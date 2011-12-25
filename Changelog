@@ -2,6 +2,65 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 0.6.4:
+- 4xm: Add a check in decode_i_frame to prevent buffer overreads
+- wma: initialize prev_block_len_bits, next_block_len_bits, and block_len_bits.
+- swscale: #include "libavutil/mathematics.h"
+- vp3dec: Check coefficient index in vp3_dequant() (CVE-2011-4352)
+- svq1dec: call avcodec_set_dimensions() after dimensions changed. (CVE-2011-4579)
+- commits related to CVE-2011-4353:
+  - vp6: Fix illegal read.
+  - vp6: Reset the internal state when aborting key frames header parsing
+  - vp6: Check for huffman tree build errors
+  - vp6: partially propagate huffman tree building errors during coeff model parsing and fix misspelling
+- commits related to CVE-2011-4351:
+  - qdm2: check output buffer size before decoding
+  - Fix qdm2 decoder packet handling to match the api
+  - Fix out of bound reads in the QDM2 decoder.
+  - Check for out of bound writes in the QDM2 decoder.
+- vmd: fix segfaults on corruped streams (CVE-2011-4364)
+- rv34: Check for invalid slice offsets
+- rv34: Fix potential overreads
+- rv34: Avoid NULL dereference on corrupted bitstream
+- rv10: Reject slices that does not have the same type as the first one
+- oggdec: fix out of bound write in the ogg demuxer
+- smacker: fix a few off by 1 errors
+- Check for invalid VLC value in smacker decoder.
+- Check and propagate errors when VLC trees cannot be built in smacker decoder.
+- Fixed off by one packet size allocation in the smacker demuxer.
+- Check for invalid packet size in the smacker demuxer.
+- ape demuxer: fix segfault on memory allocation failure.
+- Fixed size given to init_get_bits() in xan decoder.
+- smacker demuxer: handle possible av_realloc() failure.
+- Fixed segfault with wavpack decoder on corrupted decorrelation terms sub-blocks.
+- indeo2: fail if input buffer too small
+- indeo2: init_get_bits size in bits instead of bytes
+- wavpack: Check error codes rather than working around error conditions.
+- Fixed invalid writes and reads in wavpack decoder on corrupted bitstreams.
+- cpu detection: avoid a signed overflow
+- h264: correct implicit weight table computation for long ref pics
+- h264: correct the check for invalid long term frame index in MMCO decode
+- rv10/20: tell decoder to use edge emulation
+- flvenc: use int64_t to store offsets
+- VC-1: fix reading of custom PAR.
+- h264: notice memory allocation failure
+- libx264: do not set pic quality if no frame is output
+- mxfdec: Include FF_INPUT_BUFFER_PADDING_SIZE when allocating extradata.
+- rv30: return AVERROR(EINVAL) instead of EINVAL
+- Do not decode RV30 files if the extradata is too small
+- aacps: skip some memcpy() if src and dst would be equal
+- mpegts: fix Continuity Counter error detection
+- alsa: fallback to buffer_size/4 for period_size.
+- mxfenc: fix ignored drop flag in binary timecode representation.
+- dca: set AVCodecContext frame_size for DTS audio
+- H.264: fix overreads of qscale_table
+- postprocess.c: filter name needs to be double 0 terminated
+- Replace strncpy() with av_strlcpy() in libpostproc.
+- jpegdec: actually search for and parse RSTn
+- riff: Add mpgv MPEG-2 fourcc
+- Added M701 codec_tag for mpeg2video
+
+
+version 0.6.3:
 
 - fix compilation with --enable-hardcoded-tables
 - mjpeg: Detect overreads in mjpeg_decode_scan() and error out.

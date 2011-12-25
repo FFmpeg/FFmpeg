@@ -158,3 +158,21 @@ been backported from the Libav 0.7.2 release. Distributors and system
 integrators are encouraged to update and share their patches against
 this branch.
 For a full list of changes please see the Changelog file.
+
+
+* 0.6.4
+
+General notes
+-------------
+
+This mostly maintenance-only release that addresses a number a number of
+bugs such as security and compilation issues that have been brought to
+our attention. Among other (rather minor) fixes, this release features
+fixes for the QDM2 decoder (CVE-2011-4351), vp3 decoder (CVE-2011-4352),
+DoS in the VP5/VP6 decoders (CVE-2011-4353), a buffer overflow in the
+Sierra VMD decoder CVE-2011-4364, and a safety fix in the svq1 decoder
+(CVE-2011-4579).
+
+Distributors and system integrators are encouraged
+to update and share their patches against this branch.  For a full list
+of changes please see the Changelog file.
