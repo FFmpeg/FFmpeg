@@ -13,6 +13,20 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-12-25 - lavfi 2.14.0
+  e1d9dbf Add a new installed header - buffersrc.h
+  It contains a new function av_buffersrc_buffer() that allows passing
+  frames to the 'buffer' filter, but unlike av_vsrc_buffer_add_frame()
+  it allows for direct rendering.
+  1c9e340 Add avfilter_copy_frame_props() for copying properties from
+  AVFrame to AVFilterBufferRef.
+
+2011-12-25 - lavc 53.31.0
+  Add the following new fields to AVFrame:
+    b58dbb5 sample_aspect_ratio
+    3a2ddf7 width, height
+    8a4a5f6 format
+
 2011-12-18 - 8400b12 - lavc 53.28.1
   Deprecate AVFrame.age. The field is unused.
 
