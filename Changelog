@@ -6,6 +6,7 @@ version <next>:
 
 - Indeo 4 decoder
 - SMJPEG demuxer
+- Automatic thread count based on detection number of (available) CPU cores
 
 
 version 0.8_beta1:
