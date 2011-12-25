@@ -678,6 +678,7 @@ static int svq1_decode_frame(AVCodecContext *avctx,
 #endif
     return result;
   }
+  avcodec_set_dimensions(avctx, s->width, s->height);
 
   //FIXME this avoids some confusion for "B frames" without 2 references
   //this should be removed after libavcodec can handle more flexible picture types & ordering

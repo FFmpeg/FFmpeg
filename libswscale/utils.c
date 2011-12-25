@@ -42,6 +42,7 @@
 #include "libavutil/x86_cpu.h"
 #include "libavutil/avutil.h"
 #include "libavutil/bswap.h"
+#include "libavutil/mathematics.h"
 #include "libavutil/pixdesc.h"
 
 unsigned swscale_version(void)

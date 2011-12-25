@@ -454,6 +454,7 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
     s->avctx= avctx;
     s->out_format = FMT_H263;
     s->codec_id= avctx->codec_id;
+    avctx->flags |= CODEC_FLAG_EMU_EDGE;
 
     s->orig_width = s->width  = avctx->coded_width;
     s->orig_height= s->height = avctx->coded_height;
@@ -558,6 +559,11 @@ static int rv10_decode_packet(AVCodecContext *avctx,
         if(MPV_frame_start(s, avctx) < 0)
             return -1;
         ff_er_frame_start(s);
+    } else {
+        if (s->current_picture_ptr->pict_type != s->pict_type) {
+            av_log(s->avctx, AV_LOG_ERROR, "Slice type mismatch\n");
+            return -1;
+        }
     }
 
     dprintf(avctx, "qscale=%d\n", s->qscale);
