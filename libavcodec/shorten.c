@@ -205,7 +205,7 @@ static int decode_wave_header(AVCodecContext *avctx, const uint8_t *header,
 {
     int len;
     short wave_format;
-
+    const uint8_t *end= header + header_size;
 
     if (bytestream_get_le32(&header) != MKTAG('R','I','F','F')) {
         av_log(avctx, AV_LOG_ERROR, "missing RIFF tag\n");
@@ -221,6 +221,8 @@ static int decode_wave_header(AVCodecContext *avctx, const uint8_t *header,
 
     while (bytestream_get_le32(&header) != MKTAG('f','m','t',' ')) {
         len = bytestream_get_le32(&header);
+        if(len<0 || end - header - 8 < len)
+            return AVERROR_INVALIDDATA;
         header += len;
     }
     len = bytestream_get_le32(&header);
