@@ -2,6 +2,22 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 
+version 0.5.6:
+- svq1dec: call avcodec_set_dimensions() after dimensions changed. (NGS00148, CVE-2011-4579)
+- vmd: fix segfaults on corruped streams (CVE-2011-4364)
+- commits related to CVE-2011-4353:
+  - vp6: partially propagate huffman tree building errors during coeff model parsing and fix misspelling
+  - Plug some memory leaks in the VP6 decoder
+  - vp6: Reset the internal state when aborting key frames header parsing
+  - vp6: Fix illegal read.
+  - vp6: Fix illegal read.
+  - Fix out of bound reads in the QDM2 decoder.
+- commits related to CVE-2011-4351:
+  - Check for out of bound writes in the QDM2 decoder.
+  - qdm2: check output buffer size before decoding
+  - Fix qdm2 decoder packet handling to match the api
+
+
 version 0.5.5:
 
 - Fix memory (re)allocation in matroskadec.c (MSVR11-011/CVE-2011-3504)
