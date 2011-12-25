@@ -510,6 +510,20 @@ int opt_report(const char *opt)
     return 0;
 }
 
+int opt_max_alloc(const char *opt, const char *arg)
+{
+    char *tail;
+    size_t max;
+
+    max = strtol(arg, &tail, 10);
+    if (*tail) {
+        av_log(NULL, AV_LOG_FATAL, "Invalid max_alloc \"%s\".\n", arg);
+        exit_program(1);
+    }
+    av_max_alloc(max);
+    return 0;
+}
+
 int opt_codec_debug(const char *opt, const char *arg)
 {
     av_log_set_level(AV_LOG_DEBUG);

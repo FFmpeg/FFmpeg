@@ -15,3 +15,4 @@
     { "v", HAS_ARG, {(void*)opt_loglevel}, "set libav* logging level", "loglevel" },
     { "debug", HAS_ARG, {(void*)opt_codec_debug}, "set debug flags", "flags" },
     { "report", 0, {(void*)opt_report}, "generate a report" },
+    { "max_alloc", HAS_ARG, {(void*)opt_max_alloc}, "set maximum size of a single allocated block", "bytes" },
