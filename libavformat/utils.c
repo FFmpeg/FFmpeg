@@ -273,9 +273,10 @@ int ffio_limit(AVIOContext *s, int size)
             if(!s->maxsize || s->maxsize<newsize)
                 s->maxsize= newsize;
             remaining= s->maxsize - avio_tell(s);
+            remaining= FFMAX(remaining, 0);
         }
 
-        if(s->maxsize>=0 && remaining>=0 && remaining+1 < size){
+        if(s->maxsize>=0 && remaining+1 < size){
             av_log(0, AV_LOG_ERROR, "Truncating packet of size %d to %"PRId64"\n", size, remaining+1);
             size= remaining+1;
         }
