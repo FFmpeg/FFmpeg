@@ -251,10 +251,8 @@ static int dv_extract_video_info(DVDemuxContext *c, uint8_t* frame)
         avpriv_set_pts_info(c->vst, 64, c->sys->time_base.num,
                         c->sys->time_base.den);
         avctx->time_base= c->sys->time_base;
-        if (!avctx->width){
-            avctx->width = c->sys->width;
-            avctx->height = c->sys->height;
-        }
+        if (!avctx->width)
+            avcodec_set_dimensions(avctx, c->sys->width, c->sys->height);
         avctx->pix_fmt = c->sys->pix_fmt;
 
         /* finding out SAR is a little bit messy */

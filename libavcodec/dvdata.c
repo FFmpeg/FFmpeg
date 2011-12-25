@@ -287,9 +287,9 @@ const DVprofile* avpriv_dv_codec_profile(AVCodecContext* codec)
     int i;
 
     for (i=0; i<FF_ARRAY_ELEMS(dv_profiles); i++)
-       if (codec->height  == dv_profiles[i].height  &&
-           codec->pix_fmt == dv_profiles[i].pix_fmt &&
-           codec->width   == dv_profiles[i].width)
+       if (codec->coded_height == dv_profiles[i].height  &&
+           codec->pix_fmt      == dv_profiles[i].pix_fmt &&
+           codec->coded_width  == dv_profiles[i].width)
                return &dv_profiles[i];
 
     return NULL;
