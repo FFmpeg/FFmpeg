@@ -177,6 +177,11 @@ static inline int av_size_mult(size_t a, size_t b, size_t *r)
 }
 
 /**
+ * Set the maximum size that may me allocated in one block.
+ */
+void av_max_alloc(size_t max);
+
+/**
  * @}
  */
 
