@@ -163,3 +163,20 @@ General notes
 This maintenance-only release addresses several security issues that
 were brought to our attention.
 
+
+
+* 0.5.7 Dec 25, 2011
+
+General notes
+-------------
+
+This maintenance-only release addresses several security issues that
+were brought to our attention. In details, it features fixes for the
+QDM2 decoder (CVE-2011-4351), DoS in the VP5/VP6 decoders
+(CVE-2011-4353), and a buffer overflow in the Sierra VMD decoder
+CVE-2011-4364, and a safety fix in the SVQ1 decoder (CVE-2011-4579).
+CVE-2011-4352, a bug in the VP3 decoder, is not known to affect this
+release.
+
+Distributors and system integrators are encouraged to update and share
+their patches against this branch.
