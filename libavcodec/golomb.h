@@ -123,7 +123,7 @@ static inline int svq3_get_ue_golomb(GetBitContext *gb){
     }else{
         int ret = 1;
 
-        while (1) {
+        do {
             buf >>= 32 - 8;
             LAST_SKIP_BITS(re, gb, FFMIN(ff_interleaved_golomb_vlc_len[buf], 8));
 
@@ -135,7 +135,7 @@ static inline int svq3_get_ue_golomb(GetBitContext *gb){
             ret = (ret << 4) | ff_interleaved_dirac_golomb_vlc_code[buf];
             UPDATE_CACHE(re, gb);
             buf = GET_CACHE(re, gb);
-        }
+        } while(ret<0x8000000U);
 
         CLOSE_READER(re, gb);
         return ret - 1;
