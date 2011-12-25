@@ -86,6 +86,7 @@ typedef struct ShortenContext {
     int channels;
 
     int32_t *decoded[MAX_CHANNELS];
+    int32_t *decoded_base[MAX_CHANNELS];
     int32_t *offset[MAX_CHANNELS];
     int *coeffs;
     uint8_t *bitstream;
@@ -140,13 +141,14 @@ static int allocate_buffers(ShortenContext *s)
             return AVERROR(ENOMEM);
         s->offset[chan] = tmp_ptr;
 
-        tmp_ptr = av_realloc(s->decoded[chan], sizeof(int32_t)*(s->blocksize + s->nwrap));
+        tmp_ptr = av_realloc(s->decoded_base[chan], (s->blocksize + s->nwrap) *
+                             sizeof(s->decoded_base[0][0]));
         if (!tmp_ptr)
             return AVERROR(ENOMEM);
-        s->decoded[chan] = tmp_ptr;
+        s->decoded_base[chan] = tmp_ptr;
         for (i=0; i<s->nwrap; i++)
-            s->decoded[chan][i] = 0;
-        s->decoded[chan] += s->nwrap;
+            s->decoded_base[chan][i] = 0;
+        s->decoded[chan] = s->decoded_base[chan] + s->nwrap;
     }
 
     coeffs = av_realloc(s->coeffs, s->nwrap * sizeof(*s->coeffs));
@@ -615,8 +617,8 @@ static av_cold int shorten_decode_close(AVCodecContext *avctx)
     int i;
 
     for (i = 0; i < s->channels; i++) {
-        s->decoded[i] -= s->nwrap;
-        av_freep(&s->decoded[i]);
+        s->decoded[i] = NULL;
+        av_freep(&s->decoded_base[i]);
         av_freep(&s->offset[i]);
     }
     av_freep(&s->bitstream);
