@@ -11,6 +11,7 @@ version next:
 - ffprobe -show_data option
 - RTMPT protocol support
 - iLBC encoding/decoding via libilbc
+- showwaves filter
 
 
 version 0.11:

@@ -129,6 +129,9 @@ void avfilter_register_all(void)
     REGISTER_FILTER (BUFFERSINK,  buffersink,  vsink);
     REGISTER_FILTER (NULLSINK,    nullsink,    vsink);
 
+    /* transmedia filters */
+    REGISTER_FILTER (SHOWWAVES,   showwaves,   avf);
+
     /* those filters are part of public or internal API => registered
      * unconditionally */
     {

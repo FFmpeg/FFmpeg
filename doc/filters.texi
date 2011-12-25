@@ -3826,3 +3826,48 @@ mainly useful as a template and to be employed in analysis / debugging
 tools.
 
 @c man end VIDEO SINKS
+
+@chapter Transmedia Filters
+@c man begin TRANSMEDIA FILTERS
+
+Below is a description of the currently available transmedia filters.
+
+@section showwaves
+
+Convert input audio to a video output, representing the samples waves.
+
+The filter accepts the following named parameters:
+@table @option
+
+@item n
+Set the number of samples which are printed on the same column. A
+larger value will decrease the frame rate. Must be a positive
+integer. This option can be set only if the value for @var{rate}
+is not explicitly specified.
+
+@item rate, r
+Set the (approximate) output frame rate. This is done by setting the
+option @var{n}. Default value is "25".
+
+@item size, s
+Specify the video size for the output. Default value is "600x240".
+@end table
+
+Some examples follow.
+@itemize
+@item
+Output the input file audio and the corresponding video representation
+at the same time:
+@example
+amovie=a.mp3,asplit[out0],showwaves[out1]
+@end example
+
+@item
+Create a synthetic signal and show it with showwaves, forcing a
+framerate of 30 frames per second:
+@example
+aevalsrc=sin(1*2*PI*t)*sin(880*2*PI*t):cos(2*PI*200*t),asplit[out0],showwaves=r=30[out1]
+@end example
+@end itemize
+
+@c man end TRANSMEDIA FILTERS
