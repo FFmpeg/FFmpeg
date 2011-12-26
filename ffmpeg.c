@@ -463,7 +463,7 @@ static int alloc_buffer(InputStream *ist, FrameBuffer **pbuf)
 {
     AVCodecContext *s = ist->st->codec;
     FrameBuffer  *buf = av_mallocz(sizeof(*buf));
-    int ret;
+    int ret, i;
     const int pixel_size = av_pix_fmt_descriptors[s->pix_fmt].comp[0].step_minus1+1;
     int h_chroma_shift, v_chroma_shift;
     int edge = 32; // XXX should be avcodec_get_edge_width(), but that fails on svq1
@@ -491,7 +491,7 @@ static int alloc_buffer(InputStream *ist, FrameBuffer **pbuf)
     memset(buf->base[0], 128, ret);
 
     avcodec_get_chroma_sub_sample(s->pix_fmt, &h_chroma_shift, &v_chroma_shift);
-    for (int i = 0; i < FF_ARRAY_ELEMS(buf->data); i++) {
+    for (i = 0; i < FF_ARRAY_ELEMS(buf->data); i++) {
         const int h_shift = i==0 ? 0 : h_chroma_shift;
         const int v_shift = i==0 ? 0 : v_chroma_shift;
         if (s->flags & CODEC_FLAG_EMU_EDGE)
