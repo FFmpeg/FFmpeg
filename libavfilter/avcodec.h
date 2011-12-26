@@ -36,7 +36,7 @@
  * Copy the frame properties of src to dst, without copying the actual
  * image data.
  */
-void avfilter_copy_frame_props(AVFilterBufferRef *dst, const AVFrame *src);
+int avfilter_copy_frame_props(AVFilterBufferRef *dst, const AVFrame *src);
 
 /**
  * Create and return a picref reference from the data and properties

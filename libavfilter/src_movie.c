@@ -264,6 +264,7 @@ static int movie_get_frame(AVFilterLink *outlink)
                 /* use pkt_dts if pkt_pts is not available */
                 movie->picref->pts = movie->frame->pkt_pts == AV_NOPTS_VALUE ?
                     movie->frame->pkt_dts : movie->frame->pkt_pts;
+
                 if (!movie->frame->sample_aspect_ratio.num)
                     movie->picref->video->sample_aspect_ratio = st->sample_aspect_ratio;
                 av_dlog(outlink->src,

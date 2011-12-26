@@ -1093,6 +1093,8 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
         if (ret >= 0 && *got_frame_ptr) {
             avctx->frame_number++;
             frame->pkt_dts = avpkt->dts;
+            if (frame->format == AV_SAMPLE_FMT_NONE)
+                frame->format = avctx->sample_fmt;
         }
     }
     return ret;

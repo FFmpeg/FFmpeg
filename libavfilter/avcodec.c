@@ -23,7 +23,7 @@
 
 #include "avcodec.h"
 
-void avfilter_copy_frame_props(AVFilterBufferRef *dst, const AVFrame *src)
+int avfilter_copy_frame_props(AVFilterBufferRef *dst, const AVFrame *src)
 {
     dst->pts    = src->pts;
     dst->pos    = src->pkt_pos;
@@ -39,6 +39,8 @@ void avfilter_copy_frame_props(AVFilterBufferRef *dst, const AVFrame *src)
         dst->video->key_frame           = src->key_frame;
         dst->video->pict_type           = src->pict_type;
     }
+
+    return 0;
 }
 
 AVFilterBufferRef *avfilter_get_video_buffer_ref_from_frame(const AVFrame *frame,

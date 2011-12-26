@@ -1285,6 +1285,29 @@ typedef struct AVFrame {
     uint8_t **extended_data;
 
     /**
+     * sample aspect ratio for the video frame, 0/1 if unknown\unspecified
+     * - encoding: unused
+     * - decoding: Read by user.
+     */
+    AVRational sample_aspect_ratio;
+
+    /**
+     * width and height of the video frame
+     * - encoding: unused
+     * - decoding: Read by user.
+     */
+    int width, height;
+
+    /**
+     * format of the frame, -1 if unknown or unset
+     * Values correspond to enum PixelFormat for video frames,
+     * enum AVSampleFormat for audio)
+     * - encoding: unused
+     * - decoding: Read by user.
+     */
+    int format;
+
+    /**
      * frame timestamp estimated using various heuristics, in stream time base
      * Code outside libavcodec should access this field using:
      *  av_opt_ptr(avcodec_get_frame_class(), frame, "best_effort_timestamp");
@@ -1301,35 +1324,6 @@ typedef struct AVFrame {
      * - decoding: Read by user.
      */
     int64_t pkt_pos;
-
-    /**
-     * reordered sample aspect ratio for the video frame, 0/1 if unknown\unspecified
-     * Code outside libavcodec should access this field using:
-     *  av_opt_ptr(avcodec_get_frame_class(), frame, "sample_aspect_ratio");
-     * - encoding: unused
-     * - decoding: Read by user.
-     */
-    AVRational sample_aspect_ratio;
-
-    /**
-     * width and height of the video frame
-     * Code outside libavcodec should access this field using:
-     *  av_opt_ptr(avcodec_get_frame_class(), frame, "width");
-     * - encoding: unused
-     * - decoding: Read by user.
-     */
-    int width, height;
-
-    /**
-     * format of the frame, -1 if unknown or unset
-     * It should be cast to the corresponding enum (enum PixelFormat
-     * for video, enum AVSampleFormat for audio)
-     * Code outside libavcodec should access this field using:
-     *  av_opt_ptr(avcodec_get_frame_class(), frame, "format");
-     * - encoding: unused
-     * - decoding: Read by user.
-     */
-    int format;
 
 } AVFrame;
 

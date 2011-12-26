@@ -26,6 +26,7 @@
 #include "avfilter.h"
 #include "internal.h"
 #include "avcodec.h"
+#include "buffersrc.h"
 #include "vsrc_buffer.h"
 #include "libavutil/imgutils.h"
 
@@ -108,6 +109,23 @@ int av_vsrc_buffer_add_video_buffer_ref(AVFilterContext *buffer_filter,
                   (void*)picref->data, picref->linesize,
                   picref->format, picref->video->w, picref->video->h);
     avfilter_copy_buffer_ref_props(c->picref, picref);
+
+    return 0;
+}
+
+int av_buffersrc_buffer(AVFilterContext *s, AVFilterBufferRef *buf)
+{
+    BufferSourceContext *c = s->priv;
+
+    if (c->picref) {
+        av_log(s, AV_LOG_ERROR,
+               "Buffering several frames is not supported. "
+               "Please consume all available frames before adding a new one.\n"
+            );
+        return AVERROR(EINVAL);
+    }
+
+    c->picref = buf;
 
     return 0;
 }

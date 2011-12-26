@@ -165,6 +165,15 @@ static av_cold int avs_decode_init(AVCodecContext * avctx)
     return 0;
 }
 
+static av_cold int avs_decode_end(AVCodecContext *avctx)
+{
+    AvsContext *s = avctx->priv_data;
+    if (s->picture.data[0])
+        avctx->release_buffer(avctx, &s->picture);
+    return 0;
+}
+
+
 AVCodec ff_avs_decoder = {
     .name           = "avs",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -172,6 +181,7 @@ AVCodec ff_avs_decoder = {
     .priv_data_size = sizeof(AvsContext),
     .init           = avs_decode_init,
     .decode         = avs_decode_frame,
+    .close          = avs_decode_end,
     .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("AVS (Audio Video Standard) video"),
 };
