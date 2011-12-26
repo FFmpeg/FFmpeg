@@ -83,13 +83,14 @@ char *avpriv_timecode_to_string(char *buf, const struct ff_timecode *tc, unsigne
 {
     int frame_num = tc->start + frame;
     int fps = (tc->rate.num + tc->rate.den/2) / tc->rate.den;
-    int ff  = frame_num % fps;
-    int ss  = frame_num / fps        % 60;
-    int mm  = frame_num / (fps*60)   % 60;
-    int hh  = frame_num / (fps*3600) % 24;
+    int hh, mm, ss, ff;
 
     if (tc->drop)
         frame_num = avpriv_framenum_to_drop_timecode(frame_num);
+    ff = frame_num % fps;
+    ss = frame_num / fps        % 60;
+    mm = frame_num / (fps*60)   % 60;
+    hh = frame_num / (fps*3600) % 24;
     snprintf(buf, sizeof("hh:mm:ss.ff"), "%02d:%02d:%02d%c%02d",
              hh, mm, ss, tc->drop ? ';' : ':', ff);
     return buf;
