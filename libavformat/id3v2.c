@@ -486,7 +486,7 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
         int tunsync = 0;
         int tcomp = 0;
         int tencr = 0;
-        int dlen;
+        unsigned long dlen;
 
         if (isv34) {
             avio_read(s->pb, tag, 4);
@@ -547,14 +547,14 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
 
                 av_fast_malloc(&buffer, &buffer_size, dlen);
                 if (!buffer) {
-                    av_log(s, AV_LOG_ERROR, "Failed to alloc %d bytes\n", dlen);
+                    av_log(s, AV_LOG_ERROR, "Failed to alloc %ld bytes\n", dlen);
                     goto seek;
                 }
 #if CONFIG_ZLIB
                 if (tcomp) {
                     int n, err;
 
-                    av_log(s, AV_LOG_DEBUG, "Compresssed frame %s tlen=%d dlen=%d\n", tag, tlen, dlen);
+                    av_log(s, AV_LOG_DEBUG, "Compresssed frame %s tlen=%d dlen=%ld\n", tag, tlen, dlen);
 
                     av_fast_malloc(&compressed_buffer, &compressed_buffer_size, tlen);
                     if (!compressed_buffer) {
