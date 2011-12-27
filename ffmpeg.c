@@ -207,6 +207,7 @@ typedef struct InputStream {
 
     /* a pool of free buffers for decoded data */
     FrameBuffer *buffer_pool;
+    int dr1;
 } InputStream;
 
 typedef struct InputFile {
@@ -546,6 +547,7 @@ static int codec_get_buffer(AVCodecContext *s, AVFrame *frame)
     if (buf->w != s->width || buf->h != s->height || buf->pix_fmt != s->pix_fmt) {
         av_freep(&buf->base[0]);
         av_free(buf);
+        ist->dr1 = 0;
         if ((ret = alloc_buffer(ist, &buf)) < 0)
             return ret;
     }
@@ -2049,7 +2051,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
             if (!frame_sample_aspect->num)
                 *frame_sample_aspect = ist->st->sample_aspect_ratio;
             decoded_frame->pts = ist->pts;
-            if (ist->st->codec->codec->capabilities & CODEC_CAP_DR1) {
+            if (ist->dr1) {
                 FrameBuffer      *buf = decoded_frame->opaque;
                 AVFilterBufferRef *fb = avfilter_get_video_buffer_ref_from_arrays(
                                             decoded_frame->data, decoded_frame->linesize,
@@ -2291,7 +2293,8 @@ static int init_input_stream(int ist_index, OutputStream *output_streams, int nb
             return AVERROR(EINVAL);
         }
 
-        if (codec->type == AVMEDIA_TYPE_VIDEO && codec->capabilities & CODEC_CAP_DR1) {
+        ist->dr1 = codec->capabilities & CODEC_CAP_DR1;
+        if (codec->type == AVMEDIA_TYPE_VIDEO && ist->dr1) {
             ist->st->codec->get_buffer     = codec_get_buffer;
             ist->st->codec->release_buffer = codec_release_buffer;
             ist->st->codec->opaque         = ist;
