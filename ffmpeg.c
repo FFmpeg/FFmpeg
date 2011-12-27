@@ -573,6 +573,9 @@ static void codec_release_buffer(AVCodecContext *s, AVFrame *frame)
     FrameBuffer *buf = frame->opaque;
     int i;
 
+    if(frame->type!=FF_BUFFER_TYPE_USER)
+        return avcodec_default_release_buffer(s, frame);
+
     for (i = 0; i < FF_ARRAY_ELEMS(frame->data); i++)
         frame->data[i] = NULL;
 
@@ -2051,7 +2054,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
             if (!frame_sample_aspect->num)
                 *frame_sample_aspect = ist->st->sample_aspect_ratio;
             decoded_frame->pts = ist->pts;
-            if (ist->dr1) {
+            if (ist->dr1 && decoded_frame->type==FF_BUFFER_TYPE_USER) {
                 FrameBuffer      *buf = decoded_frame->opaque;
                 AVFilterBufferRef *fb = avfilter_get_video_buffer_ref_from_arrays(
                                             decoded_frame->data, decoded_frame->linesize,
