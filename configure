@@ -1228,6 +1228,7 @@ HAVE_LIST="
     symver_gnu_asm
     sysctl
     sys_mman_h
+    sys_param_h
     sys_resource_h
     sys_select_h
     sys_soundcard_h
@@ -3020,6 +3021,7 @@ check_header libcrystalhd/libcrystalhd_if.h
 check_header malloc.h
 check_header poll.h
 check_header sys/mman.h
+check_header sys/param.h
 check_header sys/resource.h
 check_header sys/select.h
 check_header termios.h
