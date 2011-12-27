@@ -8,6 +8,7 @@ version next:
 - OpenMG Audio muxer
 - SMJPEG demuxer
 - dv: add timecode to metadata
+- thumbnail video filter
 
 
 version 0.9:
@@ -144,7 +145,6 @@ easier to use. The changes are:
 - Dxtory capture format decoder
 - cellauto source
 - Simple segmenting muxer
-- thumbnail video filter
 
 
 version 0.8:
