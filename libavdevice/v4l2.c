@@ -51,6 +51,10 @@
 
 static const int desired_video_buffers = 256;
 
+#define V4L_ALLFORMATS  3
+#define V4L_RAWFORMATS  1
+#define V4L_COMPFORMATS 2
+
 struct video_data {
     AVClass *class;
     int fd;
@@ -65,8 +69,10 @@ struct video_data {
     unsigned int *buf_len;
     char *standard;
     int channel;
-    char *video_size; /**< String describing video size, set by a private option. */
+    char *video_size;   /**< String describing video size,
+                             set by a private option. */
     char *pixel_format; /**< Set by a private option. */
+    int list_format;    /**< Set by a private option. */
     char *framerate;    /**< Set by a private option. */
 };
 
@@ -256,6 +262,69 @@ static enum CodecID fmt_v4l2codec(uint32_t v4l2_fmt)
     }
 
     return CODEC_ID_NONE;
+}
+
+#if HAVE_STRUCT_V4L2_FRMIVALENUM_DISCRETE
+static void list_framesizes(AVFormatContext *ctx, int fd, uint32_t pixelformat)
+{
+    struct v4l2_frmsizeenum vfse = { .pixel_format = pixelformat };
+
+    while(!ioctl(fd, VIDIOC_ENUM_FRAMESIZES, &vfse)) {
+        switch (vfse.type) {
+        case V4L2_FRMSIZE_TYPE_DISCRETE:
+            av_log(ctx, AV_LOG_INFO, " %ux%u",
+                   vfse.discrete.width, vfse.discrete.height);
+        break;
+        case V4L2_FRMSIZE_TYPE_CONTINUOUS:
+        case V4L2_FRMSIZE_TYPE_STEPWISE:
+            av_log(ctx, AV_LOG_INFO, " {%u-%u, %u}x{%u-%u, %u}",
+                   vfse.stepwise.min_width,
+                   vfse.stepwise.max_width,
+                   vfse.stepwise.step_width,
+                   vfse.stepwise.min_height,
+                   vfse.stepwise.max_height,
+                   vfse.stepwise.step_height);
+        }
+        vfse.index++;
+    }
+}
+#endif
+
+static void list_formats(AVFormatContext *ctx, int fd, int type)
+{
+    struct v4l2_fmtdesc vfd = { .type = V4L2_BUF_TYPE_VIDEO_CAPTURE };
+
+    while(!ioctl(fd, VIDIOC_ENUM_FMT, &vfd)) {
+        enum CodecID codec_id = fmt_v4l2codec(vfd.pixelformat);
+        enum PixelFormat pix_fmt = fmt_v4l2ff(vfd.pixelformat, codec_id);
+
+        vfd.index++;
+
+        if (!(vfd.flags & V4L2_FMT_FLAG_COMPRESSED) &&
+            type & V4L_RAWFORMATS) {
+            const char *fmt_name = av_get_pix_fmt_name(pix_fmt);
+            av_log(ctx, AV_LOG_INFO, "R : %9s : %20s :",
+                   fmt_name ? fmt_name : "Unsupported",
+                   vfd.description);
+        } else if (vfd.flags & V4L2_FMT_FLAG_COMPRESSED &&
+                   type & V4L_COMPFORMATS) {
+            AVCodec *codec = avcodec_find_encoder(codec_id);
+            av_log(ctx, AV_LOG_INFO, "C : %9s : %20s :",
+                   codec ? codec->name : "Unsupported",
+                   vfd.description);
+        } else {
+            continue;
+        }
+
+        if (vfd.flags & V4L2_FMT_FLAG_EMULATED) {
+            av_log(ctx, AV_LOG_WARNING, "%s", "Emulated");
+            continue;
+        }
+#if HAVE_STRUCT_V4L2_FRMIVALENUM_DISCRETE
+        list_framesizes(ctx, fd, vfd.pixelformat);
+#endif
+        av_log(ctx, AV_LOG_INFO, "\n");
+    }
 }
 
 static int mmap_init(AVFormatContext *ctx)
@@ -621,6 +690,12 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         goto out;
     }
 
+    if (s->list_format) {
+        list_formats(s1, s->fd, s->list_format);
+        res = AVERROR_EXIT;
+        goto out;
+    }
+
     avpriv_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in us */
 
     if (s->video_size &&
@@ -629,12 +704,18 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
                s->video_size);
         goto out;
     }
-    if (s->pixel_format &&
-        (pix_fmt = av_get_pix_fmt(s->pixel_format)) == PIX_FMT_NONE) {
-        av_log(s1, AV_LOG_ERROR, "No such pixel format: %s.\n",
-               s->pixel_format);
-        res = AVERROR(EINVAL);
-        goto out;
+
+    if (s->pixel_format) {
+
+        pix_fmt = av_get_pix_fmt(s->pixel_format);
+
+        if (pix_fmt == PIX_FMT_NONE) {
+            av_log(s1, AV_LOG_ERROR, "No such pixel format: %s.\n",
+                   s->pixel_format);
+
+            res = AVERROR(EINVAL);
+            goto out;
+        }
     }
 
     if (!s->width && !s->height) {
@@ -737,6 +818,10 @@ static const AVOption options[] = {
     { "video_size",   "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size),   AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       DEC },
     { "pixel_format", "",                                                          OFFSET(pixel_format), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       DEC },
     { "framerate",    "",                                                          OFFSET(framerate),    AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       DEC },
+    { "list_formats", "List available formats and exit",                           OFFSET(list_format),  AV_OPT_TYPE_INT,    {.dbl = 0 },  0, INT_MAX, DEC, "list_formats" },
+    { "all",          "Show all available formats",                                OFFSET(list_format),  AV_OPT_TYPE_CONST,  {.dbl = V4L_ALLFORMATS  },    0, INT_MAX, DEC, "list_formats" },
+    { "raw",          "Show only non-compressed formats",                          OFFSET(list_format),  AV_OPT_TYPE_CONST,  {.dbl = V4L_RAWFORMATS  },    0, INT_MAX, DEC, "list_formats" },
+    { "compressed",   "Show only compressed formats",                              OFFSET(list_format),  AV_OPT_TYPE_CONST,  {.dbl = V4L_COMPFORMATS },    0, INT_MAX, DEC, "list_formats" },
     { NULL },
 };
 

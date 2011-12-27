@@ -267,7 +267,7 @@ the device.
 Video4Linux and Video4Linux2 devices only support a limited set of
 @var{width}x@var{height} sizes and framerates. You can check which are
 supported for example with the command @file{dov4l} for Video4Linux
-devices and the command @file{v4l-info} for Video4Linux2 devices.
+devices and using @command{-list_formats all} for Video4Linux2 devices.
 
 If the size for the device is set to 0x0, the input device will
 try to autodetect the size to use.
