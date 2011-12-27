@@ -51,17 +51,10 @@
 
 static const int desired_video_buffers = 256;
 
-enum io_method {
-    io_read,
-    io_mmap,
-    io_userptr
-};
-
 struct video_data {
     AVClass *class;
     int fd;
     int frame_format; /* V4L2_PIX_FMT_* */
-    enum io_method io_method;
     int width, height;
     int frame_size;
     int interlaced;
@@ -337,11 +330,6 @@ static int mmap_init(AVFormatContext *ctx)
     return 0;
 }
 
-static int read_init(AVFormatContext *ctx)
-{
-    return -1;
-}
-
 static void mmap_release_buffer(AVPacket *pkt)
 {
     struct v4l2_buffer buf;
@@ -420,11 +408,6 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
     pkt->priv = buf_descriptor;
 
     return s->buf_len[buf.index];
-}
-
-static int read_frame(AVFormatContext *ctx, AVPacket *pkt)
-{
-    return -1;
 }
 
 static int mmap_start(AVFormatContext *ctx)
@@ -693,19 +676,13 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         avpicture_get_size(st->codec->pix_fmt, s->width, s->height);
 
     if (capabilities & V4L2_CAP_STREAMING) {
-        s->io_method = io_mmap;
-        res = mmap_init(s1);
-        if (res == 0) {
+        if (!(res = mmap_init(s1)))
             res = mmap_start(s1);
-        }
     } else {
-        s->io_method = io_read;
-        res = read_init(s1);
+        res = AVERROR(ENOSYS);
     }
     if (res < 0) {
         close(s->fd);
-
-        res = AVERROR(EIO);
         goto out;
     }
     s->top_field_first = first_field(s->fd);
@@ -726,18 +703,8 @@ static int v4l2_read_packet(AVFormatContext *s1, AVPacket *pkt)
     AVFrame *frame = s1->streams[0]->codec->coded_frame;
     int res;
 
-    if (s->io_method == io_mmap) {
-        av_init_packet(pkt);
-        res = mmap_read_frame(s1, pkt);
-    } else if (s->io_method == io_read) {
-        if (av_new_packet(pkt, s->frame_size) < 0)
-            return AVERROR(EIO);
-
-        res = read_frame(s1, pkt);
-    } else {
-        return AVERROR(EIO);
-    }
-    if (res < 0) {
+    av_init_packet(pkt);
+    if ((res = mmap_read_frame(s1, pkt)) < 0) {
         return res;
     }
 
@@ -753,9 +720,7 @@ static int v4l2_read_close(AVFormatContext *s1)
 {
     struct video_data *s = s1->priv_data;
 
-    if (s->io_method == io_mmap) {
-        mmap_close(s);
-    }
+    mmap_close(s);
 
     close(s->fd);
     return 0;
