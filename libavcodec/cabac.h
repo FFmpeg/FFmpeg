@@ -97,15 +97,6 @@ static void refill(CABACContext *c){
     c->bytestream+= CABAC_BITS/8;
 }
 
-static inline void renorm_cabac_decoder(CABACContext *c){
-    while(c->range < 0x100){
-        c->range+= c->range;
-        c->low+= c->low;
-        if(!(c->low & CABAC_MASK))
-            refill(c);
-    }
-}
-
 static inline void renorm_cabac_decoder_once(CABACContext *c){
     int shift= (uint32_t)(c->range - 0x100)>>31;
     c->range<<= shift;
