@@ -1,8 +1,3 @@
-FATE_TESTS += fate-twinvq
-fate-twinvq: CMD = pcm -i $(SAMPLES)/vqf/achterba.vqf
-fate-twinvq: CMP = oneoff
-fate-twinvq: REF = $(SAMPLES)/vqf/achterba.pcm
-
 FATE_TESTS += fate-mpeg2-field-enc
 fate-mpeg2-field-enc: CMD = framecrc -flags +bitexact -dct fastint -idct simple -i $(SAMPLES)/mpeg2/mpeg2_field_encoding.ts -an
 
@@ -53,18 +48,8 @@ FATE_TESTS += fate-g722enc
 fate-g722enc: tests/data/asynth-16000-1.sw
 fate-g722enc: CMD = md5 -ar 16000 -ac 1 -f s16le -i $(TARGET_PATH)/tests/data/asynth-16000-1.sw -acodec g722 -ac 1 -f g722
 
-FATE_TESTS += fate-msmpeg4v1
-fate-msmpeg4v1: CMD = framecrc -flags +bitexact -dct fastint -idct simple -i $(SAMPLES)/msmpeg4v1/mpg4.avi -an
-
 FATE_TESTS += fate-ansi
 fate-ansi: CMD = framecrc -chars_per_frame 44100 -i $(SAMPLES)/ansi/TRE-IOM5.ANS -pix_fmt rgb24
-
-FATE_TESTS += fate-wmv8-drm
-# discard last packet to avoid fails due to overread of VC-1 decoder
-fate-wmv8-drm: CMD = framecrc -cryptokey 137381538c84c068111902a59c5cf6c340247c39 -i $(SAMPLES)/wmv8/wmv_drm.wmv -an -vframes 162
-
-FATE_TESTS += fate-wmv8-drm-nodec
-fate-wmv8-drm-nodec: CMD = framecrc -cryptokey 137381538c84c068111902a59c5cf6c340247c39 -i $(SAMPLES)/wmv8/wmv_drm.wmv -acodec copy -vcodec copy
 
 FATE_TESTS += fate-binkaudio-dct
 fate-binkaudio-dct: CMD = pcm -i $(SAMPLES)/bink/binkaudio_dct.bik
@@ -84,9 +69,6 @@ fate-txd-pal8: CMD = framecrc -i $(SAMPLES)/txd/outro.txd -pix_fmt rgb24 -an
 FATE_TESTS += fate-txd-16bpp
 fate-txd-16bpp: CMD = framecrc -i $(SAMPLES)/txd/misc.txd -pix_fmt bgra -an
 
-FATE_TESTS += fate-vp3
-fate-vp3: CMD = framecrc -i $(SAMPLES)/vp3/vp31.avi
-
 FATE_TESTS += fate-ws_snd
 fate-ws_snd: CMD = md5  -i $(SAMPLES)/vqa/ws_snd.vqa -f s16le
 
@@ -95,16 +77,6 @@ fate-dxa-scummvm: CMD = framecrc -i $(SAMPLES)/dxa/scummvm.dxa -pix_fmt rgb24
 
 FATE_TESTS += fate-mjpegb
 fate-mjpegb: CMD = framecrc -idct simple -flags +bitexact -i $(SAMPLES)/mjpegb/mjpegb_part.mov -an
-
-FATE_TESTS += fate-musepack7
-fate-musepack7: CMD = pcm -i $(SAMPLES)/musepack/inside-mp7.mpc
-fate-musepack7: CMP = oneoff
-fate-musepack7: REF = $(SAMPLES)/musepack/inside-mp7.pcm
-fate-musepack7: FUZZ = 1
-
-FATE_TESTS += fate-iirfilter
-fate-iirfilter: libavcodec/iirfilter-test$(EXESUF)
-fate-iirfilter: CMD = run libavcodec/iirfilter-test
 
 FATE_TESTS += fate-v410dec
 fate-v410dec: CMD = framecrc -i $(SAMPLES)/v410/lenav410.mov -pix_fmt yuv444p10le

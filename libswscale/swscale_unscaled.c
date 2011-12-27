@@ -243,9 +243,10 @@ static int packed_16bpc_bswap(SwsContext *c, const uint8_t *src[],
     int dststr = dstStride[0] >> 1;
     uint16_t       *dstPtr =       (uint16_t *) dst[0];
     const uint16_t *srcPtr = (const uint16_t *) src[0];
+    int min_stride         = FFMIN(srcstr, dststr);
 
     for (i = 0; i < srcSliceH; i++) {
-        for (j = 0; j < srcstr; j++) {
+        for (j = 0; j < min_stride; j++) {
             dstPtr[j] = av_bswap16(srcPtr[j]);
         }
         srcPtr += srcstr;
