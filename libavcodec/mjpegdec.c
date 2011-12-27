@@ -337,12 +337,19 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         }
         assert(s->nb_components==3);
         break;
+    case 0x12121100:
+        s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV444P : PIX_FMT_YUVJ444P;
+        s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
+        s->yuv442 = 1;
+        break;
     case 0x11000000:
         s->avctx->pix_fmt = PIX_FMT_GRAY8;
         break;
     case 0x12111100:
+    case 0x22211100:
         s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV440P : PIX_FMT_YUVJ440P;
         s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
+        s->yuv421 = pix_fmt_id == 0x22211100;
         break;
     case 0x21111100:
         s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV422P : PIX_FMT_YUVJ422P;
@@ -1089,6 +1096,27 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s,
             if(mjpeg_decode_scan(s, nb_components, prev_shift, point_transform,
                                  mb_bitmask, reference) < 0)
                 return -1;
+        }
+    }
+    if (s->yuv421) {
+        uint8_t *line = s->picture_ptr->data[2];
+        for (i = 0; i < s->height / 2; i++) {
+            for (index = s->width - 1; index; index--)
+                line[index] = (line[index / 2] + line[(index + 1) / 2]) >> 1;
+            line += s->linesize[2];
+        }
+    } else if (s->yuv442) {
+        uint8_t *dst = &((uint8_t *)s->picture_ptr->data[2])[(s->height - 1) * s->linesize[2]];
+        for (i = s->height - 1; i; i--) {
+            uint8_t *src1 = &((uint8_t *)s->picture_ptr->data[2])[i / 2 * s->linesize[2]];
+            uint8_t *src2 = &((uint8_t *)s->picture_ptr->data[2])[(i + 1) / 2 * s->linesize[2]];
+            if (src1 == src2) {
+                memcpy(dst, src1, s->width);
+            } else {
+                for (index = 0; index < s->width; index++)
+                    dst[index] = (src1[index] + src2[index]) >> 1;
+            }
+            dst -= s->linesize[2];
         }
     }
     emms_c();
