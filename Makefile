@@ -39,7 +39,7 @@ FFLIBS-$(CONFIG_SWSCALE)  += swscale
 
 FFLIBS := avutil
 
-DATA_FILES := $(wildcard $(SRC_PATH)/presets/*.ffpreset) doc/ffprobe.xsd
+DATA_FILES := $(wildcard $(SRC_PATH)/presets/*.ffpreset) $(SRC_PATH)/doc/ffprobe.xsd
 
 SKIPHEADERS = cmdutils_common_opts.h
 
