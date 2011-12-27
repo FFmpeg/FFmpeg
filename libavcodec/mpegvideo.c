@@ -827,15 +827,6 @@ av_cold int MPV_common_init(MpegEncContext *s)
         // Note the + 1 is for  a quicker mpeg4 slice_end detection
 
         s->parse_context.state = -1;
-        if ((s->avctx->debug & (FF_DEBUG_VIS_QP | FF_DEBUG_VIS_MB_TYPE)) ||
-            s->avctx->debug_mv) {
-            s->visualization_buffer[0] = av_malloc((s->mb_width * 16 +
-                        2 * EDGE_WIDTH) * s->mb_height * 16 + 2 * EDGE_WIDTH);
-            s->visualization_buffer[1] = av_malloc((s->mb_width * 16 +
-                        2 * EDGE_WIDTH) * s->mb_height * 16 + 2 * EDGE_WIDTH);
-            s->visualization_buffer[2] = av_malloc((s->mb_width * 16 +
-                        2 * EDGE_WIDTH) * s->mb_height * 16 + 2 * EDGE_WIDTH);
-        }
 
         s->context_initialized = 1;
         s->thread_context[0]   = s;
@@ -1572,9 +1563,10 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict)
         avcodec_get_chroma_sub_sample(s->avctx->pix_fmt,
                                       &h_chroma_shift, &v_chroma_shift);
         for (i = 0; i < 3; i++) {
-            memcpy(s->visualization_buffer[i], pict->data[i],
-                   (i == 0) ? pict->linesize[i] * height:
-                              pict->linesize[i] * height >> v_chroma_shift);
+            size_t size= (i == 0) ? pict->linesize[i] * height:
+                         pict->linesize[i] * height >> v_chroma_shift;
+            s->visualization_buffer[i]= av_realloc(s->visualization_buffer[i], size);
+            memcpy(s->visualization_buffer[i], pict->data[i], size);
             pict->data[i] = s->visualization_buffer[i];
         }
         pict->type   = FF_BUFFER_TYPE_COPY;
