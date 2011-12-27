@@ -689,6 +689,9 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = codec_id;
+    if (codec_id == CODEC_ID_RAWVIDEO)
+        st->codec->codec_tag =
+            avcodec_pix_fmt_to_codec_tag(st->codec->pix_fmt);
     st->codec->width = s->width;
     st->codec->height = s->height;
     st->codec->bit_rate = s->frame_size * 1/av_q2d(st->codec->time_base) * 8;
