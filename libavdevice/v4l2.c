@@ -100,7 +100,7 @@ static struct fmt_map fmt_conversion_table[] = {
     { PIX_FMT_NONE,    CODEC_ID_MJPEG,    V4L2_PIX_FMT_JPEG    },
 };
 
-static int device_open(AVFormatContext *ctx, uint32_t *capabilities)
+static int device_open(AVFormatContext *ctx)
 {
     struct v4l2_capability cap;
     int fd;
@@ -113,41 +113,46 @@ static int device_open(AVFormatContext *ctx, uint32_t *capabilities)
 
     fd = open(ctx->filename, flags, 0);
     if (fd < 0) {
+        err = errno;
+
         av_log(ctx, AV_LOG_ERROR, "Cannot open video device %s : %s\n",
-               ctx->filename, strerror(errno));
-
-        return AVERROR(errno);
-    }
-
-    res = ioctl(fd, VIDIOC_QUERYCAP, &cap);
-    // ENOIOCTLCMD definition only availble on __KERNEL__
-    if (res < 0 && ((err = errno) == 515)) {
-        av_log(ctx, AV_LOG_ERROR,
-               "QUERYCAP not implemented, probably V4L device but "
-               "not supporting V4L2\n");
-        close(fd);
-
-        return AVERROR(515);
-    }
-
-    if (res < 0) {
-        av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QUERYCAP): %s\n",
-                 strerror(errno));
-        close(fd);
+               ctx->filename, strerror(err));
 
         return AVERROR(err);
     }
 
-    if ((cap.capabilities & V4L2_CAP_VIDEO_CAPTURE) == 0) {
-        av_log(ctx, AV_LOG_ERROR, "Not a video capture device\n");
-        close(fd);
+    res = ioctl(fd, VIDIOC_QUERYCAP, &cap);
+    if (res < 0) {
+        err = errno;
+        av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QUERYCAP): %s\n",
+               strerror(err));
 
-        return AVERROR(ENODEV);
+        goto fail;
     }
 
-    *capabilities = cap.capabilities;
+    av_log(ctx, AV_LOG_VERBOSE, "[%d]Capabilities: %x\n",
+           fd, cap.capabilities);
+
+    if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
+        av_log(ctx, AV_LOG_ERROR, "Not a video capture device.\n");
+        err = ENODEV;
+
+        goto fail;
+    }
+
+    if (!(cap.capabilities & V4L2_CAP_STREAMING)) {
+        av_log(ctx, AV_LOG_ERROR,
+               "The device does not support the streaming I/O method.\n");
+        err = ENOSYS;
+
+        goto fail;
+    }
 
     return fd;
+
+fail:
+    close(fd);
+    return AVERROR(err);
 }
 
 static int device_init(AVFormatContext *ctx, int *width, int *height,
@@ -600,13 +605,19 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     struct video_data *s = s1->priv_data;
     AVStream *st;
     int res = 0;
-    uint32_t desired_format, capabilities = 0;
+    uint32_t desired_format;
     enum CodecID codec_id;
     enum PixelFormat pix_fmt = PIX_FMT_NONE;
 
     st = avformat_new_stream(s1, NULL);
     if (!st) {
         res = AVERROR(ENOMEM);
+        goto out;
+    }
+
+    s->fd = device_open(s1);
+    if (s->fd < 0) {
+        res = s->fd;
         goto out;
     }
 
@@ -625,13 +636,6 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         res = AVERROR(EINVAL);
         goto out;
     }
-
-    s->fd = device_open(s1, &capabilities);
-    if (s->fd < 0) {
-        res = AVERROR(EIO);
-        goto out;
-    }
-    av_log(s1, AV_LOG_VERBOSE, "[%d]Capabilities: %x\n", s->fd, capabilities);
 
     if (!s->width && !s->height) {
         struct v4l2_format fmt;
@@ -675,16 +679,12 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     s->frame_size =
         avpicture_get_size(st->codec->pix_fmt, s->width, s->height);
 
-    if (capabilities & V4L2_CAP_STREAMING) {
-        if (!(res = mmap_init(s1)))
-            res = mmap_start(s1);
-    } else {
-        res = AVERROR(ENOSYS);
-    }
-    if (res < 0) {
+    if ((res = mmap_init(s1)) ||
+        (res = mmap_start(s1)) < 0) {
         close(s->fd);
         goto out;
     }
+
     s->top_field_first = first_field(s->fd);
 
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
