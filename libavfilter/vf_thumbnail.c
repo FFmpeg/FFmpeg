@@ -54,7 +54,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
             thumb->n_frames = 0;
             av_log(ctx, AV_LOG_ERROR,
                    "Invalid number of frames specified (minimum is 2).\n");
-            return AVERROR(ENOMEM);
+            return AVERROR(EINVAL);
         }
     }
     thumb->frames = av_calloc(thumb->n_frames, sizeof(*thumb->frames));
