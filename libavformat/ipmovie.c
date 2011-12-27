@@ -456,7 +456,8 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
                 r = scratch[j++] * 4;
                 g = scratch[j++] * 4;
                 b = scratch[j++] * 4;
-                s->palette[i] = (r << 16) | (g << 8) | (b);
+                s->palette[i] = (0xFFU << 24) | (r << 16) | (g << 8) | (b);
+                s->palette[i] |= s->palette[i] >> 6 & 0x30303;
             }
             s->has_palette = 1;
             break;
@@ -524,7 +525,7 @@ static int ipmovie_read_header(AVFormatContext *s,
     AVPacket pkt;
     AVStream *st;
     unsigned char chunk_preamble[CHUNK_PREAMBLE_SIZE];
-    int chunk_type;
+    int chunk_type, i;
     uint8_t signature_buffer[sizeof(signature)];
 
     avio_read(pb, signature_buffer, sizeof(signature_buffer));
@@ -541,6 +542,9 @@ static int ipmovie_read_header(AVFormatContext *s,
 
     /* on the first read, this will position the stream at the first chunk */
     ipmovie->next_chunk_offset = avio_tell(pb) + 4;
+
+    for (i = 0; i < 256; i++)
+        ipmovie->palette[i] = 0xFFU << 24;
 
     /* process the first chunk which should be CHUNK_INIT_VIDEO */
     if (process_ipmovie_chunk(ipmovie, pb, &pkt) != CHUNK_INIT_VIDEO)
