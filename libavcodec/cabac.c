@@ -343,21 +343,6 @@ START_TIMER
             av_log(NULL, AV_LOG_ERROR, "CABAC failure at %d\n", i);
 STOP_TIMER("get_cabac")
     }
-#if 0
-    for(i=0; i<SIZE; i++){
-START_TIMER
-        if( r[i] != get_cabac_u(&c, state, (i&1) ? 6 : 7, 3, i&1) )
-            av_log(NULL, AV_LOG_ERROR, "CABAC unary (truncated) binarization failure at %d\n", i);
-STOP_TIMER("get_cabac_u")
-    }
-
-    for(i=0; i<SIZE; i++){
-START_TIMER
-        if( r[i] != get_cabac_ueg(&c, state, 3, 0, 1, 2))
-            av_log(NULL, AV_LOG_ERROR, "CABAC unary (truncated) binarization failure at %d\n", i);
-STOP_TIMER("get_cabac_ueg")
-    }
-#endif
     if(!get_cabac_terminate(&c))
         av_log(NULL, AV_LOG_ERROR, "where's the Terminator?\n");
 
