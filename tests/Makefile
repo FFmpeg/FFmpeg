@@ -23,9 +23,6 @@ tests/data/asynth-16000-1.sw: tests/audiogen$(HOSTEXESUF)
 
 tests/data/asynth%.sw tests/vsynth%/00.pgm: TAG = GEN
 
-include $(SRC_PATH)/tests/fate.mak
-include $(SRC_PATH)/tests/fate2.mak
-
 include $(SRC_PATH)/tests/fate/aac.mak
 include $(SRC_PATH)/tests/fate/ac3.mak
 include $(SRC_PATH)/tests/fate/als.mak
@@ -55,6 +52,7 @@ include $(SRC_PATH)/tests/fate/qtrle.mak
 include $(SRC_PATH)/tests/fate/real.mak
 include $(SRC_PATH)/tests/fate/screen.mak
 include $(SRC_PATH)/tests/fate/utvideo.mak
+include $(SRC_PATH)/tests/fate/video.mak
 include $(SRC_PATH)/tests/fate/voice.mak
 include $(SRC_PATH)/tests/fate/vorbis.mak
 include $(SRC_PATH)/tests/fate/vpx.mak
