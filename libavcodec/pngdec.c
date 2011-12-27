@@ -494,10 +494,10 @@ static int decode_frame(AVCodecContext *avctx,
                 } else if (s->bit_depth == 16 &&
                            s->color_type == PNG_COLOR_TYPE_RGB) {
                     avctx->pix_fmt = PIX_FMT_RGB48BE;
-                } else if (s->bit_depth == 1) {
-                    avctx->pix_fmt = PIX_FMT_MONOBLACK;
                 } else if (s->color_type == PNG_COLOR_TYPE_PALETTE) {
                     avctx->pix_fmt = PIX_FMT_PAL8;
+                } else if (s->bit_depth == 1) {
+                    avctx->pix_fmt = PIX_FMT_MONOBLACK;
                 } else if (s->bit_depth == 8 &&
                            s->color_type == PNG_COLOR_TYPE_GRAY_ALPHA) {
                     avctx->pix_fmt = PIX_FMT_GRAY8A;
@@ -609,6 +609,23 @@ static int decode_frame(AVCodecContext *avctx,
     }
  exit_loop:
 
+    if(s->bits_per_pixel == 1 && s->color_type == PNG_COLOR_TYPE_PALETTE){
+        int i, j;
+        uint8_t *pd = s->current_picture->data[0];
+        for(j=0; j < s->height; j++) {
+            for(i=s->width/8-1; i>=0; i--) {
+                pd[8*i+7]=  pd[i]    &1;
+                pd[8*i+6]= (pd[i]>>1)&1;
+                pd[8*i+5]= (pd[i]>>2)&1;
+                pd[8*i+4]= (pd[i]>>3)&1;
+                pd[8*i+3]= (pd[i]>>4)&1;
+                pd[8*i+2]= (pd[i]>>5)&1;
+                pd[8*i+1]= (pd[i]>>6)&1;
+                pd[8*i+0]=  pd[i]>>7;
+            }
+            pd += s->image_linesize;
+        }
+    }
     if(s->bits_per_pixel == 2){
         int i, j;
         uint8_t *pd = s->current_picture->data[0];
