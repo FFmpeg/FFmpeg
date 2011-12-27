@@ -1,47 +1,17 @@
 FATE_TESTS += fate-mpeg2-field-enc
 fate-mpeg2-field-enc: CMD = framecrc -flags +bitexact -dct fastint -idct simple -i $(SAMPLES)/mpeg2/mpeg2_field_encoding.ts -an
 
-FATE_TESTS += fate-imc
-fate-imc: CMD = pcm -i $(SAMPLES)/imc/imc.avi
-fate-imc: CMP = oneoff
-fate-imc: REF = $(SAMPLES)/imc/imc.pcm
-
 FATE_TESTS += fate-yop
 fate-yop: CMD = framecrc -i $(SAMPLES)/yop/test1.yop -pix_fmt rgb24 -an
 
-FATE_TESTS += fate-dts
-fate-dts: CMD = pcm -i $(SAMPLES)/dts/dts.ts
-fate-dts: CMP = oneoff
-fate-dts: REF = $(SAMPLES)/dts/dts.pcm
-
-FATE_TESTS += fate-nellymoser
-fate-nellymoser: CMD = pcm -i $(SAMPLES)/nellymoser/nellymoser.flv
-fate-nellymoser: CMP = oneoff
-fate-nellymoser: REF = $(SAMPLES)/nellymoser/nellymoser.pcm
-
 FATE_TESTS += fate-ansi
 fate-ansi: CMD = framecrc -chars_per_frame 44100 -i $(SAMPLES)/ansi/TRE-IOM5.ANS -pix_fmt rgb24
-
-FATE_TESTS += fate-binkaudio-dct
-fate-binkaudio-dct: CMD = pcm -i $(SAMPLES)/bink/binkaudio_dct.bik
-fate-binkaudio-dct: CMP = oneoff
-fate-binkaudio-dct: REF = $(SAMPLES)/bink/binkaudio_dct.pcm
-fate-binkaudio-dct: FUZZ = 2
-
-FATE_TESTS += fate-binkaudio-rdft
-fate-binkaudio-rdft: CMD = pcm -i $(SAMPLES)/bink/binkaudio_rdft.bik
-fate-binkaudio-rdft: CMP = oneoff
-fate-binkaudio-rdft: REF = $(SAMPLES)/bink/binkaudio_rdft.pcm
-fate-binkaudio-rdft: FUZZ = 2
 
 FATE_TESTS += fate-txd-pal8
 fate-txd-pal8: CMD = framecrc -i $(SAMPLES)/txd/outro.txd -pix_fmt rgb24 -an
 
 FATE_TESTS += fate-txd-16bpp
 fate-txd-16bpp: CMD = framecrc -i $(SAMPLES)/txd/misc.txd -pix_fmt bgra -an
-
-FATE_TESTS += fate-ws_snd
-fate-ws_snd: CMD = md5  -i $(SAMPLES)/vqa/ws_snd.vqa -f s16le
 
 FATE_TESTS += fate-dxa-scummvm
 fate-dxa-scummvm: CMD = framecrc -i $(SAMPLES)/dxa/scummvm.dxa -pix_fmt rgb24
