@@ -4,4 +4,4 @@ fate-twinvq: CMP = oneoff
 fate-twinvq: REF = $(SAMPLES)/vqf/achterba.pcm
 
 FATE_TESTS += fate-vqf-demux
-fate-vqf-demux: CMD = md5  -i $(SAMPLES)/vqf/achterba.vqf -acodec copy -f framecrc
+fate-vqf-demux: CMD = md5 -i $(SAMPLES)/vqf/achterba.vqf -acodec copy -f framecrc

@@ -1,8 +1,8 @@
 FATE_TESTS += fate-duck-dk3
-fate-duck-dk3: CMD = md5  -i $(SAMPLES)/duck/sop-audio-only.avi -f s16le
+fate-duck-dk3: CMD = md5 -i $(SAMPLES)/duck/sop-audio-only.avi -f s16le
 
 FATE_TESTS += fate-duck-dk4
-fate-duck-dk4: CMD = md5  -i $(SAMPLES)/duck/salsa-audio-only.avi -f s16le
+fate-duck-dk4: CMD = md5 -i $(SAMPLES)/duck/salsa-audio-only.avi -f s16le
 
 FATE_TESTS += fate-ea-mad-pcm-planar
 fate-ea-mad-pcm-planar: CMD = framecrc -i $(SAMPLES)/ea-mad/xeasport.mad

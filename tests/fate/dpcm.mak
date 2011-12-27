@@ -38,5 +38,5 @@ FATE_TESTS += fate-thp-mjpeg-adpcm
 fate-thp-mjpeg-adpcm: CMD = framecrc -idct simple -i $(SAMPLES)/thp/pikmin2-opening1-partial.thp
 
 FATE_TESTS += fate-dpcm-xan
-fate-dpcm-xan: CMD = md5  -i $(SAMPLES)/wc4-xan/wc4_2.avi -vn -f s16le
+fate-dpcm-xan: CMD = md5 -i $(SAMPLES)/wc4-xan/wc4_2.avi -vn -f s16le
 
