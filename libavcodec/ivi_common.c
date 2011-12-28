@@ -506,7 +506,7 @@ void ff_ivi_process_empty_tile(AVCodecContext *avctx, IVIBandDesc *band,
             if (band->inherit_qdelta && ref_mb)
                 mb->q_delta = ref_mb->q_delta;
 
-            if (band->inherit_mv) {
+            if (band->inherit_mv && ref_mb) {
                 /* motion vector inheritance */
                 if (mv_scale) {
                     mb->mv_x = ivi_scale_mv(ref_mb->mv_x, mv_scale);
