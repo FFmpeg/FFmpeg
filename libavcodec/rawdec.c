@@ -59,6 +59,7 @@ static const PixelFormatTag pix_fmt_bps_mov[] = {
     { PIX_FMT_RGB555BE, 16 },
     { PIX_FMT_RGB24,    24 },
     { PIX_FMT_ARGB,     32 },
+    { PIX_FMT_MONOWHITE,33 },
     { PIX_FMT_NONE, 0 },
 };
 
