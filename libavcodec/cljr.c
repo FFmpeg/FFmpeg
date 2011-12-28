@@ -161,13 +161,13 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
             case 1: dither = dither * 1664525 + 1013904223;    break;
             case 2: dither = ordered_dither[ y&1 ][ (x>>2)&1 ];break;
             }
-            put_bits(&pb, 5, (luma[3] +  (dither>>29)   ) >> 3);
-            put_bits(&pb, 5, (luma[2] + ((dither>>26)&7)) >> 3);
-            put_bits(&pb, 5, (luma[1] + ((dither>>23)&7)) >> 3);
-            put_bits(&pb, 5, (luma[0] + ((dither>>20)&7)) >> 3);
+            put_bits(&pb, 5, (249*(luma[3] +  (dither>>29)   )) >> 11);
+            put_bits(&pb, 5, (249*(luma[2] + ((dither>>26)&7))) >> 11);
+            put_bits(&pb, 5, (249*(luma[1] + ((dither>>23)&7))) >> 11);
+            put_bits(&pb, 5, (249*(luma[0] + ((dither>>20)&7))) >> 11);
             luma += 4;
-            put_bits(&pb, 6, (*(cb++) + ((dither>>18)&3)) >> 2);
-            put_bits(&pb, 6, (*(cr++) + ((dither>>16)&3)) >> 2);
+            put_bits(&pb, 6, (253*(*(cb++) + ((dither>>18)&3))) >> 10);
+            put_bits(&pb, 6, (253*(*(cr++) + ((dither>>16)&3))) >> 10);
         }
     }
 
