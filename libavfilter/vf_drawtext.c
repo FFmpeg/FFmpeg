@@ -29,6 +29,7 @@
 #include <sys/time.h>
 #include <time.h>
 
+#include "config.h"
 #include "libavcodec/timecode.h"
 #include "libavutil/avstring.h"
 #include "libavutil/colorspace.h"
@@ -341,10 +342,16 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     }
 
     if (dtext->tc.str) {
+#if CONFIG_AVCODEC
         if (avpriv_init_smpte_timecode(ctx, &dtext->tc) < 0)
             return AVERROR(EINVAL);
         if (!dtext->text)
             dtext->text = av_strdup("");
+#else
+        av_log(ctx, AV_LOG_ERROR,
+               "Timecode options are only available if libavfilter is built with libavcodec enabled.\n");
+        return AVERROR(EINVAL);
+#endif
     }
 
     if (!dtext->text) {
@@ -722,11 +729,13 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
         buf_size *= 2;
     } while ((buf = av_realloc(buf, buf_size)));
 
+#if CONFIG_AVCODEC
     if (dtext->tc.str) {
         char tcbuf[sizeof("hh:mm:ss.ff")];
         avpriv_timecode_to_string(tcbuf, &dtext->tc, dtext->frame_id++);
         buf = av_asprintf("%s%s", dtext->text, tcbuf);
     }
+#endif
 
     if (!buf)
         return AVERROR(ENOMEM);
