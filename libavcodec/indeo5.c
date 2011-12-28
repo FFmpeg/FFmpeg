@@ -90,7 +90,7 @@ typedef struct {
  */
 static int decode_gop_header(IVI5DecContext *ctx, AVCodecContext *avctx)
 {
-    int             result, i, p, tile_size, pic_size_indx, mb_size, blk_size;
+    int             result, i, p, tile_size, pic_size_indx, mb_size, blk_size, is_scalable;
     int             quant_mat, blk_size_changed = 0;
     IVIBandDesc     *band, *band1, *band2;
     IVIPicConfig    pic_conf;
@@ -112,8 +112,8 @@ static int decode_gop_header(IVI5DecContext *ctx, AVCodecContext *avctx)
     /* num_levels * 3 + 1 */
     pic_conf.luma_bands   = get_bits(&ctx->gb, 2) * 3 + 1;
     pic_conf.chroma_bands = get_bits1(&ctx->gb)   * 3 + 1;
-    ctx->is_scalable = pic_conf.luma_bands != 1 || pic_conf.chroma_bands != 1;
-    if (ctx->is_scalable && (pic_conf.luma_bands != 4 || pic_conf.chroma_bands != 1)) {
+    is_scalable = pic_conf.luma_bands != 1 || pic_conf.chroma_bands != 1;
+    if (is_scalable && (pic_conf.luma_bands != 4 || pic_conf.chroma_bands != 1)) {
         av_log(avctx, AV_LOG_ERROR, "Scalability: unsupported subdivision! Luma bands: %d, chroma bands: %d\n",
                pic_conf.luma_bands, pic_conf.chroma_bands);
         return -1;
@@ -151,6 +151,7 @@ static int decode_gop_header(IVI5DecContext *ctx, AVCodecContext *avctx)
             return -1;
         }
         ctx->pic_conf = pic_conf;
+        ctx->is_scalable = is_scalable;
         blk_size_changed = 1; /* force reallocation of the internal structures */
     }
 
