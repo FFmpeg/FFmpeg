@@ -260,6 +260,8 @@ int av_cold ff_ivi_init_tiles(IVIPlaneDesc *planes, int tile_width, int tile_hei
             t_width  >>= 1;
             t_height >>= 1;
         }
+        if(t_width<=0 || t_height<=0)
+            return AVERROR(EINVAL);
 
         for (b = 0; b < planes[p].num_bands; b++) {
             band = &planes[p].bands[b];
