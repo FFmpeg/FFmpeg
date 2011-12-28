@@ -56,6 +56,11 @@ static int decode_frame(AVCodecContext *avctx,
     if(p->data[0])
         avctx->release_buffer(avctx, p);
 
+    if(buf_size < 16 + avctx->height + avctx->width*avctx->height*5/8){
+        av_log(avctx, AV_LOG_ERROR, "Insufficient input data.\n");
+        return AVERROR(EINVAL);
+    }
+
     p->reference= 0;
     if(avctx->get_buffer(avctx, p) < 0){
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
