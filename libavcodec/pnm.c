@@ -107,6 +107,7 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
 
         avctx->width  = w;
         avctx->height = h;
+        s->maxval     = maxval;
         if (depth == 1) {
             if (maxval == 1)
                 avctx->pix_fmt = PIX_FMT_MONOWHITE;
