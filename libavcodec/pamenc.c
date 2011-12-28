@@ -78,7 +78,7 @@ static int pam_encode_frame(AVCodecContext *avctx, unsigned char *outbuf,
         return -1;
     }
     snprintf(s->bytestream, s->bytestream_end - s->bytestream,
-             "P7\nWIDTH %d\nHEIGHT %d\nDEPTH %d\nMAXVAL %d\nTUPLETYPE %s\nENDHDR\n",
+             "P7\nWIDTH %d\nHEIGHT %d\nDEPTH %d\nMAXVAL %d\nTUPLTYPE %s\nENDHDR\n",
              w, h, depth, maxval, tuple_type);
     s->bytestream += strlen(s->bytestream);
 
