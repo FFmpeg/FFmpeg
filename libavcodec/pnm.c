@@ -93,7 +93,9 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
             } else if (!strcmp(buf1, "MAXVAL")) {
                 pnm_get(s, buf1, sizeof(buf1));
                 maxval = strtol(buf1, NULL, 10);
-            } else if (!strcmp(buf1, "TUPLETYPE")) {
+            } else if (!strcmp(buf1, "TUPLTYPE") ||
+                       /* libavcodec used to write invalid files */
+                       !strcmp(buf1, "TUPLETYPE")) {
                 pnm_get(s, tuple_type, sizeof(tuple_type));
             } else if (!strcmp(buf1, "ENDHDR")) {
                 break;
