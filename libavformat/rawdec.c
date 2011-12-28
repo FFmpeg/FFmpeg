@@ -129,6 +129,7 @@ int ff_raw_audio_read_header(AVFormatContext *s,
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id = s->iformat->value;
     st->need_parsing = AVSTREAM_PARSE_FULL;
+    st->start_time = 0;
     /* the parameters will be extracted from the compressed bitstream */
 
     return 0;
