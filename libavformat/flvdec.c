@@ -153,18 +153,6 @@ static int parse_keyframes_index(AVFormatContext *s, AVIOContext *ioc, AVStream 
     int64_t *filepositions = NULL;
     int ret = AVERROR(ENOSYS);
     int64_t initial_pos = avio_tell(ioc);
-    AVDictionaryEntry *creator = av_dict_get(s->metadata, "metadatacreator",
-                                             NULL, 0);
-
-    if (creator && !strcmp(creator->value, "MEGA")) {
-        /* Files with this metadatacreator tag seem to have filepositions
-         * pointing at the 4 trailer bytes of the previous packet,
-         * which isn't the norm (nor what we expect here, nor what
-         * jwplayer + lighttpd expect, nor what flvtool2 produces).
-         * Just ignore the index in this case, instead of risking trying
-         * to adjust it to something that might or might not work. */
-        return 0;
-    }
 
     if (s->flags & AVFMT_FLAG_IGNIDX)
         return 0;
