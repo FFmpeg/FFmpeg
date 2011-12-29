@@ -314,6 +314,8 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
         char quote;
 
         p = strings = av_mallocz(strings_size + 1);
+        if (!p)
+            return AVERROR(ENOMEM);
         endp = strings + strings_size;
         avio_read(pb, strings, strings_size);
         while (p < endp) {
