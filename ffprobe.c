@@ -1354,11 +1354,11 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
         AVCodec *codec;
 
         if (!(codec = avcodec_find_decoder(stream->codec->codec_id))) {
-            fprintf(stderr, "Unsupported codec with id %d for input stream %d\n",
-                    stream->codec->codec_id, stream->index);
+            av_log(NULL, AV_LOG_ERROR, "Unsupported codec with id %d for input stream %d\n",
+                   stream->codec->codec_id, stream->index);
         } else if (avcodec_open2(stream->codec, codec, NULL) < 0) {
-            fprintf(stderr, "Error while opening codec for input stream %d\n",
-                    stream->index);
+            av_log(NULL, AV_LOG_ERROR, "Error while opening codec for input stream %d\n",
+                   stream->index);
         }
     }
 
@@ -1428,7 +1428,7 @@ static int opt_format(const char *opt, const char *arg)
 {
     iformat = av_find_input_format(arg);
     if (!iformat) {
-        fprintf(stderr, "Unknown input format: %s\n", arg);
+        av_log(NULL, AV_LOG_ERROR, "Unknown input format: %s\n", arg);
         return AVERROR(EINVAL);
     }
     return 0;
@@ -1437,8 +1437,8 @@ static int opt_format(const char *opt, const char *arg)
 static void opt_input_file(void *optctx, const char *arg)
 {
     if (input_filename) {
-        fprintf(stderr, "Argument '%s' provided as input filename, but '%s' was already specified.\n",
-                arg, input_filename);
+        av_log(NULL, AV_LOG_ERROR, "Argument '%s' provided as input filename, but '%s' was already specified.\n",
+               arg, input_filename);
         exit(1);
     }
     if (!strcmp(arg, "-"))
@@ -1507,8 +1507,8 @@ int main(int argc, char **argv)
 
     if (!input_filename) {
         show_usage();
-        fprintf(stderr, "You have to specify one input file.\n");
-        fprintf(stderr, "Use -h to get full help or, even better, run 'man %s'.\n", program_name);
+        av_log(NULL, AV_LOG_ERROR, "You have to specify one input file.\n");
+        av_log(NULL, AV_LOG_ERROR, "Use -h to get full help or, even better, run 'man %s'.\n", program_name);
         exit(1);
     }
 
