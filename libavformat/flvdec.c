@@ -197,7 +197,16 @@ static int parse_keyframes_index(AVFormatContext *s, AVIOContext *ioc, AVStream 
         }
     }
 
-    if (timeslen == fileposlen && fileposlen && max_pos <= filepositions[0]) {
+    if (timeslen == fileposlen && fileposlen>1 && max_pos <= filepositions[0]) {
+        int64_t dts, size0, size1;
+        avio_seek(ioc, filepositions[1]-4, SEEK_SET);
+        size0 = avio_rb32(ioc);
+                avio_r8(ioc);
+        size1 = avio_rb24(ioc);
+        dts   = avio_rb24(ioc);
+        dts  |= avio_r8(ioc) << 24;
+        if (size0 > filepositions[1] || FFABS(dts - times[1]*1000)>5000)
+            goto finish;
          for(i = 0; i < timeslen; i++)
              av_add_index_entry(vstream, filepositions[i], times[i]*1000, 0, 0, AVINDEX_KEYFRAME);
     } else
