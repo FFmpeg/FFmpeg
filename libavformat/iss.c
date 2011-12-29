@@ -87,6 +87,11 @@ static av_cold int iss_read_header(AVFormatContext *s, AVFormatParameters *ap)
     get_token(pb, token, sizeof(token)); //Version ID
     get_token(pb, token, sizeof(token)); //Size
 
+    if (iss->packet_size <= 0) {
+        av_log(s, AV_LOG_ERROR, "packet_size %d is invalid\n", iss->packet_size);
+        return AVERROR_INVALIDDATA;
+    }
+
     iss->sample_start_pos = avio_tell(pb);
 
     st = avformat_new_stream(s, NULL);
