@@ -757,7 +757,7 @@ static av_always_inline int dv_guess_dct_mode(DVVideoContext *s, uint8_t *data, 
         if (ps > 0) {
             int is = s->ildct_cmp(NULL, data           , NULL, linesize<<1, 4) +
                      s->ildct_cmp(NULL, data + linesize, NULL, linesize<<1, 4);
-            return (ps > is);
+            return ps > is;
         }
     }
 

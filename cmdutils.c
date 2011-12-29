@@ -914,8 +914,9 @@ int check_stream_specifier(AVFormatContext *s, AVStream *st, const char *spec)
 
             if (*endptr++ == ':') {
                 int stream_idx = strtol(endptr, NULL, 0);
-                return (stream_idx >= 0 && stream_idx < s->programs[i]->nb_stream_indexes &&
-                        st->index == s->programs[i]->stream_index[stream_idx]);
+                return stream_idx >= 0 &&
+                    stream_idx < s->programs[i]->nb_stream_indexes &&
+                    st->index == s->programs[i]->stream_index[stream_idx];
             }
 
             for (j = 0; j < s->programs[i]->nb_stream_indexes; j++)

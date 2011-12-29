@@ -429,7 +429,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static inline int is_newline(uint32_t c)
 {
-    return (c == '\n' || c == '\r' || c == '\f' || c == '\v');
+    return c == '\n' || c == '\r' || c == '\f' || c == '\v';
 }
 
 static int dtext_prepare_text(AVFilterContext *ctx)

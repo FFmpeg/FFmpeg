@@ -2343,7 +2343,7 @@ static VideoState *global_video_state;
 
 static int decode_interrupt_cb(void *ctx)
 {
-    return (global_video_state && global_video_state->abort_request);
+    return global_video_state && global_video_state->abort_request;
 }
 
 /* this thread gets the stream from the disk or the network */
