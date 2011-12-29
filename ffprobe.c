@@ -37,6 +37,7 @@
 const char program_name[] = "ffprobe";
 const int program_birth_year = 2007;
 
+static int do_show_error   = 0;
 static int do_show_format  = 0;
 static int do_show_packets = 0;
 static int do_show_streams = 0;
@@ -1322,6 +1323,22 @@ static void show_format(WriterContext *w, AVFormatContext *fmt_ctx)
     fflush(stdout);
 }
 
+static void show_error(WriterContext *w, int err)
+{
+    char errbuf[128];
+    const char *errbuf_ptr = errbuf;
+
+    if (av_strerror(err, errbuf, sizeof(errbuf)) < 0)
+        errbuf_ptr = strerror(AVUNERROR(err));
+
+    writer_print_chapter_header(w, "error");
+    print_section_header("error");
+    print_int("code", err);
+    print_str("string", errbuf_ptr);
+    print_section_footer("error");
+    writer_print_chapter_footer(w, "error");
+}
+
 static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
 {
     int err, i;
@@ -1405,6 +1422,8 @@ static int probe_file(const char *filename)
         PRINT_CHAPTER(streams);
         PRINT_CHAPTER(format);
         avformat_close_input(&fmt_ctx);
+    } else if (do_show_error) {
+        show_error(wctx, ret);
     }
     writer_print_footer(wctx);
     writer_close(&wctx);
@@ -1478,6 +1497,7 @@ static const OptionDef options[] = {
       "prettify the format of displayed values, make it more human readable" },
     { "print_format", OPT_STRING | HAS_ARG, {(void*)&print_format},
       "set the output printing format (available formats are: default, compact, csv, json, xml)", "format" },
+    { "show_error",   OPT_BOOL, {(void*)&do_show_error} ,  "show probing error" },
     { "show_format",  OPT_BOOL, {(void*)&do_show_format} , "show format/container info" },
     { "show_packets", OPT_BOOL, {(void*)&do_show_packets}, "show packets info" },
     { "show_streams", OPT_BOOL, {(void*)&do_show_streams}, "show streams info" },

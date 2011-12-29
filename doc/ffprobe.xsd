@@ -11,6 +11,7 @@
             <xsd:element name="packets"  type="ffprobe:packetsType" minOccurs="0" maxOccurs="1" />
             <xsd:element name="streams"  type="ffprobe:streamsType" minOccurs="0" maxOccurs="1" />
             <xsd:element name="format"   type="ffprobe:formatType"  minOccurs="0" maxOccurs="1" />
+            <xsd:element name="error"    type="ffprobe:errorType"   minOccurs="0" maxOccurs="1" />
         </xsd:sequence>
     </xsd:complexType>
 
@@ -92,5 +93,10 @@
     <xsd:complexType name="tagType">
       <xsd:attribute name="key"   type="xsd:string" use="required"/>
       <xsd:attribute name="value" type="xsd:string" use="required"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="errorType">
+      <xsd:attribute name="code"   type="xsd:int"    use="required"/>
+      <xsd:attribute name="string" type="xsd:string" use="required"/>
     </xsd:complexType>
 </xsd:schema>

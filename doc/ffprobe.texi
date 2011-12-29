@@ -94,6 +94,11 @@ For example for printing the output in JSON format, specify:
 For more details on the available output printing formats, see the
 Writers section below.
 
+@item -show_error
+Show information about the error found when trying to probe the input.
+
+The error information is printed within a section with name "ERROR".
+
 @item -show_format
 Show information about the container format of the input multimedia
 stream.
