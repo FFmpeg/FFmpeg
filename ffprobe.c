@@ -1399,16 +1399,16 @@ static int probe_file(const char *filename)
 
     if ((ret = writer_open(&wctx, w, w_args, NULL)) < 0)
         goto end;
-    if ((ret = open_input_file(&fmt_ctx, filename)))
-        goto end;
 
     writer_print_header(wctx);
+    ret = open_input_file(&fmt_ctx, filename);
+    if (ret >= 0) {
     PRINT_CHAPTER(packets);
     PRINT_CHAPTER(streams);
     PRINT_CHAPTER(format);
-    writer_print_footer(wctx);
-
     avformat_close_input(&fmt_ctx);
+    }
+    writer_print_footer(wctx);
     writer_close(&wctx);
 
 end:
