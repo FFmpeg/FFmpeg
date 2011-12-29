@@ -137,17 +137,17 @@ int main(int argc, char *argv[])
             start_offset = ftello(infile);
         } else {
 
-        /* 64-bit special case */
-        if (atom_size == 1) {
-            if (fread(atom_bytes, ATOM_PREAMBLE_SIZE, 1, infile) != 1) {
-                break;
+            /* 64-bit special case */
+            if (atom_size == 1) {
+                if (fread(atom_bytes, ATOM_PREAMBLE_SIZE, 1, infile) != 1) {
+                    break;
+                }
+                atom_size = BE_64(&atom_bytes[0]);
+                fseeko(infile, atom_size - ATOM_PREAMBLE_SIZE * 2, SEEK_CUR);
+            } else {
+                fseeko(infile, atom_size - ATOM_PREAMBLE_SIZE, SEEK_CUR);
             }
-            atom_size = BE_64(&atom_bytes[0]);
-            fseeko(infile, atom_size - ATOM_PREAMBLE_SIZE * 2, SEEK_CUR);
-        } else {
-            fseeko(infile, atom_size - ATOM_PREAMBLE_SIZE, SEEK_CUR);
         }
-    }
         printf("%c%c%c%c %10"PRIu64" %"PRIu64"\n",
                (atom_type >> 24) & 255,
                (atom_type >> 16) & 255,
