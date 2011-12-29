@@ -263,6 +263,9 @@ static int mlp_parse(AVCodecParserContext *s,
         mp->bytes_left = ((mp->pc.index > 0 ? mp->pc.buffer[0] : buf[0]) << 8)
                        |  (mp->pc.index > 1 ? mp->pc.buffer[1] : buf[1-mp->pc.index]);
         mp->bytes_left = (mp->bytes_left & 0xfff) * 2;
+        if (mp->bytes_left <= 0) { // prevent infinite loop
+            goto lost_sync;
+        }
         mp->bytes_left -= mp->pc.index;
     }
 
