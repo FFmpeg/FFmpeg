@@ -246,5 +246,5 @@ FATE_TESTS += fate-westwood-aud
 fate-westwood-aud: CMD = md5  -i $(SAMPLES)/westwood-aud/excellent.aud -f s16le
 FATE_TESTS += fate-wnv1
 fate-wnv1: CMD = framecrc  -i $(SAMPLES)/wnv1/wnv1-codec.avi -an
-FATE_TESTS += fate-xan-dpcm
-fate-xan-dpcm: CMD = md5  -i $(SAMPLES)/wc4-xan/wc4_2.avi -vn -f s16le
+FATE_TESTS += fate-dpcm_xan_audio
+fate-dpcm_xan_audio: CMD = md5  -i $(SAMPLES)/wc4-xan/wc4_2.avi -vn -f s16le
