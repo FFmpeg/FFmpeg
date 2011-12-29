@@ -23,7 +23,7 @@ version next:
 - RTMPTS protocol support
 - RTMPE protocol support
 - RTMPTE protocol support
-- showwaves filter
+- showwaves and showspectrum filter
 - LucasArts SMUSH playback support
 - SAMI, RealText and SubViewer demuxers and decoders
 - Heart Of Darkness PAF playback support

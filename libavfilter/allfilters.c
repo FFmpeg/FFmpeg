@@ -143,6 +143,7 @@ void avfilter_register_all(void)
 
     /* multimedia filters */
     REGISTER_FILTER (CONCAT,      concat,      avf);
+    REGISTER_FILTER (SHOWSPECTRUM,showspectrum,avf);
     REGISTER_FILTER (SHOWWAVES,   showwaves,   avf);
 
     /* multimedia sources */
