@@ -1099,7 +1099,7 @@ static int skip_check(MpegEncContext *s, Picture *p, Picture *ref)
 
 static int estimate_best_b_count(MpegEncContext *s)
 {
-    AVCodec *codec = avcodec_find_encoder(s->avctx->codec_id);
+    AVCodec *codec    = avcodec_find_encoder(s->avctx->codec_id);
     AVCodecContext *c = avcodec_alloc_context3(NULL);
     AVFrame input[FF_MAX_B_FRAMES + 2];
     const int scale = s->avctx->brd_scale;
@@ -1137,21 +1137,22 @@ static int estimate_best_b_count(MpegEncContext *s)
     if (avcodec_open2(c, codec, NULL) < 0)
         return -1;
 
-    for(i=0; i<s->max_b_frames+2; i++){
-        int ysize= c->width*c->height;
-        int csize= (c->width/2)*(c->height/2);
-        Picture pre_input, *pre_input_ptr= i ? s->input_picture[i-1] : s->next_picture_ptr;
+    for (i = 0; i < s->max_b_frames + 2; i++) {
+        int ysize = c->width * c->height;
+        int csize = (c->width / 2) * (c->height / 2);
+        Picture pre_input, *pre_input_ptr = i ? s->input_picture[i - 1] :
+                                                s->next_picture_ptr;
 
         avcodec_get_frame_defaults(&input[i]);
-        input[i].data[0]= av_malloc(ysize + 2*csize);
-        input[i].data[1]= input[i].data[0] + ysize;
-        input[i].data[2]= input[i].data[1] + csize;
-        input[i].linesize[0]= c->width;
-        input[i].linesize[1]=
-        input[i].linesize[2]= c->width/2;
+        input[i].data[0]     = av_malloc(ysize + 2 * csize);
+        input[i].data[1]     = input[i].data[0] + ysize;
+        input[i].data[2]     = input[i].data[1] + csize;
+        input[i].linesize[0] = c->width;
+        input[i].linesize[1] =
+        input[i].linesize[2] = c->width / 2;
 
-        if(pre_input_ptr && (!i || s->input_picture[i-1])) {
-            pre_input= *pre_input_ptr;
+        if (pre_input_ptr && (!i || s->input_picture[i - 1])) {
+            pre_input = *pre_input_ptr;
 
             if (pre_input.f.type != FF_BUFFER_TYPE_SHARED && i) {
                 pre_input.f.data[0] += INPLACE_OFFSET;
@@ -1159,45 +1160,54 @@ static int estimate_best_b_count(MpegEncContext *s)
                 pre_input.f.data[2] += INPLACE_OFFSET;
             }
 
-            s->dsp.shrink[scale](input[i].data[0], input[i].linesize[0], pre_input.f.data[0], pre_input.f.linesize[0], c->width,      c->height);
-            s->dsp.shrink[scale](input[i].data[1], input[i].linesize[1], pre_input.f.data[1], pre_input.f.linesize[1], c->width >> 1, c->height >> 1);
-            s->dsp.shrink[scale](input[i].data[2], input[i].linesize[2], pre_input.f.data[2], pre_input.f.linesize[2], c->width >> 1, c->height >> 1);
+            s->dsp.shrink[scale](input[i].data[0], input[i].linesize[0],
+                                 pre_input.f.data[0], pre_input.f.linesize[0],
+                                 c->width,      c->height);
+            s->dsp.shrink[scale](input[i].data[1], input[i].linesize[1],
+                                 pre_input.f.data[1], pre_input.f.linesize[1],
+                                 c->width >> 1, c->height >> 1);
+            s->dsp.shrink[scale](input[i].data[2], input[i].linesize[2],
+                                 pre_input.f.data[2], pre_input.f.linesize[2],
+                                 c->width >> 1, c->height >> 1);
         }
     }
 
-    for(j=0; j<s->max_b_frames+1; j++){
-        int64_t rd=0;
+    for (j = 0; j < s->max_b_frames + 1; j++) {
+        int64_t rd = 0;
 
-        if(!s->input_picture[j])
+        if (!s->input_picture[j])
             break;
 
-        c->error[0]= c->error[1]= c->error[2]= 0;
+        c->error[0] = c->error[1] = c->error[2] = 0;
 
-        input[0].pict_type= AV_PICTURE_TYPE_I;
-        input[0].quality= 1 * FF_QP2LAMBDA;
-        out_size = avcodec_encode_video(c, outbuf, outbuf_size, &input[0]);
-//        rd += (out_size * lambda2) >> FF_LAMBDA_SHIFT;
+        input[0].pict_type = AV_PICTURE_TYPE_I;
+        input[0].quality   = 1 * FF_QP2LAMBDA;
+        out_size           = avcodec_encode_video(c, outbuf,
+                                                  outbuf_size, &input[0]);
+        //rd += (out_size * lambda2) >> FF_LAMBDA_SHIFT;
 
-        for(i=0; i<s->max_b_frames+1; i++){
-            int is_p= i % (j+1) == j || i==s->max_b_frames;
+        for (i = 0; i < s->max_b_frames + 1; i++) {
+            int is_p = i % (j + 1) == j || i == s->max_b_frames;
 
-            input[i+1].pict_type= is_p ? AV_PICTURE_TYPE_P : AV_PICTURE_TYPE_B;
-            input[i+1].quality= is_p ? p_lambda : b_lambda;
-            out_size = avcodec_encode_video(c, outbuf, outbuf_size, &input[i+1]);
+            input[i + 1].pict_type = is_p ?
+                                     AV_PICTURE_TYPE_P : AV_PICTURE_TYPE_B;
+            input[i + 1].quality   = is_p ? p_lambda : b_lambda;
+            out_size = avcodec_encode_video(c, outbuf, outbuf_size,
+                                            &input[i + 1]);
             rd += (out_size * lambda2) >> (FF_LAMBDA_SHIFT - 3);
         }
 
         /* get the delayed frames */
-        while(out_size){
+        while (out_size) {
             out_size = avcodec_encode_video(c, outbuf, outbuf_size, NULL);
             rd += (out_size * lambda2) >> (FF_LAMBDA_SHIFT - 3);
         }
 
         rd += c->error[0] + c->error[1] + c->error[2];
 
-        if(rd < best_rd){
-            best_rd= rd;
-            best_b_count= j;
+        if (rd < best_rd) {
+            best_rd = rd;
+            best_b_count = j;
         }
     }
 
@@ -1205,43 +1215,50 @@ static int estimate_best_b_count(MpegEncContext *s)
     avcodec_close(c);
     av_freep(&c);
 
-    for(i=0; i<s->max_b_frames+2; i++){
+    for (i = 0; i < s->max_b_frames + 2; i++) {
         av_freep(&input[i].data[0]);
     }
 
     return best_b_count;
 }
 
-static int select_input_picture(MpegEncContext *s){
+static int select_input_picture(MpegEncContext *s)
+{
     int i;
 
-    for(i=1; i<MAX_PICTURE_COUNT; i++)
-        s->reordered_input_picture[i-1]= s->reordered_input_picture[i];
-    s->reordered_input_picture[MAX_PICTURE_COUNT-1]= NULL;
+    for (i = 1; i < MAX_PICTURE_COUNT; i++)
+        s->reordered_input_picture[i - 1] = s->reordered_input_picture[i];
+    s->reordered_input_picture[MAX_PICTURE_COUNT - 1] = NULL;
 
     /* set next picture type & ordering */
-    if(s->reordered_input_picture[0]==NULL && s->input_picture[0]){
-        if(/*s->picture_in_gop_number >= s->gop_size ||*/ s->next_picture_ptr==NULL || s->intra_only){
-            s->reordered_input_picture[0]= s->input_picture[0];
+    if (s->reordered_input_picture[0] == NULL && s->input_picture[0]) {
+        if (/*s->picture_in_gop_number >= s->gop_size ||*/
+            s->next_picture_ptr == NULL || s->intra_only) {
+            s->reordered_input_picture[0] = s->input_picture[0];
             s->reordered_input_picture[0]->f.pict_type = AV_PICTURE_TYPE_I;
-            s->reordered_input_picture[0]->f.coded_picture_number = s->coded_picture_number++;
-        }else{
+            s->reordered_input_picture[0]->f.coded_picture_number =
+                s->coded_picture_number++;
+        } else {
             int b_frames;
 
-            if(s->avctx->frame_skip_threshold || s->avctx->frame_skip_factor){
-                if(s->picture_in_gop_number < s->gop_size && skip_check(s, s->input_picture[0], s->next_picture_ptr)){
-                //FIXME check that te gop check above is +-1 correct
-//av_log(NULL, AV_LOG_DEBUG, "skip %p %"PRId64"\n", s->input_picture[0]->f.data[0], s->input_picture[0]->pts);
+            if (s->avctx->frame_skip_threshold || s->avctx->frame_skip_factor) {
+                if (s->picture_in_gop_number < s->gop_size &&
+                    skip_check(s, s->input_picture[0], s->next_picture_ptr)) {
+                    // FIXME check that te gop check above is +-1 correct
+                    //av_log(NULL, AV_LOG_DEBUG, "skip %p %"PRId64"\n",
+                    //       s->input_picture[0]->f.data[0],
+                    //       s->input_picture[0]->pts);
 
                     if (s->input_picture[0]->f.type == FF_BUFFER_TYPE_SHARED) {
-                        for(i=0; i<4; i++)
+                        for (i = 0; i < 4; i++)
                             s->input_picture[0]->f.data[i] = NULL;
                         s->input_picture[0]->f.type = 0;
-                    }else{
-                        assert(   s->input_picture[0]->f.type == FF_BUFFER_TYPE_USER
-                               || s->input_picture[0]->f.type == FF_BUFFER_TYPE_INTERNAL);
+                    } else {
+                        assert(s->input_picture[0]->f.type == FF_BUFFER_TYPE_USER ||
+                               s->input_picture[0]->f.type == FF_BUFFER_TYPE_INTERNAL);
 
-                        s->avctx->release_buffer(s->avctx, (AVFrame*)s->input_picture[0]);
+                        s->avctx->release_buffer(s->avctx,
+                                                 (AVFrame *) s->input_picture[0]);
                     }
 
                     emms_c();
@@ -1251,14 +1268,14 @@ static int select_input_picture(MpegEncContext *s){
                 }
             }
 
-            if(s->flags&CODEC_FLAG_PASS2){
-                for(i=0; i<s->max_b_frames+1; i++){
+            if (s->flags & CODEC_FLAG_PASS2) {
+                for (i = 0; i < s->max_b_frames + 1; i++) {
                     int pict_num = s->input_picture[0]->f.display_picture_number + i;
 
-                    if(pict_num >= s->rc_context.num_entries)
+                    if (pict_num >= s->rc_context.num_entries)
                         break;
-                    if(!s->input_picture[i]){
-                        s->rc_context.entry[pict_num-1].new_pict_type = AV_PICTURE_TYPE_P;
+                    if (!s->input_picture[i]) {
+                        s->rc_context.entry[pict_num - 1].new_pict_type = AV_PICTURE_TYPE_P;
                         break;
                     }
 
@@ -1267,121 +1284,141 @@ static int select_input_picture(MpegEncContext *s){
                 }
             }
 
-            if(s->avctx->b_frame_strategy==0){
-                b_frames= s->max_b_frames;
-                while(b_frames && !s->input_picture[b_frames]) b_frames--;
-            }else if(s->avctx->b_frame_strategy==1){
-                for(i=1; i<s->max_b_frames+1; i++){
-                    if(s->input_picture[i] && s->input_picture[i]->b_frame_score==0){
-                        s->input_picture[i]->b_frame_score=
-                            get_intra_count(s, s->input_picture[i  ]->f.data[0],
-                                               s->input_picture[i-1]->f.data[0], s->linesize) + 1;
+            if (s->avctx->b_frame_strategy == 0) {
+                b_frames = s->max_b_frames;
+                while (b_frames && !s->input_picture[b_frames])
+                    b_frames--;
+            } else if (s->avctx->b_frame_strategy == 1) {
+                for (i = 1; i < s->max_b_frames + 1; i++) {
+                    if (s->input_picture[i] &&
+                        s->input_picture[i]->b_frame_score == 0) {
+                        s->input_picture[i]->b_frame_score =
+                            get_intra_count(s,
+                                            s->input_picture[i    ]->f.data[0],
+                                            s->input_picture[i - 1]->f.data[0],
+                                            s->linesize) + 1;
                     }
                 }
-                for(i=0; i<s->max_b_frames+1; i++){
-                    if(s->input_picture[i]==NULL || s->input_picture[i]->b_frame_score - 1 > s->mb_num/s->avctx->b_sensitivity) break;
+                for (i = 0; i < s->max_b_frames + 1; i++) {
+                    if (s->input_picture[i] == NULL ||
+                        s->input_picture[i]->b_frame_score - 1 >
+                            s->mb_num / s->avctx->b_sensitivity)
+                        break;
                 }
 
-                b_frames= FFMAX(0, i-1);
+                b_frames = FFMAX(0, i - 1);
 
                 /* reset scores */
-                for(i=0; i<b_frames+1; i++){
-                    s->input_picture[i]->b_frame_score=0;
+                for (i = 0; i < b_frames + 1; i++) {
+                    s->input_picture[i]->b_frame_score = 0;
                 }
-            }else if(s->avctx->b_frame_strategy==2){
-                b_frames= estimate_best_b_count(s);
-            }else{
+            } else if (s->avctx->b_frame_strategy == 2) {
+                b_frames = estimate_best_b_count(s);
+            } else {
                 av_log(s->avctx, AV_LOG_ERROR, "illegal b frame strategy\n");
-                b_frames=0;
+                b_frames = 0;
             }
 
             emms_c();
-//static int b_count=0;
-//b_count+= b_frames;
-//av_log(s->avctx, AV_LOG_DEBUG, "b_frames: %d\n", b_count);
+            //static int b_count = 0;
+            //b_count += b_frames;
+            //av_log(s->avctx, AV_LOG_DEBUG, "b_frames: %d\n", b_count);
 
-            for(i= b_frames - 1; i>=0; i--){
+            for (i = b_frames - 1; i >= 0; i--) {
                 int type = s->input_picture[i]->f.pict_type;
-                if(type && type != AV_PICTURE_TYPE_B)
-                    b_frames= i;
+                if (type && type != AV_PICTURE_TYPE_B)
+                    b_frames = i;
             }
-            if (s->input_picture[b_frames]->f.pict_type == AV_PICTURE_TYPE_B && b_frames == s->max_b_frames){
-                av_log(s->avctx, AV_LOG_ERROR, "warning, too many b frames in a row\n");
-            }
-
-            if(s->picture_in_gop_number + b_frames >= s->gop_size){
-              if((s->flags2 & CODEC_FLAG2_STRICT_GOP) && s->gop_size > s->picture_in_gop_number){
-                    b_frames= s->gop_size - s->picture_in_gop_number - 1;
-              }else{
-                if(s->flags & CODEC_FLAG_CLOSED_GOP)
-                    b_frames=0;
-                s->input_picture[b_frames]->f.pict_type = AV_PICTURE_TYPE_I;
-              }
+            if (s->input_picture[b_frames]->f.pict_type == AV_PICTURE_TYPE_B &&
+                b_frames == s->max_b_frames) {
+                av_log(s->avctx, AV_LOG_ERROR,
+                       "warning, too many b frames in a row\n");
             }
 
-            if(   (s->flags & CODEC_FLAG_CLOSED_GOP)
-               && b_frames
-               && s->input_picture[b_frames]->f.pict_type== AV_PICTURE_TYPE_I)
+            if (s->picture_in_gop_number + b_frames >= s->gop_size) {
+                if ((s->flags2 & CODEC_FLAG2_STRICT_GOP) &&
+                    s->gop_size > s->picture_in_gop_number) {
+                    b_frames = s->gop_size - s->picture_in_gop_number - 1;
+                } else {
+                    if (s->flags & CODEC_FLAG_CLOSED_GOP)
+                        b_frames = 0;
+                    s->input_picture[b_frames]->f.pict_type = AV_PICTURE_TYPE_I;
+                }
+            }
+
+            if ((s->flags & CODEC_FLAG_CLOSED_GOP) && b_frames &&
+                s->input_picture[b_frames]->f.pict_type == AV_PICTURE_TYPE_I)
                 b_frames--;
 
-            s->reordered_input_picture[0]= s->input_picture[b_frames];
+            s->reordered_input_picture[0] = s->input_picture[b_frames];
             if (s->reordered_input_picture[0]->f.pict_type != AV_PICTURE_TYPE_I)
                 s->reordered_input_picture[0]->f.pict_type = AV_PICTURE_TYPE_P;
-            s->reordered_input_picture[0]->f.coded_picture_number = s->coded_picture_number++;
-            for(i=0; i<b_frames; i++){
+            s->reordered_input_picture[0]->f.coded_picture_number =
+                s->coded_picture_number++;
+            for (i = 0; i < b_frames; i++) {
                 s->reordered_input_picture[i + 1] = s->input_picture[i];
-                s->reordered_input_picture[i + 1]->f.pict_type = AV_PICTURE_TYPE_B;
-                s->reordered_input_picture[i + 1]->f.coded_picture_number = s->coded_picture_number++;
+                s->reordered_input_picture[i + 1]->f.pict_type =
+                    AV_PICTURE_TYPE_B;
+                s->reordered_input_picture[i + 1]->f.coded_picture_number =
+                    s->coded_picture_number++;
             }
         }
     }
 no_output_pic:
-    if(s->reordered_input_picture[0]){
-        s->reordered_input_picture[0]->f.reference = s->reordered_input_picture[0]->f.pict_type!=AV_PICTURE_TYPE_B ? 3 : 0;
+    if (s->reordered_input_picture[0]) {
+        s->reordered_input_picture[0]->f.reference =
+           s->reordered_input_picture[0]->f.pict_type !=
+               AV_PICTURE_TYPE_B ? 3 : 0;
 
         ff_copy_picture(&s->new_picture, s->reordered_input_picture[0]);
 
-        if (s->reordered_input_picture[0]->f.type == FF_BUFFER_TYPE_SHARED || s->avctx->rc_buffer_size) {
-            // input is a shared pix, so we can't modifiy it -> alloc a new one & ensure that the shared one is reuseable
+        if (s->reordered_input_picture[0]->f.type == FF_BUFFER_TYPE_SHARED ||
+            s->avctx->rc_buffer_size) {
+            // input is a shared pix, so we can't modifiy it -> alloc a new
+            // one & ensure that the shared one is reuseable
 
             Picture *pic;
-            int i= ff_find_unused_picture(s, 0);
+            int i = ff_find_unused_picture(s, 0);
             if (i < 0)
                 return i;
             pic = &s->picture[i];
 
             pic->f.reference = s->reordered_input_picture[0]->f.reference;
-            if(ff_alloc_picture(s, pic, 0) < 0){
+            if (ff_alloc_picture(s, pic, 0) < 0) {
                 return -1;
             }
 
             /* mark us unused / free shared pic */
             if (s->reordered_input_picture[0]->f.type == FF_BUFFER_TYPE_INTERNAL)
-                s->avctx->release_buffer(s->avctx, (AVFrame*)s->reordered_input_picture[0]);
-            for(i=0; i<4; i++)
+                s->avctx->release_buffer(s->avctx,
+                                         (AVFrame *) s->reordered_input_picture[0]);
+            for (i = 0; i < 4; i++)
                 s->reordered_input_picture[0]->f.data[i] = NULL;
             s->reordered_input_picture[0]->f.type = 0;
 
-            copy_picture_attributes(s, (AVFrame*)pic, (AVFrame*)s->reordered_input_picture[0]);
+            copy_picture_attributes(s, (AVFrame *) pic,
+                                    (AVFrame *) s->reordered_input_picture[0]);
 
-            s->current_picture_ptr= pic;
-        }else{
+            s->current_picture_ptr = pic;
+        } else {
             // input is not a shared pix -> reuse buffer for current_pix
 
-            assert(   s->reordered_input_picture[0]->f.type == FF_BUFFER_TYPE_USER
-                   || s->reordered_input_picture[0]->f.type == FF_BUFFER_TYPE_INTERNAL);
+            assert(s->reordered_input_picture[0]->f.type ==
+                       FF_BUFFER_TYPE_USER ||
+                   s->reordered_input_picture[0]->f.type ==
+                       FF_BUFFER_TYPE_INTERNAL);
 
-            s->current_picture_ptr= s->reordered_input_picture[0];
-            for(i=0; i<4; i++){
+            s->current_picture_ptr = s->reordered_input_picture[0];
+            for (i = 0; i < 4; i++) {
                 s->new_picture.f.data[i] += INPLACE_OFFSET;
             }
         }
         ff_copy_picture(&s->current_picture, s->current_picture_ptr);
 
         s->picture_number = s->new_picture.f.display_picture_number;
-//printf("dpn:%d\n", s->picture_number);
-    }else{
-       memset(&s->new_picture, 0, sizeof(Picture));
+        //printf("dpn:%d\n", s->picture_number);
+    } else {
+        memset(&s->new_picture, 0, sizeof(Picture));
     }
     return 0;
 }
@@ -1390,33 +1427,34 @@ int MPV_encode_picture(AVCodecContext *avctx,
                        unsigned char *buf, int buf_size, void *data)
 {
     MpegEncContext *s = avctx->priv_data;
-    AVFrame *pic_arg = data;
+    AVFrame *pic_arg  = data;
     int i, stuffing_count, context_count = avctx->thread_count;
 
-    for(i=0; i<context_count; i++){
-        int start_y= s->thread_context[i]->start_mb_y;
-        int   end_y= s->thread_context[i]->  end_mb_y;
-        int h= s->mb_height;
-        uint8_t *start= buf + (size_t)(((int64_t) buf_size)*start_y/h);
-        uint8_t *end  = buf + (size_t)(((int64_t) buf_size)*  end_y/h);
+    for (i = 0; i < context_count; i++) {
+        int start_y = s->thread_context[i]->start_mb_y;
+        int   end_y = s->thread_context[i]->  end_mb_y;
+        int h       = s->mb_height;
+        uint8_t *start = buf + (size_t)(((int64_t) buf_size) * start_y / h);
+        uint8_t *end   = buf + (size_t)(((int64_t) buf_size) *   end_y / h);
 
         init_put_bits(&s->thread_context[i]->pb, start, end - start);
     }
 
     s->picture_in_gop_number++;
 
-    if(load_input_picture(s, pic_arg) < 0)
+    if (load_input_picture(s, pic_arg) < 0)
         return -1;
 
-    if(select_input_picture(s) < 0){
+    if (select_input_picture(s) < 0) {
         return -1;
     }
 
     /* output? */
     if (s->new_picture.f.data[0]) {
         s->pict_type = s->new_picture.f.pict_type;
-//emms_c();
-//printf("qs:%f %f %d\n", s->new_picture.quality, s->current_picture.quality, s->qscale);
+        //emms_c();
+        //printf("qs:%f %f %d\n", s->new_picture.quality,
+        //       s->current_picture.quality, s->qscale);
         MPV_frame_start(s, avctx);
 vbv_retry:
         if (encode_picture(s, s->picture_number) < 0)
@@ -1428,7 +1466,8 @@ vbv_retry:
         avctx->i_tex_bits  = s->i_tex_bits;
         avctx->p_tex_bits  = s->p_tex_bits;
         avctx->i_count     = s->i_count;
-        avctx->p_count     = s->mb_num - s->i_count - s->skip_count; //FIXME f/b_count in avctx
+        // FIXME f/b_count in avctx
+        avctx->p_count     = s->mb_num - s->i_count - s->skip_count;
         avctx->skip_count  = s->skip_count;
 
         MPV_frame_end(s);
@@ -1436,29 +1475,37 @@ vbv_retry:
         if (CONFIG_MJPEG_ENCODER && s->out_format == FMT_MJPEG)
             ff_mjpeg_encode_picture_trailer(s);
 
-        if(avctx->rc_buffer_size){
-            RateControlContext *rcc= &s->rc_context;
-            int max_size= rcc->buffer_index * avctx->rc_max_available_vbv_use;
+        if (avctx->rc_buffer_size) {
+            RateControlContext *rcc = &s->rc_context;
+            int max_size = rcc->buffer_index * avctx->rc_max_available_vbv_use;
 
-            if(put_bits_count(&s->pb) > max_size && s->lambda < s->avctx->lmax){
-                s->next_lambda= FFMAX(s->lambda+1, s->lambda*(s->qscale+1) / s->qscale);
-                if(s->adaptive_quant){
+            if (put_bits_count(&s->pb) > max_size &&
+                s->lambda < s->avctx->lmax) {
+                s->next_lambda = FFMAX(s->lambda + 1, s->lambda *
+                                       (s->qscale + 1) / s->qscale);
+                if (s->adaptive_quant) {
                     int i;
-                    for(i=0; i<s->mb_height*s->mb_stride; i++)
-                        s->lambda_table[i]= FFMAX(s->lambda_table[i]+1, s->lambda_table[i]*(s->qscale+1) / s->qscale);
+                    for (i = 0; i < s->mb_height * s->mb_stride; i++)
+                        s->lambda_table[i] =
+                            FFMAX(s->lambda_table[i] + 1,
+                                  s->lambda_table[i] * (s->qscale + 1) /
+                                  s->qscale);
                 }
-                s->mb_skipped = 0;        //done in MPV_frame_start()
-                if(s->pict_type==AV_PICTURE_TYPE_P){ //done in encode_picture() so we must undo it
-                    if(s->flipflop_rounding || s->codec_id == CODEC_ID_H263P || s->codec_id == CODEC_ID_MPEG4)
+                s->mb_skipped = 0;        // done in MPV_frame_start()
+                // done in encode_picture() so we must undo it
+                if (s->pict_type == AV_PICTURE_TYPE_P) {
+                    if (s->flipflop_rounding          ||
+                        s->codec_id == CODEC_ID_H263P ||
+                        s->codec_id == CODEC_ID_MPEG4)
                         s->no_rounding ^= 1;
                 }
-                if(s->pict_type!=AV_PICTURE_TYPE_B){
-                    s->time_base= s->last_time_base;
-                    s->last_non_b_time= s->time - s->pp_time;
+                if (s->pict_type != AV_PICTURE_TYPE_B) {
+                    s->time_base       = s->last_time_base;
+                    s->last_non_b_time = s->time - s->pp_time;
                 }
-//                av_log(NULL, AV_LOG_ERROR, "R:%d ", s->next_lambda);
-                for(i=0; i<context_count; i++){
-                    PutBitContext *pb= &s->thread_context[i]->pb;
+                //av_log(NULL, AV_LOG_ERROR, "R:%d ", s->next_lambda);
+                for (i = 0; i < context_count; i++) {
+                    PutBitContext *pb = &s->thread_context[i]->pb;
                     init_put_bits(pb, pb->buf, pb->buf_end - pb->buf);
                 }
                 goto vbv_retry;
@@ -1467,30 +1514,33 @@ vbv_retry:
             assert(s->avctx->rc_max_rate);
         }
 
-        if(s->flags&CODEC_FLAG_PASS1)
+        if (s->flags & CODEC_FLAG_PASS1)
             ff_write_pass1_stats(s);
 
-        for(i=0; i<4; i++){
-            s->current_picture_ptr->f.error[i]  = s->current_picture.f.error[i];
-            avctx->error[i]                        += s->current_picture_ptr->f.error[i];
+        for (i = 0; i < 4; i++) {
+            s->current_picture_ptr->f.error[i] = s->current_picture.f.error[i];
+            avctx->error[i] += s->current_picture_ptr->f.error[i];
         }
 
-        if(s->flags&CODEC_FLAG_PASS1)
-            assert(avctx->header_bits + avctx->mv_bits + avctx->misc_bits + avctx->i_tex_bits + avctx->p_tex_bits == put_bits_count(&s->pb));
+        if (s->flags & CODEC_FLAG_PASS1)
+            assert(avctx->header_bits + avctx->mv_bits + avctx->misc_bits +
+                   avctx->i_tex_bits + avctx->p_tex_bits ==
+                       put_bits_count(&s->pb));
         flush_put_bits(&s->pb);
         s->frame_bits  = put_bits_count(&s->pb);
 
-        stuffing_count= ff_vbv_update(s, s->frame_bits);
-        if(stuffing_count){
-            if(s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb)>>3) < stuffing_count + 50){
+        stuffing_count = ff_vbv_update(s, s->frame_bits);
+        if (stuffing_count) {
+            if (s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb) >> 3) <
+                    stuffing_count + 50) {
                 av_log(s->avctx, AV_LOG_ERROR, "stuffing too large\n");
                 return -1;
             }
 
-            switch(s->codec_id){
+            switch (s->codec_id) {
             case CODEC_ID_MPEG1VIDEO:
             case CODEC_ID_MPEG2VIDEO:
-                while(stuffing_count--){
+                while (stuffing_count--) {
                     put_bits(&s->pb, 8, 0);
                 }
             break;
@@ -1498,7 +1548,7 @@ vbv_retry:
                 put_bits(&s->pb, 16, 0);
                 put_bits(&s->pb, 16, 0x1C3);
                 stuffing_count -= 4;
-                while(stuffing_count--){
+                while (stuffing_count--) {
                     put_bits(&s->pb, 8, 0xFF);
                 }
             break;
@@ -1510,245 +1560,281 @@ vbv_retry:
         }
 
         /* update mpeg1/2 vbv_delay for CBR */
-        if(s->avctx->rc_max_rate && s->avctx->rc_min_rate == s->avctx->rc_max_rate && s->out_format == FMT_MPEG1
-           && 90000LL * (avctx->rc_buffer_size-1) <= s->avctx->rc_max_rate*0xFFFFLL){
+        if (s->avctx->rc_max_rate                          &&
+            s->avctx->rc_min_rate == s->avctx->rc_max_rate &&
+            s->out_format == FMT_MPEG1                     &&
+            90000LL * (avctx->rc_buffer_size - 1) <=
+                s->avctx->rc_max_rate * 0xFFFFLL) {
             int vbv_delay, min_delay;
-            double inbits = s->avctx->rc_max_rate*av_q2d(s->avctx->time_base);
-            int    minbits= s->frame_bits - 8*(s->vbv_delay_ptr - s->pb.buf - 1);
-            double bits   = s->rc_context.buffer_index + minbits - inbits;
+            double inbits  = s->avctx->rc_max_rate *
+                             av_q2d(s->avctx->time_base);
+            int    minbits = s->frame_bits - 8 *
+                             (s->vbv_delay_ptr - s->pb.buf - 1);
+            double bits    = s->rc_context.buffer_index + minbits - inbits;
 
-            if(bits<0)
-                av_log(s->avctx, AV_LOG_ERROR, "Internal error, negative bits\n");
+            if (bits < 0)
+                av_log(s->avctx, AV_LOG_ERROR,
+                       "Internal error, negative bits\n");
 
-            assert(s->repeat_first_field==0);
+            assert(s->repeat_first_field == 0);
 
-            vbv_delay=     bits * 90000                               / s->avctx->rc_max_rate;
-            min_delay= (minbits * 90000LL + s->avctx->rc_max_rate - 1)/ s->avctx->rc_max_rate;
+            vbv_delay = bits * 90000 / s->avctx->rc_max_rate;
+            min_delay = (minbits * 90000LL + s->avctx->rc_max_rate - 1) /
+                        s->avctx->rc_max_rate;
 
-            vbv_delay= FFMAX(vbv_delay, min_delay);
+            vbv_delay = FFMAX(vbv_delay, min_delay);
 
             assert(vbv_delay < 0xFFFF);
 
             s->vbv_delay_ptr[0] &= 0xF8;
-            s->vbv_delay_ptr[0] |= vbv_delay>>13;
-            s->vbv_delay_ptr[1]  = vbv_delay>>5;
+            s->vbv_delay_ptr[0] |= vbv_delay >> 13;
+            s->vbv_delay_ptr[1]  = vbv_delay >> 5;
             s->vbv_delay_ptr[2] &= 0x07;
-            s->vbv_delay_ptr[2] |= vbv_delay<<3;
-            avctx->vbv_delay = vbv_delay*300;
+            s->vbv_delay_ptr[2] |= vbv_delay << 3;
+            avctx->vbv_delay     = vbv_delay * 300;
         }
-        s->total_bits += s->frame_bits;
+        s->total_bits     += s->frame_bits;
         avctx->frame_bits  = s->frame_bits;
-    }else{
+    } else {
         assert((put_bits_ptr(&s->pb) == s->pb.buf));
-        s->frame_bits=0;
+        s->frame_bits = 0;
     }
-    assert((s->frame_bits&7)==0);
+    assert((s->frame_bits & 7) == 0);
 
-    return s->frame_bits/8;
+    return s->frame_bits / 8;
 }
 
-static inline void dct_single_coeff_elimination(MpegEncContext *s, int n, int threshold)
+static inline void dct_single_coeff_elimination(MpegEncContext *s,
+                                                int n, int threshold)
 {
-    static const char tab[64]=
-        {3,2,2,1,1,1,1,1,
-         1,1,1,1,1,1,1,1,
-         1,1,1,1,1,1,1,1,
-         0,0,0,0,0,0,0,0,
-         0,0,0,0,0,0,0,0,
-         0,0,0,0,0,0,0,0,
-         0,0,0,0,0,0,0,0,
-         0,0,0,0,0,0,0,0};
-    int score=0;
-    int run=0;
+    static const char tab[64] = {
+        3, 2, 2, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0
+    };
+    int score = 0;
+    int run = 0;
     int i;
-    DCTELEM *block= s->block[n];
-    const int last_index= s->block_last_index[n];
+    DCTELEM *block = s->block[n];
+    const int last_index = s->block_last_index[n];
     int skip_dc;
 
-    if(threshold<0){
-        skip_dc=0;
-        threshold= -threshold;
-    }else
-        skip_dc=1;
+    if (threshold < 0) {
+        skip_dc = 0;
+        threshold = -threshold;
+    } else
+        skip_dc = 1;
 
     /* Are all we could set to zero already zero? */
-    if(last_index<=skip_dc - 1) return;
+    if (last_index <= skip_dc - 1)
+        return;
 
-    for(i=0; i<=last_index; i++){
+    for (i = 0; i <= last_index; i++) {
         const int j = s->intra_scantable.permutated[i];
         const int level = FFABS(block[j]);
-        if(level==1){
-            if(skip_dc && i==0) continue;
-            score+= tab[run];
-            run=0;
-        }else if(level>1){
+        if (level == 1) {
+            if (skip_dc && i == 0)
+                continue;
+            score += tab[run];
+            run = 0;
+        } else if (level > 1) {
             return;
-        }else{
+        } else {
             run++;
         }
     }
-    if(score >= threshold) return;
-    for(i=skip_dc; i<=last_index; i++){
+    if (score >= threshold)
+        return;
+    for (i = skip_dc; i <= last_index; i++) {
         const int j = s->intra_scantable.permutated[i];
-        block[j]=0;
+        block[j] = 0;
     }
-    if(block[0]) s->block_last_index[n]= 0;
-    else         s->block_last_index[n]= -1;
+    if (block[0])
+        s->block_last_index[n] = 0;
+    else
+        s->block_last_index[n] = -1;
 }
 
-static inline void clip_coeffs(MpegEncContext *s, DCTELEM *block, int last_index)
+static inline void clip_coeffs(MpegEncContext *s, DCTELEM *block,
+                               int last_index)
 {
     int i;
-    const int maxlevel= s->max_qcoeff;
-    const int minlevel= s->min_qcoeff;
-    int overflow=0;
+    const int maxlevel = s->max_qcoeff;
+    const int minlevel = s->min_qcoeff;
+    int overflow = 0;
 
-    if(s->mb_intra){
-        i=1; //skip clipping of intra dc
-    }else
-        i=0;
+    if (s->mb_intra) {
+        i = 1; // skip clipping of intra dc
+    } else
+        i = 0;
 
-    for(;i<=last_index; i++){
-        const int j= s->intra_scantable.permutated[i];
+    for (; i <= last_index; i++) {
+        const int j = s->intra_scantable.permutated[i];
         int level = block[j];
 
-        if     (level>maxlevel){
-            level=maxlevel;
+        if (level > maxlevel) {
+            level = maxlevel;
             overflow++;
-        }else if(level<minlevel){
-            level=minlevel;
+        } else if (level < minlevel) {
+            level = minlevel;
             overflow++;
         }
 
-        block[j]= level;
+        block[j] = level;
     }
 
-    if(overflow && s->avctx->mb_decision == FF_MB_DECISION_SIMPLE)
-        av_log(s->avctx, AV_LOG_INFO, "warning, clipping %d dct coefficients to %d..%d\n", overflow, minlevel, maxlevel);
+    if (overflow && s->avctx->mb_decision == FF_MB_DECISION_SIMPLE)
+        av_log(s->avctx, AV_LOG_INFO,
+               "warning, clipping %d dct coefficients to %d..%d\n",
+               overflow, minlevel, maxlevel);
 }
 
-static void get_visual_weight(int16_t *weight, uint8_t *ptr, int stride){
+static void get_visual_weight(int16_t *weight, uint8_t *ptr, int stride)
+{
     int x, y;
-//FIXME optimize
-    for(y=0; y<8; y++){
-        for(x=0; x<8; x++){
+    // FIXME optimize
+    for (y = 0; y < 8; y++) {
+        for (x = 0; x < 8; x++) {
             int x2, y2;
-            int sum=0;
-            int sqr=0;
-            int count=0;
+            int sum = 0;
+            int sqr = 0;
+            int count = 0;
 
-            for(y2= FFMAX(y-1, 0); y2 < FFMIN(8, y+2); y2++){
-                for(x2= FFMAX(x-1, 0); x2 < FFMIN(8, x+2); x2++){
-                    int v= ptr[x2 + y2*stride];
+            for (y2 = FFMAX(y - 1, 0); y2 < FFMIN(8, y + 2); y2++) {
+                for (x2= FFMAX(x - 1, 0); x2 < FFMIN(8, x + 2); x2++) {
+                    int v = ptr[x2 + y2 * stride];
                     sum += v;
-                    sqr += v*v;
+                    sqr += v * v;
                     count++;
                 }
             }
-            weight[x + 8*y]= (36*ff_sqrt(count*sqr - sum*sum)) / count;
+            weight[x + 8 * y]= (36 * ff_sqrt(count * sqr - sum * sum)) / count;
         }
     }
 }
 
-static av_always_inline void encode_mb_internal(MpegEncContext *s, int motion_x, int motion_y, int mb_block_height, int mb_block_count)
+static av_always_inline void encode_mb_internal(MpegEncContext *s,
+                                                int motion_x, int motion_y,
+                                                int mb_block_height,
+                                                int mb_block_count)
 {
     int16_t weight[8][64];
     DCTELEM orig[8][64];
-    const int mb_x= s->mb_x;
-    const int mb_y= s->mb_y;
+    const int mb_x = s->mb_x;
+    const int mb_y = s->mb_y;
     int i;
     int skip_dct[8];
-    int dct_offset   = s->linesize*8; //default for progressive frames
+    int dct_offset = s->linesize * 8; // default for progressive frames
     uint8_t *ptr_y, *ptr_cb, *ptr_cr;
     int wrap_y, wrap_c;
 
-    for(i=0; i<mb_block_count; i++) skip_dct[i]=s->skipdct;
+    for (i = 0; i < mb_block_count; i++)
+        skip_dct[i] = s->skipdct;
 
-    if(s->adaptive_quant){
-        const int last_qp= s->qscale;
-        const int mb_xy= mb_x + mb_y*s->mb_stride;
+    if (s->adaptive_quant) {
+        const int last_qp = s->qscale;
+        const int mb_xy = mb_x + mb_y * s->mb_stride;
 
-        s->lambda= s->lambda_table[mb_xy];
+        s->lambda = s->lambda_table[mb_xy];
         update_qscale(s);
 
-        if(!(s->flags&CODEC_FLAG_QP_RD)){
+        if (!(s->flags & CODEC_FLAG_QP_RD)) {
             s->qscale = s->current_picture_ptr->f.qscale_table[mb_xy];
-            s->dquant= s->qscale - last_qp;
+            s->dquant = s->qscale - last_qp;
 
-            if(s->out_format==FMT_H263){
-                s->dquant= av_clip(s->dquant, -2, 2);
+            if (s->out_format == FMT_H263) {
+                s->dquant = av_clip(s->dquant, -2, 2);
 
-                if(s->codec_id==CODEC_ID_MPEG4){
-                    if(!s->mb_intra){
-                        if(s->pict_type == AV_PICTURE_TYPE_B){
-                            if(s->dquant&1 || s->mv_dir&MV_DIRECT)
-                                s->dquant= 0;
+                if (s->codec_id == CODEC_ID_MPEG4) {
+                    if (!s->mb_intra) {
+                        if (s->pict_type == AV_PICTURE_TYPE_B) {
+                            if (s->dquant & 1 || s->mv_dir & MV_DIRECT)
+                                s->dquant = 0;
                         }
-                        if(s->mv_type==MV_TYPE_8X8)
-                            s->dquant=0;
+                        if (s->mv_type == MV_TYPE_8X8)
+                            s->dquant = 0;
                     }
                 }
             }
         }
         ff_set_qscale(s, last_qp + s->dquant);
-    }else if(s->flags&CODEC_FLAG_QP_RD)
+    } else if (s->flags & CODEC_FLAG_QP_RD)
         ff_set_qscale(s, s->qscale + s->dquant);
 
     wrap_y = s->linesize;
     wrap_c = s->uvlinesize;
-    ptr_y  = s->new_picture.f.data[0] + (mb_y * 16 * wrap_y) + mb_x * 16;
-    ptr_cb = s->new_picture.f.data[1] + (mb_y * mb_block_height * wrap_c) + mb_x * 8;
-    ptr_cr = s->new_picture.f.data[2] + (mb_y * mb_block_height * wrap_c) + mb_x * 8;
+    ptr_y  = s->new_picture.f.data[0] +
+             (mb_y * 16 * wrap_y)              + mb_x * 16;
+    ptr_cb = s->new_picture.f.data[1] +
+             (mb_y * mb_block_height * wrap_c) + mb_x * 8;
+    ptr_cr = s->new_picture.f.data[2] +
+             (mb_y * mb_block_height * wrap_c) + mb_x * 8;
 
-    if(mb_x*16+16 > s->width || mb_y*16+16 > s->height){
-        uint8_t *ebuf= s->edge_emu_buffer + 32;
-        s->dsp.emulated_edge_mc(ebuf            , ptr_y , wrap_y,16,16,mb_x*16,mb_y*16, s->width   , s->height);
-        ptr_y= ebuf;
-        s->dsp.emulated_edge_mc(ebuf+18*wrap_y  , ptr_cb, wrap_c, 8, mb_block_height, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
-        ptr_cb= ebuf+18*wrap_y;
-        s->dsp.emulated_edge_mc(ebuf+18*wrap_y+8, ptr_cr, wrap_c, 8, mb_block_height, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
-        ptr_cr= ebuf+18*wrap_y+8;
+    if (mb_x * 16 + 16 > s->width || mb_y * 16 + 16 > s->height) {
+        uint8_t *ebuf = s->edge_emu_buffer + 32;
+        s->dsp.emulated_edge_mc(ebuf, ptr_y, wrap_y, 16, 16, mb_x * 16,
+                                mb_y * 16, s->width, s->height);
+        ptr_y = ebuf;
+        s->dsp.emulated_edge_mc(ebuf + 18 * wrap_y, ptr_cb, wrap_c, 8,
+                                mb_block_height, mb_x * 8, mb_y * 8,
+                                s->width >> 1, s->height >> 1);
+        ptr_cb = ebuf + 18 * wrap_y;
+        s->dsp.emulated_edge_mc(ebuf + 18 * wrap_y + 8, ptr_cr, wrap_c, 8,
+                                mb_block_height, mb_x * 8, mb_y * 8,
+                                s->width >> 1, s->height >> 1);
+        ptr_cr = ebuf + 18 * wrap_y + 8;
     }
 
     if (s->mb_intra) {
-        if(s->flags&CODEC_FLAG_INTERLACED_DCT){
+        if (s->flags & CODEC_FLAG_INTERLACED_DCT) {
             int progressive_score, interlaced_score;
 
-            s->interlaced_dct=0;
-            progressive_score= s->dsp.ildct_cmp[4](s, ptr_y           , NULL, wrap_y, 8)
-                              +s->dsp.ildct_cmp[4](s, ptr_y + wrap_y*8, NULL, wrap_y, 8) - 400;
+            s->interlaced_dct = 0;
+            progressive_score = s->dsp.ildct_cmp[4](s, ptr_y,
+                                                    NULL, wrap_y, 8) +
+                                s->dsp.ildct_cmp[4](s, ptr_y + wrap_y * 8,
+                                                    NULL, wrap_y, 8) - 400;
 
-            if(progressive_score > 0){
-                interlaced_score = s->dsp.ildct_cmp[4](s, ptr_y           , NULL, wrap_y*2, 8)
-                                  +s->dsp.ildct_cmp[4](s, ptr_y + wrap_y  , NULL, wrap_y*2, 8);
-                if(progressive_score > interlaced_score){
-                    s->interlaced_dct=1;
+            if (progressive_score > 0) {
+                interlaced_score = s->dsp.ildct_cmp[4](s, ptr_y,
+                                                       NULL, wrap_y * 2, 8) +
+                                   s->dsp.ildct_cmp[4](s, ptr_y + wrap_y,
+                                                       NULL, wrap_y * 2, 8);
+                if (progressive_score > interlaced_score) {
+                    s->interlaced_dct = 1;
 
-                    dct_offset= wrap_y;
-                    wrap_y<<=1;
+                    dct_offset = wrap_y;
+                    wrap_y <<= 1;
                     if (s->chroma_format == CHROMA_422)
-                        wrap_c<<=1;
+                        wrap_c <<= 1;
                 }
             }
         }
 
-        s->dsp.get_pixels(s->block[0], ptr_y                 , wrap_y);
-        s->dsp.get_pixels(s->block[1], ptr_y              + 8, wrap_y);
-        s->dsp.get_pixels(s->block[2], ptr_y + dct_offset    , wrap_y);
-        s->dsp.get_pixels(s->block[3], ptr_y + dct_offset + 8, wrap_y);
+        s->dsp.get_pixels(s->block[0], ptr_y                  , wrap_y);
+        s->dsp.get_pixels(s->block[1], ptr_y              + 8 , wrap_y);
+        s->dsp.get_pixels(s->block[2], ptr_y + dct_offset     , wrap_y);
+        s->dsp.get_pixels(s->block[3], ptr_y + dct_offset + 8 , wrap_y);
 
-        if(s->flags&CODEC_FLAG_GRAY){
-            skip_dct[4]= 1;
-            skip_dct[5]= 1;
-        }else{
+        if (s->flags & CODEC_FLAG_GRAY) {
+            skip_dct[4] = 1;
+            skip_dct[5] = 1;
+        } else {
             s->dsp.get_pixels(s->block[4], ptr_cb, wrap_c);
             s->dsp.get_pixels(s->block[5], ptr_cr, wrap_c);
-            if(!s->chroma_y_shift){ /* 422 */
-                s->dsp.get_pixels(s->block[6], ptr_cb + (dct_offset>>1), wrap_c);
-                s->dsp.get_pixels(s->block[7], ptr_cr + (dct_offset>>1), wrap_c);
+            if (!s->chroma_y_shift) { /* 422 */
+                s->dsp.get_pixels(s->block[6],
+                                  ptr_cb + (dct_offset >> 1), wrap_c);
+                s->dsp.get_pixels(s->block[7],
+                                  ptr_cr + (dct_offset >> 1), wrap_c);
             }
         }
-    }else{
+    } else {
         op_pixels_func (*op_pix)[4];
         qpel_mc_func (*op_qpix)[16];
         uint8_t *dest_y, *dest_cb, *dest_cr;
@@ -1757,146 +1843,197 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s, int motion_x,
         dest_cb = s->dest[1];
         dest_cr = s->dest[2];
 
-        if ((!s->no_rounding) || s->pict_type==AV_PICTURE_TYPE_B){
-            op_pix = s->dsp.put_pixels_tab;
-            op_qpix= s->dsp.put_qpel_pixels_tab;
-        }else{
-            op_pix = s->dsp.put_no_rnd_pixels_tab;
-            op_qpix= s->dsp.put_no_rnd_qpel_pixels_tab;
+        if ((!s->no_rounding) || s->pict_type == AV_PICTURE_TYPE_B) {
+            op_pix  = s->dsp.put_pixels_tab;
+            op_qpix = s->dsp.put_qpel_pixels_tab;
+        } else {
+            op_pix  = s->dsp.put_no_rnd_pixels_tab;
+            op_qpix = s->dsp.put_no_rnd_qpel_pixels_tab;
         }
 
         if (s->mv_dir & MV_DIR_FORWARD) {
-            MPV_motion(s, dest_y, dest_cb, dest_cr, 0, s->last_picture.f.data, op_pix, op_qpix);
-            op_pix = s->dsp.avg_pixels_tab;
-            op_qpix= s->dsp.avg_qpel_pixels_tab;
+            MPV_motion(s, dest_y, dest_cb, dest_cr, 0, s->last_picture.f.data,
+                       op_pix, op_qpix);
+            op_pix  = s->dsp.avg_pixels_tab;
+            op_qpix = s->dsp.avg_qpel_pixels_tab;
         }
         if (s->mv_dir & MV_DIR_BACKWARD) {
-            MPV_motion(s, dest_y, dest_cb, dest_cr, 1, s->next_picture.f.data, op_pix, op_qpix);
+            MPV_motion(s, dest_y, dest_cb, dest_cr, 1, s->next_picture.f.data,
+                       op_pix, op_qpix);
         }
 
-        if(s->flags&CODEC_FLAG_INTERLACED_DCT){
+        if (s->flags & CODEC_FLAG_INTERLACED_DCT) {
             int progressive_score, interlaced_score;
 
-            s->interlaced_dct=0;
-            progressive_score= s->dsp.ildct_cmp[0](s, dest_y           , ptr_y           , wrap_y, 8)
-                              +s->dsp.ildct_cmp[0](s, dest_y + wrap_y*8, ptr_y + wrap_y*8, wrap_y, 8) - 400;
+            s->interlaced_dct = 0;
+            progressive_score = s->dsp.ildct_cmp[0](s, dest_y,
+                                                    ptr_y,              wrap_y,
+                                                    8) +
+                                s->dsp.ildct_cmp[0](s, dest_y + wrap_y * 8,
+                                                    ptr_y + wrap_y * 8, wrap_y,
+                                                    8) - 400;
 
-            if(s->avctx->ildct_cmp == FF_CMP_VSSE) progressive_score -= 400;
+            if (s->avctx->ildct_cmp == FF_CMP_VSSE)
+                progressive_score -= 400;
 
-            if(progressive_score>0){
-                interlaced_score = s->dsp.ildct_cmp[0](s, dest_y           , ptr_y           , wrap_y*2, 8)
-                                  +s->dsp.ildct_cmp[0](s, dest_y + wrap_y  , ptr_y + wrap_y  , wrap_y*2, 8);
+            if (progressive_score > 0) {
+                interlaced_score = s->dsp.ildct_cmp[0](s, dest_y,
+                                                       ptr_y,
+                                                       wrap_y * 2, 8) +
+                                   s->dsp.ildct_cmp[0](s, dest_y + wrap_y,
+                                                       ptr_y + wrap_y,
+                                                       wrap_y * 2, 8);
 
-                if(progressive_score > interlaced_score){
-                    s->interlaced_dct=1;
+                if (progressive_score > interlaced_score) {
+                    s->interlaced_dct = 1;
 
-                    dct_offset= wrap_y;
-                    wrap_y<<=1;
+                    dct_offset = wrap_y;
+                    wrap_y <<= 1;
                     if (s->chroma_format == CHROMA_422)
-                        wrap_c<<=1;
+                        wrap_c <<= 1;
                 }
             }
         }
 
-        s->dsp.diff_pixels(s->block[0], ptr_y                 , dest_y                 , wrap_y);
-        s->dsp.diff_pixels(s->block[1], ptr_y              + 8, dest_y              + 8, wrap_y);
-        s->dsp.diff_pixels(s->block[2], ptr_y + dct_offset    , dest_y + dct_offset    , wrap_y);
-        s->dsp.diff_pixels(s->block[3], ptr_y + dct_offset + 8, dest_y + dct_offset + 8, wrap_y);
+        s->dsp.diff_pixels(s->block[0], ptr_y, dest_y, wrap_y);
+        s->dsp.diff_pixels(s->block[1], ptr_y + 8, dest_y + 8, wrap_y);
+        s->dsp.diff_pixels(s->block[2], ptr_y + dct_offset,
+                           dest_y + dct_offset, wrap_y);
+        s->dsp.diff_pixels(s->block[3], ptr_y + dct_offset + 8,
+                           dest_y + dct_offset + 8, wrap_y);
 
-        if(s->flags&CODEC_FLAG_GRAY){
-            skip_dct[4]= 1;
-            skip_dct[5]= 1;
-        }else{
+        if (s->flags & CODEC_FLAG_GRAY) {
+            skip_dct[4] = 1;
+            skip_dct[5] = 1;
+        } else {
             s->dsp.diff_pixels(s->block[4], ptr_cb, dest_cb, wrap_c);
             s->dsp.diff_pixels(s->block[5], ptr_cr, dest_cr, wrap_c);
-            if(!s->chroma_y_shift){ /* 422 */
-                s->dsp.diff_pixels(s->block[6], ptr_cb + (dct_offset>>1), dest_cb + (dct_offset>>1), wrap_c);
-                s->dsp.diff_pixels(s->block[7], ptr_cr + (dct_offset>>1), dest_cr + (dct_offset>>1), wrap_c);
+            if (!s->chroma_y_shift) { /* 422 */
+                s->dsp.diff_pixels(s->block[6], ptr_cb + (dct_offset >> 1),
+                                   dest_cb + (dct_offset >> 1), wrap_c);
+                s->dsp.diff_pixels(s->block[7], ptr_cr + (dct_offset >> 1),
+                                   dest_cr + (dct_offset >> 1), wrap_c);
             }
         }
         /* pre quantization */
-        if(s->current_picture.mc_mb_var[s->mb_stride*mb_y+ mb_x]<2*s->qscale*s->qscale){
-            //FIXME optimize
-            if(s->dsp.sad[1](NULL, ptr_y               , dest_y               , wrap_y, 8) < 20*s->qscale) skip_dct[0]= 1;
-            if(s->dsp.sad[1](NULL, ptr_y            + 8, dest_y            + 8, wrap_y, 8) < 20*s->qscale) skip_dct[1]= 1;
-            if(s->dsp.sad[1](NULL, ptr_y +dct_offset   , dest_y +dct_offset   , wrap_y, 8) < 20*s->qscale) skip_dct[2]= 1;
-            if(s->dsp.sad[1](NULL, ptr_y +dct_offset+ 8, dest_y +dct_offset+ 8, wrap_y, 8) < 20*s->qscale) skip_dct[3]= 1;
-            if(s->dsp.sad[1](NULL, ptr_cb              , dest_cb              , wrap_c, 8) < 20*s->qscale) skip_dct[4]= 1;
-            if(s->dsp.sad[1](NULL, ptr_cr              , dest_cr              , wrap_c, 8) < 20*s->qscale) skip_dct[5]= 1;
-            if(!s->chroma_y_shift){ /* 422 */
-                if(s->dsp.sad[1](NULL, ptr_cb +(dct_offset>>1), dest_cb +(dct_offset>>1), wrap_c, 8) < 20*s->qscale) skip_dct[6]= 1;
-                if(s->dsp.sad[1](NULL, ptr_cr +(dct_offset>>1), dest_cr +(dct_offset>>1), wrap_c, 8) < 20*s->qscale) skip_dct[7]= 1;
+        if (s->current_picture.mc_mb_var[s->mb_stride * mb_y + mb_x] <
+                2 * s->qscale * s->qscale) {
+            // FIXME optimize
+            if (s->dsp.sad[1](NULL, ptr_y , dest_y,
+                              wrap_y, 8) < 20 * s->qscale)
+                skip_dct[0] = 1;
+            if (s->dsp.sad[1](NULL, ptr_y + 8,
+                              dest_y + 8, wrap_y, 8) < 20 * s->qscale)
+                skip_dct[1] = 1;
+            if (s->dsp.sad[1](NULL, ptr_y + dct_offset,
+                              dest_y + dct_offset, wrap_y, 8) < 20 * s->qscale)
+                skip_dct[2] = 1;
+            if (s->dsp.sad[1](NULL, ptr_y + dct_offset + 8,
+                              dest_y + dct_offset + 8,
+                              wrap_y, 8) < 20 * s->qscale)
+                skip_dct[3] = 1;
+            if (s->dsp.sad[1](NULL, ptr_cb, dest_cb,
+                              wrap_c, 8) < 20 * s->qscale)
+                skip_dct[4] = 1;
+            if (s->dsp.sad[1](NULL, ptr_cr, dest_cr,
+                              wrap_c, 8) < 20 * s->qscale)
+                skip_dct[5] = 1;
+            if (!s->chroma_y_shift) { /* 422 */
+                if (s->dsp.sad[1](NULL, ptr_cb + (dct_offset >> 1),
+                                  dest_cb + (dct_offset >> 1),
+                                  wrap_c, 8) < 20 * s->qscale)
+                    skip_dct[6] = 1;
+                if (s->dsp.sad[1](NULL, ptr_cr + (dct_offset >> 1),
+                                  dest_cr + (dct_offset >> 1),
+                                  wrap_c, 8) < 20 * s->qscale)
+                    skip_dct[7] = 1;
             }
         }
     }
 
-    if(s->avctx->quantizer_noise_shaping){
-        if(!skip_dct[0]) get_visual_weight(weight[0], ptr_y                 , wrap_y);
-        if(!skip_dct[1]) get_visual_weight(weight[1], ptr_y              + 8, wrap_y);
-        if(!skip_dct[2]) get_visual_weight(weight[2], ptr_y + dct_offset    , wrap_y);
-        if(!skip_dct[3]) get_visual_weight(weight[3], ptr_y + dct_offset + 8, wrap_y);
-        if(!skip_dct[4]) get_visual_weight(weight[4], ptr_cb                , wrap_c);
-        if(!skip_dct[5]) get_visual_weight(weight[5], ptr_cr                , wrap_c);
-        if(!s->chroma_y_shift){ /* 422 */
-            if(!skip_dct[6]) get_visual_weight(weight[6], ptr_cb + (dct_offset>>1), wrap_c);
-            if(!skip_dct[7]) get_visual_weight(weight[7], ptr_cr + (dct_offset>>1), wrap_c);
+    if (s->avctx->quantizer_noise_shaping) {
+        if (!skip_dct[0])
+            get_visual_weight(weight[0], ptr_y                 , wrap_y);
+        if (!skip_dct[1])
+            get_visual_weight(weight[1], ptr_y              + 8, wrap_y);
+        if (!skip_dct[2])
+            get_visual_weight(weight[2], ptr_y + dct_offset    , wrap_y);
+        if (!skip_dct[3])
+            get_visual_weight(weight[3], ptr_y + dct_offset + 8, wrap_y);
+        if (!skip_dct[4])
+            get_visual_weight(weight[4], ptr_cb                , wrap_c);
+        if (!skip_dct[5])
+            get_visual_weight(weight[5], ptr_cr                , wrap_c);
+        if (!s->chroma_y_shift) { /* 422 */
+            if (!skip_dct[6])
+                get_visual_weight(weight[6], ptr_cb + (dct_offset >> 1),
+                                  wrap_c);
+            if (!skip_dct[7])
+                get_visual_weight(weight[7], ptr_cr + (dct_offset >> 1),
+                                  wrap_c);
         }
-        memcpy(orig[0], s->block[0], sizeof(DCTELEM)*64*mb_block_count);
+        memcpy(orig[0], s->block[0], sizeof(DCTELEM) * 64 * mb_block_count);
     }
 
     /* DCT & quantize */
-    assert(s->out_format!=FMT_MJPEG || s->qscale==8);
+    assert(s->out_format != FMT_MJPEG || s->qscale == 8);
     {
-        for(i=0;i<mb_block_count;i++) {
-            if(!skip_dct[i]){
+        for (i = 0; i < mb_block_count; i++) {
+            if (!skip_dct[i]) {
                 int overflow;
                 s->block_last_index[i] = s->dct_quantize(s, s->block[i], i, s->qscale, &overflow);
-            // FIXME we could decide to change to quantizer instead of clipping
-            // JS: I don't think that would be a good idea it could lower quality instead
-            //     of improve it. Just INTRADC clipping deserves changes in quantizer
-                if (overflow) clip_coeffs(s, s->block[i], s->block_last_index[i]);
-            }else
-                s->block_last_index[i]= -1;
+                // FIXME we could decide to change to quantizer instead of
+                // clipping
+                // JS: I don't think that would be a good idea it could lower
+                //     quality instead of improve it. Just INTRADC clipping
+                //     deserves changes in quantizer
+                if (overflow)
+                    clip_coeffs(s, s->block[i], s->block_last_index[i]);
+            } else
+                s->block_last_index[i] = -1;
         }
-        if(s->avctx->quantizer_noise_shaping){
-            for(i=0;i<mb_block_count;i++) {
-                if(!skip_dct[i]){
-                    s->block_last_index[i] = dct_quantize_refine(s, s->block[i], weight[i], orig[i], i, s->qscale);
+        if (s->avctx->quantizer_noise_shaping) {
+            for (i = 0; i < mb_block_count; i++) {
+                if (!skip_dct[i]) {
+                    s->block_last_index[i] =
+                        dct_quantize_refine(s, s->block[i], weight[i],
+                                            orig[i], i, s->qscale);
                 }
             }
         }
 
-        if(s->luma_elim_threshold && !s->mb_intra)
-            for(i=0; i<4; i++)
+        if (s->luma_elim_threshold && !s->mb_intra)
+            for (i = 0; i < 4; i++)
                 dct_single_coeff_elimination(s, i, s->luma_elim_threshold);
-        if(s->chroma_elim_threshold && !s->mb_intra)
-            for(i=4; i<mb_block_count; i++)
+        if (s->chroma_elim_threshold && !s->mb_intra)
+            for (i = 4; i < mb_block_count; i++)
                 dct_single_coeff_elimination(s, i, s->chroma_elim_threshold);
 
-        if(s->flags & CODEC_FLAG_CBP_RD){
-            for(i=0;i<mb_block_count;i++) {
-                if(s->block_last_index[i] == -1)
-                    s->coded_score[i]= INT_MAX/256;
+        if (s->flags & CODEC_FLAG_CBP_RD) {
+            for (i = 0; i < mb_block_count; i++) {
+                if (s->block_last_index[i] == -1)
+                    s->coded_score[i] = INT_MAX / 256;
             }
         }
     }
 
-    if((s->flags&CODEC_FLAG_GRAY) && s->mb_intra){
-        s->block_last_index[4]=
-        s->block_last_index[5]= 0;
-        s->block[4][0]=
-        s->block[5][0]= (1024 + s->c_dc_scale/2)/ s->c_dc_scale;
+    if ((s->flags & CODEC_FLAG_GRAY) && s->mb_intra) {
+        s->block_last_index[4] =
+        s->block_last_index[5] = 0;
+        s->block[4][0] =
+        s->block[5][0] = (1024 + s->c_dc_scale / 2) / s->c_dc_scale;
     }
 
-    //non c quantize code returns incorrect block_last_index FIXME
-    if(s->alternate_scan && s->dct_quantize != dct_quantize_c){
-        for(i=0; i<mb_block_count; i++){
+    // non c quantize code returns incorrect block_last_index FIXME
+    if (s->alternate_scan && s->dct_quantize != dct_quantize_c) {
+        for (i = 0; i < mb_block_count; i++) {
             int j;
-            if(s->block_last_index[i]>0){
-                for(j=63; j>0; j--){
-                    if(s->block[i][ s->intra_scantable.permutated[j] ]) break;
+            if (s->block_last_index[i] > 0) {
+                for (j = 63; j > 0; j--) {
+                    if (s->block[i][s->intra_scantable.permutated[j]])
+                        break;
                 }
-                s->block_last_index[i]= j;
+                s->block_last_index[i] = j;
             }
         }
     }
@@ -1957,7 +2094,7 @@ static inline void copy_context_before_encode(MpegEncContext *d, MpegEncContext 
     /* mpeg1 */
     d->mb_skip_run= s->mb_skip_run;
     for(i=0; i<3; i++)
-        d->last_dc[i]= s->last_dc[i];
+        d->last_dc[i] = s->last_dc[i];
 
     /* statistics */
     d->mv_bits= s->mv_bits;
@@ -1986,7 +2123,7 @@ static inline void copy_context_after_encode(MpegEncContext *d, MpegEncContext *
     /* mpeg1 */
     d->mb_skip_run= s->mb_skip_run;
     for(i=0; i<3; i++)
-        d->last_dc[i]= s->last_dc[i];
+        d->last_dc[i] = s->last_dc[i];
 
     /* statistics */
     d->mv_bits= s->mv_bits;
