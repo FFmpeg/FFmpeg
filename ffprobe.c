@@ -1403,10 +1403,10 @@ static int probe_file(const char *filename)
     writer_print_header(wctx);
     ret = open_input_file(&fmt_ctx, filename);
     if (ret >= 0) {
-    PRINT_CHAPTER(packets);
-    PRINT_CHAPTER(streams);
-    PRINT_CHAPTER(format);
-    avformat_close_input(&fmt_ctx);
+        PRINT_CHAPTER(packets);
+        PRINT_CHAPTER(streams);
+        PRINT_CHAPTER(format);
+        avformat_close_input(&fmt_ctx);
     }
     writer_print_footer(wctx);
     writer_close(&wctx);
