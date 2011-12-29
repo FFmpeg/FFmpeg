@@ -21,17 +21,21 @@
 
 /**
  * @file
- * This is a demuxer for Loki SDL MJPEG files
+ * This is a demuxer for Loki SDL Motion JPEG files
  */
 
 #include "avformat.h"
 #include "internal.h"
 #include "riff.h"
 
-static const AVCodecTag codec_smjpeg_tags[] = {
+static const AVCodecTag codec_smjpeg_video_tags[] = {
+    { CODEC_ID_MJPEG,             MKTAG('J', 'F', 'I', 'F') },
+    { CODEC_ID_NONE, 0 },
+};
+
+static const AVCodecTag codec_smjpeg_audio_tags[] = {
     { CODEC_ID_ADPCM_IMA_SMJPEG,  MKTAG('A', 'P', 'C', 'M') },
     { CODEC_ID_PCM_S16LE,         MKTAG('N', 'O', 'N', 'E') },
-    { CODEC_ID_MJPEG,             MKTAG('J', 'F', 'I', 'F') },
     { CODEC_ID_NONE, 0 },
 };
 
@@ -57,9 +61,9 @@ static int smjpeg_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     avio_skip(pb, 8); // magic
     version = avio_rb32(pb);
-    if (version) {
+    if (version)
         av_log_ask_for_sample(s, "unknown version %d\n", version);
-    }
+
     duration = avio_rb32(pb); // in msec
 
     while (!pb->eof_reached) {
@@ -97,7 +101,7 @@ static int smjpeg_read_header(AVFormatContext *s, AVFormatParameters *ap)
             ast->codec->bits_per_coded_sample = avio_r8(pb);
             ast->codec->channels    = avio_r8(pb);
             ast->codec->codec_tag   = avio_rl32(pb);
-            ast->codec->codec_id    = ff_codec_get_id(codec_smjpeg_tags,
+            ast->codec->codec_id    = ff_codec_get_id(codec_smjpeg_audio_tags,
                                                       ast->codec->codec_tag);
             ast->duration           = duration;
             sc->audio_stream_index  = ast->index;
@@ -120,7 +124,7 @@ static int smjpeg_read_header(AVFormatContext *s, AVFormatParameters *ap)
             vst->codec->width      = avio_rb16(pb);
             vst->codec->height     = avio_rb16(pb);
             vst->codec->codec_tag  = avio_rl32(pb);
-            vst->codec->codec_id   = ff_codec_get_id(codec_smjpeg_tags,
+            vst->codec->codec_id   = ff_codec_get_id(codec_smjpeg_video_tags,
                                                      vst->codec->codec_tag);
             vst->duration          = duration;
             sc->video_stream_index = vst->index;

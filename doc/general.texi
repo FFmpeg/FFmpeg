@@ -318,6 +318,7 @@ library:
 @item Smacker                   @tab   @tab X
     @tab Multimedia format used by many games.
 @item SMJPEG                    @tab   @tab X
+    @tab Used in certain Loki game ports.
 @item Sony OpenMG (OMA)         @tab X @tab X
     @tab Audio format used in Sony Sonic Stage and Sony Vegas.
 @item Sony PlayStation STR      @tab   @tab X
@@ -513,6 +514,7 @@ following image formats are supported:
 @item Intel H.263            @tab     @tab  X
 @item Intel Indeo 2          @tab     @tab  X
 @item Intel Indeo 3          @tab     @tab  X
+@item Intel Indeo 4          @tab     @tab  X
 @item Intel Indeo 5          @tab     @tab  X
 @item Interplay C93          @tab     @tab  X
     @tab Used in the game Cyberia from Interplay.
