@@ -177,7 +177,7 @@ static int parse_keyframes_index(AVFormatContext *s, AVIOContext *ioc, AVStream 
 
         for (i = 0; i < arraylen && avio_tell(ioc) < max_pos - 1; i++) {
             if (avio_r8(ioc) != AMF_DATA_TYPE_NUMBER)
-                goto finish;
+                goto invalid;
             current_array[0][i] = av_int2double(avio_rb64(ioc));
         }
         if (times && filepositions) {
@@ -197,11 +197,13 @@ static int parse_keyframes_index(AVFormatContext *s, AVIOContext *ioc, AVStream 
         dts   = avio_rb24(ioc);
         dts  |= avio_r8(ioc) << 24;
         if (size0 > filepositions[1] || FFABS(dts - times[1]*1000)>5000)
-            goto finish;
+            goto invalid;
          for(i = 0; i < timeslen; i++)
              av_add_index_entry(vstream, filepositions[i], times[i]*1000, 0, 0, AVINDEX_KEYFRAME);
-    } else
+    } else {
+invalid:
         av_log(s, AV_LOG_WARNING, "Invalid keyframes object, skipping.\n");
+    }
 
 finish:
     av_freep(&times);
