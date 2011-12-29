@@ -247,7 +247,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
                 ((uint32_t*)p->data[1])[i] = (0xff<<24) | bytestream_get_le24(&buf);
         }else{
             for(i = 0; i < colors; i++)
-                ((uint32_t*)p->data[1])[i] = bytestream_get_le32(&buf);
+                ((uint32_t*)p->data[1])[i] = 0xFFU << 24 | bytestream_get_le32(&buf);
         }
         buf = buf0 + hsize;
     }
