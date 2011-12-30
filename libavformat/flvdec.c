@@ -196,7 +196,7 @@ static int parse_keyframes_index(AVFormatContext *s, AVIOContext *ioc, AVStream 
         size1 = avio_rb24(ioc);
         dts   = avio_rb24(ioc);
         dts  |= avio_r8(ioc) << 24;
-        if (size0 > filepositions[1] || FFABS(dts - times[1]*1000)>5000)
+        if (size0 > filepositions[1] || FFABS(dts - times[1]*1000)>5000/*arbitraray threshold to detect invalid index*/)
             goto invalid;
          for(i = 0; i < timeslen; i++)
              av_add_index_entry(vstream, filepositions[i], times[i]*1000, 0, 0, AVINDEX_KEYFRAME);
