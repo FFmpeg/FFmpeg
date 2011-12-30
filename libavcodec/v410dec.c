@@ -29,8 +29,7 @@ static av_cold int v410_decode_init(AVCodecContext *avctx)
     avctx->bits_per_raw_sample = 10;
 
     if (avctx->width & 1) {
-        av_log(avctx, AV_LOG_ERROR, "v410 requires width to be even.\n");
-        return AVERROR_INVALIDDATA;
+        av_log(avctx, AV_LOG_WARNING, "v410 requires width to be even.\n");
     }
 
     avctx->coded_frame = avcodec_alloc_frame();
