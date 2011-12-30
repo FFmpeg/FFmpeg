@@ -61,38 +61,59 @@ static const AVOption options[] = {
 };
 static const AVClass class = { "libvorbis", av_default_item_name, options, LIBAVUTIL_VERSION_INT };
 
+static const char * error(int oggerr, int *averr)
+{
+    switch (oggerr) {
+        case OV_EFAULT: *averr = AVERROR(EFAULT); return "internal error";
+        case OV_EIMPL:  *averr = AVERROR(EINVAL); return "not supported";
+        case OV_EINVAL: *averr = AVERROR(EINVAL); return "invalid request";
+        default:        *averr = AVERROR(EINVAL); return "unknown error";
+    }
+}
+
 static av_cold int oggvorbis_init_encoder(vorbis_info *vi, AVCodecContext *avccontext)
 {
     OggVorbisContext *context = avccontext->priv_data;
     double cfreq;
+    int r;
 
     if (avccontext->flags & CODEC_FLAG_QSCALE) {
         /* variable bitrate */
-        if (vorbis_encode_setup_vbr(vi, avccontext->channels,
+        float quality = avccontext->global_quality / (float)FF_QP2LAMBDA;
+        r = vorbis_encode_setup_vbr(vi, avccontext->channels,
                                     avccontext->sample_rate,
-                                    avccontext->global_quality / (float)FF_QP2LAMBDA / 10.0))
-            return -1;
+                                    quality / 10.0);
+        if (r) {
+            av_log(avccontext, AV_LOG_ERROR,
+                   "Unable to set quality to %g: %s\n", quality, error(r, &r));
+            return r;
+        }
     } else {
         int minrate = avccontext->rc_min_rate > 0 ? avccontext->rc_min_rate : -1;
         int maxrate = avccontext->rc_min_rate > 0 ? avccontext->rc_max_rate : -1;
 
         /* constant bitrate */
-        if (vorbis_encode_setup_managed(vi, avccontext->channels,
+        r = vorbis_encode_setup_managed(vi, avccontext->channels,
                                         avccontext->sample_rate, minrate,
-                                        avccontext->bit_rate, maxrate))
-            return -1;
+                                        avccontext->bit_rate, maxrate);
+        if (r) {
+            av_log(avccontext, AV_LOG_ERROR,
+                   "Unable to set CBR to %d: %s\n", avccontext->bit_rate,
+                   error(r, &r));
+            return r;
+        }
 
         /* variable bitrate by estimate, disable slow rate management */
         if (minrate == -1 && maxrate == -1)
             if (vorbis_encode_ctl(vi, OV_ECTL_RATEMANAGE2_SET, NULL))
-                return -1;
+                return AVERROR(EINVAL); /* should not happen */
     }
 
     /* cutoff frequency */
     if (avccontext->cutoff > 0) {
         cfreq = avccontext->cutoff / 1000.0;
         if (vorbis_encode_ctl(vi, OV_ECTL_LOWPASS_SET, &cfreq))
-            return -1;
+            return AVERROR(EINVAL); /* should not happen */
     }
 
     if (context->iblock) {
@@ -143,11 +164,13 @@ static av_cold int oggvorbis_encode_init(AVCodecContext *avccontext)
     ogg_packet header, header_comm, header_code;
     uint8_t *p;
     unsigned int offset;
+    int r;
 
     vorbis_info_init(&context->vi);
-    if (oggvorbis_init_encoder(&context->vi, avccontext) < 0) {
-        av_log(avccontext, AV_LOG_ERROR, "oggvorbis_encode_init: init_encoder failed\n");
-        return -1;
+    r = oggvorbis_init_encoder(&context->vi, avccontext);
+    if (r < 0) {
+        av_log(avccontext, AV_LOG_ERROR, "oggvorbis_encode_init failed\n");
+        return r;
     }
     vorbis_analysis_init(&context->vd, &context->vi);
     vorbis_block_init(&context->vd, &context->vb);
@@ -228,8 +251,8 @@ static int oggvorbis_encode_frame(AVCodecContext *avccontext,
             if (op.bytes == 1 && op.e_o_s)
                 continue;
             if (context->buffer_index + sizeof(ogg_packet) + op.bytes > BUFFER_SIZE) {
-                av_log(avccontext, AV_LOG_ERROR, "libvorbis: buffer overflow.");
-                return -1;
+                av_log(avccontext, AV_LOG_ERROR, "libvorbis: buffer overflow.\n");
+                return AVERROR(EINVAL);
             }
             memcpy(context->buffer + context->buffer_index, &op, sizeof(ogg_packet));
             context->buffer_index += sizeof(ogg_packet);
@@ -249,8 +272,8 @@ static int oggvorbis_encode_frame(AVCodecContext *avccontext,
         //FIXME we should reorder the user supplied pts and not assume that they are spaced by 1/sample_rate
 
         if (l > buf_size) {
-            av_log(avccontext, AV_LOG_ERROR, "libvorbis: buffer overflow.");
-            return -1;
+            av_log(avccontext, AV_LOG_ERROR, "libvorbis: buffer overflow.\n");
+            return AVERROR(EINVAL);
         }
 
         memcpy(packets, op2->packet, l);
