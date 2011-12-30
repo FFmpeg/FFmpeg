@@ -441,7 +441,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     int ret, i, type, size, flags, is_audio;
     int64_t next, pos;
     int64_t dts, pts = AV_NOPTS_VALUE;
-    int sample_rate, channels;
+    int sample_rate = 0, channels = 0;
     AVStream *st = NULL;
 
  for(;;avio_skip(s->pb, 4)){ /* pkt size is repeated at end. skip it */
