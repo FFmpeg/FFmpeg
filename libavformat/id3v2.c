@@ -437,7 +437,7 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
     AVIOContext *pbx;
     unsigned char *buffer = NULL;
     int buffer_size = 0;
-    const ID3v2EMFunc *extra_func;
+    const ID3v2EMFunc *extra_func = NULL;
     unsigned char *compressed_buffer = NULL;
     int compressed_buffer_size = 0;
 
