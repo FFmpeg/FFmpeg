@@ -96,7 +96,13 @@ static unsigned int mszh_decomp(const unsigned char * srcptr, int srclen, unsign
             ofs = FFMIN(ofs, destptr - destptr_bak);
             cnt *= 4;
             cnt = FFMIN(cnt, destptr_end - destptr);
-            av_memcpy_backptr(destptr, ofs, cnt);
+            if (ofs) {
+                av_memcpy_backptr(destptr, ofs, cnt);
+            } else {
+                // Not known what the correct behaviour is, but
+                // this at least avoids uninitialized data.
+                memset(destptr, 0, cnt);
+            }
             destptr += cnt;
         }
         maskbit >>= 1;
