@@ -2024,7 +2024,6 @@ static int mov_write_moov_tag(AVIOContext *pb, MOVMuxContext *mov,
 
 static int mov_write_mfhd_tag(AVIOContext *pb, MOVMuxContext *mov)
 {
-    int i;
     int64_t pos = avio_tell(pb);
     avio_wb32(pb, 0); /* size placeholder*/
     ffio_wfourcc(pb, "mfhd");
@@ -2600,7 +2599,6 @@ static int update_first_fragment(AVFormatContext *s)
 {
     MOVMuxContext *mov = s->priv_data;
     AVIOContext *pb = s->pb;
-    int res = 0;
     int i;
 
     int64_t moov_pos = avio_tell(pb);
