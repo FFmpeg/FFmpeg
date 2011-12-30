@@ -112,7 +112,7 @@ static inline void memcpy_backptr(uint8_t *dst, int back, int cnt);
 
 /**
  * @brief Copies previously decoded bytes to current position.
- * @param back how many bytes back we start
+ * @param back how many bytes back we start, must be > 0
  * @param cnt number of bytes to copy, must be >= 0
  *
  * cnt > back is valid, this will copy the bytes we just copied,
@@ -135,9 +135,9 @@ static inline void copy_backptr(LZOContext *c, int back, int cnt) {
 
 static inline void memcpy_backptr(uint8_t *dst, int back, int cnt) {
     const uint8_t *src = &dst[-back];
-    if (back == 1) {
+    if (back <= 1) {
         memset(dst, *src, cnt);
-    } else if(back>0) {
+    } else {
 #ifdef OUTBUF_PADDED
         COPY2(dst, src);
         COPY2(dst + 2, src + 2);
