@@ -992,6 +992,9 @@ CONFIG_LIST="
     $COMPONENT_LIST
     $PROGRAM_LIST
     avconv
+    avplay
+    avprobe
+    avserver
     aandct
     ac3dsp
     avcodec
