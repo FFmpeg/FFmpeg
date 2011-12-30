@@ -2599,7 +2599,6 @@ static int decode_thread(void *arg)
     if (is->ic) {
         avformat_close_input(&is->ic);
     }
-    avio_set_interrupt_cb(NULL);
 
     if (ret != 0) {
         SDL_Event event;
