@@ -359,4 +359,16 @@ to use them you have to append -D__STDC_CONSTANT_MACROS to your CXXFLAGS
 You have to implement a URLProtocol, see @file{libavformat/file.c} in
 Libav and @file{libmpdemux/demux_lavf.c} in MPlayer sources.
 
+@section Why is @code{make fate} not running all tests?
+
+Make sure you have the fate-suite samples and the @code{SAMPLES} Make variable
+or @code{FATE_SAMPLES} environment variable or the @code{--samples}
+@command{configure} option is set to the right path.
+
+@section Why is @code{make fate} not finding the samples?
+
+Do you happen to have a @code{~} character in the samples path to indicate a
+home directory? The value is used in ways where the shell cannot expand it,
+causing FATE to not find files. Just replace @code{~} by the full path.
+
 @bye
