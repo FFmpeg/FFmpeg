@@ -235,6 +235,8 @@ div.center img {
 #footer {
     margin: -10px 1em 0;
     padding-top: 20px;
+    text-align: center;
+    font-size: small;
 }
 
 address.footer {
@@ -962,7 +964,7 @@ dl.citelist dd {
 }
 
 .tabs3 .tablist a {
-    padding: 0 10px;
+    padding-left: 10px;
 }
 
 
@@ -979,19 +981,6 @@ a:visited {
 h1 a, h2 a, h3 a {
     text-decoration: inherit;
     color: inherit;
-}
-
-#banner, #top {
-    background-color: #BBC9D8;
-    border-bottom: 1px solid #7A96B3;
-    border-top: 1px solid #7A96B3;
-    position: relative;
-    text-align: center;
-}
-
-#banner img, #top img {
-    padding-bottom: 1px;
-    padding-top: 5px;
 }
 
 #body {
@@ -1041,12 +1030,12 @@ img {
     border: 0;
 }
 
-#navrow1 {
+.tabs {
     margin-top: 12px;
     border-top: 1px solid #5C665C;
 }
 
-#navrow1, #navrow2, #navrow3, #navrow4 {
+.tabs, .tabs2, .tabs3, .tabs4 {
     background-color: #738073;
     border-bottom: 1px solid #5C665C;
     border-left: 1px solid #5C665C;
@@ -1055,24 +1044,36 @@ img {
     text-align: center;
 }
 
-#navrow1 a, #navrow2 a, #navrow3 a, #navrow4 a {
+.tabs a,
+.tabs2 a,
+.tabs3 a,
+.tabs4 a {
     color: white;
     padding: 0.3em;
     text-decoration: none;
 }
 
 
-#navrow1 ul, #navrow2 ul, #navrow3 ul, #navrow4 ul {
+.tabs ul,
+.tabs2 ul,
+.tabs3 ul,
+.tabs4 ul {
     padding: 0;
 }
 
-#navrow1 li.current a, #navrow2 li.current a, #navrow3 li.current a, #navrow4 li.current a {
+.tabs li.current a,
+.tabs2 li.current a,
+.tabs3 li.current a,
+.tabs4 li.current a {
     background-color: #414141;
     color: white;
     text-decoration: none;
 }
 
-#navrow1 a:hover, #navrow2 a:hover, #navrow3 a:hover, #navrow4 a:hover {
+.tabs a:hover,
+.tabs2 a:hover,
+.tabs3 a:hover,
+.tabs4 a:hover {
     background-color: #313131 !important;
     color: white;
     text-decoration: none;
@@ -1093,38 +1094,4 @@ pre {
 
 #proj_desc {
     font-size: 1.2em;
-}
-
-#repos {
-    margin-left: 1em;
-    margin-right: 1em;
-    border-collapse: collapse;
-    border: solid 1px #6A996A;
-}
-
-#repos th {
-    background-color: #7BB37B;
-    border: solid 1px #6A996A;
-}
-
-#repos td {
-    padding: 0.2em;
-    border: solid 1px #6A996A;
-}
-
-#distro_status {
-    margin-left: 1em;
-    margin-right: 1em;
-    border-collapse: collapse;
-    border: solid 1px #6A996A;
-}
-
-#distro_status th {
-    background-color: #7BB37B;
-    border: solid 1px #6A996A;
-}
-
-#distro_status td {
-    padding: 0.2em;
-    border: solid 1px #6A996A;
 }

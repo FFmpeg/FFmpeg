@@ -376,13 +376,23 @@ static int read_data(void *opaque, uint8_t *buf, int buf_size)
 
 restart:
     if (!v->input) {
-reload:
-        /* If this is a live stream and target_duration has elapsed since
+        /* If this is a live stream and the reload interval has elapsed since
          * the last playlist reload, reload the variant playlists now. */
+        int64_t reload_interval = v->n_segments > 0 ?
+                                  v->segments[v->n_segments - 1]->duration :
+                                  v->target_duration;
+        reload_interval *= 1000000;
+
+reload:
         if (!v->finished &&
-            av_gettime() - v->last_load_time >= v->target_duration*1000000 &&
-            (ret = parse_playlist(c, v->url, v, NULL)) < 0)
+            av_gettime() - v->last_load_time >= reload_interval) {
+            if ((ret = parse_playlist(c, v->url, v, NULL)) < 0)
                 return ret;
+            /* If we need to reload the playlist again below (if
+             * there's still no more segments), switch to a reload
+             * interval of half the target duration. */
+            reload_interval = v->target_duration * 500000;
+        }
         if (v->cur_seq_no < v->start_seq_no) {
             av_log(NULL, AV_LOG_WARNING,
                    "skipping %d segments ahead, expired from playlists\n",
@@ -392,8 +402,7 @@ reload:
         if (v->cur_seq_no >= v->start_seq_no + v->n_segments) {
             if (v->finished)
                 return AVERROR_EOF;
-            while (av_gettime() - v->last_load_time <
-                   v->target_duration*1000000) {
+            while (av_gettime() - v->last_load_time < reload_interval) {
                 if (ff_check_interrupt(c->interrupt_callback))
                     return AVERROR_EXIT;
                 usleep(100*1000);

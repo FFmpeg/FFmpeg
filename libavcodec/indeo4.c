@@ -160,7 +160,7 @@ static inline int scale_tile_size(int def_size, int size_factor)
  */
 static int decode_pic_hdr(IVI4DecContext *ctx, AVCodecContext *avctx)
 {
-    int             pic_size_indx, val, i, p;
+    int             pic_size_indx, i, p;
     IVIPicConfig    pic_conf;
 
     if (get_bits(&ctx->gb, 18) != 0x3FFF8) {
@@ -301,7 +301,7 @@ static int decode_pic_hdr(IVI4DecContext *ctx, AVCodecContext *avctx)
     /* skip picture header extension if any */
     while (get_bits1(&ctx->gb)) {
         av_dlog(avctx, "Pic hdr extension encountered!\n");
-        val = get_bits(&ctx->gb, 8);
+        skip_bits(&ctx->gb, 8);
     }
 
     if (get_bits1(&ctx->gb)) {
@@ -325,7 +325,7 @@ static int decode_pic_hdr(IVI4DecContext *ctx, AVCodecContext *avctx)
 static int decode_band_hdr(IVI4DecContext *ctx, IVIBandDesc *band,
                            AVCodecContext *avctx)
 {
-    int plane, band_num, hdr_size, indx, transform_id, scan_indx;
+    int plane, band_num, indx, transform_id, scan_indx;
     int i;
 
     plane    = get_bits(&ctx->gb, 2);
@@ -337,7 +337,10 @@ static int decode_band_hdr(IVI4DecContext *ctx, IVIBandDesc *band,
 
     band->is_empty = get_bits1(&ctx->gb);
     if (!band->is_empty) {
-        hdr_size = get_bits1(&ctx->gb) ? get_bits(&ctx->gb, 16) : 4;
+        /* skip header size
+         * If header size is not given, header size is 4 bytes. */
+        if (get_bits1(&ctx->gb))
+            skip_bits(&ctx->gb, 16);
 
         band->is_halfpel = get_bits(&ctx->gb, 2);
         if (band->is_halfpel >= 2) {

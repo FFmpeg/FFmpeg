@@ -16,3 +16,12 @@ fate-wmv8-drm-nodec: CMD = framecrc -cryptokey 137381538c84c068111902a59c5cf6c34
 
 FATE_TESTS += fate-vc1
 fate-vc1: CMD = framecrc -i $(SAMPLES)/vc1/SA00040.vc1
+
+FATE_TESTS += fate-vc1_sa00050
+fate-vc1_sa00050: CMD = framecrc -i $(SAMPLES)/vc1/SA00050.vc1
+
+FATE_TESTS += fate-vc1_sa10091
+fate-vc1_sa10091: CMD = framecrc -i $(SAMPLES)/vc1/SA10091.vc1
+
+FATE_TESTS += fate-vc1_sa20021
+fate-vc1_sa20021: CMD = framecrc -i $(SAMPLES)/vc1/SA20021.vc1
