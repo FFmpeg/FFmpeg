@@ -1551,25 +1551,27 @@ static int mp_decode_layer3(MPADecodeContext *s)
 #if !UNCHECKED_BITSTREAM_READER
         s->gb.size_in_bits_plus8 += EXTRABYTES * 8;
 #endif
-        skip_bits_long(&s->gb, 8*(s->last_buf_size - main_data_begin));
+        s->last_buf_size <<= 3;
+        for (gr = 0, ch = 0; gr < nb_granules && (s->last_buf_size >> 3) < main_data_begin; gr++, ch = 0) {
+            for (; ch < s->nb_channels && (s->last_buf_size >> 3) < main_data_begin; ch++) {
+                g = &s->granules[ch][gr];
+                s->last_buf_size += g->part2_3_length;
+                memset(g->sb_hybrid, 0, sizeof(g->sb_hybrid));
+            }
+        }
+        skip_bits_long(&s->gb, s->last_buf_size - 8 * main_data_begin);
+        if (get_bits_count(&s->gb) >= s->gb.size_in_bits && s->in_gb.buffer) {
+            skip_bits_long(&s->in_gb, get_bits_count(&s->gb) - s->gb.size_in_bits);
+            s->gb           = s->in_gb;
+            s->in_gb.buffer = NULL;
+        }
+    } else {
+        gr = ch = 0;
     }
 
-    for (gr = 0; gr < nb_granules; gr++) {
-        for (ch = 0; ch < s->nb_channels; ch++) {
+    for (; gr < nb_granules; gr++, ch = 0) {
+        for (; ch < s->nb_channels; ch++) {
             g = &s->granules[ch][gr];
-            if (get_bits_count(&s->gb) < 0) {
-                av_log(s->avctx, AV_LOG_DEBUG, "mdb:%d, lastbuf:%d skipping granule %d\n",
-                       main_data_begin, s->last_buf_size, gr);
-                skip_bits_long(&s->gb, g->part2_3_length);
-                memset(g->sb_hybrid, 0, sizeof(g->sb_hybrid));
-                if (get_bits_count(&s->gb) >= s->gb.size_in_bits && s->in_gb.buffer) {
-                    skip_bits_long(&s->in_gb, get_bits_count(&s->gb) - s->gb.size_in_bits);
-                    s->gb           = s->in_gb;
-                    s->in_gb.buffer = NULL;
-                }
-                continue;
-            }
-
             bits_pos = get_bits_count(&s->gb);
 
             if (!s->lsf) {
