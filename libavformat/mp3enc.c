@@ -160,7 +160,7 @@ static int mp3_write_xing(AVFormatContext *s)
     int              best_bitrate_idx;
     int              best_bitrate_error= INT_MAX;
     int64_t          xing_offset;
-    int32_t          mask, header;
+    int32_t          header;
     MPADecodeHeader  c;
     int              srate_idx, i, channels;
     int              needed;
