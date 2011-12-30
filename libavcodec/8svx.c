@@ -106,7 +106,6 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
 {
     EightSvxContext *esc = avctx->priv_data;
     int n, out_data_size, ret;
-    uint8_t *out_date;
     uint8_t *src, *dst;
 
     /* decode and interleave the first packet */
