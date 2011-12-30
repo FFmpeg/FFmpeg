@@ -894,13 +894,13 @@ static av_cold int flashsv2_encode_end(AVCodecContext * avctx)
 }
 
 AVCodec ff_flashsv2_encoder = {
-    "flashsv2",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_FLASHSV2,
-    sizeof(FlashSV2Context),
-    flashsv2_encode_init,
-    flashsv2_encode_frame,
-    flashsv2_encode_end,
+    .name           = "flashsv2",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_FLASHSV2,
+    .priv_data_size = sizeof(FlashSV2Context),
+    .init           = flashsv2_encode_init,
+    .encode         = flashsv2_encode_frame,
+    .close          = flashsv2_encode_end,
     .pix_fmts = (enum PixelFormat[]) {PIX_FMT_BGR24, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("Flash Screen Video Version 2"),
     .capabilities   =  CODEC_CAP_EXPERIMENTAL,

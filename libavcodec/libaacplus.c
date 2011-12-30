@@ -122,13 +122,13 @@ static av_cold int aacPlus_encode_close(AVCodecContext *avctx)
 }
 
 AVCodec ff_libaacplus_encoder = {
-    "libaacplus",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_AAC,
-    sizeof(aacPlusAudioContext),
-    aacPlus_encode_init,
-    aacPlus_encode_frame,
-    aacPlus_encode_close,
+    .name           = "libaacplus",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_AAC,
+    .priv_data_size = sizeof(aacPlusAudioContext),
+    .init           = aacPlus_encode_init,
+    .encode         = aacPlus_encode_frame,
+    .close          = aacPlus_encode_close,
     .sample_fmts = (const enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("libaacplus AAC+ (Advanced Audio Codec with SBR+PS)"),
 };

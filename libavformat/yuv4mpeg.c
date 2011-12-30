@@ -181,7 +181,6 @@ static int yuv4_write_header(AVFormatContext *s)
 AVOutputFormat ff_yuv4mpegpipe_muxer = {
     .name              = "yuv4mpegpipe",
     .long_name         = NULL_IF_CONFIG_SMALL("YUV4MPEG pipe format"),
-    .mime_type         = "",
     .extensions        = "y4m",
     .priv_data_size    = sizeof(int),
     .audio_codec       = CODEC_ID_NONE,

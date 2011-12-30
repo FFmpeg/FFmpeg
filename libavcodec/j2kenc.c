@@ -1036,13 +1036,13 @@ static int j2kenc_destroy(AVCodecContext *avctx)
 }
 
 AVCodec ff_jpeg2000_encoder = {
-    "j2k",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_JPEG2000,
-    sizeof(J2kEncoderContext),
-    j2kenc_init,
-    encode_frame,
-    j2kenc_destroy,
+    .name           = "j2k",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_JPEG2000,
+    .priv_data_size = sizeof(J2kEncoderContext),
+    .init           = j2kenc_init,
+    .encode         = encode_frame,
+    .close          = j2kenc_destroy,
     .capabilities= CODEC_CAP_EXPERIMENTAL,
     .long_name = NULL_IF_CONFIG_SMALL("JPEG 2000"),
     .pix_fmts =

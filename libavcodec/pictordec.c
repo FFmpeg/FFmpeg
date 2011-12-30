@@ -253,7 +253,7 @@ AVCodec ff_pictor_decoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_PICTOR,
     .priv_data_size = sizeof(PicContext),
-    decode_init,
+    .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,

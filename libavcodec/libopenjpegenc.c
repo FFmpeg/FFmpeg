@@ -365,7 +365,6 @@ AVCodec ff_libopenjpeg_encoder = {
     .init           = libopenjpeg_encode_init,
     .encode         = libopenjpeg_encode_frame,
     .close          = libopenjpeg_encode_close,
-    .decode         = NULL,
     .capabilities   = 0,
     .pix_fmts = (const enum PixelFormat[]){PIX_FMT_RGB24,PIX_FMT_RGBA,PIX_FMT_GRAY8,
                                            PIX_FMT_YUV420P,PIX_FMT_YUV422P,PIX_FMT_YUVA420P,

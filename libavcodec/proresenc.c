@@ -594,6 +594,5 @@ AVCodec ff_prores_encoder = {
     .encode         = prores_encode_frame,
     .pix_fmts       = (const enum PixelFormat[]){PIX_FMT_YUV422P10, PIX_FMT_NONE},
     .long_name      = NULL_IF_CONFIG_SMALL("Apple ProRes"),
-    .capabilities   = 0,
     .profiles       = profiles
 };

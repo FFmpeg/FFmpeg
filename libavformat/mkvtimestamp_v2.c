@@ -42,13 +42,10 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 }
 
 AVOutputFormat ff_mkvtimestamp_v2_muxer = {
-    "mkvtimestamp_v2",
-    NULL_IF_CONFIG_SMALL("extract pts as timecode v2 format, as defined by mkvtoolnix"),
-    NULL,
-    "",
-    0,
-    CODEC_ID_NONE,
-    CODEC_ID_RAWVIDEO,
-    write_header,
-    write_packet,
+    .name         = "mkvtimestamp_v2",
+    .long_name    = NULL_IF_CONFIG_SMALL("extract pts as timecode v2 format, as defined by mkvtoolnix"),
+    .audio_codec  = CODEC_ID_NONE,
+    .video_codec  = CODEC_ID_RAWVIDEO,
+    .write_header = write_header,
+    .write_packet = write_packet,
 };
