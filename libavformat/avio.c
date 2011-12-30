@@ -129,7 +129,7 @@ static int url_alloc_for_protocol (URLContext **puc, struct URLProtocol *up,
     int err;
 
 #if CONFIG_NETWORK
-    if (!ff_network_init())
+    if (up->flags & URL_PROTOCOL_FLAG_NETWORK && !ff_network_init())
         return AVERROR(EIO);
 #endif
     uc = av_mallocz(sizeof(URLContext) + strlen(filename) + 1);
@@ -159,7 +159,8 @@ static int url_alloc_for_protocol (URLContext **puc, struct URLProtocol *up,
  fail:
     *puc = NULL;
 #if CONFIG_NETWORK
-    ff_network_close();
+    if (up->flags & URL_PROTOCOL_FLAG_NETWORK)
+        ff_network_close();
 #endif
     return err;
 }
@@ -380,7 +381,8 @@ int ffurl_close(URLContext *h)
     if (h->is_connected && h->prot->url_close)
         ret = h->prot->url_close(h);
 #if CONFIG_NETWORK
-    ff_network_close();
+    if (h->prot->flags & URL_PROTOCOL_FLAG_NETWORK)
+        ff_network_close();
 #endif
     if (h->prot->priv_data_size) {
         if (h->prot->priv_data_class)
