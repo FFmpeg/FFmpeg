@@ -175,6 +175,7 @@ FATE_H264  := $(FATE_H264:%=fate-h264-conformance-%)                    \
               fate-h264-interlace-crop                                  \
               fate-h264-lossless                                        \
               fate-h264-extreme-plane-pred                              \
+              fate-h264-bsf-mp4toannexb                                 \
 
 FATE_TESTS += $(FATE_H264)
 fate-h264: $(FATE_H264)
@@ -355,3 +356,4 @@ fate-h264-conformance-sva_nl2_e: CMD = framecrc -vsync 0 -i $(SAMPLES)/h264-conf
 fate-h264-interlace-crop: CMD = framecrc -vsync 0 -i $(SAMPLES)/h264/interlaced_crop.mp4 -vframes 3
 fate-h264-lossless: CMD = framecrc -vsync 0 -i $(SAMPLES)/h264/lossless.h264
 fate-h264-extreme-plane-pred: CMD = framemd5 -vsync 0 -i $(SAMPLES)/h264/extreme-plane-pred.h264
+fate-h264-bsf-mp4toannexb: CMD = md5 -i $(SAMPLES)/h264/interlaced_crop.mp4 -vcodec copy -bsf h264_mp4toannexb -f mpeg
