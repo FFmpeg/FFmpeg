@@ -2201,10 +2201,11 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
             if ((err = decode_pce(avctx, &ac->m4ac, new_che_pos, gb)))
                 break;
             if (ac->output_configured > OC_TRIAL_PCE)
-                av_log(avctx, AV_LOG_ERROR,
-                       "Not evaluating a further program_config_element as this construct is dubious at best.\n");
-            else
-                err = output_configure(ac, ac->che_pos, new_che_pos, 0, OC_TRIAL_PCE);
+                av_log(avctx, AV_LOG_INFO,
+                       "Evaluating a further program_config_element.\n");
+            err = output_configure(ac, ac->che_pos, new_che_pos, 0, OC_TRIAL_PCE);
+            if (!err)
+                ac->m4ac.chan_config = 0;
             break;
         }
 
