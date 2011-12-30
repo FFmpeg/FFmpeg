@@ -51,7 +51,6 @@ typedef struct Context {
 
 static int cache_open(URLContext *h, const char *arg, int flags)
 {
-    int access;
     const char *buffername;
     Context *c= h->priv_data;
 
