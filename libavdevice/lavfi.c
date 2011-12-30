@@ -270,7 +270,8 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     int stream_idx, min_pts_sink_idx = 0;
     AVFilterBufferRef *ref;
     AVPicture pict;
-    int ret, i, size;
+    int ret, i;
+    int size = 0;
 
     /* iterate through all the graph sinks. Select the sink with the
      * minimum PTS */
