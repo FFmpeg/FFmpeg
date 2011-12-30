@@ -656,7 +656,7 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int predictor, int point
     buffer= s->ljpeg_buffer;
 
     for(i=0; i<3; i++){
-        buffer[0][i]= 1 << (s->bits + point_transform - 1);
+        buffer[0][i]= 1 << (s->bits - 1);
     }
     for(mb_y = 0; mb_y < s->mb_height; mb_y++) {
         const int modified_predictor= mb_y ? predictor : 1;
