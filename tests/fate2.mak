@@ -88,5 +88,5 @@ fate-v410enc: CMD = md5 -f image2 -vcodec pgmyuv -i $(TARGET_PATH)/tests/vsynth1
 FATE_TESTS += fate-r210
 fate-r210: CMD = framecrc -i $(SAMPLES)/r210/r210.avi -pix_fmt rgb48le
 
-FATE_TESTS += fate-xxan_wc4_video
-fate-xxan_wc4_video: CMD = framecrc -i $(SAMPLES)/wc4-xan/wc4_2.avi -an -vframes 10
+FATE_TESTS += fate-xxan-wc4
+fate-xxan-wc4: CMD = framecrc -i $(SAMPLES)/wc4-xan/wc4_2.avi -an -vframes 10
