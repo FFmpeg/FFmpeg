@@ -491,4 +491,5 @@ URLProtocol ff_udp_protocol = {
     .url_close           = udp_close,
     .url_get_file_handle = udp_get_file_handle,
     .priv_data_size      = sizeof(UDPContext),
+    .flags               = URL_PROTOCOL_FLAG_NETWORK,
 };

@@ -625,4 +625,5 @@ URLProtocol ff_mmst_protocol = {
     .url_read       = mms_read,
     .url_close      = mms_close,
     .priv_data_size = sizeof(MMSTContext),
+    .flags          = URL_PROTOCOL_FLAG_NETWORK,
 };

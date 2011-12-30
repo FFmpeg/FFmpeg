@@ -330,4 +330,5 @@ URLProtocol ff_rtp_protocol = {
     .url_close           = rtp_close,
     .url_get_file_handle = rtp_get_file_handle,
     .priv_data_size      = sizeof(RTPContext),
+    .flags               = URL_PROTOCOL_FLAG_NETWORK,
 };

@@ -121,4 +121,5 @@ URLProtocol ff_gopher_protocol = {
     .url_write      = gopher_write,
     .url_close      = gopher_close,
     .priv_data_size = sizeof(GopherContext),
+    .flags          = URL_PROTOCOL_FLAG_NETWORK,
 };
