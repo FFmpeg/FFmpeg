@@ -1000,7 +1000,7 @@ static void deinterlace_bottom_field_inplace(uint8_t *src1, int src_wrap,
     uint8_t *src_m1, *src_0, *src_p1, *src_p2;
     int y;
     uint8_t *buf;
-    buf = (uint8_t*)av_malloc(width);
+    buf = av_malloc(width);
 
     src_m1 = src1;
     memcpy(buf,src_m1,width);
