@@ -4008,7 +4008,7 @@ static int decode_frame(AVCodecContext *avctx,
     H264Context *h = avctx->priv_data;
     MpegEncContext *s = &h->s;
     AVFrame *pict = data;
-    int buf_index;
+    int buf_index = 0;
 
     s->flags= avctx->flags;
     s->flags2= avctx->flags2;
@@ -4038,7 +4038,7 @@ static int decode_frame(AVCodecContext *avctx,
             *pict= *(AVFrame*)out;
         }
 
-        return 0;
+        return buf_index;
     }
 
     buf_index=decode_nal_units(h, buf, buf_size);
