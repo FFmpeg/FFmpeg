@@ -2,6 +2,12 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 
+version <next>:
+
+- Indeo 4 decoder
+- SMJPEG demuxer
+
+
 version 0.8_beta1:
 
 - BWF muxer
@@ -111,8 +117,6 @@ easier to use. The changes are:
 - v410 QuickTime uncompressed 4:4:4 10-bit encoder and decoder
 - OpenMG Audio muxer
 - Simple segmenting muxer
-- Indeo 4 decoder
-- SMJPEG demuxer
 
 
 version 0.7:
