@@ -2093,7 +2093,7 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
 
     size = avpriv_aac_parse_header(gb, &hdr_info);
     if (size > 0) {
-        if (hdr_info.chan_config && (hdr_info.chan_config!=ac->m4ac.chan_config || ac->m4ac.sample_rate!=hdr_info.sample_rate)) {
+        if (hdr_info.chan_config) {
             enum ChannelPosition new_che_pos[4][MAX_ELEM_ID];
             memset(new_che_pos, 0, 4 * MAX_ELEM_ID * sizeof(new_che_pos[0][0]));
             ac->m4ac.chan_config = hdr_info.chan_config;
