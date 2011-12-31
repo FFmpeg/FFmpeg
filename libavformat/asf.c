@@ -152,7 +152,6 @@ const AVMetadataConv ff_asf_metadata_conv[] = {
     { "WM/Publisher"       , "publisher"   },
     { "WM/Tool"            , "encoder"     },
     { "WM/TrackNumber"     , "track"       },
-    { "WM/Track"           , "track"       },
     { "WM/MediaStationCallSign", "service_provider" },
     { "WM/MediaStationName", "service_name" },
 //  { "Year"               , "date"        }, TODO: conversion year<->date
