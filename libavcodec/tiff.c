@@ -161,7 +161,11 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
         }
         src = zbuf;
         for(line = 0; line < lines; line++){
-            horizontal_fill(s->bpp, dst, 1, src, 0, width, 0);
+            if(s->bpp < 8 && s->avctx->pix_fmt == PIX_FMT_PAL8){
+                horizontal_fill(s->bpp, dst, 1, src, 0, width, 0);
+            }else{
+                memcpy(dst, src, width);
+            }
             dst += stride;
             src += width;
         }
@@ -202,7 +206,7 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
             ret = ff_ccitt_unpack(s->avctx, src2, size, dst, lines, stride, s->compr, s->fax_opts);
             break;
         }
-        if (s->bpp < 8)
+        if (s->bpp < 8 && s->avctx->pix_fmt == PIX_FMT_PAL8)
             for (line = 0; line < lines; line++) {
                 horizontal_fill(s->bpp, dst, 1, dst, 0, width, 0);
                 dst += stride;
@@ -258,7 +262,7 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
                 av_log(s->avctx, AV_LOG_ERROR, "Decoded only %i bytes of %i\n", pixels, width);
                 return -1;
             }
-            if (s->bpp < 8)
+            if (s->bpp < 8 && s->avctx->pix_fmt == PIX_FMT_PAL8)
                 horizontal_fill(s->bpp, dst, 1, dst, 0, width, 0);
             break;
         }
@@ -274,6 +278,10 @@ static int init_image(TiffContext *s)
 
     switch (s->bpp * 10 + s->bppcount) {
     case 11:
+        if (!s->palette_is_set) {
+            s->avctx->pix_fmt = PIX_FMT_MONOBLACK;
+            break;
+        }
     case 21:
     case 41:
     case 81:
