@@ -224,7 +224,8 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
             if (ssrc + size - src < width)
                 return AVERROR_INVALIDDATA;
             if (!s->fill_order) {
-                horizontal_fill(s->bpp, dst, 1, src, 0, width, 0);
+                horizontal_fill(s->bpp * (s->avctx->pix_fmt == PIX_FMT_PAL8),
+                                dst, 1, src, 0, width, 0);
             } else {
                 int i;
                 for (i = 0; i < width; i++)
@@ -241,7 +242,8 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
                         av_log(s->avctx, AV_LOG_ERROR, "Copy went out of bounds\n");
                         return -1;
                     }
-                    horizontal_fill(s->bpp, dst, 1, src, 0, code, pixels);
+                    horizontal_fill(s->bpp * (s->avctx->pix_fmt == PIX_FMT_PAL8),
+                                    dst, 1, src, 0, code, pixels);
                     src += code;
                     pixels += code;
                 }else if(code != -128){ // -127..-1
@@ -251,7 +253,8 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
                         return -1;
                     }
                     c = *src++;
-                    horizontal_fill(s->bpp, dst, 0, NULL, c, code, pixels);
+                    horizontal_fill(s->bpp * (s->avctx->pix_fmt == PIX_FMT_PAL8),
+                                    dst, 0, NULL, c, code, pixels);
                     pixels += code;
                 }
             }
