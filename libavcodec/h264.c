@@ -968,7 +968,7 @@ static void init_dequant_tables(H264Context *h){
 int ff_h264_alloc_tables(H264Context *h){
     MpegEncContext * const s = &h->s;
     const int big_mb_num= s->mb_stride * (s->mb_height+1);
-    const int row_mb_num= 2*s->mb_stride*s->avctx->thread_count;
+    const int row_mb_num= 2*s->mb_stride*FFMAX(s->avctx->thread_count, 1);
     int x,y;
 
     FF_ALLOCZ_OR_GOTO(h->s.avctx, h->intra4x4_pred_mode, row_mb_num * 8  * sizeof(uint8_t), fail)
