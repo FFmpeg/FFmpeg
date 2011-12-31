@@ -1324,6 +1324,7 @@ int ff_h264_frame_start(H264Context *h){
      * See decode_nal_units().
      */
     s->current_picture_ptr->f.key_frame = 0;
+    s->current_picture_ptr->sync = 0;
     s->current_picture_ptr->mmco_reset= 0;
 
     assert(s->linesize && s->uvlinesize);
