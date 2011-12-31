@@ -271,7 +271,7 @@ int ffio_limit(AVIOContext *s, int size)
         if(remaining < size){
             int64_t newsize= avio_size(s);
             if(!s->maxsize || s->maxsize<newsize)
-                s->maxsize= newsize;
+                s->maxsize= newsize - !newsize;
             remaining= s->maxsize - avio_tell(s);
             remaining= FFMAX(remaining, 0);
         }
