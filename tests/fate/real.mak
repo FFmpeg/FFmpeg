@@ -1,5 +1,5 @@
 FATE_REAL += fate-real-14_4
-fate-real-14_4: CMD = md5  -i $(SAMPLES)/real/ra3_in_rm_file.rm -f s16le
+fate-real-14_4: CMD = md5 -i $(SAMPLES)/real/ra3_in_rm_file.rm -f s16le
 
 FATE_REAL += fate-ra-288
 fate-ra-288: CMD = pcm -i $(SAMPLES)/real/ra_288.rm
@@ -16,7 +16,7 @@ FATE_REAL += fate-rv30
 fate-rv30: CMD = framecrc -flags +bitexact -dct fastint -idct simple -i $(SAMPLES)/real/rv30.rm -an
 
 FATE_REAL += fate-real-rv40
-fate-real-rv40: CMD = framecrc  -i $(SAMPLES)/real/spygames-2MB.rmvb -t 10 -an -vsync 0
+fate-real-rv40: CMD = framecrc -i $(SAMPLES)/real/spygames-2MB.rmvb -t 10 -an -vsync 0
 
 FATE_REAL += fate-sipr-5k0
 fate-sipr-5k0: CMD = pcm -i $(SAMPLES)/sipr/sipr_5k0.rm

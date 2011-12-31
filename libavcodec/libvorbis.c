@@ -134,7 +134,7 @@ static av_cold int oggvorbis_init_encoder(vorbis_info *vi, AVCodecContext *avcco
 /* How many bytes are needed for a buffer of length 'l' */
 static int xiph_len(int l)
 {
-    return (1 + l / 255 + l);
+    return 1 + l / 255 + l;
 }
 
 static av_cold int oggvorbis_encode_init(AVCodecContext *avccontext)

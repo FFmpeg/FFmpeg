@@ -148,7 +148,7 @@ static int decode_plane_subdivision(GetBitContext *gb)
 
 static inline int scale_tile_size(int def_size, int size_factor)
 {
-    return (size_factor == 15 ? def_size : (size_factor + 1) << 5);
+    return size_factor == 15 ? def_size : (size_factor + 1) << 5;
 }
 
 /**

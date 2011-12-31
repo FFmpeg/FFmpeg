@@ -214,7 +214,7 @@ static int adaptive_cb_search(const int16_t *adapt_cb, float *work,
     ff_celp_lp_synthesis_filterf(work, coefs, exc, BLOCKSIZE, LPC_ORDER);
     for (i = 0; i < BLOCKSIZE; i++)
         data[i] -= best_gain * work[i];
-    return (best_vect - BLOCKSIZE / 2 + 1);
+    return best_vect - BLOCKSIZE / 2 + 1;
 }
 
 

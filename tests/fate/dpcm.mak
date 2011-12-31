@@ -37,6 +37,6 @@ fate-qt-msimaadpcm-stereo: CMD = md5 -i $(SAMPLES)/qt-surge-suite/surge-2-16-L-m
 FATE_TESTS += fate-thp-mjpeg-adpcm
 fate-thp-mjpeg-adpcm: CMD = framecrc -idct simple -i $(SAMPLES)/thp/pikmin2-opening1-partial.thp
 
-FATE_TESTS += fate-dpcm_xan_audio
-fate-dpcm_xan_audio: CMD = md5  -i $(SAMPLES)/wc4-xan/wc4_2.avi -vn -f s16le
+FATE_TESTS += fate-dpcm-xan
+fate-dpcm-xan: CMD = md5 -i $(SAMPLES)/wc4-xan/wc4_2.avi -vn -f s16le
 

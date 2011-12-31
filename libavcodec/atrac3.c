@@ -744,7 +744,7 @@ static int decodeFrame(ATRAC3Context *q, const uint8_t* databuf,
 
         result = decodeChannelSoundUnit(q,&q->gb, q->pUnits, out_samples[0], 0, JOINT_STEREO);
         if (result != 0)
-            return (result);
+            return result;
 
         /* Framedata of the su2 in the joint-stereo mode is encoded in
          * reverse byte order so we need to swap it first. */
@@ -785,7 +785,7 @@ static int decodeFrame(ATRAC3Context *q, const uint8_t* databuf,
         /* Decode Sound Unit 2. */
         result = decodeChannelSoundUnit(q,&q->gb, &q->pUnits[1], out_samples[1], 1, JOINT_STEREO);
         if (result != 0)
-            return (result);
+            return result;
 
         /* Reconstruct the channel coefficients. */
         reverseMatrixing(out_samples[0], out_samples[1], q->matrix_coeff_index_prev, q->matrix_coeff_index_now);
@@ -804,7 +804,7 @@ static int decodeFrame(ATRAC3Context *q, const uint8_t* databuf,
 
             result = decodeChannelSoundUnit(q,&q->gb, &q->pUnits[i], out_samples[i], i, q->codingMode);
             if (result != 0)
-                return (result);
+                return result;
         }
     }
 

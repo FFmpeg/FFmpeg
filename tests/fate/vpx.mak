@@ -1,20 +1,20 @@
 FATE_TESTS += fate-ea-vp60
-fate-ea-vp60: CMD = framecrc  -i $(SAMPLES)/ea-vp6/g36.vp6
+fate-ea-vp60: CMD = framecrc -i $(SAMPLES)/ea-vp6/g36.vp6
 
 FATE_TESTS += fate-ea-vp61
-fate-ea-vp61: CMD = framecrc  -i $(SAMPLES)/ea-vp6/MovieSkirmishGondor.vp6 -t 4
+fate-ea-vp61: CMD = framecrc -i $(SAMPLES)/ea-vp6/MovieSkirmishGondor.vp6 -t 4
 
 FATE_TESTS += fate-vp3
 fate-vp3: CMD = framecrc -i $(SAMPLES)/vp3/vp31.avi
 
 FATE_TESTS += fate-vp5
-fate-vp5: CMD = framecrc  -i $(SAMPLES)/vp5/potter512-400-partial.avi -an
+fate-vp5: CMD = framecrc -i $(SAMPLES)/vp5/potter512-400-partial.avi -an
 
 FATE_TESTS += fate-vp6a
-fate-vp6a: CMD = framecrc  -i $(SAMPLES)/flash-vp6/300x180-Scr-f8-056alpha.flv
+fate-vp6a: CMD = framecrc -i $(SAMPLES)/flash-vp6/300x180-Scr-f8-056alpha.flv
 
 FATE_TESTS += fate-vp6f
-fate-vp6f: CMD = framecrc  -i $(SAMPLES)/flash-vp6/clip1024.flv
+fate-vp6f: CMD = framecrc -i $(SAMPLES)/flash-vp6/clip1024.flv
 
 VP8_SUITE = 001 002 003 004 005 006 007 008 009 010 011 012 013 014 015 016 017
 

@@ -42,10 +42,10 @@ static inline int vc1_has_MVTYPEMB_bitplane(VC1Context *v)
 {
     if (v->mv_type_is_raw)
         return 0;
-    return (v->s.pict_type == AV_PICTURE_TYPE_P &&
-            (v->mv_mode == MV_PMODE_MIXED_MV ||
-             (v->mv_mode == MV_PMODE_INTENSITY_COMP &&
-              v->mv_mode2 == MV_PMODE_MIXED_MV)));
+    return v->s.pict_type == AV_PICTURE_TYPE_P &&
+           (v->mv_mode == MV_PMODE_MIXED_MV ||
+            (v->mv_mode == MV_PMODE_INTENSITY_COMP &&
+             v->mv_mode2 == MV_PMODE_MIXED_MV));
 }
 
 /** Check whether the SKIPMB bitplane is present */
@@ -53,8 +53,8 @@ static inline int vc1_has_SKIPMB_bitplane(VC1Context *v)
 {
     if (v->skip_is_raw)
         return 0;
-    return (v->s.pict_type == AV_PICTURE_TYPE_P ||
-            (v->s.pict_type == AV_PICTURE_TYPE_B && !v->bi_type));
+    return v->s.pict_type == AV_PICTURE_TYPE_P ||
+           (v->s.pict_type == AV_PICTURE_TYPE_B && !v->bi_type);
 }
 
 /** Check whether the DIRECTMB bitplane is present */
@@ -70,9 +70,9 @@ static inline int vc1_has_ACPRED_bitplane(VC1Context *v)
 {
     if (v->acpred_is_raw)
         return 0;
-    return (v->profile == PROFILE_ADVANCED &&
-            (v->s.pict_type == AV_PICTURE_TYPE_I ||
-             (v->s.pict_type == AV_PICTURE_TYPE_B && v->bi_type)));
+    return v->profile == PROFILE_ADVANCED &&
+           (v->s.pict_type == AV_PICTURE_TYPE_I ||
+            (v->s.pict_type == AV_PICTURE_TYPE_B && v->bi_type));
 }
 
 /** Check whether the OVERFLAGS bitplane is present */
@@ -80,11 +80,11 @@ static inline int vc1_has_OVERFLAGS_bitplane(VC1Context *v)
 {
     if (v->overflg_is_raw)
         return 0;
-    return (v->profile == PROFILE_ADVANCED &&
-            (v->s.pict_type == AV_PICTURE_TYPE_I ||
-             (v->s.pict_type == AV_PICTURE_TYPE_B && v->bi_type)) &&
-            (v->overlap && v->pq <= 8) &&
-            v->condover == CONDOVER_SELECT);
+    return v->profile == PROFILE_ADVANCED &&
+           (v->s.pict_type == AV_PICTURE_TYPE_I ||
+            (v->s.pict_type == AV_PICTURE_TYPE_B && v->bi_type)) &&
+           (v->overlap && v->pq <= 8) &&
+           v->condover == CONDOVER_SELECT;
 }
 
 /** Reconstruct bitstream PTYPE (7.1.1.4, index into Table-35) */

@@ -40,17 +40,17 @@ tests/data/mapchan-mono.sw: tests/audiogen$(HOSTEXESUF)
 
 tests/data/asynth%.sw tests/vsynth%/00.pgm: TAG = GEN
 
-include $(SRC_PATH)/tests/fate.mak
-include $(SRC_PATH)/tests/fate2.mak
-
 include $(SRC_PATH)/tests/fate/aac.mak
 include $(SRC_PATH)/tests/fate/ac3.mak
 include $(SRC_PATH)/tests/fate/als.mak
 include $(SRC_PATH)/tests/fate/amrnb.mak
 include $(SRC_PATH)/tests/fate/amrwb.mak
 include $(SRC_PATH)/tests/fate/atrac.mak
+include $(SRC_PATH)/tests/fate/audio.mak
 include $(SRC_PATH)/tests/fate/dct.mak
+include $(SRC_PATH)/tests/fate/demux.mak
 include $(SRC_PATH)/tests/fate/dpcm.mak
+include $(SRC_PATH)/tests/fate/ea.mak
 include $(SRC_PATH)/tests/fate/fft.mak
 include $(SRC_PATH)/tests/fate/h264.mak
 include $(SRC_PATH)/tests/fate/image.mak
@@ -65,10 +65,13 @@ include $(SRC_PATH)/tests/fate/mp3.mak
 include $(SRC_PATH)/tests/fate/mpc.mak
 include $(SRC_PATH)/tests/fate/pcm.mak
 include $(SRC_PATH)/tests/fate/prores.mak
+include $(SRC_PATH)/tests/fate/qt.mak
 include $(SRC_PATH)/tests/fate/qtrle.mak
 include $(SRC_PATH)/tests/fate/real.mak
 include $(SRC_PATH)/tests/fate/screen.mak
 include $(SRC_PATH)/tests/fate/utvideo.mak
+include $(SRC_PATH)/tests/fate/video.mak
+include $(SRC_PATH)/tests/fate/voice.mak
 include $(SRC_PATH)/tests/fate/vorbis.mak
 include $(SRC_PATH)/tests/fate/vpx.mak
 include $(SRC_PATH)/tests/fate/vqf.mak

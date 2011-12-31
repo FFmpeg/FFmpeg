@@ -30,29 +30,31 @@
 #include <string.h>
 
 #ifdef __MINGW32__
-#define fseeko(x,y,z)  fseeko64(x,y,z)
-#define ftello(x)      ftello64(x)
+#define fseeko(x, y, z) fseeko64(x, y, z)
+#define ftello(x)       ftello64(x)
 #endif
 
-#define BE_16(x) ((((uint8_t*)(x))[0] << 8) | ((uint8_t*)(x))[1])
-#define BE_32(x) ((((uint8_t*)(x))[0] << 24) | \
-                  (((uint8_t*)(x))[1] << 16) | \
-                  (((uint8_t*)(x))[2] << 8) | \
-                   ((uint8_t*)(x))[3])
-#define BE_64(x) (((uint64_t)(((uint8_t*)(x))[0]) << 56) | \
-                  ((uint64_t)(((uint8_t*)(x))[1]) << 48) | \
-                  ((uint64_t)(((uint8_t*)(x))[2]) << 40) | \
-                  ((uint64_t)(((uint8_t*)(x))[3]) << 32) | \
-                  ((uint64_t)(((uint8_t*)(x))[4]) << 24) | \
-                  ((uint64_t)(((uint8_t*)(x))[5]) << 16) | \
-                  ((uint64_t)(((uint8_t*)(x))[6]) << 8) | \
-                  ((uint64_t)((uint8_t*)(x))[7]))
+#define BE_16(x) ((((uint8_t*)(x))[0] <<  8) | ((uint8_t*)(x))[1])
 
-#define BE_FOURCC( ch0, ch1, ch2, ch3 )             \
-        ( (uint32_t)(unsigned char)(ch3) |          \
-        ( (uint32_t)(unsigned char)(ch2) << 8 ) |   \
-        ( (uint32_t)(unsigned char)(ch1) << 16 ) |  \
-        ( (uint32_t)(unsigned char)(ch0) << 24 ) )
+#define BE_32(x) ((((uint8_t*)(x))[0] << 24) |  \
+                  (((uint8_t*)(x))[1] << 16) |  \
+                  (((uint8_t*)(x))[2] <<  8) |  \
+                   ((uint8_t*)(x))[3])
+
+#define BE_64(x) (((uint64_t)(((uint8_t*)(x))[0]) << 56) |  \
+                  ((uint64_t)(((uint8_t*)(x))[1]) << 48) |  \
+                  ((uint64_t)(((uint8_t*)(x))[2]) << 40) |  \
+                  ((uint64_t)(((uint8_t*)(x))[3]) << 32) |  \
+                  ((uint64_t)(((uint8_t*)(x))[4]) << 24) |  \
+                  ((uint64_t)(((uint8_t*)(x))[5]) << 16) |  \
+                  ((uint64_t)(((uint8_t*)(x))[6]) <<  8) |  \
+                  ((uint64_t)( (uint8_t*)(x))[7]))
+
+#define BE_FOURCC(ch0, ch1, ch2, ch3)           \
+    ( (uint32_t)(unsigned char)(ch3)        |   \
+     ((uint32_t)(unsigned char)(ch2) <<  8) |   \
+     ((uint32_t)(unsigned char)(ch1) << 16) |   \
+     ((uint32_t)(unsigned char)(ch0) << 24) )
 
 #define QT_ATOM BE_FOURCC
 /* top level atoms */
@@ -71,16 +73,16 @@
 #define STCO_ATOM QT_ATOM('s', 't', 'c', 'o')
 #define CO64_ATOM QT_ATOM('c', 'o', '6', '4')
 
-#define ATOM_PREAMBLE_SIZE 8
-#define COPY_BUFFER_SIZE 1024
+#define ATOM_PREAMBLE_SIZE    8
+#define COPY_BUFFER_SIZE   1024
 
 int main(int argc, char *argv[])
 {
     FILE *infile  = NULL;
     FILE *outfile = NULL;
     unsigned char atom_bytes[ATOM_PREAMBLE_SIZE];
-    uint32_t atom_type = 0;
-    uint64_t atom_size = 0;
+    uint32_t atom_type   = 0;
+    uint64_t atom_size   = 0;
     uint64_t atom_offset = 0;
     uint64_t last_offset;
     unsigned char *moov_atom = NULL;
@@ -95,7 +97,7 @@ int main(int argc, char *argv[])
     int bytes_to_copy;
 
     if (argc != 3) {
-        printf ("Usage: qt-faststart <infile.mov> <outfile.mov>\n");
+        printf("Usage: qt-faststart <infile.mov> <outfile.mov>\n");
         return 0;
     }
 
@@ -116,7 +118,7 @@ int main(int argc, char *argv[])
         if (fread(atom_bytes, ATOM_PREAMBLE_SIZE, 1, infile) != 1) {
             break;
         }
-        atom_size = (uint32_t)BE_32(&atom_bytes[0]);
+        atom_size = (uint32_t) BE_32(&atom_bytes[0]);
         atom_type = BE_32(&atom_bytes[4]);
 
         /* keep ftyp atom */
@@ -125,8 +127,8 @@ int main(int argc, char *argv[])
             free(ftyp_atom);
             ftyp_atom = malloc(ftyp_atom_size);
             if (!ftyp_atom) {
-                printf ("could not allocate %"PRIu64" byte for ftyp atom\n",
-                        atom_size);
+                printf("could not allocate %"PRIu64" bytes for ftyp atom\n",
+                       atom_size);
                 goto error_out;
             }
             fseeko(infile, -ATOM_PREAMBLE_SIZE, SEEK_CUR);
@@ -165,7 +167,7 @@ int main(int argc, char *argv[])
             (atom_type != PICT_ATOM) &&
             (atom_type != UUID_ATOM) &&
             (atom_type != FTYP_ATOM)) {
-            printf ("encountered non-QT top-level atom (is this a Quicktime file?)\n");
+            printf("encountered non-QT top-level atom (is this a QuickTime file?)\n");
             break;
         }
         atom_offset += atom_size;
@@ -178,7 +180,7 @@ int main(int argc, char *argv[])
     }
 
     if (atom_type != MOOV_ATOM) {
-        printf ("last atom in file was not a moov atom\n");
+        printf("last atom in file was not a moov atom\n");
         free(ftyp_atom);
         fclose(infile);
         return 0;
@@ -187,12 +189,11 @@ int main(int argc, char *argv[])
     /* moov atom was, in fact, the last atom in the chunk; load the whole
      * moov atom */
     fseeko(infile, -atom_size, SEEK_END);
-    last_offset = ftello(infile);
+    last_offset    = ftello(infile);
     moov_atom_size = atom_size;
-    moov_atom = malloc(moov_atom_size);
+    moov_atom      = malloc(moov_atom_size);
     if (!moov_atom) {
-        printf ("could not allocate %"PRIu64" byte for moov atom\n",
-            atom_size);
+        printf("could not allocate %"PRIu64" bytes for moov atom\n", atom_size);
         goto error_out;
     }
     if (fread(moov_atom, atom_size, 1, infile) != 1) {
@@ -203,7 +204,7 @@ int main(int argc, char *argv[])
     /* this utility does not support compressed atoms yet, so disqualify
      * files with compressed QT atoms */
     if (BE_32(&moov_atom[12]) == CMOV_ATOM) {
-        printf ("this utility does not support compressed moov atoms yet\n");
+        printf("this utility does not support compressed moov atoms yet\n");
         goto error_out;
     }
 
@@ -215,15 +216,15 @@ int main(int argc, char *argv[])
     for (i = 4; i < moov_atom_size - 4; i++) {
         atom_type = BE_32(&moov_atom[i]);
         if (atom_type == STCO_ATOM) {
-            printf (" patching stco atom...\n");
+            printf(" patching stco atom...\n");
             atom_size = BE_32(&moov_atom[i - 4]);
             if (i + atom_size - 4 > moov_atom_size) {
-                printf (" bad atom size\n");
+                printf(" bad atom size\n");
                 goto error_out;
             }
             offset_count = BE_32(&moov_atom[i + 8]);
             for (j = 0; j < offset_count; j++) {
-                current_offset = BE_32(&moov_atom[i + 12 + j * 4]);
+                current_offset  = BE_32(&moov_atom[i + 12 + j * 4]);
                 current_offset += moov_atom_size;
                 moov_atom[i + 12 + j * 4 + 0] = (current_offset >> 24) & 0xFF;
                 moov_atom[i + 12 + j * 4 + 1] = (current_offset >> 16) & 0xFF;
@@ -232,15 +233,15 @@ int main(int argc, char *argv[])
             }
             i += atom_size - 4;
         } else if (atom_type == CO64_ATOM) {
-            printf (" patching co64 atom...\n");
+            printf(" patching co64 atom...\n");
             atom_size = BE_32(&moov_atom[i - 4]);
             if (i + atom_size - 4 > moov_atom_size) {
-                printf (" bad atom size\n");
+                printf(" bad atom size\n");
                 goto error_out;
             }
             offset_count = BE_32(&moov_atom[i + 8]);
             for (j = 0; j < offset_count; j++) {
-                current_offset = BE_64(&moov_atom[i + 12 + j * 8]);
+                current_offset  = BE_64(&moov_atom[i + 12 + j * 8]);
                 current_offset += moov_atom_size;
                 moov_atom[i + 12 + j * 8 + 0] = (current_offset >> 56) & 0xFF;
                 moov_atom[i + 12 + j * 8 + 1] = (current_offset >> 48) & 0xFF;
@@ -275,7 +276,7 @@ int main(int argc, char *argv[])
 
     /* dump the same ftyp atom */
     if (ftyp_atom_size > 0) {
-        printf (" writing ftyp atom...\n");
+        printf(" writing ftyp atom...\n");
         if (fwrite(ftyp_atom, ftyp_atom_size, 1, outfile) != 1) {
             perror(argv[2]);
             goto error_out;
@@ -283,14 +284,14 @@ int main(int argc, char *argv[])
     }
 
     /* dump the new moov atom */
-    printf (" writing moov atom...\n");
+    printf(" writing moov atom...\n");
     if (fwrite(moov_atom, moov_atom_size, 1, outfile) != 1) {
         perror(argv[2]);
         goto error_out;
     }
 
     /* copy the remainder of the infile, from offset 0 -> last_offset - 1 */
-    printf (" copying rest of file...\n");
+    printf(" copying rest of file...\n");
     while (last_offset) {
         if (last_offset > COPY_BUFFER_SIZE)
             bytes_to_copy = COPY_BUFFER_SIZE;
@@ -305,7 +306,6 @@ int main(int argc, char *argv[])
             perror(argv[2]);
             goto error_out;
         }
-
         last_offset -= bytes_to_copy;
     }
 
