@@ -29,19 +29,9 @@
 #include "libavutil/rational.h"
 #include "libavcodec/avcodec.h"
 
-#define LIBAVFILTER_VERSION_MAJOR  2
-#define LIBAVFILTER_VERSION_MINOR  14
-#define LIBAVFILTER_VERSION_MICRO  0
-
-#define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
-                                               LIBAVFILTER_VERSION_MINOR, \
-                                               LIBAVFILTER_VERSION_MICRO)
-#define LIBAVFILTER_VERSION     AV_VERSION(LIBAVFILTER_VERSION_MAJOR,   \
-                                           LIBAVFILTER_VERSION_MINOR,   \
-                                           LIBAVFILTER_VERSION_MICRO)
-#define LIBAVFILTER_BUILD       LIBAVFILTER_VERSION_INT
-
 #include <stddef.h>
+
+#include "libavfilter/version.h"
 
 /**
  * Return the LIBAVFILTER_VERSION_INT constant.
