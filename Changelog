@@ -6,7 +6,6 @@ version next:
 - v410 Quicktime Uncompressed 4:4:4 10-bit encoder and decoder
 - SBaGen (SBG) binaural beats script demuxer
 - OpenMG Audio muxer
-- SMJPEG demuxer
 - dv: add timecode to metadata
 - thumbnail video filter
 - XML output in ffprobe
@@ -14,6 +13,9 @@ version next:
 - tinterlace video filter
 - astreamsync audio filter
 - amerge audio filter
+- Indeo 4 decoder
+- SMJPEG demuxer
+- Automatic thread count based on detection number of (available) CPU cores
 
 
 version 0.9:
@@ -150,8 +152,6 @@ easier to use. The changes are:
 - Dxtory capture format decoder
 - cellauto source
 - Simple segmenting muxer
-- Indeo 4 decoder
-- SMJPEG demuxer
 
 
 version 0.8:

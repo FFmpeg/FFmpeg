@@ -2377,8 +2377,13 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     int i, count, ret, read_size, j;
     AVStream *st;
     AVPacket pkt1, *pkt;
+    AVDictionary *one_thread_opt = NULL;
     int64_t old_offset = avio_tell(ic->pb);
     int orig_nb_streams = ic->nb_streams;        // new streams might appear, no options for those
+
+    /* this function doesn't flush the decoders, so force thread count
+     * to 1 to fix behavior when thread count > number of frames in the file */
+    av_dict_set(&one_thread_opt, "threads", "1", 0);
 
     for(i=0;i<ic->nb_streams;i++) {
         AVCodec *codec;
@@ -2404,17 +2409,18 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         /* this function doesn't flush the decoders, so force thread count
          * to 1 to fix behavior when thread count > number of frames in the file */
         if (options)
-            av_dict_set(&options[i], "threads", 0, 0);
+            av_dict_set(&options[i], "threads", "1", 0);
 
         /* Ensure that subtitle_header is properly set. */
         if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE
             && codec && !st->codec->codec)
-            avcodec_open2(st->codec, codec, options ? &options[i] : NULL);
+            avcodec_open2(st->codec, codec, options ? &options[i] : &one_thread_opt);
 
         //try to just open decoders, in case this is enough to get parameters
         if(!has_codec_parameters(st->codec)){
             if (codec && !st->codec->codec)
-                avcodec_open2(st->codec, codec, options ? &options[i] : NULL);
+                avcodec_open2(st->codec, codec, options ? &options[i]
+                              : &one_thread_opt);
         }
     }
 
@@ -2556,7 +2562,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
            least one frame of codec data, this makes sure the codec initializes
            the channel configuration and does not only trust the values from the container.
         */
-        try_decode_frame(st, pkt, (options && i < orig_nb_streams )? &options[i] : NULL);
+        try_decode_frame(st, pkt, (options && i < orig_nb_streams )? &options[i]
+                         : &one_thread_opt);
 
         st->codec_info_nb_frames++;
         count++;
@@ -2677,8 +2684,12 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 #endif
 
  find_stream_info_err:
-    for (i=0; i < ic->nb_streams; i++)
+    for (i=0; i < ic->nb_streams; i++) {
+        if (ic->streams[i]->codec)
+            ic->streams[i]->codec->thread_count = 0;
         av_freep(&ic->streams[i]->info);
+    }
+    av_dict_free(&one_thread_opt);
     return ret;
 }
 

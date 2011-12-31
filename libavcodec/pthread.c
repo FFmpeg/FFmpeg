@@ -34,15 +34,20 @@
 #if HAVE_SCHED_GETAFFINITY
 #define _GNU_SOURCE
 #include <sched.h>
-#elif HAVE_GETSYSTEMINFO
+#endif
+#if HAVE_GETSYSTEMINFO
 #include <windows.h>
-#elif HAVE_SYSCTL
+#endif
+#if HAVE_SYSCTL
 #if HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif
 #include <sys/types.h>
 #include <sys/param.h>
 #include <sys/sysctl.h>
+#endif
+#if HAVE_SYSCONF
+#include <unistd.h>
 #endif
 
 #include "avcodec.h"
@@ -178,6 +183,10 @@ static int get_logical_cpus(AVCodecContext *avctx)
     ret = sysctl(mib, 2, &nb_cpus, &len, NULL, 0);
     if (ret == -1)
         nb_cpus = 0;
+#elif HAVE_SYSCONF && defined(_SC_NPROC_ONLN)
+    nb_cpus = sysconf(_SC_NPROC_ONLN);
+#elif HAVE_SYSCONF && defined(_SC_NPROCESSORS_ONLN)
+    nb_cpus = sysconf(_SC_NPROCESSORS_ONLN);
 #endif
     av_log(avctx, AV_LOG_DEBUG, "detected %d logical cores\n", nb_cpus);
     return FFMIN(nb_cpus, MAX_AUTO_THREADS);
