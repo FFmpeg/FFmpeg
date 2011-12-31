@@ -107,6 +107,18 @@ static void av_always_inline horizontal_fill(unsigned int bpp, uint8_t* dst,
                                              uint8_t c, int width, int offset)
 {
     switch (bpp) {
+    case 1:
+        while (--width >= 0) {
+            dst[(width+offset)*8+7] = (usePtr ? src[width] : c)      & 0x1;
+            dst[(width+offset)*8+6] = (usePtr ? src[width] : c) >> 1 & 0x1;
+            dst[(width+offset)*8+5] = (usePtr ? src[width] : c) >> 2 & 0x1;
+            dst[(width+offset)*8+4] = (usePtr ? src[width] : c) >> 3 & 0x1;
+            dst[(width+offset)*8+3] = (usePtr ? src[width] : c) >> 4 & 0x1;
+            dst[(width+offset)*8+2] = (usePtr ? src[width] : c) >> 5 & 0x1;
+            dst[(width+offset)*8+1] = (usePtr ? src[width] : c) >> 6 & 0x1;
+            dst[(width+offset)*8+0] = (usePtr ? src[width] : c) >> 7;
+        }
+        break;
     case 2:
         while (--width >= 0) {
             dst[(width+offset)*4+3] = (usePtr ? src[width] : c) & 0x3;
@@ -149,11 +161,7 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
         }
         src = zbuf;
         for(line = 0; line < lines; line++){
-            if(s->bpp == 4){
-                horizontal_fill(s->bpp, dst, 1, src, 0, width, 0);
-            }else{
-                memcpy(dst, src, width);
-            }
+            horizontal_fill(s->bpp, dst, 1, src, 0, width, 0);
             dst += stride;
             src += width;
         }
@@ -194,6 +202,11 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
             ret = ff_ccitt_unpack(s->avctx, src2, size, dst, lines, stride, s->compr, s->fax_opts);
             break;
         }
+        if (s->bpp < 8)
+            for (line = 0; line < lines; line++) {
+                horizontal_fill(s->bpp, dst, 1, dst, 0, width, 0);
+                dst += stride;
+            }
         av_free(src2);
         return ret;
     }
@@ -245,7 +258,7 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
                 av_log(s->avctx, AV_LOG_ERROR, "Decoded only %i bytes of %i\n", pixels, width);
                 return -1;
             }
-            if(s->bpp == 4)
+            if (s->bpp < 8)
                 horizontal_fill(s->bpp, dst, 1, dst, 0, width, 0);
             break;
         }
@@ -261,8 +274,6 @@ static int init_image(TiffContext *s)
 
     switch (s->bpp * 10 + s->bppcount) {
     case 11:
-        s->avctx->pix_fmt = PIX_FMT_MONOBLACK;
-        break;
     case 21:
     case 41:
     case 81:
