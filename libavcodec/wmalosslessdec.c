@@ -231,8 +231,8 @@ typedef struct WmallDecodeCtx {
 
     int8_t acfilter_order;
     int8_t acfilter_scaling;
-    int acfilter_coeffs[16];
-    int acfilter_prevvalues[16];
+    int64_t acfilter_coeffs[16];
+    int acfilter_prevvalues[2][16];
 
     int8_t mclms_order;
     int8_t mclms_scaling;
@@ -1023,23 +1023,34 @@ static void revert_inter_ch_decorr(WmallDecodeCtx *s, int tile_size)
 static void revert_acfilter(WmallDecodeCtx *s, int tile_size)
 {
     int ich, icoef;
-    int pred = 0, itap;
-    int **ch_coeffs = s->channel_residues;
-    int *filter_coeffs = s->acfilter_coeffs;
-    int *prevvalues = s->acfilter_prevvalues;
+    int pred;
+    int i, j;
+    int64_t *filter_coeffs = s->acfilter_coeffs;
     int scaling = s->acfilter_scaling;
     int order = s->acfilter_order;
 
     for (ich = 0; ich < s->num_channels; ich++) {
-        for (icoef = 0; icoef < tile_size; icoef++) {
-            for (itap = 0; itap < order; itap++)
-                pred += filter_coeffs[itap] * prevvalues[itap];
+        int *prevvalues = s->acfilter_prevvalues[ich];
+        for (i = 0; i < order; i++) {
+            pred = 0;
+            for (j = 0; j < order; j++) {
+                if (i <= j)
+                    pred += filter_coeffs[j] * prevvalues[j - i];
+                else
+                    pred += s->channel_residues[ich][i - j - 1] * filter_coeffs[j];
+            }
             pred >>= scaling;
-            ch_coeffs[ich][icoef] += pred;
-            for (itap = 1; itap < order; itap++)
-                prevvalues[itap] = prevvalues[itap - 1];
-            prevvalues[0] = ch_coeffs[ich][icoef];
+            s->channel_residues[ich][i] += pred;
         }
+        for (i = order; i < tile_size; i++) {
+            pred = 0;
+            for (j = 0; j < order; j++)
+                pred += s->channel_residues[ich][i - j - 1] * filter_coeffs[j];
+            pred >>= scaling;
+            s->channel_residues[ich][i] += pred;
+        }
+        for (j = 0; j < order; j++)
+            prevvalues[j] = s->channel_residues[ich][tile_size - j - 1];
     }
 }
 
