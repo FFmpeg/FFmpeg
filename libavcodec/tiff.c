@@ -108,19 +108,22 @@ static void av_always_inline horizontal_fill(unsigned int bpp, uint8_t* dst,
 {
     int i;
 
-    if (bpp == 2) {
+    switch (bpp) {
+    case 2:
         for (i = 0; i < width; i++) {
             dst[(i+offset)*4+0] = (usePtr ? src[i] : c) >> 6;
             dst[(i+offset)*4+1] = (usePtr ? src[i] : c) >> 4 & 0x3;
             dst[(i+offset)*4+2] = (usePtr ? src[i] : c) >> 2 & 0x3;
             dst[(i+offset)*4+3] = (usePtr ? src[i] : c) & 0x3;
         }
-    } else if (bpp == 4) {
+        break;
+    case 4:
         for (i = 0; i < width; i++) {
             dst[(i+offset)*2+0] = (usePtr ? src[i] : c) >> 4;
             dst[(i+offset)*2+1] = (usePtr ? src[i] : c) & 0xF;
         }
-    } else {
+        break;
+    default:
         if (usePtr) {
             memcpy(dst + offset, src, width);
         } else {
