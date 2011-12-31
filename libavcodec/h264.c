@@ -3901,13 +3901,13 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
                     (hx->nal_unit_type == NAL_IDR_SLICE);
 
             if (h->recovery_frame == h->frame_num) {
-                h->sync |= 1;
+                s->current_picture_ptr->sync |= 1;
                 h->recovery_frame = -1;
             }
 
             h->sync |= !!s->current_picture_ptr->f.key_frame;
             h->sync |= 3*!!(s->flags2 & CODEC_FLAG2_SHOW_ALL);
-            s->current_picture_ptr->sync = h->sync;
+            s->current_picture_ptr->sync |= h->sync;
 
             if (h->current_slice == 1) {
                 if(!(s->flags2 & CODEC_FLAG2_CHUNKS)) {
@@ -4103,11 +4103,9 @@ static int decode_frame(AVCodecContext *avctx,
         field_end(h, 0);
 
         *data_size = 0; /* Wait for second field. */
-        if (h->next_output_pic && h->next_output_pic->sync) {
-            if(h->sync>1 || h->next_output_pic->f.pict_type != AV_PICTURE_TYPE_B){
+        if (h->next_output_pic && (h->next_output_pic->sync || h->sync>1)) {
                 *data_size = sizeof(AVFrame);
                 *pict = *(AVFrame*)h->next_output_pic;
-            }
         }
     }
 
