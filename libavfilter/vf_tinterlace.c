@@ -68,9 +68,9 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     if (args) {
         n = sscanf(args, "%d", &tinterlace->mode);
 
-        if (n != 1 || tinterlace->mode < 0 || tinterlace->mode > 4) {
+        if (n != 1 || tinterlace->mode < 0 || tinterlace->mode > 5) {
             av_log(ctx, AV_LOG_ERROR,
-                   "Invalid mode '%s', use an integer between 0 and 4\n", args);
+                   "Invalid mode '%s', use an integer between 0 and 5\n", args);
             return AVERROR(EINVAL);
         }
     }
@@ -179,7 +179,7 @@ static void end_frame(AVFilterLink *inlink)
     AVFilterBufferRef *cur  = tinterlace->cur;
     AVFilterBufferRef *next = tinterlace->next;
     AVFilterBufferRef *out  = NULL;
-    int field;
+    int field, tff;
 
     /* we need at least two frames */
     if (!tinterlace->cur)
@@ -234,23 +234,26 @@ static void end_frame(AVFilterLink *inlink)
                            FIELD_UPPER_AND_LOWER, 1, !field);
         break;
 
-    case 4: /* interleave upper lines from odd frames with lower lines from even frames,
-             * halving the frame rate and preserving image height */
+        /* interleave upper/lower lines from odd frames with lower/upper lines from even frames,
+         * halving the frame rate and preserving image height */
+    case 4: /* top    field first */
+    case 5: /* bottom field first */
+        tff = tinterlace->mode == 4;
         out = avfilter_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
         avfilter_copy_buffer_ref_props(out, cur);
         out->video->interlaced = 1;
-        out->video->top_field_first = 1;
+        out->video->top_field_first = tff;
 
-        /* copy upper field from cur */
+        /* copy upper/lower field from cur */
         copy_picture_field(out->data, out->linesize,
                            cur->data, cur->linesize,
                            inlink->format, inlink->w, inlink->h,
-                           FIELD_UPPER, 1, FIELD_UPPER);
-        /* copy lower fields from next */
+                           tff ? FIELD_UPPER : FIELD_LOWER, 1, tff ? FIELD_UPPER : FIELD_LOWER);
+        /* copy lower/upper field from next */
         copy_picture_field(out->data, out->linesize,
                            next->data, next->linesize,
                            inlink->format, inlink->w, inlink->h,
-                           FIELD_LOWER, 1, FIELD_LOWER);
+                           tff ? FIELD_LOWER : FIELD_UPPER, 1, tff ? FIELD_LOWER : FIELD_UPPER);
         avfilter_unref_buffer(tinterlace->next);
         tinterlace->next = NULL;
         break;

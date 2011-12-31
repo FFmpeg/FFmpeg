@@ -2525,6 +2525,10 @@ generating a frame with double height at the same input framerate.
 @item 4
 Interleave the upper field from odd frames with the lower field from
 even frames, generating a frame with unchanged height at half framerate.
+
+@item 5
+Interleave the lower field from odd frames with the upper field from
+even frames, generating a frame with unchanged height at half framerate.
 @end table
 
 Default mode is 0.
