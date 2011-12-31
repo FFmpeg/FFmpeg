@@ -560,8 +560,8 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
                 return ret;
             if (st->codec->codec_id == CODEC_ID_AAC) {
                 MPEG4AudioConfig cfg;
-                avpriv_mpeg4audio_get_config(&cfg, st->codec->extradata,
-                                             st->codec->extradata_size * 8, 1);
+                if (avpriv_mpeg4audio_get_config(&cfg, st->codec->extradata,
+                                             st->codec->extradata_size * 8, 1) >= 0) {
                 st->codec->channels = cfg.channels;
                 if (cfg.ext_sample_rate)
                     st->codec->sample_rate = cfg.ext_sample_rate;
@@ -569,6 +569,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
                     st->codec->sample_rate = cfg.sample_rate;
                 av_dlog(s, "mp4a config channels %d sample rate %d\n",
                         st->codec->channels, st->codec->sample_rate);
+                }
             }
 
             ret = AVERROR(EAGAIN);
