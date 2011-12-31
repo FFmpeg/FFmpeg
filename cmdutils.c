@@ -58,7 +58,8 @@ static const int this_year = 2011;
 void init_opts(void)
 {
 #if CONFIG_SWSCALE
-    sws_opts = sws_getContext(16, 16, 0, 16, 16, 0, SWS_BICUBIC, NULL, NULL, NULL);
+    sws_opts = sws_getContext(16, 16, 0, 16, 16, 0, SWS_BICUBIC,
+                              NULL, NULL, NULL);
 #endif
 }
 
@@ -72,24 +73,25 @@ void uninit_opts(void)
     av_dict_free(&codec_opts);
 }
 
-void log_callback_help(void* ptr, int level, const char* fmt, va_list vl)
+void log_callback_help(void *ptr, int level, const char *fmt, va_list vl)
 {
     vfprintf(stdout, fmt, vl);
 }
 
-double parse_number_or_die(const char *context, const char *numstr, int type, double min, double max)
+double parse_number_or_die(const char *context, const char *numstr, int type,
+                           double min, double max)
 {
     char *tail;
     const char *error;
     double d = av_strtod(numstr, &tail);
     if (*tail)
-        error= "Expected number for %s but found: %s\n";
+        error = "Expected number for %s but found: %s\n";
     else if (d < min || d > max)
-        error= "The value for %s was %s which is not within %f - %f\n";
-    else if(type == OPT_INT64 && (int64_t)d != d)
-        error= "Expected int64 for %s but found %s\n";
+        error = "The value for %s was %s which is not within %f - %f\n";
+    else if (type == OPT_INT64 && (int64_t)d != d)
+        error = "Expected int64 for %s but found %s\n";
     else if (type == OPT_INT && (int)d != d)
-        error= "Expected int for %s but found %s\n";
+        error = "Expected int for %s but found %s\n";
     else
         return d;
     av_log(NULL, AV_LOG_FATAL, error, context, numstr, min, max);
@@ -97,7 +99,8 @@ double parse_number_or_die(const char *context, const char *numstr, int type, do
     return 0;
 }
 
-int64_t parse_time_or_die(const char *context, const char *timestr, int is_duration)
+int64_t parse_time_or_die(const char *context, const char *timestr,
+                          int is_duration)
 {
     int64_t us;
     if (av_parse_time(&us, timestr, is_duration) < 0) {
@@ -108,13 +111,14 @@ int64_t parse_time_or_die(const char *context, const char *timestr, int is_durat
     return us;
 }
 
-void show_help_options(const OptionDef *options, const char *msg, int mask, int value)
+void show_help_options(const OptionDef *options, const char *msg, int mask,
+                       int value)
 {
     const OptionDef *po;
     int first;
 
     first = 1;
-    for(po = options; po->name != NULL; po++) {
+    for (po = options; po->name != NULL; po++) {
         char buf[64];
         if ((po->flags & mask) == value) {
             if (first) {
@@ -141,7 +145,8 @@ void show_help_children(const AVClass *class, int flags)
         show_help_children(child, flags);
 }
 
-static const OptionDef* find_option(const OptionDef *po, const char *name){
+static const OptionDef *find_option(const OptionDef *po, const char *name)
+{
     const char *p = strchr(name, ':');
     int len = p ? p - name : strlen(name);
 
@@ -188,8 +193,8 @@ static void prepare_app_arguments(int *argc_ptr, char ***argv_ptr)
         buffsize += WideCharToMultiByte(CP_UTF8, 0, argv_w[i], -1,
                                         NULL, 0, NULL, NULL);
 
-    win32_argv_utf8 = av_mallocz(sizeof(char*) * (win32_argc + 1) + buffsize);
-    argstr_flat     = (char*)win32_argv_utf8 + sizeof(char*) * (win32_argc + 1);
+    win32_argv_utf8 = av_mallocz(sizeof(char *) * (win32_argc + 1) + buffsize);
+    argstr_flat     = (char *)win32_argv_utf8 + sizeof(char *) * (win32_argc + 1);
     if (win32_argv_utf8 == NULL) {
         LocalFree(argv_w);
         return;
@@ -214,7 +219,8 @@ static inline void prepare_app_arguments(int *argc_ptr, char ***argv_ptr)
 }
 #endif /* WIN32 && !__MINGW32CE__ */
 
-int parse_option(void *optctx, const char *opt, const char *arg, const OptionDef *options)
+int parse_option(void *optctx, const char *opt, const char *arg,
+                 const OptionDef *options)
 {
     const OptionDef *po;
     int bool_val = 1;
@@ -243,13 +249,14 @@ unknown_opt:
 
     /* new-style options contain an offset into optctx, old-style address of
      * a global var*/
-    dst = po->flags & (OPT_OFFSET|OPT_SPEC) ? (uint8_t*)optctx + po->u.off : po->u.dst_ptr;
+    dst = po->flags & (OPT_OFFSET | OPT_SPEC) ? (uint8_t *)optctx + po->u.off
+                                              : po->u.dst_ptr;
 
     if (po->flags & OPT_SPEC) {
         SpecifierOpt **so = dst;
         char *p = strchr(opt, ':');
 
-        dstcount = (int*)(so + 1);
+        dstcount = (int *)(so + 1);
         *so = grow_array(*so, sizeof(**so), dstcount, *dstcount + 1);
         (*so)[*dstcount - 1].specifier = av_strdup(p ? p + 1 : "");
         dst = &(*so)[*dstcount - 1].u;
@@ -258,24 +265,25 @@ unknown_opt:
     if (po->flags & OPT_STRING) {
         char *str;
         str = av_strdup(arg);
-        *(char**)dst = str;
+        *(char **)dst = str;
     } else if (po->flags & OPT_BOOL) {
-        *(int*)dst = bool_val;
+        *(int *)dst = bool_val;
     } else if (po->flags & OPT_INT) {
-        *(int*)dst = parse_number_or_die(opt, arg, OPT_INT64, INT_MIN, INT_MAX);
+        *(int *)dst = parse_number_or_die(opt, arg, OPT_INT64, INT_MIN, INT_MAX);
     } else if (po->flags & OPT_INT64) {
-        *(int64_t*)dst = parse_number_or_die(opt, arg, OPT_INT64, INT64_MIN, INT64_MAX);
+        *(int64_t *)dst = parse_number_or_die(opt, arg, OPT_INT64, INT64_MIN, INT64_MAX);
     } else if (po->flags & OPT_TIME) {
-        *(int64_t*)dst = parse_time_or_die(opt, arg, 1);
+        *(int64_t *)dst = parse_time_or_die(opt, arg, 1);
     } else if (po->flags & OPT_FLOAT) {
-        *(float*)dst = parse_number_or_die(opt, arg, OPT_FLOAT, -INFINITY, INFINITY);
+        *(float *)dst = parse_number_or_die(opt, arg, OPT_FLOAT, -INFINITY, INFINITY);
     } else if (po->flags & OPT_DOUBLE) {
-        *(double*)dst = parse_number_or_die(opt, arg, OPT_DOUBLE, -INFINITY, INFINITY);
+        *(double *)dst = parse_number_or_die(opt, arg, OPT_DOUBLE, -INFINITY, INFINITY);
     } else if (po->u.func_arg) {
-        int ret = po->flags & OPT_FUNC2 ? po->u.func2_arg(optctx, opt, arg) :
-                                          po->u.func_arg(opt, arg);
+        int ret = po->flags & OPT_FUNC2 ? po->u.func2_arg(optctx, opt, arg)
+                                        : po->u.func_arg(opt, arg);
         if (ret < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Failed to set value '%s' for option '%s'\n", arg, opt);
+            av_log(NULL, AV_LOG_ERROR,
+                   "Failed to set value '%s' for option '%s'\n", arg, opt);
             return ret;
         }
     }
@@ -285,7 +293,7 @@ unknown_opt:
 }
 
 void parse_options(void *optctx, int argc, char **argv, const OptionDef *options,
-                   void (* parse_arg_function)(void *, const char*))
+                   void (*parse_arg_function)(void *, const char*))
 {
     const char *opt;
     int optindex, handleoptions = 1, ret;
@@ -318,7 +326,8 @@ void parse_options(void *optctx, int argc, char **argv, const OptionDef *options
 /*
  * Return index of option opt in argv or 0 if not found.
  */
-static int locate_option(int argc, char **argv, const OptionDef *options, const char *optname)
+static int locate_option(int argc, char **argv, const OptionDef *options,
+                         const char *optname)
 {
     const OptionDef *po;
     int i;
@@ -364,13 +373,16 @@ int opt_default(const char *opt, const char *arg)
         p = opt + strlen(opt);
     av_strlcpy(opt_stripped, opt, FFMIN(sizeof(opt_stripped), p - opt + 1));
 
-    if ((o = av_opt_find(&cc, opt_stripped, NULL, 0, AV_OPT_SEARCH_CHILDREN|AV_OPT_SEARCH_FAKE_OBJ)) ||
-         ((opt[0] == 'v' || opt[0] == 'a' || opt[0] == 's') &&
-          (o = av_opt_find(&cc, opt+1, NULL, 0, AV_OPT_SEARCH_FAKE_OBJ))))
+    if ((o = av_opt_find(&cc, opt_stripped, NULL, 0,
+                         AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ)) ||
+        ((opt[0] == 'v' || opt[0] == 'a' || opt[0] == 's') &&
+         (o = av_opt_find(&cc, opt + 1, NULL, 0, AV_OPT_SEARCH_FAKE_OBJ))))
         av_dict_set(&codec_opts, opt, arg, FLAGS);
-    else if ((o = av_opt_find(&fc, opt, NULL, 0, AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ)))
+    else if ((o = av_opt_find(&fc, opt, NULL, 0,
+                              AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ)))
         av_dict_set(&format_opts, opt, arg, FLAGS);
-    else if ((o = av_opt_find(&sc, opt, NULL, 0, AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ))) {
+    else if ((o = av_opt_find(&sc, opt, NULL, 0,
+                              AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ))) {
         // XXX we only support sws_flags, not arbitrary sws options
         int ret = av_opt_set(sws_opts, opt, arg, 0);
         if (ret < 0) {
@@ -489,7 +501,8 @@ static void print_all_libs_info(int flags, int level)
 
 void show_banner(void)
 {
-    av_log(NULL, AV_LOG_INFO, "%s version " LIBAV_VERSION ", Copyright (c) %d-%d the Libav developers\n",
+    av_log(NULL, AV_LOG_INFO,
+           "%s version " LIBAV_VERSION ", Copyright (c) %d-%d the Libav developers\n",
            program_name, program_birth_year, this_year);
     av_log(NULL, AV_LOG_INFO, "  built on %s %s with %s %s\n",
            __DATE__, __TIME__, CC_TYPE, CC_VERSION);
@@ -575,93 +588,92 @@ void show_license(void)
 
 void show_formats(void)
 {
-    AVInputFormat *ifmt=NULL;
-    AVOutputFormat *ofmt=NULL;
+    AVInputFormat *ifmt  = NULL;
+    AVOutputFormat *ofmt = NULL;
     const char *last_name;
 
-    printf(
-        "File formats:\n"
-        " D. = Demuxing supported\n"
-        " .E = Muxing supported\n"
-        " --\n");
-    last_name= "000";
-    for(;;){
-        int decode=0;
-        int encode=0;
-        const char *name=NULL;
-        const char *long_name=NULL;
+    printf("File formats:\n"
+           " D. = Demuxing supported\n"
+           " .E = Muxing supported\n"
+           " --\n");
+    last_name = "000";
+    for (;;) {
+        int decode = 0;
+        int encode = 0;
+        const char *name      = NULL;
+        const char *long_name = NULL;
 
-        while((ofmt= av_oformat_next(ofmt))) {
-            if((name == NULL || strcmp(ofmt->name, name)<0) &&
-                strcmp(ofmt->name, last_name)>0){
-                name= ofmt->name;
-                long_name= ofmt->long_name;
-                encode=1;
+        while ((ofmt = av_oformat_next(ofmt))) {
+            if ((name == NULL || strcmp(ofmt->name, name) < 0) &&
+                strcmp(ofmt->name, last_name) > 0) {
+                name      = ofmt->name;
+                long_name = ofmt->long_name;
+                encode    = 1;
             }
         }
-        while((ifmt= av_iformat_next(ifmt))) {
-            if((name == NULL || strcmp(ifmt->name, name)<0) &&
-                strcmp(ifmt->name, last_name)>0){
-                name= ifmt->name;
-                long_name= ifmt->long_name;
-                encode=0;
+        while ((ifmt = av_iformat_next(ifmt))) {
+            if ((name == NULL || strcmp(ifmt->name, name) < 0) &&
+                strcmp(ifmt->name, last_name) > 0) {
+                name      = ifmt->name;
+                long_name = ifmt->long_name;
+                encode    = 0;
             }
-            if(name && strcmp(ifmt->name, name)==0)
-                decode=1;
+            if (name && strcmp(ifmt->name, name) == 0)
+                decode = 1;
         }
-        if(name==NULL)
+        if (name == NULL)
             break;
-        last_name= name;
+        last_name = name;
 
-        printf(
-            " %s%s %-15s %s\n",
-            decode ? "D":" ",
-            encode ? "E":" ",
-            name,
+        printf(" %s%s %-15s %s\n",
+               decode ? "D" : " ",
+               encode ? "E" : " ",
+               name,
             long_name ? long_name:" ");
     }
 }
 
 void show_codecs(void)
 {
-    AVCodec *p=NULL, *p2;
+    AVCodec *p = NULL, *p2;
     const char *last_name;
-    printf(
-        "Codecs:\n"
-        " D..... = Decoding supported\n"
-        " .E.... = Encoding supported\n"
-        " ..V... = Video codec\n"
-        " ..A... = Audio codec\n"
-        " ..S... = Subtitle codec\n"
-        " ...S.. = Supports draw_horiz_band\n"
-        " ....D. = Supports direct rendering method 1\n"
-        " .....T = Supports weird frame truncation\n"
-        " ------\n");
+    printf("Codecs:\n"
+           " D..... = Decoding supported\n"
+           " .E.... = Encoding supported\n"
+           " ..V... = Video codec\n"
+           " ..A... = Audio codec\n"
+           " ..S... = Subtitle codec\n"
+           " ...S.. = Supports draw_horiz_band\n"
+           " ....D. = Supports direct rendering method 1\n"
+           " .....T = Supports weird frame truncation\n"
+           " ------\n");
     last_name= "000";
-    for(;;){
-        int decode=0;
-        int encode=0;
-        int cap=0;
+    for (;;) {
+        int decode = 0;
+        int encode = 0;
+        int cap    = 0;
         const char *type_str;
 
-        p2=NULL;
-        while((p= av_codec_next(p))) {
-            if((p2==NULL || strcmp(p->name, p2->name)<0) &&
-                strcmp(p->name, last_name)>0){
-                p2= p;
-                decode= encode= cap=0;
+        p2 = NULL;
+        while ((p = av_codec_next(p))) {
+            if ((p2 == NULL || strcmp(p->name, p2->name) < 0) &&
+                strcmp(p->name, last_name) > 0) {
+                p2 = p;
+                decode = encode = cap = 0;
             }
-            if(p2 && strcmp(p->name, p2->name)==0){
-                if(p->decode) decode=1;
-                if(p->encode) encode=1;
+            if (p2 && strcmp(p->name, p2->name) == 0) {
+                if (p->decode)
+                    decode = 1;
+                if (p->encode)
+                    encode = 1;
                 cap |= p->capabilities;
             }
         }
-        if(p2==NULL)
+        if (p2 == NULL)
             break;
-        last_name= p2->name;
+        last_name = p2->name;
 
-        switch(p2->type) {
+        switch (p2->type) {
         case AVMEDIA_TYPE_VIDEO:
             type_str = "V";
             break;
@@ -675,35 +687,35 @@ void show_codecs(void)
             type_str = "?";
             break;
         }
-        printf(
-            " %s%s%s%s%s%s %-15s %s",
-            decode ? "D": (/*p2->decoder ? "d":*/" "),
-            encode ? "E":" ",
-            type_str,
-            cap & CODEC_CAP_DRAW_HORIZ_BAND ? "S":" ",
-            cap & CODEC_CAP_DR1 ? "D":" ",
-            cap & CODEC_CAP_TRUNCATED ? "T":" ",
-            p2->name,
-            p2->long_name ? p2->long_name : "");
-       /* if(p2->decoder && decode==0)
-            printf(" use %s for decoding", p2->decoder->name);*/
+        printf(" %s%s%s%s%s%s %-15s %s",
+               decode ? "D" : (/* p2->decoder ? "d" : */ " "),
+               encode ? "E" : " ",
+               type_str,
+               cap & CODEC_CAP_DRAW_HORIZ_BAND ? "S" : " ",
+               cap & CODEC_CAP_DR1 ? "D" : " ",
+               cap & CODEC_CAP_TRUNCATED ? "T" : " ",
+               p2->name,
+               p2->long_name ? p2->long_name : "");
+#if 0
+            if (p2->decoder && decode == 0)
+                printf(" use %s for decoding", p2->decoder->name);
+#endif
         printf("\n");
     }
     printf("\n");
-    printf(
-"Note, the names of encoders and decoders do not always match, so there are\n"
-"several cases where the above table shows encoder only or decoder only entries\n"
-"even though both encoding and decoding are supported. For example, the h263\n"
-"decoder corresponds to the h263 and h263p encoders, for file formats it is even\n"
-"worse.\n");
+    printf("Note, the names of encoders and decoders do not always match, so there are\n"
+           "several cases where the above table shows encoder only or decoder only entries\n"
+           "even though both encoding and decoding are supported. For example, the h263\n"
+           "decoder corresponds to the h263 and h263p encoders, for file formats it is even\n"
+           "worse.\n");
 }
 
 void show_bsfs(void)
 {
-    AVBitStreamFilter *bsf=NULL;
+    AVBitStreamFilter *bsf = NULL;
 
     printf("Bitstream filters:\n");
-    while((bsf = av_bitstream_filter_next(bsf)))
+    while ((bsf = av_bitstream_filter_next(bsf)))
         printf("%s\n", bsf->name);
     printf("\n");
 }
@@ -737,15 +749,14 @@ void show_pix_fmts(void)
 {
     enum PixelFormat pix_fmt;
 
-    printf(
-        "Pixel formats:\n"
-        "I.... = Supported Input  format for conversion\n"
-        ".O... = Supported Output format for conversion\n"
-        "..H.. = Hardware accelerated format\n"
-        "...P. = Paletted format\n"
-        "....B = Bitstream format\n"
-        "FLAGS NAME            NB_COMPONENTS BITS_PER_PIXEL\n"
-        "-----\n");
+    printf("Pixel formats:\n"
+           "I.... = Supported Input  format for conversion\n"
+           ".O... = Supported Output format for conversion\n"
+           "..H.. = Hardware accelerated format\n"
+           "...P. = Paletted format\n"
+           "....B = Bitstream format\n"
+           "FLAGS NAME            NB_COMPONENTS BITS_PER_PIXEL\n"
+           "-----\n");
 
 #if !CONFIG_SWSCALE
 #   define sws_isSupportedInput(x)  0
@@ -792,7 +803,8 @@ int cmdutils_read_file(const char *filename, char **bufptr, size_t *size)
     FILE *f = fopen(filename, "rb");
 
     if (!f) {
-        av_log(NULL, AV_LOG_ERROR, "Cannot read file '%s': %s\n", filename, strerror(errno));
+        av_log(NULL, AV_LOG_ERROR, "Cannot read file '%s': %s\n", filename,
+               strerror(errno));
         return AVERROR(errno);
     }
     fseek(f, 0, SEEK_END);
@@ -828,7 +840,8 @@ void init_pts_correction(PtsCorrectionContext *ctx)
     ctx->last_pts = ctx->last_dts = INT64_MIN;
 }
 
-int64_t guess_correct_pts(PtsCorrectionContext *ctx, int64_t reordered_pts, int64_t dts)
+int64_t guess_correct_pts(PtsCorrectionContext *ctx, int64_t reordered_pts,
+                          int64_t dts)
 {
     int64_t pts = AV_NOPTS_VALUE;
 
@@ -841,7 +854,7 @@ int64_t guess_correct_pts(PtsCorrectionContext *ctx, int64_t reordered_pts, int6
         ctx->last_pts = reordered_pts;
     }
     if ((ctx->num_faulty_pts<=ctx->num_faulty_dts || dts == AV_NOPTS_VALUE)
-       && reordered_pts != AV_NOPTS_VALUE)
+        && reordered_pts != AV_NOPTS_VALUE)
         pts = reordered_pts;
     else
         pts = dts;
@@ -850,14 +863,14 @@ int64_t guess_correct_pts(PtsCorrectionContext *ctx, int64_t reordered_pts, int6
 }
 
 FILE *get_preset_file(char *filename, size_t filename_size,
-                      const char *preset_name, int is_path, const char *codec_name)
+                      const char *preset_name, int is_path,
+                      const char *codec_name)
 {
     FILE *f = NULL;
     int i;
-    const char *base[3]= { getenv("AVCONV_DATADIR"),
-                           getenv("HOME"),
-                           AVCONV_DATADIR,
-                         };
+    const char *base[3] = { getenv("AVCONV_DATADIR"),
+                            getenv("HOME"),
+                            AVCONV_DATADIR, };
 
     if (is_path) {
         av_strlcpy(filename, preset_name, filename_size);
@@ -866,11 +879,14 @@ FILE *get_preset_file(char *filename, size_t filename_size,
         for (i = 0; i < 3 && !f; i++) {
             if (!base[i])
                 continue;
-            snprintf(filename, filename_size, "%s%s/%s.ffpreset", base[i], i != 1 ? "" : "/.avconv", preset_name);
+            snprintf(filename, filename_size, "%s%s/%s.ffpreset", base[i],
+                     i != 1 ? "" : "/.avconv", preset_name);
             f = fopen(filename, "r");
             if (!f && codec_name) {
                 snprintf(filename, filename_size,
-                         "%s%s/%s-%s.ffpreset", base[i],  i != 1 ? "" : "/.avconv", codec_name, preset_name);
+                         "%s%s/%s-%s.ffpreset",
+                         base[i], i != 1 ? "" : "/.avconv", codec_name,
+                         preset_name);
                 f = fopen(filename, "r");
             }
         }
@@ -881,21 +897,22 @@ FILE *get_preset_file(char *filename, size_t filename_size,
 
 int check_stream_specifier(AVFormatContext *s, AVStream *st, const char *spec)
 {
-    if (*spec <= '9' && *spec >= '0')                                        /* opt:index */
+    if (*spec <= '9' && *spec >= '0') /* opt:index */
         return strtol(spec, NULL, 0) == st->index;
-    else if (*spec == 'v' || *spec == 'a' || *spec == 's' || *spec == 'd' || *spec == 't') { /* opt:[vasdt] */
+    else if (*spec == 'v' || *spec == 'a' || *spec == 's' || *spec == 'd' ||
+             *spec == 't') { /* opt:[vasdt] */
         enum AVMediaType type;
 
         switch (*spec++) {
-        case 'v': type = AVMEDIA_TYPE_VIDEO;    break;
-        case 'a': type = AVMEDIA_TYPE_AUDIO;    break;
-        case 's': type = AVMEDIA_TYPE_SUBTITLE; break;
-        case 'd': type = AVMEDIA_TYPE_DATA;     break;
+        case 'v': type = AVMEDIA_TYPE_VIDEO;      break;
+        case 'a': type = AVMEDIA_TYPE_AUDIO;      break;
+        case 's': type = AVMEDIA_TYPE_SUBTITLE;   break;
+        case 'd': type = AVMEDIA_TYPE_DATA;       break;
         case 't': type = AVMEDIA_TYPE_ATTACHMENT; break;
         }
         if (type != st->codec->codec_type)
             return 0;
-        if (*spec++ == ':') {                                   /* possibly followed by :index */
+        if (*spec++ == ':') { /* possibly followed by :index */
             int i, index = strtol(spec, NULL, 0);
             for (i = 0; i < s->nb_streams; i++)
                 if (s->streams[i]->codec->codec_type == type && index-- == 0)
@@ -931,12 +948,15 @@ int check_stream_specifier(AVFormatContext *s, AVStream *st, const char *spec)
     return AVERROR(EINVAL);
 }
 
-AVDictionary *filter_codec_opts(AVDictionary *opts, enum CodecID codec_id, AVFormatContext *s, AVStream *st)
+AVDictionary *filter_codec_opts(AVDictionary *opts, enum CodecID codec_id,
+                                AVFormatContext *s, AVStream *st)
 {
     AVDictionary    *ret = NULL;
     AVDictionaryEntry *t = NULL;
-    AVCodec       *codec = s->oformat ? avcodec_find_encoder(codec_id) : avcodec_find_decoder(codec_id);
-    int            flags = s->oformat ? AV_OPT_FLAG_ENCODING_PARAM : AV_OPT_FLAG_DECODING_PARAM;
+    AVCodec       *codec = s->oformat ? avcodec_find_encoder(codec_id)
+                                      : avcodec_find_decoder(codec_id);
+    int            flags = s->oformat ? AV_OPT_FLAG_ENCODING_PARAM
+                                      : AV_OPT_FLAG_DECODING_PARAM;
     char          prefix = 0;
     const AVClass    *cc = avcodec_get_class();
 
@@ -944,9 +964,18 @@ AVDictionary *filter_codec_opts(AVDictionary *opts, enum CodecID codec_id, AVFor
         return NULL;
 
     switch (codec->type) {
-    case AVMEDIA_TYPE_VIDEO:    prefix = 'v'; flags |= AV_OPT_FLAG_VIDEO_PARAM;    break;
-    case AVMEDIA_TYPE_AUDIO:    prefix = 'a'; flags |= AV_OPT_FLAG_AUDIO_PARAM;    break;
-    case AVMEDIA_TYPE_SUBTITLE: prefix = 's'; flags |= AV_OPT_FLAG_SUBTITLE_PARAM; break;
+    case AVMEDIA_TYPE_VIDEO:
+        prefix  = 'v';
+        flags  |= AV_OPT_FLAG_VIDEO_PARAM;
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        prefix  = 'a';
+        flags  |= AV_OPT_FLAG_AUDIO_PARAM;
+        break;
+    case AVMEDIA_TYPE_SUBTITLE:
+        prefix  = 's';
+        flags  |= AV_OPT_FLAG_SUBTITLE_PARAM;
+        break;
     }
 
     while (t = av_dict_get(opts, "", t, AV_DICT_IGNORE_SUFFIX)) {
@@ -961,10 +990,14 @@ AVDictionary *filter_codec_opts(AVDictionary *opts, enum CodecID codec_id, AVFor
             }
 
         if (av_opt_find(&cc, t->key, NULL, flags, AV_OPT_SEARCH_FAKE_OBJ) ||
-            (codec && codec->priv_class && av_opt_find(&codec->priv_class, t->key, NULL, flags, AV_OPT_SEARCH_FAKE_OBJ)))
+            (codec && codec->priv_class &&
+             av_opt_find(&codec->priv_class, t->key, NULL, flags,
+                         AV_OPT_SEARCH_FAKE_OBJ)))
             av_dict_set(&ret, t->key, t->value, 0);
-        else if (t->key[0] == prefix && av_opt_find(&cc, t->key+1, NULL, flags, AV_OPT_SEARCH_FAKE_OBJ))
-            av_dict_set(&ret, t->key+1, t->value, 0);
+        else if (t->key[0] == prefix &&
+                 av_opt_find(&cc, t->key + 1, NULL, flags,
+                             AV_OPT_SEARCH_FAKE_OBJ))
+            av_dict_set(&ret, t->key + 1, t->value, 0);
 
         if (p)
             *p = ':';
@@ -972,7 +1005,8 @@ AVDictionary *filter_codec_opts(AVDictionary *opts, enum CodecID codec_id, AVFor
     return ret;
 }
 
-AVDictionary **setup_find_stream_info_opts(AVFormatContext *s, AVDictionary *codec_opts)
+AVDictionary **setup_find_stream_info_opts(AVFormatContext *s,
+                                           AVDictionary *codec_opts)
 {
     int i;
     AVDictionary **opts;
@@ -981,11 +1015,13 @@ AVDictionary **setup_find_stream_info_opts(AVFormatContext *s, AVDictionary *cod
         return NULL;
     opts = av_mallocz(s->nb_streams * sizeof(*opts));
     if (!opts) {
-        av_log(NULL, AV_LOG_ERROR, "Could not alloc memory for stream options.\n");
+        av_log(NULL, AV_LOG_ERROR,
+               "Could not alloc memory for stream options.\n");
         return NULL;
     }
     for (i = 0; i < s->nb_streams; i++)
-        opts[i] = filter_codec_opts(codec_opts, s->streams[i]->codec->codec_id, s, s->streams[i]);
+        opts[i] = filter_codec_opts(codec_opts, s->streams[i]->codec->codec_id,
+                                    s, s->streams[i]);
     return opts;
 }
 
@@ -1044,10 +1080,10 @@ int get_filtered_video_frame(AVFilterContext *ctx, AVFrame *frame,
 
     memcpy(frame->data,     picref->data,     sizeof(frame->data));
     memcpy(frame->linesize, picref->linesize, sizeof(frame->linesize));
-    frame->interlaced_frame = picref->video->interlaced;
-    frame->top_field_first  = picref->video->top_field_first;
-    frame->key_frame        = picref->video->key_frame;
-    frame->pict_type        = picref->video->pict_type;
+    frame->interlaced_frame    = picref->video->interlaced;
+    frame->top_field_first     = picref->video->top_field_first;
+    frame->key_frame           = picref->video->key_frame;
+    frame->pict_type           = picref->video->pict_type;
     frame->sample_aspect_ratio = picref->video->pixel_aspect;
 
     return 1;
