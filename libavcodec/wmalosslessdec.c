@@ -752,6 +752,7 @@ static void clear_codec_buffers(WmallDecodeCtx *s)
 
     memset(s->acfilter_coeffs, 0,     16 * sizeof(int));
     memset(s->lpc_coefs      , 0, 40 * 2 * sizeof(int));
+    memset(s->acfilter_prevvalues, 0, 16 * 2 * sizeof(int)); // may be wrong
 
     memset(s->mclms_coeffs    , 0, 128 * sizeof(int16_t));
     memset(s->mclms_coeffs_cur, 0,   4 * sizeof(int16_t));
