@@ -2357,8 +2357,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
             buf->refcount++;
             av_buffersrc_buffer(ist->filters[i]->filter, fb);
         } else
-            av_vsrc_buffer_add_frame(ist->filters[i]->filter, decoded_frame,
-                                     decoded_frame->pts, decoded_frame->sample_aspect_ratio);
+            av_buffersrc_write_frame(ist->filters[i]->filter, decoded_frame);
     }
 
     av_free(buffer_to_free);

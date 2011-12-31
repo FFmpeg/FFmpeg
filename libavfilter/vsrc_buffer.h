@@ -29,7 +29,9 @@
 #include "libavcodec/avcodec.h" /* AVFrame */
 #include "avfilter.h"
 
+#if FF_API_VSRC_BUFFER_ADD_FRAME
 int av_vsrc_buffer_add_frame(AVFilterContext *buffer_filter, AVFrame *frame,
                              int64_t pts, AVRational pixel_aspect);
+#endif
 
 #endif /* AVFILTER_VSRC_BUFFER_H */

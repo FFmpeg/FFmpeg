@@ -44,8 +44,26 @@ typedef struct {
         return AVERROR(EINVAL);\
     }
 
+#if FF_API_VSRC_BUFFER_ADD_FRAME
 int av_vsrc_buffer_add_frame(AVFilterContext *buffer_filter, AVFrame *frame,
                              int64_t pts, AVRational pixel_aspect)
+{
+    int64_t orig_pts = frame->pts;
+    AVRational orig_sar = frame->sample_aspect_ratio;
+    int ret;
+
+    frame->pts = pts;
+    frame->sample_aspect_ratio = pixel_aspect;
+    if ((ret = av_buffersrc_write_frame(buffer_filter, frame)) < 0)
+        return ret;
+    frame->pts = orig_pts;
+    frame->sample_aspect_ratio = orig_sar;
+
+    return 0;
+}
+#endif
+
+int av_buffersrc_write_frame(AVFilterContext *buffer_filter, AVFrame *frame)
 {
     BufferSourceContext *c = buffer_filter->priv;
     AVFilterBufferRef *buf;
@@ -70,8 +88,6 @@ int av_vsrc_buffer_add_frame(AVFilterContext *buffer_filter, AVFrame *frame,
                   c->pix_fmt, c->w, c->h);
 
     avfilter_copy_frame_props(buf, frame);
-    buf->pts                    = pts;
-    buf->video->pixel_aspect    = pixel_aspect;
 
     if ((ret = av_fifo_generic_write(c->fifo, &buf, sizeof(buf), NULL)) < 0) {
         avfilter_unref_buffer(buf);
