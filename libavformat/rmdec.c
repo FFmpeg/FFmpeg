@@ -658,7 +658,8 @@ static int rm_assemble_video_frame(AVFormatContext *s, AVIOContext *pb,
                                    AVPacket *pkt, int len, int *pseq,
                                    int64_t *timestamp)
 {
-    int hdr, seq, pic_num, len2, pos;
+    int hdr;
+    int seq = 0, pic_num = 0, len2 = 0, pos = 0; //init to silcense compiler warning
     int type;
 
     hdr = avio_r8(pb); len--;
@@ -874,7 +875,7 @@ ff_rm_retrieve_cache (AVFormatContext *s, AVIOContext *pb,
 static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     RMDemuxContext *rm = s->priv_data;
-    AVStream *st;
+    AVStream *st = NULL; // init to silence compiler warning
     int i, len, res, seq = 1;
     int64_t timestamp, pos;
     int flags;
