@@ -106,21 +106,19 @@ static void av_always_inline horizontal_fill(unsigned int bpp, uint8_t* dst,
                                              int usePtr, const uint8_t *src,
                                              uint8_t c, int width, int offset)
 {
-    int i;
-
     switch (bpp) {
     case 2:
-        for (i = 0; i < width; i++) {
-            dst[(i+offset)*4+0] = (usePtr ? src[i] : c) >> 6;
-            dst[(i+offset)*4+1] = (usePtr ? src[i] : c) >> 4 & 0x3;
-            dst[(i+offset)*4+2] = (usePtr ? src[i] : c) >> 2 & 0x3;
-            dst[(i+offset)*4+3] = (usePtr ? src[i] : c) & 0x3;
+        while (--width >= 0) {
+            dst[(width+offset)*4+3] = (usePtr ? src[width] : c) & 0x3;
+            dst[(width+offset)*4+2] = (usePtr ? src[width] : c) >> 2 & 0x3;
+            dst[(width+offset)*4+1] = (usePtr ? src[width] : c) >> 4 & 0x3;
+            dst[(width+offset)*4+0] = (usePtr ? src[width] : c) >> 6;
         }
         break;
     case 4:
-        for (i = 0; i < width; i++) {
-            dst[(i+offset)*2+0] = (usePtr ? src[i] : c) >> 4;
-            dst[(i+offset)*2+1] = (usePtr ? src[i] : c) & 0xF;
+        while (--width >= 0) {
+            dst[(width+offset)*2+1] = (usePtr ? src[width] : c) & 0xF;
+            dst[(width+offset)*2+0] = (usePtr ? src[width] : c) >> 4;
         }
         break;
     default:
@@ -129,16 +127,6 @@ static void av_always_inline horizontal_fill(unsigned int bpp, uint8_t* dst,
         } else {
             memset(dst + offset, c, width);
         }
-    }
-}
-
-static void av_always_inline split_nibbles(uint8_t *dst, const uint8_t *src,
-                                           int width)
-{
-    while (--width >= 0) {
-        // src == dst for LZW
-        dst[width * 2 + 1] = src[width] & 0xF;
-        dst[width * 2 + 0] = src[width] >> 4;
     }
 }
 
@@ -162,7 +150,7 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
         src = zbuf;
         for(line = 0; line < lines; line++){
             if(s->bpp == 4){
-                split_nibbles(dst, src, width);
+                horizontal_fill(s->bpp, dst, 1, src, 0, width, 0);
             }else{
                 memcpy(dst, src, width);
             }
@@ -258,7 +246,7 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
                 return -1;
             }
             if(s->bpp == 4)
-                split_nibbles(dst, dst, width);
+                horizontal_fill(s->bpp, dst, 1, dst, 0, width, 0);
             break;
         }
         dst += stride;
