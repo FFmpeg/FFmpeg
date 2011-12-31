@@ -321,7 +321,6 @@ static void dump_int_buffer(uint8_t *buffer, int size, int length, int delimiter
         av_log(0, 0, "%d, ", *(int16_t *)(buffer + i * size));
     }
     av_log(0, 0, "\n");
-
 }
 
 /**
@@ -750,9 +749,9 @@ static void clear_codec_buffers(WmallDecodeCtx *s)
 {
     int ich, ilms;
 
-    memset(s->acfilter_coeffs, 0,     16 * sizeof(int));
-    memset(s->lpc_coefs      , 0, 40 * 2 * sizeof(int));
+    memset(s->acfilter_coeffs    , 0, 16 * sizeof(int));
     memset(s->acfilter_prevvalues, 0, 16 * 2 * sizeof(int)); // may be wrong
+    memset(s->lpc_coefs          , 0, 40 * 2 * sizeof(int));
 
     memset(s->mclms_coeffs    , 0, 128 * sizeof(int16_t));
     memset(s->mclms_coeffs_cur, 0,   4 * sizeof(int16_t));
