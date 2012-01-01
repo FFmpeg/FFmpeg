@@ -429,7 +429,7 @@ static int mpeg_mux_init(AVFormatContext *ctx)
     if (!s->mux_rate) {
         /* we increase slightly the bitrate to take into account the
            headers. XXX: compute it exactly */
-        bitrate += bitrate*5/100;
+        bitrate += bitrate / 20;
         bitrate += 10000;
         s->mux_rate = (bitrate + (8 * 50) - 1) / (8 * 50);
     }
