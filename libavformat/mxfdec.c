@@ -466,15 +466,15 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
     /* some files don'thave FooterPartition set in every partition */
     if (footer_partition) {
         if (mxf->footer_partition && mxf->footer_partition != footer_partition) {
-            av_log(mxf->fc, AV_LOG_ERROR, "inconsistent FooterPartition value: %li != %li\n",
+            av_log(mxf->fc, AV_LOG_ERROR, "inconsistent FooterPartition value: %" PRIi64 " != %" PRIi64 "\n",
                    mxf->footer_partition, footer_partition);
         } else {
             mxf->footer_partition = footer_partition;
         }
     }
 
-    av_dlog(mxf->fc, "PartitionPack: ThisPartition = 0x%lx, PreviousPartition = 0x%lx, "
-            "FooterPartition = 0x%lx, IndexSID = %i, BodySID = %i\n",
+    av_dlog(mxf->fc, "PartitionPack: ThisPartition = 0x%" PRIx64 ", PreviousPartition = 0x%" PRIx64 ", "
+            "FooterPartition = 0x%" PRIx64 ", IndexSID = %i, BodySID = %i\n",
             partition->this_partition,
             partition->previous_partition, footer_partition,
             partition->index_sid, partition->body_sid);
@@ -941,7 +941,7 @@ static int mxf_absolute_bodysid_offset(MXFContext *mxf, int body_sid, int64_t of
         offset -= p->essence_length;
     }
 
-    av_log(mxf->fc, AV_LOG_ERROR, "failed to find absolute offset of %lx in BodySID %i - partial file?\n",
+    av_log(mxf->fc, AV_LOG_ERROR, "failed to find absolute offset of %" PRIx64" in BodySID %i - partial file?\n",
            offset_in, body_sid);
 
     return AVERROR_INVALIDDATA;
@@ -1583,7 +1583,7 @@ static void mxf_compute_essence_containers(MXFContext *mxf)
         if (p->essence_length < 0) {
             /* next ThisPartition < essence_offset */
             p->essence_length = 0;
-            av_log(mxf->fc, AV_LOG_ERROR, "partition %i: bad ThisPartition = %lx\n",
+            av_log(mxf->fc, AV_LOG_ERROR, "partition %i: bad ThisPartition = %" PRIx64 "\n",
                    x+1, mxf->partitions[x+1].this_partition);
         }
     }
