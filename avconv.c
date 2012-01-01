@@ -667,6 +667,15 @@ void exit_program(int ret)
         avformat_free_context(s);
         av_dict_free(&output_files[i].opts);
     }
+    for (i = 0; i < nb_output_streams; i++) {
+        AVBitStreamFilterContext *bsfc = output_streams[i].bitstream_filters;
+        while (bsfc) {
+            AVBitStreamFilterContext *next = bsfc->next;
+            av_bitstream_filter_close(bsfc);
+            bsfc = next;
+        }
+        output_streams[i].bitstream_filters = NULL;
+    }
     for (i = 0; i < nb_input_files; i++) {
         avformat_close_input(&input_files[i].ctx);
     }
