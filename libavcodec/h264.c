@@ -3839,7 +3839,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
         bit_length= !dst_length ? 0 : (8*dst_length - ff_h264_decode_rbsp_trailing(h, ptr + dst_length - 1));
 
         if(s->avctx->debug&FF_DEBUG_STARTCODE){
-            av_log(h->s.avctx, AV_LOG_DEBUG, "NAL %d/%d at %d/%d length %d\n", hx->nal_unit_type, hx->nal_ref_idc, buf_index, buf_size, dst_length);
+            av_log(h->s.avctx, AV_LOG_DEBUG, "NAL %d/%d at %d/%d length %d pass %d\n", hx->nal_unit_type, hx->nal_ref_idc, buf_index, buf_size, dst_length, pass);
         }
 
         if (h->is_avc && (nalsize != consumed) && nalsize){
