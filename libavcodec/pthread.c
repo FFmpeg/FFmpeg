@@ -186,7 +186,7 @@ static int get_logical_cpus(AVCodecContext *avctx)
     nb_cpus = sysconf(_SC_NPROCESSORS_ONLN);
 #endif
     av_log(avctx, AV_LOG_DEBUG, "detected %d logical cores\n", nb_cpus);
-    return FFMIN(nb_cpus, MAX_AUTO_THREADS);
+    return nb_cpus;
 }
 
 
@@ -296,9 +296,11 @@ static int thread_init(AVCodecContext *avctx)
 
     if (!thread_count) {
         int nb_cpus = get_logical_cpus(avctx);
-        // use number of cores + 1 as thread count if there is motre than one
+        // use number of cores + 1 as thread count if there is more than one
         if (nb_cpus > 1)
-            thread_count = avctx->thread_count = nb_cpus + 1;
+            thread_count = avctx->thread_count = FFMIN(nb_cpus + 1, MAX_AUTO_THREADS);
+        else
+            thread_count = avctx->thread_count = 1;
     }
 
     if (thread_count <= 1) {
@@ -767,9 +769,11 @@ static int frame_thread_init(AVCodecContext *avctx)
 
     if (!thread_count) {
         int nb_cpus = get_logical_cpus(avctx);
-        // use number of cores + 1 as thread count if there is motre than one
+        // use number of cores + 1 as thread count if there is more than one
         if (nb_cpus > 1)
-            thread_count = avctx->thread_count = nb_cpus + 1;
+            thread_count = avctx->thread_count = FFMIN(nb_cpus + 1, MAX_AUTO_THREADS);
+        else
+            thread_count = avctx->thread_count = 1;
     }
 
     if (thread_count <= 1) {
