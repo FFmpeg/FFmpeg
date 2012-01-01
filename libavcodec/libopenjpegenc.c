@@ -371,6 +371,7 @@ AVCodec ff_libopenjpeg_encoder = {
                                            PIX_FMT_YUV440P,PIX_FMT_YUV444P,
                                            PIX_FMT_YUV420P9,PIX_FMT_YUV422P9,PIX_FMT_YUV444P9,
                                            PIX_FMT_YUV420P10,PIX_FMT_YUV422P10,PIX_FMT_YUV444P10,
-                                           PIX_FMT_YUV420P16,PIX_FMT_YUV422P16,PIX_FMT_YUV444P16},
+                                           PIX_FMT_YUV420P16,PIX_FMT_YUV422P16,PIX_FMT_YUV444P16,
+                                           PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("OpenJPEG based JPEG 2000 encoder"),
 } ;
