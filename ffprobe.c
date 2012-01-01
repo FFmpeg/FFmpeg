@@ -1305,7 +1305,6 @@ static void show_format(WriterContext *w, AVFormatContext *fmt_ctx)
 {
     char val_str[128];
     int64_t size = avio_size(fmt_ctx->pb);
-    struct print_buf pbuf = {.s = NULL};
 
     print_section_header("format");
     print_str("filename",         fmt_ctx->filename);
@@ -1320,7 +1319,6 @@ static void show_format(WriterContext *w, AVFormatContext *fmt_ctx)
     else                       print_str_opt("bit_rate", "N/A");
     show_tags(fmt_ctx->metadata);
     print_section_footer("format");
-    av_free(pbuf.s);
     fflush(stdout);
 }
 
