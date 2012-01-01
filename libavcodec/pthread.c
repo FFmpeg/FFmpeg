@@ -781,6 +781,8 @@ static int frame_thread_init(AVCodecContext *avctx)
 
     if (!thread_count) {
         int nb_cpus = get_logical_cpus(avctx);
+        if ((avctx->debug & (FF_DEBUG_VIS_QP | FF_DEBUG_VIS_MB_TYPE)) || avctx->debug_mv)
+            nb_cpus = 1;
         // use number of cores + 1 as thread count if there is motre than one
         if (nb_cpus > 1)
             thread_count = avctx->thread_count = nb_cpus + 1;
