@@ -1539,6 +1539,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
     }
 
     if (!s->adu_mode) {
+        int skip;
         const uint8_t *ptr = s->gb.buffer + (get_bits_count(&s->gb)>>3);
         assert((get_bits_count(&s->gb) & 7) == 0);
         /* now we get bits from the main_data_begin offset */
@@ -1552,25 +1553,27 @@ static int mp_decode_layer3(MPADecodeContext *s)
         s->gb.size_in_bits_plus8 += EXTRABYTES * 8;
 #endif
         s->last_buf_size <<= 3;
-        for (gr = 0, ch = 0; gr < nb_granules && (s->last_buf_size >> 3) < main_data_begin; gr++, ch = 0) {
-            for (; ch < s->nb_channels && (s->last_buf_size >> 3) < main_data_begin; ch++) {
+        for (gr = 0; gr < nb_granules && (s->last_buf_size >> 3) < main_data_begin; gr++) {
+            for (ch = 0; ch < s->nb_channels; ch++) {
                 g = &s->granules[ch][gr];
                 s->last_buf_size += g->part2_3_length;
                 memset(g->sb_hybrid, 0, sizeof(g->sb_hybrid));
             }
         }
-        skip_bits_long(&s->gb, s->last_buf_size - 8 * main_data_begin);
-        if (get_bits_count(&s->gb) >= s->gb.size_in_bits && s->in_gb.buffer) {
-            skip_bits_long(&s->in_gb, get_bits_count(&s->gb) - s->gb.size_in_bits);
+        skip = s->last_buf_size - 8 * main_data_begin;
+        if (skip >= s->gb.size_in_bits && s->in_gb.buffer) {
+            skip_bits_long(&s->in_gb, skip - s->gb.size_in_bits);
             s->gb           = s->in_gb;
             s->in_gb.buffer = NULL;
+        } else {
+            skip_bits_long(&s->gb, skip);
         }
     } else {
-        gr = ch = 0;
+        gr = 0;
     }
 
-    for (; gr < nb_granules; gr++, ch = 0) {
-        for (; ch < s->nb_channels; ch++) {
+    for (; gr < nb_granules; gr++) {
+        for (ch = 0; ch < s->nb_channels; ch++) {
             g = &s->granules[ch][gr];
             bits_pos = get_bits_count(&s->gb);
 
