@@ -777,6 +777,10 @@ typedef struct RcOverride{
  * Codec supports changed parameters at any point.
  */
 #define CODEC_CAP_PARAM_CHANGE     0x4000
+/**
+ * Codec supports avctx->thread_count == 0 (auto).
+ */
+#define CODEC_CAP_AUTO_THREADS     0x8000
 
 //The following defines may change, don't expect compatibility if you use them.
 #define MB_TYPE_INTRA4x4   0x0001
