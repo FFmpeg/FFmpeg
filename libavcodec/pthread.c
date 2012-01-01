@@ -189,6 +189,10 @@ static int get_logical_cpus(AVCodecContext *avctx)
     nb_cpus = sysconf(_SC_NPROCESSORS_ONLN);
 #endif
     av_log(avctx, AV_LOG_DEBUG, "detected %d logical cores\n", nb_cpus);
+
+    if  (avctx->height)
+        nb_cpus = FFMIN(nb_cpus, (avctx->height+15)/16);
+
     return FFMIN(nb_cpus, MAX_AUTO_THREADS);
 }
 
