@@ -855,8 +855,10 @@ get_sync_ipts(const OutputStream *ost)
     return (double)(ist->pts - of->start_time) / AV_TIME_BASE;
 }
 
-static void write_frame(AVFormatContext *s, AVPacket *pkt, AVCodecContext *avctx, AVBitStreamFilterContext *bsfc)
+static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
 {
+    AVBitStreamFilterContext *bsfc = ost->bitstream_filters;
+    AVCodecContext          *avctx = ost->st->codec;
     int ret;
 
     while (bsfc) {
@@ -886,6 +888,7 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, AVCodecContext *avctx
         print_error("av_interleaved_write_frame()", ret);
         exit_program(1);
     }
+    ost->frame_number++;
 }
 
 static void generate_silence(uint8_t* buf, enum AVSampleFormat sample_fmt, size_t size)
@@ -1100,7 +1103,7 @@ need_realloc:
             if (enc->coded_frame && enc->coded_frame->pts != AV_NOPTS_VALUE)
                 pkt.pts = av_rescale_q(enc->coded_frame->pts, enc->time_base, ost->st->time_base);
             pkt.flags |= AV_PKT_FLAG_KEY;
-            write_frame(s, &pkt, enc, ost->bitstream_filters);
+            write_frame(s, &pkt, ost);
 
             ost->sync_opts += enc->frame_size;
         }
@@ -1135,7 +1138,7 @@ need_realloc:
         if (enc->coded_frame && enc->coded_frame->pts != AV_NOPTS_VALUE)
             pkt.pts = av_rescale_q(enc->coded_frame->pts, enc->time_base, ost->st->time_base);
         pkt.flags |= AV_PKT_FLAG_KEY;
-        write_frame(s, &pkt, enc, ost->bitstream_filters);
+        write_frame(s, &pkt, ost);
     }
 }
 
@@ -1237,7 +1240,7 @@ static void do_subtitle_out(AVFormatContext *s,
             else
                 pkt.pts += 90 * sub->end_display_time;
         }
-        write_frame(s, &pkt, ost->st->codec, ost->bitstream_filters);
+        write_frame(s, &pkt, ost);
     }
 }
 
@@ -1378,7 +1381,7 @@ static void do_video_out(AVFormatContext *s,
             pkt.pts    = av_rescale_q(ost->sync_opts, enc->time_base, ost->st->time_base);
             pkt.flags |= AV_PKT_FLAG_KEY;
 
-            write_frame(s, &pkt, ost->st->codec, ost->bitstream_filters);
+            write_frame(s, &pkt, ost);
         } else {
             AVFrame big_picture;
 
@@ -1426,7 +1429,7 @@ static void do_video_out(AVFormatContext *s,
 
                 if (enc->coded_frame->key_frame)
                     pkt.flags |= AV_PKT_FLAG_KEY;
-                write_frame(s, &pkt, ost->st->codec, ost->bitstream_filters);
+                write_frame(s, &pkt, ost);
                 *frame_size = ret;
                 video_size += ret;
                 // fprintf(stderr,"\nFrame: %3d size: %5d type: %d",
@@ -1438,7 +1441,6 @@ static void do_video_out(AVFormatContext *s,
             }
         }
         ost->sync_opts++;
-        ost->frame_number++;
     }
 }
 
@@ -1687,7 +1689,7 @@ static void flush_encoders(OutputStream *ost_table, int nb_ostreams)
             pkt.size = ret;
             if (enc->coded_frame && enc->coded_frame->pts != AV_NOPTS_VALUE)
                 pkt.pts = av_rescale_q(enc->coded_frame->pts, enc->time_base, ost->st->time_base);
-            write_frame(os, &pkt, ost->st->codec, ost->bitstream_filters);
+            write_frame(os, &pkt, ost);
         }
     }
 }
@@ -1763,9 +1765,8 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         opkt.size = pkt->size;
     }
 
-    write_frame(of->ctx, &opkt, ost->st->codec, ost->bitstream_filters);
+    write_frame(of->ctx, &opkt, ost);
     ost->st->codec->frame_number++;
-    ost->frame_number++;
     av_free_packet(&opkt);
 }
 
