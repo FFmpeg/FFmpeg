@@ -569,6 +569,7 @@ static int warned_cfg = 0;
 #define INDENT        1
 #define SHOW_VERSION  2
 #define SHOW_CONFIG   4
+#define SHOW_COPYRIGHT 8
 
 #define PRINT_LIB_INFO(libname, LIBNAME, flags, level)                  \
     if (CONFIG_##LIBNAME) {                                             \
@@ -609,25 +610,34 @@ static void print_all_libs_info(int flags, int level)
     PRINT_LIB_INFO(postproc, POSTPROC, flags, level);
 }
 
+static void print_program_info(int flags, int level)
+{
+    const char *indent = flags & INDENT? "  " : "";
+
+    av_log(NULL, level, "%s version " FFMPEG_VERSION, program_name);
+    if (flags & SHOW_COPYRIGHT)
+        av_log(NULL, level, " Copyright (c) %d-%d the FFmpeg developers",
+               program_birth_year, this_year);
+    av_log(NULL, level, "\n");
+    av_log(NULL, level, "%sbuilt on %s %s with %s %s\n",
+           indent, __DATE__, __TIME__, CC_TYPE, CC_VERSION);
+    av_log(NULL, level, "%sconfiguration: " FFMPEG_CONFIGURATION "\n", indent);
+}
+
 void show_banner(int argc, char **argv, const OptionDef *options)
 {
     int idx = locate_option(argc, argv, options, "version");
     if (idx)
         return;
 
-    av_log(NULL, AV_LOG_INFO,
-           "%s version " FFMPEG_VERSION ", Copyright (c) %d-%d the FFmpeg developers\n",
-           program_name, program_birth_year, this_year);
-    av_log(NULL, AV_LOG_INFO, "  built on %s %s with %s %s\n",
-           __DATE__, __TIME__, CC_TYPE, CC_VERSION);
-    av_log(NULL, AV_LOG_INFO, "  configuration: " FFMPEG_CONFIGURATION "\n");
+    print_program_info (INDENT|SHOW_COPYRIGHT, AV_LOG_INFO);
     print_all_libs_info(INDENT|SHOW_CONFIG,  AV_LOG_INFO);
     print_all_libs_info(INDENT|SHOW_VERSION, AV_LOG_INFO);
 }
 
 int opt_version(const char *opt, const char *arg) {
     av_log_set_callback(log_callback_help);
-    printf("%s " FFMPEG_VERSION "\n", program_name);
+    print_program_info (0           , AV_LOG_INFO);
     print_all_libs_info(SHOW_VERSION, AV_LOG_INFO);
     return 0;
 }
