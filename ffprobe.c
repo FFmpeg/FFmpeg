@@ -1392,31 +1392,10 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
     }                                                                   \
 } while (0)
 
-static int probe_file(const char *filename)
+static int probe_file(WriterContext *wctx, const char *filename)
 {
     AVFormatContext *fmt_ctx;
     int ret;
-    const Writer *w;
-    char *buf;
-    char *w_name = NULL, *w_args = NULL;
-    WriterContext *wctx;
-
-    writer_register_all();
-
-    if (!print_format)
-        print_format = av_strdup("default");
-    w_name = av_strtok(print_format, "=", &buf);
-    w_args = buf;
-
-    w = writer_get_by_name(w_name);
-    if (!w) {
-        av_log(NULL, AV_LOG_ERROR, "Unknown output format with name '%s'\n", w_name);
-        ret = AVERROR(EINVAL);
-        goto end;
-    }
-
-    if ((ret = writer_open(&wctx, w, w_args, NULL)) < 0)
-        goto end;
 
     writer_print_header(wctx);
     ret = open_input_file(&fmt_ctx, filename);
@@ -1429,10 +1408,6 @@ static int probe_file(const char *filename)
         show_error(wctx, ret);
     }
     writer_print_footer(wctx);
-    writer_close(&wctx);
-
-end:
-    av_freep(&print_format);
 
     return ret;
 }
@@ -1513,6 +1488,10 @@ static const OptionDef options[] = {
 
 int main(int argc, char **argv)
 {
+    const Writer *w;
+    WriterContext *wctx;
+    char *buf;
+    char *w_name = NULL, *w_args = NULL;
     int ret;
 
     parse_loglevel(argc, argv, options);
@@ -1526,15 +1505,34 @@ int main(int argc, char **argv)
     show_banner(argc, argv, options);
     parse_options(NULL, argc, argv, options, opt_input_file);
 
-    if (!input_filename) {
-        show_usage();
-        av_log(NULL, AV_LOG_ERROR, "You have to specify one input file.\n");
-        av_log(NULL, AV_LOG_ERROR, "Use -h to get full help or, even better, run 'man %s'.\n", program_name);
-        exit(1);
+    writer_register_all();
+
+    if (!print_format)
+        print_format = av_strdup("default");
+    w_name = av_strtok(print_format, "=", &buf);
+    w_args = buf;
+
+    w = writer_get_by_name(w_name);
+    if (!w) {
+        av_log(NULL, AV_LOG_ERROR, "Unknown output format with name '%s'\n", w_name);
+        ret = AVERROR(EINVAL);
+        goto end;
     }
 
-    ret = probe_file(input_filename);
+    if ((ret = writer_open(&wctx, w, w_args, NULL)) >= 0) {
+        if (!input_filename) {
+            show_usage();
+            av_log(NULL, AV_LOG_ERROR, "You have to specify one input file.\n");
+            av_log(NULL, AV_LOG_ERROR, "Use -h to get full help or, even better, run 'man %s'.\n", program_name);
+            ret = AVERROR(EINVAL);
+        } else
+            ret = probe_file(wctx, input_filename);
 
+        writer_close(&wctx);
+    }
+
+end:
+    av_freep(&print_format);
     avformat_network_deinit();
 
     return ret;
