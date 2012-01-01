@@ -594,7 +594,7 @@ static int mov_read_chan(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (atom.size < 16ULL + num_descr * 20ULL)
         return 0;
 
-    av_dlog(c->fc, "chan: size=%ld version=%u flags=%u layout=%u bitmap=%u num_descr=%u\n",
+    av_dlog(c->fc, "chan: size=%" PRId64 " version=%u flags=%u layout=%u bitmap=%u num_descr=%u\n",
             atom.size, version, flags, layout_tag, bitmap, num_descr);
 
 #if 0
