@@ -3881,7 +3881,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
         switch(hx->nal_unit_type){
         case NAL_IDR_SLICE:
             if (h->nal_unit_type != NAL_IDR_SLICE) {
-                av_log(h->s.avctx, AV_LOG_ERROR, "Invalid mix of idr and non-idr slices");
+                av_log(h->s.avctx, AV_LOG_ERROR, "Invalid mix of idr and non-idr slices\n");
                 return -1;
             }
             idr(h); // FIXME ensure we don't lose some frames if there is reordering
