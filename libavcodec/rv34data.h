@@ -101,16 +101,6 @@ static const uint16_t rv34_qscale_tab[32] = {
 };
 
 /**
- * 4x4 dezigzag pattern
- */
-static const uint8_t rv34_dezigzag[16] = {
-  0,  1,  8, 16,
-  9,  2,  3, 10,
- 17, 24, 25, 18,
- 11, 19, 26, 27
-};
-
-/**
  * tables used to translate a quantizer value into a VLC set for decoding
  * The first table is used for intraframes.
  */

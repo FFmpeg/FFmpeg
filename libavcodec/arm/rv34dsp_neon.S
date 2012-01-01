@@ -107,27 +107,3 @@ function ff_rv34_inv_transform_noround_neon, export=1
         vst4.16         {d0[3], d1[3], d2[3], d3[3]}, [r2,:64], r1
         bx              lr
 endfunc
-
-function ff_rv34_dequant4x4_neon, export=1
-        mov             r3,  r0
-        mov             r12, #16
-        vdup.16         q0,  r2
-        vmov.16         d0[0], r1
-        vld1.16         {d2},     [r0,:64], r12
-        vld1.16         {d4},     [r0,:64], r12
-        vld1.16         {d6},     [r0,:64], r12
-        vld1.16         {d16},    [r0,:64], r12
-        vmull.s16       q1,  d2,  d0
-        vmull.s16       q2,  d4,  d1
-        vmull.s16       q3,  d6,  d1
-        vmull.s16       q8,  d16, d1
-        vqrshrn.s32     d2,  q1,  #4
-        vqrshrn.s32     d4,  q2,  #4
-        vqrshrn.s32     d6,  q3,  #4
-        vqrshrn.s32     d16, q8,  #4
-        vst1.16         {d2},     [r3,:64], r12
-        vst1.16         {d4},     [r3,:64], r12
-        vst1.16         {d6},     [r3,:64], r12
-        vst1.16         {d16},    [r3,:64], r12
-        bx              lr
-endfunc
