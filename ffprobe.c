@@ -24,6 +24,7 @@
  */
 
 #include "config.h"
+#include "version.h"
 
 #include "libavformat/avformat.h"
 #include "libavcodec/avcodec.h"
@@ -32,6 +33,9 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/dict.h"
 #include "libavdevice/avdevice.h"
+#include "libswscale/swscale.h"
+#include "libswresample/swresample.h"
+#include "libpostproc/postprocess.h"
 #include "cmdutils.h"
 
 const char program_name[] = "ffprobe";
@@ -42,6 +46,8 @@ static int do_show_format  = 0;
 static int do_show_frames  = 0;
 static int do_show_packets = 0;
 static int do_show_streams = 0;
+static int do_show_program_version  = 0;
+static int do_show_library_versions = 0;
 
 static int show_value_unit              = 0;
 static int use_value_prefix             = 0;
@@ -805,7 +811,7 @@ static void json_print_chapter_header(WriterContext *wctx, const char *chapter)
     printf("\n");
     json->multiple_entries = !strcmp(chapter, "packets") || !strcmp(chapter, "frames" ) ||
                              !strcmp(chapter, "packets_and_frames") ||
-                             !strcmp(chapter, "streams");
+                             !strcmp(chapter, "streams") || !strcmp(chapter, "library_versions");
     if (json->multiple_entries) {
         JSON_INDENT();
         printf("\"%s\": [\n", json_escape_str(&json->buf, &json->buf_size, chapter, wctx));
@@ -1073,7 +1079,7 @@ static void xml_print_chapter_header(WriterContext *wctx, const char *chapter)
         printf("\n");
     xml->multiple_entries = !strcmp(chapter, "packets") || !strcmp(chapter, "frames") ||
                             !strcmp(chapter, "packets_and_frames") ||
-                            !strcmp(chapter, "streams");
+                            !strcmp(chapter, "streams") || !strcmp(chapter, "library_versions");
 
     if (xml->multiple_entries) {
         XML_INDENT(); printf("<%s>\n", chapter);
@@ -1551,6 +1557,54 @@ static void show_usage(void)
     av_log(NULL, AV_LOG_INFO, "\n");
 }
 
+static void ffprobe_show_program_version(WriterContext *w)
+{
+    struct print_buf pbuf = {.s = NULL};
+
+    writer_print_chapter_header(w, "program_version");
+    print_section_header("program_version");
+    print_str("version", FFMPEG_VERSION);
+    print_fmt("copyright", "Copyright (c) %d-%d the FFmpeg developers",
+              program_birth_year, this_year);
+    print_str("build_date", __DATE__);
+    print_str("build_time", __TIME__);
+    print_str("compiler_type", CC_TYPE);
+    print_str("compiler_version", CC_VERSION);
+    print_str("configuration", FFMPEG_CONFIGURATION);
+    print_section_footer("program_version");
+    writer_print_chapter_footer(w, "program_version");
+
+    av_free(pbuf.s);
+}
+
+#define SHOW_LIB_VERSION(libname, LIBNAME)                              \
+    do {                                                                \
+        if (CONFIG_##LIBNAME) {                                         \
+            unsigned int version = libname##_version();                 \
+            print_section_header("library_version");                    \
+            print_str("name",    "lib" #libname);                       \
+            print_int("major",   LIB##LIBNAME##_VERSION_MAJOR);         \
+            print_int("minor",   LIB##LIBNAME##_VERSION_MINOR);         \
+            print_int("micro",   LIB##LIBNAME##_VERSION_MICRO);         \
+            print_int("version", version);                              \
+            print_section_footer("library_version");                    \
+        }                                                               \
+    } while (0)
+
+static void ffprobe_show_library_versions(WriterContext *w)
+{
+    writer_print_chapter_header(w, "library_versions");
+    SHOW_LIB_VERSION(avutil,     AVUTIL);
+    SHOW_LIB_VERSION(avcodec,    AVCODEC);
+    SHOW_LIB_VERSION(avformat,   AVFORMAT);
+    SHOW_LIB_VERSION(avdevice,   AVDEVICE);
+    SHOW_LIB_VERSION(avfilter,   AVFILTER);
+    SHOW_LIB_VERSION(swscale,    SWSCALE);
+    SHOW_LIB_VERSION(swresample, SWRESAMPLE);
+    SHOW_LIB_VERSION(postproc,   POSTPROC);
+    writer_print_chapter_footer(w, "library_versions");
+}
+
 static int opt_format(const char *opt, const char *arg)
 {
     iformat = av_find_input_format(arg);
@@ -1594,6 +1648,13 @@ static int opt_pretty(const char *opt, const char *arg)
     return 0;
 }
 
+static int opt_show_versions(const char *opt, const char *arg)
+{
+    do_show_program_version  = 1;
+    do_show_library_versions = 1;
+    return 0;
+}
+
 static const OptionDef options[] = {
 #include "cmdutils_common_opts.h"
     { "f", HAS_ARG, {(void*)opt_format}, "force format", "format" },
@@ -1612,6 +1673,9 @@ static const OptionDef options[] = {
     { "show_frames",  OPT_BOOL, {(void*)&do_show_frames} , "show frames info" },
     { "show_packets", OPT_BOOL, {(void*)&do_show_packets}, "show packets info" },
     { "show_streams", OPT_BOOL, {(void*)&do_show_streams}, "show streams info" },
+    { "show_program_version",  OPT_BOOL, {(void*)&do_show_program_version},  "show ffprobe version" },
+    { "show_library_versions", OPT_BOOL, {(void*)&do_show_library_versions}, "show library versions" },
+    { "show_versions",         0, {(void*)&opt_show_versions}, "show program and library versions" },
     { "show_private_data", OPT_BOOL, {(void*)&show_private_data}, "show private data" },
     { "private",           OPT_BOOL, {(void*)&show_private_data}, "same as show_private_data" },
     { "default", HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {(void*)opt_default}, "generic catch all option", "" },
@@ -1655,12 +1719,19 @@ int main(int argc, char **argv)
     if ((ret = writer_open(&wctx, w, w_args, NULL)) >= 0) {
         writer_print_header(wctx);
 
-        if (!input_filename) {
+        if (do_show_program_version)
+            ffprobe_show_program_version(wctx);
+        if (do_show_library_versions)
+            ffprobe_show_library_versions(wctx);
+
+        if (!input_filename &&
+            ((do_show_format || do_show_streams || do_show_packets || do_show_error) ||
+             (!do_show_program_version && !do_show_library_versions))) {
             show_usage();
             av_log(NULL, AV_LOG_ERROR, "You have to specify one input file.\n");
             av_log(NULL, AV_LOG_ERROR, "Use -h to get full help or, even better, run 'man %s'.\n", program_name);
             ret = AVERROR(EINVAL);
-        } else {
+        } else if (input_filename) {
             ret = probe_file(wctx, input_filename);
             if (ret < 0 && do_show_error)
                 show_error(wctx, ret);

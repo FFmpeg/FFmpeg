@@ -21,6 +21,7 @@ version next:
 - yuv4 libquicktime packed 4:2:0 encoder and decoder
 - ffprobe -show_frames option
 - silencedetect audio filter
+- ffprobe -show_program_version, -show_library_versions, -show_versions options
 
 
 version 0.9:

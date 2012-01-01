@@ -133,6 +133,23 @@ particular shown element.
 This option is enabled by default, but you may need to disable it
 for specific uses, for example when creating XSD-compliant XML output.
 
+@item -show_program_version
+Show information related to program version.
+
+Version information is printed within a section with name
+"PROGRAM_VERSION".
+
+@item -show_library_versions
+Show information related to library versions.
+
+Version information for each library is printed within a section with
+name "LIBRARY_VERSION".
+
+@item -show_versions
+Show information related to program and library versions. This is the
+equivalent of setting both @option{-show_program_version} and
+@option{-show_library_versions} options.
+
 @item -i @var{input_file}
 Read @var{input_file}.
 
