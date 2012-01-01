@@ -1428,7 +1428,8 @@ int MPV_encode_picture(AVCodecContext *avctx,
 {
     MpegEncContext *s = avctx->priv_data;
     AVFrame *pic_arg  = data;
-    int i, stuffing_count, context_count = avctx->thread_count;
+    int i, stuffing_count;
+    int context_count = s->slice_context_count;
 
     for (i = 0; i < context_count; i++) {
         int start_y = s->thread_context[i]->start_mb_y;
@@ -3059,7 +3060,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
 {
     int i;
     int bits;
-    int context_count = s->avctx->thread_count;
+    int context_count = s->slice_context_count;
 
     s->picture_number = picture_number;
 

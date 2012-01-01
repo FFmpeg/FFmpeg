@@ -268,6 +268,7 @@ typedef struct MpegEncContext {
     int start_mb_y;            ///< start mb_y of this thread (so current thread should process start_mb_y <= row < end_mb_y)
     int end_mb_y;              ///< end   mb_y of this thread (so current thread should process start_mb_y <= row < end_mb_y)
     struct MpegEncContext *thread_context[MAX_THREADS];
+    int slice_context_count;   ///< number of used thread_contexts
 
     /**
      * copy of the previous picture structure.
