@@ -1,6 +1,9 @@
 FATE_TESTS += fate-cscd
 fate-cscd: CMD = framecrc -i $(SAMPLES)/CSCD/sample_video.avi -an -vsync 0 -pix_fmt rgb24
 
+FATE_TESTS += fate-dxtory
+fate-dxtory: CMD = framecrc -i $(SAMPLES)/dxtory/dxtory_mic.avi
+
 FATE_TESTS += fate-fraps-v0
 fate-fraps-v0: CMD = framecrc -i $(SAMPLES)/fraps/Griffin_Ragdoll01-partial.avi
 
