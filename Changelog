@@ -16,6 +16,7 @@ version next:
 - Indeo 4 decoder
 - SMJPEG demuxer
 - Automatic thread count based on detection number of (available) CPU cores
+- y41p Brooktree Uncompressed 4:1:1 12-bit encoder and decoder
 
 
 version 0.9:
