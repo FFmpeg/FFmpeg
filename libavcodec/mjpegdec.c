@@ -648,7 +648,7 @@ static int decode_block_refinement(MJpegDecodeContext *s, DCTELEM *block, uint8_
 #undef REFINE_BIT
 #undef ZERO_RUN
 
-static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int predictor, int point_transform){
+static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int nb_components, int predictor, int point_transform){
     int i, mb_x, mb_y;
     uint16_t (*buffer)[4];
     int left[3], top[3], topleft[3];
@@ -675,7 +675,7 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int predictor, int point
             if (s->restart_interval && !s->restart_count)
                 s->restart_count = s->restart_interval;
 
-            for(i=0;i<3;i++) {
+            for(i=0;i<nb_components;i++) {
                 int pred, dc;
 
                 topleft[i]= top[i];
@@ -710,10 +710,11 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int predictor, int point
                 ptr[3*mb_x+2] = buffer[mb_x][2] + ptr[3*mb_x+1];
             }
         }else{
-            for(mb_x = 0; mb_x < s->mb_width; mb_x++) {
-                ptr[3*mb_x+0] = buffer[mb_x][2];
-                ptr[3*mb_x+1] = buffer[mb_x][1];
-                ptr[3*mb_x+2] = buffer[mb_x][0];
+            for(i=0;i<nb_components;i++) {
+                int c= s->comp_index[i];
+                for(mb_x = 0; mb_x < s->mb_width; mb_x++) {
+                    ptr[3*mb_x+2-c] = buffer[mb_x][i];
+                }
             }
         }
     }
@@ -1117,7 +1118,7 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s,
                 return -1;
         }else{
             if(s->rgb){
-                if(ljpeg_decode_rgb_scan(s, predictor, point_transform) < 0)
+                if(ljpeg_decode_rgb_scan(s, nb_components, predictor, point_transform) < 0)
                     return -1;
             }else{
                 if(ljpeg_decode_yuv_scan(s, predictor, point_transform) < 0)
