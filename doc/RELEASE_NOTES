@@ -9,8 +9,11 @@ General notes
 This release continues the API cleanups that have begun with the
 previous release. While it is binary compatible with 0.7, many parts of
 the public API were deprecated and will be removed in the git master and
-later releases. Please consult the doc/APIchanges file to see intended
-replacements for the deprecated APIs.
+later releases. Note that a couple of header includes have been cleaned
+up, which may require code changes in your applications. In particular,
+the header "libavutil/mathematics.h" is no longer included from
+"libavcodec/avcodec.h". Please consult the doc/APIchanges file to see
+intended replacements for the deprecated APIs.
 
 Furthermore, our work on the 'ffmpeg' command-line tool has resulted in
 major revisions to its interface. In order to not break existing scripts
