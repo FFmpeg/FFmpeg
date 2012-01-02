@@ -759,7 +759,7 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
     void *samples = data;
     int samplecount;
     int got_terms   = 0, got_weights = 0, got_samples = 0,
-        got_entropy = 0, got_bs      = 0, got_float   = 0; got_hybrid = 0;
+        got_entropy = 0, got_bs      = 0, got_float   = 0, got_hybrid = 0;
     const uint8_t *orig_buf = buf;
     const uint8_t *buf_end  = buf + buf_size;
     int i, j, id, size, ssize, weights, t;
@@ -887,7 +887,7 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
                 continue;
             }
             t = 0;
-            for i = s->terms - 1; (i >= 0) && (t < size); i--) {
+            for (i = s->terms - 1; (i >= 0) && (t < size); i--) {
                 if (s->decorr[i].value > 8) {
                     s->decorr[i].samplesA[0] = wp_exp2(AV_RL16(buf)); buf += 2;
                     s->decorr[i].samplesA[1] = wp_exp2(AV_RL16(buf)); buf += 2;
