@@ -73,6 +73,13 @@ uint32_t avpriv_framenum_to_smpte_timecode(unsigned frame, int fps, int drop);
 char *avpriv_timecode_to_string(char *buf, const struct ff_timecode *tc, unsigned frame);
 
 /**
+ * Check if timecode rate is valid and consistent with the drop flag.
+ *
+ * @return 0 on success, negative value on failure
+ */
+int avpriv_check_timecode_rate(void *avcl, AVRational rate, int drop);
+
+/**
  * Parse SMTPE 12M time representation (hh:mm:ss[:;.]ff). str and rate fields
  * from tc struct must be set.
  *

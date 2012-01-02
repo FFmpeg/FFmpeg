@@ -55,7 +55,7 @@ uint32_t avpriv_framenum_to_smpte_timecode(unsigned frame, int fps, int drop)
            (  (frame / (fps * 3600) % 24)) % 10;          // units of hours
 }
 
-static int check_timecode_rate(void *avcl, AVRational rate, int drop)
+int avpriv_check_timecode_rate(void *avcl, AVRational rate, int drop)
 {
     int fps;
 
@@ -109,7 +109,7 @@ int avpriv_init_smpte_timecode(void *avcl, struct ff_timecode *tc)
 
     tc->drop  = c != ':'; // drop if ';', '.', ...
 
-    ret = check_timecode_rate(avcl, tc->rate, tc->drop);
+    ret = avpriv_check_timecode_rate(avcl, tc->rate, tc->drop);
     if (ret < 0)
         return ret;
 
