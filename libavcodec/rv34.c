@@ -982,15 +982,6 @@ static void rv34_pred_4x4_block(RV34DecContext *r, uint8_t *dst, int stride, int
     r->h.pred4x4[itype](dst, prev, stride);
 }
 
-/** add_pixels_clamped for 4x4 block */
-static void rv34_add_4x4_block(uint8_t *dst, int stride, DCTELEM block[64], int off)
-{
-    int x, y;
-    for(y = 0; y < 4; y++)
-        for(x = 0; x < 4; x++)
-            dst[x + y*stride] = av_clip_uint8(dst[x + y*stride] + block[off + x+y*8]);
-}
-
 static inline int adjust_pred16(int itype, int up, int left)
 {
     if(!up && !left)
@@ -1007,15 +998,20 @@ static inline int adjust_pred16(int itype, int up, int left)
     return itype;
 }
 
-static void rv34_output_macroblock(RV34DecContext *r, int8_t *intra_types, int cbp, int is16)
+static void rv34_output_i16x16(RV34DecContext *r, int8_t *intra_types, int cbp)
 {
-    MpegEncContext *s = &r->s;
-    DSPContext *dsp = &s->dsp;
-    int i, j;
-    uint8_t *Y, *U, *V;
-    int itype;
-    int avail[6*8] = {0};
-    int idx;
+    LOCAL_ALIGNED_16(DCTELEM, block16, [64]);
+    MpegEncContext *s    = &r->s;
+    DSPContext     *dsp  = &s->dsp;
+    GetBitContext  *gb   = &s->gb;
+    int             q_dc = rv34_qscale_tab[ r->luma_dc_quant_i[s->qscale] ],
+                    q_ac = rv34_qscale_tab[s->qscale];
+    uint8_t        *dst  = s->dest[0];
+    DCTELEM        *ptr  = s->block[0];
+    int       avail[6*8] = {0};
+    int i, j, itype, has_ac;
+
+    memset(block16, 0, 64 * sizeof(*block16));
 
     // Set neighbour information.
     if(r->avail_cache[1])
@@ -1031,52 +1027,142 @@ static void rv34_output_macroblock(RV34DecContext *r, int8_t *intra_types, int c
     if(r->avail_cache[9])
         avail[24] = avail[32] = 1;
 
-    Y = s->dest[0];
-    U = s->dest[1];
-    V = s->dest[2];
-    if(!is16){
-        for(j = 0; j < 4; j++){
-            idx = 9 + j*8;
-            for(i = 0; i < 4; i++, cbp >>= 1, Y += 4, idx++){
-                rv34_pred_4x4_block(r, Y, s->linesize, ittrans[intra_types[i]], avail[idx-8], avail[idx-1], avail[idx+7], avail[idx-7]);
-                avail[idx] = 1;
-                if(cbp & 1)
-                    rv34_add_4x4_block(Y, s->linesize, s->block[(i>>1)+(j&2)], (i&1)*4+(j&1)*32);
-            }
-            Y += s->linesize * 4 - 4*4;
-            intra_types += r->intra_types_stride;
-        }
-        intra_types -= r->intra_types_stride * 4;
-        fill_rectangle(r->avail_cache + 6, 2, 2, 4, 0, 4);
-        for(j = 0; j < 2; j++){
-            idx = 6 + j*4;
-            for(i = 0; i < 2; i++, cbp >>= 1, idx++){
-                rv34_pred_4x4_block(r, U + i*4 + j*4*s->uvlinesize, s->uvlinesize, ittrans[intra_types[i*2+j*2*r->intra_types_stride]], r->avail_cache[idx-4], r->avail_cache[idx-1], !i && !j, r->avail_cache[idx-3]);
-                rv34_pred_4x4_block(r, V + i*4 + j*4*s->uvlinesize, s->uvlinesize, ittrans[intra_types[i*2+j*2*r->intra_types_stride]], r->avail_cache[idx-4], r->avail_cache[idx-1], !i && !j, r->avail_cache[idx-3]);
-                r->avail_cache[idx] = 1;
-                if(cbp & 0x01)
-                    rv34_add_4x4_block(U + i*4 + j*4*s->uvlinesize, s->uvlinesize, s->block[4], i*4+j*32);
-                if(cbp & 0x10)
-                    rv34_add_4x4_block(V + i*4 + j*4*s->uvlinesize, s->uvlinesize, s->block[5], i*4+j*32);
-            }
-        }
-    }else{
-        itype = ittrans16[intra_types[0]];
-        itype = adjust_pred16(itype, r->avail_cache[6-4], r->avail_cache[6-1]);
-        r->h.pred16x16[itype](Y, s->linesize);
-        dsp->add_pixels_clamped(s->block[0], Y,     s->linesize);
-        dsp->add_pixels_clamped(s->block[1], Y + 8, s->linesize);
-        Y += s->linesize * 8;
-        dsp->add_pixels_clamped(s->block[2], Y,     s->linesize);
-        dsp->add_pixels_clamped(s->block[3], Y + 8, s->linesize);
+    has_ac = rv34_decode_block(block16, gb, r->cur_vlcs, 3, 0, q_dc, q_dc, q_ac);
+    if(has_ac)
+        r->rdsp.rv34_inv_transform_tab[1](block16);
+    else
+        r->rdsp.rv34_inv_transform_dc_tab[1](block16);
 
-        itype = ittrans16[intra_types[0]];
-        if(itype == PLANE_PRED8x8) itype = DC_PRED8x8;
-        itype = adjust_pred16(itype, r->avail_cache[6-4], r->avail_cache[6-1]);
-        r->h.pred8x8[itype](U, s->uvlinesize);
-        dsp->add_pixels_clamped(s->block[4], U, s->uvlinesize);
-        r->h.pred8x8[itype](V, s->uvlinesize);
-        dsp->add_pixels_clamped(s->block[5], V, s->uvlinesize);
+    itype = ittrans16[intra_types[0]];
+    itype = adjust_pred16(itype, r->avail_cache[6-4], r->avail_cache[6-1]);
+    r->h.pred16x16[itype](dst, s->linesize);
+
+    dsp->clear_block(ptr);
+    for(j = 0; j < 4; j++){
+        for(i = 0; i < 4; i++, cbp >>= 1){
+            int dc = block16[i + j*8];
+
+            if(cbp & 1){
+                has_ac = rv34_decode_block(ptr, gb, r->cur_vlcs, r->luma_vlc, 0, q_ac, q_ac, q_ac);
+            }else
+                has_ac = 0;
+
+            if(has_ac){
+                ptr[0] = dc;
+                r->rdsp.rv34_idct_add(dst+4*i, s->linesize, ptr);
+                dsp->clear_block(ptr);
+            }else
+                r->rdsp.rv34_idct_dc_add(dst+4*i, s->linesize, dc);
+        }
+
+        dst += 4*s->linesize;
+    }
+
+    itype = ittrans16[intra_types[0]];
+    if(itype == PLANE_PRED8x8) itype = DC_PRED8x8;
+    itype = adjust_pred16(itype, r->avail_cache[6-4], r->avail_cache[6-1]);
+
+    q_dc = rv34_qscale_tab[rv34_chroma_quant[1][s->qscale]];
+    q_ac = rv34_qscale_tab[rv34_chroma_quant[0][s->qscale]];
+
+    for(j = 1; j < 3; j++){
+        dst = s->dest[j];
+        r->h.pred8x8[itype](dst, s->uvlinesize);
+        for(i = 0; i < 4; i++, cbp >>= 1){
+            uint8_t *pdst;
+            if(!(cbp & 1)) continue;
+            pdst   = dst + (i&1)*4 + (i&2)*2*s->uvlinesize;
+
+            has_ac = rv34_decode_block(ptr, gb, r->cur_vlcs, r->chroma_vlc, 1, q_dc, q_ac, q_ac);
+            if(has_ac){
+                r->rdsp.rv34_idct_add(pdst, s->uvlinesize, ptr);
+                dsp->clear_block(ptr);
+            }else{
+                r->rdsp.rv34_idct_dc_add(pdst, s->uvlinesize, ptr[0]);
+                ptr[0] = 0;
+            }
+        }
+    }
+}
+
+static void rv34_output_intra(RV34DecContext *r, int8_t *intra_types, int cbp)
+{
+    MpegEncContext *s   = &r->s;
+    DSPContext     *dsp = &s->dsp;
+    GetBitContext  *gb  = &s->gb;
+    DCTELEM        *ptr = s->block[0];
+    uint8_t        *dst = s->dest[0];
+    int      avail[6*8] = {0};
+    int i, j, k;
+    int idx, has_ac;
+    int q_ac, q_dc;
+
+    // Set neighbour information.
+    if(r->avail_cache[1])
+        avail[0] = 1;
+    if(r->avail_cache[2])
+        avail[1] = avail[2] = 1;
+    if(r->avail_cache[3])
+        avail[3] = avail[4] = 1;
+    if(r->avail_cache[4])
+        avail[5] = 1;
+    if(r->avail_cache[5])
+        avail[8] = avail[16] = 1;
+    if(r->avail_cache[9])
+        avail[24] = avail[32] = 1;
+
+    q_ac = rv34_qscale_tab[s->qscale];
+    for(j = 0; j < 4; j++){
+        idx = 9 + j*8;
+        for(i = 0; i < 4; i++, cbp >>= 1, dst += 4, idx++){
+            rv34_pred_4x4_block(r, dst, s->linesize, ittrans[intra_types[i]], avail[idx-8], avail[idx-1], avail[idx+7], avail[idx-7]);
+            avail[idx] = 1;
+            if(!(cbp & 1)) continue;
+
+            has_ac = rv34_decode_block(ptr, gb, r->cur_vlcs, r->luma_vlc, 0, q_ac, q_ac, q_ac);
+            if(has_ac){
+                r->rdsp.rv34_idct_add(dst, s->linesize, ptr);
+                dsp->clear_block(ptr);
+            }else{
+                r->rdsp.rv34_idct_dc_add(dst, s->linesize, ptr[0]);
+                ptr[0] = 0;
+            }
+        }
+        dst += s->linesize * 4 - 4*4;
+        intra_types += r->intra_types_stride;
+    }
+
+    intra_types -= r->intra_types_stride * 4;
+
+    q_dc = rv34_qscale_tab[rv34_chroma_quant[1][s->qscale]];
+    q_ac = rv34_qscale_tab[rv34_chroma_quant[0][s->qscale]];
+
+    for(k = 0; k < 2; k++){
+        dst = s->dest[1+k];
+        fill_rectangle(r->avail_cache + 6, 2, 2, 4, 0, 4);
+
+        for(j = 0; j < 2; j++){
+            int* acache = r->avail_cache + 6 + j*4;
+            for(i = 0; i < 2; i++, cbp >>= 1, acache++){
+                int itype = ittrans[intra_types[i*2+j*2*r->intra_types_stride]];
+                rv34_pred_4x4_block(r, dst+4*i, s->uvlinesize, itype, acache[-4], acache[-1], !i && !j, acache[-3]);
+                acache[0] = 1;
+
+                if(!(cbp&1)) continue;
+
+                has_ac = rv34_decode_block(ptr, gb, r->cur_vlcs, r->chroma_vlc, 1, q_dc, q_ac, q_ac);
+                if(has_ac){
+                    r->rdsp.rv34_idct_add(dst + 4*i, s->uvlinesize, ptr);
+                    dsp->clear_block(ptr);
+                }
+                else {
+                    r->rdsp.rv34_idct_dc_add(dst + 4*i, s->uvlinesize, ptr[0]);
+                    ptr[0] = 0;
+                }
+            }
+
+            dst += 4*s->uvlinesize;
+        }
     }
 }
 
@@ -1185,6 +1271,12 @@ static int rv34_decode_inter_macroblock(RV34DecContext *r, int8_t *intra_types)
     if(cbp == -1)
         return -1;
 
+    if (IS_INTRA(s->current_picture_ptr->f.mb_type[mb_pos])){
+        if(r->is16) rv34_output_i16x16(r, intra_types, cbp);
+        else        rv34_output_intra(r, intra_types, cbp);
+        return 0;
+    }
+
     if(r->is16){
         int luma_dc_quant = r->block_type == RV34_MB_P_MIX16x16
                           ? r->luma_dc_quant_p[s->qscale]
@@ -1243,10 +1335,7 @@ static int rv34_decode_inter_macroblock(RV34DecContext *r, int8_t *intra_types)
         else
             r->rdsp.rv34_inv_transform_dc_tab[0](ptr);
     }
-    if (IS_INTRA(s->current_picture_ptr->f.mb_type[mb_pos]))
-        rv34_output_macroblock(r, intra_types, cbp2, r->is16);
-    else
-        rv34_apply_differences(r, cbp2);
+    rv34_apply_differences(r, cbp2);
 
     return 0;
 }
@@ -1254,12 +1343,7 @@ static int rv34_decode_inter_macroblock(RV34DecContext *r, int8_t *intra_types)
 static int rv34_decode_intra_macroblock(RV34DecContext *r, int8_t *intra_types)
 {
     MpegEncContext *s = &r->s;
-    GetBitContext *gb = &s->gb;
-    int cbp, cbp2;
-    int q_dc, q_ac, has_ac;
-    int i, blknum, blkoff;
-    LOCAL_ALIGNED_16(DCTELEM, block16, [64]);
-    int dist;
+    int cbp, dist;
     int mb_pos = s->mb_x + s->mb_y * s->mb_stride;
 
     // Calculate which neighbours are available. Maybe it's worth optimizing too.
@@ -1278,74 +1362,21 @@ static int rv34_decode_intra_macroblock(RV34DecContext *r, int8_t *intra_types)
         r->avail_cache[1] = s->current_picture_ptr->f.mb_type[mb_pos - s->mb_stride - 1];
 
     s->qscale = r->si.quant;
-    cbp = cbp2 = rv34_decode_intra_mb_header(r, intra_types);
+    cbp = rv34_decode_intra_mb_header(r, intra_types);
     r->cbp_luma  [mb_pos] = cbp;
     r->cbp_chroma[mb_pos] = cbp >> 16;
     r->deblock_coefs[mb_pos] = 0xFFFF;
-     s->current_picture_ptr->f.qscale_table[mb_pos] = s->qscale;
+    s->current_picture_ptr->f.qscale_table[mb_pos] = s->qscale;
 
     if(cbp == -1)
         return -1;
 
     if(r->is16){
-        int luma_dc_quant = r->block_type == RV34_MB_P_MIX16x16
-                          ? r->luma_dc_quant_p[s->qscale]
-                          : r->luma_dc_quant_i[s->qscale];
-        q_dc = rv34_qscale_tab[luma_dc_quant];
-        q_ac = rv34_qscale_tab[s->qscale];
-        s->dsp.clear_block(block16);
-        if (rv34_decode_block(block16, gb, r->cur_vlcs, 3, 0, q_dc, q_dc, q_ac))
-            r->rdsp.rv34_inv_transform_tab[1](block16);
-        else
-            r->rdsp.rv34_inv_transform_dc_tab[1](block16);
-
-        q_ac = rv34_qscale_tab[s->qscale];
-        for(i = 0; i < 16; i++, cbp >>= 1){
-            DCTELEM *ptr;
-            blknum = ((i & 2) >> 1) + ((i & 8) >> 2);
-            blkoff = ((i & 1) << 2) + ((i & 4) << 3);
-            ptr    = s->block[blknum] + blkoff;
-            if(cbp & 1)
-                has_ac = rv34_decode_block(ptr, gb, r->cur_vlcs, r->luma_vlc, 0, q_ac, q_ac, q_ac);
-            else
-                has_ac = 0;
-            ptr[0] = block16[(i & 3) | ((i & 0xC) << 1)];
-            if(has_ac)
-                r->rdsp.rv34_inv_transform_tab[0](ptr);
-            else
-                r->rdsp.rv34_inv_transform_dc_tab[0](ptr);
-        }
-    }else{
-        q_ac = rv34_qscale_tab[s->qscale];
-        for(i = 0; i < 16; i++, cbp >>= 1){
-            DCTELEM *ptr;
-            if(!(cbp & 1)) continue;
-            blknum = ((i & 2) >> 1) + ((i & 8) >> 2);
-            blkoff = ((i & 1) << 2) + ((i & 4) << 3);
-            ptr    = s->block[blknum] + blkoff;
-            has_ac = rv34_decode_block(ptr, gb, r->cur_vlcs, r->luma_vlc, 0, q_ac, q_ac, q_ac);
-            if(has_ac)
-                r->rdsp.rv34_inv_transform_tab[0](ptr);
-            else
-                r->rdsp.rv34_inv_transform_dc_tab[0](ptr);
-        }
+        rv34_output_i16x16(r, intra_types, cbp);
+        return 0;
     }
 
-    q_dc = rv34_qscale_tab[rv34_chroma_quant[1][s->qscale]];
-    q_ac = rv34_qscale_tab[rv34_chroma_quant[0][s->qscale]];
-    for(; i < 24; i++, cbp >>= 1){
-        DCTELEM *ptr;
-        if(!(cbp & 1)) continue;
-        blknum = ((i & 4) >> 2) + 4;
-        blkoff = ((i & 1) << 2) + ((i & 2) << 4);
-        ptr    = s->block[blknum] + blkoff;
-        if (rv34_decode_block(ptr, gb, r->cur_vlcs, r->chroma_vlc, 1, q_dc, q_ac, q_ac))
-            r->rdsp.rv34_inv_transform_tab[0](ptr);
-        else
-            r->rdsp.rv34_inv_transform_dc_tab[0](ptr);
-    }
-    rv34_output_macroblock(r, intra_types, cbp2, r->is16);
-
+    rv34_output_intra(r, intra_types, cbp);
     return 0;
 }
 

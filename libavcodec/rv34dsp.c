@@ -32,7 +32,7 @@
  * @{
  */
 
-static av_always_inline void rv34_row_transform(int temp[16], DCTELEM *block)
+static av_always_inline void rv34_row_transform(int temp[16], const DCTELEM *block)
 {
     int i;
 
@@ -73,6 +73,32 @@ static void rv34_inv_transform_c(DCTELEM *block){
 }
 
 /**
+ * Real Video 3.0/4.0 inverse transform + sample reconstruction
+ * Code is almost the same as in SVQ3, only scaling is different.
+ */
+static void rv34_idct_add_c(uint8_t *dst, int stride, const DCTELEM *block){
+    int      temp[16];
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    int      i;
+
+    rv34_row_transform(temp, block);
+
+    for(i = 0; i < 4; i++){
+        const int z0 = 13*(temp[4*0+i] +    temp[4*2+i]) + 0x200;
+        const int z1 = 13*(temp[4*0+i] -    temp[4*2+i]) + 0x200;
+        const int z2 =  7* temp[4*1+i] - 17*temp[4*3+i];
+        const int z3 = 17* temp[4*1+i] +  7*temp[4*3+i];
+
+        dst[0] = cm[ dst[0] + ( (z0 + z3) >> 10 ) ];
+        dst[1] = cm[ dst[1] + ( (z1 + z2) >> 10 ) ];
+        dst[2] = cm[ dst[2] + ( (z1 - z2) >> 10 ) ];
+        dst[3] = cm[ dst[3] + ( (z0 - z3) >> 10 ) ];
+
+        dst  += stride;
+    }
+}
+
+/**
  * RealVideo 3.0/4.0 inverse transform for DC block
  *
  * Code is almost the same as rv34_inv_transform()
@@ -94,6 +120,22 @@ static void rv34_inv_transform_noround_c(DCTELEM *block){
         block[i*8+1] = ((z1 + z2) * 3) >> 11;
         block[i*8+2] = ((z1 - z2) * 3) >> 11;
         block[i*8+3] = ((z0 - z3) * 3) >> 11;
+    }
+}
+
+static void rv34_idct_dc_add_c(uint8_t *dst, int stride, int dc)
+{
+    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    int i, j;
+
+    cm += (13*13*dc + 0x200) >> 10;
+
+    for (i = 0; i < 4; i++)
+    {
+        for (j = 0; j < 4; j++)
+            dst[j] = cm[ dst[j] ];
+
+        dst += stride;
     }
 }
 
@@ -125,6 +167,9 @@ av_cold void ff_rv34dsp_init(RV34DSPContext *c, DSPContext* dsp) {
     c->rv34_inv_transform_tab[1] = rv34_inv_transform_noround_c;
     c->rv34_inv_transform_dc_tab[0]  = rv34_inv_transform_dc_c;
     c->rv34_inv_transform_dc_tab[1]  = rv34_inv_transform_dc_noround_c;
+
+    c->rv34_idct_add    = rv34_idct_add_c;
+    c->rv34_idct_dc_add = rv34_idct_dc_add_c;
 
     if (HAVE_NEON)
         ff_rv34dsp_init_neon(c, dsp);
