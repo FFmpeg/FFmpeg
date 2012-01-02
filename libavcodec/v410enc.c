@@ -67,7 +67,7 @@ static int v410_encode_frame(AVCodecContext *avctx, uint8_t *buf,
         for (j = 0; j < avctx->width; j++) {
             val  = u[j] << 2;
             val |= y[j] << 12;
-            val |= v[j] << 22;
+            val |= (uint32_t) v[j] << 22;
             AV_WL32(dst, val);
             dst += 4;
             output_size += 4;
