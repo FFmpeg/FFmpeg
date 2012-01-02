@@ -196,12 +196,12 @@ device.
 Once you have created one or more JACK readable clients, you need to
 connect them to one or more JACK writable clients.
 
-To connect or disconnect JACK clients you can use the
-@file{jack_connect} and @file{jack_disconnect} programs, or do it
-through a graphical interface, for example with @file{qjackctl}.
+To connect or disconnect JACK clients you can use the @command{jack_connect}
+and @command{jack_disconnect} programs, or do it through a graphical interface,
+for example with @command{qjackctl}.
 
 To list the JACK clients and their properties you can invoke the command
-@file{jack_lsp}.
+@command{jack_lsp}.
 
 Follows an example which shows how to capture a JACK readable client
 with @command{ffmpeg}.
@@ -260,7 +260,7 @@ device.
 
 @itemize
 @item
-Create a color video stream and play it back with @file{ffplay}:
+Create a color video stream and play it back with @command{ffplay}:
 @example
 ffplay -f lavfi -graph "color=pink [out0]" dummy
 @end example
@@ -280,14 +280,14 @@ ffplay -f lavfi -graph "testsrc [out0]; testsrc,hflip [out1]; testsrc,negate [ou
 
 @item
 Read an audio stream from a file using the amovie source and play it
-back with @file{ffplay}:
+back with @command{ffplay}:
 @example
 ffplay -f lavfi "amovie=test.wav"
 @end example
 
 @item
 Read an audio stream and a video stream and play it back with
-@file{ffplay}:
+@command{ffplay}:
 @example
 ffplay -f lavfi "movie=test.avi[out0];amovie=test.wav[out1]"
 @end example
@@ -380,7 +380,7 @@ $ ffmpeg -f openal -i '' out.ogg
 @end example
 
 Capture from two devices simultaneously, writing to two different files,
-within the same @file{ffmpeg} command:
+within the same @command{ffmpeg} command:
 @example
 $ ffmpeg -f openal -i 'DR-BT101 via PulseAudio' out1.ogg -f openal -i 'ALSA Default' out2.ogg
 @end example
@@ -415,7 +415,7 @@ The filename to provide to the input device is a source device or the
 string "default"
 
 To list the pulse source devices and their properties you can invoke
-the command @file{pactl list sources}.
+the command @command{pactl list sources}.
 
 @example
 ffmpeg -f pulse -i default /tmp/pulse.wav
@@ -516,8 +516,8 @@ the device.
 
 Video4Linux and Video4Linux2 devices only support a limited set of
 @var{width}x@var{height} sizes and frame rates. You can check which are
-supported for example with the command @file{dov4l} for Video4Linux
-devices and the command @file{v4l-info} for Video4Linux2 devices.
+supported for example with the command @command{dov4l} for Video4Linux
+devices and the command @command{v4l-info} for Video4Linux2 devices.
 
 If the size for the device is set to 0x0, the input device will
 try to auto-detect the size to use.
@@ -579,7 +579,7 @@ default to 0.
 
 Check the X11 documentation (e.g. man X) for more detailed information.
 
-Use the @file{dpyinfo} program for getting basic information about the
+Use the @command{dpyinfo} program for getting basic information about the
 properties of your X11 display (e.g. grep for "name" or "dimensions").
 
 For example to grab from @file{:0.0} using @command{ffmpeg}:

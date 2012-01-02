@@ -354,7 +354,7 @@ A customized down-mix to stereo that works automatically for 3-, 4-, 5- and
 pan=stereo: FL < FL + 0.5*FC + 0.6*BL + 0.6*SL : FR < FR + 0.5*FC + 0.6*BR + 0.6*SR
 @end example
 
-Note that @file{ffmpeg} integrates a default down-mix (and up-mix) system
+Note that @command{ffmpeg} integrates a default down-mix (and up-mix) system
 that should be preferred (see "-ac" option) unless you have very specific
 needs.
 

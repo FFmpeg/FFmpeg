@@ -43,13 +43,13 @@ The result will be that in output the top half of the video is mirrored
 onto the bottom half.
 
 Video filters are loaded using the @var{-vf} option passed to
-ffmpeg or to ffplay. Filters in the same linear chain are separated by
-commas. In our example, @var{split, fifo, overlay} are in one linear
-chain, and @var{fifo, crop, vflip} are in another. The points where
-the linear chains join are labeled by names enclosed in square
-brackets. In our example, that is @var{[T1]} and @var{[T2]}. The magic
-labels @var{[in]} and @var{[out]} are the points where video is input
-and output.
+@command{ffmpeg} or to @command{ffplay}. Filters in the same linear
+chain are separated by commas. In our example, @var{split, fifo,
+overlay} are in one linear chain, and @var{fifo, crop, vflip} are in
+another. The points where the linear chains join are labeled by names
+enclosed in square brackets. In our example, that is @var{[T1]} and
+@var{[T2]}. The magic labels @var{[in]} and @var{[out]} are the points
+where video is input and output.
 
 Some filters take in input a list of parameters: they are specified
 after the filter name and an equal sign, and are separated each other

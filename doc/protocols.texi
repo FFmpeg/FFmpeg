@@ -52,7 +52,7 @@ resource to be concatenated, each one possibly specifying a distinct
 protocol.
 
 For example to read a sequence of files @file{split1.mpeg},
-@file{split2.mpeg}, @file{split3.mpeg} with @file{ffplay} use the
+@file{split2.mpeg}, @file{split3.mpeg} with @command{ffplay} use the
 command:
 @example
 ffplay concat:split1.mpeg\|split2.mpeg\|split3.mpeg
@@ -183,7 +183,7 @@ application specified in @var{app}, may be prefixed by "mp4:".
 
 @end table
 
-For example to read with @file{ffplay} a multimedia resource named
+For example to read with @command{ffplay} a multimedia resource named
 "sample" from the application "vod" from an RTMP server "myserver":
 @example
 ffplay rtmp://myserver/vod/sample
@@ -224,7 +224,7 @@ For example, to stream a file in real-time to an RTMP server using
 ffmpeg -re -i myfile -f flv rtmp://myserver/live/mystream
 @end example
 
-To play the same stream using @file{ffplay}:
+To play the same stream using @command{ffplay}:
 @example
 ffplay "rtmp://myserver/live/mystream live=1"
 @end example
@@ -249,7 +249,7 @@ The required syntax for a RTSP url is:
 rtsp://@var{hostname}[:@var{port}]/@var{path}
 @end example
 
-The following options (set on the @command{ffmpeg}/@file{ffplay} command
+The following options (set on the @command{ffmpeg}/@command{ffplay} command
 line, or set in code via @code{AVOption}s or in @code{avformat_open_input}),
 are supported:
 
@@ -288,7 +288,7 @@ When receiving data over UDP, the demuxer tries to reorder received packets
 order for this to be enabled, a maximum delay must be specified in the
 @code{max_delay} field of AVFormatContext.
 
-When watching multi-bitrate Real-RTSP streams with @file{ffplay}, the
+When watching multi-bitrate Real-RTSP streams with @command{ffplay}, the
 streams to display can be chosen with @code{-vst} @var{n} and
 @code{-ast} @var{n} for video and audio respectively, and can be switched
 on the fly by pressing @code{v} and @code{a}.
@@ -365,13 +365,13 @@ To broadcast a stream on the local subnet, for watching in VLC:
 ffmpeg -re -i @var{input} -f sap sap://224.0.0.255?same_port=1
 @end example
 
-Similarly, for watching in ffplay:
+Similarly, for watching in @command{ffplay}:
 
 @example
 ffmpeg -re -i @var{input} -f sap sap://224.0.0.255
 @end example
 
-And for watching in ffplay, over IPv6:
+And for watching in @command{ffplay}, over IPv6:
 
 @example
 ffmpeg -re -i @var{input} -f sap sap://[ff0e::1:2:3:4]

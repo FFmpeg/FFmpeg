@@ -60,7 +60,7 @@ If not specified it defaults to the size of the input video.
 
 @subsection Examples
 
-The following command shows the @file{ffmpeg} output is an
+The following command shows the @command{ffmpeg} output is an
 SDL window, forcing its size to the qcif format:
 @example
 ffmpeg -i INPUT -vcodec rawvideo -pix_fmt yuv420p -window_size qcif -f sdl "SDL output"

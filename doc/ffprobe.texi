@@ -135,7 +135,7 @@ Read @var{input_file}.
 @chapter Writers
 @c man begin WRITERS
 
-A writer defines the output format adopted by @file{ffprobe}, and will be
+A writer defines the output format adopted by @command{ffprobe}, and will be
 used for printing all the parts of the output.
 
 A writer may accept one or more arguments, which specify the options to

@@ -577,7 +577,7 @@ Allow to set any x264 option, see x264 --fullhelp for a list.
 ":".
 @end table
 
-For example to specify libx264 encoding options with @file{ffmpeg}:
+For example to specify libx264 encoding options with @command{ffmpeg}:
 @example
 ffmpeg -i foo.mpg -vcodec libx264 -x264opts keyint=123:min-keyint=20 -an out.mkv
 @end example
