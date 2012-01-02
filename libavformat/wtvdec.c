@@ -26,7 +26,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
-#include "libavutil/intfloat_readwrite.h"
+#include "libavutil/intfloat.h"
 #include "avformat.h"
 #include "internal.h"
 #include "wtv.h"
@@ -388,7 +388,7 @@ static void crazytime_to_iso8601(char *buf, int buf_size, int64_t value)
  */
 static int oledate_to_iso8601(char *buf, int buf_size, int64_t value)
 {
-    time_t t = (av_int2dbl(value) - 25569.0) * 86400;
+    time_t t = (av_int2double(value) - 25569.0) * 86400;
     struct tm *result= gmtime(&t);
     if (!result)
         return -1;
@@ -460,7 +460,7 @@ static void get_tag(AVFormatContext *s, AVIOContext *pb, const char *key, int ty
                 return;
             }
         } else if (!strcmp(key, "WM/WMRVBitrate"))
-            snprintf(buf, buf_size, "%f", av_int2dbl(num));
+            snprintf(buf, buf_size, "%f", av_int2double(num));
         else
             snprintf(buf, buf_size, "%"PRIi64, num);
     } else if (type == 5 && length == 2) {
