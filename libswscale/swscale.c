@@ -18,39 +18,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/*
-  supported Input formats: YV12, I420/IYUV, YUY2, UYVY, BGR32, BGR32_1, BGR24, BGR16, BGR15, RGB32, RGB32_1, RGB24, Y8/Y800, YVU9/IF09, PAL8
-  supported output formats: YV12, I420/IYUV, YUY2, UYVY, {BGR,RGB}{1,4,8,15,16,24,32}, Y8/Y800, YVU9/IF09
-  {BGR,RGB}{1,4,8,15,16} support dithering
-
-  unscaled special converters (YV12=I420=IYUV, Y800=Y8)
-  YV12 -> {BGR,RGB}{1,4,8,12,15,16,24,32}
-  x -> x
-  YUV9 -> YV12
-  YUV9/YV12 -> Y800
-  Y800 -> YUV9/YV12
-  BGR24 -> BGR32 & RGB24 -> RGB32
-  BGR32 -> BGR24 & RGB32 -> RGB24
-  BGR15 -> BGR16
-*/
-
-/*
-tested special converters (most are tested actually, but I did not write it down ...)
- YV12 -> BGR12/BGR16
- YV12 -> YV12
- BGR15 -> BGR16
- BGR16 -> BGR16
- YVU9 -> YV12
-
-untested special converters
-  YV12/I420 -> BGR15/BGR24/BGR32 (it is the yuv2rgb stuff, so it should be OK)
-  YV12/I420 -> YV12/I420
-  YUY2/BGR15/BGR24/BGR32/RGB24/RGB32 -> same format
-  BGR24 -> BGR32 & RGB24 -> RGB32
-  BGR32 -> BGR24 & RGB32 -> RGB24
-  BGR24 -> YV12
-*/
-
 #include <inttypes.h>
 #include <string.h>
 #include <math.h>
