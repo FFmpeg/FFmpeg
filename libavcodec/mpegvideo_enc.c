@@ -580,10 +580,10 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
     }
 
     if (s->avctx->thread_count < 1) {
-        av_log(avctx, AV_LOG_INFO,
+        av_log(avctx, AV_LOG_ERROR,
                "automatic thread number detection not supported by codec, "
                "patch welcome\n");
-        s->avctx->thread_count = 1;
+        return -1;
     }
 
     if (s->avctx->thread_count > 1)
