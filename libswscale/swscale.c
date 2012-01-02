@@ -2223,36 +2223,6 @@ find_c_packed_planar_out_funcs(SwsContext *c,
         }
     } else {
         switch (dstFormat) {
-        case PIX_FMT_GRAY16BE:
-            *yuv2packed1 = yuv2gray16BE_1_c;
-            *yuv2packed2 = yuv2gray16BE_2_c;
-            *yuv2packedX = yuv2gray16BE_X_c;
-            break;
-        case PIX_FMT_GRAY16LE:
-            *yuv2packed1 = yuv2gray16LE_1_c;
-            *yuv2packed2 = yuv2gray16LE_2_c;
-            *yuv2packedX = yuv2gray16LE_X_c;
-            break;
-        case PIX_FMT_MONOWHITE:
-            *yuv2packed1 = yuv2monowhite_1_c;
-            *yuv2packed2 = yuv2monowhite_2_c;
-            *yuv2packedX = yuv2monowhite_X_c;
-            break;
-        case PIX_FMT_MONOBLACK:
-            *yuv2packed1 = yuv2monoblack_1_c;
-            *yuv2packed2 = yuv2monoblack_2_c;
-            *yuv2packedX = yuv2monoblack_X_c;
-            break;
-        case PIX_FMT_YUYV422:
-            *yuv2packed1 = yuv2yuyv422_1_c;
-            *yuv2packed2 = yuv2yuyv422_2_c;
-            *yuv2packedX = yuv2yuyv422_X_c;
-            break;
-        case PIX_FMT_UYVY422:
-            *yuv2packed1 = yuv2uyvy422_1_c;
-            *yuv2packed2 = yuv2uyvy422_2_c;
-            *yuv2packedX = yuv2uyvy422_X_c;
-            break;
         case PIX_FMT_RGB48LE:
             *yuv2packed1 = yuv2rgb48le_1_c;
             *yuv2packed2 = yuv2rgb48le_2_c;
@@ -2368,6 +2338,38 @@ find_c_packed_planar_out_funcs(SwsContext *c,
             *yuv2packedX = yuv2rgb4b_X_c;
             break;
         }
+    }
+    switch (dstFormat) {
+    case PIX_FMT_GRAY16BE:
+        *yuv2packed1 = yuv2gray16BE_1_c;
+        *yuv2packed2 = yuv2gray16BE_2_c;
+        *yuv2packedX = yuv2gray16BE_X_c;
+        break;
+    case PIX_FMT_GRAY16LE:
+        *yuv2packed1 = yuv2gray16LE_1_c;
+        *yuv2packed2 = yuv2gray16LE_2_c;
+        *yuv2packedX = yuv2gray16LE_X_c;
+        break;
+    case PIX_FMT_MONOWHITE:
+        *yuv2packed1 = yuv2monowhite_1_c;
+        *yuv2packed2 = yuv2monowhite_2_c;
+        *yuv2packedX = yuv2monowhite_X_c;
+        break;
+    case PIX_FMT_MONOBLACK:
+        *yuv2packed1 = yuv2monoblack_1_c;
+        *yuv2packed2 = yuv2monoblack_2_c;
+        *yuv2packedX = yuv2monoblack_X_c;
+        break;
+    case PIX_FMT_YUYV422:
+        *yuv2packed1 = yuv2yuyv422_1_c;
+        *yuv2packed2 = yuv2yuyv422_2_c;
+        *yuv2packedX = yuv2yuyv422_X_c;
+        break;
+    case PIX_FMT_UYVY422:
+        *yuv2packed1 = yuv2uyvy422_1_c;
+        *yuv2packed2 = yuv2uyvy422_2_c;
+        *yuv2packedX = yuv2uyvy422_X_c;
+        break;
     }
 }
 

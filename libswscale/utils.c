@@ -829,6 +829,7 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
 
     // reuse chroma for 2 pixels RGB/BGR unless user wants full chroma interpolation
     if (flags & SWS_FULL_CHR_H_INT &&
+        isAnyRGB(dstFormat)       &&
         dstFormat != PIX_FMT_RGBA &&
         dstFormat != PIX_FMT_ARGB &&
         dstFormat != PIX_FMT_BGRA &&
