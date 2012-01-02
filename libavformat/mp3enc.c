@@ -160,7 +160,7 @@ static int mp3_write_xing(AVFormatContext *s)
     int              best_bitrate_idx;
     int              best_bitrate_error= INT_MAX;
     int64_t          xing_offset;
-    int32_t          mask, header;
+    int32_t          header, mask;
     MPADecodeHeader  c;
     int              srate_idx, i, channels;
     int              needed;
@@ -200,8 +200,9 @@ static int mp3_write_xing(AVFormatContext *s)
     for (bitrate_idx= best_bitrate_idx;; bitrate_idx++) {
         if (15 == bitrate_idx)
             return -1;
-
-        avpriv_mpegaudio_decode_header(&c, header | (bitrate_idx << (4+8)));
+        mask = bitrate_idx << (4+8);
+        header |= mask;
+        avpriv_mpegaudio_decode_header(&c, header);
         xing_offset=xing_offtbl[c.lsf == 1][c.nb_channels == 1];
         needed = 4              // header
                + xing_offset
@@ -213,6 +214,7 @@ static int mp3_write_xing(AVFormatContext *s)
 
         if (needed <= c.frame_size)
             break;
+        header &= ~mask;
     }
 
     avio_wb32(s->pb, header);
