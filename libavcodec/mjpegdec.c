@@ -282,7 +282,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         return -1;
     }
 
-    if(s->v_max==1 && s->h_max==1 && s->lossless==1) s->rgb=1;
+    if(s->v_max==1 && s->h_max==1 && s->lossless==1 && nb_components==3) s->rgb=1;
 
     /* if different size, realloc/alloc picture */
     /* XXX: also check h_count and v_count */
