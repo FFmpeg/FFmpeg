@@ -343,7 +343,10 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         s->yuv442 = 1;
         break;
     case 0x11000000:
-        s->avctx->pix_fmt = PIX_FMT_GRAY8;
+        if(s->bits <= 8)
+            s->avctx->pix_fmt = PIX_FMT_GRAY8;
+        else
+            s->avctx->pix_fmt = PIX_FMT_GRAY16;
         break;
     case 0x12111100:
     case 0x22211100:
@@ -723,7 +726,12 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int predictor, int point
 
 static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int predictor, int point_transform){
     int i, mb_x, mb_y;
-    const int nb_components=3;
+    const int nb_components=s->nb_components;
+    int bits= (s->bits+7)&~7;
+
+    point_transform += bits - s->bits;
+
+    av_assert0(nb_components==1 || nb_components==3);
 
     for(mb_y = 0; mb_y < s->mb_height; mb_y++) {
         for(mb_x = 0; mb_x < s->mb_width; mb_x++) {
@@ -733,6 +741,7 @@ static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int predictor, int point
             if(mb_x==0 || mb_y==0 || s->interlaced){
                 for(i=0;i<nb_components;i++) {
                     uint8_t *ptr;
+                    uint16_t *ptr16;
                     int n, h, v, x, y, c, j, linesize;
                     n = s->nb_blocks[i];
                     c = s->comp_index[i];
@@ -742,13 +751,19 @@ static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int predictor, int point
                     y = 0;
                     linesize= s->linesize[c];
 
+                    if(bits>8) linesize /= 2;
+
                     for(j=0; j<n; j++) {
                         int pred, dc;
 
+                        dc = mjpeg_decode_dc(s, s->dc_index[i]);
+                        if(dc == 0xFFFF)
+                            return -1;
+                        if(bits<=8){
                         ptr = s->picture.data[c] + (linesize * (v * mb_y + y)) + (h * mb_x + x); //FIXME optimize this crap
                         if(y==0 && mb_y==0){
                             if(x==0 && mb_x==0){
-                                pred= 128 << point_transform;
+                                pred= 1 << (bits - 1);
                             }else{
                                 pred= ptr[-1];
                             }
@@ -762,11 +777,27 @@ static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int predictor, int point
 
                         if (s->interlaced && s->bottom_field)
                             ptr += linesize >> 1;
-                        dc = mjpeg_decode_dc(s, s->dc_index[i]);
-                        if(dc == 0xFFFF)
-                            return -1;
                         *ptr= pred + (dc << point_transform);
+                        }else{
+                            ptr16 = s->picture.data[c] + 2*(linesize * (v * mb_y + y)) + 2*(h * mb_x + x); //FIXME optimize this crap
+                            if(y==0 && mb_y==0){
+                                if(x==0 && mb_x==0){
+                                    pred= 1 << (bits - 1);
+                                }else{
+                                    pred= ptr16[-1];
+                                }
+                            }else{
+                                if(x==0 && mb_x==0){
+                                    pred= ptr16[-linesize];
+                                }else{
+                                    PREDICT(pred, ptr16[-linesize-1], ptr16[-linesize], ptr16[-1], predictor);
+                                }
+                            }
 
+                            if (s->interlaced && s->bottom_field)
+                                ptr16 += linesize >> 1;
+                            *ptr16= pred + (dc << point_transform);
+                        }
                         if (++x == h) {
                             x = 0;
                             y++;
@@ -776,6 +807,7 @@ static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int predictor, int point
             }else{
                 for(i=0;i<nb_components;i++) {
                     uint8_t *ptr;
+                    uint16_t *ptr16;
                     int n, h, v, x, y, c, j, linesize, dc;
                     n = s->nb_blocks[i];
                     c = s->comp_index[i];
@@ -785,16 +817,25 @@ static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int predictor, int point
                     y = 0;
                     linesize= s->linesize[c];
 
+                    if(bits>8) linesize /= 2;
+
                     for(j=0; j<n; j++) {
                         int pred;
-
-                        ptr = s->picture.data[c] + (linesize * (v * mb_y + y)) + (h * mb_x + x); //FIXME optimize this crap
-                        PREDICT(pred, ptr[-linesize-1], ptr[-linesize], ptr[-1], predictor);
 
                         dc = mjpeg_decode_dc(s, s->dc_index[i]);
                         if(dc == 0xFFFF)
                             return -1;
+                        if(bits<=8){
+                        ptr = s->picture.data[c] + (linesize * (v * mb_y + y)) + (h * mb_x + x); //FIXME optimize this crap
+                        PREDICT(pred, ptr[-linesize-1], ptr[-linesize], ptr[-1], predictor);
+
                         *ptr= pred + (dc << point_transform);
+                        }else{
+                            ptr16 = s->picture.data[c] + 2*(linesize * (v * mb_y + y)) + 2*(h * mb_x + x); //FIXME optimize this crap
+                            PREDICT(pred, ptr16[-linesize-1], ptr16[-linesize], ptr16[-1], predictor);
+
+                            *ptr16= pred + (dc << point_transform);
+                        }
                         if (++x == h) {
                             x = 0;
                             y++;
