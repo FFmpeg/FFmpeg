@@ -3159,7 +3159,7 @@ static int opt_map(OptionsContext *o, const char *opt, const char *arg)
 {
     StreamMap *m = NULL;
     int i, negative = 0, file_idx;
-    int sync_file_idx = -1, sync_stream_idx;
+    int sync_file_idx = -1, sync_stream_idx = 0;
     char *p, *sync;
     char *map;
 
@@ -3342,7 +3342,7 @@ static void parse_meta_type(char *arg, char *type, int *index, const char **stre
 static int copy_metadata(char *outspec, char *inspec, AVFormatContext *oc, AVFormatContext *ic, OptionsContext *o)
 {
     AVDictionary **meta_in = NULL;
-    AVDictionary **meta_out;
+    AVDictionary **meta_out = NULL;
     int i, ret = 0;
     char type_in, type_out;
     const char *istream_spec = NULL, *ostream_spec = NULL;
@@ -4489,7 +4489,7 @@ static void opt_output_file(void *optctx, const char *filename)
         AVDictionary **m;
         char type, *val;
         const char *stream_spec;
-        int index = 0, j, ret;
+        int index = 0, j, ret = 0;
 
         val = strchr(o->metadata[i].u.str, '=');
         if (!val) {
