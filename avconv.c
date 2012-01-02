@@ -608,7 +608,6 @@ static int configure_video_filters(InputStream *ist, OutputStream *ost)
 
         if ((ret = avfilter_graph_parse(ost->graph, ost->avfilter, inputs, outputs, NULL)) < 0)
             return ret;
-        av_freep(&ost->avfilter);
     } else {
         if ((ret = avfilter_link(last_filter, 0, ost->output_video_filter, 0)) < 0)
             return ret;
@@ -680,6 +679,10 @@ void exit_program(int ret)
             bsfc = next;
         }
         output_streams[i].bitstream_filters = NULL;
+
+#if CONFIG_AVFILTER
+        av_freep(&output_streams[i].avfilter);
+#endif
     }
     for (i = 0; i < nb_input_files; i++) {
         avformat_close_input(&input_files[i].ctx);
@@ -1252,6 +1255,7 @@ static void do_subtitle_out(AVFormatContext *s,
 static int bit_buffer_size = 1024 * 256;
 static uint8_t *bit_buffer = NULL;
 
+#if !CONFIG_AVFILTER
 static void do_video_resample(OutputStream *ost,
                               InputStream *ist,
                               AVFrame *in_picture,
@@ -1275,7 +1279,6 @@ static void do_video_resample(OutputStream *ost,
             ost->video_resample = 1;
     }
 
-#if !CONFIG_AVFILTER
     if (ost->video_resample) {
         *out_picture = &ost->pict_tmp;
         if (resample_changed) {
@@ -1297,21 +1300,13 @@ static void do_video_resample(OutputStream *ost,
         sws_scale(ost->img_resample_ctx, in_picture->data, in_picture->linesize,
               0, ost->resample_height, (*out_picture)->data, (*out_picture)->linesize);
     }
-#else
-    if (resample_changed) {
-        avfilter_graph_free(&ost->graph);
-        if (configure_video_filters(ist, ost)) {
-            av_log(NULL, AV_LOG_FATAL, "Error reinitializing filters!\n");
-            exit_program(1);
-        }
-    }
-#endif
     if (resample_changed) {
         ost->resample_width   = dec->width;
         ost->resample_height  = dec->height;
         ost->resample_pix_fmt = dec->pix_fmt;
     }
 }
+#endif
 
 
 static void do_video_out(AVFormatContext *s,
@@ -1366,7 +1361,11 @@ static void do_video_out(AVFormatContext *s,
     if (nb_frames <= 0)
         return;
 
+#if !CONFIG_AVFILTER
     do_video_resample(ost, ist, in_picture, &final_picture);
+#else
+    final_picture = in_picture;
+#endif
 
     /* duplicates frame if needed */
     for (i = 0; i < nb_frames; i++) {
@@ -1936,12 +1935,33 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
 
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost = &output_streams[i];
-        int frame_size;
+        int frame_size, resample_changed;
 
         if (!check_output_constraints(ist, ost) || !ost->encoding_needed)
             continue;
 
 #if CONFIG_AVFILTER
+        resample_changed = ost->resample_width   != decoded_frame->width  ||
+                           ost->resample_height  != decoded_frame->height ||
+                           ost->resample_pix_fmt != decoded_frame->format;
+        if (resample_changed) {
+            av_log(NULL, AV_LOG_INFO,
+                    "Input stream #%d:%d frame changed from size:%dx%d fmt:%s to size:%dx%d fmt:%s\n",
+                    ist->file_index, ist->st->index,
+                    ost->resample_width,  ost->resample_height,  av_get_pix_fmt_name(ost->resample_pix_fmt),
+                    decoded_frame->width, decoded_frame->height, av_get_pix_fmt_name(decoded_frame->format));
+
+            avfilter_graph_free(&ost->graph);
+            if (configure_video_filters(ist, ost)) {
+                av_log(NULL, AV_LOG_FATAL, "Error reinitializing filters!\n");
+                exit_program(1);
+            }
+
+            ost->resample_width   = decoded_frame->width;
+            ost->resample_height  = decoded_frame->height;
+            ost->resample_pix_fmt = decoded_frame->format;
+        }
+
         if (ist->st->sample_aspect_ratio.num)
             decoded_frame->sample_aspect_ratio = ist->st->sample_aspect_ratio;
         if (ist->st->codec->codec->capabilities & CODEC_CAP_DR1) {
