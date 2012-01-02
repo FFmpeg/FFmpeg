@@ -4224,7 +4224,7 @@ static int read_ffserver_streams(OptionsContext *o, AVFormatContext *s, const ch
             choose_pixel_fmt(st, codec);
     }
 
-    av_close_input_file(ic);
+    avformat_close_input(&ic);
     return 0;
 }
 
