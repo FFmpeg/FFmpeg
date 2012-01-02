@@ -719,7 +719,7 @@ static int decode_channel_residues(WmallDecodeCtx *s, int ch, int tile_size)
 	    residue = residue >> 1;
 	s->channel_residues[ch][i] = residue;
     }
-    dump_int_buffer(s->channel_residues[ch], 4, tile_size, 16);
+    //dump_int_buffer(s->channel_residues[ch], 4, tile_size, 16);
 
     return 0;
 
