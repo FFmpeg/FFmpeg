@@ -2054,8 +2054,6 @@ error:
     return -1;
 }
 
-static void vp3_decode_flush(AVCodecContext *avctx);
-
 static int read_huffman_tree(AVCodecContext *avctx, GetBitContext *gb)
 {
     Vp3DecodeContext *s = avctx->priv_data;
