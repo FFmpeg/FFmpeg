@@ -796,6 +796,10 @@ typedef struct RcOverride{
  */
 #define CODEC_CAP_PARAM_CHANGE     0x4000
 /**
+ * Codec supports avctx->thread_count == 0 (auto).
+ */
+#define CODEC_CAP_AUTO_THREADS     0x8000
+/**
  * Codec is lossless.
  */
 #define CODEC_CAP_LOSSLESS         0x80000000

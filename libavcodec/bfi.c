@@ -37,7 +37,7 @@ typedef struct BFIContext {
     uint32_t pal[256];
 } BFIContext;
 
-static av_cold int bfi_decode_init(AVCodecContext * avctx)
+static av_cold int bfi_decode_init(AVCodecContext *avctx)
 {
     BFIContext *bfi = avctx->priv_data;
     avctx->pix_fmt = PIX_FMT_PAL8;
@@ -46,7 +46,7 @@ static av_cold int bfi_decode_init(AVCodecContext * avctx)
     return 0;
 }
 
-static int bfi_decode_frame(AVCodecContext * avctx, void *data,
+static int bfi_decode_frame(AVCodecContext *avctx, void *data,
                             int *data_size, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data, *buf_end = avpkt->data + avpkt->size;
@@ -73,11 +73,11 @@ static int bfi_decode_frame(AVCodecContext * avctx, void *data,
         bfi->frame.pict_type = AV_PICTURE_TYPE_I;
         bfi->frame.key_frame = 1;
         /* Setting the palette */
-        if(avctx->extradata_size>768) {
+        if (avctx->extradata_size > 768) {
             av_log(NULL, AV_LOG_ERROR, "Palette is too large.\n");
             return -1;
         }
-        pal = (uint32_t *) bfi->frame.data[1];
+        pal = (uint32_t *)bfi->frame.data[1];
         for (i = 0; i < avctx->extradata_size / 3; i++) {
             int shift = 16;
             *pal = 0xFF << 24;
@@ -96,16 +96,17 @@ static int bfi_decode_frame(AVCodecContext * avctx, void *data,
         memcpy(bfi->frame.data[1], bfi->pal, sizeof(bfi->pal));
     }
 
-    buf += 4; //Unpacked size, not required.
+    buf += 4; // Unpacked size, not required.
 
     while (dst != frame_end) {
-        static const uint8_t lentab[4]={0,2,0,1};
-        unsigned int byte = *buf++, av_uninit(offset);
-        unsigned int code = byte >> 6;
+        static const uint8_t lentab[4] = { 0, 2, 0, 1 };
+        unsigned int byte   = *buf++, av_uninit(offset);
+        unsigned int code   = byte >> 6;
         unsigned int length = byte & ~0xC0;
 
         if (buf >= buf_end) {
-            av_log(avctx, AV_LOG_ERROR, "Input resolution larger than actual frame.\n");
+            av_log(avctx, AV_LOG_ERROR,
+                   "Input resolution larger than actual frame.\n");
             return -1;
         }
 
@@ -125,7 +126,7 @@ static int bfi_decode_frame(AVCodecContext * avctx, void *data,
         }
 
         /* Do boundary check */
-        if (dst + (length<<lentab[code]) > frame_end)
+        if (dst + (length << lentab[code]) > frame_end)
             break;
 
         switch (code) {
@@ -172,7 +173,7 @@ static int bfi_decode_frame(AVCodecContext * avctx, void *data,
         dst += bfi->frame.linesize[0];
     }
     *data_size = sizeof(AVFrame);
-    *(AVFrame *) data = bfi->frame;
+    *(AVFrame *)data = bfi->frame;
     return buf_size;
 }
 
