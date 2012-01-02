@@ -870,12 +870,12 @@ static int flashsv2_encode_frame(AVCodecContext * avctx, uint8_t * buf,
 
     if (keyframe) {
         new_key_frame(s);
-        p->pict_type = FF_I_TYPE;
+        p->pict_type = AV_PICTURE_TYPE_I;
         p->key_frame = 1;
         s->last_key_frame = avctx->frame_number;
         av_log(avctx, AV_LOG_DEBUG, "Inserting key frame at frame %d\n", avctx->frame_number);
     } else {
-        p->pict_type = FF_P_TYPE;
+        p->pict_type = AV_PICTURE_TYPE_P;
         p->key_frame = 0;
     }
 

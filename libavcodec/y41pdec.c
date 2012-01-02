@@ -64,7 +64,7 @@ static int y41p_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     pic->key_frame = 1;
-    pic->pict_type = FF_I_TYPE;
+    pic->pict_type = AV_PICTURE_TYPE_I;
 
     for (i = avctx->height - 1; i >= 0 ; i--) {
         y = &pic->data[0][i * pic->linesize[0]];

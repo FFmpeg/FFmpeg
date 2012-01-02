@@ -139,7 +139,7 @@ static int decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
-    s->frame.pict_type           = FF_I_TYPE;
+    s->frame.pict_type           = AV_PICTURE_TYPE_I;
     s->frame.palette_has_changed = 1;
     memcpy(s->frame.data[1], s->palette, 16 * 4);
 

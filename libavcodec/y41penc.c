@@ -54,7 +54,7 @@ static int y41p_encode_frame(AVCodecContext *avctx, uint8_t *buf,
 
     avctx->coded_frame->reference = 0;
     avctx->coded_frame->key_frame = 1;
-    avctx->coded_frame->pict_type = FF_I_TYPE;
+    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
 
     for (i = avctx->height - 1; i >= 0; i--) {
         y = &pic->data[0][i * pic->linesize[0]];

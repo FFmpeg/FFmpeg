@@ -73,7 +73,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ff_proresdsp_init(&ctx->prodsp, avctx);
 
     avctx->coded_frame = &ctx->frame;
-    ctx->frame.type = FF_I_TYPE;
+    ctx->frame.type = AV_PICTURE_TYPE_I;
     ctx->frame.key_frame = 1;
 
     ff_init_scantable_permutation(idct_permutation,

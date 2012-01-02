@@ -274,7 +274,7 @@ static int get_siz(J2kDecoderContext *s)
     if ((ret = s->avctx->get_buffer(s->avctx, &s->picture)) < 0)
         return ret;
 
-    s->picture.pict_type = FF_I_TYPE;
+    s->picture.pict_type = AV_PICTURE_TYPE_I;
     s->picture.key_frame = 1;
 
     return 0;

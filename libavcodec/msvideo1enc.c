@@ -243,7 +243,7 @@ static int encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_size, void 
         c->keyint = 0;
     else
         c->keyint++;
-    p->pict_type= keyframe ? FF_I_TYPE : FF_P_TYPE;
+    p->pict_type= keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
     p->key_frame= keyframe;
 
     return dst - buf;
