@@ -192,7 +192,7 @@ static int decode_tag(AVCodecContext *avctx, void *data,
     samples_flt = (float   *)s->frame.data[0];
 
     for (i=0 ; i<blocks ; i++) {
-        if (avctx->sample_fmt == SAMPLE_FMT_FLT) {
+        if (avctx->sample_fmt == AV_SAMPLE_FMT_FLT) {
             nelly_decode_block(s, buf, samples_flt);
             samples_flt += NELLY_SAMPLES;
         } else {
