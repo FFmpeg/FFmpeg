@@ -36,6 +36,12 @@ typedef struct {
     AVRational        pixel_aspect;
 } BufferSourceContext;
 
+#define CHECK_PARAM_CHANGE(s, c, width, height, format)\
+    if (c->w != width || c->h != height || c->pix_fmt != format) {\
+        av_log(s, AV_LOG_ERROR, "Changing frame properties on the fly is not supported.\n");\
+        return AVERROR(EINVAL);\
+    }
+
 int av_vsrc_buffer_add_frame(AVFilterContext *buffer_filter, AVFrame *frame,
                              int64_t pts, AVRational pixel_aspect)
 {
@@ -48,6 +54,8 @@ int av_vsrc_buffer_add_frame(AVFilterContext *buffer_filter, AVFrame *frame,
             );
         //return -1;
     }
+
+    CHECK_PARAM_CHANGE(buffer_filter, c, frame->width, frame->height, frame->format);
 
     c->buf = avfilter_get_video_buffer(buffer_filter->outputs[0], AV_PERM_WRITE,
                                        c->w, c->h);
@@ -72,6 +80,8 @@ int av_buffersrc_buffer(AVFilterContext *s, AVFilterBufferRef *buf)
             );
         return AVERROR(EINVAL);
     }
+
+    CHECK_PARAM_CHANGE(s, c, buf->video->w, buf->video->h, buf->format);
 
     c->buf = buf;
 
