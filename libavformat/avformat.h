@@ -66,6 +66,18 @@
  * set by user for input, always set by user for output (unless you are dealing
  * with an AVFMT_NOFILE format).
  *
+ * @section lavf_options Passing options to (de)muxers
+ * Lavf allows to configure muxers and demuxers using the @ref avoptions
+ * mechanism. Generic (format-independent) libavformat options are provided by
+ * AVFormatContext, they can be examined from a user program by calling
+ * av_opt_next() / av_opt_find() on an allocated AVFormatContext (or its AVClass
+ * from avformat_get_class()). Private (format-specific) options are provided by
+ * AVFormatContext.priv_data if and only if AVInputFormat.priv_class /
+ * AVOutputFormat.priv_class of the corresponding format struct is non-NULL.
+ * Further options may be provided by the @ref AVFormatContext.pb "I/O context",
+ * if its AVClass is non-NULL, and the protocols layer. See the discussion on
+ * nesting in @ref avoptions documentation to learn how to access those.
+ *
  * @defgroup lavf_decoding Demuxing
  * @{
  * Demuxers read a media file and split it into chunks of data (@em packets). A
@@ -99,6 +111,35 @@
  * To do that, create your own AVIOContext with avio_alloc_context(), passing
  * your reading callbacks to it. Then set the @em pb field of your
  * AVFormatContext to newly created AVIOContext.
+ *
+ * Since the format of the opened file is in general not known until after
+ * avformat_open_input() has returned, it is not possible to set demuxer private
+ * options on a preallocated context. Instead, the options should be passed to
+ * avformat_open_input() wrapped in an AVDictionary:
+ * @code
+ * AVDictionary *options = NULL;
+ * av_dict_set(&options, "video_size", "640x480", 0);
+ * av_dict_set(&options, "pixel_format", "rgb24", 0);
+ *
+ * if (avformat_open_input(&s, url, NULL, &options) < 0)
+ *     abort();
+ * av_dict_free(&options);
+ * @endcode
+ * This code passes the private options 'video_size' and 'pixel_format' to the
+ * demuxer. They would be necessary for e.g. the rawvideo demuxer, since it
+ * cannot know how to interpret raw video data otherwise. If the format turns
+ * out to be something different than raw video, those options will not be
+ * recognized by the demuxer and therefore will not be applied. Such unrecognized
+ * options are then returned in the options dictionary (recognized options are
+ * consumed). The calling program can handle such unrecognized options as it
+ * wishes, e.g.
+ * @code
+ * AVDictionaryEntry *e;
+ * if (e = av_dict_get(options, "", NULL, AV_DICT_IGNORE_SUFFIX)) {
+ *     fprintf(stderr, "Option %s not recognized by the demuxer.\n", e->key);
+ *     abort();
+ * }
+ * @endcode
  *
  * After you have finished reading the file, you must close it with
  * avformat_close_input(). It will free everything associated with the file.
