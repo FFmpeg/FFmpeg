@@ -200,8 +200,10 @@ typedef struct WmallDecodeCtx {
     uint32_t         frame_num;                     ///< current frame number (not used for decoding)
     GetBitContext    gb;                            ///< bitstream reader context
     int              buf_bit_size;                  ///< buffer size in bits
-    float*           samples;                       ///< current samplebuffer pointer
-    float*           samples_end;                   ///< maximum samplebuffer pointer
+    int16_t*         samples_16;                    ///< current samplebuffer pointer (16-bit)
+    int16_t*         samples_16_end;                ///< maximum samplebuffer pointer
+    int16_t*         samples_32;                    ///< current samplebuffer pointer (24-bit)
+    int16_t*         samples_32_end;                ///< maximum samplebuffer pointer
     uint8_t          drc_gain;                      ///< gain for the DRC tool
     int8_t           skip_frame;                    ///< skip output step
     int8_t           parsed_all_subframes;          ///< all subframes decoded?
@@ -231,8 +233,8 @@ typedef struct WmallDecodeCtx {
 
     int8_t acfilter_order;
     int8_t acfilter_scaling;
-    int acfilter_coeffs[16];
-    int acfilter_prevvalues[16];
+    int64_t acfilter_coeffs[16];
+    int acfilter_prevvalues[2][16];
 
     int8_t mclms_order;
     int8_t mclms_scaling;
@@ -321,7 +323,6 @@ static void dump_int_buffer(uint8_t *buffer, int size, int length, int delimiter
         av_log(0, 0, "%d, ", *(int16_t *)(buffer + i * size));
     }
     av_log(0, 0, "\n");
-
 }
 
 /**
@@ -358,12 +359,19 @@ static av_cold int decode_init(AVCodecContext *avctx)
     dsputil_init(&s->dsp, avctx);
     init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
 
-    avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
-
     if (avctx->extradata_size >= 18) {
         s->decode_flags    = AV_RL16(edata_ptr+14);
         channel_mask       = AV_RL32(edata_ptr+2);
         s->bits_per_sample = AV_RL16(edata_ptr);
+        if (s->bits_per_sample == 16)
+            avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+        else if (s->bits_per_sample == 24)
+            avctx->sample_fmt = AV_SAMPLE_FMT_S32;
+        else {
+            av_log(avctx, AV_LOG_ERROR, "Unknown bit-depth: %d\n",
+                   s->bits_per_sample);
+            return AVERROR_INVALIDDATA;
+        }
         /** dump the extradata */
         for (i = 0; i < avctx->extradata_size; i++)
             dprintf(avctx, "[%x] ", avctx->extradata[i]);
@@ -720,7 +728,7 @@ static int decode_channel_residues(WmallDecodeCtx *s, int ch, int tile_size)
             residue = residue >> 1;
         s->channel_residues[ch][i] = residue;
     }
-    dump_int_buffer(s->channel_residues[ch], 4, tile_size, 16);
+    //dump_int_buffer(s->channel_residues[ch], 4, tile_size, 16);
 
     return 0;
 
@@ -750,8 +758,9 @@ static void clear_codec_buffers(WmallDecodeCtx *s)
 {
     int ich, ilms;
 
-    memset(s->acfilter_coeffs, 0,     16 * sizeof(int));
-    memset(s->lpc_coefs      , 0, 40 * 2 * sizeof(int));
+    memset(s->acfilter_coeffs    , 0, 16 * sizeof(int));
+    memset(s->acfilter_prevvalues, 0, 16 * 2 * sizeof(int)); // may be wrong
+    memset(s->lpc_coefs          , 0, 40 * 2 * sizeof(int));
 
     memset(s->mclms_coeffs    , 0, 128 * sizeof(int16_t));
     memset(s->mclms_coeffs_cur, 0,   4 * sizeof(int16_t));
@@ -1023,23 +1032,34 @@ static void revert_inter_ch_decorr(WmallDecodeCtx *s, int tile_size)
 static void revert_acfilter(WmallDecodeCtx *s, int tile_size)
 {
     int ich, icoef;
-    int pred = 0, itap;
-    int **ch_coeffs = s->channel_residues;
-    int *filter_coeffs = s->acfilter_coeffs;
-    int *prevvalues = s->acfilter_prevvalues;
+    int pred;
+    int i, j;
+    int64_t *filter_coeffs = s->acfilter_coeffs;
     int scaling = s->acfilter_scaling;
     int order = s->acfilter_order;
 
     for (ich = 0; ich < s->num_channels; ich++) {
-        for (icoef = 0; icoef < tile_size; icoef++) {
-            for (itap = 0; itap < order; itap++)
-                pred += filter_coeffs[itap] * prevvalues[itap];
+        int *prevvalues = s->acfilter_prevvalues[ich];
+        for (i = 0; i < order; i++) {
+            pred = 0;
+            for (j = 0; j < order; j++) {
+                if (i <= j)
+                    pred += filter_coeffs[j] * prevvalues[j - i];
+                else
+                    pred += s->channel_residues[ich][i - j - 1] * filter_coeffs[j];
+            }
             pred >>= scaling;
-            ch_coeffs[ich][icoef] += pred;
-            for (itap = 1; itap < order; itap++)
-                prevvalues[itap] = prevvalues[itap - 1];
-            prevvalues[0] = ch_coeffs[ich][icoef];
+            s->channel_residues[ich][i] += pred;
         }
+        for (i = order; i < tile_size; i++) {
+            pred = 0;
+            for (j = 0; j < order; j++)
+                pred += s->channel_residues[ich][i - j - 1] * filter_coeffs[j];
+            pred >>= scaling;
+            s->channel_residues[ich][i] += pred;
+        }
+        for (j = 0; j < order; j++)
+            prevvalues[j] = s->channel_residues[ich][tile_size - j - 1];
     }
 }
 
@@ -1056,7 +1076,6 @@ static int decode_subframe(WmallDecodeCtx *s)
     int total_samples   = s->samples_per_frame * s->num_channels;
     int rawpcm_tile;
     int padding_zeroes;
-    int quant_stepsize = s->quant_stepsize;
 
     s->subframe_offset = get_bits_count(&s->gb);
 
@@ -1183,9 +1202,19 @@ static int decode_subframe(WmallDecodeCtx *s)
         revert_acfilter(s, subframe_len);
 
     /* Dequantize */
-    for (i = 0; i < s->num_channels; i++)
-        for (j = 0; j < subframe_len; j++)
-            s->channel_residues[i][j] *= quant_stepsize;
+    if (s->quant_stepsize != 1)
+        for (i = 0; i < s->num_channels; i++)
+            for (j = 0; j < subframe_len; j++)
+                s->channel_residues[i][j] *= s->quant_stepsize;
+
+    // Write to proper output buffer depending on bit-depth
+    for (i = 0; i < subframe_len; i++)
+        for (j = 0; j < s->num_channels; j++) {
+            if (s->bits_per_sample == 16)
+                *s->samples_16++ = (int16_t) s->channel_residues[j][i];
+            else
+                *s->samples_32++ = s->channel_residues[j][i];
+        }
 
     /** handled one subframe */
 
@@ -1213,9 +1242,14 @@ static int decode_frame(WmallDecodeCtx *s)
     int more_frames = 0;
     int len = 0;
     int i;
+    int buffer_len;
 
     /** check for potential output buffer overflow */
-    if (s->num_channels * s->samples_per_frame > s->samples_end - s->samples) {
+    if (s->bits_per_sample == 16)
+        buffer_len = s->samples_16_end - s->samples_16;
+    else
+        buffer_len = s->samples_32_end - s->samples_32;
+    if (s->num_channels * s->samples_per_frame > buffer_len) {
         /** return an error if no frame could be decoded at all */
         av_log(s->avctx, AV_LOG_ERROR,
                "not enough space for the output samples\n");
@@ -1277,8 +1311,7 @@ static int decode_frame(WmallDecodeCtx *s)
 
     if (s->skip_frame) {
         s->skip_frame = 0;
-    } else
-        s->samples += s->num_channels * s->samples_per_frame;
+    }
 
     if (s->len_prefix) {
         if (len != (get_bits_count(gb) - s->frame_offset) + 2) {
@@ -1387,8 +1420,13 @@ static int decode_packet(AVCodecContext *avctx,
     int num_bits_prev_frame;
     int packet_sequence_number;
 
-    s->samples       = data;
-    s->samples_end   = (float*)((int8_t*)data + *data_size);
+    if (s->bits_per_sample == 16) {
+        s->samples_16     = (int16_t *) data;
+        s->samples_16_end = (int16_t *) ((int8_t*)data + *data_size);
+    } else {
+        s->samples_32     = (int *) data;
+        s->samples_32_end = (int *) ((int8_t*)data + *data_size);;
+    }
     *data_size = 0;
 
     if (s->packet_done || s->packet_loss) {
@@ -1482,7 +1520,10 @@ static int decode_packet(AVCodecContext *avctx,
         save_bits(s, gb, remaining_bits(s, gb), 0);
     }
 
-    *data_size = 0; // (int8_t *)s->samples - (int8_t *)data;
+    if (s->bits_per_sample == 16)
+        *data_size = (int8_t *)s->samples_16 - (int8_t *)data;
+    else
+        *data_size = (int8_t *)s->samples_32 - (int8_t *)data;
     s->packet_offset = get_bits_count(gb) & 7;
 
     return (s->packet_loss) ? AVERROR_INVALIDDATA : get_bits_count(gb) >> 3;
