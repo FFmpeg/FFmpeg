@@ -1411,7 +1411,7 @@ static void compute_imdct(MPADecodeContext *s, GranuleDef *g,
     }
     for (j = mdct_long_end; j < sblimit; j++) {
         /* select frequency inversion */
-        win     = mdct_win[2] + ((4 * 36) & -(j & 1));
+        win     = mdct_win[2 + (4  & -(j & 1))];
         out_ptr = sb_samples + j;
 
         for (i = 0; i < 6; i++) {
