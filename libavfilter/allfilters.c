@@ -44,6 +44,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER (ASTREAMSYNC, astreamsync, af);
     REGISTER_FILTER (EARWAX,      earwax,      af);
     REGISTER_FILTER (PAN,         pan,         af);
+    REGISTER_FILTER (SILENCEDETECT, silencedetect, af);
     REGISTER_FILTER (VOLUME,      volume,      af);
 
     REGISTER_FILTER (ABUFFER,     abuffer,     asrc);

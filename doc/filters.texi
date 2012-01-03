@@ -358,6 +358,36 @@ Note that @command{ffmpeg} integrates a default down-mix (and up-mix) system
 that should be preferred (see "-ac" option) unless you have very specific
 needs.
 
+@section silencedetect
+
+Detect silence in an audio stream.
+
+This filter logs a message when it detects that the input audio volume is less
+or equal to a noise tolerance value for a duration greater or equal to the
+minimum detected noise duration.
+
+The printed times and duration are expressed in seconds.
+
+@table @option
+@item duration, d
+Set silence duration until notification (default is 2 seconds).
+
+@item noise, n
+Set noise tolerance. Can be specified in dB (in case "dB" is appended to the
+specified value) or amplitude ratio. Default is -60dB, or 0.001.
+@end table
+
+Detect 5 seconds of silence with -50dB noise tolerance:
+@example
+silencedetect=n=-50dB:d=5
+@end example
+
+Complete example with @command{ffmpeg} to detect silence with 0.0001 noise
+tolerance in @file{silence.mp3}:
+@example
+ffmpeg -f lavfi -i amovie=silence.mp3,silencedetect=noise=0.0001 -f null -
+@end example
+
 @section volume
 
 Adjust the input audio volume.

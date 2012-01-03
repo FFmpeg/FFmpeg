@@ -20,6 +20,7 @@ version next:
 - v308 Quicktime Uncompressed 4:4:4 encoder and decoder
 - yuv4 libquicktime packed 4:2:0 encoder and decoder
 - ffprobe -show_frames option
+- silencedetect audio filter
 
 
 version 0.9:
