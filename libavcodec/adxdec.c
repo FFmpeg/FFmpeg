@@ -165,6 +165,13 @@ static int adx_decode_frame(AVCodecContext *avctx, void *data,
     return buf - avpkt->data;
 }
 
+static void adx_decode_flush(AVCodecContext *avctx)
+{
+    ADXContext *c = avctx->priv_data;
+    memset(c->prev, 0, sizeof(c->prev));
+    c->eof = 0;
+}
+
 AVCodec ff_adpcm_adx_decoder = {
     .name           = "adpcm_adx",
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -172,6 +179,7 @@ AVCodec ff_adpcm_adx_decoder = {
     .priv_data_size = sizeof(ADXContext),
     .init           = adx_decode_init,
     .decode         = adx_decode_frame,
+    .flush          = adx_decode_flush,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("SEGA CRI ADX ADPCM"),
 };
