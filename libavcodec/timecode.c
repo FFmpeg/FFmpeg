@@ -64,7 +64,7 @@ int avpriv_check_timecode_rate(void *avcl, AVRational rate, int drop)
         return -1;
     }
     fps = (rate.num + rate.den/2) / rate.den;
-    if (drop && (rate.den != 1001 || fps != 30)) {
+    if (drop && fps != 30) {
         av_log(avcl, AV_LOG_ERROR, "Drop frame is only allowed with 30000/1001 FPS\n");
         return -2;
     }
