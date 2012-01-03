@@ -978,6 +978,13 @@ ffmpeg -i file.mov -an -vn -sbsf mov2textsub -c:s copy -f rawvideo sub.txt
 
 @item -tag[:@var{stream_specifier}] @var{codec_tag} (@emph{per-stream})
 Force a tag/fourcc for matching streams.
+
+@item -timecode @var{hh}:@var{mm}:@var{ss}SEP@var{ff}
+Specify Timecode for writing. @var{SEP} is ':' for non drop timecode and ';'
+(or '.') for drop.
+@example
+ffmpeg -i input.mpg -timecode 01:02:03.04 -r 30000/1001 -s ntsc output.mpg
+@end example
 @end table
 
 @section Preset files

@@ -94,7 +94,7 @@ details), you must upgrade FFmpeg's license to GPL in order to use it.
 
 
 
-@chapter Supported File Formats and Codecs
+@chapter Supported File Formats, Codecs or Features
 
 You can use the @code{-formats} and @code{-codecs} options to have an exhaustive list.
 
@@ -865,5 +865,16 @@ performance on systems without hardware floating point support).
 @end multitable
 
 @code{X} means that input/output is supported.
+
+@section Timecode
+
+@multitable @columnfractions .4 .1 .1
+@item Codec/format      @tab Read   @tab Write
+@item DV                @tab X      @tab X
+@item GXF               @tab X      @tab X
+@item MOV               @tab X      @tab
+@item MPEG1/2           @tab X      @tab X
+@item MXF               @tab        @tab X
+@end multitable
 
 @bye
