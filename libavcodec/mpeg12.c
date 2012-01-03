@@ -2485,7 +2485,9 @@ static int decode_chunks(AVCodecContext *avctx,
                 }
 
                 if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_SLICE)) {
-                    int threshold= (s2->mb_height*s->slice_count + avctx->thread_count/2) / avctx->thread_count;
+                    int threshold = (s2->mb_height * s->slice_count +
+                                     s2->slice_context_count / 2) /
+                                    s2->slice_context_count;
                     av_assert0(avctx->thread_count > 1);
                     if (threshold <= mb_y) {
                         MpegEncContext *thread_context = s2->thread_context[s->slice_count];

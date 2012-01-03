@@ -3196,7 +3196,7 @@ static AVCodec *choose_decoder(OptionsContext *o, AVFormatContext *s, AVStream *
  */
 static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
 {
-    int i, rfps, rfps_base;
+    int i;
 
     for (i = 0; i < ic->nb_streams; i++) {
         AVStream *st = ic->streams[i];
@@ -3225,17 +3225,8 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
         case AVMEDIA_TYPE_VIDEO:
             if(!ist->dec)
                 ist->dec = avcodec_find_decoder(dec->codec_id);
-            rfps      = ic->streams[i]->r_frame_rate.num;
-            rfps_base = ic->streams[i]->r_frame_rate.den;
             if (dec->lowres) {
                 dec->flags |= CODEC_FLAG_EMU_EDGE;
-            }
-
-            if (dec->time_base.den != rfps * dec->ticks_per_frame || dec->time_base.num != rfps_base) {
-
-                av_log(NULL, AV_LOG_INFO,"\nSeems stream %d codec frame rate differs from container frame rate: %2.2f (%d/%d) -> %2.2f (%d/%d)\n",
-                       i, (float)dec->time_base.den / dec->time_base.num, dec->time_base.den, dec->time_base.num,
-                       (float)rfps / rfps_base, rfps, rfps_base);
             }
 
             if (o->video_disable)

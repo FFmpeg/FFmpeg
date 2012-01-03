@@ -638,6 +638,8 @@ void MPV_common_defaults(MpegEncContext *s)
 
     s->picture_range_start   = 0;
     s->picture_range_end     = MAX_PICTURE_COUNT;
+
+    s->slice_context_count   = 1;
 }
 
 /**
@@ -656,11 +658,13 @@ void MPV_decode_defaults(MpegEncContext *s)
  */
 av_cold int MPV_common_init(MpegEncContext *s)
 {
-    int y_size, c_size, yc_size, i, mb_array_size, mv_table_size, x, y,
-        threads = (s->encoding ||
-                   (HAVE_THREADS &&
-                    s->avctx->active_thread_type & FF_THREAD_SLICE)) ?
-                  s->avctx->thread_count : 1;
+    int y_size, c_size, yc_size, i, mb_array_size, mv_table_size, x, y;
+    int nb_slices = (HAVE_THREADS &&
+                     s->avctx->active_thread_type & FF_THREAD_SLICE) ?
+                    s->avctx->thread_count : 1;
+
+    if (s->encoding && s->avctx->slices)
+        nb_slices = s->avctx->slices;
 
     if (s->codec_id == CODEC_ID_MPEG2VIDEO && !s->progressive_sequence)
         s->mb_height = (s->height + 31) / 32 * 2;
@@ -673,14 +677,15 @@ av_cold int MPV_common_init(MpegEncContext *s)
         return -1;
     }
 
-    if ((s->encoding || (s->avctx->active_thread_type & FF_THREAD_SLICE)) &&
-        (s->avctx->thread_count > MAX_THREADS ||
-         (s->avctx->thread_count > s->mb_height && s->mb_height))) {
-        int max_threads = FFMIN(MAX_THREADS, s->mb_height);
-        av_log(s->avctx, AV_LOG_WARNING,
-               "too many threads (%d), reducing to %d\n",
-               s->avctx->thread_count, max_threads);
-        threads = max_threads;
+    if (nb_slices > MAX_THREADS || (nb_slices > s->mb_height && s->mb_height)) {
+        int max_slices;
+        if (s->mb_height)
+            max_slices = FFMIN(MAX_THREADS, s->mb_height);
+        else
+            max_slices = MAX_THREADS;
+        av_log(s->avctx, AV_LOG_WARNING, "too many threads/slices (%d),"
+               " reducing to %d\n", nb_slices, max_slices);
+        nb_slices = max_slices;
     }
 
     if ((s->width || s->height) &&
@@ -831,17 +836,20 @@ av_cold int MPV_common_init(MpegEncContext *s)
         s->context_initialized = 1;
         s->thread_context[0]   = s;
 
-        if (s->encoding || (HAVE_THREADS && s->avctx->active_thread_type&FF_THREAD_SLICE)) {
-            for (i = 1; i < threads; i++) {
+//     if (s->width && s->height) {
+        if (nb_slices > 1) {
+            for (i = 1; i < nb_slices; i++) {
                 s->thread_context[i] = av_malloc(sizeof(MpegEncContext));
                 memcpy(s->thread_context[i], s, sizeof(MpegEncContext));
             }
 
-            for (i = 0; i < threads; i++) {
+            for (i = 0; i < nb_slices; i++) {
                 if (init_duplicate_context(s->thread_context[i], s) < 0)
                     goto fail;
-                s->thread_context[i]->start_mb_y = (s->mb_height*(i  ) + s->avctx->thread_count / 2) / s->avctx->thread_count;
-                s->thread_context[i]->end_mb_y   = (s->mb_height*(i+1) + s->avctx->thread_count / 2) / s->avctx->thread_count;
+                    s->thread_context[i]->start_mb_y =
+                        (s->mb_height * (i) + nb_slices / 2) / nb_slices;
+                    s->thread_context[i]->end_mb_y   =
+                        (s->mb_height * (i + 1) + nb_slices / 2) / nb_slices;
             }
         } else {
             if (init_duplicate_context(s, s) < 0)
@@ -849,6 +857,8 @@ av_cold int MPV_common_init(MpegEncContext *s)
             s->start_mb_y = 0;
             s->end_mb_y   = s->mb_height;
         }
+        s->slice_context_count = nb_slices;
+//     }
 
     return 0;
  fail:
@@ -861,13 +871,14 @@ void MPV_common_end(MpegEncContext *s)
 {
     int i, j, k;
 
-    if (s->encoding || (HAVE_THREADS && s->avctx->active_thread_type & FF_THREAD_SLICE)) {
-        for (i = 0; i < s->avctx->thread_count; i++) {
+    if (s->slice_context_count > 1) {
+        for (i = 0; i < s->slice_context_count; i++) {
             free_duplicate_context(s->thread_context[i]);
         }
-        for (i = 1; i < s->avctx->thread_count; i++) {
+        for (i = 1; i < s->slice_context_count; i++) {
             av_freep(&s->thread_context[i]);
         }
+        s->slice_context_count = 1;
     } else free_duplicate_context(s);
 
     av_freep(&s->parse_context.buffer);

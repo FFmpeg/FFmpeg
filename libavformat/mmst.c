@@ -606,7 +606,7 @@ static int mms_read(URLContext *h, uint8_t *buf, int size)
                     // copy the data to the packet buffer.
                     result = ff_mms_read_data(mms, buf, size);
                     if (result == 0) {
-                        av_dlog(NULL, "read asf media paket size is zero!\n");
+                        av_dlog(NULL, "Read ASF media packet size is zero!\n");
                         break;
                     }
                 }

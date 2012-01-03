@@ -3369,14 +3369,14 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
             linecpy(tempSrc + srcStride*copyAhead, srcBlock + srcStride*copyAhead,
                     FFMAX(height-y-copyAhead, 0), srcStride);
 
-            /* duplicate last line of src to fill the void upto line (copyAhead+7) */
+            /* duplicate last line of src to fill the void up to line (copyAhead+7) */
             for(i=FFMAX(height-y, 8); i<copyAhead+8; i++)
                     memcpy(tempSrc + srcStride*i, src + srcStride*(height-1), FFABS(srcStride));
 
             /* copy up to (copyAhead+1) lines of dst (line -1 to (copyAhead-1))*/
             linecpy(tempDst, dstBlock - dstStride, FFMIN(height-y+1, copyAhead+1), dstStride);
 
-            /* duplicate last line of dst to fill the void upto line (copyAhead) */
+            /* duplicate last line of dst to fill the void up to line (copyAhead) */
             for(i=height-y+1; i<=copyAhead; i++)
                     memcpy(tempDst + dstStride*i, dst + dstStride*(height-1), FFABS(dstStride));
 

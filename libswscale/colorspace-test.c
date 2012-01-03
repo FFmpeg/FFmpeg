@@ -36,8 +36,8 @@
 int main(int argc, char **argv)
 {
     int i, funcNum;
-    uint8_t *srcBuffer= (uint8_t*)av_malloc(SIZE);
-    uint8_t *dstBuffer= (uint8_t*)av_malloc(SIZE);
+    uint8_t *srcBuffer = av_malloc(SIZE);
+    uint8_t *dstBuffer = av_malloc(SIZE);
     int failedNum=0;
     int passedNum=0;
 
