@@ -621,17 +621,17 @@ static void imdct36(INTFLOAT *out, INTFLOAT *buf, INTFLOAT *in, INTFLOAT *win)
 
         t0 = s0 + s1;
         t1 = s0 - s1;
-        out[(9 + j) * SBLIMIT] = MULH3(t1, win[     9 + j], 1) + buf[9 + j];
-        out[(8 - j) * SBLIMIT] = MULH3(t1, win[     8 - j], 1) + buf[8 - j];
-        buf[ 9 + j           ] = MULH3(t0, win[18 + 9 + j], 1);
-        buf[ 8 - j           ] = MULH3(t0, win[18 + 8 - j], 1);
+        out[(9 + j) * SBLIMIT] = MULH3(t1, win[     9 + j], 1) + buf[4*(9 + j)];
+        out[(8 - j) * SBLIMIT] = MULH3(t1, win[     8 - j], 1) + buf[4*(8 - j)];
+        buf[4 * ( 9 + j     )] = MULH3(t0, win[18 + 9 + j], 1);
+        buf[4 * ( 8 - j     )] = MULH3(t0, win[18 + 8 - j], 1);
 
         t0 = s2 + s3;
         t1 = s2 - s3;
-        out[(9 + 8 - j) * SBLIMIT] = MULH3(t1, win[     9 + 8 - j], 1) + buf[9 + 8 - j];
-        out[         j  * SBLIMIT] = MULH3(t1, win[             j], 1) + buf[        j];
-        buf[ 9 + 8 - j           ] = MULH3(t0, win[18 + 9 + 8 - j], 1);
-        buf[         j           ] = MULH3(t0, win[18         + j], 1);
+        out[(9 + 8 - j) * SBLIMIT] = MULH3(t1, win[     9 + 8 - j], 1) + buf[4*(9 + 8 - j)];
+        out[         j  * SBLIMIT] = MULH3(t1, win[             j], 1) + buf[4*(        j)];
+        buf[4 * ( 9 + 8 - j     )] = MULH3(t0, win[18 + 9 + 8 - j], 1);
+        buf[4 * (         j     )] = MULH3(t0, win[18         + j], 1);
         i += 4;
     }
 
@@ -639,10 +639,10 @@ static void imdct36(INTFLOAT *out, INTFLOAT *buf, INTFLOAT *in, INTFLOAT *win)
     s1 = MULH3(tmp[17], icos36h[4], 2);
     t0 = s0 + s1;
     t1 = s0 - s1;
-    out[(9 + 4) * SBLIMIT] = MULH3(t1, win[     9 + 4], 1) + buf[9 + 4];
-    out[(8 - 4) * SBLIMIT] = MULH3(t1, win[     8 - 4], 1) + buf[8 - 4];
-    buf[ 9 + 4           ] = MULH3(t0, win[18 + 9 + 4], 1);
-    buf[ 8 - 4           ] = MULH3(t0, win[18 + 8 - 4], 1);
+    out[(9 + 4) * SBLIMIT] = MULH3(t1, win[     9 + 4], 1) + buf[4*(9 + 4)];
+    out[(8 - 4) * SBLIMIT] = MULH3(t1, win[     8 - 4], 1) + buf[4*(8 - 4)];
+    buf[4 * ( 9 + 4     )] = MULH3(t0, win[18 + 9 + 4], 1);
+    buf[4 * ( 8 - 4     )] = MULH3(t0, win[18 + 8 - 4], 1);
 }
 
 /* return the number of decoded frames */
@@ -1407,7 +1407,7 @@ static void compute_imdct(MPADecodeContext *s, GranuleDef *g,
         imdct36(out_ptr, buf, ptr, win);
         out_ptr += 18 * SBLIMIT;
         ptr     += 18;
-        buf     += 18;
+        buf     += (j&3) != 3 ? 1 : (4*18-3);
     }
     for (j = mdct_long_end; j < sblimit; j++) {
         /* select frequency inversion */
@@ -1415,40 +1415,40 @@ static void compute_imdct(MPADecodeContext *s, GranuleDef *g,
         out_ptr = sb_samples + j;
 
         for (i = 0; i < 6; i++) {
-            *out_ptr = buf[i];
+            *out_ptr = buf[4*i];
             out_ptr += SBLIMIT;
         }
         imdct12(out2, ptr + 0);
         for (i = 0; i < 6; i++) {
-            *out_ptr     = MULH3(out2[i    ], win[i    ], 1) + buf[i + 6*1];
-            buf[i + 6*2] = MULH3(out2[i + 6], win[i + 6], 1);
+            *out_ptr     = MULH3(out2[i    ], win[i    ], 1) + buf[4*(i + 6*1)];
+            buf[4*(i + 6*2)] = MULH3(out2[i + 6], win[i + 6], 1);
             out_ptr += SBLIMIT;
         }
         imdct12(out2, ptr + 1);
         for (i = 0; i < 6; i++) {
-            *out_ptr     = MULH3(out2[i    ], win[i    ], 1) + buf[i + 6*2];
-            buf[i + 6*0] = MULH3(out2[i + 6], win[i + 6], 1);
+            *out_ptr     = MULH3(out2[i    ], win[i    ], 1) + buf[4*(i + 6*2)];
+            buf[4*(i + 6*0)] = MULH3(out2[i + 6], win[i + 6], 1);
             out_ptr += SBLIMIT;
         }
         imdct12(out2, ptr + 2);
         for (i = 0; i < 6; i++) {
-            buf[i + 6*0] = MULH3(out2[i    ], win[i    ], 1) + buf[i + 6*0];
-            buf[i + 6*1] = MULH3(out2[i + 6], win[i + 6], 1);
-            buf[i + 6*2] = 0;
+            buf[4*(i + 6*0)] = MULH3(out2[i    ], win[i    ], 1) + buf[4*(i + 6*0)];
+            buf[4*(i + 6*1)] = MULH3(out2[i + 6], win[i + 6], 1);
+            buf[4*(i + 6*2)] = 0;
         }
         ptr += 18;
-        buf += 18;
+        buf += (j&3) != 3 ? 1 : (4*18-3);
     }
     /* zero bands */
     for (j = sblimit; j < SBLIMIT; j++) {
         /* overlap */
         out_ptr = sb_samples + j;
         for (i = 0; i < 18; i++) {
-            *out_ptr = buf[i];
-            buf[i]   = 0;
+            *out_ptr = buf[4*i];
+            buf[4*i]   = 0;
             out_ptr += SBLIMIT;
         }
-        buf += 18;
+        buf += (j&3) != 3 ? 1 : (4*18-3);
     }
 }
 
