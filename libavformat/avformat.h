@@ -69,8 +69,8 @@
  * @defgroup lavf_decoding Demuxing
  * @{
  * Demuxers read a media file and split it into chunks of data (@em packets). A
- * @ref AVPacket "packet" contains one or more frames which belong a single
- * elementary stream. In lavf API this process is represented by the
+ * @ref AVPacket "packet" contains one or more encoded frames which belongs to a
+ * single elementary stream. In the lavf API this process is represented by the
  * avformat_open_input() function for opening a file, av_read_frame() for
  * reading a single packet and finally avformat_close_input(), which does the
  * cleanup.
