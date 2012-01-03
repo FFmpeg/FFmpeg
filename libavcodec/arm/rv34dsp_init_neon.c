@@ -23,16 +23,12 @@
 #include "libavcodec/avcodec.h"
 #include "libavcodec/rv34dsp.h"
 
-void ff_rv34_inv_transform_neon(DCTELEM *block);
 void ff_rv34_inv_transform_noround_neon(DCTELEM *block);
 
-void ff_rv34_inv_transform_dc_neon(DCTELEM *block);
 void ff_rv34_inv_transform_noround_dc_neon(DCTELEM *block);
 
 void ff_rv34dsp_init_neon(RV34DSPContext *c, DSPContext* dsp)
 {
-    c->rv34_inv_transform_tab[0]    = ff_rv34_inv_transform_neon;
-    c->rv34_inv_transform_tab[1]    = ff_rv34_inv_transform_noround_neon;
-    c->rv34_inv_transform_dc_tab[0] = ff_rv34_inv_transform_dc_neon;
-    c->rv34_inv_transform_dc_tab[1] = ff_rv34_inv_transform_noround_dc_neon;
+    c->rv34_inv_transform    = ff_rv34_inv_transform_noround_neon;
+    c->rv34_inv_transform_dc = ff_rv34_inv_transform_noround_dc_neon;
 }

@@ -42,9 +42,9 @@ cglobal rv34_idct_%1_mmx2, 1, 2, 0
     movd    m0, r1
     pshufw  m0, m0, 0
     movq    [r0+ 0], m0
+    movq    [r0+ 8], m0
     movq    [r0+16], m0
-    movq    [r0+32], m0
-    movq    [r0+48], m0
+    movq    [r0+24], m0
     REP_RET
 %endmacro
 
