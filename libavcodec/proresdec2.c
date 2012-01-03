@@ -26,7 +26,7 @@
 
 //#define DEBUG
 
-#define A32_BITSTREAM_READER
+#define LONG_BITSTREAM_READER
 
 #include "avcodec.h"
 #include "get_bits.h"
@@ -333,7 +333,7 @@ static av_always_inline void decode_ac_coeffs(AVCodecContext *avctx, GetBitConte
     block_mask = blocks_per_slice - 1;
 
     for (pos = block_mask;;) {
-        bits_left = gb->size_in_bits - (((uint8_t*)re_buffer_ptr - gb->buffer)*8 - 32 + re_bit_count);
+        bits_left = gb->size_in_bits - re_index;
         if (!bits_left || (bits_left < 32 && !SHOW_UBITS(re, gb, bits_left)))
             break;
 
