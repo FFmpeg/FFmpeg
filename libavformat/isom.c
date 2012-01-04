@@ -94,6 +94,7 @@ const AVCodecTag codec_movvideo_tags[] = {
     { CODEC_ID_V308,   MKTAG('v', '3', '0', '8') }, /* UNCOMPRESSED 4:4:4 */
     { CODEC_ID_V410,   MKTAG('v', '4', '1', '0') }, /* UNCOMPRESSED 10BIT 4:4:4 */
     { CODEC_ID_Y41P,   MKTAG('Y', '4', '1', 'P') }, /* UNCOMPRESSED 12BIT 4:1:1 */
+    { CODEC_ID_YUV4,   MKTAG('y', 'u', 'v', '4') }, /* libquicktime packed yuv420p */
 
     { CODEC_ID_MJPEG,  MKTAG('j', 'p', 'e', 'g') }, /* PhotoJPEG */
     { CODEC_ID_MJPEG,  MKTAG('m', 'j', 'p', 'a') }, /* Motion-JPEG (format A) */
