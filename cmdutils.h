@@ -43,6 +43,11 @@ extern const char program_name[];
  */
 extern const int program_birth_year;
 
+/**
+ * this year, defined by the program for show_banner()
+ */
+extern const int this_year;
+
 extern AVCodecContext *avcodec_opts[AVMEDIA_TYPE_NB];
 extern AVFormatContext *avformat_opts;
 extern struct SwsContext *sws_opts;

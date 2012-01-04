@@ -54,7 +54,7 @@
 struct SwsContext *sws_opts;
 AVDictionary *format_opts, *codec_opts;
 
-static const int this_year = 2012;
+const int this_year = 2012;
 
 static FILE *report_file;
 
