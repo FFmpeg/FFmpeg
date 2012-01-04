@@ -179,7 +179,7 @@ static inline void render_line_unrolled(intptr_t x, unsigned char y, int x1,
     }
 }
 
-static void render_line(int x0, int y0, int x1, int y1, float *buf)
+static void render_line(int x0, unsigned char y0, int x1, int y1, float *buf)
 {
     int dy  = y1 - y0;
     int adx = x1 - x0;
