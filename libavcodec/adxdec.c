@@ -45,7 +45,8 @@ static av_cold int adx_decode_init(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_ERROR, "error parsing ADX header\n");
             return AVERROR_INVALIDDATA;
         }
-        c->channels = avctx->channels;
+        c->channels      = avctx->channels;
+        c->header_parsed = 1;
     }
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
@@ -106,21 +107,21 @@ static int adx_decode_frame(AVCodecContext *avctx, void *data,
         return buf_size;
     }
 
-    if(AV_RB16(buf) == 0x8000){
+    if (!c->header_parsed && buf_size >= 2 && AV_RB16(buf) == 0x8000) {
         int header_size;
-        if ((ret = avpriv_adx_decode_header(avctx, buf,
-                                            buf_size, &header_size,
+        if ((ret = avpriv_adx_decode_header(avctx, buf, buf_size, &header_size,
                                             c->coeff)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "error parsing ADX header\n");
             return AVERROR_INVALIDDATA;
         }
-        c->channels = avctx->channels;
-        if(buf_size < header_size)
+        c->channels      = avctx->channels;
+        c->header_parsed = 1;
+        if (buf_size < header_size)
             return AVERROR_INVALIDDATA;
-        buf += header_size;
+        buf      += header_size;
         buf_size -= header_size;
     }
-    if(c->channels <= 0)
+    if (!c->header_parsed)
         return AVERROR_INVALIDDATA;
 
     /* calculate number of blocks in the packet */

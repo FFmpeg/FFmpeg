@@ -35,7 +35,7 @@
 #define _GNU_SOURCE
 #include <sched.h>
 #endif
-#if HAVE_GETSYSTEMINFO
+#if HAVE_GETPROCESSAFFINITYMASK
 #include <windows.h>
 #endif
 #if HAVE_SYSCTL
@@ -172,10 +172,11 @@ static int get_logical_cpus(AVCodecContext *avctx)
     if (!ret) {
         nb_cpus = CPU_COUNT(&cpuset);
     }
-#elif HAVE_GETSYSTEMINFO
-    SYSTEM_INFO sysinfo;
-    GetSystemInfo(&sysinfo);
-    nb_cpus = sysinfo.dwNumberOfProcessors;
+#elif HAVE_GETPROCESSAFFINITYMASK
+    DWORD_PTR proc_aff, sys_aff;
+    ret = GetProcessAffinityMask(GetCurrentProcess(), &proc_aff, &sys_aff);
+    if (ret)
+        nb_cpus = av_popcount64(proc_aff);
 #elif HAVE_SYSCTL && defined(HW_NCPU)
     int mib[2] = { CTL_HW, HW_NCPU };
     size_t len = sizeof(nb_cpus);

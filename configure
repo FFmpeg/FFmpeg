@@ -1175,9 +1175,9 @@ HAVE_LIST="
     fork
     getaddrinfo
     gethrtime
+    GetProcessAffinityMask
     GetProcessMemoryInfo
     GetProcessTimes
-    GetSystemInfo
     getrusage
     gnu_as
     ibm_asm
@@ -3016,8 +3016,8 @@ check_func_headers windows.h PeekNamedPipe
 check_func_headers io.h setmode
 check_func_headers lzo/lzo1x.h lzo1x_999_compress
 check_lib2 "windows.h psapi.h" GetProcessMemoryInfo -lpsapi
+check_func_headers windows.h GetProcessAffinityMask
 check_func_headers windows.h GetProcessTimes
-check_func_headers windows.h GetSystemInfo
 check_func_headers windows.h MapViewOfFile
 check_func_headers windows.h VirtualAlloc
 

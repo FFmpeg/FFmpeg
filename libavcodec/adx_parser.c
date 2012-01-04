@@ -45,27 +45,31 @@ static int adx_parse(AVCodecParserContext *s1,
     ParseContext *pc = &s->pc;
     int next = END_NOT_FOUND;
     int i;
-    uint64_t state= pc->state64;
+    uint64_t state = pc->state64;
 
-    if(!s->header_size){
-        for(i=0; i<buf_size; i++){
-            state= (state<<8) | buf[i];
-            if((state&0xFFFF0000FFFFFF00) == 0x8000000003120400ULL && (state&0xFF) && ((state>>32)&0xFFFF)>=4){
-                s->header_size= ((state>>32)&0xFFFF) + 4;
-                s->block_size = BLOCK_SIZE * (state&0xFF);
-                s->remaining  = i - 7 + s->header_size + s->block_size;
-                break;
+    if (!s->header_size) {
+        for (i = 0; i < buf_size; i++) {
+            state = (state << 8) | buf[i];
+            /* check for fixed fields in ADX header for possible match */
+            if ((state & 0xFFFF0000FFFFFF00) == 0x8000000003120400ULL) {
+                int channels    = state & 0xFF;
+                int header_size = ((state >> 32) & 0xFFFF) + 4;
+                if (channels > 0 && header_size >= 8) {
+                    s->header_size = header_size;
+                    s->block_size  = BLOCK_SIZE * channels;
+                    s->remaining   = i - 7 + s->header_size + s->block_size;
+                    break;
+                }
             }
         }
-        pc->state64= state;
+        pc->state64 = state;
     }
 
     if (s->header_size) {
-        if (!s->remaining) {
+        if (!s->remaining)
             s->remaining = s->block_size;
-        }
-        if (s->remaining<=buf_size) {
-            next= s->remaining;
+        if (s->remaining <= buf_size) {
+            next = s->remaining;
             s->remaining = 0;
         } else
             s->remaining -= buf_size;
