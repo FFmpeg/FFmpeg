@@ -935,12 +935,12 @@ static int vorbis_parse_id_hdr(vorbis_context *vc)
     vc->bitrate_minimum = get_bits_long(gb, 32);
     bl0 = get_bits(gb, 4);
     bl1 = get_bits(gb, 4);
-    vc->blocksize[0] = (1 << bl0);
-    vc->blocksize[1] = (1 << bl1);
     if (bl0 > 13 || bl0 < 6 || bl1 > 13 || bl1 < 6 || bl1 < bl0) {
         av_log(vc->avccontext, AV_LOG_ERROR, " Vorbis id header packet corrupt (illegal blocksize). \n");
         return AVERROR_INVALIDDATA;
     }
+    vc->blocksize[0] = (1 << bl0);
+    vc->blocksize[1] = (1 << bl1);
     vc->win[0] = ff_vorbis_vwin[bl0 - 6];
     vc->win[1] = ff_vorbis_vwin[bl1 - 6];
 
