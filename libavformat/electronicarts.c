@@ -221,6 +221,10 @@ static int process_audio_header_eacs(AVFormatContext *s)
 
     ea->sample_rate  = ea->big_endian ? avio_rb32(pb) : avio_rl32(pb);
     ea->bytes        = avio_r8(pb);   /* 1=8-bit, 2=16-bit */
+    if(ea->bytes == 0){
+        av_log(s,AV_LOG_ERROR,"the file is corrupted, ea->bytes = 0\n");
+        return AVERROR_INVALIDDATA;
+    }
     ea->num_channels = avio_r8(pb);
     compression_type = avio_r8(pb);
     avio_skip(pb, 13);
