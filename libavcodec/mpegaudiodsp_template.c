@@ -69,8 +69,11 @@ static inline int round_sample(int64_t *sum)
 #   define FIXHR(a)       ((int)((a) * (1LL<<32) + 0.5))
 #endif
 
-/** Window for MDCT. */
-DECLARE_ALIGNED(16, INTFLOAT, RENAME(ff_mdct_win))[8][36];
+/** Window for MDCT. Actually only the elements in [0,17] and
+    [MDCT_BUF_SIZE/2, MDCT_BUF_SIZE/2 + 17] are actually used. The rest
+    is just to preserve alignment for SIMD implementations.
+*/
+DECLARE_ALIGNED(16, INTFLOAT, RENAME(ff_mdct_win))[8][MDCT_BUF_SIZE];
 
 DECLARE_ALIGNED(16, MPA_INT, RENAME(ff_mpa_synth_window))[512+256];
 
@@ -244,15 +247,17 @@ void RENAME(ff_init_mpadsp_tabs)(void)
 
             if (j == 2)
                 RENAME(ff_mdct_win)[j][i/3] = FIXHR((d / (1<<5)));
-            else
-                RENAME(ff_mdct_win)[j][i  ] = FIXHR((d / (1<<5)));
+            else {
+                int idx = i < 18 ? i : i + (MDCT_BUF_SIZE/2 - 18);
+                RENAME(ff_mdct_win)[j][idx] = FIXHR((d / (1<<5)));
+            }
         }
     }
 
     /* NOTE: we do frequency inversion adter the MDCT by changing
         the sign of the right window coefs */
     for (j = 0; j < 4; j++) {
-        for (i = 0; i < 36; i += 2) {
+        for (i = 0; i < MDCT_BUF_SIZE; i += 2) {
             RENAME(ff_mdct_win)[j + 4][i    ] =  RENAME(ff_mdct_win)[j][i    ];
             RENAME(ff_mdct_win)[j + 4][i + 1] = -RENAME(ff_mdct_win)[j][i + 1];
         }
@@ -353,15 +358,15 @@ static void imdct36(INTFLOAT *out, INTFLOAT *buf, INTFLOAT *in, INTFLOAT *win)
         t1 = s0 - s1;
         out[(9 + j) * SBLIMIT] = MULH3(t1, win[     9 + j], 1) + buf[4*(9 + j)];
         out[(8 - j) * SBLIMIT] = MULH3(t1, win[     8 - j], 1) + buf[4*(8 - j)];
-        buf[4 * ( 9 + j     )] = MULH3(t0, win[18 + 9 + j], 1);
-        buf[4 * ( 8 - j     )] = MULH3(t0, win[18 + 8 - j], 1);
+        buf[4 * ( 9 + j     )] = MULH3(t0, win[MDCT_BUF_SIZE/2 + 9 + j], 1);
+        buf[4 * ( 8 - j     )] = MULH3(t0, win[MDCT_BUF_SIZE/2 + 8 - j], 1);
 
         t0 = s2 + s3;
         t1 = s2 - s3;
         out[(9 + 8 - j) * SBLIMIT] = MULH3(t1, win[     9 + 8 - j], 1) + buf[4*(9 + 8 - j)];
         out[         j  * SBLIMIT] = MULH3(t1, win[             j], 1) + buf[4*(        j)];
-        buf[4 * ( 9 + 8 - j     )] = MULH3(t0, win[18 + 9 + 8 - j], 1);
-        buf[4 * (         j     )] = MULH3(t0, win[18         + j], 1);
+        buf[4 * ( 9 + 8 - j     )] = MULH3(t0, win[MDCT_BUF_SIZE/2 + 9 + 8 - j], 1);
+        buf[4 * (         j     )] = MULH3(t0, win[MDCT_BUF_SIZE/2         + j], 1);
         i += 4;
     }
 
@@ -371,8 +376,8 @@ static void imdct36(INTFLOAT *out, INTFLOAT *buf, INTFLOAT *in, INTFLOAT *win)
     t1 = s0 - s1;
     out[(9 + 4) * SBLIMIT] = MULH3(t1, win[     9 + 4], 1) + buf[4*(9 + 4)];
     out[(8 - 4) * SBLIMIT] = MULH3(t1, win[     8 - 4], 1) + buf[4*(8 - 4)];
-    buf[4 * ( 9 + 4     )] = MULH3(t0, win[18 + 9 + 4], 1);
-    buf[4 * ( 8 - 4     )] = MULH3(t0, win[18 + 8 - 4], 1);
+    buf[4 * ( 9 + 4     )] = MULH3(t0, win[MDCT_BUF_SIZE/2 + 9 + 4], 1);
+    buf[4 * ( 8 - 4     )] = MULH3(t0, win[MDCT_BUF_SIZE/2 + 8 - 4], 1);
 }
 
 void RENAME(ff_imdct36_blocks)(INTFLOAT *out, INTFLOAT *buf, INTFLOAT *in,
