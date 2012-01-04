@@ -67,6 +67,7 @@ uint32_t avpriv_framenum_to_smpte_timecode(unsigned frame, int fps, int drop);
  * @param tc    Timecode struct pointer
  * @param frame Frame id (timecode frame is computed with tc->start+frame)
  * @return a pointer to the buf parameter
+ * @note  timecode representation can be a negative timecode
  * @note  buf must have enough space to store the timecode representation: 16
  *        bytes is the minimum required size.
  */
