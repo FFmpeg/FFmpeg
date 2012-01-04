@@ -640,7 +640,7 @@ static int decode_i2_frame(FourXContext *f, const uint8_t *buf, int length){
             }
             dst+=16;
         }
-        dst += 16*stride - width;
+        dst += 16 * stride - x;
     }
 
     return 0;
