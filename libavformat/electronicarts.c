@@ -408,7 +408,7 @@ static int ea_read_header(AVFormatContext *s,
     EaDemuxContext *ea = s->priv_data;
     AVStream *st;
 
-    if (!process_ea_header(s))
+    if (process_ea_header(s)<=0)
         return AVERROR(EIO);
 
     if (ea->video_codec) {
