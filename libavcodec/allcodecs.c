@@ -217,6 +217,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (UTVIDEO, utvideo);
     REGISTER_ENCDEC  (V210,  v210);
     REGISTER_DECODER (V210X, v210x);
+    REGISTER_ENCDEC  (V308, v308);
     REGISTER_ENCDEC  (V410, v410);
     REGISTER_DECODER (VB, vb);
     REGISTER_DECODER (VBLE, vble);

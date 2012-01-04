@@ -261,6 +261,7 @@ enum CodecID {
     CODEC_ID_AVRP       = MKBETAG('A','V','R','P'),
 
     CODEC_ID_G2M        = MKBETAG( 0 ,'G','2','M'),
+    CODEC_ID_V308       = MKBETAG('V','3','0','8'),
 
     /* various PCM "codecs" */
     CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs

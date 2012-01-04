@@ -17,6 +17,7 @@ version next:
 - y41p Brooktree Uncompressed 4:1:1 12-bit encoder and decoder
 - ffprobe -show_error option
 - Avid 1:1 10-bit RGB Packer decoder
+- v308 Quicktime Uncompressed 4:4:4 encoder and decoder
 
 
 version 0.9:
