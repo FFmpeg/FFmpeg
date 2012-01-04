@@ -1223,7 +1223,6 @@ static int matroska_parse_seekhead_entry(MatroskaDemuxContext *matroska, int idx
 static void matroska_execute_seekhead(MatroskaDemuxContext *matroska)
 {
     EbmlList *seekhead_list = &matroska->seekhead;
-    MatroskaSeekhead *seekhead = seekhead_list->elem;
     int64_t before_pos = avio_tell(matroska->ctx->pb);
     int i;
 
@@ -1233,6 +1232,7 @@ static void matroska_execute_seekhead(MatroskaDemuxContext *matroska)
         return;
 
     for (i = 0; i < seekhead_list->nb_elem; i++) {
+        MatroskaSeekhead *seekhead = seekhead_list->elem;
         if (seekhead[i].pos <= before_pos)
             continue;
 
