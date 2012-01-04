@@ -61,8 +61,13 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     for (h = 0; h < avctx->height; h++) {
         uint16_t *dst = (uint16_t *)dst_line;
         for (w = 0; w < avctx->width; w++) {
-            uint32_t pixel = av_be2ne32(*src++);
+            uint32_t pixel;
             uint16_t r, g, b;
+            if (avctx->codec_id==CODEC_ID_AVRP) {
+                pixel = av_le2ne32(*src++);
+            } else {
+                pixel = av_be2ne32(*src++);
+            }
             if (avctx->codec_id==CODEC_ID_R210) {
                 b =  pixel <<  6;
                 g = (pixel >>  4) & 0xffc0;
@@ -118,5 +123,17 @@ AVCodec ff_r10k_decoder = {
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("AJA Kona 10-bit RGB Codec"),
+};
+#endif
+#if CONFIG_AVRP_DECODER
+AVCodec ff_avrp_decoder = {
+    .name           = "avrp",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_AVRP,
+    .init           = decode_init,
+    .close          = decode_close,
+    .decode         = decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
+    .long_name = NULL_IF_CONFIG_SMALL("Avid 1:1 10-bit RGB Packer"),
 };
 #endif

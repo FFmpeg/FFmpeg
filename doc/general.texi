@@ -438,6 +438,8 @@ following image formats are supported:
 @item Autodesk Animator Flic video  @tab     @tab  X
 @item Autodesk RLE           @tab     @tab  X
     @tab fourcc: AASC
+@item Avid 1:1 10-bit RGB Packer  @tab   @tab  X
+    @tab fourcc: AVrp
 @item AVS (Audio Video Standard) video  @tab     @tab  X
     @tab Video encoding used by the Creature Shock game.
 @item Beam Software VB       @tab     @tab  X
