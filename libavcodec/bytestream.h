@@ -39,11 +39,15 @@ static av_always_inline void bytestream_put_ ##name(uint8_t **b, const type valu
     write(*b, value);\
     (*b) += bytes;\
 }\
+static av_always_inline type bytestream2_get_ ## name ## u(GetByteContext *g)\
+{\
+    return bytestream_get_ ## name(&g->buffer);\
+}\
 static av_always_inline type bytestream2_get_ ## name(GetByteContext *g)\
 {\
     if (g->buffer_end - g->buffer < bytes)\
         return 0;\
-    return bytestream_get_ ## name(&g->buffer);\
+    return bytestream2_get_ ## name ## u(g);\
 }\
 static av_always_inline type bytestream2_peek_ ## name(GetByteContext *g)\
 {\
