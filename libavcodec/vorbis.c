@@ -156,7 +156,7 @@ void ff_vorbis_ready_floor1_list(vorbis_floor1_entry * list, int values)
     }
 }
 
-static inline void render_line_unrolled(intptr_t x, intptr_t y, int x1,
+static inline void render_line_unrolled(intptr_t x, unsigned char y, int x1,
                                         intptr_t sy, int ady, int adx,
                                         float *buf)
 {
@@ -191,7 +191,7 @@ static void render_line(int x0, int y0, int x1, int y1, float *buf)
     } else {
         int base = dy / adx;
         int x    = x0;
-        int y    = y0;
+        unsigned char y = y0;
         int err  = -adx;
         ady -= FFABS(base) * adx;
         while (++x < x1) {
