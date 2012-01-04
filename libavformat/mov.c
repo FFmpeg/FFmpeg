@@ -1671,7 +1671,7 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         sample_duration = avio_rb32(pb);
         /* sample_duration < 0 is invalid based on the spec */
         if (sample_duration < 0) {
-            av_log(c->fc, AV_LOG_ERROR, "Invalid SampleDelta in STTS %d", sample_duration);
+            av_log(c->fc, AV_LOG_ERROR, "Invalid SampleDelta in STTS %d\n", sample_duration);
             sample_duration = 1;
         }
         sc->stts_data[i].count= sample_count;
