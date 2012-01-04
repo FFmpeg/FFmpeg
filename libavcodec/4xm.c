@@ -786,7 +786,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     if(frame_4cc == AV_RL32("ifr2")){
         p->pict_type= AV_PICTURE_TYPE_I;
-        if(decode_i2_frame(f, buf-4, frame_size) < 0)
+        if(decode_i2_frame(f, buf-4, frame_size + 4) < 0)
             return -1;
     }else if(frame_4cc == AV_RL32("ifrm")){
         p->pict_type= AV_PICTURE_TYPE_I;
