@@ -24,7 +24,6 @@
 #include "libavutil/dict.h"
 #include "avformat.h"
 #include "internal.h"
-#include "avio_internal.h"
 #include "riff.h"
 #include "rm.h"
 
@@ -613,7 +612,6 @@ static int rm_assemble_video_frame(AVFormatContext *s, AVIOContext *pb,
     }
     if(type != 1){  // not whole frame
         len2 = get_num(pb, &len);
-        len2 = ffio_limit(pb, len2);
         pos  = get_num(pb, &len);
         pic_num = avio_r8(pb); len--;
     }
