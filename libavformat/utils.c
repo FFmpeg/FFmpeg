@@ -2273,6 +2273,8 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **option
             pkt.size -= ret;
         }
     }
+    if(!pkt.data && !got_picture)
+        return -1;
     return ret;
 }
 
