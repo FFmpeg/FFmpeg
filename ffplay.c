@@ -2263,7 +2263,7 @@ static int stream_component_open(VideoState *is, int stream_index)
         if (env)
             wanted_channel_layout = av_get_default_channel_layout(SDL_atoi(env));
         if (!wanted_channel_layout) {
-            wanted_channel_layout = (avctx->channel_layout && avctx->channels == av_get_channel_layout_nb_channels(avctx->channels)) ? avctx->channel_layout : av_get_default_channel_layout(avctx->channels);
+            wanted_channel_layout = (avctx->channel_layout && avctx->channels == av_get_channel_layout_nb_channels(avctx->channel_layout)) ? avctx->channel_layout : av_get_default_channel_layout(avctx->channels);
             wanted_channel_layout &= ~AV_CH_LAYOUT_STEREO_DOWNMIX;
             wanted_nb_channels = av_get_channel_layout_nb_channels(wanted_channel_layout);
             /* SDL only supports 1, 2, 4 or 6 channels at the moment, so we have to make sure not to request anything else. */
