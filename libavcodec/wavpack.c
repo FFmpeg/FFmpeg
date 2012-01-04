@@ -405,12 +405,12 @@ static inline int wv_get_value_integer(WavpackFrameContext *s, uint32_t *crc, in
     }
 
     bit = (S & s->and) | s->or;
-    bit = (((S + bit) << s->shift) - bit) << s->post_shift;
+    bit = (((S + bit) << s->shift) - bit);
 
     if(s->hybrid)
         bit = av_clip(bit, -s->hybrid_maxclip - 1, s->hybrid_maxclip);
 
-    return bit;
+    return bit << s->post_shift;
 }
 
 static float wv_get_value_float(WavpackFrameContext *s, uint32_t *crc, int S)
