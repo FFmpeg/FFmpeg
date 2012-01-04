@@ -1575,9 +1575,11 @@ static int vorbis_parse_audio_packet(vorbis_context *vc)
             av_log(vc->avccontext, AV_LOG_ERROR, "Too many channels in vorbis_floor_decode.\n");
             return -1;
         }
-        ret = vorbis_residue_decode(vc, residue, ch, do_not_decode, ch_res_ptr, vlen, ch_left);
-        if (ret < 0)
-            return ret;
+        if (ch) {
+            ret = vorbis_residue_decode(vc, residue, ch, do_not_decode, ch_res_ptr, vlen, ch_left);
+            if (ret < 0)
+                return ret;
+        }
 
         ch_res_ptr += ch * vlen;
         ch_left -= ch;
