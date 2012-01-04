@@ -634,9 +634,6 @@ static int init_input(AVFormatContext *s, const char *filename, AVDictionary **o
     int ret;
     AVProbeData pd = {filename, NULL, 0};
 
-    if(s->iformat && !strlen(filename))
-        return 0;
-
     if (s->pb) {
         s->flags |= AVFMT_FLAG_CUSTOM_IO;
         if (!s->iformat)
