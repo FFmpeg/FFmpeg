@@ -322,10 +322,17 @@ static void vqa_decode_chunk(VqaContext *s)
     int hibytes = s->decode_buffer_size / 2;
 
     /* first, traverse through the frame and find the subchunks */
-    while (index < s->size) {
+    while (index + CHUNK_PREAMBLE_SIZE <= s->size) {
+        unsigned next_index;
 
         chunk_type = AV_RB32(&s->buf[index]);
         chunk_size = AV_RB32(&s->buf[index + 4]);
+        byte_skip = chunk_size & 0x01;
+        next_index = index + CHUNK_PREAMBLE_SIZE + chunk_size + byte_skip;
+        if (next_index > s->size) {
+            av_log(s->avctx, AV_LOG_ERROR, "Dropping incomplete chunk\n");
+            break;
+        }
 
         switch (chunk_type) {
 
@@ -366,9 +373,7 @@ static void vqa_decode_chunk(VqaContext *s)
             chunk_type);
             break;
         }
-
-        byte_skip = chunk_size & 0x01;
-        index += (CHUNK_PREAMBLE_SIZE + chunk_size + byte_skip);
+        index = next_index;
     }
 
     /* next, deal with the palette */
