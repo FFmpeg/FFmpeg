@@ -926,6 +926,7 @@ static av_cold int xml_init(WriterContext *wctx, const char *args, void *opaque)
             av_log(wctx, AV_LOG_ERROR,                                  \
                    "XSD-compliant output selected but option '%s' was selected, XML output may be non-compliant.\n" \
                    "You need to disable such option with '-no%s'\n", opt_name, opt_name); \
+            return AVERROR(EINVAL);                                     \
         }
         CHECK_COMPLIANCE(show_private_data, "private");
         CHECK_COMPLIANCE(show_value_unit,   "unit");
