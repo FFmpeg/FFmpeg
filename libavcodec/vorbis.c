@@ -146,13 +146,13 @@ void ff_vorbis_ready_floor1_list(vorbis_floor1_entry * list, int values) {
     }
 }
 
-static void render_line(int x0, int y0, int x1, int y1, float * buf) {
+static void render_line(int x0, uint8_t y0, int x1, int y1, float * buf) {
     int dy = y1 - y0;
     int adx = x1 - x0;
     int base = dy / adx;
     int ady = FFABS(dy) - FFABS(base) * adx;
     int x = x0;
-    int y = y0;
+    uint8_t y = y0;
     int err = 0;
     int sy = dy<0 ? -1 : 1;
     buf[x] = ff_vorbis_floor1_inverse_db_table[y];
@@ -168,7 +168,8 @@ static void render_line(int x0, int y0, int x1, int y1, float * buf) {
 }
 
 void ff_vorbis_floor1_render_list(vorbis_floor1_entry * list, int values, uint_fast16_t * y_list, int * flag, int multiplier, float * out, int samples) {
-    int lx, ly, i;
+    int lx, i;
+    uint8_t ly;
     lx = 0;
     ly = y_list[0] * multiplier;
     for (i = 1; i < values; i++) {
