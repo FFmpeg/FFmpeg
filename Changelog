@@ -4,6 +4,7 @@ releases are sorted from youngest to oldest.
 version <next>:
 
 - XWD encoder and decoder
+- Support for fragmentation in the mov/mp4 muxer
 
 
 version 0.8:

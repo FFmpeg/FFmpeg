@@ -65,6 +65,11 @@ typedef struct {
     HintSample *samples;
 } HintSampleQueue;
 
+typedef struct {
+    int64_t offset;
+    int64_t time;
+} MOVFragmentInfo;
+
 typedef struct MOVIndex {
     int         mode;
     int         entry;
@@ -98,7 +103,19 @@ typedef struct MOVIndex {
     int64_t     cur_rtp_ts_unwrapped;
     uint32_t    max_packet_size;
 
+    int64_t     default_duration;
+    uint32_t    default_sample_flags;
+    uint32_t    default_size;
+
     HintSampleQueue sample_queue;
+
+    AVIOContext *mdat_buf;
+    int64_t     moof_size_offset;
+    int64_t     data_offset;
+    int64_t     frag_start;
+
+    int         nb_frag_info;
+    MOVFragmentInfo *frag_info;
 } MOVTrack;
 
 typedef struct MOVMuxContext {
@@ -116,9 +133,17 @@ typedef struct MOVMuxContext {
     int iods_skip;
     int iods_video_profile;
     int iods_audio_profile;
+
+    int fragments;
+    int max_fragment_duration;
+    int max_fragment_size;
 } MOVMuxContext;
 
 #define FF_MOV_FLAG_RTP_HINT 1
+#define FF_MOV_FLAG_FRAGMENT 2
+#define FF_MOV_FLAG_EMPTY_MOOV 4
+#define FF_MOV_FLAG_FRAG_KEYFRAME 8
+#define FF_MOV_FLAG_SEPARATE_MOOF 16
 
 int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt);
 
