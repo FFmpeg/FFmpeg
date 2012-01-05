@@ -338,9 +338,27 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         assert(s->nb_components==3);
         break;
     case 0x12121100:
+    case 0x22122100:
         s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV444P : PIX_FMT_YUVJ444P;
         s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
-        s->yuv442 = 1;
+        s->upscale_v = 2;
+        s->upscale_h = (pix_fmt_id == 0x22122100);
+        s->chroma_height = s->height;
+        break;
+    case 0x21211100:
+    case 0x22211200:
+        s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV444P : PIX_FMT_YUVJ444P;
+        s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
+        s->upscale_v = (pix_fmt_id == 0x22211200);
+        s->upscale_h = 2;
+        s->chroma_height = s->height;
+        break;
+    case 0x22221100:
+        s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV444P : PIX_FMT_YUVJ444P;
+        s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
+        s->upscale_v = 2;
+        s->upscale_h = 2;
+        s->chroma_height = s->height / 2;
         break;
     case 0x11000000:
         if(s->bits <= 8)
@@ -350,13 +368,21 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         break;
     case 0x12111100:
     case 0x22211100:
+    case 0x22112100:
         s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV440P : PIX_FMT_YUVJ440P;
         s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
-        s->yuv421 = pix_fmt_id == 0x22211100;
+        s->upscale_h = (pix_fmt_id == 0x22211100) * 2 + (pix_fmt_id == 0x22112100);
+        s->chroma_height = s->height / 2;
         break;
     case 0x21111100:
         s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV422P : PIX_FMT_YUVJ422P;
         s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
+        break;
+    case 0x22121100:
+    case 0x22111200:
+        s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV422P : PIX_FMT_YUVJ422P;
+        s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
+        s->upscale_v = (pix_fmt_id == 0x22121100) + 1;
         break;
     case 0x22111100:
         s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV420P : PIX_FMT_YUVJ420P;
@@ -1140,25 +1166,26 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s,
                 return -1;
         }
     }
-    if (s->yuv421) {
-        uint8_t *line = s->picture_ptr->data[2];
-        for (i = 0; i < s->height / 2; i++) {
+    if (s->upscale_h) {
+        uint8_t *line = s->picture_ptr->data[s->upscale_h];
+        for (i = 0; i < s->chroma_height; i++) {
             for (index = s->width - 1; index; index--)
                 line[index] = (line[index / 2] + line[(index + 1) / 2]) >> 1;
-            line += s->linesize[2];
+            line += s->linesize[s->upscale_h];
         }
-    } else if (s->yuv442) {
-        uint8_t *dst = &((uint8_t *)s->picture_ptr->data[2])[(s->height - 1) * s->linesize[2]];
+    }
+    if (s->upscale_v) {
+        uint8_t *dst = &((uint8_t *)s->picture_ptr->data[s->upscale_v])[(s->height - 1) * s->linesize[s->upscale_v]];
         for (i = s->height - 1; i; i--) {
-            uint8_t *src1 = &((uint8_t *)s->picture_ptr->data[2])[i / 2 * s->linesize[2]];
-            uint8_t *src2 = &((uint8_t *)s->picture_ptr->data[2])[(i + 1) / 2 * s->linesize[2]];
+            uint8_t *src1 = &((uint8_t *)s->picture_ptr->data[s->upscale_v])[i / 2 * s->linesize[s->upscale_v]];
+            uint8_t *src2 = &((uint8_t *)s->picture_ptr->data[s->upscale_v])[(i + 1) / 2 * s->linesize[s->upscale_v]];
             if (src1 == src2) {
                 memcpy(dst, src1, s->width);
             } else {
                 for (index = 0; index < s->width; index++)
                     dst[index] = (src1[index] + src2[index]) >> 1;
             }
-            dst -= s->linesize[2];
+            dst -= s->linesize[s->upscale_v];
         }
     }
     emms_c();
