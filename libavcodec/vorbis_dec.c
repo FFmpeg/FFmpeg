@@ -654,7 +654,7 @@ static int vorbis_parse_setup_hdr_residues(vorbis_context *vc){
         res_setup->partition_size=get_bits(gb, 24)+1;
         /* Validations to prevent a buffer overflow later. */
         if (res_setup->begin>res_setup->end
-        || res_setup->end>vc->blocksize[1]/(res_setup->type==2?1:2)
+        || res_setup->end > (res_setup->type == 2 ? vc->avccontext->channels : 1) * vc->blocksize[1] / 2
         || (res_setup->end-res_setup->begin)/res_setup->partition_size>V_MAX_PARTITIONS) {
             av_log(vc->avccontext, AV_LOG_ERROR, "partition out of bounds: type, begin, end, size, blocksize: %d, %d, %d, %d, %d\n", res_setup->type, res_setup->begin, res_setup->end, res_setup->partition_size, vc->blocksize[1]/2);
             return 1;
@@ -1505,6 +1505,7 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
     uint_fast8_t res_num=0;
     int_fast16_t retlen=0;
     float fadd_bias = vc->add_bias;
+    int ch_left = vc->audio_channels;
 
     if (get_bits1(gb)) {
         av_log(vc->avccontext, AV_LOG_ERROR, "Not a Vorbis I audio packet.\n");
@@ -1583,9 +1584,14 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
             }
         }
         residue=&vc->residues[mapping->submap_residue[i]];
+        if (ch_left < ch) {
+            av_log(vc->avccontext, AV_LOG_ERROR, "Too many channels in vorbis_floor_decode.\n");
+            return -1;
+        }
         vorbis_residue_decode(vc, residue, ch, do_not_decode, ch_res_ptr, blocksize/2);
 
         ch_res_ptr+=ch*blocksize/2;
+        ch_left -= ch;
     }
 
 // Inverse coupling
