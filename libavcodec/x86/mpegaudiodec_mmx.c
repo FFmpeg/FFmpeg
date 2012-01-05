@@ -24,6 +24,18 @@
 #include "libavcodec/dsputil.h"
 #include "libavcodec/mpegaudiodsp.h"
 
+void ff_imdct36_float_sse(float *out, float *buf, float *in, float *win);
+void ff_imdct36_float_sse2(float *out, float *buf, float *in, float *win);
+void ff_imdct36_float_sse3(float *out, float *buf, float *in, float *win);
+void ff_imdct36_float_ssse3(float *out, float *buf, float *in, float *win);
+void ff_imdct36_float_avx(float *out, float *buf, float *in, float *win);
+void ff_four_imdct36_float_sse(float *out, float *buf, float *in, float *win,
+                               float *tmpbuf);
+void ff_four_imdct36_float_avx(float *out, float *buf, float *in, float *win,
+                               float *tmpbuf);
+
+DECLARE_ALIGNED(16, static float, mdct_win_sse)[2][4][4*40];
+
 #define MACS(rt, ra, rb) rt+=(ra)*(rb)
 #define MLSS(rt, ra, rb) rt-=(ra)*(rb)
 
@@ -147,11 +159,79 @@ static void apply_window_mp3(float *in, float *win, int *unused, float *out,
     *out = sum;
 }
 
+
+#define DECL_IMDCT_BLOCKS(CPU1, CPU2)                                       \
+static void imdct36_blocks_ ## CPU1(float *out, float *buf, float *in,      \
+                               int count, int switch_point, int block_type) \
+{                                                                           \
+    int align_end = count - (count & 3);                                \
+    int j;                                                              \
+    for (j = 0; j < align_end; j+= 4) {                                 \
+        LOCAL_ALIGNED_16(float, tmpbuf, [1024]);                        \
+        float *win = mdct_win_sse[switch_point && j < 4][block_type];   \
+        /* apply window & overlap with previous buffer */               \
+                                                                        \
+        /* select window */                                             \
+        ff_four_imdct36_float_ ## CPU2(out, buf, in, win, tmpbuf);      \
+        in      += 4*18;                                                \
+        buf     += 4*18;                                                \
+        out     += 4;                                                   \
+    }                                                                   \
+    for (; j < count; j++) {                                            \
+        /* apply window & overlap with previous buffer */               \
+                                                                        \
+        /* select window */                                             \
+        int win_idx = (switch_point && j < 2) ? 0 : block_type;         \
+        float *win = ff_mdct_win_float[win_idx + (4 & -(j & 1))];       \
+                                                                        \
+        ff_imdct36_float_ ## CPU1(out, buf, in, win);                   \
+                                                                        \
+        in  += 18;                                                      \
+        buf++;                                                          \
+        out++;                                                          \
+    }                                                                   \
+}
+
+DECL_IMDCT_BLOCKS(sse,sse)
+DECL_IMDCT_BLOCKS(sse2,sse)
+DECL_IMDCT_BLOCKS(sse3,sse)
+DECL_IMDCT_BLOCKS(ssse3,sse)
+DECL_IMDCT_BLOCKS(avx,avx)
+
 void ff_mpadsp_init_mmx(MPADSPContext *s)
 {
     int mm_flags = av_get_cpu_flags();
 
+    int i, j;
+    for (j = 0; j < 4; j++) {
+        for (i = 0; i < 40; i ++) {
+            mdct_win_sse[0][j][4*i    ] = ff_mdct_win_float[j    ][i];
+            mdct_win_sse[0][j][4*i + 1] = ff_mdct_win_float[j + 4][i];
+            mdct_win_sse[0][j][4*i + 2] = ff_mdct_win_float[j    ][i];
+            mdct_win_sse[0][j][4*i + 3] = ff_mdct_win_float[j + 4][i];
+            mdct_win_sse[1][j][4*i    ] = ff_mdct_win_float[0    ][i];
+            mdct_win_sse[1][j][4*i + 1] = ff_mdct_win_float[4    ][i];
+            mdct_win_sse[1][j][4*i + 2] = ff_mdct_win_float[j    ][i];
+            mdct_win_sse[1][j][4*i + 3] = ff_mdct_win_float[j + 4][i];
+        }
+    }
+
     if (mm_flags & AV_CPU_FLAG_SSE2) {
         s->apply_window_float = apply_window_mp3;
     }
+#if HAVE_YASM
+    if (mm_flags & AV_CPU_FLAG_AVX && HAVE_AVX) {
+        s->imdct36_blocks_float = imdct36_blocks_avx;
+#if HAVE_SSE
+    } else if (mm_flags & AV_CPU_FLAG_SSSE3) {
+        s->imdct36_blocks_float = imdct36_blocks_ssse3;
+    } else if (mm_flags & AV_CPU_FLAG_SSE3) {
+        s->imdct36_blocks_float = imdct36_blocks_sse3;
+    } else if (mm_flags & AV_CPU_FLAG_SSE2) {
+        s->imdct36_blocks_float = imdct36_blocks_sse2;
+    } else if (mm_flags & AV_CPU_FLAG_SSE) {
+        s->imdct36_blocks_float = imdct36_blocks_sse;
+#endif /* HAVE_SSE */
+    }
+#endif /* HAVE_YASM */
 }

@@ -58,7 +58,7 @@ typedef struct GranuleDef {
     int preflag;
     int short_start, long_end; /* long/short band indexes */
     uint8_t scale_factors[40];
-    INTFLOAT sb_hybrid[SBLIMIT * 18]; /* 576 samples */
+    DECLARE_ALIGNED(16, INTFLOAT, sb_hybrid)[SBLIMIT * 18]; /* 576 samples */
 } GranuleDef;
 
 typedef struct MPADecodeContext {
