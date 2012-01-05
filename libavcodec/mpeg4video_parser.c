@@ -99,6 +99,7 @@ static av_cold int mpeg4video_parse_init(AVCodecParserContext *s)
     if (!pc->enc)
         return -1;
     pc->first_picture = 1;
+    pc->enc->slice_context_count = 1;
     return 0;
 }
 
