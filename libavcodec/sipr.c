@@ -487,7 +487,10 @@ static av_cold int sipr_decoder_init(AVCodecContext * avctx)
     case 37: ctx->mode = MODE_5k0; break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Invalid block_align: %d\n", avctx->block_align);
-        return AVERROR(EINVAL);
+        if      (avctx->bit_rate > 12200) ctx->mode = MODE_16k;
+        else if (avctx->bit_rate > 7500 ) ctx->mode = MODE_8k5;
+        else if (avctx->bit_rate > 5750 ) ctx->mode = MODE_6k5;
+        else                              ctx->mode = MODE_5k0;
     }
 
     av_log(avctx, AV_LOG_DEBUG, "Mode: %s\n", modes[ctx->mode].mode_name);
