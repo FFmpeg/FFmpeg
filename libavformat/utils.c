@@ -1261,30 +1261,29 @@ static int read_from_packet_buffer(AVFormatContext *s, AVPacket *pkt)
 
 int av_read_frame(AVFormatContext *s, AVPacket *pkt)
 {
-    AVPacketList *pktl;
-    int eof=0;
-    const int genpts= s->flags & AVFMT_FLAG_GENPTS;
+    const int genpts = s->flags & AVFMT_FLAG_GENPTS;
+    int          eof = 0;
 
     if (!genpts)
         return s->packet_buffer ? read_from_packet_buffer(s, pkt) :
                                   read_frame_internal(s, pkt);
 
-    for(;;){
+    for (;;) {
         int ret;
-        pktl = s->packet_buffer;
+        AVPacketList *pktl = s->packet_buffer;
 
         if (pktl) {
-            AVPacket *next_pkt= &pktl->pkt;
+            AVPacket *next_pkt = &pktl->pkt;
 
             if (next_pkt->dts != AV_NOPTS_VALUE) {
                 int wrap_bits = s->streams[next_pkt->stream_index]->pts_wrap_bits;
-                while(pktl && next_pkt->pts == AV_NOPTS_VALUE){
-                    if(   pktl->pkt.stream_index == next_pkt->stream_index
-                       && (0 > av_compare_mod(next_pkt->dts, pktl->pkt.dts, 2LL << (wrap_bits - 1)))
-                       && av_compare_mod(pktl->pkt.pts, pktl->pkt.dts, 2LL << (wrap_bits - 1))) { //not b frame
-                        next_pkt->pts= pktl->pkt.dts;
+                while (pktl && next_pkt->pts == AV_NOPTS_VALUE) {
+                    if (pktl->pkt.stream_index == next_pkt->stream_index &&
+                        (av_compare_mod(next_pkt->dts, pktl->pkt.dts, 2LL << (wrap_bits - 1)) < 0) &&
+                         av_compare_mod(pktl->pkt.pts, pktl->pkt.dts, 2LL << (wrap_bits - 1))) { //not b frame
+                        next_pkt->pts = pktl->pkt.dts;
                     }
-                    pktl= pktl->next;
+                    pktl = pktl->next;
                 }
                 pktl = s->packet_buffer;
             }
