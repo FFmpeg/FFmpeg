@@ -91,9 +91,13 @@ typedef struct ADPCMDecodeContext {
 static av_cold int adpcm_decode_init(AVCodecContext * avctx)
 {
     ADPCMDecodeContext *c = avctx->priv_data;
+    unsigned int min_channels = 1;
     unsigned int max_channels = 2;
 
     switch(avctx->codec->id) {
+    case CODEC_ID_ADPCM_EA:
+        min_channels = 2;
+        break;
     case CODEC_ID_ADPCM_EA_R1:
     case CODEC_ID_ADPCM_EA_R2:
     case CODEC_ID_ADPCM_EA_R3:
@@ -101,7 +105,7 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
         max_channels = 6;
         break;
     }
-    if (avctx->channels <= 0 || avctx->channels > max_channels) {
+    if (avctx->channels < min_channels || avctx->channels > max_channels) {
         av_log(avctx, AV_LOG_ERROR, "Invalid number of channels\n");
         return AVERROR(EINVAL);
     }
