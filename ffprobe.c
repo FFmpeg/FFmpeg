@@ -178,9 +178,11 @@ static const AVClass writer_class = {
 
 static void writer_close(WriterContext **wctx)
 {
-    if (*wctx && (*wctx)->writer->uninit)
-        (*wctx)->writer->uninit(*wctx);
+    if (!*wctx)
+        return;
 
+    if ((*wctx)->writer->uninit)
+        (*wctx)->writer->uninit(*wctx);
     av_freep(&((*wctx)->priv));
     av_freep(wctx);
 }
