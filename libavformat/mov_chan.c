@@ -428,8 +428,7 @@ uint64_t ff_mov_get_channel_layout(uint32_t tag, uint32_t bitmap)
     int i, channels;
     const struct MovChannelLayoutMap *layout_map;
 
-    /* handle the use of the channel descriptions */
-    /* TODO: map MOV channel labels to Libav channels */
+    /* use ff_mov_get_channel_label() to build a layout instead */
     if (tag == MOV_CH_LAYOUT_USE_DESCRIPTIONS)
         return 0;
 
@@ -449,6 +448,19 @@ uint64_t ff_mov_get_channel_layout(uint32_t tag, uint32_t bitmap)
             break;
     }
     return layout_map[i].layout;
+}
+
+uint32_t ff_mov_get_channel_label(uint32_t label)
+{
+    if (label == 0)
+        return 0;
+    if (label <= 18)
+        return 1U << (label - 1);
+    if (label == 38)
+        return AV_CH_STEREO_LEFT;
+    if (label == 39)
+        return AV_CH_STEREO_RIGHT;
+    return 0;
 }
 
 uint32_t ff_mov_get_channel_layout_tag(enum CodecID codec_id,
