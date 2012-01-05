@@ -63,6 +63,7 @@ const PixelFormatTag ff_raw_pix_fmt_tags[] = {
     { PIX_FMT_UYVY422, MKTAG('A', 'V', 'u', 'p') },
     { PIX_FMT_UYVY422, MKTAG('V', 'D', 'T', 'Z') }, /* SoftLab-NSK VideoTizer */
     { PIX_FMT_UYVY422, MKTAG('a', 'u', 'v', '2') },
+    { PIX_FMT_UYVY422, MKTAG('c', 'y', 'u', 'v') }, /* CYUV is also Creative YUV */
     { PIX_FMT_UYYVYY411, MKTAG('Y', '4', '1', '1') },
     { PIX_FMT_GRAY8,   MKTAG('G', 'R', 'E', 'Y') },
     { PIX_FMT_NV12,    MKTAG('N', 'V', '1', '2') },

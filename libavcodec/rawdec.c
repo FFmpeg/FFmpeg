@@ -119,6 +119,7 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
     avctx->coded_frame= &context->pic;
 
     if((avctx->extradata_size >= 9 && !memcmp(avctx->extradata + avctx->extradata_size - 9, "BottomUp", 9)) ||
+        avctx->codec_tag == MKTAG('c','y','u','v') ||
         avctx->codec_tag == MKTAG(3, 0, 0, 0) || avctx->codec_tag == MKTAG('W','R','A','W'))
         context->flip=1;
 
