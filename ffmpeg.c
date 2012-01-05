@@ -93,6 +93,11 @@
 
 #include "libavutil/avassert.h"
 
+#define VSYNC_AUTO       -1
+#define VSYNC_PASSTHROUGH 0
+#define VSYNC_CFR         1
+#define VSYNC_VFR         2
+
 const char program_name[] = "ffmpeg";
 const int program_birth_year = 2000;
 
@@ -144,7 +149,7 @@ static int do_pkt_dump = 0;
 static int do_psnr = 0;
 static int do_pass = 0;
 static const char *pass_logfilename_prefix;
-static int video_sync_method = -1;
+static int video_sync_method = VSYNC_AUTO;
 static int audio_sync_method = 0;
 static float audio_drift_threshold = 0.1;
 static int copy_ts = 0;
@@ -1433,15 +1438,15 @@ static void do_video_out(AVFormatContext *s,
     *frame_size = 0;
 
     format_video_sync = video_sync_method;
-    if (format_video_sync < 0)
-        format_video_sync = (s->oformat->flags & AVFMT_VARIABLE_FPS) ? ((s->oformat->flags & AVFMT_NOTIMESTAMPS) ? 0 : 2) : 1;
+    if (format_video_sync == VSYNC_AUTO)
+        format_video_sync = (s->oformat->flags & AVFMT_VARIABLE_FPS) ? ((s->oformat->flags & AVFMT_NOTIMESTAMPS) ? VSYNC_PASSTHROUGH : VSYNC_VFR) : 1;
 
-    if (format_video_sync) {
+    if (format_video_sync != VSYNC_PASSTHROUGH) {
         double vdelta = sync_ipts - ost->sync_opts + duration;
         // FIXME set to 0.5 after we fix some dts/pts bugs like in avidec.c
         if (vdelta < -1.1)
             nb_frames = 0;
-        else if (format_video_sync == 2) {
+        else if (format_video_sync == VSYNC_VFR) {
             if (vdelta <= -0.6) {
                 nb_frames = 0;
             } else if (vdelta > 0.6)
@@ -4873,6 +4878,17 @@ static int opt_video_filters(OptionsContext *o, const char *opt, const char *arg
     return parse_option(o, "filter:v", arg, options);
 }
 
+static int opt_vsync(const char *opt, const char *arg)
+{
+    if      (!av_strcasecmp(arg, "cfr"))         video_sync_method = VSYNC_CFR;
+    else if (!av_strcasecmp(arg, "vfr"))         video_sync_method = VSYNC_VFR;
+    else if (!av_strcasecmp(arg, "passthrough")) video_sync_method = VSYNC_PASSTHROUGH;
+
+    if (video_sync_method == VSYNC_AUTO)
+        video_sync_method = parse_number_or_die("vsync", arg, OPT_INT, VSYNC_AUTO, VSYNC_VFR);
+    return 0;
+}
+
 #define OFFSET(x) offsetof(OptionsContext, x)
 static const OptionDef options[] = {
     /* main options */
@@ -4908,7 +4924,7 @@ static const OptionDef options[] = {
     { "loop_input", OPT_BOOL | OPT_EXPERT, {(void*)&loop_input}, "deprecated, use -loop" },
     { "loop_output", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&loop_output}, "deprecated, use -loop", "" },
     { "target", HAS_ARG | OPT_FUNC2, {(void*)opt_target}, "specify target file type (\"vcd\", \"svcd\", \"dvd\", \"dv\", \"dv50\", \"pal-vcd\", \"ntsc-svcd\", ...)", "type" },
-    { "vsync", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&video_sync_method}, "video sync method", "" },
+    { "vsync", HAS_ARG | OPT_EXPERT, {(void*)opt_vsync}, "video sync method", "" },
     { "async", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&audio_sync_method}, "audio sync method", "" },
     { "adrift_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT, {(void*)&audio_drift_threshold}, "audio drift threshold", "threshold" },
     { "copyts", OPT_BOOL | OPT_EXPERT, {(void*)&copy_ts}, "copy timestamps" },

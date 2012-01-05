@@ -109,4 +109,5 @@ AVInputFormat ff_adx_demuxer = {
     .read_packet    = adx_read_packet,
     .extensions     = "adx",
     .value          = CODEC_ID_ADPCM_ADX,
+    .flags          = AVFMT_GENERIC_INDEX,
 };

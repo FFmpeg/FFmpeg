@@ -100,25 +100,9 @@ static void rv34_inv_transform_noround_c(DCTELEM *block){
 /** @} */ // transform
 
 
-/**
- * Dequantize ordinary 4x4 block.
- */
-void ff_rv34_dequant4x4_neon(DCTELEM *block, int Qdc, int Q);
-static void rv34_dequant4x4_c(DCTELEM *block, int Qdc, int Q)
-{
-    int i, j;
-
-    block[0] = (block[0] * Qdc + 8) >> 4;
-    for (i = 0; i < 4; i++)
-        for (j = !i; j < 4; j++)
-            block[j + i*8] = (block[j + i*8] * Q + 8) >> 4;
-}
-
 av_cold void ff_rv34dsp_init(RV34DSPContext *c, DSPContext* dsp) {
     c->rv34_inv_transform_tab[0] = rv34_inv_transform_c;
     c->rv34_inv_transform_tab[1] = rv34_inv_transform_noround_c;
-
-    c->rv34_dequant4x4 = rv34_dequant4x4_c;
 
     if (HAVE_NEON)
         ff_rv34dsp_init_neon(c, dsp);

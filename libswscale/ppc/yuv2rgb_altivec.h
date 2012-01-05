@@ -21,8 +21,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef PPC_YUV2RGB_ALTIVEC_H
-#define PPC_YUV2RGB_ALTIVEC_H 1
+#ifndef SWSCALE_PPC_YUV2RGB_ALTIVEC_H
+#define SWSCALE_PPC_YUV2RGB_ALTIVEC_H
 
 #define YUV2PACKEDX_HEADER(suffix) \
 void ff_yuv2 ## suffix ## _X_altivec(SwsContext *c, const int16_t *lumFilter, \
@@ -39,4 +39,4 @@ YUV2PACKEDX_HEADER(rgba);
 YUV2PACKEDX_HEADER(rgb24);
 YUV2PACKEDX_HEADER(bgr24);
 
-#endif /* PPC_YUV2RGB_ALTIVEC_H */
+#endif /* SWSCALE_PPC_YUV2RGB_ALTIVEC_H */

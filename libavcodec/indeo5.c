@@ -760,7 +760,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     switch_buffers(ctx);
 
-    //START_TIMER;
+    //{ START_TIMER;
 
     if (ctx->frame_type != FRAMETYPE_NULL) {
         for (p = 0; p < 3; p++) {
@@ -775,7 +775,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         }
     }
 
-    //STOP_TIMER("decode_planes");
+    //STOP_TIMER("decode_planes"); }
 
     if (ctx->frame.data[0])
         avctx->release_buffer(avctx, &ctx->frame);

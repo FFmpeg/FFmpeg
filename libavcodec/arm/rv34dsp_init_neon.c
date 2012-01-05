@@ -25,12 +25,9 @@
 
 void ff_rv34_inv_transform_neon(DCTELEM *block);
 void ff_rv34_inv_transform_noround_neon(DCTELEM *block);
-void ff_rv34_dequant4x4_neon(DCTELEM *block, int Qdc, int Q);
 
 void ff_rv34dsp_init_neon(RV34DSPContext *c, DSPContext* dsp)
 {
     c->rv34_inv_transform_tab[0] = ff_rv34_inv_transform_neon;
     c->rv34_inv_transform_tab[1] = ff_rv34_inv_transform_noround_neon;
-
-    c->rv34_dequant4x4 = ff_rv34_dequant4x4_neon;
 }

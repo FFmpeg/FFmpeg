@@ -41,9 +41,6 @@ typedef struct CABACContext{
     int low;
     int range;
     int outstanding_count;
-#ifdef STRICT_LIMITS
-    int symCount;
-#endif
     const uint8_t *bytestream_start;
     const uint8_t *bytestream;
     const uint8_t *bytestream_end;
@@ -215,63 +212,5 @@ static int av_unused get_cabac_terminate(CABACContext *c){
         return c->bytestream - c->bytestream_start;
     }
 }
-
-#if 0
-/**
- * Get (truncated) unary binarization.
- */
-static int get_cabac_u(CABACContext *c, uint8_t * state, int max, int max_index, int truncated){
-    int i;
-
-    for(i=0; i<max; i++){
-        if(get_cabac(c, state)==0)
-            return i;
-
-        if(i< max_index) state++;
-    }
-
-    return truncated ? max : -1;
-}
-
-/**
- * get unary exp golomb k-th order binarization.
- */
-static int get_cabac_ueg(CABACContext *c, uint8_t * state, int max, int is_signed, int k, int max_index){
-    int i, v;
-    int m= 1<<k;
-
-    if(get_cabac(c, state)==0)
-        return 0;
-
-    if(0 < max_index) state++;
-
-    for(i=1; i<max; i++){
-        if(get_cabac(c, state)==0){
-            if(is_signed && get_cabac_bypass(c)){
-                return -i;
-            }else
-                return i;
-        }
-
-        if(i < max_index) state++;
-    }
-
-    while(get_cabac_bypass(c)){
-        i+= m;
-        m+= m;
-    }
-
-    v=0;
-    while(m>>=1){
-        v+= v + get_cabac_bypass(c);
-    }
-    i += v;
-
-    if(is_signed && get_cabac_bypass(c)){
-        return -i;
-    }else
-        return i;
-}
-#endif /* 0 */
 
 #endif /* AVCODEC_CABAC_H */

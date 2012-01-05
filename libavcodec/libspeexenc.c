@@ -83,7 +83,8 @@ typedef struct {
     int abr;                    ///< flag to enable ABR
     int pkt_frame_count;        ///< frame count for the current packet
     int lookahead;              ///< encoder delay
-    int sample_count;           ///< total sample count (used for pts)
+    int64_t next_pts;           ///< next pts, in sample_rate time base
+    int pkt_sample_count;       ///< sample count in the current packet
 } LibSpeexEncContext;
 
 static av_cold void print_enc_params(AVCodecContext *avctx,
@@ -201,7 +202,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     /* set encoding delay */
     speex_encoder_ctl(s->enc_state, SPEEX_GET_LOOKAHEAD, &s->lookahead);
-    s->sample_count = -s->lookahead;
+    s->next_pts = -s->lookahead;
 
     /* create header packet bytes from header struct */
     /* note: libspeex allocates the memory for header_data, which is freed
@@ -235,7 +236,6 @@ static int encode_frame(AVCodecContext *avctx, uint8_t *frame, int buf_size,
 {
     LibSpeexEncContext *s = avctx->priv_data;
     int16_t *samples      = data;
-    int sample_count      = s->sample_count;
 
     if (data) {
         /* encode Speex frame */
@@ -243,7 +243,7 @@ static int encode_frame(AVCodecContext *avctx, uint8_t *frame, int buf_size,
             speex_encode_stereo_int(samples, s->header.frame_size, &s->bits);
         speex_encode_int(s->enc_state, samples, &s->bits);
         s->pkt_frame_count++;
-        s->sample_count += avctx->frame_size;
+        s->pkt_sample_count += avctx->frame_size;
     } else {
         /* handle end-of-stream */
         if (!s->pkt_frame_count)
@@ -259,8 +259,10 @@ static int encode_frame(AVCodecContext *avctx, uint8_t *frame, int buf_size,
     if (s->pkt_frame_count == s->frames_per_packet) {
         s->pkt_frame_count = 0;
         avctx->coded_frame->pts =
-            av_rescale_q(sample_count, (AVRational){ 1, avctx->sample_rate },
+            av_rescale_q(s->next_pts, (AVRational){ 1, avctx->sample_rate },
                          avctx->time_base);
+        s->next_pts += s->pkt_sample_count;
+        s->pkt_sample_count = 0;
         if (buf_size > speex_bits_nbytes(&s->bits)) {
             int ret = speex_bits_write(&s->bits, frame, buf_size);
             speex_bits_reset(&s->bits);

@@ -45,6 +45,18 @@ AVOutputFormat ff_ac3_muxer = {
 };
 #endif
 
+#if CONFIG_ADX_MUXER
+AVOutputFormat ff_adx_muxer = {
+    .name              = "adx",
+    .long_name         = NULL_IF_CONFIG_SMALL("CRI ADX"),
+    .extensions        = "adx",
+    .audio_codec       = CODEC_ID_ADPCM_ADX,
+    .video_codec       = CODEC_ID_NONE,
+    .write_packet      = ff_raw_write_packet,
+    .flags             = AVFMT_NOTIMESTAMPS,
+};
+#endif
+
 #if CONFIG_DIRAC_MUXER
 AVOutputFormat ff_dirac_muxer = {
     .name              = "dirac",

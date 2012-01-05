@@ -4051,7 +4051,7 @@ static int decode_frame(AVCodecContext *avctx,
     H264Context *h = avctx->priv_data;
     MpegEncContext *s = &h->s;
     AVFrame *pict = data;
-    int buf_index;
+    int buf_index = 0;
     Picture *out;
     int i, out_idx;
 
@@ -4081,7 +4081,7 @@ static int decode_frame(AVCodecContext *avctx,
             *pict= *(AVFrame*)out;
         }
 
-        return buf_size;
+        return buf_index;
     }
     if(h->is_avc && buf_size >= 9 && buf[0]==1 && buf[2]==0 && (buf[4]&0xFC)==0xFC && (buf[5]&0x1F) && buf[8]==0x67){
         int cnt= buf[5]&0x1f;
@@ -4112,7 +4112,6 @@ not_extra:
 
     if (!s->current_picture_ptr && h->nal_unit_type == NAL_END_SEQUENCE) {
         av_assert0(buf_index <= buf_size);
-        buf_size = buf_index;
         goto out;
     }
 
@@ -4193,9 +4192,7 @@ int main(void){
 
     init_get_bits(&gb, temp, 8*SIZE);
     for(i=0; i<COUNT; i++){
-        int j, s;
-
-        s= show_bits(&gb, 24);
+        int j, s = show_bits(&gb, 24);
 
         {START_TIMER
         j= get_ue_golomb(&gb);
@@ -4218,9 +4215,7 @@ int main(void){
 
     init_get_bits(&gb, temp, 8*SIZE);
     for(i=0; i<COUNT; i++){
-        int j, s;
-
-        s= show_bits(&gb, 24);
+        int j, s = show_bits(&gb, 24);
 
         {START_TIMER
         j= get_se_golomb(&gb);

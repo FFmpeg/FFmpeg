@@ -212,7 +212,7 @@ static int rv34_decode_cbp(GetBitContext *gb, RV34VLC *vlc, int table)
 /**
  * Get one coefficient value from the bistream and store it.
  */
-static inline void decode_coeff(DCTELEM *dst, int coef, int esc, GetBitContext *gb, VLC* vlc)
+static inline void decode_coeff(DCTELEM *dst, int coef, int esc, GetBitContext *gb, VLC* vlc, int q)
 {
     if(coef){
         if(coef == esc){
@@ -225,14 +225,14 @@ static inline void decode_coeff(DCTELEM *dst, int coef, int esc, GetBitContext *
         }
         if(get_bits1(gb))
             coef = -coef;
-        *dst = coef;
+        *dst = (coef*q + 8) >> 4;
     }
 }
 
 /**
  * Decode 2x2 subblock of coefficients.
  */
-static inline void decode_subblock(DCTELEM *dst, int code, const int is_block2, GetBitContext *gb, VLC *vlc)
+static inline void decode_subblock(DCTELEM *dst, int code, const int is_block2, GetBitContext *gb, VLC *vlc, int q)
 {
     int coeffs[4];
 
@@ -240,15 +240,35 @@ static inline void decode_subblock(DCTELEM *dst, int code, const int is_block2, 
     coeffs[1] = modulo_three_table[code][1];
     coeffs[2] = modulo_three_table[code][2];
     coeffs[3] = modulo_three_table[code][3];
-    decode_coeff(dst  , coeffs[0], 3, gb, vlc);
+    decode_coeff(dst  , coeffs[0], 3, gb, vlc, q);
     if(is_block2){
-        decode_coeff(dst+8, coeffs[1], 2, gb, vlc);
-        decode_coeff(dst+1, coeffs[2], 2, gb, vlc);
+        decode_coeff(dst+8, coeffs[1], 2, gb, vlc, q);
+        decode_coeff(dst+1, coeffs[2], 2, gb, vlc, q);
     }else{
-        decode_coeff(dst+1, coeffs[1], 2, gb, vlc);
-        decode_coeff(dst+8, coeffs[2], 2, gb, vlc);
+        decode_coeff(dst+1, coeffs[1], 2, gb, vlc, q);
+        decode_coeff(dst+8, coeffs[2], 2, gb, vlc, q);
     }
-    decode_coeff(dst+9, coeffs[3], 2, gb, vlc);
+    decode_coeff(dst+9, coeffs[3], 2, gb, vlc, q);
+}
+
+static inline void decode_subblock3(DCTELEM *dst, int code, const int is_block2, GetBitContext *gb, VLC *vlc,
+                                    int q_dc, int q_ac1, int q_ac2)
+{
+    int coeffs[4];
+
+    coeffs[0] = modulo_three_table[code][0];
+    coeffs[1] = modulo_three_table[code][1];
+    coeffs[2] = modulo_three_table[code][2];
+    coeffs[3] = modulo_three_table[code][3];
+    decode_coeff(dst  , coeffs[0], 3, gb, vlc, q_dc);
+    if(is_block2){
+        decode_coeff(dst+8, coeffs[1], 2, gb, vlc, q_ac1);
+        decode_coeff(dst+1, coeffs[2], 2, gb, vlc, q_ac1);
+    }else{
+        decode_coeff(dst+1, coeffs[1], 2, gb, vlc, q_ac1);
+        decode_coeff(dst+8, coeffs[2], 2, gb, vlc, q_ac1);
+    }
+    decode_coeff(dst+9, coeffs[3], 2, gb, vlc, q_ac2);
 }
 
 /**
@@ -262,7 +282,7 @@ static inline void decode_subblock(DCTELEM *dst, int code, const int is_block2, 
  *  o--o
  */
 
-static inline void rv34_decode_block(DCTELEM *dst, GetBitContext *gb, RV34VLC *rvlc, int fc, int sc)
+static inline void rv34_decode_block(DCTELEM *dst, GetBitContext *gb, RV34VLC *rvlc, int fc, int sc, int q_dc, int q_ac1, int q_ac2)
 {
     int code, pattern;
 
@@ -271,38 +291,22 @@ static inline void rv34_decode_block(DCTELEM *dst, GetBitContext *gb, RV34VLC *r
     pattern = code & 0x7;
 
     code >>= 3;
-    decode_subblock(dst, code, 0, gb, &rvlc->coefficient);
+    decode_subblock3(dst, code, 0, gb, &rvlc->coefficient, q_dc, q_ac1, q_ac2);
 
     if(pattern & 4){
         code = get_vlc2(gb, rvlc->second_pattern[sc].table, 9, 2);
-        decode_subblock(dst + 2, code, 0, gb, &rvlc->coefficient);
+        decode_subblock(dst + 2, code, 0, gb, &rvlc->coefficient, q_ac2);
     }
     if(pattern & 2){ // Looks like coefficients 1 and 2 are swapped for this block
         code = get_vlc2(gb, rvlc->second_pattern[sc].table, 9, 2);
-        decode_subblock(dst + 8*2, code, 1, gb, &rvlc->coefficient);
+        decode_subblock(dst + 8*2, code, 1, gb, &rvlc->coefficient, q_ac2);
     }
     if(pattern & 1){
         code = get_vlc2(gb, rvlc->third_pattern[sc].table, 9, 2);
-        decode_subblock(dst + 8*2+2, code, 0, gb, &rvlc->coefficient);
+        decode_subblock(dst + 8*2+2, code, 0, gb, &rvlc->coefficient, q_ac2);
     }
 
 }
-
-/**
- * Dequantize 4x4 block of DC values for 16x16 macroblock.
- * @todo optimize
- */
-static inline void rv34_dequant4x4_16x16(DCTELEM *block, int Qdc, int Q)
-{
-    int i;
-
-    for(i = 0; i < 3; i++)
-         block[rv34_dezigzag[i]] = (block[rv34_dezigzag[i]] * Qdc + 8) >> 4;
-    for(; i < 16; i++)
-         block[rv34_dezigzag[i]] = (block[rv34_dezigzag[i]] * Q + 8) >> 4;
-}
-/** @} */ //block functions
-
 
 /**
  * @name RV30/40 bitstream parsing
@@ -676,8 +680,9 @@ static inline void rv34_mc(RV34DecContext *r, const int block_type,
     srcY += src_y * s->linesize + src_x;
     srcU += uvsrc_y * s->uvlinesize + uvsrc_x;
     srcV += uvsrc_y * s->uvlinesize + uvsrc_x;
-    if(   (unsigned)(src_x - !!lx*2) > s->h_edge_pos - !!lx*2 - (width <<3) - 4
-       || (unsigned)(src_y - !!ly*2) > s->v_edge_pos - !!ly*2 - (height<<3) - 4){
+    if(s->h_edge_pos - (width << 3) < 6 || s->v_edge_pos - (height << 3) < 6 ||
+       (unsigned)(src_x - !!lx*2) > s->h_edge_pos - !!lx*2 - (width <<3) - 4 ||
+       (unsigned)(src_y - !!ly*2) > s->v_edge_pos - !!ly*2 - (height<<3) - 4) {
         uint8_t *uvbuf = s->edge_emu_buffer + 22 * s->linesize;
 
         srcY -= 2 + 2*s->linesize;
@@ -1097,6 +1102,7 @@ static int rv34_decode_macroblock(RV34DecContext *r, int8_t *intra_types)
     MpegEncContext *s = &r->s;
     GetBitContext *gb = &s->gb;
     int cbp, cbp2;
+    int q_dc, q_ac;
     int i, blknum, blkoff;
     LOCAL_ALIGNED_16(DCTELEM, block16, [64]);
     int luma_dc_quant;
@@ -1133,31 +1139,34 @@ static int rv34_decode_macroblock(RV34DecContext *r, int8_t *intra_types)
 
     luma_dc_quant = r->block_type == RV34_MB_P_MIX16x16 ? r->luma_dc_quant_p[s->qscale] : r->luma_dc_quant_i[s->qscale];
     if(r->is16){
+        q_dc = rv34_qscale_tab[luma_dc_quant];
+        q_ac = rv34_qscale_tab[s->qscale];
         memset(block16, 0, 64 * sizeof(*block16));
-        rv34_decode_block(block16, gb, r->cur_vlcs, 3, 0);
-        rv34_dequant4x4_16x16(block16, rv34_qscale_tab[luma_dc_quant],rv34_qscale_tab[s->qscale]);
+        rv34_decode_block(block16, gb, r->cur_vlcs, 3, 0, q_dc, q_dc, q_ac);
         r->rdsp.rv34_inv_transform_tab[1](block16);
     }
 
+    q_ac = rv34_qscale_tab[s->qscale];
     for(i = 0; i < 16; i++, cbp >>= 1){
         if(!r->is16 && !(cbp & 1)) continue;
         blknum = ((i & 2) >> 1) + ((i & 8) >> 2);
         blkoff = ((i & 1) << 2) + ((i & 4) << 3);
         if(cbp & 1)
-            rv34_decode_block(s->block[blknum] + blkoff, gb, r->cur_vlcs, r->luma_vlc, 0);
-        r->rdsp.rv34_dequant4x4(s->block[blknum] + blkoff, rv34_qscale_tab[s->qscale],rv34_qscale_tab[s->qscale]);
+            rv34_decode_block(s->block[blknum] + blkoff, gb,
+                              r->cur_vlcs, r->luma_vlc, 0, q_ac, q_ac, q_ac);
         if(r->is16) //FIXME: optimize
             s->block[blknum][blkoff] = block16[(i & 3) | ((i & 0xC) << 1)];
         r->rdsp.rv34_inv_transform_tab[0](s->block[blknum] + blkoff);
     }
     if(r->block_type == RV34_MB_P_MIX16x16)
         r->cur_vlcs = choose_vlc_set(r->si.quant, r->si.vlc_set, 1);
+    q_dc = rv34_qscale_tab[rv34_chroma_quant[1][s->qscale]];
+    q_ac = rv34_qscale_tab[rv34_chroma_quant[0][s->qscale]];
     for(; i < 24; i++, cbp >>= 1){
         if(!(cbp & 1)) continue;
         blknum = ((i & 4) >> 2) + 4;
         blkoff = ((i & 1) << 2) + ((i & 2) << 4);
-        rv34_decode_block(s->block[blknum] + blkoff, gb, r->cur_vlcs, r->chroma_vlc, 1);
-        r->rdsp.rv34_dequant4x4(s->block[blknum] + blkoff, rv34_qscale_tab[rv34_chroma_quant[1][s->qscale]],rv34_qscale_tab[rv34_chroma_quant[0][s->qscale]]);
+        rv34_decode_block(s->block[blknum] + blkoff, gb, r->cur_vlcs, r->chroma_vlc, 1, q_dc, q_ac, q_ac);
         r->rdsp.rv34_inv_transform_tab[0](s->block[blknum] + blkoff);
     }
     if (IS_INTRA(s->current_picture_ptr->f.mb_type[mb_pos]))

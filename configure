@@ -1226,6 +1226,7 @@ HAVE_LIST="
     struct_sockaddr_in6
     struct_sockaddr_sa_len
     struct_sockaddr_storage
+    struct_v4l2_frmivalenum_discrete
     symver
     symver_asm_label
     symver_gnu_asm
@@ -3174,6 +3175,8 @@ makeinfo --version > /dev/null 2>&1 && enable makeinfo  || disable makeinfo
 check_header linux/fb.h
 check_header linux/videodev.h
 check_header linux/videodev2.h
+check_struct linux/videodev2.h "struct v4l2_frmivalenum" discrete
+
 check_header sys/videoio.h
 
 check_func_headers "windows.h vfw.h" capCreateCaptureWindow "$vfwcap_indev_extralibs"

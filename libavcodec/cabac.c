@@ -109,10 +109,6 @@ void ff_init_cabac_encoder(CABACContext *c, uint8_t *buf, int buf_size){
     c->low= 0;
     c->range= 0x1FE;
     c->outstanding_count= 0;
-#ifdef STRICT_LIMITS
-    c->sym_count =0;
-#endif
-
     c->pb.bit_left++; //avoids firstBitFlag
 }
 
@@ -183,10 +179,6 @@ static void put_cabac(CABACContext *c, uint8_t * const state, int bit){
     }
 
     renorm_cabac_encoder(c);
-
-#ifdef STRICT_LIMITS
-    c->symCount++;
-#endif
 }
 
 /**
@@ -208,10 +200,6 @@ static void put_cabac_bypass(CABACContext *c, int bit){
         put_cabac_bit(c, 1);
         c->low -= 0x400;
     }
-
-#ifdef STRICT_LIMITS
-    c->symCount++;
-#endif
 }
 
 /**
@@ -235,10 +223,6 @@ static int put_cabac_terminate(CABACContext *c, int bit){
 
         flush_put_bits(&c->pb); //FIXME FIXME FIXME XXX wrong
     }
-
-#ifdef STRICT_LIMITS
-    c->symCount++;
-#endif
 
     return (put_bits_count(&c->pb)+7)>>3;
 }
@@ -365,21 +349,6 @@ START_TIMER
             av_log(NULL, AV_LOG_ERROR, "CABAC failure at %d\n", i);
 STOP_TIMER("get_cabac")
     }
-#if 0
-    for(i=0; i<SIZE; i++){
-START_TIMER
-        if( r[i] != get_cabac_u(&c, state, (i&1) ? 6 : 7, 3, i&1) )
-            av_log(NULL, AV_LOG_ERROR, "CABAC unary (truncated) binarization failure at %d\n", i);
-STOP_TIMER("get_cabac_u")
-    }
-
-    for(i=0; i<SIZE; i++){
-START_TIMER
-        if( r[i] != get_cabac_ueg(&c, state, 3, 0, 1, 2))
-            av_log(NULL, AV_LOG_ERROR, "CABAC unary (truncated) binarization failure at %d\n", i);
-STOP_TIMER("get_cabac_ueg")
-    }
-#endif
     if(!get_cabac_terminate(&c))
         av_log(NULL, AV_LOG_ERROR, "where's the Terminator?\n");
 

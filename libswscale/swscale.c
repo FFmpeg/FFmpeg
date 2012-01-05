@@ -18,39 +18,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/*
-  supported Input formats: YV12, I420/IYUV, YUY2, UYVY, BGR32, BGR32_1, BGR24, BGR16, BGR15, RGB32, RGB32_1, RGB24, Y8/Y800, YVU9/IF09, PAL8
-  supported output formats: YV12, I420/IYUV, YUY2, UYVY, {BGR,RGB}{1,4,8,15,16,24,32}, Y8/Y800, YVU9/IF09
-  {BGR,RGB}{1,4,8,15,16} support dithering
-
-  unscaled special converters (YV12=I420=IYUV, Y800=Y8)
-  YV12 -> {BGR,RGB}{1,4,8,12,15,16,24,32}
-  x -> x
-  YUV9 -> YV12
-  YUV9/YV12 -> Y800
-  Y800 -> YUV9/YV12
-  BGR24 -> BGR32 & RGB24 -> RGB32
-  BGR32 -> BGR24 & RGB32 -> RGB24
-  BGR15 -> BGR16
-*/
-
-/*
-tested special converters (most are tested actually, but I did not write it down ...)
- YV12 -> BGR12/BGR16
- YV12 -> YV12
- BGR15 -> BGR16
- BGR16 -> BGR16
- YVU9 -> YV12
-
-untested special converters
-  YV12/I420 -> BGR15/BGR24/BGR32 (it is the yuv2rgb stuff, so it should be OK)
-  YV12/I420 -> YV12/I420
-  YUY2/BGR15/BGR24/BGR32/RGB24/RGB32 -> same format
-  BGR24 -> BGR32 & RGB24 -> RGB32
-  BGR32 -> BGR24 & RGB32 -> RGB24
-  BGR24 -> YV12
-*/
-
 #include <inttypes.h>
 #include <string.h>
 #include <math.h>
@@ -2371,36 +2338,6 @@ find_c_packed_planar_out_funcs(SwsContext *c,
     } else {
         YUV_PACKED:
         switch (dstFormat) {
-        case PIX_FMT_GRAY16BE:
-            *yuv2packed1 = yuv2gray16BE_1_c;
-            *yuv2packed2 = yuv2gray16BE_2_c;
-            *yuv2packedX = yuv2gray16BE_X_c;
-            break;
-        case PIX_FMT_GRAY16LE:
-            *yuv2packed1 = yuv2gray16LE_1_c;
-            *yuv2packed2 = yuv2gray16LE_2_c;
-            *yuv2packedX = yuv2gray16LE_X_c;
-            break;
-        case PIX_FMT_MONOWHITE:
-            *yuv2packed1 = yuv2monowhite_1_c;
-            *yuv2packed2 = yuv2monowhite_2_c;
-            *yuv2packedX = yuv2monowhite_X_c;
-            break;
-        case PIX_FMT_MONOBLACK:
-            *yuv2packed1 = yuv2monoblack_1_c;
-            *yuv2packed2 = yuv2monoblack_2_c;
-            *yuv2packedX = yuv2monoblack_X_c;
-            break;
-        case PIX_FMT_YUYV422:
-            *yuv2packed1 = yuv2yuyv422_1_c;
-            *yuv2packed2 = yuv2yuyv422_2_c;
-            *yuv2packedX = yuv2yuyv422_X_c;
-            break;
-        case PIX_FMT_UYVY422:
-            *yuv2packed1 = yuv2uyvy422_1_c;
-            *yuv2packed2 = yuv2uyvy422_2_c;
-            *yuv2packedX = yuv2uyvy422_X_c;
-            break;
         case PIX_FMT_RGB48LE:
             *yuv2packed1 = yuv2rgb48le_1_c;
             *yuv2packed2 = yuv2rgb48le_2_c;
@@ -2516,6 +2453,38 @@ find_c_packed_planar_out_funcs(SwsContext *c,
             *yuv2packedX = yuv2rgb4b_X_c;
             break;
         }
+    }
+    switch (dstFormat) {
+    case PIX_FMT_GRAY16BE:
+        *yuv2packed1 = yuv2gray16BE_1_c;
+        *yuv2packed2 = yuv2gray16BE_2_c;
+        *yuv2packedX = yuv2gray16BE_X_c;
+        break;
+    case PIX_FMT_GRAY16LE:
+        *yuv2packed1 = yuv2gray16LE_1_c;
+        *yuv2packed2 = yuv2gray16LE_2_c;
+        *yuv2packedX = yuv2gray16LE_X_c;
+        break;
+    case PIX_FMT_MONOWHITE:
+        *yuv2packed1 = yuv2monowhite_1_c;
+        *yuv2packed2 = yuv2monowhite_2_c;
+        *yuv2packedX = yuv2monowhite_X_c;
+        break;
+    case PIX_FMT_MONOBLACK:
+        *yuv2packed1 = yuv2monoblack_1_c;
+        *yuv2packed2 = yuv2monoblack_2_c;
+        *yuv2packedX = yuv2monoblack_X_c;
+        break;
+    case PIX_FMT_YUYV422:
+        *yuv2packed1 = yuv2yuyv422_1_c;
+        *yuv2packed2 = yuv2yuyv422_2_c;
+        *yuv2packedX = yuv2yuyv422_X_c;
+        break;
+    case PIX_FMT_UYVY422:
+        *yuv2packed1 = yuv2uyvy422_1_c;
+        *yuv2packed2 = yuv2uyvy422_2_c;
+        *yuv2packedX = yuv2uyvy422_X_c;
+        break;
     }
 }
 

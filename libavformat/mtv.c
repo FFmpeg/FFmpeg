@@ -112,10 +112,12 @@ static int mtv_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     avio_skip(pb, 4);
     audio_subsegments = avio_rl16(pb);
-    if(!audio_subsegments){
-        av_log(s, AV_LOG_ERROR, "audio_subsegments is 0\n");
-        return AVERROR(EINVAL);
+
+    if (audio_subsegments == 0) {
+        av_log_ask_for_sample(s, "MTV files without audio are not supported\n");
+        return AVERROR_INVALIDDATA;
     }
+
     mtv->full_segment_size =
         audio_subsegments * (MTV_AUDIO_PADDING_SIZE + MTV_ASUBCHUNK_DATA_SIZE) +
         mtv->img_segment_size;
