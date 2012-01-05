@@ -39,6 +39,7 @@ const int program_birth_year = 2007;
 
 static int do_show_error   = 0;
 static int do_show_format  = 0;
+static int do_show_frames  = 0;
 static int do_show_packets = 0;
 static int do_show_streams = 0;
 
@@ -132,6 +133,7 @@ static char *value_string(char *buf, int buf_size, struct unit_value uv)
 typedef struct WriterContext WriterContext;
 
 #define WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS 1
+#define WRITER_FLAG_PUT_PACKETS_AND_FRAMES_IN_SAME_CHAPTER 2
 
 typedef struct Writer {
     int priv_size;                  ///< private size for the writer context
@@ -718,6 +720,7 @@ typedef struct {
     int multiple_entries; ///< tells if the given chapter requires multiple entries
     char *buf;
     size_t buf_size;
+    int print_packets_and_frames;
 } JSONContext;
 
 static av_cold int json_init(WriterContext *wctx, const char *args, void *opaque)
@@ -788,9 +791,12 @@ static void json_print_chapter_header(WriterContext *wctx, const char *chapter)
 
     if (wctx->nb_chapter)
         printf(",");
-    json->multiple_entries = !strcmp(chapter, "packets") || !strcmp(chapter, "streams");
+    json->multiple_entries = !strcmp(chapter, "packets") || !strcmp(chapter, "frames" ) ||
+                             !strcmp(chapter, "packets_and_frames") ||
+                             !strcmp(chapter, "streams");
     printf("\n  \"%s\":%s", json_escape_str(&json->buf, &json->buf_size, chapter, wctx),
            json->multiple_entries ? " [" : " ");
+    json->print_packets_and_frames = !strcmp(chapter, "packets_and_frames");
 }
 
 static void json_print_chapter_footer(WriterContext *wctx, const char *chapter)
@@ -801,10 +807,17 @@ static void json_print_chapter_footer(WriterContext *wctx, const char *chapter)
         printf("]");
 }
 
+#define INDENT "    "
+
 static void json_print_section_header(WriterContext *wctx, const char *section)
 {
+    JSONContext *json = wctx->priv;
+
     if (wctx->nb_section) printf(",");
     printf("{\n");
+    /* this is required so the parser can distinguish between packets and frames */
+    if (json->print_packets_and_frames)
+        printf(INDENT "\"type\": \"%s\",\n", section);
 }
 
 static void json_print_section_footer(WriterContext *wctx, const char *section)
@@ -821,8 +834,6 @@ static inline void json_print_item_str(WriterContext *wctx,
     printf("%s\"%s\":", indent, json_escape_str(&json->buf, &json->buf_size, key,   wctx));
     printf(" \"%s\"",           json_escape_str(&json->buf, &json->buf_size, value, wctx));
 }
-
-#define INDENT "    "
 
 static void json_print_str(WriterContext *wctx, const char *key, const char *value)
 {
@@ -868,6 +879,7 @@ static const Writer json_writer = {
     .print_integer        = json_print_int,
     .print_string         = json_print_str,
     .show_tags            = json_show_tags,
+    .flags = WRITER_FLAG_PUT_PACKETS_AND_FRAMES_IN_SAME_CHAPTER,
 };
 
 /* XML output */
@@ -931,6 +943,13 @@ static av_cold int xml_init(WriterContext *wctx, const char *args, void *opaque)
         CHECK_COMPLIANCE(show_private_data, "private");
         CHECK_COMPLIANCE(show_value_unit,   "unit");
         CHECK_COMPLIANCE(use_value_prefix,  "prefix");
+
+        if (do_show_frames && do_show_packets) {
+            av_log(wctx, AV_LOG_ERROR,
+                   "Interleaved frames and packets are not allowed in XSD. "
+                   "Select only one between the -show_frames and the -show_packets options.\n");
+            return AVERROR(EINVAL);
+        }
     }
 
     xml->buf_size = ESCAPE_INIT_BUF_SIZE;
@@ -1021,7 +1040,9 @@ static void xml_print_chapter_header(WriterContext *wctx, const char *chapter)
 
     if (wctx->nb_chapter)
         printf("\n");
-    xml->multiple_entries = !strcmp(chapter, "packets") || !strcmp(chapter, "streams");
+    xml->multiple_entries = !strcmp(chapter, "packets") || !strcmp(chapter, "frames") ||
+                            !strcmp(chapter, "packets_and_frames") ||
+                            !strcmp(chapter, "streams");
 
     if (xml->multiple_entries) {
         XML_INDENT(); printf("<%s>\n", chapter);
@@ -1111,6 +1132,7 @@ static Writer xml_writer = {
     .print_integer        = xml_print_int,
     .print_string         = xml_print_str,
     .show_tags            = xml_show_tags,
+    .flags = WRITER_FLAG_PUT_PACKETS_AND_FRAMES_IN_SAME_CHAPTER,
 };
 
 static void writer_register_all(void)
@@ -1177,15 +1199,83 @@ static void show_packet(WriterContext *w, AVFormatContext *fmt_ctx, AVPacket *pk
     fflush(stdout);
 }
 
+static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream)
+{
+    struct print_buf pbuf = {.s = NULL};
+    const char *s;
+
+    print_section_header("frame");
+    print_str("media_type",             "video");
+    print_int("width",                  frame->width);
+    print_int("height",                 frame->height);
+    s = av_get_pix_fmt_name(frame->format);
+    if (s) print_str    ("pix_fmt", s);
+    else   print_str_opt("pix_fmt", "unknown");
+    if (frame->sample_aspect_ratio.num) {
+        print_fmt("sample_aspect_ratio", "%d:%d",
+                  frame->sample_aspect_ratio.num,
+                  frame->sample_aspect_ratio.den);
+    } else {
+        print_str_opt("sample_aspect_ratio", "N/A");
+    }
+    print_fmt("pict_type",              "%c", av_get_picture_type_char(frame->pict_type));
+    print_int("coded_picture_number",   frame->coded_picture_number);
+    print_int("display_picture_number", frame->display_picture_number);
+    print_int("interlaced_frame",       frame->interlaced_frame);
+    print_int("top_field_first",        frame->top_field_first);
+    print_int("repeat_pict",            frame->repeat_pict);
+    print_int("reference",              frame->reference);
+    print_int("key_frame",              frame->key_frame);
+    print_ts  ("pkt_pts",               frame->pkt_pts);
+    print_time("pkt_pts_time",          frame->pkt_pts, &stream->time_base);
+    print_ts  ("pkt_dts",               frame->pkt_dts);
+    print_time("pkt_dts_time",          frame->pkt_dts, &stream->time_base);
+    if (frame->pkt_pos != -1) print_fmt    ("pkt_pos", "%"PRId64, frame->pkt_pos);
+    else                      print_str_opt("pkt_pos", "N/A");
+    print_section_footer("frame");
+
+    av_free(pbuf.s);
+    fflush(stdout);
+}
+
+static av_always_inline int get_video_frame(AVFormatContext *fmt_ctx,
+                                            AVFrame *frame, AVPacket *pkt)
+{
+    AVCodecContext *dec_ctx = fmt_ctx->streams[pkt->stream_index]->codec;
+    int got_picture = 0;
+
+    if (dec_ctx->codec_id   != CODEC_ID_NONE &&
+        dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO)
+        avcodec_decode_video2(dec_ctx, frame, &got_picture, pkt);
+    return got_picture;
+}
+
 static void show_packets(WriterContext *w, AVFormatContext *fmt_ctx)
 {
     AVPacket pkt;
+    AVFrame frame;
     int i = 0;
 
     av_init_packet(&pkt);
 
-    while (!av_read_frame(fmt_ctx, &pkt))
-        show_packet(w, fmt_ctx, &pkt, i++);
+    while (!av_read_frame(fmt_ctx, &pkt)) {
+        if (do_show_packets)
+            show_packet(w, fmt_ctx, &pkt, i++);
+        if (do_show_frames &&
+            get_video_frame(fmt_ctx, &frame, &pkt)) {
+            show_frame(w, &frame, fmt_ctx->streams[pkt.stream_index]);
+            av_destruct_packet(&pkt);
+        }
+    }
+    av_init_packet(&pkt);
+    pkt.data = NULL;
+    pkt.size = 0;
+    //Flush remaining frames that are cached in the decoder
+    for (i = 0; i < fmt_ctx->nb_streams; i++) {
+        pkt.stream_index = i;
+        while (get_video_frame(fmt_ctx, &frame, &pkt))
+            show_frame(w, &frame, fmt_ctx->streams[pkt.stream_index]);
+    }
 }
 
 static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_idx)
@@ -1395,13 +1485,28 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
 static int probe_file(WriterContext *wctx, const char *filename)
 {
     AVFormatContext *fmt_ctx;
-    int ret;
+    int ret, i;
 
     ret = open_input_file(&fmt_ctx, filename);
     if (ret >= 0) {
-        PRINT_CHAPTER(packets);
+        if (do_show_packets || do_show_frames) {
+            const char *chapter;
+            if (do_show_frames && do_show_packets &&
+                wctx->writer->flags & WRITER_FLAG_PUT_PACKETS_AND_FRAMES_IN_SAME_CHAPTER)
+                chapter = "packets_and_frames";
+            else if (do_show_packets && !do_show_frames)
+                chapter = "packets";
+            else // (!do_show_packets && do_show_frames)
+                chapter = "frames";
+            writer_print_chapter_header(wctx, chapter);
+            show_packets(wctx, fmt_ctx);
+            writer_print_chapter_footer(wctx, chapter);
+        }
         PRINT_CHAPTER(streams);
         PRINT_CHAPTER(format);
+        for (i = 0; i < fmt_ctx->nb_streams; i++)
+            if (fmt_ctx->streams[i]->codec->codec_id != CODEC_ID_NONE)
+                avcodec_close(fmt_ctx->streams[i]->codec);
         avformat_close_input(&fmt_ctx);
     }
 
@@ -1473,6 +1578,7 @@ static const OptionDef options[] = {
       "set the output printing format (available formats are: default, compact, csv, json, xml)", "format" },
     { "show_error",   OPT_BOOL, {(void*)&do_show_error} ,  "show probing error" },
     { "show_format",  OPT_BOOL, {(void*)&do_show_format} , "show format/container info" },
+    { "show_frames",  OPT_BOOL, {(void*)&do_show_frames} , "show frames info" },
     { "show_packets", OPT_BOOL, {(void*)&do_show_packets}, "show packets info" },
     { "show_streams", OPT_BOOL, {(void*)&do_show_streams}, "show streams info" },
     { "show_private_data", OPT_BOOL, {(void*)&show_private_data}, "show private data" },

@@ -9,6 +9,7 @@
     <xsd:complexType name="ffprobeType">
         <xsd:sequence>
             <xsd:element name="packets"  type="ffprobe:packetsType" minOccurs="0" maxOccurs="1" />
+            <xsd:element name="frames"   type="ffprobe:framesType"  minOccurs="0" maxOccurs="1" />
             <xsd:element name="streams"  type="ffprobe:streamsType" minOccurs="0" maxOccurs="1" />
             <xsd:element name="format"   type="ffprobe:formatType"  minOccurs="0" maxOccurs="1" />
             <xsd:element name="error"    type="ffprobe:errorType"   minOccurs="0" maxOccurs="1" />
@@ -18,6 +19,12 @@
     <xsd:complexType name="packetsType">
         <xsd:sequence>
             <xsd:element name="packet" type="ffprobe:packetType" minOccurs="0" maxOccurs="unbounded"/>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="framesType">
+        <xsd:sequence>
+            <xsd:element name="frame" type="ffprobe:frameType" minOccurs="0" maxOccurs="unbounded"/>
         </xsd:sequence>
     </xsd:complexType>
 
@@ -33,6 +40,31 @@
       <xsd:attribute name="size"          type="xsd:long" use="required" />
       <xsd:attribute name="pos"           type="xsd:long"  />
       <xsd:attribute name="flags"         type="xsd:string" use="required" />
+    </xsd:complexType>
+
+    <xsd:complexType name="frameType">
+      <xsd:attribute name="media_type"    type="xsd:string" use="required"/>
+      <xsd:attribute name="key_frame"     type="xsd:int"    use="required"/>
+      <xsd:attribute name="pts"           type="xsd:long" />
+      <xsd:attribute name="pts_time"      type="xsd:float"/>
+      <xsd:attribute name="pkt_pts"       type="xsd:long" />
+      <xsd:attribute name="pkt_pts_time"  type="xsd:float"/>
+      <xsd:attribute name="pkt_dts"       type="xsd:long" />
+      <xsd:attribute name="pkt_dts_time"  type="xsd:float"/>
+      <xsd:attribute name="pkt_pos"       type="xsd:long" />
+
+      <!-- video attributes -->
+      <xsd:attribute name="width"                  type="xsd:long"  />
+      <xsd:attribute name="height"                 type="xsd:long"  />
+      <xsd:attribute name="pix_fmt"                type="xsd:string"/>
+      <xsd:attribute name="sample_aspect_ratio"    type="xsd:string"/>
+      <xsd:attribute name="pict_type"              type="xsd:string"/>
+      <xsd:attribute name="coded_picture_number"   type="xsd:long"  />
+      <xsd:attribute name="display_picture_number" type="xsd:long"  />
+      <xsd:attribute name="interlaced_frame"       type="xsd:int"   />
+      <xsd:attribute name="top_field_first"        type="xsd:int"   />
+      <xsd:attribute name="repeat_pict"            type="xsd:int"   />
+      <xsd:attribute name="reference"              type="xsd:int"   />
     </xsd:complexType>
 
     <xsd:complexType name="streamsType">

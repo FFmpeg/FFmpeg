@@ -19,6 +19,7 @@ version next:
 - Avid 1:1 10-bit RGB Packer decoder
 - v308 Quicktime Uncompressed 4:4:4 encoder and decoder
 - yuv4 libquicktime packed 4:2:0 encoder and decoder
+- ffprobe -show_frames option
 
 
 version 0.9:
