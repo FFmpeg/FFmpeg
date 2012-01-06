@@ -36,6 +36,11 @@
    problems, so we limit it to a reasonable value */
 #define MAX_FRAME_SIZE 32768
 
+/* We clip the value of avctx->trellis to prevent data type overflows and
+   undefined behavior. Using larger values is insanely slow anyway. */
+#define MIN_TRELLIS 0
+#define MAX_TRELLIS 16
+
 static av_cold int g722_encode_init(AVCodecContext * avctx)
 {
     G722Context *c = avctx->priv_data;
@@ -81,6 +86,17 @@ static av_cold int g722_encode_init(AVCodecContext * avctx)
         /* This is arbitrary. We use 320 because it's 20ms @ 16kHz, which is
            a common packet size for VoIP applications */
         avctx->frame_size = 320;
+    }
+
+    if (avctx->trellis) {
+        /* validate trellis */
+        if (avctx->trellis < MIN_TRELLIS || avctx->trellis > MAX_TRELLIS) {
+            int new_trellis = av_clip(avctx->trellis, MIN_TRELLIS, MAX_TRELLIS);
+            av_log(avctx, AV_LOG_WARNING, "Requested trellis value is not "
+                   "allowed. Using %d instead of %d\n", new_trellis,
+                   avctx->trellis);
+            avctx->trellis = new_trellis;
+        }
     }
 
     return 0;
