@@ -126,7 +126,7 @@ static int tta_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     // FIXME!
     if (c->currentframe >= c->totalframes)
-        return -1;
+        return AVERROR_EOF;
 
     size = st->index_entries[c->currentframe].size;
 
