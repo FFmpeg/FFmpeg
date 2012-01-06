@@ -879,6 +879,7 @@ static void apply_param_change(AVCodecContext *avctx, AVPacket *avpkt)
             return;
         avctx->width  = bytestream_get_le32(&data);
         avctx->height = bytestream_get_le32(&data);
+        avcodec_set_dimensions(avctx, avctx->width, avctx->height);
         size -= 8;
     }
 }
@@ -894,6 +895,7 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
         return -1;
 
     avctx->pkt = avpkt;
+    apply_param_change(avctx, avpkt);
 
     if((avctx->codec->capabilities & CODEC_CAP_DELAY) || avpkt->size || (avctx->active_thread_type&FF_THREAD_FRAME)){
         if (HAVE_THREADS && avctx->active_thread_type&FF_THREAD_FRAME)
