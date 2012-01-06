@@ -204,4 +204,5 @@ URLProtocol ff_tcp_protocol = {
     .url_close           = tcp_close,
     .url_get_file_handle = tcp_get_file_handle,
     .priv_data_size      = sizeof(TCPContext),
+    .flags               = URL_PROTOCOL_FLAG_NETWORK,
 };

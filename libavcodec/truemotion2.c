@@ -272,6 +272,8 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
             len = AV_RB32(buf); buf += 4; cur += 4;
         }
         if(len > 0) {
+            if (skip <= cur)
+                return -1;
             init_get_bits(&ctx->gb, buf, (skip - cur) * 8);
             if(tm2_read_deltas(ctx, stream_id) == -1)
                 return -1;
@@ -286,7 +288,7 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
     buf += 4; cur += 4;
     buf += 4; cur += 4; /* unused by decoder */
 
-    if(skip < cur)
+    if (skip <= cur)
         return -1;
     init_get_bits(&ctx->gb, buf, (skip - cur) * 8);
     if(tm2_build_huff_table(ctx, &codes) == -1)
@@ -305,6 +307,8 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
     ctx->tok_lens[stream_id] = toks;
     len = AV_RB32(buf); buf += 4; cur += 4;
     if(len > 0) {
+        if (skip <= cur)
+            return -1;
         init_get_bits(&ctx->gb, buf, (skip - cur) * 8);
         for(i = 0; i < toks; i++) {
             if (get_bits_left(&ctx->gb) <= 0) {

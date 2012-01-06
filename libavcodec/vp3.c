@@ -1378,6 +1378,8 @@ static inline int vp3_dequant(Vp3DecodeContext *s, Vp3Fragment *frag,
             return i;
         }
     } while (i < 64);
+    // return value is expected to be a valid level
+    i--;
 end:
     // the actual DC+prediction is in the fragment structure
     block[0] = frag->dc * s->qmat[0][inter][plane][0];

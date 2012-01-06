@@ -576,7 +576,8 @@ static int mov_read_chan(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     uint8_t version;
-    uint32_t flags, layout_tag, bitmap, num_descr;
+    uint32_t flags, layout_tag, bitmap, num_descr, label_mask;
+    int i;
 
     if (c->fc->nb_streams < 1)
         return 0;
@@ -598,9 +599,7 @@ static int mov_read_chan(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     av_dlog(c->fc, "chan: size=%" PRId64 " version=%u flags=%u layout=%u bitmap=%u num_descr=%u\n",
             atom.size, version, flags, layout_tag, bitmap, num_descr);
 
-#if 0
-    /* TODO: use the channel descriptions if the layout tag is 0 */
-    int i;
+    label_mask = 0;
     for (i = 0; i < num_descr; i++) {
         uint32_t label, cflags;
         float coords[3];
@@ -609,10 +608,19 @@ static int mov_read_chan(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         AV_WN32(&coords[0], avio_rl32(pb)); // mCoordinates[0]
         AV_WN32(&coords[1], avio_rl32(pb)); // mCoordinates[1]
         AV_WN32(&coords[2], avio_rl32(pb)); // mCoordinates[2]
+        if (layout_tag == 0) {
+            uint32_t mask_incr = ff_mov_get_channel_label(label);
+            if (mask_incr == 0) {
+                label_mask = 0;
+                break;
+            }
+            label_mask |= mask_incr;
+        }
     }
-#endif
-
-    st->codec->channel_layout = ff_mov_get_channel_layout(layout_tag, bitmap);
+    if (layout_tag == 0)
+        st->codec->channel_layout = label_mask;
+    else
+        st->codec->channel_layout = ff_mov_get_channel_layout(layout_tag, bitmap);
 
     return 0;
 }

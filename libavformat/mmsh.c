@@ -406,4 +406,5 @@ URLProtocol ff_mmsh_protocol = {
     .url_close      = mmsh_close,
     .url_read_seek  = mmsh_read_seek,
     .priv_data_size = sizeof(MMSHContext),
+    .flags          = URL_PROTOCOL_FLAG_NETWORK,
 };

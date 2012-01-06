@@ -248,4 +248,5 @@ URLProtocol ff_tls_protocol = {
     .url_write      = tls_write,
     .url_close      = tls_close,
     .priv_data_size = sizeof(TLSContext),
+    .flags          = URL_PROTOCOL_FLAG_NETWORK,
 };

@@ -7,6 +7,9 @@ fate-ea-vp61: CMD = framecrc -i $(SAMPLES)/ea-vp6/MovieSkirmishGondor.vp6 -t 4
 FATE_TESTS += fate-vp3
 fate-vp3: CMD = framecrc -i $(SAMPLES)/vp3/vp31.avi
 
+FATE_TESTS += fate-vp3-coeff-level64
+fate-vp3-coeff-level64: CMD = framecrc -i $(SAMPLES)/vp3/coeff_level64.mkv
+
 FATE_TESTS += fate-vp5
 fate-vp5: CMD = framecrc -i $(SAMPLES)/vp5/potter512-400-partial.avi -an
 

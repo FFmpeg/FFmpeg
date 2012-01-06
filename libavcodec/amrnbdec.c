@@ -978,6 +978,10 @@ static int amrnb_decode_frame(AVCodecContext *avctx, void *data,
 
         pitch_sharpening(p, subframe, p->cur_frame_mode, &fixed_sparse);
 
+        if (fixed_sparse.pitch_lag == 0) {
+            av_log(avctx, AV_LOG_ERROR, "The file is corrupted, pitch_lag = 0 is not allowed\n");
+            return AVERROR_INVALIDDATA;
+        }
         ff_set_fixed_vector(p->fixed_vector, &fixed_sparse, 1.0,
                             AMR_SUBFRAME_SIZE);
 

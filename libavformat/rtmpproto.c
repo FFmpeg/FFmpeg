@@ -1000,4 +1000,5 @@ URLProtocol ff_rtmp_protocol = {
     .url_write      = rtmp_write,
     .url_close      = rtmp_close,
     .priv_data_size = sizeof(RTMPContext),
+    .flags          = URL_PROTOCOL_FLAG_NETWORK,
 };
