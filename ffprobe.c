@@ -1397,17 +1397,13 @@ static int probe_file(WriterContext *wctx, const char *filename)
     AVFormatContext *fmt_ctx;
     int ret;
 
-    writer_print_header(wctx);
     ret = open_input_file(&fmt_ctx, filename);
     if (ret >= 0) {
         PRINT_CHAPTER(packets);
         PRINT_CHAPTER(streams);
         PRINT_CHAPTER(format);
         avformat_close_input(&fmt_ctx);
-    } else if (do_show_error) {
-        show_error(wctx, ret);
     }
-    writer_print_footer(wctx);
 
     return ret;
 }
@@ -1520,14 +1516,20 @@ int main(int argc, char **argv)
     }
 
     if ((ret = writer_open(&wctx, w, w_args, NULL)) >= 0) {
+        writer_print_header(wctx);
+
         if (!input_filename) {
             show_usage();
             av_log(NULL, AV_LOG_ERROR, "You have to specify one input file.\n");
             av_log(NULL, AV_LOG_ERROR, "Use -h to get full help or, even better, run 'man %s'.\n", program_name);
             ret = AVERROR(EINVAL);
-        } else
+        } else {
             ret = probe_file(wctx, input_filename);
+            if (ret < 0 && do_show_error)
+                show_error(wctx, ret);
+        }
 
+        writer_print_footer(wctx);
         writer_close(&wctx);
     }
 
