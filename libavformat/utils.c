@@ -2386,6 +2386,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     AVPacket pkt1, *pkt;
     int64_t old_offset = avio_tell(ic->pb);
     int orig_nb_streams = ic->nb_streams;        // new streams might appear, no options for those
+    int flush_codecs = 1;
 
     for(i=0;i<ic->nb_streams;i++) {
         AVCodec *codec;
@@ -2465,6 +2466,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 /* if we found the info for all the codecs, we can stop */
                 ret = count;
                 av_log(ic, AV_LOG_DEBUG, "All info found\n");
+                flush_codecs = 0;
                 break;
             }
         }
@@ -2483,29 +2485,6 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 
         if (ret < 0) {
             /* EOF or error*/
-            AVPacket empty_pkt = { 0 };
-            int err;
-            av_init_packet(&empty_pkt);
-
-            ret = -1; /* we could not have all the codec parameters before EOF */
-            for(i=0;i<ic->nb_streams;i++) {
-                st = ic->streams[i];
-
-                /* flush the decoders */
-                while ((err = try_decode_frame(st, &empty_pkt,
-                                               (options && i < orig_nb_streams) ?
-                                                &options[i] : NULL)) >= 0)
-                    if (has_codec_parameters(st->codec))
-                        break;
-
-                if (!has_codec_parameters(st->codec)){
-                    char buf[256];
-                    avcodec_string(buf, sizeof(buf), st->codec, 0);
-                    av_log(ic, AV_LOG_WARNING, "Could not find codec parameters (%s)\n", buf);
-                } else {
-                    ret = 0;
-                }
-            }
             break;
         }
 
@@ -2579,6 +2558,32 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 
         st->codec_info_nb_frames++;
         count++;
+    }
+
+    if (flush_codecs) {
+        AVPacket empty_pkt = { 0 };
+        int err;
+        av_init_packet(&empty_pkt);
+
+        ret = -1; /* we could not have all the codec parameters before EOF */
+        for(i=0;i<ic->nb_streams;i++) {
+            st = ic->streams[i];
+
+            /* flush the decoders */
+            while ((err = try_decode_frame(st, &empty_pkt,
+                                           (options && i < orig_nb_streams) ?
+                                            &options[i] : NULL)) >= 0)
+                if (has_codec_parameters(st->codec))
+                    break;
+
+            if (!has_codec_parameters(st->codec)){
+                char buf[256];
+                avcodec_string(buf, sizeof(buf), st->codec, 0);
+                av_log(ic, AV_LOG_WARNING, "Could not find codec parameters (%s)\n", buf);
+            } else {
+                ret = 0;
+            }
+        }
     }
 
     // close codecs which were opened in try_decode_frame()
