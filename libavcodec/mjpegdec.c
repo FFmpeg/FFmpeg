@@ -684,6 +684,8 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int nb_components, int p
     int left[3], top[3], topleft[3];
     const int linesize= s->linesize[0];
     const int mask= (1<<s->bits)-1;
+    int resync_mb_y = 0;
+    int resync_mb_x = 0;
 
     av_fast_malloc(&s->ljpeg_buffer, &s->ljpeg_buffer_size, (unsigned)s->mb_width * 4 * sizeof(s->ljpeg_buffer[0][0]));
     buffer= s->ljpeg_buffer;
@@ -692,7 +694,6 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int nb_components, int p
         buffer[0][i]= 1 << (s->bits - 1);
     }
     for(mb_y = 0; mb_y < s->mb_height; mb_y++) {
-        const int modified_predictor= mb_y ? predictor : 1;
         uint8_t *ptr = s->picture.data[0] + (linesize * mb_y);
 
         if (s->interlaced && s->bottom_field)
@@ -702,8 +703,17 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int nb_components, int p
             top[i]= left[i]= topleft[i]= buffer[0][i];
         }
         for(mb_x = 0; mb_x < s->mb_width; mb_x++) {
-            if (s->restart_interval && !s->restart_count)
+            int modified_predictor = predictor;
+
+            if (s->restart_interval && !s->restart_count){
                 s->restart_count = s->restart_interval;
+                resync_mb_x = mb_x;
+                resync_mb_y = mb_y;
+                for(i=0; i<3; i++)
+                    top[i]= left[i]= topleft[i]= 1 << (s->bits - 1);
+            }
+            if (mb_y == resync_mb_y || mb_y == resync_mb_y+1 && mb_x < resync_mb_x)
+                modified_predictor = 1;
 
             for(i=0;i<nb_components;i++) {
                 int pred, dc;
