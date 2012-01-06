@@ -52,6 +52,8 @@
         return AVERROR(EINVAL); \
     }
 
+float ff_aac_pow34sf_tab[428];
+
 static const uint8_t swb_size_1024_96[] = {
     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 8, 8, 8, 8, 8,
     12, 12, 12, 12, 12, 16, 16, 24, 28, 36, 44,
@@ -690,6 +692,9 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     s->lambda = avctx->global_quality ? avctx->global_quality : 120;
 
     ff_aac_tableinit();
+
+    for (i = 0; i < 428; i++)
+        ff_aac_pow34sf_tab[i] = sqrt(ff_aac_pow2sf_tab[i] * sqrt(ff_aac_pow2sf_tab[i]));
 
     return 0;
 fail:

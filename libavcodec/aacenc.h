@@ -74,4 +74,6 @@ typedef struct AACEncContext {
     DECLARE_ALIGNED(32, float, scoefs)[1024];    ///< scaled coefficients
 } AACEncContext;
 
+extern float ff_aac_pow34sf_tab[428];
+
 #endif /* AVCODEC_AACENC_H */

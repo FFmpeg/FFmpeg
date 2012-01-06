@@ -110,14 +110,15 @@ static av_always_inline float quantize_and_encode_band_cost_template(
                                 int *bits, int BT_ZERO, int BT_UNSIGNED,
                                 int BT_PAIR, int BT_ESC)
 {
-    const float IQ = ff_aac_pow2sf_tab[POW_SF2_ZERO + scale_idx - SCALE_ONE_POS + SCALE_DIV_512];
-    const float  Q = ff_aac_pow2sf_tab[POW_SF2_ZERO - scale_idx + SCALE_ONE_POS - SCALE_DIV_512];
+    const int q_idx = POW_SF2_ZERO - scale_idx + SCALE_ONE_POS - SCALE_DIV_512;
+    const float Q   = ff_aac_pow2sf_tab [q_idx];
+    const float Q34 = ff_aac_pow34sf_tab[q_idx];
+    const float IQ  = ff_aac_pow2sf_tab [POW_SF2_ZERO + scale_idx - SCALE_ONE_POS + SCALE_DIV_512];
     const float CLIPPED_ESCAPE = 165140.0f*IQ;
     int i, j;
     float cost = 0;
     const int dim = BT_PAIR ? 2 : 4;
     int resbits = 0;
-    const float  Q34 = sqrtf(Q * sqrtf(Q));
     const int range  = aac_cb_range[cb];
     const int maxval = aac_cb_maxval[cb];
     int off;
