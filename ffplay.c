@@ -3105,9 +3105,9 @@ static const OptionDef options[] = {
 
 static void show_usage(void)
 {
-    printf("Simple media player\n");
-    printf("usage: %s [options] input_file\n", program_name);
-    printf("\n");
+    av_log(NULL, AV_LOG_INFO, "Simple media player\n");
+    av_log(NULL, AV_LOG_INFO, "usage: %s [options] input_file\n", program_name);
+    av_log(NULL, AV_LOG_INFO, "\n");
 }
 
 static int opt_help(const char *opt, const char *arg)

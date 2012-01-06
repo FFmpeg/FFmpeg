@@ -4187,9 +4187,9 @@ static int opt_audio_qscale(OptionsContext *o, const char *opt, const char *arg)
 
 static void show_usage(void)
 {
-    printf("Hyper fast Audio and Video encoder\n");
-    printf("usage: %s [options] [[infile options] -i infile]... {[outfile options] outfile}...\n", program_name);
-    printf("\n");
+    av_log(NULL, AV_LOG_INFO, "Hyper fast Audio and Video encoder\n");
+    av_log(NULL, AV_LOG_INFO, "usage: %s [options] [[infile options] -i infile]... {[outfile options] outfile}...\n", program_name);
+    av_log(NULL, AV_LOG_INFO, "\n");
 }
 
 static int opt_help(const char *opt, const char *arg)

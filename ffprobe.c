@@ -1439,9 +1439,9 @@ end:
 
 static void show_usage(void)
 {
-    printf("Simple multimedia streams analyzer\n");
-    printf("usage: %s [OPTIONS] [INPUT_FILE]\n", program_name);
-    printf("\n");
+    av_log(NULL, AV_LOG_INFO, "Simple multimedia streams analyzer\n");
+    av_log(NULL, AV_LOG_INFO, "usage: %s [OPTIONS] [INPUT_FILE]\n", program_name);
+    av_log(NULL, AV_LOG_INFO, "\n");
 }
 
 static int opt_format(const char *opt, const char *arg)
