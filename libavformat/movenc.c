@@ -987,7 +987,7 @@ static int mov_write_stts_tag(AVIOContext *pb, MOVTrack *track)
         stts_entries = av_malloc(track->entry * sizeof(*stts_entries)); /* worst case */
         for (i=0; i<track->entry; i++) {
             int64_t duration = i + 1 == track->entry ?
-                track->trackDuration - track->cluster[i].dts + track->cluster[0].dts : /* readjusting */
+                track->trackDuration - track->cluster[i].dts + track->start_dts : /* readjusting */
                 track->cluster[i+1].dts - track->cluster[i].dts;
             if (i && duration == stts_entries[entries].duration) {
                 stts_entries[entries].count++; /* compress */
@@ -2104,7 +2104,9 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     trk->cluster[trk->entry].size = size;
     trk->cluster[trk->entry].entries = samplesInChunk;
     trk->cluster[trk->entry].dts = pkt->dts;
-    trk->trackDuration = pkt->dts - trk->cluster[0].dts + pkt->duration;
+    if (trk->start_dts == AV_NOPTS_VALUE)
+        trk->start_dts = pkt->dts;
+    trk->trackDuration = pkt->dts - trk->start_dts + pkt->duration;
 
     if (pkt->pts == AV_NOPTS_VALUE) {
         av_log(s, AV_LOG_WARNING, "pts has no value\n");
@@ -2253,6 +2255,7 @@ static int mov_write_header(AVFormatContext *s)
         /* If hinting of this track is enabled by a later hint track,
          * this is updated. */
         track->hint_track = -1;
+        track->start_dts = AV_NOPTS_VALUE;
         if(st->codec->codec_type == AVMEDIA_TYPE_VIDEO){
             if (track->tag == MKTAG('m','x','3','p') || track->tag == MKTAG('m','x','3','n') ||
                 track->tag == MKTAG('m','x','4','p') || track->tag == MKTAG('m','x','4','n') ||
