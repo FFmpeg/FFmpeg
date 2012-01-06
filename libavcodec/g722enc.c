@@ -32,6 +32,10 @@
 
 #define FREEZE_INTERVAL 128
 
+/* This is an arbitrary value. Allowing insanely large values leads to strange
+   problems, so we limit it to a reasonable value */
+#define MAX_FRAME_SIZE 32768
+
 static av_cold int g722_encode_init(AVCodecContext * avctx)
 {
     G722Context *c = avctx->priv_data;
@@ -54,6 +58,29 @@ static av_cold int g722_encode_init(AVCodecContext * avctx)
             c->node_buf[i] = av_mallocz(2 * frontier * sizeof(**c->node_buf));
             c->nodep_buf[i] = av_mallocz(2 * frontier * sizeof(**c->nodep_buf));
         }
+    }
+
+    if (avctx->frame_size) {
+        /* validate frame size */
+        if (avctx->frame_size & 1 || avctx->frame_size > MAX_FRAME_SIZE) {
+            int new_frame_size;
+
+            if (avctx->frame_size == 1)
+                new_frame_size = 2;
+            else if (avctx->frame_size > MAX_FRAME_SIZE)
+                new_frame_size = MAX_FRAME_SIZE;
+            else
+                new_frame_size = avctx->frame_size - 1;
+
+            av_log(avctx, AV_LOG_WARNING, "Requested frame size is not "
+                   "allowed. Using %d instead of %d\n", new_frame_size,
+                   avctx->frame_size);
+            avctx->frame_size = new_frame_size;
+        }
+    } else {
+        /* This is arbitrary. We use 320 because it's 20ms @ 16kHz, which is
+           a common packet size for VoIP applications */
+        avctx->frame_size = 320;
     }
 
     return 0;
@@ -301,14 +328,20 @@ static int g722_encode_frame(AVCodecContext *avctx,
     const int16_t *samples = data;
     int nb_samples;
 
-    nb_samples = buf_size * 2;
+    nb_samples = avctx->frame_size - (avctx->frame_size & 1);
 
     if (avctx->trellis)
         g722_encode_trellis(c, avctx->trellis, dst, nb_samples, samples);
     else
         g722_encode_no_trellis(c, dst, nb_samples, samples);
 
-    return buf_size;
+    /* handle last frame with odd frame_size */
+    if (nb_samples < avctx->frame_size) {
+        int16_t last_samples[2] = { samples[nb_samples], samples[nb_samples] };
+        encode_byte(c, &dst[nb_samples >> 1], last_samples);
+    }
+
+    return (avctx->frame_size + 1) >> 1;
 }
 
 AVCodec ff_adpcm_g722_encoder = {
@@ -319,6 +352,7 @@ AVCodec ff_adpcm_g722_encoder = {
     .init           = g722_encode_init,
     .close          = g722_encode_close,
     .encode         = g722_encode_frame,
+    .capabilities   = CODEC_CAP_SMALL_LAST_FRAME,
     .long_name      = NULL_IF_CONFIG_SMALL("G.722 ADPCM"),
     .sample_fmts    = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
 };
