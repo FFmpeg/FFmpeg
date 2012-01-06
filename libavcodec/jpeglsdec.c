@@ -309,11 +309,12 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near, int point_transfor
     } else if(ilv == 1) { /* line interleaving */
         int j;
         int Rc[3] = {0, 0, 0};
+        stride = (s->nb_components > 1) ? 3 : 1;
         memset(cur, 0, s->picture.linesize[0]);
-        width = s->width * 3;
+        width = s->width * stride;
         for(i = 0; i < s->height; i++) {
-            for(j = 0; j < 3; j++) {
-                ls_decode_line(state, s, last + j, cur + j, Rc[j], width, 3, j, 8);
+            for(j = 0; j < stride; j++) {
+                ls_decode_line(state, s, last + j, cur + j, Rc[j], width, stride, j, 8);
                 Rc[j] = last[j];
 
                 if (s->restart_interval && !--s->restart_count) {
