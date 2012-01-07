@@ -985,7 +985,7 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    out= p->frame.data[0];
+    out= (int16_t*)p->frame.data[0];
 
 
     if(p->cur_frame_type == ActiveFrame) {
