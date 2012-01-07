@@ -367,7 +367,7 @@ how the audio volume will be increased or decreased.
 
 Output values are clipped to the maximum value.
 
-If @var{vol} is expressed as a decimal number, and the output audio
+If @var{vol} is expressed as a decimal number, the output audio
 volume is given by the relation:
 @example
 @var{output_volume} = @var{vol} * @var{input_volume}
