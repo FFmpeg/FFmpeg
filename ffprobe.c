@@ -232,34 +232,34 @@ static inline void writer_print_footer(WriterContext *wctx)
 }
 
 static inline void writer_print_chapter_header(WriterContext *wctx,
-                                               const char *header)
+                                               const char *chapter)
 {
     if (wctx->writer->print_chapter_header)
-        wctx->writer->print_chapter_header(wctx, header);
+        wctx->writer->print_chapter_header(wctx, chapter);
     wctx->nb_section = 0;
 }
 
 static inline void writer_print_chapter_footer(WriterContext *wctx,
-                                               const char *footer)
+                                               const char *chapter)
 {
     if (wctx->writer->print_chapter_footer)
-        wctx->writer->print_chapter_footer(wctx, footer);
+        wctx->writer->print_chapter_footer(wctx, chapter);
     wctx->nb_chapter++;
 }
 
 static inline void writer_print_section_header(WriterContext *wctx,
-                                               const char *header)
+                                               const char *section)
 {
     if (wctx->writer->print_section_header)
-        wctx->writer->print_section_header(wctx, header);
+        wctx->writer->print_section_header(wctx, section);
     wctx->nb_item = 0;
 }
 
 static inline void writer_print_section_footer(WriterContext *wctx,
-                                               const char *footer)
+                                               const char *section)
 {
     if (wctx->writer->print_section_footer)
-        wctx->writer->print_section_footer(wctx, footer);
+        wctx->writer->print_section_footer(wctx, section);
     wctx->nb_section++;
 }
 
