@@ -1439,11 +1439,11 @@ static int dca_exss_parse_asset_header(DCAContext *s)
 {
     int header_pos = get_bits_count(&s->gb);
     int header_size;
-    int channels;
+    int channels = 0;
     int embedded_stereo = 0;
     int embedded_6ch    = 0;
     int drc_code_present;
-    int extensions_mask;
+    int av_uninit(extensions_mask);
     int i, j;
 
     if (get_bits_left(&s->gb) < 16)
