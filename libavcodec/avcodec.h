@@ -725,10 +725,22 @@ typedef struct RcOverride{
 /* Codec can export data for HW decoding (XvMC). */
 #define CODEC_CAP_HWACCEL         0x0010
 /**
- * Codec has a nonzero delay and needs to be fed with avpkt->data=NULL,
+ * Encoder or decoder requires flushing with NULL input at the end in order to
+ * give the complete and correct output.
+ *
+ * NOTE: If this flag is not set, the codec is guaranteed to never be fed with
+ *       with NULL data. The user can still send NULL data to the public encode
+ *       or decode function, but libavcodec will not pass it along to the codec
+ *       unless this flag is set.
+ *
+ * Decoders:
+ * The decoder has a non-zero delay and needs to be fed with avpkt->data=NULL,
  * avpkt->size=0 at the end to get the delayed data until the decoder no longer
- * returns frames. If this is not set, the codec is guaranteed to never be fed
- * with NULL data.
+ * returns frames.
+ *
+ * Encoders:
+ * The encoder needs to be fed with NULL data at the end of encoding until the
+ * encoder no longer returns data.
  */
 #define CODEC_CAP_DELAY           0x0020
 /**
