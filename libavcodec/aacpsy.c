@@ -827,12 +827,12 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx,
                     p = fabsf(*pf);
             pch->prev_energy_subshort[i] = energy_subshort[i + PSY_LAME_NUM_SUBBLOCKS] = p;
             energy_short[1 + i / PSY_LAME_NUM_SUBBLOCKS] += p;
-            /* FIXME: The indexes below are [i + 3 - 2] in the LAME source.
-             *          Obviously the 3 and 2 have some significance, or this would be just [i + 1]
-             *          (which is what we use here). What the 3 stands for is ambigious, as it is both
-             *          number of short blocks, and the number of sub-short blocks.
-             *          It seems that LAME is comparing each sub-block to sub-block + 1 in the
-             *          previous block.
+            /* NOTE: The indexes below are [i + 3 - 2] in the LAME source.
+             *       Obviously the 3 and 2 have some significance, or this would be just [i + 1]
+             *       (which is what we use here). What the 3 stands for is ambiguous, as it is both
+             *       number of short blocks, and the number of sub-short blocks.
+             *       It seems that LAME is comparing each sub-block to sub-block + 1 in the
+             *       previous block.
              */
             if (p > energy_subshort[i + 1])
                 p = p / energy_subshort[i + 1];
