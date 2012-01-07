@@ -269,7 +269,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
 
     // Needed if zlib unused or init aborted before deflateInit
-    memset(&(c->zstream), 0, sizeof(z_stream));
+    memset(&c->zstream, 0, sizeof(z_stream));
     c->comp_size = avctx->width * avctx->height + 1024 +
         ((avctx->width + ZMBV_BLOCK - 1) / ZMBV_BLOCK) * ((avctx->height + ZMBV_BLOCK - 1) / ZMBV_BLOCK) * 2 + 4;
     if ((c->work_buf = av_malloc(c->comp_size)) == NULL) {
@@ -294,7 +294,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     c->zstream.zalloc = Z_NULL;
     c->zstream.zfree = Z_NULL;
     c->zstream.opaque = Z_NULL;
-    zret = deflateInit(&(c->zstream), lvl);
+    zret = deflateInit(&c->zstream, lvl);
     if (zret != Z_OK) {
         av_log(avctx, AV_LOG_ERROR, "Inflate init error: %d\n", zret);
         return -1;
@@ -317,7 +317,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
     av_freep(&c->comp_buf);
     av_freep(&c->work_buf);
 
-    deflateEnd(&(c->zstream));
+    deflateEnd(&c->zstream);
     av_freep(&c->prev);
 
     return 0;

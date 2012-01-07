@@ -53,7 +53,7 @@ typedef struct MTVDemuxContext {
 static int mtv_probe(AVProbeData *p)
 {
     /* Magic is 'AMV' */
-    if(*(p->buf) != 'A' || *(p->buf+1) != 'M' || *(p->buf+2) != 'V')
+    if (*p->buf != 'A' || *(p->buf + 1) != 'M' || *(p->buf + 2) != 'V')
         return 0;
 
     /* Check for nonzero in bpp and (width|height) header fields */

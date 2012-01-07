@@ -69,7 +69,7 @@ double ff_timefilter_update(TimeFilter *self, double system_time, double period)
         loop_error          = system_time - self->cycle_time;
 
         /// update loop
-        self->cycle_time   += FFMAX(self->feedback2_factor, 1.0/(self->count)) * loop_error;
+        self->cycle_time   += FFMAX(self->feedback2_factor, 1.0 / self->count) * loop_error;
         self->clock_period += self->feedback3_factor * loop_error / period;
     }
     return self->cycle_time;

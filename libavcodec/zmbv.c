@@ -613,7 +613,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     c->bpp = avctx->bits_per_coded_sample;
 
     // Needed if zlib unused or init aborted before inflateInit
-    memset(&(c->zstream), 0, sizeof(z_stream));
+    memset(&c->zstream, 0, sizeof(z_stream));
 
     avctx->pix_fmt = PIX_FMT_RGB24;
     c->decomp_size = (avctx->width + 255) * 4 * (avctx->height + 64);
@@ -630,7 +630,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     c->zstream.zalloc = Z_NULL;
     c->zstream.zfree = Z_NULL;
     c->zstream.opaque = Z_NULL;
-    zret = inflateInit(&(c->zstream));
+    zret = inflateInit(&c->zstream);
     if (zret != Z_OK) {
         av_log(avctx, AV_LOG_ERROR, "Inflate init error: %d\n", zret);
         return 1;
@@ -654,7 +654,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
     if (c->pic.data[0])
         avctx->release_buffer(avctx, &c->pic);
-    inflateEnd(&(c->zstream));
+    inflateEnd(&c->zstream);
     av_freep(&c->cur);
     av_freep(&c->prev);
 

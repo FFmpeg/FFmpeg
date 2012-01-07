@@ -268,10 +268,10 @@ static int dct_quantize_altivec(MpegEncContext* s,
             vec_ste(baseVector, 0, &oldBaseValue);
 
             qmat = (vector signed int*)s->q_intra_matrix[qscale];
-            biasAddr = &(s->intra_quant_bias);
+            biasAddr = &s->intra_quant_bias;
         } else {
             qmat = (vector signed int*)s->q_inter_matrix[qscale];
-            biasAddr = &(s->inter_quant_bias);
+            biasAddr = &s->inter_quant_bias;
         }
 
         // Load the bias vector (We add 0.5 to the bias so that we're
@@ -361,8 +361,8 @@ static int dct_quantize_altivec(MpegEncContext* s,
             vector signed int max_q_int, min_q_int;
             vector signed short max_q, min_q;
 
-            LOAD4(max_q_int, &(s->max_qcoeff));
-            LOAD4(min_q_int, &(s->min_qcoeff));
+            LOAD4(max_q_int, &s->max_qcoeff);
+            LOAD4(min_q_int, &s->min_qcoeff);
 
             max_q = vec_pack(max_q_int, max_q_int);
             min_q = vec_pack(min_q_int, min_q_int);

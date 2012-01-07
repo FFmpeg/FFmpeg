@@ -5342,7 +5342,7 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
     if (v->profile == PROFILE_ADVANCED)
         avctx->level = v->level;
 
-    avctx->has_b_frames = !!(avctx->max_b_frames);
+    avctx->has_b_frames = !!avctx->max_b_frames;
 
     s->mb_width  = (avctx->coded_width  + 15) >> 4;
     s->mb_height = (avctx->coded_height + 15) >> 4;

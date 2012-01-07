@@ -270,7 +270,7 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
         rc2pass2.version = XVID_VERSION;
         rc2pass2.bitrate = avctx->bit_rate;
 
-        fd = ff_tempfile("xvidff.", &(x->twopassfile));
+        fd = ff_tempfile("xvidff.", &x->twopassfile);
         if( fd == -1 ) {
             av_log(avctx, AV_LOG_ERROR,
                 "Xvid: Cannot write 2-pass pipe\n");
@@ -414,7 +414,7 @@ static int xvid_encode_frame(AVCodecContext *avctx,
     char *tmp;
     struct xvid_context *x = avctx->priv_data;
     AVFrame *picture = data;
-    AVFrame *p = &(x->encoded_picture);
+    AVFrame *p = &x->encoded_picture;
 
     xvid_enc_frame_t xvid_enc_frame;
     xvid_enc_stats_t xvid_enc_stats;
@@ -575,7 +575,7 @@ int xvid_strip_vol_header(AVCodecContext *avctx,
         }
         /* Less dangerous now, memmove properly copies the two
            chunks of overlapping data */
-        memmove(frame, &(frame[vo_len]), frame_len - vo_len);
+        memmove(frame, &frame[vo_len], frame_len - vo_len);
         return frame_len - vo_len;
     } else
         return frame_len;

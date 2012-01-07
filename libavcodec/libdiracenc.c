@@ -136,7 +136,7 @@ static av_cold int libdirac_encode_init(AVCodecContext *avccontext)
     preset = GetDiracVideoFormatPreset(avccontext);
 
     /* initialize the encoder context */
-    dirac_encoder_context_init(&(p_dirac_params->enc_ctx), preset);
+    dirac_encoder_context_init(&p_dirac_params->enc_ctx, preset);
 
     p_dirac_params->enc_ctx.src_params.chroma = GetDiracChromaFormat(avccontext->pix_fmt);
 
@@ -199,7 +199,7 @@ static av_cold int libdirac_encode_init(AVCodecContext *avccontext)
          * irrespective of the type of source material */
         p_dirac_params->enc_ctx.enc_params.picture_coding_mode = 1;
 
-    p_dirac_params->p_encoder = dirac_encoder_init(&(p_dirac_params->enc_ctx),
+    p_dirac_params->p_encoder = dirac_encoder_init(&p_dirac_params->enc_ctx,
                                                    verbose);
 
     if (!p_dirac_params->p_encoder) {
@@ -221,7 +221,7 @@ static void DiracFreeFrame(void *data)
 {
     DiracSchroEncodedFrame *enc_frame = data;
 
-    av_freep(&(enc_frame->p_encbuf));
+    av_freep(&enc_frame->p_encbuf);
     av_free(enc_frame);
 }
 
