@@ -2384,9 +2384,12 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     int i, count, ret, read_size, j;
     AVStream *st;
     AVPacket pkt1, *pkt;
+    AVDictionary *one_thread_opt = NULL;
     int64_t old_offset = avio_tell(ic->pb);
     int orig_nb_streams = ic->nb_streams;        // new streams might appear, no options for those
     int flush_codecs = 1;
+
+    av_dict_set(&one_thread_opt, "threads", "1", 0);
 
     for(i=0;i<ic->nb_streams;i++) {
         AVCodec *codec;
@@ -2409,15 +2412,19 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         assert(!st->codec->codec);
         codec = avcodec_find_decoder(st->codec->codec_id);
 
+        if (options)
+            av_dict_set(&options[i], "threads", "1", 0);
+
         /* Ensure that subtitle_header is properly set. */
         if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE
             && codec && !st->codec->codec)
-            avcodec_open2(st->codec, codec, options ? &options[i] : NULL);
+            avcodec_open2(st->codec, codec, options ? &options[i] : &one_thread_opt);
 
         //try to just open decoders, in case this is enough to get parameters
         if(!has_codec_parameters(st->codec)){
             if (codec && !st->codec->codec)
-                avcodec_open2(st->codec, codec, options ? &options[i] : NULL);
+                avcodec_open2(st->codec, codec, options ? &options[i]
+                              : &one_thread_opt);
         }
     }
 
