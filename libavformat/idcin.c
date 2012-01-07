@@ -266,8 +266,8 @@ static int idcin_read_packet(AVFormatContext *s,
 
             pal = av_packet_new_side_data(pkt, AV_PKT_DATA_PALETTE,
                                           AVPALETTE_SIZE);
-            if (ret < 0)
-                return ret;
+            if (!pal)
+                return AVERROR(ENOMEM);
             memcpy(pal, palette, AVPALETTE_SIZE);
         }
         pkt->stream_index = idcin->video_stream_index;
