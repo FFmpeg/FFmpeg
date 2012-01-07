@@ -186,4 +186,4 @@ FATE_TESTS += fate-yop
 fate-yop: CMD = framecrc -i $(SAMPLES)/yop/test1.yop -pix_fmt rgb24 -an
 
 FATE_TESTS += fate-xxan-wc4
-fate-xxan-wc4: CMD = framecrc -i $(SAMPLES)/wc4-xan/wc4_2.avi -an -vframes 10
+fate-xxan-wc4: CMD = framecrc -i $(SAMPLES)/wc4-xan/wc4trailer-partial.avi -an
