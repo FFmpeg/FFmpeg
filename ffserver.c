@@ -499,7 +499,10 @@ static void start_children(FFStream *feed)
                 }
 
                 /* This is needed to make relative pathnames work */
-                chdir(my_program_dir);
+                if (chdir(my_program_dir) < 0) {
+                    http_log("chdir failed\n");
+                    exit(1);
+                }
 
                 signal(SIGPIPE, SIG_DFL);
 
