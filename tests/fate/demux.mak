@@ -10,6 +10,9 @@ fate-bink-demux: CMD = crc -i $(SAMPLES)/bink/Snd0a7d9b58.dee -vn -acodec copy
 FATE_TESTS += fate-bink-demux-video
 fate-bink-demux-video: CMD = framecrc -i $(SAMPLES)/bink/hol2br.bik
 
+FATE_TESTS += fate-bmv
+fate-bmv: CMD = framecrc -i $(SAMPLES)/bmv/SURFING-partial.BMV -pix_fmt rgb24
+
 FATE_TESTS += fate-caf
 fate-caf: CMD = crc -i $(SAMPLES)/caf/caf-pcm16.caf
 
