@@ -81,3 +81,6 @@ fate-siff: CMD = framecrc -i $(SAMPLES)/SIFF/INTRO_B.VB -t 3 -pix_fmt rgb24
 
 FATE_TESTS += fate-westwood-aud
 fate-westwood-aud: CMD = md5 -i $(SAMPLES)/westwood-aud/excellent.aud -f s16le
+
+FATE_TESTS += fate-xmv-demux
+fate-xmv-demux: CMD = framecrc -i $(SAMPLES)/xmv/logos1p.fmv -vcodec copy -acodec copy
