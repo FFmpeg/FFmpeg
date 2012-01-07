@@ -265,5 +265,5 @@ AVInputFormat ff_vqf_demuxer = {
     .read_header    = vqf_read_header,
     .read_packet    = vqf_read_packet,
     .read_seek      = vqf_read_seek,
-    .extensions = "vqf",
+    .extensions     = "vqf,vql,vqe",
 };

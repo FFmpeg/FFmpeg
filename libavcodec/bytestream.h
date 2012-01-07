@@ -27,7 +27,7 @@
 #include "libavutil/intreadwrite.h"
 
 typedef struct {
-    const uint8_t *buffer, *buffer_end;
+    const uint8_t *buffer, *buffer_end, *buffer_start;
 } GetByteContext;
 
 #define DEF_T(type, name, bytes, read, write)                             \
@@ -79,6 +79,7 @@ static av_always_inline void bytestream2_init(GetByteContext *g,
                                               const uint8_t *buf, int buf_size)
 {
     g->buffer =  buf;
+    g->buffer_start = buf;
     g->buffer_end = buf + buf_size;
 }
 
@@ -91,6 +92,34 @@ static av_always_inline void bytestream2_skip(GetByteContext *g,
                                               unsigned int size)
 {
     g->buffer += FFMIN(g->buffer_end - g->buffer, size);
+}
+
+static av_always_inline int bytestream2_tell(GetByteContext *g)
+{
+    return (int)(g->buffer - g->buffer_start);
+}
+
+static av_always_inline int bytestream2_seek(GetByteContext *g, int offset,
+                                             int whence)
+{
+    switch (whence) {
+    case SEEK_CUR:
+        offset = av_clip(offset, -(g->buffer - g->buffer_start),
+                         g->buffer_end - g->buffer);
+        g->buffer += offset;
+        break;
+    case SEEK_END:
+        offset = av_clip(offset, -(g->buffer_end - g->buffer_start), 0);
+        g->buffer = g->buffer_end + offset;
+        break;
+    case SEEK_SET:
+        offset = av_clip(offset, 0, g->buffer_end - g->buffer_start);
+        g->buffer = g->buffer_start + offset;
+        break;
+    default:
+        return AVERROR(EINVAL);
+    }
+    return bytestream2_tell(g);
 }
 
 static av_always_inline unsigned int bytestream2_get_buffer(GetByteContext *g,

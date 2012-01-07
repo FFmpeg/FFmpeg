@@ -41,6 +41,8 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "bytestream.h"
+#include "mathops.h"
 
 #define FLI_256_COLOR 4
 #define FLI_DELTA     7
@@ -133,7 +135,7 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
 {
     FlicDecodeContext *s = avctx->priv_data;
 
-    int stream_ptr = 0;
+    GetByteContext g2;
     int pixel_ptr;
     int palette_ptr;
     unsigned char palette_idx1;
@@ -163,6 +165,8 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
     unsigned char *pixels;
     unsigned int pixel_limit;
 
+    bytestream2_init(&g2, buf, buf_size);
+
     s->frame.reference = 3;
     s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
     if (avctx->reget_buffer(avctx, &s->frame) < 0) {
@@ -172,32 +176,29 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
 
     pixels = s->frame.data[0];
     pixel_limit = s->avctx->height * s->frame.linesize[0];
-
     if (buf_size < 16 || buf_size > INT_MAX - (3 * 256 + FF_INPUT_BUFFER_PADDING_SIZE))
         return AVERROR_INVALIDDATA;
-    frame_size = AV_RL32(&buf[stream_ptr]);
+    frame_size = bytestream2_get_le32(&g2);
     if (frame_size > buf_size)
         frame_size = buf_size;
-    stream_ptr += 6;  /* skip the magic number */
-    num_chunks = AV_RL16(&buf[stream_ptr]);
-    stream_ptr += 10;  /* skip padding */
+    bytestream2_skip(&g2, 2); /* skip the magic number */
+    num_chunks = bytestream2_get_le16(&g2);
+    bytestream2_skip(&g2, 8);  /* skip padding */
 
     frame_size -= 16;
 
     /* iterate through the chunks */
     while ((frame_size >= 6) && (num_chunks > 0)) {
         int stream_ptr_after_chunk;
-        chunk_size = AV_RL32(&buf[stream_ptr]);
+        chunk_size = bytestream2_get_le32(&g2);
         if (chunk_size > frame_size) {
             av_log(avctx, AV_LOG_WARNING,
                    "Invalid chunk_size = %u > frame_size = %u\n", chunk_size, frame_size);
             chunk_size = frame_size;
         }
-        stream_ptr_after_chunk = stream_ptr + chunk_size;
+        stream_ptr_after_chunk = bytestream2_tell(&g2) - 4 + chunk_size;
 
-        stream_ptr += 4;
-        chunk_type = AV_RL16(&buf[stream_ptr]);
-        stream_ptr += 2;
+        chunk_type = bytestream2_get_le16(&g2);
 
         switch (chunk_type) {
         case FLI_256_COLOR:
@@ -211,21 +212,20 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
             else
                 color_shift = 2;
             /* set up the palette */
-            color_packets = AV_RL16(&buf[stream_ptr]);
-            stream_ptr += 2;
+            color_packets = bytestream2_get_le16(&g2);
             palette_ptr = 0;
             for (i = 0; i < color_packets; i++) {
                 /* first byte is how many colors to skip */
-                palette_ptr += buf[stream_ptr++];
+                palette_ptr += bytestream2_get_byte(&g2);
 
                 /* next byte indicates how many entries to change */
-                color_changes = buf[stream_ptr++];
+                color_changes = bytestream2_get_byte(&g2);
 
                 /* if there are 0 color changes, there are actually 256 */
                 if (color_changes == 0)
                     color_changes = 256;
 
-                if (stream_ptr + color_changes * 3 > stream_ptr_after_chunk)
+                if (bytestream2_tell(&g2) + color_changes * 3 > stream_ptr_after_chunk)
                     break;
 
                 for (j = 0; j < color_changes; j++) {
@@ -235,9 +235,9 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
                     if ((unsigned)palette_ptr >= 256)
                         palette_ptr = 0;
 
-                    r = buf[stream_ptr++] << color_shift;
-                    g = buf[stream_ptr++] << color_shift;
-                    b = buf[stream_ptr++] << color_shift;
+                    r = bytestream2_get_byte(&g2) << color_shift;
+                    g = bytestream2_get_byte(&g2) << color_shift;
+                    b = bytestream2_get_byte(&g2) << color_shift;
                     entry = 0xFF << 24 | r << 16 | g << 8 | b;
                     if (color_shift == 2)
                         entry |= entry >> 6 & 0x30303;
@@ -250,13 +250,11 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
 
         case FLI_DELTA:
             y_ptr = 0;
-            compressed_lines = AV_RL16(&buf[stream_ptr]);
-            stream_ptr += 2;
+            compressed_lines = bytestream2_get_le16(&g2);
             while (compressed_lines > 0) {
-                if (stream_ptr + 2 > stream_ptr_after_chunk)
+                if (bytestream2_tell(&g2) + 2 > stream_ptr_after_chunk)
                     break;
-                line_packets = AV_RL16(&buf[stream_ptr]);
-                stream_ptr += 2;
+                line_packets = bytestream2_get_le16(&g2);
                 if ((line_packets & 0xC000) == 0xC000) {
                     // line skip opcode
                     line_packets = -line_packets;
@@ -274,17 +272,17 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
                     CHECK_PIXEL_PTR(0);
                     pixel_countdown = s->avctx->width;
                     for (i = 0; i < line_packets; i++) {
-                        if (stream_ptr + 2 > stream_ptr_after_chunk)
+                        if (bytestream2_tell(&g2) + 2 > stream_ptr_after_chunk)
                             break;
                         /* account for the skip bytes */
-                        pixel_skip = buf[stream_ptr++];
+                        pixel_skip = bytestream2_get_byte(&g2);
                         pixel_ptr += pixel_skip;
                         pixel_countdown -= pixel_skip;
-                        byte_run = (signed char)(buf[stream_ptr++]);
+                        byte_run = sign_extend(bytestream2_get_byte(&g2), 8);
                         if (byte_run < 0) {
                             byte_run = -byte_run;
-                            palette_idx1 = buf[stream_ptr++];
-                            palette_idx2 = buf[stream_ptr++];
+                            palette_idx1 = bytestream2_get_byte(&g2);
+                            palette_idx2 = bytestream2_get_byte(&g2);
                             CHECK_PIXEL_PTR(byte_run * 2);
                             for (j = 0; j < byte_run; j++, pixel_countdown -= 2) {
                                 pixels[pixel_ptr++] = palette_idx1;
@@ -292,11 +290,10 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
                             }
                         } else {
                             CHECK_PIXEL_PTR(byte_run * 2);
-                            if (stream_ptr + byte_run * 2 > stream_ptr_after_chunk)
+                            if (bytestream2_tell(&g2) + byte_run * 2 > stream_ptr_after_chunk)
                                 break;
                             for (j = 0; j < byte_run * 2; j++, pixel_countdown--) {
-                                palette_idx1 = buf[stream_ptr++];
-                                pixels[pixel_ptr++] = palette_idx1;
+                                pixels[pixel_ptr++] = bytestream2_get_byte(&g2);
                             }
                         }
                     }
@@ -308,40 +305,37 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
 
         case FLI_LC:
             /* line compressed */
-            starting_line = AV_RL16(&buf[stream_ptr]);
-            stream_ptr += 2;
+            starting_line = bytestream2_get_le16(&g2);
             y_ptr = 0;
             y_ptr += starting_line * s->frame.linesize[0];
 
-            compressed_lines = AV_RL16(&buf[stream_ptr]);
-            stream_ptr += 2;
+            compressed_lines = bytestream2_get_le16(&g2);
             while (compressed_lines > 0) {
                 pixel_ptr = y_ptr;
                 CHECK_PIXEL_PTR(0);
                 pixel_countdown = s->avctx->width;
-                if (stream_ptr + 1 > stream_ptr_after_chunk)
+                if (bytestream2_tell(&g2) + 1 > stream_ptr_after_chunk)
                     break;
-                line_packets = buf[stream_ptr++];
+                line_packets = bytestream2_get_byte(&g2);
                 if (line_packets > 0) {
                     for (i = 0; i < line_packets; i++) {
                         /* account for the skip bytes */
-                        if (stream_ptr + 2 > stream_ptr_after_chunk)
+                        if (bytestream2_tell(&g2) + 1 > stream_ptr_after_chunk)
                             break;
-                        pixel_skip = buf[stream_ptr++];
+                        pixel_skip = bytestream2_get_byte(&g2);
                         pixel_ptr += pixel_skip;
                         pixel_countdown -= pixel_skip;
-                        byte_run = (signed char)(buf[stream_ptr++]);
+                        byte_run = sign_extend(bytestream2_get_byte(&g2),8);
                         if (byte_run > 0) {
                             CHECK_PIXEL_PTR(byte_run);
-                            if (stream_ptr + byte_run > stream_ptr_after_chunk)
+                            if (bytestream2_tell(&g2) + byte_run > stream_ptr_after_chunk)
                                 break;
                             for (j = 0; j < byte_run; j++, pixel_countdown--) {
-                                palette_idx1 = buf[stream_ptr++];
-                                pixels[pixel_ptr++] = palette_idx1;
+                                pixels[pixel_ptr++] = bytestream2_get_byte(&g2);
                             }
                         } else if (byte_run < 0) {
                             byte_run = -byte_run;
-                            palette_idx1 = buf[stream_ptr++];
+                            palette_idx1 = bytestream2_get_byte(&g2);
                             CHECK_PIXEL_PTR(byte_run);
                             for (j = 0; j < byte_run; j++, pixel_countdown--) {
                                 pixels[pixel_ptr++] = palette_idx1;
@@ -369,14 +363,14 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
                 pixel_ptr = y_ptr;
                 /* disregard the line packets; instead, iterate through all
                  * pixels on a row */
-                stream_ptr++;
+                 bytestream2_skip(&g2, 1);
                 pixel_countdown = s->avctx->width;
                 while (pixel_countdown > 0) {
-                    if (stream_ptr + 1 > stream_ptr_after_chunk)
+                    if (bytestream2_tell(&g2) + 1 > stream_ptr_after_chunk)
                         break;
-                    byte_run = (signed char)(buf[stream_ptr++]);
+                    byte_run = sign_extend(bytestream2_get_byte(&g2), 8);
                     if (byte_run > 0) {
-                        palette_idx1 = buf[stream_ptr++];
+                        palette_idx1 = bytestream2_get_byte(&g2);
                         CHECK_PIXEL_PTR(byte_run);
                         for (j = 0; j < byte_run; j++) {
                             pixels[pixel_ptr++] = palette_idx1;
@@ -388,11 +382,10 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
                     } else {  /* copy bytes if byte_run < 0 */
                         byte_run = -byte_run;
                         CHECK_PIXEL_PTR(byte_run);
-                        if (stream_ptr + byte_run > stream_ptr_after_chunk)
+                        if (bytestream2_tell(&g2) + byte_run > stream_ptr_after_chunk)
                             break;
                         for (j = 0; j < byte_run; j++) {
-                            palette_idx1 = buf[stream_ptr++];
-                            pixels[pixel_ptr++] = palette_idx1;
+                            pixels[pixel_ptr++] = bytestream2_get_byte(&g2);
                             pixel_countdown--;
                             if (pixel_countdown < 0)
                                 av_log(avctx, AV_LOG_ERROR, "pixel_countdown < 0 (%d) at line %d\n",
@@ -410,12 +403,12 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
             if (chunk_size - 6 != s->avctx->width * s->avctx->height) {
                 av_log(avctx, AV_LOG_ERROR, "In chunk FLI_COPY : source data (%d bytes) " \
                        "has incorrect size, skipping chunk\n", chunk_size - 6);
+                bytestream2_skip(&g2, chunk_size - 6);
             } else {
                 for (y_ptr = 0; y_ptr < s->frame.linesize[0] * s->avctx->height;
                      y_ptr += s->frame.linesize[0]) {
-                    memcpy(&pixels[y_ptr], &buf[stream_ptr],
-                        s->avctx->width);
-                    stream_ptr += s->avctx->width;
+                    bytestream2_get_buffer(&g2, &pixels[y_ptr],
+                                           s->avctx->width);
                 }
             }
             break;
@@ -429,7 +422,8 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
             break;
         }
 
-        stream_ptr = stream_ptr_after_chunk;
+        if (stream_ptr_after_chunk - bytestream2_tell(&g2) > 0)
+            bytestream2_skip(&g2, stream_ptr_after_chunk - bytestream2_tell(&g2));
 
         frame_size -= chunk_size;
         num_chunks--;
@@ -437,9 +431,11 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
 
     /* by the end of the chunk, the stream ptr should equal the frame
      * size (minus 1, possibly); if it doesn't, issue a warning */
-    if ((stream_ptr != buf_size) && (stream_ptr != buf_size - 1))
+    if ((bytestream2_get_bytes_left(&g2) != 0) &&
+        (bytestream2_get_bytes_left(&g2) != 1))
         av_log(avctx, AV_LOG_ERROR, "Processed FLI chunk where chunk size = %d " \
-               "and final chunk ptr = %d\n", buf_size, stream_ptr);
+               "and final chunk ptr = %d\n", buf_size,
+               buf_size - bytestream2_get_bytes_left(&g2));
 
     /* make the palette available on the way out */
     memcpy(s->frame.data[1], s->palette, AVPALETTE_SIZE);
@@ -462,7 +458,7 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
     /* Format is the pixel format, the packets are processed the same. */
     FlicDecodeContext *s = avctx->priv_data;
 
-    int stream_ptr = 0;
+    GetByteContext g2;
     int pixel_ptr;
     unsigned char palette_idx1;
 
@@ -485,6 +481,8 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
     int pixel;
     unsigned int pixel_limit;
 
+    bytestream2_init(&g2, buf, buf_size);
+
     s->frame.reference = 3;
     s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
     if (avctx->reget_buffer(avctx, &s->frame) < 0) {
@@ -495,10 +493,10 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
     pixels = s->frame.data[0];
     pixel_limit = s->avctx->height * s->frame.linesize[0];
 
-    frame_size = AV_RL32(&buf[stream_ptr]);
-    stream_ptr += 6;  /* skip the magic number */
-    num_chunks = AV_RL16(&buf[stream_ptr]);
-    stream_ptr += 10;  /* skip padding */
+    frame_size = bytestream2_get_le32(&g2);
+    bytestream2_skip(&g2, 2);  /* skip the magic number */
+    num_chunks = bytestream2_get_le16(&g2);
+    bytestream2_skip(&g2, 8);  /* skip padding */
     if (frame_size > buf_size)
         frame_size = buf_size;
 
@@ -507,17 +505,15 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
     /* iterate through the chunks */
     while ((frame_size > 0) && (num_chunks > 0)) {
         int stream_ptr_after_chunk;
-        chunk_size = AV_RL32(&buf[stream_ptr]);
+        chunk_size = bytestream2_get_le32(&g2);
         if (chunk_size > frame_size) {
             av_log(avctx, AV_LOG_WARNING,
                    "Invalid chunk_size = %u > frame_size = %u\n", chunk_size, frame_size);
             chunk_size = frame_size;
         }
-        stream_ptr_after_chunk = stream_ptr + chunk_size;
+        stream_ptr_after_chunk = bytestream2_tell(&g2) - 4 + chunk_size;
 
-        stream_ptr += 4;
-        chunk_type = AV_RL16(&buf[stream_ptr]);
-        stream_ptr += 2;
+        chunk_type = bytestream2_get_le16(&g2);
 
 
         switch (chunk_type) {
@@ -527,19 +523,17 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
              * include one of these chunks in their first frame.
              * Why I do not know, it seems rather extraneous. */
 /*            av_log(avctx, AV_LOG_ERROR, "Unexpected Palette chunk %d in non-paletised FLC\n",chunk_type);*/
-            stream_ptr = stream_ptr + chunk_size - 6;
+            bytestream2_skip(&g2, chunk_size - 6);
             break;
 
         case FLI_DELTA:
         case FLI_DTA_LC:
             y_ptr = 0;
-            compressed_lines = AV_RL16(&buf[stream_ptr]);
-            stream_ptr += 2;
+            compressed_lines = bytestream2_get_le16(&g2);
             while (compressed_lines > 0) {
-                if (stream_ptr + 2 > stream_ptr_after_chunk)
+                if (bytestream2_tell(&g2) + 2 > stream_ptr_after_chunk)
                     break;
-                line_packets = AV_RL16(&buf[stream_ptr]);
-                stream_ptr += 2;
+                line_packets = bytestream2_get_le16(&g2);
                 if (line_packets < 0) {
                     line_packets = -line_packets;
                     y_ptr += line_packets * s->frame.linesize[0];
@@ -550,28 +544,26 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                     pixel_countdown = s->avctx->width;
                     for (i = 0; i < line_packets; i++) {
                         /* account for the skip bytes */
-                        if (stream_ptr + 2 > stream_ptr_after_chunk)
+                        if (bytestream2_tell(&g2) + 2 > stream_ptr_after_chunk)
                             break;
-                        pixel_skip = buf[stream_ptr++];
+                        pixel_skip = bytestream2_get_byte(&g2);
                         pixel_ptr += (pixel_skip*2); /* Pixel is 2 bytes wide */
                         pixel_countdown -= pixel_skip;
-                        byte_run = (signed char)(buf[stream_ptr++]);
+                        byte_run = sign_extend(bytestream2_get_byte(&g2), 8);
                         if (byte_run < 0) {
                             byte_run = -byte_run;
-                            pixel    = AV_RL16(&buf[stream_ptr]);
-                            stream_ptr += 2;
+                            pixel    = bytestream2_get_le16(&g2);
                             CHECK_PIXEL_PTR(2 * byte_run);
                             for (j = 0; j < byte_run; j++, pixel_countdown -= 2) {
                                 *((signed short*)(&pixels[pixel_ptr])) = pixel;
                                 pixel_ptr += 2;
                             }
                         } else {
-                            if (stream_ptr + 2*byte_run > stream_ptr_after_chunk)
+                            if (bytestream2_tell(&g2) + 2*byte_run > stream_ptr_after_chunk)
                                 break;
                             CHECK_PIXEL_PTR(2 * byte_run);
                             for (j = 0; j < byte_run; j++, pixel_countdown--) {
-                                *((signed short*)(&pixels[pixel_ptr])) = AV_RL16(&buf[stream_ptr]);
-                                stream_ptr += 2;
+                                *((signed short*)(&pixels[pixel_ptr])) = bytestream2_get_le16(&g2);
                                 pixel_ptr += 2;
                             }
                         }
@@ -584,7 +576,7 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
 
         case FLI_LC:
             av_log(avctx, AV_LOG_ERROR, "Unexpected FLI_LC chunk in non-paletised FLC\n");
-            stream_ptr = stream_ptr + chunk_size - 6;
+            bytestream2_skip(&g2, chunk_size - 6);
             break;
 
         case FLI_BLACK:
@@ -599,15 +591,15 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                 pixel_ptr = y_ptr;
                 /* disregard the line packets; instead, iterate through all
                  * pixels on a row */
-                stream_ptr++;
+                bytestream2_skip(&g2, 1);
                 pixel_countdown = (s->avctx->width * 2);
 
                 while (pixel_countdown > 0) {
-                    if (stream_ptr + 1 > stream_ptr_after_chunk)
+                    if (bytestream2_tell(&g2) + 1 > stream_ptr_after_chunk)
                         break;
-                    byte_run = (signed char)(buf[stream_ptr++]);
+                    byte_run = sign_extend(bytestream2_get_byte(&g2), 8);
                     if (byte_run > 0) {
-                        palette_idx1 = buf[stream_ptr++];
+                        palette_idx1 = bytestream2_get_byte(&g2);
                         CHECK_PIXEL_PTR(byte_run);
                         for (j = 0; j < byte_run; j++) {
                             pixels[pixel_ptr++] = palette_idx1;
@@ -618,11 +610,11 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                         }
                     } else {  /* copy bytes if byte_run < 0 */
                         byte_run = -byte_run;
-                        if (stream_ptr + byte_run > stream_ptr_after_chunk)
+                        if (bytestream2_tell(&g2) + byte_run > stream_ptr_after_chunk)
                             break;
                         CHECK_PIXEL_PTR(byte_run);
                         for (j = 0; j < byte_run; j++) {
-                            palette_idx1 = buf[stream_ptr++];
+                            palette_idx1 = bytestream2_get_byte(&g2);
                             pixels[pixel_ptr++] = palette_idx1;
                             pixel_countdown--;
                             if (pixel_countdown < 0)
@@ -655,16 +647,15 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                 pixel_ptr = y_ptr;
                 /* disregard the line packets; instead, iterate through all
                  * pixels on a row */
-                stream_ptr++;
+                bytestream2_skip(&g2, 1);
                 pixel_countdown = s->avctx->width; /* Width is in pixels, not bytes */
 
                 while (pixel_countdown > 0) {
-                    if (stream_ptr + 1 > stream_ptr_after_chunk)
+                    if (bytestream2_tell(&g2) + 1 > stream_ptr_after_chunk)
                         break;
-                    byte_run = (signed char)(buf[stream_ptr++]);
+                    byte_run = sign_extend(bytestream2_get_byte(&g2), 8);
                     if (byte_run > 0) {
-                        pixel    = AV_RL16(&buf[stream_ptr]);
-                        stream_ptr += 2;
+                        pixel    = bytestream2_get_le16(&g2);
                         CHECK_PIXEL_PTR(2 * byte_run);
                         for (j = 0; j < byte_run; j++) {
                             *((signed short*)(&pixels[pixel_ptr])) = pixel;
@@ -676,12 +667,11 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                         }
                     } else {  /* copy pixels if byte_run < 0 */
                         byte_run = -byte_run;
-                        if (stream_ptr + 2 * byte_run > stream_ptr_after_chunk)
+                        if (bytestream2_tell(&g2) + 2 * byte_run > stream_ptr_after_chunk)
                             break;
                         CHECK_PIXEL_PTR(2 * byte_run);
                         for (j = 0; j < byte_run; j++) {
-                            *((signed short*)(&pixels[pixel_ptr])) = AV_RL16(&buf[stream_ptr]);
-                            stream_ptr += 2;
+                            *((signed short*)(&pixels[pixel_ptr])) = bytestream2_get_le16(&g2);
                             pixel_ptr  += 2;
                             pixel_countdown--;
                             if (pixel_countdown < 0)
@@ -701,7 +691,7 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
             if (chunk_size - 6 > (unsigned int)(s->avctx->width * s->avctx->height)*2) {
                 av_log(avctx, AV_LOG_ERROR, "In chunk FLI_COPY : source data (%d bytes) " \
                        "bigger than image, skipping chunk\n", chunk_size - 6);
-                stream_ptr += chunk_size - 6;
+                bytestream2_skip(&g2, chunk_size - 6);
             } else {
 
                 for (y_ptr = 0; y_ptr < s->frame.linesize[0] * s->avctx->height;
@@ -710,18 +700,17 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                     pixel_countdown = s->avctx->width;
                     pixel_ptr = 0;
                     while (pixel_countdown > 0) {
-                      *((signed short*)(&pixels[y_ptr + pixel_ptr])) = AV_RL16(&buf[stream_ptr+pixel_ptr]);
+                      *((signed short*)(&pixels[y_ptr + pixel_ptr])) = bytestream2_get_le16(&g2);
                       pixel_ptr += 2;
                       pixel_countdown--;
                     }
-                    stream_ptr += s->avctx->width*2;
                 }
             }
             break;
 
         case FLI_MINI:
             /* some sort of a thumbnail? disregard this chunk... */
-            stream_ptr += chunk_size - 6;
+            bytestream2_skip(&g2, chunk_size - 6);
             break;
 
         default:
@@ -735,9 +724,9 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
 
     /* by the end of the chunk, the stream ptr should equal the frame
      * size (minus 1, possibly); if it doesn't, issue a warning */
-    if ((stream_ptr != buf_size) && (stream_ptr != buf_size - 1))
+    if ((bytestream2_get_bytes_left(&g2) != 0) && (bytestream2_get_bytes_left(&g2) != 1))
         av_log(avctx, AV_LOG_ERROR, "Processed FLI chunk where chunk size = %d " \
-               "and final chunk ptr = %d\n", buf_size, stream_ptr);
+               "and final chunk ptr = %d\n", buf_size, bytestream2_tell(&g2));
 
 
     *data_size=sizeof(AVFrame);
