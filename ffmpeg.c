@@ -1020,9 +1020,9 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
                          InputStream *ist, AVFrame *decoded_frame)
 {
     uint8_t *buftmp;
-    int64_t audio_out_size, audio_buf_size;
+    int64_t audio_out_size, audio_buf_size, size_out;
 
-    int size_out, frame_bytes, ret, resample_changed;
+    int frame_bytes, ret, resample_changed;
     AVCodecContext *enc = ost->st->codec;
     AVCodecContext *dec = ist->st->codec;
     int osize = av_get_bytes_per_sample(enc->sample_fmt);
