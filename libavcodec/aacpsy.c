@@ -823,8 +823,7 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx,
             float const *const pfe = pf + AAC_BLOCK_SIZE_LONG / (AAC_NUM_BLOCKS_SHORT * PSY_LAME_NUM_SUBBLOCKS);
             float p = 1.0f;
             for (; pf < pfe; pf++)
-                if (p < fabsf(*pf))
-                    p = fabsf(*pf);
+                p = FFMAX(p, fabsf(*pf));
             pch->prev_energy_subshort[i] = energy_subshort[i + PSY_LAME_NUM_SUBBLOCKS] = p;
             energy_short[1 + i / PSY_LAME_NUM_SUBBLOCKS] += p;
             /* NOTE: The indexes below are [i + 3 - 2] in the LAME source.
