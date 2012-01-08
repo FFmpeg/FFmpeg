@@ -1032,7 +1032,7 @@ static void xml_print_footer(WriterContext *wctx)
     printf("</%sffprobe>\n", xml->fully_qualified ? "ffprobe:" : "");
 }
 
-#define XML_INDENT() { int i; for (i = 0; i < xml->indent_level; i++) printf(INDENT); }
+#define XML_INDENT() printf("%*c", xml->indent_level * 4, ' ')
 
 static void xml_print_chapter_header(WriterContext *wctx, const char *chapter)
 {
