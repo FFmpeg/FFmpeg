@@ -1,6 +1,20 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 0.7.4:
+
+- vorbis: An additional defense in the Vorbis codec. (CVE-2011-3895)
+- vorbisdec: Fix decoding bug with channel handling.
+- matroskadec: Fix a bug where a pointer was cached to an array that might
+  later move due to a realloc(). (CVE-2011-3893)
+- vorbis: Avoid some out-of-bounds reads. (CVE-2011-3893)
+- vp3: fix oob read for negative tokens and memleaks on error, (CVE-2011-3892)
+- avserver: Fix a bug where the socket is IPv4, but IPv6 is autoselected
+  for the loopback address.
+- vp3: fix streams with non-zero last coefficient.
+- swscale: fix crash in fast_bilinear code when compiled with -mred-zone.
+
+
 version 0.7.3:
 
 - check buffer and input values in various parts of the code:
