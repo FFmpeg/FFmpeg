@@ -122,7 +122,7 @@ int ff_raw_read_partial_packet(AVFormatContext *s, AVPacket *pkt)
         av_free_packet(pkt);
         return ret;
     }
-    pkt->size = ret;
+    av_shrink_packet(pkt, ret);
     return ret;
 }
 
