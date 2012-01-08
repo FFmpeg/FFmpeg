@@ -29,12 +29,6 @@
 #include "libavutil/avutil.h"
 #include "vda_internal.h"
 
-/**
- * \addtogroup VDA_Decoding
- *
- * @{
- */
-
 /* Helper to create a dictionary according to the given pts. */
 static CFDictionaryRef vda_dictionary_with_pts(int64_t i_pts)
 {
@@ -279,5 +273,3 @@ int ff_vda_decoder_decode(struct vda_context *vda_ctx,
 
     return 0;
 }
-
-/* @} */
