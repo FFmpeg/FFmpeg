@@ -31,7 +31,7 @@
 #include "mpegaudio.h"
 #include <lame/lame.h>
 
-#define BUFFER_SIZE (7200 + 2 * MPA_FRAME_SIZE + MPA_FRAME_SIZE / 4)
+#define BUFFER_SIZE (7200 + 2 * MPA_FRAME_SIZE + MPA_FRAME_SIZE / 4+1000) // FIXME: Buffer size to small? Adding 1000 to make up for it.
 typedef struct Mp3AudioContext {
     AVClass *class;
     lame_global_flags *gfp;
