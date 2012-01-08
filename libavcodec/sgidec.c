@@ -137,7 +137,8 @@ static int read_uncompressed_sgi(unsigned char* out_buf, uint8_t* out_end,
     for (y = s->height - 1; y >= 0; y--) {
         out_end = out_buf + (y * s->linesize);
         for (x = s->width; x > 0; x--) {
-            ptr = in_buf += s->bytes_per_channel;
+            ptr = in_buf;
+            in_buf += s->bytes_per_channel;
             for(z = 0; z < s->depth; z ++) {
                 memcpy(out_end, ptr, s->bytes_per_channel);
                 out_end += s->bytes_per_channel;
