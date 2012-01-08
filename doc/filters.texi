@@ -470,7 +470,7 @@ drawbox=10:20:200:60:red@@0.5"
 Draw text string or text from specified file on top of video using the
 libfreetype library.
 
-To enable compilation of this filter you need to configure FFmpeg with
+To enable compilation of this filter you need to configure Libav with
 @code{--enable-libfreetype}.
 
 The filter also recognizes strftime() sequences in the provided text
