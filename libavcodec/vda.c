@@ -26,7 +26,7 @@
 #include <CoreFoundation/CFData.h>
 #include <CoreFoundation/CFString.h>
 
-#include "avcodec.h"
+#include "libavutil/avutil.h"
 #include "vda_internal.h"
 
 /**
@@ -34,27 +34,6 @@
  *
  * @{
  */
-
-/* Mutex manager callback. */
-static int vda_lock_operation(void **mtx, enum AVLockOp op)
-{
-    switch (op) {
-    case AV_LOCK_CREATE:
-        *mtx = av_malloc(sizeof(pthread_mutex_t));
-        if (!*mtx)
-            return 1;
-        return !!pthread_mutex_init(*mtx, NULL);
-    case AV_LOCK_OBTAIN:
-        return !!pthread_mutex_lock(*mtx);
-    case AV_LOCK_RELEASE:
-        return !!pthread_mutex_unlock(*mtx);
-    case AV_LOCK_DESTROY:
-        pthread_mutex_destroy(*mtx);
-        av_freep(mtx);
-        return 0;
-    }
-    return 1;
-}
 
 /* Helper to create a dictionary according to the given pts. */
 static CFDictionaryRef vda_dictionary_with_pts(int64_t i_pts)
@@ -93,7 +72,7 @@ static void vda_clear_queue(struct vda_context *vda_ctx)
 {
     vda_frame *top_frame;
 
-    vda_lock_operation(&vda_ctx->queue_mutex, AV_LOCK_OBTAIN);
+    pthread_mutex_lock(&vda_ctx->queue_mutex);
 
     while (vda_ctx->queue) {
         top_frame = vda_ctx->queue;
@@ -101,7 +80,7 @@ static void vda_clear_queue(struct vda_context *vda_ctx)
         ff_vda_release_vda_frame(top_frame);
     }
 
-    vda_lock_operation(&vda_ctx->queue_mutex, AV_LOCK_RELEASE);
+    pthread_mutex_unlock(&vda_ctx->queue_mutex);
 }
 
 
@@ -130,7 +109,7 @@ static void vda_decoder_callback (void *vda_hw_ctx,
     new_frame->cv_buffer = CVPixelBufferRetain(image_buffer);
     new_frame->pts = vda_pts_from_dictionary(user_info);
 
-    vda_lock_operation(&vda_ctx->queue_mutex, AV_LOCK_OBTAIN);
+    pthread_mutex_lock(&vda_ctx->queue_mutex);
 
     queue_walker = vda_ctx->queue;
 
@@ -154,7 +133,7 @@ static void vda_decoder_callback (void *vda_hw_ctx,
         }
     }
 
-    vda_lock_operation(&vda_ctx->queue_mutex, AV_LOCK_RELEASE);
+    pthread_mutex_unlock(&vda_ctx->queue_mutex);
 }
 
 int ff_vda_create_decoder(struct vda_context *vda_ctx,
@@ -174,10 +153,7 @@ int ff_vda_create_decoder(struct vda_context *vda_ctx,
     vda_ctx->bitstream = NULL;
     vda_ctx->ref_size = 0;
 
-    if (av_lockmgr_register(vda_lock_operation))
-        return -1;
-
-    vda_lock_operation(&vda_ctx->queue_mutex, AV_LOCK_CREATE);
+    pthread_mutex_init(&vda_ctx->queue_mutex, NULL);
 
     if (extradata[4]==0xFE) {
         // convert 3 byte NAL sizes to 4 byte
@@ -247,8 +223,7 @@ int ff_vda_destroy_decoder(struct vda_context *vda_ctx)
 
     vda_clear_queue(vda_ctx);
 
-    if (vda_ctx->queue_mutex)
-        vda_lock_operation(&vda_ctx->queue_mutex, AV_LOCK_DESTROY);
+    pthread_mutex_destroy(&vda_ctx->queue_mutex);
 
     if (vda_ctx->bitstream)
         av_freep(&vda_ctx->bitstream);
@@ -266,10 +241,10 @@ vda_frame *ff_vda_queue_pop(struct vda_context *vda_ctx)
     if (!vda_ctx->queue)
         return NULL;
 
-    vda_lock_operation(&vda_ctx->queue_mutex, AV_LOCK_OBTAIN);
+    pthread_mutex_lock(&vda_ctx->queue_mutex);
     top_frame = vda_ctx->queue;
     vda_ctx->queue = top_frame->next_frame;
-    vda_lock_operation(&vda_ctx->queue_mutex, AV_LOCK_RELEASE);
+    pthread_mutex_unlock(&vda_ctx->queue_mutex);
 
     return top_frame;
 }

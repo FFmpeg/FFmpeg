@@ -23,6 +23,7 @@
 #ifndef AVCODEC_VDA_H
 #define AVCODEC_VDA_H
 
+#include <pthread.h>
 #include <stdint.h>
 
 // emmintrin.h is unable to compile with -std=c99 -Werror=missing-prototypes
@@ -92,7 +93,7 @@ struct vda_context {
     * - encoding: unused
     * - decoding: Set/Unset by libavcodec.
     */
-    void                *queue_mutex;
+    pthread_mutex_t     queue_mutex;
 
     /**
     * The frame width.
