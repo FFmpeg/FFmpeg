@@ -90,3 +90,6 @@ fate-wtv-demux: CMD = framecrc -i $(SAMPLES)/wtv/law-and-order-partial.wtv -vcod
 
 FATE_TESTS += fate-xmv-demux
 fate-xmv-demux: CMD = framecrc -i $(SAMPLES)/xmv/logos1p.fmv -vcodec copy -acodec copy
+
+FATE_TESTS += fate-xwma-demux
+fate-xwma-demux: CMD = crc -i $(SAMPLES)/xwma/ergon.xwma -acodec copy
