@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/imgutils.h"
+#include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "sgi.h"
@@ -113,6 +114,25 @@ static int read_rle_sgi(unsigned char* out_buf, const uint8_t *in_buf,
     return 0;
 }
 
+static av_always_inline void copy_loop(uint8_t *out_buf, const uint8_t *in_buf,
+                                       unsigned offset, unsigned bytes_per_channel,
+                                       SgiState *s)
+{
+    int x, y, z;
+    for (y = s->height - 1; y >= 0; y--) {
+        uint8_t *line = out_buf + (y * s->linesize);
+        for (x = s->width; x > 0; x--) {
+            const uint8_t *ptr = in_buf;
+            in_buf += bytes_per_channel;
+            for(z = 0; z < s->depth; z ++) {
+                memcpy(line, ptr, bytes_per_channel);
+                line += bytes_per_channel;
+                ptr += offset;
+            }
+        }
+    }
+}
+
 /**
  * Read an uncompressed SGI image.
  * @param out_buf output buffer
@@ -125,8 +145,6 @@ static int read_rle_sgi(unsigned char* out_buf, const uint8_t *in_buf,
 static int read_uncompressed_sgi(unsigned char* out_buf, uint8_t* out_end,
                 const uint8_t *in_buf, const uint8_t *in_end, SgiState* s)
 {
-    int x, y, z;
-    const uint8_t *ptr;
     unsigned int offset = s->height * s->width * s->bytes_per_channel;
 
     /* Test buffer size. */
@@ -134,17 +152,11 @@ static int read_uncompressed_sgi(unsigned char* out_buf, uint8_t* out_end,
        return -1;
     }
 
-    for (y = s->height - 1; y >= 0; y--) {
-        out_end = out_buf + (y * s->linesize);
-        for (x = s->width; x > 0; x--) {
-            ptr = in_buf;
-            in_buf += s->bytes_per_channel;
-            for(z = 0; z < s->depth; z ++) {
-                memcpy(out_end, ptr, s->bytes_per_channel);
-                out_end += s->bytes_per_channel;
-                ptr += offset;
-            }
-        }
+    if (s->bytes_per_channel == 2) {
+        copy_loop(out_buf, in_buf, offset, 2, s);
+    } else {
+        av_assert1(s->bytes_per_channel == 1);
+        copy_loop(out_buf, in_buf, offset, 1, s);
     }
     return 0;
 }
