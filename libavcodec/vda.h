@@ -61,7 +61,6 @@ typedef struct {
     * - decoding: Set/Unset by libavcodec.
     */
     struct vda_frame    *next_frame;
-
 } vda_frame;
 
 /**
@@ -152,18 +151,18 @@ struct vda_context {
     int                 ref_size;
 };
 
-/** Creates the video decoder. */
+/** Create the video decoder. */
 int ff_vda_create_decoder(struct vda_context *vda_ctx,
                           uint8_t *extradata,
                           int extradata_size);
 
-/** Destroys the video decoder. */
+/** Destroy the video decoder. */
 int ff_vda_destroy_decoder(struct vda_context *vda_ctx);
 
-/** Returns the top frame of the queue. */
+/** Return the top frame of the queue. */
 vda_frame *ff_vda_queue_pop(struct vda_context *vda_ctx);
 
-/** Releases the given frame. */
+/** Release the given frame. */
 void ff_vda_release_vda_frame(vda_frame *frame);
 
 #endif /* AVCODEC_VDA_H */
