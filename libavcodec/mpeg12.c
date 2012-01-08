@@ -1273,7 +1273,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
 
         /* low_delay may be forced, in this case we will have B-frames
          * that behave like P-frames. */
-        avctx->has_b_frames = !(s->low_delay);
+        avctx->has_b_frames = !s->low_delay;
 
         assert((avctx->sub_id == 1) == (avctx->codec_id == CODEC_ID_MPEG1VIDEO));
         if (avctx->codec_id == CODEC_ID_MPEG1VIDEO) {

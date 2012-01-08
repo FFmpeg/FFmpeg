@@ -704,9 +704,9 @@ av_cold int MPV_common_init(MpegEncContext *s)
     mb_array_size = s->mb_height * s->mb_stride;
     mv_table_size = (s->mb_height + 2) * s->mb_stride + 1;
 
-    /* set chroma shifts */
-    avcodec_get_chroma_sub_sample(s->avctx->pix_fmt,&(s->chroma_x_shift),
-                                                    &(s->chroma_y_shift) );
+        /* set chroma shifts */
+        avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &s->chroma_x_shift,
+                                      &s->chroma_y_shift);
 
     /* set default edge pos, will be overriden in decode_header if needed */
     s->h_edge_pos = s->mb_width * 16;
@@ -2318,7 +2318,7 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
         }
 
         dct_linesize = linesize << s->interlaced_dct;
-        dct_offset =(s->interlaced_dct)? linesize : linesize*block_size;
+        dct_offset   = s->interlaced_dct ? linesize : linesize * block_size;
 
         if(readable){
             dest_y=  s->dest[0];
@@ -2414,7 +2414,7 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
                     }else{
                         //chroma422
                         dct_linesize = uvlinesize << s->interlaced_dct;
-                        dct_offset =(s->interlaced_dct)? uvlinesize : uvlinesize*block_size;
+                        dct_offset   = s->interlaced_dct ? uvlinesize : uvlinesize*block_size;
 
                         add_dct(s, block[4], 4, dest_cb, dct_linesize);
                         add_dct(s, block[5], 5, dest_cr, dct_linesize);
@@ -2466,7 +2466,7 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
                     }else{
 
                         dct_linesize = uvlinesize << s->interlaced_dct;
-                        dct_offset =(s->interlaced_dct)? uvlinesize : uvlinesize*block_size;
+                        dct_offset   = s->interlaced_dct? uvlinesize : uvlinesize*block_size;
 
                         s->dsp.idct_put(dest_cb,              dct_linesize, block[4]);
                         s->dsp.idct_put(dest_cr,              dct_linesize, block[5]);

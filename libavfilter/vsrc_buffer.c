@@ -217,7 +217,7 @@ static int request_frame(AVFilterLink *link)
 static int poll_frame(AVFilterLink *link)
 {
     BufferSourceContext *c = link->src->priv;
-    return !!(c->picref);
+    return !!c->picref;
 }
 
 AVFilter avfilter_vsrc_buffer = {

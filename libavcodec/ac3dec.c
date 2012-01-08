@@ -223,7 +223,7 @@ static int ac3_parse_header(AC3DecodeContext *s)
     int i;
 
     /* read the rest of the bsi. read twice for dual mono mode. */
-    i = !(s->channel_mode);
+    i = !s->channel_mode;
     do {
         skip_bits(gbc, 5); // skip dialog normalization
         if (get_bits1(gbc))
@@ -792,7 +792,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
     }
 
     /* dynamic range */
-    i = !(s->channel_mode);
+    i = !s->channel_mode;
     do {
         if (get_bits1(gbc)) {
             s->dynamic_range[i] = ((dynamic_range_tab[get_bits(gbc, 8)] - 1.0) *

@@ -845,7 +845,7 @@ static int frame_thread_init(AVCodecContext *avctx)
                 err = AVERROR(ENOMEM);
                 goto error;
             }
-            *(copy->internal) = *(src->internal);
+            *copy->internal = *src->internal;
             copy->internal->is_copy = 1;
 
             if (codec->init_thread_copy)

@@ -397,4 +397,16 @@ wrong if it is larger than the average!
 For example, if you have mixed 25 and 30 fps content, then r_frame_rate
 will be 150.
 
+@section Why is @code{make fate} not running all tests?
+
+Make sure you have the fate-suite samples and the @code{SAMPLES} Make variable
+or @code{FATE_SAMPLES} environment variable or the @code{--samples}
+@command{configure} option is set to the right path.
+
+@section Why is @code{make fate} not finding the samples?
+
+Do you happen to have a @code{~} character in the samples path to indicate a
+home directory? The value is used in ways where the shell cannot expand it,
+causing FATE to not find files. Just replace @code{~} by the full path.
+
 @bye

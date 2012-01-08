@@ -109,8 +109,8 @@ static void put_dc(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb, uint8_t
     for(y=0; y<8; y++){
         int x;
         for(x=0; x<8; x++){
-            dest_cb[x + y*(s->uvlinesize)]= dcu/8;
-            dest_cr[x + y*(s->uvlinesize)]= dcv/8;
+            dest_cb[x + y * s->uvlinesize] = dcu / 8;
+            dest_cr[x + y * s->uvlinesize] = dcv / 8;
         }
     }
 }
@@ -1120,8 +1120,8 @@ void ff_er_frame_end(MpegEncContext *s){
             for(y=0; y<8; y++){
                 int x;
                 for(x=0; x<8; x++){
-                    dcu+=dest_cb[x + y*(s->uvlinesize)];
-                    dcv+=dest_cr[x + y*(s->uvlinesize)];
+                    dcu += dest_cb[x + y * s->uvlinesize];
+                    dcv += dest_cr[x + y * s->uvlinesize];
                 }
             }
             s->dc_val[1][mb_x + mb_y*s->mb_stride]= (dcu+4)>>3;

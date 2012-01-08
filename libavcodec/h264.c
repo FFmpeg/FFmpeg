@@ -4170,7 +4170,6 @@ int main(void){
     uint8_t temp[SIZE];
     PutBitContext pb;
     GetBitContext gb;
-//    int int_temp[10000];
     DSPContext dsp;
     AVCodecContext avctx;
 

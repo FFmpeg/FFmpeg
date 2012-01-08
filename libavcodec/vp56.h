@@ -30,7 +30,6 @@
 #include "dsputil.h"
 #include "get_bits.h"
 #include "bytestream.h"
-#include "cabac.h"
 #include "vp56dsp.h"
 
 typedef struct vp56_context VP56Context;

@@ -24,6 +24,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
 #include "libavutil/mathematics.h"
+#include "riff.h"
 
 typedef struct VqfContext {
     int frame_bit_len;
@@ -45,11 +46,11 @@ static int vqf_probe(AVProbeData *probe_packet)
     return AVPROBE_SCORE_MAX/2;
 }
 
-static void add_metadata(AVFormatContext *s, const char *tag,
+static void add_metadata(AVFormatContext *s, uint32_t tag,
                          unsigned int tag_len, unsigned int remaining)
 {
     int len = FFMIN(tag_len, remaining);
-    char *buf;
+    char *buf, key[5] = {0};
 
     if (len == UINT_MAX)
         return;
@@ -59,8 +60,31 @@ static void add_metadata(AVFormatContext *s, const char *tag,
         return;
     avio_read(s->pb, buf, len);
     buf[len] = 0;
-    av_dict_set(&s->metadata, tag, buf, AV_DICT_DONT_STRDUP_VAL);
+    AV_WL32(key, tag);
+    av_dict_set(&s->metadata, key, buf, AV_DICT_DONT_STRDUP_VAL);
 }
+
+static const AVMetadataConv vqf_metadata_conv[] = {
+    { "(c) ", "copyright" },
+    { "ARNG", "arranger"  },
+    { "AUTH", "author"    },
+    { "BAND", "band"      },
+    { "CDCT", "conductor" },
+    { "COMT", "comment"   },
+    { "FILE", "filename"  },
+    { "GENR", "genre"     },
+    { "LABL", "publisher" },
+    { "MUSC", "composer"  },
+    { "NAME", "title"     },
+    { "NOTE", "note"      },
+    { "PROD", "producer"  },
+    { "PRSN", "personnel" },
+    { "REMX", "remixer"   },
+    { "SING", "singer"    },
+    { "TRCK", "track"     },
+    { "WORD", "words"     },
+    { 0 },
+};
 
 static int vqf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
@@ -110,41 +134,25 @@ static int vqf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
             st->codec->bit_rate              = read_bitrate*1000;
             break;
-        case MKTAG('N','A','M','E'):
-            add_metadata(s, "title"    , len, header_size);
+        case MKTAG('D','S','I','Z'): // size of compressed data
+        {
+            char buf[8] = {0};
+            int size = avio_rb32(s->pb);
+
+            snprintf(buf, sizeof(buf), "%d", size);
+            av_dict_set(&s->metadata, "size", buf, 0);
+        }
             break;
-        case MKTAG('(','c',')',' '):
-            add_metadata(s, "copyright", len, header_size);
-            break;
-        case MKTAG('A','U','T','H'):
-            add_metadata(s, "author"   , len, header_size);
-            break;
-        case MKTAG('A','L','B','M'):
-            add_metadata(s, "album"    , len, header_size);
-            break;
-        case MKTAG('T','R','C','K'):
-            add_metadata(s, "track"    , len, header_size);
-            break;
-        case MKTAG('C','O','M','T'):
-            add_metadata(s, "comment"  , len, header_size);
-            break;
-        case MKTAG('F','I','L','E'):
-            add_metadata(s, "filename" , len, header_size);
-            break;
-        case MKTAG('D','S','I','Z'):
-            add_metadata(s, "size"     , len, header_size);
-            break;
-        case MKTAG('D','A','T','E'):
-            add_metadata(s, "date"     , len, header_size);
-            break;
-        case MKTAG('G','E','N','R'):
-            add_metadata(s, "genre"    , len, header_size);
+        case MKTAG('Y','E','A','R'): // recording date
+        case MKTAG('E','N','C','D'): // compression date
+        case MKTAG('E','X','T','R'): // reserved
+        case MKTAG('_','Y','M','H'): // reserved
+        case MKTAG('_','N','T','T'): // reserved
+        case MKTAG('_','I','D','3'): // reserved for ID3 tags
+            avio_skip(s->pb, FFMIN(len, header_size));
             break;
         default:
-            av_log(s, AV_LOG_ERROR, "Unknown chunk: %c%c%c%c\n",
-                   ((char*)&chunk_tag)[0], ((char*)&chunk_tag)[1],
-                   ((char*)&chunk_tag)[2], ((char*)&chunk_tag)[3]);
-            avio_skip(s->pb, FFMIN(len, header_size));
+            add_metadata(s, chunk_tag, len, header_size);
             break;
         }
 
@@ -200,6 +208,8 @@ static int vqf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return AVERROR(ENOMEM);
     st->codec->extradata_size = 12;
     memcpy(st->codec->extradata, comm_chunk, 12);
+
+    ff_metadata_conv_ctx(s, NULL, vqf_metadata_conv);
 
     return 0;
 }

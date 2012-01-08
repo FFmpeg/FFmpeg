@@ -292,7 +292,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
 
     if (bktr_init(s1->filename, width, height, s->standard,
-            &(s->video_fd), &(s->tuner_fd), -1, 0.0) < 0) {
+                  &s->video_fd, &s->tuner_fd, -1, 0.0) < 0) {
         ret = AVERROR(EIO);
         goto out;
     }

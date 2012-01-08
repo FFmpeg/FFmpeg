@@ -89,6 +89,7 @@ typedef struct IPMVEContext {
     int64_t video_pts;
     uint32_t     palette[256];
     int          has_palette;
+    int          changed;
 
     unsigned int audio_bits;
     unsigned int audio_channels;
@@ -168,6 +169,10 @@ static int load_ipmovie_packet(IPMVEContext *s, AVIOContext *pb,
             }
         }
 
+        if (s->changed) {
+            ff_add_param_change(pkt, 0, 0, 0, s->video_width, s->video_height);
+            s->changed = 0;
+        }
         pkt->pos= s->decode_map_chunk_offset;
         avio_seek(pb, s->decode_map_chunk_offset, SEEK_SET);
         s->decode_map_chunk_offset = 0;
@@ -223,6 +228,7 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
     int first_color, last_color;
     int audio_flags;
     unsigned char r, g, b;
+    unsigned int width, height;
 
     /* see if there are any pending packets */
     chunk_type = load_ipmovie_packet(s, pb, pkt);
@@ -379,8 +385,16 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
                 chunk_type = CHUNK_BAD;
                 break;
             }
-            s->video_width = AV_RL16(&scratch[0]) * 8;
-            s->video_height = AV_RL16(&scratch[2]) * 8;
+            width  = AV_RL16(&scratch[0]) * 8;
+            height = AV_RL16(&scratch[2]) * 8;
+            if (width != s->video_width) {
+                s->video_width = width;
+                s->changed++;
+            }
+            if (height != s->video_height) {
+                s->video_height = height;
+                s->changed++;
+            }
             if (opcode_version < 2 || !AV_RL16(&scratch[6])) {
                 s->video_bpp = 8;
             } else {

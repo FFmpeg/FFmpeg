@@ -166,6 +166,31 @@ void ff_init_cabac_states(CABACContext *c){
 #include "avcodec.h"
 #include "cabac.h"
 
+static inline void put_cabac_bit(CABACContext *c, int b){
+    put_bits(&c->pb, 1, b);
+    for(;c->outstanding_count; c->outstanding_count--){
+        put_bits(&c->pb, 1, 1-b);
+    }
+}
+
+static inline void renorm_cabac_encoder(CABACContext *c){
+    while(c->range < 0x100){
+        //FIXME optimize
+        if(c->low<0x100){
+            put_cabac_bit(c, 0);
+        }else if(c->low<0x200){
+            c->outstanding_count++;
+            c->low -= 0x100;
+        }else{
+            put_cabac_bit(c, 1);
+            c->low -= 0x200;
+        }
+
+        c->range+= c->range;
+        c->low += c->low;
+    }
+}
+
 static void put_cabac(CABACContext *c, uint8_t * const state, int bit){
     int RangeLPS= ff_h264_lps_range[2*(c->range&0xC0) + *state];
 

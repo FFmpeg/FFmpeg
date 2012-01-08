@@ -1019,12 +1019,10 @@ static av_cold int ipvideo_decode_init(AVCodecContext *avctx)
 
     dsputil_init(&s->dsp, avctx);
 
-    /* decoding map contains 4 bits of information per 8x8 block */
-    s->decoding_map_size = avctx->width * avctx->height / (8 * 8 * 2);
-
     avcodec_get_frame_defaults(&s->second_last_frame);
     avcodec_get_frame_defaults(&s->last_frame);
     avcodec_get_frame_defaults(&s->current_frame);
+
     s->current_frame.data[0] = s->last_frame.data[0] =
     s->second_last_frame.data[0] = NULL;
 
@@ -1038,6 +1036,9 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     IpvideoContext *s = avctx->priv_data;
+
+    /* decoding map contains 4 bits of information per 8x8 block */
+    s->decoding_map_size = avctx->width * avctx->height / (8 * 8 * 2);
 
     /* compressed buffer needs to be large enough to at least hold an entire
      * decoding map */
@@ -1099,6 +1100,6 @@ AVCodec ff_interplay_video_decoder = {
     .init           = ipvideo_decode_init,
     .close          = ipvideo_decode_end,
     .decode         = ipvideo_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_PARAM_CHANGE,
     .long_name = NULL_IF_CONFIG_SMALL("Interplay MVE video"),
 };

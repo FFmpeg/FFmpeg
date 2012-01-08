@@ -89,6 +89,7 @@ typedef struct Indeo3DecodeContext {
     const uint8_t   *next_cell_data;
     const uint8_t   *last_byte;
     const int8_t    *mc_vectors;
+    unsigned        num_vectors;    ///< number of motion vectors in mc_vectors
 
     int16_t         width, height;
     uint32_t        frame_num;      ///< current frame number (zero-based)
@@ -767,11 +768,17 @@ static int parse_bintree(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
             break;
         case INTER_DATA:
             if (!curr_cell.tree) { /* MC tree INTER code */
+                unsigned mv_idx;
                 /* get motion vector index and setup the pointer to the mv set */
                 if (!ctx->need_resync)
                     ctx->next_cell_data = &ctx->gb.buffer[(get_bits_count(&ctx->gb) + 7) >> 3];
                 if(ctx->mc_vectors)
-                    curr_cell.mv_ptr = &ctx->mc_vectors[*(ctx->next_cell_data++) << 1];
+                    mv_idx = *(ctx->next_cell_data++) << 1;
+                if (mv_idx >= ctx->num_vectors) {
+                    av_log(avctx, AV_LOG_ERROR, "motion vector index out of range\n");
+                    return AVERROR_INVALIDDATA;
+                }
+                curr_cell.mv_ptr = &ctx->mc_vectors[mv_idx];
                 curr_cell.tree   = 1; /* enter the VQ tree */
                 UPDATE_BITPOS(8);
             } else { /* VQ tree DATA code */
@@ -801,19 +808,24 @@ static int decode_plane(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
                         int32_t strip_width)
 {
     Cell            curr_cell;
-    uint32_t        num_vectors;
+    unsigned        num_vectors;
 
     /* each plane data starts with mc_vector_count field, */
     /* an optional array of motion vectors followed by the vq data */
     num_vectors = bytestream_get_le32(&data);
-    if(num_vectors >= data_size/2)
+    if (num_vectors > 256) {
+        av_log(ctx->avctx, AV_LOG_ERROR,
+               "Read invalid number of motion vectors %d\n", num_vectors);
         return AVERROR_INVALIDDATA;
+    }
+    if (num_vectors * 2 >= data_size)
+        return AVERROR_INVALIDDATA;
+
+    ctx->num_vectors = num_vectors;
     ctx->mc_vectors  = num_vectors ? data : 0;
-    data     += num_vectors * 2;
-    data_size-= num_vectors * 2;
 
     /* init the bitreader */
-    init_get_bits(&ctx->gb, data, data_size << 3);
+    init_get_bits(&ctx->gb, &data[num_vectors * 2], (data_size - num_vectors * 2) << 3);
     ctx->skip_bits   = 0;
     ctx->need_resync = 0;
 
