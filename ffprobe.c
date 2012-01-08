@@ -721,6 +721,7 @@ typedef struct {
     char *buf;
     size_t buf_size;
     int print_packets_and_frames;
+    int indent_level;
 } JSONContext;
 
 static av_cold int json_init(WriterContext *wctx, const char *args, void *opaque)
@@ -777,13 +778,19 @@ static const char *json_escape_str(char **dst, size_t *dst_size, const char *src
 
 static void json_print_header(WriterContext *wctx)
 {
+    JSONContext *json = wctx->priv;
     printf("{");
+    json->indent_level++;
 }
 
 static void json_print_footer(WriterContext *wctx)
 {
+    JSONContext *json = wctx->priv;
+    json->indent_level--;
     printf("\n}\n");
 }
+
+#define JSON_INDENT() printf("%*c", json->indent_level * 4, ' ')
 
 static void json_print_chapter_header(WriterContext *wctx, const char *chapter)
 {
@@ -794,20 +801,23 @@ static void json_print_chapter_header(WriterContext *wctx, const char *chapter)
     json->multiple_entries = !strcmp(chapter, "packets") || !strcmp(chapter, "frames" ) ||
                              !strcmp(chapter, "packets_and_frames") ||
                              !strcmp(chapter, "streams");
-    printf("\n  \"%s\":%s", json_escape_str(&json->buf, &json->buf_size, chapter, wctx),
+    printf("\n"); JSON_INDENT();
+    printf("\"%s\":%s", json_escape_str(&json->buf, &json->buf_size, chapter, wctx),
            json->multiple_entries ? " [" : " ");
     json->print_packets_and_frames = !strcmp(chapter, "packets_and_frames");
+    if (json->multiple_entries)
+        json->indent_level++;
 }
 
 static void json_print_chapter_footer(WriterContext *wctx, const char *chapter)
 {
     JSONContext *json = wctx->priv;
 
-    if (json->multiple_entries)
+    if (json->multiple_entries) {
         printf("]");
+        json->indent_level--;
+    }
 }
-
-#define INDENT "    "
 
 static void json_print_section_header(WriterContext *wctx, const char *section)
 {
@@ -815,30 +825,36 @@ static void json_print_section_header(WriterContext *wctx, const char *section)
 
     if (wctx->nb_section) printf(",");
     printf("{\n");
+    json->indent_level++;
     /* this is required so the parser can distinguish between packets and frames */
-    if (json->print_packets_and_frames)
-        printf(INDENT "\"type\": \"%s\",\n", section);
+    if (json->print_packets_and_frames) {
+        JSON_INDENT(); printf("\"type\": \"%s\",\n", section);
+    }
 }
 
 static void json_print_section_footer(WriterContext *wctx, const char *section)
 {
-    printf("\n  }");
+    JSONContext *json = wctx->priv;
+
+    printf("\n");
+    json->indent_level--;
+    JSON_INDENT(); printf("}");
 }
 
 static inline void json_print_item_str(WriterContext *wctx,
-                                       const char *key, const char *value,
-                                       const char *indent)
+                                       const char *key, const char *value)
 {
     JSONContext *json = wctx->priv;
 
-    printf("%s\"%s\":", indent, json_escape_str(&json->buf, &json->buf_size, key,   wctx));
-    printf(" \"%s\"",           json_escape_str(&json->buf, &json->buf_size, value, wctx));
+    JSON_INDENT();
+    printf("\"%s\":", json_escape_str(&json->buf, &json->buf_size, key,   wctx));
+    printf(" \"%s\"", json_escape_str(&json->buf, &json->buf_size, value, wctx));
 }
 
 static void json_print_str(WriterContext *wctx, const char *key, const char *value)
 {
     if (wctx->nb_item) printf(",\n");
-    json_print_item_str(wctx, key, value, INDENT);
+    json_print_item_str(wctx, key, value);
 }
 
 static void json_print_int(WriterContext *wctx, const char *key, long long int value)
@@ -846,23 +862,27 @@ static void json_print_int(WriterContext *wctx, const char *key, long long int v
     JSONContext *json = wctx->priv;
 
     if (wctx->nb_item) printf(",\n");
-    printf(INDENT "\"%s\": %lld",
+    JSON_INDENT();
+    printf("\"%s\": %lld",
            json_escape_str(&json->buf, &json->buf_size, key, wctx), value);
 }
 
 static void json_show_tags(WriterContext *wctx, AVDictionary *dict)
 {
+    JSONContext *json = wctx->priv;
     AVDictionaryEntry *tag = NULL;
     int is_first = 1;
     if (!dict)
         return;
-    printf(",\n" INDENT "\"tags\": {\n");
+    printf(",\n"); JSON_INDENT(); printf("\"tags\": {\n");
+    json->indent_level++;
     while ((tag = av_dict_get(dict, "", tag, AV_DICT_IGNORE_SUFFIX))) {
         if (is_first) is_first = 0;
         else          printf(",\n");
-        json_print_item_str(wctx, tag->key, tag->value, INDENT INDENT);
+        json_print_item_str(wctx, tag->key, tag->value);
     }
-    printf("\n    }");
+    json->indent_level--;
+    printf("\n"); JSON_INDENT(); printf("}");
 }
 
 static const Writer json_writer = {
