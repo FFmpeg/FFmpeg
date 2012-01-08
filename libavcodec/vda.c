@@ -179,6 +179,11 @@ int ff_vda_create_decoder(struct vda_context *vda_ctx,
 
     vda_lock_operation(&vda_ctx->queue_mutex, AV_LOCK_CREATE);
 
+    if (extradata[4]==0xFE) {
+        // convert 3 byte NAL sizes to 4 byte
+        extradata[4] = 0xFF;
+    }
+
     config_info = CFDictionaryCreateMutable(kCFAllocatorDefault,
                                             4,
                                             &kCFTypeDictionaryKeyCallBacks,
