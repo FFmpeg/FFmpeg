@@ -624,6 +624,7 @@ static int ipmovie_read_packet(AVFormatContext *s,
     AVIOContext *pb = s->pb;
     int ret;
 
+    for (;;) {
     ret = process_ipmovie_chunk(ipmovie, pb, pkt);
     if (ret == CHUNK_BAD)
         ret = AVERROR_INVALIDDATA;
@@ -633,10 +634,13 @@ static int ipmovie_read_packet(AVFormatContext *s,
         ret = AVERROR(ENOMEM);
     else if (ret == CHUNK_VIDEO)
         ret = 0;
+    else if (ret == CHUNK_INIT_VIDEO || ret == CHUNK_INIT_AUDIO)
+        continue;
     else
         ret = -1;
 
     return ret;
+    }
 }
 
 AVInputFormat ff_ipmovie_demuxer = {
