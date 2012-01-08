@@ -798,15 +798,16 @@ static void json_print_chapter_header(WriterContext *wctx, const char *chapter)
 
     if (wctx->nb_chapter)
         printf(",");
+    printf("\n");
     json->multiple_entries = !strcmp(chapter, "packets") || !strcmp(chapter, "frames" ) ||
                              !strcmp(chapter, "packets_and_frames") ||
                              !strcmp(chapter, "streams");
-    printf("\n"); JSON_INDENT();
-    printf("\"%s\":%s", json_escape_str(&json->buf, &json->buf_size, chapter, wctx),
-           json->multiple_entries ? " [" : " ");
-    json->print_packets_and_frames = !strcmp(chapter, "packets_and_frames");
-    if (json->multiple_entries)
+    if (json->multiple_entries) {
+        JSON_INDENT();
+        printf("\"%s\": [\n", json_escape_str(&json->buf, &json->buf_size, chapter, wctx));
+        json->print_packets_and_frames = !strcmp(chapter, "packets_and_frames");
         json->indent_level++;
+    }
 }
 
 static void json_print_chapter_footer(WriterContext *wctx, const char *chapter)
@@ -814,8 +815,10 @@ static void json_print_chapter_footer(WriterContext *wctx, const char *chapter)
     JSONContext *json = wctx->priv;
 
     if (json->multiple_entries) {
-        printf("]");
+        printf("\n");
         json->indent_level--;
+        JSON_INDENT();
+        printf("]");
     }
 }
 
@@ -823,7 +826,11 @@ static void json_print_section_header(WriterContext *wctx, const char *section)
 {
     JSONContext *json = wctx->priv;
 
-    if (wctx->nb_section) printf(",");
+    if (wctx->nb_section)
+        printf(",\n");
+    JSON_INDENT();
+    if (!json->multiple_entries)
+        printf("\"%s\": ", section);
     printf("{\n");
     json->indent_level++;
     /* this is required so the parser can distinguish between packets and frames */
