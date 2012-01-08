@@ -86,7 +86,7 @@ static const uint8_t *scan_index_to_tab[15] = {
 /**
  *  Indeo 4 dequant tables
  */
-static uint16_t ivi4_quant_8x8_intra[9][64] = {
+static const uint16_t ivi4_quant_8x8_intra[9][64] = {
   {
       43,  342,  385,  470,  555,  555,  598,  726,
      342,  342,  470,  513,  555,  598,  726,  769,
@@ -179,7 +179,7 @@ static uint16_t ivi4_quant_8x8_intra[9][64] = {
   }
 };
 
-static uint16_t ivi4_quant_8x8_inter[9][64] = {
+static const uint16_t ivi4_quant_8x8_inter[9][64] = {
   {
      427,  427,  470,  427,  427,  427,  470,  470,
      427,  427,  470,  427,  427,  427,  470,  470,
@@ -272,7 +272,7 @@ static uint16_t ivi4_quant_8x8_inter[9][64] = {
   }
 };
 
-static uint16_t ivi4_quant_4x4_intra[5][16] = {
+static const uint16_t ivi4_quant_4x4_intra[5][16] = {
   {
       22,  214,  257,  299,
      214,  257,  299,  342,
@@ -305,7 +305,7 @@ static uint16_t ivi4_quant_4x4_intra[5][16] = {
   }
 };
 
-static uint16_t ivi4_quant_4x4_inter[5][16] = {
+static const uint16_t ivi4_quant_4x4_inter[5][16] = {
   {
      107,  214,  257,  299,
      214,  257,  299,  299,
@@ -342,7 +342,7 @@ static uint16_t ivi4_quant_4x4_inter[5][16] = {
  *  Table for mapping quant matrix index from the bitstream
  *  into internal quant table number.
  */
-static uint8_t  quant_index_to_tab[22] = {
+static const uint8_t quant_index_to_tab[22] = {
     0, 1, 0, 2, 1, 3, 0, 4, 1, 5, 0, 1, 6, 7, 8, // for 8x8 quant matrixes
     0, 1, 2, 2, 3, 3, 4                          // for 4x4 quant matrixes
 };

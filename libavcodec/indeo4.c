@@ -94,7 +94,7 @@ typedef struct {
 } IVI4DecContext;
 
 
-struct {
+static const struct {
     InvTransformPtr *inv_trans;
     DCTransformPtr  *dc_trans;
     int             is_2d_trans;
