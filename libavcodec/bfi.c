@@ -49,7 +49,7 @@ static av_cold int bfi_decode_init(AVCodecContext *avctx)
 static int bfi_decode_frame(AVCodecContext *avctx, void *data,
                             int *data_size, AVPacket *avpkt)
 {
-    const uint8_t *buf = avpkt->data, *buf_end = avpkt->data + avpkt->size;
+    GetByteContext g;
     int buf_size = avpkt->size;
     BFIContext *bfi = avctx->priv_data;
     uint8_t *dst = bfi->dst;
@@ -67,6 +67,8 @@ static int bfi_decode_frame(AVCodecContext *avctx, void *data,
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
+
+    bytestream2_init(&g, avpkt->data, buf_size);
 
     /* Set frame parameters and palette, if necessary */
     if (!avctx->frame_number) {
@@ -96,15 +98,15 @@ static int bfi_decode_frame(AVCodecContext *avctx, void *data,
         memcpy(bfi->frame.data[1], bfi->pal, sizeof(bfi->pal));
     }
 
-    buf += 4; // Unpacked size, not required.
+    bytestream2_skip(&g, 4); // Unpacked size, not required.
 
     while (dst != frame_end) {
         static const uint8_t lentab[4] = { 0, 2, 0, 1 };
-        unsigned int byte   = *buf++, av_uninit(offset);
+        unsigned int byte   = bytestream2_get_byte(&g), av_uninit(offset);
         unsigned int code   = byte >> 6;
         unsigned int length = byte & ~0xC0;
 
-        if (buf >= buf_end) {
+        if (!bytestream2_get_bytes_left(&g)) {
             av_log(avctx, AV_LOG_ERROR,
                    "Input resolution larger than actual frame.\n");
             return -1;
@@ -113,16 +115,16 @@ static int bfi_decode_frame(AVCodecContext *avctx, void *data,
         /* Get length and offset(if required) */
         if (length == 0) {
             if (code == 1) {
-                length = bytestream_get_byte(&buf);
-                offset = bytestream_get_le16(&buf);
+                length = bytestream2_get_byte(&g);
+                offset = bytestream2_get_le16(&g);
             } else {
-                length = bytestream_get_le16(&buf);
+                length = bytestream2_get_le16(&g);
                 if (code == 2 && length == 0)
                     break;
             }
         } else {
             if (code == 1)
-                offset = bytestream_get_byte(&buf);
+                offset = bytestream2_get_byte(&g);
         }
 
         /* Do boundary check */
@@ -132,11 +134,11 @@ static int bfi_decode_frame(AVCodecContext *avctx, void *data,
         switch (code) {
 
         case 0:                //Normal Chain
-            if (length >= buf_end - buf) {
+            if (length >= bytestream2_get_bytes_left(&g)) {
                 av_log(avctx, AV_LOG_ERROR, "Frame larger than buffer.\n");
                 return -1;
             }
-            bytestream_get_buffer(&buf, dst, length);
+            bytestream2_get_buffer(&g, dst, length);
             dst += length;
             break;
 
@@ -154,8 +156,8 @@ static int bfi_decode_frame(AVCodecContext *avctx, void *data,
             break;
 
         case 3:                //Fill Chain
-            colour1 = bytestream_get_byte(&buf);
-            colour2 = bytestream_get_byte(&buf);
+            colour1 = bytestream2_get_byte(&g);
+            colour2 = bytestream2_get_byte(&g);
             while (length--) {
                 *dst++ = colour1;
                 *dst++ = colour2;

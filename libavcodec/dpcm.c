@@ -288,7 +288,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
     }
     case CODEC_ID_SOL_DPCM:
         if (avctx->codec_tag != 3) {
-            uint8_t *output_samples_u8 = output_samples;
+            uint8_t *output_samples_u8 = s->frame.data[0];
             while (buf < buf_end) {
                 uint8_t n = *buf++;
 
