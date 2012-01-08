@@ -31,7 +31,7 @@
  * @{
  */
 
-/** Send a frame data to the hardware decoder. */
+/** Send frame data to the hardware decoder. */
 int ff_vda_decoder_decode(struct vda_context *vda_ctx,
                           uint8_t *bitstream,
                           int bitstream_size,
