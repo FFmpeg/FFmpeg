@@ -438,8 +438,6 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
                 s->decode_buffer = NULL;
                 break;
             }
-            default:
-                av_log(s->avctx, AV_LOG_ERROR, "Error, only 16bit samples supported!\n");
         }
 
     *got_frame_ptr   = 1;
