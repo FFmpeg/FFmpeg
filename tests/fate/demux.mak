@@ -79,6 +79,9 @@ fate-sierra-vmd: CMD = framecrc -i $(SAMPLES)/vmd/12.vmd -vsync 0 -pix_fmt rgb24
 FATE_TESTS += fate-siff
 fate-siff: CMD = framecrc -i $(SAMPLES)/SIFF/INTRO_B.VB -t 3 -pix_fmt rgb24
 
+FATE_TESTS += fate-smjpeg
+fate-smjpeg: CMD = framecrc -i $(SAMPLES)/smjpeg/scenwin.mjpg -vcodec copy
+
 FATE_TESTS += fate-westwood-aud
 fate-westwood-aud: CMD = md5 -i $(SAMPLES)/westwood-aud/excellent.aud -f s16le
 
