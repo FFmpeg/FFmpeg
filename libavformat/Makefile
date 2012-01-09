@@ -354,6 +354,6 @@ SKIPHEADERS-$(CONFIG_NETWORK)            += network.h rtsp.h
 
 EXAMPLES  = metadata output
 TESTPROGS = seek
-TOOLS     = aviocat pktdumper probetest
+TOOLS     = aviocat ismindex pktdumper probetest
 
 $(SUBDIR)output-example$(EXESUF): ELIBS = -lswscale
