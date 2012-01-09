@@ -37,7 +37,7 @@ static int gsm_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, size;
 
-    size = GSM_BLOCK_SIZE * 32;
+    size = GSM_BLOCK_SIZE;
 
     pkt->pos = avio_tell(s->pb);
     pkt->stream_index = 0;
@@ -48,7 +48,7 @@ static int gsm_read_packet(AVFormatContext *s, AVPacket *pkt)
         return ret < 0 ? ret : AVERROR(EIO);
     }
     pkt->size     = ret;
-    pkt->duration = ret      / GSM_BLOCK_SIZE;
+    pkt->duration = 1;
     pkt->pts      = pkt->pos / GSM_BLOCK_SIZE;
 
     return 0;
@@ -65,7 +65,6 @@ static int gsm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->codec_id    = s->iformat->value;
     st->codec->channels    = 1;
     st->codec->sample_rate = c->sample_rate;
-    st->codec->block_align = GSM_BLOCK_SIZE;
     st->codec->bit_rate    = GSM_BLOCK_SIZE * 8 * c->sample_rate / GSM_BLOCK_SAMPLES;
 
     avpriv_set_pts_info(st, 64, GSM_BLOCK_SAMPLES, GSM_SAMPLE_RATE);
