@@ -478,7 +478,7 @@ static int mov_write_audio_tag(AVIOContext *pb, MOVTrack *track)
         avio_wb16(pb, 0);
         avio_wb32(pb, 0x00010000);
         avio_wb32(pb, 72);
-        avio_wb64(pb, av_double2int(track->timescale));
+        avio_wb64(pb, av_double2int(track->enc->sample_rate));
         avio_wb32(pb, track->enc->channels);
         avio_wb32(pb, 0x7F000000);
         avio_wb32(pb, av_get_bits_per_sample(track->enc->codec_id));
@@ -492,7 +492,7 @@ static int mov_write_audio_tag(AVIOContext *pb, MOVTrack *track)
         avio_wb16(pb, 0);
 
         avio_wb16(pb, 0); /* packet size (= 0) */
-        avio_wb16(pb, track->timescale); /* Time scale */
+        avio_wb16(pb, track->enc->sample_rate);
         avio_wb16(pb, 0); /* Reserved */
     }
 
