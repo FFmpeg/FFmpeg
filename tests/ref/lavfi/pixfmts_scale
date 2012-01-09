@@ -1,6 +1,8 @@
 abgr                d894cb97f6c80eb21bdbe8a4eea62d86
 argb                54346f2b2eef10919e0f247241df3b24
 bgr24               570f8d6b51a838aed022ef67535f6bdc
+bgr444be            25fe04f73a3bad4140d1c4f96ca5b670
+bgr444le            2fde227e6cea6dca5decdd0b7c0866f7
 bgr48be             390d3058a12a99c2b153ed7922508bea
 bgr48le             39fe06feb4ec1d9730dccc04a0cfac4c
 bgr4_byte           ee1d35a7baf8e9016891929a2f565c0b
@@ -18,6 +20,8 @@ monow               d31772ebaa877fc2a78565937f7f9673
 nv12                4676d59db43d657dc12841f6bc3ab452
 nv21                69c699510ff1fb777b118ebee1002f14
 rgb24               514692e28e8ff6860e415ce4fcf6eb8c
+rgb444be            12254053ae93373869fca18b2afcba31
+rgb444le            badbd68b59c87df6ae73248309637634
 rgb48be             8fac63787a711886030f8e056872b488
 rgb48le             ab92f2763a2eb264c3870cc758f97149
 rgb4_byte           d81ffd3add95842a618eec81024f0b5c
