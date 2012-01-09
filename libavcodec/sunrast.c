@@ -51,7 +51,7 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
     AVFrame *picture = data;
     AVFrame * const p = &s->picture;
     unsigned int w, h, depth, type, maptype, maplength, stride, x, y, len, alen;
-    uint8_t *ptr;
+    uint8_t *ptr, *ptr2 = NULL;
     const uint8_t *bufstart = buf;
 
     if (avpkt->size < 32)
@@ -90,7 +90,10 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
 
     switch (depth) {
         case 1:
-            avctx->pix_fmt = PIX_FMT_MONOWHITE;
+            avctx->pix_fmt = maplength ? PIX_FMT_PAL8 : PIX_FMT_MONOWHITE;
+            break;
+        case 4:
+            avctx->pix_fmt = maplength ? PIX_FMT_PAL8 : PIX_FMT_NONE;
             break;
         case 8:
             avctx->pix_fmt = maplength ? PIX_FMT_PAL8 : PIX_FMT_GRAY8;
@@ -121,7 +124,7 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
     if (buf_end - buf < maplength)
         return AVERROR_INVALIDDATA;
 
-    if (depth != 8 && maplength) {
+    if (depth > 8 && maplength) {
         av_log(avctx, AV_LOG_WARNING, "useless colormap found or file is corrupted, trying to recover\n");
 
     } else if (maplength) {
@@ -143,8 +146,15 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
 
     buf += maplength;
 
+    if (maplength && depth < 8) {
+        ptr = ptr2 = av_malloc((w + 15) * h);
+        if (!ptr)
+            return AVERROR(ENOMEM);
+        stride = (w + 15 >> 3) * depth;
+    } else {
     ptr    = p->data[0];
     stride = p->linesize[0];
+    }
 
     /* scanlines are aligned on 16 bit boundaries */
     len  = (depth * w + 7) >> 3;
@@ -184,6 +194,30 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
             ptr += stride;
             buf += alen;
         }
+    }
+    if (avctx->pix_fmt == PIX_FMT_PAL8 && depth < 8) {
+        uint8_t *ptr_free = ptr2;
+        ptr = p->data[0];
+        for (y=0; y<h; y++) {
+            for (x = 0; x < (w + 7 >> 3) * depth; x++) {
+                if (depth == 1) {
+                    ptr[8*x]   = ptr2[x] >> 7;
+                    ptr[8*x+1] = ptr2[x] >> 6 & 1;
+                    ptr[8*x+2] = ptr2[x] >> 5 & 1;
+                    ptr[8*x+3] = ptr2[x] >> 4 & 1;
+                    ptr[8*x+4] = ptr2[x] >> 3 & 1;
+                    ptr[8*x+5] = ptr2[x] >> 2 & 1;
+                    ptr[8*x+6] = ptr2[x] >> 1 & 1;
+                    ptr[8*x+7] = ptr2[x]      & 1;
+                } else {
+                    ptr[2*x]   = ptr2[x] >> 4;
+                    ptr[2*x+1] = ptr2[x] & 0xF;
+                }
+            }
+            ptr  += p->linesize[0];
+            ptr2 += (w + 15 >> 3) * depth;
+        }
+        av_freep(&ptr_free);
     }
 
     *picture = s->picture;
