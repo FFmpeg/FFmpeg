@@ -730,7 +730,7 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int nb_components, int p
                 for(i=0; i<3; i++)
                     top[i] = left[i]= topleft[i]= 1 << (s->bits - 1);
             }
-            if (mb_y == resync_mb_y || mb_y == resync_mb_y+1 && mb_x < resync_mb_x)
+            if (mb_y == resync_mb_y || mb_y == resync_mb_y+1 && mb_x < resync_mb_x || !mb_x)
                 modified_predictor = 1;
 
             for (i=0;i<nb_components;i++) {
