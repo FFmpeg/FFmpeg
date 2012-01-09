@@ -81,7 +81,7 @@
         "add    "tmp"       , "low"                                     \n\t"\
         "1:                                                             \n\t"
 
-#if HAVE_7REGS && !defined(BROKEN_RELOCATIONS)
+#if HAVE_7REGS && !defined(BROKEN_RELOCATIONS) && !(defined(__i386) && __clang_major__==2 && __clang_minor__==9)
 #define get_cabac_inline get_cabac_inline_x86
 static av_always_inline int get_cabac_inline_x86(CABACContext *c,
                                                  uint8_t *const state)
