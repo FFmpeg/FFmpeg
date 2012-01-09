@@ -38,6 +38,7 @@
 // avconv -i testinput.avi  -f psp -r 14.985 -s 320x240 -b 768 -ar 24000 -ab 32 M4V00001.MP4
 #define MODE_3G2  0x10
 #define MODE_IPOD 0x20
+#define MODE_ISM  0x40
 
 typedef struct MOVIentry {
     uint64_t     pos;
@@ -68,6 +69,8 @@ typedef struct {
 typedef struct {
     int64_t offset;
     int64_t time;
+    int64_t duration;
+    int64_t tfrf_offset;
 } MOVFragmentInfo;
 
 typedef struct MOVIndex {
@@ -113,6 +116,7 @@ typedef struct MOVIndex {
     int64_t     moof_size_offset;
     int64_t     data_offset;
     int64_t     frag_start;
+    int64_t     tfrf_offset;
 
     int         nb_frag_info;
     MOVFragmentInfo *frag_info;
@@ -137,6 +141,7 @@ typedef struct MOVMuxContext {
     int fragments;
     int max_fragment_duration;
     int max_fragment_size;
+    int ism_lookahead;
 } MOVMuxContext;
 
 #define FF_MOV_FLAG_RTP_HINT 1

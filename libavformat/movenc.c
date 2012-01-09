@@ -55,6 +55,7 @@ static const AVOption options[] = {
     { "iods_video_profile", "iods video profile atom.", offsetof(MOVMuxContext, iods_video_profile), AV_OPT_TYPE_INT, {.dbl = -1}, -1, 255, AV_OPT_FLAG_ENCODING_PARAM},
     { "frag_duration", "Maximum fragment duration", offsetof(MOVMuxContext, max_fragment_duration), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { "frag_size", "Maximum fragment size", offsetof(MOVMuxContext, max_fragment_size), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
+    { "ism_lookahead", "Number of lookahead entries for ISM files", offsetof(MOVMuxContext, ism_lookahead), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
 };
 
@@ -761,7 +762,7 @@ static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
     int tag = track->enc->codec_tag;
 
-    if (track->mode == MODE_MP4 || track->mode == MODE_PSP)
+    if (track->mode == MODE_MP4 || track->mode == MODE_PSP || track->mode == MODE_ISM)
         tag = mp4_get_codec_tag(s, track);
     else if (track->mode == MODE_IPOD)
         tag = ipod_get_codec_tag(s, track);
@@ -1940,6 +1941,11 @@ static int mov_write_tfhd_tag(AVIOContext *pb, MOVTrack *track,
         flags |= 0x20; /* default-sample-flags-present */
     }
 
+    /* Don't set a default sample size when creating data for silverlight,
+     * the player refuses to play files with that set. */
+    if (track->mode == MODE_ISM)
+        flags &= ~0x10;
+
     avio_wb32(pb, 0); /* size placeholder */
     ffio_wfourcc(pb, "tfhd");
     avio_w8(pb, 0); /* version */
@@ -2023,7 +2029,78 @@ static int mov_write_trun_tag(AVIOContext *pb, MOVTrack *track)
     return updateSize(pb, pos);
 }
 
-static int mov_write_traf_tag(AVIOContext *pb, MOVTrack *track, int64_t moof_offset)
+static int mov_write_tfxd_tag(AVIOContext *pb, MOVTrack *track)
+{
+    int64_t pos = avio_tell(pb);
+    const uint8_t uuid[] = {
+        0x6d, 0x1d, 0x9b, 0x05, 0x42, 0xd5, 0x44, 0xe6,
+        0x80, 0xe2, 0x14, 0x1d, 0xaf, 0xf7, 0x57, 0xb2
+    };
+
+    avio_wb32(pb, 0); /* size placeholder */
+    ffio_wfourcc(pb, "uuid");
+    avio_write(pb, uuid, sizeof(uuid));
+    avio_w8(pb, 1);
+    avio_wb24(pb, 0);
+    avio_wb64(pb, track->frag_start);
+    avio_wb64(pb, track->start_dts + track->trackDuration -
+                  track->cluster[0].dts);
+
+    return updateSize(pb, pos);
+}
+
+static int mov_write_tfrf_tag(AVIOContext *pb, MOVMuxContext *mov,
+                              MOVTrack *track, int entry)
+{
+    int n = track->nb_frag_info - 1 - entry, i;
+    int size = 8 + 16 + 4 + 1 + 16*n;
+    const uint8_t uuid[] = {
+        0xd4, 0x80, 0x7e, 0xf2, 0xca, 0x39, 0x46, 0x95,
+        0x8e, 0x54, 0x26, 0xcb, 0x9e, 0x46, 0xa7, 0x9f
+    };
+
+    if (entry < 0)
+        return 0;
+
+    avio_seek(pb, track->frag_info[entry].tfrf_offset, SEEK_SET);
+    avio_wb32(pb, size);
+    ffio_wfourcc(pb, "uuid");
+    avio_write(pb, uuid, sizeof(uuid));
+    avio_w8(pb, 1);
+    avio_wb24(pb, 0);
+    avio_w8(pb, n);
+    for (i = 0; i < n; i++) {
+        int index = entry + 1 + i;
+        avio_wb64(pb, track->frag_info[index].time);
+        avio_wb64(pb, track->frag_info[index].duration);
+    }
+    if (n < mov->ism_lookahead) {
+        int free_size = 16*(mov->ism_lookahead - n);
+        avio_wb32(pb, free_size);
+        ffio_wfourcc(pb, "free");
+        for (i = 0; i < free_size - 8; i++)
+            avio_w8(pb, 0);
+    }
+
+    return 0;
+}
+
+static int mov_write_tfrf_tags(AVIOContext *pb, MOVMuxContext *mov,
+                               MOVTrack *track)
+{
+    int64_t pos = avio_tell(pb);
+    int i;
+    for (i = 0; i < mov->ism_lookahead; i++) {
+        /* Update the tfrf tag for the last ism_lookahead fragments,
+         * nb_frag_info - 1 is the next fragment to be written. */
+        mov_write_tfrf_tag(pb, mov, track, track->nb_frag_info - 2 - i);
+    }
+    avio_seek(pb, pos, SEEK_SET);
+    return 0;
+}
+
+static int mov_write_traf_tag(AVIOContext *pb, MOVMuxContext *mov,
+                              MOVTrack *track, int64_t moof_offset)
 {
     int64_t pos = avio_tell(pb);
     avio_wb32(pb, 0); /* size placeholder */
@@ -2031,6 +2108,19 @@ static int mov_write_traf_tag(AVIOContext *pb, MOVTrack *track, int64_t moof_off
 
     mov_write_tfhd_tag(pb, track, moof_offset);
     mov_write_trun_tag(pb, track);
+    if (mov->mode == MODE_ISM) {
+        mov_write_tfxd_tag(pb, track);
+
+        if (mov->ism_lookahead) {
+            int i, size = 16 + 4 + 1 + 16*mov->ism_lookahead;
+
+            track->tfrf_offset = avio_tell(pb);
+            avio_wb32(pb, 8 + size);
+            ffio_wfourcc(pb, "free");
+            for (i = 0; i < size; i++)
+                avio_w8(pb, 0);
+        }
+    }
 
     return updateSize(pb, pos);
 }
@@ -2050,7 +2140,7 @@ static int mov_write_moof_tag(AVIOContext *pb, MOVMuxContext *mov, int tracks)
             continue;
         if (!track->entry)
             continue;
-        mov_write_traf_tag(pb, track, pos);
+        mov_write_traf_tag(pb, mov, track, pos);
     }
 
     end = avio_tell(pb);
@@ -2158,6 +2248,8 @@ static int mov_write_ftyp_tag(AVIOContext *pb, AVFormatContext *s)
         ffio_wfourcc(pb, "isom");
     else if (mov->mode == MODE_IPOD)
         ffio_wfourcc(pb, has_video ? "M4V ":"M4A ");
+    else if (mov->mode == MODE_ISM)
+        ffio_wfourcc(pb, "isml");
     else
         ffio_wfourcc(pb, "qt  ");
 
@@ -2165,7 +2257,10 @@ static int mov_write_ftyp_tag(AVIOContext *pb, AVFormatContext *s)
 
     if(mov->mode == MODE_MOV)
         ffio_wfourcc(pb, "qt  ");
-    else{
+    else if (mov->mode == MODE_ISM) {
+        ffio_wfourcc(pb, "piff");
+        ffio_wfourcc(pb, "iso2");
+    } else {
         ffio_wfourcc(pb, "isom");
         ffio_wfourcc(pb, "iso2");
         if(has_h264)
@@ -2342,8 +2437,11 @@ static int mov_flush_fragment(AVFormatContext *s)
             info = &track->frag_info[track->nb_frag_info - 1];
             info->offset   = avio_tell(s->pb);
             info->time     = mov->tracks[i].frag_start;
+            info->duration = duration;
+            mov_write_tfrf_tags(s->pb, mov, track);
 
             mov_write_moof_tag(s->pb, mov, moof_tracks);
+            info->tfrf_offset = track->tfrf_offset;
             mov->fragments++;
 
             avio_wb32(s->pb, mdat_size + 8);
@@ -2571,6 +2669,7 @@ static int mov_write_header(AVFormatContext *s)
         else if (!strcmp("mov", s->oformat->name)) mov->mode = MODE_MOV;
         else if (!strcmp("psp", s->oformat->name)) mov->mode = MODE_PSP;
         else if (!strcmp("ipod",s->oformat->name)) mov->mode = MODE_IPOD;
+        else if (!strcmp("ismv",s->oformat->name)) mov->mode = MODE_ISM;
 
         mov_write_ftyp_tag(pb,s);
         if (mov->mode == MODE_PSP) {
@@ -2681,6 +2780,10 @@ static int mov_write_header(AVFormatContext *s)
         }
         if (!track->height)
             track->height = st->codec->height;
+        /* The ism specific timescale isn't mandatory, but is assumed by
+         * some tools, such as mp4split. */
+        if (mov->mode == MODE_ISM)
+            track->timescale = 10000000;
 
         avpriv_set_pts_info(st, 64, 1, track->timescale);
 
@@ -2690,6 +2793,15 @@ static int mov_write_header(AVFormatContext *s)
             track->vosData = av_malloc(track->vosLen);
             memcpy(track->vosData, st->codec->extradata, track->vosLen);
         }
+    }
+
+    if (mov->mode == MODE_ISM) {
+        /* If no fragmentation options have been set, set a default. */
+        if (!(mov->flags & (FF_MOV_FLAG_FRAG_KEYFRAME |
+                            FF_MOV_FLAG_FRAG_CUSTOM)) &&
+            !mov->max_fragment_duration && !mov->max_fragment_size)
+            mov->max_fragment_duration = 5000000;
+        mov->flags |= FF_MOV_FLAG_EMPTY_MOOV | FF_MOV_FLAG_SEPARATE_MOOF;
     }
 
     /* Set the FRAGMENT flag if any of the fragmentation methods are
@@ -2904,5 +3016,23 @@ AVOutputFormat ff_ipod_muxer = {
     .flags = AVFMT_GLOBALHEADER | AVFMT_ALLOW_FLUSH,
     .codec_tag = (const AVCodecTag* const []){codec_ipod_tags, 0},
     .priv_class = &ipod_muxer_class,
+};
+#endif
+#if CONFIG_ISMV_MUXER
+MOV_CLASS(ismv)
+AVOutputFormat ff_ismv_muxer = {
+    .name              = "ismv",
+    .long_name         = NULL_IF_CONFIG_SMALL("ISMV/ISMA (Smooth Streaming) format"),
+    .mime_type         = "application/mp4",
+    .extensions        = "ismv,isma",
+    .priv_data_size    = sizeof(MOVMuxContext),
+    .audio_codec       = CODEC_ID_AAC,
+    .video_codec       = CODEC_ID_H264,
+    .write_header      = mov_write_header,
+    .write_packet      = ff_mov_write_packet,
+    .write_trailer     = mov_write_trailer,
+    .flags             = AVFMT_GLOBALHEADER | AVFMT_ALLOW_FLUSH,
+    .codec_tag         = (const AVCodecTag* const []){ff_mp4_obj_type, 0},
+    .priv_class        = &ismv_muxer_class,
 };
 #endif
