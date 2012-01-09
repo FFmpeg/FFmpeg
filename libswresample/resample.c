@@ -245,11 +245,27 @@ void swri_resample_free(ResampleContext **c){
     av_freep(c);
 }
 
-void swr_compensate(struct SwrContext *s, int sample_delta, int compensation_distance){
-    ResampleContext *c= s->resample;
-//    sample_delta += (c->ideal_dst_incr - c->dst_incr)*(int64_t)c->compensation_distance / c->ideal_dst_incr;
+int swr_set_compensation(struct SwrContext *s, int sample_delta, int compensation_distance){
+    ResampleContext *c;
+    int ret;
+
+    if (!s || compensation_distance < 0)
+        return AVERROR(EINVAL);
+    if (!compensation_distance && sample_delta)
+        return AVERROR(EINVAL);
+    if (!s->resample) {
+        s->flags |= SWR_FLAG_RESAMPLE;
+        ret = swr_init(s);
+        if (ret < 0)
+            return ret;
+    }
+    c= s->resample;
     c->compensation_distance= compensation_distance;
-    c->dst_incr = c->ideal_dst_incr - c->ideal_dst_incr * (int64_t)sample_delta / compensation_distance;
+    if (compensation_distance)
+        c->dst_incr = c->ideal_dst_incr - c->ideal_dst_incr * (int64_t)sample_delta / compensation_distance;
+    else
+        c->dst_incr = c->ideal_dst_incr;
+    return 0;
 }
 
 int swri_resample(ResampleContext *c, int16_t *dst, const int16_t *src, int *consumed, int src_size, int dst_size, int update_ctx){

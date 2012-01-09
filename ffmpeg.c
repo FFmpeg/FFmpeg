@@ -1160,7 +1160,7 @@ need_realloc:
                 av_log(NULL, AV_LOG_VERBOSE, "compensating audio timestamp drift:%f compensation:%d in:%d\n",
                        delta, comp, enc->sample_rate);
 //                fprintf(stderr, "drift:%f len:%d opts:%"PRId64" ipts:%"PRId64" fifo:%d\n", delta, -1, ost->sync_opts, (int64_t)(get_sync_ipts(ost) * enc->sample_rate), av_fifo_size(ost->fifo)/(ost->st->codec->channels * 2));
-                swr_compensate(ost->swr, comp, enc->sample_rate);
+                swr_set_compensation(ost->swr, comp, enc->sample_rate);
             }
         }
     } else

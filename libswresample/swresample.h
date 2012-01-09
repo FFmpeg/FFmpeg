@@ -30,7 +30,7 @@
 #include "libavutil/samplefmt.h"
 
 #define LIBSWRESAMPLE_VERSION_MAJOR 0
-#define LIBSWRESAMPLE_VERSION_MINOR 5
+#define LIBSWRESAMPLE_VERSION_MINOR 6
 #define LIBSWRESAMPLE_VERSION_MICRO 100
 
 #define LIBSWRESAMPLE_VERSION_INT  AV_VERSION_INT(LIBSWRESAMPLE_VERSION_MAJOR, \
@@ -114,7 +114,7 @@ int swr_convert(struct SwrContext *s, uint8_t *out[SWR_CH_MAX], int out_count,
 /**
  * Activate resampling compensation.
  */
-void swr_compensate(struct SwrContext *s, int sample_delta, int compensation_distance);
+int swr_set_compensation(struct SwrContext *s, int sample_delta, int compensation_distance);
 
 /**
  * Set a customized input channel mapping.
