@@ -48,15 +48,15 @@ static int decode_significance_x86(CABACContext *c, int max_coeff,
     __asm__ volatile(
         "2:                                     \n\t"
 
-        BRANCHLESS_GET_CABAC("%4", "%6", "(%1)", "%3",
-                             "%w3", "%5", "%k0", "%b0", "%a11")
+        BRANCHLESS_GET_CABAC("%4", "(%1)", "%3",
+                             "%w3", "%5", "%k0", "%b0", "%6")
 
         "test $1, %4                            \n\t"
         " jz 3f                                 \n\t"
         "add  %10, %1                           \n\t"
 
-        BRANCHLESS_GET_CABAC("%4", "%6", "(%1)", "%3",
-                             "%w3", "%5", "%k0", "%b0", "%a11")
+        BRANCHLESS_GET_CABAC("%4", "(%1)", "%3",
+                             "%w3", "%5", "%k0", "%b0", "%6")
 
         "sub  %10, %1                           \n\t"
         "mov  %2, %0                            \n\t"
@@ -81,9 +81,9 @@ static int decode_significance_x86(CABACContext *c, int max_coeff,
         "add  %9, %k0                           \n\t"
         "shr $2, %k0                            \n\t"
         :"=&q"(coeff_count), "+r"(significant_coeff_ctx_base), "+m"(index),
-         "+&r"(c->low), "=&r"(bit), "+&r"(c->range)
-        :"r"(c), "m"(minusstart), "m"(end), "m"(minusindex), "m"(last_off),
-         "i"(offsetof(CABACContext, bytestream))
+         "+&r"(c->low), "=&r"(bit), "+&r"(c->range),
+         "+m"(c->bytestream)
+        :"m"(minusstart), "m"(end), "m"(minusindex), "m"(last_off)
         : "%"REG_c, "memory"
     );
     return coeff_count;
@@ -105,8 +105,8 @@ static int decode_significance_8x8_x86(CABACContext *c,
         "movzbl (%0, %6), %k6                   \n\t"
         "add %9, %6                             \n\t"
 
-        BRANCHLESS_GET_CABAC("%4", "%7", "(%6)", "%3",
-                             "%w3", "%5", "%k0", "%b0", "%a12")
+        BRANCHLESS_GET_CABAC("%4", "(%6)", "%3",
+                             "%w3", "%5", "%k0", "%b0", "%7")
 
         "mov %1, %k6                            \n\t"
         "test $1, %4                            \n\t"
@@ -115,8 +115,8 @@ static int decode_significance_8x8_x86(CABACContext *c,
         "movzbl "MANGLE(last_coeff_flag_offset_8x8)"(%k6), %k6\n\t"
         "add %11, %6                            \n\t"
 
-        BRANCHLESS_GET_CABAC("%4", "%7", "(%6)", "%3",
-                             "%w3", "%5", "%k0", "%b0", "%a12")
+        BRANCHLESS_GET_CABAC("%4", "(%6)", "%3",
+                             "%w3", "%5", "%k0", "%b0", "%7")
 
         "mov %2, %0                             \n\t"
         "mov %1, %k6                            \n\t"
@@ -138,9 +138,8 @@ static int decode_significance_8x8_x86(CABACContext *c,
         "addl %8, %k0                           \n\t"
         "shr $2, %k0                            \n\t"
         :"=&q"(coeff_count),"+m"(last), "+m"(index), "+&r"(c->low), "=&r"(bit),
-         "+&r"(c->range), "=&r"(state)
-        :"r"(c), "m"(minusindex), "m"(significant_coeff_ctx_base), "m"(sig_off), "m"(last_coeff_ctx_base),
-         "i"(offsetof(CABACContext, bytestream))
+         "+&r"(c->range), "=&r"(state), "+m"(c->bytestream)
+        :"m"(minusindex), "m"(significant_coeff_ctx_base), "m"(sig_off), "m"(last_coeff_ctx_base)
         : "%"REG_c, "memory"
     );
     return coeff_count;
