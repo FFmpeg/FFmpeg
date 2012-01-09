@@ -25,6 +25,7 @@
  */
 
 #include "get_bits.h"
+#include "gsm.h"
 #include "gsmdec_data.h"
 
 static void apcm_dequant_add(GetBitContext *gb, int16_t *dst)

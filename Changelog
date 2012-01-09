@@ -2,6 +2,11 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 
+version <next>:
+
+- GSM audio parser
+
+
 version 0.8_beta2:
 
 - Automatic thread count based on detection number of (available) CPU cores

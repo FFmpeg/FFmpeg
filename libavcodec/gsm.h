@@ -1,6 +1,5 @@
 /*
- * gsm 06.10 decoder data
- * Copyright (c) 2010 Reimar Döffinger <Reimar.Doeffinger@gmx.de>
+ * GSM common header
  *
  * This file is part of Libav.
  *
@@ -19,26 +18,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_GSMDEC_DATA
-#define AVCODEC_GSMDEC_DATA
+#ifndef AVCODEC_GSM_H
+#define AVCODEC_GSM_H
 
-#include <stdint.h>
-#include "avcodec.h"
+/* bytes per block */
+#define GSM_BLOCK_SIZE    33
+#define GSM_MS_BLOCK_SIZE 65
 
-typedef struct {
-    AVFrame frame;
-    // Contains first 120 elements from the previous frame
-    // (used by long_term_synth according to the "lag"),
-    // then in the following 160 elements the current
-    // frame is constructed.
-    int16_t ref_buf[280];
-    int v[9];
-    int lar[2][8];
-    int lar_idx;
-    int msr;
-} GSMContext;
+/* samples per block */
+#define GSM_FRAME_SIZE 160
 
-extern const uint16_t ff_gsm_long_term_gain_tab[4];
-extern const int16_t ff_gsm_dequant_tab[64][8];
-
-#endif /* AVCODEC_GSMDEC_DATA */
+#endif /* AVCODEC_GSM_H */
