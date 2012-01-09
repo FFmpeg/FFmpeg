@@ -245,6 +245,18 @@ JSON based format.
 
 Each section is printed using JSON notation.
 
+This writer accepts options as a list of @var{key}=@var{value} pairs,
+separated by ":".
+
+The description of the accepted options follows.
+
+@table @option
+
+@item compact, c
+If set to 1 enable compact output, that is each section will be
+printed on a single line. Default value is 0.
+@end table
+
 For more information about JSON, see @url{http://www.json.org/}.
 
 @section xml

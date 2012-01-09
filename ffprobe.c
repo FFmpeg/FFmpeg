@@ -727,16 +727,52 @@ static const Writer csv_writer = {
 /* JSON output */
 
 typedef struct {
+    const AVClass *class;
     int multiple_entries; ///< tells if the given chapter requires multiple entries
     char *buf;
     size_t buf_size;
     int print_packets_and_frames;
     int indent_level;
+    int compact;
+    const char *item_sep, *item_start_end;
 } JSONContext;
+
+#undef OFFSET
+#define OFFSET(x) offsetof(JSONContext, x)
+
+static const AVOption json_options[]= {
+    { "compact", "enable compact output", OFFSET(compact), AV_OPT_TYPE_INT, {.dbl=0}, 0, 1 },
+    { "c",       "enable compact output", OFFSET(compact), AV_OPT_TYPE_INT, {.dbl=0}, 0, 1 },
+    { NULL }
+};
+
+static const char *json_get_name(void *ctx)
+{
+    return "json";
+}
+
+static const AVClass json_class = {
+    "JSONContext",
+    json_get_name,
+    json_options
+};
 
 static av_cold int json_init(WriterContext *wctx, const char *args, void *opaque)
 {
     JSONContext *json = wctx->priv;
+    int err;
+
+    json->class = &json_class;
+    av_opt_set_defaults(json);
+
+    if (args &&
+        (err = (av_set_options_string(json, args, "=", ":"))) < 0) {
+        av_log(wctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
+        return err;
+    }
+
+    json->item_sep       = json->compact ? ", " : ",\n";
+    json->item_start_end = json->compact ? " "  : "\n";
 
     json->buf_size = ESCAPE_INIT_BUF_SIZE;
     if (!(json->buf = av_malloc(json->buf_size)))
@@ -841,11 +877,13 @@ static void json_print_section_header(WriterContext *wctx, const char *section)
     JSON_INDENT();
     if (!json->multiple_entries)
         printf("\"%s\": ", section);
-    printf("{\n");
+    printf("{%s", json->item_start_end);
     json->indent_level++;
     /* this is required so the parser can distinguish between packets and frames */
     if (json->print_packets_and_frames) {
-        JSON_INDENT(); printf("\"type\": \"%s\",\n", section);
+        if (!json->compact)
+            JSON_INDENT();
+        printf("\"type\": \"%s\"%s", section, json->item_sep);
     }
 }
 
@@ -853,9 +891,11 @@ static void json_print_section_footer(WriterContext *wctx, const char *section)
 {
     JSONContext *json = wctx->priv;
 
-    printf("\n");
+    printf("%s", json->item_start_end);
     json->indent_level--;
-    JSON_INDENT(); printf("}");
+    if (!json->compact)
+        JSON_INDENT();
+    printf("}");
 }
 
 static inline void json_print_item_str(WriterContext *wctx,
@@ -863,14 +903,17 @@ static inline void json_print_item_str(WriterContext *wctx,
 {
     JSONContext *json = wctx->priv;
 
-    JSON_INDENT();
     printf("\"%s\":", json_escape_str(&json->buf, &json->buf_size, key,   wctx));
     printf(" \"%s\"", json_escape_str(&json->buf, &json->buf_size, value, wctx));
 }
 
 static void json_print_str(WriterContext *wctx, const char *key, const char *value)
 {
-    if (wctx->nb_item) printf(",\n");
+    JSONContext *json = wctx->priv;
+
+    if (wctx->nb_item) printf("%s", json->item_sep);
+    if (!json->compact)
+        JSON_INDENT();
     json_print_item_str(wctx, key, value);
 }
 
@@ -878,8 +921,9 @@ static void json_print_int(WriterContext *wctx, const char *key, long long int v
 {
     JSONContext *json = wctx->priv;
 
-    if (wctx->nb_item) printf(",\n");
-    JSON_INDENT();
+    if (wctx->nb_item) printf("%s", json->item_sep);
+    if (!json->compact)
+        JSON_INDENT();
     printf("\"%s\": %lld",
            json_escape_str(&json->buf, &json->buf_size, key, wctx), value);
 }
@@ -891,15 +935,23 @@ static void json_show_tags(WriterContext *wctx, AVDictionary *dict)
     int is_first = 1;
     if (!dict)
         return;
-    printf(",\n"); JSON_INDENT(); printf("\"tags\": {\n");
+    printf("%s", json->item_sep);
+    if (!json->compact)
+        JSON_INDENT();
+    printf("\"tags\": {%s", json->item_start_end);
     json->indent_level++;
     while ((tag = av_dict_get(dict, "", tag, AV_DICT_IGNORE_SUFFIX))) {
         if (is_first) is_first = 0;
-        else          printf(",\n");
+        else          printf("%s", json->item_sep);
+        if (!json->compact)
+            JSON_INDENT();
         json_print_item_str(wctx, tag->key, tag->value);
     }
     json->indent_level--;
-    printf("\n"); JSON_INDENT(); printf("}");
+    printf("%s", json->item_start_end);
+    if (!json->compact)
+        JSON_INDENT();
+    printf("}");
 }
 
 static const Writer json_writer = {
