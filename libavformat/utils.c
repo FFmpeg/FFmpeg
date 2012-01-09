@@ -2713,6 +2713,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             ic->streams[i]->codec->thread_count = 0;
         av_freep(&ic->streams[i]->info);
     }
+
+    av_dict_free(&one_thread_opt);
     return ret;
 }
 
