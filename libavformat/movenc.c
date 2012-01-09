@@ -2317,7 +2317,8 @@ static int mov_write_header(AVFormatContext *s)
 #endif
     if (t = av_dict_get(s->metadata, "creation_time", NULL, 0))
         mov->time = ff_iso8601_to_unix_time(t->value);
-    mov->time += 0x7C25B080; //1970 based -> 1904 based
+    if (mov->time)
+        mov->time += 0x7C25B080; // 1970 based -> 1904 based
 
     if (mov->chapter_track)
         mov_create_chapter_track(s, mov->chapter_track);
