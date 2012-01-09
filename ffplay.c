@@ -27,6 +27,7 @@
 #include <inttypes.h>
 #include <math.h>
 #include <limits.h>
+#include <signal.h>
 #include "libavutil/avstring.h"
 #include "libavutil/colorspace.h"
 #include "libavutil/mathematics.h"
@@ -923,6 +924,11 @@ static void do_exit(VideoState *is)
     SDL_Quit();
     av_log(NULL, AV_LOG_QUIET, "%s", "");
     exit(0);
+}
+
+static void sigterm_handler(int sig)
+{
+    exit(123);
 }
 
 static int video_open(VideoState *is, int force_set_video_mode)
@@ -3181,6 +3187,9 @@ int main(int argc, char **argv)
     avformat_network_init();
 
     init_opts();
+
+    signal(SIGINT , sigterm_handler); /* Interrupt (ANSI).    */
+    signal(SIGTERM, sigterm_handler); /* Termination (ANSI).  */
 
     show_banner(argc, argv, options);
 
