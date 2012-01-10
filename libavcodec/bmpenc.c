@@ -27,6 +27,7 @@
 
 static const uint32_t monoblack_pal[] = { 0x000000, 0xFFFFFF };
 static const uint32_t rgb565_masks[]  = { 0xF800, 0x07E0, 0x001F };
+static const uint32_t rgb444_masks[]  = { 0x0F00, 0x00F0, 0x000F };
 
 static av_cold int bmp_encode_init(AVCodecContext *avctx){
     BMPContext *s = avctx->priv_data;
@@ -39,9 +40,8 @@ static av_cold int bmp_encode_init(AVCodecContext *avctx){
         avctx->bits_per_coded_sample = 24;
         break;
     case PIX_FMT_RGB555:
-        avctx->bits_per_coded_sample = 16;
-        break;
     case PIX_FMT_RGB565:
+    case PIX_FMT_RGB444:
         avctx->bits_per_coded_sample = 16;
         break;
     case PIX_FMT_RGB8:
@@ -77,6 +77,11 @@ static int bmp_encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_s
     p->pict_type= AV_PICTURE_TYPE_I;
     p->key_frame= 1;
     switch (avctx->pix_fmt) {
+    case PIX_FMT_RGB444:
+        compression = BMP_BITFIELDS;
+        pal = rgb444_masks; // abuse pal to hold color masks
+        pal_entries = 3;
+        break;
     case PIX_FMT_RGB565:
         compression = BMP_BITFIELDS;
         pal = rgb565_masks; // abuse pal to hold color masks
@@ -158,7 +163,7 @@ AVCodec ff_bmp_encoder = {
     .encode         = bmp_encode_frame,
     .pix_fmts = (const enum PixelFormat[]){
         PIX_FMT_BGR24,
-        PIX_FMT_RGB555, PIX_FMT_RGB565,
+        PIX_FMT_RGB555, PIX_FMT_RGB444, PIX_FMT_RGB565,
         PIX_FMT_RGB8, PIX_FMT_BGR8, PIX_FMT_RGB4_BYTE, PIX_FMT_BGR4_BYTE, PIX_FMT_GRAY8, PIX_FMT_PAL8,
         PIX_FMT_MONOBLACK,
         PIX_FMT_NONE},
