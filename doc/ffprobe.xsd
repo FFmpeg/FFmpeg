@@ -55,6 +55,10 @@
       <xsd:attribute name="pkt_dts_time"  type="xsd:float"/>
       <xsd:attribute name="pkt_pos"       type="xsd:long" />
 
+      <!-- audio attributes -->
+      <xsd:attribute name="sample_fmt"             type="xsd:string"/>
+      <xsd:attribute name="nb_samples"             type="xsd:long"  />
+
       <!-- video attributes -->
       <xsd:attribute name="width"                  type="xsd:long"  />
       <xsd:attribute name="height"                 type="xsd:long"  />

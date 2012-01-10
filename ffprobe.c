@@ -1290,7 +1290,20 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream)
     const char *s;
 
     print_section_header("frame");
-    print_str("media_type",             "video");
+
+    s = av_get_media_type_string(stream->codec->codec_type);
+    if (s) print_str    ("media_type", s);
+    else   print_str_opt("media_type", "unknown");
+    print_int("key_frame",              frame->key_frame);
+    print_ts  ("pkt_pts",               frame->pkt_pts);
+    print_time("pkt_pts_time",          frame->pkt_pts, &stream->time_base);
+    print_ts  ("pkt_dts",               frame->pkt_dts);
+    print_time("pkt_dts_time",          frame->pkt_dts, &stream->time_base);
+    if (frame->pkt_pos != -1) print_fmt    ("pkt_pos", "%"PRId64, frame->pkt_pos);
+    else                      print_str_opt("pkt_pos", "N/A");
+
+    switch (stream->codec->codec_type) {
+    case AVMEDIA_TYPE_VIDEO:
     print_int("width",                  frame->width);
     print_int("height",                 frame->height);
     s = av_get_pix_fmt_name(frame->format);
@@ -1310,45 +1323,65 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream)
     print_int("top_field_first",        frame->top_field_first);
     print_int("repeat_pict",            frame->repeat_pict);
     print_int("reference",              frame->reference);
-    print_int("key_frame",              frame->key_frame);
-    print_ts  ("pkt_pts",               frame->pkt_pts);
-    print_time("pkt_pts_time",          frame->pkt_pts, &stream->time_base);
-    print_ts  ("pkt_dts",               frame->pkt_dts);
-    print_time("pkt_dts_time",          frame->pkt_dts, &stream->time_base);
-    if (frame->pkt_pos != -1) print_fmt    ("pkt_pos", "%"PRId64, frame->pkt_pos);
-    else                      print_str_opt("pkt_pos", "N/A");
+    break;
+
+    case AVMEDIA_TYPE_AUDIO:
+        s = av_get_sample_fmt_name(frame->format);
+        if (s) print_str    ("sample_fmt", s);
+        else   print_str_opt("sample_fmt", "unknown");
+        print_int("nb_samples",         frame->nb_samples);
+        break;
+    }
+
     print_section_footer("frame");
 
     av_free(pbuf.s);
     fflush(stdout);
 }
 
-static av_always_inline int get_video_frame(AVFormatContext *fmt_ctx,
-                                            AVFrame *frame, AVPacket *pkt)
+static av_always_inline int get_decoded_frame(AVFormatContext *fmt_ctx,
+                                              AVFrame *frame, int *got_frame,
+                                              AVPacket *pkt)
 {
     AVCodecContext *dec_ctx = fmt_ctx->streams[pkt->stream_index]->codec;
-    int got_picture = 0;
+    int ret = 0;
 
-    if (dec_ctx->codec_id   != CODEC_ID_NONE &&
-        dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO)
-        avcodec_decode_video2(dec_ctx, frame, &got_picture, pkt);
-    return got_picture;
+    *got_frame = 0;
+    switch (dec_ctx->codec_type) {
+    case AVMEDIA_TYPE_VIDEO:
+        ret = avcodec_decode_video2(dec_ctx, frame, got_frame, pkt);
+        break;
+
+    case AVMEDIA_TYPE_AUDIO:
+        ret = avcodec_decode_audio4(dec_ctx, frame, got_frame, pkt);
+        break;
+    }
+
+    return ret;
 }
 
 static void show_packets(WriterContext *w, AVFormatContext *fmt_ctx)
 {
-    AVPacket pkt;
+    AVPacket pkt, pkt1;
     AVFrame frame;
-    int i = 0;
+    int i = 0, ret, got_frame;
 
     av_init_packet(&pkt);
 
     while (!av_read_frame(fmt_ctx, &pkt)) {
         if (do_show_packets)
             show_packet(w, fmt_ctx, &pkt, i++);
-        if (do_show_frames &&
-            get_video_frame(fmt_ctx, &frame, &pkt)) {
-            show_frame(w, &frame, fmt_ctx->streams[pkt.stream_index]);
+        if (do_show_frames) {
+            pkt1 = pkt;
+            while (1) {
+                avcodec_get_frame_defaults(&frame);
+                ret = get_decoded_frame(fmt_ctx, &frame, &got_frame, &pkt1);
+                if (ret < 0 || !got_frame)
+                    break;
+                show_frame(w, &frame, fmt_ctx->streams[pkt.stream_index]);
+                pkt1.data += ret;
+                pkt1.size -= ret;
+            }
         }
         av_free_packet(&pkt);
     }
@@ -1358,7 +1391,7 @@ static void show_packets(WriterContext *w, AVFormatContext *fmt_ctx)
     //Flush remaining frames that are cached in the decoder
     for (i = 0; i < fmt_ctx->nb_streams; i++) {
         pkt.stream_index = i;
-        while (get_video_frame(fmt_ctx, &frame, &pkt))
+        while (get_decoded_frame(fmt_ctx, &frame, &got_frame, &pkt) >= 0 && got_frame)
             show_frame(w, &frame, fmt_ctx->streams[pkt.stream_index]);
     }
 }
