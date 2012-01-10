@@ -570,7 +570,7 @@ yuv2mono_X_c_template(SwsContext *c, const int16_t *lumFilter,
                       int y, enum PixelFormat target)
 {
     const uint8_t * const d128=dither_8x8_220[y&7];
-    uint8_t *g = c->table_gU[128] + c->table_gV[128];
+    uint8_t *g = c->table_gU[128 + YUVRGB_TABLE_HEADROOM] + c->table_gV[128 + YUVRGB_TABLE_HEADROOM];
     int i;
     unsigned acc = 0;
 
@@ -606,7 +606,7 @@ yuv2mono_2_c_template(SwsContext *c, const int16_t *buf[2],
 {
     const int16_t *buf0  = buf[0],  *buf1  = buf[1];
     const uint8_t * const d128 = dither_8x8_220[y & 7];
-    uint8_t *g = c->table_gU[128] + c->table_gV[128];
+    uint8_t *g = c->table_gU[128 + YUVRGB_TABLE_HEADROOM] + c->table_gV[128 + YUVRGB_TABLE_HEADROOM];
     int  yalpha1 = 4095 - yalpha;
     int i;
 
@@ -630,7 +630,7 @@ yuv2mono_1_c_template(SwsContext *c, const int16_t *buf0,
                       int uvalpha, int y, enum PixelFormat target)
 {
     const uint8_t * const d128 = dither_8x8_220[y & 7];
-    uint8_t *g = c->table_gU[128] + c->table_gV[128];
+    uint8_t *g = c->table_gU[128 + YUVRGB_TABLE_HEADROOM] + c->table_gV[128 + YUVRGB_TABLE_HEADROOM];
     int i;
 
     for (i = 0; i < dstW - 7; i += 8) {
@@ -1154,10 +1154,9 @@ yuv2rgb_X_c_template(SwsContext *c, const int16_t *lumFilter,
             }
         }
 
-        /* FIXME fix tables so that clipping is not needed and then use _NOCLIP*/
-        r =  c->table_rV[V];
-        g = (c->table_gU[U] + c->table_gV[V]);
-        b =  c->table_bU[U];
+        r =  c->table_rV[V + YUVRGB_TABLE_HEADROOM];
+        g = (c->table_gU[U + YUVRGB_TABLE_HEADROOM] + c->table_gV[V + YUVRGB_TABLE_HEADROOM]);
+        b =  c->table_bU[U + YUVRGB_TABLE_HEADROOM];
 
         yuv2rgb_write(dest, i, Y1, Y2, hasAlpha ? A1 : 0, hasAlpha ? A2 : 0,
                       r, g, b, y, target, hasAlpha);
@@ -1186,9 +1185,9 @@ yuv2rgb_2_c_template(SwsContext *c, const int16_t *buf[2],
         int U  = (ubuf0[i]        * uvalpha1 + ubuf1[i]        * uvalpha) >> 19;
         int V  = (vbuf0[i]        * uvalpha1 + vbuf1[i]        * uvalpha) >> 19;
         int A1, A2;
-        const void *r =  c->table_rV[V],
-                   *g = (c->table_gU[U] + c->table_gV[V]),
-                   *b =  c->table_bU[U];
+        const void *r =  c->table_rV[V + YUVRGB_TABLE_HEADROOM],
+                   *g = (c->table_gU[U + YUVRGB_TABLE_HEADROOM] + c->table_gV[V + YUVRGB_TABLE_HEADROOM]),
+                   *b =  c->table_bU[U + YUVRGB_TABLE_HEADROOM];
 
         if (hasAlpha) {
             A1 = (abuf0[i * 2    ] * yalpha1 + abuf1[i * 2    ] * yalpha) >> 19;
@@ -1218,9 +1217,9 @@ yuv2rgb_1_c_template(SwsContext *c, const int16_t *buf0,
             int U  = ubuf1[i]        >> 7;
             int V  = vbuf1[i]        >> 7;
             int A1, A2;
-            const void *r =  c->table_rV[V],
-                       *g = (c->table_gU[U] + c->table_gV[V]),
-                       *b =  c->table_bU[U];
+            const void *r =  c->table_rV[V + YUVRGB_TABLE_HEADROOM],
+                       *g = (c->table_gU[U + YUVRGB_TABLE_HEADROOM] + c->table_gV[V + YUVRGB_TABLE_HEADROOM]),
+                       *b =  c->table_bU[U + YUVRGB_TABLE_HEADROOM];
 
             if (hasAlpha) {
                 A1 = abuf0[i * 2    ] >> 7;
@@ -1237,9 +1236,9 @@ yuv2rgb_1_c_template(SwsContext *c, const int16_t *buf0,
             int U  = (ubuf0[i] + ubuf1[i]) >> 8;
             int V  = (vbuf0[i] + vbuf1[i]) >> 8;
             int A1, A2;
-            const void *r =  c->table_rV[V],
-                       *g = (c->table_gU[U] + c->table_gV[V]),
-                       *b =  c->table_bU[U];
+            const void *r =  c->table_rV[V + YUVRGB_TABLE_HEADROOM],
+                       *g = (c->table_gU[U + YUVRGB_TABLE_HEADROOM] + c->table_gV[V + YUVRGB_TABLE_HEADROOM]),
+                       *b =  c->table_bU[U + YUVRGB_TABLE_HEADROOM];
 
             if (hasAlpha) {
                 A1 = abuf0[i * 2    ] >> 7;

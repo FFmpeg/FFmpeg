@@ -34,6 +34,8 @@
 
 #define STR(s) AV_TOSTRING(s) // AV_STRINGIFY is too long
 
+#define YUVRGB_TABLE_HEADROOM 128
+
 #define FAST_BGR2YV12 // use 7-bit instead of 15-bit coefficients
 
 #define MAX_FILTER_SIZE 256
@@ -317,10 +319,10 @@ typedef struct SwsContext {
     int dstY;                     ///< Last destination vertical line output from last slice.
     int flags;                    ///< Flags passed by the user to select scaler algorithm, optimizations, subsampling, etc...
     void *yuvTable;             // pointer to the yuv->rgb table start so it can be freed()
-    uint8_t *table_rV[256];
-    uint8_t *table_gU[256];
-    int table_gV[256];
-    uint8_t *table_bU[256];
+    uint8_t *table_rV[256 + 2*YUVRGB_TABLE_HEADROOM];
+    uint8_t *table_gU[256 + 2*YUVRGB_TABLE_HEADROOM];
+    int table_gV[256 + 2*YUVRGB_TABLE_HEADROOM];
+    uint8_t *table_bU[256 + 2*YUVRGB_TABLE_HEADROOM];
 
     //Colorspace stuff
     int contrast, brightness, saturation;    // for sws_getColorspaceDetails
