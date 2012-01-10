@@ -282,18 +282,16 @@ void rgb15tobgr15(const uint8_t *src, uint8_t *dst, int src_size)
     }
 }
 
-void bgr8torgb8(const uint8_t *src, uint8_t *dst, int src_size)
+void rgb12tobgr12(const uint8_t *src, uint8_t *dst, int src_size)
 {
     int i;
-    int num_pixels = src_size;
-    for (i=0; i<num_pixels; i++) {
-        unsigned b,g,r;
-        register uint8_t rgb;
-        rgb = src[i];
-        r = (rgb&0x07);
-        g = (rgb&0x38)>>3;
-        b = (rgb&0xC0)>>6;
-        dst[i] = ((b<<1)&0x07) | ((g&0x07)<<3) | ((r&0x03)<<6);
+    int num_pixels = src_size >> 1;
+
+    for (i = 0; i < num_pixels; i++) {
+        unsigned br;
+        unsigned rgb = ((const uint16_t *)src)[i];
+        br = rgb & 0x0F0F;
+        ((uint16_t *)dst)[i] = (br >> 8) | (rgb & 0x00F0) | (br << 8);
     }
 }
 

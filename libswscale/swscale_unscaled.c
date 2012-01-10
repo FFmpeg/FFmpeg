@@ -404,8 +404,8 @@ static int rgbToRgbWrapper(SwsContext *c, const uint8_t *src[], int srcStride[],
     const enum PixelFormat dstFormat = c->dstFormat;
     const int srcBpp = (c->srcFormatBpp + 7) >> 3;
     const int dstBpp = (c->dstFormatBpp + 7) >> 3;
-    const int srcId = c->srcFormatBpp >> 2; /* 1:0, 4:1, 8:2, 15:3, 16:4, 24:6, 32:8 */
-    const int dstId = c->dstFormatBpp >> 2;
+    const int srcId = c->srcFormatBpp;
+    const int dstId = c->dstFormatBpp;
     void (*conv)(const uint8_t *src, uint8_t *dst, int src_size) = NULL;
 
 #define CONV_IS(src, dst) (srcFormat == PIX_FMT_##src && dstFormat == PIX_FMT_##dst)
@@ -427,38 +427,39 @@ static int rgbToRgbWrapper(SwsContext *c, const uint8_t *src[], int srcStride[],
     /* BGR -> BGR */
     if ((isBGRinInt(srcFormat) && isBGRinInt(dstFormat)) ||
         (isRGBinInt(srcFormat) && isRGBinInt(dstFormat))) {
-        switch (srcId | (dstId << 4)) {
-        case 0x34: conv = rgb16to15; break;
-        case 0x36: conv = rgb24to15; break;
-        case 0x38: conv = rgb32to15; break;
-        case 0x43: conv = rgb15to16; break;
-        case 0x46: conv = rgb24to16; break;
-        case 0x48: conv = rgb32to16; break;
-        case 0x63: conv = rgb15to24; break;
-        case 0x64: conv = rgb16to24; break;
-        case 0x68: conv = rgb32to24; break;
-        case 0x83: conv = rgb15to32; break;
-        case 0x84: conv = rgb16to32; break;
-        case 0x86: conv = rgb24to32; break;
+        switch (srcId | (dstId << 16)) {
+        case 0x000F0010: conv = rgb16to15; break;
+        case 0x000F0018: conv = rgb24to15; break;
+        case 0x000F0020: conv = rgb32to15; break;
+        case 0x0010000F: conv = rgb15to16; break;
+        case 0x00100018: conv = rgb24to16; break;
+        case 0x00100020: conv = rgb32to16; break;
+        case 0x0018000F: conv = rgb15to24; break;
+        case 0x00180010: conv = rgb16to24; break;
+        case 0x00180020: conv = rgb32to24; break;
+        case 0x0020000F: conv = rgb15to32; break;
+        case 0x00200010: conv = rgb16to32; break;
+        case 0x00200018: conv = rgb24to32; break;
         }
     } else if ((isBGRinInt(srcFormat) && isRGBinInt(dstFormat)) ||
                (isRGBinInt(srcFormat) && isBGRinInt(dstFormat))) {
-        switch (srcId | (dstId << 4)) {
-        case 0x33: conv = rgb15tobgr15; break;
-        case 0x34: conv = rgb16tobgr15; break;
-        case 0x36: conv = rgb24tobgr15; break;
-        case 0x38: conv = rgb32tobgr15; break;
-        case 0x43: conv = rgb15tobgr16; break;
-        case 0x44: conv = rgb16tobgr16; break;
-        case 0x46: conv = rgb24tobgr16; break;
-        case 0x48: conv = rgb32tobgr16; break;
-        case 0x63: conv = rgb15tobgr24; break;
-        case 0x64: conv = rgb16tobgr24; break;
-        case 0x66: conv = rgb24tobgr24; break;
-        case 0x68: conv = rgb32tobgr24; break;
-        case 0x83: conv = rgb15tobgr32; break;
-        case 0x84: conv = rgb16tobgr32; break;
-        case 0x86: conv = rgb24tobgr32; break;
+        switch (srcId | (dstId << 16)) {
+        case 0x000C000C: conv = rgb12tobgr12; break;
+        case 0x000F000F: conv = rgb15tobgr15; break;
+        case 0x000F0010: conv = rgb16tobgr15; break;
+        case 0x000F0018: conv = rgb24tobgr15; break;
+        case 0x000F0020: conv = rgb32tobgr15; break;
+        case 0x0010000F: conv = rgb15tobgr16; break;
+        case 0x00100010: conv = rgb16tobgr16; break;
+        case 0x00100018: conv = rgb24tobgr16; break;
+        case 0x00100020: conv = rgb32tobgr16; break;
+        case 0x0018000F: conv = rgb15tobgr24; break;
+        case 0x00180010: conv = rgb16tobgr24; break;
+        case 0x00180018: conv = rgb24tobgr24; break;
+        case 0x00180020: conv = rgb32tobgr24; break;
+        case 0x0020000F: conv = rgb15tobgr32; break;
+        case 0x00200010: conv = rgb16tobgr32; break;
+        case 0x00200018: conv = rgb24tobgr32; break;
         }
     }
 
