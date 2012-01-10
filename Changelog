@@ -5,6 +5,8 @@ releases are sorted from youngest to oldest.
 version <next>:
 
 - Automatic thread count based on detection number of (available) CPU cores
+- Deprecate libpostproc. If desired, the switch --enable-postproc will
+  enable it but it may be removed in a later Libav release.
 
 
 version 0.8_beta1:

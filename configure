@@ -89,7 +89,7 @@ Configuration options:
   --disable-avcodec        disable libavcodec build
   --disable-avformat       disable libavformat build
   --disable-swscale        disable libswscale build
-  --disable-postproc       disable libpostproc build
+  --enable-postproc        enable libpostproc build (deprecated) [no]
   --disable-avfilter       disable video filter support [no]
   --disable-pthreads       disable pthreads [auto]
   --disable-w32threads     disable Win32 threads [auto]
@@ -1680,7 +1680,6 @@ enable avdevice
 enable avfilter
 enable avformat
 enable avutil
-enable postproc
 enable swscale
 
 enable asm
