@@ -144,7 +144,7 @@ static int load_ipmovie_packet(IPMVEContext *s, AVIOContext *pb,
             (s->audio_chunk_size / s->audio_channels / (s->audio_bits / 8));
         else
             s->audio_frame_count +=
-                (s->audio_chunk_size - 6) / s->audio_channels;
+                (s->audio_chunk_size - 6 - s->audio_channels) / s->audio_channels;
 
         av_dlog(NULL, "sending audio frame with pts %"PRId64" (%d audio frames)\n",
                 pkt->pts, s->audio_frame_count);
