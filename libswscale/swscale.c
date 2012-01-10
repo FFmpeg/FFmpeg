@@ -1133,12 +1133,6 @@ yuv2rgb_X_c_template(SwsContext *c, const int16_t *lumFilter,
         Y2 >>= 19;
         U  >>= 19;
         V  >>= 19;
-        if ((Y1 | Y2 | U | V) & 0x100) {
-            Y1 = av_clip_uint8(Y1);
-            Y2 = av_clip_uint8(Y2);
-            U  = av_clip_uint8(U);
-            V  = av_clip_uint8(V);
-        }
         if (hasAlpha) {
             A1 = 1 << 18;
             A2 = 1 << 18;
