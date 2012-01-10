@@ -2,6 +2,16 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 
+version 0.5.7:
+- vorbis: An additional defense in the Vorbis codec. (CVE-2011-3895)
+- vorbisdec: Fix decoding bug with channel handling.
+- matroskadec: Fix a bug where a pointer was cached to an array that might
+  later move due to a realloc(). (CVE-2011-3893)
+- vorbis: Avoid some out-of-bounds reads. (CVE-2011-3893)
+- vp3: fix oob read for negative tokens and memleaks on error, (CVE-2011-3892)
+- vp3: fix streams with non-zero last coefficient.
+
+
 version 0.5.6:
 - svq1dec: call avcodec_set_dimensions() after dimensions changed. (NGS00148, CVE-2011-4579)
 - vmd: fix segfaults on corruped streams (CVE-2011-4364)
