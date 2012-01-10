@@ -33,7 +33,7 @@
 
 static av_cold int pcm_encode_init(AVCodecContext *avctx)
 {
-    avctx->frame_size = 1;
+    avctx->frame_size = 0;
     switch(avctx->codec->id) {
     case CODEC_ID_PCM_ALAW:
         pcm_alaw_tableinit();
