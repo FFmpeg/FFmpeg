@@ -3237,6 +3237,14 @@ See also the function @code{av_parse_time()}.
 
 If not specified, or the expressed duration is negative, the video is
 supposed to be generated forever.
+
+@item decimals, n
+Set the number of decimals to show in the timestamp, only used in the
+@code{testsrc} source.
+
+The displayed timestamp value will correspond to the original
+timestamp value multiplied by the power of 10 of the specified
+value. Default value is 0.
 @end table
 
 For example the following:

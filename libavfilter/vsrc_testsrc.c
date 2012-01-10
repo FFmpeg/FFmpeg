@@ -47,6 +47,7 @@ typedef struct {
     char *rate;                 ///< video frame rate
     char *duration;             ///< total duration of the generated video
     AVRational sar;             ///< sample aspect ratio
+    int nb_decimals;
 
     void (* fill_picture_fn)(AVFilterContext *ctx, AVFilterBufferRef *picref);
 
@@ -64,6 +65,8 @@ static const AVOption testsrc_options[]= {
     { "duration", "set video duration", OFFSET(duration), AV_OPT_TYPE_STRING, {.str = NULL},      0, 0 },
     { "d",        "set video duration", OFFSET(duration), AV_OPT_TYPE_STRING, {.str = NULL},      0, 0 },
     { "sar",      "set video sample aspect ratio", OFFSET(sar), AV_OPT_TYPE_RATIONAL, {.dbl= 1},  0, INT_MAX },
+    { "decimals", "set number of decimals to show", OFFSET(nb_decimals), AV_OPT_TYPE_INT, {.dbl=0},  INT_MIN, INT_MAX },
+    { "n",        "set number of decimals to show", OFFSET(nb_decimals), AV_OPT_TYPE_INT, {.dbl=0},  INT_MIN, INT_MAX },
     { NULL },
 };
 
@@ -95,6 +98,12 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     if ((test->duration) && (ret = av_parse_time(&duration, test->duration, 1)) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Invalid duration: '%s'\n", test->duration);
         return ret;
+    }
+
+    if (test->nb_decimals && strcmp(ctx->filter->name, "testsrc")) {
+        av_log(ctx, AV_LOG_WARNING,
+               "Option 'decimals' is ignored with source '%s'\n",
+               ctx->filter->name);
     }
 
     test->time_base.num = frame_rate_q.den;
@@ -361,7 +370,11 @@ static void test_fill_picture(AVFilterContext *ctx, AVFilterBufferRef *picref)
     /* draw digits */
     seg_size = width / 80;
     if (seg_size >= 1 && height >= 13 * seg_size) {
-        second = test->nb_frame * test->time_base.num / test->time_base.den;
+        double time = av_q2d(test->time_base) * test->nb_frame *
+                      pow(10, test->nb_decimals);
+        if (time > INT_MAX)
+            return;
+        second = (int)time;
         x = width - (width - seg_size * 64) / 2;
         y = (height - seg_size * 13) / 2;
         p = data + (x*3 + y * picref->linesize[0]);
