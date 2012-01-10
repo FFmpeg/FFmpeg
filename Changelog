@@ -1,6 +1,16 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 0.6.5:
+- vorbis: An additional defense in the Vorbis codec. (CVE-2011-3895)
+- vorbisdec: Fix decoding bug with channel handling.
+- matroskadec: Fix a bug where a pointer was cached to an array that might
+  later move due to a realloc(). (CVE-2011-3893)
+- vorbis: Avoid some out-of-bounds reads. (CVE-2011-3893)
+- vp3: fix oob read for negative tokens and memleaks on error, (CVE-2011-3892)
+- vp3: fix streams with non-zero last coefficient.
+
+
 version 0.6.4:
 - 4xm: Add a check in decode_i_frame to prevent buffer overreads
 - wma: initialize prev_block_len_bits, next_block_len_bits, and block_len_bits.
