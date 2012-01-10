@@ -485,6 +485,13 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
             return -1;
         }
         break;
+    case TIFF_TILE_BYTE_COUNTS:
+    case TIFF_TILE_LENGTH:
+    case TIFF_TILE_OFFSETS:
+    case TIFF_TILE_WIDTH:
+        av_log(s->avctx, AV_LOG_ERROR, "Tiled images are not supported\n");
+        return AVERROR_PATCHWELCOME;
+        break;
     case TIFF_PREDICTOR:
         s->predictor = value;
         break;
