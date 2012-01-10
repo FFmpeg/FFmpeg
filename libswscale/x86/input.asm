@@ -135,7 +135,7 @@ cglobal %2ToY, 3, 3, %1, dst, src, w
 %macro YUYV_TO_UV_FN 2-3
 cglobal %2ToUV, 3, 4, %1, dstU, dstV, src, w
 %ifdef ARCH_X86_64
-    movsxd         wq, r4m
+    movsxd         wq, dword r4m
 %else ; x86-32
     mov            wq, r4m
 %endif
@@ -190,7 +190,7 @@ cglobal %2ToUV, 3, 4, %1, dstU, dstV, src, w
 %macro NVXX_TO_UV_FN 2
 cglobal %2ToUV, 3, 4, %1, dstU, dstV, src, w
 %ifdef ARCH_X86_64
-    movsxd         wq, r4m
+    movsxd         wq, dword r4m
 %else ; x86-32
     mov            wq, r4m
 %endif
