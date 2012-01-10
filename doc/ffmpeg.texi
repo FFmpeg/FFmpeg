@@ -835,6 +835,18 @@ possible, for example, to turn two separate mono streams into a single stereo
 stream. However spliting a stereo stream into two single channel mono streams
 is possible.
 
+If you need this feature, a possible workaround is to use the @emph{amerge}
+filter. For example, if you need to merge a media (here @file{input.mkv}) with 2
+mono audio streams into one single stereo channel audio stream (and keep the
+video stream):
+
+@example
+ffmpeg -i input.mkv -f lavfi -i "
+amovie=input.mkv:si=1 [a1];
+amovie=input.mkv:si=2 [a2];
+[a1][a2] amerge" -c:a pcm_s16le -c:v copy output.mkv
+@end example
+
 @item -map_metadata[:@var{metadata_spec_out}] @var{infile}[:@var{metadata_spec_in}] (@emph{output,per-metadata})
 Set metadata information of the next output file from @var{infile}. Note that
 those are file indices (zero-based), not filenames.

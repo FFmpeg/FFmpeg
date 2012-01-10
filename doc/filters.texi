@@ -189,6 +189,23 @@ Example: merge two mono files into a stereo stream:
 amovie=left.wav [l] ; amovie=right.mp3 [r] ; [l] [r] amerge
 @end example
 
+If you need to do multiple merges (for instance multiple mono audio streams in
+a single video media), you can do:
+@example
+ffmpeg -f lavfi -i "
+amovie=input.mkv:si=0 [a0];
+amovie=input.mkv:si=1 [a1];
+amovie=input.mkv:si=2 [a2];
+amovie=input.mkv:si=3 [a3];
+amovie=input.mkv:si=4 [a4];
+amovie=input.mkv:si=5 [a5];
+[a0][a1] amerge [x0];
+[x0][a2] amerge [x1];
+[x1][a3] amerge [x2];
+[x2][a4] amerge [x3];
+[x3][a5] amerge" -c:a pcm_s16le output.mkv
+@end example
+
 @section anull
 
 Pass the audio source unchanged to the output.
