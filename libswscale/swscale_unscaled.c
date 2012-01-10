@@ -444,6 +444,7 @@ static int rgbToRgbWrapper(SwsContext *c, const uint8_t *src[], int srcStride[],
     } else if ((isBGRinInt(srcFormat) && isRGBinInt(dstFormat)) ||
                (isRGBinInt(srcFormat) && isBGRinInt(dstFormat))) {
         switch (srcId | (dstId << 16)) {
+        case 0x000C000C: conv = rgb12tobgr12; break;
         case 0x000F000F: conv = rgb15tobgr15; break;
         case 0x000F0010: conv = rgb16tobgr15; break;
         case 0x000F0018: conv = rgb24tobgr15; break;
