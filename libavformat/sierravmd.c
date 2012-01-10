@@ -206,7 +206,7 @@ static int vmd_read_header(AVFormatContext *s,
                 vmd->frame_table[total_frames].pts = current_audio_pts;
                 total_frames++;
                 if(!current_audio_pts)
-                    current_audio_pts += sound_buffers;
+                    current_audio_pts += sound_buffers - 1;
                 else
                     current_audio_pts++;
                 break;
