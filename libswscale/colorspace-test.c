@@ -27,19 +27,19 @@
 #include "swscale.h"
 #include "rgb2rgb.h"
 
-#define SIZE 1000
+#define SIZE    1000
 #define srcByte 0x55
 #define dstByte 0xBB
 
-#define FUNC(s,d,n) {s,d,#n,n}
+#define FUNC(s, d, n) { s, d, #n, n }
 
 int main(int argc, char **argv)
 {
     int i, funcNum;
     uint8_t *srcBuffer = av_malloc(SIZE);
     uint8_t *dstBuffer = av_malloc(SIZE);
-    int failedNum=0;
-    int passedNum=0;
+    int failedNum      = 0;
+    int passedNum      = 0;
 
     if (!srcBuffer || !dstBuffer)
         return -1;
@@ -47,7 +47,7 @@ int main(int argc, char **argv)
     av_log(NULL, AV_LOG_INFO, "memory corruption test ...\n");
     sws_rgb2rgb_init();
 
-    for(funcNum=0; ; funcNum++) {
+    for (funcNum = 0; ; funcNum++) {
         struct func_info_s {
             int src_bpp;
             int dst_bpp;
@@ -85,67 +85,78 @@ int main(int argc, char **argv)
             FUNC(0, 0, NULL)
         };
         int width;
-        int failed=0;
-        int srcBpp=0;
-        int dstBpp=0;
+        int failed = 0;
+        int srcBpp = 0;
+        int dstBpp = 0;
 
-        if (!func_info[funcNum].func) break;
+        if (!func_info[funcNum].func)
+            break;
 
-        av_log(NULL, AV_LOG_INFO,".");
+        av_log(NULL, AV_LOG_INFO, ".");
         memset(srcBuffer, srcByte, SIZE);
 
-        for(width=63; width>0; width--) {
+        for (width = 63; width > 0; width--) {
             int dstOffset;
-            for(dstOffset=128; dstOffset<196; dstOffset+=4) {
+            for (dstOffset = 128; dstOffset < 196; dstOffset += 4) {
                 int srcOffset;
                 memset(dstBuffer, dstByte, SIZE);
 
-                for(srcOffset=128; srcOffset<196; srcOffset+=4) {
-                    uint8_t *src= srcBuffer+srcOffset;
-                    uint8_t *dst= dstBuffer+dstOffset;
-                    const char *name=NULL;
+                for (srcOffset = 128; srcOffset < 196; srcOffset += 4) {
+                    uint8_t *src     = srcBuffer + srcOffset;
+                    uint8_t *dst     = dstBuffer + dstOffset;
+                    const char *name = NULL;
 
-                    if(failed) break; //don't fill the screen with shit ...
+                    // don't fill the screen with shit ...
+                    if (failed)
+                        break;
 
                     srcBpp = func_info[funcNum].src_bpp;
                     dstBpp = func_info[funcNum].dst_bpp;
                     name   = func_info[funcNum].name;
 
-                    func_info[funcNum].func(src, dst, width*srcBpp);
+                    func_info[funcNum].func(src, dst, width * srcBpp);
 
-                    if(!srcBpp) break;
+                    if (!srcBpp)
+                        break;
 
-                    for(i=0; i<SIZE; i++) {
-                        if(srcBuffer[i]!=srcByte) {
-                            av_log(NULL, AV_LOG_INFO, "src damaged at %d w:%d src:%d dst:%d %s\n",
+                    for (i = 0; i < SIZE; i++) {
+                        if (srcBuffer[i] != srcByte) {
+                            av_log(NULL, AV_LOG_INFO,
+                                   "src damaged at %d w:%d src:%d dst:%d %s\n",
                                    i, width, srcOffset, dstOffset, name);
-                            failed=1;
+                            failed = 1;
                             break;
                         }
                     }
-                    for(i=0; i<dstOffset; i++) {
-                        if(dstBuffer[i]!=dstByte) {
-                            av_log(NULL, AV_LOG_INFO, "dst damaged at %d w:%d src:%d dst:%d %s\n",
+                    for (i = 0; i < dstOffset; i++) {
+                        if (dstBuffer[i] != dstByte) {
+                            av_log(NULL, AV_LOG_INFO,
+                                   "dst damaged at %d w:%d src:%d dst:%d %s\n",
                                    i, width, srcOffset, dstOffset, name);
-                            failed=1;
+                            failed = 1;
                             break;
                         }
                     }
-                    for(i=dstOffset + width*dstBpp; i<SIZE; i++) {
-                        if(dstBuffer[i]!=dstByte) {
-                            av_log(NULL, AV_LOG_INFO, "dst damaged at %d w:%d src:%d dst:%d %s\n",
+                    for (i = dstOffset + width * dstBpp; i < SIZE; i++) {
+                        if (dstBuffer[i] != dstByte) {
+                            av_log(NULL, AV_LOG_INFO,
+                                   "dst damaged at %d w:%d src:%d dst:%d %s\n",
                                    i, width, srcOffset, dstOffset, name);
-                            failed=1;
+                            failed = 1;
                             break;
                         }
                     }
                 }
             }
         }
-        if(failed) failedNum++;
-        else if(srcBpp) passedNum++;
+        if (failed)
+            failedNum++;
+        else if (srcBpp)
+            passedNum++;
     }
 
-    av_log(NULL, AV_LOG_INFO, "\n%d converters passed, %d converters randomly overwrote memory\n", passedNum, failedNum);
+    av_log(NULL, AV_LOG_INFO,
+           "\n%d converters passed, %d converters randomly overwrote memory\n",
+           passedNum, failedNum);
     return failedNum;
 }

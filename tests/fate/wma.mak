@@ -8,6 +8,11 @@ fate-wmapro-5.1: CMD = pcm -i $(SAMPLES)/wmapro/latin_192_mulitchannel_cut.wma
 fate-wmapro-5.1: CMP = oneoff
 fate-wmapro-5.1: REF = $(SAMPLES)/wmapro/latin_192_mulitchannel_cut.pcm
 
+FATE_WMA += fate-wmapro-ism
+fate-wmapro-ism: CMD = pcm -i $(SAMPLES)/isom/vc1-wmapro.ism -vn
+fate-wmapro-ism: CMP = oneoff
+fate-wmapro-ism: REF = $(SAMPLES)/isom/vc1-wmapro.pcm
+
 FATE_WMA += fate-wmavoice-7k
 fate-wmavoice-7k: CMD = pcm -i $(SAMPLES)/wmavoice/streaming_CBR-7K.wma
 fate-wmavoice-7k: CMP = stddev

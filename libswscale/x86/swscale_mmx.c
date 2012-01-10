@@ -307,6 +307,26 @@ VSCALE_FUNCS(sse2, sse2);
 VSCALE_FUNC(16, sse4);
 VSCALE_FUNCS(avx, avx);
 
+#define INPUT_UV_FUNC(fmt, opt) \
+extern void ff_ ## fmt ## ToUV_ ## opt(uint8_t *dstU, uint8_t *dstV, \
+                                       const uint8_t *src, const uint8_t *unused1, \
+                                       int w, uint32_t *unused2)
+#define INPUT_FUNC(fmt, opt) \
+extern void ff_ ## fmt ## ToY_  ## opt(uint8_t *dst, const uint8_t *src, \
+                                       int w, uint32_t *unused); \
+    INPUT_UV_FUNC(fmt, opt)
+#define INPUT_FUNCS(opt) \
+    INPUT_FUNC(uyvy, opt); \
+    INPUT_FUNC(yuyv, opt); \
+    INPUT_UV_FUNC(nv12, opt); \
+    INPUT_UV_FUNC(nv21, opt)
+
+#if ARCH_X86_32
+INPUT_FUNCS(mmx);
+#endif
+INPUT_FUNCS(sse2);
+INPUT_FUNCS(avx);
+
 void ff_sws_init_swScale_mmx(SwsContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
@@ -366,6 +386,30 @@ switch(c->dstBpc){ \
         ASSIGN_MMX_SCALE_FUNC(c->hyScale, c->hLumFilterSize, mmx, mmx);
         ASSIGN_MMX_SCALE_FUNC(c->hcScale, c->hChrFilterSize, mmx, mmx);
         ASSIGN_VSCALE_FUNC(c->yuv2plane1, mmx, mmx2, cpu_flags & AV_CPU_FLAG_MMX2);
+
+        switch (c->srcFormat) {
+        case PIX_FMT_Y400A:
+            c->lumToYV12 = ff_yuyvToY_mmx;
+            if (c->alpPixBuf)
+                c->alpToYV12 = ff_uyvyToY_mmx;
+            break;
+        case PIX_FMT_YUYV422:
+            c->lumToYV12 = ff_yuyvToY_mmx;
+            c->chrToYV12 = ff_yuyvToUV_mmx;
+            break;
+        case PIX_FMT_UYVY422:
+            c->lumToYV12 = ff_uyvyToY_mmx;
+            c->chrToYV12 = ff_uyvyToUV_mmx;
+            break;
+        case PIX_FMT_NV12:
+            c->chrToYV12 = ff_nv12ToUV_mmx;
+            break;
+        case PIX_FMT_NV21:
+            c->chrToYV12 = ff_nv21ToUV_mmx;
+            break;
+        default:
+            break;
+        }
     }
     if (cpu_flags & AV_CPU_FLAG_MMX2) {
         ASSIGN_VSCALEX_FUNC(c->yuv2planeX, mmx2,);
@@ -384,6 +428,28 @@ switch(c->dstBpc){ \
         ASSIGN_SSE_SCALE_FUNC(c->hcScale, c->hChrFilterSize, sse2, sse2);
         ASSIGN_VSCALEX_FUNC(c->yuv2planeX, sse2,);
         ASSIGN_VSCALE_FUNC(c->yuv2plane1, sse2, sse2, 1);
+
+        switch (c->srcFormat) {
+        case PIX_FMT_Y400A:
+            c->lumToYV12 = ff_yuyvToY_sse2;
+            if (c->alpPixBuf)
+                c->alpToYV12 = ff_uyvyToY_sse2;
+            break;
+        case PIX_FMT_YUYV422:
+            c->lumToYV12 = ff_yuyvToY_sse2;
+            c->chrToYV12 = ff_yuyvToUV_sse2;
+            break;
+        case PIX_FMT_UYVY422:
+            c->lumToYV12 = ff_uyvyToY_sse2;
+            c->chrToYV12 = ff_uyvyToUV_sse2;
+            break;
+        case PIX_FMT_NV12:
+            c->chrToYV12 = ff_nv12ToUV_sse2;
+            break;
+        case PIX_FMT_NV21:
+            c->chrToYV12 = ff_nv21ToUV_sse2;
+            break;
+        }
     }
     if (cpu_flags & AV_CPU_FLAG_SSSE3) {
         ASSIGN_SSE_SCALE_FUNC(c->hyScale, c->hLumFilterSize, ssse3, ssse3);
@@ -402,6 +468,23 @@ switch(c->dstBpc){ \
     if (cpu_flags & AV_CPU_FLAG_AVX) {
         ASSIGN_VSCALEX_FUNC(c->yuv2planeX, avx,);
         ASSIGN_VSCALE_FUNC(c->yuv2plane1, avx, avx, 1);
+
+        switch (c->srcFormat) {
+        case PIX_FMT_YUYV422:
+            c->chrToYV12 = ff_yuyvToUV_avx;
+            break;
+        case PIX_FMT_UYVY422:
+            c->chrToYV12 = ff_uyvyToUV_avx;
+            break;
+        case PIX_FMT_NV12:
+            c->chrToYV12 = ff_nv12ToUV_avx;
+            break;
+        case PIX_FMT_NV21:
+            c->chrToYV12 = ff_nv21ToUV_avx;
+            break;
+        default:
+            break;
+        }
     }
 #endif
 }

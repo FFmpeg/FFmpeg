@@ -49,6 +49,9 @@ fate-cvid: CMD = framecrc -i $(SAMPLES)/cvid/laracroft-cinepak-partial.avi -an
 FATE_VIDEO += fate-cvid-palette
 fate-cvid-palette: CMD = framecrc -i $(SAMPLES)/cvid/catfight-cvid-pal8-partial.mov -pix_fmt rgb24 -an
 
+FATE_VIDEO += fate-cvid-grayscale
+fate-cvid-grayscale: CMD = framecrc -i $(SAMPLES)/cvid/pcitva15.avi -an
+
 FATE_VIDEO += fate-cyberia-c93
 fate-cyberia-c93: CMD = framecrc -i $(SAMPLES)/cyberia-c93/intro1.c93 -t 3 -pix_fmt rgb24
 

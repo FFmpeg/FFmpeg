@@ -69,6 +69,12 @@ static inline int round_sample(int64_t *sum)
 #   define FIXHR(a)       ((int)((a) * (1LL<<32) + 0.5))
 #endif
 
+/** Window for MDCT. Actually only the elements in [0,17] and
+    [MDCT_BUF_SIZE/2, MDCT_BUF_SIZE/2 + 17] are actually used. The rest
+    is just to preserve alignment for SIMD implementations.
+*/
+DECLARE_ALIGNED(16, INTFLOAT, RENAME(ff_mdct_win))[8][MDCT_BUF_SIZE];
+
 DECLARE_ALIGNED(16, MPA_INT, RENAME(ff_mpa_synth_window))[512+256];
 
 #define SUM8(op, sum, w, p)               \
@@ -204,6 +210,7 @@ void av_cold RENAME(ff_mpa_synth_init)(MPA_INT *window)
             window[512 - i] = v;
     }
 
+
     // Needed for avoiding shuffles in ASM implementations
     for(i=0; i < 8; i++)
         for(j=0; j < 16; j++)
@@ -214,6 +221,48 @@ void av_cold RENAME(ff_mpa_synth_init)(MPA_INT *window)
             window[512+128+16*i+j] = window[64*i+48-j];
 }
 
+void RENAME(ff_init_mpadsp_tabs)(void)
+{
+    int i, j;
+    /* compute mdct windows */
+    for (i = 0; i < 36; i++) {
+        for (j = 0; j < 4; j++) {
+            double d;
+
+            if (j == 2 && i % 3 != 1)
+                continue;
+
+            d = sin(M_PI * (i + 0.5) / 36.0);
+            if (j == 1) {
+                if      (i >= 30) d = 0;
+                else if (i >= 24) d = sin(M_PI * (i - 18 + 0.5) / 12.0);
+                else if (i >= 18) d = 1;
+            } else if (j == 3) {
+                if      (i <   6) d = 0;
+                else if (i <  12) d = sin(M_PI * (i -  6 + 0.5) / 12.0);
+                else if (i <  18) d = 1;
+            }
+            //merge last stage of imdct into the window coefficients
+            d *= 0.5 / cos(M_PI * (2 * i + 19) / 72);
+
+            if (j == 2)
+                RENAME(ff_mdct_win)[j][i/3] = FIXHR((d / (1<<5)));
+            else {
+                int idx = i < 18 ? i : i + (MDCT_BUF_SIZE/2 - 18);
+                RENAME(ff_mdct_win)[j][idx] = FIXHR((d / (1<<5)));
+            }
+        }
+    }
+
+    /* NOTE: we do frequency inversion adter the MDCT by changing
+        the sign of the right window coefs */
+    for (j = 0; j < 4; j++) {
+        for (i = 0; i < MDCT_BUF_SIZE; i += 2) {
+            RENAME(ff_mdct_win)[j + 4][i    ] =  RENAME(ff_mdct_win)[j][i    ];
+            RENAME(ff_mdct_win)[j + 4][i + 1] = -RENAME(ff_mdct_win)[j][i + 1];
+        }
+    }
+}
 /* cos(pi*i/18) */
 #define C1 FIXHR(0.98480775301220805936/2)
 #define C2 FIXHR(0.93969262078590838405/2)
@@ -227,43 +276,42 @@ void av_cold RENAME(ff_mpa_synth_init)(MPA_INT *window)
 /* 0.5 / cos(pi*(2*i+1)/36) */
 static const INTFLOAT icos36[9] = {
     FIXR(0.50190991877167369479),
-    FIXR(0.51763809020504152469),
+    FIXR(0.51763809020504152469), //0
     FIXR(0.55168895948124587824),
     FIXR(0.61038729438072803416),
-    FIXR(0.70710678118654752439),
+    FIXR(0.70710678118654752439), //1
     FIXR(0.87172339781054900991),
     FIXR(1.18310079157624925896),
-    FIXR(1.93185165257813657349),
+    FIXR(1.93185165257813657349), //2
     FIXR(5.73685662283492756461),
 };
 
 /* 0.5 / cos(pi*(2*i+1)/36) */
 static const INTFLOAT icos36h[9] = {
     FIXHR(0.50190991877167369479/2),
-    FIXHR(0.51763809020504152469/2),
+    FIXHR(0.51763809020504152469/2), //0
     FIXHR(0.55168895948124587824/2),
     FIXHR(0.61038729438072803416/2),
-    FIXHR(0.70710678118654752439/2),
+    FIXHR(0.70710678118654752439/2), //1
     FIXHR(0.87172339781054900991/2),
     FIXHR(1.18310079157624925896/4),
-    FIXHR(1.93185165257813657349/4),
+    FIXHR(1.93185165257813657349/4), //2
+//    FIXHR(5.73685662283492756461),
 };
 
-
 /* using Lee like decomposition followed by hand coded 9 points DCT */
-void RENAME(ff_imdct36)(INTFLOAT *out, INTFLOAT *buf, INTFLOAT *in,
-                        INTFLOAT *win)
+static void imdct36(INTFLOAT *out, INTFLOAT *buf, INTFLOAT *in, INTFLOAT *win)
 {
     int i, j;
     INTFLOAT t0, t1, t2, t3, s0, s1, s2, s3;
     INTFLOAT tmp[18], *tmp1, *in1;
 
-    for(i=17;i>=1;i--)
+    for (i = 17; i >= 1; i--)
         in[i] += in[i-1];
-    for(i=17;i>=3;i-=2)
+    for (i = 17; i >= 3; i -= 2)
         in[i] += in[i-2];
 
-    for(j=0;j<2;j++) {
+    for (j = 0; j < 2; j++) {
         tmp1 = tmp + j;
         in1 = in + j;
 
@@ -295,7 +343,7 @@ void RENAME(ff_imdct36)(INTFLOAT *out, INTFLOAT *buf, INTFLOAT *in,
     }
 
     i = 0;
-    for(j=0;j<4;j++) {
+    for (j = 0; j < 4; j++) {
         t0 = tmp[i];
         t1 = tmp[i + 2];
         s0 = t1 + t0;
@@ -303,22 +351,22 @@ void RENAME(ff_imdct36)(INTFLOAT *out, INTFLOAT *buf, INTFLOAT *in,
 
         t2 = tmp[i + 1];
         t3 = tmp[i + 3];
-        s1 = MULH3(t3 + t2, icos36h[j], 2);
-        s3 = MULLx(t3 - t2, icos36[8 - j], FRAC_BITS);
+        s1 = MULH3(t3 + t2, icos36h[    j], 2);
+        s3 = MULLx(t3 - t2, icos36 [8 - j], FRAC_BITS);
 
         t0 = s0 + s1;
         t1 = s0 - s1;
-        out[(9 + j)*SBLIMIT] =  MULH3(t1, win[9 + j], 1) + buf[9 + j];
-        out[(8 - j)*SBLIMIT] =  MULH3(t1, win[8 - j], 1) + buf[8 - j];
-        buf[9 + j] = MULH3(t0, win[20 + 9 + j], 1);
-        buf[8 - j] = MULH3(t0, win[20 + 8 - j], 1);
+        out[(9 + j) * SBLIMIT] = MULH3(t1, win[     9 + j], 1) + buf[4*(9 + j)];
+        out[(8 - j) * SBLIMIT] = MULH3(t1, win[     8 - j], 1) + buf[4*(8 - j)];
+        buf[4 * ( 9 + j     )] = MULH3(t0, win[MDCT_BUF_SIZE/2 + 9 + j], 1);
+        buf[4 * ( 8 - j     )] = MULH3(t0, win[MDCT_BUF_SIZE/2 + 8 - j], 1);
 
         t0 = s2 + s3;
         t1 = s2 - s3;
-        out[(9 + 8 - j)*SBLIMIT] =  MULH3(t1, win[9 + 8 - j], 1) + buf[9 + 8 - j];
-        out[(        j)*SBLIMIT] =  MULH3(t1, win[        j], 1) + buf[        j];
-        buf[9 + 8 - j] = MULH3(t0, win[20 + 9 + 8 - j], 1);
-        buf[      + j] = MULH3(t0, win[20         + j], 1);
+        out[(9 + 8 - j) * SBLIMIT] = MULH3(t1, win[     9 + 8 - j], 1) + buf[4*(9 + 8 - j)];
+        out[         j  * SBLIMIT] = MULH3(t1, win[             j], 1) + buf[4*(        j)];
+        buf[4 * ( 9 + 8 - j     )] = MULH3(t0, win[MDCT_BUF_SIZE/2 + 9 + 8 - j], 1);
+        buf[4 * (         j     )] = MULH3(t0, win[MDCT_BUF_SIZE/2         + j], 1);
         i += 4;
     }
 
@@ -326,9 +374,28 @@ void RENAME(ff_imdct36)(INTFLOAT *out, INTFLOAT *buf, INTFLOAT *in,
     s1 = MULH3(tmp[17], icos36h[4], 2);
     t0 = s0 + s1;
     t1 = s0 - s1;
-    out[(9 + 4)*SBLIMIT] =  MULH3(t1, win[9 + 4], 1) + buf[9 + 4];
-    out[(8 - 4)*SBLIMIT] =  MULH3(t1, win[8 - 4], 1) + buf[8 - 4];
-    buf[9 + 4] = MULH3(t0, win[20 + 9 + 4], 1);
-    buf[8 - 4] = MULH3(t0, win[20 + 8 - 4], 1);
+    out[(9 + 4) * SBLIMIT] = MULH3(t1, win[     9 + 4], 1) + buf[4*(9 + 4)];
+    out[(8 - 4) * SBLIMIT] = MULH3(t1, win[     8 - 4], 1) + buf[4*(8 - 4)];
+    buf[4 * ( 9 + 4     )] = MULH3(t0, win[MDCT_BUF_SIZE/2 + 9 + 4], 1);
+    buf[4 * ( 8 - 4     )] = MULH3(t0, win[MDCT_BUF_SIZE/2 + 8 - 4], 1);
+}
+
+void RENAME(ff_imdct36_blocks)(INTFLOAT *out, INTFLOAT *buf, INTFLOAT *in,
+                               int count, int switch_point, int block_type)
+{
+    int j;
+    for (j=0 ; j < count; j++) {
+        /* apply window & overlap with previous buffer */
+
+        /* select window */
+        int win_idx = (switch_point && j < 2) ? 0 : block_type;
+        INTFLOAT *win = RENAME(ff_mdct_win)[win_idx + (4 & -(j & 1))];
+
+        imdct36(out, buf, in, win);
+
+        in  += 18;
+        buf += ((j&3) != 3 ? 1 : (72-3));
+        out++;
+    }
 }
 

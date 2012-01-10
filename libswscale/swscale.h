@@ -135,7 +135,6 @@ const char *swscale_license(void);
  */
 const int *sws_getCoefficients(int colorspace);
 
-
 // when used for filters they must have an odd number of elements
 // coeffs cannot be shared between vectors
 typedef struct {
@@ -235,9 +234,9 @@ struct SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat
  *                  the destination image
  * @return          the height of the output slice
  */
-int sws_scale(struct SwsContext *c, const uint8_t* const srcSlice[],
+int sws_scale(struct SwsContext *c, const uint8_t *const srcSlice[],
               const int srcStride[], int srcSliceY, int srcSliceH,
-              uint8_t* const dst[], const int dstStride[]);
+              uint8_t *const dst[], const int dstStride[]);
 
 /**
  * @param inv_table the yuv2rgb coefficients, normally ff_yuv2rgb_coeffs[x]

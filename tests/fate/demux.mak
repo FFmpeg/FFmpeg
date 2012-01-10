@@ -79,11 +79,20 @@ fate-sierra-vmd: CMD = framecrc -i $(SAMPLES)/vmd/12.vmd -vsync 0 -pix_fmt rgb24
 FATE_DEMUX += fate-siff
 fate-siff: CMD = framecrc -i $(SAMPLES)/SIFF/INTRO_B.VB -t 3 -pix_fmt rgb24
 
+FATE_DEMUX += fate-smjpeg
+fate-smjpeg: CMD = framecrc -i $(SAMPLES)/smjpeg/scenwin.mjpg -vcodec copy
+
 FATE_DEMUX += fate-westwood-aud
 fate-westwood-aud: CMD = md5 -i $(SAMPLES)/westwood-aud/excellent.aud -f s16le
 
+FATE_DEMUX += fate-wtv-demux
+fate-wtv-demux: CMD = framecrc -i $(SAMPLES)/wtv/law-and-order-partial.wtv -vcodec copy -acodec copy
+
 FATE_DEMUX += fate-xmv-demux
 fate-xmv-demux: CMD = framecrc -i $(SAMPLES)/xmv/logos1p.fmv -vcodec copy -acodec copy
+
+FATE_DEMUX += fate-xwma-demux
+fate-xwma-demux: CMD = crc -i $(SAMPLES)/xwma/ergon.xwma -acodec copy
 
 FATE_TESTS += $(FATE_DEMUX)
 fate-demux: $(FATE_DEMUX)

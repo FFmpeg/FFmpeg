@@ -4,6 +4,8 @@ abgr                cff82561a074874027ac1cc896fd2730
 argb                756dd1eaa5baca2238ce23dbdc452684
 bgr0                ff6e1dfa26d4c2ada3a59e8b0b600d1f
 bgr24               e44192347a45586c6c157e3059610cd1
+bgr444be            c23768338d76693f0da76e8a9b6fd8df
+bgr444le            846c431a47bfb745437941bde768469c
 bgr48be             390d3058a12a99c2b153ed7922508bea
 bgr48le             39fe06feb4ec1d9730dccc04a0cfac4c
 bgr4_byte           ee1d35a7baf8e9016891929a2f565c0b
@@ -23,6 +25,8 @@ nv21                69c699510ff1fb777b118ebee1002f14
 pal8                6324fa058e1bc157ed7132bfe4022317
 rgb0                1bd6f54ad067503ac9783a70062c8f87
 rgb24               13ff53ebeab74dc05492836f1cfbd2c1
+rgb444be            46e466b2709f62b2fffc63708063eaaf
+rgb444le            f0c57a48be671428e2e53c9b54a6c4e2
 rgb48be             8fac63787a711886030f8e056872b488
 rgb48le             ab92f2763a2eb264c3870cc758f97149
 rgb4_byte           d81ffd3add95842a618eec81024f0b5c

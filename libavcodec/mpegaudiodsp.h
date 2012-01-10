@@ -20,6 +20,7 @@
 #define AVCODEC_MPEGAUDIODSP_H
 
 #include <stdint.h>
+#include "libavutil/common.h"
 
 typedef struct MPADSPContext {
     void (*apply_window_float)(float *synth_buf, float *window,
@@ -28,8 +29,11 @@ typedef struct MPADSPContext {
                                int *dither_state, int16_t *samples, int incr);
     void (*dct32_float)(float *dst, const float *src);
     void (*dct32_fixed)(int *dst, const int *src);
-    void (*imdct36_float)(float *out, float *buf, float *in, float *win);
-    void (*imdct36_fixed)(int *out, int *buf, int *in, int *win);
+
+    void (*imdct36_blocks_float)(float *out, float *buf, float *in,
+                                 int count, int switch_point, int block_type);
+    void (*imdct36_blocks_fixed)(int *out, int *buf, int *in,
+                                 int count, int switch_point, int block_type);
 } MPADSPContext;
 
 void ff_mpadsp_init(MPADSPContext *s);
@@ -63,7 +67,19 @@ void ff_mpadsp_apply_window_fixed(int32_t *synth_buf, int32_t *window,
                                   int *dither_state, int16_t *samples,
                                   int incr);
 
-void ff_imdct36_fixed(int *out, int *buf, int *in, int *win);
-void ff_imdct36_float(float *out, float *buf, float *in, float *win);
+void ff_imdct36_blocks_float(float *out, float *buf, float *in,
+                             int count, int switch_point, int block_type);
+
+void ff_imdct36_blocks_fixed(int *out, int *buf, int *in,
+                             int count, int switch_point, int block_type);
+
+void ff_init_mpadsp_tabs_float(void);
+void ff_init_mpadsp_tabs_fixed(void);
+
+/** For SSE implementation, MDCT_BUF_SIZE/2 should be 128-bit aligned */
+#define MDCT_BUF_SIZE FFALIGN(36, 2*4)
+
+extern int ff_mdct_win_fixed[8][MDCT_BUF_SIZE];
+extern float ff_mdct_win_float[8][MDCT_BUF_SIZE];
 
 #endif /* AVCODEC_MPEGAUDIODSP_H */

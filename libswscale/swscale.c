@@ -1637,12 +1637,16 @@ rgb16_32_wrapper(PIX_FMT_RGB32,    rgb32,   0, 0, 16, 0,   0x00FF, 0xFF00, 0xFF0
 rgb16_32_wrapper(PIX_FMT_RGB32_1,  rgb321,  0, 0, 16, 8,   0x00FF, 0xFF00, 0xFF0000,  8, 0,  8, RGB2YUV_SHIFT+8)
 rgb16_32_wrapper(PIX_FMT_BGR565LE, bgr16le, 0, 0,  0, 0,   0x001F, 0x07E0,   0xF800, 11, 5,  0, RGB2YUV_SHIFT+8)
 rgb16_32_wrapper(PIX_FMT_BGR555LE, bgr15le, 0, 0,  0, 0,   0x001F, 0x03E0,   0x7C00, 10, 5,  0, RGB2YUV_SHIFT+7)
+rgb16_32_wrapper(PIX_FMT_BGR444LE, bgr12le, 0, 0,  0, 0,   0x000F, 0x00F0,   0x0F00,  8, 4,  0, RGB2YUV_SHIFT+4)
 rgb16_32_wrapper(PIX_FMT_RGB565LE, rgb16le, 0, 0,  0, 0,   0xF800, 0x07E0,   0x001F,  0, 5, 11, RGB2YUV_SHIFT+8)
 rgb16_32_wrapper(PIX_FMT_RGB555LE, rgb15le, 0, 0,  0, 0,   0x7C00, 0x03E0,   0x001F,  0, 5, 10, RGB2YUV_SHIFT+7)
+rgb16_32_wrapper(PIX_FMT_RGB444LE, rgb12le, 0, 0,  0, 0,   0x0F00, 0x00F0,   0x000F,  0, 4,  8, RGB2YUV_SHIFT+4)
 rgb16_32_wrapper(PIX_FMT_BGR565BE, bgr16be, 0, 0,  0, 0,   0x001F, 0x07E0,   0xF800, 11, 5,  0, RGB2YUV_SHIFT+8)
 rgb16_32_wrapper(PIX_FMT_BGR555BE, bgr15be, 0, 0,  0, 0,   0x001F, 0x03E0,   0x7C00, 10, 5,  0, RGB2YUV_SHIFT+7)
+rgb16_32_wrapper(PIX_FMT_BGR444BE, bgr12be, 0, 0,  0, 0,   0x000F, 0x00F0,   0x0F00,  8, 4,  0, RGB2YUV_SHIFT+4)
 rgb16_32_wrapper(PIX_FMT_RGB565BE, rgb16be, 0, 0,  0, 0,   0xF800, 0x07E0,   0x001F,  0, 5, 11, RGB2YUV_SHIFT+8)
 rgb16_32_wrapper(PIX_FMT_RGB555BE, rgb15be, 0, 0,  0, 0,   0x7C00, 0x03E0,   0x001F,  0, 5, 10, RGB2YUV_SHIFT+7)
+rgb16_32_wrapper(PIX_FMT_RGB444BE, rgb12be, 0, 0,  0, 0,   0x0F00, 0x00F0,   0x000F,  0, 4,  8, RGB2YUV_SHIFT+4)
 
 static void gbr24pToUV_half_c(uint16_t *dstU, uint16_t *dstV,
                          const uint8_t *gsrc, const uint8_t *bsrc, const uint8_t *rsrc,
@@ -2887,6 +2891,8 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
         case PIX_FMT_BGR565BE: c->chrToYV12 = bgr16beToUV_half_c; break;
         case PIX_FMT_BGR555LE: c->chrToYV12 = bgr15leToUV_half_c; break;
         case PIX_FMT_BGR555BE: c->chrToYV12 = bgr15beToUV_half_c; break;
+        case PIX_FMT_BGR444LE: c->chrToYV12 = bgr12leToUV_half_c; break;
+        case PIX_FMT_BGR444BE: c->chrToYV12 = bgr12beToUV_half_c; break;
         case PIX_FMT_BGR32   : c->chrToYV12 = rgb32ToUV_half_c;   break;
         case PIX_FMT_BGR32_1 : c->chrToYV12 = rgb321ToUV_half_c;  break;
         case PIX_FMT_RGB24   : c->chrToYV12 = rgb24ToUV_half_c;   break;
@@ -2895,6 +2901,8 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
         case PIX_FMT_RGB555LE: c->chrToYV12 = rgb15leToUV_half_c; break;
         case PIX_FMT_RGB555BE: c->chrToYV12 = rgb15beToUV_half_c; break;
         case PIX_FMT_GBR24P  : c->chrToYV12 = gbr24pToUV_half_c;  break;
+        case PIX_FMT_RGB444LE: c->chrToYV12 = rgb12leToUV_half_c; break;
+        case PIX_FMT_RGB444BE: c->chrToYV12 = rgb12beToUV_half_c; break;
         }
     } else {
         switch(srcFormat) {
@@ -2909,6 +2917,8 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
         case PIX_FMT_BGR565BE: c->chrToYV12 = bgr16beToUV_c; break;
         case PIX_FMT_BGR555LE: c->chrToYV12 = bgr15leToUV_c; break;
         case PIX_FMT_BGR555BE: c->chrToYV12 = bgr15beToUV_c; break;
+        case PIX_FMT_BGR444LE: c->chrToYV12 = bgr12leToUV_c; break;
+        case PIX_FMT_BGR444BE: c->chrToYV12 = bgr12beToUV_c; break;
         case PIX_FMT_BGR32   : c->chrToYV12 = rgb32ToUV_c;   break;
         case PIX_FMT_BGR32_1 : c->chrToYV12 = rgb321ToUV_c;  break;
         case PIX_FMT_RGB24   : c->chrToYV12 = rgb24ToUV_c;   break;
@@ -2916,6 +2926,8 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
         case PIX_FMT_RGB565BE: c->chrToYV12 = rgb16beToUV_c; break;
         case PIX_FMT_RGB555LE: c->chrToYV12 = rgb15leToUV_c; break;
         case PIX_FMT_RGB555BE: c->chrToYV12 = rgb15beToUV_c; break;
+        case PIX_FMT_RGB444LE: c->chrToYV12 = rgb12leToUV_c; break;
+        case PIX_FMT_RGB444BE: c->chrToYV12 = rgb12beToUV_c; break;
         }
     }
 
@@ -2960,11 +2972,15 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
     case PIX_FMT_BGR565BE : c->lumToYV12 = bgr16beToY_c; break;
     case PIX_FMT_BGR555LE : c->lumToYV12 = bgr15leToY_c; break;
     case PIX_FMT_BGR555BE : c->lumToYV12 = bgr15beToY_c; break;
+    case PIX_FMT_BGR444LE : c->lumToYV12 = bgr12leToY_c; break;
+    case PIX_FMT_BGR444BE : c->lumToYV12 = bgr12beToY_c; break;
     case PIX_FMT_RGB24    : c->lumToYV12 = rgb24ToY_c;   break;
     case PIX_FMT_RGB565LE : c->lumToYV12 = rgb16leToY_c; break;
     case PIX_FMT_RGB565BE : c->lumToYV12 = rgb16beToY_c; break;
     case PIX_FMT_RGB555LE : c->lumToYV12 = rgb15leToY_c; break;
     case PIX_FMT_RGB555BE : c->lumToYV12 = rgb15beToY_c; break;
+    case PIX_FMT_RGB444LE : c->lumToYV12 = rgb12leToY_c; break;
+    case PIX_FMT_RGB444BE : c->lumToYV12 = rgb12beToY_c; break;
     case PIX_FMT_RGB8     :
     case PIX_FMT_BGR8     :
     case PIX_FMT_PAL8     :

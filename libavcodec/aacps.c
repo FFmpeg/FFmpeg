@@ -223,7 +223,7 @@ int ff_ps_read_data(AVCodecContext *avctx, GetBitContext *gb_host, PSContext *ps
             cnt -= 2 + ps_read_extension_data(gb, ps, ps_extension_id);
         }
         if (cnt < 0) {
-            av_log(avctx, AV_LOG_ERROR, "ps extension overflow %d", cnt);
+            av_log(avctx, AV_LOG_ERROR, "ps extension overflow %d\n", cnt);
             goto err;
         }
         skip_bits(gb, cnt);

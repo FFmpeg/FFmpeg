@@ -132,10 +132,6 @@ static uint16_t band_index_long[9][23];
 static INTFLOAT is_table[2][16];
 static INTFLOAT is_table_lsf[2][2][16];
 static INTFLOAT csa_table[8][4];
-/** Window for MDCT. Note that only the component [0,17] and [20,37] are used,
-    the components 18 and 19 are there only to assure 128-bit alignment for asm
- */
-DECLARE_ALIGNED(16, static INTFLOAT, mdct_win)[8][40];
 
 static int16_t division_tab3[1<<6 ];
 static int16_t division_tab5[1<<8 ];
@@ -421,45 +417,6 @@ static av_cold void decode_init_static(void)
         csa_table[i][2] = ca + cs;
         csa_table[i][3] = ca - cs;
 #endif
-    }
-
-    /* compute mdct windows */
-    for (i = 0; i < 36; i++) {
-        for (j = 0; j < 4; j++) {
-            double d;
-
-            if (j == 2 && i % 3 != 1)
-                continue;
-
-            d = sin(M_PI * (i + 0.5) / 36.0);
-            if (j == 1) {
-                if      (i >= 30) d = 0;
-                else if (i >= 24) d = sin(M_PI * (i - 18 + 0.5) / 12.0);
-                else if (i >= 18) d = 1;
-            } else if (j == 3) {
-                if      (i <   6) d = 0;
-                else if (i <  12) d = sin(M_PI * (i -  6 + 0.5) / 12.0);
-                else if (i <  18) d = 1;
-            }
-            //merge last stage of imdct into the window coefficients
-            d *= 0.5 / cos(M_PI * (2 * i + 19) / 72);
-
-            if (j == 2)
-                mdct_win[j][i/3] = FIXHR((d / (1<<5)));
-            else {
-                int idx = i < 18 ? i : i + 2;
-                mdct_win[j][idx] = FIXHR((d / (1<<5)));
-            }
-        }
-    }
-
-    /* NOTE: we do frequency inversion adter the MDCT by changing
-        the sign of the right window coefs */
-    for (j = 0; j < 4; j++) {
-        for (i = 0; i < 40; i += 2) {
-            mdct_win[j + 4][i    ] =  mdct_win[j][i    ];
-            mdct_win[j + 4][i + 1] = -mdct_win[j][i + 1];
-        }
     }
 }
 
@@ -1284,59 +1241,53 @@ static void compute_imdct(MPADecodeContext *s, GranuleDef *g,
         mdct_long_end = sblimit;
     }
 
-    buf = mdct_buf;
-    ptr = g->sb_hybrid;
-    for (j = 0; j < mdct_long_end; j++) {
-        int win_idx = (g->switch_point && j < 2) ? 0 : g->block_type;
-        /* apply window & overlap with previous buffer */
-        out_ptr = sb_samples + j;
-        /* select window */
-        win = mdct_win[win_idx + (4 & -(j & 1))];
-        s->mpadsp.RENAME(imdct36)(out_ptr, buf, ptr, win);
-        out_ptr += 18 * SBLIMIT;
-        ptr     += 18;
-        buf     += 18;
-    }
+    s->mpadsp.RENAME(imdct36_blocks)(sb_samples, mdct_buf, g->sb_hybrid,
+                                     mdct_long_end, g->switch_point,
+                                     g->block_type);
+
+    buf = mdct_buf + 4*18*(mdct_long_end >> 2) + (mdct_long_end & 3);
+    ptr = g->sb_hybrid + 18 * mdct_long_end;
+
     for (j = mdct_long_end; j < sblimit; j++) {
         /* select frequency inversion */
-        win     = mdct_win[2 + (4  & -(j & 1))];
+        win     = RENAME(ff_mdct_win)[2 + (4  & -(j & 1))];
         out_ptr = sb_samples + j;
 
         for (i = 0; i < 6; i++) {
-            *out_ptr = buf[i];
+            *out_ptr = buf[4*i];
             out_ptr += SBLIMIT;
         }
         imdct12(out2, ptr + 0);
         for (i = 0; i < 6; i++) {
-            *out_ptr     = MULH3(out2[i    ], win[i    ], 1) + buf[i + 6*1];
-            buf[i + 6*2] = MULH3(out2[i + 6], win[i + 6], 1);
+            *out_ptr     = MULH3(out2[i    ], win[i    ], 1) + buf[4*(i + 6*1)];
+            buf[4*(i + 6*2)] = MULH3(out2[i + 6], win[i + 6], 1);
             out_ptr += SBLIMIT;
         }
         imdct12(out2, ptr + 1);
         for (i = 0; i < 6; i++) {
-            *out_ptr     = MULH3(out2[i    ], win[i    ], 1) + buf[i + 6*2];
-            buf[i + 6*0] = MULH3(out2[i + 6], win[i + 6], 1);
+            *out_ptr     = MULH3(out2[i    ], win[i    ], 1) + buf[4*(i + 6*2)];
+            buf[4*(i + 6*0)] = MULH3(out2[i + 6], win[i + 6], 1);
             out_ptr += SBLIMIT;
         }
         imdct12(out2, ptr + 2);
         for (i = 0; i < 6; i++) {
-            buf[i + 6*0] = MULH3(out2[i    ], win[i    ], 1) + buf[i + 6*0];
-            buf[i + 6*1] = MULH3(out2[i + 6], win[i + 6], 1);
-            buf[i + 6*2] = 0;
+            buf[4*(i + 6*0)] = MULH3(out2[i    ], win[i    ], 1) + buf[4*(i + 6*0)];
+            buf[4*(i + 6*1)] = MULH3(out2[i + 6], win[i + 6], 1);
+            buf[4*(i + 6*2)] = 0;
         }
         ptr += 18;
-        buf += 18;
+        buf += (j&3) != 3 ? 1 : (4*18-3);
     }
     /* zero bands */
     for (j = sblimit; j < SBLIMIT; j++) {
         /* overlap */
         out_ptr = sb_samples + j;
         for (i = 0; i < 18; i++) {
-            *out_ptr = buf[i];
-            buf[i]   = 0;
+            *out_ptr = buf[4*i];
+            buf[4*i]   = 0;
             out_ptr += SBLIMIT;
         }
-        buf += 18;
+        buf += (j&3) != 3 ? 1 : (4*18-3);
     }
 }
 

@@ -163,6 +163,19 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
     }
 }
 
+static int count_channels(enum ChannelPosition che_pos[4][MAX_ELEM_ID])
+{
+    int i, type, sum = 0;
+    for (i = 0; i < MAX_ELEM_ID; i++) {
+        for (type = 0; type < 4; type++) {
+            sum += (1 + (type == TYPE_CPE)) *
+                (che_pos[type][i] != AAC_CHANNEL_OFF &&
+                 che_pos[type][i] != AAC_CHANNEL_CC);
+        }
+    }
+    return sum;
+}
+
 /**
  * Check for the channel element in the current channel position configuration.
  * If it exists, make sure the appropriate element is allocated and map the
@@ -437,6 +450,12 @@ static int decode_ga_specific_config(AACContext *ac, AVCodecContext *avctx,
         if ((ret = set_default_channel_config(avctx, new_che_pos, channel_config)))
             return ret;
     }
+
+    if (count_channels(new_che_pos) > 1) {
+        m4ac->ps = 0;
+    } else if (m4ac->sbr == 1 && m4ac->ps == -1)
+        m4ac->ps = 1;
+
     if (ac && (ret = output_configure(ac, ac->che_pos, new_che_pos, channel_config, OC_GLOBAL_HDR)))
         return ret;
 
@@ -495,8 +514,6 @@ static int decode_audio_specific_config(AACContext *ac,
         av_log(avctx, AV_LOG_ERROR, "invalid sampling rate index %d\n", m4ac->sampling_index);
         return -1;
     }
-    if (m4ac->sbr == 1 && m4ac->ps == -1)
-        m4ac->ps = 1;
 
     skip_bits_long(&gb, i);
 
