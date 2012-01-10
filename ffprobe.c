@@ -1304,26 +1304,26 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream)
 
     switch (stream->codec->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
-    print_int("width",                  frame->width);
-    print_int("height",                 frame->height);
-    s = av_get_pix_fmt_name(frame->format);
-    if (s) print_str    ("pix_fmt", s);
-    else   print_str_opt("pix_fmt", "unknown");
-    if (frame->sample_aspect_ratio.num) {
-        print_fmt("sample_aspect_ratio", "%d:%d",
-                  frame->sample_aspect_ratio.num,
-                  frame->sample_aspect_ratio.den);
-    } else {
-        print_str_opt("sample_aspect_ratio", "N/A");
-    }
-    print_fmt("pict_type",              "%c", av_get_picture_type_char(frame->pict_type));
-    print_int("coded_picture_number",   frame->coded_picture_number);
-    print_int("display_picture_number", frame->display_picture_number);
-    print_int("interlaced_frame",       frame->interlaced_frame);
-    print_int("top_field_first",        frame->top_field_first);
-    print_int("repeat_pict",            frame->repeat_pict);
-    print_int("reference",              frame->reference);
-    break;
+        print_int("width",                  frame->width);
+        print_int("height",                 frame->height);
+        s = av_get_pix_fmt_name(frame->format);
+        if (s) print_str    ("pix_fmt", s);
+        else   print_str_opt("pix_fmt", "unknown");
+        if (frame->sample_aspect_ratio.num) {
+            print_fmt("sample_aspect_ratio", "%d:%d",
+                      frame->sample_aspect_ratio.num,
+                      frame->sample_aspect_ratio.den);
+        } else {
+            print_str_opt("sample_aspect_ratio", "N/A");
+        }
+        print_fmt("pict_type",              "%c", av_get_picture_type_char(frame->pict_type));
+        print_int("coded_picture_number",   frame->coded_picture_number);
+        print_int("display_picture_number", frame->display_picture_number);
+        print_int("interlaced_frame",       frame->interlaced_frame);
+        print_int("top_field_first",        frame->top_field_first);
+        print_int("repeat_pict",            frame->repeat_pict);
+        print_int("reference",              frame->reference);
+        break;
 
     case AVMEDIA_TYPE_AUDIO:
         s = av_get_sample_fmt_name(frame->format);
