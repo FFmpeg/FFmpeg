@@ -37,6 +37,9 @@ static av_cold int bmp_encode_init(AVCodecContext *avctx){
     avctx->coded_frame = (AVFrame*)&s->picture;
 
     switch (avctx->pix_fmt) {
+    case PIX_FMT_BGRA:
+        avctx->bits_per_coded_sample = 32;
+        break;
     case PIX_FMT_BGR24:
         avctx->bits_per_coded_sample = 24;
         break;
@@ -167,8 +170,8 @@ AVCodec ff_bmp_encoder = {
     .init           = bmp_encode_init,
     .encode         = bmp_encode_frame,
     .pix_fmts = (const enum PixelFormat[]){
-        PIX_FMT_BGR24,
-        PIX_FMT_RGB555, PIX_FMT_RGB444, PIX_FMT_RGB565,
+        PIX_FMT_BGRA, PIX_FMT_BGR24,
+        PIX_FMT_RGB565, PIX_FMT_RGB555, PIX_FMT_RGB444,
         PIX_FMT_RGB8, PIX_FMT_BGR8, PIX_FMT_RGB4_BYTE, PIX_FMT_BGR4_BYTE, PIX_FMT_GRAY8, PIX_FMT_PAL8,
         PIX_FMT_MONOBLACK,
         PIX_FMT_NONE},
