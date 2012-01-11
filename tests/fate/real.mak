@@ -18,22 +18,25 @@ fate-rv30: CMD = framecrc -flags +bitexact -dct fastint -idct simple -i $(SAMPLE
 FATE_TESTS += fate-real-rv40
 fate-real-rv40: CMD = framecrc -i $(SAMPLES)/real/spygames-2MB.rmvb -t 10 -an -vsync 0
 
-FATE_TESTS += fate-sipr-5k0
+FATE_SIPR += fate-sipr-5k0
 fate-sipr-5k0: CMD = pcm -i $(SAMPLES)/sipr/sipr_5k0.rm
 fate-sipr-5k0: CMP = oneoff
 fate-sipr-5k0: REF = $(SAMPLES)/sipr/sipr_5k0.pcm
 
-FATE_TESTS += fate-sipr-6k5
+FATE_SIPR += fate-sipr-6k5
 fate-sipr-6k5: CMD = pcm -i $(SAMPLES)/sipr/sipr_6k5.rm
 fate-sipr-6k5: CMP = oneoff
 fate-sipr-6k5: REF = $(SAMPLES)/sipr/sipr_6k5.pcm
 
-FATE_TESTS += fate-sipr-8k5
+FATE_SIPR += fate-sipr-8k5
 fate-sipr-8k5: CMD = pcm -i $(SAMPLES)/sipr/sipr_8k5.rm
 fate-sipr-8k5: CMP = oneoff
 fate-sipr-8k5: REF = $(SAMPLES)/sipr/sipr_8k5.pcm
 
-FATE_TESTS += fate-sipr-16k
+FATE_SIPR += fate-sipr-16k
 fate-sipr-16k: CMD = pcm -i $(SAMPLES)/sipr/sipr_16k.rm
 fate-sipr-16k: CMP = oneoff
 fate-sipr-16k: REF = $(SAMPLES)/sipr/sipr_16k.pcm
+
+FATE_TESTS += $(FATE_SIPR)
+fate-sipr: $(FATE_SIPR)
