@@ -77,6 +77,11 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
         color_space = CLRSPC_SRGB;
         numcomps = 4;
         break;
+    case PIX_FMT_RGB48:
+        color_space = CLRSPC_SRGB;
+        numcomps = 3;
+        bpp = 16;
+        break;
     case PIX_FMT_YUV420P:
         color_space = CLRSPC_SYCC;
         numcomps = 3;
@@ -207,6 +212,32 @@ static int libopenjpeg_copy_rgba(AVCodecContext *avctx, AVFrame *frame, opj_imag
     return 1;
 }
 
+static int libopenjpeg_copy_rgb16(AVCodecContext *avctx, AVFrame *frame, opj_image_t *image, int numcomps)
+{
+    int compno;
+    int x;
+    int y;
+    uint16_t *frame_ptr = (uint16_t*)frame->data[0];
+
+    av_assert0(numcomps == 3);
+
+    for (compno = 0; compno < numcomps; ++compno) {
+        if (image->comps[compno].w > frame->linesize[0] / numcomps) {
+            return 0;
+        }
+    }
+
+    for (compno = 0; compno < numcomps; ++compno) {
+        for (y = 0; y < avctx->height; ++y) {
+            for (x = 0; x < avctx->width; ++x) {
+                image->comps[compno].data[y * avctx->width + x] = frame_ptr[y * frame->linesize[0] / 2 + x * numcomps + compno];
+            }
+        }
+    }
+
+    return 1;
+}
+
 static int libopenjpeg_copy_yuv8(AVCodecContext *avctx, AVFrame *frame, opj_image_t *image)
 {
     int compno;
@@ -292,6 +323,9 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf
     case PIX_FMT_RGBA:
         cpyresult = libopenjpeg_copy_rgba(avctx, frame, image, 4);
         break;
+    case PIX_FMT_RGB48:
+        cpyresult = libopenjpeg_copy_rgb16(avctx, frame, image, 3);
+        break;
     case PIX_FMT_YUV420P:
     case PIX_FMT_YUV422P:
     case PIX_FMT_YUV440P:
@@ -366,7 +400,7 @@ AVCodec ff_libopenjpeg_encoder = {
     .encode         = libopenjpeg_encode_frame,
     .close          = libopenjpeg_encode_close,
     .capabilities   = 0,
-    .pix_fmts = (const enum PixelFormat[]){PIX_FMT_RGB24,PIX_FMT_RGBA,PIX_FMT_GRAY8,
+    .pix_fmts = (const enum PixelFormat[]){PIX_FMT_RGB24,PIX_FMT_RGBA,PIX_FMT_RGB48,PIX_FMT_GRAY8,
                                            PIX_FMT_YUV420P,PIX_FMT_YUV422P,PIX_FMT_YUVA420P,
                                            PIX_FMT_YUV440P,PIX_FMT_YUV444P,
                                            PIX_FMT_YUV420P9,PIX_FMT_YUV422P9,PIX_FMT_YUV444P9,
