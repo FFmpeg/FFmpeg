@@ -119,5 +119,6 @@ AVCodec ff_libvpx_decoder = {
     .init           = vp8_init,
     .close          = vp8_free,
     .decode         = vp8_decode,
-    .long_name = NULL_IF_CONFIG_SMALL("libvpx VP8"),
+    .capabilities   = CODEC_CAP_AUTO_THREADS,
+    .long_name      = NULL_IF_CONFIG_SMALL("libvpx VP8"),
 };

@@ -13,6 +13,7 @@ version next:
 - tinterlace video filter
 - astreamsync audio filter
 - amerge audio filter
+- GSM audio parser
 - Automatic thread count based on detection number of (available) CPU cores
 - y41p Brooktree Uncompressed 4:1:1 12-bit encoder and decoder
 - ffprobe -show_error option
@@ -22,6 +23,8 @@ version next:
 - ffprobe -show_frames option
 - silencedetect audio filter
 - ffprobe -show_program_version, -show_library_versions, -show_versions options
+- rv34: frame-level multi-threading
+- optimized iMDCT transform on x86 using SSE for for mpegaudiodec
 
 
 version 0.9:
