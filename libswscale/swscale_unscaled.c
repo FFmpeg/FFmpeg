@@ -762,7 +762,10 @@ void ff_get_unscaled_swscale(SwsContext *c)
         && srcFormat != PIX_FMT_RGB48BE   && dstFormat != PIX_FMT_RGB48BE
         && srcFormat != PIX_FMT_BGR48LE   && dstFormat != PIX_FMT_BGR48LE
         && srcFormat != PIX_FMT_BGR48BE   && dstFormat != PIX_FMT_BGR48BE
-        && (!needsDither || (c->flags&(SWS_FAST_BILINEAR|SWS_POINT))))
+        && (!needsDither || (c->flags&(SWS_FAST_BILINEAR|SWS_POINT)))
+        && (!(av_pix_fmt_descriptors[srcFormat].flags & PIX_FMT_BE) == !HAVE_BIGENDIAN || (c->srcFormatBpp+7)/8!=2)
+        && (!(av_pix_fmt_descriptors[dstFormat].flags & PIX_FMT_BE) == !HAVE_BIGENDIAN || (c->dstFormatBpp+7)/8!=2)
+    )
         c->swScale= rgbToRgbWrapper;
 
 #define isByteRGB(f) (\
