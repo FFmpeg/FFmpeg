@@ -38,7 +38,6 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/time.h>
-#include <poll.h>
 #if HAVE_SYS_VIDEOIO_H
 #include <sys/videoio.h>
 #else
@@ -55,7 +54,6 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/avstring.h"
-#include "libavutil/mathematics.h"
 
 #if CONFIG_LIBV4L2
 #include <libv4l2.h>
@@ -81,7 +79,6 @@ struct video_data {
     int frame_format; /* V4L2_PIX_FMT_* */
     int width, height;
     int frame_size;
-    int timeout;
     int interlaced;
     int top_field_first;
 
@@ -462,15 +459,7 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
         .memory = V4L2_MEMORY_MMAP
     };
     struct buff_data *buf_descriptor;
-    struct pollfd p = { .fd = s->fd, .events = POLLIN };
     int res;
-
-    res = poll(&p, 1, s->timeout);
-    if (res < 0)
-        return AVERROR(errno);
-
-    if (!(p.revents & (POLLIN | POLLERR | POLLHUP)))
-        return AVERROR(EAGAIN);
 
     /* FIXME: Some special treatment might be needed in case of loss of signal... */
     while ((res = v4l2_ioctl(s->fd, VIDIOC_DQBUF, &buf)) < 0 && (errno == EINTR));
@@ -657,10 +646,6 @@ static int v4l2_set_parameters(AVFormatContext *s1, AVFormatParameters *ap)
     }
     s1->streams[0]->codec->time_base.den = tpf->denominator;
     s1->streams[0]->codec->time_base.num = tpf->numerator;
-
-    s->timeout = 100 +
-        av_rescale_q(1, s1->streams[0]->codec->time_base,
-                        (AVRational){1, 1000});
 
     return 0;
 }
