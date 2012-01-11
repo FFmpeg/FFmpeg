@@ -1046,7 +1046,7 @@ AVCodec ff_jpeg2000_encoder = {
     .capabilities= CODEC_CAP_EXPERIMENTAL,
     .long_name = NULL_IF_CONFIG_SMALL("JPEG 2000"),
     .pix_fmts =
-        (enum PixelFormat[]) {PIX_FMT_RGB24, PIX_FMT_YUV444P, PIX_FMT_GRAY8,
+        (const enum PixelFormat[]) {PIX_FMT_RGB24, PIX_FMT_YUV444P, PIX_FMT_GRAY8,
 /*                              PIX_FMT_YUV420P,
                               PIX_FMT_YUV422P, PIX_FMT_YUV444P,
                               PIX_FMT_YUV410P, PIX_FMT_YUV411P,*/
