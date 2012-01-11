@@ -1349,7 +1349,7 @@ static void show_packets(WriterContext *w, AVFormatContext *fmt_ctx)
         if (do_show_frames &&
             get_video_frame(fmt_ctx, &frame, &pkt)) {
             show_frame(w, &frame, fmt_ctx->streams[pkt.stream_index]);
-            av_destruct_packet(&pkt);
+            av_free_packet(&pkt);
         }
     }
     av_init_packet(&pkt);
