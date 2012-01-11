@@ -7,9 +7,6 @@ fate-aea-demux: CMD = crc -i $(SAMPLES)/aea/chirp.aea -acodec copy
 FATE_TESTS += fate-bink-demux
 fate-bink-demux: CMD = crc -i $(SAMPLES)/bink/Snd0a7d9b58.dee -vn -acodec copy
 
-FATE_TESTS += fate-bink-demux-video
-fate-bink-demux-video: CMD = framecrc -i $(SAMPLES)/bink/hol2br.bik
-
 FATE_TESTS += fate-bmv
 fate-bmv: CMD = framecrc -i $(SAMPLES)/bmv/SURFING-partial.BMV -pix_fmt rgb24
 
@@ -69,9 +66,6 @@ fate-qcp-demux: CMD = crc -i $(SAMPLES)/qcp/0036580847.QCP -acodec copy
 
 FATE_TESTS += fate-redcode-demux
 fate-redcode-demux: CMD = framecrc -i $(SAMPLES)/r3d/4MB-sample.r3d -vcodec copy -acodec copy
-
-FATE_TESTS += fate-sierra-audio
-fate-sierra-audio: CMD = md5 -i $(SAMPLES)/sol/lsl7sample.sol -f s16le
 
 FATE_TESTS += fate-sierra-vmd
 fate-sierra-vmd: CMD = framecrc -i $(SAMPLES)/vmd/12.vmd -vsync 0 -pix_fmt rgb24

@@ -14,8 +14,8 @@ fate-wmv8-drm: CMD = framecrc -cryptokey 137381538c84c068111902a59c5cf6c340247c3
 FATE_TESTS += fate-wmv8-drm-nodec
 fate-wmv8-drm-nodec: CMD = framecrc -cryptokey 137381538c84c068111902a59c5cf6c340247c39 -i $(SAMPLES)/wmv8/wmv_drm.wmv -acodec copy -vcodec copy
 
-FATE_TESTS += fate-vc1
-fate-vc1: CMD = framecrc -i $(SAMPLES)/vc1/SA00040.vc1
+FATE_TESTS += fate-vc1_sa00040
+fate-vc1_sa00040: CMD = framecrc -i $(SAMPLES)/vc1/SA00040.vc1
 
 FATE_TESTS += fate-vc1_sa00050
 fate-vc1_sa00050: CMD = framecrc -i $(SAMPLES)/vc1/SA00050.vc1

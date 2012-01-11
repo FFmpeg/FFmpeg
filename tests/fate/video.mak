@@ -19,8 +19,8 @@ fate-ansi: CMD = framecrc -chars_per_frame 44100 -i $(SAMPLES)/ansi/TRE-IOM5.ANS
 FATE_TESTS += fate-armovie-escape124
 fate-armovie-escape124: CMD = framecrc -i $(SAMPLES)/rpl/ESCAPE.RPL -pix_fmt rgb24
 
-FATE_TESTS += fate-auravision
-fate-auravision: CMD = framecrc -i $(SAMPLES)/auravision/SOUVIDEO.AVI -an
+FATE_TESTS += fate-auravision-v1
+fate-auravision-v1: CMD = framecrc -i $(SAMPLES)/auravision/SOUVIDEO.AVI -an
 
 FATE_TESTS += fate-auravision-v2
 fate-auravision-v2: CMD = framecrc -i $(SAMPLES)/auravision/salma-hayek-in-ugly-betty-partial-avi -an
@@ -30,6 +30,9 @@ fate-bethsoft-vid: CMD = framecrc -i $(SAMPLES)/bethsoft-vid/ANIM0001.VID -vsync
 
 FATE_TESTS += fate-bfi
 fate-bfi: CMD = framecrc -i $(SAMPLES)/bfi/2287.bfi -pix_fmt rgb24
+
+FATE_TESTS += fate-bink-video
+fate-bink-video: CMD = framecrc -i $(SAMPLES)/bink/hol2br.bik
 
 FATE_TESTS += fate-cdgraphics
 fate-cdgraphics: CMD = framecrc -i $(SAMPLES)/cdgraphics/BrotherJohn.cdg -pix_fmt rgb24 -t 1
@@ -43,8 +46,8 @@ fate-corepng: CMD = framecrc -i $(SAMPLES)/png1/corepng-partial.avi
 FATE_TESTS += fate-creatureshock-avs
 fate-creatureshock-avs: CMD = framecrc -i $(SAMPLES)/creatureshock-avs/OUTATIME.AVS -pix_fmt rgb24
 
-FATE_TESTS += fate-cvid
-fate-cvid: CMD = framecrc -i $(SAMPLES)/cvid/laracroft-cinepak-partial.avi -an
+FATE_TESTS += fate-cvid-partial
+fate-cvid-partial: CMD = framecrc -i $(SAMPLES)/cvid/laracroft-cinepak-partial.avi -an
 
 FATE_TESTS += fate-cvid-palette
 fate-cvid-palette: CMD = framecrc -i $(SAMPLES)/cvid/catfight-cvid-pal8-partial.mov -pix_fmt rgb24 -an
@@ -64,14 +67,20 @@ fate-delphine-cin: CMD = framecrc -i $(SAMPLES)/delphine-cin/LOGO-partial.CIN -p
 FATE_TESTS += fate-deluxepaint-anm
 fate-deluxepaint-anm: CMD = framecrc -i $(SAMPLES)/deluxepaint-anm/INTRO1.ANM -pix_fmt rgb24
 
-FATE_TESTS += fate-duck-tm2
-fate-duck-tm2: CMD = framecrc -i $(SAMPLES)/duck/tm20.avi
+FATE_TESTS += fate-truemotion1-15
+fate-truemotion1-15: CMD = framecrc -i $(SAMPLES)/duck/phant2-940.duk -pix_fmt rgb24
+
+FATE_TESTS += fate-truemotion1-24
+fate-truemotion1-24: CMD = framecrc -i $(SAMPLES)/duck/sonic3dblast_intro-partial.avi -pix_fmt rgb24
+
+FATE_TESTS += fate-truemotion2
+fate-truemotion2: CMD = framecrc -i $(SAMPLES)/duck/tm20.avi
+
+FATE_TESTS += fate-dxa-feeble
+fate-dxa-feeble: CMD = framecrc -i $(SAMPLES)/dxa/meetsquid.dxa -t 2 -pix_fmt rgb24
 
 FATE_TESTS += fate-dxa-scummvm
 fate-dxa-scummvm: CMD = framecrc -i $(SAMPLES)/dxa/scummvm.dxa -pix_fmt rgb24
-
-FATE_TESTS += fate-feeble-dxa
-fate-feeble-dxa: CMD = framecrc -i $(SAMPLES)/dxa/meetsquid.dxa -t 2 -pix_fmt rgb24
 
 FATE_TESTS += fate-flic-af11-palette-change
 fate-flic-af11-palette-change: CMD = framecrc -i $(SAMPLES)/fli/fli-engines.fli -t 3.3 -pix_fmt rgb24
@@ -145,12 +154,6 @@ fate-tiertex-seq: CMD = framecrc -i $(SAMPLES)/tiertex-seq/Gameover.seq -pix_fmt
 FATE_TESTS += fate-tmv
 fate-tmv: CMD = framecrc -i $(SAMPLES)/tmv/pop-partial.tmv -pix_fmt rgb24
 
-FATE_TESTS += fate-truemotion1-15
-fate-truemotion1-15: CMD = framecrc -i $(SAMPLES)/duck/phant2-940.duk -pix_fmt rgb24
-
-FATE_TESTS += fate-truemotion1-24
-fate-truemotion1-24: CMD = framecrc -i $(SAMPLES)/duck/sonic3dblast_intro-partial.avi -pix_fmt rgb24
-
 FATE_TESTS += fate-txd-16bpp
 fate-txd-16bpp: CMD = framecrc -i $(SAMPLES)/txd/misc.txd -pix_fmt bgra -an
 
@@ -173,8 +176,8 @@ fate-v410enc: CMD = md5 -f image2 -vcodec pgmyuv -i $(TARGET_PATH)/tests/vsynth1
 FATE_TESTS += fate-vcr1
 fate-vcr1: CMD = framecrc -i $(SAMPLES)/vcr1/VCR1test.avi -an
 
-FATE_TESTS += fate-video-xl
-fate-video-xl: CMD = framecrc -i $(SAMPLES)/vixl/pig-vixl.avi
+FATE_TESTS += fate-videoxl
+fate-videoxl: CMD = framecrc -i $(SAMPLES)/vixl/pig-vixl.avi
 
 FATE_TESTS += fate-vqa-cc
 fate-vqa-cc: CMD = framecrc -i $(SAMPLES)/vqa/cc-demo1-partial.vqa -pix_fmt rgb24

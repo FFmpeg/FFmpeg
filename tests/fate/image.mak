@@ -1,12 +1,6 @@
 FATE_TESTS += fate-dpx
 fate-dpx: CMD = framecrc -i $(SAMPLES)/dpx/lighthouse_rgb48.dpx
 
-FATE_TESTS += fate-fax-g3
-fate-fax-g3: CMD = framecrc -i $(SAMPLES)/CCITT_fax/G31D.TIF
-
-FATE_TESTS += fate-fax-g3s
-fate-fax-g3s: CMD = framecrc -i $(SAMPLES)/CCITT_fax/G31DS.TIF
-
 FATE_TESTS += fate-pictor
 fate-pictor: CMD = framecrc -i $(SAMPLES)/pictor/MFISH.PIC -pix_fmt rgb24
 
@@ -60,3 +54,9 @@ fate-targa-conformance-UTC24: CMD = framecrc -i $(SAMPLES)/targa-conformance/UTC
 fate-targa-conformance-UTC32: CMD = framecrc -i $(SAMPLES)/targa-conformance/UTC32.TGA -pix_fmt bgra
 
 fate-targa-top-to-bottom: CMD = framecrc -i $(SAMPLES)/targa/lena-top-to-bottom.tga
+
+FATE_TESTS += fate-tiff-fax-g3
+fate-tiff-fax-g3: CMD = framecrc -i $(SAMPLES)/CCITT_fax/G31D.TIF
+
+FATE_TESTS += fate-tiff-fax-g3s
+fate-tiff-fax-g3s: CMD = framecrc -i $(SAMPLES)/CCITT_fax/G31DS.TIF
