@@ -731,7 +731,7 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
 
 #if CONFIG_AVCODEC
     if (dtext->tc.str) {
-        char tcbuf[sizeof("hh:mm:ss.ff")];
+        char tcbuf[16];
         avpriv_timecode_to_string(tcbuf, &dtext->tc, dtext->frame_id++);
         buf = av_asprintf("%s%s", dtext->text, tcbuf);
     }

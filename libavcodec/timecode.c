@@ -91,7 +91,7 @@ char *avpriv_timecode_to_string(char *buf, const struct ff_timecode *tc, unsigne
     ss = frame_num / fps        % 60;
     mm = frame_num / (fps*60)   % 60;
     hh = frame_num / (fps*3600) % 24;
-    snprintf(buf, sizeof("hh:mm:ss.ff"), "%02d:%02d:%02d%c%02d",
+    snprintf(buf, 16, "%02d:%02d:%02d%c%02d",
              hh, mm, ss, tc->drop ? ';' : ':', ff);
     return buf;
 }
