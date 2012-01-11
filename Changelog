@@ -2,11 +2,13 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 
-version <next>:
+version 0.8_beta2:
 
 - Automatic thread count based on detection number of (available) CPU cores
 - Deprecate libpostproc. If desired, the switch --enable-postproc will
   enable it but it may be removed in a later Libav release.
+- rv34: frame-level multi-threading
+- optimized iMDCT transform on x86 using SSE for for mpegaudiodec
 
 
 version 0.8_beta1:
