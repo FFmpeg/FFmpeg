@@ -807,6 +807,7 @@ static int mov_read_mvhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     avio_rb32(pb); /* current time */
     avio_rb32(pb); /* next track ID */
 
+    c->fc->duration = av_rescale(c->duration, AV_TIME_BASE, c->time_scale);
     return 0;
 }
 
