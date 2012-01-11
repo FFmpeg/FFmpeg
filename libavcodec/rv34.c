@@ -685,7 +685,8 @@ static inline void rv34_mc(RV34DecContext *r, const int block_type,
 
     if (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME)) {
         /* wait for the referenced mb row to be finished */
-        int mb_row = FFMIN(s->mb_height - 1, s->mb_y + ((yoff + my + 21) >> 4));
+        int mb_row = FFMIN(s->mb_height - 1,
+                           s->mb_y + ((yoff + my + 5 + 8 * height) >> 4));
         AVFrame *f = dir ? &s->next_picture_ptr->f : &s->last_picture_ptr->f;
         ff_thread_await_progress(f, mb_row, 0);
     }
@@ -847,7 +848,7 @@ static int rv34_decode_mv(RV34DecContext *r, int block_type)
         //surprisingly, it uses motion scheme from next reference frame
         /* wait for the current mb row to be finished */
         if (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME))
-            ff_thread_await_progress(&s->next_picture_ptr->f, s->mb_y - 1, 0);
+            ff_thread_await_progress(&s->next_picture_ptr->f, FFMAX(0, s->mb_y-1), 0);
 
         next_bt = s->next_picture_ptr->f.mb_type[s->mb_x + s->mb_y * s->mb_stride];
         if(IS_INTRA(next_bt) || IS_SKIP(next_bt)){
