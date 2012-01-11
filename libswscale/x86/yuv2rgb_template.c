@@ -138,6 +138,7 @@
         : "+r" (index), "+r" (image)                              \
         : "r" (pu - index), "r" (pv - index), "r"(&c->redDither), \
           "r" (py - 2*index)                                      \
+        : "memory"                                                \
         );                                                        \
     }                                                             \
 
@@ -145,6 +146,7 @@
         : "+r" (index), "+r" (image)                              \
         : "r" (pu - index), "r" (pv - index), "r"(&c->redDither), \
           "r" (py - 2*index), "r" (pa - 2*index)                  \
+        : "memory"                                                \
         );                                                        \
     }                                                             \
 
