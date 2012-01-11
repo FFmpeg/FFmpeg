@@ -637,10 +637,10 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
-            {0,5,1,0,15},       /* R */
-            {0,5,3,0,15},       /* G */
-            {0,5,5,0,15},       /* B */
-            {0,5,7,0,15},       /* A */
+            {0,7,1,0,15},       /* R */
+            {0,7,3,0,15},       /* G */
+            {0,7,5,0,15},       /* B */
+            {0,7,7,0,15},       /* A */
         },
         .flags = PIX_FMT_RGB | PIX_FMT_BE,
     },
@@ -650,10 +650,10 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
-            {0,5,1,0,15},       /* R */
-            {0,5,3,0,15},       /* G */
-            {0,5,5,0,15},       /* B */
-            {0,5,7,0,15},       /* B */
+            {0,7,1,0,15},       /* R */
+            {0,7,3,0,15},       /* G */
+            {0,7,5,0,15},       /* B */
+            {0,7,7,0,15},       /* B */
         },
         .flags = PIX_FMT_RGB,
     },
@@ -759,10 +759,10 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
-            {0,5,1,0,15},       /* B */
-            {0,5,3,0,15},       /* G */
-            {0,5,5,0,15},       /* R */
-            {0,5,7,0,15},       /* A */
+            {0,7,1,0,15},       /* B */
+            {0,7,3,0,15},       /* G */
+            {0,7,5,0,15},       /* R */
+            {0,7,7,0,15},       /* A */
         },
         .flags = PIX_FMT_BE,
     },
@@ -772,10 +772,10 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
-            {0,5,1,0,15},       /* B */
-            {0,5,3,0,15},       /* G */
-            {0,5,5,0,15},       /* R */
-            {0,5,7,0,15},       /* A */
+            {0,7,1,0,15},       /* B */
+            {0,7,3,0,15},       /* G */
+            {0,7,5,0,15},       /* R */
+            {0,7,7,0,15},       /* A */
         },
     },
     [PIX_FMT_BGR565BE] = {
