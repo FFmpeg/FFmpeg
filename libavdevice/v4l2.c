@@ -38,6 +38,7 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/time.h>
+#include <poll.h>
 #if HAVE_SYS_VIDEOIO_H
 #include <sys/videoio.h>
 #else
@@ -54,6 +55,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/avstring.h"
+#include "libavutil/mathematics.h"
 
 #if CONFIG_LIBV4L2
 #include <libv4l2.h>
@@ -79,6 +81,7 @@ struct video_data {
     int frame_format; /* V4L2_PIX_FMT_* */
     int width, height;
     int frame_size;
+    int timeout;
     int interlaced;
     int top_field_first;
 
@@ -197,14 +200,11 @@ static int device_init(AVFormatContext *ctx, int *width, int *height,
 {
     struct video_data *s = ctx->priv_data;
     int fd = s->fd;
-    struct v4l2_format fmt;
+    struct v4l2_format fmt = { .type = V4L2_BUF_TYPE_VIDEO_CAPTURE };
     struct v4l2_pix_format *pix = &fmt.fmt.pix;
 
     int res;
 
-    memset(&fmt, 0, sizeof(struct v4l2_format));
-
-    fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     pix->width = *width;
     pix->height = *height;
     pix->pixelformat = pix_fmt;
@@ -362,13 +362,14 @@ static void list_formats(AVFormatContext *ctx, int fd, int type)
 
 static int mmap_init(AVFormatContext *ctx)
 {
-    struct video_data *s = ctx->priv_data;
-    struct v4l2_requestbuffers req = {0};
     int i, res;
+    struct video_data *s = ctx->priv_data;
+    struct v4l2_requestbuffers req = {
+        .type   = V4L2_BUF_TYPE_VIDEO_CAPTURE,
+        .count  = desired_video_buffers,
+        .memory = V4L2_MEMORY_MMAP
+    };
 
-    req.count = desired_video_buffers;
-    req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    req.memory = V4L2_MEMORY_MMAP;
     res = v4l2_ioctl(s->fd, VIDIOC_REQBUFS, &req);
     if (res < 0) {
         if (errno == EINVAL) {
@@ -397,11 +398,11 @@ static int mmap_init(AVFormatContext *ctx)
     }
 
     for (i = 0; i < req.count; i++) {
-        struct v4l2_buffer buf = {0};
-
-        buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-        buf.memory = V4L2_MEMORY_MMAP;
-        buf.index = i;
+        struct v4l2_buffer buf = {
+            .type   = V4L2_BUF_TYPE_VIDEO_CAPTURE,
+            .index  = i,
+            .memory = V4L2_MEMORY_MMAP
+        };
         res = v4l2_ioctl(s->fd, VIDIOC_QUERYBUF, &buf);
         if (res < 0) {
             av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QUERYBUF)\n");
@@ -431,7 +432,7 @@ static int mmap_init(AVFormatContext *ctx)
 
 static void mmap_release_buffer(AVPacket *pkt)
 {
-    struct v4l2_buffer buf = {0};
+    struct v4l2_buffer buf = { 0 };
     int res, fd;
     struct buff_data *buf_descriptor = pkt->priv;
 
@@ -456,12 +457,20 @@ static void mmap_release_buffer(AVPacket *pkt)
 static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
 {
     struct video_data *s = ctx->priv_data;
-    struct v4l2_buffer buf = {0};
+    struct v4l2_buffer buf = {
+        .type   = V4L2_BUF_TYPE_VIDEO_CAPTURE,
+        .memory = V4L2_MEMORY_MMAP
+    };
     struct buff_data *buf_descriptor;
+    struct pollfd p = { .fd = s->fd, .events = POLLIN };
     int res;
 
-    buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    buf.memory = V4L2_MEMORY_MMAP;
+    res = poll(&p, 1, s->timeout);
+    if (res < 0)
+        return AVERROR(errno);
+
+    if (!(p.revents & (POLLIN | POLLERR | POLLHUP)))
+        return AVERROR(EAGAIN);
 
     /* FIXME: Some special treatment might be needed in case of loss of signal... */
     while ((res = v4l2_ioctl(s->fd, VIDIOC_DQBUF, &buf)) < 0 && (errno == EINTR));
@@ -513,11 +522,11 @@ static int mmap_start(AVFormatContext *ctx)
     int i, res;
 
     for (i = 0; i < s->buffers; i++) {
-        struct v4l2_buffer buf = {0};
-
-        buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-        buf.memory = V4L2_MEMORY_MMAP;
-        buf.index  = i;
+        struct v4l2_buffer buf = {
+            .type   = V4L2_BUF_TYPE_VIDEO_CAPTURE,
+            .index  = i,
+            .memory = V4L2_MEMORY_MMAP
+        };
 
         res = v4l2_ioctl(s->fd, VIDIOC_QBUF, &buf);
         if (res < 0) {
@@ -560,12 +569,12 @@ static void mmap_close(struct video_data *s)
 static int v4l2_set_parameters(AVFormatContext *s1, AVFormatParameters *ap)
 {
     struct video_data *s = s1->priv_data;
-    struct v4l2_input input = {0};
-    struct v4l2_standard standard = {0};
-    struct v4l2_streamparm streamparm = {0};
+    struct v4l2_input input = { 0 };
+    struct v4l2_standard standard = { 0 };
+    struct v4l2_streamparm streamparm = { 0 };
     struct v4l2_fract *tpf = &streamparm.parm.capture.timeperframe;
+    AVRational framerate_q = { 0 };
     int i, ret;
-    AVRational framerate_q={0};
 
     streamparm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
@@ -596,7 +605,7 @@ static int v4l2_set_parameters(AVFormatContext *s1, AVFormatParameters *ap)
         av_log(s1, AV_LOG_DEBUG, "The V4L2 driver set standard: %s\n",
                s->standard);
         /* set tv standard */
-        for (i = 0;; i++) {
+        for(i=0;;i++) {
             standard.index = i;
             ret = v4l2_ioctl(s->fd, VIDIOC_ENUMSTD, &standard);
             if (ret < 0 || !av_strcasecmp(standard.name, s->standard))
@@ -648,6 +657,10 @@ static int v4l2_set_parameters(AVFormatContext *s1, AVFormatParameters *ap)
     }
     s1->streams[0]->codec->time_base.den = tpf->denominator;
     s1->streams[0]->codec->time_base.num = tpf->numerator;
+
+    s->timeout = 100 +
+        av_rescale_q(1, s1->streams[0]->codec->time_base,
+                        (AVRational){1, 1000});
 
     return 0;
 }
@@ -722,11 +735,15 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     }
 
     if (s->pixel_format) {
+        AVCodec *codec = avcodec_find_decoder_by_name(s->pixel_format);
+
+        if (codec)
+            s1->video_codec_id = codec->id;
 
         pix_fmt = av_get_pix_fmt(s->pixel_format);
 
-        if (pix_fmt == PIX_FMT_NONE) {
-            av_log(s1, AV_LOG_ERROR, "No such pixel format: %s.\n",
+        if (pix_fmt == PIX_FMT_NONE && !codec) {
+            av_log(s1, AV_LOG_ERROR, "No such input format: %s.\n",
                    s->pixel_format);
 
             res = AVERROR(EINVAL);
@@ -832,7 +849,8 @@ static const AVOption options[] = {
     { "standard",     "TV standard, used only by analog frame grabber",            OFFSET(standard),     AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0,       DEC },
     { "channel",      "TV channel, used only by frame grabber",                    OFFSET(channel),      AV_OPT_TYPE_INT,    {.dbl = 0 },    0, INT_MAX, DEC },
     { "video_size",   "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size),   AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       DEC },
-    { "pixel_format", "",                                                          OFFSET(pixel_format), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       DEC },
+    { "pixel_format", "Preferred pixel format",                                    OFFSET(pixel_format), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       DEC },
+    { "input_format", "Preferred pixel format (for raw video) or codec name",      OFFSET(pixel_format), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       DEC },
     { "framerate",    "",                                                          OFFSET(framerate),    AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       DEC },
     { "list_formats", "List available formats and exit",                           OFFSET(list_format),  AV_OPT_TYPE_INT,    {.dbl = 0 },  0, INT_MAX, DEC, "list_formats" },
     { "all",          "Show all available formats",                                OFFSET(list_format),  AV_OPT_TYPE_CONST,  {.dbl = V4L_ALLFORMATS  },    0, INT_MAX, DEC, "list_formats" },

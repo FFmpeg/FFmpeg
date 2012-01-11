@@ -92,7 +92,6 @@ typedef struct RV34DecContext{
     const uint8_t *luma_dc_quant_p;///< luma subblock DC quantizer for interframes
 
     RV34VLC *cur_vlcs;       ///< VLC set used for current frame decoding
-    int bits;                ///< slice size in bits
     H264PredContext h;       ///< functions for 4x4 and 16x16 intra block prediction
     SliceInfo si;            ///< current slice information
 
@@ -134,5 +133,7 @@ int ff_rv34_get_start_offset(GetBitContext *gb, int blocks);
 int ff_rv34_decode_init(AVCodecContext *avctx);
 int ff_rv34_decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPacket *avpkt);
 int ff_rv34_decode_end(AVCodecContext *avctx);
+int ff_rv34_decode_init_thread_copy(AVCodecContext *avctx);
+int ff_rv34_decode_update_thread_context(AVCodecContext *dst, const AVCodecContext *src);
 
 #endif /* AVCODEC_RV34_H */

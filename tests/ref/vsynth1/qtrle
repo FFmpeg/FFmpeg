@@ -1,4 +1,4 @@
-b67340783a817fe398fd138175c7fa07 *./tests/data/vsynth1/qtrle.mov
+54a37ac94abdd95b9e5726a2211e8e1c *./tests/data/vsynth1/qtrle.mov
 15263072 ./tests/data/vsynth1/qtrle.mov
 93695a27c24a61105076ca7b1f010bbd *./tests/data/qtrle.vsynth1.out.yuv
 stddev:    3.42 PSNR: 37.44 MAXDIFF:   48 bytes:  7603200/  7603200

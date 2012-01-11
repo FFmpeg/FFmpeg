@@ -1,4 +1,4 @@
-52d8c65c4987227979785d5ac2030175 *./tests/data/acodec/pcm_s8.mov
+bfd442109b661daf8ee7a468d9d6b944 *./tests/data/acodec/pcm_s8.mov
 529865 ./tests/data/acodec/pcm_s8.mov
 651d4eb8d98dfcdda96ae6c43d8f156b *./tests/data/pcm_s8.acodec.out.wav
 stddev:  147.89 PSNR: 52.93 MAXDIFF:  255 bytes:  1058400/  1058400

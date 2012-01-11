@@ -1,4 +1,4 @@
-d2621659037803a30b77e3d4f87eb733 *./tests/data/vsynth1/dnxhd-1080i.mov
+153afc6bd83611db4ba0d6d509fc3d74 *./tests/data/vsynth1/dnxhd-1080i.mov
 3031895 ./tests/data/vsynth1/dnxhd-1080i.mov
 0c651e840f860592f0d5b66030d9fa32 *./tests/data/dnxhd_1080i.vsynth1.out.yuv
 stddev:    6.29 PSNR: 32.15 MAXDIFF:   64 bytes:   760320/  7603200

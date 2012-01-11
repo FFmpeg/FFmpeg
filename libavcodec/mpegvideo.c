@@ -1135,25 +1135,26 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
            s->codec_id == CODEC_ID_SVQ3);
 
     /* mark & release old frames */
-    if (s->pict_type != AV_PICTURE_TYPE_B && s->last_picture_ptr &&
-        s->last_picture_ptr != s->next_picture_ptr &&
-        s->last_picture_ptr->f.data[0]) {
-        if (s->out_format != FMT_H264 || s->codec_id == CODEC_ID_SVQ3) {
+    if (s->out_format != FMT_H264 || s->codec_id == CODEC_ID_SVQ3) {
+        if (s->pict_type != AV_PICTURE_TYPE_B && s->last_picture_ptr &&
+            s->last_picture_ptr != s->next_picture_ptr &&
+            s->last_picture_ptr->f.data[0]) {
             if (s->last_picture_ptr->owner2 == s)
                 free_frame_buffer(s, s->last_picture_ptr);
+        }
 
-            /* release forgotten pictures */
-            /* if (mpeg124/h263) */
-            if (!s->encoding) {
-                for (i = 0; i < s->picture_count; i++) {
-                    if (s->picture[i].owner2 == s && s->picture[i].f.data[0] &&
-                        &s->picture[i] != s->next_picture_ptr &&
-                        s->picture[i].f.reference) {
-                        if (!(avctx->active_thread_type & FF_THREAD_FRAME))
-                            av_log(avctx, AV_LOG_ERROR,
-                                   "releasing zombie picture\n");
-                        free_frame_buffer(s, &s->picture[i]);
-                    }
+        /* release forgotten pictures */
+        /* if (mpeg124/h263) */
+        if (!s->encoding) {
+            for (i = 0; i < s->picture_count; i++) {
+                if (s->picture[i].owner2 == s && s->picture[i].f.data[0] &&
+                    &s->picture[i] != s->last_picture_ptr &&
+                    &s->picture[i] != s->next_picture_ptr &&
+                    s->picture[i].f.reference) {
+                    if (!(avctx->active_thread_type & FF_THREAD_FRAME))
+                        av_log(avctx, AV_LOG_ERROR,
+                               "releasing zombie picture\n");
+                    free_frame_buffer(s, &s->picture[i]);
                 }
             }
         }
@@ -1273,6 +1274,14 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         ff_copy_picture(&s->last_picture, s->last_picture_ptr);
     if (s->next_picture_ptr)
         ff_copy_picture(&s->next_picture, s->next_picture_ptr);
+
+    if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_FRAME) &&
+        (s->out_format != FMT_H264 || s->codec_id == CODEC_ID_SVQ3)) {
+        if (s->next_picture_ptr)
+            s->next_picture_ptr->owner2 = s;
+        if (s->last_picture_ptr)
+            s->last_picture_ptr->owner2 = s;
+    }
 
     assert(s->pict_type == AV_PICTURE_TYPE_I || (s->last_picture_ptr &&
                                                  s->last_picture_ptr->f.data[0]));
