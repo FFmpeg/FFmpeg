@@ -1195,13 +1195,6 @@ AVProgram *av_new_program(AVFormatContext *s, int id);
 attribute_deprecated enum CodecID av_guess_image2_codec(const char *filename);
 #endif
 
-#if FF_API_PKT_DUMP
-attribute_deprecated void av_pkt_dump(FILE *f, AVPacket *pkt, int dump_payload);
-attribute_deprecated void av_pkt_dump_log(void *avcl, int level, AVPacket *pkt,
-                                          int dump_payload);
-#endif
-
-
 /**
  * @addtogroup lavf_decoding
  * @{

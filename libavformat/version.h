@@ -47,9 +47,6 @@
  * Those FF_API_* defines are not part of public API.
  * They may change, break or disappear at any time.
  */
-#ifndef FF_API_PKT_DUMP
-#define FF_API_PKT_DUMP                (LIBAVFORMAT_VERSION_MAJOR < 54)
-#endif
 #ifndef FF_API_GUESS_IMG2_CODEC
 #define FF_API_GUESS_IMG2_CODEC        (LIBAVFORMAT_VERSION_MAJOR < 54)
 #endif
