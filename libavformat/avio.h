@@ -133,18 +133,6 @@ typedef struct {
  */
 int avio_check(const char *url, int flags);
 
-#if FF_API_OLD_INTERRUPT_CB
-/**
- * The callback is called in blocking functions to test regulary if
- * asynchronous interruption is needed. AVERROR_EXIT is returned
- * in this case by the interrupted function. 'NULL' means no interrupt
- * callback is given.
- * @deprecated Use interrupt_callback in AVFormatContext/avio_open2
- *             instead.
- */
-attribute_deprecated void avio_set_interrupt_cb(int (*interrupt_cb)(void));
-#endif
-
 /**
  * Allocate and initialize an AVIOContext for buffered I/O. It must be later
  * freed with av_free().

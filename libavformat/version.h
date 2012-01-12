@@ -47,9 +47,6 @@
  * Those FF_API_* defines are not part of public API.
  * They may change, break or disappear at any time.
  */
-#ifndef FF_API_OLD_INTERRUPT_CB
-#define FF_API_OLD_INTERRUPT_CB        (LIBAVFORMAT_VERSION_MAJOR < 54)
-#endif
 #ifndef FF_API_SET_PTS_INFO
 #define FF_API_SET_PTS_INFO            (LIBAVFORMAT_VERSION_MAJOR < 54)
 #endif
