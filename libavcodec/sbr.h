@@ -32,6 +32,7 @@
 #include <stdint.h>
 #include "fft.h"
 #include "aacps.h"
+#include "sbrdsp.h"
 
 /**
  * Spectral Band Replication header - spectrum parameters that invoke a reset if they differ from the previous header.
@@ -180,6 +181,7 @@ typedef struct {
     DECLARE_ALIGNED(16, float, qmf_filter_scratch)[5][64];
     FFTContext         mdct_ana;
     FFTContext         mdct;
+    SBRDSPContext      dsp;
 } SpectralBandReplication;
 
 #endif /* AVCODEC_SBR_H */
