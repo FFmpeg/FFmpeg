@@ -180,3 +180,20 @@ release.
 
 Distributors and system integrators are encouraged to update and share
 their patches against this branch.
+
+
+
+* 0.5.7 Jan 11, 2012
+
+General notes
+-------------
+
+This mostly maintenance-only release that addresses a number a number of
+bugs such as security and compilation issues that have been brought to
+our attention. Among other (rather minor) fixes, this release features
+fixes for the VP3 decoder (CVE-2011-3892), vorbis decoder, and matroska
+demuxer (CVE-2011-3893 and CVE-2011-3895).
+
+Distributors and system integrators are encouraged
+to update and share their patches against this branch.  For a full list
+of changes please see the Changelog file.
