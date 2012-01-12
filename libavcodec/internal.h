@@ -94,4 +94,11 @@ unsigned int avpriv_toupper4(unsigned int x);
 int avpriv_lock_avformat(void);
 int avpriv_unlock_avformat(void);
 
+/**
+ * Maximum size in bytes of extradata.
+ * This value was chosen such that every bit of the buffer is
+ * addressable by a 32-bit signed integer as used by get_bits.
+ */
+#define FF_MAX_EXTRADATA_SIZE ((1 << 28) - FF_INPUT_BUFFER_PADDING_SIZE)
+
 #endif /* AVCODEC_INTERNAL_H */

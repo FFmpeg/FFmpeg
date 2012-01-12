@@ -2442,9 +2442,11 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         }
         if(st->parser && st->parser->parser->split && !st->codec->extradata){
             int i= st->parser->parser->split(st->codec, pkt->data, pkt->size);
-            if(i){
+            if (i > 0 && i < FF_MAX_EXTRADATA_SIZE) {
                 st->codec->extradata_size= i;
                 st->codec->extradata= av_malloc(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+                if (!st->codec->extradata)
+                    return AVERROR(ENOMEM);
                 memcpy(st->codec->extradata, pkt->data, st->codec->extradata_size);
                 memset(st->codec->extradata + i, 0, FF_INPUT_BUFFER_PADDING_SIZE);
             }

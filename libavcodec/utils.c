@@ -610,6 +610,9 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVD
     int ret = 0;
     AVDictionary *tmp = NULL;
 
+    if (avctx->extradata_size < 0 || avctx->extradata_size >= FF_MAX_EXTRADATA_SIZE)
+        return AVERROR(EINVAL);
+
     if (options)
         av_dict_copy(&tmp, *options, 0);
 
