@@ -96,6 +96,11 @@ unsigned int avpriv_toupper4(unsigned int x);
  */
 void ff_init_buffer_info(AVCodecContext *s, AVFrame *pic);
 
+/**
+ * Remove and free all side data from packet.
+ */
+void ff_packet_free_side_data(AVPacket *pkt);
+
 int avpriv_lock_avformat(void);
 int avpriv_unlock_avformat(void);
 

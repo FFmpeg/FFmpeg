@@ -4297,7 +4297,7 @@ int avcodec_decode_audio4(AVCodecContext *avctx, AVFrame *frame,
  */
 int avcodec_decode_video2(AVCodecContext *avctx, AVFrame *picture,
                          int *got_picture_ptr,
-                         AVPacket *avpkt);
+                         const AVPacket *avpkt);
 
 /**
  * Decode a subtitle message.

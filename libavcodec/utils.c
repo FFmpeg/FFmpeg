@@ -994,24 +994,26 @@ static void apply_param_change(AVCodecContext *avctx, AVPacket *avpkt)
 
 int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *picture,
                          int *got_picture_ptr,
-                         AVPacket *avpkt)
+                         const AVPacket *avpkt)
 {
     int ret;
+    // copy to ensure we do not change avpkt
+    AVPacket tmp = *avpkt;
 
     *got_picture_ptr= 0;
     if((avctx->coded_width||avctx->coded_height) && av_image_check_size(avctx->coded_width, avctx->coded_height, 0, avctx))
         return -1;
 
     if((avctx->codec->capabilities & CODEC_CAP_DELAY) || avpkt->size || (avctx->active_thread_type&FF_THREAD_FRAME)){
-        av_packet_split_side_data(avpkt);
-        apply_param_change(avctx, avpkt);
-        avctx->pkt = avpkt;
+        int did_split = av_packet_split_side_data(&tmp);
+        apply_param_change(avctx, &tmp);
+        avctx->pkt = &tmp;
         if (HAVE_THREADS && avctx->active_thread_type&FF_THREAD_FRAME)
              ret = ff_thread_decode_frame(avctx, picture, got_picture_ptr,
-                                          avpkt);
+                                          &tmp);
         else {
             ret = avctx->codec->decode(avctx, picture, got_picture_ptr,
-                              avpkt);
+                              &tmp);
             picture->pkt_dts= avpkt->dts;
 
             if(!avctx->has_b_frames){
@@ -1030,6 +1032,9 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
 
         emms_c(); //needed to avoid an emms_c() call before every return;
 
+        avctx->pkt = NULL;
+        if (did_split)
+            ff_packet_free_side_data(&tmp);
 
         if (*got_picture_ptr){
             avctx->frame_number++;
