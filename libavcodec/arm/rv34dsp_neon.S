@@ -110,29 +110,29 @@ endfunc
 
 /* void rv34_inv_transform_dc_c(DCTELEM *block) */
 function ff_rv34_inv_transform_dc_neon, export=1
-        vld1.16         d28[], [r0:16]         @ block[0]
+        vld1.16         {d28[]}, [r0,:16]       @ block[0]
         vmov.i16        d4,  #169
         mov             r1,  #16
         vmull.s16       q3,  d28, d4
         vrshrn.s32      d0,  q3,  #10
-        vst1.16         {d0}, [r0:64], r1
-        vst1.16         {d0}, [r0:64], r1
-        vst1.16         {d0}, [r0:64], r1
-        vst1.16         {d0}, [r0:64], r1
+        vst1.16         {d0}, [r0,:64], r1
+        vst1.16         {d0}, [r0,:64], r1
+        vst1.16         {d0}, [r0,:64], r1
+        vst1.16         {d0}, [r0,:64], r1
         bx              lr
 endfunc
 
 /* void rv34_inv_transform_dc_noround_c(DCTELEM *block) */
 function ff_rv34_inv_transform_noround_dc_neon, export=1
-        vld1.16         d28[], [r0:16]         @ block[0]
+        vld1.16         {d28[]}, [r0,:16]       @ block[0]
         vmov.i16        d4,  #251
-        vorr.s16        d4,  #256              @ 13^2 * 3
+        vorr.s16        d4,  #256               @ 13^2 * 3
         mov             r1,  #16
         vmull.s16       q3,  d28, d4
         vshrn.s32       d0,  q3,  #11
-        vst1.64         {d0}, [r0:64], r1
-        vst1.64         {d0}, [r0:64], r1
-        vst1.64         {d0}, [r0:64], r1
-        vst1.64         {d0}, [r0:64], r1
+        vst1.64         {d0}, [r0,:64], r1
+        vst1.64         {d0}, [r0,:64], r1
+        vst1.64         {d0}, [r0,:64], r1
+        vst1.64         {d0}, [r0,:64], r1
         bx              lr
 endfunc
