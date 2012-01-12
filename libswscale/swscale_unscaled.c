@@ -352,17 +352,22 @@ static int palToRgbWrapper(SwsContext *c, const uint8_t *src[], int srcStride[],
         )
 
 /* {RGB,BGR}{15,16,24,32,32_1} -> {RGB,BGR}{15,16,24,32} */
-static int rgbToRgbWrapper(SwsContext *c, const uint8_t *src[], int srcStride[],
-                           int srcSliceY, int srcSliceH, uint8_t *dst[],
-                           int dstStride[])
+typedef void (* rgbConvFn) (const uint8_t *, uint8_t *, int);
+static rgbConvFn findRgbConvFn(SwsContext *c)
 {
     const enum PixelFormat srcFormat = c->srcFormat;
     const enum PixelFormat dstFormat = c->dstFormat;
-    const int srcBpp = (c->srcFormatBpp + 7) >> 3;
-    const int dstBpp = (c->dstFormatBpp + 7) >> 3;
     const int srcId = c->srcFormatBpp;
     const int dstId = c->dstFormatBpp;
-    void (*conv)(const uint8_t *src, uint8_t *dst, int src_size) = NULL;
+    rgbConvFn conv = NULL;
+
+#define IS_NOT_NE(bpp, fmt) \
+    (((bpp + 7) >> 3) == 2 && \
+     (!(av_pix_fmt_descriptors[fmt].flags & PIX_FMT_BE) != !HAVE_BIGENDIAN))
+
+    /* if this is non-native rgb444/555/565, don't handle it here. */
+    if (IS_NOT_NE(srcId, srcFormat) || IS_NOT_NE(dstId, dstFormat))
+        return NULL;
 
 #define CONV_IS(src, dst) (srcFormat == PIX_FMT_##src && dstFormat == PIX_FMT_##dst)
 
@@ -418,6 +423,21 @@ static int rgbToRgbWrapper(SwsContext *c, const uint8_t *src[], int srcStride[],
         case 0x00200018: conv = rgb24tobgr32; break;
         }
     }
+
+    return conv;
+}
+
+/* {RGB,BGR}{15,16,24,32,32_1} -> {RGB,BGR}{15,16,24,32} */
+static int rgbToRgbWrapper(SwsContext *c, const uint8_t *src[], int srcStride[],
+                           int srcSliceY, int srcSliceH, uint8_t *dst[],
+                           int dstStride[])
+
+{
+    const enum PixelFormat srcFormat = c->srcFormat;
+    const enum PixelFormat dstFormat = c->dstFormat;
+    const int srcBpp = (c->srcFormatBpp + 7) >> 3;
+    const int dstBpp = (c->dstFormatBpp + 7) >> 3;
+    rgbConvFn conv = findRgbConvFn(c);
 
     if (!conv) {
         av_log(c, AV_LOG_ERROR, "internal error %s -> %s converter\n",
@@ -716,6 +736,8 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
             } else {
                 if (is16BPS(c->srcFormat) && is16BPS(c->dstFormat))
                     length *= 2;
+                else if (!av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1)
+                    length >>= 3; // monowhite/black
                 for (i = 0; i < height; i++) {
                     memcpy(dstPtr, srcPtr, length);
                     srcPtr += srcStride[plane];
@@ -770,20 +792,7 @@ void ff_get_unscaled_swscale(SwsContext *c)
         c->swScale = bgr24ToYv12Wrapper;
 
     /* RGB/BGR -> RGB/BGR (no dither needed forms) */
-    if (   isAnyRGB(srcFormat)
-        && isAnyRGB(dstFormat)
-        && srcFormat != PIX_FMT_BGR8      && dstFormat != PIX_FMT_BGR8
-        && srcFormat != PIX_FMT_RGB8      && dstFormat != PIX_FMT_RGB8
-        && srcFormat != PIX_FMT_BGR4      && dstFormat != PIX_FMT_BGR4
-        && srcFormat != PIX_FMT_RGB4      && dstFormat != PIX_FMT_RGB4
-        && srcFormat != PIX_FMT_BGR4_BYTE && dstFormat != PIX_FMT_BGR4_BYTE
-        && srcFormat != PIX_FMT_RGB4_BYTE && dstFormat != PIX_FMT_RGB4_BYTE
-        && srcFormat != PIX_FMT_MONOBLACK && dstFormat != PIX_FMT_MONOBLACK
-        && srcFormat != PIX_FMT_MONOWHITE && dstFormat != PIX_FMT_MONOWHITE
-        && srcFormat != PIX_FMT_RGB48LE   && dstFormat != PIX_FMT_RGB48LE
-        && srcFormat != PIX_FMT_RGB48BE   && dstFormat != PIX_FMT_RGB48BE
-        && srcFormat != PIX_FMT_BGR48LE   && dstFormat != PIX_FMT_BGR48LE
-        && srcFormat != PIX_FMT_BGR48BE   && dstFormat != PIX_FMT_BGR48BE
+    if (isAnyRGB(srcFormat) && isAnyRGB(dstFormat) && findRgbConvFn(c)
         && (!needsDither || (c->flags&(SWS_FAST_BILINEAR|SWS_POINT))))
         c->swScale= rgbToRgbWrapper;
 
