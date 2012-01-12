@@ -3373,17 +3373,6 @@ uint64_t ff_ntp_time(void)
   return (av_gettime() / 1000) * 1000 + NTP_OFFSET_US;
 }
 
-#if FF_API_PARSE_DATE
-#include "libavutil/parseutils.h"
-
-int64_t parse_date(const char *timestr, int duration)
-{
-    int64_t timeval;
-    av_parse_time(&timeval, timestr, duration);
-    return timeval;
-}
-#endif
-
 #if FF_API_FIND_INFO_TAG
 #include "libavutil/parseutils.h"
 

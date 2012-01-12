@@ -1737,18 +1737,6 @@ void av_dump_format(AVFormatContext *ic,
                     const char *url,
                     int is_output);
 
-#if FF_API_PARSE_DATE
-/**
- * Parse datestr and return a corresponding number of microseconds.
- *
- * @param datestr String representing a date or a duration.
- * See av_parse_time() for the syntax of the provided string.
- * @deprecated in favor of av_parse_time()
- */
-attribute_deprecated
-int64_t parse_date(const char *datestr, int duration);
-#endif
-
 /**
  * Get the current time in microseconds.
  */
