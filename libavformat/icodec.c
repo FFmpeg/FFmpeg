@@ -76,6 +76,8 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
         st->codec->width      = avio_r8(pb);
         st->codec->height     = avio_r8(pb);
         ico->images[i].nb_pal = avio_r8(pb);
+        if (ico->images[i].nb_pal == 255)
+            ico->images[i].nb_pal = 0;
 
         avio_skip(pb, 3);
         st->codec->bits_per_coded_sample = avio_rl16(pb);
