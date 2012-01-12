@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
 #include "libavutil/attributes.h"
 #include "sbrdsp.h"
 
@@ -234,4 +235,7 @@ av_cold void ff_sbrdsp_init(SBRDSPContext *s)
     s->hf_apply_noise[1] = sbr_hf_apply_noise_1;
     s->hf_apply_noise[2] = sbr_hf_apply_noise_2;
     s->hf_apply_noise[3] = sbr_hf_apply_noise_3;
+
+    if (ARCH_ARM)
+        ff_sbrdsp_init_arm(s);
 }
