@@ -1770,10 +1770,6 @@ int av_filename_number_test(const char *filename);
  */
 int av_sdp_create(AVFormatContext *ac[], int n_files, char *buf, int size);
 
-#if FF_API_SDP_CREATE
-attribute_deprecated int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size);
-#endif
-
 /**
  * Return a positive value if the given filename has one of the given
  * extensions, 0 otherwise.
