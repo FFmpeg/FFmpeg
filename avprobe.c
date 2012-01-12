@@ -243,6 +243,7 @@ static void show_format(AVFormatContext *fmt_ctx)
 {
     AVDictionaryEntry *tag = NULL;
     char val_str[128];
+    int64_t size = fmt_ctx->pb ? avio_size(fmt_ctx->pb) : -1;
 
     printf("[FORMAT]\n");
 
@@ -254,8 +255,9 @@ static void show_format(AVFormatContext *fmt_ctx)
                                                       &AV_TIME_BASE_Q));
     printf("duration=%s\n",         time_value_string(val_str, sizeof(val_str), fmt_ctx->duration,
                                                       &AV_TIME_BASE_Q));
-    printf("size=%s\n",             value_string(val_str, sizeof(val_str), fmt_ctx->file_size,
-                                                 unit_byte_str));
+    printf("size=%s\n",             size >= 0 ? value_string(val_str, sizeof(val_str),
+                                                             size, unit_byte_str)
+                                              : "unknown");
     printf("bit_rate=%s\n",         value_string(val_str, sizeof(val_str), fmt_ctx->bit_rate,
                                                  unit_bit_per_second_str));
 
