@@ -228,11 +228,6 @@ static int read_header(AVFormatContext *s1)
         return ret;
     }
 
-#if FF_API_LOOP_INPUT
-    if (s1->loop_input)
-        s->loop = s1->loop_input;
-#endif
-
     av_strlcpy(s->path, s1->filename, sizeof(s->path));
     s->img_number = 0;
     s->img_count = 0;

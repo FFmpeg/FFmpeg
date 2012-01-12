@@ -47,9 +47,6 @@
  * Those FF_API_* defines are not part of public API.
  * They may change, break or disappear at any time.
  */
-#ifndef FF_API_LOOP_INPUT
-#define FF_API_LOOP_INPUT              (LIBAVFORMAT_VERSION_MAJOR < 54)
-#endif
 #ifndef FF_API_LOOP_OUTPUT
 #define FF_API_LOOP_OUTPUT             (LIBAVFORMAT_VERSION_MAJOR < 54)
 #endif
