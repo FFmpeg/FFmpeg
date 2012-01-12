@@ -3373,15 +3373,6 @@ uint64_t ff_ntp_time(void)
   return (av_gettime() / 1000) * 1000 + NTP_OFFSET_US;
 }
 
-#if FF_API_FIND_INFO_TAG
-#include "libavutil/parseutils.h"
-
-int find_info_tag(char *arg, int arg_size, const char *tag1, const char *info)
-{
-    return av_find_info_tag(arg, arg_size, tag1, info);
-}
-#endif
-
 int av_get_frame_filename(char *buf, int buf_size,
                           const char *path, int number)
 {

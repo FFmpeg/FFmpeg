@@ -1742,13 +1742,6 @@ void av_dump_format(AVFormatContext *ic,
  */
 int64_t av_gettime(void);
 
-#if FF_API_FIND_INFO_TAG
-/**
- * @deprecated use av_find_info_tag in libavutil instead.
- */
-attribute_deprecated int find_info_tag(char *arg, int arg_size, const char *tag1, const char *info);
-#endif
-
 /**
  * Return in 'buf' the path with '%d' replaced by a number.
  *
