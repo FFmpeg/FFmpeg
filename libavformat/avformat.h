@@ -851,9 +851,6 @@ typedef struct AVFormatContext {
 #endif
 
     unsigned int packet_size;
-#if FF_API_PRELOAD
-    attribute_deprecated int preload;
-#endif
     int max_delay;
 
     int flags;

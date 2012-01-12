@@ -1158,10 +1158,6 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     int preload;
     const int is_iframe = st->codec->codec_type == AVMEDIA_TYPE_VIDEO && (pkt->flags & AV_PKT_FLAG_KEY);
 
-#if FF_API_PRELOAD
-    if (ctx->preload)
-        s->preload = ctx->preload;
-#endif
     preload = av_rescale(s->preload, 90000, AV_TIME_BASE);
 
     pts= pkt->pts;
