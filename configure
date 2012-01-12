@@ -80,7 +80,6 @@ Configuration options:
   --enable-nonfree         allow use of nonfree code, the resulting libs
                            and binaries will be unredistributable [no]
   --disable-doc            do not build documentation
-  --disable-ffmpeg         disable ffmpeg build
   --disable-avconv         disable avconv build
   --disable-avplay         disable avplay build
   --disable-avprobe        disable avprobe build
@@ -911,7 +910,6 @@ PROGRAM_LIST="
     avplay
     avprobe
     avserver
-    ffmpeg
 "
 
 CONFIG_LIST="
@@ -1536,7 +1534,6 @@ avplay_select="rdft"
 avprobe_deps="avcodec avformat"
 avserver_deps="avformat ffm_muxer fork rtp_protocol rtsp_demuxer !shared"
 avserver_extralibs='$ldl'
-ffmpeg_deps="avcodec avformat swscale"
 
 doc_deps="texi2html"
 
