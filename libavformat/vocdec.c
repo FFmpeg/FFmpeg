@@ -86,9 +86,13 @@ ff_voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
 
         switch (type) {
         case VOC_TYPE_VOICE_DATA:
-            dec->sample_rate = 1000000 / (256 - avio_r8(pb));
-            if (sample_rate)
-                dec->sample_rate = sample_rate;
+            if (!dec->sample_rate) {
+                dec->sample_rate = 1000000 / (256 - avio_r8(pb));
+                if (sample_rate)
+                    dec->sample_rate = sample_rate;
+                avpriv_set_pts_info(st, 64, 1, dec->sample_rate);
+            } else
+                avio_skip(pb, 1);
             dec->channels = channels;
             tmp_codec = avio_r8(pb);
             dec->bits_per_coded_sample = av_get_bits_per_sample(dec->codec_id);
@@ -110,7 +114,11 @@ ff_voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
             break;
 
         case VOC_TYPE_NEW_VOICE_DATA:
-            dec->sample_rate = avio_rl32(pb);
+            if (!dec->sample_rate) {
+                dec->sample_rate = avio_rl32(pb);
+                avpriv_set_pts_info(st, 64, 1, dec->sample_rate);
+            } else
+                avio_skip(pb, 4);
             dec->bits_per_coded_sample = avio_r8(pb);
             dec->channels = avio_r8(pb);
             tmp_codec = avio_rl16(pb);
