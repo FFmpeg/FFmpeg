@@ -81,12 +81,41 @@ AVFilterBufferRef *avfilter_ref_buffer(AVFilterBufferRef *ref, int pmask)
     return ret;
 }
 
+static void free_pool(AVFilterPool *pool)
+{
+    int i;
+
+    av_assert0(pool->refcount > 0);
+
+    for (i = 0; i < POOL_SIZE; i++) {
+        if (pool->pic[i]) {
+            AVFilterBufferRef *picref = pool->pic[i];
+            /* free buffer: picrefs stored in the pool are not
+             * supposed to contain a free callback */
+            av_freep(&picref->buf->data[0]);
+            av_freep(&picref->buf);
+
+            av_freep(&picref->audio);
+            av_freep(&picref->video);
+            av_freep(&pool->pic[i]);
+            pool->count--;
+        }
+    }
+    pool->draining = 1;
+
+    if (!--pool->refcount) {
+        av_assert0(!pool->count);
+        av_free(pool);
+    }
+}
+
 static void store_in_pool(AVFilterBufferRef *ref)
 {
     int i;
     AVFilterPool *pool= ref->buf->priv;
 
     av_assert0(ref->buf->data[0]);
+    av_assert0(pool->refcount>0);
 
     if (pool->count == POOL_SIZE) {
         AVFilterBufferRef *ref1 = pool->pic[0];
@@ -107,6 +136,10 @@ static void store_in_pool(AVFilterBufferRef *ref)
             break;
         }
     }
+    if (pool->draining) {
+        free_pool(pool);
+    } else
+        --pool->refcount;
 }
 
 void avfilter_unref_buffer(AVFilterBufferRef *ref)
@@ -181,24 +214,9 @@ void avfilter_link_free(AVFilterLink **link)
     if (!*link)
         return;
 
-    if ((*link)->pool) {
-        int i;
-        for (i = 0; i < POOL_SIZE; i++) {
-            if ((*link)->pool->pic[i]) {
-                AVFilterBufferRef *picref = (*link)->pool->pic[i];
-                /* free buffer: picrefs stored in the pool are not
-                 * supposed to contain a free callback */
-                av_freep(&picref->buf->data[0]);
-                av_freep(&picref->buf);
+    if ((*link)->pool)
+        free_pool((*link)->pool);
 
-                av_freep(&picref->audio);
-                av_freep(&picref->video);
-                av_freep(&(*link)->pool->pic[i]);
-            }
-        }
-        (*link)->pool->count = 0;
-//        av_freep(&(*link)->pool);
-    }
     av_freep(link);
 }
 

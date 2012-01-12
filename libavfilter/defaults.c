@@ -57,11 +57,14 @@ AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link, int per
                 pic->refcount = 1;
                 memcpy(picref->data,     pic->data,     sizeof(picref->data));
                 memcpy(picref->linesize, pic->linesize, sizeof(picref->linesize));
+                pool->refcount++;
                 return picref;
             }
         }
-    } else
+    } else {
         pool = link->pool = av_mallocz(sizeof(AVFilterPool));
+        pool->refcount = 1;
+    }
 
     // align: +2 is needed for swscaler, +16 to be SIMD-friendly
     if ((i = av_image_alloc(data, linesize, w, h, link->format, 32)) < 0)
@@ -77,6 +80,7 @@ AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link, int per
 
     picref->buf->priv = pool;
     picref->buf->free = NULL;
+    pool->refcount++;
 
     return picref;
 }

@@ -31,6 +31,8 @@
 typedef struct AVFilterPool {
     AVFilterBufferRef *pic[POOL_SIZE];
     int count;
+    int refcount;
+    int draining;
 } AVFilterPool;
 
 typedef struct AVFilterCommand {
