@@ -81,6 +81,8 @@ static int segment_start(AVFormatContext *s)
     return 0;
 
 fail:
+    av_log(oc, AV_LOG_ERROR, "Failure occurred when starting segment '%s'\n",
+           oc->filename);
     avio_close(oc->pb);
     av_freep(&oc->priv_data);
 
@@ -93,6 +95,10 @@ static int segment_end(AVFormatContext *oc)
 
     if (oc->oformat->write_trailer)
         ret = oc->oformat->write_trailer(oc);
+
+    if (ret < 0)
+        av_log(oc, AV_LOG_ERROR, "Failure occurred when ending segment '%s'\n",
+               oc->filename);
 
     avio_close(oc->pb);
     if (oc->oformat->priv_class)
