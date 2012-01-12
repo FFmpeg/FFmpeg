@@ -1379,21 +1379,6 @@ void avformat_close_input(AVFormatContext **s);
  * @}
  */
 
-#if FF_API_NEW_STREAM
-/**
- * Add a new stream to a media file.
- *
- * Can only be called in the read_header() function. If the flag
- * AVFMTCTX_NOHEADER is in the format context, then new streams
- * can be added in read_packet too.
- *
- * @param s media file handle
- * @param id file-format-dependent stream ID
- */
-attribute_deprecated
-AVStream *av_new_stream(AVFormatContext *s, int id);
-#endif
-
 #if FF_API_SET_PTS_INFO
 /**
  * @deprecated this function is not supposed to be called outside of lavf
