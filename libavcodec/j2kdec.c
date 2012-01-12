@@ -1015,8 +1015,10 @@ static int decode_frame(AVCodecContext *avctx,
 
     ff_j2k_init_tier1_luts();
 
-    if (s->buf_end - s->buf < 2)
-        return AVERROR(EINVAL);
+    if (s->buf_end - s->buf < 2) {
+        ret = AVERROR(EINVAL);
+        goto err_out;
+    }
 
     // check if the image is in jp2 format
     if(s->buf_end - s->buf >= 12 &&
@@ -1024,20 +1026,22 @@ static int decode_frame(AVCodecContext *avctx,
        (AV_RB32(s->buf + 8) == JP2_SIG_VALUE)) {
         if(!jp2_find_codestream(s)) {
             av_log(avctx, AV_LOG_ERROR, "couldn't find jpeg2k codestream atom\n");
-            return -1;
+            ret = -1;
+            goto err_out;
         }
     }
 
     if (bytestream_get_be16(&s->buf) != J2K_SOC){
         av_log(avctx, AV_LOG_ERROR, "SOC marker not present\n");
-        return -1;
+        ret = -1;
+        goto err_out;
     }
     if (ret = decode_codestream(s))
-        return ret;
+        goto err_out;
 
     for (tileno = 0; tileno < s->numXtiles * s->numYtiles; tileno++)
         if (ret = decode_tile(s, s->tile + tileno))
-            return ret;
+            goto err_out;
 
     cleanup(s);
     av_log(s->avctx, AV_LOG_DEBUG, "end\n");
@@ -1046,6 +1050,10 @@ static int decode_frame(AVCodecContext *avctx,
     *picture = s->picture;
 
     return s->buf - s->buf_start;
+
+err_out:
+    cleanup(s);
+    return ret;
 }
 
 static av_cold int j2kdec_init(AVCodecContext *avctx)
