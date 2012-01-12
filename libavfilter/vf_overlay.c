@@ -115,12 +115,14 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     av_opt_set_defaults(over);
 
     if (expr = av_strtok(args1, ":", &bufptr)) {
+        av_free(over->x_expr);
         if (!(over->x_expr = av_strdup(expr))) {
             ret = AVERROR(ENOMEM);
             goto end;
         }
     }
     if (expr = av_strtok(NULL, ":", &bufptr)) {
+        av_free(over->y_expr);
         if (!(over->y_expr = av_strdup(expr))) {
             ret = AVERROR(ENOMEM);
             goto end;
