@@ -563,10 +563,6 @@ typedef struct AVStream {
 #if FF_API_REORDER_PRIVATE
     int pts_wrap_bits; /**< number of bits in pts (used for wrapping control) */
 #endif
-#if FF_API_STREAM_COPY
-    /* ffmpeg.c private use */
-    attribute_deprecated int stream_copy; /**< If set, just copy stream. */
-#endif
     enum AVDiscard discard; ///< Selects which packets can be discarded at will and do not need to be demuxed.
 
     /**
