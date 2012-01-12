@@ -1268,15 +1268,6 @@ void avformat_close_input(AVFormatContext **s);
  * @}
  */
 
-#if FF_API_SET_PTS_INFO
-/**
- * @deprecated this function is not supposed to be called outside of lavf
- */
-attribute_deprecated
-void av_set_pts_info(AVStream *s, int pts_wrap_bits,
-                     unsigned int pts_num, unsigned int pts_den);
-#endif
-
 #define AVSEEK_FLAG_BACKWARD 1 ///< seek backward
 #define AVSEEK_FLAG_BYTE     2 ///< seeking based on position in bytes
 #define AVSEEK_FLAG_ANY      4 ///< seek to any frame, even non-keyframes

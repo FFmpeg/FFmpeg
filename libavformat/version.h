@@ -47,9 +47,6 @@
  * Those FF_API_* defines are not part of public API.
  * They may change, break or disappear at any time.
  */
-#ifndef FF_API_SET_PTS_INFO
-#define FF_API_SET_PTS_INFO            (LIBAVFORMAT_VERSION_MAJOR < 54)
-#endif
 #ifndef FF_API_CLOSE_INPUT_FILE
 #define FF_API_CLOSE_INPUT_FILE        (LIBAVFORMAT_VERSION_MAJOR < 55)
 #endif

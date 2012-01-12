@@ -3579,14 +3579,6 @@ int ff_hex_to_data(uint8_t *data, const char *p)
     return len;
 }
 
-#if FF_API_SET_PTS_INFO
-void av_set_pts_info(AVStream *s, int pts_wrap_bits,
-                     unsigned int pts_num, unsigned int pts_den)
-{
-    avpriv_set_pts_info(s, pts_wrap_bits, pts_num, pts_den);
-}
-#endif
-
 void avpriv_set_pts_info(AVStream *s, int pts_wrap_bits,
                          unsigned int pts_num, unsigned int pts_den)
 {
