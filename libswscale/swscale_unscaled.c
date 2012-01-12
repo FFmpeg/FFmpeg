@@ -389,6 +389,7 @@ static rgbConvFn findRgbConvFn(SwsContext *c)
     if ((isBGRinInt(srcFormat) && isBGRinInt(dstFormat)) ||
         (isRGBinInt(srcFormat) && isRGBinInt(dstFormat))) {
         switch (srcId | (dstId << 16)) {
+        case 0x000F000C: conv = rgb12to15; break;
         case 0x000F0010: conv = rgb16to15; break;
         case 0x000F0018: conv = rgb24to15; break;
         case 0x000F0020: conv = rgb32to15; break;
