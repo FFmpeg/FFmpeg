@@ -1283,13 +1283,6 @@ void ff_read_frame_flush(AVFormatContext *s)
     }
 }
 
-#if FF_API_SEEK_PUBLIC
-void av_update_cur_dts(AVFormatContext *s, AVStream *ref_st, int64_t timestamp)
-{
-    ff_update_cur_dts(s, ref_st, timestamp);
-}
-#endif
-
 void ff_update_cur_dts(AVFormatContext *s, AVStream *ref_st, int64_t timestamp)
 {
     int i;
@@ -1411,12 +1404,6 @@ int av_index_search_timestamp(AVStream *st, int64_t wanted_timestamp,
                                      wanted_timestamp, flags);
 }
 
-#if FF_API_SEEK_PUBLIC
-int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts, int flags){
-    return ff_seek_frame_binary(s, stream_index, target_ts, flags);
-}
-#endif
-
 int ff_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts, int flags)
 {
     AVInputFormat *avif= s->iformat;
@@ -1477,18 +1464,6 @@ int ff_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
 
     return 0;
 }
-
-#if FF_API_SEEK_PUBLIC
-int64_t av_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts,
-                      int64_t pos_min, int64_t pos_max, int64_t pos_limit,
-                      int64_t ts_min, int64_t ts_max, int flags, int64_t *ts_ret,
-                      int64_t (*read_timestamp)(struct AVFormatContext *, int , int64_t *, int64_t ))
-{
-    return ff_gen_search(s, stream_index, target_ts, pos_min, pos_max,
-                         pos_limit, ts_min, ts_max, flags, ts_ret,
-                         read_timestamp);
-}
-#endif
 
 int64_t ff_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts,
                       int64_t pos_min, int64_t pos_max, int64_t pos_limit,

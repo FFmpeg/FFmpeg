@@ -1386,21 +1386,6 @@ void av_set_pts_info(AVStream *s, int pts_wrap_bits,
 #define AVSEEK_FLAG_ANY      4 ///< seek to any frame, even non-keyframes
 #define AVSEEK_FLAG_FRAME    8 ///< seeking based on frame number
 
-#if FF_API_SEEK_PUBLIC
-attribute_deprecated
-int av_seek_frame_binary(AVFormatContext *s, int stream_index,
-                         int64_t target_ts, int flags);
-attribute_deprecated
-void av_update_cur_dts(AVFormatContext *s, AVStream *ref_st, int64_t timestamp);
-attribute_deprecated
-int64_t av_gen_search(AVFormatContext *s, int stream_index,
-                      int64_t target_ts, int64_t pos_min,
-                      int64_t pos_max, int64_t pos_limit,
-                      int64_t ts_min, int64_t ts_max,
-                      int flags, int64_t *ts_ret,
-                      int64_t (*read_timestamp)(struct AVFormatContext *, int , int64_t *, int64_t ));
-#endif
-
 /**
  * @addtogroup lavf_encoding
  * @{

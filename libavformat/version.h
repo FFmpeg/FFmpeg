@@ -47,9 +47,6 @@
  * Those FF_API_* defines are not part of public API.
  * They may change, break or disappear at any time.
  */
-#ifndef FF_API_SEEK_PUBLIC
-#define FF_API_SEEK_PUBLIC             (LIBAVFORMAT_VERSION_MAJOR < 54)
-#endif
 #ifndef FF_API_REORDER_PRIVATE
 #define FF_API_REORDER_PRIVATE         (LIBAVFORMAT_VERSION_MAJOR < 54)
 #endif
