@@ -68,7 +68,7 @@ static int v410_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     pic->key_frame = 1;
-    pic->pict_type = FF_I_TYPE;
+    pic->pict_type = AV_PICTURE_TYPE_I;
 
     y = (uint16_t *)pic->data[0];
     u = (uint16_t *)pic->data[1];
