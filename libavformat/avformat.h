@@ -1191,10 +1191,6 @@ AVProgram *av_new_program(AVFormatContext *s, int id);
  */
 
 
-#if FF_API_GUESS_IMG2_CODEC
-attribute_deprecated enum CodecID av_guess_image2_codec(const char *filename);
-#endif
-
 /**
  * @addtogroup lavf_decoding
  * @{

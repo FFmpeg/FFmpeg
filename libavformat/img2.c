@@ -199,12 +199,6 @@ enum CodecID ff_guess_image2_codec(const char *filename)
     return av_str2id(img_tags, filename);
 }
 
-#if FF_API_GUESS_IMG2_CODEC
-enum CodecID av_guess_image2_codec(const char *filename){
-    return av_str2id(img_tags, filename);
-}
-#endif
-
 static int read_header(AVFormatContext *s1)
 {
     VideoData *s = s1->priv_data;
