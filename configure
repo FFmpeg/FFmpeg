@@ -1486,7 +1486,6 @@ oss_outdev_deps_any="soundcard_h sys_soundcard_h"
 pulse_indev_deps="libpulse"
 sndio_indev_deps="sndio_h"
 sndio_outdev_deps="sndio_h"
-v4l_indev_deps="linux_videodev_h"
 v4l2_indev_deps_any="linux_videodev2_h sys_videoio_h"
 vfwcap_indev_deps="capCreateCaptureWindow vfwcap_defines"
 vfwcap_indev_extralibs="-lavicap32"
@@ -2988,7 +2987,6 @@ fi
 texi2html -version > /dev/null 2>&1 && enable texi2html || disable texi2html
 
 check_header linux/fb.h
-check_header linux/videodev.h
 check_header linux/videodev2.h
 check_struct linux/videodev2.h "struct v4l2_frmivalenum" discrete
 
