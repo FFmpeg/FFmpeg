@@ -277,25 +277,6 @@ typedef struct AVProbeData {
 #define AVPROBE_SCORE_MAX 100               ///< maximum score, half of that is used for file-extension-based detection
 #define AVPROBE_PADDING_SIZE 32             ///< extra allocated bytes at the end of the probe buffer
 
-typedef struct AVFormatParameters {
-#if FF_API_FORMAT_PARAMETERS
-    attribute_deprecated AVRational time_base;
-    attribute_deprecated int sample_rate;
-    attribute_deprecated int channels;
-    attribute_deprecated int width;
-    attribute_deprecated int height;
-    attribute_deprecated enum PixelFormat pix_fmt;
-    attribute_deprecated int channel; /**< Used to select DV channel. */
-    attribute_deprecated const char *standard; /**< deprecated, use demuxer-specific options instead. */
-    attribute_deprecated unsigned int mpeg2ts_raw:1;  /**< deprecated, use mpegtsraw demuxer */
-    /**< deprecated, use mpegtsraw demuxer-specific options instead */
-    attribute_deprecated unsigned int mpeg2ts_compute_pcr:1;
-    attribute_deprecated unsigned int initial_pause:1;       /**< Do not begin to play the stream
-                                                                  immediately (RTSP only). */
-    attribute_deprecated unsigned int prealloced_context:1;
-#endif
-} AVFormatParameters;
-
 /// Demuxer will use avio_open, no opened file should be provided by the caller.
 #define AVFMT_NOFILE        0x0001
 #define AVFMT_NEEDNUMBER    0x0002 /**< Needs '%d' in filename. */
@@ -354,7 +335,6 @@ typedef struct AVOutputFormat {
     /**
      * Currently only used to set pixel format if not YUV420P.
      */
-    int (*set_parameters)(struct AVFormatContext *, AVFormatParameters *);
     int (*interleave_packet)(struct AVFormatContext *, AVPacket *out,
                              AVPacket *in, int flush);
 
@@ -1272,36 +1252,6 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
                           const char *filename, void *logctx,
                           unsigned int offset, unsigned int max_probe_size);
 
-#if FF_API_FORMAT_PARAMETERS
-/**
- * Allocate all the structures needed to read an input stream.
- *        This does not open the needed codecs for decoding the stream[s].
- * @deprecated use avformat_open_input instead.
- */
-attribute_deprecated int av_open_input_stream(AVFormatContext **ic_ptr,
-                         AVIOContext *pb, const char *filename,
-                         AVInputFormat *fmt, AVFormatParameters *ap);
-
-/**
- * Open a media file as input. The codecs are not opened. Only the file
- * header (if present) is read.
- *
- * @param ic_ptr The opened media file handle is put here.
- * @param filename filename to open
- * @param fmt If non-NULL, force the file format to use.
- * @param buf_size optional buffer size (zero if default is OK)
- * @param ap Additional parameters needed when opening the file
- *           (NULL if default).
- * @return 0 if OK, AVERROR_xxx otherwise
- *
- * @deprecated use avformat_open_input instead.
- */
-attribute_deprecated int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
-                       AVInputFormat *fmt,
-                       int buf_size,
-                       AVFormatParameters *ap);
-#endif
-
 /**
  * Open an input stream and read the header. The codecs are not opened.
  * The stream must be closed with av_close_input_file().
@@ -1322,26 +1272,6 @@ attribute_deprecated int av_open_input_file(AVFormatContext **ic_ptr, const char
  * @note If you want to use custom IO, preallocate the format context and set its pb field.
  */
 int avformat_open_input(AVFormatContext **ps, const char *filename, AVInputFormat *fmt, AVDictionary **options);
-
-#if FF_API_FORMAT_PARAMETERS
-/**
- * Read packets of a media file to get stream information. This
- * is useful for file formats with no headers such as MPEG. This
- * function also computes the real framerate in case of MPEG-2 repeat
- * frame mode.
- * The logical file position is not changed by this function;
- * examined packets may be buffered for later processing.
- *
- * @param ic media file handle
- * @return >=0 if OK, AVERROR_xxx on error
- * @todo Let the user decide somehow what information is needed so that
- *       we do not waste time getting stuff the user does not need.
- *
- * @deprecated use avformat_find_stream_info.
- */
-attribute_deprecated
-int av_find_stream_info(AVFormatContext *ic);
-#endif
 
 /**
  * Read packets of a media file to get stream information. This
@@ -1490,16 +1420,6 @@ int av_read_play(AVFormatContext *s);
  */
 int av_read_pause(AVFormatContext *s);
 
-#if FF_API_FORMAT_PARAMETERS
-/**
- * Free a AVFormatContext allocated by av_open_input_stream.
- * @param s context to free
- * @deprecated use av_close_input_file()
- */
-attribute_deprecated
-void av_close_input_stream(AVFormatContext *s);
-#endif
-
 #if FF_API_CLOSE_INPUT_FILE
 /**
  * @deprecated use avformat_close_input()
@@ -1564,13 +1484,6 @@ int64_t av_gen_search(AVFormatContext *s, int stream_index,
                       int64_t (*read_timestamp)(struct AVFormatContext *, int , int64_t *, int64_t ));
 #endif
 
-#if FF_API_FORMAT_PARAMETERS
-/**
- * @deprecated pass the options to avformat_write_header directly.
- */
-attribute_deprecated int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap);
-#endif
-
 /**
  * @addtogroup lavf_encoding
  * @{
@@ -1591,21 +1504,6 @@ attribute_deprecated int av_set_parameters(AVFormatContext *s, AVFormatParameter
  * @see av_opt_find, av_dict_set, avio_open, av_oformat_next.
  */
 int avformat_write_header(AVFormatContext *s, AVDictionary **options);
-
-#if FF_API_FORMAT_PARAMETERS
-/**
- * Allocate the stream private data and write the stream header to an
- * output media file.
- * @note: this sets stream time-bases, if possible to stream->codec->time_base
- * but for some formats it might also be some other time base
- *
- * @param s media file handle
- * @return 0 if OK, AVERROR_xxx on error
- *
- * @deprecated use avformat_write_header.
- */
-attribute_deprecated int av_write_header(AVFormatContext *s);
-#endif
 
 /**
  * Write a packet to an output media file.

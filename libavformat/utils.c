@@ -400,93 +400,6 @@ static int set_codec_from_probe_data(AVFormatContext *s, AVStream *st, AVProbeDa
 /************************************************************/
 /* input media file */
 
-#if FF_API_FORMAT_PARAMETERS
-static AVDictionary *convert_format_parameters(AVFormatParameters *ap)
-{
-    char buf[1024];
-    AVDictionary *opts = NULL;
-
-    if (!ap)
-        return NULL;
-
-    if (ap->time_base.num) {
-        snprintf(buf, sizeof(buf), "%d/%d", ap->time_base.den, ap->time_base.num);
-        av_dict_set(&opts, "framerate", buf, 0);
-    }
-    if (ap->sample_rate) {
-        snprintf(buf, sizeof(buf), "%d", ap->sample_rate);
-        av_dict_set(&opts, "sample_rate", buf, 0);
-    }
-    if (ap->channels) {
-        snprintf(buf, sizeof(buf), "%d", ap->channels);
-        av_dict_set(&opts, "channels", buf, 0);
-    }
-    if (ap->width || ap->height) {
-        snprintf(buf, sizeof(buf), "%dx%d", ap->width, ap->height);
-        av_dict_set(&opts, "video_size", buf, 0);
-    }
-    if (ap->pix_fmt != PIX_FMT_NONE) {
-        av_dict_set(&opts, "pixel_format", av_get_pix_fmt_name(ap->pix_fmt), 0);
-    }
-    if (ap->channel) {
-        snprintf(buf, sizeof(buf), "%d", ap->channel);
-        av_dict_set(&opts, "channel", buf, 0);
-    }
-    if (ap->standard) {
-        av_dict_set(&opts, "standard", ap->standard, 0);
-    }
-    if (ap->mpeg2ts_compute_pcr) {
-        av_dict_set(&opts, "mpeg2ts_compute_pcr", "1", 0);
-    }
-    if (ap->initial_pause) {
-        av_dict_set(&opts, "initial_pause", "1", 0);
-    }
-    return opts;
-}
-
-/**
- * Open a media file from an IO stream. 'fmt' must be specified.
- */
-int av_open_input_stream(AVFormatContext **ic_ptr,
-                         AVIOContext *pb, const char *filename,
-                         AVInputFormat *fmt, AVFormatParameters *ap)
-{
-    int err;
-    AVDictionary *opts;
-    AVFormatContext *ic;
-    AVFormatParameters default_ap;
-
-    if(!ap){
-        ap=&default_ap;
-        memset(ap, 0, sizeof(default_ap));
-    }
-    opts = convert_format_parameters(ap);
-
-    if(!ap->prealloced_context)
-        ic = avformat_alloc_context();
-    else
-        ic = *ic_ptr;
-    if (!ic) {
-        err = AVERROR(ENOMEM);
-        goto fail;
-    }
-    if (pb && fmt && fmt->flags & AVFMT_NOFILE)
-        av_log(ic, AV_LOG_WARNING, "Custom AVIOContext makes no sense and "
-                                   "will be ignored with AVFMT_NOFILE format.\n");
-    else
-        ic->pb = pb;
-
-    if ((err = avformat_open_input(&ic, filename, fmt, &opts)) < 0)
-        goto fail;
-    ic->pb = ic->pb ? ic->pb : pb; // don't leak custom pb if it wasn't set above
-
-fail:
-    *ic_ptr = ic;
-    av_dict_free(&opts);
-    return err;
-}
-#endif
-
 /** size of probe buffer, for guessing file type from file contents */
 #define PROBE_BUF_MIN 2048
 #define PROBE_BUF_MAX (1<<20)
@@ -557,25 +470,6 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
 
     return ret;
 }
-
-#if FF_API_FORMAT_PARAMETERS
-int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
-                       AVInputFormat *fmt,
-                       int buf_size,
-                       AVFormatParameters *ap)
-{
-    int err;
-    AVDictionary *opts = convert_format_parameters(ap);
-
-    if (!ap || !ap->prealloced_context)
-        *ic_ptr = NULL;
-
-    err = avformat_open_input(ic_ptr, filename, fmt, &opts);
-
-    av_dict_free(&opts);
-    return err;
-}
-#endif
 
 /* open input file and probe the format if necessary */
 static int init_input(AVFormatContext *s, const char *filename, AVDictionary **options)
@@ -2273,13 +2167,6 @@ static int tb_unreliable(AVCodecContext *c){
     return 0;
 }
 
-#if FF_API_FORMAT_PARAMETERS
-int av_find_stream_info(AVFormatContext *ic)
-{
-    return avformat_find_stream_info(ic, NULL);
-}
-#endif
-
 int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 {
     int i, count, ret, read_size, j;
@@ -2680,16 +2567,6 @@ int av_read_pause(AVFormatContext *s)
     return AVERROR(ENOSYS);
 }
 
-#if FF_API_FORMAT_PARAMETERS
-void av_close_input_stream(AVFormatContext *s)
-{
-    flush_packet_queue(s);
-    if (s->iformat->read_close)
-        s->iformat->read_close(s);
-    avformat_free_context(s);
-}
-#endif
-
 void avformat_free_context(AVFormatContext *s)
 {
     int i;
@@ -2863,31 +2740,6 @@ AVChapter *avpriv_new_chapter(AVFormatContext *s, int id, AVRational time_base, 
 /************************************************************/
 /* output media file */
 
-#if FF_API_FORMAT_PARAMETERS
-int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap)
-{
-    int ret;
-
-    if (s->oformat->priv_data_size > 0) {
-        s->priv_data = av_mallocz(s->oformat->priv_data_size);
-        if (!s->priv_data)
-            return AVERROR(ENOMEM);
-        if (s->oformat->priv_class) {
-            *(const AVClass**)s->priv_data= s->oformat->priv_class;
-            av_opt_set_defaults(s->priv_data);
-        }
-    } else
-        s->priv_data = NULL;
-
-    if (s->oformat->set_parameters) {
-        ret = s->oformat->set_parameters(s, ap);
-        if (ret < 0)
-            return ret;
-    }
-    return 0;
-}
-#endif
-
 static int validate_codec_tag(AVFormatContext *s, AVStream *st)
 {
     const AVCodecTag *avctag;
@@ -2920,13 +2772,6 @@ static int validate_codec_tag(AVFormatContext *s, AVStream *st)
         return 0;
     return 1;
 }
-
-#if FF_API_FORMAT_PARAMETERS
-int av_write_header(AVFormatContext *s)
-{
-    return avformat_write_header(s, NULL);
-}
-#endif
 
 int avformat_write_header(AVFormatContext *s, AVDictionary **options)
 {
