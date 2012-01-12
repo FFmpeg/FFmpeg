@@ -371,8 +371,10 @@ DEFINE_IMDCT
 INIT_XMM ssse3
 DEFINE_IMDCT
 
+%ifdef HAVE_AVX
 INIT_XMM avx
 DEFINE_IMDCT
+%endif
 
 INIT_XMM sse
 
@@ -717,5 +719,7 @@ cglobal four_imdct36_float, 5,5,8, out, buf, in, win, tmp
 INIT_XMM sse
 DEFINE_FOUR_IMDCT
 
+%ifdef HAVE_AVX
 INIT_XMM avx
 DEFINE_FOUR_IMDCT
+%endif

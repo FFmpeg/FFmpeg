@@ -465,7 +465,7 @@ switch(c->dstBpc){ \
             c->yuv2plane1 = ff_yuv2plane1_16_sse4;
     }
 
-    if (cpu_flags & AV_CPU_FLAG_AVX) {
+    if (HAVE_AVX && cpu_flags & AV_CPU_FLAG_AVX) {
         ASSIGN_VSCALEX_FUNC(c->yuv2planeX, avx,);
         ASSIGN_VSCALE_FUNC(c->yuv2plane1, avx, avx, 1);
 

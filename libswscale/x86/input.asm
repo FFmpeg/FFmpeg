@@ -233,6 +233,7 @@ YUYV_TO_UV_FN 3, uyvy
 NVXX_TO_UV_FN 5, nv12
 NVXX_TO_UV_FN 5, nv21
 
+%ifdef HAVE_AVX
 INIT_XMM avx
 ; in theory, we could write a yuy2-to-y using vpand (i.e. AVX), but
 ; that's not faster in practice
@@ -240,3 +241,4 @@ YUYV_TO_UV_FN 3, yuyv
 YUYV_TO_UV_FN 3, uyvy, 1
 NVXX_TO_UV_FN 5, nv12
 NVXX_TO_UV_FN 5, nv21
+%endif
