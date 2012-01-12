@@ -1519,11 +1519,6 @@ static int mxf_write_header(AVFormatContext *s)
         sc->order = AV_RB32(sc->track_essence_element_key+12);
     }
 
-#if FF_API_TIMESTAMP
-    if (s->timestamp)
-        timestamp = s->timestamp;
-    else
-#endif
     if (t = av_dict_get(s->metadata, "creation_time", NULL, 0))
         timestamp = ff_iso8601_to_unix_time(t->value);
     if (timestamp)

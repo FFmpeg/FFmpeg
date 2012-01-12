@@ -399,11 +399,6 @@ static int gxf_write_umf_material_description(AVFormatContext *s)
     AVDictionaryEntry *t;
     uint32_t timecode;
 
-#if FF_API_TIMESTAMP
-    if (s->timestamp)
-        timestamp = s->timestamp;
-    else
-#endif
     if (t = av_dict_get(s->metadata, "creation_time", NULL, 0))
         timestamp = ff_iso8601_to_unix_time(t->value);
 

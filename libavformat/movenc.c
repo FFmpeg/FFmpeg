@@ -2807,11 +2807,6 @@ static int mov_write_header(AVFormatContext *s)
     if (!(mov->flags & FF_MOV_FLAG_EMPTY_MOOV))
         mov_write_mdat_tag(pb, mov);
 
-#if FF_API_TIMESTAMP
-    if (s->timestamp)
-        mov->time = s->timestamp;
-    else
-#endif
     if (t = av_dict_get(s->metadata, "creation_time", NULL, 0))
         mov->time = ff_iso8601_to_unix_time(t->value);
     if (mov->time)
