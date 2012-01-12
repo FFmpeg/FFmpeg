@@ -41,10 +41,8 @@ static void *format_child_next(void *obj, void *prev)
         ((s->iformat && s->iformat->priv_class) ||
           s->oformat && s->oformat->priv_class))
         return s->priv_data;
-#if !FF_API_OLD_AVIO
     if (s->pb && s->pb->av_class && prev != s->pb)
         return s->pb;
-#endif
     return NULL;
 }
 
@@ -54,11 +52,7 @@ static const AVClass *format_child_class_next(const AVClass *prev)
     AVOutputFormat *ofmt = NULL;
 
     if (!prev)
-#if !FF_API_OLD_AVIO
         return &ffio_url_class;
-#else
-    prev = (void *)&ifmt; // Dummy pointer;
-#endif
 
     while ((ifmt = av_iformat_next(ifmt)))
         if (ifmt->priv_class == prev)
