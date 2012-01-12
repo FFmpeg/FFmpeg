@@ -1731,12 +1731,6 @@ void av_url_split(char *proto,         int proto_size,
                   char *path,          int path_size,
                   const char *url);
 
-#if FF_API_DUMP_FORMAT
-attribute_deprecated void dump_format(AVFormatContext *ic,
-                                      int index,
-                                      const char *url,
-                                      int is_output);
-#endif
 
 void av_dump_format(AVFormatContext *ic,
                     int index,

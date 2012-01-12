@@ -3282,16 +3282,6 @@ static void dump_stream_format(AVFormatContext *ic, int i, int index, int is_out
     dump_metadata(NULL, st->metadata, "    ");
 }
 
-#if FF_API_DUMP_FORMAT
-void dump_format(AVFormatContext *ic,
-                 int index,
-                 const char *url,
-                 int is_output)
-{
-    av_dump_format(ic, index, url, is_output);
-}
-#endif
-
 void av_dump_format(AVFormatContext *ic,
                     int index,
                     const char *url,
