@@ -47,9 +47,6 @@
  * Those FF_API_* defines are not part of public API.
  * They may change, break or disappear at any time.
  */
-#ifndef FF_API_FLAG_RTP_HINT
-#define FF_API_FLAG_RTP_HINT           (LIBAVFORMAT_VERSION_MAJOR < 54)
-#endif
 #ifndef FF_API_AVSTREAM_QUALITY
 #define FF_API_AVSTREAM_QUALITY        (LIBAVFORMAT_VERSION_MAJOR < 54)
 #endif
