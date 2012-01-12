@@ -29,6 +29,7 @@
 #include "libavutil/common.h"
 #include "get_bits.h"
 #include "cabac.h"
+#include "cabac_functions.h"
 
 static const uint8_t lps_range[64][4]= {
 {128,176,208,240}, {128,167,197,227}, {128,158,187,216}, {123,150,178,205},
