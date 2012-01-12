@@ -1739,6 +1739,7 @@ int main(int argc, char **argv)
     char *w_name = NULL, *w_args = NULL;
     int ret;
 
+    av_log_set_flags(AV_LOG_SKIP_REPEATED);
     parse_loglevel(argc, argv, options);
     av_register_all();
     avformat_network_init();
