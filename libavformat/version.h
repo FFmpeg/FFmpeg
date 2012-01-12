@@ -47,9 +47,6 @@
  * Those FF_API_* defines are not part of public API.
  * They may change, break or disappear at any time.
  */
-#ifndef FF_API_FILESIZE
-#define FF_API_FILESIZE                (LIBAVFORMAT_VERSION_MAJOR < 54)
-#endif
 #ifndef FF_API_MUXRATE
 #define FF_API_MUXRATE                 (LIBAVFORMAT_VERSION_MAJOR < 54)
 #endif

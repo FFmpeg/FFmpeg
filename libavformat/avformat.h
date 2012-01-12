@@ -835,13 +835,6 @@ typedef struct AVFormatContext {
      */
     int64_t duration;
 
-#if FF_API_FILESIZE
-    /**
-     * decoding: total file size, 0 if unknown
-     */
-    attribute_deprecated int64_t file_size;
-#endif
-
     /**
      * Decoding: total stream bitrate in bit/s, 0 if not
      * available. Never set it directly if the file_size and the
