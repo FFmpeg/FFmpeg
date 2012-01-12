@@ -491,8 +491,7 @@ typedef struct AVInputFormat {
      * additional parameters. Only used in raw format right
      * now. 'av_new_stream' should be called to create new streams.
      */
-    int (*read_header)(struct AVFormatContext *,
-                       AVFormatParameters *ap);
+    int (*read_header)(struct AVFormatContext *);
 
     /**
      * Read one packet and put it in 'pkt'. pts and flags are also

@@ -580,7 +580,7 @@ static int asf_read_marker(AVFormatContext *s, int64_t size)
     return 0;
 }
 
-static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int asf_read_header(AVFormatContext *s)
 {
     ASFContext *asf = s->priv_data;
     ff_asf_guid g;

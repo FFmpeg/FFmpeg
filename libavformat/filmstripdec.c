@@ -34,8 +34,7 @@ typedef struct {
     int leading;
 } FilmstripDemuxContext;
 
-static int read_header(AVFormatContext *s,
-                       AVFormatParameters *ap)
+static int read_header(AVFormatContext *s)
 {
     FilmstripDemuxContext *film = s->priv_data;
     AVIOContext *pb = s->pb;

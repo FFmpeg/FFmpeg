@@ -46,7 +46,7 @@ typedef struct CDIOContext {
     int paranoia_mode;
 } CDIOContext;
 
-static av_cold int read_header(AVFormatContext *ctx, AVFormatParameters *ap)
+static av_cold int read_header(AVFormatContext *ctx)
 {
     CDIOContext *s = ctx->priv_data;
     AVStream *st;

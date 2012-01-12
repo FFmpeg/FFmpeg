@@ -180,8 +180,7 @@ static int mmf_probe(AVProbeData *p)
 }
 
 /* mmf input */
-static int mmf_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
+static int mmf_read_header(AVFormatContext *s)
 {
     MMFContext *mmf = s->priv_data;
     unsigned int tag;

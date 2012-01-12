@@ -66,8 +66,7 @@ static int roq_probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX;
 }
 
-static int roq_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
+static int roq_read_header(AVFormatContext *s)
 {
     RoqDemuxContext *roq = s->priv_data;
     AVIOContext *pb = s->pb;

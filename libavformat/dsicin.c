@@ -91,7 +91,7 @@ static int cin_read_file_header(CinDemuxContext *cin, AVIOContext *pb) {
     return 0;
 }
 
-static int cin_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int cin_read_header(AVFormatContext *s)
 {
     int rc;
     CinDemuxContext *cin = s->priv_data;

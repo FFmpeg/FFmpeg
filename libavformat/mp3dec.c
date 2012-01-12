@@ -132,8 +132,7 @@ static int mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
     return 0;
 }
 
-static int mp3_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
+static int mp3_read_header(AVFormatContext *s)
 {
     AVStream *st;
     int64_t off;

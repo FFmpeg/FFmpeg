@@ -107,8 +107,7 @@ static int iff_probe(AVProbeData *p)
     return 0;
 }
 
-static int iff_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
+static int iff_read_header(AVFormatContext *s)
 {
     IffDemuxContext *iff = s->priv_data;
     AVIOContext *pb = s->pb;

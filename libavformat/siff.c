@@ -153,7 +153,7 @@ static int siff_parse_soun(AVFormatContext *s, SIFFContext *c, AVIOContext *pb)
     return create_audio_stream(s, c);
 }
 
-static int siff_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int siff_read_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     SIFFContext *c = s->priv_data;

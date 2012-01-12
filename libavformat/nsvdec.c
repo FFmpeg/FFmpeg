@@ -269,7 +269,7 @@ static int nsv_resync(AVFormatContext *s)
     return -1;
 }
 
-static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
+static int nsv_parse_NSVf_header(AVFormatContext *s)
 {
     NSVContext *nsv = s->priv_data;
     AVIOContext *pb = s->pb;
@@ -391,7 +391,7 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
     return 0;
 }
 
-static int nsv_parse_NSVs_header(AVFormatContext *s, AVFormatParameters *ap)
+static int nsv_parse_NSVs_header(AVFormatContext *s)
 {
     NSVContext *nsv = s->priv_data;
     AVIOContext *pb = s->pb;
@@ -512,7 +512,7 @@ fail:
     return -1;
 }
 
-static int nsv_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int nsv_read_header(AVFormatContext *s)
 {
     NSVContext *nsv = s->priv_data;
     int i, err;
@@ -527,10 +527,10 @@ static int nsv_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if (nsv_resync(s) < 0)
             return -1;
         if (nsv->state == NSV_FOUND_NSVF)
-            err = nsv_parse_NSVf_header(s, ap);
+            err = nsv_parse_NSVf_header(s);
             /* we need the first NSVs also... */
         if (nsv->state == NSV_FOUND_NSVS) {
-            err = nsv_parse_NSVs_header(s, ap);
+            err = nsv_parse_NSVs_header(s);
             break; /* we just want the first one */
         }
     }
@@ -571,7 +571,7 @@ null_chunk_retry:
     if (err < 0)
         return err;
     if (nsv->state == NSV_FOUND_NSVS)
-        err = nsv_parse_NSVs_header(s, NULL);
+        err = nsv_parse_NSVs_header(s);
     if (err < 0)
         return err;
     if (nsv->state != NSV_HAS_READ_NSVS && nsv->state != NSV_FOUND_BEEF)

@@ -126,8 +126,7 @@ static int xmv_probe(AVProbeData *p)
     return 0;
 }
 
-static int xmv_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
+static int xmv_read_header(AVFormatContext *s)
 {
     XMVDemuxContext *xmv = s->priv_data;
     AVIOContext     *pb  = s->pb;

@@ -63,8 +63,7 @@ static int xa_probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX/2;
 }
 
-static int xa_read_header(AVFormatContext *s,
-               AVFormatParameters *ap)
+static int xa_read_header(AVFormatContext *s)
 {
     MaxisXADemuxContext *xa = s->priv_data;
     AVIOContext *pb = s->pb;

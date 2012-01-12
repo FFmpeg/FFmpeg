@@ -38,7 +38,7 @@ static int voc_probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX;
 }
 
-static int voc_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int voc_read_header(AVFormatContext *s)
 {
     VocDecContext *voc = s->priv_data;
     AVIOContext *pb = s->pb;

@@ -403,7 +403,7 @@ static int rm_read_header_old(AVFormatContext *s)
     return rm_read_audio_stream_info(s, s->pb, st, st->priv_data, 1);
 }
 
-static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int rm_read_header(AVFormatContext *s)
 {
     RMDemuxContext *rm = s->priv_data;
     AVStream *st;

@@ -60,8 +60,7 @@ static int sap_read_close(AVFormatContext *s)
     return 0;
 }
 
-static int sap_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
+static int sap_read_header(AVFormatContext *s)
 {
     struct SAPState *sap = s->priv_data;
     char host[1024], path[1024], url[1024];

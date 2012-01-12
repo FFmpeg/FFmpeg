@@ -122,7 +122,7 @@ static int get_codec_data(AVIOContext *pb, AVStream *vst,
     return 0;
 }
 
-static int nuv_header(AVFormatContext *s, AVFormatParameters *ap) {
+static int nuv_header(AVFormatContext *s) {
     NUVContext *ctx = s->priv_data;
     AVIOContext *pb = s->pb;
     char id_string[12];

@@ -402,8 +402,7 @@ typedef struct RawDVContext {
     uint8_t         buf[DV_MAX_FRAME_SIZE];
 } RawDVContext;
 
-static int dv_read_header(AVFormatContext *s,
-                          AVFormatParameters *ap)
+static int dv_read_header(AVFormatContext *s)
 {
     unsigned state, marker_pos = 0;
     RawDVContext *c = s->priv_data;

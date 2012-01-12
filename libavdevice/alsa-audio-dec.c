@@ -52,8 +52,7 @@
 
 #include "alsa-audio.h"
 
-static av_cold int audio_read_header(AVFormatContext *s1,
-                                     AVFormatParameters *ap)
+static av_cold int audio_read_header(AVFormatContext *s1)
 {
     AlsaData *s = s1->priv_data;
     AVStream *st;

@@ -96,8 +96,7 @@ static int str_probe(AVProbeData *p)
     return 50;
 }
 
-static int str_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
+static int str_read_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     StrDemuxContext *str = s->priv_data;

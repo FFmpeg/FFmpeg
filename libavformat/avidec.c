@@ -325,7 +325,7 @@ static void avi_read_nikon(AVFormatContext *s, uint64_t end)
     }
 }
 
-static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int avi_read_header(AVFormatContext *s)
 {
     AVIContext *avi = s->priv_data;
     AVIOContext *pb = s->pb;

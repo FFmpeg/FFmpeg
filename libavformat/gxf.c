@@ -259,7 +259,7 @@ static void gxf_read_index(AVFormatContext *s, int pkt_len) {
     avio_skip(pb, pkt_len);
 }
 
-static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
+static int gxf_header(AVFormatContext *s) {
     AVIOContext *pb = s->pb;
     GXFPktType pkt_type;
     int map_len;

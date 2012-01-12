@@ -118,8 +118,7 @@ static int au_probe(AVProbeData *p)
 }
 
 /* au input */
-static int au_read_header(AVFormatContext *s,
-                          AVFormatParameters *ap)
+static int au_read_header(AVFormatContext *s)
 {
     int size;
     unsigned int tag;

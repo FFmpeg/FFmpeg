@@ -98,7 +98,7 @@ static int smacker_probe(AVProbeData *p)
         return 0;
 }
 
-static int smacker_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int smacker_read_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     SmackerContext *smk = s->priv_data;

@@ -138,8 +138,7 @@ static int idcin_probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX / 2;
 }
 
-static int idcin_read_header(AVFormatContext *s,
-                             AVFormatParameters *ap)
+static int idcin_read_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     IdcinDemuxContext *idcin = s->priv_data;

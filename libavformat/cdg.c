@@ -26,7 +26,7 @@
 #define CDG_COMMAND        0x09
 #define CDG_MASK           0x3F
 
-static int read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int read_header(AVFormatContext *s)
 {
     AVStream *vst;
     int ret;

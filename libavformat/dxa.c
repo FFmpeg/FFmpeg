@@ -51,7 +51,7 @@ static int dxa_probe(AVProbeData *p)
         return 0;
 }
 
-static int dxa_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int dxa_read_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     DXAContext *c = s->priv_data;

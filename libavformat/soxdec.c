@@ -44,8 +44,7 @@ static int sox_probe(AVProbeData *p)
     return 0;
 }
 
-static int sox_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
+static int sox_read_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     unsigned header_size, comment_size;

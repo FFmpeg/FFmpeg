@@ -29,7 +29,7 @@
 #include "libavutil/pixdesc.h"
 
 /* raw input */
-int ff_raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
+int ff_raw_read_header(AVFormatContext *s)
 {
     AVStream *st;
     enum CodecID id;
@@ -120,8 +120,7 @@ int ff_raw_read_partial_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-int ff_raw_audio_read_header(AVFormatContext *s,
-                             AVFormatParameters *ap)
+int ff_raw_audio_read_header(AVFormatContext *s)
 {
     AVStream *st = avformat_new_stream(s, NULL);
     if (!st)
@@ -136,8 +135,7 @@ int ff_raw_audio_read_header(AVFormatContext *s,
 }
 
 /* MPEG-1/H.263 input */
-int ff_raw_video_read_header(AVFormatContext *s,
-                             AVFormatParameters *ap)
+int ff_raw_video_read_header(AVFormatContext *s)
 {
     AVStream *st;
     FFRawVideoDemuxerContext *s1 = s->priv_data;

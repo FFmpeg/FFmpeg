@@ -55,7 +55,7 @@ static int avs_probe(AVProbeData * p)
     return 0;
 }
 
-static int avs_read_header(AVFormatContext * s, AVFormatParameters * ap)
+static int avs_read_header(AVFormatContext * s)
 {
     AvsFormat *avs = s->priv_data;
 

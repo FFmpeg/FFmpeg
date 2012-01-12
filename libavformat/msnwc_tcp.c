@@ -70,7 +70,7 @@ static int msnwc_tcp_probe(AVProbeData *p)
     return -1;
 }
 
-static int msnwc_tcp_read_header(AVFormatContext *ctx, AVFormatParameters *ap)
+static int msnwc_tcp_read_header(AVFormatContext *ctx)
 {
     AVIOContext *pb = ctx->pb;
     AVCodecContext *codec;

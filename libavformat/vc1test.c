@@ -42,8 +42,7 @@ static int vc1t_probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX/2;
 }
 
-static int vc1t_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
+static int vc1t_read_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     AVStream *st;

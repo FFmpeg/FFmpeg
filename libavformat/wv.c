@@ -203,8 +203,7 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb, int appen
     return 0;
 }
 
-static int wv_read_header(AVFormatContext *s,
-                          AVFormatParameters *ap)
+static int wv_read_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     WVContext *wc = s->priv_data;

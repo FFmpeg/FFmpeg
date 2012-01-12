@@ -205,7 +205,7 @@ enum CodecID av_guess_image2_codec(const char *filename){
 }
 #endif
 
-static int read_header(AVFormatContext *s1, AVFormatParameters *ap)
+static int read_header(AVFormatContext *s1)
 {
     VideoData *s = s1->priv_data;
     int first_index, last_index, ret = 0;

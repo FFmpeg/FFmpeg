@@ -1849,7 +1849,7 @@ static int sdp_probe(AVProbeData *p1)
     return 0;
 }
 
-static int sdp_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int sdp_read_header(AVFormatContext *s)
 {
     RTSPState *rt = s->priv_data;
     RTSPStream *rtsp_st;
@@ -1935,8 +1935,7 @@ static int rtp_probe(AVProbeData *p)
     return 0;
 }
 
-static int rtp_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
+static int rtp_read_header(AVFormatContext *s)
 {
     uint8_t recvbuf[1500];
     char host[500], sdp[500];
@@ -2013,7 +2012,7 @@ static int rtp_read_header(AVFormatContext *s,
 
     rt->media_type_mask = (1 << (AVMEDIA_TYPE_DATA+1)) - 1;
 
-    ret = sdp_read_header(s, ap);
+    ret = sdp_read_header(s);
     s->pb = NULL;
     return ret;
 

@@ -44,7 +44,7 @@ static int nc_probe(AVProbeData *probe_packet)
     return 0;
 }
 
-static int nc_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int nc_read_header(AVFormatContext *s)
 {
     AVStream *st = avformat_new_stream(s, NULL);
 

@@ -379,8 +379,7 @@ static const AVMetadataConv wav_metadata_conv[] = {
 };
 
 /* wav input */
-static int wav_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
+static int wav_read_header(AVFormatContext *s)
 {
     int64_t size, av_uninit(data_size);
     int64_t sample_count=0;
@@ -621,7 +620,7 @@ static int w64_probe(AVProbeData *p)
         return 0;
 }
 
-static int w64_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int w64_read_header(AVFormatContext *s)
 {
     int64_t size;
     AVIOContext *pb  = s->pb;

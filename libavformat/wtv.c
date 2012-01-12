@@ -945,7 +945,7 @@ static const uint8_t timeline_table_0_entries_Events_le16[] =
     {'t'_'i'_'m'_'e'_'l'_'i'_'n'_'e'_'.'_'t'_'a'_'b'_'l'_'e'_'.'_'0'_'.'_'e'_'n'_'t'_'r'_'i'_'e'_'s'_'.'_'E'_'v'_'e'_'n'_'t'_'s', 0};
 #undef _
 
-static int read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int read_header(AVFormatContext *s)
 {
     WtvContext *wtv = s->priv_data;
     int root_sector, root_size;

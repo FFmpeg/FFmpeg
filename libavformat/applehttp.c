@@ -443,7 +443,7 @@ reload:
     goto restart;
 }
 
-static int applehttp_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int applehttp_read_header(AVFormatContext *s)
 {
     AppleHTTPContext *c = s->priv_data;
     int ret = 0, i, j, stream_offset = 0;

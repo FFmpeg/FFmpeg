@@ -259,7 +259,7 @@ static int ffm_close(AVFormatContext *s)
 }
 
 
-static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int ffm_read_header(AVFormatContext *s)
 {
     FFMContext *ffm = s->priv_data;
     AVStream *st;

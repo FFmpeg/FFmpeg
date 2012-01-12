@@ -1648,7 +1648,7 @@ static inline void compute_partition_essence_offset(AVFormatContext *s,
     }
 }
 
-static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int mxf_read_header(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
     KLVPacket klv;

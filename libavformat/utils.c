@@ -608,7 +608,6 @@ int avformat_open_input(AVFormatContext **ps, const char *filename, AVInputForma
 {
     AVFormatContext *s = *ps;
     int ret = 0;
-    AVFormatParameters ap = { { 0 } };
     AVDictionary *tmp = NULL;
 
     if (!s && !(s = avformat_alloc_context()))
@@ -655,7 +654,7 @@ int avformat_open_input(AVFormatContext **ps, const char *filename, AVInputForma
         ff_id3v2_read(s, ID3v2_DEFAULT_MAGIC);
 
     if (s->iformat->read_header)
-        if ((ret = s->iformat->read_header(s, &ap)) < 0)
+        if ((ret = s->iformat->read_header(s)) < 0)
             goto fail;
 
     if (s->pb && !s->data_offset)

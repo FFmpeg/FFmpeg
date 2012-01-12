@@ -30,7 +30,7 @@ static int apc_probe(AVProbeData *p)
     return 0;
 }
 
-static int apc_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int apc_read_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     AVStream *st;

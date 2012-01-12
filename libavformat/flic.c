@@ -83,8 +83,7 @@ static int flic_probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX;
 }
 
-static int flic_read_header(AVFormatContext *s,
-                            AVFormatParameters *ap)
+static int flic_read_header(AVFormatContext *s)
 {
     FlicDemuxContext *flic = s->priv_data;
     AVIOContext *pb = s->pb;

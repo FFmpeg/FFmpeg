@@ -83,8 +83,7 @@ static int wc3_probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX;
 }
 
-static int wc3_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
+static int wc3_read_header(AVFormatContext *s)
 {
     Wc3DemuxContext *wc3 = s->priv_data;
     AVIOContext *pb = s->pb;

@@ -174,8 +174,7 @@ static int aiff_probe(AVProbeData *p)
 }
 
 /* aiff input */
-static int aiff_read_header(AVFormatContext *s,
-                            AVFormatParameters *ap)
+static int aiff_read_header(AVFormatContext *s)
 {
     int size, filesize;
     int64_t offset = 0;

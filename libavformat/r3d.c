@@ -159,7 +159,7 @@ static void r3d_read_reos(AVFormatContext *s)
     avio_skip(s->pb, 6*4);
 }
 
-static int r3d_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int r3d_read_header(AVFormatContext *s)
 {
     R3DContext *r3d = s->priv_data;
     Atom atom;

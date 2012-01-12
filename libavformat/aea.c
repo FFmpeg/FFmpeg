@@ -54,8 +54,7 @@ static int aea_read_probe(AVProbeData *p)
     return 0;
 }
 
-static int aea_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
+static int aea_read_header(AVFormatContext *s)
 {
     AVStream *st = avformat_new_stream(s, NULL);
     if (!st)

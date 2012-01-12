@@ -221,7 +221,7 @@ static void stop_jack(JackData *self)
     ff_timefilter_destroy(self->timefilter);
 }
 
-static int audio_read_header(AVFormatContext *context, AVFormatParameters *params)
+static int audio_read_header(AVFormatContext *context)
 {
     JackData *self = context->priv_data;
     AVStream *stream;

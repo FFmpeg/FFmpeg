@@ -52,7 +52,7 @@ static int swf_probe(AVProbeData *p)
         return 0;
 }
 
-static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int swf_read_header(AVFormatContext *s)
 {
     SWFContext *swf = s->priv_data;
     AVIOContext *pb = s->pb;

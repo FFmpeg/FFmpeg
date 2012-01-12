@@ -82,8 +82,7 @@ static int sol_channels(int magic, int type)
     return 2;
 }
 
-static int sol_read_header(AVFormatContext *s,
-                          AVFormatParameters *ap)
+static int sol_read_header(AVFormatContext *s)
 {
     unsigned int magic,tag;
     AVIOContext *pb = s->pb;

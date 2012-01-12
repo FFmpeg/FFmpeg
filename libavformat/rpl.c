@@ -110,7 +110,7 @@ static AVRational read_fps(const char* line, int* error)
     return result;
 }
 
-static int rpl_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int rpl_read_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     RPLContext *rpl = s->priv_data;

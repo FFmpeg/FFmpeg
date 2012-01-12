@@ -494,7 +494,7 @@ static int ogg_get_length(AVFormatContext *s)
     return 0;
 }
 
-static int ogg_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int ogg_read_header(AVFormatContext *s)
 {
     struct ogg *ogg = s->priv_data;
     int ret, i;

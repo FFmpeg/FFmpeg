@@ -400,8 +400,7 @@ static int ea_probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX;
 }
 
-static int ea_read_header(AVFormatContext *s,
-                          AVFormatParameters *ap)
+static int ea_read_header(AVFormatContext *s)
 {
     EaDemuxContext *ea = s->priv_data;
     AVStream *st;

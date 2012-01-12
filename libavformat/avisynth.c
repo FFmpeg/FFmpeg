@@ -41,7 +41,7 @@ typedef struct {
   int next_stream;
 } AVISynthContext;
 
-static int avisynth_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int avisynth_read_header(AVFormatContext *s)
 {
   AVISynthContext *avs = s->priv_data;
   HRESULT res;

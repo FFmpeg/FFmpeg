@@ -54,7 +54,7 @@ static int gsm_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-static int gsm_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int gsm_read_header(AVFormatContext *s)
 {
     GSMDemuxerContext *c = s->priv_data;
     AVStream *st = avformat_new_stream(s, NULL);

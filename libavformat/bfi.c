@@ -47,7 +47,7 @@ static int bfi_probe(AVProbeData * p)
         return 0;
 }
 
-static int bfi_read_header(AVFormatContext * s, AVFormatParameters * ap)
+static int bfi_read_header(AVFormatContext * s)
 {
     BFIContext *bfi = s->priv_data;
     AVIOContext *pb = s->pb;

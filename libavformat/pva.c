@@ -41,7 +41,7 @@ static int pva_probe(AVProbeData * pd) {
     return 0;
 }
 
-static int pva_read_header(AVFormatContext *s, AVFormatParameters *ap) {
+static int pva_read_header(AVFormatContext *s) {
     AVStream *st;
 
     if (!(st = avformat_new_stream(s, NULL)))

@@ -104,8 +104,7 @@ typedef struct MpegDemuxContext {
     int sofdec;
 } MpegDemuxContext;
 
-static int mpegps_read_header(AVFormatContext *s,
-                              AVFormatParameters *ap)
+static int mpegps_read_header(AVFormatContext *s)
 {
     MpegDemuxContext *m = s->priv_data;
     const char *sofdec = "Sofdec";

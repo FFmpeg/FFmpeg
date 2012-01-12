@@ -78,8 +78,7 @@ static int vmd_probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX / 2;
 }
 
-static int vmd_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
+static int vmd_read_header(AVFormatContext *s)
 {
     VmdDemuxContext *vmd = s->priv_data;
     AVIOContext *pb = s->pb;

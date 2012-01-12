@@ -39,7 +39,7 @@ static int pmp_probe(AVProbeData *p)
     return 0;
 }
 
-static int pmp_header(AVFormatContext *s, AVFormatParameters *ap)
+static int pmp_header(AVFormatContext *s)
 {
     PMPContext *pmp = s->priv_data;
     AVIOContext *pb = s->pb;

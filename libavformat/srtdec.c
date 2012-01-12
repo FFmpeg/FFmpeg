@@ -40,7 +40,7 @@ static int srt_probe(AVProbeData *p)
     return 0;
 }
 
-static int srt_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int srt_read_header(AVFormatContext *s)
 {
     AVStream *st = avformat_new_stream(s, NULL);
     if (!st)

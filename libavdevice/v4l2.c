@@ -543,7 +543,7 @@ static void mmap_close(struct video_data *s)
     av_free(s->buf_len);
 }
 
-static int v4l2_set_parameters(AVFormatContext *s1, AVFormatParameters *ap)
+static int v4l2_set_parameters(AVFormatContext *s1)
 {
     struct video_data *s = s1->priv_data;
     struct v4l2_input input = { 0 };
@@ -678,7 +678,7 @@ static uint32_t device_try_init(AVFormatContext *s1,
     return desired_format;
 }
 
-static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
+static int v4l2_read_header(AVFormatContext *s1)
 {
     struct video_data *s = s1->priv_data;
     AVStream *st;
@@ -766,7 +766,7 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     s->frame_format = desired_format;
 
-    if ((res = v4l2_set_parameters(s1, ap) < 0))
+    if ((res = v4l2_set_parameters(s1) < 0))
         goto out;
 
     st->codec->pix_fmt = fmt_v4l2ff(desired_format, codec_id);

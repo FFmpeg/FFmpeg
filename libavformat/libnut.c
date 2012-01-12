@@ -186,7 +186,7 @@ static off_t av_seek(void * h, long long pos, int whence) {
     return avio_seek(bc, pos, whence);
 }
 
-static int nut_read_header(AVFormatContext * avf, AVFormatParameters * ap) {
+static int nut_read_header(AVFormatContext * avf) {
     NUTContext * priv = avf->priv_data;
     AVIOContext * bc = avf->pb;
     nut_demuxer_opts_tt dopts = {

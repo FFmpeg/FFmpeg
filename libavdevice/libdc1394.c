@@ -117,7 +117,7 @@ static const AVClass libdc1394_class = {
 };
 
 
-static inline int dc1394_read_common(AVFormatContext *c, AVFormatParameters *ap,
+static inline int dc1394_read_common(AVFormatContext *c,
                                      struct dc1394_frame_format **select_fmt, struct dc1394_frame_rate **select_fps)
 {
     dc1394_data* dc1394 = c->priv_data;
@@ -191,7 +191,7 @@ out:
 }
 
 #if HAVE_LIBDC1394_1
-static int dc1394_v1_read_header(AVFormatContext *c, AVFormatParameters * ap)
+static int dc1394_v1_read_header(AVFormatContext *c)
 {
     dc1394_data* dc1394 = c->priv_data;
     AVStream* vst;
@@ -200,7 +200,7 @@ static int dc1394_v1_read_header(AVFormatContext *c, AVFormatParameters * ap)
     struct dc1394_frame_format *fmt = NULL;
     struct dc1394_frame_rate *fps = NULL;
 
-    if (dc1394_read_common(c,ap,&fmt,&fps) != 0)
+    if (dc1394_read_common(c, &fmt, &fps) != 0)
         return -1;
 
     /* Now let us prep the hardware. */
@@ -285,7 +285,7 @@ static int dc1394_v1_close(AVFormatContext * context)
 }
 
 #elif HAVE_LIBDC1394_2
-static int dc1394_v2_read_header(AVFormatContext *c, AVFormatParameters * ap)
+static int dc1394_v2_read_header(AVFormatContext *c)
 {
     dc1394_data* dc1394 = c->priv_data;
     dc1394camera_list_t *list;
@@ -293,7 +293,7 @@ static int dc1394_v2_read_header(AVFormatContext *c, AVFormatParameters * ap)
     struct dc1394_frame_format *fmt = NULL;
     struct dc1394_frame_rate *fps = NULL;
 
-    if (dc1394_read_common(c,ap,&fmt,&fps) != 0)
+    if (dc1394_read_common(c, &fmt, &fps) != 0)
        return -1;
 
     /* Now let us prep the hardware. */

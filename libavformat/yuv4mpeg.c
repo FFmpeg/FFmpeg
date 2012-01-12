@@ -190,7 +190,7 @@ AVOutputFormat ff_yuv4mpegpipe_muxer = {
 #define MAX_YUV4_HEADER 80
 #define MAX_FRAME_HEADER 80
 
-static int yuv4_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int yuv4_read_header(AVFormatContext *s)
 {
     char header[MAX_YUV4_HEADER + 10];  // Include headroom for
                                         // the longest option

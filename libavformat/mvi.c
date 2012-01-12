@@ -36,7 +36,7 @@ typedef struct MviDemuxContext {
     int video_frame_size;
 } MviDemuxContext;
 
-static int read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int read_header(AVFormatContext *s)
 {
     MviDemuxContext *mvi = s->priv_data;
     AVIOContext *pb = s->pb;

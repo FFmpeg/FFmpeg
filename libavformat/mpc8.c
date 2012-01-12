@@ -188,7 +188,7 @@ static void mpc8_handle_chunk(AVFormatContext *s, int tag, int64_t chunk_pos, in
     }
 }
 
-static int mpc8_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int mpc8_read_header(AVFormatContext *s)
 {
     MPCContext *c = s->priv_data;
     AVIOContext *pb = s->pb;

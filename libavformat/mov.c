@@ -2551,7 +2551,7 @@ finish:
     avio_seek(sc->pb, cur_pos, SEEK_SET);
 }
 
-static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int mov_read_header(AVFormatContext *s)
 {
     MOVContext *mov = s->priv_data;
     AVIOContext *pb = s->pb;

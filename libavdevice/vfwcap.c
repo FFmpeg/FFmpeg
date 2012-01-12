@@ -238,7 +238,7 @@ static int vfw_read_close(AVFormatContext *s)
     return 0;
 }
 
-static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int vfw_read_header(AVFormatContext *s)
 {
     struct vfw_ctx *ctx = s->priv_data;
     AVCodecContext *codec;

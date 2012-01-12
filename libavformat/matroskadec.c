@@ -1269,7 +1269,7 @@ static int matroska_aac_sri(int samplerate)
     return sri;
 }
 
-static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int matroska_read_header(AVFormatContext *s)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
     EbmlList *attachements_list = &matroska->attachments;
