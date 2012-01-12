@@ -421,11 +421,6 @@ static int mpeg_mux_init(AVFormatContext *ctx)
             video_bitrate += codec_rate;
     }
 
-#if FF_API_MUXRATE
-    if(ctx->mux_rate){
-        s->mux_rate= (ctx->mux_rate + (8 * 50) - 1) / (8 * 50);
-    } else
-#endif
     if (!s->mux_rate) {
         /* we increase slightly the bitrate to take into account the
            headers. XXX: compute it exactly */

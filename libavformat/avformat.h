@@ -850,12 +850,6 @@ typedef struct AVFormatContext {
     int64_t data_offset; /**< offset of the first packet */
 #endif
 
-#if FF_API_MUXRATE
-    /**
-     * use mpeg muxer private options instead
-     */
-    attribute_deprecated int mux_rate;
-#endif
     unsigned int packet_size;
 #if FF_API_PRELOAD
     attribute_deprecated int preload;
