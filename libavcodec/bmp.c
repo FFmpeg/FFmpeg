@@ -49,6 +49,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     unsigned int ihsize;
     int i, j, n, linesize;
     uint32_t rgb[3];
+    uint32_t alpha = 0;
     uint8_t *ptr;
     int dsize;
     const uint8_t *buf0 = buf;
@@ -131,6 +132,8 @@ static int bmp_decode_frame(AVCodecContext *avctx,
         rgb[0] = bytestream_get_le32(&buf);
         rgb[1] = bytestream_get_le32(&buf);
         rgb[2] = bytestream_get_le32(&buf);
+        if (ihsize >= 108)
+            alpha = bytestream_get_le32(&buf);
     }
 
     avctx->width = width;
@@ -142,13 +145,13 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     case 32:
         if(comp == BMP_BITFIELDS){
             if (rgb[0] == 0xFF000000 && rgb[1] == 0x00FF0000 && rgb[2] == 0x0000FF00)
-                avctx->pix_fmt = PIX_FMT_ABGR;
+                avctx->pix_fmt = alpha ? PIX_FMT_ABGR : PIX_FMT_0BGR;
             else if (rgb[0] == 0x00FF0000 && rgb[1] == 0x0000FF00 && rgb[2] == 0x000000FF)
-                avctx->pix_fmt = PIX_FMT_BGRA;
+                avctx->pix_fmt = alpha ? PIX_FMT_BGRA : PIX_FMT_BGR0;
             else if (rgb[0] == 0x0000FF00 && rgb[1] == 0x00FF0000 && rgb[2] == 0xFF000000)
-                avctx->pix_fmt = PIX_FMT_ARGB;
+                avctx->pix_fmt = alpha ? PIX_FMT_ARGB : PIX_FMT_0RGB;
             else if (rgb[0] == 0x000000FF && rgb[1] == 0x0000FF00 && rgb[2] == 0x00FF0000)
-                avctx->pix_fmt = PIX_FMT_RGBA;
+                avctx->pix_fmt = alpha ? PIX_FMT_RGBA : PIX_FMT_RGB0;
             else {
                 av_log(avctx, AV_LOG_ERROR, "Unknown bitfields %0X %0X %0X\n", rgb[0], rgb[1], rgb[2]);
                 return AVERROR(EINVAL);
