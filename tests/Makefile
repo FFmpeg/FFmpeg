@@ -25,6 +25,7 @@ tests/data/asynth%.sw tests/vsynth%/00.pgm: TAG = GEN
 
 include $(SRC_PATH)/tests/fate/aac.mak
 include $(SRC_PATH)/tests/fate/ac3.mak
+include $(SRC_PATH)/tests/fate/adpcm.mak
 include $(SRC_PATH)/tests/fate/als.mak
 include $(SRC_PATH)/tests/fate/amrnb.mak
 include $(SRC_PATH)/tests/fate/amrwb.mak
