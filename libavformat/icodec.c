@@ -94,6 +94,8 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
             st->codec->height   = 0;
             break;
         case 40:
+            if (ico->images[i].size < 40)
+                return AVERROR_INVALIDDATA;
             st->codec->codec_id = CODEC_ID_BMP;
             if (!st->codec->width || !st->codec->height) {
                 st->codec->width  = avio_rl32(pb);
