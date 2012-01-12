@@ -49,7 +49,6 @@ typedef struct CABACContext{
 
 extern uint8_t ff_h264_mlps_state[4*64];
 extern uint8_t ff_h264_lps_range[4*2*64];  ///< rangeTabLPS
-extern uint8_t ff_h264_mps_state[2*64];     ///< transIdxMPS
 extern const uint8_t ff_h264_norm_shift[512];
 
 #if ARCH_X86
