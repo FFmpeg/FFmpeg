@@ -129,7 +129,7 @@ static void do_adaptive_prediction(struct G722Band *band, const int cur_diff)
     band->prev_qtzd_reconst = cur_qtzd_reconst;
 }
 
-static int inline linear_scale_factor(const int log_factor)
+static inline int linear_scale_factor(const int log_factor)
 {
     const int wd1 = inv_log2_table[(log_factor >> 6) & 31];
     const int shift = log_factor >> 11;

@@ -69,7 +69,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    const static enum PixelFormat pix_fmts[] = {
+    static const enum PixelFormat pix_fmts[] = {
         PIX_FMT_YUV444P,  PIX_FMT_YUV422P,  PIX_FMT_YUV420P,
         PIX_FMT_YUV411P,  PIX_FMT_YUV410P,
         PIX_FMT_YUVJ444P, PIX_FMT_YUVJ422P, PIX_FMT_YUVJ420P,
