@@ -3994,6 +3994,13 @@ typedef struct AVCodecParserContext {
      * Previous frame byte position.
      */
     int64_t last_pos;
+
+    /**
+     * Duration of the current frame.
+     * For audio, this is in units of 1 / AVCodecContext.sample_rate.
+     * For all other types, this is in units of AVCodecContext.time_base.
+     */
+    int duration;
 } AVCodecParserContext;
 
 typedef struct AVCodecParser {

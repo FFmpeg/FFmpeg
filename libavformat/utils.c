@@ -1039,6 +1039,20 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                 if (pkt->size) {
                 got_packet:
                     pkt->duration = 0;
+                    if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+                        if (st->codec->sample_rate > 0) {
+                            pkt->duration = av_rescale_q_rnd(st->parser->duration,
+                                                             (AVRational){ 1, st->codec->sample_rate },
+                                                             st->time_base,
+                                                             AV_ROUND_DOWN);
+                        }
+                    } else if (st->codec->time_base.num != 0 &&
+                               st->codec->time_base.den != 0) {
+                        pkt->duration = av_rescale_q_rnd(st->parser->duration,
+                                                         st->codec->time_base,
+                                                         st->time_base,
+                                                         AV_ROUND_DOWN);
+                    }
                     pkt->stream_index = st->index;
                     pkt->pts = st->parser->pts;
                     pkt->dts = st->parser->dts;
