@@ -269,7 +269,6 @@ static const AVClass seg_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-
 AVOutputFormat ff_segment_muxer = {
     .name           = "segment",
     .long_name      = NULL_IF_CONFIG_SMALL("segment muxer"),
@@ -279,4 +278,22 @@ AVOutputFormat ff_segment_muxer = {
     .write_packet   = seg_write_packet,
     .write_trailer  = seg_write_trailer,
     .priv_class     = &seg_class,
+};
+
+static const AVClass sseg_class = {
+    .class_name = "stream_segment muxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+AVOutputFormat ff_stream_segment_muxer = {
+    .name           = "stream_segment,ssegment",
+    .long_name      = NULL_IF_CONFIG_SMALL("streaming segment muxer"),
+    .priv_data_size = sizeof(SegmentContext),
+    .flags          = AVFMT_NOFILE,
+    .write_header   = seg_write_header,
+    .write_packet   = seg_write_packet,
+    .write_trailer  = seg_write_trailer,
+    .priv_class     = &sseg_class,
 };
