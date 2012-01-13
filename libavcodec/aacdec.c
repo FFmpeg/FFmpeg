@@ -2393,6 +2393,8 @@ static int latm_decode_audio_specific_config(struct LATMContext *latmctx,
                                "config not byte aligned.\n", 1);
         return AVERROR_INVALIDDATA;
     }
+    if (asclen <= 0)
+        return AVERROR_INVALIDDATA;
     bits_consumed = decode_audio_specific_config(NULL, avctx, &m4ac,
                                          gb->buffer + (config_start_bit / 8),
                                          asclen, sync_extension);

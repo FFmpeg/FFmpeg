@@ -284,14 +284,14 @@ void rgb15tobgr15(const uint8_t *src, uint8_t *dst, int src_size)
 
 void rgb12tobgr12(const uint8_t *src, uint8_t *dst, int src_size)
 {
+    uint16_t *d = (uint16_t*)dst;
+    uint16_t *s = (uint16_t*)src;
     int i;
     int num_pixels = src_size >> 1;
 
     for (i = 0; i < num_pixels; i++) {
-        unsigned br;
-        unsigned rgb = ((const uint16_t *)src)[i];
-        br = rgb & 0x0F0F;
-        ((uint16_t *)dst)[i] = (br >> 8) | (rgb & 0x00F0) | (br << 8);
+        unsigned rgb = s[i];
+        d[i] = (rgb << 8 | rgb & 0xF0 | rgb >> 8) & 0xFFF;
     }
 }
 

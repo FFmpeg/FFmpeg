@@ -1316,19 +1316,20 @@ static void do_video_resample(OutputStream *ost,
     AVCodecContext *enc = ost->st->codec;
     *out_picture = in_picture;
 
-    resample_changed = ost->resample_width   != dec->width  ||
-                       ost->resample_height  != dec->height ||
-                       ost->resample_pix_fmt != dec->pix_fmt;
+    resample_changed = ost->resample_width   != in_picture->width  ||
+                       ost->resample_height  != in_picture->height ||
+                       ost->resample_pix_fmt != in_picture->format;
 
     if (resample_changed) {
         av_log(NULL, AV_LOG_INFO,
-               "Input stream #%d:%d frame changed from size:%dx%d fmt:%s to size:%dx%d fmt:%s\n",
+               "Input stream #%d:%d frame changed from size:%dx%d fmt:%s to size:%dx%d fmt:%s / frm size:%dx%d fmt:%s\n",
                ist->file_index, ist->st->index,
                ost->resample_width, ost->resample_height, av_get_pix_fmt_name(ost->resample_pix_fmt),
-               dec->width         , dec->height         , av_get_pix_fmt_name(dec->pix_fmt));
-        ost->resample_width   = dec->width;
-        ost->resample_height  = dec->height;
-        ost->resample_pix_fmt = dec->pix_fmt;
+               dec->width         , dec->height         , av_get_pix_fmt_name(dec->pix_fmt),
+               in_picture->width, in_picture->height, av_get_pix_fmt_name(in_picture->format));
+        ost->resample_width   = in_picture->width;
+        ost->resample_height  = in_picture->height;
+        ost->resample_pix_fmt = in_picture->format;
     }
 
     ost->video_resample = dec->width   != enc->width  ||
@@ -1362,9 +1363,9 @@ static void do_video_resample(OutputStream *ost,
               0, ost->resample_height, (*out_picture)->data, (*out_picture)->linesize);
     }
     if (resample_changed) {
-        ost->resample_width   = dec->width;
-        ost->resample_height  = dec->height;
-        ost->resample_pix_fmt = dec->pix_fmt;
+        ost->resample_width   = in_picture->width;
+        ost->resample_height  = in_picture->height;
+        ost->resample_pix_fmt = in_picture->format;
     }
 }
 #endif

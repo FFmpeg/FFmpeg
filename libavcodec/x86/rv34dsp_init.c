@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2011 Janne Grunau <janne-libav@jannau.net>
+ * RV30/40 MMX/SSE2 optimizations
+ * Copyright (C) 2012 Christophe Gisquet <christophe.gisquet@gmail.com>
  *
  * This file is part of Libav.
  *
@@ -18,21 +19,22 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stdint.h>
-
-#include "libavcodec/avcodec.h"
+#include "libavutil/cpu.h"
+#include "libavutil/x86_cpu.h"
+#include "libavcodec/dsputil.h"
 #include "libavcodec/rv34dsp.h"
 
-void ff_rv34_inv_transform_neon(DCTELEM *block);
-void ff_rv34_inv_transform_noround_neon(DCTELEM *block);
+void ff_rv34_idct_dequant4x4_dc_mmx2(DCTELEM *block);
+void ff_rv34_idct_dequant4x4_dc_noround_mmx2(DCTELEM *block);
 
-void ff_rv34_inv_transform_dc_neon(DCTELEM *block);
-void ff_rv34_inv_transform_noround_dc_neon(DCTELEM *block);
-
-void ff_rv34dsp_init_neon(RV34DSPContext *c, DSPContext* dsp)
+av_cold void ff_rv34dsp_init_x86(RV34DSPContext* c, DSPContext *dsp)
 {
-    c->rv34_inv_transform_tab[0]    = ff_rv34_inv_transform_neon;
-    c->rv34_inv_transform_tab[1]    = ff_rv34_inv_transform_noround_neon;
-    c->rv34_inv_transform_dc_tab[0] = ff_rv34_inv_transform_dc_neon;
-    c->rv34_inv_transform_dc_tab[1] = ff_rv34_inv_transform_noround_dc_neon;
+#if HAVE_YASM
+    int mm_flags = av_get_cpu_flags();
+
+    if (mm_flags & AV_CPU_FLAG_MMX2) {
+        c->rv34_inv_transform_dc_tab[0] = ff_rv34_idct_dequant4x4_dc_mmx2;
+        c->rv34_inv_transform_dc_tab[1] = ff_rv34_idct_dequant4x4_dc_noround_mmx2;
+    }
+#endif
 }

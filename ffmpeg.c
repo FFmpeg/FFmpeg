@@ -1365,25 +1365,26 @@ static void do_video_resample(OutputStream *ost,
 #else
     AVCodecContext *dec = ist->st->codec;
     AVCodecContext *enc = ost->st->codec;
-    int resample_changed = ost->resample_width   != dec->width  ||
-                           ost->resample_height  != dec->height ||
-                           ost->resample_pix_fmt != dec->pix_fmt;
+    int resample_changed = ost->resample_width   != in_picture->width  ||
+                           ost->resample_height  != in_picture->height ||
+                           ost->resample_pix_fmt != in_picture->format;
 
     *out_picture = in_picture;
     if (resample_changed) {
         av_log(NULL, AV_LOG_INFO,
-               "Input stream #%d:%d frame changed from size:%dx%d fmt:%s to size:%dx%d fmt:%s\n",
+               "Input stream #%d:%d frame changed from size:%dx%d fmt:%s to size:%dx%d fmt:%s / frm size:%dx%d fmt:%s\n",
                ist->file_index, ist->st->index,
                ost->resample_width, ost->resample_height, av_get_pix_fmt_name(ost->resample_pix_fmt),
-               dec->width         , dec->height         , av_get_pix_fmt_name(dec->pix_fmt));
-        ost->resample_width   = dec->width;
-        ost->resample_height  = dec->height;
-        ost->resample_pix_fmt = dec->pix_fmt;
+               dec->width         , dec->height         , av_get_pix_fmt_name(dec->pix_fmt),
+               in_picture->width, in_picture->height, av_get_pix_fmt_name(in_picture->format));
+        ost->resample_width   = in_picture->width;
+        ost->resample_height  = in_picture->height;
+        ost->resample_pix_fmt = in_picture->format;
     }
 
-    ost->video_resample = dec->width   != enc->width  ||
-                          dec->height  != enc->height ||
-                          dec->pix_fmt != enc->pix_fmt;
+    ost->video_resample = in_picture->width   != enc->width  ||
+                          in_picture->height  != enc->height ||
+                          in_picture->format  != enc->pix_fmt;
 
     if (ost->video_resample) {
         *out_picture = &ost->resample_frame;
@@ -1399,7 +1400,7 @@ static void do_video_resample(OutputStream *ost,
             }
             /* initialize a new scaler context */
             sws_freeContext(ost->img_resample_ctx);
-            ost->img_resample_ctx = sws_getContext(dec->width, dec->height, dec->pix_fmt,
+            ost->img_resample_ctx = sws_getContext(in_picture->width, in_picture->height, in_picture->format,
                                                    enc->width, enc->height, enc->pix_fmt,
                                                    ost->sws_flags, NULL, NULL, NULL);
             if (ost->img_resample_ctx == NULL) {

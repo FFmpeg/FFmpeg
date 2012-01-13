@@ -182,6 +182,14 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     return 0;
 }
 
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    BufferSourceContext *s = ctx->priv;
+    if (s->picref)
+        avfilter_unref_buffer(s->picref);
+    s->picref = NULL;
+}
+
 static int query_formats(AVFilterContext *ctx)
 {
     BufferSourceContext *c = ctx->priv;
@@ -235,6 +243,7 @@ AVFilter avfilter_vsrc_buffer = {
     .query_formats = query_formats,
 
     .init      = init,
+    .uninit    = uninit,
 
     .inputs    = (const AVFilterPad[]) {{ .name = NULL }},
     .outputs   = (const AVFilterPad[]) {{ .name      = "default",

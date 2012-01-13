@@ -210,7 +210,7 @@ attribute_deprecated int url_poll(URLPollEntry *poll_table, int n, int timeout);
  * Warning: non-blocking protocols is work-in-progress; this flag may be
  * silently ignored.
  */
-#define URL_FLAG_NONBLOCK 4
+#define URL_FLAG_NONBLOCK 8
 
 typedef int URLInterruptCB(void);
 extern URLInterruptCB *url_interrupt_cb;

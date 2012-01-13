@@ -10,7 +10,7 @@ FFLIBS-$(CONFIG_MOVIE_FILTER) += avformat avcodec
 FFLIBS-$(CONFIG_SCALE_FILTER) += swscale
 FFLIBS-$(CONFIG_MP_FILTER) += avcodec
 
-HEADERS = avcodec.h avfilter.h avfiltergraph.h buffersink.h vsrc_buffer.h
+HEADERS = avcodec.h avfilter.h avfiltergraph.h buffersink.h version.h vsrc_buffer.h
 
 OBJS = allfilters.o                                                     \
        avfilter.o                                                       \

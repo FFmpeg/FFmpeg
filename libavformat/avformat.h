@@ -508,7 +508,6 @@ typedef struct AVInputFormat {
      */
     int (*read_close)(struct AVFormatContext *);
 
-#if FF_API_READ_SEEK
     /**
      * Seek to a given timestamp relative to the frames in
      * stream component stream_index.
@@ -517,9 +516,9 @@ typedef struct AVInputFormat {
      *              match is available.
      * @return >= 0 on success (but not necessarily the new offset)
      */
-    attribute_deprecated int (*read_seek)(struct AVFormatContext *,
-                                          int stream_index, int64_t timestamp, int flags);
-#endif
+    int (*read_seek)(struct AVFormatContext *,
+                     int stream_index, int64_t timestamp, int flags);
+
     /**
      * Get the next timestamp in stream[stream_index].time_base units.
      * @return the timestamp or AV_NOPTS_VALUE if an error occurred

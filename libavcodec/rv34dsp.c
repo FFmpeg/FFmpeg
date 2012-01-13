@@ -97,13 +97,37 @@ static void rv34_inv_transform_noround_c(DCTELEM *block){
     }
 }
 
+static void rv34_inv_transform_dc_c(DCTELEM *block)
+{
+    DCTELEM dc = (13 * 13 * block[0] + 0x200) >> 10;
+    int i, j;
+
+    for (i = 0; i < 4; i++, block += 8)
+        for (j = 0; j < 4; j++)
+            block[j] = dc;
+}
+
+static void rv34_inv_transform_dc_noround_c(DCTELEM *block)
+{
+    DCTELEM dc = (13 * 13 * 3 * block[0]) >> 11;
+    int i, j;
+
+    for (i = 0; i < 4; i++, block += 8)
+        for (j = 0; j < 4; j++)
+            block[j] = dc;
+}
+
 /** @} */ // transform
 
 
 av_cold void ff_rv34dsp_init(RV34DSPContext *c, DSPContext* dsp) {
     c->rv34_inv_transform_tab[0] = rv34_inv_transform_c;
     c->rv34_inv_transform_tab[1] = rv34_inv_transform_noround_c;
+    c->rv34_inv_transform_dc_tab[0]  = rv34_inv_transform_dc_c;
+    c->rv34_inv_transform_dc_tab[1]  = rv34_inv_transform_dc_noround_c;
 
     if (HAVE_NEON)
         ff_rv34dsp_init_neon(c, dsp);
+    if (HAVE_MMX)
+        ff_rv34dsp_init_x86(c, dsp);
 }

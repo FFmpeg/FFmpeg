@@ -2119,22 +2119,6 @@ static void compute_status(HTTPContext *c)
     c->buffer_end = c->pb_buffer + len;
 }
 
-/* check if the parser needs to be opened for stream i */
-static void open_parser(AVFormatContext *s, int i)
-{
-    AVStream *st = s->streams[i];
-    AVCodec *codec;
-
-    if (!st->codec->codec) {
-        codec = avcodec_find_decoder(st->codec->codec_id);
-        if (codec && (codec->capabilities & CODEC_CAP_PARSE_ONLY)) {
-            st->codec->parse_only = 1;
-            if (avcodec_open2(st->codec, codec, NULL) < 0)
-                st->codec->parse_only = 0;
-        }
-    }
-}
-
 static int open_input_stream(HTTPContext *c, const char *info)
 {
     char buf[128];
@@ -2179,10 +2163,6 @@ static int open_input_stream(HTTPContext *c, const char *info)
         avformat_close_input(&s);
         return -1;
     }
-
-    /* open each parser */
-    for(i=0;i<s->nb_streams;i++)
-        open_parser(s, i);
 
     /* choose stream as clock source (we favorize video stream if
        present) for packet sending */
