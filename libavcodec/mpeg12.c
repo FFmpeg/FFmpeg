@@ -2075,8 +2075,6 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
 
     if (MPV_common_init(s) < 0)
         return -1;
-    exchange_uv(s); // common init reset pblocks, so we swap them here
-    s->swap_uv = 1; // in case of xvmc we need to swap uv for each MB
     s1->mpeg_enc_ctx_allocated = 1;
 
     for (i = 0; i < 64; i++) {
@@ -2096,8 +2094,15 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
     s->first_field           = 0;
     s->frame_pred_frame_dct  = 1;
     s->chroma_format         = 1;
-    s->codec_id              = s->avctx->codec_id = CODEC_ID_MPEG2VIDEO;
-    avctx->sub_id            = 2; /* indicates MPEG-2 */
+    if (s->codec_tag == AV_RL32("BW10")) {
+        s->codec_id              = s->avctx->codec_id = CODEC_ID_MPEG1VIDEO;
+        avctx->sub_id            = 1; /* indicates MPEG-1 */
+    } else {
+        exchange_uv(s); // common init reset pblocks, so we swap them here
+        s->swap_uv = 1; // in case of xvmc we need to swap uv for each MB
+        s->codec_id              = s->avctx->codec_id = CODEC_ID_MPEG2VIDEO;
+        avctx->sub_id            = 2; /* indicates MPEG-2 */
+    }
     s1->save_width           = s->width;
     s1->save_height          = s->height;
     s1->save_progressive_seq = s->progressive_sequence;
@@ -2269,7 +2274,9 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
     }
 
     s2->codec_tag = avpriv_toupper4(avctx->codec_tag);
-    if (s->mpeg_enc_ctx_allocated == 0 &&    s2->codec_tag == AV_RL32("VCR2"))
+    if (s->mpeg_enc_ctx_allocated == 0 && (   s2->codec_tag == AV_RL32("VCR2")
+                                           || s2->codec_tag == AV_RL32("BW10")
+                                          ))
         vcr2_init_sequence(avctx);
 
     s->slice_count = 0;
