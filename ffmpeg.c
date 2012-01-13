@@ -4866,9 +4866,9 @@ static int opt_passlogfile(const char *opt, const char *arg)
 
 static int opt_old2new(OptionsContext *o, const char *opt, const char *arg)
 {
-    char *s= av_malloc(strlen(opt)+2);
-    snprintf(s, strlen(opt)+2, "%s:%c", opt+1, *opt);
-    return parse_option(o, s, arg, options);
+    char *s = av_asprintf("%s:%c", opt + 1, *opt);
+    parse_option(o, s, arg, options);
+    av_free(s);
 }
 
 static int opt_bitrate(OptionsContext *o, const char *opt, const char *arg)
