@@ -433,11 +433,10 @@ static void end_frame(AVFilterLink *link)
     DeshakeContext *deshake = link->dst->priv;
     AVFilterBufferRef *in  = link->cur_buf;
     AVFilterBufferRef *out = link->dst->outputs[0]->out_buf;
-    Transform t;
+    Transform t = {{0},0}, orig = {{0},0};
     float matrix[9];
     float alpha = 2.0 / deshake->refcount;
     char tmp[256];
-    Transform orig;
 
     if (deshake->cx < 0 || deshake->cy < 0 || deshake->cw < 0 || deshake->ch < 0) {
         // Find the most likely global motion for the current frame
