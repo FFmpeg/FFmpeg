@@ -102,6 +102,18 @@ static int segment_end(AVFormatContext *s)
         av_log(s, AV_LOG_ERROR, "Failure occurred when ending segment '%s'\n",
                oc->filename);
 
+    if (seg->list) {
+        if (seg->list_size && !(seg->number % seg->list_size)) {
+            avio_close(seg->pb);
+            if ((ret = avio_open2(&seg->pb, seg->list, AVIO_FLAG_WRITE,
+                                  &s->interrupt_callback, NULL)) < 0)
+                goto end;
+        }
+        avio_printf(seg->pb, "%s\n", oc->filename);
+        avio_flush(seg->pb);
+    }
+
+end:
     avio_close(oc->pb);
     if (oc->oformat->priv_class)
         av_opt_free(oc->priv_data);
@@ -172,11 +184,6 @@ static int seg_write_header(AVFormatContext *s)
         goto fail;
     }
 
-    if (seg->list) {
-        avio_printf(seg->pb, "%s\n", oc->filename);
-        avio_flush(seg->pb);
-    }
-
 fail:
     if (ret) {
         if (oc) {
@@ -213,17 +220,6 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
 
         if (ret)
             goto fail;
-
-        if (seg->list) {
-            avio_printf(seg->pb, "%s\n", oc->filename);
-            avio_flush(seg->pb);
-            if (seg->list_size && !(seg->number % seg->list_size)) {
-                avio_close(seg->pb);
-                if ((ret = avio_open2(&seg->pb, seg->list, AVIO_FLAG_WRITE,
-                                      &s->interrupt_callback, NULL)) < 0)
-                    goto fail;
-            }
-        }
     }
 
     ret = oc->oformat->write_packet(oc, pkt);
