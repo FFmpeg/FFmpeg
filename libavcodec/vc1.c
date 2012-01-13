@@ -894,20 +894,18 @@ int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
     if (v->field_mode) {
         if (!v->refdist_flag)
             v->refdist = 0;
-        else {
-            if ((v->s.pict_type != AV_PICTURE_TYPE_B)
-                && (v->s.pict_type != AV_PICTURE_TYPE_BI)) {
-                v->refdist = get_bits(gb, 2);
-                if (v->refdist == 3)
-                    v->refdist += get_unary(gb, 0, 16);
-            } else {
-                v->bfraction_lut_index = get_vlc2(gb, ff_vc1_bfraction_vlc.table, VC1_BFRACTION_VLC_BITS, 1);
-                v->bfraction           = ff_vc1_bfraction_lut[v->bfraction_lut_index];
-                v->frfd = (v->bfraction * v->refdist) >> 8;
-                v->brfd = v->refdist - v->frfd - 1;
-                if (v->brfd < 0)
-                    v->brfd = 0;
-            }
+        else if ((v->s.pict_type != AV_PICTURE_TYPE_B) && (v->s.pict_type != AV_PICTURE_TYPE_BI)) {
+            v->refdist = get_bits(gb, 2);
+            if (v->refdist == 3)
+                v->refdist += get_unary(gb, 0, 16);
+        }
+        if ((v->s.pict_type == AV_PICTURE_TYPE_B) || (v->s.pict_type == AV_PICTURE_TYPE_BI)) {
+            v->bfraction_lut_index = get_vlc2(gb, ff_vc1_bfraction_vlc.table, VC1_BFRACTION_VLC_BITS, 1);
+            v->bfraction           = ff_vc1_bfraction_lut[v->bfraction_lut_index];
+            v->frfd = (v->bfraction * v->refdist) >> 8;
+            v->brfd = v->refdist - v->frfd - 1;
+            if (v->brfd < 0)
+                v->brfd = 0;
         }
         goto parse_common_info;
     }
