@@ -30,6 +30,12 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/mathematics.h"
 
+typedef enum {
+    LIST_TYPE_FLAT = 0,
+    LIST_TYPE_EXT,
+    LIST_TYPE_NB,
+} ListType;
+
 typedef struct {
     const AVClass *class;  /**< Class for private options. */
     int number;
@@ -37,11 +43,13 @@ typedef struct {
     char *format;          ///< format to use for output segment files
     char *list;            ///< filename for the segment list file
     int   list_size;       ///< number of entries for the segment list file
+    ListType list_type;    ///< set the list type
     AVIOContext *list_pb;  ///< list file put-byte context
     float time;            ///< segment duration
     int  wrap;             ///< number after which the index wraps
     int64_t recording_time;
     int has_video;
+    double start_time, end_time;
 } SegmentContext;
 
 static int segment_start(AVFormatContext *s)
@@ -110,7 +118,12 @@ static int segment_end(AVFormatContext *s)
                                   &s->interrupt_callback, NULL)) < 0)
                 goto end;
         }
-        avio_printf(seg->list_pb, "%s\n", oc->filename);
+
+        if (seg->list_type == LIST_TYPE_FLAT) {
+            avio_printf(seg->list_pb, "%s\n", oc->filename);
+        } else if (seg->list_type == LIST_TYPE_EXT) {
+            avio_printf(seg->list_pb, "%s,%f,%f\n", oc->filename, seg->start_time, seg->end_time);
+        }
         avio_flush(seg->list_pb);
     }
 
@@ -216,6 +229,10 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
 
         if ((ret = segment_end(s)) < 0 || (ret = segment_start(s)) < 0)
             goto fail;
+        seg->start_time = (double)pkt->pts * av_q2d(st->time_base);
+    } else if (pkt->pts != AV_NOPTS_VALUE) {
+        seg->end_time = FFMAX(seg->end_time,
+                              (double)(pkt->pts + pkt->duration) * av_q2d(st->time_base));
     }
 
     ret = oc->oformat->write_packet(oc, pkt);
@@ -252,6 +269,9 @@ static const AVOption options[] = {
     { "segment_time",      "set segment length in seconds",              OFFSET(time),    AV_OPT_TYPE_FLOAT,  {.dbl = 2},     0, FLT_MAX, E },
     { "segment_list",      "set the segment list filename",              OFFSET(list),    AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
     { "segment_list_size", "set the maximum number of playlist entries", OFFSET(list_size), AV_OPT_TYPE_INT,  {.dbl = 5},     0, INT_MAX, E },
+    { "segment_list_type", "set the segment list type",                  OFFSET(list_type), AV_OPT_TYPE_INT,  {.dbl = LIST_TYPE_FLAT}, 0, LIST_TYPE_NB-1, E, "list_type" },
+    { "flat", "flat format",     0, AV_OPT_TYPE_CONST, {.dbl=LIST_TYPE_FLAT }, INT_MIN, INT_MAX, 0, "list_type" },
+    { "ext",  "extended format", 0, AV_OPT_TYPE_CONST, {.dbl=LIST_TYPE_EXT  }, INT_MIN, INT_MAX, 0, "list_type" },
     { "segment_wrap",      "set number after which the index wraps",     OFFSET(wrap),    AV_OPT_TYPE_INT,    {.dbl = 0},     0, INT_MAX, E },
     { NULL },
 };
