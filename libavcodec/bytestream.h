@@ -75,6 +75,42 @@ DEF  (byte, 1, AV_RB8 , AV_WB8 )
 #undef DEF64
 #undef DEF_T
 
+#if HAVE_BIGENDIAN
+#   define bytestream2_get_ne16  bytestream2_get_be16
+#   define bytestream2_get_ne24  bytestream2_get_be24
+#   define bytestream2_get_ne32  bytestream2_get_be32
+#   define bytestream2_get_ne64  bytestream2_get_be64
+#   define bytestream2_get_ne16u bytestream2_get_be16u
+#   define bytestream2_get_ne24u bytestream2_get_be24u
+#   define bytestream2_get_ne32u bytestream2_get_be32u
+#   define bytestream2_get_ne64u bytestream2_get_be64u
+#   define bytestream2_put_ne16  bytestream2_put_be16
+#   define bytestream2_put_ne24  bytestream2_put_be24
+#   define bytestream2_put_ne32  bytestream2_put_be32
+#   define bytestream2_put_ne64  bytestream2_put_be64
+#   define bytestream2_peek_ne16 bytestream2_peek_be16
+#   define bytestream2_peek_ne24 bytestream2_peek_be24
+#   define bytestream2_peek_ne32 bytestream2_peek_be32
+#   define bytestream2_peek_ne64 bytestream2_peek_be64
+#else
+#   define bytestream2_get_ne16  bytestream2_get_le16
+#   define bytestream2_get_ne24  bytestream2_get_le24
+#   define bytestream2_get_ne32  bytestream2_get_le32
+#   define bytestream2_get_ne64  bytestream2_get_le64
+#   define bytestream2_get_ne16u bytestream2_get_le16u
+#   define bytestream2_get_ne24u bytestream2_get_le24u
+#   define bytestream2_get_ne32u bytestream2_get_le32u
+#   define bytestream2_get_ne64u bytestream2_get_le64u
+#   define bytestream2_put_ne16  bytestream2_put_le16
+#   define bytestream2_put_ne24  bytestream2_put_le24
+#   define bytestream2_put_ne32  bytestream2_put_le32
+#   define bytestream2_put_ne64  bytestream2_put_le64
+#   define bytestream2_peek_ne16 bytestream2_peek_le16
+#   define bytestream2_peek_ne24 bytestream2_peek_le24
+#   define bytestream2_peek_ne32 bytestream2_peek_le32
+#   define bytestream2_peek_ne64 bytestream2_peek_le64
+#endif
+
 static av_always_inline void bytestream2_init(GetByteContext *g,
                                               const uint8_t *buf, int buf_size)
 {
