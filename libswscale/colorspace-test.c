@@ -33,7 +33,7 @@
 
 #define FUNC(s, d, n) { s, d, #n, n }
 
-int main(int argc, char **argv)
+int main(void)
 {
     int i, funcNum;
     uint8_t *srcBuffer = av_malloc(SIZE);
