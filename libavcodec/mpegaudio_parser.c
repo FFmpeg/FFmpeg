@@ -77,7 +77,7 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
                     if(s->header_count > 1){
                         avctx->sample_rate= sr;
                         avctx->channels   = channels;
-                        avctx->frame_size = frame_size;
+                        s1->duration      = frame_size;
                         avctx->bit_rate   = bit_rate;
                     }
                     break;
