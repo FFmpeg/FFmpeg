@@ -5542,6 +5542,9 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
         goto err;
     }
 
+    v->s.current_picture_ptr->f.interlaced_frame = (v->fcm != PROGRESSIVE);
+    v->s.current_picture_ptr->f.top_field_first  = v->tff;
+
     s->me.qpel_put = s->dsp.put_qpel_pixels_tab;
     s->me.qpel_avg = s->dsp.avg_qpel_pixels_tab;
 
