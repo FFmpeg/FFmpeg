@@ -206,7 +206,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (seg->list) {
             avio_printf(seg->pb, "%s\n", oc->filename);
             avio_flush(seg->pb);
-            if (!(seg->number % seg->size)) {
+            if (seg->size && !(seg->number % seg->size)) {
                 avio_close(seg->pb);
                 if ((ret = avio_open2(&seg->pb, seg->list, AVIO_FLAG_WRITE,
                                       &s->interrupt_callback, NULL)) < 0)
