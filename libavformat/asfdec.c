@@ -26,7 +26,6 @@
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"
 #include "libavutil/mathematics.h"
-#include "libavcodec/mpegaudio.h"
 #include "avformat.h"
 #include "internal.h"
 #include "avio_internal.h"
@@ -322,25 +321,6 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
                     || (asf_st->ds_packet_size/asf_st->ds_chunk_size <= 1)
                     || asf_st->ds_packet_size % asf_st->ds_chunk_size)
                 asf_st->ds_span = 0; // disable descrambling
-        }
-        switch (st->codec->codec_id) {
-            case CODEC_ID_MP3:
-                st->codec->frame_size = MPA_FRAME_SIZE;
-                break;
-            case CODEC_ID_PCM_S16LE:
-            case CODEC_ID_PCM_S16BE:
-            case CODEC_ID_PCM_U16LE:
-            case CODEC_ID_PCM_U16BE:
-            case CODEC_ID_PCM_S8:
-            case CODEC_ID_PCM_U8:
-            case CODEC_ID_PCM_ALAW:
-            case CODEC_ID_PCM_MULAW:
-                st->codec->frame_size = 1;
-                break;
-            default:
-                /* This is probably wrong, but it prevents a crash later */
-                st->codec->frame_size = 1;
-                break;
         }
     } else if (type == AVMEDIA_TYPE_VIDEO &&
             size - (avio_tell(pb) - pos1 + 24) >= 51) {
