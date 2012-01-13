@@ -64,6 +64,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     for (i = 0; i < ico->nb_images; i++) {
         AVStream *st;
+        int tmp;
 
         if (avio_seek(pb, 6 + i * 16, SEEK_SET) < 0)
             break;
@@ -97,10 +98,12 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
             if (ico->images[i].size < 40)
                 return AVERROR_INVALIDDATA;
             st->codec->codec_id = CODEC_ID_BMP;
-            if (!st->codec->width || !st->codec->height) {
-                st->codec->width  = avio_rl32(pb);
-                st->codec->height = avio_rl32(pb) / 2;
-            }
+            tmp = avio_rl32(pb);
+            if (tmp)
+                st->codec->width = tmp;
+            tmp = avio_rl32(pb);
+            if (tmp)
+                st->codec->height = tmp / 2;
             break;
         default:
             av_log_ask_for_sample(s, "unsupported codec\n");
