@@ -1220,7 +1220,8 @@ static void sbr_hf_inverse_filter(SBRDSPContext *dsp,
 {
     int k;
     for (k = 0; k < k0; k++) {
-        float phi[3][2][2], dk;
+        LOCAL_ALIGNED_16(float, phi, [3], [2][2]);
+        float dk;
 
         dsp->autocorrelate(X_low[k], phi);
 
@@ -1580,8 +1581,9 @@ static void sbr_hf_assemble(float Y[2][38][64][2], const float X_high[64][40][2]
     for (e = 0; e < ch_data->bs_num_env; e++) {
         for (i = 2 * ch_data->t_env[e]; i < 2 * ch_data->t_env[e + 1]; i++) {
             int phi_sign = (1 - 2*(kx & 1));
-            float g_filt_tab[48], *g_filt;
-            float q_filt_tab[48], *q_filt;
+            LOCAL_ALIGNED_16(float, g_filt_tab, [48]);
+            LOCAL_ALIGNED_16(float, q_filt_tab, [48]);
+            float *g_filt, *q_filt;
 
             if (h_SL && e != e_a[0] && e != e_a[1]) {
                 g_filt = g_filt_tab;
