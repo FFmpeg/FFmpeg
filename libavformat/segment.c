@@ -47,15 +47,15 @@ typedef struct {
 
 static int segment_start(AVFormatContext *s)
 {
-    SegmentContext *c = s->priv_data;
-    AVFormatContext *oc = c->avf;
+    SegmentContext *seg = s->priv_data;
+    AVFormatContext *oc = seg->avf;
     int err = 0;
 
-    if (c->wrap)
-        c->number %= c->wrap;
+    if (seg->wrap)
+        seg->number %= seg->wrap;
 
     if (av_get_frame_filename(oc->filename, sizeof(oc->filename),
-                              s->filename, c->number++) < 0)
+                              s->filename, seg->number++) < 0)
         return AVERROR(EINVAL);
 
     if ((err = avio_open2(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
