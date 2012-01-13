@@ -27,6 +27,8 @@
 
 typedef struct {
     int totalframes, currentframe;
+    int frame_size;
+    int last_frame_size;
 } TTAContext;
 
 static int tta_probe(AVProbeData *p)
@@ -42,7 +44,7 @@ static int tta_read_header(AVFormatContext *s)
 {
     TTAContext *c = s->priv_data;
     AVStream *st;
-    int i, channels, bps, samplerate, datalen, framelen;
+    int i, channels, bps, samplerate, datalen;
     uint64_t framepos, start_offset;
 
     if (!av_dict_get(s->metadata, "", NULL, AV_DICT_IGNORE_SUFFIX))
@@ -69,8 +71,11 @@ static int tta_read_header(AVFormatContext *s)
 
     avio_skip(s->pb, 4); // header crc
 
-    framelen = samplerate*256/245;
-    c->totalframes = datalen / framelen + ((datalen % framelen) ? 1 : 0);
+    c->frame_size      = samplerate * 256 / 245;
+    c->last_frame_size = datalen % c->frame_size;
+    if (!c->last_frame_size)
+        c->last_frame_size = c->frame_size;
+    c->totalframes = datalen / c->frame_size + (c->last_frame_size < c->frame_size);
     c->currentframe = 0;
 
     if(c->totalframes >= UINT_MAX/sizeof(uint32_t)){
@@ -90,7 +95,8 @@ static int tta_read_header(AVFormatContext *s)
 
     for (i = 0; i < c->totalframes; i++) {
         uint32_t size = avio_rl32(s->pb);
-        av_add_index_entry(st, framepos, i*framelen, size, 0, AVINDEX_KEYFRAME);
+        av_add_index_entry(st, framepos, i * c->frame_size, size, 0,
+                           AVINDEX_KEYFRAME);
         framepos += size;
     }
     avio_skip(s->pb, 4); // seektable crc
@@ -132,6 +138,8 @@ static int tta_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     ret = av_get_packet(s->pb, pkt, size);
     pkt->dts = st->index_entries[c->currentframe++].timestamp;
+    pkt->duration = c->currentframe == c->totalframes ? c->last_frame_size :
+                                                        c->frame_size;
     return ret;
 }
 
