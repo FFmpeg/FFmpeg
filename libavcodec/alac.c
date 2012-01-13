@@ -351,6 +351,17 @@ static void interleave_stereo_24(int32_t *buffer[MAX_CHANNELS],
     }
 }
 
+static void interleave_stereo_32(int32_t *buffer[MAX_CHANNELS],
+                                 int32_t *buffer_out, int numsamples)
+{
+    int i;
+
+    for (i = 0; i < numsamples; i++) {
+        *buffer_out++ = buffer[0][i];
+        *buffer_out++ = buffer[1][i];
+    }
+}
+
 static int alac_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
@@ -533,6 +544,16 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
                 outbuffer[i] = alac->outputsamples_buffer[0][i] << 8;
         }
         break;
+    case 32:
+        if (channels == 2) {
+            interleave_stereo_32(alac->outputsamples_buffer,
+                                 (int32_t *)alac->frame.data[0], outputsamples);
+        } else {
+            int32_t *outbuffer = (int32_t *)alac->frame.data[0];
+            for (i = 0; i < outputsamples; i++)
+                outbuffer[i] = alac->outputsamples_buffer[0][i];
+        }
+        break;
     }
 
     if (input_buffer_size * 8 - get_bits_count(&alac->gb) > 8)
@@ -628,6 +649,7 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
     switch (alac->setinfo_sample_size) {
     case 16: avctx->sample_fmt    = AV_SAMPLE_FMT_S16;
              break;
+    case 32:
     case 24: avctx->sample_fmt    = AV_SAMPLE_FMT_S32;
              break;
     default: av_log_ask_for_sample(avctx, "Sample depth %d is not supported.\n",
