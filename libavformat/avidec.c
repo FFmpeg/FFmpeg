@@ -698,6 +698,29 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 }
             }
             break;
+        case MKTAG('s', 't', 'r', 'd'):
+            if (stream_index >= (unsigned)s->nb_streams || st->codec->extradata_size) {
+                avio_skip(pb, size);
+            } else {
+                uint64_t cur_pos = avio_tell(pb);
+                if (cur_pos < list_end)
+                    size = FFMIN(size, list_end - cur_pos);
+                st = s->streams[stream_index];
+
+                if(size<(1<<30)){
+                    st->codec->extradata_size= size;
+                    st->codec->extradata= av_malloc(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+                    if (!st->codec->extradata) {
+                        st->codec->extradata_size= 0;
+                        return AVERROR(ENOMEM);
+                    }
+                    avio_read(pb, st->codec->extradata, st->codec->extradata_size);
+                }
+
+                if(st->codec->extradata_size & 1) //FIXME check if the encoder really did this correctly
+                    avio_r8(pb);
+            }
+            break;
         case MKTAG('i', 'n', 'd', 'x'):
             i= avio_tell(pb);
             if(pb->seekable && !(s->flags & AVFMT_FLAG_IGNIDX) && avi->use_odml &&
