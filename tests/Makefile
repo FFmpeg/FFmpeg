@@ -38,7 +38,7 @@ tests/data/mapchan-mono.sw: tests/audiogen$(HOSTEXESUF)
 	@mkdir -p tests/data
 	$(M)./$< $@ 22050 1
 
-tests/data/asynth%.sw tests/vsynth%/00.pgm: TAG = GEN
+tests/data/%.sw tests/vsynth%/00.pgm: TAG = GEN
 
 include $(SRC_PATH)/tests/fate/aac.mak
 include $(SRC_PATH)/tests/fate/ac3.mak
