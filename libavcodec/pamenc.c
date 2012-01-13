@@ -80,7 +80,7 @@ static int pam_encode_frame(AVCodecContext *avctx, unsigned char *outbuf,
         maxval     = 255;
         tuple_type = "RGB";
         break;
-    case PIX_FMT_RGB32:
+    case PIX_FMT_RGBA:
         n          = w * 4;
         depth      = 4;
         maxval     = 255;
@@ -103,19 +103,7 @@ static int pam_encode_frame(AVCodecContext *avctx, unsigned char *outbuf,
     ptr      = p->data[0];
     linesize = p->linesize[0];
 
-    if (avctx->pix_fmt == PIX_FMT_RGB32) {
-        int j;
-        unsigned int v;
-
-        for (i = 0; i < h; i++) {
-            for (j = 0; j < w; j++) {
-                v = ((uint32_t *)ptr)[j];
-                bytestream_put_be24(&s->bytestream, v);
-                *s->bytestream++ = v >> 24;
-            }
-            ptr += linesize;
-        }
-    } else if (avctx->pix_fmt == PIX_FMT_MONOBLACK){
+    if (avctx->pix_fmt == PIX_FMT_MONOBLACK){
         int j;
         for (i = 0; i < h; i++) {
             for (j = 0; j < w; j++)
@@ -140,6 +128,6 @@ AVCodec ff_pam_encoder = {
     .priv_data_size = sizeof(PNMContext),
     .init           = ff_pnm_init,
     .encode         = pam_encode_frame,
-    .pix_fmts  = (const enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGB32, PIX_FMT_RGB48BE, PIX_FMT_GRAY8, PIX_FMT_GRAY8A, PIX_FMT_GRAY16BE, PIX_FMT_MONOBLACK, PIX_FMT_NONE},
+    .pix_fmts  = (const enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGBA, PIX_FMT_RGB48BE, PIX_FMT_GRAY8, PIX_FMT_GRAY8A, PIX_FMT_GRAY16BE, PIX_FMT_MONOBLACK, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("PAM (Portable AnyMap) image"),
 };
