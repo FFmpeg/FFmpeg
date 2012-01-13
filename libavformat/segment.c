@@ -213,12 +213,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
         av_log(s, AV_LOG_DEBUG, "Next segment starts at %d %"PRId64"\n",
                pkt->stream_index, pkt->pts);
 
-        ret = segment_end(s);
-
-        if (!ret)
-            ret = segment_start(s);
-
-        if (ret)
+        if ((ret = segment_end(s)) < 0 || (ret = segment_start(s)) < 0)
             goto fail;
     }
 
