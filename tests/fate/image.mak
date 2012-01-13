@@ -32,10 +32,12 @@ FATE_TESTS += fate-sunraster-24bit-rle
 fate-sunraster-24bit-rle: CMD = framecrc -i $(SAMPLES)/sunraster/lena-24bit-rle.sun
 
 FATE_TARGA = CBW8       \
+             CCM8       \
              CTC16      \
              CTC24      \
              CTC32      \
              UBW8       \
+             UCM8       \
              UTC16      \
              UTC24      \
              UTC32
@@ -47,12 +49,12 @@ FATE_TESTS += $(FATE_TARGA)
 fate-targa: $(FATE_TARGA)
 
 fate-targa-conformance-CBW8:  CMD = framecrc -i $(SAMPLES)/targa-conformance/CBW8.TGA
-# fate-targa-conformance-CCM8:  CMD = framecrc -i $(SAMPLES)/targa-conformance/CCM8.TGA
+fate-targa-conformance-CCM8:  CMD = framecrc -i $(SAMPLES)/targa-conformance/CCM8.TGA
 fate-targa-conformance-CTC16: CMD = framecrc -i $(SAMPLES)/targa-conformance/CTC16.TGA -pix_fmt rgb555le
 fate-targa-conformance-CTC24: CMD = framecrc -i $(SAMPLES)/targa-conformance/CTC24.TGA
 fate-targa-conformance-CTC32: CMD = framecrc -i $(SAMPLES)/targa-conformance/CTC32.TGA -pix_fmt bgra
 fate-targa-conformance-UBW8:  CMD = framecrc -i $(SAMPLES)/targa-conformance/UBW8.TGA
-# fate-targa-conformance-UCM8:  CMD = framecrc -i $(SAMPLES)/targa-conformance/UCM8.TGA
+fate-targa-conformance-UCM8:  CMD = framecrc -i $(SAMPLES)/targa-conformance/UCM8.TGA
 fate-targa-conformance-UTC16: CMD = framecrc -i $(SAMPLES)/targa-conformance/UTC16.TGA -pix_fmt rgb555le
 fate-targa-conformance-UTC24: CMD = framecrc -i $(SAMPLES)/targa-conformance/UTC24.TGA
 fate-targa-conformance-UTC32: CMD = framecrc -i $(SAMPLES)/targa-conformance/UTC32.TGA -pix_fmt bgra
