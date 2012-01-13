@@ -259,8 +259,6 @@ static void find_motion(DeshakeContext *deshake, uint8_t *src1, uint8_t *src2,
 
     int pos;
     double *angles = av_malloc(sizeof(*angles) * width * height / (16 * deshake->blocksize));
-    double totalangles = 0;
-
     int center_x = 0, center_y = 0;
     double p_x, p_y;
 
@@ -298,13 +296,6 @@ static void find_motion(DeshakeContext *deshake, uint8_t *src1, uint8_t *src2,
 
     center_x /= pos;
     center_y /= pos;
-
-    for (x = 0; x < pos; x++) {
-        totalangles += angles[x];
-    }
-
-    //av_log(NULL, AV_LOG_ERROR, "Angle: %lf\n", totalangles / (pos - 1));
-    t->angle = totalangles / (pos - 1);
 
     t->angle = clean_mean(angles, pos);
     if (t->angle < 0.001)
