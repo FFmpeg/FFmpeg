@@ -89,15 +89,17 @@ fail:
     return err;
 }
 
-static int segment_end(AVFormatContext *oc)
+static int segment_end(AVFormatContext *s)
 {
+    SegmentContext *seg = s->priv_data;
+    AVFormatContext *oc = seg->avf;
     int ret = 0;
 
     if (oc->oformat->write_trailer)
         ret = oc->oformat->write_trailer(oc);
 
     if (ret < 0)
-        av_log(oc, AV_LOG_ERROR, "Failure occurred when ending segment '%s'\n",
+        av_log(s, AV_LOG_ERROR, "Failure occurred when ending segment '%s'\n",
                oc->filename);
 
     avio_close(oc->pb);
@@ -204,7 +206,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
         av_log(s, AV_LOG_DEBUG, "Next segment starts at %d %"PRId64"\n",
                pkt->stream_index, pkt->pts);
 
-        ret = segment_end(oc);
+        ret = segment_end(s);
 
         if (!ret)
             ret = segment_start(s);
@@ -242,7 +244,7 @@ static int seg_write_trailer(struct AVFormatContext *s)
 {
     SegmentContext *seg = s->priv_data;
     AVFormatContext *oc = seg->avf;
-    int ret = segment_end(oc);
+    int ret = segment_end(s);
     if (seg->list)
         avio_close(seg->pb);
     oc->streams = NULL;
