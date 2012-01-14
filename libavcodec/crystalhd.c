@@ -124,6 +124,9 @@ typedef struct {
     AVFrame pic;
     HANDLE dev;
 
+    uint8_t *orig_extradata;
+    uint32_t orig_extradata_size;
+
     AVBitStreamFilterContext *bsfc;
     AVCodecParserContext *parser;
 
@@ -338,6 +341,19 @@ static av_cold int uninit(AVCodecContext *avctx)
     DtsCloseDecoder(device);
     DtsDeviceClose(device);
 
+    /*
+     * Restore original extradata, so that if the decoder is
+     * reinitialised, the bitstream detection and filtering
+     * will work as expected.
+     */
+    if (priv->orig_extradata) {
+        av_free(avctx->extradata);
+        avctx->extradata = priv->orig_extradata;
+        avctx->extradata_size = priv->orig_extradata_size;
+        priv->orig_extradata = NULL;
+        priv->orig_extradata_size = 0;
+    }
+
     av_parser_close(priv->parser);
     if (priv->bsfc) {
         av_bitstream_filter_close(priv->bsfc);
@@ -401,6 +417,16 @@ static av_cold int init(AVCodecContext *avctx)
         {
             uint8_t *dummy_p;
             int dummy_int;
+
+            /* Back up the extradata so it can be restored at close time. */
+            priv->orig_extradata = av_malloc(avctx->extradata_size);
+            if (!priv->orig_extradata) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Failed to allocate copy of extradata\n");
+                return AVERROR(ENOMEM);
+            }
+            priv->orig_extradata_size = avctx->extradata_size;
+            memcpy(priv->orig_extradata, avctx->extradata, avctx->extradata_size);
 
             priv->bsfc = av_bitstream_filter_init("h264_mp4toannexb");
             if (!priv->bsfc) {
