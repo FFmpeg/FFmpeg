@@ -1048,6 +1048,12 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
 
             if (s->restart_interval) {
                 s->restart_count--;
+                if(s->restart_count == 0 && s->avctx->codec_id == CODEC_ID_THP){
+                    align_get_bits(&s->gb);
+                    for (i = 0; i < nb_components; i++) /* reset dc */
+                        s->last_dc[i] = 1024;
+                }
+
                 i = 8 + ((-get_bits_count(&s->gb)) & 7);
                 /* skip RSTn */
                 if (show_bits(&s->gb, i) == (1 << i) - 1) {
