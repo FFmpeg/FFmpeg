@@ -165,6 +165,9 @@ static int ff_cmap_read_palette(AVCodecContext *avctx, uint32_t *pal)
             pal[i] = 0xFF000000 | gray2rgb((i * 255) >> avctx->bits_per_coded_sample);
         }
     }
+    if (s->masking == MASK_HAS_TRANSPARENT_COLOR &&
+        s->transparency < 1 << avctx->bits_per_coded_sample)
+        pal[s->transparency] &= 0xFFFFFF;
     return 0;
 }
 
@@ -216,10 +219,7 @@ static int extract_header(AVCodecContext *const avctx,
         s->flags        = bytestream_get_byte(&buf);
         s->transparency = bytestream_get_be16(&buf);
         s->masking      = bytestream_get_byte(&buf);
-        if (s->masking == MASK_HAS_TRANSPARENT_COLOR) {
-            av_log(avctx, AV_LOG_ERROR, "Transparency not supported\n");
-            return AVERROR_PATCHWELCOME;
-        } else if (s->masking != MASK_NONE) {
+        if (s->masking != MASK_NONE && s->masking != MASK_HAS_TRANSPARENT_COLOR) {
             av_log(avctx, AV_LOG_ERROR, "Masking not supported\n");
             return AVERROR_PATCHWELCOME;
         }
