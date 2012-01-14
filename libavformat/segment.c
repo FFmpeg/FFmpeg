@@ -34,11 +34,11 @@ typedef struct {
     const AVClass *class;  /**< Class for private options. */
     int number;
     AVFormatContext *avf;
-    char *format;          /**< Set by a private option. */
-    char *list;            /**< Set by a private option. */
-    int   list_size;       /**< Set by a private option. */
-    float time;            /**< Set by a private option. */
-    int  wrap;             /**< Set by a private option. */
+    char *format;          ///< format to use for output segment files
+    char *list;            ///< filename for the segment list file
+    int   list_size;       ///< number of entries for the segment list file
+    float time;            ///< segment duration
+    int  wrap;             ///< number after which the index wraps
     int64_t offset_time;
     int64_t recording_time;
     int has_video;
@@ -247,11 +247,11 @@ static int seg_write_trailer(struct AVFormatContext *s)
 #define OFFSET(x) offsetof(SegmentContext, x)
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "segment_format",    "container format used for the segments",  OFFSET(format),  AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
-    { "segment_time",      "segment length in seconds",               OFFSET(time),    AV_OPT_TYPE_FLOAT,  {.dbl = 2},     0, FLT_MAX, E },
-    { "segment_list",      "output the segment list",                 OFFSET(list),    AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
-    { "segment_list_size", "maximum number of playlist entries",      OFFSET(list_size), AV_OPT_TYPE_INT,  {.dbl = 5},     0, INT_MAX, E },
-    { "segment_wrap",      "number after which the index wraps",      OFFSET(wrap),    AV_OPT_TYPE_INT,    {.dbl = 0},     0, INT_MAX, E },
+    { "segment_format",    "set container format used for the segments", OFFSET(format),  AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
+    { "segment_time",      "set segment length in seconds",              OFFSET(time),    AV_OPT_TYPE_FLOAT,  {.dbl = 2},     0, FLT_MAX, E },
+    { "segment_list",      "set the segment list filename",              OFFSET(list),    AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
+    { "segment_list_size", "set the maximum number of playlist entries", OFFSET(list_size), AV_OPT_TYPE_INT,  {.dbl = 5},     0, INT_MAX, E },
+    { "segment_wrap",      "set number after which the index wraps",     OFFSET(wrap),    AV_OPT_TYPE_INT,    {.dbl = 0},     0, INT_MAX, E },
     { NULL },
 };
 
