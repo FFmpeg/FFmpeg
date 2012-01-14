@@ -519,6 +519,7 @@ static int hls_read_header(AVFormatContext *s)
              * so avformat_close_input shouldn't be called. If
              * avformat_open_input fails below, it frees and zeros the
              * context, so it doesn't need any special treatment like this. */
+            av_log(s, AV_LOG_ERROR, "Error when loading first segment '%s'\n", v->segments[0]->url);
             avformat_free_context(v->ctx);
             v->ctx = NULL;
             goto fail;
