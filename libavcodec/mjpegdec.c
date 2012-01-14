@@ -706,6 +706,8 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int nb_components, int p
     int resync_mb_y = 0;
     int resync_mb_x = 0;
 
+    s->restart_count = s->restart_interval;
+
     av_fast_malloc(&s->ljpeg_buffer, &s->ljpeg_buffer_size,
                    (unsigned)s->mb_width * 4 * sizeof(s->ljpeg_buffer[0][0]));
     buffer = s->ljpeg_buffer;
