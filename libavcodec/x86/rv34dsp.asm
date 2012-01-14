@@ -39,7 +39,7 @@ SECTION .text
 cglobal rv34_idct_dequant4x4_%1_mmx2, 1, 2, 0
     movsx   r1, word [r0]
     IDCT_DC r1
-    movd    mm0, r1
+    movd    mm0, r1d
     pshufw  mm0, mm0, 0
     movq    [r0+ 0], mm0
     movq    [r0+16], mm0
