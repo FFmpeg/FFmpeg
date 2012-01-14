@@ -1970,25 +1970,19 @@ static void update_sample_display(VideoState *is, short *samples, int samples_si
     }
 }
 
-/* return the new audio buffer size (samples can be added or deleted
-   to get better sync if video or external master clock) */
-static int synchronize_audio(VideoState *is, short *samples,
-                             int samples_size1, double pts)
+/* return the wanted number of samples to get better sync if sync_type is video
+ * or external master clock */
+static int synchronize_audio(VideoState *is, int nb_samples)
 {
-    int n, samples_size;
-    double ref_clock;
-
-    n = av_get_bytes_per_sample(is->audio_tgt_fmt) * is->audio_tgt_channels;
-    samples_size = samples_size1;
+    int wanted_nb_samples = nb_samples;
 
     /* if not master, then we try to remove or add samples to correct the clock */
     if (((is->av_sync_type == AV_SYNC_VIDEO_MASTER && is->video_st) ||
          is->av_sync_type == AV_SYNC_EXTERNAL_CLOCK)) {
         double diff, avg_diff;
-        int wanted_size, min_size, max_size, nb_samples;
+        int min_nb_samples, max_nb_samples;
 
-        ref_clock = get_master_clock(is);
-        diff = get_audio_clock(is) - ref_clock;
+        diff = get_audio_clock(is) - get_master_clock(is);
 
         if (diff < AV_NOSYNC_THRESHOLD) {
             is->audio_diff_cum = diff + is->audio_diff_avg_coef * is->audio_diff_cum;
@@ -2000,38 +1994,13 @@ static int synchronize_audio(VideoState *is, short *samples,
                 avg_diff = is->audio_diff_cum * (1.0 - is->audio_diff_avg_coef);
 
                 if (fabs(avg_diff) >= is->audio_diff_threshold) {
-                    wanted_size = samples_size + ((int)(diff * is->audio_tgt_freq) * n);
-                    nb_samples = samples_size / n;
-
-                    min_size = ((nb_samples * (100 - SAMPLE_CORRECTION_PERCENT_MAX)) / 100) * n;
-                    max_size = ((nb_samples * (100 + SAMPLE_CORRECTION_PERCENT_MAX)) / 100) * n;
-                    if (wanted_size < min_size)
-                        wanted_size = min_size;
-                    else if (wanted_size > FFMIN3(max_size, samples_size, sizeof(is->audio_buf2)))
-                        wanted_size = FFMIN3(max_size, samples_size, sizeof(is->audio_buf2));
-
-                    /* add or remove samples to correction the synchro */
-                    if (wanted_size < samples_size) {
-                        /* remove samples */
-                        samples_size = wanted_size;
-                    } else if (wanted_size > samples_size) {
-                        uint8_t *samples_end, *q;
-                        int nb;
-
-                        /* add samples */
-                        nb = (samples_size - wanted_size);
-                        samples_end = (uint8_t *)samples + samples_size - n;
-                        q = samples_end + n;
-                        while (nb > 0) {
-                            memcpy(q, samples_end, n);
-                            q += n;
-                            nb -= n;
-                        }
-                        samples_size = wanted_size;
-                    }
+                    wanted_nb_samples = nb_samples + (int)(diff * is->audio_src_freq);
+                    min_nb_samples = ((nb_samples * (100 - SAMPLE_CORRECTION_PERCENT_MAX) / 100));
+                    max_nb_samples = ((nb_samples * (100 + SAMPLE_CORRECTION_PERCENT_MAX) / 100));
+                    wanted_nb_samples = FFMIN(FFMAX(wanted_nb_samples, min_nb_samples), max_nb_samples);
                 }
                 av_dlog(NULL, "diff=%f adiff=%f sample_diff=%d apts=%0.3f vpts=%0.3f %f\n",
-                        diff, avg_diff, samples_size - samples_size1,
+                        diff, avg_diff, wanted_nb_samples - nb_samples,
                         is->audio_clock, is->video_clock, is->audio_diff_threshold);
             }
         } else {
@@ -2042,7 +2011,7 @@ static int synchronize_audio(VideoState *is, short *samples,
         }
     }
 
-    return samples_size;
+    return wanted_nb_samples;
 }
 
 /* decode one audio frame and returns its uncompressed size */
@@ -2057,6 +2026,7 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
     double pts;
     int new_packet = 0;
     int flush_complete = 0;
+    int wanted_nb_samples;
 
     for (;;) {
         /* NOTE: the audio packet can contain several frames */
@@ -2091,8 +2061,12 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
                                                    dec->sample_fmt, 1);
 
             dec_channel_layout = (dec->channel_layout && dec->channels == av_get_channel_layout_nb_channels(dec->channel_layout)) ? dec->channel_layout : av_get_default_channel_layout(dec->channels);
+            wanted_nb_samples = synchronize_audio(is, is->frame->nb_samples);
 
-            if (dec->sample_fmt != is->audio_src_fmt || dec_channel_layout != is->audio_src_channel_layout || dec->sample_rate != is->audio_src_freq) {
+            if (dec->sample_fmt != is->audio_src_fmt ||
+                dec_channel_layout != is->audio_src_channel_layout ||
+                dec->sample_rate != is->audio_src_freq ||
+                (wanted_nb_samples != is->frame->nb_samples && !is->swr_ctx)) {
                 if (is->swr_ctx)
                     swr_free(&is->swr_ctx);
                 is->swr_ctx = swr_alloc_set_opts(NULL,
@@ -2119,8 +2093,15 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
             if (is->swr_ctx) {
                 const uint8_t *in[] = { is->frame->data[0] };
                 uint8_t *out[] = {is->audio_buf2};
+                if (wanted_nb_samples != is->frame->nb_samples) {
+                    if (swr_set_compensation(is->swr_ctx, (wanted_nb_samples - is->frame->nb_samples) * is->audio_tgt_freq / dec->sample_rate,
+                                                wanted_nb_samples * is->audio_tgt_freq / dec->sample_rate) < 0) {
+                        fprintf(stderr, "swr_set_compensation() failed\n");
+                        break;
+                    }
+                }
                 len2 = swr_convert(is->swr_ctx, out, sizeof(is->audio_buf2) / is->audio_tgt_channels / av_get_bytes_per_sample(is->audio_tgt_fmt),
-                                                in, data_size / dec->channels / av_get_bytes_per_sample(dec->sample_fmt));
+                                                in, is->frame->nb_samples);
                 if (len2 < 0) {
                     fprintf(stderr, "audio_resample() failed\n");
                     break;
@@ -2182,6 +2163,7 @@ static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
     VideoState *is = opaque;
     int audio_size, len1;
     int bytes_per_sec;
+    int frame_size = av_samples_get_buffer_size(NULL, is->audio_tgt_channels, 1, is->audio_tgt_fmt, 1);
     double pts;
 
     audio_callback_time = av_gettime();
@@ -2192,12 +2174,10 @@ static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
            if (audio_size < 0) {
                 /* if error, just output silence */
                is->audio_buf      = is->silence_buf;
-               is->audio_buf_size = sizeof(is->silence_buf);
+               is->audio_buf_size = sizeof(is->silence_buf) / frame_size * frame_size;
            } else {
                if (is->show_mode != SHOW_MODE_VIDEO)
                    update_sample_display(is, (int16_t *)is->audio_buf, audio_size);
-               audio_size = synchronize_audio(is, (int16_t *)is->audio_buf, audio_size,
-                                              pts);
                is->audio_buf_size = audio_size;
            }
            is->audio_buf_index = 0;
