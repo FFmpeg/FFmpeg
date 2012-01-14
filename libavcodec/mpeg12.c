@@ -2268,7 +2268,8 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
             return buf_size;
     }
 
-    if (s->mpeg_enc_ctx_allocated == 0 && avctx->codec_tag == AV_RL32("VCR2"))
+    s2->codec_tag = avpriv_toupper4(avctx->codec_tag);
+    if (s->mpeg_enc_ctx_allocated == 0 &&    s2->codec_tag == AV_RL32("VCR2"))
         vcr2_init_sequence(avctx);
 
     s->slice_count = 0;
