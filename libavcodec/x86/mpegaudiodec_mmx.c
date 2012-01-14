@@ -192,11 +192,17 @@ static void imdct36_blocks_ ## CPU1(float *out, float *buf, float *in,      \
     }                                                                   \
 }
 
+#if HAVE_YASM
+#if HAVE_SSE
 DECL_IMDCT_BLOCKS(sse,sse)
 DECL_IMDCT_BLOCKS(sse2,sse)
 DECL_IMDCT_BLOCKS(sse3,sse)
 DECL_IMDCT_BLOCKS(ssse3,sse)
+#endif
+#if HAVE_AVX
 DECL_IMDCT_BLOCKS(avx,avx)
+#endif
+#endif
 
 void ff_mpadsp_init_mmx(MPADSPContext *s)
 {
@@ -220,8 +226,11 @@ void ff_mpadsp_init_mmx(MPADSPContext *s)
         s->apply_window_float = apply_window_mp3;
     }
 #if HAVE_YASM
-    if (mm_flags & AV_CPU_FLAG_AVX && HAVE_AVX) {
+    if (0) {
+#if HAVE_AVX
+    } else if (mm_flags & AV_CPU_FLAG_AVX && HAVE_AVX) {
         s->imdct36_blocks_float = imdct36_blocks_avx;
+#endif
 #if HAVE_SSE
     } else if (mm_flags & AV_CPU_FLAG_SSSE3) {
         s->imdct36_blocks_float = imdct36_blocks_ssse3;
