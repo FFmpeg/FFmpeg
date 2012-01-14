@@ -203,7 +203,8 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t end_pts = seg->recording_time * seg->number;
     int ret;
 
-    if ((seg->has_video && st->codec->codec_type == AVMEDIA_TYPE_VIDEO) &&
+    /* if the segment has video, start a new segment *only* with a key video frame */
+    if ((st->codec->codec_type == AVMEDIA_TYPE_VIDEO || !seg->has_video) &&
         av_compare_ts(pkt->pts, st->time_base,
                       end_pts, AV_TIME_BASE_Q) >= 0 &&
         pkt->flags & AV_PKT_FLAG_KEY) {
