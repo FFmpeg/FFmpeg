@@ -68,10 +68,6 @@ SwsFunc ff_yuv2rgb_init_mmx(SwsContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (c->srcFormat != PIX_FMT_YUV420P &&
-        c->srcFormat != PIX_FMT_YUVA420P)
-        return NULL;
-
 #if HAVE_MMX2
     if (cpu_flags & AV_CPU_FLAG_MMX2) {
         switch (c->dstFormat) {
