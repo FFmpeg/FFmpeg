@@ -44,7 +44,7 @@ typedef struct VBDecContext {
 
     uint8_t *frame, *prev_frame;
     uint32_t pal[AVPALETTE_COUNT];
-    const uint8_t *stream;
+    GetByteContext stream;
 } VBDecContext;
 
 static const uint16_t vb_patterns[64] = {
@@ -62,8 +62,8 @@ static void vb_decode_palette(VBDecContext *c, int data_size)
 {
     int start, size, i;
 
-    start = bytestream_get_byte(&c->stream);
-    size = (bytestream_get_byte(&c->stream) - 1) & 0xFF;
+    start = bytestream2_get_byte(&c->stream);
+    size = (bytestream2_get_byte(&c->stream) - 1) & 0xFF;
     if(start + size > 255){
         av_log(c->avctx, AV_LOG_ERROR, "Palette change runs beyond entry 256\n");
         return;
@@ -73,7 +73,7 @@ static void vb_decode_palette(VBDecContext *c, int data_size)
         return;
     }
     for(i = start; i <= start + size; i++)
-        c->pal[i] = bytestream_get_be24(&c->stream);
+        c->pal[i] = bytestream2_get_be24(&c->stream);
 }
 
 static inline int check_pixel(uint8_t *buf, uint8_t *start, uint8_t *end)
@@ -86,10 +86,10 @@ static inline int check_line(uint8_t *buf, uint8_t *start, uint8_t *end)
     return buf >= start && (buf + 4) <= end;
 }
 
-static int vb_decode_framedata(VBDecContext *c, const uint8_t *buf, int data_size, int offset)
+static int vb_decode_framedata(VBDecContext *c, int offset)
 {
+    GetByteContext g;
     uint8_t *prev, *cur;
-    const uint8_t* data_end = buf + data_size;
     int blk, blocks, t, blk2;
     int blocktypes = 0;
     int x, y, a, b;
@@ -98,6 +98,8 @@ static int vb_decode_framedata(VBDecContext *c, const uint8_t *buf, int data_siz
     uint8_t *pstart = c->prev_frame;
     uint8_t *pend = c->prev_frame + width*c->avctx->height;
 
+    g = c->stream;
+
     prev = c->prev_frame + offset;
     cur = c->frame;
 
@@ -105,11 +107,7 @@ static int vb_decode_framedata(VBDecContext *c, const uint8_t *buf, int data_siz
     blk2 = 0;
     for(blk = 0; blk < blocks; blk++){
         if(!(blk & 3)) {
-            if(buf >= data_end){
-                av_log(c->avctx, AV_LOG_ERROR, "Data pointer out of bounds\n");
-                return -1;
-            }
-            blocktypes = bytestream_get_byte(&buf);
+            blocktypes = bytestream2_get_byte(&g);
         }
         switch(blocktypes & 0xC0){
         case 0x00: //skip
@@ -120,15 +118,14 @@ static int vb_decode_framedata(VBDecContext *c, const uint8_t *buf, int data_siz
                     memset(cur + y*width, 0, 4);
             break;
         case 0x40:
-            t = bytestream_get_byte(&buf);
+            t = bytestream2_get_byte(&g);
             if(!t){ //raw block
-                if(buf + 16 > data_end){
+                if (bytestream2_get_bytes_left(&g) < 16) {
                     av_log(c->avctx, AV_LOG_ERROR, "Insufficient data\n");
                     return -1;
                 }
                 for(y = 0; y < 4; y++)
-                    memcpy(cur + y*width, buf + y*4, 4);
-                buf += 16;
+                    bytestream2_get_buffer(&g, cur + y * width, 4);
             }else{ // motion compensation
                 x = ((t & 0xF)^8) - 8;
                 y = ((t >> 4) ^8) - 8;
@@ -141,22 +138,18 @@ static int vb_decode_framedata(VBDecContext *c, const uint8_t *buf, int data_siz
             }
             break;
         case 0x80: // fill
-            t = bytestream_get_byte(&buf);
+            t = bytestream2_get_byte(&g);
             for(y = 0; y < 4; y++)
                 memset(cur + y*width, t, 4);
             break;
         case 0xC0: // pattern fill
-            if(buf + 2 > data_end){
-                av_log(c->avctx, AV_LOG_ERROR, "Insufficient data\n");
-                return -1;
-            }
-            t = bytestream_get_byte(&buf);
+            t = bytestream2_get_byte(&g);
             pattype = t >> 6;
             pattern = vb_patterns[t & 0x3F];
             switch(pattype){
             case 0:
-                a = bytestream_get_byte(&buf);
-                b = bytestream_get_byte(&buf);
+                a = bytestream2_get_byte(&g);
+                b = bytestream2_get_byte(&g);
                 for(y = 0; y < 4; y++)
                     for(x = 0; x < 4; x++, pattern >>= 1)
                         cur[x + y*width] = (pattern & 1) ? b : a;
@@ -164,7 +157,7 @@ static int vb_decode_framedata(VBDecContext *c, const uint8_t *buf, int data_siz
             case 1:
                 pattern = ~pattern;
             case 2:
-                a = bytestream_get_byte(&buf);
+                a = bytestream2_get_byte(&g);
                 for(y = 0; y < 4; y++)
                     for(x = 0; x < 4; x++, pattern >>= 1)
                         if(pattern & 1 && check_pixel(prev + x + y*width, pstart, pend))
@@ -193,15 +186,14 @@ static int vb_decode_framedata(VBDecContext *c, const uint8_t *buf, int data_siz
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPacket *avpkt)
 {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
     VBDecContext * const c = avctx->priv_data;
     uint8_t *outptr, *srcptr;
     int i, j;
     int flags;
     uint32_t size;
-    int rest = buf_size;
     int offset = 0;
+
+    bytestream2_init(&c->stream, avpkt->data, avpkt->size);
 
     if(c->pic.data[0])
         avctx->release_buffer(avctx, &c->pic);
@@ -211,34 +203,21 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         return -1;
     }
 
-    c->stream = buf;
-    flags = bytestream_get_le16(&c->stream);
-    rest -= 2;
+    flags = bytestream2_get_le16(&c->stream);
 
     if(flags & VB_HAS_GMC){
-        i = (int16_t)bytestream_get_le16(&c->stream);
-        j = (int16_t)bytestream_get_le16(&c->stream);
+        i = (int16_t)bytestream2_get_le16(&c->stream);
+        j = (int16_t)bytestream2_get_le16(&c->stream);
         offset = i + j * avctx->width;
-        rest -= 4;
     }
     if(flags & VB_HAS_VIDEO){
-        size = bytestream_get_le32(&c->stream);
-        if(size > rest){
-            av_log(avctx, AV_LOG_ERROR, "Frame size is too big\n");
-            return -1;
-        }
-        vb_decode_framedata(c, c->stream, size, offset);
-        c->stream += size - 4;
-        rest -= size;
+        size = bytestream2_get_le32(&c->stream);
+        vb_decode_framedata(c, offset);
+        bytestream2_skip(&c->stream, size - 4);
     }
     if(flags & VB_HAS_PALETTE){
-        size = bytestream_get_le32(&c->stream);
-        if(size > rest){
-            av_log(avctx, AV_LOG_ERROR, "Palette size is too big\n");
-            return -1;
-        }
+        size = bytestream2_get_le32(&c->stream);
         vb_decode_palette(c, size);
-        rest -= size;
     }
 
     memcpy(c->pic.data[1], c->pal, AVPALETTE_SIZE);
@@ -259,7 +238,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     *(AVFrame*)data = c->pic;
 
     /* always report that the buffer was completely consumed */
-    return buf_size;
+    return avpkt->size;
 }
 
 static av_cold int decode_init(AVCodecContext *avctx)
