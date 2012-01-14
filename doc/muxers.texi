@@ -411,7 +411,7 @@ For example a 3D WebM clip can be created using the following command line:
 ffmpeg -i sample_left_right_clip.mpg -an -c:v libvpx -metadata stereo_mode=left_right -y stereo_clip.webm
 @end example
 
-@section segment
+@section segment, stream_segment, ssegment
 
 Basic stream segmenter.
 
@@ -419,29 +419,59 @@ The segmenter muxer outputs streams to a number of separate files of nearly
 fixed duration. Output filename pattern can be set in a fashion similar to
 @ref{image2}.
 
+@code{stream_segment} is a variant of the muxer used to write to
+streaming output formats, i.e. which do not require global headers,
+and is recommended for outputting e.g. to MPEG transport stream segments.
+@code{ssegment} is a shorter alias for @code{stream_segment}.
+
 Every segment starts with a video keyframe, if a video stream is present.
+Note that if you want accurate splitting for a video file, you need to
+make the input key frames correspond to the exact splitting times
+expected by the segmenter, or the segment muxer will start the new
+segment with the key frame found next after the specified start
+time.
+
 The segment muxer works best with a single constant frame rate video.
 
 Optionally it can generate a flat list of the created segments, one segment
-per line.
+per line, by setting the option @var{segment_list}.
+
+The segment muxer supports the following options:
 
 @table @option
 @item segment_format @var{format}
 Override the inner container format, by default it is guessed by the filename
 extension.
 @item segment_time @var{t}
-Set segment duration to @var{t} seconds.
+Set segment duration to @var{t} seconds. Default value is 2.
 @item segment_list @var{name}
-Generate also a listfile named @var{name}.
+Generate also a listfile named @var{name}. If not specified no
+listfile is generated.
 @item segment_list_size @var{size}
-Overwrite the listfile once it reaches @var{size} entries.
+Overwrite the listfile once it reaches @var{size} entries. If 0
+the listfile is never overwritten. Default value is 5.
 @item segment_wrap @var{limit}
 Wrap around segment index once it reaches @var{limit}.
 @end table
 
+Some examples follow.
+
+@itemize
+@item
+To remux the content of file @file{in.mkv} to a list of segments
+@file{out-000.nut}, @file{out-001.nut}, etc., and write the list of
+generated segments to @file{out.list}:
 @example
 ffmpeg -i in.mkv -codec copy -map 0 -f segment -segment_list out.list out%03d.nut
 @end example
+
+@item
+To convert the @file{in.mkv} to TS segments using the @code{libx264}
+and @code{libfaac} encoders:
+@example
+ffmpeg -i in.mkv -map 0 -codec:v libx264 -codec:a libfaac -f ssegment -segment_list out.list out%03d.ts
+@end example
+@end itemize
 
 @section mp3
 
