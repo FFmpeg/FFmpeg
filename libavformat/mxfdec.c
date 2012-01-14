@@ -170,7 +170,7 @@ static int64_t klv_decode_ber_length(AVIOContext *pb)
         int bytes_num = size & 0x7f;
         /* SMPTE 379M 5.3.4 guarantee that bytes_num must not exceed 8 bytes */
         if (bytes_num > 8)
-            return -1;
+            return AVERROR_INVALIDDATA;
         size = 0;
         while (bytes_num--)
             size = size << 8 | avio_r8(pb);
@@ -194,7 +194,7 @@ static int mxf_read_sync(AVIOContext *pb, const uint8_t *key, unsigned size)
 static int klv_read_packet(KLVPacket *klv, AVIOContext *pb)
 {
     if (!mxf_read_sync(pb, mxf_klv_key, 4))
-        return -1;
+        return AVERROR_INVALIDDATA;
     klv->offset = avio_tell(pb) - 4;
     memcpy(klv->key, mxf_klv_key, 4);
     avio_read(pb, klv->key + 4, 12);
@@ -224,7 +224,7 @@ static int mxf_get_d10_aes3_packet(AVIOContext *pb, AVStream *st, AVPacket *pkt,
     int i;
 
     if (length > 61444) /* worst case PAL 1920 samples 8 channels */
-        return -1;
+        return AVERROR_INVALIDDATA;
     length = av_get_packet(pb, pkt, length);
     if (length < 0)
         return length;
@@ -261,7 +261,7 @@ static int mxf_decrypt_triplet(AVFormatContext *s, AVPacket *pkt, KLVPacket *klv
     if (!mxf->aesc && s->key && s->keylen == 16) {
         mxf->aesc = av_malloc(av_aes_size);
         if (!mxf->aesc)
-            return -1;
+            return AVERROR(ENOMEM);
         av_aes_init(mxf->aesc, s->key, 128, 1);
     }
     // crypto context
@@ -273,19 +273,19 @@ static int mxf_decrypt_triplet(AVFormatContext *s, AVPacket *pkt, KLVPacket *klv
     klv_decode_ber_length(pb);
     avio_read(pb, klv->key, 16);
     if (!IS_KLV_KEY(klv, mxf_essence_element_key))
-        return -1;
+        return AVERROR_INVALIDDATA;
     index = mxf_get_stream_index(s, klv);
     if (index < 0)
-        return -1;
+        return AVERROR_INVALIDDATA;
     // source size
     klv_decode_ber_length(pb);
     orig_size = avio_rb64(pb);
     if (orig_size < plaintext_size)
-        return -1;
+        return AVERROR_INVALIDDATA;
     // enc. code
     size = klv_decode_ber_length(pb);
     if (size < 32 || size - 32 < orig_size)
-        return -1;
+        return AVERROR_INVALIDDATA;
     avio_read(pb, ivec, 16);
     avio_read(pb, tmpbuf, 16);
     if (mxf->aesc)
@@ -313,15 +313,16 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
     KLVPacket klv;
 
     while (!s->pb->eof_reached) {
+        int ret;
         if (klv_read_packet(&klv, s->pb) < 0)
             return -1;
         PRINT_KEY(s, "read packet", klv.key);
         av_dlog(s, "size %"PRIu64" offset %#"PRIx64"\n", klv.length, klv.offset);
         if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key)) {
-            int res = mxf_decrypt_triplet(s, pkt, &klv);
-            if (res < 0) {
+            ret = mxf_decrypt_triplet(s, pkt, &klv);
+            if (ret < 0) {
                 av_log(s, AV_LOG_ERROR, "invalid encoded triplet\n");
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             return 0;
         }
@@ -337,10 +338,10 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
             if (klv.key[12] == 0x06 && klv.key[13] == 0x01 && klv.key[14] == 0x10) {
                 if (mxf_get_d10_aes3_packet(s->pb, s->streams[index], pkt, klv.length) < 0) {
                     av_log(s, AV_LOG_ERROR, "error reading D-10 aes3 frame\n");
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
             } else {
-                int ret = av_get_packet(s->pb, pkt, klv.length);
+                ret = av_get_packet(s->pb, pkt, klv.length);
                 if (ret < 0)
                     return ret;
             }
@@ -361,15 +362,16 @@ static int mxf_read_primer_pack(void *arg, AVIOContext *pb, int tag, int size, U
     int item_len = avio_rb32(pb);
 
     if (item_len != 18) {
-        av_log(mxf->fc, AV_LOG_ERROR, "unsupported primer pack item length\n");
-        return -1;
+        av_log_ask_for_sample(pb, "unsupported primer pack item length %d\n",
+                              item_len);
+        return AVERROR_PATCHWELCOME;
     }
     if (item_num > UINT_MAX / item_len)
-        return -1;
+        return AVERROR_INVALIDDATA;
     mxf->local_tags_count = item_num;
     mxf->local_tags = av_malloc(item_num*item_len);
     if (!mxf->local_tags)
-        return -1;
+        return AVERROR(ENOMEM);
     avio_read(pb, mxf->local_tags, item_num*item_len);
     return 0;
 }
@@ -380,7 +382,7 @@ static int mxf_add_metadata_set(MXFContext *mxf, void *metadata_set)
         return AVERROR(ENOMEM);
     mxf->metadata_sets = av_realloc(mxf->metadata_sets, (mxf->metadata_sets_count + 1) * sizeof(*mxf->metadata_sets));
     if (!mxf->metadata_sets)
-        return -1;
+        return AVERROR(ENOMEM);
     mxf->metadata_sets[mxf->metadata_sets_count] = metadata_set;
     mxf->metadata_sets_count++;
     return 0;
@@ -390,7 +392,7 @@ static int mxf_read_cryptographic_context(void *arg, AVIOContext *pb, int tag, i
 {
     MXFCryptoContext *cryptocontext = arg;
     if (size != 16)
-        return -1;
+        return AVERROR_INVALIDDATA;
     if (IS_KLV_KEY(uid, mxf_crypto_source_container_ul))
         avio_read(pb, cryptocontext->source_container_ul, 16);
     return 0;
@@ -403,10 +405,10 @@ static int mxf_read_content_storage(void *arg, AVIOContext *pb, int tag, int siz
     case 0x1901:
         mxf->packages_count = avio_rb32(pb);
         if (mxf->packages_count >= UINT_MAX / sizeof(UID))
-            return -1;
+            return AVERROR_INVALIDDATA;
         mxf->packages_refs = av_malloc(mxf->packages_count * sizeof(UID));
         if (!mxf->packages_refs)
-            return -1;
+            return AVERROR(ENOMEM);
         avio_skip(pb, 4); /* useless size of objects, always 16 according to specs */
         avio_read(pb, (uint8_t *)mxf->packages_refs, mxf->packages_count * sizeof(UID));
         break;
@@ -443,10 +445,10 @@ static int mxf_read_material_package(void *arg, AVIOContext *pb, int tag, int si
     case 0x4403:
         package->tracks_count = avio_rb32(pb);
         if (package->tracks_count >= UINT_MAX / sizeof(UID))
-            return -1;
+            return AVERROR_INVALIDDATA;
         package->tracks_refs = av_malloc(package->tracks_count * sizeof(UID));
         if (!package->tracks_refs)
-            return -1;
+            return AVERROR(ENOMEM);
         avio_skip(pb, 4); /* useless size of objects, always 16 according to specs */
         avio_read(pb, (uint8_t *)package->tracks_refs, package->tracks_count * sizeof(UID));
         break;
@@ -488,10 +490,10 @@ static int mxf_read_sequence(void *arg, AVIOContext *pb, int tag, int size, UID 
     case 0x1001:
         sequence->structural_components_count = avio_rb32(pb);
         if (sequence->structural_components_count >= UINT_MAX / sizeof(UID))
-            return -1;
+            return AVERROR_INVALIDDATA;
         sequence->structural_components_refs = av_malloc(sequence->structural_components_count * sizeof(UID));
         if (!sequence->structural_components_refs)
-            return -1;
+            return AVERROR(ENOMEM);
         avio_skip(pb, 4); /* useless size of objects, always 16 according to specs */
         avio_read(pb, (uint8_t *)sequence->structural_components_refs, sequence->structural_components_count * sizeof(UID));
         break;
@@ -506,10 +508,10 @@ static int mxf_read_source_package(void *arg, AVIOContext *pb, int tag, int size
     case 0x4403:
         package->tracks_count = avio_rb32(pb);
         if (package->tracks_count >= UINT_MAX / sizeof(UID))
-            return -1;
+            return AVERROR_INVALIDDATA;
         package->tracks_refs = av_malloc(package->tracks_count * sizeof(UID));
         if (!package->tracks_refs)
-            return -1;
+            return AVERROR(ENOMEM);
         avio_skip(pb, 4); /* useless size of objects, always 16 according to specs */
         avio_read(pb, (uint8_t *)package->tracks_refs, package->tracks_count * sizeof(UID));
         break;
@@ -564,10 +566,10 @@ static int mxf_read_generic_descriptor(void *arg, AVIOContext *pb, int tag, int 
     case 0x3F01:
         descriptor->sub_descriptors_count = avio_rb32(pb);
         if (descriptor->sub_descriptors_count >= UINT_MAX / sizeof(UID))
-            return -1;
+            return AVERROR_INVALIDDATA;
         descriptor->sub_descriptors_refs = av_malloc(descriptor->sub_descriptors_count * sizeof(UID));
         if (!descriptor->sub_descriptors_refs)
-            return -1;
+            return AVERROR(ENOMEM);
         avio_skip(pb, 4); /* useless size of objects, always 16 according to specs */
         avio_read(pb, (uint8_t *)descriptor->sub_descriptors_refs, descriptor->sub_descriptors_count * sizeof(UID));
         break;
@@ -611,7 +613,7 @@ static int mxf_read_generic_descriptor(void *arg, AVIOContext *pb, int tag, int 
         if (IS_KLV_KEY(uid, mxf_sony_mpeg4_extradata)) {
             descriptor->extradata = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
             if (!descriptor->extradata)
-                return -1;
+                return AVERROR(ENOMEM);
             descriptor->extradata_size = size;
             avio_read(pb, descriptor->extradata, size);
         }
@@ -684,7 +686,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
     }
     if (!material_package) {
         av_log(mxf->fc, AV_LOG_ERROR, "no material package found\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     for (i = 0; i < material_package->tracks_count; i++) {
@@ -732,7 +734,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             for (k = 0; k < source_package->tracks_count; k++) {
                 if (!(temp_track = mxf_resolve_strong_ref(mxf, &source_package->tracks_refs[k], Track))) {
                     av_log(mxf->fc, AV_LOG_ERROR, "could not resolve source track strong ref\n");
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
                 if (temp_track->track_id == component->source_track_id) {
                     source_track = temp_track;
@@ -750,7 +752,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         st = avformat_new_stream(mxf->fc, NULL);
         if (!st) {
             av_log(mxf->fc, AV_LOG_ERROR, "could not allocate stream\n");
-            return -1;
+            return AVERROR(ENOMEM);
         }
         st->id = source_track->track_id;
         st->priv_data = source_track;
@@ -762,7 +764,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
 
         if (!(source_track->sequence = mxf_resolve_strong_ref(mxf, &source_track->sequence_ref, Sequence))) {
             av_log(mxf->fc, AV_LOG_ERROR, "could not resolve source track sequence strong ref\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
 
         PRINT_KEY(mxf->fc, "data definition   ul", source_track->sequence->data_definition_ul);
@@ -880,8 +882,9 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
     uint64_t klv_end = avio_tell(pb) + klv->length;
 
     if (!ctx)
-        return -1;
+        return AVERROR(ENOMEM);
     while (avio_tell(pb) + 4 < klv_end) {
+        int ret;
         int tag = avio_rb16(pb);
         int size = avio_rb16(pb); /* KLV specified by 0x53 */
         uint64_t next = avio_tell(pb) + size;
@@ -905,8 +908,8 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
         }
         if (ctx_size && tag == 0x3C0A)
             avio_read(pb, ctx->uid, 16);
-        else if (read_child(ctx, pb, tag, size, uid) < 0)
-            return -1;
+        else if ((ret = read_child(ctx, pb, tag, size, uid)) < 0)
+            return ret;
 
         avio_seek(pb, next, SEEK_SET);
     }
@@ -921,15 +924,16 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     if (!mxf_read_sync(s->pb, mxf_header_partition_pack_key, 14)) {
         av_log(s, AV_LOG_ERROR, "could not find header partition pack key\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     avio_seek(s->pb, -14, SEEK_CUR);
     mxf->fc = s;
     while (!s->pb->eof_reached) {
+        int ret;
         const MXFMetadataReadTableEntry *metadata;
 
-        if (klv_read_packet(&klv, s->pb) < 0)
-            return -1;
+        if ((ret = klv_read_packet(&klv, s->pb)) < 0)
+            return ret;
         PRINT_KEY(s, "read header", klv.key);
         av_dlog(s, "size %"PRIu64" offset %#"PRIx64"\n", klv.length, klv.offset);
         if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key) ||
@@ -948,7 +952,7 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     res = metadata->read(mxf, s->pb, 0, 0, NULL);
                 if (res < 0) {
                     av_log(s, AV_LOG_ERROR, "error reading header metadata\n");
-                    return -1;
+                    return res;
                 }
                 break;
             }
@@ -1016,7 +1020,7 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     int64_t seconds;
 
     if (!s->bit_rate)
-        return -1;
+        return AVERROR_INVALIDDATA;
     if (sample_time < 0)
         sample_time = 0;
     seconds = av_rescale(sample_time, st->time_base.num, st->time_base.den);
