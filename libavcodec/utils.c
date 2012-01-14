@@ -558,7 +558,7 @@ int avcodec_default_reget_buffer(AVCodecContext *s, AVFrame *pic){
     assert(s->codec_type == AVMEDIA_TYPE_VIDEO);
 
     if (pic->data[0] && (pic->width != s->width || pic->height != s->height || pic->format != s->pix_fmt)) {
-        av_log(s, AV_LOG_WARNING, "Width/height/fmt changing with reget buffer");
+        av_log(s, AV_LOG_WARNING, "Width/height/fmt changing with reget buffer\n");
         s->release_buffer(s, pic);
     }
 
