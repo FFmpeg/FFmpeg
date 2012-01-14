@@ -92,6 +92,12 @@ static int pam_encode_frame(AVCodecContext *avctx, unsigned char *outbuf,
         maxval     = 0xFFFF;
         tuple_type = "RGB";
         break;
+    case PIX_FMT_RGBA64BE:
+        n          = w * 8;
+        depth      = 4;
+        maxval     = 0xFFFF;
+        tuple_type = "RGB_ALPHA";
+        break;
     default:
         return -1;
     }
@@ -128,6 +134,6 @@ AVCodec ff_pam_encoder = {
     .priv_data_size = sizeof(PNMContext),
     .init           = ff_pnm_init,
     .encode         = pam_encode_frame,
-    .pix_fmts  = (const enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGBA, PIX_FMT_RGB48BE, PIX_FMT_GRAY8, PIX_FMT_GRAY8A, PIX_FMT_GRAY16BE, PIX_FMT_MONOBLACK, PIX_FMT_NONE},
+    .pix_fmts  = (const enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGBA, PIX_FMT_RGB48BE, PIX_FMT_RGBA64BE, PIX_FMT_GRAY8, PIX_FMT_GRAY8A, PIX_FMT_GRAY16BE, PIX_FMT_MONOBLACK, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("PAM (Portable AnyMap) image"),
 };
