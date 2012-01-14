@@ -69,6 +69,11 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
         color_space = CLRSPC_GRAY;
         numcomps = 1;
         break;
+    case PIX_FMT_GRAY16:
+        color_space = CLRSPC_GRAY;
+        numcomps = 1;
+        bpp = 16;
+        break;
     case PIX_FMT_RGB24:
         color_space = CLRSPC_SRGB;
         numcomps = 3;
@@ -219,7 +224,7 @@ static int libopenjpeg_copy_rgb16(AVCodecContext *avctx, AVFrame *frame, opj_ima
     int y;
     uint16_t *frame_ptr = (uint16_t*)frame->data[0];
 
-    av_assert0(numcomps == 3);
+    av_assert0(numcomps == 1 || numcomps == 3);
 
     for (compno = 0; compno < numcomps; ++compno) {
         if (image->comps[compno].w > frame->linesize[0] / numcomps) {
@@ -317,6 +322,9 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf
     case PIX_FMT_GRAY8:
         cpyresult = libopenjpeg_copy_rgba(avctx, frame, image, 1);
         break;
+    case PIX_FMT_GRAY16:
+        cpyresult = libopenjpeg_copy_rgb16(avctx, frame, image, 1);
+        break;
     case PIX_FMT_RGB24:
         cpyresult = libopenjpeg_copy_rgba(avctx, frame, image, 3);
         break;
@@ -400,7 +408,8 @@ AVCodec ff_libopenjpeg_encoder = {
     .encode         = libopenjpeg_encode_frame,
     .close          = libopenjpeg_encode_close,
     .capabilities   = 0,
-    .pix_fmts = (const enum PixelFormat[]){PIX_FMT_RGB24,PIX_FMT_RGBA,PIX_FMT_RGB48,PIX_FMT_GRAY8,
+    .pix_fmts = (const enum PixelFormat[]){PIX_FMT_RGB24,PIX_FMT_RGBA,PIX_FMT_RGB48,
+                                           PIX_FMT_GRAY8,PIX_FMT_GRAY16,
                                            PIX_FMT_YUV420P,PIX_FMT_YUV422P,PIX_FMT_YUVA420P,
                                            PIX_FMT_YUV440P,PIX_FMT_YUV444P,
                                            PIX_FMT_YUV420P9,PIX_FMT_YUV422P9,PIX_FMT_YUV444P9,
