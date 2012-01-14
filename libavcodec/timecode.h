@@ -41,7 +41,7 @@ struct ff_timecode {
     char *str;       ///< string following the hh:mm:ss[:;.]ff format
     int start;       ///< timecode frame start
     int drop;        ///< drop flag (1 if drop, else 0)
-    AVRational rate; ///< Frame rate in rationnal form
+    AVRational rate; ///< Frame rate in rational form
 };
 
 /**
