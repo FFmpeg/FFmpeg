@@ -440,7 +440,7 @@ Wrap around segment index once it reaches @var{limit}.
 @end table
 
 @example
-ffmpeg -i in.mkv -c copy -map 0 -f segment -list out.list out%03d.nut
+ffmpeg -i in.mkv -codec copy -map 0 -f segment -segment_list out.list out%03d.nut
 @end example
 
 @section mp3
