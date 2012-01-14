@@ -52,6 +52,7 @@ static const uint8_t lps_range[64][4]= {
 
 uint8_t ff_h264_mlps_state[4*64];
 uint8_t ff_h264_lps_range[4*2*64];
+uint8_t ff_h264_lps_state[2*64];
 static uint8_t h264_mps_state[2 * 64];
 
 static const uint8_t mps_state[64]= {
@@ -200,6 +201,7 @@ static void put_cabac(CABACContext *c, uint8_t * const state, int bit){
     }else{
         c->low += c->range - RangeLPS;
         c->range = RangeLPS;
+        *state= ff_h264_lps_state[*state];
     }
 
     renorm_cabac_encoder(c);
