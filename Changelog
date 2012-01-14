@@ -5,6 +5,7 @@ releases are sorted from youngest to oldest.
 version <next>:
 
 - GSM audio parser
+- SMJPEG muxer
 
 
 version 0.8_beta2:
