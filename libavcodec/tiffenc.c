@@ -255,6 +255,14 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
     s->subsampling[1] = 1;
 
     switch (avctx->pix_fmt) {
+    case PIX_FMT_RGBA64LE:
+        s->bpp = 64;
+        s->photometric_interpretation = 2;
+        bpp_tab[0] = 16;
+        bpp_tab[1] = 16;
+        bpp_tab[2] = 16;
+        bpp_tab[3] = 16;
+        break;
     case PIX_FMT_RGB48LE:
         s->bpp = 48;
         s->photometric_interpretation = 2;
@@ -498,7 +506,7 @@ AVCodec ff_tiff_encoder = {
                               PIX_FMT_YUV420P, PIX_FMT_YUV422P,
                               PIX_FMT_YUV444P, PIX_FMT_YUV410P,
                               PIX_FMT_YUV411P, PIX_FMT_RGB48LE,
-                              PIX_FMT_RGBA, PIX_FMT_NONE},
+                              PIX_FMT_RGBA, PIX_FMT_RGBA64LE, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("TIFF image"),
     .priv_class     = &tiffenc_class,
 };
