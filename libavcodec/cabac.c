@@ -29,6 +29,7 @@
 #include "libavutil/common.h"
 #include "get_bits.h"
 #include "cabac.h"
+#include "cabac_functions.h"
 
 static const uint8_t lps_range[64][4]= {
 {128,176,208,240}, {128,167,197,227}, {128,158,187,216}, {123,150,178,205},
@@ -51,8 +52,7 @@ static const uint8_t lps_range[64][4]= {
 
 uint8_t ff_h264_mlps_state[4*64];
 uint8_t ff_h264_lps_range[4*2*64];
-uint8_t ff_h264_lps_state[2*64];
-uint8_t ff_h264_mps_state[2*64];
+static uint8_t h264_mps_state[2 * 64];
 
 static const uint8_t mps_state[64]= {
   1, 2, 3, 4, 5, 6, 7, 8,
@@ -141,9 +141,9 @@ void ff_init_cabac_states(CABACContext *c){
         }
 
         ff_h264_mlps_state[128+2*i+0]=
-        ff_h264_mps_state[2*i+0]= 2*mps_state[i]+0;
+        h264_mps_state[2 * i + 0] = 2 * mps_state[i] + 0;
         ff_h264_mlps_state[128+2*i+1]=
-        ff_h264_mps_state[2*i+1]= 2*mps_state[i]+1;
+        h264_mps_state[2 * i + 1] = 2 * mps_state[i] + 1;
 
         if( i ){
             ff_h264_lps_state[2*i+0]=
@@ -196,11 +196,10 @@ static void put_cabac(CABACContext *c, uint8_t * const state, int bit){
 
     if(bit == ((*state)&1)){
         c->range -= RangeLPS;
-        *state= ff_h264_mps_state[*state];
+        *state    = h264_mps_state[*state];
     }else{
         c->low += c->range - RangeLPS;
         c->range = RangeLPS;
-        *state= ff_h264_lps_state[*state];
     }
 
     renorm_cabac_encoder(c);

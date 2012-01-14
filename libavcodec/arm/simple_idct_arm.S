@@ -491,8 +491,8 @@ __end_bef_a_evaluation:
         bal __end_a_evaluation
 
 
-__constant_ptr__:  @@ see #defines at the beginning of the source code for values.
         .align
+__constant_ptr__:  @@ see #defines at the beginning of the source code for values.
         .word   W1
         .word   W2
         .word   W3

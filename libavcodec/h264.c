@@ -30,6 +30,8 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "internal.h"
+#include "cabac.h"
+#include "cabac_functions.h"
 #include "dsputil.h"
 #include "avcodec.h"
 #include "mpegvideo.h"
@@ -42,8 +44,6 @@
 #include "thread.h"
 #include "vdpau_internal.h"
 #include "libavutil/avassert.h"
-
-#include "cabac.h"
 
 //#undef NDEBUG
 #include <assert.h>

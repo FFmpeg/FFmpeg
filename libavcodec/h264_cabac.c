@@ -28,6 +28,9 @@
 #define CABAC 1
 #define UNCHECKED_BITSTREAM_READER 1
 
+#include "config.h"
+#include "cabac.h"
+#include "cabac_functions.h"
 #include "internal.h"
 #include "dsputil.h"
 #include "avcodec.h"
@@ -36,7 +39,6 @@
 #include "h264_mvpred.h"
 #include "golomb.h"
 
-#include "cabac.h"
 #if ARCH_X86
 #include "x86/h264_i386.h"
 #endif

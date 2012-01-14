@@ -340,8 +340,8 @@ int main(int argc, char **argv)
     enum PixelFormat srcFormat = PIX_FMT_NONE;
     enum PixelFormat dstFormat = PIX_FMT_NONE;
     uint8_t *rgb_data   = av_malloc(W * H * 4);
-    uint8_t *rgb_src[3] = { rgb_data, NULL, NULL };
-    int rgb_stride[3]   = { 4 * W, 0, 0 };
+    uint8_t *rgb_src[4] = { rgb_data, NULL, NULL, NULL };
+    int rgb_stride[4]   = { 4 * W, 0, 0, 0 };
     uint8_t *data       = av_malloc(4 * W * H);
     uint8_t *src[4]     = { data, data + W * H, data + W * H * 2, data + W * H * 3 };
     int stride[4]       = { W, W, W, W };
