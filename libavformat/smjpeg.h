@@ -24,17 +24,22 @@
  * SMJPEG common code
  */
 
-#include "avformat.h"
+#ifndef AVFORMAT_SMJPEG_H
+#define AVFORMAT_SMJPEG_H
+
 #include "internal.h"
-#include "smjpeg.h"
 
-const AVCodecTag ff_codec_smjpeg_video_tags[] = {
-    { CODEC_ID_MJPEG,             MKTAG('J', 'F', 'I', 'F') },
-    { CODEC_ID_NONE, 0 },
-};
+#define SMJPEG_MAGIC "\x0\xaSMJPEG"
 
-const AVCodecTag ff_codec_smjpeg_audio_tags[] = {
-    { CODEC_ID_ADPCM_IMA_SMJPEG,  MKTAG('A', 'P', 'C', 'M') },
-    { CODEC_ID_PCM_S16LE,         MKTAG('N', 'O', 'N', 'E') },
-    { CODEC_ID_NONE, 0 },
-};
+#define SMJPEG_DONE     MKTAG('D', 'O', 'N', 'E')
+#define SMJPEG_HEND     MKTAG('H', 'E', 'N', 'D')
+#define SMJPEG_SND      MKTAG('_', 'S', 'N', 'D')
+#define SMJPEG_SNDD     MKTAG('s', 'n', 'd', 'D')
+#define SMJPEG_TXT      MKTAG('_', 'T', 'X', 'T')
+#define SMJPEG_VID      MKTAG('_', 'V', 'I', 'D')
+#define SMJPEG_VIDD     MKTAG('v', 'i', 'd', 'D')
+
+extern const AVCodecTag ff_codec_smjpeg_video_tags[];
+extern const AVCodecTag ff_codec_smjpeg_audio_tags[];
+
+#endif /* AVFORMAT_SMJPEG_H */
