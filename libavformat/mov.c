@@ -794,6 +794,9 @@ static int mov_read_mvhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     av_dlog(c->fc, "time scale = %i\n", c->time_scale);
 
     c->duration = (version == 1) ? avio_rb64(pb) : avio_rb32(pb); /* duration */
+    // set the AVCodecContext duration because the duration of individual tracks
+    // may be inaccurate
+    c->fc->duration = av_rescale(c->duration, AV_TIME_BASE, c->time_scale);
     avio_rb32(pb); /* preferred scale */
 
     avio_rb16(pb); /* preferred volume */
@@ -809,8 +812,6 @@ static int mov_read_mvhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     avio_rb32(pb); /* selection duration */
     avio_rb32(pb); /* current time */
     avio_rb32(pb); /* next track ID */
-
-    c->fc->duration = av_rescale(c->duration, AV_TIME_BASE, c->time_scale);
     return 0;
 }
 
