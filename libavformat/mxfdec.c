@@ -1918,6 +1918,7 @@ static int mxf_read_close(AVFormatContext *s)
 
     for (i = 0; i < mxf->nb_index_tables; i++) {
         av_freep(&mxf->index_tables[i].segments);
+        av_freep(&mxf->index_tables[i].ptses);
         av_freep(&mxf->index_tables[i].fake_index);
     }
     av_freep(&mxf->index_tables);
