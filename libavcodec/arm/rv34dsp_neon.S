@@ -19,9 +19,10 @@
  */
 
 #include "asm.S"
+#include "neon.S"
 
-.macro rv34_inv_transform
-        vld1.16         {q14-q15}, [r0,:128]
+.macro rv34_inv_transform    r0
+        vld1.16         {q14-q15}, [\r0,:128]
         vmov.s16        d0,  #13
         vshll.s16       q12, d29, #3
         vshll.s16       q13, d29, #4
@@ -66,9 +67,39 @@
         vsub.s32        q15, q14, q9    @ z0 - z3
 .endm
 
+/* void rv34_idct_add_c(uint8_t *dst, int stride, DCTELEM *block) */
+function ff_rv34_idct_add_neon, export=1
+        mov             r3,  r0
+        rv34_inv_transform   r2
+        vmov.i16        q12, #0
+        vrshrn.s32      d16, q1,  #10   @ (z0 + z3) >> 10
+        vrshrn.s32      d17, q2,  #10   @ (z1 + z2) >> 10
+        vrshrn.s32      d18, q3,  #10   @ (z1 - z2) >> 10
+        vrshrn.s32      d19, q15, #10   @ (z0 - z3) >> 10
+        vld1.32         {d28[]},  [r0,:32], r1
+        vld1.32         {d29[]},  [r0,:32], r1
+        vtrn.32         q8,  q9
+        vld1.32         {d28[1]}, [r0,:32], r1
+        vld1.32         {d29[1]}, [r0,:32], r1
+        vst1.16         {q12}, [r2,:128]!       @ memset(block,    0, 16)
+        vst1.16         {q12}, [r2,:128]        @ memset(block+16, 0, 16)
+        vtrn.16         d16, d17
+        vtrn.32         d28, d29
+        vtrn.16         d18, d19
+        vaddw.u8        q0,   q8,  d28
+        vaddw.u8        q1,   q9,  d29
+        vqmovun.s16     d28,  q0
+        vqmovun.s16     d29,  q1
+        vst1.32         {d28[0]}, [r3,:32], r1
+        vst1.32         {d28[1]}, [r3,:32], r1
+        vst1.32         {d29[0]}, [r3,:32], r1
+        vst1.32         {d29[1]}, [r3,:32], r1
+        bx              lr
+endfunc
+
 /* void rv34_inv_transform_noround_neon(DCTELEM *block); */
 function ff_rv34_inv_transform_noround_neon, export=1
-        rv34_inv_transform
+        rv34_inv_transform   r0
         vshl.s32        q11, q2,  #1
         vshl.s32        q10, q1,  #1
         vshl.s32        q12, q3,  #1
@@ -88,6 +119,28 @@ function ff_rv34_inv_transform_noround_neon, export=1
         bx              lr
 endfunc
 
+/* void ff_rv34_idct_dc_add_neon(uint8_t *dst, int stride, int dc) */
+function ff_rv34_idct_dc_add_neon, export=1
+        mov             r3,  r0
+        vld1.32         {d28[]},  [r0,:32], r1
+        vld1.32         {d29[]},  [r0,:32], r1
+        vdup.16         d0,  r2
+        vmov.s16        d1,  #169
+        vld1.32         {d28[1]}, [r0,:32], r1
+        vmull.s16       q1,  d0,  d1    @ dc * 13 * 13
+        vld1.32         {d29[1]}, [r0,:32], r1
+        vrshrn.s32      d0,  q1,  #10   @ (dc * 13 * 13 + 0x200) >> 10
+        vmov            d1,  d0
+        vaddw.u8        q2,  q0,  d28
+        vaddw.u8        q3,  q0,  d29
+        vqmovun.s16     d28, q2
+        vqmovun.s16     d29, q3
+        vst1.32         {d28[0]}, [r3,:32], r1
+        vst1.32         {d29[0]}, [r3,:32], r1
+        vst1.32         {d28[1]}, [r3,:32], r1
+        vst1.32         {d29[1]}, [r3,:32], r1
+        bx              lr
+endfunc
 
 /* void rv34_inv_transform_dc_noround_c(DCTELEM *block) */
 function ff_rv34_inv_transform_noround_dc_neon, export=1
