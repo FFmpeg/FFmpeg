@@ -264,6 +264,10 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         bit_depth = 8;
         color_type = PNG_COLOR_TYPE_GRAY;
         break;
+    case PIX_FMT_GRAY8A:
+        bit_depth = 8;
+        color_type = PNG_COLOR_TYPE_GRAY_ALPHA;
+        break;
     case PIX_FMT_MONOBLACK:
         bit_depth = 1;
         color_type = PNG_COLOR_TYPE_GRAY;
@@ -443,6 +447,6 @@ AVCodec ff_png_encoder = {
     .priv_data_size = sizeof(PNGEncContext),
     .init           = png_enc_init,
     .encode         = encode_frame,
-    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGB32, PIX_FMT_PAL8, PIX_FMT_GRAY8, PIX_FMT_MONOBLACK, PIX_FMT_NONE},
+    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGB32, PIX_FMT_PAL8, PIX_FMT_GRAY8, PIX_FMT_GRAY8A, PIX_FMT_MONOBLACK, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("PNG image"),
 };
