@@ -56,7 +56,7 @@ SECTION .text
 ; of 2. $offset is either 0 or 3. $dither holds 8 values.
 ;-----------------------------------------------------------------------------
 
-%macro yuv2planeX_fn 4
+%macro yuv2planeX_fn 3
 
 %ifdef ARCH_X86_32
 %define cntr_reg r1
@@ -66,12 +66,12 @@ SECTION .text
 %define movsx movsxd
 %endif
 
-cglobal yuv2planeX_%2_%1, %4, 7, %3
-%if %2 == 8 || %2 == 9 || %2 == 10
+cglobal yuv2planeX_%1, %3, 7, %2
+%if %1 == 8 || %1 == 9 || %1 == 10
     pxor            m6,  m6
-%endif ; %2 == 8/9/10
+%endif ; %1 == 8/9/10
 
-%if %2 == 8
+%if %1 == 8
 %ifdef ARCH_X86_32
 %assign pad 0x2c - (stack_offset & 15)
     SUB             rsp, pad
@@ -120,7 +120,7 @@ cglobal yuv2planeX_%2_%1, %4, 7, %3
     mova      [rsp+16],  m3
     mova      [rsp+24],  m_dith
 %endif ; mmsize == 8/16
-%endif ; %2 == 8
+%endif ; %1 == 8
 
     xor             r5,  r5
 
@@ -130,11 +130,11 @@ cglobal yuv2planeX_%2_%1, %4, 7, %3
     ; 8 pixels but we can only handle 2 pixels per register, and thus 4
     ; pixels per iteration. In order to not have to keep track of where
     ; we are w.r.t. dithering, we unroll the mmx/8bit loop x2.
-%if %2 == 8
+%if %1 == 8
 %rep 16/mmsize
-%endif ; %2 == 8
+%endif ; %1 == 8
 
-%if %2 == 8
+%if %1 == 8
 %ifdef ARCH_X86_32
     mova            m2, [rsp+mmsize*(0+%%i)]
     mova            m1, [rsp+mmsize*(1+%%i)]
@@ -142,31 +142,31 @@ cglobal yuv2planeX_%2_%1, %4, 7, %3
     mova            m2,  m8
     mova            m1,  m_dith
 %endif ; x86-32/64
-%else ; %2 == 9/10/16
-    mova            m1, [yuv2yuvX_%2_start]
+%else ; %1 == 9/10/16
+    mova            m1, [yuv2yuvX_%1_start]
     mova            m2,  m1
-%endif ; %2 == 8/9/10/16
+%endif ; %1 == 8/9/10/16
     movsx     cntr_reg,  r1m
 .filterloop_ %+ %%i:
     ; input pixels
     mov             r6, [r2+gprsize*cntr_reg-2*gprsize]
-%if %2 == 16
+%if %1 == 16
     mova            m3, [r6+r5*4]
     mova            m5, [r6+r5*4+mmsize]
-%else ; %2 == 8/9/10
+%else ; %1 == 8/9/10
     mova            m3, [r6+r5*2]
-%endif ; %2 == 8/9/10/16
+%endif ; %1 == 8/9/10/16
     mov             r6, [r2+gprsize*cntr_reg-gprsize]
-%if %2 == 16
+%if %1 == 16
     mova            m4, [r6+r5*4]
     mova            m6, [r6+r5*4+mmsize]
-%else ; %2 == 8/9/10
+%else ; %1 == 8/9/10
     mova            m4, [r6+r5*2]
-%endif ; %2 == 8/9/10/16
+%endif ; %1 == 8/9/10/16
 
     ; coefficients
     movd            m0, [r0+2*cntr_reg-4]; coeff[0], coeff[1]
-%if %2 == 16
+%if %1 == 16
     pshuflw         m7,  m0,  0          ; coeff[0]
     pshuflw         m0,  m0,  0x55       ; coeff[1]
     pmovsxwd        m7,  m7              ; word -> dword
@@ -181,7 +181,7 @@ cglobal yuv2planeX_%2_%1, %4, 7, %3
     paddd           m1,  m5
     paddd           m2,  m4
     paddd           m1,  m6
-%else ; %2 == 10/9/8
+%else ; %1 == 10/9/8
     punpcklwd       m5,  m3,  m4
     punpckhwd       m3,  m4
     SPLATD          m0,  m0
@@ -191,85 +191,84 @@ cglobal yuv2planeX_%2_%1, %4, 7, %3
 
     paddd           m2,  m5
     paddd           m1,  m3
-%endif ; %2 == 8/9/10/16
+%endif ; %1 == 8/9/10/16
 
     sub       cntr_reg,  2
     jg .filterloop_ %+ %%i
 
-%if %2 == 16
-    psrad           m2,  31 - %2
-    psrad           m1,  31 - %2
-%else ; %2 == 10/9/8
-    psrad           m2,  27 - %2
-    psrad           m1,  27 - %2
-%endif ; %2 == 8/9/10/16
+%if %1 == 16
+    psrad           m2,  31 - %1
+    psrad           m1,  31 - %1
+%else ; %1 == 10/9/8
+    psrad           m2,  27 - %1
+    psrad           m1,  27 - %1
+%endif ; %1 == 8/9/10/16
 
-%if %2 == 8
+%if %1 == 8
     packssdw        m2,  m1
     packuswb        m2,  m2
     movh     [r3+r5*1],  m2
-%else ; %2 == 9/10/16
-%if %2 == 16
+%else ; %1 == 9/10/16
+%if %1 == 16
     packssdw        m2,  m1
     paddw           m2, [minshort]
-%else ; %2 == 9/10
-%ifidn %1, sse4
-    packusdw        m2,  m1
-%elifidn %1, avx
+%else ; %1 == 9/10
+%if cpuflag(sse4)
     packusdw        m2,  m1
 %else ; mmx2/sse2
     packssdw        m2,  m1
     pmaxsw          m2,  m6
 %endif ; mmx2/sse2/sse4/avx
-    pminsw          m2, [yuv2yuvX_%2_upper]
-%endif ; %2 == 9/10/16
+    pminsw          m2, [yuv2yuvX_%1_upper]
+%endif ; %1 == 9/10/16
     mova     [r3+r5*2],  m2
-%endif ; %2 == 8/9/10/16
+%endif ; %1 == 8/9/10/16
 
     add             r5,  mmsize/2
     sub             r4d, mmsize/2
-%if %2 == 8
+%if %1 == 8
 %assign %%i %%i+2
 %endrep
-%endif ; %2 == 8
+%endif ; %1 == 8
     jg .pixelloop
 
-%if %2 == 8
+%if %1 == 8
 %ifdef ARCH_X86_32
     ADD             rsp, pad
     RET
 %else ; x86-64
     REP_RET
 %endif ; x86-32/64
-%else ; %2 == 9/10/16
+%else ; %1 == 9/10/16
     REP_RET
-%endif ; %2 == 8/9/10/16
+%endif ; %1 == 8/9/10/16
 %endmacro
 
 %define PALIGNR PALIGNR_MMX
 %ifdef ARCH_X86_32
-INIT_MMX
-yuv2planeX_fn mmx2,  8,  0, 7
-yuv2planeX_fn mmx2,  9,  0, 5
-yuv2planeX_fn mmx2, 10,  0, 5
+INIT_MMX mmx2
+yuv2planeX_fn  8,  0, 7
+yuv2planeX_fn  9,  0, 5
+yuv2planeX_fn 10,  0, 5
 %endif
 
-INIT_XMM
-yuv2planeX_fn sse2,  8, 10, 7
-yuv2planeX_fn sse2,  9,  7, 5
-yuv2planeX_fn sse2, 10,  7, 5
+INIT_XMM sse2
+yuv2planeX_fn  8, 10, 7
+yuv2planeX_fn  9,  7, 5
+yuv2planeX_fn 10,  7, 5
 
 %define PALIGNR PALIGNR_SSSE3
-yuv2planeX_fn sse4,  8, 10, 7
-yuv2planeX_fn sse4,  9,  7, 5
-yuv2planeX_fn sse4, 10,  7, 5
-yuv2planeX_fn sse4, 16,  8, 5
+INIT_XMM sse4
+yuv2planeX_fn  8, 10, 7
+yuv2planeX_fn  9,  7, 5
+yuv2planeX_fn 10,  7, 5
+yuv2planeX_fn 16,  8, 5
 
 %ifdef HAVE_AVX
-INIT_AVX
-yuv2planeX_fn avx,   8, 10, 7
-yuv2planeX_fn avx,   9,  7, 5
-yuv2planeX_fn avx,  10,  7, 5
+INIT_XMM avx
+yuv2planeX_fn  8, 10, 7
+yuv2planeX_fn  9,  7, 5
+yuv2planeX_fn 10,  7, 5
 %endif
 
 ; %1=outout-bpc, %2=alignment (u/a)

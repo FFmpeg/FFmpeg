@@ -532,6 +532,9 @@ static av_cold int X264_init(AVCodecContext *avctx)
     // update AVCodecContext with x264 parameters
     avctx->has_b_frames = x4->params.i_bframe ?
         x4->params.i_bframe_pyramid ? 2 : 1 : 0;
+    if (avctx->max_b_frames < 0)
+        avctx->max_b_frames = 0;
+
     avctx->bit_rate = x4->params.rc.i_bitrate*1000;
 #if FF_API_X264_GLOBAL_OPTS
     avctx->crf = x4->params.rc.f_rf_constant;

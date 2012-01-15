@@ -72,7 +72,7 @@ typedef struct FormatEntry {
     int is_supported_in, is_supported_out;
 } FormatEntry;
 
-const static FormatEntry format_entries[PIX_FMT_NB] = {
+static const FormatEntry format_entries[PIX_FMT_NB] = {
     [PIX_FMT_YUV420P]     = { 1 , 1 },
     [PIX_FMT_YUYV422]     = { 1 , 1 },
     [PIX_FMT_RGB24]       = { 1 , 1 },
