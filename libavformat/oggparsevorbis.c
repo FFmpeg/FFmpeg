@@ -251,6 +251,7 @@ vorbis_header (AVFormatContext * s, int idx)
 
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codec->codec_id = CODEC_ID_VORBIS;
+        st->need_parsing = AVSTREAM_PARSE_HEADERS;
 
         if (srate > 0) {
             st->codec->sample_rate = srate;

@@ -701,9 +701,6 @@ static int get_audio_frame_size(AVCodecContext *enc, int size)
 {
     int frame_size;
 
-    if(enc->codec_id == CODEC_ID_VORBIS)
-        return -1;
-
     if (enc->frame_size <= 1) {
         int bits_per_sample = av_get_bits_per_sample(enc->codec_id);
 
@@ -1995,8 +1992,7 @@ static int has_codec_parameters(AVCodecContext *avctx)
     case AVMEDIA_TYPE_AUDIO:
         val = avctx->sample_rate && avctx->channels && avctx->sample_fmt != AV_SAMPLE_FMT_NONE;
         if (!avctx->frame_size &&
-            (avctx->codec_id == CODEC_ID_VORBIS ||
-             avctx->codec_id == CODEC_ID_AAC ||
+            (avctx->codec_id == CODEC_ID_AAC ||
              avctx->codec_id == CODEC_ID_MP1 ||
              avctx->codec_id == CODEC_ID_MP2 ||
              avctx->codec_id == CODEC_ID_MP3 ||
