@@ -28,7 +28,7 @@ static void print_formats(AVFilterContext *filter_ctx)
     int i, j;
 
 #define PRINT_FMTS(inout, outin, INOUT)                                 \
-    for (i = 0; i < filter_ctx->input_count; i++) {                     \
+    for (i = 0; i < filter_ctx->inout##put_count; i++) {                     \
         if (filter_ctx->inout##puts[i]->type == AVMEDIA_TYPE_VIDEO) {   \
             AVFilterFormats *fmts =                                     \
                 filter_ctx->inout##puts[i]->outin##_formats;            \
