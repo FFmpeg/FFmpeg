@@ -675,7 +675,8 @@ void ff_parse_specific_params(AVCodecContext *stream, int *au_rate, int *au_ssiz
 void ff_get_guid(AVIOContext *s, ff_asf_guid *g)
 {
     assert(sizeof(*g) == 16);
-    avio_read(s, *g, sizeof(*g));
+    if (avio_read(s, *g, sizeof(*g)) < (int)sizeof(*g))
+        memset(*g, 0, sizeof(*g));
 }
 
 enum CodecID ff_codec_guid_get_id(const AVCodecGuid *guids, ff_asf_guid guid)
