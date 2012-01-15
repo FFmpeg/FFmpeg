@@ -454,7 +454,7 @@ static void rgbtest_put_pixel(uint8_t *dst, int dst_linesize,
     case PIX_FMT_BGRA:
     case PIX_FMT_ARGB:
     case PIX_FMT_ABGR:
-        v = (r << (rgba_map[R]*8)) + (g << (rgba_map[G]*8)) + (b << (rgba_map[B]*8));
+        v = (r << (rgba_map[R]*8)) + (g << (rgba_map[G]*8)) + (b << (rgba_map[B]*8)) + (255 << (rgba_map[A]*8));
         p = dst + 4*x + y*dst_linesize;
         AV_WL32(p, v);
         break;
