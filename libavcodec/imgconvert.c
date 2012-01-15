@@ -184,6 +184,10 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
     [PIX_FMT_GRAY8] = {
         .color_type = FF_COLOR_GRAY,
     },
+    [PIX_FMT_GRAY8A] = {
+        .is_alpha = 1,
+        .color_type = FF_COLOR_GRAY,
+    },
     [PIX_FMT_MONOWHITE] = {
         .color_type = FF_COLOR_GRAY,
     },
