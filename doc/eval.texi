@@ -98,6 +98,14 @@ point (@var{x}, @var{y}) from the origin.
 @item gcd(x, y)
 Return the greatest common divisor of @var{x} and @var{y}. If both @var{x} and
 @var{y} are 0 or either or both are less than zero then behavior is undefined.
+
+@item if(x, y)
+Evaluate @var{x}, and if the result is non-zero return the result of
+the evaluation of @var{y}, return 0 otherwise.
+
+@item ifnot(x, y)
+Evaluate @var{x}, and if the result is zero return the result of the
+evaluation of @var{y}, return 0 otherwise.
 @end table
 
 The following constants are available:
@@ -116,13 +124,13 @@ Note that:
 
 @code{+} works like OR
 
-thus
+and the construct:
 @example
 if A then B else C
 @end example
 is equivalent to
 @example
-A*B + not(A)*C
+if(A,B) + ifnot(A,C)
 @end example
 
 In your C code, you can extend the list of unary and binary functions,

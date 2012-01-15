@@ -136,6 +136,7 @@ struct AVExpr {
         e_pow, e_mul, e_div, e_add,
         e_last, e_st, e_while, e_floor, e_ceil, e_trunc,
         e_sqrt, e_not, e_random, e_hypot, e_gcd,
+        e_if, e_ifnot,
     } type;
     double value; // is sign in other types
     union {
@@ -165,6 +166,8 @@ static double eval_expr(Parser *p, AVExpr *e)
         case e_trunc:  return e->value * trunc(eval_expr(p, e->param[0]));
         case e_sqrt:   return e->value * sqrt (eval_expr(p, e->param[0]));
         case e_not:    return e->value * (eval_expr(p, e->param[0]) == 0);
+        case e_if:     return e->value * ( eval_expr(p, e->param[0]) ? eval_expr(p, e->param[1]) : 0);
+        case e_ifnot:  return e->value * (!eval_expr(p, e->param[0]) ? eval_expr(p, e->param[1]) : 0);
         case e_random:{
             int idx= av_clip(eval_expr(p, e->param[0]), 0, VARS-1);
             uint64_t r= isnan(p->var[idx]) ? 0 : p->var[idx];
@@ -324,6 +327,8 @@ static int parse_primary(AVExpr **e, Parser *p)
     else if (strmatch(next, "random")) d->type = e_random;
     else if (strmatch(next, "hypot" )) d->type = e_hypot;
     else if (strmatch(next, "gcd"   )) d->type = e_gcd;
+    else if (strmatch(next, "if"    )) d->type = e_if;
+    else if (strmatch(next, "ifnot" )) d->type = e_ifnot;
     else {
         for (i=0; p->func1_names && p->func1_names[i]; i++) {
             if (strmatch(next, p->func1_names[i])) {
@@ -690,6 +695,9 @@ int main(int argc, char **argv)
         "pow(PI,1.23)",
         "PI^1.23",
         "pow(-1,1.23)",
+        "if(1, 2)",
+        "ifnot(0, 23)",
+        "ifnot(1, NaN) + if(0, 1)",
         NULL
     };
 
