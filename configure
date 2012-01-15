@@ -221,6 +221,7 @@ Advanced options (experts only):
   --nm=NM                  use nm tool
   --ar=AR                  use archive tool AR [$ar_default]
   --as=AS                  use assembler AS [$as_default]
+  --yasmexe=EXE            use yasm-compatible assembler EXE [$yasmexe_default]
   --cc=CC                  use C compiler CC [$cc_default]
   --cxx=CXX                use C compiler CXX [$cxx_default]
   --ld=LD                  use linker LD
@@ -1319,6 +1320,7 @@ CMDLINE_SET="
     target_os
     target_path
     valgrind
+    yasmexe
 "
 
 CMDLINE_APPEND="
@@ -1800,7 +1802,7 @@ objformat="elf"
 pkg_config_default=pkg-config
 ranlib="ranlib"
 strip_default="strip"
-yasmexe="yasm"
+yasmexe_default="yasm"
 
 nm_opts='-g'
 nogas=":"
@@ -2031,7 +2033,7 @@ strip_default="${cross_prefix}${strip_default}"
 
 sysinclude_default="${sysroot}/usr/include"
 
-set_default cc cxx nm pkg_config strip sysinclude
+set_default cc cxx nm pkg_config strip sysinclude yasmexe
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
