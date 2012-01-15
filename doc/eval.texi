@@ -118,7 +118,8 @@ exp(1) (Euler's number), approximately 2.718
 golden ratio (1+sqrt(5))/2, approximately 1.618
 @end table
 
-Note that:
+Assuming that an expression is considered "true" if it has a non-zero
+value, note that:
 
 @code{*} works like AND
 
