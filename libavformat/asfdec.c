@@ -1212,7 +1212,6 @@ static void asf_build_simple_index(AVFormatContext *s, int stream_index)
     ff_asf_guid g;
     ASFContext *asf = s->priv_data;
     int64_t current_pos= avio_tell(s->pb);
-    int i;
 
     if(avio_seek(s->pb, asf->data_object_offset + asf->data_object_size, SEEK_SET) < 0) {
         asf->index_read= -1;
@@ -1237,6 +1236,7 @@ static void asf_build_simple_index(AVFormatContext *s, int stream_index)
     {
         int64_t itime, last_pos=-1;
         int pct, ict;
+        int i;
         int64_t av_unused gsize= avio_rl64(s->pb);
         ff_get_guid(s->pb, &g);
         itime=avio_rl64(s->pb);
@@ -1265,8 +1265,6 @@ static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts, int 
 {
     ASFContext *asf = s->priv_data;
     AVStream *st = s->streams[stream_index];
-    int64_t pos;
-    int index;
 
     if (s->packet_size <= 0)
         return -1;
@@ -1284,10 +1282,10 @@ static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts, int 
         asf_build_simple_index(s, stream_index);
 
     if((asf->index_read > 0 && st->index_entries)){
-        index= av_index_search_timestamp(st, pts, flags);
+        int index= av_index_search_timestamp(st, pts, flags);
         if(index >= 0) {
             /* find the position */
-            pos = st->index_entries[index].pos;
+            uint64_t pos = st->index_entries[index].pos;
 
             /* do the seek */
             av_log(s, AV_LOG_DEBUG, "SEEKTO: %"PRId64"\n", pos);
