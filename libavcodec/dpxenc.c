@@ -53,6 +53,12 @@ static av_cold int encode_init(AVCodecContext *avctx)
     case PIX_FMT_RGB48BE:
         s->bits_per_component = avctx->bits_per_raw_sample ? avctx->bits_per_raw_sample : 16;
         break;
+    case PIX_FMT_RGBA64LE:
+        s->big_endian = 0;
+    case PIX_FMT_RGBA64BE:
+        s->descriptor = 51;
+        s->bits_per_component = 16;
+        break;
     default:
         av_log(avctx, AV_LOG_INFO, "unsupported pixel format\n");
         return -1;
@@ -171,6 +177,8 @@ AVCodec ff_dpx_encoder = {
         PIX_FMT_RGBA,
         PIX_FMT_RGB48LE,
         PIX_FMT_RGB48BE,
+        PIX_FMT_RGBA64LE,
+        PIX_FMT_RGBA64BE,
         PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("DPX image"),
 };
