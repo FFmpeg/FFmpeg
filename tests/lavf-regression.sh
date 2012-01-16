@@ -155,6 +155,8 @@ fi
 
 if [ -n "$do_png" ] ; then
 do_image_formats png
+do_image_formats png "-pix_fmt gray16be"
+do_image_formats png "-pix_fmt rgb48be"
 fi
 
 if [ -n "$do_bmp" ] ; then
