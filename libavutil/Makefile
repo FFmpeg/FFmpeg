@@ -37,6 +37,7 @@ HEADERS = adler32.h                                                     \
           rational.h                                                    \
           samplefmt.h                                                   \
           sha.h                                                         \
+          timecode.h                                                    \
 
 BUILT_HEADERS = avconfig.h
 
@@ -71,6 +72,7 @@ OBJS = adler32.o                                                        \
        rc4.o                                                            \
        samplefmt.o                                                      \
        sha.o                                                            \
+       timecode.o                                                       \
        tree.o                                                           \
        utils.o                                                          \
 

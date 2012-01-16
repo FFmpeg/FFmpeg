@@ -13,6 +13,9 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2012-02-02 - xxxxxxx - lavu 51.37.100
+  Add public timecode helpers.
+
 2012-01-24 - xxxxxxx - lavfi 2.60.100
   Add avfilter_graph_dump.
 
