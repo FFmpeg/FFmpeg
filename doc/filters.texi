@@ -1302,8 +1302,6 @@ timestamp expressed in seconds, NAN if the input timestamp is unknown
 @item timecode
 initial timecode representation in "hh:mm:ss[:;.]ff" format. It can be used
 with or without text parameter. @var{rate} option must be specified.
-Note that timecode options are @emph{not} effective if FFmpeg is build with
-@code{--disable-avcodec}.
 
 @item r, rate
 frame rate (timecode only)
