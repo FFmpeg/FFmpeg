@@ -22,7 +22,7 @@
 #include "libavutil/intfloat.h"
 #include "libavutil/opt.h"
 #include "libavutil/mathematics.h"
-#include "libavcodec/timecode.h"
+#include "libavutil/timecode.h"
 #include "avformat.h"
 #include "internal.h"
 #include "gxf.h"
@@ -995,7 +995,7 @@ static int gxf_interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *pk
 }
 
 static const AVOption options[] = {
-    { TIMECODE_OPT(GXFContext, AV_OPT_FLAG_ENCODING_PARAM) },
+    { AV_TIMECODE_OPTION(GXFContext, tc.str, AV_OPT_FLAG_ENCODING_PARAM) },
     { NULL }
 };
 
