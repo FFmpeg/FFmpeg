@@ -32,6 +32,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/dict.h"
+#include "libavutil/timecode.h"
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
 #include "libswresample/swresample.h"
@@ -1453,13 +1454,9 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
             else   print_str_opt("pix_fmt", "unknown");
             print_int("level",   dec_ctx->level);
             if (dec_ctx->timecode_frame_start >= 0) {
-                uint32_t tc = dec_ctx->timecode_frame_start;
-                print_fmt("timecode", "%02d:%02d:%02d%c%02d",
-                          tc>>19 & 0x1f,              // hours
-                          tc>>13 & 0x3f,              // minutes
-                          tc>>6  & 0x3f,              // seconds
-                          tc     & 1<<24 ? ';' : ':', // drop
-                          tc     & 0x3f);             // frames
+                char tcbuf[AV_TIMECODE_STR_SIZE];
+                av_timecode_make_mpeg_tc_string(tcbuf, dec_ctx->timecode_frame_start);
+                print_str("timecode", tcbuf);
             } else {
                 print_str_opt("timecode", "N/A");
             }
