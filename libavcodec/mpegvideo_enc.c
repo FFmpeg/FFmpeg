@@ -339,8 +339,9 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
     s->height   = avctx->height;
     if (avctx->gop_size > 600 &&
         avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Warning keyframe interval too large! reducing it ...\n");
+        av_log(avctx, AV_LOG_WARNING,
+               "keyframe interval too large!, reducing it from %d to %d\n",
+               avctx->gop_size, 600);
         avctx->gop_size = 600;
     }
     s->gop_size     = avctx->gop_size;
