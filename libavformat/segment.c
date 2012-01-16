@@ -39,7 +39,6 @@ typedef struct {
     int   list_size;       ///< number of entries for the segment list file
     float time;            ///< segment duration
     int  wrap;             ///< number after which the index wraps
-    int64_t offset_time;
     int64_t recording_time;
     int has_video;
     AVIOContext *pb;
@@ -129,7 +128,6 @@ static int seg_write_header(AVFormatContext *s)
     int ret, i;
 
     seg->number = 0;
-    seg->offset_time = 0;
     seg->recording_time = seg->time * 1000000;
 
     oc = avformat_alloc_context();
