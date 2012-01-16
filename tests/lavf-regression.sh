@@ -183,6 +183,10 @@ if [ -n "$do_pcx" ] ; then
 do_image_formats pcx
 fi
 
+if [ -n "$do_dpx" ] ; then
+do_image_formats dpx
+fi
+
 # audio only
 
 if [ -n "$do_wav" ] ; then
