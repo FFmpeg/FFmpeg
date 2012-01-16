@@ -112,7 +112,8 @@ typedef struct WavpackFrameContext {
     int extra_bits;
     int and, or, shift;
     int post_shift;
-    int hybrid, hybrid_bitrate, hybrid_maxclip;
+    int hybrid, hybrid_bitrate;
+    int hybrid_maxclip, hybrid_minclip;
     int float_flag;
     int float_shift;
     int float_max_exp;
@@ -412,12 +413,12 @@ static inline int wv_get_value_integer(WavpackFrameContext *s, uint32_t *crc,
     }
 
     bit = (S & s->and) | s->or;
-    bit = (((S + bit) << s->shift) - bit) << s->post_shift;
+    bit = ((S + bit) << s->shift) - bit;
 
     if (s->hybrid)
-        bit = av_clip(bit, -s->hybrid_maxclip - 1, s->hybrid_maxclip);
+        bit = av_clip(bit, s->hybrid_minclip, s->hybrid_maxclip);
 
-    return bit;
+    return bit << s->post_shift;
 }
 
 static float wv_get_value_float(WavpackFrameContext *s, uint32_t *crc, int S)
@@ -763,7 +764,7 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
     const uint8_t *orig_buf = buf;
     const uint8_t *buf_end  = buf + buf_size;
     int i, j, id, size, ssize, weights, t;
-    int bpp, chan, chmask;
+    int bpp, chan, chmask, orig_bpp;
 
     if (buf_size == 0) {
         *got_frame_ptr = 0;
@@ -799,15 +800,16 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
     s->frame_flags = AV_RL32(buf); buf += 4;
     bpp = av_get_bytes_per_sample(avctx->sample_fmt);
     samples = (uint8_t*)samples + bpp * wc->ch_offset;
+    orig_bpp = ((s->frame_flags & 0x03) + 1) << 3;
 
     s->stereo         = !(s->frame_flags & WV_MONO);
     s->stereo_in      =  (s->frame_flags & WV_FALSE_STEREO) ? 0 : s->stereo;
     s->joint          =   s->frame_flags & WV_JOINT_STEREO;
     s->hybrid         =   s->frame_flags & WV_HYBRID_MODE;
     s->hybrid_bitrate =   s->frame_flags & WV_HYBRID_BITRATE;
-    s->hybrid_maxclip = (1LL << ((((s->frame_flags & 0x03) + 1) << 3) - 1)) - 1;
-    s->post_shift     = 8 * (bpp - 1 - (s->frame_flags & 0x03)) +
-                        ((s->frame_flags >> 13) & 0x1f);
+    s->post_shift     = bpp * 8 - orig_bpp + ((s->frame_flags >> 13) & 0x1f);
+    s->hybrid_maxclip = (( 1LL << (orig_bpp - 1)) - 1) >> s->post_shift;
+    s->hybrid_minclip = ((-1LL << (orig_bpp - 1)))     >> s->post_shift;
     s->CRC            = AV_RL32(buf); buf += 4;
     if (wc->mkv_mode)
         buf += 4; //skip block size;
@@ -967,6 +969,15 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
             } else if(buf[3]) {
                 s->and   = 1;
                 s->shift = buf[3];
+            }
+            /* original WavPack decoder forces 32-bit lossy sound to be treated
+             * as 24-bit one in order to have proper clipping
+             */
+            if (s->hybrid && bpp == 4 && s->post_shift < 8 && s->shift > 8) {
+                s->post_shift += 8;
+                s->shift      -= 8;
+                s->hybrid_maxclip >>= 8;
+                s->hybrid_minclip >>= 8;
             }
             buf += 4;
             break;
