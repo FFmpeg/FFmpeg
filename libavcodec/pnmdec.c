@@ -75,6 +75,11 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
         if (s->maxval < 255)
             upgrade = 1;
         goto do_read;
+    case PIX_FMT_GRAY8A:
+        n = avctx->width * 2;
+        components=2;
+        sample_len=8;
+        goto do_read;
     case PIX_FMT_GRAY16BE:
     case PIX_FMT_GRAY16LE:
         n = avctx->width * 2;
