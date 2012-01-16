@@ -22,7 +22,12 @@
 /**
  * @file
  * Timecode helpers
+ * This *private* API is deprecated, please use the one available in libavutil instead.
  */
+
+#include "version.h"
+
+#if FF_API_OLD_TIMECODE
 
 #include <stdio.h>
 #include "timecode.h"
@@ -128,7 +133,6 @@ int avpriv_init_smpte_timecode(void *avcl, struct ff_timecode *tc)
     return 0;
 }
 
-#if FF_API_OLD_TIMECODE
 int ff_framenum_to_drop_timecode(int frame_num)
 {
     return avpriv_framenum_to_drop_timecode(frame_num);

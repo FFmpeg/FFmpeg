@@ -22,10 +22,15 @@
 /**
  * @file
  * Timecode helpers header
+ * This *private* API is deprecated, please use the one available in libavutil instead.
  */
 
 #ifndef AVCODEC_TIMECODE_H
 #define AVCODEC_TIMECODE_H
+
+#include "version.h"
+
+#if FF_API_OLD_TIMECODE
 
 #include <stdint.h>
 #include "avcodec.h"
@@ -93,7 +98,6 @@ int avpriv_check_timecode_rate(void *avcl, AVRational rate, int drop);
  */
 int avpriv_init_smpte_timecode(void *avcl, struct ff_timecode *tc);
 
-#if FF_API_OLD_TIMECODE
 attribute_deprecated int ff_framenum_to_drop_timecode(int frame_num);
 attribute_deprecated uint32_t ff_framenum_to_smtpe_timecode(unsigned frame, int fps, int drop);
 attribute_deprecated int ff_init_smtpe_timecode(void *avcl, struct ff_timecode *tc);
