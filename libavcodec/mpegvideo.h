@@ -36,7 +36,7 @@
 #include "parser.h"
 #include "mpeg12data.h"
 #include "rl.h"
-#include "timecode.h"
+#include "libavutil/timecode.h"
 
 #define FRAME_SKIPPED 100 ///< return value for header parsers if frame is not coded
 
@@ -649,7 +649,8 @@ typedef struct MpegEncContext {
     /* RTP specific */
     int rtp_mode;
 
-    struct ff_timecode tc;
+    char *tc_opt_str;        ///< timecode option string
+    AVTimecode tc;           ///< timecode context
 
     uint8_t *ptr_lastgob;
     int swap_uv;             //vcr2 codec is an MPEG-2 variant with U and V swapped

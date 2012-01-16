@@ -33,10 +33,10 @@
 #include "mpeg12.h"
 #include "mpeg12data.h"
 #include "bytestream.h"
-#include "timecode.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavutil/avassert.h"
+#include "libavutil/timecode.h"
 
 static const uint8_t inv_non_linear_qscale[13] = {
     0, 2, 4, 6, 8,
@@ -167,17 +167,20 @@ static av_cold int encode_init(AVCodecContext *avctx)
         }
     }
 
-    s->drop_frame_timecode = s->tc.drop = s->drop_frame_timecode || !!(avctx->flags2 & CODEC_FLAG2_DROP_FRAME_TIMECODE);
+    s->drop_frame_timecode = s->drop_frame_timecode || !!(avctx->flags2 & CODEC_FLAG2_DROP_FRAME_TIMECODE);
+    if (s->drop_frame_timecode)
+        s->tc.flags |= AV_TIMECODE_FLAG_DROPFRAME;
     if (s->drop_frame_timecode && s->frame_rate_index != 4) {
         av_log(avctx, AV_LOG_ERROR, "Drop frame time code only allowed with 1001/30000 fps\n");
         return -1;
     }
 
-    if (s->tc.str) {
-        s->tc.rate = avpriv_frame_rate_tab[s->frame_rate_index];
-        if (avpriv_init_smpte_timecode(s, &s->tc) < 0)
-            return -1;
-        s->drop_frame_timecode = s->tc.drop;
+    if (s->tc_opt_str) {
+        AVRational rate = avpriv_frame_rate_tab[s->frame_rate_index];
+        int ret = av_timecode_init_from_string(&s->tc, rate, s->tc_opt_str, s);
+        if (ret < 0)
+            return ret;
+        s->drop_frame_timecode = !!(s->tc.flags & AV_TIMECODE_FLAG_DROPFRAME);
         s->avctx->timecode_frame_start = s->tc.start;
     } else {
         s->avctx->timecode_frame_start = 0; // default is -1
@@ -295,9 +298,9 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             time_code = s->current_picture_ptr->f.coded_picture_number + s->avctx->timecode_frame_start;
 
             s->gop_picture_number = s->current_picture_ptr->f.coded_picture_number;
-            av_assert0(s->drop_frame_timecode == s->tc.drop);
-            if (s->tc.drop)
-                time_code = avpriv_framenum_to_drop_timecode(time_code);
+            av_assert0(s->drop_frame_timecode == !!(s->tc.flags & AV_TIMECODE_FLAG_DROPFRAME));
+            if (s->drop_frame_timecode)
+                time_code = av_timecode_adjust_ntsc_framenum(time_code);
             put_bits(&s->pb, 5, (uint32_t)((time_code / (fps * 3600)) % 24));
             put_bits(&s->pb, 6, (uint32_t)((time_code / (fps * 60)) % 60));
             put_bits(&s->pb, 1, 1);
@@ -928,7 +931,7 @@ static void mpeg1_encode_block(MpegEncContext *s,
 #define OFFSET(x) offsetof(MpegEncContext, x)
 #define VE AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM
 #define COMMON_OPTS\
-        {TIMECODE_OPT(MpegEncContext,\
+        {AV_TIMECODE_OPTION(MpegEncContext, tc_opt_str, \
          AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM)},\
     { "intra_vlc",           "Use MPEG-2 intra VLC table.",       OFFSET(intra_vlc_format),    AV_OPT_TYPE_INT, { 0 }, 0, 1, VE },\
     { "drop_frame_timecode", "Timecode is in drop frame format.", OFFSET(drop_frame_timecode), AV_OPT_TYPE_INT, { 0 }, 0, 1, VE}, \
