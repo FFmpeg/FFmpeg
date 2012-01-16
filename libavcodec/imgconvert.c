@@ -109,6 +109,7 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
 
     /* YUV formats with alpha plane */
     [PIX_FMT_YUVA420P] = {
+        .is_alpha = 1,
         .color_type = FF_COLOR_YUV,
     },
 
