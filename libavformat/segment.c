@@ -208,8 +208,8 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
                       end_pts, AV_TIME_BASE_Q) >= 0 &&
         pkt->flags & AV_PKT_FLAG_KEY) {
 
-        av_log(s, AV_LOG_DEBUG, "Next segment starts at %d %"PRId64"\n",
-               pkt->stream_index, pkt->pts);
+        av_log(s, AV_LOG_DEBUG, "Next segment starts with packet stream:%d pts:%"PRId64" pts_time:%f\n",
+               pkt->stream_index, pkt->pts, pkt->pts * av_q2d(st->time_base));
 
         if ((ret = segment_end(s)) < 0 || (ret = segment_start(s)) < 0)
             goto fail;
