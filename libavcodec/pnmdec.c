@@ -58,6 +58,11 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
     switch (avctx->pix_fmt) {
     default:
         return -1;
+    case PIX_FMT_RGBA64BE:
+        n = avctx->width * 8;
+        components=4;
+        sample_len=16;
+        goto do_read;
     case PIX_FMT_RGB48BE:
         n = avctx->width * 6;
         components=3;

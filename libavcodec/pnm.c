@@ -131,8 +131,7 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
             if (maxval < 256) {
                 avctx->pix_fmt = PIX_FMT_RGB32;
             } else {
-                av_log(avctx, AV_LOG_ERROR, "Unsupported bit depth\n");
-                return -1;
+                avctx->pix_fmt = PIX_FMT_RGBA64BE;
             }
         } else {
             return -1;
