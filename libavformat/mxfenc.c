@@ -37,8 +37,8 @@
 
 #include "libavutil/opt.h"
 #include "libavutil/random_seed.h"
+#include "libavutil/timecode.h"
 #include "libavcodec/bytestream.h"
-#include "libavcodec/timecode.h"
 #include "audiointerleave.h"
 #include "avformat.h"
 #include "internal.h"
@@ -187,7 +187,8 @@ typedef struct MXFContext {
     unsigned body_partitions_count;
     int last_key_index;  ///< index of last key frame
     uint64_t duration;
-    struct ff_timecode tc;
+    char *tc_opt_str;    ///< timecode option string
+    AVTimecode tc;       ///< timecode context
     AVStream *timecode_track;
     int timecode_base;       ///< rounded time code base (25 or 30)
     int edit_unit_byte_count; ///< fixed edit unit byte count
@@ -675,7 +676,7 @@ static void mxf_write_timecode_component(AVFormatContext *s, AVStream *st, enum 
 
     // Drop Frame
     mxf_write_local_tag(pb, 1, 0x1503);
-    avio_w8(pb, mxf->tc.drop);
+    avio_w8(pb, !!(mxf->tc.flags & AV_TIMECODE_FLAG_DROPFRAME));
 }
 
 static void mxf_write_structural_component(AVFormatContext *s, AVStream *st, enum MXFMetadataSetType type)
@@ -1395,7 +1396,7 @@ static void mxf_gen_umid(AVFormatContext *s)
 static int mxf_write_header(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
-    int i;
+    int i, ret;
     uint8_t present[FF_ARRAY_ELEMS(mxf_essence_container_uls)] = {0};
     const int *samples_per_frame = NULL;
     AVDictionaryEntry *t;
@@ -1412,6 +1413,7 @@ static int mxf_write_header(AVFormatContext *s)
         st->priv_data = sc;
 
         if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+            AVRational rate;
             if (i != 0) {
                 av_log(s, AV_LOG_ERROR, "video stream must be first track\n");
                 return -1;
@@ -1428,13 +1430,15 @@ static int mxf_write_header(AVFormatContext *s)
                 av_log(s, AV_LOG_ERROR, "unsupported video frame rate\n");
                 return -1;
             }
+            rate = (AVRational){mxf->time_base.den, mxf->time_base.num};
             avpriv_set_pts_info(st, 64, mxf->time_base.num, mxf->time_base.den);
-            if (mxf->tc.str) {
-                mxf->tc.rate.num = mxf->time_base.den;
-                mxf->tc.rate.den = mxf->time_base.num;
-                if (avpriv_init_smpte_timecode(s, &mxf->tc) < 0)
-                    return -1;
-            }
+            if (mxf->tc_opt_str)
+                ret = av_timecode_init_from_string(&mxf->tc, rate,
+                                                   mxf->tc_opt_str, s);
+            else
+                ret = av_timecode_init(&mxf->tc, rate, 0, 0, s);
+            if (ret < 0)
+                return ret;
             if (s->oformat == &ff_mxf_d10_muxer) {
                 if (st->codec->bit_rate == 50000000)
                     if (mxf->time_base.den == 25) sc->index = 3;
@@ -1544,7 +1548,7 @@ static void mxf_write_system_item(AVFormatContext *s)
     unsigned frame;
     uint32_t time_code;
 
-    frame = mxf->tc.start + mxf->last_indexed_edit_unit + mxf->edit_units_count;
+    frame = mxf->last_indexed_edit_unit + mxf->edit_units_count;
 
     // write system metadata pack
     avio_write(pb, system_metadata_pack_key, 16);
@@ -1553,7 +1557,7 @@ static void mxf_write_system_item(AVFormatContext *s)
     avio_w8(pb, 0x04); // content package rate
     avio_w8(pb, 0x00); // content package type
     avio_wb16(pb, 0x00); // channel handle
-    avio_wb16(pb, frame); // continuity count
+    avio_wb16(pb, mxf->tc.start + frame); // continuity count
     if (mxf->essence_container_count > 1)
         avio_write(pb, multiple_desc_ul, 16);
     else {
@@ -1565,11 +1569,7 @@ static void mxf_write_system_item(AVFormatContext *s)
     avio_wb64(pb, 0); // creation date/time stamp
 
     avio_w8(pb, 0x81); // SMPTE 12M time code
-    time_code = frame;
-    if (mxf->tc.drop)
-        time_code = avpriv_framenum_to_drop_timecode(time_code);
-    time_code = avpriv_framenum_to_smpte_timecode(time_code, mxf->timecode_base,
-                                                  mxf->tc.drop);
+    time_code = av_timecode_get_smpte_from_framenum(&mxf->tc, frame);
     avio_wb32(pb, time_code);
     avio_wb32(pb, 0); // binary group data
     avio_wb64(pb, 0);
@@ -1871,7 +1871,7 @@ static const AVClass mxf_class = {
     .item_name  = av_default_item_name,
     .version    = LIBAVUTIL_VERSION_INT,
     .option     = (const AVOption[]){
-        {TIMECODE_OPT(MXFContext, AV_OPT_FLAG_ENCODING_PARAM)},
+        {AV_TIMECODE_OPTION(MXFContext, tc_opt_str, AV_OPT_FLAG_ENCODING_PARAM)},
         {NULL}
     },
 };
@@ -1881,7 +1881,7 @@ static const AVClass mxf_d10_class = {
     .item_name  = av_default_item_name,
     .version    = LIBAVUTIL_VERSION_INT,
     .option     = (const AVOption[]){
-        {TIMECODE_OPT(MXFContext, AV_OPT_FLAG_ENCODING_PARAM)},
+        {AV_TIMECODE_OPTION(MXFContext, tc_opt_str, AV_OPT_FLAG_ENCODING_PARAM)},
         {NULL}
     },
 };
