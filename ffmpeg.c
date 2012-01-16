@@ -298,6 +298,7 @@ typedef struct OutputStream {
 
 /* init terminal so that we can grab keys */
 static struct termios oldtty;
+static int restore_tty;
 #endif
 
 typedef struct OutputFile {
@@ -696,7 +697,7 @@ static void term_exit(void)
 {
     av_log(NULL, AV_LOG_QUIET, "%s", "");
 #if HAVE_TERMIOS_H
-    if(!run_as_daemon)
+    if(restore_tty)
         tcsetattr (0, TCSANOW, &oldtty);
 #endif
 }
@@ -718,8 +719,9 @@ static void term_init(void)
     if(!run_as_daemon){
     struct termios tty;
 
-    tcgetattr (0, &tty);
+    if (tcgetattr (0, &tty) == 0) {
     oldtty = tty;
+    restore_tty = 1;
     atexit(term_exit);
 
     tty.c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP
@@ -732,6 +734,7 @@ static void term_init(void)
     tty.c_cc[VTIME] = 0;
 
     tcsetattr (0, TCSANOW, &tty);
+    }
     signal(SIGQUIT, sigterm_handler); /* Quit (POSIX).  */
     }
 #endif
