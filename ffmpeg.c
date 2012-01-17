@@ -238,7 +238,6 @@ typedef struct OutputStream {
     int frame_number;
     /* input pts and corresponding output pts
        for A/V sync */
-    // double sync_ipts;        /* dts from the AVPacket of the demuxer in second units */
     struct InputStream *sync_ist; /* input stream to sync against */
     int64_t sync_opts;       /* output frame counter, could be changed to some true timestamp */ // FIXME look at frame_number
     AVBitStreamFilterContext *bitstream_filters;
