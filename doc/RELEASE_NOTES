@@ -9,10 +9,7 @@ General notes
 This release continues the API cleanups that have begun with the
 previous release. While it is binary compatible with 0.7, many parts of
 the public API were deprecated and will be removed in the git master and
-later releases. Note that a couple of header includes have been cleaned
-up, which may require code changes in your applications. In particular,
-the header "libavutil/mathematics.h" is no longer included from
-"libavcodec/avcodec.h". Please consult the doc/APIchanges file to see
+later releases. Please consult the doc/APIchanges file to see
 intended replacements for the deprecated APIs.
 
 Furthermore, our work on the 'ffmpeg' command-line tool has resulted in
@@ -42,7 +39,30 @@ API changes
 
 A number of additional APIs have been introduced and some existing
 functions have been deprecated and are scheduled for removal in the next
-release. Please see the file doc/APIchanges for details along with
+release. Significant API changes include:
+
+* new audio decoding API which decodes from an AVPacket to an AVFrame and
+is able to use AVCodecContext.get_buffer() in the similar way as video decoding.
+
+* new audio encoding API which encodes from an AVFrame to an AVPacket, thus
+allowing it to properly output timing information and side data.
+
+* rewritten AVOptions API with better built-in support for private options.
+
+* private options support for demuxers [avformat_open_input()], muxers
+[avformat_write_header()], encoders and decoders [avcodec_open2()].
+As a result, many format- or codec-specific fields and flags in AVFormatContext
+and AVCodecContext were deprecated -- notably most of CODEC_FLAG2_* and many
+CODEC_FLAG_*.
+
+* new API for custom IO interrupt callbacks.
+
+* #include cleanup in libavutil -- libavutil/avutil.h no longer includes all
+the other headers in libavutil, they must be included manually. One specific
+result is that libavutil/mathematics.h is no longer included from
+libavcodec/avcodec.h, which is a common source of errors.
+
+Please see the file doc/APIchanges for details along with
 similar programmer-centric information.
 
 
