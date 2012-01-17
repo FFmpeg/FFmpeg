@@ -3141,30 +3141,6 @@ static int opt_pad(const char *opt, const char *arg)
     return -1;
 }
 
-static double parse_frame_aspect_ratio(const char *arg)
-{
-    int x = 0, y = 0;
-    double ar = 0;
-    const char *p;
-    char *end;
-
-    p = strchr(arg, ':');
-    if (p) {
-        x = strtol(arg, &end, 10);
-        if (end == p)
-            y = strtol(end + 1, &end, 10);
-        if (x > 0 && y > 0)
-            ar = (double)x / (double)y;
-    } else
-        ar = strtod(arg, NULL);
-
-    if (!ar) {
-        av_log(NULL, AV_LOG_FATAL, "Incorrect aspect ratio specification.\n");
-        exit_program(1);
-    }
-    return ar;
-}
-
 static int opt_video_channel(const char *opt, const char *arg)
 {
     av_log(NULL, AV_LOG_WARNING, "This option is deprecated, use -channel.\n");
@@ -3986,8 +3962,15 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
         }
 
         MATCH_PER_STREAM_OPT(frame_aspect_ratios, str, frame_aspect_ratio, oc, st);
-        if (frame_aspect_ratio)
-            ost->frame_aspect_ratio = parse_frame_aspect_ratio(frame_aspect_ratio);
+        if (frame_aspect_ratio) {
+            AVRational q;
+            if (av_parse_ratio(&q, frame_aspect_ratio, 255, 0, NULL) < 0 ||
+                q.num <= 0 || q.den <= 0) {
+                av_log(NULL, AV_LOG_FATAL, "Invalid aspect ratio: %s\n", frame_aspect_ratio);
+                exit_program(1);
+            }
+            ost->frame_aspect_ratio = av_q2d(q);
+        }
 
         video_enc->bits_per_raw_sample = frame_bits_per_raw_sample;
         MATCH_PER_STREAM_OPT(frame_pix_fmts, str, frame_pix_fmt, oc, st);

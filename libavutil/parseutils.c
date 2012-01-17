@@ -31,6 +31,32 @@
 #include "random_seed.h"
 #include "parseutils.h"
 
+int av_parse_ratio(AVRational *q, const char *str, int max,
+                   int log_offset, void *log_ctx)
+{
+    char c;
+    int ret;
+    int64_t gcd;
+
+    if (sscanf(str, "%d:%d%c", &q->num, &q->den, &c) != 2) {
+        double d;
+        ret = av_expr_parse_and_eval(&d, str, NULL, NULL,
+                                     NULL, NULL, NULL, NULL,
+                                     NULL, log_offset, log_ctx);
+        if (ret < 0)
+            return ret;
+        *q = av_d2q(d, max);
+    }
+
+    gcd = av_gcd(FFABS(q->num), FFABS(q->den));
+    if (gcd) {
+        q->num /= gcd;
+        q->den /= gcd;
+    }
+
+    return 0;
+}
+
 typedef struct {
     const char *abbr;
     int width, height;
@@ -124,7 +150,6 @@ int av_parse_video_rate(AVRational *rate, const char *arg)
 {
     int i, ret;
     int n = FF_ARRAY_ELEMS(video_rate_abbrs);
-    double res;
 
     /* First, we check our abbreviation table */
     for (i = 0; i < n; ++i)
@@ -134,10 +159,8 @@ int av_parse_video_rate(AVRational *rate, const char *arg)
         }
 
     /* Then, we try to parse it as fraction */
-    if ((ret = av_expr_parse_and_eval(&res, arg, NULL, NULL, NULL, NULL, NULL, NULL,
-                                      NULL, 0, NULL)) < 0)
+    if ((ret = av_parse_ratio_quiet(rate, arg, 1001000)) < 0)
         return ret;
-    *rate = av_d2q(res, 1001000);
     if (rate->num <= 0 || rate->den <= 0)
         return AVERROR(EINVAL);
     return 0;

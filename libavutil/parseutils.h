@@ -29,6 +29,30 @@
  */
 
 /**
+ * Parse str and store the parsed ratio in q.
+ *
+ * Note that a ratio with infinite (1/0) or negative value is
+ * considered valid, so you should check on the returned value if you
+ * want to exclude those values.
+ *
+ * The undefined value can be expressed using the "0:0" string.
+ *
+ * @param[in,out] q pointer to the AVRational which will contain the ratio
+ * @param[in] str the string to parse: it has to be a string in the format
+ * num:den, a float number or an expression
+ * @param[in] max the maximum allowed numerator and denominator
+ * @param[in] log_offset log level offset which is applied to the log
+ * level of log_ctx
+ * @param[in] log_ctx parent logging context
+ * @return >= 0 on success, a negative error code otherwise
+ */
+int av_parse_ratio(AVRational *q, const char *str, int max,
+                   int log_offset, void *log_ctx);
+
+#define av_parse_ratio_quiet(rate, str, max) \
+    av_parse_ratio(rate, str, max, AV_LOG_MAX_OFFSET, NULL)
+
+/**
  * Parse str and put in width_ptr and height_ptr the detected values.
  *
  * @param[in,out] width_ptr pointer to the variable which will contain the detected

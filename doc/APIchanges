@@ -13,6 +13,12 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2012-02-06 - xxxxxxx - lavu 51.38.100
+  Add av_parse_ratio() function to parseutils.h.
+
+2012-02-06 - xxxxxxx - lavu 51.38.100
+  Add AV_LOG_MAX_OFFSET macro to log.h.
+
 2012-02-02 - xxxxxxx - lavu 51.37.100
   Add public timecode helpers.
 

@@ -24,6 +24,7 @@
  */
 
 #include "libavutil/mathematics.h"
+#include "libavutil/parseutils.h"
 #include "avfilter.h"
 
 typedef struct {
@@ -33,32 +34,18 @@ typedef struct {
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     AspectContext *aspect = ctx->priv;
-    double  ratio;
-    int64_t gcd;
-    char c = 0;
+    int ret;
 
     if (args) {
-        if (sscanf(args, "%d:%d%c", &aspect->aspect.num, &aspect->aspect.den, &c) != 2)
-            if (sscanf(args, "%lf%c", &ratio, &c) == 1)
-                aspect->aspect = av_d2q(ratio, 100);
-
-        if (c || aspect->aspect.num <= 0 || aspect->aspect.den <= 0) {
+        if ((ret = av_parse_ratio(&aspect->aspect, args, 100, 0, ctx)) < 0 ||
+            aspect->aspect.num < 0 || aspect->aspect.den <= 0) {
             av_log(ctx, AV_LOG_ERROR,
                    "Invalid string '%s' for aspect ratio.\n", args);
-            return AVERROR(EINVAL);
+            return ret;
         }
 
-        gcd = av_gcd(FFABS(aspect->aspect.num), FFABS(aspect->aspect.den));
-        if (gcd) {
-            aspect->aspect.num /= gcd;
-            aspect->aspect.den /= gcd;
-        }
+        av_log(ctx, AV_LOG_INFO, "a:%d/%d\n", aspect->aspect.num, aspect->aspect.den);
     }
-
-    if (aspect->aspect.den == 0)
-        aspect->aspect = (AVRational) {0, 1};
-
-    av_log(ctx, AV_LOG_INFO, "a:%d/%d\n", aspect->aspect.num, aspect->aspect.den);
     return 0;
 }
 
