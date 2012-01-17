@@ -119,15 +119,15 @@ static char *value_string(char *buf, int buf_size, struct unit_value uv)
             prefix_string = decimal_unit_prefixes[index];
         }
 
-        if (show_float || vald != (int)vald) l = snprintf(buf, buf_size, "%.3f", vald);
-        else                                 l = snprintf(buf, buf_size, "%lld", (long long int)vald);
+        if (show_float || vald != (long long int)vald) l = snprintf(buf, buf_size, "%.3f", vald);
+        else                                           l = snprintf(buf, buf_size, "%lld", (long long int)vald);
         snprintf(buf+l, buf_size-l, "%s%s%s", prefix_string || show_value_unit ? " " : "",
                  prefix_string, show_value_unit ? uv.unit : "");
     } else {
         int l;
 
         if (show_float) l = snprintf(buf, buf_size, "%.3f", vald);
-        else            l = snprintf(buf, buf_size, "%d",   (int)vald);
+        else            l = snprintf(buf, buf_size, "%lld", (long long int)vald);
         snprintf(buf+l, buf_size-l, "%s%s", show_value_unit ? " " : "",
                  show_value_unit ? uv.unit : "");
     }
