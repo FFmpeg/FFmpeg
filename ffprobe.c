@@ -77,7 +77,7 @@ void av_noreturn exit_program(int ret)
 }
 
 struct unit_value {
-    union { double d; int i; } val;
+    union { double d; long long int i; } val;
     const char *unit;
 };
 
@@ -119,7 +119,7 @@ static char *value_string(char *buf, int buf_size, struct unit_value uv)
         }
 
         if (show_float || vald != (int)vald) l = snprintf(buf, buf_size, "%.3f", vald);
-        else                                 l = snprintf(buf, buf_size, "%d",   (int)vald);
+        else                                 l = snprintf(buf, buf_size, "%lld", (long long int)vald);
         snprintf(buf+l, buf_size-l, "%s%s%s", prefix_string || show_value_unit ? " " : "",
                  prefix_string, show_value_unit ? uv.unit : "");
     } else {
