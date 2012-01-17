@@ -968,6 +968,8 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
         if (!user_packet) {
             if (avctx->codec->capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE) {
                 av_assert0(av_get_bits_per_sample(avctx->codec_id) != 0);
+                if (!frame)
+                    return AVERROR(EINVAL);
                 buf_size = nb_samples * avctx->channels *
                            av_get_bits_per_sample(avctx->codec_id) / 8;
             } else {
