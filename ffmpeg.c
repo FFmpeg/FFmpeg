@@ -1065,6 +1065,8 @@ static int encode_audio_frame(AVFormatContext *s, OutputStream *ost,
         exit_program(1);
     }
 
+    ret = pkt.size;
+
     if (got_packet) {
         pkt.stream_index = ost->index;
         if (pkt.pts != AV_NOPTS_VALUE)
@@ -1075,12 +1077,14 @@ static int encode_audio_frame(AVFormatContext *s, OutputStream *ost,
         write_frame(s, &pkt, ost);
 
         audio_size += pkt.size;
+
+        av_free_packet(&pkt);
     }
 
     if (frame)
         ost->sync_opts += frame->nb_samples;
 
-    return pkt.size;
+    return ret;
 }
 
 static void do_audio_out(AVFormatContext *s, OutputStream *ost,
