@@ -207,6 +207,7 @@ static int libopenjpeg_copy_packed8(AVCodecContext *avctx, AVFrame *frame, opj_i
 
     for (compno = 0; compno < numcomps; ++compno) {
         if (image->comps[compno].w > frame->linesize[0] / numcomps) {
+            av_log(avctx, AV_LOG_ERROR, "Error: frame's linesize is too small for the image\n");
             return 0;
         }
     }
@@ -233,6 +234,7 @@ static int libopenjpeg_copy_packed16(AVCodecContext *avctx, AVFrame *frame, opj_
 
     for (compno = 0; compno < numcomps; ++compno) {
         if (image->comps[compno].w > frame->linesize[0] / numcomps) {
+            av_log(avctx, AV_LOG_ERROR, "Error: frame's linesize is too small for the image\n");
             return 0;
         }
     }
@@ -259,6 +261,7 @@ static int libopenjpeg_copy_unpacked8(AVCodecContext *avctx, AVFrame *frame, opj
 
     for (compno = 0; compno < numcomps; ++compno) {
         if (image->comps[compno].w > frame->linesize[compno]) {
+            av_log(avctx, AV_LOG_ERROR, "Error: frame's linesize is too small for the image\n");
             return 0;
         }
     }
@@ -288,6 +291,7 @@ static int libopenjpeg_copy_unpacked16(AVCodecContext *avctx, AVFrame *frame, op
 
     for (compno = 0; compno < numcomps; ++compno) {
         if (image->comps[compno].w > frame->linesize[compno]) {
+            av_log(avctx, AV_LOG_ERROR, "Error: frame's linesize is too small for the image\n");
             return 0;
         }
     }
