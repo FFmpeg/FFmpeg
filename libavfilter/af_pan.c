@@ -95,6 +95,12 @@ static av_cold int init(AVFilterContext *ctx, const char *args0, void *opaque)
     int nb_in_channels[2] = { 0, 0 }; // number of unnamed and named input channels
     double gain;
 
+    if (!args0) {
+        av_log(ctx, AV_LOG_ERROR,
+               "pan filter needs a channel layout and a set "
+               "of channels definitions as parameter\n");
+        return AVERROR(EINVAL);
+    }
     if (!args)
         return AVERROR(ENOMEM);
     arg = av_strtok(args, ":", &tokenizer);
