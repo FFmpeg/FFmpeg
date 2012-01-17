@@ -19,7 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avcodec.h"
-#include "bytestream.h"
 #include "png.h"
 
 const uint8_t ff_pngsig[8] = {137, 80, 78, 71, 13, 10, 26, 10};
