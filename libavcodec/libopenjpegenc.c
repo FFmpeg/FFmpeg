@@ -257,7 +257,7 @@ static int libopenjpeg_copy_unpacked8(AVCodecContext *avctx, AVFrame *frame, opj
     int y;
     int width;
     int height;
-    const int numcomps = avctx->pix_fmt == PIX_FMT_YUVA420P ? 4 : 3;
+    const int numcomps = image->numcomps;
 
     for (compno = 0; compno < numcomps; ++compno) {
         if (image->comps[compno].w > frame->linesize[compno]) {
@@ -286,7 +286,7 @@ static int libopenjpeg_copy_unpacked16(AVCodecContext *avctx, AVFrame *frame, op
     int y;
     int width;
     int height;
-    const int numcomps = 3;
+    const int numcomps = image->numcomps;
     uint16_t *frame_ptr;
 
     for (compno = 0; compno < numcomps; ++compno) {
@@ -328,12 +328,6 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf
     image->y1 = (avctx->height - 1) * ctx->enc_params.subsampling_dy + 1;
 
     switch (avctx->pix_fmt) {
-    case PIX_FMT_GRAY8:
-        cpyresult = libopenjpeg_copy_packed8(avctx, frame, image, 1);
-        break;
-    case PIX_FMT_GRAY16:
-        cpyresult = libopenjpeg_copy_packed16(avctx, frame, image, 1);
-        break;
     case PIX_FMT_RGB24:
         cpyresult = libopenjpeg_copy_packed8(avctx, frame, image, 3);
         break;
@@ -346,6 +340,7 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf
     case PIX_FMT_RGBA64:
         cpyresult = libopenjpeg_copy_packed16(avctx, frame, image, 4);
         break;
+    case PIX_FMT_GRAY8:
     case PIX_FMT_YUV420P:
     case PIX_FMT_YUV422P:
     case PIX_FMT_YUV440P:
@@ -353,6 +348,7 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf
     case PIX_FMT_YUVA420P:
         cpyresult = libopenjpeg_copy_unpacked8(avctx, frame, image);
         break;
+    case PIX_FMT_GRAY16:
     case PIX_FMT_YUV420P9:
     case PIX_FMT_YUV420P10:
     case PIX_FMT_YUV420P16:
