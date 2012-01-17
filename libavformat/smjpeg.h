@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2011 Janne Grunau <janne-libav@jannau.net>
+ * SMJPEG common code
+ * Copyright (c) 2011-2012 Paul B Mahol
  *
  * This file is part of Libav.
  *
@@ -18,23 +19,27 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stdint.h>
+/**
+ * @file
+ * SMJPEG common code
+ */
 
-#include "libavcodec/avcodec.h"
-#include "libavcodec/rv34dsp.h"
+#ifndef AVFORMAT_SMJPEG_H
+#define AVFORMAT_SMJPEG_H
 
-void ff_rv34_inv_transform_noround_neon(DCTELEM *block);
+#include "internal.h"
 
-void ff_rv34_inv_transform_noround_dc_neon(DCTELEM *block);
+#define SMJPEG_MAGIC "\x0\xaSMJPEG"
 
-void ff_rv34_idct_add_neon(uint8_t *dst, int stride, DCTELEM *block);
-void ff_rv34_idct_dc_add_neon(uint8_t *dst, int stride, int dc);
+#define SMJPEG_DONE     MKTAG('D', 'O', 'N', 'E')
+#define SMJPEG_HEND     MKTAG('H', 'E', 'N', 'D')
+#define SMJPEG_SND      MKTAG('_', 'S', 'N', 'D')
+#define SMJPEG_SNDD     MKTAG('s', 'n', 'd', 'D')
+#define SMJPEG_TXT      MKTAG('_', 'T', 'X', 'T')
+#define SMJPEG_VID      MKTAG('_', 'V', 'I', 'D')
+#define SMJPEG_VIDD     MKTAG('v', 'i', 'd', 'D')
 
-void ff_rv34dsp_init_neon(RV34DSPContext *c, DSPContext* dsp)
-{
-    c->rv34_inv_transform    = ff_rv34_inv_transform_noround_neon;
-    c->rv34_inv_transform_dc = ff_rv34_inv_transform_noround_dc_neon;
+extern const AVCodecTag ff_codec_smjpeg_video_tags[];
+extern const AVCodecTag ff_codec_smjpeg_audio_tags[];
 
-    c->rv34_idct_add    = ff_rv34_idct_add_neon;
-    c->rv34_idct_dc_add = ff_rv34_idct_dc_add_neon;
-}
+#endif /* AVFORMAT_SMJPEG_H */

@@ -36,6 +36,10 @@ typedef void (*rv40_weight_func)(uint8_t *dst/*align width (8 or 16)*/,
 
 typedef void (*rv34_inv_transform_func)(DCTELEM *block);
 
+typedef void (*rv34_idct_add_func)(uint8_t *dst, int stride, DCTELEM *block);
+typedef void (*rv34_idct_dc_add_func)(uint8_t *dst, int stride,
+                                      int   dc);
+
 typedef void (*rv40_weak_loop_filter_func)(uint8_t *src, int stride,
                                            int filter_p1, int filter_q1,
                                            int alpha, int beta,
@@ -55,8 +59,10 @@ typedef struct RV34DSPContext {
     h264_chroma_mc_func put_chroma_pixels_tab[3];
     h264_chroma_mc_func avg_chroma_pixels_tab[3];
     rv40_weight_func rv40_weight_pixels_tab[2];
-    rv34_inv_transform_func rv34_inv_transform_tab[2];
-    void (*rv34_inv_transform_dc_tab[2])(DCTELEM *block);
+    rv34_inv_transform_func rv34_inv_transform;
+    rv34_inv_transform_func rv34_inv_transform_dc;
+    rv34_idct_add_func rv34_idct_add;
+    rv34_idct_dc_add_func rv34_idct_dc_add;
     rv40_weak_loop_filter_func rv40_weak_loop_filter[2];
     rv40_strong_loop_filter_func rv40_strong_loop_filter[2];
     rv40_loop_filter_strength_func rv40_loop_filter_strength[2];

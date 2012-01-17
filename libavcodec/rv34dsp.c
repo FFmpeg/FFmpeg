@@ -37,10 +37,10 @@ static av_always_inline void rv34_row_transform(int temp[16], DCTELEM *block)
     int i;
 
     for(i = 0; i < 4; i++){
-        const int z0 = 13*(block[i+8*0] +    block[i+8*2]);
-        const int z1 = 13*(block[i+8*0] -    block[i+8*2]);
-        const int z2 =  7* block[i+8*1] - 17*block[i+8*3];
-        const int z3 = 17* block[i+8*1] +  7*block[i+8*3];
+        const int z0 = 13*(block[i+4*0] +    block[i+4*2]);
+        const int z1 = 13*(block[i+4*0] -    block[i+4*2]);
+        const int z2 =  7* block[i+4*1] - 17*block[i+4*3];
+        const int z3 = 17* block[i+4*1] +  7*block[i+4*3];
 
         temp[4*i+0] = z0 + z3;
         temp[4*i+1] = z1 + z2;
@@ -50,14 +50,16 @@ static av_always_inline void rv34_row_transform(int temp[16], DCTELEM *block)
 }
 
 /**
- * Real Video 3.0/4.0 inverse transform
+ * Real Video 3.0/4.0 inverse transform + sample reconstruction
  * Code is almost the same as in SVQ3, only scaling is different.
  */
-static void rv34_inv_transform_c(DCTELEM *block){
-    int temp[16];
-    int i;
+static void rv34_idct_add_c(uint8_t *dst, int stride, DCTELEM *block){
+    int      temp[16];
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    int      i;
 
     rv34_row_transform(temp, block);
+    memset(block, 0, 16*sizeof(DCTELEM));
 
     for(i = 0; i < 4; i++){
         const int z0 = 13*(temp[4*0+i] +    temp[4*2+i]) + 0x200;
@@ -65,10 +67,12 @@ static void rv34_inv_transform_c(DCTELEM *block){
         const int z2 =  7* temp[4*1+i] - 17*temp[4*3+i];
         const int z3 = 17* temp[4*1+i] +  7*temp[4*3+i];
 
-        block[i*8+0] = (z0 + z3) >> 10;
-        block[i*8+1] = (z1 + z2) >> 10;
-        block[i*8+2] = (z1 - z2) >> 10;
-        block[i*8+3] = (z0 - z3) >> 10;
+        dst[0] = cm[ dst[0] + ( (z0 + z3) >> 10 ) ];
+        dst[1] = cm[ dst[1] + ( (z1 + z2) >> 10 ) ];
+        dst[2] = cm[ dst[2] + ( (z1 - z2) >> 10 ) ];
+        dst[3] = cm[ dst[3] + ( (z0 - z3) >> 10 ) ];
+
+        dst  += stride;
     }
 }
 
@@ -90,21 +94,27 @@ static void rv34_inv_transform_noround_c(DCTELEM *block){
         const int z2 =  7* temp[4*1+i] - 17*temp[4*3+i];
         const int z3 = 17* temp[4*1+i] +  7*temp[4*3+i];
 
-        block[i*8+0] = ((z0 + z3) * 3) >> 11;
-        block[i*8+1] = ((z1 + z2) * 3) >> 11;
-        block[i*8+2] = ((z1 - z2) * 3) >> 11;
-        block[i*8+3] = ((z0 - z3) * 3) >> 11;
+        block[i*4+0] = ((z0 + z3) * 3) >> 11;
+        block[i*4+1] = ((z1 + z2) * 3) >> 11;
+        block[i*4+2] = ((z1 - z2) * 3) >> 11;
+        block[i*4+3] = ((z0 - z3) * 3) >> 11;
     }
 }
 
-static void rv34_inv_transform_dc_c(DCTELEM *block)
+static void rv34_idct_dc_add_c(uint8_t *dst, int stride, int dc)
 {
-    DCTELEM dc = (13 * 13 * block[0] + 0x200) >> 10;
+    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
     int i, j;
 
-    for (i = 0; i < 4; i++, block += 8)
+    cm += (13*13*dc + 0x200) >> 10;
+
+    for (i = 0; i < 4; i++)
+    {
         for (j = 0; j < 4; j++)
-            block[j] = dc;
+            dst[j] = cm[ dst[j] ];
+
+        dst += stride;
+    }
 }
 
 static void rv34_inv_transform_dc_noround_c(DCTELEM *block)
@@ -112,7 +122,7 @@ static void rv34_inv_transform_dc_noround_c(DCTELEM *block)
     DCTELEM dc = (13 * 13 * 3 * block[0]) >> 11;
     int i, j;
 
-    for (i = 0; i < 4; i++, block += 8)
+    for (i = 0; i < 4; i++, block += 4)
         for (j = 0; j < 4; j++)
             block[j] = dc;
 }
@@ -121,10 +131,11 @@ static void rv34_inv_transform_dc_noround_c(DCTELEM *block)
 
 
 av_cold void ff_rv34dsp_init(RV34DSPContext *c, DSPContext* dsp) {
-    c->rv34_inv_transform_tab[0] = rv34_inv_transform_c;
-    c->rv34_inv_transform_tab[1] = rv34_inv_transform_noround_c;
-    c->rv34_inv_transform_dc_tab[0]  = rv34_inv_transform_dc_c;
-    c->rv34_inv_transform_dc_tab[1]  = rv34_inv_transform_dc_noround_c;
+    c->rv34_inv_transform    = rv34_inv_transform_noround_c;
+    c->rv34_inv_transform_dc = rv34_inv_transform_dc_noround_c;
+
+    c->rv34_idct_add    = rv34_idct_add_c;
+    c->rv34_idct_dc_add = rv34_idct_dc_add_c;
 
     if (HAVE_NEON)
         ff_rv34dsp_init_neon(c, dsp);

@@ -33,6 +33,7 @@ typedef struct PicContext {
     AVFrame frame;
     int width, height;
     int nb_planes;
+    GetByteContext g;
 } PicContext;
 
 static void picmemset_8bpp(PicContext *s, int value, int run, int *x, int *y)
@@ -55,7 +56,8 @@ static void picmemset_8bpp(PicContext *s, int value, int run, int *x, int *y)
     }
 }
 
-static void picmemset(PicContext *s, int value, int run, int *x, int *y, int *plane, int bits_per_plane)
+static void picmemset(PicContext *s, int value, int run,
+                      int *x, int *y, int *plane, int bits_per_plane)
 {
     uint8_t *d;
     int shift = *plane * bits_per_plane;
@@ -107,34 +109,35 @@ static int decode_frame(AVCodecContext *avctx,
                         AVPacket *avpkt)
 {
     PicContext *s = avctx->priv_data;
-    int buf_size = avpkt->size;
-    const uint8_t *buf = avpkt->data;
-    const uint8_t *buf_end = avpkt->data + buf_size;
     uint32_t *palette;
-    int bits_per_plane, bpp, etype, esize, npal;
-    int i, x, y, plane;
+    int bits_per_plane, bpp, etype, esize, npal, pos_after_pal;
+    int i, x, y, plane, tmp;
 
-    if (buf_size < 11)
+    bytestream2_init(&s->g, avpkt->data, avpkt->size);
+
+    if (bytestream2_get_bytes_left(&s->g) < 11)
         return AVERROR_INVALIDDATA;
 
-    if (bytestream_get_le16(&buf) != 0x1234)
+    if (bytestream2_get_le16u(&s->g) != 0x1234)
         return AVERROR_INVALIDDATA;
-    s->width  = bytestream_get_le16(&buf);
-    s->height = bytestream_get_le16(&buf);
-    buf += 4;
-    bits_per_plane    = *buf & 0xF;
-    s->nb_planes      = (*buf++ >> 4) + 1;
-    bpp               = s->nb_planes ? bits_per_plane*s->nb_planes : bits_per_plane;
+
+    s->width       = bytestream2_get_le16u(&s->g);
+    s->height      = bytestream2_get_le16u(&s->g);
+    bytestream2_skip(&s->g, 4);
+    tmp            = bytestream2_get_byteu(&s->g);
+    bits_per_plane = tmp & 0xF;
+    s->nb_planes   = (tmp >> 4) + 1;
+    bpp            = bits_per_plane * s->nb_planes;
     if (bits_per_plane > 8 || bpp < 1 || bpp > 32) {
         av_log_ask_for_sample(avctx, "unsupported bit depth\n");
         return AVERROR_INVALIDDATA;
     }
 
-    if (*buf == 0xFF || bpp == 8) {
-        buf += 2;
-        etype  = bytestream_get_le16(&buf);
-        esize  = bytestream_get_le16(&buf);
-        if (buf_end - buf < esize)
+    if (bytestream2_peek_byte(&s->g) == 0xFF || bpp == 8) {
+        bytestream2_skip(&s->g, 2);
+        etype = bytestream2_get_le16(&s->g);
+        esize = bytestream2_get_le16(&s->g);
+        if (bytestream2_get_bytes_left(&s->g) < esize)
             return AVERROR_INVALIDDATA;
     } else {
         etype = -1;
@@ -159,25 +162,30 @@ static int decode_frame(AVCodecContext *avctx,
     s->frame.pict_type           = AV_PICTURE_TYPE_I;
     s->frame.palette_has_changed = 1;
 
+    pos_after_pal = bytestream2_tell(&s->g) + esize;
     palette = (uint32_t*)s->frame.data[1];
-    if (etype == 1 && esize > 1 && *buf < 6) {
-        int idx = *buf;
+    if (etype == 1 && esize > 1 && bytestream2_peek_byte(&s->g) < 6) {
+        int idx = bytestream2_get_byte(&s->g);
         npal = 4;
         for (i = 0; i < npal; i++)
             palette[i] = ff_cga_palette[ cga_mode45_index[idx][i] ];
     } else if (etype == 2) {
         npal = FFMIN(esize, 16);
-        for (i = 0; i < npal; i++)
-            palette[i] = ff_cga_palette[ FFMIN(buf[i], 16)];
+        for (i = 0; i < npal; i++) {
+            int pal_idx = bytestream2_get_byte(&s->g);
+            palette[i]  = ff_cga_palette[FFMIN(pal_idx, 16)];
+        }
     } else if (etype == 3) {
         npal = FFMIN(esize, 16);
-        for (i = 0; i < npal; i++)
-            palette[i] = ff_ega_palette[ FFMIN(buf[i], 63)];
+        for (i = 0; i < npal; i++) {
+            int pal_idx = bytestream2_get_byte(&s->g);
+            palette[i]  = ff_ega_palette[FFMIN(pal_idx, 63)];
+        }
     } else if (etype == 4 || etype == 5) {
         npal = FFMIN(esize / 3, 256);
         for (i = 0; i < npal; i++) {
-            palette[i] = AV_RB24(buf + i*3) << 2;
-            palette[i] |= 0xFF << 24 | palette[i] >> 6 & 0x30303;
+            palette[i] = bytestream2_get_be24(&s->g) << 2;
+            palette[i] |= 0xFFU << 24 | palette[i] >> 6 & 0x30303;
         }
     } else {
         if (bpp == 1) {
@@ -195,29 +203,34 @@ static int decode_frame(AVCodecContext *avctx,
     }
     // fill remaining palette entries
     memset(palette + npal, 0, AVPALETTE_SIZE - npal * 4);
-    buf += esize;
-
+    // skip remaining palette bytes
+    bytestream2_seek(&s->g, pos_after_pal, SEEK_SET);
 
     y = s->height - 1;
-    if (bytestream_get_le16(&buf)) {
+    if (bytestream2_get_le16(&s->g)) {
         x = 0;
         plane = 0;
-        while (y >= 0 && buf_end - buf >= 6) {
-            const uint8_t *buf_pend = buf + FFMIN(AV_RL16(buf), buf_end - buf);
-            //ignore uncompressed block size reported at buf[2]
-            int marker = buf[4];
-            buf += 5;
+        while (y >= 0 && bytestream2_get_bytes_left(&s->g) >= 6) {
+            int stop_size, marker, t1, t2;
 
-            while (plane < s->nb_planes && y >= 0 && buf_pend - buf >= 1) {
+            t1        = bytestream2_get_bytes_left(&s->g);
+            t2        = bytestream2_get_le16(&s->g);
+            stop_size = t1 - FFMIN(t1, t2);
+            // ignore uncompressed block size
+            bytestream2_skip(&s->g, 2);
+            marker    = bytestream2_get_byte(&s->g);
+
+            while (plane < s->nb_planes && y >= 0 &&
+                   bytestream2_get_bytes_left(&s->g) > stop_size) {
                 int run = 1;
-                int val = *buf++;
+                int val = bytestream2_get_byte(&s->g);
                 if (val == marker) {
-                    run = *buf++;
+                    run = bytestream2_get_byte(&s->g);
                     if (run == 0)
-                        run = bytestream_get_le16(&buf);
-                    val = *buf++;
+                        run = bytestream2_get_le16(&s->g);
+                    val = bytestream2_get_byte(&s->g);
                 }
-                if (buf > buf_end)
+                if (!bytestream2_get_bytes_left(&s->g))
                     break;
 
                 if (bits_per_plane == 8) {
@@ -228,16 +241,16 @@ static int decode_frame(AVCodecContext *avctx,
             }
         }
     } else {
-        while (y >= 0 && buf < buf_end) {
-            memcpy(s->frame.data[0] + y * s->frame.linesize[0], buf, FFMIN(avctx->width, buf_end - buf));
-            buf += avctx->width;
+        while (y >= 0 && bytestream2_get_bytes_left(&s->g) > 0) {
+            memcpy(s->frame.data[0] + y * s->frame.linesize[0], s->g.buffer, FFMIN(avctx->width, bytestream2_get_bytes_left(&s->g)));
+            bytestream2_skip(&s->g, avctx->width);
             y--;
         }
     }
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = s->frame;
-    return buf_size;
+    return avpkt->size;
 }
 
 static av_cold int decode_end(AVCodecContext *avctx)

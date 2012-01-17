@@ -317,7 +317,7 @@ library:
     @tab Used in Sierra CD-ROM games.
 @item Smacker                   @tab   @tab X
     @tab Multimedia format used by many games.
-@item SMJPEG                    @tab   @tab X
+@item SMJPEG                    @tab X @tab X
     @tab Used in certain Loki game ports.
 @item Sony OpenMG (OMA)         @tab X @tab X
     @tab Audio format used in Sony Sonic Stage and Sony Vegas.
