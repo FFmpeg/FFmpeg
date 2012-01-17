@@ -265,4 +265,5 @@ AVInputFormat ff_str_demuxer = {
     .read_header    = str_read_header,
     .read_packet    = str_read_packet,
     .read_close     = str_read_close,
+    .flags          = AVFMT_NO_BYTE_SEEK,
 };
