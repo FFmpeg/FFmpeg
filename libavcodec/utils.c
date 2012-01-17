@@ -1121,13 +1121,7 @@ int attribute_align_arg avcodec_encode_audio(AVCodecContext *avctx,
         avctx->coded_frame->key_frame = !!(pkt.flags & AV_PKT_FLAG_KEY);
     }
     /* free any side data since we cannot return it */
-    if (pkt.side_data_elems > 0) {
-        int i;
-        for (i = 0; i < pkt.side_data_elems; i++)
-            av_free(pkt.side_data[i].data);
-        av_freep(&pkt.side_data);
-        pkt.side_data_elems = 0;
-    }
+    ff_packet_free_side_data(&pkt);
 
     if (frame && frame->extended_data != frame->data)
         av_freep(&frame->extended_data);
