@@ -104,15 +104,16 @@ static char *value_string(char *buf, int buf_size, struct unit_value uv)
         snprintf(buf, buf_size, "%d:%02d:%09.6f", hours, mins, secs);
     } else if (use_value_prefix) {
         const char *prefix_string;
-        int index, l;
+        long long int index;
+        int l;
 
         if (uv.unit == unit_byte_str && use_byte_value_binary_prefix) {
-            index = (int) (log(vald)/log(2)) / 10;
+            index = (long long int) (log(vald)/log(2)) / 10;
             index = av_clip(index, 0, FF_ARRAY_ELEMS(binary_unit_prefixes) -1);
             vald /= pow(2, index*10);
             prefix_string = binary_unit_prefixes[index];
         } else {
-            index = (int) (log10(vald)) / 3;
+            index = (long long int) (log10(vald)) / 3;
             index = av_clip(index, 0, FF_ARRAY_ELEMS(decimal_unit_prefixes) -1);
             vald /= pow(10, index*3);
             prefix_string = decimal_unit_prefixes[index];
