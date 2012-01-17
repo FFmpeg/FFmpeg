@@ -37,11 +37,11 @@ typedef struct {
     char *format;          ///< format to use for output segment files
     char *list;            ///< filename for the segment list file
     int   list_size;       ///< number of entries for the segment list file
+    AVIOContext *list_pb;  ///< list file put-byte context
     float time;            ///< segment duration
     int  wrap;             ///< number after which the index wraps
     int64_t recording_time;
     int has_video;
-    AVIOContext *pb;
 } SegmentContext;
 
 static int segment_start(AVFormatContext *s)
@@ -105,13 +105,13 @@ static int segment_end(AVFormatContext *s)
 
     if (seg->list) {
         if (seg->list_size && !(seg->number % seg->list_size)) {
-            avio_close(seg->pb);
-            if ((ret = avio_open2(&seg->pb, seg->list, AVIO_FLAG_WRITE,
+            avio_close(seg->list_pb);
+            if ((ret = avio_open2(&seg->list_pb, seg->list, AVIO_FLAG_WRITE,
                                   &s->interrupt_callback, NULL)) < 0)
                 goto end;
         }
-        avio_printf(seg->pb, "%s\n", oc->filename);
-        avio_flush(seg->pb);
+        avio_printf(seg->list_pb, "%s\n", oc->filename);
+        avio_flush(seg->list_pb);
     }
 
 end:
@@ -138,7 +138,7 @@ static int seg_write_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     if (seg->list)
-        if ((ret = avio_open2(&seg->pb, seg->list, AVIO_FLAG_WRITE,
+        if ((ret = avio_open2(&seg->list_pb, seg->list, AVIO_FLAG_WRITE,
                               &s->interrupt_callback, NULL)) < 0)
             goto fail;
 
@@ -192,7 +192,7 @@ fail:
             avformat_free_context(oc);
         }
         if (seg->list)
-            avio_close(seg->pb);
+            avio_close(seg->list_pb);
     }
     return ret;
 }
@@ -225,7 +225,7 @@ fail:
         oc->streams = NULL;
         oc->nb_streams = 0;
         if (seg->list)
-            avio_close(seg->pb);
+            avio_close(seg->list_pb);
         avformat_free_context(oc);
     }
 
@@ -238,7 +238,7 @@ static int seg_write_trailer(struct AVFormatContext *s)
     AVFormatContext *oc = seg->avf;
     int ret = segment_end(s);
     if (seg->list)
-        avio_close(seg->pb);
+        avio_close(seg->list_pb);
     oc->streams = NULL;
     oc->nb_streams = 0;
     avformat_free_context(oc);
