@@ -296,7 +296,7 @@ int avcodec_fill_audio_frame(AVFrame *frame, int nb_channels,
                                       buf, nb_channels, frame->nb_samples,
                                       sample_fmt, align)) < 0) {
         if (frame->extended_data != frame->data)
-            av_free(frame->extended_data);
+            av_freep(&frame->extended_data);
         return ret;
     }
     if (frame->extended_data != frame->data) {
@@ -334,7 +334,7 @@ static int audio_get_buffer(AVCodecContext *avctx, AVFrame *frame)
         if (buf->extended_data[0] && buf_size > buf->audio_data_size) {
             av_free(buf->extended_data[0]);
             if (buf->extended_data != buf->data)
-                av_free(&buf->extended_data);
+                av_freep(&buf->extended_data);
             buf->extended_data = NULL;
             buf->data[0] = NULL;
         }
@@ -1110,7 +1110,7 @@ int attribute_align_arg avcodec_encode_audio(AVCodecContext *avctx,
     }
 
     if (frame && frame->extended_data != frame->data)
-        av_free(frame->extended_data);
+        av_freep(&frame->extended_data);
 
     return ret ? ret : pkt.size;
 }
@@ -1733,7 +1733,7 @@ static void audio_free_buffers(AVCodecContext *avctx)
     if (buf->extended_data) {
         av_free(buf->extended_data[0]);
         if (buf->extended_data != buf->data)
-            av_free(buf->extended_data);
+            av_freep(&buf->extended_data);
     }
     av_freep(&avci->buffer);
 }
