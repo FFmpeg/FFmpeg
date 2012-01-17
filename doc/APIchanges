@@ -13,6 +13,10 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2012-02-09 - xxxxxxx - lavu 51.39.100
+  Add a new installed header libavutil/timestamp.h with timestamp
+  utilities.
+
 2012-02-06 - xxxxxxx - lavu 51.38.100
   Add av_parse_ratio() function to parseutils.h.
 

@@ -38,6 +38,7 @@ HEADERS = adler32.h                                                     \
           samplefmt.h                                                   \
           sha.h                                                         \
           timecode.h                                                    \
+          timestamp.h                                                   \
 
 BUILT_HEADERS = avconfig.h
 
