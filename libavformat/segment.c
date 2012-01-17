@@ -54,8 +54,10 @@ static int segment_start(AVFormatContext *s)
         seg->number %= seg->wrap;
 
     if (av_get_frame_filename(oc->filename, sizeof(oc->filename),
-                              s->filename, seg->number++) < 0)
+                              s->filename, seg->number++) < 0) {
+        av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s'\n", s->filename);
         return AVERROR(EINVAL);
+    }
 
     if ((err = avio_open2(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
                           &s->interrupt_callback, NULL)) < 0)
