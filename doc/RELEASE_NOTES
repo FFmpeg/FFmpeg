@@ -70,4 +70,13 @@ similar programmer-centric information.
 Other notable changes
 ---------------------
 
+Libavcodec and libavformat built as shared libraries now hide non-public
+symbols. This will break applications using those symbols. Possible solutions
+are, in order of preference:
+1) Try finding a way of accomplishing the same with public API.
+2) If there is no corresponding public API, but you think there should be,
+post a request on the user mailing list or IRC channel.
+3) Finally if your program needs access to Libav internals for some special
+reason then the best solution is to link statically.
+
 Please see the Changelog file for a more detailed list of changes.
