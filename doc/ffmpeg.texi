@@ -919,15 +919,15 @@ Thread count.
 Video sync method.
 
 @table @option
-@item 0
+@item 0, passthrough
 Each frame is passed with its timestamp from the demuxer to the muxer.
-@item 1
+@item 1, cfr
 Frames will be duplicated and dropped to achieve exactly the requested
 constant framerate.
-@item 2
+@item 2, vfr
 Frames are passed through with their timestamp or dropped so as to
 prevent 2 frames from having the same timestamp.
-@item -1
+@item -1, auto
 Chooses between 1 and 2 depending on muxer capabilities. This is the
 default method.
 @end table
