@@ -197,7 +197,7 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int libopenjpeg_copy_rgba(AVCodecContext *avctx, AVFrame *frame, opj_image_t *image, int numcomps)
+static int libopenjpeg_copy_packed8(AVCodecContext *avctx, AVFrame *frame, opj_image_t *image, int numcomps)
 {
     int compno;
     int x;
@@ -222,7 +222,7 @@ static int libopenjpeg_copy_rgba(AVCodecContext *avctx, AVFrame *frame, opj_imag
     return 1;
 }
 
-static int libopenjpeg_copy_rgb16(AVCodecContext *avctx, AVFrame *frame, opj_image_t *image, int numcomps)
+static int libopenjpeg_copy_packed16(AVCodecContext *avctx, AVFrame *frame, opj_image_t *image, int numcomps)
 {
     int compno;
     int x;
@@ -248,7 +248,7 @@ static int libopenjpeg_copy_rgb16(AVCodecContext *avctx, AVFrame *frame, opj_ima
     return 1;
 }
 
-static int libopenjpeg_copy_yuv8(AVCodecContext *avctx, AVFrame *frame, opj_image_t *image)
+static int libopenjpeg_copy_unpacked8(AVCodecContext *avctx, AVFrame *frame, opj_image_t *image)
 {
     int compno;
     int x;
@@ -276,7 +276,7 @@ static int libopenjpeg_copy_yuv8(AVCodecContext *avctx, AVFrame *frame, opj_imag
     return 1;
 }
 
-static int libopenjpeg_copy_yuv16(AVCodecContext *avctx, AVFrame *frame, opj_image_t *image)
+static int libopenjpeg_copy_unpacked16(AVCodecContext *avctx, AVFrame *frame, opj_image_t *image)
 {
     int compno;
     int x;
@@ -325,29 +325,29 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf
 
     switch (avctx->pix_fmt) {
     case PIX_FMT_GRAY8:
-        cpyresult = libopenjpeg_copy_rgba(avctx, frame, image, 1);
+        cpyresult = libopenjpeg_copy_packed8(avctx, frame, image, 1);
         break;
     case PIX_FMT_GRAY16:
-        cpyresult = libopenjpeg_copy_rgb16(avctx, frame, image, 1);
+        cpyresult = libopenjpeg_copy_packed16(avctx, frame, image, 1);
         break;
     case PIX_FMT_RGB24:
-        cpyresult = libopenjpeg_copy_rgba(avctx, frame, image, 3);
+        cpyresult = libopenjpeg_copy_packed8(avctx, frame, image, 3);
         break;
     case PIX_FMT_RGBA:
-        cpyresult = libopenjpeg_copy_rgba(avctx, frame, image, 4);
+        cpyresult = libopenjpeg_copy_packed8(avctx, frame, image, 4);
         break;
     case PIX_FMT_RGB48:
-        cpyresult = libopenjpeg_copy_rgb16(avctx, frame, image, 3);
+        cpyresult = libopenjpeg_copy_packed16(avctx, frame, image, 3);
         break;
     case PIX_FMT_RGBA64:
-        cpyresult = libopenjpeg_copy_rgb16(avctx, frame, image, 4);
+        cpyresult = libopenjpeg_copy_packed16(avctx, frame, image, 4);
         break;
     case PIX_FMT_YUV420P:
     case PIX_FMT_YUV422P:
     case PIX_FMT_YUV440P:
     case PIX_FMT_YUV444P:
     case PIX_FMT_YUVA420P:
-        cpyresult = libopenjpeg_copy_yuv8(avctx, frame, image);
+        cpyresult = libopenjpeg_copy_unpacked8(avctx, frame, image);
         break;
     case PIX_FMT_YUV420P9:
     case PIX_FMT_YUV420P10:
@@ -358,7 +358,7 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf
     case PIX_FMT_YUV444P9:
     case PIX_FMT_YUV444P10:
     case PIX_FMT_YUV444P16:
-        cpyresult = libopenjpeg_copy_yuv16(avctx, frame, image);
+        cpyresult = libopenjpeg_copy_unpacked16(avctx, frame, image);
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "The frame's pixel format '%s' is not supported\n", av_get_pix_fmt_name(avctx->pix_fmt));
