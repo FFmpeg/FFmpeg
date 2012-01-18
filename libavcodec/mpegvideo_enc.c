@@ -392,10 +392,8 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
     s->obmc             = !!(s->flags  & CODEC_FLAG_OBMC);
 #endif
 
-    if (avctx->rc_max_rate && !avctx->rc_buffer_size) {
-        av_log(avctx, AV_LOG_ERROR,
-               "a vbv buffer size is needed, "
-               "for encoding with a maximum bitrate\n");
+    if ((!avctx->rc_max_rate) != (!avctx->rc_buffer_size)) {
+        av_log(avctx, AV_LOG_ERROR, "Either both buffer size and max rate or neither must be specified\n");
         return -1;
     }
 
