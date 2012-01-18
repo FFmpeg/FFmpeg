@@ -315,6 +315,9 @@ Ported from SoX.
 Mix channels with specific gain levels. The filter accepts the output
 channel layout followed by a set of channels definitions.
 
+This filter is also designed to remap efficiently the channels of an audio
+stream.
+
 The filter accepts parameters of the form:
 "@var{l}:@var{outdef}:@var{outdef}:..."
 
@@ -342,6 +345,8 @@ If the `=' in a channel specification is replaced by `<', then the gains for
 that specification will be renormalized so that the total is 1, thus
 avoiding clipping noise.
 
+@subsection Mixing examples
+
 For example, if you want to down-mix from stereo to mono, but with a bigger
 factor for the left channel:
 @example
@@ -357,6 +362,46 @@ pan=stereo: FL < FL + 0.5*FC + 0.6*BL + 0.6*SL : FR < FR + 0.5*FC + 0.6*BR + 0.6
 Note that @command{ffmpeg} integrates a default down-mix (and up-mix) system
 that should be preferred (see "-ac" option) unless you have very specific
 needs.
+
+@subsection Remapping examples
+
+The channel remapping will be effective if, and only if:
+
+@itemize
+@item gain coefficients are zeroes or ones,
+@item only one input per channel output,
+@item the number of output channels is supported by libswresample (16 at the
+      moment)
+@c if SWR_CH_MAX changes, fix the line above.
+@end itemize
+
+If all these conditions are satisfied, the filter will notify the user ("Pure
+channel mapping detected"), and use an optimized and lossless method to do the
+remapping.
+
+For example, if you have a 5.1 source and want a stereo audio stream by
+dropping the extra channels:
+@example
+pan="stereo: c0=FL : c1=FR"
+@end example
+
+Given the same source, you can also switch front left and front right channels
+and keep the input channel layout:
+@example
+pan="5.1: c0=c1 : c1=c0 : c2=c2 : c3=c3 : c4=c4 : c5=c5"
+@end example
+
+If the input is a stereo audio stream, you can mute the front left channel (and
+still keep the stereo channel layout) with:
+@example
+pan="stereo:c1=c1"
+@end example
+
+Still with a stereo audio stream input, you can copy the right channel in both
+front left and right:
+@example
+pan="stereo: c0=FR : c1=FR"
+@end example
 
 @section silencedetect
 

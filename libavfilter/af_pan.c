@@ -30,12 +30,14 @@
 #include <stdio.h>
 #include "libavutil/audioconvert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/opt.h"
+#include "libswresample/swresample.h"
 #include "avfilter.h"
 #include "internal.h"
 
 #define MAX_CHANNELS 63
 
-typedef struct {
+typedef struct PanContext {
     int64_t out_channel_layout;
     union {
         double d[MAX_CHANNELS][MAX_CHANNELS];
@@ -46,6 +48,16 @@ typedef struct {
     int need_renumber;
     int nb_input_channels;
     int nb_output_channels;
+
+    int pure_gains;
+    void (*filter_samples)(struct PanContext*,
+                           AVFilterBufferRef*,
+                           AVFilterBufferRef*,
+                           int);
+
+    /* channel mapping specific */
+    int channel_map[SWR_CH_MAX];
+    struct SwrContext *swr;
 } PanContext;
 
 static int parse_channel_name(char **arg, int *rchannel, int *rnamed)
@@ -179,6 +191,31 @@ static av_cold int init(AVFilterContext *ctx, const char *args0, void *opaque)
     return 0;
 }
 
+static void filter_samples_channel_mapping(PanContext *pan, AVFilterBufferRef *outsamples, AVFilterBufferRef *insamples, int n);
+static void filter_samples_panning        (PanContext *pan, AVFilterBufferRef *outsamples, AVFilterBufferRef *insamples, int n);
+
+static int are_gains_pure(const PanContext *pan)
+{
+    int i, j;
+
+    for (i = 0; i < MAX_CHANNELS; i++) {
+        int nb_gain = 0;
+
+        for (j = 0; j < MAX_CHANNELS; j++) {
+            double gain = pan->gain.d[i][j];
+
+            /* channel mapping is effective only if 0% or 100% of a channel is
+             * selected... */
+            if (gain != 0. && gain != 1.)
+                return 0;
+            /* ...and if the output channel is only composed of one input */
+            if (gain && nb_gain++)
+                return 0;
+        }
+    }
+    return 1;
+}
+
 static int query_formats(AVFilterContext *ctx)
 {
     PanContext *pan = ctx->priv;
@@ -186,11 +223,21 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterLink *outlink = ctx->outputs[0];
     AVFilterFormats *formats;
 
+    if (pan->nb_output_channels <= SWR_CH_MAX)
+        pan->pure_gains = are_gains_pure(pan);
+    if (pan->pure_gains) {
+        /* libswr supports any sample and packing formats */
+        avfilter_set_common_sample_formats(ctx, avfilter_make_all_formats(AVMEDIA_TYPE_AUDIO));
+        avfilter_set_common_packing_formats(ctx, avfilter_make_all_packing_formats());
+        pan->filter_samples = filter_samples_channel_mapping;
+    } else {
     const enum AVSampleFormat sample_fmts[] = {AV_SAMPLE_FMT_S16, -1};
     const int                packing_fmts[] = {AVFILTER_PACKED,   -1};
 
     avfilter_set_common_sample_formats (ctx, avfilter_make_format_list(sample_fmts));
     avfilter_set_common_packing_formats(ctx, avfilter_make_format_list(packing_fmts));
+    pan->filter_samples = filter_samples_panning;
+    }
 
     // inlink supports any channel layout
     formats = avfilter_make_all_channel_layouts();
@@ -222,6 +269,44 @@ static int config_props(AVFilterLink *link)
             }
         }
     }
+    // gains are pure, init the channel mapping
+    if (pan->pure_gains) {
+
+        // sanity check; can't be done in query_formats since the inlink
+        // channel layout is unknown at that time
+        if (pan->nb_input_channels > SWR_CH_MAX) {
+            av_log(ctx, AV_LOG_ERROR,
+                   "libswresample support a maximum of %d channels. "
+                   "Feel free to ask for a higher limit.\n", SWR_CH_MAX);
+            return AVERROR_PATCHWELCOME;
+        }
+
+        // get channel map from the pure gains
+        for (i = 0; i < pan->nb_output_channels; i++) {
+            int ch_id = -1;
+            for (j = 0; j < pan->nb_input_channels; j++) {
+                if (pan->gain.d[i][j]) {
+                    ch_id = j;
+                    break;
+                }
+            }
+            pan->channel_map[i] = ch_id;
+        }
+
+        // init libswresample context
+        pan->swr = swr_alloc_set_opts(pan->swr,
+                                      pan->out_channel_layout, link->format, link->sample_rate,
+                                      link->channel_layout,    link->format, link->sample_rate,
+                                      0, ctx);
+        if (!pan->swr)
+            return AVERROR(ENOMEM);
+        av_opt_set_int(pan->swr, "icl", pan->out_channel_layout, 0);
+        av_opt_set_int(pan->swr, "uch", pan->nb_output_channels, 0);
+        swr_set_channel_mapping(pan->swr, pan->channel_map);
+        r = swr_init(pan->swr);
+        if (r < 0)
+            return r;
+    } else {
     // renormalize
     for (i = 0; i < pan->nb_output_channels; i++) {
         if (!((pan->need_renorm >> i) & 1))
@@ -239,6 +324,7 @@ static int config_props(AVFilterLink *link)
         for (j = 0; j < pan->nb_input_channels; j++)
             pan->gain.d[i][j] /= t;
     }
+    }
     // summary
     for (i = 0; i < pan->nb_output_channels; i++) {
         cur = buf;
@@ -248,6 +334,17 @@ static int config_props(AVFilterLink *link)
             cur += FFMIN(buf + sizeof(buf) - cur, r);
         }
         av_log(ctx, AV_LOG_INFO, "o%d = %s\n", i, buf);
+    }
+    // add channel mapping summary if possible
+    if (pan->pure_gains) {
+        av_log(ctx, AV_LOG_INFO, "Pure channel mapping detected:");
+        for (i = 0; i < pan->nb_output_channels; i++)
+            if (pan->channel_map[i] < 0)
+                av_log(ctx, AV_LOG_INFO, " M");
+            else
+                av_log(ctx, AV_LOG_INFO, " %d", pan->channel_map[i]);
+        av_log(ctx, AV_LOG_INFO, "\n");
+        return 0;
     }
     // convert to integer
     for (i = 0; i < pan->nb_output_channels; i++) {
@@ -261,19 +358,26 @@ static int config_props(AVFilterLink *link)
     return 0;
 }
 
-
-static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static void filter_samples_channel_mapping(PanContext *pan,
+                                           AVFilterBufferRef *outsamples,
+                                           AVFilterBufferRef *insamples,
+                                           int n)
 {
-    PanContext *const pan = inlink->dst->priv;
-    int i, o, n = insamples->audio->nb_samples;
+    swr_convert(pan->swr, outsamples->data, n, (void *)insamples->data, n);
+}
+
+static void filter_samples_panning(PanContext *pan,
+                                   AVFilterBufferRef *outsamples,
+                                   AVFilterBufferRef *insamples,
+                                   int n)
+{
+    int i, o;
 
     /* input */
     const int16_t *in     = (int16_t *)insamples->data[0];
     const int16_t *in_end = in + n * pan->nb_input_channels;
 
     /* output */
-    AVFilterLink *const outlink = inlink->dst->outputs[0];
-    AVFilterBufferRef *outsamples = avfilter_get_audio_buffer(outlink, AV_PERM_WRITE, n);
     int16_t *out = (int16_t *)outsamples->data[0];
 
     for (; in < in_end; in += pan->nb_input_channels) {
@@ -284,9 +388,25 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
             *(out++) = v >> 8;
         }
     }
+}
+
+static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+{
+    int n = insamples->audio->nb_samples;
+    AVFilterLink *const outlink = inlink->dst->outputs[0];
+    AVFilterBufferRef *outsamples = avfilter_get_audio_buffer(outlink, AV_PERM_WRITE, n);
+    PanContext *pan = inlink->dst->priv;
+
+    pan->filter_samples(pan, outsamples, insamples, n);
 
     avfilter_filter_samples(outlink, outsamples);
     avfilter_unref_buffer(insamples);
+}
+
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    PanContext *pan = ctx->priv;
+    swr_free(&pan->swr);
 }
 
 AVFilter avfilter_af_pan = {
@@ -294,6 +414,7 @@ AVFilter avfilter_af_pan = {
     .description   = NULL_IF_CONFIG_SMALL("Remix channels with coefficients (panning)."),
     .priv_size     = sizeof(PanContext),
     .init          = init,
+    .uninit        = uninit,
     .query_formats = query_formats,
 
     .inputs    = (const AVFilterPad[]) {
