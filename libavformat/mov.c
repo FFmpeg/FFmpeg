@@ -585,12 +585,11 @@ static int mov_read_chan(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     label_mask = 0;
     for (i = 0; i < num_descr; i++) {
         uint32_t label, cflags;
-        float coords[3];
         label     = avio_rb32(pb);          // mChannelLabel
         cflags    = avio_rb32(pb);          // mChannelFlags
-        AV_WN32(&coords[0], avio_rl32(pb)); // mCoordinates[0]
-        AV_WN32(&coords[1], avio_rl32(pb)); // mCoordinates[1]
-        AV_WN32(&coords[2], avio_rl32(pb)); // mCoordinates[2]
+        avio_rl32(pb);                      // mCoordinates[0]
+        avio_rl32(pb);                      // mCoordinates[1]
+        avio_rl32(pb);                      // mCoordinates[2]
         if (layout_tag == 0) {
             uint32_t mask_incr = ff_mov_get_channel_label(label);
             if (mask_incr == 0) {
