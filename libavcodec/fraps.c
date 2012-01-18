@@ -321,7 +321,7 @@ static int decode_frame(AVCodecContext *avctx,
         }
         offs[planes] = buf_size;
         for(i = 0; i < planes; i++){
-            av_fast_malloc(&s->tmpbuf, &s->tmpbuf_size, offs[i + 1] - offs[i] - 1024 + FF_INPUT_BUFFER_PADDING_SIZE);
+            av_fast_padded_malloc(&s->tmpbuf, &s->tmpbuf_size, offs[i + 1] - offs[i] - 1024);
             if (!s->tmpbuf)
                 return AVERROR(ENOMEM);
             if(fraps2_decode_plane(s, f->data[0] + i + (f->linesize[0] * (avctx->height - 1)), -f->linesize[0],
