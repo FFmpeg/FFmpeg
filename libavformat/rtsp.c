@@ -1161,16 +1161,14 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
             }
 
             /* first try in specified port range */
-            if (RTSP_RTP_PORT_MIN != 0) {
-                while (j <= RTSP_RTP_PORT_MAX) {
-                    ff_url_join(buf, sizeof(buf), "rtp", NULL, host, -1,
-                                "?localport=%d", j);
-                    /* we will use two ports per rtp stream (rtp and rtcp) */
-                    j += 2;
-                    if (ffurl_open(&rtsp_st->rtp_handle, buf, AVIO_FLAG_READ_WRITE,
-                                   &s->interrupt_callback, NULL) == 0)
-                        goto rtp_opened;
-                }
+            while (j <= RTSP_RTP_PORT_MAX) {
+                ff_url_join(buf, sizeof(buf), "rtp", NULL, host, -1,
+                            "?localport=%d", j);
+                /* we will use two ports per rtp stream (rtp and rtcp) */
+                j += 2;
+                if (!ffurl_open(&rtsp_st->rtp_handle, buf, AVIO_FLAG_READ_WRITE,
+                               &s->interrupt_callback, NULL))
+                    goto rtp_opened;
             }
             av_log(s, AV_LOG_ERROR, "Unable to open an input RTP port\n");
             err = AVERROR(EIO);
