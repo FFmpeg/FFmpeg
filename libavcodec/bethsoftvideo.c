@@ -71,13 +71,22 @@ static int bethsoftvid_decode_frame(AVCodecContext *avctx,
     uint8_t * dst;
     uint8_t * frame_end;
     int remaining = avctx->width;          // number of bytes remaining on a line
-    const int wrap_to_next_line = vid->frame.linesize[0] - avctx->width;
-    int code;
+    int wrap_to_next_line;
+    int code, ret;
     int yoffset;
 
     if (avctx->reget_buffer(avctx, &vid->frame)) {
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return -1;
+    }
+    wrap_to_next_line = vid->frame.linesize[0] - avctx->width;
+
+    if (avpkt->side_data_elems > 0 &&
+        avpkt->side_data[0].type == AV_PKT_DATA_PALETTE) {
+        bytestream2_init(&vid->g, avpkt->side_data[0].data,
+                         avpkt->side_data[0].size);
+        if ((ret = set_palette(vid)) < 0)
+            return ret;
     }
 
     bytestream2_init(&vid->g, avpkt->data, avpkt->size);
@@ -86,7 +95,6 @@ static int bethsoftvid_decode_frame(AVCodecContext *avctx,
 
     switch(block_type = bytestream2_get_byte(&vid->g)){
         case PALETTE_BLOCK: {
-            int ret;
             *data_size = 0;
             if ((ret = set_palette(vid)) < 0) {
                 av_log(avctx, AV_LOG_ERROR, "error reading palette\n");

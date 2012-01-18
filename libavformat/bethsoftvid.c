@@ -32,6 +32,8 @@
 #include "internal.h"
 #include "libavcodec/bethsoftvideo.h"
 
+#define BVID_PALETTE_SIZE 3 * 256
+
 typedef struct BVID_DemuxContext
 {
     int nframes;
@@ -43,6 +45,7 @@ typedef struct BVID_DemuxContext
     /** video presentation time stamp.
      * delay = 16 milliseconds * (global_delay + per_frame_delay) */
     int video_pts;
+    uint8_t *palette;
 
     int is_finished;
 
@@ -163,6 +166,14 @@ static int read_frame(BVID_DemuxContext *vid, AVIOContext *pb, AVPacket *pkt,
     pkt->stream_index = 0;  // use the video decoder, which was initialized as the first stream
     pkt->pts = vid->video_pts;
 
+    /* if there is a new palette available, add it to packet side data */
+    if (vid->palette) {
+        uint8_t *pdata = av_packet_new_side_data(pkt, AV_PKT_DATA_PALETTE,
+                                                 BVID_PALETTE_SIZE);
+        memcpy(pdata, vid->palette, BVID_PALETTE_SIZE);
+        av_freep(&vid->palette);
+    }
+
     vid->nframes--;  // used to check if all the frames were read
     return vidbuf_nbytes;
 fail:
@@ -185,14 +196,18 @@ static int vid_read_packet(AVFormatContext *s,
     block_type = avio_r8(pb);
     switch(block_type){
         case PALETTE_BLOCK:
-            avio_seek(pb, -1, SEEK_CUR);     // include block type
-            ret_value = av_get_packet(pb, pkt, 3 * 256 + 1);
-            if(ret_value != 3 * 256 + 1){
-                av_free_packet(pkt);
+            if (vid->palette) {
+                av_log(s, AV_LOG_WARNING, "discarding unused palette\n");
+                av_freep(&vid->palette);
+            }
+            vid->palette = av_malloc(BVID_PALETTE_SIZE);
+            if (!vid->palette)
+                return AVERROR(ENOMEM);
+            if (avio_read(pb, vid->palette, BVID_PALETTE_SIZE) != BVID_PALETTE_SIZE) {
+                av_freep(&vid->palette);
                 return AVERROR(EIO);
             }
-            pkt->stream_index = 0;
-            return ret_value;
+            return vid_read_packet(s, pkt);
 
         case FIRST_AUDIO_BLOCK:
             avio_rl16(pb);
@@ -222,6 +237,13 @@ static int vid_read_packet(AVFormatContext *s,
     }
 }
 
+static int vid_read_close(AVFormatContext *s)
+{
+    BVID_DemuxContext *vid = s->priv_data;
+    av_freep(&vid->palette);
+    return 0;
+}
+
 AVInputFormat ff_bethsoftvid_demuxer = {
     .name           = "bethsoftvid",
     .long_name      = NULL_IF_CONFIG_SMALL("Bethesda Softworks VID format"),
@@ -229,4 +251,5 @@ AVInputFormat ff_bethsoftvid_demuxer = {
     .read_probe     = vid_probe,
     .read_header    = vid_read_header,
     .read_packet    = vid_read_packet,
+    .read_close     = vid_read_close,
 };
