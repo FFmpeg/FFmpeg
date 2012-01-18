@@ -456,8 +456,9 @@ int avcodec_get_pix_fmt_loss(enum PixelFormat dst_pix_fmt, enum PixelFormat src_
     if (!pf->is_alpha && (ps->is_alpha && has_alpha))
         loss |= FF_LOSS_ALPHA;
     if (dst_pix_fmt == PIX_FMT_PAL8 &&
-        (src_pix_fmt != PIX_FMT_PAL8 && ps->color_type != FF_COLOR_GRAY))
+        (src_pix_fmt != PIX_FMT_PAL8 && (ps->color_type != FF_COLOR_GRAY || (ps->is_alpha && has_alpha))))
         loss |= FF_LOSS_COLORQUANT;
+
     return loss;
 }
 
