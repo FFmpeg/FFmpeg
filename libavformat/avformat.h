@@ -1701,9 +1701,18 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt);
  * demuxer level.
  *
  * @param s media file handle
- * @param pkt The packet, which contains the stream_index, buf/buf_size,
-              dts/pts, ...
- * @return < 0 on error, = 0 if OK, 1 if end of stream wanted
+ * @param pkt The packet containing the data to be written. Libavformat takes
+ * ownership of the data and will free it when it sees fit using the packet's
+ * @ref AVPacket.destruct "destruct" field. The caller must not access the data
+ * after this function returns, as it may already be freed.
+ * Packet's @ref AVPacket.stream_index "stream_index" field must be set to the
+ * index of the corresponding stream in @ref AVFormatContext.streams
+ * "s.streams".
+ * It is very strongly recommended that timing information (@ref AVPacket.pts
+ * "pts", @ref AVPacket.dts "dts" @ref AVPacket.duration "duration") is set to
+ * correct values.
+ *
+ * @return 0 on success, a negative AVERROR on error.
  */
 int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt);
 
