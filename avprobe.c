@@ -78,17 +78,18 @@ static char *value_string(char *buf, int buf_size, double val, const char *unit)
 
         if (unit == unit_byte_str && use_byte_value_binary_prefix) {
             index = (int) (log(val)/log(2)) / 10;
-            index = av_clip(index, 0, FF_ARRAY_ELEMS(binary_unit_prefixes) -1);
-            val /= pow(2, index*10);
+            index = av_clip(index, 0, FF_ARRAY_ELEMS(binary_unit_prefixes) - 1);
+            val  /= pow(2, index * 10);
             prefix_string = binary_unit_prefixes[index];
         } else {
             index = (int) (log10(val)) / 3;
-            index = av_clip(index, 0, FF_ARRAY_ELEMS(decimal_unit_prefixes) -1);
-            val /= pow(10, index*3);
+            index = av_clip(index, 0, FF_ARRAY_ELEMS(decimal_unit_prefixes) - 1);
+            val  /= pow(10, index * 3);
             prefix_string = decimal_unit_prefixes[index];
         }
 
-        snprintf(buf, buf_size, "%.3f %s%s", val, prefix_string, show_value_unit ? unit : "");
+        snprintf(buf, buf_size, "%.3f %s%s", val, prefix_string,
+                 show_value_unit ? unit : "");
     } else {
         snprintf(buf, buf_size, "%f %s", val, show_value_unit ? unit : "");
     }
@@ -96,7 +97,8 @@ static char *value_string(char *buf, int buf_size, double val, const char *unit)
     return buf;
 }
 
-static char *time_value_string(char *buf, int buf_size, int64_t val, const AVRational *time_base)
+static char *time_value_string(char *buf, int buf_size, int64_t val,
+                               const AVRational *time_base)
 {
     if (val == AV_NOPTS_VALUE) {
         snprintf(buf, buf_size, "N/A");
@@ -136,17 +138,23 @@ static void show_packet(AVFormatContext *fmt_ctx, AVPacket *pkt)
     AVStream *st = fmt_ctx->streams[pkt->stream_index];
 
     printf("[PACKET]\n");
-    printf("codec_type=%s\n"   , media_type_string(st->codec->codec_type));
-    printf("stream_index=%d\n" , pkt->stream_index);
-    printf("pts=%s\n"          , ts_value_string  (val_str, sizeof(val_str), pkt->pts));
-    printf("pts_time=%s\n"     , time_value_string(val_str, sizeof(val_str), pkt->pts, &st->time_base));
-    printf("dts=%s\n"          , ts_value_string  (val_str, sizeof(val_str), pkt->dts));
-    printf("dts_time=%s\n"     , time_value_string(val_str, sizeof(val_str), pkt->dts, &st->time_base));
-    printf("duration=%s\n"     , ts_value_string  (val_str, sizeof(val_str), pkt->duration));
-    printf("duration_time=%s\n", time_value_string(val_str, sizeof(val_str), pkt->duration, &st->time_base));
-    printf("size=%s\n"         , value_string     (val_str, sizeof(val_str), pkt->size, unit_byte_str));
-    printf("pos=%"PRId64"\n"   , pkt->pos);
-    printf("flags=%c\n"        , pkt->flags & AV_PKT_FLAG_KEY ? 'K' : '_');
+    printf("codec_type=%s\n", media_type_string(st->codec->codec_type));
+    printf("stream_index=%d\n", pkt->stream_index);
+    printf("pts=%s\n", ts_value_string(val_str, sizeof(val_str), pkt->pts));
+    printf("pts_time=%s\n", time_value_string(val_str, sizeof(val_str),
+                                              pkt->pts, &st->time_base));
+    printf("dts=%s\n", ts_value_string(val_str, sizeof(val_str), pkt->dts));
+    printf("dts_time=%s\n", time_value_string(val_str, sizeof(val_str),
+                                              pkt->dts, &st->time_base));
+    printf("duration=%s\n", ts_value_string(val_str, sizeof(val_str),
+                                            pkt->duration));
+    printf("duration_time=%s\n", time_value_string(val_str, sizeof(val_str),
+                                                   pkt->duration,
+                                                   &st->time_base));
+    printf("size=%s\n", value_string(val_str, sizeof(val_str),
+                                     pkt->size, unit_byte_str));
+    printf("pos=%"PRId64"\n", pkt->pos);
+    printf("flags=%c\n", pkt->flags & AV_PKT_FLAG_KEY ? 'K' : '_');
     printf("[/PACKET]\n");
 }
 
@@ -171,18 +179,19 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
 
     printf("[STREAM]\n");
 
-    printf("index=%d\n",        stream->index);
+    printf("index=%d\n", stream->index);
 
     if ((dec_ctx = stream->codec)) {
         if ((dec = dec_ctx->codec)) {
-            printf("codec_name=%s\n",         dec->name);
-            printf("codec_long_name=%s\n",    dec->long_name);
+            printf("codec_name=%s\n", dec->name);
+            printf("codec_long_name=%s\n", dec->long_name);
         } else {
             printf("codec_name=unknown\n");
         }
 
-        printf("codec_type=%s\n",         media_type_string(dec_ctx->codec_type));
-        printf("codec_time_base=%d/%d\n", dec_ctx->time_base.num, dec_ctx->time_base.den);
+        printf("codec_type=%s\n", media_type_string(dec_ctx->codec_type));
+        printf("codec_time_base=%d/%d\n",
+               dec_ctx->time_base.num, dec_ctx->time_base.den);
 
         /* print AVI/FourCC tag */
         av_get_codec_tag_string(val_str, sizeof(val_str), dec_ctx->codec_tag);
@@ -191,30 +200,33 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
 
         switch (dec_ctx->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
-            printf("width=%d\n",                   dec_ctx->width);
-            printf("height=%d\n",                  dec_ctx->height);
-            printf("has_b_frames=%d\n",            dec_ctx->has_b_frames);
+            printf("width=%d\n", dec_ctx->width);
+            printf("height=%d\n", dec_ctx->height);
+            printf("has_b_frames=%d\n", dec_ctx->has_b_frames);
             if (dec_ctx->sample_aspect_ratio.num) {
-                printf("sample_aspect_ratio=%d:%d\n", dec_ctx->sample_aspect_ratio.num,
-                                                      dec_ctx->sample_aspect_ratio.den);
+                printf("sample_aspect_ratio=%d:%d\n",
+                       dec_ctx->sample_aspect_ratio.num,
+                       dec_ctx->sample_aspect_ratio.den);
                 av_reduce(&display_aspect_ratio.num, &display_aspect_ratio.den,
                           dec_ctx->width  * dec_ctx->sample_aspect_ratio.num,
                           dec_ctx->height * dec_ctx->sample_aspect_ratio.den,
                           1024*1024);
-                printf("display_aspect_ratio=%d:%d\n", display_aspect_ratio.num,
-                                                       display_aspect_ratio.den);
+                printf("display_aspect_ratio=%d:%d\n",
+                       display_aspect_ratio.num, display_aspect_ratio.den);
             }
-            printf("pix_fmt=%s\n",                 dec_ctx->pix_fmt != PIX_FMT_NONE ?
-                   av_pix_fmt_descriptors[dec_ctx->pix_fmt].name : "unknown");
-            printf("level=%d\n",                   dec_ctx->level);
+            printf("pix_fmt=%s\n",
+                   dec_ctx->pix_fmt != PIX_FMT_NONE ? av_pix_fmt_descriptors[dec_ctx->pix_fmt].name
+                                                    : "unknown");
+            printf("level=%d\n", dec_ctx->level);
             break;
 
         case AVMEDIA_TYPE_AUDIO:
-            printf("sample_rate=%s\n",             value_string(val_str, sizeof(val_str),
-                                                                dec_ctx->sample_rate,
-                                                                unit_hertz_str));
-            printf("channels=%d\n",                dec_ctx->channels);
-            printf("bits_per_sample=%d\n",         av_get_bits_per_sample(dec_ctx->codec_id));
+            printf("sample_rate=%s\n", value_string(val_str, sizeof(val_str),
+                                                    dec_ctx->sample_rate,
+                                                    unit_hertz_str));
+            printf("channels=%d\n", dec_ctx->channels);
+            printf("bits_per_sample=%d\n",
+                   av_get_bits_per_sample(dec_ctx->codec_id));
             break;
         }
     } else {
@@ -223,17 +235,23 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
 
     if (fmt_ctx->iformat->flags & AVFMT_SHOW_IDS)
         printf("id=0x%x\n", stream->id);
-    printf("r_frame_rate=%d/%d\n",         stream->r_frame_rate.num,   stream->r_frame_rate.den);
-    printf("avg_frame_rate=%d/%d\n",       stream->avg_frame_rate.num, stream->avg_frame_rate.den);
-    printf("time_base=%d/%d\n",            stream->time_base.num,      stream->time_base.den);
-    printf("start_time=%s\n",   time_value_string(val_str, sizeof(val_str), stream->start_time,
-                                                  &stream->time_base));
-    printf("duration=%s\n",     time_value_string(val_str, sizeof(val_str), stream->duration,
-                                                  &stream->time_base));
+    printf("r_frame_rate=%d/%d\n",
+           stream->r_frame_rate.num, stream->r_frame_rate.den);
+    printf("avg_frame_rate=%d/%d\n",
+           stream->avg_frame_rate.num, stream->avg_frame_rate.den);
+    printf("time_base=%d/%d\n",
+           stream->time_base.num, stream->time_base.den);
+    printf("start_time=%s\n",
+           time_value_string(val_str, sizeof(val_str),
+                             stream->start_time, &stream->time_base));
+    printf("duration=%s\n",
+           time_value_string(val_str, sizeof(val_str),
+                             stream->duration, &stream->time_base));
     if (stream->nb_frames)
-        printf("nb_frames=%"PRId64"\n",    stream->nb_frames);
+        printf("nb_frames=%"PRId64"\n", stream->nb_frames);
 
-    while ((tag = av_dict_get(stream->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
+    while ((tag = av_dict_get(stream->metadata, "", tag,
+                              AV_DICT_IGNORE_SUFFIX)))
         printf("TAG:%s=%s\n", tag->key, tag->value);
 
     printf("[/STREAM]\n");
@@ -247,21 +265,25 @@ static void show_format(AVFormatContext *fmt_ctx)
 
     printf("[FORMAT]\n");
 
-    printf("filename=%s\n",         fmt_ctx->filename);
-    printf("nb_streams=%d\n",       fmt_ctx->nb_streams);
-    printf("format_name=%s\n",      fmt_ctx->iformat->name);
+    printf("filename=%s\n", fmt_ctx->filename);
+    printf("nb_streams=%d\n", fmt_ctx->nb_streams);
+    printf("format_name=%s\n", fmt_ctx->iformat->name);
     printf("format_long_name=%s\n", fmt_ctx->iformat->long_name);
-    printf("start_time=%s\n",       time_value_string(val_str, sizeof(val_str), fmt_ctx->start_time,
-                                                      &AV_TIME_BASE_Q));
-    printf("duration=%s\n",         time_value_string(val_str, sizeof(val_str), fmt_ctx->duration,
-                                                      &AV_TIME_BASE_Q));
-    printf("size=%s\n",             size >= 0 ? value_string(val_str, sizeof(val_str),
-                                                             size, unit_byte_str)
-                                              : "unknown");
-    printf("bit_rate=%s\n",         value_string(val_str, sizeof(val_str), fmt_ctx->bit_rate,
-                                                 unit_bit_per_second_str));
+    printf("start_time=%s\n",
+           time_value_string(val_str, sizeof(val_str),
+                             fmt_ctx->start_time, &AV_TIME_BASE_Q));
+    printf("duration=%s\n",
+           time_value_string(val_str, sizeof(val_str),
+                             fmt_ctx->duration, &AV_TIME_BASE_Q));
+    printf("size=%s\n", size >= 0 ? value_string(val_str, sizeof(val_str),
+                                                 size, unit_byte_str)
+                                  : "unknown");
+    printf("bit_rate=%s\n",
+           value_string(val_str, sizeof(val_str),
+                        fmt_ctx->bit_rate, unit_bit_per_second_str));
 
-    while ((tag = av_dict_get(fmt_ctx->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
+    while ((tag = av_dict_get(fmt_ctx->metadata, "", tag,
+                              AV_DICT_IGNORE_SUFFIX)))
         printf("TAG:%s=%s\n", tag->key, tag->value);
 
     printf("[/FORMAT]\n");
@@ -273,7 +295,8 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
     AVFormatContext *fmt_ctx = NULL;
     AVDictionaryEntry *t;
 
-    if ((err = avformat_open_input(&fmt_ctx, filename, iformat, &format_opts)) < 0) {
+    if ((err = avformat_open_input(&fmt_ctx, filename,
+                                   iformat, &format_opts)) < 0) {
         print_error(filename, err);
         return err;
     }
@@ -297,7 +320,8 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
         AVCodec *codec;
 
         if (!(codec = avcodec_find_decoder(stream->codec->codec_id))) {
-            fprintf(stderr, "Unsupported codec with id %d for input stream %d\n",
+            fprintf(stderr,
+                    "Unsupported codec with id %d for input stream %d\n",
                     stream->codec->codec_id, stream->index);
         } else if (avcodec_open2(stream->codec, codec, NULL) < 0) {
             fprintf(stderr, "Error while opening codec for input stream %d\n",
@@ -351,7 +375,8 @@ static int opt_format(const char *opt, const char *arg)
 static void opt_input_file(void *optctx, const char *arg)
 {
     if (input_filename) {
-        fprintf(stderr, "Argument '%s' provided as input filename, but '%s' was already specified.\n",
+        fprintf(stderr,
+                "Argument '%s' provided as input filename, but '%s' was already specified.\n",
                 arg, input_filename);
         exit(1);
     }
@@ -380,8 +405,10 @@ static void opt_pretty(void)
 static const OptionDef options[] = {
 #include "cmdutils_common_opts.h"
     { "f", HAS_ARG, {(void*)opt_format}, "force format", "format" },
-    { "unit", OPT_BOOL, {(void*)&show_value_unit}, "show unit of the displayed values" },
-    { "prefix", OPT_BOOL, {(void*)&use_value_prefix}, "use SI prefixes for the displayed values" },
+    { "unit", OPT_BOOL, {(void*)&show_value_unit},
+      "show unit of the displayed values" },
+    { "prefix", OPT_BOOL, {(void*)&use_value_prefix},
+      "use SI prefixes for the displayed values" },
     { "byte_binary_prefix", OPT_BOOL, {(void*)&use_byte_value_binary_prefix},
       "use binary prefixes for byte units" },
     { "sexagesimal", OPT_BOOL,  {(void*)&use_value_sexagesimal_format},
@@ -391,7 +418,8 @@ static const OptionDef options[] = {
     { "show_format",  OPT_BOOL, {(void*)&do_show_format} , "show format/container info" },
     { "show_packets", OPT_BOOL, {(void*)&do_show_packets}, "show packets info" },
     { "show_streams", OPT_BOOL, {(void*)&do_show_streams}, "show streams info" },
-    { "default", HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {(void*)opt_default}, "generic catch all option", "" },
+    { "default", HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {(void*)opt_default},
+      "generic catch all option", "" },
     { NULL, },
 };
 
@@ -413,7 +441,9 @@ int main(int argc, char **argv)
     if (!input_filename) {
         show_usage();
         fprintf(stderr, "You have to specify one input file.\n");
-        fprintf(stderr, "Use -h to get full help or, even better, run 'man %s'.\n", program_name);
+        fprintf(stderr,
+                "Use -h to get full help or, even better, run 'man %s'.\n",
+                program_name);
         exit(1);
     }
 
