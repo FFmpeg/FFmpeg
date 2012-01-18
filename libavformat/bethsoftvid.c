@@ -42,9 +42,6 @@ typedef struct BVID_DemuxContext
      * to free, unofficial documentation) */
     int bethsoft_global_delay;
 
-    /** video presentation time stamp.
-     * delay = 16 milliseconds * (global_delay + per_frame_delay) */
-    int video_pts;
     uint8_t *palette;
 
     int is_finished;
@@ -76,6 +73,7 @@ static int vid_read_header(AVFormatContext *s)
     stream = avformat_new_stream(s, NULL);
     if (!stream)
         return AVERROR(ENOMEM);
+    stream->start_time = 0;
     avpriv_set_pts_info(stream, 32, 1, 60);     // 16 ms increments, i.e. 60 fps
     stream->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     stream->codec->codec_id = CODEC_ID_BETHSOFTVID;
@@ -107,7 +105,7 @@ static int read_frame(BVID_DemuxContext *vid, AVIOContext *pb, AVPacket *pkt,
     int vidbuf_nbytes = 0;
     int code;
     int bytes_copied = 0;
-    int position;
+    int position, duration;
     unsigned int vidbuf_capacity;
     int ret = 0;
 
@@ -120,8 +118,8 @@ static int read_frame(BVID_DemuxContext *vid, AVIOContext *pb, AVPacket *pkt,
 
     vidbuf_start[vidbuf_nbytes++] = block_type;
 
-    // get the video delay (next int16), and set the presentation time
-    vid->video_pts += vid->bethsoft_global_delay + avio_rl16(pb);
+    // get the current packet duration
+    duration = vid->bethsoft_global_delay + avio_rl16(pb);
 
     // set the y offset if it exists (decoder header data should be in data section)
     if(block_type == VIDEO_YOFF_P_FRAME){
@@ -171,7 +169,7 @@ static int read_frame(BVID_DemuxContext *vid, AVIOContext *pb, AVPacket *pkt,
 
     pkt->pos = position;
     pkt->stream_index = 0;  // use the video decoder, which was initialized as the first stream
-    pkt->pts = vid->video_pts;
+    pkt->duration = duration;
     if (block_type == VIDEO_I_FRAME)
         pkt->flags |= AV_PKT_FLAG_KEY;
 
