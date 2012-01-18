@@ -1103,7 +1103,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
                               int lower_transport, const char *real_challenge)
 {
     RTSPState *rt = s->priv_data;
-    int rtx = 0, j, i, err, interleave = 0;
+    int rtx = 0, j, i, err, interleave = 0, port_off;
     RTSPStream *rtsp_st;
     RTSPMessageHeader reply1, *reply = &reply1;
     char cmd[2048];
@@ -1120,8 +1120,11 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
     /* for each stream, make the setup request */
     /* XXX: we assume the same server is used for the control of each
      * RTSP stream */
+    port_off = av_get_random_seed() % (RTSP_RTP_PORT_MAX - RTSP_RTP_PORT_MIN);
+    /* even random offset */
+    port_off -= port_off & 0x01;
 
-    for (j = RTSP_RTP_PORT_MIN, i = 0; i < rt->nb_rtsp_streams; ++i) {
+    for (j = RTSP_RTP_PORT_MIN + port_off, i = 0; i < rt->nb_rtsp_streams; ++i) {
         char transport[2048];
 
         /*
@@ -1169,7 +1172,6 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
                         goto rtp_opened;
                 }
             }
-
             av_log(s, AV_LOG_ERROR, "Unable to open an input RTP port\n");
             err = AVERROR(EIO);
             goto fail;
