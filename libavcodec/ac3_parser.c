@@ -34,6 +34,18 @@ static const uint8_t eac3_blocks[4] = {
     1, 2, 3, 6
 };
 
+/**
+ * Table for center mix levels
+ * reference: Section 5.4.2.4 cmixlev
+ */
+static const uint8_t center_levels[4] = { 4, 5, 6, 5 };
+
+/**
+ * Table for surround mix levels
+ * reference: Section 5.4.2.5 surmixlev
+ */
+static const uint8_t surround_levels[4] = { 4, 6, 7, 6 };
+
 
 int avpriv_ac3_parse_header(GetBitContext *gbc, AC3HeaderInfo *hdr)
 {
@@ -53,8 +65,8 @@ int avpriv_ac3_parse_header(GetBitContext *gbc, AC3HeaderInfo *hdr)
     hdr->num_blocks = 6;
 
     /* set default mix levels */
-    hdr->center_mix_level   = 1;  // -4.5dB
-    hdr->surround_mix_level = 1;  // -6.0dB
+    hdr->center_mix_level   = 5;  // -4.5dB
+    hdr->surround_mix_level = 6;  // -6.0dB
 
     if(hdr->bitstream_id <= 10) {
         /* Normal AC-3 */
@@ -76,9 +88,9 @@ int avpriv_ac3_parse_header(GetBitContext *gbc, AC3HeaderInfo *hdr)
             skip_bits(gbc, 2); // skip dsurmod
         } else {
             if((hdr->channel_mode & 1) && hdr->channel_mode != AC3_CHMODE_MONO)
-                hdr->center_mix_level = get_bits(gbc, 2);
+                hdr->  center_mix_level =   center_levels[get_bits(gbc, 2)];
             if(hdr->channel_mode & 4)
-                hdr->surround_mix_level = get_bits(gbc, 2);
+                hdr->surround_mix_level = surround_levels[get_bits(gbc, 2)];
         }
         hdr->lfe_on = get_bits1(gbc);
 
