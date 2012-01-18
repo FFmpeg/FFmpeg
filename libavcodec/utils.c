@@ -608,6 +608,8 @@ int avcodec_default_reget_buffer(AVCodecContext *s, AVFrame *pic){
         s->release_buffer(s, pic);
     }
 
+    ff_init_buffer_info(s, pic);
+
     /* If no picture return a new buffer */
     if(pic->data[0] == NULL) {
         /* We will copy from buffer, so must be readable */
@@ -617,9 +619,6 @@ int avcodec_default_reget_buffer(AVCodecContext *s, AVFrame *pic){
 
     /* If internal buffer type return the same buffer */
     if(pic->type == FF_BUFFER_TYPE_INTERNAL) {
-        if(s->pkt) pic->pkt_pts= s->pkt->pts;
-        else       pic->pkt_pts= AV_NOPTS_VALUE;
-        pic->reordered_opaque= s->reordered_opaque;
         return 0;
     }
 
