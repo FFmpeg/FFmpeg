@@ -338,7 +338,7 @@ static int configure_video_filters(InputStream *ist, OutputStream *ost)
     /** filter graph containing all filters including input & output */
     AVCodecContext *codec = ost->st->codec;
     AVCodecContext *icodec = ist->st->codec;
-    FFSinkContext ffsink_ctx = { .pix_fmt = codec->pix_fmt };
+    AVSinkContext avsink_ctx = { .pix_fmt = codec->pix_fmt };
     AVRational sample_aspect_ratio;
     char args[255];
     int ret;
@@ -358,8 +358,8 @@ static int configure_video_filters(InputStream *ist, OutputStream *ost)
                                        "src", args, NULL, ost->graph);
     if (ret < 0)
         return ret;
-    ret = avfilter_graph_create_filter(&ost->output_video_filter, &ffsink,
-                                       "out", NULL, &ffsink_ctx, ost->graph);
+    ret = avfilter_graph_create_filter(&ost->output_video_filter, &avsink,
+                                       "out", NULL, &avsink_ctx, ost->graph);
     if (ret < 0)
         return ret;
     last_filter = ost->input_video_filter;

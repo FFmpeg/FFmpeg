@@ -1031,34 +1031,34 @@ AVDictionary **setup_find_stream_info_opts(AVFormatContext *s,
 
 #if CONFIG_AVFILTER
 
-static int ffsink_init(AVFilterContext *ctx, const char *args, void *opaque)
+static int avsink_init(AVFilterContext *ctx, const char *args, void *opaque)
 {
-    FFSinkContext *priv = ctx->priv;
+    AVSinkContext *priv = ctx->priv;
 
     if (!opaque)
         return AVERROR(EINVAL);
-    *priv = *(FFSinkContext *)opaque;
+    *priv = *(AVSinkContext *)opaque;
 
     return 0;
 }
 
 static void null_end_frame(AVFilterLink *inlink) { }
 
-static int ffsink_query_formats(AVFilterContext *ctx)
+static int avsink_query_formats(AVFilterContext *ctx)
 {
-    FFSinkContext *priv = ctx->priv;
+    AVSinkContext *priv = ctx->priv;
     enum PixelFormat pix_fmts[] = { priv->pix_fmt, PIX_FMT_NONE };
 
     avfilter_set_common_formats(ctx, avfilter_make_format_list(pix_fmts));
     return 0;
 }
 
-AVFilter ffsink = {
-    .name      = "ffsink",
-    .priv_size = sizeof(FFSinkContext),
-    .init      = ffsink_init,
+AVFilter avsink = {
+    .name      = "avsink",
+    .priv_size = sizeof(AVSinkContext),
+    .init      = avsink_init,
 
-    .query_formats = ffsink_query_formats,
+    .query_formats = avsink_query_formats,
 
     .inputs    = (AVFilterPad[]) {{ .name          = "default",
                                     .type          = AVMEDIA_TYPE_VIDEO,
