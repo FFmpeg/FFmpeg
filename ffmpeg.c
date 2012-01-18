@@ -305,7 +305,7 @@ typedef struct OutputFile {
     int ost_index;       /* index of the first stream in output_streams */
     int64_t recording_time; /* desired length of the resulting file in microseconds */
     int64_t start_time;     /* start time in microseconds */
-    uint64_t limit_filesize;
+    uint64_t limit_filesize; /* filesize limit expressed in bytes */
 } OutputFile;
 
 static InputStream *input_streams   = NULL;

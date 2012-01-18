@@ -143,7 +143,7 @@ Stop writing the output after its duration reaches @var{duration}.
 @var{duration} may be a number in seconds, or in @code{hh:mm:ss[.xxx]} form.
 
 @item -fs @var{limit_size} (@emph{output})
-Set the file size limit.
+Set the file size limit, expressed in bytes.
 
 @item -ss @var{position} (@emph{input/output})
 When used as an input option (before @code{-i}), seeks in this input file to
