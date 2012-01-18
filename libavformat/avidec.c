@@ -666,9 +666,9 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
         case MKTAG('i', 'n', 'd', 'x'):
             i= avio_tell(pb);
             if(pb->seekable && !(s->flags & AVFMT_FLAG_IGNIDX) &&
-               read_braindead_odml_indx(s, 0) < 0 && s->error_recognition >= FF_ER_EXPLODE){
+               read_braindead_odml_indx(s, 0) < 0 &&
+               (s->error_recognition & AV_EF_EXPLODE))
                 goto fail;
-            }
             avio_seek(pb, i+size, SEEK_SET);
             break;
         case MKTAG('v', 'p', 'r', 'p'):
@@ -705,7 +705,8 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             if(size > 1000000){
                 av_log(s, AV_LOG_ERROR, "Something went wrong during header parsing, "
                                         "I will ignore it and try to continue anyway.\n");
-                if (s->error_recognition >= FF_ER_EXPLODE) goto fail;
+                if (s->error_recognition & AV_EF_EXPLODE)
+                    goto fail;
                 avi->movi_list = avio_tell(pb) - 4;
                 avi->movi_end  = avio_size(pb);
                 goto end_of_header;
