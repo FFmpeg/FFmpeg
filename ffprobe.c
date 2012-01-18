@@ -102,10 +102,12 @@ static char *value_string(char *buf, int buf_size, struct unit_value uv)
         hours = mins / 60;
         mins %= 60;
         snprintf(buf, buf_size, "%d:%02d:%09.6f", hours, mins, secs);
-    } else if (use_value_prefix) {
-        const char *prefix_string;
-        long long int index;
+    } else {
+        const char *prefix_string = "";
         int l;
+
+        if (use_value_prefix) {
+        long long int index;
 
         if (uv.unit == unit_byte_str && use_byte_value_binary_prefix) {
             index = (long long int) (log(vald)/log(2)) / 10;
@@ -118,18 +120,14 @@ static char *value_string(char *buf, int buf_size, struct unit_value uv)
             vald /= pow(10, index * 3);
             prefix_string = decimal_unit_prefixes[index];
         }
+        }
 
-        if (show_float || vald != (long long int)vald) l = snprintf(buf, buf_size, "%.3f", vald);
-        else                                           l = snprintf(buf, buf_size, "%lld", (long long int)vald);
-        snprintf(buf+l, buf_size-l, "%s%s%s", prefix_string || show_value_unit ? " " : "",
+        if (show_float || (use_value_prefix && vald != (long long int)vald))
+            l = snprintf(buf, buf_size, "%.3f", vald);
+        else
+            l = snprintf(buf, buf_size, "%lld", (long long int)vald);
+        snprintf(buf+l, buf_size-l, "%s%s%s", *prefix_string || show_value_unit ? " " : "",
                  prefix_string, show_value_unit ? uv.unit : "");
-    } else {
-        int l;
-
-        if (show_float) l = snprintf(buf, buf_size, "%.3f", vald);
-        else            l = snprintf(buf, buf_size, "%lld", (long long int)vald);
-        snprintf(buf+l, buf_size-l, "%s%s", show_value_unit ? " " : "",
-                 show_value_unit ? uv.unit : "");
     }
 
     return buf;
