@@ -172,6 +172,8 @@ static int read_frame(BVID_DemuxContext *vid, AVIOContext *pb, AVPacket *pkt,
     pkt->pos = position;
     pkt->stream_index = 0;  // use the video decoder, which was initialized as the first stream
     pkt->pts = vid->video_pts;
+    if (block_type == VIDEO_I_FRAME)
+        pkt->flags |= AV_PKT_FLAG_KEY;
 
     /* if there is a new palette available, add it to packet side data */
     if (vid->palette) {
@@ -230,6 +232,7 @@ static int vid_read_packet(AVFormatContext *s,
                 return AVERROR(EIO);
             }
             pkt->stream_index = 1;
+            pkt->flags |= AV_PKT_FLAG_KEY;
             return 0;
 
         case VIDEO_P_FRAME:
