@@ -1290,28 +1290,26 @@ static int ff_estimate_motion_b(MpegEncContext * s,
         break;
     case ME_X1:
     case ME_EPZS:
-       {
-            P_LEFT[0]        = mv_table[mot_xy - 1][0];
-            P_LEFT[1]        = mv_table[mot_xy - 1][1];
+        P_LEFT[0] = mv_table[mot_xy - 1][0];
+        P_LEFT[1] = mv_table[mot_xy - 1][1];
 
-            if(P_LEFT[0]       > (c->xmax<<shift)) P_LEFT[0]       = (c->xmax<<shift);
+        if (P_LEFT[0] > (c->xmax << shift)) P_LEFT[0] = (c->xmax << shift);
 
-            /* special case for first line */
-            if (!s->first_slice_line) {
-                P_TOP[0] = mv_table[mot_xy - mot_stride             ][0];
-                P_TOP[1] = mv_table[mot_xy - mot_stride             ][1];
-                P_TOPRIGHT[0] = mv_table[mot_xy - mot_stride + 1         ][0];
-                P_TOPRIGHT[1] = mv_table[mot_xy - mot_stride + 1         ][1];
-                if(P_TOP[1] > (c->ymax<<shift)) P_TOP[1]= (c->ymax<<shift);
-                if(P_TOPRIGHT[0] < (c->xmin<<shift)) P_TOPRIGHT[0]= (c->xmin<<shift);
-                if(P_TOPRIGHT[1] > (c->ymax<<shift)) P_TOPRIGHT[1]= (c->ymax<<shift);
+        /* special case for first line */
+        if (!s->first_slice_line) {
+            P_TOP[0]      = mv_table[mot_xy - mot_stride    ][0];
+            P_TOP[1]      = mv_table[mot_xy - mot_stride    ][1];
+            P_TOPRIGHT[0] = mv_table[mot_xy - mot_stride + 1][0];
+            P_TOPRIGHT[1] = mv_table[mot_xy - mot_stride + 1][1];
+            if (P_TOP[1] > (c->ymax << shift)) P_TOP[1] = (c->ymax << shift);
+            if (P_TOPRIGHT[0] < (c->xmin << shift)) P_TOPRIGHT[0] = (c->xmin << shift);
+            if (P_TOPRIGHT[1] > (c->ymax << shift)) P_TOPRIGHT[1] = (c->ymax << shift);
 
-                P_MEDIAN[0]= mid_pred(P_LEFT[0], P_TOP[0], P_TOPRIGHT[0]);
-                P_MEDIAN[1]= mid_pred(P_LEFT[1], P_TOP[1], P_TOPRIGHT[1]);
-            }
-            c->pred_x= P_LEFT[0];
-            c->pred_y= P_LEFT[1];
+            P_MEDIAN[0] = mid_pred(P_LEFT[0], P_TOP[0], P_TOPRIGHT[0]);
+            P_MEDIAN[1] = mid_pred(P_LEFT[1], P_TOP[1], P_TOPRIGHT[1]);
         }
+        c->pred_x = P_LEFT[0];
+        c->pred_y = P_LEFT[1];
 
         if(mv_table == s->b_forw_mv_table){
             mv_scale= (s->pb_time<<16) / (s->pp_time<<shift);

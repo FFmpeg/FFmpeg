@@ -96,10 +96,8 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
         for (i = 0; i < h>>vsub; i++) {
             switch (step) {
             case 1:
-            {
                 for (j = 0; j < (inlink->w >> hsub); j++)
                     outrow[j] = inrow[-j];
-            }
             break;
 
             case 2:
