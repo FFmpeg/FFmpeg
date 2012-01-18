@@ -326,7 +326,7 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
 
     // decode directly to output buffer for 24-bit sample format
     if (s->bps == 3)
-        s->decode_buffer = s->frame.data[0];
+        s->decode_buffer = (int32_t *)s->frame.data[0];
 
     // init per channel states
     for (i = 0; i < s->channels; i++) {
