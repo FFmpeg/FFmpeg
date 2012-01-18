@@ -2130,6 +2130,7 @@ static int has_decode_delay_been_guessed(AVStream *st)
         st->info->nb_decoded_frames >= 6;
 }
 
+/* returns 1 or 0 if or if not decoded data was returned, or a negative error */
 static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **options)
 {
     AVCodec *codec;
@@ -2177,6 +2178,7 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **option
                 st->info->nb_decoded_frames++;
             pkt.data += ret;
             pkt.size -= ret;
+            ret       = got_picture;
         }
     }
     return ret;
@@ -2401,16 +2403,20 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 st = ic->streams[i];
 
                 /* flush the decoders */
-                while ((err = try_decode_frame(st, &empty_pkt,
-                                               (options && i < orig_nb_streams) ?
-                                                &options[i] : NULL)) >= 0)
-                    if (has_codec_parameters(st->codec))
-                        break;
+                do {
+                    err = try_decode_frame(st, &empty_pkt,
+                                           (options && i < orig_nb_streams) ?
+                                           &options[i] : NULL);
+                } while (err > 0 && !has_codec_parameters(st->codec));
 
-                if (!has_codec_parameters(st->codec)){
+                if (err < 0) {
+                    av_log(ic, AV_LOG_WARNING,
+                           "decoding for stream %d failed\n", st->index);
+                } else if (!has_codec_parameters(st->codec)){
                     char buf[256];
                     avcodec_string(buf, sizeof(buf), st->codec, 0);
-                    av_log(ic, AV_LOG_WARNING, "Could not find codec parameters (%s)\n", buf);
+                    av_log(ic, AV_LOG_WARNING,
+                           "Could not find codec parameters (%s)\n", buf);
                 } else {
                     ret = 0;
                 }
