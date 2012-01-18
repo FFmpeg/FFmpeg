@@ -25,7 +25,7 @@
 #include <inttypes.h>
 
 #define FIXP (1 << 16)
-#define MY_PI 205887 //(M_PI * FIX)
+#define MY_PI 205887 // (M_PI * FIX)
 
 static int64_t int_pow(int64_t a, int p)
 {
@@ -47,7 +47,7 @@ static int64_t int_sin(int64_t a)
 
     if (a >= MY_PI * 3 / 2)
         a -= 2 * MY_PI; // -PI / 2 .. 3PI / 2
-    if (a >= MY_PI /2)
+    if (a >= MY_PI / 2)
         a = MY_PI - a;  // -PI / 2 ..  PI / 2
 
     return a - int_pow(a, 3) / 6 + int_pow(a, 5) / 120 - int_pow(a, 7) / 5040;
@@ -67,49 +67,49 @@ static void rgb24_to_yuv420p(unsigned char *lum, unsigned char *cb,
 
     wrap  = width;
     wrap3 = width * 3;
-    p = src;
+    p     = src;
     for (y = 0; y < height; y += 2) {
         for (x = 0; x < width; x += 2) {
-            r = p[0];
-            g = p[1];
-            b = p[2];
-            r1 = r;
-            g1 = g;
-            b1 = b;
-            lum[0] = (FIX(0.29900) * r + FIX(0.58700) * g +
-                      FIX(0.11400) * b + ONE_HALF) >> SCALEBITS;
-            r = p[3];
-            g = p[4];
-            b = p[5];
-            r1 += r;
-            g1 += g;
-            b1 += b;
-            lum[1] = (FIX(0.29900) * r + FIX(0.58700) * g +
-                      FIX(0.11400) * b + ONE_HALF) >> SCALEBITS;
-            p   += wrap3;
-            lum += wrap;
+            r       = p[0];
+            g       = p[1];
+            b       = p[2];
+            r1      = r;
+            g1      = g;
+            b1      = b;
+            lum[0]  = (FIX(0.29900) * r + FIX(0.58700) * g +
+                       FIX(0.11400) * b + ONE_HALF) >> SCALEBITS;
+            r       = p[3];
+            g       = p[4];
+            b       = p[5];
+            r1     += r;
+            g1     += g;
+            b1     += b;
+            lum[1]  = (FIX(0.29900) * r + FIX(0.58700) * g +
+                       FIX(0.11400) * b + ONE_HALF) >> SCALEBITS;
+            p      += wrap3;
+            lum    += wrap;
 
-            r = p[0];
-            g = p[1];
-            b = p[2];
-            r1 += r;
-            g1 += g;
-            b1 += b;
-            lum[0] = (FIX(0.29900) * r + FIX(0.58700) * g +
-                      FIX(0.11400) * b + ONE_HALF) >> SCALEBITS;
-            r = p[3];
-            g = p[4];
-            b = p[5];
-            r1 += r;
-            g1 += g;
-            b1 += b;
-            lum[1] = (FIX(0.29900) * r + FIX(0.58700) * g +
-                      FIX(0.11400) * b + ONE_HALF) >> SCALEBITS;
+            r       = p[0];
+            g       = p[1];
+            b       = p[2];
+            r1     += r;
+            g1     += g;
+            b1     += b;
+            lum[0]  = (FIX(0.29900) * r + FIX(0.58700) * g +
+                       FIX(0.11400) * b + ONE_HALF) >> SCALEBITS;
+            r       = p[3];
+            g       = p[4];
+            b       = p[5];
+            r1     += r;
+            g1     += g;
+            b1     += b;
+            lum[1]  = (FIX(0.29900) * r + FIX(0.58700) * g +
+                       FIX(0.11400) * b + ONE_HALF) >> SCALEBITS;
 
-            cb[0] = ((- FIX(0.16874) * r1 - FIX(0.33126) * g1 +
-                      FIX(0.50000) * b1 + 4 * ONE_HALF - 1) >> (SCALEBITS + 2)) + 128;
-            cr[0] = ((FIX(0.50000) * r1 - FIX(0.41869) * g1 -
-                      FIX(0.08131) * b1 + 4 * ONE_HALF - 1) >> (SCALEBITS + 2)) + 128;
+            cb[0]   = ((- FIX(0.16874) * r1 - FIX(0.33126) * g1 +
+                       FIX(0.50000) * b1 + 4 * ONE_HALF - 1) >> (SCALEBITS + 2)) + 128;
+            cr[0]   = ((FIX(0.50000) * r1 - FIX(0.41869) * g1 -
+                       FIX(0.08131) * b1 + 4 * ONE_HALF - 1) >> (SCALEBITS + 2)) + 128;
 
             cb++;
             cr++;
@@ -171,7 +171,7 @@ static void put_pixel(int x, int y, int r, int g, int b)
         y < 0 || y >= height)
         return;
 
-    p = rgb_tab + y * wrap + x * 3;
+    p    = rgb_tab + y * wrap + x * 3;
     p[0] = r;
     p[1] = g;
     p[2] = b;
@@ -181,8 +181,8 @@ unsigned char tab_r[256 * 256];
 unsigned char tab_g[256 * 256];
 unsigned char tab_b[256 * 256];
 
-int h_cos [360];
-int h_sin [360];
+int h_cos[360];
+int h_sin[360];
 
 static int ipol(uint8_t *src, int x, int y)
 {
@@ -202,8 +202,8 @@ static int ipol(uint8_t *src, int x, int y)
 
 static void gen_image(int num, int w, int h)
 {
-    const int c = h_cos [num % 360];
-    const int s = h_sin [num % 360];
+    const int c = h_cos[num % 360];
+    const int s = h_sin[num % 360];
 
     const int xi = -(w / 2) * c;
     const int yi =  (w / 2) * s;
@@ -217,16 +217,19 @@ static void gen_image(int num, int w, int h)
     int yprime = yj;
 
     for (j = 0; j < h; j++) {
-        x = xprime + xi + FIXP * w / 2;
+        x       = xprime + xi + FIXP * w / 2;
         xprime += s;
 
-        y = yprime + yi + FIXP * h / 2;
+        y       = yprime + yi + FIXP * h / 2;
         yprime += c;
 
-        for (i = 0; i < w; i++ ) {
+        for (i = 0; i < w; i++) {
             x += c;
             y -= s;
-            put_pixel(i, j, ipol(tab_r, x, y), ipol(tab_g, x, y), ipol(tab_b, x, y));
+            put_pixel(i, j,
+                      ipol(tab_r, x, y),
+                      ipol(tab_g, x, y),
+                      ipol(tab_b, x, y));
         }
     }
 }
@@ -264,13 +267,13 @@ static int init_demo(const char *filename)
 
     /* tables sin/cos */
     for (i = 0; i < 360; i++) {
-        radian = 2 * i * MY_PI / 360;
-        h      = 2 * FIXP + int_sin (radian);
+        radian   = 2 * i * MY_PI / 360;
+        h        = 2 * FIXP + int_sin(radian);
         h_cos[i] = h * int_sin(radian + MY_PI / 2) / 2 / FIXP;
         h_sin[i] = h * int_sin(radian)             / 2 / FIXP;
     }
 
-  return 0;
+    return 0;
 }
 
 int main(int argc, char **argv)
