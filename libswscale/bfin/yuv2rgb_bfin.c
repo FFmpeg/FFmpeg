@@ -26,14 +26,15 @@
 #include <string.h>
 #include <inttypes.h>
 #include <assert.h>
-#include "config.h"
 #include <unistd.h>
+
+#include "config.h"
 #include "libswscale/rgb2rgb.h"
 #include "libswscale/swscale.h"
 #include "libswscale/swscale_internal.h"
 
 #if defined(__FDPIC__) && CONFIG_SRAM
-#define L1CODE __attribute__ ((l1_text))
+#define L1CODE __attribute__((l1_text))
 #else
 #define L1CODE
 #endif
@@ -47,21 +48,20 @@ void ff_bfin_yuv2rgb565_line(uint8_t *Y, uint8_t *U, uint8_t *V, uint8_t *out,
 void ff_bfin_yuv2rgb24_line(uint8_t *Y, uint8_t *U, uint8_t *V, uint8_t *out,
                             int w, uint32_t *coeffs) L1CODE;
 
-typedef void (* ltransform)(uint8_t *Y, uint8_t *U, uint8_t *V, uint8_t *out,
-                            int w, uint32_t *coeffs);
-
+typedef void (*ltransform)(uint8_t *Y, uint8_t *U, uint8_t *V, uint8_t *out,
+                           int w, uint32_t *coeffs);
 
 static void bfin_prepare_coefficients(SwsContext *c, int rgb, int masks)
 {
     int oy;
-    oy      = c->yOffset&0xffff;
-    oy      = oy >> 3; // keep everything U8.0 for offset calculation
+    oy = c->yOffset & 0xffff;
+    oy = oy >> 3;      // keep everything U8.0 for offset calculation
 
-    c->oc   = 128*0x01010101U;
-    c->oy   =  oy*0x01010101U;
+    c->oc = 128 * 0x01010101U;
+    c->oy = oy * 0x01010101U;
 
     /* copy 64bit vector coeffs down to 32bit vector coeffs */
-    c->cy  = c->yCoeff;
+    c->cy   = c->yCoeff;
     c->zero = 0;
 
     if (rgb) {
@@ -76,7 +76,6 @@ static void bfin_prepare_coefficients(SwsContext *c, int rgb, int masks)
         c->cgv = c->ugCoeff;
     }
 
-
     if (masks == 555) {
         c->rmask = 0x001f * 0x00010001U;
         c->gmask = 0x03e0 * 0x00010001U;
@@ -88,27 +87,25 @@ static void bfin_prepare_coefficients(SwsContext *c, int rgb, int masks)
     }
 }
 
-static int core_yuv420_rgb(SwsContext *c,
-                           uint8_t **in, int *instrides,
-                           int srcSliceY, int srcSliceH,
-                           uint8_t **oplanes, int *outstrides,
-                           ltransform lcscf, int rgb, int masks)
+static int core_yuv420_rgb(SwsContext *c, uint8_t **in, int *instrides,
+                           int srcSliceY, int srcSliceH, uint8_t **oplanes,
+                           int *outstrides, ltransform lcscf,
+                           int rgb, int masks)
 {
-    uint8_t *py,*pu,*pv,*op;
+    uint8_t *py, *pu, *pv, *op;
     int w  = instrides[0];
-    int h2 = srcSliceH>>1;
+    int h2 = srcSliceH >> 1;
     int i;
 
     bfin_prepare_coefficients(c, rgb, masks);
 
     py = in[0];
-    pu = in[1+(1^rgb)];
-    pv = in[1+(0^rgb)];
+    pu = in[1 + (1 ^ rgb)];
+    pv = in[1 + (0 ^ rgb)];
 
-    op = oplanes[0] + srcSliceY*outstrides[0];
+    op = oplanes[0] + srcSliceY * outstrides[0];
 
-    for (i=0;i<h2;i++) {
-
+    for (i = 0; i < h2; i++) {
         lcscf(py, pu, pv, op, w, &c->oy);
 
         py += instrides[0];
@@ -125,9 +122,7 @@ static int core_yuv420_rgb(SwsContext *c,
     return srcSliceH;
 }
 
-
-static int bfin_yuv420_rgb555(SwsContext *c,
-                              uint8_t **in, int *instrides,
+static int bfin_yuv420_rgb555(SwsContext *c, uint8_t **in, int *instrides,
                               int srcSliceY, int srcSliceH,
                               uint8_t **oplanes, int *outstrides)
 {
@@ -135,8 +130,7 @@ static int bfin_yuv420_rgb555(SwsContext *c,
                            outstrides, ff_bfin_yuv2rgb555_line, 1, 555);
 }
 
-static int bfin_yuv420_bgr555(SwsContext *c,
-                              uint8_t **in, int *instrides,
+static int bfin_yuv420_bgr555(SwsContext *c, uint8_t **in, int *instrides,
                               int srcSliceY, int srcSliceH,
                               uint8_t **oplanes, int *outstrides)
 {
@@ -144,8 +138,7 @@ static int bfin_yuv420_bgr555(SwsContext *c,
                            outstrides, ff_bfin_yuv2rgb555_line, 0, 555);
 }
 
-static int bfin_yuv420_rgb24(SwsContext *c,
-                             uint8_t **in, int *instrides,
+static int bfin_yuv420_rgb24(SwsContext *c, uint8_t **in, int *instrides,
                              int srcSliceY, int srcSliceH,
                              uint8_t **oplanes, int *outstrides)
 {
@@ -153,8 +146,7 @@ static int bfin_yuv420_rgb24(SwsContext *c,
                            outstrides, ff_bfin_yuv2rgb24_line, 1, 888);
 }
 
-static int bfin_yuv420_bgr24(SwsContext *c,
-                             uint8_t **in, int *instrides,
+static int bfin_yuv420_bgr24(SwsContext *c, uint8_t **in, int *instrides,
                              int srcSliceY, int srcSliceH,
                              uint8_t **oplanes, int *outstrides)
 {
@@ -162,8 +154,7 @@ static int bfin_yuv420_bgr24(SwsContext *c,
                            outstrides, ff_bfin_yuv2rgb24_line, 0, 888);
 }
 
-static int bfin_yuv420_rgb565(SwsContext *c,
-                              uint8_t **in, int *instrides,
+static int bfin_yuv420_rgb565(SwsContext *c, uint8_t **in, int *instrides,
                               int srcSliceY, int srcSliceH,
                               uint8_t **oplanes, int *outstrides)
 {
@@ -171,8 +162,7 @@ static int bfin_yuv420_rgb565(SwsContext *c,
                            outstrides, ff_bfin_yuv2rgb565_line, 1, 565);
 }
 
-static int bfin_yuv420_bgr565(SwsContext *c,
-                              uint8_t **in, int *instrides,
+static int bfin_yuv420_bgr565(SwsContext *c, uint8_t **in, int *instrides,
                               int srcSliceY, int srcSliceH,
                               uint8_t **oplanes, int *outstrides)
 {
@@ -180,24 +170,35 @@ static int bfin_yuv420_bgr565(SwsContext *c,
                            outstrides, ff_bfin_yuv2rgb565_line, 0, 565);
 }
 
-
 SwsFunc ff_yuv2rgb_get_func_ptr_bfin(SwsContext *c)
 {
     SwsFunc f;
 
-    switch(c->dstFormat) {
-    case PIX_FMT_RGB555: f = bfin_yuv420_rgb555; break;
-    case PIX_FMT_BGR555: f = bfin_yuv420_bgr555; break;
-    case PIX_FMT_RGB565: f = bfin_yuv420_rgb565; break;
-    case PIX_FMT_BGR565: f = bfin_yuv420_bgr565; break;
-    case PIX_FMT_RGB24:  f = bfin_yuv420_rgb24;  break;
-    case PIX_FMT_BGR24:  f = bfin_yuv420_bgr24;  break;
+    switch (c->dstFormat) {
+    case PIX_FMT_RGB555:
+        f = bfin_yuv420_rgb555;
+        break;
+    case PIX_FMT_BGR555:
+        f = bfin_yuv420_bgr555;
+        break;
+    case PIX_FMT_RGB565:
+        f = bfin_yuv420_rgb565;
+        break;
+    case PIX_FMT_BGR565:
+        f = bfin_yuv420_bgr565;
+        break;
+    case PIX_FMT_RGB24:
+        f = bfin_yuv420_rgb24;
+        break;
+    case PIX_FMT_BGR24:
+        f = bfin_yuv420_bgr24;
+        break;
     default:
         return 0;
     }
 
     av_log(c, AV_LOG_INFO, "BlackFin accelerated color space converter %s\n",
-           sws_format_name (c->dstFormat));
+           sws_format_name(c->dstFormat));
 
     return f;
 }
