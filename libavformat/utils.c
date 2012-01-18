@@ -3218,9 +3218,12 @@ int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out, AVPacket *pk
  *         < 0 if an error occurred
  */
 static int interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *in, int flush){
-    if(s->oformat->interleave_packet)
-        return s->oformat->interleave_packet(s, out, in, flush);
-    else
+    if (s->oformat->interleave_packet) {
+        int ret = s->oformat->interleave_packet(s, out, in, flush);
+        if (in)
+            av_free_packet(in);
+        return ret;
+    } else
         return av_interleave_packet_per_dts(s, out, in, flush);
 }
 
