@@ -109,6 +109,7 @@ static int read_frame(BVID_DemuxContext *vid, AVIOContext *pb, AVPacket *pkt,
     int bytes_copied = 0;
     int position;
     unsigned int vidbuf_capacity;
+    int ret = 0;
 
     vidbuf_start = av_malloc(vidbuf_capacity = BUFFER_PADDING_SIZE);
     if(!vidbuf_start)
@@ -124,8 +125,10 @@ static int read_frame(BVID_DemuxContext *vid, AVIOContext *pb, AVPacket *pkt,
 
     // set the y offset if it exists (decoder header data should be in data section)
     if(block_type == VIDEO_YOFF_P_FRAME){
-        if(avio_read(pb, &vidbuf_start[vidbuf_nbytes], 2) != 2)
+        if (avio_read(pb, &vidbuf_start[vidbuf_nbytes], 2) != 2) {
+            ret = AVERROR(EIO);
             goto fail;
+        }
         vidbuf_nbytes += 2;
     }
 
@@ -141,8 +144,10 @@ static int read_frame(BVID_DemuxContext *vid, AVIOContext *pb, AVPacket *pkt,
             if(block_type == VIDEO_I_FRAME)
                 vidbuf_start[vidbuf_nbytes++] = avio_r8(pb);
         } else if(code){ // plain sequence
-            if(avio_read(pb, &vidbuf_start[vidbuf_nbytes], code) != code)
+            if (avio_read(pb, &vidbuf_start[vidbuf_nbytes], code) != code) {
+                ret = AVERROR(EIO);
                 goto fail;
+            }
             vidbuf_nbytes += code;
         }
         bytes_copied += code & 0x7F;
@@ -152,12 +157,14 @@ static int read_frame(BVID_DemuxContext *vid, AVIOContext *pb, AVPacket *pkt,
                 avio_seek(pb, -1, SEEK_CUR);
             break;
         }
-        if(bytes_copied > npixels)
+        if (bytes_copied > npixels) {
+            ret = AVERROR_INVALIDDATA;
             goto fail;
+        }
     } while(code);
 
     // copy data into packet
-    if(av_new_packet(pkt, vidbuf_nbytes) < 0)
+    if ((ret = av_new_packet(pkt, vidbuf_nbytes)) < 0)
         goto fail;
     memcpy(pkt->data, vidbuf_start, vidbuf_nbytes);
     av_free(vidbuf_start);
@@ -175,10 +182,10 @@ static int read_frame(BVID_DemuxContext *vid, AVIOContext *pb, AVPacket *pkt,
     }
 
     vid->nframes--;  // used to check if all the frames were read
-    return vidbuf_nbytes;
+    return 0;
 fail:
     av_free(vidbuf_start);
-    return -1;
+    return ret;
 }
 
 static int vid_read_packet(AVFormatContext *s,
@@ -216,9 +223,14 @@ static int vid_read_packet(AVFormatContext *s,
             s->streams[1]->codec->bit_rate = s->streams[1]->codec->channels * s->streams[1]->codec->sample_rate * s->streams[1]->codec->bits_per_coded_sample;
         case AUDIO_BLOCK:
             audio_length = avio_rl16(pb);
-            ret_value = av_get_packet(pb, pkt, audio_length);
+            if ((ret_value = av_get_packet(pb, pkt, audio_length)) != audio_length) {
+                if (ret_value < 0)
+                    return ret_value;
+                av_log(s, AV_LOG_ERROR, "incomplete audio block\n");
+                return AVERROR(EIO);
+            }
             pkt->stream_index = 1;
-            return ret_value != audio_length ? AVERROR(EIO) : ret_value;
+            return 0;
 
         case VIDEO_P_FRAME:
         case VIDEO_YOFF_P_FRAME:
@@ -233,7 +245,8 @@ static int vid_read_packet(AVFormatContext *s,
             return AVERROR(EIO);
         default:
             av_log(s, AV_LOG_ERROR, "unknown block (character = %c, decimal = %d, hex = %x)!!!\n",
-                   block_type, block_type, block_type); return -1;
+                   block_type, block_type, block_type);
+            return AVERROR_INVALIDDATA;
     }
 }
 
