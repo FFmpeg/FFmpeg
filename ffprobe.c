@@ -106,7 +106,7 @@ static char *value_string(char *buf, int buf_size, struct unit_value uv)
         const char *prefix_string = "";
         int l;
 
-        if (use_value_prefix) {
+        if (use_value_prefix && vald > 1) {
             long long int index;
 
             if (uv.unit == unit_byte_str && use_byte_value_binary_prefix) {
