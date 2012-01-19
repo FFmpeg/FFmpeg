@@ -142,8 +142,6 @@ static int decode_frame(AVCodecContext *avctx,
         avctx->pix_fmt = ((compr & (~TGA_RLE)) == TGA_BW) ? PIX_FMT_GRAY8 : PIX_FMT_PAL8;
         break;
     case 15:
-        avctx->pix_fmt = PIX_FMT_RGB555LE;
-        break;
     case 16:
         avctx->pix_fmt = PIX_FMT_RGB555LE;
         break;
