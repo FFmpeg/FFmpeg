@@ -1418,6 +1418,8 @@ static int decode_packet(AVCodecContext *avctx,
     int buf_size       = avpkt->size;
     int num_bits_prev_frame;
     int packet_sequence_number;
+    int seekable_frame_in_packet;
+    int spliced_packet;
 
     if (s->bits_per_sample == 16) {
         s->samples_16     = (int16_t *) data;
@@ -1442,8 +1444,8 @@ static int decode_packet(AVCodecContext *avctx,
         /** parse packet header */
         init_get_bits(gb, buf, s->buf_bit_size);
         packet_sequence_number = get_bits(gb, 4);
-	int seekable_frame_in_packet = get_bits1(gb);
-	int spliced_packet = get_bits1(gb);
+        seekable_frame_in_packet = get_bits1(gb);
+        spliced_packet = get_bits1(gb);
 
         /** get number of bits that need to be added to the previous frame */
         num_bits_prev_frame = get_bits(gb, s->log2_frame_size);
