@@ -278,7 +278,7 @@ static void end_frame(AVFilterLink *inlink)
 
 AVFilter avfilter_vf_fade = {
     .name          = "fade",
-    .description   = NULL_IF_CONFIG_SMALL("Fade in/out input video"),
+    .description   = NULL_IF_CONFIG_SMALL("Fade in/out input video."),
     .init          = init,
     .uninit        = uninit,
     .priv_size     = sizeof(FadeContext),

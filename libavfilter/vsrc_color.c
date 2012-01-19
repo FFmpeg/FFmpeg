@@ -156,7 +156,7 @@ static int color_request_frame(AVFilterLink *link)
 
 AVFilter avfilter_vsrc_color = {
     .name        = "color",
-    .description = NULL_IF_CONFIG_SMALL("Provide an uniformly colored input, syntax is: [color[:size[:rate]]]"),
+    .description = NULL_IF_CONFIG_SMALL("Provide an uniformly colored input, syntax is: [color[:size[:rate]]]."),
 
     .priv_size = sizeof(ColorContext),
     .init      = color_init,

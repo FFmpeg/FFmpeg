@@ -285,7 +285,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 
 AVFilter avfilter_af_pan = {
     .name          = "pan",
-    .description   = NULL_IF_CONFIG_SMALL("Remix channels with coefficients (panning)"),
+    .description   = NULL_IF_CONFIG_SMALL("Remix channels with coefficients (panning)."),
     .priv_size     = sizeof(PanContext),
     .init          = init,
     .query_formats = query_formats,

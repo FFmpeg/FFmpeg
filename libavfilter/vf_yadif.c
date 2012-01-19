@@ -396,7 +396,7 @@ static void null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { }
 
 AVFilter avfilter_vf_yadif = {
     .name          = "yadif",
-    .description   = NULL_IF_CONFIG_SMALL("Deinterlace the input image"),
+    .description   = NULL_IF_CONFIG_SMALL("Deinterlace the input image."),
 
     .priv_size     = sizeof(YADIFContext),
     .init          = init,
