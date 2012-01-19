@@ -101,17 +101,6 @@ static void png_put_interlaced_row(uint8_t *dst, int width,
         bpp = bits_per_pixel >> 3;
         d = dst;
         s = src;
-        if (color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
-            for(x = 0; x < width; x++) {
-                j = x & 7;
-                if ((dsp_mask << j) & 0x80) {
-                    *(uint32_t *)d = (s[3] << 24) | (s[0] << 16) | (s[1] << 8) | s[2];
-                }
-                d += bpp;
-                if ((mask << j) & 0x80)
-                    s += bpp;
-            }
-        } else {
             for(x = 0; x < width; x++) {
                 j = x & 7;
                 if ((dsp_mask << j) & 0x80) {
@@ -121,7 +110,6 @@ static void png_put_interlaced_row(uint8_t *dst, int width,
                 if ((mask << j) & 0x80)
                     s += bpp;
             }
-        }
         break;
     }
 }
@@ -265,7 +253,10 @@ static av_always_inline void convert_to_rgb32_loco(uint8_t *dst, const uint8_t *
             r = (r+g)&0xff;
             b = (b+g)&0xff;
         }
-        *(uint32_t *)dst = (a << 24) | (r << 16) | (g << 8) | b;
+        dst[0] = r;
+        dst[1] = g;
+        dst[2] = b;
+        dst[3] = a;
         dst += 4;
         src += 4;
     }
@@ -276,7 +267,7 @@ static void convert_to_rgb32(uint8_t *dst, const uint8_t *src, int width, int lo
     if(loco)
         convert_to_rgb32_loco(dst, src, width, 1);
     else
-        convert_to_rgb32_loco(dst, src, width, 0);
+        memcpy(dst, src, width * 4);
 }
 
 static void deloco_rgb24(uint8_t *dst, int size)
@@ -339,7 +330,6 @@ static void png_handle_row(PNGDecContext *s)
                 got_line = 1;
             }
             if ((png_pass_dsp_ymask[s->pass] << (s->y & 7)) & 0x80) {
-                /* NOTE: RGB32 is handled directly in png_put_interlaced_row */
                 png_put_interlaced_row(ptr, s->width, s->bits_per_pixel, s->pass,
                                        s->color_type, s->last_row);
             }
@@ -484,7 +474,7 @@ static int decode_frame(AVCodecContext *avctx,
                     avctx->pix_fmt = PIX_FMT_RGB24;
                 } else if (s->bit_depth == 8 &&
                            s->color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
-                    avctx->pix_fmt = PIX_FMT_RGB32;
+                    avctx->pix_fmt = PIX_FMT_RGBA;
                 } else if (s->bit_depth == 8 &&
                            s->color_type == PNG_COLOR_TYPE_GRAY) {
                     avctx->pix_fmt = PIX_FMT_GRAY8;
