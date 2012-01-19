@@ -829,13 +829,14 @@ void ff_get_unscaled_swscale(SwsContext *c)
     if (srcFormat == PIX_FMT_UYVY422 && dstFormat == PIX_FMT_YUV422P)
         c->swScale = uyvyToYuv422Wrapper;
 
+#define isPlanarGray(x) (isGray(x) && (x) != PIX_FMT_GRAY8A)
     /* simple copy */
     if ( srcFormat == dstFormat ||
         (srcFormat == PIX_FMT_YUVA420P && dstFormat == PIX_FMT_YUV420P) ||
         (srcFormat == PIX_FMT_YUV420P && dstFormat == PIX_FMT_YUVA420P) ||
-        (isPlanarYUV(srcFormat) && isGray(dstFormat)) ||
-        (isPlanarYUV(dstFormat) && isGray(srcFormat)) ||
-        (isGray(dstFormat) && isGray(srcFormat)) ||
+        (isPlanarYUV(srcFormat) && isPlanarGray(dstFormat)) ||
+        (isPlanarYUV(dstFormat) && isPlanarGray(srcFormat)) ||
+        (isPlanarGray(dstFormat) && isPlanarGray(srcFormat)) ||
         (isPlanarYUV(srcFormat) && isPlanarYUV(dstFormat) &&
          c->chrDstHSubSample == c->chrSrcHSubSample &&
          c->chrDstVSubSample == c->chrSrcVSubSample &&
