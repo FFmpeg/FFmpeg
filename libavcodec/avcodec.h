@@ -3932,6 +3932,16 @@ void avcodec_default_free_buffers(AVCodecContext *s);
  */
 int av_get_bits_per_sample(enum CodecID codec_id);
 
+/**
+ * Return codec bits per sample.
+ * Only return non-zero if the bits per sample is exactly correct, not an
+ * approximation.
+ *
+ * @param[in] codec_id the codec
+ * @return Number of bits per sample or zero if unknown for the given codec.
+ */
+int av_get_exact_bits_per_sample(enum CodecID codec_id);
+
 /* frame parsing */
 typedef struct AVCodecParserContext {
     void *priv_data;

@@ -1681,21 +1681,15 @@ void avcodec_default_free_buffers(AVCodecContext *avctx)
     }
 }
 
-int av_get_bits_per_sample(enum CodecID codec_id){
+int av_get_exact_bits_per_sample(enum CodecID codec_id)
+{
     switch(codec_id){
-    case CODEC_ID_ADPCM_SBPRO_2:
-        return 2;
-    case CODEC_ID_ADPCM_SBPRO_3:
-        return 3;
-    case CODEC_ID_ADPCM_SBPRO_4:
     case CODEC_ID_ADPCM_CT:
     case CODEC_ID_ADPCM_IMA_APC:
-    case CODEC_ID_ADPCM_IMA_WAV:
-    case CODEC_ID_ADPCM_IMA_QT:
-    case CODEC_ID_ADPCM_SWF:
-    case CODEC_ID_ADPCM_MS:
-    case CODEC_ID_ADPCM_YAMAHA:
+    case CODEC_ID_ADPCM_IMA_EA_SEAD:
+    case CODEC_ID_ADPCM_IMA_WS:
     case CODEC_ID_ADPCM_G722:
+    case CODEC_ID_ADPCM_YAMAHA:
         return 4;
     case CODEC_ID_PCM_ALAW:
     case CODEC_ID_PCM_MULAW:
@@ -1727,6 +1721,24 @@ int av_get_bits_per_sample(enum CodecID codec_id){
         return 64;
     default:
         return 0;
+    }
+}
+
+int av_get_bits_per_sample(enum CodecID codec_id)
+{
+    switch (codec_id) {
+    case CODEC_ID_ADPCM_SBPRO_2:
+        return 2;
+    case CODEC_ID_ADPCM_SBPRO_3:
+        return 3;
+    case CODEC_ID_ADPCM_SBPRO_4:
+    case CODEC_ID_ADPCM_IMA_WAV:
+    case CODEC_ID_ADPCM_IMA_QT:
+    case CODEC_ID_ADPCM_SWF:
+    case CODEC_ID_ADPCM_MS:
+        return 4;
+    default:
+        return av_get_exact_bits_per_sample(codec_id);
     }
 }
 
