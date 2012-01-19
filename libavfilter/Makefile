@@ -18,6 +18,7 @@ OBJS = allfilters.o                                                     \
        defaults.o                                                       \
        drawutils.o                                                      \
        formats.o                                                        \
+       graphdump.o                                                      \
        graphparser.o                                                    \
        transform.o                                                      \
        vsrc_buffer.o
