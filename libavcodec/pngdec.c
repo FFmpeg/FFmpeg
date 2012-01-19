@@ -430,7 +430,8 @@ static int decode_frame(AVCodecContext *avctx,
             goto fail;
         tag32 = bytestream_get_be32(&s->bytestream);
         tag = av_bswap32(tag32);
-        av_dlog(avctx, "png: tag=%c%c%c%c length=%u\n",
+        if (avctx->debug & FF_DEBUG_STARTCODE)
+            av_log(avctx, AV_LOG_DEBUG, "png: tag=%c%c%c%c length=%u\n",
                 (tag & 0xff),
                 ((tag >> 8) & 0xff),
                 ((tag >> 16) & 0xff),
@@ -452,7 +453,8 @@ static int decode_frame(AVCodecContext *avctx,
             s->interlace_type = *s->bytestream++;
             s->bytestream += 4; /* crc */
             s->state |= PNG_IHDR;
-            av_dlog(avctx, "width=%d height=%d depth=%d color_type=%d compression_type=%d filter_type=%d interlace_type=%d\n",
+            if (avctx->debug & FF_DEBUG_PICT_INFO)
+                av_log(avctx, AV_LOG_DEBUG, "width=%d height=%d depth=%d color_type=%d compression_type=%d filter_type=%d interlace_type=%d\n",
                     s->width, s->height, s->bit_depth, s->color_type,
                     s->compression_type, s->filter_type, s->interlace_type);
             break;
