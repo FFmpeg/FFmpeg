@@ -70,7 +70,7 @@ static int targa_decode_rle(AVCodecContext *avctx, TargaContext *s, const uint8_
                 *dst = *src;
                 break;
             case 2:
-                *((uint16_t*)dst) = AV_RL16(src);
+                AV_WN16A(dst, AV_RN16A(src));
                 break;
             case 3:
                 dst[0] = src[0];
@@ -78,7 +78,7 @@ static int targa_decode_rle(AVCodecContext *avctx, TargaContext *s, const uint8_
                 dst[2] = src[2];
                 break;
             case 4:
-                *((uint32_t*)dst) = AV_RL32(src);
+                AV_WN32A(dst, AV_RN32A(src));
                 break;
             }
             dst += depth;
@@ -142,16 +142,16 @@ static int decode_frame(AVCodecContext *avctx,
         avctx->pix_fmt = ((compr & (~TGA_RLE)) == TGA_BW) ? PIX_FMT_GRAY8 : PIX_FMT_PAL8;
         break;
     case 15:
-        avctx->pix_fmt = PIX_FMT_RGB555;
+        avctx->pix_fmt = PIX_FMT_RGB555LE;
         break;
     case 16:
-        avctx->pix_fmt = PIX_FMT_RGB555;
+        avctx->pix_fmt = PIX_FMT_RGB555LE;
         break;
     case 24:
         avctx->pix_fmt = PIX_FMT_BGR24;
         break;
     case 32:
-        avctx->pix_fmt = PIX_FMT_RGB32;
+        avctx->pix_fmt = PIX_FMT_BGRA;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Bit depth %i is not supported\n", s->bpp);
@@ -233,18 +233,6 @@ static int decode_frame(AVCodecContext *avctx,
             size_t img_size = s->width * ((s->bpp + 1) >> 3);
             CHECK_BUFFER_SIZE(buf, buf_end, img_size, "image data");
             for(y = 0; y < s->height; y++){
-#if HAVE_BIGENDIAN
-                int x;
-                if((s->bpp + 1) >> 3 == 2){
-                    uint16_t *dst16 = (uint16_t*)dst;
-                    for(x = 0; x < s->width; x++)
-                        dst16[x] = AV_RL16(buf + x * 2);
-                }else if((s->bpp + 1) >> 3 == 4){
-                    uint32_t *dst32 = (uint32_t*)dst;
-                    for(x = 0; x < s->width; x++)
-                        dst32[x] = AV_RL32(buf + x * 4);
-                }else
-#endif
                     memcpy(dst, buf, img_size);
 
                 dst += stride;
