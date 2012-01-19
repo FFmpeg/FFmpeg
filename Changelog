@@ -28,6 +28,7 @@ version next:
 - rv34: frame-level multi-threading
 - optimized iMDCT transform on x86 using SSE for for mpegaudiodec
 - Improved PGS subtitle decoder
+- dumpgraph option to lavfi device
 
 
 version 0.9:
