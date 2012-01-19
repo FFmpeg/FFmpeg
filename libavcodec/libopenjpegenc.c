@@ -69,6 +69,10 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
         color_space = CLRSPC_GRAY;
         numcomps = 1;
         break;
+    case PIX_FMT_GRAY8A:
+        color_space = CLRSPC_GRAY;
+        numcomps = 2;
+        break;
     case PIX_FMT_GRAY16:
         color_space = CLRSPC_GRAY;
         numcomps = 1;
@@ -328,6 +332,7 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf
     switch (avctx->pix_fmt) {
     case PIX_FMT_RGB24:
     case PIX_FMT_RGBA:
+    case PIX_FMT_GRAY8A:
         cpyresult = libopenjpeg_copy_packed8(avctx, frame, image);
         break;
     case PIX_FMT_RGB48:
@@ -411,7 +416,7 @@ AVCodec ff_libopenjpeg_encoder = {
     .close          = libopenjpeg_encode_close,
     .capabilities   = 0,
     .pix_fmts = (const enum PixelFormat[]){PIX_FMT_RGB24,PIX_FMT_RGBA,PIX_FMT_RGB48,PIX_FMT_RGBA64,
-                                           PIX_FMT_GRAY8,PIX_FMT_GRAY16,
+                                           PIX_FMT_GRAY8,PIX_FMT_GRAY8A,PIX_FMT_GRAY16,
                                            PIX_FMT_YUV420P,PIX_FMT_YUV422P,PIX_FMT_YUVA420P,
                                            PIX_FMT_YUV440P,PIX_FMT_YUV444P,
                                            PIX_FMT_YUV420P9,PIX_FMT_YUV422P9,PIX_FMT_YUV444P9,
