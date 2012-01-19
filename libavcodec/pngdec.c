@@ -34,7 +34,7 @@
 
 /* Mask to determine which y pixels can be written in a pass */
 static const uint8_t png_pass_dsp_ymask[NB_PASSES] = {
-    0xff, 0xff, 0x0f, 0xcc, 0x33, 0xff, 0x55,
+    0xff, 0xff, 0x0f, 0xff, 0x33, 0xff, 0x55,
 };
 
 /* Mask to determine which pixels to overwrite while displaying */

@@ -41,7 +41,7 @@ static const uint8_t ff_png_pass_xshift[NB_PASSES] = {
 
 /* Mask to determine which pixels are valid in a pass */
 const uint8_t ff_png_pass_mask[NB_PASSES] = {
-    0x80, 0x08, 0x88, 0x22, 0xaa, 0x55, 0xff
+    0x01, 0x01, 0x11, 0x11, 0x55, 0x55, 0xff,
 };
 
 void *ff_png_zalloc(void *opaque, unsigned int items, unsigned int size)
