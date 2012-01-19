@@ -248,11 +248,11 @@ typedef struct WmallDecodeCtx {
     int quant_stepsize;
 
     struct {
-	int order;
-	int scaling;
-	int coefsend;
-	int bitsend;
-	int16_t coefs[256];
+    int order;
+    int scaling;
+    int coefsend;
+    int bitsend;
+    int16_t coefs[256];
     int lms_prevvalues[512];    // FIXME: see above
     int16_t lms_updates[512];   // and here too
     int recent;
@@ -523,12 +523,11 @@ static int decode_tilehdr(WmallDecodeCtx *s)
         for (c = 0; c < s->num_channels; c++) {
             if (num_samples[c] == min_channel_len) {
                 if (fixed_channel_layout || channels_for_cur_subframe == 1 ||
-		    (min_channel_len == s->samples_per_frame - s->min_samples_per_subframe)) {
+                   (min_channel_len == s->samples_per_frame - s->min_samples_per_subframe)) {
                     contains_subframe[c] = 1;
-		}		    
-                else {
+                } else {
                     contains_subframe[c] = get_bits1(&s->gb);
-		}
+                }
             } else
                 contains_subframe[c] = 0;
         }
@@ -553,7 +552,7 @@ static int decode_tilehdr(WmallDecodeCtx *s)
                 if (num_samples[c] > s->samples_per_frame) {
                     av_log(s->avctx, AV_LOG_ERROR, "broken frame: "
                            "channel len(%d) > samples_per_frame(%d)\n",
-			   num_samples[c], s->samples_per_frame);
+                           num_samples[c], s->samples_per_frame);
                     return AVERROR_INVALIDDATA;
                 }
             } else if (num_samples[c] <= min_channel_len) {
@@ -1471,7 +1470,7 @@ static int decode_packet(AVCodecContext *avctx,
 
             /** decode the cross packet frame if it is valid */
             if (!s->packet_loss)
-		decode_frame(s);
+                decode_frame(s);
         } else if (s->num_saved_bits - s->frame_offset) {
             dprintf(avctx, "ignoring %x previously saved bits\n",
                     s->num_saved_bits - s->frame_offset);
@@ -1491,7 +1490,7 @@ static int decode_packet(AVCodecContext *avctx,
         s->buf_bit_size = (avpkt->size - s->next_packet_start) << 3;
         init_get_bits(gb, avpkt->data, s->buf_bit_size);
         skip_bits(gb, s->packet_offset);
-	
+
         if (s->len_prefix && remaining_bits(s, gb) > s->log2_frame_size &&
             (frame_size = show_bits(gb, s->log2_frame_size)) &&
             frame_size <= remaining_bits(s, gb)) {
@@ -1509,7 +1508,7 @@ static int decode_packet(AVCodecContext *avctx,
             s->packet_done = !decode_frame(s);
         } else {
             s->packet_done = 1;
-	}
+        }
     }
 
     if (s->packet_done && !s->packet_loss &&
