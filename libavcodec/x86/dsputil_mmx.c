@@ -2313,6 +2313,9 @@ void ff_apply_window_int16_ssse3     (int16_t *output, const int16_t *input,
 void ff_apply_window_int16_ssse3_atom(int16_t *output, const int16_t *input,
                                       const int16_t *window, unsigned int len);
 
+void ff_bswap32_buf_ssse3(uint32_t *dst, const uint32_t *src, int w);
+void ff_bswap32_buf_sse2(uint32_t *dst, const uint32_t *src, int w);
+
 void ff_add_hfyu_median_prediction_mmx2(uint8_t *dst, const uint8_t *top, const uint8_t *diff, int w, int *left, int *left_top);
 int  ff_add_hfyu_left_prediction_ssse3(uint8_t *dst, const uint8_t *src, int w, int left);
 int  ff_add_hfyu_left_prediction_sse4(uint8_t *dst, const uint8_t *src, int w, int left);
@@ -2798,6 +2801,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                     c->apply_window_int16 = ff_apply_window_int16_sse2;
                 }
             }
+            c->bswap_buf = ff_bswap32_buf_sse2;
 #endif
         }
         if (mm_flags & AV_CPU_FLAG_SSSE3) {
@@ -2810,6 +2814,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             if (!(mm_flags & (AV_CPU_FLAG_SSE42|AV_CPU_FLAG_3DNOW))) { // cachesplit
                 c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_ssse3;
             }
+            c->bswap_buf = ff_bswap32_buf_ssse3;
 #endif
         }
 
