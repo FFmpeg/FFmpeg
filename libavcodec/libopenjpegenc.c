@@ -206,6 +206,8 @@ static int libopenjpeg_copy_packed8(AVCodecContext *avctx, AVFrame *frame, opj_i
     int compno;
     int x;
     int y;
+    int image_index;
+    int frame_index;
     const int numcomps = image->numcomps;
 
     for (compno = 0; compno < numcomps; ++compno) {
@@ -217,8 +219,11 @@ static int libopenjpeg_copy_packed8(AVCodecContext *avctx, AVFrame *frame, opj_i
 
     for (compno = 0; compno < numcomps; ++compno) {
         for (y = 0; y < avctx->height; ++y) {
+            image_index = y * avctx->width;
+            frame_index = y * frame->linesize[0] + compno;
             for (x = 0; x < avctx->width; ++x) {
-                image->comps[compno].data[y * avctx->width + x] = frame->data[0][y * frame->linesize[0] + x * numcomps + compno];
+                image->comps[compno].data[image_index++] = frame->data[0][frame_index];
+                frame_index += numcomps;
             }
         }
     }
@@ -231,6 +236,8 @@ static int libopenjpeg_copy_packed16(AVCodecContext *avctx, AVFrame *frame, opj_
     int compno;
     int x;
     int y;
+    int image_index;
+    int frame_index;
     const int numcomps = image->numcomps;
     uint16_t *frame_ptr = (uint16_t*)frame->data[0];
 
@@ -243,8 +250,11 @@ static int libopenjpeg_copy_packed16(AVCodecContext *avctx, AVFrame *frame, opj_
 
     for (compno = 0; compno < numcomps; ++compno) {
         for (y = 0; y < avctx->height; ++y) {
+            image_index = y * avctx->width;
+            frame_index = y * (frame->linesize[0] / 2) + compno;
             for (x = 0; x < avctx->width; ++x) {
-                image->comps[compno].data[y * avctx->width + x] = frame_ptr[y * frame->linesize[0] / 2 + x * numcomps + compno];
+                image->comps[compno].data[image_index++] = frame_ptr[frame_index];
+                frame_index += numcomps;
             }
         }
     }
@@ -259,6 +269,8 @@ static int libopenjpeg_copy_unpacked8(AVCodecContext *avctx, AVFrame *frame, opj
     int y;
     int width;
     int height;
+    int image_index;
+    int frame_index;
     const int numcomps = image->numcomps;
 
     for (compno = 0; compno < numcomps; ++compno) {
@@ -272,8 +284,10 @@ static int libopenjpeg_copy_unpacked8(AVCodecContext *avctx, AVFrame *frame, opj
         width = avctx->width / image->comps[compno].dx;
         height = avctx->height / image->comps[compno].dy;
         for (y = 0; y < height; ++y) {
+            image_index = y * width;
+            frame_index = y * frame->linesize[compno];
             for (x = 0; x < width; ++x) {
-                image->comps[compno].data[y * width + x] = frame->data[compno][y * frame->linesize[compno] + x];
+                image->comps[compno].data[image_index++] = frame->data[compno][frame_index++];
             }
         }
     }
@@ -288,6 +302,8 @@ static int libopenjpeg_copy_unpacked16(AVCodecContext *avctx, AVFrame *frame, op
     int y;
     int width;
     int height;
+    int image_index;
+    int frame_index;
     const int numcomps = image->numcomps;
     uint16_t *frame_ptr;
 
@@ -303,8 +319,10 @@ static int libopenjpeg_copy_unpacked16(AVCodecContext *avctx, AVFrame *frame, op
         height = avctx->height / image->comps[compno].dy;
         frame_ptr = (uint16_t*)frame->data[compno];
         for (y = 0; y < height; ++y) {
+            image_index = y * width;
+            frame_index = y * (frame->linesize[compno] / 2);
             for (x = 0; x < width; ++x) {
-                image->comps[compno].data[y * width + x] = frame_ptr[y * (frame->linesize[compno] / 2) + x];
+                image->comps[compno].data[image_index++] = frame_ptr[frame_index++];
             }
         }
     }
