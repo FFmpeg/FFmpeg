@@ -2518,6 +2518,7 @@ static int mov_flush_fragment(AVFormatContext *s)
                                              mov->tracks[i].cluster[0].dts;
             mov->tracks[i].entry = 0;
         }
+        avio_flush(s->pb);
         return 0;
     }
 
@@ -2557,6 +2558,7 @@ static int mov_flush_fragment(AVFormatContext *s)
 
         if (write_moof) {
             MOVFragmentInfo *info;
+            avio_flush(s->pb);
             track->nb_frag_info++;
             track->frag_info = av_realloc(track->frag_info,
                                           sizeof(*track->frag_info) *
@@ -2589,6 +2591,7 @@ static int mov_flush_fragment(AVFormatContext *s)
 
     mov->mdat_size = 0;
 
+    avio_flush(s->pb);
     return 0;
 }
 
@@ -2602,7 +2605,9 @@ static int mov_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     int size= pkt->size;
     uint8_t *reformatted_data = NULL;
 
-    if (!s->pb->seekable) return 0; /* Can't handle that */
+    if (!s->pb->seekable && !(mov->flags & FF_MOV_FLAG_EMPTY_MOOV))
+        return 0; /* Can't handle that */
+
     if (!size) return 0; /* Discard 0 sized packets */
 
     if ((mov->max_fragment_duration && trk->entry &&
@@ -2782,7 +2787,13 @@ static int mov_write_header(AVFormatContext *s)
     AVDictionaryEntry *t;
     int i, hint_track = 0;
 
-    if (!s->pb->seekable) {
+    /* Non-seekable output is ok if EMPTY_MOOV is set, or if using the ismv
+     * format (which sets EMPTY_MOOV later in this function). If ism_lookahead
+     * is enabled, we don't support non-seekable output at all. */
+    if (!s->pb->seekable &&
+        ((!(mov->flags & FF_MOV_FLAG_EMPTY_MOOV) &&
+          !(s->oformat && !strcmp(s->oformat->name, "ismv")))
+         || mov->ism_lookahead)) {
         av_log(s, AV_LOG_ERROR, "muxer does not support non seekable output\n");
         return -1;
     }
