@@ -6,7 +6,6 @@ Release Notes
 
 General notes
 -------------
-
 This release is binary compatible with 0.8. The 'ffmpeg' command-line tool has
 been extended to also support the command line syntax and features of a tool
 called avconv.
@@ -32,7 +31,30 @@ API changes
 
 A number of additional APIs have been introduced and some existing
 functions have been deprecated and are scheduled for removal in the next
-release. Please see the file doc/APIchanges for details along with
+release. Significant API changes include:
+
+* new audio decoding API which decodes from an AVPacket to an AVFrame and
+is able to use AVCodecContext.get_buffer() in the similar way as video decoding.
+
+* new audio encoding API which encodes from an AVFrame to an AVPacket, thus
+allowing it to properly output timing information and side data.
+
+* rewritten AVOptions API with better built-in support for private options.
+
+* private options support for demuxers [avformat_open_input()], muxers
+[avformat_write_header()], encoders and decoders [avcodec_open2()].
+As a result, many format- or codec-specific fields and flags in AVFormatContext
+and AVCodecContext were deprecated -- notably most of CODEC_FLAG2_* and many
+CODEC_FLAG_*.
+
+* new API for custom IO interrupt callbacks.
+
+* #include cleanup in libavutil -- libavutil/avutil.h no longer includes all
+the other headers in libavutil, they must be included manually. One specific
+result is that libavutil/mathematics.h is no longer included from
+libavcodec/avcodec.h, which is a common source of errors.
+
+Please see the file doc/APIchanges for details along with
 similar programmer-centric information.
 
 
@@ -40,5 +62,13 @@ similar programmer-centric information.
 Other notable changes
 ---------------------
 
+Libavcodec and libavformat built as shared libraries now hide non-public
+symbols. This will break applications using those symbols. Possible solutions
+are, in order of preference:
+1) Try finding a way of accomplishing the same with public API.
+2) If there is no corresponding public API, but you think there should be,
+post a request on the user mailing list or IRC channel.
+3) Finally if your program needs access to FFmpeg / libavcodec / libavformat
+internals for some special reason then the best solution is to link statically.
 
 Please see the Changelog file for a more detailed list of changes.
