@@ -872,11 +872,31 @@ int opt_protocols(const char *opt, const char *arg)
 int opt_filters(const char *opt, const char *arg)
 {
     AVFilter av_unused(**filter) = NULL;
+    char descr[64], *descr_cur;
+    int i, j;
+    const AVFilterPad *pad;
 
     printf("Filters:\n");
 #if CONFIG_AVFILTER
-    while ((filter = av_filter_next(filter)) && *filter)
-        printf("%-16s %s\n", (*filter)->name, (*filter)->description);
+    while ((filter = av_filter_next(filter)) && *filter) {
+        descr_cur = descr;
+        for (i = 0; i < 2; i++) {
+            if (i) {
+                *(descr_cur++) = '-';
+                *(descr_cur++) = '>';
+            }
+            pad = i ? (*filter)->outputs : (*filter)->inputs;
+            for (j = 0; pad[j].name; j++) {
+                if (descr_cur >= descr + sizeof(descr) - 4)
+                    break;
+                *(descr_cur++) = get_media_type_char(pad[j].type);
+            }
+            if (!j)
+                *(descr_cur++) = '|';
+        }
+        *descr_cur = 0;
+        printf("%-16s %-10s %s\n", (*filter)->name, descr, (*filter)->description);
+    }
 #endif
     return 0;
 }
