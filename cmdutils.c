@@ -764,6 +764,18 @@ int opt_formats(const char *opt, const char *arg)
     return 0;
 }
 
+static char get_media_type_char(enum AVMediaType type)
+{
+    static const char map[AVMEDIA_TYPE_NB] = {
+        [AVMEDIA_TYPE_VIDEO]      = 'V',
+        [AVMEDIA_TYPE_AUDIO]      = 'A',
+        [AVMEDIA_TYPE_DATA]       = 'D',
+        [AVMEDIA_TYPE_SUBTITLE]   = 'S',
+        [AVMEDIA_TYPE_ATTACHMENT] = 'T',
+    };
+    return type >= 0 && type < AVMEDIA_TYPE_NB && map[type] ? map[type] : '?';
+}
+
 int opt_codecs(const char *opt, const char *arg)
 {
     AVCodec *p = NULL, *p2;
@@ -783,7 +795,6 @@ int opt_codecs(const char *opt, const char *arg)
         int decode = 0;
         int encode = 0;
         int cap    = 0;
-        const char *type_str;
 
         p2 = NULL;
         while ((p = av_codec_next(p))) {
@@ -804,24 +815,10 @@ int opt_codecs(const char *opt, const char *arg)
             break;
         last_name = p2->name;
 
-        switch (p2->type) {
-        case AVMEDIA_TYPE_VIDEO:
-            type_str = "V";
-            break;
-        case AVMEDIA_TYPE_AUDIO:
-            type_str = "A";
-            break;
-        case AVMEDIA_TYPE_SUBTITLE:
-            type_str = "S";
-            break;
-        default:
-            type_str = "?";
-            break;
-        }
-        printf(" %s%s%s%s%s%s %-15s %s",
+        printf(" %s%s%c%s%s%s %-15s %s",
                decode ? "D" : (/* p2->decoder ? "d" : */ " "),
                encode ? "E" : " ",
-               type_str,
+               get_media_type_char(p2->type),
                cap & CODEC_CAP_DRAW_HORIZ_BAND ? "S" : " ",
                cap & CODEC_CAP_DR1 ? "D" : " ",
                cap & CODEC_CAP_TRUNCATED ? "T" : " ",
