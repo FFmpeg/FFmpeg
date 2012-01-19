@@ -1706,7 +1706,7 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
 {
     char sws_flags_str[128];
     int ret;
-    AVSinkContext avsink_ctx = { .pix_fmt = PIX_FMT_YUV420P };
+    SinkContext sink_ctx = { .pix_fmt = PIX_FMT_YUV420P };
     AVFilterContext *filt_src = NULL, *filt_out = NULL;
     snprintf(sws_flags_str, sizeof(sws_flags_str), "flags=%d", sws_flags);
     graph->scale_sws_opts = av_strdup(sws_flags_str);
@@ -1714,8 +1714,8 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
     if ((ret = avfilter_graph_create_filter(&filt_src, &input_filter, "src",
                                             NULL, is, graph)) < 0)
         return ret;
-    if ((ret = avfilter_graph_create_filter(&filt_out, &avsink, "out",
-                                            NULL, &avsink_ctx, graph)) < 0)
+    if ((ret = avfilter_graph_create_filter(&filt_out, &sink, "out",
+                                            NULL, &sink_ctx, graph)) < 0)
         return ret;
 
     if (vfilters) {

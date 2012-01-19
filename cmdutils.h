@@ -363,9 +363,9 @@ FILE *get_preset_file(char *filename, size_t filename_size,
 
 typedef struct {
     enum PixelFormat pix_fmt;
-} AVSinkContext;
+} SinkContext;
 
-extern AVFilter avsink;
+extern AVFilter sink;
 
 /**
  * Extract a frame from sink.
