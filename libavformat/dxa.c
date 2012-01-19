@@ -107,6 +107,8 @@ static int dxa_read_header(AVFormatContext *s)
         ret = ff_get_wav_header(pb, ast->codec, fsize);
         if (ret < 0)
             return ret;
+        if (ast->codec->sample_rate > 0)
+            avpriv_set_pts_info(ast, 64, 1, ast->codec->sample_rate);
         // find 'data' chunk
         while(avio_tell(pb) < c->vidpos && !pb->eof_reached){
             tag = avio_rl32(pb);
