@@ -1424,8 +1424,8 @@ static int decode_packet(AVCodecContext *avctx,
         s->samples_16     = (int16_t *) data;
         s->samples_16_end = (int16_t *) ((int8_t*)data + *data_size);
     } else {
-        s->samples_32     = (int *) data;
-        s->samples_32_end = (int *) ((int8_t*)data + *data_size);
+        s->samples_32     = (void *) data;
+        s->samples_32_end = (void *) ((int8_t*)data + *data_size);
     }
     *data_size = 0;
 
