@@ -40,6 +40,8 @@ typedef struct BVID_DemuxContext
 {
     int nframes;
     int sample_rate;        /**< audio sample rate */
+    int width;              /**< video width       */
+    int height;             /**< video height      */
     /** delay value between frames, added to individual frame delay.
      * custom units, which will be added to other custom units (~=16ms according
      * to free, unofficial documentation) */
@@ -65,7 +67,6 @@ static int vid_read_header(AVFormatContext *s)
 {
     BVID_DemuxContext *vid = s->priv_data;
     AVIOContext *pb = s->pb;
-    AVStream *stream;
 
     /* load main header. Contents:
     *    bytes: 'V' 'I' 'D'
@@ -73,23 +74,15 @@ static int vid_read_header(AVFormatContext *s)
     */
     avio_skip(pb, 5);
     vid->nframes = avio_rl16(pb);
-
-    stream = avformat_new_stream(s, NULL);
-    if (!stream)
-        return AVERROR(ENOMEM);
-    vid->video_index = stream->index;
-    stream->start_time = 0;
-    avpriv_set_pts_info(stream, 32, 1, 60);     // 16 ms increments, i.e. 60 fps
-    stream->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    stream->codec->codec_id = CODEC_ID_BETHSOFTVID;
-    stream->codec->width = avio_rl16(pb);
-    stream->codec->height = avio_rl16(pb);
-    stream->codec->pix_fmt = PIX_FMT_PAL8;
+    vid->width   = avio_rl16(pb);
+    vid->height  = avio_rl16(pb);
     vid->bethsoft_global_delay = avio_rl16(pb);
     avio_rl16(pb);
 
-    // wait until the first audio packet to create the audio stream
+    // wait until the first packet to create each stream
+    vid->video_index = -1;
     vid->audio_index = -1;
+    vid->sample_rate = DEFAULT_SAMPLE_RATE;
     s->ctx_flags |= AVFMTCTX_NOHEADER;
 
     return 0;
@@ -97,15 +90,34 @@ static int vid_read_header(AVFormatContext *s)
 
 #define BUFFER_PADDING_SIZE 1000
 static int read_frame(BVID_DemuxContext *vid, AVIOContext *pb, AVPacket *pkt,
-                      uint8_t block_type, AVFormatContext *s, int npixels)
+                      uint8_t block_type, AVFormatContext *s)
 {
     uint8_t * vidbuf_start = NULL;
     int vidbuf_nbytes = 0;
     int code;
     int bytes_copied = 0;
-    int position, duration;
+    int position, duration, npixels;
     unsigned int vidbuf_capacity;
     int ret = 0;
+    AVStream *st;
+
+    if (vid->video_index < 0) {
+        st = avformat_new_stream(s, NULL);
+        if (!st)
+            return AVERROR(ENOMEM);
+        vid->video_index = st->index;
+        if (vid->audio_index < 0) {
+            av_log_ask_for_sample(s, "No audio packet before first video "
+                                  "packet. Using default video time base.\n");
+        }
+        avpriv_set_pts_info(st, 64, 185, vid->sample_rate);
+        st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+        st->codec->codec_id   = CODEC_ID_BETHSOFTVID;
+        st->codec->width      = vid->width;
+        st->codec->height     = vid->height;
+    }
+    st      = s->streams[vid->video_index];
+    npixels = st->codec->width * st->codec->height;
 
     vidbuf_start = av_malloc(vidbuf_capacity = BUFFER_PADDING_SIZE);
     if(!vidbuf_start)
@@ -248,8 +260,7 @@ static int vid_read_packet(AVFormatContext *s,
         case VIDEO_P_FRAME:
         case VIDEO_YOFF_P_FRAME:
         case VIDEO_I_FRAME:
-            return read_frame(vid, pb, pkt, block_type, s,
-                              s->streams[0]->codec->width * s->streams[0]->codec->height);
+            return read_frame(vid, pb, pkt, block_type, s);
 
         case EOF_BLOCK:
             if(vid->nframes != 0)
