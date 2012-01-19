@@ -67,6 +67,11 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
         components=3;
         sample_len=16;
         goto do_read;
+    case PIX_FMT_RGBA:
+        n = avctx->width * 4;
+        components=4;
+        sample_len=8;
+        goto do_read;
     case PIX_FMT_RGB24:
         n = avctx->width * 3;
         components=3;
@@ -175,24 +180,6 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
                 ptr1 += p->linesize[1];
                 ptr2 += p->linesize[2];
             }
-        }
-        break;
-    case PIX_FMT_RGB32:
-        ptr      = p->data[0];
-        linesize = p->linesize[0];
-        if (s->bytestream + avctx->width * avctx->height * 4 > s->bytestream_end)
-            return -1;
-        for (i = 0; i < avctx->height; i++) {
-            int j, r, g, b, a;
-
-            for (j = 0; j < avctx->width; j++) {
-                r = *s->bytestream++;
-                g = *s->bytestream++;
-                b = *s->bytestream++;
-                a = *s->bytestream++;
-                ((uint32_t *)ptr)[j] = (a << 24) | (r << 16) | (g << 8) | b;
-            }
-            ptr += linesize;
         }
         break;
     }
