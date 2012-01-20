@@ -47,6 +47,7 @@ int av_base64_decode(uint8_t *out, const char *in, int out_size)
 {
     int i, v;
     uint8_t *dst = out;
+    uint8_t *end = out + out_size;
 
     v = 0;
     for (i = 0; ; i++) {
@@ -55,7 +56,7 @@ int av_base64_decode(uint8_t *out, const char *in, int out_size)
             return in[i] && in[i] != '=' ? -1 : dst - out;
         v = (v << 6) + map2[index];
         if (i & 3) {
-            if (dst - out < out_size) {
+            if (dst < end) {
                 *dst++ = v >> (6 - 2 * (i & 3));
             }
         }
