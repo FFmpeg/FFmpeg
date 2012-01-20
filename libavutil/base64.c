@@ -184,6 +184,12 @@ int main(void)
         STOP_TIMER("decode")
     }
 
+    for(i=0; i<10000; i++){
+        START_TIMER
+        av_base64_decode(NULL, out, 0);
+        STOP_TIMER("sytax check")
+    }
+
     return error_count;
 }
 
