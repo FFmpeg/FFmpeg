@@ -144,6 +144,7 @@ typedef struct MOVMuxContext {
 #define FF_MOV_FLAG_EMPTY_MOOV 4
 #define FF_MOV_FLAG_FRAG_KEYFRAME 8
 #define FF_MOV_FLAG_SEPARATE_MOOF 16
+#define FF_MOV_FLAG_FRAG_CUSTOM 32
 
 int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt);
 
