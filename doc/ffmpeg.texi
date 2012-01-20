@@ -230,6 +230,14 @@ Specify the preset for matching stream(s).
 @item -stats (@emph{global})
 Print encoding progress/statistics. On by default.
 
+@item -debug_ts (@emph{global})
+Print timestamp information. It is off by default. This option is
+mostly useful for testing and debugging purposes, and the output
+format may change from one version to another, so it should not be
+employed by portable scripts.
+
+See also the option @code{-fdebug ts}.
+
 @item -attach @var{filename} (@emph{output})
 Add an attachment to the output file. This is supported by a few formats
 like Matroska for e.g. fonts used in rendering subtitles. Attachments

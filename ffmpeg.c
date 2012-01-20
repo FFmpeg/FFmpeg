@@ -49,6 +49,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/libm.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/timestamp.h"
 #include "libavformat/os_support.h"
 #include "libswresample/swresample.h"
 
@@ -174,6 +175,7 @@ static float dts_delta_threshold = 10;
 static float dts_error_threshold = 3600*30;
 
 static int print_stats = 1;
+static int debug_ts = 0;
 
 static uint8_t *audio_buf;
 static unsigned int allocated_audio_buf_size;
@@ -1107,6 +1109,13 @@ static int encode_audio_frame(AVFormatContext *s, OutputStream *ost,
         av_free_packet(&pkt);
     }
 
+    if (debug_ts) {
+        av_log(NULL, AV_LOG_INFO, "encoder -> type:audio "
+               "pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s\n",
+               av_ts2str(pkt.pts), av_ts2timestr(pkt.pts, &ost->st->time_base),
+               av_ts2str(pkt.dts), av_ts2timestr(pkt.dts, &ost->st->time_base));
+    }
+
     return ret;
 }
 
@@ -1610,6 +1619,13 @@ static void do_video_out(AVFormatContext *s, OutputStream *ost,
                     pkt.pts = av_rescale_q(pkt.pts, enc->time_base, ost->st->time_base);
                 if (pkt.dts != AV_NOPTS_VALUE)
                     pkt.dts = av_rescale_q(pkt.dts, enc->time_base, ost->st->time_base);
+
+                if (debug_ts) {
+                    av_log(NULL, AV_LOG_INFO, "encoder -> type:video "
+                           "pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s\n",
+                           av_ts2str(pkt.pts), av_ts2timestr(pkt.pts, &ost->st->time_base),
+                           av_ts2str(pkt.dts), av_ts2timestr(pkt.dts, &ost->st->time_base));
+                }
 
                 if (format_video_sync == VSYNC_DROP)
                     pkt.pts = pkt.dts = AV_NOPTS_VALUE;
@@ -3003,10 +3019,16 @@ static int transcode(OutputFile *output_files, int nb_output_files,
         if (pkt.dts != AV_NOPTS_VALUE)
             pkt.dts *= ist->ts_scale;
 
-        //fprintf(stderr, "next:%"PRId64" dts:%"PRId64"/%"PRId64" off:%"PRId64" %d\n",
-        //        ist->next_dts,
-        //        ist->dts, av_rescale_q(pkt.dts, ist->st->time_base, AV_TIME_BASE_Q), input_files[ist->file_index].ts_offset,
-        //        ist->st->codec->codec_type);
+        if (debug_ts) {
+            av_log(NULL, AV_LOG_INFO, "demuxer -> ist_index:%d type:%s "
+                    "next_pts:%s next_pts_time:%s pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s off:%"PRId64"\n",
+                    ist_index, av_get_media_type_string(ist->st->codec->codec_type),
+                    av_ts2str(ist->next_pts), av_ts2timestr(ist->next_pts, &ist->st->time_base),
+                    av_ts2str(pkt.pts), av_ts2timestr(pkt.pts, &ist->st->time_base),
+                    av_ts2str(pkt.dts), av_ts2timestr(pkt.dts, &ist->st->time_base),
+                    input_files[ist->file_index].ts_offset);
+        }
+
         if (pkt.dts != AV_NOPTS_VALUE && ist->next_dts != AV_NOPTS_VALUE && !copy_ts) {
             int64_t pkt_dts = av_rescale_q(pkt.dts, ist->st->time_base, AV_TIME_BASE_Q);
             int64_t delta   = pkt_dts - ist->next_dts;
@@ -4979,6 +5001,7 @@ static const OptionDef options[] = {
     { "stats", OPT_BOOL, {&print_stats}, "print progress report during encoding", },
     { "attach", HAS_ARG | OPT_FUNC2, {(void*)opt_attach}, "add an attachment to the output file", "filename" },
     { "dump_attachment", HAS_ARG | OPT_STRING | OPT_SPEC, {.off = OFFSET(dump_attachment)}, "extract an attachment into a file", "filename" },
+    { "debug_ts", OPT_BOOL | OPT_EXPERT, {&debug_ts}, "print timestamp debugging info" },
 
     /* video options */
     { "vframes", HAS_ARG | OPT_VIDEO | OPT_FUNC2, {(void*)opt_video_frames}, "set the number of video frames to record", "number" },
