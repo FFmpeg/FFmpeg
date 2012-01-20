@@ -49,6 +49,7 @@ static const AVOption options[] = {
     { "frag_keyframe", "Fragment at video keyframes", 0, AV_OPT_TYPE_CONST, {.dbl = FF_MOV_FLAG_FRAG_KEYFRAME}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "separate_moof", "Write separate moof/mdat atoms for each track", 0, AV_OPT_TYPE_CONST, {.dbl = FF_MOV_FLAG_SEPARATE_MOOF}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "frag_custom", "Flush fragments on caller requests", 0, AV_OPT_TYPE_CONST, {.dbl = FF_MOV_FLAG_FRAG_CUSTOM}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
+    { "isml", "Create a live smooth streaming feed (for pushing to a publishing point)", 0, AV_OPT_TYPE_CONST, {.dbl = FF_MOV_FLAG_ISML}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     FF_RTP_FLAG_OPTS(MOVMuxContext, rtp_flags),
     { "skip_iods", "Skip writing iods atom.", offsetof(MOVMuxContext, iods_skip), AV_OPT_TYPE_INT, {.dbl = 0}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { "iods_audio_profile", "iods audio profile atom.", offsetof(MOVMuxContext, iods_audio_profile), AV_OPT_TYPE_INT, {.dbl = -1}, -1, 255, AV_OPT_FLAG_ENCODING_PARAM},
@@ -1920,6 +1921,128 @@ static int mov_write_moov_tag(AVIOContext *pb, MOVMuxContext *mov,
     return updateSize(pb, pos);
 }
 
+static void param_write_int(AVIOContext *pb, const char *name, int value)
+{
+    avio_printf(pb, "<param name=\"%s\" value=\"%d\" valuetype=\"data\"/>\n", name, value);
+}
+
+static void param_write_string(AVIOContext *pb, const char *name, const char *value)
+{
+    avio_printf(pb, "<param name=\"%s\" value=\"%s\" valuetype=\"data\"/>\n", name, value);
+}
+
+static void param_write_hex(AVIOContext *pb, const char *name, const uint8_t *value, int len)
+{
+    char buf[150];
+    len = FFMIN(sizeof(buf)/2 - 1, len);
+    ff_data_to_hex(buf, value, len, 0);
+    buf[2*len] = '\0';
+    avio_printf(pb, "<param name=\"%s\" value=\"%s\" valuetype=\"data\"/>\n", name, buf);
+}
+
+static void write_h264_extradata(AVIOContext *pb, AVCodecContext *enc)
+{
+    uint16_t sps_size, pps_size, len;
+    char buf[150];
+    sps_size = AV_RB16(&enc->extradata[6]);
+    if (11 + sps_size > enc->extradata_size)
+        return;
+    pps_size = AV_RB16(&enc->extradata[9 + sps_size]);
+    if (11 + sps_size + pps_size > enc->extradata_size)
+        return;
+    len = FFMIN(sizeof(buf)/2 - 1, sps_size);
+    ff_data_to_hex(buf, &enc->extradata[8], len, 0);
+    buf[2*len] = '\0';
+    avio_printf(pb, "<param name=\"CodecPrivateData\" value=\"00000001%s", buf);
+    len = FFMIN(sizeof(buf)/2 - 1, pps_size);
+    ff_data_to_hex(buf, &enc->extradata[11 + sps_size], len, 0);
+    buf[2*len] = '\0';
+    avio_printf(pb, "00000001%s\" valuetype=\"data\"/>\n", buf);
+}
+
+static int mov_write_isml_manifest(AVIOContext *pb, MOVMuxContext *mov)
+{
+    int64_t pos = avio_tell(pb);
+    int i;
+    const uint8_t uuid[] = {
+        0xa5, 0xd4, 0x0b, 0x30, 0xe8, 0x14, 0x11, 0xdd,
+        0xba, 0x2f, 0x08, 0x00, 0x20, 0x0c, 0x9a, 0x66
+    };
+
+    avio_wb32(pb, 0);
+    ffio_wfourcc(pb, "uuid");
+    avio_write(pb, uuid, sizeof(uuid));
+    avio_wb32(pb, 0);
+
+    avio_printf(pb, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
+    avio_printf(pb, "<smil xmlns=\"http://www.w3.org/2001/SMIL20/Language\">\n");
+    avio_printf(pb, "<head>\n");
+    avio_printf(pb, "<meta name=\"creator\" content=\"%s\" />\n",
+                    LIBAVFORMAT_IDENT);
+    avio_printf(pb, "</head>\n");
+    avio_printf(pb, "<body>\n");
+    avio_printf(pb, "<switch>\n");
+    for (i = 0; i < mov->nb_streams; i++) {
+        MOVTrack *track = &mov->tracks[i];
+        const char *type;
+        /* track->trackID is initialized in write_moov, and thus isn't known
+         * here yet */
+        int track_id = i + 1;
+
+        if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO) {
+            type = "video";
+        } else if (track->enc->codec_type == AVMEDIA_TYPE_AUDIO) {
+            type = "audio";
+        } else {
+            continue;
+        }
+        avio_printf(pb, "<%s systemBitrate=\"%d\">\n", type,
+                                                       track->enc->bit_rate);
+        param_write_int(pb, "systemBitrate", track->enc->bit_rate);
+        param_write_int(pb, "trackID", track_id);
+        if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO) {
+            if (track->enc->codec_id == CODEC_ID_H264 &&
+                track->enc->extradata_size >= 11 &&
+                track->enc->extradata[0] == 1) {
+                write_h264_extradata(pb, track->enc);
+            } else {
+                param_write_hex(pb, "CodecPrivateData", track->enc->extradata,
+                                track->enc->extradata_size);
+            }
+            if (track->enc->codec_id == CODEC_ID_H264) {
+                param_write_string(pb, "FourCC", "H264");
+            } else if (track->enc->codec_id == CODEC_ID_VC1) {
+                param_write_string(pb, "FourCC", "WVC1");
+            }
+            param_write_int(pb, "MaxWidth", track->enc->width);
+            param_write_int(pb, "MaxHeight", track->enc->height);
+            param_write_int(pb, "DisplayWidth", track->enc->width);
+            param_write_int(pb, "DisplayHeight", track->enc->height);
+        } else {
+            if (track->enc->codec_id == CODEC_ID_AAC) {
+                param_write_string(pb, "FourCC", "AACL");
+            } else if (track->enc->codec_id == CODEC_ID_WMAPRO) {
+                param_write_string(pb, "FourCC", "WMAP");
+            }
+            param_write_hex(pb, "CodecPrivateData", track->enc->extradata,
+                            track->enc->extradata_size);
+            param_write_int(pb, "AudioTag", ff_codec_get_tag(ff_codec_wav_tags,
+                                                track->enc->codec_id));
+            param_write_int(pb, "Channels", track->enc->channels);
+            param_write_int(pb, "SamplingRate", track->enc->sample_rate);
+            param_write_int(pb, "BitsPerSample", 16);
+            param_write_int(pb, "PacketSize", track->enc->block_align ?
+                                              track->enc->block_align : 4);
+        }
+        avio_printf(pb, "</%s>\n", type);
+    }
+    avio_printf(pb, "</switch>\n");
+    avio_printf(pb, "</body>\n");
+    avio_printf(pb, "</smil>\n");
+
+    return updateSize(pb, pos);
+}
+
 static int mov_write_mfhd_tag(AVIOContext *pb, MOVMuxContext *mov)
 {
     avio_wb32(pb, 16);
@@ -2190,6 +2313,10 @@ static int mov_write_mfra_tag(AVIOContext *pb, MOVMuxContext *mov)
 
     avio_wb32(pb, 0); /* size placeholder */
     ffio_wfourcc(pb, "mfra");
+    /* An empty mfra atom is enough to indicate to the publishing point that
+     * the stream has ended. */
+    if (mov->flags & FF_MOV_FLAG_ISML)
+        return updateSize(pb, pos);
 
     for (i = 0; i < mov->nb_streams; i++) {
         MOVTrack *track = &mov->tracks[i];
@@ -2828,6 +2955,9 @@ static int mov_write_header(AVFormatContext *s)
     }
 
     avio_flush(pb);
+
+    if (mov->flags & FF_MOV_FLAG_ISML)
+        mov_write_isml_manifest(pb, mov);
 
     if (mov->flags & FF_MOV_FLAG_EMPTY_MOOV) {
         mov_write_moov_tag(pb, mov, s);
