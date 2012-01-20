@@ -1694,7 +1694,7 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
     if (mb_y == 0 && s->codec_tag == AV_RL32("SLIF")) {
         skip_bits1(&s->gb);
     } else {
-        for (;;) {
+        while (get_bits_left(&s->gb) > 0) {
             int code = get_vlc2(&s->gb, mbincr_vlc.table, MBINCR_VLC_BITS, 2);
             if (code < 0) {
                 av_log(s->avctx, AV_LOG_ERROR, "first mb_incr damaged\n");
