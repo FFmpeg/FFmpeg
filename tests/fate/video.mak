@@ -144,7 +144,7 @@ fate-mpeg2-field-enc: CMD = framecrc -flags +bitexact -dct fastint -idct simple 
 
 # FIXME dropped frames in this test because of coarse timebase
 FATE_TESTS += fate-nuv
-fate-nuv: CMD = framecrc -idct simple -i $(SAMPLES)/nuv/Today.nuv
+fate-nuv: CMD = framecrc -idct simple -i $(SAMPLES)/nuv/Today.nuv -an
 
 FATE_TESTS += fate-qpeg
 fate-qpeg: CMD = framecrc -i $(SAMPLES)/qpeg/Clock.avi -an -pix_fmt rgb24
