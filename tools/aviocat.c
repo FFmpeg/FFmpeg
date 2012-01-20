@@ -89,6 +89,7 @@ int main(int argc, char **argv)
         }
     }
 
+    avio_flush(output);
     avio_close(output);
 fail:
     avio_close(input);
