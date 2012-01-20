@@ -142,6 +142,67 @@ Note also that the pattern must not necessarily contain "%d" or
 avconv -i in.avi -f image2 -frames:v 1 img.jpeg
 @end example
 
+@section MOV/MP4/ISMV
+
+The mov/mp4/ismv muxer supports fragmentation. Normally, a MOV/MP4
+file has all the metadata about all packets stored in one location
+(written at the end of the file, it can be moved to the start for
+better playback using the @command{qt-faststart} tool). A fragmented
+file consists of a number of fragments, where packets and metadata
+about these packets are stored together. Writing a fragmented
+file has the advantage that the file is decodable even if the
+writing is interrupted (while a normal MOV/MP4 is undecodable if
+it is not properly finished), and it requires less memory when writing
+very long files (since writing normal MOV/MP4 files stores info about
+every single packet in memory until the file is closed). The downside
+is that it is less compatible with other applications.
+
+Fragmentation is enabled by setting one of the AVOptions that define
+how to cut the file into fragments:
+
+@table @option
+@item -movflags frag_keyframe
+Start a new fragment at each video keyframe.
+@item -frag_duration @var{duration}
+Create fragments that are @var{duration} microseconds long.
+@item -frag_size @var{size}
+Create fragments that contain up to @var{size} bytes of payload data.
+@item -movflags frag_custom
+Allow the caller to manually choose when to cut fragments, by
+calling @code{av_write_frame(ctx, NULL)} to write a fragment with
+the packets written so far. (This is only useful with other
+applications integrating libavformat, not from @command{avconv}.)
+@end table
+
+Additionally, the way the output file is written can be adjusted
+through a few other options:
+
+@table @option
+@item -movflags empty_moov
+Write an initial moov atom directly at the start of the file, without
+describing any samples in it. Generally, an mdat/moov pair is written
+at the start of the file, as a normal MOV/MP4 file, containing only
+a short portion of the file. With this option set, there is no initial
+mdat atom, and the moov atom only describes the tracks but has
+a zero duration.
+
+Files written with this option set do not work in QuickTime.
+This option is implicitly set when writing ismv (Smooth Streaming) files.
+@item -movflags separate_moof
+Write a separate moof (movie fragment) atom for each track. Normally,
+packets for all tracks are written in a moof atom (which is slightly
+more efficient), but with this option set, the muxer writes one moof/mdat
+pair for each track, making it easier to separate tracks.
+
+This option is implicitly set when writing ismv (Smooth Streaming) files.
+@end table
+
+Smooth Streaming content can be pushed in real time to a publishing
+point on IIS with this muxer. Example:
+@example
+avconv -re @var{<normal input/transcoding options>} -movflags isml+frag_keyframe -f ismv http://server/publishingpoint.isml/Streams(Encoder1)
+@end example
+
 @section mpegts
 
 MPEG transport stream muxer.
