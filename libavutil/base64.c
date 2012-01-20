@@ -136,14 +136,33 @@ static int test_encode_decode(const uint8_t *data, unsigned int data_size,
         return 1;
     }
 
-    if ((data2_size = av_base64_decode(data2, encoded, max_data2_size)) < 0) {
+    if ((data2_size = av_base64_decode(data2, encoded, max_data2_size)) != data_size) {
         printf("Failed: cannot decode the encoded string\n"
+               "Encoded:\n%s\n", encoded);
+        return 1;
+    }
+    if ((data2_size = av_base64_decode(data2, encoded, data_size)) != data_size) {
+        printf("Failed: cannot decode with minimal buffer\n"
                "Encoded:\n%s\n", encoded);
         return 1;
     }
     if (memcmp(data2, data, data_size)) {
         printf("Failed: encoded/decoded data differs from original data\n");
         return 1;
+    }
+    if (av_base64_decode(NULL, encoded, 0) != 0) {
+        printf("Failed: decode to NULL buffer\n");
+        return 1;
+    }
+    if (strlen(encoded)) {
+        char *end = strchr(encoded, '=');
+        if (!end)
+            end = encoded + strlen(encoded) - 1;
+        *end = '%';
+        if (av_base64_decode(NULL, encoded, 0) >= 0) {
+            printf("Failed: error detection\n");
+            return 1;
+        }
     }
 
     printf("Passed!\n");
