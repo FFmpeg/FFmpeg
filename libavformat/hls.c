@@ -708,6 +708,10 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
         av_free_packet(&var->pkt);
         reset_packet(&var->pkt);
         var->pb.eof_reached = 0;
+        /* Clear any buffered data */
+        var->pb.buf_end = var->pb.buf_ptr = var->pb.buffer;
+        /* Reset the pos, to let the mpegts demuxer know we've seeked. */
+        var->pb.pos = 0;
 
         /* Locate the segment that contains the target timestamp */
         for (j = 0; j < var->n_segments; j++) {
