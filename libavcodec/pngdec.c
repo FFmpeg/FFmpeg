@@ -471,13 +471,13 @@ static int decode_frame(AVCodecContext *avctx,
                 s->bpp = (s->bits_per_pixel + 7) >> 3;
                 s->row_size = (avctx->width * s->bits_per_pixel + 7) >> 3;
 
-                if (s->bit_depth == 8 &&
+                if ((s->bit_depth == 2 || s->bit_depth == 4 || s->bit_depth == 8) &&
                     s->color_type == PNG_COLOR_TYPE_RGB) {
                     avctx->pix_fmt = PIX_FMT_RGB24;
-                } else if (s->bit_depth == 8 &&
+                } else if ((s->bit_depth == 2 || s->bit_depth == 4 || s->bit_depth == 8) &&
                            s->color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
                     avctx->pix_fmt = PIX_FMT_RGBA;
-                } else if (s->bit_depth == 8 &&
+                } else if ((s->bit_depth == 2 || s->bit_depth == 4 || s->bit_depth == 8) &&
                            s->color_type == PNG_COLOR_TYPE_GRAY) {
                     avctx->pix_fmt = PIX_FMT_GRAY8;
                 } else if (s->bit_depth == 16 &&
@@ -625,11 +625,20 @@ static int decode_frame(AVCodecContext *avctx,
         int i, j;
         uint8_t *pd = s->current_picture->data[0];
         for(j=0; j < s->height; j++) {
+            if (s->color_type == PNG_COLOR_TYPE_PALETTE){
             for(i=s->width/4-1; i>=0; i--) {
                 pd[4*i+3]=  pd[i]    &3;
                 pd[4*i+2]= (pd[i]>>2)&3;
                 pd[4*i+1]= (pd[i]>>4)&3;
                 pd[4*i+0]=  pd[i]>>6;
+            }
+            } else {
+                for(i=s->width/4-1; i>=0; i--) {
+                    pd[4*i+3]= ( pd[i]    &3)*0x55;
+                    pd[4*i+2]= ((pd[i]>>2)&3)*0x55;
+                    pd[4*i+1]= ((pd[i]>>4)&3)*0x55;
+                    pd[4*i+0]= ( pd[i]>>6   )*0x55;
+                }
             }
             pd += s->image_linesize;
         }
@@ -638,9 +647,16 @@ static int decode_frame(AVCodecContext *avctx,
         int i, j;
         uint8_t *pd = s->current_picture->data[0];
         for(j=0; j < s->height; j++) {
+            if (s->color_type == PNG_COLOR_TYPE_PALETTE){
             for(i=s->width/2-1; i>=0; i--) {
                 pd[2*i+1]= pd[i]&15;
                 pd[2*i+0]= pd[i]>>4;
+            }
+            } else {
+                for(i=s->width/2-1; i>=0; i--) {
+                    pd[2*i+1]= (pd[i]&15)*0x11;
+                    pd[2*i+0]= (pd[i]>>4)*0x11;
+                }
             }
             pd += s->image_linesize;
         }
