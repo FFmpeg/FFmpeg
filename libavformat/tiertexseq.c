@@ -234,7 +234,7 @@ static int seq_read_header(AVFormatContext *s)
     st->codec->sample_rate = SEQ_SAMPLE_RATE;
     st->codec->bits_per_coded_sample = 16;
     st->codec->bit_rate = st->codec->sample_rate * st->codec->bits_per_coded_sample * st->codec->channels;
-    st->codec->block_align = st->codec->channels * st->codec->bits_per_coded_sample;
+    st->codec->block_align = st->codec->channels * st->codec->bits_per_coded_sample / 8;
 
     return 0;
 }
