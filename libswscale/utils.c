@@ -818,7 +818,7 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
                 |SWS_SPLINE
                 |SWS_BICUBLIN);
     if(!i || (i & (i-1))) {
-        av_log(c, AV_LOG_ERROR, "Exactly one scaler algorithm must be chosen\n");
+        av_log(c, AV_LOG_ERROR, "Exactly one scaler algorithm must be chosen, got %X\n", i);
         return AVERROR(EINVAL);
     }
     /* sanity check */
