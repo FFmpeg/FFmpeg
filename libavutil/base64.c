@@ -93,8 +93,10 @@ char *av_base64_encode(char *out, int out_size, const uint8_t *in, int in_size)
         do {
             *dst++ = b64[(i_bits << 6 >> i_shift) & 0x3f];
             i_shift -= 6;
-        } while (i_shift > 6 || (bytes_remaining == 0 && i_shift > 0));
+        } while (i_shift > 6);
     }
+    if (i_shift > 0)
+        *dst++ = b64[(i_bits << 6 >> i_shift) & 0x3f];
     while ((dst - ret) & 3)
         *dst++ = '=';
     *dst = '\0';
