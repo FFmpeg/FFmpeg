@@ -2216,6 +2216,7 @@ int ff_mpeg1_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size, 
                 pc->frame_start_found = 4;
             }
             if (state == SEQ_END_CODE) {
+                pc->frame_start_found = 0;
                 pc->state=-1;
                 return i+1;
             }
