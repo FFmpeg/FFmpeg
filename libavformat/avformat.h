@@ -380,6 +380,7 @@ typedef struct AVFormatParameters {
 #define AVFMT_NOBINSEARCH   0x2000 /**< Format does not allow to fallback to binary search via read_timestamp */
 #define AVFMT_NOGENSEARCH   0x4000 /**< Format does not allow to fallback to generic search */
 #define AVFMT_NO_BYTE_SEEK  0x8000 /**< Format does not allow seeking by bytes */
+#define AVFMT_ALLOW_FLUSH  0x10000 /**< Format allows flushing. If not set, the muxer will not receive a NULL packet in the write_packet function. */
 
 /**
  * @addtogroup lavf_encoding
@@ -403,12 +404,19 @@ typedef struct AVOutputFormat {
     enum CodecID audio_codec; /**< default audio codec */
     enum CodecID video_codec; /**< default video codec */
     int (*write_header)(struct AVFormatContext *);
+    /**
+     * Write a packet. If AVFMT_ALLOW_FLUSH is set in flags,
+     * pkt can be NULL in order to flush data buffered in the muxer.
+     * When flushing, return 0 if there still is more data to flush,
+     * or 1 if everything was flushed and there is no more buffered
+     * data.
+     */
     int (*write_packet)(struct AVFormatContext *, AVPacket *pkt);
     int (*write_trailer)(struct AVFormatContext *);
     /**
      * can use flags: AVFMT_NOFILE, AVFMT_NEEDNUMBER, AVFMT_RAWPICTURE,
      * AVFMT_GLOBALHEADER, AVFMT_NOTIMESTAMPS, AVFMT_VARIABLE_FPS,
-     * AVFMT_NODIMENSIONS, AVFMT_NOSTREAMS
+     * AVFMT_NODIMENSIONS, AVFMT_NOSTREAMS, AVFMT_ALLOW_FLUSH
      */
     int flags;
     /**
@@ -1685,8 +1693,12 @@ attribute_deprecated int av_write_header(AVFormatContext *s);
  *
  * @param s media file handle
  * @param pkt The packet, which contains the stream_index, buf/buf_size,
-              dts/pts, ...
- * @return < 0 on error, = 0 if OK, 1 if end of stream wanted
+ *            dts/pts, ...
+ *            This can be NULL (at any time, not just at the end), in
+ *            order to immediately flush data buffered within the muxer,
+ *            for muxers that buffer up data internally before writing it
+ *            to the output.
+ * @return < 0 on error, = 0 if OK, 1 if flushed and there is no more data to flush
  */
 int av_write_frame(AVFormatContext *s, AVPacket *pkt);
 
