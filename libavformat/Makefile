@@ -308,8 +308,8 @@ OBJS-$(CONFIG_WC3_DEMUXER)               += wc3movie.o
 OBJS-$(CONFIG_WEBM_MUXER)                += matroskaenc.o matroska.o \
                                             riff.o isom.o avc.o \
                                             flacenc_header.o avlanguage.o
-OBJS-$(CONFIG_WSAUD_DEMUXER)             += westwood.o
-OBJS-$(CONFIG_WSVQA_DEMUXER)             += westwood.o
+OBJS-$(CONFIG_WSAUD_DEMUXER)             += westwood_aud.o
+OBJS-$(CONFIG_WSVQA_DEMUXER)             += westwood_vqa.o
 OBJS-$(CONFIG_WTV_DEMUXER)               += wtv.o asfdec.o asf.o asfcrypt.o \
                                             avlanguage.o mpegts.o isom.o riff.o
 OBJS-$(CONFIG_WV_DEMUXER)                += wv.o apetag.o
