@@ -159,10 +159,23 @@ int main(void)
         { "666666",  "NjY2NjY2"},
         { "abc:def", "YWJjOmRlZg=="},
     };
+    char in[1024], out[2048];
 
     printf("Encoding/decoding tests\n");
     for (i = 0; i < FF_ARRAY_ELEMS(tests); i++)
         error_count += test_encode_decode(tests[i].data, strlen(tests[i].data), tests[i].encoded_ref);
+
+    memset(in, 123, sizeof(in));
+    for(i=0; i<10000; i++){
+        START_TIMER
+        av_base64_encode(out, sizeof(out), in, sizeof(in));
+        STOP_TIMER("encode")
+    }
+    for(i=0; i<10000; i++){
+        START_TIMER
+        av_base64_decode(in, out, sizeof(in));
+        STOP_TIMER("decode")
+    }
 
     return error_count;
 }
