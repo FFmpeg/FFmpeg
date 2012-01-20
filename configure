@@ -269,6 +269,9 @@ Developer options (useful when working on FFmpeg itself):
   --disable-optimizations  disable compiler optimizations
   --enable-extra-warnings  enable more compiler warnings
   --disable-stripping      disable stripping of executables and shared libraries
+  --valgrind=VALGRIND      run "make fate" tests through valgrind to detect memory
+                           leaks and errors, using the specified valgrind binary.
+                           Cannot be combined with --target-exec
   --samples=PATH           location of test samples for FATE, if not set use
                            \$FATE_SAMPLES at make invocation time.
 
@@ -1315,6 +1318,7 @@ CMDLINE_SET="
     target_exec
     target_os
     target_path
+    valgrind
 "
 
 CMDLINE_APPEND="
@@ -3239,6 +3243,7 @@ fi
 
 enabled debug && add_cflags -g"$debuglevel" && add_asflags -g"$debuglevel"
 enabled coverage && add_cflags "-fprofile-arcs -ftest-coverage" && add_ldflags "-fprofile-arcs -ftest-coverage"
+test -n "$valgrind" && target_exec="$valgrind --error-exitcode=1 --malloc-fill=0x2a --track-origins=yes --leak-check=full --gen-suppressions=all --suppressions=tests/fate-valgrind.supp"
 
 # add some useful compiler flags if supported
 check_cflags -Wdeclaration-after-statement

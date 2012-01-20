@@ -1,0 +1,31 @@
+# seems fixed in newer versions
+# http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=577135
+{
+   zlib-inflate
+   Memcheck:Cond
+   fun:inflateReset2
+   fun:inflateInit2_
+}
+# libc overreads on purpose
+# http://sourceware.org/bugzilla/show_bug.cgi?id=12424
+{
+   eval-strtod
+   Memcheck:Addr8
+   fun:__GI___strncasecmp_l
+   fun:____strtod_l_internal
+   fun:av_strtod
+}
+{
+   eval-strtod
+   Memcheck:Value8
+   fun:__GI___strncasecmp_l
+   fun:____strtod_l_internal
+   fun:av_strtod
+}
+{
+   eval-strtod
+   Memcheck:Cond
+   fun:__GI___strncasecmp_l
+   fun:____strtod_l_internal
+   fun:av_strtod
+}
