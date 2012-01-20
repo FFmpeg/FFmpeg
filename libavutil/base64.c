@@ -26,6 +26,7 @@
 
 #include "common.h"
 #include "base64.h"
+#include "avassert.h"
 
 /* ---------------- private code */
 static const uint8_t map2[] =
@@ -48,10 +49,10 @@ int av_base64_decode(uint8_t *out, const char *in, int out_size)
     uint8_t *dst = out;
 
     v = 0;
-    for (i = 0; in[i] && in[i] != '='; i++) {
+    for (i = 0; ; i++) {
         unsigned int index= in[i]-43;
         if (index>=FF_ARRAY_ELEMS(map2) || map2[index] == 0xff)
-            return -1;
+            return in[i] && in[i] != '=' ? -1 : dst - out;
         v = (v << 6) + map2[index];
         if (i & 3) {
             if (dst - out < out_size) {
@@ -60,7 +61,8 @@ int av_base64_decode(uint8_t *out, const char *in, int out_size)
         }
     }
 
-    return dst - out;
+    av_assert1(0);
+    return 0;
 }
 
 /*****************************************************************************
