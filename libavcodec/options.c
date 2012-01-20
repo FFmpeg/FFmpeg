@@ -208,11 +208,11 @@ static const AVOption options[]={
 {"very_aggressive", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = FF_ER_VERY_AGGRESSIVE }, INT_MIN, INT_MAX, V|D, "er"},
 {"explode", "abort decoding on error recognition", 0, AV_OPT_TYPE_CONST, {.dbl = FF_ER_EXPLODE }, INT_MIN, INT_MAX, V|D, "er"},
 #endif /* FF_API_ER */
-{"err_filter", "set error detection filter flags", OFFSET(err_recognition), AV_OPT_TYPE_FLAGS, {.dbl = AV_EF_CRCCHECK }, INT_MIN, INT_MAX, A|V|D, "err_filter"},
-{"crccheck", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = AV_EF_CRCCHECK }, INT_MIN, INT_MAX, V|D, "err_filter"},
-{"bitstream", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = AV_EF_BITSTREAM }, INT_MIN, INT_MAX, V|D, "err_filter"},
-{"buffer", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = AV_EF_BUFFER }, INT_MIN, INT_MAX, V|D, "err_filter"},
-{"explode", "abort decoding on minor error recognition", 0, AV_OPT_TYPE_CONST, {.dbl = AV_EF_EXPLODE }, INT_MIN, INT_MAX, V|D, "err_filter"},
+{"err_detect", "set error detection flags", OFFSET(err_recognition), AV_OPT_TYPE_FLAGS, {.dbl = AV_EF_CRCCHECK }, INT_MIN, INT_MAX, A|V|D, "err_detect"},
+{"crccheck", "verify embedded CRCs", 0, AV_OPT_TYPE_CONST, {.dbl = AV_EF_CRCCHECK }, INT_MIN, INT_MAX, V|D, "err_detect"},
+{"bitstream", "detect bitstream specification deviations", 0, AV_OPT_TYPE_CONST, {.dbl = AV_EF_BITSTREAM }, INT_MIN, INT_MAX, V|D, "err_detect"},
+{"buffer", "detect improper bitstream length", 0, AV_OPT_TYPE_CONST, {.dbl = AV_EF_BUFFER }, INT_MIN, INT_MAX, V|D, "err_detect"},
+{"explode", "abort decoding on minor error detection", 0, AV_OPT_TYPE_CONST, {.dbl = AV_EF_EXPLODE }, INT_MIN, INT_MAX, V|D, "err_detect"},
 {"has_b_frames", NULL, OFFSET(has_b_frames), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
 {"block_align", NULL, OFFSET(block_align), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
 #if FF_API_PARSE_FRAME
