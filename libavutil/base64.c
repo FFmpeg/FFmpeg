@@ -26,7 +26,6 @@
 
 #include "common.h"
 #include "base64.h"
-#include "avassert.h"
 #include "intreadwrite.h"
 
 /* ---------------- private code */
@@ -69,29 +68,53 @@ static const uint8_t map2[256] =
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 };
 
+#define BASE64_DEC_STEP(i) \
+    bits = map2[in[i]]; \
+    if (bits & 0x80) \
+        goto out; \
+    v = (v << 6) + bits; \
+    if (i & 3) \
+        *dst++ = v >> (6 - 2 * (i & 3)); \
+
 int av_base64_decode(uint8_t *out, const char *in_str, int out_size)
 {
-    int i, v;
+    int v;
     uint8_t *dst = out;
     uint8_t *end = out + out_size;
     // no sign extension
     const uint8_t *in = in_str;
+    unsigned bits = 0xff;
 
     v = 0;
-    for (i = 0; ; i++) {
-        unsigned bits = map2[in[i]];
-        if (bits & 0x80)
-            return bits & 1 ? -1 : dst - out;
-        v = (v << 6) + bits;
-        if (i & 3) {
-            if (dst < end) {
-                *dst++ = v >> (6 - 2 * (i & 3));
-            }
+    while (end - dst > 2) {
+        BASE64_DEC_STEP(0)
+        BASE64_DEC_STEP(1)
+        BASE64_DEC_STEP(2)
+        BASE64_DEC_STEP(3)
+        in += 4;
+    }
+    if (end - dst) {
+        BASE64_DEC_STEP(0)
+        BASE64_DEC_STEP(1)
+        if (end - dst) {
+            BASE64_DEC_STEP(2)
+            in++;
         }
+        in += 2;
+    }
+    while (1) {
+        BASE64_DEC_STEP(0)
+        in++;
+        BASE64_DEC_STEP(0)
+        in++;
+        BASE64_DEC_STEP(0)
+        in++;
+        BASE64_DEC_STEP(0)
+        in++;
     }
 
-    av_assert1(0);
-    return 0;
+out:
+    return bits & 1 ? -1 : dst - out;
 }
 
 /*****************************************************************************
