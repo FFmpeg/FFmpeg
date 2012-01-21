@@ -214,6 +214,9 @@ static const AVOption options[]={
 {"bitstream", "detect bitstream specification deviations", 0, AV_OPT_TYPE_CONST, {.dbl = AV_EF_BITSTREAM }, INT_MIN, INT_MAX, V|D, "err_detect"},
 {"buffer", "detect improper bitstream length", 0, AV_OPT_TYPE_CONST, {.dbl = AV_EF_BUFFER }, INT_MIN, INT_MAX, V|D, "err_detect"},
 {"explode", "abort decoding on minor error detection", 0, AV_OPT_TYPE_CONST, {.dbl = AV_EF_EXPLODE }, INT_MIN, INT_MAX, V|D, "err_detect"},
+{"careful",    "consider things that violate the spec and have not been seen in the wild as errors", 0, AV_OPT_TYPE_CONST, {.dbl = AV_EF_CAREFUL }, INT_MIN, INT_MAX, V|D, "err_detect"},
+{"compliant",  "consider all spec non compliancies as errors", 0, AV_OPT_TYPE_CONST, {.dbl = AV_EF_COMPLIANT }, INT_MIN, INT_MAX, V|D, "err_detect"},
+{"aggressive", "consider things that a sane encoder shouldnt do as an error", 0, AV_OPT_TYPE_CONST, {.dbl = AV_EF_AGGRESSIVE }, INT_MIN, INT_MAX, V|D, "err_detect"},
 {"has_b_frames", NULL, OFFSET(has_b_frames), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
 {"block_align", NULL, OFFSET(block_align), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
 #if FF_API_PARSE_FRAME
