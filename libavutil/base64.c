@@ -150,7 +150,7 @@ static int test_encode_decode(const uint8_t *data, unsigned int data_size,
     return 0;
 }
 
-int main(void)
+int main(int argc, char ** argv)
 {
     int i, error_count = 0;
     struct test {
@@ -172,22 +172,24 @@ int main(void)
     for (i = 0; i < FF_ARRAY_ELEMS(tests); i++)
         error_count += test_encode_decode(tests[i].data, strlen(tests[i].data), tests[i].encoded_ref);
 
-    memset(in, 123, sizeof(in));
-    for(i=0; i<10000; i++){
-        START_TIMER
-        av_base64_encode(out, sizeof(out), in, sizeof(in));
-        STOP_TIMER("encode")
-    }
-    for(i=0; i<10000; i++){
-        START_TIMER
-        av_base64_decode(in, out, sizeof(in));
-        STOP_TIMER("decode")
-    }
+    if (argc>1 && !strcmp(argv[1], "-t")) {
+        memset(in, 123, sizeof(in));
+        for(i=0; i<10000; i++){
+            START_TIMER
+            av_base64_encode(out, sizeof(out), in, sizeof(in));
+            STOP_TIMER("encode")
+        }
+        for(i=0; i<10000; i++){
+            START_TIMER
+            av_base64_decode(in, out, sizeof(in));
+            STOP_TIMER("decode")
+        }
 
-    for(i=0; i<10000; i++){
-        START_TIMER
-        av_base64_decode(NULL, out, 0);
-        STOP_TIMER("syntax check")
+        for(i=0; i<10000; i++){
+            START_TIMER
+            av_base64_decode(NULL, out, 0);
+            STOP_TIMER("syntax check")
+        }
     }
 
     return error_count;
