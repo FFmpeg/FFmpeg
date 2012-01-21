@@ -149,6 +149,7 @@ static int mp3_read_header(AVFormatContext *s)
     // lcm of all mp3 sample rates
     avpriv_set_pts_info(st, 64, 1, 14112000);
 
+    s->pb->maxsize = -1;
     off = avio_tell(s->pb);
 
     if (!av_dict_get(s->metadata, "", NULL, AV_DICT_IGNORE_SUFFIX))
