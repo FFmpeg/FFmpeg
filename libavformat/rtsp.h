@@ -359,6 +359,11 @@ typedef struct RTSPState {
      * Mask of all requested media types
      */
     int media_type_mask;
+
+    /**
+     * Minimum and maximum local UDP ports.
+     */
+    int rtp_port_min, rtp_port_max;
 } RTSPState;
 
 #define RTSP_FLAG_FILTER_SRC  0x1    /**< Filter incoming UDP packets -

@@ -81,6 +81,8 @@ const AVOption ff_rtsp_options[] = {
     { "http", "HTTP tunneling", 0, AV_OPT_TYPE_CONST, {(1 << RTSP_LOWER_TRANSPORT_HTTP)}, 0, 0, DEC, "rtsp_transport" },
     RTSP_FLAG_OPTS("rtsp_flags", "RTSP flags"),
     RTSP_MEDIATYPE_OPTS("allowed_media_types", "Media types to accept from the server"),
+    { "min_port", "Minimum local UDP port", OFFSET(rtp_port_min), AV_OPT_TYPE_INT, {RTSP_RTP_PORT_MIN}, 0, 65535, DEC|ENC },
+    { "max_port", "Maximum local UDP port", OFFSET(rtp_port_max), AV_OPT_TYPE_INT, {RTSP_RTP_PORT_MAX}, 0, 65535, DEC|ENC },
     { NULL },
 };
 
@@ -1121,7 +1123,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
     /* XXX: we assume the same server is used for the control of each
      * RTSP stream */
 
-    for (j = RTSP_RTP_PORT_MIN, i = 0; i < rt->nb_rtsp_streams; ++i) {
+    for (j = rt->rtp_port_min, i = 0; i < rt->nb_rtsp_streams; ++i) {
         char transport[2048];
 
         /*
@@ -1158,7 +1160,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
             }
 
             /* first try in specified port range */
-            while (j <= RTSP_RTP_PORT_MAX) {
+            while (j <= rt->rtp_port_max) {
                 ff_url_join(buf, sizeof(buf), "rtp", NULL, host, -1,
                             "?localport=%d", j);
                 /* we will use two ports per rtp stream (rtp and rtcp) */
@@ -1355,6 +1357,13 @@ int ff_rtsp_connect(AVFormatContext *s)
     char real_challenge[64] = "";
     struct sockaddr_storage peer;
     socklen_t peer_len = sizeof(peer);
+
+    if (rt->rtp_port_max < rt->rtp_port_min) {
+        av_log(s, AV_LOG_ERROR, "Invalid UDP port range, max port %d less "
+                                "than min port %d\n", rt->rtp_port_max,
+                                                      rt->rtp_port_min);
+        return AVERROR(EINVAL);
+    }
 
     if (!ff_network_init())
         return AVERROR(EIO);
