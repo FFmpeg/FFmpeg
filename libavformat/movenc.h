@@ -120,6 +120,15 @@ typedef struct MOVIndex {
 
     int         nb_frag_info;
     MOVFragmentInfo *frag_info;
+
+    struct {
+        int64_t struct_offset;
+        int     first_packet_seq;
+        int     first_packet_entry;
+        int     packet_seq;
+        int     packet_entry;
+        int     slices;
+    } vc1_info;
 } MOVTrack;
 
 typedef struct MOVMuxContext {
