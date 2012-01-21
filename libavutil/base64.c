@@ -71,37 +71,41 @@ static const uint8_t map2[256] =
 #define BASE64_DEC_STEP(i) do { \
     bits = map2[in[i]]; \
     if (bits & 0x80) \
-        goto out; \
-    v = (v << 6) + bits; \
-    if (i & 3) \
-        *dst++ = v >> (6 - 2 * (i & 3)); \
+        goto out ## i; \
+    v = i ? (v << 6) + bits : bits; \
 } while(0)
 
 int av_base64_decode(uint8_t *out, const char *in_str, int out_size)
 {
-    int v;
     uint8_t *dst = out;
     uint8_t *end = out + out_size;
     // no sign extension
     const uint8_t *in = in_str;
     unsigned bits = 0xff;
+    unsigned v;
 
-    v = 0;
-    while (end - dst > 2) {
+    while (end - dst > 3) {
         BASE64_DEC_STEP(0);
         BASE64_DEC_STEP(1);
         BASE64_DEC_STEP(2);
         BASE64_DEC_STEP(3);
+        // Using AV_WB32 directly confuses compiler
+        v = av_be2ne32(v) >> 8;
+        AV_WN32(dst, v);
+        dst += 3;
         in += 4;
     }
     if (end - dst) {
         BASE64_DEC_STEP(0);
         BASE64_DEC_STEP(1);
-        if (end - dst) {
-            BASE64_DEC_STEP(2);
-            in++;
-        }
-        in += 2;
+        BASE64_DEC_STEP(2);
+        BASE64_DEC_STEP(3);
+        *dst++ = v >> 16;
+        if (end - dst)
+            *dst++ = v >> 8;
+        if (end - dst)
+            *dst++ = v;
+        in += 4;
     }
     while (1) {
         BASE64_DEC_STEP(0);
@@ -114,7 +118,13 @@ int av_base64_decode(uint8_t *out, const char *in_str, int out_size)
         in++;
     }
 
-out:
+out3:
+    *dst++ = v >> 10;
+    v <<= 2;
+out2:
+    *dst++ = v >> 4;
+out1:
+out0:
     return bits & 1 ? -1 : dst - out;
 }
 
