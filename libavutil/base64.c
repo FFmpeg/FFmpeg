@@ -68,13 +68,14 @@ static const uint8_t map2[256] =
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 };
 
-#define BASE64_DEC_STEP(i) \
+#define BASE64_DEC_STEP(i) do { \
     bits = map2[in[i]]; \
     if (bits & 0x80) \
         goto out; \
     v = (v << 6) + bits; \
     if (i & 3) \
         *dst++ = v >> (6 - 2 * (i & 3)); \
+} while(0)
 
 int av_base64_decode(uint8_t *out, const char *in_str, int out_size)
 {
@@ -87,29 +88,29 @@ int av_base64_decode(uint8_t *out, const char *in_str, int out_size)
 
     v = 0;
     while (end - dst > 2) {
-        BASE64_DEC_STEP(0)
-        BASE64_DEC_STEP(1)
-        BASE64_DEC_STEP(2)
-        BASE64_DEC_STEP(3)
+        BASE64_DEC_STEP(0);
+        BASE64_DEC_STEP(1);
+        BASE64_DEC_STEP(2);
+        BASE64_DEC_STEP(3);
         in += 4;
     }
     if (end - dst) {
-        BASE64_DEC_STEP(0)
-        BASE64_DEC_STEP(1)
+        BASE64_DEC_STEP(0);
+        BASE64_DEC_STEP(1);
         if (end - dst) {
-            BASE64_DEC_STEP(2)
+            BASE64_DEC_STEP(2);
             in++;
         }
         in += 2;
     }
     while (1) {
-        BASE64_DEC_STEP(0)
+        BASE64_DEC_STEP(0);
         in++;
-        BASE64_DEC_STEP(0)
+        BASE64_DEC_STEP(0);
         in++;
-        BASE64_DEC_STEP(0)
+        BASE64_DEC_STEP(0);
         in++;
-        BASE64_DEC_STEP(0)
+        BASE64_DEC_STEP(0);
         in++;
     }
 
