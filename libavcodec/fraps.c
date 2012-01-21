@@ -155,6 +155,20 @@ static int decode_frame(AVCodecContext *avctx,
 
     buf += header_size;
 
+    avctx->pix_fmt = version & 1 ? PIX_FMT_BGR24 : PIX_FMT_YUVJ420P;
+
+    if (version < 2) {
+        unsigned needed_size = avctx->width*avctx->height*3;
+        if (version == 0) needed_size /= 2;
+        needed_size += header_size;
+        if (buf_size != needed_size && buf_size != header_size) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Invalid frame length %d (should be %d)\n",
+                   buf_size, needed_size);
+            return -1;
+        }
+    }
+
     f->pict_type = AV_PICTURE_TYPE_I;
     f->key_frame = 1;
     f->reference = 3;
@@ -166,16 +180,6 @@ static int decode_frame(AVCodecContext *avctx,
     case 0:
     default:
         /* Fraps v0 is a reordered YUV420 */
-        avctx->pix_fmt = PIX_FMT_YUVJ420P;
-
-        if ( buf_size != avctx->width*avctx->height*3/2+header_size &&
-             buf_size != header_size ) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "Invalid frame length %d (should be %d)\n",
-                   buf_size, avctx->width*avctx->height*3/2+header_size);
-            return -1;
-        }
-
         if ( (avctx->width % 8) != 0 || (avctx->height % 2) != 0 ) {
             av_log(avctx, AV_LOG_ERROR, "Invalid frame size %dx%d\n",
                    avctx->width, avctx->height);
@@ -211,16 +215,6 @@ static int decode_frame(AVCodecContext *avctx,
 
     case 1:
         /* Fraps v1 is an upside-down BGR24 */
-        avctx->pix_fmt = PIX_FMT_BGR24;
-
-        if ( buf_size != avctx->width*avctx->height*3+header_size &&
-             buf_size != header_size ) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "Invalid frame length %d (should be %d)\n",
-                   buf_size, avctx->width*avctx->height*3+header_size);
-            return -1;
-        }
-
         if (avctx->reget_buffer(avctx, f)) {
             av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
             return -1;
@@ -243,7 +237,6 @@ static int decode_frame(AVCodecContext *avctx,
          * Fraps v2 is Huffman-coded YUV420 planes
          * Fraps v4 is virtually the same
          */
-        avctx->pix_fmt = PIX_FMT_YUVJ420P;
         if (avctx->reget_buffer(avctx, f)) {
             av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
             return -1;
@@ -281,7 +274,6 @@ static int decode_frame(AVCodecContext *avctx,
     case 3:
     case 5:
         /* Virtually the same as version 4, but is for RGB24 */
-        avctx->pix_fmt = PIX_FMT_BGR24;
         if (avctx->reget_buffer(avctx, f)) {
             av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
             return -1;
