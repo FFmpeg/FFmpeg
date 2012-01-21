@@ -374,4 +374,4 @@ OBJS-$(CONFIG_UDP_PROTOCOL)              += udp.o
 
 SKIPHEADERS-$(CONFIG_NETWORK)            += network.h rtsp.h
 TESTPROGS = seek
-TOOLS     = pktdumper probetest
+TOOLS     = aviocat pktdumper probetest

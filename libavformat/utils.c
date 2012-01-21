@@ -2244,10 +2244,18 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **option
     AVPacket pkt = *avpkt;
 
     if(!st->codec->codec){
+        AVDictionary *thread_opt = NULL;
+
         codec = avcodec_find_decoder(st->codec->codec_id);
         if (!codec)
             return -1;
-        ret = avcodec_open2(st->codec, codec, options);
+
+        /* force thread count to 1 since the h264 decoder will not extract SPS
+         *  and PPS to extradata during multi-threaded decoding */
+        av_dict_set(options ? options : &thread_opt, "threads", "1", 0);
+        ret = avcodec_open2(st->codec, codec, options ? options : &thread_opt);
+        if (!options)
+            av_dict_free(&thread_opt);
         if (ret < 0)
             return ret;
     }
@@ -2384,15 +2392,13 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     int i, count, ret, read_size, j;
     AVStream *st;
     AVPacket pkt1, *pkt;
-    AVDictionary *one_thread_opt = NULL;
     int64_t old_offset = avio_tell(ic->pb);
     int orig_nb_streams = ic->nb_streams;        // new streams might appear, no options for those
     int flush_codecs = 1;
 
-    av_dict_set(&one_thread_opt, "threads", "1", 0);
-
     for(i=0;i<ic->nb_streams;i++) {
         AVCodec *codec;
+        AVDictionary *thread_opt = NULL;
         st = ic->streams[i];
 
         if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO ||
@@ -2412,20 +2418,24 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         assert(!st->codec->codec);
         codec = avcodec_find_decoder(st->codec->codec_id);
 
-        if (options)
-            av_dict_set(&options[i], "threads", "1", 0);
+        /* force thread count to 1 since the h264 decoder will not extract SPS
+         *  and PPS to extradata during multi-threaded decoding */
+        av_dict_set(options ? &options[i] : &thread_opt, "threads", "1", 0);
 
         /* Ensure that subtitle_header is properly set. */
         if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE
             && codec && !st->codec->codec)
-            avcodec_open2(st->codec, codec, options ? &options[i] : &one_thread_opt);
+            avcodec_open2(st->codec, codec, options ? &options[i]
+                              : &thread_opt);
 
         //try to just open decoders, in case this is enough to get parameters
         if(!has_codec_parameters(st->codec)){
             if (codec && !st->codec->codec)
                 avcodec_open2(st->codec, codec, options ? &options[i]
-                              : &one_thread_opt);
+                              : &thread_opt);
         }
+        if (!options)
+            av_dict_free(&thread_opt);
     }
 
     for (i=0; i<ic->nb_streams; i++) {
@@ -2715,8 +2725,6 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             ic->streams[i]->codec->thread_count = 0;
         av_freep(&ic->streams[i]->info);
     }
-
-    av_dict_free(&one_thread_opt);
     return ret;
 }
 
