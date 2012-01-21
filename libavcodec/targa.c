@@ -55,7 +55,7 @@ static int targa_decode_rle(AVCodecContext *avctx, TargaContext *s, const uint8_
         type = *src++;
         count = (type & 0x7F) + 1;
         type &= 0x80;
-        if((x + count > w) && (x + count + 1 > (h - y) * w)){
+        if(x + count > (h - y) * w){
             av_log(avctx, AV_LOG_ERROR, "Packet went out of bounds: position (%i,%i) size %i\n", x, y, count);
             return -1;
         }
