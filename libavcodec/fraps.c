@@ -168,15 +168,15 @@ static int decode_frame(AVCodecContext *avctx,
         /* Fraps v0 is a reordered YUV420 */
         avctx->pix_fmt = PIX_FMT_YUVJ420P;
 
-        if ( (buf_size != avctx->width*avctx->height*3/2+header_size) &&
-             (buf_size != header_size) ) {
+        if ( buf_size != avctx->width*avctx->height*3/2+header_size &&
+             buf_size != header_size ) {
             av_log(avctx, AV_LOG_ERROR,
                    "Invalid frame length %d (should be %d)\n",
                    buf_size, avctx->width*avctx->height*3/2+header_size);
             return -1;
         }
 
-        if (( (avctx->width % 8) != 0) || ( (avctx->height % 2) != 0 )) {
+        if ( (avctx->width % 8) != 0 || (avctx->height % 2) != 0 ) {
             av_log(avctx, AV_LOG_ERROR, "Invalid frame size %dx%d\n",
                    avctx->width, avctx->height);
             return -1;
@@ -198,12 +198,12 @@ static int decode_frame(AVCodecContext *avctx,
                 cr=(uint32_t*)&f->data[1][ y*f->linesize[1] ];
                 cb=(uint32_t*)&f->data[2][ y*f->linesize[2] ];
                 for(x=0; x<avctx->width; x+=8){
-                    *(luma1++) = *(buf32++);
-                    *(luma1++) = *(buf32++);
-                    *(luma2++) = *(buf32++);
-                    *(luma2++) = *(buf32++);
-                    *(cr++) = *(buf32++);
-                    *(cb++) = *(buf32++);
+                    *luma1++ = *buf32++;
+                    *luma1++ = *buf32++;
+                    *luma2++ = *buf32++;
+                    *luma2++ = *buf32++;
+                    *cr++    = *buf32++;
+                    *cb++    = *buf32++;
                 }
             }
         }
@@ -213,8 +213,8 @@ static int decode_frame(AVCodecContext *avctx,
         /* Fraps v1 is an upside-down BGR24 */
         avctx->pix_fmt = PIX_FMT_BGR24;
 
-        if ( (buf_size != avctx->width*avctx->height*3+header_size) &&
-             (buf_size != header_size) ) {
+        if ( buf_size != avctx->width*avctx->height*3+header_size &&
+             buf_size != header_size ) {
             av_log(avctx, AV_LOG_ERROR,
                    "Invalid frame length %d (should be %d)\n",
                    buf_size, avctx->width*avctx->height*3+header_size);
@@ -254,7 +254,7 @@ static int decode_frame(AVCodecContext *avctx,
             f->key_frame = 0;
             break;
         }
-        if ((AV_RL32(buf) != FPS_TAG)||(buf_size < (planes*1024 + 24))) {
+        if (AV_RL32(buf) != FPS_TAG || buf_size < planes*1024 + 24) {
             av_log(avctx, AV_LOG_ERROR, "Fraps: error in data stream\n");
             return -1;
         }
@@ -292,7 +292,7 @@ static int decode_frame(AVCodecContext *avctx,
             f->key_frame = 0;
             break;
         }
-        if ((AV_RL32(buf) != FPS_TAG)||(buf_size < (planes*1024 + 24))) {
+        if (AV_RL32(buf) != FPS_TAG || buf_size < planes*1024 + 24) {
             av_log(avctx, AV_LOG_ERROR, "Fraps: error in data stream\n");
             return -1;
         }
