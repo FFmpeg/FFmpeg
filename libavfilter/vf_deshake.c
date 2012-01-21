@@ -292,14 +292,15 @@ static void find_motion(DeshakeContext *deshake, uint8_t *src1, uint8_t *src2,
         }
     }
 
-    pos = FFMAX(1, pos);
-
-    center_x /= pos;
-    center_y /= pos;
-
-    t->angle = clean_mean(angles, pos);
-    if (t->angle < 0.001)
-        t->angle = 0;
+    if (pos) {
+         center_x /= pos;
+         center_y /= pos;
+         t->angle = clean_mean(angles, pos);
+         if (t->angle < 0.001)
+              t->angle = 0;
+    } else {
+         t->angle = 0;
+    }
 
     // Find the most common motion vector in the frame and use it as the gmv
     for (y = deshake->ry * 2; y >= 0; y--) {
