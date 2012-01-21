@@ -6,6 +6,7 @@ version 0.8:
 
 - GSM audio parser
 - SMJPEG muxer
+- XWD encoder and decoder
 
 
 version 0.8_beta2:
