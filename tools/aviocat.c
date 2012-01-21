@@ -19,13 +19,9 @@
  */
 
 #include <stdio.h>
-#include <string.h>
+#include <stdlib.h>
 #include <unistd.h>
-#include <sys/stat.h>
 #include "libavformat/avformat.h"
-#include "libavformat/riff.h"
-#include "libavutil/intreadwrite.h"
-#include "libavutil/mathematics.h"
 
 static int usage(const char *argv0, int ret)
 {
