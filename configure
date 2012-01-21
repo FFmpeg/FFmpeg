@@ -1649,6 +1649,7 @@ udp_protocol_deps="network"
 
 # filters
 amovie_filter_deps="avcodec avformat"
+aresample_filter_deps="swresample"
 ass_filter_deps="libass"
 blackframe_filter_deps="gpl"
 boxblur_filter_deps="gpl"
