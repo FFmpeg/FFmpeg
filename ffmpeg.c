@@ -2360,6 +2360,8 @@ static int init_input_stream(int ist_index, OutputStream *output_streams, int nb
             ist->st->codec->opaque         = ist;
         }
 
+        if (!av_dict_get(ist->opts, "threads", NULL, 0))
+            av_dict_set(&ist->opts, "threads", "auto", 0);
         if (avcodec_open2(ist->st->codec, codec, &ist->opts) < 0) {
             snprintf(error, error_len, "Error while opening decoder for input stream #%d:%d",
                     ist->file_index, ist->st->index);
@@ -2685,6 +2687,8 @@ static int transcode_init(OutputFile *output_files, int nb_output_files,
                 memcpy(ost->st->codec->subtitle_header, dec->subtitle_header, dec->subtitle_header_size);
                 ost->st->codec->subtitle_header_size = dec->subtitle_header_size;
             }
+            if (!av_dict_get(ost->opts, "threads", NULL, 0))
+                av_dict_set(&ost->opts, "threads", "auto", 0);
             if (avcodec_open2(ost->st->codec, codec, &ost->opts) < 0) {
                 snprintf(error, sizeof(error), "Error while opening encoder for output stream #%d:%d - maybe incorrect parameters such as bit_rate, rate, width or height",
                         ost->file_index, ost->index);
