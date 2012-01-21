@@ -153,9 +153,7 @@ static int decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
-    buf+=4;
-    if (header_size == 8)
-        buf+=4;
+    buf += header_size;
 
     f->pict_type = AV_PICTURE_TYPE_I;
     f->key_frame = 1;
