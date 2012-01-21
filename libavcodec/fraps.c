@@ -157,6 +157,13 @@ static int decode_frame(AVCodecContext *avctx,
     if (header_size == 8)
         buf+=4;
 
+    f->pict_type = AV_PICTURE_TYPE_I;
+    f->key_frame = 1;
+    f->reference = 3;
+    f->buffer_hints = FF_BUFFER_HINTS_VALID |
+                      FF_BUFFER_HINTS_PRESERVE |
+                      FF_BUFFER_HINTS_REUSABLE;
+
     switch(version) {
     case 0:
     default:
@@ -177,19 +184,15 @@ static int decode_frame(AVCodecContext *avctx,
             return -1;
         }
 
-        f->reference = 3;
-        f->buffer_hints = FF_BUFFER_HINTS_VALID |
-                          FF_BUFFER_HINTS_PRESERVE |
-                          FF_BUFFER_HINTS_REUSABLE;
         if (avctx->reget_buffer(avctx, f)) {
             av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
             return -1;
         }
         /* bit 31 means same as previous pic */
-        f->pict_type = (header & (1U<<31))? AV_PICTURE_TYPE_P : AV_PICTURE_TYPE_I;
-        f->key_frame = f->pict_type == AV_PICTURE_TYPE_I;
-
-        if (f->pict_type == AV_PICTURE_TYPE_I) {
+        if (header & (1U<<31)) {
+            f->pict_type = AV_PICTURE_TYPE_P;
+            f->key_frame = 0;
+        } else {
             buf32=(const uint32_t*)buf;
             for(y=0; y<avctx->height/2; y++){
                 luma1=(uint32_t*)&f->data[0][ y*2*f->linesize[0] ];
@@ -220,19 +223,15 @@ static int decode_frame(AVCodecContext *avctx,
             return -1;
         }
 
-        f->reference = 3;
-        f->buffer_hints = FF_BUFFER_HINTS_VALID |
-                          FF_BUFFER_HINTS_PRESERVE |
-                          FF_BUFFER_HINTS_REUSABLE;
         if (avctx->reget_buffer(avctx, f)) {
             av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
             return -1;
         }
         /* bit 31 means same as previous pic */
-        f->pict_type = (header & (1U<<31))? AV_PICTURE_TYPE_P : AV_PICTURE_TYPE_I;
-        f->key_frame = f->pict_type == AV_PICTURE_TYPE_I;
-
-        if (f->pict_type == AV_PICTURE_TYPE_I) {
+        if (header & (1U<<31)) {
+            f->pict_type = AV_PICTURE_TYPE_P;
+            f->key_frame = 0;
+        } else {
             for(y=0; y<avctx->height; y++)
                 memcpy(&f->data[0][ (avctx->height-y)*f->linesize[0] ],
                        &buf[y*avctx->width*3],
@@ -247,10 +246,6 @@ static int decode_frame(AVCodecContext *avctx,
          * Fraps v4 is virtually the same
          */
         avctx->pix_fmt = PIX_FMT_YUVJ420P;
-        f->reference = 3;
-        f->buffer_hints = FF_BUFFER_HINTS_VALID |
-                          FF_BUFFER_HINTS_PRESERVE |
-                          FF_BUFFER_HINTS_REUSABLE;
         if (avctx->reget_buffer(avctx, f)) {
             av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
             return -1;
@@ -261,8 +256,6 @@ static int decode_frame(AVCodecContext *avctx,
             f->key_frame = 0;
             break;
         }
-        f->pict_type = AV_PICTURE_TYPE_I;
-        f->key_frame = 1;
         if ((AV_RL32(buf) != FPS_TAG)||(buf_size < (planes*1024 + 24))) {
             av_log(avctx, AV_LOG_ERROR, "Fraps: error in data stream\n");
             return -1;
@@ -291,10 +284,6 @@ static int decode_frame(AVCodecContext *avctx,
     case 5:
         /* Virtually the same as version 4, but is for RGB24 */
         avctx->pix_fmt = PIX_FMT_BGR24;
-        f->reference = 3;
-        f->buffer_hints = FF_BUFFER_HINTS_VALID |
-                          FF_BUFFER_HINTS_PRESERVE |
-                          FF_BUFFER_HINTS_REUSABLE;
         if (avctx->reget_buffer(avctx, f)) {
             av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
             return -1;
@@ -305,8 +294,6 @@ static int decode_frame(AVCodecContext *avctx,
             f->key_frame = 0;
             break;
         }
-        f->pict_type = AV_PICTURE_TYPE_I;
-        f->key_frame = 1;
         if ((AV_RL32(buf) != FPS_TAG)||(buf_size < (planes*1024 + 24))) {
             av_log(avctx, AV_LOG_ERROR, "Fraps: error in data stream\n");
             return -1;
