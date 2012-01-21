@@ -138,7 +138,8 @@ static int decode_frame(AVCodecContext *avctx,
     const uint32_t *buf32;
     uint32_t *luma1,*luma2,*cb,*cr;
     uint32_t offs[4];
-    int i, j, is_chroma, planes;
+    int i, j, is_chroma;
+    const int planes = 3;
 
 
     header = AV_RL32(buf);
@@ -246,7 +247,6 @@ static int decode_frame(AVCodecContext *avctx,
          * Fraps v4 is virtually the same
          */
         avctx->pix_fmt = PIX_FMT_YUVJ420P;
-        planes = 3;
         f->reference = 3;
         f->buffer_hints = FF_BUFFER_HINTS_VALID |
                           FF_BUFFER_HINTS_PRESERVE |
@@ -291,7 +291,6 @@ static int decode_frame(AVCodecContext *avctx,
     case 5:
         /* Virtually the same as version 4, but is for RGB24 */
         avctx->pix_fmt = PIX_FMT_BGR24;
-        planes = 3;
         f->reference = 3;
         f->buffer_hints = FF_BUFFER_HINTS_VALID |
                           FF_BUFFER_HINTS_PRESERVE |
