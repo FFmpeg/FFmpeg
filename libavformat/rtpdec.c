@@ -299,7 +299,7 @@ int ff_rtp_check_and_send_back_rr(RTPDemuxContext *s, int count)
     avio_w8(pb, RTCP_SDES);
     len = strlen(s->hostname);
     avio_wb16(pb, (6 + len + 3) / 4); /* length in words - 1 */
-    avio_wb32(pb, s->ssrc);
+    avio_wb32(pb, s->ssrc + 1);
     avio_w8(pb, 0x01);
     avio_w8(pb, len);
     avio_write(pb, s->hostname, len);

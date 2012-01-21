@@ -40,13 +40,13 @@
 #define MODE_IPOD 0x20
 
 typedef struct MOVIentry {
-    unsigned int size;
     uint64_t     pos;
+    int64_t      dts;
+    unsigned int size;
     unsigned int samplesInChunk;
     unsigned int chunkNum;              ///< Chunk number if the current entry is a chunk start otherwise 0
     unsigned int entries;
     int          cts;
-    int64_t      dts;
 #define MOV_SYNC_SAMPLE         0x0001
 #define MOV_PARTIAL_SYNC_SAMPLE 0x0002
     uint32_t     flags;

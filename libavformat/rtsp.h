@@ -405,9 +405,6 @@ typedef struct RTSPStream {
 void ff_rtsp_parse_line(RTSPMessageHeader *reply, const char *buf,
                         RTSPState *rt, const char *method);
 
-extern int rtsp_rtp_port_min;
-extern int rtsp_rtp_port_max;
-
 /**
  * Send a command to the RTSP server without waiting for the reply.
  *

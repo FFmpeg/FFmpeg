@@ -13,15 +13,15 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
-2012-xx-xx - lavc 53.34.0
+2012-01-15 - lavc 53.34.0
   New audio encoding API:
-  xxxxxxx Add CODEC_CAP_VARIABLE_FRAME_SIZE capability for use by audio
+  b2c75b6 Add CODEC_CAP_VARIABLE_FRAME_SIZE capability for use by audio
           encoders.
-  xxxxxxx Add avcodec_fill_audio_frame() as a convenience function.
-  xxxxxxx Add avcodec_encode_audio2() and deprecate avcodec_encode_audio().
+  5ee5fa0 Add avcodec_fill_audio_frame() as a convenience function.
+  b2c75b6 Add avcodec_encode_audio2() and deprecate avcodec_encode_audio().
           Add AVCodec.encode2().
 
-2012-01-xx - xxxxxxx - lavfi 2.15.0
+2012-01-12 - 3167dc9 - lavfi 2.15.0
   Add a new installed header -- libavfilter/version.h -- with version macros.
 
 2011-12-08 - a502939 - lavfi 2.52.0

@@ -2266,6 +2266,8 @@ static int stream_component_open(VideoState *is, int stream_index)
         }
     }
 
+    if (!av_dict_get(opts, "threads", NULL, 0))
+        av_dict_set(&opts, "threads", "auto", 0);
     if (!codec ||
         avcodec_open2(avctx, codec, &opts) < 0)
         return -1;
