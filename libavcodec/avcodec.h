@@ -854,11 +854,7 @@ enum AVSideDataParamChangeFlags {
  * sizeof(AVFrame) must not be used outside libav*.
  */
 typedef struct AVFrame {
-#if FF_API_DATA_POINTERS
-#define AV_NUM_DATA_POINTERS 4
-#else
 #define AV_NUM_DATA_POINTERS 8
-#endif
     /**
      * pointer to the picture/channel planes.
      * This might be different from the first allocated byte
