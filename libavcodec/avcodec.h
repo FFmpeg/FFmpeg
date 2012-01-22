@@ -603,10 +603,6 @@ typedef struct RcOverride{
  * assume the buffer was allocated by avcodec_default_get_buffer.
  */
 #define CODEC_CAP_DR1             0x0002
-#if FF_API_PARSE_FRAME
-/* If 'parse_only' field is true, then avcodec_parse_frame() can be used. */
-#define CODEC_CAP_PARSE_ONLY      0x0004
-#endif
 #define CODEC_CAP_TRUNCATED       0x0008
 /* Codec can export data for HW decoding (XvMC). */
 #define CODEC_CAP_HWACCEL         0x0010
@@ -1609,16 +1605,6 @@ typedef struct AVCodecContext {
      * Used by some WAV based audio codecs.
      */
     int block_align;
-
-#if FF_API_PARSE_FRAME
-    /**
-     * If true, only parsing is done. The frame data is returned.
-     * Only MPEG audio decoders support this now.
-     * - encoding: unused
-     * - decoding: Set by user
-     */
-    attribute_deprecated int parse_only;
-#endif
 
     /**
      * 0-> h263 quant 1-> mpeg quant
