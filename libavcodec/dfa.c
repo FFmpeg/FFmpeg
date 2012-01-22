@@ -67,6 +67,8 @@ static int decode_tsw1(uint8_t *frame, int width, int height,
 
     segments = bytestream_get_le32(&src);
     offset   = bytestream_get_le32(&src);
+    if (segments == 0 && offset == frame_end - frame)
+        return 0; // skip frame
     if (frame_end - frame <= offset)
         return -1;
     frame += offset;
