@@ -783,17 +783,6 @@ typedef struct AVPanScan{
 #define FF_BUFFER_TYPE_SHARED   4 ///< Buffer from somewhere else; don't deallocate image (data/base), all other tables are not shared.
 #define FF_BUFFER_TYPE_COPY     8 ///< Just a (modified) copy of some other buffer, don't deallocate anything.
 
-#if FF_API_OLD_FF_PICT_TYPES
-/* DEPRECATED, directly use the AV_PICTURE_TYPE_* enum values */
-#define FF_I_TYPE  AV_PICTURE_TYPE_I  ///< Intra
-#define FF_P_TYPE  AV_PICTURE_TYPE_P  ///< Predicted
-#define FF_B_TYPE  AV_PICTURE_TYPE_B  ///< Bi-dir predicted
-#define FF_S_TYPE  AV_PICTURE_TYPE_S  ///< S(GMC)-VOP MPEG4
-#define FF_SI_TYPE AV_PICTURE_TYPE_SI ///< Switching Intra
-#define FF_SP_TYPE AV_PICTURE_TYPE_SP ///< Switching Predicted
-#define FF_BI_TYPE AV_PICTURE_TYPE_BI
-#endif
-
 #define FF_BUFFER_HINTS_VALID    0x01 // Buffer hints value is meaningful (if 0 ignore).
 #define FF_BUFFER_HINTS_READABLE 0x02 // Codec will read from buffer.
 #define FF_BUFFER_HINTS_PRESERVE 0x04 // User must not alter buffer content.
@@ -4095,18 +4084,6 @@ void avcodec_flush_buffers(AVCodecContext *avctx);
 void avcodec_default_free_buffers(AVCodecContext *s);
 
 /* misc useful functions */
-
-#if FF_API_OLD_FF_PICT_TYPES
-/**
- * Return a single letter to describe the given picture type pict_type.
- *
- * @param[in] pict_type the picture type
- * @return A single character representing the picture type.
- * @deprecated Use av_get_picture_type_char() instead.
- */
-attribute_deprecated
-char av_get_pict_type_char(int pict_type);
-#endif
 
 /**
  * Return codec bits per sample.

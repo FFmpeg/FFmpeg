@@ -1603,12 +1603,6 @@ void avcodec_default_free_buffers(AVCodecContext *avctx)
     }
 }
 
-#if FF_API_OLD_FF_PICT_TYPES
-char av_get_pict_type_char(int pict_type){
-    return av_get_picture_type_char(pict_type);
-}
-#endif
-
 int av_get_bits_per_sample(enum CodecID codec_id){
     switch(codec_id){
     case CODEC_ID_ADPCM_SBPRO_2:
