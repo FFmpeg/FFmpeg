@@ -3227,6 +3227,11 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt){
 
     //XXX/FIXME this is a temporary hack until all encoders output pts
     if((pkt->pts == 0 || pkt->pts == AV_NOPTS_VALUE) && pkt->dts == AV_NOPTS_VALUE && !delay){
+        static int warned;
+        if (!warned) {
+            av_log(s, AV_LOG_WARNING, "Encoder did not produce proper pts, making some up.\n");
+            warned = 1;
+        }
         pkt->dts=
 //        pkt->pts= st->cur_dts;
         pkt->pts= st->pts.val;
