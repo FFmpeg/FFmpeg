@@ -90,7 +90,7 @@ int av_base64_decode(uint8_t *out, const char *in_str, int out_size)
         BASE64_DEC_STEP(2);
         BASE64_DEC_STEP(3);
         // Using AV_WB32 directly confuses compiler
-        v = av_be2ne32(v) >> 8;
+        v = av_be2ne32(v << 8);
         AV_WN32(dst, v);
         dst += 3;
         in += 4;
