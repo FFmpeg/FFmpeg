@@ -1545,21 +1545,6 @@ typedef struct AVCodecContext {
      */
     float b_quant_offset;
 
-#if FF_API_ER
-    /**
-     * Error recognition; higher values will detect more errors but may
-     * misdetect some more or less valid parts as errors.
-     * - encoding: unused
-     * - decoding: Set by user.
-     */
-    attribute_deprecated int error_recognition;
-#define FF_ER_CAREFUL         1
-#define FF_ER_COMPLIANT       2
-#define FF_ER_AGGRESSIVE      3
-#define FF_ER_VERY_AGGRESSIVE 4
-#define FF_ER_EXPLODE         5
-#endif /* FF_API_ER */
-
     /**
      * Called at the beginning of each frame to get a buffer for it.
      *
