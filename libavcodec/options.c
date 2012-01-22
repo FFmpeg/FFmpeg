@@ -79,17 +79,11 @@ static const AVOption options[]={
 {"bt", "set video bitrate tolerance (in bits/s)", OFFSET(bit_rate_tolerance), AV_OPT_TYPE_INT, {.dbl = AV_CODEC_DEFAULT_BITRATE*20 }, 1, INT_MAX, V|E},
 {"flags", NULL, OFFSET(flags), AV_OPT_TYPE_FLAGS, {.dbl = DEFAULT }, 0, UINT_MAX, V|A|E|D, "flags"},
 {"mv4", "use four motion vector by macroblock (mpeg4)", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_4MV }, INT_MIN, INT_MAX, V|E, "flags"},
-#if FF_API_MPEGVIDEO_GLOBAL_OPTS
-{"obmc", "use overlapped block motion compensation (h263+)", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_OBMC }, INT_MIN, INT_MAX, V|E, "flags"},
-#endif
 {"qpel", "use 1/4 pel motion compensation", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_QPEL }, INT_MIN, INT_MAX, V|E, "flags"},
 {"loop", "use loop filter", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_LOOP_FILTER }, INT_MIN, INT_MAX, V|E, "flags"},
 {"qscale", "use fixed qscale", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_QSCALE }, INT_MIN, INT_MAX, 0, "flags"},
 {"gmc", "use gmc", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_GMC }, INT_MIN, INT_MAX, V|E, "flags"},
 {"mv0", "always try a mb with mv=<0,0>", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_MV0 }, INT_MIN, INT_MAX, V|E, "flags"},
-#if FF_API_MPEGVIDEO_GLOBAL_OPTS
-{"part", "use data partitioning", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_PART }, INT_MIN, INT_MAX, V|E, "flags"},
-#endif
 {"input_preserved", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_INPUT_PRESERVED }, INT_MIN, INT_MAX, 0, "flags"},
 {"pass1", "use internal 2pass ratecontrol in first  pass mode", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_PASS1 }, INT_MIN, INT_MAX, 0, "flags"},
 {"pass2", "use internal 2pass ratecontrol in second pass mode", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_PASS2 }, INT_MIN, INT_MAX, 0, "flags"},
@@ -103,25 +97,12 @@ static const AVOption options[]={
 {"naq", "normalize adaptive quantization", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_NORMALIZE_AQP }, INT_MIN, INT_MAX, V|E, "flags"},
 {"ildct", "use interlaced dct", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_INTERLACED_DCT }, INT_MIN, INT_MAX, V|E, "flags"},
 {"low_delay", "force low delay", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_LOW_DELAY }, INT_MIN, INT_MAX, V|D|E, "flags"},
-#if FF_API_MPEGVIDEO_GLOBAL_OPTS
-{"alt", "enable alternate scantable (mpeg2/mpeg4)", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_ALT_SCAN }, INT_MIN, INT_MAX, V|E, "flags"},
-#endif
 {"global_header", "place global headers in extradata instead of every keyframe", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_GLOBAL_HEADER }, INT_MIN, INT_MAX, V|A|E, "flags"},
 {"bitexact", "use only bitexact stuff (except (i)dct)", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_BITEXACT }, INT_MIN, INT_MAX, A|V|S|D|E, "flags"},
 {"aic", "h263 advanced intra coding / mpeg4 ac prediction", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_AC_PRED }, INT_MIN, INT_MAX, V|E, "flags"},
-#if FF_API_MPEGVIDEO_GLOBAL_OPTS
-{"umv", "use unlimited motion vectors", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_H263P_UMV }, INT_MIN, INT_MAX, V|E, "flags"},
-#endif
 {"cbp", "use rate distortion optimization for cbp", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_CBP_RD }, INT_MIN, INT_MAX, V|E, "flags"},
 {"qprd", "use rate distortion optimization for qp selection", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_QP_RD }, INT_MIN, INT_MAX, V|E, "flags"},
-#if FF_API_MPEGVIDEO_GLOBAL_OPTS
-{"aiv", "h263 alternative inter vlc", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_H263P_AIV }, INT_MIN, INT_MAX, V|E, "flags"},
-{"slice", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_H263P_SLICE_STRUCT }, INT_MIN, INT_MAX, V|E, "flags"},
-#endif
 {"ilme", "interlaced motion estimation", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_INTERLACED_ME }, INT_MIN, INT_MAX, V|E, "flags"},
-#if FF_API_MPEGVIDEO_GLOBAL_OPTS
-{"scan_offset", "will reserve space for svcd scan offset user data", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_SVCD_SCAN_OFFSET }, INT_MIN, INT_MAX, V|E, "flags"},
-#endif
 {"cgop", "closed gop", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_CLOSED_GOP }, INT_MIN, INT_MAX, V|E, "flags"},
 {"fast", "allow non spec compliant speedup tricks", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_FAST }, INT_MIN, INT_MAX, V|E, "flags2"},
 {"sgop", "strictly enforce gop size", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_STRICT_GOP }, INT_MIN, INT_MAX, V|E, "flags2"},
@@ -411,9 +392,6 @@ static const AVOption options[]={
 {"skiprd", "RD optimal MB level residual skipping", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_SKIP_RD }, INT_MIN, INT_MAX, V|E, "flags2"},
 {"sc_factor", "multiplied by qscale for each frame and added to scene_change_score", OFFSET(scenechange_factor), AV_OPT_TYPE_INT, {.dbl = 6 }, 0, INT_MAX, V|E},
 {"mv0_threshold", NULL, OFFSET(mv0_threshold), AV_OPT_TYPE_INT, {.dbl = 256 }, 0, INT_MAX, V|E},
-#if FF_API_MPEGVIDEO_GLOBAL_OPTS
-{"ivlc", "intra vlc table", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_INTRA_VLC }, INT_MIN, INT_MAX, V|E, "flags2"},
-#endif
 {"b_sensitivity", "adjusts sensitivity of b_frame_strategy 1", OFFSET(b_sensitivity), AV_OPT_TYPE_INT, {.dbl = 40 }, 1, INT_MAX, V|E},
 {"compression_level", NULL, OFFSET(compression_level), AV_OPT_TYPE_INT, {.dbl = FF_COMPRESSION_DEFAULT }, INT_MIN, INT_MAX, V|A|E},
 {"min_prediction_order", NULL, OFFSET(min_prediction_order), AV_OPT_TYPE_INT, {.dbl = -1 }, INT_MIN, INT_MAX, A|E},
@@ -425,10 +403,6 @@ static const AVOption options[]={
 {"max_partition_order", "deprecated, use flac-specific options", OFFSET(max_partition_order), AV_OPT_TYPE_INT, {.dbl = -1 }, INT_MIN, INT_MAX, A|E},
 #endif
 {"timecode_frame_start", "GOP timecode frame start number, in non drop frame format", OFFSET(timecode_frame_start), AV_OPT_TYPE_INT64, {.dbl = 0 }, 0, INT64_MAX, V|E},
-#if FF_API_MPEGVIDEO_GLOBAL_OPTS
-{"drop_frame_timecode", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_DROP_FRAME_TIMECODE }, INT_MIN, INT_MAX, V|E, "flags2"},
-{"non_linear_q", "use non linear quantizer", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_NON_LINEAR_QUANT }, INT_MIN, INT_MAX, V|E, "flags2"},
-#endif
 #if FF_API_REQUEST_CHANNELS
 {"request_channels", "set desired number of audio channels", OFFSET(request_channels), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, 0, INT_MAX, A|D},
 #endif

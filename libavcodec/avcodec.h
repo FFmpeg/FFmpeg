@@ -667,18 +667,6 @@ typedef struct RcOverride{
  * Use corresponding private codec options instead.
  * @{
  */
-#if FF_API_MPEGVIDEO_GLOBAL_OPTS
-#define CODEC_FLAG_OBMC           0x00000001 ///< OBMC
-#define CODEC_FLAG_H263P_AIV      0x00000008 ///< H.263 alternative inter VLC
-#define CODEC_FLAG_PART   0x0080  ///< Use data partitioning.
-#define CODEC_FLAG_ALT_SCAN       0x00100000 ///< Use alternate scan.
-#define CODEC_FLAG_H263P_UMV      0x02000000 ///< unlimited motion vector
-#define CODEC_FLAG_H263P_SLICE_STRUCT 0x10000000
-#define CODEC_FLAG_SVCD_SCAN_OFFSET 0x40000000 ///< Will reserve space for SVCD scan offset user data.
-#define CODEC_FLAG2_INTRA_VLC     0x00000800 ///< Use MPEG-2 intra VLC table.
-#define CODEC_FLAG2_DROP_FRAME_TIMECODE 0x00002000 ///< timecode is in drop frame format.
-#define CODEC_FLAG2_NON_LINEAR_QUANT 0x00010000 ///< Use MPEG-2 nonlinear quantizer.
-#endif
 #if FF_API_MJPEG_GLOBAL_OPTS
 #define CODEC_FLAG_EXTERN_HUFF     0x1000   ///< Use external Huffman table (for MJPEG).
 #endif

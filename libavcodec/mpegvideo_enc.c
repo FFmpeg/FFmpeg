@@ -351,10 +351,6 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
     s->luma_elim_threshold   = avctx->luma_elim_threshold;
     s->chroma_elim_threshold = avctx->chroma_elim_threshold;
     s->strict_std_compliance = avctx->strict_std_compliance;
-#if FF_API_MPEGVIDEO_GLOBAL_OPTS
-    if (avctx->flags & CODEC_FLAG_PART)
-        s->data_partitioning = 1;
-#endif
     s->quarter_sample     = (avctx->flags & CODEC_FLAG_QPEL) != 0;
     s->mpeg_quant         = avctx->mpeg_quant;
     s->rtp_mode           = !!avctx->rtp_payload_size;
@@ -383,12 +379,6 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
                         !s->fixed_qscale;
 
     s->loop_filter      = !!(s->flags & CODEC_FLAG_LOOP_FILTER);
-#if FF_API_MPEGVIDEO_GLOBAL_OPTS
-    s->alternate_scan   = !!(s->flags  & CODEC_FLAG_ALT_SCAN);
-    s->intra_vlc_format = !!(s->flags2 & CODEC_FLAG2_INTRA_VLC);
-    s->q_scale_type     = !!(s->flags2 & CODEC_FLAG2_NON_LINEAR_QUANT);
-    s->obmc             = !!(s->flags  & CODEC_FLAG_OBMC);
-#endif
 
     if (avctx->rc_max_rate && !avctx->rc_buffer_size) {
         av_log(avctx, AV_LOG_ERROR,
@@ -458,26 +448,10 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
-#if FF_API_MPEGVIDEO_GLOBAL_OPTS
-    if (s->obmc && s->codec_id != CODEC_ID_H263 &&
-        s->codec_id != CODEC_ID_H263P) {
-        av_log(avctx, AV_LOG_ERROR, "OBMC is only supported with H263(+)\n");
-        return -1;
-    }
-#endif
-
     if (s->quarter_sample && s->codec_id != CODEC_ID_MPEG4) {
         av_log(avctx, AV_LOG_ERROR, "qpel not supported by codec\n");
         return -1;
     }
-
-#if FF_API_MPEGVIDEO_GLOBAL_OPTS
-    if (s->data_partitioning && s->codec_id != CODEC_ID_MPEG4) {
-        av_log(avctx, AV_LOG_ERROR,
-               "data partitioning not supported by codec\n");
-        return -1;
-    }
-#endif
 
     if (s->max_b_frames                    &&
         s->codec_id != CODEC_ID_MPEG4      &&
@@ -498,11 +472,7 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    if ((s->flags & (CODEC_FLAG_INTERLACED_DCT | CODEC_FLAG_INTERLACED_ME
-#if FF_API_MPEGVIDEO_GLOBAL_OPTS
-                    | CODEC_FLAG_ALT_SCAN
-#endif
-        )) &&
+    if ((s->flags & (CODEC_FLAG_INTERLACED_DCT | CODEC_FLAG_INTERLACED_ME)) &&
         s->codec_id != CODEC_ID_MPEG4 && s->codec_id != CODEC_ID_MPEG2VIDEO) {
         av_log(avctx, AV_LOG_ERROR, "interlacing not supported by codec\n");
         return -1;
@@ -534,15 +504,6 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
-#if FF_API_MPEGVIDEO_GLOBAL_OPTS
-    if ((s->flags2 & CODEC_FLAG2_INTRA_VLC) &&
-        s->codec_id != CODEC_ID_MPEG2VIDEO) {
-        av_log(avctx, AV_LOG_ERROR,
-               "intra vlc table not supported by codec\n");
-        return -1;
-    }
-#endif
-
     if (s->flags & CODEC_FLAG_LOW_DELAY) {
         if (s->codec_id != CODEC_ID_MPEG2VIDEO) {
             av_log(avctx, AV_LOG_ERROR,
@@ -557,13 +518,6 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
     }
 
     if (s->q_scale_type == 1) {
-#if FF_API_MPEGVIDEO_GLOBAL_OPTS
-        if (s->codec_id != CODEC_ID_MPEG2VIDEO) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "non linear quant is only available for mpeg2\n");
-            return -1;
-        }
-#endif
         if (avctx->qmax > 12) {
             av_log(avctx, AV_LOG_ERROR,
                    "non linear quant only supports qmax <= 12 currently\n");
@@ -575,11 +529,7 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
         s->codec_id != CODEC_ID_MPEG4      &&
         s->codec_id != CODEC_ID_MPEG1VIDEO &&
         s->codec_id != CODEC_ID_MPEG2VIDEO &&
-        (s->codec_id != CODEC_ID_H263P
-#if FF_API_MPEGVIDEO_GLOBAL_OPTS
-         || !(s->flags & CODEC_FLAG_H263P_SLICE_STRUCT)
-#endif
-         )) {
+        (s->codec_id != CODEC_ID_H263P)) {
         av_log(avctx, AV_LOG_ERROR,
                "multi threaded encoding not supported by codec\n");
         return -1;
@@ -725,14 +675,6 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
         s->out_format = FMT_H263;
         s->h263_plus  = 1;
         /* Fx */
-#if FF_API_MPEGVIDEO_GLOBAL_OPTS
-        if (avctx->flags & CODEC_FLAG_H263P_UMV)
-            s->umvplus = 1;
-        if (avctx->flags & CODEC_FLAG_H263P_AIV)
-            s->alt_inter_vlc = 1;
-        if (avctx->flags & CODEC_FLAG_H263P_SLICE_STRUCT)
-            s->h263_slice_structured = 1;
-#endif
         s->h263_aic        = (avctx->flags & CODEC_FLAG_AC_PRED) ? 1 : 0;
         s->modified_quant  = s->h263_aic;
         s->loop_filter     = (avctx->flags & CODEC_FLAG_LOOP_FILTER) ? 1 : 0;
