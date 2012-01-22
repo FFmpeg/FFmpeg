@@ -330,6 +330,8 @@ typedef struct SwsContext {
     int dstColorspaceTable[4];
     int srcRange;                 ///< 0 = MPG YUV range, 1 = JPG YUV range (source      image).
     int dstRange;                 ///< 0 = MPG YUV range, 1 = JPG YUV range (destination image).
+    int src0Alpha;
+    int dst0Alpha;
     int yuv2rgb_y_offset;
     int yuv2rgb_y_coeff;
     int yuv2rgb_v2r_coeff;

@@ -909,9 +909,10 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
                                   int srcSliceH, uint8_t *const dst[],
                                   const int dstStride[])
 {
-    int i;
+    int i, ret;
     const uint8_t *src2[4] = { srcSlice[0], srcSlice[1], srcSlice[2], srcSlice[3] };
     uint8_t *dst2[4] = { dst[0], dst[1], dst[2], dst[3] };
+    uint8_t *rgb0_tmp = NULL;
 
     // do not mess up sliceDir if we have a "trailing" 0-size slice
     if (srcSliceH == 0)
@@ -997,6 +998,20 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
         }
     }
 
+    if (c->src0Alpha && !c->dst0Alpha && isALPHA(c->dstFormat)) {
+        uint8_t *base;
+        int x,y;
+        rgb0_tmp = av_malloc(FFABS(srcStride[0]) * srcSliceH + 32);
+        base = srcStride[0] < 0 ? rgb0_tmp - srcStride[0] * (srcSliceH-1) : rgb0_tmp;
+        for (y=0; y<srcSliceH; y++){
+            memcpy(base + srcStride[0]*y, src2[0] + srcStride[0]*y, 4*c->srcW);
+            for (x=c->src0Alpha-1; x<4*c->srcW; x+=4) {
+                base[ srcStride[0]*y + x] = 0xFF;
+            }
+        }
+        src2[0] = base;
+    }
+
     // copy strides, so they can safely be modified
     if (c->sliceDir == 1) {
         // slices go from top to bottom
@@ -1012,7 +1027,7 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
         if (srcSliceY + srcSliceH == c->srcH)
             c->sliceDir = 0;
 
-        return c->swScale(c, src2, srcStride2, srcSliceY, srcSliceH, dst2,
+        ret = c->swScale(c, src2, srcStride2, srcSliceY, srcSliceH, dst2,
                           dstStride2);
     } else {
         // slices go from bottom to top => we flip the image internally
@@ -1038,9 +1053,12 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
         if (!srcSliceY)
             c->sliceDir = 0;
 
-        return c->swScale(c, src2, srcStride2, c->srcH-srcSliceY-srcSliceH,
+        ret = c->swScale(c, src2, srcStride2, c->srcH-srcSliceY-srcSliceH,
                           srcSliceH, dst2, dstStride2);
     }
+
+    av_free(rgb0_tmp);
+    return ret;
 }
 
 /* Convert the palette to the same packed 32-bit format as the palette */

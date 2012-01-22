@@ -748,10 +748,17 @@ static int handle_jpeg(enum PixelFormat *format)
     case PIX_FMT_YUVJ422P: *format = PIX_FMT_YUV422P; return 1;
     case PIX_FMT_YUVJ444P: *format = PIX_FMT_YUV444P; return 1;
     case PIX_FMT_YUVJ440P: *format = PIX_FMT_YUV440P; return 1;
-    case PIX_FMT_0BGR    : *format = PIX_FMT_ABGR   ; return 0;
-    case PIX_FMT_BGR0    : *format = PIX_FMT_BGRA   ; return 0;
-    case PIX_FMT_0RGB    : *format = PIX_FMT_ARGB   ; return 0;
-    case PIX_FMT_RGB0    : *format = PIX_FMT_RGBA   ; return 0;
+    default:                                          return 0;
+    }
+}
+
+static int handle_0alpha(enum PixelFormat *format)
+{
+    switch (*format) {
+    case PIX_FMT_0BGR    : *format = PIX_FMT_ABGR   ; return 1;
+    case PIX_FMT_BGR0    : *format = PIX_FMT_BGRA   ; return 4;
+    case PIX_FMT_0RGB    : *format = PIX_FMT_ARGB   ; return 1;
+    case PIX_FMT_RGB0    : *format = PIX_FMT_RGBA   ; return 4;
     default:                                          return 0;
     }
 }
@@ -790,6 +797,8 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
 
     handle_jpeg(&srcFormat);
     handle_jpeg(&dstFormat);
+    handle_0alpha(&srcFormat);
+    handle_0alpha(&dstFormat);
 
     if(srcFormat!=c->srcFormat || dstFormat!=c->dstFormat){
         av_log(c, AV_LOG_WARNING, "deprecated pixel format used, make sure you did set range correctly\n");
@@ -1147,6 +1156,8 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
     c->dstH= dstH;
     c->srcRange = handle_jpeg(&srcFormat);
     c->dstRange = handle_jpeg(&dstFormat);
+    c->src0Alpha = handle_0alpha(&srcFormat);
+    c->dst0Alpha = handle_0alpha(&dstFormat);
     c->srcFormat= srcFormat;
     c->dstFormat= dstFormat;
 
@@ -1545,10 +1556,12 @@ struct SwsContext *sws_getCachedContext(struct SwsContext *context,
         context->srcW      = srcW;
         context->srcH      = srcH;
         context->srcRange  = handle_jpeg(&srcFormat);
+        context->src0Alpha = handle_0alpha(&srcFormat);
         context->srcFormat = srcFormat;
         context->dstW      = dstW;
         context->dstH      = dstH;
         context->dstRange  = handle_jpeg(&dstFormat);
+        context->dst0Alpha = handle_0alpha(&dstFormat);
         context->dstFormat = dstFormat;
         context->flags     = flags;
         context->param[0]  = param[0];
