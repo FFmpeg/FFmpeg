@@ -923,13 +923,6 @@ typedef struct AVFrame {
      */
     int quality;
 
-#if FF_API_AVFRAME_AGE
-    /**
-     * @deprecated unused
-     */
-    attribute_deprecated int age;
-#endif
-
     /**
      * is this picture used as reference
      * The values for this are the same as the MpegEncContext.picture_structure
