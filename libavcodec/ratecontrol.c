@@ -125,6 +125,8 @@ int ff_rate_control_init(MpegEncContext *s)
         rcc->last_qscale_for[i]=FF_QP2LAMBDA * 5;
     }
     rcc->buffer_index= s->avctx->rc_initial_buffer_occupancy;
+    if (!rcc->buffer_index)
+        rcc->buffer_index = s->avctx->rc_buffer_size * 3 / 4;
 
     if(s->flags&CODEC_FLAG_PASS2){
         int i;
