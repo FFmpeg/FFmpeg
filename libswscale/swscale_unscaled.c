@@ -56,6 +56,20 @@ static void fillPlane(uint8_t *plane, int stride, int width, int height, int y,
     }
 }
 
+static void fillPlane16(uint8_t *plane, int stride, int width, int height, int y,
+                      int alpha, int bits)
+{
+    int i, j;
+    uint8_t *ptr = plane + stride * y;
+    int v = alpha ? -1 : (1<<bits);
+    for (i = 0; i < height; i++) {
+        for (j = 0; j < width; j++) {
+            AV_WN16(ptr+2*j, v);
+        }
+        ptr += stride;
+    }
+}
+
 static void copyPlane(const uint8_t *src, int srcStride,
                       int srcSliceY, int srcSliceH, int width,
                       uint8_t *dst, int dstStride)
@@ -615,10 +629,13 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
         // ignore palette for GRAY8
         if (plane == 1 && !dst[2]) continue;
         if (!src[plane] || (plane == 1 && !src[2])) {
-            if (is16BPS(c->dstFormat))
-                length *= 2;
-            fillPlane(dst[plane], dstStride[plane], length, height, y,
-                      (plane == 3) ? 255 : 128);
+            if (is16BPS(c->dstFormat) || isNBPS(c->dstFormat)) {
+                fillPlane16(dst[plane], dstStride[plane], length, height, y,
+                        plane == 3, av_pix_fmt_descriptors[c->dstFormat].comp[plane].depth_minus1);
+            } else {
+                fillPlane(dst[plane], dstStride[plane], length, height, y,
+                        (plane == 3) ? 255 : 128);
+            }
         } else {
             if(isNBPS(c->srcFormat) || isNBPS(c->dstFormat)
                || (is16BPS(c->srcFormat) != is16BPS(c->dstFormat))
