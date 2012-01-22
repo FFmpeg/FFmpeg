@@ -596,9 +596,6 @@ typedef struct RcOverride{
 #if FF_API_MJPEG_GLOBAL_OPTS
 #define CODEC_FLAG_EXTERN_HUFF     0x1000   ///< Use external Huffman table (for MJPEG).
 #endif
-#if FF_API_SNOW_GLOBAL_OPTS
-#define CODEC_FLAG2_MEMC_ONLY     0x00001000 ///< Only do ME/MC (I frames -> ref, P frame -> ME+MC).
-#endif
 /**
  * @}
  */
