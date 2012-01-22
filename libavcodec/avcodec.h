@@ -2282,15 +2282,6 @@ typedef struct AVCodecContext {
      */
     int lmax;
 
-#if FF_API_PALETTE_CONTROL
-    /**
-     * palette control structure
-     * - encoding: ??? (no palette-enabled encoder yet)
-     * - decoding: Set by user.
-     */
-    struct AVPaletteControl *palctrl;
-#endif
-
     /**
      * noise reduction strength
      * - encoding: Set by user.
@@ -3214,29 +3205,6 @@ typedef struct AVPicture {
 
 #define AVPALETTE_SIZE 1024
 #define AVPALETTE_COUNT 256
-#if FF_API_PALETTE_CONTROL
-/**
- * AVPaletteControl
- * This structure defines a method for communicating palette changes
- * between and demuxer and a decoder.
- *
- * @deprecated Use AVPacket to send palette changes instead.
- * This is totally broken.
- */
-typedef struct AVPaletteControl {
-
-    /* Demuxer sets this to 1 to indicate the palette has changed;
-     * decoder resets to 0. */
-    int palette_changed;
-
-    /* 4-byte ARGB palette entries, stored in native byte order; note that
-     * the individual palette components should be on a 8-bit scale; if
-     * the palette data comes from an IBM VGA native format, the component
-     * data is probably 6 bits in size and needs to be scaled. */
-    unsigned int palette[AVPALETTE_COUNT];
-
-} AVPaletteControl attribute_deprecated;
-#endif
 
 enum AVSubtitleType {
     SUBTITLE_NONE,
