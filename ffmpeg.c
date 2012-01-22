@@ -1562,6 +1562,8 @@ static void do_video_out(AVFormatContext *s,
             if (ret > 0) {
                 pkt.data = bit_buffer;
                 pkt.size = ret;
+                if (!(enc->codec->capabilities & CODEC_CAP_DELAY))
+                    pkt.pts = av_rescale_q(ost->sync_opts, enc->time_base, ost->st->time_base);
                 if (enc->coded_frame->pts != AV_NOPTS_VALUE)
                     pkt.pts = av_rescale_q(enc->coded_frame->pts, enc->time_base, ost->st->time_base);
 /*av_log(NULL, AV_LOG_DEBUG, "encoder -> %"PRId64"/%"PRId64"\n",
