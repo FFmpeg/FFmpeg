@@ -88,10 +88,7 @@ AVCodec *av_codec_next(AVCodec *c){
     else  return first_avcodec;
 }
 
-#if !FF_API_AVCODEC_INIT
-static
-#endif
-void avcodec_init(void)
+static void avcodec_init(void)
 {
     static int initialized = 0;
 

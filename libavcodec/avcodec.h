@@ -3429,15 +3429,6 @@ const char *avcodec_configuration(void);
  */
 const char *avcodec_license(void);
 
-#if FF_API_AVCODEC_INIT
-/**
- * @deprecated this function is called automatically from avcodec_register()
- * and avcodec_register_all(), there is no need to call it manually
- */
-attribute_deprecated
-void avcodec_init(void);
-#endif
-
 /**
  * Register the codec codec and initialize libavcodec.
  *
