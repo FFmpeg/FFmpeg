@@ -960,7 +960,7 @@ int ff_thread_get_buffer(AVCodecContext *avctx, AVFrame *f)
         p->requested_frame = f;
         p->state = STATE_GET_BUFFER;
         pthread_mutex_lock(&p->progress_mutex);
-        pthread_cond_signal(&p->progress_cond);
+        pthread_cond_broadcast(&p->progress_cond);
 
         while (p->state != STATE_SETTING_UP)
             pthread_cond_wait(&p->progress_cond, &p->progress_mutex);
