@@ -1810,14 +1810,6 @@ void ff_thread_await_progress(AVFrame *f, int progress, int field)
 
 #endif
 
-#if FF_API_THREAD_INIT
-int avcodec_thread_init(AVCodecContext *s, int thread_count)
-{
-    s->thread_count = thread_count;
-    return ff_thread_init(s);
-}
-#endif
-
 enum AVMediaType avcodec_get_type(enum CodecID codec_id)
 {
     if (codec_id <= CODEC_ID_NONE)

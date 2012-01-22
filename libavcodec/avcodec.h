@@ -3726,14 +3726,6 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
 
 enum PixelFormat avcodec_default_get_format(struct AVCodecContext *s, const enum PixelFormat * fmt);
 
-#if FF_API_THREAD_INIT
-/**
- * @deprecated Set s->thread_count before calling avcodec_open2() instead of calling this.
- */
-attribute_deprecated
-int avcodec_thread_init(AVCodecContext *s, int thread_count);
-#endif
-
 int avcodec_default_execute(AVCodecContext *c, int (*func)(AVCodecContext *c2, void *arg2),void *arg, int *ret, int count, int size);
 int avcodec_default_execute2(AVCodecContext *c, int (*func)(AVCodecContext *c2, void *arg2, int, int),void *arg, int *ret, int count);
 //FIXME func typedef
