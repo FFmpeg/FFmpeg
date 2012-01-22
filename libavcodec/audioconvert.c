@@ -45,23 +45,6 @@ uint64_t avcodec_guess_channel_layout(int nb_channels, enum CodecID codec_id, co
     }
 }
 
-#if FF_API_OLD_AUDIOCONVERT
-int64_t avcodec_get_channel_layout(const char *name)
-{
-    return av_get_channel_layout(name);
-}
-
-void avcodec_get_channel_layout_string(char *buf, int buf_size, int nb_channels, int64_t channel_layout)
-{
-    av_get_channel_layout_string(buf, buf_size, nb_channels, channel_layout);
-}
-
-int avcodec_channel_layout_num_channels(int64_t channel_layout)
-{
-    return av_get_channel_layout_nb_channels(channel_layout);
-}
-#endif
-
 struct AVAudioConvert {
     int in_channels, out_channels;
     int fmt_pair;

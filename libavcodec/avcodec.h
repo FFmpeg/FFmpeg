@@ -424,54 +424,6 @@ enum CodecID {
     CODEC_ID_FFMETADATA = 0x21000,   ///< Dummy codec for streams containing only metadata information.
 };
 
-#if FF_API_OLD_AUDIOCONVERT
-#include "libavutil/audioconvert.h"
-
-/* Audio channel masks */
-#define CH_FRONT_LEFT            AV_CH_FRONT_LEFT
-#define CH_FRONT_RIGHT           AV_CH_FRONT_RIGHT
-#define CH_FRONT_CENTER          AV_CH_FRONT_CENTER
-#define CH_LOW_FREQUENCY         AV_CH_LOW_FREQUENCY
-#define CH_BACK_LEFT             AV_CH_BACK_LEFT
-#define CH_BACK_RIGHT            AV_CH_BACK_RIGHT
-#define CH_FRONT_LEFT_OF_CENTER  AV_CH_FRONT_LEFT_OF_CENTER
-#define CH_FRONT_RIGHT_OF_CENTER AV_CH_FRONT_RIGHT_OF_CENTER
-#define CH_BACK_CENTER           AV_CH_BACK_CENTER
-#define CH_SIDE_LEFT             AV_CH_SIDE_LEFT
-#define CH_SIDE_RIGHT            AV_CH_SIDE_RIGHT
-#define CH_TOP_CENTER            AV_CH_TOP_CENTER
-#define CH_TOP_FRONT_LEFT        AV_CH_TOP_FRONT_LEFT
-#define CH_TOP_FRONT_CENTER      AV_CH_TOP_FRONT_CENTER
-#define CH_TOP_FRONT_RIGHT       AV_CH_TOP_FRONT_RIGHT
-#define CH_TOP_BACK_LEFT         AV_CH_TOP_BACK_LEFT
-#define CH_TOP_BACK_CENTER       AV_CH_TOP_BACK_CENTER
-#define CH_TOP_BACK_RIGHT        AV_CH_TOP_BACK_RIGHT
-#define CH_STEREO_LEFT           AV_CH_STEREO_LEFT
-#define CH_STEREO_RIGHT          AV_CH_STEREO_RIGHT
-
-/** Channel mask value used for AVCodecContext.request_channel_layout
-    to indicate that the user requests the channel order of the decoder output
-    to be the native codec channel order. */
-#define CH_LAYOUT_NATIVE         AV_CH_LAYOUT_NATIVE
-
-/* Audio channel convenience macros */
-#define CH_LAYOUT_MONO           AV_CH_LAYOUT_MONO
-#define CH_LAYOUT_STEREO         AV_CH_LAYOUT_STEREO
-#define CH_LAYOUT_2_1            AV_CH_LAYOUT_2_1
-#define CH_LAYOUT_SURROUND       AV_CH_LAYOUT_SURROUND
-#define CH_LAYOUT_4POINT0        AV_CH_LAYOUT_4POINT0
-#define CH_LAYOUT_2_2            AV_CH_LAYOUT_2_2
-#define CH_LAYOUT_QUAD           AV_CH_LAYOUT_QUAD
-#define CH_LAYOUT_5POINT0        AV_CH_LAYOUT_5POINT0
-#define CH_LAYOUT_5POINT1        AV_CH_LAYOUT_5POINT1
-#define CH_LAYOUT_5POINT0_BACK   AV_CH_LAYOUT_5POINT0_BACK
-#define CH_LAYOUT_5POINT1_BACK   AV_CH_LAYOUT_5POINT1_BACK
-#define CH_LAYOUT_7POINT0        AV_CH_LAYOUT_7POINT0
-#define CH_LAYOUT_7POINT1        AV_CH_LAYOUT_7POINT1
-#define CH_LAYOUT_7POINT1_WIDE   AV_CH_LAYOUT_7POINT1_WIDE
-#define CH_LAYOUT_STEREO_DOWNMIX AV_CH_LAYOUT_STEREO_DOWNMIX
-#endif
-
 #if FF_API_OLD_DECODE_AUDIO
 /* in bytes */
 #define AVCODEC_MAX_AUDIO_FRAME_SIZE 192000 // 1 second of 48khz 32bit audio
