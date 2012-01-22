@@ -464,9 +464,15 @@ static int mov_write_audio_tag(AVIOContext *pb, MOVTrack *track)
     uint32_t tag = track->tag;
 
     if (track->mode == MODE_MOV) {
-        if (mov_get_lpcm_flags(track->enc->codec_id))
-            tag = AV_RL32("lpcm");
-        version = 2;
+        if (track->timescale > UINT16_MAX) {
+            if (mov_get_lpcm_flags(track->enc->codec_id))
+                tag = AV_RL32("lpcm");
+            version = 2;
+        } else if (track->audio_vbr || mov_pcm_le_gt16(track->enc->codec_id) ||
+                   track->enc->codec_id == CODEC_ID_ADPCM_MS ||
+                   track->enc->codec_id == CODEC_ID_ADPCM_IMA_WAV) {
+            version = 1;
+        }
     }
 
     avio_wb32(pb, 0); /* size */
@@ -493,16 +499,32 @@ static int mov_write_audio_tag(AVIOContext *pb, MOVTrack *track)
         avio_wb32(pb, av_get_bits_per_sample(track->enc->codec_id));
         avio_wb32(pb, mov_get_lpcm_flags(track->enc->codec_id));
         avio_wb32(pb, track->sampleSize);
-        avio_wb32(pb, track->audio_vbr ? track->enc->frame_size : 1);
+        avio_wb32(pb, track->enc->frame_size);
     } else {
-        /* reserved for mp4/3gp */
-        avio_wb16(pb, 2);
-        avio_wb16(pb, 16);
-        avio_wb16(pb, 0);
+        if (track->mode == MODE_MOV) {
+            avio_wb16(pb, track->enc->channels);
+            if (track->enc->codec_id == CODEC_ID_PCM_U8 ||
+                track->enc->codec_id == CODEC_ID_PCM_S8)
+                avio_wb16(pb, 8); /* bits per sample */
+            else
+                avio_wb16(pb, 16);
+            avio_wb16(pb, track->audio_vbr ? -2 : 0); /* compression ID */
+        } else { /* reserved for mp4/3gp */
+            avio_wb16(pb, 2);
+            avio_wb16(pb, 16);
+            avio_wb16(pb, 0);
+        }
 
         avio_wb16(pb, 0); /* packet size (= 0) */
         avio_wb16(pb, track->timescale); /* Time scale */
         avio_wb16(pb, 0); /* Reserved */
+    }
+
+    if(version == 1) { /* SoundDescription V1 extended info */
+        avio_wb32(pb, track->enc->frame_size); /* Samples per packet */
+        avio_wb32(pb, track->sampleSize / track->enc->channels); /* Bytes per packet */
+        avio_wb32(pb, track->sampleSize); /* Bytes per frame */
+        avio_wb32(pb, 2); /* Bytes per sample */
     }
 
     if(track->mode == MODE_MOV &&
@@ -2279,6 +2301,9 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
             av_log(s, AV_LOG_ERROR, "fatal error, input is not a single packet, implement a AVParser for it\n");
             return -1;
         }
+    } else if (enc->codec_id == CODEC_ID_ADPCM_MS ||
+               enc->codec_id == CODEC_ID_ADPCM_IMA_WAV) {
+        samplesInChunk = enc->frame_size;
     } else if (trk->sampleSize)
         samplesInChunk = size/trk->sampleSize;
     else
@@ -2520,21 +2545,21 @@ static int mov_write_header(AVFormatContext *s)
                        "or choose different container.\n");
         }else if(st->codec->codec_type == AVMEDIA_TYPE_AUDIO){
             track->timescale = st->codec->sample_rate;
-            /* set sampleSize for PCM and ADPCM */
-            if (av_get_bits_per_sample(st->codec->codec_id)) {
+            if(!st->codec->frame_size && !av_get_bits_per_sample(st->codec->codec_id)) {
+                av_log(s, AV_LOG_ERROR, "track %d: codec frame size is not set\n", i);
+                goto error;
+            }else if(st->codec->codec_id == CODEC_ID_ADPCM_MS ||
+                     st->codec->codec_id == CODEC_ID_ADPCM_IMA_WAV){
                 if (!st->codec->block_align) {
-                    av_log(s, AV_LOG_ERROR, "track %d: codec block align is not set\n", i);
+                    av_log(s, AV_LOG_ERROR, "track %d: codec block align is not set for adpcm\n", i);
                     goto error;
                 }
                 track->sampleSize = st->codec->block_align;
-            }
-            /* set audio_vbr for compressed audio */
-            if (av_get_bits_per_sample(st->codec->codec_id) < 8) {
-                if (!st->codec->frame_size) {
-                    av_log(s, AV_LOG_ERROR, "track %d: codec frame size is not set\n", i);
-                    goto error;
-                }
+            }else if(st->codec->frame_size > 1){ /* assume compressed audio */
                 track->audio_vbr = 1;
+            }else{
+                st->codec->frame_size = 1;
+                track->sampleSize = (av_get_bits_per_sample(st->codec->codec_id) >> 3) * st->codec->channels;
             }
             if (track->mode != MODE_MOV) {
                 if (track->timescale > UINT16_MAX) {
