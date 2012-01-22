@@ -625,13 +625,6 @@ AVFrame *avcodec_alloc_frame(void){
     return pic;
 }
 
-#if FF_API_AVCODEC_OPEN
-int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
-{
-    return avcodec_open2(avctx, codec, NULL);
-}
-#endif
-
 int attribute_align_arg avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVDictionary **options)
 {
     int ret = 0;
