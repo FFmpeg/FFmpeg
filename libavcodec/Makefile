@@ -1,7 +1,7 @@
 NAME = avcodec
 FFLIBS = avutil
 
-HEADERS = avcodec.h avfft.h dxva2.h opt.h vaapi.h vda.h vdpau.h version.h xvmc.h
+HEADERS = avcodec.h avfft.h dxva2.h vaapi.h vda.h vdpau.h version.h xvmc.h
 
 OBJS = allcodecs.o                                                      \
        audioconvert.o                                                   \
