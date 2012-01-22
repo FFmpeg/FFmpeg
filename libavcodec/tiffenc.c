@@ -231,22 +231,6 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
     p->key_frame = 1;
     avctx->coded_frame= &s->picture;
 
-#if FF_API_TIFFENC_COMPLEVEL
-    if (avctx->compression_level != FF_COMPRESSION_DEFAULT)
-        av_log(avctx, AV_LOG_WARNING, "Using compression_level to set compression "
-               "algorithm is deprecated. Please use the compression_algo private "
-               "option instead.\n");
-    if (avctx->compression_level == 0) {
-        s->compr = TIFF_RAW;
-    } else if(avctx->compression_level == 2) {
-        s->compr = TIFF_LZW;
-#if CONFIG_ZLIB
-    } else if ((avctx->compression_level >= 3)) {
-        s->compr = TIFF_DEFLATE;
-#endif
-    }
-#endif
-
     s->width = avctx->width;
     s->height = avctx->height;
     s->subsampling[0] = 1;
