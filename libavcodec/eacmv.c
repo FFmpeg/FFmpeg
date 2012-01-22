@@ -162,8 +162,11 @@ static int cmv_decode_frame(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
 
     if (AV_RL32(buf)==MVIh_TAG||AV_RB32(buf)==MVIh_TAG) {
+        unsigned size = AV_RL32(buf + 4);
         cmv_process_header(s, buf+EA_PREAMBLE_SIZE, buf_end);
-        return buf_size;
+        if (size > buf_end - buf - EA_PREAMBLE_SIZE)
+            return -1;
+        buf += size;
     }
 
     if (av_image_check_size(s->width, s->height, 0, s->avctx))
