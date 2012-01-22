@@ -202,8 +202,8 @@ typedef struct WmallDecodeCtx {
     int              buf_bit_size;                  ///< buffer size in bits
     int16_t*         samples_16;                    ///< current samplebuffer pointer (16-bit)
     int16_t*         samples_16_end;                ///< maximum samplebuffer pointer
-    int16_t*         samples_32;                    ///< current samplebuffer pointer (24-bit)
-    int16_t*         samples_32_end;                ///< maximum samplebuffer pointer
+    int             *samples_32;                    ///< current samplebuffer pointer (24-bit)
+    int             *samples_32_end;                ///< maximum samplebuffer pointer
     uint8_t          drc_gain;                      ///< gain for the DRC tool
     int8_t           skip_frame;                    ///< skip output step
     int8_t           parsed_all_subframes;          ///< all subframes decoded?
