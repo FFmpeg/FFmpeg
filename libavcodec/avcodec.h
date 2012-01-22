@@ -424,18 +424,6 @@ enum CodecID {
     CODEC_ID_FFMETADATA = 0x21000,   ///< Dummy codec for streams containing only metadata information.
 };
 
-#if FF_API_OLD_SAMPLE_FMT
-#define SampleFormat AVSampleFormat
-
-#define SAMPLE_FMT_NONE AV_SAMPLE_FMT_NONE
-#define SAMPLE_FMT_U8   AV_SAMPLE_FMT_U8
-#define SAMPLE_FMT_S16  AV_SAMPLE_FMT_S16
-#define SAMPLE_FMT_S32  AV_SAMPLE_FMT_S32
-#define SAMPLE_FMT_FLT  AV_SAMPLE_FMT_FLT
-#define SAMPLE_FMT_DBL  AV_SAMPLE_FMT_DBL
-#define SAMPLE_FMT_NB   AV_SAMPLE_FMT_NB
-#endif
-
 #if FF_API_OLD_AUDIOCONVERT
 #include "libavutil/audioconvert.h"
 
@@ -4196,14 +4184,6 @@ char av_get_pict_type_char(int pict_type);
  * @return Number of bits per sample or zero if unknown for the given codec.
  */
 int av_get_bits_per_sample(enum CodecID codec_id);
-
-#if FF_API_OLD_SAMPLE_FMT
-/**
- * @deprecated Use av_get_bytes_per_sample() instead.
- */
-attribute_deprecated
-int av_get_bits_per_sample_format(enum AVSampleFormat sample_fmt);
-#endif
 
 /* frame parsing */
 typedef struct AVCodecParserContext {

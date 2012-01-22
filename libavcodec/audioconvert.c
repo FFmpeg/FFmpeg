@@ -31,23 +31,6 @@
 #include "avcodec.h"
 #include "audioconvert.h"
 
-#if FF_API_OLD_SAMPLE_FMT
-const char *avcodec_get_sample_fmt_name(int sample_fmt)
-{
-    return av_get_sample_fmt_name(sample_fmt);
-}
-
-enum AVSampleFormat avcodec_get_sample_fmt(const char* name)
-{
-    return av_get_sample_fmt(name);
-}
-
-void avcodec_sample_fmt_string (char *buf, int buf_size, int sample_fmt)
-{
-    av_get_sample_fmt_string(buf, buf_size, sample_fmt);
-}
-#endif
-
 uint64_t avcodec_guess_channel_layout(int nb_channels, enum CodecID codec_id, const char *fmt_name)
 {
     switch(nb_channels) {
