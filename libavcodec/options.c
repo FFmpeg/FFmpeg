@@ -451,13 +451,6 @@ static const AVClass av_codec_context_class = {
     .child_class_next        = codec_child_class_next,
 };
 
-#if FF_API_ALLOC_CONTEXT
-void avcodec_get_context_defaults2(AVCodecContext *s, enum AVMediaType codec_type){
-    avcodec_get_context_defaults3(s, NULL);
-    s->codec_type = codec_type;
-}
-#endif
-
 int avcodec_get_context_defaults3(AVCodecContext *s, AVCodec *codec){
     memset(s, 0, sizeof(AVCodecContext));
 
@@ -514,26 +507,6 @@ AVCodecContext *avcodec_alloc_context3(AVCodec *codec){
 
     return avctx;
 }
-
-#if FF_API_ALLOC_CONTEXT
-AVCodecContext *avcodec_alloc_context2(enum AVMediaType codec_type){
-    AVCodecContext *avctx= av_malloc(sizeof(AVCodecContext));
-
-    if(avctx==NULL) return NULL;
-
-    avcodec_get_context_defaults2(avctx, codec_type);
-
-    return avctx;
-}
-
-void avcodec_get_context_defaults(AVCodecContext *s){
-    avcodec_get_context_defaults2(s, AVMEDIA_TYPE_UNKNOWN);
-}
-
-AVCodecContext *avcodec_alloc_context(void){
-    return avcodec_alloc_context2(AVMEDIA_TYPE_UNKNOWN);
-}
-#endif
 
 int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
 {
