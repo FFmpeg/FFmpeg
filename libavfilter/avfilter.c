@@ -92,6 +92,7 @@ static void free_pool(AVFilterPool *pool)
             AVFilterBufferRef *picref = pool->pic[i];
             /* free buffer: picrefs stored in the pool are not
              * supposed to contain a free callback */
+            av_assert0(!picref->buf->refcount);
             av_freep(&picref->buf->data[0]);
             av_freep(&picref->buf);
 
@@ -146,6 +147,7 @@ void avfilter_unref_buffer(AVFilterBufferRef *ref)
 {
     if (!ref)
         return;
+    av_assert0(ref->buf->refcount > 0);
     if (!(--ref->buf->refcount)) {
         if (!ref->buf->free) {
             store_in_pool(ref);
