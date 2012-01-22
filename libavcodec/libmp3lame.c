@@ -68,9 +68,6 @@ static av_cold int MP3lame_encode_init(AVCodecContext *avctx)
         lame_set_VBR_quality(s->gfp, avctx->global_quality / (float)FF_QP2LAMBDA);
     }
     lame_set_bWriteVbrTag(s->gfp,0);
-#if FF_API_LAME_GLOBAL_OPTS
-    s->reservoir = avctx->flags2 & CODEC_FLAG2_BIT_RESERVOIR;
-#endif
     lame_set_disable_reservoir(s->gfp, !s->reservoir);
     if (lame_init_params(s->gfp) < 0)
         goto err_close;

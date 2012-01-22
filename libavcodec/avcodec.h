@@ -599,9 +599,6 @@ typedef struct RcOverride{
 #if FF_API_SNOW_GLOBAL_OPTS
 #define CODEC_FLAG2_MEMC_ONLY     0x00001000 ///< Only do ME/MC (I frames -> ref, P frame -> ME+MC).
 #endif
-#if FF_API_LAME_GLOBAL_OPTS
-#define CODEC_FLAG2_BIT_RESERVOIR 0x00020000 ///< Use a bit reservoir when encoding if possible
-#endif
 /**
  * @}
  */

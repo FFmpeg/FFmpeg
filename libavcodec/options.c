@@ -321,12 +321,7 @@ static const AVOption options[]={
 {"nr", "noise reduction", OFFSET(noise_reduction), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"rc_init_occupancy", "number of bits which should be loaded into the rc buffer before decoding starts", OFFSET(rc_initial_buffer_occupancy), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"inter_threshold", NULL, OFFSET(inter_threshold), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
-#if FF_API_LAME_GLOBAL_OPTS
-#define LAME_DEFAULTS CODEC_FLAG2_BIT_RESERVOIR
-#else
-#define LAME_DEFAULTS 0
-#endif
-{"flags2", NULL, OFFSET(flags2), AV_OPT_TYPE_FLAGS, {.dbl = LAME_DEFAULTS }, 0, UINT_MAX, V|A|E|D, "flags2"},
+{"flags2", NULL, OFFSET(flags2), AV_OPT_TYPE_FLAGS, {.dbl = DEFAULT}, 0, UINT_MAX, V|A|E|D, "flags2"},
 {"error", NULL, OFFSET(error_rate), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"qns", "quantizer noise shaping", OFFSET(quantizer_noise_shaping), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"threads", NULL, OFFSET(thread_count), AV_OPT_TYPE_INT, {.dbl = 1 }, 0, INT_MAX, V|E|D, "threads"},
@@ -384,9 +379,6 @@ static const AVOption options[]={
 {"timecode_frame_start", "GOP timecode frame start number, in non drop frame format", OFFSET(timecode_frame_start), AV_OPT_TYPE_INT64, {.dbl = 0 }, 0, INT64_MAX, V|E},
 #if FF_API_REQUEST_CHANNELS
 {"request_channels", "set desired number of audio channels", OFFSET(request_channels), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, 0, INT_MAX, A|D},
-#endif
-#if FF_API_LAME_GLOBAL_OPTS
-{"reservoir", "use bit reservoir", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_BIT_RESERVOIR }, INT_MIN, INT_MAX, A|E, "flags2"},
 #endif
 {"bits_per_raw_sample", NULL, OFFSET(bits_per_raw_sample), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
 {"channel_layout", NULL, OFFSET(channel_layout), AV_OPT_TYPE_INT64, {.dbl = DEFAULT }, 0, INT64_MAX, A|E|D, "channel_layout"},
