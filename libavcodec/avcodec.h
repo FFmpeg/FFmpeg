@@ -2029,22 +2029,6 @@ typedef struct AVCodecContext {
      */
     int color_table_id;
 
-#if FF_API_INTERNAL_CONTEXT
-    /**
-     * internal_buffer count
-     * Don't touch, used by libavcodec default_get_buffer().
-     * @deprecated this field was moved to an internal context
-     */
-    attribute_deprecated int internal_buffer_count;
-
-    /**
-     * internal_buffers
-     * Don't touch, used by libavcodec default_get_buffer().
-     * @deprecated this field was moved to an internal context
-     */
-    attribute_deprecated void *internal_buffer;
-#endif
-
     /**
      * Global quality for codecs which cannot change it per frame.
      * This should be proportional to MPEG-1/2/4 qscale.
@@ -2708,19 +2692,6 @@ typedef struct AVCodecContext {
      * - encoding: unused
      */
     AVPacket *pkt;
-
-#if FF_API_INTERNAL_CONTEXT
-    /**
-     * Whether this is a copy of the context which had init() called on it.
-     * This is used by multithreading - shared tables and picture pointers
-     * should be freed from the original context only.
-     * - encoding: Set by libavcodec.
-     * - decoding: Set by libavcodec.
-     *
-     * @deprecated this field has been moved to an internal context
-     */
-    attribute_deprecated int is_copy;
-#endif
 
     /**
      * Which multithreading methods to use.
