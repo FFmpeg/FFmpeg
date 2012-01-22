@@ -336,13 +336,6 @@ static const AVOption options[]={
 #endif
 {"flags2", NULL, OFFSET(flags2), AV_OPT_TYPE_FLAGS, {.dbl = LAME_DEFAULTS }, 0, UINT_MAX, V|A|E|D, "flags2"},
 {"error", NULL, OFFSET(error_rate), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
-#if FF_API_ANTIALIAS_ALGO
-{"antialias", "MP3 antialias algorithm", OFFSET(antialias_algo), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|D, "aa"},
-{"auto", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = FF_AA_AUTO }, INT_MIN, INT_MAX, V|D, "aa"},
-{"fastint", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = FF_AA_FASTINT }, INT_MIN, INT_MAX, V|D, "aa"},
-{"int", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = FF_AA_INT }, INT_MIN, INT_MAX, V|D, "aa"},
-{"float", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = FF_AA_FLOAT }, INT_MIN, INT_MAX, V|D, "aa"},
-#endif
 {"qns", "quantizer noise shaping", OFFSET(quantizer_noise_shaping), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"threads", NULL, OFFSET(thread_count), AV_OPT_TYPE_INT, {.dbl = 1 }, 0, INT_MAX, V|E|D, "threads"},
 {"auto", "detect a good number of threads", 0, AV_OPT_TYPE_CONST, {.dbl = 0 }, INT_MIN, INT_MAX, V|E|D, "threads"},
