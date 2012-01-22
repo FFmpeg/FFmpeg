@@ -389,12 +389,6 @@ static const AVOption options[]={
 {"compression_level", NULL, OFFSET(compression_level), AV_OPT_TYPE_INT, {.dbl = FF_COMPRESSION_DEFAULT }, INT_MIN, INT_MAX, V|A|E},
 {"min_prediction_order", NULL, OFFSET(min_prediction_order), AV_OPT_TYPE_INT, {.dbl = -1 }, INT_MIN, INT_MAX, A|E},
 {"max_prediction_order", NULL, OFFSET(max_prediction_order), AV_OPT_TYPE_INT, {.dbl = -1 }, INT_MIN, INT_MAX, A|E},
-#if FF_API_FLAC_GLOBAL_OPTS
-{"lpc_coeff_precision", "deprecated, use flac-specific options", OFFSET(lpc_coeff_precision), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, 0, INT_MAX, A|E},
-{"prediction_order_method", "deprecated, use flac-specific options", OFFSET(prediction_order_method), AV_OPT_TYPE_INT, {.dbl = -1 }, INT_MIN, INT_MAX, A|E},
-{"min_partition_order", "deprecated, use flac-specific options", OFFSET(min_partition_order), AV_OPT_TYPE_INT, {.dbl = -1 }, INT_MIN, INT_MAX, A|E},
-{"max_partition_order", "deprecated, use flac-specific options", OFFSET(max_partition_order), AV_OPT_TYPE_INT, {.dbl = -1 }, INT_MIN, INT_MAX, A|E},
-#endif
 {"timecode_frame_start", "GOP timecode frame start number, in non drop frame format", OFFSET(timecode_frame_start), AV_OPT_TYPE_INT64, {.dbl = 0 }, 0, INT64_MAX, V|E},
 #if FF_API_REQUEST_CHANNELS
 {"request_channels", "set desired number of audio channels", OFFSET(request_channels), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, 0, INT_MAX, A|D},
@@ -417,14 +411,6 @@ static const AVOption options[]={
 {"color_range", NULL, OFFSET(color_range), AV_OPT_TYPE_INT, {.dbl = AVCOL_RANGE_UNSPECIFIED }, 0, AVCOL_RANGE_NB-1, V|E|D},
 {"chroma_sample_location", NULL, OFFSET(chroma_sample_location), AV_OPT_TYPE_INT, {.dbl = AVCHROMA_LOC_UNSPECIFIED }, 0, AVCHROMA_LOC_NB-1, V|E|D},
 {"log_level_offset", "set the log level offset", OFFSET(log_level_offset), AV_OPT_TYPE_INT, {.dbl = 0 }, INT_MIN, INT_MAX },
-#if FF_API_FLAC_GLOBAL_OPTS
-{"lpc_type", "deprecated, use flac-specific options", OFFSET(lpc_type), AV_OPT_TYPE_INT, {.dbl = AV_LPC_TYPE_DEFAULT }, AV_LPC_TYPE_DEFAULT, AV_LPC_TYPE_NB-1, A|E},
-{"none",     NULL, 0, AV_OPT_TYPE_CONST, {.dbl = AV_LPC_TYPE_NONE },     INT_MIN, INT_MAX, A|E, "lpc_type"},
-{"fixed",    NULL, 0, AV_OPT_TYPE_CONST, {.dbl = AV_LPC_TYPE_FIXED },    INT_MIN, INT_MAX, A|E, "lpc_type"},
-{"levinson", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = AV_LPC_TYPE_LEVINSON }, INT_MIN, INT_MAX, A|E, "lpc_type"},
-{"cholesky", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = AV_LPC_TYPE_CHOLESKY }, INT_MIN, INT_MAX, A|E, "lpc_type"},
-{"lpc_passes", "deprecated, use flac-specific options", OFFSET(lpc_passes), AV_OPT_TYPE_INT, {.dbl = -1 }, INT_MIN, INT_MAX, A|E},
-#endif
 {"slices", "number of slices, used in parallelized encoding", OFFSET(slices), AV_OPT_TYPE_INT, {.dbl = 0 }, 0, INT_MAX, V|E},
 {"thread_type", "select multithreading type", OFFSET(thread_type), AV_OPT_TYPE_FLAGS, {.dbl = FF_THREAD_SLICE|FF_THREAD_FRAME }, 0, INT_MAX, V|E|D, "thread_type"},
 {"slice", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = FF_THREAD_SLICE }, INT_MIN, INT_MAX, V|E|D, "thread_type"},

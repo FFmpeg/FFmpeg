@@ -525,20 +525,6 @@ enum AVChromaLocation{
     AVCHROMA_LOC_NB           , ///< Not part of ABI
 };
 
-#if FF_API_FLAC_GLOBAL_OPTS
-/**
- * LPC analysis type
- */
-enum AVLPCType {
-    AV_LPC_TYPE_DEFAULT     = -1, ///< use the codec default LPC type
-    AV_LPC_TYPE_NONE        =  0, ///< do not use LPC prediction or use all zero coefficients
-    AV_LPC_TYPE_FIXED       =  1, ///< fixed LPC coefficients
-    AV_LPC_TYPE_LEVINSON    =  2, ///< Levinson-Durbin recursion
-    AV_LPC_TYPE_CHOLESKY    =  3, ///< Cholesky factorization
-    AV_LPC_TYPE_NB              , ///< Not part of ABI
-};
-#endif
-
 enum AVAudioServiceType {
     AV_AUDIO_SERVICE_TYPE_MAIN              = 0,
     AV_AUDIO_SERVICE_TYPE_EFFECTS           = 1,
@@ -2594,43 +2580,6 @@ typedef struct AVCodecContext {
      */
     int max_prediction_order;
 
-#if FF_API_FLAC_GLOBAL_OPTS
-    /**
-     * @name FLAC options
-     * @deprecated Use FLAC encoder private options instead.
-     * @{
-     */
-
-    /**
-     * LPC coefficient precision - used by FLAC encoder
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
-    attribute_deprecated int lpc_coeff_precision;
-
-    /**
-     * search method for selecting prediction order
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
-    attribute_deprecated int prediction_order_method;
-
-    /**
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
-    attribute_deprecated int min_partition_order;
-
-    /**
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
-    attribute_deprecated int max_partition_order;
-    /**
-     * @}
-     */
-#endif
-
     /**
      * GOP timecode frame start number, in non drop frame format
      * - encoding: Set by user.
@@ -2787,22 +2736,6 @@ typedef struct AVCodecContext {
     int (*execute2)(struct AVCodecContext *c, int (*func)(struct AVCodecContext *c2, void *arg, int jobnr, int threadnr), void *arg2, int *ret, int count);
 
     int log_level_offset;
-
-#if FF_API_FLAC_GLOBAL_OPTS
-    /**
-     * Determine which LPC analysis algorithm to use.
-     * - encoding: Set by user
-     * - decoding: unused
-     */
-    attribute_deprecated enum AVLPCType lpc_type;
-
-    /**
-     * Number of passes to use for Cholesky factorization during LPC analysis
-     * - encoding: Set by user
-     * - decoding: unused
-     */
-    attribute_deprecated int lpc_passes;
-#endif
 
     /**
      * Number of slices.

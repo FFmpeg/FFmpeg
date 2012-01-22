@@ -295,29 +295,6 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
     if (s->options.max_partition_order < 0)
         s->options.max_partition_order = ((int[]){  2,  2,  3,  3,  3,  8,  8,  8,  8,  8,  8,  8,  8})[level];
 
-    /* set compression option overrides from AVCodecContext */
-#if FF_API_FLAC_GLOBAL_OPTS
-    if (avctx->lpc_type > FF_LPC_TYPE_DEFAULT) {
-        if (avctx->lpc_type > FF_LPC_TYPE_CHOLESKY) {
-            av_log(avctx, AV_LOG_ERROR, "unknown lpc type: %d\n", avctx->lpc_type);
-            return -1;
-        }
-        s->options.lpc_type = avctx->lpc_type;
-        if (s->options.lpc_type == FF_LPC_TYPE_CHOLESKY) {
-            if (avctx->lpc_passes < 0) {
-                // default number of passes for Cholesky
-                s->options.lpc_passes = 2;
-            } else if (avctx->lpc_passes == 0) {
-                av_log(avctx, AV_LOG_ERROR, "invalid number of lpc passes: %d\n",
-                       avctx->lpc_passes);
-                return -1;
-            } else {
-                s->options.lpc_passes = avctx->lpc_passes;
-            }
-        }
-    }
-#endif
-
     if (s->options.lpc_type == FF_LPC_TYPE_NONE) {
         s->options.min_prediction_order = 0;
     } else if (avctx->min_prediction_order >= 0) {
@@ -358,39 +335,6 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
-#if FF_API_FLAC_GLOBAL_OPTS
-    if (avctx->prediction_order_method >= 0) {
-        if (avctx->prediction_order_method > ORDER_METHOD_LOG) {
-            av_log(avctx, AV_LOG_ERROR, "invalid prediction order method: %d\n",
-                   avctx->prediction_order_method);
-            return -1;
-        }
-        s->options.prediction_order_method = avctx->prediction_order_method;
-    }
-
-    if (avctx->min_partition_order >= 0) {
-        if (avctx->min_partition_order > MAX_PARTITION_ORDER) {
-            av_log(avctx, AV_LOG_ERROR, "invalid min partition order: %d\n",
-                   avctx->min_partition_order);
-            return -1;
-        }
-        s->options.min_partition_order = avctx->min_partition_order;
-    }
-    if (avctx->max_partition_order >= 0) {
-        if (avctx->max_partition_order > MAX_PARTITION_ORDER) {
-            av_log(avctx, AV_LOG_ERROR, "invalid max partition order: %d\n",
-                   avctx->max_partition_order);
-            return -1;
-        }
-        s->options.max_partition_order = avctx->max_partition_order;
-    }
-    if (s->options.max_partition_order < s->options.min_partition_order) {
-        av_log(avctx, AV_LOG_ERROR, "invalid partition orders: min=%d max=%d\n",
-               s->options.min_partition_order, s->options.max_partition_order);
-        return -1;
-    }
-#endif
-
     if (avctx->frame_size > 0) {
         if (avctx->frame_size < FLAC_MIN_BLOCKSIZE ||
                 avctx->frame_size > FLAC_MAX_BLOCKSIZE) {
@@ -402,18 +346,6 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
         s->avctx->frame_size = select_blocksize(s->samplerate, s->options.block_time_ms);
     }
     s->max_blocksize = s->avctx->frame_size;
-
-#if FF_API_FLAC_GLOBAL_OPTS
-    /* set LPC precision */
-    if (avctx->lpc_coeff_precision > 0) {
-        if (avctx->lpc_coeff_precision > MAX_LPC_PRECISION) {
-            av_log(avctx, AV_LOG_ERROR, "invalid lpc coeff precision: %d\n",
-                   avctx->lpc_coeff_precision);
-            return -1;
-        }
-        s->options.lpc_coeff_precision = avctx->lpc_coeff_precision;
-    }
-#endif
 
     /* set maximum encoded frame size in verbatim mode */
     s->max_framesize = ff_flac_get_max_frame_size(s->avctx->frame_size,
