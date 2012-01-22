@@ -682,19 +682,6 @@ typedef struct RcOverride{
 #if FF_API_MJPEG_GLOBAL_OPTS
 #define CODEC_FLAG_EXTERN_HUFF     0x1000   ///< Use external Huffman table (for MJPEG).
 #endif
-#if FF_API_X264_GLOBAL_OPTS
-#define CODEC_FLAG2_BPYRAMID      0x00000010 ///< H.264 allow B-frames to be used as references.
-#define CODEC_FLAG2_WPRED         0x00000020 ///< H.264 weighted biprediction for B-frames
-#define CODEC_FLAG2_MIXED_REFS    0x00000040 ///< H.264 one reference per partition, as opposed to one reference per macroblock
-#define CODEC_FLAG2_8X8DCT        0x00000080 ///< H.264 high profile 8x8 transform
-#define CODEC_FLAG2_FASTPSKIP     0x00000100 ///< H.264 fast pskip
-#define CODEC_FLAG2_AUD           0x00000200 ///< H.264 access unit delimiters
-#define CODEC_FLAG2_BRDO          0x00000400 ///< B-frame rate-distortion optimization
-#define CODEC_FLAG2_MBTREE        0x00040000 ///< Use macroblock tree ratecontrol (x264 only)
-#define CODEC_FLAG2_PSY           0x00080000 ///< Use psycho visual optimizations.
-#define CODEC_FLAG2_SSIM          0x00100000 ///< Compute SSIM during encoding, error[] values are undefined.
-#define CODEC_FLAG2_INTRA_REFRESH 0x00200000 ///< Use periodic insertion of intra blocks instead of keyframes.
-#endif
 #if FF_API_SNOW_GLOBAL_OPTS
 #define CODEC_FLAG2_MEMC_ONLY     0x00001000 ///< Only do ME/MC (I frames -> ref, P frame -> ME+MC).
 #endif
@@ -2636,24 +2623,6 @@ typedef struct AVCodecContext {
      */
     int brd_scale;
 
-#if FF_API_X264_GLOBAL_OPTS
-    /**
-     * constant rate factor - quality-based VBR - values ~correspond to qps
-     * - encoding: Set by user.
-     * - decoding: unused
-     *   @deprecated use 'crf' libx264 private option
-     */
-    attribute_deprecated float crf;
-
-    /**
-     * constant quantization parameter rate control method
-     * - encoding: Set by user.
-     * - decoding: unused
-     *   @deprecated use 'cqp' libx264 private option
-     */
-    attribute_deprecated int cqp;
-#endif
-
     /**
      * minimum GOP size
      * - encoding: Set by user.
@@ -2675,65 +2644,12 @@ typedef struct AVCodecContext {
      */
     int chromaoffset;
 
-#if FF_API_X264_GLOBAL_OPTS
-    /**
-     * Influence how often B-frames are used.
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
-    attribute_deprecated int bframebias;
-#endif
-
     /**
      * trellis RD quantization
      * - encoding: Set by user.
      * - decoding: unused
      */
     int trellis;
-
-#if FF_API_X264_GLOBAL_OPTS
-    /**
-     * Reduce fluctuations in qp (before curve compression).
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
-    attribute_deprecated float complexityblur;
-
-    /**
-     * in-loop deblocking filter alphac0 parameter
-     * alpha is in the range -6...6
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
-    attribute_deprecated int deblockalpha;
-
-    /**
-     * in-loop deblocking filter beta parameter
-     * beta is in the range -6...6
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
-    attribute_deprecated int deblockbeta;
-
-    /**
-     * macroblock subpartition sizes to consider - p8x8, p4x4, b8x8, i8x8, i4x4
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
-    attribute_deprecated int partitions;
-#define X264_PART_I4X4 0x001  /* Analyze i4x4 */
-#define X264_PART_I8X8 0x002  /* Analyze i8x8 (requires 8x8 transform) */
-#define X264_PART_P8X8 0x010  /* Analyze p16x8, p8x16 and p8x8 */
-#define X264_PART_P4X4 0x020  /* Analyze p8x4, p4x8, p4x4 */
-#define X264_PART_B8X8 0x100  /* Analyze b16x8, b8x16 and b8x8 */
-
-    /**
-     * direct MV prediction mode - 0 (none), 1 (spatial), 2 (temporal), 3 (auto)
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
-    attribute_deprecated int directpred;
-#endif
 
     /**
      * Audio cutoff bandwidth (0 means "automatic")
@@ -2974,69 +2890,6 @@ typedef struct AVCodecContext {
      * - decoding: Set by libavcodec, user can override.
      */
     int (*execute2)(struct AVCodecContext *c, int (*func)(struct AVCodecContext *c2, void *arg, int jobnr, int threadnr), void *arg2, int *ret, int count);
-
-#if FF_API_X264_GLOBAL_OPTS
-    /**
-     * explicit P-frame weighted prediction analysis method
-     * 0: off
-     * 1: fast blind weighting (one reference duplicate with -1 offset)
-     * 2: smart weighting (full fade detection analysis)
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
-    attribute_deprecated int weighted_p_pred;
-
-    /**
-     * AQ mode
-     * 0: Disabled
-     * 1: Variance AQ (complexity mask)
-     * 2: Auto-variance AQ (experimental)
-     * - encoding: Set by user
-     * - decoding: unused
-     */
-    attribute_deprecated int aq_mode;
-
-    /**
-     * AQ strength
-     * Reduces blocking and blurring in flat and textured areas.
-     * - encoding: Set by user
-     * - decoding: unused
-     */
-    attribute_deprecated float aq_strength;
-
-    /**
-     * PSY RD
-     * Strength of psychovisual optimization
-     * - encoding: Set by user
-     * - decoding: unused
-     */
-    attribute_deprecated float psy_rd;
-
-    /**
-     * PSY trellis
-     * Strength of psychovisual optimization
-     * - encoding: Set by user
-     * - decoding: unused
-     */
-    attribute_deprecated float psy_trellis;
-
-    /**
-     * RC lookahead
-     * Number of frames for frametype and ratecontrol lookahead
-     * - encoding: Set by user
-     * - decoding: unused
-     */
-    attribute_deprecated int rc_lookahead;
-
-    /**
-     * Constant rate factor maximum
-     * With CRF encoding mode and VBV restrictions enabled, prevents quality from being worse
-     * than crf_max, even if doing so would violate VBV restrictions.
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
-    attribute_deprecated float crf_max;
-#endif
 
     int log_level_offset;
 

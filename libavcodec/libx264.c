@@ -246,17 +246,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
     if (avctx->flags & CODEC_FLAG_PASS2) {
         x4->params.rc.b_stat_read = 1;
     } else {
-#if FF_API_X264_GLOBAL_OPTS
-        if (avctx->crf) {
-            x4->params.rc.i_rc_method   = X264_RC_CRF;
-            x4->params.rc.f_rf_constant = avctx->crf;
-            x4->params.rc.f_rf_constant_max = avctx->crf_max;
-        } else if (avctx->cqp > -1) {
-            x4->params.rc.i_rc_method   = X264_RC_CQP;
-            x4->params.rc.i_qp_constant = avctx->cqp;
-        }
-#endif
-
         if (x4->crf >= 0) {
             x4->params.rc.i_rc_method   = X264_RC_CRF;
             x4->params.rc.f_rf_constant = x4->crf;
@@ -278,53 +267,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.rc.f_ip_factor             = 1 / fabs(avctx->i_quant_factor);
     x4->params.rc.f_pb_factor             = avctx->b_quant_factor;
     x4->params.analyse.i_chroma_qp_offset = avctx->chromaoffset;
-
-#if FF_API_X264_GLOBAL_OPTS
-    if (avctx->aq_mode >= 0)
-        x4->params.rc.i_aq_mode = avctx->aq_mode;
-    if (avctx->aq_strength >= 0)
-        x4->params.rc.f_aq_strength = avctx->aq_strength;
-    if (avctx->psy_rd >= 0)
-        x4->params.analyse.f_psy_rd           = avctx->psy_rd;
-    if (avctx->psy_trellis >= 0)
-        x4->params.analyse.f_psy_trellis      = avctx->psy_trellis;
-    if (avctx->rc_lookahead >= 0)
-        x4->params.rc.i_lookahead             = avctx->rc_lookahead;
-    if (avctx->weighted_p_pred >= 0)
-        x4->params.analyse.i_weighted_pred    = avctx->weighted_p_pred;
-    if (avctx->bframebias)
-        x4->params.i_bframe_bias              = avctx->bframebias;
-    if (avctx->deblockalpha)
-        x4->params.i_deblocking_filter_alphac0 = avctx->deblockalpha;
-    if (avctx->deblockbeta)
-        x4->params.i_deblocking_filter_beta    = avctx->deblockbeta;
-    if (avctx->complexityblur >= 0)
-        x4->params.rc.f_complexity_blur        = avctx->complexityblur;
-    if (avctx->directpred >= 0)
-        x4->params.analyse.i_direct_mv_pred    = avctx->directpred;
-    if (avctx->partitions) {
-        if (avctx->partitions & X264_PART_I4X4)
-            x4->params.analyse.inter |= X264_ANALYSE_I4x4;
-        if (avctx->partitions & X264_PART_I8X8)
-            x4->params.analyse.inter |= X264_ANALYSE_I8x8;
-        if (avctx->partitions & X264_PART_P8X8)
-            x4->params.analyse.inter |= X264_ANALYSE_PSUB16x16;
-        if (avctx->partitions & X264_PART_P4X4)
-            x4->params.analyse.inter |= X264_ANALYSE_PSUB8x8;
-        if (avctx->partitions & X264_PART_B8X8)
-            x4->params.analyse.inter |= X264_ANALYSE_BSUB16x16;
-    }
-    x4->params.analyse.b_ssim = avctx->flags2 & CODEC_FLAG2_SSIM;
-    x4->params.b_intra_refresh = avctx->flags2 & CODEC_FLAG2_INTRA_REFRESH;
-    x4->params.i_bframe_pyramid = avctx->flags2 & CODEC_FLAG2_BPYRAMID ? X264_B_PYRAMID_NORMAL : X264_B_PYRAMID_NONE;
-    x4->params.analyse.b_weighted_bipred = avctx->flags2 & CODEC_FLAG2_WPRED;
-    x4->params.analyse.b_mixed_references = avctx->flags2 & CODEC_FLAG2_MIXED_REFS;
-    x4->params.analyse.b_transform_8x8    = avctx->flags2 & CODEC_FLAG2_8X8DCT;
-    x4->params.analyse.b_fast_pskip       = avctx->flags2 & CODEC_FLAG2_FASTPSKIP;
-    x4->params.b_aud                      = avctx->flags2 & CODEC_FLAG2_AUD;
-    x4->params.analyse.b_psy              = avctx->flags2 & CODEC_FLAG2_PSY;
-    x4->params.rc.b_mb_tree               = !!(avctx->flags2 & CODEC_FLAG2_MBTREE);
-#endif
 
     if (avctx->me_method == ME_EPZS)
         x4->params.analyse.i_me_method = X264_ME_DIA;
@@ -452,9 +394,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
         avctx->max_b_frames = 0;
 
     avctx->bit_rate = x4->params.rc.i_bitrate*1000;
-#if FF_API_X264_GLOBAL_OPTS
-    avctx->crf = x4->params.rc.f_rf_constant;
-#endif
 
     x4->enc = x264_encoder_open(&x4->params);
     if (!x4->enc)
