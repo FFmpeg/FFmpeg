@@ -31,13 +31,13 @@
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"
 #include "libavutil/opt.h"
+#include "libavutil/timecode.h"
 #include "avformat.h"
 #include "internal.h"
 #include "avio_internal.h"
 #include "riff.h"
 #include "isom.h"
 #include "libavcodec/get_bits.h"
-#include "libavcodec/timecode.h"
 #include "id3v1.h"
 #include "mov_chan.h"
 
@@ -2656,17 +2656,16 @@ finish:
 static int parse_timecode_in_framenum_format(AVFormatContext *s, AVStream *st,
                                              uint32_t value)
 {
-    char buf[16];
-    struct ff_timecode tc = {
-        .drop  = st->codec->flags2 & CODEC_FLAG2_DROP_FRAME_TIMECODE,
-        .rate  = (AVRational){st->codec->time_base.den,
-                              st->codec->time_base.num},
-    };
-
-    if (avpriv_check_timecode_rate(s, tc.rate, tc.drop) < 0)
-        return AVERROR(EINVAL);
+    AVTimecode tc;
+    char buf[AV_TIMECODE_STR_SIZE];
+    AVRational rate = {st->codec->time_base.den,
+                       st->codec->time_base.num};
+    int flags = st->codec->flags2 & CODEC_FLAG2_DROP_FRAME_TIMECODE ? AV_TIMECODE_FLAG_DROPFRAME : 0;
+    int ret = av_timecode_init(&tc, rate, flags, 0, s);
+    if (ret < 0)
+        return ret;
     av_dict_set(&st->metadata, "timecode",
-                avpriv_timecode_to_string(buf, &tc, value), 0);
+                av_timecode_make_string(&tc, buf, value), 0);
     return 0;
 }
 
