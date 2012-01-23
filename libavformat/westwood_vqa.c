@@ -128,6 +128,12 @@ static int wsvqa_read_header(AVFormatContext *s,
         st->start_time = 0;
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
 
+        st->codec->extradata_size = VQA_HEADER_SIZE;
+        st->codec->extradata = av_mallocz(VQA_HEADER_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
+        if (!st->codec->extradata)
+            return AVERROR(ENOMEM);
+        memcpy(st->codec->extradata, header, VQA_HEADER_SIZE);
+
         if (!sample_rate)
             sample_rate = 22050;
         st->codec->sample_rate = sample_rate;

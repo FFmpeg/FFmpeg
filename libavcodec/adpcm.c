@@ -86,6 +86,7 @@ static const int swf_index_tables[4][16] = {
 typedef struct ADPCMDecodeContext {
     AVFrame frame;
     ADPCMChannelStatus status[6];
+    int vqa_version;                /**< VQA version. Used for ADPCM_IMA_WS */
 } ADPCMDecodeContext;
 
 static av_cold int adpcm_decode_init(AVCodecContext * avctx)
@@ -125,6 +126,10 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
             c->status[0].predictor = AV_RL32(avctx->extradata);
             c->status[1].predictor = AV_RL32(avctx->extradata + 4);
         }
+        break;
+    case CODEC_ID_ADPCM_IMA_WS:
+        if (avctx->extradata && avctx->extradata_size >= 42)
+            c->vqa_version = AV_RL16(avctx->extradata);
         break;
     default:
         break;
@@ -774,13 +779,36 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
             *samples++ = adpcm_ima_expand_nibble(&c->status[st], v2, 3);
         }
         break;
-    case CODEC_ID_ADPCM_IMA_WS:
     case CODEC_ID_ADPCM_IMA_APC:
         while (src < buf + buf_size) {
             uint8_t v = *src++;
             *samples++ = adpcm_ima_expand_nibble(&c->status[0],  v >> 4  , 3);
             *samples++ = adpcm_ima_expand_nibble(&c->status[st], v & 0x0F, 3);
         }
+        break;
+    case CODEC_ID_ADPCM_IMA_WS:
+        for (channel = 0; channel < avctx->channels; channel++) {
+            const uint8_t *src0;
+            int src_stride;
+            int16_t *smp = samples + channel;
+
+            if (c->vqa_version == 3) {
+                src0 = src + channel * buf_size / 2;
+                src_stride = 1;
+            } else {
+                src0 = src + channel;
+                src_stride = avctx->channels;
+            }
+            for (n = nb_samples / 2; n > 0; n--) {
+                uint8_t v = *src0;
+                src0 += src_stride;
+                *smp = adpcm_ima_expand_nibble(&c->status[channel], v >> 4  , 3);
+                smp += avctx->channels;
+                *smp = adpcm_ima_expand_nibble(&c->status[channel], v & 0x0F, 3);
+                smp += avctx->channels;
+            }
+        }
+        src = buf + buf_size;
         break;
     case CODEC_ID_ADPCM_XA:
         while (buf_size >= 128) {
