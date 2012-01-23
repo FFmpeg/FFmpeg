@@ -2757,7 +2757,7 @@ static int mov_write_header(AVFormatContext *s)
             }
             /* set audio_vbr for compressed audio */
             if (av_get_bits_per_sample(st->codec->codec_id) < 8) {
-                if (!st->codec->frame_size) {
+                if (!st->codec->frame_size && track->mode == MODE_MOV) {
                     av_log(s, AV_LOG_ERROR, "track %d: codec frame size is not set\n", i);
                     goto error;
                 }
