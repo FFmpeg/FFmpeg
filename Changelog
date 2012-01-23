@@ -1,12 +1,15 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version <next>:
+
+- XWD encoder and decoder
+
 
 version 0.8:
 
 - GSM audio parser
 - SMJPEG muxer
-- XWD encoder and decoder
 
 
 version 0.8_beta2:
