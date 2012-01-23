@@ -106,7 +106,7 @@ SECTION .text
 
 INIT_MMX
 cglobal vp3_v_loop_filter_mmx2, 3, 4
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     movsxd        r1, r1d
 %endif
     mov           r3, r1
@@ -123,7 +123,7 @@ cglobal vp3_v_loop_filter_mmx2, 3, 4
     RET
 
 cglobal vp3_h_loop_filter_mmx2, 3, 4
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     movsxd        r1, r1d
 %endif
     lea           r3, [r1*3]
@@ -510,7 +510,7 @@ cglobal vp3_h_loop_filter_mmx2, 3, 4
 %define SHIFT(x)
 %define ADD(x)
         VP3_1D_IDCT_SSE2
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
         TRANSPOSE8x8W 0, 1, 2, 3, 4, 5, 6, 7, 8
 %else
         TRANSPOSE8x8W 0, 1, 2, 3, 4, 5, 6, 7, [%1], [%1+16]
@@ -530,7 +530,7 @@ cglobal vp3_idct_%1, 1, 1, %2
 
 cglobal vp3_idct_put_%1, 3, %3, %2
     VP3_IDCT_%1   r2
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     mov           r3, r2
     mov           r2, r1
     mov           r1, r0
@@ -540,7 +540,7 @@ cglobal vp3_idct_put_%1, 3, %3, %2
     mov          r1m, r0
     mov          r2m, r1
 %endif
-%ifdef WIN64
+%if WIN64
     call put_signed_pixels_clamped_mmx
     RET
 %else
@@ -549,7 +549,7 @@ cglobal vp3_idct_put_%1, 3, %3, %2
 
 cglobal vp3_idct_add_%1, 3, %3, %2
     VP3_IDCT_%1   r2
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     mov           r3, r2
     mov           r2, r1
     mov           r1, r0
@@ -559,7 +559,7 @@ cglobal vp3_idct_add_%1, 3, %3, %2
     mov          r1m, r0
     mov          r2m, r1
 %endif
-%ifdef WIN64
+%if WIN64
     call add_pixels_clamped_mmx
     RET
 %else
@@ -567,7 +567,7 @@ cglobal vp3_idct_add_%1, 3, %3, %2
 %endif
 %endmacro
 
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
 %define REGS 4
 %else
 %define REGS 3
@@ -599,7 +599,7 @@ vp3_idct_funcs sse2, 9, REGS
 
 INIT_MMX
 cglobal vp3_idct_dc_add_mmx2, 3, 4
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     movsxd        r1, r1d
 %endif
     lea           r3, [r1*3]

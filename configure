@@ -541,7 +541,8 @@ print_config_mak(){
 }
 
 print_config_asm(){
-    enabled $1 && echo "%define $2"
+    enabled $1 && v=1 || v=0
+    echo "%define $2 $v"
 }
 
 print_config(){

@@ -245,7 +245,7 @@ hadamard8x8_diff_%1:
     lea                          r0, [r3*3]
     DIFF_PIXELS_8                r1, r2,  0, r3, r0, rsp+gprsize
     HADAMARD8
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     TRANSPOSE8x8W                 0,  1,  2,  3,  4,  5,  6,  7,  8
 %else
     TRANSPOSE8x8W                 0,  1,  2,  3,  4,  5,  6,  7, [rsp+gprsize], [rsp+mmsize+gprsize]
@@ -270,7 +270,7 @@ HADAMARD8_DIFF_MMX mmx2
 
 INIT_XMM
 %define ABS2 ABS2_MMX2
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
 %define ABS_SUM_8x8 ABS_SUM_8x8_64
 %else
 %define ABS_SUM_8x8 ABS_SUM_8x8_32

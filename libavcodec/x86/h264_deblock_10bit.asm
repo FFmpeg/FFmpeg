@@ -302,7 +302,7 @@ cglobal deblock_h_luma_10_%1, 5,6,8*(mmsize/16)
 %endmacro
 
 INIT_XMM
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
 ; in:  m0=p1, m1=p0, m2=q0, m3=q1, m8=p2, m9=q2
 ;      m12=alpha, m13=beta
 ; out: m0=p1', m3=q1', m1=p0', m2=q0'
@@ -435,7 +435,7 @@ DEBLOCK_LUMA_64 avx
 ;     %1=p0 %2=p1 %3=p2 %4=p3 %5=q0 %6=q1 %7=mask0
 ;     %8=mask1p %9=2 %10=p0' %11=p1' %12=p2'
 %macro LUMA_INTRA_P012 12 ; p0..p3 in memory
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     paddw     t0, %3, %2
     mova      t2, %4
     paddw     t2, %3
@@ -501,7 +501,7 @@ DEBLOCK_LUMA_64 avx
     LOAD_AB t0, t1, r2d, r3d
     mova    %1, t0
     LOAD_MASK m0, m1, m2, m3, %1, t1, t0, t2, t3
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     mova    %2, t0        ; mask0
     psrlw   t3, %1, 2
 %else
@@ -598,7 +598,7 @@ DEBLOCK_LUMA_64 avx
 %endif
 %endmacro
 
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
 ;-----------------------------------------------------------------------------
 ; void deblock_v_luma_intra( uint16_t *pix, int stride, int alpha, int beta )
 ;-----------------------------------------------------------------------------
@@ -792,7 +792,7 @@ cglobal deblock_h_luma_intra_10_%1, 4,7,8*(mmsize/16)
     RET
 %endmacro
 
-%ifndef ARCH_X86_64
+%if ARCH_X86_64 == 0
 INIT_MMX
 DEBLOCK_LUMA mmxext
 DEBLOCK_LUMA_INTRA mmxext
@@ -907,7 +907,7 @@ cglobal deblock_v_chroma_intra_10_%1, 4,6-(mmsize/16),8*(mmsize/16)
 %endif
 %endmacro
 
-%ifndef ARCH_X86_64
+%if ARCH_X86_64 == 0
 INIT_MMX
 DEBLOCK_CHROMA mmxext
 %endif

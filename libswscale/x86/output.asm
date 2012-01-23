@@ -58,7 +58,7 @@ SECTION .text
 
 %macro yuv2planeX_fn 3
 
-%ifdef ARCH_X86_32
+%if ARCH_X86_32
 %define cntr_reg r1
 %define movsx mov
 %else
@@ -72,7 +72,7 @@ cglobal yuv2planeX_%1, %3, 7, %2
 %endif ; %1 == 8/9/10
 
 %if %1 == 8
-%ifdef ARCH_X86_32
+%if ARCH_X86_32
 %assign pad 0x2c - (stack_offset & 15)
     SUB             rsp, pad
 %define m_dith m7
@@ -91,7 +91,7 @@ cglobal yuv2planeX_%1, %3, 7, %2
 .no_rot:
 %if mmsize == 16
     punpcklbw   m_dith,  m6
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     punpcklwd       m8,  m_dith,  m6
     pslld           m8,  12
 %else ; x86-32
@@ -100,7 +100,7 @@ cglobal yuv2planeX_%1, %3, 7, %2
 %endif ; x86-32/64
     punpckhwd   m_dith,  m6
     pslld       m_dith,  12
-%ifdef ARCH_X86_32
+%if ARCH_X86_32
     mova      [rsp+ 0],  m5
     mova      [rsp+16],  m_dith
 %endif
@@ -135,7 +135,7 @@ cglobal yuv2planeX_%1, %3, 7, %2
 %endif ; %1 == 8
 
 %if %1 == 8
-%ifdef ARCH_X86_32
+%if ARCH_X86_32
     mova            m2, [rsp+mmsize*(0+%%i)]
     mova            m1, [rsp+mmsize*(1+%%i)]
 %else ; x86-64
@@ -233,7 +233,7 @@ cglobal yuv2planeX_%1, %3, 7, %2
     jg .pixelloop
 
 %if %1 == 8
-%ifdef ARCH_X86_32
+%if ARCH_X86_32
     ADD             rsp, pad
     RET
 %else ; x86-64
@@ -245,7 +245,7 @@ cglobal yuv2planeX_%1, %3, 7, %2
 %endmacro
 
 %define PALIGNR PALIGNR_MMX
-%ifdef ARCH_X86_32
+%if ARCH_X86_32
 INIT_MMX mmx2
 yuv2planeX_fn  8,  0, 7
 yuv2planeX_fn  9,  0, 5
@@ -382,7 +382,7 @@ cglobal yuv2plane1_%1, %3, %3, %2
     REP_RET
 %endmacro
 
-%ifdef ARCH_X86_32
+%if ARCH_X86_32
 INIT_MMX mmx
 yuv2plane1_fn  8, 0, 5
 yuv2plane1_fn 16, 0, 3

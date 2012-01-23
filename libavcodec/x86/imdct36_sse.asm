@@ -219,13 +219,13 @@ cglobal imdct36_float, 4,4,9, out, buf, in, win
 
     subps  m5, m0, m3
 
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     SWAP   m5, m8
 %endif
 
     mulps  m7, m2, [ps_val1]
 
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     mulps  m5, m8, [ps_val2]
 %else
     mulps  m5, m5, [ps_val2]
@@ -235,7 +235,7 @@ cglobal imdct36_float, 4,4,9, out, buf, in, win
     mulps  m5, m6, [ps_val1]
     subps  m7, m7, m5
 
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     SWAP   m5, m8
 %else
     subps  m5, m0, m3
@@ -376,7 +376,7 @@ DEFINE_IMDCT
 
 INIT_XMM sse
 
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
 %define SPILL SWAP
 %define UNSPILL SWAP
 %define SPILLED(x) m %+ x

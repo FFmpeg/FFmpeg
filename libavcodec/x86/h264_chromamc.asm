@@ -94,7 +94,7 @@ SECTION .text
 ; put/avg_h264_chroma_mc8_mmx_*(uint8_t *dst /*align 8*/, uint8_t *src /*align 1*/,
 ;                              int stride, int h, int mx, int my)
 cglobal %1_%2_chroma_mc8_%3, 6, 7, 0
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     movsxd        r2, r2d
 %endif
     mov          r6d, r5d
@@ -113,7 +113,7 @@ cglobal %1_%2_chroma_mc8_%3, 6, 7, 0
 %define rnd_1d_rv40 rnd_rv40_1d_tbl
 %define rnd_2d_rv40 rnd_rv40_2d_tbl
 %endif
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     mov          r10, r5
     and          r10, 6         ; &~1 for mx/my=[0,7]
     lea          r10, [r10*4+r4]
@@ -147,7 +147,7 @@ cglobal %1_%2_chroma_mc8_%3, 6, 7, 0
 %ifdef PIC
     lea          r11, [rnd_rv40_1d_tbl]
 %endif
-%ifndef ARCH_X86_64
+%if ARCH_X86_64 == 0
     mov           r5, r0m
 %endif
 %endif
@@ -198,7 +198,7 @@ cglobal %1_%2_chroma_mc8_%3, 6, 7, 0
 %ifdef PIC
     lea          r11, [rnd_rv40_2d_tbl]
 %endif
-%ifndef ARCH_X86_64
+%if ARCH_X86_64 == 0
     mov           r5, r0m
 %endif
 %endif
@@ -279,7 +279,7 @@ cglobal %1_%2_chroma_mc8_%3, 6, 7, 0
 
 %macro chroma_mc4_mmx_func 3
 cglobal %1_%2_chroma_mc4_%3, 6, 6, 0
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     movsxd        r2, r2d
 %endif
     pxor          m7, m7
@@ -364,7 +364,7 @@ cglobal %1_%2_chroma_mc4_%3, 6, 6, 0
 
 %macro chroma_mc2_mmx_func 3
 cglobal %1_%2_chroma_mc2_%3, 6, 7, 0
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     movsxd        r2, r2d
 %endif
 
@@ -452,7 +452,7 @@ chroma_mc4_mmx_func avg, rv40, 3dnow
 
 %macro chroma_mc8_ssse3_func 3
 cglobal %1_%2_chroma_mc8_%3, 6, 7, 8
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     movsxd        r2, r2d
 %endif
     mov          r6d, r5d
@@ -600,7 +600,7 @@ cglobal %1_%2_chroma_mc8_%3, 6, 7, 8
 
 %macro chroma_mc4_ssse3_func 3
 cglobal %1_%2_chroma_mc4_%3, 6, 7, 0
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     movsxd        r2, r2d
 %endif
     mov           r6, r4

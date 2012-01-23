@@ -64,7 +64,7 @@ SECTION .text
 ;      split the loop in an aligned and unaligned case
 %macro YUYV_TO_Y_FN 2-3
 cglobal %2ToY, 3, 3, %1, dst, src, w
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     movsxd         wq, wd
 %endif
     add          dstq, wq
@@ -134,7 +134,7 @@ cglobal %2ToY, 3, 3, %1, dst, src, w
 ;      split the loop in an aligned and unaligned case
 %macro YUYV_TO_UV_FN 2-3
 cglobal %2ToUV, 3, 4, %1, dstU, dstV, src, w
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     movsxd         wq, dword r4m
 %else ; x86-32
     mov            wq, r4m
@@ -189,7 +189,7 @@ cglobal %2ToUV, 3, 4, %1, dstU, dstV, src, w
 ; %2 = nv12 or nv21
 %macro NVXX_TO_UV_FN 2
 cglobal %2ToUV, 3, 4, %1, dstU, dstV, src, w
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     movsxd         wq, dword r4m
 %else ; x86-32
     mov            wq, r4m
@@ -215,7 +215,7 @@ cglobal %2ToUV, 3, 4, %1, dstU, dstV, src, w
 %endif ; mmsize == 8/16
 %endmacro
 
-%ifdef ARCH_X86_32
+%if ARCH_X86_32
 INIT_MMX mmx
 YUYV_TO_Y_FN  0, yuyv
 YUYV_TO_Y_FN  0, uyvy
