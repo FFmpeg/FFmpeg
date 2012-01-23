@@ -1,3 +1,9 @@
 9a0b239ff596da58debcf210dece3985 *./tests/data/lavf/lavf.mov
 357821 ./tests/data/lavf/lavf.mov
 ./tests/data/lavf/lavf.mov CRC=0x2f6a9b26
+cea874222a6d40b1761d75ea11ebe681 *./tests/data/lavf/lavf.mov
+367251 ./tests/data/lavf/lavf.mov
+./tests/data/lavf/lavf.mov CRC=0xab307eb9
+9a0b239ff596da58debcf210dece3985 *./tests/data/lavf/lavf.mov
+357821 ./tests/data/lavf/lavf.mov
+./tests/data/lavf/lavf.mov CRC=0x2f6a9b26

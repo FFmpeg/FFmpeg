@@ -20,6 +20,16 @@ do_lavf()
     do_avconv_crc $file $DEC_OPTS -i $target_path/$file $3
 }
 
+do_lavf_timecode_nodrop() { do_lavf $1 "$2 -timecode 02:56:14:13"; }
+do_lavf_timecode_drop()   { do_lavf $1 "$2 -timecode 02:56:14.13 -r 30000/1001"; }
+
+do_lavf_timecode()
+{
+    do_lavf_timecode_nodrop "$@"
+    do_lavf_timecode_drop "$@"
+    do_lavf "$@"
+}
+
 do_streamed_images()
 {
     file=${outfile}${1}pipe.$1
@@ -61,11 +71,11 @@ do_avconv $file $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $DEC_OPTS -ar 441
 fi
 
 if [ -n "$do_mpg" ] ; then
-do_lavf mpg "-ab 64k"
+do_lavf_timecode mpg "-ab 64k"
 fi
 
 if [ -n "$do_mxf" ] ; then
-do_lavf mxf "-ar 48000 -bf 2 -timecode 02:56:14:13"
+do_lavf_timecode mxf "-ar 48000 -bf 2"
 fi
 
 if [ -n "$do_mxf_d10" ]; then
@@ -89,14 +99,18 @@ do_lavf flv -an
 fi
 
 if [ -n "$do_mov" ] ; then
-do_lavf mov "-acodec pcm_alaw -vcodec mpeg4"
+do_lavf_timecode mov "-acodec pcm_alaw -vcodec mpeg4"
 fi
 
 if [ -n "$do_dv_fmt" ] ; then
+do_lavf_timecode_nodrop dv "-ar 48000 -r 25 -s pal -ac 2"
+do_lavf_timecode_drop   dv "-ar 48000 -pix_fmt yuv411p -s ntsc -ac 2"
 do_lavf dv "-ar 48000 -r 25 -s pal -ac 2"
 fi
 
 if [ -n "$do_gxf" ] ; then
+do_lavf_timecode_nodrop gxf "-ar 48000 -r 25 -s pal -ac 1"
+do_lavf_timecode_drop   gxf "-ar 48000 -s ntsc -ac 1"
 do_lavf gxf "-ar 48000 -r 25 -s pal -ac 1"
 fi
 
