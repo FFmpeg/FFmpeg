@@ -366,6 +366,7 @@ static attribute_align_arg void *frame_worker_thread(void *arg)
     AVCodec *codec = avctx->codec;
 
     while (1) {
+        int i;
         if (p->state == STATE_INPUT_READY && !fctx->die) {
             pthread_mutex_lock(&p->mutex);
             while (p->state == STATE_INPUT_READY && !fctx->die)
@@ -388,6 +389,12 @@ static attribute_align_arg void *frame_worker_thread(void *arg)
         p->state = STATE_INPUT_READY;
 
         pthread_mutex_lock(&p->progress_mutex);
+        for (i = 0; i < MAX_BUFFERS; i++)
+            if (p->progress_used[i]) {
+                p->progress[i][0] = INT_MAX;
+                p->progress[i][1] = INT_MAX;
+            }
+        pthread_cond_broadcast(&p->progress_cond);
         pthread_cond_signal(&p->output_cond);
         pthread_mutex_unlock(&p->progress_mutex);
 
