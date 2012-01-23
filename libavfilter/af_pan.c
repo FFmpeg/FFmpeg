@@ -191,9 +191,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args0, void *opaque)
     return 0;
 }
 
-static void filter_samples_channel_mapping(PanContext *pan, AVFilterBufferRef *outsamples, AVFilterBufferRef *insamples, int n);
-static void filter_samples_panning        (PanContext *pan, AVFilterBufferRef *outsamples, AVFilterBufferRef *insamples, int n);
-
 static int are_gains_pure(const PanContext *pan)
 {
     int i, j;
@@ -214,40 +211,6 @@ static int are_gains_pure(const PanContext *pan)
         }
     }
     return 1;
-}
-
-static int query_formats(AVFilterContext *ctx)
-{
-    PanContext *pan = ctx->priv;
-    AVFilterLink *inlink  = ctx->inputs[0];
-    AVFilterLink *outlink = ctx->outputs[0];
-    AVFilterFormats *formats;
-
-    if (pan->nb_output_channels <= SWR_CH_MAX)
-        pan->pure_gains = are_gains_pure(pan);
-    if (pan->pure_gains) {
-        /* libswr supports any sample and packing formats */
-        avfilter_set_common_sample_formats(ctx, avfilter_make_all_formats(AVMEDIA_TYPE_AUDIO));
-        avfilter_set_common_packing_formats(ctx, avfilter_make_all_packing_formats());
-        pan->filter_samples = filter_samples_channel_mapping;
-    } else {
-        const enum AVSampleFormat sample_fmts[] = {AV_SAMPLE_FMT_S16, -1};
-        const int                packing_fmts[] = {AVFILTER_PACKED,   -1};
-
-        avfilter_set_common_sample_formats (ctx, avfilter_make_format_list(sample_fmts));
-        avfilter_set_common_packing_formats(ctx, avfilter_make_format_list(packing_fmts));
-        pan->filter_samples = filter_samples_panning;
-    }
-
-    // inlink supports any channel layout
-    formats = avfilter_make_all_channel_layouts();
-    avfilter_formats_ref(formats, &inlink->out_chlayouts);
-
-    // outlink supports only requested output channel layout
-    formats = NULL;
-    avfilter_add_format(&formats, pan->out_channel_layout);
-    avfilter_formats_ref(formats, &outlink->in_chlayouts);
-    return 0;
 }
 
 static int config_props(AVFilterLink *link)
@@ -401,6 +364,40 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 
     avfilter_filter_samples(outlink, outsamples);
     avfilter_unref_buffer(insamples);
+}
+
+static int query_formats(AVFilterContext *ctx)
+{
+    PanContext *pan = ctx->priv;
+    AVFilterLink *inlink  = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
+    AVFilterFormats *formats;
+
+    if (pan->nb_output_channels <= SWR_CH_MAX)
+        pan->pure_gains = are_gains_pure(pan);
+    if (pan->pure_gains) {
+        /* libswr supports any sample and packing formats */
+        avfilter_set_common_sample_formats(ctx, avfilter_make_all_formats(AVMEDIA_TYPE_AUDIO));
+        avfilter_set_common_packing_formats(ctx, avfilter_make_all_packing_formats());
+        pan->filter_samples = filter_samples_channel_mapping;
+    } else {
+        const enum AVSampleFormat sample_fmts[] = {AV_SAMPLE_FMT_S16, -1};
+        const int                packing_fmts[] = {AVFILTER_PACKED,   -1};
+
+        avfilter_set_common_sample_formats (ctx, avfilter_make_format_list(sample_fmts));
+        avfilter_set_common_packing_formats(ctx, avfilter_make_format_list(packing_fmts));
+        pan->filter_samples = filter_samples_panning;
+    }
+
+    // inlink supports any channel layout
+    formats = avfilter_make_all_channel_layouts();
+    avfilter_formats_ref(formats, &inlink->out_chlayouts);
+
+    // outlink supports only requested output channel layout
+    formats = NULL;
+    avfilter_add_format(&formats, pan->out_channel_layout);
+    avfilter_formats_ref(formats, &outlink->in_chlayouts);
+    return 0;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
