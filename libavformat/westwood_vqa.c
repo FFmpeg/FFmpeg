@@ -61,8 +61,6 @@ typedef struct WsVqaDemuxContext {
 
     int audio_stream_index;
     int video_stream_index;
-
-    int64_t audio_frame_counter;
 } WsVqaDemuxContext;
 
 static int wsvqa_probe(AVProbeData *p)
@@ -144,7 +142,6 @@ static int wsvqa_read_header(AVFormatContext *s,
         wsvqa->audio_stream_index = st->index;
         wsvqa->audio_samplerate = st->codec->sample_rate;
         wsvqa->audio_channels = st->codec->channels;
-        wsvqa->audio_frame_counter = 0;
     }
 
     /* there are 0 or more chunks before the FINF chunk; iterate until
@@ -216,13 +213,14 @@ static int wsvqa_read_packet(AVFormatContext *s,
             if (chunk_type == SND2_TAG) {
                 pkt->stream_index = wsvqa->audio_stream_index;
                 /* 2 samples/byte, 1 or 2 samples per frame depending on stereo */
-                wsvqa->audio_frame_counter += (chunk_size * 2) / wsvqa->audio_channels;
+                pkt->duration = (chunk_size * 2) / wsvqa->audio_channels;
             } else if(chunk_type == SND1_TAG) {
                 pkt->stream_index = wsvqa->audio_stream_index;
                 /* unpacked size is stored in header */
-                wsvqa->audio_frame_counter += AV_RL16(pkt->data) / wsvqa->audio_channels;
+                pkt->duration = AV_RL16(pkt->data) / wsvqa->audio_channels;
             } else {
                 pkt->stream_index = wsvqa->video_stream_index;
+                pkt->duration = 1;
             }
             /* stay on 16-bit alignment */
             if (skip_byte)
