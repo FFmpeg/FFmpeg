@@ -1143,9 +1143,14 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
         }
         break;
     case AV_PICTURE_TYPE_B:
-        // TODO: implement interlaced frame B picture decoding
-        if (v->fcm == ILACE_FRAME)
-            return -1;
+        if (v->fcm == ILACE_FRAME) {
+            v->bfraction_lut_index = get_vlc2(gb, ff_vc1_bfraction_vlc.table, VC1_BFRACTION_VLC_BITS, 1);
+            v->bfraction           = ff_vc1_bfraction_lut[v->bfraction_lut_index];
+            if (v->bfraction == 0) {
+                return -1;
+            }
+            return -1; // This codepath is still incomplete thus it is disabled
+        }
         if (v->extended_mv)
             v->mvrange = get_unary(gb, 0, 3);
         else
@@ -1193,6 +1198,37 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
                 v->fourmvbp_vlc = &ff_vc1_4mv_block_pattern_vlc[fourmvbptab];
             }
             v->numref = 1; // interlaced field B pictures are always 2-ref
+        } else if (v->fcm == ILACE_FRAME) {
+            if (v->extended_dmv)
+                v->dmvrange = get_unary(gb, 0, 3);
+            get_bits1(gb); /* intcomp - present but shall always be 0 */
+            v->intcomp          = 0;
+            v->mv_mode          = MV_PMODE_1MV;
+            v->fourmvswitch     = 0;
+            v->qs_last          = v->s.quarter_sample;
+            v->s.quarter_sample = 1;
+            v->s.mspel          = 1;
+            status              = bitplane_decoding(v->direct_mb_plane, &v->dmb_is_raw, v);
+            if (status < 0)
+                return -1;
+            av_log(v->s.avctx, AV_LOG_DEBUG, "MB Direct Type plane encoding: "
+                   "Imode: %i, Invert: %i\n", status>>1, status&1);
+            status = bitplane_decoding(v->s.mbskip_table, &v->skip_is_raw, v);
+            if (status < 0)
+                return -1;
+            av_log(v->s.avctx, AV_LOG_DEBUG, "MB Skip plane encoding: "
+                   "Imode: %i, Invert: %i\n", status>>1, status&1);
+            mbmodetab       = get_bits(gb, 2);
+            v->mbmode_vlc   = &ff_vc1_intfr_non4mv_mbmode_vlc[mbmodetab];
+            imvtab          = get_bits(gb, 2);
+            v->imv_vlc      = &ff_vc1_1ref_mvdata_vlc[imvtab];
+            // interlaced p/b-picture cbpcy range is [1, 63]
+            icbptab         = get_bits(gb, 3);
+            v->cbpcy_vlc    = &ff_vc1_icbpcy_vlc[icbptab];
+            twomvbptab      = get_bits(gb, 2);
+            v->twomvbp_vlc  = &ff_vc1_2mv_block_pattern_vlc[twomvbptab];
+            fourmvbptab     = get_bits(gb, 2);
+            v->fourmvbp_vlc = &ff_vc1_4mv_block_pattern_vlc[fourmvbptab];
         } else {
             v->mv_mode          = get_bits1(gb) ? MV_PMODE_1MV : MV_PMODE_1MV_HPEL_BILIN;
             v->qs_last          = v->s.quarter_sample;
