@@ -80,7 +80,7 @@ typedef struct {
     int index_sid;
     int body_sid;
     int64_t this_partition;
-    int64_t essence_offset;         /* absolute offset of essence */
+    int64_t essence_offset;         ///< absolute offset of essence
     int64_t essence_length;
     int32_t kag_size;
     int64_t header_byte_count;
@@ -407,7 +407,7 @@ static int mxf_read_primer_pack(void *arg, AVIOContext *pb, int tag, int size, U
 static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size, UID uid, int64_t klv_offset)
 {
     MXFContext *mxf = arg;
-    MXFPartition *partition;
+    MXFPartition *partition, *tmp_part;
     UID op;
     uint64_t footer_partition;
     uint32_t nb_essence_containers;
@@ -415,9 +415,10 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
     if (mxf->partitions_count+1 >= UINT_MAX / sizeof(*mxf->partitions))
         return AVERROR(ENOMEM);
 
-    mxf->partitions = av_realloc(mxf->partitions, (mxf->partitions_count + 1) * sizeof(*mxf->partitions));
-    if (!mxf->partitions)
+    tmp_part = av_realloc(mxf->partitions, (mxf->partitions_count + 1) * sizeof(*mxf->partitions));
+    if (!tmp_part)
         return AVERROR(ENOMEM);
+    mxf->partitions = tmp_part;
 
     if (mxf->parsing_backward) {
         /* insert the new partition pack in the middle
@@ -531,11 +532,13 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
 
 static int mxf_add_metadata_set(MXFContext *mxf, void *metadata_set)
 {
+    MXFMetadataSet **tmp;
     if (mxf->metadata_sets_count+1 >= UINT_MAX / sizeof(*mxf->metadata_sets))
         return AVERROR(ENOMEM);
-    mxf->metadata_sets = av_realloc(mxf->metadata_sets, (mxf->metadata_sets_count + 1) * sizeof(*mxf->metadata_sets));
-    if (!mxf->metadata_sets)
+    tmp = av_realloc(mxf->metadata_sets, (mxf->metadata_sets_count + 1) * sizeof(*mxf->metadata_sets));
+    if (!tmp)
         return AVERROR(ENOMEM);
+    mxf->metadata_sets = tmp;
     mxf->metadata_sets[mxf->metadata_sets_count] = metadata_set;
     mxf->metadata_sets_count++;
     return 0;
@@ -888,6 +891,7 @@ static int mxf_get_sorted_table_segments(MXFContext *mxf, int *nb_sorted_segment
 
     if (!(unsorted_segments = av_calloc(nb_segments, sizeof(*unsorted_segments))) ||
         !(*sorted_segments  = av_calloc(nb_segments, sizeof(**sorted_segments)))) {
+        av_freep(sorted_segments);
         av_free(unsorted_segments);
         return AVERROR(ENOMEM);
     }
@@ -1303,7 +1307,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
 
         if (!(source_track->sequence = mxf_resolve_strong_ref(mxf, &source_track->sequence_ref, Sequence))) {
             av_log(mxf->fc, AV_LOG_ERROR, "could not resolve source track sequence strong ref\n");
-            ret = -1;
+            ret = AVERROR_INVALIDDATA;
             goto fail_and_free;
         }
 
@@ -1971,8 +1975,9 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     if (sample_time < 0)
         sample_time = 0;
     seconds = av_rescale(sample_time, st->time_base.num, st->time_base.den);
-    if (avio_seek(s->pb, (s->bit_rate * seconds) >> 3, SEEK_SET) < 0)
-        return -1;
+
+    if ((ret = avio_seek(s->pb, (s->bit_rate * seconds) >> 3, SEEK_SET)) < 0)
+        return ret;
     ff_update_cur_dts(s, st, sample_time);
     } else {
         t = &mxf->index_tables[0];
@@ -1994,7 +1999,7 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
         if ((ret = mxf_edit_unit_absolute_offset(mxf, t, sample_time, &sample_time, &seekpos, 1)) << 0)
             return ret;
 
-        av_update_cur_dts(s, st, sample_time);
+        ff_update_cur_dts(s, st, sample_time);
         mxf->current_edit_unit = sample_time;
         avio_seek(s->pb, seekpos, SEEK_SET);
     }
