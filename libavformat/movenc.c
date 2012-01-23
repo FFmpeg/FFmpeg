@@ -1948,7 +1948,8 @@ static void build_chunks(MOVTrack *trk)
     chunk->chunkNum= 1;
     trk->chunkCount= 1;
     for(i=1; i<trk->entry; i++){
-        if(chunk->pos + chunkSize == trk->cluster[i].pos){
+        if(chunk->pos + chunkSize == trk->cluster[i].pos &&
+            chunkSize + trk->cluster[i].size < UINT32_MAX / 4){
             chunkSize             += trk->cluster[i].size;
             chunk->samplesInChunk += trk->cluster[i].entries;
         }else{
