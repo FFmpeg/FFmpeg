@@ -24,7 +24,7 @@
 #include "riff.h"
 #include "isom.h"
 #include "avio_internal.h"
-#include "libavutil/intfloat_readwrite.h"
+#include "libavutil/intfloat.h"
 
 typedef struct {
     int64_t data;
@@ -144,7 +144,7 @@ static int caf_write_header(AVFormatContext *s)
 
     ffio_wfourcc(pb, "desc");                         //< Audio Description chunk
     avio_wb64(pb, 32);                                //< mChunkSize
-    avio_wb64(pb, av_dbl2int(enc->sample_rate));      //< mSampleRate
+    avio_wb64(pb, av_double2int(enc->sample_rate));   //< mSampleRate
     avio_wl32(pb, codec_tag);                         //< mFormatID
     avio_wb32(pb, codec_flags(enc->codec_id));        //< mFormatFlags
     avio_wb32(pb, enc->block_align);                  //< mBytesPerPacket
