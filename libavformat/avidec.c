@@ -699,8 +699,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             }
             break;
         case MKTAG('s', 't', 'r', 'd'):
-            st = s->streams[stream_index];
-            if (stream_index >= (unsigned)s->nb_streams || st->codec->extradata_size) {
+            if (stream_index >= (unsigned)s->nb_streams || s->streams[stream_index]->codec->extradata_size) {
                 avio_skip(pb, size);
             } else {
                 uint64_t cur_pos = avio_tell(pb);
