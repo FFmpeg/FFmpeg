@@ -2619,7 +2619,7 @@ static void mov_read_chapters(AVFormatContext *s)
                 if (len == 1 || len == 2)
                     title[len] = 0;
                 else
-                    get_strz(sc->pb, title + 2, len - 1);
+                    avio_get_str(sc->pb, INT_MAX, title + 2, len - 1);
             }
         }
 

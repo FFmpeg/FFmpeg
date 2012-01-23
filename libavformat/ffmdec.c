@@ -325,7 +325,8 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             codec->qcompress = avio_rb16(pb) / 10000.0;
             codec->qblur = avio_rb16(pb) / 10000.0;
             codec->bit_rate_tolerance = avio_rb32(pb);
-            codec->rc_eq = av_strdup(get_strz(pb, rc_eq_buf, sizeof(rc_eq_buf)));
+            avio_get_str(pb, INT_MAX, rc_eq_buf, sizeof(rc_eq_buf));
+            codec->rc_eq = av_strdup(rc_eq_buf);
             codec->rc_max_rate = avio_rb32(pb);
             codec->rc_min_rate = avio_rb32(pb);
             codec->rc_buffer_size = avio_rb32(pb);
