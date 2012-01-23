@@ -51,7 +51,6 @@
 #define CMDS_TAG MKBETAG('C', 'M', 'D', 'S')
 
 #define VQA_HEADER_SIZE 0x2A
-#define VQA_FRAMERATE 15
 #define VQA_PREAMBLE_SIZE 8
 
 typedef struct WsVqaDemuxContext {
@@ -87,13 +86,13 @@ static int wsvqa_read_header(AVFormatContext *s,
     unsigned char scratch[VQA_PREAMBLE_SIZE];
     unsigned int chunk_tag;
     unsigned int chunk_size;
+    int fps;
 
     /* initialize the video decoder stream */
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
     st->start_time = 0;
-    avpriv_set_pts_info(st, 33, 1, VQA_FRAMERATE);
     wsvqa->video_stream_index = st->index;
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_WS_VQA;
@@ -113,6 +112,12 @@ static int wsvqa_read_header(AVFormatContext *s,
     }
     st->codec->width = AV_RL16(&header[6]);
     st->codec->height = AV_RL16(&header[8]);
+    fps = header[12];
+    if (fps < 1 || fps > 30) {
+        av_log(s, AV_LOG_ERROR, "invalid fps: %d\n", fps);
+        return AVERROR_INVALIDDATA;
+    }
+    avpriv_set_pts_info(st, 64, 1, fps);
 
     /* initialize the audio decoder stream for VQA v1 or nonzero samplerate */
     if (AV_RL16(&header[24]) || (AV_RL16(&header[0]) == 1 && AV_RL16(&header[2]) == 1)) {
