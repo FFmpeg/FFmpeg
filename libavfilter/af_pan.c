@@ -231,12 +231,12 @@ static int query_formats(AVFilterContext *ctx)
         avfilter_set_common_packing_formats(ctx, avfilter_make_all_packing_formats());
         pan->filter_samples = filter_samples_channel_mapping;
     } else {
-    const enum AVSampleFormat sample_fmts[] = {AV_SAMPLE_FMT_S16, -1};
-    const int                packing_fmts[] = {AVFILTER_PACKED,   -1};
+        const enum AVSampleFormat sample_fmts[] = {AV_SAMPLE_FMT_S16, -1};
+        const int                packing_fmts[] = {AVFILTER_PACKED,   -1};
 
-    avfilter_set_common_sample_formats (ctx, avfilter_make_format_list(sample_fmts));
-    avfilter_set_common_packing_formats(ctx, avfilter_make_format_list(packing_fmts));
-    pan->filter_samples = filter_samples_panning;
+        avfilter_set_common_sample_formats (ctx, avfilter_make_format_list(sample_fmts));
+        avfilter_set_common_packing_formats(ctx, avfilter_make_format_list(packing_fmts));
+        pan->filter_samples = filter_samples_panning;
     }
 
     // inlink supports any channel layout
@@ -307,23 +307,23 @@ static int config_props(AVFilterLink *link)
         if (r < 0)
             return r;
     } else {
-    // renormalize
-    for (i = 0; i < pan->nb_output_channels; i++) {
-        if (!((pan->need_renorm >> i) & 1))
-            continue;
-        t = 0;
-        for (j = 0; j < pan->nb_input_channels; j++)
-            t += pan->gain.d[i][j];
-        if (t > -1E-5 && t < 1E-5) {
-            // t is almost 0 but not exactly, this is probably a mistake
-            if (t)
-                av_log(ctx, AV_LOG_WARNING,
-                       "Degenerate coefficients while renormalizing\n");
-            continue;
+        // renormalize
+        for (i = 0; i < pan->nb_output_channels; i++) {
+            if (!((pan->need_renorm >> i) & 1))
+                continue;
+            t = 0;
+            for (j = 0; j < pan->nb_input_channels; j++)
+                t += pan->gain.d[i][j];
+            if (t > -1E-5 && t < 1E-5) {
+                // t is almost 0 but not exactly, this is probably a mistake
+                if (t)
+                    av_log(ctx, AV_LOG_WARNING,
+                           "Degenerate coefficients while renormalizing\n");
+                continue;
+            }
+            for (j = 0; j < pan->nb_input_channels; j++)
+                pan->gain.d[i][j] /= t;
         }
-        for (j = 0; j < pan->nb_input_channels; j++)
-            pan->gain.d[i][j] /= t;
-    }
     }
     // summary
     for (i = 0; i < pan->nb_output_channels; i++) {
