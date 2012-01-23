@@ -10,6 +10,9 @@ LIBAVFORMAT_$MAJOR {
                 ff_rtp_get_local_rtp_port;
                 ff_rtp_get_local_rtcp_port;
                 ffio_open_dyn_packet_buf;
+                ffurl_close;
+                ffurl_open;
+                ffurl_write;
                 url_open;
                 url_close;
                 url_write;
