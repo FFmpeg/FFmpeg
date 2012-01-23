@@ -54,10 +54,7 @@
 #define VQA_PREAMBLE_SIZE 8
 
 typedef struct WsVqaDemuxContext {
-    int audio_samplerate;
     int audio_channels;
-    int audio_bits;
-
     int audio_stream_index;
     int video_stream_index;
 } WsVqaDemuxContext;
@@ -158,7 +155,6 @@ static int wsvqa_read_header(AVFormatContext *s,
         }
 
         wsvqa->audio_stream_index = st->index;
-        wsvqa->audio_samplerate = st->codec->sample_rate;
         wsvqa->audio_channels = st->codec->channels;
     }
 
