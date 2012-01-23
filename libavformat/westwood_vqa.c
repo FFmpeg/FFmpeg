@@ -86,7 +86,7 @@ static int wsvqa_read_header(AVFormatContext *s,
     unsigned char scratch[VQA_PREAMBLE_SIZE];
     unsigned int chunk_tag;
     unsigned int chunk_size;
-    int fps;
+    int fps, version, flags, sample_rate, channels;
 
     /* initialize the video decoder stream */
     st = avformat_new_stream(s, NULL);
@@ -120,29 +120,42 @@ static int wsvqa_read_header(AVFormatContext *s,
     avpriv_set_pts_info(st, 64, 1, fps);
 
     /* initialize the audio decoder stream for VQA v1 or nonzero samplerate */
-    if (AV_RL16(&header[24]) || (AV_RL16(&header[0]) == 1 && AV_RL16(&header[2]) == 1)) {
+    version     = AV_RL16(&header[ 0]);
+    flags       = AV_RL16(&header[ 2]);
+    sample_rate = AV_RL16(&header[24]);
+    channels    =          header[26];
+    if (sample_rate || (version == 1 && flags == 1)) {
         st = avformat_new_stream(s, NULL);
         if (!st)
             return AVERROR(ENOMEM);
         st->start_time = 0;
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        if (AV_RL16(&header[0]) == 1)
-            st->codec->codec_id = CODEC_ID_WESTWOOD_SND1;
-        else
-            st->codec->codec_id = CODEC_ID_ADPCM_IMA_WS;
-        st->codec->codec_tag = 0;  /* no tag */
-        st->codec->sample_rate = AV_RL16(&header[24]);
-        if (!st->codec->sample_rate)
-            st->codec->sample_rate = 22050;
-        st->codec->channels = header[26];
-        if (!st->codec->channels)
-            st->codec->channels = 1;
-        st->codec->bits_per_coded_sample = 16;
-        st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
-            st->codec->bits_per_coded_sample / 4;
-        st->codec->block_align = st->codec->channels * st->codec->bits_per_coded_sample;
 
+        if (!sample_rate)
+            sample_rate = 22050;
+        st->codec->sample_rate = sample_rate;
         avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+
+        if (!channels)
+            channels = 1;
+        st->codec->channels = channels;
+
+        switch (version) {
+        case 1:
+            st->codec->codec_id = CODEC_ID_WESTWOOD_SND1;
+            break;
+        case 2:
+        case 3:
+            st->codec->codec_id = CODEC_ID_ADPCM_IMA_WS;
+            st->codec->bits_per_coded_sample = 4;
+            st->codec->bit_rate = channels * sample_rate * 4;
+            break;
+        default:
+            /* NOTE: version 0 is supposedly raw pcm_u8 or pcm_s16le, but we do
+                     not have any samples to validate this */
+            av_log_ask_for_sample(s, "VQA version %d audio\n", version);
+            return AVERROR_PATCHWELCOME;
+        }
 
         wsvqa->audio_stream_index = st->index;
         wsvqa->audio_samplerate = st->codec->sample_rate;
