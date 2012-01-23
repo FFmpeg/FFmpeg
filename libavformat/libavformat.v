@@ -1,6 +1,6 @@
 LIBAVFORMAT_$MAJOR {
         global: av*;
-                #FIXME those are for avserver
+                #FIXME those are for ffserver
                 ff_inet_aton;
                 ff_socket_nonblock;
                 ffm_set_write_index;
