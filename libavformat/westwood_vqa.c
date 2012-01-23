@@ -122,7 +122,6 @@ static int wsvqa_read_header(AVFormatContext *s,
         if (!st)
             return AVERROR(ENOMEM);
         st->start_time = 0;
-        avpriv_set_pts_info(st, 33, 1, VQA_FRAMERATE);
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         if (AV_RL16(&header[0]) == 1)
             st->codec->codec_id = CODEC_ID_WESTWOOD_SND1;
@@ -139,6 +138,8 @@ static int wsvqa_read_header(AVFormatContext *s,
         st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
             st->codec->bits_per_coded_sample / 4;
         st->codec->block_align = st->codec->channels * st->codec->bits_per_coded_sample;
+
+        avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
 
         wsvqa->audio_stream_index = st->index;
         wsvqa->audio_samplerate = st->codec->sample_rate;
