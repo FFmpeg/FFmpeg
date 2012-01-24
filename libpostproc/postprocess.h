@@ -29,9 +29,11 @@
 
 #include "libavutil/avutil.h"
 
+#ifndef LIBPOSTPROC_VERSION_MAJOR
 #define LIBPOSTPROC_VERSION_MAJOR 52
 #define LIBPOSTPROC_VERSION_MINOR  0
 #define LIBPOSTPROC_VERSION_MICRO 100
+#endif
 
 #define LIBPOSTPROC_VERSION_INT AV_VERSION_INT(LIBPOSTPROC_VERSION_MAJOR, \
                                                LIBPOSTPROC_VERSION_MINOR, \
