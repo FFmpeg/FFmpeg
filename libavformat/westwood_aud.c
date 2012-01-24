@@ -169,14 +169,14 @@ static int wsaud_read_packet(AVFormatContext *s,
 
         pkt->duration = out_size;
     } else {
-    ret= av_get_packet(pb, pkt, chunk_size);
-    if (ret != chunk_size)
-        return AVERROR(EIO);
-    pkt->pts = wsaud->audio_frame_counter;
-    pkt->pts /= wsaud->audio_samplerate;
+        ret = av_get_packet(pb, pkt, chunk_size);
+        if (ret != chunk_size)
+            return AVERROR(EIO);
+        pkt->pts = wsaud->audio_frame_counter;
+        pkt->pts /= wsaud->audio_samplerate;
 
-    /* 2 samples/byte, 1 or 2 samples per frame depending on stereo */
-    wsaud->audio_frame_counter += (chunk_size * 2) / wsaud->audio_channels;
+        /* 2 samples/byte, 1 or 2 samples per frame depending on stereo */
+        wsaud->audio_frame_counter += (chunk_size * 2) / wsaud->audio_channels;
     }
     pkt->stream_index = st->index;
 
