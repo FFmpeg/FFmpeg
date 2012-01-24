@@ -605,12 +605,12 @@ null_chunk_retry:
     }
 
     /* map back streams to v,a */
-    if (s->streams[0])
+    if (s->nb_streams > 0)
         st[s->streams[0]->id] = s->streams[0];
-    if (s->streams[1])
+    if (s->nb_streams > 1)
         st[s->streams[1]->id] = s->streams[1];
 
-    if (vsize/* && st[NSV_ST_VIDEO]*/) {
+    if (vsize && st[NSV_ST_VIDEO]) {
         nst = st[NSV_ST_VIDEO]->priv_data;
         pkt = &nsv->ahead[NSV_ST_VIDEO];
         av_get_packet(pb, pkt, vsize);
@@ -623,7 +623,7 @@ null_chunk_retry:
     if(st[NSV_ST_VIDEO])
         ((NSVStream*)st[NSV_ST_VIDEO]->priv_data)->frame_offset++;
 
-    if (asize/*st[NSV_ST_AUDIO]*/) {
+    if (asize && st[NSV_ST_AUDIO]) {
         nst = st[NSV_ST_AUDIO]->priv_data;
         pkt = &nsv->ahead[NSV_ST_AUDIO];
         /* read raw audio specific header on the first audio chunk... */
