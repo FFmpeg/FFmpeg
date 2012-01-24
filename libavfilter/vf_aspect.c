@@ -28,7 +28,7 @@
 #include "avfilter.h"
 
 typedef struct {
-    AVRational aspect;
+    AVRational ratio;
 } AspectContext;
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
@@ -37,14 +37,14 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     int ret;
 
     if (args) {
-        if ((ret = av_parse_ratio(&aspect->aspect, args, 100, 0, ctx)) < 0 ||
-            aspect->aspect.num < 0 || aspect->aspect.den <= 0) {
+        if ((ret = av_parse_ratio(&aspect->ratio, args, 100, 0, ctx)) < 0 ||
+            aspect->ratio.num < 0 || aspect->ratio.den <= 0) {
             av_log(ctx, AV_LOG_ERROR,
                    "Invalid string '%s' for aspect ratio.\n", args);
             return ret;
         }
 
-        av_log(ctx, AV_LOG_INFO, "a:%d/%d\n", aspect->aspect.num, aspect->aspect.den);
+        av_log(ctx, AV_LOG_INFO, "a:%d/%d\n", aspect->ratio.num, aspect->ratio.den);
     }
     return 0;
 }
@@ -53,7 +53,7 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
     AspectContext *aspect = link->dst->priv;
 
-    picref->video->sample_aspect_ratio = aspect->aspect;
+    picref->video->sample_aspect_ratio = aspect->ratio;
     avfilter_start_frame(link->dst->outputs[0], picref);
 }
 
@@ -62,16 +62,16 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 static int setdar_config_props(AVFilterLink *inlink)
 {
     AspectContext *aspect = inlink->dst->priv;
-    AVRational dar = aspect->aspect;
+    AVRational dar = aspect->ratio;
 
-    av_reduce(&aspect->aspect.num, &aspect->aspect.den,
-               aspect->aspect.num * inlink->h,
-               aspect->aspect.den * inlink->w, 100);
+    av_reduce(&aspect->ratio.num, &aspect->ratio.den,
+               aspect->ratio.num * inlink->h,
+               aspect->ratio.den * inlink->w, 100);
 
     av_log(inlink->dst, AV_LOG_INFO, "w:%d h:%d -> dar:%d/%d sar:%d/%d\n",
-           inlink->w, inlink->h, dar.num, dar.den, aspect->aspect.num, aspect->aspect.den);
+           inlink->w, inlink->h, dar.num, dar.den, aspect->ratio.num, aspect->ratio.den);
 
-    inlink->sample_aspect_ratio = aspect->aspect;
+    inlink->sample_aspect_ratio = aspect->ratio;
 
     return 0;
 }
@@ -104,7 +104,7 @@ static int setsar_config_props(AVFilterLink *inlink)
 {
     AspectContext *aspect = inlink->dst->priv;
 
-    inlink->sample_aspect_ratio = aspect->aspect;
+    inlink->sample_aspect_ratio = aspect->ratio;
 
     return 0;
 }
