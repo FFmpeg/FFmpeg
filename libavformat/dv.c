@@ -204,6 +204,12 @@ static int dv_extract_audio_info(DVDemuxContext* c, uint8_t* frame)
     stype = (as_pack[3] & 0x1f);      /* 0 - 2CH, 2 - 4CH, 3 - 8CH */
     quant =  as_pack[4] & 0x07;       /* 0 - 16bit linear, 1 - 12bit nonlinear */
 
+    if (stype > 3) {
+        av_log(c->fctx, AV_LOG_ERROR, "stype %d is invalid\n", stype);
+        c->ach = 0;
+        return 0;
+    }
+
     /* note: ach counts PAIRS of channels (i.e. stereo channels) */
     ach = ((int[4]){  1,  0,  2,  4})[stype];
     if (ach == 1 && quant && freq == 2)
