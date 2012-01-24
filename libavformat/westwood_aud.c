@@ -117,7 +117,7 @@ static int wsaud_read_header(AVFormatContext *s,
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    avpriv_set_pts_info(st, 33, 1, wsaud->audio_samplerate);
+    avpriv_set_pts_info(st, 64, 1, wsaud->audio_samplerate);
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id = wsaud->audio_type;
     st->codec->codec_tag = 0;  /* no tag */
