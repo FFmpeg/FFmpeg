@@ -2373,7 +2373,10 @@ specified, it is assumed the value "0:1".
 For example to change the display aspect ratio to 16:9, specify:
 @example
 setdar=16:9
-# the above is equivalent to
+@end example
+
+The example above is equivalent to:
+@example
 setdar=1.77777
 @end example
 
