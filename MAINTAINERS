@@ -87,6 +87,8 @@ Generic Parts:
     bitstream.c, bitstream.h            Michael Niedermayer
   CABAC:
     cabac.h, cabac.c                    Michael Niedermayer
+  codec names:
+    codec_names.sh                      Nicolas George
   DSP utilities:
     dsputils.c, dsputils.h              Michael Niedermayer
   entropy coding:
@@ -140,6 +142,7 @@ Codecs:
   dv.c                                  Roman Shaposhnik
   eacmv*, eaidct*, eat*                 Peter Ross
   ffv1.c                                Michael Niedermayer
+  ffwavesynth.c                         Nicolas George
   flac*                                 Justin Ruggles
   flashsv*                              Benjamin Larsson
   flicvideo.c                           Mike Melanson
@@ -160,6 +163,7 @@ Codecs:
   jvdec.c                               Peter Ross
   kmvc.c                                Kostya Shishkov
   lcl*.c                                Roberto Togni, Reimar Doeffinger
+  libcelt_dec.c                         Nicolas George
   libgsm.c                              Michel Bardiaux
   libdirac*                             David Conrad
   libopenjpeg.c                         Jaikrishnan Menon
@@ -265,6 +269,10 @@ libavfilter
 ===========
 
 Video filters:
+  graphdump.c                           Nicolas George
+  af_amerge.c                           Nicolas George
+  af_astreamsync.c                      Nicolas George
+  af_pan.c                              Nicolas George
   vsrc_mandelbrot.c                     Michael Niedermayer
   vf_yadif.c                            Michael Niedermayer
 
@@ -345,6 +353,7 @@ Muxers/Demuxers:
   rtpdec_asf.*                          Ronald S. Bultje
   rtpenc_mpv.*, rtpenc_aac.*            Martin Storsjo
   rtsp.c                                Luca Barbato
+  sbgdec.c                              Nicolas George
   sdp.c                                 Martin Storsjo
   segafilm.c                            Mike Melanson
   siff.c                                Kostya Shishkov
@@ -408,6 +417,7 @@ Loren Merritt                 ABD9 08F4 C920 3F65 D8BE 35D7 1540 DAA7 060F 56DE
 Lou Logan                     7D68 DC73 CBEF EABB 671A B6CF 621C 2E28 82F8 DC3A
 Luca Barbato                  6677 4209 213C 8843 5B67 29E7 E84C 78C2 84E9 0E34
 Michael Niedermayer           9FF2 128B 147E F673 0BAD F133 611E C787 040B 0FAB
+Nicolas George                24CE 01CE 9ACC 5CEB 74D8 8D9D B063 D997 36E5 4C93
 Panagiotis Issaris            6571 13A3 33D9 3726 F728 AA98 F643 B12E ECF3 E029
 Peter Ross                    A907 E02F A6E5 0CD2 34CD 20D2 6760 79C5 AC40 DD6B
 Reimar Döffinger              C61D 16E5 9E2C D10C 8958 38A4 0899 A2B9 06D4 D9C7
