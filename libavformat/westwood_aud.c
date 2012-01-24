@@ -42,10 +42,8 @@
 #define AUD_CHUNK_SIGNATURE 0x0000DEAF
 
 typedef struct WsAudDemuxContext {
-    int audio_samplerate;
     int audio_channels;
-    int audio_bits;
-    enum CodecID audio_type;
+    int audio_samplerate;
     int audio_stream_index;
     int64_t audio_frame_counter;
 } WsAudDemuxContext;
@@ -97,37 +95,44 @@ static int wsaud_read_header(AVFormatContext *s,
     AVIOContext *pb = s->pb;
     AVStream *st;
     unsigned char header[AUD_HEADER_SIZE];
+    int sample_rate, channels, codec;
 
     if (avio_read(pb, header, AUD_HEADER_SIZE) != AUD_HEADER_SIZE)
         return AVERROR(EIO);
-    wsaud->audio_samplerate = AV_RL16(&header[0]);
-    if (header[11] == 99)
-        wsaud->audio_type = CODEC_ID_ADPCM_IMA_WS;
-    else if (header[11] == 1)
-        wsaud->audio_type = CODEC_ID_WESTWOOD_SND1;
-    else
-        return AVERROR_INVALIDDATA;
 
-    /* flag 0 indicates stereo */
-    wsaud->audio_channels = (header[10] & 0x1) + 1;
-    /* flag 1 indicates 16 bit audio */
-    wsaud->audio_bits = (((header[10] & 0x2) >> 1) + 1) * 8;
+    sample_rate = AV_RL16(&header[0]);
+    channels    = (header[10] & 0x1) + 1;
+    codec       = header[11];
 
     /* initialize the audio decoder stream */
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    avpriv_set_pts_info(st, 64, 1, wsaud->audio_samplerate);
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id = wsaud->audio_type;
-    st->codec->codec_tag = 0;  /* no tag */
-    st->codec->channels = wsaud->audio_channels;
-    st->codec->sample_rate = wsaud->audio_samplerate;
-    if (st->codec->codec_id == CODEC_ID_ADPCM_IMA_WS) {
-        st->codec->bits_per_coded_sample = 4;
-        st->codec->bit_rate = st->codec->channels * st->codec->sample_rate * 4;
-    }
 
+    switch (codec) {
+    case  1:
+        if (channels != 1) {
+            av_log_ask_for_sample(s, "Stereo WS-SND1 is not supported.\n");
+            return AVERROR_PATCHWELCOME;
+        }
+        st->codec->codec_id = CODEC_ID_WESTWOOD_SND1;
+        break;
+    case 99:
+        st->codec->codec_id = CODEC_ID_ADPCM_IMA_WS;
+        st->codec->bits_per_coded_sample = 4;
+        st->codec->bit_rate = channels * sample_rate * 4;
+        break;
+    default:
+        av_log_ask_for_sample(s, "Unknown codec: %d\n", codec);
+        return AVERROR_PATCHWELCOME;
+    }
+    avpriv_set_pts_info(st, 64, 1, sample_rate);
+    st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
+    st->codec->channels    = channels;
+    st->codec->sample_rate = sample_rate;
+
+    wsaud->audio_channels = channels;
+    wsaud->audio_samplerate = sample_rate;
     wsaud->audio_stream_index = st->index;
     wsaud->audio_frame_counter = 0;
 
