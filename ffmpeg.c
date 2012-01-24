@@ -469,9 +469,8 @@ static void reset_options(OptionsContext *o, int is_input)
     init_opts();
 }
 
-static int alloc_buffer(InputStream *ist, FrameBuffer **pbuf)
+static int alloc_buffer(AVCodecContext *s, InputStream *ist, FrameBuffer **pbuf)
 {
-    AVCodecContext *s = ist->st->codec;
     FrameBuffer  *buf = av_mallocz(sizeof(*buf));
     int ret, i;
     const int pixel_size = av_pix_fmt_descriptors[s->pix_fmt].comp[0].step_minus1+1;
@@ -547,7 +546,7 @@ static int codec_get_buffer(AVCodecContext *s, AVFrame *frame)
     FrameBuffer *buf;
     int ret, i;
 
-    if (!ist->buffer_pool && (ret = alloc_buffer(ist, &ist->buffer_pool)) < 0)
+    if (!ist->buffer_pool && (ret = alloc_buffer(s, ist, &ist->buffer_pool)) < 0)
         return ret;
 
     buf              = ist->buffer_pool;
@@ -557,7 +556,7 @@ static int codec_get_buffer(AVCodecContext *s, AVFrame *frame)
         av_freep(&buf->base[0]);
         av_free(buf);
         ist->dr1 = 0;
-        if ((ret = alloc_buffer(ist, &buf)) < 0)
+        if ((ret = alloc_buffer(s, ist, &buf)) < 0)
             return ret;
     }
     buf->refcount++;
