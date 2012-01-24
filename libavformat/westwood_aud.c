@@ -42,10 +42,7 @@
 #define AUD_CHUNK_SIGNATURE 0x0000DEAF
 
 typedef struct WsAudDemuxContext {
-    int audio_channels;
-    int audio_samplerate;
     int audio_stream_index;
-    int64_t audio_frame_counter;
 } WsAudDemuxContext;
 
 static int wsaud_probe(AVProbeData *p)
@@ -131,10 +128,7 @@ static int wsaud_read_header(AVFormatContext *s,
     st->codec->channels    = channels;
     st->codec->sample_rate = sample_rate;
 
-    wsaud->audio_channels = channels;
-    wsaud->audio_samplerate = sample_rate;
     wsaud->audio_stream_index = st->index;
-    wsaud->audio_frame_counter = 0;
 
     return 0;
 }
@@ -177,11 +171,9 @@ static int wsaud_read_packet(AVFormatContext *s,
         ret = av_get_packet(pb, pkt, chunk_size);
         if (ret != chunk_size)
             return AVERROR(EIO);
-        pkt->pts = wsaud->audio_frame_counter;
-        pkt->pts /= wsaud->audio_samplerate;
 
         /* 2 samples/byte, 1 or 2 samples per frame depending on stereo */
-        wsaud->audio_frame_counter += (chunk_size * 2) / wsaud->audio_channels;
+        pkt->duration = (chunk_size * 2) / st->codec->channels;
     }
     pkt->stream_index = st->index;
 
