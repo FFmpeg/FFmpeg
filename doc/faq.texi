@@ -300,7 +300,7 @@ lost.
 Most likely, it is through @code{auto-inserted aconvert}. Try to understand
 why the converting filter was needed at that place.
 
-Just before the output is a lilely place, as @option{-f lavfi} currently
+Just before the output is a likely place, as @option{-f lavfi} currently
 only support packed S16.
 
 Then insert the correct @code{aconvert} explicitly in the filter graph,
