@@ -3250,16 +3250,27 @@ Keep in mind that the sample aspect ratio set by the @code{setsar}
 filter may be changed by later filters in the filterchain, e.g. if
 another "setsar" or a "setdar" filter is applied.
 
-The @code{setdar} and @code{setsar} filters accept a parameter string
-which represents the wanted aspect ratio.  The parameter can
-be a floating point number string, an expression, or a string of the form
-@var{num}:@var{den}, where @var{num} and @var{den} are the numerator
-and denominator of the aspect ratio. If the parameter is not
-specified, it is assumed the value "0:1".
+The @code{setdar} and @code{setsar} filters accept a string in the
+form @var{num}:@var{den} expressing an aspect ratio, or the following
+named options, expressed as a sequence of @var{key}=@var{value} pairs,
+separated by ":".
+
+@table @option
+
+@item r, ratio:
+Set the aspect ratio used by the filter.
+
+The parameter can be a floating point number string, an expression, or
+a string of the form @var{num}:@var{den}, where @var{num} and
+@var{den} are the numerator and denominator of the aspect ratio. If
+the parameter is not specified, it is assumed the value "0".
+In case the form "@var{num}:@var{den}" the @code{:} character should
+be escaped.
+@end table
 
 For example to change the display aspect ratio to 16:9, specify:
 @example
-setdar=16:9
+setdar='16:9'
 @end example
 
 The example above is equivalent to:
@@ -3269,7 +3280,7 @@ setdar=1.77777
 
 To change the sample aspect ratio to 10:11, specify:
 @example
-setsar=10:11
+setsar='10:11'
 @end example
 
 @section setfield
