@@ -46,6 +46,9 @@ static void decode_mb(MpegEncContext *s, int ref)
     s->dest[1] = s->current_picture.f.data[1] + (s->mb_y * (16 >> s->chroma_y_shift) * s->uvlinesize) + s->mb_x * (16 >> s->chroma_x_shift);
     s->dest[2] = s->current_picture.f.data[2] + (s->mb_y * (16 >> s->chroma_y_shift) * s->uvlinesize) + s->mb_x * (16 >> s->chroma_x_shift);
 
+    ff_init_block_index(s);
+    ff_update_block_index(s);
+
     if (CONFIG_H264_DECODER && s->codec_id == CODEC_ID_H264) {
         H264Context *h = (void*)s;
         h->mb_xy = s->mb_x + s->mb_y * s->mb_stride;
