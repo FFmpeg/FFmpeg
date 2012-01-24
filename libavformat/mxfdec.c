@@ -207,6 +207,7 @@ typedef struct {
     int current_edit_unit;
     int nb_index_tables;
     MXFIndexTable *index_tables;
+    int edit_units_per_packet;      ///< how many edit units to read at a time (PCM, OPAtom)
 } MXFContext;
 
 enum MXFWrappingScheme {
@@ -1615,6 +1616,38 @@ static int64_t round_to_kag(int64_t position, int kag_size)
     return ret == position ? ret : ret + kag_size;
 }
 
+static int is_pcm(enum CodecID codec_id)
+{
+    /* we only care about "normal" PCM codecs until we get samples */
+    return codec_id >= CODEC_ID_PCM_S16LE && codec_id < CODEC_ID_PCM_S24DAUD;
+}
+
+/**
+ * Deals with the case where for some audio atoms EditUnitByteCount is very small (2, 4..).
+ * In those cases we should read more than one sample per call to mxf_read_packet().
+ */
+static void mxf_handle_small_eubc(AVFormatContext *s)
+{
+    MXFContext *mxf = s->priv_data;
+
+    /* assuming non-OPAtom == frame wrapped
+     * no sane writer would wrap 2 byte PCM packets with 20 byte headers.. */
+    if (mxf->op != OPAtom)
+        return;
+
+    /* expect PCM with exactly one index table segment and a small (< 32) EUBC */
+    if (s->nb_streams != 1 || s->streams[0]->codec->codec_type != AVMEDIA_TYPE_AUDIO ||
+        !is_pcm(s->streams[0]->codec->codec_id) || mxf->nb_index_tables != 1 ||
+        mxf->index_tables[0].nb_segments != 1 ||
+        mxf->index_tables[0].segments[0]->edit_unit_byte_count >= 32)
+        return;
+
+    /* arbitrarily default to 48 kHz PAL audio frame size */
+    /* TODO: we could compute this from the ratio between the audio and video edit rates
+     *       for 48 kHz NTSC we could use the 1802-1802-1802-1802-1801 pattern */
+    mxf->edit_units_per_packet = 1920;
+}
+
 static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     MXFContext *mxf = s->priv_data;
@@ -1623,6 +1656,7 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     int ret;
 
     mxf->last_forward_tell = INT64_MAX;
+    mxf->edit_units_per_packet = 1;
 
     if (!mxf_read_sync(s->pb, mxf_header_partition_pack_key, 14)) {
         av_log(s, AV_LOG_ERROR, "could not find header partition pack key\n");
@@ -1747,6 +1781,8 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return AVERROR_INVALIDDATA;
     }
 
+    mxf_handle_small_eubc(s);
+
     return 0;
 }
 
@@ -1847,6 +1883,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t ret64, pos, next_pos;
     AVStream *st;
     MXFIndexTable *t;
+    int edit_units;
 
     if (mxf->op != OPAtom)
         return mxf_read_packet_old(s, pkt);
@@ -1859,12 +1896,14 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (mxf->current_edit_unit >= st->duration)
         return AVERROR_EOF;
 
+    edit_units = FFMIN(mxf->edit_units_per_packet, st->duration - mxf->current_edit_unit);
+
     if ((ret = mxf_edit_unit_absolute_offset(mxf, t, mxf->current_edit_unit, NULL, &pos, 1)) < 0)
         return ret;
 
     /* compute size by finding the next edit unit or the end of the essence container
      * not pretty, but it works */
-    if ((ret = mxf_edit_unit_absolute_offset(mxf, t, mxf->current_edit_unit + 1, NULL, &next_pos, 0)) < 0 &&
+    if ((ret = mxf_edit_unit_absolute_offset(mxf, t, mxf->current_edit_unit + edit_units, NULL, &next_pos, 0)) < 0 &&
         (next_pos = mxf_essence_container_end(mxf, t->body_sid)) <= 0) {
         av_log(s, AV_LOG_ERROR, "unable to compute the size of the last packet\n");
         return AVERROR_INVALIDDATA;
@@ -1888,7 +1927,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     pkt->stream_index = 0;
-    mxf->current_edit_unit++;
+    mxf->current_edit_unit += edit_units;
 
     return 0;
 }
