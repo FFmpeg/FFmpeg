@@ -79,7 +79,7 @@ static int wsaud_probe(AVProbeData *p)
 
     /* note: only check for WS IMA (type 99) right now since there is no
      * support for type 1 */
-    if (p->buf[11] != 99)
+    if (p->buf[11] != 99 && p->buf[11] != 1)
         return 0;
 
     /* read ahead to the first audio chunk and validate the first header signature */
@@ -103,6 +103,8 @@ static int wsaud_read_header(AVFormatContext *s,
     wsaud->audio_samplerate = AV_RL16(&header[0]);
     if (header[11] == 99)
         wsaud->audio_type = CODEC_ID_ADPCM_IMA_WS;
+    else if (header[11] == 1)
+        wsaud->audio_type = CODEC_ID_WESTWOOD_SND1;
     else
         return AVERROR_INVALIDDATA;
 
@@ -121,10 +123,10 @@ static int wsaud_read_header(AVFormatContext *s,
     st->codec->codec_tag = 0;  /* no tag */
     st->codec->channels = wsaud->audio_channels;
     st->codec->sample_rate = wsaud->audio_samplerate;
-    st->codec->bits_per_coded_sample = wsaud->audio_bits;
-    st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
-        st->codec->bits_per_coded_sample / 4;
-    st->codec->block_align = st->codec->channels * st->codec->bits_per_coded_sample;
+    if (st->codec->codec_id == CODEC_ID_ADPCM_IMA_WS) {
+        st->codec->bits_per_coded_sample = 4;
+        st->codec->bit_rate = st->codec->channels * st->codec->sample_rate * 4;
+    }
 
     wsaud->audio_stream_index = st->index;
     wsaud->audio_frame_counter = 0;
@@ -140,6 +142,7 @@ static int wsaud_read_packet(AVFormatContext *s,
     unsigned char preamble[AUD_CHUNK_PREAMBLE_SIZE];
     unsigned int chunk_size;
     int ret = 0;
+    AVStream *st = s->streams[wsaud->audio_stream_index];
 
     if (avio_read(pb, preamble, AUD_CHUNK_PREAMBLE_SIZE) !=
         AUD_CHUNK_PREAMBLE_SIZE)
@@ -150,15 +153,32 @@ static int wsaud_read_packet(AVFormatContext *s,
         return AVERROR_INVALIDDATA;
 
     chunk_size = AV_RL16(&preamble[0]);
+
+    if (st->codec->codec_id == CODEC_ID_WESTWOOD_SND1) {
+        /* For Westwood SND1 audio we need to add the output size and input
+           size to the start of the packet to match what is in VQA.
+           Specifically, this is needed to signal when a packet should be
+           decoding as raw 8-bit pcm or variable-size ADPCM. */
+        int out_size = AV_RL16(&preamble[2]);
+        if ((ret = av_new_packet(pkt, chunk_size + 4)))
+            return ret;
+        if ((ret = avio_read(pb, &pkt->data[4], chunk_size)) != chunk_size)
+            return ret < 0 ? ret : AVERROR(EIO);
+        AV_WL16(&pkt->data[0], out_size);
+        AV_WL16(&pkt->data[2], chunk_size);
+
+        pkt->duration = out_size;
+    } else {
     ret= av_get_packet(pb, pkt, chunk_size);
     if (ret != chunk_size)
         return AVERROR(EIO);
-    pkt->stream_index = wsaud->audio_stream_index;
     pkt->pts = wsaud->audio_frame_counter;
     pkt->pts /= wsaud->audio_samplerate;
 
     /* 2 samples/byte, 1 or 2 samples per frame depending on stereo */
     wsaud->audio_frame_counter += (chunk_size * 2) / wsaud->audio_channels;
+    }
+    pkt->stream_index = st->index;
 
     return ret;
 }
