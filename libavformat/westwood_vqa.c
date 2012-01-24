@@ -51,18 +51,12 @@
 #define CMDS_TAG MKBETAG('C', 'M', 'D', 'S')
 
 #define VQA_HEADER_SIZE 0x2A
-#define VQA_FRAMERATE 15
 #define VQA_PREAMBLE_SIZE 8
 
 typedef struct WsVqaDemuxContext {
-    int audio_samplerate;
     int audio_channels;
-    int audio_bits;
-
     int audio_stream_index;
     int video_stream_index;
-
-    int64_t audio_frame_counter;
 } WsVqaDemuxContext;
 
 static int wsvqa_probe(AVProbeData *p)
@@ -89,12 +83,13 @@ static int wsvqa_read_header(AVFormatContext *s,
     unsigned char scratch[VQA_PREAMBLE_SIZE];
     unsigned int chunk_tag;
     unsigned int chunk_size;
+    int fps, version, flags, sample_rate, channels;
 
     /* initialize the video decoder stream */
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    avpriv_set_pts_info(st, 33, 1, VQA_FRAMERATE);
+    st->start_time = 0;
     wsvqa->video_stream_index = st->index;
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_WS_VQA;
@@ -114,34 +109,59 @@ static int wsvqa_read_header(AVFormatContext *s,
     }
     st->codec->width = AV_RL16(&header[6]);
     st->codec->height = AV_RL16(&header[8]);
+    fps = header[12];
+    if (fps < 1 || fps > 30) {
+        av_log(s, AV_LOG_ERROR, "invalid fps: %d\n", fps);
+        return AVERROR_INVALIDDATA;
+    }
+    avpriv_set_pts_info(st, 64, 1, fps);
 
     /* initialize the audio decoder stream for VQA v1 or nonzero samplerate */
-    if (AV_RL16(&header[24]) || (AV_RL16(&header[0]) == 1 && AV_RL16(&header[2]) == 1)) {
+    version     = AV_RL16(&header[ 0]);
+    flags       = AV_RL16(&header[ 2]);
+    sample_rate = AV_RL16(&header[24]);
+    channels    =          header[26];
+    if (sample_rate || (version == 1 && flags == 1)) {
         st = avformat_new_stream(s, NULL);
         if (!st)
             return AVERROR(ENOMEM);
-        avpriv_set_pts_info(st, 33, 1, VQA_FRAMERATE);
+        st->start_time = 0;
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        if (AV_RL16(&header[0]) == 1)
+
+        st->codec->extradata_size = VQA_HEADER_SIZE;
+        st->codec->extradata = av_mallocz(VQA_HEADER_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
+        if (!st->codec->extradata)
+            return AVERROR(ENOMEM);
+        memcpy(st->codec->extradata, header, VQA_HEADER_SIZE);
+
+        if (!sample_rate)
+            sample_rate = 22050;
+        st->codec->sample_rate = sample_rate;
+        avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+
+        if (!channels)
+            channels = 1;
+        st->codec->channels = channels;
+
+        switch (version) {
+        case 1:
             st->codec->codec_id = CODEC_ID_WESTWOOD_SND1;
-        else
+            break;
+        case 2:
+        case 3:
             st->codec->codec_id = CODEC_ID_ADPCM_IMA_WS;
-        st->codec->codec_tag = 0;  /* no tag */
-        st->codec->sample_rate = AV_RL16(&header[24]);
-        if (!st->codec->sample_rate)
-            st->codec->sample_rate = 22050;
-        st->codec->channels = header[26];
-        if (!st->codec->channels)
-            st->codec->channels = 1;
-        st->codec->bits_per_coded_sample = 16;
-        st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
-            st->codec->bits_per_coded_sample / 4;
-        st->codec->block_align = st->codec->channels * st->codec->bits_per_coded_sample;
+            st->codec->bits_per_coded_sample = 4;
+            st->codec->bit_rate = channels * sample_rate * 4;
+            break;
+        default:
+            /* NOTE: version 0 is supposedly raw pcm_u8 or pcm_s16le, but we do
+                     not have any samples to validate this */
+            av_log_ask_for_sample(s, "VQA version %d audio\n", version);
+            return AVERROR_PATCHWELCOME;
+        }
 
         wsvqa->audio_stream_index = st->index;
-        wsvqa->audio_samplerate = st->codec->sample_rate;
         wsvqa->audio_channels = st->codec->channels;
-        wsvqa->audio_frame_counter = 0;
     }
 
     /* there are 0 or more chunks before the FINF chunk; iterate until
@@ -208,13 +228,14 @@ static int wsvqa_read_packet(AVFormatContext *s,
             if (chunk_type == SND2_TAG) {
                 pkt->stream_index = wsvqa->audio_stream_index;
                 /* 2 samples/byte, 1 or 2 samples per frame depending on stereo */
-                wsvqa->audio_frame_counter += (chunk_size * 2) / wsvqa->audio_channels;
+                pkt->duration = (chunk_size * 2) / wsvqa->audio_channels;
             } else if(chunk_type == SND1_TAG) {
                 pkt->stream_index = wsvqa->audio_stream_index;
                 /* unpacked size is stored in header */
-                wsvqa->audio_frame_counter += AV_RL16(pkt->data) / wsvqa->audio_channels;
+                pkt->duration = AV_RL16(pkt->data) / wsvqa->audio_channels;
             } else {
                 pkt->stream_index = wsvqa->video_stream_index;
+                pkt->duration = 1;
             }
             /* stay on 16-bit alignment */
             if (skip_byte)

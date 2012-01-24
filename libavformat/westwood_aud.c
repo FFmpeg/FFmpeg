@@ -41,15 +41,6 @@
 #define AUD_CHUNK_PREAMBLE_SIZE 8
 #define AUD_CHUNK_SIGNATURE 0x0000DEAF
 
-typedef struct WsAudDemuxContext {
-    int audio_samplerate;
-    int audio_channels;
-    int audio_bits;
-    enum CodecID audio_type;
-    int audio_stream_index;
-    int64_t audio_frame_counter;
-} WsAudDemuxContext;
-
 static int wsaud_probe(AVProbeData *p)
 {
     int field;
@@ -79,7 +70,7 @@ static int wsaud_probe(AVProbeData *p)
 
     /* note: only check for WS IMA (type 99) right now since there is no
      * support for type 1 */
-    if (p->buf[11] != 99)
+    if (p->buf[11] != 99 && p->buf[11] != 1)
         return 0;
 
     /* read ahead to the first audio chunk and validate the first header signature */
@@ -93,41 +84,44 @@ static int wsaud_probe(AVProbeData *p)
 static int wsaud_read_header(AVFormatContext *s,
                              AVFormatParameters *ap)
 {
-    WsAudDemuxContext *wsaud = s->priv_data;
     AVIOContext *pb = s->pb;
     AVStream *st;
     unsigned char header[AUD_HEADER_SIZE];
+    int sample_rate, channels, codec;
 
     if (avio_read(pb, header, AUD_HEADER_SIZE) != AUD_HEADER_SIZE)
         return AVERROR(EIO);
-    wsaud->audio_samplerate = AV_RL16(&header[0]);
-    if (header[11] == 99)
-        wsaud->audio_type = CODEC_ID_ADPCM_IMA_WS;
-    else
-        return AVERROR_INVALIDDATA;
 
-    /* flag 0 indicates stereo */
-    wsaud->audio_channels = (header[10] & 0x1) + 1;
-    /* flag 1 indicates 16 bit audio */
-    wsaud->audio_bits = (((header[10] & 0x2) >> 1) + 1) * 8;
+    sample_rate = AV_RL16(&header[0]);
+    channels    = (header[10] & 0x1) + 1;
+    codec       = header[11];
 
     /* initialize the audio decoder stream */
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    avpriv_set_pts_info(st, 33, 1, wsaud->audio_samplerate);
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id = wsaud->audio_type;
-    st->codec->codec_tag = 0;  /* no tag */
-    st->codec->channels = wsaud->audio_channels;
-    st->codec->sample_rate = wsaud->audio_samplerate;
-    st->codec->bits_per_coded_sample = wsaud->audio_bits;
-    st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
-        st->codec->bits_per_coded_sample / 4;
-    st->codec->block_align = st->codec->channels * st->codec->bits_per_coded_sample;
 
-    wsaud->audio_stream_index = st->index;
-    wsaud->audio_frame_counter = 0;
+    switch (codec) {
+    case  1:
+        if (channels != 1) {
+            av_log_ask_for_sample(s, "Stereo WS-SND1 is not supported.\n");
+            return AVERROR_PATCHWELCOME;
+        }
+        st->codec->codec_id = CODEC_ID_WESTWOOD_SND1;
+        break;
+    case 99:
+        st->codec->codec_id = CODEC_ID_ADPCM_IMA_WS;
+        st->codec->bits_per_coded_sample = 4;
+        st->codec->bit_rate = channels * sample_rate * 4;
+        break;
+    default:
+        av_log_ask_for_sample(s, "Unknown codec: %d\n", codec);
+        return AVERROR_PATCHWELCOME;
+    }
+    avpriv_set_pts_info(st, 64, 1, sample_rate);
+    st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
+    st->codec->channels    = channels;
+    st->codec->sample_rate = sample_rate;
 
     return 0;
 }
@@ -135,11 +129,11 @@ static int wsaud_read_header(AVFormatContext *s,
 static int wsaud_read_packet(AVFormatContext *s,
                              AVPacket *pkt)
 {
-    WsAudDemuxContext *wsaud = s->priv_data;
     AVIOContext *pb = s->pb;
     unsigned char preamble[AUD_CHUNK_PREAMBLE_SIZE];
     unsigned int chunk_size;
     int ret = 0;
+    AVStream *st = s->streams[0];
 
     if (avio_read(pb, preamble, AUD_CHUNK_PREAMBLE_SIZE) !=
         AUD_CHUNK_PREAMBLE_SIZE)
@@ -150,15 +144,30 @@ static int wsaud_read_packet(AVFormatContext *s,
         return AVERROR_INVALIDDATA;
 
     chunk_size = AV_RL16(&preamble[0]);
-    ret= av_get_packet(pb, pkt, chunk_size);
-    if (ret != chunk_size)
-        return AVERROR(EIO);
-    pkt->stream_index = wsaud->audio_stream_index;
-    pkt->pts = wsaud->audio_frame_counter;
-    pkt->pts /= wsaud->audio_samplerate;
 
-    /* 2 samples/byte, 1 or 2 samples per frame depending on stereo */
-    wsaud->audio_frame_counter += (chunk_size * 2) / wsaud->audio_channels;
+    if (st->codec->codec_id == CODEC_ID_WESTWOOD_SND1) {
+        /* For Westwood SND1 audio we need to add the output size and input
+           size to the start of the packet to match what is in VQA.
+           Specifically, this is needed to signal when a packet should be
+           decoding as raw 8-bit pcm or variable-size ADPCM. */
+        int out_size = AV_RL16(&preamble[2]);
+        if ((ret = av_new_packet(pkt, chunk_size + 4)))
+            return ret;
+        if ((ret = avio_read(pb, &pkt->data[4], chunk_size)) != chunk_size)
+            return ret < 0 ? ret : AVERROR(EIO);
+        AV_WL16(&pkt->data[0], out_size);
+        AV_WL16(&pkt->data[2], chunk_size);
+
+        pkt->duration = out_size;
+    } else {
+        ret = av_get_packet(pb, pkt, chunk_size);
+        if (ret != chunk_size)
+            return AVERROR(EIO);
+
+        /* 2 samples/byte, 1 or 2 samples per frame depending on stereo */
+        pkt->duration = (chunk_size * 2) / st->codec->channels;
+    }
+    pkt->stream_index = st->index;
 
     return ret;
 }
@@ -166,7 +175,6 @@ static int wsaud_read_packet(AVFormatContext *s,
 AVInputFormat ff_wsaud_demuxer = {
     .name           = "wsaud",
     .long_name      = NULL_IF_CONFIG_SMALL("Westwood Studios audio format"),
-    .priv_data_size = sizeof(WsAudDemuxContext),
     .read_probe     = wsaud_probe,
     .read_header    = wsaud_read_header,
     .read_packet    = wsaud_read_packet,

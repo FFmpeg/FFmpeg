@@ -1780,6 +1780,7 @@ int av_get_bits_per_sample(enum CodecID codec_id){
         return 3;
     case CODEC_ID_ADPCM_SBPRO_4:
     case CODEC_ID_ADPCM_CT:
+    case CODEC_ID_ADPCM_IMA_APC:
     case CODEC_ID_ADPCM_IMA_WAV:
     case CODEC_ID_ADPCM_IMA_QT:
     case CODEC_ID_ADPCM_SWF:

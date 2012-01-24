@@ -72,7 +72,7 @@ static int yop_read_header(AVFormatContext *s, AVFormatParameters *ap)
     // Audio
     audio_dec               = audio_stream->codec;
     audio_dec->codec_type   = AVMEDIA_TYPE_AUDIO;
-    audio_dec->codec_id     = CODEC_ID_ADPCM_IMA_WS;
+    audio_dec->codec_id     = CODEC_ID_ADPCM_IMA_APC;
     audio_dec->channels     = 1;
     audio_dec->sample_rate  = 22050;
 
