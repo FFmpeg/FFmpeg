@@ -21,8 +21,6 @@
 
 #include "avdevice.h"
 
-#if FF_API_V4L
-
 #undef __STRICT_ANSI__ //workaround due to broken kernel headers
 #include "config.h"
 #include "libavutil/rational.h"
@@ -363,4 +361,3 @@ AVInputFormat ff_v4l_demuxer = {
     .flags          = AVFMT_NOFILE,
     .priv_class     = &v4l_class,
 };
-#endif  /* FF_API_V4L */
