@@ -325,6 +325,7 @@ Muxers/Demuxers:
   msnwc_tcp.c                           Ramiro Polla
   mtv.c                                 Reynaldo H. Verdejo Pinochet
   mxf*                                  Baptiste Coudurier
+  mxfdec.c                              Tomas Härdin
   nsvdec.c                              Francois Revol
   nut.c                                 Michael Niedermayer
   nuv.c                                 Reimar Doeffinger
