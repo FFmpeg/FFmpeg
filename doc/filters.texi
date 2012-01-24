@@ -2335,26 +2335,38 @@ select='gte(t\,10)*lte(t\,20)*eq(pict_type\,I)'
 select='isnan(prev_selected_t)+gte(t-prev_selected_t\,10)'
 @end example
 
-@anchor{setdar}
-@section setdar
+@section setdar, setsar
 
-Set the Display Aspect Ratio for the filter output video.
+The @code{setdar} filter sets the Display Aspect Ratio for the filter
+output video.
 
 This is done by changing the specified Sample (aka Pixel) Aspect
 Ratio, according to the following equation:
 @math{DAR = HORIZONTAL_RESOLUTION / VERTICAL_RESOLUTION * SAR}
 
-Keep in mind that this filter does not modify the pixel dimensions of
-the video frame. Also the display aspect ratio set by this filter may
-be changed by later filters in the filterchain, e.g. in case of
-scaling or if another "setdar" or a "setsar" filter is applied.
+Keep in mind that the @code{setdar} filter does not modify the pixel
+dimensions of the video frame. Also the display aspect ratio set by
+this filter may be changed by later filters in the filterchain,
+e.g. in case of scaling or if another "setdar" or a "setsar" filter is
+applied.
 
-The filter accepts a parameter string which represents the wanted
-display aspect ratio.
-The parameter can be a floating point number string, or an expression
-of the form @var{num}:@var{den}, where @var{num} and @var{den} are the
-numerator and denominator of the aspect ratio.
-If the parameter is not specified, it is assumed the value "0:1".
+The @code{setsar} filter sets the Sample (aka Pixel) Aspect Ratio for
+the filter output video.
+
+Note that as a consequence of the application of this filter, the
+output display aspect ratio will change according to the equation
+above.
+
+Keep in mind that the sample aspect ratio set by the @code{setsar}
+filter may be changed by later filters in the filterchain, e.g. if
+another "setsar" or a "setdar" filter is applied.
+
+The @code{setdar} and @code{setsar} filters accept a parameter string
+which represents the wanted aspect ratio.  The parameter can
+be a floating point number string, an expression, or a string of the form
+@var{num}:@var{den}, where @var{num} and @var{den} are the numerator
+and denominator of the aspect ratio. If the parameter is not
+specified, it is assumed the value "0:1".
 
 For example to change the display aspect ratio to 16:9, specify:
 @example
@@ -2363,7 +2375,10 @@ setdar=16:9
 setdar=1.77777
 @end example
 
-See also the @ref{setsar} filter documentation.
+To change the sample aspect ratio to 10:11, specify:
+@example
+setsar=10:11
+@end example
 
 @section setpts
 
@@ -2414,32 +2429,6 @@ setpts=N/(25*TB)
 
 # fixed rate 25 fps with some jitter
 setpts='1/(25*TB) * (N + 0.05 * sin(N*2*PI/25))'
-@end example
-
-@anchor{setsar}
-@section setsar
-
-Set the Sample (aka Pixel) Aspect Ratio for the filter output video.
-
-Note that as a consequence of the application of this filter, the
-output display aspect ratio will change according to the following
-equation:
-@math{DAR = HORIZONTAL_RESOLUTION / VERTICAL_RESOLUTION * SAR}
-
-Keep in mind that the sample aspect ratio set by this filter may be
-changed by later filters in the filterchain, e.g. if another "setsar"
-or a "setdar" filter is applied.
-
-The filter accepts a parameter string which represents the wanted
-sample aspect ratio.
-The parameter can be a floating point number string, or an expression
-of the form @var{num}:@var{den}, where @var{num} and @var{den} are the
-numerator and denominator of the aspect ratio.
-If the parameter is not specified, it is assumed the value "0:1".
-
-For example to change the sample aspect ratio to 10:11, specify:
-@example
-setsar=10:11
 @end example
 
 @section settb
