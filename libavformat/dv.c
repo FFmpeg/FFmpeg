@@ -384,7 +384,8 @@ int avpriv_dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
        c->audio_pkt[i].pts  = c->abytes * 30000*8 / c->ast[i]->codec->bit_rate;
        ppcm[i] = c->audio_buf[i];
     }
-    dv_extract_audio(buf, ppcm, c->sys);
+    if (c->ach)
+        dv_extract_audio(buf, ppcm, c->sys);
 
     /* We work with 720p frames split in half, thus even frames have
      * channels 0,1 and odd 2,3. */
