@@ -81,7 +81,6 @@ Configuration options:
                            and binaries will be unredistributable [no]
   --disable-doc            do not build documentation
   --disable-ffmpeg         disable ffmpeg build
-  --enable-avconv          enable  avconv build
   --disable-ffplay         disable ffplay build
   --disable-ffprobe        disable ffprobe build
   --disable-ffserver       disable ffserver build
@@ -997,7 +996,6 @@ PROGRAM_LIST="
 CONFIG_LIST="
     $COMPONENT_LIST
     $PROGRAM_LIST
-    avconv
     avplay
     avprobe
     avserver
@@ -1673,7 +1671,6 @@ avformat_deps="avcodec"
 postproc_deps="gpl"
 
 # programs
-avconv_deps="avcodec avformat swscale"
 ffplay_deps="avcodec avformat swscale sdl"
 ffplay_select="buffersink_filter rdft"
 ffprobe_deps="avcodec avformat"

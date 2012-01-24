@@ -11,7 +11,6 @@ vpath %.texi $(SRC_PATH)
 vpath %/fate_config.sh.template $(SRC_PATH)
 
 PROGS-$(CONFIG_FFMPEG)   += ffmpeg
-PROGS-$(CONFIG_AVCONV)   += avconv
 PROGS-$(CONFIG_FFPLAY)   += ffplay
 PROGS-$(CONFIG_FFPROBE)  += ffprobe
 PROGS-$(CONFIG_FFSERVER) += ffserver
@@ -24,7 +23,7 @@ HOSTPROGS  := $(TESTTOOLS:%=tests/%)
 TOOLS       = qt-faststart trasher
 TOOLS-$(CONFIG_ZLIB) += cws2fws
 
-BASENAMES   = ffmpeg avconv ffplay ffprobe ffserver
+BASENAMES   = ffmpeg ffplay ffprobe ffserver
 ALLPROGS    = $(BASENAMES:%=%$(PROGSSUF)$(EXESUF))
 ALLPROGS_G  = $(BASENAMES:%=%$(PROGSSUF)_g$(EXESUF))
 ALLMANPAGES = $(BASENAMES:%=%.1)
