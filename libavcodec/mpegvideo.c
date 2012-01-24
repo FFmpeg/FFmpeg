@@ -1344,15 +1344,15 @@ void MPV_frame_end(MpegEncContext *s)
               !(s->flags & CODEC_FLAG_EMU_EDGE)) {
         int hshift = av_pix_fmt_descriptors[s->avctx->pix_fmt].log2_chroma_w;
         int vshift = av_pix_fmt_descriptors[s->avctx->pix_fmt].log2_chroma_h;
-        s->dsp.draw_edges(s->current_picture.f.data[0], s->linesize,
+        s->dsp.draw_edges(s->current_picture.f.data[0], s->current_picture.f.linesize[0],
                           s->h_edge_pos, s->v_edge_pos,
                           EDGE_WIDTH, EDGE_WIDTH,
                           EDGE_TOP | EDGE_BOTTOM);
-        s->dsp.draw_edges(s->current_picture.f.data[1], s->uvlinesize,
+        s->dsp.draw_edges(s->current_picture.f.data[1], s->current_picture.f.linesize[1],
                           s->h_edge_pos >> hshift, s->v_edge_pos >> vshift,
                           EDGE_WIDTH >> hshift, EDGE_WIDTH >> vshift,
                           EDGE_TOP | EDGE_BOTTOM);
-        s->dsp.draw_edges(s->current_picture.f.data[2], s->uvlinesize,
+        s->dsp.draw_edges(s->current_picture.f.data[2], s->current_picture.f.linesize[2],
                           s->h_edge_pos >> hshift, s->v_edge_pos >> vshift,
                           EDGE_WIDTH >> hshift, EDGE_WIDTH >> vshift,
                           EDGE_TOP | EDGE_BOTTOM);
