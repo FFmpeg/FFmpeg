@@ -110,14 +110,15 @@ static av_always_inline float quantize_and_encode_band_cost_template(
                                 int *bits, int BT_ZERO, int BT_UNSIGNED,
                                 int BT_PAIR, int BT_ESC)
 {
-    const float IQ = ff_aac_pow2sf_tab[POW_SF2_ZERO + scale_idx - SCALE_ONE_POS + SCALE_DIV_512];
-    const float  Q = ff_aac_pow2sf_tab[POW_SF2_ZERO - scale_idx + SCALE_ONE_POS - SCALE_DIV_512];
+    const int q_idx = POW_SF2_ZERO - scale_idx + SCALE_ONE_POS - SCALE_DIV_512;
+    const float Q   = ff_aac_pow2sf_tab [q_idx];
+    const float Q34 = ff_aac_pow34sf_tab[q_idx];
+    const float IQ  = ff_aac_pow2sf_tab [POW_SF2_ZERO + scale_idx - SCALE_ONE_POS + SCALE_DIV_512];
     const float CLIPPED_ESCAPE = 165140.0f*IQ;
     int i, j;
     float cost = 0;
     const int dim = BT_PAIR ? 2 : 4;
     int resbits = 0;
-    const float  Q34 = sqrtf(Q * sqrtf(Q));
     const int range  = aac_cb_range[cb];
     const int maxval = aac_cb_maxval[cb];
     int off;
@@ -420,7 +421,7 @@ static void codebook_trellis_rate(AACEncContext *s, SingleChannelElement *sce,
     const int run_esc  = (1 << run_bits) - 1;
     int idx, ppos, count;
     int stackrun[120], stackcb[120], stack_len;
-    float next_minrd = INFINITY;
+    float next_minbits = INFINITY;
     int next_mincb = 0;
 
     abs_pow34_v(s->scoefs, sce->coeffs, 1024);
@@ -434,7 +435,7 @@ static void codebook_trellis_rate(AACEncContext *s, SingleChannelElement *sce,
         size = sce->ics.swb_sizes[swb];
         if (sce->zeroes[win*16 + swb]) {
             float cost_stay_here = path[swb][0].cost;
-            float cost_get_here  = next_minrd + run_bits + 4;
+            float cost_get_here  = next_minbits + run_bits + 4;
             if (   run_value_bits[sce->ics.num_windows == 8][path[swb][0].run]
                 != run_value_bits[sce->ics.num_windows == 8][path[swb][0].run+1])
                 cost_stay_here += run_bits;
@@ -447,7 +448,7 @@ static void codebook_trellis_rate(AACEncContext *s, SingleChannelElement *sce,
                 path[swb+1][0].cost     = cost_stay_here;
                 path[swb+1][0].run      = path[swb][0].run + 1;
             }
-            next_minrd = path[swb+1][0].cost;
+            next_minbits = path[swb+1][0].cost;
             next_mincb = 0;
             for (cb = 1; cb < 12; cb++) {
                 path[swb+1][cb].cost = 61450;
@@ -455,10 +456,10 @@ static void codebook_trellis_rate(AACEncContext *s, SingleChannelElement *sce,
                 path[swb+1][cb].run = 0;
             }
         } else {
-            float minrd = next_minrd;
+            float minbits = next_minbits;
             int mincb = next_mincb;
             int startcb = sce->band_type[win*16+swb];
-            next_minrd = INFINITY;
+            next_minbits = INFINITY;
             next_mincb = 0;
             for (cb = 0; cb < startcb; cb++) {
                 path[swb+1][cb].cost = 61450;
@@ -467,15 +468,15 @@ static void codebook_trellis_rate(AACEncContext *s, SingleChannelElement *sce,
             }
             for (cb = startcb; cb < 12; cb++) {
                 float cost_stay_here, cost_get_here;
-                float rd = 0.0f;
+                float bits = 0.0f;
                 for (w = 0; w < group_len; w++) {
-                    rd += quantize_band_cost(s, sce->coeffs + start + w*128,
-                                             s->scoefs + start + w*128, size,
-                                             sce->sf_idx[(win+w)*16+swb], cb,
-                                             0, INFINITY, NULL);
+                    bits += quantize_band_cost(s, sce->coeffs + start + w*128,
+                                               s->scoefs + start + w*128, size,
+                                               sce->sf_idx[(win+w)*16+swb], cb,
+                                               0, INFINITY, NULL);
                 }
-                cost_stay_here = path[swb][cb].cost + rd;
-                cost_get_here  = minrd              + rd + run_bits + 4;
+                cost_stay_here = path[swb][cb].cost + bits;
+                cost_get_here  = minbits            + bits + run_bits + 4;
                 if (   run_value_bits[sce->ics.num_windows == 8][path[swb][cb].run]
                     != run_value_bits[sce->ics.num_windows == 8][path[swb][cb].run+1])
                     cost_stay_here += run_bits;
@@ -488,8 +489,8 @@ static void codebook_trellis_rate(AACEncContext *s, SingleChannelElement *sce,
                     path[swb+1][cb].cost     = cost_stay_here;
                     path[swb+1][cb].run      = path[swb][cb].run + 1;
                 }
-                if (path[swb+1][cb].cost < next_minrd) {
-                    next_minrd = path[swb+1][cb].cost;
+                if (path[swb+1][cb].cost < next_minbits) {
+                    next_minbits = path[swb+1][cb].cost;
                     next_mincb = cb;
                 }
             }

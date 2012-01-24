@@ -918,13 +918,15 @@ int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
         }
         goto parse_common_info;
     }
-    if (v->finterpflag)
-        v->interpfrm = get_bits1(gb);
-    if (v->s.pict_type == AV_PICTURE_TYPE_B) {
-        v->bfraction_lut_index = get_vlc2(gb, ff_vc1_bfraction_vlc.table, VC1_BFRACTION_VLC_BITS, 1);
-        v->bfraction           = ff_vc1_bfraction_lut[v->bfraction_lut_index];
-        if (v->bfraction == 0) {
-            v->s.pict_type = AV_PICTURE_TYPE_BI; /* XXX: should not happen here */
+    if (v->fcm == PROGRESSIVE) {
+        if (v->finterpflag)
+            v->interpfrm = get_bits1(gb);
+        if (v->s.pict_type == AV_PICTURE_TYPE_B) {
+            v->bfraction_lut_index = get_vlc2(gb, ff_vc1_bfraction_vlc.table, VC1_BFRACTION_VLC_BITS, 1);
+            v->bfraction           = ff_vc1_bfraction_lut[v->bfraction_lut_index];
+            if (v->bfraction == 0) {
+                v->s.pict_type = AV_PICTURE_TYPE_BI; /* XXX: should not happen here */
+            }
         }
     }
 

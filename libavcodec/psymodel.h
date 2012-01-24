@@ -109,7 +109,7 @@ typedef struct FFPsyModel {
      *
      * @return suggested window information in a structure
      */
-    FFPsyWindowInfo (*window)(FFPsyContext *ctx, const int16_t *audio, const int16_t *la, int channel, int prev_type);
+    FFPsyWindowInfo (*window)(FFPsyContext *ctx, const float *audio, const float *la, int channel, int prev_type);
 
     /**
      * Perform psychoacoustic analysis and set band info (threshold, energy) for a group of channels.
@@ -174,14 +174,10 @@ av_cold struct FFPsyPreprocessContext* ff_psy_preprocess_init(AVCodecContext *av
  * Preprocess several channel in audio frame in order to compress it better.
  *
  * @param ctx      preprocessing context
- * @param audio    samples to preprocess
- * @param dest     place to put filtered samples
- * @param tag      channel number
- * @param channels number of channel to preprocess (some additional work may be done on stereo pair)
+ * @param audio    samples to be filtered (in place)
+ * @param channels number of channel to preprocess
  */
-void ff_psy_preprocess(struct FFPsyPreprocessContext *ctx,
-                       const int16_t *audio, int16_t *dest,
-                       int tag, int channels);
+void ff_psy_preprocess(struct FFPsyPreprocessContext *ctx, float **audio, int channels);
 
 /**
  * Cleanup audio preprocessing module.

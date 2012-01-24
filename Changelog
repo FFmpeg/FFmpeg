@@ -15,6 +15,7 @@ version next:
 - amerge audio filter
 - GSM audio parser
 - SMJPEG muxer
+- XWD encoder and decoder
 - Automatic thread count based on detection number of (available) CPU cores
 - y41p Brooktree Uncompressed 4:1:1 12-bit encoder and decoder
 - ffprobe -show_error option
