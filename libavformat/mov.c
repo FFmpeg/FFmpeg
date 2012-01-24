@@ -2156,8 +2156,19 @@ static int mov_read_tkhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     sc->width = width >> 16;
     sc->height = height >> 16;
 
+    //Assign clockwise rotate values based on transform matrix so that
+    //we can compensate for iPhone orientation during capture.
+
+    if (display_matrix[1][0] == -65536 && display_matrix[0][1] == 65536) {
+         av_dict_set(&st->metadata, "rotate", "90", 0);
+    }
+
     if (display_matrix[0][0] == -65536 && display_matrix[1][1] == -65536) {
          av_dict_set(&st->metadata, "rotate", "180", 0);
+    }
+
+    if (display_matrix[1][0] == 65536 && display_matrix[0][1] == -65536) {
+         av_dict_set(&st->metadata, "rotate", "270", 0);
     }
 
     // transform the display width/height according to the matrix
