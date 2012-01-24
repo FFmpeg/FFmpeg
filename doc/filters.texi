@@ -2342,7 +2342,9 @@ output video.
 
 This is done by changing the specified Sample (aka Pixel) Aspect
 Ratio, according to the following equation:
-@math{DAR = HORIZONTAL_RESOLUTION / VERTICAL_RESOLUTION * SAR}
+@example
+@var{DAR} = @var{HORIZONTAL_RESOLUTION} / @var{VERTICAL_RESOLUTION} * @var{SAR}
+@end example
 
 Keep in mind that the @code{setdar} filter does not modify the pixel
 dimensions of the video frame. Also the display aspect ratio set by
