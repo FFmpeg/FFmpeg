@@ -41,10 +41,6 @@
 #define AUD_CHUNK_PREAMBLE_SIZE 8
 #define AUD_CHUNK_SIGNATURE 0x0000DEAF
 
-typedef struct WsAudDemuxContext {
-    int audio_stream_index;
-} WsAudDemuxContext;
-
 static int wsaud_probe(AVProbeData *p)
 {
     int field;
@@ -88,7 +84,6 @@ static int wsaud_probe(AVProbeData *p)
 static int wsaud_read_header(AVFormatContext *s,
                              AVFormatParameters *ap)
 {
-    WsAudDemuxContext *wsaud = s->priv_data;
     AVIOContext *pb = s->pb;
     AVStream *st;
     unsigned char header[AUD_HEADER_SIZE];
@@ -128,20 +123,17 @@ static int wsaud_read_header(AVFormatContext *s,
     st->codec->channels    = channels;
     st->codec->sample_rate = sample_rate;
 
-    wsaud->audio_stream_index = st->index;
-
     return 0;
 }
 
 static int wsaud_read_packet(AVFormatContext *s,
                              AVPacket *pkt)
 {
-    WsAudDemuxContext *wsaud = s->priv_data;
     AVIOContext *pb = s->pb;
     unsigned char preamble[AUD_CHUNK_PREAMBLE_SIZE];
     unsigned int chunk_size;
     int ret = 0;
-    AVStream *st = s->streams[wsaud->audio_stream_index];
+    AVStream *st = s->streams[0];
 
     if (avio_read(pb, preamble, AUD_CHUNK_PREAMBLE_SIZE) !=
         AUD_CHUNK_PREAMBLE_SIZE)
@@ -183,7 +175,6 @@ static int wsaud_read_packet(AVFormatContext *s,
 AVInputFormat ff_wsaud_demuxer = {
     .name           = "wsaud",
     .long_name      = NULL_IF_CONFIG_SMALL("Westwood Studios audio format"),
-    .priv_data_size = sizeof(WsAudDemuxContext),
     .read_probe     = wsaud_probe,
     .read_header    = wsaud_read_header,
     .read_packet    = wsaud_read_packet,
