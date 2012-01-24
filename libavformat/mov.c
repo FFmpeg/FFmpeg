@@ -30,6 +30,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"
+#include "libavutil/opt.h"
 #include "avformat.h"
 #include "internal.h"
 #include "avio_internal.h"
@@ -1931,7 +1932,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
 }
 
 static int mov_open_dref(AVIOContext **pb, const char *src, MOVDref *ref,
-                         AVIOInterruptCB *int_cb)
+                         AVIOInterruptCB *int_cb, int use_absolute_path, AVFormatContext *fc)
 {
     /* try relative path, we do not try the absolute because it can leak information about our
        system to an attacker */
@@ -1969,6 +1970,11 @@ static int mov_open_dref(AVIOContext **pb, const char *src, MOVDref *ref,
             if (!avio_open2(pb, filename, AVIO_FLAG_READ, int_cb, NULL))
                 return 0;
         }
+    } else if (use_absolute_path) {
+        av_log(fc, AV_LOG_WARNING, "Using absolute path on user request, "
+               "this is a possible security issue\n");
+        if (!avio_open2(pb, ref->path, AVIO_FLAG_READ, int_cb, NULL))
+            return 0;
     }
 
     return AVERROR(ENOENT);
@@ -2021,7 +2027,8 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     if (sc->dref_id-1 < sc->drefs_count && sc->drefs[sc->dref_id-1].path) {
         MOVDref *dref = &sc->drefs[sc->dref_id - 1];
-        if (mov_open_dref(&sc->pb, c->fc->filename, dref, &c->fc->interrupt_callback) < 0)
+        if (mov_open_dref(&sc->pb, c->fc->filename, dref, &c->fc->interrupt_callback,
+            c->use_absolute_path, c->fc) < 0)
             av_log(c->fc, AV_LOG_ERROR,
                    "stream %d, error opening alias: path='%s', dir='%s', "
                    "filename='%s', volume='%s', nlvl_from=%d, nlvl_to=%d\n",
@@ -2751,6 +2758,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     AVIndexEntry *sample;
     AVStream *st = NULL;
     int ret;
+    mov->fc = s;
  retry:
     sample = mov_find_next_sample(s, &st);
     if (!sample) {
@@ -2920,6 +2928,15 @@ static int mov_read_close(AVFormatContext *s)
     return 0;
 }
 
+static const AVOption options[] = {
+    {"use_absolute_path",
+        "allow using absolute path when opening alias, this is a possible security issue",
+        offsetof(MOVContext, use_absolute_path), FF_OPT_TYPE_INT, {.dbl = 0},
+        0, 1, AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_DECODING_PARAM},
+    {NULL}
+};
+static const AVClass class = {"mov,mp4,m4a,3gp,3g2,mj2", av_default_item_name, options, LIBAVUTIL_VERSION_INT};
+
 AVInputFormat ff_mov_demuxer = {
     .name           = "mov,mp4,m4a,3gp,3g2,mj2",
     .long_name      = NULL_IF_CONFIG_SMALL("QuickTime/MPEG-4/Motion JPEG 2000 format"),
@@ -2929,4 +2946,5 @@ AVInputFormat ff_mov_demuxer = {
     .read_packet    = mov_read_packet,
     .read_close     = mov_read_close,
     .read_seek      = mov_read_seek,
+    .priv_class     = &class,
 };

@@ -130,6 +130,7 @@ typedef struct MOVStreamContext {
 } MOVStreamContext;
 
 typedef struct MOVContext {
+    AVClass *avclass;
     AVFormatContext *fc;
     int time_scale;
     int64_t duration;     ///< duration of the longest track
@@ -143,6 +144,7 @@ typedef struct MOVContext {
     unsigned trex_count;
     int itunes_metadata;  ///< metadata are itunes style
     int chapter_track;
+    int use_absolute_path;
 } MOVContext;
 
 int ff_mp4_read_descr_len(AVIOContext *pb);
