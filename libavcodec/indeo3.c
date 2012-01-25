@@ -772,13 +772,12 @@ static int parse_bintree(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
                 /* get motion vector index and setup the pointer to the mv set */
                 if (!ctx->need_resync)
                     ctx->next_cell_data = &ctx->gb.buffer[(get_bits_count(&ctx->gb) + 7) >> 3];
-                if(ctx->mc_vectors)
-                    mv_idx = *(ctx->next_cell_data++) << 1;
+                mv_idx = *(ctx->next_cell_data++);
                 if (mv_idx >= ctx->num_vectors) {
                     av_log(avctx, AV_LOG_ERROR, "motion vector index out of range\n");
                     return AVERROR_INVALIDDATA;
                 }
-                curr_cell.mv_ptr = &ctx->mc_vectors[mv_idx];
+                curr_cell.mv_ptr = &ctx->mc_vectors[mv_idx << 1];
                 curr_cell.tree   = 1; /* enter the VQ tree */
                 UPDATE_BITPOS(8);
             } else { /* VQ tree DATA code */
