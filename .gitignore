@@ -35,6 +35,7 @@ tests/tiny_psnr
 tests/videogen
 tests/vsynth1
 tests/vsynth2
+tools/aviocat
 tools/cws2fws
 tools/graph2dot
 tools/lavfi-showfiltfmts
