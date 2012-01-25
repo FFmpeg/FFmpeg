@@ -20,7 +20,6 @@
 
 #include <unistd.h>             /* getopt */
 
-#undef HAVE_AV_CONFIG_H
 #include "libavutil/pixdesc.h"
 #include "libavutil/audioconvert.h"
 #include "libavfilter/avfiltergraph.h"
