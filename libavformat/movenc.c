@@ -2863,20 +2863,22 @@ static int mov_write_trailer(AVFormatContext *s)
     int64_t moov_pos = avio_tell(pb);
 
     if (!(mov->flags & FF_MOV_FLAG_FRAGMENT)) {
-    /* Write size of mdat tag */
-    if (mov->mdat_size+8 <= UINT32_MAX) {
-        avio_seek(pb, mov->mdat_pos, SEEK_SET);
-        avio_wb32(pb, mov->mdat_size+8);
-    } else {
-        /* overwrite 'wide' placeholder atom */
-        avio_seek(pb, mov->mdat_pos - 8, SEEK_SET);
-        avio_wb32(pb, 1); /* special value: real atom size will be 64 bit value after tag field */
-        ffio_wfourcc(pb, "mdat");
-        avio_wb64(pb, mov->mdat_size+16);
-    }
-    avio_seek(pb, moov_pos, SEEK_SET);
+        /* Write size of mdat tag */
+        if (mov->mdat_size + 8 <= UINT32_MAX) {
+            avio_seek(pb, mov->mdat_pos, SEEK_SET);
+            avio_wb32(pb, mov->mdat_size + 8);
+        } else {
+            /* overwrite 'wide' placeholder atom */
+            avio_seek(pb, mov->mdat_pos - 8, SEEK_SET);
+            /* special value: real atom size will be 64 bit value after
+             * tag field */
+            avio_wb32(pb, 1);
+            ffio_wfourcc(pb, "mdat");
+            avio_wb64(pb, mov->mdat_size + 16);
+        }
+        avio_seek(pb, moov_pos, SEEK_SET);
 
-    mov_write_moov_tag(pb, mov, s);
+        mov_write_moov_tag(pb, mov, s);
     } else {
         mov_flush_fragment(s);
         mov_write_mfra_tag(pb, mov);
