@@ -138,7 +138,6 @@ int main(int argc, char *argv[])
             }
             start_offset = ftello(infile);
         } else {
-
             /* 64-bit special case */
             if (atom_size == 1) {
                 if (fread(atom_bytes, ATOM_PREAMBLE_SIZE, 1, infile) != 1) {

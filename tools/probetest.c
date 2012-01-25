@@ -39,7 +39,8 @@ static void probe(AVProbeData *pd, int type, int p, int size)
             int score = fmt->read_probe(pd);
             if (score > score_array[i] && score > AVPROBE_SCORE_MAX / 4) {
                 score_array[i] = score;
-                fprintf(stderr, "Failure of %s probing code with score=%d type=%d p=%X size=%d\n",
+                fprintf(stderr,
+                        "Failure of %s probing code with score=%d type=%d p=%X size=%d\n",
                         fmt->name, score, type, p, size);
                 failures++;
             }
@@ -75,9 +76,8 @@ int main(void)
                     init_put_bits(&pb, pd.buf, size);
                     switch (type) {
                     case 0:
-                        for (i = 0; i < size * 8; i++) {
+                        for (i = 0; i < size * 8; i++)
                             put_bits(&pb, 1, (av_lfg_get(&state) & 0xFFFFFFFF) > p << 20);
-                        }
                         break;
                     case 1:
                         for (i = 0; i < size * 8; i++) {
@@ -89,10 +89,10 @@ int main(void)
                         break;
                     case 2:
                         for (i = 0; i < size * 8; i++) {
-                            unsigned int p2 = (p >> (hist*3)) & 7;
+                            unsigned int p2 = (p >> (hist * 3)) & 7;
                             unsigned int v  = (av_lfg_get(&state) & 0xFFFFFFFF) > p2 << 29;
                             put_bits(&pb, 1, v);
-                            hist = (2*hist + v) & 3;
+                            hist = (2 * hist + v) & 3;
                         }
                         break;
                     case 3:
@@ -100,12 +100,18 @@ int main(void)
                             int c = 0;
                             while (p & 63) {
                                 c = (av_lfg_get(&state) & 0xFFFFFFFF) >> 24;
-                                if     (c >= 'a' && c <= 'z' && (p & 1)) break;
-                                else if(c >= 'A' && c <= 'Z' && (p & 2)) break;
-                                else if(c >= '0' && c <= '9' && (p & 4)) break;
-                                else if(c == ' ' && (p &  8)) break;
-                                else if(c ==  0  && (p & 16)) break;
-                                else if(c ==  1  && (p & 32)) break;
+                                if (c >= 'a' && c <= 'z' && (p & 1))
+                                    break;
+                                else if (c >= 'A' && c <= 'Z' && (p & 2))
+                                    break;
+                                else if (c >= '0' && c <= '9' && (p & 4))
+                                    break;
+                                else if (c == ' ' && (p & 8))
+                                    break;
+                                else if (c == 0 && (p & 16))
+                                    break;
+                                else if (c == 1 && (p & 32))
+                                    break;
                             }
                             pd.buf[i] = c;
                         }
