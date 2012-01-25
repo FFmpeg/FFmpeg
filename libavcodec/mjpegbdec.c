@@ -111,8 +111,7 @@ read_header:
     av_log(avctx, AV_LOG_DEBUG, "sod offs: 0x%x\n", sod_offs);
     if (sos_offs)
     {
-//        init_get_bits(&s->gb, buf+sos_offs, (buf_end - (buf+sos_offs))*8);
-        init_get_bits(&s->gb, buf_ptr+sos_offs, field_size*8);
+        init_get_bits(&s->gb, buf_ptr+sos_offs, FFMIN(field_size, buf_end - (buf_ptr+sos_offs))*8);
         s->mjpb_skiptosod = (sod_offs - sos_offs - show_bits(&s->gb, 16));
         s->start_code = SOS;
         if (ff_mjpeg_decode_sos(s, NULL, NULL) < 0 &&
