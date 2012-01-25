@@ -175,6 +175,10 @@ if [ -n "$do_pcx" ] ; then
 do_image_formats pcx
 fi
 
+if [ -n "$do_xwd" ] ; then
+do_image_formats xwd
+fi
+
 # audio only
 
 if [ -n "$do_wav" ] ; then
