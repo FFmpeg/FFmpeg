@@ -39,7 +39,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     const uint8_t *buf = avpkt->data;
     const uint8_t *buf_end = buf + avpkt->size;
     KgvContext * const c = avctx->priv_data;
-    int offsets[7];
+    int offsets[8];
     uint16_t *out, *prev;
     int outcnt = 0, maxcnt;
     int w, h, i;
@@ -69,7 +69,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         return -1;
     c->prev = prev;
 
-    for (i = 0; i < 7; i++)
+    for (i = 0; i < 8; i++)
         offsets[i] = -1;
 
     while (outcnt < maxcnt && buf_end - 2 > buf) {
