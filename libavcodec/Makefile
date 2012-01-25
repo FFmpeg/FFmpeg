@@ -670,8 +670,6 @@ OBJS-$(CONFIG_MLIB)                    += mlib/dsputil_mlib.o           \
 # well.
 OBJS-$(!CONFIG_SMALL)                  += inverse.o
 
--include $(SRC_PATH)/$(SUBDIR)$(ARCH)/Makefile
-
 SKIPHEADERS                            += %_tablegen.h                  \
                                           %_tables.h                    \
                                           aac_tablegen_decl.h           \

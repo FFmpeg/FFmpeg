@@ -69,8 +69,6 @@ OBJS-$(CONFIG_TESTSRC_FILTER)                += vsrc_testsrc.o
 
 OBJS-$(CONFIG_NULLSINK_FILTER)               += vsink_nullsink.o
 
--include $(SRC_PATH)/$(SUBDIR)$(ARCH)/Makefile
-
 DIRS = x86
 
 TOOLS = graph2dot lavfi-showfiltfmts
