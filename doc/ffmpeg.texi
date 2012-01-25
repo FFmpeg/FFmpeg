@@ -29,7 +29,7 @@ rates and resize video on the fly with a high quality polyphase filter.
 ffmpeg reads from an arbitrary number of input "files" (which can be regular
 files, pipes, network streams, grabbing devices, etc.), specified by the
 @code{-i} option, and writes to an arbitrary number of output "files", which are
-specified by a plain output filename. Anything found on the commandline which
+specified by a plain output filename. Anything found on the command line which
 cannot be interpreted as an option is considered to be an output filename.
 
 Each input or output file can in principle contain any number of streams of
@@ -187,9 +187,9 @@ For example, for setting the title in the output file:
 ffmpeg -i in.avi -metadata title="my title" out.flv
 @end example
 
-To set the language of the second stream:
+To set the language of the first audio stream:
 @example
-ffmpeg -i INPUT -metadata:s:1 language=eng OUTPUT
+ffmpeg -i INPUT -metadata:s:a:1 language=eng OUTPUT
 @end example
 
 @item -target @var{type} (@emph{output})
@@ -833,14 +833,28 @@ possible, for example, to turn two separate mono streams into a single stereo
 stream. However spliting a stereo stream into two single channel mono streams
 is possible.
 
-@item -map_metadata[:@var{metadata_type}][:@var{index}] @var{infile}[:@var{metadata_type}][:@var{index}] (@emph{output,per-metadata})
+@item -map_metadata[:@var{metadata_spec_out}] @var{infile}[:@var{metadata_spec_in}] (@emph{output,per-metadata})
 Set metadata information of the next output file from @var{infile}. Note that
 those are file indices (zero-based), not filenames.
-Optional @var{metadata_type} parameters specify, which metadata to copy - (g)lobal
-(i.e. metadata that applies to the whole file), per-(s)tream, per-(c)hapter or
-per-(p)rogram. All metadata specifiers other than global must be followed by the
-stream/chapter/program index. If metadata specifier is omitted, it defaults to
-global.
+Optional @var{metadata_spec_in/out} parameters specify, which metadata to copy.
+A metadata specifier can have the following forms:
+@table @option
+@item @var{g}
+global metadata, i.e. metadata that applies to the whole file
+
+@item @var{s}[:@var{stream_spec}]
+per-stream metadata. @var{stream_spec} is a stream specifier as described
+in the @ref{Stream specifiers} chapter. In an input metadata specifier, the first
+matching stream is copied from. In an output metadata specifier, all matching
+streams are copied to.
+
+@item @var{c}:@var{chapter_index}
+per-chapter metadata. @var{chapter_index} is the zero-based chapter index.
+
+@item @var{p}:@var{program_index}
+per-program metadata. @var{program_index} is the zero-based program index.
+@end table
+If metadata specifier is omitted, it defaults to global.
 
 By default, global metadata is copied from the first input file,
 per-stream and per-chapter metadata is copied along with streams/chapters. These
@@ -852,6 +866,14 @@ of the output file:
 @example
 ffmpeg -i in.ogg -map_metadata 0:s:0 out.mp3
 @end example
+
+To do the reverse, i.e. copy global metadata to all audio streams:
+@example
+ffmpeg -i in.mkv -map_metadata:s:a 0:g out.mkv
+@end example
+Note that simple @code{0} would work as well in this example, since global
+metadata is assumed by default.
+
 @item -map_chapters @var{input_file_index} (@emph{output})
 Copy chapters from input file with index @var{input_file_index} to the next
 output file. If no chapter mapping is specified, then chapters are copied from
