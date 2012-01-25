@@ -120,7 +120,7 @@ int main(int argc, char **argv)
     avformat_close_input(&fctx);
 
     while (donotquit)
-        sleep(60);
+        usleep(60 * 1000000);
 
     return 0;
 }
