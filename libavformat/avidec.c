@@ -387,11 +387,6 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
         tag = avio_rl32(pb);
         size = avio_rl32(pb);
 
-        if(size > avi->fsize){
-            av_log(s, AV_LOG_ERROR, "chunk size is too big during header parsing\n");
-            goto fail;
-        }
-
         print_tag("tag", tag, size);
 
         switch(tag) {
@@ -605,7 +600,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         break;
                     }
 
-                    if(size > 10*4 && size<(1<<30)){
+                    if(size > 10*4 && size<(1<<30) && size < avi->fsize){
                         st->codec->extradata_size= size - 10*4;
                         st->codec->extradata= av_malloc(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
                         if (!st->codec->extradata) {
