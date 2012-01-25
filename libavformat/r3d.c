@@ -288,7 +288,7 @@ static int r3d_read_reda(AVFormatContext *s, AVPacket *pkt, Atom *atom)
     tmp = avio_rb32(s->pb);
     av_dlog(s, "packet num %d\n", tmp);
 
-    tmp = avio_rb16(s->pb); // unkown
+    tmp = avio_rb16(s->pb); // unknown
     av_dlog(s, "unknown %d\n", tmp);
 
     tmp  = avio_r8(s->pb); // major version

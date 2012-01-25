@@ -50,7 +50,7 @@ int main(int argc, char **argv)
     }
 
     if (avfilter_open(&filter_ctx, filter, NULL) < 0) {
-        fprintf(stderr, "Inpossible to open filter with name '%s'\n",
+        fprintf(stderr, "Impossible to open filter with name '%s'\n",
                 filter_name);
         return 1;
     }
