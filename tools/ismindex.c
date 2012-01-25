@@ -35,6 +35,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#ifdef _WIN32
+#include <io.h>
+#define mkdir(a, b) mkdir(a)
+#endif
 
 #include "libavformat/avformat.h"
 #include "libavutil/intreadwrite.h"
