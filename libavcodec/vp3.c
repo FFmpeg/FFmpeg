@@ -1859,7 +1859,7 @@ static int vp3_update_thread_context(AVCodecContext *dst, const AVCodecContext *
         ||s->width != s1->width
         ||s->height!= s1->height) {
         if (s != s1)
-            copy_fields(s, s1, golden_frame, current_frame);
+            copy_fields(s, s1, golden_frame, keyframe);
         return -1;
     }
 
