@@ -79,7 +79,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC  (ASV2, asv2);
     REGISTER_DECODER (AURA, aura);
     REGISTER_DECODER (AURA2, aura2);
-    REGISTER_DECODER (AVRP, avrp);
+    REGISTER_ENCDEC  (AVRP, avrp);
     REGISTER_DECODER (AVS, avs);
     REGISTER_DECODER (BETHSOFTVID, bethsoftvid);
     REGISTER_DECODER (BFI, bfi);
@@ -184,8 +184,8 @@ void avcodec_register_all(void)
     REGISTER_DECODER (QDRAW, qdraw);
     REGISTER_DECODER (QPEG, qpeg);
     REGISTER_ENCDEC  (QTRLE, qtrle);
-    REGISTER_DECODER (R10K,  r10k);
-    REGISTER_DECODER (R210,  r210);
+    REGISTER_ENCDEC  (R10K,  r10k);
+    REGISTER_ENCDEC  (R210,  r210);
     REGISTER_ENCDEC  (RAWVIDEO, rawvideo);
     REGISTER_DECODER (RL2, rl2);
     REGISTER_ENCDEC  (ROQ, roq);
