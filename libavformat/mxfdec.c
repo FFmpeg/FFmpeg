@@ -1499,7 +1499,15 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
         else if ((ret = read_child(ctx, pb, tag, size, uid, -1)) < 0)
             return ret;
 
-        avio_seek(pb, next, SEEK_SET);
+        /* Accept the 64k local set limit being exceeded (Avid). Don't accept
+         * it extending past the end of the KLV though (zzuf5.mxf). */
+        if (avio_tell(pb) > klv_end) {
+            av_log(mxf->fc, AV_LOG_ERROR,
+                   "local tag %#04x extends past end of local set @ %#"PRIx64"\n",
+                   tag, klv->offset);
+            return AVERROR_INVALIDDATA;
+        } else if (avio_tell(pb) <= next)   /* only seek forward, else this can loop for a long time */
+            avio_seek(pb, next, SEEK_SET);
     }
     if (ctx_size) ctx->type = type;
     return ctx_size ? mxf_add_metadata_set(mxf, ctx) : 0;
@@ -1717,6 +1725,14 @@ static int mxf_read_header(AVFormatContext *s)
                 } else {
                     uint64_t next = avio_tell(s->pb) + klv.length;
                     res = metadata->read(mxf, s->pb, 0, klv.length, klv.key, klv.offset);
+
+                    /* only seek forward, else this can loop for a long time */
+                    if (avio_tell(s->pb) > next) {
+                        av_log(s, AV_LOG_ERROR, "read past end of KLV @ %#"PRIx64"\n",
+                               klv.offset);
+                        return AVERROR_INVALIDDATA;
+                    }
+
                     avio_seek(s->pb, next, SEEK_SET);
                 }
                 if (res < 0) {
