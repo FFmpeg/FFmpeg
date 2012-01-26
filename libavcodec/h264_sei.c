@@ -169,11 +169,15 @@ int ff_h264_decode_sei(H264Context *h){
 
         type=0;
         do{
+            if (get_bits_left(&s->gb) < 8)
+                return -1;
             type+= show_bits(&s->gb, 8);
         }while(get_bits(&s->gb, 8) == 255);
 
         size=0;
         do{
+            if (get_bits_left(&s->gb) < 8)
+                return -1;
             size+= show_bits(&s->gb, 8);
         }while(get_bits(&s->gb, 8) == 255);
 
