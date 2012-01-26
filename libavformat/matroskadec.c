@@ -1503,7 +1503,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 extradata_size = 2;
         } else if (codec_id == CODEC_ID_TTA) {
             extradata_size = 30;
-            extradata = av_mallocz(extradata_size);
+            extradata = av_mallocz(extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
             if (extradata == NULL)
                 return AVERROR(ENOMEM);
             ffio_init_context(&b, extradata, extradata_size, 1,
@@ -1642,7 +1642,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             av_dict_set(&st->metadata, "mimetype", attachements[j].mime, 0);
             st->codec->codec_id = CODEC_ID_NONE;
             st->codec->codec_type = AVMEDIA_TYPE_ATTACHMENT;
-            st->codec->extradata  = av_malloc(attachements[j].bin.size);
+            st->codec->extradata  = av_malloc(attachements[j].bin.size + FF_INPUT_BUFFER_PADDING_SIZE);
             if(st->codec->extradata == NULL)
                 break;
             st->codec->extradata_size = attachements[j].bin.size;
