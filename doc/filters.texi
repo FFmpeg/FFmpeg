@@ -104,16 +104,14 @@ Below is a description of the currently available audio filters.
 Convert the input audio format to the specified formats.
 
 The filter accepts a string of the form:
-"@var{sample_format}:@var{channel_layout}:@var{packing_format}".
+"@var{sample_format}:@var{channel_layout}".
 
-@var{sample_format} specifies the sample format, and can be a string or
-the corresponding numeric value defined in @file{libavutil/samplefmt.h}.
+@var{sample_format} specifies the sample format, and can be a string or the
+corresponding numeric value defined in @file{libavutil/samplefmt.h}. Use 'p'
+suffix for a planar sample format.
 
 @var{channel_layout} specifies the channel layout, and can be a string
 or the corresponding number value defined in @file{libavutil/audioconvert.h}.
-
-@var{packing_format} specifies the type of packing in output, can be one
-of "planar" or "packed", or the corresponding numeric values "0" or "1".
 
 The special parameter "auto", signifies that the filter will
 automatically select the output format depending on the output filter.
@@ -122,16 +120,15 @@ Some examples follow.
 
 @itemize
 @item
-Convert input to unsigned 8-bit, stereo, packed:
+Convert input to float, planar, stereo:
 @example
-aconvert=u8:stereo:packed
+aconvert=fltp:stereo
 @end example
 
 @item
-Convert input to unsigned 8-bit, automatically select out channel layout
-and packing format:
+Convert input to unsigned 8-bit, automatically select out channel layout:
 @example
-aconvert=u8:auto:auto
+aconvert=u8:auto
 @end example
 @end itemize
 

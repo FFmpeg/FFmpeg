@@ -1648,6 +1648,7 @@ tls_protocol_select="tcp_protocol"
 udp_protocol_deps="network"
 
 # filters
+aconvert_filter_deps="swresample"
 amovie_filter_deps="avcodec avformat"
 aresample_filter_deps="swresample"
 ass_filter_deps="libass"
