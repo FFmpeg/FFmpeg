@@ -933,6 +933,15 @@ static int dirac_unpack_idwt_params(DiracContext *s)
 {
     GetBitContext *gb = &s->gb;
     int i, level;
+    unsigned tmp;
+
+#define CHECKEDREAD(dst, cond, errmsg) \
+    tmp = svq3_get_ue_golomb(gb); \
+    if (cond) { \
+        av_log(s->avctx, AV_LOG_ERROR, errmsg); \
+        return -1; \
+    }\
+    dst = tmp;
 
     align_get_bits(gb);
 
@@ -941,29 +950,19 @@ static int dirac_unpack_idwt_params(DiracContext *s)
         return 0;
 
     /*[DIRAC_STD] 11.3.1 Transform parameters. transform_parameters() */
-    s->wavelet_idx = svq3_get_ue_golomb(gb);
-    if (s->wavelet_idx > 6)
-        return -1;
+    CHECKEDREAD(s->wavelet_idx, tmp > 6, "wavelet_idx is too big\n")
 
-    s->wavelet_depth = svq3_get_ue_golomb(gb);
-    if (s->wavelet_depth > MAX_DWT_LEVELS) {
-        av_log(s->avctx, AV_LOG_ERROR, "too many dwt decompositions\n");
-        return -1;
-    }
+    CHECKEDREAD(s->wavelet_depth, tmp > MAX_DWT_LEVELS || tmp < 1, "invalid number of DWT decompositions\n")
 
     if (!s->low_delay) {
         /* Codeblock paramaters (core syntax only) */
         if (get_bits1(gb)) {
             for (i = 0; i <= s->wavelet_depth; i++) {
-                s->codeblock[i].width  = svq3_get_ue_golomb(gb);
-                s->codeblock[i].height = svq3_get_ue_golomb(gb);
+                CHECKEDREAD(s->codeblock[i].width , tmp < 1, "codeblock width invalid\n")
+                CHECKEDREAD(s->codeblock[i].height, tmp < 1, "codeblock height invalid\n")
             }
 
-            s->codeblock_mode = svq3_get_ue_golomb(gb);
-            if (s->codeblock_mode > 1) {
-                av_log(s->avctx, AV_LOG_ERROR, "unknown codeblock mode\n");
-                return -1;
-            }
+            CHECKEDREAD(s->codeblock_mode, tmp > 1, "unknown codeblock mode\n")
         } else
             for (i = 0; i <= s->wavelet_depth; i++)
                 s->codeblock[i].width = s->codeblock[i].height = 1;
