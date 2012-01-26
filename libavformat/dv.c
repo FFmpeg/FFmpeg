@@ -127,10 +127,14 @@ static int dv_extract_audio(uint8_t* frame, uint8_t* ppcm[4],
     /* We work with 720p frames split in half, thus even frames have
      * channels 0,1 and odd 2,3. */
     ipcm = (sys->height == 720 && !(frame[1] & 0x0C)) ? 2 : 0;
-    pcm  = ppcm[ipcm++];
 
     /* for each DIF channel */
     for (chan = 0; chan < sys->n_difchan; chan++) {
+        /* next stereo channel (50Mbps and 100Mbps only) */
+        pcm = ppcm[ipcm++];
+        if (!pcm)
+            break;
+
         /* for each DIF segment */
         for (i = 0; i < sys->difseg_size; i++) {
             frame += 6 * 80; /* skip DIF segment header */
@@ -178,11 +182,6 @@ static int dv_extract_audio(uint8_t* frame, uint8_t* ppcm[4],
                 frame += 16 * 80; /* 15 Video DIFs + 1 Audio DIF */
             }
         }
-
-        /* next stereo channel (50Mbps and 100Mbps only) */
-        pcm = ppcm[ipcm++];
-        if (!pcm)
-            break;
     }
 
     return size;
