@@ -1,20 +1,12 @@
 Release Notes
 =============
 
-* 0.9 "Harmony"  December, 2011
+* 0.10 "Freedom"  January, 2012
 
 
 General notes
 -------------
-This release is binary compatible with 0.8. The 'ffmpeg' command-line tool has
-been extended to also support the command line syntax and features of a tool
-called avconv.
-
-Additionally, this release introduces a number of new interesting codecs
-such as the Apple Prores, Flash Screen Video 2 and Windows Media Image,
-and muxers such as LATM or CELT in Ogg, among many others. Moreover, our
-H.264 decoder has been improved to decode 4:2:2 material and our libx264
-wrapper now allows to produce 4:2:2 and 4:4:4 video.
+This release is binary compatible with 0.8 and 0.9.
 
 See the Changelog file for a list of significant changes. Note, there
 are many more new features and bugfixes than whats listed there.
@@ -39,24 +31,7 @@ is able to use AVCodecContext.get_buffer() in the similar way as video decoding.
 * new audio encoding API which encodes from an AVFrame to an AVPacket, thus
 allowing it to properly output timing information and side data.
 
-* rewritten AVOptions API with better built-in support for private options.
-
-* private options support for demuxers [avformat_open_input()], muxers
-[avformat_write_header()], encoders and decoders [avcodec_open2()].
-As a result, many format- or codec-specific fields and flags in AVFormatContext
-and AVCodecContext were deprecated -- notably most of CODEC_FLAG2_* and many
-CODEC_FLAG_*.
-
-* new API for custom IO interrupt callbacks.
-
-* #include cleanup in libavutil -- libavutil/avutil.h no longer includes all
-the other headers in libavutil, they must be included manually. One specific
-result is that libavutil/mathematics.h is no longer included from
-libavcodec/avcodec.h, which is a common source of errors.
-
-Please see the file doc/APIchanges for details along with
-similar programmer-centric information.
-
+Please see the git history and the file doc/APIchanges for details.
 
 
 Other notable changes
@@ -67,8 +42,8 @@ symbols. This will break applications using those symbols. Possible solutions
 are, in order of preference:
 1) Try finding a way of accomplishing the same with public API.
 2) If there is no corresponding public API, but you think there should be,
-post a request on the user mailing list or IRC channel.
+post a request on the developer mailing list or IRC channel.
 3) Finally if your program needs access to FFmpeg / libavcodec / libavformat
 internals for some special reason then the best solution is to link statically.
 
-Please see the Changelog file for a more detailed list of changes.
+Please see the Changelog file and git history for a more detailed list of changes.
