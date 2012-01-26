@@ -218,7 +218,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 //    case PIX_FMT_YUV444P:
 //    case PIX_FMT_YUV422P:
     case PIX_FMT_YUV420P:
-    case PIX_FMT_GRAY8:
+//     case PIX_FMT_GRAY8:
 //    case PIX_FMT_YUV411P:
 //    case PIX_FMT_YUV410P:
         s->colorspace_type= 0;
