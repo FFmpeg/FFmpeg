@@ -744,6 +744,12 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVD
            avctx->error_recognition, avctx->err_recognition);
 #endif
 
+    if (avctx->codec_type == AVMEDIA_TYPE_AUDIO &&
+        (!avctx->time_base.num || !avctx->time_base.den)) {
+        avctx->time_base.num = 1;
+        avctx->time_base.den = avctx->sample_rate;
+    }
+
     if (HAVE_THREADS && !avctx->thread_opaque) {
         ret = ff_thread_init(avctx);
         if (ret < 0) {
