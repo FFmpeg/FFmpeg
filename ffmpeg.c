@@ -629,6 +629,7 @@ static int configure_video_filters(InputStream *ist, OutputStream *ost)
                                        "src", args, NULL, ost->graph);
     if (ret < 0)
         return ret;
+
 #if FF_API_OLD_VSINK_API
     ret = avfilter_graph_create_filter(&ost->output_video_filter, avfilter_get_by_name("buffersink"),
                                        "out", NULL, pix_fmts, ost->graph);
@@ -638,6 +639,7 @@ static int configure_video_filters(InputStream *ist, OutputStream *ost)
                                        "out", NULL, buffersink_params, ost->graph);
 #endif
     av_freep(&buffersink_params);
+
     if (ret < 0)
         return ret;
     last_filter = ost->input_video_filter;

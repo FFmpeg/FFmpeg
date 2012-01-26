@@ -839,7 +839,7 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height, int w,
     }
 
     if (sides&EDGE_BOTTOM) {
-        for(i = 0; i < w; i += 4) {
+        for(i = 0; i < h; i += 4) {
             ptr= last_line + (i + 1) * wrap - w;
             __asm__ volatile(
                     "1:                             \n\t"

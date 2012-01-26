@@ -38,6 +38,7 @@
 // ffmpeg -i testinput.avi  -f psp -r 14.985 -s 320x240 -b 768 -ar 24000 -ab 32 M4V00001.MP4
 #define MODE_3G2  0x10
 #define MODE_IPOD 0x20
+#define MODE_ISM  0x40
 
 typedef struct MOVIentry {
     uint64_t     pos;
@@ -50,7 +51,6 @@ typedef struct MOVIentry {
 #define MOV_SYNC_SAMPLE         0x0001
 #define MOV_PARTIAL_SYNC_SAMPLE 0x0002
     uint32_t     flags;
-    uint8_t      *data;
 } MOVIentry;
 
 typedef struct HintSample {
@@ -66,6 +66,13 @@ typedef struct {
     int len;
     HintSample *samples;
 } HintSampleQueue;
+
+typedef struct {
+    int64_t offset;
+    int64_t time;
+    int64_t duration;
+    int64_t tfrf_offset;
+} MOVFragmentInfo;
 
 typedef struct MOVIndex {
     int         mode;
@@ -87,14 +94,12 @@ typedef struct MOVIndex {
 
     int         vosLen;
     uint8_t     *vosData;
-    int         cluster_write_index;
     MOVIentry   *cluster;
     int         audio_vbr;
     int         height; ///< active picture (w/o VBI) height for D-10/IMX
     uint32_t    tref_tag;
     int         tref_id; ///< trackID of the referenced track
-    uint32_t    trex_flags;
-    int         trex_size;
+    int64_t     start_dts;
 
     int         hint_track;   ///< the track that hints this track, -1 if no hint track is set
     int         src_track;    ///< the track that this hint track describes
@@ -102,9 +107,21 @@ typedef struct MOVIndex {
     uint32_t    prev_rtp_ts;
     int64_t     cur_rtp_ts_unwrapped;
     uint32_t    max_packet_size;
-    int64_t     base_data_offset_pos;
+
+    int64_t     default_duration;
+    uint32_t    default_sample_flags;
+    uint32_t    default_size;
 
     HintSampleQueue sample_queue;
+
+    AVIOContext *mdat_buf;
+    int64_t     moof_size_offset;
+    int64_t     data_offset;
+    int64_t     frag_start;
+    int64_t     tfrf_offset;
+
+    int         nb_frag_info;
+    MOVFragmentInfo *frag_info;
 } MOVTrack;
 
 typedef struct MOVMuxContext {
@@ -116,22 +133,28 @@ typedef struct MOVMuxContext {
     int64_t mdat_pos;
     uint64_t mdat_size;
     MOVTrack *tracks;
-    int fragments;
-    int frag_seq_num;
 
     int flags;
     int rtp_flags;
     int reserved_moov_size;
     int64_t reserved_moov_pos;
-    int max_fragment_duration;
-    int max_fragment_size;
 
     int iods_skip;
     int iods_video_profile;
     int iods_audio_profile;
+
+    int fragments;
+    int max_fragment_duration;
+    int max_fragment_size;
+    int ism_lookahead;
 } MOVMuxContext;
 
 #define FF_MOV_FLAG_RTP_HINT 1
+#define FF_MOV_FLAG_FRAGMENT 2
+#define FF_MOV_FLAG_EMPTY_MOOV 4
+#define FF_MOV_FLAG_FRAG_KEYFRAME 8
+#define FF_MOV_FLAG_SEPARATE_MOOF 16
+#define FF_MOV_FLAG_FRAG_CUSTOM 32
 
 int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt);
 

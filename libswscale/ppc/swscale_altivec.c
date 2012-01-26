@@ -99,7 +99,6 @@ yuv2planeX_altivec(const int16_t *filter, int filterSize,
                    const uint8_t *dither, int offset)
 {
     register int i, j;
-    {
         DECLARE_ALIGNED(16, int, val)[dstW];
 
         for (i=0; i<dstW; i++)
@@ -142,7 +141,6 @@ yuv2planeX_altivec(const int16_t *filter, int filterSize,
             }
         }
         altivec_packIntArrayToCharArray(val, dest, dstW);
-    }
 }
 
 static void hScale_altivec_real(SwsContext *c, int16_t *dst, int dstW,
@@ -166,7 +164,6 @@ static void hScale_altivec_real(SwsContext *c, int16_t *dst, int dstW,
     else
     switch (filterSize) {
     case 4:
-    {
     for (i=0; i<dstW; i++) {
         register int srcPos = filterPos[i];
 
@@ -201,11 +198,9 @@ static void hScale_altivec_real(SwsContext *c, int16_t *dst, int dstW,
         vec_st(val_s, 0, tempo);
         dst[i] = FFMIN(tempo[3]>>7, (1<<15)-1);
     }
-    }
     break;
 
     case 8:
-    {
     for (i=0; i<dstW; i++) {
         register int srcPos = filterPos[i];
 
@@ -228,11 +223,9 @@ static void hScale_altivec_real(SwsContext *c, int16_t *dst, int dstW,
         vec_st(val_s, 0, tempo);
         dst[i] = FFMIN(tempo[3]>>7, (1<<15)-1);
     }
-    }
     break;
 
     case 16:
-    {
         for (i=0; i<dstW; i++) {
             register int srcPos = filterPos[i];
 
@@ -257,11 +250,9 @@ static void hScale_altivec_real(SwsContext *c, int16_t *dst, int dstW,
             vec_st(val_s, 0, tempo);
             dst[i] = FFMIN(tempo[3]>>7, (1<<15)-1);
         }
-    }
     break;
 
     default:
-    {
     for (i=0; i<dstW; i++) {
         register int j;
         register int srcPos = filterPos[i];
@@ -320,7 +311,6 @@ static void hScale_altivec_real(SwsContext *c, int16_t *dst, int dstW,
         dst[i] = FFMIN(tempo[3]>>7, (1<<15)-1);
     }
 
-    }
     }
 }
 

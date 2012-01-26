@@ -12,6 +12,7 @@ version next:
 - tinterlace video filter
 - astreamsync audio filter
 - amerge audio filter
+- ISMV (Smooth Streaming) muxer
 - GSM audio parser
 - SMJPEG muxer
 - XWD encoder and decoder

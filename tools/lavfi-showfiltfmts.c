@@ -97,11 +97,13 @@ int main(int argc, char **argv)
     }
 
     if (avfilter_open(&filter_ctx, filter, NULL) < 0) {
-        fprintf(stderr, "Inpossible to open filter with name '%s'\n", filter_name);
+        fprintf(stderr, "Inpossible to open filter with name '%s'\n",
+                filter_name);
         return 1;
     }
     if (avfilter_init_filter(filter_ctx, filter_args, NULL) < 0) {
-        fprintf(stderr, "Impossible to init filter '%s' with arguments '%s'\n", filter_name, filter_args);
+        fprintf(stderr, "Impossible to init filter '%s' with arguments '%s'\n",
+                filter_name, filter_args);
         return 1;
     }
 

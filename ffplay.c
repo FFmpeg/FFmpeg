@@ -1745,6 +1745,7 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
     if ((ret = avfilter_graph_create_filter(&filt_src, &input_filter, "src",
                                             NULL, is, graph)) < 0)
         return ret;
+
 #if FF_API_OLD_VSINK_API
     ret = avfilter_graph_create_filter(&filt_out, avfilter_get_by_name("buffersink"), "out",
                                        NULL, pix_fmts, graph);
