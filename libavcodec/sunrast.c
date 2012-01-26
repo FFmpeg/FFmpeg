@@ -29,6 +29,7 @@
 #define RT_FORMAT_RGB   3
 #define RT_FORMAT_TIFF  4
 #define RT_FORMAT_IFF   5
+#define RT_EXPERIMENTAL 0xffff
 
 typedef struct SUNRASTContext {
     AVFrame picture;
@@ -70,7 +71,7 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
     maplength = AV_RB32(buf+28);
     buf      += 32;
 
-    if (type == RT_FORMAT_TIFF || type == RT_FORMAT_IFF) {
+    if (type == RT_FORMAT_TIFF || type == RT_FORMAT_IFF || type == RT_EXPERIMENTAL) {
         av_log(avctx, AV_LOG_ERROR, "unsupported (compression) type\n");
         return -1;
     }
