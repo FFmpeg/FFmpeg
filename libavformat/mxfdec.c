@@ -1535,11 +1535,6 @@ static int mxf_parse_handle_essence(MXFContext *mxf)
     AVIOContext *pb = mxf->fc->pb;
     int64_t ret;
 
-    if (!mxf->current_partition) {
-        av_log(mxf->fc, AV_LOG_ERROR, "found essence prior to PartitionPack\n");
-        return AVERROR_INVALIDDATA;
-    }
-
     if (mxf->parsing_backward) {
         return mxf_seek_to_previous_partition(mxf);
     } else {
@@ -1689,6 +1684,13 @@ static int mxf_read_header(AVFormatContext *s)
             IS_KLV_KEY(klv.key, mxf_essence_element_key) ||
             IS_KLV_KEY(klv.key, mxf_avid_essence_element_key) ||
             IS_KLV_KEY(klv.key, mxf_system_item_key)) {
+
+            if (!mxf->current_partition) {
+                av_log(mxf->fc, AV_LOG_ERROR,
+                       "found essence prior to first PartitionPack\n");
+                return AVERROR_INVALIDDATA;
+            }
+
             if (!mxf->current_partition->essence_offset) {
                 compute_partition_essence_offset(s, mxf, &klv);
             }
