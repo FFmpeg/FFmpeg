@@ -302,7 +302,7 @@ For more information about the XML format, see
 stream details (@option{-show_streams}, see @var{timecode}).
 
 @item MOV timecode is extracted from tmcd track, so is available in the tmcd
-stream metadatas (@option{-show_streams}, see @var{TAG:timecode}).
+stream metadata (@option{-show_streams}, see @var{TAG:timecode}).
 
 @item DV and GXF timecodes are available in format metadata
 (@option{-show_format}, see @var{TAG:timecode}).
