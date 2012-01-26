@@ -4918,6 +4918,20 @@ static int opt_bitrate(OptionsContext *o, const char *opt, const char *arg)
     return opt_default(opt, arg);
 }
 
+static int opt_qscale(OptionsContext *o, const char *opt, const char *arg)
+{
+    char *s;
+    int ret;
+    if(!strcmp(opt, "qscale")){
+        av_log(0,AV_LOG_WARNING, "Please use -q:a or -q:v, -qscale is ambiguous\n");
+        return parse_option(o, "q:v", arg, options);
+    }
+    s = av_asprintf("q%s", opt + 6);
+    ret = parse_option(o, s, arg, options);
+    av_free(s);
+    return ret;
+}
+
 static int opt_video_filters(OptionsContext *o, const char *opt, const char *arg)
 {
     return parse_option(o, "filter:v", arg, options);
@@ -4981,7 +4995,7 @@ static const OptionDef options[] = {
     { "frames", OPT_INT64 | HAS_ARG | OPT_SPEC, {.off = OFFSET(max_frames)}, "set the number of frames to record", "number" },
     { "tag",   OPT_STRING | HAS_ARG | OPT_SPEC, {.off = OFFSET(codec_tags)}, "force codec tag/fourcc", "fourcc/tag" },
     { "q", HAS_ARG | OPT_EXPERT | OPT_DOUBLE | OPT_SPEC, {.off = OFFSET(qscale)}, "use fixed quality scale (VBR)", "q" },
-    { "qscale", HAS_ARG | OPT_EXPERT | OPT_DOUBLE | OPT_SPEC, {.off = OFFSET(qscale)}, "use fixed quality scale (VBR)", "q" },
+    { "qscale", HAS_ARG | OPT_EXPERT | OPT_FUNC2, {(void*)opt_qscale}, "use fixed quality scale (VBR)", "q" },
 #if CONFIG_AVFILTER
     { "filter", HAS_ARG | OPT_STRING | OPT_SPEC, {.off = OFFSET(filters)}, "set stream filterchain", "filter_list" },
 #endif
