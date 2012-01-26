@@ -1385,7 +1385,8 @@ static int mp_decode_layer3(MPADecodeContext *s)
         av_dlog(s->avctx, "seekback: %d\n", main_data_begin);
     //av_log(NULL, AV_LOG_ERROR, "backstep:%d, lastbuf:%d\n", main_data_begin, s->last_buf_size);
 
-        memcpy(s->last_buf + s->last_buf_size, ptr,
+        if (s->gb.size_in_bits > get_bits_count(&s->gb))
+            memcpy(s->last_buf + s->last_buf_size, ptr,
                FFMIN(EXTRABYTES, (s->gb.size_in_bits - get_bits_count(&s->gb))>>3));
         s->in_gb = s->gb;
         init_get_bits(&s->gb, s->last_buf, s->last_buf_size*8);
