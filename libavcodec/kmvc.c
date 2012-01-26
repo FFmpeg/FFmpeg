@@ -380,6 +380,11 @@ static av_cold int decode_init(AVCodecContext * avctx)
         c->palsize = 127;
     } else {
         c->palsize = AV_RL16(avctx->extradata + 10);
+        if (c->palsize > 255U) {
+            c->palsize = 127;
+            av_log(NULL, AV_LOG_ERROR, "palsize too big\n");
+            return -1;
+        }
     }
 
     if (avctx->extradata_size == 1036) {        // palette in extradata
