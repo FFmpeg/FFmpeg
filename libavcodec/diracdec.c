@@ -1722,6 +1722,7 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
     DiracContext *s   = avctx->priv_data;
     DiracFrame *pic   = NULL;
     int i, parse_code = buf[4];
+    unsigned tmp;
 
     if (size < DATA_UNIT_HEADER_SIZE)
         return -1;
@@ -1772,7 +1773,12 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
         avcodec_get_frame_defaults(&pic->avframe);
 
         /* [DIRAC_STD] Defined in 9.6.1 ... */
-        s->num_refs    =  parse_code & 0x03;                   /* [DIRAC_STD] num_refs()      */
+        tmp            =  parse_code & 0x03;                   /* [DIRAC_STD] num_refs()      */
+        if (tmp > 2) {
+            av_log(avctx, AV_LOG_ERROR, "num_refs of 3\n");
+            return -1;
+        }
+        s->num_refs    = tmp;
         s->is_arith    = (parse_code & 0x48) == 0x08;          /* [DIRAC_STD] using_ac()      */
         s->low_delay   = (parse_code & 0x88) == 0x88;          /* [DIRAC_STD] is_low_delay()  */
         pic->avframe.reference = (parse_code & 0x0C) == 0x0C;  /* [DIRAC_STD]  is_reference() */
