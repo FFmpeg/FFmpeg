@@ -205,7 +205,7 @@ static void qtrle_encode_line(QtrleEncContext *s, AVFrame *p, int line, uint8_t 
         prev_line -= s->pixel_size;
     }
 
-    /* Good ! Now we have the best sequence for this line, let's ouput it */
+    /* Good ! Now we have the best sequence for this line, let's output it */
 
     /* We do a special case for the first pixel so that we avoid testing it in
      * the whole loop */

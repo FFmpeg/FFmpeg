@@ -1,5 +1,5 @@
 /*
- * filter to ouput only 1 every n frame, or only the I (key)frame
+ * filter to output only 1 every n frame, or only the I (key)frame
  *
  * The parameters are:
  *
