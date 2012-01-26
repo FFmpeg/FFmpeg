@@ -2,6 +2,12 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version next:
+
+version 0.10:
+- Fixes: CVE-2011-3929, CVE-2011-3934, CVE-2011-3935, CVE-2011-3936,
+         CVE-2011-3937, CVE-2011-3940, CVE-2011-3941, CVE-2011-3944,
+         CVE-2011-3945, CVE-2011-3946, CVE-2011-3947, CVE-2011-3949,
+         CVE-2011-3950, CVE-2011-3951, CVE-2011-3952
 - v410 Quicktime Uncompressed 4:4:4 10-bit encoder and decoder
 - SBaGen (SBG) binaural beats script demuxer
 - OpenMG Audio muxer
@@ -30,6 +36,13 @@ version next:
 - Improved PGS subtitle decoder
 - dumpgraph option to lavfi device
 - r210 and r10k encoders
+- avrp encoder
+- avrp decoder
+- ffwavesynth decoder
+- APC ADPCM decoder
+- OMA muxer
+- aviocat tool
+- ffeval tool
 
 
 version 0.9:
