@@ -36,11 +36,7 @@ version 0.10:
 - Improved PGS subtitle decoder
 - dumpgraph option to lavfi device
 - r210 and r10k encoders
-- avrp encoder
-- avrp decoder
 - ffwavesynth decoder
-- APC ADPCM decoder
-- OMA muxer
 - aviocat tool
 - ffeval tool
 
