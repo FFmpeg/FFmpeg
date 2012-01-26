@@ -334,16 +334,14 @@ static av_always_inline void last_reset(int *recode, int *last) {
 /* get code and update history */
 static av_always_inline int smk_get_code(GetBitContext *gb, int *recode, int *last) {
     register int *table = recode;
-    int v, b;
+    int v;
 
-    b = get_bits_count(gb);
     while(*table & SMK_NODE) {
         if(get_bits1(gb))
             table += (*table) & (~SMK_NODE);
         table++;
     }
     v = *table;
-    b = get_bits_count(gb) - b;
 
     if(v != recode[last[0]]) {
         recode[last[2]] = recode[last[1]];
