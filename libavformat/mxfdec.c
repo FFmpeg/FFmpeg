@@ -994,7 +994,7 @@ static int64_t mxf_essence_container_end(MXFContext *mxf, int body_sid)
 static int mxf_edit_unit_absolute_offset(MXFContext *mxf, MXFIndexTable *index_table, int64_t edit_unit, int64_t *edit_unit_out, int64_t *offset_out, int nag)
 {
     int i;
-    int offset_temp = 0;
+    int64_t offset_temp = 0;
 
     for (i = 0; i < index_table->nb_segments; i++) {
         MXFIndexTableSegment *s = index_table->segments[i];
