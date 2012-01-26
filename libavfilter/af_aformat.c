@@ -42,7 +42,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     if (!args)
         goto arg_fail;
 
-#define ADD_FORMATS(all_formats, fmt_name, fmt_type, fmts_list)         \
+#define ADD_FORMATS(all_formats, fmt_name, fmt_type, fmts_list) do {    \
     fmts_str = av_get_token(&args, ":");                                \
     if (!fmts_str || !*fmts_str)                                        \
         goto arg_fail;                                                  \
@@ -61,7 +61,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     }                                                                   \
     av_freep(&fmts_str);                                                \
     if (*args)                                                          \
-        args++;
+        args++;                                                         \
+} while (0)
 
     ADD_FORMATS(avfilter_make_all_formats(AVMEDIA_TYPE_AUDIO), sample_format, int, formats);
     ADD_FORMATS(avfilter_make_all_channel_layouts(), channel_layout, int64_t, chlayouts);
