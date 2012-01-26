@@ -59,7 +59,7 @@ typedef enum {
 } MXFPartitionType;
 
 typedef enum {
-    OP1a,
+    OP1a = 1,
     OP1b,
     OP1c,
     OP2a,
@@ -410,6 +410,7 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
     MXFPartition *partition, *tmp_part;
     UID op;
     uint64_t footer_partition;
+    uint32_t nb_essence_containers;
 
     if (mxf->partitions_count+1 >= UINT_MAX / sizeof(*mxf->partitions))
         return AVERROR(ENOMEM);
@@ -464,6 +465,7 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
     avio_skip(pb, 8);
     partition->body_sid = avio_rb32(pb);
     avio_read(pb, op, sizeof(UID));
+    nb_essence_containers = avio_rb32(pb);
 
     /* some files don'thave FooterPartition set in every partition */
     if (footer_partition) {
@@ -501,9 +503,22 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
     else if (op[12] == 3 && op[13] == 1) mxf->op = OP3a;
     else if (op[12] == 3 && op[13] == 2) mxf->op = OP3b;
     else if (op[12] == 3 && op[13] == 3) mxf->op = OP3c;
-    else if (op[12] == 0x10)             mxf->op = OPAtom;
     else if (op[12] == 64&& op[13] == 1) mxf->op = OPSonyOpt;
-    else {
+    else if (op[12] == 0x10) {
+        /* SMPTE 390m: "There shall be exactly one essence container"
+         * 2011_DCPTEST_24FPS.V.mxf violates this and is frame wrapped,
+         * which is why we assume OP1a. */
+        if (nb_essence_containers != 1) {
+            /* only nag once */
+            if (!mxf->op)
+                av_log(mxf->fc, AV_LOG_WARNING,
+                       "\"OPAtom\" with %u ECs - assuming OP1a\n",
+                       nb_essence_containers);
+
+            mxf->op = OP1a;
+        } else
+            mxf->op = OPAtom;
+    } else {
         av_log(mxf->fc, AV_LOG_ERROR, "unknown operational pattern: %02xh %02xh - guessing OP1a\n", op[12], op[13]);
         mxf->op = OP1a;
     }
