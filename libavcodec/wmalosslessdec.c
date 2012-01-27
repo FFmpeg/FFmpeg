@@ -224,7 +224,7 @@ typedef struct WmallDecodeCtx {
     WmallChannelCtx channel[WMALL_MAX_CHANNELS];    ///< per channel data
 
     // WMA lossless
-    
+
     uint8_t do_arith_coding;
     uint8_t do_ac_filter;
     uint8_t do_inter_ch_decorr;
@@ -583,7 +583,7 @@ static int my_log2(unsigned int i)
 {
     unsigned int iLog2 = 0;
     while ((i >> iLog2) > 1)
-	iLog2++;
+        iLog2++;
     return iLog2;
 }
 
@@ -598,7 +598,7 @@ static void decode_ac_filter(WmallDecodeCtx *s)
     s->acfilter_scaling = get_bits(&s->gb, 4);
 
     for(i = 0; i < s->acfilter_order; i++) {
-	s->acfilter_coeffs[i] = get_bits(&s->gb, s->acfilter_scaling) + 1;
+        s->acfilter_coeffs[i] = get_bits(&s->gb, s->acfilter_scaling) + 1;
     }
 }
 
