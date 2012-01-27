@@ -42,6 +42,7 @@ MMX-OBJS-$(CONFIG_ENCODERS)            += x86/dsputilenc_mmx.o
 YASM-OBJS-$(CONFIG_ENCODERS)           += x86/dsputilenc_yasm.o
 MMX-OBJS-$(CONFIG_GPL)                 += x86/idct_mmx.o
 MMX-OBJS-$(CONFIG_LPC)                 += x86/lpc_mmx.o
+YASM-OBJS-$(CONFIG_PNG_DECODER)        += x86/pngdsp.o
 MMX-OBJS-$(CONFIG_PNG_DECODER)         += x86/pngdsp-init.o
 YASM-OBJS-$(CONFIG_PRORES_DECODER)     += x86/proresdsp.o
 MMX-OBJS-$(CONFIG_PRORES_DECODER)      += x86/proresdsp-init.o
