@@ -276,4 +276,3 @@ AVCodec ff_mdec_decoder = {
     .long_name= NULL_IF_CONFIG_SMALL("Sony PlayStation MDEC (Motion DECoder)"),
     .init_thread_copy= ONLY_IF_THREADS_ENABLED(decode_init_thread_copy)
 };
-

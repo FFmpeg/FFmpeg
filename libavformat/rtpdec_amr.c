@@ -205,4 +205,3 @@ RTPDynamicProtocolHandler ff_amr_wb_dynamic_handler = {
     .free             = amr_free_context,
     .parse_packet     = amr_handle_packet,
 };
-

@@ -1533,4 +1533,3 @@ struct SwsContext *sws_getCachedContext(struct SwsContext *context,
     }
     return context;
 }
-

@@ -103,4 +103,3 @@ AVInputFormat ff_aea_demuxer = {
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "aea",
 };
-

@@ -145,4 +145,3 @@ void ff_xvid_rate_control_uninit(MpegEncContext *s){
 
     xvid_plugin_2pass2(s->rc_context.non_lavc_opaque, XVID_PLG_DESTROY, &xvid_plg_destroy, NULL);
 }
-

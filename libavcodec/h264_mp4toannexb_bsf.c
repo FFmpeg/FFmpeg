@@ -190,4 +190,3 @@ AVBitStreamFilter ff_h264_mp4toannexb_bsf = {
     sizeof(H264BSFContext),
     h264_mp4toannexb_filter,
 };
-

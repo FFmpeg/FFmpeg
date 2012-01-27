@@ -245,4 +245,3 @@ AVOutputFormat ff_rtsp_muxer = {
     .flags = AVFMT_NOFILE | AVFMT_GLOBALHEADER,
     .priv_class = &rtsp_muxer_class,
 };
-

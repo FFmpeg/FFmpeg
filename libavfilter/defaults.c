@@ -297,4 +297,3 @@ AVFilterBufferRef *avfilter_null_get_audio_buffer(AVFilterLink *link, int perms,
     return avfilter_get_audio_buffer(link->dst->outputs[0], perms, sample_fmt,
                                      size, channel_layout, packed);
 }
-

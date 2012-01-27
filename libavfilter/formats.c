@@ -181,4 +181,3 @@ void avfilter_formats_changeref(AVFilterFormats **oldref,
         *oldref = NULL;
     }
 }
-

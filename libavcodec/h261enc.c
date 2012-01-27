@@ -332,4 +332,3 @@ AVCodec ff_h261_encoder = {
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("H.261"),
 };
-

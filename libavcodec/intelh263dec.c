@@ -136,4 +136,3 @@ AVCodec ff_h263i_decoder = {
     .long_name = NULL_IF_CONFIG_SMALL("Intel H.263"),
     .pix_fmts= ff_pixfmt_list_420,
 };
-

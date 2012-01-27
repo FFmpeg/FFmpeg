@@ -384,4 +384,3 @@ AVCodec ff_libxavs_encoder = {
     .priv_class     = &class,
     .defaults       = xavs_defaults,
 };
-

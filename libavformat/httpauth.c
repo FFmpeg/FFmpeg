@@ -265,4 +265,3 @@ char *ff_http_auth_create_response(HTTPAuthState *state, const char *auth,
     }
     return authstr;
 }
-

@@ -2587,4 +2587,3 @@ AVCodec ff_mpeg1_vdpau_decoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-1 video (VDPAU acceleration)"),
 };
 #endif
-

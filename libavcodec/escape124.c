@@ -374,4 +374,3 @@ AVCodec ff_escape124_decoder = {
     .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Escape 124"),
 };
-

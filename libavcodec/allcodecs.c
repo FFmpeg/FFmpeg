@@ -432,4 +432,3 @@ void avcodec_register_all(void)
     REGISTER_BSF     (REMOVE_EXTRADATA, remove_extradata);
     REGISTER_BSF     (TEXT2MOVSUB, text2movsub);
 }
-

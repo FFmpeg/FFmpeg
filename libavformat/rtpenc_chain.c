@@ -83,4 +83,3 @@ AVFormatContext *ff_rtp_chain_mux_open(AVFormatContext *s, AVStream *st,
 
     return rtpctx;
 }
-

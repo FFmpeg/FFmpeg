@@ -105,4 +105,3 @@ RTPDynamicProtocolHandler ff_h263_2000_dynamic_handler = {
     .codec_id         = CODEC_ID_H263,
     .parse_packet     = h263_handle_packet,
 };
-

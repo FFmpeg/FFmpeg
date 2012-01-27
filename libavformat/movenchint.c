@@ -459,4 +459,3 @@ void ff_mov_close_hinting(MOVTrack *track) {
     }
     avformat_free_context(rtp_ctx);
 }
-

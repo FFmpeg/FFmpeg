@@ -886,4 +886,3 @@ AVCodec ff_fourxm_decoder = {
     .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("4X Movie"),
 };
-

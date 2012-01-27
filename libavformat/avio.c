@@ -352,4 +352,3 @@ int ff_check_interrupt(AVIOInterruptCB *cb)
         return ret;
     return 0;
 }
-

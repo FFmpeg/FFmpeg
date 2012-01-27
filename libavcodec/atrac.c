@@ -117,4 +117,3 @@ void atrac_iqmf (float *inlo, float *inhi, unsigned int nIn, float *pOut, float 
     /* Update the delay buffer. */
     memcpy(delayBuf, temp + nIn*2, 46*sizeof(float));
 }
-

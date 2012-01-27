@@ -236,4 +236,3 @@ AVInputFormat ff_sap_demuxer = {
     .read_close     = sap_read_close,
     .flags = AVFMT_NOFILE,
 };
-

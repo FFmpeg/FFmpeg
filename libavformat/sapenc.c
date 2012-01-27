@@ -261,4 +261,3 @@ AVOutputFormat ff_sap_muxer = {
     .write_trailer     = sap_write_close,
     .flags = AVFMT_NOFILE | AVFMT_GLOBALHEADER,
 };
-

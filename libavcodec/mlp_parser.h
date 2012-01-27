@@ -56,4 +56,3 @@ typedef struct MLPHeaderInfo
 int ff_mlp_read_major_sync(void *log, MLPHeaderInfo *mh, GetBitContext *gb);
 
 #endif /* AVCODEC_MLP_PARSER_H */
-

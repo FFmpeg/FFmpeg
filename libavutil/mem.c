@@ -170,4 +170,3 @@ char *av_strdup(const char *s)
     }
     return ptr;
 }
-

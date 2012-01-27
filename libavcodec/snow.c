@@ -650,4 +650,3 @@ av_cold void ff_snow_common_end(SnowContext *s)
     if (s->current_picture.data[0])
         s->avctx->release_buffer(s->avctx, &s->current_picture);
 }
-

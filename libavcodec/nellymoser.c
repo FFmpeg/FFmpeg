@@ -223,4 +223,3 @@ void ff_nelly_get_sample_bits(const float *buf, int *bits)
             bits[i] = 0;
     }
 }
-
