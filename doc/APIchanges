@@ -12,6 +12,10 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2012-xx-xx - lavc 54.8.0
+  xxxxxxx Add av_get_exact_bits_per_sample()
+  xxxxxxx Add av_get_audio_frame_duration()
+
 2012-03-xx - xxxxxxx - lavc 54.7.0 - avcodec.h
   Add av_codec_is_encoder/decoder().
 
