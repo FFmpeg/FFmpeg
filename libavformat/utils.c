@@ -4107,3 +4107,12 @@ int ff_add_param_change(AVPacket *pkt, int32_t channels,
     }
     return 0;
 }
+
+const struct AVCodecTag *avformat_get_riff_video_tags(void)
+{
+    return ff_codec_bmp_tags;
+}
+const struct AVCodecTag *avformat_get_riff_audio_tags(void)
+{
+    return ff_codec_wav_tags;
+}
