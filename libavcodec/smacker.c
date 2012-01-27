@@ -128,12 +128,12 @@ static int smacker_decode_tree(GetBitContext *gb, HuffContext *hc, uint32_t pref
  */
 static int smacker_decode_bigtree(GetBitContext *gb, HuffContext *hc, DBCtx *ctx)
 {
+    if (hc->current + 1 >= hc->length) {
+        av_log(NULL, AV_LOG_ERROR, "Tree size exceeded!\n");
+        return -1;
+    }
     if(!get_bits1(gb)){ //Leaf
         int val, i1, i2, b1, b2;
-        if(hc->current >= hc->length){
-            av_log(NULL, AV_LOG_ERROR, "Tree size exceeded!\n");
-            return -1;
-        }
         b1 = get_bits_count(gb);
         i1 = ctx->v1->table ? get_vlc2(gb, ctx->v1->table, SMKTREE_BITS, 3) : 0;
         b1 = get_bits_count(gb) - b1;
@@ -157,7 +157,7 @@ static int smacker_decode_bigtree(GetBitContext *gb, HuffContext *hc, DBCtx *ctx
         hc->values[hc->current++] = val;
         return 1;
     } else { //Node
-        int r = 0, t;
+        int r = 0, r_new, t;
 
         t = hc->current++;
         r = smacker_decode_bigtree(gb, hc, ctx);
@@ -165,8 +165,10 @@ static int smacker_decode_bigtree(GetBitContext *gb, HuffContext *hc, DBCtx *ctx
             return r;
         hc->values[t] = SMK_NODE | r;
         r++;
-        r += smacker_decode_bigtree(gb, hc, ctx);
-        return r;
+        r_new = smacker_decode_bigtree(gb, hc, ctx);
+        if (r_new < 0)
+            return r_new;
+        return r + r_new;
     }
 }
 
@@ -181,6 +183,7 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
     VLC vlc[2];
     int escapes[3];
     DBCtx ctx;
+    int err = 0;
 
     if(size >= UINT_MAX>>4){ // (((size + 3) >> 2) + 3) << 2 must not overflow
         av_log(smk->avctx, AV_LOG_ERROR, "size too large\n");
@@ -254,7 +257,8 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
     huff.current = 0;
     huff.values = av_mallocz(huff.length * sizeof(int));
 
-    smacker_decode_bigtree(gb, &huff, &ctx);
+    if (smacker_decode_bigtree(gb, &huff, &ctx) < 0)
+        err = -1;
     skip_bits1(gb);
     if(ctx.last[0] == -1) ctx.last[0] = huff.current++;
     if(ctx.last[1] == -1) ctx.last[1] = huff.current++;
@@ -278,7 +282,7 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
     av_free(tmp2.lengths);
     av_free(tmp2.values);
 
-    return 0;
+    return err;
 }
 
 static int decode_header_trees(SmackVContext *smk) {
@@ -339,16 +343,14 @@ static av_always_inline void last_reset(int *recode, int *last) {
 /* get code and update history */
 static av_always_inline int smk_get_code(GetBitContext *gb, int *recode, int *last) {
     register int *table = recode;
-    int v, b;
+    int v;
 
-    b = get_bits_count(gb);
     while(*table & SMK_NODE) {
         if(get_bits1(gb))
             table += (*table) & (~SMK_NODE);
         table++;
     }
     v = *table;
-    b = get_bits_count(gb) - b;
 
     if(v != recode[last[0]]) {
         recode[last[2]] = recode[last[1]];

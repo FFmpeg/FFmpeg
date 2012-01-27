@@ -1,0 +1,3 @@
+0ab6cd4fe5fe85a3f3e87508c2eadfa0 *./tests/data/images/xwd/02.xwd
+./tests/data/images/xwd/%02d.xwd CRC=0x6da01946
+304239 ./tests/data/images/xwd/02.xwd

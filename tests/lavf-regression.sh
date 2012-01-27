@@ -187,6 +187,10 @@ if [ -n "$do_dpx" ] ; then
 do_image_formats dpx
 fi
 
+if [ -n "$do_xwd" ] ; then
+do_image_formats xwd
+fi
+
 # audio only
 
 if [ -n "$do_wav" ] ; then
