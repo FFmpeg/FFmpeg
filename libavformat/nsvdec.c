@@ -532,11 +532,16 @@ static int nsv_read_header(AVFormatContext *s)
     for (i = 0; i < NSV_MAX_RESYNC_TRIES; i++) {
         if (nsv_resync(s) < 0)
             return -1;
-        if (nsv->state == NSV_FOUND_NSVF)
+        if (nsv->state == NSV_FOUND_NSVF) {
             err = nsv_parse_NSVf_header(s);
+            if (err < 0)
+                return err;
+        }
             /* we need the first NSVs also... */
         if (nsv->state == NSV_FOUND_NSVS) {
             err = nsv_parse_NSVs_header(s);
+            if (err < 0)
+                return err;
             break; /* we just want the first one */
         }
     }
