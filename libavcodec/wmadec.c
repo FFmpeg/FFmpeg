@@ -873,6 +873,8 @@ static int wma_decode_superframe(AVCodecContext *avctx, void *data,
 
         /* read each frame starting from bit_offset */
         pos = bit_offset + 4 + 4 + s->byte_offset_bits + 3;
+        if (pos >= MAX_CODED_SUPERFRAME_SIZE * 8)
+            return AVERROR_INVALIDDATA;
         init_get_bits(&s->gb, buf + (pos >> 3), (MAX_CODED_SUPERFRAME_SIZE - (pos >> 3))*8);
         len = pos & 7;
         if (len > 0)
