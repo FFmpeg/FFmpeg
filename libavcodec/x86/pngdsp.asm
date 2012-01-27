@@ -2,6 +2,7 @@
 ;* x86 optimizations for PNG decoding
 ;*
 ;* Copyright (c) 2008 Loren Merritt <lorenm@u.washington.edu>
+;* Copyright (c) 2012 Ronald S. Bultje <rsbultje@gmail.com>
 ;*
 ;* This file is part of Libav.
 ;*
@@ -100,6 +101,12 @@ cglobal add_png_paeth_prediction, 5, 7, %1, dst, src, top, w, bpp, end, cntr
     sub               srcq, dstq
     sub               dstq, bppq
     pxor                m7, m7
+
+    PUSH              dstq
+    lea              cntrq, [bppq-1]
+    shr              cntrq, 2 + mmsize/16
+.bpp_loop:
+    lea               dstq, [dstq+cntrq*(mmsize/2)]
     movh                m0, [dstq]
     movh                m1, [topq+dstq]
     punpcklbw           m0, m7
@@ -152,7 +159,12 @@ cglobal add_png_paeth_prediction, 5, 7, %1, dst, src, top, w, bpp, end, cntr
     add               dstq, bppq
     cmp               dstq, endq
     jle .loop
-    REP_RET
+
+    mov               dstq, [rsp]
+    dec              cntrq
+    jge .bpp_loop
+    POP               dstq
+    RET
 %endmacro
 
 INIT_MMX mmx2
