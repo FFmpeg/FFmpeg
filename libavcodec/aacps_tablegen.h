@@ -31,6 +31,7 @@
 #else
 #include "libavutil/common.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/mem.h"
 #define NR_ALLPASS_BANDS20 30
 #define NR_ALLPASS_BANDS34 50
 #define PS_AP_LINKS 3
@@ -38,12 +39,12 @@ static float pd_re_smooth[8*8*8];
 static float pd_im_smooth[8*8*8];
 static float HA[46][8][4];
 static float HB[46][8][4];
-static float f20_0_8 [ 8][7][2];
-static float f34_0_12[12][7][2];
-static float f34_1_8 [ 8][7][2];
-static float f34_2_4 [ 4][7][2];
-static float Q_fract_allpass[2][50][3][2];
-static float phi_fract[2][50][2];
+static DECLARE_ALIGNED(16, float, f20_0_8) [ 8][8][2];
+static DECLARE_ALIGNED(16, float, f34_0_12)[12][8][2];
+static DECLARE_ALIGNED(16, float, f34_1_8) [ 8][8][2];
+static DECLARE_ALIGNED(16, float, f34_2_4) [ 4][8][2];
+static DECLARE_ALIGNED(16, float, Q_fract_allpass)[2][50][3][2];
+static DECLARE_ALIGNED(16, float, phi_fract)[2][50][2];
 
 static const float g0_Q8[] = {
     0.00746082949812f, 0.02270420949825f, 0.04546865930473f, 0.07266113929591f,
@@ -65,7 +66,7 @@ static const float g2_Q4[] = {
      0.16486303567403f,  0.23279856662996f, 0.25f
 };
 
-static void make_filters_from_proto(float (*filter)[7][2], const float *proto, int bands)
+static void make_filters_from_proto(float (*filter)[8][2], const float *proto, int bands)
 {
     int q, n;
     for (q = 0; q < bands; q++) {

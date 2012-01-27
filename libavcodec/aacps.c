@@ -27,6 +27,7 @@
 #include "aacps.h"
 #include "aacps_tablegen.h"
 #include "aacpsdata.c"
+#include "dsputil.h"
 
 #define PS_BASELINE 0  ///< Operate in Baseline PS mode
                        ///< Baseline implies 10 or 20 stereo bands,
@@ -284,7 +285,7 @@ err:
 
 /** Split one subband into 2 subsubbands with a symmetric real filter.
  * The filter must have its non-center even coefficients equal to zero. */
-static void hybrid2_re(float (*in)[2], float (*out)[32][2], const float filter[7], int len, int reverse)
+static void hybrid2_re(float (*in)[2], float (*out)[32][2], const float filter[8], int len, int reverse)
 {
     int i, j;
     for (i = 0; i < len; i++, in++) {
@@ -304,11 +305,11 @@ static void hybrid2_re(float (*in)[2], float (*out)[32][2], const float filter[7
 }
 
 /** Split one subband into 6 subsubbands with a complex filter */
-static void hybrid6_cx(PSDSPContext *dsp, float (*in)[2], float (*out)[32][2], const float (*filter)[7][2], int len)
+static void hybrid6_cx(PSDSPContext *dsp, float (*in)[2], float (*out)[32][2], const float (*filter)[8][2], int len)
 {
     int i;
     int N = 8;
-    float temp[8][2];
+    LOCAL_ALIGNED_16(float, temp, [8], [2]);
 
     for (i = 0; i < len; i++, in++) {
         dsp->hybrid_analysis(temp, in, filter, 1, N);
@@ -327,7 +328,7 @@ static void hybrid6_cx(PSDSPContext *dsp, float (*in)[2], float (*out)[32][2], c
     }
 }
 
-static void hybrid4_8_12_cx(PSDSPContext *dsp, float (*in)[2], float (*out)[32][2], const float (*filter)[7][2], int N, int len)
+static void hybrid4_8_12_cx(PSDSPContext *dsp, float (*in)[2], float (*out)[32][2], const float (*filter)[8][2], int N, int len)
 {
     int i;
 
@@ -607,8 +608,8 @@ static void map_val_20_to_34(float par[PS_MAX_NR_IIDICC])
 
 static void decorrelation(PSContext *ps, float (*out)[32][2], const float (*s)[32][2], int is34)
 {
-    float power[34][PS_QMF_TIME_SLOTS] = {{0}};
-    float transient_gain[34][PS_QMF_TIME_SLOTS];
+    LOCAL_ALIGNED_16(float, power, [34], [PS_QMF_TIME_SLOTS]);
+    LOCAL_ALIGNED_16(float, transient_gain, [34], [PS_QMF_TIME_SLOTS]);
     float *peak_decay_nrg = ps->peak_decay_nrg;
     float *power_smooth = ps->power_smooth;
     float *peak_decay_diff_smooth = ps->peak_decay_diff_smooth;
@@ -620,6 +621,8 @@ static void decorrelation(PSContext *ps, float (*out)[32][2], const float (*s)[3
     const float a_smooth          = 0.25f; ///< Smoothing coefficient
     int i, k, m, n;
     int n0 = 0, nL = 32;
+
+    memset(power, 0, 34 * sizeof(*power));
 
     if (is34 != ps->is34bands_old) {
         memset(ps->peak_decay_nrg,         0, sizeof(ps->peak_decay_nrg));
@@ -883,8 +886,8 @@ static void stereo_processing(PSContext *ps, float (*l)[32][2], float (*r)[32][2
 
 int ff_ps_apply(AVCodecContext *avctx, PSContext *ps, float L[2][38][64], float R[2][38][64], int top)
 {
-    float Lbuf[91][32][2];
-    float Rbuf[91][32][2];
+    LOCAL_ALIGNED_16(float, Lbuf, [91], [32][2]);
+    LOCAL_ALIGNED_16(float, Rbuf, [91], [32][2]);
     const int len = 32;
     int is34 = ps->is34bands;
 

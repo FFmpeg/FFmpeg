@@ -30,7 +30,7 @@ typedef struct PSDSPContext {
     void (*mul_pair_single)(float (*dst)[2], float (*src0)[2], float *src1,
                             int n);
     void (*hybrid_analysis)(float (*out)[2], float (*in)[2],
-                            const float (*filter)[7][2],
+                            const float (*filter)[8][2],
                             int stride, int n);
     void (*hybrid_analysis_ileave)(float (*out)[32][2], float L[2][38][64],
                                    int i, int len);

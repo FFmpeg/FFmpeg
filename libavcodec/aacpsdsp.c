@@ -40,7 +40,7 @@ static void ps_mul_pair_single_c(float (*dst)[2], float (*src0)[2], float *src1,
 }
 
 static void ps_hybrid_analysis_c(float (*out)[2], float (*in)[2],
-                                 const float (*filter)[7][2],
+                                 const float (*filter)[8][2],
                                  int stride, int n)
 {
     int i, j;
