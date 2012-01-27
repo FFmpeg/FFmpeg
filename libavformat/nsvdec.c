@@ -317,7 +317,9 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
         char *token, *value;
         char quote;
 
-        p = strings = av_mallocz(strings_size + 1);
+        p = strings = av_mallocz((size_t)strings_size + 1);
+        if (!p)
+            return AVERROR(ENOMEM);
         endp = strings + strings_size;
         get_buffer(pb, strings, strings_size);
         while (p < endp) {
@@ -351,6 +353,8 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
         if((unsigned)table_entries >= UINT_MAX / sizeof(uint32_t))
             return -1;
         nsv->nsvf_index_data = av_malloc(table_entries * sizeof(uint32_t));
+        if (!nsv->nsvf_index_data)
+            return AVERROR(ENOMEM);
 #warning "FIXME: Byteswap buffer as needed"
         get_buffer(pb, (unsigned char *)nsv->nsvf_index_data, table_entries * sizeof(uint32_t));
     }
