@@ -157,7 +157,6 @@ enum PixelFormat {
     PIX_FMT_GBRP10LE,  ///< planar GBR 4:4:4 30bpp, little endian
     PIX_FMT_GBRP16BE,  ///< planar GBR 4:4:4 48bpp, big endian
     PIX_FMT_GBRP16LE,  ///< planar GBR 4:4:4 48bpp, little endian
-    PIX_FMT_YUVA444P,  ///< planar YUV 4:4:4 32bpp, (1 Cr & Cb sample per 1x1 Y & A samples)
     PIX_FMT_NB,        ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 };
 

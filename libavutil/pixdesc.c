@@ -521,19 +521,6 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
         },
         .flags = PIX_FMT_PLANAR,
     },
-    [PIX_FMT_YUVA444P] = {
-        .name = "yuva444p",
-        .nb_components = 4,
-        .log2_chroma_w = 0,
-        .log2_chroma_h = 0,
-        .comp = {
-            { 0, 0, 1, 0, 7 },        /* Y */
-            { 1, 0, 1, 0, 7 },        /* U */
-            { 2, 0, 1, 0, 7 },        /* V */
-            { 3, 0, 1, 0, 7 },        /* A */
-        },
-        .flags = PIX_FMT_PLANAR,
-    },
     [PIX_FMT_VDPAU_H264] = {
         .name = "vdpau_h264",
         .log2_chroma_w = 1,
