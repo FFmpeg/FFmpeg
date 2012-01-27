@@ -582,28 +582,6 @@ static void add_bytes_mmx(uint8_t *dst, uint8_t *src, int w){
         dst[i+0] += src[i+0];
 }
 
-static void add_bytes_l2_mmx(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
-    x86_reg i=0;
-    __asm__ volatile(
-        "jmp 2f                         \n\t"
-        "1:                             \n\t"
-        "movq   (%2, %0), %%mm0         \n\t"
-        "movq  8(%2, %0), %%mm1         \n\t"
-        "paddb  (%3, %0), %%mm0         \n\t"
-        "paddb 8(%3, %0), %%mm1         \n\t"
-        "movq %%mm0,  (%1, %0)          \n\t"
-        "movq %%mm1, 8(%1, %0)          \n\t"
-        "add $16, %0                    \n\t"
-        "2:                             \n\t"
-        "cmp %4, %0                     \n\t"
-        " js 1b                         \n\t"
-        : "+r" (i)
-        : "r"(dst), "r"(src1), "r"(src2), "r"((x86_reg)w-15)
-    );
-    for(; i<w; i++)
-        dst[i] = src1[i] + src2[i];
-}
-
 #if HAVE_7REGS
 static void add_hfyu_median_prediction_cmov(uint8_t *dst, const uint8_t *top, const uint8_t *diff, int w, int *left, int *left_top) {
     x86_reg w2 = -w;
@@ -878,80 +856,6 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height, int w,
         }
     }
 }
-
-#define PAETH(cpu, abs3)\
-static void add_png_paeth_prediction_##cpu(uint8_t *dst, uint8_t *src, uint8_t *top, int w, int bpp)\
-{\
-    x86_reg i = -bpp;\
-    x86_reg end = w-3;\
-    __asm__ volatile(\
-        "pxor      %%mm7, %%mm7 \n"\
-        "movd    (%1,%0), %%mm0 \n"\
-        "movd    (%2,%0), %%mm1 \n"\
-        "punpcklbw %%mm7, %%mm0 \n"\
-        "punpcklbw %%mm7, %%mm1 \n"\
-        "add       %4, %0 \n"\
-        "1: \n"\
-        "movq      %%mm1, %%mm2 \n"\
-        "movd    (%2,%0), %%mm1 \n"\
-        "movq      %%mm2, %%mm3 \n"\
-        "punpcklbw %%mm7, %%mm1 \n"\
-        "movq      %%mm2, %%mm4 \n"\
-        "psubw     %%mm1, %%mm3 \n"\
-        "psubw     %%mm0, %%mm4 \n"\
-        "movq      %%mm3, %%mm5 \n"\
-        "paddw     %%mm4, %%mm5 \n"\
-        abs3\
-        "movq      %%mm4, %%mm6 \n"\
-        "pminsw    %%mm5, %%mm6 \n"\
-        "pcmpgtw   %%mm6, %%mm3 \n"\
-        "pcmpgtw   %%mm5, %%mm4 \n"\
-        "movq      %%mm4, %%mm6 \n"\
-        "pand      %%mm3, %%mm4 \n"\
-        "pandn     %%mm3, %%mm6 \n"\
-        "pandn     %%mm0, %%mm3 \n"\
-        "movd    (%3,%0), %%mm0 \n"\
-        "pand      %%mm1, %%mm6 \n"\
-        "pand      %%mm4, %%mm2 \n"\
-        "punpcklbw %%mm7, %%mm0 \n"\
-        "movq      %6,    %%mm5 \n"\
-        "paddw     %%mm6, %%mm0 \n"\
-        "paddw     %%mm2, %%mm3 \n"\
-        "paddw     %%mm3, %%mm0 \n"\
-        "pand      %%mm5, %%mm0 \n"\
-        "movq      %%mm0, %%mm3 \n"\
-        "packuswb  %%mm3, %%mm3 \n"\
-        "movd      %%mm3, (%1,%0) \n"\
-        "add       %4, %0 \n"\
-        "cmp       %5, %0 \n"\
-        "jle 1b \n"\
-        :"+r"(i)\
-        :"r"(dst), "r"(top), "r"(src), "r"((x86_reg)bpp), "g"(end),\
-         "m"(ff_pw_255)\
-        :"memory"\
-    );\
-}
-
-#define ABS3_MMX2\
-        "psubw     %%mm5, %%mm7 \n"\
-        "pmaxsw    %%mm7, %%mm5 \n"\
-        "pxor      %%mm6, %%mm6 \n"\
-        "pxor      %%mm7, %%mm7 \n"\
-        "psubw     %%mm3, %%mm6 \n"\
-        "psubw     %%mm4, %%mm7 \n"\
-        "pmaxsw    %%mm6, %%mm3 \n"\
-        "pmaxsw    %%mm7, %%mm4 \n"\
-        "pxor      %%mm7, %%mm7 \n"
-
-#define ABS3_SSSE3\
-        "pabsw     %%mm3, %%mm3 \n"\
-        "pabsw     %%mm4, %%mm4 \n"\
-        "pabsw     %%mm5, %%mm5 \n"
-
-PAETH(mmx2, ABS3_MMX2)
-#if HAVE_SSSE3
-PAETH(ssse3, ABS3_SSSE3)
-#endif
 
 #define QPEL_V_LOW(m3,m4,m5,m6, pw_20, pw_3, rnd, in0, in1, in2, in7, out, OP)\
         "paddw " #m4 ", " #m3 "           \n\t" /* x1 */\
@@ -2552,7 +2456,6 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 #endif
 
         c->add_bytes= add_bytes_mmx;
-        c->add_bytes_l2= add_bytes_l2_mmx;
 
         if (!high_bit_depth)
         c->draw_edges = draw_edges_mmx;
@@ -2686,8 +2589,6 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             if (HAVE_AMD3DNOW && (mm_flags & AV_CPU_FLAG_3DNOW))
                 c->add_hfyu_median_prediction = add_hfyu_median_prediction_cmov;
 #endif
-
-            c->add_png_paeth_prediction= add_png_paeth_prediction_mmx2;
         } else if (HAVE_AMD3DNOW && (mm_flags & AV_CPU_FLAG_3DNOW)) {
             c->prefetch = prefetch_3dnow;
 
@@ -2826,9 +2727,6 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                 H264_QPEL_FUNCS_10(2, 0, ssse3_cache64)
                 H264_QPEL_FUNCS_10(3, 0, ssse3_cache64)
             }
-#endif
-            c->add_png_paeth_prediction= add_png_paeth_prediction_ssse3;
-#if HAVE_YASM
             if (!high_bit_depth && CONFIG_H264CHROMA) {
             c->put_h264_chroma_pixels_tab[0]= ff_put_h264_chroma_mc8_ssse3_rnd;
             c->avg_h264_chroma_pixels_tab[0]= ff_avg_h264_chroma_mc8_ssse3_rnd;

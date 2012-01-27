@@ -22,7 +22,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "png.h"
-#include "dsputil.h"
+#include "pngdsp.h"
 
 /* TODO:
  * - add 2, 4 and 16 bit depth support
@@ -33,7 +33,7 @@
 //#define DEBUG
 
 typedef struct PNGDecContext {
-    DSPContext dsp;
+    PNGDSPContext dsp;
 
     const uint8_t *bytestream;
     const uint8_t *bytestream_start;
@@ -191,7 +191,7 @@ void ff_add_png_paeth_prediction(uint8_t *dst, uint8_t *src, uint8_t *top, int w
     }
 
 /* NOTE: 'dst' can be equal to 'last' */
-static void png_filter_row(DSPContext *dsp, uint8_t *dst, int filter_type,
+static void png_filter_row(PNGDSPContext *dsp, uint8_t *dst, int filter_type,
                            uint8_t *src, uint8_t *last, int size, int bpp)
 {
     int i, p, r, g, b, a;
@@ -235,7 +235,7 @@ static void png_filter_row(DSPContext *dsp, uint8_t *dst, int filter_type,
         if(bpp > 1 && size > 4) {
             // would write off the end of the array if we let it process the last pixel with bpp=3
             int w = bpp==4 ? size : size-3;
-            dsp->add_png_paeth_prediction(dst+i, src+i, last+i, w-i, bpp);
+            dsp->add_paeth_prediction(dst+i, src+i, last+i, w-i, bpp);
             i = w;
         }
         ff_add_png_paeth_prediction(dst+i, src+i, last+i, size-i, bpp);
@@ -639,7 +639,7 @@ static av_cold int png_dec_init(AVCodecContext *avctx){
     s->last_picture = &s->picture2;
     avcodec_get_frame_defaults(&s->picture1);
     avcodec_get_frame_defaults(&s->picture2);
-    dsputil_init(&s->dsp, avctx);
+    ff_pngdsp_init(&s->dsp);
 
     return 0;
 }
