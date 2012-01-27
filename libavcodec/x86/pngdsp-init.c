@@ -29,16 +29,22 @@ void ff_add_png_paeth_prediction_ssse3(uint8_t *dst, uint8_t *src,
                                        uint8_t *top, int w, int bpp);
 void ff_add_bytes_l2_mmx (uint8_t *dst, uint8_t *src1,
                           uint8_t *src2, int w);
+void ff_add_bytes_l2_sse2(uint8_t *dst, uint8_t *src1,
+                          uint8_t *src2, int w);
 
 void ff_pngdsp_init_x86(PNGDSPContext *dsp)
 {
 #if HAVE_YASM
     int flags = av_get_cpu_flags();
 
+#if ARCH_X86_32
     if (flags & AV_CPU_FLAG_MMX)
         dsp->add_bytes_l2         = ff_add_bytes_l2_mmx;
+#endif
     if (flags & AV_CPU_FLAG_MMX2)
         dsp->add_paeth_prediction = ff_add_png_paeth_prediction_mmx2;
+    if (flags & AV_CPU_FLAG_SSE2)
+        dsp->add_bytes_l2         = ff_add_bytes_l2_sse2;
     if (flags & AV_CPU_FLAG_SSSE3)
         dsp->add_paeth_prediction = ff_add_png_paeth_prediction_ssse3;
 #endif

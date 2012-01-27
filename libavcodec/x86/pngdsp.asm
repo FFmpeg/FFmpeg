@@ -53,6 +53,21 @@ cglobal add_bytes_l2, 4, 6, %1, dst, src1, src2, wa, w, i
     cmp                 iq, waq
     jl .loop_v
 
+%if mmsize == 16
+    ; vector loop
+    mov                 wq, waq
+    and                waq, ~7
+    jmp .end_l
+.loop_l:
+    movq               mm0, [src1q+iq]
+    paddb              mm0, [src2q+iq]
+    movq  [dstq+iq       ], mm0
+    add                 iq, 8
+.end_l:
+    cmp                 iq, waq
+    jl .loop_l
+%endif
+
     ; scalar loop for leftover
     jmp .end_s
 .loop_s:
@@ -66,8 +81,13 @@ cglobal add_bytes_l2, 4, 6, %1, dst, src1, src2, wa, w, i
     REP_RET
 %endmacro
 
+%if ARCH_X86_32
 INIT_MMX mmx
 ADD_BYTES_FN 0
+%endif
+
+INIT_XMM sse2
+ADD_BYTES_FN 2
 
 %macro ADD_PAETH_PRED_FN 1
 cglobal add_png_paeth_prediction, 5, 7, %1, dst, src, top, w, bpp, end, cntr
