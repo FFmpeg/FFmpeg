@@ -24,6 +24,7 @@
 
 #include <stdint.h>
 
+#include "aacpsdsp.h"
 #include "avcodec.h"
 #include "get_bits.h"
 
@@ -72,6 +73,7 @@ typedef struct {
     float  H22[2][PS_MAX_NUM_ENV+1][PS_MAX_NR_IIDICC];
     int8_t opd_hist[PS_MAX_NR_IIDICC];
     int8_t ipd_hist[PS_MAX_NR_IIDICC];
+    PSDSPContext dsp;
 } PSContext;
 
 void ff_ps_init(void);
