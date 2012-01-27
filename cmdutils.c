@@ -233,14 +233,12 @@ int parse_option(void *optctx, const char *opt, const char *arg,
     if (!po->name && opt[0] == 'n' && opt[1] == 'o') {
         /* handle 'no' bool option */
         po = find_option(options, opt + 2);
-        if (!(po->name && (po->flags & OPT_BOOL)))
-            goto unknown_opt;
-        bool_val = 0;
+        if ((po->name && (po->flags & OPT_BOOL)))
+            bool_val = 0;
     }
     if (!po->name)
         po = find_option(options, "default");
     if (!po->name) {
-unknown_opt:
         av_log(NULL, AV_LOG_ERROR, "Unrecognized option '%s'\n", opt);
         return AVERROR(EINVAL);
     }
