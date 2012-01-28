@@ -57,18 +57,18 @@ static av_cold int sunrast_init(AVCodecContext *avctx) {
     SUNRASTContext *s = avctx->priv_data;
 
     avcodec_get_frame_defaults(&s->picture);
-    avctx->coded_frame= &s->picture;
+    avctx->coded_frame = &s->picture;
 
     return 0;
 }
 
 static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
                                 int *data_size, AVPacket *avpkt) {
-    const uint8_t *buf = avpkt->data;
-    const uint8_t *buf_end = avpkt->data + avpkt->size;
+    const uint8_t *buf       = avpkt->data;
+    const uint8_t *buf_end   = avpkt->data + avpkt->size;
     SUNRASTContext * const s = avctx->priv_data;
-    AVFrame *picture = data;
-    AVFrame * const p = &s->picture;
+    AVFrame *picture         = data;
+    AVFrame * const p        = &s->picture;
     unsigned int w, h, depth, type, maptype, maplength, stride, x, y, len, alen;
     uint8_t *ptr;
     const uint8_t *bufstart = buf;
@@ -81,12 +81,12 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
         return -1;
     }
 
-    w         = AV_RB32(buf+4);
-    h         = AV_RB32(buf+8);
-    depth     = AV_RB32(buf+12);
-    type      = AV_RB32(buf+20);
-    maptype   = AV_RB32(buf+24);
-    maplength = AV_RB32(buf+28);
+    w         = AV_RB32(buf + 4);
+    h         = AV_RB32(buf + 8);
+    depth     = AV_RB32(buf + 12);
+    type      = AV_RB32(buf + 20);
+    maptype   = AV_RB32(buf + 24);
+    maplength = AV_RB32(buf + 28);
     buf      += 32;
 
     if (type == RT_FORMAT_TIFF || type == RT_FORMAT_IFF || type == RT_EXPERIMENTAL) {
@@ -153,8 +153,8 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
         }
 
         ptr = p->data[1];
-        for (x=0; x<len; x++, ptr+=4)
-            *(uint32_t *)ptr = (buf[x]<<16) + (buf[len+x]<<8) + buf[len+len+x];
+        for (x = 0; x < len; x++, ptr += 4)
+            *(uint32_t *)ptr = (buf[x] << 16) + (buf[len + x] << 8) + buf[len + len + x];
     }
 
     buf += maplength;
@@ -164,11 +164,11 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
 
     /* scanlines are aligned on 16 bit boundaries */
     len  = (depth * w + 7) >> 3;
-    alen = len + (len&1);
+    alen = len + (len & 1);
 
     if (type == RT_BYTE_ENCODED) {
         int value, run;
-        uint8_t *end = ptr + h*stride;
+        uint8_t *end = ptr + h * stride;
 
         x = 0;
         while (ptr != end && buf < buf_end) {
@@ -193,7 +193,7 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
             }
         }
     } else {
-        for (y=0; y<h; y++) {
+        for (y = 0; y < h; y++) {
             if (buf_end - buf < len)
                 break;
             memcpy(ptr, buf, len);
@@ -202,7 +202,7 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
         }
     }
 
-    *picture = s->picture;
+    *picture   = s->picture;
     *data_size = sizeof(AVFrame);
 
     return buf - bufstart;
