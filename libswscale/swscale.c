@@ -2804,7 +2804,7 @@ static int swScale(SwsContext *c, const uint8_t* src[],
         }
     }
 
-    if ((dstFormat == PIX_FMT_YUVA420P) && !alpPixBuf)
+    if (isPlanarYUV(dstFormat) && isALPHA(dstFormat) && !alpPixBuf)
         fillPlane(dst[3], dstStride[3], dstW, dstY-lastDstY, lastDstY, 255);
 
 #if HAVE_MMX2
