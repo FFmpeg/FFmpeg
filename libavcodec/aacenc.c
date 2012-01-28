@@ -487,10 +487,10 @@ static void deinterleave_input_samples(AACEncContext *s,
         const float *sptr = samples + channel_map[ch];
 
         /* copy last 1024 samples of previous frame to the start of the current frame */
-        memcpy(&s->planar_samples[ch][0], &s->planar_samples[ch][1024], 1024 * sizeof(s->planar_samples[0][0]));
+        memcpy(&s->planar_samples[ch][1024], &s->planar_samples[ch][2048], 1024 * sizeof(s->planar_samples[0][0]));
 
         /* deinterleave */
-        for (i = 1024; i < 1024 * 2; i++) {
+        for (i = 2048; i < 3072; i++) {
             s->planar_samples[ch][i] = *sptr;
             sptr += sinc;
         }
