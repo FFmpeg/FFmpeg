@@ -24,6 +24,7 @@
 #include "avformat.h"
 #include "internal.h"
 
+#include "libavutil/avassert.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavutil/avstring.h"
@@ -48,6 +49,9 @@ typedef struct {
     int  wrap;             ///< number after which the index wraps
     char *time_str;        ///< segment duration specification string
     int64_t time;          ///< segment duration
+    char *times_str;       ///< segment times specification string
+    int64_t *times;        ///< list of segment interval specification
+    int nb_times;          ///< number of elments in the times array
     int has_video;
     double start_time, end_time;
 } SegmentContext;
@@ -136,6 +140,59 @@ end:
     return ret;
 }
 
+static int parse_times(void *log_ctx, int64_t **times, int *nb_times,
+                       const char *times_str)
+{
+    char *p;
+    int i, ret = 0;
+    char *times_str1 = av_strdup(times_str);
+    char *saveptr = NULL;
+
+    if (!times_str1)
+        return AVERROR(ENOMEM);
+
+#define FAIL(err) ret = err; goto end
+
+    *nb_times = 1;
+    for (p = times_str1; *p; p++)
+        if (*p == ',')
+            (*nb_times)++;
+
+    *times = av_malloc(sizeof(**times) * *nb_times);
+    if (!*times) {
+        av_log(log_ctx, AV_LOG_ERROR, "Could not allocate forced times array\n");
+        FAIL(AVERROR(ENOMEM));
+    }
+
+    p = times_str1;
+    for (i = 0; i < *nb_times; i++) {
+        int64_t t;
+        char *tstr = av_strtok(p, ",", &saveptr);
+        av_assert0(tstr);
+        p = NULL;
+
+        ret = av_parse_time(&t, tstr, 1);
+        if (ret < 0) {
+            av_log(log_ctx, AV_LOG_ERROR,
+                   "Invalid time duration specification in %s\n", p);
+            FAIL(AVERROR(EINVAL));
+        }
+        (*times)[i] = t;
+
+        /* check on monotonicity */
+        if (i && (*times)[i-1] > (*times)[i]) {
+            av_log(log_ctx, AV_LOG_ERROR,
+                   "Specified time %f is greater than the following time %f\n",
+                   (float)((*times)[i])/1000000, (float)((*times)[i-1])/1000000);
+            FAIL(AVERROR(EINVAL));
+        }
+    }
+
+end:
+    av_free(times_str1);
+    return ret;
+}
+
 static int seg_write_header(AVFormatContext *s)
 {
     SegmentContext *seg = s->priv_data;
@@ -144,11 +201,25 @@ static int seg_write_header(AVFormatContext *s)
 
     seg->number = 0;
 
-    if ((ret = av_parse_time(&seg->time, seg->time_str, 1)) < 0) {
+    if (seg->time_str && seg->times_str) {
         av_log(s, AV_LOG_ERROR,
-               "Invalid time duration specification '%s' for segment_time option\n",
-               seg->time_str);
-        return ret;
+               "segment_time and segment_times options are mutually exclusive, select just one of them\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (seg->times_str) {
+        if ((ret = parse_times(s, &seg->times, &seg->nb_times, seg->times_str)) < 0)
+            return ret;
+    } else {
+        /* set default value if not specified */
+        if (!seg->time_str)
+            seg->time_str = av_strdup("2");
+        if ((ret = av_parse_time(&seg->time, seg->time_str, 1)) < 0) {
+            av_log(s, AV_LOG_ERROR,
+                   "Invalid time duration specification '%s' for segment_time option\n",
+                   seg->time_str);
+            return ret;
+        }
     }
 
     oc = avformat_alloc_context();
@@ -221,8 +292,14 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
     SegmentContext *seg = s->priv_data;
     AVFormatContext *oc = seg->avf;
     AVStream *st = oc->streams[pkt->stream_index];
-    int64_t end_pts = seg->time * seg->number;
+    int64_t end_pts;
     int ret;
+
+    if (seg->times) {
+        end_pts = seg->number <= seg->nb_times ? seg->times[seg->number-1] : INT64_MAX;
+    } else {
+        end_pts = seg->time * seg->number;
+    }
 
     /* if the segment has video, start a new segment *only* with a key video frame */
     if ((st->codec->codec_type == AVMEDIA_TYPE_VIDEO || !seg->has_video) &&
@@ -264,6 +341,7 @@ static int seg_write_trailer(struct AVFormatContext *s)
         avio_close(seg->list_pb);
 
     av_opt_free(seg);
+    av_freep(&seg->times);
 
     oc->streams = NULL;
     oc->nb_streams = 0;
@@ -280,7 +358,8 @@ static const AVOption options[] = {
     { "segment_list_type", "set the segment list type",                  OFFSET(list_type), AV_OPT_TYPE_INT,  {.dbl = LIST_TYPE_FLAT}, 0, LIST_TYPE_NB-1, E, "list_type" },
     { "flat", "flat format",     0, AV_OPT_TYPE_CONST, {.dbl=LIST_TYPE_FLAT }, INT_MIN, INT_MAX, 0, "list_type" },
     { "ext",  "extended format", 0, AV_OPT_TYPE_CONST, {.dbl=LIST_TYPE_EXT  }, INT_MIN, INT_MAX, 0, "list_type" },
-    { "segment_time",      "set segment duration",                       OFFSET(time_str),AV_OPT_TYPE_STRING, {.str = "2"},   0, 0,       E },
+    { "segment_time",      "set segment duration",                       OFFSET(time_str),AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
+    { "segment_times",     "set segment split time points",              OFFSET(times_str),AV_OPT_TYPE_STRING,{.str = NULL},  0, 0,       E },
     { "segment_wrap",      "set number after which the index wraps",     OFFSET(wrap),    AV_OPT_TYPE_INT,    {.dbl = 0},     0, INT_MAX, E },
     { NULL },
 };
