@@ -29,6 +29,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     avctx->bits_per_raw_sample = 10;
 
     avctx->coded_frame         = avcodec_alloc_frame();
+    if (!avctx->coded_frame)
+        return AVERROR(ENOMEM);
 
     return 0;
 }
