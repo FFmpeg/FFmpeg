@@ -120,6 +120,8 @@ static av_cold int adx_encode_init(AVCodecContext *avctx)
     avctx->frame_size = BLOCK_SAMPLES;
 
     avctx->coded_frame = avcodec_alloc_frame();
+    if (!avctx->coded_frame)
+        return AVERROR(ENOMEM);
 
     /* the cutoff can be adjusted, but this seems to work pretty well */
     c->cutoff = 500;
