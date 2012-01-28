@@ -561,6 +561,7 @@ int avcodec_get_context_defaults3(AVCodecContext *s, AVCodec *codec){
     s->av_class = &av_codec_context_class;
 
     s->codec_type = codec ? codec->type : AVMEDIA_TYPE_UNKNOWN;
+    s->codec      = codec;
     av_opt_set_defaults(s);
 
     s->time_base           = (AVRational){0,1};

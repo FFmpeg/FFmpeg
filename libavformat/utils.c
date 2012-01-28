@@ -2140,7 +2140,9 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **option
     if (!avcodec_is_open(st->codec)) {
         AVDictionary *thread_opt = NULL;
 
-        codec = avcodec_find_decoder(st->codec->codec_id);
+        codec = st->codec->codec ? st->codec->codec :
+                                   avcodec_find_decoder(st->codec->codec_id);
+
         if (!codec)
             return -1;
 
@@ -2306,8 +2308,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 st->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
             }
         }
-        assert(!st->codec->codec);
-        codec = avcodec_find_decoder(st->codec->codec_id);
+        codec = st->codec->codec ? st->codec->codec :
+                                   avcodec_find_decoder(st->codec->codec_id);
 
         /* force thread count to 1 since the h264 decoder will not extract SPS
          *  and PPS to extradata during multi-threaded decoding */

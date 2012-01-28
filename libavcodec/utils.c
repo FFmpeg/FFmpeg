@@ -640,6 +640,18 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVD
     if (avcodec_is_open(avctx))
         return 0;
 
+    if ((!codec && !avctx->codec)) {
+        av_log(avctx, AV_LOG_ERROR, "No codec provided to avcodec_open2().\n");
+        return AVERROR(EINVAL);
+    }
+    if ((codec && avctx->codec && codec != avctx->codec)) {
+        av_log(avctx, AV_LOG_ERROR, "This AVCodecContext was allocated for %s, "
+               "but %s passed to avcodec_open2().\n", avctx->codec->name, codec->name);
+        return AVERROR(EINVAL);
+    }
+    if (!codec)
+        codec = avctx->codec;
+
     if (avctx->extradata_size < 0 || avctx->extradata_size >= FF_MAX_EXTRADATA_SIZE)
         return AVERROR(EINVAL);
 
@@ -656,11 +668,6 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVD
     if(entangled_thread_counter != 1){
         av_log(avctx, AV_LOG_ERROR, "insufficient thread locking around avcodec_open/close()\n");
         ret = -1;
-        goto end;
-    }
-
-    if(avctx->codec || !codec) {
-        ret = AVERROR(EINVAL);
         goto end;
     }
 
