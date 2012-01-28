@@ -64,16 +64,22 @@ static AVStream *add_audio_stream(AVFormatContext *oc, enum CodecID codec_id)
 {
     AVCodecContext *c;
     AVStream *st;
+    AVCodec *codec;
 
-    st = avformat_new_stream(oc, NULL);
+    /* find the audio encoder */
+    codec = avcodec_find_encoder(codec_id);
+    if (!codec) {
+        fprintf(stderr, "codec not found\n");
+        exit(1);
+    }
+
+    st = avformat_new_stream(oc, codec);
     if (!st) {
         fprintf(stderr, "Could not alloc stream\n");
         exit(1);
     }
 
     c = st->codec;
-    c->codec_id = codec_id;
-    c->codec_type = AVMEDIA_TYPE_AUDIO;
 
     /* put sample parameters */
     c->sample_fmt = AV_SAMPLE_FMT_S16;
@@ -91,19 +97,11 @@ static AVStream *add_audio_stream(AVFormatContext *oc, enum CodecID codec_id)
 static void open_audio(AVFormatContext *oc, AVStream *st)
 {
     AVCodecContext *c;
-    AVCodec *codec;
 
     c = st->codec;
 
-    /* find the audio encoder */
-    codec = avcodec_find_encoder(c->codec_id);
-    if (!codec) {
-        fprintf(stderr, "codec not found\n");
-        exit(1);
-    }
-
     /* open it */
-    if (avcodec_open2(c, codec, NULL) < 0) {
+    if (avcodec_open2(c, NULL, NULL) < 0) {
         fprintf(stderr, "could not open codec\n");
         exit(1);
     }
@@ -199,16 +197,22 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id)
 {
     AVCodecContext *c;
     AVStream *st;
+    AVCodec *codec;
 
-    st = avformat_new_stream(oc, NULL);
+    /* find the video encoder */
+    codec = avcodec_find_encoder(codec_id);
+    if (!codec) {
+        fprintf(stderr, "codec not found\n");
+        exit(1);
+    }
+
+    st = avformat_new_stream(oc, codec);
     if (!st) {
         fprintf(stderr, "Could not alloc stream\n");
         exit(1);
     }
 
     c = st->codec;
-    c->codec_id = codec_id;
-    c->codec_type = AVMEDIA_TYPE_VIDEO;
 
     /* put sample parameters */
     c->bit_rate = 400000;
@@ -262,20 +266,12 @@ static AVFrame *alloc_picture(enum PixelFormat pix_fmt, int width, int height)
 
 static void open_video(AVFormatContext *oc, AVStream *st)
 {
-    AVCodec *codec;
     AVCodecContext *c;
 
     c = st->codec;
 
-    /* find the video encoder */
-    codec = avcodec_find_encoder(c->codec_id);
-    if (!codec) {
-        fprintf(stderr, "codec not found\n");
-        exit(1);
-    }
-
     /* open the codec */
-    if (avcodec_open2(c, codec, NULL) < 0) {
+    if (avcodec_open2(c, NULL, NULL) < 0) {
         fprintf(stderr, "could not open codec\n");
         exit(1);
     }
