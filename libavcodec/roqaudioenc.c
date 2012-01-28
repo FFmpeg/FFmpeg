@@ -59,7 +59,6 @@ static av_cold int roq_dpcm_encode_init(AVCodecContext *avctx)
     context->lastSample[0] = context->lastSample[1] = 0;
 
     avctx->coded_frame= avcodec_alloc_frame();
-    avctx->coded_frame->key_frame= 1;
 
     return 0;
 }
