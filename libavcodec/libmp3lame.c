@@ -86,7 +86,6 @@ static av_cold int MP3lame_encode_init(AVCodecContext *avctx)
 
         return AVERROR(ENOMEM);
     }
-    avctx->coded_frame->key_frame = 1;
 
     if(AV_SAMPLE_FMT_S32 == avctx->sample_fmt && s->stereo) {
         int nelem = 2 * avctx->frame_size;
