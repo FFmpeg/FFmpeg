@@ -58,6 +58,8 @@ typedef struct ADPCMEncodeContext {
 
 #define FREEZE_INTERVAL 128
 
+static av_cold int adpcm_encode_close(AVCodecContext *avctx);
+
 static av_cold int adpcm_encode_init(AVCodecContext *avctx)
 {
     ADPCMEncodeContext *s = avctx->priv_data;
@@ -142,10 +144,7 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
 
     return 0;
 error:
-    av_freep(&s->paths);
-    av_freep(&s->node_buf);
-    av_freep(&s->nodep_buf);
-    av_freep(&s->trellis_hash);
+    adpcm_encode_close(avctx);
     return -1;
 }
 
