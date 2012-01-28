@@ -51,7 +51,7 @@ void avdevice_register_all(void)
     REGISTER_OUTDEV   (SDL, sdl);
     REGISTER_INOUTDEV (SNDIO, sndio);
     REGISTER_INDEV    (V4L2, v4l2);
-    REGISTER_INDEV    (V4L, v4l);
+//    REGISTER_INDEV    (V4L, v4l
     REGISTER_INDEV    (VFWCAP, vfwcap);
     REGISTER_INDEV    (X11_GRAB_DEVICE, x11_grab_device);
 
