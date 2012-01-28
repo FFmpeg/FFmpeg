@@ -135,4 +135,3 @@ AVInputFormat ff_iss_demuxer = {
     .read_header    = iss_read_header,
     .read_packet    = iss_read_packet,
 };
-

@@ -297,4 +297,3 @@ AVInputFormat ff_rl2_demuxer = {
     .read_packet    = rl2_read_packet,
     .read_seek      = rl2_read_seek,
 };
-

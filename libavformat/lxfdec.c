@@ -346,4 +346,3 @@ AVInputFormat ff_lxf_demuxer = {
     .read_packet    = lxf_read_packet,
     .codec_tag      = (const AVCodecTag* const []){lxf_tags, 0},
 };
-

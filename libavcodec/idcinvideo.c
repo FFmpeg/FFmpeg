@@ -265,4 +265,3 @@ AVCodec ff_idcin_decoder = {
     .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("id Quake II CIN video"),
 };
-

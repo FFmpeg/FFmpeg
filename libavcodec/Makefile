@@ -56,7 +56,8 @@ OBJS-$(CONFIG_VDPAU)                   += vdpau.o
 OBJS-$(CONFIG_A64MULTI_ENCODER)        += a64multienc.o elbg.o
 OBJS-$(CONFIG_A64MULTI5_ENCODER)       += a64multienc.o elbg.o
 OBJS-$(CONFIG_AAC_DECODER)             += aacdec.o aactab.o aacsbr.o aacps.o \
-                                          aacadtsdec.o mpeg4audio.o kbdwin.o
+                                          aacadtsdec.o mpeg4audio.o kbdwin.o \
+                                          sbrdsp.o
 OBJS-$(CONFIG_AAC_ENCODER)             += aacenc.o aaccoder.o    \
                                           aacpsy.o aactab.o      \
                                           psymodel.o iirfilter.o \

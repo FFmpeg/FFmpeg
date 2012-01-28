@@ -310,4 +310,3 @@ AVCodec ff_mace6_decoder = {
     .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("MACE (Macintosh Audio Compression/Expansion) 6:1"),
 };
-

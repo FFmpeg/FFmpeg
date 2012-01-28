@@ -269,4 +269,3 @@ AVCodec ff_sgi_decoder = {
     .decode         = decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("SGI image"),
 };
-

@@ -294,4 +294,3 @@ const DVprofile* avpriv_dv_codec_profile(AVCodecContext* codec)
 
     return NULL;
 }
-

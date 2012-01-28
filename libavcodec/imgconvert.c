@@ -904,4 +904,3 @@ int avpicture_deinterlace(AVPicture *dst, const AVPicture *src,
     emms_c();
     return 0;
 }
-

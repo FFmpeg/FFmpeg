@@ -143,4 +143,3 @@ AVFilter avfilter_vf_setsar = {
                                   { .name = NULL}},
 };
 #endif /* CONFIG_SETSAR_FILTER */
-

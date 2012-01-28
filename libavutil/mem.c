@@ -228,3 +228,4 @@ void av_dynarray_add(void *tab_ptr, int *nb_ptr, void *elem)
     tab[nb++] = (intptr_t)elem;
     *nb_ptr = nb;
 }
+

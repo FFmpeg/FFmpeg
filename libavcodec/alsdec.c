@@ -1755,4 +1755,3 @@ AVCodec ff_als_decoder = {
     .capabilities = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("MPEG-4 Audio Lossless Coding (ALS)"),
 };
-

@@ -1169,4 +1169,3 @@ decode_intra_mb:
 
     return 0;
 }
-

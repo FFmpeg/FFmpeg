@@ -445,4 +445,3 @@ AVInputFormat ff_oma_demuxer = {
     .extensions     = "oma,omg,aa3",
     .codec_tag      = (const AVCodecTag* const []){ff_oma_codec_tags, 0},
 };
-

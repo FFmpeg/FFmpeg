@@ -223,6 +223,8 @@ API changes, most recent first:
 
 2011-07-10 - 0b950fe - lavc 53.8.0
   Add avcodec_open2(), deprecate avcodec_open().
+  Add avcodec_alloc_context3. Deprecate avcodec_alloc_context() and
+  avcodec_alloc_context2().
 
 2011-07-01 - b442ca6 - lavf 53.5.0 - avformat.h
   Add function av_get_output_timestamp().

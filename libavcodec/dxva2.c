@@ -151,4 +151,3 @@ end:
         ff_draw_horiz_band(s, 0, s->avctx->height);
     return result;
 }
-

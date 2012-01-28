@@ -1725,4 +1725,3 @@ AVCodec ff_vorbis_decoder = {
         AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE
     },
 };
-

@@ -232,4 +232,3 @@ AVCodec ff_nellymoser_decoder = {
                                                       AV_SAMPLE_FMT_S16,
                                                       AV_SAMPLE_FMT_NONE },
 };
-

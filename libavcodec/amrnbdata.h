@@ -1669,4 +1669,3 @@ static const float highpass_poles[2] = { -1.933105469, 0.935913085 };
 static const float highpass_gain     = 0.939819335;
 
 #endif /* AVCODEC_AMRNBDATA_H */
-

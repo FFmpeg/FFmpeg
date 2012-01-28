@@ -516,4 +516,3 @@ void ff_free_parser_state(AVFormatContext *s, AVParserState *state)
     av_free(state->stream_states);
     av_free(state);
 }
-

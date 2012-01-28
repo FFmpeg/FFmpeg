@@ -51,4 +51,3 @@ void ff_h261_loop_filter(MpegEncContext *s){
     s->dsp.h261_loop_filter(dest_cb, uvlinesize);
     s->dsp.h261_loop_filter(dest_cr, uvlinesize);
 }
-

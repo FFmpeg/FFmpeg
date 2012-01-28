@@ -270,4 +270,3 @@ AVHWAccel ff_mpeg2_dxva2_hwaccel = {
     .end_frame      = end_frame,
     .priv_data_size = sizeof(struct dxva2_picture_context),
 };
-

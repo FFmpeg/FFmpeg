@@ -260,4 +260,3 @@ int ff_msrle_decode(AVCodecContext *avctx, AVPicture *pic, int depth,
         return -1;
     }
 }
-

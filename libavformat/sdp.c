@@ -642,4 +642,3 @@ void ff_sdp_write_media(char *buff, int size, AVCodecContext *c, const char *des
 {
 }
 #endif
-

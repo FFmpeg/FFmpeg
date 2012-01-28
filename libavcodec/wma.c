@@ -525,4 +525,3 @@ int ff_wma_run_level_decode(AVCodecContext* avctx, GetBitContext* gb,
 
     return 0;
 }
-

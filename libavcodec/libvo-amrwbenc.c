@@ -130,4 +130,3 @@ AVCodec ff_libvo_amrwbenc_encoder = {
                                       "(AMR) Wide-Band"),
     .priv_class = &class,
 };
-

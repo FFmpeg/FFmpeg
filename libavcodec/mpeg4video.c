@@ -168,4 +168,3 @@ int ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my){
         return MB_TYPE_DIRECT2 | MB_TYPE_16x16 | MB_TYPE_L0L1; //Note see prev line
     }
 }
-

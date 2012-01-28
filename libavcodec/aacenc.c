@@ -200,8 +200,8 @@ WINDOW_FUNC(long_start)
     float *out = sce->ret;
 
     dsp->vector_fmul(out, audio, lwindow, 1024);
-    memcpy(out + 1024, audio, sizeof(out[0]) * 448);
-    dsp->vector_fmul_reverse(out + 1024 + 448, audio, swindow, 128);
+    memcpy(out + 1024, audio + 1024, sizeof(out[0]) * 448);
+    dsp->vector_fmul_reverse(out + 1024 + 448, audio + 1024 + 448, swindow, 128);
     memset(out + 1024 + 576, 0, sizeof(out[0]) * 448);
 }
 
@@ -487,10 +487,10 @@ static void deinterleave_input_samples(AACEncContext *s,
         const float *sptr = samples + channel_map[ch];
 
         /* copy last 1024 samples of previous frame to the start of the current frame */
-        memcpy(&s->planar_samples[ch][0], &s->planar_samples[ch][1024], 1024 * sizeof(s->planar_samples[0][0]));
+        memcpy(&s->planar_samples[ch][1024], &s->planar_samples[ch][2048], 1024 * sizeof(s->planar_samples[0][0]));
 
         /* deinterleave */
-        for (i = 1024; i < 1024 * 2; i++) {
+        for (i = 2048; i < 3072; i++) {
             s->planar_samples[ch][i] = *sptr;
             sptr += sinc;
         }

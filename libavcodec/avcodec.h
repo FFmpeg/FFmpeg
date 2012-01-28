@@ -3566,6 +3566,9 @@ AVCodecContext *avcodec_alloc_context2(enum AVMediaType);
  * @param codec if non-NULL, allocate private data and initialize defaults
  *              for the given codec. It is illegal to then call avcodec_open2()
  *              with a different codec.
+ *              If NULL, then the codec-specific defaults won't be initialized,
+ *              which may result in suboptimal default settings (this is
+ *              important mainly for encoders, e.g. libx264).
  *
  * @return An AVCodecContext filled with default values or NULL on failure.
  * @see avcodec_get_context_defaults

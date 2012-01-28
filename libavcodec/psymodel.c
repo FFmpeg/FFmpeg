@@ -134,4 +134,3 @@ av_cold void ff_psy_preprocess_end(struct FFPsyPreprocessContext *ctx)
     av_freep(&ctx->fstate);
     av_free(ctx);
 }
-
