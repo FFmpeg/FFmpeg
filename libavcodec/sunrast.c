@@ -23,6 +23,8 @@
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
 
+#define RAS_MAGIC 0x59a66a95
+
 /* The Old and Standard format types indicate that the image data is
  * uncompressed. There is no difference between the two formats. */
 #define RT_OLD          0
@@ -74,7 +76,7 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
     if (avpkt->size < 32)
         return AVERROR_INVALIDDATA;
 
-    if (AV_RB32(buf) != 0x59a66a95) {
+    if (AV_RB32(buf) != RAS_MAGIC) {
         av_log(avctx, AV_LOG_ERROR, "this is not sunras encoded data\n");
         return -1;
     }
