@@ -55,6 +55,8 @@ static av_cold int libgsm_encode_init(AVCodecContext *avctx) {
     }
 
     avctx->priv_data = gsm_create();
+    if (!avctx->priv_data)
+        goto error;
 
     switch(avctx->codec_id) {
     case CODEC_ID_GSM:
@@ -71,8 +73,13 @@ static av_cold int libgsm_encode_init(AVCodecContext *avctx) {
 
     avctx->coded_frame= avcodec_alloc_frame();
     avctx->coded_frame->key_frame= 1;
+    if (!avctx->coded_frame)
+        goto error;
 
     return 0;
+error:
+    libgsm_encode_close();
+    return -1;
 }
 
 static av_cold int libgsm_encode_close(AVCodecContext *avctx) {
