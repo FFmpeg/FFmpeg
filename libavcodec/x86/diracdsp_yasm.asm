@@ -241,7 +241,7 @@ cglobal add_dirac_obmc%1_%2, 6,6,5, dst, src, stride, obmc, yblen
 %endm
 
 INIT_MMX
-%ifndef ARCH_X86_64
+%if ARCH_X86_64 == 0
 PUT_RECT mmx
 ADD_RECT mmx
 
