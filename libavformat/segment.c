@@ -52,6 +52,8 @@ typedef struct {
     char *times_str;       ///< segment times specification string
     int64_t *times;        ///< list of segment interval specification
     int nb_times;          ///< number of elments in the times array
+    char *time_delta_str;  ///< approximation value duration used for the segment times
+    int64_t time_delta;
     int has_video;
     double start_time, end_time;
 } SegmentContext;
@@ -222,6 +224,15 @@ static int seg_write_header(AVFormatContext *s)
         }
     }
 
+    if (seg->time_delta_str) {
+        if ((ret = av_parse_time(&seg->time_delta, seg->time_delta_str, 1)) < 0) {
+            av_log(s, AV_LOG_ERROR,
+                   "Invalid time duration specification '%s' for delta option\n",
+                   seg->time_delta_str);
+            return ret;
+        }
+    }
+
     oc = avformat_alloc_context();
 
     if (!oc)
@@ -304,7 +315,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
     /* if the segment has video, start a new segment *only* with a key video frame */
     if ((st->codec->codec_type == AVMEDIA_TYPE_VIDEO || !seg->has_video) &&
         av_compare_ts(pkt->pts, st->time_base,
-                      end_pts, AV_TIME_BASE_Q) >= 0 &&
+                      end_pts-seg->time_delta, AV_TIME_BASE_Q) >= 0 &&
         pkt->flags & AV_PKT_FLAG_KEY) {
 
         av_log(s, AV_LOG_DEBUG, "Next segment starts with packet stream:%d pts:%"PRId64" pts_time:%f\n",
@@ -359,6 +370,7 @@ static const AVOption options[] = {
     { "flat", "flat format",     0, AV_OPT_TYPE_CONST, {.dbl=LIST_TYPE_FLAT }, INT_MIN, INT_MAX, 0, "list_type" },
     { "ext",  "extended format", 0, AV_OPT_TYPE_CONST, {.dbl=LIST_TYPE_EXT  }, INT_MIN, INT_MAX, 0, "list_type" },
     { "segment_time",      "set segment duration",                       OFFSET(time_str),AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
+    { "segment_time_delta","set approximation value used for the segment times", OFFSET(time_delta_str), AV_OPT_TYPE_STRING, {.str = "0"}, 0, 0, E },
     { "segment_times",     "set segment split time points",              OFFSET(times_str),AV_OPT_TYPE_STRING,{.str = NULL},  0, 0,       E },
     { "segment_wrap",      "set number after which the index wraps",     OFFSET(wrap),    AV_OPT_TYPE_INT,    {.dbl = 0},     0, INT_MAX, E },
     { NULL },

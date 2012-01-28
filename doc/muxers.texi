@@ -474,6 +474,28 @@ the segment start and end time expressed in seconds.
 Default value is "flat".
 @item segment_time @var{time}
 Set segment duration to @var{time}. Default value is "2".
+@item segment_time_delta @var{delta}
+Specify the accuracy time when selecting the start time for a
+segment. Default value is "0".
+
+When delta is specified a key-frame will start a new segment if its
+PTS satisfies the relation:
+@example
+PTS >= start_time - time_delta
+@end example
+
+This option is useful when splitting video content, which is always
+split at GOP boundaries, in case a key frame is found just before the
+specified split time.
+
+In particular may be used in combination with the @file{ffmpeg} option
+@var{force_key_frames}. The key frame times specified by
+@var{force_key_frames} may not be set accurately because of rounding
+issues, with the consequence that a key frame time may result set just
+before the specified time. For constant frame rate videos a value of
+1/2*@var{frame_rate} should address the worst case mismatch between
+the specified time and the time set by @var{force_key_frames}.
+
 @item segment_times @var{times}
 Specify a list of split points. @var{times} contains a list of comma
 separated duration specifications, in increasing order.
@@ -498,6 +520,18 @@ points specified by the @var{segment_times} option:
 @example
 ffmpeg -i in.mkv -codec copy -map 0 -f segment -segment_list_type ext -segment_list out.list -segment_list_size 0 -segment_times 1,2,3,5,8,13,21 out%03d.nut
 @end example
+
+@item
+As the example above, but use the @code{ffmpeg} @var{force_key_frames}
+option to force key frames in the input at the specified location, together
+with the segment option @var{segment_time_delta} to account for
+possible roundings operated when setting key frame times.
+@example
+ffmpeg -i in.mkv -force_key_frames 1,2,3,5,8,13,21 -vcodec mpeg4 -acodec pcm_s16le -map 0 \
+-f segment -segment_list_type ext -segment_list out.list -segment_list_size 0 -segment_times 1,2,3,5,8,13,21 -segment_time_delta 0.05 out%03d.nut
+@end example
+In order to force key frames on the input file, transcoding is
+required.
 
 @item
 To convert the @file{in.mkv} to TS segments using the @code{libx264}
