@@ -860,6 +860,7 @@ int opt_protocols(const char *opt, const char *arg)
     printf("Output:\n");
     while ((name = avio_enum_protocols(&opaque, 1)))
         printf("%s\n", name);
+    return 0;
 }
 
 int opt_filters(const char *opt, const char *arg)
