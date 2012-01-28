@@ -510,14 +510,12 @@ static int aac_encode_frame(AVCodecContext *avctx,
     int chan_el_counter[4];
     FFPsyWindowInfo windows[AAC_MAX_CHANNELS];
 
-    if (s->last_frame)
+    if (s->last_frame == 2)
         return 0;
 
-    if (data) {
-        deinterleave_input_samples(s, data, avctx->frame_size);
-        if (s->psypp)
-            ff_psy_preprocess(s->psypp, s->planar_samples, s->channels);
-    }
+    deinterleave_input_samples(s, data, data ? avctx->frame_size : 0);
+    if (s->psypp)
+        ff_psy_preprocess(s->psypp, s->planar_samples, s->channels);
 
     if (!avctx->frame_number)
         return 0;
@@ -648,7 +646,7 @@ static int aac_encode_frame(AVCodecContext *avctx,
     }
 
     if (!data)
-        s->last_frame = 1;
+        s->last_frame++;
 
     return put_bits_count(&s->pb)>>3;
 }
