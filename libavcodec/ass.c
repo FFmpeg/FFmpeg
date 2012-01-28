@@ -29,9 +29,7 @@ int ff_ass_subtitle_header(AVCodecContext *avctx,
                            int bold, int italic, int underline,
                            int alignment)
 {
-    char header[512];
-
-    snprintf(header, sizeof(header),
+    avctx->subtitle_header = av_asprintf(
              "[Script Info]\r\n"
              "ScriptType: v4.00+\r\n"
              "\r\n"
@@ -44,7 +42,6 @@ int ff_ass_subtitle_header(AVCodecContext *avctx,
              font, font_size, color, color, back_color, back_color,
              -bold, -italic, -underline, alignment);
 
-    avctx->subtitle_header = av_strdup(header);
     if (!avctx->subtitle_header)
         return AVERROR(ENOMEM);
     avctx->subtitle_header_size = strlen(avctx->subtitle_header);
