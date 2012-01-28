@@ -477,7 +477,7 @@ static void put_bitstream_info(AVCodecContext *avctx, AACEncContext *s,
  * Channels are reordered from Libav's default order to AAC order.
  */
 static void deinterleave_input_samples(AACEncContext *s,
-                                       const float *samples)
+                                       const float *samples, int nb_samples)
 {
     int ch, i;
     const int sinc = s->channels;
@@ -491,10 +491,12 @@ static void deinterleave_input_samples(AACEncContext *s,
         memcpy(&s->planar_samples[ch][1024], &s->planar_samples[ch][2048], 1024 * sizeof(s->planar_samples[0][0]));
 
         /* deinterleave */
-        for (i = 2048; i < 3072; i++) {
+        for (i = 2048; i < 2048 + nb_samples; i++) {
             s->planar_samples[ch][i] = *sptr;
             sptr += sinc;
         }
+        memset(&s->planar_samples[ch][i], 0,
+               (3072 - i) * sizeof(s->planar_samples[0][0]));
     }
 }
 
@@ -512,7 +514,7 @@ static int aac_encode_frame(AVCodecContext *avctx,
         return 0;
 
     if (data) {
-        deinterleave_input_samples(s, data);
+        deinterleave_input_samples(s, data, avctx->frame_size);
         if (s->psypp)
             ff_psy_preprocess(s->psypp, s->planar_samples, s->channels);
     }
