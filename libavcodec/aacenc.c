@@ -200,8 +200,8 @@ WINDOW_FUNC(long_start)
     float *out = sce->ret;
 
     dsp->vector_fmul(out, audio, lwindow, 1024);
-    memcpy(out + 1024, audio, sizeof(out[0]) * 448);
-    dsp->vector_fmul_reverse(out + 1024 + 448, audio, swindow, 128);
+    memcpy(out + 1024, audio + 1024, sizeof(out[0]) * 448);
+    dsp->vector_fmul_reverse(out + 1024 + 448, audio + 1024 + 448, swindow, 128);
     memset(out + 1024 + 576, 0, sizeof(out[0]) * 448);
 }
 
