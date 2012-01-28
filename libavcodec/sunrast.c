@@ -90,8 +90,8 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
     buf      += 32;
 
     if (type == RT_FORMAT_TIFF || type == RT_FORMAT_IFF || type == RT_EXPERIMENTAL) {
-        av_log(avctx, AV_LOG_ERROR, "unsupported (compression) type\n");
-        return -1;
+        av_log_ask_for_sample(avctx, "unsupported (compression) type\n");
+        return AVERROR_PATCHWELCOME;
     }
     if (type > RT_FORMAT_IFF) {
         av_log(avctx, AV_LOG_ERROR, "invalid (compression) type\n");
