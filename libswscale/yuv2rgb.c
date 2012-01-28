@@ -531,9 +531,9 @@ SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c)
     case PIX_FMT_RGB48BE:
     case PIX_FMT_RGB48LE:    return yuv2rgb_c_48;
     case PIX_FMT_ARGB:
-    case PIX_FMT_ABGR:       if (CONFIG_SWSCALE_ALPHA && c->srcFormat == PIX_FMT_YUVA420P) return yuva2argb_c;
+    case PIX_FMT_ABGR:       if (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat)) return yuva2argb_c;
     case PIX_FMT_RGBA:
-    case PIX_FMT_BGRA:       return (CONFIG_SWSCALE_ALPHA && c->srcFormat == PIX_FMT_YUVA420P) ? yuva2rgba_c : yuv2rgb_c_32;
+    case PIX_FMT_BGRA:       return (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat)) ? yuva2rgba_c : yuv2rgb_c_32;
     case PIX_FMT_RGB24:      return yuv2rgb_c_24_rgb;
     case PIX_FMT_BGR24:      return yuv2rgb_c_24_bgr;
     case PIX_FMT_RGB565:
