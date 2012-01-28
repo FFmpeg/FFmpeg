@@ -499,7 +499,7 @@ int main(int argc, char **argv)
     }
 
     /* write the stream header, if any */
-    av_write_header(oc);
+    avformat_write_header(oc, NULL);
     picture->pts = 0;
     for(;;) {
         /* compute current audio and video time */
