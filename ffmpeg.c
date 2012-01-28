@@ -97,6 +97,7 @@
 #define VSYNC_PASSTHROUGH 0
 #define VSYNC_CFR         1
 #define VSYNC_VFR         2
+#define VSYNC_DROP        0xff
 
 const char program_name[] = "ffmpeg";
 const int program_birth_year = 2000;
@@ -1474,7 +1475,7 @@ static void do_video_out(AVFormatContext *s,
     if (format_video_sync == VSYNC_AUTO)
         format_video_sync = (s->oformat->flags & AVFMT_VARIABLE_FPS) ? ((s->oformat->flags & AVFMT_NOTIMESTAMPS) ? VSYNC_PASSTHROUGH : VSYNC_VFR) : 1;
 
-    if (format_video_sync != VSYNC_PASSTHROUGH) {
+    if (format_video_sync != VSYNC_PASSTHROUGH && format_video_sync != VSYNC_DROP) {
         double vdelta = sync_ipts - ost->sync_opts + duration;
         // FIXME set to 0.5 after we fix some dts/pts bugs like in avidec.c
         if (vdelta < -1.1)
@@ -1569,6 +1570,8 @@ static void do_video_out(AVFormatContext *s,
 
                 if (enc->coded_frame->key_frame)
                     pkt.flags |= AV_PKT_FLAG_KEY;
+                if (format_video_sync == VSYNC_DROP)
+                    pkt.pts = pkt.dts = AV_NOPTS_VALUE;
                 write_frame(s, &pkt, ost);
                 *frame_size = ret;
                 video_size += ret;
@@ -4927,6 +4930,7 @@ static int opt_vsync(const char *opt, const char *arg)
     if      (!av_strcasecmp(arg, "cfr"))         video_sync_method = VSYNC_CFR;
     else if (!av_strcasecmp(arg, "vfr"))         video_sync_method = VSYNC_VFR;
     else if (!av_strcasecmp(arg, "passthrough")) video_sync_method = VSYNC_PASSTHROUGH;
+    else if (!av_strcasecmp(arg, "drop"))        video_sync_method = VSYNC_DROP;
 
     if (video_sync_method == VSYNC_AUTO)
         video_sync_method = parse_number_or_die("vsync", arg, OPT_INT, VSYNC_AUTO, VSYNC_VFR);

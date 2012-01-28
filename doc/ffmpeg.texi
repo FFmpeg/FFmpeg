@@ -939,6 +939,8 @@ This option is deprecated, use -loop.
 Thread count.
 @item -vsync @var{parameter}
 Video sync method.
+For compatibility reasons old values can be specified as numbers.
+Newly added values will have to be specified as strings always.
 
 @table @option
 @item 0, passthrough
@@ -949,6 +951,9 @@ constant framerate.
 @item 2, vfr
 Frames are passed through with their timestamp or dropped so as to
 prevent 2 frames from having the same timestamp.
+@item drop
+As passthrough but destroys all timestamps, making the muxer generate
+fresh timestamps based on frame-rate.
 @item -1, auto
 Chooses between 1 and 2 depending on muxer capabilities. This is the
 default method.
