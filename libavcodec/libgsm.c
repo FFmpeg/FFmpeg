@@ -32,6 +32,13 @@
 #include "avcodec.h"
 #include "gsm.h"
 
+static av_cold int libgsm_encode_close(AVCodecContext *avctx) {
+    av_freep(&avctx->coded_frame);
+    gsm_destroy(avctx->priv_data);
+    avctx->priv_data = NULL;
+    return 0;
+}
+
 static av_cold int libgsm_encode_init(AVCodecContext *avctx) {
     if (avctx->channels > 1) {
         av_log(avctx, AV_LOG_ERROR, "Mono required for GSM, got %d channels\n",
@@ -77,15 +84,8 @@ static av_cold int libgsm_encode_init(AVCodecContext *avctx) {
 
     return 0;
 error:
-    libgsm_encode_close();
+    libgsm_encode_close(avctx);
     return -1;
-}
-
-static av_cold int libgsm_encode_close(AVCodecContext *avctx) {
-    av_freep(&avctx->coded_frame);
-    gsm_destroy(avctx->priv_data);
-    avctx->priv_data = NULL;
-    return 0;
 }
 
 static int libgsm_encode_frame(AVCodecContext *avctx,
