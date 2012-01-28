@@ -2466,6 +2466,8 @@ av_cold int ff_ac3_encode_init(AVCodecContext *avctx)
         goto init_fail;
 
     avctx->coded_frame= avcodec_alloc_frame();
+    if (!avctx->coded_frame)
+        goto init_fail;
 
     dsputil_init(&s->dsp, avctx);
     ff_ac3dsp_init(&s->ac3dsp, avctx->flags & CODEC_FLAG_BITEXACT);
