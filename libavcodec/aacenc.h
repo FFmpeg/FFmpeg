@@ -27,7 +27,7 @@
 #include "dsputil.h"
 
 #include "aac.h"
-
+#include "audio_frame_queue.h"
 #include "psymodel.h"
 
 typedef struct AACEncOptions {
@@ -71,6 +71,7 @@ typedef struct AACEncContext {
     int cur_channel;
     int last_frame;
     float lambda;
+    AudioFrameQueue afq;
     DECLARE_ALIGNED(16, int,   qcoefs)[96];      ///< quantized coefficients
     DECLARE_ALIGNED(32, float, scoefs)[1024];    ///< scaled coefficients
 

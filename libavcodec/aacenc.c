@@ -34,6 +34,7 @@
 #include "avcodec.h"
 #include "put_bits.h"
 #include "dsputil.h"
+#include "internal.h"
 #include "mpeg4audio.h"
 #include "kbdwin.h"
 #include "sinewin.h"
@@ -476,8 +477,7 @@ static void put_bitstream_info(AVCodecContext *avctx, AACEncContext *s,
  * Deinterleave input samples.
  * Channels are reordered from Libav's default order to AAC order.
  */
-static void deinterleave_input_samples(AACEncContext *s,
-                                       const float *samples, int nb_samples)
+static void deinterleave_input_samples(AACEncContext *s, AVFrame *frame)
 {
     int ch, i;
     const int sinc = s->channels;
@@ -485,35 +485,43 @@ static void deinterleave_input_samples(AACEncContext *s,
 
     /* deinterleave and remap input samples */
     for (ch = 0; ch < sinc; ch++) {
-        const float *sptr = samples + channel_map[ch];
-
         /* copy last 1024 samples of previous frame to the start of the current frame */
         memcpy(&s->planar_samples[ch][1024], &s->planar_samples[ch][2048], 1024 * sizeof(s->planar_samples[0][0]));
 
         /* deinterleave */
-        for (i = 2048; i < 2048 + nb_samples; i++) {
-            s->planar_samples[ch][i] = *sptr;
-            sptr += sinc;
+        i = 2048;
+        if (frame) {
+            const float *sptr = ((const float *)frame->data[0]) + channel_map[ch];
+            for (; i < 2048 + frame->nb_samples; i++) {
+                s->planar_samples[ch][i] = *sptr;
+                sptr += sinc;
+            }
         }
         memset(&s->planar_samples[ch][i], 0,
                (3072 - i) * sizeof(s->planar_samples[0][0]));
     }
 }
 
-static int aac_encode_frame(AVCodecContext *avctx,
-                            uint8_t *frame, int buf_size, void *data)
+static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
+                            const AVFrame *frame, int *got_packet_ptr)
 {
     AACEncContext *s = avctx->priv_data;
     float **samples = s->planar_samples, *samples2, *la, *overlap;
     ChannelElement *cpe;
-    int i, ch, w, g, chans, tag, start_ch;
+    int i, ch, w, g, chans, tag, start_ch, ret;
     int chan_el_counter[4];
     FFPsyWindowInfo windows[AAC_MAX_CHANNELS];
 
     if (s->last_frame == 2)
         return 0;
 
-    deinterleave_input_samples(s, data, data ? avctx->frame_size : 0);
+    /* add current frame to queue */
+    if (frame) {
+        if ((ret = ff_af_queue_add(&s->afq, frame) < 0))
+            return ret;
+    }
+
+    deinterleave_input_samples(s, frame);
     if (s->psypp)
         ff_psy_preprocess(s->psypp, s->planar_samples, s->channels);
 
@@ -532,7 +540,7 @@ static int aac_encode_frame(AVCodecContext *avctx,
             overlap  = &samples[cur_channel][0];
             samples2 = overlap + 1024;
             la       = samples2 + (448+64);
-            if (!data)
+            if (!frame)
                 la = NULL;
             if (tag == TYPE_LFE) {
                 wi[ch].window_type[0] = ONLY_LONG_SEQUENCE;
@@ -565,7 +573,13 @@ static int aac_encode_frame(AVCodecContext *avctx,
     }
     do {
         int frame_bits;
-        init_put_bits(&s->pb, frame, buf_size*8);
+
+        if ((ret = ff_alloc_packet(avpkt, 768 * s->channels))) {
+            av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
+            return ret;
+        }
+        init_put_bits(&s->pb, avpkt->data, avpkt->size);
+
         if ((avctx->frame_number & 0xFF)==1 && !(avctx->flags & CODEC_FLAG_BITEXACT))
             put_bitstream_info(avctx, s, LIBAVCODEC_IDENT);
         start_ch = 0;
@@ -645,10 +659,15 @@ static int aac_encode_frame(AVCodecContext *avctx,
         s->lambda = FFMIN(s->lambda, 65536.f);
     }
 
-    if (!data)
+    if (!frame)
         s->last_frame++;
 
-    return put_bits_count(&s->pb)>>3;
+    ff_af_queue_remove(&s->afq, avctx->frame_size, &avpkt->pts,
+                       &avpkt->duration);
+
+    avpkt->size = put_bits_count(&s->pb) >> 3;
+    *got_packet_ptr = 1;
+    return 0;
 }
 
 static av_cold int aac_encode_end(AVCodecContext *avctx)
@@ -662,6 +681,10 @@ static av_cold int aac_encode_end(AVCodecContext *avctx)
         ff_psy_preprocess_end(s->psypp);
     av_freep(&s->buffer.samples);
     av_freep(&s->cpe);
+    ff_af_queue_close(&s->afq);
+#if FF_API_OLD_ENCODE_AUDIO
+    av_freep(&avctx->coded_frame);
+#endif
     return 0;
 }
 
@@ -694,6 +717,11 @@ static av_cold int alloc_buffers(AVCodecContext *avctx, AACEncContext *s)
 
     for(ch = 0; ch < s->channels; ch++)
         s->planar_samples[ch] = s->buffer.samples + 3 * 1024 * ch;
+
+#if FF_API_OLD_ENCODE_AUDIO
+    if (!(avctx->coded_frame = avcodec_alloc_frame()))
+        goto alloc_fail;
+#endif
 
     return 0;
 alloc_fail:
@@ -756,6 +784,9 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     for (i = 0; i < 428; i++)
         ff_aac_pow34sf_tab[i] = sqrt(ff_aac_pow2sf_tab[i] * sqrt(ff_aac_pow2sf_tab[i]));
 
+    avctx->delay = 1024;
+    ff_af_queue_init(avctx, &s->afq);
+
     return 0;
 fail:
     aac_encode_end(avctx);
@@ -784,7 +815,7 @@ AVCodec ff_aac_encoder = {
     .id             = CODEC_ID_AAC,
     .priv_data_size = sizeof(AACEncContext),
     .init           = aac_encode_init,
-    .encode         = aac_encode_frame,
+    .encode2        = aac_encode_frame,
     .close          = aac_encode_end,
     .capabilities = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY | CODEC_CAP_EXPERIMENTAL,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_FLT,AV_SAMPLE_FMT_NONE},
