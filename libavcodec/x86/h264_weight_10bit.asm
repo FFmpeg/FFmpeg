@@ -152,7 +152,7 @@ WEIGHT_FUNC_HALF_MM sse4
 ; void h264_biweight(uint8_t *dst, uint8_t *src, int stride, int height,
 ;                    int log2_denom, int weightd, int weights, int offset);
 ;-----------------------------------------------------------------------------
-%ifdef ARCH_X86_32
+%if ARCH_X86_32
 DECLARE_REG_TMP 3
 %else
 DECLARE_REG_TMP 10

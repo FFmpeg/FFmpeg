@@ -2224,7 +2224,7 @@ AVCodec ff_g723_1_encoder = {
     .init           = g723_1_encode_init,
     .encode         = g723_1_encode_frame,
     .long_name      = NULL_IF_CONFIG_SMALL("G.723.1"),
-    .sample_fmts    = (const enum SampleFormat[]){AV_SAMPLE_FMT_S16,
-                                                  AV_SAMPLE_FMT_NONE},
+    .sample_fmts    = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,
+                                                    AV_SAMPLE_FMT_NONE},
 };
 #endif

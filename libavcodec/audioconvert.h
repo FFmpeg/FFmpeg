@@ -33,46 +33,6 @@
 #include "avcodec.h"
 #include "libavutil/audioconvert.h"
 
-#if FF_API_OLD_SAMPLE_FMT
-/**
- * @deprecated Use av_get_sample_fmt_string() instead.
- */
-attribute_deprecated
-void avcodec_sample_fmt_string(char *buf, int buf_size, int sample_fmt);
-
-/**
- * @deprecated Use av_get_sample_fmt_name() instead.
- */
-attribute_deprecated
-const char *avcodec_get_sample_fmt_name(int sample_fmt);
-
-/**
- * @deprecated Use av_get_sample_fmt() instead.
- */
-attribute_deprecated
-enum AVSampleFormat avcodec_get_sample_fmt(const char* name);
-#endif
-
-#if FF_API_OLD_AUDIOCONVERT
-/**
- * @deprecated Use av_get_channel_layout() instead.
- */
-attribute_deprecated
-int64_t avcodec_get_channel_layout(const char *name);
-
-/**
- * @deprecated Use av_get_channel_layout_string() instead.
- */
-attribute_deprecated
-void avcodec_get_channel_layout_string(char *buf, int buf_size, int nb_channels, int64_t channel_layout);
-
-/**
- * @deprecated Use av_get_channel_layout_nb_channels() instead.
- */
-attribute_deprecated
-int avcodec_channel_layout_num_channels(int64_t channel_layout);
-#endif
-
 /**
  * Guess the channel layout
  * @param nb_channels

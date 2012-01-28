@@ -243,7 +243,7 @@ static int grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
     return video_buf_size;
 }
 
-static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
+static int grab_read_header(AVFormatContext *s1)
 {
     VideoData *s = s1->priv_data;
     AVStream *st;

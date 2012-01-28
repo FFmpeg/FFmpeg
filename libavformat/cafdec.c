@@ -204,8 +204,7 @@ static void read_info_chunk(AVFormatContext *s, int64_t size)
     }
 }
 
-static int read_header(AVFormatContext *s,
-                       AVFormatParameters *ap)
+static int read_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     CaffContext *caf  = s->priv_data;

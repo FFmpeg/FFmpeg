@@ -79,7 +79,7 @@ static void get_meta(AVFormatContext *s, const char *key, int size)
         }
         size += (size&1)-res;
         str[res] = 0;
-        av_dict_set(&s->metadata, key, str, AV_METADATA_DONT_STRDUP_VAL);
+        av_dict_set(&s->metadata, key, str, AV_DICT_DONT_STRDUP_VAL);
     }else
         size+= size&1;
 
@@ -176,8 +176,7 @@ static int aiff_probe(AVProbeData *p)
 }
 
 /* aiff input */
-static int aiff_read_header(AVFormatContext *s,
-                            AVFormatParameters *ap)
+static int aiff_read_header(AVFormatContext *s)
 {
     int size, filesize;
     int64_t offset = 0;

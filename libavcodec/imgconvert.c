@@ -289,13 +289,6 @@ void avcodec_get_chroma_sub_sample(enum PixelFormat pix_fmt, int *h_shift, int *
     *v_shift = av_pix_fmt_descriptors[pix_fmt].log2_chroma_h;
 }
 
-#if FF_API_GET_PIX_FMT_NAME
-const char *avcodec_get_pix_fmt_name(enum PixelFormat pix_fmt)
-{
-    return av_get_pix_fmt_name(pix_fmt);
-}
-#endif
-
 int ff_is_hwaccel_pix_fmt(enum PixelFormat pix_fmt)
 {
     return av_pix_fmt_descriptors[pix_fmt].flags & PIX_FMT_HWACCEL;
@@ -752,55 +745,6 @@ int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width,
     }
     return 0;
 }
-
-#if FF_API_GET_ALPHA_INFO
-/* NOTE: we scan all the pixels to have an exact information */
-static int get_alpha_info_pal8(const AVPicture *src, int width, int height)
-{
-    const unsigned char *p;
-    int src_wrap, ret, x, y;
-    unsigned int a;
-    uint32_t *palette = (uint32_t *)src->data[1];
-
-    p = src->data[0];
-    src_wrap = src->linesize[0] - width;
-    ret = 0;
-    for(y=0;y<height;y++) {
-        for(x=0;x<width;x++) {
-            a = palette[p[0]] >> 24;
-            if (a == 0x00) {
-                ret |= FF_ALPHA_TRANSP;
-            } else if (a != 0xff) {
-                ret |= FF_ALPHA_SEMI_TRANSP;
-            }
-            p++;
-        }
-        p += src_wrap;
-    }
-    return ret;
-}
-
-int img_get_alpha_info(const AVPicture *src,
-                       enum PixelFormat pix_fmt, int width, int height)
-{
-    const PixFmtInfo *pf = &pix_fmt_info[pix_fmt];
-    int ret;
-
-    /* no alpha can be represented in format */
-    if (!pf->is_alpha)
-        return 0;
-    switch(pix_fmt) {
-    case PIX_FMT_PAL8:
-        ret = get_alpha_info_pal8(src, width, height);
-        break;
-    default:
-        /* we do not know, so everything is indicated */
-        ret = FF_ALPHA_TRANSP | FF_ALPHA_SEMI_TRANSP;
-        break;
-    }
-    return ret;
-}
-#endif
 
 #if !(HAVE_MMX && HAVE_YASM)
 /* filter parameters: [-1 4 2 4 -1] // 8 */

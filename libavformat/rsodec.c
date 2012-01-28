@@ -27,7 +27,7 @@
 #include "riff.h"
 #include "rso.h"
 
-static int rso_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int rso_read_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     int id, rate, bps;

@@ -288,11 +288,6 @@ static int gif_write_header(AVFormatContext *s)
         return AVERROR(EIO);
     }
 
-#if FF_API_LOOP_OUTPUT
-    if (s->loop_output)
-        gif->loop = s->loop_output;
-#endif
-
     gif_image_write_header(pb, width, height, gif->loop, NULL);
 
     avio_flush(s->pb);

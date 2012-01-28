@@ -23,35 +23,6 @@
 #include "libavutil/dict.h"
 #include "libavutil/avstring.h"
 
-#if FF_API_OLD_METADATA2
-AVDictionaryEntry *
-av_metadata_get(AVDictionary *m, const char *key, const AVDictionaryEntry *prev, int flags)
-{
-    return av_dict_get(m, key, prev, flags);
-}
-
-int av_metadata_set2(AVDictionary **pm, const char *key, const char *value, int flags)
-{
-    return av_dict_set(pm, key, value, flags);
-}
-
-void av_metadata_conv(AVFormatContext *ctx, const AVMetadataConv *d_conv,
-                                            const AVMetadataConv *s_conv)
-{
-    return;
-}
-
-void av_metadata_free(AVDictionary **pm)
-{
-    av_dict_free(pm);
-}
-
-void av_metadata_copy(AVDictionary **dst, AVDictionary *src, int flags)
-{
-    av_dict_copy(dst, src, flags);
-}
-#endif
-
 void ff_metadata_conv(AVDictionary **pm, const AVMetadataConv *d_conv,
                                        const AVMetadataConv *s_conv)
 {

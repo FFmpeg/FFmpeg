@@ -348,7 +348,7 @@ cglobal pred16x16_plane_%3_%1, 2, 7, %2
     lea          r3, [r0+r2*4-1]
     add          r4, r2
 
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
 %define e_reg r11
 %else
 %define e_reg r0
@@ -369,7 +369,7 @@ cglobal pred16x16_plane_%3_%1, 2, 7, %2
     lea          r5, [r5+r6*4]
 
     movzx     e_reg, byte [r3        ]
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     movzx       r10, byte [r4+r2     ]
     sub         r10, e_reg
 %else
@@ -385,7 +385,7 @@ cglobal pred16x16_plane_%3_%1, 2, 7, %2
     movzx        r4, byte [e_reg+r2  ]
     movzx        r6, byte [r3        ]
     sub          r6, r4
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     lea          r6, [r10+r6*2]
     lea          r5, [r5+r6*2]
     add          r5, r6
@@ -395,7 +395,7 @@ cglobal pred16x16_plane_%3_%1, 2, 7, %2
 %endif
 
     movzx        r4, byte [e_reg     ]
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     movzx       r10, byte [r3   +r2  ]
     sub         r10, r4
     sub          r5, r10
@@ -409,7 +409,7 @@ cglobal pred16x16_plane_%3_%1, 2, 7, %2
     movzx        r4, byte [e_reg+r1  ]
     movzx        r6, byte [r3   +r2*2]
     sub          r6, r4
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     add          r6, r10
 %endif
     lea          r5, [r5+r6*8]
@@ -420,7 +420,7 @@ cglobal pred16x16_plane_%3_%1, 2, 7, %2
     lea          r5, [r5+r6*4]
     add          r5, r6           ; sum of V coefficients
 
-%ifndef ARCH_X86_64
+%if ARCH_X86_64 == 0
     mov          r0, r0m
 %endif
 
@@ -641,7 +641,7 @@ cglobal pred8x8_plane_%1, 2, 7, %2
     lea          r3, [r0     -1]
     add          r4, r2
 
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
 %define e_reg r11
 %else
 %define e_reg r0
@@ -652,7 +652,7 @@ cglobal pred8x8_plane_%1, 2, 7, %2
     sub          r5, e_reg
 
     movzx     e_reg, byte [r3        ]
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     movzx       r10, byte [r4+r2     ]
     sub         r10, e_reg
     sub          r5, r10
@@ -666,7 +666,7 @@ cglobal pred8x8_plane_%1, 2, 7, %2
     movzx     e_reg, byte [r3+r1     ]
     movzx        r6, byte [r4+r2*2   ]
     sub          r6, e_reg
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     add          r6, r10
 %endif
     lea          r5, [r5+r6*4]
@@ -680,7 +680,7 @@ cglobal pred8x8_plane_%1, 2, 7, %2
     lea          r5, [r5+r6*8]
     sar          r5, 5
 
-%ifndef ARCH_X86_64
+%if ARCH_X86_64 == 0
     mov          r0, r0m
 %endif
 

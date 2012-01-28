@@ -1915,8 +1915,7 @@ static int parse_pcr(int64_t *ppcr_high, int *ppcr_low,
     return 0;
 }
 
-static int mpegts_read_header(AVFormatContext *s,
-                              AVFormatParameters *ap)
+static int mpegts_read_header(AVFormatContext *s)
 {
     MpegTSContext *ts = s->priv_data;
     AVIOContext *pb = s->pb;

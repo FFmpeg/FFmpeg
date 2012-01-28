@@ -75,7 +75,7 @@ static int mtv_probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX;
 }
 
-static int mtv_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int mtv_read_header(AVFormatContext *s)
 {
     MTVDemuxContext *mtv = s->priv_data;
     AVIOContext   *pb  = s->pb;

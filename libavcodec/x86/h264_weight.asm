@@ -126,7 +126,7 @@ INIT_XMM
 WEIGHT_FUNC_HALF_MM 8, 8, sse2
 
 %macro BIWEIGHT_SETUP 0
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
 %define off_regd r11d
 %else
 %define off_regd r3d
@@ -244,7 +244,7 @@ INIT_XMM
 BIWEIGHT_FUNC_HALF_MM 8, 8, sse2
 
 %macro BIWEIGHT_SSSE3_SETUP 0
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
 %define off_regd r11d
 %else
 %define off_regd r3d

@@ -59,8 +59,7 @@ static int loas_probe(AVProbeData *p)
     else                   return 0;
 }
 
-static int loas_read_header(AVFormatContext *s,
-                            AVFormatParameters *ap)
+static int loas_read_header(AVFormatContext *s)
 {
     AVStream *st;
 

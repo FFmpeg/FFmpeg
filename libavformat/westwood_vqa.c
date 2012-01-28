@@ -73,8 +73,7 @@ static int wsvqa_probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX;
 }
 
-static int wsvqa_read_header(AVFormatContext *s,
-                             AVFormatParameters *ap)
+static int wsvqa_read_header(AVFormatContext *s)
 {
     WsVqaDemuxContext *wsvqa = s->priv_data;
     AVIOContext *pb = s->pb;

@@ -50,7 +50,7 @@ static int microdvd_probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX;
 }
 
-static int microdvd_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int microdvd_read_header(AVFormatContext *s)
 {
     AVRational pts_info = (AVRational){ 2997, 125 };  /* default: 23.976 fps */
     MicroDVDContext *microdvd = s->priv_data;

@@ -47,7 +47,7 @@ static int yop_probe(AVProbeData *probe_packet)
     return 0;
 }
 
-static int yop_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int yop_read_header(AVFormatContext *s)
 {
     YopDecContext *yop = s->priv_data;
     AVIOContext *pb  = s->pb;

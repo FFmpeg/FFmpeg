@@ -80,23 +80,14 @@ static const AVOption options[]={
 {"bt", "set video bitrate tolerance (in bits/s)", OFFSET(bit_rate_tolerance), AV_OPT_TYPE_INT, {.dbl = AV_CODEC_DEFAULT_BITRATE*20 }, 1, INT_MAX, V|E},
 {"flags", NULL, OFFSET(flags), AV_OPT_TYPE_FLAGS, {.dbl = DEFAULT }, 0, UINT_MAX, V|A|E|D, "flags"},
 {"mv4", "use four motion vector by macroblock (mpeg4)", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_4MV }, INT_MIN, INT_MAX, V|E, "flags"},
-#if FF_API_MPEGVIDEO_GLOBAL_OPTS
-{"obmc", "use overlapped block motion compensation (h263+)", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_OBMC }, INT_MIN, INT_MAX, V|E, "flags"},
-#endif
 {"qpel", "use 1/4 pel motion compensation", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_QPEL }, INT_MIN, INT_MAX, V|E, "flags"},
 {"loop", "use loop filter", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_LOOP_FILTER }, INT_MIN, INT_MAX, V|E, "flags"},
 {"qscale", "use fixed qscale", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_QSCALE }, INT_MIN, INT_MAX, 0, "flags"},
 {"gmc", "use gmc", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_GMC }, INT_MIN, INT_MAX, V|E, "flags"},
 {"mv0", "always try a mb with mv=<0,0>", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_MV0 }, INT_MIN, INT_MAX, V|E, "flags"},
-#if FF_API_MPEGVIDEO_GLOBAL_OPTS
-{"part", "use data partitioning", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_PART }, INT_MIN, INT_MAX, V|E, "flags"},
-#endif
 {"input_preserved", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_INPUT_PRESERVED }, INT_MIN, INT_MAX, 0, "flags"},
 {"pass1", "use internal 2pass ratecontrol in first  pass mode", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_PASS1 }, INT_MIN, INT_MAX, 0, "flags"},
 {"pass2", "use internal 2pass ratecontrol in second pass mode", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_PASS2 }, INT_MIN, INT_MAX, 0, "flags"},
-#if FF_API_MJPEG_GLOBAL_OPTS
-{"extern_huff", "use external huffman table (for mjpeg)", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_EXTERN_HUFF }, INT_MIN, INT_MAX, 0, "flags"},
-#endif
 {"gray", "only decode/encode grayscale", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_GRAY }, INT_MIN, INT_MAX, V|E|D, "flags"},
 {"emu_edge", "don't draw edges", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_EMU_EDGE }, INT_MIN, INT_MAX, 0, "flags"},
 {"psnr", "error[?] variables will be set during encoding", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_PSNR }, INT_MIN, INT_MAX, V|E, "flags"},
@@ -104,25 +95,12 @@ static const AVOption options[]={
 {"naq", "normalize adaptive quantization", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_NORMALIZE_AQP }, INT_MIN, INT_MAX, V|E, "flags"},
 {"ildct", "use interlaced dct", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_INTERLACED_DCT }, INT_MIN, INT_MAX, V|E, "flags"},
 {"low_delay", "force low delay", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_LOW_DELAY }, INT_MIN, INT_MAX, V|D|E, "flags"},
-#if FF_API_MPEGVIDEO_GLOBAL_OPTS
-{"alt", "enable alternate scantable (mpeg2/mpeg4)", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_ALT_SCAN }, INT_MIN, INT_MAX, V|E, "flags"},
-#endif
 {"global_header", "place global headers in extradata instead of every keyframe", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_GLOBAL_HEADER }, INT_MIN, INT_MAX, V|A|E, "flags"},
 {"bitexact", "use only bitexact stuff (except (i)dct)", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_BITEXACT }, INT_MIN, INT_MAX, A|V|S|D|E, "flags"},
 {"aic", "h263 advanced intra coding / mpeg4 ac prediction", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_AC_PRED }, INT_MIN, INT_MAX, V|E, "flags"},
-#if FF_API_MPEGVIDEO_GLOBAL_OPTS
-{"umv", "use unlimited motion vectors", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_H263P_UMV }, INT_MIN, INT_MAX, V|E, "flags"},
-#endif
 {"cbp", "use rate distortion optimization for cbp", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_CBP_RD }, INT_MIN, INT_MAX, V|E, "flags"},
 {"qprd", "use rate distortion optimization for qp selection", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_QP_RD }, INT_MIN, INT_MAX, V|E, "flags"},
-#if FF_API_MPEGVIDEO_GLOBAL_OPTS
-{"aiv", "h263 alternative inter vlc", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_H263P_AIV }, INT_MIN, INT_MAX, V|E, "flags"},
-{"slice", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_H263P_SLICE_STRUCT }, INT_MIN, INT_MAX, V|E, "flags"},
-#endif
 {"ilme", "interlaced motion estimation", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_INTERLACED_ME }, INT_MIN, INT_MAX, V|E, "flags"},
-#if FF_API_MPEGVIDEO_GLOBAL_OPTS
-{"scan_offset", "will reserve space for svcd scan offset user data", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_SVCD_SCAN_OFFSET }, INT_MIN, INT_MAX, V|E, "flags"},
-#endif
 {"cgop", "closed gop", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_CLOSED_GOP }, INT_MIN, INT_MAX, V|E, "flags"},
 {"fast", "allow non spec compliant speedup tricks", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_FAST }, INT_MIN, INT_MAX, V|E, "flags2"},
 {"sgop", "strictly enforce gop size", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_STRICT_GOP }, INT_MIN, INT_MAX, V|E, "flags2"},
@@ -161,9 +139,6 @@ static const AVOption options[]={
 {"b_qfactor", "qp factor between p and b frames", OFFSET(b_quant_factor), AV_OPT_TYPE_FLOAT, {.dbl = 1.25 }, -FLT_MAX, FLT_MAX, V|E},
 {"rc_strategy", "ratecontrol method", OFFSET(rc_strategy), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"b_strategy", "strategy to choose between I/P/B-frames", OFFSET(b_frame_strategy), AV_OPT_TYPE_INT, {.dbl = 0 }, INT_MIN, INT_MAX, V|E},
-#if FF_API_X264_GLOBAL_OPTS
-{"wpredp", "weighted prediction analysis method", OFFSET(weighted_p_pred), AV_OPT_TYPE_INT, {.dbl = -1 }, INT_MIN, INT_MAX, V|E},
-#endif
 {"ps", "rtp payload size in bytes", OFFSET(rtp_payload_size), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"mv_bits", NULL, OFFSET(mv_bits), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
 {"header_bits", NULL, OFFSET(header_bits), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
@@ -201,14 +176,6 @@ static const AVOption options[]={
 {"unofficial", "allow unofficial extensions", 0, AV_OPT_TYPE_CONST, {.dbl = FF_COMPLIANCE_UNOFFICIAL }, INT_MIN, INT_MAX, V|D|E, "strict"},
 {"experimental", "allow non standardized experimental things", 0, AV_OPT_TYPE_CONST, {.dbl = FF_COMPLIANCE_EXPERIMENTAL }, INT_MIN, INT_MAX, V|D|E, "strict"},
 {"b_qoffset", "qp offset between P and B frames", OFFSET(b_quant_offset), AV_OPT_TYPE_FLOAT, {.dbl = 1.25 }, -FLT_MAX, FLT_MAX, V|E},
-#if FF_API_ER
-{"er", "set error detection aggressivity", OFFSET(error_recognition), AV_OPT_TYPE_INT, {.dbl = FF_ER_CAREFUL }, INT_MIN, INT_MAX, A|V|D, "er"},
-{"careful", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = FF_ER_CAREFUL }, INT_MIN, INT_MAX, V|D, "er"},
-{"compliant", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = FF_ER_COMPLIANT }, INT_MIN, INT_MAX, V|D, "er"},
-{"aggressive", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = FF_ER_AGGRESSIVE }, INT_MIN, INT_MAX, V|D, "er"},
-{"very_aggressive", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = FF_ER_VERY_AGGRESSIVE }, INT_MIN, INT_MAX, V|D, "er"},
-{"explode", "abort decoding on error recognition", 0, AV_OPT_TYPE_CONST, {.dbl = FF_ER_EXPLODE }, INT_MIN, INT_MAX, V|D, "er"},
-#endif /* FF_API_ER */
 {"err_detect", "set error detection flags", OFFSET(err_recognition), AV_OPT_TYPE_FLAGS, {.dbl = AV_EF_CRCCHECK }, INT_MIN, INT_MAX, A|V|D, "err_detect"},
 {"crccheck", "verify embedded CRCs", 0, AV_OPT_TYPE_CONST, {.dbl = AV_EF_CRCCHECK }, INT_MIN, INT_MAX, A|V|D, "err_detect"},
 {"bitstream", "detect bitstream specification deviations", 0, AV_OPT_TYPE_CONST, {.dbl = AV_EF_BITSTREAM }, INT_MIN, INT_MAX, A|V|D, "err_detect"},
@@ -219,9 +186,6 @@ static const AVOption options[]={
 {"aggressive", "consider things that a sane encoder shouldnt do as an error", 0, AV_OPT_TYPE_CONST, {.dbl = AV_EF_AGGRESSIVE }, INT_MIN, INT_MAX, A|V|D, "err_detect"},
 {"has_b_frames", NULL, OFFSET(has_b_frames), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
 {"block_align", NULL, OFFSET(block_align), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
-#if FF_API_PARSE_FRAME
-{"parse_only", NULL, OFFSET(parse_only), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
-#endif
 {"mpeg_quant", "use MPEG quantizers instead of H.263", OFFSET(mpeg_quant), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"stats_out", NULL, OFFSET(stats_out), AV_OPT_TYPE_STRING, {.str = NULL}, CHAR_MIN, CHAR_MAX},
 {"stats_in", NULL, OFFSET(stats_in), AV_OPT_TYPE_STRING, {.str = NULL}, CHAR_MIN, CHAR_MAX},
@@ -356,25 +320,8 @@ static const AVOption options[]={
 {"nr", "noise reduction", OFFSET(noise_reduction), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"rc_init_occupancy", "number of bits which should be loaded into the rc buffer before decoding starts", OFFSET(rc_initial_buffer_occupancy), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"inter_threshold", NULL, OFFSET(inter_threshold), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
-#if FF_API_X264_GLOBAL_OPTS
-#define X264_DEFAULTS CODEC_FLAG2_FASTPSKIP|CODEC_FLAG2_PSY|CODEC_FLAG2_MBTREE
-#else
-#define X264_DEFAULTS 0
-#endif
-#if FF_API_LAME_GLOBAL_OPTS
-#define LAME_DEFAULTS CODEC_FLAG2_BIT_RESERVOIR
-#else
-#define LAME_DEFAULTS 0
-#endif
-{"flags2", NULL, OFFSET(flags2), AV_OPT_TYPE_FLAGS, {.dbl = X264_DEFAULTS|LAME_DEFAULTS }, 0, UINT_MAX, V|A|E|D, "flags2"},
+{"flags2", NULL, OFFSET(flags2), AV_OPT_TYPE_FLAGS, {.dbl = DEFAULT}, 0, UINT_MAX, V|A|E|D, "flags2"},
 {"error", NULL, OFFSET(error_rate), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
-#if FF_API_ANTIALIAS_ALGO
-{"antialias", "MP3 antialias algorithm", OFFSET(antialias_algo), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|D, "aa"},
-{"auto", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = FF_AA_AUTO }, INT_MIN, INT_MAX, V|D, "aa"},
-{"fastint", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = FF_AA_FASTINT }, INT_MIN, INT_MAX, V|D, "aa"},
-{"int", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = FF_AA_INT }, INT_MIN, INT_MAX, V|D, "aa"},
-{"float", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = FF_AA_FLOAT }, INT_MIN, INT_MAX, V|D, "aa"},
-#endif
 {"qns", "quantizer noise shaping", OFFSET(quantizer_noise_shaping), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"threads", NULL, OFFSET(thread_count), AV_OPT_TYPE_INT, {.dbl = 1 }, 0, INT_MAX, V|E|D, "threads"},
 {"auto", "detect a good number of threads", 0, AV_OPT_TYPE_CONST, {.dbl = 0 }, INT_MIN, INT_MAX, V|E|D, "threads"},
@@ -417,69 +364,20 @@ static const AVOption options[]={
 {"all"             , NULL, 0, AV_OPT_TYPE_CONST, {.dbl = AVDISCARD_ALL     }, INT_MIN, INT_MAX, V|D, "avdiscard"},
 {"bidir_refine", "refine the two motion vectors used in bidirectional macroblocks", OFFSET(bidir_refine), AV_OPT_TYPE_INT, {.dbl = 1 }, 0, 4, V|E},
 {"brd_scale", "downscales frames for dynamic B-frame decision", OFFSET(brd_scale), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, 0, 10, V|E},
-#if FF_API_X264_GLOBAL_OPTS
-{"crf", "enables constant quality mode, and selects the quality (x264/VP8)", OFFSET(crf), AV_OPT_TYPE_FLOAT, {.dbl = DEFAULT }, 0, 63, V|E},
-{"cqp", "constant quantization parameter rate control method", OFFSET(cqp), AV_OPT_TYPE_INT, {.dbl = -1 }, INT_MIN, INT_MAX, V|E},
-#endif
 {"keyint_min", "minimum interval between IDR-frames", OFFSET(keyint_min), AV_OPT_TYPE_INT, {.dbl = 25 }, INT_MIN, INT_MAX, V|E},
 {"refs", "reference frames to consider for motion compensation", OFFSET(refs), AV_OPT_TYPE_INT, {.dbl = 1 }, INT_MIN, INT_MAX, V|E},
 {"chromaoffset", "chroma qp offset from luma", OFFSET(chromaoffset), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
-#if FF_API_X264_GLOBAL_OPTS
-{"bframebias", "influences how often B-frames are used", OFFSET(bframebias), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
-#endif
 {"trellis", "rate-distortion optimal quantization", OFFSET(trellis), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|A|E},
-#if FF_API_X264_GLOBAL_OPTS
-{"directpred", "direct mv prediction mode - 0 (none), 1 (spatial), 2 (temporal), 3 (auto)", OFFSET(directpred), AV_OPT_TYPE_INT, {.dbl = -1 }, INT_MIN, INT_MAX, V|E},
-{"bpyramid", "allows B-frames to be used as references for predicting", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_BPYRAMID }, INT_MIN, INT_MAX, V|E, "flags2"},
-{"wpred", "weighted biprediction for b-frames (H.264)", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_WPRED }, INT_MIN, INT_MAX, V|E, "flags2"},
-{"mixed_refs", "one reference per partition, as opposed to one reference per macroblock", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_MIXED_REFS }, INT_MIN, INT_MAX, V|E, "flags2"},
-{"dct8x8", "high profile 8x8 transform (H.264)", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_8X8DCT }, INT_MIN, INT_MAX, V|E, "flags2"},
-{"fastpskip", "fast pskip (H.264)", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_FASTPSKIP }, INT_MIN, INT_MAX, V|E, "flags2"},
-{"aud", "access unit delimiters (H.264)", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_AUD }, INT_MIN, INT_MAX, V|E, "flags2"},
-#endif
 {"skiprd", "RD optimal MB level residual skipping", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_SKIP_RD }, INT_MIN, INT_MAX, V|E, "flags2"},
-#if FF_API_X264_GLOBAL_OPTS
-{"complexityblur", "reduce fluctuations in qp (before curve compression)", OFFSET(complexityblur), AV_OPT_TYPE_FLOAT, {.dbl = -1 }, -1, FLT_MAX, V|E},
-{"deblockalpha", "in-loop deblocking filter alphac0 parameter", OFFSET(deblockalpha), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, -6, 6, V|E},
-{"deblockbeta", "in-loop deblocking filter beta parameter", OFFSET(deblockbeta), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, -6, 6, V|E},
-{"partitions", "macroblock subpartition sizes to consider", OFFSET(partitions), AV_OPT_TYPE_FLAGS, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E, "partitions"},
-{"parti4x4", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = X264_PART_I4X4 }, INT_MIN, INT_MAX, V|E, "partitions"},
-{"parti8x8", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = X264_PART_I8X8 }, INT_MIN, INT_MAX, V|E, "partitions"},
-{"partp4x4", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = X264_PART_P4X4 }, INT_MIN, INT_MAX, V|E, "partitions"},
-{"partp8x8", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = X264_PART_P8X8 }, INT_MIN, INT_MAX, V|E, "partitions"},
-{"partb8x8", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = X264_PART_B8X8 }, INT_MIN, INT_MAX, V|E, "partitions"},
-#endif
 {"sc_factor", "multiplied by qscale for each frame and added to scene_change_score", OFFSET(scenechange_factor), AV_OPT_TYPE_INT, {.dbl = 6 }, 0, INT_MAX, V|E},
 {"mv0_threshold", NULL, OFFSET(mv0_threshold), AV_OPT_TYPE_INT, {.dbl = 256 }, 0, INT_MAX, V|E},
-#if FF_API_MPEGVIDEO_GLOBAL_OPTS
-{"ivlc", "intra vlc table", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_INTRA_VLC }, INT_MIN, INT_MAX, V|E, "flags2"},
-#endif
 {"b_sensitivity", "adjusts sensitivity of b_frame_strategy 1", OFFSET(b_sensitivity), AV_OPT_TYPE_INT, {.dbl = 40 }, 1, INT_MAX, V|E},
 {"compression_level", NULL, OFFSET(compression_level), AV_OPT_TYPE_INT, {.dbl = FF_COMPRESSION_DEFAULT }, INT_MIN, INT_MAX, V|A|E},
 {"min_prediction_order", NULL, OFFSET(min_prediction_order), AV_OPT_TYPE_INT, {.dbl = -1 }, INT_MIN, INT_MAX, A|E},
 {"max_prediction_order", NULL, OFFSET(max_prediction_order), AV_OPT_TYPE_INT, {.dbl = -1 }, INT_MIN, INT_MAX, A|E},
-#if FF_API_FLAC_GLOBAL_OPTS
-{"lpc_coeff_precision", "deprecated, use flac-specific options", OFFSET(lpc_coeff_precision), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, 0, INT_MAX, A|E},
-{"prediction_order_method", "deprecated, use flac-specific options", OFFSET(prediction_order_method), AV_OPT_TYPE_INT, {.dbl = -1 }, INT_MIN, INT_MAX, A|E},
-{"min_partition_order", "deprecated, use flac-specific options", OFFSET(min_partition_order), AV_OPT_TYPE_INT, {.dbl = -1 }, INT_MIN, INT_MAX, A|E},
-{"max_partition_order", "deprecated, use flac-specific options", OFFSET(max_partition_order), AV_OPT_TYPE_INT, {.dbl = -1 }, INT_MIN, INT_MAX, A|E},
-#endif
 {"timecode_frame_start", "GOP timecode frame start number, in non drop frame format", OFFSET(timecode_frame_start), AV_OPT_TYPE_INT64, {.dbl = 0 }, 0, INT64_MAX, V|E},
-#if FF_API_MPEGVIDEO_GLOBAL_OPTS
-{"drop_frame_timecode", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_DROP_FRAME_TIMECODE }, INT_MIN, INT_MAX, V|E, "flags2"},
-{"non_linear_q", "use non linear quantizer", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_NON_LINEAR_QUANT }, INT_MIN, INT_MAX, V|E, "flags2"},
-#endif
 #if FF_API_REQUEST_CHANNELS
 {"request_channels", "set desired number of audio channels", OFFSET(request_channels), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, 0, INT_MAX, A|D},
-#endif
-#if FF_API_DRC_SCALE
-{"drc_scale", "percentage of dynamic range compression to apply", OFFSET(drc_scale), AV_OPT_TYPE_FLOAT, {.dbl = 0.0 }, 0.0, 1.0, A|D},
-#endif
-#if FF_API_LAME_GLOBAL_OPTS
-{"reservoir", "use bit reservoir", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_BIT_RESERVOIR }, INT_MIN, INT_MAX, A|E, "flags2"},
-#endif
-#if FF_API_X264_GLOBAL_OPTS
-{"mbtree", "use macroblock tree ratecontrol (x264 only)", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_MBTREE }, INT_MIN, INT_MAX, V|E, "flags2"},
 #endif
 {"bits_per_raw_sample", NULL, OFFSET(bits_per_raw_sample), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
 {"channel_layout", NULL, OFFSET(channel_layout), AV_OPT_TYPE_INT64, {.dbl = DEFAULT }, 0, INT64_MAX, A|E|D, "channel_layout"},
@@ -492,26 +390,7 @@ static const AVOption options[]={
 {"colorspace", NULL, OFFSET(colorspace), AV_OPT_TYPE_INT, {.dbl = AVCOL_SPC_UNSPECIFIED }, 1, AVCOL_SPC_NB-1, V|E|D},
 {"color_range", NULL, OFFSET(color_range), AV_OPT_TYPE_INT, {.dbl = AVCOL_RANGE_UNSPECIFIED }, 0, AVCOL_RANGE_NB-1, V|E|D},
 {"chroma_sample_location", NULL, OFFSET(chroma_sample_location), AV_OPT_TYPE_INT, {.dbl = AVCHROMA_LOC_UNSPECIFIED }, 0, AVCHROMA_LOC_NB-1, V|E|D},
-#if FF_API_X264_GLOBAL_OPTS
-{"psy", "use psycho visual optimization", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_PSY }, INT_MIN, INT_MAX, V|E, "flags2"},
-{"psy_rd", "specify psycho visual strength", OFFSET(psy_rd), AV_OPT_TYPE_FLOAT, {.dbl = -1.0 }, -1, FLT_MAX, V|E},
-{"psy_trellis", "specify psycho visual trellis", OFFSET(psy_trellis), AV_OPT_TYPE_FLOAT, {.dbl = -1 }, -1, FLT_MAX, V|E},
-{"aq_mode", "specify aq method", OFFSET(aq_mode), AV_OPT_TYPE_INT, {.dbl = -1 }, -1, INT_MAX, V|E},
-{"aq_strength", "specify aq strength", OFFSET(aq_strength), AV_OPT_TYPE_FLOAT, {.dbl = -1.0 }, -1, FLT_MAX, V|E},
-{"rc_lookahead", "specify number of frames to look ahead for frametype", OFFSET(rc_lookahead), AV_OPT_TYPE_INT, {.dbl = -1 }, -1, INT_MAX, V|E},
-{"ssim", "ssim will be calculated during encoding", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_SSIM }, INT_MIN, INT_MAX, V|E, "flags2"},
-{"intra_refresh", "use periodic insertion of intra blocks instead of keyframes", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_INTRA_REFRESH }, INT_MIN, INT_MAX, V|E, "flags2"},
-{"crf_max", "in crf mode, prevents vbv from lowering quality beyond this point", OFFSET(crf_max), AV_OPT_TYPE_FLOAT, {.dbl = DEFAULT }, 0, 51, V|E},
-#endif
 {"log_level_offset", "set the log level offset", OFFSET(log_level_offset), AV_OPT_TYPE_INT, {.dbl = 0 }, INT_MIN, INT_MAX },
-#if FF_API_FLAC_GLOBAL_OPTS
-{"lpc_type", "deprecated, use flac-specific options", OFFSET(lpc_type), AV_OPT_TYPE_INT, {.dbl = AV_LPC_TYPE_DEFAULT }, AV_LPC_TYPE_DEFAULT, AV_LPC_TYPE_NB-1, A|E},
-{"none",     NULL, 0, AV_OPT_TYPE_CONST, {.dbl = AV_LPC_TYPE_NONE },     INT_MIN, INT_MAX, A|E, "lpc_type"},
-{"fixed",    NULL, 0, AV_OPT_TYPE_CONST, {.dbl = AV_LPC_TYPE_FIXED },    INT_MIN, INT_MAX, A|E, "lpc_type"},
-{"levinson", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = AV_LPC_TYPE_LEVINSON }, INT_MIN, INT_MAX, A|E, "lpc_type"},
-{"cholesky", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = AV_LPC_TYPE_CHOLESKY }, INT_MIN, INT_MAX, A|E, "lpc_type"},
-{"lpc_passes", "deprecated, use flac-specific options", OFFSET(lpc_passes), AV_OPT_TYPE_INT, {.dbl = -1 }, INT_MIN, INT_MAX, A|E},
-#endif
 {"slices", "number of slices, used in parallelized encoding", OFFSET(slices), AV_OPT_TYPE_INT, {.dbl = 0 }, 0, INT_MAX, V|E},
 {"thread_type", "select multithreading type", OFFSET(thread_type), AV_OPT_TYPE_FLAGS, {.dbl = FF_THREAD_SLICE|FF_THREAD_FRAME }, 0, INT_MAX, V|E|D, "thread_type"},
 {"slice", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = FF_THREAD_SLICE }, INT_MIN, INT_MAX, V|E|D, "thread_type"},

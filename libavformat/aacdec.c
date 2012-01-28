@@ -62,8 +62,7 @@ static int adts_aac_probe(AVProbeData *p)
     else                   return 0;
 }
 
-static int adts_aac_read_header(AVFormatContext *s,
-                                AVFormatParameters *ap)
+static int adts_aac_read_header(AVFormatContext *s)
 {
     AVStream *st;
 

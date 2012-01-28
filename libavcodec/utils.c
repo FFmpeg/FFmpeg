@@ -107,10 +107,7 @@ AVCodec *av_codec_next(AVCodec *c){
     else  return first_avcodec;
 }
 
-#if !FF_API_AVCODEC_INIT
-static
-#endif
-void avcodec_init(void)
+static void avcodec_init(void)
 {
     static int initialized = 0;
 
@@ -799,22 +796,12 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVD
         goto free_and_end;
     }
     avctx->frame_number = 0;
-#if FF_API_ER
 
-    av_log(avctx, AV_LOG_DEBUG, "err{or,}_recognition separate: %d; %X\n",
-           avctx->error_recognition, avctx->err_recognition);
-    switch(avctx->error_recognition){
-        case FF_ER_EXPLODE        : avctx->err_recognition |= AV_EF_EXPLODE | AV_EF_COMPLIANT | AV_EF_CAREFUL;
-            break;
-        case FF_ER_VERY_AGGRESSIVE:
-        case FF_ER_AGGRESSIVE     : avctx->err_recognition |= AV_EF_AGGRESSIVE;
-        case FF_ER_COMPLIANT      : avctx->err_recognition |= AV_EF_COMPLIANT;
-        case FF_ER_CAREFUL        : avctx->err_recognition |= AV_EF_CAREFUL;
+    if (avctx->codec_type == AVMEDIA_TYPE_AUDIO &&
+        (!avctx->time_base.num || !avctx->time_base.den)) {
+        avctx->time_base.num = 1;
+        avctx->time_base.den = avctx->sample_rate;
     }
-
-    av_log(avctx, AV_LOG_DEBUG, "err{or,}_recognition combined: %d; %X\n",
-           avctx->error_recognition, avctx->err_recognition);
-#endif
 
     if (!HAVE_THREADS)
         av_log(avctx, AV_LOG_WARNING, "Warning: not compiled with thread support, using thread emulation\n");
@@ -1683,10 +1670,10 @@ const char *av_get_profile_name(const AVCodec *codec, int profile)
 
 unsigned avcodec_version( void )
 {
-    av_assert0(CODEC_ID_V410==164);
+//    av_assert0(CODEC_ID_V410==164);
     av_assert0(CODEC_ID_PCM_S8_PLANAR==65563);
     av_assert0(CODEC_ID_ADPCM_G722==69660);
-    av_assert0(CODEC_ID_BMV_AUDIO==86071);
+//     av_assert0(CODEC_ID_BMV_AUDIO==86071);
     av_assert0(CODEC_ID_SRT==94216);
     av_assert0(LIBAVCODEC_VERSION_MICRO >= 100);
 
@@ -1766,12 +1753,6 @@ void avcodec_default_free_buffers(AVCodecContext *avctx)
     }
 }
 
-#if FF_API_OLD_FF_PICT_TYPES
-char av_get_pict_type_char(int pict_type){
-    return av_get_picture_type_char(pict_type);
-}
-#endif
-
 int av_get_bits_per_sample(enum CodecID codec_id){
     switch(codec_id){
     case CODEC_ID_ADPCM_SBPRO_2:
@@ -1820,12 +1801,6 @@ int av_get_bits_per_sample(enum CodecID codec_id){
         return 0;
     }
 }
-
-#if FF_API_OLD_SAMPLE_FMT
-int av_get_bits_per_sample_format(enum AVSampleFormat sample_fmt) {
-    return av_get_bytes_per_sample(sample_fmt) << 3;
-}
-#endif
 
 #if !HAVE_THREADS
 int ff_thread_init(AVCodecContext *s){
@@ -1980,14 +1955,6 @@ void ff_thread_await_progress(AVFrame *f, int progress, int field)
 {
 }
 
-#endif
-
-#if FF_API_THREAD_INIT
-int avcodec_thread_init(AVCodecContext *s, int thread_count)
-{
-    s->thread_count = thread_count;
-    return ff_thread_init(s);
-}
 #endif
 
 enum AVMediaType avcodec_get_type(enum CodecID codec_id)

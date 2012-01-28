@@ -133,8 +133,6 @@ static int video_discard = 0;
 static int same_quant = 0;
 static int do_deinterlace = 0;
 static int intra_dc_precision = 8;
-static int loop_input = 0;
-static int loop_output = AVFMT_NOOUTPUTLOOP;
 static int qp_hist = 0;
 static int intra_only = 0;
 static const char *video_codec_name    = NULL;
@@ -3690,14 +3688,6 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
     ic->flags |= AVFMT_FLAG_NONBLOCK;
     ic->interrupt_callback = int_cb;
 
-    if (loop_input) {
-        av_log(NULL, AV_LOG_WARNING,
-            "-loop_input is deprecated, use -loop 1\n"
-            "Note, both loop options only work with -f image2\n"
-        );
-        ic->loop_input = loop_input;
-    }
-
     /* open the input file with generic avformat function */
     err = avformat_open_input(&ic, filename, file_iformat, &format_opts);
     if (err < 0) {
@@ -4478,11 +4468,6 @@ static void opt_output_file(void *optctx, const char *filename)
     }
     oc->max_delay = (int)(o->mux_max_delay * AV_TIME_BASE);
 
-    if (loop_output >= 0) {
-        av_log(NULL, AV_LOG_WARNING, "-loop_output is deprecated, use -loop\n");
-        oc->loop_output = loop_output;
-    }
-
     /* copy metadata */
     for (i = 0; i < o->nb_metadata_map; i++) {
         char *p;
@@ -4980,8 +4965,6 @@ static const OptionDef options[] = {
     { "hex", OPT_BOOL | OPT_EXPERT, {(void*)&do_hex_dump},
       "when dumping packets, also dump the payload" },
     { "re", OPT_BOOL | OPT_EXPERT | OPT_OFFSET, {.off = OFFSET(rate_emu)}, "read input at native frame rate", "" },
-    { "loop_input", OPT_BOOL | OPT_EXPERT, {(void*)&loop_input}, "deprecated, use -loop" },
-    { "loop_output", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&loop_output}, "deprecated, use -loop", "" },
     { "target", HAS_ARG | OPT_FUNC2, {(void*)opt_target}, "specify target file type (\"vcd\", \"svcd\", \"dvd\", \"dv\", \"dv50\", \"pal-vcd\", \"ntsc-svcd\", ...)", "type" },
     { "vsync", HAS_ARG | OPT_EXPERT, {(void*)opt_vsync}, "video sync method", "" },
     { "async", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&audio_sync_method}, "audio sync method", "" },

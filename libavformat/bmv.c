@@ -38,7 +38,7 @@ typedef struct BMVContext {
     int64_t  audio_pos;
 } BMVContext;
 
-static int bmv_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int bmv_read_header(AVFormatContext *s)
 {
     AVStream *st, *ast;
     BMVContext *c = s->priv_data;

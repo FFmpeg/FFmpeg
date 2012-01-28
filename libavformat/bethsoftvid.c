@@ -57,8 +57,7 @@ static int vid_probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX;
 }
 
-static int vid_read_header(AVFormatContext *s,
-                            AVFormatParameters *ap)
+static int vid_read_header(AVFormatContext *s)
 {
     BVID_DemuxContext *vid = s->priv_data;
     AVIOContext *pb = s->pb;

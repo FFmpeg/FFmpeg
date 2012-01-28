@@ -38,7 +38,7 @@ static int tta_probe(AVProbeData *p)
     return 0;
 }
 
-static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int tta_read_header(AVFormatContext *s)
 {
     TTAContext *c = s->priv_data;
     AVStream *st;

@@ -103,10 +103,6 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
 
     build_basic_mjpeg_vlc(s);
 
-#if FF_API_MJPEG_GLOBAL_OPTS
-    if (avctx->flags & CODEC_FLAG_EXTERN_HUFF)
-        s->extern_huff = 1;
-#endif
     if (s->extern_huff) {
         av_log(avctx, AV_LOG_INFO, "mjpeg: using external huffman table\n");
         init_get_bits(&s->gb, avctx->extradata, avctx->extradata_size * 8);

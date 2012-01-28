@@ -596,7 +596,7 @@ fail:
     return ret;
 }
 
-static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int nut_read_header(AVFormatContext *s)
 {
     NUTContext *nut = s->priv_data;
     AVIOContext *bc = s->pb;

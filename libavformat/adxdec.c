@@ -62,7 +62,7 @@ static int adx_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-static int adx_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int adx_read_header(AVFormatContext *s)
 {
     ADXDemuxerContext *c = s->priv_data;
     AVCodecContext *avctx;

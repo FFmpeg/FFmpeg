@@ -99,8 +99,7 @@ static void predict_width(AVCodecContext *avctx, uint64_t fsize, int got_width)
         avctx->width = fsize > 4000 ? (160<<3) : (80<<3);
 }
 
-static AVStream * init_stream(AVFormatContext *s,
-                              AVFormatParameters *ap)
+static AVStream * init_stream(AVFormatContext *s)
 {
     BinDemuxContext *bin = s->priv_data;
     AVStream *st = avformat_new_stream(s, NULL);
@@ -109,27 +108,26 @@ static AVStream * init_stream(AVFormatContext *s,
     st->codec->codec_tag   = 0;
     st->codec->codec_type  = AVMEDIA_TYPE_VIDEO;
 
-    if (!ap->time_base.num) {
+//     if (!ap->time_base.num) {
         avpriv_set_pts_info(st, 60, 1, 25);
-    } else {
-        avpriv_set_pts_info(st, 60, ap->time_base.num, ap->time_base.den);
-    }
+//     } else {
+//         avpriv_set_pts_info(st, 60, ap->time_base.num, ap->time_base.den);
+//     }
 
     /* simulate tty display speed */
-    bin->chars_per_frame = FFMAX(av_q2d(st->time_base) * (ap->sample_rate ? ap->sample_rate : LINE_RATE), 1);
+    bin->chars_per_frame = FFMAX(av_q2d(st->time_base) * (/*ap->sample_rate ? ap->sample_rate :*/ LINE_RATE), 1);
 
-    st->codec->width  = ap->width  ? ap->width  : (80<<3);
-    st->codec->height = ap->height ? ap->height : (25<<4);
+    st->codec->width  = /*ap->width  ? ap->width  :*/ (80<<3);
+    st->codec->height = /*ap->height ? ap->height :*/ (25<<4);
     return st;
 }
 
-static int bintext_read_header(AVFormatContext *s,
-                               AVFormatParameters *ap)
+static int bintext_read_header(AVFormatContext *s)
 {
     BinDemuxContext *bin = s->priv_data;
     AVIOContext *pb = s->pb;
 
-    AVStream *st = init_stream(s, ap);
+    AVStream *st = init_stream(s);
     if (!st)
         return AVERROR(ENOMEM);
     st->codec->codec_id    = CODEC_ID_BINTEXT;
@@ -146,9 +144,9 @@ static int bintext_read_header(AVFormatContext *s,
         bin->fsize = avio_size(pb);
         if (ff_sauce_read(s, &bin->fsize, &got_width, 0) < 0)
             next_tag_read(s, &bin->fsize);
-        if (!ap->width)
+//         if (!ap->width)
             predict_width(st->codec, bin->fsize, got_width);
-        if (!ap->height)
+//         if (!ap->height)
             calculate_height(st->codec, bin->fsize);
         avio_seek(pb, 0, SEEK_SET);
     }
@@ -168,14 +166,13 @@ static int xbin_probe(AVProbeData *p)
     return 0;
 }
 
-static int xbin_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
+static int xbin_read_header(AVFormatContext *s)
 {
     BinDemuxContext *bin = s->priv_data;
     AVIOContext *pb = s->pb;
     char fontheight, flags;
 
-    AVStream *st = init_stream(s, ap);
+    AVStream *st = init_stream(s);
     if (!st)
         return AVERROR(ENOMEM);
 
@@ -212,8 +209,7 @@ static int xbin_read_header(AVFormatContext *s,
 #endif /* CONFIG_XBIN_DEMUXER */
 
 #if CONFIG_ADF_DEMUXER
-static int adf_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
+static int adf_read_header(AVFormatContext *s)
 {
     BinDemuxContext *bin = s->priv_data;
     AVIOContext *pb = s->pb;
@@ -222,7 +218,7 @@ static int adf_read_header(AVFormatContext *s,
     if (avio_r8(pb) != 1)
         return AVERROR_INVALIDDATA;
 
-    st = init_stream(s, ap);
+    st = init_stream(s);
     if (!st)
         return AVERROR(ENOMEM);
     st->codec->codec_id    = CODEC_ID_BINTEXT;
@@ -247,7 +243,7 @@ static int adf_read_header(AVFormatContext *s,
         bin->fsize = avio_size(pb) - 1 - 192 - 4096;
         st->codec->width = 80<<3;
         ff_sauce_read(s, &bin->fsize, &got_width, 0);
-        if (!ap->height)
+//         if (!ap->height)
             calculate_height(st->codec, bin->fsize);
         avio_seek(pb, 1 + 192 + 4096, SEEK_SET);
     }
@@ -269,8 +265,7 @@ static int idf_probe(AVProbeData *p)
     return 0;
 }
 
-static int idf_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
+static int idf_read_header(AVFormatContext *s)
 {
     BinDemuxContext *bin = s->priv_data;
     AVIOContext *pb = s->pb;
@@ -280,7 +275,7 @@ static int idf_read_header(AVFormatContext *s,
     if (!pb->seekable)
         return AVERROR(EIO);
 
-    st = init_stream(s, ap);
+    st = init_stream(s);
     if (!st)
         return AVERROR(ENOMEM);
     st->codec->codec_id    = CODEC_ID_IDF;
@@ -301,7 +296,7 @@ static int idf_read_header(AVFormatContext *s,
 
     bin->fsize = avio_size(pb) - 12 - 4096 - 48;
     ff_sauce_read(s, &bin->fsize, &got_width, 0);
-    if (!ap->height)
+//     if (!ap->height)
         calculate_height(st->codec, bin->fsize);
     avio_seek(pb, 12, SEEK_SET);
     return 0;

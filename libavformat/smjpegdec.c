@@ -41,7 +41,7 @@ static int smjpeg_probe(AVProbeData *p)
     return 0;
 }
 
-static int smjpeg_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int smjpeg_read_header(AVFormatContext *s)
 {
     SMJPEGContext *sc = s->priv_data;
     AVStream *ast = NULL, *vst = NULL;

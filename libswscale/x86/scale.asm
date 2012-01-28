@@ -51,7 +51,7 @@ SECTION .text
 ; SCALE_FUNC source_width, intermediate_nbits, filtersize, filtersuffix, opt, n_args, n_xmm
 %macro SCALE_FUNC 7
 cglobal hscale%1to%2_%4_%5, %6, 7, %7
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     movsxd        r2, r2d
 %endif ; x86-64
 %if %2 == 19
@@ -237,7 +237,7 @@ cglobal hscale%1to%2_%4_%5, %6, 7, %7
 %else ; %4 == X || %4 == X8
 %define r6sub 0
 %endif ; %4 ==/!= X4
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     push         r12
     movsxd        r6, r6d                ; filterSize
     lea          r12, [r3+(r6-r6sub)*srcmul] ; &src[filterSize&~4]
@@ -384,7 +384,7 @@ cglobal hscale%1to%2_%4_%5, %6, 7, %7
 %ifnidn %3, X
     REP_RET
 %else ; %3 == X
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     pop          r12
     RET
 %else ; x86-32
@@ -421,7 +421,7 @@ SCALE_FUNCS 14, 19, %1, %3
 SCALE_FUNCS 16, 19, %1, %4
 %endmacro
 
-%ifdef ARCH_X86_32
+%if ARCH_X86_32
 INIT_MMX
 SCALE_FUNCS2 mmx,   0, 0, 0
 %endif

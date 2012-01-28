@@ -129,6 +129,6 @@ AVCodec ff_libaacplus_encoder = {
     .init           = aacPlus_encode_init,
     .encode         = aacPlus_encode_frame,
     .close          = aacPlus_encode_close,
-    .sample_fmts = (const enum SampleFormat[]){AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE},
+    .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("libaacplus AAC+ (Advanced Audio Codec with SBR+PS)"),
 };

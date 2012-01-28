@@ -38,13 +38,13 @@ fi
 
 if [ -n "$do_mpeg2_ivlc_qprd" ]; then
 # mpeg2 encoding intra vlc qprd
-do_video_encoding mpeg2ivlc-qprd.mpg "-vb 500k -bf 2 -trellis 1 -flags +qprd+mv0 -flags2 +ivlc -cmp 2 -subcmp 2 -mbd rd -vcodec mpeg2video -f mpeg2video"
+do_video_encoding mpeg2ivlc-qprd.mpg "-vb 500k -bf 2 -trellis 1 -flags +qprd+mv0 -intra_vlc 1 -cmp 2 -subcmp 2 -mbd rd -vcodec mpeg2video -f mpeg2video"
 do_video_decoding
 fi
 
 if [ -n "$do_mpeg2_422" ]; then
 #mpeg2 4:2:2 encoding
-do_video_encoding mpeg2_422.mpg "-vb 1000k -bf 2 -trellis 1 -flags +qprd+mv0+ildct+ilme -flags2 +ivlc -mbd rd -vcodec mpeg2video -pix_fmt yuv422p -f mpeg2video"
+do_video_encoding mpeg2_422.mpg "-vb 1000k -bf 2 -trellis 1 -flags +qprd+mv0+ildct+ilme -intra_vlc 1 -mbd rd -vcodec mpeg2video -pix_fmt yuv422p -f mpeg2video"
 do_video_decoding
 fi
 
@@ -68,7 +68,7 @@ fi
 
 if [ -n "$do_mpeg2thread_ilace" ]; then
 # mpeg2 encoding interlaced using intra vlc
-do_video_encoding mpeg2threadivlc.mpg "-qscale 10 -vcodec mpeg2video -f mpeg1video -bf 2 -flags +ildct+ilme -flags2 +ivlc -threads 2 -slices 2"
+do_video_encoding mpeg2threadivlc.mpg "-qscale 10 -vcodec mpeg2video -f mpeg1video -bf 2 -flags +ildct+ilme -intra_vlc 1 -threads 2 -slices 2"
 do_video_decoding
 
 # mpeg2 encoding interlaced
@@ -113,7 +113,7 @@ do_video_decoding
 fi
 
 if [ -n "$do_h263p" ] ; then
-do_video_encoding h263p.avi "-qscale 2 -flags +umv+aiv+aic -s 352x288 -an -vcodec h263p -ps 300"
+do_video_encoding h263p.avi "-qscale 2 -flags +aic -umv 1 -aiv 1 -s 352x288 -an -vcodec h263p -ps 300"
 do_video_decoding
 fi
 
@@ -138,7 +138,7 @@ do_video_decoding
 fi
 
 if [ -n "$do_mpeg4adv" ] ; then
-do_video_encoding mpeg4-adv.avi "-qscale 9 -flags +mv4+part+aic -trellis 1 -mbd bits -ps 200 -an -vcodec mpeg4"
+do_video_encoding mpeg4-adv.avi "-qscale 9 -flags +mv4+aic -data_partitioning 1 -trellis 1 -mbd bits -ps 200 -an -vcodec mpeg4"
 do_video_decoding
 fi
 
@@ -158,12 +158,12 @@ do_video_decoding
 fi
 
 if [ -n "$do_mpeg4thread" ] ; then
-do_video_encoding mpeg4-thread.avi "-b 500k -flags +mv4+part+aic -trellis 1 -mbd bits -ps 200 -bf 2 -an -vcodec mpeg4 -threads 2 -slices 2"
+do_video_encoding mpeg4-thread.avi "-b 500k -flags +mv4+aic -data_partitioning 1 -trellis 1 -mbd bits -ps 200 -bf 2 -an -vcodec mpeg4 -threads 2 -slices 2"
 do_video_decoding
 fi
 
 if [ -n "$do_error" ] ; then
-do_video_encoding error-mpeg4-adv.avi "-qscale 7 -flags +mv4+part+aic -mbd rd -ps 250 -error 10 -an -vcodec mpeg4"
+do_video_encoding error-mpeg4-adv.avi "-qscale 7 -flags +mv4+aic -data_partitioning 1 -mbd rd -ps 250 -error 10 -an -vcodec mpeg4"
 do_video_decoding
 fi
 

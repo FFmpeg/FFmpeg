@@ -81,8 +81,7 @@ static int wsaud_probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX / 2;
 }
 
-static int wsaud_read_header(AVFormatContext *s,
-                             AVFormatParameters *ap)
+static int wsaud_read_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     AVStream *st;

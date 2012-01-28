@@ -160,7 +160,7 @@ static int modplug_load_metadata(AVFormatContext *s)
 
 #define AUDIO_PKT_SIZE 512
 
-static int modplug_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int modplug_read_header(AVFormatContext *s)
 {
     AVStream *st;
     AVIOContext *pb = s->pb;

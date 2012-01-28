@@ -2694,7 +2694,7 @@ static int mov_read_timecode_track(AVFormatContext *s, AVStream *st)
     return 0;
 }
 
-static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int mov_read_header(AVFormatContext *s)
 {
     MOVContext *mov = s->priv_data;
     AVIOContext *pb = s->pb;

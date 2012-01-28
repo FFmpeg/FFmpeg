@@ -40,7 +40,7 @@ static int xwma_probe(AVProbeData *p)
     return 0;
 }
 
-static int xwma_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int xwma_read_header(AVFormatContext *s)
 {
     int64_t size, av_uninit(data_size);
     int ret;

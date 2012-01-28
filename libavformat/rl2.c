@@ -72,8 +72,7 @@ static int rl2_probe(AVProbeData *p)
  * @param ap format parameters
  * @return 0 on success, AVERROR otherwise
  */
-static av_cold int rl2_read_header(AVFormatContext *s,
-                            AVFormatParameters *ap)
+static av_cold int rl2_read_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     AVStream *st;

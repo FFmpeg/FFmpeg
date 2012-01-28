@@ -1378,8 +1378,7 @@ static av_cold int sbg_read_probe(AVProbeData *p)
     return score;
 }
 
-static av_cold int sbg_read_header(AVFormatContext *avf,
-                                   AVFormatParameters *ap)
+static av_cold int sbg_read_header(AVFormatContext *avf)
 {
     struct sbg_demuxer *sbg = avf->priv_data;
     int r;

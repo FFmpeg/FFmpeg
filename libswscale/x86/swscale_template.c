@@ -1435,145 +1435,6 @@ static void RENAME(yuv2yuyv422_1)(SwsContext *c, const int16_t *buf0,
     }
 }
 
-static av_always_inline void RENAME(bgr24ToY_mmx)(int16_t *dst, const uint8_t *src,
-                                                  int width, enum PixelFormat srcFormat)
-{
-
-    if(srcFormat == PIX_FMT_BGR24) {
-        __asm__ volatile(
-            "movq  "MANGLE(ff_bgr24toY1Coeff)", %%mm5       \n\t"
-            "movq  "MANGLE(ff_bgr24toY2Coeff)", %%mm6       \n\t"
-            :
-        );
-    } else {
-        __asm__ volatile(
-            "movq  "MANGLE(ff_rgb24toY1Coeff)", %%mm5       \n\t"
-            "movq  "MANGLE(ff_rgb24toY2Coeff)", %%mm6       \n\t"
-            :
-        );
-    }
-
-    __asm__ volatile(
-        "movq  "MANGLE(ff_bgr24toYOffset)", %%mm4   \n\t"
-        "mov                        %2, %%"REG_a"   \n\t"
-        "pxor                    %%mm7, %%mm7       \n\t"
-        "1:                                         \n\t"
-        PREFETCH"               64(%0)              \n\t"
-        "movd                     (%0), %%mm0       \n\t"
-        "movd                    2(%0), %%mm1       \n\t"
-        "movd                    6(%0), %%mm2       \n\t"
-        "movd                    8(%0), %%mm3       \n\t"
-        "add                       $12, %0          \n\t"
-        "punpcklbw               %%mm7, %%mm0       \n\t"
-        "punpcklbw               %%mm7, %%mm1       \n\t"
-        "punpcklbw               %%mm7, %%mm2       \n\t"
-        "punpcklbw               %%mm7, %%mm3       \n\t"
-        "pmaddwd                 %%mm5, %%mm0       \n\t"
-        "pmaddwd                 %%mm6, %%mm1       \n\t"
-        "pmaddwd                 %%mm5, %%mm2       \n\t"
-        "pmaddwd                 %%mm6, %%mm3       \n\t"
-        "paddd                   %%mm1, %%mm0       \n\t"
-        "paddd                   %%mm3, %%mm2       \n\t"
-        "paddd                   %%mm4, %%mm0       \n\t"
-        "paddd                   %%mm4, %%mm2       \n\t"
-        "psrad                     $9, %%mm0       \n\t"
-        "psrad                     $9, %%mm2       \n\t"
-        "packssdw                %%mm2, %%mm0       \n\t"
-        "movq                %%mm0, (%1, %%"REG_a") \n\t"
-        "add                        $8, %%"REG_a"   \n\t"
-        " js                        1b              \n\t"
-    : "+r" (src)
-    : "r" (dst+width), "g" ((x86_reg)-2*width)
-    : "%"REG_a
-    );
-}
-
-static void RENAME(bgr24ToY)(int16_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2,
-                             int width, uint32_t *unused)
-{
-    RENAME(bgr24ToY_mmx)(dst, src, width, PIX_FMT_BGR24);
-}
-
-static void RENAME(rgb24ToY)(int16_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2,
-                             int width, uint32_t *unused)
-{
-    RENAME(bgr24ToY_mmx)(dst, src, width, PIX_FMT_RGB24);
-}
-
-static av_always_inline void RENAME(bgr24ToUV_mmx)(int16_t *dstU, int16_t *dstV,
-                                                   const uint8_t *src, int width,
-                                                   enum PixelFormat srcFormat)
-{
-    __asm__ volatile(
-        "movq                    24(%4), %%mm6       \n\t"
-        "mov                        %3, %%"REG_a"   \n\t"
-        "pxor                    %%mm7, %%mm7       \n\t"
-        "1:                                         \n\t"
-        PREFETCH"               64(%0)              \n\t"
-        "movd                     (%0), %%mm0       \n\t"
-        "movd                    2(%0), %%mm1       \n\t"
-        "punpcklbw               %%mm7, %%mm0       \n\t"
-        "punpcklbw               %%mm7, %%mm1       \n\t"
-        "movq                    %%mm0, %%mm2       \n\t"
-        "movq                    %%mm1, %%mm3       \n\t"
-        "pmaddwd                  (%4), %%mm0       \n\t"
-        "pmaddwd                 8(%4), %%mm1       \n\t"
-        "pmaddwd                16(%4), %%mm2       \n\t"
-        "pmaddwd                 %%mm6, %%mm3       \n\t"
-        "paddd                   %%mm1, %%mm0       \n\t"
-        "paddd                   %%mm3, %%mm2       \n\t"
-
-        "movd                    6(%0), %%mm1       \n\t"
-        "movd                    8(%0), %%mm3       \n\t"
-        "add                       $12, %0          \n\t"
-        "punpcklbw               %%mm7, %%mm1       \n\t"
-        "punpcklbw               %%mm7, %%mm3       \n\t"
-        "movq                    %%mm1, %%mm4       \n\t"
-        "movq                    %%mm3, %%mm5       \n\t"
-        "pmaddwd                  (%4), %%mm1       \n\t"
-        "pmaddwd                 8(%4), %%mm3       \n\t"
-        "pmaddwd                16(%4), %%mm4       \n\t"
-        "pmaddwd                 %%mm6, %%mm5       \n\t"
-        "paddd                   %%mm3, %%mm1       \n\t"
-        "paddd                   %%mm5, %%mm4       \n\t"
-
-        "movq "MANGLE(ff_bgr24toUVOffset)", %%mm3       \n\t"
-        "paddd                   %%mm3, %%mm0       \n\t"
-        "paddd                   %%mm3, %%mm2       \n\t"
-        "paddd                   %%mm3, %%mm1       \n\t"
-        "paddd                   %%mm3, %%mm4       \n\t"
-        "psrad                     $9, %%mm0       \n\t"
-        "psrad                     $9, %%mm2       \n\t"
-        "psrad                     $9, %%mm1       \n\t"
-        "psrad                     $9, %%mm4       \n\t"
-        "packssdw                %%mm1, %%mm0       \n\t"
-        "packssdw                %%mm4, %%mm2       \n\t"
-        "movq                %%mm0, (%1, %%"REG_a") \n\t"
-        "movq                %%mm2, (%2, %%"REG_a") \n\t"
-        "add                        $8, %%"REG_a"   \n\t"
-        " js                        1b              \n\t"
-    : "+r" (src)
-    : "r" (dstU+width), "r" (dstV+width), "g" ((x86_reg)-2*width), "r"(ff_bgr24toUV[srcFormat == PIX_FMT_RGB24])
-    : "%"REG_a
-    );
-}
-
-static void RENAME(bgr24ToUV)(int16_t *dstU, int16_t *dstV,
-                              const uint8_t *unused1, const uint8_t *src1, const uint8_t *src2,
-                              int width, uint32_t *unused)
-{
-    RENAME(bgr24ToUV_mmx)(dstU, dstV, src1, width, PIX_FMT_BGR24);
-    assert(src1 == src2);
-}
-
-static void RENAME(rgb24ToUV)(int16_t *dstU, int16_t *dstV,
-                              const uint8_t *unused1, const uint8_t *src1, const uint8_t *src2,
-                              int width, uint32_t *unused)
-{
-    assert(src1==src2);
-    RENAME(bgr24ToUV_mmx)(dstU, dstV, src1, width, PIX_FMT_RGB24);
-}
-
 #if COMPILE_TEMPLATE_MMX2
 static void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
                                  int dstWidth, const uint8_t *src,
@@ -1760,8 +1621,8 @@ static void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst1, int16_t *dst2,
 
 static av_cold void RENAME(sws_init_swScale)(SwsContext *c)
 {
-    enum PixelFormat srcFormat = c->srcFormat,
-                     dstFormat = c->dstFormat;
+    enum PixelFormat dstFormat = c->dstFormat;
+
     c->use_mmx_vfilter= 0;
     if (!is16BPS(dstFormat) && !is9_OR_10BPS(dstFormat) && dstFormat != PIX_FMT_NV12
         && dstFormat != PIX_FMT_NV21 && !(c->flags & SWS_BITEXACT)) {
@@ -1832,19 +1693,5 @@ static av_cold void RENAME(sws_init_swScale)(SwsContext *c)
 #if COMPILE_TEMPLATE_MMX2
     }
 #endif /* COMPILE_TEMPLATE_MMX2 */
-    }
-
-    if (!c->chrSrcHSubSample) {
-        switch(srcFormat) {
-        case PIX_FMT_BGR24  : c->chrToYV12 = RENAME(bgr24ToUV); break;
-        case PIX_FMT_RGB24  : c->chrToYV12 = RENAME(rgb24ToUV); break;
-        default: break;
-        }
-    }
-
-    switch (srcFormat) {
-    case PIX_FMT_BGR24    : c->lumToYV12 = RENAME(bgr24ToY); break;
-    case PIX_FMT_RGB24    : c->lumToYV12 = RENAME(rgb24ToY); break;
-    default: break;
     }
 }

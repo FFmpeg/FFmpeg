@@ -203,16 +203,6 @@ static av_cold int XAVS_init(AVCodecContext *avctx)
     if (avctx->flags & CODEC_FLAG_PASS2) {
         x4->params.rc.b_stat_read = 1;
     } else {
-#if FF_API_X264_GLOBAL_OPTS
-        if (avctx->crf) {
-            x4->params.rc.i_rc_method   = XAVS_RC_CRF;
-            x4->params.rc.f_rf_constant = avctx->crf;
-        } else if (avctx->cqp > -1) {
-            x4->params.rc.i_rc_method   = XAVS_RC_CQP;
-            x4->params.rc.i_qp_constant = avctx->cqp;
-        }
-#endif
-
         if (x4->crf >= 0) {
             x4->params.rc.i_rc_method   = XAVS_RC_CRF;
             x4->params.rc.f_rf_constant = x4->crf;
@@ -221,32 +211,6 @@ static av_cold int XAVS_init(AVCodecContext *avctx)
             x4->params.rc.i_qp_constant = x4->cqp;
         }
     }
-
-#if FF_API_X264_GLOBAL_OPTS
-    if (avctx->bframebias)
-        x4->params.i_bframe_bias              = avctx->bframebias;
-    if (avctx->deblockalpha)
-        x4->params.i_deblocking_filter_alphac0 = avctx->deblockalpha;
-    if (avctx->deblockbeta)
-        x4->params.i_deblocking_filter_beta    = avctx->deblockbeta;
-    if (avctx->complexityblur >= 0)
-        x4->params.rc.f_complexity_blur        = avctx->complexityblur;
-    if (avctx->directpred >= 0)
-        x4->params.analyse.i_direct_mv_pred    = avctx->directpred;
-    if (avctx->partitions) {
-        if (avctx->partitions & XAVS_PART_I8X8)
-            x4->params.analyse.inter |= XAVS_ANALYSE_I8x8;
-        if (avctx->partitions & XAVS_PART_P8X8)
-            x4->params.analyse.inter |= XAVS_ANALYSE_PSUB16x16;
-        if (avctx->partitions & XAVS_PART_B8X8)
-            x4->params.analyse.inter |= XAVS_ANALYSE_BSUB16x16;
-    }
-    x4->params.rc.b_mb_tree               = !!(avctx->flags2 & CODEC_FLAG2_MBTREE);
-    x4->params.b_aud          = avctx->flags2 & CODEC_FLAG2_AUD;
-    x4->params.analyse.b_mixed_references = avctx->flags2 & CODEC_FLAG2_MIXED_REFS;
-    x4->params.analyse.b_fast_pskip       = avctx->flags2 & CODEC_FLAG2_FASTPSKIP;
-    x4->params.analyse.b_weighted_bipred = avctx->flags2 & CODEC_FLAG2_WPRED;
-#endif
 
     if (x4->aud >= 0)
         x4->params.b_aud                      = x4->aud;

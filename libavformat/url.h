@@ -31,7 +31,6 @@
 #include "libavutil/dict.h"
 #include "libavutil/log.h"
 
-#if !FF_API_OLD_AVIO
 #define URL_PROTOCOL_FLAG_NESTED_SCHEME 1 /*< The protocol name can be the first part of a nested protocol scheme */
 #define URL_PROTOCOL_FLAG_NETWORK       2 /*< The protocol uses network */
 
@@ -74,7 +73,6 @@ typedef struct URLProtocol {
     int flags;
     int (*url_check)(URLContext *h, int mask);
 } URLProtocol;
-#endif
 
 /**
  * Create a URLContext for accessing to the resource indicated by

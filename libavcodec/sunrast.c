@@ -23,12 +23,29 @@
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
 
+/* The Old and Standard format types indicate that the image data is
+ * uncompressed. There is no difference between the two formats. */
 #define RT_OLD          0
 #define RT_STANDARD     1
+
+/* The Byte-Encoded format type indicates that the image data is compressed
+ * using a run-length encoding scheme. */
 #define RT_BYTE_ENCODED 2
+
+/* The RGB format type indicates that the image is uncompressed with reverse
+ * component order from Old and Standard (RGB vs BGR). */
 #define RT_FORMAT_RGB   3
+
+/* The TIFF and IFF format types indicate that the raster file was originally
+ * converted from either of these file formats. We do not have any samples or
+ * documentation of the format details. */
 #define RT_FORMAT_TIFF  4
 #define RT_FORMAT_IFF   5
+
+/* The Experimental format type is implementation-specific and is generally an
+ * indication that the image file does not conform to the Sun Raster file
+ * format specification. */
+#define RT_EXPERIMENTAL 0xffff
 
 typedef struct SUNRASTContext {
     AVFrame picture;
@@ -70,6 +87,10 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
     maplength = AV_RB32(buf+28);
     buf      += 32;
 
+    if (type == RT_EXPERIMENTAL) {
+        av_log(avctx, AV_LOG_ERROR, "unsupported (compression) type\n");
+        return -1;
+    }
     if (type > RT_FORMAT_IFF) {
         av_log(avctx, AV_LOG_ERROR, "invalid (compression) type\n");
         return -1;

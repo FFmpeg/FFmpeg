@@ -31,10 +31,6 @@ DECLARE_ASM_CONST(8, uint64_t, bF8)=       0xF8F8F8F8F8F8F8F8LL;
 DECLARE_ASM_CONST(8, uint64_t, bFC)=       0xFCFCFCFCFCFCFCFCLL;
 DECLARE_ASM_CONST(8, uint64_t, w10)=       0x0010001000100010LL;
 DECLARE_ASM_CONST(8, uint64_t, w02)=       0x0002000200020002LL;
-DECLARE_ASM_CONST(8, uint64_t, bm00001111)=0x00000000FFFFFFFFLL;
-DECLARE_ASM_CONST(8, uint64_t, bm00000111)=0x0000000000FFFFFFLL;
-DECLARE_ASM_CONST(8, uint64_t, bm11111000)=0xFFFFFFFFFF000000LL;
-DECLARE_ASM_CONST(8, uint64_t, bm01010101)=0x00FF00FF00FF00FFLL;
 
 const DECLARE_ALIGNED(8, uint64_t, ff_dither4)[2] = {
     0x0103010301030103LL,
@@ -68,18 +64,6 @@ DECLARE_ALIGNED(8, const uint64_t, ff_bgr2YOffset)  = 0x1010101010101010ULL;
 DECLARE_ALIGNED(8, const uint64_t, ff_bgr2UVOffset) = 0x8080808080808080ULL;
 DECLARE_ALIGNED(8, const uint64_t, ff_w1111)        = 0x0001000100010001ULL;
 
-DECLARE_ASM_CONST(8, uint64_t, ff_bgr24toY1Coeff) = 0x0C88000040870C88ULL;
-DECLARE_ASM_CONST(8, uint64_t, ff_bgr24toY2Coeff) = 0x20DE4087000020DEULL;
-DECLARE_ASM_CONST(8, uint64_t, ff_rgb24toY1Coeff) = 0x20DE0000408720DEULL;
-DECLARE_ASM_CONST(8, uint64_t, ff_rgb24toY2Coeff) = 0x0C88408700000C88ULL;
-DECLARE_ASM_CONST(8, uint64_t, ff_bgr24toYOffset) = 0x0008010000080100ULL;
-
-DECLARE_ASM_CONST(8, uint64_t, ff_bgr24toUV)[2][4] = {
-    {0x38380000DAC83838ULL, 0xECFFDAC80000ECFFULL, 0xF6E40000D0E3F6E4ULL, 0x3838D0E300003838ULL},
-    {0xECFF0000DAC8ECFFULL, 0x3838DAC800003838ULL, 0x38380000D0E33838ULL, 0xF6E4D0E30000F6E4ULL},
-};
-
-DECLARE_ASM_CONST(8, uint64_t, ff_bgr24toUVOffset)= 0x0040010000400100ULL;
 
 //MMX versions
 #if HAVE_MMX
@@ -307,24 +291,29 @@ VSCALE_FUNCS(sse2, sse2);
 VSCALE_FUNC(16, sse4);
 VSCALE_FUNCS(avx, avx);
 
+#define INPUT_Y_FUNC(fmt, opt) \
+extern void ff_ ## fmt ## ToY_  ## opt(uint8_t *dst, const uint8_t *src, \
+                                       int w, uint32_t *unused)
 #define INPUT_UV_FUNC(fmt, opt) \
 extern void ff_ ## fmt ## ToUV_ ## opt(uint8_t *dstU, uint8_t *dstV, \
                                        const uint8_t *src, const uint8_t *unused1, \
                                        int w, uint32_t *unused2)
 #define INPUT_FUNC(fmt, opt) \
-extern void ff_ ## fmt ## ToY_  ## opt(uint8_t *dst, const uint8_t *src, \
-                                       int w, uint32_t *unused); \
+    INPUT_Y_FUNC(fmt, opt); \
     INPUT_UV_FUNC(fmt, opt)
 #define INPUT_FUNCS(opt) \
     INPUT_FUNC(uyvy, opt); \
     INPUT_FUNC(yuyv, opt); \
     INPUT_UV_FUNC(nv12, opt); \
-    INPUT_UV_FUNC(nv21, opt)
+    INPUT_UV_FUNC(nv21, opt); \
+    INPUT_FUNC(rgb24, opt); \
+    INPUT_FUNC(bgr24, opt)
 
 #if ARCH_X86_32
 INPUT_FUNCS(mmx);
 #endif
 INPUT_FUNCS(sse2);
+INPUT_FUNCS(ssse3);
 INPUT_FUNCS(avx);
 
 void ff_sws_init_swScale_mmx(SwsContext *c)
@@ -381,6 +370,12 @@ switch(c->dstBpc){ \
     case 9:  if (!isBE(c->dstFormat) && opt2chk) vscalefn = ff_yuv2plane1_9_  ## opt2;  break; \
     default:                                     vscalefn = ff_yuv2plane1_8_  ## opt1;  break; \
     }
+#define case_rgb(x, X, opt) \
+        case PIX_FMT_ ## X: \
+            c->lumToYV12 = ff_ ## x ## ToY_ ## opt; \
+            if (!c->chrSrcHSubSample) \
+                c->chrToYV12 = ff_ ## x ## ToUV_ ## opt; \
+            break
 #if ARCH_X86_32
     if (cpu_flags & AV_CPU_FLAG_MMX) {
         ASSIGN_MMX_SCALE_FUNC(c->hyScale, c->hLumFilterSize, mmx, mmx);
@@ -407,6 +402,8 @@ switch(c->dstBpc){ \
         case PIX_FMT_NV21:
             c->chrToYV12 = ff_nv21ToUV_mmx;
             break;
+        case_rgb(rgb24, RGB24, mmx);
+        case_rgb(bgr24, BGR24, mmx);
         default:
             break;
         }
@@ -449,11 +446,21 @@ switch(c->dstBpc){ \
         case PIX_FMT_NV21:
             c->chrToYV12 = ff_nv21ToUV_sse2;
             break;
+        case_rgb(rgb24, RGB24, sse2);
+        case_rgb(bgr24, BGR24, sse2);
+        default:
+            break;
         }
     }
     if (cpu_flags & AV_CPU_FLAG_SSSE3) {
         ASSIGN_SSE_SCALE_FUNC(c->hyScale, c->hLumFilterSize, ssse3, ssse3);
         ASSIGN_SSE_SCALE_FUNC(c->hcScale, c->hChrFilterSize, ssse3, ssse3);
+        switch (c->srcFormat) {
+        case_rgb(rgb24, RGB24, ssse3);
+        case_rgb(bgr24, BGR24, ssse3);
+        default:
+            break;
+        }
     }
     if (cpu_flags & AV_CPU_FLAG_SSE4) {
         /* Xto15 don't need special sse4 functions */
@@ -482,6 +489,8 @@ switch(c->dstBpc){ \
         case PIX_FMT_NV21:
             c->chrToYV12 = ff_nv21ToUV_avx;
             break;
+        case_rgb(rgb24, RGB24, avx);
+        case_rgb(bgr24, BGR24, avx);
         default:
             break;
         }

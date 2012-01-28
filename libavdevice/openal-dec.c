@@ -117,7 +117,7 @@ static inline void print_al_capture_devices(void *log_ctx)
         av_log(log_ctx, AV_LOG_INFO, "  %s\n", devices);
 }
 
-static int read_header(AVFormatContext *ctx, AVFormatParameters *ap)
+static int read_header(AVFormatContext *ctx)
 {
     al_data *ad = ctx->priv_data;
     static const ALCenum sample_formats[2][2] = {

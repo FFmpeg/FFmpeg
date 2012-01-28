@@ -31,8 +31,7 @@ static int dfa_probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX;
 }
 
-static int dfa_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
+static int dfa_read_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     AVStream *st;

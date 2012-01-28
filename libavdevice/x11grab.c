@@ -154,7 +154,7 @@ x11grab_region_win_init(struct x11_grab *s)
  *         </ul>
  */
 static int
-x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
+x11grab_read_header(AVFormatContext *s1)
 {
     struct x11_grab *x11grab = s1->priv_data;
     Display *dpy;

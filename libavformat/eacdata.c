@@ -45,7 +45,7 @@ static int cdata_probe(AVProbeData *p)
     return 0;
 }
 
-static int cdata_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int cdata_read_header(AVFormatContext *s)
 {
     CdataDemuxContext *cdata = s->priv_data;
     AVIOContext *pb = s->pb;

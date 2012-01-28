@@ -1653,7 +1653,7 @@ static void mxf_handle_small_eubc(AVFormatContext *s)
     mxf->edit_units_per_packet = 1920;
 }
 
-static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int mxf_read_header(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
     KLVPacket klv;

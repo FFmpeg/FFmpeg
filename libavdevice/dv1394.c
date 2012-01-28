@@ -81,7 +81,7 @@ static int dv1394_start(struct dv1394_data *dv)
     return 0;
 }
 
-static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap)
+static int dv1394_read_header(AVFormatContext * context)
 {
     struct dv1394_data *dv = context->priv_data;
 

@@ -1389,51 +1389,6 @@ redirect:
     if (port < 0)
         port = RTSP_DEFAULT_PORT;
 
-#if FF_API_RTSP_URL_OPTIONS
-    /* search for options */
-    option_list = strrchr(path, '?');
-    if (option_list) {
-        /* Strip out the RTSP specific options, write out the rest of
-         * the options back into the same string. */
-        filename = option_list;
-        while (option_list) {
-            int handled = 1;
-            /* move the option pointer */
-            option = ++option_list;
-            option_list = strchr(option_list, '&');
-            if (option_list)
-                *option_list = 0;
-
-            /* handle the options */
-            if (!strcmp(option, "udp")) {
-                lower_transport_mask |= (1<< RTSP_LOWER_TRANSPORT_UDP);
-            } else if (!strcmp(option, "multicast")) {
-                lower_transport_mask |= (1<< RTSP_LOWER_TRANSPORT_UDP_MULTICAST);
-            } else if (!strcmp(option, "tcp")) {
-                lower_transport_mask |= (1<< RTSP_LOWER_TRANSPORT_TCP);
-            } else if(!strcmp(option, "http")) {
-                lower_transport_mask |= (1<< RTSP_LOWER_TRANSPORT_TCP);
-                rt->control_transport = RTSP_MODE_TUNNEL;
-            } else if (!strcmp(option, "filter_src")) {
-                rt->rtsp_flags |= RTSP_FLAG_FILTER_SRC;
-            } else {
-                /* Write options back into the buffer, using memmove instead
-                 * of strcpy since the strings may overlap. */
-                int len = strlen(option);
-                memmove(++filename, option, len);
-                filename += len;
-                if (option_list) *filename = '&';
-                handled = 0;
-            }
-            if (handled)
-                av_log(s, AV_LOG_WARNING, "Options passed via URL are "
-                                          "deprecated, use -rtsp_transport "
-                                          "and -rtsp_flags instead.\n");
-        }
-        *filename = 0;
-    }
-#endif
-
     if (!lower_transport_mask)
         lower_transport_mask = (1 << RTSP_LOWER_TRANSPORT_NB) - 1;
 
@@ -1844,7 +1799,7 @@ static int sdp_probe(AVProbeData *p1)
     return 0;
 }
 
-static int sdp_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int sdp_read_header(AVFormatContext *s)
 {
     RTSPState *rt = s->priv_data;
     RTSPStream *rtsp_st;
@@ -1930,8 +1885,7 @@ static int rtp_probe(AVProbeData *p)
     return 0;
 }
 
-static int rtp_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
+static int rtp_read_header(AVFormatContext *s)
 {
     uint8_t recvbuf[1500];
     char host[500], sdp[500];
@@ -2008,7 +1962,7 @@ static int rtp_read_header(AVFormatContext *s,
 
     rt->media_type_mask = (1 << (AVMEDIA_TYPE_DATA+1)) - 1;
 
-    ret = sdp_read_header(s, ap);
+    ret = sdp_read_header(s);
     s->pb = NULL;
     return ret;
 

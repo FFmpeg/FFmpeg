@@ -378,8 +378,7 @@ static AVStream *create_stream(AVFormatContext *s, int stream_type){
     return st;
 }
 
-static int flv_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
+static int flv_read_header(AVFormatContext *s)
 {
     int offset, flags;
 

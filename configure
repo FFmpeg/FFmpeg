@@ -563,7 +563,8 @@ print_config_mak(){
 }
 
 print_config_asm(){
-    enabled $1 && echo "%define $2"
+    enabled $1 && v=1 || v=0
+    echo "%define $2 $v"
 }
 
 print_config(){
@@ -1190,6 +1191,8 @@ HAVE_LIST="
     isatty
     kbhit
     ldbrx
+    libdc1394_1
+    libdc1394_2
     llrint
     llrintf
     local_aligned_16
@@ -3130,7 +3133,6 @@ enabled libass     && require_pkg_config libass ass/ass.h ass_library_init
 enabled libcelt    && require libcelt celt/celt.h celt_decode -lcelt0 &&
                       { check_lib celt/celt.h celt_decoder_create_custom -lcelt0 ||
                         die "ERROR: libcelt version must be >= 0.11.0."; }
-enabled libdc1394  && require_pkg_config libdc1394-2 dc1394/dc1394.h dc1394_new
 enabled libdirac   && require_pkg_config dirac                          \
     "libdirac_decoder/dirac_parser.h libdirac_encoder/dirac_encoder.h"  \
     "dirac_decoder_init dirac_encoder_init"
@@ -3177,6 +3179,15 @@ enabled openssl    && { check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto 
                         check_lib openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
                         check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
                         die "ERROR: openssl not found"; }
+
+# libdc1394 check
+if enabled libdc1394; then
+    { check_lib dc1394/dc1394.h dc1394_new -ldc1394 -lraw1394 &&
+        enable libdc1394_2; } ||
+    { check_lib libdc1394/dc1394_control.h dc1394_create_handle -ldc1394_control -lraw1394 &&
+        enable libdc1394_1; } ||
+    die "ERROR: No version of libdc1394 found "
+fi
 
 SDL_CONFIG="${cross_prefix}sdl-config"
 if check_pkg_config sdl SDL_version.h SDL_Linked_Version; then

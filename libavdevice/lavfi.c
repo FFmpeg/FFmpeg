@@ -32,6 +32,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/audioconvert.h"
 #include "libavfilter/avfilter.h"
 #include "libavfilter/avfiltergraph.h"
 #include "libavfilter/buffersink.h"
@@ -78,8 +79,7 @@ av_cold static int lavfi_read_close(AVFormatContext *avctx)
     return 0;
 }
 
-av_cold static int lavfi_read_header(AVFormatContext *avctx,
-                                     AVFormatParameters *ap)
+av_cold static int lavfi_read_header(AVFormatContext *avctx)
 {
     LavfiContext *lavfi = avctx->priv_data;
     AVFilterInOut *input_links = NULL, *output_links = NULL, *inout;

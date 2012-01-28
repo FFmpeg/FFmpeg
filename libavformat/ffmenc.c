@@ -157,7 +157,6 @@ static int ffm_write_header(AVFormatContext *s)
             avio_w8(pb, codec->thread_count);
             avio_wb32(pb, codec->coder_type);
             avio_wb32(pb, codec->me_cmp);
-            avio_wb32(pb, codec->partitions);
             avio_wb32(pb, codec->me_subpel_quality);
             avio_wb32(pb, codec->me_range);
             avio_wb32(pb, codec->keyint_min);
@@ -167,7 +166,6 @@ static int ffm_write_header(AVFormatContext *s)
             avio_wb64(pb, av_double2int(codec->qblur));
             avio_wb32(pb, codec->max_qdiff);
             avio_wb32(pb, codec->refs);
-            avio_wb32(pb, codec->directpred);
             break;
         case AVMEDIA_TYPE_AUDIO:
             avio_wb32(pb, codec->sample_rate);

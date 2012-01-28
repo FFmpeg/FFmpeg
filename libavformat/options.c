@@ -41,10 +41,8 @@ static void *format_child_next(void *obj, void *prev)
         ((s->iformat && s->iformat->priv_class) ||
           s->oformat && s->oformat->priv_class))
         return s->priv_data;
-#if !FF_API_OLD_AVIO
     if (s->pb && s->pb->av_class && prev != s->pb)
         return s->pb;
-#endif
     return NULL;
 }
 
@@ -54,11 +52,7 @@ static const AVClass *format_child_class_next(const AVClass *prev)
     AVOutputFormat *ofmt = NULL;
 
     if (!prev)
-#if !FF_API_OLD_AVIO
         return &ffio_url_class;
-#else
-    prev = (void *)&ifmt; // Dummy pointer;
-#endif
 
     while ((ifmt = av_iformat_next(ifmt)))
         if (ifmt->priv_class == prev)
@@ -88,9 +82,6 @@ static const AVClass *format_child_class_next(const AVClass *prev)
 
 static const AVOption options[]={
 {"probesize", "set probing size", OFFSET(probesize), AV_OPT_TYPE_INT, {.dbl = 5000000 }, 32, INT_MAX, D},
-#if FF_API_MUXRATE
-{"muxrate", "set mux rate", OFFSET(mux_rate), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, 0, INT_MAX, E},
-#endif
 {"packetsize", "set packet size", OFFSET(packet_size), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, 0, INT_MAX, E},
 {"fflags", NULL, OFFSET(flags), AV_OPT_TYPE_FLAGS, {.dbl = DEFAULT }, INT_MIN, INT_MAX, D|E, "fflags"},
 {"ignidx", "ignore index", 0, AV_OPT_TYPE_CONST, {.dbl = AVFMT_FLAG_IGNIDX }, INT_MIN, INT_MAX, D, "fflags"},
@@ -98,9 +89,6 @@ static const AVOption options[]={
 {"nofillin", "do not fill in missing values that can be exactly calculated", 0, AV_OPT_TYPE_CONST, {.dbl = AVFMT_FLAG_NOFILLIN }, INT_MIN, INT_MAX, D, "fflags"},
 {"noparse", "disable AVParsers, this needs nofillin too", 0, AV_OPT_TYPE_CONST, {.dbl = AVFMT_FLAG_NOPARSE }, INT_MIN, INT_MAX, D, "fflags"},
 {"igndts", "ignore dts", 0, AV_OPT_TYPE_CONST, {.dbl = AVFMT_FLAG_IGNDTS }, INT_MIN, INT_MAX, D, "fflags"},
-#if FF_API_FLAG_RTP_HINT
-{"rtphint", "add rtp hinting (deprecated, use the -movflags rtphint option instead)", 0, AV_OPT_TYPE_CONST, {.dbl = AVFMT_FLAG_RTP_HINT }, INT_MIN, INT_MAX, E, "fflags"},
-#endif
 {"discardcorrupt", "discard corrupted frames", 0, AV_OPT_TYPE_CONST, {.dbl = AVFMT_FLAG_DISCARD_CORRUPT }, INT_MIN, INT_MAX, D, "fflags"},
 {"sortdts", "try to interleave outputted packets by dts", 0, AV_OPT_TYPE_CONST, {.dbl = AVFMT_FLAG_SORT_DTS }, INT_MIN, INT_MAX, D, "fflags"},
 {"keepside", "dont merge side data", 0, AV_OPT_TYPE_CONST, {.dbl = AVFMT_FLAG_KEEP_SIDE_DATA }, INT_MIN, INT_MAX, D, "fflags"},

@@ -33,6 +33,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     avctx->pix_fmt = PIX_FMT_UYVY422;
 
     avctx->coded_frame = avcodec_alloc_frame();
+    if (!avctx->coded_frame)
+        return AVERROR(ENOMEM);
 
     return 0;
 }

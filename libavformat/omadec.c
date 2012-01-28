@@ -259,8 +259,7 @@ static int decrypt_init(AVFormatContext *s, ID3v2ExtraMeta *em, uint8_t *header)
     return 0;
 }
 
-static int oma_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
+static int oma_read_header(AVFormatContext *s)
 {
     int     ret, framesize, jsflag, samplerate;
     uint32_t codec_params;

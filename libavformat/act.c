@@ -60,8 +60,7 @@ static int probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX;
 }
 
-static int read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
+static int read_header(AVFormatContext *s)
 {
     ACTContext* ctx = s->priv_data;
     AVIOContext *pb = s->pb;

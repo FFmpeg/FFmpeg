@@ -65,7 +65,7 @@ static int iss_probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX;
 }
 
-static av_cold int iss_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static av_cold int iss_read_header(AVFormatContext *s)
 {
     IssDemuxContext *iss = s->priv_data;
     AVIOContext *pb = s->pb;

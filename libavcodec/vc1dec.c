@@ -3954,6 +3954,7 @@ static int vc1_decode_p_mb_intfr(VC1Context *v)
                 vc1_mc_4mv_chroma4(v);
             } else {
                 mvbp = ff_vc1_mbmode_intfrp[v->fourmvswitch][idx_mbmode][2];
+                dmv_x = dmv_y = 0;
                 if (mvbp) {
                     get_mvdata_interlaced(v, &dmv_x, &dmv_y, 0);
                 }

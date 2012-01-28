@@ -205,13 +205,7 @@ enum CodecID ff_guess_image2_codec(const char *filename)
     return av_str2id(img_tags, filename);
 }
 
-#if FF_API_GUESS_IMG2_CODEC
-enum CodecID av_guess_image2_codec(const char *filename){
-    return av_str2id(img_tags, filename);
-}
-#endif
-
-static int read_header(AVFormatContext *s1, AVFormatParameters *ap)
+static int read_header(AVFormatContext *s1)
 {
     VideoData *s = s1->priv_data;
     int first_index, last_index, ret = 0;
@@ -239,11 +233,6 @@ static int read_header(AVFormatContext *s1, AVFormatParameters *ap)
         av_log(s, AV_LOG_ERROR, "Could not parse framerate: %s.\n", s->framerate);
         return ret;
     }
-
-#if FF_API_LOOP_INPUT
-    if (s1->loop_input)
-        s->loop = s1->loop_input;
-#endif
 
     av_strlcpy(s->path, s1->filename, sizeof(s->path));
     s->img_number = 0;

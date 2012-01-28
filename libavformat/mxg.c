@@ -37,7 +37,7 @@ typedef struct MXGContext {
     unsigned int cache_size;
 } MXGContext;
 
-static int mxg_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int mxg_read_header(AVFormatContext *s)
 {
     AVStream *video_st, *audio_st;
     MXGContext *mxg = s->priv_data;

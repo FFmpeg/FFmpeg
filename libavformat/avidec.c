@@ -351,7 +351,7 @@ static void avi_read_nikon(AVFormatContext *s, uint64_t end)
     }
 }
 
-static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int avi_read_header(AVFormatContext *s)
 {
     AVIContext *avi = s->priv_data;
     AVIOContext *pb = s->pb;
@@ -719,7 +719,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
         case MKTAG('i', 'n', 'd', 'x'):
             i= avio_tell(pb);
             if(pb->seekable && !(s->flags & AVFMT_FLAG_IGNIDX) && avi->use_odml &&
-               read_braindead_odml_indx(s, 0) < 0 && s->error_recognition >= FF_ER_EXPLODE)
+               read_braindead_odml_indx(s, 0) < 0 && (s->error_recognition & AV_EF_EXPLODE))
                 goto fail;
             avio_seek(pb, i+size, SEEK_SET);
             break;

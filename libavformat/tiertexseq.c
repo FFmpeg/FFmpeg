@@ -181,7 +181,7 @@ static int seq_parse_frame_data(SeqDemuxContext *seq, AVIOContext *pb)
     return 0;
 }
 
-static int seq_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int seq_read_header(AVFormatContext *s)
 {
     int i, rc;
     SeqDemuxContext *seq = s->priv_data;

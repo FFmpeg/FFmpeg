@@ -27,8 +27,7 @@
 #include "vorbiscomment.h"
 #include "libavcodec/bytestream.h"
 
-static int flac_read_header(AVFormatContext *s,
-                             AVFormatParameters *ap)
+static int flac_read_header(AVFormatContext *s)
 {
     int ret, metadata_last=0, metadata_type, metadata_size, found_streaminfo=0;
     uint8_t header[4];

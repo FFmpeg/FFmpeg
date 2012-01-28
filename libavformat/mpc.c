@@ -52,7 +52,7 @@ static int mpc_probe(AVProbeData *p)
     return 0;
 }
 
-static int mpc_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int mpc_read_header(AVFormatContext *s)
 {
     MPCContext *c = s->priv_data;
     AVStream *st;

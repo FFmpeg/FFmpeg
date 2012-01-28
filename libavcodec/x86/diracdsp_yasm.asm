@@ -135,7 +135,7 @@ cglobal put_signed_rect_clamped_%1, 5,7,3, dst, dst_stride, src, src_stride, w, 
     add     wd, (mmsize-1)
     and     wd, ~(mmsize-1)
 
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     mov   r10d, r5m
     mov   r11d, wd
     %define wspill r11d
@@ -176,7 +176,7 @@ cglobal add_rect_clamped_%1, 7,7,3, dst, src, stride, idwt, idwt_stride, w, h
     add     wd, (mmsize-1)
     and     wd, ~(mmsize-1)
 
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
     mov   r11d, wd
     %define wspill r11d
 %else

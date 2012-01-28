@@ -76,8 +76,7 @@ static int amr_probe(AVProbeData *p)
 }
 
 /* amr input */
-static int amr_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
+static int amr_read_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     AVStream *st;

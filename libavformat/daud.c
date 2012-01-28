@@ -20,7 +20,7 @@
  */
 #include "avformat.h"
 
-static int daud_header(AVFormatContext *s, AVFormatParameters *ap) {
+static int daud_header(AVFormatContext *s) {
     AVStream *st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);

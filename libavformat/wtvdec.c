@@ -870,7 +870,7 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
     return AVERROR_EOF;
 }
 
-static int read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int read_header(AVFormatContext *s)
 {
     WtvContext *wtv = s->priv_data;
     int root_sector, root_size;

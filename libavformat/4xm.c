@@ -91,8 +91,7 @@ static int fourxm_probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX;
 }
 
-static int fourxm_read_header(AVFormatContext *s,
-                              AVFormatParameters *ap)
+static int fourxm_read_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     unsigned int fourcc_tag;

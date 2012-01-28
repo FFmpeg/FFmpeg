@@ -86,7 +86,7 @@ static const AVMetadataConv vqf_metadata_conv[] = {
     { 0 },
 };
 
-static int vqf_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int vqf_read_header(AVFormatContext *s)
 {
     VqfContext *c = s->priv_data;
     AVStream *st  = avformat_new_stream(s, NULL);

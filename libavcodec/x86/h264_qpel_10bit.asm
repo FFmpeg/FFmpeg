@@ -111,7 +111,7 @@ INIT_XMM
 %endmacro
 
 %macro MCAxA 8
-%ifdef ARCH_X86_64
+%if ARCH_X86_64
 %ifnidn %1,mmxext
 MCAxA_OP %1,%2,%3,%4,%5,%6,%7,%8
 %endif
@@ -122,7 +122,7 @@ MCAxA_OP %1,%2,%3,%4,%5,%6,%7,%8
 
 %macro MCAxA_OP 8
 cglobal %2_h264_qpel%5_%3_10_%1, %6,%7,%8
-%ifdef ARCH_X86_32
+%if ARCH_X86_32
     call stub_%2_h264_qpel%4_%3_10_%1
     mov  r0, r0m
     mov  r1, r1m
@@ -152,7 +152,7 @@ cglobal %2_h264_qpel%5_%3_10_%1, %6,%7,%8
     call stub_%2_h264_qpel%4_%3_10_%1
     lea  r0, [r10+r2*%4+%4*2]
     lea  r1, [r11+r2*%4+%4*2]
-%ifndef UNIX64 ; fall through to function
+%if UNIX64 == 0 ; fall through to function
     call stub_%2_h264_qpel%4_%3_10_%1
     RET
 %endif
@@ -165,7 +165,7 @@ cglobal %2_h264_qpel%5_%3_10_%1, %6,%7,%8
 MCAxA %1, %2, %3, %4, i, %5,%6,%7
 
 cglobal %2_h264_qpel%4_%3_10_%1, %5,%6,%7
-%ifndef UNIX64 ; no prologue or epilogue for UNIX64
+%if UNIX64 == 0 ; no prologue or epilogue for UNIX64
     call stub_%2_h264_qpel%4_%3_10_%1
     RET
 %endif

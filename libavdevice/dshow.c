@@ -649,7 +649,7 @@ static enum CodecID waveform_codec_id(enum AVSampleFormat sample_fmt)
     }
 }
 
-static enum SampleFormat sample_fmt_bits_per_sample(int bits)
+static enum AVSampleFormat sample_fmt_bits_per_sample(int bits)
 {
     switch (bits) {
     case 8:  return AV_SAMPLE_FMT_U8;
@@ -660,7 +660,7 @@ static enum SampleFormat sample_fmt_bits_per_sample(int bits)
 }
 
 static int
-dshow_add_device(AVFormatContext *avctx, AVFormatParameters *ap,
+dshow_add_device(AVFormatContext *avctx,
                  enum dshowDeviceType devtype)
 {
     struct dshow_ctx *ctx = avctx->priv_data;
@@ -784,7 +784,7 @@ static int parse_device_name(AVFormatContext *avctx)
     return ret;
 }
 
-static int dshow_read_header(AVFormatContext *avctx, AVFormatParameters *ap)
+static int dshow_read_header(AVFormatContext *avctx)
 {
     struct dshow_ctx *ctx = avctx->priv_data;
     IGraphBuilder *graph = NULL;

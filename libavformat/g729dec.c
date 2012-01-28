@@ -29,7 +29,7 @@ typedef struct G729DemuxerContext {
     int bit_rate;
 } G729DemuxerContext;
 
-static int g729_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int g729_read_header(AVFormatContext *s)
 {
     AVStream* st;
     G729DemuxerContext *s1 = s->priv_data;

@@ -1493,7 +1493,7 @@ end:
     if(s->codec_id==CODEC_ID_MPEG4){
         int next= mpeg4_is_resync(s);
         if(next) {
-            if        (s->mb_x + s->mb_y*s->mb_width + 1 >  next && s->avctx->error_recognition >= FF_ER_AGGRESSIVE) {
+            if        (s->mb_x + s->mb_y*s->mb_width + 1 >  next && (s->avctx->err_recognition & AV_EF_AGGRESSIVE)) {
                 return -1;
             } else if (s->mb_x + s->mb_y*s->mb_width + 1 >= next)
                 return SLICE_END;
