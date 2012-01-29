@@ -13,6 +13,10 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2012-02-29 - xxxxxxx - lavu 51.22.0 - intfloat.h
+  Add a new installed header libavutil/intfloat.h with int/float punning
+  functions.
+
 2012-02-17 - xxxxxxx - lavc 53.35.0
   Add avcodec_is_open() function.
 
