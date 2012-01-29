@@ -223,8 +223,9 @@ WINDOW_FUNC(eight_short)
     const float *pwindow = sce->ics.use_kb_window[1] ? ff_aac_kbd_short_128 : ff_sine_128;
     const float *in = audio + 448;
     float *out = sce->ret;
+    int w;
 
-    for (int w = 0; w < 8; w++) {
+    for (w = 0; w < 8; w++) {
         dsp->vector_fmul        (out, in, w ? pwindow : swindow, 128);
         out += 128;
         in  += 128;
@@ -686,11 +687,12 @@ static av_cold int dsp_init(AVCodecContext *avctx, AACEncContext *s)
 
 static av_cold int alloc_buffers(AVCodecContext *avctx, AACEncContext *s)
 {
+    int ch;
     FF_ALLOCZ_OR_GOTO(avctx, s->buffer.samples, 3 * 1024 * s->channels * sizeof(s->buffer.samples[0]), alloc_fail);
     FF_ALLOCZ_OR_GOTO(avctx, s->cpe, sizeof(ChannelElement) * s->chan_map[0], alloc_fail);
     FF_ALLOCZ_OR_GOTO(avctx, avctx->extradata, 5 + FF_INPUT_BUFFER_PADDING_SIZE, alloc_fail);
 
-    for(int ch = 0; ch < s->channels; ch++)
+    for(ch = 0; ch < s->channels; ch++)
         s->planar_samples[ch] = s->buffer.samples + 3 * 1024 * ch;
 
     return 0;
