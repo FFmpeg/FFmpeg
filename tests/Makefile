@@ -5,20 +5,18 @@ REFS = $(AREF) $(VREF)
 $(VREF): avconv$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm
 $(AREF): avconv$(EXESUF) tests/data/asynth1.sw
 
-tests/vsynth1/00.pgm: tests/videogen$(HOSTEXESUF)
-	@mkdir -p tests/vsynth1
+OBJDIRS += tests/data tests/vsynth1 tests/vsynth2
+
+tests/vsynth1/00.pgm: tests/videogen$(HOSTEXESUF) | tests/vsynth1
 	$(M)./$< 'tests/vsynth1/'
 
-tests/vsynth2/00.pgm: tests/rotozoom$(HOSTEXESUF)
-	@mkdir -p tests/vsynth2
+tests/vsynth2/00.pgm: tests/rotozoom$(HOSTEXESUF) | tests/vsynth2
 	$(M)./$< 'tests/vsynth2/' $(SRC_PATH)/tests/lena.pnm
 
-tests/data/asynth1.sw: tests/audiogen$(HOSTEXESUF)
-	@mkdir -p tests/data
+tests/data/asynth1.sw: tests/audiogen$(HOSTEXESUF) | tests/data
 	$(M)./$< $@
 
-tests/data/asynth-16000-1.sw: tests/audiogen$(HOSTEXESUF)
-	@mkdir -p tests/data
+tests/data/asynth-16000-1.sw: tests/audiogen$(HOSTEXESUF) | tests/data
 	$(M)./$< $@ 16000 1
 
 tests/data/asynth%.sw tests/vsynth%/00.pgm: TAG = GEN
