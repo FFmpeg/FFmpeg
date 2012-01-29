@@ -491,10 +491,16 @@ static inline void codeblock(DiracContext *s, SubBand *b,
     }
 
     if (s->codeblock_mode && !(s->old_delta_quant && blockcnt_one)) {
+        int quant = b->quant;
         if (is_arith)
-            b->quant += dirac_get_arith_int(c, CTX_DELTA_Q_F, CTX_DELTA_Q_DATA);
+            quant += dirac_get_arith_int(c, CTX_DELTA_Q_F, CTX_DELTA_Q_DATA);
         else
-            b->quant += dirac_get_se_golomb(gb);
+            quant += dirac_get_se_golomb(gb);
+        if (quant < 0) {
+            av_log(s->avctx, AV_LOG_ERROR, "Invalid quant\n");
+            return;
+        }
+        b->quant = quant;
     }
 
     b->quant = FFMIN(b->quant, MAX_QUANT);
