@@ -68,7 +68,7 @@ static int encode_frame(AVCodecContext *avctx, uint8_t *buf,
             else
                 bytestream_put_be32(&dst, pixel);
         }
-        dst += aligned_width - avctx->width;
+        dst += (aligned_width - avctx->width) * 4;
         src_line += pic->linesize[0];
     }
 
