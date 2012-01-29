@@ -1267,14 +1267,17 @@ av_cold int avcodec_close(AVCodecContext *avctx)
         return -1;
     }
 
-    if (HAVE_THREADS && avctx->thread_opaque)
-        ff_thread_free(avctx);
-    if (avctx->codec && avctx->codec->close)
-        avctx->codec->close(avctx);
-    avcodec_default_free_buffers(avctx);
-    avctx->coded_frame = NULL;
-    av_freep(&avctx->internal);
-    if (avctx->codec && avctx->codec->priv_class)
+    if (avcodec_is_open(avctx)) {
+        if (HAVE_THREADS && avctx->thread_opaque)
+            ff_thread_free(avctx);
+        if (avctx->codec && avctx->codec->close)
+            avctx->codec->close(avctx);
+        avcodec_default_free_buffers(avctx);
+        avctx->coded_frame = NULL;
+        av_freep(&avctx->internal);
+    }
+
+    if (avctx->priv_data && avctx->codec && avctx->codec->priv_class)
         av_opt_free(avctx->priv_data);
     av_opt_free(avctx);
     av_freep(&avctx->priv_data);

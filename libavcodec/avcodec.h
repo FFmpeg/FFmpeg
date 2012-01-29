@@ -3417,7 +3417,8 @@ int avcodec_get_context_defaults3(AVCodecContext *s, AVCodec *codec);
 
 /**
  * Allocate an AVCodecContext and set its fields to default values.  The
- * resulting struct can be deallocated by simply calling av_free().
+ * resulting struct can be deallocated by calling avcodec_close() on it followed
+ * by av_free().
  *
  * @param codec if non-NULL, allocate private data and initialize defaults
  *              for the given codec. It is illegal to then call avcodec_open2()
@@ -3809,6 +3810,15 @@ int avcodec_encode_video(AVCodecContext *avctx, uint8_t *buf, int buf_size,
 int avcodec_encode_subtitle(AVCodecContext *avctx, uint8_t *buf, int buf_size,
                             const AVSubtitle *sub);
 
+/**
+ * Close a given AVCodecContext and free all the data associated with it
+ * (but not the AVCodecContext itself).
+ *
+ * Calling this function on an AVCodecContext that hasn't been opened will free
+ * the codec-specific data allocated in avcodec_alloc_context3() /
+ * avcodec_get_context_defaults3() with a non-NULL codec. Subsequent calls will
+ * do nothing.
+ */
 int avcodec_close(AVCodecContext *avctx);
 
 /**
