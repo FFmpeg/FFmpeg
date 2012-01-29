@@ -186,12 +186,12 @@ static int decode_frame(AVCodecContext *avctx,
         }
         for(i = 0; i < planes; i++) {
             offs[i] = AV_RL32(buf + 4 + i * 4);
-            if(offs[i] >= buf_size || (i && offs[i] <= offs[i - 1] + 1024)) {
+            if(offs[i] >= buf_size - header_size || (i && offs[i] <= offs[i - 1] + 1024)) {
                 av_log(avctx, AV_LOG_ERROR, "Fraps: plane %i offset is out of bounds\n", i);
                 return -1;
             }
         }
-        offs[planes] = buf_size;
+        offs[planes] = buf_size - header_size;
         for(i = 0; i < planes; i++) {
             av_fast_padded_malloc(&s->tmpbuf, &s->tmpbuf_size, offs[i + 1] - offs[i] - 1024);
             if (!s->tmpbuf)
