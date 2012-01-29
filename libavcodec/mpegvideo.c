@@ -531,7 +531,7 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
 {
     MpegEncContext *s = dst->priv_data, *s1 = src->priv_data;
 
-    if (dst == src || !s1->context_initialized)
+    if (dst == src)
         return 0;
 
     // FIXME can parameters change on I-frames?
@@ -540,12 +540,14 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
         memcpy(s, s1, sizeof(MpegEncContext));
 
         s->avctx                 = dst;
-        s->picture_range_start  += MAX_PICTURE_COUNT;
-        s->picture_range_end    += MAX_PICTURE_COUNT;
         s->bitstream_buffer      = NULL;
         s->bitstream_buffer_size = s->allocated_bitstream_buffer_size = 0;
 
-        MPV_common_init(s);
+        if (s1->context_initialized){
+            s->picture_range_start  += MAX_PICTURE_COUNT;
+            s->picture_range_end    += MAX_PICTURE_COUNT;
+            MPV_common_init(s);
+        }
     }
 
     s->avctx->coded_height  = s1->avctx->coded_height;
