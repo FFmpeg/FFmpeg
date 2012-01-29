@@ -1125,7 +1125,7 @@ int ff_h264_decode_extradata(H264Context *h, const uint8_t *buf, int size)
         if(decode_nal_units(h, buf, size) < 0)
             return -1;
     }
-    return 0;
+    return size;
 }
 
 av_cold int ff_h264_decode_init(AVCodecContext *avctx){
@@ -1170,7 +1170,7 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx){
     }
 
     if(avctx->extradata_size > 0 && avctx->extradata &&
-        ff_h264_decode_extradata(h, avctx->extradata, avctx->extradata_size))
+        ff_h264_decode_extradata(h, avctx->extradata, avctx->extradata_size)<0)
         return -1;
 
     if(h->sps.bitstream_restriction_flag && s->avctx->has_b_frames < h->sps.num_reorder_frames){
