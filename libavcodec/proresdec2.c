@@ -302,7 +302,7 @@ static av_always_inline void decode_dc_coeffs(GetBitContext *gb, DCTELEM *out,
     code = 5;
     sign = 0;
     for (i = 1; i < blocks_per_slice; i++, out += 64) {
-        DECODE_CODEWORD(code, dc_codebook[FFMIN(code, 6)]);
+        DECODE_CODEWORD(code, dc_codebook[FFMIN(code, 6U)]);
         if(code) sign ^= -(code & 1);
         else     sign  = 0;
         prev_dc += (((code + 1) >> 1) ^ sign) - sign;
