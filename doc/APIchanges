@@ -13,6 +13,10 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2012-01-30 - xxxxxxx - lavu 51.22.0 - intfloat.h
+  Add a new installed header libavutil/intfloat.h with int/float punning
+  functions.
+
 2012-01-25 - lavf 53.22.0
   f1caf01 Allow doing av_write_frame(ctx, NULL) for flushing possible
           buffered data within a muxer. Added AVFMT_ALLOW_FLUSH for
