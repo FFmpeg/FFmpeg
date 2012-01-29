@@ -1296,7 +1296,6 @@ CMDLINE_SET="
     arch
     as
     build_suffix
-    progs_suffix
     cc
     cpu
     cross_prefix
@@ -1315,6 +1314,8 @@ CMDLINE_SET="
     nm
     optflags
     pkg_config
+    postproc_version
+    progs_suffix
     samples
     strip
     sysinclude
@@ -1322,7 +1323,6 @@ CMDLINE_SET="
     target_exec
     target_os
     target_path
-    postproc_version
     valgrind
     yasmexe
 "
