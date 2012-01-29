@@ -179,6 +179,23 @@ static int decode_frame(AVCodecContext *avctx,
             *data_size = 0;
             return buf_size;
         }
+        if (AV_RL32(buf) != FPS_TAG || buf_size < planes*1024 + 24) {
+            av_log(avctx, AV_LOG_ERROR, "Fraps: error in data stream\n");
+            return -1;
+        }
+        for(i = 0; i < planes; i++) {
+            offs[i] = AV_RL32(buf + 4 + i * 4);
+            if(offs[i] >= buf_size || (i && offs[i] <= offs[i - 1] + 1024)) {
+                av_log(avctx, AV_LOG_ERROR, "Fraps: plane %i offset is out of bounds\n", i);
+                return -1;
+            }
+        }
+        offs[planes] = buf_size;
+        for(i = 0; i < planes; i++) {
+            av_fast_padded_malloc(&s->tmpbuf, &s->tmpbuf_size, offs[i + 1] - offs[i] - 1024);
+            if (!s->tmpbuf)
+                return AVERROR(ENOMEM);
+        }
     }
 
     if (f->data[0])
@@ -233,23 +250,8 @@ static int decode_frame(AVCodecContext *avctx,
          * Fraps v2 is Huffman-coded YUV420 planes
          * Fraps v4 is virtually the same
          */
-        if (AV_RL32(buf) != FPS_TAG || buf_size < planes*1024 + 24) {
-            av_log(avctx, AV_LOG_ERROR, "Fraps: error in data stream\n");
-            return -1;
-        }
-        for(i = 0; i < planes; i++) {
-            offs[i] = AV_RL32(buf + 4 + i * 4);
-            if(offs[i] >= buf_size || (i && offs[i] <= offs[i - 1] + 1024)) {
-                av_log(avctx, AV_LOG_ERROR, "Fraps: plane %i offset is out of bounds\n", i);
-                return -1;
-            }
-        }
-        offs[planes] = buf_size;
         for(i = 0; i < planes; i++){
             is_chroma = !!i;
-            av_fast_padded_malloc(&s->tmpbuf, &s->tmpbuf_size, offs[i + 1] - offs[i] - 1024);
-            if (!s->tmpbuf)
-                return AVERROR(ENOMEM);
             if(fraps2_decode_plane(s, f->data[i], f->linesize[i], avctx->width >> is_chroma,
                     avctx->height >> is_chroma, buf + offs[i], offs[i + 1] - offs[i], is_chroma, 1) < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Error decoding plane %i\n", i);
@@ -260,22 +262,7 @@ static int decode_frame(AVCodecContext *avctx,
     case 3:
     case 5:
         /* Virtually the same as version 4, but is for RGB24 */
-        if (AV_RL32(buf) != FPS_TAG || buf_size < planes*1024 + 24) {
-            av_log(avctx, AV_LOG_ERROR, "Fraps: error in data stream\n");
-            return -1;
-        }
-        for(i = 0; i < planes; i++) {
-            offs[i] = AV_RL32(buf + 4 + i * 4);
-            if(offs[i] >= buf_size || (i && offs[i] <= offs[i - 1] + 1024)) {
-                av_log(avctx, AV_LOG_ERROR, "Fraps: plane %i offset is out of bounds\n", i);
-                return -1;
-            }
-        }
-        offs[planes] = buf_size;
         for(i = 0; i < planes; i++){
-            av_fast_padded_malloc(&s->tmpbuf, &s->tmpbuf_size, offs[i + 1] - offs[i] - 1024);
-            if (!s->tmpbuf)
-                return AVERROR(ENOMEM);
             if(fraps2_decode_plane(s, f->data[0] + i + (f->linesize[0] * (avctx->height - 1)), -f->linesize[0],
                     avctx->width, avctx->height, buf + offs[i], offs[i + 1] - offs[i], 0, 3) < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Error decoding plane %i\n", i);
