@@ -39,6 +39,7 @@ static int encode_frame(AVCodecContext *avctx, uint8_t *buf,
     AVFrame *pic = data;
     int i, j;
     int aligned_width = FFALIGN(avctx->width, 64);
+    int pad = (aligned_width - avctx->width) * 4;
     uint8_t *src_line;
     uint8_t *dst = buf;
 
@@ -68,7 +69,8 @@ static int encode_frame(AVCodecContext *avctx, uint8_t *buf,
             else
                 bytestream_put_be32(&dst, pixel);
         }
-        dst += (aligned_width - avctx->width) * 4;
+        memset(dst, 0, pad);
+        dst += pad;
         src_line += pic->linesize[0];
     }
 

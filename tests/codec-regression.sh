@@ -320,8 +320,8 @@ do_video_decoding "" "-pix_fmt yuv420p"
 fi
 
 if [ -n "$do_r210" ] ; then
-do_video_encoding r210.avi "-an -c:v r210 -pix_fmt rgb48le"
-do_video_decoding "" "-pix_fmt rgb48le"
+do_video_encoding r210.avi "-an -c:v r210"
+do_video_decoding "" "-pix_fmt yuv420p"
 fi
 
 if [ -n "$do_v210" ] ; then
