@@ -334,6 +334,11 @@ do_video_encoding yuv.avi "-an -vcodec rawvideo -pix_fmt yuv420p"
 do_video_decoding "" "-pix_fmt yuv420p"
 fi
 
+if [ -n "$do_yuv4" ] ; then
+do_video_encoding yuv4.avi "-an -c:v yuv4"
+do_video_decoding
+fi
+
 if [ -n "$do_y41p" ] ; then
 do_video_encoding y41p.avi "-an -c:v y41p"
 do_video_decoding
