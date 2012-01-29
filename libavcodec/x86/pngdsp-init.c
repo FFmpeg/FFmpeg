@@ -130,6 +130,6 @@ void ff_pngdsp_init_x86(PNGDSPContext *dsp)
         dsp->add_bytes_l2         = add_bytes_l2_mmx;
     if (flags & AV_CPU_FLAG_MMX2)
         dsp->add_paeth_prediction = add_png_paeth_prediction_mmx2;
-    if (flags & AV_CPU_FLAG_SSSE3)
+    if (HAVE_SSSE3 && flags & AV_CPU_FLAG_SSSE3)
         dsp->add_paeth_prediction = add_png_paeth_prediction_ssse3;
 }
