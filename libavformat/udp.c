@@ -35,6 +35,16 @@
 #include <unistd.h>
 #include "internal.h"
 #include "network.h"
+
+
+#ifdef WIN32
+#   define if_nametoindex( str ) atoi( str )
+#else
+#   include <unistd.h>
+#   include <net/if.h>
+#endif
+
+
 #include "os_support.h"
 #include "url.h"
 
@@ -100,11 +110,12 @@ static int udp_set_multicast_ttl(int sockfd, int mcastTTL,
     return 0;
 }
 
-static int udp_join_multicast_group(int sockfd, struct sockaddr *addr)
+static int udp_join_multicast_group(int sockfd, struct sockaddr *addr, int miface_nr)
 {
 #ifdef IP_ADD_MEMBERSHIP
     if (addr->sa_family == AF_INET) {
         struct ip_mreq mreq;
+        struct group_req gr;
 
         mreq.imr_multiaddr.s_addr = ((struct sockaddr_in *)addr)->sin_addr.s_addr;
         mreq.imr_interface.s_addr= INADDR_ANY;
@@ -112,6 +123,16 @@ static int udp_join_multicast_group(int sockfd, struct sockaddr *addr)
             av_log(NULL, AV_LOG_ERROR, "setsockopt(IP_ADD_MEMBERSHIP): %s\n", strerror(errno));
             return -1;
         }
+
+#ifdef MCAST_JOIN_GROUP
+        memset(&gr, 0, sizeof(struct group_req));
+        gr.gr_interface = miface_nr;
+        memcpy(&gr.gr_group, addr, sizeof(struct sockaddr_in));
+        if (setsockopt(sockfd, SOL_IP, MCAST_JOIN_GROUP, &gr, sizeof(struct group_req)) < 0) {
+            av_log(NULL, AV_LOG_ERROR, "setsockopt(MCAST_JOIN_GROUP): %s\n", strerror(errno));
+            return -1;
+        }
+#endif
     }
 #endif
 #if HAVE_STRUCT_IPV6_MREQ && defined(IPPROTO_IPV6)
@@ -259,6 +280,7 @@ static int udp_port(struct sockaddr_storage *addr, int addr_len)
  * option: 'ttl=n'       : set the ttl value (for multicast only)
  *         'localport=n' : set the local port
  *         'pkt_size=n'  : set max packet size
+ *         'miface=if'   : set multicast input interface
  *         'reuse=1'     : enable reusing the socket
  *
  * @param h media file context
@@ -401,6 +423,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     struct sockaddr_storage my_addr;
     int len;
     int reuse_specified = 0;
+    int miface_nr = 0;
 
     h->is_streamed = 1;
     h->max_packet_size = 1472;
@@ -442,6 +465,9 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         }
         if (av_find_info_tag(buf, sizeof(buf), "localaddr", p)) {
             av_strlcpy(localaddr, buf, sizeof(localaddr));
+        }
+        if (av_find_info_tag(buf, sizeof(buf), "miface", p)) {
+            miface_nr = if_nametoindex (buf);
         }
     }
 
@@ -500,7 +526,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         }
         if (h->flags & AVIO_FLAG_READ) {
             /* input */
-            if (udp_join_multicast_group(udp_fd, (struct sockaddr *)&s->dest_addr) < 0)
+            if (udp_join_multicast_group(udp_fd, (struct sockaddr *)&s->dest_addr, miface_nr) < 0)
                 goto fail;
         }
     }
