@@ -391,7 +391,7 @@ INIT_XMM sse
 %endif
 
 %macro DEFINE_FOUR_IMDCT 0
-cglobal four_imdct36_float, 5,5,8, out, buf, in, win, tmp
+cglobal four_imdct36_float, 5,5,16, out, buf, in, win, tmp
     movlps  m0, [inq+64]
     movhps  m0, [inq+64 +   72]
     movlps  m3, [inq+64 + 2*72]
