@@ -329,6 +329,11 @@ do_video_encoding v210.avi "-an -c:v v210"
 do_video_decoding "" "-pix_fmt yuv420p"
 fi
 
+if [ -n "$do_v308" ] ; then
+do_video_encoding v308.avi "-an -c:v v308"
+do_video_decoding "" "-pix_fmt yuv420p"
+fi
+
 if [ -n "$do_yuv" ] ; then
 do_video_encoding yuv.avi "-an -vcodec rawvideo -pix_fmt yuv420p"
 do_video_decoding "" "-pix_fmt yuv420p"
