@@ -329,6 +329,11 @@ do_video_encoding yuv.avi "-an -vcodec rawvideo -pix_fmt yuv420p"
 do_video_decoding "" "-pix_fmt yuv420p"
 fi
 
+if [ -n "$do_y41p" ] ; then
+do_video_encoding y41p.avi "-an -c:v y41p"
+do_video_decoding
+fi
+
 if [ -n "$do_zlib" ] ; then
 do_video_encoding zlib.avi "-an -vcodec zlib"
 do_video_decoding "" "-pix_fmt yuv420p"
