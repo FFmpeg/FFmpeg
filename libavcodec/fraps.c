@@ -36,6 +36,7 @@
 #include "huffman.h"
 #include "bytestream.h"
 #include "dsputil.h"
+#include "thread.h"
 
 #define FPS_TAG MKTAG('F', 'P', 'S', 'x')
 
@@ -199,12 +200,12 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     if (f->data[0])
-        avctx->release_buffer(avctx, f);
+        ff_thread_release_buffer(avctx, f);
     f->pict_type = AV_PICTURE_TYPE_I;
     f->key_frame = 1;
     f->reference = 0;
     f->buffer_hints = FF_BUFFER_HINTS_VALID;
-    if (avctx->get_buffer(avctx, f)) {
+    if (ff_thread_get_buffer(avctx, f)) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
@@ -315,6 +316,6 @@ AVCodec ff_fraps_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
     .long_name = NULL_IF_CONFIG_SMALL("Fraps"),
 };
