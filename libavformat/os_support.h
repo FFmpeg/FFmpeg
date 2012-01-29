@@ -31,6 +31,9 @@
 
 #if defined(__MINGW32__) && !defined(__MINGW32CE__)
 #  include <fcntl.h>
+#  ifdef lseek
+#   undef lseek
+#  endif
 #  define lseek(f,p,w) _lseeki64((f), (p), (w))
 #  define stat _stati64
 #  define fstat(f,s) _fstati64((f), (s))

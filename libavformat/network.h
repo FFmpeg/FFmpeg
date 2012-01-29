@@ -31,9 +31,21 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 
+#ifdef EPROTONOSUPPORT
+# undef EPROTONOSUPPORT
+#endif
 #define EPROTONOSUPPORT WSAEPROTONOSUPPORT
+#ifdef ETIMEDOUT
+# undef ETIMEDOUT
+#endif
 #define ETIMEDOUT       WSAETIMEDOUT
+#ifdef ECONNREFUSED
+# undef ECONNREFUSED
+#endif
 #define ECONNREFUSED    WSAECONNREFUSED
+#ifdef EINPROGRESS
+# undef EINPROGRESS
+#endif
 #define EINPROGRESS     WSAEINPROGRESS
 
 int ff_neterrno(void);
