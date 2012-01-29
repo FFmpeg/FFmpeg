@@ -76,6 +76,8 @@ typedef struct MpegTSWrite {
 
     int pmt_start_pid;
     int start_pid;
+
+    int reemit_pat_pmt;
 } MpegTSWrite;
 
 /* a PES packet header is generated every DEFAULT_PES_HEADER_FREQ packets */
@@ -96,6 +98,8 @@ static const AVOption options[] = {
     { "muxrate", NULL, offsetof(MpegTSWrite, mux_rate), AV_OPT_TYPE_INT, {1}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { "pes_payload_size", "Minimum PES packet payload in bytes",
       offsetof(MpegTSWrite, pes_payload_size), AV_OPT_TYPE_INT, {DEFAULT_PES_PAYLOAD_SIZE}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
+    { "resend_headers", "Reemit PAT/PMT before writing the next packet",
+      offsetof(MpegTSWrite, reemit_pat_pmt), AV_OPT_TYPE_INT, {0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
 };
 
@@ -938,6 +942,12 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
     MpegTSWriteStream *ts_st = st->priv_data;
     const uint64_t delay = av_rescale(s->max_delay, 90000, AV_TIME_BASE)*2;
     int64_t dts = AV_NOPTS_VALUE, pts = AV_NOPTS_VALUE;
+
+    if (ts->reemit_pat_pmt) {
+        ts->pat_packet_count = ts->pat_packet_period - 1;
+        ts->sdt_packet_count = ts->sdt_packet_period - 1;
+        ts->reemit_pat_pmt = 0;
+    }
 
     if (pkt->pts != AV_NOPTS_VALUE)
         pts = pkt->pts + delay;
