@@ -90,15 +90,14 @@ int ff_huff_build_tree(AVCodecContext *avctx, VLC *vlc, int nb_codes,
     cur_node = nb_codes;
     nodes[nb_codes*2-1].count = 0;
     for(i = 0; i < nb_codes*2-1; i += 2){
+        uint32_t cur_count = nodes[i].count + nodes[i+1].count;
         nodes[cur_node].sym = HNODE;
-        nodes[cur_node].count = nodes[i].count + nodes[i+1].count;
+        nodes[cur_node].count = cur_count;
         nodes[cur_node].n0 = i;
-        for(j = cur_node; j > 0; j--){
-            if(nodes[j].count > nodes[j-1].count ||
-               (nodes[j].count == nodes[j-1].count &&
-                (!(flags & FF_HUFFMAN_FLAG_HNODE_FIRST) ||
-                 nodes[j].n0==j-1 || nodes[j].n0==j-2 ||
-                 (nodes[j].sym!=HNODE && nodes[j-1].sym!=HNODE))))
+        for(j = cur_node; j > i + 2; j--){
+            if(cur_count > nodes[j-1].count ||
+               (cur_count == nodes[j-1].count &&
+                !(flags & FF_HUFFMAN_FLAG_HNODE_FIRST)))
                 break;
             FFSWAP(Node, nodes[j], nodes[j-1]);
         }
