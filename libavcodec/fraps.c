@@ -181,8 +181,8 @@ static int decode_frame(AVCodecContext *avctx,
         }
     }
 
-    if (s->frame.data[0])
-        avctx->release_buffer(avctx, &s->frame);
+    if (f->data[0])
+        avctx->release_buffer(avctx, f);
     f->pict_type = AV_PICTURE_TYPE_I;
     f->key_frame = 1;
     f->reference = 0;
