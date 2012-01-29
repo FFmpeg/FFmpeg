@@ -319,6 +319,11 @@ do_video_encoding rgb.avi "-an -vcodec rawvideo -pix_fmt bgr24"
 do_video_decoding "" "-pix_fmt yuv420p"
 fi
 
+if [ -n "$do_r210" ] ; then
+do_video_encoding r210.avi "-an -c:v r210"
+do_video_decoding
+fi
+
 if [ -n "$do_v210" ] ; then
 do_video_encoding v210.avi "-an -c:v v210"
 do_video_decoding "" "-pix_fmt yuv420p"
