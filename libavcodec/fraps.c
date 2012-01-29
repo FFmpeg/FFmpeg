@@ -199,29 +199,29 @@ static int decode_frame(AVCodecContext *avctx,
             return -1;
         }
 
-            buf32=(const uint32_t*)buf;
-            for(y=0; y<avctx->height/2; y++){
-                luma1=(uint32_t*)&f->data[0][ y*2*f->linesize[0] ];
-                luma2=(uint32_t*)&f->data[0][ (y*2+1)*f->linesize[0] ];
-                cr=(uint32_t*)&f->data[1][ y*f->linesize[1] ];
-                cb=(uint32_t*)&f->data[2][ y*f->linesize[2] ];
-                for(x=0; x<avctx->width; x+=8){
-                    *luma1++ = *buf32++;
-                    *luma1++ = *buf32++;
-                    *luma2++ = *buf32++;
-                    *luma2++ = *buf32++;
-                    *cr++    = *buf32++;
-                    *cb++    = *buf32++;
-                }
+        buf32=(const uint32_t*)buf;
+        for(y=0; y<avctx->height/2; y++){
+            luma1=(uint32_t*)&f->data[0][ y*2*f->linesize[0] ];
+            luma2=(uint32_t*)&f->data[0][ (y*2+1)*f->linesize[0] ];
+            cr=(uint32_t*)&f->data[1][ y*f->linesize[1] ];
+            cb=(uint32_t*)&f->data[2][ y*f->linesize[2] ];
+            for(x=0; x<avctx->width; x+=8){
+                *luma1++ = *buf32++;
+                *luma1++ = *buf32++;
+                *luma2++ = *buf32++;
+                *luma2++ = *buf32++;
+                *cr++    = *buf32++;
+                *cb++    = *buf32++;
             }
+        }
         break;
 
     case 1:
         /* Fraps v1 is an upside-down BGR24 */
-            for(y=0; y<avctx->height; y++)
-                memcpy(&f->data[0][ (avctx->height-y)*f->linesize[0] ],
-                       &buf[y*avctx->width*3],
-                       3*avctx->width);
+        for(y=0; y<avctx->height; y++)
+            memcpy(&f->data[0][ (avctx->height-y)*f->linesize[0] ],
+                   &buf[y*avctx->width*3],
+                   3*avctx->width);
         break;
 
     case 2:
