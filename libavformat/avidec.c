@@ -1248,6 +1248,7 @@ static int avi_read_idx1(AVFormatContext *s, int size)
     unsigned last_pos= -1;
     unsigned last_idx= -1;
     int64_t idx1_pos, first_packet_pos = 0, data_offset = 0;
+    int anykey = 0;
 
     nb_index_entries = size / 16;
     if (nb_index_entries <= 0)
@@ -1299,6 +1300,14 @@ static int avi_read_idx1(AVFormatContext *s, int size)
         }
         ast->cum_len += get_duration(ast, len);
         last_pos= pos;
+        anykey |= flags&AVIIF_INDEX;
+    }
+    if (!anykey) {
+        for (index = 0; index < s->nb_streams; index++) {
+            st = s->streams[index];
+            if (st->nb_index_entries)
+                st->index_entries[0].flags |= AVINDEX_KEYFRAME;
+        }
     }
     return 0;
 }
