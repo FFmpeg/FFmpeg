@@ -27,9 +27,10 @@
 
 #undef printf
 #define COUNT 8000
-#define SIZE (COUNT*40)
+#define SIZE (COUNT * 40)
 
-int main(void){
+int main(void)
+{
     int i;
     uint8_t temp[SIZE];
     PutBitContext pb;
@@ -37,36 +38,32 @@ int main(void){
 
     init_put_bits(&pb, temp, SIZE);
     printf("testing unsigned exp golomb\n");
-    for(i=0; i<COUNT; i++){
+    for (i = 0; i < COUNT; i++)
         set_ue_golomb(&pb, i);
-    }
     flush_put_bits(&pb);
 
-    init_get_bits(&gb, temp, 8*SIZE);
-    for(i=0; i<COUNT; i++){
+    init_get_bits(&gb, temp, 8 * SIZE);
+    for (i = 0; i < COUNT; i++) {
         int j, s = show_bits(&gb, 24);
 
-        j= get_ue_golomb(&gb);
-        if(j != i){
-            printf("mismatch! at %d (%d should be %d) bits:%6X\n", i, j, i, s);
-        }
+        j = get_ue_golomb(&gb);
+        if (j != i)
+            printf("mismatch at %d (%d should be %d) bits: %6X\n", i, j, i, s);
     }
 
     init_put_bits(&pb, temp, SIZE);
     printf("testing signed exp golomb\n");
-    for(i=0; i<COUNT; i++){
-        set_se_golomb(&pb, i - COUNT/2);
-    }
+    for (i = 0; i < COUNT; i++)
+        set_se_golomb(&pb, i - COUNT / 2);
     flush_put_bits(&pb);
 
-    init_get_bits(&gb, temp, 8*SIZE);
-    for(i=0; i<COUNT; i++){
+    init_get_bits(&gb, temp, 8 * SIZE);
+    for (i = 0; i < COUNT; i++) {
         int j, s = show_bits(&gb, 24);
 
-        j= get_se_golomb(&gb);
-        if(j != i - COUNT/2){
-            printf("mismatch! at %d (%d should be %d) bits:%6X\n", i, j, i, s);
-        }
+        j = get_se_golomb(&gb);
+        if (j != i - COUNT / 2)
+            printf("mismatch at %d (%d should be %d) bits: %6X\n", i, j, i, s);
     }
 
     return 0;
