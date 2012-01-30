@@ -110,10 +110,10 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
         avctx->frame_size = (BLKSIZE - 7 * avctx->channels) * 2 /
                              avctx->channels + 2;
         avctx->block_align    = BLKSIZE;
+        if (!(avctx->extradata = av_malloc(32 + FF_INPUT_BUFFER_PADDING_SIZE)))
+            goto error;
         avctx->extradata_size = 32;
-        extradata = avctx->extradata = av_malloc(avctx->extradata_size);
-        if (!extradata)
-            return AVERROR(ENOMEM);
+        extradata = avctx->extradata;
         bytestream_put_le16(&extradata, avctx->frame_size);
         bytestream_put_le16(&extradata, 7); /* wNumCoef */
         for (i = 0; i < 7; i++) {
