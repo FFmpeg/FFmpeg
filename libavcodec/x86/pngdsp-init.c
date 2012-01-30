@@ -1,6 +1,6 @@
 /*
- * MMX optimized PNG utils
- * Copyright (c) 2008 Loren Merritt
+ * x86 PNG optimizations.
+ * Copyright (c) 2008 Loren Merrit <lorenm@u.washington.edu>
  *
  * This file is part of FFmpeg.
  *
@@ -17,46 +17,18 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
- *
  */
 
 #include "libavutil/cpu.h"
 #include "libavutil/x86_cpu.h"
-#include "libavcodec/dsputil.h"
-#include "libavcodec/png.h"
+#include "libavcodec/pngdsp.h"
 #include "dsputil_mmx.h"
 
-//#undef NDEBUG
-//#include <assert.h>
-
-static void add_bytes_l2_mmx(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w)
-{
-    x86_reg i=0;
-    __asm__ volatile(
-        "jmp 2f                         \n\t"
-        "1:                             \n\t"
-        "movq   (%2, %0), %%mm0         \n\t"
-        "movq  8(%2, %0), %%mm1         \n\t"
-        "paddb  (%3, %0), %%mm0         \n\t"
-        "paddb 8(%3, %0), %%mm1         \n\t"
-        "movq %%mm0,  (%1, %0)          \n\t"
-        "movq %%mm1, 8(%1, %0)          \n\t"
-        "add $16, %0                    \n\t"
-        "2:                             \n\t"
-        "cmp %4, %0                     \n\t"
-        " js 1b                         \n\t"
-        : "+r" (i)
-        : "r"(dst), "r"(src1), "r"(src2), "r"((x86_reg)w-15)
-    );
-    for(; i<w; i++)
-        dst[i] = src1[i] + src2[i];
-}
-
 #define PAETH(cpu, abs3)\
-static void add_paeth_prediction_##cpu(uint8_t *dst, uint8_t *src, uint8_t *top, int w, int bpp)\
+static void add_png_paeth_prediction_##cpu(uint8_t *dst, uint8_t *src, uint8_t *top, int w, int bpp)\
 {\
     x86_reg i, end;\
-    if(bpp>4) add_paeth_prediction_##cpu(dst+bpp/2, src+bpp/2, top+bpp/2, w-bpp/2, -bpp);\
+    if(bpp>4) add_png_paeth_prediction_##cpu(dst+bpp/2, src+bpp/2, top+bpp/2, w-bpp/2, -bpp);\
     if(bpp<0) bpp=-bpp;\
     i= -bpp;\
     end = w-3;\
@@ -128,16 +100,37 @@ PAETH(mmx2, ABS3_MMX2)
 PAETH(ssse3, ABS3_SSSE3)
 #endif
 
-void ff_png_init_mmx(PNGDecContext *s)
+static void add_bytes_l2_mmx(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w)
 {
-    int mm_flags = av_get_cpu_flags();
+    x86_reg i=0;
+    __asm__ volatile(
+        "jmp 2f                         \n\t"
+        "1:                             \n\t"
+        "movq   (%2, %0), %%mm0         \n\t"
+        "movq  8(%2, %0), %%mm1         \n\t"
+        "paddb  (%3, %0), %%mm0         \n\t"
+        "paddb 8(%3, %0), %%mm1         \n\t"
+        "movq %%mm0,  (%1, %0)          \n\t"
+        "movq %%mm1, 8(%1, %0)          \n\t"
+        "add $16, %0                    \n\t"
+        "2:                             \n\t"
+        "cmp %4, %0                     \n\t"
+        " js 1b                         \n\t"
+        : "+r" (i)
+        : "r"(dst), "r"(src1), "r"(src2), "r"((x86_reg) w - 15)
+    );
+    for (; i < w; i++)
+        dst[i] = src1[i] + src2[i];
+}
 
-    if (mm_flags & AV_CPU_FLAG_MMX2) {
-        s->add_bytes_l2 = add_bytes_l2_mmx;
-        s->add_paeth_prediction = add_paeth_prediction_mmx2;
-#if HAVE_SSSE3
-        if (mm_flags & AV_CPU_FLAG_SSSE3)
-            s->add_paeth_prediction = add_paeth_prediction_ssse3;
-#endif
-    }
+void ff_pngdsp_init_x86(PNGDSPContext *dsp)
+{
+    int flags = av_get_cpu_flags();
+
+    if (flags & AV_CPU_FLAG_MMX)
+        dsp->add_bytes_l2         = add_bytes_l2_mmx;
+    if (flags & AV_CPU_FLAG_MMX2)
+        dsp->add_paeth_prediction = add_png_paeth_prediction_mmx2;
+    if (HAVE_SSSE3 && flags & AV_CPU_FLAG_SSSE3)
+        dsp->add_paeth_prediction = add_png_paeth_prediction_ssse3;
 }
