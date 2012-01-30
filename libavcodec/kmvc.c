@@ -377,7 +377,8 @@ static av_cold int decode_init(AVCodecContext * avctx)
     }
 
     if (avctx->extradata_size < 12) {
-        av_log(NULL, 0, "Extradata missing, decoding may not work properly...\n");
+        av_log(avctx, AV_LOG_WARNING,
+               "Extradata missing, decoding may not work properly...\n");
         c->palsize = 127;
     } else {
         c->palsize = AV_RL16(avctx->extradata + 10);
