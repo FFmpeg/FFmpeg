@@ -53,7 +53,7 @@ static av_cold int mpc7_decode_init(AVCodecContext * avctx)
     int i, j;
     MPCContext *c = avctx->priv_data;
     GetBitContext gb;
-    uint8_t buf[16];
+    LOCAL_ALIGNED_16(uint8_t, buf, [16]);
     static int vlc_initialized = 0;
 
     static VLC_TYPE scfi_table[1 << MPC7_SCFI_BITS][2];
