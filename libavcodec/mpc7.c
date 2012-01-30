@@ -224,6 +224,8 @@ static int mpc7_decode_frame(AVCodecContext * avctx, void *data,
     }
 
     bits = av_malloc(((buf_size - 1) & ~3) + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!bits)
+        return AVERROR(ENOMEM);
     c->dsp.bswap_buf((uint32_t*)bits, (const uint32_t*)(buf + 4), (buf_size - 4) >> 2);
     init_get_bits(&gb, bits, (buf_size - 4)* 8);
     skip_bits_long(&gb, buf[0]);
