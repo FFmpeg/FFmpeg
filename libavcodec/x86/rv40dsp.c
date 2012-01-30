@@ -42,9 +42,9 @@ void ff_avg_rv40_chroma_mc4_3dnow(uint8_t *dst, uint8_t *src,
 
 void ff_rv40dsp_init_x86(RV34DSPContext *c, DSPContext *dsp)
 {
-    av_unused int mm_flags = av_get_cpu_flags();
-
 #if HAVE_YASM
+    int mm_flags = av_get_cpu_flags();
+
     if (mm_flags & AV_CPU_FLAG_MMX) {
         c->put_chroma_pixels_tab[0] = ff_put_rv40_chroma_mc8_mmx;
         c->put_chroma_pixels_tab[1] = ff_put_rv40_chroma_mc4_mmx;
