@@ -230,12 +230,12 @@ static inline uint8_t adpcm_ms_compress_sample(ADPCMChannelStatus *c,
     nibble = (nibble + bias) / c->idelta;
     nibble = av_clip(nibble, -8, 7) & 0x0F;
 
-    predictor += (signed)((nibble & 0x08) ? (nibble - 0x10) : nibble) * c->idelta;
+    predictor += ((nibble & 0x08) ? (nibble - 0x10) : nibble) * c->idelta;
 
     c->sample2 = c->sample1;
     c->sample1 = av_clip_int16(predictor);
 
-    c->idelta = (ff_adpcm_AdaptationTable[(int)nibble] * c->idelta) >> 8;
+    c->idelta = (ff_adpcm_AdaptationTable[nibble] * c->idelta) >> 8;
     if (c->idelta < 16)
         c->idelta = 16;
 
@@ -491,14 +491,14 @@ static int adpcm_encode_frame(AVCodecContext *avctx, uint8_t *frame,
         /* c->status[0].step_index = 0;
         XXX: not sure how to init the state machine */
         bytestream_put_le16(&dst, c->status[0].prev_sample);
-        *dst++ = (uint8_t)c->status[0].step_index;
+        *dst++ = c->status[0].step_index;
         *dst++ = 0; /* unknown */
         samples++;
         if (avctx->channels == 2) {
             c->status[1].prev_sample = samples[0];
             /* c->status[1].step_index = 0; */
             bytestream_put_le16(&dst, c->status[1].prev_sample);
-            *dst++ = (uint8_t)c->status[1].step_index;
+            *dst++ = c->status[1].step_index;
             *dst++ = 0;
             samples++;
         }
