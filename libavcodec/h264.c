@@ -4109,11 +4109,6 @@ int main(void){
     uint8_t temp[SIZE];
     PutBitContext pb;
     GetBitContext gb;
-    DSPContext dsp;
-    AVCodecContext avctx;
-
-    avctx.av_class = avcodec_get_class();
-    dsputil_init(&dsp, &avctx);
 
     init_put_bits(&pb, temp, SIZE);
     printf("testing unsigned exp golomb\n");
