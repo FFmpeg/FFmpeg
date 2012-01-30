@@ -4101,7 +4101,6 @@ static inline void fill_mb_avail(H264Context *h){
 
 #ifdef TEST
 #undef printf
-#undef random
 #define COUNT 8000
 #define SIZE (COUNT*40)
 int main(void){
@@ -4113,9 +4112,7 @@ int main(void){
     init_put_bits(&pb, temp, SIZE);
     printf("testing unsigned exp golomb\n");
     for(i=0; i<COUNT; i++){
-        START_TIMER
         set_ue_golomb(&pb, i);
-        STOP_TIMER("set_ue_golomb");
     }
     flush_put_bits(&pb);
 
@@ -4123,22 +4120,16 @@ int main(void){
     for(i=0; i<COUNT; i++){
         int j, s = show_bits(&gb, 24);
 
-        START_TIMER
         j= get_ue_golomb(&gb);
         if(j != i){
             printf("mismatch! at %d (%d should be %d) bits:%6X\n", i, j, i, s);
-//            return -1;
         }
-        STOP_TIMER("get_ue_golomb");
     }
-
 
     init_put_bits(&pb, temp, SIZE);
     printf("testing signed exp golomb\n");
     for(i=0; i<COUNT; i++){
-        START_TIMER
         set_se_golomb(&pb, i - COUNT/2);
-        STOP_TIMER("set_se_golomb");
     }
     flush_put_bits(&pb);
 
@@ -4146,17 +4137,11 @@ int main(void){
     for(i=0; i<COUNT; i++){
         int j, s = show_bits(&gb, 24);
 
-        START_TIMER
         j= get_se_golomb(&gb);
         if(j != i - COUNT/2){
             printf("mismatch! at %d (%d should be %d) bits:%6X\n", i, j, i, s);
-//            return -1;
         }
-        STOP_TIMER("get_se_golomb");
     }
-
-    printf("Testing RBSP\n");
-
 
     return 0;
 }
