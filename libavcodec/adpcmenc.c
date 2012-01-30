@@ -136,7 +136,6 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
     }
 
     avctx->coded_frame = avcodec_alloc_frame();
-    avctx->coded_frame->key_frame= 1;
 
     return 0;
 error:
