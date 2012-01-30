@@ -4099,55 +4099,6 @@ static inline void fill_mb_avail(H264Context *h){
 }
 #endif
 
-#ifdef TEST
-#undef printf
-#define COUNT 8000
-#define SIZE (COUNT*40)
-int main(void){
-    int i;
-    uint8_t temp[SIZE];
-    PutBitContext pb;
-    GetBitContext gb;
-
-    init_put_bits(&pb, temp, SIZE);
-    printf("testing unsigned exp golomb\n");
-    for(i=0; i<COUNT; i++){
-        set_ue_golomb(&pb, i);
-    }
-    flush_put_bits(&pb);
-
-    init_get_bits(&gb, temp, 8*SIZE);
-    for(i=0; i<COUNT; i++){
-        int j, s = show_bits(&gb, 24);
-
-        j= get_ue_golomb(&gb);
-        if(j != i){
-            printf("mismatch! at %d (%d should be %d) bits:%6X\n", i, j, i, s);
-        }
-    }
-
-    init_put_bits(&pb, temp, SIZE);
-    printf("testing signed exp golomb\n");
-    for(i=0; i<COUNT; i++){
-        set_se_golomb(&pb, i - COUNT/2);
-    }
-    flush_put_bits(&pb);
-
-    init_get_bits(&gb, temp, 8*SIZE);
-    for(i=0; i<COUNT; i++){
-        int j, s = show_bits(&gb, 24);
-
-        j= get_se_golomb(&gb);
-        if(j != i - COUNT/2){
-            printf("mismatch! at %d (%d should be %d) bits:%6X\n", i, j, i, s);
-        }
-    }
-
-    return 0;
-}
-#endif /* TEST */
-
-
 av_cold void ff_h264_free_context(H264Context *h)
 {
     int i;

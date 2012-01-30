@@ -688,7 +688,7 @@ SKIPHEADERS-$(HAVE_W32THREADS)         += w32pthreads.h
 
 EXAMPLES = api
 
-TESTPROGS = cabac dct fft fft-fixed h264 iirfilter rangecoder
+TESTPROGS = cabac dct fft fft-fixed golomb iirfilter rangecoder
 TESTPROGS-$(HAVE_MMX) += motion
 TESTOBJS = dctref.o
 
