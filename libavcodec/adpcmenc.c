@@ -63,12 +63,16 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
     ADPCMEncodeContext *s = avctx->priv_data;
     uint8_t *extradata;
     int i;
-    if (avctx->channels > 2)
-        return -1; /* only stereo or mono =) */
+    int ret = AVERROR(ENOMEM);
+
+    if (avctx->channels > 2) {
+        av_log(avctx, AV_LOG_ERROR, "only stereo or mono is supported\n");
+        return AVERROR(EINVAL);
+    }
 
     if (avctx->trellis && (unsigned)avctx->trellis > 16U) {
         av_log(avctx, AV_LOG_ERROR, "invalid trellis size\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     if (avctx->trellis) {
@@ -127,11 +131,13 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
             avctx->sample_rate != 44100) {
             av_log(avctx, AV_LOG_ERROR, "Sample rate must be 11025, "
                    "22050 or 44100\n");
+            ret = AVERROR(EINVAL);
             goto error;
         }
         avctx->frame_size = 512 * (avctx->sample_rate / 11025);
         break;
     default:
+        ret = AVERROR(EINVAL);
         goto error;
     }
 
@@ -144,7 +150,7 @@ error:
     av_freep(&s->node_buf);
     av_freep(&s->nodep_buf);
     av_freep(&s->trellis_hash);
-    return -1;
+    return ret;
 }
 
 static av_cold int adpcm_encode_close(AVCodecContext *avctx)
@@ -688,10 +694,11 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
             }
         break;
     default:
-    error:
-        return -1;
+        return AVERROR(EINVAL);
     }
     return dst - frame;
+error:
+    return AVERROR(ENOMEM);
 }
 
 
