@@ -1386,7 +1386,14 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     ast= st->priv_data;
     index= av_index_search_timestamp(st, timestamp * FFMAX(ast->sample_size, 1), flags);
     if(index<0)
+    if (index<0) {
+        if (st->nb_index_entries > 0)
+            av_log(s, AV_LOG_ERROR, "Failed to find timestamp %"PRId64 " in index %"PRId64 " .. %"PRId64 "\n",
+                   timestamp * FFMAX(ast->sample_size, 1),
+                   st->index_entries[0].timestamp,
+                   st->index_entries[st->nb_index_entries - 1].timestamp);
         return -1;
+    }
 
     /* find the position */
     pos = st->index_entries[index].pos;
@@ -1457,8 +1464,10 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     }
 
     /* do the seek */
-    if (avio_seek(s->pb, pos_min, SEEK_SET) < 0)
+    if (avio_seek(s->pb, pos_min, SEEK_SET) < 0) {
+        av_log(s, AV_LOG_ERROR, "Seek failed\n");
         return -1;
+    }
     avi->stream_index= -1;
     avi->dts_max= INT_MIN;
     return 0;
