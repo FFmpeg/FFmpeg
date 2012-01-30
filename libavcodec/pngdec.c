@@ -260,46 +260,21 @@ static void png_filter_row(PNGDSPContext *dsp, uint8_t *dst, int filter_type,
     }
 }
 
-static av_always_inline void convert_to_rgb32_loco(uint8_t *dst, const uint8_t *src, int width, int loco)
-{
-    int j;
-    unsigned int r, g, b, a;
-
-    for(j = 0;j < width; j++) {
-        r = src[0];
-        g = src[1];
-        b = src[2];
-        a = src[3];
-        if(loco) {
-            r = (r+g)&0xff;
-            b = (b+g)&0xff;
-        }
-        dst[0] = r;
-        dst[1] = g;
-        dst[2] = b;
-        dst[3] = a;
-        dst += 4;
-        src += 4;
-    }
+/* This used to be called "deloco" in FFmpeg
+ * and is actually an inverse reversible colorspace transformation */
+#define YUV2RGB(NAME, TYPE) \
+static void deloco_ ## NAME(TYPE *dst, int size, int alpha) \
+{ \
+    int i; \
+    for (i = 0; i < size; i += 3 + alpha) { \
+        int g = dst [i+1]; \
+        dst[i+0] += g; \
+        dst[i+2] += g; \
+    } \
 }
 
-static void convert_to_rgb32(uint8_t *dst, const uint8_t *src, int width, int loco)
-{
-    if(loco)
-        convert_to_rgb32_loco(dst, src, width, 1);
-    else
-        memcpy(dst, src, width * 4);
-}
-
-static void deloco_rgb24(uint8_t *dst, int size)
-{
-    int i;
-    for(i=0; i<size; i+=3) {
-        int g = dst[i+1];
-        dst[i+0] += g;
-        dst[i+2] += g;
-    }
-}
+YUV2RGB(rgb8, uint8_t)
+YUV2RGB(rgb16, uint16_t)
 
 /* process exactly one decompressed row */
 static void png_handle_row(PNGDecContext *s)
@@ -309,14 +284,6 @@ static void png_handle_row(PNGDecContext *s)
 
     if (!s->interlace_type) {
         ptr = s->image_buf + s->image_linesize * s->y;
-        /* need to swap bytes correctly for RGB_ALPHA */
-        if (s->color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
-            png_filter_row(s, s->tmp_row, s->crow_buf[0], s->crow_buf + 1,
-                           s->last_row, s->row_size, s->bpp);
-            convert_to_rgb32(ptr, s->tmp_row, s->width, s->filter_type == PNG_FILTER_TYPE_LOCO);
-            FFSWAP(uint8_t*, s->last_row, s->tmp_row);
-        } else {
-            /* in normal case, we avoid one copy */
             if (s->y == 0)
                 last_row = s->last_row;
             else
@@ -324,17 +291,28 @@ static void png_handle_row(PNGDecContext *s)
 
             png_filter_row(s, ptr, s->crow_buf[0], s->crow_buf + 1,
                            last_row, s->row_size, s->bpp);
-        }
         /* loco lags by 1 row so that it doesn't interfere with top prediction */
-        if (s->filter_type == PNG_FILTER_TYPE_LOCO &&
-            s->color_type == PNG_COLOR_TYPE_RGB && s->y > 0)
-            deloco_rgb24(ptr - s->image_linesize, s->row_size);
+        if (s->filter_type == PNG_FILTER_TYPE_LOCO && s->y > 0) {
+            if (s->bit_depth == 16) {
+                deloco_rgb16((uint16_t *)(ptr - s->image_linesize), s->row_size / 2,
+                             s->color_type == PNG_COLOR_TYPE_RGB_ALPHA);
+            } else {
+                deloco_rgb8(ptr - s->image_linesize, s->row_size,
+                            s->color_type == PNG_COLOR_TYPE_RGB_ALPHA);
+            }
+        }
         s->y++;
         if (s->y == s->height) {
             s->state |= PNG_ALLIMAGE;
-            if (s->filter_type == PNG_FILTER_TYPE_LOCO &&
-                s->color_type == PNG_COLOR_TYPE_RGB)
-                deloco_rgb24(ptr, s->row_size);
+            if (s->filter_type == PNG_FILTER_TYPE_LOCO) {
+                if (s->bit_depth == 16) {
+                    deloco_rgb16((uint16_t *)ptr, s->row_size / 2,
+                                 s->color_type == PNG_COLOR_TYPE_RGB_ALPHA);
+                } else {
+                    deloco_rgb8(ptr, s->row_size,
+                                s->color_type == PNG_COLOR_TYPE_RGB_ALPHA);
+                }
+            }
         }
     } else {
         got_line = 0;
