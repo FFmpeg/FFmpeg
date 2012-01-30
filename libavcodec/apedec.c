@@ -155,6 +155,7 @@ typedef struct APEContext {
 
     uint8_t *data;                           ///< current frame data
     uint8_t *data_end;                       ///< frame data end
+    int data_size;                           ///< frame data allocated size
     const uint8_t *ptr;                      ///< current position in frame data
 
     int error;
@@ -171,6 +172,8 @@ static av_cold int ape_decode_close(AVCodecContext *avctx)
         av_freep(&s->filterbuf[i]);
 
     av_freep(&s->data);
+    s->data_size = 0;
+
     return 0;
 }
 
@@ -826,7 +829,6 @@ static int ape_decode_frame(AVCodecContext *avctx, void *data,
 
     if(!s->samples){
         uint32_t nblocks, offset;
-        void *tmp_data;
         int buf_size;
 
         if (!avpkt->size) {
@@ -843,10 +845,9 @@ static int ape_decode_frame(AVCodecContext *avctx, void *data,
                    "extra bytes at the end will be skipped.\n");
         }
 
-        tmp_data = av_realloc(s->data, buf_size);
-        if (!tmp_data)
+        av_fast_malloc(&s->data, &s->data_size, buf_size);
+        if (!s->data)
             return AVERROR(ENOMEM);
-        s->data = tmp_data;
         s->dsp.bswap_buf((uint32_t*)s->data, (const uint32_t*)buf, buf_size >> 2);
         s->ptr = s->data;
         s->data_end = s->data + buf_size;
