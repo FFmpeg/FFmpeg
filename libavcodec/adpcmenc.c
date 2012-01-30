@@ -135,7 +135,8 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
         goto error;
     }
 
-    avctx->coded_frame = avcodec_alloc_frame();
+    if (!(avctx->coded_frame = avcodec_alloc_frame()))
+        goto error;
 
     return 0;
 error:
