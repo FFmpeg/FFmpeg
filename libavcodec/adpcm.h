@@ -30,14 +30,14 @@
 
 typedef struct ADPCMChannelStatus {
     int predictor;
-    short int step_index;
+    int16_t step_index;
     int step;
     /* for encoding */
     int prev_sample;
 
     /* MS version */
-    short sample1;
-    short sample2;
+    int16_t sample1;
+    int16_t sample2;
     int coeff1;
     int coeff2;
     int idelta;

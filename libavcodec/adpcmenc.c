@@ -166,8 +166,8 @@ static av_cold int adpcm_encode_close(AVCodecContext *avctx)
 }
 
 
-static inline unsigned char adpcm_ima_compress_sample(ADPCMChannelStatus *c,
-                                                      short sample)
+static inline uint8_t adpcm_ima_compress_sample(ADPCMChannelStatus *c,
+                                                int16_t sample)
 {
     int delta  = sample - c->prev_sample;
     int nibble = FFMIN(7, abs(delta) * 4 /
@@ -179,8 +179,8 @@ static inline unsigned char adpcm_ima_compress_sample(ADPCMChannelStatus *c,
     return nibble;
 }
 
-static inline unsigned char adpcm_ima_qt_compress_sample(ADPCMChannelStatus *c,
-                                                         short sample)
+static inline uint8_t adpcm_ima_qt_compress_sample(ADPCMChannelStatus *c,
+                                                   int16_t sample)
 {
     int delta  = sample - c->prev_sample;
     int mask, step = ff_adpcm_step_table[c->step_index];
@@ -213,8 +213,8 @@ static inline unsigned char adpcm_ima_qt_compress_sample(ADPCMChannelStatus *c,
     return nibble;
 }
 
-static inline unsigned char adpcm_ms_compress_sample(ADPCMChannelStatus *c,
-                                                     short sample)
+static inline uint8_t adpcm_ms_compress_sample(ADPCMChannelStatus *c,
+                                               int16_t sample)
 {
     int predictor, nibble, bias;
 
@@ -242,8 +242,8 @@ static inline unsigned char adpcm_ms_compress_sample(ADPCMChannelStatus *c,
     return nibble;
 }
 
-static inline unsigned char adpcm_yamaha_compress_sample(ADPCMChannelStatus *c,
-                                                         short sample)
+static inline uint8_t adpcm_yamaha_compress_sample(ADPCMChannelStatus *c,
+                                                   int16_t sample)
 {
     int nibble, delta;
 
@@ -264,8 +264,9 @@ static inline unsigned char adpcm_yamaha_compress_sample(ADPCMChannelStatus *c,
     return nibble;
 }
 
-static void adpcm_compress_trellis(AVCodecContext *avctx, const short *samples,
-                                   uint8_t *dst, ADPCMChannelStatus *c, int n)
+static void adpcm_compress_trellis(AVCodecContext *avctx,
+                                   const int16_t *samples, uint8_t *dst,
+                                   ADPCMChannelStatus *c, int n)
 {
     //FIXME 6% faster if frontier is a compile-time constant
     ADPCMEncodeContext *s = avctx->priv_data;
@@ -469,35 +470,35 @@ static void adpcm_compress_trellis(AVCodecContext *avctx, const short *samples,
     c->idelta     = nodes[0]->step;
 }
 
-static int adpcm_encode_frame(AVCodecContext *avctx,
-                              unsigned char *frame, int buf_size, void *data)
+static int adpcm_encode_frame(AVCodecContext *avctx, uint8_t *frame,
+                              int buf_size, void *data)
 {
     int n, i, st;
-    short *samples;
-    unsigned char *dst;
+    int16_t *samples;
+    uint8_t *dst;
     ADPCMEncodeContext *c = avctx->priv_data;
     uint8_t *buf;
 
     dst = frame;
-    samples = (short *)data;
+    samples = data;
     st = avctx->channels == 2;
     /* n = (BLKSIZE - 4 * avctx->channels) / (2 * 8 * avctx->channels); */
 
     switch(avctx->codec->id) {
     case CODEC_ID_ADPCM_IMA_WAV:
         n = avctx->frame_size / 8;
-        c->status[0].prev_sample = (signed short)samples[0]; /* XXX */
+        c->status[0].prev_sample = samples[0];
         /* c->status[0].step_index = 0;
         XXX: not sure how to init the state machine */
         bytestream_put_le16(&dst, c->status[0].prev_sample);
-        *dst++ = (unsigned char)c->status[0].step_index;
+        *dst++ = (uint8_t)c->status[0].step_index;
         *dst++ = 0; /* unknown */
         samples++;
         if (avctx->channels == 2) {
-            c->status[1].prev_sample = (signed short)samples[0];
+            c->status[1].prev_sample = samples[0];
             /* c->status[1].step_index = 0; */
             bytestream_put_le16(&dst, c->status[1].prev_sample);
-            *dst++ = (unsigned char)c->status[1].step_index;
+            *dst++ = (uint8_t)c->status[1].step_index;
             *dst++ = 0;
             samples++;
         }
@@ -597,7 +598,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
             c->status[i].step_index = av_clip(c->status[i].step_index, 0, 63);
             put_sbits(&pb, 16, samples[i]);
             put_bits(&pb, 6, c->status[i].step_index);
-            c->status[i].prev_sample = (signed short)samples[i];
+            c->status[i].prev_sample = samples[i];
         }
 
         if (avctx->trellis > 0) {
