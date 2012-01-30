@@ -391,11 +391,11 @@ static void compute_rematrixing_strategy(AC3EncodeContext *s)
 }
 
 
-int AC3_NAME(encode_frame)(AVCodecContext *avctx, unsigned char *frame,
-                           int buf_size, void *data)
+int AC3_NAME(encode_frame)(AVCodecContext *avctx, AVPacket *avpkt,
+                           const AVFrame *frame, int *got_packet_ptr)
 {
     AC3EncodeContext *s = avctx->priv_data;
-    const SampleType *samples = data;
+    const SampleType *samples = (const SampleType *)frame->data[0];
     int ret;
 
     if (s->options.allow_per_frame_metadata) {
@@ -442,7 +442,15 @@ int AC3_NAME(encode_frame)(AVCodecContext *avctx, unsigned char *frame,
 
     ff_ac3_quantize_mantissas(s);
 
-    ff_ac3_output_frame(s, frame);
+    if ((ret = ff_alloc_packet(avpkt, s->frame_size))) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
+        return ret;
+    }
+    ff_ac3_output_frame(s, avpkt->data);
 
-    return s->frame_size;
+    if (frame->pts != AV_NOPTS_VALUE)
+        avpkt->pts = frame->pts - ff_samples_to_time_base(avctx, avctx->delay);
+
+    *got_packet_ptr = 1;
+    return 0;
 }

@@ -27,6 +27,7 @@
  */
 
 #define CONFIG_AC3ENC_FLOAT 1
+#include "internal.h"
 #include "ac3enc.h"
 #include "eac3enc.h"
 #include "kbdwin.h"
@@ -143,7 +144,7 @@ AVCodec ff_ac3_encoder = {
     .id             = CODEC_ID_AC3,
     .priv_data_size = sizeof(AC3EncodeContext),
     .init           = ff_ac3_encode_init,
-    .encode         = ff_ac3_float_encode_frame,
+    .encode2        = ff_ac3_float_encode_frame,
     .close          = ff_ac3_encode_close,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_FLT,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("ATSC A/52A (AC-3)"),
