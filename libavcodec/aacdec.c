@@ -189,10 +189,10 @@ static int count_channels(enum ChannelPosition che_pos[4][MAX_ELEM_ID])
  * @return  Returns error status. 0 - OK, !0 - error
  */
 static av_cold int che_configure(AACContext *ac,
-                                 enum ChannelPosition che_pos[4][MAX_ELEM_ID],
+                                 enum ChannelPosition che_pos,
                                  int type, int id, int *channels)
 {
-    if (che_pos[type][id]) {
+    if (che_pos) {
         if (!ac->che[type][id]) {
             if (!(ac->che[type][id] = av_mallocz(sizeof(ChannelElement))))
                 return AVERROR(ENOMEM);
@@ -222,22 +222,21 @@ static av_cold int che_configure(AACContext *ac,
  * @return  Returns error status. 0 - OK, !0 - error
  */
 static av_cold int output_configure(AACContext *ac,
-                                    enum ChannelPosition che_pos[4][MAX_ELEM_ID],
                                     enum ChannelPosition new_che_pos[4][MAX_ELEM_ID],
                                     int channel_config, enum OCStatus oc_type)
 {
     AVCodecContext *avctx = ac->avctx;
     int i, type, channels = 0, ret;
 
-    if (new_che_pos != che_pos)
-    memcpy(che_pos, new_che_pos, 4 * MAX_ELEM_ID * sizeof(new_che_pos[0][0]));
+    if (new_che_pos)
+        memcpy(ac->che_pos, new_che_pos, 4 * MAX_ELEM_ID * sizeof(new_che_pos[0][0]));
 
     if (channel_config) {
         for (i = 0; i < tags_per_config[channel_config]; i++) {
-            if ((ret = che_configure(ac, che_pos,
-                                     aac_channel_layout_map[channel_config - 1][i][0],
-                                     aac_channel_layout_map[channel_config - 1][i][1],
-                                     &channels)))
+            int id = aac_channel_layout_map[channel_config - 1][i][1];
+            type = aac_channel_layout_map[channel_config - 1][i][0];
+            if ((ret = che_configure(ac, ac->che_pos[type][id],
+                                     type, id, &channels)))
                 return ret;
         }
 
@@ -256,7 +255,8 @@ static av_cold int output_configure(AACContext *ac,
 
         for (i = 0; i < MAX_ELEM_ID; i++) {
             for (type = 0; type < 4; type++) {
-                if ((ret = che_configure(ac, che_pos, type, i, &channels)))
+                if ((ret = che_configure(ac, ac->che_pos[type][i],
+                                         type, i, &channels)))
                     return ret;
             }
         }
@@ -437,7 +437,7 @@ static int decode_ga_specific_config(AACContext *ac, AVCodecContext *avctx,
     } else if (m4ac->sbr == 1 && m4ac->ps == -1)
         m4ac->ps = 1;
 
-    if (ac && (ret = output_configure(ac, ac->che_pos, new_che_pos, channel_config, OC_GLOBAL_HDR)))
+    if (ac && (ret = output_configure(ac, new_che_pos, channel_config, OC_GLOBAL_HDR)))
         return ret;
 
     if (extension_flag) {
@@ -610,7 +610,7 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
         if (ac->m4ac.chan_config) {
             int ret = set_default_channel_config(avctx, new_che_pos, ac->m4ac.chan_config);
             if (!ret)
-                output_configure(ac, ac->che_pos, new_che_pos, ac->m4ac.chan_config, OC_GLOBAL_HDR);
+                output_configure(ac, new_che_pos, ac->m4ac.chan_config, OC_GLOBAL_HDR);
             else if (avctx->err_recognition & AV_EF_EXPLODE)
                 return AVERROR_INVALIDDATA;
         }
@@ -1714,7 +1714,7 @@ static int decode_extension_payload(AACContext *ac, GetBitContext *gb, int cnt,
         } else if (ac->m4ac.ps == -1 && ac->output_configured < OC_LOCKED && ac->avctx->channels == 1) {
             ac->m4ac.sbr = 1;
             ac->m4ac.ps = 1;
-            output_configure(ac, ac->che_pos, ac->che_pos, ac->m4ac.chan_config, ac->output_configured);
+            output_configure(ac, NULL, ac->m4ac.chan_config, ac->output_configured);
         } else {
             ac->m4ac.sbr = 1;
         }
@@ -2097,7 +2097,7 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
             ac->m4ac.chan_config = hdr_info.chan_config;
             if (set_default_channel_config(ac->avctx, new_che_pos, hdr_info.chan_config))
                 return -7;
-            if (output_configure(ac, ac->che_pos, new_che_pos, hdr_info.chan_config,
+            if (output_configure(ac, new_che_pos, hdr_info.chan_config,
                                  FFMAX(ac->output_configured, OC_TRIAL_FRAME)))
                 return -7;
         } else if (ac->output_configured != OC_LOCKED) {
@@ -2192,7 +2192,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
                 av_log(avctx, AV_LOG_ERROR,
                        "Not evaluating a further program_config_element as this construct is dubious at best.\n");
             else
-                err = output_configure(ac, ac->che_pos, new_che_pos, 0, OC_TRIAL_PCE);
+                err = output_configure(ac, new_che_pos, 0, OC_TRIAL_PCE);
             break;
         }
 
