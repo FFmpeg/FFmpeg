@@ -289,7 +289,7 @@ static void png_handle_row(PNGDecContext *s)
             else
                 last_row = ptr - s->image_linesize;
 
-            png_filter_row(s, ptr, s->crow_buf[0], s->crow_buf + 1,
+            png_filter_row(&s->dsp, ptr, s->crow_buf[0], s->crow_buf + 1,
                            last_row, s->row_size, s->bpp);
         /* loco lags by 1 row so that it doesn't interfere with top prediction */
         if (s->filter_type == PNG_FILTER_TYPE_LOCO && s->y > 0) {
@@ -323,7 +323,7 @@ static void png_handle_row(PNGDecContext *s)
                    wait for the next one */
                 if (got_line)
                     break;
-                png_filter_row(s, s->tmp_row, s->crow_buf[0], s->crow_buf + 1,
+                png_filter_row(&s->dsp, s->tmp_row, s->crow_buf[0], s->crow_buf + 1,
                                s->last_row, s->pass_row_size, s->bpp);
                 FFSWAP(uint8_t*, s->last_row, s->tmp_row);
                 got_line = 1;
