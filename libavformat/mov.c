@@ -1381,9 +1381,11 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
             st->codec->height = sc->height;
         } else {
             if (st->codec->codec_tag == MKTAG('t','m','c','d')) {
+                MOVStreamContext *tmcd_ctx = st->priv_data;
                 int val;
                 avio_rb32(pb);       /* reserved */
                 val = avio_rb32(pb); /* flags */
+                tmcd_ctx->tmcd_flags = val;
                 if (val & 1)
                     st->codec->flags2 |= CODEC_FLAG2_DROP_FRAME_TIMECODE;
                 avio_rb32(pb); /* time scale */
@@ -2654,13 +2656,12 @@ finish:
 }
 
 static int parse_timecode_in_framenum_format(AVFormatContext *s, AVStream *st,
-                                             uint32_t value)
+                                             uint32_t value, int flags)
 {
     AVTimecode tc;
     char buf[AV_TIMECODE_STR_SIZE];
     AVRational rate = {st->codec->time_base.den,
                        st->codec->time_base.num};
-    int flags = st->codec->flags2 & CODEC_FLAG2_DROP_FRAME_TIMECODE ? AV_TIMECODE_FLAG_DROPFRAME : 0;
     int ret = av_timecode_init(&tc, rate, flags, 0, s);
     if (ret < 0)
         return ret;
@@ -2672,6 +2673,7 @@ static int parse_timecode_in_framenum_format(AVFormatContext *s, AVStream *st,
 static int mov_read_timecode_track(AVFormatContext *s, AVStream *st)
 {
     MOVStreamContext *sc = st->priv_data;
+    int flags = 0;
     int64_t cur_pos = avio_tell(sc->pb);
     uint32_t value;
 
@@ -2681,12 +2683,16 @@ static int mov_read_timecode_track(AVFormatContext *s, AVStream *st)
     avio_seek(sc->pb, st->index_entries->pos, SEEK_SET);
     value = avio_rb32(s->pb);
 
+    if (sc->tmcd_flags & 0x0001) flags |= AV_TIMECODE_FLAG_DROPFRAME;
+    if (sc->tmcd_flags & 0x0002) flags |= AV_TIMECODE_FLAG_24HOURSMAX;
+    if (sc->tmcd_flags & 0x0004) flags |= AV_TIMECODE_FLAG_ALLOWNEGATIVE;
+
     /* Assume Counter flag is set to 1 in tmcd track (even though it is likely
      * not the case) and thus assume "frame number format" instead of QT one.
      * No sample with tmcd track can be found with a QT timecode at the moment,
      * despite what the tmcd track "suggests" (Counter flag set to 0 means QT
      * format). */
-    parse_timecode_in_framenum_format(s, st, value);
+    parse_timecode_in_framenum_format(s, st, value, flags);
 
     avio_seek(sc->pb, cur_pos, SEEK_SET);
     return 0;
