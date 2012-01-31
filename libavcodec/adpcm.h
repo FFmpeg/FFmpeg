@@ -26,6 +26,8 @@
 #ifndef AVCODEC_ADPCM_H
 #define AVCODEC_ADPCM_H
 
+#include <stdint.h>
+
 #define BLKSIZE 1024
 
 typedef struct ADPCMChannelStatus {
