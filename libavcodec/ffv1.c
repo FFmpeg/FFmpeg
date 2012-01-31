@@ -1587,6 +1587,7 @@ static int read_header(FFV1Context *f){
             }
         }else if(f->avctx->bits_per_raw_sample<=8 && f->transparency){
             switch(16*f->chroma_h_shift + f->chroma_v_shift){
+            case 0x00: f->avctx->pix_fmt= PIX_FMT_YUVA444P; break;
             case 0x11: f->avctx->pix_fmt= PIX_FMT_YUVA420P; break;
             default:
                 av_log(f->avctx, AV_LOG_ERROR, "format not supported\n");
