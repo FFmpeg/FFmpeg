@@ -360,6 +360,10 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 
     pan->filter_samples(pan, outsamples, insamples, n);
 
+    avfilter_copy_buffer_ref_props(outsamples, insamples);
+    outsamples->audio->channel_layout = outlink->channel_layout;
+    outsamples->audio->planar         = outlink->planar;
+
     avfilter_filter_samples(outlink, outsamples);
     avfilter_unref_buffer(insamples);
 }
