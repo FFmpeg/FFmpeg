@@ -265,7 +265,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         lvl = avctx->compression_level;
     if(lvl < 0 || lvl > 9){
         av_log(avctx, AV_LOG_ERROR, "Compression level should be 0-9, not %i\n", lvl);
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     // Needed if zlib unused or init aborted before deflateInit
@@ -274,7 +274,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         ((avctx->width + ZMBV_BLOCK - 1) / ZMBV_BLOCK) * ((avctx->height + ZMBV_BLOCK - 1) / ZMBV_BLOCK) * 2 + 4;
     if ((c->work_buf = av_malloc(c->comp_size)) == NULL) {
         av_log(avctx, AV_LOG_ERROR, "Can't allocate work buffer.\n");
-        return -1;
+        return AVERROR(ENOMEM);
     }
     /* Conservative upper bound taken from zlib v1.2.1 source via lcl.c */
     c->comp_size = c->comp_size + ((c->comp_size + 7) >> 3) +
@@ -283,12 +283,12 @@ static av_cold int encode_init(AVCodecContext *avctx)
     /* Allocate compression buffer */
     if ((c->comp_buf = av_malloc(c->comp_size)) == NULL) {
         av_log(avctx, AV_LOG_ERROR, "Can't allocate compression buffer.\n");
-        return -1;
+        return AVERROR(ENOMEM);
     }
     c->pstride = FFALIGN(avctx->width, 16);
     if ((c->prev = av_malloc(c->pstride * avctx->height)) == NULL) {
         av_log(avctx, AV_LOG_ERROR, "Can't allocate picture.\n");
-        return -1;
+        return AVERROR(ENOMEM);
     }
 
     c->zstream.zalloc = Z_NULL;
