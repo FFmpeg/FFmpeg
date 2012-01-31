@@ -203,7 +203,6 @@ static int mpc7_decode_frame(AVCodecContext * avctx, void *data,
     int buf_size;
     MPCContext *c = avctx->priv_data;
     GetBitContext gb;
-    uint8_t *bits;
     int i, ch;
     int mb = -1;
     Band *bands = c->bands;
@@ -235,11 +234,11 @@ static int mpc7_decode_frame(AVCodecContext * avctx, void *data,
         return ret;
     }
 
-    bits = av_malloc(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
-    if (!bits)
+    av_fast_padded_malloc(&c->bits, &c->buf_size, buf_size);
+    if (!c->bits)
         return AVERROR(ENOMEM);
-    c->dsp.bswap_buf((uint32_t *)bits, (const uint32_t *)buf, buf_size >> 2);
-    init_get_bits(&gb, bits, buf_size * 8);
+    c->dsp.bswap_buf((uint32_t *)c->bits, (const uint32_t *)buf, buf_size >> 2);
+    init_get_bits(&gb, c->bits, buf_size * 8);
     skip_bits_long(&gb, skip);
 
     /* read subband indexes */
@@ -296,8 +295,6 @@ static int mpc7_decode_frame(AVCodecContext * avctx, void *data,
 
     ff_mpc_dequantize_and_synth(c, mb, c->frame.data[0], 2);
 
-    av_free(bits);
-
     bits_used = get_bits_count(&gb);
     bits_avail = buf_size * 8;
     if (!last_frame && ((bits_avail < bits_used) || (bits_used + 32 <= bits_avail))) {
@@ -324,12 +321,21 @@ static void mpc7_decode_flush(AVCodecContext *avctx)
     c->frames_to_skip = 32;
 }
 
+static av_cold int mpc7_decode_close(AVCodecContext *avctx)
+{
+    MPCContext *c = avctx->priv_data;
+    av_freep(&c->bits);
+    c->buf_size = 0;
+    return 0;
+}
+
 AVCodec ff_mpc7_decoder = {
     .name           = "mpc7",
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = CODEC_ID_MUSEPACK7,
     .priv_data_size = sizeof(MPCContext),
     .init           = mpc7_decode_init,
+    .close          = mpc7_decode_close,
     .decode         = mpc7_decode_frame,
     .flush = mpc7_decode_flush,
     .capabilities   = CODEC_CAP_DR1,
