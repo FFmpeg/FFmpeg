@@ -78,7 +78,7 @@ AVInputFormat ff_ac3_demuxer = {
     .read_packet    = ff_raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "ac3",
-    .value = CODEC_ID_AC3,
+    .raw_codec_id   = CODEC_ID_AC3,
 };
 #endif
 
@@ -96,6 +96,6 @@ AVInputFormat ff_eac3_demuxer = {
     .read_packet    = ff_raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "eac3",
-    .value = CODEC_ID_EAC3,
+    .raw_codec_id   = CODEC_ID_EAC3,
 };
 #endif

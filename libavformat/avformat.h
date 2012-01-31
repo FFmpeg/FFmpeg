@@ -415,9 +415,9 @@ typedef struct AVInputFormat {
     struct AVInputFormat *next;
 
     /**
-     * General purpose read-only value that the format can use.
+     * Raw demuxers store their codec ID here.
      */
-    int value;
+    int raw_codec_id;
 
     /**
      * Size of private data so that it can be allocated in the wrapper.

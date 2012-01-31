@@ -157,5 +157,5 @@ AVInputFormat ff_flac_demuxer = {
     .read_packet    = ff_raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "flac",
-    .value = CODEC_ID_FLAC,
+    .raw_codec_id   = CODEC_ID_FLAC,
 };
