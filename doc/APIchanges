@@ -16,6 +16,10 @@ API changes, most recent first:
 2012-01-24 - xxxxxxx - lavfi 2.60.100
   Add avfilter_graph_dump.
 
+2012-01-30 - xxxxxxx - lavu 51.22.0 - intfloat.h
+  Add a new installed header libavutil/intfloat.h with int/float punning
+  functions.
+
 2012-01-25 - lavf 53.22.0
   f1caf01 Allow doing av_write_frame(ctx, NULL) for flushing possible
           buffered data within a muxer. Added AVFMT_ALLOW_FLUSH for
@@ -109,7 +113,7 @@ API changes, most recent first:
   Add av_toupper()/av_tolower()
 
 2011-11-05 - b6d08f4 - lavf 53.13.0
-  Add avformat_network_init()/avformat_network_uninit()
+  Add avformat_network_init()/avformat_network_deinit()
 
 2011-10-27 - 512557b - lavc 53.15.0
   Remove avcodec_parse_frame.

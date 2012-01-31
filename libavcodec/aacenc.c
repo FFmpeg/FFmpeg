@@ -223,8 +223,9 @@ WINDOW_FUNC(eight_short)
     const float *pwindow = sce->ics.use_kb_window[1] ? ff_aac_kbd_short_128 : ff_sine_128;
     const float *in = audio + 448;
     float *out = sce->ret;
+    int w;
 
-    for (int w = 0; w < 8; w++) {
+    for (w = 0; w < 8; w++) {
         dsp->vector_fmul        (out, in, w ? pwindow : swindow, 128);
         out += 128;
         in  += 128;
@@ -476,7 +477,7 @@ static void put_bitstream_info(AVCodecContext *avctx, AACEncContext *s,
  * Channels are reordered from Libav's default order to AAC order.
  */
 static void deinterleave_input_samples(AACEncContext *s,
-                                       const float *samples)
+                                       const float *samples, int nb_samples)
 {
     int ch, i;
     const int sinc = s->channels;
@@ -490,10 +491,12 @@ static void deinterleave_input_samples(AACEncContext *s,
         memcpy(&s->planar_samples[ch][1024], &s->planar_samples[ch][2048], 1024 * sizeof(s->planar_samples[0][0]));
 
         /* deinterleave */
-        for (i = 2048; i < 3072; i++) {
+        for (i = 2048; i < 2048 + nb_samples; i++) {
             s->planar_samples[ch][i] = *sptr;
             sptr += sinc;
         }
+        memset(&s->planar_samples[ch][i], 0,
+               (3072 - i) * sizeof(s->planar_samples[0][0]));
     }
 }
 
@@ -507,14 +510,12 @@ static int aac_encode_frame(AVCodecContext *avctx,
     int chan_el_counter[4];
     FFPsyWindowInfo windows[AAC_MAX_CHANNELS];
 
-    if (s->last_frame)
+    if (s->last_frame == 2)
         return 0;
 
-    if (data) {
-        deinterleave_input_samples(s, data);
-        if (s->psypp)
-            ff_psy_preprocess(s->psypp, s->planar_samples, s->channels);
-    }
+    deinterleave_input_samples(s, data, data ? avctx->frame_size : 0);
+    if (s->psypp)
+        ff_psy_preprocess(s->psypp, s->planar_samples, s->channels);
 
     if (!avctx->frame_number)
         return 0;
@@ -645,7 +646,7 @@ static int aac_encode_frame(AVCodecContext *avctx,
     }
 
     if (!data)
-        s->last_frame = 1;
+        s->last_frame++;
 
     return put_bits_count(&s->pb)>>3;
 }
@@ -686,11 +687,12 @@ static av_cold int dsp_init(AVCodecContext *avctx, AACEncContext *s)
 
 static av_cold int alloc_buffers(AVCodecContext *avctx, AACEncContext *s)
 {
+    int ch;
     FF_ALLOCZ_OR_GOTO(avctx, s->buffer.samples, 3 * 1024 * s->channels * sizeof(s->buffer.samples[0]), alloc_fail);
     FF_ALLOCZ_OR_GOTO(avctx, s->cpe, sizeof(ChannelElement) * s->chan_map[0], alloc_fail);
     FF_ALLOCZ_OR_GOTO(avctx, avctx->extradata, 5 + FF_INPUT_BUFFER_PADDING_SIZE, alloc_fail);
 
-    for(int ch = 0; ch < s->channels; ch++)
+    for(ch = 0; ch < s->channels; ch++)
         s->planar_samples[ch] = s->buffer.samples + 3 * 1024 * ch;
 
     return 0;

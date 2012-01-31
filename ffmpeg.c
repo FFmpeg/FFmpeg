@@ -471,7 +471,7 @@ static void reset_options(OptionsContext *o, int is_input)
 static int alloc_buffer(AVCodecContext *s, InputStream *ist, FrameBuffer **pbuf)
 {
     FrameBuffer  *buf = av_mallocz(sizeof(*buf));
-    int ret, i;
+    int i, ret;
     const int pixel_size = av_pix_fmt_descriptors[s->pix_fmt].comp[0].step_minus1+1;
     int h_chroma_shift, v_chroma_shift;
     int edge = 32; // XXX should be avcodec_get_edge_width(), but that fails on svq1
@@ -4939,6 +4939,13 @@ static int opt_vsync(const char *opt, const char *arg)
     return 0;
 }
 
+static int opt_deinterlace(const char *opt, const char *arg)
+{
+    av_log(NULL, AV_LOG_WARNING, "-%s is deprecated, use -filter:v yadif instead\n", opt);
+    do_deinterlace = 1;
+    return 0;
+}
+
 #define OFFSET(x) offsetof(OptionsContext, x)
 static const OptionDef options[] = {
     /* main options */
@@ -5018,8 +5025,8 @@ static const OptionDef options[] = {
       "use same quantizer as source (implies VBR)" },
     { "pass", HAS_ARG | OPT_VIDEO, {(void*)opt_pass}, "select the pass number (1 or 2)", "n" },
     { "passlogfile", HAS_ARG | OPT_VIDEO, {(void*)&opt_passlogfile}, "select two pass log file name prefix", "prefix" },
-    { "deinterlace", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_deinterlace},
-      "deinterlace pictures" },
+    { "deinterlace", OPT_EXPERT | OPT_VIDEO, {(void*)opt_deinterlace},
+      "this option is deprecated, use the yadif filter instead" },
     { "psnr", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_psnr}, "calculate PSNR of compressed frames" },
     { "vstats", OPT_EXPERT | OPT_VIDEO, {(void*)&opt_vstats}, "dump video coding statistics to file" },
     { "vstats_file", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_vstats_file}, "dump video coding statistics to file", "file" },

@@ -620,6 +620,8 @@ Enable Unlimited Motion Vector (h263+)
 
 @item -deinterlace
 Deinterlace pictures.
+This option is deprecated since the deinterlacing is very low quality.
+Use the yadif filter with @code{-filter:v yadif}.
 @item -ilme
 Force interlacing support in encoder (MPEG-2 and MPEG-4 only).
 Use this option if your input file is interlaced and you want

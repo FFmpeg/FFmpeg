@@ -249,6 +249,9 @@ static int yuv4_read_header(AVFormatContext *s)
             } else if (strncmp("420paldv", tokstart, 8) == 0) {
                 pix_fmt = PIX_FMT_YUV420P;
                 chroma_sample_location = AVCHROMA_LOC_TOPLEFT;
+            } else if (strncmp("420", tokstart, 3) == 0) {
+                pix_fmt = PIX_FMT_YUV420P;
+                chroma_sample_location = AVCHROMA_LOC_CENTER;
             } else if (strncmp("411", tokstart, 3) == 0)
                 pix_fmt = PIX_FMT_YUV411P;
             else if (strncmp("422", tokstart, 3) == 0)

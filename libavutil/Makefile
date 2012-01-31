@@ -19,6 +19,7 @@ HEADERS = adler32.h                                                     \
           fifo.h                                                        \
           file.h                                                        \
           imgutils.h                                                    \
+          intfloat.h                                                    \
           intfloat_readwrite.h                                          \
           intreadwrite.h                                                \
           lfg.h                                                         \
