@@ -672,5 +672,4 @@ AVInputFormat ff_flv_demuxer = {
 #endif
     .read_close = flv_read_close,
     .extensions = "flv",
-    .value = CODEC_ID_FLV1,
 };
