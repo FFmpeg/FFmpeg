@@ -24,6 +24,7 @@
 #include "bytestream.h"
 #include "adpcm.h"
 #include "adpcm_data.h"
+#include "internal.h"
 
 /**
  * @file
@@ -141,8 +142,10 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
         goto error;
     }
 
+#if FF_API_OLD_ENCODE_AUDIO
     if (!(avctx->coded_frame = avcodec_alloc_frame()))
         goto error;
+#endif
 
     return 0;
 error:
@@ -156,7 +159,9 @@ error:
 static av_cold int adpcm_encode_close(AVCodecContext *avctx)
 {
     ADPCMEncodeContext *s = avctx->priv_data;
+#if FF_API_OLD_ENCODE_AUDIO
     av_freep(&avctx->coded_frame);
+#endif
     av_freep(&s->paths);
     av_freep(&s->node_buf);
     av_freep(&s->nodep_buf);
@@ -470,23 +475,31 @@ static void adpcm_compress_trellis(AVCodecContext *avctx,
     c->idelta     = nodes[0]->step;
 }
 
-static int adpcm_encode_frame(AVCodecContext *avctx, uint8_t *frame,
-                              int buf_size, void *data)
+static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
+                              const AVFrame *frame, int *got_packet_ptr)
 {
-    int n, i, st;
-    int16_t *samples;
+    int n, i, st, pkt_size, ret;
+    const int16_t *samples;
     uint8_t *dst;
     ADPCMEncodeContext *c = avctx->priv_data;
     uint8_t *buf;
 
-    dst = frame;
-    samples = data;
+    samples = (const int16_t *)frame->data[0];
     st = avctx->channels == 2;
-    /* n = (BLKSIZE - 4 * avctx->channels) / (2 * 8 * avctx->channels); */
+
+    if (avctx->codec_id == CODEC_ID_ADPCM_SWF)
+        pkt_size = (2 + avctx->channels * (22 + 4 * (frame->nb_samples - 1)) + 7) / 8;
+    else
+        pkt_size = avctx->block_align;
+    if ((ret = ff_alloc_packet(avpkt, pkt_size))) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
+        return ret;
+    }
+    dst = avpkt->data;
 
     switch(avctx->codec->id) {
     case CODEC_ID_ADPCM_IMA_WAV:
-        n = avctx->frame_size / 8;
+        n = frame->nb_samples / 8;
         c->status[0].prev_sample = samples[0];
         /* c->status[0].step_index = 0;
         XXX: not sure how to init the state machine */
@@ -554,7 +567,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx, uint8_t *frame,
     {
         int ch, i;
         PutBitContext pb;
-        init_put_bits(&pb, dst, buf_size * 8);
+        init_put_bits(&pb, dst, pkt_size * 8);
 
         for (ch = 0; ch < avctx->channels; ch++) {
             put_bits(&pb, 9, (c->status[ch].prev_sample + 0x10000) >> 7);
@@ -578,16 +591,15 @@ static int adpcm_encode_frame(AVCodecContext *avctx, uint8_t *frame,
         }
 
         flush_put_bits(&pb);
-        dst += put_bits_count(&pb) >> 3;
         break;
     }
     case CODEC_ID_ADPCM_SWF:
     {
         int i;
         PutBitContext pb;
-        init_put_bits(&pb, dst, buf_size * 8);
+        init_put_bits(&pb, dst, pkt_size * 8);
 
-        n = avctx->frame_size - 1;
+        n = frame->nb_samples - 1;
 
         // store AdpcmCodeSize
         put_bits(&pb, 2, 2);    // set 4-bit flash adpcm format
@@ -614,7 +626,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx, uint8_t *frame,
             }
             av_free(buf);
         } else {
-            for (i = 1; i < avctx->frame_size; i++) {
+            for (i = 1; i < frame->nb_samples; i++) {
                 put_bits(&pb, 4, adpcm_ima_compress_sample(&c->status[0],
                          samples[avctx->channels * i]));
                 if (avctx->channels == 2)
@@ -623,7 +635,6 @@ static int adpcm_encode_frame(AVCodecContext *avctx, uint8_t *frame,
             }
         }
         flush_put_bits(&pb);
-        dst += put_bits_count(&pb) >> 3;
         break;
     }
     case CODEC_ID_ADPCM_MS:
@@ -671,7 +682,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx, uint8_t *frame,
         }
         break;
     case CODEC_ID_ADPCM_YAMAHA:
-        n = avctx->frame_size / 2;
+        n = frame->nb_samples / 2;
         if (avctx->trellis > 0) {
             FF_ALLOC_OR_GOTO(avctx, buf, 2 * n * 2, error);
             n *= 2;
@@ -697,7 +708,10 @@ static int adpcm_encode_frame(AVCodecContext *avctx, uint8_t *frame,
     default:
         return AVERROR(EINVAL);
     }
-    return dst - frame;
+
+    avpkt->size = pkt_size;
+    *got_packet_ptr = 1;
+    return 0;
 error:
     return AVERROR(ENOMEM);
 }
@@ -710,7 +724,7 @@ AVCodec ff_ ## name_ ## _encoder = {                        \
     .id             = id_,                                  \
     .priv_data_size = sizeof(ADPCMEncodeContext),           \
     .init           = adpcm_encode_init,                    \
-    .encode         = adpcm_encode_frame,                   \
+    .encode2        = adpcm_encode_frame,                   \
     .close          = adpcm_encode_close,                   \
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16,   \
                                                       AV_SAMPLE_FMT_NONE}, \
