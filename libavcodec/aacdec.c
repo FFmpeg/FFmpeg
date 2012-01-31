@@ -248,9 +248,6 @@ static av_cold int output_configure(AACContext *ac,
          * current program configuration.
          *
          * Set up default 1:1 output mapping.
-         *
-         * For a 5.1 stream the output order will be:
-         *    [ Center ] [ Front Left ] [ Front Right ] [ LFE ] [ Surround Left ] [ Surround Right ]
          */
 
         for (i = 0; i < MAX_ELEM_ID; i++) {
