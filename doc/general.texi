@@ -473,6 +473,7 @@ following image formats are supported:
 @item Flash Screen Video v2  @tab     @tab  X
 @item Flash Video (FLV)      @tab  X  @tab  X
     @tab Sorenson H.263 used in Flash
+@item Forward Uncompressed   @tab     @tab  X
 @item Fraps                  @tab     @tab  X
 @item H.261                  @tab  X  @tab  X
 @item H.263 / H.263-1996     @tab  X  @tab  X
