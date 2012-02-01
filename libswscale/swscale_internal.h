@@ -649,6 +649,7 @@ void ff_swscale_get_unscaled_altivec(SwsContext *c);
  */
 SwsFunc ff_getSwsFunc(SwsContext *c);
 
+void ff_sws_init_input_funcs(SwsContext *c);
 void ff_sws_init_swScale_altivec(SwsContext *c);
 void ff_sws_init_swScale_mmx(SwsContext *c);
 
