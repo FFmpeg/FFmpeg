@@ -180,7 +180,7 @@ Create fragments that contain up to @var{size} bytes of payload data.
 Allow the caller to manually choose when to cut fragments, by
 calling @code{av_write_frame(ctx, NULL)} to write a fragment with
 the packets written so far. (This is only useful with other
-applications integrating libavformat, not from @command{avconv}.)
+applications integrating libavformat, not from @command{ffmpeg}.)
 @end table
 
 Additionally, the way the output file is written can be adjusted
@@ -209,7 +209,7 @@ This option is implicitly set when writing ismv (Smooth Streaming) files.
 Smooth Streaming content can be pushed in real time to a publishing
 point on IIS with this muxer. Example:
 @example
-avconv -re @var{<normal input/transcoding options>} -movflags isml+frag_keyframe -f ismv http://server/publishingpoint.isml/Streams(Encoder1)
+ffmpeg -re @var{<normal input/transcoding options>} -movflags isml+frag_keyframe -f ismv http://server/publishingpoint.isml/Streams(Encoder1)
 @end example
 
 @section mpegts
