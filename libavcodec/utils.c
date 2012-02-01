@@ -1034,23 +1034,107 @@ int attribute_align_arg avcodec_encode_audio(AVCodecContext *avctx,
 }
 #endif
 
+#if FF_API_OLD_ENCODE_VIDEO
 int attribute_align_arg avcodec_encode_video(AVCodecContext *avctx, uint8_t *buf, int buf_size,
                          const AVFrame *pict)
 {
+    AVPacket pkt;
+    int ret, got_packet = 0;
+
     if(buf_size < FF_MIN_BUFFER_SIZE){
         av_log(avctx, AV_LOG_ERROR, "buffer smaller than minimum size\n");
         return -1;
     }
-    if(av_image_check_size(avctx->width, avctx->height, 0, avctx))
-        return -1;
-    if((avctx->codec->capabilities & CODEC_CAP_DELAY) || pict){
-        int ret = avctx->codec->encode(avctx, buf, buf_size, pict);
-        avctx->frame_number++;
-        emms_c(); //needed to avoid an emms_c() call before every return;
 
-        return ret;
-    }else
+    av_init_packet(&pkt);
+    pkt.data = buf;
+    pkt.size = buf_size;
+
+    ret = avcodec_encode_video2(avctx, &pkt, pict, &got_packet);
+    if (!ret && got_packet && avctx->coded_frame) {
+        avctx->coded_frame->pts       = pkt.pts;
+        avctx->coded_frame->key_frame = !!(pkt.flags & AV_PKT_FLAG_KEY);
+    }
+
+    /* free any side data since we cannot return it */
+    if (pkt.side_data_elems > 0) {
+        int i;
+        for (i = 0; i < pkt.side_data_elems; i++)
+            av_free(pkt.side_data[i].data);
+        av_freep(&pkt.side_data);
+        pkt.side_data_elems = 0;
+    }
+
+    return ret ? ret : pkt.size;
+}
+#endif
+
+#define MAX_CODED_FRAME_SIZE(width, height)\
+    (8*(width)*(height) + FF_MIN_BUFFER_SIZE)
+
+int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
+                                              AVPacket *avpkt,
+                                              const AVFrame *frame,
+                                              int *got_packet_ptr)
+{
+    int ret;
+    int user_packet = !!avpkt->data;
+
+    if (!(avctx->codec->capabilities & CODEC_CAP_DELAY) && !frame) {
+        av_init_packet(avpkt);
+        avpkt->size     = 0;
+        *got_packet_ptr = 0;
         return 0;
+    }
+
+    if (av_image_check_size(avctx->width, avctx->height, 0, avctx))
+        return AVERROR(EINVAL);
+
+    if (avctx->codec->encode2) {
+        *got_packet_ptr = 0;
+        ret = avctx->codec->encode2(avctx, avpkt, frame, got_packet_ptr);
+        if (!ret) {
+            if (!*got_packet_ptr)
+                avpkt->size = 0;
+            else if (!(avctx->codec->capabilities & CODEC_CAP_DELAY))
+                avpkt->pts = avpkt->dts = frame->pts;
+        }
+    } else {
+        /* for compatibility with encoders not supporting encode2(), we need to
+           allocate a packet buffer if the user has not provided one or check
+           the size otherwise */
+        int buf_size = avpkt->size;
+
+        if (!user_packet)
+            buf_size = MAX_CODED_FRAME_SIZE(avctx->width, avctx->height);
+
+        if ((ret = ff_alloc_packet(avpkt, buf_size)))
+            return ret;
+
+        /* encode the frame */
+        ret = avctx->codec->encode(avctx, avpkt->data, avpkt->size, frame);
+        if (ret >= 0) {
+            if (!ret) {
+                /* no output. if the packet data was allocated by libavcodec,
+                   free it */
+                if (!user_packet)
+                    av_freep(&avpkt->data);
+            } else if (avctx->coded_frame) {
+                avpkt->pts    = avctx->coded_frame->pts;
+                avpkt->flags |= AV_PKT_FLAG_KEY*avctx->coded_frame->key_frame;
+            }
+
+            avpkt->size     = ret;
+            *got_packet_ptr = (ret > 0);
+            ret             = 0;
+        }
+    }
+
+    if (!ret)
+        avctx->frame_number++;
+
+    emms_c();
+    return ret;
 }
 
 int avcodec_encode_subtitle(AVCodecContext *avctx, uint8_t *buf, int buf_size,

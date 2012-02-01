@@ -3770,7 +3770,10 @@ int avcodec_fill_audio_frame(AVFrame *frame, int nb_channels,
                              enum AVSampleFormat sample_fmt, const uint8_t *buf,
                              int buf_size, int align);
 
+#if FF_API_OLD_ENCODE_VIDEO
 /**
+ * @deprecated use avcodec_encode_video2() instead.
+ *
  * Encode a video frame from pict into buf.
  * The input picture should be
  * stored using a specific format, namely avctx.pix_fmt.
@@ -3782,8 +3785,44 @@ int avcodec_fill_audio_frame(AVFrame *frame, int nb_channels,
  * @return On error a negative value is returned, on success zero or the number
  * of bytes used from the output buffer.
  */
+attribute_deprecated
 int avcodec_encode_video(AVCodecContext *avctx, uint8_t *buf, int buf_size,
                          const AVFrame *pict);
+#endif
+
+/**
+ * Encode a frame of video.
+ *
+ * Takes input raw video data from frame and writes the next output packet, if
+ * available, to avpkt. The output packet does not necessarily contain data for
+ * the most recent frame, as encoders can delay and reorder input frames
+ * internally as needed.
+ *
+ * @param avctx     codec context
+ * @param avpkt     output AVPacket.
+ *                  The user can supply an output buffer by setting
+ *                  avpkt->data and avpkt->size prior to calling the
+ *                  function, but if the size of the user-provided data is not
+ *                  large enough, encoding will fail. All other AVPacket fields
+ *                  will be reset by the encoder using av_init_packet(). If
+ *                  avpkt->data is NULL, the encoder will allocate it.
+ *                  The encoder will set avpkt->size to the size of the
+ *                  output packet. The returned data (if any) belongs to the
+ *                  caller, he is responsible for freeing it.
+ * @param[in] frame AVFrame containing the raw video data to be encoded.
+ *                  May be NULL when flushing an encoder that has the
+ *                  CODEC_CAP_DELAY capability set.
+ * @param[out] got_packet_ptr This field is set to 1 by libavcodec if the
+ *                            output packet is non-empty, and to 0 if it is
+ *                            empty. If the function returns an error, the
+ *                            packet can be assumed to be invalid, and the
+ *                            value of got_packet_ptr is undefined and should
+ *                            not be used.
+ * @return          0 on success, negative error code on failure
+ */
+int avcodec_encode_video2(AVCodecContext *avctx, AVPacket *avpkt,
+                          const AVFrame *frame, int *got_packet_ptr);
+
 int avcodec_encode_subtitle(AVCodecContext *avctx, uint8_t *buf, int buf_size,
                             const AVSubtitle *sub);
 
