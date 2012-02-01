@@ -1,5 +1,6 @@
+# FIXME dropped frames in this test because of coarse timebase
 FATE_TESTS += fate-cscd
-fate-cscd: CMD = framecrc -i $(SAMPLES)/CSCD/sample_video.avi -an -vsync 0 -pix_fmt rgb24
+fate-cscd: CMD = framecrc -i $(SAMPLES)/CSCD/sample_video.avi -an -pix_fmt rgb24
 
 FATE_TESTS += fate-dxtory
 fate-dxtory: CMD = framecrc -i $(SAMPLES)/dxtory/dxtory_mic.avi
