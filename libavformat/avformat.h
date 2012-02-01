@@ -50,7 +50,7 @@
  *
  * Main lavf structure used for both muxing and demuxing is AVFormatContext,
  * which exports all information about the file being read or written. As with
- * most Libav structures, its size is not part of public ABI, so it cannot be
+ * most Libavformat structures, its size is not part of public ABI, so it cannot be
  * allocated on stack or directly with av_malloc(). To create an
  * AVFormatContext, use avformat_alloc_context() (some functions, like
  * avformat_open_input() might do that for you).
