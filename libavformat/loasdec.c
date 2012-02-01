@@ -68,7 +68,7 @@ static int loas_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id = s->iformat->value;
+    st->codec->codec_id = s->iformat->raw_codec_id;
     st->need_parsing = AVSTREAM_PARSE_FULL;
 
     //LCM of all possible AAC sample rates
@@ -84,5 +84,5 @@ AVInputFormat ff_loas_demuxer = {
     .read_header    = loas_read_header,
     .read_packet    = ff_raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
-    .value = CODEC_ID_AAC_LATM,
+    .raw_codec_id = CODEC_ID_AAC_LATM,
 };

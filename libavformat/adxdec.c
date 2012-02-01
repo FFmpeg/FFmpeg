@@ -94,7 +94,7 @@ static int adx_read_header(AVFormatContext *s)
         return ret;
 
     st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id    = s->iformat->value;
+    st->codec->codec_id    = s->iformat->raw_codec_id;
 
     avpriv_set_pts_info(st, 64, BLOCK_SAMPLES, avctx->sample_rate);
 
@@ -108,6 +108,6 @@ AVInputFormat ff_adx_demuxer = {
     .read_header    = adx_read_header,
     .read_packet    = adx_read_packet,
     .extensions     = "adx",
-    .value          = CODEC_ID_ADPCM_ADX,
+    .raw_codec_id   = CODEC_ID_ADPCM_ADX,
     .flags          = AVFMT_GENERIC_INDEX,
 };

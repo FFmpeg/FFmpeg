@@ -1550,15 +1550,14 @@ static void flush(AVCodecContext *avctx)
  *@brief wmall decoder
  */
 AVCodec ff_wmalossless_decoder = {
-    "wmalossless",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_WMALOSSLESS,
-    sizeof(WmallDecodeCtx),
-    decode_init,
-    NULL,
-    decode_end,
-    decode_packet,
+    .name           = "wmalossless",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_WMALOSSLESS,
+    .priv_data_size = sizeof(WmallDecodeCtx),
+    .init           = decode_init,
+    .close          = decode_end,
+    .decode         = decode_packet,
+    .flush          = flush,
     .capabilities = CODEC_CAP_SUBFRAMES | CODEC_CAP_EXPERIMENTAL,
-    .flush= flush,
     .long_name = NULL_IF_CONFIG_SMALL("Windows Media Audio 9 Lossless"),
 };

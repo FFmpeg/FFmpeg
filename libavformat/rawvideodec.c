@@ -68,6 +68,6 @@ AVInputFormat ff_rawvideo_demuxer = {
     .read_packet    = rawvideo_read_packet,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "yuv,cif,qcif,rgb",
-    .value = CODEC_ID_RAWVIDEO,
+    .raw_codec_id   = CODEC_ID_RAWVIDEO,
     .priv_class = &rawvideo_demuxer_class,
 };

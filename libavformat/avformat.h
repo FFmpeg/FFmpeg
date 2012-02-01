@@ -312,13 +312,39 @@ typedef struct AVOutputFormat {
     const char *long_name;
     const char *mime_type;
     const char *extensions; /**< comma-separated filename extensions */
+    /* output support */
+    enum CodecID audio_codec;    /**< default audio codec */
+    enum CodecID video_codec;    /**< default video codec */
+    enum CodecID subtitle_codec; /**< default subtitle codec */
+    /**
+     * can use flags: AVFMT_NOFILE, AVFMT_NEEDNUMBER, AVFMT_RAWPICTURE,
+     * AVFMT_GLOBALHEADER, AVFMT_NOTIMESTAMPS, AVFMT_VARIABLE_FPS,
+     * AVFMT_NODIMENSIONS, AVFMT_NOSTREAMS, AVFMT_ALLOW_FLUSH
+     */
+    int flags;
+
+    /**
+     * List of supported codec_id-codec_tag pairs, ordered by "better
+     * choice first". The arrays are all terminated by CODEC_ID_NONE.
+     */
+    const struct AVCodecTag * const *codec_tag;
+
+
+    const AVClass *priv_class; ///< AVClass for the private context
+
+    /*****************************************************************
+     * No fields below this line are part of the public API. They
+     * may not be used outside of libavformat and can be changed and
+     * removed at will.
+     * New public fields should be added right above.
+     *****************************************************************
+     */
+    struct AVOutputFormat *next;
     /**
      * size of private data so that it can be allocated in the wrapper
      */
     int priv_data_size;
-    /* output support */
-    enum CodecID audio_codec; /**< default audio codec */
-    enum CodecID video_codec; /**< default video codec */
+
     int (*write_header)(struct AVFormatContext *);
     /**
      * Write a packet. If AVFMT_ALLOW_FLUSH is set in flags,
@@ -330,24 +356,10 @@ typedef struct AVOutputFormat {
     int (*write_packet)(struct AVFormatContext *, AVPacket *pkt);
     int (*write_trailer)(struct AVFormatContext *);
     /**
-     * can use flags: AVFMT_NOFILE, AVFMT_NEEDNUMBER, AVFMT_RAWPICTURE,
-     * AVFMT_GLOBALHEADER, AVFMT_NOTIMESTAMPS, AVFMT_VARIABLE_FPS,
-     * AVFMT_NODIMENSIONS, AVFMT_NOSTREAMS, AVFMT_ALLOW_FLUSH
+     * Currently only used to set pixel format if not YUV420P.
      */
-    int flags;
     int (*interleave_packet)(struct AVFormatContext *, AVPacket *out,
                              AVPacket *in, int flush);
-
-    /**
-     * List of supported codec_id-codec_tag pairs, ordered by "better
-     * choice first". The arrays are all terminated by CODEC_ID_NONE.
-     */
-    const struct AVCodecTag * const *codec_tag;
-
-    enum CodecID subtitle_codec; /**< default subtitle codec */
-
-    const AVClass *priv_class; ///< AVClass for the private context
-
     /**
      * Test if the given codec can be stored in this container.
      *
@@ -358,9 +370,6 @@ typedef struct AVOutputFormat {
 
     void (*get_output_timestamp)(struct AVFormatContext *s, int stream,
                                  int64_t *dts, int64_t *wall);
-
-    /* private fields */
-    struct AVOutputFormat *next;
 } AVOutputFormat;
 /**
  * @}
@@ -383,6 +392,38 @@ typedef struct AVInputFormat {
      * to define it.
      */
     const char *long_name;
+
+    /**
+     * Can use flags: AVFMT_NOFILE, AVFMT_NEEDNUMBER, AVFMT_SHOW_IDS,
+     * AVFMT_GENERIC_INDEX, AVFMT_TS_DISCONT, AVFMT_NOBINSEARCH,
+     * AVFMT_NOGENSEARCH, AVFMT_NO_BYTE_SEEK.
+     */
+    int flags;
+
+    /**
+     * If extensions are defined, then no probe is done. You should
+     * usually not use extension format guessing because it is not
+     * reliable enough
+     */
+    const char *extensions;
+
+    const struct AVCodecTag * const *codec_tag;
+
+    const AVClass *priv_class; ///< AVClass for the private context
+
+    /*****************************************************************
+     * No fields below this line are part of the public API. They
+     * may not be used outside of libavformat and can be changed and
+     * removed at will.
+     * New public fields should be added right above.
+     *****************************************************************
+     */
+    struct AVInputFormat *next;
+
+    /**
+     * Raw demuxers store their codec ID here.
+     */
+    int raw_codec_id;
 
     /**
      * Size of private data so that it can be allocated in the wrapper.
@@ -440,25 +481,6 @@ typedef struct AVInputFormat {
                               int64_t *pos, int64_t pos_limit);
 
     /**
-     * Can use flags: AVFMT_NOFILE, AVFMT_NEEDNUMBER, AVFMT_SHOW_IDS,
-     * AVFMT_GENERIC_INDEX, AVFMT_TS_DISCONT, AVFMT_NOBINSEARCH,
-     * AVFMT_NOGENSEARCH, AVFMT_NO_BYTE_SEEK.
-     */
-    int flags;
-
-    /**
-     * If extensions are defined, then no probe is done. You should
-     * usually not use extension format guessing because it is not
-     * reliable enough
-     */
-    const char *extensions;
-
-    /**
-     * General purpose read-only value that the format can use.
-     */
-    int value;
-
-    /**
      * Start/resume playing - only meaningful if using a network-based format
      * (RTSP).
      */
@@ -470,8 +492,6 @@ typedef struct AVInputFormat {
      */
     int (*read_pause)(struct AVFormatContext *);
 
-    const struct AVCodecTag * const *codec_tag;
-
     /**
      * Seek to timestamp ts.
      * Seeking will be done so that the point from which all active streams
@@ -479,11 +499,6 @@ typedef struct AVInputFormat {
      * Active streams are all streams that have AVStream.discard < AVDISCARD_ALL.
      */
     int (*read_seek2)(struct AVFormatContext *s, int stream_index, int64_t min_ts, int64_t ts, int64_t max_ts, int flags);
-
-    const AVClass *priv_class; ///< AVClass for the private context
-
-    /* private fields */
-    struct AVInputFormat *next;
 } AVInputFormat;
 /**
  * @}
@@ -1773,6 +1788,30 @@ int av_match_ext(const char *filename, const char *extensions);
  *         A negative number if this information is not available.
  */
 int avformat_query_codec(AVOutputFormat *ofmt, enum CodecID codec_id, int std_compliance);
+
+/**
+ * @defgroup riff_fourcc RIFF FourCCs
+ * @{
+ * Get the tables mapping RIFF FourCCs to libavcodec CodecIDs. The tables are
+ * meant to be passed to av_codec_get_id()/av_codec_get_tag() as in the
+ * following code:
+ * @code
+ * uint32_t tag = MKTAG('H', '2', '6', '4');
+ * const struct AVCodecTag *table[] = { avformat_get_riff_video_tags(), 0 };
+ * enum CodecID id = av_codec_get_id(table, tag);
+ * @endcode
+ */
+/**
+ * @return the table mapping RIFF FourCCs for video to libavcodec CodecID.
+ */
+const struct AVCodecTag *avformat_get_riff_video_tags(void);
+/**
+ * @return the table mapping RIFF FourCCs for audio to CodecID.
+ */
+const struct AVCodecTag *avformat_get_riff_audio_tags(void);
+/**
+ * @}
+ */
 
 /**
  * @}

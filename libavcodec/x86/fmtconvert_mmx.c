@@ -110,9 +110,9 @@ static void float_interleave_sse(float *dst, const float **src,
 
 void ff_fmt_convert_init_x86(FmtConvertContext *c, AVCodecContext *avctx)
 {
+#if HAVE_YASM
     int mm_flags = av_get_cpu_flags();
 
-#if HAVE_YASM
     if (mm_flags & AV_CPU_FLAG_MMX) {
         c->float_interleave = float_interleave_mmx;
 

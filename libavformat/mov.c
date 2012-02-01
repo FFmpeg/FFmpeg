@@ -2341,7 +2341,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         sc->ctts_data[sc->ctts_count].duration = (flags & 0x800) ? avio_rb32(pb) : 0;
         sc->ctts_count++;
         if ((keyframe = st->codec->codec_type == AVMEDIA_TYPE_AUDIO ||
-             (flags & 0x004 && !i && !sample_flags) || sample_flags & 0x2000000))
+             (flags & 0x004 && !i && !(sample_flags & 0xffff0000)) || sample_flags & 0x2000000))
             distance = 0;
         av_add_index_entry(st, offset, dts, sample_size, distance,
                            keyframe ? AVINDEX_KEYFRAME : 0);

@@ -29,8 +29,9 @@ MMX-OBJS-$(CONFIG_H264PRED)            += x86/h264_intrapred_init.o
 MMX-OBJS-$(CONFIG_RV30_DECODER)        += x86/rv34dsp_init.o
 YASM-OBJS-$(CONFIG_RV30_DECODER)       += x86/rv34dsp.o
 MMX-OBJS-$(CONFIG_RV40_DECODER)        += x86/rv34dsp_init.o            \
+                                          x86/rv40dsp_init.o
+YASM-OBJS-$(CONFIG_RV40_DECODER)       += x86/rv34dsp.o                 \
                                           x86/rv40dsp.o
-YASM-OBJS-$(CONFIG_RV40_DECODER)       += x86/rv34dsp.o
 
 YASM-OBJS-$(CONFIG_VC1_DECODER)        += x86/vc1dsp_yasm.o
 

@@ -737,7 +737,7 @@ SKIPHEADERS-$(CONFIG_VDPAU)            += vdpau.h
 SKIPHEADERS-$(CONFIG_XVMC)             += xvmc.h
 SKIPHEADERS-$(HAVE_W32THREADS)         += w32pthreads.h
 
-TESTPROGS = cabac dct fft fft-fixed h264 iirfilter rangecoder snowenc
+TESTPROGS = cabac dct fft fft-fixed golomb iirfilter rangecoder snowenc
 TESTPROGS-$(HAVE_MMX) += motion
 TESTOBJS = dctref.o
 

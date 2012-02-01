@@ -67,7 +67,7 @@ AVInputFormat ff_ ## shortname ## _demuxer = {\
     .read_packet    = ff_raw_read_partial_packet,\
     .extensions     = ext,\
     .flags          = AVFMT_GENERIC_INDEX,\
-    .value          = id,\
+    .raw_codec_id   = id,\
     .priv_data_size = sizeof(FFRawVideoDemuxerContext),\
     .priv_class     = &shortname ## _demuxer_class,\
 };

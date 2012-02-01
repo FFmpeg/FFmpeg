@@ -70,7 +70,7 @@ AVInputFormat ff_pcm_ ## name_ ## _demuxer = {              \
     .read_seek      = pcm_read_seek,                        \
     .flags          = AVFMT_GENERIC_INDEX,                  \
     .extensions     = ext,                                  \
-    .value          = codec,                                \
+    .raw_codec_id   = codec,                                \
     .priv_class     = &name_ ## _demuxer_class,             \
 };
 
