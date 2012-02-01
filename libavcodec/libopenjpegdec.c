@@ -260,6 +260,8 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     switch (image->numcomps) {
     case 1:  avctx->pix_fmt = (image->comps[0].bpp == 8) ? PIX_FMT_GRAY8 : PIX_FMT_GRAY16;
              break;
+    case 2:  avctx->pix_fmt = PIX_FMT_GRAY8A;
+             break;
     case 3:  avctx->pix_fmt = check_image_attributes(avctx, image);
              break;
     case 4:  avctx->pix_fmt = is_yuva420(image) ? PIX_FMT_YUVA420P : PIX_FMT_RGBA;
@@ -303,7 +305,11 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
         }
         break;
     case 2:
-        libopenjpeg_copyto16(picture, image);
+        if (ispacked) {
+            libopenjpeg_copy_to_packed8(picture, image);
+        } else {
+            libopenjpeg_copyto16(picture, image);
+        }
         break;
     case 3:
     case 4:
