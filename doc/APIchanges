@@ -13,6 +13,9 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2012-03-21 - xxxxxxx - lavu 51.43.100
+  Add bprint.h for bprint API.
+
 2012-02-21 - xxxxxxx - lavc 54.4.100
   Add av_get_pcm_codec() function.
 

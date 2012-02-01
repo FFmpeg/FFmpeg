@@ -10,6 +10,7 @@ HEADERS = adler32.h                                                     \
           avstring.h                                                    \
           avutil.h                                                      \
           base64.h                                                      \
+          bprint.h                                                      \
           bswap.h                                                       \
           common.h                                                      \
           cpu.h                                                         \
@@ -47,6 +48,7 @@ OBJS = adler32.o                                                        \
        audioconvert.o                                                   \
        avstring.o                                                       \
        base64.o                                                         \
+       bprint.o                                                         \
        cpu.o                                                            \
        crc.o                                                            \
        des.o                                                            \
@@ -81,8 +83,8 @@ OBJS-$(ARCH_PPC) += ppc/cpu.o
 OBJS-$(ARCH_X86) += x86/cpu.o
 
 
-TESTPROGS = adler32 aes avstring base64 cpu crc des eval file fifo lfg lls \
-            md5 opt pca parseutils random_seed rational sha tree
+TESTPROGS = adler32 aes avstring base64 bprint cpu crc des eval file fifo \
+            lfg lls md5 opt pca parseutils random_seed rational sha tree
 TESTPROGS-$(HAVE_LZO1X_999_COMPRESS) += lzo
 
 TOOLS = ffeval
