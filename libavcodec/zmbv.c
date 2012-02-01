@@ -404,6 +404,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     int zret = Z_OK; // Zlib return code
     int len = buf_size;
     int hi_ver, lo_ver;
+    uint8_t *tmp;
 
     if (c->pic.data[0])
             avctx->release_buffer(avctx, &c->pic);
@@ -485,8 +486,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
             return -1;
          }
 
-         c->cur  = av_realloc(c->cur, avctx->width * avctx->height * (c->bpp / 8));
-         c->prev = av_realloc(c->prev, avctx->width * avctx->height * (c->bpp / 8));
+         tmp = av_realloc(c->cur,  avctx->width * avctx->height * (c->bpp / 8));
+         if (!tmp)
+             return AVERROR(ENOMEM);
+         c->cur = tmp;
+         tmp = av_realloc(c->prev, avctx->width * avctx->height * (c->bpp / 8));
+         if (!tmp)
+             return AVERROR(ENOMEM);
+         c->prev = tmp;
          c->bx = (c->width + c->bw - 1) / c->bw;
          c->by = (c->height+ c->bh - 1) / c->bh;
      }
