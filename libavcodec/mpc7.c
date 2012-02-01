@@ -200,35 +200,47 @@ static int mpc7_decode_frame(AVCodecContext * avctx, void *data,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
+    int buf_size;
     MPCContext *c = avctx->priv_data;
     GetBitContext gb;
     uint8_t *bits;
     int i, ch;
     int mb = -1;
     Band *bands = c->bands;
-    int off, ret;
+    int off, ret, last_frame, skip;
     int bits_used, bits_avail;
 
     memset(bands, 0, sizeof(*bands) * (c->maxbands + 1));
-    if(buf_size <= 4){
-        av_log(avctx, AV_LOG_ERROR, "Too small buffer passed (%i bytes)\n", buf_size);
-        return AVERROR(EINVAL);
+
+    buf_size = avpkt->size & ~3;
+    if (buf_size <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "packet size is too small (%i bytes)\n",
+               avpkt->size);
+        return AVERROR_INVALIDDATA;
+    }
+    if (buf_size != avpkt->size) {
+        av_log(avctx, AV_LOG_WARNING, "packet size is not a multiple of 4. "
+               "extra bytes at the end will be skipped.\n");
     }
 
+    skip       = buf[0];
+    last_frame = buf[1];
+    buf       += 4;
+    buf_size  -= 4;
+
     /* get output buffer */
-    c->frame.nb_samples = buf[1] ? c->lastframelen : MPC_FRAME_SIZE;
+    c->frame.nb_samples = last_frame ? c->lastframelen : MPC_FRAME_SIZE;
     if ((ret = avctx->get_buffer(avctx, &c->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
 
-    bits = av_malloc(((buf_size - 1) & ~3) + FF_INPUT_BUFFER_PADDING_SIZE);
+    bits = av_malloc(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!bits)
         return AVERROR(ENOMEM);
-    c->dsp.bswap_buf((uint32_t*)bits, (const uint32_t*)(buf + 4), (buf_size - 4) >> 2);
-    init_get_bits(&gb, bits, (buf_size - 4)* 8);
-    skip_bits_long(&gb, buf[0]);
+    c->dsp.bswap_buf((uint32_t *)bits, (const uint32_t *)buf, buf_size >> 2);
+    init_get_bits(&gb, bits, buf_size * 8);
+    skip_bits_long(&gb, skip);
 
     /* read subband indexes */
     for(i = 0; i <= c->maxbands; i++){
@@ -287,21 +299,21 @@ static int mpc7_decode_frame(AVCodecContext * avctx, void *data,
     av_free(bits);
 
     bits_used = get_bits_count(&gb);
-    bits_avail = (buf_size - 4) * 8;
-    if(!buf[1] && ((bits_avail < bits_used) || (bits_used + 32 <= bits_avail))){
+    bits_avail = buf_size * 8;
+    if (!last_frame && ((bits_avail < bits_used) || (bits_used + 32 <= bits_avail))) {
         av_log(NULL,0, "Error decoding frame: used %i of %i bits\n", bits_used, bits_avail);
         return -1;
     }
     if(c->frames_to_skip){
         c->frames_to_skip--;
         *got_frame_ptr = 0;
-        return buf_size;
+        return avpkt->size;
     }
 
     *got_frame_ptr   = 1;
     *(AVFrame *)data = c->frame;
 
-    return buf_size;
+    return avpkt->size;
 }
 
 static void mpc7_decode_flush(AVCodecContext *avctx)
