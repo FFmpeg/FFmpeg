@@ -1680,7 +1680,6 @@ typedef struct AVCodecContext {
 #define FF_DCT_FASTINT 1
 #define FF_DCT_INT     2
 #define FF_DCT_MMX     3
-#define FF_DCT_MLIB    4
 #define FF_DCT_ALTIVEC 5
 #define FF_DCT_FAAN    6
 
@@ -1731,7 +1730,6 @@ typedef struct AVCodecContext {
 #define FF_IDCT_SIMPLEMMX     3
 #define FF_IDCT_LIBMPEG2MMX   4
 #define FF_IDCT_PS2           5
-#define FF_IDCT_MLIB          6
 #define FF_IDCT_ARM           7
 #define FF_IDCT_ALTIVEC       8
 #define FF_IDCT_SH4           9

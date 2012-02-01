@@ -510,8 +510,6 @@ SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c)
         t = ff_yuv2rgb_init_mmx(c);
     } else if (HAVE_VIS) {
         t = ff_yuv2rgb_init_vis(c);
-    } else if (CONFIG_MLIB) {
-        t = ff_yuv2rgb_init_mlib(c);
     } else if (HAVE_ALTIVEC) {
         t = ff_yuv2rgb_init_altivec(c);
     } else if (ARCH_BFIN) {

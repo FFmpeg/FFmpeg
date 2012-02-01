@@ -643,7 +643,6 @@ static inline int get_penalty_factor(int lambda, int lambda2, int type){
 void dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_bfin(DSPContext* c, AVCodecContext *avctx);
-void dsputil_init_mlib(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_mmi(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx);
