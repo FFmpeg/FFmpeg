@@ -403,7 +403,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     ZmbvContext * const c = avctx->priv_data;
     int zret = Z_OK; // Zlib return code
     int len = buf_size;
-    int hi_ver, lo_ver;
+    int hi_ver, lo_ver, ret;
     uint8_t *tmp;
 
     if (c->pic.data[0])
@@ -411,9 +411,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
 
     c->pic.reference = 1;
     c->pic.buffer_hints = FF_BUFFER_HINTS_VALID;
-    if (avctx->get_buffer(avctx, &c->pic) < 0) {
+    if ((ret = avctx->get_buffer(avctx, &c->pic)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     /* parse header */
@@ -433,19 +433,19 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
                "Flags=%X ver=%i.%i comp=%i fmt=%i blk=%ix%i\n",
                c->flags,hi_ver,lo_ver,c->comp,c->fmt,c->bw,c->bh);
         if (hi_ver != 0 || lo_ver != 1) {
-            av_log(avctx, AV_LOG_ERROR, "Unsupported version %i.%i\n",
-            hi_ver, lo_ver);
-            return -1;
+            av_log_ask_for_sample(avctx, "Unsupported version %i.%i\n",
+                                  hi_ver, lo_ver);
+            return AVERROR_PATCHWELCOME;
         }
         if (c->bw == 0 || c->bh == 0) {
-            av_log(avctx, AV_LOG_ERROR, "Unsupported block size %ix%i\n",
-                   c->bw, c->bh);
-            return -1;
+            av_log_ask_for_sample(avctx, "Unsupported block size %ix%i\n",
+                                  c->bw, c->bh);
+            return AVERROR_PATCHWELCOME;
         }
         if (c->comp != 0 && c->comp != 1) {
-            av_log(avctx, AV_LOG_ERROR, "Unsupported compression type %i\n",
-                   c->comp);
-            return -1;
+            av_log_ask_for_sample(avctx, "Unsupported compression type %i\n",
+                                  c->comp);
+            return AVERROR_PATCHWELCOME;
         }
 
         switch (c->fmt) {
@@ -475,9 +475,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         default:
             c->decode_intra = NULL;
             c->decode_xor = NULL;
-            av_log(avctx, AV_LOG_ERROR,
-                   "Unsupported (for now) format %i\n", c->fmt);
-            return -1;
+            av_log_ask_for_sample(avctx, "Unsupported (for now) format %i\n",
+                                  c->fmt);
+            return AVERROR_PATCHWELCOME;
         }
 
         zret = inflateReset(&c->zstream);
@@ -500,7 +500,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
 
      if (c->decode_intra == NULL) {
          av_log(avctx, AV_LOG_ERROR, "Error! Got no format or no keyframe!\n");
-         return -1;
+         return AVERROR_INVALIDDATA;
      }
 
      if (c->comp == 0) { //Uncompressed data
@@ -630,7 +630,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         if ((c->decomp_buf = av_malloc(c->decomp_size)) == NULL) {
             av_log(avctx, AV_LOG_ERROR,
                    "Can't allocate decompression buffer.\n");
-            return 1;
+            return AVERROR(ENOMEM);
         }
     }
 
@@ -640,7 +640,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     zret = inflateInit(&c->zstream);
     if (zret != Z_OK) {
         av_log(avctx, AV_LOG_ERROR, "Inflate init error: %d\n", zret);
-        return 1;
+        return -1;
     }
 
     return 0;
