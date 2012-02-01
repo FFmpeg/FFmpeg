@@ -1578,6 +1578,7 @@ static int read_header(FFV1Context *f){
         if(f->avctx->bits_per_raw_sample<=8 && !f->transparency){
             switch(16*f->chroma_h_shift + f->chroma_v_shift){
             case 0x00: f->avctx->pix_fmt= PIX_FMT_YUV444P; break;
+            case 0x01: f->avctx->pix_fmt= PIX_FMT_YUV440P; break;
             case 0x10: f->avctx->pix_fmt= PIX_FMT_YUV422P; break;
             case 0x11: f->avctx->pix_fmt= PIX_FMT_YUV420P; break;
             case 0x20: f->avctx->pix_fmt= PIX_FMT_YUV411P; break;
