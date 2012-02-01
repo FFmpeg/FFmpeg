@@ -13,18 +13,18 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
-2012-02-01 - xxxxxxx - lavc 54.01.0
+2012-02-01 - 316fc74 - lavc 54.01.0
   Add av_fast_padded_malloc() as alternative for av_realloc() when aligned
   memory is required. The buffer will always have FF_INPUT_BUFFER_PADDING_SIZE
   zero-padded bytes at the end.
 
-2012-01-31 - xxxxxxx - lavf 54.01.0
+2012-01-31 - dd6d3b0 - lavf 54.01.0
   Add avformat_get_riff_video_tags() and avformat_get_riff_audio_tags().
 
-2012-01-31 - xxxxxxx - lavc 54.01.0
+2012-01-31 - af08d9a - lavc 54.01.0
   Add avcodec_is_open() function.
 
-2012-01-30 - xxxxxxx - lavu 51.22.0 - intfloat.h
+2012-01-30 - 8b93312 - lavu 51.22.0 - intfloat.h
   Add a new installed header libavutil/intfloat.h with int/float punning
   functions.
 
