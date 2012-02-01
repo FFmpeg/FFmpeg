@@ -27,6 +27,8 @@
 #include "libavutil/cpu.h"
 #include "libavutil/pixdesc.h"
 
+#define DITHER1XBPP
+
 DECLARE_ASM_CONST(8, uint64_t, bF8)=       0xF8F8F8F8F8F8F8F8LL;
 DECLARE_ASM_CONST(8, uint64_t, bFC)=       0xFCFCFCFCFCFCFCFCLL;
 DECLARE_ASM_CONST(8, uint64_t, w10)=       0x0010001000100010LL;
