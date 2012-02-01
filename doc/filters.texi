@@ -2385,6 +2385,28 @@ To change the sample aspect ratio to 10:11, specify:
 setsar=10:11
 @end example
 
+@section setfield
+
+Force field for the output video frame.
+
+The @code{setfield} filter marks the interlace type field for the
+output frames. It does not change the input frame, but only sets the
+corresponding property, which affects how the frame is treated by
+followig filters (e.g. @code{fieldorder} or @code{yadif}).
+
+It accepts a parameter representing an integer or a string, which can
+assume the following values:
+@table @samp
+@item -1, auto
+Keep the same field property.
+
+@item 0, bff
+Mark the frame as bottom-field-first.
+
+@item 1, tff
+Mark the frame as top-field-first.
+@end table
+
 @section setpts
 
 Change the PTS (presentation timestamp) of the input video frames.
