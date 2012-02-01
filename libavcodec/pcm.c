@@ -193,7 +193,6 @@ static int pcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         return -1;
     }
 
-    avpkt->size = frame->nb_samples * avctx->channels * sample_size;
     *got_packet_ptr = 1;
     return 0;
 }
