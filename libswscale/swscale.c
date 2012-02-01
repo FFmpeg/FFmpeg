@@ -1610,8 +1610,6 @@ static void monoblack2Y_c(uint8_t *dst, const uint8_t *src,
     }
 }
 
-//FIXME yuy2* can read up to 7 samples too much
-
 static void yuy2ToY_c(uint8_t *dst, const uint8_t *src, int width,
                       uint32_t *unused)
 {
