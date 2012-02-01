@@ -30,7 +30,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "libavformat/avformat.h"
-// FIXME those are internal headers, avserver _really_ shouldn't use them
+// FIXME those are internal headers, ffserver _really_ shouldn't use them
 #include "libavformat/ffm.h"
 #include "libavformat/network.h"
 #include "libavformat/os_support.h"
