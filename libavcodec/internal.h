@@ -120,6 +120,7 @@ int avpriv_unlock_avformat(void);
  *                If avpkt->data is already set, avpkt->size is checked
  *                to ensure it is large enough.
  *                If avpkt->data is NULL, a new buffer is allocated.
+ *                avpkt->size is set to the specified size.
  *                All other AVPacket fields will be reset with av_init_packet().
  * @param size    the minimum required packet size
  * @return        0 on success, negative error code on failure

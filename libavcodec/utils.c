@@ -839,16 +839,14 @@ int ff_alloc_packet(AVPacket *avpkt, int size)
 
     if (avpkt->data) {
         uint8_t *pkt_data;
-        int pkt_size;
 
         if (avpkt->size < size)
             return AVERROR(EINVAL);
 
         pkt_data = avpkt->data;
-        pkt_size = avpkt->size;
         av_init_packet(avpkt);
         avpkt->data = pkt_data;
-        avpkt->size = pkt_size;
+        avpkt->size = size;
         return 0;
     } else {
         return av_new_packet(avpkt, size);
