@@ -183,9 +183,6 @@ enum CodecID {
     CODEC_ID_TIERTEXSEQVIDEO,
     CODEC_ID_TIFF,
     CODEC_ID_GIF,
-#if LIBAVCODEC_VERSION_MAJOR == 53
-    CODEC_ID_FFH264,
-#endif
     CODEC_ID_DXA,
     CODEC_ID_DNXHD,
     CODEC_ID_THP,
@@ -203,10 +200,6 @@ enum CodecID {
     CODEC_ID_INDEO5,
     CODEC_ID_MIMIC,
     CODEC_ID_RL2,
-#if LIBAVCODEC_VERSION_MAJOR == 53
-    CODEC_ID_8SVX_EXP,
-    CODEC_ID_8SVX_FIB,
-#endif
     CODEC_ID_ESCAPE124,
     CODEC_ID_DIRAC,
     CODEC_ID_BFI,
@@ -245,10 +238,6 @@ enum CodecID {
     CODEC_ID_DFA,
     CODEC_ID_WMV3IMAGE,
     CODEC_ID_VC1IMAGE,
-#if LIBAVCODEC_VERSION_MAJOR == 53
-    CODEC_ID_G723_1,
-    CODEC_ID_G729,
-#endif
     CODEC_ID_UTVIDEO,
     CODEC_ID_BMV_VIDEO,
     CODEC_ID_VBLE,
@@ -346,10 +335,6 @@ enum CodecID {
     CODEC_ID_MACE3,
     CODEC_ID_MACE6,
     CODEC_ID_VMDAUDIO,
-#if LIBAVCODEC_VERSION_MAJOR == 53
-    CODEC_ID_SONIC,
-    CODEC_ID_SONIC_LS,
-#endif
     CODEC_ID_FLAC,
     CODEC_ID_MP3ADU,
     CODEC_ID_MP3ON4,
@@ -391,12 +376,10 @@ enum CodecID {
     CODEC_ID_AAC_LATM,
     CODEC_ID_QDMC,
     CODEC_ID_CELT,
-#if LIBAVCODEC_VERSION_MAJOR > 53
     CODEC_ID_G723_1,
     CODEC_ID_G729,
     CODEC_ID_8SVX_EXP,
     CODEC_ID_8SVX_FIB,
-#endif
     CODEC_ID_BMV_AUDIO,
 
     /* subtitle codecs */
@@ -1471,7 +1454,6 @@ typedef struct AVCodecContext {
 #define FF_BUG_DC_CLIP          4096
 #define FF_BUG_MS               8192 ///< Work around various bugs in Microsoft's broken decoders.
 #define FF_BUG_TRUNCATED       16384
-//#define FF_BUG_FAKE_SCALABILITY 16 //Autodetection should work 100%.
 
     /**
      * luma single coefficient elimination threshold
@@ -2044,14 +2026,6 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int context_model;
-#if 0
-    /**
-     *
-     * - encoding: unused
-     * - decoding: Set by user.
-     */
-    uint8_t * (*realloc)(struct AVCodecContext *s, uint8_t *buf, int buf_size);
-#endif
 
     /**
      * slice flags
