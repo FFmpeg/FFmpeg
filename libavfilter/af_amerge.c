@@ -186,6 +186,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 {
     AVFilterContext *ctx = inlink->dst;
     AMergeContext *am = ctx->priv;
+    AVFilterLink *const outlink = ctx->outputs[0];
     int input_number = inlink == ctx->inputs[1];
     struct amerge_queue *inq = &am->queue[input_number];
     int nb_samples, ns, i;
@@ -214,6 +215,12 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
         ins[i] = (*inbuf[i])->data[0] +
                  am->queue[i].pos * am->nb_in_ch[i] * am->bps;
     }
+
+    avfilter_copy_buffer_ref_props(outbuf, *inbuf[0]);
+    outbuf->audio->nb_samples     = nb_samples;
+    outbuf->audio->channel_layout = outlink->channel_layout;
+    outbuf->audio->planar         = outlink->planar;
+
     while (nb_samples) {
         ns = nb_samples;
         for (i = 0; i < 2; i++)
