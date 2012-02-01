@@ -491,7 +491,7 @@ following image formats are supported:
 @item Escape 124             @tab     @tab  X
 @item Escape 130             @tab     @tab  X
 @item FFmpeg video codec #1  @tab  X  @tab  X
-    @tab experimental lossless codec (fourcc: FFV1)
+    @tab lossless codec (fourcc: FFV1)
 @item Flash Screen Video v1  @tab  X  @tab  X
     @tab fourcc: FSV1
 @item Flash Screen Video v2  @tab  X  @tab  X
