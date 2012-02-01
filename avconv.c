@@ -910,6 +910,7 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
         bsfc = bsfc->next;
     }
 
+    pkt->stream_index = ost->index;
     ret = av_interleaved_write_frame(s, pkt);
     if (ret < 0) {
         print_error("av_interleaved_write_frame()", ret);
@@ -966,7 +967,6 @@ static int encode_audio_frame(AVFormatContext *s, OutputStream *ost,
     }
 
     if (got_packet) {
-        pkt.stream_index = ost->index;
         if (pkt.pts != AV_NOPTS_VALUE)
             pkt.pts      = av_rescale_q(pkt.pts,      enc->time_base, ost->st->time_base);
         if (pkt.duration > 0)
@@ -1254,7 +1254,6 @@ static void do_subtitle_out(AVFormatContext *s,
         }
 
         av_init_packet(&pkt);
-        pkt.stream_index = ost->index;
         pkt.data = subtitle_out;
         pkt.size = subtitle_out_size;
         pkt.pts  = av_rescale_q(sub->pts, AV_TIME_BASE_Q, ost->st->time_base);
@@ -1388,7 +1387,6 @@ static void do_video_out(AVFormatContext *s,
     for (i = 0; i < nb_frames; i++) {
         AVPacket pkt;
         av_init_packet(&pkt);
-        pkt.stream_index = ost->index;
 
         if (s->oformat->flags & AVFMT_RAWPICTURE &&
             enc->codec->id == CODEC_ID_RAWVIDEO) {
@@ -1704,7 +1702,6 @@ static void flush_encoders(OutputStream *ost_table, int nb_ostreams)
                     stop_encoding = 1;
                     break;
                 }
-                pkt.stream_index = ost->index;
                 pkt.data = bit_buffer;
                 pkt.size = ret;
                 if (enc->coded_frame && enc->coded_frame->pts != AV_NOPTS_VALUE)
@@ -1764,7 +1761,6 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         ost->sync_opts++;
     }
 
-    opkt.stream_index = ost->index;
     if (pkt->pts != AV_NOPTS_VALUE)
         opkt.pts = av_rescale_q(pkt->pts, ist->st->time_base, ost->st->time_base) - ost_tb_start_time;
     else
