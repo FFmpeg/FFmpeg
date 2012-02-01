@@ -144,7 +144,7 @@ static const uint8_t aac_chan_configs[6][5] = {
 };
 
 /**
- * Table to remap channels from Libav's default order to AAC order.
+ * Table to remap channels from libavcodec's default order to AAC order.
  */
 static const uint8_t aac_chan_maps[AAC_MAX_CHANNELS][AAC_MAX_CHANNELS] = {
     { 0 },
@@ -474,7 +474,7 @@ static void put_bitstream_info(AVCodecContext *avctx, AACEncContext *s,
 
 /*
  * Deinterleave input samples.
- * Channels are reordered from Libav's default order to AAC order.
+ * Channels are reordered from libavcodec's default order to AAC order.
  */
 static void deinterleave_input_samples(AACEncContext *s,
                                        const float *samples, int nb_samples)
