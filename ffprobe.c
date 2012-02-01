@@ -42,6 +42,10 @@
 const char program_name[] = "ffprobe";
 const int program_birth_year = 2007;
 
+static int do_count_frames = 0;
+static int do_count_packets = 0;
+static int do_read_frames  = 0;
+static int do_read_packets = 0;
 static int do_show_error   = 0;
 static int do_show_format  = 0;
 static int do_show_frames  = 0;
@@ -71,6 +75,8 @@ static const char *unit_second_str          = "s"    ;
 static const char *unit_hertz_str           = "Hz"   ;
 static const char *unit_byte_str            = "byte" ;
 static const char *unit_bit_per_second_str  = "bit/s";
+static uint64_t *nb_streams_packets;
+static uint64_t *nb_streams_frames;
 
 void av_noreturn exit_program(int ret)
 {
@@ -1360,7 +1366,7 @@ static av_always_inline int get_decoded_frame(AVFormatContext *fmt_ctx,
     return ret;
 }
 
-static void show_packets(WriterContext *w, AVFormatContext *fmt_ctx)
+static void read_packets(WriterContext *w, AVFormatContext *fmt_ctx)
 {
     AVPacket pkt, pkt1;
     AVFrame frame;
@@ -1369,18 +1375,23 @@ static void show_packets(WriterContext *w, AVFormatContext *fmt_ctx)
     av_init_packet(&pkt);
 
     while (!av_read_frame(fmt_ctx, &pkt)) {
-        if (do_show_packets)
-            show_packet(w, fmt_ctx, &pkt, i++);
-        if (do_show_frames) {
+        if (do_read_packets) {
+            if (do_show_packets)
+                show_packet(w, fmt_ctx, &pkt, i++);
+            nb_streams_packets[pkt.stream_index]++;
+        }
+        if (do_read_frames) {
             pkt1 = pkt;
             while (1) {
                 avcodec_get_frame_defaults(&frame);
                 ret = get_decoded_frame(fmt_ctx, &frame, &got_frame, &pkt1);
                 if (ret < 0 || !got_frame)
                     break;
-                show_frame(w, &frame, fmt_ctx->streams[pkt.stream_index]);
+                if (do_show_frames)
+                    show_frame(w, &frame, fmt_ctx->streams[pkt.stream_index]);
                 pkt1.data += ret;
                 pkt1.size -= ret;
+                nb_streams_frames[pkt.stream_index]++;
             }
         }
         av_free_packet(&pkt);
@@ -1391,8 +1402,13 @@ static void show_packets(WriterContext *w, AVFormatContext *fmt_ctx)
     //Flush remaining frames that are cached in the decoder
     for (i = 0; i < fmt_ctx->nb_streams; i++) {
         pkt.stream_index = i;
-        while (get_decoded_frame(fmt_ctx, &frame, &got_frame, &pkt) >= 0 && got_frame)
-            show_frame(w, &frame, fmt_ctx->streams[pkt.stream_index]);
+        while (get_decoded_frame(fmt_ctx, &frame, &got_frame, &pkt) >= 0 && got_frame) {
+            if (do_read_frames) {
+                if (do_show_frames)
+                    show_frame(w, &frame, fmt_ctx->streams[pkt.stream_index]);
+                nb_streams_frames[pkt.stream_index]++;
+            }
+        }
     }
 }
 
@@ -1495,6 +1511,10 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
     print_time("duration",      stream->duration,   &stream->time_base);
     if (stream->nb_frames) print_fmt    ("nb_frames", "%"PRId64, stream->nb_frames);
     else                   print_str_opt("nb_frames", "N/A");
+    if (nb_streams_frames[stream_idx])  print_fmt    ("nb_read_frames", "%"PRIu64, nb_streams_frames[stream_idx]);
+    else                                print_str_opt("nb_read_frames", "N/A");
+    if (nb_streams_packets[stream_idx]) print_fmt    ("nb_read_packets", "%"PRIu64, nb_streams_packets[stream_idx]);
+    else                                print_str_opt("nb_read_packets", "N/A");
     show_tags(stream->metadata);
 
     print_section_footer("stream");
@@ -1603,9 +1623,14 @@ static int probe_file(WriterContext *wctx, const char *filename)
     AVFormatContext *fmt_ctx;
     int ret, i;
 
+    do_read_frames = do_show_frames || do_count_frames;
+    do_read_packets = do_show_packets || do_count_packets;
+
     ret = open_input_file(&fmt_ctx, filename);
+    nb_streams_frames  = av_calloc(fmt_ctx->nb_streams, sizeof(*nb_streams_frames));
+    nb_streams_packets = av_calloc(fmt_ctx->nb_streams, sizeof(*nb_streams_packets));
     if (ret >= 0) {
-        if (do_show_packets || do_show_frames) {
+        if (do_read_frames || do_read_packets) {
             const char *chapter;
             if (do_show_frames && do_show_packets &&
                 wctx->writer->flags & WRITER_FLAG_PUT_PACKETS_AND_FRAMES_IN_SAME_CHAPTER)
@@ -1614,9 +1639,11 @@ static int probe_file(WriterContext *wctx, const char *filename)
                 chapter = "packets";
             else // (!do_show_packets && do_show_frames)
                 chapter = "frames";
-            writer_print_chapter_header(wctx, chapter);
-            show_packets(wctx, fmt_ctx);
-            writer_print_chapter_footer(wctx, chapter);
+            if (do_show_frames || do_show_packets)
+                writer_print_chapter_header(wctx, chapter);
+            read_packets(wctx, fmt_ctx);
+            if (do_show_frames || do_show_packets)
+                writer_print_chapter_footer(wctx, chapter);
         }
         PRINT_CHAPTER(streams);
         PRINT_CHAPTER(format);
@@ -1625,6 +1652,9 @@ static int probe_file(WriterContext *wctx, const char *filename)
                 avcodec_close(fmt_ctx->streams[i]->codec);
         avformat_close_input(&fmt_ctx);
     }
+
+    av_freep(&nb_streams_frames);
+    av_freep(&nb_streams_packets);
 
     return ret;
 }
@@ -1753,6 +1783,8 @@ static const OptionDef options[] = {
     { "show_frames",  OPT_BOOL, {(void*)&do_show_frames} , "show frames info" },
     { "show_packets", OPT_BOOL, {(void*)&do_show_packets}, "show packets info" },
     { "show_streams", OPT_BOOL, {(void*)&do_show_streams}, "show streams info" },
+    { "count_frames", OPT_BOOL, {(void*)&do_count_frames}, "count the number of frames per stream" },
+    { "count_packets", OPT_BOOL, {(void*)&do_count_packets}, "count the number of packets per stream" },
     { "show_program_version",  OPT_BOOL, {(void*)&do_show_program_version},  "show ffprobe version" },
     { "show_library_versions", OPT_BOOL, {(void*)&do_show_library_versions}, "show library versions" },
     { "show_versions",         0, {(void*)&opt_show_versions}, "show program and library versions" },

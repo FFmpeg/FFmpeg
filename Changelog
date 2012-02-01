@@ -6,6 +6,7 @@ version next:
 - setfield filter
 - CDXL demuxer and decoder
 - Apple ProRes encoder
+- ffprobe -count_packets and -count_frames options
 
 
 version 0.10:

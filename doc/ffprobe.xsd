@@ -111,6 +111,8 @@
       <xsd:attribute name="start_time"       type="xsd:float"/>
       <xsd:attribute name="duration"         type="xsd:float"/>
       <xsd:attribute name="nb_frames"        type="xsd:int"/>
+      <xsd:attribute name="nb_read_frames"   type="xsd:int"/>
+      <xsd:attribute name="nb_read_packets"  type="xsd:int"/>
     </xsd:complexType>
 
     <xsd:complexType name="formatType">
