@@ -50,6 +50,19 @@ static enum PixelFormat check_image_attributes(AVCodecContext *avctx, opj_image_
     compRatio |= c1.dx << 9  | c1.dy << 6;
     compRatio |= c2.dx << 3  | c2.dy;
 
+    if (image->numcomps == 4) {
+        if (c0.prec == 8) {
+            if (compRatio == 0112222 &&
+                image->comps[3].dx == 1 && image->comps[3].dy == 1) {
+                return PIX_FMT_YUVA420P;
+            } else {
+                return PIX_FMT_RGBA;
+            }
+        } else {
+            return PIX_FMT_RGBA64;
+        }
+    }
+
     switch (compRatio) {
     case 0111111: goto libopenjpeg_yuv444_rgb;
     case 0111212: return PIX_FMT_YUV440P;
@@ -89,15 +102,6 @@ libopenjpeg_rgb:
     }
 
     return PIX_FMT_RGB24;
-}
-
-static int is_yuva420(opj_image_t *image)
-{
-    return image->numcomps == 4 &&
-           image->comps[0].dx == 1 && image->comps[0].dy == 1 &&
-           image->comps[1].dx == 2 && image->comps[1].dy == 2 &&
-           image->comps[2].dx == 2 && image->comps[2].dy == 2 &&
-           image->comps[3].dx == 1 && image->comps[3].dy == 1;
 }
 
 static inline int libopenjpeg_ispacked(enum PixelFormat pix_fmt) {
@@ -262,9 +266,8 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
              break;
     case 2:  avctx->pix_fmt = PIX_FMT_GRAY8A;
              break;
-    case 3:  avctx->pix_fmt = check_image_attributes(avctx, image);
-             break;
-    case 4:  avctx->pix_fmt = is_yuva420(image) ? PIX_FMT_YUVA420P : PIX_FMT_RGBA;
+    case 3:
+    case 4:  avctx->pix_fmt = check_image_attributes(avctx, image);
              break;
     default: av_log(avctx, AV_LOG_ERROR, "%d components unsupported.\n", image->numcomps);
              goto done;
@@ -318,6 +321,7 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
         }
         break;
     case 6:
+    case 8:
         if (ispacked) {
             libopenjpeg_copy_to_packed16(picture, image);
         }
