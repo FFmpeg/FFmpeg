@@ -108,7 +108,8 @@ int av_image_fill_pointers(uint8_t *data[4], enum PixelFormat pix_fmt, int heigh
         return AVERROR(EINVAL);
     size[0] = linesizes[0] * height;
 
-    if (desc->flags & PIX_FMT_PAL) {
+    if (desc->flags & PIX_FMT_PAL ||
+        desc->flags & PIX_FMT_PSEUDOPAL) {
         size[0] = (size[0] + 3) & ~3;
         data[1] = ptr + size[0]; /* palette is stored here as 256 32 bits words */
         return size[0] + 256 * 4;
@@ -196,7 +197,8 @@ int av_image_alloc(uint8_t *pointers[4], int linesizes[4],
         av_free(buf);
         return ret;
     }
-    if (av_pix_fmt_descriptors[pix_fmt].flags & PIX_FMT_PAL)
+    if (av_pix_fmt_descriptors[pix_fmt].flags & PIX_FMT_PAL ||
+        av_pix_fmt_descriptors[pix_fmt].flags & PIX_FMT_PSEUDOPAL)
         ff_set_systematic_pal2((uint32_t*)pointers[1], pix_fmt);
 
     return ret;
@@ -243,7 +245,8 @@ void av_image_copy(uint8_t *dst_data[4], int dst_linesizes[4],
     if (desc->flags & PIX_FMT_HWACCEL)
         return;
 
-    if (desc->flags & PIX_FMT_PAL) {
+    if (desc->flags & PIX_FMT_PAL ||
+        desc->flags & PIX_FMT_PSEUDOPAL) {
         av_image_copy_plane(dst_data[0], dst_linesizes[0],
                             src_data[0], src_linesizes[0],
                             width, height);

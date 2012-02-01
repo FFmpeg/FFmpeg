@@ -272,7 +272,8 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     ref2->data[0] += crop->y * ref2->linesize[0];
     ref2->data[0] += crop->x * crop->max_step[0];
 
-    if (!(av_pix_fmt_descriptors[link->format].flags & PIX_FMT_PAL)) {
+    if (!(av_pix_fmt_descriptors[link->format].flags & PIX_FMT_PAL ||
+          av_pix_fmt_descriptors[link->format].flags & PIX_FMT_PSEUDOPAL)) {
         for (i = 1; i < 3; i ++) {
             if (ref2->data[i]) {
                 ref2->data[i] += (crop->y >> crop->vsub) * ref2->linesize[i];

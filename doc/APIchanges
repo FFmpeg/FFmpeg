@@ -13,6 +13,9 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2012-02-xx - xxxxxxx - lavu 51.22.1 - pixdesc.h
+  Add PIX_FMT_PSEUDOPAL flag.
+
 2012-02-01 - xxxxxxx - lavc 54.01.0
   Add avcodec_encode_video2() and deprecate avcodec_encode_video().
 

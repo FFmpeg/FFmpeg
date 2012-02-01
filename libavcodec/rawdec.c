@@ -158,8 +158,7 @@ static int raw_decode(AVCodecContext *avctx,
 
     avpicture_fill(picture, buf, avctx->pix_fmt, avctx->width, avctx->height);
     if((avctx->pix_fmt==PIX_FMT_PAL8 && buf_size < context->length) ||
-       (avctx->pix_fmt!=PIX_FMT_PAL8 &&
-        (av_pix_fmt_descriptors[avctx->pix_fmt].flags & PIX_FMT_PAL))){
+       (av_pix_fmt_descriptors[avctx->pix_fmt].flags & PIX_FMT_PSEUDOPAL)) {
         frame->data[1]= context->palette;
     }
     if (avctx->pix_fmt == PIX_FMT_PAL8) {
