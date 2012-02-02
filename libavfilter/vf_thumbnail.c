@@ -24,7 +24,7 @@
  * selection (such as a black frame) we could get with an absolute seek.
  *
  * Simplified version of algorithm by Vadim Zaliva <lord@crocodile.org>.
- * @url http://notbrainsurgery.livejournal.com/29773.html
+ * @see http://notbrainsurgery.livejournal.com/29773.html
  */
 
 #include "avfilter.h"
