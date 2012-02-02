@@ -814,7 +814,6 @@ static int ape_decode_frame(AVCodecContext *avctx, void *data,
                             int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
     APEContext *s = avctx->priv_data;
     int16_t *samples;
     int i, ret;
@@ -828,17 +827,23 @@ static int ape_decode_frame(AVCodecContext *avctx, void *data,
     if(!s->samples){
         uint32_t nblocks, offset;
         void *tmp_data;
+        int buf_size;
 
-        if (!buf_size) {
+        if (!avpkt->size) {
             *got_frame_ptr = 0;
             return 0;
         }
-        if (buf_size < 8) {
+        if (avpkt->size < 8) {
             av_log(avctx, AV_LOG_ERROR, "Packet is too small\n");
             return AVERROR_INVALIDDATA;
         }
+        buf_size = avpkt->size & ~3;
+        if (buf_size != avpkt->size) {
+            av_log(avctx, AV_LOG_WARNING, "packet size is not a multiple of 4. "
+                   "extra bytes at the end will be skipped.\n");
+        }
 
-        tmp_data = av_realloc(s->data, FFALIGN(buf_size, 4));
+        tmp_data = av_realloc(s->data, buf_size);
         if (!tmp_data)
             return AVERROR(ENOMEM);
         s->data = tmp_data;
@@ -874,12 +879,12 @@ static int ape_decode_frame(AVCodecContext *avctx, void *data,
             return AVERROR_INVALIDDATA;
         }
 
-        bytes_used = buf_size;
+        bytes_used = avpkt->size;
     }
 
     if (!s->data) {
         *got_frame_ptr = 0;
-        return buf_size;
+        return avpkt->size;
     }
 
     blockstodecode = FFMIN(BLOCKS_PER_LOOP, s->samples);
