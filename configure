@@ -254,6 +254,8 @@ Developer options (useful when working on Libav itself):
   --enable-extra-warnings  enable more compiler warnings
   --samples=PATH           location of test samples for FATE, if not set use
                            \$FATE_SAMPLES at make invocation time.
+  --enable-xmm-clobber-test check XMM registers for clobbering (Win64-only;
+                           should be used only for debugging purposes)
 
 NOTE: Object files are built at the place where configure is launched.
 EOF
@@ -991,6 +993,7 @@ CONFIG_LIST="
     vda
     vdpau
     version3
+    xmm_clobber_test
     x11grab
     zlib
 "
@@ -3064,6 +3067,17 @@ enabled extra_warnings && check_cflags -Winline
 check_ldflags -Wl,--warn-common
 check_ldflags -Wl,-rpath-link=libpostproc:libswscale:libavfilter:libavdevice:libavformat:libavcodec:libavutil
 test_ldflags -Wl,-Bsymbolic && append SHFLAGS -Wl,-Bsymbolic
+
+enabled xmm_clobber_test &&                             \
+    check_ldflags -Wl,--wrap,avcodec_open2              \
+                  -Wl,--wrap,avcodec_decode_audio4      \
+                  -Wl,--wrap,avcodec_decode_video2      \
+                  -Wl,--wrap,avcodec_decode_subtitle2   \
+                  -Wl,--wrap,avcodec_encode_audio2      \
+                  -Wl,--wrap,avcodec_encode_video       \
+                  -Wl,--wrap,avcodec_encode_subtitle    \
+                  -Wl,--wrap,sws_scale ||               \
+    disable xmm_clobber_test
 
 echo "X{};" > $TMPV
 if test_ldflags -Wl,--version-script,$TMPV; then
