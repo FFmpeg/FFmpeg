@@ -402,7 +402,7 @@ void avcodec_register_all(void)
     REGISTER_ENCODER (LIBMP3LAME, libmp3lame);
     REGISTER_ENCDEC  (LIBOPENCORE_AMRNB, libopencore_amrnb);
     REGISTER_DECODER (LIBOPENCORE_AMRWB, libopencore_amrwb);
-    REGISTER_ENCDEC (LIBOPENJPEG, libopenjpeg);
+    REGISTER_ENCDEC  (LIBOPENJPEG, libopenjpeg);
     REGISTER_ENCDEC  (LIBSCHROEDINGER, libschroedinger);
     REGISTER_ENCDEC  (LIBSPEEX, libspeex);
     REGISTER_DECODER (LIBSTAGEFRIGHT_H264, libstagefright_h264);
@@ -419,8 +419,8 @@ void avcodec_register_all(void)
 
     /* text */
     REGISTER_DECODER (BINTEXT, bintext);
-    REGISTER_DECODER  (XBIN, xbin);
-    REGISTER_DECODER  (IDF, idf);
+    REGISTER_DECODER (XBIN, xbin);
+    REGISTER_DECODER (IDF, idf);
 
     /* parsers */
     REGISTER_PARSER  (AAC, aac);
