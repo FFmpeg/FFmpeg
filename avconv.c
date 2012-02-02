@@ -2121,6 +2121,10 @@ static int output_packet(InputStream *ist,
             ret = transcode_video    (ist, &avpkt, &got_output, &pkt_pts);
             if (avpkt.duration)
                 ist->next_dts += av_rescale_q(avpkt.duration, ist->st->time_base, AV_TIME_BASE_Q);
+            else if (ist->st->r_frame_rate.num)
+                ist->next_dts += av_rescale_q(1, (AVRational){ist->st->r_frame_rate.den,
+                                                              ist->st->r_frame_rate.num},
+                                              AV_TIME_BASE_Q);
             else if (ist->st->codec->time_base.num != 0) {
                 int ticks      = ist->st->parser ? ist->st->parser->repeat_pict + 1 :
                                                    ist->st->codec->ticks_per_frame;
