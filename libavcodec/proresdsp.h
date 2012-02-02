@@ -30,7 +30,10 @@
 typedef struct {
     int idct_permutation_type;
     uint8_t idct_permutation[64];
+    int dct_permutation_type;
+    uint8_t dct_permutation[64];
     void (* idct_put) (uint16_t *out, int linesize, DCTELEM *block, const int16_t *qmat);
+    void (* fdct) (const uint16_t *src, int linesize, DCTELEM *block);
 } ProresDSPContext;
 
 void ff_proresdsp_init(ProresDSPContext *dsp);

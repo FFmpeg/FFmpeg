@@ -51,13 +51,30 @@ static void prores_idct_put_c(uint16_t *out, int linesize, DCTELEM *block, const
     put_pixels(out, linesize >> 1, block);
 }
 
+static void prores_fdct_c(const uint16_t *src, int linesize, DCTELEM *block)
+{
+    int x, y;
+    const uint16_t *tsrc = src;
+
+    for (y = 0; y < 8; y++) {
+        for (x = 0; x < 8; x++)
+            block[y * 8 + x] = tsrc[x];
+        tsrc += linesize >> 1;
+    }
+    ff_jpeg_fdct_islow_10(block);
+}
+
 void ff_proresdsp_init(ProresDSPContext *dsp)
 {
     dsp->idct_put = prores_idct_put_c;
     dsp->idct_permutation_type = FF_NO_IDCT_PERM;
+    dsp->fdct     = prores_fdct_c;
+    dsp->dct_permutation_type  = FF_NO_IDCT_PERM;
 
     if (HAVE_MMX) ff_proresdsp_x86_init(dsp);
 
     ff_init_scantable_permutation(dsp->idct_permutation,
                                   dsp->idct_permutation_type);
+    ff_init_scantable_permutation(dsp->dct_permutation,
+                                  dsp->dct_permutation_type);
 }
