@@ -475,7 +475,6 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
     avctx->extradata_size = ALAC_EXTRADATA_SIZE;
 
     avctx->coded_frame = avcodec_alloc_frame();
-    avctx->coded_frame->key_frame = 1;
 
     s->avctx = avctx;
     ret = ff_lpc_init(&s->lpc_ctx, avctx->frame_size, s->max_prediction_order,
