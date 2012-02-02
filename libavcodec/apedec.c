@@ -838,10 +838,10 @@ static int ape_decode_frame(AVCodecContext *avctx, void *data,
             return AVERROR_INVALIDDATA;
         }
 
-        tmp_data = av_realloc(s->data, FFALIGN(buf_size, 4));
-        if (!tmp_data)
+        av_free(s->data);
+        s->data = av_malloc(FFALIGN(buf_size, 4));
+        if (!s->data)
             return AVERROR(ENOMEM);
-        s->data = tmp_data;
         s->dsp.bswap_buf((uint32_t*)s->data, (const uint32_t*)buf, buf_size >> 2);
         s->ptr = s->data;
         s->data_end = s->data + buf_size;
