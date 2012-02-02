@@ -51,6 +51,19 @@ bgr_Vcoeff_3x56: times 2 dw RV, 0, GV, RV
 rgb_Vcoeff_12x4: times 2 dw RV, GV, 0, RV
 rgb_Vcoeff_3x56: times 2 dw BV, 0, GV, BV
 
+rgba_Ycoeff_rb:  times 4 dw RY, BY
+rgba_Ycoeff_br:  times 4 dw BY, RY
+rgba_Ycoeff_ga:  times 4 dw GY, 0
+rgba_Ycoeff_ag:  times 4 dw 0,  GY
+rgba_Ucoeff_rb:  times 4 dw RU, BU
+rgba_Ucoeff_br:  times 4 dw BU, RU
+rgba_Ucoeff_ga:  times 4 dw GU, 0
+rgba_Ucoeff_ag:  times 4 dw 0,  GU
+rgba_Vcoeff_rb:  times 4 dw RV, BV
+rgba_Vcoeff_br:  times 4 dw BV, RV
+rgba_Vcoeff_ga:  times 4 dw GV, 0
+rgba_Vcoeff_ag:  times 4 dw 0,  GV
+
 shuf_rgb_12x4:   db 0, 0x80, 1, 0x80,  2, 0x80,  3, 0x80, \
                     6, 0x80, 7, 0x80,  8, 0x80,  9, 0x80
 shuf_rgb_3x56:   db 2, 0x80, 3, 0x80,  4, 0x80,  5, 0x80, \
@@ -295,6 +308,152 @@ RGB24_FUNCS 11, 13
 
 INIT_XMM avx
 RGB24_FUNCS 11, 13
+
+; %1 = nr. of XMM registers
+; %2-5 = rgba, bgra, argb or abgr (in individual characters)
+%macro RGB32_TO_Y_FN 5-6
+cglobal %2%3%4%5 %+ ToY, 3, 3, %1, dst, src, w
+    mova           m5, [rgba_Ycoeff_%2%4]
+    mova           m6, [rgba_Ycoeff_%3%5]
+%if %0 == 6
+    jmp mangle(program_name %+ _ %+ %6 %+ ToY %+ SUFFIX).body
+%else ; %0 == 6
+.body:
+%if ARCH_X86_64
+    movsxd         wq, wd
+%endif
+    lea          srcq, [srcq+wq*4]
+    add          dstq, wq
+    neg            wq
+    mova           m4, [rgb_Yrnd]
+    pcmpeqb        m7, m7
+    psrlw          m7, 8                  ; (word) { 0x00ff } x4
+.loop:
+    ; FIXME check alignment and use mova
+    movu           m0, [srcq+wq*4+0]      ; (byte) { Bx, Gx, Rx, xx }[0-3]
+    movu           m2, [srcq+wq*4+mmsize] ; (byte) { Bx, Gx, Rx, xx }[4-7]
+    DEINTB          1,  0,  3,  2,  7     ; (word) { Gx, xx (m0/m2) or Bx, Rx (m1/m3) }[0-3]/[4-7]
+    pmaddwd        m1, m5                 ; (dword) { Bx*BY + Rx*RY }[0-3]
+    pmaddwd        m0, m6                 ; (dword) { Gx*GY }[0-3]
+    pmaddwd        m3, m5                 ; (dword) { Bx*BY + Rx*RY }[4-7]
+    pmaddwd        m2, m6                 ; (dword) { Gx*GY }[4-7]
+    paddd          m0, m4                 ; += rgb_Yrnd
+    paddd          m2, m4                 ; += rgb_Yrnd
+    paddd          m0, m1                 ; (dword) { Y[0-3] }
+    paddd          m2, m3                 ; (dword) { Y[4-7] }
+    psrad          m0, 15
+    psrad          m2, 15
+    packssdw       m0, m2                 ; (word) { Y[0-7] }
+    packuswb       m0, m0                 ; (byte) { Y[0-7] }
+    movh    [dstq+wq], m0
+    add            wq, mmsize / 2
+    jl .loop
+    REP_RET
+%endif ; %0 == 3
+%endmacro
+
+; %1 = nr. of XMM registers
+; %2-5 = rgba, bgra, argb or abgr (in individual characters)
+%macro RGB32_TO_UV_FN 5-6
+cglobal %2%3%4%5 %+ ToUV, 3, 4, %1, dstU, dstV, src, w
+%if ARCH_X86_64
+    mova           m8, [rgba_Ucoeff_%2%4]
+    mova           m9, [rgba_Ucoeff_%3%5]
+    mova          m10, [rgba_Vcoeff_%2%4]
+    mova          m11, [rgba_Vcoeff_%3%5]
+%define coeffU1 m8
+%define coeffU2 m9
+%define coeffV1 m10
+%define coeffV2 m11
+%else ; x86-32
+%define coeffU1 [rgba_Ucoeff_%2%4]
+%define coeffU2 [rgba_Ucoeff_%3%5]
+%define coeffV1 [rgba_Vcoeff_%2%4]
+%define coeffV2 [rgba_Vcoeff_%3%5]
+%endif ; x86-64/32
+%if ARCH_X86_64 && %0 == 6
+    jmp mangle(program_name %+ _ %+ %6 %+ ToUV %+ SUFFIX).body
+%else ; ARCH_X86_64 && %0 == 6
+.body:
+%if ARCH_X86_64
+    movsxd         wq, dword r4m
+%else ; x86-32
+    mov            wq, r4m
+%endif
+    add         dstUq, wq
+    add         dstVq, wq
+    lea          srcq, [srcq+wq*4]
+    neg            wq
+    pcmpeqb        m7, m7
+    psrlw          m7, 8                  ; (word) { 0x00ff } x4
+    mova           m6, [rgb_UVrnd]
+.loop:
+    ; FIXME check alignment and use mova
+    movu           m0, [srcq+wq*4+0]      ; (byte) { Bx, Gx, Rx, xx }[0-3]
+    movu           m4, [srcq+wq*4+mmsize] ; (byte) { Bx, Gx, Rx, xx }[4-7]
+    DEINTB          1,  0,  5,  4,  7     ; (word) { Gx, xx (m0/m4) or Bx, Rx (m1/m5) }[0-3]/[4-7]
+    pmaddwd        m3, m1, coeffV1        ; (dword) { Bx*BV + Rx*RV }[0-3]
+    pmaddwd        m2, m0, coeffV2        ; (dword) { Gx*GV }[0-3]
+    pmaddwd        m1, coeffU1            ; (dword) { Bx*BU + Rx*RU }[0-3]
+    pmaddwd        m0, coeffU2            ; (dword) { Gx*GU }[0-3]
+    paddd          m3, m6                 ; += rgb_UVrnd
+    paddd          m1, m6                 ; += rgb_UVrnd
+    paddd          m2, m3                 ; (dword) { V[0-3] }
+    paddd          m0, m1                 ; (dword) { U[0-3] }
+    pmaddwd        m3, m5, coeffV1        ; (dword) { Bx*BV + Rx*RV }[4-7]
+    pmaddwd        m1, m4, coeffV2        ; (dword) { Gx*GV }[4-7]
+    pmaddwd        m5, coeffU1            ; (dword) { Bx*BU + Rx*RU }[4-7]
+    pmaddwd        m4, coeffU2            ; (dword) { Gx*GU }[4-7]
+    paddd          m3, m6                 ; += rgb_UVrnd
+    paddd          m5, m6                 ; += rgb_UVrnd
+    psrad          m0, 15
+    paddd          m1, m3                 ; (dword) { V[4-7] }
+    paddd          m4, m5                 ; (dword) { U[4-7] }
+    psrad          m2, 15
+    psrad          m4, 15
+    psrad          m1, 15
+    packssdw       m0, m4                 ; (word) { U[0-7] }
+    packssdw       m2, m1                 ; (word) { V[0-7] }
+%if mmsize == 8
+    packuswb       m0, m0                 ; (byte) { U[0-7] }
+    packuswb       m2, m2                 ; (byte) { V[0-7] }
+    movh   [dstUq+wq], m0
+    movh   [dstVq+wq], m2
+%else ; mmsize == 16
+    packuswb       m0, m2                 ; (byte) { U[0-7], V[0-7] }
+    movh   [dstUq+wq], m0
+    movhps [dstVq+wq], m0
+%endif ; mmsize == 8/16
+    add            wq, mmsize / 2
+    jl .loop
+    REP_RET
+%endif ; ARCH_X86_64 && %0 == 3
+%endmacro
+
+; %1 = nr. of XMM registers for rgb-to-Y func
+; %2 = nr. of XMM registers for rgb-to-UV func
+%macro RGB32_FUNCS 2
+RGB32_TO_Y_FN %1, r, g, b, a
+RGB32_TO_Y_FN %1, b, g, r, a, rgba
+RGB32_TO_Y_FN %1, a, r, g, b, rgba
+RGB32_TO_Y_FN %1, a, b, g, r, rgba
+
+RGB32_TO_UV_FN %2, r, g, b, a
+RGB32_TO_UV_FN %2, b, g, r, a, rgba
+RGB32_TO_UV_FN %2, a, r, g, b, rgba
+RGB32_TO_UV_FN %2, a, b, g, r, rgba
+%endmacro
+
+%if ARCH_X86_32
+INIT_MMX mmx
+RGB32_FUNCS 0, 0
+%endif
+
+INIT_XMM sse2
+RGB32_FUNCS 8, 12
+
+INIT_XMM avx
+RGB32_FUNCS 8, 12
 
 ;-----------------------------------------------------------------------------
 ; YUYV/UYVY/NV12/NV21 packed pixel shuffling.
