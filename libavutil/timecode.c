@@ -22,9 +22,8 @@
 /**
  * @file
  * Timecode helpers
- * A few references:
- *   https://en.wikipedia.org/wiki/SMPTE_time_code
- *   http://www.dropframetimecode.org
+ * @see https://en.wikipedia.org/wiki/SMPTE_time_code
+ * @see http://www.dropframetimecode.org
  */
 
 #include <stdio.h>
