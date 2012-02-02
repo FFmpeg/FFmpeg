@@ -307,4 +307,10 @@ int ff_add_param_change(AVPacket *pkt, int32_t channels,
                         uint64_t channel_layout, int32_t sample_rate,
                         int32_t width, int32_t height);
 
+/**
+ * Set the timebase for each stream from the corresponding codec timebase and
+ * print it.
+ */
+int ff_framehash_write_header(AVFormatContext *s);
+
 #endif /* AVFORMAT_INTERNAL_H */
