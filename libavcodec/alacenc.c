@@ -386,11 +386,21 @@ static void write_compressed_frame(AlacEncodeContext *s)
     }
 }
 
+static av_cold int alac_encode_close(AVCodecContext *avctx)
+{
+    AlacEncodeContext *s = avctx->priv_data;
+    ff_lpc_end(&s->lpc_ctx);
+    av_freep(&avctx->extradata);
+    avctx->extradata_size = 0;
+    av_freep(&avctx->coded_frame);
+    return 0;
+}
+
 static av_cold int alac_encode_init(AVCodecContext *avctx)
 {
     AlacEncodeContext *s    = avctx->priv_data;
     int ret;
-    uint8_t *alac_extradata = av_mallocz(ALAC_EXTRADATA_SIZE+1);
+    uint8_t *alac_extradata;
 
     avctx->frame_size      = DEFAULT_FRAME_SIZE;
 
@@ -423,6 +433,14 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
 
     s->write_sample_size  = DEFAULT_SAMPLE_SIZE + avctx->channels - 1; // FIXME: consider wasted_bytes
 
+    avctx->extradata = av_mallocz(ALAC_EXTRADATA_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!avctx->extradata) {
+        ret = AVERROR(ENOMEM);
+        goto error;
+    }
+    avctx->extradata_size = ALAC_EXTRADATA_SIZE;
+
+    alac_extradata = avctx->extradata;
     AV_WB32(alac_extradata,    ALAC_EXTRADATA_SIZE);
     AV_WB32(alac_extradata+4,  MKBETAG('a','l','a','c'));
     AV_WB32(alac_extradata+12, avctx->frame_size);
@@ -446,7 +464,8 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
            avctx->min_prediction_order > ALAC_MAX_LPC_ORDER) {
             av_log(avctx, AV_LOG_ERROR, "invalid min prediction order: %d\n",
                    avctx->min_prediction_order);
-                return -1;
+            ret = AVERROR(EINVAL);
+            goto error;
         }
 
         s->min_prediction_order = avctx->min_prediction_order;
@@ -458,7 +477,8 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
             avctx->max_prediction_order > ALAC_MAX_LPC_ORDER) {
             av_log(avctx, AV_LOG_ERROR, "invalid max prediction order: %d\n",
                    avctx->max_prediction_order);
-                return -1;
+            ret = AVERROR(EINVAL);
+            goto error;
         }
 
         s->max_prediction_order = avctx->max_prediction_order;
@@ -468,18 +488,27 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR,
                "invalid prediction orders: min=%d max=%d\n",
                s->min_prediction_order, s->max_prediction_order);
-        return -1;
+        ret = AVERROR(EINVAL);
+        goto error;
     }
 
-    avctx->extradata = alac_extradata;
-    avctx->extradata_size = ALAC_EXTRADATA_SIZE;
-
     avctx->coded_frame = avcodec_alloc_frame();
+    if (!avctx->coded_frame) {
+        ret = AVERROR(ENOMEM);
+        goto error;
+    }
 
     s->avctx = avctx;
-    ret = ff_lpc_init(&s->lpc_ctx, avctx->frame_size, s->max_prediction_order,
-                      FF_LPC_TYPE_LEVINSON);
 
+    if ((ret = ff_lpc_init(&s->lpc_ctx, avctx->frame_size,
+                           s->max_prediction_order,
+                           FF_LPC_TYPE_LEVINSON)) < 0) {
+        goto error;
+    }
+
+    return 0;
+error:
+    alac_encode_close(avctx);
     return ret;
 }
 
@@ -527,16 +556,6 @@ verbatim:
     }
 
     return out_bytes;
-}
-
-static av_cold int alac_encode_close(AVCodecContext *avctx)
-{
-    AlacEncodeContext *s = avctx->priv_data;
-    ff_lpc_end(&s->lpc_ctx);
-    av_freep(&avctx->extradata);
-    avctx->extradata_size = 0;
-    av_freep(&avctx->coded_frame);
-    return 0;
 }
 
 AVCodec ff_alac_encoder = {
