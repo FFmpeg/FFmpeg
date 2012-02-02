@@ -377,6 +377,11 @@ static void write_compressed_frame(AlacEncodeContext *s)
     }
 }
 
+static av_always_inline int get_max_frame_size(int frame_size, int ch, int bps)
+{
+    return FFALIGN(55 + bps * ch * frame_size + 3, 8) / 8;
+}
+
 static av_cold int alac_encode_close(AVCodecContext *avctx)
 {
     AlacEncodeContext *s = avctx->priv_data;
@@ -420,8 +425,9 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
     s->rc.k_modifier      = 14;
     s->rc.rice_modifier   = 4;
 
-    s->max_coded_frame_size = 8 + (avctx->frame_size * avctx->channels *
-                                   DEFAULT_SAMPLE_SIZE >> 3);
+    s->max_coded_frame_size = get_max_frame_size(avctx->frame_size,
+                                                 avctx->channels,
+                                                 DEFAULT_SAMPLE_SIZE);
 
     // FIXME: consider wasted_bytes
     s->write_sample_size  = DEFAULT_SAMPLE_SIZE + avctx->channels - 1;
@@ -511,8 +517,15 @@ static int alac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
     AlacEncodeContext *s = avctx->priv_data;
     PutBitContext *pb = &s->pbctx;
     int i, out_bytes, verbatim_flag = 0;
+    int max_frame_size;
 
-    if (buf_size < 2 * s->max_coded_frame_size) {
+    if (avctx->frame_size < DEFAULT_FRAME_SIZE)
+        max_frame_size = get_max_frame_size(avctx->frame_size, avctx->channels,
+                                            DEFAULT_SAMPLE_SIZE);
+    else
+        max_frame_size = s->max_coded_frame_size;
+
+    if (buf_size < 2 * max_frame_size) {
         av_log(avctx, AV_LOG_ERROR, "buffer size is too small\n");
         return -1;
     }
@@ -537,7 +550,7 @@ verbatim:
     flush_put_bits(pb);
     out_bytes = put_bits_count(pb) >> 3;
 
-    if (out_bytes > s->max_coded_frame_size) {
+    if (out_bytes > max_frame_size) {
         /* frame too large. use verbatim mode */
         if (verbatim_flag || s->compression_level == 0) {
             /* still too large. must be an error. */
