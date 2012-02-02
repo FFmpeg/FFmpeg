@@ -58,6 +58,7 @@ typedef struct AlacLPCContext {
 } AlacLPCContext;
 
 typedef struct AlacEncodeContext {
+    int frame_size;                     /**< current frame size               */
     int compression_level;
     int min_prediction_order;
     int max_prediction_order;
@@ -82,7 +83,7 @@ static void init_sample_buffers(AlacEncodeContext *s,
 
     for (ch = 0; ch < s->avctx->channels; ch++) {
         const int16_t *sptr = input_samples + ch;
-        for (i = 0; i < s->avctx->frame_size; i++) {
+        for (i = 0; i < s->frame_size; i++) {
             s->sample_buf[ch][i] = *sptr;
             sptr += s->avctx->channels;
         }
@@ -124,7 +125,7 @@ static void write_frame_header(AlacEncodeContext *s, int is_verbatim)
     put_bits(&s->pbctx, 1,  1);                     // Sample count is in the header
     put_bits(&s->pbctx, 2,  0);                     // FIXME: Wasted bytes field
     put_bits(&s->pbctx, 1,  is_verbatim);           // Audio block is verbatim
-    put_bits32(&s->pbctx, s->avctx->frame_size);    // No. of samples in the frame
+    put_bits32(&s->pbctx, s->frame_size);           // No. of samples in the frame
 }
 
 static void calc_predictor_params(AlacEncodeContext *s, int ch)
@@ -144,7 +145,7 @@ static void calc_predictor_params(AlacEncodeContext *s, int ch)
         s->lpc[ch].lpc_coeff[5] =  -25;
     } else {
         opt_order = ff_lpc_calc_coefs(&s->lpc_ctx, s->sample_buf[ch],
-                                      s->avctx->frame_size,
+                                      s->frame_size,
                                       s->min_prediction_order,
                                       s->max_prediction_order,
                                       ALAC_MAX_LPC_PRECISION, coefs, shift,
@@ -193,7 +194,7 @@ static int estimate_stereo_mode(int32_t *left_ch, int32_t *right_ch, int n)
 static void alac_stereo_decorrelation(AlacEncodeContext *s)
 {
     int32_t *left = s->sample_buf[0], *right = s->sample_buf[1];
-    int i, mode, n = s->avctx->frame_size;
+    int i, mode, n = s->frame_size;
     int32_t tmp;
 
     mode = estimate_stereo_mode(left, right, n);
@@ -238,7 +239,7 @@ static void alac_linear_predictor(AlacEncodeContext *s, int ch)
     if (lpc.lpc_order == 31) {
         s->predictor_buf[0] = s->sample_buf[ch][0];
 
-        for (i = 1; i < s->avctx->frame_size; i++) {
+        for (i = 1; i < s->frame_size; i++) {
             s->predictor_buf[i] = s->sample_buf[ch][i    ] -
                                   s->sample_buf[ch][i - 1];
         }
@@ -258,7 +259,7 @@ static void alac_linear_predictor(AlacEncodeContext *s, int ch)
             residual[i] = samples[i] - samples[i-1];
 
         // perform lpc on remaining samples
-        for (i = lpc.lpc_order + 1; i < s->avctx->frame_size; i++) {
+        for (i = lpc.lpc_order + 1; i < s->frame_size; i++) {
             int sum = 1 << (lpc.lpc_quant - 1), res_val, j;
 
             for (j = 0; j < lpc.lpc_order; j++) {
@@ -300,7 +301,7 @@ static void alac_entropy_coder(AlacEncodeContext *s)
     int sign_modifier = 0, i, k;
     int32_t *samples = s->predictor_buf;
 
-    for (i = 0; i < s->avctx->frame_size;) {
+    for (i = 0; i < s->frame_size;) {
         int x;
 
         k = av_log2((history >> 9) + 3);
@@ -320,12 +321,12 @@ static void alac_entropy_coder(AlacEncodeContext *s)
         if (x > 0xFFFF)
             history = 0xFFFF;
 
-        if (history < 128 && i < s->avctx->frame_size) {
+        if (history < 128 && i < s->frame_size) {
             unsigned int block_size = 0;
 
             k = 7 - av_log2(history) + ((history + 16) >> 6);
 
-            while (*samples == 0 && i < s->avctx->frame_size) {
+            while (*samples == 0 && i < s->frame_size) {
                 samples++;
                 i++;
                 block_size++;
@@ -369,7 +370,7 @@ static void write_compressed_frame(AlacEncodeContext *s)
         // TODO: determine when this will actually help. for now it's not used.
         if (prediction_type == 15) {
             // 2nd pass 1st order filter
-            for (j = s->avctx->frame_size - 1; j > 0; j--)
+            for (j = s->frame_size - 1; j > 0; j--)
                 s->predictor_buf[j] -= s->predictor_buf[j - 1];
         }
 
@@ -398,7 +399,7 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
     int ret;
     uint8_t *alac_extradata;
 
-    avctx->frame_size = DEFAULT_FRAME_SIZE;
+    avctx->frame_size = s->frame_size = DEFAULT_FRAME_SIZE;
 
     if (avctx->sample_fmt != AV_SAMPLE_FMT_S16) {
         av_log(avctx, AV_LOG_ERROR, "only pcm_s16 input samples are supported\n");
@@ -519,8 +520,10 @@ static int alac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
     int i, out_bytes, verbatim_flag = 0;
     int max_frame_size;
 
+    s->frame_size  = avctx->frame_size;
+
     if (avctx->frame_size < DEFAULT_FRAME_SIZE)
-        max_frame_size = get_max_frame_size(avctx->frame_size, avctx->channels,
+        max_frame_size = get_max_frame_size(s->frame_size, avctx->channels,
                                             DEFAULT_SAMPLE_SIZE);
     else
         max_frame_size = s->max_coded_frame_size;
@@ -537,7 +540,7 @@ verbatim:
         // Verbatim mode
         const int16_t *samples = data;
         write_frame_header(s, 1);
-        for (i = 0; i < avctx->frame_size * avctx->channels; i++) {
+        for (i = 0; i < s->frame_size * avctx->channels; i++) {
             put_sbits(pb, 16, *samples++);
         }
     } else {
