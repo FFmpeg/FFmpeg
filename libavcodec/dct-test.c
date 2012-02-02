@@ -48,8 +48,6 @@
 void ff_mmx_idct(DCTELEM *data);
 void ff_mmxext_idct(DCTELEM *data);
 
-void odivx_idct_c(short *block);
-
 // BFIN
 void ff_bfin_idct(DCTELEM *block);
 void ff_bfin_fdct(DCTELEM *block);
