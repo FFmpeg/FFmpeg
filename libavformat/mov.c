@@ -1639,6 +1639,7 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     st->nb_frames= total_sample_count;
     if (duration)
         st->duration= duration;
+    sc->track_end = duration;
     return 0;
 }
 
@@ -2233,7 +2234,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     if (flags & 0x001) data_offset        = avio_rb32(pb);
     if (flags & 0x004) first_sample_flags = avio_rb32(pb);
-    dts = st->duration - sc->time_offset;
+    dts    = sc->track_end - sc->time_offset;
     offset = frag->base_data_offset + data_offset;
     distance = 0;
     av_dlog(c->fc, "first sample flags 0x%x\n", first_sample_flags);
@@ -2263,7 +2264,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         sc->data_size += sample_size;
     }
     frag->moof_offset = offset;
-    st->duration = dts + sc->time_offset;
+    st->duration = sc->track_end = dts + sc->time_offset;
     return 0;
 }
 
