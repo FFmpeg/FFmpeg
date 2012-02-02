@@ -641,8 +641,8 @@ static void write_header(FFV1Context *f){
         if(f->version>0)
             put_symbol(c, state, f->avctx->bits_per_raw_sample, 0);
         put_rac(c, state, 1); //chroma planes
-            put_symbol(c, state, f->chroma_h_shift, 0);
-            put_symbol(c, state, f->chroma_v_shift, 0);
+        put_symbol(c, state, f->chroma_h_shift, 0);
+        put_symbol(c, state, f->chroma_v_shift, 0);
         put_rac(c, state, f->transparency);
 
         write_quant_tables(c, f->quant_table);
@@ -783,8 +783,8 @@ static int write_extra_header(FFV1Context *f){
     put_symbol(c, state, f->colorspace, 0); //YUV cs type
     put_symbol(c, state, f->avctx->bits_per_raw_sample, 0);
     put_rac(c, state, 1); //chroma planes
-        put_symbol(c, state, f->chroma_h_shift, 0);
-        put_symbol(c, state, f->chroma_v_shift, 0);
+    put_symbol(c, state, f->chroma_h_shift, 0);
+    put_symbol(c, state, f->chroma_v_shift, 0);
     put_rac(c, state, f->transparency);
     put_symbol(c, state, f->num_h_slices-1, 0);
     put_symbol(c, state, f->num_v_slices-1, 0);
@@ -1071,12 +1071,12 @@ static void clear_state(FFV1Context *f){
                 }else
                 memset(p->state, 128, CONTEXT_SIZE*p->context_count);
             }else{
-            for(j=0; j<p->context_count; j++){
+                for(j=0; j<p->context_count; j++){
                     p->vlc_state[j].drift= 0;
                     p->vlc_state[j].error_sum= 4; //FFMAX((RANGE + 32)/64, 2);
                     p->vlc_state[j].bias= 0;
                     p->vlc_state[j].count= 1;
-            }
+                }
             }
         }
     }
