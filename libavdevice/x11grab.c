@@ -295,7 +295,7 @@ x11grab_read_header(AVFormatContext *s1)
         }
         break;
     case 32:
-        input_pixfmt = PIX_FMT_RGB32;
+        input_pixfmt = PIX_FMT_0RGB32;
         break;
     default:
         av_log(s1, AV_LOG_ERROR, "image depth %i not supported ... aborting\n", image->bits_per_pixel);
@@ -539,8 +539,6 @@ x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
             av_log (s1, AV_LOG_INFO, "XGetZPixmap() failed\n");
         }
     }
-    if (image->bits_per_pixel == 32)
-        XAddPixel(image, 0xFF000000);
 
     if (s->draw_mouse) {
         paint_mouse_pointer(image, s);
