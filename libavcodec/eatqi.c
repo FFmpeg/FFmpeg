@@ -127,7 +127,8 @@ static int tqi_decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
-    av_fast_padded_malloc(&t->bitstream_buf, &t->bitstream_buf_size, buf_end-buf);
+    av_fast_padded_malloc(&t->bitstream_buf, &t->bitstream_buf_size,
+                          buf_end - buf);
     if (!t->bitstream_buf)
         return AVERROR(ENOMEM);
     s->dsp.bswap_buf(t->bitstream_buf, (const uint32_t*)buf, (buf_end-buf)/4);

@@ -37,7 +37,7 @@ typedef struct {
     AVFrame frame;
     DSPContext dsp;
     /* input data */
-    uint8_t buffer[32];
+    DECLARE_ALIGNED(16, uint8_t, buffer)[32];
     int16_t vector[8];  ///< input vector: 5/5/4/4/4/3/3/3
     int offset1[2];     ///< 8-bit value, used in one copying offset
     int offset2[4];     ///< 7-bit value, encodes offsets for copying and for two-point filter

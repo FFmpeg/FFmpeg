@@ -28,7 +28,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 {
     if (avctx->width & 1) {
         av_log(avctx, AV_LOG_ERROR, "frwu needs even width\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
     avctx->pix_fmt = PIX_FMT_UYVY422;
 
@@ -42,7 +42,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                         AVPacket *avpkt)
 {
-    int field;
+    int field, ret;
     AVFrame *pic = avctx->coded_frame;
     const uint8_t *buf = avpkt->data;
     const uint8_t *buf_end = buf + avpkt->size;
@@ -52,16 +52,18 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     if (avpkt->size < avctx->width * 2 * avctx->height + 4 + 2*8) {
         av_log(avctx, AV_LOG_ERROR, "Packet is too small.\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     if (bytestream_get_le32(&buf) != AV_RL32("FRW1")) {
         av_log(avctx, AV_LOG_ERROR, "incorrect marker\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     pic->reference = 0;
-    if (avctx->get_buffer(avctx, pic) < 0)
-        return -1;
+    if ((ret = avctx->get_buffer(avctx, pic)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
+    }
 
     pic->pict_type = AV_PICTURE_TYPE_I;
     pic->key_frame = 1;
@@ -74,16 +76,16 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         int field_size, min_field_size = avctx->width * 2 * field_h;
         uint8_t *dst = pic->data[0];
         if (buf_end - buf < 8)
-            return -1;
+            return AVERROR_INVALIDDATA;
         buf += 4; // flags? 0x80 == bottom field maybe?
         field_size = bytestream_get_le32(&buf);
         if (field_size < min_field_size) {
             av_log(avctx, AV_LOG_ERROR, "Field size %i is too small (required %i)\n", field_size, min_field_size);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         if (buf_end - buf < field_size) {
             av_log(avctx, AV_LOG_ERROR, "Packet is too small, need %i, have %i\n", field_size, (int)(buf_end - buf));
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         if (field)
             dst += pic->linesize[0];

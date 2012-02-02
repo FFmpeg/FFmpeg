@@ -271,31 +271,28 @@ cglobal %2 %+ 24ToUV, 7, 7, %1, dstU, dstV, u1, src, u2, w, u3
 %endif ; ARCH_X86_64 && %0 == 3
 %endmacro
 
+; %1 = nr. of XMM registers for rgb-to-Y func
+; %2 = nr. of XMM registers for rgb-to-UV func
+%macro RGB24_FUNCS 2
+RGB24_TO_Y_FN %1, rgb
+RGB24_TO_Y_FN %1, bgr, rgb
+RGB24_TO_UV_FN %2, rgb
+RGB24_TO_UV_FN %2, bgr, rgb
+%endmacro
+
 %if ARCH_X86_32
 INIT_MMX mmx
-RGB24_TO_Y_FN 0, rgb
-RGB24_TO_Y_FN 0, bgr, rgb
-RGB24_TO_UV_FN 0, rgb
-RGB24_TO_UV_FN 0, bgr, rgb
+RGB24_FUNCS 0, 0
 %endif
 
 INIT_XMM sse2
-RGB24_TO_Y_FN 10, rgb
-RGB24_TO_Y_FN 10, bgr, rgb
-RGB24_TO_UV_FN 12, rgb
-RGB24_TO_UV_FN 12, bgr, rgb
+RGB24_FUNCS 10, 12
 
 INIT_XMM ssse3
-RGB24_TO_Y_FN 11, rgb
-RGB24_TO_Y_FN 11, bgr, rgb
-RGB24_TO_UV_FN 13, rgb
-RGB24_TO_UV_FN 13, bgr, rgb
+RGB24_FUNCS 11, 13
 
 INIT_XMM avx
-RGB24_TO_Y_FN 11, rgb
-RGB24_TO_Y_FN 11, bgr, rgb
-RGB24_TO_UV_FN 13, rgb
-RGB24_TO_UV_FN 13, bgr, rgb
+RGB24_FUNCS 11, 13
 
 ;-----------------------------------------------------------------------------
 ; YUYV/UYVY/NV12/NV21 packed pixel shuffling.

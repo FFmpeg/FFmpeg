@@ -138,6 +138,7 @@ static int dv_extract_audio(uint8_t* frame, uint8_t* ppcm[4],
         pcm = ppcm[ipcm++];
         if (!pcm)
             break;
+
         /* for each DIF segment */
         for (i = 0; i < sys->difseg_size; i++) {
             frame += 6 * 80; /* skip DIF segment header */
@@ -186,8 +187,6 @@ static int dv_extract_audio(uint8_t* frame, uint8_t* ppcm[4],
                 frame += 16 * 80; /* 15 Video DIFs + 1 Audio DIF */
             }
         }
-
-        /* next stereo channel (50Mbps and 100Mbps only) */
     }
 
     return size;

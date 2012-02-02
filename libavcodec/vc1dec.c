@@ -5712,7 +5712,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
             if (!v->field_mode || v->second_field)
                 s->end_mb_y = (i == n_slices     ) ? mb_height : FFMIN(mb_height, slices[i].mby_start % mb_height);
             else
-                s->end_mb_y = (i == n_slices1 + 1) ? mb_height : FFMIN(mb_height, slices[i].mby_start % mb_height);
+                s->end_mb_y = (i <= n_slices1 + 1) ? mb_height : FFMIN(mb_height, slices[i].mby_start % mb_height);
             vc1_decode_blocks(v);
             if (i != n_slices)
                 s->gb = slices[i].gb;

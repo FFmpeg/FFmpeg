@@ -185,9 +185,6 @@ enum CodecID {
     CODEC_ID_TIERTEXSEQVIDEO,
     CODEC_ID_TIFF,
     CODEC_ID_GIF,
-#if LIBAVCODEC_VERSION_MAJOR == 53
-    CODEC_ID_FFH264,
-#endif
     CODEC_ID_DXA,
     CODEC_ID_DNXHD,
     CODEC_ID_THP,
@@ -205,10 +202,6 @@ enum CodecID {
     CODEC_ID_INDEO5,
     CODEC_ID_MIMIC,
     CODEC_ID_RL2,
-#if LIBAVCODEC_VERSION_MAJOR == 53
-    CODEC_ID_8SVX_EXP,
-    CODEC_ID_8SVX_FIB,
-#endif
     CODEC_ID_ESCAPE124,
     CODEC_ID_DIRAC,
     CODEC_ID_BFI,
@@ -247,18 +240,13 @@ enum CodecID {
     CODEC_ID_DFA,
     CODEC_ID_WMV3IMAGE,
     CODEC_ID_VC1IMAGE,
-#if LIBAVCODEC_VERSION_MAJOR == 53
-    CODEC_ID_G723_1_DEPRECATED,
-    CODEC_ID_G729_DEPRECATED,
-#endif
-    CODEC_ID_UTVIDEO_DEPRECATED,
+    CODEC_ID_UTVIDEO,
     CODEC_ID_BMV_VIDEO,
     CODEC_ID_VBLE,
     CODEC_ID_DXTORY,
     CODEC_ID_V410,
     CODEC_ID_XWD,
     CODEC_ID_Y41P       = MKBETAG('Y','4','1','P'),
-    CODEC_ID_UTVIDEO = 0x800,
     CODEC_ID_ESCAPE130  = MKBETAG('E','1','3','0'),
     CODEC_ID_AVRP       = MKBETAG('A','V','R','P'),
 
@@ -397,15 +385,11 @@ enum CodecID {
     CODEC_ID_AAC_LATM,
     CODEC_ID_QDMC,
     CODEC_ID_CELT,
-#if LIBAVCODEC_VERSION_MAJOR > 53
-    CODEC_ID_G723_1_DEPRECATED,
-    CODEC_ID_G729_DEPRECATED,
+    CODEC_ID_G723_1,
+    CODEC_ID_G729,
     CODEC_ID_8SVX_EXP,
     CODEC_ID_8SVX_FIB,
-#endif
     CODEC_ID_BMV_AUDIO,
-    CODEC_ID_G729 = 0x15800,
-    CODEC_ID_G723_1= 0x15801,
     CODEC_ID_FFWAVESYNTH = MKBETAG('F','F','W','S'),
     CODEC_ID_8SVX_RAW   = MKBETAG('8','S','V','X'),
     CODEC_ID_SONIC       = MKBETAG('S','O','N','C'),
@@ -1523,7 +1507,6 @@ typedef struct AVCodecContext {
 #define FF_BUG_DC_CLIP          4096
 #define FF_BUG_MS               8192 ///< Work around various bugs in Microsoft's broken decoders.
 #define FF_BUG_TRUNCATED       16384
-//#define FF_BUG_FAKE_SCALABILITY 16 //Autodetection should work 100%.
 
     /**
      * luma single coefficient elimination threshold
@@ -2096,14 +2079,6 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int context_model;
-#if 0
-    /**
-     *
-     * - encoding: unused
-     * - decoding: Set by user.
-     */
-    uint8_t * (*realloc)(struct AVCodecContext *s, uint8_t *buf, int buf_size);
-#endif
 
     /**
      * slice flags

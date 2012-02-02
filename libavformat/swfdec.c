@@ -137,10 +137,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             ast->codec->codec_id = ff_codec_get_id(swf_audio_codec_tags, (v>>4) & 15);
             ast->need_parsing = AVSTREAM_PARSE_FULL;
             sample_rate_code= (v>>2) & 3;
-            if (!sample_rate_code)
-                ast->codec->sample_rate = 5512;
-            else
-                ast->codec->sample_rate = 11025 << (sample_rate_code-1);
+            ast->codec->sample_rate = 44100 >> (3 - sample_rate_code);
             avpriv_set_pts_info(ast, 64, 1, ast->codec->sample_rate);
             len -= 4;
         } else if (tag == TAG_VIDEOFRAME) {

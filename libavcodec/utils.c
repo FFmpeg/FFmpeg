@@ -91,7 +91,7 @@ void av_fast_padded_malloc(void *ptr, unsigned int *size, size_t min_size)
 {
     uint8_t **p = ptr;
     if (min_size > SIZE_MAX - FF_INPUT_BUFFER_PADDING_SIZE) {
-        *p = NULL;
+        av_freep(p);
         *size = 0;
         return;
     }
@@ -1448,9 +1448,9 @@ av_cold int avcodec_close(AVCodecContext *avctx)
 static enum CodecID remap_deprecated_codec_id(enum CodecID id)
 {
     switch(id){
-        case CODEC_ID_G723_1_DEPRECATED : return CODEC_ID_G723_1;
-        case CODEC_ID_G729_DEPRECATED   : return CODEC_ID_G729;
-        case CODEC_ID_UTVIDEO_DEPRECATED: return CODEC_ID_UTVIDEO;
+        //This is for future deprecatec codec ids, its empty since
+        //last major bump but will fill up again over time, please dont remove it
+//         case CODEC_ID_UTVIDEO_DEPRECATED: return CODEC_ID_UTVIDEO;
         default                         : return id;
     }
 }
