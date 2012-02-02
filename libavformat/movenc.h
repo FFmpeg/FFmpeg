@@ -151,6 +151,7 @@ typedef struct MOVMuxContext {
     int max_fragment_duration;
     int max_fragment_size;
     int ism_lookahead;
+    AVIOContext *mdat_buf;
 } MOVMuxContext;
 
 #define FF_MOV_FLAG_RTP_HINT 1

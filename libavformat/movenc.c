@@ -96,9 +96,9 @@ static int mov_write_stco_tag(AVIOContext *pb, MOVTrack *track)
     avio_wb32(pb, track->entry); /* entry count */
     for (i=0; i<track->entry; i++) {
         if(mode64 == 1)
-            avio_wb64(pb, track->cluster[i].pos);
+            avio_wb64(pb, track->cluster[i].pos + track->data_offset);
         else
-            avio_wb32(pb, track->cluster[i].pos);
+            avio_wb32(pb, track->cluster[i].pos + track->data_offset);
     }
     return update_size(pb, pos);
 }
@@ -2681,6 +2681,10 @@ static int mov_flush_fragment(AVFormatContext *s)
 
     if (!(mov->flags & FF_MOV_FLAG_EMPTY_MOOV) && mov->fragments == 0) {
         int64_t pos = avio_tell(s->pb);
+        int ret;
+        AVIOContext *moov_buf;
+        uint8_t *buf;
+        int buf_size;
 
         for (i = 0; i < mov->nb_streams; i++)
             if (!mov->tracks[i].entry)
@@ -2688,10 +2692,24 @@ static int mov_flush_fragment(AVFormatContext *s)
         /* Don't write the initial moov unless all tracks have data */
         if (i < mov->nb_streams)
             return 0;
-        avio_seek(s->pb, mov->mdat_pos, SEEK_SET);
-        avio_wb32(s->pb, mov->mdat_size + 8);
-        avio_seek(s->pb, pos, SEEK_SET);
+
+        if ((ret = avio_open_dyn_buf(&moov_buf)) < 0)
+            return ret;
+        mov_write_moov_tag(moov_buf, mov, s);
+        buf_size = avio_close_dyn_buf(moov_buf, &buf);
+        av_free(buf);
+        for (i = 0; i < mov->nb_streams; i++)
+            mov->tracks[i].data_offset = pos + buf_size + 8;
+
         mov_write_moov_tag(s->pb, mov, s);
+
+        buf_size = avio_close_dyn_buf(mov->mdat_buf, &buf);
+        mov->mdat_buf = NULL;
+        avio_wb32(s->pb, buf_size + 8);
+        ffio_wfourcc(s->pb, "mdat");
+        avio_write(s->pb, buf, buf_size);
+        av_free(buf);
+
         mov->fragments++;
         mov->mdat_size = 0;
         for (i = 0; i < mov->nb_streams; i++) {
@@ -2804,13 +2822,21 @@ static int mov_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         mov_flush_fragment(s);
     }
 
-    if (mov->flags & FF_MOV_FLAG_FRAGMENT && mov->fragments > 0) {
-        if (!trk->mdat_buf) {
-            int ret;
-            if ((ret = avio_open_dyn_buf(&trk->mdat_buf)) < 0)
-                return ret;
+    if (mov->flags & FF_MOV_FLAG_FRAGMENT) {
+        int ret;
+        if (mov->fragments > 0) {
+            if (!trk->mdat_buf) {
+                if ((ret = avio_open_dyn_buf(&trk->mdat_buf)) < 0)
+                    return ret;
+            }
+            pb = trk->mdat_buf;
+        } else {
+            if (!mov->mdat_buf) {
+                if ((ret = avio_open_dyn_buf(&mov->mdat_buf)) < 0)
+                    return ret;
+            }
+            pb = mov->mdat_buf;
         }
-        pb = trk->mdat_buf;
     }
 
     if (enc->codec_id == CODEC_ID_AMR_NB) {
@@ -2972,11 +2998,18 @@ static int mov_write_header(AVFormatContext *s)
     AVDictionaryEntry *t;
     int i, hint_track = 0;
 
-    /* Non-seekable output is ok if EMPTY_MOOV is set, or if using the ismv
-     * format (which sets EMPTY_MOOV later in this function). If ism_lookahead
+    /* Set the FRAGMENT flag if any of the fragmentation methods are
+     * enabled. */
+    if (mov->max_fragment_duration || mov->max_fragment_size ||
+        mov->flags & (FF_MOV_FLAG_EMPTY_MOOV |
+                      FF_MOV_FLAG_FRAG_KEYFRAME |
+                      FF_MOV_FLAG_FRAG_CUSTOM))
+        mov->flags |= FF_MOV_FLAG_FRAGMENT;
+
+    /* Non-seekable output is ok if using fragmentation. If ism_lookahead
      * is enabled, we don't support non-seekable output at all. */
     if (!s->pb->seekable &&
-        ((!(mov->flags & FF_MOV_FLAG_EMPTY_MOOV) &&
+        ((!(mov->flags & FF_MOV_FLAG_FRAGMENT) &&
           !(s->oformat && !strcmp(s->oformat->name, "ismv")))
          || mov->ism_lookahead)) {
         av_log(s, AV_LOG_ERROR, "muxer does not support non seekable output\n");
@@ -3116,18 +3149,11 @@ static int mov_write_header(AVFormatContext *s)
                             FF_MOV_FLAG_FRAG_CUSTOM)) &&
             !mov->max_fragment_duration && !mov->max_fragment_size)
             mov->max_fragment_duration = 5000000;
-        mov->flags |= FF_MOV_FLAG_EMPTY_MOOV | FF_MOV_FLAG_SEPARATE_MOOF;
+        mov->flags |= FF_MOV_FLAG_EMPTY_MOOV | FF_MOV_FLAG_SEPARATE_MOOF |
+                      FF_MOV_FLAG_FRAGMENT;
     }
 
-    /* Set the FRAGMENT flag if any of the fragmentation methods are
-     * enabled. */
-    if (mov->max_fragment_duration || mov->max_fragment_size ||
-        mov->flags & (FF_MOV_FLAG_EMPTY_MOOV |
-                      FF_MOV_FLAG_FRAG_KEYFRAME |
-                      FF_MOV_FLAG_FRAG_CUSTOM))
-        mov->flags |= FF_MOV_FLAG_FRAGMENT;
-
-    if (!(mov->flags & FF_MOV_FLAG_EMPTY_MOOV))
+    if (!(mov->flags & FF_MOV_FLAG_FRAGMENT))
         mov_write_mdat_tag(pb, mov);
 
     if (t = av_dict_get(s->metadata, "creation_time", NULL, 0))
