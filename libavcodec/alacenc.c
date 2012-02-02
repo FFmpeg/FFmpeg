@@ -119,12 +119,12 @@ static void encode_scalar(AlacEncodeContext *s, int x,
 
 static void write_frame_header(AlacEncodeContext *s, int is_verbatim)
 {
-    put_bits(&s->pbctx, 3,  s->avctx->channels-1);          // No. of channels -1
-    put_bits(&s->pbctx, 16, 0);                             // Seems to be zero
-    put_bits(&s->pbctx, 1,  1);                             // Sample count is in the header
-    put_bits(&s->pbctx, 2,  0);                             // FIXME: Wasted bytes field
-    put_bits(&s->pbctx, 1,  is_verbatim);                   // Audio block is verbatim
-    put_bits32(&s->pbctx, s->avctx->frame_size);            // No. of samples in the frame
+    put_bits(&s->pbctx, 3,  s->avctx->channels-1);  // No. of channels -1
+    put_bits(&s->pbctx, 16, 0);                     // Seems to be zero
+    put_bits(&s->pbctx, 1,  1);                     // Sample count is in the header
+    put_bits(&s->pbctx, 2,  0);                     // FIXME: Wasted bytes field
+    put_bits(&s->pbctx, 1,  is_verbatim);           // Audio block is verbatim
+    put_bits32(&s->pbctx, s->avctx->frame_size);    // No. of samples in the frame
 }
 
 static void calc_predictor_params(AlacEncodeContext *s, int ch)
@@ -167,8 +167,8 @@ static int estimate_stereo_mode(int32_t *left_ch, int32_t *right_ch, int n)
     /* calculate sum of 2nd order residual for each channel */
     sum[0] = sum[1] = sum[2] = sum[3] = 0;
     for (i = 2; i < n; i++) {
-        lt = left_ch[i] - 2*left_ch[i-1] + left_ch[i-2];
-        rt = right_ch[i] - 2*right_ch[i-1] + right_ch[i-2];
+        lt =  left_ch[i] - 2 *  left_ch[i - 1] +  left_ch[i - 2];
+        rt = right_ch[i] - 2 * right_ch[i - 1] + right_ch[i - 2];
         sum[2] += FFABS((lt + rt) >> 1);
         sum[3] += FFABS(lt - rt);
         sum[0] += FFABS(lt);
@@ -184,9 +184,8 @@ static int estimate_stereo_mode(int32_t *left_ch, int32_t *right_ch, int n)
     /* return mode with lowest score */
     best = 0;
     for (i = 1; i < 4; i++) {
-        if (score[i] < score[best]) {
+        if (score[i] < score[best])
             best = i;
-        }
     }
     return best;
 }
@@ -199,40 +198,35 @@ static void alac_stereo_decorrelation(AlacEncodeContext *s)
 
     mode = estimate_stereo_mode(left, right, n);
 
-    switch(mode)
-    {
-        case ALAC_CHMODE_LEFT_RIGHT:
-            s->interlacing_leftweight = 0;
-            s->interlacing_shift = 0;
-            break;
-
-        case ALAC_CHMODE_LEFT_SIDE:
-            for (i = 0; i < n; i++) {
-                right[i] = left[i] - right[i];
-            }
-            s->interlacing_leftweight = 1;
-            s->interlacing_shift = 0;
-            break;
-
-        case ALAC_CHMODE_RIGHT_SIDE:
-            for (i = 0; i < n; i++) {
-                tmp = right[i];
-                right[i] = left[i] - right[i];
-                left[i] = tmp + (right[i] >> 31);
-            }
-            s->interlacing_leftweight = 1;
-            s->interlacing_shift = 31;
-            break;
-
-        default:
-            for (i = 0; i < n; i++) {
-                tmp = left[i];
-                left[i] = (tmp + right[i]) >> 1;
-                right[i] = tmp - right[i];
-            }
-            s->interlacing_leftweight = 1;
-            s->interlacing_shift = 1;
-            break;
+    switch (mode) {
+    case ALAC_CHMODE_LEFT_RIGHT:
+        s->interlacing_leftweight = 0;
+        s->interlacing_shift      = 0;
+        break;
+    case ALAC_CHMODE_LEFT_SIDE:
+        for (i = 0; i < n; i++)
+            right[i] = left[i] - right[i];
+        s->interlacing_leftweight = 1;
+        s->interlacing_shift      = 0;
+        break;
+    case ALAC_CHMODE_RIGHT_SIDE:
+        for (i = 0; i < n; i++) {
+            tmp = right[i];
+            right[i] = left[i] - right[i];
+            left[i]  = tmp + (right[i] >> 31);
+        }
+        s->interlacing_leftweight = 1;
+        s->interlacing_shift      = 31;
+        break;
+    default:
+        for (i = 0; i < n; i++) {
+            tmp = left[i];
+            left[i]  = (tmp + right[i]) >> 1;
+            right[i] =  tmp - right[i];
+        }
+        s->interlacing_leftweight = 1;
+        s->interlacing_shift      = 1;
+        break;
     }
 }
 
@@ -244,8 +238,10 @@ static void alac_linear_predictor(AlacEncodeContext *s, int ch)
     if (lpc.lpc_order == 31) {
         s->predictor_buf[0] = s->sample_buf[ch][0];
 
-        for (i = 1; i < s->avctx->frame_size; i++)
-            s->predictor_buf[i] = s->sample_buf[ch][i] - s->sample_buf[ch][i-1];
+        for (i = 1; i < s->avctx->frame_size; i++) {
+            s->predictor_buf[i] = s->sample_buf[ch][i    ] -
+                                  s->sample_buf[ch][i - 1];
+        }
 
         return;
     }
@@ -267,7 +263,7 @@ static void alac_linear_predictor(AlacEncodeContext *s, int ch)
 
             for (j = 0; j < lpc.lpc_order; j++) {
                 sum += (samples[lpc.lpc_order-j] - samples[0]) *
-                        lpc.lpc_coeff[j];
+                       lpc.lpc_coeff[j];
             }
 
             sum >>= lpc.lpc_quant;
@@ -276,21 +272,20 @@ static void alac_linear_predictor(AlacEncodeContext *s, int ch)
                                       s->write_sample_size);
             res_val = residual[i];
 
-            if(res_val) {
+            if (res_val) {
                 int index = lpc.lpc_order - 1;
                 int neg = (res_val < 0);
 
-                while(index >= 0 && (neg ? (res_val < 0):(res_val > 0))) {
-                    int val = samples[0] - samples[lpc.lpc_order - index];
+                while (index >= 0 && (neg ? (res_val < 0) : (res_val > 0))) {
+                    int val  = samples[0] - samples[lpc.lpc_order - index];
                     int sign = (val ? FFSIGN(val) : 0);
 
-                    if(neg)
-                        sign*=-1;
+                    if (neg)
+                        sign *= -1;
 
                     lpc.lpc_coeff[index] -= sign;
                     val *= sign;
-                    res_val -= ((val >> lpc.lpc_quant) *
-                            (lpc.lpc_order - index));
+                    res_val -= (val >> lpc.lpc_quant) * (lpc.lpc_order - index);
                     index--;
                 }
             }
@@ -310,16 +305,16 @@ static void alac_entropy_coder(AlacEncodeContext *s)
 
         k = av_log2((history >> 9) + 3);
 
-        x = -2*(*samples)-1;
-        x ^= (x>>31);
+        x  = -2 * (*samples) -1;
+        x ^= x >> 31;
 
         samples++;
         i++;
 
         encode_scalar(s, x - sign_modifier, k, s->write_sample_size);
 
-        history += x * s->rc.history_mult
-                   - ((history * s->rc.history_mult) >> 9);
+        history += x * s->rc.history_mult -
+                   ((history * s->rc.history_mult) >> 9);
 
         sign_modifier = 0;
         if (x > 0xFFFF)
@@ -336,9 +331,7 @@ static void alac_entropy_coder(AlacEncodeContext *s)
                 block_size++;
             }
             encode_scalar(s, block_size, k, 16);
-
             sign_modifier = (block_size <= 0xFFFF);
-
             history = 0;
         }
 
@@ -356,7 +349,6 @@ static void write_compressed_frame(AlacEncodeContext *s)
     put_bits(&s->pbctx, 8, s->interlacing_leftweight);
 
     for (i = 0; i < s->avctx->channels; i++) {
-
         calc_predictor_params(s, i);
 
         put_bits(&s->pbctx, 4, prediction_type);
@@ -365,9 +357,8 @@ static void write_compressed_frame(AlacEncodeContext *s)
         put_bits(&s->pbctx, 3, s->rc.rice_modifier);
         put_bits(&s->pbctx, 5, s->lpc[i].lpc_order);
         // predictor coeff. table
-        for (j = 0; j < s->lpc[i].lpc_order; j++) {
+        for (j = 0; j < s->lpc[i].lpc_order; j++)
             put_sbits(&s->pbctx, 16, s->lpc[i].lpc_coeff[j]);
-        }
     }
 
     // apply lpc and entropy coding to audio samples
@@ -398,11 +389,11 @@ static av_cold int alac_encode_close(AVCodecContext *avctx)
 
 static av_cold int alac_encode_init(AVCodecContext *avctx)
 {
-    AlacEncodeContext *s    = avctx->priv_data;
+    AlacEncodeContext *s = avctx->priv_data;
     int ret;
     uint8_t *alac_extradata;
 
-    avctx->frame_size      = DEFAULT_FRAME_SIZE;
+    avctx->frame_size = DEFAULT_FRAME_SIZE;
 
     if (avctx->sample_fmt != AV_SAMPLE_FMT_S16) {
         av_log(avctx, AV_LOG_ERROR, "only pcm_s16 input samples are supported\n");
@@ -429,9 +420,11 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
     s->rc.k_modifier      = 14;
     s->rc.rice_modifier   = 4;
 
-    s->max_coded_frame_size = 8 + (avctx->frame_size * avctx->channels * DEFAULT_SAMPLE_SIZE >> 3);
+    s->max_coded_frame_size = 8 + (avctx->frame_size * avctx->channels *
+                                   DEFAULT_SAMPLE_SIZE >> 3);
 
-    s->write_sample_size  = DEFAULT_SAMPLE_SIZE + avctx->channels - 1; // FIXME: consider wasted_bytes
+    // FIXME: consider wasted_bytes
+    s->write_sample_size  = DEFAULT_SAMPLE_SIZE + avctx->channels - 1;
 
     avctx->extradata = av_mallocz(ALAC_EXTRADATA_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!avctx->extradata) {
@@ -566,8 +559,8 @@ AVCodec ff_alac_encoder = {
     .init           = alac_encode_init,
     .encode         = alac_encode_frame,
     .close          = alac_encode_close,
-    .capabilities = CODEC_CAP_SMALL_LAST_FRAME,
-    .sample_fmts = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
-                                                  AV_SAMPLE_FMT_NONE },
-    .long_name = NULL_IF_CONFIG_SMALL("ALAC (Apple Lossless Audio Codec)"),
+    .capabilities   = CODEC_CAP_SMALL_LAST_FRAME,
+    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
+                                                     AV_SAMPLE_FMT_NONE },
+    .long_name      = NULL_IF_CONFIG_SMALL("ALAC (Apple Lossless Audio Codec)"),
 };
