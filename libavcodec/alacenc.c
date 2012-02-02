@@ -527,7 +527,7 @@ static int alac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
 
     if (buf_size < 2 * max_frame_size) {
         av_log(avctx, AV_LOG_ERROR, "buffer size is too small\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
 verbatim:
@@ -555,7 +555,7 @@ verbatim:
         if (verbatim_flag || s->compression_level == 0) {
             /* still too large. must be an error. */
             av_log(avctx, AV_LOG_ERROR, "error encoding frame\n");
-            return -1;
+            return AVERROR_BUG;
         }
         verbatim_flag = 1;
         goto verbatim;
