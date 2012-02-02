@@ -1955,17 +1955,8 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
         /* no picture yet */
         return ret;
     }
-    ist->next_dts = decoded_frame->pts = guess_correct_pts(&ist->pts_ctx, decoded_frame->pkt_pts,
-                                                           decoded_frame->pkt_dts);
-    if (pkt->duration)
-        ist->next_dts += av_rescale_q(pkt->duration, ist->st->time_base, AV_TIME_BASE_Q);
-    else if (ist->st->codec->time_base.num != 0) {
-        int ticks      = ist->st->parser ? ist->st->parser->repeat_pict + 1 :
-                                           ist->st->codec->ticks_per_frame;
-        ist->next_dts += ((int64_t)AV_TIME_BASE *
-                          ist->st->codec->time_base.num * ticks) /
-                          ist->st->codec->time_base.den;
-    }
+    decoded_frame->pts = guess_correct_pts(&ist->pts_ctx, decoded_frame->pkt_pts,
+                                           decoded_frame->pkt_dts);
     pkt->size = 0;
     pre_process_video_frame(ist, (AVPicture *)decoded_frame, &buffer_to_free);
 
@@ -2128,6 +2119,13 @@ static int output_packet(InputStream *ist,
             break;
         case AVMEDIA_TYPE_VIDEO:
             ret = transcode_video    (ist, &avpkt, &got_output, &pkt_pts);
+            if (avpkt.duration)
+                ist->next_dts += av_rescale_q(avpkt.duration, ist->st->time_base, AV_TIME_BASE_Q);
+            else if (ist->st->codec->time_base.num != 0) {
+                int ticks      = ist->st->parser ? ist->st->parser->repeat_pict + 1 :
+                                                   ist->st->codec->ticks_per_frame;
+                ist->next_dts += av_rescale_q(ticks, ist->st->codec->time_base, AV_TIME_BASE_Q);
+            }
             break;
         case AVMEDIA_TYPE_SUBTITLE:
             ret = transcode_subtitles(ist, &avpkt, &got_output);
