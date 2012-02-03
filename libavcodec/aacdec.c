@@ -416,11 +416,13 @@ static av_cold int output_configure(AACContext *ac,
     }
 
     if (channel_config) {
+        if (avctx->request_channel_layout != AV_CH_LAYOUT_NATIVE)
+            sniff_channel_order(layout_map, tags);
         for (i = 0; i < tags_per_config[channel_config]; i++) {
-            int type    = aac_channel_layout_map[channel_config - 1][i][0];
-            int id      = aac_channel_layout_map[channel_config - 1][i][1];
-            int positon = aac_channel_layout_map[channel_config - 1][i][2];
-            if ((ret = che_configure(ac, positon,
+            int type    = layout_map[i][0];
+            int id      = layout_map[i][1];
+            int position = layout_map[i][2];
+            if ((ret = che_configure(ac, position,
                                      type, id,
                                      &channels)))
                 return ret;
@@ -437,7 +439,9 @@ static av_cold int output_configure(AACContext *ac,
          * channels in the order the PCE declared them.
          */
 
-        uint64_t layout = sniff_channel_order(layout_map, tags);
+        uint64_t layout = 0;
+        if (avctx->request_channel_layout != AV_CH_LAYOUT_NATIVE)
+            layout = sniff_channel_order(layout_map, tags);
         for (i = 0; i < tags; i++) {
             int type =     layout_map[i][0];
             int id =       layout_map[i][1];
