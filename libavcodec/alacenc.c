@@ -22,6 +22,7 @@
 #include "avcodec.h"
 #include "put_bits.h"
 #include "dsputil.h"
+#include "internal.h"
 #include "lpc.h"
 #include "mathops.h"
 
@@ -346,14 +347,14 @@ static void alac_entropy_coder(AlacEncodeContext *s)
     }
 }
 
-static int write_frame(AlacEncodeContext *s, uint8_t *data, int size,
+static int write_frame(AlacEncodeContext *s, AVPacket *avpkt,
                        const int16_t *samples)
 {
     int i, j;
     int prediction_type = 0;
     PutBitContext *pb = &s->pbctx;
 
-    init_put_bits(pb, data, size);
+    init_put_bits(pb, avpkt->data, avpkt->size);
 
     if (s->verbatim) {
         write_frame_header(s);
@@ -536,13 +537,14 @@ error:
     return ret;
 }
 
-static int alac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
-                             int buf_size, void *data)
+static int alac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
+                             const AVFrame *frame, int *got_packet_ptr)
 {
     AlacEncodeContext *s = avctx->priv_data;
-    int out_bytes, max_frame_size;
+    int out_bytes, max_frame_size, ret;
+    const int16_t *samples = (const int16_t *)frame->data[0];
 
-    s->frame_size  = avctx->frame_size;
+    s->frame_size = frame->nb_samples;
 
     if (avctx->frame_size < DEFAULT_FRAME_SIZE)
         max_frame_size = get_max_frame_size(s->frame_size, avctx->channels,
@@ -550,23 +552,25 @@ static int alac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
     else
         max_frame_size = s->max_coded_frame_size;
 
-    if (buf_size < 2 * max_frame_size) {
-        av_log(avctx, AV_LOG_ERROR, "buffer size is too small\n");
-        return AVERROR(EINVAL);
+    if ((ret = ff_alloc_packet(avpkt, 2 * max_frame_size))) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
+        return ret;
     }
 
     /* use verbatim mode for compression_level 0 */
     s->verbatim = !s->compression_level;
 
-    out_bytes = write_frame(s, frame, buf_size, data);
+    out_bytes = write_frame(s, avpkt, samples);
 
     if (out_bytes > max_frame_size) {
         /* frame too large. use verbatim mode */
         s->verbatim = 1;
-        out_bytes = write_frame(s, frame, buf_size, data);
+        out_bytes = write_frame(s, avpkt, samples);
     }
 
-    return out_bytes;
+    avpkt->size = out_bytes;
+    *got_packet_ptr = 1;
+    return 0;
 }
 
 AVCodec ff_alac_encoder = {
@@ -575,7 +579,7 @@ AVCodec ff_alac_encoder = {
     .id             = CODEC_ID_ALAC,
     .priv_data_size = sizeof(AlacEncodeContext),
     .init           = alac_encode_init,
-    .encode         = alac_encode_frame,
+    .encode2        = alac_encode_frame,
     .close          = alac_encode_close,
     .capabilities   = CODEC_CAP_SMALL_LAST_FRAME,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
