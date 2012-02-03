@@ -360,41 +360,41 @@ static int write_frame(AlacEncodeContext *s, uint8_t *data, int size,
         for (i = 0; i < s->frame_size * s->avctx->channels; i++)
             put_sbits(pb, 16, *samples++);
     } else {
-    init_sample_buffers(s, samples);
-    write_frame_header(s);
+        init_sample_buffers(s, samples);
+        write_frame_header(s);
 
-    if (s->avctx->channels == 2)
-        alac_stereo_decorrelation(s);
-    put_bits(pb, 8, s->interlacing_shift);
-    put_bits(pb, 8, s->interlacing_leftweight);
+        if (s->avctx->channels == 2)
+            alac_stereo_decorrelation(s);
+        put_bits(pb, 8, s->interlacing_shift);
+        put_bits(pb, 8, s->interlacing_leftweight);
 
-    for (i = 0; i < s->avctx->channels; i++) {
-        calc_predictor_params(s, i);
+        for (i = 0; i < s->avctx->channels; i++) {
+            calc_predictor_params(s, i);
 
-        put_bits(pb, 4, prediction_type);
-        put_bits(pb, 4, s->lpc[i].lpc_quant);
+            put_bits(pb, 4, prediction_type);
+            put_bits(pb, 4, s->lpc[i].lpc_quant);
 
-        put_bits(pb, 3, s->rc.rice_modifier);
-        put_bits(pb, 5, s->lpc[i].lpc_order);
-        // predictor coeff. table
-        for (j = 0; j < s->lpc[i].lpc_order; j++)
-            put_sbits(pb, 16, s->lpc[i].lpc_coeff[j]);
-    }
-
-    // apply lpc and entropy coding to audio samples
-
-    for (i = 0; i < s->avctx->channels; i++) {
-        alac_linear_predictor(s, i);
-
-        // TODO: determine when this will actually help. for now it's not used.
-        if (prediction_type == 15) {
-            // 2nd pass 1st order filter
-            for (j = s->frame_size - 1; j > 0; j--)
-                s->predictor_buf[j] -= s->predictor_buf[j - 1];
+            put_bits(pb, 3, s->rc.rice_modifier);
+            put_bits(pb, 5, s->lpc[i].lpc_order);
+            // predictor coeff. table
+            for (j = 0; j < s->lpc[i].lpc_order; j++)
+                put_sbits(pb, 16, s->lpc[i].lpc_coeff[j]);
         }
 
-        alac_entropy_coder(s);
-    }
+        // apply lpc and entropy coding to audio samples
+
+        for (i = 0; i < s->avctx->channels; i++) {
+            alac_linear_predictor(s, i);
+
+            // TODO: determine when this will actually help. for now it's not used.
+            if (prediction_type == 15) {
+                // 2nd pass 1st order filter
+                for (j = s->frame_size - 1; j > 0; j--)
+                    s->predictor_buf[j] -= s->predictor_buf[j - 1];
+            }
+
+            alac_entropy_coder(s);
+        }
     }
     put_bits(pb, 3, 7);
     flush_put_bits(pb);
