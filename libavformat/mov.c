@@ -1529,6 +1529,8 @@ static int mov_read_stss(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     av_dlog(c->fc, "keyframe_count = %d\n", entries);
 
+    if (!entries)
+        return 0;
     if (entries >= UINT_MAX / sizeof(int))
         return AVERROR_INVALIDDATA;
     sc->keyframes = av_malloc(entries * sizeof(int));
