@@ -404,7 +404,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     int zret = Z_OK; // Zlib return code
     int len = buf_size;
     int hi_ver, lo_ver, ret;
-    uint8_t *tmp;
 
     if (c->pic.data[0])
             avctx->release_buffer(avctx, &c->pic);
