@@ -66,8 +66,6 @@ typedef struct {
     int buf_size;
     AVLFG rnd;
     int frames_to_skip;
-    uint8_t *buffer;
-    int buffer_size;
     /* for synthesis */
     DECLARE_ALIGNED(16, MPA_INT, synth_buf)[MPA_MAX_CHANNELS][512*2];
     int synth_buf_offset[MPA_MAX_CHANNELS];

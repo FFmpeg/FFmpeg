@@ -83,3 +83,4 @@ OBJS-$(HAVE_MMX)                       += x86/dsputil_mmx.o             \
                                           x86/mpegvideo_mmx.o           \
                                           x86/simple_idct_mmx.o         \
 
+OBJS-$(CONFIG_XMM_CLOBBER_TEST)        += x86/w64xmmtest.o

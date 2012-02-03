@@ -25,6 +25,8 @@ MMX-OBJS-$(HAVE_YASM)      +=  x86/input.o              \
 
 $(SUBDIR)x86/swscale_mmx.o: CFLAGS += $(NOREDZONE_FLAGS)
 
+OBJS-$(CONFIG_XMM_CLOBBER_TEST) += x86/w64xmmtest.o
+
 TESTPROGS = colorspace swscale
 
 DIRS = bfin mlib ppc sparc x86

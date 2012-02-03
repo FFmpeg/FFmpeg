@@ -1063,7 +1063,7 @@ emu_edge mmx
 ; %4 = CLIPD function takes min/max as float instead of int (CLIPD_SSE2)
 ; %5 = suffix
 %macro VECTOR_CLIP_INT32 4-5
-cglobal vector_clip_int32%5, 5,5,%2, dst, src, min, max, len
+cglobal vector_clip_int32%5, 5,5,%1, dst, src, min, max, len
 %if %4
     cvtsi2ss  m4, minm
     cvtsi2ss  m5, maxm

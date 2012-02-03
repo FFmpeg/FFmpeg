@@ -129,6 +129,7 @@ typedef struct MOVStreamContext {
     int has_palette;
     int64_t data_size;
     uint32_t tmcd_flags;  ///< tmcd track flags
+    int64_t track_end;    ///< used for dts generation in fragmented movie files
 } MOVStreamContext;
 
 typedef struct MOVContext {

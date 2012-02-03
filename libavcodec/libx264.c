@@ -188,12 +188,12 @@ static int X264_frame(AVCodecContext *ctx, uint8_t *buf,
 
     do {
         bufsize = orig_bufsize;
-    if (x264_encoder_encode(x4->enc, &nal, &nnal, frame? &x4->pic: NULL, &pic_out) < 0)
-        return -1;
+        if (x264_encoder_encode(x4->enc, &nal, &nnal, frame? &x4->pic: NULL, &pic_out) < 0)
+            return -1;
 
-    bufsize = encode_nals(ctx, buf, bufsize, nal, nnal, 0);
-    if (bufsize < 0)
-        return -1;
+        bufsize = encode_nals(ctx, buf, bufsize, nal, nnal, 0);
+        if (bufsize < 0)
+            return -1;
     } while (!bufsize && !frame && x264_encoder_delayed_frames(x4->enc));
 
     /* FIXME: libx264 now provides DTS, but AVFrame doesn't have a field for it. */

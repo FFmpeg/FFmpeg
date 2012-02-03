@@ -276,6 +276,8 @@ Developer options (useful when working on FFmpeg itself):
                            Cannot be combined with --target-exec
   --samples=PATH           location of test samples for FATE, if not set use
                            \$FATE_SAMPLES at make invocation time.
+  --enable-xmm-clobber-test check XMM registers for clobbering (Win64-only;
+                           should be used only for debugging purposes)
 
 NOTE: Object files are built at the place where configure is launched.
 EOF
@@ -1085,6 +1087,7 @@ CONFIG_LIST="
     vda
     vdpau
     version3
+    xmm_clobber_test
     x11grab
     zlib
 "
@@ -1779,7 +1782,7 @@ test_deps _muxer _demuxer                                               \
     wav                                                                 \
     yuv4mpegpipe=yuv4mpeg                                               \
 
-ac3_fixed_test_deps="ac3_fixed_encoder ac3_decoder rm_muxer rm_demuxer"
+ac3_fixed_test_deps="ac3_fixed_encoder ac3_decoder"
 mpg_test_deps="mpeg1system_muxer mpegps_demuxer"
 
 # default parameters
@@ -3303,6 +3306,17 @@ enabled extra_warnings && check_cflags -Winline
 check_ldflags -Wl,--warn-common
 check_ldflags -Wl,-rpath-link=libpostproc:libswresample:libswscale:libavfilter:libavdevice:libavformat:libavcodec:libavutil
 test_ldflags -Wl,-Bsymbolic && append SHFLAGS -Wl,-Bsymbolic
+
+enabled xmm_clobber_test &&                             \
+    check_ldflags -Wl,--wrap,avcodec_open2              \
+                  -Wl,--wrap,avcodec_decode_audio4      \
+                  -Wl,--wrap,avcodec_decode_video2      \
+                  -Wl,--wrap,avcodec_decode_subtitle2   \
+                  -Wl,--wrap,avcodec_encode_audio2      \
+                  -Wl,--wrap,avcodec_encode_video       \
+                  -Wl,--wrap,avcodec_encode_subtitle    \
+                  -Wl,--wrap,sws_scale ||               \
+    disable xmm_clobber_test
 
 echo "X{};" > $TMPV
 if test_ldflags -Wl,--version-script,$TMPV; then

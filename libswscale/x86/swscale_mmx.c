@@ -308,6 +308,10 @@ extern void ff_ ## fmt ## ToUV_ ## opt(uint8_t *dstU, uint8_t *dstV, \
     INPUT_FUNC(yuyv, opt); \
     INPUT_UV_FUNC(nv12, opt); \
     INPUT_UV_FUNC(nv21, opt); \
+    INPUT_FUNC(rgba, opt); \
+    INPUT_FUNC(bgra, opt); \
+    INPUT_FUNC(argb, opt); \
+    INPUT_FUNC(abgr, opt); \
     INPUT_FUNC(rgb24, opt); \
     INPUT_FUNC(bgr24, opt)
 
@@ -406,6 +410,10 @@ switch(c->dstBpc){ \
             break;
         case_rgb(rgb24, RGB24, mmx);
         case_rgb(bgr24, BGR24, mmx);
+        case_rgb(bgra,  BGRA,  mmx);
+        case_rgb(rgba,  RGBA,  mmx);
+        case_rgb(abgr,  ABGR,  mmx);
+        case_rgb(argb,  ARGB,  mmx);
         default:
             break;
         }
@@ -450,6 +458,10 @@ switch(c->dstBpc){ \
             break;
         case_rgb(rgb24, RGB24, sse2);
         case_rgb(bgr24, BGR24, sse2);
+        case_rgb(bgra,  BGRA,  sse2);
+        case_rgb(rgba,  RGBA,  sse2);
+        case_rgb(abgr,  ABGR,  sse2);
+        case_rgb(argb,  ARGB,  sse2);
         default:
             break;
         }
@@ -493,6 +505,10 @@ switch(c->dstBpc){ \
             break;
         case_rgb(rgb24, RGB24, avx);
         case_rgb(bgr24, BGR24, avx);
+        case_rgb(bgra,  BGRA,  avx);
+        case_rgb(rgba,  RGBA,  avx);
+        case_rgb(abgr,  ABGR,  avx);
+        case_rgb(argb,  ARGB,  avx);
         default:
             break;
         }

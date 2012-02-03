@@ -34,24 +34,23 @@ function ff_ac3_bit_alloc_calc_bap_armv6, export=1
         add             r0,  r0,  r4,  lsl #1           @ mask + band
         add             r4,  lr,  r4
         add             r7,  r7,  r2                    @ bap + start
-        ldrb            r10, [r4], #1
 1:
         ldrsh           r9,  [r0], #2                   @ mask[band]
         mov             r8,  #0xff0
         sub             r9,  r9,  r12                   @   - snr_offset
-        mov             r11, r10
-        ldrb            r10, [r4], #1                   @ band_start_tab[band++]
+        ldrb            r10, [r4, #1]!                  @ band_start_tab[++band]
         subs            r9,  r9,  r5                    @   - floor
         it              lt
         movlt           r9,  #0
         cmp             r10, r3                         @   - end
         and             r9,  r9,  r8, lsl #1            @   & 0x1fe0
         ite             gt
-        subgt           r8,  r3,  r11
-        suble           r8,  r10, r11
+        subgt           r8,  r3,  r2
+        suble           r8,  r10, r2
+        mov             r2,  r10
         add             r9,  r9,  r5                    @   + floor => m
         tst             r8,  #1
-        add             r2,  r7,  r8
+        add             r11, r7,  r8
         bne             3f
         b               5f
 2:
@@ -65,9 +64,9 @@ function ff_ac3_bit_alloc_calc_bap_armv6, export=1
         ldrb            lr,  [r6, lr]
         strb            r8,  [r7], #1                   @ bap[bin]
         strb            lr,  [r7], #1
-5:      cmp             r7,  r2
+5:      cmp             r7,  r11
         blo             2b
-        cmp             r3,  r11
+        cmp             r3,  r10
         bgt             1b
         pop             {r4-r11,pc}
 3:
