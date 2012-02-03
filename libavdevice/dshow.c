@@ -683,12 +683,15 @@ dshow_add_device(AVFormatContext *avctx,
     codec = st->codec;
     if (devtype == VideoDevice) {
         BITMAPINFOHEADER *bih = NULL;
+        AVRational time_base;
 
         if (IsEqualGUID(&type.formattype, &FORMAT_VideoInfo)) {
             VIDEOINFOHEADER *v = (void *) type.pbFormat;
+            time_base = (AVRational) { v->AvgTimePerFrame, 10000000 };
             bih = &v->bmiHeader;
         } else if (IsEqualGUID(&type.formattype, &FORMAT_VideoInfo2)) {
             VIDEOINFOHEADER2 *v = (void *) type.pbFormat;
+            time_base = (AVRational) { v->AvgTimePerFrame, 10000000 };
             bih = &v->bmiHeader;
         }
         if (!bih) {
@@ -696,7 +699,7 @@ dshow_add_device(AVFormatContext *avctx,
             goto error;
         }
 
-        codec->time_base  = ap->time_base;
+        codec->time_base  = time_base;
         codec->codec_type = AVMEDIA_TYPE_VIDEO;
         codec->width      = bih->biWidth;
         codec->height     = bih->biHeight;
@@ -851,7 +854,7 @@ static int dshow_read_header(AVFormatContext *avctx)
         ret = dshow_open_device(avctx, devenum, VideoDevice);
         if (ret < 0)
             goto error;
-        ret = dshow_add_device(avctx, ap, VideoDevice);
+        ret = dshow_add_device(avctx, VideoDevice);
         if (ret < 0)
             goto error;
     }
@@ -859,7 +862,7 @@ static int dshow_read_header(AVFormatContext *avctx)
         ret = dshow_open_device(avctx, devenum, AudioDevice);
         if (ret < 0)
             goto error;
-        ret = dshow_add_device(avctx, ap, AudioDevice);
+        ret = dshow_add_device(avctx, AudioDevice);
         if (ret < 0)
             goto error;
     }
