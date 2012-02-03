@@ -120,12 +120,18 @@ static void encode_scalar(AlacEncodeContext *s, int x,
 
 static void write_frame_header(AlacEncodeContext *s, int is_verbatim)
 {
+    int encode_fs = 0;
+
+    if (s->frame_size < DEFAULT_FRAME_SIZE)
+        encode_fs = 1;
+
     put_bits(&s->pbctx, 3,  s->avctx->channels-1);  // No. of channels -1
     put_bits(&s->pbctx, 16, 0);                     // Seems to be zero
-    put_bits(&s->pbctx, 1,  1);                     // Sample count is in the header
+    put_bits(&s->pbctx, 1,  encode_fs);             // Sample count is in the header
     put_bits(&s->pbctx, 2,  0);                     // FIXME: Wasted bytes field
     put_bits(&s->pbctx, 1,  is_verbatim);           // Audio block is verbatim
-    put_bits32(&s->pbctx, s->frame_size);           // No. of samples in the frame
+    if (encode_fs)
+        put_bits32(&s->pbctx, s->frame_size);       // No. of samples in the frame
 }
 
 static void calc_predictor_params(AlacEncodeContext *s, int ch)
@@ -380,7 +386,8 @@ static void write_compressed_frame(AlacEncodeContext *s)
 
 static av_always_inline int get_max_frame_size(int frame_size, int ch, int bps)
 {
-    return FFALIGN(55 + bps * ch * frame_size + 3, 8) / 8;
+    int header_bits = 23 + 32 * (frame_size < DEFAULT_FRAME_SIZE);
+    return FFALIGN(header_bits + bps * ch * frame_size + 3, 8) / 8;
 }
 
 static av_cold int alac_encode_close(AVCodecContext *avctx)
