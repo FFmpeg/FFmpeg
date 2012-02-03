@@ -168,8 +168,9 @@ typedef struct InputStream {
     AVFrame *filtered_frame;
 
     int64_t       start;     /* time when read started */
-    int64_t       next_pts;  /* synthetic pts for cases where pkt.pts
-                                is not defined */
+    /* predicted dts of the next packet read for this stream or (when there are
+     * several frames in a packet) of the next frame in current packet */
+    int64_t       next_dts;
     int64_t       pts;       /* current pts */
     PtsCorrectionContext pts_ctx;
     double ts_scale;
@@ -1847,11 +1848,11 @@ static int transcode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
     /* if the decoder provides a pts, use it instead of the last packet pts.
        the decoder could be delaying output by a packet or more. */
     if (decoded_frame->pts != AV_NOPTS_VALUE)
-        ist->next_pts = decoded_frame->pts;
+        ist->next_dts = decoded_frame->pts;
 
-    /* increment next_pts to use for the case where the input stream does not
+    /* increment next_dts to use for the case where the input stream does not
        have timestamps or there are multiple frames in the packet */
-    ist->next_pts += ((int64_t)AV_TIME_BASE * decoded_frame->nb_samples) /
+    ist->next_dts += ((int64_t)AV_TIME_BASE * decoded_frame->nb_samples) /
                      avctx->sample_rate;
 
     // preprocess audio (volume)
@@ -1954,14 +1955,14 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
         /* no picture yet */
         return ret;
     }
-    ist->next_pts = ist->pts = guess_correct_pts(&ist->pts_ctx, decoded_frame->pkt_pts,
+    ist->next_dts = ist->pts = guess_correct_pts(&ist->pts_ctx, decoded_frame->pkt_pts,
                                                  decoded_frame->pkt_dts);
     if (pkt->duration)
-        ist->next_pts += av_rescale_q(pkt->duration, ist->st->time_base, AV_TIME_BASE_Q);
+        ist->next_dts += av_rescale_q(pkt->duration, ist->st->time_base, AV_TIME_BASE_Q);
     else if (ist->st->codec->time_base.num != 0) {
         int ticks      = ist->st->parser ? ist->st->parser->repeat_pict + 1 :
                                            ist->st->codec->ticks_per_frame;
-        ist->next_pts += ((int64_t)AV_TIME_BASE *
+        ist->next_dts += ((int64_t)AV_TIME_BASE *
                           ist->st->codec->time_base.num * ticks) /
                           ist->st->codec->time_base.den;
     }
@@ -2091,8 +2092,8 @@ static int output_packet(InputStream *ist,
     int64_t pkt_pts = AV_NOPTS_VALUE;
     AVPacket avpkt;
 
-    if (ist->next_pts == AV_NOPTS_VALUE)
-        ist->next_pts = ist->pts;
+    if (ist->next_dts == AV_NOPTS_VALUE)
+        ist->next_dts = ist->pts;
 
     if (pkt == NULL) {
         /* EOF handling */
@@ -2105,7 +2106,7 @@ static int output_packet(InputStream *ist,
     }
 
     if (pkt->dts != AV_NOPTS_VALUE)
-        ist->next_pts = ist->pts = av_rescale_q(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q);
+        ist->next_dts = ist->pts = av_rescale_q(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q);
     if (pkt->pts != AV_NOPTS_VALUE)
         pkt_pts = av_rescale_q(pkt->pts, ist->st->time_base, AV_TIME_BASE_Q);
 
@@ -2114,7 +2115,7 @@ static int output_packet(InputStream *ist,
         int ret = 0;
     handle_eof:
 
-        ist->pts = ist->next_pts;
+        ist->pts = ist->next_dts;
 
         if (avpkt.size && avpkt.size != pkt->size) {
             av_log(NULL, ist->showed_multi_packet_warning ? AV_LOG_VERBOSE : AV_LOG_WARNING,
@@ -2151,16 +2152,16 @@ static int output_packet(InputStream *ist,
     /* handle stream copy */
     if (!ist->decoding_needed) {
         rate_emu_sleep(ist);
-        ist->pts = ist->next_pts;
+        ist->pts = ist->next_dts;
         switch (ist->st->codec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
-            ist->next_pts += ((int64_t)AV_TIME_BASE * ist->st->codec->frame_size) /
+            ist->next_dts += ((int64_t)AV_TIME_BASE * ist->st->codec->frame_size) /
                              ist->st->codec->sample_rate;
             break;
         case AVMEDIA_TYPE_VIDEO:
             if (ist->st->codec->time_base.num != 0) {
                 int ticks = ist->st->parser ? ist->st->parser->repeat_pict + 1 : ist->st->codec->ticks_per_frame;
-                ist->next_pts += ((int64_t)AV_TIME_BASE *
+                ist->next_dts += ((int64_t)AV_TIME_BASE *
                                   ist->st->codec->time_base.num * ticks) /
                                   ist->st->codec->time_base.den;
             }
@@ -2237,7 +2238,7 @@ static int init_input_stream(int ist_index, OutputStream *output_streams, int nb
     }
 
     ist->pts = ist->st->avg_frame_rate.num ? - ist->st->codec->has_b_frames * AV_TIME_BASE / av_q2d(ist->st->avg_frame_rate) : 0;
-    ist->next_pts = AV_NOPTS_VALUE;
+    ist->next_dts = AV_NOPTS_VALUE;
     init_pts_correction(&ist->pts_ctx);
     ist->is_start = 1;
 
@@ -2759,13 +2760,13 @@ static int transcode(OutputFile *output_files,
             pkt.dts *= ist->ts_scale;
 
         //fprintf(stderr, "next:%"PRId64" dts:%"PRId64" off:%"PRId64" %d\n",
-        //        ist->next_pts,
+        //        ist->next_dts,
         //        pkt.dts, input_files[ist->file_index].ts_offset,
         //        ist->st->codec->codec_type);
-        if (pkt.dts != AV_NOPTS_VALUE && ist->next_pts != AV_NOPTS_VALUE
+        if (pkt.dts != AV_NOPTS_VALUE && ist->next_dts != AV_NOPTS_VALUE
             && (is->iformat->flags & AVFMT_TS_DISCONT)) {
             int64_t pkt_dts = av_rescale_q(pkt.dts, ist->st->time_base, AV_TIME_BASE_Q);
-            int64_t delta   = pkt_dts - ist->next_pts;
+            int64_t delta   = pkt_dts - ist->next_dts;
             if ((FFABS(delta) > 1LL * dts_delta_threshold * AV_TIME_BASE || pkt_dts + 1 < ist->pts) && !copy_ts) {
                 input_files[ist->file_index].ts_offset -= delta;
                 av_log(NULL, AV_LOG_DEBUG,
