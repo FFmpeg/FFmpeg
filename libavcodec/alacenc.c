@@ -59,6 +59,7 @@ typedef struct AlacLPCContext {
 
 typedef struct AlacEncodeContext {
     int frame_size;                     /**< current frame size               */
+    int verbatim;                       /**< current frame verbatim mode flag */
     int compression_level;
     int min_prediction_order;
     int max_prediction_order;
@@ -118,7 +119,7 @@ static void encode_scalar(AlacEncodeContext *s, int x,
     }
 }
 
-static void write_frame_header(AlacEncodeContext *s, int is_verbatim)
+static void write_frame_header(AlacEncodeContext *s)
 {
     int encode_fs = 0;
 
@@ -129,7 +130,7 @@ static void write_frame_header(AlacEncodeContext *s, int is_verbatim)
     put_bits(&s->pbctx, 16, 0);                     // Seems to be zero
     put_bits(&s->pbctx, 1,  encode_fs);             // Sample count is in the header
     put_bits(&s->pbctx, 2,  0);                     // FIXME: Wasted bytes field
-    put_bits(&s->pbctx, 1,  is_verbatim);           // Audio block is verbatim
+    put_bits(&s->pbctx, 1,  s->verbatim);           // Audio block is verbatim
     if (encode_fs)
         put_bits32(&s->pbctx, s->frame_size);       // No. of samples in the frame
 }
@@ -345,27 +346,39 @@ static void alac_entropy_coder(AlacEncodeContext *s)
     }
 }
 
-static void write_compressed_frame(AlacEncodeContext *s)
+static int write_frame(AlacEncodeContext *s, uint8_t *data, int size,
+                       const int16_t *samples)
 {
     int i, j;
     int prediction_type = 0;
+    PutBitContext *pb = &s->pbctx;
+
+    init_put_bits(pb, data, size);
+
+    if (s->verbatim) {
+        write_frame_header(s);
+        for (i = 0; i < s->frame_size * s->avctx->channels; i++)
+            put_sbits(pb, 16, *samples++);
+    } else {
+    init_sample_buffers(s, samples);
+    write_frame_header(s);
 
     if (s->avctx->channels == 2)
         alac_stereo_decorrelation(s);
-    put_bits(&s->pbctx, 8, s->interlacing_shift);
-    put_bits(&s->pbctx, 8, s->interlacing_leftweight);
+    put_bits(pb, 8, s->interlacing_shift);
+    put_bits(pb, 8, s->interlacing_leftweight);
 
     for (i = 0; i < s->avctx->channels; i++) {
         calc_predictor_params(s, i);
 
-        put_bits(&s->pbctx, 4, prediction_type);
-        put_bits(&s->pbctx, 4, s->lpc[i].lpc_quant);
+        put_bits(pb, 4, prediction_type);
+        put_bits(pb, 4, s->lpc[i].lpc_quant);
 
-        put_bits(&s->pbctx, 3, s->rc.rice_modifier);
-        put_bits(&s->pbctx, 5, s->lpc[i].lpc_order);
+        put_bits(pb, 3, s->rc.rice_modifier);
+        put_bits(pb, 5, s->lpc[i].lpc_order);
         // predictor coeff. table
         for (j = 0; j < s->lpc[i].lpc_order; j++)
-            put_sbits(&s->pbctx, 16, s->lpc[i].lpc_coeff[j]);
+            put_sbits(pb, 16, s->lpc[i].lpc_coeff[j]);
     }
 
     // apply lpc and entropy coding to audio samples
@@ -382,6 +395,10 @@ static void write_compressed_frame(AlacEncodeContext *s)
 
         alac_entropy_coder(s);
     }
+    }
+    put_bits(pb, 3, 7);
+    flush_put_bits(pb);
+    return put_bits_count(pb) >> 3;
 }
 
 static av_always_inline int get_max_frame_size(int frame_size, int ch, int bps)
@@ -523,9 +540,7 @@ static int alac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
                              int buf_size, void *data)
 {
     AlacEncodeContext *s = avctx->priv_data;
-    PutBitContext *pb = &s->pbctx;
-    int i, out_bytes, verbatim_flag = 0;
-    int max_frame_size;
+    int out_bytes, max_frame_size;
 
     s->frame_size  = avctx->frame_size;
 
@@ -540,35 +555,15 @@ static int alac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
         return AVERROR(EINVAL);
     }
 
-verbatim:
-    init_put_bits(pb, frame, buf_size);
+    /* use verbatim mode for compression_level 0 */
+    s->verbatim = !s->compression_level;
 
-    if (s->compression_level == 0 || verbatim_flag) {
-        // Verbatim mode
-        const int16_t *samples = data;
-        write_frame_header(s, 1);
-        for (i = 0; i < s->frame_size * avctx->channels; i++) {
-            put_sbits(pb, 16, *samples++);
-        }
-    } else {
-        init_sample_buffers(s, data);
-        write_frame_header(s, 0);
-        write_compressed_frame(s);
-    }
-
-    put_bits(pb, 3, 7);
-    flush_put_bits(pb);
-    out_bytes = put_bits_count(pb) >> 3;
+    out_bytes = write_frame(s, frame, buf_size, data);
 
     if (out_bytes > max_frame_size) {
         /* frame too large. use verbatim mode */
-        if (verbatim_flag || s->compression_level == 0) {
-            /* still too large. must be an error. */
-            av_log(avctx, AV_LOG_ERROR, "error encoding frame\n");
-            return AVERROR_BUG;
-        }
-        verbatim_flag = 1;
-        goto verbatim;
+        s->verbatim = 1;
+        out_bytes = write_frame(s, frame, buf_size, data);
     }
 
     return out_bytes;
