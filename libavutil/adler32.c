@@ -23,6 +23,7 @@
 
 #include "config.h"
 #include "adler32.h"
+#include "common.h"
 
 #define BASE 65521L /* largest prime smaller than 65536 */
 
@@ -37,17 +38,22 @@ unsigned long av_adler32_update(unsigned long adler, const uint8_t * buf,
     unsigned long s2 = adler >> 16;
 
     while (len > 0) {
+        unsigned len2 = FFMIN((len-1) & ~15, 2048);
+        if (len2) {
+            len -= len2;
+
 #if CONFIG_SMALL
-        while (len > 4  && s2 < (1U << 31)) {
+        while (len2 >= 4) {
             DO4(buf);
-            len -= 4;
+            len2 -= 4;
         }
 #else
-        while (len > 16 && s2 < (1U << 31)) {
+        while (len2 >= 16) {
             DO16(buf);
-            len -= 16;
+            len2 -= 16;
         }
 #endif
+        }
         DO1(buf); len--;
         s1 %= BASE;
         s2 %= BASE;
