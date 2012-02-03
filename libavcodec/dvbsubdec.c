@@ -150,7 +150,7 @@ static void png_save2(const char *filename, uint32_t *bitmap, int w, int h)
 }
 #endif
 
-#define RGBA(r,g,b,a) (((a) << 24) | ((r) << 16) | ((g) << 8) | (b))
+#define RGBA(r,g,b,a) (((unsigned)(a) << 24) | ((r) << 16) | ((g) << 8) | (b))
 
 typedef struct DVBSubCLUT {
     int id;
