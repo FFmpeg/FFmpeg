@@ -25,6 +25,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "golomb.h"
+#include "internal.h"
 #include "lpc.h"
 #include "flac.h"
 #include "flacdata.h"
@@ -367,9 +368,11 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
     s->frame_count   = 0;
     s->min_framesize = s->max_framesize;
 
+#if FF_API_OLD_ENCODE_AUDIO
     avctx->coded_frame = avcodec_alloc_frame();
     if (!avctx->coded_frame)
         return AVERROR(ENOMEM);
+#endif
 
     ret = ff_lpc_init(&s->lpc_ctx, avctx->frame_size,
                       s->options.max_prediction_order, FF_LPC_TYPE_LEVINSON);
@@ -380,7 +383,7 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
 }
 
 
-static void init_frame(FlacEncodeContext *s)
+static void init_frame(FlacEncodeContext *s, int nb_samples)
 {
     int i, ch;
     FlacFrame *frame;
@@ -388,7 +391,7 @@ static void init_frame(FlacEncodeContext *s)
     frame = &s->frame;
 
     for (i = 0; i < 16; i++) {
-        if (s->avctx->frame_size == ff_flac_blocksize_table[i]) {
+        if (nb_samples == ff_flac_blocksize_table[i]) {
             frame->blocksize  = ff_flac_blocksize_table[i];
             frame->bs_code[0] = i;
             frame->bs_code[1] = 0;
@@ -396,7 +399,7 @@ static void init_frame(FlacEncodeContext *s)
         }
     }
     if (i == 16) {
-        frame->blocksize = s->avctx->frame_size;
+        frame->blocksize = nb_samples;
         if (frame->blocksize <= 256) {
             frame->bs_code[0] = 6;
             frame->bs_code[1] = frame->blocksize-1;
@@ -1166,9 +1169,9 @@ static void write_frame_footer(FlacEncodeContext *s)
 }
 
 
-static int write_frame(FlacEncodeContext *s, uint8_t *frame, int buf_size)
+static int write_frame(FlacEncodeContext *s, AVPacket *avpkt)
 {
-    init_put_bits(&s->pb, frame, buf_size);
+    init_put_bits(&s->pb, avpkt->data, avpkt->size);
     write_frame_header(s);
     write_subframes(s);
     write_frame_footer(s);
@@ -1190,30 +1193,31 @@ static void update_md5_sum(FlacEncodeContext *s, const int16_t *samples)
 }
 
 
-static int flac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
-                             int buf_size, void *data)
+static int flac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
+                             const AVFrame *frame, int *got_packet_ptr)
 {
     FlacEncodeContext *s;
-    const int16_t *samples = data;
-    int frame_bytes, out_bytes;
+    const int16_t *samples;
+    int frame_bytes, out_bytes, ret;
 
     s = avctx->priv_data;
 
     /* when the last block is reached, update the header in extradata */
-    if (!data) {
+    if (!frame) {
         s->max_framesize = s->max_encoded_framesize;
         av_md5_final(s->md5ctx, s->md5sum);
         write_streaminfo(s, avctx->extradata);
         return 0;
     }
+    samples = (const int16_t *)frame->data[0];
 
     /* change max_framesize for small final frame */
-    if (avctx->frame_size < s->frame.blocksize) {
-        s->max_framesize = ff_flac_get_max_frame_size(avctx->frame_size,
+    if (frame->nb_samples < s->frame.blocksize) {
+        s->max_framesize = ff_flac_get_max_frame_size(frame->nb_samples,
                                                       s->channels, 16);
     }
 
-    init_frame(s);
+    init_frame(s, frame->nb_samples);
 
     copy_samples(s, samples);
 
@@ -1228,22 +1232,26 @@ static int flac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
         frame_bytes = encode_frame(s);
     }
 
-    if (buf_size < frame_bytes) {
-        av_log(avctx, AV_LOG_ERROR, "output buffer too small\n");
-        return 0;
+    if ((ret = ff_alloc_packet(avpkt, frame_bytes))) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
+        return ret;
     }
-    out_bytes = write_frame(s, frame, buf_size);
+
+    out_bytes = write_frame(s, avpkt);
 
     s->frame_count++;
-    avctx->coded_frame->pts = s->sample_count;
-    s->sample_count += avctx->frame_size;
+    s->sample_count += frame->nb_samples;
     update_md5_sum(s, samples);
     if (out_bytes > s->max_encoded_framesize)
         s->max_encoded_framesize = out_bytes;
     if (out_bytes < s->min_framesize)
         s->min_framesize = out_bytes;
 
-    return out_bytes;
+    avpkt->pts      = frame->pts;
+    avpkt->duration = ff_samples_to_time_base(avctx, frame->nb_samples);
+    avpkt->size     = out_bytes;
+    *got_packet_ptr = 1;
+    return 0;
 }
 
 
@@ -1256,7 +1264,9 @@ static av_cold int flac_encode_close(AVCodecContext *avctx)
     }
     av_freep(&avctx->extradata);
     avctx->extradata_size = 0;
+#if FF_API_OLD_ENCODE_AUDIO
     av_freep(&avctx->coded_frame);
+#endif
     return 0;
 }
 
@@ -1294,7 +1304,7 @@ AVCodec ff_flac_encoder = {
     .id             = CODEC_ID_FLAC,
     .priv_data_size = sizeof(FlacEncodeContext),
     .init           = flac_encode_init,
-    .encode         = flac_encode_frame,
+    .encode2        = flac_encode_frame,
     .close          = flac_encode_close,
     .capabilities = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
