@@ -164,8 +164,8 @@ cglobal rv40_weight_func_%1, 6, 7, %2
 
     ; Use result of test now
     jz .loop_512
-    movd       m2, r3
-    movd       m3, r4
+    movd       m2, r3d
+    movd       m3, r4d
     SPLATW     m2, m2
     SPLATW     m3, m3
 
@@ -178,8 +178,8 @@ cglobal rv40_weight_func_%1, 6, 7, %2
 .loop_512:
     sar        r3, 9
     sar        r4, 9
-    movd       m2, r3
-    movd       m3, r4
+    movd       m2, r3d
+    movd       m3, r4d
 %if cpuflag(ssse3)
     punpcklbw  m3, m2
     SPLATW     m3, m3
