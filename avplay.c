@@ -2114,8 +2114,10 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
         if ((new_packet = packet_queue_get(&is->audioq, pkt, 1)) < 0)
             return -1;
 
-        if (pkt->data == flush_pkt.data)
+        if (pkt->data == flush_pkt.data) {
             avcodec_flush_buffers(dec);
+            flush_complete = 0;
+        }
 
         *pkt_temp = *pkt;
 
