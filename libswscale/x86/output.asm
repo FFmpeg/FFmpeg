@@ -317,6 +317,7 @@ yuv2planeX_fn 10,  7, 5
 
 %macro yuv2plane1_fn 3
 cglobal yuv2plane1_%1, %3, %3, %2, src, dst, dstw, dither, offset
+    movsxdifnidn dstwq, dstwd
     add          dstwq, mmsize - 1
     and          dstwq, ~(mmsize - 1)
 %if %1 == 8
