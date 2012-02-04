@@ -1024,6 +1024,7 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
         bsfc = bsfc->next;
     }
 
+    pkt->stream_index = ost->index;
     ret = av_interleaved_write_frame(s, pkt);
     if (ret < 0) {
         print_error("av_interleaved_write_frame()", ret);
@@ -1082,7 +1083,6 @@ static int encode_audio_frame(AVFormatContext *s, OutputStream *ost,
     ret = pkt.size;
 
     if (got_packet) {
-        pkt.stream_index = ost->index;
         if (pkt.pts != AV_NOPTS_VALUE)
             pkt.pts      = av_rescale_q(pkt.pts,      enc->time_base, ost->st->time_base);
         if (pkt.duration > 0)
@@ -1363,7 +1363,6 @@ static void do_subtitle_out(AVFormatContext *s,
         }
 
         av_init_packet(&pkt);
-        pkt.stream_index = ost->index;
         pkt.data = subtitle_out;
         pkt.size = subtitle_out_size;
         pkt.pts  = av_rescale_q(sub->pts, AV_TIME_BASE_Q, ost->st->time_base);
@@ -1487,7 +1486,6 @@ static void do_video_out(AVFormatContext *s,
                 ost->sync_opts = lrintf(sync_ipts);
         } else if (vdelta > 1.1)
             nb_frames = lrintf(vdelta);
-//fprintf(stderr, "vdelta:%f, ost->sync_opts:%"PRId64", ost->sync_ipts:%f nb_frames:%d\n", vdelta, ost->sync_opts, get_sync_ipts(ost), nb_frames);
         if (nb_frames == 0) {
             ++nb_frames_drop;
             av_log(NULL, AV_LOG_VERBOSE, "*** drop!\n");
@@ -1508,7 +1506,6 @@ static void do_video_out(AVFormatContext *s,
     for (i = 0; i < nb_frames; i++) {
         AVPacket pkt;
         av_init_packet(&pkt);
-        pkt.stream_index = ost->index;
 
         if (s->oformat->flags & AVFMT_RAWPICTURE &&
             enc->codec->id == CODEC_ID_RAWVIDEO) {
@@ -1542,10 +1539,7 @@ static void do_video_out(AVFormatContext *s,
             big_picture.quality = quality;
             if (!enc->me_threshold)
                 big_picture.pict_type = 0;
-//            big_picture.pts = AV_NOPTS_VALUE;
             big_picture.pts = ost->sync_opts;
-//            big_picture.pts= av_rescale(ost->sync_opts, AV_TIME_BASE*(int64_t)enc->time_base.num, enc->time_base.den);
-// av_log(NULL, AV_LOG_DEBUG, "%"PRId64" -> encoder\n", ost->sync_opts);
             if (ost->forced_kf_index < ost->forced_kf_count &&
                 big_picture.pts >= ost->forced_kf_pts[ost->forced_kf_index]) {
                 big_picture.pict_type = AV_PICTURE_TYPE_I;
@@ -1566,9 +1560,6 @@ static void do_video_out(AVFormatContext *s,
                     pkt.pts = av_rescale_q(ost->sync_opts, enc->time_base, ost->st->time_base);
                 if (enc->coded_frame->pts != AV_NOPTS_VALUE)
                     pkt.pts = av_rescale_q(enc->coded_frame->pts, enc->time_base, ost->st->time_base);
-/*av_log(NULL, AV_LOG_DEBUG, "encoder -> %"PRId64"/%"PRId64"\n",
-   pkt.pts != AV_NOPTS_VALUE ? av_rescale(pkt.pts, enc->time_base.den, AV_TIME_BASE*(int64_t)enc->time_base.num) : -1,
-   pkt.dts != AV_NOPTS_VALUE ? av_rescale(pkt.dts, enc->time_base.den, AV_TIME_BASE*(int64_t)enc->time_base.num) : -1);*/
 
                 if (enc->coded_frame->key_frame)
                     pkt.flags |= AV_PKT_FLAG_KEY;
@@ -1577,8 +1568,7 @@ static void do_video_out(AVFormatContext *s,
                 write_frame(s, &pkt, ost);
                 *frame_size = ret;
                 video_size += ret;
-                // fprintf(stderr,"\nFrame: %3d size: %5d type: %d",
-                //         enc->frame_number-1, ret, enc->pict_type);
+
                 /* if two pass, output log */
                 if (ost->logfile && enc->stats_out) {
                     fprintf(ost->logfile, "%s", enc->stats_out);
@@ -1840,7 +1830,6 @@ static void flush_encoders(OutputStream *ost_table, int nb_ostreams)
                     stop_encoding = 1;
                     break;
                 }
-                pkt.stream_index = ost->index;
                 pkt.data = bit_buffer;
                 pkt.size = ret;
                 if (enc->coded_frame && enc->coded_frame->pts != AV_NOPTS_VALUE)
@@ -1901,7 +1890,6 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         ost->sync_opts++;
     }
 
-    opkt.stream_index = ost->index;
     if (pkt->pts != AV_NOPTS_VALUE)
         opkt.pts = av_rescale_q(pkt->pts, ist->st->time_base, ost->st->time_base) - ost_tb_start_time;
     else

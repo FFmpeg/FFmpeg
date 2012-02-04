@@ -3177,8 +3177,6 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
         }
         break;
     default:
-        av_log(avctx, AV_LOG_DEBUG, "Unsupported bit depth: %d\n", avctx->bits_per_raw_sample);
-    case 8:
         BIT_DEPTH_FUNCS(8, _16);
         break;
     }
