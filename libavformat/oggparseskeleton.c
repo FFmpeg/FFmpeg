@@ -46,7 +46,7 @@ static int skeleton_header(AVFormatContext *s, int idx)
         version_major = AV_RL16(buf+8);
         version_minor = AV_RL16(buf+10);
 
-        if (version_major != 3) {
+        if (version_major != 3 && version_major != 4) {
             av_log(s, AV_LOG_WARNING, "Unknown skeleton version %d.%d\n",
                    version_major, version_minor);
             return -1;
