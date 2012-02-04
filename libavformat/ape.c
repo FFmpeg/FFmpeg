@@ -159,8 +159,8 @@ static int ape_read_header(AVFormatContext * s)
     AVStream *st;
     uint32_t tag;
     int i;
-    int total_blocks;
-    int64_t pts;
+    int total_blocks, final_size = 0;
+    int64_t pts, file_size;
 
     /* Skip any leading junk such as id3v2 tags */
     ape->junklength = avio_tell(pb);
@@ -289,8 +289,17 @@ static int ape_read_header(AVFormatContext * s)
         ape->frames[i - 1].size = ape->frames[i].pos - ape->frames[i - 1].pos;
         ape->frames[i].skip     = (ape->frames[i].pos - ape->frames[0].pos) & 3;
     }
-    ape->frames[ape->totalframes - 1].size    = ape->finalframeblocks * 4;
     ape->frames[ape->totalframes - 1].nblocks = ape->finalframeblocks;
+    /* calculate final packet size from total file size, if available */
+    file_size = avio_size(pb);
+    if (file_size > 0) {
+        final_size = file_size - ape->frames[ape->totalframes - 1].pos -
+                     ape->wavtaillength;
+        final_size -= final_size & 3;
+    }
+    if (file_size <= 0 || final_size <= 0)
+        final_size = ape->finalframeblocks * 8;
+    ape->frames[ape->totalframes - 1].size = final_size;
 
     for (i = 0; i < ape->totalframes; i++) {
         if(ape->frames[i].skip){
