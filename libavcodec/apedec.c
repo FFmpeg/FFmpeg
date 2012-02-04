@@ -827,7 +827,6 @@ static int ape_decode_frame(AVCodecContext *avctx, void *data,
 
     if(!s->samples){
         uint32_t nblocks, offset;
-        void *tmp_data;
 
         if (!buf_size) {
             *got_frame_ptr = 0;
