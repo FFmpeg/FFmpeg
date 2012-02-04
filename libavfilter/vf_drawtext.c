@@ -550,7 +550,9 @@ static int dtext_prepare_text(AVFilterContext *ctx)
     y     = FFMIN(y + text_height, height - 1);
 
     dtext->w = str_w;
+    dtext->var_values[VAR_TEXT_W] = dtext->var_values[VAR_TW] = dtext->w;
     dtext->h = y;
+    dtext->var_values[VAR_TEXT_H] = dtext->var_values[VAR_TH] = dtext->h;
 
     return 0;
 }
