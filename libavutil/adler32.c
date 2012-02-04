@@ -57,6 +57,11 @@ unsigned long av_adler32_update(unsigned long adler, const uint8_t * buf,
                 len2 -= 8;
                 buf+=8;
             }
+
+            //We combine the 8 interleaved adler32 checksums without overflows
+            //Decreasing the number of iterations would allow below code to be
+            //simplified but would likely be slower due to the fewer iterations
+            //of the inner loop
             s1 += ((a1+b1)*0x1000100010001)>>48;
             s2 += ((((a2&0xFFFF0000FFFF)+(b2&0xFFFF0000FFFF)+((a2>>16)&0xFFFF0000FFFF)+((b2>>16)&0xFFFF0000FFFF))*0x800000008)>>32)
 #if HAVE_BIGENDIAN
