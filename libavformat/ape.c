@@ -379,6 +379,14 @@ static int ape_read_packet(AVFormatContext * s, AVPacket * pkt)
     else
         nblocks = ape->blocksperframe;
 
+    if (ape->frames[ape->currentframe].size <= 0 ||
+        ape->frames[ape->currentframe].size > INT_MAX - extra_size) {
+        av_log(s, AV_LOG_ERROR, "invalid packet size: %d\n",
+               ape->frames[ape->currentframe].size);
+        ape->currentframe++;
+        return AVERROR(EIO);
+    }
+
     if (av_new_packet(pkt,  ape->frames[ape->currentframe].size + extra_size) < 0)
         return AVERROR(ENOMEM);
 
