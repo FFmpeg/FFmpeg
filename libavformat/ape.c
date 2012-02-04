@@ -358,7 +358,7 @@ static int ape_read_packet(AVFormatContext * s, AVPacket * pkt)
 
     if (s->pb->eof_reached)
         return AVERROR_EOF;
-    if (ape->currentframe > ape->totalframes)
+    if (ape->currentframe >= ape->totalframes)
         return AVERROR_EOF;
 
     if (avio_seek(s->pb, ape->frames[ape->currentframe].pos, SEEK_SET) < 0)
