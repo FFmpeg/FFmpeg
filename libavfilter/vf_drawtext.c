@@ -492,9 +492,11 @@ static int dtext_prepare_text(AVFilterContext *ctx)
         /* get glyph */
         dummy.code = code;
         glyph = av_tree_find(dtext->glyphs, &dummy, glyph_cmp, NULL);
-        if (!glyph)
+        if (!glyph) {
             ret = load_glyph(ctx, &glyph, code);
-        if (ret) return ret;
+            if (ret)
+                return ret;
+        }
 
         y_min = FFMIN(glyph->bbox.yMin, y_min);
         y_max = FFMAX(glyph->bbox.yMax, y_max);
