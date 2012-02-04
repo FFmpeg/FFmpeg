@@ -59,7 +59,10 @@ int ff_xvid_rate_control_init(MpegEncContext *s){
             rce->skip_count, (rce->i_tex_bits + rce->p_tex_bits + rce->misc_bits+7)/8, (rce->header_bits+rce->mv_bits+7)/8);
 
 //av_log(NULL, AV_LOG_ERROR, "%s\n", tmp);
-        write(fd, tmp, strlen(tmp));
+        if (write(fd, tmp, strlen(tmp)) < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Error %s writing 2pass logfile\n", strerror(errno));
+            return AVERROR(errno);
+        }
     }
 
     close(fd);
