@@ -671,6 +671,10 @@ static int ogg_read_seek(AVFormatContext *s, int stream_index,
     struct ogg_stream *os = ogg->streams + stream_index;
     int ret;
 
+    // Ensure everything is reset even when seeking via
+    // the generated index.
+    ogg_reset(ogg);
+
     // Try seeking to a keyframe first. If this fails (very possible),
     // av_seek_frame will fall back to ignoring keyframes
     if (s->streams[stream_index]->codec->codec_type == AVMEDIA_TYPE_VIDEO
