@@ -866,11 +866,10 @@ static void choose_pixel_fmt(AVStream *st, AVCodec *codec)
 }
 
 static double
-get_sync_ipts(const OutputStream *ost)
+get_sync_ipts(const OutputStream *ost, int64_t pts)
 {
-    const InputStream *ist = ost->sync_ist;
     OutputFile *of = &output_files[ost->file_index];
-    return (double)(ist->pts - of->start_time) / AV_TIME_BASE;
+    return (double)(pts - of->start_time) / AV_TIME_BASE;
 }
 
 static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
@@ -1094,7 +1093,7 @@ need_realloc:
     }
 
     if (audio_sync_method) {
-        double delta = get_sync_ipts(ost) * enc->sample_rate - ost->sync_opts -
+        double delta = get_sync_ipts(ost, ist->pts) * enc->sample_rate - ost->sync_opts -
                        av_fifo_size(ost->fifo) / (enc->channels * osize);
         int idelta = delta * dec->sample_rate / enc->sample_rate;
         int byte_delta = idelta * isize * dec->channels;
@@ -1137,7 +1136,7 @@ need_realloc:
             }
         }
     } else
-        ost->sync_opts = lrintf(get_sync_ipts(ost) * enc->sample_rate) -
+        ost->sync_opts = lrintf(get_sync_ipts(ost, ist->pts) * enc->sample_rate) -
                                 av_fifo_size(ost->fifo) / (enc->channels * osize); // FIXME wrong
 
     if (ost->audio_resample) {
@@ -1361,7 +1360,7 @@ static void do_video_out(AVFormatContext *s,
 
     enc = ost->st->codec;
 
-    sync_ipts = get_sync_ipts(ost) / av_q2d(enc->time_base);
+    sync_ipts = get_sync_ipts(ost, in_picture->pts) / av_q2d(enc->time_base);
 
     /* by default, we output a single frame */
     nb_frames = 1;
@@ -1955,8 +1954,8 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
         /* no picture yet */
         return ret;
     }
-    ist->next_dts = ist->pts = guess_correct_pts(&ist->pts_ctx, decoded_frame->pkt_pts,
-                                                 decoded_frame->pkt_dts);
+    ist->next_dts = decoded_frame->pts = guess_correct_pts(&ist->pts_ctx, decoded_frame->pkt_pts,
+                                                           decoded_frame->pkt_dts);
     if (pkt->duration)
         ist->next_dts += av_rescale_q(pkt->duration, ist->st->time_base, AV_TIME_BASE_Q);
     else if (ist->st->codec->time_base.num != 0) {
@@ -2011,7 +2010,6 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
                                         ist->st->codec->pix_fmt);
 
             avfilter_copy_frame_props(fb, decoded_frame);
-            fb->pts                 = ist->pts;
             fb->buf->priv           = buf;
             fb->buf->free           = filter_release_buffer;
 
@@ -2019,7 +2017,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
             av_buffersrc_buffer(ost->input_video_filter, fb);
         } else
             av_vsrc_buffer_add_frame(ost->input_video_filter, decoded_frame,
-                                     ist->pts, decoded_frame->sample_aspect_ratio);
+                                     decoded_frame->pts, decoded_frame->sample_aspect_ratio);
 
         if (!ist->filtered_frame && !(ist->filtered_frame = avcodec_alloc_frame())) {
             av_free(buffer_to_free);
@@ -2034,7 +2032,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
             if (ost->output_video_filter)
                 get_filtered_video_frame(ost->output_video_filter, filtered_frame, &ost->picref, &ist_pts_tb);
             if (ost->picref)
-                ist->pts = av_rescale_q(ost->picref->pts, ist_pts_tb, AV_TIME_BASE_Q);
+                filtered_frame->pts = av_rescale_q(ost->picref->pts, ist_pts_tb, AV_TIME_BASE_Q);
             if (ost->picref->video && !ost->frame_aspect_ratio)
                 ost->st->codec->sample_aspect_ratio = ost->picref->video->pixel_aspect;
 #else
