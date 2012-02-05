@@ -131,6 +131,7 @@ typedef struct APEContext {
     DSPContext dsp;
     int channels;
     int samples;                             ///< samples left to decode in current frame
+    int bps;
 
     int fileversion;                         ///< codec version, very important in decoding process
     int compression_level;                   ///< compression levels
@@ -184,13 +185,25 @@ static av_cold int ape_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Incorrect extradata\n");
         return AVERROR(EINVAL);
     }
-    if (avctx->bits_per_coded_sample != 16) {
-        av_log(avctx, AV_LOG_ERROR, "Only 16-bit samples are supported\n");
-        return AVERROR(EINVAL);
-    }
     if (avctx->channels > 2) {
         av_log(avctx, AV_LOG_ERROR, "Only mono and stereo is supported\n");
         return AVERROR(EINVAL);
+    }
+    s->bps = avctx->bits_per_coded_sample;
+    switch (s->bps) {
+    case 8:
+        avctx->sample_fmt = AV_SAMPLE_FMT_U8;
+        break;
+    case 16:
+        avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+        break;
+    case 24:
+        avctx->sample_fmt = AV_SAMPLE_FMT_S32;
+        break;
+    default:
+        av_log_ask_for_sample(avctx, "Unsupported bits per coded sample %d\n",
+                              s->bps);
+        return AVERROR_PATCHWELCOME;
     }
     s->avctx             = avctx;
     s->channels          = avctx->channels;
@@ -215,7 +228,6 @@ static av_cold int ape_decode_init(AVCodecContext *avctx)
     }
 
     dsputil_init(&s->dsp, avctx);
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     avctx->channel_layout = (avctx->channels==2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
 
     avcodec_get_frame_defaults(&s->frame);
@@ -816,7 +828,9 @@ static int ape_decode_frame(AVCodecContext *avctx, void *data,
 {
     const uint8_t *buf = avpkt->data;
     APEContext *s = avctx->priv_data;
-    int16_t *samples;
+    uint8_t *sample8;
+    int16_t *sample16;
+    int32_t *sample24;
     int i, ret;
     int blockstodecode;
     int bytes_used = 0;
@@ -894,7 +908,6 @@ static int ape_decode_frame(AVCodecContext *avctx, void *data,
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    samples = (int16_t *)s->frame.data[0];
 
     s->error=0;
 
@@ -910,10 +923,31 @@ static int ape_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    for (i = 0; i < blockstodecode; i++) {
-        *samples++ = s->decoded0[i];
-        if(s->channels == 2)
-            *samples++ = s->decoded1[i];
+    switch (s->bps) {
+    case 8:
+        sample8 = (uint8_t *)s->frame.data[0];
+        for (i = 0; i < blockstodecode; i++) {
+            *sample8++ = (s->decoded0[i] + 0x80) & 0xff;
+            if (s->channels == 2)
+                *sample8++ = (s->decoded1[i] + 0x80) & 0xff;
+        }
+        break;
+    case 16:
+        sample16 = (int16_t *)s->frame.data[0];
+        for (i = 0; i < blockstodecode; i++) {
+            *sample16++ = s->decoded0[i];
+            if (s->channels == 2)
+                *sample16++ = s->decoded1[i];
+        }
+        break;
+    case 24:
+        sample24 = (int32_t *)s->frame.data[0];
+        for (i = 0; i < blockstodecode; i++) {
+            *sample24++ = s->decoded0[i] << 8;
+            if (s->channels == 2)
+                *sample24++ = s->decoded1[i] << 8;
+        }
+        break;
     }
 
     s->samples -= blockstodecode;
