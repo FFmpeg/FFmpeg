@@ -1077,8 +1077,8 @@ static void vertical_compose_daub97iL1(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2,
 
 static void spatial_compose_dd97i_dy(DWTContext *d, int level, int width, int height, int stride)
 {
-    vertical_compose_3tap vertical_compose_l0 = d->vertical_compose_l0;
-    vertical_compose_5tap vertical_compose_h0 = d->vertical_compose_h0;
+    vertical_compose_3tap vertical_compose_l0 = (void*)d->vertical_compose_l0;
+    vertical_compose_5tap vertical_compose_h0 = (void*)d->vertical_compose_h0;
     DWTCompose *cs = d->cs + level;
 
     int i, y = cs->y;
@@ -1101,8 +1101,8 @@ static void spatial_compose_dd97i_dy(DWTContext *d, int level, int width, int he
 
 static void spatial_compose_dirac53i_dy(DWTContext *d, int level, int width, int height, int stride)
 {
-    vertical_compose_3tap vertical_compose_l0 = d->vertical_compose_l0;
-    vertical_compose_3tap vertical_compose_h0 = d->vertical_compose_h0;
+    vertical_compose_3tap vertical_compose_l0 = (void*)d->vertical_compose_l0;
+    vertical_compose_3tap vertical_compose_h0 = (void*)d->vertical_compose_h0;
     DWTCompose *cs = d->cs + level;
 
     int y= cs->y;
@@ -1124,8 +1124,8 @@ static void spatial_compose_dirac53i_dy(DWTContext *d, int level, int width, int
 
 static void spatial_compose_dd137i_dy(DWTContext *d, int level, int width, int height, int stride)
 {
-    vertical_compose_5tap vertical_compose_l0 = d->vertical_compose_l0;
-    vertical_compose_5tap vertical_compose_h0 = d->vertical_compose_h0;
+    vertical_compose_5tap vertical_compose_l0 = (void*)d->vertical_compose_l0;
+    vertical_compose_5tap vertical_compose_h0 = (void*)d->vertical_compose_h0;
     DWTCompose *cs = d->cs + level;
 
     int i, y = cs->y;
@@ -1149,7 +1149,7 @@ static void spatial_compose_dd137i_dy(DWTContext *d, int level, int width, int h
 // haar makes the assumption that height is even (always true for dirac)
 static void spatial_compose_haari_dy(DWTContext *d, int level, int width, int height, int stride)
 {
-    vertical_compose_2tap vertical_compose = d->vertical_compose;
+    vertical_compose_2tap vertical_compose = (void*)d->vertical_compose;
     int y = d->cs[level].y;
     IDWTELEM *b0 = d->buffer + (y-1)*stride;
     IDWTELEM *b1 = d->buffer + (y  )*stride;
@@ -1165,8 +1165,8 @@ static void spatial_compose_haari_dy(DWTContext *d, int level, int width, int he
 // Fortunately, this filter isn't used in practice.
 static void spatial_compose_fidelity(DWTContext *d, int level, int width, int height, int stride)
 {
-    vertical_compose_9tap vertical_compose_l0 = d->vertical_compose_l0;
-    vertical_compose_9tap vertical_compose_h0 = d->vertical_compose_h0;
+    vertical_compose_9tap vertical_compose_l0 = (void*)d->vertical_compose_l0;
+    vertical_compose_9tap vertical_compose_h0 = (void*)d->vertical_compose_h0;
     int i, y;
     IDWTELEM *b[8];
 
@@ -1190,10 +1190,10 @@ static void spatial_compose_fidelity(DWTContext *d, int level, int width, int he
 
 static void spatial_compose_daub97i_dy(DWTContext *d, int level, int width, int height, int stride)
 {
-    vertical_compose_3tap vertical_compose_l0 = d->vertical_compose_l0;
-    vertical_compose_3tap vertical_compose_h0 = d->vertical_compose_h0;
-    vertical_compose_3tap vertical_compose_l1 = d->vertical_compose_l1;
-    vertical_compose_3tap vertical_compose_h1 = d->vertical_compose_h1;
+    vertical_compose_3tap vertical_compose_l0 = (void*)d->vertical_compose_l0;
+    vertical_compose_3tap vertical_compose_h0 = (void*)d->vertical_compose_h0;
+    vertical_compose_3tap vertical_compose_l1 = (void*)d->vertical_compose_l1;
+    vertical_compose_3tap vertical_compose_h1 = (void*)d->vertical_compose_h1;
     DWTCompose *cs = d->cs + level;
 
     int i, y = cs->y;
