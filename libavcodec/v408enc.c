@@ -89,6 +89,7 @@ static av_cold int v408_encode_close(AVCodecContext *avctx)
     return 0;
 }
 
+#if CONFIG_AYUV_ENCODER
 AVCodec ff_ayuv_encoder = {
     .name         = "ayuv",
     .type         = AVMEDIA_TYPE_VIDEO,
@@ -99,7 +100,8 @@ AVCodec ff_ayuv_encoder = {
     .pix_fmts     = (const enum PixelFormat[]){ PIX_FMT_YUVA444P, PIX_FMT_NONE },
     .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed packed MS 4:4:4:4"),
 };
-
+#endif
+#if CONFIG_V408_ENCODER
 AVCodec ff_v408_encoder = {
     .name         = "v408",
     .type         = AVMEDIA_TYPE_VIDEO,
@@ -110,3 +112,4 @@ AVCodec ff_v408_encoder = {
     .pix_fmts     = (const enum PixelFormat[]){ PIX_FMT_YUVA444P, PIX_FMT_NONE },
     .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed packed QT 4:4:4:4"),
 };
+#endif
