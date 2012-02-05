@@ -59,7 +59,7 @@ FATE_TESTS += fate-psx-str-v3-mdec
 fate-psx-str-v3-mdec: CMD = framecrc -i $(SAMPLES)/psx-str/abc000_cut.str -an
 
 FATE_TESTS += fate-pva-demux
-fate-pva-demux: CMD = framecrc -idct simple -i $(SAMPLES)/pva/PVA_test-partial.pva -t 0.6 -acodec copy
+fate-pva-demux: CMD = framecrc -idct simple -i $(SAMPLES)/pva/PVA_test-partial.pva -t 0.6 -acodec copy -vn
 
 FATE_TESTS += fate-qcp-demux
 fate-qcp-demux: CMD = crc -i $(SAMPLES)/qcp/0036580847.QCP -acodec copy
