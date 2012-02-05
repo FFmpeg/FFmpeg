@@ -1378,7 +1378,6 @@ static int mp_decode_layer3(MPADecodeContext *s)
     }
 
     if (!s->adu_mode) {
-        int skip;
         const uint8_t *ptr = s->gb.buffer + (get_bits_count(&s->gb)>>3);
         int extrasize = av_clip(get_bits_left(&s->gb) >> 3, 0, EXTRABYTES);
         assert((get_bits_count(&s->gb) & 7) == 0);
