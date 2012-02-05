@@ -81,6 +81,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (AURA2, aura2);
     REGISTER_ENCDEC  (AVRP, avrp);
     REGISTER_DECODER (AVS, avs);
+    REGISTER_ENCDEC  (AYUV, ayuv);
     REGISTER_DECODER (BETHSOFTVID, bethsoftvid);
     REGISTER_DECODER (BFI, bfi);
     REGISTER_DECODER (BINK, bink);
@@ -218,6 +219,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC  (V210,  v210);
     REGISTER_DECODER (V210X, v210x);
     REGISTER_ENCDEC  (V308, v308);
+    REGISTER_ENCDEC  (V408, v408);
     REGISTER_ENCDEC  (V410, v410);
     REGISTER_DECODER (VB, vb);
     REGISTER_DECODER (VBLE, vble);

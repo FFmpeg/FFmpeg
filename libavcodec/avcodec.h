@@ -251,7 +251,9 @@ enum CodecID {
     CODEC_ID_AVRP       = MKBETAG('A','V','R','P'),
 
     CODEC_ID_G2M        = MKBETAG( 0 ,'G','2','M'),
+    CODEC_ID_AYUV       = MKBETAG('A','Y','U','V'),
     CODEC_ID_V308       = MKBETAG('V','3','0','8'),
+    CODEC_ID_V408       = MKBETAG('V','4','0','8'),
     CODEC_ID_YUV4       = MKBETAG('Y','U','V','4'),
 
     /* various PCM "codecs" */

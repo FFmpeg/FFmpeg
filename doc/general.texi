@@ -444,6 +444,8 @@ following image formats are supported:
     @tab fourcc: AVrp
 @item AVS (Audio Video Standard) video  @tab     @tab  X
     @tab Video encoding used by the Creature Shock game.
+@item AYUV                   @tab  X  @tab  X
+    @tab Microsoft uncompressed packed 4:4:4:4
 @item Beam Software VB       @tab     @tab  X
 @item Bethesda VID video     @tab     @tab  X
     @tab Used in some games from Bethesda Softworks.
@@ -613,6 +615,7 @@ following image formats are supported:
 @item Ut Video               @tab     @tab  X
 @item v210 QuickTime uncompressed 4:2:2 10-bit     @tab  X  @tab  X
 @item v308 QuickTime uncompressed 4:4:4            @tab  X  @tab  X
+@item v408 QuickTime uncompressed 4:4:4:4          @tab  X  @tab  X
 @item v410 QuickTime uncompressed 4:4:4 10-bit     @tab  X  @tab  X
 @item VBLE Lossless Codec    @tab     @tab  X
 @item VMware Screen Codec / VMware Video  @tab     @tab  X
