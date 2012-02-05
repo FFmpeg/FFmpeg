@@ -2,7 +2,7 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version next:
-- v408 Quicktime amd Microsoft AYUV Uncompressed 4:4:4:4 encoder and decoder
+- v408 Quicktime and Microsoft AYUV Uncompressed 4:4:4:4 encoder and decoder
 
 version 0.10:
 - Fixes: CVE-2011-3929, CVE-2011-3934, CVE-2011-3935, CVE-2011-3936,
