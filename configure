@@ -3423,6 +3423,33 @@ fi
 ! enabled_any memalign posix_memalign malloc_aligned &&
     enabled_any $need_memalign && enable memalign_hack
 
+# add_dep lib dep
+# -> enable ${lib}_deps_${dep}
+# -> add $dep to ${lib}_deps only once
+add_dep() {
+    lib=$1
+    dep=$2
+    enabled "${lib}_deps_${dep}" && return 0
+    enable  "${lib}_deps_${dep}"
+    prepend "${lib}_deps" $dep
+}
+
+# merge deps lib components
+# merge all ${component}_deps into ${lib}_deps and ${lib}_deps_*
+merge_deps() {
+    lib=$1
+    shift
+    for comp in $*; do
+        enabled $comp || continue
+        eval "dep=\"\$${comp}_deps\""
+        for d in $dep; do
+            add_dep $lib $d
+        done
+    done
+}
+
+merge_deps libavfilter $FILTER_LIST
+
 echo "install prefix            $prefix"
 echo "source path               $source_path"
 echo "C compiler                $cc"
@@ -3778,11 +3805,18 @@ Cflags: -I\${includedir}
 EOF
 }
 
+libavfilter_pc_deps=""
+enabled libavfilter_deps_avcodec    && prepend libavfilter_pc_deps "libavcodec = $LIBAVCODEC_VERSION,"
+enabled libavfilter_deps_avformat   && prepend libavfilter_pc_deps "libavformat = $LIBAVFORMAT_VERSION,"
+enabled libavfilter_deps_swscale    && prepend libavfilter_pc_deps "libswscale = $LIBSWSCALE_VERSION,"
+enabled libavfilter_deps_swresample && prepend libavfilter_pc_deps "libswresample = $LIBSWRESAMPLE_VERSION,"
+libavfilter_pc_deps=${libavfilter_pc_deps%, }
+
 pkgconfig_generate libavutil "FFmpeg utility library" "$LIBAVUTIL_VERSION" "$LIBM"
 pkgconfig_generate libavcodec "FFmpeg codec library" "$LIBAVCODEC_VERSION" "$extralibs" "libavutil = $LIBAVUTIL_VERSION"
 pkgconfig_generate libavformat "FFmpeg container format library" "$LIBAVFORMAT_VERSION" "$extralibs" "libavcodec = $LIBAVCODEC_VERSION"
 pkgconfig_generate libavdevice "FFmpeg device handling library" "$LIBAVDEVICE_VERSION" "$extralibs" "libavformat = $LIBAVFORMAT_VERSION"
-pkgconfig_generate libavfilter "FFmpeg video filtering library" "$LIBAVFILTER_VERSION" "$extralibs"
+pkgconfig_generate libavfilter "FFmpeg video filtering library" "$LIBAVFILTER_VERSION" "$extralibs" "$libavfilter_pc_deps"
 pkgconfig_generate libpostproc "FFmpeg postprocessing library" "$LIBPOSTPROC_VERSION" "" "libavutil = $LIBAVUTIL_VERSION"
 pkgconfig_generate libswscale "FFmpeg image rescaling library" "$LIBSWSCALE_VERSION" "$LIBM" "libavutil = $LIBAVUTIL_VERSION"
 pkgconfig_generate libswresample "FFmpeg audio rescaling library" "$LIBSWRESAMPLE_VERSION" "$LIBM" "libavutil = $LIBAVUTIL_VERSION"
