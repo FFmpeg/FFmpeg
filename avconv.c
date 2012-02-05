@@ -204,6 +204,9 @@ typedef struct OutputStream {
     // double sync_ipts;        /* dts from the AVPacket of the demuxer in second units */
     struct InputStream *sync_ist; /* input stream to sync against */
     int64_t sync_opts;       /* output frame counter, could be changed to some true timestamp */ // FIXME look at frame_number
+    /* pts of the first frame encoded for this stream, used for limiting
+     * recording time */
+    int64_t first_pts;
     AVBitStreamFilterContext *bitstream_filters;
     AVCodec *enc;
     int64_t max_frames;
@@ -918,6 +921,19 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
     }
 }
 
+static int check_recording_time(OutputStream *ost)
+{
+    OutputFile *of = &output_files[ost->file_index];
+
+    if (of->recording_time != INT64_MAX &&
+        av_compare_ts(ost->sync_opts - ost->first_pts, ost->st->codec->time_base, of->recording_time,
+                      AV_TIME_BASE_Q) >= 0) {
+        ost->is_past_recording_time = 1;
+        return 0;
+    }
+    return 1;
+}
+
 static void generate_silence(uint8_t* buf, enum AVSampleFormat sample_fmt, size_t size)
 {
     int fill_char = 0x00;
@@ -958,6 +974,11 @@ static int encode_audio_frame(AVFormatContext *s, OutputStream *ost,
             av_log(NULL, AV_LOG_FATAL, "Audio encoding failed\n");
             exit_program(1);
         }
+
+        if (!check_recording_time(ost))
+            return 0;
+
+        ost->sync_opts += frame->nb_samples;
     }
 
     got_packet = 0;
@@ -976,9 +997,6 @@ static int encode_audio_frame(AVFormatContext *s, OutputStream *ost,
 
         audio_size += pkt.size;
     }
-
-    if (frame)
-        ost->sync_opts += frame->nb_samples;
 
     return pkt.size;
 }
@@ -1241,6 +1259,10 @@ static void do_subtitle_out(AVFormatContext *s,
         nb = 1;
 
     for (i = 0; i < nb; i++) {
+        ost->sync_opts = av_rescale_q(pts, ist->st->time_base, enc->time_base);
+        if (!check_recording_time(ost))
+            return;
+
         sub->pts = av_rescale_q(pts, ist->st->time_base, AV_TIME_BASE_Q);
         // start_display_time is required to be 0
         sub->pts               += av_rescale_q(sub->start_display_time, (AVRational){ 1, 1000 }, AV_TIME_BASE_Q);
@@ -1382,10 +1404,16 @@ static void do_video_out(AVFormatContext *s,
     final_picture = in_picture;
 #endif
 
+    if (!ost->frame_number)
+        ost->first_pts = ost->sync_opts;
+
     /* duplicates frame if needed */
     for (i = 0; i < nb_frames; i++) {
         AVPacket pkt;
         av_init_packet(&pkt);
+
+        if (!check_recording_time(ost))
+            return;
 
         if (s->oformat->flags & AVFMT_RAWPICTURE &&
             enc->codec->id == CODEC_ID_RAWVIDEO) {
@@ -1723,13 +1751,6 @@ static int check_output_constraints(InputStream *ist, OutputStream *ost)
     if (of->start_time && ist->pts < of->start_time)
         return 0;
 
-    if (of->recording_time != INT64_MAX &&
-        av_compare_ts(ist->pts, AV_TIME_BASE_Q, of->recording_time + of->start_time,
-                      (AVRational){ 1, 1000000 }) >= 0) {
-        ost->is_past_recording_time = 1;
-        return 0;
-    }
-
     return 1;
 }
 
@@ -1744,6 +1765,12 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     if ((!ost->frame_number && !(pkt->flags & AV_PKT_FLAG_KEY)) &&
         !ost->copy_initial_nonkeyframes)
         return;
+
+    if (of->recording_time != INT64_MAX &&
+        ist->pts >= of->recording_time + of->start_time) {
+        ost->is_past_recording_time = 1;
+        return;
+    }
 
     /* force the input stream PTS */
     if (ost->st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
