@@ -2448,6 +2448,11 @@ static int transcode_init(OutputFile *output_files, int nb_output_files,
             codec->extradata_size= icodec->extradata_size;
 
             codec->time_base = ist->st->time_base;
+            /*
+             * Avi is a special case here because it supports variable fps but
+             * having the fps and timebase differe significantly adds quite some
+             * overhead
+             */
             if(!strcmp(oc->oformat->name, "avi")) {
                 if (   copy_tb<0 && av_q2d(icodec->time_base)*icodec->ticks_per_frame > 2*av_q2d(ist->st->time_base)
                                  && av_q2d(ist->st->time_base) < 1.0/500
