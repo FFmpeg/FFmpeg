@@ -62,7 +62,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
     uint8_t *p = buf;
     uint8_t *pdst = buf;
 
-    if (buf_size < aligned_width * avctx->height * 8 / 3) {
+    if (buf_size < avctx->height * stride) {
         av_log(avctx, AV_LOG_ERROR, "output buffer too small\n");
         return AVERROR(ENOMEM);
     }
