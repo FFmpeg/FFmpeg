@@ -982,11 +982,11 @@ static void choose_pixel_fmt(AVStream *st, AVCodec *codec)
     }
 }
 
-static double get_sync_ipts(const OutputStream *ost)
+static double
+get_sync_ipts(const OutputStream *ost, int64_t pts)
 {
-    const InputStream *ist = ost->sync_ist;
     OutputFile *of = &output_files[ost->file_index];
-    return (double)(ist->pts - of->start_time) / AV_TIME_BASE;
+    return (double)(pts - of->start_time) / AV_TIME_BASE;
 }
 
 static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
@@ -1206,7 +1206,7 @@ need_realloc:
     av_assert0(ost->audio_resample || dec->sample_fmt==enc->sample_fmt);
 
     if (audio_sync_method) {
-        double delta = get_sync_ipts(ost) * enc->sample_rate - ost->sync_opts -
+        double delta = get_sync_ipts(ost, ist->pts) * enc->sample_rate - ost->sync_opts -
                        av_fifo_size(ost->fifo) / (enc->channels * osize);
         int idelta = delta * dec->sample_rate / enc->sample_rate;
         int byte_delta = idelta * isize * dec->channels;
@@ -1248,7 +1248,7 @@ need_realloc:
             }
         }
     } else
-        ost->sync_opts = lrintf(get_sync_ipts(ost) * enc->sample_rate) -
+        ost->sync_opts = lrintf(get_sync_ipts(ost, ist->pts) * enc->sample_rate) -
                                 av_fifo_size(ost->fifo) / (enc->channels * osize); // FIXME wrong
 
     if (ost->audio_resample || ost->audio_channels_mapped) {
@@ -1469,7 +1469,7 @@ static void do_video_out(AVFormatContext *s,
         duration /= av_q2d(enc->time_base);
     }
 
-    sync_ipts = get_sync_ipts(ost) / av_q2d(enc->time_base);
+    sync_ipts = get_sync_ipts(ost, in_picture->pts) / av_q2d(enc->time_base);
 
     /* by default, we output a single frame */
     nb_frames = 1;
@@ -2085,7 +2085,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
 
     best_effort_timestamp= av_opt_ptr(avcodec_get_frame_class(), decoded_frame, "best_effort_timestamp");
     if(*best_effort_timestamp != AV_NOPTS_VALUE)
-        ist->next_pts = ist->pts = *best_effort_timestamp;
+        ist->next_pts = ist->pts = decoded_frame->pts = *best_effort_timestamp;
 
     pkt->size = 0;
 
@@ -2152,7 +2152,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
                 *filtered_frame= *decoded_frame; //for me_threshold
                 if (ost->picref) {
                     avfilter_fill_frame_from_video_buffer_ref(filtered_frame, ost->picref);
-                    ist->pts = av_rescale_q(ost->picref->pts, ist_pts_tb, AV_TIME_BASE_Q);
+                    filtered_frame->pts = av_rescale_q(ost->picref->pts, ist_pts_tb, AV_TIME_BASE_Q);
                 }
             }
             if (ost->picref->video && !ost->frame_aspect_ratio)
