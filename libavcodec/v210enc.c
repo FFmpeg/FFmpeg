@@ -31,11 +31,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    if (avctx->pix_fmt != PIX_FMT_YUV422P10) {
-        av_log(avctx, AV_LOG_ERROR, "v210 needs YUV422P10\n");
-        return -1;
-    }
-
     if (avctx->bits_per_raw_sample != 10)
         av_log(avctx, AV_LOG_WARNING, "bits per raw sample: %d != 10-bit\n",
                avctx->bits_per_raw_sample);
