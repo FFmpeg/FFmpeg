@@ -86,7 +86,7 @@ const AVClass ffurl_context_class = {
 
 const char *avio_enum_protocols(void **opaque, int output)
 {
-    URLProtocol **p = opaque;
+    URLProtocol **p = (URLProtocol **)opaque;
     *p = ffurl_protocol_next(*p);
     if (!*p) return NULL;
     if ((output && (*p)->url_write) || (!output && (*p)->url_read))
