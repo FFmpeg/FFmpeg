@@ -598,6 +598,9 @@ libfreetype flags.
 @item tabsize
 The size in number of spaces to use for rendering the tab.
 Default value is 4.
+
+@item fix_bounds
+If true, check and fix text coords to avoid clipping.
 @end table
 
 For example the command:

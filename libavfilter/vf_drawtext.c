@@ -122,6 +122,7 @@ typedef struct {
     short int draw_box;             ///< draw box around text - true or false
     int use_kerning;                ///< font kerning is used - true/false
     int tabsize;                    ///< tab size
+    int fix_bounds;                 ///< do we let it go out of frame bounds - t/f
 
     FT_Library library;             ///< freetype font library handle
     FT_Face face;                   ///< freetype font face handle
@@ -157,6 +158,8 @@ static const AVOption drawtext_options[]= {
 {"shadowy",  "set y",                OFFSET(shadowy),            AV_OPT_TYPE_INT,    {.dbl=0},     INT_MIN,  INT_MAX  },
 {"tabsize",  "set tab size",         OFFSET(tabsize),            AV_OPT_TYPE_INT,    {.dbl=4},     0,        INT_MAX  },
 {"draw",     "if false do not draw", OFFSET(d_expr),             AV_OPT_TYPE_STRING, {.str="1"},   CHAR_MIN, CHAR_MAX },
+{"fix_bounds", "if true, check and fix text coords to avoid clipping",
+                                     OFFSET(fix_bounds),         AV_OPT_TYPE_INT,    {.dbl=1},     0,        1        },
 
 /* FT_LOAD_* flags */
 {"ft_load_flags", "set font loading flags for libfreetype",   OFFSET(ft_load_flags),  AV_OPT_TYPE_FLAGS,  {.dbl=FT_LOAD_DEFAULT|FT_LOAD_RENDER}, 0, INT_MAX, 0, "ft_load_flags" },
@@ -828,12 +831,14 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     normalize_double(&dtext->x, dtext->var_values[VAR_X]);
     normalize_double(&dtext->y, dtext->var_values[VAR_Y]);
 
-    if (dtext->x < 0) dtext->x = 0;
-    if (dtext->y < 0) dtext->y = 0;
-    if ((unsigned)dtext->x + (unsigned)dtext->w > inlink->w)
-        dtext->x = inlink->w - dtext->w;
-    if ((unsigned)dtext->y + (unsigned)dtext->h > inlink->h)
-        dtext->y = inlink->h - dtext->h;
+    if (dtext->fix_bounds) {
+        if (dtext->x < 0) dtext->x = 0;
+        if (dtext->y < 0) dtext->y = 0;
+        if ((unsigned)dtext->x + (unsigned)dtext->w > inlink->w)
+            dtext->x = inlink->w - dtext->w;
+        if ((unsigned)dtext->y + (unsigned)dtext->h > inlink->h)
+            dtext->y = inlink->h - dtext->h;
+    }
 
     dtext->x &= ~((1 << dtext->hsub) - 1);
     dtext->y &= ~((1 << dtext->vsub) - 1);
