@@ -171,7 +171,8 @@ typedef struct InputStream {
     /* predicted dts of the next packet read for this stream or (when there are
      * several frames in a packet) of the next frame in current packet */
     int64_t       next_dts;
-    int64_t       pts;       /* current pts */
+    /* dts of the last packet read for this stream */
+    int64_t       last_dts;
     PtsCorrectionContext pts_ctx;
     double ts_scale;
     int is_start;            /* is 1 at the start and after a discontinuity */
@@ -1093,7 +1094,7 @@ need_realloc:
     }
 
     if (audio_sync_method) {
-        double delta = get_sync_ipts(ost, ist->pts) * enc->sample_rate - ost->sync_opts -
+        double delta = get_sync_ipts(ost, ist->last_dts) * enc->sample_rate - ost->sync_opts -
                        av_fifo_size(ost->fifo) / (enc->channels * osize);
         int idelta = delta * dec->sample_rate / enc->sample_rate;
         int byte_delta = idelta * isize * dec->channels;
@@ -1136,7 +1137,7 @@ need_realloc:
             }
         }
     } else
-        ost->sync_opts = lrintf(get_sync_ipts(ost, ist->pts) * enc->sample_rate) -
+        ost->sync_opts = lrintf(get_sync_ipts(ost, ist->last_dts) * enc->sample_rate) -
                                 av_fifo_size(ost->fifo) / (enc->channels * osize); // FIXME wrong
 
     if (ost->audio_resample) {
@@ -1748,7 +1749,7 @@ static int check_output_constraints(InputStream *ist, OutputStream *ost)
     if (ost->source_index != ist_index)
         return 0;
 
-    if (of->start_time && ist->pts < of->start_time)
+    if (of->start_time && ist->last_dts < of->start_time)
         return 0;
 
     return 1;
@@ -1767,7 +1768,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         return;
 
     if (of->recording_time != INT64_MAX &&
-        ist->pts >= of->recording_time + of->start_time) {
+        ist->last_dts >= of->recording_time + of->start_time) {
         ost->is_past_recording_time = 1;
         return;
     }
@@ -1786,7 +1787,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         opkt.pts = AV_NOPTS_VALUE;
 
     if (pkt->dts == AV_NOPTS_VALUE)
-        opkt.dts = av_rescale_q(ist->pts, AV_TIME_BASE_Q, ost->st->time_base);
+        opkt.dts = av_rescale_q(ist->last_dts, AV_TIME_BASE_Q, ost->st->time_base);
     else
         opkt.dts = av_rescale_q(pkt->dts, ist->st->time_base, ost->st->time_base);
     opkt.dts -= ost_tb_start_time;
@@ -1814,7 +1815,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
 static void rate_emu_sleep(InputStream *ist)
 {
     if (input_files[ist->file_index].rate_emu) {
-        int64_t pts = av_rescale(ist->pts, 1000000, AV_TIME_BASE);
+        int64_t pts = av_rescale(ist->last_dts, 1000000, AV_TIME_BASE);
         int64_t now = av_gettime() - ist->start;
         if (pts > now)
             usleep(pts - now);
@@ -1941,7 +1942,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
         avcodec_get_frame_defaults(ist->decoded_frame);
     decoded_frame = ist->decoded_frame;
     pkt->pts  = *pkt_pts;
-    pkt->dts  = ist->pts;
+    pkt->dts  = ist->last_dts;
     *pkt_pts  = AV_NOPTS_VALUE;
 
     ret = avcodec_decode_video2(ist->st->codec,
@@ -2091,7 +2092,7 @@ static int output_packet(InputStream *ist,
     AVPacket avpkt;
 
     if (ist->next_dts == AV_NOPTS_VALUE)
-        ist->next_dts = ist->pts;
+        ist->next_dts = ist->last_dts;
 
     if (pkt == NULL) {
         /* EOF handling */
@@ -2104,7 +2105,7 @@ static int output_packet(InputStream *ist,
     }
 
     if (pkt->dts != AV_NOPTS_VALUE)
-        ist->next_dts = ist->pts = av_rescale_q(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q);
+        ist->next_dts = ist->last_dts = av_rescale_q(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q);
     if (pkt->pts != AV_NOPTS_VALUE)
         pkt_pts = av_rescale_q(pkt->pts, ist->st->time_base, AV_TIME_BASE_Q);
 
@@ -2113,7 +2114,7 @@ static int output_packet(InputStream *ist,
         int ret = 0;
     handle_eof:
 
-        ist->pts = ist->next_dts;
+        ist->last_dts = ist->next_dts;
 
         if (avpkt.size && avpkt.size != pkt->size) {
             av_log(NULL, ist->showed_multi_packet_warning ? AV_LOG_VERBOSE : AV_LOG_WARNING,
@@ -2150,7 +2151,7 @@ static int output_packet(InputStream *ist,
     /* handle stream copy */
     if (!ist->decoding_needed) {
         rate_emu_sleep(ist);
-        ist->pts = ist->next_dts;
+        ist->last_dts = ist->next_dts;
         switch (ist->st->codec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
             ist->next_dts += ((int64_t)AV_TIME_BASE * ist->st->codec->frame_size) /
@@ -2235,7 +2236,7 @@ static int init_input_stream(int ist_index, OutputStream *output_streams, int nb
         assert_avoptions(ist->opts);
     }
 
-    ist->pts = ist->st->avg_frame_rate.num ? - ist->st->codec->has_b_frames * AV_TIME_BASE / av_q2d(ist->st->avg_frame_rate) : 0;
+    ist->last_dts = ist->st->avg_frame_rate.num ? - ist->st->codec->has_b_frames * AV_TIME_BASE / av_q2d(ist->st->avg_frame_rate) : 0;
     ist->next_dts = AV_NOPTS_VALUE;
     init_pts_correction(&ist->pts_ctx);
     ist->is_start = 1;
@@ -2685,7 +2686,7 @@ static int transcode(OutputFile *output_files,
                 (os->pb && avio_tell(os->pb) >= of->limit_filesize))
                 continue;
             opts = ost->st->pts.val * av_q2d(ost->st->time_base);
-            ipts = ist->pts;
+            ipts = ist->last_dts;
             if (!input_files[ist->file_index].eof_reached) {
                 if (ipts < ipts_min) {
                     ipts_min = ipts;
@@ -2765,7 +2766,7 @@ static int transcode(OutputFile *output_files,
             && (is->iformat->flags & AVFMT_TS_DISCONT)) {
             int64_t pkt_dts = av_rescale_q(pkt.dts, ist->st->time_base, AV_TIME_BASE_Q);
             int64_t delta   = pkt_dts - ist->next_dts;
-            if ((FFABS(delta) > 1LL * dts_delta_threshold * AV_TIME_BASE || pkt_dts + 1 < ist->pts) && !copy_ts) {
+            if ((FFABS(delta) > 1LL * dts_delta_threshold * AV_TIME_BASE || pkt_dts + 1 < ist->last_dts) && !copy_ts) {
                 input_files[ist->file_index].ts_offset -= delta;
                 av_log(NULL, AV_LOG_DEBUG,
                        "timestamp discontinuity %"PRId64", new offset= %"PRId64"\n",
