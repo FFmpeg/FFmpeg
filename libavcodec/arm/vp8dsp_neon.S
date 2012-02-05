@@ -1,4 +1,4 @@
-/**
+/*
  * VP8 NEON optimisations
  *
  * Copyright (c) 2010 Rob Clark <rob@ti.com>

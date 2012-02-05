@@ -1,4 +1,4 @@
-/**
+/*
  * VP8 compatible video decoder
  *
  * Copyright (C) 2010 David Conrad

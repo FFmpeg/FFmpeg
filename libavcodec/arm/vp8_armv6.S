@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2010 Mans Rullgard
  *
  * This file is part of Libav.

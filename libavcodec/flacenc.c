@@ -1,4 +1,4 @@
-/**
+/*
  * FLAC audio encoder
  * Copyright (c) 2006  Justin Ruggles <justin.ruggles@gmail.com>
  *

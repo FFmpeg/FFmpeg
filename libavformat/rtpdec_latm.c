@@ -1,4 +1,4 @@
-/**
+/*
  * RTP Depacketization of MP4A-LATM, RFC 3016
  * Copyright (c) 2010 Martin Storsjo
  *

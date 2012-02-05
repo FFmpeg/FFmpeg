@@ -1,4 +1,4 @@
-/**
+/*
  * ALAC audio encoder
  * Copyright (c) 2008  Jaikrishnan Menon <realityman@gmx.net>
  *
