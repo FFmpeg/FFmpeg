@@ -41,6 +41,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
                avctx->bits_per_raw_sample);
 
     avctx->coded_frame = avcodec_alloc_frame();
+    if (!avctx->coded_frame)
+        return AVERROR(ENOMEM);
 
     avctx->coded_frame->key_frame = 1;
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
