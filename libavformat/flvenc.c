@@ -39,6 +39,7 @@ static const AVCodecTag flv_video_codec_ids[] = {
     {CODEC_ID_FLASHSV2, FLV_CODECID_SCREEN2},
     {CODEC_ID_VP6F,    FLV_CODECID_VP6   },
     {CODEC_ID_VP6,     FLV_CODECID_VP6   },
+    {CODEC_ID_VP6A,    FLV_CODECID_VP6A  },
     {CODEC_ID_H264,    FLV_CODECID_H264  },
     {CODEC_ID_NONE,    0}
 };
@@ -407,7 +408,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
 //    av_log(s, AV_LOG_DEBUG, "type:%d pts: %"PRId64" size:%d\n", enc->codec_type, timestamp, size);
 
     if(enc->codec_id == CODEC_ID_VP6 || enc->codec_id == CODEC_ID_VP6F ||
-       enc->codec_id == CODEC_ID_AAC)
+       enc->codec_id == CODEC_ID_VP6A || enc->codec_id == CODEC_ID_AAC)
         flags_size= 2;
     else if(enc->codec_id == CODEC_ID_H264 || enc->codec_id == CODEC_ID_MPEG4)
         flags_size= 5;
@@ -479,7 +480,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (enc->codec_id == CODEC_ID_VP6)
         avio_w8(pb,0);
-    if (enc->codec_id == CODEC_ID_VP6F)
+    if (enc->codec_id == CODEC_ID_VP6F || enc->codec_id == CODEC_ID_VP6A)
         avio_w8(pb, enc->extradata_size ? enc->extradata[0] : 0);
     else if (enc->codec_id == CODEC_ID_AAC)
         avio_w8(pb,1); // AAC raw
