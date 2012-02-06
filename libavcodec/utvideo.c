@@ -376,8 +376,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         return ret;
     }
 
-    ff_thread_finish_setup(avctx);
-
     /* parse plane structure to retrieve frame flags and validate slice offsets */
     ptr = buf;
     for (i = 0; i < c->planes; i++) {
