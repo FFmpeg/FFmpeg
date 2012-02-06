@@ -72,9 +72,6 @@ OBJS = adler32.o                                                        \
        tree.o                                                           \
        utils.o                                                          \
 
-OBJS-$(ARCH_PPC) += ppc/cpu.o
-OBJS-$(ARCH_X86) += x86/cpu.o
-
 TESTPROGS = adler32 aes avstring base64 cpu crc des eval fifo lfg lls \
             md5 opt parseutils sha tree
 
