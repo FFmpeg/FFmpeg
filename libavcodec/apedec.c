@@ -25,13 +25,13 @@
 #include "bytestream.h"
 #include "libavutil/audioconvert.h"
 #include "libavutil/avassert.h"
+#include "libavutil/opt.h"
 
 /**
  * @file
  * Monkey's Audio lossless audio decoder
  */
 
-#define BLOCKS_PER_LOOP     4608
 #define MAX_CHANNELS        2
 #define MAX_BYTESPERSAMPLE  3
 
@@ -126,6 +126,7 @@ typedef struct APEPredictor {
 
 /** Decoder context */
 typedef struct APEContext {
+    AVClass *class;                          ///< class for AVOptions
     AVCodecContext *avctx;
     AVFrame frame;
     DSPContext dsp;
@@ -145,6 +146,7 @@ typedef struct APEContext {
     int32_t *decoded_buffer;
     int decoded_size;
     int32_t *decoded[MAX_CHANNELS];          ///< decoded data for each channel
+    int blocks_per_loop;                     ///< maximum number of samples to decode for each call
 
     int16_t* filterbuf[APE_FILTER_LEVELS];   ///< filter memory
 
@@ -891,7 +893,7 @@ static int ape_decode_frame(AVCodecContext *avctx, void *data,
         return avpkt->size;
     }
 
-    blockstodecode = FFMIN(BLOCKS_PER_LOOP, s->samples);
+    blockstodecode = FFMIN(s->blocks_per_loop, s->samples);
 
     /* reallocate decoded sample buffer if needed */
     av_fast_malloc(&s->decoded_buffer, &s->decoded_size,
@@ -964,6 +966,21 @@ static void ape_flush(AVCodecContext *avctx)
     s->samples= 0;
 }
 
+#define OFFSET(x) offsetof(APEContext, x)
+#define PAR (AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM)
+static const AVOption options[] = {
+    { "max_samples", "maximum number of samples decoded per call",             OFFSET(blocks_per_loop), AV_OPT_TYPE_INT,   { 4608 },    1,       INT_MAX, PAR, "max_samples" },
+    { "all",         "no maximum. decode all samples for each packet at once", 0,                       AV_OPT_TYPE_CONST, { INT_MAX }, INT_MIN, INT_MAX, PAR, "max_samples" },
+    { NULL},
+};
+
+static const AVClass ape_decoder_class = {
+    .class_name = "APE decoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_ape_decoder = {
     .name           = "ape",
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -975,4 +992,5 @@ AVCodec ff_ape_decoder = {
     .capabilities   = CODEC_CAP_SUBFRAMES | CODEC_CAP_DELAY | CODEC_CAP_DR1,
     .flush = ape_flush,
     .long_name = NULL_IF_CONFIG_SMALL("Monkey's Audio"),
+    .priv_class     = &ape_decoder_class,
 };
