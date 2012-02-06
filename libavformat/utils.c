@@ -2751,6 +2751,16 @@ void avformat_close_input(AVFormatContext **ps)
         avio_close(pb);
 }
 
+#if FF_API_NEW_STREAM
+AVStream *av_new_stream(AVFormatContext *s, int id)
+{
+    AVStream *st = avformat_new_stream(s, NULL);
+    if (st)
+        st->id = id;
+    return st;
+}
+#endif
+
 AVStream *avformat_new_stream(AVFormatContext *s, AVCodec *c)
 {
     AVStream *st;
