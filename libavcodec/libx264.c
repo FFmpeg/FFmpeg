@@ -99,13 +99,6 @@ static int encode_nals(AVCodecContext *ctx, uint8_t *buf, int size,
     }
 
     for (i = 0; i < nnal; i++){
-        /* Don't put the SEI in extradata. */
-        if (skip_sei && nals[i].i_type == NAL_SEI) {
-            x4->sei_size = nals[i].i_payload;
-            x4->sei      = av_malloc(x4->sei_size);
-            memcpy(x4->sei, nals[i].p_payload, nals[i].i_payload);
-            continue;
-        }
         memcpy(p, nals[i].p_payload, nals[i].i_payload);
         p += nals[i].i_payload;
     }
@@ -403,16 +396,25 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
     if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
         x264_nal_t *nal;
+        uint8_t *p;
         int nnal, s, i;
 
         s = x264_encoder_headers(x4->enc, &nal, &nnal);
+        avctx->extradata = p = av_malloc(s);
 
-        for (i = 0; i < nnal; i++)
-            if (nal[i].i_type == NAL_SEI)
+        for (i = 0; i < nnal; i++) {
+            /* Don't put the SEI in extradata. */
+            if (nal[i].i_type == NAL_SEI) {
                 av_log(avctx, AV_LOG_INFO, "%s\n", nal[i].p_payload+25);
-
-        avctx->extradata      = av_malloc(s);
-        avctx->extradata_size = encode_nals(avctx, avctx->extradata, s, nal, nnal, 1);
+                x4->sei_size = nal[i].i_payload;
+                x4->sei      = av_malloc(x4->sei_size);
+                memcpy(x4->sei, nal[i].p_payload, nal[i].i_payload);
+                continue;
+            }
+            memcpy(p, nal[i].p_payload, nal[i].i_payload);
+            p += nal[i].i_payload;
+        }
+        avctx->extradata_size = p - avctx->extradata;
     }
 
     return 0;
