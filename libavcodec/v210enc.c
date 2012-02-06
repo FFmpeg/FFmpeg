@@ -53,7 +53,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
                         int buf_size, void *data)
 {
     const AVFrame *pic = data;
-    int aligned_width = FFALIGN(avctx->width, 48);
+    int aligned_width = ((avctx->width + 47) / 48) * 48;
     int stride = aligned_width * 8 / 3;
     int h, w;
     const uint16_t *y = (const uint16_t*)pic->data[0];
