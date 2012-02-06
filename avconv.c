@@ -1356,11 +1356,12 @@ static void do_video_out(AVFormatContext *s,
     int nb_frames, i, ret, format_video_sync;
     AVFrame *final_picture;
     AVCodecContext *enc;
-    double sync_ipts;
+    double sync_ipts, delta;
 
     enc = ost->st->codec;
 
     sync_ipts = get_sync_ipts(ost, in_picture->pts) / av_q2d(enc->time_base);
+    delta = sync_ipts - ost->sync_opts;
 
     /* by default, we output a single frame */
     nb_frames = 1;
@@ -1372,31 +1373,36 @@ static void do_video_out(AVFormatContext *s,
         format_video_sync = (s->oformat->flags & AVFMT_NOTIMESTAMPS) ? VSYNC_PASSTHROUGH :
                             (s->oformat->flags & AVFMT_VARIABLE_FPS) ? VSYNC_VFR : VSYNC_CFR;
 
-    if (format_video_sync != VSYNC_PASSTHROUGH) {
-        double vdelta = sync_ipts - ost->sync_opts;
+    switch (format_video_sync) {
+    case VSYNC_CFR:
         // FIXME set to 0.5 after we fix some dts/pts bugs like in avidec.c
-        if (vdelta < -1.1)
+        if (delta < -1.1)
             nb_frames = 0;
-        else if (format_video_sync == VSYNC_VFR) {
-            if (vdelta <= -0.6) {
-                nb_frames = 0;
-            } else if (vdelta > 0.6)
-                ost->sync_opts = lrintf(sync_ipts);
-        } else if (vdelta > 1.1)
-            nb_frames = lrintf(vdelta);
-        if (nb_frames == 0) {
-            ++nb_frames_drop;
-            av_log(NULL, AV_LOG_VERBOSE, "*** drop!\n");
-        } else if (nb_frames > 1) {
-            nb_frames_dup += nb_frames - 1;
-            av_log(NULL, AV_LOG_VERBOSE, "*** %d dup!\n", nb_frames - 1);
-        }
-    } else
+        else if (delta > 1.1)
+            nb_frames = lrintf(delta);
+        break;
+    case VSYNC_VFR:
+        if (delta <= -0.6)
+            nb_frames = 0;
+        else if (delta > 0.6)
+            ost->sync_opts = lrintf(sync_ipts);
+        break;
+    case VSYNC_PASSTHROUGH:
         ost->sync_opts = lrintf(sync_ipts);
+        break;
+    default:
+        av_assert0(0);
+    }
 
     nb_frames = FFMIN(nb_frames, ost->max_frames - ost->frame_number);
-    if (nb_frames <= 0)
+    if (nb_frames == 0) {
+        nb_frames_drop++;
+        av_log(NULL, AV_LOG_VERBOSE, "*** drop!\n");
         return;
+    } else if (nb_frames > 1) {
+        nb_frames_dup += nb_frames - 1;
+        av_log(NULL, AV_LOG_VERBOSE, "*** %d dup!\n", nb_frames - 1);
+    }
 
 #if !CONFIG_AVFILTER
     do_video_resample(ost, ist, in_picture, &final_picture);
