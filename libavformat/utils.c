@@ -2246,6 +2246,13 @@ static int tb_unreliable(AVCodecContext *c){
     return 0;
 }
 
+#if FF_API_FORMAT_PARAMETERS
+int av_find_stream_info(AVFormatContext *ic)
+{
+    return avformat_find_stream_info(ic, NULL);
+}
+#endif
+
 int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 {
     int i, count, ret, read_size, j;
