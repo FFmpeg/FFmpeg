@@ -857,7 +857,7 @@ static int binkb_decode_plane(BinkContext *c, GetBitContext *gb, int plane_idx,
                 memset(dctblock, 0, sizeof(*dctblock) * 64);
                 dctblock[0] = binkb_get_value(c, BINKB_SRC_INTRA_DC);
                 qp = binkb_get_value(c, BINKB_SRC_INTRA_Q);
-                read_dct_coeffs(gb, dctblock, bink_scan, binkb_intra_quant, qp);
+                read_dct_coeffs(gb, dctblock, bink_scan, (const int32_t (*)[64])binkb_intra_quant, qp);
                 c->bdsp.idct_put(dst, stride, dctblock);
                 break;
             case 3:
@@ -890,7 +890,7 @@ static int binkb_decode_plane(BinkContext *c, GetBitContext *gb, int plane_idx,
                 memset(dctblock, 0, sizeof(*dctblock) * 64);
                 dctblock[0] = binkb_get_value(c, BINKB_SRC_INTER_DC);
                 qp = binkb_get_value(c, BINKB_SRC_INTER_Q);
-                read_dct_coeffs(gb, dctblock, bink_scan, binkb_inter_quant, qp);
+                read_dct_coeffs(gb, dctblock, bink_scan, (const int32_t (*)[64])binkb_inter_quant, qp);
                 c->bdsp.idct_add(dst, stride, dctblock);
                 break;
             case 5:
