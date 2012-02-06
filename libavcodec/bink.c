@@ -1246,17 +1246,10 @@ static av_cold void binkb_calc_quant(void)
     for (j = 0; j < 16; j++) {
         for (i = 0; i < 64; i++) {
             int k = inv_bink_scan[i];
-            if (s[i] == C) {
-                binkb_intra_quant[j][k] = (1L << 12) * binkb_intra_seed[i] *
-                                          binkb_num[j]/binkb_den[j];
-                binkb_inter_quant[j][k] = (1L << 12) * binkb_inter_seed[i] *
-                                          binkb_num[j]/binkb_den[j];
-            } else {
                 binkb_intra_quant[j][k] = binkb_intra_seed[i] * (int64_t)s[i] *
                                           binkb_num[j]/(binkb_den[j] * (C>>12));
                 binkb_inter_quant[j][k] = binkb_inter_seed[i] * (int64_t)s[i] *
                                           binkb_num[j]/(binkb_den[j] * (C>>12));
-            }
         }
     }
 }
