@@ -692,8 +692,6 @@ const vf_info_t vf_info_fspp = {
 //Specific spp's dct, idct and threshold functions
 //I'd prefer to have them in the separate file.
 
-//#define MANGLE(a) #a
-
 //typedef int16_t DCTELEM; //! only int16_t
 
 #define DCTSIZE 8
@@ -917,7 +915,7 @@ static void column_fidct_mmx(int16_t* thr_adr,  DCTELEM *data,  DCTELEM *output,
         "paddusw 0*16(%%"REG_d"), %%mm5    \n\t"
         "paddusw %%mm6, %%mm2          \n\t"
 
-        "pmulhw "MANGLE(MM_FIX_0_707106781)", %%mm7 \n\t"
+        "pmulhw "LOCAL_MANGLE(MM_FIX_0_707106781)", %%mm7 \n\t"
         //
         "paddw 0*16(%%"REG_d"), %%mm5      \n\t"
         "paddw %%mm6, %%mm2            \n\t"
@@ -928,7 +926,7 @@ static void column_fidct_mmx(int16_t* thr_adr,  DCTELEM *data,  DCTELEM *output,
 //This func is totally compute-bound,  operates at huge speed. So,  DC shortcut
 // at this place isn't worthwhile due to BTB miss penalty (checked on Pent. 3).
 //However,  typical numbers: nondc - 29%%,  dc - 46%%,  zero - 25%%. All <> 0 case is very rare.
-        "paddw "MANGLE(MM_2)", %%mm5            \n\t"
+        "paddw "LOCAL_MANGLE(MM_2)", %%mm5            \n\t"
         "movq %%mm2, %%mm6             \n\t"
 
         "paddw %%mm5, %%mm2            \n\t"
@@ -970,7 +968,7 @@ static void column_fidct_mmx(int16_t* thr_adr,  DCTELEM *data,  DCTELEM *output,
         "psraw $2, %%mm6              \n\t" //paddw mm6, MM_2 !!    ---
         "movq %%mm2, %%mm7             \n\t"
 
-        "pmulhw "MANGLE(MM_FIX_1_414213562_A)", %%mm1 \n\t"
+        "pmulhw "LOCAL_MANGLE(MM_FIX_1_414213562_A)", %%mm1 \n\t"
         "paddw %%mm6, %%mm2            \n\t" //'t0
 
         "movq %%mm2, 0*8+%3            \n\t" //!
@@ -994,16 +992,16 @@ static void column_fidct_mmx(int16_t* thr_adr,  DCTELEM *data,  DCTELEM *output,
         "psllw $2, %%mm3              \n\t"
         "psllw $2, %%mm7              \n\t" //opt for P6
 
-        "pmulhw "MANGLE(MM_FIX_0_382683433)", %%mm3 \n\t"
+        "pmulhw "LOCAL_MANGLE(MM_FIX_0_382683433)", %%mm3 \n\t"
         "psllw $2, %%mm4              \n\t"
 
-        "pmulhw "MANGLE(MM_FIX_0_541196100)", %%mm7 \n\t"
+        "pmulhw "LOCAL_MANGLE(MM_FIX_0_541196100)", %%mm7 \n\t"
         "psllw $2, %%mm2              \n\t"
 
-        "pmulhw "MANGLE(MM_FIX_1_306562965)", %%mm4 \n\t"
+        "pmulhw "LOCAL_MANGLE(MM_FIX_1_306562965)", %%mm4 \n\t"
         "paddw %%mm1, %%mm5            \n\t" //'t1
 
-        "pmulhw "MANGLE(MM_FIX_0_707106781)", %%mm2 \n\t"
+        "pmulhw "LOCAL_MANGLE(MM_FIX_0_707106781)", %%mm2 \n\t"
         "psubw %%mm1, %%mm6            \n\t" //'t2
         // t7 't12 't11 t4 t6 - 't13 't10   ---
 
@@ -1078,20 +1076,20 @@ static void column_fidct_mmx(int16_t* thr_adr,  DCTELEM *data,  DCTELEM *output,
         "movq 0*8+%3, %%mm4            \n\t"
         "movq %%mm0, %%mm1             \n\t"
 
-        "pmulhw "MANGLE(MM_FIX_0_847759065)", %%mm0 \n\t" //tmp6
+        "pmulhw "LOCAL_MANGLE(MM_FIX_0_847759065)", %%mm0 \n\t" //tmp6
         "movq %%mm1, %%mm2             \n\t"
 
         "movq "DCTSIZE_S"*0*2(%%"REG_D"), %%mm5 \n\t"
         "movq %%mm2, %%mm3             \n\t"
 
-        "pmulhw "MANGLE(MM_FIX_0_566454497)", %%mm1 \n\t" //tmp5
+        "pmulhw "LOCAL_MANGLE(MM_FIX_0_566454497)", %%mm1 \n\t" //tmp5
         "paddw %%mm4, %%mm5            \n\t"
 
         "movq 1*8+%3, %%mm6            \n\t"
         //paddw mm3, MM_2
         "psraw $2, %%mm3              \n\t" //tmp7
 
-        "pmulhw "MANGLE(MM_FIX_0_198912367)", %%mm2 \n\t" //-tmp4
+        "pmulhw "LOCAL_MANGLE(MM_FIX_0_198912367)", %%mm2 \n\t" //-tmp4
         "psubw %%mm3, %%mm4            \n\t"
 
         "movq "DCTSIZE_S"*1*2(%%"REG_D"), %%mm7 \n\t"
@@ -1157,13 +1155,13 @@ static void column_fidct_mmx(int16_t* thr_adr,  DCTELEM *data,  DCTELEM *output,
         "movq %%mm5, %%mm1             \n\t"
         "psllw $1, %%mm0              \n\t" //'z12
 
-        "pmulhw "MANGLE(MM_FIX_2_613125930)", %%mm1 \n\t" //-
+        "pmulhw "LOCAL_MANGLE(MM_FIX_2_613125930)", %%mm1 \n\t" //-
         "paddw %%mm0, %%mm5            \n\t"
 
-        "pmulhw "MANGLE(MM_FIX_1_847759065)", %%mm5 \n\t" //'z5
+        "pmulhw "LOCAL_MANGLE(MM_FIX_1_847759065)", %%mm5 \n\t" //'z5
         "paddw %%mm6, %%mm2            \n\t" //'z11
 
-        "pmulhw "MANGLE(MM_FIX_1_082392200)", %%mm0 \n\t"
+        "pmulhw "LOCAL_MANGLE(MM_FIX_1_082392200)", %%mm0 \n\t"
         "movq %%mm2, %%mm7             \n\t"
 
         //---
@@ -1173,7 +1171,7 @@ static void column_fidct_mmx(int16_t* thr_adr,  DCTELEM *data,  DCTELEM *output,
         "psllw $1, %%mm2              \n\t"
         "paddw %%mm3, %%mm7            \n\t" //'t7
 
-        "pmulhw "MANGLE(MM_FIX_1_414213562)", %%mm2 \n\t" //'t11
+        "pmulhw "LOCAL_MANGLE(MM_FIX_1_414213562)", %%mm2 \n\t" //'t11
         "movq %%mm4, %%mm6             \n\t"
         //paddw mm7, MM_2
         "psraw $2, %%mm7              \n\t"
@@ -1275,7 +1273,7 @@ static void column_fidct_mmx(int16_t* thr_adr,  DCTELEM *data,  DCTELEM *output,
         "paddusw 1*8+0*16(%%"REG_d"), %%mm5 \n\t"
         "paddusw %%mm6, %%mm2          \n\t"
 
-        "pmulhw "MANGLE(MM_FIX_0_707106781)", %%mm7 \n\t"
+        "pmulhw "LOCAL_MANGLE(MM_FIX_0_707106781)", %%mm7 \n\t"
         //
         "paddw 1*8+0*16(%%"REG_d"), %%mm5  \n\t"
         "paddw %%mm6, %%mm2            \n\t"
@@ -1286,7 +1284,7 @@ static void column_fidct_mmx(int16_t* thr_adr,  DCTELEM *data,  DCTELEM *output,
 //This func is totally compute-bound,  operates at huge speed. So,  DC shortcut
 // at this place isn't worthwhile due to BTB miss penalty (checked on Pent. 3).
 //However,  typical numbers: nondc - 29%%,  dc - 46%%,  zero - 25%%. All <> 0 case is very rare.
-        "paddw "MANGLE(MM_2)", %%mm5            \n\t"
+        "paddw "LOCAL_MANGLE(MM_2)", %%mm5            \n\t"
         "movq %%mm2, %%mm6             \n\t"
 
         "paddw %%mm5, %%mm2            \n\t"
@@ -1328,7 +1326,7 @@ static void column_fidct_mmx(int16_t* thr_adr,  DCTELEM *data,  DCTELEM *output,
         "psraw $2, %%mm6              \n\t" //paddw mm6, MM_2 !!    ---
         "movq %%mm2, %%mm7             \n\t"
 
-        "pmulhw "MANGLE(MM_FIX_1_414213562_A)", %%mm1 \n\t"
+        "pmulhw "LOCAL_MANGLE(MM_FIX_1_414213562_A)", %%mm1 \n\t"
         "paddw %%mm6, %%mm2            \n\t" //'t0
 
         "movq %%mm2, 0*8+%3            \n\t" //!
@@ -1352,16 +1350,16 @@ static void column_fidct_mmx(int16_t* thr_adr,  DCTELEM *data,  DCTELEM *output,
         "psllw $2, %%mm3              \n\t"
         "psllw $2, %%mm7              \n\t" //opt for P6
 
-        "pmulhw "MANGLE(MM_FIX_0_382683433)", %%mm3 \n\t"
+        "pmulhw "LOCAL_MANGLE(MM_FIX_0_382683433)", %%mm3 \n\t"
         "psllw $2, %%mm4              \n\t"
 
-        "pmulhw "MANGLE(MM_FIX_0_541196100)", %%mm7 \n\t"
+        "pmulhw "LOCAL_MANGLE(MM_FIX_0_541196100)", %%mm7 \n\t"
         "psllw $2, %%mm2              \n\t"
 
-        "pmulhw "MANGLE(MM_FIX_1_306562965)", %%mm4 \n\t"
+        "pmulhw "LOCAL_MANGLE(MM_FIX_1_306562965)", %%mm4 \n\t"
         "paddw %%mm1, %%mm5            \n\t" //'t1
 
-        "pmulhw "MANGLE(MM_FIX_0_707106781)", %%mm2 \n\t"
+        "pmulhw "LOCAL_MANGLE(MM_FIX_0_707106781)", %%mm2 \n\t"
         "psubw %%mm1, %%mm6            \n\t" //'t2
         // t7 't12 't11 t4 t6 - 't13 't10   ---
 
@@ -1436,20 +1434,20 @@ static void column_fidct_mmx(int16_t* thr_adr,  DCTELEM *data,  DCTELEM *output,
         "movq 0*8+%3, %%mm4            \n\t"
         "movq %%mm0, %%mm1             \n\t"
 
-        "pmulhw "MANGLE(MM_FIX_0_847759065)", %%mm0 \n\t" //tmp6
+        "pmulhw "LOCAL_MANGLE(MM_FIX_0_847759065)", %%mm0 \n\t" //tmp6
         "movq %%mm1, %%mm2             \n\t"
 
         "movq "DCTSIZE_S"*0*2(%%"REG_D"), %%mm5 \n\t"
         "movq %%mm2, %%mm3             \n\t"
 
-        "pmulhw "MANGLE(MM_FIX_0_566454497)", %%mm1 \n\t" //tmp5
+        "pmulhw "LOCAL_MANGLE(MM_FIX_0_566454497)", %%mm1 \n\t" //tmp5
         "paddw %%mm4, %%mm5            \n\t"
 
         "movq 1*8+%3, %%mm6            \n\t"
         //paddw mm3, MM_2
         "psraw $2, %%mm3              \n\t" //tmp7
 
-        "pmulhw "MANGLE(MM_FIX_0_198912367)", %%mm2 \n\t" //-tmp4
+        "pmulhw "LOCAL_MANGLE(MM_FIX_0_198912367)", %%mm2 \n\t" //-tmp4
         "psubw %%mm3, %%mm4            \n\t"
 
         "movq "DCTSIZE_S"*1*2(%%"REG_D"), %%mm7 \n\t"
@@ -1517,13 +1515,13 @@ static void column_fidct_mmx(int16_t* thr_adr,  DCTELEM *data,  DCTELEM *output,
         "movq %%mm5, %%mm1             \n\t"
         "psllw $1, %%mm0              \n\t" //'z12
 
-        "pmulhw "MANGLE(MM_FIX_2_613125930)", %%mm1 \n\t" //-
+        "pmulhw "LOCAL_MANGLE(MM_FIX_2_613125930)", %%mm1 \n\t" //-
         "paddw %%mm0, %%mm5            \n\t"
 
-        "pmulhw "MANGLE(MM_FIX_1_847759065)", %%mm5 \n\t" //'z5
+        "pmulhw "LOCAL_MANGLE(MM_FIX_1_847759065)", %%mm5 \n\t" //'z5
         "paddw %%mm6, %%mm2            \n\t" //'z11
 
-        "pmulhw "MANGLE(MM_FIX_1_082392200)", %%mm0 \n\t"
+        "pmulhw "LOCAL_MANGLE(MM_FIX_1_082392200)", %%mm0 \n\t"
         "movq %%mm2, %%mm7             \n\t"
 
         //---
@@ -1533,7 +1531,7 @@ static void column_fidct_mmx(int16_t* thr_adr,  DCTELEM *data,  DCTELEM *output,
         "psllw $1, %%mm2              \n\t"
         "paddw %%mm3, %%mm7            \n\t" //'t7
 
-        "pmulhw "MANGLE(MM_FIX_1_414213562)", %%mm2 \n\t" //'t11
+        "pmulhw "LOCAL_MANGLE(MM_FIX_1_414213562)", %%mm2 \n\t" //'t11
         "movq %%mm4, %%mm6             \n\t"
         //paddw mm7, MM_2
         "psraw $2, %%mm7              \n\t"
@@ -1702,7 +1700,7 @@ static void row_idct_mmx (DCTELEM* workspace,
         "punpckhwd %%mm3, %%mm7        \n\t"
         "psubw %%mm6, %%mm0            \n\t"
 
-        "pmulhw "MANGLE(MM_FIX_1_414213562_A)", %%mm0 \n\t"
+        "pmulhw "LOCAL_MANGLE(MM_FIX_1_414213562_A)", %%mm0 \n\t"
         "movq %%mm4, %%mm2             \n\t"
 
         "punpckldq %%mm7, %%mm4        \n\t" //2
@@ -1764,19 +1762,19 @@ static void row_idct_mmx (DCTELEM* workspace,
         "movq %%mm3, %%mm0             \n\t"
         "psubw %%mm5, %%mm4            \n\t" //z12
 
-        "pmulhw "MANGLE(MM_FIX_2_613125930)", %%mm0 \n\t" //-
+        "pmulhw "LOCAL_MANGLE(MM_FIX_2_613125930)", %%mm0 \n\t" //-
         "paddw %%mm4, %%mm3            \n\t"
 
-        "pmulhw "MANGLE(MM_FIX_1_847759065)", %%mm3 \n\t" //z5
+        "pmulhw "LOCAL_MANGLE(MM_FIX_1_847759065)", %%mm3 \n\t" //z5
         "paddw %%mm5, %%mm2            \n\t" //z11  >
 
-        "pmulhw "MANGLE(MM_FIX_1_082392200)", %%mm4 \n\t"
+        "pmulhw "LOCAL_MANGLE(MM_FIX_1_082392200)", %%mm4 \n\t"
         "movq %%mm2, %%mm5             \n\t"
 
         "psubw %%mm6, %%mm2            \n\t"
         "paddw %%mm6, %%mm5            \n\t" //t7
 
-        "pmulhw "MANGLE(MM_FIX_1_414213562)", %%mm2 \n\t" //t11
+        "pmulhw "LOCAL_MANGLE(MM_FIX_1_414213562)", %%mm2 \n\t" //t11
         "paddw %%mm3, %%mm0            \n\t" //t12
 
         "psllw $3, %%mm0              \n\t"
@@ -1800,7 +1798,7 @@ static void row_idct_mmx (DCTELEM* workspace,
         "paddw %%mm2, %%mm7            \n\t" //d2
         "psubw %%mm2, %%mm0            \n\t" //d5
 
-        "movq "MANGLE(MM_DESCALE_RND)", %%mm2   \n\t" //4
+        "movq "LOCAL_MANGLE(MM_DESCALE_RND)", %%mm2   \n\t" //4
         "psubw %%mm5, %%mm6            \n\t" //d7
 
         "paddw 0*8+%3, %%mm5           \n\t" //d0
@@ -2006,7 +2004,7 @@ static void row_fdct_mmx(DCTELEM *data,  const uint8_t *pixels,  int line_size, 
         "psllw $2, %%mm1              \n\t"
         "paddw %%mm5, %%mm6            \n\t" //t10
 
-        "pmulhw "MANGLE(MM_FIX_0_707106781)", %%mm1 \n\t"
+        "pmulhw "LOCAL_MANGLE(MM_FIX_0_707106781)", %%mm1 \n\t"
         "paddw %%mm6, %%mm7            \n\t" //d2
 
         "psubw %%mm2, %%mm6            \n\t" //d3
@@ -2049,19 +2047,19 @@ static void row_fdct_mmx(DCTELEM *data,  const uint8_t *pixels,  int line_size, 
         "movq 0*8+%3, %%mm2           \n\t"
         "psllw $2, %%mm4              \n\t" //t11
 
-        "pmulhw "MANGLE(MM_FIX_0_707106781)", %%mm4 \n\t" //z3
+        "pmulhw "LOCAL_MANGLE(MM_FIX_0_707106781)", %%mm4 \n\t" //z3
         "paddw %%mm2, %%mm1            \n\t"
 
         "psllw $2, %%mm1              \n\t" //t12
         "movq %%mm3, %%mm0             \n\t"
 
-        "pmulhw "MANGLE(MM_FIX_0_541196100)", %%mm0 \n\t"
+        "pmulhw "LOCAL_MANGLE(MM_FIX_0_541196100)", %%mm0 \n\t"
         "psubw %%mm1, %%mm3            \n\t"
 
-        "pmulhw "MANGLE(MM_FIX_0_382683433)", %%mm3 \n\t" //z5
+        "pmulhw "LOCAL_MANGLE(MM_FIX_0_382683433)", %%mm3 \n\t" //z5
         "movq %%mm2, %%mm5             \n\t"
 
-        "pmulhw "MANGLE(MM_FIX_1_306562965)", %%mm1 \n\t"
+        "pmulhw "LOCAL_MANGLE(MM_FIX_1_306562965)", %%mm1 \n\t"
         "psubw %%mm4, %%mm2            \n\t" //z13
 
         "paddw %%mm4, %%mm5            \n\t" //z11
