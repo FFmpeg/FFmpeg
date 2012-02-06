@@ -576,6 +576,18 @@ static int64_t ogg_calc_pts(AVFormatContext *s, int idx, int64_t *dts)
     return pts;
 }
 
+static void ogg_validate_keyframe(AVFormatContext *s, int idx, int pstart, int psize)
+{
+    struct ogg *ogg = s->priv_data;
+    struct ogg_stream *os = ogg->streams + idx;
+    if (psize && s->streams[idx]->codec->codec_id == CODEC_ID_THEORA) {
+        if (!!(os->pflags & AV_PKT_FLAG_KEY) != !(os->buf[pstart] & 0x40)) {
+            av_log(s, AV_LOG_WARNING, "Broken file, keyframes not correctly marked.\n");
+            os->pflags ^= AV_PKT_FLAG_KEY;
+        }
+    }
+}
+
 static int ogg_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     struct ogg *ogg;
@@ -597,6 +609,7 @@ retry:
 
     // pflags might not be set until after this
     pts = ogg_calc_pts(s, idx, &dts);
+    ogg_validate_keyframe(s, idx, pstart, psize);
 
     if (os->keyframe_seek && !(os->pflags & AV_PKT_FLAG_KEY))
         goto retry;
@@ -639,13 +652,15 @@ static int64_t ogg_read_timestamp(AVFormatContext *s, int stream_index,
     int64_t pts = AV_NOPTS_VALUE;
     int64_t keypos = -1;
     int i = -1;
+    int pstart, psize;
     avio_seek(bc, *pos_arg, SEEK_SET);
     ogg_reset(ogg);
 
-    while (avio_tell(bc) < pos_limit && !ogg_packet(s, &i, NULL, NULL, pos_arg)) {
+    while (avio_tell(bc) < pos_limit && !ogg_packet(s, &i, &pstart, &psize, pos_arg)) {
         if (i == stream_index) {
             struct ogg_stream *os = ogg->streams + stream_index;
             pts = ogg_calc_pts(s, i, NULL);
+            ogg_validate_keyframe(s, i, pstart, psize);
             if (os->pflags & AV_PKT_FLAG_KEY) {
                 keypos = *pos_arg;
             } else if (os->keyframe_seek) {
