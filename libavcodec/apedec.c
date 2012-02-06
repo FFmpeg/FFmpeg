@@ -474,8 +474,8 @@ static void entropy_decode(APEContext *ctx, int blockstodecode, int stereo)
 
     if (ctx->frameflags & APE_FRAMECODE_STEREO_SILENCE) {
         /* We are pure silence, just memset the output buffer. */
-        memset(decoded0, 0, blockstodecode * sizeof(int32_t));
-        memset(decoded1, 0, blockstodecode * sizeof(int32_t));
+        memset(decoded0, 0, blockstodecode * sizeof(*decoded0));
+        memset(decoded1, 0, blockstodecode * sizeof(*decoded1));
     } else {
         while (blockstodecode--) {
             *decoded0++ = ape_decode_value(ctx, &ctx->riceY);
@@ -525,7 +525,7 @@ static void init_predictor_decoder(APEContext *ctx)
     APEPredictor *p = &ctx->predictor;
 
     /* Zero the history buffers */
-    memset(p->historybuffer, 0, PREDICTOR_SIZE * sizeof(int32_t));
+    memset(p->historybuffer, 0, PREDICTOR_SIZE * sizeof(*p->historybuffer));
     p->buf = p->historybuffer;
 
     /* Initialize and zero the coefficients */
@@ -610,7 +610,8 @@ static void predictor_decode_stereo(APEContext *ctx, int count)
 
         /* Have we filled the history buffer? */
         if (p->buf == p->historybuffer + HISTORY_SIZE) {
-            memmove(p->historybuffer, p->buf, PREDICTOR_SIZE * sizeof(int32_t));
+            memmove(p->historybuffer, p->buf,
+                    PREDICTOR_SIZE * sizeof(*p->historybuffer));
             p->buf = p->historybuffer;
         }
     }
@@ -650,7 +651,8 @@ static void predictor_decode_mono(APEContext *ctx, int count)
 
         /* Have we filled the history buffer? */
         if (p->buf == p->historybuffer + HISTORY_SIZE) {
-            memmove(p->historybuffer, p->buf, PREDICTOR_SIZE * sizeof(int32_t));
+            memmove(p->historybuffer, p->buf,
+                    PREDICTOR_SIZE * sizeof(*p->historybuffer));
             p->buf = p->historybuffer;
         }
 
@@ -668,8 +670,8 @@ static void do_init_filter(APEFilter *f, int16_t *buf, int order)
     f->delay       = f->historybuffer + order * 2;
     f->adaptcoeffs = f->historybuffer + order;
 
-    memset(f->historybuffer, 0, (order * 2) * sizeof(int16_t));
-    memset(f->coeffs, 0, order * sizeof(int16_t));
+    memset(f->historybuffer, 0, (order * 2) * sizeof(*f->historybuffer));
+    memset(f->coeffs, 0, order * sizeof(*f->coeffs));
     f->avg = 0;
 }
 
@@ -725,7 +727,7 @@ static void do_apply_filter(APEContext *ctx, int version, APEFilter *f,
         /* Have we filled the history buffer? */
         if (f->delay == f->historybuffer + HISTORY_SIZE + (order * 2)) {
             memmove(f->historybuffer, f->delay - (order * 2),
-                    (order * 2) * sizeof(int16_t));
+                    (order * 2) * sizeof(*f->historybuffer));
             f->delay = f->historybuffer + order * 2;
             f->adaptcoeffs = f->historybuffer + order;
         }
