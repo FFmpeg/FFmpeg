@@ -95,6 +95,7 @@ TESTPROGS = adler32                                                     \
             cpu                                                         \
             crc                                                         \
             des                                                         \
+            error                                                       \
             eval                                                        \
             file                                                        \
             fifo                                                        \

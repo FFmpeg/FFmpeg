@@ -20,34 +20,45 @@
 #include "avutil.h"
 #include "avstring.h"
 
+struct error_entry {
+    int num;
+    const char *tag;
+    const char *str;
+};
+
+#define ERROR_TAG(tag) AVERROR_##tag, #tag
+struct error_entry error_entries[] = {
+    { ERROR_TAG(BSF_NOT_FOUND),      "Bitstream filter not found"                     },
+    { ERROR_TAG(BUG),                "Internal bug, should not have happened"         },
+    { ERROR_TAG(BUG2),               "Internal bug, should not have happened"         },
+    { ERROR_TAG(DECODER_NOT_FOUND),  "Decoder not found"                              },
+    { ERROR_TAG(DEMUXER_NOT_FOUND),  "Demuxer not found"                              },
+    { ERROR_TAG(ENCODER_NOT_FOUND),  "Encoder not found"                              },
+    { ERROR_TAG(EOF),                "End of file"                                    },
+    { ERROR_TAG(EXIT),               "Immediate exit requested"                       },
+    { ERROR_TAG(FILTER_NOT_FOUND),   "Filter not found"                               },
+    { ERROR_TAG(INVALIDDATA),        "Invalid data found when processing input"       },
+    { ERROR_TAG(MUXER_NOT_FOUND),    "Muxer not found"                                },
+    { ERROR_TAG(OPTION_NOT_FOUND),   "Option not found"                               },
+    { ERROR_TAG(PATCHWELCOME),       "Not yet implemented in FFmpeg, patches welcome" },
+    { ERROR_TAG(PROTOCOL_NOT_FOUND), "Protocol not found"                             },
+    { ERROR_TAG(STREAM_NOT_FOUND),   "Stream not found"                               },
+    { ERROR_TAG(UNKNOWN),            "Unknown error occurred"                         },
+};
+
 int av_strerror(int errnum, char *errbuf, size_t errbuf_size)
 {
-    int ret = 0;
-    const char *errstr = NULL;
+    int ret = 0, i;
+    struct error_entry *entry = NULL;
 
-    switch (errnum) {
-    case AVERROR_BSF_NOT_FOUND:     errstr = "Bitstream filter not found"                   ; break;
-    case AVERROR_BUG2:
-    case AVERROR_BUG:               errstr = "Internal bug, should not have happened"       ; break;
-    case AVERROR_DECODER_NOT_FOUND: errstr = "Decoder not found"                            ; break;
-    case AVERROR_DEMUXER_NOT_FOUND: errstr = "Demuxer not found"                            ; break;
-    case AVERROR_ENCODER_NOT_FOUND: errstr = "Encoder not found"                            ; break;
-    case AVERROR_EOF:               errstr = "End of file"                                  ; break;
-    case AVERROR_EXIT:              errstr = "Immediate exit requested"                     ; break;
-    case AVERROR_FILTER_NOT_FOUND:  errstr = "Filter not found"                             ; break;
-    case AVERROR_INVALIDDATA:       errstr = "Invalid data found when processing input"     ; break;
-    case AVERROR_MUXER_NOT_FOUND:   errstr = "Muxer not found"                              ; break;
-    case AVERROR_OPTION_NOT_FOUND:  errstr = "Option not found"                             ; break;
-    case AVERROR_PATCHWELCOME:      errstr = "Not yet implemented in FFmpeg, patches welcome"; break;
-    case AVERROR_PROTOCOL_NOT_FOUND:errstr = "Protocol not found"                           ; break;
-    case AVERROR_STREAM_NOT_FOUND:  errstr = "Stream not found"                             ; break;
-    case AVERROR_UNKNOWN:           errstr = "Unknown error occurred"                       ; break;
-    case AVERROR(EINVAL):           errstr = "Invalid argument"                             ; break;
-    case 0:                         errstr = "Success"                                      ; break;
+    for (i = 0; i < FF_ARRAY_ELEMS(error_entries); i++) {
+        if (errnum == error_entries[i].num) {
+            entry = &error_entries[i];
+            break;
+        }
     }
-
-    if (errstr) {
-        av_strlcpy(errbuf, errstr, errbuf_size);
+    if (entry) {
+        av_strlcpy(errbuf, entry->str, errbuf_size);
     } else {
 #if HAVE_STRERROR_R
         ret = strerror_r(AVUNERROR(errnum), errbuf, errbuf_size);
@@ -60,3 +71,28 @@ int av_strerror(int errnum, char *errbuf, size_t errbuf_size)
 
     return ret;
 }
+
+#ifdef TEST
+
+#undef printf
+
+int main(void)
+{
+    int i;
+    char errbuf[256];
+
+    for (i = 0; i < FF_ARRAY_ELEMS(error_entries); i++) {
+        struct error_entry *entry = &error_entries[i];
+        av_strerror(entry->num, errbuf, sizeof(errbuf));
+        printf("%d: %s [%s]\n", entry->num, errbuf, entry->tag);
+    }
+
+    for (i = 0; i < 256; i++) {
+        av_strerror(-i, errbuf, sizeof(errbuf));
+        printf("%d: %s\n", -i, errbuf);
+    }
+
+    return 0;
+}
+
+#endif /* TEST */
