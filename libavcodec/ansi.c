@@ -182,6 +182,8 @@ static int execute_code(AVCodecContext * avctx, int c)
     case 'l': //reset screen mode
         if (s->nb_args < 2)
             s->args[0] = DEFAULT_SCREEN_MODE;
+        width = avctx->width;
+        height = avctx->height;
         switch(s->args[0]) {
         case 0: case 1: case 4: case 5: case 13: case 19: //320x200 (25 rows)
             s->font = ff_cga_font;
