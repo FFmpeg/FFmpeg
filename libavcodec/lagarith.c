@@ -30,6 +30,7 @@
 #include "mathops.h"
 #include "dsputil.h"
 #include "lagarithrac.h"
+#include "thread.h"
 
 enum LagarithFrameType {
     FRAME_RAW           = 1,    /**< uncompressed */
@@ -516,7 +517,7 @@ static int lag_decode_frame(AVCodecContext *avctx,
     AVFrame *picture = data;
 
     if (p->data[0])
-        avctx->release_buffer(avctx, p);
+        ff_thread_release_buffer(avctx, p);
 
     p->reference = 0;
     p->key_frame = 1;
@@ -530,7 +531,7 @@ static int lag_decode_frame(AVCodecContext *avctx,
     case FRAME_SOLID_RGBA:
         avctx->pix_fmt = PIX_FMT_RGB32;
 
-        if (avctx->get_buffer(avctx, p) < 0) {
+        if (ff_thread_get_buffer(avctx, p) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return -1;
         }
@@ -552,7 +553,7 @@ static int lag_decode_frame(AVCodecContext *avctx,
         if (frametype == FRAME_ARITH_RGB24 || frametype == FRAME_U_RGB24)
             avctx->pix_fmt = PIX_FMT_RGB24;
 
-        if (avctx->get_buffer(avctx, p) < 0) {
+        if (ff_thread_get_buffer(avctx, p) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return -1;
         }
@@ -611,7 +612,7 @@ static int lag_decode_frame(AVCodecContext *avctx,
     case FRAME_ARITH_YUY2:
         avctx->pix_fmt = PIX_FMT_YUV422P;
 
-        if (avctx->get_buffer(avctx, p) < 0) {
+        if (ff_thread_get_buffer(avctx, p) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return -1;
         }
@@ -637,7 +638,7 @@ static int lag_decode_frame(AVCodecContext *avctx,
     case FRAME_ARITH_YV12:
         avctx->pix_fmt = PIX_FMT_YUV420P;
 
-        if (avctx->get_buffer(avctx, p) < 0) {
+        if (ff_thread_get_buffer(avctx, p) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return -1;
         }
@@ -690,7 +691,7 @@ static av_cold int lag_decode_end(AVCodecContext *avctx)
     LagarithContext *l = avctx->priv_data;
 
     if (l->picture.data[0])
-        avctx->release_buffer(avctx, &l->picture);
+        ff_thread_release_buffer(avctx, &l->picture);
     av_freep(&l->rgb_planes);
 
     return 0;
@@ -704,6 +705,6 @@ AVCodec ff_lagarith_decoder = {
     .init           = lag_decode_init,
     .close          = lag_decode_end,
     .decode         = lag_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
     .long_name      = NULL_IF_CONFIG_SMALL("Lagarith lossless"),
 };
