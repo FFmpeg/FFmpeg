@@ -1,6 +1,7 @@
 /*
  * Bytestream functions
  * copyright (c) 2006 Baptiste Coudurier <baptiste.coudurier@free.fr>
+ * Copyright (c) 2012 Aneesh Dogra (lionaneesh) <lionaneesh@gmail.com>
  *
  * This file is part of Libav.
  *
@@ -30,6 +31,11 @@ typedef struct {
     const uint8_t *buffer, *buffer_end, *buffer_start;
 } GetByteContext;
 
+typedef struct {
+    uint8_t *buffer, *buffer_end, *buffer_start;
+    int eof;
+} PutByteContext;
+
 #define DEF_T(type, name, bytes, read, write)                             \
 static av_always_inline type bytestream_get_ ## name(const uint8_t **b){\
     (*b) += bytes;\
@@ -38,6 +44,17 @@ static av_always_inline type bytestream_get_ ## name(const uint8_t **b){\
 static av_always_inline void bytestream_put_ ##name(uint8_t **b, const type value){\
     write(*b, value);\
     (*b) += bytes;\
+}\
+static av_always_inline void bytestream2_put_ ## name ## u(PutByteContext *p, const type value)\
+{\
+    bytestream_put_ ## name(&p->buffer, value);\
+}\
+static av_always_inline void bytestream2_put_ ## name(PutByteContext *p, const type value){\
+    if (!p->eof && (p->buffer_end - p->buffer >= bytes)) {\
+        write(p->buffer, value);\
+        p->buffer += bytes;\
+    } else\
+        p->eof = 1;\
 }\
 static av_always_inline type bytestream2_get_ ## name ## u(GetByteContext *g)\
 {\
@@ -119,9 +136,23 @@ static av_always_inline void bytestream2_init(GetByteContext *g,
     g->buffer_end = buf + buf_size;
 }
 
+static av_always_inline void bytestream2_init_writer(PutByteContext *p,
+                                                     uint8_t *buf, int buf_size)
+{
+    p->buffer       = buf;
+    p->buffer_start = buf;
+    p->buffer_end   = buf + buf_size;
+    p->eof          = 0;
+}
+
 static av_always_inline unsigned int bytestream2_get_bytes_left(GetByteContext *g)
 {
     return g->buffer_end - g->buffer;
+}
+
+static av_always_inline unsigned int bytestream2_get_bytes_left_p(PutByteContext *p)
+{
+    return p->buffer_end - p->buffer;
 }
 
 static av_always_inline void bytestream2_skip(GetByteContext *g,
@@ -130,9 +161,26 @@ static av_always_inline void bytestream2_skip(GetByteContext *g,
     g->buffer += FFMIN(g->buffer_end - g->buffer, size);
 }
 
+static av_always_inline void bytestream2_skip_p(PutByteContext *p,
+                                                unsigned int size)
+{
+    int size2;
+    if (p->eof)
+        return;
+    size2 = FFMIN(p->buffer_end - p->buffer, size);
+    if (size2 != size)
+        p->eof = 1;
+    p->buffer += size2;
+}
+
 static av_always_inline int bytestream2_tell(GetByteContext *g)
 {
     return (int)(g->buffer - g->buffer_start);
+}
+
+static av_always_inline int bytestream2_tell_p(PutByteContext *p)
+{
+    return (int)(p->buffer - p->buffer_start);
 }
 
 static av_always_inline int bytestream2_seek(GetByteContext *g, int offset,
@@ -158,6 +206,36 @@ static av_always_inline int bytestream2_seek(GetByteContext *g, int offset,
     return bytestream2_tell(g);
 }
 
+static av_always_inline int bytestream2_seek_p(PutByteContext *p, int offset,
+                                               int whence)
+{
+    p->eof = 0;
+    switch (whence) {
+    case SEEK_CUR:
+        if (p->buffer_end - p->buffer < offset)
+            p->eof = 1;
+        offset = av_clip(offset, -(p->buffer - p->buffer_start),
+                         p->buffer_end - p->buffer);
+        p->buffer += offset;
+        break;
+    case SEEK_END:
+        if (offset > 0)
+            p->eof = 1;
+        offset = av_clip(offset, -(p->buffer_end - p->buffer_start), 0);
+        p->buffer = p->buffer_end + offset;
+        break;
+    case SEEK_SET:
+        if (p->buffer_end - p->buffer_start < offset)
+            p->eof = 1;
+        offset = av_clip(offset, 0, p->buffer_end - p->buffer_start);
+        p->buffer = p->buffer_start + offset;
+        break;
+    default:
+        return AVERROR(EINVAL);
+    }
+    return bytestream2_tell_p(p);
+}
+
 static av_always_inline unsigned int bytestream2_get_buffer(GetByteContext *g,
                                                             uint8_t *dst,
                                                             unsigned int size)
@@ -166,6 +244,40 @@ static av_always_inline unsigned int bytestream2_get_buffer(GetByteContext *g,
     memcpy(dst, g->buffer, size2);
     g->buffer += size2;
     return size2;
+}
+
+static av_always_inline unsigned int bytestream2_put_buffer(PutByteContext *p,
+                                                            const uint8_t *src,
+                                                            unsigned int size)
+{
+    int size2;
+    if (p->eof)
+        return 0;
+    size2 = FFMIN(p->buffer_end - p->buffer, size);
+    if (size2 != size)
+        p->eof = 1;
+    memcpy(p->buffer, src, size2);
+    p->buffer += size2;
+    return size2;
+}
+
+static av_always_inline void bytestream2_set_buffer(PutByteContext *p,
+                                                    const uint8_t c,
+                                                    unsigned int size)
+{
+    int size2;
+    if (p->eof)
+        return;
+    size2 = FFMIN(p->buffer_end - p->buffer, size);
+    if (size2 != size)
+        p->eof = 1;
+    memset(p->buffer, c, size2);
+    p->buffer += size2;
+}
+
+static av_always_inline unsigned int bytestream2_get_eof(PutByteContext *p)
+{
+    return p->eof;
 }
 
 static av_always_inline unsigned int bytestream_get_buffer(const uint8_t **b, uint8_t *dst, unsigned int size)
