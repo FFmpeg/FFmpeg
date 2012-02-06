@@ -165,6 +165,7 @@ typedef struct FFV1Context{
     int version;
     int width, height;
     int chroma_h_shift, chroma_v_shift;
+    int chroma_planes;
     int transparency;
     int flags;
     int picture_number;
@@ -640,7 +641,7 @@ static void write_header(FFV1Context *f){
         put_symbol(c, state, f->colorspace, 0); //YUV cs type
         if(f->version>0)
             put_symbol(c, state, f->avctx->bits_per_raw_sample, 0);
-        put_rac(c, state, 1); //chroma planes
+        put_rac(c, state, f->chroma_planes);
         put_symbol(c, state, f->chroma_h_shift, 0);
         put_symbol(c, state, f->chroma_v_shift, 0);
         put_rac(c, state, f->transparency);
@@ -782,7 +783,7 @@ static int write_extra_header(FFV1Context *f){
     }
     put_symbol(c, state, f->colorspace, 0); //YUV cs type
     put_symbol(c, state, f->avctx->bits_per_raw_sample, 0);
-    put_rac(c, state, 1); //chroma planes
+    put_rac(c, state, f->chroma_planes);
     put_symbol(c, state, f->chroma_h_shift, 0);
     put_symbol(c, state, f->chroma_v_shift, 0);
     put_rac(c, state, f->transparency);
@@ -916,6 +917,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     case PIX_FMT_YUV420P10:
     case PIX_FMT_YUV422P10:
         s->packed_at_lsb = 1;
+    case PIX_FMT_GRAY16:
     case PIX_FMT_YUV444P16:
     case PIX_FMT_YUV422P16:
     case PIX_FMT_YUV420P16:
@@ -934,10 +936,12 @@ static av_cold int encode_init(AVCodecContext *avctx)
     case PIX_FMT_YUV420P:
     case PIX_FMT_YUV411P:
     case PIX_FMT_YUV410P:
+        s->chroma_planes= avctx->pix_fmt == PIX_FMT_GRAY16 ? 0 : 1;
         s->colorspace= 0;
         break;
     case PIX_FMT_YUVA444P:
     case PIX_FMT_YUVA420P:
+        s->chroma_planes= 1;
         s->colorspace= 0;
         s->transparency= 1;
         break;
@@ -1101,8 +1105,10 @@ static int encode_slice(AVCodecContext *c, void *arg){
 
         encode_plane(fs, p->data[0] + ps*x + y*p->linesize[0], width, height, p->linesize[0], 0);
 
-        encode_plane(fs, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1);
-        encode_plane(fs, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1);
+        if (f->chroma_planes){
+            encode_plane(fs, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1);
+            encode_plane(fs, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1);
+        }
         if (fs->transparency)
             encode_plane(fs, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], 2);
     }else{
@@ -1435,8 +1441,10 @@ static int decode_slice(AVCodecContext *c, void *arg){
         const int cy= y>>f->chroma_v_shift;
         decode_plane(fs, p->data[0] + ps*x + y*p->linesize[0], width, height, p->linesize[0], 0);
 
-        decode_plane(fs, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1);
-        decode_plane(fs, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1);
+        if (f->chroma_planes){
+            decode_plane(fs, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1);
+            decode_plane(fs, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1);
+        }
         if (fs->transparency)
             decode_plane(fs, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], 2);
     }else{
@@ -1567,7 +1575,7 @@ static int read_header(FFV1Context *f){
         f->colorspace= get_symbol(c, state, 0); //YUV cs type
         if(f->version>0)
             f->avctx->bits_per_raw_sample= get_symbol(c, state, 0);
-        get_rac(c, state); //no chroma = false
+        f->chroma_planes= get_rac(c, state);
         f->chroma_h_shift= get_symbol(c, state, 0);
         f->chroma_v_shift= get_symbol(c, state, 0);
         f->transparency= get_rac(c, state);
@@ -1575,7 +1583,9 @@ static int read_header(FFV1Context *f){
     }
 
     if(f->colorspace==0){
-        if(f->avctx->bits_per_raw_sample<=8 && !f->transparency){
+        if(f->avctx->bits_per_raw_sample>8 && !f->transparency && !f->chroma_planes){
+            f->avctx->pix_fmt= PIX_FMT_GRAY16;
+        }else if(f->avctx->bits_per_raw_sample<=8 && !f->transparency){
             switch(16*f->chroma_h_shift + f->chroma_v_shift){
             case 0x00: f->avctx->pix_fmt= PIX_FMT_YUV444P; break;
             case 0x01: f->avctx->pix_fmt= PIX_FMT_YUV440P; break;
@@ -1817,7 +1827,7 @@ AVCodec ff_ffv1_encoder = {
     .encode         = encode_frame,
     .close          = common_end,
     .capabilities = CODEC_CAP_SLICE_THREADS,
-    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUVA420P, PIX_FMT_YUV444P, PIX_FMT_YUVA444P, PIX_FMT_YUV440P, PIX_FMT_YUV422P, PIX_FMT_YUV411P, PIX_FMT_YUV410P, PIX_FMT_0RGB32, PIX_FMT_RGB32, PIX_FMT_YUV420P16, PIX_FMT_YUV422P16, PIX_FMT_YUV444P16, PIX_FMT_YUV420P9, PIX_FMT_YUV420P10, PIX_FMT_YUV422P10, PIX_FMT_NONE},
+    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUVA420P, PIX_FMT_YUV444P, PIX_FMT_YUVA444P, PIX_FMT_YUV440P, PIX_FMT_YUV422P, PIX_FMT_YUV411P, PIX_FMT_YUV410P, PIX_FMT_0RGB32, PIX_FMT_RGB32, PIX_FMT_YUV420P16, PIX_FMT_YUV422P16, PIX_FMT_YUV444P16, PIX_FMT_YUV420P9, PIX_FMT_YUV420P10, PIX_FMT_YUV422P10, PIX_FMT_GRAY16, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("FFmpeg video codec #1"),
 };
 #endif
