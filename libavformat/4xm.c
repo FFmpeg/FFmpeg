@@ -169,7 +169,7 @@ static int fourxm_read_header(AVFormatContext *s)
             current_track = AV_RL32(&header[i + 8]);
             if((unsigned)current_track >= UINT_MAX / sizeof(AudioTrack) - 1){
                 av_log(s, AV_LOG_ERROR, "current_track too large\n");
-                ret= -1;
+                ret = AVERROR_INVALIDDATA;
                 goto fail;
             }
             if (current_track + 1 > fourxm->track_count) {
@@ -193,7 +193,7 @@ static int fourxm_read_header(AVFormatContext *s)
                || fourxm->tracks[current_track].sample_rate <= 0
                || fourxm->tracks[current_track].bits        <  0){
                 av_log(s, AV_LOG_ERROR, "audio header invalid\n");
-                ret= -1;
+                ret = AVERROR_INVALIDDATA;
                 goto fail;
             }
             i += 8 + size;
