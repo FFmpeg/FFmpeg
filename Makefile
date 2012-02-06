@@ -98,7 +98,7 @@ config.h: .config
 	@-printf '\nWARNING: $(?F) newer than config.h, rerun configure\n\n'
 	@-tput sgr0 2>/dev/null
 
-SUBDIR_VARS := CLEANFILES DIRS EXAMPLES FFLIBS HOSTPROGS TESTPROGS TOOLS \
+SUBDIR_VARS := CLEANFILES EXAMPLES FFLIBS HOSTPROGS TESTPROGS TOOLS      \
                ARCH_HEADERS BUILT_HEADERS SKIPHEADERS                    \
                ALTIVEC-OBJS ARMV6-OBJS MMX-OBJS NEON-OBJS YASM-OBJS      \
                OBJS TESTOBJS

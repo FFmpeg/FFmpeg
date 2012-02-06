@@ -29,5 +29,3 @@ MMX-OBJS-$(HAVE_YASM)      +=  x86/input.o              \
 OBJS-$(CONFIG_XMM_CLOBBER_TEST) += x86/w64xmmtest.o
 
 TESTPROGS = colorspace swscale
-
-DIRS = bfin ppc sparc x86

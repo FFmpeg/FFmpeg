@@ -78,6 +78,4 @@ OBJS-$(ARCH_X86) += x86/cpu.o
 TESTPROGS = adler32 aes avstring base64 cpu crc des eval fifo lfg lls \
             md5 opt parseutils sha tree
 
-DIRS = arm avr32 bfin mips ppc sh4 tomi x86
-
 ARCH_HEADERS = bswap.h intmath.h intreadwrite.h timer.h
