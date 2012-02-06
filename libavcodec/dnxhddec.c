@@ -394,8 +394,6 @@ static int dnxhd_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         }
     }
 
-    ff_thread_finish_setup(avctx);
-
     dnxhd_decode_macroblocks(ctx, buf + 0x280, buf_size - 0x280);
 
     if (first_field && ctx->picture.interlaced_frame) {
