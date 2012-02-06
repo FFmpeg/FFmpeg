@@ -1228,40 +1228,34 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
 static av_cold void binkb_calc_quant(void)
 {
     uint8_t inv_bink_scan[64];
-    double s[64];
+    static const int s[64]={
+        1073741824,1489322693,1402911301,1262586814,1073741824, 843633538, 581104888, 296244703,
+        1489322693,2065749918,1945893874,1751258219,1489322693,1170153332, 806015634, 410903207,
+        1402911301,1945893874,1832991949,1649649171,1402911301,1102260336, 759250125, 387062357,
+        1262586814,1751258219,1649649171,1484645031,1262586814, 992008094, 683307060, 348346918,
+        1073741824,1489322693,1402911301,1262586814,1073741824, 843633538, 581104888, 296244703,
+         843633538,1170153332,1102260336, 992008094, 843633538, 662838617, 456571181, 232757969,
+         581104888, 806015634, 759250125, 683307060, 581104888, 456571181, 314491699, 160326478,
+         296244703, 410903207, 387062357, 348346918, 296244703, 232757969, 160326478,  81733730,
+    };
     int i, j;
-
-    for (j = 0; j < 8; j++) {
-        for (i = 0; i < 8; i++) {
-            if (j && j != 4)
-               if (i && i != 4)
-                   s[j*8 + i] = cos(j * M_PI/16.0) * cos(i * M_PI/16.0) * 2.0;
-               else
-                   s[j*8 + i] = cos(j * M_PI/16.0) * sqrt(2.0);
-            else
-               if (i && i != 4)
-                   s[j*8 + i] = cos(i * M_PI/16.0) * sqrt(2.0);
-               else
-                   s[j*8 + i] = 1.0;
-        }
-    }
-
+#define C (1LL<<30)
     for (i = 0; i < 64; i++)
         inv_bink_scan[bink_scan[i]] = i;
 
     for (j = 0; j < 16; j++) {
         for (i = 0; i < 64; i++) {
             int k = inv_bink_scan[i];
-            if (s[i] == 1.0) {
+            if (s[i] == C) {
                 binkb_intra_quant[j][k] = (1L << 12) * binkb_intra_seed[i] *
                                           binkb_num[j]/binkb_den[j];
                 binkb_inter_quant[j][k] = (1L << 12) * binkb_inter_seed[i] *
                                           binkb_num[j]/binkb_den[j];
             } else {
-                binkb_intra_quant[j][k] = (1L << 12) * binkb_intra_seed[i] * s[i] *
-                                          binkb_num[j]/(double)binkb_den[j];
-                binkb_inter_quant[j][k] = (1L << 12) * binkb_inter_seed[i] * s[i] *
-                                          binkb_num[j]/(double)binkb_den[j];
+                binkb_intra_quant[j][k] = binkb_intra_seed[i] * (int64_t)s[i] *
+                                          binkb_num[j]/(binkb_den[j] * (C>>12));
+                binkb_inter_quant[j][k] = binkb_inter_seed[i] * (int64_t)s[i] *
+                                          binkb_num[j]/(binkb_den[j] * (C>>12));
             }
         }
     }
