@@ -86,14 +86,6 @@ static int encode_nals(AVCodecContext *ctx, uint8_t *buf,
     }
 
     for (i = 0; i < nnal; i++) {
-        /* Don't put the SEI in extradata. */
-        if (skip_sei && nals[i].i_type == NAL_SEI) {
-            x4->sei = av_malloc( 5 + nals[i].i_payload * 4 / 3 );
-            if (xavs_nal_encode(x4->sei, &x4->sei_size, 1, nals + i) < 0)
-                return -1;
-
-            continue;
-        }
         s = xavs_nal_encode(p, &size, 1, nals + i);
         if (s < 0)
             return -1;
@@ -329,12 +321,27 @@ static av_cold int XAVS_init(AVCodecContext *avctx)
     /* We Have PPS and SPS in AVS */
     if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
         xavs_nal_t *nal;
-        int nnal, s;
+        int nnal, s, i, size;
+        uint8_t *p;
 
         s = xavs_encoder_headers(x4->enc, &nal, &nnal);
 
-        avctx->extradata      = av_malloc(s);
-        avctx->extradata_size = encode_nals(avctx, avctx->extradata, s, nal, nnal, 1);
+        avctx->extradata = p = av_malloc(s);
+        for (i = 0; i < nnal; i++) {
+            /* Don't put the SEI in extradata. */
+            if (nal[i].i_type == NAL_SEI) {
+                x4->sei = av_malloc( 5 + nal[i].i_payload * 4 / 3 );
+                if (xavs_nal_encode(x4->sei, &x4->sei_size, 1, nal + i) < 0)
+                    return -1;
+
+                continue;
+            }
+            size = xavs_nal_encode(p, &s, 1, nal + i);
+            if (size < 0)
+                return -1;
+            p += size;
+        }
+        avctx->extradata_size = p - avctx->extradata;
     }
     return 0;
 }
