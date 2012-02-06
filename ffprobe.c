@@ -385,7 +385,7 @@ fail:
         char buf[64];                                                   \
         snprintf(buf, sizeof(buf), "%s", src);                          \
         av_log(log_ctx, AV_LOG_WARNING,                                 \
-               "String '%s...' with is too big\n", buf);                \
+               "String '%s...' is too big\n", buf);                     \
         return "FFPROBE_TOO_BIG_STRING";                                \
     }
 
