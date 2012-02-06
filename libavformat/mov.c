@@ -602,7 +602,7 @@ static int mov_read_chan(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     label_mask = 0;
     for (i = 0; i < num_descr; i++) {
-        uint32_t label, cflags;
+        uint32_t av_unused label, cflags;
         label     = avio_rb32(pb);          // mChannelLabel
         cflags    = avio_rb32(pb);          // mChannelFlags
         avio_rl32(pb);                      // mCoordinates[0]
