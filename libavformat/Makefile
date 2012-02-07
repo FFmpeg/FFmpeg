@@ -254,6 +254,7 @@ OBJS-$(CONFIG_RTPDEC)                    += rdt.o         \
                                             rtpdec_asf.o  \
                                             rtpdec_g726.o \
                                             rtpdec_h263.o \
+                                            rtpdec_h263_rfc2190.o \
                                             rtpdec_h264.o \
                                             rtpdec_latm.o \
                                             rtpdec_mpeg4.o \

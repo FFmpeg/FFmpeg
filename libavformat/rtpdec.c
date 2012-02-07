@@ -66,6 +66,7 @@ void av_register_rtp_dynamic_payload_handlers(void)
     ff_register_dynamic_payload_handler(&ff_amr_wb_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_h263_1998_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_h263_2000_dynamic_handler);
+    ff_register_dynamic_payload_handler(&ff_h263_rfc2190_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_h264_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_vorbis_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_theora_dynamic_handler);
