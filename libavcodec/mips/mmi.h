@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_PS2_MMI_H
-#define AVCODEC_PS2_MMI_H
+#ifndef AVCODEC_MIPS_MMI_H
+#define AVCODEC_MIPS_MMI_H
 
 #include <stdint.h>
 
@@ -176,4 +176,4 @@ void ff_mmi_idct(DCTELEM *block);
 #define         pextlb(rs, rt, rd) \
         __asm__ volatile ("pextlb  " #rd ", " #rs ", " #rt )
 
-#endif /* AVCODEC_PS2_MMI_H */
+#endif /* AVCODEC_MIPS_MMI_H */
