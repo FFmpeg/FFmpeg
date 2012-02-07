@@ -132,7 +132,8 @@ typedef struct {
     AVRational sample_rate;
     AVRational aspect_ratio;
     int width;
-    int height;
+    int height; /* Field height, not frame height */
+    int frame_layout; /* See MXFFrameLayout enum */
     int channels;
     int bits_per_sample;
     unsigned int component_depth;
@@ -824,6 +825,9 @@ static int mxf_read_generic_descriptor(void *arg, AVIOContext *pb, int tag, int 
     case 0x3202:
         descriptor->height = avio_rb32(pb);
         break;
+    case 0x320C:
+        descriptor->frame_layout = avio_r8(pb);
+        break;
     case 0x320E:
         descriptor->aspect_ratio.num = avio_rb32(pb);
         descriptor->aspect_ratio.den = avio_rb32(pb);
@@ -1467,7 +1471,34 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             if (st->codec->codec_id == CODEC_ID_NONE)
                 st->codec->codec_id = container_ul->id;
             st->codec->width = descriptor->width;
+            /* Field height, not frame height */
             st->codec->height = descriptor->height;
+            switch (descriptor->frame_layout) {
+                case SegmentedFrame:
+                    /* This one is a weird layout I don't fully understand. */
+                    av_log(mxf->fc, AV_LOG_INFO,
+                           "SegmentedFrame layout isn't currently supported\n");
+                    break;
+                case FullFrame:
+                    break;
+                case OneField:
+                    /* Every other line is stored and needs to be duplicated. */
+                    av_log(mxf->fc, AV_LOG_INFO,
+                           "OneField frame layout isn't currently supported\n");
+                    break;
+                    /* The correct thing to do here is fall through, but by
+                     * breaking we might be able to decode some streams at half
+                     * the vertical resolution, rather than not al all.
+                     * It's also for compatibility with the old behavior. */
+                case SeparateFields:
+                case MixedFields:
+                    /* Turn field height into frame height. */
+                    st->codec->height *= 2;
+                default:
+                    av_log(mxf->fc, AV_LOG_INFO,
+                           "Unknown frame layout type: %d\n",
+                           descriptor->frame_layout);
+            }
             if (st->codec->codec_id == CODEC_ID_RAWVIDEO) {
                 st->codec->pix_fmt = descriptor->pix_fmt;
                 if (st->codec->pix_fmt == PIX_FMT_NONE) {
