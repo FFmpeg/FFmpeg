@@ -234,18 +234,6 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
 
     for (i = 0; i < 4; i++)
         linesize_align[i] = STRIDE_ALIGN;
-//STRIDE_ALIGN is 8 for SSE* but this does not work for SVQ1 chroma planes
-//we could change STRIDE_ALIGN to 16 for x86/sse but it would increase the
-//picture size unneccessarily in some cases. The solution here is not
-//pretty and better ideas are welcome!
-#if HAVE_MMX
-    if(s->codec_id == CODEC_ID_SVQ1 || s->codec_id == CODEC_ID_VP5 ||
-       s->codec_id == CODEC_ID_VP6 || s->codec_id == CODEC_ID_VP6F ||
-       s->codec_id == CODEC_ID_VP6A) {
-        for (i = 0; i < 4; i++)
-            linesize_align[i] = 16;
-    }
-#endif
 }
 
 void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height){

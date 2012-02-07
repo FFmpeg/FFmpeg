@@ -655,23 +655,9 @@ void ff_intrax8dsp_init(DSPContext* c, AVCodecContext *avctx);
 void ff_mlp_init(DSPContext* c, AVCodecContext *avctx);
 void ff_mlp_init_x86(DSPContext* c, AVCodecContext *avctx);
 
-#if ARCH_ARM
-
-#if HAVE_NEON
+#if (ARCH_ARM && HAVE_NEON) || ARCH_PPC || HAVE_MMI || HAVE_MMX
 #   define STRIDE_ALIGN 16
-#endif
-
-#elif ARCH_PPC
-
-#define STRIDE_ALIGN 16
-
-#elif HAVE_MMI
-
-#define STRIDE_ALIGN 16
-
-#endif
-
-#ifndef STRIDE_ALIGN
+#else
 #   define STRIDE_ALIGN 8
 #endif
 
