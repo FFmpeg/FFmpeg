@@ -159,7 +159,7 @@ int ff_raw_video_read_header(AVFormatContext *s)
     }
 
     st->r_frame_rate = st->avg_frame_rate = framerate;
-    avpriv_set_pts_info(st, 64, 1, 1200000);
+    avpriv_set_pts_info(st, 64, framerate.den, framerate.num);
 
 fail:
     return ret;
