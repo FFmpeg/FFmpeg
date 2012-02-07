@@ -2120,7 +2120,6 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
     rate_emu_sleep(ist);
 
     for (i = 0; i < nb_output_streams; i++) {
-        AVFrame *filtered_frame = NULL;
         OutputStream *ost = &output_streams[i];
 
         if (!check_output_constraints(ist, ost) || !ost->encoding_needed)
@@ -2129,6 +2128,8 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
 #if CONFIG_AVFILTER
         while (av_buffersink_poll_frame(ost->output_video_filter)) {
             AVRational ist_pts_tb = ost->output_video_filter->inputs[0]->time_base;
+            AVFrame *filtered_frame;
+
             if (av_buffersink_get_buffer_ref(ost->output_video_filter, &ost->picref, 0) < 0){
                 av_log(0, AV_LOG_WARNING, "AV Filter told us it has a frame available but failed to output one\n");
                 goto cont;
@@ -2146,16 +2147,14 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
             }
             if (ost->picref->video && !ost->frame_aspect_ratio)
                 ost->st->codec->sample_aspect_ratio = ost->picref->video->sample_aspect_ratio;
-#else
-            filtered_frame = decoded_frame;
-#endif
-
             do_video_out(output_files[ost->file_index].ctx, ost, ist, filtered_frame,
                          same_quant ? quality : ost->st->codec->global_quality);
-#if CONFIG_AVFILTER
             cont:
             avfilter_unref_buffer(ost->picref);
         }
+#else
+        do_video_out(output_files[ost->file_index].ctx, ost, ist, decoded_frame,
+                     same_quant ? quality : ost->st->codec->global_quality);
 #endif
     }
 
