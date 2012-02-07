@@ -881,6 +881,8 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
                                                avctx->time_base);
             }
             avpkt->dts = avpkt->pts;
+        } else {
+            avpkt->size = 0;
         }
     } else {
         /* for compatibility with encoders not supporting encode2(), we need to
