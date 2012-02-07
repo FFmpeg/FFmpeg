@@ -2054,9 +2054,6 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
     void *buffer_to_free = NULL;
     int i, ret = 0;
     float quality = 0;
-#if CONFIG_AVFILTER
-    int frame_available = 1;
-#endif
     int64_t *best_effort_timestamp;
     AVRational *frame_sample_aspect;
 
@@ -2129,11 +2126,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
             continue;
 
 #if CONFIG_AVFILTER
-        if (ost->input_video_filter) {
-            frame_available = av_buffersink_poll_frame(ost->output_video_filter);
-        }
-        while (frame_available) {
-            if (ost->output_video_filter) {
+        while (av_buffersink_poll_frame(ost->output_video_filter)) {
                 AVRational ist_pts_tb = ost->output_video_filter->inputs[0]->time_base;
                 if (av_buffersink_get_buffer_ref(ost->output_video_filter, &ost->picref, 0) < 0){
                     av_log(0, AV_LOG_WARNING, "AV Filter told us it has a frame available but failed to output one\n");
@@ -2150,7 +2143,6 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
                     avfilter_fill_frame_from_video_buffer_ref(filtered_frame, ost->picref);
                     filtered_frame->pts = av_rescale_q(ost->picref->pts, ist_pts_tb, AV_TIME_BASE_Q);
                 }
-            }
             if (ost->picref->video && !ost->frame_aspect_ratio)
                 ost->st->codec->sample_aspect_ratio = ost->picref->video->sample_aspect_ratio;
 #else
@@ -2163,7 +2155,6 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
                 do_video_stats(output_files[ost->file_index].ctx, ost, frame_size);
 #if CONFIG_AVFILTER
             cont:
-            frame_available = ost->output_video_filter && av_buffersink_poll_frame(ost->output_video_filter);
             avfilter_unref_buffer(ost->picref);
         }
 #endif
