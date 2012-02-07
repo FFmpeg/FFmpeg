@@ -46,6 +46,14 @@ enum MXFMetadataSetType {
     TypeBottom,// add metadata type before this
 };
 
+enum MXFFrameLayout {
+    FullFrame = 0,
+    MixedFields,
+    OneField,
+    SegmentedFrame,
+    SeparateFields
+};
+
 typedef struct {
     UID key;
     int64_t offset;
