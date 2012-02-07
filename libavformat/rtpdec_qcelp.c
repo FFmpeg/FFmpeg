@@ -1,4 +1,4 @@
-/**
+/*
  * RTP Depacketization of QCELP/PureVoice, RFC 2658
  * Copyright (c) 2010 Martin Storsjo
  *

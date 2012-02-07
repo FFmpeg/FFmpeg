@@ -139,6 +139,7 @@ typedef struct {
     short int draw_box;             ///< draw box around text - true or false
     int use_kerning;                ///< font kerning is used - true/false
     int tabsize;                    ///< tab size
+    int fix_bounds;                 ///< do we let it go out of frame bounds - t/f
 
     FT_Library library;             ///< freetype font library handle
     FT_Face face;                   ///< freetype font face handle
@@ -184,6 +185,8 @@ static const AVOption drawtext_options[]= {
 {"timecode", "set initial timecode", OFFSET(tc_opt_string),      AV_OPT_TYPE_STRING, {.str=NULL},  CHAR_MIN, CHAR_MAX },
 {"r",        "set rate (timecode only)", OFFSET(tc_rate),        AV_OPT_TYPE_RATIONAL, {.dbl=0},          0,  INT_MAX },
 {"rate",     "set rate (timecode only)", OFFSET(tc_rate),        AV_OPT_TYPE_RATIONAL, {.dbl=0},          0,  INT_MAX },
+{"fix_bounds", "if true, check and fix text coords to avoid clipping",
+                                     OFFSET(fix_bounds),         AV_OPT_TYPE_INT,    {.dbl=1},     0,        1        },
 
 /* FT_LOAD_* flags */
 {"ft_load_flags", "set font loading flags for libfreetype",   OFFSET(ft_load_flags),  AV_OPT_TYPE_FLAGS,  {.dbl=FT_LOAD_DEFAULT|FT_LOAD_RENDER}, 0, INT_MAX, 0, "ft_load_flags" },
@@ -754,8 +757,9 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
         /* get glyph */
         dummy.code = code;
         glyph = av_tree_find(dtext->glyphs, &dummy, glyph_cmp, NULL);
-        if (!glyph)
+        if (!glyph) {
             load_glyph(ctx, &glyph, code);
+        }
 
         y_min = FFMIN(glyph->bbox.yMin, y_min);
         y_max = FFMAX(glyph->bbox.yMax, y_max);

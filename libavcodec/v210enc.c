@@ -28,7 +28,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 {
     if (avctx->width & 1) {
         av_log(avctx, AV_LOG_ERROR, "v210 needs even width\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     if (avctx->pix_fmt != PIX_FMT_YUV422P10) {
@@ -62,9 +62,9 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
     uint8_t *p = buf;
     uint8_t *pdst = buf;
 
-    if (buf_size < aligned_width * avctx->height * 8 / 3) {
+    if (buf_size < avctx->height * stride) {
         av_log(avctx, AV_LOG_ERROR, "output buffer too small\n");
-        return -1;
+        return AVERROR(ENOMEM);
     }
 
 #define CLIP(v) av_clip(v, 4, 1019)

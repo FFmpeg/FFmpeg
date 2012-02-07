@@ -1,4 +1,4 @@
-/**
+/*
  * Common code for the RTP depacketization of MPEG-4 formats.
  * Copyright (c) 2010 Fabrice Bellard
  *                    Romain Degez

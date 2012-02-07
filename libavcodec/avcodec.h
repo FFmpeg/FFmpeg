@@ -884,7 +884,7 @@ typedef struct AVFrame {
      * For audio, only linesize[0] may be set. For planar audio, each channel
      * plane must be the same size.
      *
-     * - encoding: Set by user (video only)
+     * - encoding: Set by user
      * - decoding: set by AVCodecContext.get_buffer()
      */
     int linesize[AV_NUM_DATA_POINTERS];
@@ -1134,7 +1134,7 @@ typedef struct AVFrame {
 
     /**
      * number of audio samples (per channel) described by this frame
-     * - encoding: unused
+     * - encoding: Set by user
      * - decoding: Set by libavcodec
      */
     int nb_samples;

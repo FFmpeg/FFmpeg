@@ -159,8 +159,8 @@ static int ape_read_header(AVFormatContext * s)
     AVStream *st;
     uint32_t tag;
     int i;
-    int total_blocks;
-    int64_t pts;
+    int total_blocks, final_size = 0;
+    int64_t pts, file_size;
 
     /* Skip any leading junk such as id3v2 tags */
     ape->junklength = avio_tell(pb);
@@ -289,8 +289,17 @@ static int ape_read_header(AVFormatContext * s)
         ape->frames[i - 1].size = ape->frames[i].pos - ape->frames[i - 1].pos;
         ape->frames[i].skip     = (ape->frames[i].pos - ape->frames[0].pos) & 3;
     }
-    ape->frames[ape->totalframes - 1].size    = ape->finalframeblocks * 4;
     ape->frames[ape->totalframes - 1].nblocks = ape->finalframeblocks;
+    /* calculate final packet size from total file size, if available */
+    file_size = avio_size(pb);
+    if (file_size > 0) {
+        final_size = file_size - ape->frames[ape->totalframes - 1].pos -
+                     ape->wavtaillength;
+        final_size -= final_size & 3;
+    }
+    if (file_size <= 0 || final_size <= 0)
+        final_size = ape->finalframeblocks * 8;
+    ape->frames[ape->totalframes - 1].size = final_size;
 
     for (i = 0; i < ape->totalframes; i++) {
         if(ape->frames[i].skip){
@@ -357,17 +366,26 @@ static int ape_read_packet(AVFormatContext * s, AVPacket * pkt)
     uint32_t extra_size = 8;
 
     if (url_feof(s->pb))
-        return AVERROR(EIO);
-    if (ape->currentframe > ape->totalframes)
-        return AVERROR(EIO);
+        return AVERROR_EOF;
+    if (ape->currentframe >= ape->totalframes)
+        return AVERROR_EOF;
 
-    avio_seek (s->pb, ape->frames[ape->currentframe].pos, SEEK_SET);
+    if (avio_seek(s->pb, ape->frames[ape->currentframe].pos, SEEK_SET) < 0)
+        return AVERROR(EIO);
 
     /* Calculate how many blocks there are in this frame */
     if (ape->currentframe == (ape->totalframes - 1))
         nblocks = ape->finalframeblocks;
     else
         nblocks = ape->blocksperframe;
+
+    if (ape->frames[ape->currentframe].size <= 0 ||
+        ape->frames[ape->currentframe].size > INT_MAX - extra_size) {
+        av_log(s, AV_LOG_ERROR, "invalid packet size: %d\n",
+               ape->frames[ape->currentframe].size);
+        ape->currentframe++;
+        return AVERROR(EIO);
+    }
 
     if (av_new_packet(pkt,  ape->frames[ape->currentframe].size + extra_size) < 0)
         return AVERROR(ENOMEM);
