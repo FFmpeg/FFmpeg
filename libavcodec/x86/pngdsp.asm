@@ -56,7 +56,7 @@ cglobal add_bytes_l2, 4, 6, %1, dst, src1, src2, wa, w, i
 
 %if mmsize == 16
     ; vector loop
-    mov                 wq, waq
+    mov                waq, wq
     and                waq, ~7
     jmp .end_l
 .loop_l:
