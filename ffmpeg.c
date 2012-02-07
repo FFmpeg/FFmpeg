@@ -1444,18 +1444,20 @@ static void do_video_resample(OutputStream *ost,
 #endif
 }
 
+static void do_video_stats(AVFormatContext *os, OutputStream *ost, int frame_size);
 
 static void do_video_out(AVFormatContext *s,
                          OutputStream *ost,
                          InputStream *ist,
                          AVFrame *in_picture,
-                         int *frame_size, float quality)
+                         float quality)
 {
     int nb_frames, i, ret, format_video_sync;
     AVFrame *final_picture;
     AVCodecContext *enc;
     double sync_ipts;
     double duration = 0;
+    int frame_size = 0;
 
     enc = ost->st->codec;
 
@@ -1471,8 +1473,6 @@ static void do_video_out(AVFormatContext *s,
 
     /* by default, we output a single frame */
     nb_frames = 1;
-
-    *frame_size = 0;
 
     format_video_sync = video_sync_method;
     if (format_video_sync == VSYNC_AUTO)
@@ -1571,7 +1571,7 @@ static void do_video_out(AVFormatContext *s,
                     pkt.pts = pkt.dts = AV_NOPTS_VALUE;
 
                 write_frame(s, &pkt, ost);
-                *frame_size = pkt.size;
+                frame_size = pkt.size;
                 video_size += pkt.size;
 
                 /* if two pass, output log */
@@ -1588,6 +1588,8 @@ static void do_video_out(AVFormatContext *s,
          */
         ost->frame_number++;
     }
+    if (vstats_filename && frame_size)
+        do_video_stats(output_files[ost->file_index].ctx, ost, frame_size);
 }
 
 static double psnr(double d)
@@ -2121,7 +2123,6 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
     for (i = 0; i < nb_output_streams; i++) {
         AVFrame *filtered_frame = NULL;
         OutputStream *ost = &output_streams[i];
-        int frame_size;
 
         if (!check_output_constraints(ist, ost) || !ost->encoding_needed)
             continue;
@@ -2150,10 +2151,8 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
             filtered_frame = decoded_frame;
 #endif
 
-            do_video_out(output_files[ost->file_index].ctx, ost, ist, filtered_frame, &frame_size,
+            do_video_out(output_files[ost->file_index].ctx, ost, ist, filtered_frame,
                          same_quant ? quality : ost->st->codec->global_quality);
-            if (vstats_filename && frame_size)
-                do_video_stats(output_files[ost->file_index].ctx, ost, frame_size);
 #if CONFIG_AVFILTER
             cont:
             avfilter_unref_buffer(ost->picref);
