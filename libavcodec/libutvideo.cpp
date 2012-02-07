@@ -189,17 +189,27 @@ static av_cold int utvideo_decode_close(AVCodecContext *avctx)
 
 AVCodec ff_libutvideo_decoder = {
     "libutvideo",
+    NULL_IF_CONFIG_SMALL("Ut Video"),
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_UTVIDEO,
+    0,    //capabilities
+    NULL, //supported_framerates
+    NULL, //pix_fmts
+    NULL, //supported_samplerates
+    NULL, //sample_fmts
+    NULL, //channel_layouts
+    0,    //max_lowres
+    NULL, //priv_class
+    NULL, //profiles
     sizeof(UtVideoContext),
+    NULL, //next
+    NULL, //init_thread_copy
+    NULL, //update_thread_context
+    NULL, //defaults
+    NULL, //init_static_data
     utvideo_decode_init,
-    NULL,
-    utvideo_decode_close,
+    NULL, //encode
+    NULL, //encode2
     utvideo_decode_frame,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL_IF_CONFIG_SMALL("Ut Video"),
+    utvideo_decode_close,
 };
