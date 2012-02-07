@@ -32,6 +32,7 @@
 #include "mpegvideo.h"
 #include "mpegvideo_common.h"
 #include "dnxhdenc.h"
+#include "internal.h"
 
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 #define DNX10BIT_QMAT_SHIFT 18 // The largest value that will not lead to overflow for 10bit samples.
@@ -990,6 +991,11 @@ static int dnxhd_encode_end(AVCodecContext *avctx)
     return 0;
 }
 
+static const AVCodecDefault dnxhd_defaults[] = {
+    { "qmax", "1024" }, /* Maximum quantization scale factor allowed for VC-3 */
+    { NULL },
+};
+
 AVCodec ff_dnxhd_encoder = {
     .name           = "dnxhd",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -1002,4 +1008,5 @@ AVCodec ff_dnxhd_encoder = {
     .pix_fmts = (const enum PixelFormat[]){PIX_FMT_YUV422P, PIX_FMT_YUV422P10, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("VC3/DNxHD"),
     .priv_class = &class,
+    .defaults       = dnxhd_defaults,
 };
