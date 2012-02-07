@@ -873,12 +873,14 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
     if (avctx->codec->encode2) {
         *got_packet_ptr = 0;
         ret = avctx->codec->encode2(avctx, avpkt, frame, got_packet_ptr);
-        if (!ret && *got_packet_ptr &&
-            !(avctx->codec->capabilities & CODEC_CAP_DELAY)) {
-            avpkt->pts = frame->pts;
-            avpkt->duration = av_rescale_q(frame->nb_samples,
-                                           (AVRational){ 1, avctx->sample_rate },
-                                           avctx->time_base);
+        if (!ret && *got_packet_ptr) {
+            if (!(avctx->codec->capabilities & CODEC_CAP_DELAY)) {
+                avpkt->pts = frame->pts;
+                avpkt->duration = av_rescale_q(frame->nb_samples,
+                                               (AVRational){ 1, avctx->sample_rate },
+                                               avctx->time_base);
+            }
+            avpkt->dts = avpkt->pts;
         }
     } else {
         /* for compatibility with encoders not supporting encode2(), we need to
@@ -925,7 +927,7 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
                     av_freep(&avpkt->data);
             } else {
                 if (avctx->coded_frame)
-                    avpkt->pts = avctx->coded_frame->pts;
+                    avpkt->pts = avpkt->dts = avctx->coded_frame->pts;
                 /* Set duration for final small packet. This can be removed
                    once all encoders supporting CODEC_CAP_SMALL_LAST_FRAME use
                    encode2() */
