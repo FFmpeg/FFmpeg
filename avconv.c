@@ -2450,13 +2450,30 @@ static int transcode_init(OutputFile *output_files,
                 ost->resample_width   = icodec->width;
                 ost->resample_pix_fmt = icodec->pix_fmt;
 
-                if (!ost->frame_rate.num)
-                    ost->frame_rate = ist->st->r_frame_rate.num ? ist->st->r_frame_rate : (AVRational) { 25, 1 };
-                if (ost->enc && ost->enc->supported_framerates && !ost->force_fps) {
-                    int idx = av_find_nearest_q_idx(ost->frame_rate, ost->enc->supported_framerates);
-                    ost->frame_rate = ost->enc->supported_framerates[idx];
+                /*
+                 * We want CFR output if and only if one of those is true:
+                 * 1) user specified output framerate with -r
+                 * 2) user specified -vsync cfr
+                 * 3) output format is CFR and the user didn't force vsync to
+                 *    something else than CFR
+                 *
+                 * in such a case, set ost->frame_rate
+                 */
+                if (!ost->frame_rate.num &&
+                    (video_sync_method ==  VSYNC_CFR ||
+                     (video_sync_method ==  VSYNC_AUTO &&
+                      !(oc->oformat->flags & (AVFMT_NOTIMESTAMPS | AVFMT_VARIABLE_FPS))))) {
+                    ost->frame_rate = ist->st->r_frame_rate.num ? ist->st->r_frame_rate : (AVRational){25, 1};
+                    if (ost->enc && ost->enc->supported_framerates && !ost->force_fps) {
+                        int idx = av_find_nearest_q_idx(ost->frame_rate, ost->enc->supported_framerates);
+                        ost->frame_rate = ost->enc->supported_framerates[idx];
+                    }
                 }
-                codec->time_base = (AVRational){ost->frame_rate.den, ost->frame_rate.num};
+                if (ost->frame_rate.num) {
+                    codec->time_base = (AVRational){ost->frame_rate.den, ost->frame_rate.num};
+                    video_sync_method = VSYNC_CFR;
+                } else
+                    codec->time_base = ist->st->time_base;
 
 #if CONFIG_AVFILTER
                 if (configure_video_filters(ist, ost)) {
