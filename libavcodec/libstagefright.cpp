@@ -536,17 +536,27 @@ static av_cold int Stagefright_close(AVCodecContext *avctx)
 
 AVCodec ff_libstagefright_h264_decoder = {
     "libstagefright_h264",
+    NULL_IF_CONFIG_SMALL("libstagefright H.264"),
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_H264,
+    CODEC_CAP_DELAY,
+    NULL, //supported_framerates
+    NULL, //pix_fmts
+    NULL, //supported_samplerates
+    NULL, //sample_fmts
+    NULL, //channel_layouts
+    0,    //max_lowres
+    NULL, //priv_class
+    NULL, //profiles
     sizeof(StagefrightContext),
+    NULL, //next
+    NULL, //init_thread_copy
+    NULL, //update_thread_context
+    NULL, //defaults
+    NULL, //init_static_data
     Stagefright_init,
     NULL, //encode
-    Stagefright_close,
+    NULL, //encode2
     Stagefright_decode_frame,
-    CODEC_CAP_DELAY,
-    NULL, //next
-    NULL, //flush
-    NULL, //supported_framerates
-    NULL, //pixel_formats
-    NULL_IF_CONFIG_SMALL("libstagefright H.264"),
+    Stagefright_close,
 };
