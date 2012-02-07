@@ -2127,22 +2127,22 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
 
 #if CONFIG_AVFILTER
         while (av_buffersink_poll_frame(ost->output_video_filter)) {
-                AVRational ist_pts_tb = ost->output_video_filter->inputs[0]->time_base;
-                if (av_buffersink_get_buffer_ref(ost->output_video_filter, &ost->picref, 0) < 0){
-                    av_log(0, AV_LOG_WARNING, "AV Filter told us it has a frame available but failed to output one\n");
-                    goto cont;
-                }
-                if (!ist->filtered_frame && !(ist->filtered_frame = avcodec_alloc_frame())) {
-                    av_free(buffer_to_free);
-                    return AVERROR(ENOMEM);
-                } else
-                    avcodec_get_frame_defaults(ist->filtered_frame);
-                filtered_frame = ist->filtered_frame;
-                *filtered_frame= *decoded_frame; //for me_threshold
-                if (ost->picref) {
-                    avfilter_fill_frame_from_video_buffer_ref(filtered_frame, ost->picref);
-                    filtered_frame->pts = av_rescale_q(ost->picref->pts, ist_pts_tb, AV_TIME_BASE_Q);
-                }
+            AVRational ist_pts_tb = ost->output_video_filter->inputs[0]->time_base;
+            if (av_buffersink_get_buffer_ref(ost->output_video_filter, &ost->picref, 0) < 0){
+                av_log(0, AV_LOG_WARNING, "AV Filter told us it has a frame available but failed to output one\n");
+                goto cont;
+            }
+            if (!ist->filtered_frame && !(ist->filtered_frame = avcodec_alloc_frame())) {
+                av_free(buffer_to_free);
+                return AVERROR(ENOMEM);
+            } else
+                avcodec_get_frame_defaults(ist->filtered_frame);
+            filtered_frame = ist->filtered_frame;
+            *filtered_frame= *decoded_frame; //for me_threshold
+            if (ost->picref) {
+                avfilter_fill_frame_from_video_buffer_ref(filtered_frame, ost->picref);
+                filtered_frame->pts = av_rescale_q(ost->picref->pts, ist_pts_tb, AV_TIME_BASE_Q);
+            }
             if (ost->picref->video && !ost->frame_aspect_ratio)
                 ost->st->codec->sample_aspect_ratio = ost->picref->video->sample_aspect_ratio;
 #else
