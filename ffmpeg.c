@@ -2050,7 +2050,7 @@ static int transcode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
 
 static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int64_t *pkt_pts)
 {
-    AVFrame *decoded_frame, *filtered_frame = NULL;
+    AVFrame *decoded_frame;
     void *buffer_to_free = NULL;
     int i, ret = 0;
     float quality = 0;
@@ -2119,6 +2119,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
     rate_emu_sleep(ist);
 
     for (i = 0; i < nb_output_streams; i++) {
+        AVFrame *filtered_frame = NULL;
         OutputStream *ost = &output_streams[i];
         int frame_size;
 
