@@ -24,11 +24,19 @@
  * Interface to libfaac for aac encoding.
  */
 
-#include "avcodec.h"
 #include <faac.h>
+
+#include "avcodec.h"
+#include "audio_frame_queue.h"
+#include "internal.h"
+
+
+/* libfaac has an encoder delay of 1024 samples */
+#define FAAC_DELAY_SAMPLES 1024
 
 typedef struct FaacAudioContext {
     faacEncHandle faac_handle;
+    AudioFrameQueue afq;
 } FaacAudioContext;
 
 
@@ -36,11 +44,15 @@ static av_cold int Faac_encode_close(AVCodecContext *avctx)
 {
     FaacAudioContext *s = avctx->priv_data;
 
+#if FF_API_OLD_ENCODE_AUDIO
     av_freep(&avctx->coded_frame);
+#endif
     av_freep(&avctx->extradata);
+    ff_af_queue_close(&s->afq);
 
     if (s->faac_handle)
         faacEncClose(s->faac_handle);
+
     return 0;
 }
 
@@ -109,11 +121,13 @@ static av_cold int Faac_encode_init(AVCodecContext *avctx)
 
     avctx->frame_size = samples_input / avctx->channels;
 
+#if FF_API_OLD_ENCODE_AUDIO
     avctx->coded_frame= avcodec_alloc_frame();
     if (!avctx->coded_frame) {
         ret = AVERROR(ENOMEM);
         goto error;
     }
+#endif
 
     /* Set decoder specific info */
     avctx->extradata_size = 0;
@@ -144,26 +158,52 @@ static av_cold int Faac_encode_init(AVCodecContext *avctx)
         goto error;
     }
 
+    avctx->delay = FAAC_DELAY_SAMPLES;
+    ff_af_queue_init(avctx, &s->afq);
+
     return 0;
 error:
     Faac_encode_close(avctx);
     return ret;
 }
 
-static int Faac_encode_frame(AVCodecContext *avctx,
-                             unsigned char *frame, int buf_size, void *data)
+static int Faac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
+                             const AVFrame *frame, int *got_packet_ptr)
 {
     FaacAudioContext *s = avctx->priv_data;
-    int bytes_written;
-    int num_samples = data ? avctx->frame_size : 0;
+    int bytes_written, ret;
+    int num_samples  = frame ? frame->nb_samples : 0;
+    void *samples    = frame ? frame->data[0]    : NULL;
 
-    bytes_written = faacEncEncode(s->faac_handle,
-                                  data,
+    if ((ret = ff_alloc_packet(avpkt, (7 + 768) * avctx->channels))) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
+        return ret;
+    }
+
+    bytes_written = faacEncEncode(s->faac_handle, samples,
                                   num_samples * avctx->channels,
-                                  frame,
-                                  buf_size);
+                                  avpkt->data, avpkt->size);
+    if (bytes_written < 0) {
+        av_log(avctx, AV_LOG_ERROR, "faacEncEncode() error\n");
+        return bytes_written;
+    }
 
-    return bytes_written;
+    /* add current frame to the queue */
+    if (frame) {
+        if ((ret = ff_af_queue_add(&s->afq, frame) < 0))
+            return ret;
+    }
+
+    if (!bytes_written)
+        return 0;
+
+    /* Get the next frame pts/duration */
+    ff_af_queue_remove(&s->afq, avctx->frame_size, &avpkt->pts,
+                       &avpkt->duration);
+
+    avpkt->size = bytes_written;
+    *got_packet_ptr = 1;
+    return 0;
 }
 
 static const AVProfile profiles[] = {
@@ -180,7 +220,7 @@ AVCodec ff_libfaac_encoder = {
     .id             = CODEC_ID_AAC,
     .priv_data_size = sizeof(FaacAudioContext),
     .init           = Faac_encode_init,
-    .encode         = Faac_encode_frame,
+    .encode2        = Faac_encode_frame,
     .close          = Faac_encode_close,
     .capabilities = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
