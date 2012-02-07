@@ -40,6 +40,8 @@
 %if ARCH_X86_64
     %ifidn __OUTPUT_FORMAT__,win32
         %define WIN64  1
+    %elifidn __OUTPUT_FORMAT__,win64
+        %define WIN64  1
     %else
         %define UNIX64 1
     %endif
