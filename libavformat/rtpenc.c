@@ -443,6 +443,11 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
         ff_rtp_send_h264(s1, pkt->data, size);
         break;
     case CODEC_ID_H263:
+        if (s->flags & FF_RTP_FLAG_RFC2190) {
+            ff_rtp_send_h263_rfc2190(s1, pkt->data, size);
+            break;
+        }
+        /* Fallthrough */
     case CODEC_ID_H263P:
         ff_rtp_send_h263(s1, pkt->data, size);
         break;
