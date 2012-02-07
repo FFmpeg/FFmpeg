@@ -171,6 +171,7 @@ static int nb_frames_drop = 0;
 static int input_sync;
 
 static float dts_delta_threshold = 10;
+static float dts_error_threshold = 3600*30;
 
 static int print_stats = 1;
 
@@ -3020,14 +3021,14 @@ static int transcode(OutputFile *output_files, int nb_output_files,
         //        ist->next_dts,
         //        ist->dts, av_rescale_q(pkt.dts, ist->st->time_base, AV_TIME_BASE_Q), input_files[ist->file_index].ts_offset,
         //        ist->st->codec->codec_type);
-        if (pkt.dts != AV_NOPTS_VALUE && ist->next_dts != AV_NOPTS_VALUE
-            && (is->iformat->flags & AVFMT_TS_DISCONT)) {
+        if (pkt.dts != AV_NOPTS_VALUE && ist->next_dts != AV_NOPTS_VALUE && !copy_ts) {
             int64_t pkt_dts = av_rescale_q(pkt.dts, ist->st->time_base, AV_TIME_BASE_Q);
             int64_t delta   = pkt_dts - ist->next_dts;
-            if((delta < -1LL*dts_delta_threshold*AV_TIME_BASE ||
+            if (is->iformat->flags & AVFMT_TS_DISCONT) {
+            if(delta < -1LL*dts_delta_threshold*AV_TIME_BASE ||
                 (delta > 1LL*dts_delta_threshold*AV_TIME_BASE &&
                  ist->st->codec->codec_type != AVMEDIA_TYPE_SUBTITLE) ||
-                pkt_dts+1<ist->pts)&& !copy_ts){
+                pkt_dts+1<ist->pts){
                 input_files[ist->file_index].ts_offset -= delta;
                 av_log(NULL, AV_LOG_DEBUG,
                        "timestamp discontinuity %"PRId64", new offset= %"PRId64"\n",
@@ -3035,6 +3036,23 @@ static int transcode(OutputFile *output_files, int nb_output_files,
                 pkt.dts-= av_rescale_q(delta, AV_TIME_BASE_Q, ist->st->time_base);
                 if (pkt.pts != AV_NOPTS_VALUE)
                     pkt.pts-= av_rescale_q(delta, AV_TIME_BASE_Q, ist->st->time_base);
+            }
+            } else {
+                if ( delta < -1LL*dts_error_threshold*AV_TIME_BASE ||
+                    (delta > 1LL*dts_error_threshold*AV_TIME_BASE && ist->st->codec->codec_type != AVMEDIA_TYPE_SUBTITLE) ||
+                     pkt_dts+1<ist->pts){
+                    av_log(NULL, AV_LOG_WARNING, "DTS %"PRId64", next:%"PRId64" st:%d invalid droping\n", pkt.dts, ist->next_dts, pkt.stream_index);
+                    pkt.dts = AV_NOPTS_VALUE;
+                }
+                if (pkt.pts != AV_NOPTS_VALUE){
+                    int64_t pkt_pts = av_rescale_q(pkt.pts, ist->st->time_base, AV_TIME_BASE_Q);
+                    delta   = pkt_pts - ist->next_dts;
+                    if ( delta < -1LL*dts_error_threshold*AV_TIME_BASE ||
+                        (delta > 1LL*dts_error_threshold*AV_TIME_BASE && ist->st->codec->codec_type != AVMEDIA_TYPE_SUBTITLE)) {
+                        av_log(NULL, AV_LOG_WARNING, "PTS %"PRId64", next:%"PRId64" invalid droping st:%d\n", pkt.pts, ist->next_dts, pkt.stream_index);
+                        pkt.pts = AV_NOPTS_VALUE;
+                    }
+                }
             }
         }
 
@@ -4960,6 +4978,7 @@ static const OptionDef options[] = {
     { "copytb", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&copy_tb}, "copy input stream time base when stream copying", "source" },
     { "shortest", OPT_BOOL | OPT_EXPERT, {(void*)&opt_shortest}, "finish encoding within shortest input" }, //
     { "dts_delta_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT, {(void*)&dts_delta_threshold}, "timestamp discontinuity delta threshold", "threshold" },
+    { "dts_error_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT, {(void*)&dts_error_threshold}, "timestamp error delta threshold", "threshold" },
     { "xerror", OPT_BOOL, {(void*)&exit_on_error}, "exit on error", "error" },
     { "copyinkf", OPT_BOOL | OPT_EXPERT | OPT_SPEC, {.off = OFFSET(copy_initial_nonkeyframes)}, "copy initial non-keyframes" },
     { "frames", OPT_INT64 | HAS_ARG | OPT_SPEC, {.off = OFFSET(max_frames)}, "set the number of frames to record", "number" },
