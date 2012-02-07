@@ -2623,7 +2623,7 @@ static int transcode_init(OutputFile *output_files, int nb_output_files,
 #if CONFIG_AVFILTER
                 if (configure_video_filters(ist, ost)) {
                     av_log(NULL, AV_LOG_FATAL, "Error opening filters!\n");
-                    exit(1);
+                    exit_program(1);
                 }
 #endif
                 break;
