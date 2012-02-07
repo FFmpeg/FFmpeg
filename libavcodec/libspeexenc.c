@@ -67,7 +67,6 @@
 #include <speex/speex.h>
 #include <speex/speex_header.h>
 #include <speex/speex_stereo.h>
-#include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "internal.h"
@@ -258,9 +257,7 @@ static int encode_frame(AVCodecContext *avctx, uint8_t *frame, int buf_size,
     /* write output if all frames for the packet have been encoded */
     if (s->pkt_frame_count == s->frames_per_packet) {
         s->pkt_frame_count = 0;
-        avctx->coded_frame->pts =
-            av_rescale_q(s->next_pts, (AVRational){ 1, avctx->sample_rate },
-                         avctx->time_base);
+        avctx->coded_frame->pts = ff_samples_to_time_base(avctx, s->next_pts);
         s->next_pts += s->pkt_sample_count;
         s->pkt_sample_count = 0;
         if (buf_size > speex_bits_nbytes(&s->bits)) {

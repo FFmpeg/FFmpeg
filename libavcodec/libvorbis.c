@@ -29,8 +29,8 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 #include "vorbis.h"
-#include "libavutil/mathematics.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -216,7 +216,8 @@ static int oggvorbis_encode_frame(AVCodecContext *avccontext,
         op2->packet = context->buffer + sizeof(ogg_packet);
 
         l = op2->bytes;
-        avccontext->coded_frame->pts = av_rescale_q(op2->granulepos, (AVRational) { 1, avccontext->sample_rate }, avccontext->time_base);
+        avccontext->coded_frame->pts = ff_samples_to_time_base(avccontext,
+                                                               op2->granulepos);
         //FIXME we should reorder the user supplied pts and not assume that they are spaced by 1/sample_rate
 
         if (l > buf_size) {

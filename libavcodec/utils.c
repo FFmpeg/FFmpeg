@@ -886,9 +886,8 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
         if (!ret && *got_packet_ptr) {
             if (!(avctx->codec->capabilities & CODEC_CAP_DELAY)) {
                 avpkt->pts = frame->pts;
-                avpkt->duration = av_rescale_q(frame->nb_samples,
-                                               (AVRational){ 1, avctx->sample_rate },
-                                               avctx->time_base);
+                avpkt->duration = ff_samples_to_time_base(avctx,
+                                                          frame->nb_samples);
             }
             avpkt->dts = avpkt->pts;
         } else {
@@ -944,9 +943,8 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
                    once all encoders supporting CODEC_CAP_SMALL_LAST_FRAME use
                    encode2() */
                 if (fs_tmp) {
-                    avpkt->duration = av_rescale_q(avctx->frame_size,
-                                                   (AVRational){ 1, avctx->sample_rate },
-                                                   avctx->time_base);
+                    avpkt->duration = ff_samples_to_time_base(avctx,
+                                                              avctx->frame_size);
                 }
             }
             avpkt->size = ret;
@@ -1018,9 +1016,8 @@ int attribute_align_arg avcodec_encode_audio(AVCodecContext *avctx,
         /* fabricate frame pts from sample count.
            this is needed because the avcodec_encode_audio() API does not have
            a way for the user to provide pts */
-        frame->pts = av_rescale_q(avctx->internal->sample_count,
-                                  (AVRational){ 1, avctx->sample_rate },
-                                  avctx->time_base);
+        frame->pts = ff_samples_to_time_base(avctx,
+                                             avctx->internal->sample_count);
         avctx->internal->sample_count += frame->nb_samples;
     } else {
         frame = NULL;
