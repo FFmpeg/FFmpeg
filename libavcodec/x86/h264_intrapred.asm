@@ -1931,6 +1931,9 @@ cglobal pred8x8l_vertical_right_mmxext, 4,5
 
 %macro PRED8x8L_VERTICAL_RIGHT 1
 cglobal pred8x8l_vertical_right_%1, 4,5,7
+    ; manually spill XMM registers for Win64 because
+    ; the code here is initialized with INIT_MMX
+    WIN64_SPILL_XMM 7
     sub          r0, r3
     lea          r4, [r0+r3*2]
     movq        mm0, [r0+r3*1-8]

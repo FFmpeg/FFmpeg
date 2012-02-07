@@ -968,6 +968,9 @@ cglobal h264_idct_add8_8_sse2, 5, 7, 8
 
 %macro IDCT_DC_DEQUANT 2
 cglobal h264_luma_dc_dequant_idct_%1, 3,4,%2
+    ; manually spill XMM registers for Win64 because
+    ; the code here is initialized with INIT_MMX
+    WIN64_SPILL_XMM %2
     movq        m3, [r1+24]
     movq        m2, [r1+16]
     movq        m1, [r1+ 8]
