@@ -409,56 +409,31 @@ static av_cold int output_configure(AACContext *ac,
 {
     AVCodecContext *avctx = ac->avctx;
     int i, channels = 0, ret;
+    uint64_t layout = 0;
 
     if (ac->layout_map != layout_map) {
         memcpy(ac->layout_map, layout_map, tags * sizeof(layout_map[0]));
         ac->layout_map_tags = tags;
     }
 
-    if (channel_config) {
-        if (avctx->request_channel_layout != AV_CH_LAYOUT_NATIVE)
-            sniff_channel_order(layout_map, tags);
-        for (i = 0; i < tags_per_config[channel_config]; i++) {
-            int type    = layout_map[i][0];
-            int id      = layout_map[i][1];
-            int position = layout_map[i][2];
-            if ((ret = che_configure(ac, position,
-                                     type, id,
-                                     &channels)))
-                return ret;
-        }
-
-        memset(ac->tag_che_map, 0, 4 * MAX_ELEM_ID * sizeof(ac->che[0][0]));
-
-        avctx->channel_layout = aac_channel_layout[channel_config - 1];
-    } else {
-        /* Allocate or free elements depending on if they are in the
-         * current program configuration.
-         *
-         * Try to sniff a reasonable channel order, otherwise output the
-         * channels in the order the PCE declared them.
-         */
-
-        uint64_t layout = 0;
-        if (avctx->request_channel_layout != AV_CH_LAYOUT_NATIVE)
-            layout = sniff_channel_order(layout_map, tags);
-        for (i = 0; i < tags; i++) {
-            int type =     layout_map[i][0];
-            int id =       layout_map[i][1];
-            int position = layout_map[i][2];
-            if ((ret = che_configure(ac, position,
-                                     type, id,
-                                     &channels)))
-                return ret;
-        }
-
-        memcpy(ac->tag_che_map, ac->che, 4 * MAX_ELEM_ID * sizeof(ac->che[0][0]));
-
-        avctx->channel_layout = layout;
+    // Try to sniff a reasonable channel order, otherwise output the
+    // channels in the order the PCE declared them.
+    if (avctx->request_channel_layout != AV_CH_LAYOUT_NATIVE)
+        layout = sniff_channel_order(layout_map, tags);
+    for (i = 0; i < tags; i++) {
+        int type =     layout_map[i][0];
+        int id =       layout_map[i][1];
+        int position = layout_map[i][2];
+        // Allocate or free elements depending on if they are in the
+        // current program configuration.
+        ret = che_configure(ac, position, type, id, &channels);
+        if (ret < 0)
+            return ret;
     }
 
+    memcpy(ac->tag_che_map, ac->che, 4 * MAX_ELEM_ID * sizeof(ac->che[0][0]));
+    avctx->channel_layout = layout;
     avctx->channels = channels;
-
     ac->output_configured = oc_type;
 
     return 0;
