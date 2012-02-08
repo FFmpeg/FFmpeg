@@ -210,9 +210,8 @@ typedef struct InputStream {
     /* dts of the last packet read for this stream */
     int64_t       dts;
 
-    int64_t       next_pts;  /* synthetic pts for cases where pkt.pts
-                                is not defined */
-    int64_t       pts;       /* current pts */
+    int64_t       next_pts;  ///< synthetic pts for the next decode frame
+    int64_t       pts;       ///< current pts of the decoded frame
     double ts_scale;
     int is_start;            /* is 1 at the start and after a discontinuity */
     int showed_multi_packet_warning;
