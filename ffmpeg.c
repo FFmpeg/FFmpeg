@@ -1970,12 +1970,15 @@ static int transcode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
     /* if the decoder provides a pts, use it instead of the last packet pts.
        the decoder could be delaying output by a packet or more. */
     if (decoded_frame->pts != AV_NOPTS_VALUE)
-        ist->pts = ist->next_pts = decoded_frame->pts;
+        ist->dts = ist->next_dts = ist->pts = ist->next_pts = decoded_frame->pts;
 
-    /* increment next_pts to use for the case where the input stream does not
+    /* increment next_dts to use for the case where the input stream does not
        have timestamps or there are multiple frames in the packet */
     ist->next_pts += ((int64_t)AV_TIME_BASE * decoded_frame->nb_samples) /
                      avctx->sample_rate;
+    ist->next_dts += ((int64_t)AV_TIME_BASE * decoded_frame->nb_samples) /
+                     avctx->sample_rate;
+
 
     // preprocess audio (volume)
     if (audio_volume != 256) {
