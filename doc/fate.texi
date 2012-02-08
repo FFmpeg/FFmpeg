@@ -132,4 +132,3 @@ makeopts=       # extra options passed to 'make'
 In order to send reports you need to create an @command{ssh} key and send it
 to @email{root@@libav.org}.
 The current server fingerprint is @var{a4:99:d7:d3:1c:92:0d:56:d6:d5:61:be:01:ae:7d:e6}
-

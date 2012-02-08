@@ -108,4 +108,3 @@ void ff_imdct_calc_sse(FFTContext *s, FFTSample *output, const FFTSample *input)
         XMM_CLOBBERS_ONLY("%xmm0", "%xmm1", "%xmm7")
     );
 }
-

@@ -67,4 +67,3 @@ av_cold void ff_dct_init_mmx(DCTContext *s)
 #endif
 }
 #endif
-

@@ -270,6 +270,3 @@ void dsputil_init_bfin( DSPContext* c, AVCodecContext *avctx )
         }
     }
 }
-
-
-

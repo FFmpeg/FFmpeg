@@ -30,4 +30,3 @@ fate-nellymoser: REF = $(SAMPLES)/nellymoser/nellymoser.pcm
 
 FATE_TESTS += fate-ws_snd
 fate-ws_snd: CMD = md5 -i $(SAMPLES)/vqa/ws_snd.vqa -f s16le
-

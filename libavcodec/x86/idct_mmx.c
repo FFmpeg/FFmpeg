@@ -626,4 +626,3 @@ declare_idct (ff_mmxext_idct, mmxext_table,
 
 declare_idct (ff_mmx_idct, mmx_table,
               mmx_row_head, mmx_row, mmx_row_tail, mmx_row_mid)
-

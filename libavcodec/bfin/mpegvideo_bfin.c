@@ -145,4 +145,3 @@ void MPV_common_init_bfin (MpegEncContext *s)
 {
 /*     s->dct_quantize= dct_quantize_bfin; */
 }
-

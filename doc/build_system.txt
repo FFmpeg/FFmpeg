@@ -27,4 +27,3 @@ libavcodec/api-example
 
 libswscale/swscale-test
     Build the swscale self-test (useful also as example).
-

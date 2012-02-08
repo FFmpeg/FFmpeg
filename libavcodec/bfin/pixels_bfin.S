@@ -737,5 +737,3 @@ DEFUN(sse16,mL1,
         unlink;
         rts;
 DEFUN_END(sse16)
-
-

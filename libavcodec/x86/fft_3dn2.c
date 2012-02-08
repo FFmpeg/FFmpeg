@@ -171,4 +171,3 @@ void ff_imdct_calc_3dn2(FFTContext *s, FFTSample *output, const FFTSample *input
     );
     __asm__ volatile("femms");
 }
-
