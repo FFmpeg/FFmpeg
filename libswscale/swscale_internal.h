@@ -359,8 +359,8 @@ typedef struct SwsContext {
 #define V_TEMP                "11*8+4*4*256*2+32"
 #define Y_TEMP                "11*8+4*4*256*2+40"
 #define ALP_MMX_FILTER_OFFSET "11*8+4*4*256*2+48"
-#define UV_OFF                "11*8+4*4*256*3+48"
-#define UV_OFFx2              "11*8+4*4*256*3+56"
+#define UV_OFF_PX             "11*8+4*4*256*3+48"
+#define UV_OFF_BYTE           "11*8+4*4*256*3+56"
 #define DITHER16              "11*8+4*4*256*3+64"
 #define DITHER32              "11*8+4*4*256*3+80"
 
@@ -706,6 +706,14 @@ void ff_swscale_get_unscaled_altivec(SwsContext *c);
  */
 SwsFunc ff_getSwsFunc(SwsContext *c);
 
+void ff_sws_init_input_funcs(SwsContext *c);
+void ff_sws_init_output_funcs(SwsContext *c,
+                              yuv2planar1_fn *yuv2plane1,
+                              yuv2planarX_fn *yuv2planeX,
+                              yuv2interleavedX_fn *yuv2nv12cX,
+                              yuv2packed1_fn *yuv2packed1,
+                              yuv2packed2_fn *yuv2packed2,
+                              yuv2packedX_fn *yuv2packedX);
 void ff_sws_init_swScale_altivec(SwsContext *c);
 void ff_sws_init_swScale_mmx(SwsContext *c);
 

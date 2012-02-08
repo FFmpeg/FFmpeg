@@ -2616,6 +2616,7 @@ static int transcode_init(OutputFile *output_files, int nb_output_files,
 #endif
                 break;
             case AVMEDIA_TYPE_SUBTITLE:
+                codec->time_base = (AVRational){1, 1000};
                 break;
             default:
                 abort();

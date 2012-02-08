@@ -315,7 +315,7 @@ IDCT_ADD16INTRA_10 avx
 ; h264_idct_add8(pixel **dst, const int *block_offset, dctcoef *block, int stride, const uint8_t nnzc[6*8])
 ;-----------------------------------------------------------------------------
 %macro IDCT_ADD8 1
-cglobal h264_idct_add8_10_%1,5,7
+cglobal h264_idct_add8_10_%1,5,7,7
 %if ARCH_X86_64
     mov r10, r0
 %endif

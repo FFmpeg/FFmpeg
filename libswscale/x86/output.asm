@@ -275,17 +275,17 @@ yuv2planeX_fn 10,  7, 5
 %macro yuv2plane1_mainloop 2
 .loop_%2:
 %if %1 == 8
-    paddsw          m0, m2, [r0+r2*2+mmsize*0]
-    paddsw          m1, m3, [r0+r2*2+mmsize*1]
+    paddsw          m0, m2, [srcq+dstwq*2+mmsize*0]
+    paddsw          m1, m3, [srcq+dstwq*2+mmsize*1]
     psraw           m0, 7
     psraw           m1, 7
     packuswb        m0, m1
     mov%2      [r1+r2], m0
 %elif %1 == 16
-    paddd           m0, m4, [r0+r2*4+mmsize*0]
-    paddd           m1, m4, [r0+r2*4+mmsize*1]
-    paddd           m2, m4, [r0+r2*4+mmsize*2]
-    paddd           m3, m4, [r0+r2*4+mmsize*3]
+    paddd           m0, m4, [srcq+dstwq*4+mmsize*0]
+    paddd           m1, m4, [srcq+dstwq*4+mmsize*1]
+    paddd           m2, m4, [srcq+dstwq*4+mmsize*2]
+    paddd           m3, m4, [srcq+dstwq*4+mmsize*3]
     psrad           m0, 3
     psrad           m1, 3
     psrad           m2, 3
@@ -299,46 +299,46 @@ yuv2planeX_fn 10,  7, 5
     paddw           m0, m5
     paddw           m2, m5
 %endif ; mmx/sse2/sse4/avx
-    mov%2    [r1+r2*2], m0
-    mov%2    [r1+r2*2+mmsize], m2
-%else
-    paddsw          m0, m2, [r0+r2*2+mmsize*0]
-    paddsw          m1, m2, [r0+r2*2+mmsize*1]
+    mov%2    [dstq+dstwq*2+mmsize*0], m0
+    mov%2    [dstq+dstwq*2+mmsize*1], m2
+%else ; %1 == 9/10
+    paddsw          m0, m2, [srcq+dstwq*2+mmsize*0]
+    paddsw          m1, m2, [srcq+dstwq*2+mmsize*1]
     psraw           m0, 15 - %1
     psraw           m1, 15 - %1
     pmaxsw          m0, m4
     pmaxsw          m1, m4
     pminsw          m0, m3
     pminsw          m1, m3
-    mov%2    [r1+r2*2], m0
-    mov%2    [r1+r2*2+mmsize], m1
+    mov%2    [dstq+dstwq*2+mmsize*0], m0
+    mov%2    [dstq+dstwq*2+mmsize*1], m1
 %endif
-    add             r2, mmsize
+    add          dstwq, mmsize
     jl .loop_%2
 %endmacro
 
 %macro yuv2plane1_fn 3
-cglobal yuv2plane1_%1, %3, %3, %2
-    add             r2, mmsize - 1
-    and             r2, ~(mmsize - 1)
+cglobal yuv2plane1_%1, %3, %3, %2, src, dst, dstw, dither, offset
+    add          dstwq, mmsize - 1
+    and          dstwq, ~(mmsize - 1)
 %if %1 == 8
-    add             r1, r2
+    add           dstq, dstwq
 %else ; %1 != 8
-    lea             r1, [r1+r2*2]
+    lea           dstq, [dstq+dstwq*2]
 %endif ; %1 == 8
 %if %1 == 16
-    lea             r0, [r0+r2*4]
+    lea           srcq, [srcq+dstwq*4]
 %else ; %1 != 16
-    lea             r0, [r0+r2*2]
+    lea           srcq, [srcq+dstwq*2]
 %endif ; %1 == 16
-    neg             r2
+    neg          dstwq
 
 %if %1 == 8
     pxor            m4, m4               ; zero
 
     ; create registers holding dither
-    movq            m3, [r3]             ; dither
-    test           r4d, r4d
+    movq            m3, [ditherq]        ; dither
+    test       offsetd, offsetd
     jz              .no_rot
 %if mmsize == 16
     punpcklqdq      m3, m3
@@ -374,7 +374,7 @@ cglobal yuv2plane1_%1, %3, %3, %2
 %if mmsize == 8
     yuv2plane1_mainloop %1, a
 %else ; mmsize == 16
-    test            r1, 15
+    test          dstq, 15
     jnz .unaligned
     yuv2plane1_mainloop %1, a
     REP_RET
