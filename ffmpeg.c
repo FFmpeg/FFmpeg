@@ -204,6 +204,12 @@ typedef struct InputStream {
     AVFrame *filtered_frame;
 
     int64_t       start;     /* time when read started */
+    /* predicted dts of the next packet read for this stream or (when there are
+     * several frames in a packet) of the next frame in current packet */
+    int64_t       next_dts;
+    /* dts of the last packet read for this stream */
+    int64_t       dts;
+
     int64_t       next_pts;  /* synthetic pts for cases where pkt.pts
                                 is not defined */
     int64_t       pts;       /* current pts */
