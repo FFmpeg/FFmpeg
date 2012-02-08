@@ -251,6 +251,7 @@ static int wv_read_packet(AVFormatContext *s,
     int ret;
     int size, ver, off;
     int64_t pos;
+    uint32_t block_samples;
 
     if (s->pb->eof_reached)
         return AVERROR(EIO);
@@ -316,6 +317,12 @@ static int wv_read_packet(AVFormatContext *s,
     pkt->stream_index = 0;
     wc->block_parsed = 1;
     pkt->pts = wc->soff;
+    block_samples = AV_RN32(wc->extra);
+    if (block_samples > INT32_MAX)
+        av_log(s, AV_LOG_WARNING, "Too many samples in block: %"PRIu32"\n", block_samples);
+    else
+        pkt->duration = block_samples;
+
     av_add_index_entry(s->streams[0], pos, pkt->pts, 0, 0, AVINDEX_KEYFRAME);
     return 0;
 }
