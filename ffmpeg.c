@@ -2057,7 +2057,6 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
 #if CONFIG_AVFILTER
     int frame_available = 1;
 #endif
-    int duration=0;
     int64_t *best_effort_timestamp;
     AVRational *frame_sample_aspect;
 
@@ -2069,20 +2068,6 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
     pkt->pts  = *pkt_pts;
     pkt->dts  = ist->dts;
     *pkt_pts  = AV_NOPTS_VALUE;
-
-    if (pkt->duration) {
-        duration = av_rescale_q(pkt->duration, ist->st->time_base, AV_TIME_BASE_Q);
-    } else if(ist->st->codec->time_base.num != 0) {
-        int ticks= ist->st->parser ? ist->st->parser->repeat_pict+1 : ist->st->codec->ticks_per_frame;
-        duration = ((int64_t)AV_TIME_BASE *
-                          ist->st->codec->time_base.num * ticks) /
-                          ist->st->codec->time_base.den;
-    }
-
-    if(ist->dts != AV_NOPTS_VALUE && duration) {
-        ist->next_dts += duration;
-    }else
-        ist->next_dts = AV_NOPTS_VALUE;
 
     ret = avcodec_decode_video2(ist->st->codec,
                                 decoded_frame, got_output, pkt);
@@ -2099,7 +2084,6 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
     if(*best_effort_timestamp != AV_NOPTS_VALUE)
         ist->next_pts = ist->pts = *best_effort_timestamp;
 
-    ist->next_pts += duration;
     pkt->size = 0;
 
     pre_process_video_frame(ist, (AVPicture *)decoded_frame, &buffer_to_free);
@@ -2251,6 +2235,7 @@ static int output_packet(InputStream *ist,
 
     // while we have more to decode or while the decoder did output something on EOF
     while (ist->decoding_needed && (avpkt.size > 0 || (!pkt && got_output))) {
+        int duration;
     handle_eof:
 
         ist->pts = ist->next_pts;
@@ -2268,6 +2253,23 @@ static int output_packet(InputStream *ist,
             break;
         case AVMEDIA_TYPE_VIDEO:
             ret = transcode_video    (ist, &avpkt, &got_output, &pkt_pts);
+            if (avpkt.duration) {
+                duration = av_rescale_q(avpkt.duration, ist->st->time_base, AV_TIME_BASE_Q);
+            } else if(ist->st->codec->time_base.num != 0) {
+                int ticks= ist->st->parser ? ist->st->parser->repeat_pict+1 : ist->st->codec->ticks_per_frame;
+                duration = ((int64_t)AV_TIME_BASE *
+                                ist->st->codec->time_base.num * ticks) /
+                                ist->st->codec->time_base.den;
+            } else
+                duration = 0;
+
+            if(ist->dts != AV_NOPTS_VALUE && duration) {
+                ist->next_dts += duration;
+            }else
+                ist->next_dts = AV_NOPTS_VALUE;
+
+            if (got_output)
+                ist->next_pts += duration; //FIXME the duration is not correct in some cases
             break;
         case AVMEDIA_TYPE_SUBTITLE:
             ret = transcode_subtitles(ist, &avpkt, &got_output);
