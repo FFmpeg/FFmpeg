@@ -2374,8 +2374,9 @@ static int init_input_stream(int ist_index, OutputStream *output_streams, int nb
         assert_avoptions(ist->opts);
     }
 
-    ist->pts = ist->st->avg_frame_rate.num ? - ist->st->codec->has_b_frames * AV_TIME_BASE / av_q2d(ist->st->avg_frame_rate) : 0;
+    ist->dts = ist->st->avg_frame_rate.num ? - ist->st->codec->has_b_frames * AV_TIME_BASE / av_q2d(ist->st->avg_frame_rate) : 0;
     ist->next_pts = AV_NOPTS_VALUE;
+    ist->next_dts = AV_NOPTS_VALUE;
     ist->is_start = 1;
 
     return 0;
