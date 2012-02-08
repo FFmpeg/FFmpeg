@@ -2227,6 +2227,8 @@ static int output_packet(InputStream *ist,
 
     AVPacket avpkt;
 
+    if (ist->next_dts == AV_NOPTS_VALUE)
+        ist->next_dts = ist->dts;
     if (ist->next_pts == AV_NOPTS_VALUE)
         ist->next_pts = ist->pts;
 
@@ -2241,6 +2243,7 @@ static int output_packet(InputStream *ist,
     }
 
     if (pkt->dts != AV_NOPTS_VALUE) {
+        ist->next_dts = ist->dts = av_rescale_q(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q);
         if (ist->st->codec->codec_type != AVMEDIA_TYPE_VIDEO || !ist->decoding_needed)
             ist->next_pts = ist->pts = av_rescale_q(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q);
         pkt_dts = av_rescale_q(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q);
@@ -2253,6 +2256,7 @@ static int output_packet(InputStream *ist,
     handle_eof:
 
         ist->pts = ist->next_pts;
+        ist->dts = ist->next_dts;
 
         if (avpkt.size && avpkt.size != pkt->size) {
             av_log(NULL, ist->showed_multi_packet_warning ? AV_LOG_VERBOSE : AV_LOG_WARNING,
