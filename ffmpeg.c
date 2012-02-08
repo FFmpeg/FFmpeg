@@ -1487,11 +1487,8 @@ static void do_video_stats(AVFormatContext *os, OutputStream *ost,
 }
 
 
-static void do_video_out(AVFormatContext *s,
-                         OutputStream *ost,
-                         InputStream *ist,
-                         AVFrame *in_picture,
-                         float quality)
+static void do_video_out(AVFormatContext *s, OutputStream *ost,
+                         InputStream *ist, AVFrame *in_picture)
 {
     int nb_frames, i, ret, format_video_sync;
     AVFrame *final_picture;
@@ -1499,6 +1496,8 @@ static void do_video_out(AVFormatContext *s,
     double sync_ipts;
     double duration = 0;
     int frame_size = 0;
+    float quality = same_quant ? in_picture->quality
+                               : ost->st->codec->global_quality;
 
     enc = ost->st->codec;
 
@@ -2054,7 +2053,6 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
     AVFrame *decoded_frame;
     void *buffer_to_free = NULL;
     int i, ret = 0;
-    float quality = 0;
     int64_t *best_effort_timestamp;
     AVRational *frame_sample_aspect;
 
@@ -2072,7 +2070,6 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
     if (ret < 0)
         return ret;
 
-    quality = same_quant ? decoded_frame->quality : 0;
     if (!*got_output) {
         /* no picture yet */
         return ret;
@@ -2147,14 +2144,12 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
             }
             if (ost->picref->video && !ost->frame_aspect_ratio)
                 ost->st->codec->sample_aspect_ratio = ost->picref->video->sample_aspect_ratio;
-            do_video_out(output_files[ost->file_index].ctx, ost, ist, filtered_frame,
-                         same_quant ? quality : ost->st->codec->global_quality);
+            do_video_out(output_files[ost->file_index].ctx, ost, ist, filtered_frame);
             cont:
             avfilter_unref_buffer(ost->picref);
         }
 #else
-        do_video_out(output_files[ost->file_index].ctx, ost, ist, decoded_frame,
-                     same_quant ? quality : ost->st->codec->global_quality);
+        do_video_out(output_files[ost->file_index].ctx, ost, ist, decoded_frame);
 #endif
     }
 
