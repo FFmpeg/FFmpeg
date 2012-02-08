@@ -1078,6 +1078,8 @@ static int encode_audio_frame(AVFormatContext *s, OutputStream *ost,
             av_log(NULL, AV_LOG_FATAL, "Audio encoding failed\n");
             exit_program(1);
         }
+
+        ost->sync_opts += frame->nb_samples;
     }
 
     got_packet = 0;
@@ -1100,9 +1102,6 @@ static int encode_audio_frame(AVFormatContext *s, OutputStream *ost,
 
         av_free_packet(&pkt);
     }
-
-    if (frame)
-        ost->sync_opts += frame->nb_samples;
 
     return ret;
 }
@@ -1356,6 +1355,8 @@ static void do_subtitle_out(AVFormatContext *s,
         nb = 1;
 
     for (i = 0; i < nb; i++) {
+        ost->sync_opts = av_rescale_q(pts, ist->st->time_base, enc->time_base);
+
         sub->pts = av_rescale_q(pts, ist->st->time_base, AV_TIME_BASE_Q);
         // start_display_time is required to be 0
         sub->pts               += av_rescale_q(sub->start_display_time, (AVRational){ 1, 1000 }, AV_TIME_BASE_Q);
