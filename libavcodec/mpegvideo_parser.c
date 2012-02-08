@@ -23,11 +23,19 @@
 #include "parser.h"
 #include "mpegvideo.h"
 
+struct MpvParseContext {
+    ParseContext pc;
+    AVRational frame_rate;
+    int progressive_sequence;
+    int width, height;
+};
+
+
 static void mpegvideo_extract_headers(AVCodecParserContext *s,
                                       AVCodecContext *avctx,
                                       const uint8_t *buf, int buf_size)
 {
-    ParseContext1 *pc = s->priv_data;
+    struct MpvParseContext *pc = s->priv_data;
     const uint8_t *buf_end = buf + buf_size;
     uint32_t start_code;
     int frame_rate_index, ext_type, bytes_left;
@@ -131,7 +139,7 @@ static int mpegvideo_parse(AVCodecParserContext *s,
                            const uint8_t **poutbuf, int *poutbuf_size,
                            const uint8_t *buf, int buf_size)
 {
-    ParseContext1 *pc1 = s->priv_data;
+    struct MpvParseContext *pc1 = s->priv_data;
     ParseContext *pc= &pc1->pc;
     int next;
 
@@ -175,8 +183,8 @@ static int mpegvideo_split(AVCodecContext *avctx,
 
 AVCodecParser ff_mpegvideo_parser = {
     .codec_ids      = { CODEC_ID_MPEG1VIDEO, CODEC_ID_MPEG2VIDEO },
-    .priv_data_size = sizeof(ParseContext1),
+    .priv_data_size = sizeof(struct MpvParseContext),
     .parser_parse   = mpegvideo_parse,
-    .parser_close   = ff_parse1_close,
+    .parser_close   = ff_parse_close,
     .split          = mpegvideo_split,
 };
