@@ -2318,6 +2318,8 @@ static int output_packet(InputStream *ist,
             }
             break;
         }
+        ist->pts = ist->dts;
+        ist->next_pts = ist->next_dts;
     }
     for (i = 0; pkt && i < nb_ostreams; i++) {
         OutputStream *ost = &ost_table[i];
