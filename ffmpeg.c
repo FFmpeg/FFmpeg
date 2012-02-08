@@ -1937,7 +1937,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
 static void rate_emu_sleep(InputStream *ist)
 {
     if (input_files[ist->file_index].rate_emu) {
-        int64_t pts = av_rescale(ist->pts, 1000000, AV_TIME_BASE);
+        int64_t pts = av_rescale(ist->dts, 1000000, AV_TIME_BASE);
         int64_t now = av_gettime() - ist->start;
         if (pts > now)
             usleep(pts - now);
