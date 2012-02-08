@@ -2048,7 +2048,7 @@ static int transcode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
     return ret;
 }
 
-static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int64_t *pkt_pts, int64_t *pkt_dts)
+static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int64_t *pkt_pts)
 {
     AVFrame *decoded_frame, *filtered_frame = NULL;
     void *buffer_to_free = NULL;
@@ -2067,7 +2067,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
         avcodec_get_frame_defaults(ist->decoded_frame);
     decoded_frame = ist->decoded_frame;
     pkt->pts  = *pkt_pts;
-    pkt->dts  = *pkt_dts;
+    pkt->dts  = ist->dts;
     *pkt_pts  = AV_NOPTS_VALUE;
 
     if (pkt->duration) {
@@ -2079,10 +2079,10 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
                           ist->st->codec->time_base.den;
     }
 
-    if(*pkt_dts != AV_NOPTS_VALUE && duration) {
-        *pkt_dts += duration;
+    if(ist->dts != AV_NOPTS_VALUE && duration) {
+        ist->next_dts += duration;
     }else
-        *pkt_dts = AV_NOPTS_VALUE;
+        ist->next_dts = AV_NOPTS_VALUE;
 
     ret = avcodec_decode_video2(ist->st->codec,
                                 decoded_frame, got_output, pkt);
@@ -2222,7 +2222,6 @@ static int output_packet(InputStream *ist,
 {
     int ret = 0, i;
     int got_output;
-    int64_t pkt_dts = AV_NOPTS_VALUE;
     int64_t pkt_pts = AV_NOPTS_VALUE;
 
     AVPacket avpkt;
@@ -2246,7 +2245,6 @@ static int output_packet(InputStream *ist,
         ist->next_dts = ist->dts = av_rescale_q(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q);
         if (ist->st->codec->codec_type != AVMEDIA_TYPE_VIDEO || !ist->decoding_needed)
             ist->next_pts = ist->pts = av_rescale_q(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q);
-        pkt_dts = av_rescale_q(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q);
     }
     if(pkt->pts != AV_NOPTS_VALUE)
         pkt_pts = av_rescale_q(pkt->pts, ist->st->time_base, AV_TIME_BASE_Q);
@@ -2269,7 +2267,7 @@ static int output_packet(InputStream *ist,
             ret = transcode_audio    (ist, &avpkt, &got_output);
             break;
         case AVMEDIA_TYPE_VIDEO:
-            ret = transcode_video    (ist, &avpkt, &got_output, &pkt_pts, &pkt_dts);
+            ret = transcode_video    (ist, &avpkt, &got_output, &pkt_pts);
             break;
         case AVMEDIA_TYPE_SUBTITLE:
             ret = transcode_subtitles(ist, &avpkt, &got_output);
