@@ -19,6 +19,8 @@
 #ifndef AVCODEC_ARM_VP8_H
 #define AVCODEC_ARM_VP8_H
 
+#include "config.h"
+
 #if HAVE_ARMV6
 #define decode_block_coeffs_internal ff_decode_block_coeffs_armv6
 int ff_decode_block_coeffs_armv6(VP56RangeCoder *rc, DCTELEM block[16],
