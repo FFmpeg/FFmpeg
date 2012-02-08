@@ -2108,7 +2108,6 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
                                             ist->st->codec->pix_fmt);
 
                 avfilter_copy_frame_props(fb, decoded_frame);
-                fb->pts                 = ist->pts;
                 fb->buf->priv           = buf;
                 fb->buf->free           = filter_release_buffer;
 
