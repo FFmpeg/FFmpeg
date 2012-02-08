@@ -542,7 +542,6 @@ void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufI
 
 SwsFunc ff_yuv2rgb_init_mmx(SwsContext *c);
 SwsFunc ff_yuv2rgb_init_vis(SwsContext *c);
-SwsFunc ff_yuv2rgb_init_mlib(SwsContext *c);
 SwsFunc ff_yuv2rgb_init_altivec(SwsContext *c);
 SwsFunc ff_yuv2rgb_get_func_ptr_bfin(SwsContext *c);
 void ff_bfin_get_unscaled_swscale(SwsContext *c);
@@ -682,7 +681,9 @@ const char *sws_format_name(enum PixelFormat format);
     (av_pix_fmt_descriptors[x].nb_components >= 2          &&  \
      (av_pix_fmt_descriptors[x].flags & PIX_FMT_PLANAR))
 
-#define usePal(x) ((av_pix_fmt_descriptors[x].flags & PIX_FMT_PAL) || (x) == PIX_FMT_Y400A)
+#define usePal(x) ((av_pix_fmt_descriptors[x].flags & PIX_FMT_PAL) ||       \
+                   (av_pix_fmt_descriptors[x].flags & PIX_FMT_PSEUDOPAL) || \
+                   (x) == PIX_FMT_Y400A)
 
 extern const uint64_t ff_dither4[2];
 extern const uint64_t ff_dither8[2];

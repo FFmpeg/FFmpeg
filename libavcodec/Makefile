@@ -718,8 +718,6 @@ OBJS-$(HAVE_PTHREADS)                  += pthread.o
 OBJS-$(HAVE_W32THREADS)                += pthread.o
 OBJS-$(HAVE_OS2THREADS)                += pthread.o
 
-OBJS-$(CONFIG_MLIB)                    += mlib/dsputil_mlib.o           \
-
 # inverse.o contains the ff_inverse table definition, which is used by
 # the FASTDIV macro (from libavutil); since referencing the external
 # table has a negative effect on performance, copy it in libavcodec as
@@ -749,7 +747,7 @@ HOSTPROGS = aac_tablegen aacps_tablegen cbrt_tablegen cos_tablegen      \
             dv_tablegen motionpixels_tablegen mpegaudio_tablegen        \
             pcm_tablegen qdm2_tablegen sinewin_tablegen
 
-DIRS = alpha arm bfin mlib ppc ps2 sh4 sparc x86
+DIRS = alpha arm bfin ppc ps2 sh4 sparc x86
 
 CLEANFILES = *_tables.c *_tables.h *_tablegen$(HOSTEXESUF)
 

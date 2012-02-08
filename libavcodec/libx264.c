@@ -88,12 +88,23 @@ static void X264_log(void *p, int level, const char *fmt, va_list args)
 }
 
 
-static int encode_nals(AVCodecContext *ctx, uint8_t *buf, int size,
-                       x264_nal_t *nals, int nnal, int skip_sei)
+static int encode_nals(AVCodecContext *ctx, AVPacket *pkt,
+                       x264_nal_t *nals, int nnal)
 {
     X264Context *x4 = ctx->priv_data;
-    uint8_t *p = buf;
-    int i;
+    uint8_t *p;
+    int i, size = x4->sei_size, ret;
+
+    if (!nnal)
+        return 0;
+
+    for (i = 0; i < nnal; i++)
+        size += nals[i].i_payload;
+
+    if ((ret = ff_alloc_packet(pkt, size)) < 0)
+        return ret;
+
+    p = pkt->data;
 
     /* Write the SEI as part of the first frame. */
     if (x4->sei_size > 0 && nnal > 0) {
@@ -108,23 +119,11 @@ static int encode_nals(AVCodecContext *ctx, uint8_t *buf, int size,
     }
 
     for (i = 0; i < nnal; i++){
-        /* Don't put the SEI in extradata. */
-        if (skip_sei && nals[i].i_type == NAL_SEI) {
-            x4->sei_size = nals[i].i_payload;
-            x4->sei      = av_malloc(x4->sei_size);
-            memcpy(x4->sei, nals[i].p_payload, nals[i].i_payload);
-            continue;
-        }
-        if (nals[i].i_payload > (size - (p - buf))) {
-            // return only complete nals which fit in buf
-            av_log(ctx, AV_LOG_ERROR, "Error: nal buffer is too small\n");
-            break;
-        }
         memcpy(p, nals[i].p_payload, nals[i].i_payload);
         p += nals[i].i_payload;
     }
 
-    return p - buf;
+    return 1;
 }
 
 static int avfmt2_num_planes(int avfmt)
@@ -146,15 +145,13 @@ static int avfmt2_num_planes(int avfmt)
     }
 }
 
-static int X264_frame(AVCodecContext *ctx, uint8_t *buf,
-                      int orig_bufsize, void *data)
+static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
+                      int *got_packet)
 {
     X264Context *x4 = ctx->priv_data;
-    AVFrame *frame = data;
     x264_nal_t *nal;
-    int nnal, i;
+    int nnal, i, ret;
     x264_picture_t pic_out;
-    int bufsize;
 
     x264_picture_init( &x4->pic );
     x4->pic.img.i_csp   = x4->params.i_csp;
@@ -187,17 +184,16 @@ static int X264_frame(AVCodecContext *ctx, uint8_t *buf,
     }
 
     do {
-        bufsize = orig_bufsize;
         if (x264_encoder_encode(x4->enc, &nal, &nnal, frame? &x4->pic: NULL, &pic_out) < 0)
             return -1;
 
-        bufsize = encode_nals(ctx, buf, bufsize, nal, nnal, 0);
-        if (bufsize < 0)
+        ret = encode_nals(ctx, pkt, nal, nnal);
+        if (ret < 0)
             return -1;
-    } while (!bufsize && !frame && x264_encoder_delayed_frames(x4->enc));
+    } while (!ret && !frame && x264_encoder_delayed_frames(x4->enc));
 
-    /* FIXME: libx264 now provides DTS, but AVFrame doesn't have a field for it. */
-    x4->out_pic.pts = pic_out.i_pts;
+    pkt->pts = pic_out.i_pts;
+    pkt->dts = pic_out.i_dts;
 
     switch (pic_out.i_type) {
     case X264_TYPE_IDR:
@@ -213,11 +209,12 @@ static int X264_frame(AVCodecContext *ctx, uint8_t *buf,
         break;
     }
 
-    x4->out_pic.key_frame = pic_out.b_keyframe;
-    if (bufsize)
+    pkt->flags |= AV_PKT_FLAG_KEY*pic_out.b_keyframe;
+    if (ret)
         x4->out_pic.quality = (pic_out.i_qpplus1 - 1) * FF_QP2LAMBDA;
 
-    return bufsize;
+    *got_packet = ret;
+    return 0;
 }
 
 static av_cold int X264_close(AVCodecContext *avctx)
@@ -485,16 +482,25 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
     if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
         x264_nal_t *nal;
+        uint8_t *p;
         int nnal, s, i;
 
         s = x264_encoder_headers(x4->enc, &nal, &nnal);
+        avctx->extradata = p = av_malloc(s);
 
-        for (i = 0; i < nnal; i++)
-            if (nal[i].i_type == NAL_SEI)
+        for (i = 0; i < nnal; i++) {
+            /* Don't put the SEI in extradata. */
+            if (nal[i].i_type == NAL_SEI) {
                 av_log(avctx, AV_LOG_INFO, "%s\n", nal[i].p_payload+25);
-
-        avctx->extradata      = av_malloc(s);
-        avctx->extradata_size = encode_nals(avctx, avctx->extradata, s, nal, nnal, 1);
+                x4->sei_size = nal[i].i_payload;
+                x4->sei      = av_malloc(x4->sei_size);
+                memcpy(x4->sei, nal[i].p_payload, nal[i].i_payload);
+                continue;
+            }
+            memcpy(p, nal[i].p_payload, nal[i].i_payload);
+            p += nal[i].i_payload;
+        }
+        avctx->extradata_size = p - avctx->extradata;
     }
 
     return 0;
@@ -634,7 +640,7 @@ AVCodec ff_libx264_encoder = {
     .id             = CODEC_ID_H264,
     .priv_data_size = sizeof(X264Context),
     .init           = X264_init,
-    .encode         = X264_frame,
+    .encode2        = X264_frame,
     .close          = X264_close,
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_AUTO_THREADS,
     .long_name      = NULL_IF_CONFIG_SMALL("libx264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),

@@ -205,7 +205,6 @@ External library support:
   --enable-libxvid         enable Xvid encoding via xvidcore,
                            native MPEG-4/Xvid encoder exists [no]
   --enable-openal          enable OpenAL 1.1 capture support [no]
-  --enable-mlib            enable Sun medialib [no]
   --enable-openssl         enable openssl [no]
   --enable-zlib            enable zlib [autodetect]
 
@@ -1062,7 +1061,6 @@ CONFIG_LIST="
     lsp
     mdct
     memalign_hack
-    mlib
     mpegaudiodsp
     network
     nonfree
@@ -3179,7 +3177,6 @@ enabled openal     && { { for al_libs in "${OPENAL_LIBS}" "-lopenal" "-lOpenAL32
                         die "ERROR: openal not found"; } &&
                       { check_cpp_condition "AL/al.h" "defined(AL_VERSION_1_1)" ||
                         die "ERROR: openal version must be 1.1 or compatible"; }
-enabled mlib       && require  mediaLib mlib_types.h mlib_VectorSub_S16_U8_Mod -lmlib
 enabled openssl    && { check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto ||
                         check_lib openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
                         check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
@@ -3478,7 +3475,6 @@ echo "network support           ${network-no}"
 echo "threading support         ${thread_type-no}"
 echo "safe bitstream reader     ${safe_bitstream_reader-no}"
 echo "SDL support               ${sdl-no}"
-echo "Sun medialib support      ${mlib-no}"
 echo "libdxva2 enabled          ${dxva2-no}"
 echo "libva enabled             ${vaapi-no}"
 echo "libvdpau enabled          ${vdpau-no}"

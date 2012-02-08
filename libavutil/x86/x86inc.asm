@@ -40,6 +40,8 @@
 %if ARCH_X86_64
     %ifidn __OUTPUT_FORMAT__,win32
         %define WIN64  1
+    %elifidn __OUTPUT_FORMAT__,win64
+        %define WIN64  1
     %else
         %define UNIX64 1
     %endif
@@ -290,7 +292,11 @@ DECLARE_REG 6, rax, eax, ax,  al,  [rsp + stack_offset + 56]
         push r5
         %assign stack_offset stack_offset+16
     %endif
-    WIN64_SPILL_XMM %3
+    %if mmsize == 8
+        %assign xmm_regs_used 0
+    %else
+        WIN64_SPILL_XMM %3
+    %endif
     LOAD_IF_USED 4, %1
     LOAD_IF_USED 5, %1
     LOAD_IF_USED 6, %1
@@ -299,9 +305,6 @@ DECLARE_REG 6, rax, eax, ax,  al,  [rsp + stack_offset + 56]
 
 %macro WIN64_SPILL_XMM 1
     %assign xmm_regs_used %1
-    %if mmsize == 8
-        %assign xmm_regs_used 0
-    %endif
     ASSERT xmm_regs_used <= 16
     %if xmm_regs_used > 6
         sub rsp, (xmm_regs_used-6)*16+16

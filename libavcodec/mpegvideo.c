@@ -191,8 +191,6 @@ av_cold int ff_dct_common_init(MpegEncContext *s)
     MPV_common_init_mmx(s);
 #elif ARCH_ALPHA
     MPV_common_init_axp(s);
-#elif CONFIG_MLIB
-    MPV_common_init_mlib(s);
 #elif HAVE_MMI
     MPV_common_init_mmi(s);
 #elif ARCH_ARM

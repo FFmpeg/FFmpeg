@@ -72,7 +72,8 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     }
 
     /* copy palette */
-    if (priv->pix_desc->flags & PIX_FMT_PAL)
+    if (priv->pix_desc->flags & PIX_FMT_PAL ||
+        priv->pix_desc->flags & PIX_FMT_PSEUDOPAL)
         memcpy(outpicref->data[1], outpicref->data[1], 256*4);
 
     avfilter_start_frame(outlink, avfilter_ref_buffer(outpicref, ~0));

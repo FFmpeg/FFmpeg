@@ -1385,9 +1385,6 @@ static void do_subtitle_out(AVFormatContext *s,
     }
 }
 
-static int bit_buffer_size = 1024 * 256;
-static uint8_t *bit_buffer = NULL;
-
 static void do_video_resample(OutputStream *ost,
                               InputStream *ist,
                               AVFrame *in_picture,
@@ -1513,6 +1510,8 @@ static void do_video_out(AVFormatContext *s,
     for (i = 0; i < nb_frames; i++) {
         AVPacket pkt;
         av_init_packet(&pkt);
+        pkt.data = NULL;
+        pkt.size = 0;
 
         if (s->oformat->flags & AVFMT_RAWPICTURE &&
             enc->codec->id == CODEC_ID_RAWVIDEO) {
@@ -1528,6 +1527,7 @@ static void do_video_out(AVFormatContext *s,
 
             write_frame(s, &pkt, ost);
         } else {
+            int got_packet;
             AVFrame big_picture;
 
             big_picture = *final_picture;
@@ -1552,29 +1552,27 @@ static void do_video_out(AVFormatContext *s,
                 big_picture.pict_type = AV_PICTURE_TYPE_I;
                 ost->forced_kf_index++;
             }
-            ret = avcodec_encode_video(enc,
-                                       bit_buffer, bit_buffer_size,
-                                       &big_picture);
+            ret = avcodec_encode_video2(enc, &pkt, &big_picture, &got_packet);
             if (ret < 0) {
                 av_log(NULL, AV_LOG_FATAL, "Video encoding failed\n");
                 exit_program(1);
             }
 
-            if (ret > 0) {
-                pkt.data = bit_buffer;
-                pkt.size = ret;
-                if (!(enc->codec->capabilities & CODEC_CAP_DELAY))
-                    pkt.pts = av_rescale_q(ost->sync_opts, enc->time_base, ost->st->time_base);
-                if (enc->coded_frame->pts != AV_NOPTS_VALUE)
-                    pkt.pts = av_rescale_q(enc->coded_frame->pts, enc->time_base, ost->st->time_base);
+            if (got_packet) {
+                if (pkt.pts == AV_NOPTS_VALUE && !(enc->codec->capabilities & CODEC_CAP_DELAY))
+                    pkt.pts = ost->sync_opts;
 
-                if (enc->coded_frame->key_frame)
-                    pkt.flags |= AV_PKT_FLAG_KEY;
+                if (pkt.pts != AV_NOPTS_VALUE)
+                    pkt.pts = av_rescale_q(pkt.pts, enc->time_base, ost->st->time_base);
+                if (pkt.dts != AV_NOPTS_VALUE)
+                    pkt.dts = av_rescale_q(pkt.dts, enc->time_base, ost->st->time_base);
+
                 if (format_video_sync == VSYNC_DROP)
                     pkt.pts = pkt.dts = AV_NOPTS_VALUE;
+
                 write_frame(s, &pkt, ost);
-                *frame_size = ret;
-                video_size += ret;
+                *frame_size = pkt.size;
+                video_size += pkt.size;
 
                 /* if two pass, output log */
                 if (ost->logfile && enc->stats_out) {
@@ -1789,7 +1787,7 @@ static void flush_encoders(OutputStream *ost_table, int nb_ostreams)
 
         for (;;) {
             AVPacket pkt;
-            int fifo_bytes;
+            int fifo_bytes, got_packet;
             av_init_packet(&pkt);
             pkt.data = NULL;
             pkt.size = 0;
@@ -1822,25 +1820,23 @@ static void flush_encoders(OutputStream *ost_table, int nb_ostreams)
                 }
                 break;
             case AVMEDIA_TYPE_VIDEO:
-                ret = avcodec_encode_video(enc, bit_buffer, bit_buffer_size, NULL);
+                ret = avcodec_encode_video2(enc, &pkt, NULL, &got_packet);
                 if (ret < 0) {
                     av_log(NULL, AV_LOG_FATAL, "Video encoding failed\n");
                     exit_program(1);
                 }
-                video_size += ret;
-                if (enc->coded_frame && enc->coded_frame->key_frame)
-                    pkt.flags |= AV_PKT_FLAG_KEY;
+                video_size += pkt.size;
                 if (ost->logfile && enc->stats_out) {
                     fprintf(ost->logfile, "%s", enc->stats_out);
                 }
-                if (ret <= 0) {
+                if (!got_packet) {
                     stop_encoding = 1;
                     break;
                 }
-                pkt.data = bit_buffer;
-                pkt.size = ret;
-                if (enc->coded_frame && enc->coded_frame->pts != AV_NOPTS_VALUE)
-                    pkt.pts = av_rescale_q(enc->coded_frame->pts, enc->time_base, ost->st->time_base);
+                if (pkt.pts != AV_NOPTS_VALUE)
+                    pkt.pts = av_rescale_q(pkt.pts, enc->time_base, ost->st->time_base);
+                if (pkt.dts != AV_NOPTS_VALUE)
+                    pkt.dts = av_rescale_q(pkt.dts, enc->time_base, ost->st->time_base);
                 write_frame(os, &pkt, ost);
                 break;
             default:
@@ -2668,19 +2664,6 @@ static int transcode_init(OutputFile *output_files, int nb_output_files,
                 }
             }
         }
-        if (codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-            /* maximum video buffer size is 8-bytes per pixel, plus DPX header size (1664)*/
-            int size        = codec->width * codec->height;
-            bit_buffer_size = FFMAX(bit_buffer_size, 9*size + 10000);
-        }
-    }
-
-    if (!bit_buffer)
-        bit_buffer = av_malloc(bit_buffer_size);
-    if (!bit_buffer) {
-        av_log(NULL, AV_LOG_ERROR, "Cannot allocate %d bytes output buffer\n",
-               bit_buffer_size);
-        return AVERROR(ENOMEM);
     }
 
     /* open each encoder */
@@ -3118,7 +3101,6 @@ static int transcode(OutputFile *output_files, int nb_output_files,
     ret = 0;
 
  fail:
-    av_freep(&bit_buffer);
     av_freep(&no_packet);
 
     if (output_streams) {
