@@ -30,4 +30,9 @@
  */
 void ff_ape_parse_tag(AVFormatContext *s);
 
+/**
+ * Write an APEv2 tag
+ */
+void ff_ape_write(AVFormatContext *s);
+
 #endif /* AVFORMAT_APETAG_H */
