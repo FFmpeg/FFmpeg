@@ -39,7 +39,7 @@ AVBitStreamFilterContext *av_bitstream_filter_init(const char *name){
         if(!strcmp(name, bsf->name)){
             AVBitStreamFilterContext *bsfc= av_mallocz(sizeof(AVBitStreamFilterContext));
             bsfc->filter= bsf;
-            bsfc->priv_data= av_mallocz(bsf->priv_data_size);
+            bsfc->priv_data = bsf->priv_data_size ? av_mallocz(bsf->priv_data_size) : NULL;
             return bsfc;
         }
         bsf= bsf->next;
