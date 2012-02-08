@@ -2135,10 +2135,10 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
                 goto cont;
             }
             if (!ist->filtered_frame && !(ist->filtered_frame = avcodec_alloc_frame())) {
-                av_free(buffer_to_free);
-                return AVERROR(ENOMEM);
-            } else
-                avcodec_get_frame_defaults(ist->filtered_frame);
+                ret = AVERROR(ENOMEM);
+                goto end;
+            }
+            avcodec_get_frame_defaults(ist->filtered_frame);
             filtered_frame = ist->filtered_frame;
             *filtered_frame= *decoded_frame; //for me_threshold
             if (ost->picref) {
@@ -2158,6 +2158,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
 #endif
     }
 
+end:
     av_free(buffer_to_free);
     return ret;
 }
