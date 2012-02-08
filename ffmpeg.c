@@ -3027,9 +3027,9 @@ static int transcode(OutputFile *output_files, int nb_output_files,
         if (pkt.dts != AV_NOPTS_VALUE)
             pkt.dts *= ist->ts_scale;
 
-        //fprintf(stderr, "next:%"PRId64" dts:%"PRId64" off:%"PRId64" %d\n",
+        //fprintf(stderr, "next:%"PRId64" dts:%"PRId64"/%"PRId64" off:%"PRId64" %d\n",
         //        ist->next_dts,
-        //        pkt.dts, input_files[ist->file_index].ts_offset,
+        //        ist->dts, av_rescale_q(pkt.dts, ist->st->time_base, AV_TIME_BASE_Q), input_files[ist->file_index].ts_offset,
         //        ist->st->codec->codec_type);
         if (pkt.dts != AV_NOPTS_VALUE && ist->next_dts != AV_NOPTS_VALUE
             && (is->iformat->flags & AVFMT_TS_DISCONT)) {
