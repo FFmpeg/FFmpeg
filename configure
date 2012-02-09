@@ -867,6 +867,7 @@ static void sighandler(int sig){
 int func(void){
     $code
 }
+int (*func_ptr)(void) = func;
 int main(void){
     signal(SIGILL, sighandler);
     signal(SIGFPE, sighandler);
@@ -874,7 +875,7 @@ int main(void){
 #ifdef SIGBUS
     signal(SIGBUS, sighandler);
 #endif
-    return func();
+    return func_ptr();
 }
 EOF
 }
