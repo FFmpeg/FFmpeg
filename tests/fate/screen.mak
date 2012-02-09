@@ -1,3 +1,4 @@
+# FIXME dropped frames in this test because of coarse timebase
 FATE_SCREEN += fate-cscd
 fate-cscd: CMD = framecrc -i $(SAMPLES)/CSCD/sample_video.avi -an -pix_fmt rgb24
 

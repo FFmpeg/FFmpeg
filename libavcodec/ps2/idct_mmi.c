@@ -359,4 +359,3 @@ void ff_mmi_idct_add(uint8_t *dest, int line_size, DCTELEM *block)
         //let savedtemp regs be saved
         __asm__ volatile(" ":::"$16", "$17", "$18", "$19", "$20", "$21", "$22", "$23");
 }
-

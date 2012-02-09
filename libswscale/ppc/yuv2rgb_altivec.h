@@ -24,6 +24,10 @@
 #ifndef SWSCALE_PPC_YUV2RGB_ALTIVEC_H
 #define SWSCALE_PPC_YUV2RGB_ALTIVEC_H
 
+#include <stdint.h>
+
+#include "libswscale/swscale_internal.h"
+
 #define YUV2PACKEDX_HEADER(suffix)                                  \
     void ff_yuv2 ## suffix ## _X_altivec(SwsContext *c,             \
                                          const int16_t *lumFilter,  \

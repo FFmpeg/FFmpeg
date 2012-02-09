@@ -278,5 +278,3 @@ DEFUN(vp3_idct,mL1,
     unlink;
     RTS;
 DEFUN_END(vp3_idct)
-
-

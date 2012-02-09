@@ -26,6 +26,7 @@
 
 #include "avcodec.h"
 #include "raw.h"
+#include "internal.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/intreadwrite.h"
 
@@ -40,19 +41,29 @@ static av_cold int raw_init_encoder(AVCodecContext *avctx)
     return 0;
 }
 
-static int raw_encode(AVCodecContext *avctx,
-                            unsigned char *frame, int buf_size, void *data)
+static int raw_encode(AVCodecContext *avctx, AVPacket *pkt,
+                      const AVFrame *frame, int *got_packet)
 {
-    int ret = avpicture_layout((AVPicture *)data, avctx->pix_fmt, avctx->width,
-                                               avctx->height, frame, buf_size);
+    int ret = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
+
+    if (ret < 0)
+        return ret;
+
+    if ((ret = ff_alloc_packet(pkt, ret)) < 0)
+        return ret;
+    if ((ret = avpicture_layout((const AVPicture *)frame, avctx->pix_fmt, avctx->width,
+                                avctx->height, pkt->data, pkt->size)) < 0)
+        return ret;
 
     if(avctx->codec_tag == AV_RL32("yuv2") && ret > 0 &&
        avctx->pix_fmt   == PIX_FMT_YUYV422) {
         int x;
         for(x = 1; x < avctx->height*avctx->width*2; x += 2)
-            frame[x] ^= 0x80;
+            pkt->data[x] ^= 0x80;
     }
-    return ret;
+    pkt->flags |= AV_PKT_FLAG_KEY;
+    *got_packet = 1;
+    return 0;
 }
 
 AVCodec ff_rawvideo_encoder = {
@@ -61,6 +72,6 @@ AVCodec ff_rawvideo_encoder = {
     .id             = CODEC_ID_RAWVIDEO,
     .priv_data_size = sizeof(AVFrame),
     .init           = raw_init_encoder,
-    .encode         = raw_encode,
+    .encode2        = raw_encode,
     .long_name = NULL_IF_CONFIG_SMALL("raw video"),
 };

@@ -41,5 +41,3 @@ void ff_bfin_vp3_idct_add (uint8_t *dest, int line_size, DCTELEM *block)
     ff_bfin_vp3_idct (block);
     ff_bfin_add_pixels_clamped (block, dest, line_size);
 }
-
-

@@ -215,4 +215,3 @@ void idct_add_altivec(uint8_t* dest, int stride, int16_t *blk)
     ADD (dest, vx6, perm0)      dest += stride;
     ADD (dest, vx7, perm1)
 }
-

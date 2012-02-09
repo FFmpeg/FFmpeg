@@ -164,4 +164,3 @@ void dsputil_init_mmi(DSPContext* c, AVCodecContext *avctx)
         c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
     }
 }
-

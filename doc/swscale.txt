@@ -96,4 +96,3 @@ would benefit from it.
 Also, as already hinted at, initFilter() accepts an optional convolutional
 filter as input that can be used for contrast, saturation, blur, sharpening
 shift, chroma vs. luma shift, ...
-

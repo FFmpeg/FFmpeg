@@ -490,7 +490,8 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
     /* sanity check PreviousPartition if set */
     if (partition->previous_partition &&
         mxf->run_in + partition->previous_partition >= klv_offset) {
-        av_log(mxf->fc, AV_LOG_ERROR, "PreviousPartition points to this partition or forward\n");
+        av_log(mxf->fc, AV_LOG_ERROR,
+               "PreviousPartition points to this partition or forward\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -1107,7 +1108,6 @@ static int mxf_compute_ptses_fake_index(MXFContext *mxf, MXFIndexTable *index_ta
 
         if (s->nb_index_entries == 2 * s->index_duration + 1) {
             index_delta = 2;    /* Avid index */
-
             /* ignore the last entry - it's the size of the essence container */
             n--;
         }
@@ -1117,7 +1117,8 @@ static int mxf_compute_ptses_fake_index(MXFContext *mxf, MXFIndexTable *index_ta
             int index  = x + offset;
 
             if (x >= index_table->nb_ptses) {
-                av_log(mxf->fc, AV_LOG_ERROR, "x >= nb_ptses - IndexEntryCount %i < IndexDuration %"PRId64"?\n",
+                av_log(mxf->fc, AV_LOG_ERROR,
+                       "x >= nb_ptses - IndexEntryCount %i < IndexDuration %"PRId64"?\n",
                        s->nb_index_entries, s->index_duration);
                 break;
             }
@@ -1401,8 +1402,10 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 st->codec->codec_id = container_ul->id;
             st->codec->channels = descriptor->channels;
             st->codec->bits_per_coded_sample = descriptor->bits_per_sample;
+
             if (descriptor->sample_rate.den > 0)
-            st->codec->sample_rate = descriptor->sample_rate.num / descriptor->sample_rate.den;
+                st->codec->sample_rate = descriptor->sample_rate.num / descriptor->sample_rate.den;
+
             /* TODO: implement CODEC_ID_RAWAUDIO */
             if (st->codec->codec_id == CODEC_ID_PCM_S16LE) {
                 if (descriptor->bits_per_sample > 16 && descriptor->bits_per_sample <= 24)
@@ -1496,14 +1499,15 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
         else if ((ret = read_child(ctx, pb, tag, size, uid, -1)) < 0)
             return ret;
 
-        /* accept the 64k local set limit being exceeded (Avid)
-         * don't accept it extending past the end of the KLV though (zzuf5.mxf) */
+        /* Accept the 64k local set limit being exceeded (Avid). Don't accept
+         * it extending past the end of the KLV though (zzuf5.mxf). */
         if (avio_tell(pb) > klv_end) {
-            av_log(mxf->fc, AV_LOG_ERROR, "local tag %#04x extends past end of local set @ %#"PRIx64"\n",
+            av_log(mxf->fc, AV_LOG_ERROR,
+                   "local tag %#04x extends past end of local set @ %#"PRIx64"\n",
                    tag, klv->offset);
             return AVERROR_INVALIDDATA;
         } else if (avio_tell(pb) <= next)   /* only seek forward, else this can loop for a long time */
-        avio_seek(pb, next, SEEK_SET);
+            avio_seek(pb, next, SEEK_SET);
     }
     if (ctx_size) ctx->type = type;
     return ctx_size ? mxf_add_metadata_set(mxf, ctx) : 0;
@@ -1628,8 +1632,9 @@ static int is_pcm(enum CodecID codec_id)
 }
 
 /**
- * Deals with the case where for some audio atoms EditUnitByteCount is very small (2, 4..).
- * In those cases we should read more than one sample per call to mxf_read_packet().
+ * Deal with the case where for some audio atoms EditUnitByteCount is
+ * very small (2, 4..). In those cases we should read more than one
+ * sample per call to mxf_read_packet().
  */
 static void mxf_handle_small_eubc(AVFormatContext *s)
 {
@@ -1641,15 +1646,18 @@ static void mxf_handle_small_eubc(AVFormatContext *s)
         return;
 
     /* expect PCM with exactly one index table segment and a small (< 32) EUBC */
-    if (s->nb_streams != 1 || s->streams[0]->codec->codec_type != AVMEDIA_TYPE_AUDIO ||
-        !is_pcm(s->streams[0]->codec->codec_id) || mxf->nb_index_tables != 1 ||
-        mxf->index_tables[0].nb_segments != 1 ||
+    if (s->nb_streams != 1                                     ||
+        s->streams[0]->codec->codec_type != AVMEDIA_TYPE_AUDIO ||
+        !is_pcm(s->streams[0]->codec->codec_id)                ||
+        mxf->nb_index_tables != 1                              ||
+        mxf->index_tables[0].nb_segments != 1                  ||
         mxf->index_tables[0].segments[0]->edit_unit_byte_count >= 32)
         return;
 
     /* arbitrarily default to 48 kHz PAL audio frame size */
-    /* TODO: we could compute this from the ratio between the audio and video edit rates
-     *       for 48 kHz NTSC we could use the 1802-1802-1802-1802-1801 pattern */
+    /* TODO: We could compute this from the ratio between the audio
+     *       and video edit rates for 48 kHz NTSC we could use the
+     *       1802-1802-1802-1802-1801 pattern. */
     mxf->edit_units_per_packet = 1920;
 }
 
@@ -1799,7 +1807,8 @@ static void mxf_packet_timestamps(MXFContext *mxf, AVPacket *pkt)
     int64_t last_ofs = -1, next_ofs;
     MXFIndexTable *t = &mxf->index_tables[0];
 
-    /* this is called from the OP1a demuxing logic, which means there may be no index tables */
+    /* this is called from the OP1a demuxing logic, which means there
+     * may be no index tables */
     if (mxf->nb_index_tables <= 0)
         return;
 
@@ -1809,9 +1818,10 @@ static void mxf_packet_timestamps(MXFContext *mxf, AVPacket *pkt)
             break;
 
         if (next_ofs <= last_ofs) {
-            /* large next_ofs didn't change or current_edit_unit wrapped around
-             * this fixes the infinite loop on zzuf3.mxf */
-            av_log(mxf->fc, AV_LOG_ERROR, "next_ofs didn't change. not deriving packet timestamps\n");
+            /* large next_ofs didn't change or current_edit_unit wrapped
+             * around this fixes the infinite loop on zzuf3.mxf */
+            av_log(mxf->fc, AV_LOG_ERROR,
+                   "next_ofs didn't change. not deriving packet timestamps\n");
             return;
         }
 

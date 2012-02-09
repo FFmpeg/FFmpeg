@@ -107,4 +107,3 @@ one with score 3)
 
 Author: Michael niedermayer
 Copyright LGPL
-
