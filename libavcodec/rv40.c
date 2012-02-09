@@ -80,18 +80,18 @@ static av_cold void rv40_init_tables(void)
     for(i = 0; i < NUM_PTYPE_VLCS; i++){
         ptype_vlc[i].table = &ptype_table[i << PTYPE_VLC_BITS];
         ptype_vlc[i].table_allocated = 1 << PTYPE_VLC_BITS;
-        init_vlc_sparse(&ptype_vlc[i], PTYPE_VLC_BITS, PTYPE_VLC_SIZE,
-                         ptype_vlc_bits[i],  1, 1,
-                         ptype_vlc_codes[i], 1, 1,
-                         ptype_vlc_syms,     1, 1, INIT_VLC_USE_NEW_STATIC);
+        ff_init_vlc_sparse(&ptype_vlc[i], PTYPE_VLC_BITS, PTYPE_VLC_SIZE,
+                            ptype_vlc_bits[i],  1, 1,
+                            ptype_vlc_codes[i], 1, 1,
+                            ptype_vlc_syms,     1, 1, INIT_VLC_USE_NEW_STATIC);
     }
     for(i = 0; i < NUM_BTYPE_VLCS; i++){
         btype_vlc[i].table = &btype_table[i << BTYPE_VLC_BITS];
         btype_vlc[i].table_allocated = 1 << BTYPE_VLC_BITS;
-        init_vlc_sparse(&btype_vlc[i], BTYPE_VLC_BITS, BTYPE_VLC_SIZE,
-                         btype_vlc_bits[i],  1, 1,
-                         btype_vlc_codes[i], 1, 1,
-                         btype_vlc_syms,     1, 1, INIT_VLC_USE_NEW_STATIC);
+        ff_init_vlc_sparse(&btype_vlc[i], BTYPE_VLC_BITS, BTYPE_VLC_SIZE,
+                            btype_vlc_bits[i],  1, 1,
+                            btype_vlc_codes[i], 1, 1,
+                            btype_vlc_syms,     1, 1, INIT_VLC_USE_NEW_STATIC);
     }
 }
 

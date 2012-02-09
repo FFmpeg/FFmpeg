@@ -253,9 +253,9 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
    (byte/word/long) to store the 'bits', 'codes', and 'symbols' tables.
 
    'use_static' should be set to 1 for tables, which should be freed
-   with av_free_static(), 0 if free_vlc() will be used.
+   with av_free_static(), 0 if ff_free_vlc() will be used.
 */
-int init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
+int ff_init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
              const void *bits, int bits_wrap, int bits_size,
              const void *codes, int codes_wrap, int codes_size,
              const void *symbols, int symbols_wrap, int symbols_size,
@@ -318,7 +318,7 @@ int init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
 }
 
 
-void free_vlc(VLC *vlc)
+void ff_free_vlc(VLC *vlc)
 {
     av_freep(&vlc->table);
 }

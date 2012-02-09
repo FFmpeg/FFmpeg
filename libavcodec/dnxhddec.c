@@ -79,9 +79,9 @@ static int dnxhd_init_vlc(DNXHDContext *ctx, int cid)
         }
         ctx->cid_table = &ff_dnxhd_cid_table[index];
 
-        free_vlc(&ctx->ac_vlc);
-        free_vlc(&ctx->dc_vlc);
-        free_vlc(&ctx->run_vlc);
+        ff_free_vlc(&ctx->ac_vlc);
+        ff_free_vlc(&ctx->dc_vlc);
+        ff_free_vlc(&ctx->run_vlc);
 
         init_vlc(&ctx->ac_vlc, DNXHD_VLC_BITS, 257,
                  ctx->cid_table->ac_bits, 1, 1,
@@ -391,9 +391,9 @@ static av_cold int dnxhd_decode_close(AVCodecContext *avctx)
 
     if (ctx->picture.data[0])
         avctx->release_buffer(avctx, &ctx->picture);
-    free_vlc(&ctx->ac_vlc);
-    free_vlc(&ctx->dc_vlc);
-    free_vlc(&ctx->run_vlc);
+    ff_free_vlc(&ctx->ac_vlc);
+    ff_free_vlc(&ctx->dc_vlc);
+    ff_free_vlc(&ctx->run_vlc);
     return 0;
 }
 

@@ -693,8 +693,8 @@ av_cold void ff_mpeg12_init_vlcs(void)
         INIT_VLC_STATIC(&mb_btype_vlc, MB_BTYPE_VLC_BITS, 11,
                         &table_mb_btype[0][1], 2, 1,
                         &table_mb_btype[0][0], 2, 1, 64);
-        init_rl(&ff_rl_mpeg1, ff_mpeg12_static_rl_table_store[0]);
-        init_rl(&ff_rl_mpeg2, ff_mpeg12_static_rl_table_store[1]);
+        ff_init_rl(&ff_rl_mpeg1, ff_mpeg12_static_rl_table_store[0]);
+        ff_init_rl(&ff_rl_mpeg2, ff_mpeg12_static_rl_table_store[1]);
 
         INIT_2D_VLC_RL(ff_rl_mpeg1, 680);
         INIT_2D_VLC_RL(ff_rl_mpeg2, 674);

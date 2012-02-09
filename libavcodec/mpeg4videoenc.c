@@ -1230,7 +1230,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
         init_uni_dc_tab();
 
-        init_rl(&ff_mpeg4_rl_intra, ff_mpeg4_static_rl_table_store[0]);
+        ff_init_rl(&ff_mpeg4_rl_intra, ff_mpeg4_static_rl_table_store[0]);
 
         init_uni_mpeg4_rl_tab(&ff_mpeg4_rl_intra, uni_mpeg4_intra_rl_bits, uni_mpeg4_intra_rl_len);
         init_uni_mpeg4_rl_tab(&ff_h263_rl_inter, uni_mpeg4_inter_rl_bits, uni_mpeg4_inter_rl_len);
