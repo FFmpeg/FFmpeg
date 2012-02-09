@@ -62,7 +62,7 @@ static void end_frame(AVFilterLink *inlink)
     av_log(ctx, AV_LOG_INFO,
            "n:%d pts:%s pts_time:%s pos:%"PRId64" "
            "fmt:%s sar:%d/%d s:%dx%d i:%c iskey:%d type:%c "
-           "checksum:%08X plane_checksum:[%08X %08X %08X %08X]\n",
+           "checksum:%08X plane_checksum:[%08X",
            showinfo->frame,
            av_ts2str(picref->pts), av_ts2timestr(picref->pts, &inlink->time_base), picref->pos,
            av_pix_fmt_descriptors[picref->format].name,
@@ -72,7 +72,11 @@ static void end_frame(AVFilterLink *inlink)
            picref->video->top_field_first ? 'T' : 'B',    /* Top / Bottom */
            picref->video->key_frame,
            av_get_picture_type_char(picref->video->pict_type),
-           checksum, plane_checksum[0], plane_checksum[1], plane_checksum[2], plane_checksum[3]);
+           checksum, plane_checksum[0]);
+
+    for (plane = 1; picref->data[plane] && plane < 4; plane++)
+        av_log(ctx, AV_LOG_INFO, " %08X", plane_checksum[plane]);
+    av_log(ctx, AV_LOG_INFO, "]\n");
 
     showinfo->frame++;
     avfilter_end_frame(inlink->dst->outputs[0]);
