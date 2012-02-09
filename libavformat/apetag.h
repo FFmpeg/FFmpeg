@@ -30,4 +30,4 @@
  */
 void ff_ape_parse_tag(AVFormatContext *s);
 
-#endif /* AVFORMAT_ID3V2_H */
+#endif /* AVFORMAT_APETAG_H */
