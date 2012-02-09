@@ -65,8 +65,8 @@ int ff_intel_h263_decode_picture_header(MpegEncContext *s)
     s->pb_frame = get_bits1(&s->gb);
 
     if (format < 6) {
-        s->width = h263_format[format][0];
-        s->height = h263_format[format][1];
+        s->width = ff_h263_format[format][0];
+        s->height = ff_h263_format[format][1];
         s->avctx->sample_aspect_ratio.num = 12;
         s->avctx->sample_aspect_ratio.den = 11;
     } else {
