@@ -43,7 +43,7 @@
 #undef NDEBUG
 #include <assert.h>
 
-extern const uint8_t mvtab[33][2];
+extern const uint8_t ff_mvtab[33][2];
 
 static VLC svq1_block_type;
 static VLC svq1_motion_component;
@@ -769,8 +769,8 @@ static av_cold int svq1_decode_init(AVCodecContext *avctx)
         &ff_svq1_block_type_vlc[0][0], 2, 1, 6);
 
     INIT_VLC_STATIC(&svq1_motion_component, 7, 33,
-        &mvtab[0][1], 2, 1,
-        &mvtab[0][0], 2, 1, 176);
+        &ff_mvtab[0][1], 2, 1,
+        &ff_mvtab[0][0], 2, 1, 176);
 
     for (i = 0; i < 6; i++) {
         static const uint8_t sizes[2][6] = {{14, 10, 14, 18, 16, 18}, {10, 10, 14, 14, 14, 16}};
