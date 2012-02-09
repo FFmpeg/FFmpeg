@@ -295,7 +295,9 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
         if (avctx->pix_fmt != PIX_FMT_YUVJ420P &&
             avctx->pix_fmt != PIX_FMT_YUVJ422P &&
             avctx->pix_fmt != PIX_FMT_YUVJ444P &&
+            avctx->pix_fmt != PIX_FMT_BGR0     &&
             avctx->pix_fmt != PIX_FMT_BGRA     &&
+            avctx->pix_fmt != PIX_FMT_BGR24    &&
             ((avctx->pix_fmt != PIX_FMT_YUV420P &&
               avctx->pix_fmt != PIX_FMT_YUV422P &&
               avctx->pix_fmt != PIX_FMT_YUV444P) ||
@@ -625,7 +627,10 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
     case CODEC_ID_AMV:
         s->out_format = FMT_MJPEG;
         s->intra_only = 1; /* force intra only for jpeg */
-        if (avctx->codec->id == CODEC_ID_LJPEG && avctx->pix_fmt   == PIX_FMT_BGRA) {
+        if (avctx->codec->id == CODEC_ID_LJPEG &&
+            (avctx->pix_fmt == PIX_FMT_BGR0
+             || s->avctx->pix_fmt == PIX_FMT_BGRA
+             || s->avctx->pix_fmt == PIX_FMT_BGR24)) {
             s->mjpeg_vsample[0] = s->mjpeg_hsample[0] =
             s->mjpeg_vsample[1] = s->mjpeg_hsample[1] =
             s->mjpeg_vsample[2] = s->mjpeg_hsample[2] = 1;

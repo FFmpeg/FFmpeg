@@ -56,7 +56,9 @@ static int encode_picture_lossless(AVCodecContext *avctx, unsigned char *buf, in
 
     s->header_bits= put_bits_count(&s->pb);
 
-    if(avctx->pix_fmt == PIX_FMT_BGRA){
+    if(avctx->pix_fmt == PIX_FMT_BGR0
+        || avctx->pix_fmt == PIX_FMT_BGRA
+        || avctx->pix_fmt == PIX_FMT_BGR24){
         int x, y, i;
         const int linesize= p->linesize[0];
         uint16_t (*buffer)[4]= (void *) s->rd_scratchpad;
@@ -79,9 +81,15 @@ static int encode_picture_lossless(AVCodecContext *avctx, unsigned char *buf, in
                 top[i]= left[i]= topleft[i]= buffer[0][i];
             }
             for(x = 0; x < width; x++) {
+                if(avctx->pix_fmt == PIX_FMT_BGR24){
+                    buffer[x][1] = ptr[3*x+0] - ptr[3*x+1] + 0x100;
+                    buffer[x][2] = ptr[3*x+2] - ptr[3*x+1] + 0x100;
+                    buffer[x][0] = (ptr[3*x+0] + 2*ptr[3*x+1] + ptr[3*x+2])>>2;
+                }else{
                 buffer[x][1] = ptr[4*x+0] - ptr[4*x+1] + 0x100;
                 buffer[x][2] = ptr[4*x+2] - ptr[4*x+1] + 0x100;
                 buffer[x][0] = (ptr[4*x+0] + 2*ptr[4*x+1] + ptr[4*x+2])>>2;
+                }
 
                 for(i=0;i<3;i++) {
                     int pred, diff;

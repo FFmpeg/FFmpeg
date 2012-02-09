@@ -214,7 +214,9 @@ void ff_mjpeg_encode_picture_header(MpegEncContext *s)
     }
 
     put_bits(&s->pb, 16, 17);
-    if(lossless && s->avctx->pix_fmt == PIX_FMT_BGRA)
+    if(lossless && (s->avctx->pix_fmt == PIX_FMT_BGR0
+                    || s->avctx->pix_fmt == PIX_FMT_BGRA
+                    || s->avctx->pix_fmt == PIX_FMT_BGR24))
         put_bits(&s->pb, 8, 9); /* 9 bits/component RCT */
     else
         put_bits(&s->pb, 8, 8); /* 8 bits/component */
