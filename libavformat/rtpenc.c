@@ -388,8 +388,9 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
 
     rtcp_bytes = ((s->octet_count - s->last_octet_count) * RTCP_TX_RATIO_NUM) /
         RTCP_TX_RATIO_DEN;
-    if (s->first_packet || ((rtcp_bytes >= RTCP_SR_SIZE) &&
-                           (ff_ntp_time() - s->last_rtcp_ntp_time > 5000000))) {
+    if ((s->first_packet || ((rtcp_bytes >= RTCP_SR_SIZE) &&
+                            (ff_ntp_time() - s->last_rtcp_ntp_time > 5000000))) &&
+        !(s->flags & FF_RTP_FLAG_SKIP_RTCP)) {
         rtcp_send_sr(s1, ff_ntp_time());
         s->last_octet_count = s->octet_count;
         s->first_packet = 0;
