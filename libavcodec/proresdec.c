@@ -42,7 +42,7 @@ typedef struct {
     int slice_num;
     int x_pos, y_pos;
     int slice_width;
-    DECLARE_ALIGNED(16, DCTELEM, blocks[8 * 4 * 64]);
+    DECLARE_ALIGNED(16, DCTELEM, blocks)[8 * 4 * 64];
 } ProresThreadData;
 
 typedef struct {
@@ -57,8 +57,8 @@ typedef struct {
     uint8_t    qmat_chroma[64];          ///< dequantization matrix for chroma
     int        qmat_changed;             ///< 1 - global quantization matrices changed
     int        prev_slice_sf;            ///< scalefactor of the previous decoded slice
-    DECLARE_ALIGNED(16, int16_t, qmat_luma_scaled[64]);
-    DECLARE_ALIGNED(16, int16_t, qmat_chroma_scaled[64]);
+    DECLARE_ALIGNED(16, int16_t, qmat_luma_scaled)[64];
+    DECLARE_ALIGNED(16, int16_t, qmat_chroma_scaled)[64];
     int        total_slices;            ///< total number of slices in a picture
     ProresThreadData *slice_data;
     int        pic_num;
