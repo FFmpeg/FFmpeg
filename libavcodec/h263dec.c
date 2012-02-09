@@ -113,7 +113,7 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
         if (MPV_common_init(s) < 0)
             return -1;
 
-        h263_decode_init_vlc(s);
+        ff_h263_decode_init_vlc(s);
 
     return 0;
 }
@@ -421,7 +421,7 @@ retry:
     } else if (CONFIG_FLV_DECODER && s->h263_flv) {
         ret = ff_flv_decode_picture_header(s);
     } else {
-        ret = h263_decode_picture_header(s);
+        ret = ff_h263_decode_picture_header(s);
     }
 
     if(ret==FRAME_SKIPPED) return get_consumed_bytes(s, buf_size);
