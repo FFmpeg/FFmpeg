@@ -866,7 +866,7 @@ static av_cold int decode_end(AVCodecContext *avctx){
         av_freep(&f->cfrm[i].data);
         f->cfrm[i].allocated_size= 0;
     }
-    free_vlc(&f->pre_vlc);
+    ff_free_vlc(&f->pre_vlc);
     if(f->current_picture.data[0])
         avctx->release_buffer(avctx, &f->current_picture);
     if(f->last_picture.data[0])

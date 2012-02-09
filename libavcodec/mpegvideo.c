@@ -1005,8 +1005,8 @@ void MPV_common_end(MpegEncContext *s)
         avcodec_default_free_buffers(s->avctx);
 }
 
-void init_rl(RLTable *rl,
-             uint8_t static_store[2][2 * MAX_RUN + MAX_LEVEL + 3])
+void ff_init_rl(RLTable *rl,
+                uint8_t static_store[2][2 * MAX_RUN + MAX_LEVEL + 3])
 {
     int8_t  max_level[MAX_RUN + 1], max_run[MAX_LEVEL + 1];
     uint8_t index_run[MAX_RUN + 1];
@@ -1057,7 +1057,7 @@ void init_rl(RLTable *rl,
     }
 }
 
-void init_vlc_rl(RLTable *rl)
+void ff_init_vlc_rl(RLTable *rl)
 {
     int i, q;
 

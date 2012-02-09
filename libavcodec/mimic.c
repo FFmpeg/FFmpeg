@@ -413,7 +413,7 @@ static av_cold int mimic_decode_end(AVCodecContext *avctx)
     for(i = 0; i < 16; i++)
         if(ctx->buf_ptrs[i].data[0])
             ff_thread_release_buffer(avctx, &ctx->buf_ptrs[i]);
-    free_vlc(&ctx->vlc);
+    ff_free_vlc(&ctx->vlc);
 
     return 0;
 }

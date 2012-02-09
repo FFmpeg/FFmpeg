@@ -2205,9 +2205,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (!done) {
         done = 1;
 
-        init_rl(&ff_mpeg4_rl_intra, ff_mpeg4_static_rl_table_store[0]);
-        init_rl(&rvlc_rl_inter, ff_mpeg4_static_rl_table_store[1]);
-        init_rl(&rvlc_rl_intra, ff_mpeg4_static_rl_table_store[2]);
+        ff_init_rl(&ff_mpeg4_rl_intra, ff_mpeg4_static_rl_table_store[0]);
+        ff_init_rl(&rvlc_rl_inter, ff_mpeg4_static_rl_table_store[1]);
+        ff_init_rl(&rvlc_rl_intra, ff_mpeg4_static_rl_table_store[2]);
         INIT_VLC_RL(ff_mpeg4_rl_intra, 554);
         INIT_VLC_RL(rvlc_rl_inter, 1072);
         INIT_VLC_RL(rvlc_rl_intra, 1072);

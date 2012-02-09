@@ -62,8 +62,8 @@ static int build_vlc(VLC *vlc, const uint8_t *bits_table,
     if (is_ac)
         huff_sym[0] = 16 * 256;
 
-    return init_vlc_sparse(vlc, 9, nb_codes, huff_size, 1, 1,
-                           huff_code, 2, 2, huff_sym, 2, 2, use_static);
+    return ff_init_vlc_sparse(vlc, 9, nb_codes, huff_size, 1, 1,
+                              huff_code, 2, 2, huff_sym, 2, 2, use_static);
 }
 
 static void build_basic_mjpeg_vlc(MJpegDecodeContext *s)
@@ -195,7 +195,7 @@ int ff_mjpeg_decode_dht(MJpegDecodeContext *s)
         len -= n;
 
         /* build VLC and flush previous vlc if present */
-        free_vlc(&s->vlcs[class][index]);
+        ff_free_vlc(&s->vlcs[class][index]);
         av_log(s->avctx, AV_LOG_DEBUG, "class=%d index=%d nb_codes=%d\n",
                class, index, code_max + 1);
         if (build_vlc(&s->vlcs[class][index], bits_table, val_table,
@@ -203,7 +203,7 @@ int ff_mjpeg_decode_dht(MJpegDecodeContext *s)
             return -1;
 
         if (class > 0) {
-            free_vlc(&s->vlcs[2][index]);
+            ff_free_vlc(&s->vlcs[2][index]);
             if (build_vlc(&s->vlcs[2][index], bits_table, val_table,
                           code_max + 1, 0, 0) < 0)
                 return -1;
@@ -1642,7 +1642,7 @@ av_cold int ff_mjpeg_decode_end(AVCodecContext *avctx)
 
     for (i = 0; i < 3; i++) {
         for (j = 0; j < 4; j++)
-            free_vlc(&s->vlcs[i][j]);
+            ff_free_vlc(&s->vlcs[i][j]);
     }
     for (i = 0; i < MAX_COMPONENTS; i++) {
         av_freep(&s->blocks[i]);

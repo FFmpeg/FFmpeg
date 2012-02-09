@@ -262,7 +262,7 @@ av_cold void ff_msmpeg4_encode_init(MpegEncContext *s)
         init_mv_table(&mv_tables[0]);
         init_mv_table(&mv_tables[1]);
         for(i=0;i<NB_RL_TABLES;i++)
-            init_rl(&rl_table[i], static_rl_table_store[i]);
+            ff_init_rl(&rl_table[i], static_rl_table_store[i]);
 
         for(i=0; i<NB_RL_TABLES; i++){
             int level;
@@ -1271,7 +1271,7 @@ av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
         done = 1;
 
         for(i=0;i<NB_RL_TABLES;i++) {
-            init_rl(&rl_table[i], static_rl_table_store[i]);
+            ff_init_rl(&rl_table[i], static_rl_table_store[i]);
         }
         INIT_VLC_RL(rl_table[0], 642);
         INIT_VLC_RL(rl_table[1], 1104);
