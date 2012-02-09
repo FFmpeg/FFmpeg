@@ -25,6 +25,7 @@
 #include "libavutil/adler32.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/timestamp.h"
 #include "avfilter.h"
 
 typedef struct {
@@ -59,11 +60,11 @@ static void end_frame(AVFilterLink *inlink)
     }
 
     av_log(ctx, AV_LOG_INFO,
-           "n:%d pts:%"PRId64" pts_time:%f pos:%"PRId64" "
+           "n:%d pts:%s pts_time:%s pos:%"PRId64" "
            "fmt:%s sar:%d/%d s:%dx%d i:%c iskey:%d type:%c "
            "checksum:%08X plane_checksum:[%08X %08X %08X %08X]\n",
            showinfo->frame,
-           picref->pts, picref ->pts * av_q2d(inlink->time_base), picref->pos,
+           av_ts2str(picref->pts), av_ts2timestr(picref->pts, &inlink->time_base), picref->pos,
            av_pix_fmt_descriptors[picref->format].name,
            picref->video->sample_aspect_ratio.num, picref->video->sample_aspect_ratio.den,
            picref->video->w, picref->video->h,

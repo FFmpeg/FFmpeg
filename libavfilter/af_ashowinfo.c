@@ -25,6 +25,7 @@
 
 #include "libavutil/adler32.h"
 #include "libavutil/audioconvert.h"
+#include "libavutil/timestamp.h"
 #include "avfilter.h"
 
 typedef struct {
@@ -63,11 +64,11 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
                                  samplesref->audio->channel_layout);
 
     av_log(ctx, AV_LOG_INFO,
-           "n:%d pts:%"PRId64" pts_time:%f pos:%"PRId64" "
+           "n:%d pts:%s pts_time:%s pos:%"PRId64" "
            "fmt:%s chlayout:%s nb_samples:%d rate:%d planar:%d "
            "checksum:%08X plane_checksum[%08X %08X %08X %08X %08X %08X %08X %08X]\n",
            showinfo->frame,
-           samplesref->pts, samplesref->pts * av_q2d(inlink->time_base),
+           av_ts2str(samplesref->pts), av_ts2timestr(samplesref->pts, &inlink->time_base),
            samplesref->pos,
            av_get_sample_fmt_name(samplesref->format),
            chlayout_str,
