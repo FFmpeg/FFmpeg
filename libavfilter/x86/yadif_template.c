@@ -107,10 +107,10 @@ void RENAME(ff_yadif_filter_line)(uint8_t *dst,
                                   uint8_t *prev, uint8_t *cur, uint8_t *next,
                                   int w, int prefs, int mrefs, int parity, int mode)
 {
-    DECLARE_ALIGNED(16, uint8_t, tmp0[16]);
-    DECLARE_ALIGNED(16, uint8_t, tmp1[16]);
-    DECLARE_ALIGNED(16, uint8_t, tmp2[16]);
-    DECLARE_ALIGNED(16, uint8_t, tmp3[16]);
+    DECLARE_ALIGNED(16, uint8_t, tmp0)[16];
+    DECLARE_ALIGNED(16, uint8_t, tmp1)[16];
+    DECLARE_ALIGNED(16, uint8_t, tmp2)[16];
+    DECLARE_ALIGNED(16, uint8_t, tmp3)[16];
     int x;
 
 #define FILTER\
