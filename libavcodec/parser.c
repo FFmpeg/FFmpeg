@@ -289,14 +289,6 @@ void ff_parse_close(AVCodecParserContext *s)
     av_freep(&pc->buffer);
 }
 
-void ff_parse1_close(AVCodecParserContext *s)
-{
-    ParseContext1 *pc1 = s->priv_data;
-
-    av_free(pc1->pc.buffer);
-    av_free(pc1->enc);
-}
-
 /*************************/
 
 int ff_mpeg4video_split(AVCodecContext *avctx,

@@ -39,26 +39,12 @@ typedef struct ParseContext{
 
 struct MpegEncContext;
 
-typedef struct ParseContext1{
-    ParseContext pc;
-/* XXX/FIXME PC1 vs. PC */
-    /* MPEG-2-specific */
-    AVRational frame_rate;
-    int progressive_sequence;
-    int width, height;
-
-    /* XXX: suppress that, needed by MPEG-4 */
-    struct MpegEncContext *enc;
-    int first_picture;
-} ParseContext1;
-
 #define END_NOT_FOUND (-100)
 
 int ff_combine_frame(ParseContext *pc, int next, const uint8_t **buf, int *buf_size);
 int ff_mpeg4video_split(AVCodecContext *avctx, const uint8_t *buf,
                         int buf_size);
 void ff_parse_close(AVCodecParserContext *s);
-void ff_parse1_close(AVCodecParserContext *s);
 
 /**
  * Fetch timestamps for a specific byte within the current access unit.
