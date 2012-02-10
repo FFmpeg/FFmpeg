@@ -111,7 +111,7 @@ int ff_h264_check_intra4x4_pred_mode(H264Context *h){
 /**
  * checks if the top & left blocks are available if needed & changes the dc mode so it only uses the available blocks.
  */
-int ff_h264_check_intra_pred_mode(H264Context *h, int mode){
+int ff_h264_check_intra_pred_mode(H264Context *h, int mode, int is_chroma){
     MpegEncContext * const s = &h->s;
     static const int8_t top [7]= {LEFT_DC_PRED8x8, 1,-1,-1};
     static const int8_t left[7]= { TOP_DC_PRED8x8,-1, 2,-1,DC_128_PRED8x8};
@@ -131,7 +131,7 @@ int ff_h264_check_intra_pred_mode(H264Context *h, int mode){
 
     if((h->left_samples_available&0x8080) != 0x8080){
         mode= left[ mode ];
-        if(h->left_samples_available&0x8080){ //mad cow disease mode, aka MBAFF + constrained_intra_pred
+        if(is_chroma && (h->left_samples_available&0x8080)){ //mad cow disease mode, aka MBAFF + constrained_intra_pred
             mode= ALZHEIMER_DC_L0T_PRED8x8 + (!(h->left_samples_available&0x8000)) + 2*(mode == DC_128_PRED8x8);
         }
         if(mode<0){
