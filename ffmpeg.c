@@ -2107,7 +2107,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
                 av_buffersrc_buffer(ost->input_video_filter, fb);
             } else
             if((av_vsrc_buffer_add_frame(ost->input_video_filter, decoded_frame, AV_VSRC_BUF_FLAG_OVERWRITE)) < 0){
-                av_log(0, AV_LOG_FATAL, "Failed to inject frame into filter network\n");
+                av_log(NULL, AV_LOG_FATAL, "Failed to inject frame into filter network\n");
                 exit_program(1);
             }
         }
@@ -2128,7 +2128,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
             AVFrame *filtered_frame;
 
             if (av_buffersink_get_buffer_ref(ost->output_video_filter, &ost->picref, 0) < 0){
-                av_log(0, AV_LOG_WARNING, "AV Filter told us it has a frame available but failed to output one\n");
+                av_log(NULL, AV_LOG_WARNING, "AV Filter told us it has a frame available but failed to output one\n");
                 goto cont;
             }
             if (!ist->filtered_frame && !(ist->filtered_frame = avcodec_alloc_frame())) {
@@ -3563,13 +3563,13 @@ static void assert_file_overwrite(const char *filename)
                 term_exit();
                 signal(SIGINT, SIG_DFL);
                 if (!read_yesno()) {
-                    av_log(0, AV_LOG_FATAL, "Not overwriting - exiting\n");
+                    av_log(NULL, AV_LOG_FATAL, "Not overwriting - exiting\n");
                     exit_program(1);
                 }
                 term_init();
             }
             else {
-                av_log(0, AV_LOG_FATAL, "File '%s' already exists. Exiting.\n", filename);
+                av_log(NULL, AV_LOG_FATAL, "File '%s' already exists. Exiting.\n", filename);
                 exit_program(1);
             }
         }
@@ -4820,9 +4820,9 @@ static int opt_preset(OptionsContext *o, const char *opt, const char *arg)
 
     if (!(f = get_preset_file(filename, sizeof(filename), arg, *opt == 'f', codec_name))) {
         if(!strncmp(arg, "libx264-lossless", strlen("libx264-lossless"))){
-            av_log(0, AV_LOG_FATAL, "Please use -preset <speed> -qp 0\n");
+            av_log(NULL, AV_LOG_FATAL, "Please use -preset <speed> -qp 0\n");
         }else
-            av_log(0, AV_LOG_FATAL, "File for preset '%s' not found\n", arg);
+            av_log(NULL, AV_LOG_FATAL, "File for preset '%s' not found\n", arg);
         exit_program(1);
     }
 
@@ -4832,7 +4832,7 @@ static int opt_preset(OptionsContext *o, const char *opt, const char *arg)
             continue;
         e|= sscanf(line, "%999[^=]=%999[^\n]\n", tmp, tmp2) - 2;
         if(e){
-            av_log(0, AV_LOG_FATAL, "%s: Invalid syntax: '%s'\n", filename, line);
+            av_log(NULL, AV_LOG_FATAL, "%s: Invalid syntax: '%s'\n", filename, line);
             exit_program(1);
         }
         if(!strcmp(tmp, "acodec")){
@@ -4844,7 +4844,7 @@ static int opt_preset(OptionsContext *o, const char *opt, const char *arg)
         }else if(!strcmp(tmp, "dcodec")){
             opt_data_codec(o, tmp, tmp2);
         }else if(opt_default(tmp, tmp2) < 0){
-            av_log(0, AV_LOG_FATAL, "%s: Invalid option or argument: '%s', parsed as '%s' = '%s'\n", filename, line, tmp, tmp2);
+            av_log(NULL, AV_LOG_FATAL, "%s: Invalid option or argument: '%s', parsed as '%s' = '%s'\n", filename, line, tmp, tmp2);
             exit_program(1);
         }
     }
@@ -4879,7 +4879,7 @@ static int opt_old2new(OptionsContext *o, const char *opt, const char *arg)
 static int opt_bitrate(OptionsContext *o, const char *opt, const char *arg)
 {
     if(!strcmp(opt, "b")){
-        av_log(0,AV_LOG_WARNING, "Please use -b:a or -b:v, -b is ambiguous\n");
+        av_log(NULL, AV_LOG_WARNING, "Please use -b:a or -b:v, -b is ambiguous\n");
         return parse_option(o, "b:v", arg, options);
     }
     return opt_default(opt, arg);
@@ -4890,7 +4890,7 @@ static int opt_qscale(OptionsContext *o, const char *opt, const char *arg)
     char *s;
     int ret;
     if(!strcmp(opt, "qscale")){
-        av_log(0,AV_LOG_WARNING, "Please use -q:a or -q:v, -qscale is ambiguous\n");
+        av_log(NULL, AV_LOG_WARNING, "Please use -q:a or -q:v, -qscale is ambiguous\n");
         return parse_option(o, "q:v", arg, options);
     }
     s = av_asprintf("q%s", opt + 6);
