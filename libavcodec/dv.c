@@ -45,6 +45,7 @@
 #include "put_bits.h"
 #include "simple_idct.h"
 #include "dvdata.h"
+#include "dvquant.h"
 #include "dv_tablegen.h"
 
 //#undef NDEBUG
