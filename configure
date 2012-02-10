@@ -1678,7 +1678,7 @@ avformat_deps="avcodec"
 postproc_deps="gpl"
 
 # programs
-ffplay_deps="avcodec avformat swscale sdl"
+ffplay_deps="avcodec avformat swscale swresample sdl"
 ffplay_select="buffersink_filter rdft"
 ffprobe_deps="avcodec avformat"
 ffserver_deps="avformat ffm_muxer fork rtp_protocol rtsp_demuxer"
