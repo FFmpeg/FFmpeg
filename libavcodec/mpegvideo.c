@@ -2648,10 +2648,7 @@ static void dct_unquantize_mpeg1_intra_c(MpegEncContext *s,
 
     nCoeffs= s->block_last_index[n];
 
-    if (n < 4)
-        block[0] = block[0] * s->y_dc_scale;
-    else
-        block[0] = block[0] * s->c_dc_scale;
+    block[0] *= n < 4 ? s->y_dc_scale : s->c_dc_scale;
     /* XXX: only mpeg1 */
     quant_matrix = s->intra_matrix;
     for(i=1;i<=nCoeffs;i++) {
@@ -2710,10 +2707,7 @@ static void dct_unquantize_mpeg2_intra_c(MpegEncContext *s,
     if(s->alternate_scan) nCoeffs= 63;
     else nCoeffs= s->block_last_index[n];
 
-    if (n < 4)
-        block[0] = block[0] * s->y_dc_scale;
-    else
-        block[0] = block[0] * s->c_dc_scale;
+    block[0] *= n < 4 ? s->y_dc_scale : s->c_dc_scale;
     quant_matrix = s->intra_matrix;
     for(i=1;i<=nCoeffs;i++) {
         int j= s->intra_scantable.permutated[i];
@@ -2741,10 +2735,7 @@ static void dct_unquantize_mpeg2_intra_bitexact(MpegEncContext *s,
     if(s->alternate_scan) nCoeffs= 63;
     else nCoeffs= s->block_last_index[n];
 
-    if (n < 4)
-        block[0] = block[0] * s->y_dc_scale;
-    else
-        block[0] = block[0] * s->c_dc_scale;
+    block[0] *= n < 4 ? s->y_dc_scale : s->c_dc_scale;
     quant_matrix = s->intra_matrix;
     for(i=1;i<=nCoeffs;i++) {
         int j= s->intra_scantable.permutated[i];
@@ -2806,10 +2797,7 @@ static void dct_unquantize_h263_intra_c(MpegEncContext *s,
     qmul = qscale << 1;
 
     if (!s->h263_aic) {
-        if (n < 4)
-            block[0] = block[0] * s->y_dc_scale;
-        else
-            block[0] = block[0] * s->c_dc_scale;
+        block[0] *= n < 4 ? s->y_dc_scale : s->c_dc_scale;
         qadd = (qscale - 1) | 1;
     }else{
         qadd = 0;
