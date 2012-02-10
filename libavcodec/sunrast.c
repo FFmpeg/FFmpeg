@@ -153,10 +153,6 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
     } else if (maplength) {
         unsigned int len = maplength / 3;
 
-        if (!maplength) {
-            av_log(avctx, AV_LOG_ERROR, "colormap expected\n");
-            return -1;
-        }
         if (maplength % 3 || maplength > 768) {
             av_log(avctx, AV_LOG_WARNING, "invalid colormap length\n");
             return -1;
