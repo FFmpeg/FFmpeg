@@ -273,7 +273,7 @@ static int nsv_parse_NSVf_header(AVFormatContext *s)
 {
     NSVContext *nsv = s->priv_data;
     AVIOContext *pb = s->pb;
-    unsigned int av_unused file_size;
+    unsigned int file_size;
     unsigned int size;
     int64_t duration;
     int strings_size;

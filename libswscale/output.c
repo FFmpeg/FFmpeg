@@ -899,12 +899,11 @@ yuv2rgb_X_c_template(SwsContext *c, const int16_t *lumFilter,
     int i;
 
     for (i = 0; i < (dstW >> 1); i++) {
-        int j;
+        int j, A1, A2;
         int Y1 = 1 << 18;
         int Y2 = 1 << 18;
         int U  = 1 << 18;
         int V  = 1 << 18;
-        int av_unused A1, A2;
         const void *r, *g, *b;
 
         for (j = 0; j < lumFilterSize; j++) {
@@ -1106,8 +1105,7 @@ yuv2rgb_full_X_c_template(SwsContext *c, const int16_t *lumFilter,
         int Y = 0;
         int U = -128 << 19;
         int V = -128 << 19;
-        int av_unused A;
-        int R, G, B;
+        int R, G, B, A;
 
         for (j = 0; j < lumFilterSize; j++) {
             Y += lumSrc[j][i] * lumFilter[j];

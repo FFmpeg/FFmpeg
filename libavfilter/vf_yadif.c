@@ -372,7 +372,7 @@ static int query_formats(AVFilterContext *ctx)
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     YADIFContext *yadif = ctx->priv;
-    av_unused int cpu_flags = av_get_cpu_flags();
+    int cpu_flags = av_get_cpu_flags();
 
     yadif->mode = 0;
     yadif->parity = -1;
