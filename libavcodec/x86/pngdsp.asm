@@ -43,12 +43,12 @@ cglobal add_bytes_l2, 4, 6, %1, dst, src1, src2, wa, w, i
     and                waq, ~(mmsize*2-1)
     jmp .end_v
 .loop_v:
-    movu                m0, [src2q+iq]
-    movu                m1, [src2q+iq+mmsize]
-    paddb               m0, [src1q+iq]
-    paddb               m1, [src1q+iq+mmsize]
-    movu  [dstq+iq       ], m0
-    movu  [dstq+iq+mmsize], m1
+    mova                m0, [src1q+iq]
+    mova                m1, [src1q+iq+mmsize]
+    paddb               m0, [src2q+iq]
+    paddb               m1, [src2q+iq+mmsize]
+    mova  [dstq+iq       ], m0
+    mova  [dstq+iq+mmsize], m1
     add                 iq, mmsize*2
 .end_v:
     cmp                 iq, waq
@@ -60,8 +60,8 @@ cglobal add_bytes_l2, 4, 6, %1, dst, src1, src2, wa, w, i
     and                waq, ~7
     jmp .end_l
 .loop_l:
-    movq               mm0, [src2q+iq]
-    paddb              mm0, [src1q+iq]
+    movq               mm0, [src1q+iq]
+    paddb              mm0, [src2q+iq]
     movq  [dstq+iq       ], mm0
     add                 iq, 8
 .end_l:
