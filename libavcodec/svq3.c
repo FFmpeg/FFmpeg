@@ -811,7 +811,9 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
     MpegEncContext *s = &h->s;
     int m;
     unsigned char *extradata;
+    unsigned char *extradata_end;
     unsigned int size;
+    int marker_found = 0;
 
     if (ff_h264_decode_init(avctx) < 0)
         return -1;
@@ -831,19 +833,26 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
 
         /* prowl for the "SEQH" marker in the extradata */
         extradata = (unsigned char *)avctx->extradata;
-        for (m = 0; m < avctx->extradata_size; m++) {
-            if (!memcmp(extradata, "SEQH", 4))
-                break;
-            extradata++;
+        extradata_end = avctx->extradata + avctx->extradata_size;
+        if (extradata) {
+            for (m = 0; m + 8 < avctx->extradata_size; m++) {
+                if (!memcmp(extradata, "SEQH", 4)) {
+                    marker_found = 1;
+                    break;
+                }
+                extradata++;
+            }
         }
 
         /* if a match was found, parse the extra data */
-        if (extradata && !memcmp(extradata, "SEQH", 4)) {
+        if (marker_found) {
 
             GetBitContext gb;
             int frame_size_code;
 
             size = AV_RB32(&extradata[4]);
+            if (size > extradata_end - extradata - 8)
+                return AVERROR_INVALIDDATA;
             init_get_bits(&gb, extradata + 8, size*8);
 
             /* 'frame size code' and optional 'width, height' */
