@@ -12,6 +12,9 @@ LIBAVFORMAT_$MAJOR {
                 ffio_open_dyn_packet_buf;
                 ffurl_close;
                 ffurl_open;
+                ffurl_read_complete;
+                ffurl_seek;
+                ffurl_size;
                 ffurl_write;
                 url_open;
                 url_close;
