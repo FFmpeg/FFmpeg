@@ -95,10 +95,6 @@ static const uint8_t dv_audio_shuffle625[12][9] = {
   {  31,  67, 103,  21,  57,  93,  11,  47,  83},
 };
 
-static const av_unused int dv_audio_frequency[3] = {
-    48000, 44100, 32000,
-};
-
 /* macroblock bit budgets */
 static const uint8_t block_sizes_dv2550[8] = {
     112, 112, 112, 112, 80, 80, 0, 0,
