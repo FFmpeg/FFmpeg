@@ -758,6 +758,16 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVD
                 goto free_and_end;
             }
         }
+        if (avctx->codec->pix_fmts) {
+            for (i = 0; avctx->codec->pix_fmts[i] != PIX_FMT_NONE; i++)
+                if (avctx->pix_fmt == avctx->codec->pix_fmts[i])
+                    break;
+            if (avctx->codec->pix_fmts[i] == PIX_FMT_NONE) {
+                av_log(avctx, AV_LOG_ERROR, "Specified pix_fmt is not supported\n");
+                ret = AVERROR(EINVAL);
+                goto free_and_end;
+            }
+        }
         if (avctx->codec->supported_samplerates) {
             for (i = 0; avctx->codec->supported_samplerates[i] != 0; i++)
                 if (avctx->sample_rate == avctx->codec->supported_samplerates[i])
