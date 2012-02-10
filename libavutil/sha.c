@@ -181,7 +181,7 @@ static void sha256_transform(uint32_t *state, const uint8_t buffer[64])
 {
     unsigned int i, a, b, c, d, e, f, g, h;
     uint32_t block[64];
-    uint32_t T1, av_unused(T2);
+    uint32_t T1;
 
     a = state[0];
     b = state[1];
@@ -193,6 +193,7 @@ static void sha256_transform(uint32_t *state, const uint8_t buffer[64])
     h = state[7];
 #if CONFIG_SMALL
     for (i = 0; i < 64; i++) {
+        uint32_t T2;
         if (i < 16)
             T1 = blk0(i);
         else

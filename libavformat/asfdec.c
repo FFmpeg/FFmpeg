@@ -365,8 +365,8 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
         /* This code assumes that extradata contains only palette */
         /* This is true for all paletted codecs implemented in libavcodec */
         if (st->codec->extradata_size && (st->codec->bits_per_coded_sample <= 8)) {
-            int av_unused i;
 #if HAVE_BIGENDIAN
+            int i;
             for (i = 0; i < FFMIN(st->codec->extradata_size, AVPALETTE_SIZE)/4; i++)
                 asf_st->palette[i] = av_bswap32(((uint32_t*)st->codec->extradata)[i]);
 #else
