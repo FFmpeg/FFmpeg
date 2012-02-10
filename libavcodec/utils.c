@@ -885,9 +885,11 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
         ret = avctx->codec->encode2(avctx, avpkt, frame, got_packet_ptr);
         if (!ret && *got_packet_ptr) {
             if (!(avctx->codec->capabilities & CODEC_CAP_DELAY)) {
-                avpkt->pts = frame->pts;
-                avpkt->duration = ff_samples_to_time_base(avctx,
-                                                          frame->nb_samples);
+                if (avpkt->pts == AV_NOPTS_VALUE)
+                    avpkt->pts = frame->pts;
+                if (!avpkt->duration)
+                    avpkt->duration = ff_samples_to_time_base(avctx,
+                                                              frame->nb_samples);
             }
             avpkt->dts = avpkt->pts;
         } else {
