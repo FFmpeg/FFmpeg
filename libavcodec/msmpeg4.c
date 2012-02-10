@@ -282,8 +282,8 @@ av_cold void ff_msmpeg4_encode_init(MpegEncContext *s)
 static void find_best_tables(MpegEncContext * s)
 {
     int i;
-    int best       =-1, best_size       =9999999;
-    int chroma_best=-1, best_chroma_size=9999999;
+    int best        = 0, best_size        = INT_MAX;
+    int chroma_best = 0, best_chroma_size = INT_MAX;
 
     for(i=0; i<3; i++){
         int level;
