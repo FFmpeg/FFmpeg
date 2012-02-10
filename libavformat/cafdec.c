@@ -358,7 +358,7 @@ static int read_seek(AVFormatContext *s, int stream_index,
 {
     AVStream *st = s->streams[0];
     CaffContext *caf = s->priv_data;
-    int64_t pos;
+    int64_t pos, packet_cnt, frame_cnt;
 
     timestamp = FFMAX(timestamp, 0);
 
@@ -367,17 +367,22 @@ static int read_seek(AVFormatContext *s, int stream_index,
         pos = caf->bytes_per_packet * timestamp / caf->frames_per_packet;
         if (caf->data_size > 0)
             pos = FFMIN(pos, caf->data_size);
-        caf->packet_cnt = pos / caf->bytes_per_packet;
-        caf->frame_cnt  = caf->frames_per_packet * caf->packet_cnt;
+        packet_cnt = pos / caf->bytes_per_packet;
+        frame_cnt  = caf->frames_per_packet * packet_cnt;
     } else if (st->nb_index_entries) {
-        caf->packet_cnt = av_index_search_timestamp(st, timestamp, flags);
-        caf->frame_cnt  = st->index_entries[caf->packet_cnt].timestamp;
-        pos             = st->index_entries[caf->packet_cnt].pos;
+        packet_cnt = av_index_search_timestamp(st, timestamp, flags);
+        frame_cnt  = st->index_entries[packet_cnt].timestamp;
+        pos        = st->index_entries[packet_cnt].pos;
     } else {
         return -1;
     }
 
-    avio_seek(s->pb, pos + caf->data_start, SEEK_SET);
+    if (avio_seek(s->pb, pos + caf->data_start, SEEK_SET) < 0)
+        return -1;
+
+    caf->packet_cnt = packet_cnt;
+    caf->frame_cnt  = frame_cnt;
+
     return 0;
 }
 
