@@ -279,9 +279,11 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
             return -1;
         }
 
-        s->decode_buffer = av_mallocz(sizeof(int32_t)*s->frame_length*s->channels);
-        if (!s->decode_buffer)
-            return AVERROR(ENOMEM);
+        if (s->bps < 3) {
+            s->decode_buffer = av_mallocz(sizeof(int32_t)*s->frame_length*s->channels);
+            if (!s->decode_buffer)
+                return AVERROR(ENOMEM);
+        }
         s->ch_ctx = av_malloc(avctx->channels * sizeof(*s->ch_ctx));
         if (!s->ch_ctx) {
             av_freep(&s->decode_buffer);
