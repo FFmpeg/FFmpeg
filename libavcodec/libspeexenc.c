@@ -81,7 +81,6 @@ typedef struct {
     int cbr_quality;            ///< CBR quality 0 to 10
     int abr;                    ///< flag to enable ABR
     int pkt_frame_count;        ///< frame count for the current packet
-    int lookahead;              ///< encoder delay
     int64_t next_pts;           ///< next pts, in sample_rate time base
     int pkt_sample_count;       ///< sample count in the current packet
 } LibSpeexEncContext;
@@ -200,8 +199,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     s->header.frames_per_packet = s->frames_per_packet;
 
     /* set encoding delay */
-    speex_encoder_ctl(s->enc_state, SPEEX_GET_LOOKAHEAD, &s->lookahead);
-    s->next_pts = -s->lookahead;
+    speex_encoder_ctl(s->enc_state, SPEEX_GET_LOOKAHEAD, &avctx->delay);
 
     /* create header packet bytes from header struct */
     /* note: libspeex allocates the memory for header_data, which is freed
@@ -257,7 +255,8 @@ static int encode_frame(AVCodecContext *avctx, uint8_t *frame, int buf_size,
     /* write output if all frames for the packet have been encoded */
     if (s->pkt_frame_count == s->frames_per_packet) {
         s->pkt_frame_count = 0;
-        avctx->coded_frame->pts = ff_samples_to_time_base(avctx, s->next_pts);
+        avctx->coded_frame->pts = ff_samples_to_time_base(avctx, s->next_pts -
+                                                          avctx->delay);
         s->next_pts += s->pkt_sample_count;
         s->pkt_sample_count = 0;
         if (buf_size > speex_bits_nbytes(&s->bits)) {
