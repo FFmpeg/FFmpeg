@@ -2736,6 +2736,7 @@ static void dct_unquantize_mpeg2_intra_bitexact(MpegEncContext *s,
     else nCoeffs= s->block_last_index[n];
 
     block[0] *= n < 4 ? s->y_dc_scale : s->c_dc_scale;
+    sum += block[0];
     quant_matrix = s->intra_matrix;
     for(i=1;i<=nCoeffs;i++) {
         int j= s->intra_scantable.permutated[i];
