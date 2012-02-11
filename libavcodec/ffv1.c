@@ -196,6 +196,7 @@ typedef struct FFV1Context{
     int slice_height;
     int slice_x;
     int slice_y;
+    int bits_per_raw_sample;
 }FFV1Context;
 
 static av_always_inline int fold(int diff, int bits){
@@ -540,7 +541,7 @@ static void encode_plane(FFV1Context *s, uint8_t *src, int w, int h, int stride,
         sample[0][-1]= sample[1][0  ];
         sample[1][ w]= sample[1][w-1];
 //{START_TIMER
-        if(s->avctx->bits_per_raw_sample<=8){
+        if(s->bits_per_raw_sample<=8){
             for(x=0; x<w; x++){
                 sample[0][x]= src[x + stride*y];
             }
@@ -552,10 +553,10 @@ static void encode_plane(FFV1Context *s, uint8_t *src, int w, int h, int stride,
                 }
             }else{
                 for(x=0; x<w; x++){
-                    sample[0][x]= ((uint16_t*)(src + stride*y))[x] >> (16 - s->avctx->bits_per_raw_sample);
+                    sample[0][x]= ((uint16_t*)(src + stride*y))[x] >> (16 - s->bits_per_raw_sample);
                 }
             }
-            encode_line(s, w, sample, plane_index, s->avctx->bits_per_raw_sample);
+            encode_line(s, w, sample, plane_index, s->bits_per_raw_sample);
         }
 //STOP_TIMER("encode line")}
     }
@@ -640,7 +641,7 @@ static void write_header(FFV1Context *f){
         }
         put_symbol(c, state, f->colorspace, 0); //YUV cs type
         if(f->version>0)
-            put_symbol(c, state, f->avctx->bits_per_raw_sample, 0);
+            put_symbol(c, state, f->bits_per_raw_sample, 0);
         put_rac(c, state, f->chroma_planes);
         put_symbol(c, state, f->chroma_h_shift, 0);
         put_symbol(c, state, f->chroma_v_shift, 0);
@@ -782,7 +783,7 @@ static int write_extra_header(FFV1Context *f){
         }
     }
     put_symbol(c, state, f->colorspace, 0); //YUV cs type
-    put_symbol(c, state, f->avctx->bits_per_raw_sample, 0);
+    put_symbol(c, state, f->bits_per_raw_sample, 0);
     put_rac(c, state, f->chroma_planes);
     put_symbol(c, state, f->chroma_h_shift, 0);
     put_symbol(c, state, f->chroma_v_shift, 0);
@@ -876,14 +877,23 @@ static av_cold int encode_init(AVCodecContext *avctx)
     s->plane_count=3;
     switch(avctx->pix_fmt){
     case PIX_FMT_YUV420P9:
+        if (!avctx->bits_per_raw_sample)
+            s->bits_per_raw_sample = 9;
     case PIX_FMT_YUV420P10:
     case PIX_FMT_YUV422P10:
         s->packed_at_lsb = 1;
+        if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
+            s->bits_per_raw_sample = 10;
     case PIX_FMT_GRAY16:
     case PIX_FMT_YUV444P16:
     case PIX_FMT_YUV422P16:
     case PIX_FMT_YUV420P16:
-        if(avctx->bits_per_raw_sample <=8){
+        if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample) {
+            s->bits_per_raw_sample = 16;
+        } else if (!s->bits_per_raw_sample){
+            s->bits_per_raw_sample = avctx->bits_per_raw_sample;
+        }
+        if(s->bits_per_raw_sample <=8){
             av_log(avctx, AV_LOG_ERROR, "bits_per_raw_sample invalid\n");
             return -1;
         }
@@ -920,7 +930,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
     for(i=0; i<256; i++){
         s->quant_table_count=2;
-        if(avctx->bits_per_raw_sample <=8){
+        if(s->bits_per_raw_sample <=8){
             s->quant_tables[0][0][i]=           quant11[i];
             s->quant_tables[0][1][i]=        11*quant11[i];
             s->quant_tables[0][2][i]=     11*11*quant11[i];
@@ -1095,7 +1105,7 @@ static int encode_slice(AVCodecContext *c, void *arg){
     int x= fs->slice_x;
     int y= fs->slice_y;
     AVFrame * const p= &f->picture;
-    const int ps= (c->bits_per_raw_sample>8)+1;
+    const int ps= (f->bits_per_raw_sample>8)+1;
 
     if(f->colorspace==0){
         const int chroma_width = -((-width )>>f->chroma_h_shift);
