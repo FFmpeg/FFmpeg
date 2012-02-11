@@ -112,7 +112,7 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
             avctx->pix_fmt = PIX_FMT_MONOWHITE;
             break;
         case 8:
-            avctx->pix_fmt = PIX_FMT_PAL8;
+            avctx->pix_fmt = maplength ? PIX_FMT_PAL8 : PIX_FMT_GRAY8;
             break;
         case 24:
             avctx->pix_fmt = (type == RT_FORMAT_RGB) ? PIX_FMT_RGB24 : PIX_FMT_BGR24;
@@ -140,13 +140,9 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
     if (depth != 8 && maplength) {
         av_log(avctx, AV_LOG_WARNING, "useless colormap found or file is corrupted, trying to recover\n");
 
-    } else if (depth == 8) {
+    } else if (maplength) {
         unsigned int len = maplength / 3;
 
-        if (!maplength) {
-            av_log(avctx, AV_LOG_ERROR, "colormap expected\n");
-            return -1;
-        }
         if (maplength % 3 || maplength > 768) {
             av_log(avctx, AV_LOG_WARNING, "invalid colormap length\n");
             return -1;
