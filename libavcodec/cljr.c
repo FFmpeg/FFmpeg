@@ -135,8 +135,8 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
     AVFrame *p = data;
     int x, y;
 
-    p->pict_type = AV_PICTURE_TYPE_I;
-    p->key_frame = 1;
+    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
+    avctx->coded_frame->key_frame = 1;
 
     init_put_bits(&pb, buf, buf_size / 8);
 
