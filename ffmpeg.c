@@ -4864,7 +4864,7 @@ static int opt_passlogfile(const char *opt, const char *arg)
 {
     pass_logfilename_prefix = arg;
 #if CONFIG_LIBX264_ENCODER
-    return opt_default("passlogfile", arg);
+    return opt_default(opt, arg);
 #else
     return 0;
 #endif
