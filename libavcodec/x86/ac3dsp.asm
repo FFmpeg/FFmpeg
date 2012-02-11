@@ -35,7 +35,6 @@ pw_bap_mul2: dw 5, 7, 0, 7, 5, 7, 0, 7
 ; used in ff_ac3_extract_exponents()
 pd_1:   times 4 dd 1
 pd_151: times 4 dd 151
-pb_shuf_4dwb: db 0, 4, 8, 12
 
 SECTION .text
 
@@ -404,15 +403,12 @@ cglobal ac3_extract_exponents_3dnow, 3,3,0, exp, coef, len
 %endif
 
 %macro AC3_EXTRACT_EXPONENTS 1
-cglobal ac3_extract_exponents_%1, 3,3,5, exp, coef, len
+cglobal ac3_extract_exponents_%1, 3,3,4, exp, coef, len
     add     expq, lenq
     lea    coefq, [coefq+4*lenq]
     neg     lenq
     mova      m2, [pd_1]
     mova      m3, [pd_151]
-%ifidn %1, ssse3 ;
-    movd      m4, [pb_shuf_4dwb]
-%endif
 .loop:
     ; move 4 32-bit coefs to xmm0
     mova      m0, [coefq+4*lenq]
@@ -426,12 +422,11 @@ cglobal ac3_extract_exponents_%1, 3,3,5, exp, coef, len
     mova      m0, m3
     psubd     m0, m1
     ; move the lowest byte in each of 4 dwords to the low dword
-%ifidn %1, ssse3
-    pshufb    m0, m4
-%else
+    ; NOTE: We cannot just extract the low bytes with pshufb because the dword
+    ;       result for 16777215 is -1 due to float inaccuracy. Using packuswb
+    ;       clips this to 0, which is the correct exponent.
     packssdw  m0, m0
     packuswb  m0, m0
-%endif
     movd  [expq+lenq], m0
 
     add     lenq, 4

@@ -8,15 +8,15 @@ fate-aac-al05_44: REF = $(SAMPLES)/aac/al05_44.s16
 
 FATE_AAC += fate-aac-al06_44
 fate-aac-al06_44: CMD = pcm -i $(SAMPLES)/aac/al06_44.mp4
-fate-aac-al06_44: REF = $(SAMPLES)/aac/al06_44.s16
+fate-aac-al06_44: REF = $(SAMPLES)/aac/al06_44_reorder.s16
 
 FATE_AAC += fate-aac-al07_96
 fate-aac-al07_96: CMD = pcm -i $(SAMPLES)/aac/al07_96.mp4
-fate-aac-al07_96: REF = $(SAMPLES)/aac/al07_96.s16
+fate-aac-al07_96: REF = $(SAMPLES)/aac/al07_96_reorder.s16
 
 FATE_AAC += fate-aac-al15_44
 fate-aac-al15_44: CMD = pcm -i $(SAMPLES)/aac/al15_44.mp4
-fate-aac-al15_44: REF = $(SAMPLES)/aac/al15_44.s16
+fate-aac-al15_44: REF = $(SAMPLES)/aac/al15_44_reorder.s16
 
 FATE_AAC += fate-aac-al17_44
 fate-aac-al17_44: CMD = pcm -i $(SAMPLES)/aac/al17_44.mp4
@@ -32,7 +32,7 @@ fate-aac-am00_88: REF = $(SAMPLES)/aac/am00_88.s16
 
 FATE_AAC += fate-aac-am05_44
 fate-aac-am05_44: CMD = pcm -i $(SAMPLES)/aac/am05_44.mp4
-fate-aac-am05_44: REF = $(SAMPLES)/aac/am05_44.s16
+fate-aac-am05_44: REF = $(SAMPLES)/aac/am05_44_reorder.s16
 
 FATE_AAC += fate-aac-al_sbr_hq_cm_48_2
 fate-aac-al_sbr_hq_cm_48_2: CMD = pcm -i $(SAMPLES)/aac/al_sbr_cm_48_2.mp4
@@ -40,7 +40,7 @@ fate-aac-al_sbr_hq_cm_48_2: REF = $(SAMPLES)/aac/al_sbr_hq_cm_48_2.s16
 
 FATE_AAC += fate-aac-al_sbr_hq_cm_48_5.1
 fate-aac-al_sbr_hq_cm_48_5.1: CMD = pcm -i $(SAMPLES)/aac/al_sbr_cm_48_5.1.mp4
-fate-aac-al_sbr_hq_cm_48_5.1: REF = $(SAMPLES)/aac/al_sbr_hq_cm_48_5.1.s16
+fate-aac-al_sbr_hq_cm_48_5.1: REF = $(SAMPLES)/aac/al_sbr_hq_cm_48_5.1_reorder.s16
 
 FATE_AAC += fate-aac-al_sbr_ps_06_ur
 fate-aac-al_sbr_ps_06_ur: CMD = pcm -i $(SAMPLES)/aac/al_sbr_ps_06_new.mp4

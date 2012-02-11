@@ -263,9 +263,8 @@ typedef struct {
      * @name Channel element related data
      * @{
      */
-    enum ChannelPosition che_pos[4][MAX_ELEM_ID]; /**< channel element channel mapping with the
-                                                   *   first index as the first 4 raw data block types
-                                                   */
+    uint8_t layout_map[MAX_ELEM_ID*4][3];
+    int layout_map_tags;
     ChannelElement          *che[4][MAX_ELEM_ID];
     ChannelElement  *tag_che_map[4][MAX_ELEM_ID];
     int tags_mapped;

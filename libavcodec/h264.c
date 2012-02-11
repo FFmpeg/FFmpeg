@@ -104,7 +104,7 @@ int ff_h264_check_intra4x4_pred_mode(H264Context *h){
     return 0;
 } //FIXME cleanup like check_intra_pred_mode
 
-static int check_intra_pred_mode(H264Context *h, int mode, int is_chroma){
+int ff_h264_check_intra_pred_mode(H264Context *h, int mode, int is_chroma){
     MpegEncContext * const s = &h->s;
     static const int8_t top [7]= {LEFT_DC_PRED8x8, 1,-1,-1};
     static const int8_t left[7]= { TOP_DC_PRED8x8,-1, 2,-1,DC_128_PRED8x8};
@@ -134,22 +134,6 @@ static int check_intra_pred_mode(H264Context *h, int mode, int is_chroma){
     }
 
     return mode;
-}
-
-/**
- * checks if the top & left blocks are available if needed & changes the dc mode so it only uses the available blocks.
- */
-int ff_h264_check_intra16x16_pred_mode(H264Context *h, int mode)
-{
-    return check_intra_pred_mode(h, mode, 0);
-}
-
-/**
- * checks if the top & left blocks are available if needed & changes the dc mode so it only uses the available blocks.
- */
-int ff_h264_check_intra_chroma_pred_mode(H264Context *h, int mode)
-{
-    return check_intra_pred_mode(h, mode, 1);
 }
 
 

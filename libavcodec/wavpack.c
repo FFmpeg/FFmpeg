@@ -499,6 +499,21 @@ static void wv_reset_saved_context(WavpackFrameContext *s)
     s->sc.crc = s->extra_sc.crc = 0xFFFFFFFF;
 }
 
+static inline int wv_check_crc(WavpackFrameContext *s, uint32_t crc,
+                               uint32_t crc_extra_bits)
+{
+    if (crc != s->CRC) {
+        av_log(s->avctx, AV_LOG_ERROR, "CRC error\n");
+        return AVERROR_INVALIDDATA;
+    }
+    if (s->got_extra_bits && crc_extra_bits != s->crc_extra_bits) {
+        av_log(s->avctx, AV_LOG_ERROR, "Extra bits CRC error\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    return 0;
+}
+
 static inline int wv_unpack_stereo(WavpackFrameContext *s, GetBitContext *gb,
                                    void *dst, const int type)
 {
@@ -609,14 +624,9 @@ static inline int wv_unpack_stereo(WavpackFrameContext *s, GetBitContext *gb,
     } while (!last && count < s->samples);
 
     wv_reset_saved_context(s);
-    if (crc != s->CRC) {
-        av_log(s->avctx, AV_LOG_ERROR, "CRC error\n");
-        return -1;
-    }
-    if (s->got_extra_bits && crc_extra_bits != s->crc_extra_bits) {
-        av_log(s->avctx, AV_LOG_ERROR, "Extra bits CRC error\n");
-        return -1;
-    }
+    if ((s->avctx->err_recognition & AV_EF_CRCCHECK) &&
+        wv_check_crc(s, crc, crc_extra_bits))
+        return AVERROR_INVALIDDATA;
 
     return count * 2;
 }
@@ -679,14 +689,9 @@ static inline int wv_unpack_mono(WavpackFrameContext *s, GetBitContext *gb,
     } while (!last && count < s->samples);
 
     wv_reset_saved_context(s);
-    if (crc != s->CRC) {
-        av_log(s->avctx, AV_LOG_ERROR, "CRC error\n");
-        return -1;
-    }
-    if (s->got_extra_bits && crc_extra_bits != s->crc_extra_bits) {
-        av_log(s->avctx, AV_LOG_ERROR, "Extra bits CRC error\n");
-        return -1;
-    }
+    if ((s->avctx->err_recognition & AV_EF_CRCCHECK) &&
+        wv_check_crc(s, crc, crc_extra_bits))
+        return AVERROR_INVALIDDATA;
 
     return count;
 }

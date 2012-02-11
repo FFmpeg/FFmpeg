@@ -614,7 +614,7 @@ static int svq3_decode_mb(SVQ3Context *svq3, unsigned int mb_type)
         dir = i_mb_type_info[mb_type - 8].pred_mode;
         dir = (dir >> 1) ^ 3*(dir & 1) ^ 1;
 
-        if ((h->intra16x16_pred_mode = ff_h264_check_intra16x16_pred_mode(h, dir)) == -1){
+        if ((h->intra16x16_pred_mode = ff_h264_check_intra_pred_mode(h, dir, 0)) == -1){
             av_log(h->s.avctx, AV_LOG_ERROR, "check_intra_pred_mode = -1\n");
             return -1;
         }
@@ -713,7 +713,7 @@ static int svq3_decode_mb(SVQ3Context *svq3, unsigned int mb_type)
     s->current_picture.f.mb_type[mb_xy] = mb_type;
 
     if (IS_INTRA(mb_type)) {
-        h->chroma_pred_mode = ff_h264_check_intra_chroma_pred_mode(h, DC_PRED8x8);
+        h->chroma_pred_mode = ff_h264_check_intra_pred_mode(h, DC_PRED8x8, 1);
     }
 
     return 0;
@@ -813,7 +813,9 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
     MpegEncContext *s = &h->s;
     int m;
     unsigned char *extradata;
+    unsigned char *extradata_end;
     unsigned int size;
+    int marker_found = 0;
 
     if (ff_h264_decode_init(avctx) < 0)
         return -1;
@@ -834,19 +836,26 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
 
         /* prowl for the "SEQH" marker in the extradata */
         extradata = (unsigned char *)avctx->extradata;
-        for (m = 0; m < avctx->extradata_size; m++) {
-            if (!memcmp(extradata, "SEQH", 4))
-                break;
-            extradata++;
+        extradata_end = avctx->extradata + avctx->extradata_size;
+        if (extradata) {
+            for (m = 0; m + 8 < avctx->extradata_size; m++) {
+                if (!memcmp(extradata, "SEQH", 4)) {
+                    marker_found = 1;
+                    break;
+                }
+                extradata++;
+            }
         }
 
         /* if a match was found, parse the extra data */
-        if (extradata && !memcmp(extradata, "SEQH", 4)) {
+        if (marker_found) {
 
             GetBitContext gb;
             int frame_size_code;
 
             size = AV_RB32(&extradata[4]);
+            if (size > extradata_end - extradata - 8)
+                return AVERROR_INVALIDDATA;
             init_get_bits(&gb, extradata + 8, size*8);
 
             /* 'frame size code' and optional 'width, height' */

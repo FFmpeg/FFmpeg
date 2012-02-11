@@ -1093,6 +1093,8 @@ static int encode_audio_frame(AVFormatContext *s, OutputStream *ost,
     if (got_packet) {
         if (pkt.pts != AV_NOPTS_VALUE)
             pkt.pts      = av_rescale_q(pkt.pts,      enc->time_base, ost->st->time_base);
+        if (pkt.dts != AV_NOPTS_VALUE)
+            pkt.dts      = av_rescale_q(pkt.dts,      enc->time_base, ost->st->time_base);
         if (pkt.duration > 0)
             pkt.duration = av_rescale_q(pkt.duration, enc->time_base, ost->st->time_base);
 
