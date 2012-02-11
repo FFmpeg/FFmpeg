@@ -283,7 +283,8 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
             s->decode_buffer = av_mallocz(sizeof(int32_t)*s->frame_length*s->channels);
             if (!s->decode_buffer)
                 return AVERROR(ENOMEM);
-        }
+        } else
+            s->decode_buffer = NULL;
         s->ch_ctx = av_malloc(avctx->channels * sizeof(*s->ch_ctx));
         if (!s->ch_ctx) {
             av_freep(&s->decode_buffer);
@@ -449,7 +450,9 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
 static av_cold int tta_decode_close(AVCodecContext *avctx) {
     TTAContext *s = avctx->priv_data;
 
-    av_free(s->decode_buffer);
+    if (s->bps < 3)
+        av_free(s->decode_buffer);
+    s->decode_buffer = NULL;
     av_freep(&s->ch_ctx);
 
     return 0;
