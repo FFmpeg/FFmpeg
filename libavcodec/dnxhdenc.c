@@ -29,6 +29,7 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "dsputil.h"
+#include "internal.h"
 #include "mpegvideo.h"
 #include "mpegvideo_common.h"
 #include "dnxhdenc.h"
@@ -903,18 +904,21 @@ static void dnxhd_load_picture(DNXHDEncContext *ctx, const AVFrame *frame)
     ctx->cur_field = frame->interlaced_frame && !frame->top_field_first;
 }
 
-static int dnxhd_encode_picture(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data)
+static int dnxhd_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
+                                const AVFrame *frame, int *got_packet)
 {
     DNXHDEncContext *ctx = avctx->priv_data;
     int first_field = 1;
     int offset, i, ret;
+    uint8_t *buf;
 
-    if (buf_size < ctx->cid_table->frame_size) {
+    if ((ret = ff_alloc_packet(pkt, ctx->cid_table->frame_size)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "output buffer is too small to compress picture\n");
-        return -1;
+        return ret;
     }
+    buf = pkt->data;
 
-    dnxhd_load_picture(ctx, data);
+    dnxhd_load_picture(ctx, frame);
 
  encode_coding_unit:
     for (i = 0; i < 3; i++) {
@@ -955,13 +959,14 @@ static int dnxhd_encode_picture(AVCodecContext *avctx, unsigned char *buf, int b
         first_field     = 0;
         ctx->cur_field ^= 1;
         buf      += ctx->cid_table->coding_unit_size;
-        buf_size -= ctx->cid_table->coding_unit_size;
         goto encode_coding_unit;
     }
 
     ctx->frame.quality = ctx->qscale*FF_QP2LAMBDA;
 
-    return ctx->cid_table->frame_size;
+    pkt->flags |= AV_PKT_FLAG_KEY;
+    *got_packet = 1;
+    return 0;
 }
 
 static int dnxhd_encode_end(AVCodecContext *avctx)
@@ -999,7 +1004,7 @@ AVCodec ff_dnxhd_encoder = {
     .id             = CODEC_ID_DNXHD,
     .priv_data_size = sizeof(DNXHDEncContext),
     .init           = dnxhd_encode_init,
-    .encode         = dnxhd_encode_picture,
+    .encode2        = dnxhd_encode_picture,
     .close          = dnxhd_encode_end,
     .capabilities = CODEC_CAP_SLICE_THREADS,
     .pix_fmts = (const enum PixelFormat[]){PIX_FMT_YUV422P, PIX_FMT_YUV422P10, PIX_FMT_NONE},
