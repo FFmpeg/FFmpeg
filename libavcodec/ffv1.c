@@ -874,44 +874,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
             s->state_transition[i]=ver2_state[i];
 
     s->plane_count=3;
-    for(i=0; i<256; i++){
-        s->quant_table_count=2;
-        if(avctx->bits_per_raw_sample <=8){
-            s->quant_tables[0][0][i]=           quant11[i];
-            s->quant_tables[0][1][i]=        11*quant11[i];
-            s->quant_tables[0][2][i]=     11*11*quant11[i];
-            s->quant_tables[1][0][i]=           quant11[i];
-            s->quant_tables[1][1][i]=        11*quant11[i];
-            s->quant_tables[1][2][i]=     11*11*quant5 [i];
-            s->quant_tables[1][3][i]=   5*11*11*quant5 [i];
-            s->quant_tables[1][4][i]= 5*5*11*11*quant5 [i];
-        }else{
-            s->quant_tables[0][0][i]=           quant9_10bit[i];
-            s->quant_tables[0][1][i]=        11*quant9_10bit[i];
-            s->quant_tables[0][2][i]=     11*11*quant9_10bit[i];
-            s->quant_tables[1][0][i]=           quant9_10bit[i];
-            s->quant_tables[1][1][i]=        11*quant9_10bit[i];
-            s->quant_tables[1][2][i]=     11*11*quant5_10bit[i];
-            s->quant_tables[1][3][i]=   5*11*11*quant5_10bit[i];
-            s->quant_tables[1][4][i]= 5*5*11*11*quant5_10bit[i];
-        }
-    }
-    s->context_count[0]= (11*11*11+1)/2;
-    s->context_count[1]= (11*11*5*5*5+1)/2;
-    memcpy(s->quant_table, s->quant_tables[avctx->context_model], sizeof(s->quant_table));
-
-    for(i=0; i<s->plane_count; i++){
-        PlaneContext * const p= &s->plane[i];
-
-        memcpy(p->quant_table, s->quant_table, sizeof(p->quant_table));
-        p->quant_table_index= avctx->context_model;
-        p->context_count= s->context_count[p->quant_table_index];
-    }
-
-    if(allocate_initial_states(s) < 0)
-        return AVERROR(ENOMEM);
-
-    avctx->coded_frame= &s->picture;
     switch(avctx->pix_fmt){
     case PIX_FMT_YUV420P9:
     case PIX_FMT_YUV420P10:
@@ -956,6 +918,44 @@ static av_cold int encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "format not supported\n");
         return -1;
     }
+    for(i=0; i<256; i++){
+        s->quant_table_count=2;
+        if(avctx->bits_per_raw_sample <=8){
+            s->quant_tables[0][0][i]=           quant11[i];
+            s->quant_tables[0][1][i]=        11*quant11[i];
+            s->quant_tables[0][2][i]=     11*11*quant11[i];
+            s->quant_tables[1][0][i]=           quant11[i];
+            s->quant_tables[1][1][i]=        11*quant11[i];
+            s->quant_tables[1][2][i]=     11*11*quant5 [i];
+            s->quant_tables[1][3][i]=   5*11*11*quant5 [i];
+            s->quant_tables[1][4][i]= 5*5*11*11*quant5 [i];
+        }else{
+            s->quant_tables[0][0][i]=           quant9_10bit[i];
+            s->quant_tables[0][1][i]=        11*quant9_10bit[i];
+            s->quant_tables[0][2][i]=     11*11*quant9_10bit[i];
+            s->quant_tables[1][0][i]=           quant9_10bit[i];
+            s->quant_tables[1][1][i]=        11*quant9_10bit[i];
+            s->quant_tables[1][2][i]=     11*11*quant5_10bit[i];
+            s->quant_tables[1][3][i]=   5*11*11*quant5_10bit[i];
+            s->quant_tables[1][4][i]= 5*5*11*11*quant5_10bit[i];
+        }
+    }
+    s->context_count[0]= (11*11*11+1)/2;
+    s->context_count[1]= (11*11*5*5*5+1)/2;
+    memcpy(s->quant_table, s->quant_tables[avctx->context_model], sizeof(s->quant_table));
+
+    for(i=0; i<s->plane_count; i++){
+        PlaneContext * const p= &s->plane[i];
+
+        memcpy(p->quant_table, s->quant_table, sizeof(p->quant_table));
+        p->quant_table_index= avctx->context_model;
+        p->context_count= s->context_count[p->quant_table_index];
+    }
+
+    if(allocate_initial_states(s) < 0)
+        return AVERROR(ENOMEM);
+
+    avctx->coded_frame= &s->picture;
     if(!s->transparency)
         s->plane_count= 2;
     avcodec_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_h_shift, &s->chroma_v_shift);
