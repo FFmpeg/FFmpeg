@@ -83,6 +83,8 @@ int ff_get_cpu_flags_x86(void)
         cpuid(1, eax, ebx, ecx, std_caps);
         family = ((eax>>8)&0xf) + ((eax>>20)&0xff);
         model  = ((eax>>4)&0xf) + ((eax>>12)&0xf0);
+        if (std_caps & (1<<15))
+            rval |= AV_CPU_FLAG_CMOV;
         if (std_caps & (1<<23))
             rval |= AV_CPU_FLAG_MMX;
         if (std_caps & (1<<25))
