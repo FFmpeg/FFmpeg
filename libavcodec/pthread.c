@@ -386,14 +386,14 @@ static attribute_align_arg void *frame_worker_thread(void *arg)
 
         if (p->state == STATE_SETTING_UP) ff_thread_finish_setup(avctx);
 
-        p->state = STATE_INPUT_READY;
-
         pthread_mutex_lock(&p->progress_mutex);
         for (i = 0; i < MAX_BUFFERS; i++)
             if (p->progress_used[i]) {
                 p->progress[i][0] = INT_MAX;
                 p->progress[i][1] = INT_MAX;
             }
+        p->state = STATE_INPUT_READY;
+
         pthread_cond_broadcast(&p->progress_cond);
         pthread_cond_signal(&p->output_cond);
         pthread_mutex_unlock(&p->progress_mutex);
