@@ -2943,6 +2943,8 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
 
             } else {
                 if (s0->current_picture_ptr->frame_num != h->frame_num) {
+                    ff_thread_report_progress((AVFrame*)s0->current_picture_ptr, INT_MAX,
+                                              s0->picture_structure==PICT_BOTTOM_FIELD);
                     /*
                      * This and previous field had
                      * different frame_nums. Consider this field first in
