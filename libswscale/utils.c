@@ -263,7 +263,7 @@ static int initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSi
         if (xInc <= 1<<16)      filterSize= 1 + sizeFactor; // upscale
         else                    filterSize= 1 + (sizeFactor*srcW + dstW - 1)/ dstW;
 
-        if (filterSize > srcW-2) filterSize=srcW-2;
+        filterSize = av_clip(filterSize, 1, srcW - 2);
 
         FF_ALLOC_OR_GOTO(NULL, filter, dstW*sizeof(*filter)*filterSize, fail);
 
