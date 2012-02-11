@@ -416,30 +416,30 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
         return -1;
     skip_bits_long(&s->gb, 32); // frame crc
 
-        // convert to output buffer
-        switch(s->bps) {
-            case 1: {
-                uint8_t *samples = (uint8_t *)s->frame.data[0];
-                for (p = s->decode_buffer; p < s->decode_buffer + (framelen * s->channels); p++)
-                    *samples++ = *p + 0x80;
-                break;
-            }
-            case 2: {
-                uint16_t *samples = (int16_t *)s->frame.data[0];
-                for (p = s->decode_buffer; p < s->decode_buffer + (framelen * s->channels); p++)
-                    *samples++ = *p;
-                break;
-            }
-            case 3: {
-                // shift samples for 24-bit sample format
-                int32_t *samples = (int32_t *)s->frame.data[0];
-                for (p = s->decode_buffer; p < s->decode_buffer + (framelen * s->channels); p++)
-                    *samples++ <<= 8;
-                // reset decode buffer
-                s->decode_buffer = NULL;
-                break;
-            }
+    // convert to output buffer
+    switch (s->bps) {
+    case 1: {
+        uint8_t *samples = (uint8_t *)s->frame.data[0];
+        for (p = s->decode_buffer; p < s->decode_buffer + (framelen * s->channels); p++)
+            *samples++ = *p + 0x80;
+        break;
         }
+    case 2: {
+        uint16_t *samples = (int16_t *)s->frame.data[0];
+        for (p = s->decode_buffer; p < s->decode_buffer + (framelen * s->channels); p++)
+            *samples++ = *p;
+        break;
+        }
+    case 3: {
+        // shift samples for 24-bit sample format
+        int32_t *samples = (int32_t *)s->frame.data[0];
+        for (p = s->decode_buffer; p < s->decode_buffer + (framelen * s->channels); p++)
+            *samples++ <<= 8;
+        // reset decode buffer
+        s->decode_buffer = NULL;
+        break;
+        }
+    }
 
     *got_frame_ptr   = 1;
     *(AVFrame *)data = s->frame;
