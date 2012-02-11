@@ -26,7 +26,7 @@
  * external API header
  */
 
-/**
+/*
  * @mainpage
  *
  * @section libav_intro Introduction
