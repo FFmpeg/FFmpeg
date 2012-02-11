@@ -25,10 +25,6 @@
 #include "libavcodec/dsputil.h"
 #include "mmi.h"
 
-void ff_mmi_idct_put(uint8_t *dest, int line_size, DCTELEM *block);
-void ff_mmi_idct_add(uint8_t *dest, int line_size, DCTELEM *block);
-void ff_mmi_idct(DCTELEM *block);
-
 static void clear_blocks_mmi(DCTELEM * blocks)
 {
         __asm__ volatile(

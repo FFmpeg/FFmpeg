@@ -21,6 +21,14 @@
 #ifndef AVCODEC_PS2_MMI_H
 #define AVCODEC_PS2_MMI_H
 
+#include <stdint.h>
+
+#include "libavcodec/dsputil.h"
+
+void ff_mmi_idct_put(uint8_t *dest, int line_size, DCTELEM *block);
+void ff_mmi_idct_add(uint8_t *dest, int line_size, DCTELEM *block);
+void ff_mmi_idct(DCTELEM *block);
+
 #define align16 __attribute__ ((aligned (16)))
 
 /*
