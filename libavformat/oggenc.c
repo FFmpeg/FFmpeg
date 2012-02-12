@@ -131,6 +131,11 @@ static int ogg_write_page(AVFormatContext *s, OGGPage *page, int extra_flags)
     return 0;
 }
 
+static int ogg_key_granule(OGGStreamContext *oggstream, int64_t granule)
+{
+    return oggstream->kfgshift && !(granule & ((1<<oggstream->kfgshift)-1));
+}
+
 static int64_t ogg_granule_to_timestamp(OGGStreamContext *oggstream, int64_t granule)
 {
     if (oggstream->kfgshift)
@@ -199,9 +204,15 @@ static int ogg_buffer_data(AVFormatContext *s, AVStream *st,
     int i, segments, len, flush = 0;
 
     // Handles VFR by flushing page because this frame needs to have a timestamp
+    // For theora, keyframes also need to have a timestamp to correctly mark
+    // them as such, otherwise seeking will not work correctly at the very
+    // least with old libogg versions.
+    // Do not try to flush empty packets though, that will create broken files.
     if (st->codec->codec_id == CODEC_ID_THEORA &&
-        ogg_granule_to_timestamp(oggstream, granule) >
-        ogg_granule_to_timestamp(oggstream, oggstream->last_granule) + 1) {
+        oggstream->page.size &&
+        (ogg_granule_to_timestamp(oggstream, granule) >
+         ogg_granule_to_timestamp(oggstream, oggstream->last_granule) + 1 ||
+         ogg_key_granule(oggstream, granule))) {
         if (oggstream->page.granule != -1)
             ogg_buffer_page(s, oggstream);
         flush = 1;
