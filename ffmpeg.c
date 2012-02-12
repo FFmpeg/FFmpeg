@@ -2513,7 +2513,7 @@ static int transcode_init(OutputFile *output_files, int nb_output_files,
             }
         } else {
             if (!ost->enc)
-                ost->enc = avcodec_find_encoder(ost->st->codec->codec_id);
+                ost->enc = avcodec_find_encoder(codec->codec_id);
 
             ist->decoding_needed = 1;
             ost->encoding_needed = 1;
