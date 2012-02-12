@@ -28,6 +28,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 
 typedef struct PCXContext {
     AVFrame picture;
@@ -95,19 +96,19 @@ static int pcx_rle_encode(      uint8_t *dst, int dst_size,
     return dst - dst_start;
 }
 
-static int pcx_encode_frame(AVCodecContext *avctx,
-                            unsigned char *buf, int buf_size, void *data)
+static int pcx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
+                            const AVFrame *frame, int *got_packet)
 {
     PCXContext *s = avctx->priv_data;
     AVFrame *const pict = &s->picture;
-    const uint8_t *buf_start = buf;
-    const uint8_t *buf_end   = buf + buf_size;
+    const uint8_t *buf_end;
+    uint8_t *buf;
 
-    int bpp, nplanes, i, y, line_bytes, written;
+    int bpp, nplanes, i, y, line_bytes, written, ret, max_pkt_size;
     const uint32_t *pal = NULL;
     const uint8_t *src;
 
-    *pict = *(AVFrame *)data;
+    *pict = *frame;
     pict->pict_type = AV_PICTURE_TYPE_I;
     pict->key_frame = 1;
 
@@ -144,6 +145,14 @@ static int pcx_encode_frame(AVCodecContext *avctx,
     line_bytes = (avctx->width * bpp + 7) >> 3;
     line_bytes = (line_bytes + 1) & ~1;
 
+    max_pkt_size = 128 + avctx->height * 2 * line_bytes * nplanes + (pal ? 256*3 + 1 : 0);
+    if ((ret = ff_alloc_packet(pkt, max_pkt_size)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting output packet of size %d.\n", max_pkt_size);
+        return ret;
+    }
+    buf     = pkt->data;
+    buf_end = pkt->data + pkt->size;
+
     bytestream_put_byte(&buf, 10);                  // manufacturer
     bytestream_put_byte(&buf, 5);                   // version
     bytestream_put_byte(&buf, 1);                   // encoding
@@ -160,7 +169,7 @@ static int pcx_encode_frame(AVCodecContext *avctx,
     bytestream_put_byte(&buf, nplanes);             // number of planes
     bytestream_put_le16(&buf, line_bytes);          // scanline plane size in bytes
 
-    while (buf - buf_start < 128)
+    while (buf - pkt->data < 128)
         *buf++= 0;
 
     src = pict->data[0];
@@ -186,7 +195,11 @@ static int pcx_encode_frame(AVCodecContext *avctx,
         }
     }
 
-    return buf - buf_start;
+    pkt->size   = buf - pkt->data;
+    pkt->flags |= AV_PKT_FLAG_KEY;
+    *got_packet = 1;
+
+    return 0;
 }
 
 AVCodec ff_pcx_encoder = {
@@ -195,7 +208,7 @@ AVCodec ff_pcx_encoder = {
     .id             = CODEC_ID_PCX,
     .priv_data_size = sizeof(PCXContext),
     .init           = pcx_encode_init,
-    .encode         = pcx_encode_frame,
+    .encode2        = pcx_encode_frame,
     .pix_fmts = (const enum PixelFormat[]){
         PIX_FMT_RGB24,
         PIX_FMT_RGB8, PIX_FMT_BGR8, PIX_FMT_RGB4_BYTE, PIX_FMT_BGR4_BYTE, PIX_FMT_GRAY8, PIX_FMT_PAL8,
