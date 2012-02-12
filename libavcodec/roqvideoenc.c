@@ -59,6 +59,7 @@
 #include "roqvideo.h"
 #include "bytestream.h"
 #include "elbg.h"
+#include "internal.h"
 #include "mathops.h"
 
 #define CHROMA_BIAS 1
@@ -1001,13 +1002,12 @@ static void roq_write_video_info_chunk(RoqContext *enc)
     bytestream_put_byte(&enc->out_buf, 0x00);
 }
 
-static int roq_encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data)
+static int roq_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
+                            const AVFrame *frame, int *got_packet)
 {
     RoqContext *enc = avctx->priv_data;
-    const AVFrame *frame= data;
-    uint8_t *buf_start = buf;
+    int size, ret;
 
-    enc->out_buf = buf;
     enc->avctx = avctx;
 
     enc->frame_to_enc = frame;
@@ -1019,10 +1019,12 @@ static int roq_encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_s
 
     /* 138 bits max per 8x8 block +
      *     256 codebooks*(6 bytes 2x2 + 4 bytes 4x4) + 8 bytes frame header */
-    if (((enc->width*enc->height/64)*138+7)/8 + 256*(6+4) + 8 > buf_size) {
-        av_log(avctx, AV_LOG_ERROR, "  RoQ: Output buffer too small!\n");
-        return -1;
+    size = ((enc->width * enc->height / 64) * 138 + 7) / 8 + 256 * (6 + 4) + 8;
+    if ((ret = ff_alloc_packet(pkt, size)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting output packet with size %d.\n", size);
+        return ret;
     }
+    enc->out_buf = pkt->data;
 
     /* Check for I frame */
     if (enc->framesSinceKeyframe == avctx->gop_size)
@@ -1046,7 +1048,12 @@ static int roq_encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_s
     /* Encode the actual frame */
     roq_encode_video(enc);
 
-    return enc->out_buf - buf_start;
+    pkt->size   = enc->out_buf - pkt->data;
+    if (enc->framesSinceKeyframe == 1)
+        pkt->flags |= AV_PKT_FLAG_KEY;
+    *got_packet = 1;
+
+    return 0;
 }
 
 static int roq_encode_end(AVCodecContext *avctx)
@@ -1071,7 +1078,7 @@ AVCodec ff_roq_encoder = {
     .id                   = CODEC_ID_ROQ,
     .priv_data_size       = sizeof(RoqContext),
     .init                 = roq_encode_init,
-    .encode               = roq_encode_frame,
+    .encode2              = roq_encode_frame,
     .close                = roq_encode_end,
     .supported_framerates = (const AVRational[]){{30,1}, {0,0}},
     .pix_fmts             = (const enum PixelFormat[]){PIX_FMT_YUV444P, PIX_FMT_NONE},
