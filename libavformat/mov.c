@@ -25,11 +25,13 @@
 //#define DEBUG
 //#define MOV_EXPORT_ALL_METADATA
 
+#include "libavutil/audioconvert.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"
+#include "libavcodec/ac3tab.h"
 #include "avformat.h"
 #include "internal.h"
 #include "avio_internal.h"
@@ -552,6 +554,9 @@ static int mov_read_dac3(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     acmod = (ac3info >> 11) & 0x7;
     lfeon = (ac3info >> 10) & 0x1;
     st->codec->channels = ((int[]){2,1,2,3,3,4,4,5})[acmod] + lfeon;
+    st->codec->channel_layout = avpriv_ac3_channel_layout_tab[acmod];
+    if (lfeon)
+        st->codec->channel_layout |= AV_CH_LOW_FREQUENCY;
     st->codec->audio_service_type = bsmod;
     if (st->codec->channels > 1 && bsmod == 0x7)
         st->codec->audio_service_type = AV_AUDIO_SERVICE_TYPE_KARAOKE;

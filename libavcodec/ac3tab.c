@@ -84,7 +84,7 @@ const uint8_t ff_ac3_channels_tab[8] = {
 /**
  * Map audio coding mode (acmod) to channel layout mask.
  */
-const uint16_t ff_ac3_channel_layout_tab[8] = {
+const uint16_t avpriv_ac3_channel_layout_tab[8] = {
     AV_CH_LAYOUT_STEREO,
     AV_CH_LAYOUT_MONO,
     AV_CH_LAYOUT_STEREO,
