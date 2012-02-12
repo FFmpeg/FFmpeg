@@ -1774,7 +1774,7 @@ test_deps _muxer _demuxer                                               \
     gxf                                                                 \
     matroska=mkv                                                        \
     mmf                                                                 \
-    mov                                                                 \
+    mov="mov ismv"                                                      \
     pcm_mulaw=mulaw                                                     \
     mxf="mxf mxf_d10"                                                   \
     nut                                                                 \

@@ -102,6 +102,10 @@ if [ -n "$do_mov" ] ; then
 do_lavf_timecode mov "-acodec pcm_alaw -vcodec mpeg4"
 fi
 
+if [ -n "$do_ismv" ] ; then
+do_lavf_timecode ismv "-an -vcodec mpeg4"
+fi
+
 if [ -n "$do_dv_fmt" ] ; then
 do_lavf_timecode_nodrop dv "-ar 48000 -r 25 -s pal -ac 2"
 do_lavf_timecode_drop   dv "-ar 48000 -pix_fmt yuv411p -s ntsc -ac 2"
