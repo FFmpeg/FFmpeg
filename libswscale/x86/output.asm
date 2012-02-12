@@ -278,7 +278,7 @@ yuv2planeX_fn 10,  7, 5
     psraw           m0, 7
     psraw           m1, 7
     packuswb        m0, m1
-    mov%2      [r1+r2], m0
+    mov%2 [dstq+dstwq], m0
 %elif %1 == 16
     paddd           m0, m4, [srcq+dstwq*4+mmsize*0]
     paddd           m1, m4, [srcq+dstwq*4+mmsize*1]
