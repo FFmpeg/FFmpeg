@@ -1177,7 +1177,7 @@ cglobal butterflies_float_interleave, 4,4,3, dst, src0, src1, len
 
 INIT_XMM sse
 BUTTERFLIES_FLOAT_INTERLEAVE
-%ifdef HAVE_AVX
+%if HAVE_AVX
 INIT_YMM avx
 BUTTERFLIES_FLOAT_INTERLEAVE
 %endif

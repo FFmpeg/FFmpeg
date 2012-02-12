@@ -306,7 +306,7 @@ INIT_XMM
 idct_put_fn sse2, 16
 INIT_XMM
 idct_put_fn sse4, 16
-%ifdef HAVE_AVX
+%if HAVE_AVX
 INIT_AVX
 idct_put_fn avx,  16
 %endif
