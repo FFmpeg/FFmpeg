@@ -229,12 +229,13 @@ static int png_write_row(PNGEncContext *s, const uint8_t *data, int size)
     return 0;
 }
 
-static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data){
+static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
+                        const AVFrame *pict, int *got_packet)
+{
     PNGEncContext *s = avctx->priv_data;
-    AVFrame *pict = data;
     AVFrame * const p= &s->picture;
     int bit_depth, color_type, y, len, row_size, ret, is_progressive;
-    int bits_per_pixel, pass_row_size;
+    int bits_per_pixel, pass_row_size, max_packet_size;
     int compression_level;
     uint8_t *ptr, *top;
     uint8_t *crow_base = NULL, *crow_buf, *crow;
@@ -246,9 +247,17 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     p->pict_type= AV_PICTURE_TYPE_I;
     p->key_frame= 1;
 
-    s->bytestream_start=
-    s->bytestream= buf;
-    s->bytestream_end= buf+buf_size;
+    max_packet_size = IOBUF_SIZE*avctx->height + FF_MIN_BUFFER_SIZE;
+    if (!pkt->data &&
+        (ret = av_new_packet(pkt, max_packet_size)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Could not allocate output packet of size %d.\n",
+               max_packet_size);
+        return ret;
+    }
+
+    s->bytestream_start =
+    s->bytestream       = pkt->data;
+    s->bytestream_end   = pkt->data + pkt->size;
 
     is_progressive = !!(avctx->flags & CODEC_FLAG_INTERLACED_DCT);
     switch(avctx->pix_fmt) {
@@ -409,7 +418,11 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     }
     png_write_chunk(&s->bytestream, MKTAG('I', 'E', 'N', 'D'), NULL, 0);
 
-    ret = s->bytestream - s->bytestream_start;
+    pkt->size   = s->bytestream - s->bytestream_start;
+    pkt->flags |= AV_PKT_FLAG_KEY;
+    *got_packet = 1;
+    ret         = 0;
+
  the_end:
     av_free(crow_base);
     av_free(progressive_buf);
@@ -442,7 +455,7 @@ AVCodec ff_png_encoder = {
     .id             = CODEC_ID_PNG,
     .priv_data_size = sizeof(PNGEncContext),
     .init           = png_enc_init,
-    .encode         = encode_frame,
+    .encode2        = encode_frame,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGB32, PIX_FMT_PAL8, PIX_FMT_GRAY8, PIX_FMT_MONOBLACK, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("PNG image"),
 };
