@@ -81,6 +81,7 @@ FATE_ACODEC  = $(ACODEC_TESTS:%=fate-acodec-%)
 FATE_VSYNTH1 = $(VCODEC_TESTS:%=fate-vsynth1-%)
 FATE_VSYNTH2 = $(VCODEC_TESTS:%=fate-vsynth2-%)
 FATE_VCODEC  = $(FATE_VSYNTH1) $(FATE_VSYNTH2)
+FATE_LAVF_FATE = $(LAVF_FATE_TESTS:%=fate-lavf-fate-%)
 FATE_LAVF    = $(LAVF_TESTS:%=fate-lavf-%)
 FATE_LAVFI   = $(LAVFI_TESTS:%=fate-lavfi-%)
 FATE_SEEK    = $(SEEK_TESTS:seek_%=fate-seek-%)
@@ -104,6 +105,7 @@ $(FATE_SEEK):   fate-codec fate-lavf libavformat/seek-test$(EXESUF)
 $(FATE_ACODEC):  CMD = codectest acodec
 $(FATE_VSYNTH1): CMD = codectest vsynth1
 $(FATE_VSYNTH2): CMD = codectest vsynth2
+$(FATE_LAVF_FATE): CMD = lavffatetest
 $(FATE_LAVF):    CMD = lavftest
 $(FATE_LAVFI):   CMD = lavfitest
 $(FATE_SEEK):    CMD = seektest
@@ -111,11 +113,13 @@ $(FATE_SEEK):    CMD = seektest
 fate-codec:  fate-acodec fate-vcodec
 fate-acodec: $(FATE_ACODEC)
 fate-vcodec: $(FATE_VCODEC)
+fate-lavf-fate: $(FATE_LAVF_FATE)
 fate-lavf:   $(FATE_LAVF)
 fate-lavfi:  $(FATE_LAVFI)
 fate-seek:   $(FATE_SEEK)
 
 ifdef SAMPLES
+FATE += $(FATE_LAVF_FATE)
 FATE += $(FATE_TESTS) $(FATE_TESTS-yes)
 fate-rsync:
 	rsync -vaLW --timeout=60 --contimeout=60 rsync://fate.ffmpeg.org/fate-suite/ $(SAMPLES)

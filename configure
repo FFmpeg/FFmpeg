@@ -1778,7 +1778,7 @@ test_deps _muxer _demuxer                                               \
     pcm_mulaw=mulaw                                                     \
     mxf="mxf mxf_d10"                                                   \
     nut                                                                 \
-    ogg                                                                 \
+    ogg="ogg ogg_vp3"                                                   \
     rawvideo=pixfmt                                                     \
     rm                                                                  \
     swf                                                                 \
@@ -1946,11 +1946,12 @@ find_tests(){
 
 ACODEC_TESTS=$(find_tests acodec)
 VCODEC_TESTS=$(find_tests vsynth1)
+LAVF_FATE_TESTS=$(find_tests lavf-fate)
 LAVF_TESTS=$(find_tests lavf)
 LAVFI_TESTS=$(find_tests lavfi)
 SEEK_TESTS=$(find_tests seek seek_)
 
-ALL_TESTS="$ACODEC_TESTS $VCODEC_TESTS $LAVF_TESTS $LAVFI_TESTS $SEEK_TESTS"
+ALL_TESTS="$ACODEC_TESTS $VCODEC_TESTS $LAVF_FATE_TESTS $LAVF_TESTS $LAVFI_TESTS $SEEK_TESTS"
 
 pcm_test_deps=$(map 'echo ${v%_*}_decoder $v' $(filter pcm_* $ENCODER_LIST))
 
@@ -3699,6 +3700,7 @@ print_config CONFIG_ "$config_files" $CONFIG_LIST       \
 cat >>config.mak <<EOF
 ACODEC_TESTS=$(print_enabled -n _test $ACODEC_TESTS)
 VCODEC_TESTS=$(print_enabled -n _test $VCODEC_TESTS)
+LAVF_FATE_TESTS=$(print_enabled -n _test $LAVF_FATE_TESTS)
 LAVF_TESTS=$(print_enabled   -n _test $LAVF_TESTS)
 LAVFI_TESTS=$(print_enabled  -n _test $LAVFI_TESTS)
 SEEK_TESTS=$(print_enabled   -n _test $SEEK_TESTS)

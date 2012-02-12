@@ -77,11 +77,15 @@ pcm(){
 regtest(){
     t="${test#$2-}"
     ref=${base}/ref/$2/$t
-    ${base}/${1}-regression.sh $t $2 $3 "$target_exec" "$target_path" "$threads" "$thread_type" "$tool"
+    ${base}/${1}-regression.sh $t $2 $3 "$target_exec" "$target_path" "$threads" "$thread_type" "$tool" "$samples"
 }
 
 codectest(){
     regtest codec $1 tests/$1
+}
+
+lavffatetest(){
+    regtest lavf lavf-fate tests/vsynth1
 }
 
 lavftest(){

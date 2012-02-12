@@ -11,6 +11,7 @@ target_exec=$4
 target_path=$5
 threads=${6:-1}
 tool=$8
+samples=$9
 
 datadir="./tests/data"
 target_datadir="${target_path}/${datadir}"
