@@ -3006,8 +3006,8 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
             if(av_cmp_q(st->sample_aspect_ratio, st->codec->sample_aspect_ratio)
                && FFABS(av_q2d(st->sample_aspect_ratio) - av_q2d(st->codec->sample_aspect_ratio)) > 0.004*av_q2d(st->sample_aspect_ratio)
             ){
-                av_log(s, AV_LOG_ERROR, "Aspect ratio mismatch between encoder "
-                       "(%d/%d) and muxer layer (%d/%d)\n",
+                av_log(s, AV_LOG_ERROR, "Aspect ratio mismatch between muxer "
+                       "(%d/%d) and encoder layer (%d/%d)\n",
                        st->sample_aspect_ratio.num, st->sample_aspect_ratio.den,
                        st->codec->sample_aspect_ratio.num,
                        st->codec->sample_aspect_ratio.den);
