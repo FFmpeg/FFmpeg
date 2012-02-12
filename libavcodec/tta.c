@@ -235,6 +235,9 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
         if (s->channels == 0) {
             av_log(s->avctx, AV_LOG_ERROR, "Invalid number of channels\n");
             return AVERROR_INVALIDDATA;
+        } else if (avctx->sample_rate == 0) {
+            av_log(s->avctx, AV_LOG_ERROR, "Invalid samplerate\n");
+            return AVERROR_INVALIDDATA;
         }
 
         switch(s->bps) {
@@ -354,12 +357,16 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
             unary--;
         }
 
-        if (get_bits_left(&s->gb) < k)
-            return -1;
+        if (get_bits_left(&s->gb) < k) {
+            ret = AVERROR_INVALIDDATA;
+            goto error;
+        }
 
         if (k) {
-            if (k > MIN_CACHE_BITS)
-                return -1;
+            if (k > MIN_CACHE_BITS) {
+                ret = AVERROR_INVALIDDATA;
+                goto error;
+            }
             value = (unary << k) + get_bits(&s->gb, k);
         } else
             value = unary;
@@ -412,8 +419,10 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
         }
     }
 
-    if (get_bits_left(&s->gb) < 32)
-        return -1;
+    if (get_bits_left(&s->gb) < 32) {
+        ret = AVERROR_INVALIDDATA;
+        goto error;
+    }
     skip_bits_long(&s->gb, 32); // frame crc
 
     // convert to output buffer
@@ -445,6 +454,11 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
     *(AVFrame *)data = s->frame;
 
     return buf_size;
+error:
+    // reset decode buffer
+    if (s->bps == 3)
+        s->decode_buffer = NULL;
+    return ret;
 }
 
 static av_cold int tta_decode_close(AVCodecContext *avctx) {

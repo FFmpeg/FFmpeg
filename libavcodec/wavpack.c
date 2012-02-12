@@ -909,8 +909,9 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
                 } else {
                     for (j = 0; j < s->decorr[i].value; j++) {
                         s->decorr[i].samplesA[j] = wp_exp2(AV_RL16(buf)); buf += 2;
-                        if (s->stereo_in)
+                        if (s->stereo_in) {
                             s->decorr[i].samplesB[j] = wp_exp2(AV_RL16(buf)); buf += 2;
+                        }
                     }
                     t += s->decorr[i].value * 2 * (s->stereo_in + 1);
                 }
