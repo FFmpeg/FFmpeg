@@ -629,20 +629,20 @@ yuv2422_1_c_template(SwsContext *c, const int16_t *buf0,
                      const int16_t *abuf0, uint8_t *dest, int dstW,
                      int uvalpha, int y, enum PixelFormat target)
 {
-    const int16_t *ubuf0 = ubuf[0], *ubuf1 = ubuf[1],
-                  *vbuf0 = vbuf[0], *vbuf1 = vbuf[1];
+    const int16_t *ubuf0 = ubuf[0], *vbuf0 = vbuf[0];
     int i;
 
     if (uvalpha < 2048) {
         for (i = 0; i < (dstW >> 1); i++) {
             int Y1 = buf0[i * 2]     >> 7;
             int Y2 = buf0[i * 2 + 1] >> 7;
-            int U  = ubuf1[i]        >> 7;
-            int V  = vbuf1[i]        >> 7;
+            int U  = ubuf0[i]        >> 7;
+            int V  = vbuf0[i]        >> 7;
 
             output_pixels(i * 4, Y1, U, Y2, V);
         }
     } else {
+        const int16_t *ubuf1 = ubuf[1], *vbuf1 = vbuf[1];
         for (i = 0; i < (dstW >> 1); i++) {
             int Y1 =  buf0[i * 2]          >> 7;
             int Y2 =  buf0[i * 2 + 1]      >> 7;
@@ -775,8 +775,7 @@ yuv2rgb48_1_c_template(SwsContext *c, const int32_t *buf0,
                        const int32_t *abuf0, uint16_t *dest, int dstW,
                        int uvalpha, int y, enum PixelFormat target)
 {
-    const int32_t *ubuf0 = ubuf[0], *ubuf1 = ubuf[1],
-                  *vbuf0 = vbuf[0], *vbuf1 = vbuf[1];
+    const int32_t *ubuf0 = ubuf[0], *vbuf0 = vbuf[0];
     int i;
 
     if (uvalpha < 2048) {
@@ -807,6 +806,7 @@ yuv2rgb48_1_c_template(SwsContext *c, const int32_t *buf0,
             dest += 6;
         }
     } else {
+        const int32_t *ubuf1 = ubuf[1], *vbuf1 = vbuf[1];
         for (i = 0; i < (dstW >> 1); i++) {
             int Y1 = (buf0[i * 2]    ) >> 2;
             int Y2 = (buf0[i * 2 + 1]) >> 2;
@@ -1070,16 +1070,15 @@ yuv2rgb_1_c_template(SwsContext *c, const int16_t *buf0,
                      int uvalpha, int y, enum PixelFormat target,
                      int hasAlpha)
 {
-    const int16_t *ubuf0 = ubuf[0], *ubuf1 = ubuf[1],
-                  *vbuf0 = vbuf[0], *vbuf1 = vbuf[1];
+    const int16_t *ubuf0 = ubuf[0], *vbuf0 = vbuf[0];
     int i;
 
     if (uvalpha < 2048) {
         for (i = 0; i < (dstW >> 1); i++) {
             int Y1 = buf0[i * 2]     >> 7;
             int Y2 = buf0[i * 2 + 1] >> 7;
-            int U  = ubuf1[i]        >> 7;
-            int V  = vbuf1[i]        >> 7;
+            int U  = ubuf0[i]        >> 7;
+            int V  = vbuf0[i]        >> 7;
             int A1, A2;
             const void *r =  c->table_rV[V],
                        *g = (c->table_gU[U] + c->table_gV[V]),
@@ -1094,6 +1093,7 @@ yuv2rgb_1_c_template(SwsContext *c, const int16_t *buf0,
                           r, g, b, y, target, hasAlpha);
         }
     } else {
+        const int16_t *ubuf1 = ubuf[1], *vbuf1 = vbuf[1];
         for (i = 0; i < (dstW >> 1); i++) {
             int Y1 =  buf0[i * 2]          >> 7;
             int Y2 =  buf0[i * 2 + 1]      >> 7;
