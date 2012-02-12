@@ -1242,8 +1242,11 @@ static void matroska_execute_seekhead(MatroskaDemuxContext *matroska)
             continue;
         }
 
-        if (matroska_parse_seekhead_entry(matroska, i) < 0)
+        if (matroska_parse_seekhead_entry(matroska, i) < 0) {
+            // mark index as broken
+            matroska->cues_parsing_deferred = -1;
             break;
+        }
     }
 }
 
@@ -1284,7 +1287,8 @@ static void matroska_parse_cues(MatroskaDemuxContext *matroska) {
             break;
     assert(i <= seekhead_list->nb_elem);
 
-    matroska_parse_seekhead_entry(matroska, i);
+    if (matroska_parse_seekhead_entry(matroska, i) < 0)
+       matroska->cues_parsing_deferred = -1;
     matroska_add_index_entries(matroska);
 }
 
@@ -2023,13 +2027,13 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
     int i, index, index_sub, index_min;
 
     /* Parse the CUES now since we need the index data to seek. */
-    if (matroska->cues_parsing_deferred) {
-        matroska_parse_cues(matroska);
+    if (matroska->cues_parsing_deferred > 0) {
         matroska->cues_parsing_deferred = 0;
+        matroska_parse_cues(matroska);
     }
 
     if (!st->nb_index_entries)
-        return 0;
+        goto err;
     timestamp = FFMAX(timestamp, st->index_entries[0].timestamp);
 
     if ((index = av_index_search_timestamp(st, timestamp, flags)) < 0) {
@@ -2043,8 +2047,8 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
     }
 
     matroska_clear_queue(matroska);
-    if (index < 0)
-        return 0;
+    if (index < 0 || (matroska->cues_parsing_deferred < 0 && index == st->nb_index_entries - 1))
+        goto err;
 
     index_min = index;
     for (i=0; i < matroska->tracks.nb_elem; i++) {
@@ -2070,6 +2074,15 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
     matroska->num_levels = 0;
     ff_update_cur_dts(s, st, st->index_entries[index].timestamp);
     return 0;
+err:
+    // slightly hackish but allows proper fallback to
+    // the generic seeking code.
+    matroska_clear_queue(matroska);
+    matroska->current_id = 0;
+    matroska->skip_to_keyframe = 0;
+    matroska->done = 0;
+    matroska->num_levels = 0;
+    return -1;
 }
 
 static int matroska_read_close(AVFormatContext *s)
