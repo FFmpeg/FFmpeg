@@ -1226,9 +1226,10 @@ static av_cold int decode_end(AVCodecContext *avctx)
 #endif /* CONFIG_HUFFYUV_DECODER || CONFIG_FFVHUFF_DECODER */
 
 #if CONFIG_HUFFYUV_ENCODER || CONFIG_FFVHUFF_ENCODER
-static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data){
+static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
+                        const AVFrame *pict, int *got_packet)
+{
     HYuvContext *s = avctx->priv_data;
-    AVFrame *pict = data;
     const int width= s->width;
     const int width2= s->width>>1;
     const int height= s->height;
@@ -1236,7 +1237,13 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     const int fake_ustride= s->interlaced ? pict->linesize[1]*2  : pict->linesize[1];
     const int fake_vstride= s->interlaced ? pict->linesize[2]*2  : pict->linesize[2];
     AVFrame * const p= &s->picture;
-    int i, j, size=0;
+    int i, j, size = 0, ret;
+
+    if (!pkt->data &&
+        (ret = av_new_packet(pkt, width * height * 3 * 4 + FF_MIN_BUFFER_SIZE)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Error allocating output packet.\n");
+        return ret;
+    }
 
     *p = *pict;
     p->pict_type= AV_PICTURE_TYPE_I;
@@ -1247,7 +1254,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
             generate_len_table(s->len[i], s->stats[i]);
             if(generate_bits_table(s->bits[i], s->len[i])<0)
                 return -1;
-            size+= store_table(s, s->len[i], &buf[size]);
+            size += store_table(s, s->len[i], &pkt->data[size]);
         }
 
         for(i=0; i<3; i++)
@@ -1255,7 +1262,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
                 s->stats[i][j] >>= 1;
     }
 
-    init_put_bits(&s->pb, buf+size, buf_size-size);
+    init_put_bits(&s->pb, pkt->data + size, pkt->size - size);
 
     if(avctx->pix_fmt == PIX_FMT_YUV422P || avctx->pix_fmt == PIX_FMT_YUV420P){
         int lefty, leftu, leftv, y, cy;
@@ -1413,12 +1420,16 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         avctx->stats_out[0] = '\0';
     if(!(s->avctx->flags2 & CODEC_FLAG2_NO_OUTPUT)){
         flush_put_bits(&s->pb);
-        s->dsp.bswap_buf((uint32_t*)buf, (uint32_t*)buf, size);
+        s->dsp.bswap_buf((uint32_t*)pkt->data, (uint32_t*)pkt->data, size);
     }
 
     s->picture_number++;
 
-    return size*4;
+    pkt->size   = size*4;
+    pkt->flags |= AV_PKT_FLAG_KEY;
+    *got_packet = 1;
+
+    return 0;
 }
 
 static av_cold int encode_end(AVCodecContext *avctx)
@@ -1471,7 +1482,7 @@ AVCodec ff_huffyuv_encoder = {
     .id             = CODEC_ID_HUFFYUV,
     .priv_data_size = sizeof(HYuvContext),
     .init           = encode_init,
-    .encode         = encode_frame,
+    .encode2        = encode_frame,
     .close          = encode_end,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV422P, PIX_FMT_RGB32, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("Huffyuv / HuffYUV"),
@@ -1485,7 +1496,7 @@ AVCodec ff_ffvhuff_encoder = {
     .id             = CODEC_ID_FFVHUFF,
     .priv_data_size = sizeof(HYuvContext),
     .init           = encode_init,
-    .encode         = encode_frame,
+    .encode2        = encode_frame,
     .close          = encode_end,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_RGB32, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("Huffyuv FFmpeg variant"),
