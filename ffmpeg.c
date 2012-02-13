@@ -2139,7 +2139,6 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
                 ret = AVERROR(ENOMEM);
                 goto end;
             }
-            avcodec_get_frame_defaults(ist->filtered_frame);
             filtered_frame = ist->filtered_frame;
             *filtered_frame= *decoded_frame; //for me_threshold
             if (ost->picref) {
