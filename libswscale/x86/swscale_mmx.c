@@ -90,7 +90,6 @@ void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufI
     const int flags= c->flags;
     int16_t **lumPixBuf= c->lumPixBuf;
     int16_t **chrUPixBuf= c->chrUPixBuf;
-    int16_t **alpPixBuf= c->alpPixBuf;
     const int vLumBufSize= c->vLumBufSize;
     const int vChrBufSize= c->vChrBufSize;
     int16_t *vLumFilterPos= c->vLumFilterPos;
@@ -99,7 +98,6 @@ void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufI
     int16_t *vChrFilter= c->vChrFilter;
     int32_t *lumMmxFilter= c->lumMmxFilter;
     int32_t *chrMmxFilter= c->chrMmxFilter;
-    int32_t av_unused *alpMmxFilter= c->alpMmxFilter;
     const int vLumFilterSize= c->vLumFilterSize;
     const int vChrFilterSize= c->vChrFilterSize;
     const int chrDstY= dstY>>c->chrDstVSubSample;
@@ -115,7 +113,6 @@ void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufI
     if (dstY < dstH - 2) {
         const int16_t **lumSrcPtr= (const int16_t **) lumPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize;
         const int16_t **chrUSrcPtr= (const int16_t **) chrUPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
-        const int16_t **alpSrcPtr= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? (const int16_t **) alpPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize : NULL;
         int i;
         if (flags & SWS_ACCURATE_RND) {
             int s= APCK_SIZE / 8;
@@ -125,12 +122,6 @@ void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufI
                 lumMmxFilter[s*i+APCK_COEF/4  ]=
                 lumMmxFilter[s*i+APCK_COEF/4+1]= vLumFilter[dstY*vLumFilterSize + i    ]
                 + (vLumFilterSize>1 ? vLumFilter[dstY*vLumFilterSize + i + 1]<<16 : 0);
-                if (CONFIG_SWSCALE_ALPHA && alpPixBuf) {
-                    *(const void**)&alpMmxFilter[s*i              ]= alpSrcPtr[i  ];
-                    *(const void**)&alpMmxFilter[s*i+APCK_PTR2/4  ]= alpSrcPtr[i+(vLumFilterSize>1)];
-                    alpMmxFilter[s*i+APCK_COEF/4  ]=
-                    alpMmxFilter[s*i+APCK_COEF/4+1]= lumMmxFilter[s*i+APCK_COEF/4  ];
-                }
             }
             for (i=0; i<vChrFilterSize; i+=2) {
                 *(const void**)&chrMmxFilter[s*i              ]= chrUSrcPtr[i  ];
@@ -145,11 +136,6 @@ void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufI
                 lumMmxFilter[4*i+2]=
                 lumMmxFilter[4*i+3]=
                 ((uint16_t)vLumFilter[dstY*vLumFilterSize + i])*0x10001;
-                if (CONFIG_SWSCALE_ALPHA && alpPixBuf) {
-                    *(const void**)&alpMmxFilter[4*i+0]= alpSrcPtr[i];
-                    alpMmxFilter[4*i+2]=
-                    alpMmxFilter[4*i+3]= lumMmxFilter[4*i+2];
-                }
             }
             for (i=0; i<vChrFilterSize; i++) {
                 *(const void**)&chrMmxFilter[4*i+0]= chrUSrcPtr[i];
