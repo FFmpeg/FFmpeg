@@ -1386,8 +1386,7 @@ static void ac3_output_frame_header(AC3EncodeContext *s)
  */
 static void output_audio_block(AC3EncodeContext *s, int blk)
 {
-    int ch, i, baie, bnd, got_cpl;
-    int av_uninit(ch0);
+    int ch, i, baie, bnd, got_cpl, ch0;
     AC3Block *block = &s->blocks[blk];
 
     /* block switching */
@@ -2236,8 +2235,7 @@ static av_cold int validate_options(AC3EncodeContext *s)
  */
 static av_cold void set_bandwidth(AC3EncodeContext *s)
 {
-    int blk, ch;
-    int av_uninit(cpl_start);
+    int blk, ch, cpl_start;
 
     if (s->cutoff) {
         /* calculate bandwidth based on user-specified cutoff frequency */
