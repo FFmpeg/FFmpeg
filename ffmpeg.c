@@ -620,6 +620,8 @@ static int configure_video_filters(InputStream *ist, OutputStream *ost)
     int ret;
 
     ost->graph = avfilter_graph_alloc();
+    if (!ost->graph)
+        return AVERROR(ENOMEM);
 
     if (ist->st->sample_aspect_ratio.num) {
         sample_aspect_ratio = ist->st->sample_aspect_ratio;
