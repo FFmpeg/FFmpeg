@@ -295,52 +295,6 @@ static void yuv2nv12cX_c(SwsContext *c, const int16_t *chrFilter, int chrFilterS
         }
 }
 
-#define YUV2PACKED16WRAPPER(name, base, ext, fmt) \
-static void name ## ext ## _X_c(SwsContext *c, const int16_t *lumFilter, \
-                        const int16_t **_lumSrc, int lumFilterSize, \
-                        const int16_t *chrFilter, const int16_t **_chrUSrc, \
-                        const int16_t **_chrVSrc, int chrFilterSize, \
-                        const int16_t **_alpSrc, uint8_t *_dest, int dstW, \
-                        int y) \
-{ \
-    const int32_t **lumSrc  = (const int32_t **) _lumSrc, \
-                  **chrUSrc = (const int32_t **) _chrUSrc, \
-                  **chrVSrc = (const int32_t **) _chrVSrc, \
-                  **alpSrc  = (const int32_t **) _alpSrc; \
-    uint16_t *dest = (uint16_t *) _dest; \
-    name ## base ## _X_c_template(c, lumFilter, lumSrc, lumFilterSize, \
-                          chrFilter, chrUSrc, chrVSrc, chrFilterSize, \
-                          alpSrc, dest, dstW, y, fmt); \
-} \
- \
-static void name ## ext ## _2_c(SwsContext *c, const int16_t *_buf[2], \
-                        const int16_t *_ubuf[2], const int16_t *_vbuf[2], \
-                        const int16_t *_abuf[2], uint8_t *_dest, int dstW, \
-                        int yalpha, int uvalpha, int y) \
-{ \
-    const int32_t **buf  = (const int32_t **) _buf, \
-                  **ubuf = (const int32_t **) _ubuf, \
-                  **vbuf = (const int32_t **) _vbuf, \
-                  **abuf = (const int32_t **) _abuf; \
-    uint16_t *dest = (uint16_t *) _dest; \
-    name ## base ## _2_c_template(c, buf, ubuf, vbuf, abuf, \
-                          dest, dstW, yalpha, uvalpha, y, fmt); \
-} \
- \
-static void name ## ext ## _1_c(SwsContext *c, const int16_t *_buf0, \
-                        const int16_t *_ubuf[2], const int16_t *_vbuf[2], \
-                        const int16_t *_abuf0, uint8_t *_dest, int dstW, \
-                        int uvalpha, int y) \
-{ \
-    const int32_t *buf0  = (const int32_t *)  _buf0, \
-                 **ubuf  = (const int32_t **) _ubuf, \
-                 **vbuf  = (const int32_t **) _vbuf, \
-                  *abuf0 = (const int32_t *)  _abuf0; \
-    uint16_t *dest = (uint16_t *) _dest; \
-    name ## base ## _1_c_template(c, buf0, ubuf, vbuf, abuf0, dest, \
-                                  dstW, uvalpha, y, fmt); \
-}
-
 #define output_pixel(pos, acc) \
     if (target == PIX_FMT_MONOBLACK) { \
         pos = acc; \
@@ -762,6 +716,52 @@ yuv2rgb48_1_c_template(SwsContext *c, const int32_t *buf0,
 #undef output_pixel
 #undef r_b
 #undef b_r
+
+#define YUV2PACKED16WRAPPER(name, base, ext, fmt) \
+static void name ## ext ## _X_c(SwsContext *c, const int16_t *lumFilter, \
+                        const int16_t **_lumSrc, int lumFilterSize, \
+                        const int16_t *chrFilter, const int16_t **_chrUSrc, \
+                        const int16_t **_chrVSrc, int chrFilterSize, \
+                        const int16_t **_alpSrc, uint8_t *_dest, int dstW, \
+                        int y) \
+{ \
+    const int32_t **lumSrc  = (const int32_t **) _lumSrc, \
+                  **chrUSrc = (const int32_t **) _chrUSrc, \
+                  **chrVSrc = (const int32_t **) _chrVSrc, \
+                  **alpSrc  = (const int32_t **) _alpSrc; \
+    uint16_t *dest = (uint16_t *) _dest; \
+    name ## base ## _X_c_template(c, lumFilter, lumSrc, lumFilterSize, \
+                          chrFilter, chrUSrc, chrVSrc, chrFilterSize, \
+                          alpSrc, dest, dstW, y, fmt); \
+} \
+ \
+static void name ## ext ## _2_c(SwsContext *c, const int16_t *_buf[2], \
+                        const int16_t *_ubuf[2], const int16_t *_vbuf[2], \
+                        const int16_t *_abuf[2], uint8_t *_dest, int dstW, \
+                        int yalpha, int uvalpha, int y) \
+{ \
+    const int32_t **buf  = (const int32_t **) _buf, \
+                  **ubuf = (const int32_t **) _ubuf, \
+                  **vbuf = (const int32_t **) _vbuf, \
+                  **abuf = (const int32_t **) _abuf; \
+    uint16_t *dest = (uint16_t *) _dest; \
+    name ## base ## _2_c_template(c, buf, ubuf, vbuf, abuf, \
+                          dest, dstW, yalpha, uvalpha, y, fmt); \
+} \
+ \
+static void name ## ext ## _1_c(SwsContext *c, const int16_t *_buf0, \
+                        const int16_t *_ubuf[2], const int16_t *_vbuf[2], \
+                        const int16_t *_abuf0, uint8_t *_dest, int dstW, \
+                        int uvalpha, int y) \
+{ \
+    const int32_t *buf0  = (const int32_t *)  _buf0, \
+                 **ubuf  = (const int32_t **) _ubuf, \
+                 **vbuf  = (const int32_t **) _vbuf, \
+                  *abuf0 = (const int32_t *)  _abuf0; \
+    uint16_t *dest = (uint16_t *) _dest; \
+    name ## base ## _1_c_template(c, buf0, ubuf, vbuf, abuf0, dest, \
+                                  dstW, uvalpha, y, fmt); \
+}
 
 YUV2PACKED16WRAPPER(yuv2, rgb48, rgb48be, PIX_FMT_RGB48BE)
 YUV2PACKED16WRAPPER(yuv2, rgb48, rgb48le, PIX_FMT_RGB48LE)
