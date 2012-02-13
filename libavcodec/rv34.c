@@ -1676,15 +1676,19 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
     if(get_slice_offset(avctx, slices_hdr, 0) < 0 ||
        get_slice_offset(avctx, slices_hdr, 0) > buf_size){
         av_log(avctx, AV_LOG_ERROR, "Slice offset is invalid\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     init_get_bits(&s->gb, buf+get_slice_offset(avctx, slices_hdr, 0), (buf_size-get_slice_offset(avctx, slices_hdr, 0))*8);
     if(r->parse_slice_header(r, &r->s.gb, &si) < 0 || si.start){
         av_log(avctx, AV_LOG_ERROR, "First slice header is incorrect\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
-    if ((!s->last_picture_ptr || !s->last_picture_ptr->f.data[0]) && si.type == AV_PICTURE_TYPE_B)
-        return -1;
+    if ((!s->last_picture_ptr || !s->last_picture_ptr->f.data[0]) &&
+        si.type == AV_PICTURE_TYPE_B) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid decoder state: B-frame without "
+               "reference data.\n");
+        return AVERROR_INVALIDDATA;
+    }
     if(   (avctx->skip_frame >= AVDISCARD_NONREF && si.type==AV_PICTURE_TYPE_B)
        || (avctx->skip_frame >= AVDISCARD_NONKEY && si.type!=AV_PICTURE_TYPE_I)
        ||  avctx->skip_frame >= AVDISCARD_ALL)
