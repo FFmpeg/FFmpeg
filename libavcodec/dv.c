@@ -42,6 +42,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "get_bits.h"
+#include "internal.h"
 #include "put_bits.h"
 #include "simple_idct.h"
 #include "dvdata.h"
@@ -1275,29 +1276,37 @@ static void dv_format_frame(DVVideoContext* c, uint8_t* buf)
 }
 
 
-static int dvvideo_encode_frame(AVCodecContext *c, uint8_t *buf, int buf_size,
-                                void *data)
+static int dvvideo_encode_frame(AVCodecContext *c, AVPacket *pkt,
+                                const AVFrame *frame, int *got_packet)
 {
     DVVideoContext *s = c->priv_data;
+    int ret;
 
     s->sys = avpriv_dv_codec_profile(c);
-    if (!s->sys || buf_size < s->sys->frame_size || dv_init_dynamic_tables(s->sys))
+    if (!s->sys || dv_init_dynamic_tables(s->sys))
         return -1;
+    if ((ret = ff_alloc_packet(pkt, s->sys->frame_size)) < 0) {
+        av_log(c, AV_LOG_ERROR, "Error getting output packet.\n");
+        return ret;
+    }
 
     c->pix_fmt           = s->sys->pix_fmt;
-    s->picture           = *((AVFrame *)data);
+    s->picture           = *frame;
     s->picture.key_frame = 1;
     s->picture.pict_type = AV_PICTURE_TYPE_I;
 
-    s->buf = buf;
+    s->buf = pkt->data;
     c->execute(c, dv_encode_video_segment, s->sys->work_chunks, NULL,
                dv_work_pool_size(s->sys), sizeof(DVwork_chunk));
 
     emms_c();
 
-    dv_format_frame(s, buf);
+    dv_format_frame(s, pkt->data);
 
-    return s->sys->frame_size;
+    pkt->flags |= AV_PKT_FLAG_KEY;
+    *got_packet = 1;
+
+    return 0;
 }
 #endif
 
@@ -1319,7 +1328,7 @@ AVCodec ff_dvvideo_encoder = {
     .id             = CODEC_ID_DVVIDEO,
     .priv_data_size = sizeof(DVVideoContext),
     .init           = dvvideo_init_encoder,
-    .encode         = dvvideo_encode_frame,
+    .encode2        = dvvideo_encode_frame,
     .capabilities = CODEC_CAP_SLICE_THREADS,
     .pix_fmts  = (const enum PixelFormat[]) {PIX_FMT_YUV411P, PIX_FMT_YUV422P, PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
