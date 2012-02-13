@@ -497,14 +497,19 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int svq1_encode_frame(AVCodecContext *avctx, unsigned char *buf,
-    int buf_size, void *data)
+static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
+                             const AVFrame *pict, int *got_packet)
 {
     SVQ1Context * const s = avctx->priv_data;
-    AVFrame *pict = data;
     AVFrame * const p= (AVFrame*)&s->picture;
     AVFrame temp;
-    int i;
+    int i, ret;
+
+    if (!pkt->data &&
+        (ret = av_new_packet(pkt, s->y_block_width*s->y_block_height*MAX_MB_BYTES*3 + FF_MIN_BUFFER_SIZE) < 0)) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting output packet.\n");
+        return ret;
+    }
 
     if(avctx->pix_fmt != PIX_FMT_YUV410P){
         av_log(avctx, AV_LOG_ERROR, "unsupported pixel format\n");
@@ -521,7 +526,7 @@ static int svq1_encode_frame(AVCodecContext *avctx, unsigned char *buf,
     s->current_picture= s->last_picture;
     s->last_picture= temp;
 
-    init_put_bits(&s->pb, buf, buf_size);
+    init_put_bits(&s->pb, pkt->data, pkt->size);
 
     *p = *pict;
     p->pict_type = avctx->gop_size && avctx->frame_number % avctx->gop_size ? AV_PICTURE_TYPE_P : AV_PICTURE_TYPE_I;
@@ -542,7 +547,12 @@ static int svq1_encode_frame(AVCodecContext *avctx, unsigned char *buf,
 
     flush_put_bits(&s->pb);
 
-    return put_bits_count(&s->pb) / 8;
+    pkt->size = put_bits_count(&s->pb) / 8;
+    if (p->pict_type == AV_PICTURE_TYPE_I)
+        pkt->flags |= AV_PKT_FLAG_KEY;
+    *got_packet = 1;
+
+    return 0;
 }
 
 static av_cold int svq1_encode_end(AVCodecContext *avctx)
@@ -574,7 +584,7 @@ AVCodec ff_svq1_encoder = {
     .id             = CODEC_ID_SVQ1,
     .priv_data_size = sizeof(SVQ1Context),
     .init           = svq1_encode_init,
-    .encode         = svq1_encode_frame,
+    .encode2        = svq1_encode_frame,
     .close          = svq1_encode_end,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV410P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("Sorenson Vector Quantizer 1 / Sorenson Video 1 / SVQ1"),
