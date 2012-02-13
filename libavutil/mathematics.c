@@ -130,10 +130,17 @@ int64_t av_rescale(int64_t a, int64_t b, int64_t c){
     return av_rescale_rnd(a, b, c, AV_ROUND_NEAR_INF);
 }
 
-int64_t av_rescale_q(int64_t a, AVRational bq, AVRational cq){
+int64_t av_rescale_q_rnd(int64_t a, AVRational bq, AVRational cq,
+                         enum AVRounding rnd)
+{
     int64_t b= bq.num * (int64_t)cq.den;
     int64_t c= cq.num * (int64_t)bq.den;
-    return av_rescale_rnd(a, b, c, AV_ROUND_NEAR_INF);
+    return av_rescale_rnd(a, b, c, rnd);
+}
+
+int64_t av_rescale_q(int64_t a, AVRational bq, AVRational cq)
+{
+    return av_rescale_q_rnd(a, bq, cq, AV_ROUND_NEAR_INF);
 }
 
 int av_compare_ts(int64_t ts_a, AVRational tb_a, int64_t ts_b, AVRational tb_b){
