@@ -27,6 +27,7 @@
 #include "avcodec.h"
 #include "libavutil/opt.h"
 #include "get_bits.h"
+#include "internal.h"
 #include "put_bits.h"
 
 typedef struct CLJRContext {
@@ -132,13 +133,12 @@ AVCodec ff_cljr_decoder = {
 #endif
 
 #if CONFIG_CLJR_ENCODER
-static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
-                        int buf_size, void *data)
+static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
+                        const AVFrame *p, int *got_packet)
 {
     CLJRContext *a = avctx->priv_data;
     PutBitContext pb;
-    AVFrame *p = data;
-    int x, y;
+    int x, y, ret;
     uint32_t dither= avctx->frame_number;
     static const uint32_t ordered_dither[2][2] =
     {
@@ -146,10 +146,15 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
         { 0xCB2A0000, 0xCB250000 },
     };
 
-    p->pict_type = AV_PICTURE_TYPE_I;
-    p->key_frame = 1;
+    if ((ret = ff_alloc_packet(pkt, 32*avctx->height*avctx->width/4)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting output packet.\n");
+        return ret;
+    }
 
-    init_put_bits(&pb, buf, buf_size / 8);
+    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
+    avctx->coded_frame->key_frame = 1;
+
+    init_put_bits(&pb, pkt->data, pkt->size);
 
     for (y = 0; y < avctx->height; y++) {
         uint8_t *luma = &p->data[0][y * p->linesize[0]];
@@ -173,7 +178,10 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
 
     flush_put_bits(&pb);
 
-    return put_bits_count(&pb) / 8;
+    pkt->size   = put_bits_count(&pb) / 8;
+    pkt->flags |= AV_PKT_FLAG_KEY;
+    *got_packet = 1;
+    return 0;
 }
 
 #define OFFSET(x) offsetof(CLJRContext, x)
@@ -196,7 +204,7 @@ AVCodec ff_cljr_encoder = {
     .id             = CODEC_ID_CLJR,
     .priv_data_size = sizeof(CLJRContext),
     .init           = common_init,
-    .encode         = encode_frame,
+    .encode2        = encode_frame,
     .pix_fmts       = (const enum PixelFormat[]) { PIX_FMT_YUV411P,
                                                    PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("Cirrus Logic AccuPak"),

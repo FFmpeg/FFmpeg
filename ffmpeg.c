@@ -4420,6 +4420,8 @@ static void opt_output_file(void *optctx, const char *filename)
     output_files[nb_output_files - 1].ctx       = oc;
     output_files[nb_output_files - 1].ost_index = nb_output_streams - oc->nb_streams;
     output_files[nb_output_files - 1].recording_time = o->recording_time;
+    if (o->recording_time != INT64_MAX)
+        oc->duration = o->recording_time;
     output_files[nb_output_files - 1].start_time     = o->start_time;
     output_files[nb_output_files - 1].limit_filesize = o->limit_filesize;
     av_dict_copy(&output_files[nb_output_files - 1].opts, format_opts, 0);
