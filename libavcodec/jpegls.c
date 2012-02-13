@@ -36,10 +36,8 @@ void ff_jpegls_init_state(JLSState *state){
     // QBPP = ceil(log2(RANGE))
     for(state->qbpp = 0; (1 << state->qbpp) < state->range; state->qbpp++);
 
-    if(state->bpp < 8)
-        state->limit = 16 + 2 * state->bpp - state->qbpp;
-    else
-        state->limit = (4 * state->bpp) - state->qbpp;
+    state->bpp = FFMAX(av_log2(state->maxval)+1, 2);
+    state->limit = 2*(state->bpp + FFMAX(state->bpp, 8)) - state->qbpp;
 
     for(i = 0; i < 367; i++) {
         state->A[i] = FFMAX((state->range + 32) >> 6, 2);
