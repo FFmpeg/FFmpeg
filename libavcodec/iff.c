@@ -544,7 +544,7 @@ static int decode_frame_ilbm(AVCodecContext *avctx,
             uint8_t *row = &s->frame.data[0][ y*s->frame.linesize[0] ];
             memcpy(s->ham_buf, buf, FFMIN(avctx->width, buf_end - buf));
             buf += avctx->width + (avctx->width & 1); // padding if odd
-            decode_ham_plane32((uint32_t *) row, s->ham_buf, s->ham_palbuf, avctx->width);
+            decode_ham_plane32((uint32_t *) row, s->ham_buf, s->ham_palbuf, s->planesize);
         }
     }
 
@@ -631,7 +631,7 @@ static int decode_frame_byterun1(AVCodecContext *avctx,
         for (y = 0; y < avctx->height ; y++) {
             uint8_t *row = &s->frame.data[0][y*s->frame.linesize[0]];
             buf += decode_byterun(s->ham_buf, avctx->width, buf, buf_end);
-            decode_ham_plane32((uint32_t *) row, s->ham_buf, s->ham_palbuf, avctx->width);
+            decode_ham_plane32((uint32_t *) row, s->ham_buf, s->ham_palbuf, s->planesize);
         }
     }
 
