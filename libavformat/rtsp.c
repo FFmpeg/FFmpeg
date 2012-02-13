@@ -1927,6 +1927,9 @@ static int rtp_read_header(AVFormatContext *s)
             continue;
         }
 
+        if (recvbuf[1] >= RTCP_SR && recvbuf[1] <= RTCP_APP)
+            continue;
+
         payload_type = recvbuf[1] & 0x7f;
         break;
     }
