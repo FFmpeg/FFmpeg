@@ -295,80 +295,6 @@ static void yuv2nv12cX_c(SwsContext *c, const int16_t *chrFilter, int chrFilterS
         }
 }
 
-#define output_pixel(pos, val) \
-        if (target == PIX_FMT_GRAY16BE) { \
-            AV_WB16(pos, val); \
-        } else { \
-            AV_WL16(pos, val); \
-        }
-
-static av_always_inline void
-yuv2gray16_X_c_template(SwsContext *c, const int16_t *lumFilter,
-                        const int32_t **lumSrc, int lumFilterSize,
-                        const int16_t *chrFilter, const int32_t **chrUSrc,
-                        const int32_t **chrVSrc, int chrFilterSize,
-                        const int32_t **alpSrc, uint16_t *dest, int dstW,
-                        int y, enum PixelFormat target)
-{
-    int i;
-
-    for (i = 0; i < (dstW >> 1); i++) {
-        int j;
-        int Y1 = (1 << 14) - 0x40000000;
-        int Y2 = (1 << 14) - 0x40000000;
-
-        for (j = 0; j < lumFilterSize; j++) {
-            Y1 += lumSrc[j][i * 2]     * lumFilter[j];
-            Y2 += lumSrc[j][i * 2 + 1] * lumFilter[j];
-        }
-        Y1 >>= 15;
-        Y2 >>= 15;
-        Y1 = av_clip_int16(Y1);
-        Y2 = av_clip_int16(Y2);
-        output_pixel(&dest[i * 2 + 0], 0x8000 + Y1);
-        output_pixel(&dest[i * 2 + 1], 0x8000 + Y2);
-    }
-}
-
-static av_always_inline void
-yuv2gray16_2_c_template(SwsContext *c, const int32_t *buf[2],
-                        const int32_t *ubuf[2], const int32_t *vbuf[2],
-                        const int32_t *abuf[2], uint16_t *dest, int dstW,
-                        int yalpha, int uvalpha, int y,
-                        enum PixelFormat target)
-{
-    int  yalpha1 = 4095 - yalpha;
-    int i;
-    const int32_t *buf0 = buf[0], *buf1 = buf[1];
-
-    for (i = 0; i < (dstW >> 1); i++) {
-        int Y1 = (buf0[i * 2    ] * yalpha1 + buf1[i * 2    ] * yalpha) >> 15;
-        int Y2 = (buf0[i * 2 + 1] * yalpha1 + buf1[i * 2 + 1] * yalpha) >> 15;
-
-        output_pixel(&dest[i * 2 + 0], Y1);
-        output_pixel(&dest[i * 2 + 1], Y2);
-    }
-}
-
-static av_always_inline void
-yuv2gray16_1_c_template(SwsContext *c, const int32_t *buf0,
-                        const int32_t *ubuf[2], const int32_t *vbuf[2],
-                        const int32_t *abuf0, uint16_t *dest, int dstW,
-                        int uvalpha, int y, enum PixelFormat target)
-{
-    int i;
-
-    for (i = 0; i < (dstW >> 1); i++) {
-        int Y1 = buf0[i * 2    ] << 1;
-        int Y2 = buf0[i * 2 + 1] << 1;
-
-        output_pixel(&dest[i * 2 + 0], Y1);
-        output_pixel(&dest[i * 2 + 1], Y2);
-    }
-}
-
-#undef output_pixel
-
 #define YUV2PACKED16WRAPPER(name, base, ext, fmt) \
 static void name ## ext ## _X_c(SwsContext *c, const int16_t *lumFilter, \
                         const int16_t **_lumSrc, int lumFilterSize, \
@@ -414,9 +340,6 @@ static void name ## ext ## _1_c(SwsContext *c, const int16_t *_buf0, \
     name ## base ## _1_c_template(c, buf0, ubuf, vbuf, abuf0, dest, \
                                   dstW, uvalpha, y, fmt); \
 }
-
-YUV2PACKED16WRAPPER(yuv2gray16,, LE, PIX_FMT_GRAY16LE)
-YUV2PACKED16WRAPPER(yuv2gray16,, BE, PIX_FMT_GRAY16BE)
 
 #define output_pixel(pos, acc) \
     if (target == PIX_FMT_MONOBLACK) { \
@@ -1490,16 +1413,6 @@ void ff_sws_init_output_funcs(SwsContext *c,
         }
     }
     switch (dstFormat) {
-    case PIX_FMT_GRAY16BE:
-        *yuv2packed1 = yuv2gray16BE_1_c;
-        *yuv2packed2 = yuv2gray16BE_2_c;
-        *yuv2packedX = yuv2gray16BE_X_c;
-        break;
-    case PIX_FMT_GRAY16LE:
-        *yuv2packed1 = yuv2gray16LE_1_c;
-        *yuv2packed2 = yuv2gray16LE_2_c;
-        *yuv2packedX = yuv2gray16LE_X_c;
-        break;
     case PIX_FMT_MONOWHITE:
         *yuv2packed1 = yuv2monowhite_1_c;
         *yuv2packed2 = yuv2monowhite_2_c;

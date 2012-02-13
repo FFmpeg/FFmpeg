@@ -554,7 +554,7 @@ static int swScale(SwsContext *c, const uint8_t* src[],
                 chrVSrcPtr = tmpV;
             }
 
-            if (isPlanarYUV(dstFormat) || dstFormat==PIX_FMT_GRAY8) { //YV12 like
+            if (isPlanarYUV(dstFormat) || (isGray(dstFormat) && !isALPHA(dstFormat))) { //YV12 like
                 const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
 
                 if (vLumFilterSize == 1) {
