@@ -237,9 +237,6 @@ void av_register_all(void)
     REGISTER_DEMUXER  (YOP, yop);
     REGISTER_MUXDEMUX (YUV4MPEGPIPE, yuv4mpegpipe);
 
-    /* external libraries */
-    REGISTER_MUXDEMUX (LIBNUT, libnut);
-
     /* protocols */
     REGISTER_PROTOCOL (APPLEHTTP, applehttp);
     REGISTER_PROTOCOL (CONCAT, concat);
@@ -254,12 +251,16 @@ void av_register_all(void)
     REGISTER_PROTOCOL (MD5,  md5);
     REGISTER_PROTOCOL (PIPE, pipe);
     REGISTER_PROTOCOL (RTMP, rtmp);
-    REGISTER_PROTOCOL (RTMPE, rtmpe);
-    REGISTER_PROTOCOL (RTMPS, rtmps);
-    REGISTER_PROTOCOL (RTMPT, rtmpt);
-    REGISTER_PROTOCOL (RTMPTE, rtmpte);
     REGISTER_PROTOCOL (RTP, rtp);
     REGISTER_PROTOCOL (TCP, tcp);
     REGISTER_PROTOCOL (TLS, tls);
     REGISTER_PROTOCOL (UDP, udp);
+
+    /* external libraries */
+    REGISTER_MUXDEMUX (LIBNUT, libnut);
+    REGISTER_PROTOCOL (LIBRTMP, librtmp);
+    REGISTER_PROTOCOL (LIBRTMPE, librtmpe);
+    REGISTER_PROTOCOL (LIBRTMPS, librtmps);
+    REGISTER_PROTOCOL (LIBRTMPT, librtmpt);
+    REGISTER_PROTOCOL (LIBRTMPTE, librtmpte);
 }
