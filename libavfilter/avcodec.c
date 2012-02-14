@@ -56,6 +56,20 @@ AVFilterBufferRef *avfilter_get_video_buffer_ref_from_frame(const AVFrame *frame
     return picref;
 }
 
+int avfilter_fill_frame_from_audio_buffer_ref(AVFrame *frame,
+                                              const AVFilterBufferRef *samplesref)
+{
+    if (!samplesref || !samplesref->audio || !frame)
+        return AVERROR(EINVAL);
+
+    memcpy(frame->data, samplesref->data, sizeof(frame->data));
+    frame->pkt_pos    = samplesref->pos;
+    frame->format     = samplesref->format;
+    frame->nb_samples = samplesref->audio->nb_samples;
+
+    return 0;
+}
+
 int avfilter_fill_frame_from_video_buffer_ref(AVFrame *frame,
                                               const AVFilterBufferRef *picref)
 {
@@ -72,4 +86,13 @@ int avfilter_fill_frame_from_video_buffer_ref(AVFrame *frame,
     frame->sample_aspect_ratio = picref->video->sample_aspect_ratio;
 
     return 0;
+}
+
+int avfilter_fill_frame_from_buffer_ref(AVFrame *frame,
+                                        const AVFilterBufferRef *ref)
+{
+    if (!ref)
+        return AVERROR(EINVAL);
+    return ref->video ? avfilter_fill_frame_from_video_buffer_ref(frame, ref)
+                      : avfilter_fill_frame_from_audio_buffer_ref(frame, ref);
 }
