@@ -543,10 +543,10 @@ abuffer=44100:s16:stereo:planar
 
 will instruct the source to accept planar 16bit signed stereo at 44100Hz.
 Since the sample format with name "s16" corresponds to the number
-1 and the "stereo" channel layout corresponds to the value 3, this is
+1 and the "stereo" channel layout corresponds to the value 0x3, this is
 equivalent to:
 @example
-abuffer=44100:1:3:1
+abuffer=44100:1:0x3:1
 @end example
 
 @section aevalsrc
