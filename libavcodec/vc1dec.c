@@ -478,7 +478,10 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
     int dxy, mx, my, uvmx, uvmy, src_x, src_y, uvsrc_x, uvsrc_y;
     int off, off_uv;
     int v_edge_pos = s->v_edge_pos >> v->field_mode;
-    if (!v->field_mode && !v->s.last_picture.f.data[0])
+
+    if ((!v->field_mode ||
+         (v->ref_field_type[dir] == 1 && v->cur_field_type == 1)) &&
+        !v->s.last_picture.f.data[0])
         return;
 
     mx = s->mv[dir][0][0];
@@ -690,7 +693,9 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n, int dir)
     int fieldmv = (v->fcm == ILACE_FRAME) ? v->blk_mv_type[s->block_index[n]] : 0;
     int v_edge_pos = s->v_edge_pos >> v->field_mode;
 
-    if (!v->field_mode && !v->s.last_picture.f.data[0])
+    if ((!v->field_mode ||
+         (v->ref_field_type[dir] == 1 && v->cur_field_type == 1)) &&
+        !v->s.last_picture.f.data[0])
         return;
 
     mx = s->mv[dir][n][0];
@@ -946,6 +951,8 @@ static void vc1_mc_4mv_chroma(VC1Context *v, int dir)
         if (dominant)
             chroma_ref_type = !v->cur_field_type;
     }
+    if (v->field_mode && chroma_ref_type == 1 && v->cur_field_type == 1 && !v->s.last_picture.f.data[0])
+        return;
     s->current_picture.f.motion_val[1][s->block_index[0] + v->blocks_off][0] = tx;
     s->current_picture.f.motion_val[1][s->block_index[0] + v->blocks_off][1] = ty;
     uvmx = (tx + ((tx & 3) == 3)) >> 1;
