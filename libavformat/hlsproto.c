@@ -222,6 +222,12 @@ static int applehttp_open(URLContext *h, const char *uri, int flags)
         ret = AVERROR(EINVAL);
         goto fail;
     }
+    av_log(h, AV_LOG_WARNING,
+           "Using the hls protocol is discouraged, please try using the "
+           "hls demuxer instead. The hls demuxer should be more complete "
+           "and work as well as the protocol implementation. (If not, "
+           "please report it.) To use the demuxer, simply use %s as url.\n",
+           s->playlisturl);
 
     if ((ret = parse_playlist(h, s->playlisturl)) < 0)
         goto fail;
