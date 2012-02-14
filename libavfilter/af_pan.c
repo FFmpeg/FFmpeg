@@ -61,7 +61,7 @@ typedef struct PanContext {
 static int parse_channel_name(char **arg, int *rchannel, int *rnamed)
 {
     char buf[8];
-    int len, i, channel_id;
+    int len, i, channel_id = 0;
     int64_t layout, layout0;
 
     if (sscanf(*arg, " %7[A-Z] %n", buf, &len)) {
