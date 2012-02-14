@@ -74,7 +74,6 @@ static const struct {
     { "7.1",         8,  AV_CH_LAYOUT_7POINT1 },
     { "7.1(wide)",   8,  AV_CH_LAYOUT_7POINT1_WIDE },
     { "downmix",     2,  AV_CH_LAYOUT_STEREO_DOWNMIX, },
-    { 0 }
 };
 
 static uint64_t get_channel_layout_single(const char *name, int name_len)
@@ -83,7 +82,7 @@ static uint64_t get_channel_layout_single(const char *name, int name_len)
     char *end;
     int64_t layout;
 
-    for (i = 0; i < FF_ARRAY_ELEMS(channel_layout_map) - 1; i++) {
+    for (i = 0; i < FF_ARRAY_ELEMS(channel_layout_map); i++) {
         if (strlen(channel_layout_map[i].name) == name_len &&
             !memcmp(channel_layout_map[i].name, name, name_len))
             return channel_layout_map[i].layout;
@@ -127,7 +126,7 @@ void av_get_channel_layout_string(char *buf, int buf_size,
     if (nb_channels <= 0)
         nb_channels = av_get_channel_layout_nb_channels(channel_layout);
 
-    for (i = 0; channel_layout_map[i].name; i++)
+    for (i = 0; i < FF_ARRAY_ELEMS(channel_layout_map); i++)
         if (nb_channels    == channel_layout_map[i].nb_channels &&
             channel_layout == channel_layout_map[i].layout) {
             av_strlcpy(buf, channel_layout_map[i].name, buf_size);
@@ -164,7 +163,7 @@ int av_get_channel_layout_nb_channels(uint64_t channel_layout)
 
 int64_t av_get_default_channel_layout(int nb_channels) {
     int i;
-    for (i = 0; channel_layout_map[i].name; i++)
+    for (i = 0; i < FF_ARRAY_ELEMS(channel_layout_map); i++)
         if (nb_channels == channel_layout_map[i].nb_channels)
             return channel_layout_map[i].layout;
     return 0;
