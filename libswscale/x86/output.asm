@@ -264,7 +264,7 @@ yuv2planeX_fn  9,  7, 5
 yuv2planeX_fn 10,  7, 5
 yuv2planeX_fn 16,  8, 5
 
-%ifdef HAVE_AVX
+%if HAVE_AVX
 INIT_XMM avx
 yuv2planeX_fn  8, 10, 7
 yuv2planeX_fn  9,  7, 5
@@ -404,7 +404,7 @@ yuv2plane1_fn 16, 6, 3
 INIT_XMM sse4
 yuv2plane1_fn 16, 5, 3
 
-%ifdef HAVE_AVX
+%if HAVE_AVX
 INIT_XMM avx
 yuv2plane1_fn  8, 5, 5
 yuv2plane1_fn  9, 5, 3
