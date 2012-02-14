@@ -16,6 +16,9 @@ fate-sunraster-1bit-rle: CMD = framecrc -i $(SAMPLES)/sunraster/lena-1bit-rle.su
 FATE_SUNRASTER += fate-sunraster-8bit-raw
 fate-sunraster-8bit-raw: CMD = framecrc -i $(SAMPLES)/sunraster/lena-8bit-raw.sun -pix_fmt rgb24
 
+FATE_SUNRASTER += fate-sunraster-8bit_gray-raw
+fate-sunraster-8bit_gray-raw: CMD = framecrc -i $(SAMPLES)/sunraster/gray.ras
+
 FATE_SUNRASTER += fate-sunraster-8bit-rle
 fate-sunraster-8bit-rle: CMD = framecrc -i $(SAMPLES)/sunraster/lena-8bit-rle.sun -pix_fmt rgb24
 
