@@ -113,7 +113,7 @@ static int sdp_parse_fmtp_config_h264(AVStream * stream,
             h264_data->level_idc = level_idc;
         }
     } else  if (!strcmp(attr, "sprop-parameter-sets")) {
-        uint8_t start_sequence[]= { 0, 0, 1 };
+        uint8_t start_sequence[] = { 0, 0, 0, 1 };
         codec->extradata_size= 0;
         codec->extradata= NULL;
 
@@ -176,7 +176,7 @@ static int h264_handle_packet(AVFormatContext *ctx,
     uint8_t nal = buf[0];
     uint8_t type = (nal & 0x1f);
     int result= 0;
-    uint8_t start_sequence[]= {0, 0, 1};
+    uint8_t start_sequence[] = { 0, 0, 0, 1 };
 
 #ifdef DEBUG
     assert(data);

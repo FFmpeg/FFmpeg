@@ -120,7 +120,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     GradFunContext *gf = ctx->priv;
     float thresh = 1.2;
     int radius = 16;
-    av_unused int cpu_flags = av_get_cpu_flags();
+    int cpu_flags = av_get_cpu_flags();
 
     if (args)
         sscanf(args, "%f:%d", &thresh, &radius);

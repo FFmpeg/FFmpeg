@@ -18,8 +18,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_PS2_MMI_H
-#define AVCODEC_PS2_MMI_H
+#ifndef AVCODEC_MIPS_MMI_H
+#define AVCODEC_MIPS_MMI_H
+
+#include <stdint.h>
+
+#include "libavcodec/dsputil.h"
+
+void ff_mmi_idct_put(uint8_t *dest, int line_size, DCTELEM *block);
+void ff_mmi_idct_add(uint8_t *dest, int line_size, DCTELEM *block);
+void ff_mmi_idct(DCTELEM *block);
 
 #define align16 __attribute__ ((aligned (16)))
 
@@ -168,4 +176,4 @@
 #define         pextlb(rs, rt, rd) \
         __asm__ volatile ("pextlb  " #rd ", " #rs ", " #rt )
 
-#endif /* AVCODEC_PS2_MMI_H */
+#endif /* AVCODEC_MIPS_MMI_H */
