@@ -59,7 +59,6 @@ void av_register_all(void)
     REGISTER_DEMUXER  (ANM, anm);
     REGISTER_DEMUXER  (APC, apc);
     REGISTER_DEMUXER  (APE, ape);
-    REGISTER_DEMUXER  (APPLEHTTP, applehttp);
     REGISTER_MUXDEMUX (ASF, asf);
     REGISTER_MUXDEMUX (ASS, ass);
     REGISTER_MUXER    (ASF_STREAM, asf_stream);
@@ -104,6 +103,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX (H261, h261);
     REGISTER_MUXDEMUX (H263, h263);
     REGISTER_MUXDEMUX (H264, h264);
+    REGISTER_DEMUXER  (HLS, hls);
     REGISTER_DEMUXER  (IDCIN, idcin);
     REGISTER_DEMUXER  (IFF, iff);
     REGISTER_MUXDEMUX (IMAGE2, image2);
