@@ -519,6 +519,13 @@ yuv2422_1_c_template(SwsContext *c, const int16_t *buf0,
             int U  = (ubuf0[i]       +64) >> 7;
             int V  = (vbuf0[i]       +64) >> 7;
 
+            if ((Y1 | Y2 | U | V) & 0x100) {
+                Y1 = av_clip_uint8(Y1);
+                Y2 = av_clip_uint8(Y2);
+                U  = av_clip_uint8(U);
+                V  = av_clip_uint8(V);
+            }
+
             output_pixels(i * 4, Y1, U, Y2, V);
         }
     } else {
@@ -528,6 +535,13 @@ yuv2422_1_c_template(SwsContext *c, const int16_t *buf0,
             int Y2 = (buf0[i * 2 + 1]    + 64) >> 7;
             int U  = (ubuf0[i] + ubuf1[i]+128) >> 8;
             int V  = (vbuf0[i] + vbuf1[i]+128) >> 8;
+
+            if ((Y1 | Y2 | U | V) & 0x100) {
+                Y1 = av_clip_uint8(Y1);
+                Y2 = av_clip_uint8(Y2);
+                U  = av_clip_uint8(U);
+                V  = av_clip_uint8(V);
+            }
 
             output_pixels(i * 4, Y1, U, Y2, V);
         }
