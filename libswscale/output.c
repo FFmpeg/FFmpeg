@@ -994,18 +994,18 @@ yuv2rgb_1_c_template(SwsContext *c, const int16_t *buf0,
 
     if (uvalpha < 2048) {
         for (i = 0; i < (dstW >> 1); i++) {
-            int Y1 = buf0[i * 2]     >> 7;
-            int Y2 = buf0[i * 2 + 1] >> 7;
-            int U  = ubuf0[i]        >> 7;
-            int V  = vbuf0[i]        >> 7;
+            int Y1 = (buf0[i * 2    ] + 64) >> 7;
+            int Y2 = (buf0[i * 2 + 1] + 64) >> 7;
+            int U  = (ubuf0[i]        + 64) >> 7;
+            int V  = (vbuf0[i]        + 64) >> 7;
             int A1, A2;
             const void *r =  c->table_rV[V + YUVRGB_TABLE_HEADROOM],
                        *g = (c->table_gU[U + YUVRGB_TABLE_HEADROOM] + c->table_gV[V + YUVRGB_TABLE_HEADROOM]),
                        *b =  c->table_bU[U + YUVRGB_TABLE_HEADROOM];
 
             if (hasAlpha) {
-                A1 = abuf0[i * 2    ] >> 7;
-                A2 = abuf0[i * 2 + 1] >> 7;
+                A1 = (abuf0[i * 2    ] + 64) >> 7;
+                A2 = (abuf0[i * 2 + 1] + 64) >> 7;
             }
 
             yuv2rgb_write(dest, i, Y1, Y2, hasAlpha ? A1 : 0, hasAlpha ? A2 : 0,
@@ -1014,18 +1014,18 @@ yuv2rgb_1_c_template(SwsContext *c, const int16_t *buf0,
     } else {
         const int16_t *ubuf1 = ubuf[1], *vbuf1 = vbuf[1];
         for (i = 0; i < (dstW >> 1); i++) {
-            int Y1 =  buf0[i * 2]          >> 7;
-            int Y2 =  buf0[i * 2 + 1]      >> 7;
-            int U  = (ubuf0[i] + ubuf1[i]) >> 8;
-            int V  = (vbuf0[i] + vbuf1[i]) >> 8;
+            int Y1 = (buf0[i * 2    ]     +  64) >> 7;
+            int Y2 = (buf0[i * 2 + 1]     +  64) >> 7;
+            int U  = (ubuf0[i] + ubuf1[i] + 128) >> 8;
+            int V  = (vbuf0[i] + vbuf1[i] + 128) >> 8;
             int A1, A2;
             const void *r =  c->table_rV[V + YUVRGB_TABLE_HEADROOM],
                        *g = (c->table_gU[U + YUVRGB_TABLE_HEADROOM] + c->table_gV[V + YUVRGB_TABLE_HEADROOM]),
                        *b =  c->table_bU[U + YUVRGB_TABLE_HEADROOM];
 
             if (hasAlpha) {
-                A1 = abuf0[i * 2    ] >> 7;
-                A2 = abuf0[i * 2 + 1] >> 7;
+                A1 = (abuf0[i * 2    ] + 64) >> 7;
+                A2 = (abuf0[i * 2 + 1] + 64) >> 7;
             }
 
             yuv2rgb_write(dest, i, Y1, Y2, hasAlpha ? A1 : 0, hasAlpha ? A2 : 0,
