@@ -103,7 +103,7 @@ static int rv30_decode_mb_info(RV34DecContext *r)
     GetBitContext *gb = &s->gb;
     int code = svq3_get_ue_golomb(gb);
 
-    if(code > 11){
+    if (code < 0 || code > 11) {
         av_log(s->avctx, AV_LOG_ERROR, "Incorrect MB type code\n");
         return -1;
     }
