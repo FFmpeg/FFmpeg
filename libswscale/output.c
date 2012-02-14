@@ -514,20 +514,20 @@ yuv2422_1_c_template(SwsContext *c, const int16_t *buf0,
 
     if (uvalpha < 2048) {
         for (i = 0; i < (dstW >> 1); i++) {
-            int Y1 = buf0[i * 2]     >> 7;
-            int Y2 = buf0[i * 2 + 1] >> 7;
-            int U  = ubuf0[i]        >> 7;
-            int V  = vbuf0[i]        >> 7;
+            int Y1 = (buf0[i * 2    ]+64) >> 7;
+            int Y2 = (buf0[i * 2 + 1]+64) >> 7;
+            int U  = (ubuf0[i]       +64) >> 7;
+            int V  = (vbuf0[i]       +64) >> 7;
 
             output_pixels(i * 4, Y1, U, Y2, V);
         }
     } else {
         const int16_t *ubuf1 = ubuf[1], *vbuf1 = vbuf[1];
         for (i = 0; i < (dstW >> 1); i++) {
-            int Y1 =  buf0[i * 2]          >> 7;
-            int Y2 =  buf0[i * 2 + 1]      >> 7;
-            int U  = (ubuf0[i] + ubuf1[i]) >> 8;
-            int V  = (vbuf0[i] + vbuf1[i]) >> 8;
+            int Y1 = (buf0[i * 2    ]    + 64) >> 7;
+            int Y2 = (buf0[i * 2 + 1]    + 64) >> 7;
+            int U  = (ubuf0[i] + ubuf1[i]+128) >> 8;
+            int V  = (vbuf0[i] + vbuf1[i]+128) >> 8;
 
             output_pixels(i * 4, Y1, U, Y2, V);
         }
