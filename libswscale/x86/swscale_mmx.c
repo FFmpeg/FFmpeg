@@ -364,9 +364,9 @@ void ff_sws_init_swScale_mmx(SwsContext *c)
     }
 #define ASSIGN_VSCALEX_FUNC(vscalefn, opt, do_16_case) \
 switch(c->dstBpc){ \
-    case 16:                          /*do_16_case;*/                          break; \
-    case 10: if (!isBE(c->dstFormat)) /*vscalefn = ff_yuv2planeX_10_ ## opt;*/ break; \
-    case 9:  if (!isBE(c->dstFormat)) /*vscalefn = ff_yuv2planeX_9_  ## opt;*/ break; \
+    case 16:                          do_16_case;                          break; \
+    case 10: if (!isBE(c->dstFormat)) vscalefn = ff_yuv2planeX_10_ ## opt; break; \
+    case 9:  if (!isBE(c->dstFormat)) vscalefn = ff_yuv2planeX_9_  ## opt; break; \
     default:                          /*vscalefn = ff_yuv2planeX_8_  ## opt;*/ break; \
     }
 #define ASSIGN_VSCALE_FUNC(vscalefn, opt1, opt2, opt2chk) \
