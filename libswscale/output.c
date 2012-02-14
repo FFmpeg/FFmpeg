@@ -378,14 +378,14 @@ yuv2mono_1_c_template(SwsContext *c, const int16_t *buf0,
     int i;
 
     for (i = 0; i < dstW - 7; i += 8) {
-        int acc =    g[(buf0[i    ] >> 7) + d128[0]];
-        acc += acc + g[(buf0[i + 1] >> 7) + d128[1]];
-        acc += acc + g[(buf0[i + 2] >> 7) + d128[2]];
-        acc += acc + g[(buf0[i + 3] >> 7) + d128[3]];
-        acc += acc + g[(buf0[i + 4] >> 7) + d128[4]];
-        acc += acc + g[(buf0[i + 5] >> 7) + d128[5]];
-        acc += acc + g[(buf0[i + 6] >> 7) + d128[6]];
-        acc += acc + g[(buf0[i + 7] >> 7) + d128[7]];
+        int acc =    g[((buf0[i    ] + 64) >> 7) + d128[0]];
+        acc += acc + g[((buf0[i + 1] + 64) >> 7) + d128[1]];
+        acc += acc + g[((buf0[i + 2] + 64) >> 7) + d128[2]];
+        acc += acc + g[((buf0[i + 3] + 64) >> 7) + d128[3]];
+        acc += acc + g[((buf0[i + 4] + 64) >> 7) + d128[4]];
+        acc += acc + g[((buf0[i + 5] + 64) >> 7) + d128[5]];
+        acc += acc + g[((buf0[i + 6] + 64) >> 7) + d128[6]];
+        acc += acc + g[((buf0[i + 7] + 64) >> 7) + d128[7]];
         output_pixel(*dest++, acc);
     }
 }
