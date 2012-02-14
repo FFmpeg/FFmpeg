@@ -6,6 +6,7 @@ version <next>:
 - XWD encoder and decoder
 - Support for fragmentation in the mov/mp4 muxer
 - ISMV (Smooth Streaming) muxer
+- CDXL demuxer and decoder
 
 
 version 0.8:
