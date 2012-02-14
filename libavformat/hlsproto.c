@@ -29,6 +29,7 @@
 #include "avformat.h"
 #include "internal.h"
 #include "url.h"
+#include "version.h"
 #include <unistd.h>
 
 /*
@@ -195,11 +196,27 @@ static int applehttp_open(URLContext *h, const char *uri, int flags)
 
     h->is_streamed = 1;
 
-    if (av_strstart(uri, "applehttp+", &nested_url)) {
+    if (av_strstart(uri, "hls+", &nested_url)) {
         av_strlcpy(s->playlisturl, nested_url, sizeof(s->playlisturl));
+    } else if (av_strstart(uri, "hls://", &nested_url)) {
+        av_log(h, AV_LOG_ERROR,
+               "No nested protocol specified. Specify e.g. hls+http://%s\n",
+               nested_url);
+        ret = AVERROR(EINVAL);
+        goto fail;
+#if FF_API_APPLEHTTP_PROTO
+    } else if (av_strstart(uri, "applehttp+", &nested_url)) {
+        av_strlcpy(s->playlisturl, nested_url, sizeof(s->playlisturl));
+        av_log(h, AV_LOG_WARNING,
+               "The applehttp protocol is deprecated, use hls+%s as url "
+               "instead.\n", nested_url);
     } else if (av_strstart(uri, "applehttp://", &nested_url)) {
         av_strlcpy(s->playlisturl, "http://", sizeof(s->playlisturl));
         av_strlcat(s->playlisturl, nested_url, sizeof(s->playlisturl));
+        av_log(h, AV_LOG_WARNING,
+               "The applehttp protocol is deprecated, use hls+http://%s as url "
+               "instead.\n", nested_url);
+#endif
     } else {
         av_log(h, AV_LOG_ERROR, "Unsupported url %s\n", uri);
         ret = AVERROR(EINVAL);
@@ -303,8 +320,19 @@ retry:
     goto start;
 }
 
+#if FF_API_APPLEHTTP_PROTO
 URLProtocol ff_applehttp_protocol = {
     .name           = "applehttp",
+    .url_open       = applehttp_open,
+    .url_read       = applehttp_read,
+    .url_close      = applehttp_close,
+    .flags          = URL_PROTOCOL_FLAG_NESTED_SCHEME,
+    .priv_data_size = sizeof(AppleHTTPContext),
+};
+#endif
+
+URLProtocol ff_hls_protocol = {
+    .name           = "hls",
     .url_open       = applehttp_open,
     .url_read       = applehttp_read,
     .url_close      = applehttp_close,

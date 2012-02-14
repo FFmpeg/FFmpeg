@@ -22,6 +22,7 @@
 #include "rtp.h"
 #include "rdt.h"
 #include "url.h"
+#include "version.h"
 
 #define REGISTER_MUXER(X,x) { \
     extern AVOutputFormat ff_##x##_muxer; \
@@ -238,11 +239,14 @@ void av_register_all(void)
     REGISTER_MUXDEMUX (YUV4MPEGPIPE, yuv4mpegpipe);
 
     /* protocols */
+#if FF_API_APPLEHTTP_PROTO
     REGISTER_PROTOCOL (APPLEHTTP, applehttp);
+#endif
     REGISTER_PROTOCOL (CONCAT, concat);
     REGISTER_PROTOCOL (CRYPTO, crypto);
     REGISTER_PROTOCOL (FILE, file);
     REGISTER_PROTOCOL (GOPHER, gopher);
+    REGISTER_PROTOCOL (HLS, hls);
     REGISTER_PROTOCOL (HTTP, http);
     REGISTER_PROTOCOL (HTTPPROXY, httpproxy);
     REGISTER_PROTOCOL (HTTPS, https);
