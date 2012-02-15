@@ -788,10 +788,10 @@ int ff_get_mb_score(MpegEncContext * s, int mx, int my, int src_index,
 extern const uint8_t ff_mpeg1_dc_scale_table[128];
 extern const uint8_t * const ff_mpeg2_dc_scale_table[4];
 
-void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number);
-void mpeg1_encode_mb(MpegEncContext *s,
-                     DCTELEM block[6][64],
-                     int motion_x, int motion_y);
+void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number);
+void ff_mpeg1_encode_mb(MpegEncContext *s,
+                        DCTELEM block[6][64],
+                        int motion_x, int motion_y);
 void ff_mpeg1_encode_init(MpegEncContext *s);
 void ff_mpeg1_encode_slice_header(MpegEncContext *s);
 void ff_mpeg1_clean_buffers(MpegEncContext *s);

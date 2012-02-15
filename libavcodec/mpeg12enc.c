@@ -331,7 +331,7 @@ void ff_mpeg1_encode_slice_header(MpegEncContext *s){
     put_bits(&s->pb, 1, 0); /* slice extra information */
 }
 
-void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
+void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
 {
     mpeg1_encode_sequence_header(s);
 
@@ -656,7 +656,7 @@ static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
     }
 }
 
-void mpeg1_encode_mb(MpegEncContext *s, DCTELEM block[6][64], int motion_x, int motion_y)
+void ff_mpeg1_encode_mb(MpegEncContext *s, DCTELEM block[6][64], int motion_x, int motion_y)
 {
     if (s->chroma_format == CHROMA_420) mpeg1_encode_mb_internal(s, block, motion_x, motion_y, 6);
     else                                mpeg1_encode_mb_internal(s, block, motion_x, motion_y, 8);

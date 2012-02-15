@@ -1994,7 +1994,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
     case CODEC_ID_MPEG1VIDEO:
     case CODEC_ID_MPEG2VIDEO:
         if (CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER)
-            mpeg1_encode_mb(s, s->block, motion_x, motion_y);
+            ff_mpeg1_encode_mb(s, s->block, motion_x, motion_y);
         break;
     case CODEC_ID_MPEG4:
         if (CONFIG_MPEG4_ENCODER)
@@ -3204,7 +3204,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
         break;
     case FMT_MPEG1:
         if (CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER)
-            mpeg1_encode_picture_header(s, picture_number);
+            ff_mpeg1_encode_picture_header(s, picture_number);
         break;
     case FMT_H264:
         break;
