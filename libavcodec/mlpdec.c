@@ -38,12 +38,6 @@
 /** number of bits used for VLC lookup - longest Huffman code is 9 */
 #define VLC_BITS            9
 
-
-static const char* sample_message =
-    "Please file a bug report following the instructions at "
-    "http://libav.org/bugreports.html and include "
-    "a sample of this file.";
-
 typedef struct SubStream {
     /// Set if a valid restart header has been read. Otherwise the substream cannot be decoded.
     uint8_t     restart_seen;
@@ -305,10 +299,10 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
         return AVERROR_INVALIDDATA;
     }
     if (mh.num_substreams > MAX_SUBSTREAMS) {
-        av_log(m->avctx, AV_LOG_ERROR,
+        av_log_ask_for_sample(m->avctx,
                "Number of substreams %d is larger than the maximum supported "
-               "by the decoder. %s\n", mh.num_substreams, sample_message);
-        return AVERROR_INVALIDDATA;
+               "by the decoder.\n", mh.num_substreams);
+        return AVERROR_PATCHWELCOME;
     }
 
     m->access_unit_size      = mh.access_unit_size;
@@ -387,10 +381,10 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
     /* This should happen for TrueHD streams with >6 channels and MLP's noise
      * type. It is not yet known if this is allowed. */
     if (s->max_channel > MAX_MATRIX_CHANNEL_MLP && !s->noise_type) {
-        av_log(m->avctx, AV_LOG_ERROR,
+        av_log_ask_for_sample(m->avctx,
                "Number of channels %d is larger than the maximum supported "
-               "by the decoder. %s\n", s->max_channel+2, sample_message);
-        return AVERROR_INVALIDDATA;
+               "by the decoder.\n", s->max_channel + 2);
+        return AVERROR_PATCHWELCOME;
     }
 
     if (s->min_channel > s->max_channel) {
@@ -432,10 +426,10 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
     for (ch = 0; ch <= s->max_matrix_channel; ch++) {
         int ch_assign = get_bits(gbp, 6);
         if (ch_assign > s->max_matrix_channel) {
-            av_log(m->avctx, AV_LOG_ERROR,
-                   "Assignment of matrix channel %d to invalid output channel %d. %s\n",
-                   ch, ch_assign, sample_message);
-            return AVERROR_INVALIDDATA;
+            av_log_ask_for_sample(m->avctx,
+                   "Assignment of matrix channel %d to invalid output channel %d.\n",
+                   ch, ch_assign);
+            return AVERROR_PATCHWELCOME;
         }
         s->ch_assign[ch_assign] = ch;
     }
@@ -763,8 +757,8 @@ static int read_block_data(MLPDecodeContext *m, GetBitContext *gbp,
     if (s->data_check_present) {
         expected_stream_pos  = get_bits_count(gbp);
         expected_stream_pos += get_bits(gbp, 16);
-        av_log(m->avctx, AV_LOG_WARNING, "This file contains some features "
-               "we have not tested yet. %s\n", sample_message);
+        av_log_ask_for_sample(m->avctx, "This file contains some features "
+                              "we have not tested yet.\n");
     }
 
     if (s->blockpos + s->blocksize > m->access_unit_size) {
