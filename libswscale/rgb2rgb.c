@@ -125,8 +125,8 @@ void sws_rgb2rgb_init(void)
 
 void rgb32to24(const uint8_t *src, uint8_t *dst, int src_size)
 {
-    int i;
-    int num_pixels = src_size >> 2;
+    int i, num_pixels = src_size >> 2;
+
     for (i=0; i<num_pixels; i++) {
 #if HAVE_BIGENDIAN
         /* RGB32 (= A,B,G,R) -> BGR24 (= B,G,R) */
@@ -162,13 +162,12 @@ void rgb24to32(const uint8_t *src, uint8_t *dst, int src_size)
 
 void rgb16tobgr32(const uint8_t *src, uint8_t *dst, int src_size)
 {
-    const uint16_t *end;
     uint8_t *d = dst;
     const uint16_t *s = (const uint16_t *)src;
-    end = s + src_size/2;
+    const uint16_t *end = s + src_size / 2;
+
     while (s < end) {
-        register uint16_t bgr;
-        bgr = *s++;
+        register uint16_t bgr = *s++;
 #if HAVE_BIGENDIAN
         *d++ = 255;
         *d++ = (bgr&0x1F)<<3;
@@ -185,11 +184,11 @@ void rgb16tobgr32(const uint8_t *src, uint8_t *dst, int src_size)
 
 void rgb12to15(const uint8_t *src, uint8_t *dst, int src_size)
 {
-    const uint16_t *end;
     uint16_t *d = (uint16_t *)dst;
     const uint16_t *s = (const uint16_t *)src;
     uint16_t rgb, r, g, b;
-    end = s + src_size / 2;
+    const uint16_t *end = s + src_size / 2;
+
     while (s < end) {
         rgb = *s++;
         r = rgb & 0xF00;
@@ -204,13 +203,12 @@ void rgb12to15(const uint8_t *src, uint8_t *dst, int src_size)
 
 void rgb16to24(const uint8_t *src, uint8_t *dst, int src_size)
 {
-    const uint16_t *end;
     uint8_t *d = dst;
     const uint16_t *s = (const uint16_t *)src;
-    end = s + src_size/2;
+    const uint16_t *end = s + src_size / 2;
+
     while (s < end) {
-        register uint16_t bgr;
-        bgr = *s++;
+        register uint16_t bgr = *s++;
         *d++ = (bgr&0xF800)>>8;
         *d++ = (bgr&0x7E0)>>3;
         *d++ = (bgr&0x1F)<<3;
@@ -219,8 +217,7 @@ void rgb16to24(const uint8_t *src, uint8_t *dst, int src_size)
 
 void rgb16tobgr16(const uint8_t *src, uint8_t *dst, int src_size)
 {
-    int i;
-    int num_pixels = src_size >> 1;
+    int i, num_pixels = src_size >> 1;
 
     for (i=0; i<num_pixels; i++) {
         unsigned rgb = ((const uint16_t*)src)[i];
@@ -230,8 +227,7 @@ void rgb16tobgr16(const uint8_t *src, uint8_t *dst, int src_size)
 
 void rgb16tobgr15(const uint8_t *src, uint8_t *dst, int src_size)
 {
-    int i;
-    int num_pixels = src_size >> 1;
+    int i, num_pixels = src_size >> 1;
 
     for (i=0; i<num_pixels; i++) {
         unsigned rgb = ((const uint16_t*)src)[i];
@@ -241,13 +237,12 @@ void rgb16tobgr15(const uint8_t *src, uint8_t *dst, int src_size)
 
 void rgb15tobgr32(const uint8_t *src, uint8_t *dst, int src_size)
 {
-    const uint16_t *end;
     uint8_t *d = dst;
     const uint16_t *s = (const uint16_t *)src;
-    end = s + src_size/2;
+    const uint16_t *end = s + src_size / 2;
+
     while (s < end) {
-        register uint16_t bgr;
-        bgr = *s++;
+        register uint16_t bgr = *s++;
 #if HAVE_BIGENDIAN
         *d++ = 255;
         *d++ = (bgr&0x1F)<<3;
@@ -264,13 +259,12 @@ void rgb15tobgr32(const uint8_t *src, uint8_t *dst, int src_size)
 
 void rgb15to24(const uint8_t *src, uint8_t *dst, int src_size)
 {
-    const uint16_t *end;
     uint8_t *d = dst;
     const uint16_t *s = (const uint16_t *)src;
-    end = s + src_size/2;
+    const uint16_t *end = s + src_size / 2;
+
     while (s < end) {
-        register uint16_t bgr;
-        bgr = *s++;
+        register uint16_t bgr = *s++;
         *d++ = (bgr&0x7C00)>>7;
         *d++ = (bgr&0x3E0)>>2;
         *d++ = (bgr&0x1F)<<3;
@@ -279,8 +273,7 @@ void rgb15to24(const uint8_t *src, uint8_t *dst, int src_size)
 
 void rgb15tobgr16(const uint8_t *src, uint8_t *dst, int src_size)
 {
-    int i;
-    int num_pixels = src_size >> 1;
+    int i, num_pixels = src_size >> 1;
 
     for (i=0; i<num_pixels; i++) {
         unsigned rgb = ((const uint16_t*)src)[i];
@@ -290,13 +283,11 @@ void rgb15tobgr16(const uint8_t *src, uint8_t *dst, int src_size)
 
 void rgb15tobgr15(const uint8_t *src, uint8_t *dst, int src_size)
 {
-    int i;
-    int num_pixels = src_size >> 1;
+    int i, num_pixels = src_size >> 1;
 
     for (i=0; i<num_pixels; i++) {
-        unsigned br;
         unsigned rgb = ((const uint16_t*)src)[i];
-        br = rgb&0x7c1F;
+        unsigned br  = rgb & 0x7C1F;
         ((uint16_t*)dst)[i] = (br>>10) | (rgb&0x3E0) | (br<<10);
     }
 }
@@ -305,8 +296,7 @@ void rgb12tobgr12(const uint8_t *src, uint8_t *dst, int src_size)
 {
     uint16_t *d = (uint16_t*)dst;
     uint16_t *s = (uint16_t*)src;
-    int i;
-    int num_pixels = src_size >> 1;
+    int i, num_pixels = src_size >> 1;
 
     for (i = 0; i < num_pixels; i++) {
         unsigned rgb = s[i];
@@ -316,15 +306,13 @@ void rgb12tobgr12(const uint8_t *src, uint8_t *dst, int src_size)
 
 void bgr8torgb8(const uint8_t *src, uint8_t *dst, int src_size)
 {
-    int i;
-    int num_pixels = src_size;
+    int i, num_pixels = src_size;
+
     for (i=0; i<num_pixels; i++) {
-        unsigned b,g,r;
-        register uint8_t rgb;
-        rgb = src[i];
-        r = (rgb&0x07);
-        g = (rgb&0x38)>>3;
-        b = (rgb&0xC0)>>6;
+        register uint8_t rgb = src[i];
+        unsigned r           = (rgb & 0x07);
+        unsigned g           = (rgb & 0x38) >> 3;
+        unsigned b           = (rgb & 0xC0) >> 6;
         dst[i] = ((b<<1)&0x07) | ((g&0x07)<<3) | ((r&0x03)<<6);
     }
 }
