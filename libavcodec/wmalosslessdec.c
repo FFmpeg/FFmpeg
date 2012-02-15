@@ -715,9 +715,14 @@ static int decode_channel_residues(WmallDecodeCtx *s, int ch, int tile_size)
 	    quo += get_bits_long(&s->gb, get_bits(&s->gb, 5) + 1);
 
        	ave_mean = (s->ave_sum[ch] + (1 << s->movave_scaling)) >> (s->movave_scaling + 1);
-	rem_bits = av_ceil_log2(ave_mean);
-	rem = rem_bits ? get_bits(&s->gb, rem_bits) : 0;
-	residue = (quo << rem_bits) + rem;
+    if (ave_mean <= 1)
+        residue = quo;
+    else
+    {
+        rem_bits = av_ceil_log2(ave_mean);
+        rem = rem_bits ? get_bits(&s->gb, rem_bits) : 0;
+        residue = (quo << rem_bits) + rem;
+    }
 
 	s->ave_sum[ch] = residue + s->ave_sum[ch] - (s->ave_sum[ch] >> s->movave_scaling);
 
