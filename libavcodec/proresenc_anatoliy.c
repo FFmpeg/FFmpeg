@@ -584,6 +584,19 @@ static av_cold int prores_encode_close(AVCodecContext *avctx)
     return 0;
 }
 
+AVCodec ff_prores_anatoliy_encoder = {
+    .name           = "prores_anatoliy",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_PRORES,
+    .priv_data_size = sizeof(ProresContext),
+    .init           = prores_encode_init,
+    .close          = prores_encode_close,
+    .encode         = prores_encode_frame,
+    .pix_fmts       = (const enum PixelFormat[]){PIX_FMT_YUV422P10, PIX_FMT_NONE},
+    .long_name      = NULL_IF_CONFIG_SMALL("Apple ProRes"),
+    .profiles       = profiles
+};
+
 AVCodec ff_prores_encoder = {
     .name           = "prores",
     .type           = AVMEDIA_TYPE_VIDEO,

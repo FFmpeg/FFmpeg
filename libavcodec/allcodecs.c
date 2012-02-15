@@ -181,6 +181,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC  (PNG, png);
     REGISTER_ENCDEC  (PPM, ppm);
     REGISTER_ENCDEC  (PRORES, prores);
+    REGISTER_ENCODER (PRORES_ANATOLIY, prores_anatoliy);
     REGISTER_DECODER (PRORES_LGPL, prores_lgpl);
     REGISTER_DECODER (PTX, ptx);
     REGISTER_DECODER (QDRAW, qdraw);
