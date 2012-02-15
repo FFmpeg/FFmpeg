@@ -167,8 +167,8 @@ void ff_wmv2_encode_mb(MpegEncContext * s,
         }
 
         put_bits(&s->pb,
-                 wmv2_inter_table[w->cbp_table_index][cbp + 64][1],
-                 wmv2_inter_table[w->cbp_table_index][cbp + 64][0]);
+                 ff_wmv2_inter_table[w->cbp_table_index][cbp + 64][1],
+                 ff_wmv2_inter_table[w->cbp_table_index][cbp + 64][0]);
 
         /* motion vector */
         ff_h263_pred_motion(s, 0, 0, &pred_x, &pred_y);
@@ -196,13 +196,13 @@ void ff_wmv2_encode_mb(MpegEncContext * s,
                      ff_msmp4_mb_i_table[coded_cbp][1], ff_msmp4_mb_i_table[coded_cbp][0]);
         } else {
             put_bits(&s->pb,
-                     wmv2_inter_table[w->cbp_table_index][cbp][1],
-                     wmv2_inter_table[w->cbp_table_index][cbp][0]);
+                     ff_wmv2_inter_table[w->cbp_table_index][cbp][1],
+                     ff_wmv2_inter_table[w->cbp_table_index][cbp][0]);
         }
         put_bits(&s->pb, 1, 0);         /* no AC prediction yet */
         if(s->inter_intra_pred){
             s->h263_aic_dir=0;
-            put_bits(&s->pb, table_inter_intra[s->h263_aic_dir][1], table_inter_intra[s->h263_aic_dir][0]);
+            put_bits(&s->pb, ff_table_inter_intra[s->h263_aic_dir][1], ff_table_inter_intra[s->h263_aic_dir][0]);
         }
     }
 

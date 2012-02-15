@@ -5351,16 +5351,16 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
     if (v->profile == PROFILE_ADVANCED || v->res_fasttx) {
         for (i = 0; i < 64; i++) {
 #define transpose(x) ((x >> 3) | ((x & 7) << 3))
-            v->zz_8x8[0][i] = transpose(wmv1_scantable[0][i]);
-            v->zz_8x8[1][i] = transpose(wmv1_scantable[1][i]);
-            v->zz_8x8[2][i] = transpose(wmv1_scantable[2][i]);
-            v->zz_8x8[3][i] = transpose(wmv1_scantable[3][i]);
+            v->zz_8x8[0][i] = transpose(ff_wmv1_scantable[0][i]);
+            v->zz_8x8[1][i] = transpose(ff_wmv1_scantable[1][i]);
+            v->zz_8x8[2][i] = transpose(ff_wmv1_scantable[2][i]);
+            v->zz_8x8[3][i] = transpose(ff_wmv1_scantable[3][i]);
             v->zzi_8x8[i] = transpose(ff_vc1_adv_interlaced_8x8_zz[i]);
         }
         v->left_blk_sh = 0;
         v->top_blk_sh  = 3;
     } else {
-        memcpy(v->zz_8x8, wmv1_scantable, 4*64);
+        memcpy(v->zz_8x8, ff_wmv1_scantable, 4*64);
         v->left_blk_sh = 3;
         v->top_blk_sh  = 0;
     }
