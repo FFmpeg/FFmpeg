@@ -139,11 +139,14 @@ struct TrellisNode {
     int score;
 };
 
+#define MAX_STORED_Q 16
+
 typedef struct ProresContext {
     AVClass *class;
     DECLARE_ALIGNED(16, DCTELEM, blocks)[MAX_PLANES][64 * 4 * MAX_MBS_PER_SLICE];
     DECLARE_ALIGNED(16, uint16_t, emu_buf)[16*16];
-    int16_t quants[16][64];
+    int16_t quants[MAX_STORED_Q][64];
+    int16_t custom_q[64];
 
     ProresDSPContext dsp;
     ScanTable  scantable;
@@ -155,6 +158,8 @@ typedef struct ProresContext {
     int num_slices;
     int num_planes;
     int bits_per_mb;
+
+    int frame_size;
 
     int profile;
     const struct prores_profile *profile_info;
@@ -348,6 +353,15 @@ static int encode_slice(AVCodecContext *avctx, const AVFrame *pic,
     int slice_width_factor = av_log2(mbs_per_slice);
     int num_cblocks, pwidth;
     int plane_factor, is_chroma;
+    uint16_t *qmat;
+
+    if (quant < MAX_STORED_Q) {
+        qmat = ctx->quants[quant];
+    } else {
+        qmat = ctx->custom_q;
+        for (i = 0; i < 64; i++)
+            qmat[i] = ctx->profile_info->quant[i] * quant;
+    }
 
     for (i = 0; i < ctx->num_planes; i++) {
         is_chroma    = (i == 1 || i == 2);
@@ -373,7 +387,7 @@ static int encode_slice(AVCodecContext *avctx, const AVFrame *pic,
         sizes[i] = encode_slice_plane(ctx, pb, src, pic->linesize[i],
                                       mbs_per_slice, ctx->blocks[0],
                                       num_cblocks, plane_factor,
-                                      ctx->quants[quant]);
+                                      qmat);
         total_size += sizes[i];
     }
     return total_size;
@@ -500,6 +514,8 @@ static int find_slice_quant(AVCodecContext *avctx, const AVFrame *pic,
     int error, bits, bits_limit;
     int mbs, prev, cur, new_score;
     int slice_bits[TRELLIS_WIDTH], slice_score[TRELLIS_WIDTH];
+    int overquant;
+    uint16_t *qmat;
 
     mbs = x + mbs_per_slice;
 
@@ -526,7 +542,7 @@ static int find_slice_quant(AVCodecContext *avctx, const AVFrame *pic,
                        mbs_per_slice, num_cblocks[i]);
     }
 
-    for (q = min_quant; q <= max_quant; q++) {
+    for (q = min_quant; q < max_quant + 2; q++) {
         ctx->nodes[trellis_node + q].prev_node = -1;
         ctx->nodes[trellis_node + q].quant     = q;
     }
@@ -549,12 +565,43 @@ static int find_slice_quant(AVCodecContext *avctx, const AVFrame *pic,
         slice_bits[q]  = bits;
         slice_score[q] = error;
     }
+    if (slice_bits[max_quant] <= ctx->bits_per_mb * mbs_per_slice) {
+        slice_bits[max_quant + 1]  = slice_bits[max_quant];
+        slice_score[max_quant + 1] = slice_score[max_quant] + 1;
+        overquant = max_quant;
+    } else {
+        for (q = max_quant + 1; q < 128; q++) {
+            bits  = 0;
+            error = 0;
+            if (q < MAX_STORED_Q) {
+                qmat = ctx->quants[q];
+            } else {
+                qmat = ctx->custom_q;
+                for (i = 0; i < 64; i++)
+                    qmat[i] = ctx->profile_info->quant[i] * q;
+            }
+            for (i = 0; i < ctx->num_planes; i++) {
+                bits += estimate_slice_plane(ctx, &error, i,
+                                             src, pic->linesize[i],
+                                             mbs_per_slice,
+                                             num_cblocks[i], plane_factor[i],
+                                             qmat);
+            }
+            if (bits <= ctx->bits_per_mb * mbs_per_slice)
+                break;
+        }
+
+        slice_bits[max_quant + 1]  = bits;
+        slice_score[max_quant + 1] = error;
+        overquant = q;
+    }
+    ctx->nodes[trellis_node + max_quant + 1].quant = overquant;
 
     bits_limit = mbs * ctx->bits_per_mb;
-    for (pq = min_quant; pq <= max_quant; pq++) {
+    for (pq = min_quant; pq < max_quant + 2; pq++) {
         prev = trellis_node - TRELLIS_WIDTH + pq;
 
-        for (q = min_quant; q <= max_quant; q++) {
+        for (q = min_quant; q < max_quant + 2; q++) {
             cur = trellis_node + q;
 
             bits  = ctx->nodes[prev].bits + slice_bits[q];
@@ -578,7 +625,7 @@ static int find_slice_quant(AVCodecContext *avctx, const AVFrame *pic,
 
     error = ctx->nodes[trellis_node + min_quant].score;
     pq    = trellis_node + min_quant;
-    for (q = min_quant + 1; q <= max_quant; q++) {
+    for (q = min_quant + 1; q < max_quant + 2; q++) {
         if (ctx->nodes[trellis_node + q].score <= error) {
             error = ctx->nodes[trellis_node + q].score;
             pq    = trellis_node + q;
@@ -606,8 +653,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     avctx->coded_frame->key_frame = 1;
 
-    pkt_size = ctx->mb_width * ctx->mb_height * 64 * 3 * 12
-               + ctx->num_slices * 2 + 200 + FF_MIN_BUFFER_SIZE;
+    pkt_size = ctx->frame_size + FF_MIN_BUFFER_SIZE;
 
     if ((ret = ff_alloc_packet(pkt, pkt_size)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error getting output packet.\n");
@@ -762,9 +808,13 @@ static av_cold int encode_init(AVCodecContext *avctx)
             break;
     ctx->bits_per_mb   = ctx->profile_info->br_tab[i];
 
+    ctx->frame_size = ctx->num_slices * (2 + 2 * ctx->num_planes
+                                         + (2 * mps * ctx->bits_per_mb) / 8)
+                      + 200;
+
     min_quant = ctx->profile_info->min_quant;
     max_quant = ctx->profile_info->max_quant;
-    for (i = min_quant; i <= max_quant; i++) {
+    for (i = min_quant; i < MAX_STORED_Q; i++) {
         for (j = 0; j < 64; j++)
             ctx->quants[i][j] = ctx->profile_info->quant[j] * i;
     }
@@ -773,6 +823,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     av_log(avctx, AV_LOG_DEBUG, "profile %d, %d slices, %d bits per MB\n",
            ctx->profile, ctx->num_slices, ctx->bits_per_mb);
+    av_log(avctx, AV_LOG_DEBUG, "estimated frame size %d\n",
+           ctx->frame_size);
 
     ctx->nodes = av_malloc((ctx->slices_width + 1) * TRELLIS_WIDTH
                            * sizeof(*ctx->nodes));
@@ -780,7 +832,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         encode_close(avctx);
         return AVERROR(ENOMEM);
     }
-    for (i = min_quant; i <= max_quant; i++) {
+    for (i = min_quant; i < max_quant + 2; i++) {
         ctx->nodes[i].prev_node = -1;
         ctx->nodes[i].bits      = 0;
         ctx->nodes[i].score     = 0;
