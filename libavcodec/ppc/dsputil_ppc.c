@@ -143,7 +143,7 @@ static void prefetch_ppc(void *mem, int stride, int h)
     } while(--h);
 }
 
-void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
+void ff_dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
 {
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
@@ -163,10 +163,10 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
     }
 
 #if HAVE_ALTIVEC
-    if(CONFIG_H264_DECODER) dsputil_h264_init_ppc(c, avctx);
+    if(CONFIG_H264_DECODER) ff_dsputil_h264_init_ppc(c, avctx);
 
     if (av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC) {
-        dsputil_init_altivec(c, avctx);
+        ff_dsputil_init_altivec(c, avctx);
         float_init_altivec(c, avctx);
         int_init_altivec(c, avctx);
         c->gmc1 = gmc1_altivec;

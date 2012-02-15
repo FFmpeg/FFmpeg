@@ -231,7 +231,7 @@ static av_cold int ape_decode_init(AVCodecContext *avctx)
                          filter_alloc_fail);
     }
 
-    dsputil_init(&s->dsp, avctx);
+    ff_dsputil_init(&s->dsp, avctx);
     avctx->channel_layout = (avctx->channels==2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
 
     avcodec_get_frame_defaults(&s->frame);

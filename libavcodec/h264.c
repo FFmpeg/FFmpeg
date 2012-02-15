@@ -1037,7 +1037,7 @@ static av_cold void common_init(H264Context *h){
     h->dequant_coeff_pps= -1;
     s->unrestricted_mv=1;
 
-    dsputil_init(&s->dsp, s->avctx); // needed so that idct permutation is known early
+    ff_dsputil_init(&s->dsp, s->avctx); // needed so that idct permutation is known early
 
     memset(h->pps.scaling_matrix4, 16, 6*16*sizeof(uint8_t));
     memset(h->pps.scaling_matrix8, 16, 2*64*sizeof(uint8_t));
@@ -3941,7 +3941,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
                     ff_h264dsp_init(&h->h264dsp, h->sps.bit_depth_luma, h->sps.chroma_format_idc);
                     ff_h264_pred_init(&h->hpc, s->codec_id, h->sps.bit_depth_luma, h->sps.chroma_format_idc);
                     s->dsp.dct_bits = h->sps.bit_depth_luma > 8 ? 32 : 16;
-                    dsputil_init(&s->dsp, s->avctx);
+                    ff_dsputil_init(&s->dsp, s->avctx);
                 } else {
                     av_log(avctx, AV_LOG_ERROR, "Unsupported bit depth: %d\n", h->sps.bit_depth_luma);
                     return -1;

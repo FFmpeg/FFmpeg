@@ -1153,7 +1153,7 @@ static av_cold int twin_decode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    dsputil_init(&tctx->dsp, avctx);
+    ff_dsputil_init(&tctx->dsp, avctx);
     if ((ret = init_mdct_win(tctx))) {
         av_log(avctx, AV_LOG_ERROR, "Error initializing MDCT\n");
         twin_decode_close(avctx);

@@ -880,7 +880,7 @@ static av_cold void common_init(AVCodecContext *avctx)
 {
     FourXContext * const f = avctx->priv_data;
 
-    dsputil_init(&f->dsp, avctx);
+    ff_dsputil_init(&f->dsp, avctx);
 
     f->avctx = avctx;
 }

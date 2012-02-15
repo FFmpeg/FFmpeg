@@ -1724,7 +1724,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         }
     }
 
-    dsputil_init(&ctx->dsp, avctx);
+    ff_dsputil_init(&ctx->dsp, avctx);
 
     avcodec_get_frame_defaults(&ctx->frame);
     avctx->coded_frame = &ctx->frame;

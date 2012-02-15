@@ -148,7 +148,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     avctx->frame_size = NELLY_SAMPLES;
     s->avctx = avctx;
     ff_mdct_init(&s->mdct_ctx, 8, 0, 32768.0);
-    dsputil_init(&s->dsp, avctx);
+    ff_dsputil_init(&s->dsp, avctx);
 
     /* Generate overlap window */
     ff_sine_window_init(ff_sine_128, 128);

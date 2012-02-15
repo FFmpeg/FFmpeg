@@ -659,7 +659,7 @@ static av_cold int common_init(AVCodecContext *avctx){
     s->avctx= avctx;
     s->flags= avctx->flags;
 
-    dsputil_init(&s->dsp, avctx);
+    ff_dsputil_init(&s->dsp, avctx);
 
     s->width = avctx->width;
     s->height= avctx->height;

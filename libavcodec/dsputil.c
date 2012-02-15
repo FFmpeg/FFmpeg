@@ -2747,7 +2747,7 @@ static void ff_jref_idct1_add(uint8_t *dest, int line_size, DCTELEM *block)
 static void just_return(void *mem av_unused, int stride av_unused, int h av_unused) { return; }
 
 /* init static data */
-av_cold void dsputil_static_init(void)
+av_cold void ff_dsputil_static_init(void)
 {
     int i;
 
@@ -2784,7 +2784,7 @@ int ff_check_alignment(void){
     return 0;
 }
 
-av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
+av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
 {
     int i;
 
@@ -3136,14 +3136,14 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     }
 
 
-    if (HAVE_MMX)        dsputil_init_mmx   (c, avctx);
-    if (ARCH_ARM)        dsputil_init_arm   (c, avctx);
-    if (HAVE_VIS)        dsputil_init_vis   (c, avctx);
-    if (ARCH_ALPHA)      dsputil_init_alpha (c, avctx);
-    if (ARCH_PPC)        dsputil_init_ppc   (c, avctx);
-    if (HAVE_MMI)        dsputil_init_mmi   (c, avctx);
-    if (ARCH_SH4)        dsputil_init_sh4   (c, avctx);
-    if (ARCH_BFIN)       dsputil_init_bfin  (c, avctx);
+    if (HAVE_MMX)        ff_dsputil_init_mmx   (c, avctx);
+    if (ARCH_ARM)        ff_dsputil_init_arm   (c, avctx);
+    if (HAVE_VIS)        ff_dsputil_init_vis   (c, avctx);
+    if (ARCH_ALPHA)      ff_dsputil_init_alpha (c, avctx);
+    if (ARCH_PPC)        ff_dsputil_init_ppc   (c, avctx);
+    if (HAVE_MMI)        ff_dsputil_init_mmi   (c, avctx);
+    if (ARCH_SH4)        ff_dsputil_init_sh4   (c, avctx);
+    if (ARCH_BFIN)       ff_dsputil_init_bfin  (c, avctx);
 
     for(i=0; i<64; i++){
         if(!c->put_2tap_qpel_pixels_tab[0][i])

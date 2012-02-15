@@ -331,7 +331,7 @@ DEFFUNC(avg,no_rnd,xy,16,OP_XY,PACK)
 
 #endif
 
-void dsputil_init_align(DSPContext* c, AVCodecContext *avctx)
+void ff_dsputil_init_align(DSPContext* c, AVCodecContext *avctx)
 {
         const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 

@@ -390,7 +390,7 @@ av_cold int ff_snow_common_init(AVCodecContext *avctx){
     s->avctx= avctx;
     s->max_ref_frames=1; //just make sure its not an invalid value in case of no initial keyframe
 
-    dsputil_init(&s->dsp, avctx);
+    ff_dsputil_init(&s->dsp, avctx);
     ff_dwt_init(&s->dwt);
 
 #define mcf(dx,dy)\

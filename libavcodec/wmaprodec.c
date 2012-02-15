@@ -281,7 +281,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     int num_possible_block_sizes;
 
     s->avctx = avctx;
-    dsputil_init(&s->dsp, avctx);
+    ff_dsputil_init(&s->dsp, avctx);
     ff_fmt_convert_init(&s->fmt_conv, avctx);
     init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
 

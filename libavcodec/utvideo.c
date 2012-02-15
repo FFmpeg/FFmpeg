@@ -505,7 +505,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     c->avctx = avctx;
 
-    dsputil_init(&c->dsp, avctx);
+    ff_dsputil_init(&c->dsp, avctx);
 
     if (avctx->extradata_size < 16) {
         av_log(avctx, AV_LOG_ERROR, "Insufficient extradata size %d, should be at least 16\n",

@@ -380,7 +380,7 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
 
     ff_atrac_generate_tables();
 
-    dsputil_init(&q->dsp, avctx);
+    ff_dsputil_init(&q->dsp, avctx);
     ff_fmt_convert_init(&q->fmt_conv, avctx);
 
     q->bands[0] = q->low;

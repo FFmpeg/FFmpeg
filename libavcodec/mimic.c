@@ -121,7 +121,7 @@ static av_cold int mimic_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "error initializing vlc table\n");
         return -1;
     }
-    dsputil_init(&ctx->dsp, avctx);
+    ff_dsputil_init(&ctx->dsp, avctx);
     ff_init_scantable(ctx->dsp.idct_permutation, &ctx->scantable, col_zag);
 
     return 0;

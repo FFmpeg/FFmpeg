@@ -144,11 +144,11 @@ int main(int argc, char **argv)
 
     ctx = avcodec_alloc_context3(NULL);
     ctx->dsp_mask = AV_CPU_FLAG_FORCE;
-    dsputil_init(&cctx, ctx);
+    ff_dsputil_init(&cctx, ctx);
     for (c = 0; c < flags_size; c++) {
         int x;
         ctx->dsp_mask = AV_CPU_FLAG_FORCE | flags[c];
-        dsputil_init(&mmxctx, ctx);
+        ff_dsputil_init(&mmxctx, ctx);
 
         for (x = 0; x < 2; x++) {
             printf("%s for %dx%d pixels\n", c ? "mmx2" : "mmx",

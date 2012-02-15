@@ -73,7 +73,7 @@ static void simple_idct_arm_add(uint8_t *dest, int line_size, DCTELEM *block)
     ff_add_pixels_clamped(block, dest, line_size);
 }
 
-void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx)
+void ff_dsputil_init_arm(DSPContext* c, AVCodecContext *avctx)
 {
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 

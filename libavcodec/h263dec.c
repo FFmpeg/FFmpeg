@@ -557,7 +557,7 @@ retry:
     if (s->codec_id == CODEC_ID_MPEG4 && s->xvid_build>=0 && avctx->idct_algo == FF_IDCT_AUTO && (av_get_cpu_flags() & AV_CPU_FLAG_MMX)) {
         avctx->idct_algo= FF_IDCT_XVIDMMX;
         avctx->coded_width= 0; // force reinit
-//        dsputil_init(&s->dsp, avctx);
+//        ff_dsputil_init(&s->dsp, avctx);
         s->picture_number=0;
     }
 #endif

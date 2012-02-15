@@ -1371,7 +1371,7 @@ static void avg_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, int l
     }
 }
 
-void dsputil_init_altivec(DSPContext* c, AVCodecContext *avctx)
+void ff_dsputil_init_altivec(DSPContext* c, AVCodecContext *avctx)
 {
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 

@@ -1095,7 +1095,7 @@ static int ssd_int8_vs_int16_mmx(const int8_t *pix1, const int16_t *pix2, int si
 #endif //HAVE_SSSE3
 
 
-void dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
+void ff_dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
 {
     int mm_flags = av_get_cpu_flags();
     int bit_depth = avctx->bits_per_raw_sample;
@@ -1192,5 +1192,5 @@ void dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
         }
     }
 
-    dsputil_init_pix_mmx(c, avctx);
+    ff_dsputil_init_pix_mmx(c, avctx);
 }

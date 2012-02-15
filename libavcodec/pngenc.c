@@ -427,7 +427,7 @@ static av_cold int png_enc_init(AVCodecContext *avctx){
 
     avcodec_get_frame_defaults(&s->picture);
     avctx->coded_frame= &s->picture;
-    dsputil_init(&s->dsp, avctx);
+    ff_dsputil_init(&s->dsp, avctx);
 
     s->filter_type = av_clip(avctx->prediction_method, PNG_FILTER_VALUE_NONE, PNG_FILTER_VALUE_MIXED);
     if(avctx->pix_fmt == PIX_FMT_MONOBLACK)

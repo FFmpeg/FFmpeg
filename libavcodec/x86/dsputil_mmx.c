@@ -2336,7 +2336,7 @@ extern void ff_butterflies_float_interleave_sse(float *dst, const float *src0,
 extern void ff_butterflies_float_interleave_avx(float *dst, const float *src0,
                                                 const float *src1, int len);
 
-void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
+void ff_dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 {
     int mm_flags = av_get_cpu_flags();
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
@@ -2844,5 +2844,5 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
     }
 
     if (CONFIG_ENCODERS)
-        dsputilenc_init_mmx(c, avctx);
+        ff_dsputilenc_init_mmx(c, avctx);
 }

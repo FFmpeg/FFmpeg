@@ -109,7 +109,7 @@ static void avcodec_init(void)
         return;
     initialized = 1;
 
-    dsputil_static_init();
+    ff_dsputil_static_init();
 }
 
 static av_always_inline int codec_is_encoder(AVCodec *codec)

@@ -3949,7 +3949,7 @@ static int vis_level(void)
 }
 
 /* libavcodec initialization code */
-void dsputil_init_vis(DSPContext* c, AVCodecContext *avctx)
+void ff_dsputil_init_vis(DSPContext* c, AVCodecContext *avctx)
 {
   /* VIS-specific optimizations */
   int accel = vis_level ();

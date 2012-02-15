@@ -62,7 +62,7 @@ static av_cold int ra288_decode_init(AVCodecContext *avctx)
 {
     RA288Context *ractx = avctx->priv_data;
     avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
-    dsputil_init(&ractx->dsp, avctx);
+    ff_dsputil_init(&ractx->dsp, avctx);
 
     avcodec_get_frame_defaults(&ractx->frame);
     avctx->coded_frame = &ractx->frame;

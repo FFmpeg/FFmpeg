@@ -472,7 +472,7 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
 {
     SVQ1Context * const s = avctx->priv_data;
 
-    dsputil_init(&s->dsp, avctx);
+    ff_dsputil_init(&s->dsp, avctx);
     avctx->coded_frame= (AVFrame*)&s->picture;
 
     s->frame_width = avctx->width;

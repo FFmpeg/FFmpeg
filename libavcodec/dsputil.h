@@ -580,8 +580,8 @@ typedef struct DSPContext {
     op_fill_func fill_block_tab[2];
 } DSPContext;
 
-void dsputil_static_init(void);
-void dsputil_init(DSPContext* p, AVCodecContext *avctx);
+void ff_dsputil_static_init(void);
+void ff_dsputil_init(DSPContext* p, AVCodecContext *avctx);
 
 int ff_check_alignment(void);
 
@@ -640,14 +640,14 @@ static inline int get_penalty_factor(int lambda, int lambda2, int type){
     }
 }
 
-void dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx);
-void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx);
-void dsputil_init_bfin(DSPContext* c, AVCodecContext *avctx);
-void dsputil_init_mmi(DSPContext* c, AVCodecContext *avctx);
-void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx);
-void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx);
-void dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx);
-void dsputil_init_vis(DSPContext* c, AVCodecContext *avctx);
+void ff_dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx);
+void ff_dsputil_init_arm(DSPContext* c, AVCodecContext *avctx);
+void ff_dsputil_init_bfin(DSPContext* c, AVCodecContext *avctx);
+void ff_dsputil_init_mmi(DSPContext* c, AVCodecContext *avctx);
+void ff_dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx);
+void ff_dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx);
+void ff_dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx);
+void ff_dsputil_init_vis(DSPContext* c, AVCodecContext *avctx);
 
 void ff_dsputil_init_dwt(DSPContext *c);
 void ff_intrax8dsp_init(DSPContext* c, AVCodecContext *avctx);

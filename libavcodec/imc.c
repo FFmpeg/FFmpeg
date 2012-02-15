@@ -166,7 +166,7 @@ static av_cold int imc_decode_init(AVCodecContext * avctx)
         av_log(avctx, AV_LOG_INFO, "FFT init failed\n");
         return ret;
     }
-    dsputil_init(&q->dsp, avctx);
+    ff_dsputil_init(&q->dsp, avctx);
     avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
     avctx->channel_layout = AV_CH_LAYOUT_MONO;
 

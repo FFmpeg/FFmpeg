@@ -824,7 +824,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
     l->pic.data[0]=NULL;
     avctx->pix_fmt = PIX_FMT_BGR24;
 
-    dsputil_init(&l->dsp, avctx);
+    ff_dsputil_init(&l->dsp, avctx);
 
     l->last = av_malloc(4 * sizeof(int) * (avctx->width >> 2));
     l->clast = av_malloc(4 * sizeof(int) * (avctx->width >> 2));

@@ -238,7 +238,7 @@ static av_cold int mlp_decode_init(AVCodecContext *avctx)
     m->avctx = avctx;
     for (substr = 0; substr < MAX_SUBSTREAMS; substr++)
         m->substream[substr].lossless_check_data = 0xffffffff;
-    dsputil_init(&m->dsp, avctx);
+    ff_dsputil_init(&m->dsp, avctx);
 
     avcodec_get_frame_defaults(&m->frame);
     avctx->coded_frame = &m->frame;

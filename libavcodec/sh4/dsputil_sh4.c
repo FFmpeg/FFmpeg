@@ -89,11 +89,11 @@ static void idct_add(uint8_t *dest, int line_size, DCTELEM *block)
         }
 }
 
-void dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx)
+void ff_dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx)
 {
         const int idct_algo= avctx->idct_algo;
         const int high_bit_depth = avctx->bits_per_raw_sample > 8;
-        dsputil_init_align(c,avctx);
+        ff_dsputil_init_align(c,avctx);
 
         if (!high_bit_depth)
         c->clear_blocks = clear_blocks_sh4;

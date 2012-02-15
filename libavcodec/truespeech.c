@@ -68,7 +68,7 @@ static av_cold int truespeech_decode_init(AVCodecContext * avctx)
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 
-    dsputil_init(&c->dsp, avctx);
+    ff_dsputil_init(&c->dsp, avctx);
 
     avcodec_get_frame_defaults(&c->frame);
     avctx->coded_frame = &c->frame;

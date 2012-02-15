@@ -126,7 +126,7 @@ int ff_wma_init(AVCodecContext *avctx, int flags2)
     s->bit_rate    = avctx->bit_rate;
     s->block_align = avctx->block_align;
 
-    dsputil_init(&s->dsp, avctx);
+    ff_dsputil_init(&s->dsp, avctx);
     ff_fmt_convert_init(&s->fmt_conv, avctx);
 
     if (avctx->codec->id == CODEC_ID_WMAV1) {
