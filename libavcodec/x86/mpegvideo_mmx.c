@@ -29,7 +29,7 @@
 #include "libavcodec/mpegvideo.h"
 #include "dsputil_mmx.h"
 
-extern uint16_t inv_zigzag_direct16[64];
+extern uint16_t ff_inv_zigzag_direct16[64];
 
 
 static void dct_unquantize_h263_intra_mmx(MpegEncContext *s,

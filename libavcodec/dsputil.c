@@ -82,7 +82,7 @@ const uint8_t ff_zigzag248_direct[64] = {
 };
 
 /* not permutated inverse zigzag_direct + 1 for MMX quantizer */
-DECLARE_ALIGNED(16, uint16_t, inv_zigzag_direct16)[64];
+DECLARE_ALIGNED(16, uint16_t, ff_inv_zigzag_direct16)[64];
 
 const uint8_t ff_alternate_horizontal_scan[64] = {
     0,  1,   2,  3,  8,  9, 16, 17,
@@ -2761,7 +2761,7 @@ av_cold void ff_dsputil_static_init(void)
         ff_squareTbl[i] = (i - 256) * (i - 256);
     }
 
-    for(i=0; i<64; i++) inv_zigzag_direct16[ff_zigzag_direct[i]]= i+1;
+    for(i=0; i<64; i++) ff_inv_zigzag_direct16[ff_zigzag_direct[i]]= i+1;
 }
 
 int ff_check_alignment(void){
