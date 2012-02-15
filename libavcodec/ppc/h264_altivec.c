@@ -72,7 +72,7 @@
 
 #define H264_MC(OPNAME, SIZE, CODETYPE) \
 static void OPNAME ## h264_qpel ## SIZE ## _mc00_ ## CODETYPE (uint8_t *dst, uint8_t *src, int stride){\
-    OPNAME ## pixels ## SIZE ## _ ## CODETYPE(dst, src, stride, SIZE);\
+    ff_ ## OPNAME ## pixels ## SIZE ## _ ## CODETYPE(dst, src, stride, SIZE);\
 }\
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc10_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){ \

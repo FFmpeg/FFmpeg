@@ -122,7 +122,7 @@ static void vector_fmul_window_altivec(float *dst, const float *src0, const floa
     }
 }
 
-void float_init_altivec(DSPContext* c, AVCodecContext *avctx)
+void ff_float_init_altivec(DSPContext* c, AVCodecContext *avctx)
 {
     c->vector_fmul = vector_fmul_altivec;
     c->vector_fmul_reverse = vector_fmul_reverse_altivec;
