@@ -45,10 +45,10 @@ void ff_jpeg_fdct_islow_10(DCTELEM *data);
 void ff_fdct248_islow_8(DCTELEM *data);
 void ff_fdct248_islow_10(DCTELEM *data);
 
-void j_rev_dct (DCTELEM *data);
-void j_rev_dct4 (DCTELEM *data);
-void j_rev_dct2 (DCTELEM *data);
-void j_rev_dct1 (DCTELEM *data);
+void ff_j_rev_dct (DCTELEM *data);
+void ff_j_rev_dct4 (DCTELEM *data);
+void ff_j_rev_dct2 (DCTELEM *data);
+void ff_j_rev_dct1 (DCTELEM *data);
 void ff_wmv2_idct_c(DCTELEM *data);
 
 void ff_fdct_mmx(DCTELEM *block);

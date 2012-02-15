@@ -2700,34 +2700,34 @@ static void ff_wmv2_idct_add_c(uint8_t *dest, int line_size, DCTELEM *block)
 }
 static void ff_jref_idct_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
-    j_rev_dct (block);
+    ff_j_rev_dct (block);
     ff_put_pixels_clamped_c(block, dest, line_size);
 }
 static void ff_jref_idct_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
-    j_rev_dct (block);
+    ff_j_rev_dct (block);
     ff_add_pixels_clamped_c(block, dest, line_size);
 }
 
 static void ff_jref_idct4_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
-    j_rev_dct4 (block);
+    ff_j_rev_dct4 (block);
     put_pixels_clamped4_c(block, dest, line_size);
 }
 static void ff_jref_idct4_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
-    j_rev_dct4 (block);
+    ff_j_rev_dct4 (block);
     add_pixels_clamped4_c(block, dest, line_size);
 }
 
 static void ff_jref_idct2_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
-    j_rev_dct2 (block);
+    ff_j_rev_dct2 (block);
     put_pixels_clamped2_c(block, dest, line_size);
 }
 static void ff_jref_idct2_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
-    j_rev_dct2 (block);
+    ff_j_rev_dct2 (block);
     add_pixels_clamped2_c(block, dest, line_size);
 }
 
@@ -2813,17 +2813,17 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
     if(avctx->lowres==1){
         c->idct_put= ff_jref_idct4_put;
         c->idct_add= ff_jref_idct4_add;
-        c->idct    = j_rev_dct4;
+        c->idct    = ff_j_rev_dct4;
         c->idct_permutation_type= FF_NO_IDCT_PERM;
     }else if(avctx->lowres==2){
         c->idct_put= ff_jref_idct2_put;
         c->idct_add= ff_jref_idct2_add;
-        c->idct    = j_rev_dct2;
+        c->idct    = ff_j_rev_dct2;
         c->idct_permutation_type= FF_NO_IDCT_PERM;
     }else if(avctx->lowres==3){
         c->idct_put= ff_jref_idct1_put;
         c->idct_add= ff_jref_idct1_add;
-        c->idct    = j_rev_dct1;
+        c->idct    = ff_j_rev_dct1;
         c->idct_permutation_type= FF_NO_IDCT_PERM;
     }else{
         if (avctx->bits_per_raw_sample == 10) {
@@ -2835,7 +2835,7 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
         if(avctx->idct_algo==FF_IDCT_INT){
             c->idct_put= ff_jref_idct_put;
             c->idct_add= ff_jref_idct_add;
-            c->idct    = j_rev_dct;
+            c->idct    = ff_j_rev_dct;
             c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
         }else if((CONFIG_VP3_DECODER || CONFIG_VP5_DECODER || CONFIG_VP6_DECODER ) &&
                 avctx->idct_algo==FF_IDCT_VP3){
