@@ -347,7 +347,7 @@ static void find_best_tables(MpegEncContext * s)
 }
 
 /* write MSMPEG4 compatible frame header */
-void msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
+void ff_msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
 {
     find_best_tables(s);
 
@@ -373,7 +373,7 @@ void msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
         put_bits(&s->pb, 5, 0x16 + s->mb_height/s->slice_height);
 
         if(s->msmpeg4_version==4){
-            msmpeg4_encode_ext_header(s);
+            ff_msmpeg4_encode_ext_header(s);
             if(s->bit_rate>MBAC_BITRATE)
                 put_bits(&s->pb, 1, s->per_mb_rl_table);
         }
@@ -406,7 +406,7 @@ void msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
     s->esc3_run_length= 0;
 }
 
-void msmpeg4_encode_ext_header(MpegEncContext * s)
+void ff_msmpeg4_encode_ext_header(MpegEncContext * s)
 {
         put_bits(&s->pb, 5, s->avctx->time_base.den / s->avctx->time_base.num); //yes 29.97 -> 29
 
@@ -533,9 +533,9 @@ static void msmpeg4v2_encode_motion(MpegEncContext * s, int val)
     }
 }
 
-void msmpeg4_encode_mb(MpegEncContext * s,
-                       DCTELEM block[6][64],
-                       int motion_x, int motion_y)
+void ff_msmpeg4_encode_mb(MpegEncContext * s,
+                          DCTELEM block[6][64],
+                          int motion_x, int motion_y)
 {
     int cbp, coded_cbp, i;
     int pred_x, pred_y;
@@ -1363,7 +1363,7 @@ av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-int msmpeg4_decode_picture_header(MpegEncContext * s)
+int ff_msmpeg4_decode_picture_header(MpegEncContext * s)
 {
     int code;
 
@@ -1430,7 +1430,7 @@ int msmpeg4_decode_picture_header(MpegEncContext * s)
             s->dc_table_index = get_bits1(&s->gb);
             break;
         case 4:
-            msmpeg4_decode_ext_header(s, (2+5+5+17+7)/8);
+            ff_msmpeg4_decode_ext_header(s, (2+5+5+17+7)/8);
 
             if(s->bit_rate > MBAC_BITRATE) s->per_mb_rl_table= get_bits1(&s->gb);
             else                           s->per_mb_rl_table= 0;
@@ -1517,7 +1517,7 @@ int msmpeg4_decode_picture_header(MpegEncContext * s)
     return 0;
 }
 
-int msmpeg4_decode_ext_header(MpegEncContext * s, int buf_size)
+int ff_msmpeg4_decode_ext_header(MpegEncContext * s, int buf_size)
 {
     int left= buf_size*8 - get_bits_count(&s->gb);
     int length= s->msmpeg4_version>=3 ? 17 : 16;
