@@ -268,7 +268,7 @@ static void put_pixels16_axp_asm(uint8_t *block, const uint8_t *pixels,
     put_pixels_axp_asm(block + 8, pixels + 8, line_size, h);
 }
 
-void dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx)
+void ff_dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx)
 {
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 

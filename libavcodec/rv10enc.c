@@ -28,7 +28,7 @@
 #include "mpegvideo.h"
 #include "put_bits.h"
 
-void rv10_encode_picture_header(MpegEncContext *s, int picture_number)
+void ff_rv10_encode_picture_header(MpegEncContext *s, int picture_number)
 {
     int full_frame= 0;
 
@@ -61,9 +61,9 @@ AVCodec ff_rv10_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_RV10,
     .priv_data_size = sizeof(MpegEncContext),
-    .init           = MPV_encode_init,
-    .encode         = MPV_encode_picture,
-    .close          = MPV_encode_end,
+    .init           = ff_MPV_encode_init,
+    .encode         = ff_MPV_encode_picture,
+    .close          = ff_MPV_encode_end,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("RealVideo 1.0"),
 };

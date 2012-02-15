@@ -424,7 +424,7 @@ static int64_t dv_frame_offset(AVFormatContext *s, DVDemuxContext *c,
     return offset + s->data_offset;
 }
 
-void dv_offset_reset(DVDemuxContext *c, int64_t frame_offset)
+void ff_dv_offset_reset(DVDemuxContext *c, int64_t frame_offset)
 {
     c->frames= frame_offset;
     if (c->ach)
@@ -552,7 +552,7 @@ static int dv_read_seek(AVFormatContext *s, int stream_index,
     if (avio_seek(s->pb, offset, SEEK_SET) < 0)
         return -1;
 
-    dv_offset_reset(c, offset / c->sys->frame_size);
+    ff_dv_offset_reset(c, offset / c->sys->frame_size);
     return 0;
 }
 

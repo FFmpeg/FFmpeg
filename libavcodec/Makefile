@@ -333,6 +333,7 @@ OBJS-$(CONFIG_PRORES_DECODER)          += proresdec2.o
 OBJS-$(CONFIG_PRORES_LGPL_DECODER)     += proresdec_lgpl.o proresdsp.o
 OBJS-$(CONFIG_PRORES_ENCODER)          += proresenc_anatoliy.o
 OBJS-$(CONFIG_PRORES_ANATOLIY_ENCODER) += proresenc_anatoliy.o
+OBJS-$(CONFIG_PRORES_KOSTYA_ENCODER)   += proresenc_kostya.o proresdata.o proresdsp.o
 OBJS-$(CONFIG_PTX_DECODER)             += ptx.o
 OBJS-$(CONFIG_QCELP_DECODER)           += qcelpdec.o celp_math.o         \
                                           celp_filters.o acelp_vectors.o \

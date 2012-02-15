@@ -694,21 +694,21 @@ typedef struct MpegEncContext {
         &new_ctx->picture[pic - old_ctx->picture] : pic - (Picture*)old_ctx + (Picture*)new_ctx)\
     : NULL)
 
-void MPV_decode_defaults(MpegEncContext *s);
-int MPV_common_init(MpegEncContext *s);
-void MPV_common_end(MpegEncContext *s);
-void MPV_decode_mb(MpegEncContext *s, DCTELEM block[12][64]);
-int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx);
-void MPV_frame_end(MpegEncContext *s);
-int MPV_encode_init(AVCodecContext *avctx);
-int MPV_encode_end(AVCodecContext *avctx);
-int MPV_encode_picture(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data);
-void MPV_common_init_mmx(MpegEncContext *s);
-void MPV_common_init_axp(MpegEncContext *s);
-void MPV_common_init_mmi(MpegEncContext *s);
-void MPV_common_init_arm(MpegEncContext *s);
-void MPV_common_init_altivec(MpegEncContext *s);
-void MPV_common_init_bfin(MpegEncContext *s);
+void ff_MPV_decode_defaults(MpegEncContext *s);
+int ff_MPV_common_init(MpegEncContext *s);
+void ff_MPV_common_end(MpegEncContext *s);
+void ff_MPV_decode_mb(MpegEncContext *s, DCTELEM block[12][64]);
+int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx);
+void ff_MPV_frame_end(MpegEncContext *s);
+int ff_MPV_encode_init(AVCodecContext *avctx);
+int ff_MPV_encode_end(AVCodecContext *avctx);
+int ff_MPV_encode_picture(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data);
+void ff_MPV_common_init_mmx(MpegEncContext *s);
+void ff_MPV_common_init_axp(MpegEncContext *s);
+void ff_MPV_common_init_mmi(MpegEncContext *s);
+void ff_MPV_common_init_arm(MpegEncContext *s);
+void ff_MPV_common_init_altivec(MpegEncContext *s);
+void ff_MPV_common_init_bfin(MpegEncContext *s);
 void ff_clean_intra_table_entries(MpegEncContext *s);
 void ff_draw_horiz_band(MpegEncContext *s, int y, int h);
 void ff_mpeg_flush(AVCodecContext *avctx);
@@ -718,8 +718,8 @@ void ff_release_unused_pictures(MpegEncContext *s, int remove_current);
 int ff_find_unused_picture(MpegEncContext *s, int shared);
 void ff_denoise_dct(MpegEncContext *s, DCTELEM *block);
 void ff_update_duplicate_context(MpegEncContext *dst, MpegEncContext *src);
-int MPV_lowest_referenced_row(MpegEncContext *s, int dir);
-void MPV_report_decode_progress(MpegEncContext *s);
+int ff_MPV_lowest_referenced_row(MpegEncContext *s, int dir);
+void ff_MPV_report_decode_progress(MpegEncContext *s);
 int ff_mpeg_update_thread_context(AVCodecContext *dst, const AVCodecContext *src);
 const uint8_t *avpriv_mpv_find_start_code(const uint8_t *p, const uint8_t *end, uint32_t *state);
 void ff_set_qscale(MpegEncContext * s, int qscale);
@@ -796,10 +796,10 @@ int ff_get_mb_score(MpegEncContext * s, int mx, int my, int src_index,
 extern const uint8_t ff_mpeg1_dc_scale_table[128];
 extern const uint8_t * const ff_mpeg2_dc_scale_table[4];
 
-void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number);
-void mpeg1_encode_mb(MpegEncContext *s,
-                     DCTELEM block[6][64],
-                     int motion_x, int motion_y);
+void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number);
+void ff_mpeg1_encode_mb(MpegEncContext *s,
+                        DCTELEM block[6][64],
+                        int motion_x, int motion_y);
 void ff_mpeg1_encode_init(MpegEncContext *s);
 void ff_mpeg1_encode_slice_header(MpegEncContext *s);
 void ff_mpeg1_clean_buffers(MpegEncContext *s);
@@ -821,19 +821,19 @@ int ff_h261_get_picture_format(int width, int height);
 
 
 /* rv10.c */
-void rv10_encode_picture_header(MpegEncContext *s, int picture_number);
-int rv_decode_dc(MpegEncContext *s, int n);
-void rv20_encode_picture_header(MpegEncContext *s, int picture_number);
+void ff_rv10_encode_picture_header(MpegEncContext *s, int picture_number);
+int ff_rv_decode_dc(MpegEncContext *s, int n);
+void ff_rv20_encode_picture_header(MpegEncContext *s, int picture_number);
 
 
 /* msmpeg4.c */
-void msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number);
-void msmpeg4_encode_ext_header(MpegEncContext * s);
-void msmpeg4_encode_mb(MpegEncContext * s,
-                       DCTELEM block[6][64],
-                       int motion_x, int motion_y);
-int msmpeg4_decode_picture_header(MpegEncContext * s);
-int msmpeg4_decode_ext_header(MpegEncContext * s, int buf_size);
+void ff_msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number);
+void ff_msmpeg4_encode_ext_header(MpegEncContext * s);
+void ff_msmpeg4_encode_mb(MpegEncContext * s,
+                          DCTELEM block[6][64],
+                          int motion_x, int motion_y);
+int ff_msmpeg4_decode_picture_header(MpegEncContext * s);
+int ff_msmpeg4_decode_ext_header(MpegEncContext * s, int buf_size);
 int ff_msmpeg4_decode_init(AVCodecContext *avctx);
 void ff_msmpeg4_encode_init(MpegEncContext *s);
 int ff_wmv2_decode_picture_header(MpegEncContext * s);

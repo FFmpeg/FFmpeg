@@ -72,7 +72,7 @@
 
 #define H264_MC(OPNAME, SIZE, CODETYPE) \
 static void OPNAME ## h264_qpel ## SIZE ## _mc00_ ## CODETYPE (uint8_t *dst, uint8_t *src, int stride){\
-    OPNAME ## pixels ## SIZE ## _ ## CODETYPE(dst, src, stride, SIZE);\
+    ff_ ## OPNAME ## pixels ## SIZE ## _ ## CODETYPE(dst, src, stride, SIZE);\
 }\
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc10_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){ \
@@ -966,7 +966,7 @@ static void ff_biweight_h264_pixels ## W ## _altivec(uint8_t *dst, uint8_t *src,
 H264_WEIGHT(16)
 H264_WEIGHT( 8)
 
-void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx) {
+void ff_dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx) {
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
     if (av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC) {

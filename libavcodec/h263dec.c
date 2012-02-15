@@ -56,7 +56,7 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     s->workaround_bugs= avctx->workaround_bugs;
 
     // set defaults
-    MPV_decode_defaults(s);
+    ff_MPV_decode_defaults(s);
     s->quant_precision=5;
     s->decode_mb= ff_h263_decode_mb;
     s->low_delay= 1;
@@ -112,10 +112,10 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
 
     /* for h263, we allocate the images after having read the header */
     if (avctx->codec->id != CODEC_ID_H263 && avctx->codec->id != CODEC_ID_MPEG4)
-        if (MPV_common_init(s) < 0)
+        if (ff_MPV_common_init(s) < 0)
             return -1;
 
-        h263_decode_init_vlc(s);
+        ff_h263_decode_init_vlc(s);
 
     return 0;
 }
@@ -124,7 +124,7 @@ av_cold int ff_h263_decode_end(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
 
-    MPV_common_end(s);
+    ff_MPV_common_end(s);
     return 0;
 }
 
@@ -222,7 +222,7 @@ static int decode_slice(MpegEncContext *s){
             if(ret<0){
                 const int xy= s->mb_x + s->mb_y*s->mb_stride;
                 if(ret==SLICE_END){
-                    MPV_decode_mb(s, s->block);
+                    ff_MPV_decode_mb(s, s->block);
                     if(s->loop_filter)
                         ff_h263_loop_filter(s);
 
@@ -234,7 +234,7 @@ static int decode_slice(MpegEncContext *s){
                     if(++s->mb_x >= s->mb_width){
                         s->mb_x=0;
                         ff_draw_horiz_band(s, s->mb_y*mb_size, mb_size);
-                        MPV_report_decode_progress(s);
+                        ff_MPV_report_decode_progress(s);
                         s->mb_y++;
                     }
                     return 0;
@@ -249,13 +249,13 @@ static int decode_slice(MpegEncContext *s){
                 return -1;
             }
 
-            MPV_decode_mb(s, s->block);
+            ff_MPV_decode_mb(s, s->block);
             if(s->loop_filter)
                 ff_h263_loop_filter(s);
         }
 
         ff_draw_horiz_band(s, s->mb_y*mb_size, mb_size);
-        MPV_report_decode_progress(s);
+        ff_MPV_report_decode_progress(s);
 
         s->mb_x= 0;
     }
@@ -404,7 +404,7 @@ retry:
     s->bitstream_buffer_size=0;
 
     if (!s->context_initialized) {
-        if (MPV_common_init(s) < 0) //we need the idct permutaton for reading a custom matrix
+        if (ff_MPV_common_init(s) < 0) //we need the idct permutaton for reading a custom matrix
             return -1;
     }
 
@@ -421,7 +421,7 @@ retry:
     if (CONFIG_WMV2_DECODER && s->msmpeg4_version==5) {
         ret= ff_wmv2_decode_picture_header(s);
     } else if (CONFIG_MSMPEG4_DECODER && s->msmpeg4_version) {
-        ret = msmpeg4_decode_picture_header(s);
+        ret = ff_msmpeg4_decode_picture_header(s);
     } else if (CONFIG_MPEG4_DECODER && s->h263_pred) {
         if(s->avctx->extradata_size && s->picture_number==0){
             GetBitContext gb;
@@ -435,7 +435,7 @@ retry:
     } else if (CONFIG_FLV_DECODER && s->h263_flv) {
         ret = ff_flv_decode_picture_header(s);
     } else {
-        ret = h263_decode_picture_header(s);
+        ret = ff_h263_decode_picture_header(s);
     }
 
     if(ret==FRAME_SKIPPED) return get_consumed_bytes(s, buf_size);
@@ -591,7 +591,7 @@ retry:
         }
 
         s->parse_context.buffer=0;
-        MPV_common_end(s);
+        ff_MPV_common_end(s);
         s->parse_context= pc;
     }
     if (!s->context_initialized) {
@@ -632,7 +632,7 @@ retry:
         s->me.qpel_avg= s->dsp.avg_qpel_pixels_tab;
     }
 
-    if(MPV_frame_start(s, avctx) < 0)
+    if(ff_MPV_frame_start(s, avctx) < 0)
         return -1;
 
     if (!s->divx_packed) ff_thread_finish_setup(avctx);
@@ -650,7 +650,7 @@ retry:
     ff_er_frame_start(s);
 
     //the second part of the wmv2 header contains the MB skip bits which are stored in current_picture->mb_type
-    //which is not available before MPV_frame_start()
+    //which is not available before ff_MPV_frame_start()
     if (CONFIG_WMV2_DECODER && s->msmpeg4_version==5){
         ret = ff_wmv2_decode_secondary_picture_header(s);
         if(ret<0) return ret;
@@ -681,7 +681,7 @@ retry:
     }
 
     if (s->msmpeg4_version && s->msmpeg4_version<4 && s->pict_type==AV_PICTURE_TYPE_I)
-        if(!CONFIG_MSMPEG4_DECODER || msmpeg4_decode_ext_header(s, buf_size) < 0){
+        if(!CONFIG_MSMPEG4_DECODER || ff_msmpeg4_decode_ext_header(s, buf_size) < 0){
             s->error_status_table[s->mb_num-1]= ER_MB_ERROR;
         }
 
@@ -722,7 +722,7 @@ intrax8_decoded:
             return -1;
     }
 
-    MPV_frame_end(s);
+    ff_MPV_frame_end(s);
 
     assert(s->current_picture.f.pict_type == s->current_picture_ptr->f.pict_type);
     assert(s->current_picture.f.pict_type == s->pict_type);

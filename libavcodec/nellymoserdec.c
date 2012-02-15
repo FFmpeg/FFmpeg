@@ -122,7 +122,7 @@ static av_cold int decode_init(AVCodecContext * avctx) {
     av_lfg_init(&s->random_state, 0);
     ff_mdct_init(&s->imdct_ctx, 8, 1, 1.0);
 
-    dsputil_init(&s->dsp, avctx);
+    ff_dsputil_init(&s->dsp, avctx);
 
     if (avctx->request_sample_fmt == AV_SAMPLE_FMT_FLT) {
         s->scale_bias = 1.0/(32768*8);

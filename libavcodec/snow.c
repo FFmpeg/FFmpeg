@@ -99,7 +99,7 @@ static void init_qexp(void){
     double v=128;
 
     for(i=0; i<QROOT; i++){
-        qexp[i]= lrintf(v);
+        ff_qexp[i]= lrintf(v);
         v *= pow(2, 1.0 / QROOT);
     }
 }
@@ -390,7 +390,7 @@ av_cold int ff_snow_common_init(AVCodecContext *avctx){
     s->avctx= avctx;
     s->max_ref_frames=1; //just make sure its not an invalid value in case of no initial keyframe
 
-    dsputil_init(&s->dsp, avctx);
+    ff_dsputil_init(&s->dsp, avctx);
     ff_dwt_init(&s->dwt);
 
 #define mcf(dx,dy)\
@@ -443,7 +443,7 @@ av_cold int ff_snow_common_init(AVCodecContext *avctx){
 
     for(i=0; i<MAX_REF_FRAMES; i++)
         for(j=0; j<MAX_REF_FRAMES; j++)
-            scale_mv_ref[i][j] = 256*(i+1)/(j+1);
+            ff_scale_mv_ref[i][j] = 256*(i+1)/(j+1);
 
     s->avctx->get_buffer(s->avctx, &s->mconly_picture);
     s->scratchbuf = av_malloc(s->mconly_picture.linesize[0]*7*MB_SIZE);

@@ -5,6 +5,7 @@ version next:
 - v408 Quicktime and Microsoft AYUV Uncompressed 4:4:4:4 encoder and decoder
 - setfield filter
 - CDXL demuxer and decoder
+- Apple ProRes encoder
 
 
 version 0.10:

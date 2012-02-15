@@ -101,7 +101,7 @@ static const uint8_t obmc4[16]={
 //error:0.000000
 };
 
-const int8_t quant3bA[256]={
+const int8_t ff_quant3bA[256]={
  0, 0, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1,
  1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1,
  1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1,
@@ -120,13 +120,13 @@ const int8_t quant3bA[256]={
  1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1,
 };
 
-const uint8_t * const obmc_tab[4]= {
+const uint8_t * const ff_obmc_tab[4]= {
     obmc32, obmc16, obmc8, obmc4
 };
 
 /* runtime generated tables */
-uint8_t qexp[QROOT];
-int scale_mv_ref[MAX_REF_FRAMES][MAX_REF_FRAMES];
+uint8_t ff_qexp[QROOT];
+int ff_scale_mv_ref[MAX_REF_FRAMES][MAX_REF_FRAMES];
 
 
 #endif /* AVCODEC_SNOW_H */

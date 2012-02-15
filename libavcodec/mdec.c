@@ -214,7 +214,7 @@ static int decode_frame(AVCodecContext *avctx,
 static av_cold void mdec_common_init(AVCodecContext *avctx){
     MDECContext * const a = avctx->priv_data;
 
-    dsputil_init(&a->dsp, avctx);
+    ff_dsputil_init(&a->dsp, avctx);
 
     a->mb_width   = (avctx->coded_width  + 15) / 16;
     a->mb_height  = (avctx->coded_height + 15) / 16;

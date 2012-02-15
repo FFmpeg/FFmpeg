@@ -199,7 +199,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     s->m.me.map       = av_mallocz(ME_MAP_SIZE*sizeof(uint32_t));
     s->m.me.score_map = av_mallocz(ME_MAP_SIZE*sizeof(uint32_t));
     s->m.obmc_scratchpad= av_mallocz(MB_SIZE*MB_SIZE*12*sizeof(uint32_t));
-    h263_encode_init(&s->m); //mv_penalty
+    ff_h263_encode_init(&s->m); //mv_penalty
 
     s->max_ref_frames = FFMAX(FFMIN(avctx->refs, MAX_REF_FRAMES), 1);
 
@@ -575,7 +575,7 @@ static int get_dc(SnowContext *s, int mb_x, int mb_y, int plane_index){
     Plane *p= &s->plane[plane_index];
     const int block_size = MB_SIZE >> s->block_max_depth;
     const int block_w    = plane_index ? block_size/2 : block_size;
-    const uint8_t *obmc  = plane_index ? obmc_tab[s->block_max_depth+1] : obmc_tab[s->block_max_depth];
+    const uint8_t *obmc  = plane_index ? ff_obmc_tab[s->block_max_depth+1] : ff_obmc_tab[s->block_max_depth];
     const int obmc_stride= plane_index ? block_size : 2*block_size;
     const int ref_stride= s->current_picture.linesize[plane_index];
     uint8_t *src= s-> input_picture.data[plane_index];
@@ -766,7 +766,7 @@ static int get_4block_rd(SnowContext *s, int mb_x, int mb_y, int plane_index){
     Plane *p= &s->plane[plane_index];
     const int block_size = MB_SIZE >> s->block_max_depth;
     const int block_w    = plane_index ? block_size/2 : block_size;
-    const uint8_t *obmc  = plane_index ? obmc_tab[s->block_max_depth+1] : obmc_tab[s->block_max_depth];
+    const uint8_t *obmc  = plane_index ? ff_obmc_tab[s->block_max_depth+1] : ff_obmc_tab[s->block_max_depth];
     const int obmc_stride= plane_index ? block_size : 2*block_size;
     const int ref_stride= s->current_picture.linesize[plane_index];
     uint8_t *dst= s->current_picture.data[plane_index];
@@ -939,7 +939,7 @@ static int encode_subband_c0run(SnowContext *s, SubBand *b, IDWTELEM *src, IDWTE
                     int t2= 2*FFABS(t) + (t<0);
 
                     put_symbol2(&s->c, b->state[context + 2], FFABS(v)-1, context-4);
-                    put_rac(&s->c, &b->state[0][16 + 1 + 3 + quant3bA[l2&0xFF] + 3*quant3bA[t2&0xFF]], v<0);
+                    put_rac(&s->c, &b->state[0][16 + 1 + 3 + ff_quant3bA[l2&0xFF] + 3*ff_quant3bA[t2&0xFF]], v<0);
                 }
             }
         }
@@ -1090,7 +1090,7 @@ static void iterative_me(SnowContext *s){
                 //FIXME precalculate
                 {
                     int x, y;
-                    memcpy(obmc_edged, obmc_tab[s->block_max_depth], b_w*b_w*4);
+                    memcpy(obmc_edged, ff_obmc_tab[s->block_max_depth], b_w*b_w*4);
                     if(mb_x==0)
                         for(y=0; y<b_w*2; y++)
                             memset(obmc_edged[y], obmc_edged[y][0] + obmc_edged[y][b_w-1], b_w);
@@ -1286,7 +1286,7 @@ static void quantize(SnowContext *s, SubBand *b, IDWTELEM *dst, DWTELEM *src, in
     const int w= b->width;
     const int h= b->height;
     const int qlog= av_clip(s->qlog + b->qlog, 0, QROOT*16);
-    const int qmul= qexp[qlog&(QROOT-1)]<<((qlog>>QSHIFT) + ENCODER_EXTRA_BITS);
+    const int qmul= ff_qexp[qlog&(QROOT-1)]<<((qlog>>QSHIFT) + ENCODER_EXTRA_BITS);
     int x,y, thres1, thres2;
 
     if(s->qlog == LOSSLESS_QLOG){
@@ -1347,7 +1347,7 @@ static void dequantize(SnowContext *s, SubBand *b, IDWTELEM *src, int stride){
     const int w= b->width;
     const int h= b->height;
     const int qlog= av_clip(s->qlog + b->qlog, 0, QROOT*16);
-    const int qmul= qexp[qlog&(QROOT-1)]<<(qlog>>QSHIFT);
+    const int qmul= ff_qexp[qlog&(QROOT-1)]<<(qlog>>QSHIFT);
     const int qadd= (s->qbias*qmul)>>QBIAS_SHIFT;
     int x,y;
 
@@ -1538,7 +1538,7 @@ static int ratecontrol_1pass(SnowContext *s, AVFrame *pict)
             const int h= b->height;
             const int stride= b->stride;
             const int qlog= av_clip(2*QROOT + b->qlog, 0, QROOT*16);
-            const int qmul= qexp[qlog&(QROOT-1)]<<(qlog>>QSHIFT);
+            const int qmul= ff_qexp[qlog&(QROOT-1)]<<(qlog>>QSHIFT);
             const int qdiv= (1<<16)/qmul;
             int x, y;
             //FIXME this is ugly

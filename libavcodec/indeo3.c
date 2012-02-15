@@ -995,7 +995,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     build_requant_tab();
 
-    dsputil_init(&ctx->dsp, avctx);
+    ff_dsputil_init(&ctx->dsp, avctx);
 
     return allocate_frame_buffers(ctx, avctx);
 }

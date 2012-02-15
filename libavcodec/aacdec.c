@@ -825,7 +825,7 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
 
     ff_aac_sbr_init();
 
-    dsputil_init(&ac->dsp, avctx);
+    ff_dsputil_init(&ac->dsp, avctx);
     ff_fmt_convert_init(&ac->fmt_conv, avctx);
 
     ac->random_state = 0x1f2e3d4c;

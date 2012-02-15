@@ -48,7 +48,7 @@ static av_cold int tqi_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
     if(avctx->idct_algo==FF_IDCT_AUTO)
         avctx->idct_algo=FF_IDCT_EA;
-    dsputil_init(&s->dsp, avctx);
+    ff_dsputil_init(&s->dsp, avctx);
     ff_init_scantable(s->dsp.idct_permutation, &s->intra_scantable, ff_zigzag_direct);
     s->qscale = 1;
     avctx->time_base = (AVRational){1, 15};

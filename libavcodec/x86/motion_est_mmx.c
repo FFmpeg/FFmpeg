@@ -422,7 +422,7 @@ static int sad16_xy2_ ## suf(void *v, uint8_t *blk2, uint8_t *blk1, int stride, 
 PIX_SAD(mmx)
 PIX_SAD(mmx2)
 
-void dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx)
+void ff_dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx)
 {
     int mm_flags = av_get_cpu_flags();
 

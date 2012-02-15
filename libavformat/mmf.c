@@ -297,7 +297,7 @@ AVInputFormat ff_mmf_demuxer = {
     .read_probe     = mmf_probe,
     .read_header    = mmf_read_header,
     .read_packet    = mmf_read_packet,
-    .read_seek      = pcm_read_seek,
+    .read_seek      = ff_pcm_read_seek,
 };
 #endif
 #if CONFIG_MMF_MUXER

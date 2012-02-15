@@ -83,7 +83,7 @@ static void vp5_parse_vector_adjustment(VP56Context *s, VP56mv *vect)
             int sign = vp56_rac_get_prob(c, model->vector_sig[comp]);
             di  = vp56_rac_get_prob(c, model->vector_pdi[comp][0]);
             di |= vp56_rac_get_prob(c, model->vector_pdi[comp][1]) << 1;
-            delta = vp56_rac_get_tree(c, vp56_pva_tree,
+            delta = vp56_rac_get_tree(c, ff_vp56_pva_tree,
                                       model->vector_pdv[comp]);
             delta = di | (delta << 2);
             delta = (delta ^ -sign) + sign;
@@ -180,7 +180,7 @@ static void vp5_parse_coeff(VP56Context *s)
 
         if (b > 3) pt = 1;
 
-        ctx = 6*s->coeff_ctx[vp56_b6to4[b]][0]
+        ctx = 6*s->coeff_ctx[ff_vp56_b6to4[b]][0]
               + s->above_blocks[s->above_block_idx[b]].not_null_dc;
         model1 = model->coeff_dccv[pt];
         model2 = model->coeff_dcct[pt][ctx];
@@ -190,26 +190,26 @@ static void vp5_parse_coeff(VP56Context *s)
             if (vp56_rac_get_prob(c, model2[0])) {
                 if (vp56_rac_get_prob(c, model2[2])) {
                     if (vp56_rac_get_prob(c, model2[3])) {
-                        s->coeff_ctx[vp56_b6to4[b]][coeff_idx] = 4;
-                        idx = vp56_rac_get_tree(c, vp56_pc_tree, model1);
+                        s->coeff_ctx[ff_vp56_b6to4[b]][coeff_idx] = 4;
+                        idx = vp56_rac_get_tree(c, ff_vp56_pc_tree, model1);
                         sign = vp56_rac_get(c);
-                        coeff = vp56_coeff_bias[idx+5];
-                        for (i=vp56_coeff_bit_length[idx]; i>=0; i--)
-                            coeff += vp56_rac_get_prob(c, vp56_coeff_parse_table[idx][i]) << i;
+                        coeff = ff_vp56_coeff_bias[idx+5];
+                        for (i=ff_vp56_coeff_bit_length[idx]; i>=0; i--)
+                            coeff += vp56_rac_get_prob(c, ff_vp56_coeff_parse_table[idx][i]) << i;
                     } else {
                         if (vp56_rac_get_prob(c, model2[4])) {
                             coeff = 3 + vp56_rac_get_prob(c, model1[5]);
-                            s->coeff_ctx[vp56_b6to4[b]][coeff_idx] = 3;
+                            s->coeff_ctx[ff_vp56_b6to4[b]][coeff_idx] = 3;
                         } else {
                             coeff = 2;
-                            s->coeff_ctx[vp56_b6to4[b]][coeff_idx] = 2;
+                            s->coeff_ctx[ff_vp56_b6to4[b]][coeff_idx] = 2;
                         }
                         sign = vp56_rac_get(c);
                     }
                     ct = 2;
                 } else {
                     ct = 1;
-                    s->coeff_ctx[vp56_b6to4[b]][coeff_idx] = 1;
+                    s->coeff_ctx[ff_vp56_b6to4[b]][coeff_idx] = 1;
                     sign = vp56_rac_get(c);
                     coeff = 1;
                 }
@@ -221,24 +221,24 @@ static void vp5_parse_coeff(VP56Context *s)
                 if (ct && !vp56_rac_get_prob(c, model2[1]))
                     break;
                 ct = 0;
-                s->coeff_ctx[vp56_b6to4[b]][coeff_idx] = 0;
+                s->coeff_ctx[ff_vp56_b6to4[b]][coeff_idx] = 0;
             }
             coeff_idx++;
             if (coeff_idx >= 64)
                 break;
 
             cg = vp5_coeff_groups[coeff_idx];
-            ctx = s->coeff_ctx[vp56_b6to4[b]][coeff_idx];
+            ctx = s->coeff_ctx[ff_vp56_b6to4[b]][coeff_idx];
             model1 = model->coeff_ract[pt][ct][cg];
             model2 = cg > 2 ? model1 : model->coeff_acct[pt][ct][cg][ctx];
         }
 
-        ctx_last = FFMIN(s->coeff_ctx_last[vp56_b6to4[b]], 24);
-        s->coeff_ctx_last[vp56_b6to4[b]] = coeff_idx;
+        ctx_last = FFMIN(s->coeff_ctx_last[ff_vp56_b6to4[b]], 24);
+        s->coeff_ctx_last[ff_vp56_b6to4[b]] = coeff_idx;
         if (coeff_idx < ctx_last)
             for (i=coeff_idx; i<=ctx_last; i++)
-                s->coeff_ctx[vp56_b6to4[b]][i] = 5;
-        s->above_blocks[s->above_block_idx[b]].not_null_dc = s->coeff_ctx[vp56_b6to4[b]][0];
+                s->coeff_ctx[ff_vp56_b6to4[b]][i] = 5;
+        s->above_blocks[s->above_block_idx[b]].not_null_dc = s->coeff_ctx[ff_vp56_b6to4[b]][0];
     }
 }
 
@@ -253,7 +253,7 @@ static void vp5_default_models_init(VP56Context *s)
         model->vector_pdi[i][0] = 0x55;
         model->vector_pdi[i][1] = 0x80;
     }
-    memcpy(model->mb_types_stats, vp56_def_mb_types_stats, sizeof(model->mb_types_stats));
+    memcpy(model->mb_types_stats, ff_vp56_def_mb_types_stats, sizeof(model->mb_types_stats));
     memset(model->vector_pdv, 0x80, sizeof(model->vector_pdv));
 }
 

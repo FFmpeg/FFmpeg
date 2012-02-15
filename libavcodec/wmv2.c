@@ -28,8 +28,8 @@
 av_cold void ff_wmv2_common_init(Wmv2Context * w){
     MpegEncContext * const s= &w->s;
 
-    ff_init_scantable(s->dsp.idct_permutation, &w->abt_scantable[0], wmv2_scantableA);
-    ff_init_scantable(s->dsp.idct_permutation, &w->abt_scantable[1], wmv2_scantableB);
+    ff_init_scantable(s->dsp.idct_permutation, &w->abt_scantable[0], ff_wmv2_scantableA);
+    ff_init_scantable(s->dsp.idct_permutation, &w->abt_scantable[1], ff_wmv2_scantableB);
 }
 
 static void wmv2_add_block(Wmv2Context *w, DCTELEM *block1, uint8_t *dst, int stride, int n){

@@ -54,7 +54,7 @@ const uint16_t ff_msmp4_mb_i_table[64][2] = {
 };
 
 /* non intra picture macroblock coded block pattern + mb type */
-const uint32_t table_mb_non_intra[128][2] = {
+const uint32_t ff_table_mb_non_intra[128][2] = {
 {   0x40,  7 },{   0x13c9, 13 },{   0x9fd, 12 },{   0x1fc, 15 },
 {  0x9fc, 12 },{    0xa83, 18 },{ 0x12d34, 17 },{  0x83bc, 16 },
 {  0x83a, 12 },{    0x7f8, 17 },{   0x3fd, 16 },{   0x3ff, 16 },
@@ -592,15 +592,15 @@ static const int8_t table4_run[168] = {
  29, 30, 31, 32, 33, 34, 35, 36,
 };
 
-extern const uint16_t inter_vlc[103][2];
-extern const int8_t inter_level[102];
-extern const int8_t inter_run[102];
+extern const uint16_t ff_inter_vlc[103][2];
+extern const int8_t ff_inter_level[102];
+extern const int8_t ff_inter_run[102];
 
 extern const uint16_t ff_mpeg4_intra_vlc[103][2];
 extern const int8_t ff_mpeg4_intra_level[102];
 extern const int8_t ff_mpeg4_intra_run[102];
 
-RLTable rl_table[NB_RL_TABLES] = {
+RLTable ff_rl_table[NB_RL_TABLES] = {
     /* intra luminance tables */
     /* low motion  */
     {
@@ -647,9 +647,9 @@ RLTable rl_table[NB_RL_TABLES] = {
     {
         102,
         58,
-        inter_vlc,
-        inter_run,
-        inter_level,
+        ff_inter_vlc,
+        ff_inter_run,
+        ff_inter_level,
     },
 };
 
@@ -1784,7 +1784,7 @@ static const uint8_t table1_mvy[1099] = {
  34, 28, 21,
 };
 
-MVTable mv_tables[2] = {
+MVTable ff_mv_tables[2] = {
     {
         1099,
         table0_mv_code,
@@ -1801,30 +1801,30 @@ MVTable mv_tables[2] = {
     }
 };
 
-const uint8_t v2_mb_type[8][2] = {
+const uint8_t ff_v2_mb_type[8][2] = {
  {1, 1}, {0   , 2}, {3   , 3}, {9   , 5},
  {5, 4}, {0x21, 7}, {0x20, 7}, {0x11, 6},
 };
 
-const uint8_t v2_intra_cbpc[4][2] = {
+const uint8_t ff_v2_intra_cbpc[4][2] = {
  {1, 1}, {0, 3}, {1, 3}, {1, 2},
 };
 
-const uint8_t wmv1_y_dc_scale_table[32]={
+const uint8_t ff_wmv1_y_dc_scale_table[32]={
 //  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
     0, 8, 8, 8, 8, 8, 9, 9,10,10,11,11,12,12,13,13,14,14,15,15,16,16,17,17,18,18,19,19,20,20,21,21
 };
-const uint8_t wmv1_c_dc_scale_table[32]={
+const uint8_t ff_wmv1_c_dc_scale_table[32]={
 //  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
     0, 8, 8, 8, 8, 9, 9,10,10,11,11,12,12,13,13,14,14,15,15,16,16,17,17,18,18,19,19,20,20,21,21,22
 };
 
-const uint8_t old_ff_y_dc_scale_table[32]={
+const uint8_t ff_old_ff_y_dc_scale_table[32]={
 //  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
     0, 8, 8, 8, 8,10,12,14,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39
 };
 
-const uint8_t wmv1_scantable[WMV1_SCANTABLE_COUNT][64]={
+const uint8_t ff_wmv1_scantable[WMV1_SCANTABLE_COUNT][64]={
   {
     0x00, 0x08, 0x01, 0x02, 0x09, 0x10, 0x18, 0x11,
     0x0A, 0x03, 0x04, 0x0B, 0x12, 0x19, 0x20, 0x28,
@@ -1867,7 +1867,7 @@ const uint8_t wmv1_scantable[WMV1_SCANTABLE_COUNT][64]={
   }
 };
 
-const uint8_t table_inter_intra[4][2]={
+const uint8_t ff_table_inter_intra[4][2]={
     {0,1} /*Luma-Left Chroma-Left*/,
     {2,2} /*Luma-Top  Chroma-Left*/,
     {6,3} /*luma-Left Chroma-Top */,
@@ -1979,21 +1979,21 @@ static const uint32_t table_mb_non_intra4[128][2] = {
 {0x000011,  5}, {0x0001AC,  9}, {0x0000F3,  8}, {0x000439, 11},
 };
 
-const uint32_t (* const wmv2_inter_table[WMV2_INTER_CBP_TABLE_COUNT])[2]={
+const uint32_t (* const ff_wmv2_inter_table[WMV2_INTER_CBP_TABLE_COUNT])[2]={
     table_mb_non_intra2,
     table_mb_non_intra3,
     table_mb_non_intra4,
-    table_mb_non_intra,
+    ff_table_mb_non_intra,
 };
 
-const uint8_t wmv2_scantableA[64]={
+const uint8_t ff_wmv2_scantableA[64]={
 0x00, 0x01, 0x02, 0x08, 0x03, 0x09, 0x0A, 0x10,
 0x04, 0x0B, 0x11, 0x18, 0x12, 0x0C, 0x05, 0x13,
 0x19, 0x0D, 0x14, 0x1A, 0x1B, 0x06, 0x15, 0x1C,
 0x0E, 0x16, 0x1D, 0x07, 0x1E, 0x0F, 0x17, 0x1F,
 };
 
-const uint8_t wmv2_scantableB[64]={
+const uint8_t ff_wmv2_scantableB[64]={
 0x00, 0x08, 0x01, 0x10, 0x09, 0x18, 0x11, 0x02,
 0x20, 0x0A, 0x19, 0x28, 0x12, 0x30, 0x21, 0x1A,
 0x38, 0x29, 0x22, 0x03, 0x31, 0x39, 0x0B, 0x2A,

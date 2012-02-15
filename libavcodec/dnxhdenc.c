@@ -267,10 +267,10 @@ static int dnxhd_encode_init(AVCodecContext *avctx)
 
     avctx->bits_per_raw_sample = ctx->cid_table->bit_depth;
 
-    dsputil_init(&ctx->m.dsp, avctx);
+    ff_dsputil_init(&ctx->m.dsp, avctx);
     ff_dct_common_init(&ctx->m);
     if (!ctx->m.dct_quantize)
-        ctx->m.dct_quantize = dct_quantize_c;
+        ctx->m.dct_quantize = ff_dct_quantize_c;
 
     if (ctx->cid_table->bit_depth == 10) {
        ctx->m.dct_quantize = dnxhd_10bit_dct_quantize;

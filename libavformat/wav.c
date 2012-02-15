@@ -676,7 +676,7 @@ static int wav_read_seek(AVFormatContext *s,
     default:
         break;
     }
-    return pcm_read_seek(s, stream_index, timestamp, flags);
+    return ff_pcm_read_seek(s, stream_index, timestamp, flags);
 }
 
 #define OFFSET(x) offsetof(WAVContext, x)

@@ -814,9 +814,9 @@ static int decodeFrame(ATRAC3Context *q, const uint8_t* databuf,
         p2= p1+256;
         p3= p2+256;
         p4= p3+256;
-        atrac_iqmf (p1, p2, 256, p1, q->pUnits[i].delayBuf1, q->tempBuf);
-        atrac_iqmf (p4, p3, 256, p3, q->pUnits[i].delayBuf2, q->tempBuf);
-        atrac_iqmf (p1, p3, 512, p1, q->pUnits[i].delayBuf3, q->tempBuf);
+        ff_atrac_iqmf (p1, p2, 256, p1, q->pUnits[i].delayBuf1, q->tempBuf);
+        ff_atrac_iqmf (p4, p3, 256, p3, q->pUnits[i].delayBuf2, q->tempBuf);
+        ff_atrac_iqmf (p1, p3, 512, p1, q->pUnits[i].delayBuf3, q->tempBuf);
     }
 
     return 0;
@@ -1016,7 +1016,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         return ret;
     }
 
-    atrac_generate_tables();
+    ff_atrac_generate_tables();
 
     /* Generate gain tables. */
     for (i=0 ; i<16 ; i++)
@@ -1039,7 +1039,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         q->matrix_coeff_index_next[i] = 3;
     }
 
-    dsputil_init(&dsp, avctx);
+    ff_dsputil_init(&dsp, avctx);
     ff_fmt_convert_init(&q->fmt_conv, avctx);
 
     q->pUnits = av_mallocz(sizeof(channel_unit)*q->channels);

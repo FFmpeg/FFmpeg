@@ -268,7 +268,7 @@ EPEL_HV(4,  4,4)
 
 static void put_vp8_pixels16_altivec(uint8_t *dst, int stride, uint8_t *src, int s, int h, int mx, int my)
 {
-    put_pixels16_altivec(dst, src, stride, h);
+    ff_put_pixels16_altivec(dst, src, stride, h);
 }
 
 av_cold void ff_vp8dsp_init_altivec(VP8DSPContext *c)

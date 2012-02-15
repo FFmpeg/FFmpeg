@@ -165,13 +165,9 @@ typedef struct SnowContext{
 }SnowContext;
 
 /* Tables */
-extern const uint8_t * const obmc_tab[4];
-#ifdef __sgi
-// Avoid a name clash on SGI IRIX
-#undef qexp
-#endif
-extern uint8_t qexp[QROOT];
-extern int scale_mv_ref[MAX_REF_FRAMES][MAX_REF_FRAMES];
+extern const uint8_t * const ff_obmc_tab[4];
+extern uint8_t ff_qexp[QROOT];
+extern int ff_scale_mv_ref[MAX_REF_FRAMES][MAX_REF_FRAMES];
 
 /* C bits used by mmx/sse2/altivec */
 
@@ -256,7 +252,7 @@ static inline void pred_mv(SnowContext *s, int *mx, int *my, int ref,
         *mx = mid_pred(left->mx, top->mx, tr->mx);
         *my = mid_pred(left->my, top->my, tr->my);
     }else{
-        const int *scale = scale_mv_ref[ref];
+        const int *scale = ff_scale_mv_ref[ref];
         *mx = mid_pred((left->mx * scale[left->ref] + 128) >>8,
                        (top ->mx * scale[top ->ref] + 128) >>8,
                        (tr  ->mx * scale[tr  ->ref] + 128) >>8);
@@ -405,7 +401,7 @@ static av_always_inline void predict_slice(SnowContext *s, IDWTELEM *buf, int pl
     int x, y, mb_x;
     int block_size = MB_SIZE >> s->block_max_depth;
     int block_w    = plane_index ? block_size/2 : block_size;
-    const uint8_t *obmc  = plane_index ? obmc_tab[s->block_max_depth+1] : obmc_tab[s->block_max_depth];
+    const uint8_t *obmc  = plane_index ? ff_obmc_tab[s->block_max_depth+1] : ff_obmc_tab[s->block_max_depth];
     const int obmc_stride= plane_index ? block_size : 2*block_size;
     int ref_stride= s->current_picture.linesize[plane_index];
     uint8_t *dst8= s->current_picture.data[plane_index];
@@ -496,7 +492,7 @@ static inline void init_ref(MotionEstContext *c, uint8_t *src[3], uint8_t *ref[3
 
 /* bitstream functions */
 
-extern const int8_t quant3bA[256];
+extern const int8_t ff_quant3bA[256];
 
 #define QEXPSHIFT (7-FRAC_BITS+8) //FIXME try to change this to 0
 
@@ -642,7 +638,7 @@ static inline void unpack_coeffs(SnowContext *s, SubBand *b, SubBand * parent, i
                 v=get_rac(&s->c, &b->state[0][context]);
                 if(v){
                     v= 2*(get_symbol2(&s->c, b->state[context + 2], context-4) + 1);
-                    v+=get_rac(&s->c, &b->state[0][16 + 1 + 3 + quant3bA[l&0xFF] + 3*quant3bA[t&0xFF]]);
+                    v+=get_rac(&s->c, &b->state[0][16 + 1 + 3 + ff_quant3bA[l&0xFF] + 3*ff_quant3bA[t&0xFF]]);
 
                     xc->x=x;
                     (xc++)->coeff= v;

@@ -669,7 +669,7 @@ static av_cold int dsp_init(AVCodecContext *avctx, AACEncContext *s)
 {
     int ret = 0;
 
-    dsputil_init(&s->dsp, avctx);
+    ff_dsputil_init(&s->dsp, avctx);
 
     // window init
     ff_kbd_window_init(ff_aac_kbd_long_1024, 4.0, 1024);

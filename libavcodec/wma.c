@@ -126,7 +126,7 @@ int ff_wma_init(AVCodecContext *avctx, int flags2)
     s->bit_rate    = avctx->bit_rate;
     s->block_align = avctx->block_align;
 
-    dsputil_init(&s->dsp, avctx);
+    ff_dsputil_init(&s->dsp, avctx);
     ff_fmt_convert_init(&s->fmt_conv, avctx);
 
     if (avctx->codec->id == CODEC_ID_WMAV1) {
@@ -417,13 +417,13 @@ int ff_wma_end(AVCodecContext *avctx)
         ff_mdct_end(&s->mdct_ctx[i]);
 
     if (s->use_exp_vlc) {
-        free_vlc(&s->exp_vlc);
+        ff_free_vlc(&s->exp_vlc);
     }
     if (s->use_noise_coding) {
-        free_vlc(&s->hgain_vlc);
+        ff_free_vlc(&s->hgain_vlc);
     }
     for (i = 0; i < 2; i++) {
-        free_vlc(&s->coef_vlc[i]);
+        ff_free_vlc(&s->coef_vlc[i]);
         av_free(s->run_table[i]);
         av_free(s->level_table[i]);
         av_free(s->int_table[i]);

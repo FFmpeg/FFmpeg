@@ -38,17 +38,17 @@
 /* dct code */
 typedef short DCTELEM;
 
-void fdct_ifast (DCTELEM *data);
-void fdct_ifast248 (DCTELEM *data);
+void ff_fdct_ifast (DCTELEM *data);
+void ff_fdct_ifast248 (DCTELEM *data);
 void ff_jpeg_fdct_islow_8(DCTELEM *data);
 void ff_jpeg_fdct_islow_10(DCTELEM *data);
 void ff_fdct248_islow_8(DCTELEM *data);
 void ff_fdct248_islow_10(DCTELEM *data);
 
-void j_rev_dct (DCTELEM *data);
-void j_rev_dct4 (DCTELEM *data);
-void j_rev_dct2 (DCTELEM *data);
-void j_rev_dct1 (DCTELEM *data);
+void ff_j_rev_dct (DCTELEM *data);
+void ff_j_rev_dct4 (DCTELEM *data);
+void ff_j_rev_dct2 (DCTELEM *data);
+void ff_j_rev_dct1 (DCTELEM *data);
 void ff_wmv2_idct_c(DCTELEM *data);
 
 void ff_fdct_mmx(DCTELEM *block);
@@ -581,8 +581,9 @@ typedef struct DSPContext {
     op_fill_func fill_block_tab[2];
 } DSPContext;
 
-void dsputil_static_init(void);
-void dsputil_init(DSPContext* p, AVCodecContext *avctx);
+void ff_dsputil_static_init(void);
+void ff_dsputil_init(DSPContext* p, AVCodecContext *avctx);
+attribute_deprecated void dsputil_init(DSPContext* c, AVCodecContext *avctx);
 
 int ff_check_alignment(void);
 
@@ -641,14 +642,14 @@ static inline int get_penalty_factor(int lambda, int lambda2, int type){
     }
 }
 
-void dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx);
-void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx);
-void dsputil_init_bfin(DSPContext* c, AVCodecContext *avctx);
-void dsputil_init_mmi(DSPContext* c, AVCodecContext *avctx);
-void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx);
-void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx);
-void dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx);
-void dsputil_init_vis(DSPContext* c, AVCodecContext *avctx);
+void ff_dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx);
+void ff_dsputil_init_arm(DSPContext* c, AVCodecContext *avctx);
+void ff_dsputil_init_bfin(DSPContext* c, AVCodecContext *avctx);
+void ff_dsputil_init_mmi(DSPContext* c, AVCodecContext *avctx);
+void ff_dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx);
+void ff_dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx);
+void ff_dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx);
+void ff_dsputil_init_vis(DSPContext* c, AVCodecContext *avctx);
 
 void ff_dsputil_init_dwt(DSPContext *c);
 void ff_intrax8dsp_init(DSPContext* c, AVCodecContext *avctx);

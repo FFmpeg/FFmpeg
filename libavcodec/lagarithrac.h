@@ -51,7 +51,7 @@ typedef struct lag_rac {
     uint8_t  range_hash[256];   /**< Hash table mapping upper byte to approximate symbol. */
 } lag_rac;
 
-void lag_rac_init(lag_rac *l, GetBitContext *gb, int length);
+void ff_lag_rac_init(lag_rac *l, GetBitContext *gb, int length);
 
 /* TODO: Optimize */
 static inline void lag_rac_refill(lag_rac *l)

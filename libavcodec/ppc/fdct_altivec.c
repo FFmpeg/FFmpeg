@@ -195,7 +195,7 @@ static vector float fdctconsts[3] = {
 
 /* two dimensional discrete cosine transform */
 
-void fdct_altivec(int16_t *block)
+void ff_fdct_altivec(int16_t *block)
 {
     vector signed short *bp;
     vector float *cp;

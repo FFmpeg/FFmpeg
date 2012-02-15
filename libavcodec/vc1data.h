@@ -126,7 +126,7 @@ extern const uint8_t ff_vc1_4mv_block_pattern_bits[4][16];
 extern const uint8_t ff_vc1_2mv_block_pattern_codes[4][4];
 extern const uint8_t ff_vc1_2mv_block_pattern_bits[4][4];
 
-extern const uint8_t wmv3_dc_scale_table[32];
+extern const uint8_t ff_wmv3_dc_scale_table[32];
 
 /* P-Picture CBPCY VLC tables */
 extern const uint16_t ff_vc1_cbpcy_p_codes[4][64];
@@ -197,7 +197,7 @@ extern const int8_t ff_vc1_intra_vert_8x8_zz [64];
 extern const int32_t ff_vc1_dqscale[63];
 
 /* P Interlaced field picture MV predictor scaling values (Table 114) */
-extern const uint16_t vc1_field_mvpred_scales[2][7][4];
+extern const uint16_t ff_vc1_field_mvpred_scales[2][7][4];
 /* B Interlaced field picture backward MV predictor scaling values for first field (Table 115) */
-extern const uint16_t vc1_b_field_mvpred_scales[7][4];
+extern const uint16_t ff_vc1_b_field_mvpred_scales[7][4];
 #endif /* AVCODEC_VC1DATA_H */

@@ -697,8 +697,8 @@ av_cold void ff_mpeg12_init_vlcs(void)
         INIT_VLC_STATIC(&mb_btype_vlc, MB_BTYPE_VLC_BITS, 11,
                         &table_mb_btype[0][1], 2, 1,
                         &table_mb_btype[0][0], 2, 1, 64);
-        init_rl(&ff_rl_mpeg1, ff_mpeg12_static_rl_table_store[0]);
-        init_rl(&ff_rl_mpeg2, ff_mpeg12_static_rl_table_store[1]);
+        ff_init_rl(&ff_rl_mpeg1, ff_mpeg12_static_rl_table_store[0]);
+        ff_init_rl(&ff_rl_mpeg2, ff_mpeg12_static_rl_table_store[1]);
 
         INIT_2D_VLC_RL(ff_rl_mpeg1, 680);
         INIT_2D_VLC_RL(ff_rl_mpeg2, 674);
@@ -1126,7 +1126,7 @@ static av_cold int mpeg_decode_init(AVCodecContext *avctx)
     for (i = 0; i < 64; i++)
        s2->dsp.idct_permutation[i]=i;
 
-    MPV_decode_defaults(s2);
+    ff_MPV_decode_defaults(s2);
 
     s->mpeg_enc_ctx.avctx  = avctx;
     s->mpeg_enc_ctx.flags  = avctx->flags;
@@ -1258,7 +1258,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
         if (s1->mpeg_enc_ctx_allocated) {
             ParseContext pc = s->parse_context;
             s->parse_context.buffer = 0;
-            MPV_common_end(s);
+            ff_MPV_common_end(s);
             s->parse_context = pc;
         }
 
@@ -1336,7 +1336,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
          * if DCT permutation is changed. */
         memcpy(old_permutation, s->dsp.idct_permutation, 64 * sizeof(uint8_t));
 
-        if (MPV_common_init(s) < 0)
+        if (ff_MPV_common_init(s) < 0)
             return -2;
 
         quant_matrix_rebuild(s->intra_matrix,        old_permutation, s->dsp.idct_permutation);
@@ -1600,7 +1600,7 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
 
     /* start frame decoding */
     if (s->first_field || s->picture_structure == PICT_FRAME) {
-        if (MPV_frame_start(s, avctx) < 0)
+        if (ff_MPV_frame_start(s, avctx) < 0)
             return -1;
 
         ff_er_frame_start(s);
@@ -1790,13 +1790,13 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
         s->dest[1] +=(16 >> lowres) >> s->chroma_x_shift;
         s->dest[2] +=(16 >> lowres) >> s->chroma_x_shift;
 
-        MPV_decode_mb(s, s->block);
+        ff_MPV_decode_mb(s, s->block);
 
         if (++s->mb_x >= s->mb_width) {
             const int mb_size = 16 >> s->avctx->lowres;
 
             ff_draw_horiz_band(s, mb_size*(s->mb_y >> field_pic), mb_size);
-            MPV_report_decode_progress(s);
+            ff_MPV_report_decode_progress(s);
 
             s->mb_x = 0;
             s->mb_y += 1 << field_pic;
@@ -1949,7 +1949,7 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
 
         ff_er_frame_end(s);
 
-        MPV_frame_end(s);
+        ff_MPV_frame_end(s);
 
         if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
             *pict = *(AVFrame*)s->current_picture_ptr;
@@ -2060,7 +2060,7 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
     /* start new MPEG-1 context decoding */
     s->out_format = FMT_MPEG1;
     if (s1->mpeg_enc_ctx_allocated) {
-        MPV_common_end(s);
+        ff_MPV_common_end(s);
     }
     s->width  = avctx->coded_width;
     s->height = avctx->coded_height;
@@ -2074,7 +2074,7 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
         if (avctx->idct_algo == FF_IDCT_AUTO)
             avctx->idct_algo = FF_IDCT_SIMPLE;
 
-    if (MPV_common_init(s) < 0)
+    if (ff_MPV_common_init(s) < 0)
         return -1;
     s1->mpeg_enc_ctx_allocated = 1;
 
@@ -2541,7 +2541,7 @@ static int mpeg_decode_end(AVCodecContext *avctx)
     Mpeg1Context *s = avctx->priv_data;
 
     if (s->mpeg_enc_ctx_allocated)
-        MPV_common_end(&s->mpeg_enc_ctx);
+        ff_MPV_common_end(&s->mpeg_enc_ctx);
     return 0;
 }
 

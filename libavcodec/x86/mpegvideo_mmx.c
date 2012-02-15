@@ -29,7 +29,7 @@
 #include "libavcodec/mpegvideo.h"
 #include "dsputil_mmx.h"
 
-extern uint16_t inv_zigzag_direct16[64];
+extern uint16_t ff_inv_zigzag_direct16[64];
 
 
 static void dct_unquantize_h263_intra_mmx(MpegEncContext *s,
@@ -626,7 +626,7 @@ static void  denoise_dct_sse2(MpegEncContext *s, DCTELEM *block){
 #include "mpegvideo_mmx_template.c"
 #endif
 
-void MPV_common_init_mmx(MpegEncContext *s)
+void ff_MPV_common_init_mmx(MpegEncContext *s)
 {
     int mm_flags = av_get_cpu_flags();
 

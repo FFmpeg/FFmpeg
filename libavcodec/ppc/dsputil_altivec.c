@@ -609,7 +609,7 @@ static void add_bytes_altivec(uint8_t *dst, uint8_t *src, int w) {
 }
 
 /* next one assumes that ((line_size % 16) == 0) */
-void put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h)
+void ff_put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
     register vector unsigned char pixelsv1, pixelsv2;
     register vector unsigned char pixelsv1B, pixelsv2B;
@@ -651,7 +651,7 @@ void put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, 
 
 /* next one assumes that ((line_size % 16) == 0) */
 #define op_avg(a,b)  a = ( ((a)|(b)) - ((((a)^(b))&0xFEFEFEFEUL)>>1) )
-void avg_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h)
+void ff_avg_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
     register vector unsigned char pixelsv1, pixelsv2, pixelsv, blockv;
     register vector unsigned char perm = vec_lvsl(0, pixels);
@@ -1371,7 +1371,7 @@ static void avg_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, int l
     }
 }
 
-void dsputil_init_altivec(DSPContext* c, AVCodecContext *avctx)
+void ff_dsputil_init_altivec(DSPContext* c, AVCodecContext *avctx)
 {
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
@@ -1391,10 +1391,10 @@ void dsputil_init_altivec(DSPContext* c, AVCodecContext *avctx)
     if (!high_bit_depth) {
     c->get_pixels = get_pixels_altivec;
     c->clear_block = clear_block_altivec;
-    c->put_pixels_tab[0][0] = put_pixels16_altivec;
+    c->put_pixels_tab[0][0] = ff_put_pixels16_altivec;
     /* the two functions do the same thing, so use the same code */
-    c->put_no_rnd_pixels_tab[0][0] = put_pixels16_altivec;
-    c->avg_pixels_tab[0][0] = avg_pixels16_altivec;
+    c->put_no_rnd_pixels_tab[0][0] = ff_put_pixels16_altivec;
+    c->avg_pixels_tab[0][0] = ff_avg_pixels16_altivec;
     c->avg_pixels_tab[1][0] = avg_pixels8_altivec;
     c->avg_pixels_tab[1][3] = avg_pixels8_xy2_altivec;
     c->put_pixels_tab[1][3] = put_pixels8_xy2_altivec;

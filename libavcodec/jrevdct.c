@@ -207,7 +207,7 @@ ones here or successive P-frames will drift too much with Reference frame coding
  * Perform the inverse DCT on one block of coefficients.
  */
 
-void j_rev_dct(DCTBLOCK data)
+void ff_j_rev_dct(DCTBLOCK data)
 {
   int32_t tmp0, tmp1, tmp2, tmp3;
   int32_t tmp10, tmp11, tmp12, tmp13;
@@ -945,7 +945,7 @@ void j_rev_dct(DCTBLOCK data)
 #define DCTSIZE 4
 #define DCTSTRIDE 8
 
-void j_rev_dct4(DCTBLOCK data)
+void ff_j_rev_dct4(DCTBLOCK data)
 {
   int32_t tmp0, tmp1, tmp2, tmp3;
   int32_t tmp10, tmp11, tmp12, tmp13;
@@ -1132,7 +1132,7 @@ void j_rev_dct4(DCTBLOCK data)
   }
 }
 
-void j_rev_dct2(DCTBLOCK data){
+void ff_j_rev_dct2(DCTBLOCK data){
   int d00, d01, d10, d11;
 
   data[0] += 4;
@@ -1147,7 +1147,7 @@ void j_rev_dct2(DCTBLOCK data){
   data[1+1*DCTSTRIDE]= (d01 - d11)>>3;
 }
 
-void j_rev_dct1(DCTBLOCK data){
+void ff_j_rev_dct1(DCTBLOCK data){
   data[0] = (data[0] + 4)>>3;
 }
 

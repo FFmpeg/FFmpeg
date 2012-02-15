@@ -69,7 +69,7 @@ static void decode_mb(MpegEncContext *s, int ref)
         ff_h264_hl_decode_mb(h);
     } else {
         assert(ref == 0);
-        MPV_decode_mb(s, s->block);
+        ff_MPV_decode_mb(s, s->block);
     }
 }
 

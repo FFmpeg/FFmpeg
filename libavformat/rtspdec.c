@@ -388,7 +388,7 @@ static int rtsp_read_close(AVFormatContext *s)
     return 0;
 }
 
-const AVClass rtsp_demuxer_class = {
+static const AVClass rtsp_demuxer_class = {
     .class_name     = "RTSP demuxer",
     .item_name      = av_default_item_name,
     .option         = ff_rtsp_options,

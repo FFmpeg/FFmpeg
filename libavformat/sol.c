@@ -147,5 +147,5 @@ AVInputFormat ff_sol_demuxer = {
     .read_probe     = sol_probe,
     .read_header    = sol_read_header,
     .read_packet    = sol_read_packet,
-    .read_seek      = pcm_read_seek,
+    .read_seek      = ff_pcm_read_seek,
 };

@@ -519,7 +519,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
 static av_cold void common_init(AVCodecContext *avctx){
     ASV1Context * const a = avctx->priv_data;
 
-    dsputil_init(&a->dsp, avctx);
+    ff_dsputil_init(&a->dsp, avctx);
 
     a->mb_width   = (avctx->width  + 15) / 16;
     a->mb_height  = (avctx->height + 15) / 16;

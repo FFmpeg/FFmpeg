@@ -132,7 +132,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
 
-    if(MPV_encode_init(avctx) < 0)
+    if(ff_MPV_encode_init(avctx) < 0)
         return -1;
 
     if(find_frame_rate_index(s) < 0){
@@ -341,7 +341,7 @@ void ff_mpeg1_encode_slice_header(MpegEncContext *s){
     put_bits(&s->pb, 1, 0); /* slice extra information */
 }
 
-void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
+void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
 {
     mpeg1_encode_sequence_header(s);
 
@@ -666,7 +666,7 @@ static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
     }
 }
 
-void mpeg1_encode_mb(MpegEncContext *s, DCTELEM block[6][64], int motion_x, int motion_y)
+void ff_mpeg1_encode_mb(MpegEncContext *s, DCTELEM block[6][64], int motion_x, int motion_y)
 {
     if (s->chroma_format == CHROMA_420) mpeg1_encode_mb_internal(s, block, motion_x, motion_y, 6);
     else                                mpeg1_encode_mb_internal(s, block, motion_x, motion_y, 8);
@@ -725,8 +725,8 @@ void ff_mpeg1_encode_init(MpegEncContext *s)
         int i;
 
         done=1;
-        init_rl(&ff_rl_mpeg1, ff_mpeg12_static_rl_table_store[0]);
-        init_rl(&ff_rl_mpeg2, ff_mpeg12_static_rl_table_store[1]);
+        ff_init_rl(&ff_rl_mpeg1, ff_mpeg12_static_rl_table_store[0]);
+        ff_init_rl(&ff_rl_mpeg2, ff_mpeg12_static_rl_table_store[1]);
 
         for(i=0; i<64; i++)
         {
@@ -966,8 +966,8 @@ AVCodec ff_mpeg1video_encoder = {
     .id             = CODEC_ID_MPEG1VIDEO,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = encode_init,
-    .encode         = MPV_encode_picture,
-    .close          = MPV_encode_end,
+    .encode         = ff_MPV_encode_picture,
+    .close          = ff_MPV_encode_end,
     .supported_framerates= avpriv_frame_rate_tab+1,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .capabilities= CODEC_CAP_DELAY,
@@ -981,8 +981,8 @@ AVCodec ff_mpeg2video_encoder = {
     .id             = CODEC_ID_MPEG2VIDEO,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = encode_init,
-    .encode         = MPV_encode_picture,
-    .close          = MPV_encode_end,
+    .encode         = ff_MPV_encode_picture,
+    .close          = ff_MPV_encode_end,
     .supported_framerates= avpriv_frame_rate_tab+1,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_NONE},
     .capabilities= CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,

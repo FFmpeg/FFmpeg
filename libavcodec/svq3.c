@@ -931,7 +931,7 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
         s->width  = avctx->width;
         s->height = avctx->height;
 
-        if (MPV_common_init(s) < 0)
+        if (ff_MPV_common_init(s) < 0)
             return -1;
 
         h->b_stride = 4*s->mb_width;
@@ -1099,7 +1099,7 @@ static int svq3_decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
-    MPV_frame_end(s);
+    ff_MPV_frame_end(s);
 
     if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
         *(AVFrame *) data = *(AVFrame *) &s->current_picture;
@@ -1123,7 +1123,7 @@ static int svq3_decode_end(AVCodecContext *avctx)
 
     ff_h264_free_context(h);
 
-    MPV_common_end(s);
+    ff_MPV_common_end(s);
 
     av_freep(&svq3->buf);
     svq3->buf_size = 0;

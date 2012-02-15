@@ -863,7 +863,7 @@ static int mov_get_codec_tag(AVFormatContext *s, MOVTrack *track)
         else if (track->enc->codec_id == CODEC_ID_RAWVIDEO)
             tag = mov_get_rawvideo_codec_tag(s, track);
         else if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO) {
-            tag = ff_codec_get_tag(codec_movvideo_tags, track->enc->codec_id);
+            tag = ff_codec_get_tag(ff_codec_movvideo_tags, track->enc->codec_id);
             if (!tag) { // if no mac fcc found, try with Microsoft tags
                 tag = ff_codec_get_tag(ff_codec_bmp_tags, track->enc->codec_id);
                 if (tag)
@@ -871,7 +871,7 @@ static int mov_get_codec_tag(AVFormatContext *s, MOVTrack *track)
                            "the file may be unplayable!\n");
             }
         } else if (track->enc->codec_type == AVMEDIA_TYPE_AUDIO) {
-            tag = ff_codec_get_tag(codec_movaudio_tags, track->enc->codec_id);
+            tag = ff_codec_get_tag(ff_codec_movaudio_tags, track->enc->codec_id);
             if (!tag) { // if no mac fcc found, try with Microsoft tags
                 int ms_tag = ff_codec_get_tag(ff_codec_wav_tags, track->enc->codec_id);
                 if (ms_tag) {
@@ -3310,7 +3310,7 @@ AVOutputFormat ff_mov_muxer = {
     .write_packet      = ff_mov_write_packet,
     .write_trailer     = mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER | AVFMT_ALLOW_FLUSH,
-    .codec_tag = (const AVCodecTag* const []){codec_movvideo_tags, codec_movaudio_tags, 0},
+    .codec_tag = (const AVCodecTag* const []){ff_codec_movvideo_tags, ff_codec_movaudio_tags, 0},
     .priv_class = &mov_muxer_class,
 };
 #endif

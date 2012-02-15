@@ -468,9 +468,9 @@ static inline int get_b_cbp(MpegEncContext * s, DCTELEM block[6][64],
 //FIXME this is duplicated to h263.c
 static const int dquant_code[5]= {1,0,9,2,3};
 
-void mpeg4_encode_mb(MpegEncContext * s,
-                    DCTELEM block[6][64],
-                    int motion_x, int motion_y)
+void ff_mpeg4_encode_mb(MpegEncContext * s,
+                        DCTELEM block[6][64],
+                        int motion_x, int motion_y)
 {
     int cbpc, cbpy, pred_x, pred_y;
     PutBitContext * const pb2    = s->data_partitioning                         ? &s->pb2    : &s->pb;
@@ -705,7 +705,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
                 }
 
                 /* motion vectors: 16x16 mode */
-                h263_pred_motion(s, 0, 0, &pred_x, &pred_y);
+                ff_h263_pred_motion(s, 0, 0, &pred_x, &pred_y);
 
                 ff_h263_encode_motion_vector(s, motion_x - pred_x,
                                                 motion_y - pred_y, s->f_code);
@@ -729,7 +729,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
                 }
 
                 /* motion vectors: 16x8 interlaced mode */
-                h263_pred_motion(s, 0, 0, &pred_x, &pred_y);
+                ff_h263_pred_motion(s, 0, 0, &pred_x, &pred_y);
                 pred_y /=2;
 
                 put_bits(&s->pb, 1, s->field_select[0][0]);
@@ -757,7 +757,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
 
                 for(i=0; i<4; i++){
                     /* motion vectors: 8x8 mode*/
-                    h263_pred_motion(s, i, 0, &pred_x, &pred_y);
+                    ff_h263_pred_motion(s, i, 0, &pred_x, &pred_y);
 
                     ff_h263_encode_motion_vector(s, s->current_picture.f.motion_val[0][ s->block_index[i] ][0] - pred_x,
                                                     s->current_picture.f.motion_val[0][ s->block_index[i] ][1] - pred_y, s->f_code);
@@ -1038,7 +1038,7 @@ static void mpeg4_encode_vol_header(MpegEncContext * s, int vo_number, int vol_n
 }
 
 /* write mpeg4 VOP header */
-void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
+void ff_mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
 {
     int time_incr;
     int time_div, time_mod;
@@ -1232,7 +1232,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     int ret;
     static int done = 0;
 
-    if((ret=MPV_encode_init(avctx)) < 0)
+    if((ret=ff_MPV_encode_init(avctx)) < 0)
         return ret;
 
     if (!done) {
@@ -1240,7 +1240,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
         init_uni_dc_tab();
 
-        init_rl(&ff_mpeg4_rl_intra, ff_mpeg4_static_rl_table_store[0]);
+        ff_init_rl(&ff_mpeg4_rl_intra, ff_mpeg4_static_rl_table_store[0]);
 
         init_uni_mpeg4_rl_tab(&ff_mpeg4_rl_intra, uni_mpeg4_intra_rl_bits, uni_mpeg4_intra_rl_len);
         init_uni_mpeg4_rl_tab(&ff_h263_rl_inter, uni_mpeg4_inter_rl_bits, uni_mpeg4_inter_rl_len);
@@ -1346,8 +1346,8 @@ AVCodec ff_mpeg4_encoder = {
     .id             = CODEC_ID_MPEG4,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = encode_init,
-    .encode         = MPV_encode_picture,
-    .close          = MPV_encode_end,
+    .encode         = ff_MPV_encode_picture,
+    .close          = ff_MPV_encode_end,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .capabilities= CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2"),

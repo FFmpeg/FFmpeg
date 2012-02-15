@@ -313,13 +313,13 @@ static av_cold int dvvideo_init(AVCodecContext *avctx)
             dv_rl_vlc[i].level = level;
             dv_rl_vlc[i].run   = run;
         }
-        free_vlc(&dv_vlc);
+        ff_free_vlc(&dv_vlc);
 
         dv_vlc_map_tableinit();
     }
 
     /* Generic DSP setup */
-    dsputil_init(&dsp, avctx);
+    ff_dsputil_init(&dsp, avctx);
     ff_set_cmp(&dsp, dsp.ildct_cmp, avctx->ildct_cmp);
     s->get_pixels = dsp.get_pixels;
     s->ildct_cmp = dsp.ildct_cmp[5];
