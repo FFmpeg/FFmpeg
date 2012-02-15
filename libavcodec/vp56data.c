@@ -25,10 +25,10 @@
 
 #include "vp56data.h"
 
-const uint8_t vp56_b2p[]   = { 0, 0, 0, 0, 1, 2, 3, 3, 3, 3 };
-const uint8_t vp56_b6to4[] = { 0, 0, 1, 1, 2, 3 };
+const uint8_t ff_vp56_b2p[]   = { 0, 0, 0, 0, 1, 2, 3, 3, 3, 3 };
+const uint8_t ff_vp56_b6to4[] = { 0, 0, 1, 1, 2, 3 };
 
-const uint8_t vp56_coeff_parse_table[6][11] = {
+const uint8_t ff_vp56_coeff_parse_table[6][11] = {
     { 159,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0 },
     { 145, 165,   0,   0,   0,   0,   0,   0,   0,   0,   0 },
     { 140, 148, 173,   0,   0,   0,   0,   0,   0,   0,   0 },
@@ -37,7 +37,7 @@ const uint8_t vp56_coeff_parse_table[6][11] = {
     { 129, 130, 133, 140, 153, 177, 196, 230, 243, 254, 254 },
 };
 
-const uint8_t vp56_def_mb_types_stats[3][10][2] = {
+const uint8_t ff_vp56_def_mb_types_stats[3][10][2] = {
     { {  69, 42 }, {   1,  2 }, {  1,   7 }, {  44, 42 }, {  6, 22 },
       {   1,  3 }, {   0,  2 }, {  1,   5 }, {   0,  1 }, {  0,  0 }, },
     { { 229,  8 }, {   1,  1 }, {  0,   8 }, {   0,  0 }, {  0,  0 },
@@ -46,7 +46,7 @@ const uint8_t vp56_def_mb_types_stats[3][10][2] = {
       {   1,  2 }, {   0,  1 }, {  0,   1 }, {   1,  1 }, {  0,  0 }, },
 };
 
-const VP56Tree vp56_pva_tree[] = {
+const VP56Tree ff_vp56_pva_tree[] = {
     { 8, 0},
     { 4, 1},
     { 2, 2}, {-0}, {-1},
@@ -56,7 +56,7 @@ const VP56Tree vp56_pva_tree[] = {
     { 2, 6}, {-6}, {-7},
 };
 
-const VP56Tree vp56_pc_tree[] = {
+const VP56Tree ff_vp56_pc_tree[] = {
     { 4, 6},
     { 2, 7}, {-0}, {-1},
     { 4, 8},
@@ -64,5 +64,5 @@ const VP56Tree vp56_pc_tree[] = {
     { 2,10}, {-4}, {-5},
 };
 
-const uint8_t vp56_coeff_bias[] = { 0, 1, 2, 3, 4, 5, 7, 11, 19, 35, 67 };
-const uint8_t vp56_coeff_bit_length[] = { 0, 1, 2, 3, 4, 10 };
+const uint8_t ff_vp56_coeff_bias[] = { 0, 1, 2, 3, 4, 5, 7, 11, 19, 35, 67 };
+const uint8_t ff_vp56_coeff_bit_length[] = { 0, 1, 2, 3, 4, 10 };
