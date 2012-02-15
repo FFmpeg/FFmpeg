@@ -1998,7 +1998,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
         break;
     case CODEC_ID_MPEG4:
         if (CONFIG_MPEG4_ENCODER)
-            mpeg4_encode_mb(s, s->block, motion_x, motion_y);
+            ff_mpeg4_encode_mb(s, s->block, motion_x, motion_y);
         break;
     case CODEC_ID_MSMPEG4V2:
     case CODEC_ID_MSMPEG4V3:
@@ -3192,7 +3192,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
         else if (CONFIG_MSMPEG4_ENCODER && s->msmpeg4_version)
             msmpeg4_encode_picture_header(s, picture_number);
         else if (CONFIG_MPEG4_ENCODER && s->h263_pred)
-            mpeg4_encode_picture_header(s, picture_number);
+            ff_mpeg4_encode_picture_header(s, picture_number);
         else if (CONFIG_RV10_ENCODER && s->codec_id == CODEC_ID_RV10)
             rv10_encode_picture_header(s, picture_number);
         else if (CONFIG_RV20_ENCODER && s->codec_id == CODEC_ID_RV20)
