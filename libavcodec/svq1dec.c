@@ -670,7 +670,7 @@ static int svq1_decode_frame(AVCodecContext *avctx,
      || avctx->skip_frame >= AVDISCARD_ALL)
       return buf_size;
 
-  if(MPV_frame_start(s, avctx) < 0)
+  if(ff_MPV_frame_start(s, avctx) < 0)
       return -1;
 
   pmv = av_malloc((FFALIGN(s->width, 16)/8 + 3) * sizeof(*pmv));
@@ -738,7 +738,7 @@ static int svq1_decode_frame(AVCodecContext *avctx,
   *pict = *(AVFrame*)&s->current_picture;
 
 
-  MPV_frame_end(s);
+  ff_MPV_frame_end(s);
 
   *data_size=sizeof(AVFrame);
   result = buf_size;
@@ -753,7 +753,7 @@ static av_cold int svq1_decode_init(AVCodecContext *avctx)
     int i;
     int offset = 0;
 
-    MPV_decode_defaults(s);
+    ff_MPV_decode_defaults(s);
 
     s->avctx = avctx;
     s->width = (avctx->width+3)&~3;
@@ -762,7 +762,7 @@ static av_cold int svq1_decode_init(AVCodecContext *avctx)
     avctx->pix_fmt = PIX_FMT_YUV410P;
     avctx->has_b_frames= 1; // not true, but DP frames and these behave like unidirectional b frames
     s->flags= avctx->flags;
-    if (MPV_common_init(s) < 0) return -1;
+    if (ff_MPV_common_init(s) < 0) return -1;
 
     INIT_VLC_STATIC(&svq1_block_type, 2, 4,
         &ff_svq1_block_type_vlc[0][1], 2, 1,
@@ -804,7 +804,7 @@ static av_cold int svq1_decode_end(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
 
-    MPV_common_end(s);
+    ff_MPV_common_end(s);
     return 0;
 }
 

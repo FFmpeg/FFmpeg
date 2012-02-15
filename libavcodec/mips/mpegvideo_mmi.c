@@ -80,7 +80,7 @@ static void dct_unquantize_h263_mmi(MpegEncContext *s,
 }
 
 
-void MPV_common_init_mmi(MpegEncContext *s)
+void ff_MPV_common_init_mmi(MpegEncContext *s)
 {
     s->dct_unquantize_h263_intra =
     s->dct_unquantize_h263_inter = dct_unquantize_h263_mmi;

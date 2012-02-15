@@ -671,7 +671,7 @@ av_cold int ff_cavs_init(AVCodecContext *avctx) {
     AVSContext *h = avctx->priv_data;
     MpegEncContext * const s = &h->s;
 
-    MPV_decode_defaults(s);
+    ff_MPV_decode_defaults(s);
     ff_cavsdsp_init(&h->cdsp, avctx);
     s->avctx = avctx;
 

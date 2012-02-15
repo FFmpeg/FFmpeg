@@ -469,7 +469,7 @@ static int decode_pic(AVSContext *h) {
 
     if (!s->context_initialized) {
         s->avctx->idct_algo = FF_IDCT_CAVS;
-        if (MPV_common_init(s) < 0)
+        if (ff_MPV_common_init(s) < 0)
             return -1;
         ff_init_scantable(s->dsp.idct_permutation,&h->scantable,ff_zigzag_direct);
     }

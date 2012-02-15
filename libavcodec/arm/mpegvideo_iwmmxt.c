@@ -93,7 +93,7 @@ static void dct_unquantize_h263_intra_iwmmxt(MpegEncContext *s,
     block_orig[0] = level;
 }
 
-void MPV_common_init_iwmmxt(MpegEncContext *s)
+void ff_MPV_common_init_iwmmxt(MpegEncContext *s)
 {
     if (!(mm_flags & AV_CPU_FLAG_IWMMXT)) return;
 

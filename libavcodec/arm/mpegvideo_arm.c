@@ -38,17 +38,17 @@ void ff_dct_unquantize_h263_inter_neon(MpegEncContext *s, DCTELEM *block,
 void ff_dct_unquantize_h263_intra_neon(MpegEncContext *s, DCTELEM *block,
                                        int n, int qscale);
 
-void MPV_common_init_arm(MpegEncContext *s)
+void ff_MPV_common_init_arm(MpegEncContext *s)
 {
     /* IWMMXT support is a superset of armv5te, so
      * allow optimized functions for armv5te unless
      * a better iwmmxt function exists
      */
 #if HAVE_ARMV5TE
-    MPV_common_init_armv5te(s);
+    ff_MPV_common_init_armv5te(s);
 #endif
 #if HAVE_IWMMXT
-    MPV_common_init_iwmmxt(s);
+    ff_MPV_common_init_iwmmxt(s);
 #endif
 
     if (HAVE_NEON) {

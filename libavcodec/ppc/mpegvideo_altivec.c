@@ -554,7 +554,7 @@ static void dct_unquantize_h263_altivec(MpegEncContext *s,
 }
 
 
-void MPV_common_init_altivec(MpegEncContext *s)
+void ff_MPV_common_init_altivec(MpegEncContext *s)
 {
     if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC)) return;
 

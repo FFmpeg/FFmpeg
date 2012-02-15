@@ -188,17 +188,17 @@ av_cold int ff_dct_common_init(MpegEncContext *s)
     s->dct_unquantize_mpeg2_inter = dct_unquantize_mpeg2_inter_c;
 
 #if HAVE_MMX
-    MPV_common_init_mmx(s);
+    ff_MPV_common_init_mmx(s);
 #elif ARCH_ALPHA
-    MPV_common_init_axp(s);
+    ff_MPV_common_init_axp(s);
 #elif HAVE_MMI
-    MPV_common_init_mmi(s);
+    ff_MPV_common_init_mmi(s);
 #elif ARCH_ARM
-    MPV_common_init_arm(s);
+    ff_MPV_common_init_arm(s);
 #elif HAVE_ALTIVEC
-    MPV_common_init_altivec(s);
+    ff_MPV_common_init_altivec(s);
 #elif ARCH_BFIN
-    MPV_common_init_bfin(s);
+    ff_MPV_common_init_bfin(s);
 #endif
 
     /* load & permutate scantables
@@ -458,7 +458,7 @@ static int init_duplicate_context(MpegEncContext *s, MpegEncContext *base)
 
     return 0;
 fail:
-    return -1; // free() through MPV_common_end()
+    return -1; // free() through ff_MPV_common_end()
 }
 
 static void free_duplicate_context(MpegEncContext *s)
@@ -543,7 +543,7 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
         s->bitstream_buffer      = NULL;
         s->bitstream_buffer_size = s->allocated_bitstream_buffer_size = 0;
 
-        MPV_common_init(s);
+        ff_MPV_common_init(s);
     }
 
     s->avctx->coded_height  = s1->avctx->coded_height;
@@ -615,7 +615,7 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
  * The changed fields will not depend upon the
  * prior state of the MpegEncContext.
  */
-void MPV_common_defaults(MpegEncContext *s)
+void ff_MPV_common_defaults(MpegEncContext *s)
 {
     s->y_dc_scale_table      =
     s->c_dc_scale_table      = ff_mpeg1_dc_scale_table;
@@ -644,16 +644,16 @@ void MPV_common_defaults(MpegEncContext *s)
  * the changed fields will not depend upon
  * the prior state of the MpegEncContext.
  */
-void MPV_decode_defaults(MpegEncContext *s)
+void ff_MPV_decode_defaults(MpegEncContext *s)
 {
-    MPV_common_defaults(s);
+    ff_MPV_common_defaults(s);
 }
 
 /**
  * init common structure for both encoder and decoder.
  * this assumes that some variables like width/height are already set
  */
-av_cold int MPV_common_init(MpegEncContext *s)
+av_cold int ff_MPV_common_init(MpegEncContext *s)
 {
     int y_size, c_size, yc_size, i, mb_array_size, mv_table_size, x, y;
     int nb_slices = (HAVE_THREADS &&
@@ -913,12 +913,12 @@ av_cold int MPV_common_init(MpegEncContext *s)
 
     return 0;
  fail:
-    MPV_common_end(s);
+    ff_MPV_common_end(s);
     return -1;
 }
 
 /* init common structure for both encoder and decoder */
-void MPV_common_end(MpegEncContext *s)
+void ff_MPV_common_end(MpegEncContext *s)
 {
     int i, j, k;
 
@@ -1158,7 +1158,7 @@ static void update_noise_reduction(MpegEncContext *s)
  * generic function for encode/decode called after coding/decoding
  * the header and before a frame is coded/decoded.
  */
-int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
+int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 {
     int i;
     Picture *pic;
@@ -1347,7 +1347,7 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 
 /* generic function for encode/decode called after a
  * frame has been coded/decoded. */
-void MPV_frame_end(MpegEncContext *s)
+void ff_MPV_frame_end(MpegEncContext *s)
 {
     int i;
     /* redraw edges for the frame if decoding didn't complete */
@@ -2175,7 +2175,7 @@ static inline void MPV_motion_lowres(MpegEncContext *s,
 /**
  * find the lowest MB row referenced in the MVs
  */
-int MPV_lowest_referenced_row(MpegEncContext *s, int dir)
+int ff_MPV_lowest_referenced_row(MpegEncContext *s, int dir)
 {
     int my_max = INT_MIN, my_min = INT_MAX, qpel_shift = !s->quarter_sample;
     int my, off, i, mvs;
@@ -2365,10 +2365,10 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
 
                 if(HAVE_THREADS && s->avctx->active_thread_type&FF_THREAD_FRAME) {
                     if (s->mv_dir & MV_DIR_FORWARD) {
-                        ff_thread_await_progress((AVFrame*)s->last_picture_ptr, MPV_lowest_referenced_row(s, 0), 0);
+                        ff_thread_await_progress((AVFrame*)s->last_picture_ptr, ff_MPV_lowest_referenced_row(s, 0), 0);
                     }
                     if (s->mv_dir & MV_DIR_BACKWARD) {
-                        ff_thread_await_progress((AVFrame*)s->next_picture_ptr, MPV_lowest_referenced_row(s, 1), 0);
+                        ff_thread_await_progress((AVFrame*)s->next_picture_ptr, ff_MPV_lowest_referenced_row(s, 1), 0);
                     }
                 }
 
@@ -2519,7 +2519,7 @@ skip_idct:
     }
 }
 
-void MPV_decode_mb(MpegEncContext *s, DCTELEM block[12][64]){
+void ff_MPV_decode_mb(MpegEncContext *s, DCTELEM block[12][64]){
 #if !CONFIG_SMALL
     if(s->out_format == FMT_MPEG1) {
         if(s->avctx->lowres) MPV_decode_mb_internal(s, block, 1, 1);
@@ -2893,7 +2893,7 @@ void ff_set_qscale(MpegEncContext * s, int qscale)
     s->c_dc_scale= s->c_dc_scale_table[ s->chroma_qscale ];
 }
 
-void MPV_report_decode_progress(MpegEncContext *s)
+void ff_MPV_report_decode_progress(MpegEncContext *s)
 {
     if (s->pict_type != AV_PICTURE_TYPE_B && !s->partitioned_frame && !s->error_occurred)
         ff_thread_report_progress((AVFrame*)s->current_picture_ptr, s->mb_y, 0);

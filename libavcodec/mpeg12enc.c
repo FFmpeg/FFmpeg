@@ -131,7 +131,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
 
-    if(MPV_encode_init(avctx) < 0)
+    if(ff_MPV_encode_init(avctx) < 0)
         return -1;
 
     if(find_frame_rate_index(s) < 0){
@@ -954,8 +954,8 @@ AVCodec ff_mpeg1video_encoder = {
     .id             = CODEC_ID_MPEG1VIDEO,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = encode_init,
-    .encode         = MPV_encode_picture,
-    .close          = MPV_encode_end,
+    .encode         = ff_MPV_encode_picture,
+    .close          = ff_MPV_encode_end,
     .supported_framerates= avpriv_frame_rate_tab+1,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .capabilities= CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,
@@ -969,8 +969,8 @@ AVCodec ff_mpeg2video_encoder = {
     .id             = CODEC_ID_MPEG2VIDEO,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = encode_init,
-    .encode         = MPV_encode_picture,
-    .close          = MPV_encode_end,
+    .encode         = ff_MPV_encode_picture,
+    .close          = ff_MPV_encode_end,
     .supported_framerates= avpriv_frame_rate_tab+1,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_NONE},
     .capabilities= CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,

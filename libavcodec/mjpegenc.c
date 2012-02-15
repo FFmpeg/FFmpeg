@@ -450,9 +450,9 @@ AVCodec ff_mjpeg_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_MJPEG,
     .priv_data_size = sizeof(MpegEncContext),
-    .init           = MPV_encode_init,
-    .encode         = MPV_encode_picture,
-    .close          = MPV_encode_end,
+    .init           = ff_MPV_encode_init,
+    .encode         = ff_MPV_encode_picture,
+    .close          = ff_MPV_encode_end,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUVJ420P, PIX_FMT_YUVJ422P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("MJPEG (Motion JPEG)"),
 };

@@ -45,7 +45,7 @@ int ff_dct_quantize_c(MpegEncContext *s, DCTELEM *block, int n, int qscale, int 
  * Set the given MpegEncContext to common defaults (same for encoding and decoding).
  * The changed fields will not depend upon the prior state of the MpegEncContext.
  */
-void MPV_common_defaults(MpegEncContext *s);
+void ff_MPV_common_defaults(MpegEncContext *s);
 
 static inline void gmc1_motion(MpegEncContext *s,
                                uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,

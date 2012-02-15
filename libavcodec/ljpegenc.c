@@ -191,8 +191,8 @@ AVCodec ff_ljpeg_encoder = { //FIXME avoid MPV_* lossless JPEG should not need t
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_LJPEG,
     .priv_data_size = sizeof(MpegEncContext),
-    .init           = MPV_encode_init,
+    .init           = ff_MPV_encode_init,
     .encode         = encode_picture_lossless,
-    .close          = MPV_encode_end,
+    .close          = ff_MPV_encode_end,
     .long_name      = NULL_IF_CONFIG_SMALL("Lossless JPEG"),
 };

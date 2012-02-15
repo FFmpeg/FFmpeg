@@ -55,7 +55,7 @@ static int encode_ext_header(Wmv2Context *w){
 static av_cold int wmv2_encode_init(AVCodecContext *avctx){
     Wmv2Context * const w= avctx->priv_data;
 
-    if(MPV_encode_init(avctx) < 0)
+    if(ff_MPV_encode_init(avctx) < 0)
         return -1;
 
     ff_wmv2_common_init(w);
@@ -217,8 +217,8 @@ AVCodec ff_wmv2_encoder = {
     .id             = CODEC_ID_WMV2,
     .priv_data_size = sizeof(Wmv2Context),
     .init           = wmv2_encode_init,
-    .encode         = MPV_encode_picture,
-    .close          = MPV_encode_end,
+    .encode         = ff_MPV_encode_picture,
+    .close          = ff_MPV_encode_end,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("Windows Media Video 8"),
 };

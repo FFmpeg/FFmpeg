@@ -1222,7 +1222,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     int ret;
     static int done = 0;
 
-    if((ret=MPV_encode_init(avctx)) < 0)
+    if((ret=ff_MPV_encode_init(avctx)) < 0)
         return ret;
 
     if (!done) {
@@ -1336,8 +1336,8 @@ AVCodec ff_mpeg4_encoder = {
     .id             = CODEC_ID_MPEG4,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = encode_init,
-    .encode         = MPV_encode_picture,
-    .close          = MPV_encode_end,
+    .encode         = ff_MPV_encode_picture,
+    .close          = ff_MPV_encode_end,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .capabilities= CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2"),

@@ -626,7 +626,7 @@ static void  denoise_dct_sse2(MpegEncContext *s, DCTELEM *block){
 #include "mpegvideo_mmx_template.c"
 #endif
 
-void MPV_common_init_mmx(MpegEncContext *s)
+void ff_MPV_common_init_mmx(MpegEncContext *s)
 {
     int mm_flags = av_get_cpu_flags();
 

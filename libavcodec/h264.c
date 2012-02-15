@@ -1100,7 +1100,7 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx){
     MpegEncContext * const s = &h->s;
     int i;
 
-    MPV_decode_defaults(s);
+    ff_MPV_decode_defaults(s);
 
     s->avctx = avctx;
     common_init(h);
@@ -1281,11 +1281,11 @@ int ff_h264_frame_start(H264Context *h){
     int i;
     const int pixel_shift = h->pixel_shift;
 
-    if(MPV_frame_start(s, s->avctx) < 0)
+    if(ff_MPV_frame_start(s, s->avctx) < 0)
         return -1;
     ff_er_frame_start(s);
     /*
-     * MPV_frame_start uses pict_type to derive key_frame.
+     * ff_MPV_frame_start uses pict_type to derive key_frame.
      * This is incorrect for H.264; IDR markings must be used.
      * Zero here; IDR markings per slice in frame or fields are ORed in later.
      * See decode_nal_units().
@@ -1319,7 +1319,7 @@ int ff_h264_frame_start(H264Context *h){
 
     // We mark the current picture as non-reference after allocating it, so
     // that if we break out due to an error it can be released automatically
-    // in the next MPV_frame_start().
+    // in the next ff_MPV_frame_start().
     // SVQ3 as well as most other codecs have only last/next/current and thus
     // get released even with set reference, besides SVQ3 and others do not
     // mark frames as reference later "naturally".
@@ -2562,7 +2562,7 @@ static int field_end(H264Context *h, int in_setup){
     if (!FIELD_PICTURE)
         ff_er_frame_end(s);
 
-    MPV_frame_end(s);
+    ff_MPV_frame_end(s);
 
     h->current_slice=0;
 
@@ -2625,7 +2625,7 @@ int ff_h264_get_profile(SPS *sps)
 
 /**
  * Decode a slice header.
- * This will also call MPV_common_init() and frame_start() as needed.
+ * This will also call ff_MPV_common_init() and frame_start() as needed.
  *
  * @param h h264context
  * @param h0 h264 master context (differs from 'h' when doing sliced based parallel decoding)
@@ -2734,7 +2734,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         }
         free_tables(h, 0);
         flush_dpb(s->avctx);
-        MPV_common_end(s);
+        ff_MPV_common_end(s);
     }
     if (!s->context_initialized) {
         if (h != h0) {
@@ -2806,8 +2806,8 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
 
         s->avctx->hwaccel = ff_find_hwaccel(s->avctx->codec->id, s->avctx->pix_fmt);
 
-        if (MPV_common_init(s) < 0) {
-            av_log(h->s.avctx, AV_LOG_ERROR, "MPV_common_init() failed.\n");
+        if (ff_MPV_common_init(s) < 0) {
+            av_log(h->s.avctx, AV_LOG_ERROR, "ff_MPV_common_init() failed.\n");
             return -1;
         }
         s->first_field = 0;
@@ -4119,7 +4119,7 @@ av_cold int ff_h264_decode_end(AVCodecContext *avctx)
 
     ff_h264_free_context(h);
 
-    MPV_common_end(s);
+    ff_MPV_common_end(s);
 
 //    memset(h, 0, sizeof(H264Context));
 
