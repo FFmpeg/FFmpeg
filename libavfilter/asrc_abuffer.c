@@ -234,7 +234,7 @@ int av_asrc_buffer_add_buffer(AVFilterContext *ctx,
                               int sample_fmt, int64_t channel_layout, int planar,
                               int64_t pts, int av_unused flags)
 {
-    uint8_t *data[8];
+    uint8_t *data[8] = {0};
     int linesize[8];
     int nb_channels = av_get_channel_layout_nb_channels(channel_layout),
         nb_samples  = buf_size / nb_channels / av_get_bytes_per_sample(sample_fmt);
