@@ -19,22 +19,6 @@ supported protocols.
 
 A description of the currently available protocols follows.
 
-@section applehttp
-
-Read Apple HTTP Live Streaming compliant segmented stream as
-a uniform one. The M3U8 playlists describing the segments can be
-remote HTTP resources or local files, accessed using the standard
-file protocol.
-HTTP is default, specific protocol can be declared by specifying
-"+@var{proto}" after the applehttp URI scheme name, where @var{proto}
-is either "file" or "http".
-
-@example
-applehttp://host/path/to/remote/resource.m3u8
-applehttp+http://host/path/to/remote/resource.m3u8
-applehttp+file://path/to/local/resource.m3u8
-@end example
-
 @section concat
 
 Physical concatenation protocol.
@@ -80,6 +64,26 @@ specified with the name "FILE.mpeg" is interpreted as the URL
 @section gopher
 
 Gopher protocol.
+
+@section hls
+
+Read Apple HTTP Live Streaming compliant segmented stream as
+a uniform one. The M3U8 playlists describing the segments can be
+remote HTTP resources or local files, accessed using the standard
+file protocol.
+The nested protocol is declared by specifying
+"+@var{proto}" after the hls URI scheme name, where @var{proto}
+is either "file" or "http".
+
+@example
+hls+http://host/path/to/remote/resource.m3u8
+hls+file://path/to/local/resource.m3u8
+@end example
+
+Using this protocol is discouraged - the hls demuxer should work
+just as well (if not, please report the issues) and is more complete.
+To use the hls demuxer instead, simply use the direct URLs to the
+m3u8 files.
 
 @section http
 

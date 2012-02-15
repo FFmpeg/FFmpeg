@@ -4,6 +4,7 @@ releases are sorted from youngest to oldest.
 version next:
 - v408 Quicktime and Microsoft AYUV Uncompressed 4:4:4:4 encoder and decoder
 - setfield filter
+- CDXL demuxer and decoder
 
 
 version 0.10:

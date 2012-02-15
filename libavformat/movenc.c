@@ -30,6 +30,7 @@
 #include "avc.h"
 #include "libavcodec/get_bits.h"
 #include "libavcodec/put_bits.h"
+#include "libavcodec/vc1.h"
 #include "internal.h"
 #include "libavutil/avstring.h"
 #include "libavutil/intfloat.h"
@@ -433,6 +434,98 @@ static int mov_write_wave_tag(AVIOContext *pb, MOVTrack *track)
     return update_size(pb, pos);
 }
 
+static int mov_write_dvc1_structs(MOVTrack *track, uint8_t *buf)
+{
+    uint8_t *unescaped;
+    const uint8_t *start, *next, *end = track->vos_data + track->vos_len;
+    int unescaped_size, seq_found = 0;
+    int level = 0, interlace = 0;
+    int packet_seq   = track->vc1_info.packet_seq;
+    int packet_entry = track->vc1_info.packet_entry;
+    int slices       = track->vc1_info.slices;
+    PutBitContext pbc;
+
+    if (track->start_dts == AV_NOPTS_VALUE) {
+        /* No packets written yet, vc1_info isn't authoritative yet. */
+        /* Assume inline sequence and entry headers. This will be
+         * overwritten at the end if the file is seekable. */
+        packet_seq = packet_entry = 1;
+    }
+
+    unescaped = av_mallocz(track->vos_len + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!unescaped)
+        return AVERROR(ENOMEM);
+    start = find_next_marker(track->vos_data, end);
+    for (next = start; next < end; start = next) {
+        GetBitContext gb;
+        int size;
+        next = find_next_marker(start + 4, end);
+        size = next - start - 4;
+        if (size <= 0)
+            continue;
+        unescaped_size = vc1_unescape_buffer(start + 4, size, unescaped);
+        init_get_bits(&gb, unescaped, 8 * unescaped_size);
+        if (AV_RB32(start) == VC1_CODE_SEQHDR) {
+            int profile = get_bits(&gb, 2);
+            if (profile != PROFILE_ADVANCED) {
+                av_free(unescaped);
+                return AVERROR(ENOSYS);
+            }
+            seq_found = 1;
+            level = get_bits(&gb, 3);
+            /* chromaformat, frmrtq_postproc, bitrtq_postproc, postprocflag,
+             * width, height */
+            skip_bits_long(&gb, 2 + 3 + 5 + 1 + 2*12);
+            skip_bits(&gb, 1); /* broadcast */
+            interlace = get_bits1(&gb);
+            skip_bits(&gb, 4); /* tfcntrflag, finterpflag, reserved, psf */
+        }
+    }
+    if (!seq_found) {
+        av_free(unescaped);
+        return AVERROR(ENOSYS);
+    }
+
+    init_put_bits(&pbc, buf, 7);
+    /* VC1DecSpecStruc */
+    put_bits(&pbc, 4, 12); /* profile - advanced */
+    put_bits(&pbc, 3, level);
+    put_bits(&pbc, 1, 0); /* reserved */
+    /* VC1AdvDecSpecStruc */
+    put_bits(&pbc, 3, level);
+    put_bits(&pbc, 1, 0); /* cbr */
+    put_bits(&pbc, 6, 0); /* reserved */
+    put_bits(&pbc, 1, !interlace); /* no interlace */
+    put_bits(&pbc, 1, !packet_seq); /* no multiple seq */
+    put_bits(&pbc, 1, !packet_entry); /* no multiple entry */
+    put_bits(&pbc, 1, !slices); /* no slice code */
+    put_bits(&pbc, 1, 0); /* no bframe */
+    put_bits(&pbc, 1, 0); /* reserved */
+    put_bits32(&pbc, track->enc->time_base.den); /* framerate */
+    flush_put_bits(&pbc);
+
+    av_free(unescaped);
+
+    return 0;
+}
+
+static int mov_write_dvc1_tag(AVIOContext *pb, MOVTrack *track)
+{
+    uint8_t buf[7] = { 0 };
+    int ret;
+
+    if ((ret = mov_write_dvc1_structs(track, buf)) < 0)
+        return ret;
+
+    avio_wb32(pb, track->vos_len + 8 + sizeof(buf));
+    ffio_wfourcc(pb, "dvc1");
+    track->vc1_info.struct_offset = avio_tell(pb);
+    avio_write(pb, buf, sizeof(buf));
+    avio_write(pb, track->vos_data, track->vos_len);
+
+    return 0;
+}
+
 static int mov_write_glbl_tag(AVIOContext *pb, MOVTrack *track)
 {
     avio_wb32(pb, track->vos_len + 8);
@@ -659,6 +752,7 @@ static int mp4_get_codec_tag(AVFormatContext *s, MOVTrack *track)
     else if (track->enc->codec_id == CODEC_ID_AC3)       tag = MKTAG('a','c','-','3');
     else if (track->enc->codec_id == CODEC_ID_DIRAC)     tag = MKTAG('d','r','a','c');
     else if (track->enc->codec_id == CODEC_ID_MOV_TEXT)  tag = MKTAG('t','x','3','g');
+    else if (track->enc->codec_id == CODEC_ID_VC1)       tag = MKTAG('v','c','-','1');
     else if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO) tag = MKTAG('m','p','4','v');
     else if (track->enc->codec_type == AVMEDIA_TYPE_AUDIO) tag = MKTAG('m','p','4','a');
 
@@ -945,6 +1039,8 @@ static int mov_write_video_tag(AVIOContext *pb, MOVTrack *track)
             mov_write_uuid_tag_ipod(pb);
     } else if (track->enc->field_order != AV_FIELD_UNKNOWN)
         mov_write_fiel_tag(pb, track);
+    else if (track->enc->codec_id == CODEC_ID_VC1 && track->vos_len > 0)
+        mov_write_dvc1_tag(pb, track);
     else if (track->vos_len > 0)
         mov_write_glbl_tag(pb, track);
 
@@ -2557,6 +2653,63 @@ static int mov_parse_mpeg2_frame(AVPacket *pkt, uint32_t *flags)
     return 0;
 }
 
+static void mov_parse_vc1_frame(AVPacket *pkt, MOVTrack *trk, int fragment)
+{
+    const uint8_t *start, *next, *end = pkt->data + pkt->size;
+    int seq = 0, entry = 0;
+    int key = pkt->flags & AV_PKT_FLAG_KEY;
+    start = find_next_marker(pkt->data, end);
+    for (next = start; next < end; start = next) {
+        next = find_next_marker(start + 4, end);
+        switch (AV_RB32(start)) {
+        case VC1_CODE_SEQHDR:
+            seq = 1;
+            break;
+        case VC1_CODE_ENTRYPOINT:
+            entry = 1;
+            break;
+        case VC1_CODE_SLICE:
+            trk->vc1_info.slices = 1;
+            break;
+        }
+    }
+    if (!trk->entry && !fragment) {
+        /* First packet in first fragment */
+        trk->vc1_info.first_packet_seq   = seq;
+        trk->vc1_info.first_packet_entry = entry;
+    } else if ((seq && !trk->vc1_info.packet_seq) ||
+               (entry && !trk->vc1_info.packet_entry)) {
+        int i;
+        for (i = 0; i < trk->entry; i++)
+            trk->cluster[i].flags &= ~MOV_SYNC_SAMPLE;
+        trk->has_keyframes = 0;
+        if (seq)
+            trk->vc1_info.packet_seq = 1;
+        if (entry)
+            trk->vc1_info.packet_entry = 1;
+        if (!fragment) {
+            /* First fragment */
+            if ((!seq   || trk->vc1_info.first_packet_seq) &&
+                (!entry || trk->vc1_info.first_packet_entry)) {
+                /* First packet had the same headers as this one, readd the
+                 * sync sample flag. */
+                trk->cluster[0].flags |= MOV_SYNC_SAMPLE;
+                trk->has_keyframes = 1;
+            }
+        }
+    }
+    if (trk->vc1_info.packet_seq && trk->vc1_info.packet_entry)
+        key = seq && entry;
+    else if (trk->vc1_info.packet_seq)
+        key = seq;
+    else if (trk->vc1_info.packet_entry)
+        key = entry;
+    if (key) {
+        trk->cluster[trk->entry].flags |= MOV_SYNC_SAMPLE;
+        trk->has_keyframes++;
+    }
+}
+
 static int mov_flush_fragment(AVFormatContext *s)
 {
     MOVMuxContext *mov = s->priv_data;
@@ -2788,7 +2941,9 @@ static int mov_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         trk->flags |= MOV_TRACK_CTTS;
     trk->cluster[trk->entry].cts = pkt->pts - pkt->dts;
     trk->cluster[trk->entry].flags = 0;
-    if (pkt->flags & AV_PKT_FLAG_KEY) {
+    if (enc->codec_id == CODEC_ID_VC1) {
+        mov_parse_vc1_frame(pkt, trk, mov->fragments);
+    } else if (pkt->flags & AV_PKT_FLAG_KEY) {
         if (mov->mode == MODE_MOV && enc->codec_id == CODEC_ID_MPEG2VIDEO &&
             trk->entry > 0) { // force sync sample for the first key frame
             mov_parse_mpeg2_frame(pkt, &trk->cluster[trk->entry].flags);
@@ -3113,6 +3268,16 @@ static int mov_write_trailer(AVFormatContext *s)
     for (i=0; i<mov->nb_streams; i++) {
         if (mov->tracks[i].tag == MKTAG('r','t','p',' '))
             ff_mov_close_hinting(&mov->tracks[i]);
+        if (mov->flags & FF_MOV_FLAG_FRAGMENT &&
+            mov->tracks[i].vc1_info.struct_offset && s->pb->seekable) {
+            int64_t off = avio_tell(pb);
+            uint8_t buf[7];
+            if (mov_write_dvc1_structs(&mov->tracks[i], buf) >= 0) {
+                avio_seek(pb, mov->tracks[i].vc1_info.struct_offset, SEEK_SET);
+                avio_write(pb, buf, 7);
+                avio_seek(pb, off, SEEK_SET);
+            }
+        }
         av_freep(&mov->tracks[i].cluster);
         av_freep(&mov->tracks[i].frag_info);
 
