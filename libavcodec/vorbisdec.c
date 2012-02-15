@@ -1447,7 +1447,7 @@ static inline int vorbis_residue_decode(vorbis_context *vc, vorbis_residue *vr,
     }
 }
 
-void vorbis_inverse_coupling(float *mag, float *ang, int blocksize)
+void ff_vorbis_inverse_coupling(float *mag, float *ang, int blocksize)
 {
     int i;
     for (i = 0;  i < blocksize;  i++) {

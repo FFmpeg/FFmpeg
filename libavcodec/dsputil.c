@@ -3016,7 +3016,7 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->add_8x8basis= add_8x8basis_c;
 
 #if CONFIG_VORBIS_DECODER
-    c->vorbis_inverse_coupling = vorbis_inverse_coupling;
+    c->vorbis_inverse_coupling = ff_vorbis_inverse_coupling;
 #endif
 #if CONFIG_AC3_DECODER
     c->ac3_downmix = ff_ac3_downmix_c;
