@@ -1306,7 +1306,7 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
 
         /* Feed the DV video stream version of the timestamp to the */
         /* DV demux so it can synthesize correct timestamps.        */
-        dv_offset_reset(avi->dv_demux, timestamp);
+        ff_dv_offset_reset(avi->dv_demux, timestamp);
 
         avio_seek(s->pb, pos, SEEK_SET);
         avi->stream_index= -1;

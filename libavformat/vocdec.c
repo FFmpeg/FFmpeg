@@ -62,7 +62,7 @@ static int voc_read_header(AVFormatContext *s)
 }
 
 int
-voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
+ff_voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
 {
     VocDecContext *voc = s->priv_data;
     AVCodecContext *dec = st->codec;
@@ -153,7 +153,7 @@ voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
 
 static int voc_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    return voc_get_packet(s, pkt, s->streams[0], 0);
+    return ff_voc_get_packet(s, pkt, s->streams[0], 0);
 }
 
 AVInputFormat ff_voc_demuxer = {

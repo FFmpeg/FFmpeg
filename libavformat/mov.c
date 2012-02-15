@@ -1126,7 +1126,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
 
         if (st->codec->codec_tag &&
             st->codec->codec_tag != format &&
-            (c->fc->video_codec_id ? ff_codec_get_id(codec_movvideo_tags, format) != c->fc->video_codec_id
+            (c->fc->video_codec_id ? ff_codec_get_id(ff_codec_movvideo_tags, format) != c->fc->video_codec_id
                                    : st->codec->codec_tag != MKTAG('j','p','e','g'))
            ){
             /* Multiple fourcc, we skip JPEG. This is not correct, we should
@@ -1144,7 +1144,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
         sc->dref_id= dref_id;
 
         st->codec->codec_tag = format;
-        id = ff_codec_get_id(codec_movaudio_tags, format);
+        id = ff_codec_get_id(ff_codec_movaudio_tags, format);
         if (id<=0 && ((format&0xFFFF) == 'm'+('s'<<8) || (format&0xFFFF) == 'T'+('S'<<8)))
             id = ff_codec_get_id(ff_codec_wav_tags, av_bswap32(format)&0xFFFF);
 
@@ -1152,7 +1152,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
             st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         } else if (st->codec->codec_type != AVMEDIA_TYPE_AUDIO && /* do not overwrite codec type */
                    format && format != MKTAG('m','p','4','s')) { /* skip old asf mpeg4 tag */
-            id = ff_codec_get_id(codec_movvideo_tags, format);
+            id = ff_codec_get_id(ff_codec_movvideo_tags, format);
             if (id <= 0)
                 id = ff_codec_get_id(ff_codec_bmp_tags, format);
             if (id > 0)

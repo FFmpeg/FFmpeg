@@ -66,7 +66,7 @@ const AVCodecTag ff_mp4_obj_type[] = {
     { CODEC_ID_NONE      ,    0 },
 };
 
-const AVCodecTag codec_movvideo_tags[] = {
+const AVCodecTag ff_codec_movvideo_tags[] = {
 /*  { CODEC_ID_, MKTAG('I', 'V', '5', '0') }, *//* Indeo 5.0 */
 
     { CODEC_ID_RAWVIDEO, MKTAG('r', 'a', 'w', ' ') }, /* Uncompressed RGB */
@@ -223,7 +223,7 @@ const AVCodecTag codec_movvideo_tags[] = {
     { CODEC_ID_NONE, 0 },
 };
 
-const AVCodecTag codec_movaudio_tags[] = {
+const AVCodecTag ff_codec_movaudio_tags[] = {
     { CODEC_ID_AAC,             MKTAG('m', 'p', '4', 'a') },
     { CODEC_ID_AC3,             MKTAG('a', 'c', '-', '3') }, /* ETSI TS 102 366 Annex F */
     { CODEC_ID_AC3,             MKTAG('s', 'a', 'c', '3') }, /* Nero Recode */

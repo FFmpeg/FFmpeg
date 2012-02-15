@@ -412,7 +412,7 @@ static int oma_read_seek(struct AVFormatContext *s, int stream_index, int64_t ti
 {
     OMAContext *oc = s->priv_data;
 
-    pcm_read_seek(s, stream_index, timestamp, flags);
+    ff_pcm_read_seek(s, stream_index, timestamp, flags);
 
     if (oc->encrypted) {
         /* readjust IV for CBC */

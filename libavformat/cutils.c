@@ -47,7 +47,7 @@ void ff_dynarray_add(intptr_t **tab_ptr, int *nb_ptr, intptr_t elem)
 
 /* This is our own gmtime_r. It differs from its POSIX counterpart in a
    couple of places, though. */
-struct tm *brktimegm(time_t secs, struct tm *tm)
+struct tm *ff_brktimegm(time_t secs, struct tm *tm)
 {
     int days, y, ny, m;
     int md[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };

@@ -24,7 +24,7 @@
 
 #include "avformat.h"
 
-int pcm_read_seek(AVFormatContext *s,
-                  int stream_index, int64_t timestamp, int flags);
+int ff_pcm_read_seek(AVFormatContext *s,
+                     int stream_index, int64_t timestamp, int flags);
 
 #endif /* AVFORMAT_PCM_H */

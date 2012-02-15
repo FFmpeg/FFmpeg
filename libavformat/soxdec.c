@@ -148,5 +148,5 @@ AVInputFormat ff_sox_demuxer = {
     .read_probe     = sox_probe,
     .read_header    = sox_read_header,
     .read_packet    = sox_read_packet,
-    .read_seek      = pcm_read_seek,
+    .read_seek      = ff_pcm_read_seek,
 };

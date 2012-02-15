@@ -190,7 +190,7 @@ AVInputFormat ff_au_demuxer = {
     .read_probe     = au_probe,
     .read_header    = au_read_header,
     .read_packet    = au_read_packet,
-    .read_seek      = pcm_read_seek,
+    .read_seek      = ff_pcm_read_seek,
     .codec_tag= (const AVCodecTag* const []){codec_au_tags, 0},
 };
 #endif

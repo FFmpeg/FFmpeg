@@ -480,7 +480,7 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb, AVCodecCo
     } else if (codec->codec_type == AVMEDIA_TYPE_VIDEO) {
         if (qt_id) {
             if (!codec->codec_tag)
-                codec->codec_tag = ff_codec_get_tag(codec_movvideo_tags, codec->codec_id);
+                codec->codec_tag = ff_codec_get_tag(ff_codec_movvideo_tags, codec->codec_id);
             if (codec->extradata_size)
                 avio_write(dyn_cp, codec->extradata, codec->extradata_size);
         } else {
@@ -583,7 +583,7 @@ static int mkv_write_tracks(AVFormatContext *s)
                 put_ebml_uint(pb, MATROSKA_ID_TRACKDEFAULTDURATION, av_q2d(codec->time_base)*1E9);
 
                 if (!native_id &&
-                      ff_codec_get_tag(codec_movvideo_tags, codec->codec_id) &&
+                      ff_codec_get_tag(ff_codec_movvideo_tags, codec->codec_id) &&
                     (!ff_codec_get_tag(ff_codec_bmp_tags,   codec->codec_id)
                      || codec->codec_id == CODEC_ID_SVQ1
                      || codec->codec_id == CODEC_ID_SVQ3
