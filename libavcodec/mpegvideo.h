@@ -813,9 +813,9 @@ int ff_h261_get_picture_format(int width, int height);
 
 
 /* rv10.c */
-void rv10_encode_picture_header(MpegEncContext *s, int picture_number);
-int rv_decode_dc(MpegEncContext *s, int n);
-void rv20_encode_picture_header(MpegEncContext *s, int picture_number);
+void ff_rv10_encode_picture_header(MpegEncContext *s, int picture_number);
+int ff_rv_decode_dc(MpegEncContext *s, int n);
+void ff_rv20_encode_picture_header(MpegEncContext *s, int picture_number);
 
 
 /* msmpeg4.c */

@@ -28,7 +28,7 @@
 #include "mpegvideo.h"
 #include "put_bits.h"
 
-void rv10_encode_picture_header(MpegEncContext *s, int picture_number)
+void ff_rv10_encode_picture_header(MpegEncContext *s, int picture_number)
 {
     int full_frame= 0;
 

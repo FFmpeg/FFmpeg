@@ -186,7 +186,7 @@ static const uint8_t rv_chrom_bits[256] =
 
 static VLC rv_dc_lum, rv_dc_chrom;
 
-int rv_decode_dc(MpegEncContext *s, int n)
+int ff_rv_decode_dc(MpegEncContext *s, int n)
 {
     int code;
 

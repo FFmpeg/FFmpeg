@@ -29,7 +29,7 @@
 #include "h263.h"
 #include "put_bits.h"
 
-void rv20_encode_picture_header(MpegEncContext *s, int picture_number){
+void ff_rv20_encode_picture_header(MpegEncContext *s, int picture_number){
     put_bits(&s->pb, 2, s->pict_type); //I 0 vs. 1 ?
     put_bits(&s->pb, 1, 0);     /* unknown bit */
     put_bits(&s->pb, 5, s->qscale);

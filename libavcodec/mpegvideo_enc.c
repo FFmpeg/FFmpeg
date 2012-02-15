@@ -3194,9 +3194,9 @@ static int encode_picture(MpegEncContext *s, int picture_number)
         else if (CONFIG_MPEG4_ENCODER && s->h263_pred)
             ff_mpeg4_encode_picture_header(s, picture_number);
         else if (CONFIG_RV10_ENCODER && s->codec_id == CODEC_ID_RV10)
-            rv10_encode_picture_header(s, picture_number);
+            ff_rv10_encode_picture_header(s, picture_number);
         else if (CONFIG_RV20_ENCODER && s->codec_id == CODEC_ID_RV20)
-            rv20_encode_picture_header(s, picture_number);
+            ff_rv20_encode_picture_header(s, picture_number);
         else if (CONFIG_FLV_ENCODER && s->codec_id == CODEC_ID_FLV1)
             ff_flv_encode_picture_header(s, picture_number);
         else if (CONFIG_H263_ENCODER)
