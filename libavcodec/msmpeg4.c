@@ -60,7 +60,7 @@ static uint32_t v2_dc_lum_table[512][2];
 static uint32_t v2_dc_chroma_table[512][2];
 
 /* vc1 externs */
-extern const uint8_t wmv3_dc_scale_table[32];
+extern const uint8_t ff_wmv3_dc_scale_table[32];
 
 #include "msmpeg4data.h"
 
@@ -152,8 +152,8 @@ static av_cold void common_init(MpegEncContext * s)
         break;
 #if CONFIG_VC1_DECODER
     case 6:
-        s->y_dc_scale_table= wmv3_dc_scale_table;
-        s->c_dc_scale_table= wmv3_dc_scale_table;
+        s->y_dc_scale_table= ff_wmv3_dc_scale_table;
+        s->c_dc_scale_table= ff_wmv3_dc_scale_table;
         break;
 #endif
 

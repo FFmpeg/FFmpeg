@@ -291,7 +291,7 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb);
  * @param gb GetBit context initialized from Codec context extra_data
  * @return Status
  */
-int vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitContext *gb)
+int ff_vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitContext *gb)
 {
     av_log(avctx, AV_LOG_DEBUG, "Header: %0X\n", show_bits(gb, 32));
     v->profile = get_bits(gb, 2);
@@ -524,7 +524,7 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
     return 0;
 }
 
-int vc1_decode_entry_point(AVCodecContext *avctx, VC1Context *v, GetBitContext *gb)
+int ff_vc1_decode_entry_point(AVCodecContext *avctx, VC1Context *v, GetBitContext *gb)
 {
     int i;
 
@@ -572,7 +572,7 @@ int vc1_decode_entry_point(AVCodecContext *avctx, VC1Context *v, GetBitContext *
     return 0;
 }
 
-int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
+int ff_vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
 {
     int pqindex, lowquant, status;
 
@@ -815,7 +815,7 @@ int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
         lutuv[i] = av_clip_uint8((scale * (i - 128) + 128*64 + 32) >> 6);  \
     }
 
-int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
+int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
 {
     int pqindex, lowquant;
     int status;

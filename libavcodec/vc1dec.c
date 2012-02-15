@@ -1308,10 +1308,10 @@ static av_always_inline int scaleforsame_x(VC1Context *v, int n /* MV */, int di
         refdist = dir ? v->brfd : v->frfd;
     if (refdist > 3)
         refdist = 3;
-    scalesame1    = vc1_field_mvpred_scales[table_index][1][refdist];
-    scalesame2    = vc1_field_mvpred_scales[table_index][2][refdist];
-    scalezone1_x  = vc1_field_mvpred_scales[table_index][3][refdist];
-    zone1offset_x = vc1_field_mvpred_scales[table_index][5][refdist];
+    scalesame1    = ff_vc1_field_mvpred_scales[table_index][1][refdist];
+    scalesame2    = ff_vc1_field_mvpred_scales[table_index][2][refdist];
+    scalezone1_x  = ff_vc1_field_mvpred_scales[table_index][3][refdist];
+    zone1offset_x = ff_vc1_field_mvpred_scales[table_index][5][refdist];
 
     if (FFABS(n) > 255)
         scaledvalue = n;
@@ -1341,10 +1341,10 @@ static av_always_inline int scaleforsame_y(VC1Context *v, int i, int n /* MV */,
         refdist = dir ? v->brfd : v->frfd;
     if (refdist > 3)
         refdist = 3;
-    scalesame1    = vc1_field_mvpred_scales[table_index][1][refdist];
-    scalesame2    = vc1_field_mvpred_scales[table_index][2][refdist];
-    scalezone1_y  = vc1_field_mvpred_scales[table_index][4][refdist];
-    zone1offset_y = vc1_field_mvpred_scales[table_index][6][refdist];
+    scalesame1    = ff_vc1_field_mvpred_scales[table_index][1][refdist];
+    scalesame2    = ff_vc1_field_mvpred_scales[table_index][2][refdist];
+    scalezone1_y  = ff_vc1_field_mvpred_scales[table_index][4][refdist];
+    zone1offset_y = ff_vc1_field_mvpred_scales[table_index][6][refdist];
 
     if (FFABS(n) > 63)
         scaledvalue = n;
@@ -1372,10 +1372,10 @@ static av_always_inline int scaleforopp_x(VC1Context *v, int n /* MV */)
     int scaledvalue;
 
     brfd = FFMIN(v->brfd, 3);
-    scalezone1_x  = vc1_b_field_mvpred_scales[3][brfd];
-    zone1offset_x = vc1_b_field_mvpred_scales[5][brfd];
-    scaleopp1     = vc1_b_field_mvpred_scales[1][brfd];
-    scaleopp2     = vc1_b_field_mvpred_scales[2][brfd];
+    scalezone1_x  = ff_vc1_b_field_mvpred_scales[3][brfd];
+    zone1offset_x = ff_vc1_b_field_mvpred_scales[5][brfd];
+    scaleopp1     = ff_vc1_b_field_mvpred_scales[1][brfd];
+    scaleopp2     = ff_vc1_b_field_mvpred_scales[2][brfd];
 
     if (FFABS(n) > 255)
         scaledvalue = n;
@@ -1399,10 +1399,10 @@ static av_always_inline int scaleforopp_y(VC1Context *v, int n /* MV */, int dir
     int scaledvalue;
 
     brfd = FFMIN(v->brfd, 3);
-    scalezone1_y  = vc1_b_field_mvpred_scales[4][brfd];
-    zone1offset_y = vc1_b_field_mvpred_scales[6][brfd];
-    scaleopp1     = vc1_b_field_mvpred_scales[1][brfd];
-    scaleopp2     = vc1_b_field_mvpred_scales[2][brfd];
+    scalezone1_y  = ff_vc1_b_field_mvpred_scales[4][brfd];
+    zone1offset_y = ff_vc1_b_field_mvpred_scales[6][brfd];
+    scaleopp1     = ff_vc1_b_field_mvpred_scales[1][brfd];
+    scaleopp2     = ff_vc1_b_field_mvpred_scales[2][brfd];
 
     if (FFABS(n) > 63)
         scaledvalue = n;
@@ -1438,7 +1438,7 @@ static av_always_inline int scaleforsame(VC1Context *v, int i, int n /* MV */,
         return n;
     }
     brfd      = FFMIN(v->brfd, 3);
-    scalesame = vc1_b_field_mvpred_scales[0][brfd];
+    scalesame = ff_vc1_b_field_mvpred_scales[0][brfd];
 
     n = (n * scalesame >> 8) << hpel;
     return n;
@@ -1462,7 +1462,7 @@ static av_always_inline int scaleforopp(VC1Context *v, int n /* MV */,
         refdist = FFMIN(v->refdist, 3);
     else
         refdist = dir ? v->brfd : v->frfd;
-    scaleopp = vc1_field_mvpred_scales[dir ^ v->second_field][0][refdist];
+    scaleopp = ff_vc1_field_mvpred_scales[dir ^ v->second_field][0][refdist];
 
     n = (n * scaleopp >> 8) << hpel;
     return n;
@@ -5281,7 +5281,7 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
 
         init_get_bits(&gb, avctx->extradata, avctx->extradata_size*8);
 
-        if (vc1_decode_sequence_header(avctx, v, &gb) < 0)
+        if (ff_vc1_decode_sequence_header(avctx, v, &gb) < 0)
           return -1;
 
         count = avctx->extradata_size*8 - get_bits_count(&gb);
@@ -5316,14 +5316,14 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
             init_get_bits(&gb, buf2, buf2_size * 8);
             switch (AV_RB32(start)) {
             case VC1_CODE_SEQHDR:
-                if (vc1_decode_sequence_header(avctx, v, &gb) < 0) {
+                if (ff_vc1_decode_sequence_header(avctx, v, &gb) < 0) {
                     av_free(buf2);
                     return -1;
                 }
                 seq_initialized = 1;
                 break;
             case VC1_CODE_ENTRYPOINT:
-                if (vc1_decode_entry_point(avctx, v, &gb) < 0) {
+                if (ff_vc1_decode_entry_point(avctx, v, &gb) < 0) {
                     av_free(buf2);
                     return -1;
                 }
@@ -5501,7 +5501,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                 case VC1_CODE_ENTRYPOINT: /* it should be before frame data */
                     buf_size2 = vc1_unescape_buffer(start + 4, size, buf2);
                     init_get_bits(&s->gb, buf2, buf_size2 * 8);
-                    vc1_decode_entry_point(avctx, v, &s->gb);
+                    ff_vc1_decode_entry_point(avctx, v, &s->gb);
                     break;
                 case VC1_CODE_SLICE: {
                     int buf_size3;
@@ -5600,11 +5600,11 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
     // do parse frame header
     v->pic_header_flag = 0;
     if (v->profile < PROFILE_ADVANCED) {
-        if (vc1_parse_frame_header(v, &s->gb) == -1) {
+        if (ff_vc1_parse_frame_header(v, &s->gb) == -1) {
             goto err;
         }
     } else {
-        if (vc1_parse_frame_header_adv(v, &s->gb) == -1) {
+        if (ff_vc1_parse_frame_header_adv(v, &s->gb) == -1) {
             goto err;
         }
     }
@@ -5699,10 +5699,10 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
             if (i) {
                 v->pic_header_flag = 0;
                 if (v->field_mode && i == n_slices1 + 2)
-                    vc1_parse_frame_header_adv(v, &s->gb);
+                    ff_vc1_parse_frame_header_adv(v, &s->gb);
                 else if (get_bits1(&s->gb)) {
                     v->pic_header_flag = 1;
-                    vc1_parse_frame_header_adv(v, &s->gb);
+                    ff_vc1_parse_frame_header_adv(v, &s->gb);
                 }
             }
             s->start_mb_y = (i == 0) ? 0 : FFMAX(0, slices[i-1].mby_start % mb_height);
