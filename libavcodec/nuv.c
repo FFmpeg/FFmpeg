@@ -121,9 +121,9 @@ static int codec_reinit(AVCodecContext *avctx, int width, int height, int qualit
             av_log(avctx, AV_LOG_ERROR, "Can't allocate decompression buffer.\n");
             return 0;
         }
-        rtjpeg_decode_init(&c->rtj, &c->dsp, c->width, c->height, c->lq, c->cq);
+        ff_rtjpeg_decode_init(&c->rtj, &c->dsp, c->width, c->height, c->lq, c->cq);
     } else if (quality != c->quality)
-        rtjpeg_decode_init(&c->rtj, &c->dsp, c->width, c->height, c->lq, c->cq);
+        ff_rtjpeg_decode_init(&c->rtj, &c->dsp, c->width, c->height, c->lq, c->cq);
     return 1;
 }
 
@@ -154,7 +154,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         ret = get_quant(avctx, c, buf, buf_size);
         if (ret < 0)
             return ret;
-        rtjpeg_decode_init(&c->rtj, &c->dsp, c->width, c->height, c->lq, c->cq);
+        ff_rtjpeg_decode_init(&c->rtj, &c->dsp, c->width, c->height, c->lq, c->cq);
         return orig_size;
     }
 
@@ -224,7 +224,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         }
         case NUV_RTJPEG_IN_LZO:
         case NUV_RTJPEG: {
-            rtjpeg_decode_frame_yuv420(&c->rtj, &c->pic, buf, buf_size);
+            ff_rtjpeg_decode_frame_yuv420(&c->rtj, &c->pic, buf, buf_size);
             break;
         }
         case NUV_BLACK: {

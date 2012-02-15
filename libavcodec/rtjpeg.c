@@ -97,15 +97,15 @@ static inline int get_block(GetBitContext *gb, DCTELEM *block, const uint8_t *sc
 
 /**
  * @brief decode one rtjpeg YUV420 frame
- * @param c context, must be initialized via rtjpeg_decode_init
+ * @param c context, must be initialized via ff_rtjpeg_decode_init
  * @param f AVFrame to place decoded frame into. If parts of the frame
  *          are not coded they are left unchanged, so consider initializing it
  * @param buf buffer containing input data
  * @param buf_size length of input data in bytes
  * @return number of bytes consumed from the input buffer
  */
-int rtjpeg_decode_frame_yuv420(RTJpegContext *c, AVFrame *f,
-                               const uint8_t *buf, int buf_size) {
+int ff_rtjpeg_decode_frame_yuv420(RTJpegContext *c, AVFrame *f,
+                                  const uint8_t *buf, int buf_size) {
     GetBitContext gb;
     int w = c->w / 16, h = c->h / 16;
     int x, y;
@@ -154,9 +154,9 @@ int rtjpeg_decode_frame_yuv420(RTJpegContext *c, AVFrame *f,
  * @param lquant luma quantization table to use
  * @param cquant chroma quantization table to use
  */
-void rtjpeg_decode_init(RTJpegContext *c, DSPContext *dsp,
-                        int width, int height,
-                        const uint32_t *lquant, const uint32_t *cquant) {
+void ff_rtjpeg_decode_init(RTJpegContext *c, DSPContext *dsp,
+                           int width, int height,
+                           const uint32_t *lquant, const uint32_t *cquant) {
     int i;
     c->dsp = dsp;
     for (i = 0; i < 64; i++) {
