@@ -984,14 +984,6 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     /* update flags */
     if(is_intra_only(st->codec))
         pkt->flags |= AV_PKT_FLAG_KEY;
-    else if (pc) {
-        pkt->flags = 0;
-        /* keyframe computation */
-        if (pc->key_frame == 1)
-            pkt->flags |= AV_PKT_FLAG_KEY;
-        else if (pc->key_frame == -1 && pc->pict_type == AV_PICTURE_TYPE_I)
-            pkt->flags |= AV_PKT_FLAG_KEY;
-    }
     if (pc)
         pkt->convergence_duration = pc->convergence_duration;
 }
@@ -1053,6 +1045,10 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                     pkt->pts = st->parser->pts;
                     pkt->dts = st->parser->dts;
                     pkt->pos = st->parser->pos;
+                    if (st->parser->key_frame == 1 ||
+                        (st->parser->key_frame == -1 &&
+                         st->parser->pict_type == AV_PICTURE_TYPE_I))
+                        pkt->flags |= AV_PKT_FLAG_KEY;
                     if(pkt->data == st->cur_pkt.data && pkt->size == st->cur_pkt.size){
                         s->cur_st = NULL;
                         pkt->destruct= st->cur_pkt.destruct;
