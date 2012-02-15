@@ -89,7 +89,7 @@ static const float odd_table[] __attribute__ ((aligned(8))) = {
 
 //optimized
 
-void idct_sh4(DCTELEM *block)
+void ff_idct_sh4(DCTELEM *block)
 {
         DEFREG;
 

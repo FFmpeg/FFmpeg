@@ -56,7 +56,7 @@ static void idct_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
         int i;
         uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
-        idct_sh4(block);
+        ff_idct_sh4(block);
         for(i=0;i<8;i++) {
                 dest[0] = cm[block[0]];
                 dest[1] = cm[block[1]];
@@ -74,7 +74,7 @@ static void idct_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
         int i;
         uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
-        idct_sh4(block);
+        ff_idct_sh4(block);
         for(i=0;i<8;i++) {
                 dest[0] = cm[dest[0]+block[0]];
                 dest[1] = cm[dest[1]+block[1]];
@@ -101,7 +101,7 @@ void ff_dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx)
             (idct_algo==FF_IDCT_AUTO || idct_algo==FF_IDCT_SH4)) {
                 c->idct_put = idct_put;
                 c->idct_add = idct_add;
-               c->idct     = idct_sh4;
+                c->idct     = ff_idct_sh4;
                 c->idct_permutation_type= FF_NO_IDCT_PERM;
         }
 }
