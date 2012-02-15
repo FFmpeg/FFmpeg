@@ -2796,8 +2796,8 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
         c->fdct248 = ff_fdct248_islow_10;
     } else {
         if(avctx->dct_algo==FF_DCT_FASTINT) {
-            c->fdct    = fdct_ifast;
-            c->fdct248 = fdct_ifast248;
+            c->fdct    = ff_fdct_ifast;
+            c->fdct248 = ff_fdct_ifast248;
         }
         else if(avctx->dct_algo==FF_DCT_FAAN) {
             c->fdct    = ff_faandct;

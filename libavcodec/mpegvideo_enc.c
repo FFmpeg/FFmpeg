@@ -89,7 +89,7 @@ void ff_convert_matrix(DSPContext *dsp, int (*qmat)[64],
                 qmat[qscale][i] = (int)((UINT64_C(1) << QMAT_SHIFT) /
                                         (qscale * quant_matrix[j]));
             }
-        } else if (dsp->fdct == fdct_ifast
+        } else if (dsp->fdct == ff_fdct_ifast
 #ifndef FAAN_POSTSCALE
                    || dsp->fdct == ff_faandct
 #endif
@@ -132,7 +132,7 @@ void ff_convert_matrix(DSPContext *dsp, int (*qmat)[64],
 
         for (i = intra; i < 64; i++) {
             int64_t max = 8191;
-            if (dsp->fdct == fdct_ifast
+            if (dsp->fdct == ff_fdct_ifast
 #ifndef FAAN_POSTSCALE
                 || dsp->fdct == ff_faandct
 #endif
@@ -3370,7 +3370,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
         int dct_coeff= FFABS(block[ scantable[i] ]);
         int best_score=256*256*256*120;
 
-        if (   s->dsp.fdct == fdct_ifast
+        if (   s->dsp.fdct == ff_fdct_ifast
 #ifndef FAAN_POSTSCALE
             || s->dsp.fdct == ff_faandct
 #endif
