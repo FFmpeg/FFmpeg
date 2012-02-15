@@ -768,7 +768,7 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
         return -1;
 
     if (!s->dct_quantize)
-        s->dct_quantize = dct_quantize_c;
+        s->dct_quantize = ff_dct_quantize_c;
     if (!s->denoise_dct)
         s->denoise_dct  = denoise_dct_c;
     s->fast_dct_quantize = s->dct_quantize;
@@ -1976,7 +1976,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
     }
 
     // non c quantize code returns incorrect block_last_index FIXME
-    if (s->alternate_scan && s->dct_quantize != dct_quantize_c) {
+    if (s->alternate_scan && s->dct_quantize != ff_dct_quantize_c) {
         for (i = 0; i < mb_block_count; i++) {
             int j;
             if (s->block_last_index[i] > 0) {
@@ -3940,7 +3940,7 @@ STOP_TIMER("iterative search")
     return last_non_zero;
 }
 
-int dct_quantize_c(MpegEncContext *s,
+int ff_dct_quantize_c(MpegEncContext *s,
                         DCTELEM *block, int n,
                         int qscale, int *overflow)
 {

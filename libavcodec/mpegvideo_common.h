@@ -39,7 +39,7 @@
 #include "faandct.h"
 #include <limits.h>
 
-int dct_quantize_c(MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow);
+int ff_dct_quantize_c(MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow);
 
 /**
  * Set the given MpegEncContext to common defaults (same for encoding and decoding).
