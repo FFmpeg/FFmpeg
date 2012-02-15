@@ -382,7 +382,7 @@ static int lag_decode_arith_plane(LagarithContext *l, uint8_t *dst,
         if (lag_read_prob_header(&rac, &gb) < 0)
             return -1;
 
-        lag_rac_init(&rac, &gb, length - stride);
+        ff_lag_rac_init(&rac, &gb, length - stride);
 
         for (i = 0; i < height; i++)
             read += lag_decode_line(l, &rac, dst + (i * stride), width,

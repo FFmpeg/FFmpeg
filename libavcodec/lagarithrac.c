@@ -30,7 +30,7 @@
 #include "get_bits.h"
 #include "lagarithrac.h"
 
-void lag_rac_init(lag_rac *l, GetBitContext *gb, int length)
+void ff_lag_rac_init(lag_rac *l, GetBitContext *gb, int length)
 {
     int i, j;
 
