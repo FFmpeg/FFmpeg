@@ -36,14 +36,21 @@ struct TimeFilter {
     int count;
 };
 
-TimeFilter *ff_timefilter_new(double clock_period,
-                              double feedback2_factor,
-                              double feedback3_factor)
+/* 1 - exp(-x) using a 3-order power series */
+static double qexpneg(double x)
+{
+    return 1 - 1 / (1 + x * (1 + x / 2 * (1 + x / 3)));
+}
+
+TimeFilter *ff_timefilter_new(double time_base,
+                              double period,
+                              double bandwidth)
 {
     TimeFilter *self       = av_mallocz(sizeof(TimeFilter));
-    self->clock_period     = clock_period;
-    self->feedback2_factor = feedback2_factor;
-    self->feedback3_factor = feedback3_factor;
+    double o               = 2 * M_PI * bandwidth * period * time_base;
+    self->clock_period     = time_base;
+    self->feedback2_factor = qexpneg(M_SQRT2 * o);
+    self->feedback3_factor = qexpneg(o * o);
     return self;
 }
 

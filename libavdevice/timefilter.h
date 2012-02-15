@@ -45,16 +45,18 @@ typedef struct TimeFilter TimeFilter;
  *
  * Unless you know what you are doing, you should set these as follow:
  *
- * o = 2 * M_PI * bandwidth * period
- * feedback2_factor = sqrt(2 * o)
+ * o = 2 * M_PI * bandwidth * period_in_seconds
+ * feedback2_factor = sqrt(2) * o
  * feedback3_factor = o * o
  *
  * Where bandwidth is up to you to choose. Smaller values will filter out more
  * of the jitter, but also take a longer time for the loop to settle. A good
  * starting point is something between 0.3 and 3 Hz.
  *
- * @param clock_period period of the hardware clock in seconds
- *        (for example 1.0/44100)
+ * @param time_base   period of the hardware clock in seconds
+ *                    (for example 1.0/44100)
+ * @param period      expected update interval, in input units
+ * @param brandwidth  filtering bandwidth, in Hz
  *
  * For more details about these parameters and background concepts please see:
  * http://www.kokkinizita.net/papers/usingdll.pdf

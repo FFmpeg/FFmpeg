@@ -59,7 +59,6 @@ static av_cold int audio_read_header(AVFormatContext *s1)
     AVStream *st;
     int ret;
     enum CodecID codec_id;
-    double o;
 
     st = avformat_new_stream(s1, NULL);
     if (!st) {
@@ -81,9 +80,9 @@ static av_cold int audio_read_header(AVFormatContext *s1)
     st->codec->sample_rate = s->sample_rate;
     st->codec->channels    = s->channels;
     avpriv_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
-    o = 2 * M_PI * s->period_size / s->sample_rate * 1.5; // bandwidth: 1.5Hz
+    /* microseconds instead of seconds, MHz instead of Hz */
     s->timefilter = ff_timefilter_new(1000000.0 / s->sample_rate,
-                                      sqrt(2 * o), o * o);
+                                      s->period_size, 1.5E-6);
     if (!s->timefilter)
         goto fail;
 
