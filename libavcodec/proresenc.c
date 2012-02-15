@@ -265,6 +265,7 @@ static void encode_dcs(PutBitContext *pb, DCTELEM *blocks,
 
     prev_dc = (blocks[0] - 0x4000) / scale;
     encode_vlc_codeword(pb, FIRST_DC_CB, MAKE_CODE(prev_dc));
+    sign     = 0;
     codebook = 3;
     blocks  += 64;
 
@@ -409,6 +410,7 @@ static int estimate_dcs(int *error, DCTELEM *blocks, int blocks_per_slice,
 
     prev_dc  = (blocks[0] - 0x4000) / scale;
     bits     = estimate_vlc(FIRST_DC_CB, MAKE_CODE(prev_dc));
+    sign     = 0;
     codebook = 3;
     blocks  += 64;
     *error  += FFABS(blocks[0] - 0x4000) % scale;
