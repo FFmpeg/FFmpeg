@@ -420,7 +420,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    out_frame= ctx->frame.data[0];
+    out_frame = (int16_t*) ctx->frame.data[0];
 
     if (buf_size == 10) {
         packet_type = FORMAT_G729_8K;
