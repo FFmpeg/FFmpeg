@@ -164,6 +164,13 @@ void ff_mp4_parse_es_descr(AVIOContext *pb, int *es_id);
 #define MOV_TFHD_DEFAULT_FLAGS          0x20
 #define MOV_TFHD_DURATION_IS_EMPTY  0x010000
 
+#define MOV_TRUN_DATA_OFFSET            0x01
+#define MOV_TRUN_FIRST_SAMPLE_FLAGS     0x04
+#define MOV_TRUN_SAMPLE_DURATION       0x100
+#define MOV_TRUN_SAMPLE_SIZE           0x200
+#define MOV_TRUN_SAMPLE_FLAGS          0x400
+#define MOV_TRUN_SAMPLE_CTS            0x800
+
 int ff_mov_read_esds(AVFormatContext *fc, AVIOContext *pb, MOVAtom atom);
 enum CodecID ff_mov_get_lpcm_codec_id(int bps, int flags);
 
