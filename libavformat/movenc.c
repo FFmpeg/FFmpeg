@@ -2179,19 +2179,19 @@ static int mov_write_tfhd_tag(AVIOContext *pb, MOVTrack *track,
                               int64_t moof_offset)
 {
     int64_t pos = avio_tell(pb);
-    /* default-sample-size + default-sample-duration + base-data-offset */
-    uint32_t flags = 0x19;
+    uint32_t flags = MOV_TFHD_DEFAULT_SIZE | MOV_TFHD_DEFAULT_DURATION |
+                     MOV_TFHD_BASE_DATA_OFFSET;
     if (!track->entry) {
-        flags |= 0x010000; /* duration-is-empty */
+        flags |= MOV_TFHD_DURATION_IS_EMPTY;
     } else {
-        flags |= 0x20; /* default-sample-flags-present */
+        flags |= MOV_TFHD_DEFAULT_FLAGS;
     }
 
     /* Don't set a default sample size, the silverlight player refuses
      * to play files with that set. Don't set a default sample duration,
      * WMP freaks out if it is set. */
     if (track->mode == MODE_ISM)
-        flags &= ~0x18;
+        flags &= ~(MOV_TFHD_DEFAULT_SIZE | MOV_TFHD_DEFAULT_DURATION);
 
     avio_wb32(pb, 0); /* size placeholder */
     ffio_wfourcc(pb, "tfhd");
@@ -2199,19 +2199,19 @@ static int mov_write_tfhd_tag(AVIOContext *pb, MOVTrack *track,
     avio_wb24(pb, flags);
 
     avio_wb32(pb, track->track_id); /* track-id */
-    if (flags & 0x01)
+    if (flags & MOV_TFHD_BASE_DATA_OFFSET)
         avio_wb64(pb, moof_offset);
-    if (flags & 0x08) {
+    if (flags & MOV_TFHD_DEFAULT_DURATION) {
         track->default_duration = track->audio_vbr ? track->enc->frame_size : 1;
         avio_wb32(pb, track->default_duration);
     }
-    if (flags & 0x10) {
+    if (flags & MOV_TFHD_DEFAULT_SIZE) {
         track->default_size = track->entry ? track->cluster[0].size : 1;
         avio_wb32(pb, track->default_size);
     } else
         track->default_size = -1;
 
-    if (flags & 0x20) {
+    if (flags & MOV_TFHD_DEFAULT_FLAGS) {
         track->default_sample_flags =
             track->enc->codec_type == AVMEDIA_TYPE_VIDEO ?
             0x01010000 : 0x02000000;

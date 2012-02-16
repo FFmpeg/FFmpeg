@@ -2167,14 +2167,16 @@ static int mov_read_tfhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return AVERROR_INVALIDDATA;
     }
 
-    if (flags & 0x01) frag->base_data_offset = avio_rb64(pb);
-    else              frag->base_data_offset = frag->moof_offset;
-    if (flags & 0x02) frag->stsd_id          = avio_rb32(pb);
-    else              frag->stsd_id          = trex->stsd_id;
+    frag->base_data_offset = flags & MOV_TFHD_BASE_DATA_OFFSET ?
+                             avio_rb64(pb) : frag->moof_offset;
+    frag->stsd_id  = flags & MOV_TFHD_STSD_ID ? avio_rb32(pb) : trex->stsd_id;
 
-    frag->duration = flags & 0x08 ? avio_rb32(pb) : trex->duration;
-    frag->size     = flags & 0x10 ? avio_rb32(pb) : trex->size;
-    frag->flags    = flags & 0x20 ? avio_rb32(pb) : trex->flags;
+    frag->duration = flags & MOV_TFHD_DEFAULT_DURATION ?
+                     avio_rb32(pb) : trex->duration;
+    frag->size     = flags & MOV_TFHD_DEFAULT_SIZE ?
+                     avio_rb32(pb) : trex->size;
+    frag->flags    = flags & MOV_TFHD_DEFAULT_FLAGS ?
+                     avio_rb32(pb) : trex->flags;
     av_dlog(c->fc, "frag flags 0x%x\n", frag->flags);
     return 0;
 }
