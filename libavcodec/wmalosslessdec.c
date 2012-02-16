@@ -240,7 +240,7 @@ typedef struct WmallDecodeCtx {
     int8_t mclms_scaling;
     int16_t mclms_coeffs[128];
     int16_t mclms_coeffs_cur[4];
-    int16_t mclms_prevvalues[64];   // FIXME: should be 32-bit / 16-bit depending on bit-depth
+    int mclms_prevvalues[64];   // FIXME: should be 32-bit / 16-bit depending on bit-depth
     int16_t mclms_updates[64];
     int mclms_recent;
 
@@ -248,12 +248,12 @@ typedef struct WmallDecodeCtx {
     int quant_stepsize;
 
     struct {
-        int order;
-        int scaling;
-        int coefsend;
-        int bitsend;
-        int16_t coefs[256];
-    int16_t lms_prevvalues[512];    // FIXME: see above
+    int order;
+    int scaling;
+    int coefsend;
+    int bitsend;
+    int16_t coefs[256];
+    int lms_prevvalues[512];    // FIXME: see above
     int16_t lms_updates[512];   // and here too
     int recent;
     } cdlms[2][9];              /* XXX: Here, 2 is the max. no. of channels allowed,
@@ -523,10 +523,9 @@ static int decode_tilehdr(WmallDecodeCtx *s)
         for (c = 0; c < s->num_channels; c++) {
             if (num_samples[c] == min_channel_len) {
                 if (fixed_channel_layout || channels_for_cur_subframe == 1 ||
-                    (min_channel_len == s->samples_per_frame - s->min_samples_per_subframe)) {
+                   (min_channel_len == s->samples_per_frame - s->min_samples_per_subframe)) {
                     contains_subframe[c] = 1;
-                }
-                else {
+                } else {
                     contains_subframe[c] = get_bits1(&s->gb);
                 }
             } else
@@ -715,10 +714,15 @@ static int decode_channel_residues(WmallDecodeCtx *s, int ch, int tile_size)
         if(quo >= 32)
             quo += get_bits_long(&s->gb, get_bits(&s->gb, 5) + 1);
 
-               ave_mean = (s->ave_sum[ch] + (1 << s->movave_scaling)) >> (s->movave_scaling + 1);
+       	ave_mean = (s->ave_sum[ch] + (1 << s->movave_scaling)) >> (s->movave_scaling + 1);
+    if (ave_mean <= 1)
+        residue = quo;
+    else
+    {
         rem_bits = av_ceil_log2(ave_mean);
         rem = rem_bits ? get_bits(&s->gb, rem_bits) : 0;
         residue = (quo << rem_bits) + rem;
+    }
 
         s->ave_sum[ch] = residue + s->ave_sum[ch] - (s->ave_sum[ch] >> s->movave_scaling);
 
@@ -770,7 +774,7 @@ static void clear_codec_buffers(WmallDecodeCtx *s)
     for (ich = 0; ich < s->num_channels; ich++) {
         for (ilms = 0; ilms < s->cdlms_ttl[ich]; ilms++) {
             memset(s->cdlms[ich][ilms].coefs         , 0, 256 * sizeof(int16_t));
-            memset(s->cdlms[ich][ilms].lms_prevvalues, 0, 512 * sizeof(int16_t));
+            memset(s->cdlms[ich][ilms].lms_prevvalues, 0, 512 * sizeof(int));
             memset(s->cdlms[ich][ilms].lms_updates   , 0, 512 * sizeof(int16_t));
         }
         s->ave_sum[ich] = 0;
@@ -804,7 +808,7 @@ static void mclms_update(WmallDecodeCtx *s, int icoef, int *pred)
     int order = s->mclms_order;
     int num_channels = s->num_channels;
     int range = 1 << (s->bits_per_sample - 1);
-    int bps = s->bits_per_sample > 16 ? 4 : 2; // bytes per sample
+    //int bps = s->bits_per_sample > 16 ? 4 : 2; // bytes per sample
 
     for (ich = 0; ich < num_channels; ich++) {
         pred_error = s->channel_residues[ich][icoef] - pred[ich];
@@ -849,10 +853,10 @@ static void mclms_update(WmallDecodeCtx *s, int icoef, int *pred)
     if (s->mclms_recent == 0) {
         memcpy(&s->mclms_prevvalues[order * num_channels],
                s->mclms_prevvalues,
-               bps * order * num_channels);
+               4 * order * num_channels);
         memcpy(&s->mclms_updates[order * num_channels],
                s->mclms_updates,
-               bps * order * num_channels);
+               2 * order * num_channels);
         s->mclms_recent = num_channels * order;
     }
 }
@@ -911,7 +915,7 @@ static void lms_update(WmallDecodeCtx *s, int ich, int ilms, int input, int resi
     int icoef;
     int recent = s->cdlms[ich][ilms].recent;
     int range = 1 << s->bits_per_sample - 1;
-    int bps = s->bits_per_sample > 16 ? 4 : 2; // bytes per sample
+    //int bps = s->bits_per_sample > 16 ? 4 : 2; // bytes per sample
 
     if (residue < 0) {
         for (icoef = 0; icoef < s->cdlms[ich][ilms].order; icoef++)
@@ -931,10 +935,10 @@ static void lms_update(WmallDecodeCtx *s, int ich, int ilms, int input, int resi
                 follow kshishkov's suggestion of using a union. */
         memcpy(&s->cdlms[ich][ilms].lms_prevvalues[s->cdlms[ich][ilms].order],
                s->cdlms[ich][ilms].lms_prevvalues,
-               bps * s->cdlms[ich][ilms].order);
+               4 * s->cdlms[ich][ilms].order);
         memcpy(&s->cdlms[ich][ilms].lms_updates[s->cdlms[ich][ilms].order],
                s->cdlms[ich][ilms].lms_updates,
-               bps * s->cdlms[ich][ilms].order);
+               2 * s->cdlms[ich][ilms].order);
         recent = s->cdlms[ich][ilms].order - 1;
     }
 
@@ -1419,6 +1423,8 @@ static int decode_packet(AVCodecContext *avctx,
     int buf_size       = avpkt->size;
     int num_bits_prev_frame;
     int packet_sequence_number;
+    int seekable_frame_in_packet;
+    int spliced_packet;
 
     if (s->bits_per_sample == 16) {
         s->samples_16     = (int16_t *) data;
