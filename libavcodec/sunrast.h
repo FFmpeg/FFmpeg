@@ -24,6 +24,10 @@
 
 #define RAS_MAGIC 0x59a66a95
 
+#define RMT_NONE      0
+#define RMT_EQUAL_RGB 1
+#define RMT_RAW       2 ///< the data layout of this map type is unknown
+
 /* The Old and Standard format types indicate that the image data is
  * uncompressed. There is no difference between the two formats. */
 #define RT_OLD          0
@@ -32,6 +36,7 @@
 /* The Byte-Encoded format type indicates that the image data is compressed
  * using a run-length encoding scheme. */
 #define RT_BYTE_ENCODED 2
+#define RLE_TRIGGER 0x80
 
 /* The RGB format type indicates that the image is uncompressed with reverse
  * component order from Old and Standard (RGB vs BGR). */

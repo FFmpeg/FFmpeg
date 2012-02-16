@@ -491,7 +491,8 @@ AVOutputFormat ff_image2_muxer = {
     .name           = "image2",
     .long_name      = NULL_IF_CONFIG_SMALL("image2 sequence"),
     .extensions     = "bmp,dpx,jpeg,jpg,ljpg,pam,pbm,pcx,pgm,pgmyuv,png,"
-                      "ppm,sgi,tga,tif,tiff,jp2,xwd",
+                      "ppm,sgi,tga,tif,tiff,jp2,xwd,sun,ras,rs,im1,im8,im24,"
+                      "sunras",
     .priv_data_size = sizeof(VideoData),
     .video_codec    = CODEC_ID_MJPEG,
     .write_header   = write_header,

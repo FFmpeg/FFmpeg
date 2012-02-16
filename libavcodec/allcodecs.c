@@ -189,7 +189,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (SMC, smc);
     REGISTER_ENCDEC  (SNOW, snow);
     REGISTER_DECODER (SP5X, sp5x);
-    REGISTER_DECODER (SUNRAST, sunrast);
+    REGISTER_ENCDEC  (SUNRAST, sunrast);
     REGISTER_ENCDEC  (SVQ1, svq1);
     REGISTER_DECODER (SVQ3, svq3);
     REGISTER_ENCDEC  (TARGA, targa);

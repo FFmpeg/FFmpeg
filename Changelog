@@ -8,6 +8,7 @@ version <next>:
 - ISMV (Smooth Streaming) muxer
 - CDXL demuxer and decoder
 - Apple ProRes encoder
+- Sun Rasterfile Encoder
 
 
 version 0.8:
