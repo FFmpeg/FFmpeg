@@ -53,6 +53,7 @@ typedef struct SwrContext {
     int int_bps;                                    ///< internal bytes per sample
     int resample_first;                             ///< 1 if resampling must come first, 0 if rematrixing
     int rematrix;                                   ///< flag to indicate if rematrixing is needed (basically if input and output layouts mismatch)
+    int rematrix_custom;                            ///< flag to indicate that a custom matrix has been defined
 
     AudioData in;                                   ///< input audio data
     AudioData postin;                               ///< post-input audio data: used for rematrix/resample

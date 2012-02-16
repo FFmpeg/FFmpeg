@@ -209,7 +209,8 @@ int swr_init(struct SwrContext *s){
     if(!s->out_ch_layout)
         s->out_ch_layout= av_get_default_channel_layout(s->out.ch_count);
 
-    s->rematrix= s->out_ch_layout  !=s->in_ch_layout || s->rematrix_volume!=1.0;
+    s->rematrix= s->out_ch_layout  !=s->in_ch_layout || s->rematrix_volume!=1.0 ||
+                 s->rematrix_custom;
 
 #define RSC 1 //FIXME finetune
     if(!s-> in.ch_count)
