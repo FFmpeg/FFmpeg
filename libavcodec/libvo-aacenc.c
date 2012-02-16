@@ -39,6 +39,8 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     int index;
 
     avctx->coded_frame = avcodec_alloc_frame();
+    if (!avctx->coded_frame)
+        return AVERROR(ENOMEM);
     avctx->frame_size = 1024;
 
     voGetAACEncAPI(&s->codec_api);

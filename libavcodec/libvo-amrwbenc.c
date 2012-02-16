@@ -87,6 +87,8 @@ static av_cold int amr_wb_encode_init(AVCodecContext *avctx)
 
     avctx->frame_size  = 320;
     avctx->coded_frame = avcodec_alloc_frame();
+    if (!avctx->coded_frame)
+        return AVERROR(ENOMEM);
 
     s->state     = E_IF_init();
 

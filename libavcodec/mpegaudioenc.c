@@ -181,6 +181,8 @@ static av_cold int MPA_encode_init(AVCodecContext *avctx)
     }
 
     avctx->coded_frame= avcodec_alloc_frame();
+    if (!avctx->coded_frame)
+        return AVERROR(ENOMEM);
 
     return 0;
 }

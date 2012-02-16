@@ -196,10 +196,13 @@ static av_cold int amr_nb_encode_init(AVCodecContext *avctx)
 
     avctx->frame_size  = 160;
     avctx->coded_frame = avcodec_alloc_frame();
+    if (!avctx->coded_frame)
+        return AVERROR(ENOMEM);
 
     s->enc_state = Encoder_Interface_init(s->enc_dtx);
     if (!s->enc_state) {
         av_log(avctx, AV_LOG_ERROR, "Encoder_Interface_init error\n");
+        av_freep(&avctx->coded_frame);
         return -1;
     }
 
