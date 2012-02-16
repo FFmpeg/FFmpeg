@@ -156,7 +156,6 @@ static av_cold int oggvorbis_encode_init(AVCodecContext *avccontext)
     avccontext->frame_size = OGGVORBIS_FRAME_SIZE;
 
     avccontext->coded_frame = avcodec_alloc_frame();
-    avccontext->coded_frame->key_frame = 1;
 
     return 0;
 }

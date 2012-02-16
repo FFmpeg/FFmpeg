@@ -90,7 +90,6 @@ static av_cold int Faac_encode_init(AVCodecContext *avctx)
     avctx->frame_size = samples_input / avctx->channels;
 
     avctx->coded_frame= avcodec_alloc_frame();
-    avctx->coded_frame->key_frame= 1;
 
     /* Set decoder specific info */
     avctx->extradata_size = 0;
