@@ -446,7 +446,7 @@ av_cold int ff_snow_common_init(AVCodecContext *avctx){
             ff_scale_mv_ref[i][j] = 256*(i+1)/(j+1);
 
     s->avctx->get_buffer(s->avctx, &s->mconly_picture);
-    s->scratchbuf = av_malloc(s->mconly_picture.linesize[0]*7*MB_SIZE);
+    s->scratchbuf = av_mallocz(s->mconly_picture.linesize[0]*7*MB_SIZE);
 
     return 0;
 }
