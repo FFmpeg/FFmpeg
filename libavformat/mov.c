@@ -2282,7 +2282,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                                                   avio_rb32(pb) : 0;
         sc->ctts_count++;
         if ((keyframe = st->codec->codec_type == AVMEDIA_TYPE_AUDIO ||
-             (flags & MOV_TRUN_FIRST_SAMPLE_FLAGS && !i && !(sample_flags & 0xffff0000)) || sample_flags & 0x2000000))
+             (flags & MOV_TRUN_FIRST_SAMPLE_FLAGS && !i && !(sample_flags & ~MOV_FRAG_SAMPLE_FLAG_DEGRADATION_PRIORITY_MASK)) || sample_flags & MOV_FRAG_SAMPLE_FLAG_DEPENDS_NO))
             distance = 0;
         av_add_index_entry(st, offset, dts, sample_size, distance,
                            keyframe ? AVINDEX_KEYFRAME : 0);

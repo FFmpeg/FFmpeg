@@ -2214,7 +2214,8 @@ static int mov_write_tfhd_tag(AVIOContext *pb, MOVTrack *track,
     if (flags & MOV_TFHD_DEFAULT_FLAGS) {
         track->default_sample_flags =
             track->enc->codec_type == AVMEDIA_TYPE_VIDEO ?
-            0x01010000 : 0x02000000;
+            (MOV_FRAG_SAMPLE_FLAG_DEPENDS_YES | MOV_FRAG_SAMPLE_FLAG_IS_NON_SYNC) :
+            MOV_FRAG_SAMPLE_FLAG_DEPENDS_NO;
         avio_wb32(pb, track->default_sample_flags);
     }
 
@@ -2223,7 +2224,8 @@ static int mov_write_tfhd_tag(AVIOContext *pb, MOVTrack *track,
 
 static uint32_t get_sample_flags(MOVTrack *track, MOVIentry *entry)
 {
-    return entry->flags & MOV_SYNC_SAMPLE ? 0x02000000 : 0x01010000;
+    return entry->flags & MOV_SYNC_SAMPLE ? MOV_FRAG_SAMPLE_FLAG_DEPENDS_NO :
+           (MOV_FRAG_SAMPLE_FLAG_DEPENDS_YES | MOV_FRAG_SAMPLE_FLAG_IS_NON_SYNC);
 }
 
 static int mov_write_trun_tag(AVIOContext *pb, MOVTrack *track)

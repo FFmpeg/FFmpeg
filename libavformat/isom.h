@@ -171,6 +171,16 @@ void ff_mp4_parse_es_descr(AVIOContext *pb, int *es_id);
 #define MOV_TRUN_SAMPLE_FLAGS          0x400
 #define MOV_TRUN_SAMPLE_CTS            0x800
 
+#define MOV_FRAG_SAMPLE_FLAG_DEGRADATION_PRIORITY_MASK 0x0000ffff
+#define MOV_FRAG_SAMPLE_FLAG_IS_NON_SYNC               0x00010000
+#define MOV_FRAG_SAMPLE_FLAG_PADDING_MASK              0x000e0000
+#define MOV_FRAG_SAMPLE_FLAG_REDUNDANCY_MASK           0x00300000
+#define MOV_FRAG_SAMPLE_FLAG_DEPENDED_MASK             0x00c00000
+#define MOV_FRAG_SAMPLE_FLAG_DEPENDS_MASK              0x03000000
+
+#define MOV_FRAG_SAMPLE_FLAG_DEPENDS_NO                0x02000000
+#define MOV_FRAG_SAMPLE_FLAG_DEPENDS_YES               0x01000000
+
 int ff_mov_read_esds(AVFormatContext *fc, AVIOContext *pb, MOVAtom atom);
 enum CodecID ff_mov_get_lpcm_codec_id(int bps, int flags);
 
