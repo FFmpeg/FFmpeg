@@ -187,6 +187,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
 {
     int i, j, ret;
     char filt_args[128];
+    AVFilterFormats *formats, *chlayouts, *packing;
 
     /* ask all the sub-filters for their supported media formats */
     for (i = 0; i < graph->filter_count; i++) {
@@ -221,9 +222,13 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                     !link->in_packing   || !link->out_packing)
                     return AVERROR(EINVAL);
 
-                if (!avfilter_merge_formats(link->in_formats,   link->out_formats)   ||
-                    !avfilter_merge_formats(link->in_chlayouts, link->out_chlayouts) ||
-                    !avfilter_merge_formats(link->in_packing,   link->out_packing))
+                /* Merge all three list before checking: that way, in all
+                 * three categories, aconvert will use a common format
+                 * whenever possible. */
+                formats   = avfilter_merge_formats(link->in_formats,   link->out_formats);
+                chlayouts = avfilter_merge_formats(link->in_chlayouts, link->out_chlayouts);
+                packing   = avfilter_merge_formats(link->in_packing,   link->out_packing);
+                if (!formats || !chlayouts || !packing)
                     if (ret = insert_conv_filter(graph, link, "aconvert", NULL))
                        return ret;
             }
