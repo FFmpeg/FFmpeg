@@ -384,9 +384,6 @@ The channel remapping will be effective if, and only if:
 @itemize
 @item gain coefficients are zeroes or ones,
 @item only one input per channel output,
-@item the number of output channels is supported by libswresample (16 at the
-      moment)
-@c if SWR_CH_MAX changes, fix the line above.
 @end itemize
 
 If all these conditions are satisfied, the filter will notify the user ("Pure

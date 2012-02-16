@@ -234,17 +234,28 @@ static int config_props(AVFilterLink *link)
             }
         }
     }
-    // gains are pure, init the channel mapping
-    if (pan->pure_gains) {
 
+        /* TODO reindent */
         // sanity check; can't be done in query_formats since the inlink
         // channel layout is unknown at that time
-        if (pan->nb_input_channels > SWR_CH_MAX) {
+        if (pan->nb_input_channels > SWR_CH_MAX ||
+            pan->nb_output_channels > SWR_CH_MAX) {
             av_log(ctx, AV_LOG_ERROR,
                    "libswresample support a maximum of %d channels. "
                    "Feel free to ask for a higher limit.\n", SWR_CH_MAX);
             return AVERROR_PATCHWELCOME;
         }
+
+        // init libswresample context
+        pan->swr = swr_alloc_set_opts(pan->swr,
+                                      pan->out_channel_layout, link->format, link->sample_rate,
+                                      link->channel_layout,    link->format, link->sample_rate,
+                                      0, ctx);
+        if (!pan->swr)
+            return AVERROR(ENOMEM);
+
+    // gains are pure, init the channel mapping
+    if (pan->pure_gains) {
 
         // get channel map from the pure gains
         for (i = 0; i < pan->nb_output_channels; i++) {
@@ -258,19 +269,9 @@ static int config_props(AVFilterLink *link)
             pan->channel_map[i] = ch_id;
         }
 
-        // init libswresample context
-        pan->swr = swr_alloc_set_opts(pan->swr,
-                                      pan->out_channel_layout, link->format, link->sample_rate,
-                                      link->channel_layout,    link->format, link->sample_rate,
-                                      0, ctx);
-        if (!pan->swr)
-            return AVERROR(ENOMEM);
         av_opt_set_int(pan->swr, "icl", pan->out_channel_layout, 0);
         av_opt_set_int(pan->swr, "uch", pan->nb_output_channels, 0);
         swr_set_channel_mapping(pan->swr, pan->channel_map);
-        r = swr_init(pan->swr);
-        if (r < 0)
-            return r;
     } else {
         // renormalize
         for (i = 0; i < pan->nb_output_channels; i++) {
@@ -289,7 +290,16 @@ static int config_props(AVFilterLink *link)
             for (j = 0; j < pan->nb_input_channels; j++)
                 pan->gain.d[i][j] /= t;
         }
+        av_opt_set_int(pan->swr, "icl", link->channel_layout, 0);
+        av_opt_set_int(pan->swr, "ocl", pan->out_channel_layout, 0);
+        swr_set_matrix(pan->swr, pan->gain.d[0],
+                       pan->gain.d[1] - pan->gain.d[0]);
     }
+
+    r = swr_init(pan->swr);
+    if (r < 0)
+        return r;
+
     // summary
     for (i = 0; i < pan->nb_output_channels; i++) {
         cur = buf;
@@ -331,30 +341,6 @@ static void filter_samples_channel_mapping(PanContext *pan,
     swr_convert(pan->swr, outsamples->data, n, (void *)insamples->data, n);
 }
 
-static void filter_samples_panning(PanContext *pan,
-                                   AVFilterBufferRef *outsamples,
-                                   AVFilterBufferRef *insamples,
-                                   int n)
-{
-    int i, o;
-
-    /* input */
-    const int16_t *in     = (int16_t *)insamples->data[0];
-    const int16_t *in_end = in + n * pan->nb_input_channels;
-
-    /* output */
-    int16_t *out = (int16_t *)outsamples->data[0];
-
-    for (; in < in_end; in += pan->nb_input_channels) {
-        for (o = 0; o < pan->nb_output_channels; o++) {
-            int v = 0;
-            for (i = 0; i < pan->nb_input_channels; i++)
-                v += pan->gain.i[o][i] * in[i];
-            *(out++) = v >> 8;
-        }
-    }
-}
-
 static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 {
     int n = insamples->audio->nb_samples;
@@ -379,21 +365,12 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterLink *outlink = ctx->outputs[0];
     AVFilterFormats *formats;
 
-    if (pan->nb_output_channels <= SWR_CH_MAX)
+        /* TODO reindent */
         pan->pure_gains = are_gains_pure(pan);
-    if (pan->pure_gains) {
         /* libswr supports any sample and packing formats */
         avfilter_set_common_sample_formats(ctx, avfilter_make_all_formats(AVMEDIA_TYPE_AUDIO));
         avfilter_set_common_packing_formats(ctx, avfilter_make_all_packing_formats());
         pan->filter_samples = filter_samples_channel_mapping;
-    } else {
-        const enum AVSampleFormat sample_fmts[] = {AV_SAMPLE_FMT_S16, -1};
-        const int                packing_fmts[] = {AVFILTER_PACKED,   -1};
-
-        avfilter_set_common_sample_formats (ctx, avfilter_make_format_list(sample_fmts));
-        avfilter_set_common_packing_formats(ctx, avfilter_make_format_list(packing_fmts));
-        pan->filter_samples = filter_samples_panning;
-    }
 
     // inlink supports any channel layout
     formats = avfilter_make_all_channel_layouts();
