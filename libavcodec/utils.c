@@ -1902,6 +1902,27 @@ int av_get_bits_per_sample(enum CodecID codec_id){
     }
 }
 
+enum CodecID av_get_pcm_codec(enum AVSampleFormat fmt, int be)
+{
+    static const enum CodecID map[AV_SAMPLE_FMT_NB][2] = {
+        [AV_SAMPLE_FMT_U8  ] = { CODEC_ID_PCM_U8,    CODEC_ID_PCM_U8    },
+        [AV_SAMPLE_FMT_S16 ] = { CODEC_ID_PCM_S16LE, CODEC_ID_PCM_S16BE },
+        [AV_SAMPLE_FMT_S32 ] = { CODEC_ID_PCM_S32LE, CODEC_ID_PCM_S32BE },
+        [AV_SAMPLE_FMT_FLT ] = { CODEC_ID_PCM_F32LE, CODEC_ID_PCM_F32BE },
+        [AV_SAMPLE_FMT_DBL ] = { CODEC_ID_PCM_F64LE, CODEC_ID_PCM_F64BE },
+        [AV_SAMPLE_FMT_U8P ] = { CODEC_ID_PCM_U8,    CODEC_ID_PCM_U8    },
+        [AV_SAMPLE_FMT_S16P] = { CODEC_ID_PCM_S16LE, CODEC_ID_PCM_S16BE },
+        [AV_SAMPLE_FMT_S32P] = { CODEC_ID_PCM_S32LE, CODEC_ID_PCM_S32BE },
+        [AV_SAMPLE_FMT_FLTP] = { CODEC_ID_PCM_F32LE, CODEC_ID_PCM_F32BE },
+        [AV_SAMPLE_FMT_DBLP] = { CODEC_ID_PCM_F64LE, CODEC_ID_PCM_F64BE },
+    };
+    if (fmt < 0 || fmt >= AV_SAMPLE_FMT_NB)
+        return CODEC_ID_NONE;
+    if (be < 0 || be > 1)
+        be = AV_NE(1, 0);
+    return map[fmt][be];
+}
+
 #if !HAVE_THREADS
 int ff_thread_init(AVCodecContext *s){
     return -1;
