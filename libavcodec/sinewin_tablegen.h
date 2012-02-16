@@ -38,6 +38,7 @@ SINETABLE( 512);
 SINETABLE(1024);
 SINETABLE(2048);
 SINETABLE(4096);
+SINETABLE(8192);
 #else
 #include "libavcodec/sinewin_tables.h"
 #endif
@@ -45,7 +46,7 @@ SINETABLE(4096);
 SINETABLE_CONST float * const ff_sine_windows[] = {
     NULL, NULL, NULL, NULL, NULL, // unused
     ff_sine_32 , ff_sine_64 ,
-    ff_sine_128, ff_sine_256, ff_sine_512, ff_sine_1024, ff_sine_2048, ff_sine_4096
+    ff_sine_128, ff_sine_256, ff_sine_512, ff_sine_1024, ff_sine_2048, ff_sine_4096, ff_sine_8192
 };
 
 // Generate a sine window.

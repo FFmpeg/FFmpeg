@@ -38,7 +38,7 @@ int main(void)
 
     write_fileheader();
 
-    for (i = 5; i <= 12; i++) {
+    for (i = 5; i <= 13; i++) {
         ff_init_ff_sine_windows(i);
         printf("SINETABLE(%4i) = {\n", 1 << i);
         write_float_array(ff_sine_windows[i], 1 << i);
