@@ -1922,6 +1922,9 @@ static int rtp_read_header(AVFormatContext *s)
             continue;
         }
 
+        if (RTP_PT_IS_RTCP(recvbuf[1]))
+            continue;
+
         payload_type = recvbuf[1] & 0x7f;
         break;
     }

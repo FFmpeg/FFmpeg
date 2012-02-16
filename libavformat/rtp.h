@@ -91,4 +91,6 @@ enum RTCPType {
     RTCP_APP   // 204
 };
 
+#define RTP_PT_IS_RTCP(x) ((x) >= RTCP_SR && (x) <= RTCP_APP)
+
 #endif /* AVFORMAT_RTP_H */

@@ -2230,10 +2230,11 @@ static int mov_write_tfhd_tag(AVIOContext *pb, MOVTrack *track,
         flags |= 0x20; /* default-sample-flags-present */
     }
 
-    /* Don't set a default sample size when creating data for silverlight,
-     * the player refuses to play files with that set. */
+    /* Don't set a default sample size, the silverlight player refuses
+     * to play files with that set. Don't set a default sample duration,
+     * WMP freaks out if it is set. */
     if (track->mode == MODE_ISM)
-        flags &= ~0x10;
+        flags &= ~0x18;
 
     avio_wb32(pb, 0); /* size placeholder */
     ffio_wfourcc(pb, "tfhd");

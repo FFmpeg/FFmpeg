@@ -141,7 +141,8 @@ static int allocate_buffers(ShortenContext *s)
             return AVERROR(ENOMEM);
         s->offset[chan] = tmp_ptr;
 
-        tmp_ptr = av_realloc(s->decoded_base[chan], sizeof(int32_t)*(s->blocksize + s->nwrap));
+        tmp_ptr = av_realloc(s->decoded_base[chan], (s->blocksize + s->nwrap) *
+                             sizeof(s->decoded_base[0][0]));
         if (!tmp_ptr)
             return AVERROR(ENOMEM);
         s->decoded_base[chan] = tmp_ptr;
