@@ -378,7 +378,7 @@ static av_cold int decoder_init(AVCodecContext * avctx)
     for(i=0; i<4; i++)
         ctx->quant_energy[i] = -14336; // -14 in (5.10)
 
-    dsputil_init(&ctx->dsp, avctx);
+    ff_dsputil_init(&ctx->dsp, avctx);
     ctx->dsp.scalarproduct_int16 = scalarproduct_int16_c;
 
     avcodec_get_frame_defaults(&ctx->frame);
