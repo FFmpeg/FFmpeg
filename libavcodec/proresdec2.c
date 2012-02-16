@@ -358,7 +358,7 @@ static av_always_inline void decode_ac_coeffs(AVCodecContext *avctx, GetBitConte
 }
 
 static void decode_slice_luma(AVCodecContext *avctx, SliceContext *slice,
-                              uint8_t *dst, int dst_stride,
+                              uint16_t *dst, int dst_stride,
                               const uint8_t *buf, unsigned buf_size,
                               const int16_t *qmat)
 {
@@ -379,16 +379,16 @@ static void decode_slice_luma(AVCodecContext *avctx, SliceContext *slice,
     block = blocks;
     for (i = 0; i < slice->mb_count; i++) {
         ctx->prodsp.idct_put(dst, dst_stride, block+(0<<6), qmat);
-        ctx->prodsp.idct_put(dst+16, dst_stride, block+(1<<6), qmat);
-        ctx->prodsp.idct_put(dst+8*dst_stride, dst_stride, block+(2<<6), qmat);
-        ctx->prodsp.idct_put(dst+8*dst_stride+16, dst_stride, block+(3<<6), qmat);
+        ctx->prodsp.idct_put(dst             +8, dst_stride, block+(1<<6), qmat);
+        ctx->prodsp.idct_put(dst+4*dst_stride  , dst_stride, block+(2<<6), qmat);
+        ctx->prodsp.idct_put(dst+4*dst_stride+8, dst_stride, block+(3<<6), qmat);
         block += 4*64;
-        dst += 32;
+        dst += 16;
     }
 }
 
 static void decode_slice_chroma(AVCodecContext *avctx, SliceContext *slice,
-                                uint8_t *dst, int dst_stride,
+                                uint16_t *dst, int dst_stride,
                                 const uint8_t *buf, unsigned buf_size,
                                 const int16_t *qmat, int log2_blocks_per_mb)
 {
@@ -410,9 +410,9 @@ static void decode_slice_chroma(AVCodecContext *avctx, SliceContext *slice,
     for (i = 0; i < slice->mb_count; i++) {
         for (j = 0; j < log2_blocks_per_mb; j++) {
             ctx->prodsp.idct_put(dst,              dst_stride, block+(0<<6), qmat);
-            ctx->prodsp.idct_put(dst+8*dst_stride, dst_stride, block+(1<<6), qmat);
+            ctx->prodsp.idct_put(dst+4*dst_stride, dst_stride, block+(1<<6), qmat);
             block += 2*64;
-            dst += 16;
+            dst += 8;
         }
     }
 }
@@ -482,14 +482,14 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
         dest_v += pic->linesize[2];
     }
 
-    decode_slice_luma(avctx, slice, dest_y, luma_stride,
+    decode_slice_luma(avctx, slice, (uint16_t*)dest_y, luma_stride,
                       buf, y_data_size, qmat_luma_scaled);
 
     if (!(avctx->flags & CODEC_FLAG_GRAY)) {
-        decode_slice_chroma(avctx, slice, dest_u, chroma_stride,
+        decode_slice_chroma(avctx, slice, (uint16_t*)dest_u, chroma_stride,
                             buf + y_data_size, u_data_size,
                             qmat_chroma_scaled, log2_chroma_blocks_per_mb);
-        decode_slice_chroma(avctx, slice, dest_v, chroma_stride,
+        decode_slice_chroma(avctx, slice, (uint16_t*)dest_v, chroma_stride,
                             buf + y_data_size + u_data_size, v_data_size,
                             qmat_chroma_scaled, log2_chroma_blocks_per_mb);
     }
