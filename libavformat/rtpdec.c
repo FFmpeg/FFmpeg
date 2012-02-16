@@ -695,7 +695,7 @@ static int rtp_parse_one_packet(RTPDemuxContext *s, AVPacket *pkt,
 
     if ((buf[0] & 0xc0) != (RTP_VERSION << 6))
         return -1;
-    if (buf[1] >= RTCP_SR && buf[1] <= RTCP_APP) {
+    if (RTP_PT_IS_RTCP(buf[1])) {
         return rtcp_parse_packet(s, buf, len);
     }
 

@@ -333,7 +333,7 @@ static int write_hint_packets(AVIOContext *out, const uint8_t *data,
         size -= 4;
         if (packet_len > size || packet_len <= 12)
             break;
-        if (data[1] >= RTCP_SR && data[1] <= RTCP_APP) {
+        if (RTP_PT_IS_RTCP(data[1])) {
             /* RTCP packet, just skip */
             data += packet_len;
             size -= packet_len;
