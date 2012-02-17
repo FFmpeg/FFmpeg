@@ -1011,7 +1011,7 @@ static void zero_remaining(unsigned int b, unsigned int b_max,
 {
     unsigned int count = 0;
 
-    while (b < b_max)
+    for (; b < b_max; b++)
         count += div_blocks[b];
 
     if (count)
