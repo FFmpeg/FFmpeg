@@ -89,7 +89,6 @@ static av_cold int MP3lame_encode_init(AVCodecContext *avctx)
         ret = AVERROR(ENOMEM);
         goto error;
     }
-    avctx->coded_frame->key_frame = 1;
 
     return 0;
 error:
