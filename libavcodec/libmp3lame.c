@@ -29,6 +29,7 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "mpegaudio.h"
+#include "mpegaudiodecheader.h"
 #include <lame/lame.h>
 
 #define BUFFER_SIZE (7200 + 2 * MPA_FRAME_SIZE + MPA_FRAME_SIZE / 4)
@@ -100,65 +101,11 @@ static const int sSampleRates[] = {
     44100, 48000,  32000, 22050, 24000, 16000, 11025, 12000, 8000, 0
 };
 
-static const int sBitRates[2][3][15] = {
-    {
-        { 0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448 },
-        { 0, 32, 48, 56, 64,  80,  96,  112, 128, 160, 192, 224, 256, 320, 384 },
-        { 0, 32, 40, 48, 56,  64,  80,  96,  112, 128, 160, 192, 224, 256, 320 }
-    },
-    {
-        { 0, 32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256 },
-        { 0,  8, 16, 24, 32, 40, 48,  56,  64,  80,  96, 112, 128, 144, 160 },
-        { 0,  8, 16, 24, 32, 40, 48,  56,  64,  80,  96, 112, 128, 144, 160 }
-    },
-};
-
-static const int sSamplesPerFrame[2][3] = {
-    { 384, 1152, 1152 },
-    { 384, 1152,  576 }
-};
-
-static const int sBitsPerSlot[3] = { 32, 8, 8 };
-
-static int mp3len(void *data, int *samplesPerFrame, int *sampleRate)
-{
-    uint32_t header  = AV_RB32(data);
-    int layerID      = 3 - ((header >> 17) & 0x03);
-    int bitRateID    = ((header >> 12) & 0x0f);
-    int sampleRateID = ((header >> 10) & 0x03);
-    int bitsPerSlot  = sBitsPerSlot[layerID];
-    int isPadded     = ((header >> 9) & 0x01);
-    static int const mode_tab[4] = { 2, 3, 1, 0 };
-    int mode    = mode_tab[(header >> 19) & 0x03];
-    int mpeg_id = mode > 0;
-    int temp0, temp1, bitRate;
-
-    if (((header >> 21) & 0x7ff) != 0x7ff || mode == 3 || layerID == 3 ||
-        sampleRateID == 3) {
-        return -1;
-    }
-
-    if (!samplesPerFrame)
-        samplesPerFrame = &temp0;
-    if (!sampleRate)
-        sampleRate      = &temp1;
-
-    //*isMono = ((header >>  6) & 0x03) == 0x03;
-
-    *sampleRate      = sSampleRates[sampleRateID] >> mode;
-    bitRate          = sBitRates[mpeg_id][layerID][bitRateID] * 1000;
-    *samplesPerFrame = sSamplesPerFrame[mpeg_id][layerID];
-    //av_log(NULL, AV_LOG_DEBUG,
-    //       "sr:%d br:%d spf:%d l:%d m:%d\n",
-    //       *sampleRate, bitRate, *samplesPerFrame, layerID, mode);
-
-    return *samplesPerFrame * bitRate / (bitsPerSlot * *sampleRate) + isPadded;
-}
-
 static int MP3lame_encode_frame(AVCodecContext *avctx, unsigned char *frame,
                                 int buf_size, void *data)
 {
     Mp3AudioContext *s = avctx->priv_data;
+    MPADecodeHeader hdr;
     int len;
     int lame_result;
 
@@ -193,7 +140,11 @@ static int MP3lame_encode_frame(AVCodecContext *avctx, unsigned char *frame,
     if (s->buffer_index < 4)
         return 0;
 
-    len = mp3len(s->buffer, NULL, NULL);
+    if (avpriv_mpegaudio_decode_header(&hdr, AV_RB32(s->buffer))) {
+        av_log(avctx, AV_LOG_ERROR, "free format output not supported\n");
+        return -1;
+    }
+    len = hdr.frame_size;
     av_dlog(avctx, "in:%d packet-len:%d index:%d\n", avctx->frame_size, len,
             s->buffer_index);
     if (len <= s->buffer_index) {
