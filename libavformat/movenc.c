@@ -3124,7 +3124,6 @@ static int mov_write_header(AVFormatContext *s)
             }else if(st->codec->frame_size > 1){ /* assume compressed audio */
                 track->audio_vbr = 1;
             }else{
-                st->codec->frame_size = 1;
                 track->sample_size = (av_get_bits_per_sample(st->codec->codec_id) >> 3) * st->codec->channels;
             }
             if (track->mode != MODE_MOV) {
