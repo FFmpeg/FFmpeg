@@ -148,7 +148,7 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
             if (buf_end - buf < 1)
                 return AVERROR_INVALIDDATA;
 
-            if ((value = *buf++) == 0x80) {
+            if ((value = *buf++) == RLE_TRIGGER) {
                 run = *buf++ + 1;
                 if (run != 1)
                     value = *buf++;
