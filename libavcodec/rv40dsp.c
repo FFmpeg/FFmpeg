@@ -278,7 +278,7 @@ RV40_CHROMA_MC(put_, op_put)
 RV40_CHROMA_MC(avg_, op_avg)
 
 #define RV40_WEIGHT_FUNC(size) \
-static void rv40_weight_func_ ## size (uint8_t *dst, uint8_t *src1, uint8_t *src2, int w1, int w2, int stride)\
+static void rv40_weight_func_ ## size (uint8_t *dst, uint8_t *src1, uint8_t *src2, int w1, int w2, ptrdiff_t stride)\
 {\
     int i, j;\
 \
@@ -316,7 +316,7 @@ static const uint8_t rv40_dither_r[16] = {
  */
 static av_always_inline void rv40_weak_loop_filter(uint8_t *src,
                                                    const int step,
-                                                   const int stride,
+                                                   const ptrdiff_t stride,
                                                    const int filter_p1,
                                                    const int filter_q1,
                                                    const int alpha,
@@ -362,7 +362,7 @@ static av_always_inline void rv40_weak_loop_filter(uint8_t *src,
     }
 }
 
-static void rv40_h_weak_loop_filter(uint8_t *src, const int stride,
+static void rv40_h_weak_loop_filter(uint8_t *src, const ptrdiff_t stride,
                                     const int filter_p1, const int filter_q1,
                                     const int alpha, const int beta,
                                     const int lim_p0q0, const int lim_q1,
@@ -372,7 +372,7 @@ static void rv40_h_weak_loop_filter(uint8_t *src, const int stride,
                           alpha, beta, lim_p0q0, lim_q1, lim_p1);
 }
 
-static void rv40_v_weak_loop_filter(uint8_t *src, const int stride,
+static void rv40_v_weak_loop_filter(uint8_t *src, const ptrdiff_t stride,
                                     const int filter_p1, const int filter_q1,
                                     const int alpha, const int beta,
                                     const int lim_p0q0, const int lim_q1,
@@ -384,7 +384,7 @@ static void rv40_v_weak_loop_filter(uint8_t *src, const int stride,
 
 static av_always_inline void rv40_strong_loop_filter(uint8_t *src,
                                                      const int step,
-                                                     const int stride,
+                                                     const ptrdiff_t stride,
                                                      const int alpha,
                                                      const int lims,
                                                      const int dmode,
@@ -440,14 +440,14 @@ static av_always_inline void rv40_strong_loop_filter(uint8_t *src,
     }
 }
 
-static void rv40_h_strong_loop_filter(uint8_t *src, const int stride,
+static void rv40_h_strong_loop_filter(uint8_t *src, const ptrdiff_t stride,
                                       const int alpha, const int lims,
                                       const int dmode, const int chroma)
 {
     rv40_strong_loop_filter(src, stride, 1, alpha, lims, dmode, chroma);
 }
 
-static void rv40_v_strong_loop_filter(uint8_t *src, const int stride,
+static void rv40_v_strong_loop_filter(uint8_t *src, const ptrdiff_t stride,
                                       const int alpha, const int lims,
                                       const int dmode, const int chroma)
 {
@@ -455,7 +455,7 @@ static void rv40_v_strong_loop_filter(uint8_t *src, const int stride,
 }
 
 static av_always_inline int rv40_loop_filter_strength(uint8_t *src,
-                                                      int step, int stride,
+                                                      int step, ptrdiff_t stride,
                                                       int beta, int beta2,
                                                       int edge,
                                                       int *p1, int *q1)
@@ -490,14 +490,14 @@ static av_always_inline int rv40_loop_filter_strength(uint8_t *src,
     return strong0 && strong1;
 }
 
-static int rv40_h_loop_filter_strength(uint8_t *src, int stride,
+static int rv40_h_loop_filter_strength(uint8_t *src, ptrdiff_t stride,
                                        int beta, int beta2, int edge,
                                        int *p1, int *q1)
 {
     return rv40_loop_filter_strength(src, stride, 1, beta, beta2, edge, p1, q1);
 }
 
-static int rv40_v_loop_filter_strength(uint8_t *src, int stride,
+static int rv40_v_loop_filter_strength(uint8_t *src, ptrdiff_t stride,
                                        int beta, int beta2, int edge,
                                        int *p1, int *q1)
 {

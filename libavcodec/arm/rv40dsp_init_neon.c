@@ -51,20 +51,20 @@ void ff_put_rv40_chroma_mc4_neon(uint8_t *, uint8_t *, int, int, int, int);
 void ff_avg_rv40_chroma_mc8_neon(uint8_t *, uint8_t *, int, int, int, int);
 void ff_avg_rv40_chroma_mc4_neon(uint8_t *, uint8_t *, int, int, int, int);
 
-void ff_rv40_weight_func_16_neon(uint8_t *, uint8_t *, uint8_t *, int, int, int);
-void ff_rv40_weight_func_8_neon(uint8_t *, uint8_t *, uint8_t *, int, int, int);
+void ff_rv40_weight_func_16_neon(uint8_t *, uint8_t *, uint8_t *, int, int, ptrdiff_t);
+void ff_rv40_weight_func_8_neon(uint8_t *, uint8_t *, uint8_t *, int, int, ptrdiff_t);
 
-int ff_rv40_h_loop_filter_strength_neon(uint8_t *src, int stride,
+int ff_rv40_h_loop_filter_strength_neon(uint8_t *src, ptrdiff_t stride,
                                         int beta, int beta2, int edge,
                                         int *p1, int *q1);
-int ff_rv40_v_loop_filter_strength_neon(uint8_t *src, int stride,
+int ff_rv40_v_loop_filter_strength_neon(uint8_t *src, ptrdiff_t stride,
                                         int beta, int beta2, int edge,
                                         int *p1, int *q1);
 
-void ff_rv40_h_weak_loop_filter_neon(uint8_t *src, int stride, int filter_p1,
+void ff_rv40_h_weak_loop_filter_neon(uint8_t *src, ptrdiff_t stride, int filter_p1,
                                      int filter_q1, int alpha, int beta,
                                      int lim_p0q0, int lim_q1, int lim_p1);
-void ff_rv40_v_weak_loop_filter_neon(uint8_t *src, int stride, int filter_p1,
+void ff_rv40_v_weak_loop_filter_neon(uint8_t *src, ptrdiff_t stride, int filter_p1,
                                      int filter_q1, int alpha, int beta,
                                      int lim_p0q0, int lim_q1, int lim_p1);
 
