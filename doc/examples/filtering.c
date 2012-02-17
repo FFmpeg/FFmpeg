@@ -47,7 +47,7 @@ static int64_t last_pts = AV_NOPTS_VALUE;
 
 static int open_input_file(const char *filename)
 {
-    int ret, i;
+    int ret;
     AVCodec *dec;
 
     if ((ret = avformat_open_input(&fmt_ctx, filename, NULL, NULL)) < 0) {
@@ -126,6 +126,7 @@ static int init_filters(const char *filters_descr)
 
     if ((ret = avfilter_graph_config(filter_graph, NULL)) < 0)
         return ret;
+    return 0;
 }
 
 static void display_picref(AVFilterBufferRef *picref, AVRational time_base)
