@@ -295,6 +295,9 @@ static void yuv2nv12cX_c(SwsContext *c, const int16_t *chrFilter, int chrFilterS
         }
 }
 
+#define accumulate_bit(acc, val) \
+    acc <<= 1; \
+    acc |= (val) >= (128 + 110)
 #define output_pixel(pos, acc) \
     if (target == PIX_FMT_MONOBLACK) { \
         pos = acc; \
@@ -311,7 +314,6 @@ yuv2mono_X_c_template(SwsContext *c, const int16_t *lumFilter,
                       int y, enum PixelFormat target)
 {
     const uint8_t * const d128=dither_8x8_220[y&7];
-    uint8_t *g = c->table_gU[128] + c->table_gV[128];
     int i;
     unsigned acc = 0;
 
@@ -330,8 +332,8 @@ yuv2mono_X_c_template(SwsContext *c, const int16_t *lumFilter,
             Y1 = av_clip_uint8(Y1);
             Y2 = av_clip_uint8(Y2);
         }
-        acc += acc + g[Y1 + d128[(i + 0) & 7]];
-        acc += acc + g[Y2 + d128[(i + 1) & 7]];
+        accumulate_bit(acc, Y1 + d128[(i + 0) & 7]);
+        accumulate_bit(acc, Y2 + d128[(i + 1) & 7]);
         if ((i & 7) == 6) {
             output_pixel(*dest++, acc);
         }
@@ -347,19 +349,29 @@ yuv2mono_2_c_template(SwsContext *c, const int16_t *buf[2],
 {
     const int16_t *buf0  = buf[0],  *buf1  = buf[1];
     const uint8_t * const d128 = dither_8x8_220[y & 7];
-    uint8_t *g = c->table_gU[128] + c->table_gV[128];
     int  yalpha1 = 4095 - yalpha;
     int i;
 
     for (i = 0; i < dstW - 7; i += 8) {
-        int acc =    g[((buf0[i    ] * yalpha1 + buf1[i    ] * yalpha) >> 19) + d128[0]];
-        acc += acc + g[((buf0[i + 1] * yalpha1 + buf1[i + 1] * yalpha) >> 19) + d128[1]];
-        acc += acc + g[((buf0[i + 2] * yalpha1 + buf1[i + 2] * yalpha) >> 19) + d128[2]];
-        acc += acc + g[((buf0[i + 3] * yalpha1 + buf1[i + 3] * yalpha) >> 19) + d128[3]];
-        acc += acc + g[((buf0[i + 4] * yalpha1 + buf1[i + 4] * yalpha) >> 19) + d128[4]];
-        acc += acc + g[((buf0[i + 5] * yalpha1 + buf1[i + 5] * yalpha) >> 19) + d128[5]];
-        acc += acc + g[((buf0[i + 6] * yalpha1 + buf1[i + 6] * yalpha) >> 19) + d128[6]];
-        acc += acc + g[((buf0[i + 7] * yalpha1 + buf1[i + 7] * yalpha) >> 19) + d128[7]];
+        int Y, acc = 0;
+
+        Y = (buf0[i + 0] * yalpha1 + buf1[i + 0] * yalpha) >> 19;
+        accumulate_bit(acc, Y + d128[0]);
+        Y = (buf0[i + 1] * yalpha1 + buf1[i + 1] * yalpha) >> 19;
+        accumulate_bit(acc, Y + d128[1]);
+        Y = (buf0[i + 2] * yalpha1 + buf1[i + 2] * yalpha) >> 19;
+        accumulate_bit(acc, Y + d128[2]);
+        Y = (buf0[i + 3] * yalpha1 + buf1[i + 3] * yalpha) >> 19;
+        accumulate_bit(acc, Y + d128[3]);
+        Y = (buf0[i + 4] * yalpha1 + buf1[i + 4] * yalpha) >> 19;
+        accumulate_bit(acc, Y + d128[4]);
+        Y = (buf0[i + 5] * yalpha1 + buf1[i + 5] * yalpha) >> 19;
+        accumulate_bit(acc, Y + d128[5]);
+        Y = (buf0[i + 6] * yalpha1 + buf1[i + 6] * yalpha) >> 19;
+        accumulate_bit(acc, Y + d128[6]);
+        Y = (buf0[i + 7] * yalpha1 + buf1[i + 7] * yalpha) >> 19;
+        accumulate_bit(acc, Y + d128[7]);
+
         output_pixel(*dest++, acc);
     }
 }
@@ -371,23 +383,26 @@ yuv2mono_1_c_template(SwsContext *c, const int16_t *buf0,
                       int uvalpha, int y, enum PixelFormat target)
 {
     const uint8_t * const d128 = dither_8x8_220[y & 7];
-    uint8_t *g = c->table_gU[128] + c->table_gV[128];
     int i;
 
     for (i = 0; i < dstW - 7; i += 8) {
-        int acc =    g[(buf0[i    ] >> 7) + d128[0]];
-        acc += acc + g[(buf0[i + 1] >> 7) + d128[1]];
-        acc += acc + g[(buf0[i + 2] >> 7) + d128[2]];
-        acc += acc + g[(buf0[i + 3] >> 7) + d128[3]];
-        acc += acc + g[(buf0[i + 4] >> 7) + d128[4]];
-        acc += acc + g[(buf0[i + 5] >> 7) + d128[5]];
-        acc += acc + g[(buf0[i + 6] >> 7) + d128[6]];
-        acc += acc + g[(buf0[i + 7] >> 7) + d128[7]];
+        int acc = 0;
+
+        accumulate_bit(acc, (buf0[i + 0] >> 7) + d128[0]);
+        accumulate_bit(acc, (buf0[i + 1] >> 7) + d128[1]);
+        accumulate_bit(acc, (buf0[i + 2] >> 7) + d128[2]);
+        accumulate_bit(acc, (buf0[i + 3] >> 7) + d128[3]);
+        accumulate_bit(acc, (buf0[i + 4] >> 7) + d128[4]);
+        accumulate_bit(acc, (buf0[i + 5] >> 7) + d128[5]);
+        accumulate_bit(acc, (buf0[i + 6] >> 7) + d128[6]);
+        accumulate_bit(acc, (buf0[i + 7] >> 7) + d128[7]);
+
         output_pixel(*dest++, acc);
     }
 }
 
 #undef output_pixel
+#undef accumulate_bit
 
 #define YUV2PACKEDWRAPPER(name, base, ext, fmt) \
 static void name ## ext ## _X_c(SwsContext *c, const int16_t *lumFilter, \
