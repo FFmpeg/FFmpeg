@@ -1078,6 +1078,10 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
     q->sample_rate = avctx->sample_rate;
     q->nb_channels = avctx->channels;
     q->bit_rate = avctx->bit_rate;
+    if (!q->nb_channels) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid number of channels\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     /* Initialize RNG. */
     av_lfg_init(&q->random_state, 0);
