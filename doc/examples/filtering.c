@@ -55,7 +55,7 @@ static int open_input_file(const char *filename)
         return ret;
     }
 
-    if ((ret = av_find_stream_info(fmt_ctx)) < 0) {
+    if ((ret = avformat_find_stream_info(fmt_ctx, NULL)) < 0) {
         av_log(NULL, AV_LOG_ERROR, "Cannot find stream information\n");
         return ret;
     }
@@ -70,7 +70,7 @@ static int open_input_file(const char *filename)
     dec_ctx = fmt_ctx->streams[video_stream_index]->codec;
 
     /* init the video decoder */
-    if ((ret = avcodec_open(dec_ctx, dec)) < 0) {
+    if ((ret = avcodec_open2(dec_ctx, dec, NULL)) < 0) {
         av_log(NULL, AV_LOG_ERROR, "Cannot open video decoder\n");
         return ret;
     }
@@ -205,7 +205,7 @@ int main(int argc, char **argv)
 
                 /* pull filtered pictures from the filtergraph */
                 while (avfilter_poll_frame(buffersink_ctx->inputs[0])) {
-                    av_vsink_buffer_get_video_buffer_ref(buffersink_ctx, &picref, 0);
+                    av_buffersink_get_buffer_ref(buffersink_ctx, &picref, 0);
                     if (picref) {
                         display_picref(picref, buffersink_ctx->inputs[0]->time_base);
                         avfilter_unref_buffer(picref);
@@ -218,7 +218,7 @@ end:
     avfilter_graph_free(&filter_graph);
     if (dec_ctx)
         avcodec_close(dec_ctx);
-    av_close_input_file(fmt_ctx);
+    avformat_close_input(&fmt_ctx);
 
     if (ret < 0 && ret != AVERROR_EOF) {
         char buf[1024];
