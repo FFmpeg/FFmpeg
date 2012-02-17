@@ -396,8 +396,7 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
         }
 
         // extract coded value
-#define UNFOLD(x) (((x)&1) ? (++(x)>>1) : (-(x)>>1))
-        *p = UNFOLD(value);
+        *p = 1 + ((value >> 1) ^ ((value & 1) - 1));
 
         // run hybrid filter
         ttafilter_process(filter, p);
