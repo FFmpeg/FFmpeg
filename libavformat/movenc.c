@@ -1305,6 +1305,9 @@ static int mov_write_mdhd_tag(AVIOContext *pb, MOVTrack *track)
 {
     int version = track->track_duration < INT32_MAX ? 0 : 1;
 
+    if (track->mode == MODE_ISM)
+        version = 1;
+
     (version == 1) ? avio_wb32(pb, 44) : avio_wb32(pb, 32); /* size */
     ffio_wfourcc(pb, "mdhd");
     avio_w8(pb, version);
@@ -1350,6 +1353,9 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVTrack *track, AVStream *st)
     int64_t duration = av_rescale_rnd(track->track_duration, MOV_TIMESCALE,
                                       track->timescale, AV_ROUND_UP);
     int version = duration < INT32_MAX ? 0 : 1;
+
+    if (track->mode == MODE_ISM)
+        version = 1;
 
     (version == 1) ? avio_wb32(pb, 104) : avio_wb32(pb, 92); /* size */
     ffio_wfourcc(pb, "tkhd");
