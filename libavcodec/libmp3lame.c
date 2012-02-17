@@ -162,8 +162,6 @@ static int MP3lame_encode_frame(AVCodecContext *avctx, unsigned char *frame,
     int len;
     int lame_result;
 
-    /* lame 3.91 dies on '1-channel interleaved' data */
-
     if (data) {
         if (avctx->channels > 1) {
             lame_result = lame_encode_buffer_interleaved(s->gfp, data,
