@@ -60,27 +60,29 @@ static void import_palette(CDXLVideoContext *c, uint32_t *new_palette)
     }
 }
 
-static void bitplanar2chunky(CDXLVideoContext *c, int width,
-                             int linesize, uint8_t *out)
+static void bitplanar2chunky(CDXLVideoContext *c, int linesize, uint8_t *out)
 {
+    int skip = FFALIGN(c->avctx->width, 16) - c->avctx->width;
     GetBitContext gb;
     int x, y, plane;
 
     init_get_bits(&gb, c->video, c->video_size * 8);
     memset(out, 0, linesize * c->avctx->height);
-    for (plane = 0; plane < c->bpp; plane++)
-        for (y = 0; y < c->avctx->height; y++)
-            for (x = 0; x < width; x++)
+    for (plane = 0; plane < c->bpp; plane++) {
+        for (y = 0; y < c->avctx->height; y++) {
+            for (x = 0; x < c->avctx->width; x++)
                 out[linesize * y + x] |= get_bits1(&gb) << plane;
+            skip_bits(&gb, skip);
+        }
+    }
 }
 
 static void cdxl_decode_rgb(CDXLVideoContext *c)
 {
     uint32_t *new_palette = (uint32_t *)c->frame.data[1];
-    int padded_width = FFALIGN(c->avctx->width, 16);
 
     import_palette(c, new_palette);
-    bitplanar2chunky(c, padded_width, c->frame.linesize[0], c->frame.data[0]);
+    bitplanar2chunky(c, c->frame.linesize[0], c->frame.data[0]);
 }
 
 static void cdxl_decode_ham6(CDXLVideoContext *c)
@@ -94,7 +96,7 @@ static void cdxl_decode_ham6(CDXLVideoContext *c)
     out = c->frame.data[0];
 
     import_palette(c, new_palette);
-    bitplanar2chunky(c, avctx->width, avctx->width, c->new_video);
+    bitplanar2chunky(c, avctx->width, c->new_video);
 
     for (y = 0; y < avctx->height; y++) {
         r = new_palette[0] & 0xFF0000;
@@ -137,7 +139,7 @@ static void cdxl_decode_ham8(CDXLVideoContext *c)
     out = c->frame.data[0];
 
     import_palette(c, new_palette);
-    bitplanar2chunky(c, avctx->width, avctx->width, c->new_video);
+    bitplanar2chunky(c, avctx->width, c->new_video);
 
     for (y = 0; y < avctx->height; y++) {
         r = new_palette[0] & 0xFF0000;
@@ -209,15 +211,12 @@ static int cdxl_decode_frame(AVCodecContext *avctx, void *data,
     if (w != avctx->width || h != avctx->height)
         avcodec_set_dimensions(avctx, w, h);
 
+    if (c->video_size < FFALIGN(avctx->width, 16) * avctx->height * c->bpp / 8)
+        return AVERROR_INVALIDDATA;
     if (encoding == 0) {
-        if (c->video_size < FFALIGN(avctx->width, 16) *
-                            avctx->height * c->bpp / 8)
-            return AVERROR_INVALIDDATA;
         avctx->pix_fmt = PIX_FMT_PAL8;
     } else if (encoding == 1 && (c->bpp == 6 || c->bpp == 8)) {
         if (c->palette_size != (1 << (c->bpp - 1)))
-            return AVERROR_INVALIDDATA;
-        if (c->video_size < avctx->width * avctx->height * c->bpp / 8)
             return AVERROR_INVALIDDATA;
         avctx->pix_fmt = PIX_FMT_BGR24;
     } else {
