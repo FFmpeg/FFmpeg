@@ -40,15 +40,27 @@ typedef struct Mp3AudioContext {
     int reservoir;
 } Mp3AudioContext;
 
-static av_cold int MP3lame_encode_init(AVCodecContext *avctx)
+
+static av_cold int MP3lame_encode_close(AVCodecContext *avctx)
 {
     Mp3AudioContext *s = avctx->priv_data;
 
+    av_freep(&avctx->coded_frame);
+
+    lame_close(s->gfp);
+    return 0;
+}
+
+static av_cold int MP3lame_encode_init(AVCodecContext *avctx)
+{
+    Mp3AudioContext *s = avctx->priv_data;
+    int ret;
+
     if (avctx->channels > 2)
-        return -1;
+        return AVERROR(EINVAL);
 
     if ((s->gfp = lame_init()) == NULL)
-        goto err;
+        return AVERROR(ENOMEM);
     lame_set_in_samplerate(s->gfp, avctx->sample_rate);
     lame_set_out_samplerate(s->gfp, avctx->sample_rate);
     lame_set_num_channels(s->gfp, avctx->channels);
@@ -66,19 +78,23 @@ static av_cold int MP3lame_encode_init(AVCodecContext *avctx)
     }
     lame_set_bWriteVbrTag(s->gfp,0);
     lame_set_disable_reservoir(s->gfp, !s->reservoir);
-    if (lame_init_params(s->gfp) < 0)
-        goto err_close;
+    if (lame_init_params(s->gfp) < 0) {
+        ret = -1;
+        goto error;
+    }
 
     avctx->frame_size             = lame_get_framesize(s->gfp);
     avctx->coded_frame            = avcodec_alloc_frame();
+    if (!avctx->coded_frame) {
+        ret = AVERROR(ENOMEM);
+        goto error;
+    }
     avctx->coded_frame->key_frame = 1;
 
     return 0;
-
-err_close:
-    lame_close(s->gfp);
-err:
-    return -1;
+error:
+    MP3lame_encode_close(avctx);
+    return ret;
 }
 
 static const int sSampleRates[] = {
@@ -196,16 +212,6 @@ static int MP3lame_encode_frame(AVCodecContext *avctx, unsigned char *frame,
         return len;
     } else
         return 0;
-}
-
-static av_cold int MP3lame_encode_close(AVCodecContext *avctx)
-{
-    Mp3AudioContext *s = avctx->priv_data;
-
-    av_freep(&avctx->coded_frame);
-
-    lame_close(s->gfp);
-    return 0;
 }
 
 #define OFFSET(x) offsetof(Mp3AudioContext, x)
