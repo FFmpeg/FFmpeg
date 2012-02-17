@@ -28,6 +28,7 @@
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "mpegaudio.h"
 #include "mpegaudiodecheader.h"
 #include <lame/lame.h>
@@ -71,11 +72,12 @@ static av_cold int MP3lame_encode_init(AVCodecContext *avctx)
         lame_set_quality(s->gfp, avctx->compression_level);
     }
     lame_set_mode(s->gfp, avctx->channels > 1 ? JOINT_STEREO : MONO);
-    lame_set_brate(s->gfp, avctx->bit_rate / 1000);
     if (avctx->flags & CODEC_FLAG_QSCALE) {
-        lame_set_brate(s->gfp, 0);
         lame_set_VBR(s->gfp, vbr_default);
         lame_set_VBR_quality(s->gfp, avctx->global_quality / (float)FF_QP2LAMBDA);
+    } else {
+        if (avctx->bit_rate)
+            lame_set_brate(s->gfp, avctx->bit_rate / 1000);
     }
     lame_set_bWriteVbrTag(s->gfp,0);
     lame_set_disable_reservoir(s->gfp, !s->reservoir);
@@ -171,6 +173,11 @@ static const AVClass libmp3lame_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
+static const AVCodecDefault libmp3lame_defaults[] = {
+    { "b",          "0" },
+    { NULL },
+};
+
 AVCodec ff_libmp3lame_encoder = {
     .name                  = "libmp3lame",
     .type                  = AVMEDIA_TYPE_AUDIO,
@@ -185,4 +192,5 @@ AVCodec ff_libmp3lame_encoder = {
     .supported_samplerates = sSampleRates,
     .long_name             = NULL_IF_CONFIG_SMALL("libmp3lame MP3 (MPEG audio layer 3)"),
     .priv_class            = &libmp3lame_class,
+    .defaults              = libmp3lame_defaults,
 };
