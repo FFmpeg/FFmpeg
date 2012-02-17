@@ -38,10 +38,12 @@
 
 typedef struct LAMEContext {
     AVClass *class;
+    AVCodecContext *avctx;
     lame_global_flags *gfp;
     uint8_t buffer[BUFFER_SIZE];
     int buffer_index;
     int reservoir;
+    void *planar_samples[2];
 } LAMEContext;
 
 
@@ -50,6 +52,8 @@ static av_cold int mp3lame_encode_close(AVCodecContext *avctx)
     LAMEContext *s = avctx->priv_data;
 
     av_freep(&avctx->coded_frame);
+    av_freep(&s->planar_samples[0]);
+    av_freep(&s->planar_samples[1]);
 
     lame_close(s->gfp);
     return 0;
@@ -59,6 +63,8 @@ static av_cold int mp3lame_encode_init(AVCodecContext *avctx)
 {
     LAMEContext *s = avctx->priv_data;
     int ret;
+
+    s->avctx = avctx;
 
     /* initialize LAME and get defaults */
     if ((s->gfp = lame_init()) == NULL)
@@ -110,10 +116,73 @@ static av_cold int mp3lame_encode_init(AVCodecContext *avctx)
         goto error;
     }
 
+    /* sample format */
+    if (avctx->sample_fmt == AV_SAMPLE_FMT_S32 ||
+        avctx->sample_fmt == AV_SAMPLE_FMT_FLT) {
+        int ch;
+        for (ch = 0; ch < avctx->channels; ch++) {
+            s->planar_samples[ch] = av_malloc(avctx->frame_size *
+                                              av_get_bytes_per_sample(avctx->sample_fmt));
+            if (!s->planar_samples[ch]) {
+                ret = AVERROR(ENOMEM);
+                goto error;
+            }
+        }
+    }
+
     return 0;
 error:
     mp3lame_encode_close(avctx);
     return ret;
+}
+
+#define DEINTERLEAVE(type, scale) do {                  \
+    int ch, i;                                          \
+    for (ch = 0; ch < s->avctx->channels; ch++) {       \
+        const type *input = samples;                    \
+        type      *output = s->planar_samples[ch];      \
+        input += ch;                                    \
+        for (i = 0; i < s->avctx->frame_size; i++) {    \
+            output[i] = *input * scale;                 \
+            input += s->avctx->channels;                \
+        }                                               \
+    }                                                   \
+} while (0)
+
+static int encode_frame_int16(LAMEContext *s, void *samples)
+{
+    if (s->avctx->channels > 1) {
+        return lame_encode_buffer_interleaved(s->gfp, samples,
+                                              s->avctx->frame_size,
+                                              s->buffer + s->buffer_index,
+                                              BUFFER_SIZE - s->buffer_index);
+    } else {
+        return lame_encode_buffer(s->gfp, samples, NULL, s->avctx->frame_size,
+                                  s->buffer + s->buffer_index,
+                                  BUFFER_SIZE - s->buffer_index);
+    }
+}
+
+static int encode_frame_int32(LAMEContext *s, void *samples)
+{
+    DEINTERLEAVE(int32_t, 1);
+
+    return lame_encode_buffer_int(s->gfp,
+                                  s->planar_samples[0], s->planar_samples[1],
+                                  s->avctx->frame_size,
+                                  s->buffer + s->buffer_index,
+                                  BUFFER_SIZE - s->buffer_index);
+}
+
+static int encode_frame_float(LAMEContext *s, void *samples)
+{
+    DEINTERLEAVE(float, 32768.0f);
+
+    return lame_encode_buffer_float(s->gfp,
+                                    s->planar_samples[0], s->planar_samples[1],
+                                    s->avctx->frame_size,
+                                    s->buffer + s->buffer_index,
+                                    BUFFER_SIZE - s->buffer_index);
 }
 
 static int mp3lame_encode_frame(AVCodecContext *avctx, unsigned char *frame,
@@ -125,16 +194,18 @@ static int mp3lame_encode_frame(AVCodecContext *avctx, unsigned char *frame,
     int lame_result;
 
     if (data) {
-        if (avctx->channels > 1) {
-            lame_result = lame_encode_buffer_interleaved(s->gfp, data,
-                                                         avctx->frame_size,
-                                                         s->buffer + s->buffer_index,
-                                                         BUFFER_SIZE - s->buffer_index);
-        } else {
-            lame_result = lame_encode_buffer(s->gfp, data, data,
-                                             avctx->frame_size, s->buffer +
-                                             s->buffer_index, BUFFER_SIZE -
-                                             s->buffer_index);
+        switch (avctx->sample_fmt) {
+        case AV_SAMPLE_FMT_S16:
+            lame_result = encode_frame_int16(s, data);
+            break;
+        case AV_SAMPLE_FMT_S32:
+            lame_result = encode_frame_int32(s, data);
+            break;
+        case AV_SAMPLE_FMT_FLT:
+            lame_result = encode_frame_float(s, data);
+            break;
+        default:
+            return AVERROR_BUG;
         }
     } else {
         lame_result = lame_encode_flush(s->gfp, s->buffer + s->buffer_index,
@@ -203,7 +274,9 @@ AVCodec ff_libmp3lame_encoder = {
     .encode                = mp3lame_encode_frame,
     .close                 = mp3lame_encode_close,
     .capabilities          = CODEC_CAP_DELAY,
-    .sample_fmts           = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16,
+    .sample_fmts           = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S32,
+                                                             AV_SAMPLE_FMT_FLT,
+                                                             AV_SAMPLE_FMT_S16,
                                                              AV_SAMPLE_FMT_NONE },
     .supported_samplerates = libmp3lame_sample_rates,
     .long_name             = NULL_IF_CONFIG_SMALL("libmp3lame MP3 (MPEG audio layer 3)"),
