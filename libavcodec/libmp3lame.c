@@ -35,7 +35,6 @@
 typedef struct Mp3AudioContext {
     AVClass *class;
     lame_global_flags *gfp;
-    int stereo;
     uint8_t buffer[BUFFER_SIZE];
     int buffer_index;
     int reservoir;
@@ -48,8 +47,6 @@ static av_cold int MP3lame_encode_init(AVCodecContext *avctx)
     if (avctx->channels > 2)
         return -1;
 
-    s->stereo = avctx->channels > 1 ? 1 : 0;
-
     if ((s->gfp = lame_init()) == NULL)
         goto err;
     lame_set_in_samplerate(s->gfp, avctx->sample_rate);
@@ -60,7 +57,7 @@ static av_cold int MP3lame_encode_init(AVCodecContext *avctx)
     } else {
         lame_set_quality(s->gfp, avctx->compression_level);
     }
-    lame_set_mode(s->gfp, s->stereo ? JOINT_STEREO : MONO);
+    lame_set_mode(s->gfp, avctx->channels > 1 ? JOINT_STEREO : MONO);
     lame_set_brate(s->gfp, avctx->bit_rate / 1000);
     if (avctx->flags & CODEC_FLAG_QSCALE) {
         lame_set_brate(s->gfp, 0);
@@ -153,7 +150,7 @@ static int MP3lame_encode_frame(AVCodecContext *avctx, unsigned char *frame,
     /* lame 3.91 dies on '1-channel interleaved' data */
 
     if (data) {
-        if (s->stereo) {
+        if (avctx->channels > 1) {
             lame_result = lame_encode_buffer_interleaved(s->gfp, data,
                                                          avctx->frame_size,
                                                          s->buffer + s->buffer_index,
