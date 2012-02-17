@@ -183,6 +183,11 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
     int stereo = s->channels - 1;
     int16_t *output_samples;
 
+    if (stereo && (buf_size & 1)) {
+        buf_size--;
+        buf_end--;
+    }
+
     /* calculate output size */
     switch(avctx->codec->id) {
     case CODEC_ID_ROQ_DPCM:
@@ -317,7 +322,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
     *got_frame_ptr   = 1;
     *(AVFrame *)data = s->frame;
 
-    return buf_size;
+    return avpkt->size;
 }
 
 #define DPCM_DECODER(id_, name_, long_name_)                \
