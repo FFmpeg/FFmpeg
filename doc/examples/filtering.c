@@ -27,11 +27,13 @@
  */
 
 #define _XOPEN_SOURCE 600 /* for usleep */
+#include <unistd.h>
 
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavfilter/avfiltergraph.h>
-#include <libavfilter/vsrc_buffer.h>
+#include <libavfilter/avcodec.h>
+#include <libavfilter/buffersink.h>
 
 const char *filter_descr = "scale=78:24";
 
@@ -199,7 +201,7 @@ int main(int argc, char **argv)
                     frame.pts = frame.pkt_dts == AV_NOPTS_VALUE ?
                         frame.pkt_dts : frame.pkt_pts;
                 /* push the decoded frame into the filtergraph */
-                av_vsrc_buffer_add_frame(buffersrc_ctx, &frame);
+                av_vsrc_buffer_add_frame(buffersrc_ctx, &frame, 0);
 
                 /* pull filtered pictures from the filtergraph */
                 while (avfilter_poll_frame(buffersink_ctx->inputs[0])) {
