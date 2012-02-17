@@ -169,6 +169,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
     int in, out = 0;
     int predictor[2];
     int channel_number = 0;
+    int stereo = s->channels - 1;
     short *output_samples = data;
     int shift[2];
     unsigned char byte;
@@ -176,6 +177,9 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
 
     if (!buf_size)
         return 0;
+
+    if (stereo && (buf_size & 1))
+        buf_size--;
 
     // almost every DPCM variant expands one byte of data into two
     if(*data_size/2 < buf_size)
@@ -295,7 +299,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
     }
 
     *data_size = out * sizeof(short);
-    return buf_size;
+    return avpkt->size;
 }
 
 #define DPCM_DECODER(id, name, long_name_)      \
