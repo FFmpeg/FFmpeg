@@ -352,11 +352,10 @@ typedef struct SwsContext {
 #define U_TEMP                "11*8+4*4*256*2+24"
 #define V_TEMP                "11*8+4*4*256*2+32"
 #define Y_TEMP                "11*8+4*4*256*2+40"
-#define ALP_MMX_FILTER_OFFSET "11*8+4*4*256*2+48"
-#define UV_OFF_PX             "11*8+4*4*256*3+48"
-#define UV_OFF_BYTE           "11*8+4*4*256*3+56"
-#define DITHER16              "11*8+4*4*256*3+64"
-#define DITHER32              "11*8+4*4*256*3+80"
+#define UV_OFF_PX             "11*8+4*4*256*2+48"
+#define UV_OFF_BYTE           "11*8+4*4*256*2+56"
+#define DITHER16              "11*8+4*4*256*2+64"
+#define DITHER32              "11*8+4*4*256*2+80"
 
     DECLARE_ALIGNED(8, uint64_t, redDither);
     DECLARE_ALIGNED(8, uint64_t, greenDither);
