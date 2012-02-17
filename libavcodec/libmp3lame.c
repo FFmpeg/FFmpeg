@@ -181,7 +181,6 @@ static int MP3lame_encode_frame(AVCodecContext *avctx, unsigned char *frame,
 
     if (lame_result < 0) {
         if (lame_result == -1) {
-            /* output buffer too small */
             av_log(avctx, AV_LOG_ERROR,
                    "lame: output buffer too small (buffer index: %d, free bytes: %d)\n",
                    s->buffer_index, BUFFER_SIZE - s->buffer_index);
@@ -202,7 +201,6 @@ static int MP3lame_encode_frame(AVCodecContext *avctx, unsigned char *frame,
         s->buffer_index -= len;
 
         memmove(s->buffer, s->buffer + len, s->buffer_index);
-        // FIXME fix the audio codec API, so we do not need the memcpy()
         return len;
     } else
         return 0;
