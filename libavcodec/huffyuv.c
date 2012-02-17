@@ -184,7 +184,7 @@ static int read_len_table(uint8_t *dst, GetBitContext *gb){
         if(repeat==0)
             repeat= get_bits(gb, 8);
 //printf("%d %d\n", val, repeat);
-        if(i+repeat > 256) {
+        if(i+repeat > 256 || get_bits_left(gb) < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error reading huffman table\n");
             return -1;
         }
