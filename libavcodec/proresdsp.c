@@ -29,6 +29,7 @@
 
 #define CLIP_AND_BIAS(x) (av_clip((x) + BIAS, CLIP_MIN, CLIP_MAX))
 
+#if CONFIG_PRORES_DECODER
 /**
  * Add bias value, clamp and output pixels of a slice
  */
@@ -50,7 +51,9 @@ static void prores_idct_put_c(uint16_t *out, int linesize, DCTELEM *block, const
     ff_prores_idct(block, qmat);
     put_pixels(out, linesize >> 1, block);
 }
+#endif
 
+#if CONFIG_PRORES_ENCODER
 static void prores_fdct_c(const uint16_t *src, int linesize, DCTELEM *block)
 {
     int x, y;
@@ -63,18 +66,23 @@ static void prores_fdct_c(const uint16_t *src, int linesize, DCTELEM *block)
     }
     ff_jpeg_fdct_islow_10(block);
 }
+#endif
 
 void ff_proresdsp_init(ProresDSPContext *dsp)
 {
+#if CONFIG_PRORES_DECODER
     dsp->idct_put = prores_idct_put_c;
     dsp->idct_permutation_type = FF_NO_IDCT_PERM;
-    dsp->fdct     = prores_fdct_c;
-    dsp->dct_permutation_type  = FF_NO_IDCT_PERM;
 
     if (HAVE_MMX) ff_proresdsp_x86_init(dsp);
 
     ff_init_scantable_permutation(dsp->idct_permutation,
                                   dsp->idct_permutation_type);
+#endif
+#if CONFIG_PRORES_ENCODER
+    dsp->fdct                 = prores_fdct_c;
+    dsp->dct_permutation_type = FF_NO_IDCT_PERM;
     ff_init_scantable_permutation(dsp->dct_permutation,
                                   dsp->dct_permutation_type);
+#endif
 }
