@@ -806,7 +806,7 @@ int opt_codecs(const char *opt, const char *arg)
             if (p2 && strcmp(p->name, p2->name) == 0) {
                 if (p->decode)
                     decode = 1;
-                if (p->encode)
+                if (p->encode || p->encode2)
                     encode = 1;
                 cap |= p->capabilities;
             }
