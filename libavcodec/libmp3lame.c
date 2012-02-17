@@ -195,17 +195,14 @@ static int MP3lame_encode_frame(AVCodecContext *avctx, unsigned char *frame,
         return 0;
 
     len = mp3len(s->buffer, NULL, NULL);
-    //av_log(avctx, AV_LOG_DEBUG, "in:%d packet-len:%d index:%d\n",
-    //       avctx->frame_size, len, s->buffer_index);
+    av_dlog(avctx, "in:%d packet-len:%d index:%d\n", avctx->frame_size, len,
+            s->buffer_index);
     if (len <= s->buffer_index) {
         memcpy(frame, s->buffer, len);
         s->buffer_index -= len;
 
         memmove(s->buffer, s->buffer + len, s->buffer_index);
         // FIXME fix the audio codec API, so we do not need the memcpy()
-        /*for(i=0; i<len; i++) {
-            av_log(avctx, AV_LOG_DEBUG, "%2X ", frame[i]);
-        }*/
         return len;
     } else
         return 0;
