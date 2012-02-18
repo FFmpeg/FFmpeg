@@ -39,7 +39,7 @@
 
 #define MAX_ORDER 16
 typedef struct TTAFilter {
-    int32_t shift, round, error, mode;
+    int32_t shift, round, error;
     int32_t qm[MAX_ORDER];
     int32_t dx[MAX_ORDER];
     int32_t dl[MAX_ORDER];
@@ -84,19 +84,18 @@ static const uint32_t shift_1[] = {
 
 static const uint32_t * const shift_16 = shift_1 + 4;
 
-static const int32_t ttafilter_configs[4][2] = {
-    {10, 1},
-    {9, 1},
-    {10, 1},
-    {12, 0}
+static const int32_t ttafilter_configs[4] = {
+    10,
+    9,
+    10,
+    12
 };
 
-static void ttafilter_init(TTAFilter *c, int32_t shift, int32_t mode) {
+static void ttafilter_init(TTAFilter *c, int32_t shift) {
     memset(c, 0, sizeof(TTAFilter));
     c->shift = shift;
    c->round = shift_1[shift-1];
 //    c->round = 1 << (shift - 1);
-    c->mode = mode;
 }
 
 // FIXME: copy paste from original
@@ -111,9 +110,8 @@ static inline void memshl(register int32_t *a, register int32_t *b) {
     *a = *b;
 }
 
-// FIXME: copy paste from original
-// mode=1 encoder, mode=0 decoder
-static inline void ttafilter_process(TTAFilter *c, int32_t *in, int32_t mode) {
+static inline void ttafilter_process(TTAFilter *c, int32_t *in)
+{
     register int32_t *dl = c->dl, *qm = c->qm, *dx = c->dx, sum = c->round;
 
     if (!c->error) {
@@ -151,22 +149,13 @@ static inline void ttafilter_process(TTAFilter *c, int32_t *in, int32_t mode) {
     *(dx-2) = ((*(dl-3) >> 30) | 1) << 1;
     *(dx-3) = ((*(dl-4) >> 30) | 1);
 
-    // compress
-    if (mode) {
-        *dl = *in;
-        *in -= (sum >> c->shift);
-        c->error = *in;
-    } else {
-        c->error = *in;
-        *in += (sum >> c->shift);
-        *dl = *in;
-    }
+    c->error = *in;
+    *in += (sum >> c->shift);
+    *dl = *in;
 
-    if (c->mode) {
-        *(dl-1) = *dl - *(dl-1);
-        *(dl-2) = *(dl-1) - *(dl-2);
-        *(dl-3) = *(dl-2) - *(dl-3);
-    }
+    *(dl-1) = *dl - *(dl-1);
+    *(dl-2) = *(dl-1) - *(dl-2);
+    *(dl-3) = *(dl-2) - *(dl-3);
 
     memshl(c->dl, c->dl + 1);
     memshl(c->dx, c->dx + 1);
@@ -368,7 +357,7 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
     // init per channel states
     for (i = 0; i < s->channels; i++) {
         s->ch_ctx[i].predictor = 0;
-        ttafilter_init(&s->ch_ctx[i].filter, ttafilter_configs[s->bps-1][0], ttafilter_configs[s->bps-1][1]);
+        ttafilter_init(&s->ch_ctx[i].filter, ttafilter_configs[s->bps-1]);
         rice_init(&s->ch_ctx[i].rice, 10, 10);
     }
 
@@ -422,11 +411,10 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
         }
 
         // extract coded value
-#define UNFOLD(x) (((x)&1) ? (++(x)>>1) : (-(x)>>1))
-        *p = UNFOLD(value);
+        *p = 1 + ((value >> 1) ^ ((value & 1) - 1));
 
         // run hybrid filter
-        ttafilter_process(filter, p, 0);
+        ttafilter_process(filter, p);
 
         // fixed order prediction
 #define PRED(x, k) (int32_t)((((uint64_t)x << k) - x) >> k)

@@ -105,7 +105,7 @@
 #define MAX_FRAMESIZE  32768                                 ///< maximum compressed frame size
 
 #define WMAPRO_BLOCK_MIN_BITS  6                                           ///< log2 of min block size
-#define WMAPRO_BLOCK_MAX_BITS 12                                           ///< log2 of max block size
+#define WMAPRO_BLOCK_MAX_BITS 13                                           ///< log2 of max block size
 #define WMAPRO_BLOCK_MAX_SIZE (1 << WMAPRO_BLOCK_MAX_BITS)                 ///< maximum block size
 #define WMAPRO_BLOCK_SIZES    (WMAPRO_BLOCK_MAX_BITS - WMAPRO_BLOCK_MIN_BITS + 1) ///< possible block sizes
 
@@ -276,7 +276,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     WMAProDecodeCtx *s = avctx->priv_data;
     uint8_t *edata_ptr = avctx->extradata;
     unsigned int channel_mask;
-    int i;
+    int i, bits;
     int log2_max_num_subframes;
     int num_possible_block_sizes;
 
@@ -310,8 +310,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->len_prefix  = (s->decode_flags & 0x40);
 
     /** get frame len */
-    s->samples_per_frame = 1 << ff_wma_get_frame_len_bits(avctx->sample_rate,
-                                                          3, s->decode_flags);
+    bits = ff_wma_get_frame_len_bits(avctx->sample_rate, 3, s->decode_flags);
+    if (bits > WMAPRO_BLOCK_MAX_BITS) {
+        av_log_missing_feature(avctx, "14-bits block sizes", 1);
+        return AVERROR_INVALIDDATA;
+    }
+    s->samples_per_frame = 1 << bits;
 
     /** subframe info */
     log2_max_num_subframes       = ((s->decode_flags & 0x38) >> 3);

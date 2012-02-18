@@ -23,6 +23,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 
 static av_cold int encode_init(AVCodecContext *avctx)
 {
@@ -44,25 +45,24 @@ static av_cold int encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
-                        int buf_size, void *data)
+static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
+                        const AVFrame *pic, int *got_packet)
 {
-    const AVFrame *pic = data;
     int aligned_width = ((avctx->width + 47) / 48) * 48;
     int stride = aligned_width * 8 / 3;
     int line_padding = stride - ((avctx->width * 8 + 11) / 12) * 4;
-    int h, w;
+    int h, w, ret;
     const uint16_t *y = (const uint16_t*)pic->data[0];
     const uint16_t *u = (const uint16_t*)pic->data[1];
     const uint16_t *v = (const uint16_t*)pic->data[2];
     PutByteContext p;
 
-    if (buf_size < avctx->height * stride) {
-        av_log(avctx, AV_LOG_ERROR, "output buffer too small\n");
-        return AVERROR(ENOMEM);
+    if ((ret = ff_alloc_packet(pkt, avctx->height * stride)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting output packet.\n");
+        return ret;
     }
 
-    bytestream2_init_writer(&p, buf, buf_size);
+    bytestream2_init_writer(&p, pkt->data, pkt->size);
 
 #define CLIP(v) av_clip(v, 4, 1019)
 
@@ -104,7 +104,9 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
         v += pic->linesize[2] / 2 - avctx->width / 2;
     }
 
-    return bytestream2_tell_p(&p);
+    pkt->flags |= AV_PKT_FLAG_KEY;
+    *got_packet = 1;
+    return 0;
 }
 
 static av_cold int encode_close(AVCodecContext *avctx)
@@ -119,7 +121,7 @@ AVCodec ff_v210_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_V210,
     .init           = encode_init,
-    .encode         = encode_frame,
+    .encode2        = encode_frame,
     .close          = encode_close,
     .pix_fmts       = (const enum PixelFormat[]){PIX_FMT_YUV422P10, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("Uncompressed 4:2:2 10-bit"),

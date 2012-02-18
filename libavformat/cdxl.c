@@ -62,9 +62,8 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     CDXLDemuxContext *cdxl = s->priv_data;
     AVIOContext *pb = s->pb;
-    uint32_t current_size;
-    uint16_t audio_size, palette_size;
-    int32_t  video_size;
+    uint32_t current_size, video_size, image_size;
+    uint16_t audio_size, palette_size, width, height;
     int64_t  pos;
     int      ret;
 
@@ -81,14 +80,17 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     current_size = AV_RB32(&cdxl->header[2]);
+    width        = AV_RB16(&cdxl->header[14]);
+    height       = AV_RB16(&cdxl->header[16]);
     palette_size = AV_RB16(&cdxl->header[20]);
     audio_size   = AV_RB16(&cdxl->header[22]);
+    image_size   = FFALIGN(width, 16) * height * cdxl->header[19] / 8;
+    video_size   = palette_size + image_size;
 
     if (palette_size > 512)
         return AVERROR_INVALIDDATA;
-    if (current_size < audio_size + palette_size + CDXL_HEADER_SIZE)
+    if (current_size < (uint64_t)audio_size + video_size + CDXL_HEADER_SIZE)
         return AVERROR_INVALIDDATA;
-    video_size   = current_size - audio_size - CDXL_HEADER_SIZE;
 
     if (cdxl->read_chunk && audio_size) {
         if (cdxl->audio_stream_index == -1) {
@@ -121,8 +123,8 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
             st->codec->codec_type    = AVMEDIA_TYPE_VIDEO;
             st->codec->codec_tag     = 0;
             st->codec->codec_id      = CODEC_ID_CDXL;
-            st->codec->width         = AV_RB16(&cdxl->header[14]);
-            st->codec->height        = AV_RB16(&cdxl->header[16]);
+            st->codec->width         = width;
+            st->codec->height        = height;
             cdxl->video_stream_index = st->index;
             avpriv_set_pts_info(st, 63, cdxl->fps.den, cdxl->fps.num);
         }
@@ -141,6 +143,8 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
         cdxl->read_chunk   = audio_size;
     }
 
+    if (!cdxl->read_chunk)
+        avio_skip(pb, current_size - audio_size - video_size - CDXL_HEADER_SIZE);
     return ret;
 }
 
