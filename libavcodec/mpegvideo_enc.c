@@ -890,7 +890,8 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg)
     AVFrame *pic = NULL;
     int64_t pts;
     int i;
-    const int encoding_delay = s->max_b_frames;
+    const int encoding_delay = s->max_b_frames ? s->max_b_frames :
+                                                 (s->low_delay ? 0 : 1);
     int direct = 1;
 
     if (pic_arg) {
