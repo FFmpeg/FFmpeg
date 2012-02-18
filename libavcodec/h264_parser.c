@@ -166,12 +166,25 @@ static inline int parse_nal_units(AVCodecParserContext *s,
         return 0;
 
     for(;;) {
-        int src_length, dst_length, consumed;
+        int src_length, dst_length, consumed, nalsize = 0;
+        if (h->is_avc) {
+            int i;
+            if (h->nal_length_size >= buf_end - buf) break;
+            nalsize = 0;
+            for (i = 0; i < h->nal_length_size; i++)
+                nalsize = (nalsize << 8) | *buf++;
+            if (nalsize <= 0 || nalsize > buf_end - buf) {
+                av_log(h->s.avctx, AV_LOG_ERROR, "AVC: nal size %d\n", nalsize);
+                break;
+            }
+            src_length = nalsize;
+        } else {
         buf = avpriv_mpv_find_start_code(buf, buf_end, &state);
         if(buf >= buf_end)
             break;
         --buf;
         src_length = buf_end - buf;
+        }
         switch (state & 0x1f) {
         case NAL_SLICE:
         case NAL_IDR_SLICE:
@@ -267,7 +280,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
 
             return 0; /* no need to evaluate the rest */
         }
-        buf += consumed;
+        buf += h->is_avc ? nalsize : consumed;
     }
     if (q264)
         return 0;
@@ -316,7 +329,6 @@ static int h264_parse(AVCodecParserContext *s,
         }
     }
 
-    if(!h->is_avc){
     parse_nal_units(s, avctx, buf, buf_size);
 
     if (h->sei_cpb_removal_delay >= 0) {
@@ -331,7 +343,6 @@ static int h264_parse(AVCodecParserContext *s,
 
     if (s->flags & PARSER_FLAG_ONCE) {
         s->flags &= PARSER_FLAG_COMPLETE_FRAMES;
-    }
     }
 
     *poutbuf = buf;
