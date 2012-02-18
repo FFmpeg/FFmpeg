@@ -404,10 +404,10 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
         // fixed order prediction
 #define PRED(x, k) (int32_t)((((uint64_t)x << k) - x) >> k)
         switch (s->bps) {
-            case 1: *p += PRED(*predictor, 4); break;
-            case 2:
-            case 3: *p += PRED(*predictor, 5); break;
-            case 4: *p += *predictor; break;
+        case 1: *p += PRED(*predictor, 4); break;
+        case 2:
+        case 3: *p += PRED(*predictor, 5); break;
+        case 4: *p +=      *predictor;     break;
         }
         *predictor = *p;
 
