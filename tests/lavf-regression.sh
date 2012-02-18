@@ -135,6 +135,8 @@ do_lavf mkv "-acodec mp2 -ab 64k -vcodec mpeg4"
 fi
 
 if [ -n "$do_ogg_vp3" ] ; then
+# -idct simple causes different results on different systems
+DEC_OPTS="$DEC_OPTS -idct auto"
 do_lavf_fate ogg "vp3/coeff_level64.mkv"
 fi
 
