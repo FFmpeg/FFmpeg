@@ -66,7 +66,7 @@ read_header:
     if (get_bits_long(&hgb, 32) != MKBETAG('m','j','p','g'))
     {
         av_log(avctx, AV_LOG_WARNING, "not mjpeg-b (bad fourcc)\n");
-        return 0;
+        return AVERROR_INVALIDDATA;
     }
 
     field_size = get_bits_long(&hgb, 32); /* field size */
@@ -146,7 +146,7 @@ read_header:
         picture->quality*= FF_QP2LAMBDA;
     }
 
-    return buf_ptr - buf;
+    return buf_size;
 }
 
 AVCodec ff_mjpegb_decoder = {
