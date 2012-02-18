@@ -43,9 +43,9 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
                    "Invalid string '%s' for aspect ratio.\n", args);
             return ret;
         }
-
-        av_log(ctx, AV_LOG_INFO, "a:%d/%d\n", aspect->ratio.num, aspect->ratio.den);
     }
+
+    av_log(ctx, AV_LOG_INFO, "a:%d/%d\n", aspect->ratio.num, aspect->ratio.den);
     return 0;
 }
 
