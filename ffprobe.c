@@ -1627,9 +1627,9 @@ static int probe_file(WriterContext *wctx, const char *filename)
     do_read_packets = do_show_packets || do_count_packets;
 
     ret = open_input_file(&fmt_ctx, filename);
-    nb_streams_frames  = av_calloc(fmt_ctx->nb_streams, sizeof(*nb_streams_frames));
-    nb_streams_packets = av_calloc(fmt_ctx->nb_streams, sizeof(*nb_streams_packets));
     if (ret >= 0) {
+        nb_streams_frames  = av_calloc(fmt_ctx->nb_streams, sizeof(*nb_streams_frames));
+        nb_streams_packets = av_calloc(fmt_ctx->nb_streams, sizeof(*nb_streams_packets));
         if (do_read_frames || do_read_packets) {
             const char *chapter;
             if (do_show_frames && do_show_packets &&
@@ -1651,11 +1651,9 @@ static int probe_file(WriterContext *wctx, const char *filename)
             if (fmt_ctx->streams[i]->codec->codec_id != CODEC_ID_NONE)
                 avcodec_close(fmt_ctx->streams[i]->codec);
         avformat_close_input(&fmt_ctx);
+        av_freep(&nb_streams_frames);
+        av_freep(&nb_streams_packets);
     }
-
-    av_freep(&nb_streams_frames);
-    av_freep(&nb_streams_packets);
-
     return ret;
 }
 
