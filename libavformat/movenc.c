@@ -1582,7 +1582,7 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov,
         mov_write_udta_sdp(pb, track->rtp_ctx, track->track_id);
     if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO && track->mode == MODE_MOV) {
         double sample_aspect_ratio = av_q2d(st->sample_aspect_ratio);
-        if (0.0 != sample_aspect_ratio && 1.0 != sample_aspect_ratio)
+        if (st->sample_aspect_ratio.num && 1.0 != sample_aspect_ratio)
             mov_write_tapt_tag(pb, track);
     };
     return update_size(pb, pos);
