@@ -35,6 +35,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     AspectContext *aspect = ctx->priv;
     int ret;
+    aspect->ratio = (AVRational) {0, 1};
 
     if (args) {
         if ((ret = av_parse_ratio(&aspect->ratio, args, 100, 0, ctx)) < 0 ||
