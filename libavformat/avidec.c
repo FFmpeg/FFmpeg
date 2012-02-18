@@ -1385,7 +1385,6 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     st = s->streams[stream_index];
     ast= st->priv_data;
     index= av_index_search_timestamp(st, timestamp * FFMAX(ast->sample_size, 1), flags);
-    if(index<0)
     if (index<0) {
         if (st->nb_index_entries > 0)
             av_log(s, AV_LOG_ERROR, "Failed to find timestamp %"PRId64 " in index %"PRId64 " .. %"PRId64 "\n",
