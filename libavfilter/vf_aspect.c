@@ -58,7 +58,6 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 }
 
 #if CONFIG_SETDAR_FILTER
-/* for setdar filter, convert from frame aspect ratio to pixel aspect ratio */
 static int setdar_config_props(AVFilterLink *inlink)
 {
     AspectContext *aspect = inlink->dst->priv;
@@ -99,7 +98,6 @@ AVFilter avfilter_vf_setdar = {
 #endif /* CONFIG_SETDAR_FILTER */
 
 #if CONFIG_SETSAR_FILTER
-/* for setdar filter, convert from frame aspect ratio to pixel aspect ratio */
 static int setsar_config_props(AVFilterLink *inlink)
 {
     AspectContext *aspect = inlink->dst->priv;
