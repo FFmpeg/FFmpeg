@@ -817,8 +817,12 @@ static int wma_decode_superframe(AVCodecContext *avctx, void *data,
         s->last_superframe_len = 0;
         return 0;
     }
-    if (buf_size < s->block_align)
-        return 0;
+    if (buf_size < s->block_align) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Input packet size too small (%d < %d)\n",
+               buf_size, s->block_align);
+        return AVERROR_INVALIDDATA;
+    }
     buf_size = s->block_align;
 
     init_get_bits(&s->gb, buf, buf_size*8);
