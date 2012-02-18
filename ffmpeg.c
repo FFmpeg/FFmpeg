@@ -4402,6 +4402,18 @@ static void opt_output_file(void *optctx, const char *filename)
         }
     }
 
+
+    for (i = nb_output_streams - oc->nb_streams; i < nb_output_streams; i++) { //for all streams of this output file
+        AVDictionaryEntry *e;
+        ost = &output_streams[i];
+
+        if (   ost->stream_copy
+            && (e = av_dict_get(codec_opts, "flags", NULL, AV_DICT_IGNORE_SUFFIX))
+            && (!e->key[5] || check_stream_specifier(oc, ost->st, e->key+6)))
+            if (av_opt_set(ost->st->codec, "flags", e->value, 0) < 0)
+                exit_program(1);
+    }
+
     /* handle attached files */
     for (i = 0; i < o->nb_attachments; i++) {
         AVIOContext *pb;
