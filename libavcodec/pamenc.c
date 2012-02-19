@@ -33,21 +33,6 @@ static int pam_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     const char *tuple_type;
     uint8_t *ptr;
 
-    if ((ret = ff_alloc_packet(pkt, avpicture_get_size(avctx->pix_fmt,
-                                                       avctx->width,
-                                                       avctx->height) + 200)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "encoded frame too large\n");
-        return ret;
-    }
-
-    *p           = *pict;
-    p->pict_type = AV_PICTURE_TYPE_I;
-    p->key_frame = 1;
-
-    s->bytestream_start =
-    s->bytestream       = pkt->data;
-    s->bytestream_end   = pkt->data + pkt->size;
-
     h = avctx->height;
     w = avctx->width;
     switch (avctx->pix_fmt) {
@@ -102,6 +87,22 @@ static int pam_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     default:
         return -1;
     }
+
+    if ((ret = ff_alloc_packet(pkt, avpicture_get_size(avctx->pix_fmt,
+                                                       avctx->width,
+                                                       avctx->height) + 200)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "encoded frame too large\n");
+        return ret;
+    }
+
+    *p           = *pict;
+    p->pict_type = AV_PICTURE_TYPE_I;
+    p->key_frame = 1;
+
+    s->bytestream_start =
+    s->bytestream       = pkt->data;
+    s->bytestream_end   = pkt->data + pkt->size;
+
     snprintf(s->bytestream, s->bytestream_end - s->bytestream,
              "P7\nWIDTH %d\nHEIGHT %d\nDEPTH %d\nMAXVAL %d\nTUPLTYPE %s\nENDHDR\n",
              w, h, depth, maxval, tuple_type);
