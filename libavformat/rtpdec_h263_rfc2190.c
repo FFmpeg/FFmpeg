@@ -35,6 +35,7 @@ struct PayloadContext {
     uint8_t      endbyte;
     int          endbyte_bits;
     uint32_t     timestamp;
+    int          newformat;
 };
 
 static PayloadContext *h263_new_context(void)
@@ -58,8 +59,13 @@ static int h263_handle_packet(AVFormatContext *ctx, PayloadContext *data,
                               AVStream *st, AVPacket *pkt, uint32_t *timestamp,
                               const uint8_t *buf, int len, int flags)
 {
-    int f, p, i, sbit, ebit; /* Corresponding to header fields in the RFC */
+    /* Corresponding to header fields in the RFC */
+    int f, p, i, sbit, ebit, src, r;
     int header_size;
+
+    if (data->newformat)
+        return ff_h263_handle_packet(ctx, data, st, pkt, timestamp, buf, len,
+                                     flags);
 
     if (data->buf && data->timestamp != *timestamp) {
         /* Dropping old buffered, unfinished data */
@@ -80,6 +86,7 @@ static int h263_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         /* Mode A */
         header_size = 4;
         i = buf[1] & 0x10;
+        r = ((buf[1] & 0x01) << 3) | ((buf[2] & 0xe0) >> 5);
     } else if (!p) {
         /* Mode B */
         header_size = 8;
@@ -89,6 +96,7 @@ static int h263_handle_packet(AVFormatContext *ctx, PayloadContext *data,
                    len, header_size);
             return AVERROR_INVALIDDATA;
         }
+        r = buf[3] & 0x03;
         i = buf[4] & 0x80;
     } else {
         /* Mode C */
@@ -99,10 +107,24 @@ static int h263_handle_packet(AVFormatContext *ctx, PayloadContext *data,
                    len, header_size);
             return AVERROR_INVALIDDATA;
         }
+        r = buf[3] & 0x03;
         i = buf[4] & 0x80;
     }
     sbit = (buf[0] >> 3) & 0x7;
     ebit =  buf[0]       & 0x7;
+    src  = (buf[1] & 0xe0) >> 5;
+    if (!(buf[0] & 0xf8)) { /* Reserved bits in RFC 2429/4629 are zero */
+        if ((src == 0 || src >= 6) && r) {
+            /* Invalid src for this format, and bits that should be zero
+             * according to RFC 2190 aren't zero. */
+            av_log(ctx, AV_LOG_WARNING,
+                   "Interpreting H263 RTP data as RFC 2429/4629 even though "
+                   "signalled with a static payload type.\n");
+            data->newformat = 1;
+            return ff_h263_handle_packet(ctx, data, st, pkt, timestamp, buf,
+                                         len, flags);
+        }
+    }
 
     buf += header_size;
     len -= header_size;

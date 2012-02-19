@@ -1914,6 +1914,10 @@ static int decode_frame_mp3on4(AVCodecContext *avctx, void *data,
         m     = s->mp3decctx[fr];
         assert(m != NULL);
 
+        if (fsize < HEADER_SIZE) {
+            av_log(avctx, AV_LOG_ERROR, "Frame size smaller than header size\n");
+            return AVERROR_INVALIDDATA;
+        }
         header = (AV_RB32(buf) & 0x000fffff) | s->syncword; // patch header
 
         if (ff_mpa_check_header(header) < 0) // Bad header, discard block

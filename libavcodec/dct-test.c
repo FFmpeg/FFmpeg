@@ -54,7 +54,7 @@ void ff_bfin_fdct(DCTELEM *block);
 
 // ALTIVEC
 void ff_fdct_altivec(DCTELEM *block);
-//void idct_altivec(DCTELEM *block);?? no routine
+//void ff_idct_altivec(DCTELEM *block);?? no routine
 
 // ARM
 void ff_j_rev_dct_arm(DCTELEM *data);

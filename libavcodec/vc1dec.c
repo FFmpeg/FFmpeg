@@ -67,7 +67,7 @@ static const int offset_table2[9] = {  0,  1,  3,  7, 15, 31, 63, 127, 255 };
  * @param v The VC1Context to initialize
  * @return Status
  */
-static int vc1_init_common(VC1Context *v)
+int ff_vc1_init_common(VC1Context *v)
 {
     static int done = 0;
     int i = 0;
@@ -5274,7 +5274,7 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
         avctx->idct_algo = FF_IDCT_WMV2;
     }
 
-    if (vc1_init_common(v) < 0)
+    if (ff_vc1_init_common(v) < 0)
         return -1;
     ff_vc1dsp_init(&v->vc1dsp);
 

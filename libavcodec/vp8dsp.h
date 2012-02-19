@@ -29,7 +29,9 @@
 
 #include "dsputil.h"
 
-typedef void (*vp8_mc_func)(uint8_t *dst/*align 8*/, int dstStride, uint8_t *src/*align 1*/, int srcStride, int h, int x, int y);
+typedef void (*vp8_mc_func)(uint8_t *dst/*align 8*/, int dstStride,
+                            uint8_t *src/*align 1*/, int srcStride,
+                            int h, int x, int y);
 
 typedef struct VP8DSPContext {
     void (*vp8_luma_dc_wht)(DCTELEM block[4][4][16], DCTELEM dc[16]);

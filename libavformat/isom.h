@@ -162,6 +162,30 @@ void ff_mp4_parse_es_descr(AVIOContext *pb, int *es_id);
 #define MP4DecSpecificDescrTag          0x05
 #define MP4SLDescrTag                   0x06
 
+#define MOV_TFHD_BASE_DATA_OFFSET       0x01
+#define MOV_TFHD_STSD_ID                0x02
+#define MOV_TFHD_DEFAULT_DURATION       0x08
+#define MOV_TFHD_DEFAULT_SIZE           0x10
+#define MOV_TFHD_DEFAULT_FLAGS          0x20
+#define MOV_TFHD_DURATION_IS_EMPTY  0x010000
+
+#define MOV_TRUN_DATA_OFFSET            0x01
+#define MOV_TRUN_FIRST_SAMPLE_FLAGS     0x04
+#define MOV_TRUN_SAMPLE_DURATION       0x100
+#define MOV_TRUN_SAMPLE_SIZE           0x200
+#define MOV_TRUN_SAMPLE_FLAGS          0x400
+#define MOV_TRUN_SAMPLE_CTS            0x800
+
+#define MOV_FRAG_SAMPLE_FLAG_DEGRADATION_PRIORITY_MASK 0x0000ffff
+#define MOV_FRAG_SAMPLE_FLAG_IS_NON_SYNC               0x00010000
+#define MOV_FRAG_SAMPLE_FLAG_PADDING_MASK              0x000e0000
+#define MOV_FRAG_SAMPLE_FLAG_REDUNDANCY_MASK           0x00300000
+#define MOV_FRAG_SAMPLE_FLAG_DEPENDED_MASK             0x00c00000
+#define MOV_FRAG_SAMPLE_FLAG_DEPENDS_MASK              0x03000000
+
+#define MOV_FRAG_SAMPLE_FLAG_DEPENDS_NO                0x02000000
+#define MOV_FRAG_SAMPLE_FLAG_DEPENDS_YES               0x01000000
+
 int ff_mov_read_esds(AVFormatContext *fc, AVIOContext *pb, MOVAtom atom);
 enum CodecID ff_mov_get_lpcm_codec_id(int bps, int flags);
 
