@@ -86,6 +86,7 @@ static const IdStrMap img_tags[] = {
     { CODEC_ID_SUNRAST   , "im1"},
     { CODEC_ID_SUNRAST   , "im8"},
     { CODEC_ID_SUNRAST   , "im24"},
+    { CODEC_ID_SUNRAST   , "im32"},
     { CODEC_ID_SUNRAST   , "sunras"},
     { CODEC_ID_JPEG2000  , "j2c"},
     { CODEC_ID_JPEG2000  , "j2k"},
