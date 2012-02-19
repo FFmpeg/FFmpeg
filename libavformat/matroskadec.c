@@ -1638,7 +1638,6 @@ static int matroska_read_header(AVFormatContext *s)
                       st->codec->height * track->video.display_width,
                       st->codec-> width * track->video.display_height,
                       255);
-            if (st->codec->codec_id != CODEC_ID_H264)
             st->need_parsing = AVSTREAM_PARSE_HEADERS;
             if (track->default_duration)
                 st->avg_frame_rate = av_d2q(1000000000.0/track->default_duration, INT_MAX);
