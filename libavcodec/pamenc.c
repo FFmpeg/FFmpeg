@@ -37,7 +37,7 @@ static int pam_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     w = avctx->width;
     switch (avctx->pix_fmt) {
     case PIX_FMT_MONOBLACK:
-        n          = (w + 7) >> 3;
+        n          = w;
         depth      = 1;
         maxval     = 1;
         tuple_type = "BLACKANDWHITE";
@@ -88,9 +88,7 @@ static int pam_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return -1;
     }
 
-    if ((ret = ff_alloc_packet(pkt, avpicture_get_size(avctx->pix_fmt,
-                                                       avctx->width,
-                                                       avctx->height) + 200)) < 0) {
+    if ((ret = ff_alloc_packet(pkt, n*h + 200)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "encoded frame too large\n");
         return ret;
     }
