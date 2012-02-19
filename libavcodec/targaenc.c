@@ -91,9 +91,6 @@ static int targa_encode_frame(AVCodecContext *avctx,
         return AVERROR(EINVAL);
     }
 
-    p->pict_type= AV_PICTURE_TYPE_I;
-    p->key_frame= 1;
-
     /* zero out the header and only set applicable fields */
     memset(outbuf, 0, 12);
     AV_WL16(outbuf+12, avctx->width);
@@ -154,6 +151,7 @@ static av_cold int targa_encode_init(AVCodecContext *avctx)
 
     avcodec_get_frame_defaults(&s->picture);
     s->picture.key_frame= 1;
+    s->picture.pict_type = AV_PICTURE_TYPE_I;
     avctx->coded_frame= &s->picture;
 
     return 0;
