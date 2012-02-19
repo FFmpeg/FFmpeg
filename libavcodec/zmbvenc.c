@@ -138,17 +138,6 @@ static int encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_size, void 
     p->key_frame= keyframe;
     chpal = !keyframe && memcmp(p->data[1], c->pal2, 1024);
 
-    fl = (keyframe ? ZMBV_KEYFRAME : 0) | (chpal ? ZMBV_DELTAPAL : 0);
-    *buf++ = fl; len++;
-    if(keyframe){
-        deflateReset(&c->zstream);
-        *buf++ = 0; len++; // hi ver
-        *buf++ = 1; len++; // lo ver
-        *buf++ = 1; len++; // comp
-        *buf++ = 4; len++; // format - 8bpp
-        *buf++ = ZMBV_BLOCK; len++; // block width
-        *buf++ = ZMBV_BLOCK; len++; // block height
-    }
     palptr = (uint32_t*)p->data[1];
     src = p->data[0];
     prev = c->prev;
@@ -223,6 +212,9 @@ static int encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_size, void 
         src += p->linesize[0];
     }
 
+    if (keyframe)
+        deflateReset(&c->zstream);
+
     c->zstream.next_in = c->work_buf;
     c->zstream.avail_in = work_size;
     c->zstream.total_in = 0;
@@ -235,6 +227,16 @@ static int encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_size, void 
         return -1;
     }
 
+    fl = (keyframe ? ZMBV_KEYFRAME : 0) | (chpal ? ZMBV_DELTAPAL : 0);
+    *buf++ = fl; len++;
+    if (keyframe) {
+        *buf++ = 0; len++; // hi ver
+        *buf++ = 1; len++; // lo ver
+        *buf++ = 1; len++; // comp
+        *buf++ = 4; len++; // format - 8bpp
+        *buf++ = ZMBV_BLOCK; len++; // block width
+        *buf++ = ZMBV_BLOCK; len++; // block height
+    }
     memcpy(buf, c->comp_buf, c->zstream.total_out);
     return len + c->zstream.total_out;
 }
