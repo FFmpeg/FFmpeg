@@ -714,7 +714,7 @@ static int decode_channel_residues(WmallDecodeCtx *s, int ch, int tile_size)
         if(quo >= 32)
             quo += get_bits_long(&s->gb, get_bits(&s->gb, 5) + 1);
 
-       	ave_mean = (s->ave_sum[ch] + (1 << s->movave_scaling)) >> (s->movave_scaling + 1);
+    ave_mean = (s->ave_sum[ch] + (1 << s->movave_scaling)) >> (s->movave_scaling + 1);
     if (ave_mean <= 1)
         residue = quo;
     else
