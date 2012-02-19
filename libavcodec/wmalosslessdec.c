@@ -713,8 +713,11 @@ static int decode_channel_residues(WmallDecodeCtx *s, int ch, int tile_size)
     //av_log(0, 0, "%8d: ", num_logged_tiles++);
     for(; i < tile_size; i++) {
         int quo = 0, rem, rem_bits, residue;
-        while(get_bits1(&s->gb))
+        while(get_bits1(&s->gb)) {
             quo++;
+            if (get_bits_left(&s->gb) <= 0)
+                return -1;
+        }
         if(quo >= 32)
             quo += get_bits_long(&s->gb, get_bits(&s->gb, 5) + 1);
 
