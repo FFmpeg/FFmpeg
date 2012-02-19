@@ -77,7 +77,11 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
         av_log(avctx, AV_LOG_ERROR, "invalid image size\n");
         return AVERROR_INVALIDDATA;
     }
-    if (maptype & ~1) {
+    if (maptype == RMT_RAW) {
+        av_log_ask_for_sample(avctx, "unsupported colormap type\n");
+        return AVERROR_PATCHWELCOME;
+    }
+    if (maptype > RMT_RAW) {
         av_log(avctx, AV_LOG_ERROR, "invalid colormap type\n");
         return AVERROR_INVALIDDATA;
     }
