@@ -1,6 +1,6 @@
 # use pkg-config for getting CFLAGS abd LDFLAGS
 FFMPEG_LIBS=libavdevice libavformat libavfilter libavcodec libswscale libavutil
-CFLAGS+=$(shell pkg-config  --cflags $(FFMPEG_LIBS))
+CFLAGS+=-Wall $(shell pkg-config  --cflags $(FFMPEG_LIBS))
 LDFLAGS+=$(shell pkg-config --libs $(FFMPEG_LIBS))
 
 EXAMPLES=decoding_encoding filtering metadata muxing
