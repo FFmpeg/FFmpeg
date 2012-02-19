@@ -824,9 +824,13 @@ cglobal deblock_v_chroma_8_mmxext, 5,6
 ; void ff_deblock_h_chroma( uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0 )
 ;-----------------------------------------------------------------------------
 cglobal deblock_h_chroma_8_mmxext, 5,7
-%if ARCH_X86_64
+%if UNIX64
     %define buf0 [rsp-24]
     %define buf1 [rsp-16]
+%elif WIN64
+    sub   rsp, 16
+    %define buf0 [rsp]
+    %define buf1 [rsp+8]
 %else
     %define buf0 r0m
     %define buf1 r2m
@@ -839,6 +843,9 @@ cglobal deblock_h_chroma_8_mmxext, 5,7
     movq  m0, buf0
     movq  m3, buf1
     TRANSPOSE8x4B_STORE PASS8ROWS(t5, r0, r1, t6)
+%if WIN64
+    add   rsp, 16
+%endif
     RET
 
 ALIGN 16
