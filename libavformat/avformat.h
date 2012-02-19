@@ -433,15 +433,14 @@ typedef struct AVInputFormat {
 
     /**
      * Read the format header and initialize the AVFormatContext
-     * structure. Return 0 if OK. 'ap' if non-NULL contains
-     * additional parameters. Only used in raw format right
-     * now. 'av_new_stream' should be called to create new streams.
+     * structure. Return 0 if OK. Only used in raw format right
+     * now. 'avformat_new_stream' should be called to create new streams.
      */
     int (*read_header)(struct AVFormatContext *);
 
     /**
      * Read one packet and put it in 'pkt'. pts and flags are also
-     * set. 'av_new_stream' can be called only if the flag
+     * set. 'avformat_new_stream' can be called only if the flag
      * AVFMTCTX_NOHEADER is used and only in the calling thread (not in a
      * background thread).
      * @return 0 on success, < 0 on error.
