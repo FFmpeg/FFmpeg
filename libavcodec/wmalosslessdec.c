@@ -160,6 +160,7 @@ typedef struct WmallDecodeCtx {
     /* generic decoder variables */
     AVCodecContext*  avctx;                         ///< codec context for av_log
     DSPContext       dsp;                           ///< accelerated DSP functions
+    AVFrame          frame;
     uint8_t          frame_data[MAX_FRAMESIZE +
                       FF_INPUT_BUFFER_PADDING_SIZE];///< compressed frame data
     PutBitContext    pb;                            ///< context for filling the frame_data buffer
@@ -436,6 +437,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
         av_log_ask_for_sample(avctx, "unsupported number of channels\n");
         return AVERROR_PATCHWELCOME;
     }
+
+    avcodec_get_frame_defaults(&s->frame);
+    avctx->coded_frame = &s->frame;
 
     avctx->channel_layout = channel_mask;
     return 0;
@@ -1245,21 +1249,18 @@ static int decode_frame(WmallDecodeCtx *s)
     GetBitContext* gb = &s->gb;
     int more_frames = 0;
     int len = 0;
-    int i;
-    int buffer_len;
+    int i, ret;
 
-    /** check for potential output buffer overflow */
-    if (s->bits_per_sample == 16)
-        buffer_len = s->samples_16_end - s->samples_16;
-    else
-        buffer_len = s->samples_32_end - s->samples_32;
-    if (s->num_channels * s->samples_per_frame > buffer_len) {
+    s->frame.nb_samples = s->samples_per_frame;
+    if ((ret = s->avctx->get_buffer(s->avctx, &s->frame)) < 0) {
         /** return an error if no frame could be decoded at all */
         av_log(s->avctx, AV_LOG_ERROR,
                "not enough space for the output samples\n");
         s->packet_loss = 1;
         return 0;
     }
+    s->samples_16 = (int16_t *)s->frame.data[0];
+    s->samples_32 = (int32_t *)s->frame.data[0];
 
     /** get frame length */
     if (s->len_prefix)
@@ -1415,7 +1416,7 @@ static void save_bits(WmallDecodeCtx *s, GetBitContext* gb, int len,
  *@return number of bytes that were read from the input buffer
  */
 static int decode_packet(AVCodecContext *avctx,
-                         void *data, int *data_size, AVPacket* avpkt)
+                         void *data, int *got_frame_ptr, AVPacket* avpkt)
 {
     WmallDecodeCtx *s = avctx->priv_data;
     GetBitContext* gb  = &s->pgb;
@@ -1425,15 +1426,6 @@ static int decode_packet(AVCodecContext *avctx,
     int packet_sequence_number;
     int seekable_frame_in_packet;
     int spliced_packet;
-
-    if (s->bits_per_sample == 16) {
-        s->samples_16     = (int16_t *) data;
-        s->samples_16_end = (int16_t *) ((int8_t*)data + *data_size);
-    } else {
-        s->samples_32     = (void *) data;
-        s->samples_32_end = (void *) ((int8_t*)data + *data_size);
-    }
-    *data_size = 0;
 
     if (s->packet_done || s->packet_loss) {
         int seekable_frame_in_packet, spliced_packet;
@@ -1526,10 +1518,8 @@ static int decode_packet(AVCodecContext *avctx,
         save_bits(s, gb, remaining_bits(s, gb), 0);
     }
 
-    if (s->bits_per_sample == 16)
-        *data_size = (int8_t *)s->samples_16 - (int8_t *)data;
-    else
-        *data_size = (int8_t *)s->samples_32 - (int8_t *)data;
+    *(AVFrame *)data = s->frame;
+    *got_frame_ptr = 1;
     s->packet_offset = get_bits_count(gb) & 7;
 
     return (s->packet_loss) ? AVERROR_INVALIDDATA : get_bits_count(gb) >> 3;
@@ -1564,6 +1554,6 @@ AVCodec ff_wmalossless_decoder = {
     .close          = decode_end,
     .decode         = decode_packet,
     .flush          = flush,
-    .capabilities = CODEC_CAP_SUBFRAMES | CODEC_CAP_EXPERIMENTAL,
+    .capabilities = CODEC_CAP_SUBFRAMES | CODEC_CAP_EXPERIMENTAL | CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Windows Media Audio 9 Lossless"),
 };
