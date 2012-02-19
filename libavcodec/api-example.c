@@ -74,7 +74,7 @@ static void audio_encode_example(const char *filename)
     c->channels = 2;
 
     /* open it */
-    if (avcodec_open(c, codec) < 0) {
+    if (avcodec_open2(c, codec, NULL) < 0) {
         fprintf(stderr, "could not open codec\n");
         exit(1);
     }
@@ -139,7 +139,7 @@ static void audio_decode_example(const char *outfilename, const char *filename)
     c = avcodec_alloc_context3(codec);
 
     /* open it */
-    if (avcodec_open(c, codec) < 0) {
+    if (avcodec_open2(c, codec, NULL) < 0) {
         fprintf(stderr, "could not open codec\n");
         exit(1);
     }
@@ -242,7 +242,7 @@ static void video_encode_example(const char *filename)
     c->pix_fmt = PIX_FMT_YUV420P;
 
     /* open it */
-    if (avcodec_open(c, codec) < 0) {
+    if (avcodec_open2(c, codec, NULL) < 0) {
         fprintf(stderr, "could not open codec\n");
         exit(1);
     }
@@ -369,7 +369,7 @@ static void video_decode_example(const char *outfilename, const char *filename)
        available in the bitstream. */
 
     /* open it */
-    if (avcodec_open(c, codec) < 0) {
+    if (avcodec_open2(c, codec, NULL) < 0) {
         fprintf(stderr, "could not open codec\n");
         exit(1);
     }
@@ -455,9 +455,6 @@ static void video_decode_example(const char *outfilename, const char *filename)
 int main(int argc, char **argv)
 {
     const char *filename;
-
-    /* must be called before using avcodec lib */
-    avcodec_init();
 
     /* register all the codecs */
     avcodec_register_all();

@@ -65,7 +65,7 @@ static AVStream *add_audio_stream(AVFormatContext *oc, enum CodecID codec_id)
     AVCodecContext *c;
     AVStream *st;
 
-    st = av_new_stream(oc, 1);
+    st = avformat_new_stream(oc, NULL);
     if (!st) {
         fprintf(stderr, "Could not alloc stream\n");
         exit(1);
@@ -103,7 +103,7 @@ static void open_audio(AVFormatContext *oc, AVStream *st)
     }
 
     /* open it */
-    if (avcodec_open(c, codec) < 0) {
+    if (avcodec_open2(c, codec, NULL) < 0) {
         fprintf(stderr, "could not open codec\n");
         exit(1);
     }
@@ -164,7 +164,7 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
 
     get_audio_frame(samples, audio_input_frame_size, c->channels);
 
-    pkt.size= avcodec_encode_audio(c, audio_outbuf, audio_outbuf_size, samples);
+    pkt.size = avcodec_encode_audio2(c, audio_outbuf, audio_outbuf_size, samples);
 
     if (c->coded_frame && c->coded_frame->pts != AV_NOPTS_VALUE)
         pkt.pts= av_rescale_q(c->coded_frame->pts, c->time_base, st->time_base);
@@ -275,7 +275,7 @@ static void open_video(AVFormatContext *oc, AVStream *st)
     }
 
     /* open the codec */
-    if (avcodec_open(c, codec) < 0) {
+    if (avcodec_open2(c, codec, NULL) < 0) {
         fprintf(stderr, "could not open codec\n");
         exit(1);
     }
@@ -482,13 +482,6 @@ int main(int argc, char **argv)
         audio_st = add_audio_stream(oc, fmt->audio_codec);
     }
 
-    /* set the output parameters (must be done even if no
-       parameters). */
-    if (av_set_parameters(oc, NULL) < 0) {
-        fprintf(stderr, "Invalid output format parameters\n");
-        return 1;
-    }
-
     av_dump_format(oc, 0, filename, 1);
 
     /* now that all the parameters are set, we can open the audio and
@@ -507,7 +500,7 @@ int main(int argc, char **argv)
     }
 
     /* write the stream header, if any */
-    av_write_header(oc);
+    avformat_write_header(oc, NULL);
 
     for(;;) {
         /* compute current audio and video time */
