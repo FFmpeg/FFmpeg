@@ -535,6 +535,19 @@ int opt_max_alloc(const char *opt, const char *arg)
     return 0;
 }
 
+int opt_cpuflags(const char *opt, const char *arg)
+{
+    char *tail;
+    long flags = strtol(arg, &tail, 10);
+
+    if (*tail) {
+        av_log(NULL, AV_LOG_FATAL, "Invalid cpuflags \"%s\".\n", arg);
+        exit_program(1);
+    }
+    av_force_cpu_flags(flags);
+    return 0;
+}
+
 int opt_codec_debug(const char *opt, const char *arg)
 {
     av_log_set_level(AV_LOG_DEBUG);

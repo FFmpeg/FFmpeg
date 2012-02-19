@@ -85,6 +85,8 @@ int opt_report(const char *opt);
 
 int opt_max_alloc(const char *opt, const char *arg);
 
+int opt_cpuflags(const char *opt, const char *arg);
+
 int opt_codec_debug(const char *opt, const char *arg);
 
 /**
