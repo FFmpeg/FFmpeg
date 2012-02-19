@@ -897,7 +897,8 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg)
     AVFrame *pic = NULL;
     int64_t pts;
     int i;
-    const int encoding_delay = s->max_b_frames;
+    const int encoding_delay = s->max_b_frames ? s->max_b_frames :
+                                                 (s->low_delay ? 0 : 1);
     int direct = 1;
 
     if (pic_arg) {
@@ -915,6 +916,9 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg)
                            "last=%"PRId64"\n", pts, s->user_specified_pts);
                     return -1;
                 }
+
+                if (!s->low_delay && pic_arg->display_picture_number == 1)
+                    s->dts_delta = time - last;
             }
             s->user_specified_pts = pts;
         } else {
@@ -1384,20 +1388,23 @@ no_output_pic:
     return 0;
 }
 
-int ff_MPV_encode_picture(AVCodecContext *avctx,
-                          unsigned char *buf, int buf_size, void *data)
+int ff_MPV_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
+                          const AVFrame *pic_arg, int *got_packet)
 {
     MpegEncContext *s = avctx->priv_data;
-    AVFrame *pic_arg  = data;
-    int i, stuffing_count;
+    int i, stuffing_count, ret;
     int context_count = s->slice_context_count;
+
+    if (!pkt->data &&
+        (ret = ff_alloc_packet(pkt, s->mb_width*s->mb_height*(MAX_MB_BYTES+100)+10000)) < 0)
+        return ret;
 
     for (i = 0; i < context_count; i++) {
         int start_y = s->thread_context[i]->start_mb_y;
         int   end_y = s->thread_context[i]->  end_mb_y;
         int h       = s->mb_height;
-        uint8_t *start = buf + (size_t)(((int64_t) buf_size) * start_y / h);
-        uint8_t *end   = buf + (size_t)(((int64_t) buf_size) *   end_y / h);
+        uint8_t *start = pkt->data + (size_t)(((int64_t) pkt->size) * start_y / h);
+        uint8_t *end   = pkt->data + (size_t)(((int64_t) pkt->size) *   end_y / h);
 
         init_put_bits(&s->thread_context[i]->pb, start, end - start);
     }
@@ -1557,13 +1564,27 @@ vbv_retry:
         }
         s->total_bits     += s->frame_bits;
         avctx->frame_bits  = s->frame_bits;
+
+        pkt->pts = s->current_picture.f.pts;
+        if (!s->low_delay) {
+            if (!s->current_picture.f.coded_picture_number)
+                pkt->dts = pkt->pts - s->dts_delta;
+            else
+                pkt->dts = s->reordered_pts;
+            s->reordered_pts = s->input_picture[0]->f.pts;
+        } else
+            pkt->dts = pkt->pts;
+        if (s->current_picture.f.key_frame)
+            pkt->flags |= AV_PKT_FLAG_KEY;
     } else {
         assert((put_bits_ptr(&s->pb) == s->pb.buf));
         s->frame_bits = 0;
     }
     assert((s->frame_bits & 7) == 0);
 
-    return s->frame_bits / 8;
+    pkt->size = s->frame_bits / 8;
+    *got_packet = !!pkt->size;
+    return 0;
 }
 
 static inline void dct_single_coeff_elimination(MpegEncContext *s,
@@ -2385,7 +2406,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
             if(s->data_partitioning){
                 if(   s->pb2   .buf_end - s->pb2   .buf - (put_bits_count(&s->    pb2)>>3) < MAX_MB_BYTES
                    || s->tex_pb.buf_end - s->tex_pb.buf - (put_bits_count(&s->tex_pb )>>3) < MAX_MB_BYTES){
-                    av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
+                    av_log(s->avctx, AV_LOG_ERROR, "encoded partitioned frame too large\n");
                     return -1;
                 }
             }
@@ -4084,7 +4105,7 @@ AVCodec ff_h263_encoder = {
     .id             = CODEC_ID_H263,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_MPV_encode_init,
-    .encode         = ff_MPV_encode_picture,
+    .encode2        = ff_MPV_encode_picture,
     .close          = ff_MPV_encode_end,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("H.263 / H.263-1996"),
@@ -4111,7 +4132,7 @@ AVCodec ff_h263p_encoder = {
     .id             = CODEC_ID_H263P,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_MPV_encode_init,
-    .encode         = ff_MPV_encode_picture,
+    .encode2        = ff_MPV_encode_picture,
     .close          = ff_MPV_encode_end,
     .capabilities = CODEC_CAP_SLICE_THREADS,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
@@ -4125,7 +4146,7 @@ AVCodec ff_msmpeg4v2_encoder = {
     .id             = CODEC_ID_MSMPEG4V2,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_MPV_encode_init,
-    .encode         = ff_MPV_encode_picture,
+    .encode2        = ff_MPV_encode_picture,
     .close          = ff_MPV_encode_end,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 2"),
@@ -4137,7 +4158,7 @@ AVCodec ff_msmpeg4v3_encoder = {
     .id             = CODEC_ID_MSMPEG4V3,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_MPV_encode_init,
-    .encode         = ff_MPV_encode_picture,
+    .encode2        = ff_MPV_encode_picture,
     .close          = ff_MPV_encode_end,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 3"),
@@ -4149,7 +4170,7 @@ AVCodec ff_wmv1_encoder = {
     .id             = CODEC_ID_WMV1,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_MPV_encode_init,
-    .encode         = ff_MPV_encode_picture,
+    .encode2        = ff_MPV_encode_picture,
     .close          = ff_MPV_encode_end,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("Windows Media Video 7"),

@@ -103,7 +103,7 @@ static void open_audio(AVFormatContext *oc, AVStream *st)
     }
 
     /* open it */
-    if (avcodec_open(c, codec) < 0) {
+    if (avcodec_open2(c, codec, NULL) < 0) {
         fprintf(stderr, "could not open codec\n");
         exit(1);
     }
@@ -164,7 +164,7 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
 
     get_audio_frame(samples, audio_input_frame_size, c->channels);
 
-    pkt.size = avcodec_encode_audio(c, audio_outbuf, audio_outbuf_size, samples);
+    pkt.size = avcodec_encode_audio2(c, audio_outbuf, audio_outbuf_size, samples);
 
     if (c->coded_frame && c->coded_frame->pts != AV_NOPTS_VALUE)
         pkt.pts= av_rescale_q(c->coded_frame->pts, c->time_base, st->time_base);
@@ -284,7 +284,7 @@ static void open_video(AVFormatContext *oc, AVStream *st)
     }
 
     /* open the codec */
-    if (avcodec_open(c, codec) < 0) {
+    if (avcodec_open2(c, codec, NULL) < 0) {
         fprintf(stderr, "could not open codec\n");
         exit(1);
     }

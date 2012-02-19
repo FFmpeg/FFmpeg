@@ -70,7 +70,7 @@ static void audio_encode_example(const char *filename)
     c->sample_fmt = AV_SAMPLE_FMT_S16;
 
     /* open it */
-    if (avcodec_open(c, codec) < 0) {
+    if (avcodec_open2(c, codec, NULL) < 0) {
         fprintf(stderr, "could not open codec\n");
         exit(1);
     }
@@ -135,7 +135,7 @@ static void audio_decode_example(const char *outfilename, const char *filename)
     c = avcodec_alloc_context3(codec);
 
     /* open it */
-    if (avcodec_open(c, codec) < 0) {
+    if (avcodec_open2(c, codec, NULL) < 0) {
         fprintf(stderr, "could not open codec\n");
         exit(1);
     }
@@ -243,7 +243,7 @@ static void video_encode_example(const char *filename, int codec_id)
         av_opt_set(c->priv_data, "preset", "slow", 0);
 
     /* open it */
-    if (avcodec_open(c, codec) < 0) {
+    if (avcodec_open2(c, codec, NULL) < 0) {
         fprintf(stderr, "could not open codec\n");
         exit(1);
     }
@@ -366,7 +366,7 @@ static void video_decode_example(const char *outfilename, const char *filename)
        available in the bitstream. */
 
     /* open it */
-    if (avcodec_open(c, codec) < 0) {
+    if (avcodec_open2(c, codec, NULL) < 0) {
         fprintf(stderr, "could not open codec\n");
         exit(1);
     }
