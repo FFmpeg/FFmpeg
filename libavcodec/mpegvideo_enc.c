@@ -1384,20 +1384,6 @@ int ff_MPV_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
     int i, stuffing_count, ret;
     int context_count = s->slice_context_count;
 
-    if (!pkt->data &&
-        (ret = ff_alloc_packet(pkt, s->mb_width*s->mb_height*MAX_MB_BYTES)) < 0)
-        return ret;
-
-    for (i = 0; i < context_count; i++) {
-        int start_y = s->thread_context[i]->start_mb_y;
-        int   end_y = s->thread_context[i]->  end_mb_y;
-        int h       = s->mb_height;
-        uint8_t *start = pkt->data + (size_t)(((int64_t) pkt->size) * start_y / h);
-        uint8_t *end   = pkt->data + (size_t)(((int64_t) pkt->size) *   end_y / h);
-
-        init_put_bits(&s->thread_context[i]->pb, start, end - start);
-    }
-
     s->picture_in_gop_number++;
 
     if (load_input_picture(s, pic_arg) < 0)
@@ -1409,6 +1395,20 @@ int ff_MPV_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
 
     /* output? */
     if (s->new_picture.f.data[0]) {
+        if (!pkt->data &&
+            (ret = ff_alloc_packet(pkt, s->mb_width*s->mb_height*MAX_MB_BYTES)) < 0)
+            return ret;
+
+        for (i = 0; i < context_count; i++) {
+            int start_y = s->thread_context[i]->start_mb_y;
+            int   end_y = s->thread_context[i]->  end_mb_y;
+            int h       = s->mb_height;
+            uint8_t *start = pkt->data + (size_t)(((int64_t) pkt->size) * start_y / h);
+            uint8_t *end   = pkt->data + (size_t)(((int64_t) pkt->size) *   end_y / h);
+
+            init_put_bits(&s->thread_context[i]->pb, start, end - start);
+        }
+
         s->pict_type = s->new_picture.f.pict_type;
         //emms_c();
         //printf("qs:%f %f %d\n", s->new_picture.quality,
