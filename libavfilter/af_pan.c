@@ -48,11 +48,6 @@ typedef struct PanContext {
     int nb_output_channels;
 
     int pure_gains;
-    void (*filter_samples)(struct PanContext*,
-                           AVFilterBufferRef*,
-                           AVFilterBufferRef*,
-                           int);
-
     /* channel mapping specific */
     int channel_map[SWR_CH_MAX];
     struct SwrContext *swr;
@@ -332,14 +327,6 @@ static int config_props(AVFilterLink *link)
     return 0;
 }
 
-static void filter_samples_channel_mapping(PanContext *pan,
-                                           AVFilterBufferRef *outsamples,
-                                           AVFilterBufferRef *insamples,
-                                           int n)
-{
-    swr_convert(pan->swr, outsamples->data, n, (void *)insamples->data, n);
-}
-
 static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 {
     int n = insamples->audio->nb_samples;
@@ -347,8 +334,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
     AVFilterBufferRef *outsamples = avfilter_get_audio_buffer(outlink, AV_PERM_WRITE, n);
     PanContext *pan = inlink->dst->priv;
 
-    pan->filter_samples(pan, outsamples, insamples, n);
-
+    swr_convert(pan->swr, outsamples->data, n, (void *)insamples->data, n);
     avfilter_copy_buffer_ref_props(outsamples, insamples);
     outsamples->audio->channel_layout = outlink->channel_layout;
     outsamples->audio->planar         = outlink->planar;
@@ -368,7 +354,6 @@ static int query_formats(AVFilterContext *ctx)
     /* libswr supports any sample and packing formats */
     avfilter_set_common_sample_formats(ctx, avfilter_make_all_formats(AVMEDIA_TYPE_AUDIO));
     avfilter_set_common_packing_formats(ctx, avfilter_make_all_packing_formats());
-    pan->filter_samples = filter_samples_channel_mapping;
 
     // inlink supports any channel layout
     formats = avfilter_make_all_channel_layouts();
