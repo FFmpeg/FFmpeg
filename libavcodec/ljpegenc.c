@@ -32,21 +32,37 @@
 
 #include "avcodec.h"
 #include "dsputil.h"
+#include "internal.h"
 #include "mpegvideo.h"
 #include "mjpeg.h"
 #include "mjpegenc.h"
 
 
-static int encode_picture_lossless(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data){
+static int encode_picture_lossless(AVCodecContext *avctx, AVPacket *pkt,
+                                   const AVFrame *pict, int *got_packet)
+{
     MpegEncContext * const s = avctx->priv_data;
     MJpegContext * const m = s->mjpeg_ctx;
-    AVFrame *pict = data;
     const int width= s->width;
     const int height= s->height;
     AVFrame * const p= (AVFrame*)&s->current_picture;
     const int predictor= avctx->prediction_method+1;
+    const int mb_width  = (width  + s->mjpeg_hsample[0] - 1) / s->mjpeg_hsample[0];
+    const int mb_height = (height + s->mjpeg_vsample[0] - 1) / s->mjpeg_vsample[0];
+    int ret, max_pkt_size = FF_MIN_BUFFER_SIZE;
 
-    init_put_bits(&s->pb, buf, buf_size);
+    if (avctx->pix_fmt == PIX_FMT_BGRA)
+        max_pkt_size += width * height * 3 * 4;
+    else {
+        max_pkt_size += mb_width * mb_height * 3 * 4
+                        * s->mjpeg_hsample[0] * s->mjpeg_vsample[0];
+    }
+    if ((ret = ff_alloc_packet(pkt, max_pkt_size)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting output packet of size %d.\n", max_pkt_size);
+        return ret;
+    }
+
+    init_put_bits(&s->pb, pkt->data, pkt->size);
 
     *p = *pict;
     p->pict_type= AV_PICTURE_TYPE_I;
@@ -104,8 +120,6 @@ static int encode_picture_lossless(AVCodecContext *avctx, unsigned char *buf, in
         }
     }else{
         int mb_x, mb_y, i;
-        const int mb_width  = (width  + s->mjpeg_hsample[0] - 1) / s->mjpeg_hsample[0];
-        const int mb_height = (height + s->mjpeg_vsample[0] - 1) / s->mjpeg_vsample[0];
 
         for(mb_y = 0; mb_y < mb_height; mb_y++) {
             if(s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb)>>3) < mb_width * 4 * 3 * s->mjpeg_hsample[0] * s->mjpeg_vsample[0]){
@@ -181,7 +195,11 @@ static int encode_picture_lossless(AVCodecContext *avctx, unsigned char *buf, in
     s->picture_number++;
 
     flush_put_bits(&s->pb);
-    return put_bits_ptr(&s->pb) - s->pb.buf;
+    pkt->size   = put_bits_ptr(&s->pb) - s->pb.buf;
+    pkt->flags |= AV_PKT_FLAG_KEY;
+    *got_packet = 1;
+
+    return 0;
 //    return (put_bits_count(&f->pb)+7)/8;
 }
 
@@ -192,7 +210,7 @@ AVCodec ff_ljpeg_encoder = { //FIXME avoid MPV_* lossless JPEG should not need t
     .id             = CODEC_ID_LJPEG,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_MPV_encode_init,
-    .encode         = encode_picture_lossless,
+    .encode2        = encode_picture_lossless,
     .close          = ff_MPV_encode_end,
     .long_name      = NULL_IF_CONFIG_SMALL("Lossless JPEG"),
 };
