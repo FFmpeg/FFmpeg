@@ -1315,8 +1315,20 @@ typedef struct AVCodecContext {
     int frame_number;   ///< audio or video frame number
 
     /**
-     * Number of frames the decoded output will be delayed relative to
-     * the encoded input.
+     * Encoder delay.
+     *
+     * Video:
+     *   Number of frames the decoded output will be delayed relative to the
+     *   encoded input.
+     *
+     * Audio:
+     *   Number of "priming" samples added to the beginning of the stream
+     *   during encoding. The decoded output will be delayed by this many
+     *   samples relative to the input to the encoder. Note that this field is
+     *   purely informational and does not directly affect the pts output by
+     *   the encoder, which should always be based on the actual presentation
+     *   time, including any delay.
+     *
      * - encoding: Set by libavcodec.
      * - decoding: unused
      */
