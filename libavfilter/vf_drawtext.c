@@ -49,7 +49,7 @@
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
 
-static const char *var_names[] = {
+static const char *const var_names[] = {
     "E",
     "PHI",
     "PI",
@@ -64,8 +64,8 @@ static const char *var_names[] = {
     NULL
 };
 
-static const char *fun2_names[] = {
-    "rand",
+static const char *const fun2_names[] = {
+    "rand"
 };
 
 static double drand(void *opaque, double min, double max)

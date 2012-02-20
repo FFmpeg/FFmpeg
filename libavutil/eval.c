@@ -543,13 +543,13 @@ int av_expr_parse_and_eval(double *d, const char *s,
 #undef printf
 #include <string.h>
 
-static double const_values[] = {
+static const double const_values[] = {
     M_PI,
     M_E,
     0
 };
 
-static const char *const_names[] = {
+static const char *const const_names[] = {
     "PI",
     "E",
     0

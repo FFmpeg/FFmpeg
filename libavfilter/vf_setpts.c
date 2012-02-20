@@ -30,7 +30,7 @@
 #include "libavutil/mathematics.h"
 #include "avfilter.h"
 
-static const char *var_names[] = {
+static const char *const var_names[] = {
     "E",           ///< Euler number
     "INTERLACED",  ///< tell if the current frame is interlaced
     "N",           ///< frame number (starting at zero)

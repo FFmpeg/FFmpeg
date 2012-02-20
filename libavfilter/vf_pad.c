@@ -35,7 +35,7 @@
 #include "libavutil/mathematics.h"
 #include "drawutils.h"
 
-static const char *var_names[] = {
+static const char *const var_names[] = {
     "PI",
     "PHI",
     "E",

@@ -1015,7 +1015,7 @@ static int decode_scalefactors(AACContext *ac, float sf[120], GetBitContext *gb,
     int offset[3] = { global_gain, global_gain - 90, 0 };
     int clipped_offset;
     int noise_flag = 1;
-    static const char *sf_str[3] = { "Global gain", "Noise gain", "Intensity stereo position" };
+    static const char *const sf_str[3] = { "Global gain", "Noise gain", "Intensity stereo position" };
     for (g = 0; g < ics->num_window_groups; g++) {
         for (i = 0; i < ics->max_sfb;) {
             int run_end = band_type_run_end[idx];

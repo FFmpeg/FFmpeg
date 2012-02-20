@@ -30,7 +30,7 @@
 #include "libavutil/pixdesc.h"
 #include "libswscale/swscale.h"
 
-static const char *var_names[] = {
+static const char *const var_names[] = {
     "PI",
     "PHI",
     "E",

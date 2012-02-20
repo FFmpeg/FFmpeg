@@ -47,7 +47,7 @@ int ff_xvid_rate_control_init(MpegEncContext *s){
     }
 
     for(i=0; i<s->rc_context.num_entries; i++){
-        static const char *frame_types = " ipbs";
+        static const char frame_types[] = " ipbs";
         char tmp[256];
         RateControlEntry *rce;
 

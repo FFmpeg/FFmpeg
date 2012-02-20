@@ -28,7 +28,7 @@
 #include "libavutil/mathematics.h"
 #include "avfilter.h"
 
-static const char *var_names[] = {
+static const char *const var_names[] = {
     "E",                 ///< Euler number
     "PHI",               ///< golden ratio
     "PI",                ///< greek pi

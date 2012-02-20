@@ -66,7 +66,7 @@ typedef struct VP8EncoderContext {
 } VP8Context;
 
 /** String mappings for enum vp8e_enc_control_id */
-static const char *ctlidstr[] = {
+static const char *const ctlidstr[] = {
     [VP8E_UPD_ENTROPY]           = "VP8E_UPD_ENTROPY",
     [VP8E_UPD_REFERENCE]         = "VP8E_UPD_REFERENCE",
     [VP8E_USE_REFERENCE]         = "VP8E_USE_REFERENCE",

@@ -27,7 +27,7 @@
 #include "libavutil/parseutils.h"
 #include "avfilter.h"
 
-static const char *var_names[] = {
+static const char *const var_names[] = {
     "E",
     "PHI",
     "PI",

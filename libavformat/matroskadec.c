@@ -514,7 +514,7 @@ static EbmlSyntax matroska_clusters[] = {
     { 0 }
 };
 
-static const char *matroska_doctypes[] = { "matroska", "webm" };
+static const char *const matroska_doctypes[] = { "matroska", "webm" };
 
 /*
  * Return: Whether we reached the end of a level in the hierarchy or not.

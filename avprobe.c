@@ -48,13 +48,13 @@ static const OptionDef options[];
 static const char *input_filename;
 static AVInputFormat *iformat = NULL;
 
-static const char *binary_unit_prefixes [] = { "", "Ki", "Mi", "Gi", "Ti", "Pi" };
-static const char *decimal_unit_prefixes[] = { "", "K" , "M" , "G" , "T" , "P"  };
+static const char *const binary_unit_prefixes [] = { "", "Ki", "Mi", "Gi", "Ti", "Pi" };
+static const char *const decimal_unit_prefixes[] = { "", "K" , "M" , "G" , "T" , "P"  };
 
-static const char *unit_second_str          = "s"    ;
-static const char *unit_hertz_str           = "Hz"   ;
-static const char *unit_byte_str            = "byte" ;
-static const char *unit_bit_per_second_str  = "bit/s";
+static const char unit_second_str[]         = "s"    ;
+static const char unit_hertz_str[]          = "Hz"   ;
+static const char unit_byte_str[]           = "byte" ;
+static const char unit_bit_per_second_str[] = "bit/s";
 
 void exit_program(int ret)
 {

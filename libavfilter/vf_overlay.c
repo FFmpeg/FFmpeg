@@ -33,7 +33,7 @@
 #include "libavutil/mathematics.h"
 #include "internal.h"
 
-static const char *var_names[] = {
+static const char *const var_names[] = {
     "E",
     "PHI",
     "PI",
