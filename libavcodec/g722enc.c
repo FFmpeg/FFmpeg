@@ -41,9 +41,22 @@
 #define MIN_TRELLIS 0
 #define MAX_TRELLIS 16
 
+static av_cold int g722_encode_close(AVCodecContext *avctx)
+{
+    G722Context *c = avctx->priv_data;
+    int i;
+    for (i = 0; i < 2; i++) {
+        av_freep(&c->paths[i]);
+        av_freep(&c->node_buf[i]);
+        av_freep(&c->nodep_buf[i]);
+    }
+    return 0;
+}
+
 static av_cold int g722_encode_init(AVCodecContext * avctx)
 {
     G722Context *c = avctx->priv_data;
+    int ret;
 
     if (avctx->channels != 1) {
         av_log(avctx, AV_LOG_ERROR, "Only mono tracks are allowed.\n");
@@ -62,6 +75,10 @@ static av_cold int g722_encode_init(AVCodecContext * avctx)
             c->paths[i] = av_mallocz(max_paths * sizeof(**c->paths));
             c->node_buf[i] = av_mallocz(2 * frontier * sizeof(**c->node_buf));
             c->nodep_buf[i] = av_mallocz(2 * frontier * sizeof(**c->nodep_buf));
+            if (!c->paths[i] || !c->node_buf[i] || !c->nodep_buf[i]) {
+                ret = AVERROR(ENOMEM);
+                goto error;
+            }
         }
     }
 
@@ -100,18 +117,9 @@ static av_cold int g722_encode_init(AVCodecContext * avctx)
     }
 
     return 0;
-}
-
-static av_cold int g722_encode_close(AVCodecContext *avctx)
-{
-    G722Context *c = avctx->priv_data;
-    int i;
-    for (i = 0; i < 2; i++) {
-        av_freep(&c->paths[i]);
-        av_freep(&c->node_buf[i]);
-        av_freep(&c->nodep_buf[i]);
-    }
-    return 0;
+error:
+    g722_encode_close(avctx);
+    return ret;
 }
 
 static const int16_t low_quant[33] = {
