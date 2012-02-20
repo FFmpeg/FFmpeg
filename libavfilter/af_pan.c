@@ -235,24 +235,23 @@ static int config_props(AVFilterLink *link)
         }
     }
 
-        /* TODO reindent */
-        // sanity check; can't be done in query_formats since the inlink
-        // channel layout is unknown at that time
-        if (pan->nb_input_channels > SWR_CH_MAX ||
-            pan->nb_output_channels > SWR_CH_MAX) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "libswresample support a maximum of %d channels. "
-                   "Feel free to ask for a higher limit.\n", SWR_CH_MAX);
-            return AVERROR_PATCHWELCOME;
-        }
+    // sanity check; can't be done in query_formats since the inlink
+    // channel layout is unknown at that time
+    if (pan->nb_input_channels > SWR_CH_MAX ||
+        pan->nb_output_channels > SWR_CH_MAX) {
+        av_log(ctx, AV_LOG_ERROR,
+               "libswresample support a maximum of %d channels. "
+               "Feel free to ask for a higher limit.\n", SWR_CH_MAX);
+        return AVERROR_PATCHWELCOME;
+    }
 
-        // init libswresample context
-        pan->swr = swr_alloc_set_opts(pan->swr,
-                                      pan->out_channel_layout, link->format, link->sample_rate,
-                                      link->channel_layout,    link->format, link->sample_rate,
-                                      0, ctx);
-        if (!pan->swr)
-            return AVERROR(ENOMEM);
+    // init libswresample context
+    pan->swr = swr_alloc_set_opts(pan->swr,
+                                  pan->out_channel_layout, link->format, link->sample_rate,
+                                  link->channel_layout,    link->format, link->sample_rate,
+                                  0, ctx);
+    if (!pan->swr)
+        return AVERROR(ENOMEM);
 
     // gains are pure, init the channel mapping
     if (pan->pure_gains) {
@@ -365,12 +364,11 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterLink *outlink = ctx->outputs[0];
     AVFilterFormats *formats;
 
-        /* TODO reindent */
-        pan->pure_gains = are_gains_pure(pan);
-        /* libswr supports any sample and packing formats */
-        avfilter_set_common_sample_formats(ctx, avfilter_make_all_formats(AVMEDIA_TYPE_AUDIO));
-        avfilter_set_common_packing_formats(ctx, avfilter_make_all_packing_formats());
-        pan->filter_samples = filter_samples_channel_mapping;
+    pan->pure_gains = are_gains_pure(pan);
+    /* libswr supports any sample and packing formats */
+    avfilter_set_common_sample_formats(ctx, avfilter_make_all_formats(AVMEDIA_TYPE_AUDIO));
+    avfilter_set_common_packing_formats(ctx, avfilter_make_all_packing_formats());
+    pan->filter_samples = filter_samples_channel_mapping;
 
     // inlink supports any channel layout
     formats = avfilter_make_all_channel_layouts();
