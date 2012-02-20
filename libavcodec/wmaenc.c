@@ -20,6 +20,7 @@
  */
 
 #include "avcodec.h"
+#include "internal.h"
 #include "wma.h"
 
 #undef NDEBUG
@@ -86,7 +87,12 @@ static int encode_init(AVCodecContext * avctx){
     avctx->bit_rate    = avctx->block_align * 8LL * avctx->sample_rate /
                          s->frame_len;
 //av_log(NULL, AV_LOG_ERROR, "%d %d %d %d\n", s->block_align, avctx->bit_rate, s->frame_len, avctx->sample_rate);
-    avctx->frame_size= s->frame_len;
+    avctx->frame_size = avctx->delay = s->frame_len;
+
+#if FF_API_OLD_ENCODE_AUDIO
+    avctx->coded_frame = &s->frame;
+    avcodec_get_frame_defaults(avctx->coded_frame);
+#endif
 
     return 0;
 }
@@ -340,16 +346,17 @@ static int encode_frame(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE], 
     return put_bits_count(&s->pb)/8 - s->block_align;
 }
 
-static int encode_superframe(AVCodecContext *avctx,
-                            unsigned char *buf, int buf_size, void *data){
+static int encode_superframe(AVCodecContext *avctx, AVPacket *avpkt,
+                             const AVFrame *frame, int *got_packet_ptr)
+{
     WMACodecContext *s = avctx->priv_data;
-    const short *samples = data;
-    int i, total_gain;
+    const int16_t *samples = (const int16_t *)frame->data[0];
+    int i, total_gain, ret;
 
     s->block_len_bits= s->frame_len_bits; //required by non variable block len
     s->block_len = 1 << s->block_len_bits;
 
-    apply_window_and_mdct(avctx, samples, avctx->frame_size);
+    apply_window_and_mdct(avctx, samples, frame->nb_samples);
 
     if (s->ms_stereo) {
         float a, b;
@@ -363,24 +370,25 @@ static int encode_superframe(AVCodecContext *avctx,
         }
     }
 
-    if (buf_size < 2 * MAX_CODED_SUPERFRAME_SIZE) {
-        av_log(avctx, AV_LOG_ERROR, "output buffer size is too small\n");
-        return AVERROR(EINVAL);
+    if ((ret = ff_alloc_packet(avpkt, 2 * MAX_CODED_SUPERFRAME_SIZE))) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
+        return ret;
     }
 
 #if 1
     total_gain= 128;
     for(i=64; i; i>>=1){
-        int error= encode_frame(s, s->coefs, buf, buf_size, total_gain-i);
+        int error = encode_frame(s, s->coefs, avpkt->data, avpkt->size,
+                                 total_gain - i);
         if(error<0)
             total_gain-= i;
     }
 #else
     total_gain= 90;
-    best= encode_frame(s, s->coefs, buf, buf_size, total_gain);
+    best = encode_frame(s, s->coefs, avpkt->data, avpkt->size, total_gain);
     for(i=32; i; i>>=1){
-        int scoreL= encode_frame(s, s->coefs, buf, buf_size, total_gain-i);
-        int scoreR= encode_frame(s, s->coefs, buf, buf_size, total_gain+i);
+        int scoreL = encode_frame(s, s->coefs, avpkt->data, avpkt->size, total_gain - i);
+        int scoreR = encode_frame(s, s->coefs, avpkt->data, avpkt->size, total_gain + i);
         av_log(NULL, AV_LOG_ERROR, "%d %d %d (%d)\n", scoreL, best, scoreR, total_gain);
         if(scoreL < FFMIN(best, scoreR)){
             best = scoreL;
@@ -392,7 +400,7 @@ static int encode_superframe(AVCodecContext *avctx,
     }
 #endif
 
-    if ((i = encode_frame(s, s->coefs, buf, buf_size, total_gain)) >= 0) {
+    if ((i = encode_frame(s, s->coefs, avpkt->data, avpkt->size, total_gain)) >= 0) {
         av_log(avctx, AV_LOG_ERROR, "required frame size too large. please "
                "use a higher bit rate.\n");
         return AVERROR(EINVAL);
@@ -402,7 +410,13 @@ static int encode_superframe(AVCodecContext *avctx,
         put_bits(&s->pb, 8, 'N');
 
     flush_put_bits(&s->pb);
-    return s->block_align;
+
+    if (frame->pts != AV_NOPTS_VALUE)
+        avpkt->pts = frame->pts - ff_samples_to_time_base(avctx, avctx->delay);
+
+    avpkt->size = s->block_align;
+    *got_packet_ptr = 1;
+    return 0;
 }
 
 AVCodec ff_wmav1_encoder = {
@@ -411,7 +425,7 @@ AVCodec ff_wmav1_encoder = {
     .id             = CODEC_ID_WMAV1,
     .priv_data_size = sizeof(WMACodecContext),
     .init           = encode_init,
-    .encode         = encode_superframe,
+    .encode2        = encode_superframe,
     .close          = ff_wma_end,
     .sample_fmts    = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Audio 1"),
@@ -423,7 +437,7 @@ AVCodec ff_wmav2_encoder = {
     .id             = CODEC_ID_WMAV2,
     .priv_data_size = sizeof(WMACodecContext),
     .init           = encode_init,
-    .encode         = encode_superframe,
+    .encode2        = encode_superframe,
     .close          = ff_wma_end,
     .sample_fmts    = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Audio 2"),
