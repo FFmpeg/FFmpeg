@@ -37,11 +37,7 @@
 
 typedef struct PanContext {
     int64_t out_channel_layout;
-    union {
-        double d[MAX_CHANNELS][MAX_CHANNELS];
-        // i is 1:7:8 fixed-point, i.e. in [-128*256; +128*256[
-        int    i[MAX_CHANNELS][MAX_CHANNELS];
-    } gain;
+    double gain[MAX_CHANNELS][MAX_CHANNELS];
     int64_t need_renorm;
     int need_renumber;
     int nb_input_channels;
@@ -171,7 +167,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args0, void *opaque)
                        "Can not mix named and numbered channels\n");
                 return AVERROR(EINVAL);
             }
-            pan->gain.d[out_ch_id][in_ch_id] = gain;
+            pan->gain[out_ch_id][in_ch_id] = gain;
             if (!*arg)
                 break;
             if (*arg != '+') {
@@ -196,7 +192,7 @@ static int are_gains_pure(const PanContext *pan)
         int nb_gain = 0;
 
         for (j = 0; j < MAX_CHANNELS; j++) {
-            double gain = pan->gain.d[i][j];
+            double gain = pan->gain[i][j];
 
             /* channel mapping is effective only if 0% or 100% of a channel is
              * selected... */
@@ -247,7 +243,7 @@ static int config_props(AVFilterLink *link)
         for (i = j = 0; i < MAX_CHANNELS; i++) {
             if ((link->channel_layout >> i) & 1) {
                 for (k = 0; k < pan->nb_output_channels; k++)
-                    pan->gain.d[k][j] = pan->gain.d[k][i];
+                    pan->gain[k][j] = pan->gain[k][i];
                 j++;
             }
         }
@@ -278,7 +274,7 @@ static int config_props(AVFilterLink *link)
         for (i = 0; i < pan->nb_output_channels; i++) {
             int ch_id = -1;
             for (j = 0; j < pan->nb_input_channels; j++) {
-                if (pan->gain.d[i][j]) {
+                if (pan->gain[i][j]) {
                     ch_id = j;
                     break;
                 }
@@ -296,7 +292,7 @@ static int config_props(AVFilterLink *link)
                 continue;
             t = 0;
             for (j = 0; j < pan->nb_input_channels; j++)
-                t += pan->gain.d[i][j];
+                t += pan->gain[i][j];
             if (t > -1E-5 && t < 1E-5) {
                 // t is almost 0 but not exactly, this is probably a mistake
                 if (t)
@@ -305,12 +301,11 @@ static int config_props(AVFilterLink *link)
                 continue;
             }
             for (j = 0; j < pan->nb_input_channels; j++)
-                pan->gain.d[i][j] /= t;
+                pan->gain[i][j] /= t;
         }
         av_opt_set_int(pan->swr, "icl", link->channel_layout, 0);
         av_opt_set_int(pan->swr, "ocl", pan->out_channel_layout, 0);
-        swr_set_matrix(pan->swr, pan->gain.d[0],
-                       pan->gain.d[1] - pan->gain.d[0]);
+        swr_set_matrix(pan->swr, pan->gain[0], pan->gain[1] - pan->gain[0]);
     }
 
     r = swr_init(pan->swr);
@@ -322,7 +317,7 @@ static int config_props(AVFilterLink *link)
         cur = buf;
         for (j = 0; j < pan->nb_input_channels; j++) {
             r = snprintf(cur, buf + sizeof(buf) - cur, "%s%.3g i%d",
-                         j ? " + " : "", pan->gain.d[i][j], j);
+                         j ? " + " : "", pan->gain[i][j], j);
             cur += FFMIN(buf + sizeof(buf) - cur, r);
         }
         av_log(ctx, AV_LOG_INFO, "o%d = %s\n", i, buf);
@@ -337,15 +332,6 @@ static int config_props(AVFilterLink *link)
                 av_log(ctx, AV_LOG_INFO, " %d", pan->channel_map[i]);
         av_log(ctx, AV_LOG_INFO, "\n");
         return 0;
-    }
-    // convert to integer
-    for (i = 0; i < pan->nb_output_channels; i++) {
-        for (j = 0; j < pan->nb_input_channels; j++) {
-            if (pan->gain.d[i][j] < -128 || pan->gain.d[i][j] > 128)
-                av_log(ctx, AV_LOG_WARNING,
-                    "Gain #%d->#%d too large, clamped\n", j, i);
-            pan->gain.i[i][j] = av_clipf(pan->gain.d[i][j], -128, 128) * 256.0;
-        }
     }
     return 0;
 }
