@@ -210,6 +210,29 @@ static int are_gains_pure(const PanContext *pan)
     return 1;
 }
 
+static int query_formats(AVFilterContext *ctx)
+{
+    PanContext *pan = ctx->priv;
+    AVFilterLink *inlink  = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
+    AVFilterFormats *formats;
+
+    pan->pure_gains = are_gains_pure(pan);
+    /* libswr supports any sample and packing formats */
+    avfilter_set_common_sample_formats(ctx, avfilter_make_all_formats(AVMEDIA_TYPE_AUDIO));
+    avfilter_set_common_packing_formats(ctx, avfilter_make_all_packing_formats());
+
+    // inlink supports any channel layout
+    formats = avfilter_make_all_channel_layouts();
+    avfilter_formats_ref(formats, &inlink->out_chlayouts);
+
+    // outlink supports only requested output channel layout
+    formats = NULL;
+    avfilter_add_format(&formats, pan->out_channel_layout);
+    avfilter_formats_ref(formats, &outlink->in_chlayouts);
+    return 0;
+}
+
 static int config_props(AVFilterLink *link)
 {
     AVFilterContext *ctx = link->dst;
@@ -341,29 +364,6 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 
     avfilter_filter_samples(outlink, outsamples);
     avfilter_unref_buffer(insamples);
-}
-
-static int query_formats(AVFilterContext *ctx)
-{
-    PanContext *pan = ctx->priv;
-    AVFilterLink *inlink  = ctx->inputs[0];
-    AVFilterLink *outlink = ctx->outputs[0];
-    AVFilterFormats *formats;
-
-    pan->pure_gains = are_gains_pure(pan);
-    /* libswr supports any sample and packing formats */
-    avfilter_set_common_sample_formats(ctx, avfilter_make_all_formats(AVMEDIA_TYPE_AUDIO));
-    avfilter_set_common_packing_formats(ctx, avfilter_make_all_packing_formats());
-
-    // inlink supports any channel layout
-    formats = avfilter_make_all_channel_layouts();
-    avfilter_formats_ref(formats, &inlink->out_chlayouts);
-
-    // outlink supports only requested output channel layout
-    formats = NULL;
-    avfilter_add_format(&formats, pan->out_channel_layout);
-    avfilter_formats_ref(formats, &outlink->in_chlayouts);
-    return 0;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
