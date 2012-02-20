@@ -665,5 +665,5 @@ AVCodec ff_png_decoder = {
     .close          = png_dec_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1 /*| CODEC_CAP_DRAW_HORIZ_BAND*/,
-    .long_name = NULL_IF_CONFIG_SMALL("PNG image"),
+    .long_name = NULL_IF_CONFIG_SMALL("PNG (Portable Network Graphics) image"),
 };
