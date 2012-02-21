@@ -114,6 +114,10 @@ then 0 is assumed.
 note, when you have the derivatives at y instead of 0
 taylor(expr, x-y) can be used
 When the series does not converge the results are undefined.
+
+@item root(expr, max)
+Finds x where f(x)=0 in the interval 0..max.
+f() must be continuous or the result is undefined.
 @end table
 
 The following constants are available:
