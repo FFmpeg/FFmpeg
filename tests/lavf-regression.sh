@@ -225,6 +225,10 @@ if [ -n "$do_rso" ] ; then
 do_audio_only rso
 fi
 
+if [ -n "$do_sox" ] ; then
+do_audio_only sox
+fi
+
 # pix_fmt conversions
 
 if [ -n "$do_pixfmt" ] ; then
