@@ -350,8 +350,9 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             if (err < 0)
                 return err;
             if (c->found_moov && c->found_mdat &&
-                (!pb->seekable || start_pos + a.size == avio_size(pb))) {
-                if (!pb->seekable)
+                ((!pb->seekable || c->fc->flags & AVFMT_FLAG_IGNIDX) ||
+                 start_pos + a.size == avio_size(pb))) {
+                if (!pb->seekable || c->fc->flags & AVFMT_FLAG_IGNIDX)
                     c->next_root_atom = start_pos + a.size;
                 return 0;
             }
