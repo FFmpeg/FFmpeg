@@ -106,6 +106,13 @@ the evaluation of @var{y}, return 0 otherwise.
 @item ifnot(x, y)
 Evaluate @var{x}, and if the result is zero return the result of the
 evaluation of @var{y}, return 0 otherwise.
+
+@item taylor(expr, x)
+Evaluate a taylor series at x.
+expr represents the LD(0)-th derivates of f(x) at 0.
+note, when you have the derivatives at y instead of 0
+taylor(expr, x-y) can be used
+When the series does not converge the results are undefined.
 @end table
 
 The following constants are available:

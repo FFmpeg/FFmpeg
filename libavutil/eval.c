@@ -134,7 +134,7 @@ struct AVExpr {
         e_squish, e_gauss, e_ld, e_isnan,
         e_mod, e_max, e_min, e_eq, e_gt, e_gte,
         e_pow, e_mul, e_div, e_add,
-        e_last, e_st, e_while, e_floor, e_ceil, e_trunc,
+        e_last, e_st, e_while, e_taylor, e_floor, e_ceil, e_trunc,
         e_sqrt, e_not, e_random, e_hypot, e_gcd,
         e_if, e_ifnot,
     } type;
@@ -179,6 +179,23 @@ static double eval_expr(Parser *p, AVExpr *e)
             double d = NAN;
             while (eval_expr(p, e->param[0]))
                 d=eval_expr(p, e->param[1]);
+            return d;
+        }
+        case e_taylor: {
+            double t = 1, d = 0, v;
+            double x = eval_expr(p, e->param[1]);
+            int i;
+            double var0 = p->var[0];
+            for(i=0; i<1000; i++) {
+                double ld = d;
+                p->var[0] = i;
+                v = eval_expr(p, e->param[0]);
+                d += t*v;
+                if(ld==d && v)
+                    break;
+                t *= x / (i+1);
+            }
+            p->var[0] = var0;
             return d;
         }
         default: {
@@ -318,6 +335,7 @@ static int parse_primary(AVExpr **e, Parser *p)
     else if (strmatch(next, "isnan" )) d->type = e_isnan;
     else if (strmatch(next, "st"    )) d->type = e_st;
     else if (strmatch(next, "while" )) d->type = e_while;
+    else if (strmatch(next, "taylor")) d->type = e_taylor;
     else if (strmatch(next, "floor" )) d->type = e_floor;
     else if (strmatch(next, "ceil"  )) d->type = e_ceil;
     else if (strmatch(next, "trunc" )) d->type = e_trunc;
@@ -698,6 +716,8 @@ int main(int argc, char **argv)
         "if(1, 2)",
         "ifnot(0, 23)",
         "ifnot(1, NaN) + if(0, 1)",
+        "taylor(1, 1)",
+        "taylor(eq(mod(ld(0),4),1)-eq(mod(ld(0),4),3), PI/2)",
         NULL
     };
 
