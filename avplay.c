@@ -242,7 +242,6 @@ static int64_t duration = AV_NOPTS_VALUE;
 static int debug = 0;
 static int debug_mv = 0;
 static int step = 0;
-static int thread_count = 1;
 static int workaround_bugs = 1;
 static int fast = 0;
 static int genpts = 0;
@@ -2189,7 +2188,6 @@ static int stream_component_open(VideoState *is, int stream_index)
     avctx->skip_idct         = skip_idct;
     avctx->skip_loop_filter  = skip_loop_filter;
     avctx->error_concealment = error_concealment;
-    avctx->thread_count      = thread_count;
 
     if (lowres) avctx->flags  |= CODEC_FLAG_EMU_EDGE;
     if (fast)   avctx->flags2 |= CODEC_FLAG2_FAST;
@@ -2954,15 +2952,6 @@ static int opt_vismv(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_thread_count(const char *opt, const char *arg)
-{
-    thread_count = parse_number_or_die(opt, arg, OPT_INT64, 0, INT_MAX);
-#if !HAVE_THREADS
-    fprintf(stderr, "Warning: not compiled with thread support, using thread emulation\n");
-#endif
-    return 0;
-}
-
 static const OptionDef options[] = {
 #include "cmdutils_common_opts.h"
     { "x", HAS_ARG, { (void*)opt_width }, "force displayed width", "width" },
@@ -2994,7 +2983,6 @@ static const OptionDef options[] = {
     { "idct", OPT_INT | HAS_ARG | OPT_EXPERT, { (void*)&idct }, "set idct algo",  "algo" },
     { "ec", OPT_INT | HAS_ARG | OPT_EXPERT, { (void*)&error_concealment }, "set error concealment options",  "bit_mask" },
     { "sync", HAS_ARG | OPT_EXPERT, { (void*)opt_sync }, "set audio-video sync. type (type=audio/video/ext)", "type" },
-    { "threads", HAS_ARG | OPT_EXPERT, { (void*)opt_thread_count }, "thread count", "count" },
     { "autoexit", OPT_BOOL | OPT_EXPERT, { (void*)&autoexit }, "exit at the end", "" },
     { "exitonkeydown", OPT_BOOL | OPT_EXPERT, { (void*)&exit_on_keydown }, "exit on key down", "" },
     { "exitonmousedown", OPT_BOOL | OPT_EXPERT, { (void*)&exit_on_mousedown }, "exit on mouse down", "" },
