@@ -127,10 +127,24 @@ static void apply_mdct(NellyMoserEncodeContext *s)
     s->mdct_ctx.mdct_calc(&s->mdct_ctx, s->mdct_out + NELLY_BUF_LEN, s->buf[s->bufsel] + NELLY_BUF_LEN);
 }
 
+static av_cold int encode_end(AVCodecContext *avctx)
+{
+    NellyMoserEncodeContext *s = avctx->priv_data;
+
+    ff_mdct_end(&s->mdct_ctx);
+
+    if (s->avctx->trellis) {
+        av_free(s->opt);
+        av_free(s->path);
+    }
+
+    return 0;
+}
+
 static av_cold int encode_init(AVCodecContext *avctx)
 {
     NellyMoserEncodeContext *s = avctx->priv_data;
-    int i;
+    int i, ret;
 
     if (avctx->channels != 1) {
         av_log(avctx, AV_LOG_ERROR, "Nellymoser supports only 1 channel\n");
@@ -147,7 +161,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     avctx->frame_size = NELLY_SAMPLES;
     s->avctx = avctx;
-    ff_mdct_init(&s->mdct_ctx, 8, 0, 32768.0);
+    if ((ret = ff_mdct_init(&s->mdct_ctx, 8, 0, 32768.0)) < 0)
+        goto error;
     ff_dsputil_init(&s->dsp, avctx);
 
     /* Generate overlap window */
@@ -158,23 +173,16 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if (s->avctx->trellis) {
         s->opt  = av_malloc(NELLY_BANDS * OPT_SIZE * sizeof(float  ));
         s->path = av_malloc(NELLY_BANDS * OPT_SIZE * sizeof(uint8_t));
+        if (!s->opt || !s->path) {
+            ret = AVERROR(ENOMEM);
+            goto error;
+        }
     }
 
     return 0;
-}
-
-static av_cold int encode_end(AVCodecContext *avctx)
-{
-    NellyMoserEncodeContext *s = avctx->priv_data;
-
-    ff_mdct_end(&s->mdct_ctx);
-
-    if (s->avctx->trellis) {
-        av_free(s->opt);
-        av_free(s->path);
-    }
-
-    return 0;
+error:
+    encode_end(avctx);
+    return ret;
 }
 
 #define find_best(val, table, LUT, LUT_add, LUT_size) \
