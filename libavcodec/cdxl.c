@@ -122,7 +122,7 @@ static void cdxl_decode_ham6(CDXLVideoContext *c)
                 g = index * 0x11 << 8;
                 break;
             }
-            AV_WN32(out + x * 3, r | g | b);
+            AV_WL24(out + x * 3, r | g | b);
         }
         out += c->frame.linesize[0];
     }
@@ -165,7 +165,7 @@ static void cdxl_decode_ham8(CDXLVideoContext *c)
                 g = (index << 10) | (g & (3 << 8));
                 break;
             }
-            AV_WN32(out + x * 3, r | g | b);
+            AV_WL24(out + x * 3, r | g | b);
         }
         out += c->frame.linesize[0];
     }
