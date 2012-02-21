@@ -37,6 +37,7 @@
 #define XAVS_PART_B8X8 0x100 /* Analyze b16x8, b*/
 
 typedef struct XavsContext {
+    AVClass        *class;
     xavs_param_t    params;
     xavs_t         *enc;
     xavs_picture_t  pic;
