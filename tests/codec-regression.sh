@@ -253,6 +253,11 @@ do_video_encoding dnxhd-720p-10bit.dnxhd "-s hd720 -b 90M -pix_fmt yuv422p10 -vf
 do_video_decoding "" "-s cif -pix_fmt yuv420p"
 fi
 
+if [ -n "$do_prores" ] ; then
+do_video_encoding prores.mov "-vcodec prores -profile hq"
+do_video_decoding "" "-pix_fmt yuv420p"
+fi
+
 if [ -n "$do_svq1" ] ; then
 do_video_encoding svq1.mov "-an -vcodec svq1 -qscale 3 -pix_fmt yuv410p"
 do_video_decoding "" "-pix_fmt yuv420p"
