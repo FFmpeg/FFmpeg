@@ -43,7 +43,7 @@ static int cdxl_read_header(AVFormatContext *s)
     CDXLDemuxContext *cdxl = s->priv_data;
     int ret;
 
-    if ((ret = av_parse_video_rate(&cdxl->fps, cdxl->framerate)) < 0) {
+    if (cdxl->framerate && (ret = av_parse_video_rate(&cdxl->fps, cdxl->framerate)) < 0) {
         av_log(s, AV_LOG_ERROR,
                "Could not parse framerate: %s.\n", cdxl->framerate);
         return ret;
@@ -103,8 +103,9 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
             st->codec->codec_id      = CODEC_ID_PCM_S8;
             st->codec->channels      = cdxl->header[1] & 0x10 ? 2 : 1;
             st->codec->sample_rate   = cdxl->sample_rate;
+            st->start_time           = 0;
             cdxl->audio_stream_index = st->index;
-            avpriv_set_pts_info(st, 32, 1, cdxl->sample_rate);
+            avpriv_set_pts_info(st, 64, 1, cdxl->sample_rate);
         }
 
         ret = av_get_packet(pb, pkt, audio_size);
@@ -125,8 +126,12 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
             st->codec->codec_id      = CODEC_ID_CDXL;
             st->codec->width         = width;
             st->codec->height        = height;
+            st->start_time           = 0;
             cdxl->video_stream_index = st->index;
-            avpriv_set_pts_info(st, 63, cdxl->fps.den, cdxl->fps.num);
+            if (cdxl->framerate)
+                avpriv_set_pts_info(st, 64, cdxl->fps.den, cdxl->fps.num);
+            else
+                avpriv_set_pts_info(st, 64, 1, cdxl->sample_rate);
         }
 
         if (av_new_packet(pkt, video_size + CDXL_HEADER_SIZE) < 0)
@@ -140,6 +145,7 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->stream_index  = cdxl->video_stream_index;
         pkt->flags        |= AV_PKT_FLAG_KEY;
         pkt->pos           = pos;
+        pkt->duration      = cdxl->framerate ? 1 : audio_size ? audio_size : 220;
         cdxl->read_chunk   = audio_size;
     }
 
@@ -151,7 +157,7 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
 #define OFFSET(x) offsetof(CDXLDemuxContext, x)
 static const AVOption cdxl_options[] = {
     { "sample_rate", "", OFFSET(sample_rate), AV_OPT_TYPE_INT,    { .dbl = 11025 }, 1, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
-    { "framerate",   "", OFFSET(framerate),   AV_OPT_TYPE_STRING, { .str = "10" },  0, 0,       AV_OPT_FLAG_DECODING_PARAM },
+    { "framerate",   "", OFFSET(framerate),   AV_OPT_TYPE_STRING, { .str = NULL },  0, 0,       AV_OPT_FLAG_DECODING_PARAM },
     { NULL },
 };
 
