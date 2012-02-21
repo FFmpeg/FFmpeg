@@ -31,7 +31,7 @@
  *
  * @section libav_intro Introduction
  *
- * This document describe the usage of the different libraries
+ * This document describes the usage of the different libraries
  * provided by Libav.
  *
  * @li @ref libavc "libavcodec" encoding/decoding library
@@ -40,7 +40,6 @@
  * @li @ref lavd "libavdevice" special devices muxing/demuxing library
  * @li @ref lavu "libavutil" common utility library
  * @li @subpage libswscale  color conversion and scaling library
- *
  */
 
 /**

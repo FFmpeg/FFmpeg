@@ -40,9 +40,9 @@
 uint64_t ff_mov_get_channel_layout(uint32_t tag, uint32_t bitmap);
 
 /**
- * Get the channel layout for the specified channel layout tag.
+ * Get the channel layout for the specified channel label.
  *
- * @param[in]  tag     channel label
+ * @param[in]  label   channel label
  * @return             channel layout mask fragment
  */
 uint32_t ff_mov_get_channel_label(uint32_t label);

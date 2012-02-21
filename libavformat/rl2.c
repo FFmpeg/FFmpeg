@@ -69,7 +69,6 @@ static int rl2_probe(AVProbeData *p)
 /**
  * read rl2 header data and setup the avstreams
  * @param s demuxer context
- * @param ap format parameters
  * @return 0 on success, AVERROR otherwise
  */
 static av_cold int rl2_read_header(AVFormatContext *s)
