@@ -137,6 +137,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
         av_free(s->opt);
         av_free(s->path);
     }
+    av_freep(&avctx->coded_frame);
 
     return 0;
 }
@@ -177,6 +178,12 @@ static av_cold int encode_init(AVCodecContext *avctx)
             ret = AVERROR(ENOMEM);
             goto error;
         }
+    }
+
+    avctx->coded_frame = avcodec_alloc_frame();
+    if (!avctx->coded_frame) {
+        ret = AVERROR(ENOMEM);
+        goto error;
     }
 
     return 0;
