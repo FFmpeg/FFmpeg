@@ -143,6 +143,7 @@ typedef struct MOVContext {
     unsigned trex_count;
     int itunes_metadata;  ///< metadata are itunes style
     int chapter_track;
+    int64_t next_root_atom; ///< offset of the next root atom
 } MOVContext;
 
 int ff_mp4_read_descr_len(AVIOContext *pb);
