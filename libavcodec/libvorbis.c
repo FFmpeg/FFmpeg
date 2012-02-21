@@ -61,45 +61,63 @@ static const AVOption options[] = {
 };
 static const AVClass class = { "libvorbis", av_default_item_name, options, LIBAVUTIL_VERSION_INT };
 
+static int vorbis_error_to_averror(int ov_err)
+{
+    switch (ov_err) {
+    case OV_EFAULT: return AVERROR_BUG;
+    case OV_EINVAL: return AVERROR(EINVAL);
+    case OV_EIMPL:  return AVERROR(EINVAL);
+    default:        return AVERROR_UNKNOWN;
+    }
+}
+
 static av_cold int oggvorbis_init_encoder(vorbis_info *vi, AVCodecContext *avccontext)
 {
     OggVorbisContext *context = avccontext->priv_data;
     double cfreq;
+    int ret;
 
     if (avccontext->flags & CODEC_FLAG_QSCALE) {
         /* variable bitrate */
-        if (vorbis_encode_setup_vbr(vi, avccontext->channels,
-                                    avccontext->sample_rate,
-                                    avccontext->global_quality / (float)FF_QP2LAMBDA / 10.0))
-            return -1;
+        float q = avccontext->global_quality / (float)FF_QP2LAMBDA;
+        if ((ret = vorbis_encode_setup_vbr(vi, avccontext->channels,
+                                           avccontext->sample_rate,
+                                           q / 10.0)))
+            goto error;
     } else {
         int minrate = avccontext->rc_min_rate > 0 ? avccontext->rc_min_rate : -1;
         int maxrate = avccontext->rc_min_rate > 0 ? avccontext->rc_max_rate : -1;
 
         /* constant bitrate */
-        if (vorbis_encode_setup_managed(vi, avccontext->channels,
-                                        avccontext->sample_rate, minrate,
-                                        avccontext->bit_rate, maxrate))
-            return -1;
+        if ((ret = vorbis_encode_setup_managed(vi, avccontext->channels,
+                                               avccontext->sample_rate, minrate,
+                                               avccontext->bit_rate, maxrate)))
+            goto error;
 
         /* variable bitrate by estimate, disable slow rate management */
         if (minrate == -1 && maxrate == -1)
-            if (vorbis_encode_ctl(vi, OV_ECTL_RATEMANAGE2_SET, NULL))
-                return -1;
+            if ((ret = vorbis_encode_ctl(vi, OV_ECTL_RATEMANAGE2_SET, NULL)))
+                goto error;
     }
 
     /* cutoff frequency */
     if (avccontext->cutoff > 0) {
         cfreq = avccontext->cutoff / 1000.0;
-        if (vorbis_encode_ctl(vi, OV_ECTL_LOWPASS_SET, &cfreq))
-            return -1;
+        if ((ret = vorbis_encode_ctl(vi, OV_ECTL_LOWPASS_SET, &cfreq)))
+            goto error;
     }
 
     if (context->iblock) {
-        vorbis_encode_ctl(vi, OV_ECTL_IBLOCK_SET, &context->iblock);
+        if ((ret = vorbis_encode_ctl(vi, OV_ECTL_IBLOCK_SET, &context->iblock)))
+            goto error;
     }
 
-    return vorbis_encode_setup_init(vi);
+    if ((ret = vorbis_encode_setup_init(vi)))
+        goto error;
+
+    return 0;
+error:
+    return vorbis_error_to_averror(ret);
 }
 
 /* How many bytes are needed for a buffer of length 'l' */
@@ -108,32 +126,63 @@ static int xiph_len(int l)
     return 1 + l / 255 + l;
 }
 
+static av_cold int oggvorbis_encode_close(AVCodecContext *avccontext)
+{
+    OggVorbisContext *context = avccontext->priv_data;
+/*  ogg_packet op ; */
+
+    vorbis_analysis_wrote(&context->vd, 0);  /* notify vorbisenc this is EOF */
+
+    vorbis_block_clear(&context->vb);
+    vorbis_dsp_clear(&context->vd);
+    vorbis_info_clear(&context->vi);
+
+    av_freep(&avccontext->coded_frame);
+    av_freep(&avccontext->extradata);
+
+    return 0;
+}
+
 static av_cold int oggvorbis_encode_init(AVCodecContext *avccontext)
 {
     OggVorbisContext *context = avccontext->priv_data;
     ogg_packet header, header_comm, header_code;
     uint8_t *p;
     unsigned int offset;
+    int ret;
 
     vorbis_info_init(&context->vi);
-    if (oggvorbis_init_encoder(&context->vi, avccontext) < 0) {
+    if ((ret = oggvorbis_init_encoder(&context->vi, avccontext))) {
         av_log(avccontext, AV_LOG_ERROR, "oggvorbis_encode_init: init_encoder failed\n");
-        return -1;
+        goto error;
     }
-    vorbis_analysis_init(&context->vd, &context->vi);
-    vorbis_block_init(&context->vd, &context->vb);
+    if ((ret = vorbis_analysis_init(&context->vd, &context->vi))) {
+        ret = vorbis_error_to_averror(ret);
+        goto error;
+    }
+    if ((ret = vorbis_block_init(&context->vd, &context->vb))) {
+        ret = vorbis_error_to_averror(ret);
+        goto error;
+    }
 
     vorbis_comment_init(&context->vc);
     vorbis_comment_add_tag(&context->vc, "encoder", LIBAVCODEC_IDENT);
 
-    vorbis_analysis_headerout(&context->vd, &context->vc, &header,
-                              &header_comm, &header_code);
+    if ((ret = vorbis_analysis_headerout(&context->vd, &context->vc, &header,
+                                         &header_comm, &header_code))) {
+        ret = vorbis_error_to_averror(ret);
+        goto error;
+    }
 
     avccontext->extradata_size =
         1 + xiph_len(header.bytes) + xiph_len(header_comm.bytes) +
         header_code.bytes;
     p = avccontext->extradata =
             av_malloc(avccontext->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!p) {
+        ret = AVERROR(ENOMEM);
+        goto error;
+    }
     p[0]    = 2;
     offset  = 1;
     offset += av_xiphlacing(&p[offset], header.bytes);
@@ -156,8 +205,15 @@ static av_cold int oggvorbis_encode_init(AVCodecContext *avccontext)
     avccontext->frame_size = OGGVORBIS_FRAME_SIZE;
 
     avccontext->coded_frame = avcodec_alloc_frame();
+    if (!avccontext->coded_frame) {
+        ret = AVERROR(ENOMEM);
+        goto error;
+    }
 
     return 0;
+error:
+    oggvorbis_encode_close(avccontext);
+    return ret;
 }
 
 static int oggvorbis_encode_frame(AVCodecContext *avccontext,
@@ -231,23 +287,6 @@ static int oggvorbis_encode_frame(AVCodecContext *avccontext,
     }
 
     return l;
-}
-
-static av_cold int oggvorbis_encode_close(AVCodecContext *avccontext)
-{
-    OggVorbisContext *context = avccontext->priv_data;
-/*  ogg_packet op ; */
-
-    vorbis_analysis_wrote(&context->vd, 0);  /* notify vorbisenc this is EOF */
-
-    vorbis_block_clear(&context->vb);
-    vorbis_dsp_clear(&context->vd);
-    vorbis_info_clear(&context->vi);
-
-    av_freep(&avccontext->coded_frame);
-    av_freep(&avccontext->extradata);
-
-    return 0;
 }
 
 AVCodec ff_libvorbis_encoder = {
