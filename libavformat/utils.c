@@ -942,11 +942,10 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         compute_frame_duration(&num, &den, st, pc, pkt);
         if (den && num) {
             pkt->duration = av_rescale_rnd(1, num * (int64_t)st->time_base.den, den * (int64_t)st->time_base.num, AV_ROUND_DOWN);
-
-            if(pkt->duration != 0 && s->packet_buffer)
-                update_initial_durations(s, st, pkt);
         }
     }
+    if(pkt->duration != 0 && s->packet_buffer)
+        update_initial_durations(s, st, pkt);
 
     /* correct timestamps with byte offset if demuxers only have timestamps
        on packet boundaries */
@@ -1099,6 +1098,20 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                 if (pkt->size) {
                 got_packet:
                     pkt->duration = 0;
+                    if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+                        if (st->codec->sample_rate > 0) {
+                            pkt->duration = av_rescale_q_rnd(st->parser->duration,
+                                                             (AVRational){ 1, st->codec->sample_rate },
+                                                             st->time_base,
+                                                             AV_ROUND_DOWN);
+                        }
+                    } else if (st->codec->time_base.num != 0 &&
+                               st->codec->time_base.den != 0) {
+                        pkt->duration = av_rescale_q_rnd(st->parser->duration,
+                                                         st->codec->time_base,
+                                                         st->time_base,
+                                                         AV_ROUND_DOWN);
+                    }
                     pkt->stream_index = st->index;
                     pkt->pts = st->parser->pts;
                     pkt->dts = st->parser->dts;

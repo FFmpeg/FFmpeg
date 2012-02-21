@@ -71,6 +71,7 @@ typedef struct FLACHeaderMarker {
 } FLACHeaderMarker;
 
 typedef struct FLACParseContext {
+    AVCodecParserContext *pc;      /**< parent context                        */
     AVCodecContext *avctx;         /**< codec context pointer for logging     */
     FLACHeaderMarker *headers;     /**< linked-list that starts at the first
                                         CRC-8 verified header within buffer   */
@@ -458,7 +459,7 @@ static int get_best_header(FLACParseContext* fpc, const uint8_t **poutbuf,
 
     fpc->avctx->sample_rate = header->fi.samplerate;
     fpc->avctx->channels    = header->fi.channels;
-    fpc->avctx->frame_size  = header->fi.blocksize;
+    fpc->pc->duration       = header->fi.blocksize;
     *poutbuf = flac_fifo_read_wrap(fpc, header->offset, *poutbuf_size,
                                         &fpc->wrap_buf,
                                         &fpc->wrap_buf_allocated_size);
@@ -484,7 +485,7 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     if (s->flags & PARSER_FLAG_COMPLETE_FRAMES) {
         FLACFrameInfo fi;
         if (frame_header_is_valid(avctx, buf, &fi))
-            avctx->frame_size = fi.blocksize;
+            s->duration = fi.blocksize;
         *poutbuf      = buf;
         *poutbuf_size = buf_size;
         return buf_size;
@@ -630,8 +631,8 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
             av_log(avctx, AV_LOG_DEBUG, "Junk frame till offset %i\n",
                    fpc->best_header->offset);
 
-            /* Set frame_size to 0. It is unknown or invalid in a junk frame. */
-            avctx->frame_size = 0;
+            /* Set duration to 0. It is unknown or invalid in a junk frame. */
+            s->duration = 0;
             *poutbuf_size     = fpc->best_header->offset;
             *poutbuf          = flac_fifo_read_wrap(fpc, 0, *poutbuf_size,
                                                     &fpc->wrap_buf,
@@ -652,6 +653,7 @@ handle_error:
 static int flac_parse_init(AVCodecParserContext *c)
 {
     FLACParseContext *fpc = c->priv_data;
+    fpc->pc = c;
     /* There will generally be FLAC_MIN_HEADERS buffered in the fifo before
        it drains.  This is allocated early to avoid slow reallocation. */
     fpc->fifo_buf = av_fifo_alloc(FLAC_AVG_FRAME_SIZE * (FLAC_MIN_HEADERS + 3));

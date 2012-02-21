@@ -22,6 +22,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "internal.h"
 
 static av_cold int v410_encode_init(AVCodecContext *avctx)
 {
@@ -40,20 +41,19 @@ static av_cold int v410_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int v410_encode_frame(AVCodecContext *avctx, uint8_t *buf,
-                             int buf_size, void *data)
+static int v410_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
+                             const AVFrame *pic, int *got_packet)
 {
-    AVFrame *pic = data;
-    uint8_t *dst = buf;
+    uint8_t *dst;
     uint16_t *y, *u, *v;
     uint32_t val;
-    int i, j;
-    int output_size = 0;
+    int i, j, ret;
 
-    if (buf_size < avctx->width * avctx->height * 4) {
-        av_log(avctx, AV_LOG_ERROR, "Out buffer is too small.\n");
-        return AVERROR(ENOMEM);
+    if ((ret = ff_alloc_packet(pkt, avctx->width * avctx->height * 4)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting output packet.\n");
+        return ret;
     }
+    dst = pkt->data;
 
     avctx->coded_frame->reference = 0;
     avctx->coded_frame->key_frame = 1;
@@ -70,14 +70,15 @@ static int v410_encode_frame(AVCodecContext *avctx, uint8_t *buf,
             val |= (uint32_t) v[j] << 22;
             AV_WL32(dst, val);
             dst += 4;
-            output_size += 4;
         }
         y += pic->linesize[0] >> 1;
         u += pic->linesize[1] >> 1;
         v += pic->linesize[2] >> 1;
     }
 
-    return output_size;
+    pkt->flags |= AV_PKT_FLAG_KEY;
+    *got_packet = 1;
+    return 0;
 }
 
 static av_cold int v410_encode_close(AVCodecContext *avctx)
@@ -92,7 +93,7 @@ AVCodec ff_v410_encoder = {
     .type         = AVMEDIA_TYPE_VIDEO,
     .id           = CODEC_ID_V410,
     .init         = v410_encode_init,
-    .encode       = v410_encode_frame,
+    .encode2      = v410_encode_frame,
     .close        = v410_encode_close,
     .pix_fmts     = (const enum PixelFormat[]){ PIX_FMT_YUV444P10, PIX_FMT_NONE },
     .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed 4:4:4 10-bit"),

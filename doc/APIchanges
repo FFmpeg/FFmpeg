@@ -32,6 +32,12 @@ API changes, most recent first:
 2012-01-24 - xxxxxxx - lavfi 2.60.100
   Add avfilter_graph_dump.
 
+2012-xx-xx - xxxxxxx - lavc 54.x.x
+  Add duration field to AVCodecParserContext
+
+2012-02-xx - xxxxxxx - lavu 51.23.1 - mathematics.h
+  Add av_rescale_q_rnd()
+
 2012-02-xx - xxxxxxx - lavu 51.22.1 - pixdesc.h
   Add PIX_FMT_PSEUDOPAL flag.
 

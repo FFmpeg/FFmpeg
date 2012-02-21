@@ -342,7 +342,7 @@ static void RENAME(yuv2rgb32_X_ar)(SwsContext *c, const int16_t *lumFilter,
         "movq                      %%mm2, "U_TEMP"(%0)  \n\t"
         "movq                      %%mm4, "V_TEMP"(%0)  \n\t"
         "movq                      %%mm5, "Y_TEMP"(%0)  \n\t"
-        YSCALEYUV2PACKEDX_ACCURATE_YA(LUM_MMX_FILTER_OFFSET)
+        YSCALEYUV2PACKEDX_ACCURATE_YA(ALP_MMX_FILTER_OFFSET)
         "movq               "Y_TEMP"(%0), %%mm5         \n\t"
         "psraw                        $3, %%mm1         \n\t"
         "psraw                        $3, %%mm7         \n\t"
@@ -372,7 +372,7 @@ static void RENAME(yuv2rgb32_X)(SwsContext *c, const int16_t *lumFilter,
     if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
         YSCALEYUV2PACKEDX
         YSCALEYUV2RGBX
-        YSCALEYUV2PACKEDX_YA(LUM_MMX_FILTER_OFFSET, %%mm0, %%mm3, %%mm6, %%mm1, %%mm7)
+        YSCALEYUV2PACKEDX_YA(ALP_MMX_FILTER_OFFSET, %%mm0, %%mm3, %%mm6, %%mm1, %%mm7)
         "psraw                        $3, %%mm1         \n\t"
         "psraw                        $3, %%mm7         \n\t"
         "packuswb                  %%mm7, %%mm1         \n\t"

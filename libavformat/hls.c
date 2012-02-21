@@ -547,7 +547,7 @@ static int hls_read_header(AVFormatContext *s)
 
     c->first_packet = 1;
     c->first_timestamp = AV_NOPTS_VALUE;
-    c->seek_timestamp = AV_NOPTS_VALUE;
+    c->seek_timestamp  = AV_NOPTS_VALUE;
 
     return 0;
 fail:
@@ -609,16 +609,13 @@ start:
         if (var->needed && !var->pkt.data) {
             while (1) {
                 int64_t ts_diff;
+                AVStream *st;
                 ret = av_read_frame(var->ctx, &var->pkt);
                 if (ret < 0) {
-                    if (!url_feof(&var->pb)) {
+                    if (!url_feof(&var->pb))
                         return ret;
-                    } else {
-                        if ((var->cur_seq_no - var->start_seq_no) == (var->n_segments)) {
-                            return AVERROR_EOF;
-                        }
-                    }
                     reset_packet(&var->pkt);
+                    break;
                 } else {
                     if (c->first_timestamp == AV_NOPTS_VALUE)
                         c->first_timestamp = var->pkt.dts;
@@ -632,18 +629,14 @@ start:
                     break;
                 }
 
-                ts_diff = var->pkt.dts - c->seek_timestamp;
-                if (ts_diff >= 0) {
-                    if (c->seek_flags & AVSEEK_FLAG_ANY) {
-                        c->seek_timestamp = AV_NOPTS_VALUE;
-                        break;
-                    }
-
-                    /* Seek to keyframe */
-                    if (var->pkt.flags & AV_PKT_FLAG_KEY) {
-                        c->seek_timestamp = AV_NOPTS_VALUE;
-                        break;
-                    }
+                st = var->ctx->streams[var->pkt.stream_index];
+                ts_diff = av_rescale_rnd(var->pkt.dts, AV_TIME_BASE,
+                                         st->time_base.den, AV_ROUND_DOWN) -
+                          c->seek_timestamp;
+                if (ts_diff >= 0 && (c->seek_flags  & AVSEEK_FLAG_ANY ||
+                                     var->pkt.flags & AV_PKT_FLAG_KEY)) {
+                    c->seek_timestamp = AV_NOPTS_VALUE;
+                    break;
                 }
             }
         }
@@ -685,8 +678,12 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
     if ((flags & AVSEEK_FLAG_BYTE) || !c->variants[0]->finished)
         return AVERROR(ENOSYS);
 
-    c->seek_timestamp = timestamp;
-    c->seek_flags = flags;
+    c->seek_flags     = flags;
+    c->seek_timestamp = stream_index < 0 ? timestamp :
+                        av_rescale_rnd(timestamp, AV_TIME_BASE,
+                                       s->streams[stream_index]->time_base.den,
+                                       flags & AVSEEK_FLAG_BACKWARD ?
+                                       AV_ROUND_DOWN : AV_ROUND_UP);
     timestamp = av_rescale_rnd(timestamp, 1, stream_index >= 0 ?
                                s->streams[stream_index]->time_base.den :
                                AV_TIME_BASE, flags & AVSEEK_FLAG_BACKWARD ?
@@ -712,6 +709,10 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
         av_free_packet(&var->pkt);
         reset_packet(&var->pkt);
         var->pb.eof_reached = 0;
+        /* Clear any buffered data */
+        var->pb.buf_end = var->pb.buf_ptr = var->pb.buffer;
+        /* Reset the pos, to let the mpegts demuxer know we've seeked. */
+        var->pb.pos = 0;
 
         /* Locate the segment that contains the target timestamp */
         for (j = 0; j < var->n_segments; j++) {
@@ -723,7 +724,7 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
             }
             pos += var->segments[j]->duration;
         }
-        if (ret != 0)
+        if (ret)
             c->seek_timestamp = AV_NOPTS_VALUE;
     }
     return ret;

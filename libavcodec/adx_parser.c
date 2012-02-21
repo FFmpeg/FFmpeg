@@ -80,6 +80,9 @@ static int adx_parse(AVCodecParserContext *s1,
         *poutbuf_size = 0;
         return buf_size;
     }
+
+    s1->duration = BLOCK_SAMPLES;
+
     *poutbuf = buf;
     *poutbuf_size = buf_size;
     return next;

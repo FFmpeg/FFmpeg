@@ -314,7 +314,7 @@ static int mlp_parse(AVCodecParserContext *s,
         else
             avctx->sample_fmt = AV_SAMPLE_FMT_S16;
         avctx->sample_rate = mh.group1_samplerate;
-        avctx->frame_size = mh.access_unit_size;
+        s->duration = mh.access_unit_size;
 
         if (mh.stream_type == 0xbb) {
             /* MLP stream */

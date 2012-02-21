@@ -96,6 +96,12 @@ int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding) av_cons
 int64_t av_rescale_q(int64_t a, AVRational bq, AVRational cq) av_const;
 
 /**
+ * Rescale a 64-bit integer by 2 rational numbers with specified rounding.
+ */
+int64_t av_rescale_q_rnd(int64_t a, AVRational bq, AVRational cq,
+                         enum AVRounding) av_const;
+
+/**
  * Compare 2 timestamps each in its own timebases.
  * The result of the function is undefined if one of the timestamps
  * is outside the int64_t range when represented in the others timebase.

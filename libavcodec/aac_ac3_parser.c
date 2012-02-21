@@ -93,7 +93,7 @@ get_next:
             avctx->channels = s->channels;
             avctx->channel_layout = s->channel_layout;
         }
-        avctx->frame_size = s->samples;
+        s1->duration = s->samples;
         avctx->audio_service_type = s->service_type;
     }
 

@@ -1,4 +1,4 @@
-006f8dc92eb4f7bab82eded314ca1124 *./tests/data/acodec/adpcm_yam.wav
-266298 ./tests/data/acodec/adpcm_yam.wav
-c36a9d5a1e0ad57fbe9665a31373b7c1 *./tests/data/adpcm_yam.acodec.out.wav
-stddev: 1247.60 PSNR: 34.41 MAXDIFF:39895 bytes:  1064960/  1058400
+e9c14f701d25947317db9367b9dc772d *./tests/data/acodec/adpcm_yam.wav
+265274 ./tests/data/acodec/adpcm_yam.wav
+1488b5974fa040a65f0d407fc0224c6a *./tests/data/adpcm_yam.acodec.out.wav
+stddev: 1247.60 PSNR: 34.41 MAXDIFF:39895 bytes:  1060864/  1058400
