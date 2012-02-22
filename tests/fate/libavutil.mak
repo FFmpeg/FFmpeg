@@ -33,6 +33,10 @@ FATE_LIBAVUTIL += fate-md5
 fate-md5: libavutil/md5-test$(EXESUF)
 fate-md5: CMD = run libavutil/md5-test
 
+FATE_LIBAVUTIL += fate-random_seed
+fate-random_seed: libavutil/random_seed-test$(EXESUF)
+fate-random_seed: CMD = run libavutil/random_seed-test
+
 FATE_LIBAVUTIL += fate-sha
 fate-sha: libavutil/sha-test$(EXESUF)
 fate-sha: CMD = run libavutil/sha-test
