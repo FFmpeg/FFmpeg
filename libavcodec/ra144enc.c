@@ -38,10 +38,6 @@ static av_cold int ra144_encode_init(AVCodecContext * avctx)
     RA144Context *ractx;
     int ret;
 
-    if (avctx->sample_fmt != AV_SAMPLE_FMT_S16) {
-        av_log(avctx, AV_LOG_ERROR, "invalid sample format\n");
-        return -1;
-    }
     if (avctx->channels != 1) {
         av_log(avctx, AV_LOG_ERROR, "invalid number of channels: %d\n",
                avctx->channels);
