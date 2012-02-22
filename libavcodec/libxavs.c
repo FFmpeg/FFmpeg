@@ -54,6 +54,9 @@ typedef struct XavsContext {
     int fast_pskip;
     int mbtree;
     int mixed_refs;
+
+    int64_t *pts_buffer;
+    int out_frame_count;
 } XavsContext;
 
 static void XAVS_log(void *p, int level, const char *fmt, va_list args)
@@ -71,13 +74,24 @@ static void XAVS_log(void *p, int level, const char *fmt, va_list args)
     av_vlog(p, level_map[level], fmt, args);
 }
 
-static int encode_nals(AVCodecContext *ctx, uint8_t *buf,
-                       int size, xavs_nal_t *nals,
-                       int nnal, int skip_sei)
+static int encode_nals(AVCodecContext *ctx, AVPacket *pkt,
+                       xavs_nal_t *nals, int nnal)
 {
     XavsContext *x4 = ctx->priv_data;
-    uint8_t *p = buf;
-    int i, s;
+    uint8_t *p;
+    int i, s, ret, size = x4->sei_size + FF_MIN_BUFFER_SIZE;
+
+    if (!nnal)
+        return 0;
+
+    for (i = 0; i < nnal; i++)
+        size += nals[i].i_payload;
+
+    if ((ret = ff_alloc_packet(pkt, size)) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Error getting output packet of size %d.\n", size);
+        return ret;
+    }
+    p = pkt->data;
 
     /* Write the SEI as part of the first frame. */
     if (x4->sei_size > 0 && nnal > 0) {
@@ -92,17 +106,17 @@ static int encode_nals(AVCodecContext *ctx, uint8_t *buf,
             return -1;
         p += s;
     }
+    pkt->size = p - pkt->data;
 
-    return p - buf;
+    return 1;
 }
 
-static int XAVS_frame(AVCodecContext *ctx, uint8_t *buf,
-                      int bufsize, void *data)
+static int XAVS_frame(AVCodecContext *ctx, AVPacket *pkt,
+                      const AVFrame *frame, int *got_packet)
 {
     XavsContext *x4 = ctx->priv_data;
-    AVFrame *frame = data;
     xavs_nal_t *nal;
-    int nnal, i;
+    int nnal, i, ret;
     xavs_picture_t pic_out;
 
     x4->pic.img.i_csp   = XAVS_CSP_I420;
@@ -116,29 +130,44 @@ static int XAVS_frame(AVCodecContext *ctx, uint8_t *buf,
 
         x4->pic.i_pts  = frame->pts;
         x4->pic.i_type = XAVS_TYPE_AUTO;
+        x4->pts_buffer[ctx->frame_number % (ctx->max_b_frames+1)] = frame->pts;
     }
 
     if (xavs_encoder_encode(x4->enc, &nal, &nnal,
                             frame? &x4->pic: NULL, &pic_out) < 0)
     return -1;
 
-    bufsize = encode_nals(ctx, buf, bufsize, nal, nnal, 0);
+    ret = encode_nals(ctx, pkt, nal, nnal);
 
-    if (bufsize < 0)
+    if (ret < 0)
         return -1;
 
-    if (!bufsize && !frame && !(x4->end_of_stream)){
-        buf[bufsize]   = 0x0;
-        buf[bufsize+1] = 0x0;
-        buf[bufsize+2] = 0x01;
-        buf[bufsize+3] = 0xb1;
-        bufsize += 4;
-        x4->end_of_stream = END_OF_STREAM;
-        return bufsize;
+    if (!ret) {
+        if (!frame && !(x4->end_of_stream)) {
+            if ((ret = ff_alloc_packet(pkt, 4)) < 0)
+                return ret;
+
+            pkt->data[0] = 0x0;
+            pkt->data[1] = 0x0;
+            pkt->data[2] = 0x01;
+            pkt->data[3] = 0xb1;
+            pkt->dts = 2*x4->pts_buffer[(x4->out_frame_count-1)%(ctx->max_b_frames+1)] -
+                       x4->pts_buffer[(x4->out_frame_count-2)%(ctx->max_b_frames+1)];
+            x4->end_of_stream = END_OF_STREAM;
+            *got_packet = 1;
+        }
+        return 0;
     }
-    /* FIXME: libxavs now provides DTS */
-    /* but AVFrame doesn't have a field for it. */
+
     x4->out_pic.pts = pic_out.i_pts;
+    pkt->pts = pic_out.i_pts;
+    if (ctx->has_b_frames) {
+        if (!x4->out_frame_count)
+            pkt->dts = pkt->pts - (x4->pts_buffer[1] - x4->pts_buffer[0]);
+        else
+            pkt->dts = x4->pts_buffer[(x4->out_frame_count-1)%(ctx->max_b_frames+1)];
+    } else
+        pkt->dts = pkt->pts;
 
     switch (pic_out.i_type) {
     case XAVS_TYPE_IDR:
@@ -156,11 +185,16 @@ static int XAVS_frame(AVCodecContext *ctx, uint8_t *buf,
 
     /* There is no IDR frame in AVS JiZhun */
     /* Sequence header is used as a flag */
-    x4->out_pic.key_frame = pic_out.i_type == XAVS_TYPE_I;
+    if (pic_out.i_type == XAVS_TYPE_I) {
+        x4->out_pic.key_frame = 1;
+        pkt->flags |= AV_PKT_FLAG_KEY;
+    }
 
     x4->out_pic.quality   = (pic_out.i_qpplus1 - 1) * FF_QP2LAMBDA;
 
-    return bufsize;
+    x4->out_frame_count++;
+    *got_packet = ret;
+    return 0;
 }
 
 static av_cold int XAVS_close(AVCodecContext *avctx)
@@ -169,6 +203,7 @@ static av_cold int XAVS_close(AVCodecContext *avctx)
 
     av_freep(&avctx->extradata);
     av_free(x4->sei);
+    av_freep(&x4->pts_buffer);
 
     if (x4->enc)
         xavs_encoder_close(x4->enc);
@@ -317,6 +352,9 @@ static av_cold int XAVS_init(AVCodecContext *avctx)
     if (!x4->enc)
         return -1;
 
+    if (!(x4->pts_buffer = av_mallocz((avctx->max_b_frames+1) * sizeof(*x4->pts_buffer))))
+        return AVERROR(ENOMEM);
+
     avctx->coded_frame = &x4->out_pic;
     /* TAG: Do we have GLOBAL HEADER in AVS */
     /* We Have PPS and SPS in AVS */
@@ -384,7 +422,7 @@ AVCodec ff_libxavs_encoder = {
     .id             = CODEC_ID_CAVS,
     .priv_data_size = sizeof(XavsContext),
     .init           = XAVS_init,
-    .encode         = XAVS_frame,
+    .encode2        = XAVS_frame,
     .close          = XAVS_close,
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_AUTO_THREADS,
     .pix_fmts       = (const enum PixelFormat[]) { PIX_FMT_YUV420P, PIX_FMT_NONE },
