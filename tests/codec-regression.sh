@@ -283,6 +283,11 @@ do_video_encoding prores.mov "-vcodec prores"
 do_video_decoding "" "-pix_fmt yuv420p"
 fi
 
+if [ -n "$do_prores_kostya" ] ; then
+do_video_encoding prores_kostya.mov "-vcodec prores_kostya -profile hq"
+do_video_decoding "" "-pix_fmt yuv420p"
+fi
+
 if [ -n "$do_svq1" ] ; then
 do_video_encoding svq1.mov "-an -vcodec svq1 -qscale 3 -pix_fmt yuv410p"
 do_video_decoding "" "-pix_fmt yuv420p"

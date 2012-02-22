@@ -26,8 +26,8 @@
 
 void ff_rv34_idct_dc_mmx2(DCTELEM *block);
 void ff_rv34_idct_dc_noround_mmx2(DCTELEM *block);
-void ff_rv34_idct_dc_add_mmx(uint8_t *dst, int stride, int dc);
-void ff_rv34_idct_dc_add_sse4(uint8_t *dst, int stride, int dc);
+void ff_rv34_idct_dc_add_mmx(uint8_t *dst, ptrdiff_t stride, int dc);
+void ff_rv34_idct_dc_add_sse4(uint8_t *dst, ptrdiff_t stride, int dc);
 
 av_cold void ff_rv34dsp_init_x86(RV34DSPContext* c, DSPContext *dsp)
 {

@@ -30,7 +30,7 @@
 #include "avfilter.h"
 #include "internal.h"
 
-static const char * const var_names[] = {
+static const char *const var_names[] = {
     "w",        ///< width of the input video
     "h",        ///< height of the input video
     "val",      ///< input value for the pixel

@@ -51,7 +51,7 @@
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
 
-static const char * const var_names[] = {
+static const char *const var_names[] = {
     "main_w", "w", "W",       ///< width  of the input video
     "main_h", "h", "H",       ///< height of the input video
     "tw", "text_w",           ///< width  of the rendered text
@@ -72,8 +72,8 @@ static const char * const var_names[] = {
     NULL
 };
 
-static const char *fun2_names[] = {
-    "rand",
+static const char *const fun2_names[] = {
+    "rand"
 };
 
 static double drand(void *opaque, double min, double max)

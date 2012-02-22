@@ -32,24 +32,24 @@
 typedef void (*rv40_weight_func)(uint8_t *dst/*align width (8 or 16)*/,
                                  uint8_t *src1/*align width (8 or 16)*/,
                                  uint8_t *src2/*align width (8 or 16)*/,
-                                 int w1, int w2, int stride);
+                                 int w1, int w2, ptrdiff_t stride);
 
 typedef void (*rv34_inv_transform_func)(DCTELEM *block);
 
-typedef void (*rv34_idct_add_func)(uint8_t *dst, int stride, DCTELEM *block);
-typedef void (*rv34_idct_dc_add_func)(uint8_t *dst, int stride,
+typedef void (*rv34_idct_add_func)(uint8_t *dst, ptrdiff_t stride, DCTELEM *block);
+typedef void (*rv34_idct_dc_add_func)(uint8_t *dst, ptrdiff_t stride,
                                       int   dc);
 
-typedef void (*rv40_weak_loop_filter_func)(uint8_t *src, int stride,
+typedef void (*rv40_weak_loop_filter_func)(uint8_t *src, ptrdiff_t stride,
                                            int filter_p1, int filter_q1,
                                            int alpha, int beta,
                                            int lims, int lim_q1, int lim_p1);
 
-typedef void (*rv40_strong_loop_filter_func)(uint8_t *src, int stride,
+typedef void (*rv40_strong_loop_filter_func)(uint8_t *src, ptrdiff_t stride,
                                              int alpha, int lims,
                                              int dmode, int chroma);
 
-typedef int (*rv40_loop_filter_strength_func)(uint8_t *src, int stride,
+typedef int (*rv40_loop_filter_strength_func)(uint8_t *src, ptrdiff_t stride,
                                               int beta, int beta2, int edge,
                                               int *p1, int *q1);
 

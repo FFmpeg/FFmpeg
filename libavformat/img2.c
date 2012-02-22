@@ -138,6 +138,11 @@ static enum CodecID av_str2id(const IdStrMap *tags, const char *str)
     return CODEC_ID_NONE;
 }
 
+enum CodecID ff_guess_image2_codec(const char *filename)
+{
+    return av_str2id(img_tags, filename);
+}
+
 /* return -1 if no image found */
 static int find_image_range(int *pfirst_index, int *plast_index,
                             const char *path)
@@ -194,18 +199,13 @@ static int find_image_range(int *pfirst_index, int *plast_index,
 
 static int read_probe(AVProbeData *p)
 {
-    if (p->filename && av_str2id(img_tags, p->filename)) {
+    if (p->filename && ff_guess_image2_codec(p->filename)) {
         if (av_filename_number_test(p->filename))
             return AVPROBE_SCORE_MAX;
         else
             return AVPROBE_SCORE_MAX/2;
     }
     return 0;
-}
-
-enum CodecID ff_guess_image2_codec(const char *filename)
-{
-    return av_str2id(img_tags, filename);
 }
 
 static int read_header(AVFormatContext *s1)
@@ -277,7 +277,7 @@ static int read_header(AVFormatContext *s1)
         const char *str= strrchr(s->path, '.');
         s->split_planes = str && !av_strcasecmp(str + 1, "y");
         st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-        st->codec->codec_id = av_str2id(img_tags, s->path);
+        st->codec->codec_id   = ff_guess_image2_codec(s->path);
         if (st->codec->codec_id == CODEC_ID_LJPEG)
             st->codec->codec_id = CODEC_ID_MJPEG;
     }
@@ -419,7 +419,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         avio_close(pb[1]);
         avio_close(pb[2]);
     }else{
-        if(av_str2id(img_tags, s->filename) == CODEC_ID_JPEG2000){
+        if (ff_guess_image2_codec(s->filename) == CODEC_ID_JPEG2000) {
             AVStream *st = s->streams[0];
             if(st->codec->extradata_size > 8 &&
                AV_RL32(st->codec->extradata+4) == MKTAG('j','p','2','h')){

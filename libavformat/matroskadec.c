@@ -542,7 +542,7 @@ static EbmlSyntax matroska_clusters[] = {
     { 0 }
 };
 
-static const char *matroska_doctypes[] = { "matroska", "webm" };
+static const char *const matroska_doctypes[] = { "matroska", "webm" };
 
 static int matroska_resync(MatroskaDemuxContext *matroska, int64_t last_pos)
 {

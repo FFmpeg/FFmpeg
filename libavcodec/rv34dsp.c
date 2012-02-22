@@ -53,7 +53,7 @@ static av_always_inline void rv34_row_transform(int temp[16], DCTELEM *block)
  * Real Video 3.0/4.0 inverse transform + sample reconstruction
  * Code is almost the same as in SVQ3, only scaling is different.
  */
-static void rv34_idct_add_c(uint8_t *dst, int stride, DCTELEM *block){
+static void rv34_idct_add_c(uint8_t *dst, ptrdiff_t stride, DCTELEM *block){
     int      temp[16];
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
     int      i;
@@ -101,7 +101,7 @@ static void rv34_inv_transform_noround_c(DCTELEM *block){
     }
 }
 
-static void rv34_idct_dc_add_c(uint8_t *dst, int stride, int dc)
+static void rv34_idct_dc_add_c(uint8_t *dst, ptrdiff_t stride, int dc)
 {
     const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
     int i, j;

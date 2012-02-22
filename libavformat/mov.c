@@ -2311,7 +2311,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     int64_t dts;
     int data_offset = 0;
     unsigned entries, first_sample_flags = frag->flags;
-    int flags, distance, i;
+    int flags, distance, i, found_keyframe = 0;
 
     for (i = 0; i < c->fc->nb_streams; i++) {
         if (c->fc->streams[i]->id == frag->track_id) {
@@ -2365,7 +2365,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         unsigned sample_size = frag->size;
         int sample_flags = i ? frag->flags : first_sample_flags;
         unsigned sample_duration = frag->duration;
-        int keyframe;
+        int keyframe = 0;
 
         if (flags & MOV_TRUN_SAMPLE_DURATION) sample_duration = avio_rb32(pb);
         if (flags & MOV_TRUN_SAMPLE_SIZE)     sample_size     = avio_rb32(pb);
@@ -2374,8 +2374,13 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         sc->ctts_data[sc->ctts_count].duration = (flags & MOV_TRUN_SAMPLE_CTS) ?
                                                   avio_rb32(pb) : 0;
         sc->ctts_count++;
-        if ((keyframe = st->codec->codec_type == AVMEDIA_TYPE_AUDIO ||
-             (flags & MOV_TRUN_FIRST_SAMPLE_FLAGS && !i && !(sample_flags & ~MOV_FRAG_SAMPLE_FLAG_DEGRADATION_PRIORITY_MASK)) || sample_flags & MOV_FRAG_SAMPLE_FLAG_DEPENDS_NO))
+        if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
+            keyframe = 1;
+        else if (!found_keyframe)
+            keyframe = found_keyframe =
+                !(sample_flags & (MOV_FRAG_SAMPLE_FLAG_IS_NON_SYNC |
+                                  MOV_FRAG_SAMPLE_FLAG_DEPENDS_YES));
+        if (keyframe)
             distance = 0;
         av_add_index_entry(st, offset, dts, sample_size, distance,
                            keyframe ? AVINDEX_KEYFRAME : 0);

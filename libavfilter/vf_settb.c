@@ -30,7 +30,7 @@
 #include "avfilter.h"
 #include "internal.h"
 
-static const char * const var_names[] = {
+static const char *const var_names[] = {
     "AVTB",   /* default timebase 1/AV_TIME_BASE */
     "intb",   /* input timebase */
     NULL

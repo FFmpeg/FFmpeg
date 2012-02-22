@@ -27,7 +27,7 @@
 #include "libavutil/fifo.h"
 #include "avfilter.h"
 
-static const char * const var_names[] = {
+static const char *const var_names[] = {
     "TB",                ///< timebase
 
     "pts",               ///< original pts in the file of the frame

@@ -42,9 +42,9 @@ void ff_avg_rv40_chroma_mc4_3dnow(uint8_t *dst, uint8_t *src,
 
 #define DECLARE_WEIGHT(opt) \
 void ff_rv40_weight_func_16_##opt(uint8_t *dst, uint8_t *src1, uint8_t *src2, \
-                                  int w1, int w2, int stride); \
+                                  int w1, int w2, ptrdiff_t stride); \
 void ff_rv40_weight_func_8_##opt (uint8_t *dst, uint8_t *src1, uint8_t *src2, \
-                                  int w1, int w2, int stride);
+                                  int w1, int w2, ptrdiff_t stride);
 DECLARE_WEIGHT(mmx)
 DECLARE_WEIGHT(sse2)
 DECLARE_WEIGHT(ssse3)

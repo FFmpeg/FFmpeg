@@ -35,7 +35,7 @@
 #include "libavutil/mathematics.h"
 #include "drawutils.h"
 
-static const char * const var_names[] = {
+static const char *const var_names[] = {
     "in_w",   "iw",
     "in_h",   "ih",
     "out_w",  "ow",

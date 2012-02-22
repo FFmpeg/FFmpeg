@@ -445,5 +445,5 @@ AVCodec ff_png_encoder = {
                                           PIX_FMT_GRAY8, PIX_FMT_GRAY8A,
                                           PIX_FMT_GRAY16BE,
                                           PIX_FMT_MONOBLACK, PIX_FMT_NONE},
-    .long_name= NULL_IF_CONFIG_SMALL("PNG image"),
+    .long_name= NULL_IF_CONFIG_SMALL("PNG (Portable Network Graphics) image"),
 };

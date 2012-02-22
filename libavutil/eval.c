@@ -622,13 +622,13 @@ void av_free_expr(AVExpr *e)
 #undef printf
 #include <string.h>
 
-static double const_values[] = {
+static const double const_values[] = {
     M_PI,
     M_E,
     0
 };
 
-static const char *const_names[] = {
+static const char *const const_names[] = {
     "PI",
     "E",
     0

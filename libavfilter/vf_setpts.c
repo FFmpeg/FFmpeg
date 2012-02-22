@@ -30,7 +30,7 @@
 #include "libavutil/mathematics.h"
 #include "avfilter.h"
 
-static const char * const var_names[] = {
+static const char *const var_names[] = {
     "INTERLACED",  ///< tell if the current frame is interlaced
     "N",           ///< frame number (starting at zero)
     "POS",         ///< original position in the file of the frame
