@@ -33,6 +33,15 @@
 #include "ra144.h"
 
 
+static av_cold int ra144_encode_close(AVCodecContext *avctx)
+{
+    RA144Context *ractx = avctx->priv_data;
+    ff_lpc_end(&ractx->lpc_ctx);
+    av_freep(&avctx->coded_frame);
+    return 0;
+}
+
+
 static av_cold int ra144_encode_init(AVCodecContext * avctx)
 {
     RA144Context *ractx;
@@ -51,15 +60,19 @@ static av_cold int ra144_encode_init(AVCodecContext * avctx)
     ractx->avctx = avctx;
     ret = ff_lpc_init(&ractx->lpc_ctx, avctx->frame_size, LPC_ORDER,
                       FF_LPC_TYPE_LEVINSON);
-    return ret;
-}
+    if (ret < 0)
+        goto error;
 
+    avctx->coded_frame = avcodec_alloc_frame();
+    if (!avctx->coded_frame) {
+        ret = AVERROR(ENOMEM);
+        goto error;
+    }
 
-static av_cold int ra144_encode_close(AVCodecContext *avctx)
-{
-    RA144Context *ractx = avctx->priv_data;
-    ff_lpc_end(&ractx->lpc_ctx);
     return 0;
+error:
+    ra144_encode_close(avctx);
+    return ret;
 }
 
 
