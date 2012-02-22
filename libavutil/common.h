@@ -64,6 +64,9 @@
 /* misc math functions */
 extern const uint8_t ff_log2_tab[256];
 
+/**
+ * Reverse the order of the bits of an 8-bits unsigned integer.
+ */
 extern const uint8_t av_reverse[256];
 
 static av_always_inline av_const int av_log2_c(unsigned int v)
