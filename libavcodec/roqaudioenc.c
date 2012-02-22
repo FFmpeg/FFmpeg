@@ -65,6 +65,8 @@ static av_cold int roq_dpcm_encode_init(AVCodecContext *avctx)
     }
 
     avctx->frame_size = ROQ_FRAME_SIZE;
+    avctx->bit_rate   = (ROQ_HEADER_SIZE + ROQ_FRAME_SIZE * avctx->channels) *
+                        (22050 / ROQ_FRAME_SIZE) * 8;
 
     context->frame_buffer = av_malloc(8 * ROQ_FRAME_SIZE * avctx->channels *
                                       sizeof(*context->frame_buffer));
