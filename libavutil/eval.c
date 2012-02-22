@@ -523,7 +523,7 @@ static int verify_expr(AVExpr *e)
         case e_sqrt:
         case e_not:
         case e_random:
-            return verify_expr(e->param[0]) && !e->param[2];
+            return verify_expr(e->param[0]) && !e->param[1];
         case e_taylor:
             return verify_expr(e->param[0]) && verify_expr(e->param[1])
                    && (!e->param[2] || verify_expr(e->param[2]));
