@@ -145,7 +145,7 @@ struct AVExpr {
         double (*func1)(void *, double);
         double (*func2)(void *, double, double);
     } a;
-    struct AVExpr *param[2];
+    struct AVExpr *param[3];
     double *var;
 };
 
@@ -229,6 +229,7 @@ void av_expr_free(AVExpr *e)
     if (!e) return;
     av_expr_free(e->param[0]);
     av_expr_free(e->param[1]);
+    av_expr_free(e->param[2]);
     av_freep(&e->var);
     av_freep(&e);
 }
@@ -300,6 +301,10 @@ static int parse_primary(AVExpr **e, Parser *p)
     if (p->s[0]== ',') {
         p->s++; // ","
         parse_expr(&d->param[1], p);
+    }
+    if (p->s[0]== ',') {
+        p->s++; // ","
+        parse_expr(&d->param[2], p);
     }
     if (p->s[0] != ')') {
         av_log(p, AV_LOG_ERROR, "Missing ')' or too many args in '%s'\n", s0);
@@ -517,8 +522,8 @@ static int verify_expr(AVExpr *e)
         case e_sqrt:
         case e_not:
         case e_random:
-            return verify_expr(e->param[0]);
-        default: return verify_expr(e->param[0]) && verify_expr(e->param[1]);
+            return verify_expr(e->param[0]) && !e->param[2];
+        default: return verify_expr(e->param[0]) && verify_expr(e->param[1]) && !e->param[2];
     }
 }
 
