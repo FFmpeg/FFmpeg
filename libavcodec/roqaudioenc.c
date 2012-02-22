@@ -57,11 +57,11 @@ static av_cold int roq_dpcm_encode_init(AVCodecContext *avctx)
 
     if (avctx->channels > 2) {
         av_log(avctx, AV_LOG_ERROR, "Audio must be mono or stereo\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
     if (avctx->sample_rate != 22050) {
         av_log(avctx, AV_LOG_ERROR, "Audio must be 22050 Hz\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     avctx->frame_size = ROQ_FRAME_SIZE;
