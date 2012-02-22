@@ -107,9 +107,10 @@ the evaluation of @var{y}, return 0 otherwise.
 Evaluate @var{x}, and if the result is zero return the result of the
 evaluation of @var{y}, return 0 otherwise.
 
-@item taylor(expr, x)
+@item taylor(expr, x) taylor(expr, x, id)
 Evaluate a taylor series at x.
-expr represents the LD(0)-th derivates of f(x) at 0.
+expr represents the LD(id)-th derivates of f(x) at 0. If id is not specified
+then 0 is assumed.
 note, when you have the derivatives at y instead of 0
 taylor(expr, x-y) can be used
 When the series does not converge the results are undefined.

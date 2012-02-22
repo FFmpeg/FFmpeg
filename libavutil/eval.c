@@ -184,18 +184,19 @@ static double eval_expr(Parser *p, AVExpr *e)
         case e_taylor: {
             double t = 1, d = 0, v;
             double x = eval_expr(p, e->param[1]);
+            int id = e->param[2] ? av_clip(eval_expr(p, e->param[2]), 0, VARS-1) : 0;
             int i;
-            double var0 = p->var[0];
+            double var0 = p->var[id];
             for(i=0; i<1000; i++) {
                 double ld = d;
-                p->var[0] = i;
+                p->var[id] = i;
                 v = eval_expr(p, e->param[0]);
                 d += t*v;
                 if(ld==d && v)
                     break;
                 t *= x / (i+1);
             }
-            p->var[0] = var0;
+            p->var[id] = var0;
             return d;
         }
         default: {
@@ -523,6 +524,9 @@ static int verify_expr(AVExpr *e)
         case e_not:
         case e_random:
             return verify_expr(e->param[0]) && !e->param[2];
+        case e_taylor:
+            return verify_expr(e->param[0]) && verify_expr(e->param[1])
+                   && (!e->param[2] || verify_expr(e->param[2]));
         default: return verify_expr(e->param[0]) && verify_expr(e->param[1]) && !e->param[2];
     }
 }
@@ -722,7 +726,7 @@ int main(int argc, char **argv)
         "ifnot(0, 23)",
         "ifnot(1, NaN) + if(0, 1)",
         "taylor(1, 1)",
-        "taylor(eq(mod(ld(0),4),1)-eq(mod(ld(0),4),3), PI/2)",
+        "taylor(eq(mod(ld(1),4),1)-eq(mod(ld(1),4),3), PI/2, 1)",
         NULL
     };
 
