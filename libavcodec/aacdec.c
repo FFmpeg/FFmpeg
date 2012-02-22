@@ -5,7 +5,7 @@
  *
  * AAC LATM decoder
  * Copyright (c) 2008-2010 Paul Kendall <paul@kcbbs.gen.nz>
- * Copyright (c) 2010      Janne Grunau <janne-ffmpeg@jannau.net>
+ * Copyright (c) 2010      Janne Grunau <janne-libav@jannau.net>
  *
  * This file is part of Libav.
  *
