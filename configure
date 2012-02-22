@@ -1416,7 +1416,6 @@ h264_parser_select="golomb h264chroma h264dsp h264pred"
 
 # external libraries
 libdirac_decoder_deps="libdirac !libschroedinger"
-libdirac_encoder_deps="libdirac"
 libfaac_encoder_deps="libfaac"
 libgsm_decoder_deps="libgsm"
 libgsm_encoder_deps="libgsm"
@@ -2937,8 +2936,8 @@ enabled avisynth   && require2 vfw32 "windows.h vfw.h" AVIFileInit -lavifil32
 enabled frei0r     && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
 enabled gnutls     && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
 enabled libdirac   && require_pkg_config dirac                          \
-    "libdirac_decoder/dirac_parser.h libdirac_encoder/dirac_encoder.h"  \
-    "dirac_decoder_init dirac_encoder_init"
+    "libdirac_decoder/dirac_parser.h"  \
+    "dirac_decoder_init"
 enabled libfaac    && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
 enabled libfreetype && require_pkg_config freetype2 "ft2build.h freetype/freetype.h" FT_Init_FreeType
 enabled libgsm     && require  libgsm gsm/gsm.h gsm_create -lgsm
