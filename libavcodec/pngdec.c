@@ -407,8 +407,10 @@ static int decode_frame(AVCodecContext *avctx,
 
     /* check signature */
     if (memcmp(s->bytestream, ff_pngsig, 8) != 0 &&
-        memcmp(s->bytestream, ff_mngsig, 8) != 0)
+        memcmp(s->bytestream, ff_mngsig, 8) != 0) {
+        av_log(avctx, AV_LOG_ERROR, "Missing png signature\n");
         return -1;
+    }
     s->bytestream+= 8;
     s->y=
     s->state=0;
