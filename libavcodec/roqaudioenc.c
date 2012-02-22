@@ -49,10 +49,6 @@ static av_cold int roq_dpcm_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Audio must be 22050 Hz\n");
         return -1;
     }
-    if (avctx->sample_fmt != AV_SAMPLE_FMT_S16) {
-        av_log(avctx, AV_LOG_ERROR, "Audio must be signed 16-bit\n");
-        return -1;
-    }
 
     avctx->frame_size = ROQ_FIRST_FRAME_SIZE;
 
