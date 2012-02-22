@@ -157,6 +157,9 @@ static int parse_keyframes_index(AVFormatContext *s, AVIOContext *ioc, AVStream 
         return 0;
     }
 
+    if (s->flags & AVFMT_FLAG_IGNIDX)
+        return 0;
+
     while (avio_tell(ioc) < max_pos - 2 && amf_get_string(ioc, str_val, sizeof(str_val)) > 0) {
         int64_t* current_array;
 
