@@ -132,7 +132,7 @@ static int tm2_build_huff_table(TM2Context *ctx, TM2Codes *code)
                huff.val_bits, huff.max_bits);
         return -1;
     }
-    if((huff.nodes < 0) || (huff.nodes > 0x10000)) {
+    if((huff.nodes <= 0) || (huff.nodes > 0x10000)) {
         av_log(ctx->avctx, AV_LOG_ERROR, "Incorrect number of Huffman tree nodes: %i\n", huff.nodes);
         return -1;
     }
