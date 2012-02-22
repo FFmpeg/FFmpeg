@@ -120,9 +120,22 @@ for examples see get_bits, show_bits, skip_bits, get_vlc
 #   define MIN_CACHE_BITS 25
 #endif
 
+#if UNCHECKED_BITSTREAM_READER
 #define OPEN_READER(name, gb)                   \
     unsigned int name##_index = (gb)->index;    \
     unsigned int av_unused name##_cache = 0
+
+#define HAVE_BITS_REMAINING(name, gb) 1
+#else
+#define OPEN_READER(name, gb)                   \
+    unsigned int name##_index = (gb)->index;    \
+    unsigned int av_unused name##_cache = 0;    \
+    unsigned int av_unused name##_size_plus8 =  \
+                (gb)->size_in_bits_plus8
+
+#define HAVE_BITS_REMAINING(name, gb)           \
+    name##_index < name##_size_plus8
+#endif
 
 #define CLOSE_READER(name, gb) (gb)->index = name##_index
 
@@ -156,7 +169,7 @@ for examples see get_bits, show_bits, skip_bits, get_vlc
 #   define SKIP_COUNTER(name, gb, num) name##_index += (num)
 #else
 #   define SKIP_COUNTER(name, gb, num) \
-    name##_index = FFMIN((gb)->size_in_bits_plus8, name##_index + (num))
+    name##_index = FFMIN(name##_size_plus8, name##_index + (num))
 #endif
 
 #define SKIP_BITS(name, gb, num) do {           \
