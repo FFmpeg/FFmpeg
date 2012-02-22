@@ -362,33 +362,33 @@ static inline void cx_pktcpy(struct FrameListData *dst,
 }
 
 /**
- * Store coded frame information in format suitable for return from encode().
+ * Store coded frame information in format suitable for return from encode2().
  *
- * Write buffer information from @a cx_frame to @a buf & @a buf_size.
- * Timing/frame details to @a coded_frame.
- * @return Frame size written to @a buf on success
- * @return AVERROR(EINVAL) on error
+ * Write information from @a cx_frame to @a pkt
+ * @return packet data size on success
+ * @return a negative AVERROR on error
  */
 static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
-                      uint8_t *buf, int buf_size, AVFrame *coded_frame)
+                      AVPacket *pkt, AVFrame *coded_frame)
 {
-    if ((int) cx_frame->sz <= buf_size) {
-        buf_size = cx_frame->sz;
-        memcpy(buf, cx_frame->buf, buf_size);
+    int ret = ff_alloc_packet(pkt, cx_frame->sz);
+    if (ret >= 0) {
+        memcpy(pkt->data, cx_frame->buf, pkt->size);
+        pkt->pts = pkt->dts    = cx_frame->pts;
         coded_frame->pts       = cx_frame->pts;
         coded_frame->key_frame = !!(cx_frame->flags & VPX_FRAME_IS_KEY);
 
-        if (coded_frame->key_frame)
+        if (coded_frame->key_frame) {
             coded_frame->pict_type = AV_PICTURE_TYPE_I;
-        else
+            pkt->flags            |= AV_PKT_FLAG_KEY;
+        } else
             coded_frame->pict_type = AV_PICTURE_TYPE_P;
     } else {
         av_log(avctx, AV_LOG_ERROR,
-               "Compressed frame larger than storage provided! (%zu/%d)\n",
-               cx_frame->sz, buf_size);
-        return AVERROR(EINVAL);
+               "Error getting output packet of size %zu.\n", cx_frame->sz);
+        return ret;
     }
-    return buf_size;
+    return pkt->size;
 }
 
 /**
@@ -399,7 +399,7 @@ static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
  * @return AVERROR(EINVAL) on output size error
  * @return AVERROR(ENOMEM) on coded frame queue data allocation error
  */
-static int queue_frames(AVCodecContext *avctx, uint8_t *buf, int buf_size,
+static int queue_frames(AVCodecContext *avctx, AVPacket *pkt_out,
                         AVFrame *coded_frame)
 {
     VP8Context *ctx = avctx->priv_data;
@@ -410,9 +410,9 @@ static int queue_frames(AVCodecContext *avctx, uint8_t *buf, int buf_size,
     if (ctx->coded_frame_list) {
         struct FrameListData *cx_frame = ctx->coded_frame_list;
         /* return the leading frame if we've already begun queueing */
-        size = storeframe(avctx, cx_frame, buf, buf_size, coded_frame);
+        size = storeframe(avctx, cx_frame, pkt_out, coded_frame);
         if (size < 0)
-            return AVERROR(EINVAL);
+            return size;
         ctx->coded_frame_list = cx_frame->next;
         free_coded_frame(cx_frame);
     }
@@ -429,9 +429,9 @@ static int queue_frames(AVCodecContext *avctx, uint8_t *buf, int buf_size,
                    provided a frame for output */
                 assert(!ctx->coded_frame_list);
                 cx_pktcpy(&cx_frame, pkt);
-                size = storeframe(avctx, &cx_frame, buf, buf_size, coded_frame);
+                size = storeframe(avctx, &cx_frame, pkt_out, coded_frame);
                 if (size < 0)
-                    return AVERROR(EINVAL);
+                    return size;
             } else {
                 struct FrameListData *cx_frame =
                     av_malloc(sizeof(struct FrameListData));
@@ -477,11 +477,10 @@ static int queue_frames(AVCodecContext *avctx, uint8_t *buf, int buf_size,
     return size;
 }
 
-static int vp8_encode(AVCodecContext *avctx, uint8_t *buf, int buf_size,
-                      void *data)
+static int vp8_encode(AVCodecContext *avctx, AVPacket *pkt,
+                      const AVFrame *frame, int *got_packet)
 {
     VP8Context *ctx = avctx->priv_data;
-    AVFrame *frame = data;
     struct vpx_image *rawimg = NULL;
     int64_t timestamp = 0;
     int res, coded_size;
@@ -503,7 +502,7 @@ static int vp8_encode(AVCodecContext *avctx, uint8_t *buf, int buf_size,
         log_encoder_error(avctx, "Error encoding frame");
         return AVERROR_INVALIDDATA;
     }
-    coded_size = queue_frames(avctx, buf, buf_size, avctx->coded_frame);
+    coded_size = queue_frames(avctx, pkt, avctx->coded_frame);
 
     if (!frame && avctx->flags & CODEC_FLAG_PASS1) {
         unsigned int b64_size = AV_BASE64_SIZE(ctx->twopass_stats.sz);
@@ -517,7 +516,9 @@ static int vp8_encode(AVCodecContext *avctx, uint8_t *buf, int buf_size,
         av_base64_encode(avctx->stats_out, b64_size, ctx->twopass_stats.buf,
                          ctx->twopass_stats.sz);
     }
-    return coded_size;
+
+    *got_packet = !!coded_size;
+    return 0;
 }
 
 #define OFFSET(x) offsetof(VP8Context, x)
@@ -570,7 +571,7 @@ AVCodec ff_libvpx_encoder = {
     .id             = CODEC_ID_VP8,
     .priv_data_size = sizeof(VP8Context),
     .init           = vp8_init,
-    .encode         = vp8_encode,
+    .encode2        = vp8_encode,
     .close          = vp8_free,
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_AUTO_THREADS,
     .pix_fmts = (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
