@@ -441,6 +441,7 @@ static int ra144_encode_frame(AVCodecContext *avctx, uint8_t *frame,
     int16_t block_coefs[NBLOCKS][LPC_ORDER];
     int lpc_refl[LPC_ORDER];    /**< reflection coefficients of the frame */
     unsigned int refl_rms[NBLOCKS]; /**< RMS of the reflection coefficients */
+    const int16_t *samples = data;
     int energy = 0;
     int i, idx;
 
@@ -515,7 +516,7 @@ static int ra144_encode_frame(AVCodecContext *avctx, uint8_t *frame,
     ractx->lpc_refl_rms[1] = ractx->lpc_refl_rms[0];
     FFSWAP(unsigned int *, ractx->lpc_coef[0], ractx->lpc_coef[1]);
     for (i = 0; i < NBLOCKS * BLOCKSIZE; i++)
-        ractx->curr_block[i] = *((int16_t *)data + i) >> 2;
+        ractx->curr_block[i] = samples[i] >> 2;
     return FRAMESIZE;
 }
 
