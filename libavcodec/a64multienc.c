@@ -317,8 +317,6 @@ static int a64multi_encode_frame(AVCodecContext *avctx, unsigned char *buf,
             charset  += charset_size;
             req_size += charset_size;
         }
-        /* no charset so clean buf */
-        else memset(buf, 0, charset_size);
 
         /* write x frames to buf */
         for (frame = 0; frame < c->mc_lifetime; frame++) {
