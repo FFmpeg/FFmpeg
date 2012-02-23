@@ -238,4 +238,6 @@ av_cold void ff_sbrdsp_init(SBRDSPContext *s)
 
     if (ARCH_ARM)
         ff_sbrdsp_init_arm(s);
+    if (HAVE_MMX)
+        ff_sbrdsp_init_x86(s);
 }
