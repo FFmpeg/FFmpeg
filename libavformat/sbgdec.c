@@ -1473,13 +1473,11 @@ static int sbg_read_seek2(AVFormatContext *avf, int stream_index,
     return 0;
 }
 
-#if FF_API_READ_SEEK
 static int sbg_read_seek(AVFormatContext *avf, int stream_index,
                          int64_t ts, int flags)
 {
     return sbg_read_seek2(avf, stream_index, ts, ts, ts, 0);
 }
-#endif
 
 static const AVOption sbg_options[] = {
     { "sample_rate", "", offsetof(struct sbg_demuxer, sample_rate),
@@ -1508,9 +1506,7 @@ AVInputFormat ff_sbg_demuxer = {
     .read_probe     = sbg_read_probe,
     .read_header    = sbg_read_header,
     .read_packet    = sbg_read_packet,
-#if FF_API_READ_SEEK
     .read_seek      = sbg_read_seek,
-#endif
     .read_seek2     = sbg_read_seek2,
     .extensions     = "sbg",
     .priv_class     = &sbg_demuxer_class,
