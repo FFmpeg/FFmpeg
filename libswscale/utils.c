@@ -244,7 +244,7 @@ static int initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSi
             xDstInSrc+= xInc;
         }
     } else {
-        int xDstInSrc;
+        int64_t xDstInSrc;
         int sizeFactor;
 
         if      (flags&SWS_BICUBIC)      sizeFactor=  4;
@@ -809,8 +809,8 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
     if (!dstFilter) dstFilter= &dummyFilter;
     if (!srcFilter) srcFilter= &dummyFilter;
 
-    c->lumXInc= ((srcW<<16) + (dstW>>1))/dstW;
-    c->lumYInc= ((srcH<<16) + (dstH>>1))/dstH;
+    c->lumXInc= (((int64_t)srcW<<16) + (dstW>>1))/dstW;
+    c->lumYInc= (((int64_t)srcH<<16) + (dstH>>1))/dstH;
     c->dstFormatBpp = av_get_bits_per_pixel(&av_pix_fmt_descriptors[dstFormat]);
     c->srcFormatBpp = av_get_bits_per_pixel(&av_pix_fmt_descriptors[srcFormat]);
     c->vRounder= 4* 0x0001000100010001ULL;
@@ -896,8 +896,8 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
     else
         c->canMMX2BeUsed=0;
 
-    c->chrXInc= ((c->chrSrcW<<16) + (c->chrDstW>>1))/c->chrDstW;
-    c->chrYInc= ((c->chrSrcH<<16) + (c->chrDstH>>1))/c->chrDstH;
+    c->chrXInc= (((int64_t)c->chrSrcW<<16) + (c->chrDstW>>1))/c->chrDstW;
+    c->chrYInc= (((int64_t)c->chrSrcH<<16) + (c->chrDstH>>1))/c->chrDstH;
 
     // match pixel 0 of the src to pixel 0 of dst and match pixel n-2 of src to pixel n-2 of dst
     // but only for the FAST_BILINEAR mode otherwise do correct scaling
@@ -912,8 +912,8 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
         }
         //we don't use the x86 asm scaler if MMX is available
         else if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) {
-            c->lumXInc = ((srcW-2)<<16)/(dstW-2) - 20;
-            c->chrXInc = ((c->chrSrcW-2)<<16)/(c->chrDstW-2) - 20;
+            c->lumXInc = ((int64_t)(srcW-2)<<16)/(dstW-2) - 20;
+            c->chrXInc = ((int64_t)(c->chrSrcW-2)<<16)/(c->chrDstW-2) - 20;
         }
     }
 
