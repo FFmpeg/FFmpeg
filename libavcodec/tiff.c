@@ -289,6 +289,11 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
     count = tget_long(&buf, s->le);
     off = tget_long(&buf, s->le);
 
+    if (type == 0 || type >= FF_ARRAY_ELEMS(type_sizes)) {
+        av_log(s->avctx, AV_LOG_DEBUG, "Unknown tiff type (%u) encountered\n", type);
+        return 0;
+    }
+
     if(count == 1){
         switch(type){
         case TIFF_BYTE:
@@ -310,10 +315,12 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
             value = -1;
             buf = start + off;
         }
-    }else if(type_sizes[type] * count <= 4){
-        buf -= 4;
-    }else{
-        buf = start + off;
+    } else {
+        if (count <= 4 && type_sizes[type] * count <= 4) {
+            buf -= 4;
+        } else {
+            buf = start + off;
+        }
     }
 
     if(buf && (buf < start || buf > end_buf)){
