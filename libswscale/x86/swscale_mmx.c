@@ -117,6 +117,44 @@ void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufI
         const int16_t **chrUSrcPtr= (const int16_t **) chrUPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
         const int16_t **alpSrcPtr= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? (const int16_t **) alpPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize : NULL;
         int i;
+
+        if (firstLumSrcY < 0 || firstLumSrcY + vLumFilterSize > c->srcH) {
+            const int16_t **tmpY = (const int16_t **) lumPixBuf + 2 * vLumBufSize;
+            int neg = -firstLumSrcY, i, end = FFMIN(c->srcH - firstLumSrcY, vLumFilterSize);
+            for (i = 0; i < neg;            i++)
+                tmpY[i] = lumSrcPtr[neg];
+            for (     ; i < end;            i++)
+                tmpY[i] = lumSrcPtr[i];
+            for (     ; i < vLumFilterSize; i++)
+                tmpY[i] = tmpY[i-1];
+            lumSrcPtr = tmpY;
+
+            if (alpSrcPtr) {
+                const int16_t **tmpA = (const int16_t **) alpPixBuf + 2 * vLumBufSize;
+                for (i = 0; i < neg;            i++)
+                    tmpA[i] = alpSrcPtr[neg];
+                for (     ; i < end;            i++)
+                    tmpA[i] = alpSrcPtr[i];
+                for (     ; i < vLumFilterSize; i++)
+                    tmpA[i] = tmpA[i - 1];
+                alpSrcPtr = tmpA;
+            }
+        }
+        if (firstChrSrcY < 0 || firstChrSrcY + vChrFilterSize > c->chrSrcH) {
+            const int16_t **tmpU = (const int16_t **) chrUPixBuf + 2 * vChrBufSize;
+            int neg = -firstChrSrcY, i, end = FFMIN(c->chrSrcH - firstChrSrcY, vChrFilterSize);
+            for (i = 0; i < neg;            i++) {
+                tmpU[i] = chrUSrcPtr[neg];
+            }
+            for (     ; i < end;            i++) {
+                tmpU[i] = chrUSrcPtr[i];
+            }
+            for (     ; i < vChrFilterSize; i++) {
+                tmpU[i] = tmpU[i - 1];
+            }
+            chrUSrcPtr = tmpU;
+        }
+
         if (flags & SWS_ACCURATE_RND) {
             int s= APCK_SIZE / 8;
             for (i=0; i<vLumFilterSize; i+=2) {
