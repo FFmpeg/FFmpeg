@@ -2189,15 +2189,20 @@ static av_cold int validate_options(AC3EncodeContext *s)
             wpf--;
         s->frame_size_min = 2 * wpf;
     } else {
+        int best_br = 0, best_code = 0, best_diff = INT_MAX;
         for (i = 0; i < 19; i++) {
-            if ((ff_ac3_bitrate_tab[i] >> s->bit_alloc.sr_shift)*1000 == avctx->bit_rate)
+            int br   = (ff_ac3_bitrate_tab[i] >> s->bit_alloc.sr_shift) * 1000;
+            int diff = abs(br - avctx->bit_rate);
+            if (diff < best_diff) {
+                best_br   = br;
+                best_code = i;
+                best_diff = diff;
+            }
+            if (!best_diff)
                 break;
         }
-        if (i == 19) {
-            av_log(avctx, AV_LOG_ERROR, "invalid bit rate\n");
-            return AVERROR(EINVAL);
-        }
-        s->frame_size_code = i << 1;
+        avctx->bit_rate    = best_br;
+        s->frame_size_code = best_code << 1;
         s->frame_size_min  = 2 * ff_ac3_frame_size_tab[s->frame_size_code][s->bit_alloc.sr_code];
         s->num_blks_code   = 0x3;
         s->num_blocks      = 6;
