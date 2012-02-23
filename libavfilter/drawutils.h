@@ -25,6 +25,7 @@
  */
 
 #include <stdint.h>
+#include "avfilter.h"
 #include "libavutil/pixfmt.h"
 
 int ff_fill_rgba_map(uint8_t *rgba_map, enum PixelFormat pix_fmt);
@@ -41,5 +42,81 @@ void ff_draw_rectangle(uint8_t *dst[4], int dst_linesize[4],
 void ff_copy_rectangle(uint8_t *dst[4], int dst_linesize[4],
                        uint8_t *src[4], int src_linesize[4], int pixelstep[4],
                        int hsub, int vsub, int x, int y, int y2, int w, int h);
+
+#define MAX_PLANES 4
+
+typedef struct FFDrawContext {
+    const struct AVPixFmtDescriptor *desc;
+    enum PixelFormat format;
+    unsigned nb_planes;
+    int pixelstep[MAX_PLANES]; /*< offset between pixels */
+    uint8_t hsub[MAX_PLANES];  /*< horizontal subsamling */
+    uint8_t vsub[MAX_PLANES];  /*< vertical subsamling */
+    uint8_t hsub_max;
+    uint8_t vsub_max;
+} FFDrawContext;
+
+typedef struct FFDrawColor {
+    union {
+        uint32_t u32;
+        uint16_t u16;
+        uint8_t  u8[4];
+    } comp[MAX_PLANES];
+} FFDrawColor;
+
+/**
+ * Init a draw context.
+ *
+ * Only a limited number of pixel formats are supported, if format is not
+ * supported the function will return an error.
+ * No flags currently defined.
+ * @return  0 for success, < 0 for error
+ */
+int ff_draw_init(FFDrawContext *draw, enum PixelFormat format, unsigned flags);
+
+/**
+ * Prepare a color.
+ */
+void ff_draw_color(FFDrawContext *draw, FFDrawColor *color, uint8_t rgba[4]);
+
+/**
+ * Copy a rectangle from an image to another.
+ *
+ * The coordinates must be as even as the subsampling requires.
+ */
+void ff_copy_rectangle2(FFDrawContext *draw,
+                        uint8_t *dst[], int dst_linesize[],
+                        uint8_t *src[], int src_linesize[],
+                        int dst_x, int dst_y, int src_x, int src_y,
+                        int w, int h);
+
+/**
+ * Fill a rectangle with an uniform color.
+ *
+ * The coordinates must be as even as the subsampling requires.
+ * The color needs to be inited with ff_draw_color.
+ */
+void ff_fill_rectangle(FFDrawContext *draw, FFDrawColor *color,
+                       uint8_t *dst[], int dst_linesize[],
+                       int dst_x, int dst_y, int w, int h);
+
+/**
+ * Round a dimension according to subsampling.
+ *
+ * @param draw       draw context
+ * @param sub_dir    0 for horizontal, 1 for vertical
+ * @param round_dir  0 nearest, -1 round down, +1 round up
+ * @param value      value to round
+ * @return  the rounded value
+ */
+int ff_draw_round_to_sub(FFDrawContext *draw, int sub_dir, int round_dir,
+                         int value);
+
+/**
+ * Return the list of pixel formats supported by the draw functions.
+ *
+ * The flags are the same as ff_draw_init, i.e., none currently.
+ */
+AVFilterFormats *ff_draw_supported_pixel_formats(unsigned flags);
 
 #endif /* AVFILTER_DRAWUTILS_H */
