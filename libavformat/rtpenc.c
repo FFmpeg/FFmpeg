@@ -31,7 +31,7 @@
 //#define DEBUG
 
 static const AVOption options[] = {
-    FF_RTP_FLAG_OPTS(RTPMuxContext, flags),
+    FF_RTP_FLAG_OPTS(RTPMuxContext, flags)
     { "payload_type", "Specify RTP payload type", offsetof(RTPMuxContext, payload_type), AV_OPT_TYPE_INT, {.dbl = -1 }, -1, 127, AV_OPT_FLAG_ENCODING_PARAM },
     { NULL },
 };
