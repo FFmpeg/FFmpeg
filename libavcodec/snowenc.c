@@ -1600,18 +1600,25 @@ static void calculate_visual_weight(SnowContext *s, Plane *p){
     }
 }
 
-static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data){
+static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
+                        const AVFrame *pict, int *got_packet)
+{
     SnowContext *s = avctx->priv_data;
     RangeCoder * const c= &s->c;
-    AVFrame *pict = data;
     AVFrame *pic = &s->new_picture;
     const int width= s->avctx->width;
     const int height= s->avctx->height;
-    int level, orientation, plane_index, i, y;
+    int level, orientation, plane_index, i, y, ret;
     uint8_t rc_header_bak[sizeof(s->header_state)];
     uint8_t rc_block_bak[sizeof(s->block_state)];
 
-    ff_init_range_encoder(c, buf, buf_size);
+    if (!pkt->data &&
+        (ret = av_new_packet(pkt, s->b_width*s->b_height*MB_SIZE*MB_SIZE*3 + FF_MIN_BUFFER_SIZE)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting output packet.\n");
+        return ret;
+    }
+
+    ff_init_range_encoder(c, pkt->data, pkt->size);
     ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
 
     for(i=0; i<3; i++){
@@ -1744,7 +1751,7 @@ redo_frame:
                && pic->pict_type == AV_PICTURE_TYPE_P
                && !(avctx->flags&CODEC_FLAG_PASS2)
                && s->m.me.scene_change_score > s->avctx->scenechange_threshold){
-                ff_init_range_encoder(c, buf, buf_size);
+                ff_init_range_encoder(c, pkt->data, pkt->size);
                 ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
                 pic->pict_type= AV_PICTURE_TYPE_I;
                 s->keyframe=1;
@@ -1777,7 +1784,7 @@ redo_frame:
                     return -1;
                 if(delta_qlog){
                     //reordering qlog in the bitstream would eliminate this reset
-                    ff_init_range_encoder(c, buf, buf_size);
+                    ff_init_range_encoder(c, pkt->data, pkt->size);
                     memcpy(s->header_state, rc_header_bak, sizeof(s->header_state));
                     memcpy(s->block_state, rc_block_bak, sizeof(s->block_state));
                     encode_header(s);
@@ -1873,7 +1880,12 @@ redo_frame:
 
     emms_c();
 
-    return ff_rac_terminate(c);
+    pkt->size = ff_rac_terminate(c);
+    if (avctx->coded_frame->key_frame)
+        pkt->flags |= AV_PKT_FLAG_KEY;
+    *got_packet = 1;
+
+    return 0;
 }
 
 static av_cold int encode_end(AVCodecContext *avctx)
@@ -1908,7 +1920,7 @@ AVCodec ff_snow_encoder = {
     .id             = CODEC_ID_SNOW,
     .priv_data_size = sizeof(SnowContext),
     .init           = encode_init,
-    .encode         = encode_frame,
+    .encode2        = encode_frame,
     .close          = encode_end,
     .long_name = NULL_IF_CONFIG_SMALL("Snow"),
     .priv_class     = &snowenc_class,
