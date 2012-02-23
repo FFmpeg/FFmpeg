@@ -22,6 +22,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "internal.h"
 
 static av_cold int v308_encode_init(AVCodecContext *avctx)
 {
@@ -40,19 +41,18 @@ static av_cold int v308_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int v308_encode_frame(AVCodecContext *avctx, uint8_t *buf,
-                             int buf_size, void *data)
+static int v308_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
+                             const AVFrame *pic, int *got_packet)
 {
-    AVFrame *pic = data;
-    uint8_t *dst = buf;
+    uint8_t *dst;
     uint8_t *y, *u, *v;
-    int i, j;
-    int output_size = 0;
+    int i, j, ret;
 
-    if (buf_size < avctx->width * avctx->height * 3) {
+    if ((ret = ff_alloc_packet(pkt, avctx->width * avctx->height * 3)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Out buffer is too small.\n");
-        return AVERROR(ENOMEM);
+        return ret;
     }
+    dst = pkt->data;
 
     avctx->coded_frame->reference = 0;
     avctx->coded_frame->key_frame = 1;
@@ -67,14 +67,15 @@ static int v308_encode_frame(AVCodecContext *avctx, uint8_t *buf,
             *dst++ = v[j];
             *dst++ = y[j];
             *dst++ = u[j];
-            output_size += 3;
         }
         y += pic->linesize[0];
         u += pic->linesize[1];
         v += pic->linesize[2];
     }
 
-    return output_size;
+    pkt->flags |= AV_PKT_FLAG_KEY;
+    *got_packet = 1;
+    return 0;
 }
 
 static av_cold int v308_encode_close(AVCodecContext *avctx)
@@ -89,7 +90,7 @@ AVCodec ff_v308_encoder = {
     .type         = AVMEDIA_TYPE_VIDEO,
     .id           = CODEC_ID_V308,
     .init         = v308_encode_init,
-    .encode       = v308_encode_frame,
+    .encode2      = v308_encode_frame,
     .close        = v308_encode_close,
     .pix_fmts     = (const enum PixelFormat[]){ PIX_FMT_YUV444P, PIX_FMT_NONE },
     .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed packed 4:4:4"),
