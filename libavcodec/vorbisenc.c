@@ -155,7 +155,7 @@ static int cb_lookup_vals(int lookup, int dimentions, int entries)
     return 0;
 }
 
-static void ready_codebook(vorbis_enc_codebook *cb)
+static int ready_codebook(vorbis_enc_codebook *cb)
 {
     int i;
 
@@ -167,6 +167,8 @@ static void ready_codebook(vorbis_enc_codebook *cb)
         int vals = cb_lookup_vals(cb->lookup, cb->ndimentions, cb->nentries);
         cb->dimentions = av_malloc(sizeof(float) * cb->nentries * cb->ndimentions);
         cb->pow2 = av_mallocz(sizeof(float) * cb->nentries);
+        if (!cb->dimentions || !cb->pow2)
+            return AVERROR(ENOMEM);
         for (i = 0; i < cb->nentries; i++) {
             float last = 0;
             int j;
@@ -187,13 +189,16 @@ static void ready_codebook(vorbis_enc_codebook *cb)
             cb->pow2[i] /= 2.;
         }
     }
+    return 0;
 }
 
-static void ready_residue(vorbis_enc_residue *rc, vorbis_enc_context *venc)
+static int ready_residue(vorbis_enc_residue *rc, vorbis_enc_context *venc)
 {
     int i;
     assert(rc->type == 2);
     rc->maxes = av_mallocz(sizeof(float[2]) * rc->classifications);
+    if (!rc->maxes)
+        return AVERROR(ENOMEM);
     for (i = 0; i < rc->classifications; i++) {
         int j;
         vorbis_enc_codebook * cb;
@@ -223,15 +228,16 @@ static void ready_residue(vorbis_enc_residue *rc, vorbis_enc_context *venc)
         rc->maxes[i][0] += 0.8;
         rc->maxes[i][1] += 0.8;
     }
+    return 0;
 }
 
-static void create_vorbis_context(vorbis_enc_context *venc,
-                                  AVCodecContext *avccontext)
+static int create_vorbis_context(vorbis_enc_context *venc,
+                                 AVCodecContext *avccontext)
 {
     vorbis_enc_floor   *fc;
     vorbis_enc_residue *rc;
     vorbis_enc_mapping *mc;
-    int i, book;
+    int i, book, ret;
 
     venc->channels    = avccontext->channels;
     venc->sample_rate = avccontext->sample_rate;
@@ -239,6 +245,8 @@ static void create_vorbis_context(vorbis_enc_context *venc,
 
     venc->ncodebooks = FF_ARRAY_ELEMS(cvectors);
     venc->codebooks  = av_malloc(sizeof(vorbis_enc_codebook) * venc->ncodebooks);
+    if (!venc->codebooks)
+        return AVERROR(ENOMEM);
 
     // codebook 0..14 - floor1 book, values 0..255
     // codebook 15 residue masterbook
@@ -255,27 +263,36 @@ static void create_vorbis_context(vorbis_enc_context *venc,
 
         cb->lens      = av_malloc(sizeof(uint8_t)  * cb->nentries);
         cb->codewords = av_malloc(sizeof(uint32_t) * cb->nentries);
+        if (!cb->lens || !cb->codewords)
+            return AVERROR(ENOMEM);
         memcpy(cb->lens, cvectors[book].clens, cvectors[book].len);
         memset(cb->lens + cvectors[book].len, 0, cb->nentries - cvectors[book].len);
 
         if (cb->lookup) {
             vals = cb_lookup_vals(cb->lookup, cb->ndimentions, cb->nentries);
             cb->quantlist = av_malloc(sizeof(int) * vals);
+            if (!cb->quantlist)
+                return AVERROR(ENOMEM);
             for (i = 0; i < vals; i++)
                 cb->quantlist[i] = cvectors[book].quant[i];
         } else {
             cb->quantlist = NULL;
         }
-        ready_codebook(cb);
+        if ((ret = ready_codebook(cb)) < 0)
+            return ret;
     }
 
     venc->nfloors = 1;
     venc->floors  = av_malloc(sizeof(vorbis_enc_floor) * venc->nfloors);
+    if (!venc->floors)
+        return AVERROR(ENOMEM);
 
     // just 1 floor
     fc = &venc->floors[0];
     fc->partitions         = NUM_FLOOR_PARTITIONS;
     fc->partition_to_class = av_malloc(sizeof(int) * fc->partitions);
+    if (!fc->partition_to_class)
+        return AVERROR(ENOMEM);
     fc->nclasses           = 0;
     for (i = 0; i < fc->partitions; i++) {
         static const int a[] = {0, 1, 2, 2, 3, 3, 4, 4};
@@ -284,6 +301,8 @@ static void create_vorbis_context(vorbis_enc_context *venc,
     }
     fc->nclasses++;
     fc->classes = av_malloc(sizeof(vorbis_enc_floor_class) * fc->nclasses);
+    if (!fc->classes)
+        return AVERROR(ENOMEM);
     for (i = 0; i < fc->nclasses; i++) {
         vorbis_enc_floor_class * c = &fc->classes[i];
         int j, books;
@@ -292,6 +311,8 @@ static void create_vorbis_context(vorbis_enc_context *venc,
         c->masterbook = floor_classes[i].masterbook;
         books         = (1 << c->subclass);
         c->books      = av_malloc(sizeof(int) * books);
+        if (!c->books)
+            return AVERROR(ENOMEM);
         for (j = 0; j < books; j++)
             c->books[j] = floor_classes[i].nbooks[j];
     }
@@ -303,6 +324,8 @@ static void create_vorbis_context(vorbis_enc_context *venc,
         fc->values += fc->classes[fc->partition_to_class[i]].dim;
 
     fc->list = av_malloc(sizeof(vorbis_floor1_entry) * fc->values);
+    if (!fc->list)
+        return AVERROR(ENOMEM);
     fc->list[0].x = 0;
     fc->list[1].x = 1 << fc->rangebits;
     for (i = 2; i < fc->values; i++) {
@@ -317,6 +340,8 @@ static void create_vorbis_context(vorbis_enc_context *venc,
 
     venc->nresidues = 1;
     venc->residues  = av_malloc(sizeof(vorbis_enc_residue) * venc->nresidues);
+    if (!venc->residues)
+        return AVERROR(ENOMEM);
 
     // single residue
     rc = &venc->residues[0];
@@ -327,6 +352,8 @@ static void create_vorbis_context(vorbis_enc_context *venc,
     rc->classifications = 10;
     rc->classbook       = 15;
     rc->books           = av_malloc(sizeof(*rc->books) * rc->classifications);
+    if (!rc->books)
+        return AVERROR(ENOMEM);
     {
         static const int8_t a[10][8] = {
             { -1, -1, -1, -1, -1, -1, -1, -1, },
@@ -342,19 +369,26 @@ static void create_vorbis_context(vorbis_enc_context *venc,
         };
         memcpy(rc->books, a, sizeof a);
     }
-    ready_residue(rc, venc);
+    if ((ret = ready_residue(rc, venc)) < 0)
+        return ret;
 
     venc->nmappings = 1;
     venc->mappings  = av_malloc(sizeof(vorbis_enc_mapping) * venc->nmappings);
+    if (!venc->mappings)
+        return AVERROR(ENOMEM);
 
     // single mapping
     mc = &venc->mappings[0];
     mc->submaps = 1;
     mc->mux     = av_malloc(sizeof(int) * venc->channels);
+    if (!mc->mux)
+        return AVERROR(ENOMEM);
     for (i = 0; i < venc->channels; i++)
         mc->mux[i] = 0;
     mc->floor   = av_malloc(sizeof(int) * mc->submaps);
     mc->residue = av_malloc(sizeof(int) * mc->submaps);
+    if (!mc->floor || !mc->residue)
+        return AVERROR(ENOMEM);
     for (i = 0; i < mc->submaps; i++) {
         mc->floor[i]   = 0;
         mc->residue[i] = 0;
@@ -362,6 +396,8 @@ static void create_vorbis_context(vorbis_enc_context *venc,
     mc->coupling_steps = venc->channels == 2 ? 1 : 0;
     mc->magnitude      = av_malloc(sizeof(int) * mc->coupling_steps);
     mc->angle          = av_malloc(sizeof(int) * mc->coupling_steps);
+    if (!mc->magnitude || !mc->angle)
+        return AVERROR(ENOMEM);
     if (mc->coupling_steps) {
         mc->magnitude[0] = 0;
         mc->angle[0]     = 1;
@@ -369,6 +405,8 @@ static void create_vorbis_context(vorbis_enc_context *venc,
 
     venc->nmodes = 1;
     venc->modes  = av_malloc(sizeof(vorbis_enc_mode) * venc->nmodes);
+    if (!venc->modes)
+        return AVERROR(ENOMEM);
 
     // single mode
     venc->modes[0].blockflag = 0;
@@ -379,12 +417,18 @@ static void create_vorbis_context(vorbis_enc_context *venc,
     venc->samples    = av_malloc(sizeof(float) * venc->channels * (1 << venc->log2_blocksize[1]));
     venc->floor      = av_malloc(sizeof(float) * venc->channels * (1 << venc->log2_blocksize[1]) / 2);
     venc->coeffs     = av_malloc(sizeof(float) * venc->channels * (1 << venc->log2_blocksize[1]) / 2);
+    if (!venc->saved || !venc->samples || !venc->floor || !venc->coeffs)
+        return AVERROR(ENOMEM);
 
     venc->win[0] = ff_vorbis_vwin[venc->log2_blocksize[0] - 6];
     venc->win[1] = ff_vorbis_vwin[venc->log2_blocksize[1] - 6];
 
-    ff_mdct_init(&venc->mdct[0], venc->log2_blocksize[0], 0, 1.0);
-    ff_mdct_init(&venc->mdct[1], venc->log2_blocksize[1], 0, 1.0);
+    if ((ret = ff_mdct_init(&venc->mdct[0], venc->log2_blocksize[0], 0, 1.0)) < 0)
+        return ret;
+    if ((ret = ff_mdct_init(&venc->mdct[1], venc->log2_blocksize[1], 0, 1.0)) < 0)
+        return ret;
+
+    return 0;
 }
 
 static void put_float(PutBitContext *pb, float f)
@@ -647,6 +691,8 @@ static int put_main_header(vorbis_enc_context *venc, uint8_t **out)
 
     len = hlens[0] + hlens[1] + hlens[2];
     p = *out = av_mallocz(64 + len + len/255);
+    if (!p)
+        return AVERROR(ENOMEM);
 
     *p++ = 2;
     p += av_xiphlacing(p, hlens[0]);
@@ -952,32 +998,6 @@ static int apply_window_and_mdct(vorbis_enc_context *venc, const signed short *a
     return 1;
 }
 
-static av_cold int vorbis_encode_init(AVCodecContext *avccontext)
-{
-    vorbis_enc_context *venc = avccontext->priv_data;
-
-    if (avccontext->channels != 2) {
-        av_log(avccontext, AV_LOG_ERROR, "Current Libav Vorbis encoder only supports 2 channels.\n");
-        return -1;
-    }
-
-    create_vorbis_context(venc, avccontext);
-
-    if (avccontext->flags & CODEC_FLAG_QSCALE)
-        venc->quality = avccontext->global_quality / (float)FF_QP2LAMBDA / 10.;
-    else
-        venc->quality = 0.03;
-    venc->quality *= venc->quality;
-
-    avccontext->extradata_size = put_main_header(venc, (uint8_t**)&avccontext->extradata);
-
-    avccontext->frame_size     = 1 << (venc->log2_blocksize[0] - 1);
-
-    avccontext->coded_frame            = avcodec_alloc_frame();
-    avccontext->coded_frame->key_frame = 1;
-
-    return 0;
-}
 
 static int vorbis_encode_frame(AVCodecContext *avccontext,
                                unsigned char *packets,
@@ -1100,6 +1120,43 @@ static av_cold int vorbis_encode_close(AVCodecContext *avccontext)
     av_freep(&avccontext->extradata);
 
     return 0 ;
+}
+
+static av_cold int vorbis_encode_init(AVCodecContext *avccontext)
+{
+    vorbis_enc_context *venc = avccontext->priv_data;
+    int ret;
+
+    if (avccontext->channels != 2) {
+        av_log(avccontext, AV_LOG_ERROR, "Current Libav Vorbis encoder only supports 2 channels.\n");
+        return -1;
+    }
+
+    if ((ret = create_vorbis_context(venc, avccontext)) < 0)
+        goto error;
+
+    if (avccontext->flags & CODEC_FLAG_QSCALE)
+        venc->quality = avccontext->global_quality / (float)FF_QP2LAMBDA / 10.;
+    else
+        venc->quality = 0.03;
+    venc->quality *= venc->quality;
+
+    if ((ret = put_main_header(venc, (uint8_t**)&avccontext->extradata)) < 0)
+        goto error;
+    avccontext->extradata_size = ret;
+
+    avccontext->frame_size = 1 << (venc->log2_blocksize[0] - 1);
+
+    avccontext->coded_frame = avcodec_alloc_frame();
+    if (!avccontext->coded_frame) {
+        ret = AVERROR(ENOMEM);
+        goto error;
+    }
+
+    return 0;
+error:
+    vorbis_encode_close(avccontext);
+    return ret;
 }
 
 AVCodec ff_vorbis_encoder = {
