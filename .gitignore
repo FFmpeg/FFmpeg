@@ -24,7 +24,6 @@ libavfilter/libavfilter*
 libavformat/libavformat*
 libavutil/avconfig.h
 libavutil/libavutil*
-libpostproc/libpostproc*
 libswscale/libswscale*
 tests/audiogen
 tests/base64

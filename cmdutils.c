@@ -33,9 +33,6 @@
 #include "libavfilter/avfilter.h"
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
-#if CONFIG_POSTPROC
-#include "libpostproc/postprocess.h"
-#endif
 #include "libavutil/avstring.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/parseutils.h"
@@ -496,9 +493,6 @@ static void print_all_libs_info(int flags, int level)
     PRINT_LIB_INFO(avdevice, AVDEVICE, flags, level);
     PRINT_LIB_INFO(avfilter, AVFILTER, flags, level);
     PRINT_LIB_INFO(swscale,  SWSCALE,  flags, level);
-#if CONFIG_POSTPROC
-    PRINT_LIB_INFO(postproc, POSTPROC, flags, level);
-#endif
 }
 
 void show_banner(void)

@@ -6,7 +6,6 @@ libavcodec:  2012-01-27
 libavdevice: 2011-04-18
 libavfilter: 2011-04-18
 libavformat: 2012-01-27
-libpostproc: 2011-04-18 (deprecated, to be removed later)
 libswscale:  2011-06-20
 libavutil:   2011-04-18
 

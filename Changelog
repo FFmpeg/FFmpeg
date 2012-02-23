@@ -9,6 +9,7 @@ version <next>:
 - CDXL demuxer and decoder
 - Apple ProRes encoder
 - Sun Rasterfile Encoder
+- remove libpostproc
 
 
 version 0.8:
