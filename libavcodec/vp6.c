@@ -77,6 +77,10 @@ static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size,
         cols = buf[3];  /* number of stored macroblock cols */
         /* buf[4] is number of displayed macroblock rows */
         /* buf[5] is number of displayed macroblock cols */
+        if (!rows || !cols) {
+            av_log(s->avctx, AV_LOG_ERROR, "Invalid size %dx%d\n", cols << 4, rows << 4);
+            return 0;
+        }
 
         if (!s->macroblocks || /* first frame */
             16*cols != s->avctx->coded_width ||
@@ -97,7 +101,7 @@ static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size,
             vrt_shift = 5;
         s->sub_version = sub_version;
     } else {
-        if (!s->sub_version)
+        if (!s->sub_version || !s->avctx->coded_width || !s->avctx->coded_height)
             return 0;
 
         if (separated_coeff || !s->filter_header) {
