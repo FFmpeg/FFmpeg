@@ -207,7 +207,6 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
     AVFrame *pict = data;
     AVFrame *const p = (AVFrame *) & s->picture;
     int i;
-    int n;
     uint8_t *ptr = buf;
     uint8_t *offset;
     uint32_t strips;
@@ -216,7 +215,7 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
     int bytes_per_row;
     uint32_t res[2] = { 72, 1 };        // image resolution (72/1)
     static const uint16_t bpp_tab[] = { 8, 8, 8, 8 };
-    int ret = -1;
+    int ret;
     int is_yuv = 0;
     uint8_t *yuv_line = NULL;
     int shift_h, shift_v;
@@ -332,13 +331,13 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
                        p->data[0] + j * p->linesize[0], bytes_per_row);
             zn += bytes_per_row;
         }
-        n = encode_strip(s, zbuf, ptr, zn, s->compr);
+        ret = encode_strip(s, zbuf, ptr, zn, s->compr);
         av_free(zbuf);
-        if (n<0) {
+        if (ret < 0) {
             av_log(s->avctx, AV_LOG_ERROR, "Encode strip failed\n");
             goto fail;
         }
-        ptr += n;
+        ptr += ret;
         strip_sizes[0] = ptr - buf - strip_offsets[0];
     } else
 #endif
@@ -355,20 +354,19 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
             }
             if (is_yuv){
                  pack_yuv(s, yuv_line, i);
-                 n = encode_strip(s, yuv_line, ptr, bytes_per_row, s->compr);
+                 ret = encode_strip(s, yuv_line, ptr, bytes_per_row, s->compr);
                  i += s->subsampling[1] - 1;
             }
             else
-                n = encode_strip(s, p->data[0] + i * p->linesize[0],
+                ret = encode_strip(s, p->data[0] + i * p->linesize[0],
                         ptr, bytes_per_row, s->compr);
-            if (n < 0) {
+            if (ret < 0) {
                 av_log(s->avctx, AV_LOG_ERROR, "Encode strip failed\n");
                 goto fail;
             }
-            strip_sizes[i / s->rps] += n;
-            ptr += n;
+            strip_sizes[i / s->rps] += ret;
+            ptr += ret;
             if(s->compr == TIFF_LZW && (i==s->height-1 || i%s->rps == s->rps-1)){
-                int ret;
                 ret = ff_lzw_encode_flush(s->lzws, flush_put_bits);
                 strip_sizes[(i / s->rps )] += ret ;
                 ptr += ret;
@@ -422,8 +420,10 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
     }
     bytestream_put_le32(&offset, ptr - buf);    // write offset to dir
 
-    if (check_size(s, 6 + s->num_entries * 12))
+    if (check_size(s, 6 + s->num_entries * 12)) {
+        ret = AVERROR(EINVAL);
         goto fail;
+    }
     bytestream_put_le16(&ptr, s->num_entries);  // write tag count
     bytestream_put_buffer(&ptr, s->entries, s->num_entries * 12);
     bytestream_put_le32(&ptr, 0);
