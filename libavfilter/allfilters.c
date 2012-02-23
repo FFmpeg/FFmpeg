@@ -98,6 +98,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER (SPLIT,       split,       vf);
     REGISTER_FILTER (SWAPUV,      swapuv,      vf);
     REGISTER_FILTER (THUMBNAIL,   thumbnail,   vf);
+    REGISTER_FILTER (TILE,        tile,        vf);
     REGISTER_FILTER (TINTERLACE,  tinterlace,  vf);
     REGISTER_FILTER (TRANSPOSE,   transpose,   vf);
     REGISTER_FILTER (UNSHARP,     unsharp,     vf);

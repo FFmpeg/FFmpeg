@@ -18,6 +18,7 @@ version next:
 - XBM encoder
 - RealAudio Lossless decoder
 - ZeroCodec decoder
+- tile video filter
 
 
 version 0.10:
