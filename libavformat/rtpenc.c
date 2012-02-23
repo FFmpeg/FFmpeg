@@ -82,7 +82,7 @@ static int is_supported(enum CodecID id)
 static int rtp_write_header(AVFormatContext *s1)
 {
     RTPMuxContext *s = s1->priv_data;
-    int max_packet_size, n;
+    int n;
     AVStream *st;
 
     if (s1->nb_streams != 1) {
@@ -109,16 +109,16 @@ static int rtp_write_header(AVFormatContext *s1)
         s->first_rtcp_ntp_time = (s1->start_time_realtime / 1000) * 1000 +
                                  NTP_OFFSET_US;
 
-    max_packet_size = s1->pb->max_packet_size;
-    if (max_packet_size <= 12) {
-        av_log(s1, AV_LOG_ERROR, "Max packet size %d too low\n", max_packet_size);
+    s->max_packet_size = s1->pb->max_packet_size;
+    if (s->max_packet_size <= 12) {
+        av_log(s1, AV_LOG_ERROR, "Max packet size %d too low\n", s->max_packet_size);
         return AVERROR(EIO);
     }
-    s->buf = av_malloc(max_packet_size);
+    s->buf = av_malloc(s->max_packet_size);
     if (s->buf == NULL) {
         return AVERROR(ENOMEM);
     }
-    s->max_payload_size = max_packet_size - 12;
+    s->max_payload_size = s->max_packet_size - 12;
 
     s->max_frames_per_packet = 0;
     if (s1->max_delay) {
