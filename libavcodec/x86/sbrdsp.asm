@@ -72,3 +72,43 @@ cglobal sbr_sum_square, 2, 3, 6
     fld         dword r0m
 %endif
     RET
+
+%define STEP  40*4*2
+cglobal sbr_hf_g_filt, 5, 6, 5
+    lea         r1, [r1 + 8*r4] ; offset by ixh elements into X_high
+    mov         r5, r3
+    and         r3, 0xFC
+    lea         r2, [r2 + r3*4]
+    lea         r0, [r0 + r3*8]
+    neg         r3
+.loop4:
+    movq        m0, [r2 + 4*r3 + 0]
+    movq        m1, [r2 + 4*r3 + 8]
+    movq        m2, [r1 + 0*STEP]
+    movq        m3, [r1 + 2*STEP]
+    movhps      m2, [r1 + 1*STEP]
+    movhps      m3, [r1 + 3*STEP]
+    punpckldq   m0, m0
+    punpckldq   m1, m1
+    mulps       m0, m2
+    mulps       m1, m3
+    movu        [r0 + 8*r3 +  0], m0
+    movu        [r0 + 8*r3 + 16], m1
+    add         r1, 4*STEP
+    add         r3, 4
+    jnz         .loop4
+    and         r5, 3 ; number of single element loops
+    jz          .end
+.loop1: ; element 0 and 1 can be computed at the same time
+    movss       m0, [r2]
+    movq        m2, [r1]
+    punpckldq   m0, m0
+    mulps       m2, m0
+    movq      [r0], m2
+    add         r0, 8
+    add         r2, 4
+    add         r1, STEP
+    dec         r5
+    jnz         .loop1
+.end:
+    RET
