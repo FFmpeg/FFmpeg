@@ -1022,24 +1022,9 @@ static void rv34_output_i16x16(RV34DecContext *r, int8_t *intra_types, int cbp)
                     q_ac = rv34_qscale_tab[s->qscale];
     uint8_t        *dst  = s->dest[0];
     DCTELEM        *ptr  = s->block[0];
-    int       avail[6*8] = {0};
     int i, j, itype, has_ac;
 
     memset(block16, 0, 16 * sizeof(*block16));
-
-    // Set neighbour information.
-    if(r->avail_cache[1])
-        avail[0] = 1;
-    if(r->avail_cache[2])
-        avail[1] = avail[2] = 1;
-    if(r->avail_cache[3])
-        avail[3] = avail[4] = 1;
-    if(r->avail_cache[4])
-        avail[5] = 1;
-    if(r->avail_cache[5])
-        avail[8] = avail[16] = 1;
-    if(r->avail_cache[9])
-        avail[24] = avail[32] = 1;
 
     has_ac = rv34_decode_block(block16, gb, r->cur_vlcs, 3, 0, q_dc, q_dc, q_ac);
     if(has_ac)
