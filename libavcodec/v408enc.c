@@ -22,6 +22,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "internal.h"
 
 static av_cold int v408_encode_init(AVCodecContext *avctx)
 {
@@ -35,19 +36,18 @@ static av_cold int v408_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int v408_encode_frame(AVCodecContext *avctx, uint8_t *buf,
-                             int buf_size, void *data)
+static int v408_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
+                             const AVFrame *pic, int *got_packet)
 {
-    AVFrame *pic = data;
-    uint8_t *dst = buf;
+    uint8_t *dst;
     uint8_t *y, *u, *v, *a;
-    int i, j;
-    int output_size = 0;
+    int i, j, ret;
 
-    if (buf_size < avctx->width * avctx->height * 4) {
+    if ((ret = ff_alloc_packet(pkt, avctx->width * avctx->height * 4)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Out buffer is too small.\n");
-        return AVERROR(ENOMEM);
+        return ret;
     }
+    dst = pkt->data;
 
     avctx->coded_frame->reference = 0;
     avctx->coded_frame->key_frame = 1;
@@ -71,7 +71,6 @@ static int v408_encode_frame(AVCodecContext *avctx, uint8_t *buf,
                 *dst++ = v[j];
                 *dst++ = a[j];
             }
-            output_size += 4;
         }
         y += pic->linesize[0];
         u += pic->linesize[1];
@@ -79,7 +78,9 @@ static int v408_encode_frame(AVCodecContext *avctx, uint8_t *buf,
         a += pic->linesize[3];
     }
 
-    return output_size;
+    pkt->flags |= AV_PKT_FLAG_KEY;
+    *got_packet = 1;
+    return 0;
 }
 
 static av_cold int v408_encode_close(AVCodecContext *avctx)
@@ -95,7 +96,7 @@ AVCodec ff_ayuv_encoder = {
     .type         = AVMEDIA_TYPE_VIDEO,
     .id           = CODEC_ID_AYUV,
     .init         = v408_encode_init,
-    .encode       = v408_encode_frame,
+    .encode2      = v408_encode_frame,
     .close        = v408_encode_close,
     .pix_fmts     = (const enum PixelFormat[]){ PIX_FMT_YUVA444P, PIX_FMT_NONE },
     .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed packed MS 4:4:4:4"),
@@ -107,7 +108,7 @@ AVCodec ff_v408_encoder = {
     .type         = AVMEDIA_TYPE_VIDEO,
     .id           = CODEC_ID_V408,
     .init         = v408_encode_init,
-    .encode       = v408_encode_frame,
+    .encode2      = v408_encode_frame,
     .close        = v408_encode_close,
     .pix_fmts     = (const enum PixelFormat[]){ PIX_FMT_YUVA444P, PIX_FMT_NONE },
     .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed packed QT 4:4:4:4"),
