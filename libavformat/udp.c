@@ -335,7 +335,7 @@ static void *circular_buffer_task( void *_URLContext)
         int len;
 
         if (ff_check_interrupt(&h->interrupt_callback)) {
-            s->circular_buffer_error = EINTR;
+            s->circular_buffer_error = AVERROR(EINTR);
             goto end;
         }
 
@@ -347,7 +347,7 @@ static void *circular_buffer_task( void *_URLContext)
         if (ret < 0) {
             if (ff_neterrno() == AVERROR(EINTR))
                 continue;
-            s->circular_buffer_error = EIO;
+            s->circular_buffer_error = AVERROR(EIO);
             goto end;
         }
 
@@ -361,14 +361,14 @@ static void *circular_buffer_task( void *_URLContext)
         /* No Space left, error, what do we do now */
         if(left < UDP_MAX_PKT_SIZE + 4) {
             av_log(h, AV_LOG_ERROR, "circular_buffer: OVERRUN\n");
-            s->circular_buffer_error = EIO;
+            s->circular_buffer_error = AVERROR(EIO);
             goto end;
         }
         left = FFMIN(left, s->fifo->end - s->fifo->wptr);
         len = recv(s->udp_fd, s->tmp+4, sizeof(s->tmp)-4, 0);
         if (len < 0) {
             if (ff_neterrno() != AVERROR(EAGAIN) && ff_neterrno() != AVERROR(EINTR)) {
-                s->circular_buffer_error = EIO;
+                s->circular_buffer_error = AVERROR(EIO);
                 goto end;
             }
             continue;
