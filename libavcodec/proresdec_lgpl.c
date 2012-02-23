@@ -289,7 +289,7 @@ static int decode_picture_header(ProresContext *ctx, const uint8_t *buf,
 /**
  * Read an unsigned rice/exp golomb codeword.
  */
-static inline int decode_vlc_codeword(GetBitContext *gb, uint8_t codebook)
+static inline int decode_vlc_codeword(GetBitContext *gb, unsigned codebook)
 {
     unsigned int rice_order, exp_order, switch_bits;
     unsigned int buf, code;

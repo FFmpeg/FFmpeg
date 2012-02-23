@@ -84,7 +84,7 @@ static const uint64_t thd_layout[13] = {
     AV_CH_BACK_CENTER,                                      // Cs
     AV_CH_TOP_CENTER,                                       // Ts
     AV_CH_SIDE_LEFT|AV_CH_SIDE_RIGHT,                       // LRsd - TODO: Surround Direct
-    AV_CH_FRONT_LEFT_OF_CENTER|AV_CH_FRONT_RIGHT_OF_CENTER, // LRw  - TODO: Wide
+    AV_CH_WIDE_LEFT|AV_CH_WIDE_RIGHT,                       // LRw
     AV_CH_TOP_FRONT_CENTER,                                 // Cvh
     AV_CH_LOW_FREQUENCY                                     // LFE2
 };
@@ -109,7 +109,8 @@ static int truehd_channels(int chanmap)
 
 uint64_t ff_truehd_layout(int chanmap)
 {
-    int layout = 0, i;
+    int i;
+    uint64_t layout = 0;
 
     for (i = 0; i < 13; i++)
         layout |= thd_layout[i] * ((chanmap >> i) & 1);

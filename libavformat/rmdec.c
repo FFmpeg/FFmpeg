@@ -266,6 +266,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
         switch (ast->deint_id) {
         case DEINT_ID_INT4:
             if (ast->coded_framesize > ast->audio_framesize ||
+                sub_packet_h <= 1 ||
                 ast->coded_framesize * sub_packet_h > (2 + (sub_packet_h & 1)) * ast->audio_framesize)
                 return AVERROR_INVALIDDATA;
             break;
@@ -370,8 +371,19 @@ static int rm_read_index(AVFormatContext *s)
                 st = s->streams[n];
                 break;
             }
-        if (n == s->nb_streams)
+        if (n == s->nb_streams) {
+            av_log(s, AV_LOG_ERROR,
+                   "Invalid stream index %d for index at pos %"PRId64"\n",
+                   str_id, avio_tell(pb));
             goto skip;
+        } else if ((avio_size(pb) - avio_tell(pb)) / 14 < n_pkts) {
+            av_log(s, AV_LOG_ERROR,
+                   "Nr. of packets in packet index for stream index %d "
+                   "exceeds filesize (%"PRId64" at %"PRId64" = %d)\n",
+                   str_id, avio_size(pb), avio_tell(pb),
+                   (avio_size(pb) - avio_tell(pb)) / 14);
+            goto skip;
+        }
 
         for (n = 0; n < n_pkts; n++) {
             avio_skip(pb, 2);
@@ -383,9 +395,12 @@ static int rm_read_index(AVFormatContext *s)
         }
 
 skip:
-        if (next_off && avio_tell(pb) != next_off &&
-            avio_seek(pb, next_off, SEEK_SET) < 0)
+        if (next_off && avio_tell(pb) < next_off &&
+            avio_seek(pb, next_off, SEEK_SET) < 0) {
+            av_log(s, AV_LOG_ERROR,
+                   "Non-linear index detected, not supported\n");
             return -1;
+        }
     } while (next_off);
 
     return 0;
