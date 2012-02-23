@@ -2141,6 +2141,17 @@ static av_cold int validate_options(AC3EncodeContext *s)
     s->bit_alloc.sr_code  = i % 3;
     s->bitstream_id       = s->eac3 ? 16 : 8 + s->bit_alloc.sr_shift;
 
+    /* select a default bit rate if not set by the user */
+    if (!avctx->bit_rate) {
+        switch (s->fbw_channels) {
+        case 1: avctx->bit_rate =  96000; break;
+        case 2: avctx->bit_rate = 192000; break;
+        case 3: avctx->bit_rate = 320000; break;
+        case 4: avctx->bit_rate = 384000; break;
+        case 5: avctx->bit_rate = 448000; break;
+        }
+    }
+
     /* validate bit rate */
     if (s->eac3) {
         int max_br, min_br, wpf, min_br_dist, min_br_code;

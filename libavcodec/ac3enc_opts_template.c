@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/opt.h"
+#include "internal.h"
 #include "ac3.h"
 
 #if AC3ENC_TYPE == AC3ENC_TYPE_AC3_FIXED
@@ -77,4 +78,9 @@ static const AVOption eac3_options[] = {
 {"cpl_start_band", "Coupling Start Band", OFFSET(cpl_start), AV_OPT_TYPE_INT, {.dbl = AC3ENC_OPT_AUTO }, AC3ENC_OPT_AUTO, 15, AC3ENC_PARAM, "cpl_start_band"},
     {"auto", "Selected by the Encoder", 0, AV_OPT_TYPE_CONST, {.dbl = AC3ENC_OPT_AUTO }, INT_MIN, INT_MAX, AC3ENC_PARAM, "cpl_start_band"},
 {NULL}
+};
+
+static const AVCodecDefault ac3_defaults[] = {
+    { "b",  "0" },
+    { NULL }
 };
