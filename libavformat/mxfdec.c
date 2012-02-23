@@ -48,6 +48,7 @@
 #include "libavutil/aes.h"
 #include "libavutil/mathematics.h"
 #include "libavcodec/bytestream.h"
+#include "libavutil/timecode.h"
 #include "avformat.h"
 #include "internal.h"
 #include "mxf.h"
@@ -112,6 +113,15 @@ typedef struct {
     int structural_components_count;
     int64_t duration;
 } MXFSequence;
+
+typedef struct {
+    UID uid;
+    enum MXFMetadataSetType type;
+    int drop_frame;
+    int start_frame;
+    struct AVRational rate;
+    AVTimecode tc;
+} MXFTimecodeComponent;
 
 typedef struct {
     UID uid;
@@ -621,6 +631,23 @@ static int mxf_read_material_package(void *arg, AVIOContext *pb, int tag, int si
             return AVERROR(ENOMEM);
         avio_skip(pb, 4); /* useless size of objects, always 16 according to specs */
         avio_read(pb, (uint8_t *)package->tracks_refs, package->tracks_count * sizeof(UID));
+        break;
+    }
+    return 0;
+}
+
+static int mxf_read_timecode_component(void *arg, AVIOContext *pb, int tag, int size, UID uid, int64_t klv_offset)
+{
+    MXFTimecodeComponent *mxf_timecode = arg;
+    switch(tag) {
+    case 0x1501:
+        mxf_timecode->start_frame = avio_rb64(pb);
+        break;
+    case 0x1502:
+        mxf_timecode->rate = (AVRational){avio_rb16(pb), 1};
+        break;
+    case 0x1503:
+        mxf_timecode->drop_frame = avio_r8(pb);
         break;
     }
     return 0;
@@ -1274,6 +1301,14 @@ static int mxf_is_intra_only(MXFDescriptor *descriptor)
                             &descriptor->essence_codec_ul)->id     != CODEC_ID_NONE;
 }
 
+static int mxf_add_timecode_metadata(AVDictionary **pm, const char *key, AVTimecode *tc)
+{
+    char buf[AV_TIMECODE_STR_SIZE];
+    av_dict_set(pm, key, av_timecode_make_string(tc, buf, 0), 0);
+
+    return 0;
+}
+
 static int mxf_parse_structural_metadata(MXFContext *mxf)
 {
     MXFPackage *material_package = NULL;
@@ -1298,15 +1333,26 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         MXFTrack *temp_track = NULL;
         MXFDescriptor *descriptor = NULL;
         MXFStructuralComponent *component = NULL;
+        MXFTimecodeComponent *mxf_tc = NULL;
         UID *essence_container_ul = NULL;
         const MXFCodecUL *codec_ul = NULL;
         const MXFCodecUL *container_ul = NULL;
         const MXFCodecUL *pix_fmt_ul = NULL;
         AVStream *st;
+        AVTimecode tc;
+        int flags;
 
         if (!(material_track = mxf_resolve_strong_ref(mxf, &material_package->tracks_refs[i], Track))) {
             av_log(mxf->fc, AV_LOG_ERROR, "could not resolve material track strong ref\n");
             continue;
+        }
+
+        if ((component = mxf_resolve_strong_ref(mxf, &material_track->sequence_ref, TimecodeComponent))) {
+            mxf_tc = (MXFTimecodeComponent*)component;
+            flags = mxf_tc->drop_frame == 1 ? AV_TIMECODE_FLAG_DROPFRAME : 0;
+            if (av_timecode_init(&tc, mxf_tc->rate, flags, mxf_tc->start_frame, mxf) == 0) {
+                mxf_add_timecode_metadata(&mxf->fc->metadata, "timecode", &tc);
+            }
         }
 
         if (!(material_track->sequence = mxf_resolve_strong_ref(mxf, &material_track->sequence_ref, Sequence))) {
@@ -1314,9 +1360,21 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             continue;
         }
 
+        for (j = 0; j < material_track->sequence->structural_components_count; j++) {
+            component = mxf_resolve_strong_ref(mxf, &material_track->sequence->structural_components_refs[j], TimecodeComponent);
+            if (!component)
+                continue;
+
+            mxf_tc = (MXFTimecodeComponent*)component;
+            flags = mxf_tc->drop_frame == 1 ? AV_TIMECODE_FLAG_DROPFRAME : 0;
+            if (av_timecode_init(&tc, mxf_tc->rate, flags, mxf_tc->start_frame, mxf) == 0) {
+                mxf_add_timecode_metadata(&mxf->fc->metadata, "timecode", &tc);
+                break;
+            }
+        }
+
         /* TODO: handle multiple source clips */
         for (j = 0; j < material_track->sequence->structural_components_count; j++) {
-            /* TODO: handle timecode component */
             component = mxf_resolve_strong_ref(mxf, &material_track->sequence->structural_components_refs[j], SourceClip);
             if (!component)
                 continue;
@@ -1515,6 +1573,7 @@ static const MXFMetadataReadTableEntry mxf_metadata_read_table[] = {
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x47,0x00 }, mxf_read_generic_descriptor, sizeof(MXFDescriptor), Descriptor }, /* AES3 */
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x3A,0x00 }, mxf_read_track, sizeof(MXFTrack), Track }, /* Static Track */
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x3B,0x00 }, mxf_read_track, sizeof(MXFTrack), Track }, /* Generic Track */
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x14,0x00 }, mxf_read_timecode_component, sizeof(MXFTimecodeComponent), TimecodeComponent },
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x04,0x01,0x02,0x02,0x00,0x00 }, mxf_read_cryptographic_context, sizeof(MXFCryptoContext), CryptoContext },
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x10,0x01,0x00 }, mxf_read_index_table_segment, sizeof(MXFIndexTableSegment), IndexTableSegment },
     { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 }, NULL, 0, AnyType },
