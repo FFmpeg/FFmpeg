@@ -388,10 +388,10 @@ static int ogg_write_header(AVFormatContext *s)
             p = ogg_write_vorbiscomment(7, st->codec->flags & CODEC_FLAG_BITEXACT,
                                         &oggstream->header_len[1], &s->metadata,
                                         framing_bit);
+            oggstream->header[1] = p;
             if (!p)
                 return AVERROR(ENOMEM);
 
-            oggstream->header[1] = p;
             bytestream_put_byte(&p, header_type);
             bytestream_put_buffer(&p, cstr, 6);
 
@@ -497,8 +497,8 @@ static int ogg_write_trailer(AVFormatContext *s)
         if (st->codec->codec_id == CODEC_ID_FLAC ||
             st->codec->codec_id == CODEC_ID_SPEEX) {
             av_free(oggstream->header[0]);
-            av_free(oggstream->header[1]);
         }
+        av_freep(&oggstream->header[1]);
         av_freep(&st->priv_data);
     }
     return 0;
