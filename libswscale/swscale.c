@@ -407,9 +407,9 @@ static int swScale(SwsContext *c, const uint8_t* src[],
             (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? dst[3] + dstStride[3] * dstY : NULL,
         };
 
-        const int firstLumSrcY= vLumFilterPos[dstY]; //First line needed as input
-        const int firstLumSrcY2= vLumFilterPos[FFMIN(dstY | ((1<<c->chrDstVSubSample) - 1), dstH-1)];
-        const int firstChrSrcY= vChrFilterPos[chrDstY]; //First line needed as input
+        const int firstLumSrcY= FFMAX(1 - vLumFilterSize, vLumFilterPos[dstY]); //First line needed as input
+        const int firstLumSrcY2= FFMAX(1 - vLumFilterSize, vLumFilterPos[FFMIN(dstY | ((1<<c->chrDstVSubSample) - 1), dstH-1)]);
+        const int firstChrSrcY= FFMAX(1 - vChrFilterSize, vChrFilterPos[chrDstY]); //First line needed as input
 
         // Last line needed as input
         int lastLumSrcY  = FFMIN(c->srcH,    firstLumSrcY  + vLumFilterSize) - 1;
