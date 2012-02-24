@@ -12,6 +12,3 @@ fate-lossless-shorten: CMD = md5 -i $(SAMPLES)/lossless-audio/luckynight-partial
 
 FATE_TESTS += fate-lossless-tta
 fate-lossless-tta: CMD = crc -i $(SAMPLES)/lossless-audio/inside.tta
-
-FATE_TESTS += fate-lossless-wavpack
-fate-lossless-wavpack: CMD = md5 -i $(SAMPLES)/lossless-audio/luckynight-partial.wv -f s16le
