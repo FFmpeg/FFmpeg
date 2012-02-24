@@ -139,7 +139,7 @@ static int decode_frame(AVCodecContext *avctx,
     uint32_t *luma1,*luma2,*cb,*cr;
     uint32_t offs[4];
     int i, j, is_chroma, planes;
-
+    enum PixelFormat pix_fmt;
 
     header = AV_RL32(buf);
     version = header & 0xff;
@@ -156,12 +156,16 @@ static int decode_frame(AVCodecContext *avctx,
     if (header_size == 8)
         buf+=4;
 
+    pix_fmt = version & 1 ? PIX_FMT_BGR24 : PIX_FMT_YUVJ420P;
+    if (avctx->pix_fmt != pix_fmt && f->data[0]) {
+        avctx->release_buffer(avctx, f);
+    }
+    avctx->pix_fmt = pix_fmt;
+
     switch(version) {
     case 0:
     default:
         /* Fraps v0 is a reordered YUV420 */
-        avctx->pix_fmt = PIX_FMT_YUVJ420P;
-
         if ( (buf_size != avctx->width*avctx->height*3/2+header_size) &&
              (buf_size != header_size) ) {
             av_log(avctx, AV_LOG_ERROR,
@@ -209,8 +213,6 @@ static int decode_frame(AVCodecContext *avctx,
 
     case 1:
         /* Fraps v1 is an upside-down BGR24 */
-        avctx->pix_fmt = PIX_FMT_BGR24;
-
         if ( (buf_size != avctx->width*avctx->height*3+header_size) &&
              (buf_size != header_size) ) {
             av_log(avctx, AV_LOG_ERROR,
@@ -245,7 +247,6 @@ static int decode_frame(AVCodecContext *avctx,
          * Fraps v2 is Huffman-coded YUV420 planes
          * Fraps v4 is virtually the same
          */
-        avctx->pix_fmt = PIX_FMT_YUVJ420P;
         planes = 3;
         f->reference = 1;
         f->buffer_hints = FF_BUFFER_HINTS_VALID |
@@ -291,7 +292,6 @@ static int decode_frame(AVCodecContext *avctx,
     case 3:
     case 5:
         /* Virtually the same as version 4, but is for RGB24 */
-        avctx->pix_fmt = PIX_FMT_BGR24;
         planes = 3;
         f->reference = 1;
         f->buffer_hints = FF_BUFFER_HINTS_VALID |
