@@ -1112,10 +1112,9 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
             avpkt->size = 0;
         else if (!(avctx->codec->capabilities & CODEC_CAP_DELAY))
             avpkt->pts = avpkt->dts = frame->pts;
-    }
 
-    if (!ret)
         avctx->frame_number++;
+    }
 
     emms_c();
     return ret;
