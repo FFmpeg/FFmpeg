@@ -1510,8 +1510,10 @@ static int vorbis_parse_audio_packet(vorbis_context *vc)
     blockflag = vc->modes[mode_number].blockflag;
     blocksize = vc->blocksize[blockflag];
     vlen = blocksize / 2;
-    if (blockflag)
-        skip_bits(gb, 2); // previous_window, next_window
+    if (blockflag) {
+        previous_window = get_bits(gb, 1);
+        skip_bits1(gb); // next_window
+    }
 
     memset(ch_res_ptr,   0, sizeof(float) * vc->audio_channels * vlen); //FIXME can this be removed ?
     memset(ch_floor_ptr, 0, sizeof(float) * vc->audio_channels * vlen); //FIXME can this be removed ?
