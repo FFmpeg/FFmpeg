@@ -3170,6 +3170,7 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
         ist->st = st;
         ist->file_index = nb_input_files;
         ist->discard = 1;
+        st->discard  = AVDISCARD_ALL;
         ist->opts = filter_codec_opts(codec_opts, ist->st->codec->codec_id, ic, st);
 
         ist->ts_scale = 1.0;
@@ -3178,10 +3179,6 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
         ist->dec = choose_decoder(o, ic, st);
 
         switch (dec->codec_type) {
-        case AVMEDIA_TYPE_AUDIO:
-            if (o->audio_disable)
-                st->discard = AVDISCARD_ALL;
-            break;
         case AVMEDIA_TYPE_VIDEO:
             if (dec->lowres) {
                 dec->flags |= CODEC_FLAG_EMU_EDGE;
@@ -3189,17 +3186,10 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
                 dec->width  >>= dec->lowres;
             }
 
-            if (o->video_disable)
-                st->discard = AVDISCARD_ALL;
-            else if (video_discard)
-                st->discard = video_discard;
             break;
+        case AVMEDIA_TYPE_AUDIO:
         case AVMEDIA_TYPE_DATA:
-            break;
         case AVMEDIA_TYPE_SUBTITLE:
-            if (o->subtitle_disable)
-                st->discard = AVDISCARD_ALL;
-            break;
         case AVMEDIA_TYPE_ATTACHMENT:
         case AVMEDIA_TYPE_UNKNOWN:
             break;
@@ -3873,6 +3863,7 @@ static void opt_output_file(void *optctx, const char *filename)
             ost->source_index = index;\
             ost->sync_ist     = &input_streams[index];\
             input_streams[index].discard = 0;\
+            input_streams[index].st->discard = AVDISCARD_NONE;\
         }
 
         /* video: highest resolution */
@@ -3936,6 +3927,7 @@ static void opt_output_file(void *optctx, const char *filename)
             ost->sync_ist     = &input_streams[input_files[map->sync_file_index].ist_index +
                                            map->sync_stream_index];
             ist->discard = 0;
+            ist->st->discard = AVDISCARD_NONE;
         }
     }
 
