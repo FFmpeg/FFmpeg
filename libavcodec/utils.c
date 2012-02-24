@@ -838,14 +838,13 @@ int ff_alloc_packet(AVPacket *avpkt, int size)
         return AVERROR(EINVAL);
 
     if (avpkt->data) {
-        uint8_t *pkt_data;
+        void *destruct = avpkt->destruct;
 
         if (avpkt->size < size)
             return AVERROR(EINVAL);
 
-        pkt_data = avpkt->data;
         av_init_packet(avpkt);
-        avpkt->data = pkt_data;
+        avpkt->destruct = destruct;
         avpkt->size = size;
         return 0;
     } else {
