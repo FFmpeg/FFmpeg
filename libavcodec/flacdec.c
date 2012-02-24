@@ -33,6 +33,7 @@
 
 #include <limits.h>
 
+#include "libavutil/audioconvert.h"
 #include "libavutil/crc.h"
 #include "avcodec.h"
 #include "internal.h"
@@ -61,6 +62,15 @@ typedef struct FLACContext {
 
     int32_t *decoded[FLAC_MAX_CHANNELS];    ///< decoded samples
 } FLACContext;
+
+static const int64_t flac_channel_layouts[6] = {
+    AV_CH_LAYOUT_MONO,
+    AV_CH_LAYOUT_STEREO,
+    AV_CH_LAYOUT_SURROUND,
+    AV_CH_LAYOUT_QUAD,
+    AV_CH_LAYOUT_5POINT0,
+    AV_CH_LAYOUT_5POINT1
+};
 
 static void allocate_buffers(FLACContext *s);
 
@@ -119,6 +129,9 @@ static av_cold int flac_decode_init(AVCodecContext *avctx)
 
     avcodec_get_frame_defaults(&s->frame);
     avctx->coded_frame = &s->frame;
+
+    if (avctx->channels <= FF_ARRAY_ELEMS(flac_channel_layouts))
+        avctx->channel_layout = flac_channel_layouts[avctx->channels - 1];
 
     return 0;
 }

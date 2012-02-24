@@ -1188,9 +1188,6 @@ int attribute_align_arg avcodec_encode_video(AVCodecContext *avctx, uint8_t *buf
 }
 #endif
 
-#define MAX_CODED_FRAME_SIZE(width, height)\
-    (9*(width)*(height) + FF_MIN_BUFFER_SIZE)
-
 int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
                                               AVPacket *avpkt,
                                               const AVFrame *frame,
@@ -1209,44 +1206,15 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
     if (av_image_check_size(avctx->width, avctx->height, 0, avctx))
         return AVERROR(EINVAL);
 
-    if (avctx->codec->encode2) {
-        *got_packet_ptr = 0;
-        ret = avctx->codec->encode2(avctx, avpkt, frame, got_packet_ptr);
-        if (!ret) {
-            if (!*got_packet_ptr)
-                avpkt->size = 0;
-            else if (!(avctx->codec->capabilities & CODEC_CAP_DELAY))
-                avpkt->pts = avpkt->dts = frame->pts;
-        }
-    } else {
-        /* for compatibility with encoders not supporting encode2(), we need to
-           allocate a packet buffer if the user has not provided one or check
-           the size otherwise */
-        int buf_size = avpkt->size;
+    av_assert0(avctx->codec->encode2);
 
-        if (!user_packet)
-            buf_size = MAX_CODED_FRAME_SIZE(avctx->width, avctx->height);
-
-        if ((ret = ff_alloc_packet(avpkt, buf_size)))
-            return ret;
-
-        /* encode the frame */
-        ret = avctx->codec->encode(avctx, avpkt->data, avpkt->size, frame);
-        if (ret >= 0) {
-            if (!ret) {
-                /* no output. if the packet data was allocated by libavcodec,
-                   free it */
-                if (!user_packet)
-                    av_freep(&avpkt->data);
-            } else if (avctx->coded_frame) {
-                avpkt->pts    = avctx->coded_frame->pts;
-                avpkt->flags |= AV_PKT_FLAG_KEY*!!avctx->coded_frame->key_frame;
-            }
-
-            avpkt->size     = ret;
-            *got_packet_ptr = (ret > 0);
-            ret             = 0;
-        }
+    *got_packet_ptr = 0;
+    ret = avctx->codec->encode2(avctx, avpkt, frame, got_packet_ptr);
+    if (!ret) {
+        if (!*got_packet_ptr)
+            avpkt->size = 0;
+        else if (!(avctx->codec->capabilities & CODEC_CAP_DELAY))
+            avpkt->pts = avpkt->dts = frame->pts;
     }
 
     if (!ret)

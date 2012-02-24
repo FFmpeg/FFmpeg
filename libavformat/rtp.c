@@ -106,7 +106,9 @@ int ff_rtp_get_payload_type(AVFormatContext *fmt, AVCodecContext *codec)
     /* static payload type */
     for (i = 0; AVRtpPayloadTypes[i].pt >= 0; ++i)
         if (AVRtpPayloadTypes[i].codec_id == codec->codec_id) {
-            if (codec->codec_id == CODEC_ID_H263)
+            if (codec->codec_id == CODEC_ID_H263 && (!fmt ||
+                !fmt->oformat->priv_class ||
+                !av_opt_flag_is_set(fmt->priv_data, "rtpflags", "rfc2190")))
                 continue;
             if (codec->codec_id == CODEC_ID_PCM_S16BE)
                 if (codec->channels != AVRtpPayloadTypes[i].audio_channels)

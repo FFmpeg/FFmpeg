@@ -404,6 +404,9 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
              * actually specifies the maximum video size, but we only know
              * the current size. This is required for playback on Android
              * stagefright and on Samsung bada. */
+            if (!fmt || !fmt->oformat->priv_class ||
+                !av_opt_flag_is_set(fmt->priv_data, "rtpflags", "rfc2190") ||
+                c->codec_id == CODEC_ID_H263P)
             av_strlcatf(buff, size, "a=rtpmap:%d H263-2000/90000\r\n"
                                     "a=framesize:%d %d-%d\r\n",
                                     payload_type,

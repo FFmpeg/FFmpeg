@@ -1545,7 +1545,6 @@ h264_parser_select="golomb h264chroma h264dsp h264pred"
 libaacplus_encoder_deps="libaacplus"
 libcelt_decoder_deps="libcelt"
 libdirac_decoder_deps="libdirac !libschroedinger"
-libdirac_encoder_deps="libdirac"
 libfaac_encoder_deps="libfaac"
 libgsm_decoder_deps="libgsm"
 libgsm_encoder_deps="libgsm"
@@ -3145,8 +3144,8 @@ enabled libcelt    && require libcelt celt/celt.h celt_decode -lcelt0 &&
                       { check_lib celt/celt.h celt_decoder_create_custom -lcelt0 ||
                         die "ERROR: libcelt version must be >= 0.11.0."; }
 enabled libdirac   && require_pkg_config dirac                          \
-    "libdirac_decoder/dirac_parser.h libdirac_encoder/dirac_encoder.h"  \
-    "dirac_decoder_init dirac_encoder_init"
+    "libdirac_decoder/dirac_parser.h"  \
+    "dirac_decoder_init"
 enabled libfaac    && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
 enabled libfreetype && require_pkg_config freetype2 "ft2build.h freetype/freetype.h" FT_Init_FreeType
 enabled libgsm     && require  libgsm gsm/gsm.h gsm_create -lgsm

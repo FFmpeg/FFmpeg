@@ -433,12 +433,14 @@ static int swScale(SwsContext *c, const uint8_t* src[],
         };
         int use_mmx_vfilter= c->use_mmx_vfilter;
 
-        const int firstLumSrcY= vLumFilterPos[dstY]; //First line needed as input
-        const int firstLumSrcY2= vLumFilterPos[FFMIN(dstY | ((1<<c->chrDstVSubSample) - 1), dstH-1)];
-        const int firstChrSrcY= vChrFilterPos[chrDstY]; //First line needed as input
-        int lastLumSrcY= firstLumSrcY + vLumFilterSize -1; // Last line needed as input
-        int lastLumSrcY2=firstLumSrcY2+ vLumFilterSize -1; // Last line needed as input
-        int lastChrSrcY= firstChrSrcY + vChrFilterSize -1; // Last line needed as input
+        const int firstLumSrcY= FFMAX(1 - vLumFilterSize, vLumFilterPos[dstY]); //First line needed as input
+        const int firstLumSrcY2= FFMAX(1 - vLumFilterSize, vLumFilterPos[FFMIN(dstY | ((1<<c->chrDstVSubSample) - 1), dstH-1)]);
+        const int firstChrSrcY= FFMAX(1 - vChrFilterSize, vChrFilterPos[chrDstY]); //First line needed as input
+
+        // Last line needed as input
+        int lastLumSrcY  = FFMIN(c->srcH,    firstLumSrcY  + vLumFilterSize) - 1;
+        int lastLumSrcY2 = FFMIN(c->srcH,    firstLumSrcY2 + vLumFilterSize) - 1;
+        int lastChrSrcY  = FFMIN(c->chrSrcH, firstChrSrcY  + vChrFilterSize) - 1;
         int enough_lines;
 
         //handle holes (FAST_BILINEAR & weird filters)

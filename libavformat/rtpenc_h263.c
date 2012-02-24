@@ -23,8 +23,8 @@
 #include "avformat.h"
 #include "rtpenc.h"
 
-static const uint8_t *find_resync_marker_reverse(const uint8_t *restrict start,
-                                                 const uint8_t *restrict end)
+const uint8_t *ff_h263_find_resync_marker_reverse(const uint8_t *restrict start,
+                                                  const uint8_t *restrict end)
 {
     const uint8_t *p = end - 1;
     start += 1; /* Make sure we never return the original start. */
@@ -63,7 +63,8 @@ void ff_rtp_send_h263(AVFormatContext *s1, const uint8_t *buf1, int size)
 
         /* Look for a better place to split the frame into packets. */
         if (len < size) {
-            const uint8_t *end = find_resync_marker_reverse(buf1, buf1 + len);
+            const uint8_t *end = ff_h263_find_resync_marker_reverse(buf1,
+                                                                    buf1 + len);
             len = end - buf1;
         }
 

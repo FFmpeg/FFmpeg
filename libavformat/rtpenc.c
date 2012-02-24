@@ -31,8 +31,9 @@
 //#define DEBUG
 
 static const AVOption options[] = {
-    FF_RTP_FLAG_OPTS(RTPMuxContext, flags),
+    FF_RTP_FLAG_OPTS(RTPMuxContext, flags)
     { "payload_type", "Specify RTP payload type", offsetof(RTPMuxContext, payload_type), AV_OPT_TYPE_INT, {.dbl = -1 }, -1, 127, AV_OPT_FLAG_ENCODING_PARAM },
+    { "max_packet_size", "Max packet size", offsetof(RTPMuxContext, max_packet_size), AV_OPT_TYPE_INT, {.dbl = 0 }, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     { NULL },
 };
 
@@ -82,11 +83,13 @@ static int is_supported(enum CodecID id)
 static int rtp_write_header(AVFormatContext *s1)
 {
     RTPMuxContext *s = s1->priv_data;
-    int max_packet_size, n;
+    int n;
     AVStream *st;
 
-    if (s1->nb_streams != 1)
-        return -1;
+    if (s1->nb_streams != 1) {
+        av_log(s1, AV_LOG_ERROR, "Only one stream supported in the RTP muxer\n");
+        return AVERROR(EINVAL);
+    }
     st = s1->streams[0];
     if (!is_supported(st->codec->codec_id)) {
         av_log(s1, AV_LOG_ERROR, "Unsupported codec %s\n", avcodec_get_name(st->codec->codec_id));
@@ -107,16 +110,21 @@ static int rtp_write_header(AVFormatContext *s1)
         s->first_rtcp_ntp_time = (s1->start_time_realtime / 1000) * 1000 +
                                  NTP_OFFSET_US;
 
-    max_packet_size = s1->pb->max_packet_size;
-    if (max_packet_size <= 12) {
-        av_log(s1, AV_LOG_ERROR, "Max packet size %d too low\n", max_packet_size);
+    if (s->max_packet_size) {
+        if (s1->pb->max_packet_size)
+            s->max_packet_size = FFMIN(s->max_payload_size,
+                                       s1->pb->max_packet_size);
+    } else
+        s->max_packet_size = s1->pb->max_packet_size;
+    if (s->max_packet_size <= 12) {
+        av_log(s1, AV_LOG_ERROR, "Max packet size %d too low\n", s->max_packet_size);
         return AVERROR(EIO);
     }
-    s->buf = av_malloc(max_packet_size);
+    s->buf = av_malloc(s->max_packet_size);
     if (s->buf == NULL) {
         return AVERROR(ENOMEM);
     }
-    s->max_payload_size = max_packet_size - 12;
+    s->max_payload_size = s->max_packet_size - 12;
 
     s->max_frames_per_packet = 0;
     if (s1->max_delay) {
@@ -386,8 +394,9 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
 
     rtcp_bytes = ((s->octet_count - s->last_octet_count) * RTCP_TX_RATIO_NUM) /
         RTCP_TX_RATIO_DEN;
-    if (s->first_packet || ((rtcp_bytes >= RTCP_SR_SIZE) &&
-                           (ff_ntp_time() - s->last_rtcp_ntp_time > 5000000))) {
+    if ((s->first_packet || ((rtcp_bytes >= RTCP_SR_SIZE) &&
+                            (ff_ntp_time() - s->last_rtcp_ntp_time > 5000000))) &&
+        !(s->flags & FF_RTP_FLAG_SKIP_RTCP)) {
         rtcp_send_sr(s1, ff_ntp_time());
         s->last_octet_count = s->octet_count;
         s->first_packet = 0;
@@ -443,6 +452,11 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
         ff_rtp_send_h264(s1, pkt->data, size);
         break;
     case CODEC_ID_H263:
+        if (s->flags & FF_RTP_FLAG_RFC2190) {
+            ff_rtp_send_h263_rfc2190(s1, pkt->data, size);
+            break;
+        }
+        /* Fallthrough */
     case CODEC_ID_H263P:
         ff_rtp_send_h263(s1, pkt->data, size);
         break;

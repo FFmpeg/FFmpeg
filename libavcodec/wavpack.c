@@ -813,8 +813,8 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
     s->hybrid         =   s->frame_flags & WV_HYBRID_MODE;
     s->hybrid_bitrate =   s->frame_flags & WV_HYBRID_BITRATE;
     s->post_shift     = bpp * 8 - orig_bpp + ((s->frame_flags >> 13) & 0x1f);
-    s->hybrid_maxclip = (( 1LL << (orig_bpp - 1)) - 1) >> s->post_shift;
-    s->hybrid_minclip = ((-1LL << (orig_bpp - 1)))     >> s->post_shift;
+    s->hybrid_maxclip = (( 1LL << (orig_bpp - 1)) - 1);
+    s->hybrid_minclip = ((-1LL << (orig_bpp - 1)));
     s->CRC            = AV_RL32(buf); buf += 4;
     if (wc->mkv_mode)
         buf += 4; //skip block size;

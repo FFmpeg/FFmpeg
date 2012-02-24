@@ -1378,7 +1378,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
                 avctx->request_channels < s->channels) {
             s->out_channels = avctx->request_channels;
             s->output_mode  = avctx->request_channels == 1 ? AC3_CHMODE_MONO : AC3_CHMODE_STEREO;
-            s->channel_layout = ff_ac3_channel_layout_tab[s->output_mode];
+            s->channel_layout = avpriv_ac3_channel_layout_tab[s->output_mode];
         }
         avctx->channels       = s->out_channels;
         avctx->channel_layout = s->channel_layout;
