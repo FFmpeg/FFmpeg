@@ -274,7 +274,7 @@ static int initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSi
             int j;
             (*filterPos)[i]= xx;
             for (j=0; j<filterSize; j++) {
-                int64_t d= ((int64_t)FFABS((xx<<17) - xDstInSrc))<<13;
+                int64_t d= (FFABS(((int64_t)xx<<17) - xDstInSrc))<<13;
                 double floatd;
                 int64_t coeff;
 
