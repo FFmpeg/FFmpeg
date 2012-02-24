@@ -8,13 +8,13 @@ FATE_QTRLE += fate-qtrle-4bit
 fate-qtrle-4bit: CMD = framecrc -i $(SAMPLES)/qtrle/Animation-16Greys.mov -pix_fmt rgb24 -an
 
 FATE_QTRLE += fate-qtrle-8bit
-fate-qtrle-8bit: CMD = framecrc -i $(SAMPLES)/qtrle/criticalpath-credits.mov -vsync 0 -pix_fmt rgb24 -an
+fate-qtrle-8bit: CMD = framecrc -i $(SAMPLES)/qtrle/criticalpath-credits.mov -pix_fmt rgb24 -an
 
 FATE_QTRLE += fate-qtrle-16bit
 fate-qtrle-16bit: CMD = framecrc -i $(SAMPLES)/qtrle/mr-cork-rle.mov -pix_fmt rgb24
 
 FATE_QTRLE += fate-qtrle-24bit
-fate-qtrle-24bit: CMD = framecrc -i $(SAMPLES)/qtrle/aletrek-rle.mov -vsync 0
+fate-qtrle-24bit: CMD = framecrc -i $(SAMPLES)/qtrle/aletrek-rle.mov
 
 FATE_QTRLE += fate-qtrle-32bit
 fate-qtrle-32bit: CMD = framecrc -i $(SAMPLES)/qtrle/ultra_demo_720_480_32bpp_rle.mov -pix_fmt rgb24

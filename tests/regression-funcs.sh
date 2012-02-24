@@ -95,7 +95,7 @@ do_avconv_crc()
 
 do_video_decoding()
 {
-    do_avconv $raw_dst $DEC_OPTS $1 -i $target_path/$file -f rawvideo $ENC_OPTS -vsync 0 $2
+    do_avconv $raw_dst $DEC_OPTS $1 -i $target_path/$file -f rawvideo $ENC_OPTS $2
 }
 
 do_video_encoding()
