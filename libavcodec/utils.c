@@ -862,6 +862,8 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
     int user_packet = !!avpkt->data;
     int nb_samples;
 
+    *got_packet_ptr = 0;
+
     if (!(avctx->codec->capabilities & CODEC_CAP_DELAY) && !frame) {
         av_init_packet(avpkt);
         avpkt->size = 0;
@@ -883,7 +885,6 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
     }
 
     if (avctx->codec->encode2) {
-        *got_packet_ptr = 0;
         ret = avctx->codec->encode2(avctx, avpkt, frame, got_packet_ptr);
         if (!ret && *got_packet_ptr) {
             if (!(avctx->codec->capabilities & CODEC_CAP_DELAY)) {
