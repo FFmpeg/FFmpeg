@@ -484,14 +484,25 @@ static int prores_encode_picture(AVCodecContext *avctx, AVFrame *pic,
     return sl_data - buf;
 }
 
-static int prores_encode_frame(AVCodecContext *avctx, unsigned char *buf,
-        int buf_size, void *data)
+static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
+                               const AVFrame *pict, int *got_packet)
 {
-    AVFrame *pic = data;
-
+    ProresContext* ctx = avctx->priv_data;
     int header_size = 148;
-    int pic_size = prores_encode_picture(avctx, pic, buf + header_size + 8,
-            buf_size - header_size - 8);
+    uint8_t *buf;
+    int pic_size, ret;
+    int frame_size = FFALIGN(avctx->width, 16) * FFALIGN(avctx->height, 16)*16 + 500 + FF_MIN_BUFFER_SIZE; //FIXME choose tighter limit
+
+
+    if (!pkt->data &&
+        (ret = av_new_packet(pkt, frame_size + FF_MIN_BUFFER_SIZE)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting output packet.\n");
+        return ret;
+    }
+
+    buf = pkt->data;
+    pic_size = prores_encode_picture(avctx, pict, buf + header_size + 8,
+            pkt->size - header_size - 8);
 
     bytestream_put_be32(&buf, pic_size + 8 + header_size);
     bytestream_put_buffer(&buf, "icpf", 4);
@@ -513,7 +524,11 @@ static int prores_encode_frame(AVCodecContext *avctx, unsigned char *buf,
     bytestream_put_buffer(&buf, QMAT_LUMA[avctx->profile],   64);
     bytestream_put_buffer(&buf, QMAT_CHROMA[avctx->profile], 64);
 
-    return pic_size + 8 + header_size;
+    pkt->flags |= AV_PKT_FLAG_KEY;
+    pkt->size = pic_size + 8 + header_size;
+    *got_packet = 1;
+
+    return 0;
 }
 
 static void scale_mat(const uint8_t* src, int* dst, int scale)
@@ -591,7 +606,7 @@ AVCodec ff_prores_anatoliy_encoder = {
     .priv_data_size = sizeof(ProresContext),
     .init           = prores_encode_init,
     .close          = prores_encode_close,
-    .encode         = prores_encode_frame,
+    .encode2        = prores_encode_frame,
     .pix_fmts       = (const enum PixelFormat[]){PIX_FMT_YUV422P10, PIX_FMT_NONE},
     .long_name      = NULL_IF_CONFIG_SMALL("Apple ProRes"),
     .profiles       = profiles
@@ -604,7 +619,7 @@ AVCodec ff_prores_encoder = {
     .priv_data_size = sizeof(ProresContext),
     .init           = prores_encode_init,
     .close          = prores_encode_close,
-    .encode         = prores_encode_frame,
+    .encode2        = prores_encode_frame,
     .pix_fmts       = (const enum PixelFormat[]){PIX_FMT_YUV422P10, PIX_FMT_NONE},
     .long_name      = NULL_IF_CONFIG_SMALL("Apple ProRes"),
     .profiles       = profiles
