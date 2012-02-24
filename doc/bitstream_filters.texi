@@ -57,7 +57,7 @@ stream (carrying the AVI1 header ID and lacking a DHT segment) to
 produce fully qualified JPEG images.
 
 @example
-avconv -i mjpeg-movie.avi -c:v copy -vbsf mjpeg2jpeg frame_%d.jpg
+avconv -i mjpeg-movie.avi -c:v copy -bsf:v mjpeg2jpeg frame_%d.jpg
 exiftran -i -9 frame*.jpg
 avconv -i frame_%d.jpg -c:v copy rotated.avi
 @end example
