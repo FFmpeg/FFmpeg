@@ -1093,10 +1093,11 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
     int ret;
     int user_packet = !!avpkt->data;
 
+    *got_packet_ptr = 0;
+
     if (!(avctx->codec->capabilities & CODEC_CAP_DELAY) && !frame) {
         av_init_packet(avpkt);
         avpkt->size     = 0;
-        *got_packet_ptr = 0;
         return 0;
     }
 
@@ -1105,7 +1106,6 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
 
     av_assert0(avctx->codec->encode2);
 
-    *got_packet_ptr = 0;
     ret = avctx->codec->encode2(avctx, avpkt, frame, got_packet_ptr);
     if (!ret) {
         if (!*got_packet_ptr)
