@@ -223,8 +223,29 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
                 len = mszh_dlen;
             }
             break;
-        case COMP_MSZH_NOCOMP:
+        case COMP_MSZH_NOCOMP: {
+            int bppx2;
+            switch (c->imgtype) {
+            case IMGTYPE_YUV111:
+            case IMGTYPE_RGB24:
+                bppx2 = 6;
+                break;
+            case IMGTYPE_YUV422:
+            case IMGTYPE_YUV211:
+                bppx2 = 4;
+                break;
+            case IMGTYPE_YUV411:
+            case IMGTYPE_YUV420:
+                bppx2 = 3;
+                break;
+            default:
+                bppx2 = 0; // will error out below
+                break;
+            }
+            if (len < ((width * height * bppx2) >> 1))
+                return AVERROR_INVALIDDATA;
             break;
+        }
         default:
             av_log(avctx, AV_LOG_ERROR, "BUG! Unknown MSZH compression in frame decoder.\n");
             return -1;
