@@ -44,7 +44,7 @@ static int xwd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 {
     enum PixelFormat pix_fmt = avctx->pix_fmt;
     uint32_t pixdepth, bpp, bpad, ncolors = 0, lsize, vclass, be = 0;
-    uint32_t rgb[3] = { 0 };
+    uint32_t rgb[3] = { 0 }, bitorder = 0;
     uint32_t header_size;
     int i, out_size, ret;
     uint8_t *ptr, *buf;
@@ -133,6 +133,8 @@ static int xwd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         ncolors  = 256;
         break;
     case PIX_FMT_MONOWHITE:
+        be       = 1;
+        bitorder = 1;
         bpp      = 1;
         bpad     = 8;
         vclass   = XWD_STATIC_GRAY;
@@ -164,7 +166,7 @@ static int xwd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream_put_be32(&buf, 0);             // bitmap x offset
     bytestream_put_be32(&buf, be);            // byte order
     bytestream_put_be32(&buf, 32);            // bitmap unit
-    bytestream_put_be32(&buf, be);            // bit-order of image data
+    bytestream_put_be32(&buf, bitorder);      // bit-order of image data
     bytestream_put_be32(&buf, bpad);          // bitmap scan-line pad in bits
     bytestream_put_be32(&buf, bpp);           // bits per pixel
     bytestream_put_be32(&buf, lsize);         // bytes per scan-line
