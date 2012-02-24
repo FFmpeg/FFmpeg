@@ -60,7 +60,6 @@ int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
         fi->ch_mode = FLAC_CHMODE_INDEPENDENT;
     } else if (fi->ch_mode <= FLAC_CHMODE_MID_SIDE) {
         fi->channels = 2;
-        avctx->channel_layout = AV_CH_LAYOUT_STEREO;
     } else {
         av_log(avctx, AV_LOG_ERROR + log_level_offset,
                "invalid channel mode: %d\n", fi->ch_mode);
