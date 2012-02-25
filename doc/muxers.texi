@@ -353,6 +353,8 @@ Set segment duration to @var{t} seconds.
 Generate also a listfile named @var{name}.
 @item segment_list_size @var{size}
 Overwrite the listfile once it reaches @var{size} entries.
+@item segment_wrap @var{limit}
+Wrap around segment index once it reaches @var{limit}.
 @end table
 
 @example
