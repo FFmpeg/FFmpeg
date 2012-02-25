@@ -34,6 +34,7 @@ do_lavfi "crop_scale_vflip"   "null,null,crop=iw-200:ih-200:200:200,crop=iw-20:i
 do_lavfi "crop_vflip"         "crop=iw-100:ih-100:100:100,vflip"
 do_lavfi "deshake"            "deshake"
 do_lavfi "drawbox"            "drawbox=224:24:88:72:#FF8010@0.5"
+do_lavfi "fade"               "fade=in:5:15,fade=out:30:15"
 do_lavfi "null"               "null"
 do_lavfi "scale200"           "scale=200:200"
 do_lavfi "scale500"           "scale=500:500"
