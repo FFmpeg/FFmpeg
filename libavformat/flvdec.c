@@ -192,7 +192,7 @@ static int parse_keyframes_index(AVFormatContext *s, AVIOContext *ioc, AVStream 
     }
 
     if (timeslen == fileposlen && fileposlen>1 && max_pos <= filepositions[0]) {
-        int64_t dts, size0, size1;
+        int64_t av_unused dts, size0, size1;
         avio_seek(ioc, filepositions[1]-4, SEEK_SET);
         size0 = avio_rb32(ioc);
                 avio_r8(ioc);
