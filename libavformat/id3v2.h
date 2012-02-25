@@ -24,6 +24,7 @@
 
 #include <stdint.h>
 #include "avformat.h"
+#include "internal.h"
 #include "metadata.h"
 
 #define ID3v2_HEADER_SIZE 10
@@ -58,6 +59,14 @@ typedef struct ID3v2ExtraMetaGEOB {
     uint8_t *description;
     uint8_t *data;
 } ID3v2ExtraMetaGEOB;
+
+typedef struct ID3v2ExtraMetaAPIC {
+    uint8_t     *data;
+    int          len;
+    const char  *type;
+    uint8_t     *description;
+    enum CodecID id;
+} ID3v2ExtraMetaAPIC;
 
 /**
  * Detect ID3v2 Header.
@@ -119,5 +128,9 @@ extern const char ff_id3v2_4_tags[][4];
  * ID3v2.3-only text information frames.
  */
 extern const char ff_id3v2_3_tags[][4];
+
+extern const CodecMime ff_id3v2_mime_tags[];
+
+extern const char *ff_id3v2_picture_types[21];
 
 #endif /* AVFORMAT_ID3V2_H */
