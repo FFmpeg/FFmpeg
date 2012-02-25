@@ -76,6 +76,18 @@ if [ -n "$do_pixdesc" ]; then
     done
 fi
 
+do_lavfi_lavd() {
+    label=$1
+    graph=$2
+    shift 2
+    [ $test = $label ] || return 0
+    printf '%-20s' $label
+    run_avconv $DEC_OPTS -f lavfi -i $graph \
+        $ENC_OPTS -vcodec rawvideo $* -f nut md5:
+}
+
+do_lavfi_lavd "testsrc"              "testsrc=r=7:n=2:d=10"
+
 # TODO: add tests for
 # direct rendering,
 # chains with feedback loops
