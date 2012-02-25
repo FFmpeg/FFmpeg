@@ -653,7 +653,7 @@ seek:
     return;
 }
 
-void ff_id3v2_read_all(AVFormatContext *s, const char *magic, ID3v2ExtraMeta **extra_meta)
+void ff_id3v2_read(AVFormatContext *s, const char *magic, ID3v2ExtraMeta **extra_meta)
 {
     int len, ret;
     uint8_t buf[ID3v2_HEADER_SIZE];
@@ -682,11 +682,6 @@ void ff_id3v2_read_all(AVFormatContext *s, const char *magic, ID3v2ExtraMeta **e
     ff_metadata_conv(&s->metadata, NULL, id3v2_2_metadata_conv);
     ff_metadata_conv(&s->metadata, NULL, ff_id3v2_4_metadata_conv);
     merge_date(&s->metadata);
-}
-
-void ff_id3v2_read(AVFormatContext *s, const char *magic)
-{
-    ff_id3v2_read_all(s, magic, NULL);
 }
 
 void ff_id3v2_free_extra_meta(ID3v2ExtraMeta **extra_meta)
