@@ -530,6 +530,13 @@ typedef struct AVIndexEntry {
 #define AV_DISPOSITION_HEARING_IMPAIRED  0x0080  /**< stream for hearing impaired audiences */
 #define AV_DISPOSITION_VISUAL_IMPAIRED   0x0100  /**< stream for visual impaired audiences */
 #define AV_DISPOSITION_CLEAN_EFFECTS     0x0200  /**< stream without voice */
+/**
+ * The stream is stored in the file as an attached picture/"cover art" (e.g.
+ * APIC frame in ID3v2). The single packet associated with it will be returned
+ * among the first few packets read from the file unless seeking takes place.
+ * It can also be accessed at any time in AVStream.attached_pic.
+ */
+#define AV_DISPOSITION_ATTACHED_PIC      0x0400
 
 /**
  * Stream structure.
@@ -601,6 +608,15 @@ typedef struct AVStream {
      * Average framerate
      */
     AVRational avg_frame_rate;
+
+    /**
+     * For streams with AV_DISPOSITION_ATTACHED_PIC disposition, this packet
+     * will contain the attached picture.
+     *
+     * decoding: set by libavformat, must not be modified by the caller.
+     * encoding: unused
+     */
+    AVPacket attached_pic;
 
     /*****************************************************************
      * All fields below this line are not part of the public API. They
