@@ -213,7 +213,7 @@ static int cdxl_decode_frame(AVCodecContext *avctx, void *data,
 
     if (c->video_size < FFALIGN(avctx->width, 16) * avctx->height * c->bpp / 8)
         return AVERROR_INVALIDDATA;
-    if (encoding == 0) {
+    if (!encoding && c->palette_size && c->bpp <= 8) {
         avctx->pix_fmt = PIX_FMT_PAL8;
     } else if (encoding == 1 && (c->bpp == 6 || c->bpp == 8)) {
         if (c->palette_size != (1 << (c->bpp - 1)))
