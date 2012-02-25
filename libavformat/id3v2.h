@@ -109,6 +109,12 @@ int ff_id3v2_write(struct AVFormatContext *s, int id3v2_version, const char *mag
  */
 void ff_id3v2_free_extra_meta(ID3v2ExtraMeta **extra_meta);
 
+/**
+ * Create a stream for each APIC (attached picture) extracted from the
+ * ID3v2 header.
+ */
+int ff_id3v2_parse_apic(AVFormatContext *s, ID3v2ExtraMeta **extra_meta);
+
 extern const AVMetadataConv ff_id3v2_34_metadata_conv[];
 extern const AVMetadataConv ff_id3v2_4_metadata_conv[];
 

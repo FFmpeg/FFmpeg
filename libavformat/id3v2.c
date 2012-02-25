@@ -702,3 +702,37 @@ void ff_id3v2_free_extra_meta(ID3v2ExtraMeta **extra_meta)
         current = next;
     }
 }
+
+int ff_id3v2_parse_apic(AVFormatContext *s, ID3v2ExtraMeta **extra_meta)
+{
+    ID3v2ExtraMeta *cur;
+
+    for (cur = *extra_meta; cur; cur = cur->next) {
+        ID3v2ExtraMetaAPIC *apic;
+        AVStream *st;
+
+        if (strcmp(cur->tag, "APIC"))
+            continue;
+        apic = cur->data;
+
+        if (!(st = avformat_new_stream(s, NULL)))
+            return AVERROR(ENOMEM);
+
+        st->disposition      |= AV_DISPOSITION_ATTACHED_PIC;
+        st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+        st->codec->codec_id   = apic->id;
+        av_dict_set(&st->metadata, "title",   apic->description, 0);
+        av_dict_set(&st->metadata, "comment", apic->type, 0);
+
+        av_init_packet(&st->attached_pic);
+        st->attached_pic.data         = apic->data;
+        st->attached_pic.size         = apic->len;
+        st->attached_pic.destruct     = av_destruct_packet;
+        st->attached_pic.stream_index = st->index;
+
+        apic->data = NULL;
+        apic->len  = 0;
+    }
+
+    return 0;
+}

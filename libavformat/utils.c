@@ -520,6 +520,7 @@ int avformat_open_input(AVFormatContext **ps, const char *filename, AVInputForma
     AVFormatContext *s = *ps;
     int i, ret = 0;
     AVDictionary *tmp = NULL;
+    ID3v2ExtraMeta *id3v2_extra_meta = NULL;
 
     if (!s && !(s = avformat_alloc_context()))
         return AVERROR(ENOMEM);
@@ -562,11 +563,16 @@ int avformat_open_input(AVFormatContext **ps, const char *filename, AVInputForma
 
     /* e.g. AVFMT_NOFILE formats will not have a AVIOContext */
     if (s->pb)
-        ff_id3v2_read(s, ID3v2_DEFAULT_MAGIC);
+        ff_id3v2_read_all(s, ID3v2_DEFAULT_MAGIC, &id3v2_extra_meta);
 
     if (s->iformat->read_header)
         if ((ret = s->iformat->read_header(s)) < 0)
             goto fail;
+
+    if (id3v2_extra_meta &&
+        (ret = ff_id3v2_parse_apic(s, &id3v2_extra_meta)) < 0)
+        goto fail;
+    ff_id3v2_free_extra_meta(&id3v2_extra_meta);
 
     /* queue attached pictures */
     for (i = 0; i < s->nb_streams; i++)
@@ -589,6 +595,7 @@ int avformat_open_input(AVFormatContext **ps, const char *filename, AVInputForma
     return 0;
 
 fail:
+    ff_id3v2_free_extra_meta(&id3v2_extra_meta);
     av_dict_free(&tmp);
     if (s->pb && !(s->flags & AVFMT_FLAG_CUSTOM_IO))
         avio_close(s->pb);
