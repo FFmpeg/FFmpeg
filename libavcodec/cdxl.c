@@ -197,10 +197,6 @@ static int cdxl_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     if (c->bpp < 1)
         return AVERROR_INVALIDDATA;
-    if (c->bpp > 8) {
-        av_log_ask_for_sample(avctx, "unsupported pixel size: %d\n", c->bpp);
-        return AVERROR_PATCHWELCOME;
-    }
     if (format) {
         av_log_ask_for_sample(avctx, "unsupported pixel format: %d\n", format);
         return AVERROR_PATCHWELCOME;
