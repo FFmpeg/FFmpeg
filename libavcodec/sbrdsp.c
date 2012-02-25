@@ -151,7 +151,7 @@ static void sbr_hf_gen_c(float (*X_high)[2], const float (*X_low)[2],
 }
 
 static void sbr_hf_g_filt_c(float (*Y)[2], const float (*X_high)[40][2],
-                            const float *g_filt, int m_max, int ixh)
+                            const float *g_filt, int m_max, intptr_t ixh)
 {
     int m;
 
@@ -238,4 +238,6 @@ av_cold void ff_sbrdsp_init(SBRDSPContext *s)
 
     if (ARCH_ARM)
         ff_sbrdsp_init_arm(s);
+    if (HAVE_MMX)
+        ff_sbrdsp_init_x86(s);
 }

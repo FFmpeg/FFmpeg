@@ -52,8 +52,6 @@ static int sws_flags = SWS_BICUBIC;
 
 static float t, tincr, tincr2;
 static int16_t *samples;
-static uint8_t *audio_outbuf;
-static int audio_outbuf_size;
 static int audio_input_frame_size;
 
 /*
@@ -63,8 +61,16 @@ static AVStream *add_audio_stream(AVFormatContext *oc, enum CodecID codec_id)
 {
     AVCodecContext *c;
     AVStream *st;
+    AVCodec *codec;
 
-    st = avformat_new_stream(oc, NULL);
+    /* find the audio encoder */
+    codec = avcodec_find_encoder(codec_id);
+    if (!codec) {
+        fprintf(stderr, "codec not found\n");
+        exit(1);
+    }
+
+    st = avformat_new_stream(oc, codec);
     if (!st) {
         fprintf(stderr, "Could not alloc stream\n");
         exit(1);
@@ -72,8 +78,6 @@ static AVStream *add_audio_stream(AVFormatContext *oc, enum CodecID codec_id)
     st->id = 1;
 
     c = st->codec;
-    c->codec_id = codec_id;
-    c->codec_type = AVMEDIA_TYPE_AUDIO;
 
     /* put sample parameters */
     c->sample_fmt = AV_SAMPLE_FMT_S16;
@@ -91,19 +95,11 @@ static AVStream *add_audio_stream(AVFormatContext *oc, enum CodecID codec_id)
 static void open_audio(AVFormatContext *oc, AVStream *st)
 {
     AVCodecContext *c;
-    AVCodec *codec;
 
     c = st->codec;
 
-    /* find the audio encoder */
-    codec = avcodec_find_encoder(c->codec_id);
-    if (!codec) {
-        fprintf(stderr, "codec not found\n");
-        exit(1);
-    }
-
     /* open it */
-    if (avcodec_open2(c, codec, NULL) < 0) {
+    if (avcodec_open2(c, NULL, NULL) < 0) {
         fprintf(stderr, "could not open codec\n");
         exit(1);
     }
@@ -114,27 +110,12 @@ static void open_audio(AVFormatContext *oc, AVStream *st)
     /* increment frequency by 110 Hz per second */
     tincr2 = 2 * M_PI * 110.0 / c->sample_rate / c->sample_rate;
 
-    audio_outbuf_size = 10000;
-    audio_outbuf = av_malloc(audio_outbuf_size);
-
-    /* ugly hack for PCM codecs (will be removed ASAP with new PCM
-       support to compute the input frame size in samples */
-    if (c->frame_size <= 1) {
-        audio_input_frame_size = audio_outbuf_size / c->channels;
-        switch(st->codec->codec_id) {
-        case CODEC_ID_PCM_S16LE:
-        case CODEC_ID_PCM_S16BE:
-        case CODEC_ID_PCM_U16LE:
-        case CODEC_ID_PCM_U16BE:
-            audio_input_frame_size >>= 1;
-            break;
-        default:
-            break;
-        }
-    } else {
+    if (c->codec->capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE)
+        audio_input_frame_size = 10000;
+    else
         audio_input_frame_size = c->frame_size;
-    }
-    samples = av_malloc(audio_input_frame_size * 2 * c->channels);
+    samples = av_malloc(audio_input_frame_size * av_get_bytes_per_sample(c->sample_fmt)
+                        * c->channels);
 }
 
 /* prepare a 16 bit dummy audio frame of 'frame_size' samples and
@@ -158,19 +139,23 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
 {
     AVCodecContext *c;
     AVPacket pkt;
-    av_init_packet(&pkt);
+    AVFrame *frame = avcodec_alloc_frame();
+    int got_packet;
 
+    av_init_packet(&pkt);
     c = st->codec;
 
     get_audio_frame(samples, audio_input_frame_size, c->channels);
+    frame->nb_samples = audio_input_frame_size;
+    avcodec_fill_audio_frame(frame, c->channels, c->sample_fmt, (uint8_t *)samples,
+                             audio_input_frame_size * av_get_bytes_per_sample(c->sample_fmt)
+                             * c->channels, 1);
 
-    pkt.size = avcodec_encode_audio2(c, audio_outbuf, audio_outbuf_size, samples);
+    avcodec_encode_audio2(c, &pkt, frame, &got_packet);
+    if (!got_packet)
+        return;
 
-    if (c->coded_frame && c->coded_frame->pts != AV_NOPTS_VALUE)
-        pkt.pts= av_rescale_q(c->coded_frame->pts, c->time_base, st->time_base);
-    pkt.flags |= AV_PKT_FLAG_KEY;
-    pkt.stream_index = st->index;
-    pkt.data = audio_outbuf;
+    pkt.stream_index= st->index;
 
     /* write the compressed frame in the media file */
     if (av_interleaved_write_frame(oc, &pkt) != 0) {
@@ -184,7 +169,6 @@ static void close_audio(AVFormatContext *oc, AVStream *st)
     avcodec_close(st->codec);
 
     av_free(samples);
-    av_free(audio_outbuf);
 }
 
 /**************************************************************/
@@ -201,7 +185,14 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id)
     AVStream *st;
     AVCodec *codec;
 
-    st = avformat_new_stream(oc, NULL);
+    /* find the video encoder */
+    codec = avcodec_find_encoder(codec_id);
+    if (!codec) {
+        fprintf(stderr, "codec not found\n");
+        exit(1);
+    }
+
+    st = avformat_new_stream(oc, codec);
     if (!st) {
         fprintf(stderr, "Could not alloc stream\n");
         exit(1);
@@ -271,20 +262,12 @@ static AVFrame *alloc_picture(enum PixelFormat pix_fmt, int width, int height)
 
 static void open_video(AVFormatContext *oc, AVStream *st)
 {
-    AVCodec *codec;
     AVCodecContext *c;
 
     c = st->codec;
 
-    /* find the video encoder */
-    codec = avcodec_find_encoder(c->codec_id);
-    if (!codec) {
-        fprintf(stderr, "codec not found\n");
-        exit(1);
-    }
-
     /* open the codec */
-    if (avcodec_open2(c, codec, NULL) < 0) {
+    if (avcodec_open2(c, NULL, NULL) < 0) {
         fprintf(stderr, "could not open codec\n");
         exit(1);
     }

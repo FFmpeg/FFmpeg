@@ -75,6 +75,10 @@ static int ape_tag_read_field(AVFormatContext *s)
         if (!value)
             return AVERROR(ENOMEM);
         c = avio_read(pb, value, size);
+        if (c < 0) {
+            av_free(value);
+            return c;
+        }
         value[c] = 0;
         av_dict_set(&s->metadata, key, value, AV_DICT_DONT_STRDUP_VAL);
     }

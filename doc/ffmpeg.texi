@@ -1019,10 +1019,10 @@ Set bitstream filters for matching streams. @var{bistream_filters} is
 a comma-separated list of bitstream filters. Use the @code{-bsfs} option
 to get the list of bitstream filters.
 @example
-ffmpeg -i h264.mp4 -c:v copy -vbsf h264_mp4toannexb -an out.h264
+ffmpeg -i h264.mp4 -c:v copy -bsf:v h264_mp4toannexb -an out.h264
 @end example
 @example
-ffmpeg -i file.mov -an -vn -sbsf mov2textsub -c:s copy -f rawvideo sub.txt
+ffmpeg -i file.mov -an -vn -bsf:s mov2textsub -c:s copy -f rawvideo sub.txt
 @end example
 
 @item -tag[:@var{stream_specifier}] @var{codec_tag} (@emph{per-stream})

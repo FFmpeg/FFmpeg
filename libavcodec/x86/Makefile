@@ -53,6 +53,8 @@ YASM-OBJS-$(CONFIG_PNG_DECODER)        += x86/pngdsp.o
 MMX-OBJS-$(CONFIG_PNG_DECODER)         += x86/pngdsp-init.o
 YASM-OBJS-$(CONFIG_PRORES_DECODER)     += x86/proresdsp.o
 MMX-OBJS-$(CONFIG_PRORES_DECODER)      += x86/proresdsp-init.o
+MMX-OBJS-$(CONFIG_AAC_DECODER)         += x86/sbrdsp_init.o
+YASM-OBJS-$(CONFIG_AAC_DECODER)        += x86/sbrdsp.o
 MMX-OBJS-$(CONFIG_DWT)                 += x86/snowdsp_mmx.o \
                                           x86/dwt.o
 YASM-OBJS-$(CONFIG_V210_DECODER)       += x86/v210.o
