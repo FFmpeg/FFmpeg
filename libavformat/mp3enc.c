@@ -35,6 +35,7 @@
 #include "libavcodec/mpegaudiodecheader.h"
 #include "libavformat/avio_internal.h"
 #include "libavutil/dict.h"
+#include "libavutil/avassert.h"
 
 static int id3v1_set_string(AVFormatContext *s, const char *key,
                             uint8_t *buf, int buf_size)
@@ -157,7 +158,7 @@ static int mp3_write_xing(AVFormatContext *s)
     AVCodecContext   *codec = s->streams[0]->codec;
     MP3Context       *mp3 = s->priv_data;
     int              bitrate_idx;
-    int              best_bitrate_idx;
+    int              best_bitrate_idx = -1;
     int              best_bitrate_error= INT_MAX;
     int64_t          xing_offset;
     int32_t          header, mask;
@@ -196,6 +197,7 @@ static int mp3_write_xing(AVFormatContext *s)
             best_bitrate_idx  = bitrate_idx;
         }
     }
+    av_assert0(best_bitrate_idx >= 0);
 
     for (bitrate_idx= best_bitrate_idx;; bitrate_idx++) {
         if (15 == bitrate_idx)
