@@ -40,6 +40,7 @@ do_lavfi "overlay"            "split[m],scale=88:72,pad=96:80:4:4[o2];[m]fifo,[o
 do_lavfi "pad"                "pad=iw*1.5:ih*1.5:iw*0.3:ih*0.2"
 do_lavfi "scale200"           "scale=200:200"
 do_lavfi "scale500"           "scale=500:500"
+do_lavfi "select"             "select=not(eq(mod(n\,2)\,0)+eq(mod(n\,3)\,0))"
 do_lavfi "setdar"             "setdar=16/9"
 do_lavfi "setsar"             "setsar=16/11"
 do_lavfi "vflip"              "vflip"
