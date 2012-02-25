@@ -97,6 +97,7 @@ do_lavfi_lavd() {
         $ENC_OPTS -vcodec rawvideo $* -f nut md5:
 }
 
+do_lavfi_lavd "life"                 "life=s=40x40:r=5:seed=42:mold=64" -t 2
 do_lavfi_lavd "testsrc"              "testsrc=r=7:n=2:d=10"
 
 # TODO: add tests for
