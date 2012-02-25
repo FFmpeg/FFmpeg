@@ -58,6 +58,7 @@
 #define AVERROR_PROTOCOL_NOT_FOUND (-MKTAG(0xF8,'P','R','O')) ///< Protocol not found
 #define AVERROR_STREAM_NOT_FOUND   (-MKTAG(0xF8,'S','T','R')) ///< Stream not found
 #define AVERROR_BUG                (-MKTAG( 'B','U','G',' ')) ///< Bug detected, please report the issue
+#define AVERROR_UNKNOWN            (-MKTAG( 'U','N','K','N')) ///< Unknown error, typically from an external library
 
 /**
  * Put a description of the AVERROR code errnum in errbuf.
