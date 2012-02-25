@@ -1190,7 +1190,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
 
         /* Initialize the previous sample.  */
         for (i = 0; i < 4; i++)
-            prev[0][i] = (int16_t)bytestream_get_be16(&src);
+            prev[i>>1][i&1] = (int16_t)bytestream_get_be16(&src);
 
         for (ch = 0; ch <= st; ch++) {
             samples = (short *)c->frame.data[0] + ch;
