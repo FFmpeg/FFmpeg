@@ -144,6 +144,7 @@ static int seg_write_header(AVFormatContext *s)
         goto fail;
     }
 
+    oc->interrupt_callback = s->interrupt_callback;
     seg->avf = oc;
 
     oc->streams = s->streams;
