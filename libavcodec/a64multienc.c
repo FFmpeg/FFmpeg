@@ -254,7 +254,7 @@ static int a64multi_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int b_width;
 
     int req_size, ret;
-    uint8_t *buf;
+    uint8_t *buf = NULL;
 
     int *charmap     = c->mc_charmap;
     uint8_t *colram  = c->mc_colram;
