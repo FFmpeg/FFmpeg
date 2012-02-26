@@ -9,7 +9,7 @@ FFLIBS-$(CONFIG_ARESAMPLE_FILTER)            += swresample
 FFLIBS-$(CONFIG_MOVIE_FILTER)                += avformat avcodec
 FFLIBS-$(CONFIG_PAN_FILTER)                  += swresample
 FFLIBS-$(CONFIG_SCALE_FILTER)                += swscale
-FFLIBS-$(CONFIG_MP_FILTER)                   += avcodec
+FFLIBS-$(CONFIG_MP_FILTER)                   += avcodec postproc
 
 HEADERS = avcodec.h avfilter.h avfiltergraph.h buffersink.h version.h vsrc_buffer.h
 
@@ -140,6 +140,7 @@ OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_ow.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_palette.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_perspective.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_phase.o
+OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_pp.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_pp7.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_pullup.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_qp.o

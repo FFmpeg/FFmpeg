@@ -1668,7 +1668,7 @@ frei0r_filter_deps="frei0r dlopen"
 frei0r_src_filter_deps="frei0r dlopen"
 hqdn3d_filter_deps="gpl"
 movie_filter_deps="avcodec avformat"
-mp_filter_deps="gpl avcodec swscale"
+mp_filter_deps="gpl avcodec swscale postproc"
 mptestsrc_filter_deps="gpl"
 negate_filter_deps="lut_filter"
 ocv_filter_deps="libopencv"
@@ -3809,6 +3809,7 @@ enabled libavfilter_deps_avcodec    && prepend libavfilter_pc_deps "libavcodec =
 enabled libavfilter_deps_avformat   && prepend libavfilter_pc_deps "libavformat = $LIBAVFORMAT_VERSION,"
 enabled libavfilter_deps_swscale    && prepend libavfilter_pc_deps "libswscale = $LIBSWSCALE_VERSION,"
 enabled libavfilter_deps_swresample && prepend libavfilter_pc_deps "libswresample = $LIBSWRESAMPLE_VERSION,"
+enabled libavfilter_deps_postproc   && prepend libavfilter_pc_deps "libpostproc = $LIBPOSTPROC_VERSION,"
 libavfilter_pc_deps=${libavfilter_pc_deps%, }
 
 pkgconfig_generate libavutil "FFmpeg utility library" "$LIBAVUTIL_VERSION" "$LIBM"

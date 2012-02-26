@@ -225,6 +225,7 @@ static const vf_info_t* const filters[]={
     &vf_info_palette,
     &vf_info_perspective,
     &vf_info_phase,
+    &vf_info_pp,
     &vf_info_pp7,
     &vf_info_pullup,
     &vf_info_qp,
