@@ -142,6 +142,7 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
             av_free_packet(pkt);
             return ret;
         }
+        av_shrink_packet(pkt, CDXL_HEADER_SIZE + ret);
         pkt->stream_index  = cdxl->video_stream_index;
         pkt->flags        |= AV_PKT_FLAG_KEY;
         pkt->pos           = pos;
