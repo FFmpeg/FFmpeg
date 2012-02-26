@@ -859,12 +859,48 @@ typedef struct AVFrame {
     int linesize[AV_NUM_DATA_POINTERS];
 
     /**
-     * pointer to the first allocated byte of the picture. Can be used in get_buffer/release_buffer.
-     * This isn't used by libavcodec unless the default get/release_buffer() is used.
-     * - encoding:
-     * - decoding:
+     * pointers to the data planes/channels.
+     *
+     * For video, this should simply point to data[].
+     *
+     * For planar audio, each channel has a separate data pointer, and
+     * linesize[0] contains the size of each channel buffer.
+     * For packed audio, there is just one data pointer, and linesize[0]
+     * contains the total size of the buffer for all channels.
+     *
+     * Note: Both data and extended_data will always be set by get_buffer(),
+     * but for planar audio with more channels that can fit in data,
+     * extended_data must be used by the decoder in order to access all
+     * channels.
+     *
+     * encoding: unused
+     * decoding: set by AVCodecContext.get_buffer()
      */
-    uint8_t *base[AV_NUM_DATA_POINTERS];
+    uint8_t **extended_data;
+
+    /**
+     * width and height of the video frame
+     * - encoding: unused
+     * - decoding: Read by user.
+     */
+    int width, height;
+
+    /**
+     * number of audio samples (per channel) described by this frame
+     * - encoding: Set by user
+     * - decoding: Set by libavcodec
+     */
+    int nb_samples;
+
+    /**
+     * format of the frame, -1 if unknown or unset
+     * Values correspond to enum PixelFormat for video frames,
+     * enum AVSampleFormat for audio)
+     * - encoding: unused
+     * - decoding: Read by user.
+     */
+    int format;
+
     /**
      * 1 -> keyframe, 0-> not
      * - encoding: Set by libavcodec.
@@ -880,12 +916,41 @@ typedef struct AVFrame {
     enum AVPictureType pict_type;
 
     /**
+     * pointer to the first allocated byte of the picture. Can be used in get_buffer/release_buffer.
+     * This isn't used by libavcodec unless the default get/release_buffer() is used.
+     * - encoding:
+     * - decoding:
+     */
+    uint8_t *base[AV_NUM_DATA_POINTERS];
+
+    /**
+     * sample aspect ratio for the video frame, 0/1 if unknown\unspecified
+     * - encoding: unused
+     * - decoding: Read by user.
+     */
+    AVRational sample_aspect_ratio;
+
+    /**
      * presentation timestamp in time_base units (time when frame should be shown to user)
      * If AV_NOPTS_VALUE then frame_rate = 1/time_base will be assumed.
      * - encoding: MUST be set by user.
      * - decoding: Set by libavcodec.
      */
     int64_t pts;
+
+    /**
+     * reordered pts from the last AVPacket that has been input into the decoder
+     * - encoding: unused
+     * - decoding: Read by user.
+     */
+    int64_t pkt_pts;
+
+    /**
+     * dts from the last AVPacket that has been input into the decoder
+     * - encoding: unused
+     * - decoding: Read by user.
+     */
+    int64_t pkt_dts;
 
     /**
      * picture number in bitstream order
@@ -931,6 +996,11 @@ typedef struct AVFrame {
     int qstride;
 
     /**
+     *
+     */
+    int qscale_type;
+
+    /**
      * mbskip_table[mb]>=1 if MB didn't change
      * stride= mb_width = (width+15)>>4
      * - encoding: unused
@@ -961,12 +1031,19 @@ typedef struct AVFrame {
     uint32_t *mb_type;
 
     /**
-     * log2 of the size of the block which a single vector in motion_val represents:
-     * (4->16x16, 3->8x8, 2-> 4x4, 1-> 2x2)
+     * DCT coefficients
      * - encoding: unused
      * - decoding: Set by libavcodec.
      */
-    uint8_t motion_subsample_log2;
+    short *dct_coeff;
+
+    /**
+     * motion reference frame index
+     * the order in which these are stored can depend on the codec.
+     * - encoding: Set by user.
+     * - decoding: Set by libavcodec.
+     */
+    int8_t *ref_index[2];
 
     /**
      * for some private data of the user
@@ -999,11 +1076,6 @@ typedef struct AVFrame {
     int repeat_pict;
 
     /**
-     *
-     */
-    int qscale_type;
-
-    /**
      * The content of the picture is interlaced.
      * - encoding: Set by user.
      * - decoding: Set by libavcodec. (default 0)
@@ -1016,13 +1088,6 @@ typedef struct AVFrame {
      * - decoding: Set by libavcodec.
      */
     int top_field_first;
-
-    /**
-     * Pan scan.
-     * - encoding: Set by user.
-     * - decoding: Set by libavcodec.
-     */
-    AVPanScan *pan_scan;
 
     /**
      * Tell user application that palette has changed from previous frame.
@@ -1039,19 +1104,11 @@ typedef struct AVFrame {
     int buffer_hints;
 
     /**
-     * DCT coefficients
-     * - encoding: unused
-     * - decoding: Set by libavcodec.
-     */
-    short *dct_coeff;
-
-    /**
-     * motion reference frame index
-     * the order in which these are stored can depend on the codec.
+     * Pan scan.
      * - encoding: Set by user.
      * - decoding: Set by libavcodec.
      */
-    int8_t *ref_index[2];
+    AVPanScan *pan_scan;
 
     /**
      * reordered opaque 64bit (generally an integer or a double precision float
@@ -1074,20 +1131,6 @@ typedef struct AVFrame {
     void *hwaccel_picture_private;
 
     /**
-     * reordered pts from the last AVPacket that has been input into the decoder
-     * - encoding: unused
-     * - decoding: Read by user.
-     */
-    int64_t pkt_pts;
-
-    /**
-     * dts from the last AVPacket that has been input into the decoder
-     * - encoding: unused
-     * - decoding: Read by user.
-     */
-    int64_t pkt_dts;
-
-    /**
      * the AVCodecContext which ff_thread_get_buffer() was last called on
      * - encoding: Set by libavcodec.
      * - decoding: Set by libavcodec.
@@ -1102,54 +1145,12 @@ typedef struct AVFrame {
     void *thread_opaque;
 
     /**
-     * number of audio samples (per channel) described by this frame
-     * - encoding: Set by user
-     * - decoding: Set by libavcodec
-     */
-    int nb_samples;
-
-    /**
-     * pointers to the data planes/channels.
-     *
-     * For video, this should simply point to data[].
-     *
-     * For planar audio, each channel has a separate data pointer, and
-     * linesize[0] contains the size of each channel buffer.
-     * For packed audio, there is just one data pointer, and linesize[0]
-     * contains the total size of the buffer for all channels.
-     *
-     * Note: Both data and extended_data will always be set by get_buffer(),
-     * but for planar audio with more channels that can fit in data,
-     * extended_data must be used by the decoder in order to access all
-     * channels.
-     *
-     * encoding: unused
-     * decoding: set by AVCodecContext.get_buffer()
-     */
-    uint8_t **extended_data;
-
-    /**
-     * sample aspect ratio for the video frame, 0/1 if unknown\unspecified
+     * log2 of the size of the block which a single vector in motion_val represents:
+     * (4->16x16, 3->8x8, 2-> 4x4, 1-> 2x2)
      * - encoding: unused
-     * - decoding: Read by user.
+     * - decoding: Set by libavcodec.
      */
-    AVRational sample_aspect_ratio;
-
-    /**
-     * width and height of the video frame
-     * - encoding: unused
-     * - decoding: Read by user.
-     */
-    int width, height;
-
-    /**
-     * format of the frame, -1 if unknown or unset
-     * Values correspond to enum PixelFormat for video frames,
-     * enum AVSampleFormat for audio)
-     * - encoding: unused
-     * - decoding: Read by user.
-     */
-    int format;
+    uint8_t motion_subsample_log2;
 } AVFrame;
 
 struct AVCodecInternal;
