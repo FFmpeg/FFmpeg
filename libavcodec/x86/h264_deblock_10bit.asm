@@ -870,7 +870,7 @@ cglobal deblock_v_chroma_10_%1, 5,7-(mmsize/16),8*(mmsize/16)
 %if mmsize < 16
     add         r0, mmsize
     add         r5, mmsize
-    add         r4, mmsize/8
+    add         r4, mmsize/4
     dec         r6
     jg .loop
     REP_RET
