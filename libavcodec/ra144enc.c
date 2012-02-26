@@ -33,15 +33,20 @@
 #include "ra144.h"
 
 
+static av_cold int ra144_encode_close(AVCodecContext *avctx)
+{
+    RA144Context *ractx = avctx->priv_data;
+    ff_lpc_end(&ractx->lpc_ctx);
+    av_freep(&avctx->coded_frame);
+    return 0;
+}
+
+
 static av_cold int ra144_encode_init(AVCodecContext * avctx)
 {
     RA144Context *ractx;
     int ret;
 
-    if (avctx->sample_fmt != AV_SAMPLE_FMT_S16) {
-        av_log(avctx, AV_LOG_ERROR, "invalid sample format\n");
-        return -1;
-    }
     if (avctx->channels != 1) {
         av_log(avctx, AV_LOG_ERROR, "invalid number of channels: %d\n",
                avctx->channels);
@@ -55,15 +60,19 @@ static av_cold int ra144_encode_init(AVCodecContext * avctx)
     ractx->avctx = avctx;
     ret = ff_lpc_init(&ractx->lpc_ctx, avctx->frame_size, LPC_ORDER,
                       FF_LPC_TYPE_LEVINSON);
-    return ret;
-}
+    if (ret < 0)
+        goto error;
 
+    avctx->coded_frame = avcodec_alloc_frame();
+    if (!avctx->coded_frame) {
+        ret = AVERROR(ENOMEM);
+        goto error;
+    }
 
-static av_cold int ra144_encode_close(AVCodecContext *avctx)
-{
-    RA144Context *ractx = avctx->priv_data;
-    ff_lpc_end(&ractx->lpc_ctx);
     return 0;
+error:
+    ra144_encode_close(avctx);
+    return ret;
 }
 
 
@@ -432,6 +441,7 @@ static int ra144_encode_frame(AVCodecContext *avctx, uint8_t *frame,
     int16_t block_coefs[NBLOCKS][LPC_ORDER];
     int lpc_refl[LPC_ORDER];    /**< reflection coefficients of the frame */
     unsigned int refl_rms[NBLOCKS]; /**< RMS of the reflection coefficients */
+    const int16_t *samples = data;
     int energy = 0;
     int i, idx;
 
@@ -506,7 +516,7 @@ static int ra144_encode_frame(AVCodecContext *avctx, uint8_t *frame,
     ractx->lpc_refl_rms[1] = ractx->lpc_refl_rms[0];
     FFSWAP(unsigned int *, ractx->lpc_coef[0], ractx->lpc_coef[1]);
     for (i = 0; i < NBLOCKS * BLOCKSIZE; i++)
-        ractx->curr_block[i] = *((int16_t *)data + i) >> 2;
+        ractx->curr_block[i] = samples[i] >> 2;
     return FRAMESIZE;
 }
 

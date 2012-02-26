@@ -75,7 +75,7 @@ static av_cold int MPA_encode_init(AVCodecContext *avctx)
 
     if (channels <= 0 || channels > 2){
         av_log(avctx, AV_LOG_ERROR, "encoding %d channel(s) is not allowed in mp2\n", channels);
-        return -1;
+        return AVERROR(EINVAL);
     }
     bitrate = bitrate / 1000;
     s->nb_channels = channels;
@@ -93,7 +93,7 @@ static av_cold int MPA_encode_init(AVCodecContext *avctx)
     }
     if (i == 3){
         av_log(avctx, AV_LOG_ERROR, "Sampling rate %d is not allowed in mp2\n", freq);
-        return -1;
+        return AVERROR(EINVAL);
     }
     s->freq_index = i;
 
@@ -104,7 +104,7 @@ static av_cold int MPA_encode_init(AVCodecContext *avctx)
     }
     if (i == 15){
         av_log(avctx, AV_LOG_ERROR, "bitrate %d is not allowed in mp2\n", bitrate);
-        return -1;
+        return AVERROR(EINVAL);
     }
     s->bitrate_index = i;
 
@@ -181,7 +181,8 @@ static av_cold int MPA_encode_init(AVCodecContext *avctx)
     }
 
     avctx->coded_frame= avcodec_alloc_frame();
-    avctx->coded_frame->key_frame= 1;
+    if (!avctx->coded_frame)
+        return AVERROR(ENOMEM);
 
     return 0;
 }

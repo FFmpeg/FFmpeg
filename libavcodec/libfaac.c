@@ -38,28 +38,47 @@ static const int channel_maps[][6] = {
     { 2, 0, 1, 4, 5, 3 }, //< C L R Ls Rs LFE
 };
 
+static av_cold int Faac_encode_close(AVCodecContext *avctx)
+{
+    FaacAudioContext *s = avctx->priv_data;
+
+    av_freep(&avctx->coded_frame);
+    av_freep(&avctx->extradata);
+
+    if (s->faac_handle)
+        faacEncClose(s->faac_handle);
+    return 0;
+}
+
 static av_cold int Faac_encode_init(AVCodecContext *avctx)
 {
     FaacAudioContext *s = avctx->priv_data;
     faacEncConfigurationPtr faac_cfg;
     unsigned long samples_input, max_bytes_output;
+    int ret;
 
     /* number of channels */
     if (avctx->channels < 1 || avctx->channels > 6) {
         av_log(avctx, AV_LOG_ERROR, "encoding %d channel(s) is not allowed\n", avctx->channels);
-        return -1;
+        ret = AVERROR(EINVAL);
+        goto error;
     }
 
     s->faac_handle = faacEncOpen(avctx->sample_rate,
                                  avctx->channels,
                                  &samples_input, &max_bytes_output);
+    if (!s->faac_handle) {
+        av_log(avctx, AV_LOG_ERROR, "error in faacEncOpen()\n");
+        ret = AVERROR_UNKNOWN;
+        goto error;
+    }
 
     /* check faac version */
     faac_cfg = faacEncGetCurrentConfiguration(s->faac_handle);
     if (faac_cfg->version != FAAC_CFG_VERSION) {
         av_log(avctx, AV_LOG_ERROR, "wrong libfaac version (compiled for: %d, using %d)\n", FAAC_CFG_VERSION, faac_cfg->version);
-        faacEncClose(s->faac_handle);
-        return -1;
+        ret = AVERROR(EINVAL);
+        goto error;
     }
 
     /* put the options in the configuration struct */
@@ -79,8 +98,8 @@ static av_cold int Faac_encode_init(AVCodecContext *avctx)
             break;
         default:
             av_log(avctx, AV_LOG_ERROR, "invalid AAC profile\n");
-            faacEncClose(s->faac_handle);
-            return -1;
+            ret = AVERROR(EINVAL);
+            goto error;
     }
     faac_cfg->mpegVersion = MPEG4;
     faac_cfg->useTns = 0;
@@ -100,7 +119,10 @@ static av_cold int Faac_encode_init(AVCodecContext *avctx)
     avctx->frame_size = samples_input / avctx->channels;
 
     avctx->coded_frame= avcodec_alloc_frame();
-    avctx->coded_frame->key_frame= 1;
+    if (!avctx->coded_frame) {
+        ret = AVERROR(ENOMEM);
+        goto error;
+    }
 
     /* Set decoder specific info */
     avctx->extradata_size = 0;
@@ -112,6 +134,10 @@ static av_cold int Faac_encode_init(AVCodecContext *avctx)
         if (!faacEncGetDecoderSpecificInfo(s->faac_handle, &buffer,
                                            &decoder_specific_info_size)) {
             avctx->extradata = av_malloc(decoder_specific_info_size + FF_INPUT_BUFFER_PADDING_SIZE);
+            if (!avctx->extradata) {
+                ret = AVERROR(ENOMEM);
+                goto error;
+            }
             avctx->extradata_size = decoder_specific_info_size;
             memcpy(avctx->extradata, buffer, avctx->extradata_size);
             faac_cfg->outputFormat = 0;
@@ -123,10 +149,14 @@ static av_cold int Faac_encode_init(AVCodecContext *avctx)
 
     if (!faacEncSetConfiguration(s->faac_handle, faac_cfg)) {
         av_log(avctx, AV_LOG_ERROR, "libfaac doesn't support this output format!\n");
-        return -1;
+        ret = AVERROR(EINVAL);
+        goto error;
     }
 
     return 0;
+error:
+    Faac_encode_close(avctx);
+    return ret;
 }
 
 static int Faac_encode_frame(AVCodecContext *avctx,
@@ -143,17 +173,6 @@ static int Faac_encode_frame(AVCodecContext *avctx,
                                   buf_size);
 
     return bytes_written;
-}
-
-static av_cold int Faac_encode_close(AVCodecContext *avctx)
-{
-    FaacAudioContext *s = avctx->priv_data;
-
-    av_freep(&avctx->coded_frame);
-    av_freep(&avctx->extradata);
-
-    faacEncClose(s->faac_handle);
-    return 0;
 }
 
 static const AVProfile profiles[] = {

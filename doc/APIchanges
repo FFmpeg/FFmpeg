@@ -35,6 +35,9 @@ API changes, most recent first:
 2012-01-24 - xxxxxxx - lavfi 2.60.100
   Add avfilter_graph_dump.
 
+2012-xx-xx - xxxxxxx - lavu 51.24.0 - error.h
+  Add AVERROR_UNKNOWN
+
 2012-xx-xx - xxxxxxx - lavc 54.x.x
   Add duration field to AVCodecParserContext
 

@@ -25,9 +25,8 @@
 #include "avcodec.h"
 #include "bytestream.h"
 
-#define ROQ_FIRST_FRAME_SIZE     (735*8)
 #define ROQ_FRAME_SIZE           735
-
+#define ROQ_HEADER_SIZE   8
 
 #define MAX_DPCM (127*127)
 
@@ -35,34 +34,59 @@
 typedef struct
 {
     short lastSample[2];
+    int input_frames;
+    int buffered_samples;
+    int16_t *frame_buffer;
 } ROQDPCMContext;
+
+
+static av_cold int roq_dpcm_encode_close(AVCodecContext *avctx)
+{
+    ROQDPCMContext *context = avctx->priv_data;
+
+    av_freep(&avctx->coded_frame);
+    av_freep(&context->frame_buffer);
+
+    return 0;
+}
 
 static av_cold int roq_dpcm_encode_init(AVCodecContext *avctx)
 {
     ROQDPCMContext *context = avctx->priv_data;
+    int ret;
 
     if (avctx->channels > 2) {
         av_log(avctx, AV_LOG_ERROR, "Audio must be mono or stereo\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
     if (avctx->sample_rate != 22050) {
         av_log(avctx, AV_LOG_ERROR, "Audio must be 22050 Hz\n");
-        return -1;
-    }
-    if (avctx->sample_fmt != AV_SAMPLE_FMT_S16) {
-        av_log(avctx, AV_LOG_ERROR, "Audio must be signed 16-bit\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
-    avctx->frame_size = ROQ_FIRST_FRAME_SIZE;
+    avctx->frame_size = ROQ_FRAME_SIZE;
+    avctx->bit_rate   = (ROQ_HEADER_SIZE + ROQ_FRAME_SIZE * avctx->channels) *
+                        (22050 / ROQ_FRAME_SIZE) * 8;
+
+    context->frame_buffer = av_malloc(8 * ROQ_FRAME_SIZE * avctx->channels *
+                                      sizeof(*context->frame_buffer));
+    if (!context->frame_buffer) {
+        ret = AVERROR(ENOMEM);
+        goto error;
+    }
 
     context->lastSample[0] = context->lastSample[1] = 0;
 
     avctx->coded_frame= avcodec_alloc_frame();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
+    if (!avctx->coded_frame) {
+        ret = AVERROR(ENOMEM);
+        goto error;
+    }
 
     return 0;
+error:
+    roq_dpcm_encode_close(avctx);
+    return ret;
 }
 
 static unsigned char dpcm_predict(short *previous, short current)
@@ -108,25 +132,45 @@ static unsigned char dpcm_predict(short *previous, short current)
 static int roq_dpcm_encode_frame(AVCodecContext *avctx,
                 unsigned char *frame, int buf_size, void *data)
 {
-    int i, samples, stereo, ch;
-    const short *in;
-    unsigned char *out;
-
+    int i, stereo, data_size;
+    const int16_t *in = data;
+    uint8_t *out = frame;
     ROQDPCMContext *context = avctx->priv_data;
 
     stereo = (avctx->channels == 2);
+
+    if (!data && context->input_frames >= 8)
+        return 0;
+
+    if (data && context->input_frames < 8) {
+        memcpy(&context->frame_buffer[context->buffered_samples * avctx->channels],
+               in, avctx->frame_size * avctx->channels * sizeof(*in));
+        context->buffered_samples += avctx->frame_size;
+        if (context->input_frames < 7) {
+            context->input_frames++;
+            return 0;
+        }
+        in = context->frame_buffer;
+    }
 
     if (stereo) {
         context->lastSample[0] &= 0xFF00;
         context->lastSample[1] &= 0xFF00;
     }
 
-    out = frame;
-    in = data;
+    if (context->input_frames == 7 || !data)
+        data_size = avctx->channels * context->buffered_samples;
+    else
+        data_size = avctx->channels * avctx->frame_size;
+
+    if (buf_size < ROQ_HEADER_SIZE + data_size) {
+        av_log(avctx, AV_LOG_ERROR, "output buffer is too small\n");
+        return AVERROR(EINVAL);
+    }
 
     bytestream_put_byte(&out, stereo ? 0x21 : 0x20);
     bytestream_put_byte(&out, 0x10);
-    bytestream_put_le32(&out, avctx->frame_size*avctx->channels);
+    bytestream_put_le32(&out, data_size);
 
     if (stereo) {
         bytestream_put_byte(&out, (context->lastSample[1])>>8);
@@ -135,23 +179,15 @@ static int roq_dpcm_encode_frame(AVCodecContext *avctx,
         bytestream_put_le16(&out, context->lastSample[0]);
 
     /* Write the actual samples */
-    samples = avctx->frame_size;
-    for (i=0; i<samples; i++)
-        for (ch=0; ch<avctx->channels; ch++)
-            *out++ = dpcm_predict(&context->lastSample[ch], *in++);
+    for (i = 0; i < data_size; i++)
+        *out++ = dpcm_predict(&context->lastSample[i & 1], *in++);
 
-    /* Use smaller frames from now on */
-    avctx->frame_size = ROQ_FRAME_SIZE;
+    context->input_frames++;
+    if (!data)
+        context->input_frames = FFMAX(context->input_frames, 8);
 
     /* Return the result size */
-    return out - frame;
-}
-
-static av_cold int roq_dpcm_encode_close(AVCodecContext *avctx)
-{
-    av_freep(&avctx->coded_frame);
-
-    return 0;
+    return ROQ_HEADER_SIZE + data_size;
 }
 
 AVCodec ff_roq_dpcm_encoder = {
@@ -162,6 +198,7 @@ AVCodec ff_roq_dpcm_encoder = {
     .init           = roq_dpcm_encode_init,
     .encode         = roq_dpcm_encode_frame,
     .close          = roq_dpcm_encode_close,
+    .capabilities   = CODEC_CAP_DELAY,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("id RoQ DPCM"),
 };

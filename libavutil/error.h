@@ -64,6 +64,7 @@
  * it has been introduced in Libav after our AVERROR_BUG and with a modified value.
  */
 #define AVERROR_BUG2               (-MKTAG( 'B','U','G',' '))
+#define AVERROR_UNKNOWN            (-MKTAG( 'U','N','K','N')) ///< Unknown error, typically from an external library
 
 /**
  * Put a description of the AVERROR code errnum in errbuf.
