@@ -566,6 +566,25 @@ static int get_cluster_duration(MOVTrack *track, int cluster_idx)
     return next_dts - track->cluster[cluster_idx].dts;
 }
 
+static int get_samples_per_packet(MOVTrack *track)
+{
+    int i, first_duration;
+
+    /* use 1 for raw PCM */
+    if (!track->audio_vbr)
+        return 1;
+
+    /* check to see if duration is constant for all clusters */
+    if (!track->entry)
+        return 0;
+    first_duration = get_cluster_duration(track, 0);
+    for (i = 1; i < track->entry; i++) {
+        if (get_cluster_duration(track, i) != first_duration)
+            return 0;
+    }
+    return first_duration;
+}
+
 static int mov_write_audio_tag(AVIOContext *pb, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
@@ -602,7 +621,7 @@ static int mov_write_audio_tag(AVIOContext *pb, MOVTrack *track)
         avio_wb32(pb, av_get_bits_per_sample(track->enc->codec_id));
         avio_wb32(pb, mov_get_lpcm_flags(track->enc->codec_id));
         avio_wb32(pb, track->sample_size);
-        avio_wb32(pb, track->audio_vbr ? track->enc->frame_size : 1);
+        avio_wb32(pb, get_samples_per_packet(track));
     } else {
         /* reserved for mp4/3gp */
         avio_wb16(pb, 2);
@@ -3112,10 +3131,6 @@ static int mov_write_header(AVFormatContext *s)
             }
             /* set audio_vbr for compressed audio */
             if (av_get_bits_per_sample(st->codec->codec_id) < 8) {
-                if (!st->codec->frame_size && track->mode == MODE_MOV) {
-                    av_log(s, AV_LOG_ERROR, "track %d: codec frame size is not set\n", i);
-                    goto error;
-                }
                 track->audio_vbr = 1;
             }
             if (track->mode != MODE_MOV) {
