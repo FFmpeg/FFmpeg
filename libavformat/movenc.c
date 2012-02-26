@@ -2215,7 +2215,7 @@ static int mov_write_tfhd_tag(AVIOContext *pb, MOVTrack *track,
     if (flags & MOV_TFHD_BASE_DATA_OFFSET)
         avio_wb64(pb, moof_offset);
     if (flags & MOV_TFHD_DEFAULT_DURATION) {
-        track->default_duration = track->audio_vbr ? track->enc->frame_size : 1;
+        track->default_duration = get_cluster_duration(track, 0);
         avio_wb32(pb, track->default_duration);
     }
     if (flags & MOV_TFHD_DEFAULT_SIZE) {
