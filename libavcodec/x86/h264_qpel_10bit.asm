@@ -619,7 +619,7 @@ MC MC33
 %define PAD 12
 %define COUNT 2
 %else
-%define PAD 0
+%define PAD 4
 %define COUNT 3
 %endif
 put_hv%2_10_%1:
