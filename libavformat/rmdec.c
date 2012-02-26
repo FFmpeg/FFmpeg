@@ -378,7 +378,7 @@ static int rm_read_index(AVFormatContext *s)
         } else if ((avio_size(pb) - avio_tell(pb)) / 14 < n_pkts) {
             av_log(s, AV_LOG_ERROR,
                    "Nr. of packets in packet index for stream index %d "
-                   "exceeds filesize (%"PRId64" at %"PRId64" = %d)\n",
+                   "exceeds filesize (%"PRId64" at %"PRId64" = %"PRId64")\n",
                    str_id, avio_size(pb), avio_tell(pb),
                    (avio_size(pb) - avio_tell(pb)) / 14);
             goto skip;
