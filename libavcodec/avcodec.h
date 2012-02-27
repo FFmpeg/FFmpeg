@@ -1757,12 +1757,12 @@ typedef struct AVCodecContext {
     attribute_deprecated int inter_threshold;
 #endif
 
+#if FF_API_MPV_GLOBAL_OPTS
     /**
-     * quantizer noise shaping
-     * - encoding: Set by user.
-     * - decoding: unused
+     * @deprecated use mpegvideo private options instead
      */
-    int quantizer_noise_shaping;
+    attribute_deprecated int quantizer_noise_shaping;
+#endif
 
     /**
      * Motion estimation threshold below which no motion estimation is

@@ -630,6 +630,8 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
         s->mpv_flags |= FF_MPV_FLAG_SKIP_RD;
     if (avctx->flags2 & CODEC_FLAG2_STRICT_GOP)
         s->mpv_flags |= FF_MPV_FLAG_STRICT_GOP;
+    if (avctx->quantizer_noise_shaping)
+        s->quantizer_noise_shaping = avctx->quantizer_noise_shaping;
 #endif
 
     switch (avctx->codec->id) {
@@ -1949,7 +1951,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
         }
     }
 
-    if (s->avctx->quantizer_noise_shaping) {
+    if (s->quantizer_noise_shaping) {
         if (!skip_dct[0])
             get_visual_weight(weight[0], ptr_y                 , wrap_y);
         if (!skip_dct[1])
@@ -1990,7 +1992,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
             } else
                 s->block_last_index[i] = -1;
         }
-        if (s->avctx->quantizer_noise_shaping) {
+        if (s->quantizer_noise_shaping) {
             for (i = 0; i < mb_block_count; i++) {
                 if (!skip_dct[i]) {
                     s->block_last_index[i] =
@@ -3738,7 +3740,7 @@ STOP_TIMER("init rem[]")
 #ifdef REFINE_STATS
 {START_TIMER
 #endif
-        analyze_gradient = last_non_zero > 2 || s->avctx->quantizer_noise_shaping >= 3;
+        analyze_gradient = last_non_zero > 2 || s->quantizer_noise_shaping >= 3;
 
         if(analyze_gradient){
 #ifdef REFINE_STATS
@@ -3796,7 +3798,7 @@ STOP_TIMER("dct")}
             const int level= block[j];
             int change, old_coeff;
 
-            if(s->avctx->quantizer_noise_shaping < 3 && i > last_non_zero + 1)
+            if(s->quantizer_noise_shaping < 3 && i > last_non_zero + 1)
                 break;
 
             if(level){
@@ -3814,7 +3816,7 @@ STOP_TIMER("dct")}
                 int score, new_coeff, unquant_change;
 
                 score=0;
-                if(s->avctx->quantizer_noise_shaping < 2 && FFABS(new_level) > FFABS(level))
+                if(s->quantizer_noise_shaping < 2 && FFABS(new_level) > FFABS(level))
                    continue;
 
                 if(new_level){
