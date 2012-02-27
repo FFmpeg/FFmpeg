@@ -697,27 +697,22 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
 /**
  * Get the number of samples of an audio frame. Return -1 on error.
  */
-static int get_audio_frame_size(AVCodecContext *enc, int size)
+static int get_audio_frame_size(AVCodecContext *enc, int size, int mux)
 {
     int frame_size;
 
-    if (enc->frame_size <= 1) {
-        int bits_per_sample = av_get_bits_per_sample(enc->codec_id);
+    /* give frame_size priority if demuxing */
+    if (!mux && enc->frame_size > 1)
+        return enc->frame_size;
 
-        if (bits_per_sample) {
-            if (enc->channels == 0)
-                return -1;
-            frame_size = (size << 3) / (bits_per_sample * enc->channels);
-        } else {
-            /* used for example by ADPCM codecs */
-            if (enc->bit_rate == 0)
-                return -1;
-            frame_size = ((int64_t)size * 8 * enc->sample_rate) / enc->bit_rate;
-        }
-    } else {
-        frame_size = enc->frame_size;
-    }
-    return frame_size;
+    if ((frame_size = av_get_audio_frame_duration(enc, size)) > 0)
+        return frame_size;
+
+    /* fallback to using frame_size if muxing */
+    if (enc->frame_size > 1)
+        return enc->frame_size;
+
+    return -1;
 }
 
 
@@ -753,7 +748,7 @@ static void compute_frame_duration(int *pnum, int *pden, AVStream *st,
         }
         break;
     case AVMEDIA_TYPE_AUDIO:
-        frame_size = get_audio_frame_size(st->codec, pkt->size);
+        frame_size = get_audio_frame_size(st->codec, pkt->size, 0);
         if (frame_size <= 0 || st->codec->sample_rate <= 0)
             break;
         *pnum = frame_size;
@@ -2955,7 +2950,7 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt){
     /* update pts */
     switch (st->codec->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
-        frame_size = get_audio_frame_size(st->codec, pkt->size);
+        frame_size = get_audio_frame_size(st->codec, pkt->size, 1);
 
         /* HACK/FIXME, we skip the initial 0 size packets as they are most
            likely equal to the encoder delay, but it would be better if we
