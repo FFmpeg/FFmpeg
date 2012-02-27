@@ -27,8 +27,8 @@
 static av_cold int bmp_decode_init(AVCodecContext *avctx){
     BMPContext *s = avctx->priv_data;
 
-    avcodec_get_frame_defaults((AVFrame*)&s->picture);
-    avctx->coded_frame = (AVFrame*)&s->picture;
+    avcodec_get_frame_defaults(&s->picture);
+    avctx->coded_frame = &s->picture;
 
     return 0;
 }

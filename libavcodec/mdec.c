@@ -242,7 +242,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
 
 static av_cold int decode_init_thread_copy(AVCodecContext *avctx){
     MDECContext * const a = avctx->priv_data;
-    AVFrame *p = (AVFrame*)&a->picture;
+    AVFrame *p = &a->picture;
 
     avctx->coded_frame = p;
     a->avctx= avctx;

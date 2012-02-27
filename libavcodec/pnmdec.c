@@ -32,7 +32,7 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
     int buf_size         = avpkt->size;
     PNMContext * const s = avctx->priv_data;
     AVFrame *picture     = data;
-    AVFrame * const p    = (AVFrame*)&s->picture;
+    AVFrame * const p    = &s->picture;
     int i, j, n, linesize, h, upgrade = 0;
     unsigned char *ptr;
     int components, sample_len;

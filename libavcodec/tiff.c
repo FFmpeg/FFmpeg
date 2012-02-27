@@ -506,7 +506,7 @@ static int decode_frame(AVCodecContext *avctx,
     int buf_size = avpkt->size;
     TiffContext * const s = avctx->priv_data;
     AVFrame *picture = data;
-    AVFrame * const p= (AVFrame*)&s->picture;
+    AVFrame * const p = &s->picture;
     const uint8_t *orig_buf = buf, *end_buf = buf + buf_size;
     unsigned off;
     int id, le, ret;
@@ -619,8 +619,8 @@ static av_cold int tiff_init(AVCodecContext *avctx){
     s->width = 0;
     s->height = 0;
     s->avctx = avctx;
-    avcodec_get_frame_defaults((AVFrame*)&s->picture);
-    avctx->coded_frame= (AVFrame*)&s->picture;
+    avcodec_get_frame_defaults(&s->picture);
+    avctx->coded_frame = &s->picture;
     ff_lzw_decode_open(&s->lzw);
     ff_ccitt_unpack_init();
 

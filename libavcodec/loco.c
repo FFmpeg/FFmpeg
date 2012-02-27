@@ -163,7 +163,7 @@ static int decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     LOCOContext * const l = avctx->priv_data;
-    AVFrame * const p= (AVFrame*)&l->pic;
+    AVFrame * const p = &l->pic;
     int decoded;
 
     if(p->data[0])

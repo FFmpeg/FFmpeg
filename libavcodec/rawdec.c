@@ -120,8 +120,8 @@ static int raw_decode(AVCodecContext *avctx,
     int buf_size = avpkt->size;
     RawVideoContext *context = avctx->priv_data;
 
-    AVFrame * frame = (AVFrame *) data;
-    AVPicture * picture = (AVPicture *) data;
+    AVFrame   *frame   = data;
+    AVPicture *picture = data;
 
     frame->pict_type        = avctx->coded_frame->pict_type;
     frame->interlaced_frame = avctx->coded_frame->interlaced_frame;

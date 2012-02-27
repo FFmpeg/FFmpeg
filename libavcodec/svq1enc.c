@@ -473,7 +473,7 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
     SVQ1Context * const s = avctx->priv_data;
 
     ff_dsputil_init(&s->dsp, avctx);
-    avctx->coded_frame= (AVFrame*)&s->picture;
+    avctx->coded_frame = &s->picture;
 
     s->frame_width = avctx->width;
     s->frame_height = avctx->height;
@@ -501,7 +501,7 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                              const AVFrame *pict, int *got_packet)
 {
     SVQ1Context * const s = avctx->priv_data;
-    AVFrame * const p= (AVFrame*)&s->picture;
+    AVFrame * const p = &s->picture;
     AVFrame temp;
     int i, ret;
 

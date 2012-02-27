@@ -143,7 +143,7 @@ static int ir2_decode_frame(AVCodecContext *avctx,
     int buf_size = avpkt->size;
     Ir2Context * const s = avctx->priv_data;
     AVFrame *picture = data;
-    AVFrame * const p= (AVFrame*)&s->picture;
+    AVFrame * const p = &s->picture;
     int start;
 
     if(p->data[0])

@@ -29,7 +29,7 @@ static int pam_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                             const AVFrame *pict, int *got_packet)
 {
     PNMContext *s     = avctx->priv_data;
-    AVFrame * const p = (AVFrame*)&s->picture;
+    AVFrame * const p = &s->picture;
     int i, h, w, n, linesize, depth, maxval, ret;
     const char *tuple_type;
     uint8_t *ptr;

@@ -29,7 +29,7 @@ static int pnm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                             const AVFrame *pict, int *got_packet)
 {
     PNMContext *s     = avctx->priv_data;
-    AVFrame * const p = (AVFrame*)&s->picture;
+    AVFrame * const p = &s->picture;
     int i, h, h1, c, n, linesize, ret;
     uint8_t *ptr, *ptr1, *ptr2;
 

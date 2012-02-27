@@ -204,7 +204,7 @@ static int encode_frame(AVCodecContext * avctx, AVPacket *pkt,
                         const AVFrame *pict, int *got_packet)
 {
     TiffEncoderContext *s = avctx->priv_data;
-    AVFrame *const p = (AVFrame *) & s->picture;
+    AVFrame *const p = &s->picture;
     int i;
     uint8_t *ptr;
     uint8_t *offset;

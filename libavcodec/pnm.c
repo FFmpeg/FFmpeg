@@ -189,8 +189,8 @@ av_cold int ff_pnm_init(AVCodecContext *avctx)
 {
     PNMContext *s = avctx->priv_data;
 
-    avcodec_get_frame_defaults((AVFrame*)&s->picture);
-    avctx->coded_frame = (AVFrame*)&s->picture;
+    avcodec_get_frame_defaults(&s->picture);
+    avctx->coded_frame = &s->picture;
 
     return 0;
 }

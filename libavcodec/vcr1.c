@@ -49,7 +49,7 @@ static int decode_frame(AVCodecContext *avctx,
     int buf_size = avpkt->size;
     VCR1Context * const a = avctx->priv_data;
     AVFrame *picture = data;
-    AVFrame * const p= (AVFrame*)&a->picture;
+    AVFrame * const p = &a->picture;
     const uint8_t *bytestream= buf;
     int i, x, y;
 
@@ -121,7 +121,7 @@ static int decode_frame(AVCodecContext *avctx,
 static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data){
     VCR1Context * const a = avctx->priv_data;
     AVFrame *pict = data;
-    AVFrame * const p= (AVFrame*)&a->picture;
+    AVFrame * const p = &a->picture;
     int size;
 
     *p = *pict;
@@ -141,7 +141,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
 static av_cold void common_init(AVCodecContext *avctx){
     VCR1Context * const a = avctx->priv_data;
 
-    avctx->coded_frame= (AVFrame*)&a->picture;
+    avctx->coded_frame = &a->picture;
     a->avctx= avctx;
 }
 

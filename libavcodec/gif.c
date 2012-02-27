@@ -146,7 +146,7 @@ static int gif_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                             const AVFrame *pict, int *got_packet)
 {
     GIFContext *s = avctx->priv_data;
-    AVFrame *const p = (AVFrame *)&s->picture;
+    AVFrame *const p = &s->picture;
     uint8_t *outbuf_ptr, *end;
     int ret;
 

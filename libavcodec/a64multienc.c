@@ -246,7 +246,7 @@ static int a64multi_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                                  const AVFrame *pict, int *got_packet)
 {
     A64Context *c = avctx->priv_data;
-    AVFrame *const p = (AVFrame *) & c->picture;
+    AVFrame *const p = &c->picture;
 
     int frame;
     int x, y;
