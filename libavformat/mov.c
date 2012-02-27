@@ -1180,6 +1180,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
         if (st->codec->codec_type==AVMEDIA_TYPE_VIDEO) {
             unsigned int color_depth, len;
             int color_greyscale;
+            int color_table_id;
 
             st->codec->codec_id = id;
             avio_rb16(pb); /* version */
@@ -1207,9 +1208,9 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
                 st->codec->codec_tag=MKTAG('I', '4', '2', '0');
 
             st->codec->bits_per_coded_sample = avio_rb16(pb); /* depth */
-            st->codec->color_table_id = avio_rb16(pb); /* colortable id */
+            color_table_id = avio_rb16(pb); /* colortable id */
             av_dlog(c->fc, "depth %d, ctab id %d\n",
-                   st->codec->bits_per_coded_sample, st->codec->color_table_id);
+                   st->codec->bits_per_coded_sample, color_table_id);
             /* figure out the palette situation */
             color_depth = st->codec->bits_per_coded_sample & 0x1F;
             color_greyscale = st->codec->bits_per_coded_sample & 0x20;
@@ -1236,7 +1237,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
                         if (color_index < 0)
                             color_index = 0;
                     }
-                } else if (st->codec->color_table_id) {
+                } else if (color_table_id) {
                     const uint8_t *color_table;
                     /* if flag bit 3 is set, use the default palette */
                     color_count = 1 << color_depth;
