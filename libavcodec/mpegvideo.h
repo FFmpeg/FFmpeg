@@ -506,6 +506,10 @@ typedef struct MpegEncContext {
     int gob_index;
     int obmc;                       ///< overlapped block motion compensation
     int showed_packed_warning;      ///< flag for having shown the warning about divxs invalid b frames
+    int mb_info;                    ///< interval for outputting info about mb offsets as side data
+    int prev_mb_info, last_mb_info;
+    uint8_t *mb_info_ptr;
+    int mb_info_size;
 
     /* H.263+ specific */
     int umvplus;                    ///< == H263+ && unrestricted_mv

@@ -43,6 +43,7 @@
 #include "flv.h"
 #include "mpeg4video.h"
 #include "internal.h"
+#include "bytestream.h"
 #include <limits.h>
 
 //#undef NDEBUG
@@ -1426,6 +1427,12 @@ int ff_MPV_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
         if (!pkt->data &&
             (ret = ff_alloc_packet(pkt, s->mb_width*s->mb_height*MAX_MB_BYTES)) < 0)
             return ret;
+        if (s->mb_info) {
+            s->mb_info_ptr = av_packet_new_side_data(pkt,
+                                 AV_PKT_DATA_H263_MB_INFO,
+                                 s->mb_width*s->mb_height*12);
+            s->prev_mb_info = s->last_mb_info = s->mb_info_size = 0;
+        }
 
         for (i = 0; i < context_count; i++) {
             int start_y = s->thread_context[i]->start_mb_y;
@@ -1593,6 +1600,8 @@ vbv_retry:
             pkt->dts = pkt->pts;
         if (s->current_picture.f.key_frame)
             pkt->flags |= AV_PKT_FLAG_KEY;
+        if (s->mb_info)
+            av_packet_shrink_side_data(pkt, AV_PKT_DATA_H263_MB_INFO, s->mb_info_size);
     } else {
         assert((put_bits_ptr(&s->pb) == s->pb.buf));
         s->frame_bits = 0;
@@ -2336,6 +2345,49 @@ static void write_slice_end(MpegEncContext *s){
         s->misc_bits+= get_bits_diff(s);
 }
 
+static void write_mb_info(MpegEncContext *s)
+{
+    uint8_t *ptr = s->mb_info_ptr + s->mb_info_size - 12;
+    int offset = put_bits_count(&s->pb);
+    int mba  = s->mb_x + s->mb_width * (s->mb_y % s->gob_index);
+    int gobn = s->mb_y / s->gob_index;
+    int pred_x, pred_y;
+    if (CONFIG_H263_ENCODER)
+        ff_h263_pred_motion(s, 0, 0, &pred_x, &pred_y);
+    bytestream_put_le32(&ptr, offset);
+    bytestream_put_byte(&ptr, s->qscale);
+    bytestream_put_byte(&ptr, gobn);
+    bytestream_put_le16(&ptr, mba);
+    bytestream_put_byte(&ptr, pred_x); /* hmv1 */
+    bytestream_put_byte(&ptr, pred_y); /* vmv1 */
+    /* 4MV not implemented */
+    bytestream_put_byte(&ptr, 0); /* hmv2 */
+    bytestream_put_byte(&ptr, 0); /* vmv2 */
+}
+
+static void update_mb_info(MpegEncContext *s, int startcode)
+{
+    if (!s->mb_info)
+        return;
+    if (put_bits_count(&s->pb) - s->prev_mb_info*8 >= s->mb_info*8) {
+        s->mb_info_size += 12;
+        s->prev_mb_info = s->last_mb_info;
+    }
+    if (startcode) {
+        s->prev_mb_info = put_bits_count(&s->pb)/8;
+        /* This might have incremented mb_info_size above, and we return without
+         * actually writing any info into that slot yet. But in that case,
+         * this will be called again at the start of the after writing the
+         * start code, actually writing the mb info. */
+        return;
+    }
+
+    s->last_mb_info = put_bits_count(&s->pb)/8;
+    if (!s->mb_info_size)
+        s->mb_info_size += 12;
+    write_mb_info(s);
+}
+
 static int encode_thread(AVCodecContext *c, void *arg){
     MpegEncContext *s= *(void**)arg;
     int mb_x, mb_y, pdif = 0;
@@ -2481,6 +2533,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                         int number_mb = (mb_y - s->resync_mb_y)*s->mb_width + mb_x - s->resync_mb_x;
                         s->avctx->rtp_callback(s->avctx, s->ptr_lastgob, current_packet_size, number_mb);
                     }
+                    update_mb_info(s, 1);
 
                     switch(s->codec_id){
                     case CODEC_ID_MPEG4:
@@ -2523,6 +2576,8 @@ static int encode_thread(AVCodecContext *c, void *arg){
 
             s->mb_skipped=0;
             s->dquant=0; //only for QP_RD
+
+            update_mb_info(s, 0);
 
             if (mb_type & (mb_type-1) || (s->mpv_flags & FF_MPV_FLAG_QP_RD)) { // more than 1 MB type possible or FF_MPV_FLAG_QP_RD
                 int next_block=0;
@@ -4074,6 +4129,7 @@ int ff_dct_quantize_c(MpegEncContext *s,
 static const AVOption h263_options[] = {
     { "obmc",         "use overlapped block motion compensation.", OFFSET(obmc), AV_OPT_TYPE_INT, { 0 }, 0, 1, VE },
     { "structured_slices","Write slice start position at every GOB header instead of just GOB number.", OFFSET(h263_slice_structured), AV_OPT_TYPE_INT, { 0 }, 0, 1, VE},
+    { "mb_info",      "emit macroblock info for RFC 2190 packetization, the parameter value is the maximum payload size", OFFSET(mb_info), AV_OPT_TYPE_INT, { 0 }, 0, INT_MAX, VE },
     FF_MPV_COMMON_OPTS
     { NULL },
 };
