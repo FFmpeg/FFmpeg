@@ -723,6 +723,15 @@ pp_mode *pp_get_mode_by_name_and_quality(const char *name, int quality)
     struct PPMode *ppMode;
     char *filterToken;
 
+    if (!strcmp(name, "help")) {
+        const char *p;
+        for (p = pp_help; strchr(p, '\n'); p = strchr(p, '\n') + 1) {
+            av_strlcpy(temp, p, FFMIN(sizeof(temp), strchr(p, '\n') - p + 2));
+            av_log(NULL, AV_LOG_INFO, "%s", temp);
+        }
+        return NULL;
+    }
+
     ppMode= av_malloc(sizeof(PPMode));
 
     ppMode->lumMode= 0;
