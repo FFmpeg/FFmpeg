@@ -46,6 +46,12 @@ enum ID3v2Encoding {
     ID3v2_ENCODING_UTF8     = 3,
 };
 
+typedef struct ID3v2EncContext {
+    int      version;       ///< ID3v2 minor version, either 3 or 4
+    int64_t size_pos;       ///< offset of the tag total size
+    int          len;       ///< size of the tag written so far
+} ID3v2EncContext;
+
 typedef struct ID3v2ExtraMeta {
     const char *tag;
     void *data;
@@ -91,12 +97,28 @@ int ff_id3v2_tag_len(const uint8_t *buf);
 void ff_id3v2_read(AVFormatContext *s, const char *magic, ID3v2ExtraMeta **extra_meta);
 
 /**
- * Write an ID3v2 tag.
+ * Initialize an ID3v2 tag.
+ */
+void ff_id3v2_start(ID3v2EncContext *id3, AVIOContext *pb, int id3v2_version,
+                    const char *magic);
+
+/**
+ * Convert and write all global metadata from s into an ID3v2 tag.
+ */
+int ff_id3v2_write_metadata(AVFormatContext *s, ID3v2EncContext *id3);
+
+/**
+ * Finalize an opened ID3v2 tag.
+ */
+void ff_id3v2_finish(ID3v2EncContext *id3, AVIOContext *pb);
+
+/**
+ * Write an ID3v2 tag containing all global metadata from s.
  * @param id3v2_version Subversion of ID3v2; supported values are 3 and 4
  * @param magic magic bytes to identify the header
  * If in doubt, use ID3v2_DEFAULT_MAGIC.
  */
-int ff_id3v2_write(struct AVFormatContext *s, int id3v2_version, const char *magic);
+int ff_id3v2_write_simple(struct AVFormatContext *s, int id3v2_version, const char *magic);
 
 /**
  * Free memory allocated parsing special (non-text) metadata.

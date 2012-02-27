@@ -187,7 +187,7 @@ static int mp3_write_header(struct AVFormatContext *s)
     MP3Context  *mp3 = s->priv_data;
     int ret;
 
-    ret = ff_id3v2_write(s, mp3->id3v2_version, ID3v2_DEFAULT_MAGIC);
+    ret = ff_id3v2_write_simple(s, mp3->id3v2_version, ID3v2_DEFAULT_MAGIC);
     if (ret < 0)
         return ret;
 

@@ -97,50 +97,70 @@ static int id3v2_check_write_tag(AVFormatContext *s, AVDictionaryEntry *t, const
     return -1;
 }
 
-int ff_id3v2_write(struct AVFormatContext *s, int id3v2_version,
-                   const char *magic)
+void ff_id3v2_start(ID3v2EncContext *id3, AVIOContext *pb, int id3v2_version,
+                    const char *magic)
 {
-    int64_t size_pos, cur_pos;
-    AVDictionaryEntry *t = NULL;
+    id3->version = id3v2_version;
 
-    int totlen = 0, enc = id3v2_version == 3 ? ID3v2_ENCODING_UTF16BOM :
-                                               ID3v2_ENCODING_UTF8;
-
-
-    avio_wb32(s->pb, MKBETAG(magic[0], magic[1], magic[2], id3v2_version));
-    avio_w8(s->pb, 0);
-    avio_w8(s->pb, 0); /* flags */
+    avio_wb32(pb, MKBETAG(magic[0], magic[1], magic[2], id3v2_version));
+    avio_w8(pb, 0);
+    avio_w8(pb, 0); /* flags */
 
     /* reserve space for size */
-    size_pos = avio_tell(s->pb);
-    avio_wb32(s->pb, 0);
+    id3->size_pos = avio_tell(pb);
+    avio_wb32(pb, 0);
+}
+
+int ff_id3v2_write_metadata(AVFormatContext *s, ID3v2EncContext *id3)
+{
+    AVDictionaryEntry *t = NULL;
+    int enc = id3->version == 3 ? ID3v2_ENCODING_UTF16BOM :
+                                  ID3v2_ENCODING_UTF8;
 
     ff_metadata_conv(&s->metadata, ff_id3v2_34_metadata_conv, NULL);
-    if (id3v2_version == 4)
+    if (id3->version == 4)
         ff_metadata_conv(&s->metadata, ff_id3v2_4_metadata_conv, NULL);
 
     while ((t = av_dict_get(s->metadata, "", t, AV_DICT_IGNORE_SUFFIX))) {
         int ret;
 
         if ((ret = id3v2_check_write_tag(s, t, ff_id3v2_tags, enc)) > 0) {
-            totlen += ret;
+            id3->len += ret;
             continue;
         }
-        if ((ret = id3v2_check_write_tag(s, t, id3v2_version == 3 ?
+        if ((ret = id3v2_check_write_tag(s, t, id3->version == 3 ?
                                                ff_id3v2_3_tags : ff_id3v2_4_tags, enc)) > 0) {
-            totlen += ret;
+            id3->len += ret;
             continue;
         }
 
         /* unknown tag, write as TXXX frame */
         if ((ret = id3v2_put_ttag(s, t->key, t->value, MKBETAG('T', 'X', 'X', 'X'), enc)) < 0)
             return ret;
-        totlen += ret;
+        id3->len += ret;
     }
 
-    cur_pos = avio_tell(s->pb);
-    avio_seek(s->pb, size_pos, SEEK_SET);
-    id3v2_put_size(s->pb, totlen);
-    avio_seek(s->pb, cur_pos, SEEK_SET);
+    return 0;
+}
+
+void ff_id3v2_finish(ID3v2EncContext *id3, AVIOContext *pb)
+{
+    int64_t cur_pos = avio_tell(pb);
+    avio_seek(pb, id3->size_pos, SEEK_SET);
+    id3v2_put_size(pb, id3->len);
+    avio_seek(pb, cur_pos, SEEK_SET);
+}
+
+int ff_id3v2_write_simple(struct AVFormatContext *s, int id3v2_version,
+                          const char *magic)
+{
+    ID3v2EncContext id3 = { 0 };
+    int ret;
+
+    ff_id3v2_start(&id3, s->pb, id3v2_version, magic);
+    if ((ret = ff_id3v2_write_metadata(s, &id3)) < 0)
+        return ret;
+    ff_id3v2_finish(&id3, s->pb);
+
     return 0;
 }
