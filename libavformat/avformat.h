@@ -566,7 +566,6 @@ typedef struct AVStream {
      * encoding: set by libavformat in av_write_header
      */
     AVRational time_base;
-    enum AVDiscard discard; ///< Selects which packets can be discarded at will and do not need to be demuxed.
 
     /**
      * Decoding: pts of the first frame of the stream, in stream time base.
@@ -586,6 +585,8 @@ typedef struct AVStream {
     int64_t nb_frames;                 ///< number of frames in this stream if known or 0
 
     int disposition; /**< AV_DISPOSITION_* bit field */
+
+    enum AVDiscard discard; ///< Selects which packets can be discarded at will and do not need to be demuxed.
 
     /**
      * sample aspect ratio (0 if unknown)
@@ -610,11 +611,6 @@ typedef struct AVStream {
      */
 
     /**
-     * Number of frames that have been demuxed during av_find_stream_info()
-     */
-    int codec_info_nb_frames;
-
-    /**
      * Stream information used internally by av_find_stream_info()
      */
 #define MAX_STD_TIMEBASES (60*12+5)
@@ -626,9 +622,12 @@ typedef struct AVStream {
         int64_t codec_info_duration;
         int nb_decoded_frames;
     } *info;
+
+    AVPacket cur_pkt;
     const uint8_t *cur_ptr;
     int cur_len;
-    AVPacket cur_pkt;
+
+    int pts_wrap_bits; /**< number of bits in pts (used for wrapping control) */
 
     // Timestamp generation support:
     /**
@@ -641,8 +640,8 @@ typedef struct AVStream {
     int64_t reference_dts;
     int64_t first_dts;
     int64_t cur_dts;
-    int last_IP_duration;
     int64_t last_IP_pts;
+    int last_IP_duration;
 
     /**
      * Number of packets to buffer for codec probing
@@ -651,22 +650,26 @@ typedef struct AVStream {
     int probe_packets;
 
     /**
+     * Number of frames that have been demuxed during av_find_stream_info()
+     */
+    int codec_info_nb_frames;
+
+    /* av_read_frame() support */
+    enum AVStreamParseType need_parsing;
+    struct AVCodecParserContext *parser;
+
+    /**
      * last packet in packet_buffer for this stream when muxing.
      */
     struct AVPacketList *last_in_packet_buffer;
     AVProbeData probe_data;
 #define MAX_REORDER_DELAY 16
     int64_t pts_buffer[MAX_REORDER_DELAY+1];
-    /* av_read_frame() support */
-    enum AVStreamParseType need_parsing;
-    struct AVCodecParserContext *parser;
 
     AVIndexEntry *index_entries; /**< Only used if the format does not
                                     support seeking natively. */
     int nb_index_entries;
     unsigned int index_entries_allocated_size;
-
-    int pts_wrap_bits; /**< number of bits in pts (used for wrapping control) */
 } AVStream;
 
 #define AV_PROGRAM_RUNNING 1
@@ -739,6 +742,9 @@ typedef struct AVFormatContext {
      */
     AVIOContext *pb;
 
+    /* stream info */
+    int ctx_flags; /**< Format-specific flags, see AVFMTCTX_xx */
+
     /**
      * A list of all streams in the file. New streams are created with
      * avformat_new_stream().
@@ -752,8 +758,6 @@ typedef struct AVFormatContext {
     AVStream **streams;
 
     char filename[1024]; /**< input or output filename */
-    /* stream info */
-    int ctx_flags; /**< Format-specific flags, see AVFMTCTX_xx */
 
     /**
      * Decoding: position of the first frame of the component, in
@@ -846,12 +850,6 @@ typedef struct AVFormatContext {
     unsigned int nb_chapters;
     AVChapter **chapters;
 
-    /**
-     * Flags to enable debugging.
-     */
-    int debug;
-#define FF_FDEBUG_TS        0x0001
-
     AVDictionary *metadata;
 
     /**
@@ -887,6 +885,11 @@ typedef struct AVFormatContext {
      */
     AVIOInterruptCB interrupt_callback;
 
+    /**
+     * Flags to enable debugging.
+     */
+    int debug;
+#define FF_FDEBUG_TS        0x0001
     /*****************************************************************
      * All fields below this line are not part of the public API. They
      * may not be used outside of libavformat and can be changed and
@@ -894,19 +897,6 @@ typedef struct AVFormatContext {
      * New public fields should be added right above.
      *****************************************************************
      */
-    /**
-     * Raw packets from the demuxer, prior to parsing and decoding.
-     * This buffer is used for buffering packets until the codec can
-     * be identified, as parsing cannot be done without knowing the
-     * codec.
-     */
-    struct AVPacketList *raw_packet_buffer;
-    struct AVPacketList *raw_packet_buffer_end;
-    /**
-     * Remaining size available for raw_packet_buffer, in bytes.
-     */
-#define RAW_PACKET_BUFFER_SIZE 2500000
-    int raw_packet_buffer_remaining_size;
 
     /**
      * This buffer is only needed when packets were already buffered but
@@ -921,6 +911,20 @@ typedef struct AVFormatContext {
 
     /* av_seek_frame() support */
     int64_t data_offset; /**< offset of the first packet */
+
+    /**
+     * Raw packets from the demuxer, prior to parsing and decoding.
+     * This buffer is used for buffering packets until the codec can
+     * be identified, as parsing cannot be done without knowing the
+     * codec.
+     */
+    struct AVPacketList *raw_packet_buffer;
+    struct AVPacketList *raw_packet_buffer_end;
+    /**
+     * Remaining size available for raw_packet_buffer, in bytes.
+     */
+#define RAW_PACKET_BUFFER_SIZE 2500000
+    int raw_packet_buffer_remaining_size;
 } AVFormatContext;
 
 typedef struct AVPacketList {
