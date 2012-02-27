@@ -62,6 +62,11 @@ static int dct_quantize_trellis_c(MpegEncContext *s, DCTELEM *block, int n, int 
 static uint8_t default_mv_penalty[MAX_FCODE + 1][MAX_MV * 2 + 1];
 static uint8_t default_fcode_tab[MAX_MV * 2 + 1];
 
+const AVOption ff_mpv_generic_options[] = {
+    FF_MPV_COMMON_OPTS
+    { NULL },
+};
+
 void ff_convert_matrix(DSPContext *dsp, int (*qmat)[64],
                        uint16_t (*qmat16)[2][64],
                        const uint16_t *quant_matrix,
@@ -605,6 +610,11 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
         return -1;
     }
     s->time_increment_bits = av_log2(s->avctx->time_base.den - 1) + 1;
+
+#if FF_API_MPV_GLOBAL_OPTS
+    if (avctx->flags2 & CODEC_FLAG2_SKIP_RD)
+        s->mpv_flags |= FF_MPV_FLAG_SKIP_RD;
+#endif
 
     switch (avctx->codec->id) {
     case CODEC_ID_MPEG1VIDEO:
@@ -2698,7 +2708,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     encode_mb_hq(s, &backup_s, &best_s, CANDIDATE_MB_TYPE_DIRECT, pb, pb2, tex_pb,
                                  &dmin, &next_block, 0, 0);
                 }
-                if(!best_s.mb_intra && s->flags2&CODEC_FLAG2_SKIP_RD){
+                if (!best_s.mb_intra && s->mpv_flags & FF_MPV_FLAG_SKIP_RD) {
                     int coded=0;
                     for(i=0; i<6; i++)
                         coded |= s->block_last_index[i];
@@ -4046,6 +4056,7 @@ int ff_dct_quantize_c(MpegEncContext *s,
 static const AVOption h263_options[] = {
     { "obmc",         "use overlapped block motion compensation.", OFFSET(obmc), AV_OPT_TYPE_INT, { 0 }, 0, 1, VE },
     { "structured_slices","Write slice start position at every GOB header instead of just GOB number.", OFFSET(h263_slice_structured), AV_OPT_TYPE_INT, { 0 }, 0, 1, VE},
+    FF_MPV_COMMON_OPTS
     { NULL },
 };
 
@@ -4074,6 +4085,7 @@ static const AVOption h263p_options[] = {
     { "aiv",        "Use alternative inter VLC.",       OFFSET(alt_inter_vlc), AV_OPT_TYPE_INT, { 0 }, 0, 1, VE },
     { "obmc",       "use overlapped block motion compensation.", OFFSET(obmc), AV_OPT_TYPE_INT, { 0 }, 0, 1, VE },
     { "structured_slices", "Write slice start position at every GOB header instead of just GOB number.", OFFSET(h263_slice_structured), AV_OPT_TYPE_INT, { 0 }, 0, 1, VE},
+    FF_MPV_COMMON_OPTS
     { NULL },
 };
 static const AVClass h263p_class = {
@@ -4097,6 +4109,8 @@ AVCodec ff_h263p_encoder = {
     .priv_class     = &h263p_class,
 };
 
+FF_MPV_GENERIC_CLASS(msmpeg4v2)
+
 AVCodec ff_msmpeg4v2_encoder = {
     .name           = "msmpeg4v2",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -4107,7 +4121,10 @@ AVCodec ff_msmpeg4v2_encoder = {
     .close          = ff_MPV_encode_end,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 2"),
+    .priv_class     = &msmpeg4v2_class,
 };
+
+FF_MPV_GENERIC_CLASS(msmpeg4v3)
 
 AVCodec ff_msmpeg4v3_encoder = {
     .name           = "msmpeg4",
@@ -4119,7 +4136,10 @@ AVCodec ff_msmpeg4v3_encoder = {
     .close          = ff_MPV_encode_end,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 3"),
+    .priv_class     = &msmpeg4v3_class,
 };
+
+FF_MPV_GENERIC_CLASS(wmv1)
 
 AVCodec ff_wmv1_encoder = {
     .name           = "wmv1",
@@ -4131,4 +4151,5 @@ AVCodec ff_wmv1_encoder = {
     .close          = ff_MPV_encode_end,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("Windows Media Video 7"),
+    .priv_class     = &wmv1_class,
 };

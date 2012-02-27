@@ -321,6 +321,8 @@ static void h261_encode_block(H261Context * h, DCTELEM * block, int n){
     }
 }
 
+FF_MPV_GENERIC_CLASS(h261)
+
 AVCodec ff_h261_encoder = {
     .name           = "h261",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -331,4 +333,5 @@ AVCodec ff_h261_encoder = {
     .close          = ff_MPV_encode_end,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("H.261"),
+    .priv_class     = &h261_class,
 };

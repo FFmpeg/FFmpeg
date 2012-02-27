@@ -57,6 +57,8 @@ void ff_rv20_encode_picture_header(MpegEncContext *s, int picture_number){
     }
 }
 
+FF_MPV_GENERIC_CLASS(rv20)
+
 AVCodec ff_rv20_encoder = {
     .name           = "rv20",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -67,4 +69,5 @@ AVCodec ff_rv20_encoder = {
     .close          = ff_MPV_encode_end,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("RealVideo 2.0"),
+    .priv_class     = &rv20_class,
 };

@@ -84,6 +84,8 @@ void ff_flv2_encode_ac_esc(PutBitContext *pb, int slevel, int level, int run, in
     }
 }
 
+FF_MPV_GENERIC_CLASS(flv)
+
 AVCodec ff_flv_encoder = {
     .name           = "flv",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -94,4 +96,5 @@ AVCodec ff_flv_encoder = {
     .close          = ff_MPV_encode_end,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("Flash Video (FLV) / Sorenson Spark / Sorenson H.263"),
+    .priv_class     = &flv_class,
 };

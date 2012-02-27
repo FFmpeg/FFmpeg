@@ -927,6 +927,7 @@ static void mpeg1_encode_block(MpegEncContext *s,
 
 static const AVOption mpeg1_options[] = {
     COMMON_OPTS
+    FF_MPV_COMMON_OPTS
     { NULL },
 };
 
@@ -934,6 +935,7 @@ static const AVOption mpeg2_options[] = {
     COMMON_OPTS
     { "non_linear_quant",    "Use nonlinear quantizer.",          OFFSET(q_scale_type),         AV_OPT_TYPE_INT, { 0 }, 0, 1, VE },
     { "alternate_scan",      "Enable alternate scantable.",       OFFSET(alternate_scan),       AV_OPT_TYPE_INT, { 0 }, 0, 1, VE },
+    FF_MPV_COMMON_OPTS
     { NULL },
 };
 
