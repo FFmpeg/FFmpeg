@@ -40,6 +40,11 @@
 
 #define DC_VLC_BITS 14 //FIXME find a better solution
 
+typedef struct RVDecContext {
+    MpegEncContext m;
+    int sub_id;
+} RVDecContext;
+
 static const uint16_t rv_lum_code[256] =
 {
  0x3e7f, 0x0f00, 0x0f01, 0x0f02, 0x0f03, 0x0f04, 0x0f05, 0x0f06,
@@ -293,8 +298,9 @@ static int rv10_decode_picture_header(MpegEncContext *s)
     return mb_count;
 }
 
-static int rv20_decode_picture_header(MpegEncContext *s)
+static int rv20_decode_picture_header(RVDecContext *rv)
 {
+    MpegEncContext *s = &rv->m;
     int seq, mb_pos, i;
     int rpr_bits;
 
@@ -325,10 +331,10 @@ static int rv20_decode_picture_header(MpegEncContext *s)
         return -1;
     }
 
-    if(RV_GET_MINOR_VER(s->avctx->sub_id) >= 2)
+    if(RV_GET_MINOR_VER(rv->sub_id) >= 2)
         s->loop_filter = get_bits1(&s->gb);
 
-    if(RV_GET_MINOR_VER(s->avctx->sub_id) <= 1)
+    if(RV_GET_MINOR_VER(rv->sub_id) <= 1)
         seq = get_bits(&s->gb, 8) << 7;
     else
         seq = get_bits(&s->gb, 13) << 2;
@@ -393,7 +399,7 @@ static int rv20_decode_picture_header(MpegEncContext *s)
 av_log(s->avctx, AV_LOG_DEBUG, "\n");*/
     s->no_rounding= get_bits1(&s->gb);
 
-    if(RV_GET_MINOR_VER(s->avctx->sub_id) <= 1 && s->pict_type == AV_PICTURE_TYPE_B)
+    if(RV_GET_MINOR_VER(rv->sub_id) <= 1 && s->pict_type == AV_PICTURE_TYPE_B)
         skip_bits(&s->gb, 5); // binary decoder reads 3+2 bits here but they don't seem to be used
 
     s->f_code = 1;
@@ -418,7 +424,8 @@ av_log(s->avctx, AV_LOG_DEBUG, "\n");*/
 
 static av_cold int rv10_decode_init(AVCodecContext *avctx)
 {
-    MpegEncContext *s = avctx->priv_data;
+    RVDecContext  *rv = avctx->priv_data;
+    MpegEncContext *s = &rv->m;
     static int done=0;
     int major_ver, minor_ver, micro_ver;
 
@@ -438,11 +445,11 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
     s->orig_height= s->height = avctx->coded_height;
 
     s->h263_long_vectors= ((uint8_t*)avctx->extradata)[3] & 1;
-    avctx->sub_id= AV_RB32((uint8_t*)avctx->extradata + 4);
+    rv->sub_id = AV_RB32((uint8_t*)avctx->extradata + 4);
 
-    major_ver = RV_GET_MAJOR_VER(avctx->sub_id);
-    minor_ver = RV_GET_MINOR_VER(avctx->sub_id);
-    micro_ver = RV_GET_MICRO_VER(avctx->sub_id);
+    major_ver = RV_GET_MAJOR_VER(rv->sub_id);
+    minor_ver = RV_GET_MINOR_VER(rv->sub_id);
+    micro_ver = RV_GET_MICRO_VER(rv->sub_id);
 
     s->low_delay = 1;
     switch (major_ver) {
@@ -457,13 +464,13 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
         }
         break;
     default:
-        av_log(s->avctx, AV_LOG_ERROR, "unknown header %X\n", avctx->sub_id);
+        av_log(s->avctx, AV_LOG_ERROR, "unknown header %X\n", rv->sub_id);
         av_log_missing_feature(avctx, "RV1/2 version", 1);
         return AVERROR_PATCHWELCOME;
     }
 
     if(avctx->debug & FF_DEBUG_PICT_INFO){
-        av_log(avctx, AV_LOG_DEBUG, "ver:%X ver0:%X\n", avctx->sub_id, avctx->extradata_size >= 4 ? ((uint32_t*)avctx->extradata)[0] : -1);
+        av_log(avctx, AV_LOG_DEBUG, "ver:%X ver0:%X\n", rv->sub_id, avctx->extradata_size >= 4 ? ((uint32_t*)avctx->extradata)[0] : -1);
     }
 
     avctx->pix_fmt = PIX_FMT_YUV420P;
@@ -498,7 +505,8 @@ static av_cold int rv10_decode_end(AVCodecContext *avctx)
 static int rv10_decode_packet(AVCodecContext *avctx,
                              const uint8_t *buf, int buf_size, int buf_size2)
 {
-    MpegEncContext *s = avctx->priv_data;
+    RVDecContext  *rv = avctx->priv_data;
+    MpegEncContext *s = &rv->m;
     int mb_count, mb_pos, left, start_mb_x, active_bits_size;
 
     active_bits_size = buf_size * 8;
@@ -506,7 +514,7 @@ static int rv10_decode_packet(AVCodecContext *avctx,
     if(s->codec_id ==CODEC_ID_RV10)
         mb_count = rv10_decode_picture_header(s);
     else
-        mb_count = rv20_decode_picture_header(s);
+        mb_count = rv20_decode_picture_header(rv);
     if (mb_count < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "HEADER ERROR\n");
         return -1;
@@ -714,7 +722,7 @@ AVCodec ff_rv10_decoder = {
     .name           = "rv10",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_RV10,
-    .priv_data_size = sizeof(MpegEncContext),
+    .priv_data_size = sizeof(RVDecContext),
     .init           = rv10_decode_init,
     .close          = rv10_decode_end,
     .decode         = rv10_decode_frame,
@@ -728,7 +736,7 @@ AVCodec ff_rv20_decoder = {
     .name           = "rv20",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_RV20,
-    .priv_data_size = sizeof(MpegEncContext),
+    .priv_data_size = sizeof(RVDecContext),
     .init           = rv10_decode_init,
     .close          = rv10_decode_end,
     .decode         = rv10_decode_frame,

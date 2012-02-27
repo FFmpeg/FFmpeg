@@ -142,6 +142,5 @@ int avpriv_mpa_decode_header(AVCodecContext *avctx, uint32_t head, int *sample_r
     *sample_rate = s->sample_rate;
     *channels = s->nb_channels;
     *bit_rate = s->bit_rate;
-    avctx->sub_id = s->layer;
     return s->frame_size;
 }

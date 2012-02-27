@@ -69,7 +69,6 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                 pc->frame_rate.num = avctx->time_base.num = avpriv_frame_rate_tab[frame_rate_index].den;
                 avctx->bit_rate = ((buf[4]<<10) | (buf[5]<<2) | (buf[6]>>6))*400;
                 avctx->codec_id = CODEC_ID_MPEG1VIDEO;
-                avctx->sub_id = 1;
             }
             break;
         case EXT_START_CODE:
@@ -94,7 +93,6 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                         avctx->time_base.den = pc->frame_rate.den * (frame_rate_ext_n + 1) * 2;
                         avctx->time_base.num = pc->frame_rate.num * (frame_rate_ext_d + 1);
                         avctx->codec_id = CODEC_ID_MPEG2VIDEO;
-                        avctx->sub_id = 2; /* forces MPEG2 */
                     }
                     break;
                 case 0x8: /* picture coding extension */

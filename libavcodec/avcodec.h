@@ -1228,15 +1228,12 @@ typedef struct AVCodecContext {
      */
     unsigned int stream_codec_tag;
 
+#if FF_API_SUB_ID
     /**
-     * Some codecs need additional format info. It is stored here.
-     * If any muxer uses this then ALL demuxers/parsers AND encoders for the
-     * specific codec MUST set it correctly otherwise stream copy breaks.
-     * In general use of this field by muxers is not recommended.
-     * - encoding: Set by libavcodec.
-     * - decoding: Set by libavcodec. (FIXME: Is this OK?)
+     * @deprecated this field is unused
      */
-    int sub_id;
+    attribute_deprecated int sub_id;
+#endif
 
     void *priv_data;
 
