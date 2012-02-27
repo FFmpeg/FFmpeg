@@ -430,7 +430,7 @@ static inline int get_b_cbp(MpegEncContext * s, DCTELEM block[6][64],
 {
     int cbp = 0, i;
 
-    if (s->flags & CODEC_FLAG_CBP_RD) {
+    if (s->mpv_flags & FF_MPV_FLAG_CBP_RD) {
         int score = 0;
         const int lambda = s->lambda2 >> (FF_LAMBDA_SHIFT - 6);
 

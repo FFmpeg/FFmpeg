@@ -495,7 +495,12 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    if ((s->flags & CODEC_FLAG_CBP_RD) && !avctx->trellis) {
+#if FF_API_MPV_GLOBAL_OPTS
+    if (s->flags & CODEC_FLAG_CBP_RD)
+        s->mpv_flags |= FF_MPV_FLAG_CBP_RD;
+#endif
+
+    if ((s->mpv_flags & FF_MPV_FLAG_CBP_RD) && !avctx->trellis) {
         av_log(avctx, AV_LOG_ERROR, "CBP RD needs trellis quant\n");
         return -1;
     }
@@ -1998,7 +2003,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
             for (i = 4; i < mb_block_count; i++)
                 dct_single_coeff_elimination(s, i, s->chroma_elim_threshold);
 
-        if (s->flags & CODEC_FLAG_CBP_RD) {
+        if (s->mpv_flags & FF_MPV_FLAG_CBP_RD) {
             for (i = 0; i < mb_block_count; i++) {
                 if (s->block_last_index[i] == -1)
                     s->coded_score[i] = INT_MAX / 256;
