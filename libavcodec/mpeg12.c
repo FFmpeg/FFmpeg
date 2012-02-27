@@ -1915,7 +1915,7 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
         ff_MPV_frame_end(s);
 
         if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
-            *pict = *(AVFrame*)s->current_picture_ptr;
+            *pict = s->current_picture_ptr->f;
             ff_print_debug_info(s, pict);
         } else {
             if (avctx->active_thread_type & FF_THREAD_FRAME)
@@ -1923,7 +1923,7 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
             /* latency of 1 frame for I- and P-frames */
             /* XXX: use another variable than picture_number */
             if (s->last_picture_ptr != NULL) {
-                *pict = *(AVFrame*)s->last_picture_ptr;
+                *pict = s->last_picture_ptr->f;
                  ff_print_debug_info(s, pict);
             }
         }
@@ -2203,7 +2203,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
     if (buf_size == 0 || (buf_size == 4 && AV_RB32(buf) == SEQ_END_CODE)) {
         /* special case for last picture */
         if (s2->low_delay == 0 && s2->next_picture_ptr) {
-            *picture = *(AVFrame*)s2->next_picture_ptr;
+            *picture = s2->next_picture_ptr->f;
             s2->next_picture_ptr = NULL;
 
             *data_size = sizeof(AVFrame);

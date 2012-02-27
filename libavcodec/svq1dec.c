@@ -735,7 +735,7 @@ static int svq1_decode_frame(AVCodecContext *avctx,
     }
   }
 
-  *pict = *(AVFrame*)&s->current_picture;
+  *pict = s->current_picture.f;
 
 
   ff_MPV_frame_end(s);

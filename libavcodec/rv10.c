@@ -677,9 +677,9 @@ static int rv10_decode_frame(AVCodecContext *avctx,
         ff_MPV_frame_end(s);
 
         if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
-            *pict= *(AVFrame*)s->current_picture_ptr;
+            *pict = s->current_picture_ptr->f;
         } else if (s->last_picture_ptr != NULL) {
-            *pict= *(AVFrame*)s->last_picture_ptr;
+            *pict = s->last_picture_ptr->f;
         }
 
         if(s->last_picture_ptr || s->low_delay){

@@ -149,7 +149,7 @@ avs_decode_frame(AVCodecContext * avctx,
             align_get_bits(&change_map);
     }
 
-    *picture = *(AVFrame *) & avs->picture;
+    *picture   = avs->picture;
     *data_size = sizeof(AVPicture);
 
     return buf_size;

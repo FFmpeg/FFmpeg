@@ -5449,7 +5449,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
     if (buf_size == 0 || (buf_size == 4 && AV_RB32(buf) == VC1_CODE_ENDOFSEQ)) {
         /* special case for last picture */
         if (s->low_delay == 0 && s->next_picture_ptr) {
-            *pict = *(AVFrame*)s->next_picture_ptr;
+            *pict = s->next_picture_ptr->f;
             s->next_picture_ptr = NULL;
 
             *data_size = sizeof(AVFrame);
@@ -5755,9 +5755,9 @@ image:
         *data_size = sizeof(AVFrame);
     } else {
         if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
-            *pict = *(AVFrame*)s->current_picture_ptr;
+            *pict = s->current_picture_ptr->f;
         } else if (s->last_picture_ptr != NULL) {
-            *pict = *(AVFrame*)s->last_picture_ptr;
+            *pict = s->last_picture_ptr->f;
         }
         if (s->last_picture_ptr || s->low_delay) {
             *data_size = sizeof(AVFrame);

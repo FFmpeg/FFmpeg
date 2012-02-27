@@ -624,7 +624,8 @@ retry:
 
 assert(s->current_picture.f.pict_type == s->current_picture_ptr->f.pict_type);
 assert(s->current_picture.f.pict_type == s->pict_type);
-    *pict= *(AVFrame*)s->current_picture_ptr;
+
+    *pict = s->current_picture_ptr->f;
     ff_print_debug_info(s, pict);
 
     *data_size = sizeof(AVFrame);

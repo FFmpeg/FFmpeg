@@ -248,7 +248,7 @@ static int decode_frame(AVCodecContext *avctx,
         }
     }
 
-    *picture= *(AVFrame*)&s->picture;
+    *picture   = s->picture;
     *data_size = sizeof(AVPicture);
 
     return avpkt->size;

@@ -655,7 +655,7 @@ static int cavs_decode_frame(AVCodecContext * avctx,void *data, int *data_size,
     if (buf_size == 0) {
         if (!s->low_delay && h->DPB[0].f.data[0]) {
             *data_size = sizeof(AVPicture);
-            *picture = *(AVFrame *) &h->DPB[0];
+            *picture = h->DPB[0].f;
         }
         return 0;
     }
@@ -691,12 +691,12 @@ static int cavs_decode_frame(AVCodecContext * avctx,void *data, int *data_size,
             *data_size = sizeof(AVPicture);
             if(h->pic_type != AV_PICTURE_TYPE_B) {
                 if(h->DPB[1].f.data[0]) {
-                    *picture = *(AVFrame *) &h->DPB[1];
+                    *picture = h->DPB[1].f;
                 } else {
                     *data_size = 0;
                 }
             } else
-                *picture = *(AVFrame *) &h->picture;
+                *picture = h->picture.f;
             break;
         case EXT_START_CODE:
             //mpeg_decode_extension(avctx,buf_ptr, input_size);

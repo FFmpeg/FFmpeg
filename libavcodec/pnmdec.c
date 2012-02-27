@@ -180,7 +180,7 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
         }
         break;
     }
-    *picture   = *(AVFrame*)&s->picture;
+    *picture   = s->picture;
     *data_size = sizeof(AVPicture);
 
     return s->bytestream - s->bytestream_start;

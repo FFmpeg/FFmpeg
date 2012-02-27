@@ -956,7 +956,7 @@ static int svq3_decode_frame(AVCodecContext *avctx,
     /* special case for last picture */
     if (buf_size == 0) {
         if (s->next_picture_ptr && !s->low_delay) {
-            *(AVFrame *) data = *(AVFrame *) &s->next_picture;
+            *(AVFrame *) data   = s->next_picture.f;
             s->next_picture_ptr = NULL;
             *data_size = sizeof(AVFrame);
         }
@@ -1076,9 +1076,9 @@ static int svq3_decode_frame(AVCodecContext *avctx,
     ff_MPV_frame_end(s);
 
     if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
-        *(AVFrame *) data = *(AVFrame *) &s->current_picture;
+        *(AVFrame *) data = s->current_picture.f;
     } else {
-        *(AVFrame *) data = *(AVFrame *) &s->last_picture;
+        *(AVFrame *) data = s->last_picture.f;
     }
 
     /* Do not output the last pic after seeking. */

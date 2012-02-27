@@ -361,26 +361,14 @@ static void await_references(H264Context *h){
                 nrefs[list]--;
 
                 if(!FIELD_PICTURE && ref_field_picture){ // frame referencing two fields
-                    ff_thread_await_progress(&ref_pic->f,
-                                             FFMIN((row >> 1) - !(row & 1),
-                                                   pic_height - 1),
-                                             1);
-                    ff_thread_await_progress(&ref_pic->f,
-                                             FFMIN((row >> 1), pic_height - 1),
-                                             0);
+                    ff_thread_await_progress(&ref_pic->f, FFMIN((row >> 1) - !(row & 1), pic_height - 1), 1);
+                    ff_thread_await_progress(&ref_pic->f, FFMIN((row >> 1),              pic_height - 1), 0);
                 }else if(FIELD_PICTURE && !ref_field_picture){ // field referencing one field of a frame
-                    ff_thread_await_progress(&ref_pic->f,
-                                             FFMIN(row * 2 + ref_field,
-                                                   pic_height - 1),
-                                             0);
+                    ff_thread_await_progress(&ref_pic->f, FFMIN(row * 2 + ref_field, pic_height - 1), 0);
                 }else if(FIELD_PICTURE){
-                    ff_thread_await_progress(&ref_pic->f,
-                                             FFMIN(row, pic_height - 1),
-                                             ref_field);
+                    ff_thread_await_progress(&ref_pic->f, FFMIN(row, pic_height - 1), ref_field);
                 }else{
-                    ff_thread_await_progress(&ref_pic->f,
-                                             FFMIN(row, pic_height - 1),
-                                             0);
+                    ff_thread_await_progress(&ref_pic->f, FFMIN(row, pic_height - 1), 0);
                 }
             }
         }
@@ -4053,7 +4041,7 @@ static int decode_frame(AVCodecContext *avctx,
 
         if(out){
             *data_size = sizeof(AVFrame);
-            *pict= *(AVFrame*)out;
+            *pict      = out->f;
         }
 
         return buf_index;
@@ -4087,7 +4075,7 @@ static int decode_frame(AVCodecContext *avctx,
 
         } else {
             *data_size = sizeof(AVFrame);
-            *pict = *(AVFrame*)h->next_output_pic;
+            *pict      = h->next_output_pic->f;
         }
     }
 

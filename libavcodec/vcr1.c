@@ -111,7 +111,7 @@ static int decode_frame(AVCodecContext *avctx,
         }
     }
 
-    *picture= *(AVFrame*)&a->picture;
+    *picture   = a->picture;
     *data_size = sizeof(AVPicture);
 
     return buf_size;

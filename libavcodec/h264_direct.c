@@ -154,8 +154,7 @@ static void await_reference_mb_row(H264Context * const h, Picture *ref, int mb_y
     //even if pixels aren't deblocked yet
 
     ff_thread_await_progress(&ref->f,
-                             FFMIN(16 * mb_y >> ref_field_picture,
-                                   ref_height - 1),
+                             FFMIN(16 * mb_y >> ref_field_picture, ref_height - 1),
                              ref_field_picture && ref_field);
 }
 

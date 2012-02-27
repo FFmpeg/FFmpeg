@@ -191,7 +191,7 @@ static int ir2_decode_frame(AVCodecContext *avctx,
                          s->picture.data[1], s->picture.linesize[1], ir2_luma_table);
     }
 
-    *picture= *(AVFrame*)&s->picture;
+    *picture   = s->picture;
     *data_size = sizeof(AVPicture);
 
     return buf_size;
