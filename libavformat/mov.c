@@ -1406,20 +1406,16 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
         // force sample rate for qcelp when not stored in mov
         if (st->codec->codec_tag != MKTAG('Q','c','l','p'))
             st->codec->sample_rate = 8000;
-        st->codec->frame_size= 160;
         st->codec->channels= 1; /* really needed */
         break;
     case CODEC_ID_AMR_NB:
         st->codec->channels= 1; /* really needed */
         /* force sample rate for amr, stsd in 3gp does not store sample rate */
         st->codec->sample_rate = 8000;
-        /* force frame_size, too, samples_per_frame isn't always set properly */
-        st->codec->frame_size  = 160;
         break;
     case CODEC_ID_AMR_WB:
         st->codec->channels    = 1;
         st->codec->sample_rate = 16000;
-        st->codec->frame_size  = 320;
         break;
     case CODEC_ID_MP2:
     case CODEC_ID_MP3:
@@ -1429,12 +1425,10 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
     case CODEC_ID_GSM:
     case CODEC_ID_ADPCM_MS:
     case CODEC_ID_ADPCM_IMA_WAV:
-        st->codec->frame_size = sc->samples_per_frame;
         st->codec->block_align = sc->bytes_per_frame;
         break;
     case CODEC_ID_ALAC:
         if (st->codec->extradata_size == 36) {
-            st->codec->frame_size = AV_RB32(st->codec->extradata+12);
             st->codec->channels   = AV_RB8 (st->codec->extradata+21);
             st->codec->sample_rate = AV_RB32(st->codec->extradata+32);
         }
@@ -1983,13 +1977,6 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
 
     avpriv_set_pts_info(st, 64, 1, sc->time_scale);
-
-    if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
-        !st->codec->frame_size && sc->stts_count == 1) {
-        st->codec->frame_size = av_rescale(sc->stts_data[0].duration,
-                                           st->codec->sample_rate, sc->time_scale);
-        av_dlog(c->fc, "frame size %d\n", st->codec->frame_size);
-    }
 
     mov_build_index(c, st);
 
