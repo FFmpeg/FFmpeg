@@ -102,7 +102,9 @@ static const AVOption options[]={
 {"ilme", "interlaced motion estimation", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_INTERLACED_ME }, INT_MIN, INT_MAX, V|E, "flags"},
 {"cgop", "closed gop", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_CLOSED_GOP }, INT_MIN, INT_MAX, V|E, "flags"},
 {"fast", "allow non spec compliant speedup tricks", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_FAST }, INT_MIN, INT_MAX, V|E, "flags2"},
-{"sgop", "strictly enforce gop size", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_STRICT_GOP }, INT_MIN, INT_MAX, V|E, "flags2"},
+#if FF_API_MPV_GLOBAL_OPTS
+{"sgop", "Deprecated, use mpegvideo private options instead", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_STRICT_GOP }, INT_MIN, INT_MAX, V|E, "flags2"},
+#endif
 {"noout", "skip bitstream encoding", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_NO_OUTPUT }, INT_MIN, INT_MAX, V|E, "flags2"},
 {"local_header", "place global headers at every keyframe instead of in extradata", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_LOCAL_HEADER }, INT_MIN, INT_MAX, V|E, "flags2"},
 {"sub_id", NULL, OFFSET(sub_id), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},

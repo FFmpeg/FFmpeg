@@ -700,12 +700,14 @@ typedef struct MpegEncContext {
 
 /* mpegvideo_enc common options */
 #define FF_MPV_FLAG_SKIP_RD      0x0001
+#define FF_MPV_FLAG_STRICT_GOP   0x0002
 
 #define FF_MPV_OFFSET(x) offsetof(MpegEncContext, x)
 #define FF_MPV_OPT_FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM)
 #define FF_MPV_COMMON_OPTS \
 { "mpv_flags",      "Flags common for all mpegvideo-based encoders.", FF_MPV_OFFSET(mpv_flags), AV_OPT_TYPE_FLAGS, { 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "mpv_flags" },\
 { "skip_rd",        "RD optimal MB level residual skipping", 0, AV_OPT_TYPE_CONST, { FF_MPV_FLAG_SKIP_RD },    0, 0, FF_MPV_OPT_FLAGS, "mpv_flags" },\
+{ "strict_gop",     "Strictly enforce gop size",             0, AV_OPT_TYPE_CONST, { FF_MPV_FLAG_STRICT_GOP }, 0, 0, FF_MPV_OPT_FLAGS, "mpv_flags" },
 
 extern const AVOption ff_mpv_generic_options[];
 

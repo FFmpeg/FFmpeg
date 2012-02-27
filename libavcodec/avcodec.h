@@ -567,10 +567,10 @@ typedef struct RcOverride{
 #define CODEC_FLAG_INTERLACED_ME  0x20000000 ///< interlaced motion estimation
 #define CODEC_FLAG_CLOSED_GOP     0x80000000
 #define CODEC_FLAG2_FAST          0x00000001 ///< Allow non spec compliant speedup tricks.
-#define CODEC_FLAG2_STRICT_GOP    0x00000002 ///< Strictly enforce GOP size.
 #define CODEC_FLAG2_NO_OUTPUT     0x00000004 ///< Skip bitstream encoding.
 #define CODEC_FLAG2_LOCAL_HEADER  0x00000008 ///< Place global headers at every keyframe instead of in extradata.
 #if FF_API_MPV_GLOBAL_OPTS
+#define CODEC_FLAG2_STRICT_GOP    0x00000002 ///< Strictly enforce GOP size.
 #define CODEC_FLAG2_SKIP_RD       0x00004000 ///< RD optimal MB level residual skipping
 #endif
 #define CODEC_FLAG2_CHUNKS        0x00008000 ///< Input bitstream might be truncated at a packet boundaries instead of only at frame boundaries.

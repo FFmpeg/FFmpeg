@@ -614,6 +614,8 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
 #if FF_API_MPV_GLOBAL_OPTS
     if (avctx->flags2 & CODEC_FLAG2_SKIP_RD)
         s->mpv_flags |= FF_MPV_FLAG_SKIP_RD;
+    if (avctx->flags2 & CODEC_FLAG2_STRICT_GOP)
+        s->mpv_flags |= FF_MPV_FLAG_STRICT_GOP;
 #endif
 
     switch (avctx->codec->id) {
@@ -1300,7 +1302,7 @@ static int select_input_picture(MpegEncContext *s)
             }
 
             if (s->picture_in_gop_number + b_frames >= s->gop_size) {
-                if ((s->flags2 & CODEC_FLAG2_STRICT_GOP) &&
+                if ((s->mpv_flags & FF_MPV_FLAG_STRICT_GOP) &&
                     s->gop_size > s->picture_in_gop_number) {
                     b_frames = s->gop_size - s->picture_in_gop_number - 1;
                 } else {
