@@ -1077,7 +1077,11 @@ ffmpeg -f image2 -i foo-%03d.jpeg -r 12 -s WxH foo.avi
 The syntax @code{foo-%03d.jpeg} specifies to use a decimal number
 composed of three digits padded with zeroes to express the sequence
 number. It is the same syntax supported by the C printf function, but
-only formats accepting a normal integer are suitable.
+only formats accepting a normal integer are suitable. When importing
+an image sequence, -i also accepts shell-like wildcard patterns such as
+@code{foo-*.jpeg}, @code{foo-???.jpeg} or @code{foo-00[234]*.jpeg}.
+It will probably be necessary to escape these patterns so they do not
+get interpreted by your shell.
 
 @item
 You can put many streams of the same type in the output:

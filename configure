@@ -1183,6 +1183,7 @@ HAVE_LIST="
     GetProcessMemoryInfo
     GetProcessTimes
     getrusage
+    glob
     gnu_as
     ibm_asm
     inet_aton
@@ -3075,6 +3076,7 @@ check_func_headers windows.h GetProcessAffinityMask
 check_func_headers windows.h GetProcessTimes
 check_func_headers windows.h MapViewOfFile
 check_func_headers windows.h VirtualAlloc
+check_func_headers glob.h glob
 
 check_header dlfcn.h
 check_header dxva2api.h -D_WIN32_WINNT=0x0600

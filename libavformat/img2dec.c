@@ -27,6 +27,25 @@
 #include "libavutil/parseutils.h"
 #include "avformat.h"
 #include "internal.h"
+#if HAVE_GLOB
+#include <glob.h>
+
+/* Locally define as 0 (bitwise-OR no-op) any missing glob options that
+   are non-posix glibc/bsd extensions. */
+#ifndef GLOB_NOMAGIC
+#define GLOB_NOMAGIC 0
+#endif
+#ifndef GLOB_TILDE
+#define GLOB_TILDE 0
+#endif
+#ifndef GLOB_TILDE_CHECK
+#define GLOB_TILDE_CHECK GLOB_TILDE
+#endif
+#ifndef GLOB_BRACE
+#define GLOB_BRACE 0
+#endif
+
+#endif /* HAVE_GLOB */
 
 typedef struct {
     const AVClass *class;  /**< Class for private options. */
@@ -41,6 +60,10 @@ typedef struct {
     char *video_size;       /**< Set by a private option. */
     char *framerate;        /**< Set by a private option. */
     int loop;
+    int use_glob;
+#if HAVE_GLOB
+    glob_t globstate;
+#endif
 } VideoDemuxData;
 
 static const int sizes[][2] = {
@@ -67,6 +90,17 @@ static int infer_size(int *width_ptr, int *height_ptr, int size)
         }
     }
     return -1;
+}
+
+static int is_glob(const char *path)
+{
+#if HAVE_GLOB
+    size_t span = strcspn(path, "*?[]{}\\");
+    /* Did we hit a glob char or get to the end? */
+    return path[span] != '\0';
+#else
+    return 0;
+#endif
 }
 
 /* return -1 if no image found */
@@ -128,6 +162,8 @@ static int read_probe(AVProbeData *p)
     if (p->filename && ff_guess_image2_codec(p->filename)) {
         if (av_filename_number_test(p->filename))
             return AVPROBE_SCORE_MAX;
+        else if (is_glob(p->filename))
+            return AVPROBE_SCORE_MAX;
         else
             return AVPROBE_SCORE_MAX/2;
     }
@@ -183,8 +219,21 @@ static int read_header(AVFormatContext *s1)
     }
 
     if (!s->is_pipe) {
+        s->use_glob = is_glob(s->path);
+        if (s->use_glob) {
+#if HAVE_GLOB
+            int gerr;
+            gerr = glob(s->path, GLOB_NOCHECK|GLOB_BRACE|GLOB_NOMAGIC|GLOB_TILDE_CHECK, NULL, &s->globstate);
+            if (gerr != 0) {
+                return AVERROR(ENOENT);
+            }
+            first_index = 0;
+            last_index = s->globstate.gl_pathc - 1;
+#endif
+        } else {
         if (find_image_range(&first_index, &last_index, s->path) < 0)
             return AVERROR(ENOENT);
+        }
         s->img_first = first_index;
         s->img_last = last_index;
         s->img_number = first_index;
@@ -216,7 +265,8 @@ static int read_header(AVFormatContext *s1)
 static int read_packet(AVFormatContext *s1, AVPacket *pkt)
 {
     VideoDemuxData *s = s1->priv_data;
-    char filename[1024];
+    char filename_bytes[1024];
+    char *filename = filename_bytes;
     int i;
     int size[3]={0}, ret[3]={0};
     AVIOContext *f[3];
@@ -229,9 +279,15 @@ static int read_packet(AVFormatContext *s1, AVPacket *pkt)
         }
         if (s->img_number > s->img_last)
             return AVERROR_EOF;
-        if (av_get_frame_filename(filename, sizeof(filename),
+        if (s->use_glob) {
+#if HAVE_GLOB
+            filename = s->globstate.gl_pathv[s->img_number];
+#endif
+        } else {
+        if (av_get_frame_filename(filename_bytes, sizeof(filename_bytes),
                                   s->path, s->img_number)<0 && s->img_number > 1)
             return AVERROR(EIO);
+        }
         for(i=0; i<3; i++){
             if (avio_open2(&f[i], filename, AVIO_FLAG_READ,
                            &s1->interrupt_callback, NULL) < 0) {
@@ -281,6 +337,17 @@ static int read_packet(AVFormatContext *s1, AVPacket *pkt)
     }
 }
 
+static int read_close(struct AVFormatContext* s1)
+{
+    VideoDemuxData *s = s1->priv_data;
+#if HAVE_GLOB
+    if (s->use_glob) {
+        globfree(&s->globstate);
+    }
+#endif
+    return 0;
+}
+
 #define OFFSET(x) offsetof(VideoDemuxData, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
@@ -305,6 +372,7 @@ AVInputFormat ff_image2_demuxer = {
     .read_probe     = read_probe,
     .read_header    = read_header,
     .read_packet    = read_packet,
+    .read_close     = read_close,
     .flags          = AVFMT_NOFILE,
     .priv_class     = &img2_class,
 };
