@@ -129,10 +129,17 @@ static int rtp_write_header(AVFormatContext *s1)
     s->max_frames_per_packet = 0;
     if (s1->max_delay) {
         if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-            if (st->codec->frame_size == 0) {
+            int frame_size = av_get_audio_frame_duration(st->codec, 0);
+            if (!frame_size)
+                frame_size = st->codec->frame_size;
+            if (frame_size == 0) {
                 av_log(s1, AV_LOG_ERROR, "Cannot respect max delay: frame size = 0\n");
             } else {
-                s->max_frames_per_packet = av_rescale_rnd(s1->max_delay, st->codec->sample_rate, AV_TIME_BASE * (int64_t)st->codec->frame_size, AV_ROUND_DOWN);
+                s->max_frames_per_packet =
+                        av_rescale_q_rnd(s1->max_delay,
+                                         AV_TIME_BASE_Q,
+                                         (AVRational){ frame_size / st->codec->sample_rate },
+                                         AV_ROUND_DOWN);
             }
         }
         if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
