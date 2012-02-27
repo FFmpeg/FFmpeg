@@ -629,10 +629,12 @@ typedef struct AVStream {
 
     /**
      * This is the fundamental unit of time (in seconds) in terms
-     * of which frame timestamps are represented. For fixed-fps content,
-     * time base should be 1/framerate and timestamp increments should be 1.
+     * of which frame timestamps are represented.
+     *
      * decoding: set by libavformat
-     * encoding: set by libavformat in av_write_header
+     * encoding: set by libavformat in av_write_header. The muxer may use the
+     * user-provided value of @ref AVCodecContext.time_base "codec->time_base"
+     * as a hint.
      */
     AVRational time_base;
 
