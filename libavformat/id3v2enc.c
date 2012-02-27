@@ -19,6 +19,7 @@
  */
 
 #include <stdint.h>
+#include <string.h>
 
 #include "libavutil/dict.h"
 #include "libavutil/intreadwrite.h"
@@ -40,6 +41,20 @@ static int string_is_ascii(const uint8_t *str)
     return !*str;
 }
 
+static void id3v2_encode_string(AVIOContext *pb, const uint8_t *str,
+                               enum ID3v2Encoding enc)
+{
+    int (*put)(AVIOContext*, const char*);
+
+    if (enc == ID3v2_ENCODING_UTF16BOM) {
+        avio_wl16(pb, 0xFEFF);      /* BOM */
+        put = avio_put_str16le;
+    } else
+        put = avio_put_str;
+
+    put(pb, str);
+}
+
 /**
  * Write a text frame with one (normal frames) or two (TXXX frames) strings
  * according to encoding (only UTF-8 or UTF-16+BOM supported).
@@ -50,7 +65,6 @@ static int id3v2_put_ttag(ID3v2EncContext *id3, AVIOContext *avioc, const char *
 {
     int len;
     uint8_t *pb;
-    int (*put)(AVIOContext*, const char*);
     AVIOContext *dyn_buf;
     if (avio_open_dyn_buf(&dyn_buf) < 0)
         return AVERROR(ENOMEM);
@@ -62,15 +76,9 @@ static int id3v2_put_ttag(ID3v2EncContext *id3, AVIOContext *avioc, const char *
         enc = ID3v2_ENCODING_ISO8859;
 
     avio_w8(dyn_buf, enc);
-    if (enc == ID3v2_ENCODING_UTF16BOM) {
-        avio_wl16(dyn_buf, 0xFEFF);      /* BOM */
-        put = avio_put_str16le;
-    } else
-        put = avio_put_str;
-
-    put(dyn_buf, str1);
+    id3v2_encode_string(dyn_buf, str1, enc);
     if (str2)
-        put(dyn_buf, str2);
+        id3v2_encode_string(dyn_buf, str2, enc);
     len = avio_close_dyn_buf(dyn_buf, &pb);
 
     avio_wb32(avioc, tag);
@@ -143,6 +151,71 @@ int ff_id3v2_write_metadata(AVFormatContext *s, ID3v2EncContext *id3)
             return ret;
         id3->len += ret;
     }
+
+    return 0;
+}
+
+int ff_id3v2_write_apic(AVFormatContext *s, ID3v2EncContext *id3, AVPacket *pkt)
+{
+    AVStream *st = s->streams[pkt->stream_index];
+    AVDictionaryEntry *e;
+
+    AVIOContext *dyn_buf;
+    uint8_t     *buf;
+    const CodecMime *mime = ff_id3v2_mime_tags;
+    const char  *mimetype = NULL, *desc = "";
+    int enc = id3->version == 3 ? ID3v2_ENCODING_UTF16BOM :
+                                  ID3v2_ENCODING_UTF8;
+    int i, len, type = 0;
+
+    /* get the mimetype*/
+    while (mime->id != CODEC_ID_NONE) {
+        if (mime->id == st->codec->codec_id) {
+            mimetype = mime->str;
+            break;
+        }
+        mime++;
+    }
+    if (!mimetype) {
+        av_log(s, AV_LOG_ERROR, "No mimetype is known for stream %d, cannot "
+               "write an attached picture.\n", st->index);
+        return AVERROR(EINVAL);
+    }
+
+    /* get the picture type */
+    e = av_dict_get(st->metadata, "comment", NULL, 0);
+    for (i = 0; e && i < FF_ARRAY_ELEMS(ff_id3v2_picture_types); i++) {
+        if (strstr(ff_id3v2_picture_types[i], e->value) == ff_id3v2_picture_types[i]) {
+            type = i;
+            break;
+        }
+    }
+
+    /* get the description */
+    if ((e = av_dict_get(st->metadata, "title", NULL, 0)))
+        desc = e->value;
+
+    /* start writing */
+    if (avio_open_dyn_buf(&dyn_buf) < 0)
+        return AVERROR(ENOMEM);
+
+    avio_w8(dyn_buf, enc);
+    avio_put_str(dyn_buf, mimetype);
+    avio_w8(dyn_buf, type);
+    id3v2_encode_string(dyn_buf, desc, enc);
+    avio_write(dyn_buf, pkt->data, pkt->size);
+    len = avio_close_dyn_buf(dyn_buf, &buf);
+
+    avio_wb32(s->pb, MKBETAG('A', 'P', 'I', 'C'));
+    if (id3->version == 3)
+        avio_wb32(s->pb, len);
+    else
+        id3v2_put_size(s->pb, len);
+    avio_wb16(s->pb, 0);
+    avio_write(s->pb, buf, len);
+    av_freep(&buf);
+
+    id3->len += len + ID3v2_HEADER_SIZE;
 
     return 0;
 }
