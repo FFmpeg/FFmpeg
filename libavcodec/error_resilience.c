@@ -592,7 +592,7 @@ skip_mean_and_median:
                         if (s->avctx->codec_id == CODEC_ID_H264) {
                             // FIXME
                         } else {
-                            ff_thread_await_progress((AVFrame *) s->last_picture_ptr,
+                            ff_thread_await_progress(&s->last_picture_ptr->f,
                                                      mb_y, 0);
                         }
                         if (!s->last_picture.f.motion_val[0] ||
@@ -763,7 +763,7 @@ static int is_intra_more_likely(MpegEncContext *s)
                 if (s->avctx->codec_id == CODEC_ID_H264) {
                     // FIXME
                 } else {
-                    ff_thread_await_progress((AVFrame *) s->last_picture_ptr,
+                    ff_thread_await_progress(&s->last_picture_ptr->f,
                                              mb_y, 0);
                 }
                 is_intra_likely += s->dsp.sad[0](NULL, last_mb_ptr, mb_ptr,
@@ -1144,7 +1144,7 @@ void ff_er_frame_end(MpegEncContext *s)
                     if (s->avctx->codec_id == CODEC_ID_H264) {
                         // FIXME
                     } else {
-                        ff_thread_await_progress((AVFrame *) s->next_picture_ptr, mb_y, 0);
+                        ff_thread_await_progress(&s->next_picture_ptr->f, mb_y, 0);
                     }
                     s->mv[0][0][0] = s->next_picture.f.motion_val[0][xy][0] *  time_pb            / time_pp;
                     s->mv[0][0][1] = s->next_picture.f.motion_val[0][xy][1] *  time_pb            / time_pp;

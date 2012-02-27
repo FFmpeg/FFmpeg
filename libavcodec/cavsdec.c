@@ -500,9 +500,9 @@ static int decode_pic(AVSContext *h) {
     }
     /* release last B frame */
     if(h->picture.f.data[0])
-        s->avctx->release_buffer(s->avctx, (AVFrame *)&h->picture);
+        s->avctx->release_buffer(s->avctx, &h->picture.f);
 
-    s->avctx->get_buffer(s->avctx, (AVFrame *)&h->picture);
+    s->avctx->get_buffer(s->avctx, &h->picture.f);
     ff_cavs_init_pic(h);
     h->picture.poc = get_bits(&s->gb,8)*2;
 
@@ -591,7 +591,7 @@ static int decode_pic(AVSContext *h) {
     }
     if(h->pic_type != AV_PICTURE_TYPE_B) {
         if(h->DPB[1].f.data[0])
-            s->avctx->release_buffer(s->avctx, (AVFrame *)&h->DPB[1]);
+            s->avctx->release_buffer(s->avctx, &h->DPB[1].f);
         h->DPB[1] = h->DPB[0];
         h->DPB[0] = h->picture;
         memset(&h->picture,0,sizeof(Picture));
@@ -675,9 +675,9 @@ static int cavs_decode_frame(AVCodecContext * avctx,void *data, int *data_size,
         case PIC_I_START_CODE:
             if(!h->got_keyframe) {
                 if(h->DPB[0].f.data[0])
-                    avctx->release_buffer(avctx, (AVFrame *)&h->DPB[0]);
+                    avctx->release_buffer(avctx, &h->DPB[0].f);
                 if(h->DPB[1].f.data[0])
-                    avctx->release_buffer(avctx, (AVFrame *)&h->DPB[1]);
+                    avctx->release_buffer(avctx, &h->DPB[1].f);
                 h->got_keyframe = 1;
             }
         case PIC_PB_START_CODE:
