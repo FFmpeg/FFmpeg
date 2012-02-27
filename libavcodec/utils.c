@@ -553,7 +553,7 @@ int avcodec_default_reget_buffer(AVCodecContext *s, AVFrame *pic){
         return s->get_buffer(s, pic);
     }
 
-    assert(s->pix_fmt == pic->pix_fmt);
+    assert(s->pix_fmt == pic->format);
 
     /* If internal buffer type return the same buffer */
     if(pic->type == FF_BUFFER_TYPE_INTERNAL) {
