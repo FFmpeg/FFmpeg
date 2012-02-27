@@ -93,7 +93,8 @@ static void fill_picture_parameters(struct dxva_context *ctx, const H264Context 
     pp->num_ref_frames                = h->sps.ref_frame_count;
 
     pp->wBitFields                    = ((s->picture_structure != PICT_FRAME) <<  0) |
-                                        (h->sps.mb_aff                        <<  1) |
+                                        ((h->sps.mb_aff &&
+                                        (s->picture_structure == PICT_FRAME)) <<  1) |
                                         (h->sps.residual_color_transform_flag <<  2) |
                                         /* sp_for_switch_flag (not implemented by FFmpeg) */
                                         (0                                    <<  3) |
