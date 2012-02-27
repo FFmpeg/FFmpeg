@@ -387,7 +387,7 @@ void ff_end_tag(AVIOContext *pb, int64_t start)
 /* returns the size or -1 on error */
 int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc)
 {
-    int bps, blkalign, bytespersec;
+    int bps, blkalign, bytespersec, frame_size;
     int hdrsize = 18;
     int waveformatextensible;
     uint8_t temp[256];
@@ -396,6 +396,14 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc)
 
     if(!enc->codec_tag || enc->codec_tag > 0xffff)
         return -1;
+
+    /* We use the known constant frame size for the codec if known, otherwise
+       fallback to using AVCodecContext.frame_size, which is not as reliable
+       for indicating packet duration */
+    frame_size = av_get_audio_frame_duration(enc, 0);
+    if (!frame_size)
+        frame_size = enc->frame_size;
+
     waveformatextensible =   (enc->channels > 2 && enc->channel_layout)
                           || enc->sample_rate > 48000
                           || av_get_bits_per_sample(enc->codec_id) > 16;
@@ -422,7 +430,9 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc)
     }
 
     if (enc->codec_id == CODEC_ID_MP2 || enc->codec_id == CODEC_ID_MP3) {
-        blkalign = enc->frame_size; //this is wrong, but it seems many demuxers do not work if this is set correctly
+        /* this is wrong, but it seems many demuxers do not work if this is set
+           correctly */
+        blkalign = frame_size;
         //blkalign = 144 * enc->bit_rate/enc->sample_rate;
     } else if (enc->codec_id == CODEC_ID_AC3) {
             blkalign = 3840; //maximum bytes per frame
@@ -462,7 +472,7 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc)
         bytestream_put_le32(&riff_extradata, 0);                          /* dwPTSHigh */
     } else if (enc->codec_id == CODEC_ID_GSM_MS || enc->codec_id == CODEC_ID_ADPCM_IMA_WAV) {
         hdrsize += 2;
-        bytestream_put_le16(&riff_extradata, enc->frame_size); /* wSamplesPerBlock */
+        bytestream_put_le16(&riff_extradata, frame_size); /* wSamplesPerBlock */
     } else if(enc->extradata_size){
         riff_extradata_start= enc->extradata;
         riff_extradata= enc->extradata + enc->extradata_size;
@@ -618,10 +628,18 @@ int ff_get_bmp_header(AVIOContext *pb, AVStream *st)
 void ff_parse_specific_params(AVCodecContext *stream, int *au_rate, int *au_ssize, int *au_scale)
 {
     int gcd;
+    int audio_frame_size;
+
+    /* We use the known constant frame size for the codec if known, otherwise
+       fallback to using AVCodecContext.frame_size, which is not as reliable
+       for indicating packet duration */
+    audio_frame_size = av_get_audio_frame_duration(stream, 0);
+    if (!audio_frame_size)
+        audio_frame_size = stream->frame_size;
 
     *au_ssize= stream->block_align;
-    if(stream->frame_size && stream->sample_rate){
-        *au_scale=stream->frame_size;
+    if (audio_frame_size && stream->sample_rate) {
+        *au_scale = audio_frame_size;
         *au_rate= stream->sample_rate;
     }else if(stream->codec_type == AVMEDIA_TYPE_VIDEO ||
              stream->codec_type == AVMEDIA_TYPE_DATA ||
