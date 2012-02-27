@@ -1750,12 +1750,12 @@ typedef struct AVCodecContext {
      */
     int noise_reduction;
 
+#if FF_API_INTER_THRESHOLD
     /**
-     *
-     * - encoding: Set by user.
-     * - decoding: unused
+     * @deprecated this field is unused
      */
-    int inter_threshold;
+    attribute_deprecated int inter_threshold;
+#endif
 
     /**
      * quantizer noise shaping

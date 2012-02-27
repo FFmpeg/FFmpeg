@@ -320,7 +320,9 @@ static const AVOption options[]={
 {"lmax", "max lagrange factor (VBR)", OFFSET(lmax), AV_OPT_TYPE_INT, {.dbl = 31*FF_QP2LAMBDA }, 0, INT_MAX, V|E},
 {"nr", "noise reduction", OFFSET(noise_reduction), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"rc_init_occupancy", "number of bits which should be loaded into the rc buffer before decoding starts", OFFSET(rc_initial_buffer_occupancy), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
+#if FF_API_INTER_THRESHOLD
 {"inter_threshold", NULL, OFFSET(inter_threshold), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
+#endif
 {"flags2", NULL, OFFSET(flags2), AV_OPT_TYPE_FLAGS, {.dbl = DEFAULT}, 0, UINT_MAX, V|A|E|D, "flags2"},
 {"error", NULL, OFFSET(error_rate), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"qns", "quantizer noise shaping", OFFSET(quantizer_noise_shaping), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
