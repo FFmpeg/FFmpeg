@@ -24,10 +24,18 @@
 #include "avcodec.h"
 #include "get_bits.h"
 
+#define BIT_PLANAR   0x00
+#define BYTE_PLANAR  0x20
+#define CHUNKY       0x40
+#define BIT_LINE     0x80
+#define BYTE_LINE    0xC0
+
 typedef struct {
     AVCodecContext *avctx;
     AVFrame        frame;
     int            bpp;
+    int            format;
+    int            padded_bits;
     const uint8_t  *palette;
     int            palette_size;
     const uint8_t  *video;
@@ -62,18 +70,45 @@ static void import_palette(CDXLVideoContext *c, uint32_t *new_palette)
 
 static void bitplanar2chunky(CDXLVideoContext *c, int linesize, uint8_t *out)
 {
-    int skip = FFALIGN(c->avctx->width, 16) - c->avctx->width;
     GetBitContext gb;
     int x, y, plane;
 
     init_get_bits(&gb, c->video, c->video_size * 8);
-    memset(out, 0, linesize * c->avctx->height);
     for (plane = 0; plane < c->bpp; plane++) {
         for (y = 0; y < c->avctx->height; y++) {
             for (x = 0; x < c->avctx->width; x++)
                 out[linesize * y + x] |= get_bits1(&gb) << plane;
-            skip_bits(&gb, skip);
+            skip_bits(&gb, c->padded_bits);
         }
+    }
+}
+
+static void bitline2chunky(CDXLVideoContext *c, int linesize, uint8_t *out)
+{
+    GetBitContext  gb;
+    int x, y, plane;
+
+    init_get_bits(&gb, c->video, c->video_size * 8);
+    for (y = 0; y < c->avctx->height; y++) {
+        for (plane = 0; plane < c->bpp; plane++) {
+            for (x = 0; x < c->avctx->width; x++)
+                out[linesize * y + x] |= get_bits1(&gb) << plane;
+            skip_bits(&gb, c->padded_bits);
+        }
+    }
+}
+
+static void import_format(CDXLVideoContext *c, int linesize, uint8_t *out)
+{
+    memset(out, 0, linesize * c->avctx->height);
+
+    switch (c->format) {
+    case BIT_PLANAR:
+        bitplanar2chunky(c, linesize, out);
+        break;
+    case BIT_LINE:
+        bitline2chunky(c, linesize, out);
+        break;
     }
 }
 
@@ -82,7 +117,7 @@ static void cdxl_decode_rgb(CDXLVideoContext *c)
     uint32_t *new_palette = (uint32_t *)c->frame.data[1];
 
     import_palette(c, new_palette);
-    bitplanar2chunky(c, c->frame.linesize[0], c->frame.data[0]);
+    import_format(c, c->frame.linesize[0], c->frame.data[0]);
 }
 
 static void cdxl_decode_ham6(CDXLVideoContext *c)
@@ -96,7 +131,7 @@ static void cdxl_decode_ham6(CDXLVideoContext *c)
     out = c->frame.data[0];
 
     import_palette(c, new_palette);
-    bitplanar2chunky(c, avctx->width, c->new_video);
+    import_format(c, avctx->width, c->new_video);
 
     for (y = 0; y < avctx->height; y++) {
         r = new_palette[0] & 0xFF0000;
@@ -139,7 +174,7 @@ static void cdxl_decode_ham8(CDXLVideoContext *c)
     out = c->frame.data[0];
 
     import_palette(c, new_palette);
-    bitplanar2chunky(c, avctx->width, c->new_video);
+    import_format(c, avctx->width, c->new_video);
 
     for (y = 0; y < avctx->height; y++) {
         r = new_palette[0] & 0xFF0000;
@@ -176,13 +211,13 @@ static int cdxl_decode_frame(AVCodecContext *avctx, void *data,
 {
     CDXLVideoContext *c = avctx->priv_data;
     AVFrame * const p = &c->frame;
-    int ret, w, h, encoding, format, buf_size = pkt->size;
+    int ret, w, h, encoding, aligned_width, buf_size = pkt->size;
     const uint8_t *buf = pkt->data;
 
     if (buf_size < 32)
         return AVERROR_INVALIDDATA;
     encoding        = buf[1] & 7;
-    format          = buf[1] & 0xE0;
+    c->format       = buf[1] & 0xE0;
     w               = AV_RB16(&buf[14]);
     h               = AV_RB16(&buf[16]);
     c->bpp          = buf[19];
@@ -197,12 +232,8 @@ static int cdxl_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     if (c->bpp < 1)
         return AVERROR_INVALIDDATA;
-    if (c->bpp > 8) {
-        av_log_ask_for_sample(avctx, "unsupported pixel size: %d\n", c->bpp);
-        return AVERROR_PATCHWELCOME;
-    }
-    if (format) {
-        av_log_ask_for_sample(avctx, "unsupported pixel format: %d\n", format);
+    if (c->format != BIT_PLANAR && c->format != BIT_LINE) {
+        av_log_ask_for_sample(avctx, "unsupported pixel format: 0x%0x\n", c->format);
         return AVERROR_PATCHWELCOME;
     }
 
@@ -211,9 +242,11 @@ static int cdxl_decode_frame(AVCodecContext *avctx, void *data,
     if (w != avctx->width || h != avctx->height)
         avcodec_set_dimensions(avctx, w, h);
 
-    if (c->video_size < FFALIGN(avctx->width, 16) * avctx->height * c->bpp / 8)
+    aligned_width = FFALIGN(c->avctx->width, 16);
+    c->padded_bits  = aligned_width - c->avctx->width;
+    if (c->video_size < aligned_width * avctx->height * c->bpp / 8)
         return AVERROR_INVALIDDATA;
-    if (encoding == 0) {
+    if (!encoding && c->palette_size && c->bpp <= 8) {
         avctx->pix_fmt = PIX_FMT_PAL8;
     } else if (encoding == 1 && (c->bpp == 6 || c->bpp == 8)) {
         if (c->palette_size != (1 << (c->bpp - 1)))

@@ -375,7 +375,7 @@ fate-h264-conformance-sva_fm1_e: CMD = framecrc -vsync drop -i $(SAMPLES)/h264-c
 fate-h264-conformance-sva_nl1_b: CMD = framecrc -vsync drop -i $(SAMPLES)/h264-conformance/SVA_NL1_B.264
 fate-h264-conformance-sva_nl2_e: CMD = framecrc -vsync drop -i $(SAMPLES)/h264-conformance/SVA_NL2_E.264
 
-fate-h264-interlace-crop: CMD = framecrc -vsync 0 -i $(SAMPLES)/h264/interlaced_crop.mp4 -vframes 3
-fate-h264-lossless: CMD = framecrc -vsync 0 -i $(SAMPLES)/h264/lossless.h264
-fate-h264-extreme-plane-pred: CMD = framemd5 -vsync 0 -i $(SAMPLES)/h264/extreme-plane-pred.h264
+fate-h264-interlace-crop: CMD = framecrc -i $(SAMPLES)/h264/interlaced_crop.mp4 -vframes 3
+fate-h264-lossless: CMD = framecrc -i $(SAMPLES)/h264/lossless.h264
+fate-h264-extreme-plane-pred: CMD = framemd5 -i $(SAMPLES)/h264/extreme-plane-pred.h264
 fate-h264-bsf-mp4toannexb: CMD = md5 -i $(SAMPLES)/h264/interlaced_crop.mp4 -vcodec copy -bsf h264_mp4toannexb -f h264
