@@ -145,6 +145,22 @@
  * avformat_close_input(). It will free everything associated with the file.
  *
  * @section lavf_decoding_read Reading from an opened file
+ * Reading data from an opened AVFormatContext is done by repeatedly calling
+ * av_read_frame() on it. Each call, if successful, will return an AVPacket
+ * containing encoded data for one AVStream, identified by
+ * AVPacket.stream_index. This packet may be passed straight into the libavcodec
+ * decoding functions avcodec_decode_video2(), avcodec_decode_audio4() or
+ * avcodec_decode_subtitle2() if the caller wishes to decode the data.
+ *
+ * AVPacket.pts, AVPacket.dts and AVPacket.duration timing information will be
+ * set if known. They may also be unset (i.e. AV_NOPTS_VALUE for
+ * pts/dts, 0 for duration) if the stream does not provide them. The timing
+ * information will be in AVStream.time_base units, i.e. it has to be
+ * multiplied by the timebase to convert them to seconds.
+ *
+ * The packet data belongs to the demuxer and is invalid after the next call to
+ * av_read_frame(). The user must free the packet with av_free_packet() before
+ * calling av_read_frame() again or closing the file.
  *
  * @section lavf_decoding_seek Seeking
  * @}
