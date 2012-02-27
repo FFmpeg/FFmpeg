@@ -1691,7 +1691,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
         ctx->reverted_channels = NULL;
     }
 
-    avctx->frame_size = sconf->frame_length;
     channel_size      = sconf->frame_length + sconf->max_order;
 
     ctx->prev_raw_samples = av_malloc (sizeof(*ctx->prev_raw_samples) * sconf->max_order);
