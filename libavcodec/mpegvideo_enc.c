@@ -353,8 +353,12 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
     s->flags2       = avctx->flags2;
     s->max_b_frames = avctx->max_b_frames;
     s->codec_id     = avctx->codec->id;
-    s->luma_elim_threshold   = avctx->luma_elim_threshold;
-    s->chroma_elim_threshold = avctx->chroma_elim_threshold;
+#if FF_API_MPV_GLOBAL_OPTS
+    if (avctx->luma_elim_threshold)
+        s->luma_elim_threshold   = avctx->luma_elim_threshold;
+    if (avctx->chroma_elim_threshold)
+        s->chroma_elim_threshold = avctx->chroma_elim_threshold;
+#endif
     s->strict_std_compliance = avctx->strict_std_compliance;
     s->quarter_sample     = (avctx->flags & CODEC_FLAG_QPEL) != 0;
     s->mpeg_quant         = avctx->mpeg_quant;

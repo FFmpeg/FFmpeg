@@ -1439,19 +1439,21 @@ typedef struct AVCodecContext {
 
     int b_frame_strategy;
 
+#if FF_API_MPV_GLOBAL_OPTS
     /**
      * luma single coefficient elimination threshold
      * - encoding: Set by user.
      * - decoding: unused
      */
-    int luma_elim_threshold;
+    attribute_deprecated int luma_elim_threshold;
 
     /**
      * chroma single coeff elimination threshold
      * - encoding: Set by user.
      * - decoding: unused
      */
-    int chroma_elim_threshold;
+    attribute_deprecated int chroma_elim_threshold;
+#endif
 
     /**
      * qscale offset between IP and B-frames

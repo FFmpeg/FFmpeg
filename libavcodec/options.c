@@ -169,8 +169,10 @@ static const AVOption options[]={
 {"dc_clip", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = FF_BUG_DC_CLIP }, INT_MIN, INT_MAX, V|D, "bug"},
 {"ms", "workaround various bugs in microsofts broken decoders", 0, AV_OPT_TYPE_CONST, {.dbl = FF_BUG_MS }, INT_MIN, INT_MAX, V|D, "bug"},
 {"trunc", "trancated frames", 0, AV_OPT_TYPE_CONST, {.dbl = FF_BUG_TRUNCATED}, INT_MIN, INT_MAX, V|D, "bug"},
+#if FF_API_MPV_GLOBAL_OPTS
 {"lelim", "single coefficient elimination threshold for luminance (negative values also consider dc coefficient)", OFFSET(luma_elim_threshold), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"celim", "single coefficient elimination threshold for chrominance (negative values also consider dc coefficient)", OFFSET(chroma_elim_threshold), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
+#endif
 {"strict", "how strictly to follow the standards", OFFSET(strict_std_compliance), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, A|V|D|E, "strict"},
 {"very", "strictly conform to a older more strict version of the spec or reference software", 0, AV_OPT_TYPE_CONST, {.dbl = FF_COMPLIANCE_VERY_STRICT }, INT_MIN, INT_MAX, V|D|E, "strict"},
 {"strict", "strictly conform to all the things in the spec no matter what consequences", 0, AV_OPT_TYPE_CONST, {.dbl = FF_COMPLIANCE_STRICT }, INT_MIN, INT_MAX, V|D|E, "strict"},

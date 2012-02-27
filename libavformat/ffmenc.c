@@ -144,8 +144,6 @@ static int ffm_write_header(AVFormatContext *s)
             avio_wb32(pb, codec->dct_algo);
             avio_wb32(pb, codec->strict_std_compliance);
             avio_wb32(pb, codec->max_b_frames);
-            avio_wb32(pb, codec->luma_elim_threshold);
-            avio_wb32(pb, codec->chroma_elim_threshold);
             avio_wb32(pb, codec->mpeg_quant);
             avio_wb32(pb, codec->intra_dc_precision);
             avio_wb32(pb, codec->me_method);
