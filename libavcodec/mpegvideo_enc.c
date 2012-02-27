@@ -374,13 +374,18 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
     /* Fixed QSCALE */
     s->fixed_qscale = !!(avctx->flags & CODEC_FLAG_QSCALE);
 
+#if FF_API_MPV_GLOBAL_OPTS
+    if (s->flags & CODEC_FLAG_QP_RD)
+        s->mpv_flags |= FF_MPV_FLAG_QP_RD;
+#endif
+
     s->adaptive_quant = (s->avctx->lumi_masking ||
                          s->avctx->dark_masking ||
                          s->avctx->temporal_cplx_masking ||
                          s->avctx->spatial_cplx_masking  ||
                          s->avctx->p_masking      ||
                          s->avctx->border_masking ||
-                         (s->flags & CODEC_FLAG_QP_RD)) &&
+                         (s->mpv_flags & FF_MPV_FLAG_QP_RD)) &&
                         !s->fixed_qscale;
 
     s->loop_filter      = !!(s->flags & CODEC_FLAG_LOOP_FILTER);
@@ -495,7 +500,7 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    if ((s->flags & CODEC_FLAG_QP_RD) &&
+    if ((s->mpv_flags & FF_MPV_FLAG_QP_RD) &&
         s->avctx->mb_decision != FF_MB_DECISION_RD) {
         av_log(avctx, AV_LOG_ERROR, "QP RD needs mbd=2\n");
         return -1;
@@ -1727,7 +1732,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
         s->lambda = s->lambda_table[mb_xy];
         update_qscale(s);
 
-        if (!(s->flags & CODEC_FLAG_QP_RD)) {
+        if (!(s->mpv_flags & FF_MPV_FLAG_QP_RD)) {
             s->qscale = s->current_picture_ptr->f.qscale_table[mb_xy];
             s->dquant = s->qscale - last_qp;
 
@@ -1747,7 +1752,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
             }
         }
         ff_set_qscale(s, last_qp + s->dquant);
-    } else if (s->flags & CODEC_FLAG_QP_RD)
+    } else if (s->mpv_flags & FF_MPV_FLAG_QP_RD)
         ff_set_qscale(s, s->qscale + s->dquant);
 
     wrap_y = s->linesize;
@@ -2508,7 +2513,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
             s->mb_skipped=0;
             s->dquant=0; //only for QP_RD
 
-            if(mb_type & (mb_type-1) || (s->flags & CODEC_FLAG_QP_RD)){ // more than 1 MB type possible or CODEC_FLAG_QP_RD
+            if (mb_type & (mb_type-1) || (s->mpv_flags & FF_MPV_FLAG_QP_RD)) { // more than 1 MB type possible or FF_MPV_FLAG_QP_RD
                 int next_block=0;
                 int pb_bits_count, pb2_bits_count, tex_pb_bits_count;
 
@@ -2645,7 +2650,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     }
                 }
 
-                if((s->flags & CODEC_FLAG_QP_RD) && dmin < INT_MAX){
+                if ((s->mpv_flags & FF_MPV_FLAG_QP_RD) && dmin < INT_MAX) {
                     if(best_s.mv_type==MV_TYPE_16X16){ //FIXME move 4mv after QPRD
                         const int last_qp= backup_s.qscale;
                         int qpi, qp, dc[6];

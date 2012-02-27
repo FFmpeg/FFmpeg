@@ -38,13 +38,13 @@ fi
 
 if [ -n "$do_mpeg2_ivlc_qprd" ]; then
 # mpeg2 encoding intra vlc qprd
-do_video_encoding mpeg2ivlc-qprd.mpg "-vb 500k -bf 2 -trellis 1 -flags +qprd+mv0 -intra_vlc 1 -cmp 2 -subcmp 2 -mbd rd -vcodec mpeg2video -f mpeg2video"
+do_video_encoding mpeg2ivlc-qprd.mpg "-vb 500k -bf 2 -trellis 1 -flags +mv0 -mpv_flags +qp_rd -intra_vlc 1 -cmp 2 -subcmp 2 -mbd rd -vcodec mpeg2video -f mpeg2video"
 do_video_decoding
 fi
 
 if [ -n "$do_mpeg2_422" ]; then
 #mpeg2 4:2:2 encoding
-do_video_encoding mpeg2_422.mpg "-vb 1000k -bf 2 -trellis 1 -flags +qprd+mv0+ildct+ilme -intra_vlc 1 -mbd rd -vcodec mpeg2video -pix_fmt yuv422p -f mpeg2video"
+do_video_encoding mpeg2_422.mpg "-vb 1000k -bf 2 -trellis 1 -flags +mv0+ildct+ilme -mpv_flags +qp_rd -intra_vlc 1 -mbd rd -vcodec mpeg2video -pix_fmt yuv422p -f mpeg2video"
 do_video_decoding
 fi
 
@@ -128,7 +128,7 @@ do_video_decoding
 fi
 
 if [ -n "$do_mpeg4_qprd" ]; then
-do_video_encoding mpeg4-qprd.avi "-b 450k -bf 2 -trellis 1 -flags +mv4+qprd+mv0 -cmp 2 -subcmp 2 -mbd rd -an -vcodec mpeg4"
+do_video_encoding mpeg4-qprd.avi "-b 450k -bf 2 -trellis 1 -flags +mv4+mv0 -mpv_flags +qp_rd -cmp 2 -subcmp 2 -mbd rd -an -vcodec mpeg4"
 do_video_decoding
 fi
 
