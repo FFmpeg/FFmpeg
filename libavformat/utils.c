@@ -2026,15 +2026,20 @@ static void estimate_timings(AVFormatContext *ic, int64_t old_offset)
     }
 }
 
-static int has_codec_parameters(AVCodecContext *avctx)
+static int has_codec_parameters(AVStream *st)
 {
+    AVCodecContext *avctx = st->codec;
     int val;
     switch (avctx->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
-        val = avctx->sample_rate && avctx->channels && avctx->sample_fmt != AV_SAMPLE_FMT_NONE;
+        val = avctx->sample_rate && avctx->channels;
+        if (st->info->found_decoder >= 0 && avctx->sample_fmt == AV_SAMPLE_FMT_NONE)
+            return 0;
         break;
     case AVMEDIA_TYPE_VIDEO:
-        val = avctx->width && avctx->pix_fmt != PIX_FMT_NONE;
+        val = avctx->width;
+        if (st->info->found_decoder >= 0 && avctx->pix_fmt == PIX_FMT_NONE)
+            return 0;
         break;
     default:
         val = 1;
@@ -2057,14 +2062,16 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **option
     AVFrame picture;
     AVPacket pkt = *avpkt;
 
-    if (!avcodec_is_open(st->codec)) {
+    if (!avcodec_is_open(st->codec) && !st->info->found_decoder) {
         AVDictionary *thread_opt = NULL;
 
         codec = st->codec->codec ? st->codec->codec :
                                    avcodec_find_decoder(st->codec->codec_id);
 
-        if (!codec)
+        if (!codec) {
+            st->info->found_decoder = -1;
             return -1;
+        }
 
         /* force thread count to 1 since the h264 decoder will not extract SPS
          *  and PPS to extradata during multi-threaded decoding */
@@ -2072,13 +2079,20 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **option
         ret = avcodec_open2(st->codec, codec, options ? options : &thread_opt);
         if (!options)
             av_dict_free(&thread_opt);
-        if (ret < 0)
+        if (ret < 0) {
+            st->info->found_decoder = -1;
             return ret;
-    }
+        }
+        st->info->found_decoder = 1;
+    } else if (!st->info->found_decoder)
+        st->info->found_decoder = 1;
+
+    if (st->info->found_decoder < 0)
+        return -1;
 
     while ((pkt.size > 0 || (!pkt.data && got_picture)) &&
            ret >= 0 &&
-           (!has_codec_parameters(st->codec)  ||
+           (!has_codec_parameters(st)         ||
            !has_decode_delay_been_guessed(st) ||
            (!st->codec_info_nb_frames && st->codec->codec->capabilities & CODEC_CAP_CHANNEL_CONF))) {
         got_picture = 0;
@@ -2229,7 +2243,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                               : &thread_opt);
 
         //try to just open decoders, in case this is enough to get parameters
-        if(!has_codec_parameters(st->codec)){
+        if (!has_codec_parameters(st)) {
             if (codec && !st->codec->codec)
                 avcodec_open2(st->codec, codec, options ? &options[i]
                               : &thread_opt);
@@ -2256,7 +2270,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             int fps_analyze_framecount = 20;
 
             st = ic->streams[i];
-            if (!has_codec_parameters(st->codec))
+            if (!has_codec_parameters(st))
                 break;
             /* if the timebase is coarse (like the usual millisecond precision
                of mkv), we need to analyze more frames to reliably arrive at
@@ -2302,7 +2316,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         if (ret < 0) {
             /* EOF or error*/
             AVPacket empty_pkt = { 0 };
-            int err;
+            int err = 0;
             av_init_packet(&empty_pkt);
 
             ret = -1; /* we could not have all the codec parameters before EOF */
@@ -2310,16 +2324,18 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 st = ic->streams[i];
 
                 /* flush the decoders */
+                if (st->info->found_decoder == 1) {
                 do {
                     err = try_decode_frame(st, &empty_pkt,
                                            (options && i < orig_nb_streams) ?
                                            &options[i] : NULL);
-                } while (err > 0 && !has_codec_parameters(st->codec));
+                } while (err > 0 && !has_codec_parameters(st));
+                }
 
                 if (err < 0) {
                     av_log(ic, AV_LOG_WARNING,
                            "decoding for stream %d failed\n", st->index);
-                } else if (!has_codec_parameters(st->codec)){
+                } else if (!has_codec_parameters(st)) {
                     char buf[256];
                     avcodec_string(buf, sizeof(buf), st->codec, 0);
                     av_log(ic, AV_LOG_WARNING,
