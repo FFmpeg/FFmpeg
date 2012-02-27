@@ -2325,11 +2325,11 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 
                 /* flush the decoders */
                 if (st->info->found_decoder == 1) {
-                do {
-                    err = try_decode_frame(st, &empty_pkt,
-                                           (options && i < orig_nb_streams) ?
-                                           &options[i] : NULL);
-                } while (err > 0 && !has_codec_parameters(st));
+                    do {
+                        err = try_decode_frame(st, &empty_pkt,
+                                               (options && i < orig_nb_streams) ?
+                                               &options[i] : NULL);
+                    } while (err > 0 && !has_codec_parameters(st));
                 }
 
                 if (err < 0) {
