@@ -1267,6 +1267,10 @@ need_realloc:
         buftmp = audio_buf;
         size_out = swr_convert(ost->swr, (      uint8_t*[]){buftmp}, audio_buf_size / (enc->channels * osize),
                                          (const uint8_t*[]){buf   }, size / (dec->channels * isize));
+        if (size_out < 0) {
+            av_log(NULL, AV_LOG_FATAL, "swr_convert failed\n");
+            exit_program(1);
+        }
         size_out = size_out * enc->channels * osize;
     } else {
         buftmp = buf;

@@ -106,7 +106,7 @@ void swr_free(struct SwrContext **s);
  * @param in        input buffers, only the first one need to be set in case of packed audio
  * @param in_count  number of input samples available in one channel
  *
- * @return number of samples output per channel
+ * @return number of samples output per channel, negative value on error
  */
 int swr_convert(struct SwrContext *s, uint8_t *out[SWR_CH_MAX], int out_count,
                                 const uint8_t *in [SWR_CH_MAX], int in_count);
