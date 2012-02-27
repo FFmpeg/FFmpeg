@@ -813,7 +813,8 @@ static void update_initial_timestamps(AVFormatContext *s, int stream_index,
         st->start_time = pts;
 }
 
-static void update_initial_durations(AVFormatContext *s, AVStream *st, AVPacket *pkt)
+static void update_initial_durations(AVFormatContext *s, AVStream *st,
+                                     int stream_index, int duration)
 {
     AVPacketList *pktl= s->packet_buffer;
     int64_t cur_dts= 0;
@@ -821,10 +822,10 @@ static void update_initial_durations(AVFormatContext *s, AVStream *st, AVPacket 
     if(st->first_dts != AV_NOPTS_VALUE){
         cur_dts= st->first_dts;
         for(; pktl; pktl= pktl->next){
-            if(pktl->pkt.stream_index == pkt->stream_index){
+            if(pktl->pkt.stream_index == stream_index){
                 if(pktl->pkt.pts != pktl->pkt.dts || pktl->pkt.dts != AV_NOPTS_VALUE || pktl->pkt.duration)
                     break;
-                cur_dts -= pkt->duration;
+                cur_dts -= duration;
             }
         }
         pktl= s->packet_buffer;
@@ -833,15 +834,16 @@ static void update_initial_durations(AVFormatContext *s, AVStream *st, AVPacket 
         return;
 
     for(; pktl; pktl= pktl->next){
-        if(pktl->pkt.stream_index != pkt->stream_index)
+        if(pktl->pkt.stream_index != stream_index)
             continue;
         if(pktl->pkt.pts == pktl->pkt.dts && pktl->pkt.dts == AV_NOPTS_VALUE
            && !pktl->pkt.duration){
             pktl->pkt.dts= cur_dts;
             if(!st->codec->has_b_frames)
                 pktl->pkt.pts= cur_dts;
-            cur_dts += pkt->duration;
-            pktl->pkt.duration= pkt->duration;
+            cur_dts += duration;
+            if (st->codec->codec_type != AVMEDIA_TYPE_AUDIO)
+                pktl->pkt.duration = duration;
         }else
             break;
     }
@@ -884,13 +886,13 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         pkt->dts= pkt->pts= AV_NOPTS_VALUE;
     }
 
-    if (pkt->duration == 0) {
+    if (pkt->duration == 0 && st->codec->codec_type != AVMEDIA_TYPE_AUDIO) {
         compute_frame_duration(&num, &den, st, pc, pkt);
         if (den && num) {
             pkt->duration = av_rescale_rnd(1, num * (int64_t)st->time_base.den, den * (int64_t)st->time_base.num, AV_ROUND_DOWN);
 
             if(pkt->duration != 0 && s->packet_buffer)
-                update_initial_durations(s, st, pkt);
+                update_initial_durations(s, st, pkt->stream_index, pkt->duration);
         }
     }
 
@@ -951,12 +953,29 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             st->last_IP_pts= pkt->pts;
             /* cannot compute PTS if not present (we can compute it only
             by knowing the future */
-        } else if(pkt->pts != AV_NOPTS_VALUE || pkt->dts != AV_NOPTS_VALUE || pkt->duration){
-            if(pkt->pts != AV_NOPTS_VALUE && pkt->duration){
-                int64_t old_diff= FFABS(st->cur_dts - pkt->duration - pkt->pts);
+        } else if (pkt->pts != AV_NOPTS_VALUE ||
+                   pkt->dts != AV_NOPTS_VALUE ||
+                   pkt->duration              ||
+                   st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+            int duration = pkt->duration;
+            if (!duration && st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+                compute_frame_duration(&num, &den, st, pc, pkt);
+                if (den && num) {
+                    duration = av_rescale_rnd(1, num * (int64_t)st->time_base.den,
+                                                 den * (int64_t)st->time_base.num,
+                                                 AV_ROUND_DOWN);
+                    if (duration != 0 && s->packet_buffer) {
+                        update_initial_durations(s, st, pkt->stream_index,
+                                                 duration);
+                    }
+                }
+            }
+
+            if(pkt->pts != AV_NOPTS_VALUE && duration){
+                int64_t old_diff= FFABS(st->cur_dts - duration - pkt->pts);
                 int64_t new_diff= FFABS(st->cur_dts - pkt->pts);
-                if(old_diff < new_diff && old_diff < (pkt->duration>>3)){
-                    pkt->pts += pkt->duration;
+                if(old_diff < new_diff && old_diff < (duration>>3)){
+                    pkt->pts += duration;
     //                av_log(NULL, AV_LOG_DEBUG, "id:%d old:%"PRId64" new:%"PRId64" dur:%d cur:%"PRId64" size:%d\n", pkt->stream_index, old_diff, new_diff, pkt->duration, st->cur_dts, pkt->size);
                 }
             }
@@ -969,7 +988,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
                 pkt->pts = st->cur_dts;
             pkt->dts = pkt->pts;
             if(pkt->pts != AV_NOPTS_VALUE)
-                st->cur_dts = pkt->pts + pkt->duration;
+                st->cur_dts = pkt->pts + duration;
         }
     }
 
