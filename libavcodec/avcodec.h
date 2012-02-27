@@ -3079,6 +3079,17 @@ uint8_t* av_packet_new_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
                                  int size);
 
 /**
+ * Shrink the already allocated side data buffer
+ *
+ * @param pkt packet
+ * @param type side information type
+ * @param size new side information size
+ * @return 0 on success, < 0 on failure
+ */
+int av_packet_shrink_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
+                               int size);
+
+/**
  * Get side information from packet.
  *
  * @param pkt packet

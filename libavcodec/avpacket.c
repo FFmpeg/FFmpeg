@@ -196,3 +196,19 @@ uint8_t* av_packet_get_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
     }
     return NULL;
 }
+
+int av_packet_shrink_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
+                               int size)
+{
+    int i;
+
+    for (i = 0; i < pkt->side_data_elems; i++) {
+        if (pkt->side_data[i].type == type) {
+            if (size > pkt->side_data[i].size)
+                return AVERROR(ENOMEM);
+            pkt->side_data[i].size = size;
+            return 0;
+        }
+    }
+    return AVERROR(ENOENT);
+}

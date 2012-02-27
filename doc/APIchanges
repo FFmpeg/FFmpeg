@@ -12,6 +12,9 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2012-xx-xx - xxxxxxx - lavc 54.3.0 - avcodec.h
+  Add av_packet_shrink_side_data.
+
 2012-xx-xx - xxxxxxx - lavf 54.2.0 - avformat.h
   Add AVStream.attached_pic and AV_DISPOSITION_ATTACHED_PIC,
   used for dealing with attached pictures/cover art.
