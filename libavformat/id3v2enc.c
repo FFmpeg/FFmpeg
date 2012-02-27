@@ -26,12 +26,12 @@
 #include "avio.h"
 #include "id3v2.h"
 
-static void id3v2_put_size(AVFormatContext *s, int size)
+static void id3v2_put_size(AVIOContext *pb, int size)
 {
-    avio_w8(s->pb, size >> 21 & 0x7f);
-    avio_w8(s->pb, size >> 14 & 0x7f);
-    avio_w8(s->pb, size >> 7  & 0x7f);
-    avio_w8(s->pb, size       & 0x7f);
+    avio_w8(pb, size >> 21 & 0x7f);
+    avio_w8(pb, size >> 14 & 0x7f);
+    avio_w8(pb, size >> 7  & 0x7f);
+    avio_w8(pb, size       & 0x7f);
 }
 
 static int string_is_ascii(const uint8_t *str)
@@ -74,7 +74,7 @@ static int id3v2_put_ttag(AVFormatContext *s, const char *str1, const char *str2
     len = avio_close_dyn_buf(dyn_buf, &pb);
 
     avio_wb32(s->pb, tag);
-    id3v2_put_size(s, len);
+    id3v2_put_size(s->pb, len);
     avio_wb16(s->pb, 0);
     avio_write(s->pb, pb, len);
 
@@ -140,7 +140,7 @@ int ff_id3v2_write(struct AVFormatContext *s, int id3v2_version,
 
     cur_pos = avio_tell(s->pb);
     avio_seek(s->pb, size_pos, SEEK_SET);
-    id3v2_put_size(s, totlen);
+    id3v2_put_size(s->pb, totlen);
     avio_seek(s->pb, cur_pos, SEEK_SET);
     return 0;
 }
