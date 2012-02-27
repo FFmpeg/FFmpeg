@@ -24,6 +24,10 @@
 
 #include "parser.h"
 #include "dca.h"
+#include "dcadata.h"
+#include "dca_parser.h"
+#include "get_bits.h"
+#include "put_bits.h"
 
 typedef struct DCAParseContext {
     ParseContext pc;
@@ -100,6 +104,71 @@ static av_cold int dca_parse_init(AVCodecParserContext * s)
     return 0;
 }
 
+int ff_dca_convert_bitstream(const uint8_t *src, int src_size, uint8_t *dst,
+                             int max_size)
+{
+    uint32_t mrk;
+    int i, tmp;
+    const uint16_t *ssrc = (const uint16_t *) src;
+    uint16_t *sdst = (uint16_t *) dst;
+    PutBitContext pb;
+
+    if ((unsigned) src_size > (unsigned) max_size)
+        src_size = max_size;
+
+    mrk = AV_RB32(src);
+    switch (mrk) {
+    case DCA_MARKER_RAW_BE:
+        memcpy(dst, src, src_size);
+        return src_size;
+    case DCA_MARKER_RAW_LE:
+        for (i = 0; i < (src_size + 1) >> 1; i++)
+            *sdst++ = av_bswap16(*ssrc++);
+        return src_size;
+    case DCA_MARKER_14B_BE:
+    case DCA_MARKER_14B_LE:
+        init_put_bits(&pb, dst, max_size);
+        for (i = 0; i < (src_size + 1) >> 1; i++, src += 2) {
+            tmp = ((mrk == DCA_MARKER_14B_BE) ? AV_RB16(src) : AV_RL16(src)) & 0x3FFF;
+            put_bits(&pb, 14, tmp);
+        }
+        flush_put_bits(&pb);
+        return (put_bits_count(&pb) + 7) >> 3;
+    default:
+        return AVERROR_INVALIDDATA;
+    }
+}
+
+static int dca_parse_params(const uint8_t *buf, int buf_size, int *duration,
+                            int *sample_rate)
+{
+    GetBitContext gb;
+    uint8_t hdr[12 + FF_INPUT_BUFFER_PADDING_SIZE] = { 0 };
+    int ret, sample_blocks, sr_code;
+
+    if (buf_size < 12)
+        return AVERROR_INVALIDDATA;
+
+    if ((ret = ff_dca_convert_bitstream(buf, 12, hdr, 12)) < 0)
+        return ret;
+
+    init_get_bits(&gb, hdr, 96);
+
+    skip_bits_long(&gb, 39);
+    sample_blocks = get_bits(&gb, 7) + 1;
+    if (sample_blocks < 8)
+        return AVERROR_INVALIDDATA;
+    *duration = 256 * (sample_blocks / 8);
+
+    skip_bits(&gb, 20);
+    sr_code = get_bits(&gb, 4);
+    *sample_rate = dca_sample_rates[sr_code];
+    if (*sample_rate == 0)
+        return AVERROR_INVALIDDATA;
+
+    return 0;
+}
+
 static int dca_parse(AVCodecParserContext * s,
                      AVCodecContext * avctx,
                      const uint8_t ** poutbuf, int *poutbuf_size,
@@ -107,7 +176,7 @@ static int dca_parse(AVCodecParserContext * s,
 {
     DCAParseContext *pc1 = s->priv_data;
     ParseContext *pc = &pc1->pc;
-    int next;
+    int next, duration, sample_rate;
 
     if (s->flags & PARSER_FLAG_COMPLETE_FRAMES) {
         next = buf_size;
@@ -120,6 +189,15 @@ static int dca_parse(AVCodecParserContext * s,
             return buf_size;
         }
     }
+
+    /* read the duration and sample rate from the frame header */
+    if (!dca_parse_params(buf, buf_size, &duration, &sample_rate)) {
+        s->duration = duration;
+        if (!avctx->sample_rate)
+            avctx->sample_rate = sample_rate;
+    } else
+        s->duration = 0;
+
     *poutbuf = buf;
     *poutbuf_size = buf_size;
     return next;
