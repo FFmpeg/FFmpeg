@@ -60,6 +60,7 @@ typedef struct {
 
 extern const MXFCodecUL ff_mxf_data_definition_uls[];
 extern const MXFCodecUL ff_mxf_codec_uls[];
+extern const MXFCodecUL ff_mxf_pixel_format_uls[];
 
 int ff_mxf_decode_pixel_layout(const char pixel_layout[16], enum PixelFormat *pix_fmt);
 
