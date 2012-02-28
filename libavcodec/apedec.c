@@ -393,7 +393,7 @@ static inline int range_get_symbol(APEContext *ctx,
 }
 /** @} */ // group rangecoder
 
-static inline void update_rice(APERice *rice, int x)
+static inline void update_rice(APERice *rice, unsigned int x)
 {
     int lim = rice->k ? (1 << (rice->k + 4)) : 0;
     rice->ksum += ((x + 1) / 2) - ((rice->ksum + 16) >> 5);
@@ -406,7 +406,7 @@ static inline void update_rice(APERice *rice, int x)
 
 static inline int ape_decode_value(APEContext *ctx, APERice *rice)
 {
-    int x, overflow;
+    unsigned int x, overflow;
 
     if (ctx->fileversion < 3990) {
         int tmpk;
