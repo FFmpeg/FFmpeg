@@ -628,8 +628,8 @@ static int mxf_read_track(void *arg, AVIOContext *pb, int tag, int size, UID uid
         avio_read(pb, track->track_number, 4);
         break;
     case 0x4B01:
-        track->edit_rate.den = avio_rb32(pb);
         track->edit_rate.num = avio_rb32(pb);
+        track->edit_rate.den = avio_rb32(pb);
         break;
     case 0x4803:
         avio_read(pb, track->sequence_ref, 16);
@@ -1336,7 +1336,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         if (st->duration == -1)
             st->duration = AV_NOPTS_VALUE;
         st->start_time = component->start_position;
-        avpriv_set_pts_info(st, 64, material_track->edit_rate.num, material_track->edit_rate.den);
+        avpriv_set_pts_info(st, 64, material_track->edit_rate.den, material_track->edit_rate.num);
 
         PRINT_KEY(mxf->fc, "data definition   ul", source_track->sequence->data_definition_ul);
         codec_ul = mxf_get_codec_ul(ff_mxf_data_definition_uls, &source_track->sequence->data_definition_ul);
