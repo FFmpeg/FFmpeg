@@ -565,6 +565,42 @@ static int mov_get_lpcm_flags(enum CodecID codec_id)
     }
 }
 
+static int get_cluster_duration(MOVTrack *track, int cluster_idx)
+{
+    int64_t next_dts;
+
+    if (cluster_idx >= track->entry)
+        return 0;
+
+    if (cluster_idx + 1 == track->entry)
+        next_dts = track->track_duration + track->start_dts;
+    else
+        next_dts = track->cluster[cluster_idx + 1].dts;
+
+    return next_dts - track->cluster[cluster_idx].dts;
+}
+
+static int get_samples_per_packet(MOVTrack *track)
+{
+    int i, first_duration;
+
+// return track->enc->frame_size;
+
+    /* use 1 for raw PCM */
+    if (!track->audio_vbr)
+        return 1;
+
+    /* check to see if duration is constant for all clusters */
+    if (!track->entry)
+        return 0;
+    first_duration = get_cluster_duration(track, 0);
+    for (i = 1; i < track->entry; i++) {
+        if (get_cluster_duration(track, i) != first_duration)
+            return 0;
+    }
+    return first_duration;
+}
+
 static int mov_write_audio_tag(AVIOContext *pb, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
@@ -607,7 +643,7 @@ static int mov_write_audio_tag(AVIOContext *pb, MOVTrack *track)
         avio_wb32(pb, av_get_bits_per_sample(track->enc->codec_id));
         avio_wb32(pb, mov_get_lpcm_flags(track->enc->codec_id));
         avio_wb32(pb, track->sample_size);
-        avio_wb32(pb, track->enc->frame_size);
+        avio_wb32(pb, get_samples_per_packet(track));
     } else {
         if (track->mode == MODE_MOV) {
             avio_wb16(pb, track->enc->channels);
@@ -1143,9 +1179,7 @@ static int mov_write_stts_tag(AVIOContext *pb, MOVTrack *track)
                        av_malloc(track->entry * sizeof(*stts_entries)) : /* worst case */
                        NULL;
         for (i=0; i<track->entry; i++) {
-            int64_t duration = i + 1 == track->entry ?
-                track->track_duration - track->cluster[i].dts + track->start_dts : /* readjusting */
-                track->cluster[i+1].dts - track->cluster[i].dts;
+            int duration = get_cluster_duration(track, i);
             if (i && duration == stts_entries[entries].duration) {
                 stts_entries[entries].count++; /* compress */
             } else {
@@ -2262,7 +2296,7 @@ static int mov_write_tfhd_tag(AVIOContext *pb, MOVTrack *track,
     if (flags & MOV_TFHD_BASE_DATA_OFFSET)
         avio_wb64(pb, moof_offset);
     if (flags & MOV_TFHD_DEFAULT_DURATION) {
-        track->default_duration = track->audio_vbr ? track->enc->frame_size : 1;
+        track->default_duration = get_cluster_duration(track, 0);
         avio_wb32(pb, track->default_duration);
     }
     if (flags & MOV_TFHD_DEFAULT_SIZE) {
@@ -2295,10 +2329,7 @@ static int mov_write_trun_tag(AVIOContext *pb, MOVTrack *track)
     int i;
 
     for (i = 0; i < track->entry; i++) {
-        int64_t duration = i + 1 == track->entry ?
-            track->track_duration - track->cluster[i].dts + track->start_dts :
-            track->cluster[i + 1].dts - track->cluster[i].dts;
-        if (duration != track->default_duration)
+        if (get_cluster_duration(track, i) != track->default_duration)
             flags |= MOV_TRUN_SAMPLE_DURATION;
         if (track->cluster[i].size != track->default_size)
             flags |= MOV_TRUN_SAMPLE_SIZE;
@@ -2322,11 +2353,8 @@ static int mov_write_trun_tag(AVIOContext *pb, MOVTrack *track)
         avio_wb32(pb, get_sample_flags(track, &track->cluster[0]));
 
     for (i = 0; i < track->entry; i++) {
-        int64_t duration = i + 1 == track->entry ?
-            track->track_duration - track->cluster[i].dts + track->start_dts :
-            track->cluster[i + 1].dts - track->cluster[i].dts;
         if (flags & MOV_TRUN_SAMPLE_DURATION)
-            avio_wb32(pb, duration);
+            avio_wb32(pb, get_cluster_duration(track, i));
         if (flags & MOV_TRUN_SAMPLE_SIZE)
             avio_wb32(pb, track->cluster[i].size);
         if (flags & MOV_TRUN_SAMPLE_FLAGS)

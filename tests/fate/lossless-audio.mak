@@ -15,3 +15,4 @@ fate-lossless-tta: CMD = crc -i $(SAMPLES)/lossless-audio/inside.tta
 
 FATE_TESTS += $(FATE_LOSSLESS_AUDIO)
 fate-lossless-audio: $(FATE_LOSSLESS_AUDIO)
+
