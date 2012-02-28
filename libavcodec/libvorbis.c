@@ -93,12 +93,12 @@ static av_cold int oggvorbis_init_encoder(vorbis_info *vi,
             goto error;
     } else {
         int minrate = avctx->rc_min_rate > 0 ? avctx->rc_min_rate : -1;
-        int maxrate = avctx->rc_min_rate > 0 ? avctx->rc_max_rate : -1;
+        int maxrate = avctx->rc_max_rate > 0 ? avctx->rc_max_rate : -1;
 
         /* average bitrate */
         if ((ret = vorbis_encode_setup_managed(vi, avctx->channels,
-                                               avctx->sample_rate, minrate,
-                                               avctx->bit_rate, maxrate)))
+                                               avctx->sample_rate, maxrate,
+                                               avctx->bit_rate, minrate)))
             goto error;
 
         /* variable bitrate by estimate, disable slow rate management */
