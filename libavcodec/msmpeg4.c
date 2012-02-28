@@ -34,6 +34,7 @@
 #include "libavutil/x86_cpu.h"
 #include "h263.h"
 #include "mpeg4video.h"
+#include "vc1data.h"
 
 /*
  * You can also call this codec : MPEG4 with a twist !
@@ -58,9 +59,6 @@
 
 static uint32_t v2_dc_lum_table[512][2];
 static uint32_t v2_dc_chroma_table[512][2];
-
-/* vc1 externs */
-extern const uint8_t ff_wmv3_dc_scale_table[32];
 
 #include "msmpeg4data.h"
 

@@ -31,7 +31,7 @@
  *
  * @section libav_intro Introduction
  *
- * This document describe the usage of the different libraries
+ * This document describes the usage of the different libraries
  * provided by FFmpeg.
  *
  * @li @ref libavc "libavcodec" encoding/decoding library
@@ -41,7 +41,6 @@
  * @li @ref lavu "libavutil" common utility library
  * @li @subpage libpostproc post processing library
  * @li @subpage libswscale  color conversion and scaling library
- *
  */
 
 /**

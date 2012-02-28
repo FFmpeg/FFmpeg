@@ -1481,7 +1481,6 @@ static void save_bits(WMAProDecodeCtx *s, GetBitContext* gb, int len,
  *@brief Decode a single WMA packet.
  *@param avctx codec context
  *@param data the output buffer
- *@param data_size number of bytes that were written to the output buffer
  *@param avpkt input packet
  *@return number of bytes that were read from the input buffer
  */

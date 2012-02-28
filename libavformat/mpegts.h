@@ -96,10 +96,6 @@ typedef struct {
  * @param stream_type               STREAM_TYPE_xxx
  * @param pp                        Descriptor buffer pointer
  * @param desc_list_end             End of buffer
- * @param mp4_dec_config_descr_len  Length of 'mp4_dec_config_descr', or zero if not present
- * @param mp4_es_id
- * @param pid
- * @param mp4_dec_config_descr
  * @return <0 to stop processing
  */
 int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type,

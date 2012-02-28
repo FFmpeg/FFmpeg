@@ -399,8 +399,6 @@ static uint64_t sniff_channel_order(uint8_t (*layout_map)[3], int tags)
 /**
  * Configure output channel order based on the current program configuration element.
  *
- * @param   che_pos current channel position configuration
- *
  * @return  Returns error status. 0 - OK, !0 - error
  */
 static av_cold int output_configure(AACContext *ac,
@@ -459,8 +457,6 @@ static void flush(AVCodecContext *avctx)
 /**
  * Decode an array of 4 bit element IDs, optionally interleaved with a stereo/mono switching bit.
  *
- * @param cpe_map Stereo (Channel Pair Element) map, NULL if stereo bit is not present.
- * @param sce_map mono (Single Channel Element) map
  * @param type speaker type/position for these channels
  */
 static void decode_channel_map(uint8_t layout_map[][3],
@@ -1037,7 +1033,6 @@ static int decode_scalefactors(AACContext *ac, float sf[120], GetBitContext *gb,
     int offset[3] = { global_gain, global_gain - 90, 0 };
     int clipped_offset;
     int noise_flag = 1;
-    static const char *const sf_str[3] = { "Global gain", "Noise gain", "Intensity stereo position" };
     for (g = 0; g < ics->num_window_groups; g++) {
         for (i = 0; i < ics->max_sfb;) {
             int run_end = band_type_run_end[idx];
@@ -1076,7 +1071,7 @@ static int decode_scalefactors(AACContext *ac, float sf[120], GetBitContext *gb,
                     offset[0] += get_vlc2(gb, vlc_scalefactors.table, 7, 3) - 60;
                     if (offset[0] > 255U) {
                         av_log(ac->avctx, AV_LOG_ERROR,
-                               "%s (%d) out of range.\n", sf_str[0], offset[0]);
+                               "Scalefactor (%d) out of range.\n", offset[0]);
                         return -1;
                     }
                     sf[idx] = -ff_aac_pow2sf_tab[offset[0] - 100 + POW_SF2_ZERO];

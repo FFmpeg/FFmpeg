@@ -1725,9 +1725,6 @@ static int check_bits_for_superframe(GetBitContext *orig_gb,
  * (if less than 480), usually used to prevent blanks at track boundaries.
  *
  * @param ctx WMA Voice decoder context
- * @param samples pointer to output buffer for voice samples
- * @param data_size pointer containing the size of #samples on input, and the
- *                  amount of #samples filled on output
  * @return 0 on success, <0 on error or 1 if there was not enough data to
  *         fully parse the superframe
  */

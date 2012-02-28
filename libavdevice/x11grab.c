@@ -146,7 +146,6 @@ x11grab_region_win_init(struct x11_grab *s)
  * Initialize the x11 grab device demuxer (public device demuxer API).
  *
  * @param s1 Context from avformat core
- * @param ap Parameters from avformat core
  * @return <ul>
  *          <li>AVERROR(ENOMEM) no memory left</li>
  *          <li>AVERROR(EIO) other failure case</li>
