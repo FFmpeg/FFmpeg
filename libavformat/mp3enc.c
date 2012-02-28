@@ -31,6 +31,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 #include "libavutil/dict.h"
+#include "libavutil/avassert.h"
 
 static int id3v1_set_string(AVFormatContext *s, const char *key,
                             uint8_t *buf, int buf_size)
@@ -75,16 +76,25 @@ static int id3v1_create_tag(AVFormatContext *s, uint8_t *buf)
 
 typedef struct MP3Context {
     const AVClass *class;
+    ID3v2EncContext id3;
     int id3v2_version;
     int write_id3v1;
     int64_t nb_frames_offset;
+
+    /* index of the audio stream */
+    int audio_stream_idx;
+    /* number of attached pictures we still need to write */
+    int pics_to_write;
+
+    /* audio packets are queued here until we get all the attached pictures */
+    AVPacketList *queue, *queue_end;
 } MP3Context;
 
 /* insert a dummy frame containing number of frames */
 static void mp3_write_xing(AVFormatContext *s)
 {
     MP3Context       *mp3 = s->priv_data;
-    AVCodecContext *codec = s->streams[0]->codec;
+    AVCodecContext *codec = s->streams[mp3->audio_stream_idx]->codec;
     int       bitrate_idx = 1;    // 32 kbps
     int64_t   xing_offset = (codec->channels == 2) ? 32 : 17;
     int32_t        header;
@@ -129,10 +139,36 @@ static void mp3_write_xing(AVFormatContext *s)
     ffio_fill(s->pb, 0, mpah.frame_size);
 }
 
+static int mp3_queue_flush(AVFormatContext *s)
+{
+    MP3Context *mp3 = s->priv_data;
+    AVPacketList *pktl;
+    int ret = 0, write = 1;
+
+    ff_id3v2_finish(&mp3->id3, s->pb);
+    mp3_write_xing(s);
+
+    while ((pktl = mp3->queue)) {
+        if (write && (ret = ff_raw_write_packet(s, &pktl->pkt)) < 0)
+            write = 0;
+        av_free_packet(&pktl->pkt);
+        mp3->queue = pktl->next;
+        av_freep(&pktl);
+    }
+    mp3->queue_end = NULL;
+    return ret;
+}
+
 static int mp3_write_trailer(struct AVFormatContext *s)
 {
     uint8_t buf[ID3v1_TAG_SIZE];
     MP3Context *mp3 = s->priv_data;
+
+    if (mp3 && mp3->pics_to_write) {
+        av_log(s, AV_LOG_WARNING, "No packets were sent for some of the "
+               "attached pictures.\n");
+        mp3_queue_flush(s);
+    }
 
     /* write the id3v1 tag */
     if (mp3 && mp3->write_id3v1 && id3v1_create_tag(s, buf) > 0) {
@@ -142,7 +178,7 @@ static int mp3_write_trailer(struct AVFormatContext *s)
     /* write number of frames */
     if (mp3 && mp3->nb_frames_offset) {
         avio_seek(s->pb, mp3->nb_frames_offset, SEEK_SET);
-        avio_wb32(s->pb, s->streams[0]->nb_frames);
+        avio_wb32(s->pb, s->streams[mp3->audio_stream_idx]->nb_frames);
         avio_seek(s->pb, 0, SEEK_END);
     }
 
@@ -181,6 +217,50 @@ static const AVClass mp3_muxer_class = {
     .version        = LIBAVUTIL_VERSION_INT,
 };
 
+static int mp3_write_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    MP3Context *mp3 = s->priv_data;
+
+    if (pkt->stream_index == mp3->audio_stream_idx) {
+        if (mp3->pics_to_write) {
+            /* buffer audio packets until we get all the pictures */
+            AVPacketList *pktl = av_mallocz(sizeof(*pktl));
+            if (!pktl)
+                return AVERROR(ENOMEM);
+
+            pktl->pkt     = *pkt;
+            pkt->destruct = NULL;
+
+            if (mp3->queue_end)
+                mp3->queue_end->next = pktl;
+            else
+                mp3->queue = pktl;
+            mp3->queue_end = pktl;
+        } else
+            return ff_raw_write_packet(s, pkt);
+    } else {
+        int ret;
+
+        /* warn only once for each stream */
+        if (s->streams[pkt->stream_index]->nb_frames == 1) {
+            av_log(s, AV_LOG_WARNING, "Got more than one picture in stream %d,"
+                   " ignoring.\n", pkt->stream_index);
+        }
+        if (!mp3->pics_to_write || s->streams[pkt->stream_index]->nb_frames >= 1)
+            return 0;
+
+        if ((ret = ff_id3v2_write_apic(s, &mp3->id3, pkt)) < 0)
+            return ret;
+        mp3->pics_to_write--;
+
+        /* flush the buffered audio packets */
+        if (!mp3->pics_to_write &&
+            (ret = mp3_queue_flush(s)) < 0)
+            return ret;
+    }
+
+    return 0;
+}
 
 /**
  * Write an ID3v2 header at beginning of stream
@@ -189,14 +269,40 @@ static const AVClass mp3_muxer_class = {
 static int mp3_write_header(struct AVFormatContext *s)
 {
     MP3Context  *mp3 = s->priv_data;
-    int ret;
+    int ret, i;
 
-    ret = ff_id3v2_write_simple(s, mp3->id3v2_version, ID3v2_DEFAULT_MAGIC);
+    /* check the streams -- we want exactly one audio and arbitrary number of
+     * video (attached pictures) */
+    mp3->audio_stream_idx = -1;
+    for (i = 0; i < s->nb_streams; i++) {
+        AVStream *st = s->streams[i];
+        if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+            if (mp3->audio_stream_idx >= 0 || st->codec->codec_id != CODEC_ID_MP3) {
+                av_log(s, AV_LOG_ERROR, "Invalid audio stream. Exactly one MP3 "
+                       "audio stream is required.\n");
+                return AVERROR(EINVAL);
+            }
+            mp3->audio_stream_idx = i;
+        } else if (st->codec->codec_type != AVMEDIA_TYPE_VIDEO) {
+            av_log(s, AV_LOG_ERROR, "Only audio streams and pictures are allowed in MP3.\n");
+            return AVERROR(EINVAL);
+        }
+    }
+    if (mp3->audio_stream_idx < 0) {
+        av_log(s, AV_LOG_ERROR, "No audio stream present.\n");
+        return AVERROR(EINVAL);
+    }
+    mp3->pics_to_write = s->nb_streams - 1;
+
+    ff_id3v2_start(&mp3->id3, s->pb, mp3->id3v2_version, ID3v2_DEFAULT_MAGIC);
+    ret = ff_id3v2_write_metadata(s, &mp3->id3);
     if (ret < 0)
         return ret;
 
-    if (s->pb->seekable)
+    if (!mp3->pics_to_write) {
+        ff_id3v2_finish(&mp3->id3, s->pb);
         mp3_write_xing(s);
+    }
 
     return 0;
 }
@@ -208,9 +314,9 @@ AVOutputFormat ff_mp3_muxer = {
     .extensions        = "mp3",
     .priv_data_size    = sizeof(MP3Context),
     .audio_codec       = CODEC_ID_MP3,
-    .video_codec       = CODEC_ID_NONE,
+    .video_codec       = CODEC_ID_PNG,
     .write_header      = mp3_write_header,
-    .write_packet      = ff_raw_write_packet,
+    .write_packet      = mp3_write_packet,
     .write_trailer     = mp3_write_trailer,
     .flags             = AVFMT_NOTIMESTAMPS,
     .priv_class = &mp3_muxer_class,
