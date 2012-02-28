@@ -189,24 +189,24 @@ static void get_slice_data(ProresContext *ctx, const uint16_t *src,
             elinesize = linesize;
         } else {
             int bw, bh, pix;
-            const int estride = 16 / sizeof(*ctx->emu_buf);
 
             esrc      = ctx->emu_buf;
-            elinesize = 16;
+            elinesize = 16 * sizeof(*ctx->emu_buf);
 
             bw = FFMIN(w - x, mb_width);
             bh = FFMIN(h - y, 16);
 
             for (j = 0; j < bh; j++) {
-                memcpy(ctx->emu_buf + j * estride, src + j * linesize,
+                memcpy(ctx->emu_buf + j * 16,
+                       (const uint8_t*)src + j * linesize,
                        bw * sizeof(*src));
-                pix = ctx->emu_buf[j * estride + bw - 1];
+                pix = ctx->emu_buf[j * 16 + bw - 1];
                 for (k = bw; k < mb_width; k++)
-                    ctx->emu_buf[j * estride + k] = pix;
+                    ctx->emu_buf[j * 16 + k] = pix;
             }
             for (; j < 16; j++)
-                memcpy(ctx->emu_buf + j * estride,
-                       ctx->emu_buf + (bh - 1) * estride,
+                memcpy(ctx->emu_buf + j * 16,
+                       ctx->emu_buf + (bh - 1) * 16,
                        mb_width * sizeof(*ctx->emu_buf));
         }
         if (!is_chroma) {
