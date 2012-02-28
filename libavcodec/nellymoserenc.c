@@ -38,8 +38,10 @@
 #include "libavutil/mathematics.h"
 #include "nellymoser.h"
 #include "avcodec.h"
+#include "audio_frame_queue.h"
 #include "dsputil.h"
 #include "fft.h"
+#include "internal.h"
 #include "sinewin.h"
 
 #define BITSTREAM_WRITER_LE
@@ -54,6 +56,7 @@ typedef struct NellyMoserEncodeContext {
     int             last_frame;
     DSPContext      dsp;
     FFTContext      mdct_ctx;
+    AudioFrameQueue afq;
     DECLARE_ALIGNED(32, float, mdct_out)[NELLY_SAMPLES];
     DECLARE_ALIGNED(32, float, in_buff)[NELLY_SAMPLES];
     DECLARE_ALIGNED(32, float, buf)[3 * NELLY_BUF_LEN];     ///< sample buffer
@@ -136,7 +139,10 @@ static av_cold int encode_end(AVCodecContext *avctx)
         av_free(s->opt);
         av_free(s->path);
     }
+    ff_af_queue_close(&s->afq);
+#if FF_API_OLD_ENCODE_AUDIO
     av_freep(&avctx->coded_frame);
+#endif
 
     return 0;
 }
@@ -161,6 +167,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     avctx->frame_size = NELLY_SAMPLES;
     avctx->delay      = NELLY_BUF_LEN;
+    ff_af_queue_init(avctx, &s->afq);
     s->avctx = avctx;
     if ((ret = ff_mdct_init(&s->mdct_ctx, 8, 0, 32768.0)) < 0)
         goto error;
@@ -180,11 +187,13 @@ static av_cold int encode_init(AVCodecContext *avctx)
         }
     }
 
+#if FF_API_OLD_ENCODE_AUDIO
     avctx->coded_frame = avcodec_alloc_frame();
     if (!avctx->coded_frame) {
         ret = AVERROR(ENOMEM);
         goto error;
     }
+#endif
 
     return 0;
 error:
@@ -366,30 +375,44 @@ static void encode_block(NellyMoserEncodeContext *s, unsigned char *output, int 
     memset(put_bits_ptr(&pb), 0, output + output_size - put_bits_ptr(&pb));
 }
 
-static int encode_frame(AVCodecContext *avctx, uint8_t *frame, int buf_size, void *data)
+static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
+                        const AVFrame *frame, int *got_packet_ptr)
 {
     NellyMoserEncodeContext *s = avctx->priv_data;
-    const float *samples = data;
+    int ret;
 
     if (s->last_frame)
         return 0;
 
     memcpy(s->buf, s->buf + NELLY_SAMPLES, NELLY_BUF_LEN * sizeof(*s->buf));
-    if (data) {
-        memcpy(s->buf + NELLY_BUF_LEN, samples, avctx->frame_size * sizeof(*s->buf));
-        if (avctx->frame_size < NELLY_SAMPLES) {
+    if (frame) {
+        memcpy(s->buf + NELLY_BUF_LEN, frame->data[0],
+               frame->nb_samples * sizeof(*s->buf));
+        if (frame->nb_samples < NELLY_SAMPLES) {
             memset(s->buf + NELLY_BUF_LEN + avctx->frame_size, 0,
-                   (NELLY_SAMPLES - avctx->frame_size) * sizeof(*s->buf));
-            if (avctx->frame_size >= NELLY_BUF_LEN)
+                   (NELLY_SAMPLES - frame->nb_samples) * sizeof(*s->buf));
+            if (frame->nb_samples >= NELLY_BUF_LEN)
                 s->last_frame = 1;
         }
+        if ((ret = ff_af_queue_add(&s->afq, frame) < 0))
+            return ret;
     } else {
         memset(s->buf + NELLY_BUF_LEN, 0, NELLY_SAMPLES * sizeof(*s->buf));
         s->last_frame = 1;
     }
 
-    encode_block(s, frame, buf_size);
-    return NELLY_BLOCK_LEN;
+    if ((ret = ff_alloc_packet(avpkt, NELLY_BLOCK_LEN))) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
+        return ret;
+    }
+    encode_block(s, avpkt->data, avpkt->size);
+
+    /* Get the next frame pts/duration */
+    ff_af_queue_remove(&s->afq, avctx->frame_size, &avpkt->pts,
+                       &avpkt->duration);
+
+    *got_packet_ptr = 1;
+    return 0;
 }
 
 AVCodec ff_nellymoser_encoder = {
@@ -398,7 +421,7 @@ AVCodec ff_nellymoser_encoder = {
     .id = CODEC_ID_NELLYMOSER,
     .priv_data_size = sizeof(NellyMoserEncodeContext),
     .init = encode_init,
-    .encode = encode_frame,
+    .encode2 = encode_frame,
     .close = encode_end,
     .capabilities = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY,
     .long_name = NULL_IF_CONFIG_SMALL("Nellymoser Asao"),

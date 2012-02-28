@@ -287,7 +287,8 @@ OBJS-$(CONFIG_MSVIDEO1_DECODER)        += msvideo1.o
 OBJS-$(CONFIG_MSZH_DECODER)            += lcldec.o
 OBJS-$(CONFIG_MXPEG_DECODER)           += mxpegdec.o mjpegdec.o mjpeg.o
 OBJS-$(CONFIG_NELLYMOSER_DECODER)      += nellymoserdec.o nellymoser.o
-OBJS-$(CONFIG_NELLYMOSER_ENCODER)      += nellymoserenc.o nellymoser.o
+OBJS-$(CONFIG_NELLYMOSER_ENCODER)      += nellymoserenc.o nellymoser.o \
+                                          audio_frame_queue.o
 OBJS-$(CONFIG_NUV_DECODER)             += nuv.o rtjpeg.o
 OBJS-$(CONFIG_PAM_DECODER)             += pnmdec.o pnm.o
 OBJS-$(CONFIG_PAM_ENCODER)             += pamenc.o pnm.o
