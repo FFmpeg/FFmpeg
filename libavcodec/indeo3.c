@@ -724,6 +724,8 @@ static int parse_bintree(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
         SPLIT_CELL(ref_cell->height, curr_cell.height);
         ref_cell->ypos   += curr_cell.height;
         ref_cell->height -= curr_cell.height;
+        if (ref_cell->height <= 0 || curr_cell.height <= 0)
+            return AVERROR_INVALIDDATA;
     } else if (code == V_SPLIT) {
         if (curr_cell.width > strip_width) {
             /* split strip */
@@ -732,6 +734,8 @@ static int parse_bintree(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
             SPLIT_CELL(ref_cell->width, curr_cell.width);
         ref_cell->xpos  += curr_cell.width;
         ref_cell->width -= curr_cell.width;
+        if (ref_cell->width <= 0 || curr_cell.width <= 0)
+            return AVERROR_INVALIDDATA;
     }
 
     while (1) { /* loop until return */
@@ -887,13 +891,16 @@ static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
 
     if (width != ctx->width || height != ctx->height) {
+        int res;
+
         av_dlog(avctx, "Frame dimensions changed!\n");
 
         ctx->width  = width;
         ctx->height = height;
 
         free_frame_buffers(ctx);
-        allocate_frame_buffers(ctx, avctx);
+        if ((res = allocate_frame_buffers(ctx, avctx)) < 0)
+             return res;
         avcodec_set_dimensions(avctx, width, height);
     }
 
