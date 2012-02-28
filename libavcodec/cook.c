@@ -366,7 +366,7 @@ static void decode_gain_info(GetBitContext *gb, int *gaininfo)
  * @param q                 pointer to the COOKContext
  * @param quant_index_table pointer to the array
  */
-static void decode_envelope(COOKContext *q, COOKSubpacket *p,
+static int decode_envelope(COOKContext *q, COOKSubpacket *p,
                             int *quant_index_table)
 {
     int i, j, vlc_index;
@@ -388,7 +388,14 @@ static void decode_envelope(COOKContext *q, COOKSubpacket *p,
         j = get_vlc2(&q->gb, q->envelope_quant_index[vlc_index - 1].table,
                      q->envelope_quant_index[vlc_index - 1].bits, 2);
         quant_index_table[i] = quant_index_table[i - 1] + j - 12; // differential encoding
+
+        if (quant_index_table[i] < -63 || quant_index_table[i] > 64) {
+            av_log(NULL, AV_LOG_ERROR, "quant_index_table value out of bounds\n");
+            return AVERROR_INVALIDDATA;
+        }
     }
+
+    return 0;
 }
 
 /**
@@ -635,20 +642,24 @@ static void decode_vectors(COOKContext *q, COOKSubpacket *p, int *category,
  * @param q                 pointer to the COOKContext
  * @param mlt_buffer        pointer to mlt coefficients
  */
-static void mono_decode(COOKContext *q, COOKSubpacket *p, float *mlt_buffer)
+static int mono_decode(COOKContext *q, COOKSubpacket *p, float *mlt_buffer)
 {
     int category_index[128];
     int quant_index_table[102];
     int category[128];
+    int ret;
 
     memset(&category,       0, sizeof(category));
     memset(&category_index, 0, sizeof(category_index));
 
-    decode_envelope(q, p, quant_index_table);
+    if ((ret = decode_envelope(q, p, quant_index_table)) < 0)
+        return ret;
     q->num_vectors = get_bits(&q->gb, p->log2_numvector_size);
     categorize(q, p, quant_index_table, category, category_index);
     expand_category(q, category, category_index);
     decode_vectors(q, p, category, quant_index_table, mlt_buffer);
+
+    return 0;
 }
 
 
@@ -798,10 +809,10 @@ static void decouple_float(COOKContext *q,
  * @param mlt_buffer1       pointer to left channel mlt coefficients
  * @param mlt_buffer2       pointer to right channel mlt coefficients
  */
-static void joint_decode(COOKContext *q, COOKSubpacket *p, float *mlt_buffer1,
+static int joint_decode(COOKContext *q, COOKSubpacket *p, float *mlt_buffer1,
                          float *mlt_buffer2)
 {
-    int i, j;
+    int i, j, ret;
     int decouple_tab[SUBBAND_SIZE];
     float *decode_buffer = q->decode_buffer_0;
     int idx, cpl_tmp;
@@ -815,8 +826,8 @@ static void joint_decode(COOKContext *q, COOKSubpacket *p, float *mlt_buffer1,
     memset(mlt_buffer1, 0, 1024 * sizeof(*mlt_buffer1));
     memset(mlt_buffer2, 0, 1024 * sizeof(*mlt_buffer2));
     decouple_info(q, p, decouple_tab);
-    mono_decode(q, p, decode_buffer);
-
+    if ((ret = mono_decode(q, p, decode_buffer)) < 0)
+        return ret;
     /* The two channels are stored interleaved in decode_buffer. */
     for (i = 0; i < p->js_subband_start; i++) {
         for (j = 0; j < SUBBAND_SIZE; j++) {
@@ -837,6 +848,7 @@ static void joint_decode(COOKContext *q, COOKSubpacket *p, float *mlt_buffer1,
         q->decouple(q, p, i, f1, f2, decode_buffer, mlt_buffer1, mlt_buffer2);
         idx = (1 << p->js_vlc_bits) - 1;
     }
+    return 0;
 }
 
 /**
@@ -909,10 +921,11 @@ static inline void mlt_compensate_output(COOKContext *q, float *decode_buffer,
  * @param inbuffer          pointer to the inbuffer
  * @param outbuffer         pointer to the outbuffer
  */
-static void decode_subpacket(COOKContext *q, COOKSubpacket *p,
+static int decode_subpacket(COOKContext *q, COOKSubpacket *p,
                              const uint8_t *inbuffer, float *outbuffer)
 {
     int sub_packet_size = p->size;
+    int ret;
     /* packet dump */
     // for (i = 0; i < sub_packet_size ; i++)
     //     av_log(q->avctx, AV_LOG_ERROR, "%02x", inbuffer[i]);
@@ -921,13 +934,16 @@ static void decode_subpacket(COOKContext *q, COOKSubpacket *p,
     decode_bytes_and_gain(q, p, inbuffer, &p->gains1);
 
     if (p->joint_stereo) {
-        joint_decode(q, p, q->decode_buffer_1, q->decode_buffer_2);
+        if ((ret = joint_decode(q, p, q->decode_buffer_1, q->decode_buffer_2)) < 0)
+            return ret;
     } else {
-        mono_decode(q, p, q->decode_buffer_1);
+        if ((ret = mono_decode(q, p, q->decode_buffer_1)) < 0)
+            return ret;
 
         if (p->num_channels == 2) {
             decode_bytes_and_gain(q, p, inbuffer + sub_packet_size / 2, &p->gains2);
-            mono_decode(q, p, q->decode_buffer_2);
+            if ((ret = mono_decode(q, p, q->decode_buffer_2)) < 0)
+                return ret;
         }
     }
 
@@ -996,7 +1012,8 @@ static int cook_decode_frame(AVCodecContext *avctx, void *data,
                i, q->subpacket[i].size, q->subpacket[i].joint_stereo, offset,
                avctx->block_align);
 
-        decode_subpacket(q, &q->subpacket[i], buf + offset, samples);
+        if ((ret = decode_subpacket(q, &q->subpacket[i], buf + offset, samples)) < 0)
+            return ret;
         offset += q->subpacket[i].size;
         chidx += q->subpacket[i].num_channels;
         av_log(avctx, AV_LOG_DEBUG, "subpacket[%i] %i %i\n",
