@@ -689,9 +689,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream_put_be16  (&buf, avctx->height);
     bytestream_put_byte  (&buf, ctx->chroma_factor << 6); // frame flags
     bytestream_put_byte  (&buf, 0);             // reserved
-    bytestream_put_byte  (&buf, 0);             // primaries
-    bytestream_put_byte  (&buf, 0);             // transfer function
-    bytestream_put_byte  (&buf, 6);             // colour matrix - ITU-R BT.601-4
+    bytestream_put_byte  (&buf, avctx->color_primaries);
+    bytestream_put_byte  (&buf, avctx->color_trc);
+    bytestream_put_byte  (&buf, avctx->colorspace);
     bytestream_put_byte  (&buf, 0x40);          // source format and alpha information
     bytestream_put_byte  (&buf, 0);             // reserved
     bytestream_put_byte  (&buf, 0x03);          // matrix flags - both matrices are present

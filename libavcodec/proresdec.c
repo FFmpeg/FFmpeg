@@ -165,6 +165,10 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
         ctx->picture.top_field_first  = ctx->frame_type & 1;
     }
 
+    avctx->color_primaries = buf[14];
+    avctx->color_trc       = buf[15];
+    avctx->colorspace      = buf[16];
+
     ctx->alpha_info = buf[17] & 0xf;
     if (ctx->alpha_info)
         av_log_missing_feature(avctx, "alpha channel", 0);
