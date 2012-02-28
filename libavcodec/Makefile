@@ -322,7 +322,8 @@ OBJS-$(CONFIG_QTRLE_ENCODER)           += qtrleenc.o
 OBJS-$(CONFIG_R10K_DECODER)            += r210dec.o
 OBJS-$(CONFIG_R210_DECODER)            += r210dec.o
 OBJS-$(CONFIG_RA_144_DECODER)          += ra144dec.o ra144.o celp_filters.o
-OBJS-$(CONFIG_RA_144_ENCODER)          += ra144enc.o ra144.o celp_filters.o
+OBJS-$(CONFIG_RA_144_ENCODER)          += ra144enc.o ra144.o celp_filters.o \
+                                          audio_frame_queue.o
 OBJS-$(CONFIG_RA_288_DECODER)          += ra288.o celp_math.o celp_filters.o
 OBJS-$(CONFIG_RALF_DECODER)            += ralf.o
 OBJS-$(CONFIG_RAWVIDEO_DECODER)        += rawdec.o
