@@ -2269,7 +2269,7 @@ static int output_packet(InputStream *ist,
             ret = transcode_video    (ist, &avpkt, &got_output, &pkt_pts);
             if (avpkt.duration) {
                 duration = av_rescale_q(avpkt.duration, ist->st->time_base, AV_TIME_BASE_Q);
-            } else if(ist->st->codec->time_base.num != 0) {
+            } else if(ist->st->codec->time_base.num != 0 && ist->st->codec->time_base.den != 0) {
                 int ticks= ist->st->parser ? ist->st->parser->repeat_pict+1 : ist->st->codec->ticks_per_frame;
                 duration = ((int64_t)AV_TIME_BASE *
                                 ist->st->codec->time_base.num * ticks) /
