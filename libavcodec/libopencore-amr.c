@@ -22,6 +22,8 @@
 #include "avcodec.h"
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
+#include "audio_frame_queue.h"
+#include "internal.h"
 
 static void amr_decode_fix_avctx(AVCodecContext *avctx)
 {
@@ -85,6 +87,7 @@ typedef struct AMRContext {
     int   enc_mode;
     int   enc_dtx;
     int   enc_last_frame;
+    AudioFrameQueue afq;
 } AMRContext;
 
 static const AVOption options[] = {
@@ -196,9 +199,12 @@ static av_cold int amr_nb_encode_init(AVCodecContext *avctx)
 
     avctx->frame_size  = 160;
     avctx->delay       =  50;
+    ff_af_queue_init(avctx, &s->afq);
+#if FF_API_OLD_ENCODE_AUDIO
     avctx->coded_frame = avcodec_alloc_frame();
     if (!avctx->coded_frame)
         return AVERROR(ENOMEM);
+#endif
 
     s->enc_state = Encoder_Interface_init(s->enc_dtx);
     if (!s->enc_state) {
@@ -218,38 +224,49 @@ static av_cold int amr_nb_encode_close(AVCodecContext *avctx)
     AMRContext *s = avctx->priv_data;
 
     Encoder_Interface_exit(s->enc_state);
+    ff_af_queue_close(&s->afq);
+#if FF_API_OLD_ENCODE_AUDIO
     av_freep(&avctx->coded_frame);
+#endif
     return 0;
 }
 
-static int amr_nb_encode_frame(AVCodecContext *avctx,
-                               unsigned char *frame/*out*/,
-                               int buf_size, void *data/*in*/)
+static int amr_nb_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
+                               const AVFrame *frame, int *got_packet_ptr)
 {
     AMRContext *s = avctx->priv_data;
-    int written;
+    int written, ret;
     int16_t *flush_buf = NULL;
-    const int16_t *samples = data;
+    const int16_t *samples = frame ? (const int16_t *)frame->data[0] : NULL;
 
     if (s->enc_bitrate != avctx->bit_rate) {
         s->enc_mode    = get_bitrate_mode(avctx->bit_rate, avctx);
         s->enc_bitrate = avctx->bit_rate;
     }
 
-    if (data) {
-        if (avctx->frame_size < 160) {
-            flush_buf = av_mallocz(160 * sizeof(*flush_buf));
+    if ((ret = ff_alloc_packet(avpkt, 32))) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
+        return ret;
+    }
+
+    if (frame) {
+        if (frame->nb_samples < avctx->frame_size) {
+            flush_buf = av_mallocz(avctx->frame_size * sizeof(*flush_buf));
             if (!flush_buf)
                 return AVERROR(ENOMEM);
-            memcpy(flush_buf, samples, avctx->frame_size * sizeof(*flush_buf));
+            memcpy(flush_buf, samples, frame->nb_samples * sizeof(*flush_buf));
             samples = flush_buf;
-            if (avctx->frame_size < 110)
+            if (frame->nb_samples < avctx->frame_size - avctx->delay)
                 s->enc_last_frame = -1;
+        }
+        if ((ret = ff_af_queue_add(&s->afq, frame) < 0)) {
+            av_freep(&flush_buf);
+            return ret;
         }
     } else {
         if (s->enc_last_frame < 0)
             return 0;
-        flush_buf = av_mallocz(160 * sizeof(*flush_buf));
+        flush_buf = av_mallocz(avctx->frame_size * sizeof(*flush_buf));
         if (!flush_buf)
             return AVERROR(ENOMEM);
         samples = flush_buf;
@@ -257,12 +274,18 @@ static int amr_nb_encode_frame(AVCodecContext *avctx,
     }
 
     written = Encoder_Interface_Encode(s->enc_state, s->enc_mode, samples,
-                                       frame, 0);
+                                       avpkt->data, 0);
     av_dlog(avctx, "amr_nb_encode_frame encoded %u bytes, bitrate %u, first byte was %#02x\n",
             written, s->enc_mode, frame[0]);
 
+    /* Get the next frame pts/duration */
+    ff_af_queue_remove(&s->afq, avctx->frame_size, &avpkt->pts,
+                       &avpkt->duration);
+
+    avpkt->size = written;
+    *got_packet_ptr = 1;
     av_freep(&flush_buf);
-    return written;
+    return 0;
 }
 
 AVCodec ff_libopencore_amrnb_encoder = {
@@ -271,7 +294,7 @@ AVCodec ff_libopencore_amrnb_encoder = {
     .id             = CODEC_ID_AMR_NB,
     .priv_data_size = sizeof(AMRContext),
     .init           = amr_nb_encode_init,
-    .encode         = amr_nb_encode_frame,
+    .encode2        = amr_nb_encode_frame,
     .close          = amr_nb_encode_close,
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_SMALL_LAST_FRAME,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
