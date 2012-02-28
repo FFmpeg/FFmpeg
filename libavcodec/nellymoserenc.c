@@ -363,6 +363,7 @@ static void encode_block(NellyMoserEncodeContext *s, unsigned char *output, int 
     }
 
     flush_put_bits(&pb);
+    memset(put_bits_ptr(&pb), 0, output + output_size - put_bits_ptr(&pb));
 }
 
 static int encode_frame(AVCodecContext *avctx, uint8_t *frame, int buf_size, void *data)
