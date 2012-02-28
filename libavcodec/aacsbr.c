@@ -1229,8 +1229,7 @@ static void sbr_hf_inverse_filter(SBRDSPContext *dsp,
              (phi[1][1][0] * phi[1][1][0] + phi[1][1][1] * phi[1][1][1]) / 1.000001f;
 
         if (!dk) {
-            alpha1[k][0] = 0;
-            alpha1[k][1] = 0;
+            AV_ZERO64(alpha1[k]);
         } else {
             float temp_real, temp_im;
             temp_real = phi[0][0][0] * phi[1][1][0] -
@@ -1245,8 +1244,7 @@ static void sbr_hf_inverse_filter(SBRDSPContext *dsp,
         }
 
         if (!phi[1][0][0]) {
-            alpha0[k][0] = 0;
-            alpha0[k][1] = 0;
+            AV_ZERO64(alpha0[k]);
         } else {
             float temp_real, temp_im;
             temp_real = phi[0][0][0] + alpha1[k][0] * phi[1][1][0] +
@@ -1260,10 +1258,8 @@ static void sbr_hf_inverse_filter(SBRDSPContext *dsp,
 
         if (alpha1[k][0] * alpha1[k][0] + alpha1[k][1] * alpha1[k][1] >= 16.0f ||
            alpha0[k][0] * alpha0[k][0] + alpha0[k][1] * alpha0[k][1] >= 16.0f) {
-            alpha1[k][0] = 0;
-            alpha1[k][1] = 0;
-            alpha0[k][0] = 0;
-            alpha0[k][1] = 0;
+            AV_ZERO64(alpha0[k]);
+            AV_ZERO64(alpha1[k]);
         }
     }
 }
@@ -1299,14 +1295,12 @@ static int sbr_lf_gen(AACContext *ac, SpectralBandReplication *sbr,
     memset(X_low, 0, 32*sizeof(*X_low));
     for (k = 0; k < sbr->kx[1]; k++) {
         for (i = t_HFGen; i < i_f + t_HFGen; i++) {
-            X_low[k][i][0] = W[1][i - t_HFGen][k][0];
-            X_low[k][i][1] = W[1][i - t_HFGen][k][1];
+            AV_COPY64(X_low[k][i], W[1][i - t_HFGen][k]);
         }
     }
     for (k = 0; k < sbr->kx[0]; k++) {
         for (i = 0; i < t_HFGen; i++) {
-            X_low[k][i][0] = W[0][i + i_f - t_HFGen][k][0];
-            X_low[k][i][1] = W[0][i + i_f - t_HFGen][k][1];
+            AV_COPY64(X_low[k][i], W[0][i + i_f - t_HFGen][k]);
         }
     }
     return 0;
