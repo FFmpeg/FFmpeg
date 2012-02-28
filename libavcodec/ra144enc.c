@@ -53,6 +53,7 @@ static av_cold int ra144_encode_init(AVCodecContext * avctx)
         return -1;
     }
     avctx->frame_size = NBLOCKS * BLOCKSIZE;
+    avctx->delay      = avctx->frame_size;
     avctx->bit_rate = 8000;
     ractx = avctx->priv_data;
     ractx->lpc_coef[0] = ractx->lpc_tables[0];
@@ -433,7 +434,7 @@ static int ra144_encode_frame(AVCodecContext *avctx, uint8_t *frame,
 {
     static const uint8_t sizes[LPC_ORDER] = {64, 32, 32, 16, 16, 8, 8, 8, 8, 4};
     static const uint8_t bit_sizes[LPC_ORDER] = {6, 5, 5, 4, 4, 3, 3, 3, 3, 2};
-    RA144Context *ractx;
+    RA144Context *ractx = avctx->priv_data;
     PutBitContext pb;
     int32_t lpc_data[NBLOCKS * BLOCKSIZE];
     int32_t lpc_coefs[LPC_ORDER][MAX_LPC_ORDER];
@@ -445,11 +446,13 @@ static int ra144_encode_frame(AVCodecContext *avctx, uint8_t *frame,
     int energy = 0;
     int i, idx;
 
+    if (ractx->last_frame)
+        return 0;
+
     if (buf_size < FRAMESIZE) {
         av_log(avctx, AV_LOG_ERROR, "output buffer too small\n");
         return 0;
     }
-    ractx = avctx->priv_data;
 
     /**
      * Since the LPC coefficients are calculated on a frame centered over the
@@ -462,11 +465,15 @@ static int ra144_encode_frame(AVCodecContext *avctx, uint8_t *frame,
         lpc_data[i] = ractx->curr_block[BLOCKSIZE + BLOCKSIZE / 2 + i];
         energy += (lpc_data[i] * lpc_data[i]) >> 4;
     }
-    for (i = 2 * BLOCKSIZE + BLOCKSIZE / 2; i < NBLOCKS * BLOCKSIZE; i++) {
-        lpc_data[i] = *((int16_t *)data + i - 2 * BLOCKSIZE - BLOCKSIZE / 2) >>
-                      2;
-        energy += (lpc_data[i] * lpc_data[i]) >> 4;
+    if (data) {
+        int j;
+        for (j = 0; j < avctx->frame_size && i < NBLOCKS * BLOCKSIZE; i++, j++) {
+            lpc_data[i] = samples[j] >> 2;
+            energy += (lpc_data[i] * lpc_data[i]) >> 4;
+        }
     }
+    if (i < NBLOCKS * BLOCKSIZE)
+        memset(&lpc_data[i], 0, (NBLOCKS * BLOCKSIZE - i) * sizeof(*lpc_data));
     energy = ff_energy_tab[quantize(ff_t_sqrt(energy >> 5) >> 10, ff_energy_tab,
                                     32)];
 
@@ -515,8 +522,17 @@ static int ra144_encode_frame(AVCodecContext *avctx, uint8_t *frame,
     ractx->old_energy = energy;
     ractx->lpc_refl_rms[1] = ractx->lpc_refl_rms[0];
     FFSWAP(unsigned int *, ractx->lpc_coef[0], ractx->lpc_coef[1]);
-    for (i = 0; i < NBLOCKS * BLOCKSIZE; i++)
-        ractx->curr_block[i] = samples[i] >> 2;
+
+    /* copy input samples to current block for processing in next call */
+    i = 0;
+    if (data) {
+        for (; i < avctx->frame_size; i++)
+            ractx->curr_block[i] = samples[i] >> 2;
+    } else
+        ractx->last_frame = 1;
+    memset(&ractx->curr_block[i], 0,
+           (NBLOCKS * BLOCKSIZE - i) * sizeof(*ractx->curr_block));
+
     return FRAMESIZE;
 }
 
@@ -529,6 +545,7 @@ AVCodec ff_ra_144_encoder = {
     .init           = ra144_encode_init,
     .encode         = ra144_encode_frame,
     .close          = ra144_encode_close,
+    .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_SMALL_LAST_FRAME,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("RealAudio 1.0 (14.4K)"),
