@@ -820,6 +820,7 @@ static int is_intra_only(AVCodecContext *enc){
         case CODEC_ID_LJPEG:
         case CODEC_ID_PRORES:
         case CODEC_ID_RAWVIDEO:
+        case CODEC_ID_V210:
         case CODEC_ID_DVVIDEO:
         case CODEC_ID_HUFFYUV:
         case CODEC_ID_FFVHUFF:
