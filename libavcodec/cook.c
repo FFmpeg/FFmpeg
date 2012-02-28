@@ -399,7 +399,7 @@ static void decode_envelope(COOKContext *q, COOKSubpacket *p,
  * @param category              pointer to the category array
  * @param category_index        pointer to the category_index array
  */
-static void categorize(COOKContext *q, COOKSubpacket *p, int *quant_index_table,
+static void categorize(COOKContext *q, COOKSubpacket *p, const int *quant_index_table,
                        int *category, int *category_index)
 {
     int exp_idx, bias, tmpbias1, tmpbias2, bits_left, num_bits, index, v, i, j;
