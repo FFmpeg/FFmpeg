@@ -24,6 +24,7 @@
 #include "libavutil/intmath.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 
 #define ROQ_FRAME_SIZE           735
 #define ROQ_HEADER_SIZE   8
@@ -37,6 +38,7 @@ typedef struct
     int input_frames;
     int buffered_samples;
     int16_t *frame_buffer;
+    int64_t first_pts;
 } ROQDPCMContext;
 
 
@@ -44,7 +46,9 @@ static av_cold int roq_dpcm_encode_close(AVCodecContext *avctx)
 {
     ROQDPCMContext *context = avctx->priv_data;
 
+#if FF_API_OLD_ENCODE_AUDIO
     av_freep(&avctx->coded_frame);
+#endif
     av_freep(&context->frame_buffer);
 
     return 0;
@@ -77,11 +81,13 @@ static av_cold int roq_dpcm_encode_init(AVCodecContext *avctx)
 
     context->lastSample[0] = context->lastSample[1] = 0;
 
+#if FF_API_OLD_ENCODE_AUDIO
     avctx->coded_frame= avcodec_alloc_frame();
     if (!avctx->coded_frame) {
         ret = AVERROR(ENOMEM);
         goto error;
     }
+#endif
 
     return 0;
 error:
@@ -129,23 +135,25 @@ static unsigned char dpcm_predict(short *previous, short current)
     return result;
 }
 
-static int roq_dpcm_encode_frame(AVCodecContext *avctx,
-                unsigned char *frame, int buf_size, void *data)
+static int roq_dpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
+                                 const AVFrame *frame, int *got_packet_ptr)
 {
-    int i, stereo, data_size;
-    const int16_t *in = data;
-    uint8_t *out = frame;
+    int i, stereo, data_size, ret;
+    const int16_t *in = frame ? (const int16_t *)frame->data[0] : NULL;
+    uint8_t *out;
     ROQDPCMContext *context = avctx->priv_data;
 
     stereo = (avctx->channels == 2);
 
-    if (!data && context->input_frames >= 8)
+    if (!in && context->input_frames >= 8)
         return 0;
 
-    if (data && context->input_frames < 8) {
+    if (in && context->input_frames < 8) {
         memcpy(&context->frame_buffer[context->buffered_samples * avctx->channels],
                in, avctx->frame_size * avctx->channels * sizeof(*in));
         context->buffered_samples += avctx->frame_size;
+        if (context->input_frames == 0)
+            context->first_pts = frame->pts;
         if (context->input_frames < 7) {
             context->input_frames++;
             return 0;
@@ -158,15 +166,16 @@ static int roq_dpcm_encode_frame(AVCodecContext *avctx,
         context->lastSample[1] &= 0xFF00;
     }
 
-    if (context->input_frames == 7 || !data)
+    if (context->input_frames == 7 || !in)
         data_size = avctx->channels * context->buffered_samples;
     else
         data_size = avctx->channels * avctx->frame_size;
 
-    if (buf_size < ROQ_HEADER_SIZE + data_size) {
-        av_log(avctx, AV_LOG_ERROR, "output buffer is too small\n");
-        return AVERROR(EINVAL);
+    if ((ret = ff_alloc_packet(avpkt, ROQ_HEADER_SIZE + data_size))) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
+        return ret;
     }
+    out = avpkt->data;
 
     bytestream_put_byte(&out, stereo ? 0x21 : 0x20);
     bytestream_put_byte(&out, 0x10);
@@ -182,12 +191,15 @@ static int roq_dpcm_encode_frame(AVCodecContext *avctx,
     for (i = 0; i < data_size; i++)
         *out++ = dpcm_predict(&context->lastSample[i & 1], *in++);
 
+    avpkt->pts      = context->input_frames <= 7 ? context->first_pts : frame->pts;
+    avpkt->duration = data_size / avctx->channels;
+
     context->input_frames++;
-    if (!data)
+    if (!in)
         context->input_frames = FFMAX(context->input_frames, 8);
 
-    /* Return the result size */
-    return ROQ_HEADER_SIZE + data_size;
+    *got_packet_ptr = 1;
+    return 0;
 }
 
 AVCodec ff_roq_dpcm_encoder = {
@@ -196,7 +208,7 @@ AVCodec ff_roq_dpcm_encoder = {
     .id             = CODEC_ID_ROQ_DPCM,
     .priv_data_size = sizeof(ROQDPCMContext),
     .init           = roq_dpcm_encode_init,
-    .encode         = roq_dpcm_encode_frame,
+    .encode2        = roq_dpcm_encode_frame,
     .close          = roq_dpcm_encode_close,
     .capabilities   = CODEC_CAP_DELAY,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
