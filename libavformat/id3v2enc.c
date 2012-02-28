@@ -45,7 +45,7 @@ static int string_is_ascii(const uint8_t *str)
  * according to encoding (only UTF-8 or UTF-16+BOM supported).
  * @return number of bytes written or a negative error code.
  */
-static int id3v2_put_ttag(AVFormatContext *s, const char *str1, const char *str2,
+static int id3v2_put_ttag(ID3v2EncContext *id3, AVIOContext *avioc, const char *str1, const char *str2,
                           uint32_t tag, enum ID3v2Encoding enc)
 {
     int len;
@@ -73,17 +73,21 @@ static int id3v2_put_ttag(AVFormatContext *s, const char *str1, const char *str2
         put(dyn_buf, str2);
     len = avio_close_dyn_buf(dyn_buf, &pb);
 
-    avio_wb32(s->pb, tag);
-    id3v2_put_size(s->pb, len);
-    avio_wb16(s->pb, 0);
-    avio_write(s->pb, pb, len);
+    avio_wb32(avioc, tag);
+    /* ID3v2.3 frame size is not synchsafe */
+    if (id3->version == 3)
+        avio_wb32(avioc, len);
+    else
+        id3v2_put_size(avioc, len);
+    avio_wb16(avioc, 0);
+    avio_write(avioc, pb, len);
 
     av_freep(&pb);
     return len + ID3v2_HEADER_SIZE;
 }
 
-static int id3v2_check_write_tag(AVFormatContext *s, AVDictionaryEntry *t, const char table[][4],
-                                 enum ID3v2Encoding enc)
+static int id3v2_check_write_tag(ID3v2EncContext *id3, AVIOContext *pb, AVDictionaryEntry *t,
+                                 const char table[][4], enum ID3v2Encoding enc)
 {
     uint32_t tag;
     int i;
@@ -93,7 +97,7 @@ static int id3v2_check_write_tag(AVFormatContext *s, AVDictionaryEntry *t, const
     tag = AV_RB32(t->key);
     for (i = 0; *table[i]; i++)
         if (tag == AV_RB32(table[i]))
-            return id3v2_put_ttag(s, t->value, NULL, tag, enc);
+            return id3v2_put_ttag(id3, pb, t->value, NULL, tag, enc);
     return -1;
 }
 
@@ -124,18 +128,18 @@ int ff_id3v2_write_metadata(AVFormatContext *s, ID3v2EncContext *id3)
     while ((t = av_dict_get(s->metadata, "", t, AV_DICT_IGNORE_SUFFIX))) {
         int ret;
 
-        if ((ret = id3v2_check_write_tag(s, t, ff_id3v2_tags, enc)) > 0) {
+        if ((ret = id3v2_check_write_tag(id3, s->pb, t, ff_id3v2_tags, enc)) > 0) {
             id3->len += ret;
             continue;
         }
-        if ((ret = id3v2_check_write_tag(s, t, id3->version == 3 ?
+        if ((ret = id3v2_check_write_tag(id3, s->pb, t, id3->version == 3 ?
                                                ff_id3v2_3_tags : ff_id3v2_4_tags, enc)) > 0) {
             id3->len += ret;
             continue;
         }
 
         /* unknown tag, write as TXXX frame */
-        if ((ret = id3v2_put_ttag(s, t->key, t->value, MKBETAG('T', 'X', 'X', 'X'), enc)) < 0)
+        if ((ret = id3v2_put_ttag(id3, s->pb, t->key, t->value, MKBETAG('T', 'X', 'X', 'X'), enc)) < 0)
             return ret;
         id3->len += ret;
     }
