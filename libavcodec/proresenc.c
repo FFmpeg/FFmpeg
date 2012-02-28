@@ -171,7 +171,7 @@ typedef struct ProresContext {
 static void get_slice_data(ProresContext *ctx, const uint16_t *src,
                            int linesize, int x, int y, int w, int h,
                            DCTELEM *blocks,
-                           int mbs_per_slice, int blocks_per_mb)
+                           int mbs_per_slice, int blocks_per_mb, int is_chroma)
 {
     const uint16_t *esrc;
     const int mb_width = 4 * blocks_per_mb;
@@ -209,17 +209,30 @@ static void get_slice_data(ProresContext *ctx, const uint16_t *src,
                        ctx->emu_buf + (bh - 1) * estride,
                        mb_width * sizeof(*ctx->emu_buf));
         }
-        ctx->dsp.fdct(esrc, elinesize, blocks);
-        blocks += 64;
-        if (blocks_per_mb > 2) {
-            ctx->dsp.fdct(src + 8, linesize, blocks);
+        if (!is_chroma) {
+            ctx->dsp.fdct(esrc, elinesize, blocks);
             blocks += 64;
-        }
-        ctx->dsp.fdct(src + linesize * 4, linesize, blocks);
-        blocks += 64;
-        if (blocks_per_mb > 2) {
-            ctx->dsp.fdct(src + linesize * 4 + 8, linesize, blocks);
+            if (blocks_per_mb > 2) {
+                ctx->dsp.fdct(src + 8, linesize, blocks);
+                blocks += 64;
+            }
+            ctx->dsp.fdct(src + linesize * 4, linesize, blocks);
             blocks += 64;
+            if (blocks_per_mb > 2) {
+                ctx->dsp.fdct(src + linesize * 4 + 8, linesize, blocks);
+                blocks += 64;
+            }
+        } else {
+            ctx->dsp.fdct(esrc, elinesize, blocks);
+            blocks += 64;
+            ctx->dsp.fdct(src + linesize * 4, linesize, blocks);
+            blocks += 64;
+            if (blocks_per_mb > 2) {
+                ctx->dsp.fdct(src + 8, linesize, blocks);
+                blocks += 64;
+                ctx->dsp.fdct(src + linesize * 4 + 8, linesize, blocks);
+                blocks += 64;
+            }
         }
 
         x += mb_width;
@@ -383,7 +396,7 @@ static int encode_slice(AVCodecContext *avctx, const AVFrame *pic,
 
         get_slice_data(ctx, src, pic->linesize[i], xp, yp,
                        pwidth, avctx->height, ctx->blocks[0],
-                       mbs_per_slice, num_cblocks);
+                       mbs_per_slice, num_cblocks, is_chroma);
         sizes[i] = encode_slice_plane(ctx, pb, src, pic->linesize[i],
                                       mbs_per_slice, ctx->blocks[0],
                                       num_cblocks, plane_factor,
@@ -539,7 +552,7 @@ static int find_slice_quant(AVCodecContext *avctx, const AVFrame *pic,
 
         get_slice_data(ctx, src, pic->linesize[i], xp, yp,
                        pwidth, avctx->height, ctx->blocks[i],
-                       mbs_per_slice, num_cblocks[i]);
+                       mbs_per_slice, num_cblocks[i], is_chroma[i]);
     }
 
     for (q = min_quant; q < max_quant + 2; q++) {
