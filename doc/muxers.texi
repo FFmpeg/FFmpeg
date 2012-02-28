@@ -361,5 +361,39 @@ Wrap around segment index once it reaches @var{limit}.
 avconv -i in.mkv -c copy -map 0 -f segment -list out.list out%03d.nut
 @end example
 
+@section mp3
+
+The MP3 muxer writes a raw MP3 stream with an ID3v2 header at the beginning and
+optionally an ID3v1 tag at the end. ID3v2.3 and ID3v2.4 are supported, the
+@code{id3v2_version} option controls which one is used. The legacy ID3v1 tag is
+not written by default, but may be enabled with the @code{write_id3v1} option.
+
+For seekable output the muxer also writes a Xing frame at the beginning, which
+contains the number of frames in the file. It is useful for computing duration
+of VBR files.
+
+The muxer supports writing ID3v2 attached pictures (APIC frames). The pictures
+are supplied to the muxer in form of a video stream with a single packet. There
+can be any number of those streams, each will correspond to a single APIC frame.
+The stream metadata tags @var{title} and @var{comment} map to APIC
+@var{description} and @var{picture type} respectively. See
+@url{http://id3.org/id3v2.4.0-frames} for allowed picture types.
+
+Note that the APIC frames must be written at the beginning, so the muxer will
+buffer the audio frames until it gets all the pictures. It is therefore advised
+to provide the pictures as soon as possible to avoid excessive buffering.
+
+Examples:
+
+Write an mp3 with an ID3v2.3 header and an ID3v1 footer:
+@example
+avconv -i INPUT -id3v2_version 3 -write_id3v1 1 out.mp3
+@end example
+
+Attach a picture to an mp3:
+@example
+avconv -i input.mp3 -i cover.png -c copy -metadata:s:v title="Album cover"
+-metadata:s:v comment="Cover (Front)" out.mp3
+@end example
 
 @c man end MUXERS

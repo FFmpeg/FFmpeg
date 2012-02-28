@@ -10,6 +10,7 @@ version <next>:
 - Apple ProRes encoder
 - Sun Rasterfile Encoder
 - remove libpostproc
+- ID3v2 attached pictures reading and writing
 
 
 version 0.8:
