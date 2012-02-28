@@ -277,6 +277,10 @@ static void xa_decode(short *out, const unsigned char *in,
 
         shift  = 12 - (in[4+i*2] & 15);
         filter = in[4+i*2] >> 4;
+        if (filter >= FF_ARRAY_ELEMS(xa_adpcm_table)) {
+            av_log_ask_for_sample(NULL, "unknown filter %d\n", filter);
+            filter=0;
+        }
         f0 = xa_adpcm_table[filter][0];
         f1 = xa_adpcm_table[filter][1];
 
@@ -304,6 +308,10 @@ static void xa_decode(short *out, const unsigned char *in,
 
         shift  = 12 - (in[5+i*2] & 15);
         filter = in[5+i*2] >> 4;
+        if (filter >= FF_ARRAY_ELEMS(xa_adpcm_table)) {
+            av_log_ask_for_sample(NULL, "unknown filter %d\n", filter);
+            filter=0;
+        }
 
         f0 = xa_adpcm_table[filter][0];
         f1 = xa_adpcm_table[filter][1];
