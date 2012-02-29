@@ -61,6 +61,12 @@ static const AVOption options[] = {
     { "iblock", "Sets the impulse block bias", offsetof(OggVorbisContext, iblock), AV_OPT_TYPE_DOUBLE, { .dbl = 0 }, -15, 0, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
     { NULL }
 };
+
+static const AVCodecDefault defaults[] = {
+    { "b",  "0" },
+    { NULL },
+};
+
 static const AVClass class = { "libvorbis", av_default_item_name, options, LIBAVUTIL_VERSION_INT };
 
 
@@ -81,12 +87,15 @@ static av_cold int oggvorbis_init_encoder(vorbis_info *vi,
     double cfreq;
     int ret;
 
-    if (avctx->flags & CODEC_FLAG_QSCALE) {
+    if (avctx->flags & CODEC_FLAG_QSCALE || !avctx->bit_rate) {
         /* variable bitrate
          * NOTE: we use the oggenc range of -1 to 10 for global_quality for
-         *       user convenience, but libvorbis uses -0.1 to 1.0
+         *       user convenience, but libvorbis uses -0.1 to 1.0.
          */
         float q = avctx->global_quality / (float)FF_QP2LAMBDA;
+        /* default to 3 if the user did not set quality or bitrate */
+        if (!(avctx->flags & CODEC_FLAG_QSCALE))
+            q = 3.0;
         if ((ret = vorbis_encode_setup_vbr(vi, avctx->channels,
                                            avctx->sample_rate,
                                            q / 10.0)))
@@ -307,4 +316,5 @@ AVCodec ff_libvorbis_encoder = {
                                                       AV_SAMPLE_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("libvorbis Vorbis"),
     .priv_class     = &class,
+    .defaults       = defaults,
 };
