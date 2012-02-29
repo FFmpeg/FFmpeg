@@ -137,13 +137,16 @@ typedef struct {
 #define RESIDUE_PART_SIZE      32
 #define NUM_RESIDUE_PARTITIONS (RESIDUE_SIZE/RESIDUE_PART_SIZE)
 
-static inline void put_codeword(PutBitContext *pb, vorbis_enc_codebook *cb,
-                                int entry)
+static inline int put_codeword(PutBitContext *pb, vorbis_enc_codebook *cb,
+                               int entry)
 {
     assert(entry >= 0);
     assert(entry < cb->nentries);
     assert(cb->lens[entry]);
+    if (pb->size_in_bits - put_bits_count(pb) < cb->lens[entry])
+        return AVERROR(EINVAL);
     put_bits(pb, cb->lens[entry], cb->codewords[entry]);
+    return 0;
 }
 
 static int cb_lookup_vals(int lookup, int dimentions, int entries)
@@ -751,14 +754,16 @@ static int render_point(int x0, int y0, int x1, int y1, int x)
     return y0 +  (x - x0) * (y1 - y0) / (x1 - x0);
 }
 
-static void floor_encode(vorbis_enc_context *venc, vorbis_enc_floor *fc,
-                         PutBitContext *pb, uint16_t *posts,
-                         float *floor, int samples)
+static int floor_encode(vorbis_enc_context *venc, vorbis_enc_floor *fc,
+                        PutBitContext *pb, uint16_t *posts,
+                        float *floor, int samples)
 {
     int range = 255 / fc->multiplier + 1;
     int coded[MAX_FLOOR_VALUES]; // first 2 values are unused
     int i, counter;
 
+    if (pb->size_in_bits - put_bits_count(pb) < 1 + 2 * ilog(range - 1))
+        return AVERROR(EINVAL);
     put_bits(pb, 1, 1); // non zero
     put_bits(pb, ilog(range - 1), posts[0]);
     put_bits(pb, ilog(range - 1), posts[1]);
@@ -816,7 +821,8 @@ static void floor_encode(vorbis_enc_context *venc, vorbis_enc_floor *fc,
                 cval   |= l << cshift;
                 cshift += c->subclass;
             }
-            put_codeword(pb, book, cval);
+            if (put_codeword(pb, book, cval))
+                return AVERROR(EINVAL);
         }
         for (k = 0; k < c->dim; k++) {
             int book  = c->books[cval & (csub-1)];
@@ -826,12 +832,15 @@ static void floor_encode(vorbis_enc_context *venc, vorbis_enc_floor *fc,
                 continue;
             if (entry == -1)
                 entry = 0;
-            put_codeword(pb, &venc->codebooks[book], entry);
+            if (put_codeword(pb, &venc->codebooks[book], entry))
+                return AVERROR(EINVAL);
         }
     }
 
     ff_vorbis_floor1_render_list(fc->list, fc->values, posts, coded,
                                  fc->multiplier, floor, samples);
+
+    return 0;
 }
 
 static float *put_vector(vorbis_enc_codebook *book, PutBitContext *pb,
@@ -852,13 +861,14 @@ static float *put_vector(vorbis_enc_codebook *book, PutBitContext *pb,
             distance = d;
         }
     }
-    put_codeword(pb, book, entry);
+    if (put_codeword(pb, book, entry))
+        return NULL;
     return &book->dimentions[entry * book->ndimentions];
 }
 
-static void residue_encode(vorbis_enc_context *venc, vorbis_enc_residue *rc,
-                           PutBitContext *pb, float *coeffs, int samples,
-                           int real_ch)
+static int residue_encode(vorbis_enc_context *venc, vorbis_enc_residue *rc,
+                          PutBitContext *pb, float *coeffs, int samples,
+                          int real_ch)
 {
     int pass, i, j, p, k;
     int psize      = rc->partition_size;
@@ -894,7 +904,8 @@ static void residue_encode(vorbis_enc_context *venc, vorbis_enc_residue *rc,
                         entry *= rc->classifications;
                         entry += classes[j][p + i];
                     }
-                    put_codeword(pb, book, entry);
+                    if (put_codeword(pb, book, entry))
+                        return AVERROR(EINVAL);
                 }
             for (i = 0; i < classwords && p < partitions; i++, p++) {
                 for (j = 0; j < channels; j++) {
@@ -909,8 +920,10 @@ static void residue_encode(vorbis_enc_context *venc, vorbis_enc_residue *rc,
 
                     if (rc->type == 0) {
                         for (k = 0; k < psize; k += book->ndimentions) {
-                            float *a = put_vector(book, pb, &buf[k]);
                             int l;
+                            float *a = put_vector(book, pb, &buf[k]);
+                            if (!a)
+                                return AVERROR(EINVAL);
                             for (l = 0; l < book->ndimentions; l++)
                                 buf[k + l] -= a[l];
                         }
@@ -930,6 +943,8 @@ static void residue_encode(vorbis_enc_context *venc, vorbis_enc_residue *rc,
                                 }
                             }
                             pv = put_vector(book, pb, vec);
+                            if (!pv)
+                                return AVERROR(EINVAL);
                             for (dim = book->ndimentions; dim--; ) {
                                 coeffs[a1 + b1] -= *pv++;
                                 if ((a1 += samples) == s) {
@@ -943,6 +958,7 @@ static void residue_encode(vorbis_enc_context *venc, vorbis_enc_residue *rc,
             }
         }
     }
+    return 0;
 }
 
 static int apply_window_and_mdct(vorbis_enc_context *venc, const signed short *audio,
@@ -1017,6 +1033,11 @@ static int vorbis_encode_frame(AVCodecContext *avccontext,
 
     init_put_bits(&pb, packets, buf_size);
 
+    if (pb.size_in_bits - put_bits_count(&pb) < 1 + ilog(venc->nmodes - 1)) {
+        av_log(avccontext, AV_LOG_ERROR, "output buffer is too small\n");
+        return AVERROR(EINVAL);
+    }
+
     put_bits(&pb, 1, 0); // magic bit
 
     put_bits(&pb, ilog(venc->nmodes - 1), 0); // 0 bits, the mode
@@ -1032,7 +1053,10 @@ static int vorbis_encode_frame(AVCodecContext *avccontext,
         vorbis_enc_floor *fc = &venc->floors[mapping->floor[mapping->mux[i]]];
         uint16_t posts[MAX_FLOOR_VALUES];
         floor_fit(venc, fc, &venc->coeffs[i * samples], posts, samples);
-        floor_encode(venc, fc, &pb, posts, &venc->floor[i * samples], samples);
+        if (floor_encode(venc, fc, &pb, posts, &venc->floor[i * samples], samples)) {
+            av_log(avccontext, AV_LOG_ERROR, "output buffer is too small\n");
+            return AVERROR(EINVAL);
+        }
     }
 
     for (i = 0; i < venc->channels * samples; i++)
@@ -1052,8 +1076,11 @@ static int vorbis_encode_frame(AVCodecContext *avccontext,
         }
     }
 
-    residue_encode(venc, &venc->residues[mapping->residue[mapping->mux[0]]],
-                   &pb, venc->coeffs, samples, venc->channels);
+    if (residue_encode(venc, &venc->residues[mapping->residue[mapping->mux[0]]],
+                       &pb, venc->coeffs, samples, venc->channels)) {
+        av_log(avccontext, AV_LOG_ERROR, "output buffer is too small\n");
+        return AVERROR(EINVAL);
+    }
 
     avccontext->coded_frame->pts = venc->sample_count;
     venc->sample_count += avccontext->frame_size;
