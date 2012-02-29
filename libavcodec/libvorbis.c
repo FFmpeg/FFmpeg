@@ -271,10 +271,6 @@ static int oggvorbis_encode_frame(AVCodecContext *avctx, unsigned char *packets,
 
         /* add any available packets to the output packet buffer */
         while ((ret = vorbis_bitrate_flushpacket(&s->vd, &op)) == 1) {
-            /* i'd love to say the following line is a hack, but sadly it's
-             * not, apparently the end of stream decision is in libogg. */
-            if (op.bytes == 1 && op.e_o_s)
-                continue;
             if (s->buffer_index + sizeof(ogg_packet) + op.bytes > BUFFER_SIZE) {
                 av_log(avctx, AV_LOG_ERROR, "libvorbis: buffer overflow.");
                 return -1;
