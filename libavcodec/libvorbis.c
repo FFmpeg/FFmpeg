@@ -29,6 +29,7 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 #include "vorbis.h"
 #include "libavutil/mathematics.h"
 
@@ -59,6 +60,12 @@ static const AVOption options[] = {
     { "iblock", "Sets the impulse block bias", offsetof(OggVorbisContext, iblock), AV_OPT_TYPE_DOUBLE, { .dbl = 0 }, -15, 0, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
     { NULL }
 };
+
+static const AVCodecDefault defaults[] = {
+    { "b",  "0" },
+    { NULL },
+};
+
 static const AVClass class = { "libvorbis", av_default_item_name, options, LIBAVUTIL_VERSION_INT };
 
 static av_cold int oggvorbis_init_encoder(vorbis_info *vi, AVCodecContext *avccontext)
@@ -66,11 +73,18 @@ static av_cold int oggvorbis_init_encoder(vorbis_info *vi, AVCodecContext *avcco
     OggVorbisContext *context = avccontext->priv_data;
     double cfreq;
 
-    if (avccontext->flags & CODEC_FLAG_QSCALE) {
-        /* variable bitrate */
+    if (avccontext->flags & CODEC_FLAG_QSCALE || !avccontext->bit_rate) {
+        /* variable bitrate
+         * NOTE: we use the oggenc range of -1 to 10 for global_quality for
+         *       user convenience, but libvorbis uses -0.1 to 1.0.
+         */
+        float q = avccontext->global_quality / (float)FF_QP2LAMBDA;
+        /* default to 3 if the user did not set quality or bitrate */
+        if (!(avccontext->flags & CODEC_FLAG_QSCALE))
+            q = 3.0;
         if (vorbis_encode_setup_vbr(vi, avccontext->channels,
                                     avccontext->sample_rate,
-                                    avccontext->global_quality / (float)FF_QP2LAMBDA / 10.0))
+                                    q / 10.0))
             return -1;
     } else {
         int minrate = avccontext->rc_min_rate > 0 ? avccontext->rc_min_rate : -1;
@@ -262,4 +276,5 @@ AVCodec ff_libvorbis_encoder = {
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("libvorbis Vorbis"),
     .priv_class     = &class,
+    .defaults       = defaults,
 };
