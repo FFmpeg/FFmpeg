@@ -52,6 +52,7 @@ typedef struct OggVorbisContext {
     uint8_t buffer[BUFFER_SIZE];        /**< output packet buffer           */
     int buffer_index;                   /**< current buffer position        */
     int eof;                            /**< end-of-file flag               */
+    int dsp_initialized;                /**< vd has been initialized        */
     vorbis_comment vc;                  /**< VorbisComment info             */
     ogg_packet op;                      /**< ogg packet                     */
     double iblock;                      /**< impulse block bias option      */
@@ -148,7 +149,8 @@ static av_cold int oggvorbis_encode_close(AVCodecContext *avctx)
     OggVorbisContext *s = avctx->priv_data;
 
     /* notify vorbisenc this is EOF */
-    vorbis_analysis_wrote(&s->vd, 0);
+    if (s->dsp_initialized)
+        vorbis_analysis_wrote(&s->vd, 0);
 
     vorbis_block_clear(&s->vb);
     vorbis_dsp_clear(&s->vd);
@@ -177,6 +179,7 @@ static av_cold int oggvorbis_encode_init(AVCodecContext *avctx)
         ret = vorbis_error_to_averror(ret);
         goto error;
     }
+    s->dsp_initialized = 1;
     if ((ret = vorbis_block_init(&s->vd, &s->vb))) {
         ret = vorbis_error_to_averror(ret);
         goto error;
