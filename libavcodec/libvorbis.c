@@ -237,7 +237,7 @@ static int oggvorbis_encode_frame(AVCodecContext *avctx, unsigned char *packets,
     OggVorbisContext *s = avctx->priv_data;
     ogg_packet op;
     float *audio = data;
-    int pkt_size;
+    int pkt_size, ret;
 
     /* send samples to libvorbis */
     if (data) {
@@ -253,20 +253,24 @@ static int oggvorbis_encode_frame(AVCodecContext *avctx, unsigned char *packets,
             for (i = 0; i < samples; i++)
                 buffer[c][i] = audio[i * channels + co];
         }
-        vorbis_analysis_wrote(&s->vd, samples);
+        if ((ret = vorbis_analysis_wrote(&s->vd, samples)) < 0)
+            return vorbis_error_to_averror(ret);
     } else {
         if (!s->eof)
-            vorbis_analysis_wrote(&s->vd, 0);
+            if ((ret = vorbis_analysis_wrote(&s->vd, 0)) < 0)
+                return vorbis_error_to_averror(ret);
         s->eof = 1;
     }
 
     /* retrieve available packets from libvorbis */
-    while (vorbis_analysis_blockout(&s->vd, &s->vb) == 1) {
-        vorbis_analysis(&s->vb, NULL);
-        vorbis_bitrate_addblock(&s->vb);
+    while ((ret = vorbis_analysis_blockout(&s->vd, &s->vb)) == 1) {
+        if ((ret = vorbis_analysis(&s->vb, NULL)) < 0)
+            break;
+        if ((ret = vorbis_bitrate_addblock(&s->vb)) < 0)
+            break;
 
         /* add any available packets to the output packet buffer */
-        while (vorbis_bitrate_flushpacket(&s->vd, &op)) {
+        while ((ret = vorbis_bitrate_flushpacket(&s->vd, &op)) == 1) {
             /* i'd love to say the following line is a hack, but sadly it's
              * not, apparently the end of stream decision is in libogg. */
             if (op.bytes == 1 && op.e_o_s)
@@ -280,7 +284,11 @@ static int oggvorbis_encode_frame(AVCodecContext *avctx, unsigned char *packets,
             memcpy(s->buffer + s->buffer_index, op.packet, op.bytes);
             s->buffer_index += op.bytes;
         }
+        if (ret < 0)
+            break;
     }
+    if (ret < 0)
+        return vorbis_error_to_averror(ret);
 
     /* output then next packet from the output buffer, if available */
     pkt_size = 0;
