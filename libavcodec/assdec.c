@@ -41,8 +41,11 @@ static int ass_decode_frame(AVCodecContext *avctx, void *data, int *got_sub_ptr,
     int len, size = avpkt->size;
 
     while (size > 0) {
+        int duration;
         ASSDialog *dialog = ff_ass_split_dialog(avctx->priv_data, ptr, 0, NULL);
-        int duration = dialog->end - dialog->start;
+        if (!dialog)
+            return AVERROR_INVALIDDATA;
+        duration = dialog->end - dialog->start;
         len = ff_ass_add_rect(data, ptr, 0, duration, 1);
         if (len < 0)
             return len;
