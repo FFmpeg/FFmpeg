@@ -1198,6 +1198,7 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
 {
     int ret;
     int user_packet = !!avpkt->data;
+    void *new_data;
 
     *got_packet_ptr = 0;
 
@@ -1218,6 +1219,12 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
             avpkt->size = 0;
         else if (!(avctx->codec->capabilities & CODEC_CAP_DELAY))
             avpkt->pts = avpkt->dts = frame->pts;
+        if (avpkt->data) {
+            new_data = av_realloc(avpkt->data,
+                                  avpkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
+            if (new_data)
+                avpkt->data = new_data;
+        }
 
         avctx->frame_number++;
     }
