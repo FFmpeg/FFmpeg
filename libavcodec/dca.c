@@ -717,15 +717,19 @@ static int dca_subframe_header(DCAContext *s, int base_channel, int block_index)
 
     for (j = base_channel; j < s->prim_channels; j++) {
         const uint32_t *scale_table;
+        unsigned int scale_max;
         int scale_sum;
 
         memset(s->scale_factor[j], 0,
                s->subband_activity[j] * sizeof(s->scale_factor[0][0][0]) * 2);
 
-        if (s->scalefactor_huffman[j] == 6)
+        if (s->scalefactor_huffman[j] == 6) {
             scale_table = scale_factor_quant7;
-        else
+            scale_max   = 127;
+        } else {
             scale_table = scale_factor_quant6;
+            scale_max   = 63;
+        }
 
         /* When huffman coded, only the difference is encoded */
         scale_sum = 0;
@@ -733,12 +737,20 @@ static int dca_subframe_header(DCAContext *s, int base_channel, int block_index)
         for (k = 0; k < s->subband_activity[j]; k++) {
             if (k >= s->vq_start_subband[j] || s->bitalloc[j][k] > 0) {
                 scale_sum = get_scale(&s->gb, s->scalefactor_huffman[j], scale_sum);
+                if (scale_sum > scale_max) {
+                    av_log(s->avctx, AV_LOG_ERROR, "scale_sum out of range\n");
+                    return AVERROR_INVALIDDATA;
+                }
                 s->scale_factor[j][k][0] = scale_table[scale_sum];
             }
 
             if (k < s->vq_start_subband[j] && s->transition_mode[j][k]) {
                 /* Get second scale factor */
                 scale_sum = get_scale(&s->gb, s->scalefactor_huffman[j], scale_sum);
+                if (scale_sum > scale_max) {
+                    av_log(s->avctx, AV_LOG_ERROR, "scale_sum out of range\n");
+                    return AVERROR_INVALIDDATA;
+                }
                 s->scale_factor[j][k][1] = scale_table[scale_sum];
             }
         }
