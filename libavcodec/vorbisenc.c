@@ -27,6 +27,7 @@
 #include <float.h>
 #include "avcodec.h"
 #include "dsputil.h"
+#include "internal.h"
 #include "fft.h"
 #include "vorbis.h"
 #include "vorbis_enc_data.h"
@@ -123,7 +124,7 @@ typedef struct {
     int nmodes;
     vorbis_enc_mode *modes;
 
-    int64_t sample_count;
+    int64_t next_pts;
 } vorbis_enc_context;
 
 #define MAX_CHANNELS     2
@@ -1015,23 +1016,27 @@ static int apply_window_and_mdct(vorbis_enc_context *venc, const signed short *a
 }
 
 
-static int vorbis_encode_frame(AVCodecContext *avccontext,
-                               unsigned char *packets,
-                               int buf_size, void *data)
+static int vorbis_encode_frame(AVCodecContext *avccontext, AVPacket *avpkt,
+                               const AVFrame *frame, int *got_packet_ptr)
 {
     vorbis_enc_context *venc = avccontext->priv_data;
-    const signed short *audio = data;
-    int samples = data ? avccontext->frame_size : 0;
+    const int16_t *audio = frame ? (const int16_t *)frame->data[0] : NULL;
+    int samples = frame ? frame->nb_samples : 0;
     vorbis_enc_mode *mode;
     vorbis_enc_mapping *mapping;
     PutBitContext pb;
-    int i;
+    int i, ret;
 
     if (!apply_window_and_mdct(venc, audio, samples))
         return 0;
     samples = 1 << (venc->log2_blocksize[0] - 1);
 
-    init_put_bits(&pb, packets, buf_size);
+    if ((ret = ff_alloc_packet(avpkt, 8192))) {
+        av_log(avccontext, AV_LOG_ERROR, "Error getting output packet\n");
+        return ret;
+    }
+
+    init_put_bits(&pb, avpkt->data, avpkt->size);
 
     if (pb.size_in_bits - put_bits_count(&pb) < 1 + ilog(venc->nmodes - 1)) {
         av_log(avccontext, AV_LOG_ERROR, "output buffer is too small\n");
@@ -1082,10 +1087,20 @@ static int vorbis_encode_frame(AVCodecContext *avccontext,
         return AVERROR(EINVAL);
     }
 
-    avccontext->coded_frame->pts = venc->sample_count;
-    venc->sample_count += avccontext->frame_size;
     flush_put_bits(&pb);
-    return put_bits_count(&pb) >> 3;
+    avpkt->size = put_bits_count(&pb) >> 3;
+
+    avpkt->duration = ff_samples_to_time_base(avccontext, avccontext->frame_size);
+    if (frame)
+        if (frame->pts != AV_NOPTS_VALUE)
+            avpkt->pts = ff_samples_to_time_base(avccontext, frame->pts);
+    else
+        avpkt->pts = venc->next_pts;
+    if (avpkt->pts != AV_NOPTS_VALUE)
+        venc->next_pts = avpkt->pts + avpkt->duration;
+
+    *got_packet_ptr = 1;
+    return 0;
 }
 
 
@@ -1143,7 +1158,9 @@ static av_cold int vorbis_encode_close(AVCodecContext *avccontext)
     ff_mdct_end(&venc->mdct[0]);
     ff_mdct_end(&venc->mdct[1]);
 
+#if FF_API_OLD_ENCODE_AUDIO
     av_freep(&avccontext->coded_frame);
+#endif
     av_freep(&avccontext->extradata);
 
     return 0 ;
@@ -1174,11 +1191,13 @@ static av_cold int vorbis_encode_init(AVCodecContext *avccontext)
 
     avccontext->frame_size = 1 << (venc->log2_blocksize[0] - 1);
 
+#if FF_API_OLD_ENCODE_AUDIO
     avccontext->coded_frame = avcodec_alloc_frame();
     if (!avccontext->coded_frame) {
         ret = AVERROR(ENOMEM);
         goto error;
     }
+#endif
 
     return 0;
 error:
@@ -1192,7 +1211,7 @@ AVCodec ff_vorbis_encoder = {
     .id             = CODEC_ID_VORBIS,
     .priv_data_size = sizeof(vorbis_enc_context),
     .init           = vorbis_encode_init,
-    .encode         = vorbis_encode_frame,
+    .encode2        = vorbis_encode_frame,
     .close          = vorbis_encode_close,
     .capabilities= CODEC_CAP_DELAY | CODEC_CAP_EXPERIMENTAL,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
