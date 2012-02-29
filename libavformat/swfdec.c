@@ -113,7 +113,6 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
             vst->codec->codec_id = ff_codec_get_id(swf_codec_tags, avio_r8(pb));
             avpriv_set_pts_info(vst, 16, 256, swf->frame_rate);
-            vst->codec->time_base = (AVRational){ 256, swf->frame_rate };
             len -= 8;
         } else if (tag == TAG_STREAMHEAD || tag == TAG_STREAMHEAD2) {
             /* streaming found */
@@ -186,7 +185,6 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
                 vst->codec->codec_id = CODEC_ID_MJPEG;
                 avpriv_set_pts_info(vst, 64, 256, swf->frame_rate);
-                vst->codec->time_base = (AVRational){ 256, swf->frame_rate };
                 st = vst;
             }
             avio_rl16(pb); /* BITMAP_ID */
