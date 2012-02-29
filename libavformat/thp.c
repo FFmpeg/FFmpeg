@@ -181,6 +181,9 @@ static int thp_read_packet(AVFormatContext *s,
         }
 
         pkt->stream_index = thp->audio_stream_index;
+        if (thp->audiosize >= 8)
+            pkt->duration = AV_RB32(&pkt->data[4]);
+
         thp->audiosize = 0;
         thp->frame++;
     }
