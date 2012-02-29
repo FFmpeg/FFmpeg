@@ -817,6 +817,7 @@ static int dca_subframe_header(DCAContext *s, int base_channel, int block_index)
 
     /* Low frequency effect data */
     if (!base_channel && s->lfe) {
+        int quant7;
         /* LFE samples */
         int lfe_samples = 2 * s->lfe * (4 + block_index);
         int lfe_end_sample = 2 * s->lfe * (4 + block_index + s->subsubframes[s->current_subframe]);
@@ -828,7 +829,12 @@ static int dca_subframe_header(DCAContext *s, int base_channel, int block_index)
         }
 
         /* Scale factor index */
-        s->lfe_scale_factor = scale_factor_quant7[get_bits(&s->gb, 8)];
+        quant7 = get_bits(&s->gb, 8);
+        if (quant7 > 127) {
+            av_log_ask_for_sample(s->avctx, "LFEScaleIndex larger than 127\n");
+            return AVERROR_INVALIDDATA;
+        }
+        s->lfe_scale_factor = scale_factor_quant7[quant7];
 
         /* Quantization step size * scale factor */
         lfe_scale = 0.035 * s->lfe_scale_factor;
