@@ -236,7 +236,7 @@ static int oggvorbis_encode_frame(AVCodecContext *avctx, unsigned char *packets,
 {
     OggVorbisContext *s = avctx->priv_data;
     ogg_packet op;
-    signed short *audio = data;
+    float *audio = data;
     int pkt_size;
 
     /* send samples to libvorbis */
@@ -251,7 +251,7 @@ static int oggvorbis_encode_frame(AVCodecContext *avctx, unsigned char *packets,
             int co = (channels > 8) ? c :
                      ff_vorbis_encoding_channel_layout_offsets[channels - 1][c];
             for (i = 0; i < samples; i++)
-                buffer[c][i] = audio[i * channels + co] / 32768.f;
+                buffer[c][i] = audio[i * channels + co];
         }
         vorbis_analysis_wrote(&s->vd, samples);
     } else {
@@ -315,7 +315,7 @@ AVCodec ff_libvorbis_encoder = {
     .encode         = oggvorbis_encode_frame,
     .close          = oggvorbis_encode_close,
     .capabilities   = CODEC_CAP_DELAY,
-    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16,
+    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLT,
                                                       AV_SAMPLE_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("libvorbis Vorbis"),
     .priv_class     = &class,
