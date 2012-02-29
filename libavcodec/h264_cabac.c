@@ -1996,6 +1996,8 @@ decode_intra_mb:
         }
 
         // The pixels are stored in the same order as levels in h->mb array.
+        if ((int) (h->cabac.bytestream_end - ptr) < mb_size)
+            return -1;
         memcpy(h->mb, ptr, mb_size); ptr+=mb_size;
 
         ff_init_cabac_decoder(&h->cabac, ptr, h->cabac.bytestream_end - ptr);
