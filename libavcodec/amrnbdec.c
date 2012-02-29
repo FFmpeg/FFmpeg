@@ -200,6 +200,10 @@ static enum Mode unpack_bitstream(AMRContext *p, const uint8_t *buf,
     p->bad_frame_indicator = !get_bits1(&gb); // quality bit
     skip_bits(&gb, 2);                        // two padding bits
 
+    if (mode >= N_MODES || buf_size < frame_sizes_nb[mode] + 1) {
+        return NO_DATA;
+    }
+
     if (mode < MODE_DTX)
         ff_amr_bit_reorder((uint16_t *) &p->frame, sizeof(AMRNBFrame), buf + 1,
                            amr_unpacking_bitmaps_per_mode[mode]);
@@ -947,6 +951,10 @@ static int amrnb_decode_frame(AVCodecContext *avctx, void *data,
     buf_out = (float *)p->avframe.data[0];
 
     p->cur_frame_mode = unpack_bitstream(p, buf, buf_size);
+    if (p->cur_frame_mode == NO_DATA) {
+        av_log(avctx, AV_LOG_ERROR, "Corrupt bitstream\n");
+        return AVERROR_INVALIDDATA;
+    }
     if (p->cur_frame_mode == MODE_DTX) {
         av_log_missing_feature(avctx, "dtx mode", 1);
         return -1;
