@@ -418,6 +418,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     avfilter_unref_buffer(deshake->ref);
     if (deshake->fp)
         fclose(deshake->fp);
+    avcodec_close(deshake->avctx);
+    av_freep(&deshake->avctx);
 }
 
 static void end_frame(AVFilterLink *link)
