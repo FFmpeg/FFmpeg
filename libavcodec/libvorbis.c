@@ -29,9 +29,11 @@
 #include "libavutil/fifo.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
+#include "audio_frame_queue.h"
 #include "bytestream.h"
 #include "internal.h"
 #include "vorbis.h"
+#include "vorbis_parser.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -56,6 +58,8 @@ typedef struct OggVorbisContext {
     vorbis_comment vc;                  /**< VorbisComment info             */
     ogg_packet op;                      /**< ogg packet                     */
     double iblock;                      /**< impulse block bias option      */
+    VorbisParseContext vp;              /**< parse context to get durations */
+    AudioFrameQueue afq;                /**< frame queue for timestamps     */
 } OggVorbisContext;
 
 static const AVOption options[] = {
@@ -157,7 +161,10 @@ static av_cold int oggvorbis_encode_close(AVCodecContext *avctx)
     vorbis_info_clear(&s->vi);
 
     av_fifo_free(s->pkt_fifo);
+    ff_af_queue_close(&s->afq);
+#if FF_API_OLD_ENCODE_AUDIO
     av_freep(&avctx->coded_frame);
+#endif
     av_freep(&avctx->extradata);
 
     return 0;
@@ -218,9 +225,15 @@ static av_cold int oggvorbis_encode_init(AVCodecContext *avctx)
     offset += header_code.bytes;
     assert(offset == avctx->extradata_size);
 
+    if ((ret = avpriv_vorbis_parse_extradata(avctx, &s->vp)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "invalid extradata\n");
+        return ret;
+    }
+
     vorbis_comment_clear(&s->vc);
 
     avctx->frame_size = OGGVORBIS_FRAME_SIZE;
+    ff_af_queue_init(avctx, &s->afq);
 
     s->pkt_fifo = av_fifo_alloc(BUFFER_SIZE);
     if (!s->pkt_fifo) {
@@ -228,11 +241,13 @@ static av_cold int oggvorbis_encode_init(AVCodecContext *avctx)
         goto error;
     }
 
+#if FF_API_OLD_ENCODE_AUDIO
     avctx->coded_frame = avcodec_alloc_frame();
     if (!avctx->coded_frame) {
         ret = AVERROR(ENOMEM);
         goto error;
     }
+#endif
 
     return 0;
 error:
@@ -240,17 +255,17 @@ error:
     return ret;
 }
 
-static int oggvorbis_encode_frame(AVCodecContext *avctx, unsigned char *packets,
-                                  int buf_size, void *data)
+static int oggvorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
+                                  const AVFrame *frame, int *got_packet_ptr)
 {
     OggVorbisContext *s = avctx->priv_data;
     ogg_packet op;
-    float *audio = data;
-    int pkt_size, ret;
+    int ret, duration;
 
     /* send samples to libvorbis */
-    if (data) {
-        const int samples = avctx->frame_size;
+    if (frame) {
+        const float *audio = (const float *)frame->data[0];
+        const int samples = frame->nb_samples;
         float **buffer;
         int c, channels = s->vi.channels;
 
@@ -266,6 +281,8 @@ static int oggvorbis_encode_frame(AVCodecContext *avctx, unsigned char *packets,
             av_log(avctx, AV_LOG_ERROR, "error in vorbis_analysis_wrote()\n");
             return vorbis_error_to_averror(ret);
         }
+        if ((ret = ff_af_queue_add(&s->afq, frame) < 0))
+            return ret;
     } else {
         if (!s->eof)
             if ((ret = vorbis_analysis_wrote(&s->vd, 0)) < 0) {
@@ -301,22 +318,34 @@ static int oggvorbis_encode_frame(AVCodecContext *avctx, unsigned char *packets,
         return vorbis_error_to_averror(ret);
     }
 
-    /* output then next packet from the output buffer, if available */
-    pkt_size = 0;
-    if (av_fifo_size(s->pkt_fifo) >= sizeof(ogg_packet)) {
-        av_fifo_generic_read(s->pkt_fifo, &op, sizeof(ogg_packet), NULL);
-        pkt_size = op.bytes;
-        // FIXME: we should use the user-supplied pts and duration
-        avctx->coded_frame->pts = ff_samples_to_time_base(avctx,
-                                                          op.granulepos);
-        if (pkt_size > buf_size) {
-            av_log(avctx, AV_LOG_ERROR, "output buffer is too small");
-            return AVERROR(EINVAL);
+    /* check for available packets */
+    if (av_fifo_size(s->pkt_fifo) < sizeof(ogg_packet))
+        return 0;
+
+    av_fifo_generic_read(s->pkt_fifo, &op, sizeof(ogg_packet), NULL);
+
+    if ((ret = ff_alloc_packet(avpkt, op.bytes))) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
+        return ret;
+    }
+    av_fifo_generic_read(s->pkt_fifo, avpkt->data, op.bytes, NULL);
+
+    avpkt->pts = ff_samples_to_time_base(avctx, op.granulepos);
+
+    duration = avpriv_vorbis_parse_frame(&s->vp, avpkt->data, avpkt->size);
+    if (duration > 0) {
+        /* we do not know encoder delay until we get the first packet from
+         * libvorbis, so we have to update the AudioFrameQueue counts */
+        if (!avctx->delay) {
+            avctx->delay              = duration;
+            s->afq.remaining_delay   += duration;
+            s->afq.remaining_samples += duration;
         }
-        av_fifo_generic_read(s->pkt_fifo, packets, pkt_size, NULL);
+        ff_af_queue_remove(&s->afq, duration, &avpkt->pts, &avpkt->duration);
     }
 
-    return pkt_size;
+    *got_packet_ptr = 1;
+    return 0;
 }
 
 AVCodec ff_libvorbis_encoder = {
@@ -325,7 +354,7 @@ AVCodec ff_libvorbis_encoder = {
     .id             = CODEC_ID_VORBIS,
     .priv_data_size = sizeof(OggVorbisContext),
     .init           = oggvorbis_encode_init,
-    .encode         = oggvorbis_encode_frame,
+    .encode2        = oggvorbis_encode_frame,
     .close          = oggvorbis_encode_close,
     .capabilities   = CODEC_CAP_DELAY,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLT,
