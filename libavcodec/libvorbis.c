@@ -173,15 +173,17 @@ static av_cold int oggvorbis_encode_init(AVCodecContext *avctx)
 
     vorbis_info_init(&s->vi);
     if ((ret = oggvorbis_init_encoder(&s->vi, avctx))) {
-        av_log(avctx, AV_LOG_ERROR, "oggvorbis_encode_init: init_encoder failed\n");
+        av_log(avctx, AV_LOG_ERROR, "encoder setup failed\n");
         goto error;
     }
     if ((ret = vorbis_analysis_init(&s->vd, &s->vi))) {
+        av_log(avctx, AV_LOG_ERROR, "analysis init failed\n");
         ret = vorbis_error_to_averror(ret);
         goto error;
     }
     s->dsp_initialized = 1;
     if ((ret = vorbis_block_init(&s->vd, &s->vb))) {
+        av_log(avctx, AV_LOG_ERROR, "dsp init failed\n");
         ret = vorbis_error_to_averror(ret);
         goto error;
     }
@@ -260,12 +262,16 @@ static int oggvorbis_encode_frame(AVCodecContext *avctx, unsigned char *packets,
             for (i = 0; i < samples; i++)
                 buffer[c][i] = audio[i * channels + co];
         }
-        if ((ret = vorbis_analysis_wrote(&s->vd, samples)) < 0)
+        if ((ret = vorbis_analysis_wrote(&s->vd, samples)) < 0) {
+            av_log(avctx, AV_LOG_ERROR, "error in vorbis_analysis_wrote()\n");
             return vorbis_error_to_averror(ret);
+        }
     } else {
         if (!s->eof)
-            if ((ret = vorbis_analysis_wrote(&s->vd, 0)) < 0)
+            if ((ret = vorbis_analysis_wrote(&s->vd, 0)) < 0) {
+                av_log(avctx, AV_LOG_ERROR, "error in vorbis_analysis_wrote()\n");
                 return vorbis_error_to_averror(ret);
+            }
         s->eof = 1;
     }
 
@@ -279,17 +285,21 @@ static int oggvorbis_encode_frame(AVCodecContext *avctx, unsigned char *packets,
         /* add any available packets to the output packet buffer */
         while ((ret = vorbis_bitrate_flushpacket(&s->vd, &op)) == 1) {
             if (av_fifo_space(s->pkt_fifo) < sizeof(ogg_packet) + op.bytes) {
-                av_log(avctx, AV_LOG_ERROR, "libvorbis: buffer overflow.");
-                return -1;
+                av_log(avctx, AV_LOG_ERROR, "packet buffer is too small");
+                return AVERROR_BUG;
             }
             av_fifo_generic_write(s->pkt_fifo, &op, sizeof(ogg_packet), NULL);
             av_fifo_generic_write(s->pkt_fifo, op.packet, op.bytes, NULL);
         }
-        if (ret < 0)
+        if (ret < 0) {
+            av_log(avctx, AV_LOG_ERROR, "error getting available packets\n");
             break;
+        }
     }
-    if (ret < 0)
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "error getting available packets\n");
         return vorbis_error_to_averror(ret);
+    }
 
     /* output then next packet from the output buffer, if available */
     pkt_size = 0;
@@ -300,8 +310,8 @@ static int oggvorbis_encode_frame(AVCodecContext *avctx, unsigned char *packets,
         avctx->coded_frame->pts = ff_samples_to_time_base(avctx,
                                                           op.granulepos);
         if (pkt_size > buf_size) {
-            av_log(avctx, AV_LOG_ERROR, "libvorbis: buffer overflow.");
-            return -1;
+            av_log(avctx, AV_LOG_ERROR, "output buffer is too small");
+            return AVERROR(EINVAL);
         }
         av_fifo_generic_read(s->pkt_fifo, packets, pkt_size, NULL);
     }
