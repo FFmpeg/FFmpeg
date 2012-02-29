@@ -3549,7 +3549,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
                 {
                     RENAME(tempNoiseReducer)(dstBlock-8, stride,
                             c.tempBlurred[isColor] + y*dstStride + x,
-                            c.tempBlurredPast[isColor] + (y>>3)*256 + (x>>3),
+                            c.tempBlurredPast[isColor] + (y>>3)*256 + (x>>3) + 256,
                             c.ppMode.maxTmpNoise);
                 }
             }
@@ -3571,7 +3571,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
         if((mode & TEMP_NOISE_FILTER)){
             RENAME(tempNoiseReducer)(dstBlock-8, dstStride,
                     c.tempBlurred[isColor] + y*dstStride + x,
-                    c.tempBlurredPast[isColor] + (y>>3)*256 + (x>>3),
+                    c.tempBlurredPast[isColor] + (y>>3)*256 + (x>>3) + 256,
                     c.ppMode.maxTmpNoise);
         }
 
