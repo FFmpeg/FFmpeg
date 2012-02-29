@@ -150,6 +150,7 @@ static struct PPFilter filters[]=
     {"l5", "lowpass5",              1, 1, 4, LOWPASS5_DEINT_FILTER},
     {"tn", "tmpnoise",              1, 7, 8, TEMP_NOISE_FILTER},
     {"fq", "forcequant",            1, 0, 0, FORCE_QUANT},
+    {"be", "bitexact",              1, 0, 0, BITEXACT},
     {NULL, NULL,0,0,0,0} //End Marker
 };
 
@@ -536,9 +537,8 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, 
 
 //Note: we have C, MMX, MMX2, 3DNOW version there is no 3DNOW+MMX2 one
 //Plain C versions
-#if !(HAVE_MMX || HAVE_ALTIVEC) || CONFIG_RUNTIME_CPUDETECT
+//we always compile C for testing which needs bitexactness
 #define COMPILE_C
-#endif
 
 #if HAVE_ALTIVEC
 #define COMPILE_ALTIVEC
@@ -623,6 +623,9 @@ static inline void postProcess(const uint8_t src[], int srcStride, uint8_t dst[]
     PPContext *c= (PPContext *)vc;
     PPMode *ppMode= (PPMode *)vm;
     c->ppMode= *ppMode; //FIXME
+
+    if(ppMode->lumMode & BITEXACT)
+        return postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
 
     // Using ifs here as they are faster than function pointers although the
     // difference would not be measurable here but it is much better because

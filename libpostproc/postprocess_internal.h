@@ -67,6 +67,7 @@
 
 #define TEMP_NOISE_FILTER               0x100000
 #define FORCE_QUANT                     0x200000
+#define BITEXACT                        0x1000000
 
 //use if you want a faster postprocessing code
 //cannot differentiate between chroma & luma filters (both on or both off)
