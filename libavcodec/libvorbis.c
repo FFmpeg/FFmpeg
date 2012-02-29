@@ -26,6 +26,7 @@
 
 #include <vorbis/vorbisenc.h>
 
+#include "libavutil/fifo.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "bytestream.h"
@@ -49,8 +50,7 @@ typedef struct OggVorbisContext {
     vorbis_info vi;                     /**< vorbis_info used during init   */
     vorbis_dsp_state vd;                /**< DSP state used for analysis    */
     vorbis_block vb;                    /**< vorbis_block used for analysis */
-    uint8_t buffer[BUFFER_SIZE];        /**< output packet buffer           */
-    int buffer_index;                   /**< current buffer position        */
+    AVFifoBuffer *pkt_fifo;             /**< output packet buffer           */
     int eof;                            /**< end-of-file flag               */
     int dsp_initialized;                /**< vd has been initialized        */
     vorbis_comment vc;                  /**< VorbisComment info             */
@@ -156,6 +156,7 @@ static av_cold int oggvorbis_encode_close(AVCodecContext *avctx)
     vorbis_dsp_clear(&s->vd);
     vorbis_info_clear(&s->vi);
 
+    av_fifo_free(s->pkt_fifo);
     av_freep(&avctx->coded_frame);
     av_freep(&avctx->extradata);
 
@@ -219,6 +220,12 @@ static av_cold int oggvorbis_encode_init(AVCodecContext *avctx)
 
     avctx->frame_size = OGGVORBIS_FRAME_SIZE;
 
+    s->pkt_fifo = av_fifo_alloc(BUFFER_SIZE);
+    if (!s->pkt_fifo) {
+        ret = AVERROR(ENOMEM);
+        goto error;
+    }
+
     avctx->coded_frame = avcodec_alloc_frame();
     if (!avctx->coded_frame) {
         ret = AVERROR(ENOMEM);
@@ -271,14 +278,12 @@ static int oggvorbis_encode_frame(AVCodecContext *avctx, unsigned char *packets,
 
         /* add any available packets to the output packet buffer */
         while ((ret = vorbis_bitrate_flushpacket(&s->vd, &op)) == 1) {
-            if (s->buffer_index + sizeof(ogg_packet) + op.bytes > BUFFER_SIZE) {
+            if (av_fifo_space(s->pkt_fifo) < sizeof(ogg_packet) + op.bytes) {
                 av_log(avctx, AV_LOG_ERROR, "libvorbis: buffer overflow.");
                 return -1;
             }
-            memcpy(s->buffer + s->buffer_index, &op, sizeof(ogg_packet));
-            s->buffer_index += sizeof(ogg_packet);
-            memcpy(s->buffer + s->buffer_index, op.packet, op.bytes);
-            s->buffer_index += op.bytes;
+            av_fifo_generic_write(s->pkt_fifo, &op, sizeof(ogg_packet), NULL);
+            av_fifo_generic_write(s->pkt_fifo, op.packet, op.bytes, NULL);
         }
         if (ret < 0)
             break;
@@ -288,23 +293,17 @@ static int oggvorbis_encode_frame(AVCodecContext *avctx, unsigned char *packets,
 
     /* output then next packet from the output buffer, if available */
     pkt_size = 0;
-    if (s->buffer_index) {
-        ogg_packet *op2 = (ogg_packet *)s->buffer;
-        op2->packet     = s->buffer + sizeof(ogg_packet);
-
-        pkt_size = op2->bytes;
+    if (av_fifo_size(s->pkt_fifo) >= sizeof(ogg_packet)) {
+        av_fifo_generic_read(s->pkt_fifo, &op, sizeof(ogg_packet), NULL);
+        pkt_size = op.bytes;
         // FIXME: we should use the user-supplied pts and duration
         avctx->coded_frame->pts = ff_samples_to_time_base(avctx,
-                                                          op2->granulepos);
+                                                          op.granulepos);
         if (pkt_size > buf_size) {
             av_log(avctx, AV_LOG_ERROR, "libvorbis: buffer overflow.");
             return -1;
         }
-
-        memcpy(packets, op2->packet, pkt_size);
-        s->buffer_index -= pkt_size + sizeof(ogg_packet);
-        memmove(s->buffer, s->buffer + pkt_size + sizeof(ogg_packet),
-                s->buffer_index);
+        av_fifo_generic_read(s->pkt_fifo, packets, pkt_size, NULL);
     }
 
     return pkt_size;
