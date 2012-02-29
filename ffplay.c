@@ -1564,7 +1564,7 @@ static int input_get_buffer(AVCodecContext *codec, AVFrame *pic)
     w = codec->width;
     h = codec->height;
 
-    if(av_image_check_size(w, h, 0, codec))
+    if(av_image_check_size(w, h, 0, codec) || codec->pix_fmt<0)
         return -1;
 
     avcodec_align_dimensions2(codec, &w, &h, stride);

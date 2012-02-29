@@ -414,7 +414,7 @@ static int video_get_buffer(AVCodecContext *s, AVFrame *pic)
         return -1;
     }
 
-    if(av_image_check_size(w, h, 0, s))
+    if(av_image_check_size(w, h, 0, s) || s->pix_fmt<0)
         return -1;
 
     if (!avci->buffer) {

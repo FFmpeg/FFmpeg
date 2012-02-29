@@ -553,7 +553,7 @@ static int codec_get_buffer(AVCodecContext *s, AVFrame *frame)
     FrameBuffer *buf;
     int ret, i;
 
-    if(av_image_check_size(s->width, s->height, 0, s))
+    if(av_image_check_size(s->width, s->height, 0, s) || s->pix_fmt<0)
         return -1;
 
     if (!ist->buffer_pool && (ret = alloc_buffer(s, ist, &ist->buffer_pool)) < 0)
