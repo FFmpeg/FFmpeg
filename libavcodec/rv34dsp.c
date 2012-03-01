@@ -55,7 +55,6 @@ static av_always_inline void rv34_row_transform(int temp[16], DCTELEM *block)
  */
 static void rv34_idct_add_c(uint8_t *dst, ptrdiff_t stride, DCTELEM *block){
     int      temp[16];
-    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
     int      i;
 
     rv34_row_transform(temp, block);
@@ -67,10 +66,10 @@ static void rv34_idct_add_c(uint8_t *dst, ptrdiff_t stride, DCTELEM *block){
         const int z2 =  7* temp[4*1+i] - 17*temp[4*3+i];
         const int z3 = 17* temp[4*1+i] +  7*temp[4*3+i];
 
-        dst[0] = cm[ dst[0] + ( (z0 + z3) >> 10 ) ];
-        dst[1] = cm[ dst[1] + ( (z1 + z2) >> 10 ) ];
-        dst[2] = cm[ dst[2] + ( (z1 - z2) >> 10 ) ];
-        dst[3] = cm[ dst[3] + ( (z0 - z3) >> 10 ) ];
+        dst[0] = av_clip_uint8( dst[0] + ( (z0 + z3) >> 10 ) );
+        dst[1] = av_clip_uint8( dst[1] + ( (z1 + z2) >> 10 ) );
+        dst[2] = av_clip_uint8( dst[2] + ( (z1 - z2) >> 10 ) );
+        dst[3] = av_clip_uint8( dst[3] + ( (z0 - z3) >> 10 ) );
 
         dst  += stride;
     }
