@@ -78,13 +78,13 @@ void ff_mpc_dequantize_and_synth(MPCContext * c, int maxband, void *data, int ch
         for(ch = 0; ch < 2; ch++){
             if(bands[i].res[ch]){
                 j = 0;
-                mul = mpc_CC[bands[i].res[ch]] * mpc_SCF[bands[i].scf_idx[ch][0] & 0xFF];
+                mul = (mpc_CC+1)[bands[i].res[ch]] * mpc_SCF[bands[i].scf_idx[ch][0] & 0xFF];
                 for(; j < 12; j++)
                     c->sb_samples[ch][j][i] = mul * c->Q[ch][j + off];
-                mul = mpc_CC[bands[i].res[ch]] * mpc_SCF[bands[i].scf_idx[ch][1] & 0xFF];
+                mul = (mpc_CC+1)[bands[i].res[ch]] * mpc_SCF[bands[i].scf_idx[ch][1] & 0xFF];
                 for(; j < 24; j++)
                     c->sb_samples[ch][j][i] = mul * c->Q[ch][j + off];
-                mul = mpc_CC[bands[i].res[ch]] * mpc_SCF[bands[i].scf_idx[ch][2] & 0xFF];
+                mul = (mpc_CC+1)[bands[i].res[ch]] * mpc_SCF[bands[i].scf_idx[ch][2] & 0xFF];
                 for(; j < 36; j++)
                     c->sb_samples[ch][j][i] = mul * c->Q[ch][j + off];
             }
