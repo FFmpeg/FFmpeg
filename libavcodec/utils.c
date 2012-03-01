@@ -1113,6 +1113,12 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
         else if (!(avctx->codec->capabilities & CODEC_CAP_DELAY))
             avpkt->pts = avpkt->dts = frame->pts;
 
+        if (!user_packet && avpkt->data) {
+            uint8_t *new_data = av_realloc(avpkt->data, avpkt->size);
+            if (new_data)
+                avpkt->data = new_data;
+        }
+
         avctx->frame_number++;
     }
 
