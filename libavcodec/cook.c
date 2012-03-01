@@ -761,7 +761,7 @@ static void imlt_gain(COOKContext *q, float *inbuffer,
  * @param decouple_tab      decoupling array
  *
  */
-static void decouple_info(COOKContext *q, COOKSubpacket *p, int *decouple_tab)
+static int decouple_info(COOKContext *q, COOKSubpacket *p, int *decouple_tab)
 {
     int i;
     int vlc    = get_bits1(&q->gb);
@@ -776,8 +776,15 @@ static void decouple_info(COOKContext *q, COOKSubpacket *p, int *decouple_tab)
         for (i = 0; i < length; i++)
             decouple_tab[start + i] = get_vlc2(&q->gb, p->ccpl.table, p->ccpl.bits, 2);
     else
-        for (i = 0; i < length; i++)
-            decouple_tab[start + i] = get_bits(&q->gb, p->js_vlc_bits);
+        for (i = 0; i < length; i++) {
+            int v = get_bits(&q->gb, p->js_vlc_bits);
+            if (v == (1<<p->js_vlc_bits)-1) {
+                av_log(q->avctx, AV_LOG_ERROR, "decouple value too large\n");
+                return AVERROR_INVALIDDATA;
+            }
+            decouple_tab[start + i] = v;
+        }
+    return 0;
 }
 
 /*
@@ -829,7 +836,8 @@ static int joint_decode(COOKContext *q, COOKSubpacket *p, float *mlt_buffer1,
     /* Make sure the buffers are zeroed out. */
     memset(mlt_buffer1, 0, 1024 * sizeof(*mlt_buffer1));
     memset(mlt_buffer2, 0, 1024 * sizeof(*mlt_buffer2));
-    decouple_info(q, p, decouple_tab);
+    if ((ret = decouple_info(q, p, decouple_tab)) < 0)
+        return ret;
     if ((ret = mono_decode(q, p, decode_buffer)) < 0)
         return ret;
     /* The two channels are stored interleaved in decode_buffer. */
