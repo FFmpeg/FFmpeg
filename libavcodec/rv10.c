@@ -499,9 +499,10 @@ static int rv10_decode_packet(AVCodecContext *avctx,
                              const uint8_t *buf, int buf_size, int buf_size2)
 {
     MpegEncContext *s = avctx->priv_data;
-    int mb_count, mb_pos, left, start_mb_x;
+    int mb_count, mb_pos, left, start_mb_x, active_bits_size;
 
-    init_get_bits(&s->gb, buf, buf_size*8);
+    active_bits_size = buf_size * 8;
+    init_get_bits(&s->gb, buf, FFMAX(buf_size, buf_size2) * 8);
     if(s->codec_id ==CODEC_ID_RV10)
         mb_count = rv10_decode_picture_header(s);
     else
@@ -584,13 +585,26 @@ static int rv10_decode_packet(AVCodecContext *avctx,
         s->mv_type = MV_TYPE_16X16;
         ret=ff_h263_decode_mb(s, s->block);
 
-        if (ret != SLICE_ERROR && s->gb.size_in_bits < get_bits_count(&s->gb) && 8*buf_size2 >= get_bits_count(&s->gb)){
-            av_log(avctx, AV_LOG_DEBUG, "update size from %d to %d\n", s->gb.size_in_bits, 8*buf_size2);
-            s->gb.size_in_bits= 8*buf_size2;
+        // Repeat the slice end check from ff_h263_decode_mb with our active
+        // bitstream size
+        if (ret != SLICE_ERROR) {
+            int v = show_bits(&s->gb, 16);
+
+            if (get_bits_count(&s->gb) + 16 > active_bits_size)
+                v >>= get_bits_count(&s->gb) + 16 - active_bits_size;
+
+            if (!v)
+                ret = SLICE_END;
+        }
+        if (ret != SLICE_ERROR && active_bits_size < get_bits_count(&s->gb) &&
+            8 * buf_size2 >= get_bits_count(&s->gb)) {
+            active_bits_size = buf_size2 * 8;
+            av_log(avctx, AV_LOG_DEBUG, "update size from %d to %d\n",
+                   8 * buf_size, active_bits_size);
             ret= SLICE_OK;
         }
 
-        if (ret == SLICE_ERROR || s->gb.size_in_bits < get_bits_count(&s->gb)) {
+        if (ret == SLICE_ERROR || active_bits_size < get_bits_count(&s->gb)) {
             av_log(s->avctx, AV_LOG_ERROR, "ERROR at MB %d %d\n", s->mb_x, s->mb_y);
             return -1;
         }
@@ -612,7 +626,7 @@ static int rv10_decode_packet(AVCodecContext *avctx,
 
     ff_er_add_slice(s, start_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, ER_MB_END);
 
-    return s->gb.size_in_bits;
+    return active_bits_size;
 }
 
 static int get_slice_offset(AVCodecContext *avctx, const uint8_t *buf, int n)
