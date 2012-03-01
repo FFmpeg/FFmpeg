@@ -2692,11 +2692,6 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     s->avctx->level   = h->sps.level_idc;
     s->avctx->refs    = h->sps.ref_frame_count;
 
-    if(h == h0 && h->dequant_coeff_pps != pps_id){
-        h->dequant_coeff_pps = pps_id;
-        init_dequant_tables(h);
-    }
-
     s->mb_width= h->sps.mb_width;
     s->mb_height= h->sps.mb_height * (2 - h->sps.frame_mbs_only_flag);
 
@@ -2791,7 +2786,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
                 else
                     s->avctx->pix_fmt = PIX_FMT_YUV420P10;
                 break;
-            default:
+            case 8:
                 if (CHROMA444){
                     s->avctx->pix_fmt = s->avctx->color_range == AVCOL_RANGE_JPEG ? PIX_FMT_YUVJ444P : PIX_FMT_YUV444P;
                     if (s->avctx->colorspace == AVCOL_SPC_RGB) {
@@ -2810,6 +2805,11 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
                                                              hwaccel_pixfmt_list_h264_jpeg_420 :
                                                              ff_hwaccel_pixfmt_list_420);
                 }
+                break;
+            default:
+                av_log(s->avctx, AV_LOG_ERROR,
+                       "Unsupported bit depth: %d\n", h->sps.bit_depth_luma);
+                return AVERROR_INVALIDDATA;
         }
 
         s->avctx->hwaccel = ff_find_hwaccel(s->avctx->codec->id, s->avctx->pix_fmt);
@@ -2853,6 +2853,11 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
                     return -1;
                 }
         }
+    }
+
+    if(h == h0 && h->dequant_coeff_pps != pps_id){
+        h->dequant_coeff_pps = pps_id;
+        init_dequant_tables(h);
     }
 
     h->frame_num= get_bits(&s->gb, h->sps.log2_max_frame_num);

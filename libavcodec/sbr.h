@@ -88,6 +88,7 @@ typedef struct {
     ///QMF values of the original signal
     float              W[2][32][32][2];
     ///QMF output of the HF adjustor
+    int                Ypos;
     DECLARE_ALIGNED(16, float, Y)[2][38][64][2];
     DECLARE_ALIGNED(16, float, g_temp)[42][48];
     float              q_temp[42][48];

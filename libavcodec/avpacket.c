@@ -279,3 +279,19 @@ int av_packet_split_side_data(AVPacket *pkt){
     }
     return 0;
 }
+
+int av_packet_shrink_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
+                               int size)
+{
+    int i;
+
+    for (i = 0; i < pkt->side_data_elems; i++) {
+        if (pkt->side_data[i].type == type) {
+            if (size > pkt->side_data[i].size)
+                return AVERROR(ENOMEM);
+            pkt->side_data[i].size = size;
+            return 0;
+        }
+    }
+    return AVERROR(ENOENT);
+}

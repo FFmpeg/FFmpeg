@@ -1353,8 +1353,8 @@ static int sbr_hf_gen(AACContext *ac, SpectralBandReplication *sbr,
 
 /// Generate the subband filtered lowband
 static int sbr_x_gen(SpectralBandReplication *sbr, float X[2][38][64],
-                     const float X_low[32][40][2], const float Y[2][38][64][2],
-                     int ch)
+                     const float Y0[38][64][2], const float Y1[38][64][2],
+                     const float X_low[32][40][2], int ch)
 {
     int k, i;
     const int i_f = 32;
@@ -1368,8 +1368,8 @@ static int sbr_x_gen(SpectralBandReplication *sbr, float X[2][38][64],
     }
     for (; k < sbr->kx[0] + sbr->m[0]; k++) {
         for (i = 0; i < i_Temp; i++) {
-            X[0][i][k] = Y[0][i + i_f][k][0];
-            X[1][i][k] = Y[0][i + i_f][k][1];
+            X[0][i][k] = Y0[i + i_f][k][0];
+            X[1][i][k] = Y0[i + i_f][k][1];
         }
     }
 
@@ -1381,8 +1381,8 @@ static int sbr_x_gen(SpectralBandReplication *sbr, float X[2][38][64],
     }
     for (; k < sbr->kx[1] + sbr->m[1]; k++) {
         for (i = i_Temp; i < i_f; i++) {
-            X[0][i][k] = Y[1][i][k][0];
-            X[1][i][k] = Y[1][i][k][1];
+            X[0][i][k] = Y1[i][k][0];
+            X[1][i][k] = Y1[i][k][1];
         }
     }
     return 0;
@@ -1542,7 +1542,8 @@ static void sbr_gain_calc(AACContext *ac, SpectralBandReplication *sbr,
 }
 
 /// Assembling HF Signals (14496-3 sp04 p220)
-static void sbr_hf_assemble(float Y[2][38][64][2], const float X_high[64][40][2],
+static void sbr_hf_assemble(float Y1[38][64][2],
+                            const float X_high[64][40][2],
                             SpectralBandReplication *sbr, SBRData *ch_data,
                             const int e_a[2])
 {
@@ -1564,7 +1565,6 @@ static void sbr_hf_assemble(float Y[2][38][64][2], const float X_high[64][40][2]
     float (*g_temp)[48] = ch_data->g_temp, (*q_temp)[48] = ch_data->q_temp;
     int indexnoise = ch_data->f_indexnoise;
     int indexsine  = ch_data->f_indexsine;
-    memcpy(Y[0], Y[1], sizeof(Y[0]));
 
     if (sbr->reset) {
         for (i = 0; i < h_SL; i++) {
@@ -1607,18 +1607,18 @@ static void sbr_hf_assemble(float Y[2][38][64][2], const float X_high[64][40][2]
                 q_filt = q_temp[i];
             }
 
-            sbr->dsp.hf_g_filt(Y[1][i] + kx, X_high + kx, g_filt, m_max,
+            sbr->dsp.hf_g_filt(Y1[i] + kx, X_high + kx, g_filt, m_max,
                                i + ENVELOPE_ADJUSTMENT_OFFSET);
 
             if (e != e_a[0] && e != e_a[1]) {
-                sbr->dsp.hf_apply_noise[indexsine](Y[1][i] + kx, sbr->s_m[e],
+                sbr->dsp.hf_apply_noise[indexsine](Y1[i] + kx, sbr->s_m[e],
                                                    q_filt, indexnoise,
                                                    kx, m_max);
             } else {
                 for (m = 0; m < m_max; m++) {
-                    Y[1][i][m + kx][0] +=
+                    Y1[i][m + kx][0] +=
                         sbr->s_m[e][m] * phi[0][indexsine];
-                    Y[1][i][m + kx][1] +=
+                    Y1[i][m + kx][1] +=
                         sbr->s_m[e][m] * (phi[1][indexsine] * phi_sign);
                     phi_sign = -phi_sign;
                 }
@@ -1658,12 +1658,17 @@ void ff_sbr_apply(AACContext *ac, SpectralBandReplication *sbr, int id_aac,
             sbr_mapping(ac, sbr, &sbr->data[ch], sbr->data[ch].e_a);
             sbr_env_estimate(sbr->e_curr, sbr->X_high, sbr, &sbr->data[ch]);
             sbr_gain_calc(ac, sbr, &sbr->data[ch], sbr->data[ch].e_a);
-            sbr_hf_assemble(sbr->data[ch].Y, sbr->X_high, sbr, &sbr->data[ch],
+            sbr->data[ch].Ypos ^= 1;
+            sbr_hf_assemble(sbr->data[ch].Y[sbr->data[ch].Ypos],
+                            sbr->X_high, sbr, &sbr->data[ch],
                             sbr->data[ch].e_a);
         }
 
         /* synthesis */
-        sbr_x_gen(sbr, sbr->X[ch], sbr->X_low, sbr->data[ch].Y, ch);
+        sbr_x_gen(sbr, sbr->X[ch],
+                  sbr->data[ch].Y[1-sbr->data[ch].Ypos],
+                  sbr->data[ch].Y[  sbr->data[ch].Ypos],
+                  sbr->X_low, ch);
     }
 
     if (ac->m4ac.ps == 1) {

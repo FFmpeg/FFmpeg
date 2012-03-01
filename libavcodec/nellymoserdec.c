@@ -49,14 +49,15 @@ typedef struct NellyMoserDecodeContext {
     AVCodecContext* avctx;
     AVFrame         frame;
     float          *float_buf;
-    DECLARE_ALIGNED(16, float, state)[NELLY_BUF_LEN];
     AVLFG           random_state;
     GetBitContext   gb;
     float           scale_bias;
     DSPContext      dsp;
     FFTContext      imdct_ctx;
     FmtConvertContext fmt_conv;
-    DECLARE_ALIGNED(32, float, imdct_out)[NELLY_BUF_LEN * 2];
+    DECLARE_ALIGNED(32, float, imdct_buf)[2][NELLY_BUF_LEN];
+    float          *imdct_out;
+    float          *imdct_prev;
 } NellyMoserDecodeContext;
 
 static void nelly_decode_block(NellyMoserDecodeContext *s,
@@ -106,12 +107,9 @@ static void nelly_decode_block(NellyMoserDecodeContext *s,
         memset(&aptr[NELLY_FILL_LEN], 0,
                (NELLY_BUF_LEN - NELLY_FILL_LEN) * sizeof(float));
 
-        s->imdct_ctx.imdct_calc(&s->imdct_ctx, s->imdct_out, aptr);
-        /* XXX: overlapping and windowing should be part of a more
-           generic imdct function */
-        s->dsp.vector_fmul_reverse(s->state, s->state, ff_sine_128, NELLY_BUF_LEN);
-        s->dsp.vector_fmul_add(aptr, s->imdct_out, ff_sine_128, s->state, NELLY_BUF_LEN);
-        memcpy(s->state, s->imdct_out + NELLY_BUF_LEN, sizeof(float)*NELLY_BUF_LEN);
+        s->imdct_ctx.imdct_half(&s->imdct_ctx, s->imdct_out, aptr);
+        s->dsp.vector_fmul_window(aptr, s->imdct_prev + NELLY_BUF_LEN/2, s->imdct_out, ff_sine_128, NELLY_BUF_LEN/2);
+        FFSWAP(float *, s->imdct_out, s->imdct_prev);
     }
 }
 
@@ -119,6 +117,8 @@ static av_cold int decode_init(AVCodecContext * avctx) {
     NellyMoserDecodeContext *s = avctx->priv_data;
 
     s->avctx = avctx;
+    s->imdct_out = s->imdct_buf[0];
+    s->imdct_prev = s->imdct_buf[1];
     av_lfg_init(&s->random_state, 0);
     ff_mdct_init(&s->imdct_ctx, 8, 1, 1.0);
 
