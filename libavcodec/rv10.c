@@ -642,8 +642,12 @@ static int rv10_decode_frame(AVCodecContext *avctx,
 
     if(!avctx->slice_count){
         slice_count = (*buf++) + 1;
+        buf_size--;
         slices_hdr = buf + 4;
         buf += 8 * slice_count;
+        buf_size -= 8 * slice_count;
+        if (buf_size <= 0)
+            return AVERROR_INVALIDDATA;
     }else
         slice_count = avctx->slice_count;
 
@@ -689,7 +693,7 @@ static int rv10_decode_frame(AVCodecContext *avctx,
         s->current_picture_ptr= NULL; //so we can detect if frame_end wasnt called (find some nicer solution...)
     }
 
-    return buf_size;
+    return avpkt->size;
 }
 
 AVCodec ff_rv10_decoder = {
