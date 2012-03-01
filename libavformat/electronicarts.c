@@ -349,7 +349,7 @@ static int process_ea_header(AVFormatContext *s) {
 
             case kVGT_TAG:
                 ea->video_codec = CODEC_ID_TGV;
-                ea->time_base = (AVRational){0,0};
+                ea->time_base = (AVRational){1, 15};
                 break;
 
             case mTCD_TAG :
