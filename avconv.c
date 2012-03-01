@@ -979,6 +979,7 @@ static int encode_audio_frame(AVFormatContext *s, OutputStream *ost,
         if (!check_recording_time(ost))
             return 0;
 
+        frame->pts = ost->sync_opts;
         ost->sync_opts += frame->nb_samples;
     }
 
