@@ -428,7 +428,7 @@ static float wv_get_value_float(WavpackFrameContext *s, uint32_t *crc, int S)
         uint32_t u;
     } value;
 
-    int sign;
+    unsigned int sign;
     int exp = s->float_max_exp;
 
     if (s->got_extra_bits) {
