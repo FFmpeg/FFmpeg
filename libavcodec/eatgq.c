@@ -141,7 +141,7 @@ static void tgq_idct_put_mb_dconly(TgqContext *s, int mb_x, int mb_y, const int8
     }
 }
 
-static void tgq_decode_mb(TgqContext *s, int mb_y, int mb_x, const uint8_t **bs, const uint8_t *buf_end){
+static int tgq_decode_mb(TgqContext *s, int mb_y, int mb_x, const uint8_t **bs, const uint8_t *buf_end){
     int mode;
     int i;
     int8_t dc[6];
@@ -149,7 +149,7 @@ static void tgq_decode_mb(TgqContext *s, int mb_y, int mb_x, const uint8_t **bs,
     mode = bytestream_get_byte(bs);
     if (mode>buf_end-*bs) {
         av_log(s->avctx, AV_LOG_ERROR, "truncated macroblock\n");
-        return;
+        return AVERROR_INVALIDDATA;
     }
 
     if (mode>12) {
@@ -174,6 +174,8 @@ static void tgq_decode_mb(TgqContext *s, int mb_y, int mb_x, const uint8_t **bs,
         tgq_idct_put_mb_dconly(s, mb_x, mb_y, dc);
     }
     *bs += mode;
+
+    return 0;
 }
 
 static void tgq_calculate_qtable(TgqContext *s, int quant){
@@ -196,7 +198,7 @@ static int tgq_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf_start = buf;
     const uint8_t *buf_end = buf + buf_size;
     TgqContext *s = avctx->priv_data;
-    int x,y;
+    int x,y, ret;
 
     int big_endian = AV_RL32(&buf[4]) > 0x000FFFFF;
     buf += 8;
@@ -228,7 +230,8 @@ static int tgq_decode_frame(AVCodecContext *avctx,
 
     for (y=0; y<(avctx->height+15)/16; y++)
     for (x=0; x<(avctx->width+15)/16; x++)
-        tgq_decode_mb(s, y, x, &buf, buf_end);
+        if ((ret=tgq_decode_mb(s, y, x, &buf, buf_end)) < 0)
+            return ret;
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = s->frame;
