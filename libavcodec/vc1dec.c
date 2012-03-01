@@ -5072,7 +5072,7 @@ static void vc1_draw_sprites(VC1Context *v, SpriteData* sd)
                 if (!(xoff[sprite] & 0xFFFF) && xadv[sprite] == 1 << 16) {
                         src_h[sprite][0] = iplane + (xoff[sprite] >> 16) +  yline      * iline;
                     if (ysub[sprite])
-                        src_h[sprite][1] = iplane + (xoff[sprite] >> 16) + (yline + 1) * iline;
+                        src_h[sprite][1] = iplane + (xoff[sprite] >> 16) + FFMIN(yline + 1, (v->sprite_height>>!!plane)-1) * iline;
                 } else {
                     if (sr_cache[sprite][0] != yline) {
                         if (sr_cache[sprite][1] == yline) {
@@ -5084,7 +5084,7 @@ static void vc1_draw_sprites(VC1Context *v, SpriteData* sd)
                         }
                     }
                     if (ysub[sprite] && sr_cache[sprite][1] != yline + 1) {
-                        v->vc1dsp.sprite_h(v->sr_rows[sprite][1], iplane + (yline + 1) * iline, xoff[sprite], xadv[sprite], width);
+                        v->vc1dsp.sprite_h(v->sr_rows[sprite][1], iplane + FFMIN(yline + 1, (v->sprite_height>>!!plane)-1) * iline, xoff[sprite], xadv[sprite], width);
                         sr_cache[sprite][1] = yline + 1;
                     }
                     src_h[sprite][0] = v->sr_rows[sprite][0];
