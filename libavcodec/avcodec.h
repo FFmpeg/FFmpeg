@@ -1972,7 +1972,17 @@ typedef struct AVCodecContext {
      * Samples per packet, initialized when calling 'init'.
      */
     int frame_size;
-    int frame_number;   ///< audio or video frame number
+
+    /**
+     * Frame counter, set by libavcodec.
+     *
+     * - decoding: total number of frames returned from the decoder so far.
+     * - encoding: total number of frames passed to the encoder so far.
+     *
+     *   @note the counter is not incremented if encoding/decoding resulted in
+     *   an error.
+     */
+    int frame_number;
 
     /**
      * number of bytes per packet if constant and known or 0
