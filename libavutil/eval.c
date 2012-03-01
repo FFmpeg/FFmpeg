@@ -201,7 +201,7 @@ static double eval_expr(Parser *p, AVExpr *e)
             return d;
         }
         case e_root: {
-            int i;
+            int i, j;
             double low = -1, high = -1, v, low_v = -DBL_MAX, high_v = DBL_MAX;
             double var0 = p->var[0];
             double x_max = eval_expr(p, e->param[1]);
@@ -224,7 +224,7 @@ static double eval_expr(Parser *p, AVExpr *e)
                     high_v = v;
                 }
                 if (low>=0 && high>=0){
-                    while (1) {
+                    for (j=0; j<1000; j++) {
                         p->var[0] = (low+high)*0.5;
                         if (low == p->var[0] || high == p->var[0])
                             break;
