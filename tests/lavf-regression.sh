@@ -223,6 +223,10 @@ if [ -n "$do_xwd" ] ; then
 do_image_formats xwd
 fi
 
+if [ -n "$do_sun" ] ; then
+do_image_formats sun
+fi
+
 # audio only
 
 if [ -n "$do_wav" ] ; then
