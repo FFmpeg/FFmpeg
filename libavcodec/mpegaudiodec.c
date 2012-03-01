@@ -24,8 +24,6 @@
  * MPEG Audio decoder
  */
 
-#define UNCHECKED_BITSTREAM_READER 1
-
 #include "libavutil/audioconvert.h"
 #include "avcodec.h"
 #include "get_bits.h"
