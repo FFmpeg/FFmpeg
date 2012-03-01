@@ -175,7 +175,6 @@ void ff_svq3_add_idct_c(uint8_t *dst, DCTELEM *block, int stride, int qp,
 {
     const int qmul = svq3_dequant_coeff[qp];
     int i;
-    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     if (dc) {
         dc = 13*13*((dc == 1) ? 1538*block[0] : ((qmul*(block[0] >> 3)) / 2));
@@ -201,10 +200,10 @@ void ff_svq3_add_idct_c(uint8_t *dst, DCTELEM *block, int stride, int qp,
         const int z3 = 17* block[i + 4*1] +  7*block[i + 4*3];
         const int rr = (dc + 0x80000);
 
-        dst[i + stride*0] = cm[ dst[i + stride*0] + (((z0 + z3)*qmul + rr) >> 20) ];
-        dst[i + stride*1] = cm[ dst[i + stride*1] + (((z1 + z2)*qmul + rr) >> 20) ];
-        dst[i + stride*2] = cm[ dst[i + stride*2] + (((z1 - z2)*qmul + rr) >> 20) ];
-        dst[i + stride*3] = cm[ dst[i + stride*3] + (((z0 - z3)*qmul + rr) >> 20) ];
+        dst[i + stride*0] = av_clip_uint8( dst[i + stride*0] + (((z0 + z3)*qmul + rr) >> 20) );
+        dst[i + stride*1] = av_clip_uint8( dst[i + stride*1] + (((z1 + z2)*qmul + rr) >> 20) );
+        dst[i + stride*2] = av_clip_uint8( dst[i + stride*2] + (((z1 - z2)*qmul + rr) >> 20) );
+        dst[i + stride*3] = av_clip_uint8( dst[i + stride*3] + (((z0 - z3)*qmul + rr) >> 20) );
     }
 }
 
