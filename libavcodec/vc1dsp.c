@@ -348,7 +348,6 @@ static void vc1_inv_trans_8x4_c(uint8_t *dest, int linesize, DCTELEM *block)
     int i;
     register int t1,t2,t3,t4,t5,t6,t7,t8;
     DCTELEM *src, *dst;
-    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     src = block;
     dst = block;
@@ -388,10 +387,10 @@ static void vc1_inv_trans_8x4_c(uint8_t *dest, int linesize, DCTELEM *block)
         t3 = 22 * src[ 8] + 10 * src[24];
         t4 = 22 * src[24] - 10 * src[ 8];
 
-        dest[0*linesize] = cm[dest[0*linesize] + ((t1 + t3) >> 7)];
-        dest[1*linesize] = cm[dest[1*linesize] + ((t2 - t4) >> 7)];
-        dest[2*linesize] = cm[dest[2*linesize] + ((t2 + t4) >> 7)];
-        dest[3*linesize] = cm[dest[3*linesize] + ((t1 - t3) >> 7)];
+        dest[0*linesize] = av_clip_uint8(dest[0*linesize] + ((t1 + t3) >> 7));
+        dest[1*linesize] = av_clip_uint8(dest[1*linesize] + ((t2 - t4) >> 7));
+        dest[2*linesize] = av_clip_uint8(dest[2*linesize] + ((t2 + t4) >> 7));
+        dest[3*linesize] = av_clip_uint8(dest[3*linesize] + ((t1 - t3) >> 7));
 
         src ++;
         dest++;
