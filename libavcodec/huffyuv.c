@@ -514,7 +514,7 @@ s->bgr32=1;
         }
         break;
     default:
-        assert(0);
+        return AVERROR_INVALIDDATA;
     }
 
     alloc_temp(s);
