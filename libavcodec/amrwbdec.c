@@ -898,10 +898,10 @@ static float auto_correlation(float *diff_isf, float mean, int lag)
  * Extrapolate a ISF vector to the 16kHz range (20th order LP)
  * used at mode 6k60 LP filter for the high frequency band.
  *
- * @param[out] out                 Buffer for extrapolated isf
- * @param[in]  isf                 Input isf vector
+ * @param[out] isf Buffer for extrapolated isf; contains LP_ORDER
+ *                 values on input
  */
-static void extrapolate_isf(float out[LP_ORDER_16k], float isf[LP_ORDER])
+static void extrapolate_isf(float isf[LP_ORDER_16k])
 {
     float diff_isf[LP_ORDER - 2], diff_mean;
     float *diff_hi = diff_isf - LP_ORDER + 1; // diff array for extrapolated indexes
@@ -909,8 +909,7 @@ static void extrapolate_isf(float out[LP_ORDER_16k], float isf[LP_ORDER])
     float est, scale;
     int i, i_max_corr;
 
-    memcpy(out, isf, (LP_ORDER - 1) * sizeof(float));
-    out[LP_ORDER_16k - 1] = isf[LP_ORDER - 1];
+    isf[LP_ORDER_16k - 1] = isf[LP_ORDER - 1];
 
     /* Calculate the difference vector */
     for (i = 0; i < LP_ORDER - 2; i++)
@@ -931,16 +930,16 @@ static void extrapolate_isf(float out[LP_ORDER_16k], float isf[LP_ORDER])
     i_max_corr++;
 
     for (i = LP_ORDER - 1; i < LP_ORDER_16k - 1; i++)
-        out[i] = isf[i - 1] + isf[i - 1 - i_max_corr]
+        isf[i] = isf[i - 1] + isf[i - 1 - i_max_corr]
                             - isf[i - 2 - i_max_corr];
 
     /* Calculate an estimate for ISF(18) and scale ISF based on the error */
-    est   = 7965 + (out[2] - out[3] - out[4]) / 6.0;
-    scale = 0.5 * (FFMIN(est, 7600) - out[LP_ORDER - 2]) /
-            (out[LP_ORDER_16k - 2] - out[LP_ORDER - 2]);
+    est   = 7965 + (isf[2] - isf[3] - isf[4]) / 6.0;
+    scale = 0.5 * (FFMIN(est, 7600) - isf[LP_ORDER - 2]) /
+            (isf[LP_ORDER_16k - 2] - isf[LP_ORDER - 2]);
 
     for (i = LP_ORDER - 1; i < LP_ORDER_16k - 1; i++)
-        diff_hi[i] = scale * (out[i] - out[i - 1]);
+        diff_hi[i] = scale * (isf[i] - isf[i - 1]);
 
     /* Stability insurance */
     for (i = LP_ORDER; i < LP_ORDER_16k - 1; i++)
@@ -952,11 +951,11 @@ static void extrapolate_isf(float out[LP_ORDER_16k], float isf[LP_ORDER])
         }
 
     for (i = LP_ORDER - 1; i < LP_ORDER_16k - 1; i++)
-        out[i] = out[i - 1] + diff_hi[i] * (1.0f / (1 << 15));
+        isf[i] = isf[i - 1] + diff_hi[i] * (1.0f / (1 << 15));
 
     /* Scale the ISF vector for 16000 Hz */
     for (i = 0; i < LP_ORDER_16k - 1; i++)
-        out[i] *= 0.8;
+        isf[i] *= 0.8;
 }
 
 /**
@@ -1003,7 +1002,7 @@ static void hb_synthesis(AMRWBContext *ctx, int subframe, float *samples,
         ff_weighted_vector_sumf(e_isf, isf_past, isf, isfp_inter[subframe],
                                 1.0 - isfp_inter[subframe], LP_ORDER);
 
-        extrapolate_isf(e_isf, e_isf);
+        extrapolate_isf(e_isf);
 
         e_isf[LP_ORDER_16k - 1] *= 2.0;
         ff_acelp_lsf2lspd(e_isp, e_isf, LP_ORDER_16k);
