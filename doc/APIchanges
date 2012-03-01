@@ -13,6 +13,7 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+<<<<<<< HEAD
 2012-02-21 - xxxxxxx - lavc 54.4.100
   Add av_get_pcm_codec() function.
 
@@ -35,6 +36,13 @@ API changes, most recent first:
 2012-01-24 - xxxxxxx - lavfi 2.60.100
   Add avfilter_graph_dump.
 
+||||||| merged common ancestors
+=======
+2012-xx-xx - xxxxxxx - lavf 54.2.0 - avformat.h
+  Add AVStream.attached_pic and AV_DISPOSITION_ATTACHED_PIC,
+  used for dealing with attached pictures/cover art.
+
+>>>>>>> qatar/master
 2012-02-25 - c9bca80 - lavu 51.24.0 - error.h
   Add AVERROR_UNKNOWN
 

@@ -49,7 +49,7 @@ static av_cold int oma_write_header(AVFormatContext *s)
     }
 
     /* Metadata; OpenMG does not support ID3v2.4 */
-    ff_id3v2_write(s, 3, ID3v2_EA3_MAGIC);
+    ff_id3v2_write_simple(s, 3, ID3v2_EA3_MAGIC);
 
     ffio_wfourcc(s->pb, "EA3\0");
     avio_w8(s->pb, EA3_HEADER_SIZE >> 7);

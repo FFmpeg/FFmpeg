@@ -56,6 +56,8 @@ void ff_rv10_encode_picture_header(MpegEncContext *s, int picture_number)
     put_bits(&s->pb, 3, 0);     /* ignored */
 }
 
+FF_MPV_GENERIC_CLASS(rv10)
+
 AVCodec ff_rv10_encoder = {
     .name           = "rv10",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -66,4 +68,5 @@ AVCodec ff_rv10_encoder = {
     .close          = ff_MPV_encode_end,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("RealVideo 1.0"),
+    .priv_class     = &rv10_class,
 };

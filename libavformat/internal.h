@@ -37,6 +37,11 @@ typedef struct AVCodecTag {
     unsigned int tag;
 } AVCodecTag;
 
+typedef struct CodecMime{
+    char str[32];
+    enum CodecID id;
+} CodecMime;
+
 #ifdef __GNUC__
 #define dynarray_add(tab, nb_ptr, elem)\
 do {\

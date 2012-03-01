@@ -112,7 +112,7 @@ static int rtp_write_header(AVFormatContext *s1)
 
     if (s->max_packet_size) {
         if (s1->pb->max_packet_size)
-            s->max_packet_size = FFMIN(s->max_payload_size,
+            s->max_packet_size = FFMIN(s->max_packet_size,
                                        s1->pb->max_packet_size);
     } else
         s->max_packet_size = s1->pb->max_packet_size;

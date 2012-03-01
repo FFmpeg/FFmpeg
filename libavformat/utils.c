@@ -545,11 +545,29 @@ static int init_input(AVFormatContext *s, const char *filename, AVDictionary **o
     return av_probe_input_buffer(s->pb, &s->iformat, filename, s, 0, 0);
 }
 
+static AVPacket *add_to_pktbuf(AVPacketList **packet_buffer, AVPacket *pkt,
+                               AVPacketList **plast_pktl){
+    AVPacketList *pktl = av_mallocz(sizeof(AVPacketList));
+    if (!pktl)
+        return NULL;
+
+    if (*packet_buffer)
+        (*plast_pktl)->next = pktl;
+    else
+        *packet_buffer = pktl;
+
+    /* add the packet in the buffered packet list */
+    *plast_pktl = pktl;
+    pktl->pkt= *pkt;
+    return &pktl->pkt;
+}
+
 int avformat_open_input(AVFormatContext **ps, const char *filename, AVInputFormat *fmt, AVDictionary **options)
 {
     AVFormatContext *s = *ps;
-    int ret = 0;
+    int i, ret = 0;
     AVDictionary *tmp = NULL;
+    ID3v2ExtraMeta *id3v2_extra_meta = NULL;
 
     if (!s && !(s = avformat_alloc_context()))
         return AVERROR(ENOMEM);
@@ -592,11 +610,24 @@ int avformat_open_input(AVFormatContext **ps, const char *filename, AVInputForma
 
     /* e.g. AVFMT_NOFILE formats will not have a AVIOContext */
     if (s->pb)
-        ff_id3v2_read(s, ID3v2_DEFAULT_MAGIC);
+        ff_id3v2_read(s, ID3v2_DEFAULT_MAGIC, &id3v2_extra_meta);
 
     if (!(s->flags&AVFMT_FLAG_PRIV_OPT) && s->iformat->read_header)
         if ((ret = s->iformat->read_header(s)) < 0)
             goto fail;
+
+    if (id3v2_extra_meta &&
+        (ret = ff_id3v2_parse_apic(s, &id3v2_extra_meta)) < 0)
+        goto fail;
+    ff_id3v2_free_extra_meta(&id3v2_extra_meta);
+
+    /* queue attached pictures */
+    for (i = 0; i < s->nb_streams; i++)
+        if (s->streams[i]->disposition & AV_DISPOSITION_ATTACHED_PIC) {
+            AVPacket copy = s->streams[i]->attached_pic;
+            copy.destruct = NULL;
+            add_to_pktbuf(&s->raw_packet_buffer, &copy, &s->raw_packet_buffer_end);
+        }
 
     if (!(s->flags&AVFMT_FLAG_PRIV_OPT) && s->pb && !s->data_offset)
         s->data_offset = avio_tell(s->pb);
@@ -611,6 +642,7 @@ int avformat_open_input(AVFormatContext **ps, const char *filename, AVInputForma
     return 0;
 
 fail:
+    ff_id3v2_free_extra_meta(&id3v2_extra_meta);
     av_dict_free(&tmp);
     if (s->pb && !(s->flags & AVFMT_FLAG_CUSTOM_IO))
         avio_close(s->pb);
@@ -620,23 +652,6 @@ fail:
 }
 
 /*******************************************************/
-
-static AVPacket *add_to_pktbuf(AVPacketList **packet_buffer, AVPacket *pkt,
-                               AVPacketList **plast_pktl){
-    AVPacketList *pktl = av_mallocz(sizeof(AVPacketList));
-    if (!pktl)
-        return NULL;
-
-    if (*packet_buffer)
-        (*plast_pktl)->next = pktl;
-    else
-        *packet_buffer = pktl;
-
-    /* add the packet in the buffered packet list */
-    *plast_pktl = pktl;
-    pktl->pkt= *pkt;
-    return &pktl->pkt;
-}
 
 int av_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
@@ -2722,6 +2737,8 @@ void avformat_free_context(AVFormatContext *s)
             av_parser_close(st->parser);
             av_free_packet(&st->cur_pkt);
         }
+        if (st->attached_pic.data)
+            av_free_packet(&st->attached_pic);
         av_dict_free(&st->metadata);
         av_freep(&st->index_entries);
         av_freep(&st->codec->extradata);

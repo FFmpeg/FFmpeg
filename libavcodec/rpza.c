@@ -183,6 +183,8 @@ static void rpza_decode_stream(RpzaContext *s)
             color4[1] |= ((11 * ta + 21 * tb) >> 5);
             color4[2] |= ((21 * ta + 11 * tb) >> 5);
 
+            if (s->size - stream_ptr < n_blocks * 4)
+                return;
             while (n_blocks--) {
                 block_ptr = row_ptr + pixel_ptr;
                 for (pixel_y = 0; pixel_y < 4; pixel_y++) {
@@ -200,6 +202,8 @@ static void rpza_decode_stream(RpzaContext *s)
 
         /* Fill block with 16 colors */
         case 0x00:
+            if (s->size - stream_ptr < 16)
+                return;
             block_ptr = row_ptr + pixel_ptr;
             for (pixel_y = 0; pixel_y < 4; pixel_y++) {
                 for (pixel_x = 0; pixel_x < 4; pixel_x++){

@@ -57,6 +57,11 @@ static int vp5_parse_header(VP56Context *s, const uint8_t *buf, int buf_size,
         }
         rows = vp56_rac_gets(c, 8);  /* number of stored macroblock rows */
         cols = vp56_rac_gets(c, 8);  /* number of stored macroblock cols */
+        if (!rows || !cols) {
+            av_log(s->avctx, AV_LOG_ERROR, "Invalid size %dx%d\n",
+                   cols << 4, rows << 4);
+            return 0;
+        }
         vp56_rac_gets(c, 8);  /* number of displayed macroblock rows */
         vp56_rac_gets(c, 8);  /* number of displayed macroblock cols */
         vp56_rac_gets(c, 2);

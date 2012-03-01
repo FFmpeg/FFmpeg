@@ -8,6 +8,7 @@ version next:
 - Apple ProRes encoder
 - ffprobe -count_packets and -count_frames options
 - Sun Rasterfile Encoder
+- ID3v2 attached pictures reading and writing
 
 
 version 0.10:

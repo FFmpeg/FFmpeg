@@ -258,5 +258,6 @@ AVCodec ff_eac3_encoder = {
     .long_name       = NULL_IF_CONFIG_SMALL("ATSC A/52 E-AC-3"),
     .priv_class      = &eac3enc_class,
     .channel_layouts = ff_ac3_channel_layouts,
+    .defaults        = ac3_defaults,
 };
 #endif

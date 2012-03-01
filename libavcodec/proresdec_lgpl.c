@@ -165,6 +165,10 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
         ctx->picture.top_field_first  = ctx->frame_type & 1;
     }
 
+    avctx->color_primaries = buf[14];
+    avctx->color_trc       = buf[15];
+    avctx->colorspace      = buf[16];
+
     ctx->alpha_info = buf[17] & 0xf;
     if (ctx->alpha_info)
         av_log_missing_feature(avctx, "alpha channel", 0);
@@ -411,7 +415,7 @@ static void decode_slice_plane(ProresContext *ctx, ProresThreadData *td,
                                int data_size, uint16_t *out_ptr,
                                int linesize, int mbs_per_slice,
                                int blocks_per_mb, int plane_size_factor,
-                               const int16_t *qmat)
+                               const int16_t *qmat, int is_chroma)
 {
     GetBitContext gb;
     DCTELEM *block_ptr;
@@ -431,18 +435,33 @@ static void decode_slice_plane(ProresContext *ctx, ProresThreadData *td,
     /* inverse quantization, inverse transform and output */
     block_ptr = td->blocks;
 
-    for (mb_num = 0; mb_num < mbs_per_slice; mb_num++, out_ptr += blocks_per_mb * 4) {
-        ctx->dsp.idct_put(out_ptr,                    linesize, block_ptr, qmat);
-        block_ptr += 64;
-        if (blocks_per_mb > 2) {
-            ctx->dsp.idct_put(out_ptr + 8,            linesize, block_ptr, qmat);
+    if (!is_chroma) {
+        for (mb_num = 0; mb_num < mbs_per_slice; mb_num++, out_ptr += blocks_per_mb * 4) {
+            ctx->dsp.idct_put(out_ptr,                    linesize, block_ptr, qmat);
             block_ptr += 64;
+            if (blocks_per_mb > 2) {
+                ctx->dsp.idct_put(out_ptr + 8,            linesize, block_ptr, qmat);
+                block_ptr += 64;
+            }
+            ctx->dsp.idct_put(out_ptr + linesize * 4,     linesize, block_ptr, qmat);
+            block_ptr += 64;
+            if (blocks_per_mb > 2) {
+                ctx->dsp.idct_put(out_ptr + linesize * 4 + 8, linesize, block_ptr, qmat);
+                block_ptr += 64;
+            }
         }
-        ctx->dsp.idct_put(out_ptr + linesize * 4,     linesize, block_ptr, qmat);
-        block_ptr += 64;
-        if (blocks_per_mb > 2) {
-            ctx->dsp.idct_put(out_ptr + linesize * 4 + 8, linesize, block_ptr, qmat);
+    } else {
+        for (mb_num = 0; mb_num < mbs_per_slice; mb_num++, out_ptr += blocks_per_mb * 4) {
+            ctx->dsp.idct_put(out_ptr,                    linesize, block_ptr, qmat);
             block_ptr += 64;
+            ctx->dsp.idct_put(out_ptr + linesize * 4,     linesize, block_ptr, qmat);
+            block_ptr += 64;
+            if (blocks_per_mb > 2) {
+                ctx->dsp.idct_put(out_ptr + 8,            linesize, block_ptr, qmat);
+                block_ptr += 64;
+                ctx->dsp.idct_put(out_ptr + linesize * 4 + 8, linesize, block_ptr, qmat);
+                block_ptr += 64;
+            }
         }
     }
 }
@@ -523,7 +542,7 @@ static int decode_slice(AVCodecContext *avctx, void *tdata)
                        (uint16_t*) (y_data + (mb_y_pos << 4) * y_linesize +
                                     (mb_x_pos << 5)), y_linesize,
                        mbs_per_slice, 4, slice_width_factor + 2,
-                       td->qmat_luma_scaled);
+                       td->qmat_luma_scaled, 0);
 
     /* decode U chroma plane */
     decode_slice_plane(ctx, td, buf + hdr_size + y_data_size, u_data_size,
@@ -531,7 +550,7 @@ static int decode_slice(AVCodecContext *avctx, void *tdata)
                                     (mb_x_pos << ctx->mb_chroma_factor)),
                        u_linesize, mbs_per_slice, ctx->num_chroma_blocks,
                        slice_width_factor + ctx->chroma_factor - 1,
-                       td->qmat_chroma_scaled);
+                       td->qmat_chroma_scaled, 1);
 
     /* decode V chroma plane */
     decode_slice_plane(ctx, td, buf + hdr_size + y_data_size + u_data_size,
@@ -540,7 +559,7 @@ static int decode_slice(AVCodecContext *avctx, void *tdata)
                                     (mb_x_pos << ctx->mb_chroma_factor)),
                        v_linesize, mbs_per_slice, ctx->num_chroma_blocks,
                        slice_width_factor + ctx->chroma_factor - 1,
-                       td->qmat_chroma_scaled);
+                       td->qmat_chroma_scaled, 1);
 
     return 0;
 }

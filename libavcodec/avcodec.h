@@ -582,17 +582,19 @@ typedef struct RcOverride{
 #define CODEC_FLAG_BITEXACT       0x00800000 ///< Use only bitexact stuff (except (I)DCT).
 /* Fx : Flag for h263+ extra options */
 #define CODEC_FLAG_AC_PRED        0x01000000 ///< H.263 advanced intra coding / MPEG-4 AC prediction
-#define CODEC_FLAG_CBP_RD         0x04000000 ///< Use rate distortion optimization for cbp.
-#define CODEC_FLAG_QP_RD          0x08000000 ///< Use rate distortion optimization for qp selectioon.
 #define CODEC_FLAG_LOOP_FILTER    0x00000800 ///< loop filter
 #define CODEC_FLAG_INTERLACED_ME  0x20000000 ///< interlaced motion estimation
 #define CODEC_FLAG_CLOSED_GOP     0x80000000
 #define CODEC_FLAG2_FAST          0x00000001 ///< Allow non spec compliant speedup tricks.
-#define CODEC_FLAG2_STRICT_GOP    0x00000002 ///< Strictly enforce GOP size.
 #define CODEC_FLAG2_NO_OUTPUT     0x00000004 ///< Skip bitstream encoding.
 #define CODEC_FLAG2_LOCAL_HEADER  0x00000008 ///< Place global headers at every keyframe instead of in extradata.
 #define CODEC_FLAG2_DROP_FRAME_TIMECODE 0x00002000 ///< timecode is in drop frame format. DEPRECATED!!!!
+#if FF_API_MPV_GLOBAL_OPTS
+#define CODEC_FLAG_CBP_RD         0x04000000 ///< Use rate distortion optimization for cbp.
+#define CODEC_FLAG_QP_RD          0x08000000 ///< Use rate distortion optimization for qp selectioon.
+#define CODEC_FLAG2_STRICT_GOP    0x00000002 ///< Strictly enforce GOP size.
 #define CODEC_FLAG2_SKIP_RD       0x00004000 ///< RD optimal MB level residual skipping
+#endif
 #define CODEC_FLAG2_CHUNKS        0x00008000 ///< Input bitstream might be truncated at a packet boundaries instead of only at frame boundaries.
 #define CODEC_FLAG2_SHOW_ALL      0x00400000 ///< Show all frames before the first keyframe
 
@@ -1492,19 +1494,21 @@ typedef struct AVCodecContext {
 
     int b_frame_strategy;
 
+#if FF_API_MPV_GLOBAL_OPTS
     /**
      * luma single coefficient elimination threshold
      * - encoding: Set by user.
      * - decoding: unused
      */
-    int luma_elim_threshold;
+    attribute_deprecated int luma_elim_threshold;
 
     /**
      * chroma single coeff elimination threshold
      * - encoding: Set by user.
      * - decoding: unused
      */
-    int chroma_elim_threshold;
+    attribute_deprecated int chroma_elim_threshold;
+#endif
 
     /**
      * qscale offset between IP and B-frames
@@ -1735,13 +1739,15 @@ typedef struct AVCodecContext {
      */
     int inter_quant_bias;
 
+#if FF_API_COLOR_TABLE_ID
     /**
      * color table ID
      * - encoding: unused
      * - decoding: Which clrtable should be used for 8bit RGB images.
      *             Tables have to be stored somewhere. FIXME
      */
-    int color_table_id;
+    attribute_deprecated int color_table_id;
+#endif
 
     /**
      * slice flags
@@ -1799,19 +1805,19 @@ typedef struct AVCodecContext {
      */
     int noise_reduction;
 
+#if FF_API_INTER_THRESHOLD
     /**
-     *
-     * - encoding: Set by user.
-     * - decoding: unused
+     * @deprecated this field is unused
      */
-    int inter_threshold;
+    attribute_deprecated int inter_threshold;
+#endif
 
+#if FF_API_MPV_GLOBAL_OPTS
     /**
-     * quantizer noise shaping
-     * - encoding: Set by user.
-     * - decoding: unused
+     * @deprecated use mpegvideo private options instead
      */
-    int quantizer_noise_shaping;
+    attribute_deprecated int quantizer_noise_shaping;
+#endif
 
     /**
      * Motion estimation threshold below which no motion estimation is

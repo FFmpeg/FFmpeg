@@ -38,6 +38,8 @@
 #include "rl.h"
 #include "libavutil/timecode.h"
 
+#include "libavutil/opt.h"
+
 #define FRAME_SKIPPED 100 ///< return value for header parsers if frame is not coded
 
 enum OutputFormat {
@@ -695,12 +697,45 @@ typedef struct MpegEncContext {
     int (*dct_quantize)(struct MpegEncContext *s, DCTELEM *block/*align 16*/, int n, int qscale, int *overflow);
     int (*fast_dct_quantize)(struct MpegEncContext *s, DCTELEM *block/*align 16*/, int n, int qscale, int *overflow);
     void (*denoise_dct)(struct MpegEncContext *s, DCTELEM *block);
+
+    int mpv_flags;      ///< flags set by private options
+    int quantizer_noise_shaping;
 } MpegEncContext;
 
 #define REBASE_PICTURE(pic, new_ctx, old_ctx) (pic ? \
     (pic >= old_ctx->picture && pic < old_ctx->picture+old_ctx->picture_count ?\
         &new_ctx->picture[pic - old_ctx->picture] : pic - (Picture*)old_ctx + (Picture*)new_ctx)\
     : NULL)
+
+/* mpegvideo_enc common options */
+#define FF_MPV_FLAG_SKIP_RD      0x0001
+#define FF_MPV_FLAG_STRICT_GOP   0x0002
+#define FF_MPV_FLAG_QP_RD        0x0004
+#define FF_MPV_FLAG_CBP_RD       0x0008
+
+#define FF_MPV_OFFSET(x) offsetof(MpegEncContext, x)
+#define FF_MPV_OPT_FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM)
+#define FF_MPV_COMMON_OPTS \
+{ "mpv_flags",      "Flags common for all mpegvideo-based encoders.", FF_MPV_OFFSET(mpv_flags), AV_OPT_TYPE_FLAGS, { 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "mpv_flags" },\
+{ "skip_rd",        "RD optimal MB level residual skipping", 0, AV_OPT_TYPE_CONST, { FF_MPV_FLAG_SKIP_RD },    0, 0, FF_MPV_OPT_FLAGS, "mpv_flags" },\
+{ "strict_gop",     "Strictly enforce gop size",             0, AV_OPT_TYPE_CONST, { FF_MPV_FLAG_STRICT_GOP }, 0, 0, FF_MPV_OPT_FLAGS, "mpv_flags" },\
+{ "qp_rd",          "Use rate distortion optimization for qp selection", 0, AV_OPT_TYPE_CONST, { FF_MPV_FLAG_QP_RD },  0, 0, FF_MPV_OPT_FLAGS, "mpv_flags" },\
+{ "cbp_rd",         "use rate distortion optimization for CBP",          0, AV_OPT_TYPE_CONST, { FF_MPV_FLAG_CBP_RD }, 0, 0, FF_MPV_OPT_FLAGS, "mpv_flags" },\
+{ "luma_elim_threshold",   "single coefficient elimination threshold for luminance (negative values also consider dc coefficient)",\
+                                                                      FF_MPV_OFFSET(luma_elim_threshold), AV_OPT_TYPE_INT, { 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS },\
+{ "chroma_elim_threshold", "single coefficient elimination threshold for chrominance (negative values also consider dc coefficient)",\
+                                                                      FF_MPV_OFFSET(chroma_elim_threshold), AV_OPT_TYPE_INT, { 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS },\
+{ "quantizer_noise_shaping", NULL,                                  FF_MPV_OFFSET(quantizer_noise_shaping), AV_OPT_TYPE_INT, { 0 },       0, INT_MAX, FF_MPV_OPT_FLAGS },
+
+extern const AVOption ff_mpv_generic_options[];
+
+#define FF_MPV_GENERIC_CLASS(name) \
+static const AVClass name ## _class = {\
+    .class_name = #name " encoder",\
+    .item_name  = av_default_item_name,\
+    .option     = ff_mpv_generic_options,\
+    .version    = LIBAVUTIL_VERSION_INT,\
+};
 
 void ff_MPV_decode_defaults(MpegEncContext *s);
 int ff_MPV_common_init(MpegEncContext *s);

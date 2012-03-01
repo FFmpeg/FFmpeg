@@ -98,12 +98,16 @@ static const AVOption options[]={
 {"global_header", "place global headers in extradata instead of every keyframe", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_GLOBAL_HEADER }, INT_MIN, INT_MAX, V|A|E, "flags"},
 {"bitexact", "use only bitexact stuff (except (i)dct)", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_BITEXACT }, INT_MIN, INT_MAX, A|V|S|D|E, "flags"},
 {"aic", "h263 advanced intra coding / mpeg4 ac prediction", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_AC_PRED }, INT_MIN, INT_MAX, V|E, "flags"},
-{"cbp", "use rate distortion optimization for cbp", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_CBP_RD }, INT_MIN, INT_MAX, V|E, "flags"},
-{"qprd", "use rate distortion optimization for qp selection", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_QP_RD }, INT_MIN, INT_MAX, V|E, "flags"},
+#if FF_API_MPV_GLOBAL_OPTS
+{"cbp", "Deprecated, use mpegvideo private options instead", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_CBP_RD }, INT_MIN, INT_MAX, V|E, "flags"},
+{"qprd", "Deprecated, use mpegvideo private options instead", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_QP_RD }, INT_MIN, INT_MAX, V|E, "flags"},
+#endif
 {"ilme", "interlaced motion estimation", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_INTERLACED_ME }, INT_MIN, INT_MAX, V|E, "flags"},
 {"cgop", "closed gop", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_CLOSED_GOP }, INT_MIN, INT_MAX, V|E, "flags"},
 {"fast", "allow non spec compliant speedup tricks", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_FAST }, INT_MIN, INT_MAX, V|E, "flags2"},
-{"sgop", "strictly enforce gop size", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_STRICT_GOP }, INT_MIN, INT_MAX, V|E, "flags2"},
+#if FF_API_MPV_GLOBAL_OPTS
+{"sgop", "Deprecated, use mpegvideo private options instead", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_STRICT_GOP }, INT_MIN, INT_MAX, V|E, "flags2"},
+#endif
 {"noout", "skip bitstream encoding", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_NO_OUTPUT }, INT_MIN, INT_MAX, V|E, "flags2"},
 {"local_header", "place global headers at every keyframe instead of in extradata", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_LOCAL_HEADER }, INT_MIN, INT_MAX, V|E, "flags2"},
 {"showall", "Show all frames before the first keyframe", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_SHOW_ALL }, INT_MIN, INT_MAX, V|D, "flags2"},
@@ -167,8 +171,10 @@ static const AVOption options[]={
 {"dc_clip", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = FF_BUG_DC_CLIP }, INT_MIN, INT_MAX, V|D, "bug"},
 {"ms", "workaround various bugs in microsofts broken decoders", 0, AV_OPT_TYPE_CONST, {.dbl = FF_BUG_MS }, INT_MIN, INT_MAX, V|D, "bug"},
 {"trunc", "trancated frames", 0, AV_OPT_TYPE_CONST, {.dbl = FF_BUG_TRUNCATED}, INT_MIN, INT_MAX, V|D, "bug"},
+#if FF_API_MPV_GLOBAL_OPTS
 {"lelim", "single coefficient elimination threshold for luminance (negative values also consider dc coefficient)", OFFSET(luma_elim_threshold), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"celim", "single coefficient elimination threshold for chrominance (negative values also consider dc coefficient)", OFFSET(chroma_elim_threshold), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
+#endif
 {"strict", "how strictly to follow the standards", OFFSET(strict_std_compliance), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, A|V|D|E, "strict"},
 {"very", "strictly conform to a older more strict version of the spec or reference software", 0, AV_OPT_TYPE_CONST, {.dbl = FF_COMPLIANCE_VERY_STRICT }, INT_MIN, INT_MAX, V|D|E, "strict"},
 {"strict", "strictly conform to all the things in the spec no matter what consequences", 0, AV_OPT_TYPE_CONST, {.dbl = FF_COMPLIANCE_STRICT }, INT_MIN, INT_MAX, V|D|E, "strict"},
@@ -194,8 +200,8 @@ static const AVOption options[]={
 {"rc_qmod_freq", "experimental quantizer modulation", OFFSET(rc_qmod_freq), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"rc_override_count", NULL, OFFSET(rc_override_count), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
 {"rc_eq", "set rate control equation", OFFSET(rc_eq), AV_OPT_TYPE_STRING, {.str = NULL}, CHAR_MIN, CHAR_MAX, V|E},
-{"maxrate", "set max video bitrate tolerance (in bits/s)", OFFSET(rc_max_rate), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
-{"minrate", "set min video bitrate tolerance (in bits/s)", OFFSET(rc_min_rate), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
+{"maxrate", "set max bitrate tolerance (in bits/s)", OFFSET(rc_max_rate), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|A|E},
+{"minrate", "set min bitrate tolerance (in bits/s)", OFFSET(rc_min_rate), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|A|E},
 {"bufsize", "set ratecontrol buffer size (in bits)", OFFSET(rc_buffer_size), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, A|V|E},
 {"rc_buf_aggressivity", "currently useless", OFFSET(rc_buffer_aggressivity), AV_OPT_TYPE_FLOAT, {.dbl = 1.0 }, -FLT_MAX, FLT_MAX, V|E},
 {"i_qfactor", "qp factor between P and I frames", OFFSET(i_quant_factor), AV_OPT_TYPE_FLOAT, {.dbl = -0.8 }, -FLT_MAX, FLT_MAX, V|E},
@@ -296,7 +302,9 @@ static const AVOption options[]={
 {"me_range", "limit motion vectors range (1023 for DivX player)", OFFSET(me_range), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"ibias", "intra quant bias", OFFSET(intra_quant_bias), AV_OPT_TYPE_INT, {.dbl = FF_DEFAULT_QUANT_BIAS }, INT_MIN, INT_MAX, V|E},
 {"pbias", "inter quant bias", OFFSET(inter_quant_bias), AV_OPT_TYPE_INT, {.dbl = FF_DEFAULT_QUANT_BIAS }, INT_MIN, INT_MAX, V|E},
+#if FF_API_COLOR_TABLE_ID
 {"color_table_id", NULL, OFFSET(color_table_id), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
+#endif
 {"global_quality", NULL, OFFSET(global_quality), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|A|E},
 {"coder", NULL, OFFSET(coder_type), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E, "coder"},
 {"vlc", "variable length coder / huffman coder", 0, AV_OPT_TYPE_CONST, {.dbl = FF_CODER_TYPE_VLC }, INT_MIN, INT_MAX, V|E, "coder"},
@@ -317,10 +325,14 @@ static const AVOption options[]={
 {"lmax", "max lagrange factor (VBR)", OFFSET(lmax), AV_OPT_TYPE_INT, {.dbl = 31*FF_QP2LAMBDA }, 0, INT_MAX, V|E},
 {"nr", "noise reduction", OFFSET(noise_reduction), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"rc_init_occupancy", "number of bits which should be loaded into the rc buffer before decoding starts", OFFSET(rc_initial_buffer_occupancy), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
+#if FF_API_INTER_THRESHOLD
 {"inter_threshold", NULL, OFFSET(inter_threshold), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
+#endif
 {"flags2", NULL, OFFSET(flags2), AV_OPT_TYPE_FLAGS, {.dbl = DEFAULT}, 0, UINT_MAX, V|A|E|D, "flags2"},
 {"error", NULL, OFFSET(error_rate), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
-{"qns", "quantizer noise shaping", OFFSET(quantizer_noise_shaping), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
+#if FF_API_MPV_GLOBAL_OPTS
+{"qns", "deprecated, use mpegvideo private options instead", OFFSET(quantizer_noise_shaping), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
+#endif
 {"threads", NULL, OFFSET(thread_count), AV_OPT_TYPE_INT, {.dbl = 1 }, 0, INT_MAX, V|E|D, "threads"},
 {"auto", "detect a good number of threads", 0, AV_OPT_TYPE_CONST, {.dbl = 0 }, INT_MIN, INT_MAX, V|E|D, "threads"},
 {"me_threshold", "motion estimaton threshold", OFFSET(me_threshold), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
@@ -366,7 +378,9 @@ static const AVOption options[]={
 {"refs", "reference frames to consider for motion compensation", OFFSET(refs), AV_OPT_TYPE_INT, {.dbl = 1 }, INT_MIN, INT_MAX, V|E},
 {"chromaoffset", "chroma qp offset from luma", OFFSET(chromaoffset), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"trellis", "rate-distortion optimal quantization", OFFSET(trellis), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|A|E},
-{"skiprd", "RD optimal MB level residual skipping", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_SKIP_RD }, INT_MIN, INT_MAX, V|E, "flags2"},
+#if FF_API_MPV_GLOBAL_OPTS
+{"skiprd", "Deprecated, use mpegvideo private options instead", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_SKIP_RD }, INT_MIN, INT_MAX, V|E, "flags2"},
+#endif
 {"sc_factor", "multiplied by qscale for each frame and added to scene_change_score", OFFSET(scenechange_factor), AV_OPT_TYPE_INT, {.dbl = 6 }, 0, INT_MAX, V|E},
 {"mv0_threshold", NULL, OFFSET(mv0_threshold), AV_OPT_TYPE_INT, {.dbl = 256 }, 0, INT_MAX, V|E},
 {"b_sensitivity", "adjusts sensitivity of b_frame_strategy 1", OFFSET(b_sensitivity), AV_OPT_TYPE_INT, {.dbl = 40 }, 1, INT_MAX, V|E},

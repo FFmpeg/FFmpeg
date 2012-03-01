@@ -171,7 +171,7 @@ typedef struct ProresContext {
 static void get_slice_data(ProresContext *ctx, const uint16_t *src,
                            int linesize, int x, int y, int w, int h,
                            DCTELEM *blocks,
-                           int mbs_per_slice, int blocks_per_mb)
+                           int mbs_per_slice, int blocks_per_mb, int is_chroma)
 {
     const uint16_t *esrc;
     const int mb_width = 4 * blocks_per_mb;
@@ -189,37 +189,50 @@ static void get_slice_data(ProresContext *ctx, const uint16_t *src,
             elinesize = linesize;
         } else {
             int bw, bh, pix;
-            const int estride = 16 / sizeof(*ctx->emu_buf);
 
             esrc      = ctx->emu_buf;
-            elinesize = 16;
+            elinesize = 16 * sizeof(*ctx->emu_buf);
 
             bw = FFMIN(w - x, mb_width);
             bh = FFMIN(h - y, 16);
 
             for (j = 0; j < bh; j++) {
-                memcpy(ctx->emu_buf + j * estride, src + j * linesize,
+                memcpy(ctx->emu_buf + j * 16,
+                       (const uint8_t*)src + j * linesize,
                        bw * sizeof(*src));
-                pix = ctx->emu_buf[j * estride + bw - 1];
+                pix = ctx->emu_buf[j * 16 + bw - 1];
                 for (k = bw; k < mb_width; k++)
-                    ctx->emu_buf[j * estride + k] = pix;
+                    ctx->emu_buf[j * 16 + k] = pix;
             }
             for (; j < 16; j++)
-                memcpy(ctx->emu_buf + j * estride,
-                       ctx->emu_buf + (bh - 1) * estride,
+                memcpy(ctx->emu_buf + j * 16,
+                       ctx->emu_buf + (bh - 1) * 16,
                        mb_width * sizeof(*ctx->emu_buf));
         }
-        ctx->dsp.fdct(esrc, elinesize, blocks);
-        blocks += 64;
-        if (blocks_per_mb > 2) {
-            ctx->dsp.fdct(src + 8, linesize, blocks);
+        if (!is_chroma) {
+            ctx->dsp.fdct(esrc, elinesize, blocks);
             blocks += 64;
-        }
-        ctx->dsp.fdct(src + linesize * 4, linesize, blocks);
-        blocks += 64;
-        if (blocks_per_mb > 2) {
-            ctx->dsp.fdct(src + linesize * 4 + 8, linesize, blocks);
+            if (blocks_per_mb > 2) {
+                ctx->dsp.fdct(src + 8, linesize, blocks);
+                blocks += 64;
+            }
+            ctx->dsp.fdct(src + linesize * 4, linesize, blocks);
             blocks += 64;
+            if (blocks_per_mb > 2) {
+                ctx->dsp.fdct(src + linesize * 4 + 8, linesize, blocks);
+                blocks += 64;
+            }
+        } else {
+            ctx->dsp.fdct(esrc, elinesize, blocks);
+            blocks += 64;
+            ctx->dsp.fdct(src + linesize * 4, linesize, blocks);
+            blocks += 64;
+            if (blocks_per_mb > 2) {
+                ctx->dsp.fdct(src + 8, linesize, blocks);
+                blocks += 64;
+                ctx->dsp.fdct(src + linesize * 4 + 8, linesize, blocks);
+                blocks += 64;
+            }
         }
 
         x += mb_width;
@@ -383,7 +396,7 @@ static int encode_slice(AVCodecContext *avctx, const AVFrame *pic,
 
         get_slice_data(ctx, src, pic->linesize[i], xp, yp,
                        pwidth, avctx->height, ctx->blocks[0],
-                       mbs_per_slice, num_cblocks);
+                       mbs_per_slice, num_cblocks, is_chroma);
         sizes[i] = encode_slice_plane(ctx, pb, src, pic->linesize[i],
                                       mbs_per_slice, ctx->blocks[0],
                                       num_cblocks, plane_factor,
@@ -539,7 +552,7 @@ static int find_slice_quant(AVCodecContext *avctx, const AVFrame *pic,
 
         get_slice_data(ctx, src, pic->linesize[i], xp, yp,
                        pwidth, avctx->height, ctx->blocks[i],
-                       mbs_per_slice, num_cblocks[i]);
+                       mbs_per_slice, num_cblocks[i], is_chroma[i]);
     }
 
     for (q = min_quant; q < max_quant + 2; q++) {
@@ -676,9 +689,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream_put_be16  (&buf, avctx->height);
     bytestream_put_byte  (&buf, ctx->chroma_factor << 6); // frame flags
     bytestream_put_byte  (&buf, 0);             // reserved
-    bytestream_put_byte  (&buf, 0);             // primaries
-    bytestream_put_byte  (&buf, 0);             // transfer function
-    bytestream_put_byte  (&buf, 6);             // colour matrix - ITU-R BT.601-4
+    bytestream_put_byte  (&buf, avctx->color_primaries);
+    bytestream_put_byte  (&buf, avctx->color_trc);
+    bytestream_put_byte  (&buf, avctx->colorspace);
     bytestream_put_byte  (&buf, 0x40);          // source format and alpha information
     bytestream_put_byte  (&buf, 0);             // reserved
     bytestream_put_byte  (&buf, 0x03);          // matrix flags - both matrices are present
