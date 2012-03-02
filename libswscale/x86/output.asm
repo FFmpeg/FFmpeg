@@ -146,7 +146,7 @@ cglobal yuv2planeX_%1, %3, 7, %2, filter, fltsize, src, dst, w, dither, offset
     mova            m1, [yuv2yuvX_%1_start]
     mova            m2,  m1
 %endif ; %1 == 8/9/10/16
-    movsx     cntr_reg,  r1m ; FIXME should be fltsizem, but the assembler does the wrong thing b/c of SUB above
+    movsx     cntr_reg,  fltsizem
 .filterloop_ %+ %%i:
     ; input pixels
     mov             r6, [srcq+gprsize*cntr_reg-2*gprsize]
