@@ -183,6 +183,10 @@ if [ -n "$do_dpx" ] ; then
 do_image_formats dpx
 fi
 
+if [ -n "$do_sunrast" ] ; then
+do_image_formats sun
+fi
+
 # audio only
 
 if [ -n "$do_wav" ] ; then
