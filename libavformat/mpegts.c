@@ -889,7 +889,7 @@ static int mpegts_push_data(MpegTSFilter *filter,
                 /* we got the full header. We parse it and get the payload */
                 pes->state = MPEGTS_PAYLOAD;
                 pes->data_index = 0;
-                if (pes->stream_type == 0x12) {
+                if (pes->stream_type == 0x12 && buf_size > 0) {
                     int sl_header_bytes = read_sl_header(pes, &pes->sl, p, buf_size);
                     pes->pes_header_size += sl_header_bytes;
                     p += sl_header_bytes;
