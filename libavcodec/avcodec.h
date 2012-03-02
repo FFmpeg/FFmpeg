@@ -4297,4 +4297,14 @@ const AVClass *avcodec_get_class(void);
  */
 int avcodec_is_open(AVCodecContext *s);
 
+/**
+ * @return a non-zero number if codec is an encoder, zero otherwise
+ */
+int av_codec_is_encoder(AVCodec *codec);
+
+/**
+ * @return a non-zero number if codec is a decoder, zero otherwise
+ */
+int av_codec_is_decoder(AVCodec *codec);
+
 #endif /* AVCODEC_AVCODEC_H */

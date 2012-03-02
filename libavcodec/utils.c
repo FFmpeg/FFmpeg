@@ -112,12 +112,12 @@ static void avcodec_init(void)
     ff_dsputil_static_init();
 }
 
-static av_always_inline int codec_is_encoder(AVCodec *codec)
+int av_codec_is_encoder(AVCodec *codec)
 {
     return codec && (codec->encode || codec->encode2);
 }
 
-static av_always_inline int codec_is_decoder(AVCodec *codec)
+int av_codec_is_decoder(AVCodec *codec)
 {
     return codec && codec->decode;
 }
@@ -704,7 +704,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVD
 
     /* if the decoder init function was already called previously,
        free the already allocated subtitle_header before overwriting it */
-    if (codec_is_decoder(codec))
+    if (av_codec_is_decoder(codec))
         av_freep(&avctx->subtitle_header);
 
 #define SANE_NB_CHANNELS 128U
@@ -748,7 +748,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVD
         ret = AVERROR(EINVAL);
         goto free_and_end;
     }
-    if (codec_is_encoder(avctx->codec)) {
+    if (av_codec_is_encoder(avctx->codec)) {
         int i;
         if (avctx->codec->sample_fmts) {
             for (i = 0; avctx->codec->sample_fmts[i] != AV_SAMPLE_FMT_NONE; i++)
@@ -1367,7 +1367,7 @@ av_cold int avcodec_close(AVCodecContext *avctx)
         av_opt_free(avctx->priv_data);
     av_opt_free(avctx);
     av_freep(&avctx->priv_data);
-    if (codec_is_encoder(avctx->codec))
+    if (av_codec_is_encoder(avctx->codec))
         av_freep(&avctx->extradata);
     avctx->codec = NULL;
     avctx->active_thread_type = 0;
@@ -1385,7 +1385,7 @@ AVCodec *avcodec_find_encoder(enum CodecID id)
     AVCodec *p, *experimental=NULL;
     p = first_avcodec;
     while (p) {
-        if (codec_is_encoder(p) && p->id == id) {
+        if (av_codec_is_encoder(p) && p->id == id) {
             if (p->capabilities & CODEC_CAP_EXPERIMENTAL && !experimental) {
                 experimental = p;
             } else
@@ -1403,7 +1403,7 @@ AVCodec *avcodec_find_encoder_by_name(const char *name)
         return NULL;
     p = first_avcodec;
     while (p) {
-        if (codec_is_encoder(p) && strcmp(name,p->name) == 0)
+        if (av_codec_is_encoder(p) && strcmp(name,p->name) == 0)
             return p;
         p = p->next;
     }
@@ -1415,7 +1415,7 @@ AVCodec *avcodec_find_decoder(enum CodecID id)
     AVCodec *p;
     p = first_avcodec;
     while (p) {
-        if (codec_is_decoder(p) && p->id == id)
+        if (av_codec_is_decoder(p) && p->id == id)
             return p;
         p = p->next;
     }
@@ -1429,7 +1429,7 @@ AVCodec *avcodec_find_decoder_by_name(const char *name)
         return NULL;
     p = first_avcodec;
     while (p) {
-        if (codec_is_decoder(p) && strcmp(name,p->name) == 0)
+        if (av_codec_is_decoder(p) && strcmp(name,p->name) == 0)
             return p;
         p = p->next;
     }
