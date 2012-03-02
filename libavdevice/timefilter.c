@@ -50,7 +50,7 @@ TimeFilter *ff_timefilter_new(double time_base,
     double o               = 2 * M_PI * bandwidth * period * time_base;
     self->clock_period     = time_base;
     self->feedback2_factor = qexpneg(M_SQRT2 * o);
-    self->feedback3_factor = qexpneg(o * o);
+    self->feedback3_factor = qexpneg(o * o) / period;
     return self;
 }
 
@@ -78,7 +78,7 @@ double ff_timefilter_update(TimeFilter *self, double system_time, double period)
 
         /// update loop
         self->cycle_time   += FFMAX(self->feedback2_factor, 1.0 / self->count) * loop_error;
-        self->clock_period += self->feedback3_factor * loop_error / period;
+        self->clock_period += self->feedback3_factor * loop_error;
     }
     return self->cycle_time;
 }
