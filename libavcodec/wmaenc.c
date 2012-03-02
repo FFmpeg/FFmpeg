@@ -70,6 +70,8 @@ static int encode_init(AVCodecContext * avctx){
     s->use_exp_vlc = flags2 & 0x0001;
     s->use_bit_reservoir = flags2 & 0x0002;
     s->use_variable_block_len = flags2 & 0x0004;
+    if (avctx->channels == 2)
+        s->ms_stereo = 1;
 
     ff_wma_init(avctx, flags2);
 
@@ -191,7 +193,7 @@ static int encode_block(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE], 
     }
 
     if (s->nb_channels == 2) {
-        put_bits(&s->pb, 1, s->ms_stereo= 1);
+        put_bits(&s->pb, 1, !!s->ms_stereo);
     }
 
     for(ch = 0; ch < s->nb_channels; ch++) {
