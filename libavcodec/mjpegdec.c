@@ -312,8 +312,13 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         s->first_picture = 0;
     }
 
-    if (s->interlaced && (s->bottom_field == !s->interlace_polarity))
+    if (s->interlaced && (s->bottom_field == !s->interlace_polarity)) {
+        if (s->progressive) {
+            av_log_ask_for_sample(s->avctx, "progressively coded interlaced pictures not supported\n");
+            return AVERROR_INVALIDDATA;
+        }
         return 0;
+    }
 
     /* XXX: not complete test ! */
     pix_fmt_id = (s->h_count[0] << 28) | (s->v_count[0] << 24) |
