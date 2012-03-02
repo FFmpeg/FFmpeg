@@ -438,10 +438,8 @@ static int rm_read_header(AVFormatContext *s)
         return AVERROR(EIO);
     }
 
-    avio_rb32(pb); /* header size */
-    avio_rb16(pb);
-    avio_rb32(pb);
-    avio_rb32(pb); /* number of headers */
+    tag_size = avio_rb32(pb);
+    avio_skip(pb, tag_size - 8);
 
     for(;;) {
         if (pb->eof_reached)
