@@ -761,6 +761,60 @@ video, use the command:
 ass=sub.ass
 @end example
 
+@section blackdetect
+
+Detect video intervals that are (almost) completely black. Can be
+useful to detect chapter transitions, commercials, or invalid
+recordings. Output lines contains the time for the start, end and
+duration of the detected black interval expressed in seconds.
+
+In order to display the output lines, you need to set the loglevel at
+least to the AV_LOG_INFO value.
+
+This filter accepts a list of options in the form of
+@var{key}=@var{value} pairs separated by ":". A description of the
+accepted options follows.
+
+@table @option
+@item black_min_duration, d
+Set the minimum detected black duration expressed in seconds. It must
+be a non-negative floating point number.
+
+Default value is 2.0.
+
+@item picture_black_ratio_th, pic_th
+Set the threshold for considering a picture "black".
+Express the minimum value for the ratio:
+@example
+@var{nb_black_pixels} / @var{nb_pixels}
+@end example
+
+for which a picture is considered black.
+Default value is 0.98.
+
+@item pixel_black_th, pix_th
+Set the threshold for considering a pixel "black".
+
+The threshold expresses the maximum pixel luminance value for which a
+pixel is considered "black". The provided value is scaled according to
+the following equation:
+@example
+@var{absolute_threshold} = @var{luminance_minimum_value} + @var{pixel_black_th} * @var{luminance_range_size}
+@end example
+
+@var{luminance_range_size} and @var{luminance_minimum_value} depend on
+the input video format, the range is [0-255] for YUV full-range
+formats and [16-235] for YUV non full-range formats.
+
+Default value is 0.10.
+@end table
+
+The following example sets the maximum pixel threshold to the minimum
+value, and detects only black intervals of 2 or more seconds:
+@example
+blackdetect=d=2:pix_th=0.00
+@end example
+
 @section blackframe
 
 Detect frames that are (almost) completely black. Can be useful to

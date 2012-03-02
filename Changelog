@@ -11,6 +11,7 @@ version next:
 - ID3v2 attached pictures reading and writing
 - WMA Lossless decoder
 - bluray protocol
+- blackdetect filter
 
 
 version 0.10:
