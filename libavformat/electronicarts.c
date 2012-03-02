@@ -283,6 +283,20 @@ static int process_video_header_vp6(AVFormatContext *s)
     return 1;
 }
 
+static int process_video_header_cmv(AVFormatContext *s)
+{
+    EaDemuxContext *ea = s->priv_data;
+    int fps;
+
+    avio_skip(s->pb, 10);
+    fps = avio_rl16(s->pb);
+    if (fps)
+        ea->time_base = (AVRational){1, fps};
+    ea->video_codec = CODEC_ID_CMV;
+
+    return 0;
+}
+
 /*
  * Process EA file header
  * Returns 1 if the EA file is valid and successfully opened, 0 otherwise
@@ -330,7 +344,7 @@ static int process_ea_header(AVFormatContext *s) {
                 break;
 
             case MVIh_TAG :
-                ea->video_codec = CODEC_ID_CMV;
+                err = process_video_header_cmv(s);
                 break;
 
             case kVGT_TAG:
@@ -418,10 +432,12 @@ static int ea_read_header(AVFormatContext *s)
         if (st->codec->codec_id == CODEC_ID_MPEG2VIDEO)
             st->need_parsing = AVSTREAM_PARSE_HEADERS;
         st->codec->codec_tag = 0;  /* no fourcc */
-        if (ea->time_base.num)
-            avpriv_set_pts_info(st, 64, ea->time_base.num, ea->time_base.den);
         st->codec->width = ea->width;
         st->codec->height = ea->height;
+        if (ea->time_base.num)
+            avpriv_set_pts_info(st, 64, ea->time_base.num, ea->time_base.den);
+        st->r_frame_rate = st->avg_frame_rate = (AVRational){ea->time_base.den,
+                                                             ea->time_base.num};
     }
 
     if (ea->audio_codec) {

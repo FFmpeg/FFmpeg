@@ -40,7 +40,7 @@ static int decode_frame(AVCodecContext *avctx,
     const uint8_t *buf_end = avpkt->data + avpkt->size;
     int buf_size = avpkt->size;
     QdrawContext * const a = avctx->priv_data;
-    AVFrame * const p= (AVFrame*)&a->pic;
+    AVFrame * const p = &a->pic;
     uint8_t* outdata;
     int colors;
     int i;

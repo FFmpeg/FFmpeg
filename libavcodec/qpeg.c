@@ -259,8 +259,8 @@ static int decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     QpegContext * const a = avctx->priv_data;
-    AVFrame * p= (AVFrame*)&a->pic;
-    AVFrame * ref= (AVFrame*)&a->ref;
+    AVFrame *  p = &a->pic;
+    AVFrame * ref= &a->ref;
     uint8_t* outdata;
     int delta, ret = 0;
     const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
@@ -311,8 +311,8 @@ static av_cold int decode_init(AVCodecContext *avctx){
 
 static av_cold int decode_end(AVCodecContext *avctx){
     QpegContext * const a = avctx->priv_data;
-    AVFrame * const p= (AVFrame*)&a->pic;
-    AVFrame * const ref= (AVFrame*)&a->ref;
+    AVFrame * const p = &a->pic;
+    AVFrame * const ref= &a->ref;
 
     if(p->data[0])
         avctx->release_buffer(avctx, p);

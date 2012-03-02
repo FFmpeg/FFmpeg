@@ -56,6 +56,7 @@ theora_header (AVFormatContext * s, int idx)
     if (os->buf[os->pstart] == 0x80) {
         GetBitContext gb;
         int width, height;
+        AVRational timebase;
 
         init_get_bits(&gb, os->buf + os->pstart, os->psize*8);
 
@@ -85,14 +86,14 @@ theora_header (AVFormatContext * s, int idx)
 
             skip_bits(&gb, 16);
         }
-        st->codec->time_base.den = get_bits_long(&gb, 32);
-        st->codec->time_base.num = get_bits_long(&gb, 32);
-        if (!(st->codec->time_base.num > 0 && st->codec->time_base.den > 0)) {
+        timebase.den = get_bits_long(&gb, 32);
+        timebase.num = get_bits_long(&gb, 32);
+        if (!(timebase.num > 0 && timebase.den > 0)) {
             av_log(s, AV_LOG_WARNING, "Invalid time base in theora stream, assuming 25 FPS\n");
-            st->codec->time_base.num = 1;
-            st->codec->time_base.den = 25;
+            timebase.num = 1;
+            timebase.den = 25;
         }
-        avpriv_set_pts_info(st, 64, st->codec->time_base.num, st->codec->time_base.den);
+        avpriv_set_pts_info(st, 64, timebase.num, timebase.den);
 
         st->sample_aspect_ratio.num = get_bits_long(&gb, 24);
         st->sample_aspect_ratio.den = get_bits_long(&gb, 24);

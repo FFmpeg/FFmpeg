@@ -232,7 +232,7 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
                              const AVFrame *pict, int *got_packet)
 {
     JpeglsContext * const s = avctx->priv_data;
-    AVFrame * const p= (AVFrame*)&s->picture;
+    AVFrame * const p = &s->picture;
     const int near = avctx->prediction_method;
     PutBitContext pb, pb2;
     GetBitContext gb;

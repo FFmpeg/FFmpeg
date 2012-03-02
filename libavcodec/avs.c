@@ -51,7 +51,7 @@ avs_decode_frame(AVCodecContext * avctx,
     int buf_size = avpkt->size;
     AvsContext *const avs = avctx->priv_data;
     AVFrame *picture = data;
-    AVFrame *const p = (AVFrame *) & avs->picture;
+    AVFrame *const p =  &avs->picture;
     const uint8_t *table, *vect;
     uint8_t *out;
     int i, j, x, y, stride, vect_w = 3, vect_h = 3;
@@ -151,7 +151,7 @@ avs_decode_frame(AVCodecContext * avctx,
             align_get_bits(&change_map);
     }
 
-    *picture = *(AVFrame *) & avs->picture;
+    *picture   = avs->picture;
     *data_size = sizeof(AVPicture);
 
     return buf_size;

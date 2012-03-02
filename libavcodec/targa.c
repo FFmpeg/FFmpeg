@@ -106,7 +106,7 @@ static int decode_frame(AVCodecContext *avctx,
     const uint8_t *buf_end = avpkt->data + avpkt->size;
     TargaContext * const s = avctx->priv_data;
     AVFrame *picture = data;
-    AVFrame * const p= (AVFrame*)&s->picture;
+    AVFrame * const p = &s->picture;
     uint8_t *dst;
     int stride;
     int idlen, pal, compr, y, w, h, bpp, flags;
@@ -262,7 +262,7 @@ static int decode_frame(AVCodecContext *avctx,
         }
     }
 
-    *picture= *(AVFrame*)&s->picture;
+    *picture   = s->picture;
     *data_size = sizeof(AVPicture);
 
     return avpkt->size;
@@ -271,8 +271,8 @@ static int decode_frame(AVCodecContext *avctx,
 static av_cold int targa_init(AVCodecContext *avctx){
     TargaContext *s = avctx->priv_data;
 
-    avcodec_get_frame_defaults((AVFrame*)&s->picture);
-    avctx->coded_frame= (AVFrame*)&s->picture;
+    avcodec_get_frame_defaults(&s->picture);
+    avctx->coded_frame = &s->picture;
 
     return 0;
 }

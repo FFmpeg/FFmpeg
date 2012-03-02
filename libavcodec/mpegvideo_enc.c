@@ -981,7 +981,7 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg)
         if (i < 0)
             return i;
 
-        pic = (AVFrame *) &s->picture[i];
+        pic = &s->picture[i].f;
         pic->reference = 3;
 
         for (i = 0; i < 4; i++) {
@@ -996,7 +996,7 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg)
         if (i < 0)
             return i;
 
-        pic = (AVFrame *) &s->picture[i];
+        pic = &s->picture[i].f;
         pic->reference = 3;
 
         if (ff_alloc_picture(s, (Picture *) pic, 0) < 0) {
@@ -1252,7 +1252,7 @@ static int select_input_picture(MpegEncContext *s)
                                s->input_picture[0]->f.type == FF_BUFFER_TYPE_INTERNAL);
 
                         s->avctx->release_buffer(s->avctx,
-                                                 (AVFrame *) s->input_picture[0]);
+                                                 &s->input_picture[0]->f);
                     }
 
                     emms_c();
@@ -1385,13 +1385,13 @@ no_output_pic:
             /* mark us unused / free shared pic */
             if (s->reordered_input_picture[0]->f.type == FF_BUFFER_TYPE_INTERNAL)
                 s->avctx->release_buffer(s->avctx,
-                                         (AVFrame *) s->reordered_input_picture[0]);
+                                         &s->reordered_input_picture[0]->f);
             for (i = 0; i < 4; i++)
                 s->reordered_input_picture[0]->f.data[i] = NULL;
             s->reordered_input_picture[0]->f.type = 0;
 
-            copy_picture_attributes(s, (AVFrame *) pic,
-                                    (AVFrame *) s->reordered_input_picture[0]);
+            copy_picture_attributes(s, &pic->f,
+                                    &s->reordered_input_picture[0]->f);
 
             s->current_picture_ptr = pic;
         } else {

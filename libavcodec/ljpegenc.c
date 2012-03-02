@@ -45,7 +45,7 @@ static int encode_picture_lossless(AVCodecContext *avctx, AVPacket *pkt,
     MJpegContext * const m = s->mjpeg_ctx;
     const int width= s->width;
     const int height= s->height;
-    AVFrame * const p= (AVFrame*)&s->current_picture;
+    AVFrame * const p = &s->current_picture.f;
     const int predictor= avctx->prediction_method+1;
     const int mb_width  = (width  + s->mjpeg_hsample[0] - 1) / s->mjpeg_hsample[0];
     const int mb_height = (height + s->mjpeg_vsample[0] - 1) / s->mjpeg_vsample[0];

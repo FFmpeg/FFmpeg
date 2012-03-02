@@ -64,7 +64,7 @@ static int decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     WNV1Context * const l = avctx->priv_data;
-    AVFrame * const p= (AVFrame*)&l->pic;
+    AVFrame * const p = &l->pic;
     unsigned char *Y,*U,*V;
     int i, j;
     int prev_y = 0, prev_u = 0, prev_v = 0;

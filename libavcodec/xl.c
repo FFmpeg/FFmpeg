@@ -45,7 +45,7 @@ static int decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     VideoXLContext * const a = avctx->priv_data;
-    AVFrame * const p= (AVFrame*)&a->pic;
+    AVFrame * const p = &a->pic;
     uint8_t *Y, *U, *V;
     int i, j;
     int stride;

@@ -1313,7 +1313,7 @@ static int mpeg4_decode_mb(MpegEncContext *s,
                 s->last_mv[i][1][1]= 0;
             }
 
-            ff_thread_await_progress((AVFrame*)s->next_picture_ptr, s->mb_y, 0);
+            ff_thread_await_progress(&s->next_picture_ptr->f, s->mb_y, 0);
         }
 
         /* if we skipped it in the future P Frame than skip it now too */
@@ -1500,7 +1500,7 @@ end:
 
             if(s->pict_type==AV_PICTURE_TYPE_B){
                 const int delta= s->mb_x + 1 == s->mb_width ? 2 : 1;
-                ff_thread_await_progress((AVFrame*)s->next_picture_ptr,
+                ff_thread_await_progress(&s->next_picture_ptr->f,
                                         (s->mb_x + delta >= s->mb_width) ? FFMIN(s->mb_y+1, s->mb_height-1) : s->mb_y, 0);
                 if (s->next_picture.f.mbskip_table[xy + delta])
                     return SLICE_OK;

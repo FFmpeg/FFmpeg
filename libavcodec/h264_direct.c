@@ -154,7 +154,8 @@ static void await_reference_mb_row(H264Context * const h, Picture *ref, int mb_y
     //FIXME it can be safe to access mb stuff
     //even if pixels aren't deblocked yet
 
-    ff_thread_await_progress((AVFrame*)ref, FFMIN(16*mb_y >> ref_field_picture, ref_height-1),
+    ff_thread_await_progress(&ref->f,
+                             FFMIN(16 * mb_y >> ref_field_picture, ref_height - 1),
                              ref_field_picture && ref_field);
 }
 
