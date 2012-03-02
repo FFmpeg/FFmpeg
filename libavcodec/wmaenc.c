@@ -39,6 +39,12 @@ static int encode_init(AVCodecContext * avctx){
         return AVERROR(EINVAL);
     }
 
+    if (avctx->sample_rate > 48000) {
+        av_log(avctx, AV_LOG_ERROR, "sample rate is too high: %d > 48kHz",
+               avctx->sample_rate);
+        return AVERROR(EINVAL);
+    }
+
     if(avctx->bit_rate < 24*1000) {
         av_log(avctx, AV_LOG_ERROR, "bitrate too low: got %i, need 24000 or higher\n",
                avctx->bit_rate);
