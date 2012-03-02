@@ -658,9 +658,9 @@ void show_codecs(void)
                 decode = encode = cap = 0;
             }
             if (p2 && strcmp(p->name, p2->name) == 0) {
-                if (p->decode)
+                if (av_codec_is_decoder(p))
                     decode = 1;
-                if (p->encode)
+                if (av_codec_is_encoder(p))
                     encode = 1;
                 cap |= p->capabilities;
             }
