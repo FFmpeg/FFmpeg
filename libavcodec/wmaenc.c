@@ -355,6 +355,11 @@ static int encode_superframe(AVCodecContext *avctx,
         }
     }
 
+    if (buf_size < 2 * MAX_CODED_SUPERFRAME_SIZE) {
+        av_log(avctx, AV_LOG_ERROR, "output buffer size is too small\n");
+        return AVERROR(EINVAL);
+    }
+
 #if 1
     total_gain= 128;
     for(i=64; i; i>>=1){
