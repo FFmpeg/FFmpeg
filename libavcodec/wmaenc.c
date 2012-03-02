@@ -71,8 +71,12 @@ static int encode_init(AVCodecContext * avctx){
     for(i = 0; i < s->nb_block_sizes; i++)
         ff_mdct_init(&s->mdct_ctx[i], s->frame_len_bits - i + 1, 0, 1.0);
 
-    avctx->block_align=
-    s->block_align= avctx->bit_rate*(int64_t)s->frame_len / (avctx->sample_rate*8);
+    s->block_align     = avctx->bit_rate * (int64_t)s->frame_len /
+                         (avctx->sample_rate * 8);
+    s->block_align     = FFMIN(s->block_align, MAX_CODED_SUPERFRAME_SIZE);
+    avctx->block_align = s->block_align;
+    avctx->bit_rate    = avctx->block_align * 8LL * avctx->sample_rate /
+                         s->frame_len;
 //av_log(NULL, AV_LOG_ERROR, "%d %d %d %d\n", s->block_align, avctx->bit_rate, s->frame_len, avctx->sample_rate);
     avctx->frame_size= s->frame_len;
 
