@@ -1174,6 +1174,10 @@ static void vc1_mc_4mv_chroma4(VC1Context *v)
                     mquant = v->pq + mqdiff;                   \
                 else                                           \
                     mquant = get_bits(gb, 5);                  \
+                if (!mquant) {                                 \
+                    av_log(v->s.avctx,AV_LOG_ERROR, "zero mquant\n");   \
+                    mquant = 1;                                \
+                }                                              \
             }                                                  \
         }                                                      \
         if (v->dqprofile == DQPROFILE_SINGLE_EDGE)             \
