@@ -404,7 +404,7 @@ static int encode_superframe(AVCodecContext *avctx,
         put_bits(&s->pb, 8, 'N');
 
     flush_put_bits(&s->pb);
-    return put_bits_ptr(&s->pb) - s->pb.buf;
+    return s->block_align;
 }
 
 AVCodec ff_wmav1_encoder = {
