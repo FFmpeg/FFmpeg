@@ -1114,7 +1114,7 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
     }
 
         ff_h263_show_pict_info(s);
-    if (s->pict_type == AV_PICTURE_TYPE_I && s->codec_tag == AV_RL32("ZYGO")){
+    if (s->pict_type == AV_PICTURE_TYPE_I && s->codec_tag == AV_RL32("ZYGO") && get_bits_left(&s->gb) >= 85 + 13*3*16 + 50){
         int i,j;
         for(i=0; i<85; i++) av_log(s->avctx, AV_LOG_DEBUG, "%d", get_bits1(&s->gb));
         av_log(s->avctx, AV_LOG_DEBUG, "\n");
