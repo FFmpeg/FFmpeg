@@ -173,8 +173,8 @@ SECTION .text
 ;                                              int height,   int mx, int my);
 ;-----------------------------------------------------------------------------
 
-%macro FILTER_SSSE3 3
-cglobal put_vp8_epel%1_h6_ssse3, 6, 6, %2
+%macro FILTER_SSSE3 1
+cglobal put_vp8_epel%1_h6, 6, 6, 8
     lea      r5d, [r5*3]
     mova      m3, [filter_h6_shuf2]
     mova      m4, [filter_h6_shuf3]
@@ -189,7 +189,7 @@ cglobal put_vp8_epel%1_h6_ssse3, 6, 6, %2
     movu      m0, [r2-2]
     mova      m1, m0
     mova      m2, m0
-%ifidn %1, 4
+%if mmsize == 8
 ; For epel4, we need 9 bytes, but only 8 get loaded; to compensate, do the
 ; shuffle with a memory operand
     punpcklbw m0, [r2+3]
@@ -215,7 +215,7 @@ cglobal put_vp8_epel%1_h6_ssse3, 6, 6, %2
     jg .nextrow
     REP_RET
 
-cglobal put_vp8_epel%1_h4_ssse3, 6, 6, %3
+cglobal put_vp8_epel%1_h4, 6, 6, 7
     shl      r5d, 4
     mova      m2, [pw_64]
     mova      m3, [filter_h2_shuf]
@@ -246,7 +246,7 @@ cglobal put_vp8_epel%1_h4_ssse3, 6, 6, %3
     jg .nextrow
     REP_RET
 
-cglobal put_vp8_epel%1_v4_ssse3, 7, 7, %2
+cglobal put_vp8_epel%1_v4, 7, 7, 8
     shl      r6d, 4
 %ifdef PIC
     lea      r11, [fourtap_filter_hb_m]
@@ -285,7 +285,7 @@ cglobal put_vp8_epel%1_v4_ssse3, 7, 7, %2
     jg .nextrow
     REP_RET
 
-cglobal put_vp8_epel%1_v6_ssse3, 7, 7, %2
+cglobal put_vp8_epel%1_v6, 7, 7, 8
     lea      r6d, [r6*3]
 %ifdef PIC
     lea      r11, [sixtap_filter_hb_m]
@@ -333,13 +333,14 @@ cglobal put_vp8_epel%1_v6_ssse3, 7, 7, %2
     REP_RET
 %endmacro
 
-INIT_MMX
-FILTER_SSSE3 4, 0, 0
-INIT_XMM
-FILTER_SSSE3 8, 8, 7
+INIT_MMX ssse3
+FILTER_SSSE3 4
+INIT_XMM ssse3
+FILTER_SSSE3 8
 
 ; 4x4 block, H-only 4-tap filter
-cglobal put_vp8_epel4_h4_mmxext, 6, 6
+INIT_MMX mmx2
+cglobal put_vp8_epel4_h4, 6, 6
     shl       r5d, 4
 %ifdef PIC
     lea       r11, [fourtap_filter_hw_m]
@@ -386,7 +387,8 @@ cglobal put_vp8_epel4_h4_mmxext, 6, 6
     REP_RET
 
 ; 4x4 block, H-only 6-tap filter
-cglobal put_vp8_epel4_h6_mmxext, 6, 6
+INIT_MMX mmx2
+cglobal put_vp8_epel4_h6, 6, 6
     lea       r5d, [r5*3]
 %ifdef PIC
     lea       r11, [sixtap_filter_hw_m]
@@ -442,8 +444,8 @@ cglobal put_vp8_epel4_h6_mmxext, 6, 6
     jg .nextrow
     REP_RET
 
-INIT_XMM
-cglobal put_vp8_epel8_h4_sse2, 6, 6, 10
+INIT_XMM sse2
+cglobal put_vp8_epel8_h4, 6, 6, 10
     shl      r5d, 5
 %ifdef PIC
     lea      r11, [fourtap_filter_v_m]
@@ -490,7 +492,8 @@ cglobal put_vp8_epel8_h4_sse2, 6, 6, 10
     jg .nextrow
     REP_RET
 
-cglobal put_vp8_epel8_h6_sse2, 6, 6, 14
+INIT_XMM sse2
+cglobal put_vp8_epel8_h6, 6, 6, 14
     lea      r5d, [r5*3]
     shl      r5d, 4
 %ifdef PIC
@@ -552,9 +555,9 @@ cglobal put_vp8_epel8_h6_sse2, 6, 6, 14
     jg .nextrow
     REP_RET
 
-%macro FILTER_V 3
+%macro FILTER_V 1
 ; 4x4 block, V-only 4-tap filter
-cglobal put_vp8_epel%2_v4_%1, 7, 7, %3
+cglobal put_vp8_epel%1_v4, 7, 7, 8
     shl      r6d, 5
 %ifdef PIC
     lea      r11, [fourtap_filter_v_m]
@@ -607,7 +610,7 @@ cglobal put_vp8_epel%2_v4_%1, 7, 7, %3
 
 
 ; 4x4 block, V-only 6-tap filter
-cglobal put_vp8_epel%2_v6_%1, 7, 7, %3
+cglobal put_vp8_epel%1_v6, 7, 7, 8
     shl      r6d, 4
     lea       r6, [r6*3]
 %ifdef PIC
@@ -671,13 +674,13 @@ cglobal put_vp8_epel%2_v6_%1, 7, 7, %3
     REP_RET
 %endmacro
 
-INIT_MMX
-FILTER_V mmxext, 4, 0
-INIT_XMM
-FILTER_V sse2,   8, 8
+INIT_MMX mmx2
+FILTER_V 4
+INIT_XMM sse2
+FILTER_V 8
 
-%macro FILTER_BILINEAR 3
-cglobal put_vp8_bilinear%2_v_%1, 7,7,%3
+%macro FILTER_BILINEAR 1
+cglobal put_vp8_bilinear%1_v, 7, 7, 7
     mov      r5d, 8*16
     shl      r6d, 4
     sub      r5d, r6d
@@ -705,7 +708,7 @@ cglobal put_vp8_bilinear%2_v_%1, 7,7,%3
     psraw     m2, 2
     pavgw     m0, m6
     pavgw     m2, m6
-%ifidn %1, mmxext
+%if mmsize == 8
     packuswb  m0, m0
     packuswb  m2, m2
     movh [r0+r1*0], m0
@@ -722,7 +725,7 @@ cglobal put_vp8_bilinear%2_v_%1, 7,7,%3
     jg .nextrow
     REP_RET
 
-cglobal put_vp8_bilinear%2_h_%1, 7,7,%3
+cglobal put_vp8_bilinear%1_h, 7, 7, 7
     mov      r6d, 8*16
     shl      r5d, 4
     sub      r6d, r5d
@@ -751,7 +754,7 @@ cglobal put_vp8_bilinear%2_h_%1, 7,7,%3
     psraw     m2, 2
     pavgw     m0, m6
     pavgw     m2, m6
-%ifidn %1, mmxext
+%if mmsize == 8
     packuswb  m0, m0
     packuswb  m2, m2
     movh [r0+r1*0], m0
@@ -769,13 +772,13 @@ cglobal put_vp8_bilinear%2_h_%1, 7,7,%3
     REP_RET
 %endmacro
 
-INIT_MMX
-FILTER_BILINEAR mmxext, 4, 0
-INIT_XMM
-FILTER_BILINEAR   sse2, 8, 7
+INIT_MMX mmx2
+FILTER_BILINEAR 4
+INIT_XMM sse2
+FILTER_BILINEAR 8
 
 %macro FILTER_BILINEAR_SSSE3 1
-cglobal put_vp8_bilinear%1_v_ssse3, 7,7
+cglobal put_vp8_bilinear%1_v, 7, 7, 5
     shl      r6d, 4
 %ifdef PIC
     lea      r11, [bilinear_filter_vb_m]
@@ -811,7 +814,7 @@ cglobal put_vp8_bilinear%1_v_ssse3, 7,7
     jg .nextrow
     REP_RET
 
-cglobal put_vp8_bilinear%1_h_ssse3, 7,7
+cglobal put_vp8_bilinear%1_h, 7, 7, 5
     shl      r5d, 4
 %ifdef PIC
     lea      r11, [bilinear_filter_vb_m]
@@ -848,12 +851,13 @@ cglobal put_vp8_bilinear%1_h_ssse3, 7,7
     REP_RET
 %endmacro
 
-INIT_MMX
+INIT_MMX ssse3
 FILTER_BILINEAR_SSSE3 4
-INIT_XMM
+INIT_XMM ssse3
 FILTER_BILINEAR_SSSE3 8
 
-cglobal put_vp8_pixels8_mmx, 5,5
+INIT_MMX mmx
+cglobal put_vp8_pixels8, 5,5
 .nextrow:
     movq  mm0, [r2+r3*0]
     movq  mm1, [r2+r3*1]
@@ -866,7 +870,8 @@ cglobal put_vp8_pixels8_mmx, 5,5
     REP_RET
 
 %if ARCH_X86_32
-cglobal put_vp8_pixels16_mmx, 5,5
+INIT_MMX mmx
+cglobal put_vp8_pixels16, 5,5
 .nextrow:
     movq  mm0, [r2+r3*0+0]
     movq  mm1, [r2+r3*0+8]
@@ -883,7 +888,8 @@ cglobal put_vp8_pixels16_mmx, 5,5
     REP_RET
 %endif
 
-cglobal put_vp8_pixels16_sse, 5,5,2
+INIT_XMM sse
+cglobal put_vp8_pixels16, 5,5,2
 .nextrow:
     movups xmm0, [r2+r3*0]
     movups xmm1, [r2+r3*1]
@@ -918,8 +924,8 @@ cglobal put_vp8_pixels16_sse, 5,5,2
     %4 [r1+r2+%3], m5
 %endmacro
 
-INIT_MMX
-cglobal vp8_idct_dc_add_mmx, 3, 3
+INIT_MMX mmx
+cglobal vp8_idct_dc_add, 3, 3
     ; load data
     movd       m0, [r1]
 
@@ -941,8 +947,8 @@ cglobal vp8_idct_dc_add_mmx, 3, 3
     ADD_DC     m0, m1, 0, movh
     RET
 
-INIT_XMM
-cglobal vp8_idct_dc_add_sse4, 3, 3, 6
+INIT_XMM sse4
+cglobal vp8_idct_dc_add, 3, 3, 6
     ; load data
     movd       m0, [r1]
     pxor       m1, m1
@@ -976,8 +982,8 @@ cglobal vp8_idct_dc_add_sse4, 3, 3, 6
 ;-----------------------------------------------------------------------------
 
 %if ARCH_X86_32
-INIT_MMX
-cglobal vp8_idct_dc_add4y_mmx, 3, 3
+INIT_MMX mmx
+cglobal vp8_idct_dc_add4y, 3, 3
     ; load data
     movd      m0, [r1+32*0] ; A
     movd      m1, [r1+32*2] ; C
@@ -1012,8 +1018,8 @@ cglobal vp8_idct_dc_add4y_mmx, 3, 3
     RET
 %endif
 
-INIT_XMM
-cglobal vp8_idct_dc_add4y_sse2, 3, 3, 6
+INIT_XMM sse2
+cglobal vp8_idct_dc_add4y, 3, 3, 6
     ; load data
     movd      m0, [r1+32*0] ; A
     movd      m1, [r1+32*2] ; C
@@ -1046,8 +1052,8 @@ cglobal vp8_idct_dc_add4y_sse2, 3, 3, 6
 ; void vp8_idct_dc_add4uv_<opt>(uint8_t *dst, DCTELEM block[4][16], int stride);
 ;-----------------------------------------------------------------------------
 
-INIT_MMX
-cglobal vp8_idct_dc_add4uv_mmx, 3, 3
+INIT_MMX mmx
+cglobal vp8_idct_dc_add4uv, 3, 3
     ; load data
     movd      m0, [r1+32*0] ; A
     movd      m1, [r1+32*2] ; C
@@ -1118,9 +1124,8 @@ cglobal vp8_idct_dc_add4uv_mmx, 3, 3
     SWAP                 %4,  %3
 %endmacro
 
-INIT_MMX
-%macro VP8_IDCT_ADD 1
-cglobal vp8_idct_add_%1, 3, 3
+%macro VP8_IDCT_ADD 0
+cglobal vp8_idct_add, 3, 3
     ; load block data
     movq         m0, [r1+ 0]
     movq         m1, [r1+ 8]
@@ -1128,7 +1133,7 @@ cglobal vp8_idct_add_%1, 3, 3
     movq         m3, [r1+24]
     movq         m6, [pw_20091]
     movq         m7, [pw_17734]
-%ifidn %1, sse
+%if cpuflag(sse)
     xorps      xmm0, xmm0
     movaps  [r1+ 0], xmm0
     movaps  [r1+16], xmm0
@@ -1157,9 +1162,11 @@ cglobal vp8_idct_add_%1, 3, 3
 %endmacro
 
 %if ARCH_X86_32
-VP8_IDCT_ADD mmx
+INIT_MMX mmx
+VP8_IDCT_ADD
 %endif
-VP8_IDCT_ADD sse
+INIT_MMX sse
+VP8_IDCT_ADD
 
 ;-----------------------------------------------------------------------------
 ; void vp8_luma_dc_wht_mmxext(DCTELEM block[4][4][16], DCTELEM dc[16])
@@ -1192,13 +1199,13 @@ VP8_IDCT_ADD sse
     SWAP %1, %4, %3
 %endmacro
 
-%macro VP8_DC_WHT 1
-cglobal vp8_luma_dc_wht_%1, 2,3
+%macro VP8_DC_WHT 0
+cglobal vp8_luma_dc_wht, 2, 3
     movq          m0, [r1]
     movq          m1, [r1+8]
     movq          m2, [r1+16]
     movq          m3, [r1+24]
-%ifidn %1, sse
+%if cpuflag(sse)
     xorps      xmm0, xmm0
     movaps  [r1+ 0], xmm0
     movaps  [r1+16], xmm0
@@ -1222,11 +1229,12 @@ cglobal vp8_luma_dc_wht_%1, 2,3
     RET
 %endmacro
 
-INIT_MMX
 %if ARCH_X86_32
-VP8_DC_WHT mmx
+INIT_MMX mmx
+VP8_DC_WHT
 %endif
-VP8_DC_WHT sse
+INIT_MMX sse
+VP8_DC_WHT
 
 ;-----------------------------------------------------------------------------
 ; void vp8_h/v_loop_filter_simple_<opt>(uint8_t *dst, int stride, int flim);
