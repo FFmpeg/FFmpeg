@@ -161,13 +161,13 @@ static int raw_decode(AVCodecContext *avctx,
         uint8_t *dst = context->buffer;
         buf_size = context->length - 256*4;
         if (avctx->bits_per_coded_sample == 4){
-            for(i=0; 2*i+1 < buf_size; i++){
+            for(i=0; 2*i+1 < buf_size && i<avpkt->size; i++){
                 dst[2*i+0]= buf[i]>>4;
                 dst[2*i+1]= buf[i]&15;
             }
             linesize_align = 8;
         } else {
-            for(i=0; 4*i+3 < buf_size; i++){
+            for(i=0; 4*i+3 < buf_size && i<avpkt->size; i++){
                 dst[4*i+0]= buf[i]>>6;
                 dst[4*i+1]= buf[i]>>4&3;
                 dst[4*i+2]= buf[i]>>2&3;
