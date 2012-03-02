@@ -865,6 +865,7 @@ cglobal put_vp8_pixels8_mmx, 5,5
     jg .nextrow
     REP_RET
 
+%if ARCH_X86_32
 cglobal put_vp8_pixels16_mmx, 5,5
 .nextrow:
     movq  mm0, [r2+r3*0+0]
@@ -880,6 +881,7 @@ cglobal put_vp8_pixels16_mmx, 5,5
     sub   r4d, 2
     jg .nextrow
     REP_RET
+%endif
 
 cglobal put_vp8_pixels16_sse, 5,5,2
 .nextrow:
@@ -973,6 +975,7 @@ cglobal vp8_idct_dc_add_sse4, 3, 3, 6
 ; void vp8_idct_dc_add4y_<opt>(uint8_t *dst, DCTELEM block[4][16], int stride);
 ;-----------------------------------------------------------------------------
 
+%if ARCH_X86_32
 INIT_MMX
 cglobal vp8_idct_dc_add4y_mmx, 3, 3
     ; load data
@@ -1007,6 +1010,7 @@ cglobal vp8_idct_dc_add4y_mmx, 3, 3
     ADD_DC    m0, m6, 0, mova
     ADD_DC    m1, m7, 8, mova
     RET
+%endif
 
 INIT_XMM
 cglobal vp8_idct_dc_add4y_sse2, 3, 3, 6
@@ -1152,7 +1156,9 @@ cglobal vp8_idct_add_%1, 3, 3
     RET
 %endmacro
 
+%if ARCH_X86_32
 VP8_IDCT_ADD mmx
+%endif
 VP8_IDCT_ADD sse
 
 ;-----------------------------------------------------------------------------
@@ -1217,7 +1223,9 @@ cglobal vp8_luma_dc_wht_%1, 2,3
 %endmacro
 
 INIT_MMX
+%if ARCH_X86_32
 VP8_DC_WHT mmx
+%endif
 VP8_DC_WHT sse
 
 ;-----------------------------------------------------------------------------
@@ -1610,6 +1618,7 @@ cglobal vp8_%2_loop_filter_simple_%1, 3, %3, %4
 %endif
 %endmacro
 
+%if ARCH_X86_32
 INIT_MMX
 %define SPLATB_REG SPLATB_REG_MMX
 SIMPLE_LOOPFILTER mmx,    v, 4, 0
@@ -1617,6 +1626,8 @@ SIMPLE_LOOPFILTER mmx,    h, 5, 0
 %define SPLATB_REG SPLATB_REG_MMXEXT
 SIMPLE_LOOPFILTER mmxext, v, 4, 0
 SIMPLE_LOOPFILTER mmxext, h, 5, 0
+%endif
+
 INIT_XMM
 %define SPLATB_REG SPLATB_REG_SSE2
 %define WRITE_8W   WRITE_8W_SSE2
@@ -2118,6 +2129,7 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
     RET
 %endmacro
 
+%if ARCH_X86_32
 INIT_MMX
 %define SPLATB_REG SPLATB_REG_MMX
 INNER_LOOPFILTER mmx,    v, 6, 16, 0
@@ -2130,6 +2142,7 @@ INNER_LOOPFILTER mmxext, v, 6, 16, 0
 INNER_LOOPFILTER mmxext, h, 6, 16, 0
 INNER_LOOPFILTER mmxext, v, 6,  8, 0
 INNER_LOOPFILTER mmxext, h, 6,  8, 0
+%endif
 
 INIT_XMM
 %define SPLATB_REG SPLATB_REG_SSE2
@@ -2814,6 +2827,7 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
     RET
 %endmacro
 
+%if ARCH_X86_32
 INIT_MMX
 %define SPLATB_REG SPLATB_REG_MMX
 MBEDGE_LOOPFILTER mmx,    v, 6, 16, 0
@@ -2826,6 +2840,7 @@ MBEDGE_LOOPFILTER mmxext, v, 6, 16, 0
 MBEDGE_LOOPFILTER mmxext, h, 6, 16, 0
 MBEDGE_LOOPFILTER mmxext, v, 6,  8, 0
 MBEDGE_LOOPFILTER mmxext, h, 6,  8, 0
+%endif
 
 INIT_XMM
 %define SPLATB_REG SPLATB_REG_SSE2
