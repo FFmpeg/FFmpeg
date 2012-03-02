@@ -132,7 +132,7 @@ static inline void decode_subband_slice_buffered(SnowContext *s, SubBand *b, sli
     return;
 }
 
-static void decode_q_branch(SnowContext *s, int level, int x, int y){
+static int decode_q_branch(SnowContext *s, int level, int x, int y){
     const int w= s->b_width << s->block_max_depth;
     const int rem_depth= s->block_max_depth - level;
     const int index= (x + y*w) << rem_depth;
@@ -145,7 +145,7 @@ static void decode_q_branch(SnowContext *s, int level, int x, int y){
 
     if(s->keyframe){
         set_blocks(s, level, x, y, null_block.color[0], null_block.color[1], null_block.color[2], null_block.mx, null_block.my, null_block.ref, BLOCK_INTRA);
-        return;
+        return 0;
     }
 
     if(level==s->block_max_depth || get_rac(&s->c, &s->block_state[4 + s_context])){
@@ -168,17 +168,26 @@ static void decode_q_branch(SnowContext *s, int level, int x, int y){
         }else{
             if(s->ref_frames > 1)
                 ref= get_symbol(&s->c, &s->block_state[128 + 1024 + 32*ref_context], 0);
+            if (ref >= s->ref_frames) {
+                av_log(s->avctx, AV_LOG_ERROR, "Invalid ref\n");
+                return -1;
+            }
             pred_mv(s, &mx, &my, ref, left, top, tr);
             mx+= get_symbol(&s->c, &s->block_state[128 + 32*(mx_context + 16*!!ref)], 1);
             my+= get_symbol(&s->c, &s->block_state[128 + 32*(my_context + 16*!!ref)], 1);
         }
         set_blocks(s, level, x, y, l, cb, cr, mx, my, ref, type);
     }else{
-        decode_q_branch(s, level+1, 2*x+0, 2*y+0);
-        decode_q_branch(s, level+1, 2*x+1, 2*y+0);
-        decode_q_branch(s, level+1, 2*x+0, 2*y+1);
-        decode_q_branch(s, level+1, 2*x+1, 2*y+1);
+        if (decode_q_branch(s, level+1, 2*x+0, 2*y+0)<0)
+            return -1;
+        if (decode_q_branch(s, level+1, 2*x+1, 2*y+0)<0)
+            return -1;
+        if (decode_q_branch(s, level+1, 2*x+0, 2*y+1)<0)
+            return -1;
+        if (decode_q_branch(s, level+1, 2*x+1, 2*y+1)<0)
+            return -1;
     }
+    return 0;
 }
 
 static void dequantize_slice_buffered(SnowContext *s, slice_buffer * sb, SubBand *b, IDWTELEM *src, int stride, int start_y, int end_y){
@@ -349,16 +358,18 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void decode_blocks(SnowContext *s){
+static int decode_blocks(SnowContext *s){
     int x, y;
     int w= s->b_width;
     int h= s->b_height;
 
     for(y=0; y<h; y++){
         for(x=0; x<w; x++){
-            decode_q_branch(s, 0, x, y);
+            if (decode_q_branch(s, 0, x, y) < 0)
+                return -1;
         }
     }
+    return 0;
 }
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPacket *avpkt){
@@ -397,7 +408,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     if(avctx->debug&FF_DEBUG_PICT_INFO)
         av_log(avctx, AV_LOG_ERROR, "keyframe:%d qlog:%d\n", s->keyframe, s->qlog);
 
-    decode_blocks(s);
+    if (decode_blocks(s) < 0)
+        return -1;
 
     for(plane_index=0; plane_index<3; plane_index++){
         Plane *p= &s->plane[plane_index];
