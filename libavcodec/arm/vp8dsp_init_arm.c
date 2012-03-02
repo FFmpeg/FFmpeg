@@ -22,38 +22,38 @@
 void ff_vp8_luma_dc_wht_neon(DCTELEM block[4][4][16], DCTELEM dc[16]);
 void ff_vp8_luma_dc_wht_dc_neon(DCTELEM block[4][4][16], DCTELEM dc[16]);
 
-void ff_vp8_idct_add_neon(uint8_t *dst, DCTELEM block[16], int stride);
-void ff_vp8_idct_dc_add_neon(uint8_t *dst, DCTELEM block[16], int stride);
-void ff_vp8_idct_dc_add4y_neon(uint8_t *dst, DCTELEM block[4][16], int stride);
-void ff_vp8_idct_dc_add4uv_neon(uint8_t *dst, DCTELEM block[4][16], int stride);
+void ff_vp8_idct_add_neon(uint8_t *dst, DCTELEM block[16], ptrdiff_t stride);
+void ff_vp8_idct_dc_add_neon(uint8_t *dst, DCTELEM block[16], ptrdiff_t stride);
+void ff_vp8_idct_dc_add4y_neon(uint8_t *dst, DCTELEM block[4][16], ptrdiff_t stride);
+void ff_vp8_idct_dc_add4uv_neon(uint8_t *dst, DCTELEM block[4][16], ptrdiff_t stride);
 
-void ff_vp8_v_loop_filter16_neon(uint8_t *dst, int stride,
+void ff_vp8_v_loop_filter16_neon(uint8_t *dst, ptrdiff_t stride,
                                  int flim_E, int flim_I, int hev_thresh);
-void ff_vp8_h_loop_filter16_neon(uint8_t *dst, int stride,
+void ff_vp8_h_loop_filter16_neon(uint8_t *dst, ptrdiff_t stride,
                                  int flim_E, int flim_I, int hev_thresh);
-void ff_vp8_v_loop_filter8uv_neon(uint8_t *dstU, uint8_t *dstV, int stride,
+void ff_vp8_v_loop_filter8uv_neon(uint8_t *dstU, uint8_t *dstV, ptrdiff_t stride,
                                   int flim_E, int flim_I, int hev_thresh);
-void ff_vp8_h_loop_filter8uv_neon(uint8_t *dstU, uint8_t *dstV, int stride,
+void ff_vp8_h_loop_filter8uv_neon(uint8_t *dstU, uint8_t *dstV, ptrdiff_t stride,
                                   int flim_E, int flim_I, int hev_thresh);
 
-void ff_vp8_v_loop_filter16_inner_neon(uint8_t *dst, int stride,
+void ff_vp8_v_loop_filter16_inner_neon(uint8_t *dst, ptrdiff_t stride,
                                        int flim_E, int flim_I, int hev_thresh);
-void ff_vp8_h_loop_filter16_inner_neon(uint8_t *dst, int stride,
+void ff_vp8_h_loop_filter16_inner_neon(uint8_t *dst, ptrdiff_t stride,
                                        int flim_E, int flim_I, int hev_thresh);
 void ff_vp8_v_loop_filter8uv_inner_neon(uint8_t *dstU, uint8_t *dstV,
-                                        int stride, int flim_E, int flim_I,
+                                        ptrdiff_t stride, int flim_E, int flim_I,
                                         int hev_thresh);
 void ff_vp8_h_loop_filter8uv_inner_neon(uint8_t *dstU, uint8_t *dstV,
-                                        int stride, int flim_E, int flim_I,
+                                        ptrdiff_t stride, int flim_E, int flim_I,
                                         int hev_thresh);
 
-void ff_vp8_v_loop_filter16_simple_neon(uint8_t *dst, int stride, int flim);
-void ff_vp8_h_loop_filter16_simple_neon(uint8_t *dst, int stride, int flim);
+void ff_vp8_v_loop_filter16_simple_neon(uint8_t *dst, ptrdiff_t stride, int flim);
+void ff_vp8_h_loop_filter16_simple_neon(uint8_t *dst, ptrdiff_t stride, int flim);
 
 
 #define VP8_MC(n)                                                       \
-    void ff_put_vp8_##n##_neon(uint8_t *dst, int dststride,             \
-                               uint8_t *src, int srcstride,             \
+    void ff_put_vp8_##n##_neon(uint8_t *dst, ptrdiff_t dststride,       \
+                               uint8_t *src, ptrdiff_t srcstride,       \
                                int h, int x, int y)
 
 #define VP8_EPEL(w)                             \
