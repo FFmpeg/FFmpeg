@@ -902,17 +902,17 @@ static void update_initial_durations(AVFormatContext *s, AVStream *st, AVPacket 
     for(; pktl; pktl= pktl->next){
         if(pktl->pkt.stream_index != pkt->stream_index)
             continue;
-        if(pktl->pkt.pts == pktl->pkt.dts && pktl->pkt.dts == AV_NOPTS_VALUE
+        if(pktl->pkt.pts == pktl->pkt.dts && (pktl->pkt.dts == AV_NOPTS_VALUE || pktl->pkt.dts == st->first_dts)
            && !pktl->pkt.duration){
             pktl->pkt.dts= cur_dts;
             if(!st->codec->has_b_frames)
                 pktl->pkt.pts= cur_dts;
-            cur_dts += pkt->duration;
             pktl->pkt.duration= pkt->duration;
         }else
             break;
+        cur_dts = pktl->pkt.dts + pktl->pkt.duration;
     }
-    if(st->first_dts == AV_NOPTS_VALUE)
+    if(!pktl)
         st->cur_dts= cur_dts;
 }
 
