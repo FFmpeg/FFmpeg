@@ -123,7 +123,8 @@ static int audio_read_packet(AVFormatContext *s1, AVPacket *pkt)
     dts = av_gettime();
     snd_pcm_delay(s->h, &delay);
     dts -= av_rescale(delay + res, 1000000, s->sample_rate);
-    pkt->pts = ff_timefilter_update(s->timefilter, dts, res);
+    pkt->pts = ff_timefilter_update(s->timefilter, dts, s->last_period);
+    s->last_period = res;
 
     pkt->size = res * s->frame_size;
 

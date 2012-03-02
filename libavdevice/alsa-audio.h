@@ -52,6 +52,7 @@ typedef struct {
     int period_size; ///< preferred size for reads and writes, in frames
     int sample_rate; ///< sample rate set by user
     int channels;    ///< number of channels set by user
+    int last_period;
     TimeFilter *timefilter;
     void (*reorder_func)(const void *, void *, int);
     void *reorder_buf;
