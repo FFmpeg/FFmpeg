@@ -1,4 +1,4 @@
-1975cc4a3521e374b33ae042e182f6b6 *./tests/data/acodec/g722.wav
-48053 ./tests/data/acodec/g722.wav
-ade04cdcf249e6946395f109b077dd62 *./tests/data/g722.acodec.out.wav
-stddev: 8841.24 PSNR: 17.40 MAXDIFF:36225 bytes:   191980/  1058400
+7b0492eee76b04b710990235f97a0bf2 *./tests/data/acodec/g722.wav
+   48053 ./tests/data/acodec/g722.wav
+b5568e0e3930ff563824156e8e1015f0 *./tests/data/g722.acodec.out.wav
+stddev: 8939.44 PSNR: 17.30 MAXDIFF:40370 bytes:   191980/  1058400
