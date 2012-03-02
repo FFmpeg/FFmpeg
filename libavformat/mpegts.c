@@ -1772,7 +1772,7 @@ static int read_packet(AVFormatContext *s, uint8_t *buf, int raw_packet_size)
 static int handle_packets(MpegTSContext *ts, int nb_packets)
 {
     AVFormatContext *s = ts->stream;
-    uint8_t packet[TS_PACKET_SIZE];
+    uint8_t packet[TS_PACKET_SIZE+FF_INPUT_BUFFER_PADDING_SIZE];
     int packet_num, ret = 0;
 
     if (avio_tell(s->pb) != ts->last_pos) {
@@ -1794,6 +1794,7 @@ static int handle_packets(MpegTSContext *ts, int nb_packets)
 
     ts->stop_parse = 0;
     packet_num = 0;
+    memset(packet + TS_PACKET_SIZE, 0, FF_INPUT_BUFFER_PADDING_SIZE);
     for(;;) {
         if (ts->stop_parse>0)
             break;
