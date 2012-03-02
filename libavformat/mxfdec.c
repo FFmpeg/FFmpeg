@@ -1877,48 +1877,53 @@ static int mxf_read_header(AVFormatContext *s)
 }
 
 /**
- * Computes DTS and PTS for the given video packet based on its offset.
+ * Sets mxf->current_edit_unit based on what offset we're currently at.
+ * @return next_ofs if OK, <0 on error
  */
-static void mxf_packet_timestamps(MXFContext *mxf, AVPacket *pkt)
+static int64_t mxf_set_current_edit_unit(MXFContext *mxf, int64_t current_offset)
 {
-    int64_t last_ofs = -1, next_ofs;
+    int64_t last_ofs = -1, next_ofs = -1;
     MXFIndexTable *t = &mxf->index_tables[0];
 
     /* this is called from the OP1a demuxing logic, which means there
      * may be no index tables */
     if (mxf->nb_index_tables <= 0)
-        return;
+        return -1;
 
-    /* find mxf->current_edit_unit so that the next edit unit starts ahead of pkt->pos */
+    /* find mxf->current_edit_unit so that the next edit unit starts ahead
+     * of current_offset */
     while (mxf->current_edit_unit >= 0) {
-        if (mxf_edit_unit_absolute_offset(mxf, t, mxf->current_edit_unit + 1, NULL, &next_ofs, 0) < 0)
-            break;
+        if (mxf_edit_unit_absolute_offset(mxf, t, mxf->current_edit_unit + 1,
+                                          NULL, &next_ofs, 0) < 0)
+            return -1;
 
         if (next_ofs <= last_ofs) {
             /* large next_ofs didn't change or current_edit_unit wrapped
              * around this fixes the infinite loop on zzuf3.mxf */
             av_log(mxf->fc, AV_LOG_ERROR,
                    "next_ofs didn't change. not deriving packet timestamps\n");
-            return;
+            return -1;
         }
 
-        if (next_ofs > pkt->pos)
+        if (next_ofs > current_offset)
             break;
 
         last_ofs = next_ofs;
         mxf->current_edit_unit++;
     }
 
-    if (mxf->current_edit_unit < 0 || mxf->current_edit_unit >= t->nb_ptses)
-        return;
+    /* not checking mxf->current_edit_unit >= t->nb_ptses here since CBR files
+     * may lack IndexEntryArrays */
+    if (mxf->current_edit_unit < 0)
+        return -1;
 
-    pkt->dts = mxf->current_edit_unit + t->first_dts;
-    pkt->pts = t->ptses[mxf->current_edit_unit];
+    return next_ofs;
 }
 
 static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
 {
     KLVPacket klv;
+    MXFContext *mxf = s->priv_data;
 
     while (!s->pb->eof_reached) {
         if (klv_read_packet(&klv, s->pb) < 0)
@@ -1936,12 +1941,30 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
         if (IS_KLV_KEY(klv.key, mxf_essence_element_key) ||
             IS_KLV_KEY(klv.key, mxf_avid_essence_element_key)) {
             int index = mxf_get_stream_index(s, &klv);
+            int64_t next_ofs, next_klv;
+
             if (index < 0) {
                 av_log(s, AV_LOG_ERROR, "error getting stream index %d\n", AV_RB32(klv.key+12));
                 goto skip;
             }
             if (s->streams[index]->discard == AVDISCARD_ALL)
                 goto skip;
+
+            next_klv = avio_tell(s->pb) + klv.length;
+            next_ofs = mxf_set_current_edit_unit(mxf, klv.offset);
+
+            if (next_ofs >= 0 && next_klv > next_ofs) {
+                /* if this check is hit then it's possible OPAtom was treated
+                 * as OP1a truncate the packet since it's probably very large
+                 * (>2 GiB is common) */
+                av_log_ask_for_sample(s,
+                                      "KLV for edit unit %i extends into next "
+                                      "edit unit - OPAtom misinterpreted as "
+                                      "OP1a?\n",
+                                      mxf->current_edit_unit);
+                klv.length = next_ofs - avio_tell(s->pb);
+            }
+
             /* check for 8 channels AES3 element */
             if (klv.key[12] == 0x06 && klv.key[13] == 0x01 && klv.key[14] == 0x10) {
                 if (mxf_get_d10_aes3_packet(s->pb, s->streams[index], pkt, klv.length) < 0) {
@@ -1956,8 +1979,20 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
             pkt->stream_index = index;
             pkt->pos = klv.offset;
 
-            if (s->streams[index]->codec->codec_type == AVMEDIA_TYPE_VIDEO)
-                mxf_packet_timestamps(s->priv_data, pkt);   /* offset -> EditUnit -> DTS/PTS */
+            if (s->streams[index]->codec->codec_type == AVMEDIA_TYPE_VIDEO && next_ofs >= 0) {
+                /* mxf->current_edit_unit good - see if we have an
+                 * index table to derive timestamps from */
+                MXFIndexTable *t = &mxf->index_tables[0];
+
+                if (mxf->nb_index_tables >= 1 &&
+                    mxf->current_edit_unit < t->nb_ptses) {
+                    pkt->dts = mxf->current_edit_unit + t->first_dts;
+                    pkt->pts = t->ptses[mxf->current_edit_unit];
+                }
+            }
+
+            /* seek for truncated packets */
+            avio_seek(s->pb, next_klv, SEEK_SET);
 
             return 0;
         } else
