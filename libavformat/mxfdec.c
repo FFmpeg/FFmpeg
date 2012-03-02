@@ -510,16 +510,20 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
     else if (op[12] == 64&& op[13] == 1) mxf->op = OPSonyOpt;
     else if (op[12] == 0x10) {
         /* SMPTE 390m: "There shall be exactly one essence container"
-         * 2011_DCPTEST_24FPS.V.mxf violates this and is frame wrapped,
-         * which is why we assume OP1a. */
+         * The following block deals with files that violate this, namely:
+         * 2011_DCPTEST_24FPS.V.mxf - two ECs, OP1a
+         * abcdefghiv016f56415e.mxf - zero ECs, OPAtom, output by Avid AirSpeed */
         if (nb_essence_containers != 1) {
+            MXFOP op = nb_essence_containers ? OP1a : OPAtom;
+
             /* only nag once */
             if (!mxf->op)
                 av_log(mxf->fc, AV_LOG_WARNING,
-                       "\"OPAtom\" with %u ECs - assuming OP1a\n",
-                       nb_essence_containers);
+                       "\"OPAtom\" with %u ECs - assuming %s\n",
+                       nb_essence_containers,
+                       op == OP1a ? "OP1a" : "OPAtom");
 
-            mxf->op = OP1a;
+            mxf->op = op;
         } else
             mxf->op = OPAtom;
     } else {
