@@ -906,10 +906,10 @@ cglobal put_vp8_pixels16, 5, 5, 2, dst, dststride, src, srcstride, height
 ;-----------------------------------------------------------------------------
 
 %macro ADD_DC 4
-    %4        m2, [r0+%3]
-    %4        m3, [r0+r2+%3]
-    %4        m4, [r1+%3]
-    %4        m5, [r1+r2+%3]
+    %4        m2, [dst1q+%3]
+    %4        m3, [dst1q+strideq+%3]
+    %4        m4, [dst2q+%3]
+    %4        m5, [dst2q+strideq+%3]
     paddusb   m2, %1
     paddusb   m3, %1
     paddusb   m4, %1
@@ -918,22 +918,22 @@ cglobal put_vp8_pixels16, 5, 5, 2, dst, dststride, src, srcstride, height
     psubusb   m3, %2
     psubusb   m4, %2
     psubusb   m5, %2
-    %4    [r0+%3], m2
-    %4 [r0+r2+%3], m3
-    %4    [r1+%3], m4
-    %4 [r1+r2+%3], m5
+    %4 [dst1q+%3], m2
+    %4 [dst1q+strideq+%3], m3
+    %4 [dst2q+%3], m4
+    %4 [dst2q+strideq+%3], m5
 %endmacro
 
 INIT_MMX mmx
-cglobal vp8_idct_dc_add, 3, 3
+cglobal vp8_idct_dc_add, 3, 3, 0, dst, block, stride
     ; load data
-    movd       m0, [r1]
+    movd       m0, [blockq]
 
     ; calculate DC
     paddw      m0, [pw_4]
     pxor       m1, m1
     psraw      m0, 3
-    movd      [r1], m1
+    movd [blockq], m1
     psubw      m1, m0
     packuswb   m0, m0
     packuswb   m1, m1
@@ -943,24 +943,26 @@ cglobal vp8_idct_dc_add, 3, 3
     punpcklwd  m1, m1
 
     ; add DC
-    lea        r1, [r0+r2*2]
+    DEFINE_ARGS dst1, dst2, stride
+    lea     dst2q, [dst1q+strideq*2]
     ADD_DC     m0, m1, 0, movh
     RET
 
 INIT_XMM sse4
-cglobal vp8_idct_dc_add, 3, 3, 6
+cglobal vp8_idct_dc_add, 3, 3, 6, dst, block, stride
     ; load data
-    movd       m0, [r1]
+    movd       m0, [blockq]
     pxor       m1, m1
 
     ; calculate DC
     paddw      m0, [pw_4]
-    movd     [r1], m1
-    lea        r1, [r0+r2*2]
-    movd       m2, [r0]
-    movd       m3, [r0+r2]
-    movd       m4, [r1]
-    movd       m5, [r1+r2]
+    movd [blockq], m1
+    DEFINE_ARGS dst1, dst2, stride
+    lea     dst2q, [dst1q+strideq*2]
+    movd       m2, [dst1q]
+    movd       m3, [dst1q+strideq]
+    movd       m4, [dst2q]
+    movd       m5, [dst2q+strideq]
     psraw      m0, 3
     pshuflw    m0, m0, 0
     punpcklqdq m0, m0
@@ -971,10 +973,10 @@ cglobal vp8_idct_dc_add, 3, 3, 6
     paddw      m2, m0
     paddw      m4, m0
     packuswb   m2, m4
-    movd      [r0], m2
-    pextrd [r0+r2], m2, 1
-    pextrd    [r1], m2, 2
-    pextrd [r1+r2], m2, 3
+    movd   [dst1q], m2
+    pextrd [dst1q+strideq], m2, 1
+    pextrd [dst2q], m2, 2
+    pextrd [dst2q+strideq], m2, 3
     RET
 
 ;-----------------------------------------------------------------------------
@@ -983,21 +985,21 @@ cglobal vp8_idct_dc_add, 3, 3, 6
 
 %if ARCH_X86_32
 INIT_MMX mmx
-cglobal vp8_idct_dc_add4y, 3, 3
+cglobal vp8_idct_dc_add4y, 3, 3, 0, dst, block, stride
     ; load data
-    movd      m0, [r1+32*0] ; A
-    movd      m1, [r1+32*2] ; C
-    punpcklwd m0, [r1+32*1] ; A B
-    punpcklwd m1, [r1+32*3] ; C D
+    movd      m0, [blockq+32*0] ; A
+    movd      m1, [blockq+32*2] ; C
+    punpcklwd m0, [blockq+32*1] ; A B
+    punpcklwd m1, [blockq+32*3] ; C D
     punpckldq m0, m1        ; A B C D
     pxor      m6, m6
 
     ; calculate DC
     paddw     m0, [pw_4]
-    movd [r1+32*0], m6
-    movd [r1+32*1], m6
-    movd [r1+32*2], m6
-    movd [r1+32*3], m6
+    movd [blockq+32*0], m6
+    movd [blockq+32*1], m6
+    movd [blockq+32*2], m6
+    movd [blockq+32*3], m6
     psraw     m0, 3
     psubw     m6, m0
     packuswb  m0, m0
@@ -1012,28 +1014,29 @@ cglobal vp8_idct_dc_add4y, 3, 3
     punpckhbw m7, m7 ; CCCCDDDD
 
     ; add DC
-    lea       r1, [r0+r2*2]
+    DEFINE_ARGS dst1, dst2, stride
+    lea    dst2q, [dst1q+strideq*2]
     ADD_DC    m0, m6, 0, mova
     ADD_DC    m1, m7, 8, mova
     RET
 %endif
 
 INIT_XMM sse2
-cglobal vp8_idct_dc_add4y, 3, 3, 6
+cglobal vp8_idct_dc_add4y, 3, 3, 6, dst, block, stride
     ; load data
-    movd      m0, [r1+32*0] ; A
-    movd      m1, [r1+32*2] ; C
-    punpcklwd m0, [r1+32*1] ; A B
-    punpcklwd m1, [r1+32*3] ; C D
+    movd      m0, [blockq+32*0] ; A
+    movd      m1, [blockq+32*2] ; C
+    punpcklwd m0, [blockq+32*1] ; A B
+    punpcklwd m1, [blockq+32*3] ; C D
     punpckldq m0, m1        ; A B C D
     pxor      m1, m1
 
     ; calculate DC
     paddw     m0, [pw_4]
-    movd [r1+32*0], m1
-    movd [r1+32*1], m1
-    movd [r1+32*2], m1
-    movd [r1+32*3], m1
+    movd [blockq+32*0], m1
+    movd [blockq+32*1], m1
+    movd [blockq+32*2], m1
+    movd [blockq+32*3], m1
     psraw     m0, 3
     psubw     m1, m0
     packuswb  m0, m0
@@ -1044,7 +1047,8 @@ cglobal vp8_idct_dc_add4y, 3, 3, 6
     punpcklbw m1, m1
 
     ; add DC
-    lea       r1, [r0+r2*2]
+    DEFINE_ARGS dst1, dst2, stride
+    lea    dst2q, [dst1q+strideq*2]
     ADD_DC    m0, m1, 0, mova
     RET
 
@@ -1053,21 +1057,21 @@ cglobal vp8_idct_dc_add4y, 3, 3, 6
 ;-----------------------------------------------------------------------------
 
 INIT_MMX mmx
-cglobal vp8_idct_dc_add4uv, 3, 3
+cglobal vp8_idct_dc_add4uv, 3, 3, 0, dst, block, stride
     ; load data
-    movd      m0, [r1+32*0] ; A
-    movd      m1, [r1+32*2] ; C
-    punpcklwd m0, [r1+32*1] ; A B
-    punpcklwd m1, [r1+32*3] ; C D
+    movd      m0, [blockq+32*0] ; A
+    movd      m1, [blockq+32*2] ; C
+    punpcklwd m0, [blockq+32*1] ; A B
+    punpcklwd m1, [blockq+32*3] ; C D
     punpckldq m0, m1        ; A B C D
     pxor      m6, m6
 
     ; calculate DC
     paddw     m0, [pw_4]
-    movd [r1+32*0], m6
-    movd [r1+32*1], m6
-    movd [r1+32*2], m6
-    movd [r1+32*3], m6
+    movd [blockq+32*0], m6
+    movd [blockq+32*1], m6
+    movd [blockq+32*2], m6
+    movd [blockq+32*3], m6
     psraw     m0, 3
     psubw     m6, m0
     packuswb  m0, m0
@@ -1082,10 +1086,11 @@ cglobal vp8_idct_dc_add4uv, 3, 3
     punpckhbw m7, m7 ; CCCCDDDD
 
     ; add DC
-    lea       r1, [r0+r2*2]
+    DEFINE_ARGS dst1, dst2, stride
+    lea    dst2q, [dst1q+strideq*2]
     ADD_DC    m0, m6, 0, mova
-    lea       r0, [r0+r2*4]
-    lea       r1, [r1+r2*4]
+    lea    dst1q, [dst1q+strideq*4]
+    lea    dst2q, [dst2q+strideq*4]
     ADD_DC    m1, m7, 0, mova
     RET
 
@@ -1125,24 +1130,24 @@ cglobal vp8_idct_dc_add4uv, 3, 3
 %endmacro
 
 %macro VP8_IDCT_ADD 0
-cglobal vp8_idct_add, 3, 3
+cglobal vp8_idct_add, 3, 3, 0, dst, block, stride
     ; load block data
-    movq         m0, [r1+ 0]
-    movq         m1, [r1+ 8]
-    movq         m2, [r1+16]
-    movq         m3, [r1+24]
+    movq         m0, [blockq+ 0]
+    movq         m1, [blockq+ 8]
+    movq         m2, [blockq+16]
+    movq         m3, [blockq+24]
     movq         m6, [pw_20091]
     movq         m7, [pw_17734]
 %if cpuflag(sse)
     xorps      xmm0, xmm0
-    movaps  [r1+ 0], xmm0
-    movaps  [r1+16], xmm0
+    movaps [blockq+ 0], xmm0
+    movaps [blockq+16], xmm0
 %else
     pxor         m4, m4
-    movq    [r1+ 0], m4
-    movq    [r1+ 8], m4
-    movq    [r1+16], m4
-    movq    [r1+24], m4
+    movq [blockq+ 0], m4
+    movq [blockq+ 8], m4
+    movq [blockq+16], m4
+    movq [blockq+24], m4
 %endif
 
     ; actual IDCT
@@ -1154,9 +1159,10 @@ cglobal vp8_idct_add, 3, 3
 
     ; store
     pxor         m4, m4
-    lea          r1, [r0+2*r2]
-    STORE_DIFFx2 m0, m1, m6, m7, m4, 3, r0, r2
-    STORE_DIFFx2 m2, m3, m6, m7, m4, 3, r1, r2
+    DEFINE_ARGS dst1, dst2, stride
+    lea       dst2q, [dst1q+2*strideq]
+    STORE_DIFFx2 m0, m1, m6, m7, m4, 3, dst1q, strideq
+    STORE_DIFFx2 m2, m3, m6, m7, m4, 3, dst2q, strideq
 
     RET
 %endmacro
@@ -1173,24 +1179,24 @@ VP8_IDCT_ADD
 ;-----------------------------------------------------------------------------
 
 %macro SCATTER_WHT 3
-    movd  r1d, m%1
-    movd  r2d, m%2
-    mov [r0+2*16*(0+%3)], r1w
-    mov [r0+2*16*(1+%3)], r2w
-    shr   r1d, 16
-    shr   r2d, 16
+    movd dc1d, m%1
+    movd dc2d, m%2
+    mov [blockq+2*16*(0+%3)], dc1w
+    mov [blockq+2*16*(1+%3)], dc2w
+    shr  dc1d, 16
+    shr  dc2d, 16
     psrlq m%1, 32
     psrlq m%2, 32
-    mov [r0+2*16*(4+%3)], r1w
-    mov [r0+2*16*(5+%3)], r2w
-    movd  r1d, m%1
-    movd  r2d, m%2
-    mov [r0+2*16*(8+%3)], r1w
-    mov [r0+2*16*(9+%3)], r2w
-    shr   r1d, 16
-    shr   r2d, 16
-    mov [r0+2*16*(12+%3)], r1w
-    mov [r0+2*16*(13+%3)], r2w
+    mov [blockq+2*16*(4+%3)], dc1w
+    mov [blockq+2*16*(5+%3)], dc2w
+    movd dc1d, m%1
+    movd dc2d, m%2
+    mov [blockq+2*16*(8+%3)], dc1w
+    mov [blockq+2*16*(9+%3)], dc2w
+    shr  dc1d, 16
+    shr  dc2d, 16
+    mov [blockq+2*16*(12+%3)], dc1w
+    mov [blockq+2*16*(13+%3)], dc2w
 %endmacro
 
 %macro HADAMARD4_1D 4
@@ -1200,21 +1206,21 @@ VP8_IDCT_ADD
 %endmacro
 
 %macro VP8_DC_WHT 0
-cglobal vp8_luma_dc_wht, 2, 3
-    movq          m0, [r1]
-    movq          m1, [r1+8]
-    movq          m2, [r1+16]
-    movq          m3, [r1+24]
+cglobal vp8_luma_dc_wht, 2, 3, 0, block, dc1, dc2
+    movq          m0, [dc1q]
+    movq          m1, [dc1q+8]
+    movq          m2, [dc1q+16]
+    movq          m3, [dc1q+24]
 %if cpuflag(sse)
     xorps      xmm0, xmm0
-    movaps  [r1+ 0], xmm0
-    movaps  [r1+16], xmm0
+    movaps [dc1q+ 0], xmm0
+    movaps [dc1q+16], xmm0
 %else
     pxor         m4, m4
-    movq    [r1+ 0], m4
-    movq    [r1+ 8], m4
-    movq    [r1+16], m4
-    movq    [r1+24], m4
+    movq  [dc1q+ 0], m4
+    movq  [dc1q+ 8], m4
+    movq  [dc1q+16], m4
+    movq  [dc1q+24], m4
 %endif
     HADAMARD4_1D  0, 1, 2, 3
     TRANSPOSE4x4W 0, 1, 2, 3, 4
