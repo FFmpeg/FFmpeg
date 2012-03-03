@@ -143,7 +143,7 @@ static void qpeg_decode_inter(const uint8_t *src, uint8_t *dst, int size,
 
         if(delta) {
             /* motion compensation */
-            while((code & 0xF0) == 0xF0) {
+            while(size > 0 && (code & 0xF0) == 0xF0) {
                 if(delta == 1) {
                     int me_idx;
                     int me_w, me_h, me_x, me_y;
@@ -210,6 +210,9 @@ static void qpeg_decode_inter(const uint8_t *src, uint8_t *dst, int size,
         } else if(code >= 0xC0) { /* copy code: 0xC0..0xDF */
             code &= 0x1F;
 
+            if(code + 1 > size)
+                break;
+
             for(i = 0; i <= code; i++) {
                 dst[filled++] = *src++;
                 if(filled >= width) {
@@ -227,11 +230,11 @@ static void qpeg_decode_inter(const uint8_t *src, uint8_t *dst, int size,
             code &= 0x3F;
             /* codes 0x80 and 0x81 are actually escape codes,
                skip value minus constant is in the next byte */
-            if(!code)
-                skip = (*src++) + 64;
-            else if(code == 1)
-                skip = (*src++) + 320;
-            else
+            if(!code) {
+                skip = (*src++) + 64; size--;
+            } else if(code == 1) {
+                skip = (*src++) + 320; size--;
+            } else
                 skip = code;
             filled += skip;
             while( filled >= width) {
