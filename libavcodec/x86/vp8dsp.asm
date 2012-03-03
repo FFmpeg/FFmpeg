@@ -1489,20 +1489,25 @@ VP8_DC_WHT
 %endmacro
 
 %macro SIMPLE_LOOPFILTER 2
-cglobal vp8_%1_loop_filter_simple, 3, %2, 8
+cglobal vp8_%1_loop_filter_simple, 3, %2, 8, dst, stride, flim, cntr
 %if mmsize == 8 ; mmx/mmxext
-    mov            r3, 2
+    mov         cntrq, 2
 %endif
 %if cpuflag(ssse3)
     pxor           m0, m0
 %endif
-    SPLATB_REG     m7, r2, m0       ; splat "flim" into register
+    SPLATB_REG     m7, flim, m0     ; splat "flim" into register
 
     ; set up indexes to address 4 rows
-    mov            r2, r1
-    neg            r1
+%if mmsize == 8
+    DEFINE_ARGS dst1, mstride, stride, cntr, dst2
+%else
+    DEFINE_ARGS dst1, mstride, stride, dst3, dst2
+%endif
+    mov       strideq, mstrideq
+    neg      mstrideq
 %ifidn %1, h
-    lea            r0, [r0+4*r2-2]
+    lea         dst1q, [dst1q+4*strideq-2]
 %endif
 
 %if mmsize == 8 ; mmx / mmxext
@@ -1510,17 +1515,17 @@ cglobal vp8_%1_loop_filter_simple, 3, %2, 8
 %endif
 %ifidn %1, v
     ; read 4 half/full rows of pixels
-    mova           m0, [r0+r1*2]    ; p1
-    mova           m1, [r0+r1]      ; p0
-    mova           m2, [r0]         ; q0
-    mova           m3, [r0+r2]      ; q1
+    mova           m0, [dst1q+mstrideq*2]    ; p1
+    mova           m1, [dst1q+mstrideq]      ; p0
+    mova           m2, [dst1q]               ; q0
+    mova           m3, [dst1q+ strideq]      ; q1
 %else ; h
-    lea            r4, [r0+r2]
+    lea         dst2q, [dst1q+ strideq]
 
 %if mmsize == 8 ; mmx/mmxext
-    READ_8x4_INTERLEAVED  0, 1, 2, 3, 4, 5, 6, r0, r4, r1, r2
+    READ_8x4_INTERLEAVED  0, 1, 2, 3, 4, 5, 6, dst1q, dst2q, mstrideq, strideq
 %else ; sse2
-    READ_16x4_INTERLEAVED 0, 1, 2, 3, 4, 5, 6, r0, r4, r1, r2, r3
+    READ_16x4_INTERLEAVED 0, 1, 2, 3, 4, 5, 6, dst1q, dst2q, mstrideq, strideq, dst3q
 %endif
     TRANSPOSE4x4W         0, 1, 2, 3, 4
 %endif
@@ -1590,35 +1595,35 @@ cglobal vp8_%1_loop_filter_simple, 3, %2, 8
 
     ; store
 %ifidn %1, v
-    mova         [r0], m4
-    mova      [r0+r1], m6
+    mova      [dst1q], m4
+    mova [dst1q+mstrideq], m6
 %else ; h
-    inc           r0
+    inc        dst1q
     SBUTTERFLY    bw, 6, 4, 0
 
 %if mmsize == 16 ; sse2
 %if cpuflag(sse4)
-    inc            r4
+    inc         dst2q
 %endif
-    WRITE_8W       m6, r4, r0, r1, r2
-    lea            r4, [r3+r1+1]
+    WRITE_8W       m6, dst2q, dst1q, mstrideq, strideq
+    lea         dst2q, [dst3q+mstrideq+1]
 %if cpuflag(sse4)
-    inc            r3
+    inc         dst3q
 %endif
-    WRITE_8W       m4, r3, r4, r1, r2
+    WRITE_8W       m4, dst3q, dst2q, mstrideq, strideq
 %else ; mmx/mmxext
-    WRITE_2x4W     m6, m4, r4, r0, r1, r2
+    WRITE_2x4W     m6, m4, dst2q, dst1q, mstrideq, strideq
 %endif
 %endif
 
 %if mmsize == 8 ; mmx/mmxext
     ; next 8 pixels
 %ifidn %1, v
-    add            r0, 8            ; advance 8 cols = pixels
+    add         dst1q, 8            ; advance 8 cols = pixels
 %else ; h
-    lea            r0, [r0+r2*8-1]  ; advance 8 rows = lines
+    lea         dst1q, [dst1q+strideq*8-1]  ; advance 8 rows = lines
 %endif
-    dec            r3
+    dec         cntrq
     jg .next8px
     REP_RET
 %else ; sse2
