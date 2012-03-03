@@ -4310,6 +4310,7 @@ static void opt_output_file(void *optctx, const char *filename)
                     ost->sync_ist= ist;
                     ost->source_index= i;
                     ist->discard = 0;
+                    ist->st->discard = AVDISCARD_NONE;
                     break;
                 }
             }
