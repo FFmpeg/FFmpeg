@@ -254,9 +254,9 @@ command:
 avconv -f sndio -i /dev/audio0 /tmp/oss.wav
 @end example
 
-@section video4linux and video4linux2
+@section video4linux2
 
-Video4Linux and Video4Linux2 input video devices.
+Video4Linux2 input video device.
 
 The name of the device to grab is a file device node, usually Linux
 systems tend to automatically create such nodes when the device
@@ -264,33 +264,19 @@ systems tend to automatically create such nodes when the device
 kind @file{/dev/video@var{N}}, where @var{N} is a number associated to
 the device.
 
-Video4Linux and Video4Linux2 devices only support a limited set of
+Video4Linux2 devices usually support a limited set of
 @var{width}x@var{height} sizes and framerates. You can check which are
-supported for example with the command @file{dov4l} for Video4Linux
-devices and using @command{-list_formats all} for Video4Linux2 devices.
+supported using @command{-list_formats all} for Video4Linux2 devices.
 
-If the size for the device is set to 0x0, the input device will
-try to autodetect the size to use.
-Only for the video4linux2 device, if the frame rate is set to 0/0 the
-input device will use the frame rate value already set in the driver.
+Some usage examples of the video4linux2 devices with avconv and avplay:
 
-Video4Linux support is deprecated since Linux 2.6.30, and will be
-dropped in later versions.
-
-Follow some usage examples of the video4linux devices with the ff*
-tools.
 @example
-# Grab and show the input of a video4linux device, frame rate is set
-# to the default of 25/1.
-avplay -s 320x240 -f video4linux /dev/video0
+# Grab and show the input of a video4linux2 device.
+avplay -f video4linux2 -framerate 30 -video_size hd720 /dev/video0
 
-# Grab and show the input of a video4linux2 device, autoadjust size.
-avplay -f video4linux2 /dev/video0
-
-# Grab and record the input of a video4linux2 device, autoadjust size,
-# frame rate value defaults to 0/0 so it is read from the video4linux2
-# driver.
-avconv -f video4linux2 -i /dev/video0 out.mpeg
+# Grab and record the input of a video4linux2 device, leave the
+framerate and size as previously set.
+avconv -f video4linux2 -input_format mjpeg -i /dev/video0 out.mpeg
 @end example
 
 @section vfwcap
