@@ -125,10 +125,10 @@ void ff_vp8_h_loop_filter16_simple_ ## opt(uint8_t *dst, ptrdiff_t stride, int f
 simple_lf_funcs(neon);
 simple_lf_funcs(armv6);
 
-#define VP8_MC(n)                                                       \
-    void ff_put_vp8_##n##_neon(uint8_t *dst, ptrdiff_t dststride,       \
-                               uint8_t *src, ptrdiff_t srcstride,       \
-                               int h, int x, int y)
+#define VP8_MC_OPT(n, opt)                                               \
+    void ff_put_vp8_##n##_##opt(uint8_t *dst, ptrdiff_t dststride,       \
+                                uint8_t *src, ptrdiff_t srcstride,       \
+                                int h, int x, int y)
 
 #define VP8_MC(n) \
     VP8_MC_OPT(n, neon)
