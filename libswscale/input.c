@@ -52,6 +52,86 @@
 #define b ((origin == PIX_FMT_BGR48BE || origin == PIX_FMT_BGR48LE) ? r_b : b_r)
 
 static av_always_inline void
+rgb64ToY_c_template(uint16_t *dst, const uint16_t *src, int width,
+                    enum PixelFormat origin)
+{
+    int i;
+    for (i = 0; i < width; i++) {
+        unsigned int r_b = input_pixel(&src[i*4+0]);
+        unsigned int   g = input_pixel(&src[i*4+1]);
+        unsigned int b_r = input_pixel(&src[i*4+2]);
+
+        dst[i] = (RY*r + GY*g + BY*b + (0x2001<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT;
+    }
+}
+
+static av_always_inline void
+rgb64ToUV_c_template(uint16_t *dstU, uint16_t *dstV,
+                    const uint16_t *src1, const uint16_t *src2,
+                    int width, enum PixelFormat origin)
+{
+    int i;
+    assert(src1==src2);
+    for (i = 0; i < width; i++) {
+        int r_b = input_pixel(&src1[i*4+0]);
+        int   g = input_pixel(&src1[i*4+1]);
+        int b_r = input_pixel(&src1[i*4+2]);
+
+        dstU[i] = (RU*r + GU*g + BU*b + (0x10001<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT;
+        dstV[i] = (RV*r + GV*g + BV*b + (0x10001<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT;
+    }
+}
+
+static av_always_inline void
+rgb64ToUV_half_c_template(uint16_t *dstU, uint16_t *dstV,
+                          const uint16_t *src1, const uint16_t *src2,
+                          int width, enum PixelFormat origin)
+{
+    int i;
+    assert(src1==src2);
+    for (i = 0; i < width; i++) {
+        int r_b = (input_pixel(&src1[8 * i + 0]) + input_pixel(&src1[8 * i + 4]) + 1) >> 1;
+        int   g = (input_pixel(&src1[8 * i + 1]) + input_pixel(&src1[8 * i + 5]) + 1) >> 1;
+        int b_r = (input_pixel(&src1[8 * i + 2]) + input_pixel(&src1[8 * i + 6]) + 1) >> 1;
+
+        dstU[i]= (RU*r + GU*g + BU*b + (0x10001<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT;
+        dstV[i]= (RV*r + GV*g + BV*b + (0x10001<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT;
+    }
+}
+
+#define rgb64funcs(pattern, BE_LE, origin) \
+static void pattern ## 64 ## BE_LE ## ToY_c(uint8_t *_dst, const uint8_t *_src, const uint8_t *unused0, const uint8_t *unused1,\
+                                    int width, uint32_t *unused) \
+{ \
+    const uint16_t *src = (const uint16_t *) _src; \
+    uint16_t *dst = (uint16_t *) _dst; \
+    rgb64ToY_c_template(dst, src, width, origin); \
+} \
+ \
+static void pattern ## 64 ## BE_LE ## ToUV_c(uint8_t *_dstU, uint8_t *_dstV, \
+                                    const uint8_t *unused0, const uint8_t *_src1, const uint8_t *_src2, \
+                                    int width, uint32_t *unused) \
+{ \
+    const uint16_t *src1 = (const uint16_t *) _src1, \
+                   *src2 = (const uint16_t *) _src2; \
+    uint16_t *dstU = (uint16_t *) _dstU, *dstV = (uint16_t *) _dstV; \
+    rgb64ToUV_c_template(dstU, dstV, src1, src2, width, origin); \
+} \
+ \
+static void pattern ## 64 ## BE_LE ## ToUV_half_c(uint8_t *_dstU, uint8_t *_dstV, \
+                                    const uint8_t *unused0, const uint8_t *_src1, const uint8_t *_src2, \
+                                    int width, uint32_t *unused) \
+{ \
+    const uint16_t *src1 = (const uint16_t *) _src1, \
+                   *src2 = (const uint16_t *) _src2; \
+    uint16_t *dstU = (uint16_t *) _dstU, *dstV = (uint16_t *) _dstV; \
+    rgb64ToUV_half_c_template(dstU, dstV, src1, src2, width, origin); \
+}
+
+rgb64funcs(rgb, LE, PIX_FMT_RGBA64LE)
+rgb64funcs(rgb, BE, PIX_FMT_RGBA64BE)
+
+static av_always_inline void
 rgb48ToY_c_template(uint16_t *dst, const uint16_t *src, int width,
                     enum PixelFormat origin)
 {
@@ -280,6 +360,15 @@ static void gbr24pToUV_half_c(uint16_t *dstU, uint16_t *dstV,
 
         dstU[i] = (RU*r + GU*g + BU*b + (0x4001<<(RGB2YUV_SHIFT-6))) >> (RGB2YUV_SHIFT-6+1);
         dstV[i] = (RV*r + GV*g + BV*b + (0x4001<<(RGB2YUV_SHIFT-6))) >> (RGB2YUV_SHIFT-6+1);
+    }
+}
+
+static void rgba64ToA_c(int16_t *dst, const uint16_t *src, const uint8_t *unused1,
+                        const uint8_t *unused2, int width, uint32_t *unused)
+{
+    int i;
+    for (i=0; i<width; i++) {
+        dst[i]= src[4*i+3];
     }
 }
 
@@ -669,6 +758,8 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     }
     if (c->chrSrcHSubSample) {
         switch(srcFormat) {
+        case PIX_FMT_RGBA64BE: c->chrToYV12 = rgb64BEToUV_half_c; break;
+        case PIX_FMT_RGBA64LE: c->chrToYV12 = rgb64LEToUV_half_c; break;
         case PIX_FMT_RGB48BE : c->chrToYV12 = rgb48BEToUV_half_c; break;
         case PIX_FMT_RGB48LE : c->chrToYV12 = rgb48LEToUV_half_c; break;
         case PIX_FMT_BGR48BE : c->chrToYV12 = bgr48BEToUV_half_c; break;
@@ -695,6 +786,8 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
         }
     } else {
         switch(srcFormat) {
+        case PIX_FMT_RGBA64BE: c->chrToYV12 = rgb64BEToUV_c; break;
+        case PIX_FMT_RGBA64LE: c->chrToYV12 = rgb64LEToUV_c; break;
         case PIX_FMT_RGB48BE : c->chrToYV12 = rgb48BEToUV_c; break;
         case PIX_FMT_RGB48LE : c->chrToYV12 = rgb48LEToUV_c; break;
         case PIX_FMT_BGR48BE : c->chrToYV12 = bgr48BEToUV_c; break;
@@ -785,9 +878,13 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case PIX_FMT_RGB48LE: c->lumToYV12 = rgb48LEToY_c; break;
     case PIX_FMT_BGR48BE: c->lumToYV12 = bgr48BEToY_c; break;
     case PIX_FMT_BGR48LE: c->lumToYV12 = bgr48LEToY_c; break;
+    case PIX_FMT_RGBA64BE:c->lumToYV12 = rgb64BEToY_c; break;
+    case PIX_FMT_RGBA64LE:c->lumToYV12 = rgb64LEToY_c; break;
     }
     if (c->alpPixBuf) {
         switch (srcFormat) {
+        case PIX_FMT_RGBA64LE:
+        case PIX_FMT_RGBA64BE:  c->alpToYV12 = rgba64ToA_c; break;
         case PIX_FMT_BGRA:
         case PIX_FMT_RGBA:  c->alpToYV12 = rgbaToA_c; break;
         case PIX_FMT_ABGR:
