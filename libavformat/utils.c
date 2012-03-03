@@ -1011,6 +1011,21 @@ static void free_packet_buffer(AVPacketList **pkt_buf, AVPacketList **pkt_buf_en
     *pkt_buf_end = NULL;
 }
 
+static int read_from_packet_buffer(AVPacketList **pkt_buffer,
+                                   AVPacketList **pkt_buffer_end,
+                                   AVPacket      *pkt)
+{
+    AVPacketList *pktl;
+    av_assert0(*pkt_buffer);
+    pktl = *pkt_buffer;
+    *pkt = pktl->pkt;
+    *pkt_buffer = pktl->next;
+    if (!pktl->next)
+        *pkt_buffer_end = NULL;
+    av_freep(&pktl);
+    return 0;
+}
+
 
 static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 {
@@ -1171,23 +1186,15 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-static int read_from_packet_buffer(AVFormatContext *s, AVPacket *pkt)
-{
-    AVPacketList *pktl = s->packet_buffer;
-    av_assert0(pktl);
-    *pkt = pktl->pkt;
-    s->packet_buffer = pktl->next;
-    av_freep(&pktl);
-    return 0;
-}
-
 int av_read_frame(AVFormatContext *s, AVPacket *pkt)
 {
     const int genpts = s->flags & AVFMT_FLAG_GENPTS;
     int          eof = 0;
 
     if (!genpts)
-        return s->packet_buffer ? read_from_packet_buffer(s, pkt) :
+        return s->packet_buffer ? read_from_packet_buffer(&s->packet_buffer,
+                                                          &s->packet_buffer_end,
+                                                          pkt) :
                                   read_frame_internal(s, pkt);
 
     for (;;) {
@@ -1213,7 +1220,8 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
             /* read packet from packet buffer, if there is data */
             if (!(next_pkt->pts == AV_NOPTS_VALUE &&
                   next_pkt->dts != AV_NOPTS_VALUE && !eof))
-                return read_from_packet_buffer(s, pkt);
+                return read_from_packet_buffer(&s->packet_buffer,
+                                               &s->packet_buffer_end, pkt);
         }
 
         ret = read_frame_internal(s, pkt);
