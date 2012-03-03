@@ -520,6 +520,13 @@ supported using @command{-list_formats all} for Video4Linux2 devices.
 
 Some usage examples of the video4linux2 devices with ffmpeg and ffplay:
 
+The time base for the timestamps is 1 microsecond. Depending on the kernel
+version and configuration, the timestamps may be derived from the real time
+clock (origin at the Unix Epoch) or the monotonic clock (origin usually at
+boot time, unaffected by NTP or manual changes to the clock). The
+@option{-timestamps abs} or @option{-ts abs} option can be used to force
+conversion into the real time clock.
+
 Note that if FFmpeg is build with v4l-utils support ("--enable-libv4l2"
 option), it will always be used.
 @example

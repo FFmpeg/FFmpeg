@@ -1157,6 +1157,7 @@ HAVE_LIST="
     attribute_may_alias
     attribute_packed
     cbrtf
+    clock_gettime
     closesocket
     cmov
     dcbzl
@@ -3048,6 +3049,7 @@ fi
 # Solaris has nanosleep in -lrt, OpenSolaris no longer needs that
 check_func nanosleep || { check_func nanosleep -lrt && add_extralibs -lrt; }
 
+check_func  clock_gettime || { check_func clock_gettime -lrt && add_extralibs -lrt; }
 check_func  fcntl
 check_func  fork
 check_func  getaddrinfo $network_extralibs
