@@ -79,6 +79,7 @@ static void uninit(struct vf_instance *vf){
             pp_free_mode(vf->priv->ppMode[i]);
     }
     if(vf->priv->context) pp_free_context(vf->priv->context);
+    free(vf->priv);
 }
 
 static int query_format(struct vf_instance *vf, unsigned int fmt){
