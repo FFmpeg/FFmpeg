@@ -1422,7 +1422,17 @@ VP8_DC_WHT
     add              %4, %5
 %endmacro
 
-%macro WRITE_8W_SSE2 5
+%macro WRITE_8W 5
+%if cpuflag(sse4)
+    pextrw    [%3+%4*4], %1, 0
+    pextrw    [%2+%4*4], %1, 1
+    pextrw    [%3+%4*2], %1, 2
+    pextrw    [%3+%4  ], %1, 3
+    pextrw    [%3     ], %1, 4
+    pextrw    [%2     ], %1, 5
+    pextrw    [%2+%5  ], %1, 6
+    pextrw    [%2+%5*2], %1, 7
+%else
     movd            %2d, %1
     psrldq           %1, 4
     mov       [%3+%4*4], %2w
@@ -1448,67 +1458,51 @@ VP8_DC_WHT
     mov       [%3+%5  ], %2w
     shr              %2, 16
     mov       [%3+%5*2], %2w
+%endif
 %endmacro
 
-%macro WRITE_8W_SSE4 5
-    pextrw    [%3+%4*4], %1, 0
-    pextrw    [%2+%4*4], %1, 1
-    pextrw    [%3+%4*2], %1, 2
-    pextrw    [%3+%4  ], %1, 3
-    pextrw    [%3     ], %1, 4
-    pextrw    [%2     ], %1, 5
-    pextrw    [%2+%5  ], %1, 6
-    pextrw    [%2+%5*2], %1, 7
-%endmacro
-
-%macro SPLATB_REG_MMX 2-3
+%macro SPLATB_REG 2-3
+%if cpuflag(ssse3)
     movd           %1, %2d
-    punpcklbw      %1, %1
-    punpcklwd      %1, %1
-    punpckldq      %1, %1
-%endmacro
-
-%macro SPLATB_REG_MMXEXT 2-3
-    movd           %1, %2d
-    punpcklbw      %1, %1
-    pshufw         %1, %1, 0x0
-%endmacro
-
-%macro SPLATB_REG_SSE2 2-3
+    pshufb         %1, %3
+%elif cpuflag(sse2)
     movd           %1, %2d
     punpcklbw      %1, %1
     pshuflw        %1, %1, 0x0
     punpcklqdq     %1, %1
-%endmacro
-
-%macro SPLATB_REG_SSSE3 3
+%elif cpuflag(mmx2)
     movd           %1, %2d
-    pshufb         %1, %3
+    punpcklbw      %1, %1
+    pshufw         %1, %1, 0x0
+%else
+    movd           %1, %2d
+    punpcklbw      %1, %1
+    punpcklwd      %1, %1
+    punpckldq      %1, %1
+%endif
 %endmacro
 
-%macro SIMPLE_LOOPFILTER 4
-cglobal vp8_%2_loop_filter_simple_%1, 3, %3, %4
+%macro SIMPLE_LOOPFILTER 2
+cglobal vp8_%1_loop_filter_simple, 3, %2, 8
 %if mmsize == 8 ; mmx/mmxext
     mov            r3, 2
 %endif
-%ifnidn %1, sse2
-%if mmsize == 16
+%if cpuflag(ssse3)
     pxor           m0, m0
-%endif
 %endif
     SPLATB_REG     m7, r2, m0       ; splat "flim" into register
 
     ; set up indexes to address 4 rows
     mov            r2, r1
     neg            r1
-%ifidn %2, h
+%ifidn %1, h
     lea            r0, [r0+4*r2-2]
 %endif
 
 %if mmsize == 8 ; mmx / mmxext
 .next8px
 %endif
-%ifidn %2, v
+%ifidn %1, v
     ; read 4 half/full rows of pixels
     mova           m0, [r0+r1*2]    ; p1
     mova           m1, [r0+r1]      ; p0
@@ -1589,7 +1583,7 @@ cglobal vp8_%2_loop_filter_simple_%1, 3, %3, %4
     psubusb        m6, m3           ; p0+f2
 
     ; store
-%ifidn %2, v
+%ifidn %1, v
     mova         [r0], m4
     mova      [r0+r1], m6
 %else ; h
@@ -1597,12 +1591,12 @@ cglobal vp8_%2_loop_filter_simple_%1, 3, %3, %4
     SBUTTERFLY    bw, 6, 4, 0
 
 %if mmsize == 16 ; sse2
-%ifidn %1, sse4
+%if cpuflag(sse4)
     inc            r4
 %endif
     WRITE_8W       m6, r4, r0, r1, r2
     lea            r4, [r3+r1+1]
-%ifidn %1, sse4
+%if cpuflag(sse4)
     inc            r3
 %endif
     WRITE_8W       m4, r3, r4, r1, r2
@@ -1613,7 +1607,7 @@ cglobal vp8_%2_loop_filter_simple_%1, 3, %3, %4
 
 %if mmsize == 8 ; mmx/mmxext
     ; next 8 pixels
-%ifidn %2, v
+%ifidn %1, v
     add            r0, 8            ; advance 8 cols = pixels
 %else ; h
     lea            r0, [r0+r2*8-1]  ; advance 8 rows = lines
@@ -1627,41 +1621,38 @@ cglobal vp8_%2_loop_filter_simple_%1, 3, %3, %4
 %endmacro
 
 %if ARCH_X86_32
-INIT_MMX
-%define SPLATB_REG SPLATB_REG_MMX
-SIMPLE_LOOPFILTER mmx,    v, 4, 0
-SIMPLE_LOOPFILTER mmx,    h, 5, 0
-%define SPLATB_REG SPLATB_REG_MMXEXT
-SIMPLE_LOOPFILTER mmxext, v, 4, 0
-SIMPLE_LOOPFILTER mmxext, h, 5, 0
+INIT_MMX mmx
+SIMPLE_LOOPFILTER v, 4
+SIMPLE_LOOPFILTER h, 5
+INIT_MMX mmx2
+SIMPLE_LOOPFILTER v, 4
+SIMPLE_LOOPFILTER h, 5
 %endif
 
-INIT_XMM
-%define SPLATB_REG SPLATB_REG_SSE2
-%define WRITE_8W   WRITE_8W_SSE2
-SIMPLE_LOOPFILTER sse2,   v, 3, 8
-SIMPLE_LOOPFILTER sse2,   h, 5, 8
-%define SPLATB_REG SPLATB_REG_SSSE3
-SIMPLE_LOOPFILTER ssse3,  v, 3, 8
-SIMPLE_LOOPFILTER ssse3,  h, 5, 8
-%define WRITE_8W   WRITE_8W_SSE4
-SIMPLE_LOOPFILTER sse4,   h, 5, 8
+INIT_XMM sse2
+SIMPLE_LOOPFILTER v, 3
+SIMPLE_LOOPFILTER h, 5
+INIT_XMM ssse3
+SIMPLE_LOOPFILTER v, 3
+SIMPLE_LOOPFILTER h, 5
+INIT_XMM sse4
+SIMPLE_LOOPFILTER h, 5
 
 ;-----------------------------------------------------------------------------
 ; void vp8_h/v_loop_filter<size>_inner_<opt>(uint8_t *dst, [uint8_t *v,] int stride,
 ;                                            int flimE, int flimI, int hev_thr);
 ;-----------------------------------------------------------------------------
 
-%macro INNER_LOOPFILTER 5
-%if %4 == 8 ; chroma
-cglobal vp8_%2_loop_filter8uv_inner_%1, 6, %3, %5
+%macro INNER_LOOPFILTER 3
+%if %3 == 8 ; chroma
+cglobal vp8_%1_loop_filter8uv_inner, 6, %2, 13
 %define dst8_reg    r1
 %define mstride_reg r2
 %define E_reg       r3
 %define I_reg       r4
 %define hev_thr_reg r5
 %else ; luma
-cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
+cglobal vp8_%1_loop_filter16y_inner, 5, %2, 13
 %define mstride_reg r1
 %define E_reg       r2
 %define I_reg       r3
@@ -1681,10 +1672,8 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
 %define stack_reg   hev_thr_reg
 %endif
 
-%ifnidn %1, sse2
-%if mmsize == 16
+%if cpuflag(ssse3)
     pxor             m7, m7
-%endif
 %endif
 
 %ifndef m8 ; mmx/mmxext or sse2 on x86-32
@@ -1696,7 +1685,7 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
     ; align stack
     mov       stack_reg, rsp         ; backup stack pointer
     and             rsp, ~(mmsize-1) ; align stack
-%ifidn %2, v
+%ifidn %1, v
     sub             rsp, mmsize * 4  ; stack layout: [0]=E, [1]=I, [2]=hev_thr
                                      ;               [3]=hev() result
 %else ; h
@@ -1729,14 +1718,14 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
     SPLATB_REG  hev_thr, hev_thr_reg, m7 ; hev_thresh
 %endif
 
-%if mmsize == 8 && %4 == 16 ; mmx/mmxext
+%if mmsize == 8 && %3 == 16 ; mmx/mmxext
     mov         cnt_reg, 2
 %endif
     mov      stride_reg, mstride_reg
     neg     mstride_reg
-%ifidn %2, h
+%ifidn %1, h
     lea         dst_reg, [dst_reg + stride_reg*4-4]
-%if %4 == 8
+%if %3 == 8
     lea        dst8_reg, [dst8_reg+ stride_reg*4-4]
 %endif
 %endif
@@ -1746,8 +1735,8 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
 %endif
     ; read
     lea        dst2_reg, [dst_reg + stride_reg]
-%ifidn %2, v
-%if %4 == 8 && mmsize == 16
+%ifidn %1, v
+%if %3 == 8 && mmsize == 16
 %define movrow movh
 %else
 %define movrow mova
@@ -1758,7 +1747,7 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
     movrow           m5, [dst2_reg]               ; q1
     movrow           m6, [dst2_reg+ stride_reg]   ; q2
     movrow           m7, [dst2_reg+ stride_reg*2] ; q3
-%if mmsize == 16 && %4 == 8
+%if mmsize == 16 && %3 == 8
     movhps           m0, [dst8_reg+mstride_reg*4]
     movhps           m2, [dst8_reg+mstride_reg*2]
     add        dst8_reg, stride_reg
@@ -1795,7 +1784,7 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
     SWAP              6, 3
     SWAP              5, 3
 %else ; sse2 (h)
-%if %4 == 16
+%if %3 == 16
     lea        dst8_reg, [dst_reg + stride_reg*8]
 %endif
 
@@ -1882,7 +1871,7 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
     psubusb          m6, m5          ; q2-q1
     por              m6, m4          ; abs(q2-q1)
 
-%ifidn %1, mmx
+%if notcpuflag(mmx2)
     mova             m4, flim_I
     pxor             m3, m3
     psubusb          m0, m4
@@ -1904,9 +1893,9 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
 
     ; normal_limit and high_edge_variance for p1-p0, q1-q0
     SWAP              7, 3           ; now m7 is zero
-%ifidn %2, v
+%ifidn %1, v
     movrow           m3, [dst_reg +mstride_reg] ; p0
-%if mmsize == 16 && %4 == 8
+%if mmsize == 16 && %3 == 8
     movhps           m3, [dst8_reg+mstride_reg]
 %endif
 %elifdef m12
@@ -1922,7 +1911,7 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
     psubusb          m1, m3          ; p1-p0
     psubusb          m6, m2          ; p0-p1
     por              m1, m6          ; abs(p1-p0)
-%ifidn %1, mmx
+%if notcpuflag(mmx2)
     mova             m6, m1
     psubusb          m1, m4
     psubusb          m6, hev_thr
@@ -1936,9 +1925,9 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
 %endif
 
     SWAP              6, 4           ; now m6 is I
-%ifidn %2, v
+%ifidn %1, v
     movrow           m4, [dst_reg]   ; q0
-%if mmsize == 16 && %4 == 8
+%if mmsize == 16 && %3 == 8
     movhps           m4, [dst8_reg]
 %endif
 %elifdef m8
@@ -1953,7 +1942,7 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
     psubusb          m1, m5          ; q0-q1
     psubusb          m7, m4          ; q1-q0
     por              m1, m7          ; abs(q1-q0)
-%ifidn %1, mmx
+%if notcpuflag(mmx2)
     mova             m7, m1
     psubusb          m1, m6
     psubusb          m7, hev_thr
@@ -2061,14 +2050,14 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
 %else
     mova             m6, mask_res
 %endif
-%ifidn %1, mmx
+%if notcpuflag(mmx2)
     mova             m7, [pb_1]
 %else ; mmxext/sse2
     pxor             m7, m7
 %endif
     pand             m0, m6
     pand             m1, m6
-%ifidn %1, mmx
+%if notcpuflag(mmx2)
     paddusb          m0, m7
     pand             m1, [pb_FE]
     pandn            m7, m0
@@ -2086,12 +2075,12 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
     paddusb          m2, m0          ; p1+a
 
     ; store
-%ifidn %2, v
+%ifidn %1, v
     movrow [dst_reg +mstride_reg*2], m2
     movrow [dst_reg +mstride_reg  ], m3
     movrow    [dst_reg], m4
     movrow [dst_reg + stride_reg  ], m5
-%if mmsize == 16 && %4 == 8
+%if mmsize == 16 && %3 == 8
     movhps [dst8_reg+mstride_reg*2], m2
     movhps [dst8_reg+mstride_reg  ], m3
     movhps   [dst8_reg], m4
@@ -2108,20 +2097,20 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
     WRITE_4x2D        2, 3, 4, 5, dst_reg, dst2_reg, mstride_reg, stride_reg
 %else ; sse2 (h)
     lea        dst8_reg, [dst8_reg+mstride_reg+2]
-    WRITE_4x4D        2, 3, 4, 5, dst_reg, dst2_reg, dst8_reg, mstride_reg, stride_reg, %4
+    WRITE_4x4D        2, 3, 4, 5, dst_reg, dst2_reg, dst8_reg, mstride_reg, stride_reg, %3
 %endif
 %endif
 
 %if mmsize == 8
-%if %4 == 8 ; chroma
-%ifidn %2, h
+%if %3 == 8 ; chroma
+%ifidn %1, h
     sub         dst_reg, 2
 %endif
     cmp         dst_reg, dst8_reg
     mov         dst_reg, dst8_reg
     jnz .next8px
 %else
-%ifidn %2, h
+%ifidn %1, h
     lea         dst_reg, [dst_reg + stride_reg*8-2]
 %else ; v
     add         dst_reg, 8
@@ -2138,56 +2127,46 @@ cglobal vp8_%2_loop_filter16y_inner_%1, 5, %3, %5
 %endmacro
 
 %if ARCH_X86_32
-INIT_MMX
-%define SPLATB_REG SPLATB_REG_MMX
-INNER_LOOPFILTER mmx,    v, 6, 16, 0
-INNER_LOOPFILTER mmx,    h, 6, 16, 0
-INNER_LOOPFILTER mmx,    v, 6,  8, 0
-INNER_LOOPFILTER mmx,    h, 6,  8, 0
+INIT_MMX mmx
+INNER_LOOPFILTER v, 6, 16
+INNER_LOOPFILTER h, 6, 16
+INNER_LOOPFILTER v, 6,  8
+INNER_LOOPFILTER h, 6,  8
 
-%define SPLATB_REG SPLATB_REG_MMXEXT
-INNER_LOOPFILTER mmxext, v, 6, 16, 0
-INNER_LOOPFILTER mmxext, h, 6, 16, 0
-INNER_LOOPFILTER mmxext, v, 6,  8, 0
-INNER_LOOPFILTER mmxext, h, 6,  8, 0
+INIT_MMX mmx2
+INNER_LOOPFILTER v, 6, 16
+INNER_LOOPFILTER h, 6, 16
+INNER_LOOPFILTER v, 6,  8
+INNER_LOOPFILTER h, 6,  8
 %endif
 
-INIT_XMM
-%define SPLATB_REG SPLATB_REG_SSE2
-INNER_LOOPFILTER sse2,   v, 5, 16, 13
-%ifdef m8
-INNER_LOOPFILTER sse2,   h, 5, 16, 13
-%else
-INNER_LOOPFILTER sse2,   h, 6, 16, 13
-%endif
-INNER_LOOPFILTER sse2,   v, 6,  8, 13
-INNER_LOOPFILTER sse2,   h, 6,  8, 13
+INIT_XMM sse2
+INNER_LOOPFILTER v, 5, 16
+INNER_LOOPFILTER h, 5 + ARCH_X86_32, 16
+INNER_LOOPFILTER v, 6,  8
+INNER_LOOPFILTER h, 6,  8
 
-%define SPLATB_REG SPLATB_REG_SSSE3
-INNER_LOOPFILTER ssse3,  v, 5, 16, 13
-%ifdef m8
-INNER_LOOPFILTER ssse3,  h, 5, 16, 13
-%else
-INNER_LOOPFILTER ssse3,  h, 6, 16, 13
-%endif
-INNER_LOOPFILTER ssse3,  v, 6,  8, 13
-INNER_LOOPFILTER ssse3,  h, 6,  8, 13
+INIT_XMM ssse3
+INNER_LOOPFILTER v, 5, 16
+INNER_LOOPFILTER h, 5 + ARCH_X86_32, 16
+INNER_LOOPFILTER v, 6,  8
+INNER_LOOPFILTER h, 6,  8
 
 ;-----------------------------------------------------------------------------
 ; void vp8_h/v_loop_filter<size>_mbedge_<opt>(uint8_t *dst, [uint8_t *v,] int stride,
 ;                                            int flimE, int flimI, int hev_thr);
 ;-----------------------------------------------------------------------------
 
-%macro MBEDGE_LOOPFILTER 5
-%if %4 == 8 ; chroma
-cglobal vp8_%2_loop_filter8uv_mbedge_%1, 6, %3, %5
+%macro MBEDGE_LOOPFILTER 3
+%if %3 == 8 ; chroma
+cglobal vp8_%1_loop_filter8uv_mbedge, 6, %2, 15
 %define dst8_reg    r1
 %define mstride_reg r2
 %define E_reg       r3
 %define I_reg       r4
 %define hev_thr_reg r5
 %else ; luma
-cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
+cglobal vp8_%1_loop_filter16y_mbedge, 5, %2, 15
 %define mstride_reg r1
 %define E_reg       r2
 %define I_reg       r3
@@ -2207,14 +2186,7 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
 %define stack_reg   hev_thr_reg
 %endif
 
-%define ssse3_or_higher 0
-%ifnidn %1, sse2
-%if mmsize == 16
-%define ssse3_or_higher 1
-%endif
-%endif
-
-%if ssse3_or_higher
+%if cpuflag(ssse3)
     pxor             m7, m7
 %endif
 
@@ -2275,14 +2247,14 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
     SPLATB_REG  hev_thr, hev_thr_reg, m7 ; hev_thresh
 %endif
 
-%if mmsize == 8 && %4 == 16 ; mmx/mmxext
+%if mmsize == 8 && %3 == 16 ; mmx/mmxext
     mov         cnt_reg, 2
 %endif
     mov      stride_reg, mstride_reg
     neg     mstride_reg
-%ifidn %2, h
+%ifidn %1, h
     lea         dst_reg, [dst_reg + stride_reg*4-4]
-%if %4 == 8
+%if %3 == 8
     lea        dst8_reg, [dst8_reg+ stride_reg*4-4]
 %endif
 %endif
@@ -2292,8 +2264,8 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
 %endif
     ; read
     lea        dst2_reg, [dst_reg + stride_reg]
-%ifidn %2, v
-%if %4 == 8 && mmsize == 16
+%ifidn %1, v
+%if %3 == 8 && mmsize == 16
 %define movrow movh
 %else
 %define movrow mova
@@ -2304,7 +2276,7 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
     movrow           m5, [dst2_reg]               ; q1
     movrow           m6, [dst2_reg+ stride_reg]   ; q2
     movrow           m7, [dst2_reg+ stride_reg*2] ; q3
-%if mmsize == 16 && %4 == 8
+%if mmsize == 16 && %3 == 8
     movhps           m0, [dst8_reg+mstride_reg*4]
     movhps           m2, [dst8_reg+mstride_reg*2]
     add        dst8_reg, stride_reg
@@ -2341,7 +2313,7 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
     SWAP              6, 3
     SWAP              5, 3
 %else ; sse2 (h)
-%if %4 == 16
+%if %3 == 16
     lea        dst8_reg, [dst_reg + stride_reg*8]
 %endif
 
@@ -2430,7 +2402,7 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
     psubusb          m6, m5          ; q2-q1
     por              m6, m4          ; abs(q2-q1)
 
-%ifidn %1, mmx
+%if notcpuflag(mmx2)
     mova             m4, flim_I
     pxor             m3, m3
     psubusb          m0, m4
@@ -2452,9 +2424,9 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
 
     ; normal_limit and high_edge_variance for p1-p0, q1-q0
     SWAP              7, 3           ; now m7 is zero
-%ifidn %2, v
+%ifidn %1, v
     movrow           m3, [dst_reg +mstride_reg] ; p0
-%if mmsize == 16 && %4 == 8
+%if mmsize == 16 && %3 == 8
     movhps           m3, [dst8_reg+mstride_reg]
 %endif
 %elifdef m12
@@ -2470,7 +2442,7 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
     psubusb          m1, m3          ; p1-p0
     psubusb          m6, m2          ; p0-p1
     por              m1, m6          ; abs(p1-p0)
-%ifidn %1, mmx
+%if notcpuflag(mmx2)
     mova             m6, m1
     psubusb          m1, m4
     psubusb          m6, hev_thr
@@ -2484,9 +2456,9 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
 %endif
 
     SWAP              6, 4           ; now m6 is I
-%ifidn %2, v
+%ifidn %1, v
     movrow           m4, [dst_reg]   ; q0
-%if mmsize == 16 && %4 == 8
+%if mmsize == 16 && %3 == 8
     movhps           m4, [dst8_reg]
 %endif
 %elifdef m8
@@ -2501,7 +2473,7 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
     psubusb          m1, m5          ; q0-q1
     psubusb          m7, m4          ; q1-q0
     por              m1, m7          ; abs(q1-q0)
-%ifidn %1, mmx
+%if notcpuflag(mmx2)
     mova             m7, m1
     psubusb          m1, m6
     psubusb          m7, hev_thr
@@ -2613,7 +2585,7 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
     paddusb          m4, m1          ; q0-f1
 
     ; filter_mbedge (m2-m5 = p1-q1; lim_res carries w)
-%if ssse3_or_higher
+%if cpuflag(ssse3)
     mova             m7, [pb_1]
 %else
     mova             m7, [pw_63]
@@ -2626,7 +2598,7 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
     pxor             m0, m0
     mova             m6, m1
     pcmpgtb          m0, m1         ; which are negative
-%if ssse3_or_higher
+%if cpuflag(ssse3)
     punpcklbw        m6, m7         ; interleave with "1" for rounding
     punpckhbw        m1, m7
 %else
@@ -2634,7 +2606,7 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
     punpckhbw        m1, m0
 %endif
     mova       lim_sign, m0
-%if ssse3_or_higher
+%if cpuflag(ssse3)
     mova             m7, [pb_27_63]
 %ifndef m8
     mova        lim_res, m1
@@ -2667,7 +2639,7 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
     psubb           m1, m6
     pand            m1, m0          ; -a0
     pandn           m0, m6          ; +a0
-%if ssse3_or_higher
+%if cpuflag(ssse3)
     mova            m6, [pb_18_63]  ; pipelining
 %endif
     psubusb         m3, m1
@@ -2675,7 +2647,7 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
     paddusb         m3, m0          ; p0+a0
     psubusb         m4, m0          ; q0-a0
 
-%if ssse3_or_higher
+%if cpuflag(ssse3)
     SWAP             6, 7
 %ifdef m10
     SWAP             1, 10
@@ -2707,7 +2679,7 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
     psubb           m1, m6
     pand            m1, m0          ; -a1
     pandn           m0, m6          ; +a1
-%if ssse3_or_higher
+%if cpuflag(ssse3)
     mova            m6, [pb_9_63]
 %endif
     psubusb         m2, m1
@@ -2715,7 +2687,7 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
     paddusb         m2, m0          ; p1+a1
     psubusb         m5, m0          ; q1-a1
 
-%if ssse3_or_higher
+%if cpuflag(ssse3)
     SWAP             6, 7
 %ifdef m10
     SWAP             1, 10
@@ -2765,14 +2737,14 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
     psubusb         m6, m7          ; q1-a1
 
     ; store
-%ifidn %2, v
+%ifidn %1, v
     movrow [dst2_reg+mstride_reg*4], m1
     movrow [dst_reg +mstride_reg*2], m2
     movrow [dst_reg +mstride_reg  ], m3
     movrow    [dst_reg], m4
     movrow   [dst2_reg], m5
     movrow [dst2_reg+ stride_reg  ], m6
-%if mmsize == 16 && %4 == 8
+%if mmsize == 16 && %3 == 8
     add        dst8_reg, mstride_reg
     movhps [dst8_reg+mstride_reg*2], m1
     movhps [dst8_reg+mstride_reg  ], m2
@@ -2796,14 +2768,14 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
     WRITE_2x4W       m5, m6, dst2_reg, dst_reg, mstride_reg, stride_reg
 %else ; sse2 (h)
     lea        dst8_reg, [dst8_reg+mstride_reg+1]
-    WRITE_4x4D        1, 2, 3, 4, dst_reg, dst2_reg, dst8_reg, mstride_reg, stride_reg, %4
+    WRITE_4x4D        1, 2, 3, 4, dst_reg, dst2_reg, dst8_reg, mstride_reg, stride_reg, %3
     lea         dst_reg, [dst2_reg+mstride_reg+4]
     lea        dst8_reg, [dst8_reg+mstride_reg+4]
-%ifidn %1, sse4
+%if cpuflag(sse4)
     add        dst2_reg, 4
 %endif
     WRITE_8W         m5, dst2_reg, dst_reg,  mstride_reg, stride_reg
-%ifidn %1, sse4
+%if cpuflag(sse4)
     lea        dst2_reg, [dst8_reg+ stride_reg]
 %endif
     WRITE_8W         m6, dst2_reg, dst8_reg, mstride_reg, stride_reg
@@ -2811,15 +2783,15 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
 %endif
 
 %if mmsize == 8
-%if %4 == 8 ; chroma
-%ifidn %2, h
+%if %3 == 8 ; chroma
+%ifidn %1, h
     sub         dst_reg, 5
 %endif
     cmp         dst_reg, dst8_reg
     mov         dst_reg, dst8_reg
     jnz .next8px
 %else
-%ifidn %2, h
+%ifidn %1, h
     lea         dst_reg, [dst_reg + stride_reg*8-5]
 %else ; v
     add         dst_reg, 8
@@ -2836,46 +2808,31 @@ cglobal vp8_%2_loop_filter16y_mbedge_%1, 5, %3, %5
 %endmacro
 
 %if ARCH_X86_32
-INIT_MMX
-%define SPLATB_REG SPLATB_REG_MMX
-MBEDGE_LOOPFILTER mmx,    v, 6, 16, 0
-MBEDGE_LOOPFILTER mmx,    h, 6, 16, 0
-MBEDGE_LOOPFILTER mmx,    v, 6,  8, 0
-MBEDGE_LOOPFILTER mmx,    h, 6,  8, 0
+INIT_MMX mmx
+MBEDGE_LOOPFILTER v, 6, 16
+MBEDGE_LOOPFILTER h, 6, 16
+MBEDGE_LOOPFILTER v, 6,  8
+MBEDGE_LOOPFILTER h, 6,  8
 
-%define SPLATB_REG SPLATB_REG_MMXEXT
-MBEDGE_LOOPFILTER mmxext, v, 6, 16, 0
-MBEDGE_LOOPFILTER mmxext, h, 6, 16, 0
-MBEDGE_LOOPFILTER mmxext, v, 6,  8, 0
-MBEDGE_LOOPFILTER mmxext, h, 6,  8, 0
+INIT_MMX mmx2
+MBEDGE_LOOPFILTER v, 6, 16
+MBEDGE_LOOPFILTER h, 6, 16
+MBEDGE_LOOPFILTER v, 6,  8
+MBEDGE_LOOPFILTER h, 6,  8
 %endif
 
-INIT_XMM
-%define SPLATB_REG SPLATB_REG_SSE2
-%define WRITE_8W   WRITE_8W_SSE2
-MBEDGE_LOOPFILTER sse2,   v, 5, 16, 15
-%ifdef m8
-MBEDGE_LOOPFILTER sse2,   h, 5, 16, 15
-%else
-MBEDGE_LOOPFILTER sse2,   h, 6, 16, 15
-%endif
-MBEDGE_LOOPFILTER sse2,   v, 6,  8, 15
-MBEDGE_LOOPFILTER sse2,   h, 6,  8, 15
+INIT_XMM sse2
+MBEDGE_LOOPFILTER v, 5, 16
+MBEDGE_LOOPFILTER h, 5 + ARCH_X86_32, 16
+MBEDGE_LOOPFILTER v, 6,  8
+MBEDGE_LOOPFILTER h, 6,  8
 
-%define SPLATB_REG SPLATB_REG_SSSE3
-MBEDGE_LOOPFILTER ssse3,  v, 5, 16, 15
-%ifdef m8
-MBEDGE_LOOPFILTER ssse3,  h, 5, 16, 15
-%else
-MBEDGE_LOOPFILTER ssse3,  h, 6, 16, 15
-%endif
-MBEDGE_LOOPFILTER ssse3,  v, 6,  8, 15
-MBEDGE_LOOPFILTER ssse3,  h, 6,  8, 15
+INIT_XMM ssse3
+MBEDGE_LOOPFILTER v, 5, 16
+MBEDGE_LOOPFILTER h, 5 + ARCH_X86_32, 16
+MBEDGE_LOOPFILTER v, 6,  8
+MBEDGE_LOOPFILTER h, 6,  8
 
-%define WRITE_8W   WRITE_8W_SSE4
-%ifdef m8
-MBEDGE_LOOPFILTER sse4,   h, 5, 16, 15
-%else
-MBEDGE_LOOPFILTER sse4,   h, 6, 16, 15
-%endif
-MBEDGE_LOOPFILTER sse4,   h, 6,  8, 15
+INIT_XMM sse4
+MBEDGE_LOOPFILTER h, 5 + ARCH_X86_32, 16
+MBEDGE_LOOPFILTER h, 6,  8
