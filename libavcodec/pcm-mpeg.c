@@ -69,8 +69,8 @@ static int pcm_bluray_parse_header(AVCodecContext *avctx,
 
     /* get the sample depth and derive the sample format from it */
     avctx->bits_per_coded_sample = bits_per_samples[header[3] >> 6];
-    if (!avctx->bits_per_coded_sample) {
-        av_log(avctx, AV_LOG_ERROR, "unsupported sample depth (0)\n");
+    if (avctx->bits_per_coded_sample == 16 || avctx->bits_per_coded_sample == 24) {
+        av_log(avctx, AV_LOG_ERROR, "unsupported sample depth (%d)\n", avctx->bits_per_coded_sample);
         return -1;
     }
     avctx->sample_fmt = avctx->bits_per_coded_sample == 16 ? AV_SAMPLE_FMT_S16 :
