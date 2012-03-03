@@ -798,7 +798,7 @@ Note that using this option disables the default mappings for this output file.
 
 @item -map_channel [@var{input_file_id}.@var{stream_specifier}.@var{channel_id}|-1][:@var{output_file_id}.@var{stream_specifier}]
 Map an audio channel from a given input to an output. If
-@var{output_file_id}.@var{stream_specifier} are not set, the audio channel will
+@var{output_file_id}.@var{stream_specifier} is not set, the audio channel will
 be mapped on all the audio streams.
 
 Using "-1" instead of
@@ -820,18 +820,18 @@ The order of the "-map_channel" option specifies the order of the channels in
 the output stream. The output channel layout is guessed from the number of
 channels mapped (mono if one "-map_channel", stereo if two, etc.). Using "-ac"
 in combination of "-map_channel" makes the channel gain levels to be updated if
-channel layouts don't match (for instance two "-map_channel" options and "-ac
-6").
+input and output channel layouts don't match (for instance two "-map_channel"
+options and "-ac 6").
 
-You can also extract each channel of an @var{INPUT} to specific outputs; the
-following command extract each channel of the audio stream (file 0, stream 0)
-to the respective @var{OUTPUT_CH0} and @var{OUTPUT_CH1}:
+You can also extract each channel of an input to specific outputs; the following
+command extracts two channels of the @var{INPUT} audio stream (file 0, stream 0)
+to the respective @var{OUTPUT_CH0} and @var{OUTPUT_CH1} outputs:
 @example
 ffmpeg -i INPUT -map_channel 0.0.0 OUTPUT_CH0 -map_channel 0.0.1 OUTPUT_CH1
 @end example
 
-The following example split the channels of a stereo input into streams:
-
+The following example splits the channels of a stereo input into two separate
+streams, which are put into the same output file:
 @example
 ffmpeg -i stereo.wav -map 0:0 -map 0:0 -map_channel 0.0.0:0.0 -map_channel 0.0.1:0.1 -y out.ogg
 @end example
@@ -841,14 +841,13 @@ input stream; you can't for example use "-map_channel" to pick multiple input
 audio channels contained in different streams (from the same or different files)
 and merge them into a single output stream. It is therefore not currently
 possible, for example, to turn two separate mono streams into a single stereo
-stream. However spliting a stereo stream into two single channel mono streams
+stream. However splitting a stereo stream into two single channel mono streams
 is possible.
 
 If you need this feature, a possible workaround is to use the @emph{amerge}
 filter. For example, if you need to merge a media (here @file{input.mkv}) with 2
 mono audio streams into one single stereo channel audio stream (and keep the
-video stream):
-
+video stream), you can use the following command:
 @example
 ffmpeg -i input.mkv -f lavfi -i "
 amovie=input.mkv:si=1 [a1];
