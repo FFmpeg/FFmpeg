@@ -37,6 +37,7 @@
 #undef free
 
 typedef struct CDIOContext {
+    AVClass             *class;
     cdrom_drive_t       *drive;
     cdrom_paranoia_t *paranoia;
     int32_t last_sector;
