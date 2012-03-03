@@ -131,8 +131,12 @@ cglobal yuv2planeX_%1, %3, 7, %2, filter, fltsize, src, dst, w, dither, offset
     ; pixels per iteration. In order to not have to keep track of where
     ; we are w.r.t. dithering, we unroll the mmx/8bit loop x2.
 %if %1 == 8
-%rep 16/mmsize
-%endif ; %1 == 8
+%assign %%repcnt 16/mmsize
+%else
+%assign %%repcnt 1
+%endif
+
+%rep %%repcnt
 
 %if %1 == 8
 %if ARCH_X86_32
@@ -226,10 +230,9 @@ cglobal yuv2planeX_%1, %3, 7, %2, filter, fltsize, src, dst, w, dither, offset
 
     add             r5,  mmsize/2
     sub             wd,  mmsize/2
-%if %1 == 8
+
 %assign %%i %%i+2
 %endrep
-%endif ; %1 == 8
     jg .pixelloop
 
 %if %1 == 8
