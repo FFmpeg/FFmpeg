@@ -94,6 +94,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     }
 
     if (expr = av_strtok(args1, ":", &bufptr)) {
+        av_free(fade->type);
         if (!(fade->type = av_strdup(expr))) {
             ret = AVERROR(ENOMEM);
             goto end;
