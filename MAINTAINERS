@@ -370,6 +370,7 @@ Muxers/Demuxers:
   wv.c                                  Kostya Shishkov
 
 Protocols:
+  bluray.c                              Petri Hintukainen
   http.c                                Ronald S. Bultje
   mms*.c                                Ronald S. Bultje
   udp.c                                 Luca Abeni

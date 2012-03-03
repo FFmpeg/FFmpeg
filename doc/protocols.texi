@@ -19,6 +19,36 @@ supported protocols.
 
 A description of the currently available protocols follows.
 
+@section bluray
+
+Read BluRay playlist.
+
+The accepted options are:
+@table @option
+
+@item angle
+BluRay angle
+
+@item chapter
+Start chapter (1...N)
+
+@item playlist
+Playlist to read (BDMV/PLAYLIST/?????.mpls)
+
+@end table
+
+Examples:
+
+Read longest playlist from BluRay mounted to /mnt/bluray:
+@example
+bluray:/mnt/bluray
+@end example
+
+Read angle 2 of playlist 4 from BluRay mounted to /mnt/bluray, start from chapter 2:
+@example
+-playlist 4 -angle 2 -chapter 2 bluray:/mnt/bluray
+@end example
+
 @section concat
 
 Physical concatenation protocol.

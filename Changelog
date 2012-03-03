@@ -10,6 +10,7 @@ version next:
 - Sun Rasterfile Encoder
 - ID3v2 attached pictures reading and writing
 - WMA Lossless decoder
+- bluray protocol
 
 
 version 0.10:
