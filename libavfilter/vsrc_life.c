@@ -177,6 +177,7 @@ static int init_pattern_from_file(AVFilterContext *ctx)
     if ((ret = av_file_map(life->filename, &life->file_buf, &life->file_bufsize,
                            0, ctx)) < 0)
         return ret;
+    av_freep(&life->filename);
 
     /* prescan file to get the number of lines and the maximum width */
     w = 0;
@@ -243,6 +244,7 @@ static int init(AVFilterContext *ctx, const char *args, void *opaque)
         av_log(ctx, AV_LOG_ERROR, "Invalid frame rate: %s\n", life->rate);
         return AVERROR(EINVAL);
     }
+    av_freep(&life->rate);
 
     if (!life->size && !life->filename)
         av_opt_set(life, "size", "320x240", 0);
@@ -252,6 +254,7 @@ static int init(AVFilterContext *ctx, const char *args, void *opaque)
         av_log(ctx, AV_LOG_ERROR, "Invalid frame size: %s\n", life->size);
         return ret;
     }
+    av_freep(&life->size);
 
     if ((ret = parse_rule(&life->born_rule, &life->stay_rule, life->rule_str, ctx)) < 0)
         return ret;
@@ -262,6 +265,7 @@ static int init(AVFilterContext *ctx, const char *args, void *opaque)
                life->name ## _color_str); \
         return ret; \
     } \
+    av_freep(&life->name ## _color_str); \
 } while (0)
 
     PARSE_COLOR(life);
