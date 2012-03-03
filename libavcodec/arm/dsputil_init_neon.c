@@ -171,8 +171,7 @@ void ff_vector_clip_int32_neon(int32_t *dst, const int32_t *src, int32_t min,
 
 void ff_vorbis_inverse_coupling_neon(float *mag, float *ang, int blocksize);
 
-int32_t ff_scalarproduct_int16_neon(const int16_t *v1, const int16_t *v2, int len,
-                                    int shift);
+int32_t ff_scalarproduct_int16_neon(const int16_t *v1, const int16_t *v2, int len);
 int32_t ff_scalarproduct_and_madd_int16_neon(int16_t *v1, const int16_t *v2,
                                              const int16_t *v3, int len, int mul);
 

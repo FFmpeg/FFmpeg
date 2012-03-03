@@ -536,9 +536,8 @@ typedef struct DSPContext {
     /**
      * Calculate scalar product of two vectors.
      * @param len length of vectors, should be multiple of 16
-     * @param shift number of bits to discard from product
      */
-    int32_t (*scalarproduct_int16)(const int16_t *v1, const int16_t *v2/*align 16*/, int len, int shift);
+    int32_t (*scalarproduct_int16)(const int16_t *v1, const int16_t *v2/*align 16*/, int len);
     /* ape functions */
     /**
      * Calculate scalar product of v1 and v2,

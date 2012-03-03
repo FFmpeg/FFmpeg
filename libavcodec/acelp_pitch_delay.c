@@ -106,7 +106,7 @@ int16_t ff_acelp_decode_gain_code(
         mr_energy += quant_energy[i] * ma_prediction_coeff[i];
 
     mr_energy = gain_corr_factor * exp(M_LN10 / (20 << 23) * mr_energy) /
-                sqrt(dsp->scalarproduct_int16(fc_v, fc_v, subframe_size, 0));
+                sqrt(dsp->scalarproduct_int16(fc_v, fc_v, subframe_size));
     return mr_energy >> 12;
 }
 
