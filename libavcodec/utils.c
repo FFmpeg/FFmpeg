@@ -1219,15 +1219,10 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
             avpkt->size = 0;
         else if (!(avctx->codec->capabilities & CODEC_CAP_DELAY))
             avpkt->pts = avpkt->dts = frame->pts;
-        if (avpkt->data && avpkt->destruct == av_destruct_packet) {
-            new_data = av_realloc(avpkt->data,
-                                  avpkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
-            if (new_data)
-                avpkt->data = new_data;
-        }
 
-        if (!user_packet && avpkt->data) {
-            uint8_t *new_data = av_realloc(avpkt->data, avpkt->size);
+        if (!user_packet && avpkt->data &&
+            avpkt->destruct == av_destruct_packet) {
+            uint8_t *new_data = av_realloc(avpkt->data, avpkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
             if (new_data)
                 avpkt->data = new_data;
         }
