@@ -203,6 +203,8 @@ static void qpeg_decode_inter(const uint8_t *src, uint8_t *dst, int size,
                     filled = 0;
                     dst -= stride;
                     height--;
+                    if(height < 0)
+                        break;
                 }
             }
         } else if(code >= 0xC0) { /* copy code: 0xC0..0xDF */
@@ -214,6 +216,8 @@ static void qpeg_decode_inter(const uint8_t *src, uint8_t *dst, int size,
                     filled = 0;
                     dst -= stride;
                     height--;
+                    if(height < 0)
+                        break;
                 }
             }
             size -= code + 1;
