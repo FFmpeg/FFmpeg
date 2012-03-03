@@ -88,17 +88,20 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
         av_log(ctx, AV_LOG_ERROR, "Invalid frame size: '%s'\n", test->size);
         return ret;
     }
+    av_freep(&test->size);
 
     if ((ret = av_parse_video_rate(&frame_rate_q, test->rate)) < 0 ||
         frame_rate_q.den <= 0 || frame_rate_q.num <= 0) {
         av_log(ctx, AV_LOG_ERROR, "Invalid frame rate: '%s'\n", test->rate);
         return ret;
     }
+    av_freep(&test->rate);
 
     if ((test->duration) && (ret = av_parse_time(&duration, test->duration, 1)) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Invalid duration: '%s'\n", test->duration);
         return ret;
     }
+    av_freep(&test->duration);
 
     if (test->nb_decimals && strcmp(ctx->filter->name, "testsrc")) {
         av_log(ctx, AV_LOG_WARNING,
