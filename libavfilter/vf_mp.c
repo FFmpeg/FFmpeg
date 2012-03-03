@@ -769,6 +769,23 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     return 0;
 }
 
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    MPContext *m = ctx->priv;
+    vf_instance_t *vf = &m->vf;
+
+    while(vf){
+        vf_instance_t *next = vf->next;
+        if(vf->uninit)
+            vf->uninit(vf);
+        free_mp_image(vf->imgctx.static_images[0]);
+        free_mp_image(vf->imgctx.static_images[1]);
+        free_mp_image(vf->imgctx.temp_images[0]);
+        free_mp_image(vf->imgctx.export_images[0]);
+        vf = next;
+    }
+}
+
 static int query_formats(AVFilterContext *ctx)
 {
     AVFilterFormats *avfmts=NULL;
@@ -881,6 +898,7 @@ AVFilter avfilter_vf_mp = {
     .name      = "mp",
     .description = NULL_IF_CONFIG_SMALL("Apply a libmpcodecs filter to the input video."),
     .init = init,
+    .uninit = uninit,
     .priv_size = sizeof(MPContext),
     .query_formats = query_formats,
 
