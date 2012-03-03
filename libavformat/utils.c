@@ -1000,6 +1000,17 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         pkt->convergence_duration = pc->convergence_duration;
 }
 
+static void free_packet_buffer(AVPacketList **pkt_buf, AVPacketList **pkt_buf_end)
+{
+    while (*pkt_buf) {
+        AVPacketList *pktl = *pkt_buf;
+        *pkt_buf = pktl->next;
+        av_free_packet(&pktl->pkt);
+        av_freep(&pktl);
+    }
+    *pkt_buf_end = NULL;
+}
+
 
 static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 {
@@ -1223,24 +1234,9 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
 /* XXX: suppress the packet queue */
 static void flush_packet_queue(AVFormatContext *s)
 {
-    AVPacketList *pktl;
+    free_packet_buffer(&s->packet_buffer,     &s->packet_buffer_end);
+    free_packet_buffer(&s->raw_packet_buffer, &s->raw_packet_buffer_end);
 
-    for(;;) {
-        pktl = s->packet_buffer;
-        if (!pktl)
-            break;
-        s->packet_buffer = pktl->next;
-        av_free_packet(&pktl->pkt);
-        av_free(pktl);
-    }
-    while(s->raw_packet_buffer){
-        pktl = s->raw_packet_buffer;
-        s->raw_packet_buffer = pktl->next;
-        av_free_packet(&pktl->pkt);
-        av_free(pktl);
-    }
-    s->packet_buffer_end=
-    s->raw_packet_buffer_end= NULL;
     s->raw_packet_buffer_remaining_size = RAW_PACKET_BUFFER_SIZE;
 }
 
