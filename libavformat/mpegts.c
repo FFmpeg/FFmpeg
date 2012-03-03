@@ -710,6 +710,12 @@ static int read_sl_header(PESContext *pes, SLConfigDescr *sl, const uint8_t *buf
     int padding_flag = 0, padding_bits = 0, inst_bitrate_flag = 0;
     int dts_flag = -1, cts_flag = -1;
     int64_t dts = AV_NOPTS_VALUE, cts = AV_NOPTS_VALUE;
+
+    if (buf_size<=0) {
+        av_log(0,AV_LOG_WARNING, "empty SL header\n");
+        return 0;
+    }
+
     init_get_bits(&gb, buf, buf_size*8);
 
     if (sl->use_au_start)
