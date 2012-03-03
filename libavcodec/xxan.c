@@ -162,6 +162,7 @@ static int xan_decode_chroma(AVCodecContext *avctx, AVPacket *avpkt)
     int i, j;
     const uint8_t *src, *src_end;
     const uint8_t *table;
+    int table_size;
     int mode, offset, dec_size;
 
     chroma_off = AV_RL32(buf + 4);
@@ -173,6 +174,7 @@ static int xan_decode_chroma(AVCodecContext *avctx, AVPacket *avpkt)
     }
     src    = avpkt->data + 4 + chroma_off;
     table  = src + 2;
+    table_size =  avpkt->data + avpkt->size - table;
     mode   = bytestream_get_le16(&src);
     offset = bytestream_get_le16(&src) * 2;
 
@@ -200,6 +202,8 @@ static int xan_decode_chroma(AVCodecContext *avctx, AVPacket *avpkt)
                     return 0;
                 val = *src++;
                 if (val) {
+                    if (val << 1 >= table_size)
+                        return AVERROR_INVALIDDATA;
                     val  = AV_RL16(table + (val << 1));
                     uval = (val >> 3) & 0xF8;
                     vval = (val >> 8) & 0xF8;
@@ -220,6 +224,8 @@ static int xan_decode_chroma(AVCodecContext *avctx, AVPacket *avpkt)
                     return 0;
                 val = *src++;
                 if (val) {
+                    if (val << 1 >= table_size)
+                        return AVERROR_INVALIDDATA;
                     val  = AV_RL16(table + (val << 1));
                     uval = (val >> 3) & 0xF8;
                     vval = (val >> 8) & 0xF8;
