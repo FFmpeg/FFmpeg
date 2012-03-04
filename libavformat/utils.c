@@ -752,6 +752,17 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 /**********************************************************/
 
+static int determinable_frame_size(AVCodecContext *avctx)
+{
+    if (avctx->codec_id == CODEC_ID_AAC ||
+        avctx->codec_id == CODEC_ID_MP1 ||
+        avctx->codec_id == CODEC_ID_MP2 ||
+        avctx->codec_id == CODEC_ID_MP3 ||
+        avctx->codec_id == CODEC_ID_CELT)
+        return 1;
+    return 0;
+}
+
 /**
  * Get the number of samples of an audio frame. Return -1 on error.
  */
@@ -2101,12 +2112,7 @@ static int has_codec_parameters(AVCodecContext *avctx)
     switch (avctx->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
         val = avctx->sample_rate && avctx->channels && avctx->sample_fmt != AV_SAMPLE_FMT_NONE;
-        if (!avctx->frame_size &&
-            (avctx->codec_id == CODEC_ID_AAC ||
-             avctx->codec_id == CODEC_ID_MP1 ||
-             avctx->codec_id == CODEC_ID_MP2 ||
-             avctx->codec_id == CODEC_ID_MP3 ||
-             avctx->codec_id == CODEC_ID_CELT))
+        if (!avctx->frame_size && determinable_frame_size(avctx))
             return 0;
         break;
     case AVMEDIA_TYPE_VIDEO:
