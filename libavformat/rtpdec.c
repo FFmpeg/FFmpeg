@@ -396,6 +396,9 @@ RTPDemuxContext *ff_rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext
         case CODEC_ID_H264:
             st->need_parsing = AVSTREAM_PARSE_FULL;
             break;
+        case CODEC_ID_VORBIS:
+            st->need_parsing = AVSTREAM_PARSE_HEADERS;
+            break;
         case CODEC_ID_ADPCM_G722:
             /* According to RFC 3551, the stream clock rate is 8000
              * even if the sample rate is 16000. */

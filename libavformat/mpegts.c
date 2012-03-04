@@ -714,11 +714,6 @@ static int read_sl_header(PESContext *pes, SLConfigDescr *sl, const uint8_t *buf
     int dts_flag = -1, cts_flag = -1;
     int64_t dts = AV_NOPTS_VALUE, cts = AV_NOPTS_VALUE;
 
-    if (buf_size<=0) {
-        av_log(0,AV_LOG_WARNING, "empty SL header\n");
-        return 0;
-    }
-
     init_get_bits(&gb, buf, buf_size*8);
 
     if (sl->use_au_start)
@@ -928,7 +923,7 @@ static int mpegts_push_data(MpegTSFilter *filter,
                 /* we got the full header. We parse it and get the payload */
                 pes->state = MPEGTS_PAYLOAD;
                 pes->data_index = 0;
-                if (pes->stream_type == 0x12) {
+                if (pes->stream_type == 0x12 && buf_size > 0) {
                     int sl_header_bytes = read_sl_header(pes, &pes->sl, p, buf_size);
                     pes->pes_header_size += sl_header_bytes;
                     p += sl_header_bytes;
@@ -1844,6 +1839,7 @@ static int handle_packets(MpegTSContext *ts, int nb_packets)
 
     ts->stop_parse = 0;
     packet_num = 0;
+    memset(packet + TS_PACKET_SIZE, 0, FF_INPUT_BUFFER_PADDING_SIZE);
     for(;;) {
         packet_num++;
         if (nb_packets != 0 && packet_num >= nb_packets ||

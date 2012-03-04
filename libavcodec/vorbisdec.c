@@ -1043,7 +1043,6 @@ static av_cold int vorbis_decode_init(AVCodecContext *avccontext)
 
     avccontext->channels    = vc->audio_channels;
     avccontext->sample_rate = vc->audio_samplerate;
-    avccontext->frame_size  = FFMIN(vc->blocksize[0], vc->blocksize[1]) >> 2;
 
     avcodec_get_frame_defaults(&vc->frame);
     avccontext->coded_frame = &vc->frame;
@@ -1522,8 +1521,10 @@ static int vorbis_parse_audio_packet(vorbis_context *vc)
     blockflag = vc->modes[mode_number].blockflag;
     blocksize = vc->blocksize[blockflag];
     vlen = blocksize / 2;
-    if (blockflag)
-        skip_bits(gb, 2); // previous_window, next_window
+    if (blockflag) {
+        previous_window = get_bits(gb, 1);
+        skip_bits1(gb); // next_window
+    }
 
     memset(ch_res_ptr,   0, sizeof(float) * vc->audio_channels * vlen); //FIXME can this be removed ?
     memset(ch_floor_ptr, 0, sizeof(float) * vc->audio_channels * vlen); //FIXME can this be removed ?
