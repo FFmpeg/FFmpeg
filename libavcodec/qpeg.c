@@ -25,15 +25,17 @@
  */
 
 #include "avcodec.h"
+#include "bytestream.h"
 
 typedef struct QpegContext{
     AVCodecContext *avctx;
     AVFrame pic, ref;
     uint32_t pal[256];
+    GetByteContext buffer;
 } QpegContext;
 
-static int qpeg_decode_intra(const uint8_t *src, uint8_t *dst, int size,
-                            int stride, int width, int height)
+static void qpeg_decode_intra(QpegContext *qctx, uint8_t *dst,
+                              int stride, int width, int height)
 {
     int i;
     int code;
@@ -46,31 +48,26 @@ static int qpeg_decode_intra(const uint8_t *src, uint8_t *dst, int size,
     height--;
     dst = dst + height * stride;
 
-    while((size > 0) && (rows_to_go > 0)) {
-        code = *src++;
-        size--;
+    while ((bytestream2_get_bytes_left(&qctx->buffer) > 0) && (rows_to_go > 0)) {
+        code = bytestream2_get_byte(&qctx->buffer);
         run = copy = 0;
         if(code == 0xFC) /* end-of-picture code */
             break;
         if(code >= 0xF8) { /* very long run */
-            c0 = *src++;
-            c1 = *src++;
-            size -= 2;
+            c0 = bytestream2_get_byte(&qctx->buffer);
+            c1 = bytestream2_get_byte(&qctx->buffer);
             run = ((code & 0x7) << 16) + (c0 << 8) + c1 + 2;
         } else if (code >= 0xF0) { /* long run */
-            c0 = *src++;
-            size--;
+            c0 = bytestream2_get_byte(&qctx->buffer);
             run = ((code & 0xF) << 8) + c0 + 2;
         } else if (code >= 0xE0) { /* short run */
             run = (code & 0x1F) + 2;
         } else if (code >= 0xC0) { /* very long copy */
-            c0 = *src++;
-            c1 = *src++;
-            size -= 2;
+            c0 = bytestream2_get_byte(&qctx->buffer);
+            c1 = bytestream2_get_byte(&qctx->buffer);
             copy = ((code & 0x3F) << 16) + (c0 << 8) + c1 + 1;
         } else if (code >= 0x80) { /* long copy */
-            c0 = *src++;
-            size--;
+            c0 = bytestream2_get_byte(&qctx->buffer);
             copy = ((code & 0x7F) << 8) + c0 + 1;
         } else { /* short copy */
             copy = code + 1;
@@ -80,8 +77,7 @@ static int qpeg_decode_intra(const uint8_t *src, uint8_t *dst, int size,
         if(run) {
             int p;
 
-            p = *src++;
-            size--;
+            p = bytestream2_get_byte(&qctx->buffer);
             for(i = 0; i < run; i++) {
                 dst[filled++] = p;
                 if (filled >= width) {
@@ -93,11 +89,8 @@ static int qpeg_decode_intra(const uint8_t *src, uint8_t *dst, int size,
                 }
             }
         } else {
-            size -= copy;
-            if (size<0)
-                return AVERROR_INVALIDDATA;
             for(i = 0; i < copy; i++) {
-                dst[filled++] = *src++;
+                dst[filled++] = bytestream2_get_byte(&qctx->buffer);
                 if (filled >= width) {
                     filled = 0;
                     dst -= stride;
@@ -108,7 +101,6 @@ static int qpeg_decode_intra(const uint8_t *src, uint8_t *dst, int size,
             }
         }
     }
-    return 0;
 }
 
 static const int qpeg_table_h[16] =
@@ -117,9 +109,10 @@ static const int qpeg_table_w[16] =
  { 0x00, 0x20, 0x18, 0x08, 0x18, 0x10, 0x20, 0x10, 0x08, 0x10, 0x20, 0x20, 0x08, 0x10, 0x18, 0x04};
 
 /* Decodes delta frames */
-static void qpeg_decode_inter(const uint8_t *src, uint8_t *dst, int size,
-                            int stride, int width, int height,
-                            int delta, const uint8_t *ctable, uint8_t *refdata)
+static void qpeg_decode_inter(QpegContext *qctx, uint8_t *dst,
+                              int stride, int width, int height,
+                              int delta, const uint8_t *ctable,
+                              uint8_t *refdata)
 {
     int i, j;
     int code;
@@ -137,13 +130,12 @@ static void qpeg_decode_inter(const uint8_t *src, uint8_t *dst, int size,
     height--;
     dst = dst + height * stride;
 
-    while((size > 0) && (height >= 0)) {
-        code = *src++;
-        size--;
+    while ((bytestream2_get_bytes_left(&qctx->buffer) > 0) && (height >= 0)) {
+        code = bytestream2_get_byte(&qctx->buffer);
 
         if(delta) {
             /* motion compensation */
-            while(size > 0 && (code & 0xF0) == 0xF0) {
+            while(bytestream2_get_bytes_left(&qctx->buffer) > 0 && (code & 0xF0) == 0xF0) {
                 if(delta == 1) {
                     int me_idx;
                     int me_w, me_h, me_x, me_y;
@@ -156,8 +148,7 @@ static void qpeg_decode_inter(const uint8_t *src, uint8_t *dst, int size,
                     me_h = qpeg_table_h[me_idx];
 
                     /* extract motion vector */
-                    corr = *src++;
-                    size--;
+                    corr = bytestream2_get_byte(&qctx->buffer);
 
                     val = corr >> 4;
                     if(val > 7)
@@ -184,8 +175,7 @@ static void qpeg_decode_inter(const uint8_t *src, uint8_t *dst, int size,
                         }
                     }
                 }
-                code = *src++;
-                size--;
+                code = bytestream2_get_byte(&qctx->buffer);
             }
         }
 
@@ -195,8 +185,7 @@ static void qpeg_decode_inter(const uint8_t *src, uint8_t *dst, int size,
             int p;
 
             code &= 0x1F;
-            p = *src++;
-            size--;
+            p = bytestream2_get_byte(&qctx->buffer);
             for(i = 0; i <= code; i++) {
                 dst[filled++] = p;
                 if(filled >= width) {
@@ -210,11 +199,11 @@ static void qpeg_decode_inter(const uint8_t *src, uint8_t *dst, int size,
         } else if(code >= 0xC0) { /* copy code: 0xC0..0xDF */
             code &= 0x1F;
 
-            if(code + 1 > size)
+            if(code + 1 > bytestream2_get_bytes_left(&qctx->buffer))
                 break;
 
             for(i = 0; i <= code; i++) {
-                dst[filled++] = *src++;
+                dst[filled++] = bytestream2_get_byte(&qctx->buffer);
                 if(filled >= width) {
                     filled = 0;
                     dst -= stride;
@@ -223,18 +212,17 @@ static void qpeg_decode_inter(const uint8_t *src, uint8_t *dst, int size,
                         break;
                 }
             }
-            size -= code + 1;
         } else if(code >= 0x80) { /* skip code: 0x80..0xBF */
             int skip;
 
             code &= 0x3F;
             /* codes 0x80 and 0x81 are actually escape codes,
                skip value minus constant is in the next byte */
-            if(!code) {
-                skip = (*src++) + 64; size--;
-            } else if(code == 1) {
-                skip = (*src++) + 320; size--;
-            } else
+            if(!code)
+                skip = bytestream2_get_byte(&qctx->buffer) +  64;
+            else if(code == 1)
+                skip = bytestream2_get_byte(&qctx->buffer) + 320;
+            else
                 skip = code;
             filled += skip;
             while( filled >= width) {
@@ -246,8 +234,9 @@ static void qpeg_decode_inter(const uint8_t *src, uint8_t *dst, int size,
             }
         } else {
             /* zero code treated as one-pixel skip */
-            if(code)
+            if(code) {
                 dst[filled++] = ctable[code & 0x7F];
+            }
             else
                 filled++;
             if(filled >= width) {
@@ -263,14 +252,20 @@ static int decode_frame(AVCodecContext *avctx,
                         void *data, int *data_size,
                         AVPacket *avpkt)
 {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
+    uint8_t ctable[128];
     QpegContext * const a = avctx->priv_data;
     AVFrame *  p = &a->pic;
     AVFrame * ref= &a->ref;
     uint8_t* outdata;
     int delta, ret = 0;
     const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
+
+    if (avpkt->size < 0x86) {
+        av_log(avctx, AV_LOG_ERROR, "Packet is too small\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    bytestream2_init(&a->buffer, avpkt->data, avpkt->size);
 
     if(ref->data[0])
         avctx->release_buffer(avctx, ref);
@@ -282,15 +277,16 @@ static int decode_frame(AVCodecContext *avctx,
         return -1;
     }
     outdata = a->pic.data[0];
-    if(buf[0x85] == 0x10) {
-        ret = qpeg_decode_intra(buf+0x86, outdata, buf_size - 0x86, a->pic.linesize[0], avctx->width, avctx->height);
-    } else {
-        delta = buf[0x85];
-        qpeg_decode_inter(buf+0x86, outdata, buf_size - 0x86, a->pic.linesize[0], avctx->width, avctx->height, delta, buf + 4, a->ref.data[0]);
-    }
+    bytestream2_skip(&a->buffer, 4);
+    bytestream2_get_buffer(&a->buffer, ctable, 128);
+    bytestream2_skip(&a->buffer, 1);
 
-    if (ret<0)
-        return ret;
+    delta = bytestream2_get_byte(&a->buffer);
+    if(delta == 0x10) {
+        qpeg_decode_intra(a, outdata, a->pic.linesize[0], avctx->width, avctx->height);
+    } else {
+        qpeg_decode_inter(a, outdata, a->pic.linesize[0], avctx->width, avctx->height, delta, ctable, a->ref.data[0]);
+    }
 
     /* make the palette available on the way out */
     if (pal) {
@@ -302,7 +298,7 @@ static int decode_frame(AVCodecContext *avctx,
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = a->pic;
 
-    return buf_size;
+    return avpkt->size;
 }
 
 static av_cold int decode_init(AVCodecContext *avctx){

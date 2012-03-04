@@ -131,8 +131,12 @@ cglobal yuv2planeX_%1, %3, 7, %2, filter, fltsize, src, dst, w, dither, offset
     ; pixels per iteration. In order to not have to keep track of where
     ; we are w.r.t. dithering, we unroll the mmx/8bit loop x2.
 %if %1 == 8
-%rep 16/mmsize
-%endif ; %1 == 8
+%assign %%repcnt 16/mmsize
+%else
+%assign %%repcnt 1
+%endif
+
+%rep %%repcnt
 
 %if %1 == 8
 %if ARCH_X86_32
@@ -146,7 +150,7 @@ cglobal yuv2planeX_%1, %3, 7, %2, filter, fltsize, src, dst, w, dither, offset
     mova            m1, [yuv2yuvX_%1_start]
     mova            m2,  m1
 %endif ; %1 == 8/9/10/16
-    movsx     cntr_reg,  r1m ; FIXME should be fltsizem, but the assembler does the wrong thing b/c of SUB above
+    movsx     cntr_reg,  fltsizem
 .filterloop_ %+ %%i:
     ; input pixels
     mov             r6, [srcq+gprsize*cntr_reg-2*gprsize]
@@ -226,10 +230,9 @@ cglobal yuv2planeX_%1, %3, 7, %2, filter, fltsize, src, dst, w, dither, offset
 
     add             r5,  mmsize/2
     sub             wd,  mmsize/2
-%if %1 == 8
+
 %assign %%i %%i+2
 %endrep
-%endif ; %1 == 8
     jg .pixelloop
 
 %if %1 == 8

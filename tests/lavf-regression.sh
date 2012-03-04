@@ -223,7 +223,7 @@ if [ -n "$do_xwd" ] ; then
 do_image_formats xwd
 fi
 
-if [ -n "$do_sun" ] ; then
+if [ -n "$do_sunrast" ] ; then
 do_image_formats sun
 fi
 

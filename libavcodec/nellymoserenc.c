@@ -52,13 +52,11 @@
 typedef struct NellyMoserEncodeContext {
     AVCodecContext  *avctx;
     int             last_frame;
-    int             bufsel;
-    int             have_saved;
     DSPContext      dsp;
     FFTContext      mdct_ctx;
     DECLARE_ALIGNED(32, float, mdct_out)[NELLY_SAMPLES];
     DECLARE_ALIGNED(32, float, in_buff)[NELLY_SAMPLES];
-    DECLARE_ALIGNED(32, float, buf)[2][3 * NELLY_BUF_LEN];     ///< sample buffer
+    DECLARE_ALIGNED(32, float, buf)[3 * NELLY_BUF_LEN];     ///< sample buffer
     float           (*opt )[NELLY_BANDS];
     uint8_t         (*path)[NELLY_BANDS];
 } NellyMoserEncodeContext;
@@ -115,16 +113,17 @@ static const uint8_t quant_lut_offset[8] = { 0, 0, 1, 4, 11, 32, 81, 230 };
 
 static void apply_mdct(NellyMoserEncodeContext *s)
 {
-    s->dsp.vector_fmul(s->in_buff, s->buf[s->bufsel], ff_sine_128, NELLY_BUF_LEN);
-    s->dsp.vector_fmul_reverse(s->in_buff + NELLY_BUF_LEN, s->buf[s->bufsel] + NELLY_BUF_LEN, ff_sine_128,
-                               NELLY_BUF_LEN);
+    float *in0 = s->buf;
+    float *in1 = s->buf + NELLY_BUF_LEN;
+    float *in2 = s->buf + 2 * NELLY_BUF_LEN;
+
+    s->dsp.vector_fmul        (s->in_buff,                 in0, ff_sine_128, NELLY_BUF_LEN);
+    s->dsp.vector_fmul_reverse(s->in_buff + NELLY_BUF_LEN, in1, ff_sine_128, NELLY_BUF_LEN);
     s->mdct_ctx.mdct_calc(&s->mdct_ctx, s->mdct_out, s->in_buff);
 
-    s->dsp.vector_fmul(s->buf[s->bufsel] + NELLY_BUF_LEN, s->buf[s->bufsel] + NELLY_BUF_LEN,
-                       ff_sine_128, NELLY_BUF_LEN);
-    s->dsp.vector_fmul_reverse(s->buf[s->bufsel] + 2 * NELLY_BUF_LEN, s->buf[1 - s->bufsel], ff_sine_128,
-                               NELLY_BUF_LEN);
-    s->mdct_ctx.mdct_calc(&s->mdct_ctx, s->mdct_out + NELLY_BUF_LEN, s->buf[s->bufsel] + NELLY_BUF_LEN);
+    s->dsp.vector_fmul        (s->in_buff,                 in1, ff_sine_128, NELLY_BUF_LEN);
+    s->dsp.vector_fmul_reverse(s->in_buff + NELLY_BUF_LEN, in2, ff_sine_128, NELLY_BUF_LEN);
+    s->mdct_ctx.mdct_calc(&s->mdct_ctx, s->mdct_out + NELLY_BUF_LEN, s->in_buff);
 }
 
 static av_cold int encode_end(AVCodecContext *avctx)
@@ -161,6 +160,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
 
     avctx->frame_size = NELLY_SAMPLES;
+    avctx->delay      = NELLY_BUF_LEN;
     s->avctx = avctx;
     if ((ret = ff_mdct_init(&s->mdct_ctx, 8, 0, 32768.0)) < 0)
         goto error;
@@ -363,38 +363,33 @@ static void encode_block(NellyMoserEncodeContext *s, unsigned char *output, int 
     }
 
     flush_put_bits(&pb);
+    memset(put_bits_ptr(&pb), 0, output + output_size - put_bits_ptr(&pb));
 }
 
 static int encode_frame(AVCodecContext *avctx, uint8_t *frame, int buf_size, void *data)
 {
     NellyMoserEncodeContext *s = avctx->priv_data;
     const float *samples = data;
-    int i;
 
     if (s->last_frame)
         return 0;
 
+    memcpy(s->buf, s->buf + NELLY_SAMPLES, NELLY_BUF_LEN * sizeof(*s->buf));
     if (data) {
-        memcpy(s->buf[s->bufsel], samples, avctx->frame_size * sizeof(*samples));
-        for (i = avctx->frame_size; i < NELLY_SAMPLES; i++) {
-            s->buf[s->bufsel][i] = 0;
-        }
-        s->bufsel = 1 - s->bufsel;
-        if (!s->have_saved) {
-            s->have_saved = 1;
-            return 0;
+        memcpy(s->buf + NELLY_BUF_LEN, samples, avctx->frame_size * sizeof(*s->buf));
+        if (avctx->frame_size < NELLY_SAMPLES) {
+            memset(s->buf + NELLY_BUF_LEN + avctx->frame_size, 0,
+                   (NELLY_SAMPLES - avctx->frame_size) * sizeof(*s->buf));
+            if (avctx->frame_size >= NELLY_BUF_LEN)
+                s->last_frame = 1;
         }
     } else {
-        memset(s->buf[s->bufsel], 0, sizeof(s->buf[0][0]) * NELLY_BUF_LEN);
-        s->bufsel = 1 - s->bufsel;
+        memset(s->buf + NELLY_BUF_LEN, 0, NELLY_SAMPLES * sizeof(*s->buf));
         s->last_frame = 1;
     }
 
-    if (s->have_saved) {
-        encode_block(s, frame, buf_size);
-        return NELLY_BLOCK_LEN;
-    }
-    return 0;
+    encode_block(s, frame, buf_size);
+    return NELLY_BLOCK_LEN;
 }
 
 AVCodec ff_nellymoser_encoder = {

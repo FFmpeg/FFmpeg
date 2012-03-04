@@ -36,6 +36,7 @@ typedef struct {
     AVCodecContext *avctx;
     AVFrame frame;
     LPCContext lpc_ctx;
+    int last_frame;
 
     unsigned int     old_energy;        ///< previous frame energy
 

@@ -85,6 +85,7 @@ typedef struct AMRContext {
     int   enc_bitrate;
     int   enc_mode;
     int   enc_dtx;
+    int   enc_last_frame;
 } AMRContext;
 
 static const AVOption options[] = {
@@ -195,6 +196,7 @@ static av_cold int amr_nb_encode_init(AVCodecContext *avctx)
     }
 
     avctx->frame_size  = 160;
+    avctx->delay       =  50;
     avctx->coded_frame = avcodec_alloc_frame();
     if (!avctx->coded_frame)
         return AVERROR(ENOMEM);
@@ -227,17 +229,40 @@ static int amr_nb_encode_frame(AVCodecContext *avctx,
 {
     AMRContext *s = avctx->priv_data;
     int written;
+    int16_t *flush_buf = NULL;
+    const int16_t *samples = data;
 
     if (s->enc_bitrate != avctx->bit_rate) {
         s->enc_mode    = get_bitrate_mode(avctx->bit_rate, avctx);
         s->enc_bitrate = avctx->bit_rate;
     }
 
-    written = Encoder_Interface_Encode(s->enc_state, s->enc_mode, data,
+    if (data) {
+        if (avctx->frame_size < 160) {
+            flush_buf = av_mallocz(160 * sizeof(*flush_buf));
+            if (!flush_buf)
+                return AVERROR(ENOMEM);
+            memcpy(flush_buf, samples, avctx->frame_size * sizeof(*flush_buf));
+            samples = flush_buf;
+            if (avctx->frame_size < 110)
+                s->enc_last_frame = -1;
+        }
+    } else {
+        if (s->enc_last_frame < 0)
+            return 0;
+        flush_buf = av_mallocz(160 * sizeof(*flush_buf));
+        if (!flush_buf)
+            return AVERROR(ENOMEM);
+        samples = flush_buf;
+        s->enc_last_frame = -1;
+    }
+
+    written = Encoder_Interface_Encode(s->enc_state, s->enc_mode, samples,
                                        frame, 0);
     av_dlog(avctx, "amr_nb_encode_frame encoded %u bytes, bitrate %u, first byte was %#02x\n",
             written, s->enc_mode, frame[0]);
 
+    av_freep(&flush_buf);
     return written;
 }
 
@@ -249,6 +274,7 @@ AVCodec ff_libopencore_amrnb_encoder = {
     .init           = amr_nb_encode_init,
     .encode         = amr_nb_encode_frame,
     .close          = amr_nb_encode_close,
+    .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_SMALL_LAST_FRAME,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("OpenCORE Adaptive Multi-Rate (AMR) Narrow-Band"),
     .priv_class = &class,

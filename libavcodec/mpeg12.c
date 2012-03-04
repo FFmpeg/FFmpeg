@@ -1276,7 +1276,6 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
          * that behave like P-frames. */
         avctx->has_b_frames = !s->low_delay;
 
-        assert((avctx->sub_id == 1) == (avctx->codec_id == CODEC_ID_MPEG1VIDEO));
         if (avctx->codec_id == CODEC_ID_MPEG1VIDEO) {
             //MPEG-1 fps
             avctx->time_base.den = avpriv_frame_rate_tab[s->frame_rate_index].num;
@@ -1420,7 +1419,6 @@ static void mpeg_decode_sequence_extension(Mpeg1Context *s1)
 
     av_dlog(s->avctx, "sequence extension\n");
     s->codec_id      = s->avctx->codec_id = CODEC_ID_MPEG2VIDEO;
-    s->avctx->sub_id = 2; /* indicates MPEG-2 found */
 
     if (s->avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(s->avctx, AV_LOG_DEBUG, "profile: %d, level: %d vbv buffer: %d, bitrate:%d\n",
@@ -2038,7 +2036,6 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     s->frame_pred_frame_dct = 1;
     s->chroma_format        = 1;
     s->codec_id             = s->avctx->codec_id = CODEC_ID_MPEG1VIDEO;
-    avctx->sub_id           = 1; /* indicates MPEG-1 */
     s->out_format           = FMT_MPEG1;
     s->swap_uv              = 0; // AFAIK VCR2 does not have SEQ_HEADER
     if (s->flags & CODEC_FLAG_LOW_DELAY)
@@ -2097,12 +2094,10 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
     s->chroma_format         = 1;
     if (s->codec_tag == AV_RL32("BW10")) {
         s->codec_id              = s->avctx->codec_id = CODEC_ID_MPEG1VIDEO;
-        avctx->sub_id            = 1; /* indicates MPEG-1 */
     } else {
         exchange_uv(s); // common init reset pblocks, so we swap them here
         s->swap_uv = 1; // in case of xvmc we need to swap uv for each MB
         s->codec_id              = s->avctx->codec_id = CODEC_ID_MPEG2VIDEO;
-        avctx->sub_id            = 2; /* indicates MPEG-2 */
     }
     s1->save_width           = s->width;
     s1->save_height          = s->height;

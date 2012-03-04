@@ -251,6 +251,8 @@ DECLARE_REG_TMP_SIZE 0,1,2,3,4,5,6,7,8,9
         %endrep
     %endif
 
+    %xdefine %%stack_offset stack_offset
+    %undef stack_offset ; so that the current value of stack_offset doesn't get baked in by xdefine
     %assign %%i 0
     %rep %0
         %xdefine %1q r %+ %%i %+ q
@@ -262,7 +264,8 @@ DECLARE_REG_TMP_SIZE 0,1,2,3,4,5,6,7,8,9
         %assign %%i %%i+1
         %rotate 1
     %endrep
-    %assign n_arg_names %%i
+    %xdefine stack_offset %%stack_offset
+    %assign n_arg_names %0
 %endmacro
 
 %if WIN64 ; Windows x64 ;=================================================

@@ -42,6 +42,67 @@ enum {
     PRORES_PROFILE_HQ,
 };
 
+enum {
+    QUANT_MAT_PROXY = 0,
+    QUANT_MAT_LT,
+    QUANT_MAT_STANDARD,
+    QUANT_MAT_HQ,
+    QUANT_MAT_DEFAULT,
+};
+
+static const uint8_t prores_quant_matrices[][64] = {
+    { // proxy
+         4,  7,  9, 11, 13, 14, 15, 63,
+         7,  7, 11, 12, 14, 15, 63, 63,
+         9, 11, 13, 14, 15, 63, 63, 63,
+        11, 11, 13, 14, 63, 63, 63, 63,
+        11, 13, 14, 63, 63, 63, 63, 63,
+        13, 14, 63, 63, 63, 63, 63, 63,
+        13, 63, 63, 63, 63, 63, 63, 63,
+        63, 63, 63, 63, 63, 63, 63, 63,
+    },
+    { // LT
+         4,  5,  6,  7,  9, 11, 13, 15,
+         5,  5,  7,  8, 11, 13, 15, 17,
+         6,  7,  9, 11, 13, 15, 15, 17,
+         7,  7,  9, 11, 13, 15, 17, 19,
+         7,  9, 11, 13, 14, 16, 19, 23,
+         9, 11, 13, 14, 16, 19, 23, 29,
+         9, 11, 13, 15, 17, 21, 28, 35,
+        11, 13, 16, 17, 21, 28, 35, 41,
+    },
+    { // standard
+         4,  4,  5,  5,  6,  7,  7,  9,
+         4,  4,  5,  6,  7,  7,  9,  9,
+         5,  5,  6,  7,  7,  9,  9, 10,
+         5,  5,  6,  7,  7,  9,  9, 10,
+         5,  6,  7,  7,  8,  9, 10, 12,
+         6,  7,  7,  8,  9, 10, 12, 15,
+         6,  7,  7,  9, 10, 11, 14, 17,
+         7,  7,  9, 10, 11, 14, 17, 21,
+    },
+    { // high quality
+         4,  4,  4,  4,  4,  4,  4,  4,
+         4,  4,  4,  4,  4,  4,  4,  4,
+         4,  4,  4,  4,  4,  4,  4,  4,
+         4,  4,  4,  4,  4,  4,  4,  5,
+         4,  4,  4,  4,  4,  4,  5,  5,
+         4,  4,  4,  4,  4,  5,  5,  6,
+         4,  4,  4,  4,  5,  5,  6,  7,
+         4,  4,  4,  4,  5,  6,  7,  7,
+    },
+    { // codec default
+         4,  4,  4,  4,  4,  4,  4,  4,
+         4,  4,  4,  4,  4,  4,  4,  4,
+         4,  4,  4,  4,  4,  4,  4,  4,
+         4,  4,  4,  4,  4,  4,  4,  4,
+         4,  4,  4,  4,  4,  4,  4,  4,
+         4,  4,  4,  4,  4,  4,  4,  4,
+         4,  4,  4,  4,  4,  4,  4,  4,
+         4,  4,  4,  4,  4,  4,  4,  4,
+    },
+};
+
 #define NUM_MB_LIMITS 4
 static const int prores_mb_limits[NUM_MB_LIMITS] = {
     1620, // up to 720x576
@@ -56,7 +117,7 @@ static const struct prores_profile {
     int         min_quant;
     int         max_quant;
     int         br_tab[NUM_MB_LIMITS];
-    uint8_t     quant[64];
+    int         quant;
 } prores_profile_info[4] = {
     {
         .full_name = "proxy",
@@ -64,16 +125,7 @@ static const struct prores_profile {
         .min_quant = 4,
         .max_quant = 8,
         .br_tab    = { 300, 242, 220, 194 },
-        .quant     = {
-             4,  7,  9, 11, 13, 14, 15, 63,
-             7,  7, 11, 12, 14, 15, 63, 63,
-             9, 11, 13, 14, 15, 63, 63, 63,
-            11, 11, 13, 14, 63, 63, 63, 63,
-            11, 13, 14, 63, 63, 63, 63, 63,
-            13, 14, 63, 63, 63, 63, 63, 63,
-            13, 63, 63, 63, 63, 63, 63, 63,
-            63, 63, 63, 63, 63, 63, 63, 63,
-        },
+        .quant     = QUANT_MAT_PROXY,
     },
     {
         .full_name = "LT",
@@ -81,16 +133,7 @@ static const struct prores_profile {
         .min_quant = 1,
         .max_quant = 9,
         .br_tab    = { 720, 560, 490, 440 },
-        .quant     = {
-             4,  5,  6,  7,  9, 11, 13, 15,
-             5,  5,  7,  8, 11, 13, 15, 17,
-             6,  7,  9, 11, 13, 15, 15, 17,
-             7,  7,  9, 11, 13, 15, 17, 19,
-             7,  9, 11, 13, 14, 16, 19, 23,
-             9, 11, 13, 14, 16, 19, 23, 29,
-             9, 11, 13, 15, 17, 21, 28, 35,
-            11, 13, 16, 17, 21, 28, 35, 41,
-        },
+        .quant     = QUANT_MAT_LT,
     },
     {
         .full_name = "standard",
@@ -98,16 +141,7 @@ static const struct prores_profile {
         .min_quant = 1,
         .max_quant = 6,
         .br_tab    = { 1050, 808, 710, 632 },
-        .quant     = {
-             4,  4,  5,  5,  6,  7,  7,  9,
-             4,  4,  5,  6,  7,  7,  9,  9,
-             5,  5,  6,  7,  7,  9,  9, 10,
-             5,  5,  6,  7,  7,  9,  9, 10,
-             5,  6,  7,  7,  8,  9, 10, 12,
-             6,  7,  7,  8,  9, 10, 12, 15,
-             6,  7,  7,  9, 10, 11, 14, 17,
-             7,  7,  9, 10, 11, 14, 17, 21,
-        },
+        .quant     = QUANT_MAT_STANDARD,
     },
     {
         .full_name = "high quality",
@@ -115,16 +149,7 @@ static const struct prores_profile {
         .min_quant = 1,
         .max_quant = 6,
         .br_tab    = { 1566, 1216, 1070, 950 },
-        .quant     = {
-             4,  4,  4,  4,  4,  4,  4,  4,
-             4,  4,  4,  4,  4,  4,  4,  4,
-             4,  4,  4,  4,  4,  4,  4,  4,
-             4,  4,  4,  4,  4,  4,  4,  5,
-             4,  4,  4,  4,  4,  4,  5,  5,
-             4,  4,  4,  4,  4,  5,  5,  6,
-             4,  4,  4,  4,  5,  5,  6,  7,
-             4,  4,  4,  4,  5,  6,  7,  7,
-        },
+        .quant     = QUANT_MAT_HQ,
     }
 // for 4444 profile bitrate numbers are { 2350, 1828, 1600, 1425 }
 };
@@ -147,6 +172,7 @@ typedef struct ProresContext {
     DECLARE_ALIGNED(16, uint16_t, emu_buf)[16*16];
     int16_t quants[MAX_STORED_Q][64];
     int16_t custom_q[64];
+    const uint8_t *quant_mat;
 
     ProresDSPContext dsp;
     ScanTable  scantable;
@@ -158,6 +184,9 @@ typedef struct ProresContext {
     int num_slices;
     int num_planes;
     int bits_per_mb;
+
+    char *vendor;
+    int quant_sel;
 
     int frame_size;
 
@@ -373,7 +402,7 @@ static int encode_slice(AVCodecContext *avctx, const AVFrame *pic,
     } else {
         qmat = ctx->custom_q;
         for (i = 0; i < 64; i++)
-            qmat[i] = ctx->profile_info->quant[i] * quant;
+            qmat[i] = ctx->quant_mat[i] * quant;
     }
 
     for (i = 0; i < ctx->num_planes; i++) {
@@ -591,7 +620,7 @@ static int find_slice_quant(AVCodecContext *avctx, const AVFrame *pic,
             } else {
                 qmat = ctx->custom_q;
                 for (i = 0; i < 64; i++)
-                    qmat[i] = ctx->profile_info->quant[i] * q;
+                    qmat[i] = ctx->quant_mat[i] * q;
             }
             for (i = 0; i < ctx->num_planes; i++) {
                 bits += estimate_slice_plane(ctx, &error, i,
@@ -684,7 +713,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     tmp = buf;
     buf += 2;                                   // frame header size will be stored here
     bytestream_put_be16  (&buf, 0);             // version 1
-    bytestream_put_buffer(&buf, "Lavc", 4);     // creator
+    bytestream_put_buffer(&buf, ctx->vendor, 4);
     bytestream_put_be16  (&buf, avctx->width);
     bytestream_put_be16  (&buf, avctx->height);
     bytestream_put_byte  (&buf, ctx->chroma_factor << 6); // frame flags
@@ -694,13 +723,17 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream_put_byte  (&buf, avctx->colorspace);
     bytestream_put_byte  (&buf, 0x40);          // source format and alpha information
     bytestream_put_byte  (&buf, 0);             // reserved
-    bytestream_put_byte  (&buf, 0x03);          // matrix flags - both matrices are present
-    // luma quantisation matrix
-    for (i = 0; i < 64; i++)
-        bytestream_put_byte(&buf, ctx->profile_info->quant[i]);
-    // chroma quantisation matrix
-    for (i = 0; i < 64; i++)
-        bytestream_put_byte(&buf, ctx->profile_info->quant[i]);
+    if (ctx->quant_sel != QUANT_MAT_DEFAULT) {
+        bytestream_put_byte  (&buf, 0x03);      // matrix flags - both matrices are present
+        // luma quantisation matrix
+        for (i = 0; i < 64; i++)
+            bytestream_put_byte(&buf, ctx->quant_mat[i]);
+        // chroma quantisation matrix
+        for (i = 0; i < 64; i++)
+            bytestream_put_byte(&buf, ctx->quant_mat[i]);
+    } else {
+        bytestream_put_byte  (&buf, 0x00);      // matrix flags - default matrices are used
+    }
     bytestream_put_be16  (&tmp, buf - orig_buf); // write back frame header size
 
     // picture header
@@ -816,10 +849,25 @@ static av_cold int encode_init(AVCodecContext *avctx)
     ctx->slices_width += av_popcount(ctx->mb_width - ctx->slices_width * mps);
     ctx->num_slices    = ctx->mb_height * ctx->slices_width;
 
-    for (i = 0; i < NUM_MB_LIMITS - 1; i++)
-        if (prores_mb_limits[i] >= ctx->mb_width * ctx->mb_height)
-            break;
-    ctx->bits_per_mb   = ctx->profile_info->br_tab[i];
+    if (ctx->quant_sel == -1)
+        ctx->quant_mat = prores_quant_matrices[ctx->profile_info->quant];
+    else
+        ctx->quant_mat = prores_quant_matrices[ctx->quant_sel];
+
+    if (strlen(ctx->vendor) != 4) {
+        av_log(avctx, AV_LOG_ERROR, "vendor ID should be 4 bytes\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (!ctx->bits_per_mb) {
+        for (i = 0; i < NUM_MB_LIMITS - 1; i++)
+            if (prores_mb_limits[i] >= ctx->mb_width * ctx->mb_height)
+                break;
+        ctx->bits_per_mb   = ctx->profile_info->br_tab[i];
+    } else if (ctx->bits_per_mb < 128) {
+        av_log(avctx, AV_LOG_ERROR, "too few bits per MB, please set at least 128\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     ctx->frame_size = ctx->num_slices * (2 + 2 * ctx->num_planes
                                          + (2 * mps * ctx->bits_per_mb) / 8)
@@ -829,7 +877,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     max_quant = ctx->profile_info->max_quant;
     for (i = min_quant; i < MAX_STORED_Q; i++) {
         for (j = 0; j < 64; j++)
-            ctx->quants[i][j] = ctx->profile_info->quant[j] * i;
+            ctx->quants[i][j] = ctx->quant_mat[j] * i;
     }
 
     avctx->codec_tag   = ctx->profile_info->tag;
@@ -877,6 +925,24 @@ static const AVOption options[] = {
         0, 0, VE, "profile" },
     { "hq",            NULL, 0, AV_OPT_TYPE_CONST, { PRORES_PROFILE_HQ },
         0, 0, VE, "profile" },
+    { "vendor", "vendor ID", OFFSET(vendor),
+        AV_OPT_TYPE_STRING, { .str = "Lavc" }, CHAR_MIN, CHAR_MAX, VE },
+    { "bits_per_mb", "desired bits per macroblock", OFFSET(bits_per_mb),
+        AV_OPT_TYPE_INT, { 0 }, 0, 8192, VE },
+    { "quant_mat", "quantiser matrix", OFFSET(quant_sel), AV_OPT_TYPE_INT,
+        { -1 }, -1, QUANT_MAT_DEFAULT, VE, "quant_mat" },
+    { "auto",          NULL, 0, AV_OPT_TYPE_CONST, { -1 },
+        0, 0, VE, "quant_mat" },
+    { "proxy",         NULL, 0, AV_OPT_TYPE_CONST, { QUANT_MAT_PROXY },
+        0, 0, VE, "quant_mat" },
+    { "lt",            NULL, 0, AV_OPT_TYPE_CONST, { QUANT_MAT_LT },
+        0, 0, VE, "quant_mat" },
+    { "standard",      NULL, 0, AV_OPT_TYPE_CONST, { QUANT_MAT_STANDARD },
+        0, 0, VE, "quant_mat" },
+    { "hq",            NULL, 0, AV_OPT_TYPE_CONST, { QUANT_MAT_HQ },
+        0, 0, VE, "quant_mat" },
+    { "default",       NULL, 0, AV_OPT_TYPE_CONST, { QUANT_MAT_DEFAULT },
+        0, 0, VE, "quant_mat" },
     { NULL }
 };
 

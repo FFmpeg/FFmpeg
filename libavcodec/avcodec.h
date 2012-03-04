@@ -1280,15 +1280,12 @@ typedef struct AVCodecContext {
      */
     unsigned int stream_codec_tag;
 
+#if FF_API_SUB_ID
     /**
-     * Some codecs need additional format info. It is stored here.
-     * If any muxer uses this then ALL demuxers/parsers AND encoders for the
-     * specific codec MUST set it correctly otherwise stream copy breaks.
-     * In general use of this field by muxers is not recommended.
-     * - encoding: Set by libavcodec.
-     * - decoding: Set by libavcodec. (FIXME: Is this OK?)
+     * @deprecated this field is unused
      */
-    int sub_id;
+    attribute_deprecated int sub_id;
+#endif
 
     void *priv_data;
 
@@ -4503,5 +4500,15 @@ const AVClass *avcodec_get_frame_class(void);
  * with no corresponding avcodec_close()), 0 otherwise.
  */
 int avcodec_is_open(AVCodecContext *s);
+
+/**
+ * @return a non-zero number if codec is an encoder, zero otherwise
+ */
+int av_codec_is_encoder(AVCodec *codec);
+
+/**
+ * @return a non-zero number if codec is a decoder, zero otherwise
+ */
+int av_codec_is_decoder(AVCodec *codec);
 
 #endif /* AVCODEC_AVCODEC_H */
