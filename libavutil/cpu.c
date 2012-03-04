@@ -19,9 +19,11 @@
 #include "cpu.h"
 #include "config.h"
 
+static int cpuflags_mask, checked;
+
 int av_get_cpu_flags(void)
 {
-    static int flags, checked;
+    static int flags;
 
     if (checked)
         return flags;
@@ -30,8 +32,16 @@ int av_get_cpu_flags(void)
     if (ARCH_PPC) flags = ff_get_cpu_flags_ppc();
     if (ARCH_X86) flags = ff_get_cpu_flags_x86();
 
+    flags  &= cpuflags_mask;
     checked = 1;
+
     return flags;
+}
+
+void av_set_cpu_flags_mask(int mask)
+{
+    cpuflags_mask = mask;
+    checked       = 0;
 }
 
 #ifdef TEST

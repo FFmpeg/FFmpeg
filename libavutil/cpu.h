@@ -48,6 +48,14 @@
  */
 int av_get_cpu_flags(void);
 
+/**
+ * Set a mask on flags returned by av_get_cpu_flags().
+ * This function is mainly useful for testing.
+ *
+ * @warning this function is not thread safe.
+ */
+void av_set_cpu_flags_mask(int mask);
+
 /* The following CPU-specific functions shall not be called directly. */
 int ff_get_cpu_flags_arm(void);
 int ff_get_cpu_flags_ppc(void);
