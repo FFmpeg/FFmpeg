@@ -318,4 +318,13 @@ int ff_add_param_change(AVPacket *pkt, int32_t channels,
  */
 int ff_framehash_write_header(AVFormatContext *s);
 
+/**
+ * Read a transport packet from a media file.
+ *
+ * @param s media file handle
+ * @param pkt is filled
+ * @return 0 if OK, AVERROR_xxx on error
+ */
+int ff_read_packet(AVFormatContext *s, AVPacket *pkt);
+
 #endif /* AVFORMAT_INTERNAL_H */

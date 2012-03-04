@@ -612,7 +612,7 @@ fail:
 
 /*******************************************************/
 
-int av_read_packet(AVFormatContext *s, AVPacket *pkt)
+int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, i;
     AVStream *st;
@@ -697,6 +697,14 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 }
+
+#if FF_API_READ_PACKET
+int av_read_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    return ff_read_packet(s, pkt);
+}
+#endif
+
 
 /**********************************************************/
 
@@ -1156,7 +1164,7 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
         AVPacket cur_pkt;
 
         /* read next packet */
-        ret = av_read_packet(s, &cur_pkt);
+        ret = ff_read_packet(s, &cur_pkt);
         if (ret < 0) {
             if (ret == AVERROR(EAGAIN))
                 return ret;
@@ -1183,7 +1191,7 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                    cur_pkt.size);
         }
         if (s->debug & FF_FDEBUG_TS)
-            av_log(s, AV_LOG_DEBUG, "av_read_packet stream=%d, pts=%"PRId64", dts=%"PRId64", size=%d, duration=%d, flags=%d\n",
+            av_log(s, AV_LOG_DEBUG, "ff_read_packet stream=%d, pts=%"PRId64", dts=%"PRId64", size=%d, duration=%d, flags=%d\n",
                    cur_pkt.stream_index,
                    cur_pkt.pts,
                    cur_pkt.dts,
@@ -1956,7 +1964,7 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
                 break;
 
             do {
-                ret = av_read_packet(ic, pkt);
+                ret = ff_read_packet(ic, pkt);
             } while(ret == AVERROR(EAGAIN));
             if (ret != 0)
                 break;
