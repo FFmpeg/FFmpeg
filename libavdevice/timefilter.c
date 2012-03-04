@@ -83,6 +83,11 @@ double ff_timefilter_update(TimeFilter *self, double system_time, double period)
     return self->cycle_time;
 }
 
+double ff_timefilter_eval(TimeFilter *self, double delta)
+{
+    return self->cycle_time + self->clock_period * delta;
+}
+
 #ifdef TEST
 #include "libavutil/lfg.h"
 #define LFG_MAX ((1LL << 32) - 1)

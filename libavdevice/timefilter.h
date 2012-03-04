@@ -82,6 +82,15 @@ TimeFilter * ff_timefilter_new(double clock_period, double feedback2_factor, dou
 double ff_timefilter_update(TimeFilter *self, double system_time, double period);
 
 /**
+ * Evaluate the filter at a specified time
+ *
+ * @param delta  difference between the requested time and the current time
+ *               (last call to ff_timefilter_update).
+ * @return  the filtered time
+ */
+double ff_timefilter_eval(TimeFilter *self, double delta);
+
+/**
  * Reset the filter
  *
  * This function should mainly be called in case of XRUN.
