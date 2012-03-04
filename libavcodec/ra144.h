@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include "lpc.h"
 #include "audio_frame_queue.h"
+#include "dsputil.h"
 
 #define NBLOCKS         4       ///< number of subblocks within a block
 #define BLOCKSIZE       40      ///< subblock size in 16-bit words
@@ -35,6 +36,7 @@
 
 typedef struct RA144Context {
     AVCodecContext *avctx;
+    DSPContext dsp;
     LPCContext lpc_ctx;
     AudioFrameQueue afq;
     int last_frame;
@@ -57,6 +59,8 @@ typedef struct RA144Context {
     /** Adaptive codebook, its size is two units bigger to avoid a
      *  buffer overflow. */
     int16_t adapt_cb[146+2];
+
+    DECLARE_ALIGNED(16, int16_t, buffer_a)[FFALIGN(BLOCKSIZE,16)];
 } RA144Context;
 
 void ff_copy_and_dup(int16_t *target, const int16_t *source, int offset);
@@ -68,7 +72,7 @@ unsigned int ff_rms(const int *data);
 int ff_interp(RA144Context *ractx, int16_t *out, int a, int copyold,
               int energy);
 unsigned int ff_rescale_rms(unsigned int rms, unsigned int energy);
-int ff_irms(const int16_t *data);
+int ff_irms(DSPContext *dsp, const int16_t *data/*align 16*/);
 void ff_subblock_synthesis(RA144Context *ractx, const int16_t *lpc_coefs,
                            int cba_idx, int cb1_idx, int cb2_idx,
                            int gval, int gain);

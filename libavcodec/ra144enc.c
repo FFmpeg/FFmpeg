@@ -60,7 +60,9 @@ static av_cold int ra144_encode_init(AVCodecContext * avctx)
     ractx = avctx->priv_data;
     ractx->lpc_coef[0] = ractx->lpc_tables[0];
     ractx->lpc_coef[1] = ractx->lpc_tables[1];
+    AV_ZERO128(ractx->buffer_a+BLOCKSIZE);
     ractx->avctx = avctx;
+    ff_dsputil_init(&ractx->dsp, avctx);
     ret = ff_lpc_init(&ractx->lpc_ctx, avctx->frame_size, LPC_ORDER,
                       FF_LPC_TYPE_LEVINSON);
     if (ret < 0)
@@ -334,7 +336,6 @@ static void ra144_encode_subblock(RA144Context *ractx,
     float data[BLOCKSIZE] = { 0 }, work[LPC_ORDER + BLOCKSIZE];
     float coefs[LPC_ORDER];
     float zero[BLOCKSIZE], cba[BLOCKSIZE], cb1[BLOCKSIZE], cb2[BLOCKSIZE];
-    int16_t cba_vect[BLOCKSIZE];
     int cba_idx, cb1_idx, cb2_idx, gain;
     int i, n;
     unsigned m[3];
@@ -373,8 +374,8 @@ static void ra144_encode_subblock(RA144Context *ractx,
          */
         memcpy(cba, work + LPC_ORDER, sizeof(cba));
 
-        ff_copy_and_dup(cba_vect, ractx->adapt_cb, cba_idx + BLOCKSIZE / 2 - 1);
-        m[0] = (ff_irms(cba_vect) * rms) >> 12;
+        ff_copy_and_dup(ractx->buffer_a, ractx->adapt_cb, cba_idx + BLOCKSIZE / 2 - 1);
+        m[0] = (ff_irms(&ractx->dsp, ractx->buffer_a) * rms) >> 12;
     }
     fixed_cb_search(work + LPC_ORDER, coefs, data, cba_idx, &cb1_idx, &cb2_idx);
     for (i = 0; i < BLOCKSIZE; i++) {
