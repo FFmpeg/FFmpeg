@@ -28,24 +28,8 @@ extern "C" {
 #include "avcodec.h"
 }
 
-#include <stdlib.h>
-#include <utvideo/utvideo.h>
-#include <utvideo/Codec.h>
-
+#include "libutvideo.h"
 #include "get_bits.h"
-
-typedef struct {
-    uint32_t version;
-    uint32_t original_format;
-    uint32_t frameinfo_size;
-    uint32_t flags;
-} UtVideoExtra;
-
-typedef struct {
-    CCodec *codec;
-    unsigned int buf_size;
-    uint8_t *output;
-} UtVideoContext;
 
 static av_cold int utvideo_decode_init(AVCodecContext *avctx)
 {
@@ -91,9 +75,9 @@ static av_cold int utvideo_decode_init(AVCodecContext *avctx)
 
     /* Only allocate the buffer once */
     utv->buf_size = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
-    utv->output = (uint8_t *)av_malloc(utv->buf_size * sizeof(uint8_t));
+    utv->buffer = (uint8_t *)av_malloc(utv->buf_size * sizeof(uint8_t));
 
-    if (utv->output == NULL) {
+    if (utv->buffer == NULL) {
         av_log(avctx, AV_LOG_ERROR, "Unable to allocate output buffer.\n");
         return -1;
     }
@@ -143,26 +127,26 @@ static int utvideo_decode_frame(AVCodecContext *avctx, void *data,
     pic->key_frame = 1;
 
     /* Decode the frame */
-    utv->codec->DecodeFrame(utv->output, avpkt->data, true);
+    utv->codec->DecodeFrame(utv->buffer, avpkt->data, true);
 
     /* Set the output data depending on the colorspace */
     switch (avctx->pix_fmt) {
     case PIX_FMT_YUV420P:
         pic->linesize[0] = w;
         pic->linesize[1] = pic->linesize[2] = w / 2;
-        pic->data[0] = utv->output;
-        pic->data[2] = utv->output + (w * h);
+        pic->data[0] = utv->buffer;
+        pic->data[2] = utv->buffer + (w * h);
         pic->data[1] = pic->data[2] + (w * h / 4);
         break;
     case PIX_FMT_YUYV422:
         pic->linesize[0] = w * 2;
-        pic->data[0] = utv->output;
+        pic->data[0] = utv->buffer;
         break;
     case PIX_FMT_BGR24:
     case PIX_FMT_RGB32:
         /* Make the linesize negative, since Ut Video uses bottom-up BGR */
         pic->linesize[0] = -1 * w * (avctx->pix_fmt == PIX_FMT_BGR24 ? 3 : 4);
-        pic->data[0] = utv->output + utv->buf_size + pic->linesize[0];
+        pic->data[0] = utv->buffer + utv->buf_size + pic->linesize[0];
         break;
     }
 
@@ -178,7 +162,7 @@ static av_cold int utvideo_decode_close(AVCodecContext *avctx)
 
     /* Free output */
     av_freep(&avctx->coded_frame);
-    av_freep(&utv->output);
+    av_freep(&utv->buffer);
 
     /* Finish decoding and clean up the instance */
     utv->codec->DecodeEnd();
