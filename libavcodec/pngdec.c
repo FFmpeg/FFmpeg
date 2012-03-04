@@ -427,7 +427,7 @@ static int decode_frame(AVCodecContext *avctx,
         if (s->bytestream >= s->bytestream_end)
             goto fail;
         length = bytestream_get_be32(&s->bytestream);
-        if (length > 0x7fffffff)
+        if (length > 0x7fffffff || length > s->bytestream_end - s->bytestream)
             goto fail;
         tag32 = bytestream_get_be32(&s->bytestream);
         tag = av_bswap32(tag32);
