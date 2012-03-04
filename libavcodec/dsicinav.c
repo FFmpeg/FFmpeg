@@ -175,6 +175,7 @@ static int cin_decode_lzss(const unsigned char *src, int src_size, unsigned char
             }
         }
     }
+    return 0;
 }
 
 static void cin_decode_rle(const unsigned char *src, int src_size, unsigned char *dst, int dst_size)
