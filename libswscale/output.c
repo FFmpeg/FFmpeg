@@ -1040,8 +1040,8 @@ yuv2rgb_1_c_template(SwsContext *c, const int16_t *buf0,
                        *b =  c->table_bU[U + YUVRGB_TABLE_HEADROOM];
 
             if (hasAlpha) {
-                A1 = (abuf0[i * 2    ] + 64) >> 7;
-                A2 = (abuf0[i * 2 + 1] + 64) >> 7;
+                A1 = abuf0[i * 2    ] * 255 + 16384 >> 15;
+                A2 = abuf0[i * 2 + 1] * 255 + 16384 >> 15;
             }
 
             yuv2rgb_write(dest, i, Y1, Y2, hasAlpha ? A1 : 0, hasAlpha ? A2 : 0,
