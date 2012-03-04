@@ -622,7 +622,7 @@ static int decode_cell(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
     /* of the predicted cell in order to avoid overflows. */
     if (vq_index >= 8 && ref_block) {
         for (x = 0; x < cell->width << 2; x++)
-            ref_block[x] = requant_tab[vq_index & 7][ref_block[x]];
+            ref_block[x] = requant_tab[vq_index & 7][ref_block[x] & 127];
     }
 
     error = IV3_NOERR;
