@@ -190,6 +190,12 @@ int parse_option(void *optctx, const char *opt, const char *arg,
 void parse_loglevel(int argc, char **argv, const OptionDef *options);
 
 /**
+ * Return index of option opt in argv or 0 if not found.
+ */
+int locate_option(int argc, char **argv, const OptionDef *options,
+                  const char *optname);
+
+/**
  * Check if the given stream matches a stream specifier.
  *
  * @param s  Corresponding format context.

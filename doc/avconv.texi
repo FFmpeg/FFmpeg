@@ -808,6 +808,10 @@ avconv -i file.mov -an -vn -bsf:s mov2textsub -c:s copy -f rawvideo sub.txt
 
 @item -tag[:@var{stream_specifier}] @var{codec_tag} (@emph{output,per-stream})
 Force a tag/fourcc for matching streams.
+
+@item -cpuflags mask (@emph{global})
+Set a mask that's applied to autodetected CPU flags.  This option is intended
+for testing. Do not use it unless you know what you're doing.
 @end table
 @c man end OPTIONS
 
