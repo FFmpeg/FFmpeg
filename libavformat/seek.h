@@ -31,12 +31,9 @@
 typedef struct AVParserStreamState {
     // saved members of AVStream
     AVCodecParserContext   *parser;
-    AVPacket                cur_pkt;
     int64_t                 last_IP_pts;
     int64_t                 cur_dts;
     int64_t                 reference_dts;
-    const uint8_t          *cur_ptr;
-    int                     cur_len;
     int                     probe_packets;
 } AVParserStreamState;
 
@@ -47,8 +44,8 @@ typedef struct AVParserState {
     int64_t         fpos;                   ///< file position at the time of call
 
     // saved members of AVFormatContext
-    AVStream       *cur_st;                 ///< current stream.
     AVPacketList   *packet_buffer;          ///< packet buffer of original state
+    AVPacketList   *parse_queue;            ///< parse queue of original state
     AVPacketList   *raw_packet_buffer;      ///< raw packet buffer of original state
     int raw_packet_buffer_remaining_size;   ///< remaining space in raw_packet_buffer
 
