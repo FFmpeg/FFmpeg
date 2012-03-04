@@ -638,6 +638,11 @@ static inline void tm2_motion_block(TM2Context *ctx, AVFrame *pic, int bx, int b
     mx = GET_TOK(ctx, TM2_MOT);
     my = GET_TOK(ctx, TM2_MOT);
 
+    if (4*bx+mx<0 || 4*by+my<0 || 4*bx+mx+4 > ctx->avctx->width || 4*by+my+4 > ctx->avctx->height) {
+        av_log(0,0, "MV out of picture\n");
+        return;
+    }
+
     Yo += my * oYstride + mx;
     Uo += (my >> 1) * oUstride + (mx >> 1);
     Vo += (my >> 1) * oVstride + (mx >> 1);
