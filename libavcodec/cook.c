@@ -770,7 +770,7 @@ static int decouple_info(COOKContext *q, COOKSubpacket *p, int *decouple_tab)
     int length = end - start + 1;
 
     if (start > end)
-        return;
+        return 0;
 
     if (vlc)
         for (i = 0; i < length; i++)
@@ -969,6 +969,7 @@ static int decode_subpacket(COOKContext *q, COOKSubpacket *p,
         else
             mlt_compensate_output(q, q->decode_buffer_2, &p->gains2,
                                   p->mono_previous_buffer2, outbuffer, p->ch_idx + 1);
+    return 0;
 }
 
 
