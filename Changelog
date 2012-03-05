@@ -12,6 +12,7 @@ version next:
 - WMA Lossless decoder
 - bluray protocol
 - blackdetect filter
+- libutvideo encoder wrapper (--enable-libutvideo)
 
 
 version 0.10:

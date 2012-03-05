@@ -194,7 +194,7 @@ External library support:
   --enable-libspeex        enable Speex support via libspeex [no]
   --enable-libstagefright-h264  enable H.264 decoding via libstagefright [no]
   --enable-libtheora       enable Theora encoding via libtheora [no]
-  --enable-libutvideo      enable Ut Video decoding via libutvideo [no]
+  --enable-libutvideo      enable Ut Video encoding and decoding via libutvideo [no]
   --enable-libv4l2         enable libv4l2/v4l-utils [no]
   --enable-libvo-aacenc    enable AAC encoding via libvo-aacenc [no]
   --enable-libvo-amrwbenc  enable AMR-WB encoding via libvo-amrwbenc [no]
@@ -1575,6 +1575,7 @@ libx264rgb_encoder_deps="libx264"
 libxavs_encoder_deps="libxavs"
 libxvid_encoder_deps="libxvid"
 libutvideo_decoder_deps="libutvideo gpl"
+libutvideo_encoder_deps="libutvideo gpl"
 
 # demuxers / muxers
 ac3_demuxer_select="ac3_parser"
