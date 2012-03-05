@@ -573,6 +573,19 @@ static int decode_cell(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
     /* setup output and reference pointers */
     offset = (cell->ypos << 2) * plane->pitch + (cell->xpos << 2);
     block  =  plane->pixels[ctx->buf_sel] + offset;
+
+    if (cell->mv_ptr) {
+        mv_y      = cell->mv_ptr[0];
+        mv_x      = cell->mv_ptr[1];
+        if (   mv_x + 4*cell->xpos < 0
+            || mv_y + 4*cell->ypos < 0
+            || mv_x + 4*cell->xpos + 4*cell->width  > plane->width
+            || mv_y + 4*cell->ypos + 4*cell->height > plane->height) {
+            av_log(avctx, AV_LOG_ERROR, "motion vector %d %d outside reference\n", mv_x + 4*cell->xpos, mv_y + 4*cell->ypos);
+            return AVERROR_INVALIDDATA;
+        }
+    }
+
     if (!cell->mv_ptr) {
         /* use previous line as reference for INTRA cells */
         ref_block = block - plane->pitch;
@@ -584,13 +597,6 @@ static int decode_cell(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
         /* set the pointer to the reference pixels for modes 0-4 INTER */
         mv_y      = cell->mv_ptr[0];
         mv_x      = cell->mv_ptr[1];
-        if (   mv_x + 4*cell->xpos < 0
-            || mv_y + 4*cell->ypos < 0
-            || mv_x + 4*cell->xpos + 4*cell->width  > plane->width
-            || mv_y + 4*cell->ypos + 4*cell->height > plane->height) {
-            av_log(avctx, AV_LOG_ERROR, "motion vector %d %d outside reference\n", mv_x + 4*cell->xpos, mv_y + 4*cell->ypos);
-            return AVERROR_INVALIDDATA;
-        }
         offset   += mv_y * plane->pitch + mv_x;
         ref_block = plane->pixels[ctx->buf_sel ^ 1] + offset;
     }
