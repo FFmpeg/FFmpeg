@@ -75,10 +75,12 @@ meaning only while running the regression tests.
 @item THREADS
 Specify how many threads to use while running regression tests, it is
 quite useful to detect thread-related regressions.
+@item CPUFLAGS
+Specify a mask to be applied to autodetected CPU flags.
 @end table
 
 @example
-    make V=1 SAMPLES=/var/fate/samples THREADS=2 fate
+    make V=1 SAMPLES=/var/fate/samples THREADS=2 CPUFLAGS=mmx fate
 @end example
 
 @chapter Automated Tests

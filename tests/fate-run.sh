@@ -17,6 +17,7 @@ ref=${7:-"${base}/ref/fate/${test}"}
 fuzz=$8
 threads=${9:-1}
 thread_type=${10:-frame+slice}
+cpuflags=${11:-all}
 
 outdir="tests/data/fate"
 outfile="${outdir}/${test}"
@@ -50,7 +51,7 @@ run(){
 }
 
 avconv(){
-    run avconv -nostats -threads $threads -thread_type $thread_type "$@"
+    run avconv -nostats -threads $threads -thread_type $thread_type -cpuflags $cpuflags "$@"
 }
 
 framecrc(){
@@ -76,7 +77,7 @@ pcm(){
 regtest(){
     t="${test#$2-}"
     ref=${base}/ref/$2/$t
-    ${base}/${1}-regression.sh $t $2 $3 "$target_exec" "$target_path" "$threads" "$thread_type"
+    ${base}/${1}-regression.sh $t $2 $3 "$target_exec" "$target_path" "$threads" "$thread_type" "$cpuflags"
 }
 
 codectest(){
