@@ -21,6 +21,7 @@
 
 #include "avcodec.h"
 #include "wma.h"
+#include "libavutil/avassert.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -404,6 +405,7 @@ static int encode_superframe(AVCodecContext *avctx,
         put_bits(&s->pb, 8, 'N');
 
     flush_put_bits(&s->pb);
+    av_assert0(put_bits_ptr(&s->pb) - s->pb.buf == s->block_align);
     return s->block_align;
 }
 
