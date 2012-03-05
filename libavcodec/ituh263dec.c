@@ -852,8 +852,8 @@ end:
     {
         int v= show_bits(&s->gb, 16);
 
-        if(get_bits_count(&s->gb) + 16 > s->gb.size_in_bits){
-            v>>= get_bits_count(&s->gb) + 16 - s->gb.size_in_bits;
+        if (get_bits_left(&s->gb) < 16) {
+            v >>= 16 - get_bits_left(&s->gb);
         }
 
         if(v==0)

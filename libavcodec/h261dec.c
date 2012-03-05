@@ -265,7 +265,7 @@ static int h261_decode_mb(H261Context *h){
     while( h->mba_diff == MBA_STUFFING ); // stuffing
 
     if ( h->mba_diff < 0 ){
-        if ( get_bits_count(&s->gb) + 7 >= s->gb.size_in_bits )
+        if (get_bits_left(&s->gb) <= 7)
             return SLICE_END;
 
         av_log(s->avctx, AV_LOG_ERROR, "illegal mba at %d %d\n", s->mb_x, s->mb_y);

@@ -164,7 +164,7 @@ static int decode_buffering_period(H264Context *h){
 int ff_h264_decode_sei(H264Context *h){
     MpegEncContext * const s = &h->s;
 
-    while(get_bits_count(&s->gb) + 16 < s->gb.size_in_bits){
+    while (get_bits_left(&s->gb) > 16) {
         int size, type;
 
         type=0;
