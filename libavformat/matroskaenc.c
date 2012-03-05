@@ -940,6 +940,14 @@ static int mkv_write_header(AVFormatContext *s)
         put_ebml_binary(pb, MATROSKA_ID_SEGMENTUID, segment_uid, 16);
     }
 
+    if (tag = av_dict_get(s->metadata, "creation_time", NULL, 0)) {
+        // Adjust time so it's relative to 2001-01-01 and convert to nanoseconds.
+        int64_t date_utc = (ff_iso8601_to_unix_time(tag->value) - 978307200) * 1000000000;
+        uint8_t date_utc_buf[8];
+        AV_WB64(date_utc_buf, date_utc);
+        put_ebml_binary(pb, MATROSKA_ID_DATEUTC, date_utc_buf, 8);
+    }
+
     // reserve space for the duration
     mkv->duration = 0;
     mkv->duration_offset = avio_tell(pb);

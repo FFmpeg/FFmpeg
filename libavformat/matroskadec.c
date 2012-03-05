@@ -235,6 +235,7 @@ typedef struct {
     uint64_t time_scale;
     double   duration;
     char    *title;
+    EbmlBin date_utc;
     EbmlList tracks;
     EbmlList attachments;
     EbmlList chapters;
@@ -294,7 +295,7 @@ static EbmlSyntax matroska_info[] = {
     { MATROSKA_ID_TITLE,              EBML_UTF8,  0, offsetof(MatroskaDemuxContext,title) },
     { MATROSKA_ID_WRITINGAPP,         EBML_NONE },
     { MATROSKA_ID_MUXINGAPP,          EBML_NONE },
-    { MATROSKA_ID_DATEUTC,            EBML_NONE },
+    { MATROSKA_ID_DATEUTC,            EBML_BIN,  0, offsetof(MatroskaDemuxContext,date_utc) },
     { MATROSKA_ID_SEGMENTUID,         EBML_NONE },
     { 0 }
 };
@@ -1346,6 +1347,17 @@ static int matroska_aac_sri(int samplerate)
     return sri;
 }
 
+static void matroska_metadata_creation_time(AVDictionary **metadata, int64_t date_utc)
+{
+    char buffer[32];
+    /* Convert to seconds and adjust by number of seconds between 2001-01-01 and Epoch */
+    time_t creation_time = date_utc / 1000000000 + 978307200;
+    struct tm *ptm = gmtime(&creation_time);
+    if (!ptm) return;
+    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", ptm);
+    av_dict_set(metadata, "creation_time", buffer, 0);
+}
+
 static int matroska_read_header(AVFormatContext *s)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
@@ -1405,6 +1417,9 @@ static int matroska_read_header(AVFormatContext *s)
         matroska->ctx->duration = matroska->duration * matroska->time_scale
                                   * 1000 / AV_TIME_BASE;
     av_dict_set(&s->metadata, "title", matroska->title, 0);
+
+    if (matroska->date_utc.size == 8)
+        matroska_metadata_creation_time(&s->metadata, AV_RB64(matroska->date_utc.data));
 
     tracks = matroska->tracks.elem;
     for (i=0; i < matroska->tracks.nb_elem; i++) {
