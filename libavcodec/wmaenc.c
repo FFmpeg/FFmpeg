@@ -398,9 +398,9 @@ static int encode_superframe(AVCodecContext *avctx,
 #endif
 
     encode_frame(s, s->coefs, buf, buf_size, total_gain);
-    assert((put_bits_count(&s->pb) & 7) == 0);
+    av_assert0((put_bits_count(&s->pb) & 7) == 0);
     i= s->block_align - (put_bits_count(&s->pb)+7)/8;
-    assert(i>=0);
+    av_assert0(i>=0);
     while(i--)
         put_bits(&s->pb, 8, 'N');
 
