@@ -379,6 +379,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.analyse.b_psnr = avctx->flags & CODEC_FLAG_PSNR;
 
     x4->params.i_threads      = avctx->thread_count;
+    if (avctx->thread_type)
+        x4->params.b_sliced_threads = avctx->thread_type == FF_THREAD_SLICE;
 
     x4->params.b_interlaced   = avctx->flags & CODEC_FLAG_INTERLACED_DCT;
 
@@ -536,6 +538,7 @@ static const AVCodecDefault x264_defaults[] = {
     { "coder",            "-1" },
     { "cmp",              "-1" },
     { "threads",          AV_STRINGIFY(X264_THREADS_AUTO) },
+    { "thread_type",      "0" },
     { NULL },
 };
 
