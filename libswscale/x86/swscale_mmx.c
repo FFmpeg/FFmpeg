@@ -93,8 +93,8 @@ void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufI
     int16_t **alpPixBuf= c->alpPixBuf;
     const int vLumBufSize= c->vLumBufSize;
     const int vChrBufSize= c->vChrBufSize;
-    int16_t *vLumFilterPos= c->vLumFilterPos;
-    int16_t *vChrFilterPos= c->vChrFilterPos;
+    int32_t *vLumFilterPos= c->vLumFilterPos;
+    int32_t *vChrFilterPos= c->vChrFilterPos;
     int16_t *vLumFilter= c->vLumFilter;
     int16_t *vChrFilter= c->vChrFilter;
     int32_t *lumMmxFilter= c->lumMmxFilter;
@@ -204,7 +204,7 @@ extern void ff_hscale ## from_bpc ## to ## to_bpc ## _ ## filter_n ## _ ## opt( 
                                                 SwsContext *c, int16_t *data, \
                                                 int dstW, const uint8_t *src, \
                                                 const int16_t *filter, \
-                                                const int16_t *filterPos, int filterSize)
+                                                const int32_t *filterPos, int filterSize)
 
 #define SCALE_FUNCS(filter_n, opt) \
     SCALE_FUNC(filter_n,  8, 15, opt); \

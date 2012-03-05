@@ -38,7 +38,7 @@ SECTION .text
 ;                               (SwsContext *c, int{16,32}_t *dst,
 ;                                int dstW, const uint{8,16}_t *src,
 ;                                const int16_t *filter,
-;                                const int16_t *filterPos, int filterSize);
+;                                const int32_t *filterPos, int filterSize);
 ;
 ; Scale one horizontal line. Input is either 8-bits width or 16-bits width
 ; ($source_width can be either 8, 9, 10 or 16, difference is whether we have to
@@ -53,6 +53,9 @@ SECTION .text
 cglobal hscale%1to%2_%4_%5, %6, 7, %7
 %if ARCH_X86_64
     movsxd        r2, r2d
+%define mov32 movsxd
+%else ; x86-32
+%define mov32 mov
 %endif ; x86-64
 %if %2 == 19
 %if mmsize == 8 ; mmx
@@ -95,14 +98,14 @@ cglobal hscale%1to%2_%4_%5, %6, 7, %7
 %else ; %2 == 19
     lea           r1, [r1+r2*(4>>r2shr)]
 %endif ; %2 == 15/19
-    lea           r5, [r5+r2*(2>>r2shr)]
+    lea           r5, [r5+r2*(4>>r2shr)]
     neg           r2
 
 .loop:
 %if %3 == 4 ; filterSize == 4 scaling
     ; load 2x4 or 4x4 source pixels into m0/m1
-    movsx         r0, word [r5+r2*2+0]   ; filterPos[0]
-    movsx         r6, word [r5+r2*2+2]   ; filterPos[1]
+    mov32         r0, dword [r5+r2*4+0]  ; filterPos[0]
+    mov32         r6, dword [r5+r2*4+4]  ; filterPos[1]
     movlh         m0, [r3+r0*srcmul]     ; src[filterPos[0] + {0,1,2,3}]
 %if mmsize == 8
     movlh         m1, [r3+r6*srcmul]     ; src[filterPos[1] + {0,1,2,3}]
@@ -112,8 +115,8 @@ cglobal hscale%1to%2_%4_%5, %6, 7, %7
 %else ; %1 == 8
     movd          m4, [r3+r6*srcmul]     ; src[filterPos[1] + {0,1,2,3}]
 %endif
-    movsx         r0, word [r5+r2*2+4]   ; filterPos[2]
-    movsx         r6, word [r5+r2*2+6]   ; filterPos[3]
+    mov32         r0, dword [r5+r2*4+8]  ; filterPos[2]
+    mov32         r6, dword [r5+r2*4+12] ; filterPos[3]
     movlh         m1, [r3+r0*srcmul]     ; src[filterPos[2] + {0,1,2,3}]
 %if %1 > 8
     movhps        m1, [r3+r6*srcmul]     ; src[filterPos[3] + {0,1,2,3}]
@@ -156,8 +159,8 @@ cglobal hscale%1to%2_%4_%5, %6, 7, %7
 %endif ; mmx/sse2/ssse3/sse4
 %else ; %3 == 8, i.e. filterSize == 8 scaling
     ; load 2x8 or 4x8 source pixels into m0, m1, m4 and m5
-    movsx         r0, word [r5+r2*1+0]   ; filterPos[0]
-    movsx         r6, word [r5+r2*1+2]   ; filterPos[1]
+    mov32         r0, dword [r5+r2*2+0]  ; filterPos[0]
+    mov32         r6, dword [r5+r2*2+4]  ; filterPos[1]
     movbh         m0, [r3+ r0   *srcmul] ; src[filterPos[0] + {0,1,2,3,4,5,6,7}]
 %if mmsize == 8
     movbh         m1, [r3+(r0+4)*srcmul] ; src[filterPos[0] + {4,5,6,7}]
@@ -165,8 +168,8 @@ cglobal hscale%1to%2_%4_%5, %6, 7, %7
     movbh         m5, [r3+(r6+4)*srcmul] ; src[filterPos[1] + {4,5,6,7}]
 %else ; mmsize == 16
     movbh         m1, [r3+ r6   *srcmul] ; src[filterPos[1] + {0,1,2,3,4,5,6,7}]
-    movsx         r0, word [r5+r2*1+4]   ; filterPos[2]
-    movsx         r6, word [r5+r2*1+6]   ; filterPos[3]
+    mov32         r0, dword [r5+r2*2+8]  ; filterPos[2]
+    mov32         r6, dword [r5+r2*2+12] ; filterPos[3]
     movbh         m4, [r3+ r0   *srcmul] ; src[filterPos[2] + {0,1,2,3,4,5,6,7}]
     movbh         m5, [r3+ r6   *srcmul] ; src[filterPos[3] + {0,1,2,3,4,5,6,7}]
 %endif ; mmsize == 8/16
@@ -251,7 +254,7 @@ cglobal hscale%1to%2_%4_%5, %6, 7, %7
 %define r1x     r1
 %define filter2 r6m
 %endif ; x86-32/64
-    lea           r5, [r5+r2*2]
+    lea           r5, [r5+r2*4]
 %if %2 == 15
     lea           r1, [r1+r2*2]
 %else ; %2 == 19
@@ -261,8 +264,8 @@ cglobal hscale%1to%2_%4_%5, %6, 7, %7
     neg           r2
 
 .loop:
-    movsx         r0, word [r5+r2*2+0]   ; filterPos[0]
-    movsx        r1x, word [r5+r2*2+2]   ; filterPos[1]
+    mov32         r0, dword [r5+r2*4+0]  ; filterPos[0]
+    mov32        r1x, dword [r5+r2*4+4]  ; filterPos[1]
     ; FIXME maybe do 4px/iteration on x86-64 (x86-32 wouldn't have enough regs)?
     pxor          m4, m4
     pxor          m5, m5
@@ -293,7 +296,7 @@ cglobal hscale%1to%2_%4_%5, %6, 7, %7
     jl .innerloop
 
 %ifidn %4, X4
-    movsx        r1x, word [r5+r2*2+2]   ; filterPos[1]
+    mov32        r1x, dword [r5+r2*4+4]  ; filterPos[1]
     movlh         m0, [src_reg+r0 *srcmul] ; split last 4 srcpx of dstpx[0]
     sub          r1x, r6                   ; and first 4 srcpx of dstpx[1]
 %if %1 > 8
