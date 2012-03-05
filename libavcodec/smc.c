@@ -313,7 +313,7 @@ static void smc_decode_stream(SmcContext *s)
             } else
                 color_table_index = CQUAD * s->buf[stream_ptr++];
 
-            while (n_blocks--) {
+            while (n_blocks-- && stream_ptr + 3 < s->size) {
                 color_flags = AV_RB32(&s->buf[stream_ptr]);
                 stream_ptr += 4;
                 /* flag mask actually acts as a bit shift count here */
