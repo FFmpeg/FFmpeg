@@ -303,13 +303,7 @@ DVDemuxContext* avpriv_dv_init_demux(AVFormatContext *s)
         return NULL;
     }
 
-    c->sys  = NULL;
-    c->fctx = s;
-    memset(c->ast, 0, sizeof(c->ast));
-    c->ach    = 0;
-    c->frames = 0;
-    c->abytes = 0;
-
+    c->fctx                   = s;
     c->vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     c->vst->codec->codec_id   = CODEC_ID_DVVIDEO;
     c->vst->codec->bit_rate   = 25000000;
