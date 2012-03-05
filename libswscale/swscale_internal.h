@@ -295,10 +295,10 @@ typedef struct SwsContext {
     int16_t *hChrFilter;          ///< Array of horizontal filter coefficients for chroma     planes.
     int16_t *vLumFilter;          ///< Array of vertical   filter coefficients for luma/alpha planes.
     int16_t *vChrFilter;          ///< Array of vertical   filter coefficients for chroma     planes.
-    int16_t *hLumFilterPos;       ///< Array of horizontal filter starting positions for each dst[i] for luma/alpha planes.
-    int16_t *hChrFilterPos;       ///< Array of horizontal filter starting positions for each dst[i] for chroma     planes.
-    int16_t *vLumFilterPos;       ///< Array of vertical   filter starting positions for each dst[i] for luma/alpha planes.
-    int16_t *vChrFilterPos;       ///< Array of vertical   filter starting positions for each dst[i] for chroma     planes.
+    int32_t *hLumFilterPos;       ///< Array of horizontal filter starting positions for each dst[i] for luma/alpha planes.
+    int32_t *hChrFilterPos;       ///< Array of horizontal filter starting positions for each dst[i] for chroma     planes.
+    int32_t *vLumFilterPos;       ///< Array of vertical   filter starting positions for each dst[i] for luma/alpha planes.
+    int32_t *vChrFilterPos;       ///< Array of vertical   filter starting positions for each dst[i] for chroma     planes.
     int hLumFilterSize;           ///< Horizontal filter size for luma/alpha pixels.
     int hChrFilterSize;           ///< Horizontal filter size for chroma     pixels.
     int vLumFilterSize;           ///< Vertical   filter size for luma/alpha pixels.
@@ -508,10 +508,10 @@ typedef struct SwsContext {
     /** @{ */
     void (*hyScale)(struct SwsContext *c, int16_t *dst, int dstW,
                     const uint8_t *src, const int16_t *filter,
-                    const int16_t *filterPos, int filterSize);
+                    const int32_t *filterPos, int filterSize);
     void (*hcScale)(struct SwsContext *c, int16_t *dst, int dstW,
                     const uint8_t *src, const int16_t *filter,
-                    const int16_t *filterPos, int filterSize);
+                    const int32_t *filterPos, int filterSize);
     /** @} */
 
     /// Color range conversion function for luma plane if needed.
