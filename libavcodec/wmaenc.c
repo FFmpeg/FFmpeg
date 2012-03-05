@@ -396,13 +396,11 @@ static int encode_superframe(AVCodecContext *avctx,
     }
 #endif
 
-    if ((i = encode_frame(s, s->coefs, buf, buf_size, total_gain)) >= 0) {
-        av_log(avctx, AV_LOG_ERROR, "required frame size too large. please "
-               "use a higher bit rate.\n");
-        return AVERROR(EINVAL);
-    }
+    encode_frame(s, s->coefs, buf, buf_size, total_gain);
     assert((put_bits_count(&s->pb) & 7) == 0);
-    while (i++)
+    i= s->block_align - (put_bits_count(&s->pb)+7)/8;
+    assert(i>=0);
+    while(i--)
         put_bits(&s->pb, 8, 'N');
 
     flush_put_bits(&s->pb);
