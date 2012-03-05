@@ -195,8 +195,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
         }
         /* dump the extradata */
         for (i = 0; i < avctx->extradata_size; i++)
-            av_dlog(avctx, AV_LOG_DEBUG, "[%x] ", avctx->extradata[i]);
-        av_dlog(avctx, AV_LOG_DEBUG, "\n");
+            av_dlog(avctx, "[%x] ", avctx->extradata[i]);
+        av_dlog(avctx, "\n");
 
     } else {
         av_log_ask_for_sample(avctx, "Unsupported extradata size\n");
@@ -865,7 +865,7 @@ static int decode_subframe(WmallDecodeCtx *s)
 
         s->do_arith_coding    = get_bits1(&s->gb);
         if (s->do_arith_coding) {
-            av_dlog(s->avctx, AV_LOG_DEBUG, "do_arith_coding == 1");
+            av_dlog(s->avctx, "do_arith_coding == 1");
             abort();
         }
         s->do_ac_filter       = get_bits1(&s->gb);
@@ -914,7 +914,7 @@ static int decode_subframe(WmallDecodeCtx *s)
 
     if (rawpcm_tile) {
         int bits = s->bits_per_sample - padding_zeroes;
-        av_dlog(s->avctx, AV_LOG_DEBUG, "RAWPCM %d bits per sample. "
+        av_dlog(s->avctx, "RAWPCM %d bits per sample. "
                 "total %d bits, remain=%d\n", bits,
                 bits * s->num_channels * subframe_len, get_bits_count(&s->gb));
         for (i = 0; i < s->num_channels; i++)
@@ -1009,13 +1009,13 @@ static int decode_frame(WmallDecodeCtx *s)
         /* usually true for the first frame */
         if (get_bits1(gb)) {
             skip = get_bits(gb, av_log2(s->samples_per_frame * 2));
-            av_dlog(s->avctx, AV_LOG_DEBUG, "start skip: %i\n", skip);
+            av_dlog(s->avctx, "start skip: %i\n", skip);
         }
 
         /* sometimes true for the last frame */
         if (get_bits1(gb)) {
             skip = get_bits(gb, av_log2(s->samples_per_frame * 2));
-            av_dlog(s->avctx, AV_LOG_DEBUG, "end skip: %i\n", skip);
+            av_dlog(s->avctx, "end skip: %i\n", skip);
         }
 
     }
@@ -1035,7 +1035,7 @@ static int decode_frame(WmallDecodeCtx *s)
         }
     }
 
-    av_dlog(s->avctx, AV_LOG_DEBUG, "Frame done\n");
+    av_dlog(s->avctx, "Frame done\n");
 
     if (s->skip_frame)
         s->skip_frame = 0;
@@ -1184,7 +1184,7 @@ static int decode_packet(AVCodecContext *avctx, void *data, int *got_frame_ptr,
             if (!s->packet_loss)
                 decode_frame(s);
         } else if (s->num_saved_bits - s->frame_offset) {
-            av_dlog(avctx, AV_LOG_DEBUG, "ignoring %x previously saved bits\n",
+            av_dlog(avctx, "ignoring %x previously saved bits\n",
                     s->num_saved_bits - s->frame_offset);
         }
 
