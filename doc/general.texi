@@ -893,7 +893,7 @@ performance on systems without hardware floating point support).
 @item AVI               @tab X      @tab X
 @item DV                @tab X      @tab X
 @item GXF               @tab X      @tab X
-@item MOV               @tab X      @tab
+@item MOV               @tab X      @tab X
 @item MPEG1/2           @tab X      @tab X
 @item MXF               @tab X      @tab X
 @end multitable

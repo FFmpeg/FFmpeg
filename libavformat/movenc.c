@@ -1095,6 +1095,26 @@ static int mov_write_video_tag(AVIOContext *pb, MOVTrack *track)
     return update_size(pb, pos);
 }
 
+static int mov_write_tmcd_tag(AVIOContext *pb, MOVTrack *track)
+{
+    int64_t pos = avio_tell(pb);
+    int frame_duration = track->enc->time_base.num;
+    int nb_frames = (track->timescale + frame_duration/2) / frame_duration;
+
+    avio_wb32(pb, 0); /* size */
+    ffio_wfourcc(pb, "tmcd");               /* Data format */
+    avio_wb32(pb, 0);                       /* Reserved */
+    avio_wb32(pb, 1);                       /* Data reference index */
+    avio_wb32(pb, 0);                       /* Flags */
+    avio_wb32(pb, track->timecode_flags);   /* Flags (timecode) */
+    avio_wb32(pb, track->timescale);        /* Timescale */
+    avio_wb32(pb, frame_duration);          /* Frame duration */
+    avio_w8(pb, nb_frames);                 /* Number of frames */
+    avio_wb24(pb, 0);                       /* Reserved */
+    /* TODO: source reference string */
+    return update_size(pb, pos);
+}
+
 static int mov_write_rtp_tag(AVIOContext *pb, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
@@ -1130,6 +1150,8 @@ static int mov_write_stsd_tag(AVIOContext *pb, MOVTrack *track)
         mov_write_subtitle_tag(pb, track);
     else if (track->enc->codec_tag == MKTAG('r','t','p',' '))
         mov_write_rtp_tag(pb, track);
+    else if (track->enc->codec_tag == MKTAG('t','m','c','d'))
+        mov_write_tmcd_tag(pb, track);
     return update_size(pb, pos);
 }
 
@@ -1262,9 +1284,32 @@ static int mov_write_nmhd_tag(AVIOContext *pb)
     return 12;
 }
 
-static int mov_write_gmhd_tag(AVIOContext *pb)
+static int mov_write_tcmi_tag(AVIOContext *pb, MOVTrack *track)
 {
-    avio_wb32(pb, 0x4C);   /* size */
+    int64_t pos = avio_tell(pb);
+    const char *font = "Lucida Grande";
+    avio_wb32(pb, 0);                   /* size */
+    ffio_wfourcc(pb, "tcmi");           /* timecode media information atom */
+    avio_wb32(pb, 0);                   /* version & flags */
+    avio_wb16(pb, 0);                   /* text font */
+    avio_wb16(pb, 0);                   /* text face */
+    avio_wb16(pb, 12);                  /* text size */
+    avio_wb16(pb, 0);                   /* (unknown, not in the QT specs...) */
+    avio_wb16(pb, 0x0000);              /* text color (red) */
+    avio_wb16(pb, 0x0000);              /* text color (green) */
+    avio_wb16(pb, 0x0000);              /* text color (blue) */
+    avio_wb16(pb, 0xffff);              /* background color (red) */
+    avio_wb16(pb, 0xffff);              /* background color (green) */
+    avio_wb16(pb, 0xffff);              /* background color (blue) */
+    avio_w8(pb, strlen(font));          /* font len (part of the pascal string) */
+    avio_write(pb, font, strlen(font)); /* font name */
+    return update_size(pb, pos);
+}
+
+static int mov_write_gmhd_tag(AVIOContext *pb, MOVTrack *track)
+{
+    int64_t pos = avio_tell(pb);
+    avio_wb32(pb, 0);      /* size */
     ffio_wfourcc(pb, "gmhd");
     avio_wb32(pb, 0x18);   /* gmin size */
     ffio_wfourcc(pb, "gmin");/* generic media info */
@@ -1295,7 +1340,14 @@ static int mov_write_gmhd_tag(AVIOContext *pb)
     avio_wb32(pb, 0x00004000);
     avio_wb16(pb, 0x0000);
 
-    return 0x4C;
+    if (track->enc->codec_tag == MKTAG('t','m','c','d')) {
+        int64_t tmcd_pos = avio_tell(pb);
+        avio_wb32(pb, 0); /* size */
+        ffio_wfourcc(pb, "tmcd");
+        mov_write_tcmi_tag(pb, track);
+        update_size(pb, tmcd_pos);
+    }
+    return update_size(pb, pos);
 }
 
 static int mov_write_smhd_tag(AVIOContext *pb)
@@ -1338,6 +1390,9 @@ static int mov_write_hdlr_tag(AVIOContext *pb, MOVTrack *track)
             if (track->tag == MKTAG('t','x','3','g')) hdlr_type = "sbtl";
             else                                      hdlr_type = "text";
             descr = "SubtitleHandler";
+        } else if (track->enc->codec_tag == MKTAG('t','m','c','d')) {
+            hdlr_type = "tmcd";
+            descr = "TimeCodeHandler";
         } else if (track->enc->codec_tag == MKTAG('r','t','p',' ')) {
             hdlr_type = "hint";
             descr = "HintHandler";
@@ -1389,8 +1444,10 @@ static int mov_write_minf_tag(AVIOContext *pb, MOVTrack *track)
     else if (track->enc->codec_type == AVMEDIA_TYPE_AUDIO)
         mov_write_smhd_tag(pb);
     else if (track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-        if (track->tag == MKTAG('t','e','x','t')) mov_write_gmhd_tag(pb);
+        if (track->tag == MKTAG('t','e','x','t')) mov_write_gmhd_tag(pb, track);
         else                                      mov_write_nmhd_tag(pb);
+    } else if (track->tag == MKTAG('t','m','c','d')) {
+        mov_write_gmhd_tag(pb, track);
     } else if (track->tag == MKTAG('r','t','p',' ')) {
         mov_write_hmhd_tag(pb);
     }
@@ -2145,6 +2202,14 @@ static int mov_write_moov_tag(AVIOContext *pb, MOVMuxContext *mov,
             mov->tracks[i].tref_tag = MKTAG('h','i','n','t');
             mov->tracks[i].tref_id =
                 mov->tracks[mov->tracks[i].src_track].track_id;
+        }
+    }
+    for (i = 0; i < mov->nb_streams; i++) {
+        if (mov->tracks[i].tag == MKTAG('t','m','c','d')) {
+            int src_trk = mov->tracks[i].src_track;
+            mov->tracks[src_trk].tref_tag = mov->tracks[i].tag;
+            mov->tracks[src_trk].tref_id  = mov->tracks[i].track_id;
+            mov->tracks[i].track_duration = mov->tracks[src_trk].track_duration;
         }
     }
 
@@ -3151,12 +3216,48 @@ static void mov_create_chapter_track(AVFormatContext *s, int tracknum)
     }
 }
 
+static int mov_create_timecode_track(AVFormatContext *s, int index, int src_index, const char *tcstr)
+{
+    MOVMuxContext *mov  = s->priv_data;
+    MOVTrack *track     = &mov->tracks[index];
+    AVStream *src_st    = s->streams[src_index];
+    AVTimecode tc;
+    AVPacket pkt    = {.stream_index = index, .flags = AV_PKT_FLAG_KEY, .size = 4};
+    AVRational rate = {src_st->codec->time_base.den, src_st->codec->time_base.num};
+
+    /* compute the frame number */
+    int ret = av_timecode_init_from_string(&tc, rate, tcstr, s);
+    if (ret < 0)
+        return ret;
+
+    /* tmcd track based on video stream */
+    track->mode      = mov->mode;
+    track->tag       = MKTAG('t','m','c','d');
+    track->src_track = src_index;
+    track->timescale = src_st->codec->time_base.den;
+    if (tc.flags & AV_TIMECODE_FLAG_DROPFRAME)
+        track->timecode_flags |= MOV_TIMECODE_FLAG_DROPFRAME;
+
+    /* encode context: tmcd data stream */
+    track->enc = avcodec_alloc_context3(NULL);
+    track->enc->codec_type = AVMEDIA_TYPE_DATA;
+    track->enc->codec_tag  = track->tag;
+    track->enc->time_base  = src_st->codec->time_base;
+
+    /* the tmcd track just contains one packet with the frame number */
+    pkt.data = av_malloc(pkt.size);
+    AV_WB32(pkt.data, tc.start);
+    ret = ff_mov_write_packet(s, &pkt);
+    av_free(pkt.data);
+    return ret;
+}
+
 static int mov_write_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     MOVMuxContext *mov = s->priv_data;
-    AVDictionaryEntry *t;
-    int i, hint_track = 0;
+    AVDictionaryEntry *t, *global_tcr = av_dict_get(s->metadata, "timecode", NULL, 0);
+    int i, hint_track = 0, tmcd_track = 0;
 
     /* Set the FRAGMENT flag if any of the fragmentation methods are
      * enabled. */
@@ -3210,6 +3311,17 @@ static int mov_write_header(AVFormatContext *s)
                 st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
                 mov->nb_streams++;
             }
+        }
+    }
+
+    if (mov->mode == MODE_MOV) {
+        /* Add a tmcd track for each video stream with a timecode */
+        tmcd_track = mov->nb_streams;
+        for (i = 0; i < s->nb_streams; i++) {
+            AVStream *st = s->streams[i];
+            if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
+                (global_tcr || av_dict_get(st->metadata, "timecode", NULL, 0)))
+                mov->nb_streams++;
         }
     }
 
@@ -3336,6 +3448,24 @@ static int mov_write_header(AVFormatContext *s)
         }
     }
 
+    if (mov->mode == MODE_MOV) {
+        /* Initialize the tmcd tracks */
+        for (i = 0; i < s->nb_streams; i++) {
+            AVStream *st = s->streams[i];
+            t = global_tcr;
+
+            if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+                if (!t)
+                    t = av_dict_get(st->metadata, "timecode", NULL, 0);
+                if (!t)
+                    continue;
+                if (mov_create_timecode_track(s, tmcd_track, i, t->value) < 0)
+                    goto error;
+                tmcd_track++;
+            }
+        }
+    }
+
     avio_flush(pb);
 
     if (mov->flags & FF_MOV_FLAG_ISML)
@@ -3401,6 +3531,8 @@ static int mov_write_trailer(AVFormatContext *s)
     for (i=0; i<mov->nb_streams; i++) {
         if (mov->tracks[i].tag == MKTAG('r','t','p',' '))
             ff_mov_close_hinting(&mov->tracks[i]);
+        else if (mov->tracks[i].tag == MKTAG('t','m','c','d'))
+            av_freep(&mov->tracks[i].enc);
         if (mov->flags & FF_MOV_FLAG_FRAGMENT &&
             mov->tracks[i].vc1_info.struct_offset && s->pb->seekable) {
             int64_t off = avio_tell(pb);

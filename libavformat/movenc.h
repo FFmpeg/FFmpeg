@@ -87,6 +87,10 @@ typedef struct MOVIndex {
 #define MOV_TRACK_CTTS         0x0001
 #define MOV_TRACK_STPS         0x0002
     uint32_t    flags;
+#define MOV_TIMECODE_FLAG_DROPFRAME     0x0001
+#define MOV_TIMECODE_FLAG_24HOURSMAX    0x0002
+#define MOV_TIMECODE_FLAG_ALLOWNEGATIVE 0x0004
+    uint32_t    timecode_flags;
     int         language;
     int         track_id;
     int         tag; ///< stsd fourcc
@@ -102,7 +106,7 @@ typedef struct MOVIndex {
     int64_t     start_dts;
 
     int         hint_track;   ///< the track that hints this track, -1 if no hint track is set
-    int         src_track;    ///< the track that this hint track describes
+    int         src_track;    ///< the track that this hint (or tmcd) track describes
     AVFormatContext *rtp_ctx; ///< the format context for the hinting rtp muxer
     uint32_t    prev_rtp_ts;
     int64_t     cur_rtp_ts_unwrapped;
