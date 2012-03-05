@@ -49,7 +49,7 @@ typedef struct Escape124Context {
 } Escape124Context;
 
 static int can_safely_read(GetBitContext* gb, int bits) {
-    return get_bits_count(gb) + bits <= gb->size_in_bits;
+    return get_bits_left(gb) >= bits;
 }
 
 /**
