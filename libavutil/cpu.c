@@ -19,7 +19,7 @@
 #include "cpu.h"
 #include "config.h"
 
-static int cpuflags_mask, checked;
+static int cpuflags_mask = -1, checked;
 
 int av_get_cpu_flags(void)
 {
