@@ -4075,7 +4075,7 @@ static int decode_frame(AVCodecContext *avctx,
     }
     if(h->is_avc && buf_size >= 9 && buf[0]==1 && buf[2]==0 && (buf[4]&0xFC)==0xFC && (buf[5]&0x1F) && buf[8]==0x67){
         int cnt= buf[5]&0x1f;
-        uint8_t *p= buf+6;
+        const uint8_t *p= buf+6;
         while(cnt--){
             int nalsize= AV_RB16(p) + 2;
             if(nalsize > buf_size - (p-buf) || p[2]!=0x67)
