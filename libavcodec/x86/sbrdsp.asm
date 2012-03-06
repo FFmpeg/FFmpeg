@@ -104,7 +104,7 @@ cglobal sbr_hf_g_filt, 5, 6, 5
     movq        m2, [r1]
     punpckldq   m0, m0
     mulps       m2, m0
-    movq      [r0], m2
+    movlps    [r0], m2
     add         r0, 8
     add         r2, 4
     add         r1, STEP
