@@ -33,6 +33,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "bytestream.h"
 
 #define MM_PREAMBLE_SIZE    6
 
@@ -48,6 +49,7 @@ typedef struct MmContext {
     AVCodecContext *avctx;
     AVFrame frame;
     int palette[AVPALETTE_COUNT];
+    GetByteContext gb;
 } MmContext;
 
 static av_cold int mm_decode_init(AVCodecContext *avctx)
@@ -63,40 +65,40 @@ static av_cold int mm_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void mm_decode_pal(MmContext *s, const uint8_t *buf, const uint8_t *buf_end)
+static int mm_decode_pal(MmContext *s)
 {
     int i;
-    buf += 4;
-    for (i=0; i<128 && buf+2<buf_end; i++) {
-        s->palette[i] = AV_RB24(buf);
+
+    bytestream2_skip(&s->gb, 4);
+    for (i = 0; i < 128; i++) {
+        s->palette[i] = bytestream2_get_be24(&s->gb);
         s->palette[i+128] = s->palette[i]<<2;
-        buf += 3;
     }
+
+    return 0;
 }
 
 /**
  * @param half_horiz Half horizontal resolution (0 or 1)
  * @param half_vert Half vertical resolution (0 or 1)
  */
-static void mm_decode_intra(MmContext * s, int half_horiz, int half_vert, const uint8_t *buf, int buf_size)
+static int mm_decode_intra(MmContext * s, int half_horiz, int half_vert)
 {
     int i, x, y;
     i=0; x=0; y=0;
 
-    while(i<buf_size) {
+    while (bytestream2_get_bytes_left(&s->gb) > 0) {
         int run_length, color;
 
         if (y >= s->avctx->height)
-            return;
+            return 0;
 
-        if (buf[i] & 0x80) {
+        color = bytestream2_get_byte(&s->gb);
+        if (color & 0x80) {
             run_length = 1;
-            color = buf[i];
-            i++;
         }else{
-            run_length = (buf[i] & 0x7f) + 2;
-            color = buf[i+1];
-            i+=2;
+            run_length = (color & 0x7f) + 2;
+            color = bytestream2_get_byte(&s->gb);
         }
 
         if (half_horiz)
@@ -114,23 +116,28 @@ static void mm_decode_intra(MmContext * s, int half_horiz, int half_vert, const 
             y += 1 + half_vert;
         }
     }
+
+    return 0;
 }
 
 /*
  * @param half_horiz Half horizontal resolution (0 or 1)
  * @param half_vert Half vertical resolution (0 or 1)
  */
-static void mm_decode_inter(MmContext * s, int half_horiz, int half_vert, const uint8_t *buf, int buf_size)
+static int mm_decode_inter(MmContext * s, int half_horiz, int half_vert)
 {
-    const int data_ptr = 2 + AV_RL16(&buf[0]);
-    int d, r, y;
-    d = data_ptr; r = 2; y = 0;
+    int data_off = bytestream2_get_le16(&s->gb), y;
+    GetByteContext data_ptr;
 
-    while(r < data_ptr) {
+    if (bytestream2_get_bytes_left(&s->gb) < data_off)
+        return AVERROR_INVALIDDATA;
+
+    bytestream2_init(&data_ptr, s->gb.buffer + data_off, bytestream2_get_bytes_left(&s->gb) - data_off);
+    while (s->gb.buffer < data_ptr.buffer_start) {
         int i, j;
-        int length = buf[r] & 0x7f;
-        int x = buf[r+1] + ((buf[r] & 0x80) << 1);
-        r += 2;
+        int length = bytestream2_get_byte(&s->gb);
+        int x = bytestream2_get_byte(&s->gb) + ((length & 0x80) << 1);
+        length &= 0x7F;
 
         if (length==0) {
             y += x;
@@ -138,13 +145,14 @@ static void mm_decode_inter(MmContext * s, int half_horiz, int half_vert, const 
         }
 
         if (y + half_vert >= s->avctx->height)
-            return;
+            return 0;
 
         for(i=0; i<length; i++) {
+            int replace_array = bytestream2_get_byte(&s->gb);
             for(j=0; j<8; j++) {
-                int replace = (buf[r+i] >> (7-j)) & 1;
+                int replace = (replace_array >> (7-j)) & 1;
                 if (replace) {
-                    int color = buf[d];
+                    int color = bytestream2_get_byte(&data_ptr);
                     s->frame.data[0][y*s->frame.linesize[0] + x] = color;
                     if (half_horiz)
                         s->frame.data[0][y*s->frame.linesize[0] + x + 1] = color;
@@ -153,15 +161,15 @@ static void mm_decode_inter(MmContext * s, int half_horiz, int half_vert, const 
                         if (half_horiz)
                             s->frame.data[0][(y+1)*s->frame.linesize[0] + x + 1] = color;
                     }
-                    d++;
                 }
                 x += 1 + half_horiz;
             }
         }
 
-        r += length;
         y += 1 + half_vert;
     }
+
+    return 0;
 }
 
 static int mm_decode_frame(AVCodecContext *avctx,
@@ -171,12 +179,14 @@ static int mm_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     MmContext *s = avctx->priv_data;
-    const uint8_t *buf_end = buf+buf_size;
-    int type;
+    int type, res;
 
+    if (buf_size < MM_PREAMBLE_SIZE)
+        return AVERROR_INVALIDDATA;
     type = AV_RL16(&buf[0]);
     buf += MM_PREAMBLE_SIZE;
     buf_size -= MM_PREAMBLE_SIZE;
+    bytestream2_init(&s->gb, buf, buf_size);
 
     if (avctx->reget_buffer(avctx, &s->frame) < 0) {
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
@@ -184,16 +194,19 @@ static int mm_decode_frame(AVCodecContext *avctx,
     }
 
     switch(type) {
-    case MM_TYPE_PALETTE   : mm_decode_pal(s, buf, buf_end); return buf_size;
-    case MM_TYPE_INTRA     : mm_decode_intra(s, 0, 0, buf, buf_size); break;
-    case MM_TYPE_INTRA_HH  : mm_decode_intra(s, 1, 0, buf, buf_size); break;
-    case MM_TYPE_INTRA_HHV : mm_decode_intra(s, 1, 1, buf, buf_size); break;
-    case MM_TYPE_INTER     : mm_decode_inter(s, 0, 0, buf, buf_size); break;
-    case MM_TYPE_INTER_HH  : mm_decode_inter(s, 1, 0, buf, buf_size); break;
-    case MM_TYPE_INTER_HHV : mm_decode_inter(s, 1, 1, buf, buf_size); break;
-    default :
-        return -1;
+    case MM_TYPE_PALETTE   : res = mm_decode_pal(s); return buf_size;
+    case MM_TYPE_INTRA     : res = mm_decode_intra(s, 0, 0); break;
+    case MM_TYPE_INTRA_HH  : res = mm_decode_intra(s, 1, 0); break;
+    case MM_TYPE_INTRA_HHV : res = mm_decode_intra(s, 1, 1); break;
+    case MM_TYPE_INTER     : res = mm_decode_inter(s, 0, 0); break;
+    case MM_TYPE_INTER_HH  : res = mm_decode_inter(s, 1, 0); break;
+    case MM_TYPE_INTER_HHV : res = mm_decode_inter(s, 1, 1); break;
+    default:
+        res = AVERROR_INVALIDDATA;
+        break;
     }
+    if (res < 0)
+        return res;
 
     memcpy(s->frame.data[1], s->palette, AVPALETTE_SIZE);
 
