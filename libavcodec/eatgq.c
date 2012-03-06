@@ -43,6 +43,7 @@ typedef struct TgqContext {
     ScanTable scantable;
     int qtable[64];
     DECLARE_ALIGNED(16, DCTELEM, block)[6][64];
+    GetByteContext gb;
 } TgqContext;
 
 static av_cold int tgq_decode_init(AVCodecContext *avctx){
@@ -141,39 +142,36 @@ static void tgq_idct_put_mb_dconly(TgqContext *s, int mb_x, int mb_y, const int8
     }
 }
 
-static void tgq_decode_mb(TgqContext *s, int mb_y, int mb_x, const uint8_t **bs, const uint8_t *buf_end){
+static void tgq_decode_mb(TgqContext *s, int mb_y, int mb_x){
     int mode;
     int i;
     int8_t dc[6];
 
-    mode = bytestream_get_byte(bs);
-    if (mode>buf_end-*bs) {
-        av_log(s->avctx, AV_LOG_ERROR, "truncated macroblock\n");
-        return;
-    }
-
+    mode = bytestream2_get_byte(&s->gb);
     if (mode>12) {
         GetBitContext gb;
-        init_get_bits(&gb, *bs, mode*8);
+        init_get_bits(&gb, s->gb.buffer, FFMIN(s->gb.buffer_end - s->gb.buffer, mode) * 8);
         for(i=0; i<6; i++)
             tgq_decode_block(s, s->block[i], &gb);
         tgq_idct_put_mb(s, s->block, mb_x, mb_y);
+        bytestream2_skip(&s->gb, mode);
     }else{
         if (mode==3) {
-            memset(dc, (*bs)[0], 4);
-            dc[4] = (*bs)[1];
-            dc[5] = (*bs)[2];
+            memset(dc, bytestream2_get_byte(&s->gb), 4);
+            dc[4] = bytestream2_get_byte(&s->gb);
+            dc[5] = bytestream2_get_byte(&s->gb);
         }else if (mode==6) {
-            memcpy(dc, *bs, 6);
+            bytestream2_get_buffer(&s->gb, dc, 6);
         }else if (mode==12) {
-            for(i=0; i<6; i++)
-                dc[i] = (*bs)[i*2];
+            for (i = 0; i < 6; i++) {
+                dc[i] = bytestream2_get_byte(&s->gb);
+                bytestream2_skip(&s->gb, 1);
+            }
         }else{
             av_log(s->avctx, AV_LOG_ERROR, "unsupported mb mode %i\n", mode);
         }
         tgq_idct_put_mb_dconly(s, mb_x, mb_y, dc);
     }
-    *bs += mode;
 }
 
 static void tgq_calculate_qtable(TgqContext *s, int quant){
@@ -193,28 +191,30 @@ static int tgq_decode_frame(AVCodecContext *avctx,
                             AVPacket *avpkt){
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
-    const uint8_t *buf_start = buf;
-    const uint8_t *buf_end = buf + buf_size;
     TgqContext *s = avctx->priv_data;
     int x,y;
-
     int big_endian = AV_RL32(&buf[4]) > 0x000FFFFF;
-    buf += 8;
 
-    if(8>buf_end-buf) {
+    if (buf_size < 16) {
         av_log(avctx, AV_LOG_WARNING, "truncated header\n");
         return -1;
     }
-    s->width  = big_endian ? AV_RB16(&buf[0]) : AV_RL16(&buf[0]);
-    s->height = big_endian ? AV_RB16(&buf[2]) : AV_RL16(&buf[2]);
+    bytestream2_init(&s->gb, buf + 8, buf_size - 8);
+    if (big_endian) {
+        s->width  = bytestream2_get_be16u(&s->gb);
+        s->height = bytestream2_get_be16u(&s->gb);
+    } else {
+        s->width  = bytestream2_get_le16u(&s->gb);
+        s->height = bytestream2_get_le16u(&s->gb);
+    }
 
     if (s->avctx->width!=s->width || s->avctx->height!=s->height) {
         avcodec_set_dimensions(s->avctx, s->width, s->height);
         if (s->frame.data[0])
             avctx->release_buffer(avctx, &s->frame);
     }
-    tgq_calculate_qtable(s, buf[4]);
-    buf += 8;
+    tgq_calculate_qtable(s, bytestream2_get_byteu(&s->gb));
+    bytestream2_skip(&s->gb, 3);
 
     if (!s->frame.data[0]) {
         s->frame.key_frame = 1;
@@ -226,14 +226,14 @@ static int tgq_decode_frame(AVCodecContext *avctx,
         }
     }
 
-    for (y=0; y<(avctx->height+15)/16; y++)
-    for (x=0; x<(avctx->width+15)/16; x++)
-        tgq_decode_mb(s, y, x, &buf, buf_end);
+    for (y = 0; y < FFALIGN(avctx->height, 16) >> 4; y++)
+        for (x = 0; x < FFALIGN(avctx->width, 16) >> 4; x++)
+            tgq_decode_mb(s, y, x);
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = s->frame;
 
-    return buf-buf_start;
+    return avpkt->size;
 }
 
 static av_cold int tgq_decode_end(AVCodecContext *avctx){
