@@ -208,8 +208,7 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
     {
         if (avctx->err_recognition & AV_EF_CRCCHECK) {
             s->crc_table = av_crc_get_table(AV_CRC_32_IEEE_LE);
-            if (tta_check_crc(s, avctx->extradata, 18))
-                return AVERROR_INVALIDDATA;
+            tta_check_crc(s, avctx->extradata, 18);
         }
 
         /* signature */
