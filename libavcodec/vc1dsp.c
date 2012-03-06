@@ -139,8 +139,6 @@ static void vc1_h_s_overlap_c(DCTELEM *left, DCTELEM *right)
  * @see 8.6
  */
 static av_always_inline int vc1_filter_line(uint8_t* src, int stride, int pq){
-    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
-
     int a0 = (2*(src[-2*stride] - src[ 1*stride]) - 5*(src[-1*stride] - src[ 0*stride]) + 4) >> 3;
     int a0_sign = a0 >> 31;        /* Store sign */
     a0 = (a0 ^ a0_sign) - a0_sign; /* a0 = FFABS(a0); */
@@ -163,8 +161,8 @@ static av_always_inline int vc1_filter_line(uint8_t* src, int stride, int pq){
                 else{
                     d = FFMIN(d, clip);
                     d = (d ^ d_sign) - d_sign;          /* Restore sign */
-                    src[-1*stride] = cm[src[-1*stride] - d];
-                    src[ 0*stride] = cm[src[ 0*stride] + d];
+                    src[-1*stride] = av_clip_uint8(src[-1*stride] - d);
+                    src[ 0*stride] = av_clip_uint8(src[ 0*stride] + d);
                 }
                 return 1;
             }
@@ -234,19 +232,17 @@ static void vc1_inv_trans_8x8_dc_c(uint8_t *dest, int linesize, DCTELEM *block)
 {
     int i;
     int dc = block[0];
-    const uint8_t *cm;
     dc = (3 * dc +  1) >> 1;
     dc = (3 * dc + 16) >> 5;
-    cm = ff_cropTbl + MAX_NEG_CROP + dc;
     for(i = 0; i < 8; i++){
-        dest[0] = cm[dest[0]];
-        dest[1] = cm[dest[1]];
-        dest[2] = cm[dest[2]];
-        dest[3] = cm[dest[3]];
-        dest[4] = cm[dest[4]];
-        dest[5] = cm[dest[5]];
-        dest[6] = cm[dest[6]];
-        dest[7] = cm[dest[7]];
+        dest[0] = av_clip_uint8(dest[0] + dc);
+        dest[1] = av_clip_uint8(dest[1] + dc);
+        dest[2] = av_clip_uint8(dest[2] + dc);
+        dest[3] = av_clip_uint8(dest[3] + dc);
+        dest[4] = av_clip_uint8(dest[4] + dc);
+        dest[5] = av_clip_uint8(dest[5] + dc);
+        dest[6] = av_clip_uint8(dest[6] + dc);
+        dest[7] = av_clip_uint8(dest[7] + dc);
         dest += linesize;
     }
 }
@@ -326,19 +322,17 @@ static void vc1_inv_trans_8x4_dc_c(uint8_t *dest, int linesize, DCTELEM *block)
 {
     int i;
     int dc = block[0];
-    const uint8_t *cm;
     dc = ( 3 * dc +  1) >> 1;
     dc = (17 * dc + 64) >> 7;
-    cm = ff_cropTbl + MAX_NEG_CROP + dc;
     for(i = 0; i < 4; i++){
-        dest[0] = cm[dest[0]];
-        dest[1] = cm[dest[1]];
-        dest[2] = cm[dest[2]];
-        dest[3] = cm[dest[3]];
-        dest[4] = cm[dest[4]];
-        dest[5] = cm[dest[5]];
-        dest[6] = cm[dest[6]];
-        dest[7] = cm[dest[7]];
+        dest[0] = av_clip_uint8(dest[0] + dc);
+        dest[1] = av_clip_uint8(dest[1] + dc);
+        dest[2] = av_clip_uint8(dest[2] + dc);
+        dest[3] = av_clip_uint8(dest[3] + dc);
+        dest[4] = av_clip_uint8(dest[4] + dc);
+        dest[5] = av_clip_uint8(dest[5] + dc);
+        dest[6] = av_clip_uint8(dest[6] + dc);
+        dest[7] = av_clip_uint8(dest[7] + dc);
         dest += linesize;
     }
 }
@@ -348,7 +342,6 @@ static void vc1_inv_trans_8x4_c(uint8_t *dest, int linesize, DCTELEM *block)
     int i;
     register int t1,t2,t3,t4,t5,t6,t7,t8;
     DCTELEM *src, *dst;
-    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     src = block;
     dst = block;
@@ -388,10 +381,10 @@ static void vc1_inv_trans_8x4_c(uint8_t *dest, int linesize, DCTELEM *block)
         t3 = 22 * src[ 8] + 10 * src[24];
         t4 = 22 * src[24] - 10 * src[ 8];
 
-        dest[0*linesize] = cm[dest[0*linesize] + ((t1 + t3) >> 7)];
-        dest[1*linesize] = cm[dest[1*linesize] + ((t2 - t4) >> 7)];
-        dest[2*linesize] = cm[dest[2*linesize] + ((t2 + t4) >> 7)];
-        dest[3*linesize] = cm[dest[3*linesize] + ((t1 - t3) >> 7)];
+        dest[0*linesize] = av_clip_uint8(dest[0*linesize] + ((t1 + t3) >> 7));
+        dest[1*linesize] = av_clip_uint8(dest[1*linesize] + ((t2 - t4) >> 7));
+        dest[2*linesize] = av_clip_uint8(dest[2*linesize] + ((t2 + t4) >> 7));
+        dest[3*linesize] = av_clip_uint8(dest[3*linesize] + ((t1 - t3) >> 7));
 
         src ++;
         dest++;
@@ -404,15 +397,13 @@ static void vc1_inv_trans_4x8_dc_c(uint8_t *dest, int linesize, DCTELEM *block)
 {
     int i;
     int dc = block[0];
-    const uint8_t *cm;
     dc = (17 * dc +  4) >> 3;
     dc = (12 * dc + 64) >> 7;
-    cm = ff_cropTbl + MAX_NEG_CROP + dc;
     for(i = 0; i < 8; i++){
-        dest[0] = cm[dest[0]];
-        dest[1] = cm[dest[1]];
-        dest[2] = cm[dest[2]];
-        dest[3] = cm[dest[3]];
+        dest[0] = av_clip_uint8(dest[0] + dc);
+        dest[1] = av_clip_uint8(dest[1] + dc);
+        dest[2] = av_clip_uint8(dest[2] + dc);
+        dest[3] = av_clip_uint8(dest[3] + dc);
         dest += linesize;
     }
 }
@@ -422,7 +413,6 @@ static void vc1_inv_trans_4x8_c(uint8_t *dest, int linesize, DCTELEM *block)
     int i;
     register int t1,t2,t3,t4,t5,t6,t7,t8;
     DCTELEM *src, *dst;
-    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     src = block;
     dst = block;
@@ -458,14 +448,14 @@ static void vc1_inv_trans_4x8_c(uint8_t *dest, int linesize, DCTELEM *block)
         t3 =  9 * src[ 8] - 16 * src[24] +  4 * src[40] + 15 * src[56];
         t4 =  4 * src[ 8] -  9 * src[24] + 15 * src[40] - 16 * src[56];
 
-        dest[0*linesize] = cm[dest[0*linesize] + ((t5 + t1) >> 7)];
-        dest[1*linesize] = cm[dest[1*linesize] + ((t6 + t2) >> 7)];
-        dest[2*linesize] = cm[dest[2*linesize] + ((t7 + t3) >> 7)];
-        dest[3*linesize] = cm[dest[3*linesize] + ((t8 + t4) >> 7)];
-        dest[4*linesize] = cm[dest[4*linesize] + ((t8 - t4 + 1) >> 7)];
-        dest[5*linesize] = cm[dest[5*linesize] + ((t7 - t3 + 1) >> 7)];
-        dest[6*linesize] = cm[dest[6*linesize] + ((t6 - t2 + 1) >> 7)];
-        dest[7*linesize] = cm[dest[7*linesize] + ((t5 - t1 + 1) >> 7)];
+        dest[0*linesize] = av_clip_uint8(dest[0*linesize] + ((t5 + t1) >> 7));
+        dest[1*linesize] = av_clip_uint8(dest[1*linesize] + ((t6 + t2) >> 7));
+        dest[2*linesize] = av_clip_uint8(dest[2*linesize] + ((t7 + t3) >> 7));
+        dest[3*linesize] = av_clip_uint8(dest[3*linesize] + ((t8 + t4) >> 7));
+        dest[4*linesize] = av_clip_uint8(dest[4*linesize] + ((t8 - t4 + 1) >> 7));
+        dest[5*linesize] = av_clip_uint8(dest[5*linesize] + ((t7 - t3 + 1) >> 7));
+        dest[6*linesize] = av_clip_uint8(dest[6*linesize] + ((t6 - t2 + 1) >> 7));
+        dest[7*linesize] = av_clip_uint8(dest[7*linesize] + ((t5 - t1 + 1) >> 7));
 
         src ++;
         dest++;
@@ -478,15 +468,13 @@ static void vc1_inv_trans_4x4_dc_c(uint8_t *dest, int linesize, DCTELEM *block)
 {
     int i;
     int dc = block[0];
-    const uint8_t *cm;
     dc = (17 * dc +  4) >> 3;
     dc = (17 * dc + 64) >> 7;
-    cm = ff_cropTbl + MAX_NEG_CROP + dc;
     for(i = 0; i < 4; i++){
-        dest[0] = cm[dest[0]];
-        dest[1] = cm[dest[1]];
-        dest[2] = cm[dest[2]];
-        dest[3] = cm[dest[3]];
+        dest[0] = av_clip_uint8(dest[0] + dc);
+        dest[1] = av_clip_uint8(dest[1] + dc);
+        dest[2] = av_clip_uint8(dest[2] + dc);
+        dest[3] = av_clip_uint8(dest[3] + dc);
         dest += linesize;
     }
 }
@@ -496,7 +484,6 @@ static void vc1_inv_trans_4x4_c(uint8_t *dest, int linesize, DCTELEM *block)
     int i;
     register int t1,t2,t3,t4;
     DCTELEM *src, *dst;
-    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     src = block;
     dst = block;
@@ -522,10 +509,10 @@ static void vc1_inv_trans_4x4_c(uint8_t *dest, int linesize, DCTELEM *block)
         t3 = 22 * src[ 8] + 10 * src[24];
         t4 = 22 * src[24] - 10 * src[ 8];
 
-        dest[0*linesize] = cm[dest[0*linesize] + ((t1 + t3) >> 7)];
-        dest[1*linesize] = cm[dest[1*linesize] + ((t2 - t4) >> 7)];
-        dest[2*linesize] = cm[dest[2*linesize] + ((t2 + t4) >> 7)];
-        dest[3*linesize] = cm[dest[3*linesize] + ((t1 - t3) >> 7)];
+        dest[0*linesize] = av_clip_uint8(dest[0*linesize] + ((t1 + t3) >> 7));
+        dest[1*linesize] = av_clip_uint8(dest[1*linesize] + ((t2 - t4) >> 7));
+        dest[2*linesize] = av_clip_uint8(dest[2*linesize] + ((t2 + t4) >> 7));
+        dest[3*linesize] = av_clip_uint8(dest[3*linesize] + ((t1 - t3) >> 7));
 
         src ++;
         dest++;
