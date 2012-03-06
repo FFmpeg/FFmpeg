@@ -385,7 +385,6 @@ AVFilter avfilter_vsrc_mptestsrc = {
 
     .outputs   = (const AVFilterPad[]) {{ .name = "default",
                                     .type = AVMEDIA_TYPE_VIDEO,
-                                    .config_props = config_props,
                                     .request_frame = request_frame,
                                     .config_props  = config_props, },
                                   { .name = NULL }},
