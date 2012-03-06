@@ -1475,8 +1475,8 @@ static void do_video_out(AVFormatContext *s,
                     pkt.dts = av_rescale_q(pkt.dts, enc->time_base, ost->st->time_base);
 
                 write_frame(s, &pkt, ost);
-                *frame_size = ret;
-                video_size += ret;
+                *frame_size = pkt.size;
+                video_size += pkt.size;
 
                 /* if two pass, output log */
                 if (ost->logfile && enc->stats_out) {
