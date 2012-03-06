@@ -148,7 +148,7 @@ static void init_lengths(BinkContext *c, int width, int bw)
 {
     c->bundle[BINK_SRC_BLOCK_TYPES].len = av_log2((width >> 3) + 511) + 1;
 
-    c->bundle[BINK_SRC_SUB_BLOCK_TYPES].len = av_log2((width >> 4) + 511) + 1;
+    c->bundle[BINK_SRC_SUB_BLOCK_TYPES].len = av_log2(((width + 7) >> 4) + 511) + 1;
 
     c->bundle[BINK_SRC_COLORS].len = av_log2(bw*64 + 511) + 1;
 
