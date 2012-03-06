@@ -4128,6 +4128,26 @@ int av_get_bits_per_sample(enum CodecID codec_id);
  */
 enum CodecID av_get_pcm_codec(enum AVSampleFormat fmt, int be);
 
+/**
+ * Return codec bits per sample.
+ * Only return non-zero if the bits per sample is exactly correct, not an
+ * approximation.
+ *
+ * @param[in] codec_id the codec
+ * @return Number of bits per sample or zero if unknown for the given codec.
+ */
+int av_get_exact_bits_per_sample(enum CodecID codec_id);
+
+/**
+ * Return audio frame duration.
+ *
+ * @param avctx        codec context
+ * @param frame_bytes  size of the frame, or 0 if unknown
+ * @return             frame duration, in samples, if known. 0 if not able to
+ *                     determine.
+ */
+int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes);
+
 /* frame parsing */
 typedef struct AVCodecParserContext {
     void *priv_data;

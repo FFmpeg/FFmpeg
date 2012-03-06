@@ -33,7 +33,6 @@ static void amr_decode_fix_avctx(AVCodecContext *avctx)
     if (!avctx->channels)
         avctx->channels = 1;
 
-    avctx->frame_size = 160 * is_amr_wb;
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 }
 

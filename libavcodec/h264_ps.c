@@ -241,7 +241,7 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps){
         sps->num_reorder_frames= get_ue_golomb(&s->gb);
         get_ue_golomb(&s->gb); /*max_dec_frame_buffering*/
 
-        if(get_bits_left(&s->gb) < 0){
+        if (get_bits_left(&s->gb) < 0) {
             sps->num_reorder_frames=0;
             sps->bitstream_restriction_flag= 0;
         }

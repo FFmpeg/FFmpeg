@@ -432,9 +432,6 @@ rdt_parse_sdp_line (AVFormatContext *s, int st_index,
                 }
                 rdt->rmst[s->streams[n]->index] = ff_rm_alloc_rmstream();
                 rdt_load_mdpr(rdt, s->streams[n], (n - first) * 2);
-
-                if (s->streams[n]->codec->codec_id == CODEC_ID_AAC)
-                    s->streams[n]->codec->frame_size = 1; // FIXME
            }
     }
 

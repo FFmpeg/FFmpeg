@@ -79,10 +79,10 @@ static int create_audio_stream(AVFormatContext *s, SIFFContext *c)
     ast->codec->codec_type      = AVMEDIA_TYPE_AUDIO;
     ast->codec->codec_id        = CODEC_ID_PCM_U8;
     ast->codec->channels        = 1;
-    ast->codec->bits_per_coded_sample = c->bits;
+    ast->codec->bits_per_coded_sample = 8;
     ast->codec->sample_rate     = c->rate;
-    ast->codec->frame_size      = c->block_align;
     avpriv_set_pts_info(ast, 16, 1, c->rate);
+    ast->start_time = 0;
     return 0;
 }
 
@@ -215,9 +215,10 @@ static int siff_read_packet(AVFormatContext *s, AVPacket *pkt)
             pkt->stream_index = 0;
             c->curstrm = -1;
         }else{
-            if (av_get_packet(s->pb, pkt, c->sndsize - 4) < 0)
+            if ((size = av_get_packet(s->pb, pkt, c->sndsize - 4)) < 0)
                 return AVERROR(EIO);
             pkt->stream_index = 1;
+            pkt->duration     = size;
             c->curstrm = 0;
         }
         if(!c->cur_frame || c->curstrm)
@@ -228,6 +229,7 @@ static int siff_read_packet(AVFormatContext *s, AVPacket *pkt)
         size = av_get_packet(s->pb, pkt, c->block_align);
         if(size <= 0)
             return AVERROR(EIO);
+        pkt->duration = size;
     }
     return pkt->size;
 }

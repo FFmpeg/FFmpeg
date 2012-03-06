@@ -54,9 +54,6 @@ static av_cold int libspeex_decode_init(AVCodecContext *avctx)
     if (s->header) {
         avctx->sample_rate = s->header->rate;
         avctx->channels    = s->header->nb_channels;
-        avctx->frame_size  = s->frame_size = s->header->frame_size;
-        if (s->header->frames_per_packet)
-            avctx->frame_size *= s->header->frames_per_packet;
 
         mode = speex_lib_get_mode(s->header->mode);
         if (!mode) {
