@@ -625,7 +625,7 @@ static void decode_component(DiracContext *s, int comp)
                 b->quant = svq3_get_ue_golomb(&s->gb);
                 align_get_bits(&s->gb);
                 b->coeff_data = s->gb.buffer + get_bits_count(&s->gb)/8;
-                b->length = FFMIN(b->length, get_bits_left(&s->gb)/8);
+                b->length = FFMIN(b->length, FFMAX(get_bits_left(&s->gb)/8, 0));
                 skip_bits_long(&s->gb, b->length*8);
             }
         }
