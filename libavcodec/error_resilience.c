@@ -419,8 +419,13 @@ static void guess_mv(MpegEncContext *s)
     if ((!(s->avctx->error_concealment&FF_EC_GUESS_MVS)) ||
         num_avail <= mb_width / 2) {
         for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
+            s->mb_x = 0;
+            s->mb_y = mb_y;
+            ff_init_block_index(s);
             for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
                 const int mb_xy = mb_x + mb_y * s->mb_stride;
+
+                ff_update_block_index(s);
 
                 if (IS_INTRA(s->current_picture.f.mb_type[mb_xy]))
                     continue;
@@ -456,6 +461,9 @@ static void guess_mv(MpegEncContext *s)
 
             changed = 0;
             for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
+                s->mb_x = 0;
+                s->mb_y = mb_y;
+                ff_init_block_index(s);
                 for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
                     const int mb_xy        = mb_x + mb_y * s->mb_stride;
                     int mv_predictor[8][2] = { { 0 } };
@@ -466,6 +474,8 @@ static void guess_mv(MpegEncContext *s)
                     int best_pred          = 0;
                     const int mot_index    = (mb_x + mb_y * mot_stride) * mot_step;
                     int prev_x, prev_y, prev_ref;
+
+                    ff_update_block_index(s);
 
                     if ((mb_x ^ mb_y ^ pass) & 1)
                         continue;
@@ -1072,10 +1082,15 @@ void ff_er_frame_end(MpegEncContext *s)
 
     /* handle inter blocks with damaged AC */
     for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
+        s->mb_x = 0;
+        s->mb_y = mb_y;
+        ff_init_block_index(s);
         for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
             const int mb_xy   = mb_x + mb_y * s->mb_stride;
             const int mb_type = s->current_picture.f.mb_type[mb_xy];
             int dir           = !s->last_picture.f.data[0];
+
+            ff_update_block_index(s);
 
             error = s->error_status_table[mb_xy];
 
@@ -1114,10 +1129,15 @@ void ff_er_frame_end(MpegEncContext *s)
     /* guess MVs */
     if (s->pict_type == AV_PICTURE_TYPE_B) {
         for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
+            s->mb_x = 0;
+            s->mb_y = mb_y;
+            ff_init_block_index(s);
             for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
                 int       xy      = mb_x * 2 + mb_y * 2 * s->b8_stride;
                 const int mb_xy   = mb_x + mb_y * s->mb_stride;
                 const int mb_type = s->current_picture.f.mb_type[mb_xy];
+
+                ff_update_block_index(s);
 
                 error = s->error_status_table[mb_xy];
 
