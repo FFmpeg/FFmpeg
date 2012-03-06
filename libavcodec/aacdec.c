@@ -200,7 +200,7 @@ static int count_paired_channels(uint8_t (*layout_map)[3], int tags, int pos, in
             break;
         if (layout_map[i][0] == TYPE_CPE) {
             if (sce_parity) {
-                if (pos == AAC_CHANNEL_FRONT || !first_cpe) {
+                if (pos == AAC_CHANNEL_FRONT && !first_cpe) {
                     sce_parity = 0;
                 } else {
                     return -1;
@@ -223,9 +223,12 @@ static int count_paired_channels(uint8_t (*layout_map)[3], int tags, int pos, in
 static uint64_t sniff_channel_order(uint8_t (*layout_map)[3], int tags)
 {
     int i, n, total_non_cc_elements;
-    struct elem_to_channel e2c_vec[MAX_ELEM_ID] = {{ 0 }};
+    struct elem_to_channel e2c_vec[4*MAX_ELEM_ID] = {{ 0 }};
     int num_front_channels, num_side_channels, num_back_channels;
     uint64_t layout;
+
+    if(FF_ARRAY_ELEMS(e2c_vec) < tags)
+        return 0;
 
     i = 0;
     num_front_channels =
