@@ -1201,7 +1201,6 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
 {
     int ret;
     int user_packet = !!avpkt->data;
-    void *new_data;
 
     *got_packet_ptr = 0;
 
