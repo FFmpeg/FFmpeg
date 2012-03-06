@@ -453,10 +453,11 @@ void ff_mjpeg_encode_mb(MpegEncContext *s, DCTELEM block[6][64])
 // maximum over s->mjpeg_vsample[i]
 #define V_MAX 2
 static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
-                              AVFrame *pic, int *got_packet)
+                              const AVFrame *pic_arg, int *got_packet)
 
 {
     MpegEncContext *s = avctx->priv_data;
+    AVFrame pic = *pic_arg;
     int i;
 
     //CODEC_FLAG_EMU_EDGE have to be cleared
@@ -465,10 +466,10 @@ static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
 
     //picture should be flipped upside-down
     for(i=0; i < 3; i++) {
-        pic->data[i] += (pic->linesize[i] * (s->mjpeg_vsample[i] * (8 * s->mb_height -((s->height/V_MAX)&7)) - 1 ));
-        pic->linesize[i] *= -1;
+        pic.data[i] += (pic.linesize[i] * (s->mjpeg_vsample[i] * (8 * s->mb_height -((s->height/V_MAX)&7)) - 1 ));
+        pic.linesize[i] *= -1;
     }
-    return ff_MPV_encode_picture(avctx, pkt, pic, got_packet);
+    return ff_MPV_encode_picture(avctx, pkt, &pic, got_packet);
 }
 
 AVCodec ff_mjpeg_encoder = {
