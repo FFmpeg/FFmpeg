@@ -649,7 +649,7 @@ static int svq3_decode_mb(SVQ3Context *svq3, unsigned int mb_type)
     if (IS_INTRA16x16(mb_type) || (s->pict_type != AV_PICTURE_TYPE_I && s->adaptive_quant && cbp)) {
         s->qscale += svq3_get_se_golomb(&s->gb);
 
-        if (s->qscale > 31){
+        if (s->qscale > 31u){
             av_log(h->s.avctx, AV_LOG_ERROR, "qscale:%d\n", s->qscale);
             return -1;
         }
