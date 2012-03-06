@@ -27,6 +27,7 @@
 #include "get_bits.h"
 #include "put_bits.h"
 #include "wma.h"
+#include "wma_common.h"
 
 /** current decoder limitations */
 #define WMALL_MAX_CHANNELS      8                       ///< max number of handled channels
