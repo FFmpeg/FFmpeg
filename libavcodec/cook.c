@@ -832,8 +832,8 @@ static void joint_decode(COOKContext *q, COOKSubpacket *p, float *mlt_buffer1,
         cpl_tmp = cplband[i];
         idx -= decouple_tab[cpl_tmp];
         cplscale = q->cplscales[p->js_vlc_bits - 2];  // choose decoupler table
-        f1 = cplscale[decouple_tab[cpl_tmp]];
-        f2 = cplscale[idx - 1];
+        f1 = cplscale[decouple_tab[cpl_tmp] + 1];
+        f2 = cplscale[idx];
         q->decouple(q, p, i, f1, f2, decode_buffer, mlt_buffer1, mlt_buffer2);
         idx = (1 << p->js_vlc_bits) - 1;
     }
