@@ -156,7 +156,7 @@ static int pcm_bluray_decode_frame(AVCodecContext *avctx, void *data,
 
     /* There's always an even number of channels in the source */
     num_source_channels = FFALIGN(avctx->channels, 2);
-    sample_size = (num_source_channels * avctx->bits_per_coded_sample) >> 3;
+    sample_size = (num_source_channels * (avctx->sample_fmt == AV_SAMPLE_FMT_S16 ? 16 : 24)) >> 3;
     samples = buf_size / sample_size;
 
     /* get output buffer */
