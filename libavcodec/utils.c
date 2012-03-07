@@ -297,7 +297,7 @@ int avcodec_fill_audio_frame(AVFrame *frame, int nb_channels,
     }
 
     if ((ret = av_samples_fill_arrays(frame->extended_data, &frame->linesize[0],
-                                      buf, nb_channels, frame->nb_samples,
+                                      (uint8_t *)(intptr_t)buf, nb_channels, frame->nb_samples,
                                       sample_fmt, align)) < 0) {
         if (frame->extended_data != frame->data)
             av_freep(&frame->extended_data);
@@ -1127,7 +1127,7 @@ int attribute_align_arg avcodec_encode_audio(AVCodecContext *avctx,
                                                   avctx->sample_fmt, 1);
         if ((ret = avcodec_fill_audio_frame(frame, avctx->channels,
                                             avctx->sample_fmt,
-                                            samples, samples_size, 1)))
+                                            (const uint8_t *)samples, samples_size, 1)))
             return ret;
 
         /* fabricate frame pts from sample count.
@@ -1249,7 +1249,7 @@ int avcodec_encode_subtitle(AVCodecContext *avctx, uint8_t *buf, int buf_size,
         return -1;
     }
 
-    ret = avctx->codec->encode(avctx, buf, buf_size, sub);
+    ret = avctx->codec->encode(avctx, buf, buf_size, (void *)(intptr_t)sub);
     avctx->frame_number++;
     return ret;
 }
