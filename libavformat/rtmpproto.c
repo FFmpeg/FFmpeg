@@ -347,6 +347,21 @@ static void gen_pong(URLContext *s, RTMPContext *rt, RTMPPacket *ppkt)
 }
 
 /**
+ * Generate server bandwidth message and send it to the server.
+ */
+static void gen_server_bw(URLContext *s, RTMPContext *rt)
+{
+    RTMPPacket pkt;
+    uint8_t *p;
+
+    ff_rtmp_packet_create(&pkt, RTMP_NETWORK_CHANNEL, RTMP_PT_SERVER_BW, 0, 4);
+    p = pkt.data;
+    bytestream_put_be32(&p, 2500000);
+    ff_rtmp_packet_write(rt->stream, &pkt, rt->chunk_size, rt->prev_pkt[1]);
+    ff_rtmp_packet_destroy(&pkt);
+}
+
+/**
  * Generate report on bytes read so far and send it to the server.
  */
 static void gen_bytes_read(URLContext *s, RTMPContext *rt, uint32_t ts)
@@ -607,6 +622,7 @@ static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
                     gen_fcpublish_stream(s, rt);
                     rt->state = STATE_RELEASING;
                 } else {
+                    gen_server_bw(s, rt);
                     rt->state = STATE_CONNECTING;
                 }
                 gen_create_stream(s, rt);
