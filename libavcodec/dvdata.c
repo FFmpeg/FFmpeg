@@ -248,11 +248,13 @@ static const DVprofile dv_profiles[] = {
 const DVprofile* avpriv_dv_frame_profile(const DVprofile *sys,
                                   const uint8_t* frame, unsigned buf_size)
 {
-   int i;
+   int i, dsf, stype;
 
-   int dsf = (frame[3] & 0x80) >> 7;
+    if (buf_size < 80*5 + 48 + 4)
+        return NULL;
 
-   int stype = frame[80*5 + 48 + 3] & 0x1f;
+   dsf = (frame[3] & 0x80) >> 7;
+   stype = frame[80*5 + 48 + 3] & 0x1f;
 
    /* 576i50 25Mbps 4:1:1 is a special case */
    if (dsf == 1 && stype == 0 && frame[4] & 0x07 /* the APT field */) {
