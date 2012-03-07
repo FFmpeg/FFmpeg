@@ -2000,11 +2000,17 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
             IS_KLV_KEY(klv.key, mxf_avid_essence_element_key)) {
             int index = mxf_get_stream_index(s, &klv);
             int64_t next_ofs, next_klv;
+            AVStream *st;
+            MXFTrack *track;
 
             if (index < 0) {
                 av_log(s, AV_LOG_ERROR, "error getting stream index %d\n", AV_RB32(klv.key+12));
                 goto skip;
             }
+
+            st = s->streams[index];
+            track = st->priv_data;
+
             if (s->streams[index]->discard == AVDISCARD_ALL)
                 goto skip;
 
@@ -2046,6 +2052,11 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
                     mxf->current_edit_unit < t->nb_ptses) {
                     pkt->dts = mxf->current_edit_unit + t->first_dts;
                     pkt->pts = t->ptses[mxf->current_edit_unit];
+                } else if (track->intra_only) {
+                    /* intra-only -> PTS = EditUnit.
+                     * let utils.c figure out DTS since it can be
+                     * < PTS if low_delay = 0 (Sony IMX30) */
+                    pkt->pts = mxf->current_edit_unit;
                 }
             }
 
