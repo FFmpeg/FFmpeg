@@ -535,6 +535,8 @@ static int decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "The answer to life, universe and everything is not correct!\n");
         return -1;
     }
+    // Reset these pointers so we can tell if they were set this frame
+    s->stripsizes = s->stripdata = NULL;
     /* parse image file directory */
     off = tget_long(&buf, le);
     if (off >= UINT_MAX - 14 || end_buf - orig_buf < off + 14) {
