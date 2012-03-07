@@ -137,6 +137,11 @@ same effect.
 @item -cpuflags flags (@emph{global})
 Allows setting and clearing cpu flags. This option is intended
 for testing. Do not use it unless you know what you're doing.
+@example
+ffmpeg -cpuflags -sse+mmx ...
+ffmpeg -cpuflags mmx ...
+ffmpeg -cpuflags 0 ...
+@end example
 
 @end table
 
