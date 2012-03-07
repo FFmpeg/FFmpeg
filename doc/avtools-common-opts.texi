@@ -134,6 +134,10 @@ It also implies @code{-loglevel verbose}.
 Note: setting the environment variable @code{FFREPORT} to any value has the
 same effect.
 
+@item -cpuflags flags (@emph{global})
+Allows setting and clearing cpu flags. This option is intended
+for testing. Do not use it unless you know what you're doing.
+
 @end table
 
 @section AVOptions

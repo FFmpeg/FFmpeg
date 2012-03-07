@@ -166,9 +166,11 @@ the synchronisation of the samples directory.
 @item THREADS
     Specify how many threads to use while running regression tests, it is
     quite useful to detect thread-related regressions.
+@item CPUFLAGS
+    Specify CPU flags.
 @end table
 
 Example:
 @example
-make V=1 SAMPLES=/var/fate/samples THREADS=2 fate
+make V=1 SAMPLES=/var/fate/samples THREADS=2 CPUFLAGS=mmx fate
 @end example

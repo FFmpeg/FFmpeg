@@ -4963,6 +4963,13 @@ static int opt_deinterlace(const char *opt, const char *arg)
     return 0;
 }
 
+static void parse_cpuflags(int argc, char **argv, const OptionDef *options)
+{
+    int idx = locate_option(argc, argv, options, "cpuflags");
+    if (idx && argv[idx + 1])
+        opt_cpuflags("cpuflags", argv[idx + 1]);
+}
+
 #define OFFSET(x) offsetof(OptionsContext, x)
 static const OptionDef options[] = {
     /* main options */
@@ -5135,6 +5142,8 @@ int main(int argc, char **argv)
     show_banner(argc, argv, options);
 
     term_init();
+
+    parse_cpuflags(argc, argv, options);
 
     /* parse options */
     parse_options(&o, argc, argv, options, opt_output_file);

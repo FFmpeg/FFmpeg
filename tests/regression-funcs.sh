@@ -10,7 +10,7 @@ raw_src_dir=$3
 target_exec=$4
 target_path=$5
 threads=${6:-1}
-tool=$8
+cpuflags=${8:-all}
 samples=$9
 
 datadir="./tests/data"
@@ -20,7 +20,7 @@ this="$test.$test_ref"
 outfile="$datadir/$test_ref/"
 
 # various files
-avconv="$target_exec ${target_path}/${tool}"
+avconv="$target_exec ${target_path}/ffmpeg"
 tiny_psnr="tests/tiny_psnr"
 raw_src="${target_path}/$raw_src_dir/%02d.pgm"
 raw_dst="$datadir/$this.out.yuv"
@@ -45,7 +45,7 @@ echov(){
 
 . $(dirname $0)/md5.sh
 
-AVCONV_OPTS="-nostats -y"
+AVCONV_OPTS="-nostats -y -cpuflags $cpuflags"
 COMMON_OPTS="-flags +bitexact -idct simple -sws_flags +accurate_rnd+bitexact"
 DEC_OPTS="$COMMON_OPTS -threads $threads"
 ENC_OPTS="$COMMON_OPTS -threads 1 -dct fastint"

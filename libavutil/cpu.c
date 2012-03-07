@@ -23,7 +23,7 @@ static int flags, checked;
 
 void av_force_cpu_flags(int arg){
     flags   = arg;
-    checked = 1;
+    checked = arg != -1;
 }
 
 int av_get_cpu_flags(void)
@@ -37,6 +37,13 @@ int av_get_cpu_flags(void)
 
     checked = 1;
     return flags;
+}
+
+void av_set_cpu_flags_mask(int mask)
+{
+    checked       = 0;
+    flags         = av_get_cpu_flags() & mask;
+    checked       = 1;
 }
 
 #ifdef TEST

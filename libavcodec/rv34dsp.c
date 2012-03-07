@@ -102,15 +102,13 @@ static void rv34_inv_transform_noround_c(DCTELEM *block){
 
 static void rv34_idct_dc_add_c(uint8_t *dst, ptrdiff_t stride, int dc)
 {
-    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
     int i, j;
 
-    cm += (13*13*dc + 0x200) >> 10;
-
+    dc = (13*13*dc + 0x200) >> 10;
     for (i = 0; i < 4; i++)
     {
         for (j = 0; j < 4; j++)
-            dst[j] = cm[ dst[j] ];
+            dst[j] = av_clip_uint8( dst[j] + dc );
 
         dst += stride;
     }
