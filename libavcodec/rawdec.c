@@ -129,6 +129,9 @@ static int raw_decode(AVCodecContext *avctx,
     frame->reordered_opaque = avctx->reordered_opaque;
     frame->pkt_pts          = avctx->pkt->pts;
 
+    if(buf_size < context->length - (avctx->pix_fmt==PIX_FMT_PAL8 ? 256*4 : 0))
+        return -1;
+
     //2bpp and 4bpp raw in avi and mov (yes this is ugly ...)
     if (context->buffer) {
         int i;
@@ -152,9 +155,6 @@ static int raw_decode(AVCodecContext *avctx,
     if(avctx->codec_tag == MKTAG('A', 'V', '1', 'x') ||
        avctx->codec_tag == MKTAG('A', 'V', 'u', 'p'))
         buf += buf_size - context->length;
-
-    if(buf_size < context->length - (avctx->pix_fmt==PIX_FMT_PAL8 ? 256*4 : 0))
-        return -1;
 
     avpicture_fill(picture, buf, avctx->pix_fmt, avctx->width, avctx->height);
     if((avctx->pix_fmt==PIX_FMT_PAL8 && buf_size < context->length) ||
