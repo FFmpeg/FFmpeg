@@ -335,13 +335,7 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     outpicref->video->w = pad->w;
     outpicref->video->h = pad->h;
 
-    avfilter_start_frame(inlink->dst->outputs[0], outpicref);
-}
-
-static void end_frame(AVFilterLink *link)
-{
-    avfilter_end_frame(link->dst->outputs[0]);
-    avfilter_unref_buffer(link->cur_buf);
+    avfilter_start_frame(inlink->dst->outputs[0], avfilter_ref_buffer(outpicref, ~0));
 }
 
 static void draw_send_bar_slice(AVFilterLink *link, int y, int h, int slice_dir, int before_slice)
@@ -417,8 +411,7 @@ AVFilter avfilter_vf_pad = {
                                     .config_props     = config_input,
                                     .get_video_buffer = get_video_buffer,
                                     .start_frame      = start_frame,
-                                    .draw_slice       = draw_slice,
-                                    .end_frame        = end_frame, },
+                                    .draw_slice       = draw_slice, },
                                   { .name = NULL}},
 
     .outputs   = (const AVFilterPad[]) {{ .name       = "default",
