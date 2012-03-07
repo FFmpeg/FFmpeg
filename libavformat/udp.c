@@ -387,8 +387,10 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     }
     /* bind to the local address if not multicast or if the multicast
      * bind failed */
-    if (bind_ret < 0 && bind(udp_fd,(struct sockaddr *)&my_addr, len) < 0)
+    if (bind_ret < 0 && bind(udp_fd,(struct sockaddr *)&my_addr, len) < 0) {
+        av_log(h, AV_LOG_ERROR, "bind failed: %s\n", strerror(errno));
         goto fail;
+    }
 
     len = sizeof(my_addr);
     getsockname(udp_fd, (struct sockaddr *)&my_addr, &len);
