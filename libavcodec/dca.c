@@ -29,6 +29,7 @@
 #include "libavutil/common.h"
 #include "libavutil/intmath.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mathematics.h"
 #include "libavutil/audioconvert.h"
 #include "avcodec.h"
 #include "dsputil.h"
