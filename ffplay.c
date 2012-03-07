@@ -1673,7 +1673,7 @@ static int input_request_frame(AVFilterLink *link)
     } else {
         picref = avfilter_get_video_buffer(link, AV_PERM_WRITE, link->w, link->h);
         av_image_copy(picref->data, picref->linesize,
-                      priv->frame->data, priv->frame->linesize,
+                      (const uint8_t **)(void **)priv->frame->data, priv->frame->linesize,
                       picref->format, link->w, link->h);
     }
     av_free_packet(&pkt);
@@ -3217,7 +3217,7 @@ int main(int argc, char **argv)
     }
 
     av_init_packet(&flush_pkt);
-    flush_pkt.data = "FLUSH";
+    flush_pkt.data = (char *)(intptr_t)"FLUSH";
 
     is = stream_open(input_filename, file_iformat);
     if (!is) {
