@@ -72,6 +72,12 @@ const char *avformat_license(void)
     return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
 }
 
+#define RELATIVE_TS_BASE (INT64_MAX - (1LL<<32))
+
+static int is_relative(int64_t ts) {
+    return ts > (RELATIVE_TS_BASE - (1LL<<32));
+}
+
 /* fraction handling */
 
 /**
@@ -870,21 +876,23 @@ static void update_initial_timestamps(AVFormatContext *s, int stream_index,
     AVStream *st= s->streams[stream_index];
     AVPacketList *pktl= s->parse_queue ? s->parse_queue : s->packet_buffer;
 
-    if(st->first_dts != AV_NOPTS_VALUE || dts == AV_NOPTS_VALUE || st->cur_dts == AV_NOPTS_VALUE)
+    if(st->first_dts != AV_NOPTS_VALUE || dts == AV_NOPTS_VALUE || st->cur_dts == AV_NOPTS_VALUE || is_relative(dts))
         return;
 
-    st->first_dts= dts - st->cur_dts;
+    st->first_dts= dts - (st->cur_dts - RELATIVE_TS_BASE);
     st->cur_dts= dts;
+
+    if (is_relative(pts))
+        pts += st->first_dts - RELATIVE_TS_BASE;
 
     for(; pktl; pktl= get_next_pkt(s, st, pktl)){
         if(pktl->pkt.stream_index != stream_index)
             continue;
-        //FIXME think more about this check
-        if(pktl->pkt.pts != AV_NOPTS_VALUE && pktl->pkt.pts == pktl->pkt.dts)
-            pktl->pkt.pts += st->first_dts;
+        if(is_relative(pktl->pkt.pts))
+            pktl->pkt.pts += st->first_dts - RELATIVE_TS_BASE;
 
-        if(pktl->pkt.dts != AV_NOPTS_VALUE)
-            pktl->pkt.dts += st->first_dts;
+        if(is_relative(pktl->pkt.dts))
+            pktl->pkt.dts += st->first_dts - RELATIVE_TS_BASE;
 
         if(st->start_time == AV_NOPTS_VALUE && pktl->pkt.pts != AV_NOPTS_VALUE)
             st->start_time= pktl->pkt.pts;
@@ -897,7 +905,7 @@ static void update_initial_durations(AVFormatContext *s, AVStream *st,
                                      int stream_index, int duration)
 {
     AVPacketList *pktl= s->parse_queue ? s->parse_queue : s->packet_buffer;
-    int64_t cur_dts= 0;
+    int64_t cur_dts= RELATIVE_TS_BASE;
 
     if(st->first_dts != AV_NOPTS_VALUE){
         cur_dts= st->first_dts;
@@ -910,7 +918,7 @@ static void update_initial_durations(AVFormatContext *s, AVStream *st,
         }
         pktl= s->parse_queue ? s->parse_queue : s->packet_buffer;
         st->first_dts = cur_dts;
-    }else if(st->cur_dts)
+    }else if(st->cur_dts != RELATIVE_TS_BASE)
         return;
 
     for(; pktl; pktl= get_next_pkt(s, st, pktl)){
@@ -1308,15 +1316,17 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
 {
     const int genpts = s->flags & AVFMT_FLAG_GENPTS;
     int          eof = 0;
+    int ret;
 
-    if (!genpts)
-        return s->packet_buffer ? read_from_packet_buffer(&s->packet_buffer,
+    if (!genpts) {
+        ret = s->packet_buffer ? read_from_packet_buffer(&s->packet_buffer,
                                                           &s->packet_buffer_end,
                                                           pkt) :
                                   read_frame_internal(s, pkt);
+        goto return_packet;
+    }
 
     for (;;) {
-        int ret;
         AVPacketList *pktl = s->packet_buffer;
 
         if (pktl) {
@@ -1337,9 +1347,11 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
 
             /* read packet from packet buffer, if there is data */
             if (!(next_pkt->pts == AV_NOPTS_VALUE &&
-                  next_pkt->dts != AV_NOPTS_VALUE && !eof))
-                return read_from_packet_buffer(&s->packet_buffer,
+                  next_pkt->dts != AV_NOPTS_VALUE && !eof)) {
+                ret = read_from_packet_buffer(&s->packet_buffer,
                                                &s->packet_buffer_end, pkt);
+                goto return_packet;
+            }
         }
 
         ret = read_frame_internal(s, pkt);
@@ -1355,6 +1367,13 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
                           &s->packet_buffer_end)) < 0)
             return AVERROR(ENOMEM);
     }
+
+return_packet:
+    if (is_relative(pkt->dts))
+        pkt->dts -= RELATIVE_TS_BASE;
+    if (is_relative(pkt->pts))
+        pkt->pts -= RELATIVE_TS_BASE;
+    return ret;
 }
 
 /* XXX: suppress the packet queue */
@@ -1408,7 +1427,7 @@ void ff_read_frame_flush(AVFormatContext *s)
             st->parser = NULL;
         }
         st->last_IP_pts = AV_NOPTS_VALUE;
-        if(st->first_dts == AV_NOPTS_VALUE) st->cur_dts = 0;
+        if(st->first_dts == AV_NOPTS_VALUE) st->cur_dts = RELATIVE_TS_BASE;
         else                                st->cur_dts = AV_NOPTS_VALUE; /* we set the current DTS to an unspecified origin */
         st->reference_dts = AV_NOPTS_VALUE;
 
@@ -1455,6 +1474,9 @@ int ff_add_index_entry(AVIndexEntry **index_entries,
 
     if((unsigned)*nb_index_entries + 1 >= UINT_MAX / sizeof(AVIndexEntry))
         return -1;
+
+    if (is_relative(timestamp)) //FIXME this maintains previous behavior but we should shift by the correct offset once known
+        timestamp -= RELATIVE_TS_BASE;
 
     entries = av_fast_realloc(*index_entries,
                               index_entries_allocated_size,
@@ -2479,7 +2501,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             int64_t last = st->info->last_dts;
 
             if(pkt->dts != AV_NOPTS_VALUE && last != AV_NOPTS_VALUE && pkt->dts > last){
-                double dts= pkt->dts * av_q2d(st->time_base);
+                double dts= (is_relative(pkt->dts) ?  pkt->dts - RELATIVE_TS_BASE : pkt->dts) * av_q2d(st->time_base);
                 int64_t duration= pkt->dts - last;
 
 //                 if(st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
@@ -2883,7 +2905,7 @@ AVStream *avformat_new_stream(AVFormatContext *s, AVCodec *c)
            but durations get some timestamps, formats with some unknown
            timestamps have their first few packets buffered and the
            timestamps corrected before they are returned to the user */
-    st->cur_dts = 0;
+    st->cur_dts = s->iformat ? RELATIVE_TS_BASE : 0;
     st->first_dts = AV_NOPTS_VALUE;
     st->probe_packets = MAX_PROBE_PACKETS;
 

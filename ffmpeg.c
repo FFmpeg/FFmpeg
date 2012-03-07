@@ -4258,6 +4258,7 @@ static int read_ffserver_streams(OptionsContext *o, AVFormatContext *s, const ch
 
         // FIXME: a more elegant solution is needed
         memcpy(st, ic->streams[i], sizeof(AVStream));
+        st->cur_dts = 0;
         st->info = av_malloc(sizeof(*st->info));
         memcpy(st->info, ic->streams[i]->info, sizeof(*st->info));
         st->codec= avctx;
