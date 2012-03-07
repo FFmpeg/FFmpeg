@@ -200,7 +200,7 @@ static int count_paired_channels(uint8_t (*layout_map)[3], int tags, int pos, in
             break;
         if (layout_map[i][0] == TYPE_CPE) {
             if (sce_parity) {
-                if (pos == AAC_CHANNEL_FRONT || !first_cpe) {
+                if (pos == AAC_CHANNEL_FRONT && !first_cpe) {
                     sce_parity = 0;
                 } else {
                     return -1;
