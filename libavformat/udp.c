@@ -380,13 +380,13 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             goto fail;
     }
 
-    /* the bind is needed to give a port to the socket now */
     /* if multicast, try the multicast address bind first */
     if (s->is_multicast && (h->flags & AVIO_FLAG_READ)) {
         bind_ret = bind(udp_fd,(struct sockaddr *)&s->dest_addr, len);
     }
     /* bind to the local address if not multicast or if the multicast
      * bind failed */
+    /* the bind is needed to give a port to the socket now */
     if (bind_ret < 0 && bind(udp_fd,(struct sockaddr *)&my_addr, len) < 0) {
         av_log(h, AV_LOG_ERROR, "bind failed: %s\n", strerror(errno));
         goto fail;
