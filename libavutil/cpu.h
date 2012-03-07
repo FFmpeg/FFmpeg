@@ -53,6 +53,7 @@ int av_get_cpu_flags(void);
 
 /**
  * Disables cpu detection and forces the specified flags.
+ * -1 is a special case that disables forcing of specific flags.
  */
 void av_force_cpu_flags(int flags);
 
