@@ -2869,6 +2869,7 @@ AVStream *avformat_new_stream(AVFormatContext *s, AVCodec *c)
         av_free(st);
         return NULL;
     }
+    st->info->last_dts = AV_NOPTS_VALUE;
 
     st->codec = avcodec_alloc_context3(c);
     if (s->iformat) {
