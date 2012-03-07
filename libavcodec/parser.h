@@ -37,8 +37,6 @@ typedef struct ParseContext{
     uint64_t state64;           ///< contains the last 8 bytes in MSB order
 } ParseContext;
 
-struct MpegEncContext;
-
 #define END_NOT_FOUND (-100)
 
 int ff_combine_frame(ParseContext *pc, int next, const uint8_t **buf, int *buf_size);
