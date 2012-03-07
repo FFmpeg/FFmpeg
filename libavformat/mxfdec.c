@@ -121,6 +121,7 @@ typedef struct {
     int track_id;
     uint8_t track_number[4];
     AVRational edit_rate;
+    int intra_only;
 } MXFTrack;
 
 typedef struct {
@@ -912,6 +913,19 @@ static const MXFCodecUL mxf_picture_essence_container_uls[] = {
     { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x05,0x00,0x00 }, 14,   CODEC_ID_RAWVIDEO }, /* Uncompressed Picture */
     { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },  0,      CODEC_ID_NONE },
 };
+
+/* EC ULs for intra-only formats */
+static const MXFCodecUL mxf_intra_only_essence_container_uls[] = {
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x01,0x00,0x00 }, 14, CODEC_ID_MPEG2VIDEO }, /* MXF-GC SMPTE D-10 Mappings */
+    { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },  0,       CODEC_ID_NONE },
+};
+
+/* intra-only PictureEssenceCoding ULs, where no corresponding EC UL exists */
+static const MXFCodecUL mxf_intra_only_picture_essence_coding_uls[] = {
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0A,0x04,0x01,0x02,0x02,0x01,0x32,0x00,0x00 }, 14,       CODEC_ID_H264 }, /* H.264/MPEG-4 AVC Intra Profiles */
+    { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },  0,       CODEC_ID_NONE },
+};
+
 static const MXFCodecUL mxf_sound_essence_container_uls[] = {
     // sound essence container uls
     { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x06,0x01,0x00 }, 14, CODEC_ID_PCM_S16LE }, /* BWF Frame wrapped */
@@ -1284,6 +1298,14 @@ finish_decoding_index:
     return ret;
 }
 
+static int mxf_is_intra_only(MXFDescriptor *d)
+{
+    return mxf_get_codec_ul(mxf_intra_only_essence_container_uls,
+                            &d->essence_container_ul)->id != CODEC_ID_NONE ||
+           mxf_get_codec_ul(mxf_intra_only_picture_essence_coding_uls,
+                            &d->essence_codec_ul)->id     != CODEC_ID_NONE;
+}
+
 static int mxf_parse_structural_metadata(MXFContext *mxf)
 {
     MXFPackage *material_package = NULL;
@@ -1440,6 +1462,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             st->codec->extradata_size = descriptor->extradata_size;
         }
         if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+            source_track->intra_only = mxf_is_intra_only(descriptor);
             container_ul = mxf_get_codec_ul(mxf_picture_essence_container_uls, essence_container_ul);
             if (st->codec->codec_id == CODEC_ID_NONE)
                 st->codec->codec_id = container_ul->id;
