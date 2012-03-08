@@ -2337,6 +2337,7 @@ extern void ff_butterflies_float_interleave_avx(float *dst, const float *src0,
                                                 const float *src1, int len);
 
 #define SET_QPEL_FUNCS(PFX, IDX, SIZE, CPU, PREFIX) \
+    do {                                                                     \
     c->PFX ## _pixels_tab[IDX][ 0] = PREFIX ## PFX ## SIZE ## _mc00_ ## CPU; \
     c->PFX ## _pixels_tab[IDX][ 1] = PREFIX ## PFX ## SIZE ## _mc10_ ## CPU; \
     c->PFX ## _pixels_tab[IDX][ 2] = PREFIX ## PFX ## SIZE ## _mc20_ ## CPU; \
@@ -2352,25 +2353,32 @@ extern void ff_butterflies_float_interleave_avx(float *dst, const float *src0,
     c->PFX ## _pixels_tab[IDX][12] = PREFIX ## PFX ## SIZE ## _mc03_ ## CPU; \
     c->PFX ## _pixels_tab[IDX][13] = PREFIX ## PFX ## SIZE ## _mc13_ ## CPU; \
     c->PFX ## _pixels_tab[IDX][14] = PREFIX ## PFX ## SIZE ## _mc23_ ## CPU; \
-    c->PFX ## _pixels_tab[IDX][15] = PREFIX ## PFX ## SIZE ## _mc33_ ## CPU
+    c->PFX ## _pixels_tab[IDX][15] = PREFIX ## PFX ## SIZE ## _mc33_ ## CPU; \
+    } while (0)
 
 #define SET_HPEL_FUNCS(PFX, IDX, SIZE, CPU) \
+    do {                                                                   \
     c->PFX ## _pixels_tab[IDX][0] = PFX ## _pixels ## SIZE ## _ ## CPU;    \
     c->PFX ## _pixels_tab[IDX][1] = PFX ## _pixels ## SIZE ## _x2_ ## CPU; \
     c->PFX ## _pixels_tab[IDX][2] = PFX ## _pixels ## SIZE ## _y2_ ## CPU; \
-    c->PFX ## _pixels_tab[IDX][3] = PFX ## _pixels ## SIZE ## _xy2_ ## CPU
+    c->PFX ## _pixels_tab[IDX][3] = PFX ## _pixels ## SIZE ## _xy2_ ## CPU;\
+    } while (0)
 
 #define H264_QPEL_FUNCS(x, y, CPU) \
+    do {                                                                      \
     c->put_h264_qpel_pixels_tab[0][x+y*4] = put_h264_qpel16_mc##x##y##_##CPU; \
     c->put_h264_qpel_pixels_tab[1][x+y*4] = put_h264_qpel8_mc##x##y##_##CPU;  \
     c->avg_h264_qpel_pixels_tab[0][x+y*4] = avg_h264_qpel16_mc##x##y##_##CPU; \
-    c->avg_h264_qpel_pixels_tab[1][x+y*4] = avg_h264_qpel8_mc##x##y##_##CPU
+    c->avg_h264_qpel_pixels_tab[1][x+y*4] = avg_h264_qpel8_mc##x##y##_##CPU;  \
+    } while (0)
 
 #define H264_QPEL_FUNCS_10(x, y, CPU) \
+    do {                                                                            \
     c->put_h264_qpel_pixels_tab[0][x+y*4] = ff_put_h264_qpel16_mc##x##y##_10_##CPU; \
     c->put_h264_qpel_pixels_tab[1][x+y*4] = ff_put_h264_qpel8_mc##x##y##_10_##CPU;  \
     c->avg_h264_qpel_pixels_tab[0][x+y*4] = ff_avg_h264_qpel16_mc##x##y##_10_##CPU; \
-    c->avg_h264_qpel_pixels_tab[1][x+y*4] = ff_avg_h264_qpel8_mc##x##y##_10_##CPU;
+    c->avg_h264_qpel_pixels_tab[1][x+y*4] = ff_avg_h264_qpel8_mc##x##y##_10_##CPU;  \
+    } while (0)
 
 static void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx, int mm_flags)
 {
