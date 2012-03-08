@@ -382,8 +382,9 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 
     /* If multicast, try binding the multicast address first, to avoid
      * receiving UDP packets from other sources aimed at the same UDP
-     * port. This fails on windows. */
-    if (s->is_multicast && (h->flags & AVIO_FLAG_READ)) {
+     * port. This fails on windows. This makes sending to the same address
+     * using sendto() fail, so only do it if we're opened in read-only mode. */
+    if (s->is_multicast && !(h->flags & AVIO_FLAG_WRITE)) {
         bind_ret = bind(udp_fd,(struct sockaddr *)&s->dest_addr, len);
     }
     /* bind to the local address if not multicast or if the multicast
