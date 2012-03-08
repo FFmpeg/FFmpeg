@@ -97,12 +97,8 @@ Configuration options:
   --disable-swscale-alpha  disable alpha channel support in swscale
   --disable-fastdiv        disable table-based division
   --enable-small           optimize for size instead of speed
-  --disable-aandct         disable AAN DCT code
   --disable-dct            disable DCT code
   --disable-fft            disable FFT code
-  --disable-golomb         disable Golomb code
-  --disable-huffman        disable Huffman code
-  --disable-lpc            disable LPC code
   --disable-mdct           disable MDCT code
   --disable-rdft           disable RDFT code
   --enable-vaapi           enable VAAPI code
@@ -915,7 +911,6 @@ PROGRAM_LIST="
 CONFIG_LIST="
     $COMPONENT_LIST
     $PROGRAM_LIST
-    aandct
     ac3dsp
     avcodec
     avdevice
@@ -931,14 +926,9 @@ CONFIG_LIST="
     fft
     frei0r
     gnutls
-    golomb
     gpl
     gray
-    h264chroma
-    h264dsp
-    h264pred
     hardcoded_tables
-    huffman
     libcdio
     libdc1394
     libdirac
@@ -963,7 +953,6 @@ CONFIG_LIST="
     libx264
     libxavs
     libxvid
-    lpc
     lsp
     mdct
     memalign_hack
@@ -1156,9 +1145,16 @@ HAVE_LIST="
 
 # options emitted with CONFIG_ prefix but not available on command line
 CONFIG_EXTRA="
+    aandct
     avutil
+    golomb
     gplv3
+    h264chroma
+    h264dsp
+    h264pred
+    huffman
     lgplv3
+    lpc
 "
 
 CMDLINE_SELECT="
