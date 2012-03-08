@@ -487,7 +487,6 @@ static int prores_encode_picture(AVCodecContext *avctx, AVFrame *pic,
 static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                                const AVFrame *pict, int *got_packet)
 {
-    ProresContext* ctx = avctx->priv_data;
     int header_size = 148;
     uint8_t *buf;
     int pic_size, ret;
