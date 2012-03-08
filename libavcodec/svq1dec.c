@@ -706,7 +706,7 @@ static int svq1_decode_frame(AVCodecContext *avctx,
           result = svq1_decode_block_intra (&s->gb, &current[x], linesize);
           if (result != 0)
           {
-            av_log(s->avctx, AV_LOG_INFO, "Error in svq1_decode_block %i (keyframe)\n",result);
+            av_log(s->avctx, AV_LOG_ERROR, "Error in svq1_decode_block %i (keyframe)\n",result);
             goto err;
           }
         }
