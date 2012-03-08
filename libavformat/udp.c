@@ -380,7 +380,9 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             goto fail;
     }
 
-    /* if multicast, try the multicast address bind first */
+    /* If multicast, try binding the multicast address first, to avoid
+     * receiving UDP packets from other sources aimed at the same UDP
+     * port. This fails on windows. */
     if (s->is_multicast && (h->flags & AVIO_FLAG_READ)) {
         bind_ret = bind(udp_fd,(struct sockaddr *)&s->dest_addr, len);
     }
