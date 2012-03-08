@@ -1161,16 +1161,6 @@ QPEL(put_, 16,XMM, 16)\
 QPEL(avg_, 8, XMM, 16)\
 QPEL(avg_, 16,XMM, 16)\
 
-
-#define AVG_3DNOW_OP(a,b,temp, size) \
-"mov" #size " " #b ", " #temp "   \n\t"\
-"pavgusb " #temp ", " #a "        \n\t"\
-"mov" #size " " #a ", " #b "      \n\t"
-#define AVG_MMX2_OP(a,b,temp, size) \
-"mov" #size " " #b ", " #temp "   \n\t"\
-"pavgb " #temp ", " #a "          \n\t"\
-"mov" #size " " #a ", " #b "      \n\t"
-
 #define PAVGB "pavgusb"
 QPEL_H264(put_,       PUT_OP, 3dnow)
 QPEL_H264(avg_, AVG_3DNOW_OP, 3dnow)

@@ -22,6 +22,7 @@
 #include "avcodec.h"
 #include "sinewin.h"
 #include "wma.h"
+#include "wma_common.h"
 #include "wmadata.h"
 
 #undef NDEBUG
@@ -65,46 +66,6 @@ static void init_coef_vlc(VLC *vlc, uint16_t **prun_table,
     *plevel_table = flevel_table;
     *pint_table   = int_table;
     av_free(level_table);
-}
-
-/**
- *@brief Get the samples per frame for this stream.
- *@param sample_rate output sample_rate
- *@param version wma version
- *@param decode_flags codec compression features
- *@return log2 of the number of output samples per frame
- */
-int av_cold ff_wma_get_frame_len_bits(int sample_rate, int version,
-                                      unsigned int decode_flags)
-{
-
-    int frame_len_bits;
-
-    if (sample_rate <= 16000) {
-        frame_len_bits = 9;
-    } else if (sample_rate <= 22050 ||
-             (sample_rate <= 32000 && version == 1)) {
-        frame_len_bits = 10;
-    } else if (sample_rate <= 48000 || version < 3) {
-        frame_len_bits = 11;
-    } else if (sample_rate <= 96000) {
-        frame_len_bits = 12;
-    } else {
-        frame_len_bits = 13;
-    }
-
-    if (version == 3) {
-        int tmp = decode_flags & 0x6;
-        if (tmp == 0x2) {
-            ++frame_len_bits;
-        } else if (tmp == 0x4) {
-            --frame_len_bits;
-        } else if (tmp == 0x6) {
-            frame_len_bits -= 2;
-        }
-    }
-
-    return frame_len_bits;
 }
 
 int ff_wma_init(AVCodecContext *avctx, int flags2)

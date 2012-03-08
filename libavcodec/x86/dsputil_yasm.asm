@@ -35,13 +35,12 @@ pb_bswap32: db 3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12
 SECTION_TEXT
 
 %macro SCALARPRODUCT 1
-; int scalarproduct_int16(int16_t *v1, int16_t *v2, int order, int shift)
-cglobal scalarproduct_int16_%1, 3,3,4, v1, v2, order, shift
+; int scalarproduct_int16(int16_t *v1, int16_t *v2, int order)
+cglobal scalarproduct_int16_%1, 3,3,3, v1, v2, order
     shl orderq, 1
     add v1q, orderq
     add v2q, orderq
     neg orderq
-    movd    m3, shiftm
     pxor    m2, m2
 .loop:
     movu    m0, [v1q + orderq]
@@ -55,10 +54,8 @@ cglobal scalarproduct_int16_%1, 3,3,4, v1, v2, order, shift
 %if mmsize == 16
     movhlps m0, m2
     paddd   m2, m0
-    psrad   m2, m3
     pshuflw m0, m2, 0x4e
 %else
-    psrad   m2, m3
     pshufw  m0, m2, 0x4e
 %endif
     paddd   m2, m0

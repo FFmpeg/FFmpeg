@@ -200,4 +200,9 @@ extern const int32_t ff_vc1_dqscale[63];
 extern const uint16_t ff_vc1_field_mvpred_scales[2][7][4];
 /* B Interlaced field picture backward MV predictor scaling values for first field (Table 115) */
 extern const uint16_t ff_vc1_b_field_mvpred_scales[7][4];
+
+#define AC_MODES 8
+
+extern const int ff_vc1_ac_sizes[AC_MODES];
+
 #endif /* AVCODEC_VC1DATA_H */

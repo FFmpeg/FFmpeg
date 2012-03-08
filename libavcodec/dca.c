@@ -639,13 +639,20 @@ static int dca_parse_frame_header(DCAContext *s)
 }
 
 
-static inline int get_scale(GetBitContext *gb, int level, int value)
+static inline int get_scale(GetBitContext *gb, int level, int value, int log2range)
 {
     if (level < 5) {
         /* huffman encoded */
         value += get_bitalloc(gb, &dca_scalefactor, level);
-    } else if (level < 8)
-        value = get_bits(gb, level + 1);
+        value = av_clip(value, 0, (1 << log2range) - 1);
+    } else if (level < 8) {
+        if (level + 1 > log2range) {
+            skip_bits(gb, level + 1 - log2range);
+            value = get_bits(gb, log2range);
+        } else {
+            value = get_bits(gb, level + 1);
+        }
+    }
     return value;
 }
 
@@ -718,18 +725,17 @@ static int dca_subframe_header(DCAContext *s, int base_channel, int block_index)
 
     for (j = base_channel; j < s->prim_channels; j++) {
         const uint32_t *scale_table;
-        unsigned int scale_max;
-        int scale_sum;
+        int scale_sum, log_size;
 
         memset(s->scale_factor[j], 0,
                s->subband_activity[j] * sizeof(s->scale_factor[0][0][0]) * 2);
 
         if (s->scalefactor_huffman[j] == 6) {
             scale_table = scale_factor_quant7;
-            scale_max   = 127;
+            log_size = 7;
         } else {
             scale_table = scale_factor_quant6;
-            scale_max   = 63;
+            log_size = 6;
         }
 
         /* When huffman coded, only the difference is encoded */
@@ -737,21 +743,13 @@ static int dca_subframe_header(DCAContext *s, int base_channel, int block_index)
 
         for (k = 0; k < s->subband_activity[j]; k++) {
             if (k >= s->vq_start_subband[j] || s->bitalloc[j][k] > 0) {
-                scale_sum = get_scale(&s->gb, s->scalefactor_huffman[j], scale_sum);
-                if (scale_sum > scale_max) {
-                    av_log(s->avctx, AV_LOG_ERROR, "scale_sum out of range\n");
-                    return AVERROR_INVALIDDATA;
-                }
+                scale_sum = get_scale(&s->gb, s->scalefactor_huffman[j], scale_sum, log_size);
                 s->scale_factor[j][k][0] = scale_table[scale_sum];
             }
 
             if (k < s->vq_start_subband[j] && s->transition_mode[j][k]) {
                 /* Get second scale factor */
-                scale_sum = get_scale(&s->gb, s->scalefactor_huffman[j], scale_sum);
-                if (scale_sum > scale_max) {
-                    av_log(s->avctx, AV_LOG_ERROR, "scale_sum out of range\n");
-                    return AVERROR_INVALIDDATA;
-                }
+                scale_sum = get_scale(&s->gb, s->scalefactor_huffman[j], scale_sum, log_size);
                 s->scale_factor[j][k][1] = scale_table[scale_sum];
             }
         }
@@ -780,8 +778,7 @@ static int dca_subframe_header(DCAContext *s, int base_channel, int block_index)
              * (is this valid as well for joint scales ???) */
 
             for (k = s->subband_activity[j]; k < s->subband_activity[source_channel]; k++) {
-                scale = get_scale(&s->gb, s->joint_huff[j], 0);
-                scale += 64;    /* bias */
+                scale = get_scale(&s->gb, s->joint_huff[j], 64 /* bias */, 7);
                 s->joint_scale_factor[j][k] = scale;    /*joint_scale_table[scale]; */
             }
 
@@ -802,13 +799,14 @@ static int dca_subframe_header(DCAContext *s, int base_channel, int block_index)
             }
         } else {
             int am = s->amode & DCA_CHANNEL_MASK;
-            if (am < 16) {
+            if (am >= FF_ARRAY_ELEMS(dca_default_coeffs)) {
+                av_log(s->avctx, AV_LOG_ERROR,
+                       "Invalid channel mode %d\n", am);
+                return AVERROR_INVALIDDATA;
+            }
             for (j = base_channel; j < s->prim_channels; j++) {
                 s->downmix_coef[j][0] = dca_default_coeffs[am][j][0];
                 s->downmix_coef[j][1] = dca_default_coeffs[am][j][1];
-            }
-            } else {
-                av_log(s->avctx, AV_LOG_WARNING, "amode > 15 default downmix_coef unsupported\n");
             }
         }
     }

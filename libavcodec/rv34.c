@@ -472,26 +472,26 @@ static void rv34_pred_mv(RV34DecContext *r, int block_type, int subblock_no, int
     int A[2] = {0}, B[2], C[2];
     int i, j;
     int mx, my;
-    int avail_index = avail_indexes[subblock_no];
+    int* avail = r->avail_cache + avail_indexes[subblock_no];
     int c_off = part_sizes_w[block_type];
 
     mv_pos += (subblock_no & 1) + (subblock_no >> 1)*s->b8_stride;
     if(subblock_no == 3)
         c_off = -1;
 
-    if(r->avail_cache[avail_index - 1]){
+    if(avail[-1]){
         A[0] = s->current_picture_ptr->f.motion_val[0][mv_pos-1][0];
         A[1] = s->current_picture_ptr->f.motion_val[0][mv_pos-1][1];
     }
-    if(r->avail_cache[avail_index - 4]){
+    if(avail[-4]){
         B[0] = s->current_picture_ptr->f.motion_val[0][mv_pos-s->b8_stride][0];
         B[1] = s->current_picture_ptr->f.motion_val[0][mv_pos-s->b8_stride][1];
     }else{
         B[0] = A[0];
         B[1] = A[1];
     }
-    if(!r->avail_cache[avail_index - 4 + c_off]){
-        if(r->avail_cache[avail_index - 4] && (r->avail_cache[avail_index - 1] || r->rv30)){
+    if(!avail[c_off-4]){
+        if(avail[-4] && (avail[-1] || r->rv30)){
             C[0] = s->current_picture_ptr->f.motion_val[0][mv_pos-s->b8_stride-1][0];
             C[1] = s->current_picture_ptr->f.motion_val[0][mv_pos-s->b8_stride-1][1];
         }else{
@@ -611,21 +611,21 @@ static void rv34_pred_mv_rv3(RV34DecContext *r, int block_type, int dir)
     int A[2] = {0}, B[2], C[2];
     int i, j, k;
     int mx, my;
-    int avail_index = avail_indexes[0];
+    int* avail = r->avail_cache + avail_indexes[0];
 
-    if(r->avail_cache[avail_index - 1]){
+    if(avail[-1]){
         A[0] = s->current_picture_ptr->f.motion_val[0][mv_pos - 1][0];
         A[1] = s->current_picture_ptr->f.motion_val[0][mv_pos - 1][1];
     }
-    if(r->avail_cache[avail_index - 4]){
+    if(avail[-4]){
         B[0] = s->current_picture_ptr->f.motion_val[0][mv_pos - s->b8_stride][0];
         B[1] = s->current_picture_ptr->f.motion_val[0][mv_pos - s->b8_stride][1];
     }else{
         B[0] = A[0];
         B[1] = A[1];
     }
-    if(!r->avail_cache[avail_index - 4 + 2]){
-        if(r->avail_cache[avail_index - 4] && (r->avail_cache[avail_index - 1])){
+    if(!avail[-4 + 2]){
+        if(avail[-4] && (avail[-1])){
             C[0] = s->current_picture_ptr->f.motion_val[0][mv_pos - s->b8_stride - 1][0];
             C[1] = s->current_picture_ptr->f.motion_val[0][mv_pos - s->b8_stride - 1][1];
         }else{
@@ -1022,24 +1022,9 @@ static void rv34_output_i16x16(RV34DecContext *r, int8_t *intra_types, int cbp)
                     q_ac = rv34_qscale_tab[s->qscale];
     uint8_t        *dst  = s->dest[0];
     DCTELEM        *ptr  = s->block[0];
-    int       avail[6*8] = {0};
     int i, j, itype, has_ac;
 
     memset(block16, 0, 16 * sizeof(*block16));
-
-    // Set neighbour information.
-    if(r->avail_cache[1])
-        avail[0] = 1;
-    if(r->avail_cache[2])
-        avail[1] = avail[2] = 1;
-    if(r->avail_cache[3])
-        avail[3] = avail[4] = 1;
-    if(r->avail_cache[4])
-        avail[5] = 1;
-    if(r->avail_cache[5])
-        avail[8] = avail[16] = 1;
-    if(r->avail_cache[9])
-        avail[24] = avail[32] = 1;
 
     has_ac = rv34_decode_block(block16, gb, r->cur_vlcs, 3, 0, q_dc, q_dc, q_ac);
     if(has_ac)

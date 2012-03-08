@@ -150,8 +150,6 @@ extern const float ff_wma_lsp_codebook[NB_LSP_COEFS][16];
 extern const uint32_t ff_aac_scalefactor_code[121];
 extern const uint8_t  ff_aac_scalefactor_bits[121];
 
-int av_cold ff_wma_get_frame_len_bits(int sample_rate, int version,
-                                      unsigned int decode_flags);
 int ff_wma_init(AVCodecContext * avctx, int flags2);
 int ff_wma_total_gain_to_bits(int total_gain);
 int ff_wma_end(AVCodecContext *avctx);

@@ -1129,3 +1129,7 @@ const uint16_t ff_vc1_b_field_mvpred_scales[7][4] = {
     {  26,     17,     12,     10 },   // ZONE1OFFSET_X
     {   7,      4,      3,      3 }    // ZONE1OFFSET_Y
 };
+
+const int ff_vc1_ac_sizes[AC_MODES] = {
+    186, 169, 133, 149, 103, 103, 163, 175
+};

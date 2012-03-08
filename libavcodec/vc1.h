@@ -28,6 +28,8 @@
 #include "intrax8.h"
 #include "vc1dsp.h"
 
+#define AC_VLC_BITS 9
+
 /** Markers used in VC-1 AP frame data */
 //@{
 enum VC1Code {

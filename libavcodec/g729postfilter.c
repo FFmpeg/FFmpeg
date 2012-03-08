@@ -163,7 +163,7 @@ static int16_t long_term_filter(DSPContext *dsp, int pitch_delay_int,
 
     ener = dsp->scalarproduct_int16(sig_scaled + RES_PREV_DATA_SIZE,
                                     sig_scaled + RES_PREV_DATA_SIZE,
-                                    subframe_size, 0);
+                                    subframe_size);
     if (ener) {
         sh_ener = FFMAX(av_log2(ener) - 14, 0);
         ener >>= sh_ener;
@@ -192,7 +192,7 @@ static int16_t long_term_filter(DSPContext *dsp, int pitch_delay_int,
         for (i = pitch_delay_int - 1; i <= pitch_delay_int + 1; i++) {
             sum = dsp->scalarproduct_int16(sig_scaled + RES_PREV_DATA_SIZE,
                                            sig_scaled + RES_PREV_DATA_SIZE - i,
-                                           subframe_size, 0);
+                                           subframe_size);
             if (sum > corr_int_num) {
                 corr_int_num = sum;
                 best_delay_int = i;
@@ -202,7 +202,7 @@ static int16_t long_term_filter(DSPContext *dsp, int pitch_delay_int,
             /* Compute denominator of pseudo-normalized correlation R'(0). */
             corr_int_den = dsp->scalarproduct_int16(sig_scaled - best_delay_int + RES_PREV_DATA_SIZE,
                                                     sig_scaled - best_delay_int + RES_PREV_DATA_SIZE,
-                                                    subframe_size, 0);
+                                                    subframe_size);
 
             /* Compute signals with non-integer delay k (with 1/8 precision),
                where k is in [0;6] range.
@@ -229,7 +229,7 @@ static int16_t long_term_filter(DSPContext *dsp, int pitch_delay_int,
             for (k = 0; k < ANALYZED_FRAC_DELAYS; k++) {
                 sum = dsp->scalarproduct_int16(&delayed_signal[k][1],
                                                &delayed_signal[k][1],
-                                               subframe_size - 1, 0);
+                                               subframe_size - 1);
                 corr_den[k][0] = sum + delayed_signal[k][0            ] * delayed_signal[k][0            ];
                 corr_den[k][1] = sum + delayed_signal[k][subframe_size] * delayed_signal[k][subframe_size];
 
@@ -257,7 +257,7 @@ static int16_t long_term_filter(DSPContext *dsp, int pitch_delay_int,
                            correlation R'(k). */
                         sum = dsp->scalarproduct_int16(&delayed_signal[k][i],
                                                        sig_scaled + RES_PREV_DATA_SIZE,
-                                                       subframe_size, 0);
+                                                       subframe_size);
                         gain_num_short = FFMAX(sum >> sh_gain_num, 0);
 
                         /*
@@ -314,7 +314,7 @@ static int16_t long_term_filter(DSPContext *dsp, int pitch_delay_int,
         /* Compute R'(k) correlation's numerator. */
         sum = dsp->scalarproduct_int16(residual_filt,
                                        sig_scaled + RES_PREV_DATA_SIZE,
-                                       subframe_size, 0);
+                                       subframe_size);
 
         if (sum < 0) {
             gain_long_num = 0;
@@ -327,7 +327,7 @@ static int16_t long_term_filter(DSPContext *dsp, int pitch_delay_int,
         }
 
         /* Compute R'(k) correlation's denominator. */
-        sum = dsp->scalarproduct_int16(residual_filt, residual_filt, subframe_size, 0);
+        sum = dsp->scalarproduct_int16(residual_filt, residual_filt, subframe_size);
 
         tmp = FFMAX(av_log2(sum) - 14, 0);
         sum >>= tmp;
@@ -437,8 +437,8 @@ static int16_t get_tilt_comp(DSPContext *dsp, int16_t *lp_gn,
     /* Now lp_gn (starting with 10) contains impulse response
        of A(z/FORMANT_PP_FACTOR_NUM)/A(z/FORMANT_PP_FACTOR_DEN) filter. */
 
-    rh0 = dsp->scalarproduct_int16(lp_gn + 10, lp_gn + 10, 20, 0);
-    rh1 = dsp->scalarproduct_int16(lp_gn + 10, lp_gn + 11, 20, 0);
+    rh0 = dsp->scalarproduct_int16(lp_gn + 10, lp_gn + 10, 20);
+    rh1 = dsp->scalarproduct_int16(lp_gn + 10, lp_gn + 11, 20);
 
     /* downscale to avoid overflow */
     temp = av_log2(rh0) - 14;

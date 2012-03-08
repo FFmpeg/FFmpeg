@@ -548,6 +548,11 @@ yuv2422_1_c_template(SwsContext *c, const int16_t *buf0,
                 V  = av_clip_uint8(V);
             }
 
+            Y1 = av_clip_uint8(Y1);
+            Y2 = av_clip_uint8(Y2);
+            U  = av_clip_uint8(U);
+            V  = av_clip_uint8(V);
+
             output_pixels(i * 4, Y1, U, Y2, V);
         }
     } else {
@@ -564,6 +569,11 @@ yuv2422_1_c_template(SwsContext *c, const int16_t *buf0,
                 U  = av_clip_uint8(U);
                 V  = av_clip_uint8(V);
             }
+
+            Y1 = av_clip_uint8(Y1);
+            Y2 = av_clip_uint8(Y2);
+            U  = av_clip_uint8(U);
+            V  = av_clip_uint8(V);
 
             output_pixels(i * 4, Y1, U, Y2, V);
         }
@@ -1008,9 +1018,16 @@ yuv2rgb_2_c_template(SwsContext *c, const int16_t *buf[2],
                    *g = (c->table_gU[U + YUVRGB_TABLE_HEADROOM] + c->table_gV[V + YUVRGB_TABLE_HEADROOM]),
                    *b =  c->table_bU[U + YUVRGB_TABLE_HEADROOM];
 
+        Y1 = av_clip_uint8(Y1);
+        Y2 = av_clip_uint8(Y2);
+        U  = av_clip_uint8(U);
+        V  = av_clip_uint8(V);
+
         if (hasAlpha) {
             A1 = (abuf0[i * 2    ] * yalpha1 + abuf1[i * 2    ] * yalpha) >> 19;
             A2 = (abuf0[i * 2 + 1] * yalpha1 + abuf1[i * 2 + 1] * yalpha) >> 19;
+            A1 = av_clip_uint8(A1);
+            A2 = av_clip_uint8(A2);
         }
 
         yuv2rgb_write(dest, i, Y1, Y2, hasAlpha ? A1 : 0, hasAlpha ? A2 : 0,
@@ -1039,9 +1056,16 @@ yuv2rgb_1_c_template(SwsContext *c, const int16_t *buf0,
                        *g = (c->table_gU[U + YUVRGB_TABLE_HEADROOM] + c->table_gV[V + YUVRGB_TABLE_HEADROOM]),
                        *b =  c->table_bU[U + YUVRGB_TABLE_HEADROOM];
 
+            Y1 = av_clip_uint8(Y1);
+            Y2 = av_clip_uint8(Y2);
+            U  = av_clip_uint8(U);
+            V  = av_clip_uint8(V);
+
             if (hasAlpha) {
                 A1 = abuf0[i * 2    ] * 255 + 16384 >> 15;
                 A2 = abuf0[i * 2 + 1] * 255 + 16384 >> 15;
+                A1 = av_clip_uint8(A1);
+                A2 = av_clip_uint8(A2);
             }
 
             yuv2rgb_write(dest, i, Y1, Y2, hasAlpha ? A1 : 0, hasAlpha ? A2 : 0,
@@ -1059,9 +1083,16 @@ yuv2rgb_1_c_template(SwsContext *c, const int16_t *buf0,
                        *g = (c->table_gU[U + YUVRGB_TABLE_HEADROOM] + c->table_gV[V + YUVRGB_TABLE_HEADROOM]),
                        *b =  c->table_bU[U + YUVRGB_TABLE_HEADROOM];
 
+            Y1 = av_clip_uint8(Y1);
+            Y2 = av_clip_uint8(Y2);
+            U  = av_clip_uint8(U);
+            V  = av_clip_uint8(V);
+
             if (hasAlpha) {
                 A1 = (abuf0[i * 2    ] + 64) >> 7;
                 A2 = (abuf0[i * 2 + 1] + 64) >> 7;
+                A1 = av_clip_uint8(A1);
+                A2 = av_clip_uint8(A2);
             }
 
             yuv2rgb_write(dest, i, Y1, Y2, hasAlpha ? A1 : 0, hasAlpha ? A2 : 0,

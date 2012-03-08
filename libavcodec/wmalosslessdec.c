@@ -27,6 +27,7 @@
 #include "get_bits.h"
 #include "put_bits.h"
 #include "wma.h"
+#include "wma_common.h"
 
 /** current decoder limitations */
 #define WMALL_MAX_CHANNELS      8                       ///< max number of handled channels
@@ -406,7 +407,6 @@ static void decode_mclms(WmallDecodeCtx *s)
     if (get_bits1(&s->gb)) {
         int i, send_coef_bits;
         int cbits = av_log2(s->mclms_scaling + 1);
-        assert(cbits == my_log2(s->mclms_scaling + 1));
         if (1 << cbits < s->mclms_scaling + 1)
             cbits++;
 
