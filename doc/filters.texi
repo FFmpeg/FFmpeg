@@ -2549,6 +2549,9 @@ For example:
 will create two separate outputs from the same input, one cropped and
 one padded.
 
+@section swapuv
+Swap U & V plane.
+
 @section thumbnail
 Select the most representative frame in a given sequence of consecutive frames.
 

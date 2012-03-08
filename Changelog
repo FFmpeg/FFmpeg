@@ -5,6 +5,8 @@ version next:
 
 version 0.10.1
 
+- swapuv filter
+
 - Several bugs and crashes have been fixed in the following codecs: AAC,
   AC-3, ADPCM, AMR (both NB and WB), ATRAC3, CAVC, Cook, camstudio, DCA,
   DPCM, DSI CIN, DV, EA TGQ, FLAC, fraps, G.722 (both encoder and
