@@ -1574,8 +1574,8 @@ libx264_encoder_deps="libx264"
 libx264rgb_encoder_deps="libx264"
 libxavs_encoder_deps="libxavs"
 libxvid_encoder_deps="libxvid"
-libutvideo_decoder_deps="libutvideo gpl"
-libutvideo_encoder_deps="libutvideo gpl"
+libutvideo_decoder_deps="libutvideo"
+libutvideo_encoder_deps="libutvideo"
 
 # demuxers / muxers
 ac3_demuxer_select="ac3_parser"
@@ -2800,6 +2800,7 @@ die_license_disabled() {
 }
 
 die_license_disabled gpl libcdio
+die_license_disabled gpl libutvideo
 die_license_disabled gpl libx264
 die_license_disabled gpl libxavs
 die_license_disabled gpl libxvid
