@@ -80,7 +80,7 @@ ogm_header(AVFormatContext *s, int idx)
         if(st->codec->codec_type == AVMEDIA_TYPE_VIDEO){
             st->codec->width = bytestream_get_le32(&p);
             st->codec->height = bytestream_get_le32(&p);
-            avpriv_set_pts_info(st, 64, spu * 10000000, time_unit);
+            avpriv_set_pts_info(st, 64, time_unit, spu * 10000000);
         } else {
             st->codec->channels = bytestream_get_le16(&p);
             p += 2;                 /* block_align */
