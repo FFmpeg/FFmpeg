@@ -400,11 +400,12 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     s->local_port = udp_port(&my_addr, len);
 
     if (s->is_multicast) {
-        if (!(h->flags & AVIO_FLAG_READ)) {
+        if (h->flags & AVIO_FLAG_WRITE) {
             /* output */
             if (udp_set_multicast_ttl(udp_fd, s->ttl, (struct sockaddr *)&s->dest_addr) < 0)
                 goto fail;
-        } else {
+        }
+        if (h->flags & AVIO_FLAG_READ) {
             /* input */
             if (udp_join_multicast_group(udp_fd, (struct sockaddr *)&s->dest_addr) < 0)
                 goto fail;
