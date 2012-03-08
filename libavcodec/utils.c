@@ -265,9 +265,11 @@ void ff_init_buffer_info(AVCodecContext *s, AVFrame *pic)
     if (s->pkt) {
         pic->pkt_pts = s->pkt->pts;
         pic->pkt_pos = s->pkt->pos;
+        pic->pkt_duration = s->pkt->duration;
     } else {
         pic->pkt_pts = AV_NOPTS_VALUE;
         pic->pkt_pos = -1;
+        pic->pkt_duration = 0;
     }
     pic->reordered_opaque= s->reordered_opaque;
     pic->sample_aspect_ratio = s->sample_aspect_ratio;
@@ -384,9 +386,11 @@ static int audio_get_buffer(AVCodecContext *avctx, AVFrame *frame)
     if (avctx->pkt) {
         frame->pkt_pts = avctx->pkt->pts;
         frame->pkt_pos = avctx->pkt->pos;
+        frame->pkt_duration = avctx->pkt->duration;
     } else {
         frame->pkt_pts = AV_NOPTS_VALUE;
         frame->pkt_pos = -1;
+        frame->pkt_duration = 0;
     }
 
     frame->reordered_opaque = avctx->reordered_opaque;
@@ -521,9 +525,11 @@ static int video_get_buffer(AVCodecContext *s, AVFrame *pic)
     if (s->pkt) {
         pic->pkt_pts = s->pkt->pts;
         pic->pkt_pos = s->pkt->pos;
+        pic->pkt_duration = s->pkt->duration;
     } else {
         pic->pkt_pts = AV_NOPTS_VALUE;
         pic->pkt_pos = -1;
+        pic->pkt_duration = 0;
     }
     pic->reordered_opaque= s->reordered_opaque;
     pic->sample_aspect_ratio = s->sample_aspect_ratio;
@@ -661,6 +667,7 @@ void avcodec_get_frame_defaults(AVFrame *pic){
     memset(pic, 0, sizeof(AVFrame));
 
     pic->pts = pic->pkt_dts = pic->pkt_pts = pic->best_effort_timestamp = AV_NOPTS_VALUE;
+    pic->pkt_duration = 0;
     pic->pkt_pos = -1;
     pic->key_frame= 1;
     pic->sample_aspect_ratio = (AVRational){0, 1};
@@ -682,6 +689,7 @@ AVFrame *avcodec_alloc_frame(void){
     void av_##name##_set_##field(str *s, type v) { s->field = v; }
 
 MAKE_ACCESSORS(AVFrame, frame, int64_t, best_effort_timestamp)
+MAKE_ACCESSORS(AVFrame, frame, int64_t, pkt_duration)
 MAKE_ACCESSORS(AVFrame, frame, int64_t, pkt_pos)
 MAKE_ACCESSORS(AVFrame, frame, int64_t, channel_layout)
 MAKE_ACCESSORS(AVFrame, frame, int,     sample_rate)
