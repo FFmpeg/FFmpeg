@@ -13,6 +13,7 @@ version next:
 - bluray protocol
 - blackdetect filter
 - libutvideo encoder wrapper (--enable-libutvideo)
+- swapuv filter
 
 
 version 0.10:
