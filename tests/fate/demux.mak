@@ -13,6 +13,9 @@ fate-bmv: CMD = framecrc -i $(SAMPLES)/bmv/SURFING-partial.BMV -pix_fmt rgb24
 FATE_TESTS += fate-caf
 fate-caf: CMD = crc -i $(SAMPLES)/caf/caf-pcm16.caf
 
+FATE_TESTS += fate-cdxl-demux
+fate-cdxl-demux: CMD = framecrc -i $(SAMPLES)/cdxl/mirage.cdxl -vcodec copy -acodec copy
+
 FATE_TESTS += fate-cryo-apc
 fate-cryo-apc: CMD = md5 -i $(SAMPLES)/cryo-apc/cine007.APC -f s16le
 
