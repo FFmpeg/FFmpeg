@@ -138,7 +138,7 @@ static int rtp_write_header(AVFormatContext *s1)
                 s->max_frames_per_packet =
                         av_rescale_q_rnd(s1->max_delay,
                                          AV_TIME_BASE_Q,
-                                         (AVRational){ frame_size / st->codec->sample_rate },
+                                         (AVRational){ frame_size, st->codec->sample_rate },
                                          AV_ROUND_DOWN);
             }
         }

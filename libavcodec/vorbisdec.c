@@ -1593,6 +1593,9 @@ static int vorbis_parse_audio_packet(vorbis_context *vc)
         ch_left -= ch;
     }
 
+    if (ch_left > 0)
+        return AVERROR_INVALIDDATA;
+
 // Inverse coupling
 
     for (i = mapping->coupling_steps - 1; i >= 0; --i) { //warning: i has to be signed
