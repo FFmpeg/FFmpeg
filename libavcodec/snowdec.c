@@ -336,6 +336,11 @@ static int decode_header(SnowContext *s){
         return -1;
     }
 
+    if (s->chroma_h_shift != 1 || s->chroma_v_shift != 1) {
+        av_log(s->avctx, AV_LOG_ERROR, "Invalid chroma shift\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
     s->qlog           += get_symbol(&s->c, s->header_state, 1);
     s->mv_scale       += get_symbol(&s->c, s->header_state, 1);
     s->qbias          += get_symbol(&s->c, s->header_state, 1);
