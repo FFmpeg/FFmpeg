@@ -28,7 +28,6 @@ int av_get_cpu_flags(void)
     if (checked)
         return flags;
 
-    if (ARCH_ARM) flags = ff_get_cpu_flags_arm();
     if (ARCH_PPC) flags = ff_get_cpu_flags_ppc();
     if (ARCH_X86) flags = ff_get_cpu_flags_x86();
 
@@ -53,9 +52,7 @@ static const struct {
     int flag;
     const char *name;
 } cpu_flag_tab[] = {
-#if   ARCH_ARM
-    { AV_CPU_FLAG_IWMMXT,    "iwmmxt"     },
-#elif ARCH_PPC
+#if   ARCH_PPC
     { AV_CPU_FLAG_ALTIVEC,   "altivec"    },
 #elif ARCH_X86
     { AV_CPU_FLAG_MMX,       "mmx"        },

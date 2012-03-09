@@ -72,7 +72,6 @@ OBJS = adler32.o                                                        \
        tree.o                                                           \
        utils.o                                                          \
 
-OBJS-$(ARCH_ARM) += arm/cpu.o
 OBJS-$(ARCH_PPC) += ppc/cpu.o
 OBJS-$(ARCH_X86) += x86/cpu.o
 

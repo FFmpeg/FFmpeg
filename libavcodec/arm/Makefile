@@ -43,9 +43,6 @@ OBJS-$(HAVE_ARMVFP)                    += arm/dsputil_vfp.o             \
                                           arm/dsputil_init_vfp.o        \
                                           $(VFP-OBJS-yes)
 
-OBJS-$(HAVE_IWMMXT)                    += arm/dsputil_iwmmxt.o          \
-                                          arm/mpegvideo_iwmmxt.o        \
-
 NEON-OBJS-$(CONFIG_FFT)                += arm/fft_neon.o                \
                                           arm/fft_fixed_neon.o          \
 
