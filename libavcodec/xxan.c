@@ -129,7 +129,8 @@ static int xan_unpack(uint8_t *dest, const int dest_len,
                 if (size + size2 > dest_end - dest)
                     break;
             }
-            if (src + size > src_end || dest + size + size2 > dest_end)
+            if (src + size > src_end || dest + size + size2 > dest_end ||
+                dest - orig_dest + size < back)
                 return -1;
             bytestream_get_buffer(&src, dest, size);
             dest += size;
