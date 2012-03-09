@@ -105,7 +105,7 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
             avctx->pix_fmt = (type == RT_FORMAT_RGB) ? PIX_FMT_RGB24 : PIX_FMT_BGR24;
             break;
         case 32:
-            avctx->pix_fmt = (type == RT_FORMAT_RGB) ? PIX_FMT_RGB0 : PIX_FMT_BGR0;
+            avctx->pix_fmt = (type == RT_FORMAT_RGB) ? PIX_FMT_0RGB : PIX_FMT_0BGR;
             break;
         default:
             av_log(avctx, AV_LOG_ERROR, "invalid depth\n");
