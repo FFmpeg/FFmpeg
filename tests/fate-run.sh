@@ -14,7 +14,7 @@ target_path=$4
 command=$5
 cmp=${6:-diff}
 ref=${7:-"${base}/ref/fate/${test}"}
-fuzz=$8
+fuzz=${8:-1}
 threads=${9:-1}
 thread_type=${10:-frame+slice}
 cpuflags=${11:-all}
@@ -30,7 +30,7 @@ do_tiny_psnr(){
     val=$(expr "$psnr" : ".*$3: *\([0-9.]*\)")
     size1=$(expr "$psnr" : '.*bytes: *\([0-9]*\)')
     size2=$(expr "$psnr" : '.*bytes:[ 0-9]*/ *\([0-9]*\)')
-    res=$(echo "if ($val $4 $5) 1" | bc)
+    res=$(echo "if ($val $4 $fuzz) 1" | bc)
     if [ "$res" != 1 ] || [ $size1 != $size2 ]; then
         echo "$psnr"
         return 1
@@ -38,11 +38,11 @@ do_tiny_psnr(){
 }
 
 oneoff(){
-    do_tiny_psnr "$1" "$2" MAXDIFF '<=' ${fuzz:-1}
+    do_tiny_psnr "$1" "$2" MAXDIFF '<='
 }
 
 stddev(){
-    do_tiny_psnr "$1" "$2" stddev  '<=' ${fuzz:-1}
+    do_tiny_psnr "$1" "$2" stddev  '<='
 }
 
 run(){
@@ -122,8 +122,8 @@ fi
 if test -e "$ref"; then
     case $cmp in
         diff)   diff -u -w "$ref" "$outfile"            >$cmpfile ;;
-        oneoff) oneoff     "$ref" "$outfile" "$fuzz"    >$cmpfile ;;
-        stddev) stddev     "$ref" "$outfile" "$fuzz"    >$cmpfile ;;
+        oneoff) oneoff     "$ref" "$outfile"            >$cmpfile ;;
+        stddev) stddev     "$ref" "$outfile"            >$cmpfile ;;
         null)   cat               "$outfile"            >$cmpfile ;;
     esac
     cmperr=$?
