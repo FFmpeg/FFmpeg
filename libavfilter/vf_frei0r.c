@@ -418,6 +418,7 @@ static int source_config_props(AVFilterLink *outlink)
     outlink->w = frei0r->w;
     outlink->h = frei0r->h;
     outlink->time_base = frei0r->time_base;
+    outlink->sample_aspect_ratio = (AVRational){1,1};
 
     if (!(frei0r->instance = frei0r->construct(outlink->w, outlink->h))) {
         av_log(ctx, AV_LOG_ERROR, "Impossible to load frei0r instance");
