@@ -193,7 +193,7 @@ static int get_scale_idx(GetBitContext *gb, int ref)
     int t = get_vlc2(gb, dscf_vlc.table, MPC7_DSCF_BITS, 1) - 7;
     if (t == 8)
         return get_bits(gb, 6);
-    return ref + t;
+    return av_clip_uintp2(ref + t, 7);
 }
 
 static int mpc7_decode_frame(AVCodecContext * avctx, void *data,
@@ -247,7 +247,7 @@ static int mpc7_decode_frame(AVCodecContext * avctx, void *data,
             int t = 4;
             if(i) t = get_vlc2(&gb, hdr_vlc.table, MPC7_HDR_BITS, 1) - 5;
             if(t == 4) bands[i].res[ch] = get_bits(&gb, 4);
-            else bands[i].res[ch] = bands[i-1].res[ch] + t;
+            else bands[i].res[ch] = av_clip(bands[i-1].res[ch] + t, 0, 17);
         }
 
         if(bands[i].res[0] || bands[i].res[1]){
