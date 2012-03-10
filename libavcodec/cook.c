@@ -389,7 +389,7 @@ static int decode_envelope(COOKContext *q, COOKSubpacket *p,
                      q->envelope_quant_index[vlc_index - 1].bits, 2);
         quant_index_table[i] = quant_index_table[i - 1] + j - 12; // differential encoding
 
-        if (quant_index_table[i] < -63 || quant_index_table[i] > 64) {
+        if (quant_index_table[i] < -63 || quant_index_table[i] > 63) {
             av_log(NULL, AV_LOG_ERROR, "quant_index_table value out of bounds\n");
             return AVERROR_INVALIDDATA;
         }
