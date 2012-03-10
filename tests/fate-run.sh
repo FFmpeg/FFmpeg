@@ -85,6 +85,16 @@ pcm(){
     avconv "$@" -vn -f s16le -
 }
 
+enc_dec_pcm(){
+    out_fmt=$1
+    pcm_fmt=$2
+    shift 2
+    encfile="${outdir}/${test}.${out_fmt}"
+    cleanfiles=$encfile
+    avconv -i $ref "$@" -f $out_fmt -y $encfile || return
+    avconv -i $encfile -c:a pcm_${pcm_fmt} -f wav -
+}
+
 regtest(){
     t="${test#$2-}"
     ref=${base}/ref/$2/$t
