@@ -3818,10 +3818,13 @@ enabled libavfilter_deps_swresample && prepend libavfilter_pc_deps "libswresampl
 enabled libavfilter_deps_postproc   && prepend libavfilter_pc_deps "libpostproc = $LIBPOSTPROC_VERSION,"
 libavfilter_pc_deps=${libavfilter_pc_deps%, }
 
+libavdevice_pc_deps="libavformat = $LIBAVFORMAT_VERSION"
+enabled lavfi_indev && prepend libavdevice_pc_deps "libavfilter = $LIBAVFILTER_VERSION,"
+
 pkgconfig_generate libavutil "FFmpeg utility library" "$LIBAVUTIL_VERSION" "$LIBM"
 pkgconfig_generate libavcodec "FFmpeg codec library" "$LIBAVCODEC_VERSION" "$extralibs" "libavutil = $LIBAVUTIL_VERSION"
 pkgconfig_generate libavformat "FFmpeg container format library" "$LIBAVFORMAT_VERSION" "$extralibs" "libavcodec = $LIBAVCODEC_VERSION"
-pkgconfig_generate libavdevice "FFmpeg device handling library" "$LIBAVDEVICE_VERSION" "$extralibs" "libavformat = $LIBAVFORMAT_VERSION"
+pkgconfig_generate libavdevice "FFmpeg device handling library" "$LIBAVDEVICE_VERSION" "$extralibs" "$libavdevice_pc_deps"
 pkgconfig_generate libavfilter "FFmpeg video filtering library" "$LIBAVFILTER_VERSION" "$extralibs" "$libavfilter_pc_deps"
 pkgconfig_generate libpostproc "FFmpeg postprocessing library" "$LIBPOSTPROC_VERSION" "" "libavutil = $LIBAVUTIL_VERSION"
 pkgconfig_generate libswscale "FFmpeg image rescaling library" "$LIBSWSCALE_VERSION" "$LIBM" "libavutil = $LIBAVUTIL_VERSION"
