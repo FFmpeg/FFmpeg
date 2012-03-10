@@ -8,6 +8,7 @@ FFLIBS-$(CONFIG_AMOVIE_FILTER)               += avformat avcodec
 FFLIBS-$(CONFIG_ARESAMPLE_FILTER)            += swresample
 FFLIBS-$(CONFIG_MOVIE_FILTER)                += avformat avcodec
 FFLIBS-$(CONFIG_PAN_FILTER)                  += swresample
+FFLIBS-$(CONFIG_REMOVELOGO_FILTER)           += swscale avformat avcodec
 FFLIBS-$(CONFIG_SCALE_FILTER)                += swscale
 FFLIBS-$(CONFIG_MP_FILTER)                   += avcodec postproc
 
@@ -25,6 +26,8 @@ OBJS = allfilters.o                                                     \
        vsrc_buffer.o
 
 OBJS-$(CONFIG_AVCODEC)                       += avcodec.o
+OBJS-$(CONFIG_AVFORMAT)                      += lavfutils.o
+OBJS-$(CONFIG_SWSCALE)                       += lswsutils.o
 
 OBJS-$(CONFIG_ACONVERT_FILTER)               += af_aconvert.o
 OBJS-$(CONFIG_AFORMAT_FILTER)                += af_aformat.o
@@ -80,6 +83,7 @@ OBJS-$(CONFIG_OCV_FILTER)                    += vf_libopencv.o
 OBJS-$(CONFIG_OVERLAY_FILTER)                += vf_overlay.o
 OBJS-$(CONFIG_PAD_FILTER)                    += vf_pad.o
 OBJS-$(CONFIG_PIXDESCTEST_FILTER)            += vf_pixdesctest.o
+OBJS-$(CONFIG_REMOVELOGO_FILTER)             += bbox.o lswsutils.o lavfutils.o vf_removelogo.o
 OBJS-$(CONFIG_SCALE_FILTER)                  += vf_scale.o
 OBJS-$(CONFIG_SELECT_FILTER)                 += vf_select.o
 OBJS-$(CONFIG_SETDAR_FILTER)                 += vf_aspect.o
