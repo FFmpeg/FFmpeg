@@ -918,6 +918,18 @@ boxblur=min(h\,w)/10:1:min(cw\,ch)/10:1
 
 @end itemize
 
+@section colormatrix
+
+The colormatrix filter allows conversion between any of the following color
+space: BT.709 (@var{bt709}), BT.601 (@var{bt601}), SMPTE-240M (@var{smpte240m})
+and FCC (@var{fcc}).
+
+The syntax of the parameters is @var{source}:@var{destination}:
+
+@example
+colormatrix=bt601:smpte240m
+@end example
+
 @section copy
 
 Copy the input source unchanged to the output. Mainly useful for

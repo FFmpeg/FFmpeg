@@ -52,6 +52,7 @@ OBJS-$(CONFIG_BBOX_FILTER)                   += bbox.o vf_bbox.o
 OBJS-$(CONFIG_BLACKDETECT_FILTER)            += vf_blackdetect.o
 OBJS-$(CONFIG_BLACKFRAME_FILTER)             += vf_blackframe.o
 OBJS-$(CONFIG_BOXBLUR_FILTER)                += vf_boxblur.o
+OBJS-$(CONFIG_COLORMATRIX_FILTER)            += vf_colormatrix.o
 OBJS-$(CONFIG_COPY_FILTER)                   += vf_copy.o
 OBJS-$(CONFIG_CROP_FILTER)                   += vf_crop.o
 OBJS-$(CONFIG_CROPDETECT_FILTER)             += vf_cropdetect.o
