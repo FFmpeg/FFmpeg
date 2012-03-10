@@ -227,7 +227,7 @@ static uint64_t sniff_channel_order(uint8_t (*layout_map)[3], int tags)
     int num_front_channels, num_side_channels, num_back_channels;
     uint64_t layout;
 
-    if(FF_ARRAY_ELEMS(e2c_vec) < tags)
+    if (FF_ARRAY_ELEMS(e2c_vec) < tags)
         return 0;
 
     i = 0;
