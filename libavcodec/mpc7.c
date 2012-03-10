@@ -248,6 +248,10 @@ static int mpc7_decode_frame(AVCodecContext * avctx, void *data,
             if(i) t = get_vlc2(&gb, hdr_vlc.table, MPC7_HDR_BITS, 1) - 5;
             if(t == 4) bands[i].res[ch] = get_bits(&gb, 4);
             else bands[i].res[ch] = bands[i-1].res[ch] + t;
+            if (bands[i].res[ch] < -1 || bands[i].res[ch] > 17) {
+                av_log(avctx, AV_LOG_ERROR, "subband index invalid\n");
+                return AVERROR_INVALIDDATA;
+            }
         }
 
         if(bands[i].res[0] || bands[i].res[1]){
