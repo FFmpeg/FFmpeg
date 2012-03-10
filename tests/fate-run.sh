@@ -18,6 +18,7 @@ fuzz=${8:-1}
 threads=${9:-1}
 thread_type=${10:-frame+slice}
 cpuflags=${11:-all}
+cmp_shift=${12:-0}
 
 outdir="tests/data/fate"
 outfile="${outdir}/${test}"
@@ -26,7 +27,7 @@ cmpfile="${outdir}/${test}.diff"
 repfile="${outdir}/${test}.rep"
 
 do_tiny_psnr(){
-    psnr=$(tests/tiny_psnr "$1" "$2" 2 0 0)
+    psnr=$(tests/tiny_psnr "$1" "$2" 2 $cmp_shift 0)
     val=$(expr "$psnr" : ".*$3: *\([0-9.]*\)")
     size1=$(expr "$psnr" : '.*bytes: *\([0-9]*\)')
     size2=$(expr "$psnr" : '.*bytes:[ 0-9]*/ *\([0-9]*\)')
