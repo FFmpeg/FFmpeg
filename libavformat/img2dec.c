@@ -95,9 +95,19 @@ static int infer_size(int *width_ptr, int *height_ptr, int size)
 static int is_glob(const char *path)
 {
 #if HAVE_GLOB
-    size_t span = strcspn(path, "*?[]{}\\");
+    size_t span = 0;
+    const char *p = path;
+
+    while (p = strchr(p, '%')) {
+        if (*(++p) == '%') {
+            ++p;
+            continue;
+        }
+        if (span = strspn(p, "*?[]{}"))
+            break;
+    }
     /* Did we hit a glob char or get to the end? */
-    return path[span] != '\0';
+    return span != 0;
 #else
     return 0;
 #endif
@@ -222,7 +232,23 @@ static int read_header(AVFormatContext *s1)
         s->use_glob = is_glob(s->path);
         if (s->use_glob) {
 #if HAVE_GLOB
+            char *p = s->path, *q, *dup;
             int gerr;
+
+            dup = q = av_strdup(p);
+            while (*q) {
+                /* Do we have room for the next char and a \ insertion? */
+                if ((p - s->path) >= (sizeof(s->path) - 2))
+                  break;
+                if (*q == '%' && strspn(q + 1, "%*?[]{}"))
+                    ++q;
+                else if (strspn(q, "\\*?[]{}"))
+                    *p++ = '\\';
+                *p++ = *q++;
+            }
+            *p = 0;
+            av_free(dup);
+
             gerr = glob(s->path, GLOB_NOCHECK|GLOB_BRACE|GLOB_NOMAGIC|GLOB_TILDE_CHECK, NULL, &s->globstate);
             if (gerr != 0) {
                 return AVERROR(ENOENT);
