@@ -14,6 +14,7 @@ version next:
 - blackdetect filter
 - libutvideo encoder wrapper (--enable-libutvideo)
 - swapuv filter
+- bbox filter
 
 
 version 0.10:
