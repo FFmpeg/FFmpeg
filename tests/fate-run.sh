@@ -20,6 +20,7 @@ thread_type=${10:-frame+slice}
 cpuflags=${11:-all}
 cmp_shift=${12:-0}
 cmp_target=${13:-0}
+size_tolerance=${14:-0}
 
 outdir="tests/data/fate"
 outfile="${outdir}/${test}"
@@ -40,7 +41,8 @@ do_tiny_psnr(){
     size1=$(expr "$psnr" : '.*bytes: *\([0-9]*\)')
     size2=$(expr "$psnr" : '.*bytes:[ 0-9]*/ *\([0-9]*\)')
     val_cmp=$(compare $val $cmp_target $fuzz)
-    if [ "$val_cmp" != 0 ] || [ $size1 != $size2 ]; then
+    size_cmp=$(compare $size1 $size2 $size_tolerance)
+    if [ "$val_cmp" != 0 ] || [ "$size_cmp" != 0 ]; then
         echo "$psnr"
         return 1
     fi
