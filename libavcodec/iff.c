@@ -638,12 +638,15 @@ static int decode_frame_byterun1(AVCodecContext *avctx,
                 uint8_t *row = &s->frame.data[0][y*s->frame.linesize[0]];
                 buf += decode_byterun(row, avctx->width, buf, buf_end);
             }
-        } else { // IFF-PBM: HAM to PIX_FMT_BGR32
+        } else if (s->ham) { // IFF-PBM: HAM to PIX_FMT_BGR32
             for (y = 0; y < avctx->height ; y++) {
                 uint8_t *row = &s->frame.data[0][y*s->frame.linesize[0]];
                 buf += decode_byterun(s->ham_buf, avctx->width, buf, buf_end);
                 decode_ham_plane32((uint32_t *) row, s->ham_buf, s->ham_palbuf, s->planesize);
             }
+        } else {
+            av_log_ask_for_sample(avctx, "unsupported bpp\n");
+            return AVERROR_INVALIDDATA;
         }
     }
 
