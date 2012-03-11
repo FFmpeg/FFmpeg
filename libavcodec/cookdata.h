@@ -36,8 +36,8 @@ static const int expbits_tab[8] = {
     52,47,43,37,29,22,16,0,
 };
 
-static const float dither_tab[8] = {
-  0.0, 0.0, 0.0, 0.0, 0.0, 0.176777, 0.25, 0.707107,
+static const float dither_tab[9] = {
+  0.0, 0.0, 0.0, 0.0, 0.0, 0.176777, 0.25, 0.707107, 1.0
 };
 
 static const float quant_centroid_tab[7][14] = {
