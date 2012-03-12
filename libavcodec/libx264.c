@@ -506,7 +506,7 @@ static const AVOption options[] = {
     { "spatial",       NULL,      0,    AV_OPT_TYPE_CONST, { X264_DIRECT_PRED_SPATIAL },  0, 0, VE, "direct-pred" },
     { "temporal",      NULL,      0,    AV_OPT_TYPE_CONST, { X264_DIRECT_PRED_TEMPORAL }, 0, 0, VE, "direct-pred" },
     { "auto",          NULL,      0,    AV_OPT_TYPE_CONST, { X264_DIRECT_PRED_AUTO },     0, 0, VE, "direct-pred" },
-    { "slice-max-size","Constant quantization parameter rate control method",OFFSET(slice_max_size),        AV_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE },
+    { "slice-max-size","Limit the size of each slice in bytes",           OFFSET(slice_max_size),AV_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE },
     { NULL },
 };
 
