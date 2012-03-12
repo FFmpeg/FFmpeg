@@ -22,7 +22,6 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
-#include "libavutil/intreadwrite.h"
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {
@@ -54,7 +53,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         av_log(avctx, AV_LOG_ERROR, "Packet is too small.\n");
         return AVERROR_INVALIDDATA;
     }
-    if (bytestream_get_le32(&buf) != AV_RL32("FRW1")) {
+    if (bytestream_get_le32(&buf) != MKTAG('F', 'R', 'W', '1')) {
         av_log(avctx, AV_LOG_ERROR, "incorrect marker\n");
         return AVERROR_INVALIDDATA;
     }
