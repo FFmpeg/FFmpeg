@@ -67,22 +67,7 @@ enum var_name {
 
 static int query_formats(AVFilterContext *ctx)
 {
-    static const enum PixelFormat pix_fmts[] = {
-        PIX_FMT_ARGB,         PIX_FMT_RGBA,
-        PIX_FMT_ABGR,         PIX_FMT_BGRA,
-        PIX_FMT_RGB24,        PIX_FMT_BGR24,
-
-        PIX_FMT_YUV444P,      PIX_FMT_YUV422P,
-        PIX_FMT_YUV420P,      PIX_FMT_YUV411P,
-        PIX_FMT_YUV410P,      PIX_FMT_YUV440P,
-        PIX_FMT_YUVJ444P,     PIX_FMT_YUVJ422P,
-        PIX_FMT_YUVJ420P,     PIX_FMT_YUVJ440P,
-        PIX_FMT_YUVA420P,
-
-        PIX_FMT_NONE
-    };
-
-    avfilter_set_common_pixel_formats(ctx, avfilter_make_format_list(pix_fmts));
+    avfilter_set_common_pixel_formats(ctx, ff_draw_supported_pixel_formats(0));
     return 0;
 }
 
@@ -96,10 +81,9 @@ typedef struct {
     char x_expr[256];       ///< width  expression string
     char y_expr[256];       ///< height expression string
 
-    uint8_t color[4];       ///< color expressed either in YUVA or RGBA colorspace for the padding area
-    uint8_t *line[4];
-    int      line_step[4];
-    int hsub, vsub;         ///< chroma subsampling values
+    uint8_t rgba_color[4];  ///< color for the padding area
+    FFDrawContext draw;
+    FFDrawColor color;
     int needs_copy;
 } PadContext;
 
@@ -117,35 +101,22 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
         sscanf(args, "%255[^:]:%255[^:]:%255[^:]:%255[^:]:%127s",
                pad->w_expr, pad->h_expr, pad->x_expr, pad->y_expr, color_string);
 
-    if (av_parse_color(pad->color, color_string, -1, ctx) < 0)
+    if (av_parse_color(pad->rgba_color, color_string, -1, ctx) < 0)
         return AVERROR(EINVAL);
 
     return 0;
-}
-
-static av_cold void uninit(AVFilterContext *ctx)
-{
-    PadContext *pad = ctx->priv;
-    int i;
-
-    for (i = 0; i < 4; i++) {
-        av_freep(&pad->line[i]);
-        pad->line_step[i] = 0;
-    }
 }
 
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     PadContext *pad = ctx->priv;
-    const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[inlink->format];
-    uint8_t rgba_color[4];
-    int ret, is_packed_rgba;
+    int ret;
     double var_values[VARS_NB], res;
     char *expr;
 
-    pad->hsub = pix_desc->log2_chroma_w;
-    pad->vsub = pix_desc->log2_chroma_h;
+    ff_draw_init(&pad->draw, inlink->format, 0);
+    ff_draw_color(&pad->draw, &pad->color, pad->rgba_color);
 
     var_values[VAR_IN_W]  = var_values[VAR_IW] = inlink->w;
     var_values[VAR_IN_H]  = var_values[VAR_IH] = inlink->h;
@@ -155,8 +126,8 @@ static int config_input(AVFilterLink *inlink)
     var_values[VAR_SAR]   = inlink->sample_aspect_ratio.num ?
         (float) inlink->sample_aspect_ratio.num / inlink->sample_aspect_ratio.den : 1;
     var_values[VAR_DAR]   = var_values[VAR_A] * var_values[VAR_SAR];
-    var_values[VAR_HSUB]  = 1<<pad->hsub;
-    var_values[VAR_VSUB]  = 1<<pad->vsub;
+    var_values[VAR_HSUB]  = 1 << pad->draw.hsub_max;
+    var_values[VAR_VSUB]  = 1 << pad->draw.vsub_max;
 
     /* evaluate width and height */
     av_expr_parse_and_eval(&res, (expr = pad->w_expr),
@@ -203,22 +174,16 @@ static int config_input(AVFilterLink *inlink)
     if (!pad->h)
         pad->h = inlink->h;
 
-    pad->w &= ~((1 << pad->hsub) - 1);
-    pad->h &= ~((1 << pad->vsub) - 1);
-    pad->x &= ~((1 << pad->hsub) - 1);
-    pad->y &= ~((1 << pad->vsub) - 1);
+    pad->w    = ff_draw_round_to_sub(&pad->draw, 0, -1, pad->w);
+    pad->h    = ff_draw_round_to_sub(&pad->draw, 1, -1, pad->h);
+    pad->x    = ff_draw_round_to_sub(&pad->draw, 0, -1, pad->x);
+    pad->y    = ff_draw_round_to_sub(&pad->draw, 1, -1, pad->y);
+    pad->in_w = ff_draw_round_to_sub(&pad->draw, 0, -1, inlink->w);
+    pad->in_h = ff_draw_round_to_sub(&pad->draw, 1, -1, inlink->h);
 
-    pad->in_w = inlink->w & ~((1 << pad->hsub) - 1);
-    pad->in_h = inlink->h & ~((1 << pad->vsub) - 1);
-
-    memcpy(rgba_color, pad->color, sizeof(rgba_color));
-    ff_fill_line_with_color(pad->line, pad->line_step, pad->w, pad->color,
-                            inlink->format, rgba_color, &is_packed_rgba, NULL);
-
-    av_log(ctx, AV_LOG_INFO, "w:%d h:%d -> w:%d h:%d x:%d y:%d color:0x%02X%02X%02X%02X[%s]\n",
+    av_log(ctx, AV_LOG_INFO, "w:%d h:%d -> w:%d h:%d x:%d y:%d color:0x%02X%02X%02X%02X\n",
            inlink->w, inlink->h, pad->w, pad->h, pad->x, pad->y,
-           pad->color[0], pad->color[1], pad->color[2], pad->color[3],
-           is_packed_rgba ? "rgba" : "yuva");
+           pad->rgba_color[0], pad->rgba_color[1], pad->rgba_color[2], pad->rgba_color[3]);
 
     if (pad->x <  0 || pad->y <  0                      ||
         pad->w <= 0 || pad->h <= 0                      ||
@@ -261,13 +226,9 @@ static AVFilterBufferRef *get_video_buffer(AVFilterLink *inlink, int perms, int 
     picref->video->w = w;
     picref->video->h = h;
 
-    for (plane = 0; plane < 4 && picref->data[plane]; plane++) {
-        int hsub = (plane == 1 || plane == 2) ? pad->hsub : 0;
-        int vsub = (plane == 1 || plane == 2) ? pad->vsub : 0;
-
-        picref->data[plane] += FFALIGN(pad->x >> hsub, align) * pad->line_step[plane] +
-            (pad->y >> vsub) * picref->linesize[plane];
-    }
+    for (plane = 0; plane < 4 && picref->data[plane]; plane++)
+        picref->data[plane] += FFALIGN(pad->x >> pad->draw.hsub[plane], align) * pad->draw.pixelstep[plane] +
+                                      (pad->y >> pad->draw.vsub[plane])        * picref->linesize[plane];
 
     return picref;
 }
@@ -277,12 +238,12 @@ static int does_clip(PadContext *pad, AVFilterBufferRef *outpicref, int plane, i
     int64_t x_in_buf, y_in_buf;
 
     x_in_buf =  outpicref->data[plane] - outpicref->buf->data[plane]
-             +  (x >> hsub) * pad      ->line_step[plane]
-             +  (y >> vsub) * outpicref->linesize [plane];
+             +  (x >> hsub) * pad->draw.pixelstep[plane]
+             +  (y >> vsub) * outpicref->linesize[plane];
 
-    if(x_in_buf < 0 || x_in_buf % pad->line_step[plane])
+    if(x_in_buf < 0 || x_in_buf % pad->draw.pixelstep[plane])
         return 1;
-    x_in_buf /= pad->line_step[plane];
+    x_in_buf /= pad->draw.pixelstep[plane];
 
     av_assert0(outpicref->buf->linesize[plane]>0); //while reference can use negative linesize the main buffer should not
 
@@ -302,16 +263,16 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     int plane;
 
     for (plane = 0; plane < 4 && outpicref->data[plane]; plane++) {
-        int hsub = (plane == 1 || plane == 2) ? pad->hsub : 0;
-        int vsub = (plane == 1 || plane == 2) ? pad->vsub : 0;
+        int hsub = pad->draw.hsub[plane];
+        int vsub = pad->draw.vsub[plane];
 
         av_assert0(outpicref->buf->w>0 && outpicref->buf->h>0);
 
         if(outpicref->format != outpicref->buf->format) //unsupported currently
             break;
 
-        outpicref->data[plane] -=   (pad->x  >> hsub) * pad      ->line_step[plane]
-                                  + (pad->y  >> vsub) * outpicref->linesize [plane];
+        outpicref->data[plane] -=   (pad->x  >> hsub) * pad->draw.pixelstep[plane]
+                                  + (pad->y  >> vsub) * outpicref->linesize[plane];
 
         if(   does_clip(pad, outpicref, plane, hsub, vsub, 0, 0)
            || does_clip(pad, outpicref, plane, hsub, vsub, 0, pad->h-1)
@@ -354,9 +315,9 @@ static void draw_send_bar_slice(AVFilterLink *link, int y, int h, int slice_dir,
     }
 
     if (bar_h) {
-        ff_draw_rectangle(link->dst->outputs[0]->out_buf->data,
+        ff_fill_rectangle(&pad->draw, &pad->color,
+                          link->dst->outputs[0]->out_buf->data,
                           link->dst->outputs[0]->out_buf->linesize,
-                          pad->line, pad->line_step, pad->hsub, pad->vsub,
                           0, bar_y, pad->w, bar_h);
         avfilter_draw_slice(link->dst->outputs[0], bar_y, bar_h, slice_dir);
     }
@@ -370,27 +331,26 @@ static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 
     y += pad->y;
 
-    y &= ~((1 << pad->vsub) - 1);
-    h &= ~((1 << pad->vsub) - 1);
+    y = ff_draw_round_to_sub(&pad->draw, 1, -1, y);
+    h = ff_draw_round_to_sub(&pad->draw, 1, -1, h);
 
     if (!h)
         return;
     draw_send_bar_slice(link, y, h, slice_dir, 1);
 
     /* left border */
-    ff_draw_rectangle(outpic->data, outpic->linesize, pad->line, pad->line_step,
-                      pad->hsub, pad->vsub, 0, y, pad->x, h);
+    ff_fill_rectangle(&pad->draw, &pad->color, outpic->data, outpic->linesize,
+                      0, y, pad->x, h);
 
     if(pad->needs_copy){
-        ff_copy_rectangle(outpic->data, outpic->linesize,
-                          inpic->data, inpic->linesize, pad->line_step,
-                          pad->hsub, pad->vsub,
-                          pad->x, y, y-pad->y, inpic->video->w, h);
+        ff_copy_rectangle2(&pad->draw,
+                           outpic->data, outpic->linesize,
+                           inpic ->data, inpic ->linesize,
+                           pad->x, y, 0, y - pad->y, inpic->video->w, h);
     }
 
     /* right border */
-    ff_draw_rectangle(outpic->data, outpic->linesize,
-                      pad->line, pad->line_step, pad->hsub, pad->vsub,
+    ff_fill_rectangle(&pad->draw, &pad->color, outpic->data, outpic->linesize,
                       pad->x + pad->in_w, y, pad->w - pad->x - pad->in_w, h);
     avfilter_draw_slice(link->dst->outputs[0], y, h, slice_dir);
 
@@ -403,7 +363,6 @@ AVFilter avfilter_vf_pad = {
 
     .priv_size     = sizeof(PadContext),
     .init          = init,
-    .uninit        = uninit,
     .query_formats = query_formats,
 
     .inputs    = (const AVFilterPad[]) {{ .name       = "default",
