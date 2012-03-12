@@ -622,7 +622,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
             1,
             0,
             0x800))
-            /* Overflow occured, downscale excitation signal... */
+            /* Overflow occurred, downscale excitation signal... */
             for (j = 0; j < 2 * SUBFRAME_SIZE + PITCH_DELAY_MAX + INTERPOL_LEN; j++)
                 ctx->exc_base[j] >>= 2;
 

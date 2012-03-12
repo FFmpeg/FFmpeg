@@ -383,7 +383,7 @@ int avio_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer);
 
 /**
  * Iterate through names of available protocols.
- * @note it is recommanded to use av_protocol_next() instead of this
+ * @note it is recommended to use av_protocol_next() instead of this
  *
  * @param opaque A private pointer representing current protocol.
  *        It must be a pointer to NULL on first iteration and will

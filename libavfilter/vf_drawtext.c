@@ -123,7 +123,7 @@ typedef struct {
     int x;                          ///< x position to start drawing text
     int y;                          ///< y position to start drawing text
     int max_glyph_w;                ///< max glyph width
-    int max_glyph_h;                ///< max glyph heigth
+    int max_glyph_h;                ///< max glyph height
     int shadowx, shadowy;
     unsigned int fontsize;          ///< font size to use
     char *fontcolor_string;         ///< font color as string

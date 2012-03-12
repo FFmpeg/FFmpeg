@@ -491,7 +491,7 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
 
     if(s->int_sample_fmt == s->out_sample_fmt && s->out.planar){
         if(preout==in){
-            out_count= FFMIN(out_count, in_count); //TODO check at teh end if this is needed or redundant
+            out_count= FFMIN(out_count, in_count); //TODO check at the end if this is needed or redundant
             av_assert0(s->in.planar); //we only support planar internally so it has to be, we support copying non planar though
             copy(out, in, out_count);
             return out_count;

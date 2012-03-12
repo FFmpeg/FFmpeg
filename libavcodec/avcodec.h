@@ -80,7 +80,7 @@
  * If you add a codec ID to this list, add it so that
  * 1. no value of a existing codec ID changes (that would break ABI),
  * 2. Give it a value which when taken as ASCII is recognized uniquely by a human as this specific codec.
- *    This ensures that 2 forks can independantly add CodecIDs without producing conflicts.
+ *    This ensures that 2 forks can independently add CodecIDs without producing conflicts.
  */
 enum CodecID {
     CODEC_ID_NONE,
