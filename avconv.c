@@ -2459,6 +2459,9 @@ static int transcode_init(OutputFile *output_files,
                 snprintf(logfilename, sizeof(logfilename), "%s-%d.log",
                          pass_logfilename_prefix ? pass_logfilename_prefix : DEFAULT_PASS_LOGFILENAME_PREFIX,
                          i);
+                if (!strcmp(ost->enc->name, "libx264")) {
+                    av_dict_set(&ost->opts, "stats", logfilename, AV_DICT_DONT_OVERWRITE);
+                } else {
                 if (codec->flags & CODEC_FLAG_PASS1) {
                     f = fopen(logfilename, "wb");
                     if (!f) {
@@ -2476,6 +2479,7 @@ static int transcode_init(OutputFile *output_files,
                         exit_program(1);
                     }
                     codec->stats_in = logbuffer;
+                }
                 }
             }
         }
