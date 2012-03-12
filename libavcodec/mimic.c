@@ -312,7 +312,7 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
     int quality, num_coeffs;
     int swap_buf_size = buf_size - MIMIC_HEADER_SIZE;
 
-    if(buf_size < MIMIC_HEADER_SIZE) {
+    if (buf_size <= MIMIC_HEADER_SIZE) {
         av_log(avctx, AV_LOG_ERROR, "insufficient data\n");
         return -1;
     }
