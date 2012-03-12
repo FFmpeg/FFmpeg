@@ -1122,7 +1122,7 @@ int ff_rtsp_send_cmd_with_content(AVFormatContext *s,
 {
     RTSPState *rt = s->priv_data;
     HTTPAuthType cur_auth_type;
-    int ret;
+    int ret, attempts = 0;
 
 retry:
     cur_auth_type = rt->auth_state.auth_type;
@@ -1133,9 +1133,11 @@ retry:
 
     if ((ret = ff_rtsp_read_reply(s, reply, content_ptr, 0, method) ) < 0)
         return ret;
+    attempts++;
 
-    if (reply->status_code == 401 && cur_auth_type == HTTP_AUTH_NONE &&
-        rt->auth_state.auth_type != HTTP_AUTH_NONE)
+    if (reply->status_code == 401 &&
+        (cur_auth_type == HTTP_AUTH_NONE || rt->auth_state.stale) &&
+        rt->auth_state.auth_type != HTTP_AUTH_NONE && attempts < 2)
         goto retry;
 
     if (reply->status_code > 400){
