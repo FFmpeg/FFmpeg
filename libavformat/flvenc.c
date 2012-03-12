@@ -445,6 +445,10 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
             if (ff_avc_parse_nal_units_buf(pkt->data, &data, &size) < 0)
                 return -1;
         }
+    } else if (enc->codec_id == CODEC_ID_AAC && pkt->size > 2 &&
+               (AV_RB16(pkt->data) & 0xfff0) == 0xfff0) {
+        av_log(s, AV_LOG_ERROR, "malformated aac bitstream, use -absf aac_adtstoasc\n");
+        return -1;
     }
     if (flv->delay == AV_NOPTS_VALUE)
         flv->delay = -pkt->dts;
