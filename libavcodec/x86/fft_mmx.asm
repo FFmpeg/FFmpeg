@@ -36,6 +36,8 @@
 %define pointer resd
 %endif
 
+SECTION_RODATA
+
 struc FFTContext
     .nbits:    resd 1
     .reverse:  resd 1
@@ -46,8 +48,6 @@ struc FFTContext
     .tcos:     pointer 1
     .tsin:     pointer 1
 endstruc
-
-SECTION_RODATA
 
 %define M_SQRT1_2 0.70710678118654752440
 %define M_COS_PI_1_8 0.923879532511287
