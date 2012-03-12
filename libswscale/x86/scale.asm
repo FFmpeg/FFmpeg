@@ -48,9 +48,9 @@ SECTION .text
 ; the first pixel is given in filterPos[nOutputPixel].
 ;-----------------------------------------------------------------------------
 
-; SCALE_FUNC source_width, intermediate_nbits, filtersize, filtersuffix, opt, n_args, n_xmm
-%macro SCALE_FUNC 7
-cglobal hscale%1to%2_%4_%5, %6, 7, %7
+; SCALE_FUNC source_width, intermediate_nbits, filtersize, filtersuffix, n_args, n_xmm
+%macro SCALE_FUNC 6
+cglobal hscale%1to%2_%4, %5, 7, %6
 %if ARCH_X86_64
     movsxd        r2, r2d
 %define mov32 movsxd
@@ -60,7 +60,7 @@ cglobal hscale%1to%2_%4_%5, %6, 7, %7
 %if %2 == 19
 %if mmsize == 8 ; mmx
     mova          m2, [max_19bit_int]
-%elifidn %5, sse4
+%elif cpuflag(sse4)
     mova          m2, [max_19bit_int]
 %else ; ssse3/sse2
     mova          m2, [max_19bit_flt]
@@ -124,7 +124,7 @@ cglobal hscale%1to%2_%4_%5, %6, 7, %7
     movd          m5, [r3+r6*srcmul]     ; src[filterPos[3] + {0,1,2,3}]
     punpckldq     m0, m4
     punpckldq     m1, m5
-%endif ; %1 == 8 && %5 <= ssse
+%endif ; %1 == 8
 %endif ; mmsize == 8/16
 %if %1 == 8
     punpcklbw     m0, m3                 ; byte -> word
@@ -146,7 +146,7 @@ cglobal hscale%1to%2_%4_%5, %6, 7, %7
     punpckldq     m0, m1
     punpckhdq     m4, m1
     paddd         m0, m4
-%elifidn %5, sse2
+%elif notcpuflag(ssse3) ; sse2
     mova          m4, m0
     shufps        m0, m1, 10001000b
     shufps        m4, m1, 11011101b
@@ -201,7 +201,7 @@ cglobal hscale%1to%2_%4_%5, %6, 7, %7
     punpckldq     m0, m4
     punpckhdq     m1, m4
     paddd         m0, m1
-%elifidn %5, sse2
+%elif notcpuflag(ssse3) ; sse2
 %if %1 == 8
 %define mex m6
 %else
@@ -304,7 +304,7 @@ cglobal hscale%1to%2_%4_%5, %6, 7, %7
 %else ; %1 == 8
     movd          m1, [src_reg+(r1x+r6sub)*srcmul]
     punpckldq     m0, m1
-%endif ; %1 == 8 && %5 <= ssse
+%endif ; %1 == 8
 %if %1 == 8
     punpcklbw     m0, m3
 %endif ; %1 == 8
@@ -323,7 +323,7 @@ cglobal hscale%1to%2_%4_%5, %6, 7, %7
     punpckhdq     m0, m5
     paddd         m0, m4
 %else ; mmsize == 16
-%ifidn %5, sse2
+%if notcpuflag(ssse3) ; sse2
     mova          m1, m4
     punpcklqdq    m4, m5
     punpckhqdq    m1, m5
@@ -334,7 +334,7 @@ cglobal hscale%1to%2_%4_%5, %6, 7, %7
 %ifidn %4, X4
     paddd         m4, m0
 %endif ; %3 == X4
-%ifidn %5, sse2
+%if notcpuflag(ssse3) ; sse2
     pshufd        m4, m4, 11011000b
     movhlps       m0, m4
     paddd         m0, m4
@@ -364,7 +364,7 @@ cglobal hscale%1to%2_%4_%5, %6, 7, %7
 %else ; %2 == 19
 %if mmsize == 8
     PMINSD_MMX    m0, m2, m4
-%elifidn %5, sse4
+%elif cpuflag(sse4)
     pminsd        m0, m2
 %else ; sse2/ssse3
     cvtdq2ps      m0, m0
@@ -396,37 +396,39 @@ cglobal hscale%1to%2_%4_%5, %6, 7, %7
 %endif ; %3 ==/!= X
 %endmacro
 
-; SCALE_FUNCS source_width, intermediate_nbits, opt, n_xmm
-%macro SCALE_FUNCS 4
-SCALE_FUNC %1, %2, 4, 4,  %3, 6, %4
-SCALE_FUNC %1, %2, 8, 8,  %3, 6, %4
+; SCALE_FUNCS source_width, intermediate_nbits, n_xmm
+%macro SCALE_FUNCS 3
+SCALE_FUNC %1, %2, 4, 4,  6, %3
+SCALE_FUNC %1, %2, 8, 8,  6, %3
 %if mmsize == 8
-SCALE_FUNC %1, %2, X, X,  %3, 7, %4
+SCALE_FUNC %1, %2, X, X,  7, %3
 %else
-SCALE_FUNC %1, %2, X, X4, %3, 7, %4
-SCALE_FUNC %1, %2, X, X8, %3, 7, %4
+SCALE_FUNC %1, %2, X, X4, 7, %3
+SCALE_FUNC %1, %2, X, X8, 7, %3
 %endif
 %endmacro
 
-; SCALE_FUNCS2 opt, 8_xmm_args, 9to10_xmm_args, 16_xmm_args
-%macro SCALE_FUNCS2 4
-%ifnidn %1, sse4
-SCALE_FUNCS  8, 15, %1, %2
-SCALE_FUNCS  9, 15, %1, %3
-SCALE_FUNCS 10, 15, %1, %3
-SCALE_FUNCS 16, 15, %1, %4
+; SCALE_FUNCS2 8_xmm_args, 9to10_xmm_args, 16_xmm_args
+%macro SCALE_FUNCS2 3
+%if notcpuflag(sse4)
+SCALE_FUNCS  8, 15, %1
+SCALE_FUNCS  9, 15, %2
+SCALE_FUNCS 10, 15, %2
+SCALE_FUNCS 16, 15, %3
 %endif ; !sse4
-SCALE_FUNCS  8, 19, %1, %2
-SCALE_FUNCS  9, 19, %1, %3
-SCALE_FUNCS 10, 19, %1, %3
-SCALE_FUNCS 16, 19, %1, %4
+SCALE_FUNCS  8, 19, %1
+SCALE_FUNCS  9, 19, %2
+SCALE_FUNCS 10, 19, %2
+SCALE_FUNCS 16, 19, %3
 %endmacro
 
 %if ARCH_X86_32
-INIT_MMX
-SCALE_FUNCS2 mmx,   0, 0, 0
+INIT_MMX mmx
+SCALE_FUNCS2 0, 0, 0
 %endif
-INIT_XMM
-SCALE_FUNCS2 sse2,  6, 7, 8
-SCALE_FUNCS2 ssse3, 6, 6, 8
-SCALE_FUNCS2 sse4,  6, 6, 8
+INIT_XMM sse2
+SCALE_FUNCS2 6, 7, 8
+INIT_XMM ssse3
+SCALE_FUNCS2 6, 6, 8
+INIT_XMM sse4
+SCALE_FUNCS2 6, 6, 8
