@@ -1788,7 +1788,7 @@ static inline void vc1_pred_mv_intfr(VC1Context *v, int n, int dmv_x, int dmv_y,
                 } else if (c_valid) {
                     px = C[0];
                     py = C[1];
-                }
+                } else px = py = 0;
             }
         } else if (total_valid == 1) {
             px = (a_valid) ? A[0] : ((b_valid) ? B[0] : C[0]);
@@ -3890,7 +3890,7 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
     int val; /* temp values */
     int first_block = 1;
     int dst_idx, off;
-    int pred_flag;
+    int pred_flag = 0;
     int block_cbp = 0, pat, block_tt = 0;
     int idx_mbmode = 0;
 
