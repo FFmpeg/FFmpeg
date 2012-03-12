@@ -161,6 +161,7 @@ typedef struct {
     char       *tc_opt_string;      ///< specified timecode option string
     AVRational  tc_rate;            ///< frame rate for timecode
     AVTimecode  tc;                 ///< timecode context
+    int tc24hmax;                   ///< 1 if timecode is wrapped to 24 hours, 0 otherwise
     int frame_id;
 } DrawTextContext;
 
@@ -183,6 +184,7 @@ static const AVOption drawtext_options[]= {
 {"basetime", "set base time",        OFFSET(basetime),           AV_OPT_TYPE_INT64,  {.dbl=AV_NOPTS_VALUE},     INT64_MIN,        INT64_MAX  },
 {"draw",     "if false do not draw", OFFSET(d_expr),             AV_OPT_TYPE_STRING, {.str="1"},   CHAR_MIN, CHAR_MAX },
 {"timecode", "set initial timecode", OFFSET(tc_opt_string),      AV_OPT_TYPE_STRING, {.str=NULL},  CHAR_MIN, CHAR_MAX },
+{"tc24hmax", "set 24 hours max (timecode only)", OFFSET(tc24hmax), AV_OPT_TYPE_INT,  {.dbl=0},            0,        1 },
 {"r",        "set rate (timecode only)", OFFSET(tc_rate),        AV_OPT_TYPE_RATIONAL, {.dbl=0},          0,  INT_MAX },
 {"rate",     "set rate (timecode only)", OFFSET(tc_rate),        AV_OPT_TYPE_RATIONAL, {.dbl=0},          0,  INT_MAX },
 {"fix_bounds", "if true, check and fix text coords to avoid clipping",
@@ -351,6 +353,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
                                                dtext->tc_opt_string, ctx);
         if (ret < 0)
             return ret;
+        if (dtext->tc24hmax)
+            dtext->tc.flags |= AV_TIMECODE_FLAG_24HOURSMAX;
         if (!dtext->text)
             dtext->text = av_strdup("");
     }
