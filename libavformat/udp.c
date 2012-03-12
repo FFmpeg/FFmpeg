@@ -364,7 +364,6 @@ static void *circular_buffer_task( void *_URLContext)
             s->circular_buffer_error = AVERROR(EIO);
             goto end;
         }
-        left = FFMIN(left, s->fifo->end - s->fifo->wptr);
         len = recv(s->udp_fd, s->tmp+4, sizeof(s->tmp)-4, 0);
         if (len < 0) {
             if (ff_neterrno() != AVERROR(EAGAIN) && ff_neterrno() != AVERROR(EINTR)) {
