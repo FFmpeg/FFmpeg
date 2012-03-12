@@ -59,6 +59,7 @@ typedef struct {
     int is_multicast;
     int local_port;
     int reuse_socket;
+    int overrun_nonfatal;
     struct sockaddr_storage dest_addr;
     int dest_addr_len;
     int is_connected;
@@ -260,6 +261,7 @@ static int udp_port(struct sockaddr_storage *addr, int addr_len)
  *         'localport=n' : set the local port
  *         'pkt_size=n'  : set max packet size
  *         'reuse=1'     : enable reusing the socket
+ *         'overrun_nonfatal=1': survive in case of circular buffer overrun
  *
  * @param h media file context
  * @param uri of the remote server
@@ -358,12 +360,6 @@ static void *circular_buffer_task( void *_URLContext)
         /* Whats the minimum we can read so that we dont comletely fill the buffer */
         left = av_fifo_space(s->fifo);
 
-        /* No Space left, error, what do we do now */
-        if(left < UDP_MAX_PKT_SIZE + 4) {
-            av_log(h, AV_LOG_ERROR, "circular_buffer: OVERRUN\n");
-            s->circular_buffer_error = AVERROR(EIO);
-            goto end;
-        }
         len = recv(s->udp_fd, s->tmp+4, sizeof(s->tmp)-4, 0);
         if (len < 0) {
             if (ff_neterrno() != AVERROR(EAGAIN) && ff_neterrno() != AVERROR(EINTR)) {
@@ -373,6 +369,20 @@ static void *circular_buffer_task( void *_URLContext)
             continue;
         }
         AV_WL32(s->tmp, len);
+        if(left < len + 4) {
+            /* No Space left */
+            if (s->overrun_nonfatal) {
+                av_log(h, AV_LOG_WARNING, "Circular buffer overrun. "
+                        "Surviving due to overrun_nonfatal option\n");
+                continue;
+            } else {
+                av_log(h, AV_LOG_ERROR, "Circular buffer overrun. "
+                        "To avoid, increase fifo_size URL option. "
+                        "To survive in such case, use overrun_nonfatal option\n");
+                s->circular_buffer_error = AVERROR(EIO);
+                goto end;
+            }
+        }
         pthread_mutex_lock(&s->mutex);
         av_fifo_generic_write(s->fifo, s->tmp, len+4, NULL);
         pthread_cond_signal(&s->cond);
@@ -420,6 +430,13 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             if (buf == endptr)
                 s->reuse_socket = 1;
             reuse_specified = 1;
+        }
+        if (av_find_info_tag(buf, sizeof(buf), "overrun_nonfatal", p)) {
+            char *endptr = NULL;
+            s->overrun_nonfatal = strtol(buf, &endptr, 10);
+            /* assume if no digits were found it is a request to enable it */
+            if (buf == endptr)
+                s->overrun_nonfatal = 1;
         }
         if (av_find_info_tag(buf, sizeof(buf), "ttl", p)) {
             s->ttl = strtol(buf, NULL, 10);
