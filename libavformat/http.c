@@ -168,6 +168,9 @@ static int http_open_cnx(URLContext *h)
         ffurl_close(hd);
         if (redirects++ >= MAX_REDIRECTS)
             return AVERROR(EIO);
+        /* Restart the authentication process with the new target, which
+         * might use a different auth mechanism. */
+        memset(&s->auth_state, 0, sizeof(s->auth_state));
         attempts = 0;
         location_changed = 0;
         goto redo;
