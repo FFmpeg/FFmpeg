@@ -253,6 +253,10 @@ static void pred_spatial_direct_motion(H264Context * const h, int *mb_type){
             mb_type_col[1] = h->ref_list[1][0].f.mb_type[mb_xy + s->mb_stride];
             b8_stride = 2+4*s->mb_stride;
             b4_stride *= 6;
+            if (IS_INTERLACED(mb_type_col[0]) != IS_INTERLACED(mb_type_col[1])) {
+                mb_type_col[0] &= ~MB_TYPE_INTERLACED;
+                mb_type_col[1] &= ~MB_TYPE_INTERLACED;
+            }
 
             sub_mb_type |= MB_TYPE_16x16|MB_TYPE_DIRECT2; /* B_SUB_8x8 */
             if(    (mb_type_col[0] & MB_TYPE_16x16_OR_INTRA)
@@ -439,6 +443,10 @@ static void pred_temp_direct_motion(H264Context * const h, int *mb_type){
             mb_type_col[1] = h->ref_list[1][0].f.mb_type[mb_xy + s->mb_stride];
             b8_stride = 2+4*s->mb_stride;
             b4_stride *= 6;
+            if (IS_INTERLACED(mb_type_col[0]) != IS_INTERLACED(mb_type_col[1])) {
+                mb_type_col[0] &= ~MB_TYPE_INTERLACED;
+                mb_type_col[1] &= ~MB_TYPE_INTERLACED;
+            }
 
             sub_mb_type = MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2; /* B_SUB_8x8 */
 
