@@ -333,12 +333,12 @@ static int16_t g729d_voice_decision(int onset, int prev_voice_decision, const in
     return voice_decision;
 }
 
-static int32_t scalarproduct_int16_c(const int16_t * v1, const int16_t * v2, int order, int shift)
+static int32_t scalarproduct_int16_c(const int16_t * v1, const int16_t * v2, int order)
 {
     int res = 0;
 
     while (order--)
-        res += (*v1++ * *v2++) >> shift;
+        res += *v1++ * *v2++;
 
     return res;
 }
