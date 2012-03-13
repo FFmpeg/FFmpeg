@@ -306,24 +306,26 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     MimicContext *ctx = avctx->priv_data;
+    GetByteContext gb;
     int is_pframe;
     int width, height;
     int quality, num_coeffs;
     int swap_buf_size = buf_size - MIMIC_HEADER_SIZE;
 
-    if(buf_size < MIMIC_HEADER_SIZE) {
+    if (buf_size <= MIMIC_HEADER_SIZE) {
         av_log(avctx, AV_LOG_ERROR, "insufficient data\n");
         return -1;
     }
 
-    buf       += 2; /* some constant (always 256) */
-    quality    = bytestream_get_le16(&buf);
-    width      = bytestream_get_le16(&buf);
-    height     = bytestream_get_le16(&buf);
-    buf       += 4; /* some constant */
-    is_pframe  = bytestream_get_le32(&buf);
-    num_coeffs = bytestream_get_byte(&buf);
-    buf       += 3; /* some constant */
+    bytestream2_init(&gb, buf, MIMIC_HEADER_SIZE);
+    bytestream2_skip(&gb, 2); /* some constant (always 256) */
+    quality    = bytestream2_get_le16u(&gb);
+    width      = bytestream2_get_le16u(&gb);
+    height     = bytestream2_get_le16u(&gb);
+    bytestream2_skip(&gb, 4); /* some constant */
+    is_pframe  = bytestream2_get_le32u(&gb);
+    num_coeffs = bytestream2_get_byteu(&gb);
+    bytestream2_skip(&gb, 3); /* some constant */
 
     if(!ctx->avctx) {
         int i;
@@ -372,7 +374,7 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR(ENOMEM);
 
     ctx->dsp.bswap_buf(ctx->swap_buf,
-                        (const uint32_t*) buf,
+                        (const uint32_t*) (buf + MIMIC_HEADER_SIZE),
                         swap_buf_size>>2);
     init_get_bits(&ctx->gb, ctx->swap_buf, swap_buf_size << 3);
 

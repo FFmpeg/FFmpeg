@@ -43,7 +43,6 @@
 #define AV_CPU_FLAG_CMOV      0x1000000 ///< supports cmov instruction
 #define AV_CPU_FLAG_XOP          0x0400 ///< Bulldozer XOP functions
 #define AV_CPU_FLAG_FMA4         0x0800 ///< Bulldozer FMA4 functions
-#define AV_CPU_FLAG_IWMMXT       0x0100 ///< XScale IWMMXT
 #define AV_CPU_FLAG_ALTIVEC      0x0001 ///< standard
 
 /**
@@ -67,7 +66,6 @@ void av_force_cpu_flags(int flags);
 attribute_deprecated void av_set_cpu_flags_mask(int mask);
 
 /* The following CPU-specific functions shall not be called directly. */
-int ff_get_cpu_flags_arm(void);
 int ff_get_cpu_flags_ppc(void);
 int ff_get_cpu_flags_x86(void);
 

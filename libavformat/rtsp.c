@@ -1005,7 +1005,7 @@ start:
             av_freep(content_ptr);
         /* If method is set, this is called from ff_rtsp_send_cmd,
          * where a reply to exactly this request is awaited. For
-         * callers from within packet reciving, we just want to
+         * callers from within packet receiving, we just want to
          * return to the caller and go back to receiving packets. */
         if (method)
             goto start;
