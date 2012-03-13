@@ -51,7 +51,7 @@
  */
 int ff_jpegls_decode_lse(MJpegDecodeContext *s)
 {
-    int len, id;
+    int av_unused(len), id;
 
     /* XXX: verify len field validity */
     len = get_bits(&s->gb, 16);
