@@ -192,7 +192,7 @@ static int tgq_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     TgqContext *s = avctx->priv_data;
-    int x,y, ret;
+    int x,y;
     int big_endian = AV_RL32(&buf[4]) > 0x000FFFFF;
 
     if (buf_size < 16) {
