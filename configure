@@ -173,6 +173,7 @@ External library support:
   --enable-libaacplus      enable AAC+ encoding via libaacplus [no]
   --enable-libass          enable libass subtitles rendering [no]
   --enable-libbluray       enable BluRay reading using libbluray [no]
+  --enable-libcaca         enable textual display using libcaca
   --enable-libcelt         enable CELT decoding via libcelt [no]
   --enable-libcdio         enable audio CD grabbing with libcdio
   --enable-libdc1394       enable IIDC-1394 grabbing using libdc1394
@@ -1051,6 +1052,7 @@ CONFIG_LIST="
     libaacplus
     libass
     libbluray
+    libcaca
     libcdio
     libcelt
     libdc1394
@@ -1693,6 +1695,7 @@ w64_demuxer_deps="wav_demuxer"
 alsa_indev_deps="alsa_asoundlib_h snd_pcm_htimestamp"
 alsa_outdev_deps="alsa_asoundlib_h"
 bktr_indev_deps_any="dev_bktr_ioctl_bt848_h machine_ioctl_bt848_h dev_video_bktr_ioctl_bt848_h dev_ic_bt8xx_h"
+caca_outdev_deps="libcaca"
 dshow_indev_deps="IBaseFilter"
 dshow_indev_extralibs="-lpsapi -lole32 -lstrmiids -luuid"
 dv1394_indev_deps="dv1394 dv_demuxer"
@@ -3312,6 +3315,7 @@ enabled libbluray  && require libbluray libbluray/bluray.h bd_open -lbluray
 enabled libcelt    && require libcelt celt/celt.h celt_decode -lcelt0 &&
                       { check_lib celt/celt.h celt_decoder_create_custom -lcelt0 ||
                         die "ERROR: libcelt version must be >= 0.11.0."; }
+enabled libcaca    && require_pkg_config caca caca.h caca_create_canvas
 enabled libfaac    && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
 enabled libfdk_aac && require  libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen -lfdk-aac
 enabled libfreetype && require_pkg_config freetype2 "ft2build.h freetype/freetype.h" FT_Init_FreeType
@@ -3688,6 +3692,7 @@ echo "frei0r enabled            ${frei0r-no}"
 echo "gnutls enabled            ${gnutls-no}"
 echo "libaacplus enabled        ${libaacplus-no}"
 echo "libass enabled            ${libass-no}"
+echo "libcaca enabled           ${libcaca-no}"
 echo "libcdio support           ${libcdio-no}"
 echo "libcelt enabled           ${libcelt-no}"
 echo "libdc1394 support         ${libdc1394-no}"

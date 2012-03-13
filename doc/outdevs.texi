@@ -22,6 +22,67 @@ A description of the currently available output devices follows.
 
 ALSA (Advanced Linux Sound Architecture) output device.
 
+@section caca
+
+CACA output device.
+
+This output devices allows to show a video stream in CACA window.
+Only one CACA window is allowed per application, so you can
+have only one instance of this output device in an application.
+
+To enable this output device you need to configure FFmpeg with
+@code(--enable-libcaca).
+libcaca is a graphics library that outputs text instead of pixels.
+
+For more information about libcaca, check:
+@url{http://caca.zoy.org/wiki/libcaca}
+
+@subsection Options
+
+@table @option
+
+@item window_title
+Set the CACA window title, if not specified default to the filename
+specified for the output device.
+
+@item window_size
+Set the CACA window size, can be a string of the form
+@var{width}x@var{height} or a video size abbreviation.
+If not specified it defaults to the size of the input video.
+
+@item driver
+Set display driver.
+
+@item algorithm
+Set dithering algorithm. Dithering is necessary
+because the picture being rendered has usually far more colours than
+the available palette.
+
+@item antialias
+Set antialias method. Antialiasing smoothens the rendered
+image and avoids the commonly seen staircase effect.
+
+@item charset
+Set which characters are going to be used when rendering text.
+
+@item colors
+Set colors to be used when rendering text.
+
+@item list_drivers
+List available drivers.
+
+@item list_dither
+List available dither options.
+@end table
+
+@subsection Examples
+
+The following command shows the @command{ffmpeg} output is an
+CACA window, forcing its size to 80x25:
+@example
+ffmpeg -i INPUT -vcodec rawvideo -pix_fmt rgb24 -window_size 80x25 -f caca -
+@end example
+
 @section oss
 
 OSS (Open Sound System) output device.
