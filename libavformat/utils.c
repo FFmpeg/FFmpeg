@@ -2356,7 +2356,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 
         st = ic->streams[pkt->stream_index];
         if (st->codec_info_nb_frames>1) {
-            if (st->time_base.den > 0 && av_rescale_q(st->info->codec_info_duration, st->time_base, AV_TIME_BASE_Q) >= ic->max_analyze_duration) {
+            if (av_rescale_q(st->info->codec_info_duration, st->time_base, AV_TIME_BASE_Q) >= ic->max_analyze_duration) {
                 av_log(ic, AV_LOG_WARNING, "max_analyze_duration reached\n");
                 break;
             }
