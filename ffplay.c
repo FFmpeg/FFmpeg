@@ -2253,6 +2253,7 @@ static int stream_component_open(VideoState *is, int stream_index)
         avctx->flags |= CODEC_FLAG_EMU_EDGE;
 
     if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
+        memset(&is->audio_pkt_temp, 0, sizeof(is->audio_pkt_temp));
         env = SDL_getenv("SDL_AUDIO_CHANNELS");
         if (env)
             wanted_channel_layout = av_get_default_channel_layout(SDL_atoi(env));
