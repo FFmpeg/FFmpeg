@@ -2421,11 +2421,11 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     }
     for(i=0;i<ic->nb_streams;i++) {
         st = ic->streams[i];
-        if (st->codec_info_nb_frames>2 && !st->avg_frame_rate.num && st->info->codec_info_duration)
-            av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
-                     (st->codec_info_nb_frames-2)*(int64_t)st->time_base.den,
-                      st->info->codec_info_duration*(int64_t)st->time_base.num, 60000);
         if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+            if (st->codec_info_nb_frames>2 && !st->avg_frame_rate.num && st->info->codec_info_duration)
+                av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
+                          (st->codec_info_nb_frames-2)*(int64_t)st->time_base.den,
+                          st->info->codec_info_duration*(int64_t)st->time_base.num, 60000);
             // the check for tb_unreliable() is not completely correct, since this is not about handling
             // a unreliable/inexact time base, but a time base that is finer than necessary, as e.g.
             // ipmovie.c produces.
