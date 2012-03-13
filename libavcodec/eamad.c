@@ -204,8 +204,6 @@ static int decode_mb(MadContext *t, int inter)
             mv_map = v ? get_bits(&s->gb, 6) : 63;
             mv_x = decode_motion(&s->gb);
             mv_y = decode_motion(&s->gb);
-        } else {
-            mv_map = 0;
         }
     }
 
