@@ -208,4 +208,7 @@ av_cold void ff_psdsp_init(PSDSPContext *s)
     s->decorrelate            = ps_decorrelate_c;
     s->stereo_interpolate[0]  = ps_stereo_interpolate_c;
     s->stereo_interpolate[1]  = ps_stereo_interpolate_ipdopd_c;
+
+    if (ARCH_ARM)
+        ff_psdsp_init_arm(s);
 }
