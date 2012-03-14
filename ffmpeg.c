@@ -1130,9 +1130,16 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
     AVCodecContext *dec = ist->st->codec;
     int osize = av_get_bytes_per_sample(enc->sample_fmt);
     int isize = av_get_bytes_per_sample(dec->sample_fmt);
-    uint8_t *buf = decoded_frame->data[0];
+    uint8_t *buf[AV_NUM_DATA_POINTERS];
     int size     = decoded_frame->nb_samples * dec->channels * isize;
+    int planes   = av_sample_fmt_is_planar(dec->sample_fmt) ? dec->channels : 1;
     int64_t allocated_for_size = size;
+    int i;
+
+    av_assert0(planes <= AV_NUM_DATA_POINTERS);
+
+    for(i=0; i<planes; i++)
+        buf[i]= decoded_frame->data[i];
 
 need_realloc:
     audio_buf_size  = (allocated_for_size + isize * dec->channels - 1) / (isize * dec->channels);
@@ -1229,7 +1236,8 @@ need_realloc:
                 if (byte_delta < 0) {
                     byte_delta = FFMAX(byte_delta, -size);
                     size += byte_delta;
-                    buf  -= byte_delta;
+                    for (i=0; i<planes; i++)
+                        buf[i]  -= byte_delta/planes;
                     av_log(NULL, AV_LOG_VERBOSE, "discarding %d audio samples\n",
                            -byte_delta / (isize * dec->channels));
                     if (!size)
@@ -1244,9 +1252,12 @@ need_realloc:
                     }
                     ist->is_start = 0;
 
-                    generate_silence(input_tmp, dec->sample_fmt, byte_delta);
-                    memcpy(input_tmp + byte_delta, buf, size);
-                    buf = input_tmp;
+                    for (i=0; i<planes; i++) {
+                        uint8_t *t = input_tmp + i*((byte_delta + size)/planes);
+                        generate_silence(t, dec->sample_fmt, byte_delta/planes);
+                        memcpy(t + byte_delta/planes, buf[i], size/planes);
+                        buf[i] = t;
+                    }
                     size += byte_delta;
                     av_log(NULL, AV_LOG_VERBOSE, "adding %d audio samples of silence\n", idelta);
                 }
@@ -1266,14 +1277,14 @@ need_realloc:
     if (ost->audio_resample || ost->audio_channels_mapped) {
         buftmp = audio_buf;
         size_out = swr_convert(ost->swr, (      uint8_t*[]){buftmp}, audio_buf_size / (enc->channels * osize),
-                                         (const uint8_t*[]){buf   }, size / (dec->channels * isize));
+                                         buf, size / (dec->channels * isize));
         if (size_out < 0) {
             av_log(NULL, AV_LOG_FATAL, "swr_convert failed\n");
             exit_program(1);
         }
         size_out = size_out * enc->channels * osize;
     } else {
-        buftmp = buf;
+        buftmp = buf[0];
         size_out = size;
     }
 
