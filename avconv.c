@@ -2024,8 +2024,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
         frame_available = avfilter_poll_frame(ost->output_video_filter->inputs[0]);
         while (frame_available) {
             AVRational ist_pts_tb;
-            if (ost->output_video_filter)
-                get_filtered_video_frame(ost->output_video_filter, filtered_frame, &ost->picref, &ist_pts_tb);
+            get_filtered_video_frame(ost->output_video_filter, filtered_frame, &ost->picref, &ist_pts_tb);
             if (ost->picref)
                 filtered_frame->pts = av_rescale_q(ost->picref->pts, ist_pts_tb, AV_TIME_BASE_Q);
             if (ost->picref->video && !ost->frame_aspect_ratio)
