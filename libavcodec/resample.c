@@ -272,11 +272,13 @@ int audio_resample(ReSampleContext *s, short *output, short *input, int nb_sampl
     lenout = 4 * nb_samples * s->ratio + 16;
 
     if (s->sample_fmt[1] != AV_SAMPLE_FMT_S16) {
+        int out_size = lenout * av_get_bytes_per_sample(s->sample_fmt[1]) *
+                       s->output_channels;
         output_bak = output;
 
-        if (!s->buffer_size[1] || s->buffer_size[1] < lenout) {
+        if (!s->buffer_size[1] || s->buffer_size[1] < out_size) {
             av_free(s->buffer[1]);
-            s->buffer_size[1] = lenout;
+            s->buffer_size[1] = out_size;
             s->buffer[1] = av_malloc(s->buffer_size[1]);
             if (!s->buffer[1]) {
                 av_log(s->resample_context, AV_LOG_ERROR, "Could not allocate buffer\n");
