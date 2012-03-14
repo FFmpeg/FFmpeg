@@ -301,9 +301,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         s->first_picture = 0;
     }
 
-    if (s->interlaced && (s->bottom_field == !s->interlace_polarity))
-        return 0;
-
+    if (!(s->interlaced && (s->bottom_field == !s->interlace_polarity))) {
     /* XXX: not complete test ! */
     pix_fmt_id = (s->h_count[0] << 28) | (s->v_count[0] << 24) |
                  (s->h_count[1] << 20) | (s->v_count[1] << 16) |
@@ -370,6 +368,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
 
     if (len != (8 + (3 * nb_components)))
         av_log(s->avctx, AV_LOG_DEBUG, "decode_sof0: error, len(%d) mismatch\n", len);
+    }
 
     /* totally blank picture as progressive JPEG will only add details to it */
     if (s->progressive) {
