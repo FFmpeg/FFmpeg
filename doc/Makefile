@@ -17,18 +17,27 @@ documentation: $(DOCS)
 
 TEXIDEP = awk '/^@include/ { printf "$@: $(@D)/%s\n", $$2 }' <$< >$(@:%=%.d)
 
+doc/print_options.o: libavformat/options_table.h libavcodec/options_table.h
+
+GENTEXI  = format codec
+GENTEXI := $(GENTEXI:%=doc/avoptions_%.texi)
+
+$(GENTEXI): TAG = GENTEXI
+$(GENTEXI): doc/avoptions_%.texi: doc/print_options
+	$(M)doc/print_options $* > $@
+
 doc/%.html: TAG = HTML
-doc/%.html: doc/%.texi $(SRC_PATH)/doc/t2h.init
+doc/%.html: doc/%.texi $(SRC_PATH)/doc/t2h.init $(GENTEXI)
 	$(Q)$(TEXIDEP)
 	$(M)texi2html -monolithic --init-file $(SRC_PATH)/doc/t2h.init --output $@ $<
 
 doc/%.pod: TAG = POD
-doc/%.pod: doc/%.texi
+doc/%.pod: doc/%.texi $(GENTEXI)
 	$(Q)$(TEXIDEP)
 	$(M)$(SRC_PATH)/doc/texi2pod.pl $< $@
 
 doc/%.1: TAG = MAN
-doc/%.1: doc/%.pod
+doc/%.1: doc/%.pod $(GENTEXI)
 	$(M)pod2man --section=1 --center=" " --release=" " $< > $@
 
 $(DOCS): | doc
@@ -46,7 +55,7 @@ uninstall-man:
 	$(RM) $(addprefix "$(MANDIR)/man1/",$(ALLMANPAGES))
 
 clean::
-	$(RM) doc/*.html doc/*.pod doc/*.1 $(CLEANSUFFIXES:%=doc/%)
+	$(RM) doc/*.html doc/*.pod doc/*.1 $(CLEANSUFFIXES:%=doc/%) doc/avoptions_*.texi
 
 -include $(wildcard $(DOCS:%=%.d))
 

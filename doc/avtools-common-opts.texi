@@ -156,3 +156,6 @@ use @option{-option 0}/@option{-option 1}.
 
 Note2 old undocumented way of specifying per-stream AVOptions by prepending
 v/a/s to the options name is now obsolete and will be removed soon.
+
+@include avoptions_codec.texi
+@include avoptions_format.texi
