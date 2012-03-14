@@ -15,6 +15,7 @@ version <next>:
 - XBM encoder
 - RealAudio Lossless decoder
 - ZeroCodec decoder
+- drop support for avconv without libavfilter
 
 
 version 0.8:

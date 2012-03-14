@@ -1539,7 +1539,7 @@ avdevice_deps="avcodec avformat"
 avformat_deps="avcodec"
 
 # programs
-avconv_deps="avcodec avformat swscale"
+avconv_deps="avcodec avfilter avformat swscale"
 avplay_deps="avcodec avformat swscale sdl"
 avplay_select="rdft"
 avprobe_deps="avcodec avformat"
