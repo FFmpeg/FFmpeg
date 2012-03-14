@@ -96,7 +96,7 @@ static int http_open_cnx(URLContext *h)
     char auth[1024], proxyauth[1024] = "";
     char path1[1024];
     char buf[1024], urlbuf[1024];
-    int port, use_proxy, err, location_changed = 0, redirects = 0;
+    int port, use_proxy, err, location_changed = 0, redirects = 0, attempts = 0;
     HTTPAuthType cur_auth_type, cur_proxy_auth_type;
     HTTPContext *s = h->priv_data;
     URLContext *hd = NULL;
@@ -148,16 +148,18 @@ static int http_open_cnx(URLContext *h)
     cur_proxy_auth_type = s->auth_state.auth_type;
     if (http_connect(h, path, local_path, hoststr, auth, proxyauth, &location_changed) < 0)
         goto fail;
+    attempts++;
     if (s->http_code == 401) {
-        if (cur_auth_type == HTTP_AUTH_NONE && s->auth_state.auth_type != HTTP_AUTH_NONE) {
+        if ((cur_auth_type == HTTP_AUTH_NONE || s->auth_state.stale) &&
+            s->auth_state.auth_type != HTTP_AUTH_NONE && attempts < 4) {
             ffurl_close(hd);
             goto redo;
         } else
             goto fail;
     }
     if (s->http_code == 407) {
-        if (cur_proxy_auth_type == HTTP_AUTH_NONE &&
-            s->proxy_auth_state.auth_type != HTTP_AUTH_NONE) {
+        if ((cur_proxy_auth_type == HTTP_AUTH_NONE || s->proxy_auth_state.stale) &&
+            s->proxy_auth_state.auth_type != HTTP_AUTH_NONE && attempts < 4) {
             ffurl_close(hd);
             goto redo;
         } else
@@ -169,6 +171,10 @@ static int http_open_cnx(URLContext *h)
         ffurl_close(hd);
         if (redirects++ >= MAX_REDIRECTS)
             return AVERROR(EIO);
+        /* Restart the authentication process with the new target, which
+         * might use a different auth mechanism. */
+        memset(&s->auth_state, 0, sizeof(s->auth_state));
+        attempts = 0;
         location_changed = 0;
         goto redo;
     }
@@ -602,7 +608,7 @@ static int http_proxy_open(URLContext *h, const char *uri, int flags)
     char hostname[1024], hoststr[1024];
     char auth[1024], pathbuf[1024], *path;
     char line[1024], lower_url[100];
-    int port, ret = 0;
+    int port, ret = 0, attempts = 0;
     HTTPAuthType cur_auth_type;
     char *authstr;
 
@@ -669,8 +675,10 @@ redo:
             break;
         s->line_count++;
     }
-    if (s->http_code == 407 && cur_auth_type == HTTP_AUTH_NONE &&
-        s->proxy_auth_state.auth_type != HTTP_AUTH_NONE) {
+    attempts++;
+    if (s->http_code == 407 &&
+        (cur_auth_type == HTTP_AUTH_NONE || s->proxy_auth_state.stale) &&
+        s->proxy_auth_state.auth_type != HTTP_AUTH_NONE && attempts < 2) {
         ffurl_close(s->hd);
         s->hd = NULL;
         goto redo;

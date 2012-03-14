@@ -41,6 +41,9 @@ typedef struct {
     char opaque[300];      /**< A server-specified string that should be
                              *  included in authentication responses, not
                              *  included in the actual digest calculation. */
+    char stale[10];        /**< The server indicated that the auth was ok,
+                             * but needs to be redone with a new, non-stale
+                             * nonce. */
     int nc;                /**< Nonce count, the number of earlier replies
                              *  where this particular nonce has been used. */
 } DigestParams;
@@ -62,6 +65,10 @@ typedef struct {
      * The parameters specifiec to digest authentication.
      */
     DigestParams digest_params;
+    /**
+     * Auth ok, but needs to be resent with a new nonce.
+     */
+    int stale;
 } HTTPAuthState;
 
 void ff_http_auth_handle_header(HTTPAuthState *state, const char *key,

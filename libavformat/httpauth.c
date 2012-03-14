@@ -57,6 +57,9 @@ static void handle_digest_params(HTTPAuthState *state, const char *key,
     } else if (!strncmp(key, "qop=", key_len)) {
         *dest     =        digest->qop;
         *dest_len = sizeof(digest->qop);
+    } else if (!strncmp(key, "stale=", key_len)) {
+        *dest     =        digest->stale;
+        *dest_len = sizeof(digest->stale);
     }
 }
 
@@ -93,6 +96,7 @@ void ff_http_auth_handle_header(HTTPAuthState *state, const char *key,
             state->auth_type <= HTTP_AUTH_BASIC) {
             state->auth_type = HTTP_AUTH_BASIC;
             state->realm[0] = 0;
+            state->stale = 0;
             ff_parse_key_value(p, (ff_parse_key_val_cb) handle_basic_params,
                                state);
         } else if (av_stristart(value, "Digest ", &p) &&
@@ -100,10 +104,13 @@ void ff_http_auth_handle_header(HTTPAuthState *state, const char *key,
             state->auth_type = HTTP_AUTH_DIGEST;
             memset(&state->digest_params, 0, sizeof(DigestParams));
             state->realm[0] = 0;
+            state->stale = 0;
             ff_parse_key_value(p, (ff_parse_key_val_cb) handle_digest_params,
                                state);
             choose_qop(state->digest_params.qop,
                        sizeof(state->digest_params.qop));
+            if (!av_strcasecmp(state->digest_params.stale, "true"))
+                state->stale = 1;
         }
     } else if (!strcmp(key, "Authentication-Info")) {
         ff_parse_key_value(value, (ff_parse_key_val_cb) handle_digest_update,
@@ -237,6 +244,9 @@ char *ff_http_auth_create_response(HTTPAuthState *state, const char *auth,
 {
     char *authstr = NULL;
 
+    /* Clear the stale flag, we assume the auth is ok now. It is reset
+     * by the server headers if there's a new issue. */
+    state->stale = 0;
     if (!auth || !strchr(auth, ':'))
         return NULL;
 
