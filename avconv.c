@@ -216,8 +216,6 @@ typedef struct OutputStream {
 
     /* video only */
     int video_resample;
-    AVFrame pict_tmp;      /* temporary image for resampling */
-    struct SwsContext *img_resample_ctx; /* for image resampling */
     int resample_height;
     int resample_width;
     int resample_pix_fmt;
@@ -1314,7 +1312,6 @@ static void do_video_out(AVFormatContext *s,
                          int *frame_size, float quality)
 {
     int nb_frames, i, ret, format_video_sync;
-    AVFrame *final_picture;
     AVCodecContext *enc;
     double sync_ipts, delta;
 
@@ -1364,8 +1361,6 @@ static void do_video_out(AVFormatContext *s,
         av_log(NULL, AV_LOG_VERBOSE, "*** %d dup!\n", nb_frames - 1);
     }
 
-    final_picture = in_picture;
-
     if (!ost->frame_number)
         ost->first_pts = ost->sync_opts;
 
@@ -1386,7 +1381,7 @@ static void do_video_out(AVFormatContext *s,
                method. */
             enc->coded_frame->interlaced_frame = in_picture->interlaced_frame;
             enc->coded_frame->top_field_first  = in_picture->top_field_first;
-            pkt.data   = (uint8_t *)final_picture;
+            pkt.data   = (uint8_t *)in_picture;
             pkt.size   =  sizeof(AVPicture);
             pkt.pts    = av_rescale_q(ost->sync_opts, enc->time_base, ost->st->time_base);
             pkt.flags |= AV_PKT_FLAG_KEY;
@@ -1396,7 +1391,7 @@ static void do_video_out(AVFormatContext *s,
             int got_packet;
             AVFrame big_picture;
 
-            big_picture = *final_picture;
+            big_picture = *in_picture;
             /* better than nothing: use input picture interlaced
                settings */
             big_picture.interlaced_frame = in_picture->interlaced_frame;
@@ -2793,10 +2788,7 @@ static int transcode(OutputFile *output_files,
                 av_fifo_free(ost->fifo); /* works even if fifo is not
                                              initialized but set to zero */
                 av_freep(&ost->st->codec->subtitle_header);
-                av_free(ost->pict_tmp.data[0]);
                 av_free(ost->forced_kf_pts);
-                if (ost->video_resample)
-                    sws_freeContext(ost->img_resample_ctx);
                 if (ost->resample)
                     audio_resample_close(ost->resample);
                 if (ost->reformat_ctx)
