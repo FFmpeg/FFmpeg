@@ -1640,14 +1640,6 @@ int64_t ff_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts,
 
 static int seek_frame_byte(AVFormatContext *s, int stream_index, int64_t pos, int flags){
     int64_t pos_min, pos_max;
-#if 0
-    AVStream *st;
-
-    if (stream_index < 0)
-        return -1;
-
-    st= s->streams[stream_index];
-#endif
 
     pos_min = s->data_offset;
     pos_max = avio_size(s->pb) - 1;
@@ -1657,9 +1649,6 @@ static int seek_frame_byte(AVFormatContext *s, int stream_index, int64_t pos, in
 
     avio_seek(s->pb, pos, SEEK_SET);
 
-#if 0
-    av_update_cur_dts(s, st, ts);
-#endif
     return 0;
 }
 
@@ -2474,31 +2463,6 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     estimate_timings(ic, old_offset);
 
     compute_chapters_end(ic);
-
-#if 0
-    /* correct DTS for B-frame streams with no timestamps */
-    for(i=0;i<ic->nb_streams;i++) {
-        st = ic->streams[i];
-        if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-            if(b-frames){
-                ppktl = &ic->packet_buffer;
-                while(ppkt1){
-                    if(ppkt1->stream_index != i)
-                        continue;
-                    if(ppkt1->pkt->dts < 0)
-                        break;
-                    if(ppkt1->pkt->pts != AV_NOPTS_VALUE)
-                        break;
-                    ppkt1->pkt->dts -= delta;
-                    ppkt1= ppkt1->next;
-                }
-                if(ppkt1)
-                    continue;
-                st->cur_dts -= delta;
-            }
-        }
-    }
-#endif
 
  find_stream_info_err:
     for (i=0; i < ic->nb_streams; i++) {
