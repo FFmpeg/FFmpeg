@@ -710,8 +710,8 @@ const vf_info_t vf_info_fspp = {
 #if HAVE_MMX
 
 DECLARE_ASM_CONST(8, uint64_t, MM_FIX_0_382683433)=FIX64(0.382683433, 14);
-DECLARE_ALIGNED(8, uint64_t, MM_FIX_0_541196100)=FIX64(0.541196100, 14);
-DECLARE_ALIGNED(8, uint64_t, MM_FIX_0_707106781)=FIX64(0.707106781, 14);
+DECLARE_ALIGNED(8, uint64_t, ff_MM_FIX_0_541196100)=FIX64(0.541196100, 14);
+DECLARE_ALIGNED(8, uint64_t, ff_MM_FIX_0_707106781)=FIX64(0.707106781, 14);
 DECLARE_ASM_CONST(8, uint64_t, MM_FIX_1_306562965)=FIX64(1.306562965, 14);
 
 DECLARE_ASM_CONST(8, uint64_t, MM_FIX_1_414213562_A)=FIX64(1.414213562, 14);
@@ -917,7 +917,7 @@ static void column_fidct_mmx(int16_t* thr_adr,  DCTELEM *data,  DCTELEM *output,
         "paddusw 0*16(%%"REG_d"), %%mm5    \n\t"
         "paddusw %%mm6, %%mm2          \n\t"
 
-        "pmulhw "MANGLE(MM_FIX_0_707106781)", %%mm7 \n\t"
+        "pmulhw "MANGLE(ff_MM_FIX_0_707106781)", %%mm7 \n\t"
         //
         "paddw 0*16(%%"REG_d"), %%mm5      \n\t"
         "paddw %%mm6, %%mm2            \n\t"
@@ -997,13 +997,13 @@ static void column_fidct_mmx(int16_t* thr_adr,  DCTELEM *data,  DCTELEM *output,
         "pmulhw "MANGLE(MM_FIX_0_382683433)", %%mm3 \n\t"
         "psllw $2, %%mm4              \n\t"
 
-        "pmulhw "MANGLE(MM_FIX_0_541196100)", %%mm7 \n\t"
+        "pmulhw "MANGLE(ff_MM_FIX_0_541196100)", %%mm7 \n\t"
         "psllw $2, %%mm2              \n\t"
 
         "pmulhw "MANGLE(MM_FIX_1_306562965)", %%mm4 \n\t"
         "paddw %%mm1, %%mm5            \n\t" //'t1
 
-        "pmulhw "MANGLE(MM_FIX_0_707106781)", %%mm2 \n\t"
+        "pmulhw "MANGLE(ff_MM_FIX_0_707106781)", %%mm2 \n\t"
         "psubw %%mm1, %%mm6            \n\t" //'t2
         // t7 't12 't11 t4 t6 - 't13 't10   ---
 
@@ -1275,7 +1275,7 @@ static void column_fidct_mmx(int16_t* thr_adr,  DCTELEM *data,  DCTELEM *output,
         "paddusw 1*8+0*16(%%"REG_d"), %%mm5 \n\t"
         "paddusw %%mm6, %%mm2          \n\t"
 
-        "pmulhw "MANGLE(MM_FIX_0_707106781)", %%mm7 \n\t"
+        "pmulhw "MANGLE(ff_MM_FIX_0_707106781)", %%mm7 \n\t"
         //
         "paddw 1*8+0*16(%%"REG_d"), %%mm5  \n\t"
         "paddw %%mm6, %%mm2            \n\t"
@@ -1355,13 +1355,13 @@ static void column_fidct_mmx(int16_t* thr_adr,  DCTELEM *data,  DCTELEM *output,
         "pmulhw "MANGLE(MM_FIX_0_382683433)", %%mm3 \n\t"
         "psllw $2, %%mm4              \n\t"
 
-        "pmulhw "MANGLE(MM_FIX_0_541196100)", %%mm7 \n\t"
+        "pmulhw "MANGLE(ff_MM_FIX_0_541196100)", %%mm7 \n\t"
         "psllw $2, %%mm2              \n\t"
 
         "pmulhw "MANGLE(MM_FIX_1_306562965)", %%mm4 \n\t"
         "paddw %%mm1, %%mm5            \n\t" //'t1
 
-        "pmulhw "MANGLE(MM_FIX_0_707106781)", %%mm2 \n\t"
+        "pmulhw "MANGLE(ff_MM_FIX_0_707106781)", %%mm2 \n\t"
         "psubw %%mm1, %%mm6            \n\t" //'t2
         // t7 't12 't11 t4 t6 - 't13 't10   ---
 
@@ -2006,7 +2006,7 @@ static void row_fdct_mmx(DCTELEM *data,  const uint8_t *pixels,  int line_size, 
         "psllw $2, %%mm1              \n\t"
         "paddw %%mm5, %%mm6            \n\t" //t10
 
-        "pmulhw "MANGLE(MM_FIX_0_707106781)", %%mm1 \n\t"
+        "pmulhw "MANGLE(ff_MM_FIX_0_707106781)", %%mm1 \n\t"
         "paddw %%mm6, %%mm7            \n\t" //d2
 
         "psubw %%mm2, %%mm6            \n\t" //d3
@@ -2049,13 +2049,13 @@ static void row_fdct_mmx(DCTELEM *data,  const uint8_t *pixels,  int line_size, 
         "movq 0*8+%3, %%mm2           \n\t"
         "psllw $2, %%mm4              \n\t" //t11
 
-        "pmulhw "MANGLE(MM_FIX_0_707106781)", %%mm4 \n\t" //z3
+        "pmulhw "MANGLE(ff_MM_FIX_0_707106781)", %%mm4 \n\t" //z3
         "paddw %%mm2, %%mm1            \n\t"
 
         "psllw $2, %%mm1              \n\t" //t12
         "movq %%mm3, %%mm0             \n\t"
 
-        "pmulhw "MANGLE(MM_FIX_0_541196100)", %%mm0 \n\t"
+        "pmulhw "MANGLE(ff_MM_FIX_0_541196100)", %%mm0 \n\t"
         "psubw %%mm1, %%mm3            \n\t"
 
         "pmulhw "MANGLE(MM_FIX_0_382683433)", %%mm3 \n\t" //z5
