@@ -207,6 +207,11 @@ do_video_encoding ffv1.avi "-strict -2 -an -vcodec ffv1"
 do_video_decoding
 fi
 
+if [ -n "$do_ffvhuff" ] ; then
+do_video_encoding ffvhuff.avi "-an -vcodec ffvhuff"
+do_video_decoding ""
+fi
+
 if [ -n "$do_snow" ] ; then
 do_video_encoding snow.avi "-strict -2 -an -vcodec snow -qscale 2 -flags +qpel -me_method iter -dia_size 2 -cmp 12 -subcmp 12 -s 128x64"
 do_video_decoding "" "-s 352x288"
