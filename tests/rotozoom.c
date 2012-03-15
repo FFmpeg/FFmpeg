@@ -58,12 +58,12 @@ static int64_t int_sin(int64_t a)
 #define FIX(x)    ((int) ((x) * (1L << SCALEBITS) + 0.5))
 
 static void rgb24_to_yuv420p(unsigned char *lum, unsigned char *cb,
-                             unsigned char *cr, unsigned char *src,
+                             unsigned char *cr, const unsigned char *src,
                              int width, int height)
 {
     int wrap, wrap3, x, y;
     int r, g, b, r1, g1, b1;
-    unsigned char *p;
+    const unsigned char *p;
 
     wrap  = width;
     wrap3 = width * 3;
