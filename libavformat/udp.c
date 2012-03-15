@@ -331,15 +331,18 @@ static void *circular_buffer_task( void *_URLContext)
 
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_cancelstate);
     ff_socket_nonblock(s->udp_fd, 0);
+    pthread_mutex_lock(&s->mutex);
     while(1) {
         int len;
 
+        pthread_mutex_unlock(&s->mutex);
         /* Blocking operations are always cancellation points;
            see "General Information" / "Thread Cancelation Overview"
            in Single Unix. */
         pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_cancelstate);
         len = recv(s->udp_fd, s->tmp+4, sizeof(s->tmp)-4, 0);
         pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_cancelstate);
+        pthread_mutex_lock(&s->mutex);
         if (len < 0) {
             if (ff_neterrno() != AVERROR(EAGAIN) && ff_neterrno() != AVERROR(EINTR)) {
                 s->circular_buffer_error = ff_neterrno();
@@ -363,14 +366,11 @@ static void *circular_buffer_task( void *_URLContext)
                 goto end;
             }
         }
-        pthread_mutex_lock(&s->mutex);
         av_fifo_generic_write(s->fifo, s->tmp, len+4, NULL);
         pthread_cond_signal(&s->cond);
-        pthread_mutex_unlock(&s->mutex);
     }
 
 end:
-    pthread_mutex_lock(&s->mutex);
     pthread_cond_signal(&s->cond);
     pthread_mutex_unlock(&s->mutex);
     return NULL;
@@ -579,7 +579,6 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
             avail = av_fifo_size(s->fifo);
             if (avail) { // >=size) {
                 uint8_t tmp[4];
-                pthread_mutex_unlock(&s->mutex);
 
                 av_fifo_generic_read(s->fifo, tmp, 4, NULL);
                 avail= AV_RL32(tmp);
@@ -590,10 +589,12 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
 
                 av_fifo_generic_read(s->fifo, buf, avail, NULL);
                 av_fifo_drain(s->fifo, AV_RL32(tmp) - avail);
+                pthread_mutex_unlock(&s->mutex);
                 return avail;
             } else if(s->circular_buffer_error){
+                int err = s->circular_buffer_error;
                 pthread_mutex_unlock(&s->mutex);
-                return s->circular_buffer_error;
+                return err;
             } else if(nonblock) {
                 pthread_mutex_unlock(&s->mutex);
                 return AVERROR(EAGAIN);
