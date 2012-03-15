@@ -332,12 +332,7 @@ static void *circular_buffer_task( void *_URLContext)
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_cancelstate);
     ff_socket_nonblock(s->udp_fd, 0);
     while(1) {
-        int left;
         int len;
-
-        /* How much do we have left to the end of the buffer */
-        /* Whats the minimum we can read so that we dont comletely fill the buffer */
-        left = av_fifo_space(s->fifo);
 
         /* Blocking operations are always cancellation points;
            see "General Information" / "Thread Cancelation Overview"
@@ -353,7 +348,8 @@ static void *circular_buffer_task( void *_URLContext)
             continue;
         }
         AV_WL32(s->tmp, len);
-        if(left < len + 4) {
+
+        if(av_fifo_space(s->fifo) < len + 4) {
             /* No Space left */
             if (s->overrun_nonfatal) {
                 av_log(h, AV_LOG_WARNING, "Circular buffer overrun. "
