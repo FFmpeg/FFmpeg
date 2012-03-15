@@ -28,7 +28,7 @@
       +3*((src)[-2*stride] + (src)[3*stride])                   \
       -1*((src)[-3*stride] + (src)[4*stride]) + 16) >> 5)
 
-static void dirac_hpel_filter(uint8_t *dsth, uint8_t *dstv, uint8_t *dstc, uint8_t *src,
+static void dirac_hpel_filter(uint8_t *dsth, uint8_t *dstv, uint8_t *dstc, const uint8_t *src,
                               int stride, int width, int height)
 {
     int x, y;
@@ -98,7 +98,7 @@ PIXOP_BILINEAR(avg, OP_AVG, 32)
             block += stride;                                            \
         }                                                               \
     }                                                                   \
-    static void biweight_dirac_pixels ## W ## _c(uint8_t *dst, uint8_t *src, int stride, int log2_denom, \
+    static void biweight_dirac_pixels ## W ## _c(uint8_t *dst, const uint8_t *src, int stride, int log2_denom, \
                                                  int weightd, int weights, int h) { \
         int x;                                                          \
         while (h--) {                                                   \

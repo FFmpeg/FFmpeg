@@ -24,10 +24,10 @@
 #include <stdint.h>
 
 typedef void (*dirac_weight_func)(uint8_t *block, int stride, int log2_denom, int weight, int h);
-typedef void (*dirac_biweight_func)(uint8_t *dst, uint8_t *src, int stride, int log2_denom, int weightd, int weights, int h);
+typedef void (*dirac_biweight_func)(uint8_t *dst, const uint8_t *src, int stride, int log2_denom, int weightd, int weights, int h);
 
 typedef struct {
-    void (*dirac_hpel_filter)(uint8_t *dsth, uint8_t *dstv, uint8_t *dstc, uint8_t *src, int stride, int width, int height);
+    void (*dirac_hpel_filter)(uint8_t *dsth, uint8_t *dstv, uint8_t *dstc, const uint8_t *src, int stride, int width, int height);
     /**
      * dirac_pixels_tab[width][subpel]
      * width is 2 for 32, 1 for 16, 0 for 8

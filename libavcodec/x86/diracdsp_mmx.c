@@ -27,11 +27,11 @@ void ff_put_signed_rect_clamped_mmx(uint8_t *dst, int dst_stride, const int16_t 
 void ff_put_signed_rect_clamped_sse2(uint8_t *dst, int dst_stride, const int16_t *src, int src_stride, int width, int height);
 
 #define HPEL_FILTER(MMSIZE, EXT)                                                             \
-    void ff_dirac_hpel_filter_v_ ## EXT(uint8_t *, uint8_t *, int, int);                     \
-    void ff_dirac_hpel_filter_h_ ## EXT(uint8_t *, uint8_t *, int);                          \
+    void ff_dirac_hpel_filter_v_ ## EXT(uint8_t *, const uint8_t *, int, int);               \
+    void ff_dirac_hpel_filter_h_ ## EXT(uint8_t *, const uint8_t *, int);                    \
                                                                                              \
     static void dirac_hpel_filter_ ## EXT(uint8_t *dsth, uint8_t *dstv, uint8_t *dstc,       \
-                                          uint8_t *src, int stride, int width, int height)   \
+                                          const uint8_t *src, int stride, int width, int height)   \
     {                                                                                        \
         while( height-- )                                                                    \
         {                                                                                    \
