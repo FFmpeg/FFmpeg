@@ -1921,7 +1921,7 @@ static void add_bytes_c(uint8_t *dst, uint8_t *src, int w){
         dst[i+0] += src[i+0];
 }
 
-static void diff_bytes_c(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
+static void diff_bytes_c(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int w){
     long i;
 #if !HAVE_FAST_UNALIGNED
     if((long)src2 & (sizeof(long)-1)){

@@ -821,7 +821,7 @@ static int vsad16_mmx2(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, i
 }
 #undef SUM
 
-static void diff_bytes_mmx(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
+static void diff_bytes_mmx(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int w){
     x86_reg i=0;
     __asm__ volatile(
         "1:                             \n\t"
