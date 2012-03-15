@@ -36,7 +36,6 @@
  * Decoder context
  */
 typedef struct DxaDecContext {
-    AVCodecContext *avctx;
     AVFrame pic, prev;
 
     int dsize;
@@ -292,7 +291,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
 {
     DxaDecContext * const c = avctx->priv_data;
 
-    c->avctx = avctx;
     avctx->pix_fmt = PIX_FMT_PAL8;
 
     c->dsize = avctx->width * avctx->height * 2;
