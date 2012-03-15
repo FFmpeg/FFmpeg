@@ -265,8 +265,9 @@ static inline short adpcm_yamaha_expand_nibble(ADPCMChannelStatus *c, unsigned c
     return c->predictor;
 }
 
-static void xa_decode(short *out, const unsigned char *in,
-    ADPCMChannelStatus *left, ADPCMChannelStatus *right, int inc)
+static int xa_decode(AVCodecContext *avctx,
+                     short *out, const unsigned char *in,
+                     ADPCMChannelStatus *left, ADPCMChannelStatus *right, int inc)
 {
     int i, j;
     int shift,filter,f0,f1;
@@ -278,7 +279,7 @@ static void xa_decode(short *out, const unsigned char *in,
         shift  = 12 - (in[4+i*2] & 15);
         filter = in[4+i*2] >> 4;
         if (filter >= FF_ARRAY_ELEMS(xa_adpcm_table)) {
-            av_log_ask_for_sample(NULL, "unknown filter %d\n", filter);
+            av_log_ask_for_sample(avctx, "unknown XA-ADPCM filter %d\n", filter);
             filter=0;
         }
         f0 = xa_adpcm_table[filter][0];
@@ -309,7 +310,7 @@ static void xa_decode(short *out, const unsigned char *in,
         shift  = 12 - (in[5+i*2] & 15);
         filter = in[5+i*2] >> 4;
         if (filter >= FF_ARRAY_ELEMS(xa_adpcm_table)) {
-            av_log_ask_for_sample(NULL, "unknown filter %d\n", filter);
+            av_log_ask_for_sample(avctx, "unknown XA-ADPCM filter %d\n", filter);
             filter=0;
         }
 
@@ -336,6 +337,8 @@ static void xa_decode(short *out, const unsigned char *in,
             left->sample2 = s_2;
         }
     }
+
+    return 0;
 }
 
 /**
@@ -823,8 +826,9 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         break;
     case CODEC_ID_ADPCM_XA:
         while (buf_size >= 128) {
-            xa_decode(samples, src, &c->status[0], &c->status[1],
-                avctx->channels);
+            if ((ret = xa_decode(avctx, samples, src, &c->status[0],
+                                 &c->status[1], avctx->channels)) < 0)
+                return ret;
             src += 128;
             samples += 28 * 8;
             buf_size -= 128;

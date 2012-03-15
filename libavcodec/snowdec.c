@@ -142,6 +142,7 @@ static int decode_q_branch(SnowContext *s, int level, int x, int y){
     const BlockNode *tl    = y && x ? &s->block[index-w-1] : left;
     const BlockNode *tr    = y && trx<w && ((x&1)==0 || level==0) ? &s->block[index-w+(1<<rem_depth)] : tl; //FIXME use lt
     int s_context= 2*left->level + 2*top->level + tl->level + tr->level;
+    int res;
 
     if(s->keyframe){
         set_blocks(s, level, x, y, null_block.color[0], null_block.color[1], null_block.color[2], null_block.mx, null_block.my, null_block.ref, BLOCK_INTRA);
@@ -170,7 +171,7 @@ static int decode_q_branch(SnowContext *s, int level, int x, int y){
                 ref= get_symbol(&s->c, &s->block_state[128 + 1024 + 32*ref_context], 0);
             if (ref >= s->ref_frames) {
                 av_log(s->avctx, AV_LOG_ERROR, "Invalid ref\n");
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             pred_mv(s, &mx, &my, ref, left, top, tr);
             mx+= get_symbol(&s->c, &s->block_state[128 + 32*(mx_context + 16*!!ref)], 1);
@@ -178,14 +179,11 @@ static int decode_q_branch(SnowContext *s, int level, int x, int y){
         }
         set_blocks(s, level, x, y, l, cb, cr, mx, my, ref, type);
     }else{
-        if (decode_q_branch(s, level+1, 2*x+0, 2*y+0)<0)
-            return -1;
-        if (decode_q_branch(s, level+1, 2*x+1, 2*y+0)<0)
-            return -1;
-        if (decode_q_branch(s, level+1, 2*x+0, 2*y+1)<0)
-            return -1;
-        if (decode_q_branch(s, level+1, 2*x+1, 2*y+1)<0)
-            return -1;
+        if ((res = decode_q_branch(s, level+1, 2*x+0, 2*y+0)) < 0 ||
+            (res = decode_q_branch(s, level+1, 2*x+1, 2*y+0)) < 0 ||
+            (res = decode_q_branch(s, level+1, 2*x+0, 2*y+1)) < 0 ||
+            (res = decode_q_branch(s, level+1, 2*x+1, 2*y+1)) < 0)
+            return res;
     }
     return 0;
 }
@@ -367,11 +365,12 @@ static int decode_blocks(SnowContext *s){
     int x, y;
     int w= s->b_width;
     int h= s->b_height;
+    int res;
 
     for(y=0; y<h; y++){
         for(x=0; x<w; x++){
-            if (decode_q_branch(s, 0, x, y) < 0)
-                return -1;
+            if ((res = decode_q_branch(s, 0, x, y)) < 0)
+                return res;
         }
     }
     return 0;
@@ -385,6 +384,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     int bytes_read;
     AVFrame *picture = data;
     int level, orientation, plane_index;
+    int res;
 
     ff_init_range_decoder(c, buf, buf_size);
     ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
@@ -413,8 +413,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     if(avctx->debug&FF_DEBUG_PICT_INFO)
         av_log(avctx, AV_LOG_ERROR, "keyframe:%d qlog:%d\n", s->keyframe, s->qlog);
 
-    if (decode_blocks(s) < 0)
-        return -1;
+    if ((res = decode_blocks(s)) < 0)
+        return res;
 
     for(plane_index=0; plane_index<3; plane_index++){
         Plane *p= &s->plane[plane_index];

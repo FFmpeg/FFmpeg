@@ -79,6 +79,7 @@ static int read_header(AVFormatContext *s)
     vst->codec->codec_tag   = 0; /* no fourcc */
     vst->codec->width       = avio_rl16(pb);
     vst->codec->height      = avio_rl16(pb);
+    vst->duration           =
     vst->nb_frames          =
     ast->nb_index_entries   = avio_rl16(pb);
     avpriv_set_pts_info(vst, 64, avio_rl16(pb), 1000);
