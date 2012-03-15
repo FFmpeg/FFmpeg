@@ -330,25 +330,7 @@ numerator and denominator of the aspect ratio. For example "4:3",
 
 @item -vn (@emph{output})
 Disable video recording.
-@item -bt @var{tolerance}
-Set video bitrate tolerance (in bits, default 4000k).
-Has a minimum value of: (target_bitrate/target_framerate).
-In 1-pass mode, bitrate tolerance specifies how far ratecontrol is
-willing to deviate from the target average bitrate value. This is
-not related to min/max bitrate. Lowering tolerance too much has
-an adverse effect on quality.
-@item -maxrate @var{bitrate}
-Set max video bitrate (in bit/s).
-Requires -bufsize to be set.
-@item -minrate @var{bitrate}
-Set min video bitrate (in bit/s).
-Most useful in setting up a CBR encode:
-@example
-avconv -i myfile.avi -b 4000k -minrate 4000k -maxrate 4000k -bufsize 1835k out.m2v
-@end example
-It is of little use elsewise.
-@item -bufsize @var{size}
-Set video buffer verifier buffer size (in bits).
+
 @item -vcodec @var{codec} (@emph{output})
 Set the video codec. This is an alias for @code{-codec:v}.
 @item -same_quant
@@ -392,140 +374,11 @@ Set pixel format. Use @code{-pix_fmts} to show all the supported
 pixel formats.
 @item -sws_flags @var{flags} (@emph{input/output})
 Set SwScaler flags.
-@item -g @var{gop_size}
-Set the group of pictures size.
 @item -vdt @var{n}
 Discard threshold.
-@item -qmin @var{q}
-minimum video quantizer scale (VBR)
-@item -qmax @var{q}
-maximum video quantizer scale (VBR)
-@item -qdiff @var{q}
-maximum difference between the quantizer scales (VBR)
-@item -qblur @var{blur}
-video quantizer scale blur (VBR) (range 0.0 - 1.0)
-@item -qcomp @var{compression}
-video quantizer scale compression (VBR) (default 0.5).
-Constant of ratecontrol equation. Recommended range for default rc_eq: 0.0-1.0
-
-@item -lmin @var{lambda}
-minimum video lagrange factor (VBR)
-@item -lmax @var{lambda}
-max video lagrange factor (VBR)
-@item -mblmin @var{lambda}
-minimum macroblock quantizer scale (VBR)
-@item -mblmax @var{lambda}
-maximum macroblock quantizer scale (VBR)
-
-These four options (lmin, lmax, mblmin, mblmax) use 'lambda' units,
-but you may use the QP2LAMBDA constant to easily convert from 'q' units:
-@example
-avconv -i src.ext -lmax 21*QP2LAMBDA dst.ext
-@end example
-
-@item -rc_init_cplx @var{complexity}
-initial complexity for single pass encoding
-@item -b_qfactor @var{factor}
-qp factor between P- and B-frames
-@item -i_qfactor @var{factor}
-qp factor between P- and I-frames
-@item -b_qoffset @var{offset}
-qp offset between P- and B-frames
-@item -i_qoffset @var{offset}
-qp offset between P- and I-frames
-@item -rc_eq @var{equation}
-Set rate control equation (see section "Expression Evaluation")
-(default = @code{tex^qComp}).
-
-When computing the rate control equation expression, besides the
-standard functions defined in the section "Expression Evaluation", the
-following functions are available:
-@table @var
-@item bits2qp(bits)
-@item qp2bits(qp)
-@end table
-
-and the following constants are available:
-@table @var
-@item iTex
-@item pTex
-@item tex
-@item mv
-@item fCode
-@item iCount
-@item mcVar
-@item var
-@item isI
-@item isP
-@item isB
-@item avgQP
-@item qComp
-@item avgIITex
-@item avgPITex
-@item avgPPTex
-@item avgBPTex
-@item avgTex
-@end table
 
 @item -rc_override[:@var{stream_specifier}] @var{override} (@emph{output,per-stream})
 rate control override for specific intervals
-@item -me_method @var{method}
-Set motion estimation method to @var{method}.
-Available methods are (from lowest to best quality):
-@table @samp
-@item zero
-Try just the (0, 0) vector.
-@item phods
-@item log
-@item x1
-@item hex
-@item umh
-@item epzs
-(default method)
-@item full
-exhaustive search (slow and marginally better than epzs)
-@end table
-
-@item -er @var{n}
-Set error resilience to @var{n}.
-@table @samp
-@item 1
-FF_ER_CAREFUL (default)
-@item 2
-FF_ER_COMPLIANT
-@item 3
-FF_ER_AGGRESSIVE
-@item 4
-FF_ER_VERY_AGGRESSIVE
-@end table
-
-@item -ec @var{bit_mask}
-Set error concealment to @var{bit_mask}. @var{bit_mask} is a bit mask of
-the following values:
-@table @samp
-@item 1
-FF_EC_GUESS_MVS (default = enabled)
-@item 2
-FF_EC_DEBLOCK (default = enabled)
-@end table
-
-@item -bf @var{frames}
-Use 'frames' B-frames (supported for MPEG-1, MPEG-2 and MPEG-4).
-@item -mbd @var{mode}
-macroblock decision
-@table @samp
-@item 0
-FF_MB_DECISION_SIMPLE: Use mb_cmp (cannot change it yet in avconv).
-@item 1
-FF_MB_DECISION_BITS: Choose the one which needs the fewest bits.
-@item 2
-FF_MB_DECISION_RD: rate distortion
-@end table
-
-@item -bug @var{param}
-Work around encoder bugs that are not auto-detected.
-@item -strict @var{strictness}
-How strictly to follow the standards.
 
 @item -deinterlace
 Deinterlace pictures.
@@ -586,28 +439,6 @@ of supported sample formats.
 @table @option
 @item -atag @var{fourcc/tag} (@emph{output})
 Force audio tag/fourcc. This is an alias for @code{-tag:a}.
-@item -audio_service_type @var{type}
-Set the type of service that the audio stream contains.
-@table @option
-@item ma
-Main Audio Service (default)
-@item ef
-Effects
-@item vi
-Visually Impaired
-@item hi
-Hearing Impaired
-@item di
-Dialogue
-@item co
-Commentary
-@item em
-Emergency
-@item vo
-Voice Over
-@item ka
-Karaoke
-@end table
 @end table
 
 @section Subtitle options:
@@ -739,12 +570,8 @@ Exit after avconv has been running for @var{duration} seconds.
 Dump each input packet to stderr.
 @item -hex (@emph{global})
 When dumping packets, also dump the payload.
-@item -ps @var{size}
-Set RTP payload size in bytes.
 @item -re (@emph{input})
 Read input at native frame rate. Mainly used to simulate a grab device.
-@item -threads @var{count}
-Thread count.
 @item -vsync @var{parameter}
 Video sync method.
 
@@ -1033,6 +860,19 @@ avconv -i test1.avi -i test2.avi -map 0.3 -map 0.2 -map 0.1 -map 0.0 -c copy tes
 
 The resulting output file @file{test12.avi} will contain first four streams from
 the input file in reverse order.
+
+@item
+To force CBR video output:
+@example
+avconv -i myfile.avi -b 4000k -minrate 4000k -maxrate 4000k -bufsize 1835k out.m2v
+@end example
+
+@item
+The four options lmin, lmax, mblmin and mblmax use 'lambda' units,
+but you may use the QP2LAMBDA constant to easily convert from 'q' units:
+@example
+avconv -i src.ext -lmax 21*QP2LAMBDA dst.ext
+@end example
 
 @end itemize
 @c man end EXAMPLES

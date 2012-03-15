@@ -33,7 +33,10 @@
 
 static const AVOption options[]={
 {"b", "set bitrate (in bits/s)", OFFSET(bit_rate), AV_OPT_TYPE_INT, {.dbl = AV_CODEC_DEFAULT_BITRATE }, INT_MIN, INT_MAX, V|A|E},
-{"bt", "set video bitrate tolerance (in bits/s)", OFFSET(bit_rate_tolerance), AV_OPT_TYPE_INT, {.dbl = AV_CODEC_DEFAULT_BITRATE*20 }, 1, INT_MAX, V|E},
+{"bt", "Set video bitrate tolerance (in bits/s). In 1-pass mode, bitrate tolerance specifies how far "
+       "ratecontrol is willing to deviate from the target average bitrate value. This is not related "
+       "to min/max bitrate. Lowering tolerance too much has an adverse effect on quality.",
+       OFFSET(bit_rate_tolerance), AV_OPT_TYPE_INT, {.dbl = AV_CODEC_DEFAULT_BITRATE*20 }, 1, INT_MAX, V|E},
 {"flags", NULL, OFFSET(flags), AV_OPT_TYPE_FLAGS, {.dbl = DEFAULT }, 0, UINT_MAX, V|A|E|D, "flags"},
 {"mv4", "use four motion vector by macroblock (mpeg4)", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_4MV }, INT_MIN, INT_MAX, V|E, "flags"},
 {"qpel", "use 1/4 pel motion compensation", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_QPEL }, INT_MIN, INT_MAX, V|E, "flags"},
@@ -91,7 +94,9 @@ static const AVOption options[]={
 {"frame_size", NULL, OFFSET(frame_size), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, A|E},
 {"frame_number", NULL, OFFSET(frame_number), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
 {"delay", NULL, OFFSET(delay), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
-{"qcomp", "video quantizer scale compression (VBR)", OFFSET(qcompress), AV_OPT_TYPE_FLOAT, {.dbl = 0.5 }, -FLT_MAX, FLT_MAX, V|E},
+{"qcomp", "video quantizer scale compression (VBR). Constant of ratecontrol equation. "
+          "Recommended range for default rc_eq: 0.0-1.0",
+          OFFSET(qcompress), AV_OPT_TYPE_FLOAT, {.dbl = 0.5 }, -FLT_MAX, FLT_MAX, V|E},
 {"qblur", "video quantizer scale blur (VBR)", OFFSET(qblur), AV_OPT_TYPE_FLOAT, {.dbl = 0.5 }, -1, FLT_MAX, V|E},
 {"qmin", "min video quantizer scale (VBR)", OFFSET(qmin), AV_OPT_TYPE_INT, {.dbl = 2 }, -1, 69, V|E},
 {"qmax", "max video quantizer scale (VBR)", OFFSET(qmax), AV_OPT_TYPE_INT, {.dbl = 31 }, -1, 69, V|E},
@@ -153,9 +158,14 @@ static const AVOption options[]={
 {"rc_qmod_amp", "experimental quantizer modulation", OFFSET(rc_qmod_amp), AV_OPT_TYPE_FLOAT, {.dbl = DEFAULT }, -FLT_MAX, FLT_MAX, V|E},
 {"rc_qmod_freq", "experimental quantizer modulation", OFFSET(rc_qmod_freq), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"rc_override_count", NULL, OFFSET(rc_override_count), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
-{"rc_eq", "set rate control equation", OFFSET(rc_eq), AV_OPT_TYPE_STRING, {.str = NULL}, CHAR_MIN, CHAR_MAX, V|E},
-{"maxrate", "set max bitrate tolerance (in bits/s)", OFFSET(rc_max_rate), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|A|E},
-{"minrate", "set min bitrate tolerance (in bits/s)", OFFSET(rc_min_rate), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|A|E},
+{"rc_eq", "Set rate control equation. When computing the expression, besides the standard functions "
+          "defined in the section 'Expression Evaluation', the following functions are available: "
+          "bits2qp(bits), qp2bits(qp). Also the following constants are available: iTex pTex tex mv "
+          "fCode iCount mcVar var isI isP isB avgQP qComp avgIITex avgPITex avgPPTex avgBPTex avgTex.",
+          OFFSET(rc_eq), AV_OPT_TYPE_STRING, {.str = NULL}, CHAR_MIN, CHAR_MAX, V|E},
+{"maxrate", "Set max bitrate tolerance (in bits/s). Requires bufsize to be set.", OFFSET(rc_max_rate), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|A|E},
+{"minrate", "Set min bitrate tolerance (in bits/s). Most useful in setting up a CBR encode. It is of little use elsewise.",
+            OFFSET(rc_min_rate), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|A|E},
 {"bufsize", "set ratecontrol buffer size (in bits)", OFFSET(rc_buffer_size), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, A|V|E},
 {"rc_buf_aggressivity", "currently useless", OFFSET(rc_buffer_aggressivity), AV_OPT_TYPE_FLOAT, {.dbl = 1.0 }, -FLT_MAX, FLT_MAX, V|E},
 {"i_qfactor", "qp factor between P and I frames", OFFSET(i_quant_factor), AV_OPT_TYPE_FLOAT, {.dbl = -0.8 }, -FLT_MAX, FLT_MAX, V|E},
