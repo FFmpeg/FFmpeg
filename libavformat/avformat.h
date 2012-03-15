@@ -610,7 +610,18 @@ typedef struct AVStream {
      * encoding: set by the user
      */
     int id;
-    AVCodecContext *codec; /**< codec context */
+    /**
+     * Codec context associated with this stream. Allocated and freed by
+     * libavformat.
+     *
+     * - decoding: The demuxer exports codec information stored in the headers
+     *             here.
+     * - encoding: The user sets codec information, the muxer writes it to the
+     *             output. Mandatory fields as specified in AVCodecContext
+     *             documentation must be set even if this AVCodecContext is
+     *             not actually used for encoding.
+     */
+    AVCodecContext *codec;
     /**
      * Real base framerate of the stream.
      * This is the lowest framerate with which all timestamps can be
