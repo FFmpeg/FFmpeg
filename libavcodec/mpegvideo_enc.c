@@ -1418,7 +1418,7 @@ no_output_pic:
 }
 
 int ff_MPV_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
-                          const AVFrame *pic_arg, int *got_packet)
+                          AVFrame *pic_arg, int *got_packet)
 {
     MpegEncContext *s = avctx->priv_data;
     int i, stuffing_count, ret;
