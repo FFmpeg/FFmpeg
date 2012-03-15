@@ -136,7 +136,7 @@ static const unsigned char classic_add_chroma[256] = {
     6, 12,  8, 10,  7,  9,  6,  4,  6,  2,  2,  3,  3,  3,  3,  2,
 };
 
-static inline int sub_left_prediction(HYuvContext *s, uint8_t *dst, uint8_t *src, int w, int left){
+static inline int sub_left_prediction(HYuvContext *s, uint8_t *dst, const uint8_t *src, int w, int left){
     int i;
     if(w<32){
         for(i=0; i<w; i++){
@@ -156,7 +156,7 @@ static inline int sub_left_prediction(HYuvContext *s, uint8_t *dst, uint8_t *src
     }
 }
 
-static inline void sub_left_prediction_bgr32(HYuvContext *s, uint8_t *dst, uint8_t *src, int w, int *red, int *green, int *blue, int *alpha){
+static inline void sub_left_prediction_bgr32(HYuvContext *s, uint8_t *dst, const uint8_t *src, int w, int *red, int *green, int *blue, int *alpha){
     int i;
     int r,g,b,a;
     r= *red;
@@ -184,7 +184,7 @@ static inline void sub_left_prediction_bgr32(HYuvContext *s, uint8_t *dst, uint8
     *alpha= src[(w-1)*4+A];
 }
 
-static inline void sub_left_prediction_rgb24(HYuvContext *s, uint8_t *dst, uint8_t *src, int w, int *red, int *green, int *blue){
+static inline void sub_left_prediction_rgb24(HYuvContext *s, uint8_t *dst, const uint8_t *src, int w, int *red, int *green, int *blue){
     int i;
     int r,g,b;
     r= *red;
