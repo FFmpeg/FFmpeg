@@ -336,11 +336,6 @@ static void *circular_buffer_task( void *_URLContext)
         int ret;
         int len;
 
-        if (ff_check_interrupt(&h->interrupt_callback)) {
-            s->circular_buffer_error = AVERROR(EINTR);
-            goto end;
-        }
-
         FD_ZERO(&rfds);
         FD_SET(s->udp_fd, &rfds);
         tv.tv_sec = 1;
@@ -590,7 +585,7 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
 {
     UDPContext *s = h->priv_data;
     int ret;
-    int avail;
+    int avail, nonblock = h->flags & AVIO_FLAG_NONBLOCK;
 
 #if HAVE_PTHREADS
     if (s->fifo) {
@@ -614,12 +609,19 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
             } else if(s->circular_buffer_error){
                 pthread_mutex_unlock(&s->mutex);
                 return s->circular_buffer_error;
-            } else if(h->flags & AVIO_FLAG_NONBLOCK) {
+            } else if(nonblock) {
                 pthread_mutex_unlock(&s->mutex);
                 return AVERROR(EAGAIN);
             }
             else {
-                pthread_cond_wait(&s->cond, &s->mutex);
+                /* FIXME: using the monotonic clock would be better,
+                   but it does not exist on all supported platforms. */
+                int64_t t = av_gettime() + 100000;
+                struct timespec tv = { .tv_sec  =  t / 1000000,
+                                       .tv_nsec = (t % 1000000) * 1000 };
+                if (pthread_cond_timedwait(&s->cond, &s->mutex, &tv) < 0)
+                    return AVERROR(errno == ETIMEDOUT ? EAGAIN : errno);
+                nonblock = 1;
             }
         } while( 1);
     }
