@@ -1,6 +1,36 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 0.8.1:
+
+- Several bugs and crashes have been fixed in the following codecs: AAC,
+  AC-3, ADPCM, AMR (both NB and WB), ATRAC3, CAVC, Cook, camstudio, DCA,
+  DPCM, DSI CIN, DV, EA TGQ, FLAC, fraps, G.722 (both encoder and
+  decoder), H.264, huvffyuv, BB JV decoder, Indeo 3, KGV1, LCL, the
+  libx264 wrapper, MJPEG, mp3on4, Musepack, MPEG1/2, PNG, QDM2, Qt RLE,
+  ROQ, RV10, RV30/RV34/RV40, shorten, smacker, subrip, SVQ3, TIFF,
+  Truemotion2, TTA, VC1, VMware Screen codec, Vorbis, VP5, VP6, WMA,
+  Westwood SNDx, XXAN.
+
+- This release additionally updates the following codecs to the
+  bytestream2 API, and therefore benefit from additional overflow
+  checks: XXAN, ALG MM, TQG, SMC, Qt SMC, ROQ, PNG
+
+- Several bugs and crashes have been fixed in the following formats:
+  AIFF, ASF, DV, Matroska, NSV, MOV, MPEG-TS, Smacker, Sony OpenMG, RM,
+  SWF.
+
+- Libswscale has an potential overflow for large image size fixed.
+
+- The following APIs have been added:
+
+  avcodec_is_open()
+  avformat_get_riff_video_tags()
+  avformat_get_riff_audio_tags()
+
+  Please see the file doc/APIchanges and the Doxygen documentation for
+  further information.
+
 
 version 0.8:
 
