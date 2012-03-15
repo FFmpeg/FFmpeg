@@ -327,32 +327,13 @@ static void *circular_buffer_task( void *_URLContext)
 {
     URLContext *h = _URLContext;
     UDPContext *s = h->priv_data;
-    fd_set rfds;
-    struct timeval tv;
     int old_cancelstate;
 
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_cancelstate);
+    ff_socket_nonblock(s->udp_fd, 0);
     while(1) {
         int left;
-        int ret;
         int len;
-
-        FD_ZERO(&rfds);
-        FD_SET(s->udp_fd, &rfds);
-        tv.tv_sec = 1;
-        tv.tv_usec = 0;
-        pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_cancelstate);
-        ret = select(s->udp_fd + 1, &rfds, NULL, NULL, &tv);
-        pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_cancelstate);
-        if (ret < 0) {
-            if (ff_neterrno() == AVERROR(EINTR))
-                continue;
-            s->circular_buffer_error = AVERROR(EIO);
-            goto end;
-        }
-
-        if (!(ret > 0 && FD_ISSET(s->udp_fd, &rfds)))
-            continue;
 
         /* How much do we have left to the end of the buffer */
         /* Whats the minimum we can read so that we dont comletely fill the buffer */
