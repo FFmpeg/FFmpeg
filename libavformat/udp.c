@@ -342,7 +342,7 @@ static void *circular_buffer_task( void *_URLContext)
         pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_cancelstate);
         if (len < 0) {
             if (ff_neterrno() != AVERROR(EAGAIN) && ff_neterrno() != AVERROR(EINTR)) {
-                s->circular_buffer_error = AVERROR(EIO);
+                s->circular_buffer_error = ff_neterrno();
                 goto end;
             }
             continue;
