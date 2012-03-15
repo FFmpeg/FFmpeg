@@ -3104,6 +3104,13 @@ Specifies the index of the video stream to read. If the value is -1,
 the best suited video stream will be automatically selected. Default
 value is "-1".
 
+@item loop
+Specifies how many times to read the video stream in sequence.
+If the value is less than 1, the stream will be read again and again.
+Default value is "1".
+
+Note that when the movie is looped the source timestamps are not
+changed, so it will generate non monotonically increasing timestamps.
 @end table
 
 This filter allows to overlay a second video on top of main input of
