@@ -73,7 +73,6 @@ typedef struct {
     pthread_mutex_t mutex;
     pthread_cond_t cond;
     int thread_started;
-    volatile int exit_thread;
 #endif
     uint8_t tmp[UDP_MAX_PKT_SIZE+4];
     int remaining_in_dg;
@@ -330,8 +329,10 @@ static void *circular_buffer_task( void *_URLContext)
     UDPContext *s = h->priv_data;
     fd_set rfds;
     struct timeval tv;
+    int old_cancelstate;
 
-    while(!s->exit_thread) {
+    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_cancelstate);
+    while(1) {
         int left;
         int ret;
         int len;
@@ -340,7 +341,9 @@ static void *circular_buffer_task( void *_URLContext)
         FD_SET(s->udp_fd, &rfds);
         tv.tv_sec = 1;
         tv.tv_usec = 0;
+        pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_cancelstate);
         ret = select(s->udp_fd + 1, &rfds, NULL, NULL, &tv);
+        pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_cancelstate);
         if (ret < 0) {
             if (ff_neterrno() == AVERROR(EINTR))
                 continue;
@@ -355,7 +358,12 @@ static void *circular_buffer_task( void *_URLContext)
         /* Whats the minimum we can read so that we dont comletely fill the buffer */
         left = av_fifo_space(s->fifo);
 
+        /* Blocking operations are always cancellation points;
+           see "General Information" / "Thread Cancelation Overview"
+           in Single Unix. */
+        pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_cancelstate);
         len = recv(s->udp_fd, s->tmp+4, sizeof(s->tmp)-4, 0);
+        pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_cancelstate);
         if (len < 0) {
             if (ff_neterrno() != AVERROR(EAGAIN) && ff_neterrno() != AVERROR(EINTR)) {
                 s->circular_buffer_error = AVERROR(EIO);
@@ -669,7 +677,7 @@ static int udp_close(URLContext *h)
     av_fifo_free(s->fifo);
 #if HAVE_PTHREADS
     if (s->thread_started) {
-        s->exit_thread = 1;
+        pthread_cancel(s->circular_buffer_thread);
         ret = pthread_join(s->circular_buffer_thread, NULL);
         if (ret != 0)
             av_log(h, AV_LOG_ERROR, "pthread_join(): %s\n", strerror(ret));
