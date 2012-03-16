@@ -182,9 +182,16 @@ static int mpegvideo_split(AVCodecContext *avctx,
     return 0;
 }
 
+static int mpegvideo_parse_init(AVCodecParserContext *s)
+{
+    s->pict_type = AV_PICTURE_TYPE_NONE; // first frame might be partial
+    return 0;
+}
+
 AVCodecParser ff_mpegvideo_parser = {
     .codec_ids      = { CODEC_ID_MPEG1VIDEO, CODEC_ID_MPEG2VIDEO },
     .priv_data_size = sizeof(struct MpvParseContext),
+    .parser_init    = mpegvideo_parse_init,
     .parser_parse   = mpegvideo_parse,
     .parser_close   = ff_parse_close,
     .split          = mpegvideo_split,

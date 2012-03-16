@@ -63,6 +63,8 @@ AVCodecParserContext *av_parser_init(int codec_id)
         av_free(s);
         return NULL;
     }
+    s->fetch_timestamp=1;
+    s->pict_type = AV_PICTURE_TYPE_I;
     if (parser->parser_init) {
         ret = parser->parser_init(s);
         if (ret != 0) {
@@ -71,8 +73,6 @@ AVCodecParserContext *av_parser_init(int codec_id)
             return NULL;
         }
     }
-    s->fetch_timestamp=1;
-    s->pict_type = AV_PICTURE_TYPE_I;
     s->key_frame = -1;
     s->convergence_duration = 0;
     s->dts_sync_point       = INT_MIN;
