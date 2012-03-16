@@ -1271,6 +1271,7 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
                 return -1;
             ff_thread_report_progress(&s->last_picture_ptr->f, INT_MAX, 0);
             ff_thread_report_progress(&s->last_picture_ptr->f, INT_MAX, 1);
+            s->last_picture_ptr->f.reference = 3;
         }
         if ((s->next_picture_ptr == NULL ||
              s->next_picture_ptr->f.data[0] == NULL) &&
@@ -1282,6 +1283,7 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
                 return -1;
             ff_thread_report_progress(&s->next_picture_ptr->f, INT_MAX, 0);
             ff_thread_report_progress(&s->next_picture_ptr->f, INT_MAX, 1);
+            s->next_picture_ptr->f.reference = 3;
         }
     }
 
