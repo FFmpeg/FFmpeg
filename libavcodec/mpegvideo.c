@@ -1415,8 +1415,7 @@ void MPV_frame_end(MpegEncContext *s)
     s->avctx->coded_frame = (AVFrame *) s->current_picture_ptr;
 
     if (s->codec_id != CODEC_ID_H264 && s->current_picture.f.reference) {
-        ff_thread_report_progress((AVFrame *) s->current_picture_ptr,
-                                  s->mb_height - 1, 0);
+        ff_thread_report_progress((AVFrame *) s->current_picture_ptr, INT_MAX, 0);
     }
 }
 
