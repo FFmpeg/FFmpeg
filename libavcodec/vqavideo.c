@@ -158,7 +158,18 @@ static av_cold int vqa_decode_init(AVCodecContext *avctx)
     /* allocate codebooks */
     s->codebook_size = MAX_CODEBOOK_SIZE;
     s->codebook = av_malloc(s->codebook_size);
+    if (!s->codebook)
+        goto fail;
     s->next_codebook_buffer = av_malloc(s->codebook_size);
+    if (!s->next_codebook_buffer)
+        goto fail;
+
+    /* allocate decode buffer */
+    s->decode_buffer_size = (s->width / s->vector_width) *
+        (s->height / s->vector_height) * 2;
+    s->decode_buffer = av_malloc(s->decode_buffer_size);
+    if (!s->decode_buffer)
+        goto fail;
 
     /* initialize the solid-color vectors */
     if (s->vector_height == 4) {
@@ -174,14 +185,14 @@ static av_cold int vqa_decode_init(AVCodecContext *avctx)
     }
     s->next_codebook_buffer_index = 0;
 
-    /* allocate decode buffer */
-    s->decode_buffer_size = (s->width / s->vector_width) *
-        (s->height / s->vector_height) * 2;
-    s->decode_buffer = av_malloc(s->decode_buffer_size);
-
     s->frame.data[0] = NULL;
 
     return 0;
+fail:
+    av_freep(&s->codebook);
+    av_freep(&s->next_codebook_buffer);
+    av_freep(&s->decode_buffer);
+    return AVERROR(ENOMEM);
 }
 
 #define CHECK_COUNT() \
@@ -589,9 +600,9 @@ static av_cold int vqa_decode_end(AVCodecContext *avctx)
 {
     VqaContext *s = avctx->priv_data;
 
-    av_free(s->codebook);
-    av_free(s->next_codebook_buffer);
-    av_free(s->decode_buffer);
+    av_freep(&s->codebook);
+    av_freep(&s->next_codebook_buffer);
+    av_freep(&s->decode_buffer);
 
     if (s->frame.data[0])
         avctx->release_buffer(avctx, &s->frame);
