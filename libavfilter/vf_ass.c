@@ -134,7 +134,7 @@ static int config_input(AVFilterLink *inlink)
     const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[inlink->format];
     double sar = inlink->sample_aspect_ratio.num ?
         av_q2d(inlink->sample_aspect_ratio) : 1;
-    double dar = inlink->w / inlink->h * sar;
+    double dar = inlink->w / (double)inlink->h * sar;
 
     av_image_fill_max_pixsteps(ass->pix_step, NULL, pix_desc);
     ff_fill_rgba_map(ass->rgba_map, inlink->format);
