@@ -447,5 +447,6 @@ int vc1_decode_entry_point(AVCodecContext *avctx, VC1Context *v, GetBitContext *
 
 int vc1_parse_frame_header    (VC1Context *v, GetBitContext *gb);
 int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext *gb);
+int ff_vc1_init_common(VC1Context *v);
 
 #endif /* AVCODEC_VC1_H */

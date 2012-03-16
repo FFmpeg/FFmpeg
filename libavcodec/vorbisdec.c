@@ -1256,20 +1256,20 @@ static int vorbis_floor1_decode(vorbis_context *vc,
             floor1_flag[i]               = 1;
             if (val >= room) {
                 if (highroom > lowroom) {
-                    floor1_Y_final[i] = val - lowroom + predicted;
+                    floor1_Y_final[i] = av_clip_uint16(val - lowroom + predicted);
                 } else {
-                    floor1_Y_final[i] = predicted - val + highroom - 1;
+                    floor1_Y_final[i] = av_clip_uint16(predicted - val + highroom - 1);
                 }
             } else {
                 if (val & 1) {
-                    floor1_Y_final[i] = predicted - (val + 1) / 2;
+                    floor1_Y_final[i] = av_clip_uint16(predicted - (val + 1) / 2);
                 } else {
-                    floor1_Y_final[i] = predicted + val / 2;
+                    floor1_Y_final[i] = av_clip_uint16(predicted + val / 2);
                 }
             }
         } else {
             floor1_flag[i]    = 0;
-            floor1_Y_final[i] = predicted;
+            floor1_Y_final[i] = av_clip_uint16(predicted);
         }
 
         av_dlog(NULL, " Decoded floor(%d) = %u / val %u\n",

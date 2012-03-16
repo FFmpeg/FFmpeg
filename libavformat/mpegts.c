@@ -919,7 +919,7 @@ static int mpegts_push_data(MpegTSFilter *filter,
                 /* we got the full header. We parse it and get the payload */
                 pes->state = MPEGTS_PAYLOAD;
                 pes->data_index = 0;
-                if (pes->stream_type == 0x12) {
+                if (pes->stream_type == 0x12 && buf_size > 0) {
                     int sl_header_bytes = read_sl_header(pes, &pes->sl, p, buf_size);
                     pes->pes_header_size += sl_header_bytes;
                     p += sl_header_bytes;
@@ -1813,7 +1813,7 @@ static int read_packet(AVFormatContext *s, uint8_t *buf, int raw_packet_size)
 static int handle_packets(MpegTSContext *ts, int nb_packets)
 {
     AVFormatContext *s = ts->stream;
-    uint8_t packet[TS_PACKET_SIZE];
+    uint8_t packet[TS_PACKET_SIZE+FF_INPUT_BUFFER_PADDING_SIZE];
     int packet_num, ret = 0;
 
     if (avio_tell(s->pb) != ts->last_pos) {
@@ -1835,6 +1835,7 @@ static int handle_packets(MpegTSContext *ts, int nb_packets)
 
     ts->stop_parse = 0;
     packet_num = 0;
+    memset(packet + TS_PACKET_SIZE, 0, FF_INPUT_BUFFER_PADDING_SIZE);
     for(;;) {
         packet_num++;
         if (nb_packets != 0 && packet_num >= nb_packets ||

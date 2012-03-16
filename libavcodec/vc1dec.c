@@ -67,7 +67,7 @@ static const int offset_table2[9] = {  0,  1,  3,  7, 15, 31, 63, 127, 255 };
  * @param v The VC1Context to initialize
  * @return Status
  */
-static int vc1_init_common(VC1Context *v)
+int ff_vc1_init_common(VC1Context *v)
 {
     static int done = 0;
     int i = 0;
@@ -478,7 +478,10 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
     int dxy, mx, my, uvmx, uvmy, src_x, src_y, uvsrc_x, uvsrc_y;
     int off, off_uv;
     int v_edge_pos = s->v_edge_pos >> v->field_mode;
-    if (!v->field_mode && !v->s.last_picture.f.data[0])
+
+    if ((!v->field_mode ||
+         (v->ref_field_type[dir] == 1 && v->cur_field_type == 1)) &&
+        !v->s.last_picture.f.data[0])
         return;
 
     mx = s->mv[dir][0][0];
@@ -690,7 +693,9 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n, int dir)
     int fieldmv = (v->fcm == ILACE_FRAME) ? v->blk_mv_type[s->block_index[n]] : 0;
     int v_edge_pos = s->v_edge_pos >> v->field_mode;
 
-    if (!v->field_mode && !v->s.last_picture.f.data[0])
+    if ((!v->field_mode ||
+         (v->ref_field_type[dir] == 1 && v->cur_field_type == 1)) &&
+        !v->s.last_picture.f.data[0])
         return;
 
     mx = s->mv[dir][n][0];
@@ -946,6 +951,8 @@ static void vc1_mc_4mv_chroma(VC1Context *v, int dir)
         if (dominant)
             chroma_ref_type = !v->cur_field_type;
     }
+    if (v->field_mode && chroma_ref_type == 1 && v->cur_field_type == 1 && !v->s.last_picture.f.data[0])
+        return;
     s->current_picture.f.motion_val[1][s->block_index[0] + v->blocks_off][0] = tx;
     s->current_picture.f.motion_val[1][s->block_index[0] + v->blocks_off][1] = ty;
     uvmx = (tx + ((tx & 3) == 3)) >> 1;
@@ -5266,7 +5273,7 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
         avctx->idct_algo = FF_IDCT_WMV2;
     }
 
-    if (vc1_init_common(v) < 0)
+    if (ff_vc1_init_common(v) < 0)
         return -1;
     ff_vc1dsp_init(&v->vc1dsp);
 
@@ -5711,7 +5718,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
             if (!v->field_mode || v->second_field)
                 s->end_mb_y = (i == n_slices     ) ? mb_height : FFMIN(mb_height, slices[i].mby_start % mb_height);
             else
-                s->end_mb_y = (i == n_slices1 + 1) ? mb_height : FFMIN(mb_height, slices[i].mby_start % mb_height);
+                s->end_mb_y = (i <= n_slices1 + 1) ? mb_height : FFMIN(mb_height, slices[i].mby_start % mb_height);
             vc1_decode_blocks(v);
             if (i != n_slices)
                 s->gb = slices[i].gb;

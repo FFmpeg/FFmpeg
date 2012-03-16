@@ -424,7 +424,7 @@ static av_cold int qtrle_decode_init(AVCodecContext *avctx)
     default:
         av_log (avctx, AV_LOG_ERROR, "Unsupported colorspace: %d bits/sample?\n",
             avctx->bits_per_coded_sample);
-        break;
+        return AVERROR_INVALIDDATA;
     }
 
     avcodec_get_frame_defaults(&s->frame);

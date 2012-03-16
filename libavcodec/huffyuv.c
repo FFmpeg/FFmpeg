@@ -82,13 +82,15 @@ typedef struct HYuvContext{
     DSPContext dsp;
 }HYuvContext;
 
-static const unsigned char classic_shift_luma[] = {
+#define classic_shift_luma_table_size 42
+static const unsigned char classic_shift_luma[classic_shift_luma_table_size + FF_INPUT_BUFFER_PADDING_SIZE] = {
   34,36,35,69,135,232,9,16,10,24,11,23,12,16,13,10,14,8,15,8,
   16,8,17,20,16,10,207,206,205,236,11,8,10,21,9,23,8,8,199,70,
   69,68, 0
 };
 
-static const unsigned char classic_shift_chroma[] = {
+#define classic_shift_chroma_table_size 59
+static const unsigned char classic_shift_chroma[classic_shift_chroma_table_size + FF_INPUT_BUFFER_PADDING_SIZE] = {
   66,36,37,38,39,40,41,75,76,77,110,239,144,81,82,83,84,85,118,183,
   56,57,88,89,56,89,154,57,58,57,26,141,57,56,58,57,58,57,184,119,
   214,245,116,83,82,49,80,79,78,77,44,75,41,40,39,38,37,36,34, 0
@@ -212,7 +214,7 @@ static int read_len_table(uint8_t *dst, GetBitContext *gb){
         if(repeat==0)
             repeat= get_bits(gb, 8);
 //printf("%d %d\n", val, repeat);
-        if(i+repeat > 256) {
+        if(i+repeat > 256 || get_bits_left(gb) < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error reading huffman table\n");
             return -1;
         }
@@ -394,10 +396,10 @@ static int read_old_huffman_tables(HYuvContext *s){
     GetBitContext gb;
     int i;
 
-    init_get_bits(&gb, classic_shift_luma, sizeof(classic_shift_luma)*8);
+    init_get_bits(&gb, classic_shift_luma, classic_shift_luma_table_size*8);
     if(read_len_table(s->len[0], &gb)<0)
         return -1;
-    init_get_bits(&gb, classic_shift_chroma, sizeof(classic_shift_chroma)*8);
+    init_get_bits(&gb, classic_shift_chroma, classic_shift_chroma_table_size*8);
     if(read_len_table(s->len[1], &gb)<0)
         return -1;
 
@@ -543,7 +545,7 @@ s->bgr32=1;
         }
         break;
     default:
-        assert(0);
+        return AVERROR_INVALIDDATA;
     }
 
     alloc_temp(s);
@@ -750,7 +752,7 @@ static void decode_422_bitstream(HYuvContext *s, int count){
     count/=2;
 
     if(count >= (get_bits_left(&s->gb))/(31*4)){
-        for(i=0; i<count && get_bits_count(&s->gb) < s->gb.size_in_bits; i++){
+        for (i = 0; i < count && get_bits_left(&s->gb) > 0; i++) {
             READ_2PIX(s->temp[0][2*i  ], s->temp[1][i], 1);
             READ_2PIX(s->temp[0][2*i+1], s->temp[2][i], 2);
         }
@@ -768,7 +770,7 @@ static void decode_gray_bitstream(HYuvContext *s, int count){
     count/=2;
 
     if(count >= (get_bits_left(&s->gb))/(31*2)){
-        for(i=0; i<count && get_bits_count(&s->gb) < s->gb.size_in_bits; i++){
+        for (i = 0; i < count && get_bits_left(&s->gb) > 0; i++) {
             READ_2PIX(s->temp[0][2*i  ], s->temp[0][2*i+1], 0);
         }
     }else{

@@ -7528,7 +7528,7 @@ static const float dca_downmix_coeffs[65] = {
   0.001412537544623, 0.001000000000000, 0.000501187233627, 0.000251188643151, 0.000000000000000,
 };
 
-static const uint8_t dca_default_coeffs[16][5][2] = {
+static const uint8_t dca_default_coeffs[10][5][2] = {
     { { 13, 13 },                                                 },
     { {  0, 64 }, { 64,  0 },                                     },
     { {  0, 64 }, { 64,  0 },                                     },

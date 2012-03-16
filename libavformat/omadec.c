@@ -234,7 +234,7 @@ static int decrypt_init(AVFormatContext *s, ID3v2ExtraMeta *em, uint8_t *header)
         rprobe(s, gdata, oc->r_val) < 0 &&
         nprobe(s, gdata, geob->datasize, oc->n_val) < 0) {
         int i;
-        for (i = 0; i < sizeof(leaf_table); i += 2) {
+        for (i = 0; i < FF_ARRAY_ELEMS(leaf_table); i += 2) {
             uint8_t buf[16];
             AV_WL64(buf, leaf_table[i]);
             AV_WL64(&buf[8], leaf_table[i+1]);

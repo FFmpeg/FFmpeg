@@ -703,6 +703,21 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVD
     int ret = 0;
     AVDictionary *tmp = NULL;
 
+    if (avcodec_is_open(avctx))
+        return 0;
+
+    if ((!codec && !avctx->codec)) {
+        av_log(avctx, AV_LOG_ERROR, "No codec provided to avcodec_open2().\n");
+        return AVERROR(EINVAL);
+    }
+    if ((codec && avctx->codec && codec != avctx->codec)) {
+        av_log(avctx, AV_LOG_ERROR, "This AVCodecContext was allocated for %s, "
+               "but %s passed to avcodec_open2().\n", avctx->codec->name, codec->name);
+        return AVERROR(EINVAL);
+    }
+    if (!codec)
+        codec = avctx->codec;
+
     if (avctx->extradata_size < 0 || avctx->extradata_size >= FF_MAX_EXTRADATA_SIZE)
         return AVERROR(EINVAL);
 
@@ -719,11 +734,6 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVD
     if(entangled_thread_counter != 1){
         av_log(avctx, AV_LOG_ERROR, "insufficient thread locking around avcodec_open/close()\n");
         ret = -1;
-        goto end;
-    }
-
-    if(avctx->codec || !codec) {
-        ret = AVERROR(EINVAL);
         goto end;
     }
 
@@ -815,6 +825,12 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVD
     av_log(avctx, AV_LOG_DEBUG, "err{or,}_recognition combined: %d; %X\n",
            avctx->error_recognition, avctx->err_recognition);
 #endif
+
+    if (avctx->codec_type == AVMEDIA_TYPE_AUDIO &&
+        (!avctx->time_base.num || !avctx->time_base.den)) {
+        avctx->time_base.num = 1;
+        avctx->time_base.den = avctx->sample_rate;
+    }
 
     if (!HAVE_THREADS)
         av_log(avctx, AV_LOG_WARNING, "Warning: not compiled with thread support, using thread emulation\n");
@@ -1421,14 +1437,17 @@ av_cold int avcodec_close(AVCodecContext *avctx)
         return -1;
     }
 
-    if (HAVE_THREADS && avctx->thread_opaque)
-        ff_thread_free(avctx);
-    if (avctx->codec && avctx->codec->close)
-        avctx->codec->close(avctx);
-    avcodec_default_free_buffers(avctx);
-    avctx->coded_frame = NULL;
-    av_freep(&avctx->internal);
-    if (avctx->codec && avctx->codec->priv_class)
+    if (avcodec_is_open(avctx)) {
+        if (HAVE_THREADS && avctx->thread_opaque)
+            ff_thread_free(avctx);
+        if (avctx->codec && avctx->codec->close)
+            avctx->codec->close(avctx);
+        avcodec_default_free_buffers(avctx);
+        avctx->coded_frame = NULL;
+        av_freep(&avctx->internal);
+    }
+
+    if (avctx->priv_data && avctx->codec && avctx->codec->priv_class)
         av_opt_free(avctx->priv_data);
     av_opt_free(avctx);
     av_freep(&avctx->priv_data);
@@ -2008,4 +2027,9 @@ enum AVMediaType avcodec_get_type(enum CodecID codec_id)
         return AVMEDIA_TYPE_SUBTITLE;
 
     return AVMEDIA_TYPE_UNKNOWN;
+}
+
+int avcodec_is_open(AVCodecContext *s)
+{
+    return !!s->internal;
 }

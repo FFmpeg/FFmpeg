@@ -2148,6 +2148,30 @@ int av_match_ext(const char *filename, const char *extensions);
 int avformat_query_codec(AVOutputFormat *ofmt, enum CodecID codec_id, int std_compliance);
 
 /**
+ * @defgroup riff_fourcc RIFF FourCCs
+ * @{
+ * Get the tables mapping RIFF FourCCs to libavcodec CodecIDs. The tables are
+ * meant to be passed to av_codec_get_id()/av_codec_get_tag() as in the
+ * following code:
+ * @code
+ * uint32_t tag = MKTAG('H', '2', '6', '4');
+ * const struct AVCodecTag *table[] = { avformat_get_riff_video_tags(), 0 };
+ * enum CodecID id = av_codec_get_id(table, tag);
+ * @endcode
+ */
+/**
+ * @return the table mapping RIFF FourCCs for video to libavcodec CodecID.
+ */
+const struct AVCodecTag *avformat_get_riff_video_tags(void);
+/**
+ * @return the table mapping RIFF FourCCs for audio to CodecID.
+ */
+const struct AVCodecTag *avformat_get_riff_audio_tags(void);
+/**
+ * @}
+ */
+
+/**
  * @}
  */
 

@@ -366,8 +366,8 @@ static void decode_gain_info(GetBitContext *gb, int *gaininfo)
  * @param q                 pointer to the COOKContext
  * @param quant_index_table pointer to the array
  */
-static void decode_envelope(COOKContext *q, COOKSubpacket *p,
-                            int *quant_index_table)
+static int decode_envelope(COOKContext *q, COOKSubpacket *p,
+                           int *quant_index_table)
 {
     int i, j, vlc_index;
 
@@ -388,7 +388,15 @@ static void decode_envelope(COOKContext *q, COOKSubpacket *p,
         j = get_vlc2(&q->gb, q->envelope_quant_index[vlc_index - 1].table,
                      q->envelope_quant_index[vlc_index - 1].bits, 2);
         quant_index_table[i] = quant_index_table[i - 1] + j - 12; // differential encoding
+        if (quant_index_table[i] > 63 || quant_index_table[i] < -63) {
+            av_log(q->avctx, AV_LOG_ERROR,
+                   "Invalid quantizer %d at position %d, outside [-63, 63] range\n",
+                   quant_index_table[i], i);
+            return AVERROR_INVALIDDATA;
+        }
     }
+
+    return 0;
 }
 
 /**
@@ -507,7 +515,11 @@ static inline void expand_category(COOKContext *q, int *category,
 {
     int i;
     for (i = 0; i < q->num_vectors; i++)
-        ++category[category_index[i]];
+    {
+        int idx = category_index[i];
+        if (++category[idx] >= FF_ARRAY_ELEMS(dither_tab))
+            --category[idx];
+    }
 }
 
 /**
@@ -635,20 +647,24 @@ static void decode_vectors(COOKContext *q, COOKSubpacket *p, int *category,
  * @param q                 pointer to the COOKContext
  * @param mlt_buffer        pointer to mlt coefficients
  */
-static void mono_decode(COOKContext *q, COOKSubpacket *p, float *mlt_buffer)
+static int mono_decode(COOKContext *q, COOKSubpacket *p, float *mlt_buffer)
 {
     int category_index[128];
     int quant_index_table[102];
     int category[128];
+    int res;
 
     memset(&category,       0, sizeof(category));
     memset(&category_index, 0, sizeof(category_index));
 
-    decode_envelope(q, p, quant_index_table);
+    if ((res = decode_envelope(q, p, quant_index_table)) < 0)
+        return res;
     q->num_vectors = get_bits(&q->gb, p->log2_numvector_size);
     categorize(q, p, quant_index_table, category, category_index);
     expand_category(q, category, category_index);
     decode_vectors(q, p, category, quant_index_table, mlt_buffer);
+
+    return 0;
 }
 
 
@@ -798,10 +814,10 @@ static void decouple_float(COOKContext *q,
  * @param mlt_buffer1       pointer to left channel mlt coefficients
  * @param mlt_buffer2       pointer to right channel mlt coefficients
  */
-static void joint_decode(COOKContext *q, COOKSubpacket *p, float *mlt_buffer1,
-                         float *mlt_buffer2)
+static int joint_decode(COOKContext *q, COOKSubpacket *p, float *mlt_buffer1,
+                        float *mlt_buffer2)
 {
-    int i, j;
+    int i, j, res;
     int decouple_tab[SUBBAND_SIZE];
     float *decode_buffer = q->decode_buffer_0;
     int idx, cpl_tmp;
@@ -815,7 +831,8 @@ static void joint_decode(COOKContext *q, COOKSubpacket *p, float *mlt_buffer1,
     memset(mlt_buffer1, 0, 1024 * sizeof(*mlt_buffer1));
     memset(mlt_buffer2, 0, 1024 * sizeof(*mlt_buffer2));
     decouple_info(q, p, decouple_tab);
-    mono_decode(q, p, decode_buffer);
+    if ((res = mono_decode(q, p, decode_buffer)) < 0)
+        return res;
 
     /* The two channels are stored interleaved in decode_buffer. */
     for (i = 0; i < p->js_subband_start; i++) {
@@ -832,11 +849,13 @@ static void joint_decode(COOKContext *q, COOKSubpacket *p, float *mlt_buffer1,
         cpl_tmp = cplband[i];
         idx -= decouple_tab[cpl_tmp];
         cplscale = q->cplscales[p->js_vlc_bits - 2];  // choose decoupler table
-        f1 = cplscale[decouple_tab[cpl_tmp]];
-        f2 = cplscale[idx - 1];
+        f1 = cplscale[decouple_tab[cpl_tmp] + 1];
+        f2 = cplscale[idx];
         q->decouple(q, p, i, f1, f2, decode_buffer, mlt_buffer1, mlt_buffer2);
         idx = (1 << p->js_vlc_bits) - 1;
     }
+
+    return 0;
 }
 
 /**
@@ -909,10 +928,11 @@ static inline void mlt_compensate_output(COOKContext *q, float *decode_buffer,
  * @param inbuffer          pointer to the inbuffer
  * @param outbuffer         pointer to the outbuffer
  */
-static void decode_subpacket(COOKContext *q, COOKSubpacket *p,
-                             const uint8_t *inbuffer, float *outbuffer)
+static int decode_subpacket(COOKContext *q, COOKSubpacket *p,
+                            const uint8_t *inbuffer, float *outbuffer)
 {
     int sub_packet_size = p->size;
+    int res;
     /* packet dump */
     // for (i = 0; i < sub_packet_size ; i++)
     //     av_log(q->avctx, AV_LOG_ERROR, "%02x", inbuffer[i]);
@@ -921,13 +941,16 @@ static void decode_subpacket(COOKContext *q, COOKSubpacket *p,
     decode_bytes_and_gain(q, p, inbuffer, &p->gains1);
 
     if (p->joint_stereo) {
-        joint_decode(q, p, q->decode_buffer_1, q->decode_buffer_2);
+        if ((res = joint_decode(q, p, q->decode_buffer_1, q->decode_buffer_2)) < 0)
+            return res;
     } else {
-        mono_decode(q, p, q->decode_buffer_1);
+        if ((res = mono_decode(q, p, q->decode_buffer_1)) < 0)
+            return res;
 
         if (p->num_channels == 2) {
             decode_bytes_and_gain(q, p, inbuffer + sub_packet_size / 2, &p->gains2);
-            mono_decode(q, p, q->decode_buffer_2);
+            if ((res = mono_decode(q, p, q->decode_buffer_2)) < 0)
+                return res;
         }
     }
 
@@ -941,6 +964,8 @@ static void decode_subpacket(COOKContext *q, COOKSubpacket *p,
         else
             mlt_compensate_output(q, q->decode_buffer_2, &p->gains2,
                                   p->mono_previous_buffer2, outbuffer, p->ch_idx + 1);
+
+    return 0;
 }
 
 
@@ -996,7 +1021,8 @@ static int cook_decode_frame(AVCodecContext *avctx, void *data,
                i, q->subpacket[i].size, q->subpacket[i].joint_stereo, offset,
                avctx->block_align);
 
-        decode_subpacket(q, &q->subpacket[i], buf + offset, samples);
+        if ((ret = decode_subpacket(q, &q->subpacket[i], buf + offset, samples)) < 0)
+            return ret;
         offset += q->subpacket[i].size;
         chidx += q->subpacket[i].num_channels;
         av_log(avctx, AV_LOG_DEBUG, "subpacket[%i] %i %i\n",
@@ -1078,6 +1104,10 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
     q->sample_rate = avctx->sample_rate;
     q->nb_channels = avctx->channels;
     q->bit_rate = avctx->bit_rate;
+    if (!q->nb_channels) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid number of channels\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     /* Initialize RNG. */
     av_lfg_init(&q->random_state, 0);

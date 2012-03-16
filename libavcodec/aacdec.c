@@ -826,19 +826,20 @@ static int decode_band_types(AACContext *ac, enum BandType band_type[120],
                 av_log(ac->avctx, AV_LOG_ERROR, "invalid band type\n");
                 return -1;
             }
-            while ((sect_len_incr = get_bits(gb, bits)) == (1 << bits) - 1 && get_bits_left(gb) >= bits)
+            do {
+                sect_len_incr = get_bits(gb, bits);
                 sect_end += sect_len_incr;
-            sect_end += sect_len_incr;
-            if (get_bits_left(gb) < 0 || sect_len_incr == (1 << bits) - 1) {
-                av_log(ac->avctx, AV_LOG_ERROR, overread_err);
-                return -1;
-            }
-            if (sect_end > ics->max_sfb) {
-                av_log(ac->avctx, AV_LOG_ERROR,
-                       "Number of bands (%d) exceeds limit (%d).\n",
-                       sect_end, ics->max_sfb);
-                return -1;
-            }
+                if (get_bits_left(gb) < 0) {
+                    av_log(ac->avctx, AV_LOG_ERROR, overread_err);
+                    return -1;
+                }
+                if (sect_end > ics->max_sfb) {
+                    av_log(ac->avctx, AV_LOG_ERROR,
+                           "Number of bands (%d) exceeds limit (%d).\n",
+                           sect_end, ics->max_sfb);
+                    return -1;
+                }
+            } while (sect_len_incr == (1 << bits) - 1);
             for (; k < sect_end; k++) {
                 band_type        [idx]   = sect_band_type;
                 band_type_run_end[idx++] = sect_end;

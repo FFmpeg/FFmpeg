@@ -104,7 +104,7 @@ int ff_h264_check_intra4x4_pred_mode(H264Context *h){
     return 0;
 } //FIXME cleanup like check_intra_pred_mode
 
-static int check_intra_pred_mode(H264Context *h, int mode, int is_chroma){
+int ff_h264_check_intra_pred_mode(H264Context *h, int mode, int is_chroma){
     MpegEncContext * const s = &h->s;
     static const int8_t top [7]= {LEFT_DC_PRED8x8, 1,-1,-1};
     static const int8_t left[7]= { TOP_DC_PRED8x8,-1, 2,-1,DC_128_PRED8x8};
@@ -134,22 +134,6 @@ static int check_intra_pred_mode(H264Context *h, int mode, int is_chroma){
     }
 
     return mode;
-}
-
-/**
- * checks if the top & left blocks are available if needed & changes the dc mode so it only uses the available blocks.
- */
-int ff_h264_check_intra16x16_pred_mode(H264Context *h, int mode)
-{
-    return check_intra_pred_mode(h, mode, 0);
-}
-
-/**
- * checks if the top & left blocks are available if needed & changes the dc mode so it only uses the available blocks.
- */
-int ff_h264_check_intra_chroma_pred_mode(H264Context *h, int mode)
-{
-    return check_intra_pred_mode(h, mode, 1);
 }
 
 
@@ -2707,11 +2691,6 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     s->avctx->level   = h->sps.level_idc;
     s->avctx->refs    = h->sps.ref_frame_count;
 
-    if(h == h0 && h->dequant_coeff_pps != pps_id){
-        h->dequant_coeff_pps = pps_id;
-        init_dequant_tables(h);
-    }
-
     s->mb_width= h->sps.mb_width;
     s->mb_height= h->sps.mb_height * (2 - h->sps.frame_mbs_only_flag);
 
@@ -2806,7 +2785,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
                 else
                     s->avctx->pix_fmt = PIX_FMT_YUV420P10;
                 break;
-            default:
+            case 8:
                 if (CHROMA444){
                     s->avctx->pix_fmt = s->avctx->color_range == AVCOL_RANGE_JPEG ? PIX_FMT_YUVJ444P : PIX_FMT_YUV444P;
                     if (s->avctx->colorspace == AVCOL_SPC_RGB) {
@@ -2825,6 +2804,11 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
                                                              hwaccel_pixfmt_list_h264_jpeg_420 :
                                                              ff_hwaccel_pixfmt_list_420);
                 }
+                break;
+            default:
+                av_log(s->avctx, AV_LOG_ERROR,
+                       "Unsupported bit depth: %d\n", h->sps.bit_depth_luma);
+                return AVERROR_INVALIDDATA;
         }
 
         s->avctx->hwaccel = ff_find_hwaccel(s->avctx->codec->id, s->avctx->pix_fmt);
@@ -2868,6 +2852,11 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
                     return -1;
                 }
         }
+    }
+
+    if(h == h0 && h->dequant_coeff_pps != pps_id){
+        h->dequant_coeff_pps = pps_id;
+        init_dequant_tables(h);
     }
 
     h->frame_num= get_bits(&s->gb, h->sps.log2_max_frame_num);
@@ -3041,7 +3030,8 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     h->ref_count[1]= h->pps.ref_count[1];
 
     if(h->slice_type_nos != AV_PICTURE_TYPE_I){
-        unsigned max= (16<<(s->picture_structure != PICT_FRAME))-1;
+        unsigned max= s->picture_structure == PICT_FRAME ? 15 : 31;
+
         if(h->slice_type_nos == AV_PICTURE_TYPE_B){
             h->direct_spatial_mv_pred= get_bits1(&s->gb);
         }
@@ -3051,13 +3041,14 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
             h->ref_count[0]= get_ue_golomb(&s->gb) + 1;
             if(h->slice_type_nos==AV_PICTURE_TYPE_B)
                 h->ref_count[1]= get_ue_golomb(&s->gb) + 1;
+        }
 
-        }
-        if(h->ref_count[0]-1 > max || h->ref_count[1]-1 > max){
+        if (h->ref_count[0]-1 > max || h->ref_count[1]-1 > max){
             av_log(h->s.avctx, AV_LOG_ERROR, "reference overflow\n");
-            h->ref_count[0]= h->ref_count[1]= 1;
-            return -1;
+            h->ref_count[0] = h->ref_count[1] = 1;
+            return AVERROR_INVALIDDATA;
         }
+
         if(h->slice_type_nos == AV_PICTURE_TYPE_B)
             h->list_count= 2;
         else
@@ -3694,8 +3685,8 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg){
                 if(s->mb_y >= s->mb_height){
                     tprintf(s->avctx, "slice end %d %d\n", get_bits_count(&s->gb), s->gb.size_in_bits);
 
-                    if(   get_bits_count(&s->gb) == s->gb.size_in_bits
-                       || get_bits_count(&s->gb) <  s->gb.size_in_bits && s->avctx->error_recognition < FF_ER_AGGRESSIVE) {
+                    if (   get_bits_left(&s->gb) == 0
+                        || get_bits_left(&s->gb) > 0 && !(s->avctx->err_recognition & AV_EF_AGGRESSIVE)) {
                         ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, ER_MB_END&part_mask);
 
                         return 0;
@@ -3707,9 +3698,9 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg){
                 }
             }
 
-            if(get_bits_count(&s->gb) >= s->gb.size_in_bits && s->mb_skip_run<=0){
+            if (get_bits_left(&s->gb) <= 0 && s->mb_skip_run <= 0){
                 tprintf(s->avctx, "slice end %d %d\n", get_bits_count(&s->gb), s->gb.size_in_bits);
-                if(get_bits_count(&s->gb) == s->gb.size_in_bits ){
+                if (get_bits_left(&s->gb) == 0) {
                     ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, ER_MB_END&part_mask);
                     if (s->mb_x > lf_x_start) loop_filter(h, lf_x_start, s->mb_x);
 
@@ -3798,7 +3789,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
         int consumed;
         int dst_length;
         int bit_length;
-        uint8_t *ptr;
+        const uint8_t *ptr;
         int i, nalsize = 0;
         int err;
 
@@ -3974,10 +3965,10 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
             break;
         case NAL_SPS:
             init_get_bits(&s->gb, ptr, bit_length);
-            if(ff_h264_decode_seq_parameter_set(h) < 0 && (h->is_avc ? (nalsize != consumed) && nalsize : 1)){
+            if (ff_h264_decode_seq_parameter_set(h) < 0 && (h->is_avc ? (nalsize != consumed) && nalsize : 1)){
                 av_log(h->s.avctx, AV_LOG_DEBUG, "SPS decoding failure, trying alternative mode\n");
                 if(h->is_avc) av_assert0(next_avc - buf_index + consumed == nalsize);
-                init_get_bits(&s->gb, &buf[buf_index + 1 - consumed], 8*(next_avc - buf_index + consumed));
+                init_get_bits(&s->gb, &buf[buf_index + 1 - consumed], 8*(next_avc - buf_index + consumed - 1));
                 ff_h264_decode_seq_parameter_set(h);
             }
 

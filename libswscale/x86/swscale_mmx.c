@@ -108,8 +108,8 @@ void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufI
     int16_t **alpPixBuf= c->alpPixBuf;
     const int vLumBufSize= c->vLumBufSize;
     const int vChrBufSize= c->vChrBufSize;
-    int16_t *vLumFilterPos= c->vLumFilterPos;
-    int16_t *vChrFilterPos= c->vChrFilterPos;
+    int32_t *vLumFilterPos= c->vLumFilterPos;
+    int32_t *vChrFilterPos= c->vChrFilterPos;
     int16_t *vLumFilter= c->vLumFilter;
     int16_t *vChrFilter= c->vChrFilter;
     int32_t *lumMmxFilter= c->lumMmxFilter;
@@ -132,6 +132,44 @@ void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufI
         const int16_t **chrUSrcPtr= (const int16_t **)(void*) chrUPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
         const int16_t **alpSrcPtr= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? (const int16_t **)(void*) alpPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize : NULL;
         int i;
+
+        if (firstLumSrcY < 0 || firstLumSrcY + vLumFilterSize > c->srcH) {
+            const int16_t **tmpY = (const int16_t **) lumPixBuf + 2 * vLumBufSize;
+            int neg = -firstLumSrcY, i, end = FFMIN(c->srcH - firstLumSrcY, vLumFilterSize);
+            for (i = 0; i < neg;            i++)
+                tmpY[i] = lumSrcPtr[neg];
+            for (     ; i < end;            i++)
+                tmpY[i] = lumSrcPtr[i];
+            for (     ; i < vLumFilterSize; i++)
+                tmpY[i] = tmpY[i-1];
+            lumSrcPtr = tmpY;
+
+            if (alpSrcPtr) {
+                const int16_t **tmpA = (const int16_t **) alpPixBuf + 2 * vLumBufSize;
+                for (i = 0; i < neg;            i++)
+                    tmpA[i] = alpSrcPtr[neg];
+                for (     ; i < end;            i++)
+                    tmpA[i] = alpSrcPtr[i];
+                for (     ; i < vLumFilterSize; i++)
+                    tmpA[i] = tmpA[i - 1];
+                alpSrcPtr = tmpA;
+            }
+        }
+        if (firstChrSrcY < 0 || firstChrSrcY + vChrFilterSize > c->chrSrcH) {
+            const int16_t **tmpU = (const int16_t **) chrUPixBuf + 2 * vChrBufSize;
+            int neg = -firstChrSrcY, i, end = FFMIN(c->chrSrcH - firstChrSrcY, vChrFilterSize);
+            for (i = 0; i < neg;            i++) {
+                tmpU[i] = chrUSrcPtr[neg];
+            }
+            for (     ; i < end;            i++) {
+                tmpU[i] = chrUSrcPtr[i];
+            }
+            for (     ; i < vChrFilterSize; i++) {
+                tmpU[i] = tmpU[i - 1];
+            }
+            chrUSrcPtr = tmpU;
+        }
+
         if (flags & SWS_ACCURATE_RND) {
             int s= APCK_SIZE / 8;
             for (i=0; i<vLumFilterSize; i+=2) {
@@ -242,7 +280,7 @@ extern void ff_hscale ## from_bpc ## to ## to_bpc ## _ ## filter_n ## _ ## opt( 
                                                 SwsContext *c, int16_t *data, \
                                                 int dstW, const uint8_t *src, \
                                                 const int16_t *filter, \
-                                                const int16_t *filterPos, int filterSize)
+                                                const int32_t *filterPos, int filterSize)
 
 #define SCALE_FUNCS(filter_n, opt) \
     SCALE_FUNC(filter_n,  8, 15, opt); \

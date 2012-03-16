@@ -132,7 +132,7 @@ static inline void decode_subband_slice_buffered(SnowContext *s, SubBand *b, sli
     return;
 }
 
-static void decode_q_branch(SnowContext *s, int level, int x, int y){
+static int decode_q_branch(SnowContext *s, int level, int x, int y){
     const int w= s->b_width << s->block_max_depth;
     const int rem_depth= s->block_max_depth - level;
     const int index= (x + y*w) << rem_depth;
@@ -142,10 +142,11 @@ static void decode_q_branch(SnowContext *s, int level, int x, int y){
     const BlockNode *tl    = y && x ? &s->block[index-w-1] : left;
     const BlockNode *tr    = y && trx<w && ((x&1)==0 || level==0) ? &s->block[index-w+(1<<rem_depth)] : tl; //FIXME use lt
     int s_context= 2*left->level + 2*top->level + tl->level + tr->level;
+    int res;
 
     if(s->keyframe){
         set_blocks(s, level, x, y, null_block.color[0], null_block.color[1], null_block.color[2], null_block.mx, null_block.my, null_block.ref, BLOCK_INTRA);
-        return;
+        return 0;
     }
 
     if(level==s->block_max_depth || get_rac(&s->c, &s->block_state[4 + s_context])){
@@ -168,17 +169,23 @@ static void decode_q_branch(SnowContext *s, int level, int x, int y){
         }else{
             if(s->ref_frames > 1)
                 ref= get_symbol(&s->c, &s->block_state[128 + 1024 + 32*ref_context], 0);
+            if (ref >= s->ref_frames) {
+                av_log(s->avctx, AV_LOG_ERROR, "Invalid ref\n");
+                return AVERROR_INVALIDDATA;
+            }
             pred_mv(s, &mx, &my, ref, left, top, tr);
             mx+= get_symbol(&s->c, &s->block_state[128 + 32*(mx_context + 16*!!ref)], 1);
             my+= get_symbol(&s->c, &s->block_state[128 + 32*(my_context + 16*!!ref)], 1);
         }
         set_blocks(s, level, x, y, l, cb, cr, mx, my, ref, type);
     }else{
-        decode_q_branch(s, level+1, 2*x+0, 2*y+0);
-        decode_q_branch(s, level+1, 2*x+1, 2*y+0);
-        decode_q_branch(s, level+1, 2*x+0, 2*y+1);
-        decode_q_branch(s, level+1, 2*x+1, 2*y+1);
+        if ((res = decode_q_branch(s, level+1, 2*x+0, 2*y+0)) < 0 ||
+            (res = decode_q_branch(s, level+1, 2*x+1, 2*y+0)) < 0 ||
+            (res = decode_q_branch(s, level+1, 2*x+0, 2*y+1)) < 0 ||
+            (res = decode_q_branch(s, level+1, 2*x+1, 2*y+1)) < 0)
+            return res;
     }
+    return 0;
 }
 
 static void dequantize_slice_buffered(SnowContext *s, slice_buffer * sb, SubBand *b, IDWTELEM *src, int stride, int start_y, int end_y){
@@ -327,6 +334,11 @@ static int decode_header(SnowContext *s){
         return -1;
     }
 
+    if (s->chroma_h_shift != 1 || s->chroma_v_shift != 1) {
+        av_log(s->avctx, AV_LOG_ERROR, "Invalid chroma shift\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
     s->qlog           += get_symbol(&s->c, s->header_state, 1);
     s->mv_scale       += get_symbol(&s->c, s->header_state, 1);
     s->qbias          += get_symbol(&s->c, s->header_state, 1);
@@ -349,16 +361,19 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void decode_blocks(SnowContext *s){
+static int decode_blocks(SnowContext *s){
     int x, y;
     int w= s->b_width;
     int h= s->b_height;
+    int res;
 
     for(y=0; y<h; y++){
         for(x=0; x<w; x++){
-            decode_q_branch(s, 0, x, y);
+            if ((res = decode_q_branch(s, 0, x, y)) < 0)
+                return res;
         }
     }
+    return 0;
 }
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPacket *avpkt){
@@ -369,6 +384,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     int bytes_read;
     AVFrame *picture = data;
     int level, orientation, plane_index;
+    int res;
 
     ff_init_range_decoder(c, buf, buf_size);
     ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
@@ -397,7 +413,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     if(avctx->debug&FF_DEBUG_PICT_INFO)
         av_log(avctx, AV_LOG_ERROR, "keyframe:%d qlog:%d\n", s->keyframe, s->qlog);
 
-    decode_blocks(s);
+    if ((res = decode_blocks(s)) < 0)
+        return res;
 
     for(plane_index=0; plane_index<3; plane_index++){
         Plane *p= &s->plane[plane_index];

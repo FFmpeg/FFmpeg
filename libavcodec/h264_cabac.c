@@ -1998,6 +1998,8 @@ decode_intra_mb:
         }
 
         // The pixels are stored in the same order as levels in h->mb array.
+        if ((int) (h->cabac.bytestream_end - ptr) < mb_size)
+            return -1;
         memcpy(h->mb, ptr, mb_size); ptr+=mb_size;
 
         ff_init_cabac_decoder(&h->cabac, ptr, h->cabac.bytestream_end - ptr);
@@ -2042,14 +2044,14 @@ decode_intra_mb:
             write_back_intra_pred_mode(h);
             if( ff_h264_check_intra4x4_pred_mode(h) < 0 ) return -1;
         } else {
-            h->intra16x16_pred_mode= ff_h264_check_intra16x16_pred_mode( h, h->intra16x16_pred_mode );
+            h->intra16x16_pred_mode= ff_h264_check_intra_pred_mode( h, h->intra16x16_pred_mode, 0 );
             if( h->intra16x16_pred_mode < 0 ) return -1;
         }
         if(decode_chroma){
             h->chroma_pred_mode_table[mb_xy] =
             pred_mode                        = decode_cabac_mb_chroma_pre_mode( h );
 
-            pred_mode= ff_h264_check_intra_chroma_pred_mode( h, pred_mode );
+            pred_mode= ff_h264_check_intra_pred_mode( h, pred_mode, 1 );
             if( pred_mode < 0 ) return -1;
             h->chroma_pred_mode= pred_mode;
         } else {

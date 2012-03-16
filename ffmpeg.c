@@ -2626,32 +2626,35 @@ static int transcode_init(OutputFile *output_files, int nb_output_files,
                 break;
             }
             /* two pass mode */
-            if (codec->codec_id != CODEC_ID_H264 &&
-                (codec->flags & (CODEC_FLAG_PASS1 | CODEC_FLAG_PASS2))) {
+            if (codec->flags & (CODEC_FLAG_PASS1 | CODEC_FLAG_PASS2)) {
                 char logfilename[1024];
                 FILE *f;
 
                 snprintf(logfilename, sizeof(logfilename), "%s-%d.log",
                          pass_logfilename_prefix ? pass_logfilename_prefix : DEFAULT_PASS_LOGFILENAME_PREFIX,
                          i);
-                if (codec->flags & CODEC_FLAG_PASS2) {
-                    char  *logbuffer;
-                    size_t logbuffer_size;
-                    if (cmdutils_read_file(logfilename, &logbuffer, &logbuffer_size) < 0) {
-                        av_log(NULL, AV_LOG_FATAL, "Error reading log file '%s' for pass-2 encoding\n",
-                               logfilename);
-                        exit_program(1);
+                if (!strcmp(ost->enc->name, "libx264")) {
+                    av_dict_set(&ost->opts, "stats", logfilename, AV_DICT_DONT_OVERWRITE);
+                } else {
+                    if (codec->flags & CODEC_FLAG_PASS2) {
+                        char  *logbuffer;
+                        size_t logbuffer_size;
+                        if (cmdutils_read_file(logfilename, &logbuffer, &logbuffer_size) < 0) {
+                            av_log(NULL, AV_LOG_FATAL, "Error reading log file '%s' for pass-2 encoding\n",
+                                logfilename);
+                            exit_program(1);
+                        }
+                        codec->stats_in = logbuffer;
                     }
-                    codec->stats_in = logbuffer;
-                }
-                if (codec->flags & CODEC_FLAG_PASS1) {
-                    f = fopen(logfilename, "wb");
-                    if (!f) {
-                        av_log(NULL, AV_LOG_FATAL, "Cannot write log file '%s' for pass-1 encoding: %s\n",
-                               logfilename, strerror(errno));
-                        exit_program(1);
+                    if (codec->flags & CODEC_FLAG_PASS1) {
+                        f = fopen(logfilename, "wb");
+                        if (!f) {
+                            av_log(NULL, AV_LOG_FATAL, "Cannot write log file '%s' for pass-1 encoding: %s\n",
+                                logfilename, strerror(errno));
+                            exit_program(1);
+                        }
+                        ost->logfile = f;
                     }
-                    ost->logfile = f;
                 }
             }
         }

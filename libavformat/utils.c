@@ -2236,6 +2236,7 @@ static int has_decode_delay_been_guessed(AVStream *st)
         st->info->nb_decoded_frames >= 6;
 }
 
+/* returns 1 or 0 if or if not decoded data was returned, or a negative error */
 static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **options)
 {
     AVCodec *codec;
@@ -2243,10 +2244,12 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **option
     AVFrame picture;
     AVPacket pkt = *avpkt;
 
-    if(!st->codec->codec){
+    if (!avcodec_is_open(st->codec)) {
         AVDictionary *thread_opt = NULL;
 
-        codec = avcodec_find_decoder(st->codec->codec_id);
+        codec = st->codec->codec ? st->codec->codec :
+                                   avcodec_find_decoder(st->codec->codec_id);
+
         if (!codec)
             return -1;
 
@@ -2283,6 +2286,7 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **option
                 st->info->nb_decoded_frames++;
             pkt.data += ret;
             pkt.size -= ret;
+            ret       = got_picture;
         }
     }
     if(!pkt.data && !got_picture)
@@ -2415,8 +2419,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 st->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
             }
         }
-        assert(!st->codec->codec);
-        codec = avcodec_find_decoder(st->codec->codec_id);
+        codec = st->codec->codec ? st->codec->codec :
+                                   avcodec_find_decoder(st->codec->codec_id);
 
         /* force thread count to 1 since the h264 decoder will not extract SPS
          *  and PPS to extradata during multi-threaded decoding */
@@ -2589,12 +2593,16 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             st = ic->streams[i];
 
             /* flush the decoders */
-            while ((err = try_decode_frame(st, &empty_pkt,
+            do {
+                    err = try_decode_frame(st, &empty_pkt,
                                            (options && i < orig_nb_streams) ?
-                                            &options[i] : NULL)) >= 0)
-                if (has_codec_parameters(st->codec))
-                    break;
+                                            &options[i] : NULL);
+            } while (err > 0 && !has_codec_parameters(st->codec));
 
+            if (err < 0) {
+                av_log(ic, AV_LOG_WARNING,
+                       "decoding for stream %d failed\n", st->index);
+            }
             if (!has_codec_parameters(st->codec)){
                 char buf[256];
                 avcodec_string(buf, sizeof(buf), st->codec, 0);
@@ -2608,8 +2616,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     // close codecs which were opened in try_decode_frame()
     for(i=0;i<ic->nb_streams;i++) {
         st = ic->streams[i];
-        if(st->codec->codec)
-            avcodec_close(st->codec);
+        avcodec_close(st->codec);
     }
     for(i=0;i<ic->nb_streams;i++) {
         st = ic->streams[i];
@@ -4392,4 +4399,13 @@ int ff_add_param_change(AVPacket *pkt, int32_t channels,
         bytestream_put_le32(&data, height);
     }
     return 0;
+}
+
+const struct AVCodecTag *avformat_get_riff_video_tags(void)
+{
+    return ff_codec_bmp_tags;
+}
+const struct AVCodecTag *avformat_get_riff_audio_tags(void)
+{
+    return ff_codec_wav_tags;
 }

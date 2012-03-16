@@ -140,7 +140,7 @@ static int decode_frame(AVCodecContext *avctx,
     uint32_t offs[4];
     int i, j, is_chroma;
     const int planes = 3;
-
+    enum PixelFormat pix_fmt;
 
     header = AV_RL32(buf);
     version = header & 0xff;
@@ -154,8 +154,6 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     buf += header_size;
-
-    avctx->pix_fmt = version & 1 ? PIX_FMT_BGR24 : PIX_FMT_YUVJ420P;
 
     if (version < 2) {
         unsigned needed_size = avctx->width*avctx->height*3;
@@ -175,6 +173,12 @@ static int decode_frame(AVCodecContext *avctx,
     f->buffer_hints = FF_BUFFER_HINTS_VALID |
                       FF_BUFFER_HINTS_PRESERVE |
                       FF_BUFFER_HINTS_REUSABLE;
+
+    pix_fmt = version & 1 ? PIX_FMT_BGR24 : PIX_FMT_YUVJ420P;
+    if (avctx->pix_fmt != pix_fmt && f->data[0]) {
+        avctx->release_buffer(avctx, f);
+    }
+    avctx->pix_fmt = pix_fmt;
 
     switch(version) {
     case 0:

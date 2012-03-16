@@ -125,6 +125,9 @@ static int dv_extract_audio(uint8_t* frame, uint8_t* ppcm[4],
     if (quant > 1)
         return -1; /* unsupported quantization */
 
+    if (freq >= FF_ARRAY_ELEMS(dv_audio_frequency))
+        return AVERROR_INVALIDDATA;
+
     size = (sys->audio_min_samples[freq] + smpls) * 4; /* 2ch, 2bytes */
     half_ch = sys->difseg_size / 2;
 
@@ -135,6 +138,7 @@ static int dv_extract_audio(uint8_t* frame, uint8_t* ppcm[4],
     /* for each DIF channel */
     for (chan = 0; chan < sys->n_difchan; chan++) {
         av_assert0(ipcm<4);
+        /* next stereo channel (50Mbps and 100Mbps only) */
         pcm = ppcm[ipcm++];
         if (!pcm)
             break;
@@ -186,8 +190,6 @@ static int dv_extract_audio(uint8_t* frame, uint8_t* ppcm[4],
                 frame += 16 * 80; /* 15 Video DIFs + 1 Audio DIF */
             }
         }
-
-        /* next stereo channel (50Mbps and 100Mbps only) */
     }
 
     return size;
@@ -208,6 +210,12 @@ static int dv_extract_audio_info(DVDemuxContext* c, uint8_t* frame)
     freq  = (as_pack[4] >> 3) & 0x07; /* 0 - 48kHz, 1 - 44,1kHz, 2 - 32kHz */
     stype = (as_pack[3] & 0x1f);      /* 0 - 2CH, 2 - 4CH, 3 - 8CH */
     quant =  as_pack[4] & 0x07;       /* 0 - 16bit linear, 1 - 12bit nonlinear */
+
+    if (freq >= FF_ARRAY_ELEMS(dv_audio_frequency)) {
+        av_log(c->fctx, AV_LOG_ERROR,
+               "Unrecognized audio sample rate index (%d)\n", freq);
+        return 0;
+    }
 
     if (stype > 3) {
         av_log(c->fctx, AV_LOG_ERROR, "stype %d is invalid\n", stype);

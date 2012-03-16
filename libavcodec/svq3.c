@@ -175,7 +175,6 @@ void ff_svq3_add_idct_c(uint8_t *dst, DCTELEM *block, int stride, int qp,
 {
     const int qmul = svq3_dequant_coeff[qp];
     int i;
-    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     if (dc) {
         dc = 13*13*((dc == 1) ? 1538*block[0] : ((qmul*(block[0] >> 3)) / 2));
@@ -201,10 +200,10 @@ void ff_svq3_add_idct_c(uint8_t *dst, DCTELEM *block, int stride, int qp,
         const int z3 = 17* block[i + 4*1] +  7*block[i + 4*3];
         const int rr = (dc + 0x80000);
 
-        dst[i + stride*0] = cm[ dst[i + stride*0] + (((z0 + z3)*qmul + rr) >> 20) ];
-        dst[i + stride*1] = cm[ dst[i + stride*1] + (((z1 + z2)*qmul + rr) >> 20) ];
-        dst[i + stride*2] = cm[ dst[i + stride*2] + (((z1 - z2)*qmul + rr) >> 20) ];
-        dst[i + stride*3] = cm[ dst[i + stride*3] + (((z0 - z3)*qmul + rr) >> 20) ];
+        dst[i + stride*0] = av_clip_uint8( dst[i + stride*0] + (((z0 + z3)*qmul + rr) >> 20) );
+        dst[i + stride*1] = av_clip_uint8( dst[i + stride*1] + (((z1 + z2)*qmul + rr) >> 20) );
+        dst[i + stride*2] = av_clip_uint8( dst[i + stride*2] + (((z1 - z2)*qmul + rr) >> 20) );
+        dst[i + stride*3] = av_clip_uint8( dst[i + stride*3] + (((z0 - z3)*qmul + rr) >> 20) );
     }
 }
 
@@ -614,7 +613,7 @@ static int svq3_decode_mb(SVQ3Context *svq3, unsigned int mb_type)
         dir = i_mb_type_info[mb_type - 8].pred_mode;
         dir = (dir >> 1) ^ 3*(dir & 1) ^ 1;
 
-        if ((h->intra16x16_pred_mode = ff_h264_check_intra16x16_pred_mode(h, dir)) == -1){
+        if ((h->intra16x16_pred_mode = ff_h264_check_intra_pred_mode(h, dir, 0)) == -1){
             av_log(h->s.avctx, AV_LOG_ERROR, "check_intra_pred_mode = -1\n");
             return -1;
         }
@@ -653,7 +652,7 @@ static int svq3_decode_mb(SVQ3Context *svq3, unsigned int mb_type)
     if (IS_INTRA16x16(mb_type) || (s->pict_type != AV_PICTURE_TYPE_I && s->adaptive_quant && cbp)) {
         s->qscale += svq3_get_se_golomb(&s->gb);
 
-        if (s->qscale > 31U){
+        if (s->qscale > 31u){
             av_log(h->s.avctx, AV_LOG_ERROR, "qscale:%d\n", s->qscale);
             return -1;
         }
@@ -713,7 +712,7 @@ static int svq3_decode_mb(SVQ3Context *svq3, unsigned int mb_type)
     s->current_picture.f.mb_type[mb_xy] = mb_type;
 
     if (IS_INTRA(mb_type)) {
-        h->chroma_pred_mode = ff_h264_check_intra_chroma_pred_mode(h, DC_PRED8x8);
+        h->chroma_pred_mode = ff_h264_check_intra_pred_mode(h, DC_PRED8x8, 1);
     }
 
     return 0;
@@ -813,7 +812,9 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
     MpegEncContext *s = &h->s;
     int m;
     unsigned char *extradata;
+    unsigned char *extradata_end;
     unsigned int size;
+    int marker_found = 0;
 
     if (ff_h264_decode_init(avctx) < 0)
         return -1;
@@ -834,19 +835,26 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
 
         /* prowl for the "SEQH" marker in the extradata */
         extradata = (unsigned char *)avctx->extradata;
-        for (m = 0; m < avctx->extradata_size; m++) {
-            if (!memcmp(extradata, "SEQH", 4))
-                break;
-            extradata++;
+        extradata_end = avctx->extradata + avctx->extradata_size;
+        if (extradata) {
+            for (m = 0; m + 8 < avctx->extradata_size; m++) {
+                if (!memcmp(extradata, "SEQH", 4)) {
+                    marker_found = 1;
+                    break;
+                }
+                extradata++;
+            }
         }
 
         /* if a match was found, parse the extra data */
-        if (extradata && !memcmp(extradata, "SEQH", 4)) {
+        if (marker_found) {
 
             GetBitContext gb;
             int frame_size_code;
 
             size = AV_RB32(&extradata[4]);
+            if (size > extradata_end - extradata - 8)
+                return AVERROR_INVALIDDATA;
             init_get_bits(&gb, extradata + 8, size*8);
 
             /* 'frame size code' and optional 'width, height' */

@@ -265,8 +265,9 @@ static inline short adpcm_yamaha_expand_nibble(ADPCMChannelStatus *c, unsigned c
     return c->predictor;
 }
 
-static void xa_decode(short *out, const unsigned char *in,
-    ADPCMChannelStatus *left, ADPCMChannelStatus *right, int inc)
+static int xa_decode(AVCodecContext *avctx,
+                     short *out, const unsigned char *in,
+                     ADPCMChannelStatus *left, ADPCMChannelStatus *right, int inc)
 {
     int i, j;
     int shift,filter,f0,f1;
@@ -277,6 +278,12 @@ static void xa_decode(short *out, const unsigned char *in,
 
         shift  = 12 - (in[4+i*2] & 15);
         filter = in[4+i*2] >> 4;
+        if (filter > 4) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Invalid XA-ADPCM filter %d (max. allowed is 4)\n",
+                   filter);
+            return AVERROR_INVALIDDATA;
+        }
         f0 = xa_adpcm_table[filter][0];
         f1 = xa_adpcm_table[filter][1];
 
@@ -304,7 +311,12 @@ static void xa_decode(short *out, const unsigned char *in,
 
         shift  = 12 - (in[5+i*2] & 15);
         filter = in[5+i*2] >> 4;
-
+        if (filter > 4) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Invalid XA-ADPCM filter %d (max. allowed is 4)\n",
+                   filter);
+            return AVERROR_INVALIDDATA;
+        }
         f0 = xa_adpcm_table[filter][0];
         f1 = xa_adpcm_table[filter][1];
 
@@ -328,6 +340,8 @@ static void xa_decode(short *out, const unsigned char *in,
             left->sample2 = s_2;
         }
     }
+
+    return 0;
 }
 
 /**
@@ -699,7 +713,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         for (channel = 0; channel < avctx->channels; channel++) {
             cs = &c->status[channel];
             cs->predictor  = (int16_t)bytestream_get_le16(&src);
-            cs->step_index = *src++;
+            cs->step_index = av_clip(*src++, 0, 88);
             src++;
             *samples++ = cs->predictor;
         }
@@ -722,8 +736,8 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
 
         c->status[0].predictor  = (int16_t)AV_RL16(src + 10);
         c->status[1].predictor  = (int16_t)AV_RL16(src + 12);
-        c->status[0].step_index = src[14];
-        c->status[1].step_index = src[15];
+        c->status[0].step_index = av_clip(src[14], 0, 88);
+        c->status[1].step_index = av_clip(src[15], 0, 88);
         /* sign extend the predictors */
         src += 16;
         diff_channel = c->status[1].predictor;
@@ -763,7 +777,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         for (channel = 0; channel < avctx->channels; channel++) {
             cs = &c->status[channel];
             cs->predictor  = (int16_t)bytestream_get_le16(&src);
-            cs->step_index = *src++;
+            cs->step_index = av_clip(*src++, 0, 88);
             src++;
         }
 
@@ -815,8 +829,9 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         break;
     case CODEC_ID_ADPCM_XA:
         while (buf_size >= 128) {
-            xa_decode(samples, src, &c->status[0], &c->status[1],
-                avctx->channels);
+            if ((ret = xa_decode(avctx, samples, src, &c->status[0],
+                                 &c->status[1], avctx->channels)) < 0)
+                return ret;
             src += 128;
             samples += 28 * 8;
             buf_size -= 128;
@@ -826,7 +841,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         src += 4; // skip sample count (already read)
 
         for (i=0; i<=st; i++)
-            c->status[i].step_index = bytestream_get_le32(&src);
+            c->status[i].step_index = av_clip(bytestream_get_le32(&src), 0, 88);
         for (i=0; i<=st; i++)
             c->status[i].predictor  = bytestream_get_le32(&src);
 
@@ -1043,11 +1058,11 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
     case CODEC_ID_ADPCM_IMA_SMJPEG:
         if (avctx->codec->id == CODEC_ID_ADPCM_IMA_AMV) {
             c->status[0].predictor = sign_extend(bytestream_get_le16(&src), 16);
-            c->status[0].step_index = bytestream_get_le16(&src);
+            c->status[0].step_index = av_clip(bytestream_get_le16(&src), 0, 88);
             src += 4;
         } else {
             c->status[0].predictor = sign_extend(bytestream_get_be16(&src), 16);
-            c->status[0].step_index = bytestream_get_byte(&src);
+            c->status[0].step_index = av_clip(bytestream_get_byte(&src), 0, 88);
             src += 1;
         }
 

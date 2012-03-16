@@ -762,10 +762,10 @@ static void RENAME(yuv2yuyv422_X)(SwsContext *c, const int16_t *lumFilter,
     "1:                                 \n\t"\
     "movq     (%2, "#index"), %%mm2     \n\t" /* uvbuf0[eax]*/\
     "movq     (%3, "#index"), %%mm3     \n\t" /* uvbuf1[eax]*/\
-    "add           "UV_OFFx2"("#c"), "#index"  \n\t" \
+    "add "UV_OFF_BYTE"("#c"), "#index"  \n\t" \
     "movq     (%2, "#index"), %%mm5     \n\t" /* uvbuf0[eax+2048]*/\
     "movq     (%3, "#index"), %%mm4     \n\t" /* uvbuf1[eax+2048]*/\
-    "sub           "UV_OFFx2"("#c"), "#index"  \n\t" \
+    "sub "UV_OFF_BYTE"("#c"), "#index"  \n\t" \
     "psubw             %%mm3, %%mm2     \n\t" /* uvbuf0[eax] - uvbuf1[eax]*/\
     "psubw             %%mm4, %%mm5     \n\t" /* uvbuf0[eax+2048] - uvbuf1[eax+2048]*/\
     "movq "CHR_MMX_FILTER_OFFSET"+8("#c"), %%mm0    \n\t"\
@@ -993,10 +993,10 @@ static void RENAME(yuv2rgb565_2)(SwsContext *c, const int16_t *buf[2],
     "1:                                 \n\t"\
     "movq     (%2, "#index"), %%mm2     \n\t" /* uvbuf0[eax]*/\
     "movq     (%3, "#index"), %%mm3     \n\t" /* uvbuf1[eax]*/\
-    "add           "UV_OFFx2"("#c"), "#index"  \n\t" \
+    "add "UV_OFF_BYTE"("#c"), "#index"  \n\t" \
     "movq     (%2, "#index"), %%mm5     \n\t" /* uvbuf0[eax+2048]*/\
     "movq     (%3, "#index"), %%mm4     \n\t" /* uvbuf1[eax+2048]*/\
-    "sub           "UV_OFFx2"("#c"), "#index"  \n\t" \
+    "sub "UV_OFF_BYTE"("#c"), "#index"  \n\t" \
     "psubw             %%mm3, %%mm2     \n\t" /* uvbuf0[eax] - uvbuf1[eax]*/\
     "psubw             %%mm4, %%mm5     \n\t" /* uvbuf0[eax+2048] - uvbuf1[eax+2048]*/\
     "movq "CHR_MMX_FILTER_OFFSET"+8("#c"), %%mm0    \n\t"\
@@ -1048,9 +1048,9 @@ static void RENAME(yuv2yuyv422_2)(SwsContext *c, const int16_t *buf[2],
     ".p2align              4            \n\t"\
     "1:                                 \n\t"\
     "movq     (%2, "#index"), %%mm3     \n\t" /* uvbuf0[eax]*/\
-    "add           "UV_OFFx2"("#c"), "#index"  \n\t" \
+    "add "UV_OFF_BYTE"("#c"), "#index"  \n\t" \
     "movq     (%2, "#index"), %%mm4     \n\t" /* uvbuf0[eax+2048]*/\
-    "sub           "UV_OFFx2"("#c"), "#index"  \n\t" \
+    "sub "UV_OFF_BYTE"("#c"), "#index"  \n\t" \
     "psraw                $4, %%mm3     \n\t" /* uvbuf0[eax] - uvbuf1[eax] >>4*/\
     "psraw                $4, %%mm4     \n\t" /* uvbuf0[eax+2048] - uvbuf1[eax+2048] >>4*/\
     "psubw  "U_OFFSET"("#c"), %%mm3     \n\t" /* (U-128)8*/\
@@ -1101,10 +1101,10 @@ static void RENAME(yuv2yuyv422_2)(SwsContext *c, const int16_t *buf[2],
     "1:                                 \n\t"\
     "movq     (%2, "#index"), %%mm2     \n\t" /* uvbuf0[eax]*/\
     "movq     (%3, "#index"), %%mm3     \n\t" /* uvbuf1[eax]*/\
-    "add           "UV_OFFx2"("#c"), "#index"  \n\t" \
+    "add "UV_OFF_BYTE"("#c"), "#index"  \n\t" \
     "movq     (%2, "#index"), %%mm5     \n\t" /* uvbuf0[eax+2048]*/\
     "movq     (%3, "#index"), %%mm4     \n\t" /* uvbuf1[eax+2048]*/\
-    "sub           "UV_OFFx2"("#c"), "#index"  \n\t" \
+    "sub "UV_OFF_BYTE"("#c"), "#index"  \n\t" \
     "paddw             %%mm2, %%mm3     \n\t" /* uvbuf0[eax] + uvbuf1[eax]*/\
     "paddw             %%mm5, %%mm4     \n\t" /* uvbuf0[eax+2048] + uvbuf1[eax+2048]*/\
     "psrlw                $5, %%mm3     \n\t" /*FIXME might overflow*/\
@@ -1368,9 +1368,9 @@ static void RENAME(yuv2rgb565_1)(SwsContext *c, const int16_t *buf0,
     ".p2align              4            \n\t"\
     "1:                                 \n\t"\
     "movq     (%2, "#index"), %%mm3     \n\t" /* uvbuf0[eax]*/\
-    "add           "UV_OFFx2"("#c"), "#index"  \n\t" \
+    "add "UV_OFF_BYTE"("#c"), "#index"  \n\t" \
     "movq     (%2, "#index"), %%mm4     \n\t" /* uvbuf0[eax+2048]*/\
-    "sub           "UV_OFFx2"("#c"), "#index"  \n\t" \
+    "sub "UV_OFF_BYTE"("#c"), "#index"  \n\t" \
     "psraw                $7, %%mm3     \n\t" \
     "psraw                $7, %%mm4     \n\t" \
     "movq  (%0, "#index", 2), %%mm1     \n\t" /*buf0[eax]*/\
@@ -1386,10 +1386,10 @@ static void RENAME(yuv2rgb565_1)(SwsContext *c, const int16_t *buf0,
     "1:                                 \n\t"\
     "movq     (%2, "#index"), %%mm2     \n\t" /* uvbuf0[eax]*/\
     "movq     (%3, "#index"), %%mm3     \n\t" /* uvbuf1[eax]*/\
-    "add           "UV_OFFx2"("#c"), "#index"  \n\t" \
+    "add "UV_OFF_BYTE"("#c"), "#index"  \n\t" \
     "movq     (%2, "#index"), %%mm5     \n\t" /* uvbuf0[eax+2048]*/\
     "movq     (%3, "#index"), %%mm4     \n\t" /* uvbuf1[eax+2048]*/\
-    "sub           "UV_OFFx2"("#c"), "#index"  \n\t" \
+    "sub "UV_OFF_BYTE"("#c"), "#index"  \n\t" \
     "paddw             %%mm2, %%mm3     \n\t" /* uvbuf0[eax] + uvbuf1[eax]*/\
     "paddw             %%mm5, %%mm4     \n\t" /* uvbuf0[eax+2048] + uvbuf1[eax+2048]*/\
     "psrlw                $8, %%mm3     \n\t" \
@@ -1579,7 +1579,7 @@ static void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
                                  int dstWidth, const uint8_t *src,
                                  int srcW, int xInc)
 {
-    int16_t *filterPos = c->hLumFilterPos;
+    int32_t *filterPos = c->hLumFilterPos;
     int16_t *filter    = c->hLumFilter;
     void    *mmx2FilterCode= c->lumMmx2FilterCode;
     int i;
@@ -1675,7 +1675,7 @@ static void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst1, int16_t *dst2,
                                  int dstWidth, const uint8_t *src1,
                                  const uint8_t *src2, int srcW, int xInc)
 {
-    int16_t *filterPos = c->hChrFilterPos;
+    int32_t *filterPos = c->hChrFilterPos;
     int16_t *filter    = c->hChrFilter;
     void    *mmx2FilterCode= c->chrMmx2FilterCode;
     int i;

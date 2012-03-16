@@ -58,24 +58,24 @@ typedef struct TiffContext {
     LZWState *lzw;
 } TiffContext;
 
-static int tget_short(const uint8_t **p, int le){
-    int v = le ? AV_RL16(*p) : AV_RB16(*p);
+static unsigned tget_short(const uint8_t **p, int le) {
+    unsigned v = le ? AV_RL16(*p) : AV_RB16(*p);
     *p += 2;
     return v;
 }
 
-static int tget_long(const uint8_t **p, int le){
-    int v = le ? AV_RL32(*p) : AV_RB32(*p);
+static unsigned tget_long(const uint8_t **p, int le) {
+    unsigned v = le ? AV_RL32(*p) : AV_RB32(*p);
     *p += 4;
     return v;
 }
 
-static int tget(const uint8_t **p, int type, int le){
+static unsigned tget(const uint8_t **p, int type, int le) {
     switch(type){
     case TIFF_BYTE : return *(*p)++;
     case TIFF_SHORT: return tget_short(p, le);
     case TIFF_LONG : return tget_long (p, le);
-    default        : return -1;
+    default        : return UINT_MAX;
     }
 }
 
@@ -340,7 +340,7 @@ static int init_image(TiffContext *s)
 
 static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *buf, const uint8_t *end_buf)
 {
-    int tag, type, count, off, value = 0;
+    unsigned tag, type, count, off, value = 0;
     int i, j;
     uint32_t *pal;
     const uint8_t *rp, *gp, *bp;
@@ -351,6 +351,11 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
     type = tget_short(&buf, s->le);
     count = tget_long(&buf, s->le);
     off = tget_long(&buf, s->le);
+
+    if (type == 0 || type >= FF_ARRAY_ELEMS(type_sizes)) {
+        av_log(s->avctx, AV_LOG_DEBUG, "Unknown tiff type (%u) encountered\n", type);
+        return 0;
+    }
 
     if(count == 1){
         switch(type){
@@ -370,13 +375,15 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
                 break;
             }
         default:
-            value = -1;
+            value = UINT_MAX;
             buf = start + off;
         }
-    }else if(type_sizes[type] * count <= 4){
-        buf -= 4;
-    }else{
-        buf = start + off;
+    } else {
+        if (count <= 4 && type_sizes[type] * count <= 4) {
+            buf -= 4;
+        } else {
+            buf = start + off;
+        }
     }
 
     if(buf && (buf < start || buf > end_buf)){
@@ -454,7 +461,7 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
         }
         break;
     case TIFF_ROWSPERSTRIP:
-        if(type == TIFF_LONG && value == -1)
+        if (type == TIFF_LONG && value == UINT_MAX)
             value = s->avctx->height;
         if(value < 1){
             av_log(s->avctx, AV_LOG_ERROR, "Incorrect value of rows per strip\n");
@@ -599,6 +606,8 @@ static int decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "The answer to life, universe and everything is not correct!\n");
         return -1;
     }
+    // Reset these pointers so we can tell if they were set this frame
+    s->stripsizes = s->stripdata = NULL;
     /* parse image file directory */
     off = tget_long(&buf, le);
     if (off >= UINT_MAX - 14 || end_buf - orig_buf < off + 14) {

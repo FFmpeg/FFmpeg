@@ -42,6 +42,7 @@
 
 #define BACKSTEP_SIZE 512
 #define EXTRABYTES 24
+#define LAST_BUF_SIZE 2 * BACKSTEP_SIZE + EXTRABYTES
 
 /* layer 3 "granule" */
 typedef struct GranuleDef {
@@ -65,7 +66,7 @@ typedef struct GranuleDef {
 
 typedef struct MPADecodeContext {
     MPA_DECODE_HEADER
-    uint8_t last_buf[2 * BACKSTEP_SIZE + EXTRABYTES];
+    uint8_t last_buf[LAST_BUF_SIZE];
     int last_buf_size;
     /* next header (used in free format parsing) */
     uint32_t free_format_next_header;
@@ -1380,18 +1381,18 @@ static int mp_decode_layer3(MPADecodeContext *s)
     if (!s->adu_mode) {
         int skip;
         const uint8_t *ptr = s->gb.buffer + (get_bits_count(&s->gb)>>3);
+        int extrasize = av_clip(get_bits_left(&s->gb) >> 3, 0,
+                                FFMAX(0, LAST_BUF_SIZE - s->last_buf_size));
         assert((get_bits_count(&s->gb) & 7) == 0);
         /* now we get bits from the main_data_begin offset */
         av_dlog(s->avctx, "seekback: %d\n", main_data_begin);
     //av_log(NULL, AV_LOG_ERROR, "backstep:%d, lastbuf:%d\n", main_data_begin, s->last_buf_size);
 
-        if (s->gb.size_in_bits > get_bits_count(&s->gb))
-            memcpy(s->last_buf + s->last_buf_size, ptr,
-               FFMIN(EXTRABYTES, (s->gb.size_in_bits - get_bits_count(&s->gb))>>3));
+        memcpy(s->last_buf + s->last_buf_size, ptr, extrasize);
         s->in_gb = s->gb;
         init_get_bits(&s->gb, s->last_buf, s->last_buf_size*8);
 #if !UNCHECKED_BITSTREAM_READER
-        s->gb.size_in_bits_plus8 += EXTRABYTES * 8;
+        s->gb.size_in_bits_plus8 += extrasize * 8;
 #endif
         skip_bits_long(&s->gb, 8*(s->last_buf_size - main_data_begin));
     }
@@ -1921,6 +1922,10 @@ static int decode_frame_mp3on4(AVCodecContext *avctx, void *data,
         m     = s->mp3decctx[fr];
         assert(m != NULL);
 
+        if (fsize < HEADER_SIZE) {
+            av_log(avctx, AV_LOG_ERROR, "Frame size smaller than header size\n");
+            return AVERROR_INVALIDDATA;
+        }
         header = (AV_RB32(buf) & 0x000fffff) | s->syncword; // patch header
 
         if (ff_mpa_check_header(header) < 0) // Bad header, discard block

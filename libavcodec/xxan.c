@@ -35,6 +35,7 @@ typedef struct XanContext {
     uint8_t *y_buffer;
     uint8_t *scratch_buffer;
     int     buffer_size;
+    GetByteContext gb;
 } XanContext;
 
 static av_cold int xan_decode_init(AVCodecContext *avctx)
@@ -58,29 +59,29 @@ static av_cold int xan_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int xan_unpack_luma(const uint8_t *src, const int src_size,
+static int xan_unpack_luma(XanContext *s,
                            uint8_t *dst, const int dst_size)
 {
    int tree_size, eof;
-   const uint8_t *tree;
    int bits, mask;
    int tree_root, node;
    const uint8_t *dst_end = dst + dst_size;
-   const uint8_t *src_end = src + src_size;
+   GetByteContext tree = s->gb;
+   int start_off = bytestream2_tell(&tree);
 
-   tree_size = *src++;
-   eof       = *src++;
-   tree      = src - eof * 2 - 2;
+   tree_size = bytestream2_get_byte(&s->gb);
+   eof       = bytestream2_get_byte(&s->gb);
    tree_root = eof + tree_size;
-   src += tree_size * 2;
+   bytestream2_skip(&s->gb, tree_size * 2);
 
    node = tree_root;
-   bits = *src++;
+   bits = bytestream2_get_byte(&s->gb);
    mask = 0x80;
    for (;;) {
        int bit = !!(bits & mask);
        mask >>= 1;
-       node = tree[node*2 + bit];
+       bytestream2_seek(&tree, start_off + node*2 + bit - eof * 2, SEEK_SET);
+       node = bytestream2_get_byte(&tree);
        if (node == eof)
            break;
        if (node < eof) {
@@ -90,50 +91,51 @@ static int xan_unpack_luma(const uint8_t *src, const int src_size,
            node = tree_root;
        }
        if (!mask) {
-           bits = *src++;
-           if (src > src_end)
+           if (bytestream2_get_bytes_left(&s->gb) <= 0)
                break;
+           bits = bytestream2_get_byteu(&s->gb);
            mask = 0x80;
        }
    }
-   return dst != dst_end;
+   return dst != dst_end ? AVERROR_INVALIDDATA : 0;
 }
 
 /* almost the same as in xan_wc3 decoder */
-static int xan_unpack(uint8_t *dest, const int dest_len,
-                      const uint8_t *src, const int src_len)
+static int xan_unpack(XanContext *s,
+                      uint8_t *dest, const int dest_len)
 {
     uint8_t opcode;
     int size;
     uint8_t *orig_dest = dest;
-    const uint8_t *src_end = src + src_len;
     const uint8_t *dest_end = dest + dest_len;
 
     while (dest < dest_end) {
-        opcode = *src++;
+        if (bytestream2_get_bytes_left(&s->gb) <= 0)
+            return AVERROR_INVALIDDATA;
+
+        opcode = bytestream2_get_byteu(&s->gb);
 
         if (opcode < 0xe0) {
             int size2, back;
             if ((opcode & 0x80) == 0) {
                 size  = opcode & 3;
-                back  = ((opcode & 0x60) << 3) + *src++ + 1;
+                back  = ((opcode & 0x60) << 3) + bytestream2_get_byte(&s->gb) + 1;
                 size2 = ((opcode & 0x1c) >> 2) + 3;
             } else if ((opcode & 0x40) == 0) {
-                size  = *src >> 6;
-                back  = (bytestream_get_be16(&src) & 0x3fff) + 1;
+                size  = bytestream2_peek_byte(&s->gb) >> 6;
+                back  = (bytestream2_get_be16(&s->gb) & 0x3fff) + 1;
                 size2 = (opcode & 0x3f) + 4;
             } else {
                 size  = opcode & 3;
-                back  = ((opcode & 0x10) << 12) + bytestream_get_be16(&src) + 1;
-                size2 = ((opcode & 0x0c) <<  6) + *src++ + 5;
+                back  = ((opcode & 0x10) << 12) + bytestream2_get_be16(&s->gb) + 1;
+                size2 = ((opcode & 0x0c) <<  6) + bytestream2_get_byte(&s->gb) + 5;
                 if (size + size2 > dest_end - dest)
                     break;
             }
-            if (src + size > src_end ||
-                dest + size + size2 > dest_end ||
-                dest + size - orig_dest < back )
+            if (dest + size + size2 > dest_end ||
+                dest - orig_dest + size < back)
                 return -1;
-            bytestream_get_buffer(&src, dest, size);
+            bytestream2_get_buffer(&s->gb, dest, size);
             dest += size;
             av_memcpy_backptr(dest, back, size2);
             dest += size2;
@@ -141,9 +143,9 @@ static int xan_unpack(uint8_t *dest, const int dest_len,
             int finish = opcode >= 0xfc;
 
             size = finish ? opcode & 3 : ((opcode & 0x1f) << 2) + 4;
-            if (src + size > src_end || dest + size > dest_end)
+            if (dest_end - dest < size)
                 return -1;
-            bytestream_get_buffer(&src, dest, size);
+            bytestream2_get_buffer(&s->gb, dest, size);
             dest += size;
             if (finish)
                 break;
@@ -152,38 +154,37 @@ static int xan_unpack(uint8_t *dest, const int dest_len,
     return dest - orig_dest;
 }
 
-static int xan_decode_chroma(AVCodecContext *avctx, AVPacket *avpkt)
+static int xan_decode_chroma(AVCodecContext *avctx, unsigned chroma_off)
 {
-    const uint8_t *buf = avpkt->data;
     XanContext *s = avctx->priv_data;
     uint8_t *U, *V;
-    unsigned chroma_off;
     int val, uval, vval;
     int i, j;
     const uint8_t *src, *src_end;
     const uint8_t *table;
-    int mode, offset, dec_size;
+    int mode, offset, dec_size, table_size;
 
-    chroma_off = AV_RL32(buf + 4);
     if (!chroma_off)
         return 0;
-    if (chroma_off + 10 >= avpkt->size) {
+    if (chroma_off + 4 >= bytestream2_get_bytes_left(&s->gb)) {
         av_log(avctx, AV_LOG_ERROR, "Invalid chroma block position\n");
         return -1;
     }
-    src    = avpkt->data + 4 + chroma_off;
-    table  = src + 2;
-    mode   = bytestream_get_le16(&src);
-    offset = bytestream_get_le16(&src) * 2;
+    bytestream2_seek(&s->gb, chroma_off + 4, SEEK_SET);
+    mode        = bytestream2_get_le16(&s->gb);
+    table       = s->gb.buffer;
+    table_size  = bytestream2_get_le16(&s->gb);
+    offset      = table_size * 2;
+    table_size += 1;
 
-    if (src - avpkt->data >= avpkt->size - offset) {
+    if (offset >= bytestream2_get_bytes_left(&s->gb)) {
         av_log(avctx, AV_LOG_ERROR, "Invalid chroma block offset\n");
         return -1;
     }
 
+    bytestream2_skip(&s->gb, offset);
     memset(s->scratch_buffer, 0, s->buffer_size);
-    dec_size = xan_unpack(s->scratch_buffer, s->buffer_size, src + offset,
-                          avpkt->size - offset - (src - avpkt->data));
+    dec_size = xan_unpack(s, s->scratch_buffer, s->buffer_size);
     if (dec_size < 0) {
         av_log(avctx, AV_LOG_ERROR, "Chroma unpacking failed\n");
         return -1;
@@ -199,7 +200,7 @@ static int xan_decode_chroma(AVCodecContext *avctx, AVPacket *avpkt)
                 if (src_end - src < 1)
                     return 0;
                 val = *src++;
-                if (val) {
+                if (val && val < table_size) {
                     val  = AV_RL16(table + (val << 1));
                     uval = (val >> 3) & 0xF8;
                     vval = (val >> 8) & 0xF8;
@@ -219,7 +220,7 @@ static int xan_decode_chroma(AVCodecContext *avctx, AVPacket *avpkt)
                 if (src_end - src < 1)
                     return 0;
                 val = *src++;
-                if (val) {
+                if (val && val < table_size) {
                     val  = AV_RL16(table + (val << 1));
                     uval = (val >> 3) & 0xF8;
                     vval = (val >> 8) & 0xF8;
@@ -237,32 +238,27 @@ static int xan_decode_chroma(AVCodecContext *avctx, AVPacket *avpkt)
     return 0;
 }
 
-static int xan_decode_frame_type0(AVCodecContext *avctx, AVPacket *avpkt)
+static int xan_decode_frame_type0(AVCodecContext *avctx)
 {
-    const uint8_t *buf = avpkt->data;
     XanContext *s = avctx->priv_data;
     uint8_t *ybuf, *prev_buf, *src = s->scratch_buffer;
     unsigned  chroma_off, corr_off;
-    int cur, last, size;
+    int cur, last;
     int i, j;
     int ret;
 
-    corr_off   = AV_RL32(buf + 8);
-    chroma_off = AV_RL32(buf + 4);
+    chroma_off = bytestream2_get_le32(&s->gb);
+    corr_off   = bytestream2_get_le32(&s->gb);
 
-    if ((ret = xan_decode_chroma(avctx, avpkt)) != 0)
+    if ((ret = xan_decode_chroma(avctx, chroma_off)) != 0)
         return ret;
 
-    size = avpkt->size - 4;
-    if (corr_off >= avpkt->size) {
+    if (corr_off >= (s->gb.buffer_end - s->gb.buffer_start)) {
         av_log(avctx, AV_LOG_WARNING, "Ignoring invalid correction block position\n");
         corr_off = 0;
     }
-    if (corr_off)
-        size = corr_off;
-    if (chroma_off)
-        size = FFMIN(size, chroma_off);
-    ret = xan_unpack_luma(buf + 12, size, src, s->buffer_size >> 1);
+    bytestream2_seek(&s->gb, 12, SEEK_SET);
+    ret = xan_unpack_luma(s, src, s->buffer_size >> 1);
     if (ret) {
         av_log(avctx, AV_LOG_ERROR, "Luma decoding failed\n");
         return ret;
@@ -298,12 +294,11 @@ static int xan_decode_frame_type0(AVCodecContext *avctx, AVPacket *avpkt)
     if (corr_off) {
         int corr_end, dec_size;
 
-        corr_end = avpkt->size;
+        corr_end = (s->gb.buffer_end - s->gb.buffer_start);
         if (chroma_off > corr_off)
             corr_end = chroma_off;
-        dec_size = xan_unpack(s->scratch_buffer, s->buffer_size,
-                              avpkt->data + 8 + corr_off,
-                              corr_end - corr_off);
+        bytestream2_seek(&s->gb, 8 + corr_off, SEEK_SET);
+        dec_size = xan_unpack(s, s->scratch_buffer, s->buffer_size);
         if (dec_size < 0)
             dec_size = 0;
         else
@@ -325,19 +320,19 @@ static int xan_decode_frame_type0(AVCodecContext *avctx, AVPacket *avpkt)
     return 0;
 }
 
-static int xan_decode_frame_type1(AVCodecContext *avctx, AVPacket *avpkt)
+static int xan_decode_frame_type1(AVCodecContext *avctx)
 {
-    const uint8_t *buf = avpkt->data;
     XanContext *s = avctx->priv_data;
     uint8_t *ybuf, *src = s->scratch_buffer;
     int cur, last;
     int i, j;
     int ret;
 
-    if ((ret = xan_decode_chroma(avctx, avpkt)) != 0)
+    if ((ret = xan_decode_chroma(avctx, bytestream2_get_le32(&s->gb))) != 0)
         return ret;
 
-    ret = xan_unpack_luma(buf + 16, avpkt->size - 16, src,
+    bytestream2_seek(&s->gb, 16, SEEK_SET);
+    ret = xan_unpack_luma(s, src,
                           s->buffer_size >> 1);
     if (ret) {
         av_log(avctx, AV_LOG_ERROR, "Luma decoding failed\n");
@@ -387,13 +382,14 @@ static int xan_decode_frame(AVCodecContext *avctx,
         return ret;
     }
 
-    ftype = AV_RL32(avpkt->data);
+    bytestream2_init(&s->gb, avpkt->data, avpkt->size);
+    ftype = bytestream2_get_le32(&s->gb);
     switch (ftype) {
     case 0:
-        ret = xan_decode_frame_type0(avctx, avpkt);
+        ret = xan_decode_frame_type0(avctx);
         break;
     case 1:
-        ret = xan_decode_frame_type1(avctx, avpkt);
+        ret = xan_decode_frame_type1(avctx);
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unknown frame type %d\n", ftype);

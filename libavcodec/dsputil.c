@@ -367,18 +367,17 @@ void ff_put_pixels_clamped_c(const DCTELEM *block, uint8_t *restrict pixels,
                              int line_size)
 {
     int i;
-    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     /* read the pixels */
     for(i=0;i<8;i++) {
-        pixels[0] = cm[block[0]];
-        pixels[1] = cm[block[1]];
-        pixels[2] = cm[block[2]];
-        pixels[3] = cm[block[3]];
-        pixels[4] = cm[block[4]];
-        pixels[5] = cm[block[5]];
-        pixels[6] = cm[block[6]];
-        pixels[7] = cm[block[7]];
+        pixels[0] = av_clip_uint8(block[0]);
+        pixels[1] = av_clip_uint8(block[1]);
+        pixels[2] = av_clip_uint8(block[2]);
+        pixels[3] = av_clip_uint8(block[3]);
+        pixels[4] = av_clip_uint8(block[4]);
+        pixels[5] = av_clip_uint8(block[5]);
+        pixels[6] = av_clip_uint8(block[6]);
+        pixels[7] = av_clip_uint8(block[7]);
 
         pixels += line_size;
         block += 8;
@@ -389,14 +388,13 @@ static void put_pixels_clamped4_c(const DCTELEM *block, uint8_t *restrict pixels
                                  int line_size)
 {
     int i;
-    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     /* read the pixels */
     for(i=0;i<4;i++) {
-        pixels[0] = cm[block[0]];
-        pixels[1] = cm[block[1]];
-        pixels[2] = cm[block[2]];
-        pixels[3] = cm[block[3]];
+        pixels[0] = av_clip_uint8(block[0]);
+        pixels[1] = av_clip_uint8(block[1]);
+        pixels[2] = av_clip_uint8(block[2]);
+        pixels[3] = av_clip_uint8(block[3]);
 
         pixels += line_size;
         block += 8;
@@ -407,12 +405,11 @@ static void put_pixels_clamped2_c(const DCTELEM *block, uint8_t *restrict pixels
                                  int line_size)
 {
     int i;
-    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     /* read the pixels */
     for(i=0;i<2;i++) {
-        pixels[0] = cm[block[0]];
-        pixels[1] = cm[block[1]];
+        pixels[0] = av_clip_uint8(block[0]);
+        pixels[1] = av_clip_uint8(block[1]);
 
         pixels += line_size;
         block += 8;
@@ -444,18 +441,17 @@ void ff_add_pixels_clamped_c(const DCTELEM *block, uint8_t *restrict pixels,
                              int line_size)
 {
     int i;
-    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     /* read the pixels */
     for(i=0;i<8;i++) {
-        pixels[0] = cm[pixels[0] + block[0]];
-        pixels[1] = cm[pixels[1] + block[1]];
-        pixels[2] = cm[pixels[2] + block[2]];
-        pixels[3] = cm[pixels[3] + block[3]];
-        pixels[4] = cm[pixels[4] + block[4]];
-        pixels[5] = cm[pixels[5] + block[5]];
-        pixels[6] = cm[pixels[6] + block[6]];
-        pixels[7] = cm[pixels[7] + block[7]];
+        pixels[0] = av_clip_uint8(pixels[0] + block[0]);
+        pixels[1] = av_clip_uint8(pixels[1] + block[1]);
+        pixels[2] = av_clip_uint8(pixels[2] + block[2]);
+        pixels[3] = av_clip_uint8(pixels[3] + block[3]);
+        pixels[4] = av_clip_uint8(pixels[4] + block[4]);
+        pixels[5] = av_clip_uint8(pixels[5] + block[5]);
+        pixels[6] = av_clip_uint8(pixels[6] + block[6]);
+        pixels[7] = av_clip_uint8(pixels[7] + block[7]);
         pixels += line_size;
         block += 8;
     }
@@ -465,14 +461,13 @@ static void add_pixels_clamped4_c(const DCTELEM *block, uint8_t *restrict pixels
                           int line_size)
 {
     int i;
-    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     /* read the pixels */
     for(i=0;i<4;i++) {
-        pixels[0] = cm[pixels[0] + block[0]];
-        pixels[1] = cm[pixels[1] + block[1]];
-        pixels[2] = cm[pixels[2] + block[2]];
-        pixels[3] = cm[pixels[3] + block[3]];
+        pixels[0] = av_clip_uint8(pixels[0] + block[0]);
+        pixels[1] = av_clip_uint8(pixels[1] + block[1]);
+        pixels[2] = av_clip_uint8(pixels[2] + block[2]);
+        pixels[3] = av_clip_uint8(pixels[3] + block[3]);
         pixels += line_size;
         block += 8;
     }
@@ -482,12 +477,11 @@ static void add_pixels_clamped2_c(const DCTELEM *block, uint8_t *restrict pixels
                           int line_size)
 {
     int i;
-    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     /* read the pixels */
     for(i=0;i<2;i++) {
-        pixels[0] = cm[pixels[0] + block[0]];
-        pixels[1] = cm[pixels[1] + block[1]];
+        pixels[0] = av_clip_uint8(pixels[0] + block[0]);
+        pixels[1] = av_clip_uint8(pixels[1] + block[1]);
         pixels += line_size;
         block += 8;
     }
@@ -2779,15 +2773,11 @@ static void ff_jref_idct2_add(uint8_t *dest, int line_size, DCTELEM *block)
 
 static void ff_jref_idct1_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
-    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
-
-    dest[0] = cm[(block[0] + 4)>>3];
+    dest[0] = av_clip_uint8((block[0] + 4)>>3);
 }
 static void ff_jref_idct1_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
-    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
-
-    dest[0] = cm[dest[0] + ((block[0] + 4)>>3)];
+    dest[0] = av_clip_uint8(dest[0] + ((block[0] + 4)>>3));
 }
 
 static void just_return(void *mem av_unused, int stride av_unused, int h av_unused) { return; }

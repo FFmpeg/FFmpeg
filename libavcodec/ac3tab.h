@@ -33,7 +33,7 @@
 
 extern const uint16_t ff_ac3_frame_size_tab[38][3];
 extern const uint8_t  ff_ac3_channels_tab[8];
-extern const uint16_t ff_ac3_channel_layout_tab[8];
+extern const uint16_t avpriv_ac3_channel_layout_tab[8];
 extern const uint8_t  ff_ac3_enc_channel_map[8][2][6];
 extern const uint8_t  ff_ac3_dec_channel_map[8][2][6];
 extern const uint16_t ff_ac3_sample_rate_tab[3];

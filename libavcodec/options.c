@@ -647,7 +647,7 @@ AVCodecContext *avcodec_alloc_context(void){
 
 int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
 {
-    if (dest->codec) { // check that the dest context is uninitialized
+    if (avcodec_is_open(dest)) { // check that the dest context is uninitialized
         av_log(dest, AV_LOG_ERROR,
                "Tried to copy AVCodecContext %p into already-initialized %p\n",
                src, dest);

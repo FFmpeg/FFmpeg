@@ -33,6 +33,7 @@
 #define KMVC_KEYFRAME 0x80
 #define KMVC_PALETTE  0x40
 #define KMVC_METHOD   0x0F
+#define MAX_PALSIZE   256
 
 /*
  * Decoder context
@@ -43,7 +44,7 @@ typedef struct KmvcContext {
 
     int setpal;
     int palsize;
-    uint32_t pal[256];
+    uint32_t pal[MAX_PALSIZE];
     uint8_t *cur, *prev;
     uint8_t *frm0, *frm1;
     GetByteContext g;
@@ -380,10 +381,10 @@ static av_cold int decode_init(AVCodecContext * avctx)
         c->palsize = 127;
     } else {
         c->palsize = AV_RL16(avctx->extradata + 10);
-        if (c->palsize > 255U) {
+        if (c->palsize >= (unsigned)MAX_PALSIZE) {
             c->palsize = 127;
-            av_log(NULL, AV_LOG_ERROR, "palsize too big\n");
-            return -1;
+            av_log(avctx, AV_LOG_ERROR, "KMVC palette too large\n");
+            return AVERROR_INVALIDDATA;
         }
     }
 

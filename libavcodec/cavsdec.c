@@ -656,7 +656,8 @@ static int cavs_decode_frame(AVCodecContext * avctx,void *data, int *data_size,
     if (buf_size == 0) {
         if (!s->low_delay && h->DPB[0].f.data[0]) {
             *data_size = sizeof(AVPicture);
-            *picture = *(AVFrame *) &h->DPB[0];
+            *picture = h->DPB[0].f;
+            memset(&h->DPB[0], 0, sizeof(h->DPB[0]));
         }
         return 0;
     }

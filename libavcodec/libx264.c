@@ -70,6 +70,7 @@ typedef struct X264Context {
     char *partitions;
     int direct_pred;
     int slice_max_size;
+    char *stats;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -462,6 +463,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
     PARSE_X264_OPT("psy-rd", psy_rd);
     PARSE_X264_OPT("deblock", deblock);
     PARSE_X264_OPT("partitions", partitions);
+    PARSE_X264_OPT("stats", stats);
     if (x4->psy >= 0)
         x4->params.analyse.b_psy  = x4->psy;
     if (x4->rc_lookahead >= 0)
@@ -647,7 +649,8 @@ static const AVOption options[] = {
     { "spatial",       NULL,      0,    AV_OPT_TYPE_CONST, { X264_DIRECT_PRED_SPATIAL },  0, 0, VE, "direct-pred" },
     { "temporal",      NULL,      0,    AV_OPT_TYPE_CONST, { X264_DIRECT_PRED_TEMPORAL }, 0, 0, VE, "direct-pred" },
     { "auto",          NULL,      0,    AV_OPT_TYPE_CONST, { X264_DIRECT_PRED_AUTO },     0, 0, VE, "direct-pred" },
-    { "slice-max-size","Constant quantization parameter rate control method",OFFSET(slice_max_size),        AV_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE },
+    { "slice-max-size","Limit the size of each slice in bytes",           OFFSET(slice_max_size),AV_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE },
+    { "stats",         "Filename for 2 pass stats",                       OFFSET(stats),         AV_OPT_TYPE_STRING, { 0 },  0,       0, VE },
     { NULL },
 };
 

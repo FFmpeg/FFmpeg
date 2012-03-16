@@ -22,6 +22,19 @@ API changes, most recent first:
           muxers supporting it (av_write_frame makes sure it is called
           only for muxers with this flag).
 
+2012-03-04 - xxxxxxx - lavu 51.22.1 - error.h
+  Add AVERROR_UNKNOWN
+
+2012-02-29 - xxxxxxx - lavf 53.21.0
+  Add avformat_get_riff_video_tags() and avformat_get_riff_audio_tags().
+
+2012-02-29 - xxxxxxx - lavu 51.22.0 - intfloat.h
+  Add a new installed header libavutil/intfloat.h with int/float punning
+  functions.
+
+2012-02-17 - xxxxxxx - lavc 53.35.0
+  Add avcodec_is_open() function.
+
 2012-01-15 - lavc 53.34.0
   New audio encoding API:
   b2c75b6 Add CODEC_CAP_VARIABLE_FRAME_SIZE capability for use by audio
