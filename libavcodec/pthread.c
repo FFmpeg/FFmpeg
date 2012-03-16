@@ -884,6 +884,9 @@ void ff_thread_flush(AVCodecContext *avctx)
     fctx->next_decoding = fctx->next_finished = 0;
     fctx->delaying = 1;
     fctx->prev_thread = NULL;
+    // Make sure decode flush calls with size=0 won't return old frames
+    for (int i = 0; i < avctx->thread_count; i++)
+        fctx->threads[i].got_frame = 0;
 }
 
 static int *allocate_progress(PerThreadContext *p)
