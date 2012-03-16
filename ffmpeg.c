@@ -3424,6 +3424,16 @@ static int copy_metadata(char *outspec, char *inspec, AVFormatContext *oc, AVFor
     parse_meta_type(inspec,  &type_in,  &idx_in,  &istream_spec);
     parse_meta_type(outspec, &type_out, &idx_out, &ostream_spec);
 
+    if (!ic) {
+        if (type_out == 'g' || !*outspec)
+            o->metadata_global_manual = 1;
+        if (type_out == 's' || !*outspec)
+            o->metadata_streams_manual = 1;
+        if (type_out == 'c' || !*outspec)
+            o->metadata_chapters_manual = 1;
+        return 0;
+    }
+
     if (type_in == 'g' || type_out == 'g')
         o->metadata_global_manual = 1;
     if (type_in == 's' || type_out == 's')
@@ -4511,13 +4521,11 @@ static void opt_output_file(void *optctx, const char *filename)
         char *p;
         int in_file_index = strtol(o->metadata_map[i].u.str, &p, 0);
 
-        if (in_file_index < 0)
-            continue;
         if (in_file_index >= nb_input_files) {
             av_log(NULL, AV_LOG_FATAL, "Invalid input file index %d while processing metadata maps\n", in_file_index);
             exit_program(1);
         }
-        copy_metadata(o->metadata_map[i].specifier, *p ? p + 1 : p, oc, input_files[in_file_index].ctx, o);
+        copy_metadata(o->metadata_map[i].specifier, *p ? p + 1 : p, oc, in_file_index >= 0 ? input_files[in_file_index].ctx : NULL, o);
     }
 
     /* copy chapters */
