@@ -2178,13 +2178,13 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
             }
             if (!ist->filtered_frame && !(ist->filtered_frame = avcodec_alloc_frame())) {
                 ret = AVERROR(ENOMEM);
-                goto end;
+                goto fail;
             }
             filtered_frame = ist->filtered_frame;
             *filtered_frame= *decoded_frame; //for me_threshold
             avfilter_fill_frame_from_video_buffer_ref(filtered_frame, ost->picref);
             filtered_frame->pts = av_rescale_q(ost->picref->pts, ist_pts_tb, AV_TIME_BASE_Q);
-            if (ost->picref->video && !ost->frame_aspect_ratio)
+            if (!ost->frame_aspect_ratio)
                 ost->st->codec->sample_aspect_ratio = ost->picref->video->sample_aspect_ratio;
             do_video_out(output_files[ost->file_index].ctx, ost, ist, filtered_frame);
             cont:
@@ -2195,7 +2195,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
 #endif
     }
 
-end:
+fail:
     av_free(buffer_to_free);
     return ret;
 }
