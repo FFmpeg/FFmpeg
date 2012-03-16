@@ -169,6 +169,9 @@ x11grab_read_header(AVFormatContext *s1)
     AVRational framerate;
 
     param = av_strdup(s1->filename);
+    if (!param)
+        goto out;
+
     offset = strchr(param, '+');
     if (offset) {
         sscanf(offset, "%d,%d", &x_off, &y_off);
@@ -319,6 +322,7 @@ x11grab_read_header(AVFormatContext *s1)
     st->codec->bit_rate = x11grab->frame_size * 1/av_q2d(x11grab->time_base) * 8;
 
 out:
+    av_free(param);
     return ret;
 }
 
