@@ -527,7 +527,7 @@ static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
 
         return ret;
     }
-    return AVERROR(EIO);
+    return AVERROR_EOF;
 }
 
 static int gxf_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int flags) {
