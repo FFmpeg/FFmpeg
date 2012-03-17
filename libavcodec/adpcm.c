@@ -1090,8 +1090,8 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         }
         break;
     case CODEC_ID_ADPCM_CT:
-        for (n = nb_samples >> (1 - st); n > 0; n--, src++) {
-            uint8_t v = *src;
+        for (n = nb_samples >> (1 - st); n > 0; n--) {
+            int v = bytestream2_get_byteu(&gb);
             *samples++ = adpcm_ct_expand_nibble(&c->status[0 ], v >> 4  );
             *samples++ = adpcm_ct_expand_nibble(&c->status[st], v & 0x0F);
         }
