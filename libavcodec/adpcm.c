@@ -544,6 +544,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
     int st; /* stereo */
     int count1, count2;
     int nb_samples, coded_samples, ret;
+    GetByteContext gb;
 
     nb_samples = get_nb_samples(avctx, buf, buf_size, &coded_samples);
     if (nb_samples <= 0) {
@@ -568,6 +569,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     src = buf;
+    bytestream2_init(&gb, buf, buf_size);
 
     st = avctx->channels == 2 ? 1 : 0;
 
@@ -576,20 +578,18 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         /* In QuickTime, IMA is encoded by chunks of 34 bytes (=64 samples).
            Channel data is interleaved per-chunk. */
         for (channel = 0; channel < avctx->channels; channel++) {
-            int16_t predictor;
+            int predictor;
             int step_index;
             cs = &(c->status[channel]);
             /* (pppppp) (piiiiiii) */
 
             /* Bits 15-7 are the _top_ 9 bits of the 16-bit initial predictor value */
-            predictor = AV_RB16(src);
+            predictor = sign_extend(bytestream2_get_be16u(&gb), 16);
             step_index = predictor & 0x7F;
-            predictor &= 0xFF80;
-
-            src += 2;
+            predictor &= ~0x7F;
 
             if (cs->step_index == step_index) {
-                int diff = (int)predictor - cs->predictor;
+                int diff = predictor - cs->predictor;
                 if (diff < 0)
                     diff = - diff;
                 if (diff > 0x7f)
@@ -600,19 +600,20 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
                 cs->predictor = predictor;
             }
 
-            if (cs->step_index > 88){
-                av_log(avctx, AV_LOG_ERROR, "ERROR: step_index = %i\n", cs->step_index);
-                cs->step_index = 88;
+            if (cs->step_index > 88u){
+                av_log(avctx, AV_LOG_ERROR, "ERROR: step_index[%d] = %i\n",
+                       channel, cs->step_index);
+                return AVERROR_INVALIDDATA;
             }
 
             samples = (short *)c->frame.data[0] + channel;
 
             for (m = 0; m < 32; m++) {
-                *samples = adpcm_ima_qt_expand_nibble(cs, src[0] & 0x0F, 3);
+                int byte = bytestream2_get_byteu(&gb);
+                *samples = adpcm_ima_qt_expand_nibble(cs, byte & 0x0F, 3);
                 samples += avctx->channels;
-                *samples = adpcm_ima_qt_expand_nibble(cs, src[0] >> 4  , 3);
+                *samples = adpcm_ima_qt_expand_nibble(cs, byte >> 4  , 3);
                 samples += avctx->channels;
-                src ++;
             }
         }
         break;
@@ -1239,7 +1240,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
     *got_frame_ptr   = 1;
     *(AVFrame *)data = c->frame;
 
-    return src - buf;
+    return src == buf ? bytestream2_tell(&gb) : src - buf;
 }
 
 
