@@ -150,8 +150,7 @@ static inline short adpcm_ima_expand_nibble(ADPCMChannelStatus *c, char nibble, 
 
     step = ff_adpcm_step_table[c->step_index];
     step_index = c->step_index + ff_adpcm_index_table[(unsigned)nibble];
-    if (step_index < 0) step_index = 0;
-    else if (step_index > 88) step_index = 88;
+    step_index = av_clip(step_index, 0, 88);
 
     sign = nibble & 8;
     delta = nibble & 7;
