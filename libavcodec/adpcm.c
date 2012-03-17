@@ -403,9 +403,7 @@ static int get_nb_samples(AVCodecContext *avctx, const uint8_t *buf,
     switch (avctx->codec->id) {
     case CODEC_ID_ADPCM_EA:
         has_coded_samples = 1;
-        if (buf_size < 4)
-            return 0;
-        *coded_samples  = AV_RL32(buf);
+        *coded_samples  = bytestream2_get_le32(gb);
         *coded_samples -= *coded_samples % 28;
         nb_samples      = (buf_size - 12) / 30 * 28;
         break;
@@ -868,37 +866,35 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         break;
     case CODEC_ID_ADPCM_EA:
     {
-        int32_t previous_left_sample, previous_right_sample;
-        int32_t current_left_sample, current_right_sample;
-        int32_t next_left_sample, next_right_sample;
-        int32_t coeff1l, coeff2l, coeff1r, coeff2r;
-        uint8_t shift_left, shift_right;
+        int previous_left_sample, previous_right_sample;
+        int current_left_sample, current_right_sample;
+        int next_left_sample, next_right_sample;
+        int coeff1l, coeff2l, coeff1r, coeff2r;
+        int shift_left, shift_right;
 
         /* Each EA ADPCM frame has a 12-byte header followed by 30-byte pieces,
            each coding 28 stereo samples. */
 
-        src += 4; // skip sample count (already read)
-
-        current_left_sample   = (int16_t)bytestream_get_le16(&src);
-        previous_left_sample  = (int16_t)bytestream_get_le16(&src);
-        current_right_sample  = (int16_t)bytestream_get_le16(&src);
-        previous_right_sample = (int16_t)bytestream_get_le16(&src);
+        current_left_sample   = sign_extend(bytestream2_get_le16u(&gb), 16);
+        previous_left_sample  = sign_extend(bytestream2_get_le16u(&gb), 16);
+        current_right_sample  = sign_extend(bytestream2_get_le16u(&gb), 16);
+        previous_right_sample = sign_extend(bytestream2_get_le16u(&gb), 16);
 
         for (count1 = 0; count1 < nb_samples / 28; count1++) {
-            coeff1l = ea_adpcm_table[ *src >> 4       ];
-            coeff2l = ea_adpcm_table[(*src >> 4  ) + 4];
-            coeff1r = ea_adpcm_table[*src & 0x0F];
-            coeff2r = ea_adpcm_table[(*src & 0x0F) + 4];
-            src++;
+            int byte = bytestream2_get_byteu(&gb);
+            coeff1l = ea_adpcm_table[ byte >> 4       ];
+            coeff2l = ea_adpcm_table[(byte >> 4  ) + 4];
+            coeff1r = ea_adpcm_table[ byte & 0x0F];
+            coeff2r = ea_adpcm_table[(byte & 0x0F) + 4];
 
-            shift_left  = 20 - (*src >> 4);
-            shift_right = 20 - (*src & 0x0F);
-            src++;
+            byte = bytestream2_get_byteu(&gb);
+            shift_left  = 20 - (byte >> 4);
+            shift_right = 20 - (byte & 0x0F);
 
             for (count2 = 0; count2 < 28; count2++) {
-                next_left_sample  = sign_extend(*src >> 4, 4) << shift_left;
-                next_right_sample = sign_extend(*src,      4) << shift_right;
-                src++;
+                byte = bytestream2_get_byteu(&gb);
+                next_left_sample  = sign_extend(byte >> 4, 4) << shift_left;
+                next_right_sample = sign_extend(byte,      4) << shift_right;
 
                 next_left_sample = (next_left_sample +
                     (current_left_sample * coeff1l) +
@@ -911,13 +907,12 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
                 current_left_sample = av_clip_int16(next_left_sample);
                 previous_right_sample = current_right_sample;
                 current_right_sample = av_clip_int16(next_right_sample);
-                *samples++ = (unsigned short)current_left_sample;
-                *samples++ = (unsigned short)current_right_sample;
+                *samples++ = current_left_sample;
+                *samples++ = current_right_sample;
             }
         }
 
-        if (src - buf == buf_size - 2)
-            src += 2; // Skip terminating 0x0000
+        bytestream2_skip(&gb, 2); // Skip terminating 0x0000
 
         break;
     }
