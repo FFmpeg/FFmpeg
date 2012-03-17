@@ -802,8 +802,8 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         }
         break;
     case CODEC_ID_ADPCM_IMA_APC:
-        while (src < buf + buf_size) {
-            uint8_t v = *src++;
+        while (bytestream2_get_bytes_left(&gb) > 0) {
+            int v = bytestream2_get_byteu(&gb);
             *samples++ = adpcm_ima_expand_nibble(&c->status[0],  v >> 4  , 3);
             *samples++ = adpcm_ima_expand_nibble(&c->status[st], v & 0x0F, 3);
         }
