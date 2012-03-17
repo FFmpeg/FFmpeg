@@ -2212,6 +2212,9 @@ can be used to test the monowhite pixel format descriptor definition.
 
 Scale the input video to @var{width}:@var{height}[:@var{interl}=@{1|-1@}] and/or convert the image format.
 
+The scale filter forces the output display aspect ratio to be the same
+of the input, by changing the output sample aspect ratio.
+
 The parameters @var{width} and @var{height} are expressions containing
 the following constants:
 

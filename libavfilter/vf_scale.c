@@ -207,10 +207,6 @@ static int config_props(AVFilterLink *outlink)
     outlink->h = h;
 
     /* TODO: make algorithm configurable */
-    av_log(ctx, AV_LOG_INFO, "w:%d h:%d fmt:%s -> w:%d h:%d fmt:%s flags:0x%0x\n",
-           inlink ->w, inlink ->h, av_pix_fmt_descriptors[ inlink->format].name,
-           outlink->w, outlink->h, av_pix_fmt_descriptors[outlink->format].name,
-           scale->flags);
 
     scale->input_is_pal = av_pix_fmt_descriptors[inlink->format].flags & PIX_FMT_PAL ||
                           av_pix_fmt_descriptors[inlink->format].flags & PIX_FMT_PSEUDOPAL;
@@ -239,6 +235,12 @@ static int config_props(AVFilterLink *outlink)
     } else
         outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
 
+    av_log(ctx, AV_LOG_INFO, "w:%d h:%d fmt:%s sar:%d/%d -> w:%d h:%d fmt:%s sar:%d/%d flags:0x%0x\n",
+           inlink ->w, inlink ->h, av_pix_fmt_descriptors[ inlink->format].name,
+           inlink->sample_aspect_ratio.num, inlink->sample_aspect_ratio.den,
+           outlink->w, outlink->h, av_pix_fmt_descriptors[outlink->format].name,
+           outlink->sample_aspect_ratio.num, outlink->sample_aspect_ratio.den,
+           scale->flags);
     return 0;
 
 fail:
