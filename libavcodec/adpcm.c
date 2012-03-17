@@ -343,6 +343,64 @@ static int xa_decode(AVCodecContext *avctx,
     return 0;
 }
 
+static void adpcm_swf_decode(AVCodecContext *avctx, const uint8_t *buf, int buf_size, int16_t *samples)
+{
+    ADPCMDecodeContext *c = avctx->priv_data;
+    GetBitContext gb;
+    const int *table;
+    int k0, signmask, nb_bits, count;
+    int size = buf_size*8;
+    int i;
+
+    init_get_bits(&gb, buf, size);
+
+    //read bits & initial values
+    nb_bits = get_bits(&gb, 2)+2;
+    //av_log(NULL,AV_LOG_INFO,"nb_bits: %d\n", nb_bits);
+    table = swf_index_tables[nb_bits-2];
+    k0 = 1 << (nb_bits-2);
+    signmask = 1 << (nb_bits-1);
+
+    while (get_bits_count(&gb) <= size - 22*avctx->channels) {
+        for (i = 0; i < avctx->channels; i++) {
+            *samples++ = c->status[i].predictor = get_sbits(&gb, 16);
+            c->status[i].step_index = get_bits(&gb, 6);
+        }
+
+        for (count = 0; get_bits_count(&gb) <= size - nb_bits*avctx->channels && count < 4095; count++) {
+            int i;
+
+            for (i = 0; i < avctx->channels; i++) {
+                // similar to IMA adpcm
+                int delta = get_bits(&gb, nb_bits);
+                int step = ff_adpcm_step_table[c->status[i].step_index];
+                long vpdiff = 0; // vpdiff = (delta+0.5)*step/4
+                int k = k0;
+
+                do {
+                    if (delta & k)
+                        vpdiff += step;
+                    step >>= 1;
+                    k >>= 1;
+                } while(k);
+                vpdiff += step;
+
+                if (delta & signmask)
+                    c->status[i].predictor -= vpdiff;
+                else
+                    c->status[i].predictor += vpdiff;
+
+                c->status[i].step_index += table[delta & (~signmask)];
+
+                c->status[i].step_index = av_clip(c->status[i].step_index, 0, 88);
+                c->status[i].predictor = av_clip_int16(c->status[i].predictor);
+
+                *samples++ = c->status[i].predictor;
+            }
+        }
+    }
+}
+
 /**
  * Get the number of samples that will be decoded from the packet.
  * In one case, this is actually the maximum number of samples possible to
@@ -479,7 +537,7 @@ static int get_nb_samples(AVCodecContext *avctx, const uint8_t *buf,
     case CODEC_ID_ADPCM_SWF:
     {
         int buf_bits       = buf_size * 8 - 2;
-        int nbits          = (buf[0] >> 6) + 2;
+        int nbits          = (bytestream2_get_byte(gb) >> 6) + 2;
         int block_hdr_size = 22 * ch;
         int block_size     = block_hdr_size + nbits * ch * 4095;
         int nblocks        = buf_bits / block_size;
@@ -1140,62 +1198,9 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         }
         break;
     case CODEC_ID_ADPCM_SWF:
-    {
-        GetBitContext gb;
-        const int *table;
-        int k0, signmask, nb_bits, count;
-        int size = buf_size*8;
-
-        init_get_bits(&gb, buf, size);
-
-        //read bits & initial values
-        nb_bits = get_bits(&gb, 2)+2;
-        //av_log(NULL,AV_LOG_INFO,"nb_bits: %d\n", nb_bits);
-        table = swf_index_tables[nb_bits-2];
-        k0 = 1 << (nb_bits-2);
-        signmask = 1 << (nb_bits-1);
-
-        while (get_bits_count(&gb) <= size - 22*avctx->channels) {
-            for (i = 0; i < avctx->channels; i++) {
-                *samples++ = c->status[i].predictor = get_sbits(&gb, 16);
-                c->status[i].step_index = get_bits(&gb, 6);
-            }
-
-            for (count = 0; get_bits_count(&gb) <= size - nb_bits*avctx->channels && count < 4095; count++) {
-                int i;
-
-                for (i = 0; i < avctx->channels; i++) {
-                    // similar to IMA adpcm
-                    int delta = get_bits(&gb, nb_bits);
-                    int step = ff_adpcm_step_table[c->status[i].step_index];
-                    long vpdiff = 0; // vpdiff = (delta+0.5)*step/4
-                    int k = k0;
-
-                    do {
-                        if (delta & k)
-                            vpdiff += step;
-                        step >>= 1;
-                        k >>= 1;
-                    } while(k);
-                    vpdiff += step;
-
-                    if (delta & signmask)
-                        c->status[i].predictor -= vpdiff;
-                    else
-                        c->status[i].predictor += vpdiff;
-
-                    c->status[i].step_index += table[delta & (~signmask)];
-
-                    c->status[i].step_index = av_clip(c->status[i].step_index, 0, 88);
-                    c->status[i].predictor = av_clip_int16(c->status[i].predictor);
-
-                    *samples++ = c->status[i].predictor;
-                }
-            }
-        }
-        src += buf_size;
+        adpcm_swf_decode(avctx, buf, buf_size, samples);
+        bytestream2_seek(&gb, 0, SEEK_END);
         break;
-    }
     case CODEC_ID_ADPCM_YAMAHA:
         for (n = nb_samples >> (1 - st); n > 0; n--, src++) {
             uint8_t v = *src;
