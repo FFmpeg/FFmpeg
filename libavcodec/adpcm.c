@@ -194,12 +194,12 @@ static inline int adpcm_ima_qt_expand_nibble(ADPCMChannelStatus *c, int nibble, 
     return c->predictor;
 }
 
-static inline short adpcm_ms_expand_nibble(ADPCMChannelStatus *c, char nibble)
+static inline short adpcm_ms_expand_nibble(ADPCMChannelStatus *c, int nibble)
 {
     int predictor;
 
     predictor = (((c->sample1) * (c->coeff1)) + ((c->sample2) * (c->coeff2))) / 64;
-    predictor += (signed)((nibble & 0x08)?(nibble - 0x10):(nibble)) * c->idelta;
+    predictor += ((nibble & 0x08)?(nibble - 0x10):(nibble)) * c->idelta;
 
     c->sample2 = c->sample1;
     c->sample1 = av_clip_int16(predictor);
@@ -673,34 +673,42 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
     {
         int block_predictor;
 
-        if (avctx->block_align != 0 && buf_size > avctx->block_align)
-            buf_size = avctx->block_align;
-
-        block_predictor = av_clip(*src++, 0, 6);
+        block_predictor = bytestream2_get_byteu(&gb);
+        if (block_predictor > 6) {
+            av_log(avctx, AV_LOG_ERROR, "ERROR: block_predictor[0] = %d\n",
+                   block_predictor);
+            return AVERROR_INVALIDDATA;
+        }
         c->status[0].coeff1 = ff_adpcm_AdaptCoeff1[block_predictor];
         c->status[0].coeff2 = ff_adpcm_AdaptCoeff2[block_predictor];
         if (st) {
-            block_predictor = av_clip(*src++, 0, 6);
+            block_predictor = bytestream2_get_byteu(&gb);
+            if (block_predictor > 6) {
+                av_log(avctx, AV_LOG_ERROR, "ERROR: block_predictor[1] = %d\n",
+                       block_predictor);
+                return AVERROR_INVALIDDATA;
+            }
             c->status[1].coeff1 = ff_adpcm_AdaptCoeff1[block_predictor];
             c->status[1].coeff2 = ff_adpcm_AdaptCoeff2[block_predictor];
         }
-        c->status[0].idelta = (int16_t)bytestream_get_le16(&src);
+        c->status[0].idelta = sign_extend(bytestream2_get_le16u(&gb), 16);
         if (st){
-            c->status[1].idelta = (int16_t)bytestream_get_le16(&src);
+            c->status[1].idelta = sign_extend(bytestream2_get_le16u(&gb), 16);
         }
 
-        c->status[0].sample1 = bytestream_get_le16(&src);
-        if (st) c->status[1].sample1 = bytestream_get_le16(&src);
-        c->status[0].sample2 = bytestream_get_le16(&src);
-        if (st) c->status[1].sample2 = bytestream_get_le16(&src);
+        c->status[0].sample1 = sign_extend(bytestream2_get_le16u(&gb), 16);
+        if (st) c->status[1].sample1 = sign_extend(bytestream2_get_le16u(&gb), 16);
+        c->status[0].sample2 = sign_extend(bytestream2_get_le16u(&gb), 16);
+        if (st) c->status[1].sample2 = sign_extend(bytestream2_get_le16u(&gb), 16);
 
         *samples++ = c->status[0].sample2;
         if (st) *samples++ = c->status[1].sample2;
         *samples++ = c->status[0].sample1;
         if (st) *samples++ = c->status[1].sample1;
-        for(n = (nb_samples - 2) >> (1 - st); n > 0; n--, src++) {
-            *samples++ = adpcm_ms_expand_nibble(&c->status[0 ], src[0] >> 4  );
-            *samples++ = adpcm_ms_expand_nibble(&c->status[st], src[0] & 0x0F);
+        for(n = (nb_samples - 2) >> (1 - st); n > 0; n--) {
+            int byte = bytestream2_get_byteu(&gb);
+            *samples++ = adpcm_ms_expand_nibble(&c->status[0 ], byte >> 4  );
+            *samples++ = adpcm_ms_expand_nibble(&c->status[st], byte & 0x0F);
         }
         break;
     }
