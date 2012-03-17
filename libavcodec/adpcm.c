@@ -777,14 +777,18 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
     case CODEC_ID_ADPCM_IMA_ISS:
         for (channel = 0; channel < avctx->channels; channel++) {
             cs = &c->status[channel];
-            cs->predictor  = (int16_t)bytestream_get_le16(&src);
-            cs->step_index = av_clip(*src++, 0, 88);
-            src++;
+            cs->predictor  = sign_extend(bytestream2_get_le16u(&gb), 16);
+            cs->step_index = sign_extend(bytestream2_get_le16u(&gb), 16);
+            if (cs->step_index > 88u){
+                av_log(avctx, AV_LOG_ERROR, "ERROR: step_index[%d] = %i\n",
+                       channel, cs->step_index);
+                return AVERROR_INVALIDDATA;
+            }
         }
 
-        for (n = nb_samples >> (1 - st); n > 0; n--, src++) {
-            uint8_t v1, v2;
-            uint8_t v = *src;
+        for (n = nb_samples >> (1 - st); n > 0; n--) {
+            int v1, v2;
+            int v = bytestream2_get_byteu(&gb);
             /* nibbles are swapped for mono */
             if (st) {
                 v1 = v >> 4;
