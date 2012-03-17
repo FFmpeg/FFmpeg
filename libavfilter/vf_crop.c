@@ -221,8 +221,9 @@ static int config_input(AVFilterLink *link)
     } else
         crop->out_sar = link->sample_aspect_ratio;
 
-    av_log(ctx, AV_LOG_INFO, "w:%d h:%d -> w:%d h:%d\n",
-           link->w, link->h, crop->w, crop->h);
+    av_log(ctx, AV_LOG_INFO, "w:%d h:%d sar:%d/%d -> w:%d h:%d sar:%d/%d\n",
+           link->w, link->h, link->sample_aspect_ratio.num, link->sample_aspect_ratio.den,
+           crop->w, crop->h, crop->out_sar.num, crop->out_sar.den);
 
     if (crop->w <= 0 || crop->h <= 0 ||
         crop->w > link->w || crop->h > link->h) {
