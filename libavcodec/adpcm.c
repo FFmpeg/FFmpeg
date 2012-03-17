@@ -1202,8 +1202,8 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         bytestream2_seek(&gb, 0, SEEK_END);
         break;
     case CODEC_ID_ADPCM_YAMAHA:
-        for (n = nb_samples >> (1 - st); n > 0; n--, src++) {
-            uint8_t v = *src;
+        for (n = nb_samples >> (1 - st); n > 0; n--) {
+            int v = bytestream2_get_byteu(&gb);
             *samples++ = adpcm_yamaha_expand_nibble(&c->status[0 ], v & 0x0F);
             *samples++ = adpcm_yamaha_expand_nibble(&c->status[st], v >> 4  );
         }
