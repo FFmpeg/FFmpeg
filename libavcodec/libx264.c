@@ -70,7 +70,6 @@ typedef struct X264Context {
     char *partitions;
     int direct_pred;
     int slice_max_size;
-    char *stats;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
