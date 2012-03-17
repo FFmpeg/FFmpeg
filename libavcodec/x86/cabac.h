@@ -51,7 +51,7 @@
         "xor    "tmp"       , "ret"     \n\t"
 #endif /* HAVE_FAST_CMOV */
 
-#define BRANCHLESS_GET_CABAC(ret, statep, low, lowword, range, tmp, tmpbyte, byte) \
+#define BRANCHLESS_GET_CABAC(ret, statep, low, lowword, range, tmp, tmpbyte, byte, end) \
         "movzbl "statep"    , "ret"                                     \n\t"\
         "mov    "range"     , "tmp"                                     \n\t"\
         "and    $0xC0       , "range"                                   \n\t"\
@@ -64,9 +64,12 @@
         "shl    %%cl        , "low"                                     \n\t"\
         "mov    "tmpbyte"   , "statep"                                  \n\t"\
         "test   "lowword"   , "lowword"                                 \n\t"\
-        " jnz   1f                                                      \n\t"\
+        " jnz   2f                                                      \n\t"\
         "mov    "byte"      , %%"REG_c"                                 \n\t"\
+        "cmp    "end"       , %%"REG_c"                                 \n\t"\
+        "jge    1f                                                      \n\t"\
         "add"OPSIZE" $2     , "byte"                                    \n\t"\
+        "1:                                                             \n\t"\
         "movzwl (%%"REG_c")     , "tmp"                                 \n\t"\
         "lea    -1("low")   , %%ecx                                     \n\t"\
         "xor    "low"       , %%ecx                                     \n\t"\
@@ -79,7 +82,7 @@
         "add    $7          , %%ecx                                     \n\t"\
         "shl    %%cl        , "tmp"                                     \n\t"\
         "add    "tmp"       , "low"                                     \n\t"\
-        "1:                                                             \n\t"
+        "2:                                                             \n\t"
 
 #if HAVE_7REGS && !defined(BROKEN_RELOCATIONS)
 #define get_cabac_inline get_cabac_inline_x86
@@ -90,10 +93,12 @@ static av_always_inline int get_cabac_inline_x86(CABACContext *c,
 
     __asm__ volatile(
         BRANCHLESS_GET_CABAC("%0", "(%4)", "%1", "%w1",
-                             "%2", "%3", "%b3", "%a6(%5)")
+                             "%2", "%3", "%b3",
+                             "%a6(%5)", "%a7(%5)")
         : "=&r"(bit), "+&r"(c->low), "+&r"(c->range), "=&q"(tmp)
         : "r"(state), "r"(c),
-          "i"(offsetof(CABACContext, bytestream))
+          "i"(offsetof(CABACContext, bytestream)),
+          "i"(offsetof(CABACContext, bytestream_end))
         : "%"REG_c, "memory"
     );
     return bit & 1;
