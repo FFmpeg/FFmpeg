@@ -78,6 +78,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER (COPY,        copy,        vf);
     REGISTER_FILTER (CROP,        crop,        vf);
     REGISTER_FILTER (CROPDETECT,  cropdetect,  vf);
+    REGISTER_FILTER (DECIMATE,    decimate,    vf);
     REGISTER_FILTER (DELOGO,      delogo,      vf);
     REGISTER_FILTER (DESHAKE,     deshake,     vf);
     REGISTER_FILTER (DRAWBOX,     drawbox,     vf);

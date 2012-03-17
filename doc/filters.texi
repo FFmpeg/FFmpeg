@@ -1539,6 +1539,43 @@ indicates never reset and return the largest area encountered during
 playback.
 @end table
 
+@section decimate
+
+This filter drops frames that do not differ greatly from the previous
+frame in order to reduce framerate.  The main use of this filter is
+for very-low-bitrate encoding (e.g. streaming over dialup modem), but
+it could in theory be used for fixing movies that were
+inverse-telecined incorrectly.
+
+It accepts the following parameters:
+@var{max}:@var{hi}:@var{lo}:@var{frac}.
+
+@table @option
+
+@item max
+Set the maximum number of consecutive frames which can be dropped (if
+positive), or the minimum interval between dropped frames (if
+negative). If the value is 0, the frame is dropped unregarding the
+number of previous sequentially dropped frames.
+
+Default value is 0.
+
+@item hi, lo, frac
+Set the dropping threshold values.
+
+Values for @var{hi} and @var{lo} are for 8x8 pixel blocks and
+represent actual pixel value differences, so a threshold of 64
+corresponds to 1 unit of difference for each pixel, or the same spread
+out differently over the block.
+
+A frame is a candidate for dropping if no 8x8 blocks differ by more
+than a threshold of @var{hi}, and if no more than @var{frac} blocks (1
+meaning the whole image) differ by more than a threshold of @var{lo}.
+
+Default value for @var{hi} is 64*12, default value for @var{lo} is
+64*5, and default value for @var{frac} is 0.33.
+@end table
+
 @section delogo
 
 Suppress a TV station logo by a simple interpolation of the surrounding
