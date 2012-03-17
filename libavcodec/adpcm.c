@@ -1060,27 +1060,33 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
     case CODEC_ID_ADPCM_IMA_AMV:
     case CODEC_ID_ADPCM_IMA_SMJPEG:
         if (avctx->codec->id == CODEC_ID_ADPCM_IMA_AMV) {
-            c->status[0].predictor = sign_extend(bytestream_get_le16(&src), 16);
-            c->status[0].step_index = av_clip(bytestream_get_le16(&src), 0, 88);
-            src += 4;
+            c->status[0].predictor = sign_extend(bytestream2_get_le16u(&gb), 16);
+            c->status[0].step_index = bytestream2_get_le16u(&gb);
+            bytestream2_skipu(&gb, 4);
         } else {
-            c->status[0].predictor = sign_extend(bytestream_get_be16(&src), 16);
-            c->status[0].step_index = av_clip(bytestream_get_byte(&src), 0, 88);
-            src += 1;
+            c->status[0].predictor = sign_extend(bytestream2_get_be16u(&gb), 16);
+            c->status[0].step_index = bytestream2_get_byteu(&gb);
+            bytestream2_skipu(&gb, 1);
+        }
+        if (c->status[0].step_index > 88u) {
+            av_log(avctx, AV_LOG_ERROR, "ERROR: step_index = %i\n",
+                   c->status[0].step_index);
+            return AVERROR_INVALIDDATA;
         }
 
-        for (n = nb_samples >> (1 - st); n > 0; n--, src++) {
-            char hi, lo;
-            lo = *src & 0x0F;
-            hi = *src >> 4;
+        for (n = nb_samples >> (1 - st); n > 0; n--) {
+            int hi, lo, v = bytestream2_get_byteu(&gb);
 
-            if (avctx->codec->id == CODEC_ID_ADPCM_IMA_AMV)
-                FFSWAP(char, hi, lo);
+            if (avctx->codec->id == CODEC_ID_ADPCM_IMA_AMV) {
+                hi = v & 0x0F;
+                lo = v >> 4;
+            } else {
+                lo = v & 0x0F;
+                hi = v >> 4;
+            }
 
-            *samples++ = adpcm_ima_expand_nibble(&c->status[0],
-                lo, 3);
-            *samples++ = adpcm_ima_expand_nibble(&c->status[0],
-                hi, 3);
+            *samples++ = adpcm_ima_expand_nibble(&c->status[0], lo, 3);
+            *samples++ = adpcm_ima_expand_nibble(&c->status[0], hi, 3);
         }
         break;
     case CODEC_ID_ADPCM_CT:
