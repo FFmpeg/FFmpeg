@@ -310,6 +310,15 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVIOContext *pb,
         /* ra type header */
         if (rm_read_audio_stream_info(s, pb, st, rst, 0))
             return -1;
+    } else if (v == MKBETAG('L', 'S', 'D', ':')) {
+        avio_seek(pb, -4, SEEK_CUR);
+        if ((ret = rm_read_extradata(pb, st->codec, codec_data_size)) < 0)
+            return ret;
+
+        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+        st->codec->codec_tag  = AV_RL32(st->codec->extradata);
+        st->codec->codec_id   = ff_codec_get_id(ff_rm_codec_tags,
+                                                st->codec->codec_tag);
     } else {
         int fps;
         if (avio_rl32(pb) != MKTAG('V', 'I', 'D', 'O')) {
