@@ -184,6 +184,7 @@ typedef struct ProresContext {
     int num_slices;
     int num_planes;
     int bits_per_mb;
+    int force_quant;
 
     char *vendor;
     int quant_sel;
@@ -397,7 +398,9 @@ static int encode_slice(AVCodecContext *avctx, const AVFrame *pic,
     int plane_factor, is_chroma;
     uint16_t *qmat;
 
-    if (quant < MAX_STORED_Q) {
+    if (ctx->force_quant) {
+        qmat = ctx->quants[0];
+    } else if (quant < MAX_STORED_Q) {
         qmat = ctx->quants[quant];
     } else {
         qmat = ctx->custom_q;
@@ -750,21 +753,23 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     // slices
     for (y = 0; y < ctx->mb_height; y++) {
         mbs_per_slice = ctx->mbs_per_slice;
-        for (x = mb = 0; x < ctx->mb_width; x += mbs_per_slice, mb++) {
-            while (ctx->mb_width - x < mbs_per_slice)
-                mbs_per_slice >>= 1;
-            q = find_slice_quant(avctx, pic, (mb + 1) * TRELLIS_WIDTH, x, y,
-                                 mbs_per_slice);
-        }
+        if (!ctx->force_quant) {
+            for (x = mb = 0; x < ctx->mb_width; x += mbs_per_slice, mb++) {
+                while (ctx->mb_width - x < mbs_per_slice)
+                    mbs_per_slice >>= 1;
+                q = find_slice_quant(avctx, pic, (mb + 1) * TRELLIS_WIDTH, x, y,
+                                     mbs_per_slice);
+            }
 
-        for (x = ctx->slices_width - 1; x >= 0; x--) {
-            ctx->slice_q[x] = ctx->nodes[q].quant;
-            q = ctx->nodes[q].prev_node;
+            for (x = ctx->slices_width - 1; x >= 0; x--) {
+                ctx->slice_q[x] = ctx->nodes[q].quant;
+                q = ctx->nodes[q].prev_node;
+            }
         }
 
         mbs_per_slice = ctx->mbs_per_slice;
         for (x = mb = 0; x < ctx->mb_width; x += mbs_per_slice, mb++) {
-            q = ctx->slice_q[mb];
+            q = ctx->force_quant ? ctx->force_quant : ctx->slice_q[mb];
 
             while (ctx->mb_width - x < mbs_per_slice)
                 mbs_per_slice >>= 1;
@@ -859,26 +864,65 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    if (!ctx->bits_per_mb) {
-        for (i = 0; i < NUM_MB_LIMITS - 1; i++)
-            if (prores_mb_limits[i] >= ctx->mb_width * ctx->mb_height)
-                break;
-        ctx->bits_per_mb   = ctx->profile_info->br_tab[i];
-    } else if (ctx->bits_per_mb < 128) {
-        av_log(avctx, AV_LOG_ERROR, "too few bits per MB, please set at least 128\n");
-        return AVERROR_INVALIDDATA;
+    ctx->force_quant = avctx->global_quality / FF_QP2LAMBDA;
+    if (!ctx->force_quant) {
+        if (!ctx->bits_per_mb) {
+            for (i = 0; i < NUM_MB_LIMITS - 1; i++)
+                if (prores_mb_limits[i] >= ctx->mb_width * ctx->mb_height)
+                    break;
+            ctx->bits_per_mb   = ctx->profile_info->br_tab[i];
+        } else if (ctx->bits_per_mb < 128) {
+            av_log(avctx, AV_LOG_ERROR, "too few bits per MB, please set at least 128\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        min_quant = ctx->profile_info->min_quant;
+        max_quant = ctx->profile_info->max_quant;
+        for (i = min_quant; i < MAX_STORED_Q; i++) {
+            for (j = 0; j < 64; j++)
+                ctx->quants[i][j] = ctx->quant_mat[j] * i;
+        }
+
+        ctx->nodes = av_malloc((ctx->slices_width + 1) * TRELLIS_WIDTH
+                               * sizeof(*ctx->nodes));
+        if (!ctx->nodes) {
+            encode_close(avctx);
+            return AVERROR(ENOMEM);
+        }
+        for (i = min_quant; i < max_quant + 2; i++) {
+            ctx->nodes[i].prev_node = -1;
+            ctx->nodes[i].bits      = 0;
+            ctx->nodes[i].score     = 0;
+        }
+
+        ctx->slice_q = av_malloc(ctx->slices_width * sizeof(*ctx->slice_q));
+        if (!ctx->slice_q) {
+            encode_close(avctx);
+            return AVERROR(ENOMEM);
+        }
+    } else {
+        int ls = 0;
+
+        if (ctx->force_quant > 64) {
+            av_log(avctx, AV_LOG_ERROR, "too large quantiser, maximum is 64\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        for (j = 0; j < 64; j++) {
+            ctx->quants[0][j] = ctx->quant_mat[j] * ctx->force_quant;
+            ls += av_log2((1 << 11)  / ctx->quants[0][j]) * 2 + 1;
+        }
+
+        ctx->bits_per_mb = ls * 8;
+        if (ctx->chroma_factor == CFACTOR_Y444)
+            ctx->bits_per_mb += ls * 4;
+        if (ctx->num_planes == 4)
+            ctx->bits_per_mb += ls * 4;
     }
 
     ctx->frame_size = ctx->num_slices * (2 + 2 * ctx->num_planes
                                          + (2 * mps * ctx->bits_per_mb) / 8)
                       + 200;
-
-    min_quant = ctx->profile_info->min_quant;
-    max_quant = ctx->profile_info->max_quant;
-    for (i = min_quant; i < MAX_STORED_Q; i++) {
-        for (j = 0; j < 64; j++)
-            ctx->quants[i][j] = ctx->quant_mat[j] * i;
-    }
 
     avctx->codec_tag   = ctx->profile_info->tag;
 
@@ -886,24 +930,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
            ctx->profile, ctx->num_slices, ctx->bits_per_mb);
     av_log(avctx, AV_LOG_DEBUG, "estimated frame size %d\n",
            ctx->frame_size);
-
-    ctx->nodes = av_malloc((ctx->slices_width + 1) * TRELLIS_WIDTH
-                           * sizeof(*ctx->nodes));
-    if (!ctx->nodes) {
-        encode_close(avctx);
-        return AVERROR(ENOMEM);
-    }
-    for (i = min_quant; i < max_quant + 2; i++) {
-        ctx->nodes[i].prev_node = -1;
-        ctx->nodes[i].bits      = 0;
-        ctx->nodes[i].score     = 0;
-    }
-
-    ctx->slice_q = av_malloc(ctx->slices_width * sizeof(*ctx->slice_q));
-    if (!ctx->slice_q) {
-        encode_close(avctx);
-        return AVERROR(ENOMEM);
-    }
 
     return 0;
 }
