@@ -895,6 +895,7 @@ error:
 void ff_thread_flush(AVCodecContext *avctx)
 {
     FrameThreadContext *fctx = avctx->thread_opaque;
+    int i;
 
     if (!avctx->thread_opaque) return;
 
@@ -910,7 +911,7 @@ void ff_thread_flush(AVCodecContext *avctx)
     fctx->delaying = 1;
     fctx->prev_thread = NULL;
     // Make sure decode flush calls with size=0 won't return old frames
-    for (int i = 0; i < avctx->thread_count; i++)
+    for (i = 0; i < avctx->thread_count; i++)
         fctx->threads[i].got_frame = 0;
 }
 
