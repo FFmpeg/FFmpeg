@@ -1033,18 +1033,22 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
             int coeff[2][4], shift[4];
             short *s2, *s = &samples[channel];
             for (n=0; n<4; n++, s+=32*avctx->channels) {
+                int val = sign_extend(bytestream2_get_le16u(&gb), 16);
                 for (i=0; i<2; i++)
-                    coeff[i][n] = ea_adpcm_table[(src[0]&0x0F)+4*i];
-                shift[n] = 20 - (src[2] & 0x0F);
-                for (s2=s, i=0; i<2; i++, src+=2, s2+=avctx->channels)
-                    s2[0] = (src[0]&0xF0) + (src[1]<<8);
+                    coeff[i][n] = ea_adpcm_table[(val&0x0F)+4*i];
+                s[0] = val & ~0x0F;
+
+                val = sign_extend(bytestream2_get_le16u(&gb), 16);
+                shift[n] = 20 - (val & 0x0F);
+                s[avctx->channels] = val & ~0x0F;
             }
 
             for (m=2; m<32; m+=2) {
                 s = &samples[m*avctx->channels + channel];
-                for (n=0; n<4; n++, src++, s+=32*avctx->channels) {
+                for (n=0; n<4; n++, s+=32*avctx->channels) {
+                    int byte = bytestream2_get_byteu(&gb);
                     for (s2=s, i=0; i<8; i+=4, s2+=avctx->channels) {
-                        int level = sign_extend(*src >> (4 - i), 4) << shift[n];
+                        int level = sign_extend(byte >> (4 - i), 4) << shift[n];
                         int pred  = s2[-1*avctx->channels] * coeff[0][n]
                                   + s2[-2*avctx->channels] * coeff[1][n];
                         s2[0] = av_clip_int16((level + pred + 0x80) >> 8);
