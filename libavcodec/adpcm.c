@@ -860,9 +860,10 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         }
         break;
     case CODEC_ID_ADPCM_IMA_EA_SEAD:
-        for (n = nb_samples >> (1 - st); n > 0; n--, src++) {
-            *samples++ = adpcm_ima_expand_nibble(&c->status[0], src[0] >> 4, 6);
-            *samples++ = adpcm_ima_expand_nibble(&c->status[st],src[0]&0x0F, 6);
+        for (n = nb_samples >> (1 - st); n > 0; n--) {
+            int byte = bytestream2_get_byteu(&gb);
+            *samples++ = adpcm_ima_expand_nibble(&c->status[0],  byte >> 4,   6);
+            *samples++ = adpcm_ima_expand_nibble(&c->status[st], byte & 0x0F, 6);
         }
         break;
     case CODEC_ID_ADPCM_EA:
