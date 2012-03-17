@@ -450,6 +450,8 @@ static int get_nb_samples(AVCodecContext *avctx, const uint8_t *buf,
         nb_samples = ((buf_size - 16) * 2 / 3 * 4) / ch;
         break;
     case CODEC_ID_ADPCM_IMA_DK4:
+        if (avctx->block_align > 0)
+            buf_size = FFMIN(buf_size, avctx->block_align);
         nb_samples = 1 + (buf_size - 4 * ch) * 2 / ch;
         break;
     case CODEC_ID_ADPCM_IMA_WAV:
@@ -713,18 +715,18 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         break;
     }
     case CODEC_ID_ADPCM_IMA_DK4:
-        if (avctx->block_align != 0 && buf_size > avctx->block_align)
-            buf_size = avctx->block_align;
-
         for (channel = 0; channel < avctx->channels; channel++) {
             cs = &c->status[channel];
-            cs->predictor  = (int16_t)bytestream_get_le16(&src);
-            cs->step_index = av_clip(*src++, 0, 88);
-            src++;
-            *samples++ = cs->predictor;
+            cs->predictor  = *samples++ = sign_extend(bytestream2_get_le16u(&gb), 16);
+            cs->step_index = sign_extend(bytestream2_get_le16u(&gb), 16);
+            if (cs->step_index > 88u){
+                av_log(avctx, AV_LOG_ERROR, "ERROR: step_index[%d] = %i\n",
+                       channel, cs->step_index);
+                return AVERROR_INVALIDDATA;
+            }
         }
-        for (n = nb_samples >> (1 - st); n > 0; n--, src++) {
-            uint8_t v = *src;
+        for (n = nb_samples >> (1 - st); n > 0; n--) {
+            int v = bytestream2_get_byteu(&gb);
             *samples++ = adpcm_ima_expand_nibble(&c->status[0 ], v >> 4  , 3);
             *samples++ = adpcm_ima_expand_nibble(&c->status[st], v & 0x0F, 3);
         }
