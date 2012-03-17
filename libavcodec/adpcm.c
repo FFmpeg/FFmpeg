@@ -413,7 +413,7 @@ static int get_nb_samples(AVCodecContext *avctx, const uint8_t *buf,
         nb_samples     = (buf_size - (4 + 8 * ch)) * 2 / ch;
         break;
     case CODEC_ID_ADPCM_EA_MAXIS_XA:
-        nb_samples = ((buf_size - ch) / (2 * ch)) * 2 * ch;
+        nb_samples = (buf_size - ch) / ch * 2;
         break;
     case CODEC_ID_ADPCM_EA_R1:
     case CODEC_ID_ADPCM_EA_R2:
@@ -921,15 +921,19 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         int coeff[2][2], shift[2];
 
         for(channel = 0; channel < avctx->channels; channel++) {
+            int byte = bytestream2_get_byteu(&gb);
             for (i=0; i<2; i++)
-                coeff[channel][i] = ea_adpcm_table[(*src >> 4) + 4*i];
-            shift[channel] = 20 - (*src & 0x0F);
-            src++;
+                coeff[channel][i] = ea_adpcm_table[(byte >> 4) + 4*i];
+            shift[channel] = 20 - (byte & 0x0F);
         }
         for (count1 = 0; count1 < nb_samples / 2; count1++) {
+            int byte[2];
+
+            byte[0] = bytestream2_get_byteu(&gb);
+            if (st) byte[1] = bytestream2_get_byteu(&gb);
             for(i = 4; i >= 0; i-=4) { /* Pairwise samples LL RR (st) or LL LL (mono) */
                 for(channel = 0; channel < avctx->channels; channel++) {
-                    int32_t sample = sign_extend(src[channel] >> i, 4) << shift[channel];
+                    int sample = sign_extend(byte[channel] >> i, 4) << shift[channel];
                     sample = (sample +
                              c->status[channel].sample1 * coeff[channel][0] +
                              c->status[channel].sample2 * coeff[channel][1] + 0x80) >> 8;
@@ -938,10 +942,8 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
                     *samples++ = c->status[channel].sample1;
                 }
             }
-            src+=avctx->channels;
         }
-        /* consume whole packet */
-        src = buf + buf_size;
+        bytestream2_seek(&gb, 0, SEEK_END);
         break;
     }
     case CODEC_ID_ADPCM_EA_R1:
