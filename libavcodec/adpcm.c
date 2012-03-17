@@ -618,26 +618,23 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         }
         break;
     case CODEC_ID_ADPCM_IMA_WAV:
-        if (avctx->block_align != 0 && buf_size > avctx->block_align)
-            buf_size = avctx->block_align;
-
         for(i=0; i<avctx->channels; i++){
             cs = &(c->status[i]);
-            cs->predictor = *samples++ = (int16_t)bytestream_get_le16(&src);
+            cs->predictor = *samples++ = sign_extend(bytestream2_get_le16u(&gb), 16);
 
-            cs->step_index = *src++;
-            if (cs->step_index > 88){
-                av_log(avctx, AV_LOG_ERROR, "ERROR: step_index = %i\n", cs->step_index);
-                cs->step_index = 88;
+            cs->step_index = sign_extend(bytestream2_get_le16u(&gb), 16);
+            if (cs->step_index > 88u){
+                av_log(avctx, AV_LOG_ERROR, "ERROR: step_index[%d] = %i\n",
+                       i, cs->step_index);
+                return AVERROR_INVALIDDATA;
             }
-            if (*src++) av_log(avctx, AV_LOG_ERROR, "unused byte should be null but is %d!!\n", src[-1]); /* unused */
         }
 
         for (n = (nb_samples - 1) / 8; n > 0; n--) {
             for (i = 0; i < avctx->channels; i++) {
                 cs = &c->status[i];
                 for (m = 0; m < 4; m++) {
-                    uint8_t v = *src++;
+                    int v = bytestream2_get_byteu(&gb);
                     *samples = adpcm_ima_expand_nibble(cs, v & 0x0F, 3);
                     samples += avctx->channels;
                     *samples = adpcm_ima_expand_nibble(cs, v >> 4  , 3);
