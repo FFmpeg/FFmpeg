@@ -514,24 +514,6 @@ static int get_nb_samples(AVCodecContext *avctx, const uint8_t *buf,
     return nb_samples;
 }
 
-/* DK3 ADPCM support macro */
-#define DK3_GET_NEXT_NIBBLE() \
-    if (decode_top_nibble_next) \
-    { \
-        nibble = last_byte >> 4; \
-        decode_top_nibble_next = 0; \
-    } \
-    else \
-    { \
-        if (end_of_packet) \
-            break; \
-        last_byte = *src++; \
-        if (src >= buf + buf_size) \
-            end_of_packet = 1; \
-        nibble = last_byte & 0x0F; \
-        decode_top_nibble_next = 1; \
-    }
-
 static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
                               int *got_frame_ptr, AVPacket *avpkt)
 {
@@ -733,26 +715,37 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         break;
     case CODEC_ID_ADPCM_IMA_DK3:
     {
-        unsigned char last_byte = 0;
-        unsigned char nibble;
+        int last_byte = 0;
+        int nibble;
         int decode_top_nibble_next = 0;
-        int end_of_packet = 0;
         int diff_channel;
+        const int16_t *samples_end = samples + avctx->channels * nb_samples;
 
-        if (avctx->block_align != 0 && buf_size > avctx->block_align)
-            buf_size = avctx->block_align;
-
-        c->status[0].predictor  = (int16_t)AV_RL16(src + 10);
-        c->status[1].predictor  = (int16_t)AV_RL16(src + 12);
-        c->status[0].step_index = av_clip(src[14], 0, 88);
-        c->status[1].step_index = av_clip(src[15], 0, 88);
+        bytestream2_skipu(&gb, 10);
+        c->status[0].predictor  = sign_extend(bytestream2_get_le16u(&gb), 16);
+        c->status[1].predictor  = sign_extend(bytestream2_get_le16u(&gb), 16);
+        c->status[0].step_index = bytestream2_get_byteu(&gb);
+        c->status[1].step_index = bytestream2_get_byteu(&gb);
+        if (c->status[0].step_index > 88u || c->status[1].step_index > 88u){
+            av_log(avctx, AV_LOG_ERROR, "ERROR: step_index = %i/%i\n",
+                   c->status[0].step_index, c->status[1].step_index);
+            return AVERROR_INVALIDDATA;
+        }
         /* sign extend the predictors */
-        src += 16;
         diff_channel = c->status[1].predictor;
 
-        /* the DK3_GET_NEXT_NIBBLE macro issues the break statement when
-         * the buffer is consumed */
-        while (1) {
+        /* DK3 ADPCM support macro */
+#define DK3_GET_NEXT_NIBBLE() \
+    if (decode_top_nibble_next) { \
+        nibble = last_byte >> 4; \
+        decode_top_nibble_next = 0; \
+    } else { \
+        last_byte = bytestream2_get_byteu(&gb); \
+        nibble = last_byte & 0x0F; \
+        decode_top_nibble_next = 1; \
+    }
+
+        while (samples < samples_end) {
 
             /* for this algorithm, c->status[0] is the sum channel and
              * c->status[1] is the diff channel */
