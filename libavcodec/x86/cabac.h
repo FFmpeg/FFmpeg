@@ -27,7 +27,7 @@
 #include "config.h"
 
 #if HAVE_FAST_CMOV
-#define BRANCHLESS_GET_CABAC_UPDATE(ret, statep, low, lowword, range, tmp)\
+#define BRANCHLESS_GET_CABAC_UPDATE(ret, statep, low, range, tmp)\
         "mov    "tmp"       , %%ecx     \n\t"\
         "shl    $17         , "tmp"     \n\t"\
         "cmp    "low"       , "tmp"     \n\t"\
@@ -37,7 +37,7 @@
         "xor    %%ecx       , "ret"     \n\t"\
         "sub    "tmp"       , "low"     \n\t"
 #else /* HAVE_FAST_CMOV */
-#define BRANCHLESS_GET_CABAC_UPDATE(ret, statep, low, lowword, range, tmp)\
+#define BRANCHLESS_GET_CABAC_UPDATE(ret, statep, low, range, tmp)\
         "mov    "tmp"       , %%ecx     \n\t"\
         "shl    $17         , "tmp"     \n\t"\
         "sub    "low"       , "tmp"     \n\t"\
@@ -57,7 +57,7 @@
         "and    $0xC0       , "range"                                   \n\t"\
         "movzbl "MANGLE(ff_h264_lps_range)"("ret", "range", 2), "range" \n\t"\
         "sub    "range"     , "tmp"                                     \n\t"\
-        BRANCHLESS_GET_CABAC_UPDATE(ret, statep, low, lowword, range, tmp)   \
+        BRANCHLESS_GET_CABAC_UPDATE(ret, statep, low, range, tmp)   \
         "movzbl " MANGLE(ff_h264_norm_shift) "("range"), %%ecx          \n\t"\
         "shl    %%cl        , "range"                                   \n\t"\
         "movzbl "MANGLE(ff_h264_mlps_state)"+128("ret"), "tmp"          \n\t"\
