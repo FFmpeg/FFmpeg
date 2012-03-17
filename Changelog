@@ -12,6 +12,7 @@ version <next>:
 - remove libpostproc
 - ID3v2 attached pictures reading and writing
 - WMA Lossless decoder
+- XBM encoder
 
 
 version 0.8:

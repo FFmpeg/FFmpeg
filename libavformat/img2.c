@@ -64,6 +64,7 @@ static const IdStrMap img_tags[] = {
     { CODEC_ID_JPEG2000  , "jpc"},
     { CODEC_ID_DPX       , "dpx"},
     { CODEC_ID_PICTOR    , "pic"},
+    { CODEC_ID_XBM       , "xbm"},
     { CODEC_ID_XWD       , "xwd"},
     { CODEC_ID_NONE      , NULL}
 };
