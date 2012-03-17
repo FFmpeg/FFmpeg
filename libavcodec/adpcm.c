@@ -809,28 +809,29 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         }
         break;
     case CODEC_ID_ADPCM_IMA_WS:
-        for (channel = 0; channel < avctx->channels; channel++) {
-            const uint8_t *src0;
-            int src_stride;
-            int16_t *smp = samples + channel;
+        if (c->vqa_version == 3) {
+            for (channel = 0; channel < avctx->channels; channel++) {
+                int16_t *smp = samples + channel;
 
-            if (c->vqa_version == 3) {
-                src0 = src + channel * buf_size / 2;
-                src_stride = 1;
-            } else {
-                src0 = src + channel;
-                src_stride = avctx->channels;
+                for (n = nb_samples / 2; n > 0; n--) {
+                    int v = bytestream2_get_byteu(&gb);
+                    *smp = adpcm_ima_expand_nibble(&c->status[channel], v >> 4  , 3);
+                    smp += avctx->channels;
+                    *smp = adpcm_ima_expand_nibble(&c->status[channel], v & 0x0F, 3);
+                    smp += avctx->channels;
+                }
             }
+        } else {
             for (n = nb_samples / 2; n > 0; n--) {
-                uint8_t v = *src0;
-                src0 += src_stride;
-                *smp = adpcm_ima_expand_nibble(&c->status[channel], v >> 4  , 3);
-                smp += avctx->channels;
-                *smp = adpcm_ima_expand_nibble(&c->status[channel], v & 0x0F, 3);
-                smp += avctx->channels;
+                for (channel = 0; channel < avctx->channels; channel++) {
+                    int v = bytestream2_get_byteu(&gb);
+                    *samples++  = adpcm_ima_expand_nibble(&c->status[channel], v >> 4  , 3);
+                    samples[st] = adpcm_ima_expand_nibble(&c->status[channel], v & 0x0F, 3);
+                }
+                samples += avctx->channels;
             }
         }
-        src = buf + buf_size;
+        bytestream2_seek(&gb, 0, SEEK_END);
         break;
     case CODEC_ID_ADPCM_XA:
         while (buf_size >= 128) {
