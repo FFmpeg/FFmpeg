@@ -1,4 +1,0 @@
-bdb4c312fb109f990be83a70f8ec9bdc *./tests/data/acodec/wmav2.asf
-106044 ./tests/data/acodec/wmav2.asf
-stddev:12246.35 PSNR: 14.57 MAXDIFF:65521 bytes:  1064960/  1058400
-stddev: 2068.08 PSNR: 30.02 MAXDIFF:27650 bytes:  1056768/  1058400

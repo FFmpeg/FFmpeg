@@ -36,3 +36,22 @@ fate-wmavoice-19k: FUZZ = 3
 
 FATE_TESTS += $(FATE_WMAVOICE)
 fate-wmavoice: $(FATE_WMAVOICE)
+
+FATE_WMA_ENCODE += fate-wmav1-encode
+fate-wmav1-encode: CMD = enc_dec_pcm asf s16le -c:a wmav1 -b:a 128k
+fate-wmav1-encode: CMP = stddev
+fate-wmav1-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
+fate-wmav1-encode: CMP_SHIFT = -8192
+fate-wmav1-encode: CMP_TARGET = 291.06
+fate-wmav1-encode: SIZE_TOLERANCE = 4632
+
+FATE_WMA_ENCODE += fate-wmav2-encode
+fate-wmav2-encode: CMD = enc_dec_pcm asf s16le -c:a wmav2 -b:a 128k
+fate-wmav2-encode: CMP = stddev
+fate-wmav2-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
+fate-wmav2-encode: CMP_SHIFT = -8192
+fate-wmav2-encode: CMP_TARGET = 258.32
+fate-wmav2-encode: SIZE_TOLERANCE = 4632
+
+FATE_TESTS += $(FATE_WMA_ENCODE)
+fate-wma-encode: $(FATE_WMA_ENCODE)
