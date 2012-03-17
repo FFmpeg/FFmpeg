@@ -24,6 +24,8 @@
 
 #include <stdint.h>
 
+#include "bytestream.h"
+
 #define FF_S3TC_DXT1    0x31545844
 #define FF_S3TC_DXT3    0x33545844
 

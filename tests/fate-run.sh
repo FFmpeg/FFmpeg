@@ -14,10 +14,13 @@ target_path=$4
 command=$5
 cmp=${6:-diff}
 ref=${7:-"${base}/ref/fate/${test}"}
-fuzz=$8
+fuzz=${8:-1}
 threads=${9:-1}
 thread_type=${10:-frame+slice}
 cpuflags=${11:-all}
+cmp_shift=${12:-0}
+cmp_target=${13:-0}
+size_tolerance=${14:-0}
 
 outdir="tests/data/fate"
 outfile="${outdir}/${test}"
@@ -25,24 +28,32 @@ errfile="${outdir}/${test}.err"
 cmpfile="${outdir}/${test}.diff"
 repfile="${outdir}/${test}.rep"
 
+# $1=value1, $2=value2, $3=threshold
+# prints 0 if absolute difference between value1 and value2 is <= threshold
+compare(){
+    v=$(echo "scale=2; if ($1 >= $2) { $1 - $2 } else { $2 - $1 }" | bc)
+    echo "if ($v <= $3) { 0 } else { 1 }" | bc
+}
+
 do_tiny_psnr(){
-    psnr=$(tests/tiny_psnr "$1" "$2" 2 0 0)
+    psnr=$(tests/tiny_psnr "$1" "$2" 2 $cmp_shift 0)
     val=$(expr "$psnr" : ".*$3: *\([0-9.]*\)")
     size1=$(expr "$psnr" : '.*bytes: *\([0-9]*\)')
     size2=$(expr "$psnr" : '.*bytes:[ 0-9]*/ *\([0-9]*\)')
-    res=$(echo "if ($val $4 $5) 1" | bc)
-    if [ "$res" != 1 ] || [ $size1 != $size2 ]; then
+    val_cmp=$(compare $val $cmp_target $fuzz)
+    size_cmp=$(compare $size1 $size2 $size_tolerance)
+    if [ "$val_cmp" != 0 ] || [ "$size_cmp" != 0 ]; then
         echo "$psnr"
         return 1
     fi
 }
 
 oneoff(){
-    do_tiny_psnr "$1" "$2" MAXDIFF '<=' ${fuzz:-1}
+    do_tiny_psnr "$1" "$2" MAXDIFF
 }
 
 stddev(){
-    do_tiny_psnr "$1" "$2" stddev  '<=' ${fuzz:-1}
+    do_tiny_psnr "$1" "$2" stddev
 }
 
 run(){
@@ -72,6 +83,16 @@ md5(){
 
 pcm(){
     avconv "$@" -vn -f s16le -
+}
+
+enc_dec_pcm(){
+    out_fmt=$1
+    pcm_fmt=$2
+    shift 2
+    encfile="${outdir}/${test}.${out_fmt}"
+    cleanfiles=$encfile
+    avconv -i $ref "$@" -f $out_fmt -y $encfile || return
+    avconv -i $encfile -c:a pcm_${pcm_fmt} -f wav -
 }
 
 regtest(){
@@ -126,8 +147,8 @@ fi
 if test -e "$ref"; then
     case $cmp in
         diff)   diff -u -w "$ref" "$outfile"            >$cmpfile ;;
-        oneoff) oneoff     "$ref" "$outfile" "$fuzz"    >$cmpfile ;;
-        stddev) stddev     "$ref" "$outfile" "$fuzz"    >$cmpfile ;;
+        oneoff) oneoff     "$ref" "$outfile"            >$cmpfile ;;
+        stddev) stddev     "$ref" "$outfile"            >$cmpfile ;;
         null)   cat               "$outfile"            >$cmpfile ;;
     esac
     cmperr=$?
