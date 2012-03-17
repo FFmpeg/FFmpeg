@@ -105,7 +105,7 @@ static av_always_inline int get_cabac_bypass_sign_x86(CABACContext *c, int val)
 {
     x86_reg tmp;
     __asm__ volatile(
-        "movl        %a5(%2), %k1       \n\t"
+        "movl        %a6(%2), %k1       \n\t"
         "movl        %a3(%2), %%eax     \n\t"
         "shl             $17, %k1       \n\t"
         "add           %%eax, %%eax     \n\t"
@@ -122,9 +122,10 @@ static av_always_inline int get_cabac_bypass_sign_x86(CABACContext *c, int val)
         "movzwl         (%1), %%edx     \n\t"
         "bswap         %%edx            \n\t"
         "shrl            $15, %%edx     \n\t"
-        "add              $2, %1        \n\t"
         "addl          %%edx, %%eax     \n\t"
-        "mov              %1, %a4(%2)   \n\t"
+        "cmp         %a5(%2), %1        \n\t"
+        "jge              1f            \n\t"
+        "add"OPSIZE"      $2, %a4(%2)   \n\t"
         "1:                             \n\t"
         "movl          %%eax, %a3(%2)   \n\t"
 
@@ -132,6 +133,7 @@ static av_always_inline int get_cabac_bypass_sign_x86(CABACContext *c, int val)
         : "r"(c),
           "i"(offsetof(CABACContext, low)),
           "i"(offsetof(CABACContext, bytestream)),
+          "i"(offsetof(CABACContext, bytestream_end)),
           "i"(offsetof(CABACContext, range))
         : "%eax", "%edx", "memory"
     );
