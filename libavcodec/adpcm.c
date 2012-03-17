@@ -1101,38 +1101,41 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
     case CODEC_ID_ADPCM_SBPRO_2:
         if (!c->status[0].step_index) {
             /* the first byte is a raw sample */
-            *samples++ = 128 * (*src++ - 0x80);
+            *samples++ = 128 * (bytestream2_get_byteu(&gb) - 0x80);
             if (st)
-              *samples++ = 128 * (*src++ - 0x80);
+                *samples++ = 128 * (bytestream2_get_byteu(&gb) - 0x80);
             c->status[0].step_index = 1;
             nb_samples--;
         }
         if (avctx->codec->id == CODEC_ID_ADPCM_SBPRO_4) {
-            for (n = nb_samples >> (1 - st); n > 0; n--, src++) {
+            for (n = nb_samples >> (1 - st); n > 0; n--) {
+                int byte = bytestream2_get_byteu(&gb);
                 *samples++ = adpcm_sbpro_expand_nibble(&c->status[0],
-                    src[0] >> 4, 4, 0);
+                                                       byte >> 4,   4, 0);
                 *samples++ = adpcm_sbpro_expand_nibble(&c->status[st],
-                    src[0] & 0x0F, 4, 0);
+                                                       byte & 0x0F, 4, 0);
             }
         } else if (avctx->codec->id == CODEC_ID_ADPCM_SBPRO_3) {
-            for (n = nb_samples / 3; n > 0; n--, src++) {
+            for (n = nb_samples / 3; n > 0; n--) {
+                int byte = bytestream2_get_byteu(&gb);
                 *samples++ = adpcm_sbpro_expand_nibble(&c->status[0],
-                     src[0] >> 5        , 3, 0);
+                                                        byte >> 5        , 3, 0);
                 *samples++ = adpcm_sbpro_expand_nibble(&c->status[0],
-                    (src[0] >> 2) & 0x07, 3, 0);
+                                                       (byte >> 2) & 0x07, 3, 0);
                 *samples++ = adpcm_sbpro_expand_nibble(&c->status[0],
-                    src[0] & 0x03, 2, 0);
+                                                        byte & 0x03,       2, 0);
             }
         } else {
-            for (n = nb_samples >> (2 - st); n > 0; n--, src++) {
+            for (n = nb_samples >> (2 - st); n > 0; n--) {
+                int byte = bytestream2_get_byteu(&gb);
                 *samples++ = adpcm_sbpro_expand_nibble(&c->status[0],
-                     src[0] >> 6        , 2, 2);
+                                                        byte >> 6        , 2, 2);
                 *samples++ = adpcm_sbpro_expand_nibble(&c->status[st],
-                    (src[0] >> 4) & 0x03, 2, 2);
+                                                       (byte >> 4) & 0x03, 2, 2);
                 *samples++ = adpcm_sbpro_expand_nibble(&c->status[0],
-                    (src[0] >> 2) & 0x03, 2, 2);
+                                                       (byte >> 2) & 0x03, 2, 2);
                 *samples++ = adpcm_sbpro_expand_nibble(&c->status[st],
-                    src[0] & 0x03, 2, 2);
+                                                        byte & 0x03,       2, 2);
             }
         }
         break;
