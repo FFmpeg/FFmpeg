@@ -410,8 +410,7 @@ static void adpcm_swf_decode(AVCodecContext *avctx, const uint8_t *buf, int buf_
  *                           packet, or 0 if the codec does not encode the
  *                           number of samples in each frame.
  */
-static int get_nb_samples(AVCodecContext *avctx, const uint8_t *buf,
-                          GetByteContext *gb,
+static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
                           int buf_size, int *coded_samples)
 {
     ADPCMDecodeContext *s = avctx->priv_data;
@@ -549,9 +548,8 @@ static int get_nb_samples(AVCodecContext *avctx, const uint8_t *buf,
     }
     case CODEC_ID_ADPCM_THP:
         has_coded_samples = 1;
-        if (buf_size < 8)
-            return 0;
-        *coded_samples  = AV_RB32(&buf[4]);
+        bytestream2_skip(gb, 4); // channel size
+        *coded_samples  = bytestream2_get_be32(gb);
         *coded_samples -= *coded_samples % 14;
         nb_samples      = (buf_size - 80) / (8 * ch) * 14;
         break;
@@ -576,14 +574,13 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
     ADPCMChannelStatus *cs;
     int n, m, channel, i;
     short *samples;
-    const uint8_t *src;
     int st; /* stereo */
     int count1, count2;
     int nb_samples, coded_samples, ret;
     GetByteContext gb;
 
     bytestream2_init(&gb, buf, buf_size);
-    nb_samples = get_nb_samples(avctx, buf, &gb, buf_size, &coded_samples);
+    nb_samples = get_nb_samples(avctx, &gb, buf_size, &coded_samples);
     if (nb_samples <= 0) {
         av_log(avctx, AV_LOG_ERROR, "invalid number of samples in packet\n");
         return AVERROR_INVALIDDATA;
@@ -604,8 +601,6 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
             av_log(avctx, AV_LOG_WARNING, "mismatch in coded sample count\n");
         c->frame.nb_samples = nb_samples = coded_samples;
     }
-
-    src = buf;
 
     st = avctx->channels == 2 ? 1 : 0;
 
@@ -1214,31 +1209,34 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         int prev[2][2];
         int ch;
 
-        src += 4; // skip channel size
-        src += 4; // skip number of samples (already read)
-
         for (i = 0; i < 32; i++)
-            table[0][i] = (int16_t)bytestream_get_be16(&src);
+            table[0][i] = sign_extend(bytestream2_get_be16u(&gb), 16);
 
         /* Initialize the previous sample.  */
         for (i = 0; i < 4; i++)
-            prev[0][i] = (int16_t)bytestream_get_be16(&src);
+            prev[0][i] = sign_extend(bytestream2_get_be16u(&gb), 16);
 
         for (ch = 0; ch <= st; ch++) {
             samples = (short *)c->frame.data[0] + ch;
 
             /* Read in every sample for this channel.  */
             for (i = 0; i < nb_samples / 14; i++) {
-                int index = (*src >> 4) & 7;
-                unsigned int exp = *src++ & 15;
+                int byte = bytestream2_get_byteu(&gb);
+                int index = (byte >> 4) & 7;
+                unsigned int exp = byte & 0x0F;
                 int factor1 = table[ch][index * 2];
                 int factor2 = table[ch][index * 2 + 1];
 
                 /* Decode 14 samples.  */
                 for (n = 0; n < 14; n++) {
                     int32_t sampledat;
-                    if(n&1) sampledat = sign_extend(*src++, 4);
-                    else    sampledat = sign_extend(*src >> 4, 4);
+
+                    if (n & 1) {
+                        sampledat = sign_extend(byte, 4);
+                    } else {
+                        byte = bytestream2_get_byteu(&gb);
+                        sampledat = sign_extend(byte >> 4, 4);
+                    }
 
                     sampledat = ((prev[ch][0]*factor1
                                 + prev[ch][1]*factor2) >> 11) + (sampledat << exp);
@@ -1262,7 +1260,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
     *got_frame_ptr   = 1;
     *(AVFrame *)data = c->frame;
 
-    return src == buf ? bytestream2_tell(&gb) : src - buf;
+    return bytestream2_tell(&gb);
 }
 
 
