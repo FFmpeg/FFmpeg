@@ -15,6 +15,7 @@ version next:
 - libutvideo encoder wrapper (--enable-libutvideo)
 - swapuv filter
 - bbox filter
+- XBM encoder
 
 
 version 0.10:

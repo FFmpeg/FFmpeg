@@ -482,6 +482,7 @@ OBJS-$(CONFIG_XAN_DPCM_DECODER)        += dpcm.o
 OBJS-$(CONFIG_XAN_WC3_DECODER)         += xan.o
 OBJS-$(CONFIG_XAN_WC4_DECODER)         += xxan.o
 OBJS-$(CONFIG_XBIN_DECODER)            += bintext.o cga_data.o
+OBJS-$(CONFIG_XBM_ENCODER)             += xbmenc.o
 OBJS-$(CONFIG_XL_DECODER)              += xl.o
 OBJS-$(CONFIG_XSUB_DECODER)            += xsubdec.o
 OBJS-$(CONFIG_XSUB_ENCODER)            += xsubenc.o

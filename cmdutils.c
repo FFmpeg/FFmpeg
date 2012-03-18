@@ -1064,7 +1064,7 @@ FILE *get_preset_file(char *filename, size_t filename_size,
             if (!f && codec_name) {
                 snprintf(filename, filename_size,
                          "%s%s/%s-%s.ffpreset",
-                         base[i],  i != 1 ? "" : "/.ffmpeg", codec_name,
+                         base[i], i != 1 ? "" : "/.ffmpeg", codec_name,
                          preset_name);
                 f = fopen(filename, "r");
             }

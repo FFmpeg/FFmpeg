@@ -357,7 +357,7 @@ int cmdutils_read_file(const char *filename, char **bufptr, size_t *size);
  * at configuration time or in a "ffpresets" folder along the executable
  * on win32, in that order. If no such file is found and
  * codec_name is defined, then search for a file named
- * codec_name-preset_name.ffpreset in the above-mentioned directories.
+ * codec_name-preset_name.avpreset in the above-mentioned directories.
  *
  * @param filename buffer where the name of the found filename is written
  * @param filename_size size in bytes of the filename buffer
