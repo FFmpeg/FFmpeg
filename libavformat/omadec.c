@@ -140,7 +140,7 @@ static int rprobe(AVFormatContext *s, uint8_t *enc_header, const uint8_t *r_val)
     return memcmp(&enc_header[pos], oc->sm_val, 8) ? -1 : 0;
 }
 
-static int nprobe(AVFormatContext *s, uint8_t *enc_header, const uint8_t *n_val)
+static int nprobe(AVFormatContext *s, uint8_t *enc_header, int size, const uint8_t *n_val)
 {
     OMAContext *oc = s->priv_data;
     uint32_t pos, taglen, datalen;
@@ -158,6 +158,9 @@ static int nprobe(AVFormatContext *s, uint8_t *enc_header, const uint8_t *n_val)
 
     taglen = AV_RB32(&enc_header[pos+32]);
     datalen = AV_RB32(&enc_header[pos+36]) >> 4;
+
+    if(taglen + (((uint64_t)datalen)<<4) + 44 > size)
+        return -1;
 
     pos += 44 + taglen;
 
@@ -229,14 +232,14 @@ static int decrypt_init(AVFormatContext *s, ID3v2ExtraMeta *em, uint8_t *header)
     }
     if (!memcmp(oc->r_val, (const uint8_t[8]){0}, 8) ||
         rprobe(s, gdata, oc->r_val) < 0 &&
-        nprobe(s, gdata, oc->n_val) < 0) {
+        nprobe(s, gdata, geob->datasize, oc->n_val) < 0) {
         int i;
         for (i = 0; i < FF_ARRAY_ELEMS(leaf_table); i += 2) {
             uint8_t buf[16];
             AV_WL64(buf, leaf_table[i]);
             AV_WL64(&buf[8], leaf_table[i+1]);
             kset(s, buf, buf, 16);
-            if (!rprobe(s, gdata, oc->r_val) || !nprobe(s, gdata, oc->n_val))
+            if (!rprobe(s, gdata, oc->r_val) || !nprobe(s, gdata, geob->datasize, oc->n_val))
                 break;
         }
         if (i >= sizeof(leaf_table)) {
