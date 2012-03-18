@@ -19,6 +19,9 @@ fate-adpcm-creative-8-4bit: CMD = md5 -i $(SAMPLES)/creative/BBC_4BIT.VOC -f s16
 FATE_ADPCM += fate-adpcm-ea-mad-ea-r1
 fate-adpcm-ea-mad-ea-r1: CMD = framecrc -i $(SAMPLES)/ea-mad/NFS6LogoE.mad
 
+FATE_ADPCM += fate-adpcm-ea-maxis-xa
+fate-adpcm-ea-maxis-xa: CMD = framecrc -i $(SAMPLES)/maxis-xa/SC2KBUG.XA -frames:a 30
+
 FATE_ADPCM += fate-adpcm-ea-tqi
 fate-adpcm-ea-tqi: CMD = framecrc -i $(SAMPLES)/ea-wve/networkBackbone-partial.wve -frames:v 26
 
