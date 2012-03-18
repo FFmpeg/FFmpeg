@@ -1798,6 +1798,7 @@ pp4_test_deps="mp_filter"
 pp5_test_deps="mp_filter"
 pp6_test_deps="mp_filter"
 zlib_test_deps="zlib"
+zmbv_test_deps="zlib"
 
 # default parameters
 
