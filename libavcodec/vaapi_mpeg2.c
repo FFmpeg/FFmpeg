@@ -132,7 +132,7 @@ static int vaapi_mpeg2_decode_slice(AVCodecContext *avctx, const uint8_t *buffer
         return -1;
     slice_param->macroblock_offset              = macroblock_offset;
     slice_param->slice_horizontal_position      = s->mb_x;
-    slice_param->slice_vertical_position        = s->mb_y;
+    slice_param->slice_vertical_position        = s->mb_y >> (s->picture_structure != PICT_FRAME);
     slice_param->quantiser_scale_code           = quantiser_scale_code;
     slice_param->intra_slice_flag               = intra_slice_flag;
     return 0;
