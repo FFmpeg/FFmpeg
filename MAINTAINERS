@@ -244,6 +244,7 @@ Codecs:
   xan.c                                 Mike Melanson
   xl.c                                  Kostya Shishkov
   xvmc.c                                Ivan Kalvachev
+  zerocodec.c                           Derek Buitenhuis
   zmbv*                                 Kostya Shishkov
 
 Hardware acceleration:

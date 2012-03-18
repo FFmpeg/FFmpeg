@@ -351,6 +351,7 @@ library:
 @item eXtended BINary text (XBIN) @tab @tab X
 @item YUV4MPEG pipe             @tab X @tab X
 @item Psygnosis YOP             @tab   @tab X
+@item ZeroCodec Lossless Video  @tab   @tab X
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.

@@ -16,6 +16,7 @@ version next:
 - swapuv filter
 - bbox filter
 - XBM encoder
+- ZeroCodec decoder
 
 
 version 0.10:

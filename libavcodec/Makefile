@@ -493,6 +493,7 @@ OBJS-$(CONFIG_Y41P_ENCODER)            += y41penc.o
 OBJS-$(CONFIG_YOP_DECODER)             += yop.o
 OBJS-$(CONFIG_YUV4_DECODER)            += yuv4dec.o
 OBJS-$(CONFIG_YUV4_ENCODER)            += yuv4enc.o
+OBJS-$(CONFIG_ZEROCODEC_DECODER)       += zerocodec.o
 OBJS-$(CONFIG_ZLIB_DECODER)            += lcldec.o
 OBJS-$(CONFIG_ZLIB_ENCODER)            += lclenc.o
 OBJS-$(CONFIG_ZMBV_DECODER)            += zmbv.o
