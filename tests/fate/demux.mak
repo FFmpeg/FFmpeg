@@ -38,7 +38,7 @@ FATE_TESTS += fate-lmlm4-demux
 fate-lmlm4-demux: CMD = framecrc -i $(SAMPLES)/lmlm4/LMLM4_CIFat30fps.divx -t 3 -acodec copy -vcodec copy
 
 FATE_TESTS += fate-maxis-xa
-fate-maxis-xa: CMD = md5 -i $(SAMPLES)/maxis-xa/SC2KBUG.XA -f s16le
+fate-maxis-xa: CMD = framecrc -i $(SAMPLES)/maxis-xa/SC2KBUG.XA -frames:a 30 -c:a copy
 
 FATE_TESTS += fate-mtv
 fate-mtv: CMD = framecrc -i $(SAMPLES)/mtv/comedian_auto-partial.mtv -acodec copy -pix_fmt rgb24
