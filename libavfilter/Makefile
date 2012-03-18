@@ -94,6 +94,7 @@ OBJS-$(CONFIG_SETTB_FILTER)                  += vf_settb.o
 OBJS-$(CONFIG_SHOWINFO_FILTER)               += vf_showinfo.o
 OBJS-$(CONFIG_SLICIFY_FILTER)                += vf_slicify.o
 OBJS-$(CONFIG_SPLIT_FILTER)                  += vf_split.o
+OBJS-$(CONFIG_SUPER2XSAI_FILTER)             += vf_super2xsai.o
 OBJS-$(CONFIG_SWAPUV_FILTER)                 += vf_swapuv.o
 OBJS-$(CONFIG_THUMBNAIL_FILTER)              += vf_thumbnail.o
 OBJS-$(CONFIG_TILE_FILTER)                   += vf_tile.o
