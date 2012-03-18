@@ -323,11 +323,20 @@ const DVprofile* avpriv_dv_frame_profile(const DVprofile *sys,
 const DVprofile* avpriv_dv_codec_profile(AVCodecContext* codec)
 {
     int i;
+    int w, h;
+
+    if (codec->coded_width || codec->coded_height) {
+        w = codec->coded_width;
+        h = codec->coded_height;
+    } else {
+        w = codec->width;
+        h = codec->height;
+    }
 
     for (i=0; i<FF_ARRAY_ELEMS(dv_profiles); i++)
-       if (codec->coded_height == dv_profiles[i].height  &&
+       if (h == dv_profiles[i].height  &&
            codec->pix_fmt      == dv_profiles[i].pix_fmt &&
-           codec->coded_width  == dv_profiles[i].width)
+           w == dv_profiles[i].width)
                return &dv_profiles[i];
 
     return NULL;
