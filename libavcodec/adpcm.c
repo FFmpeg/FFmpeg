@@ -292,7 +292,7 @@ static int xa_decode(AVCodecContext *avctx,
         for(j=0;j<28;j++) {
             d = in[16+i+j*4];
 
-            t = (signed char)(d<<4)>>4;
+            t = sign_extend(d, 4);
             s = ( t<<shift ) + ((s_1*f0 + s_2*f1+32)>>6);
             s_2 = s_1;
             s_1 = av_clip_int16(s);
@@ -322,7 +322,7 @@ static int xa_decode(AVCodecContext *avctx,
         for(j=0;j<28;j++) {
             d = in[16+i+j*4];
 
-            t = (signed char)d >> 4;
+            t = sign_extend(d >> 4, 4);
             s = ( t<<shift ) + ((s_1*f0 + s_2*f1+32)>>6);
             s_2 = s_1;
             s_1 = av_clip_int16(s);
@@ -834,13 +834,12 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         bytestream2_seek(&gb, 0, SEEK_END);
         break;
     case CODEC_ID_ADPCM_XA:
-        while (buf_size >= 128) {
-            if ((ret = xa_decode(avctx, samples, src, &c->status[0],
+        while (bytestream2_get_bytes_left(&gb) >= 128) {
+            if ((ret = xa_decode(avctx, samples, buf + bytestream2_tell(&gb), &c->status[0],
                                  &c->status[1], avctx->channels)) < 0)
                 return ret;
-            src += 128;
+            bytestream2_skipu(&gb, 128);
             samples += 28 * 8;
-            buf_size -= 128;
         }
         break;
     case CODEC_ID_ADPCM_IMA_EA_EACS:
