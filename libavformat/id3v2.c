@@ -724,6 +724,7 @@ int ff_id3v2_parse_apic(AVFormatContext *s, ID3v2ExtraMeta **extra_meta)
         st->attached_pic.size         = apic->len;
         st->attached_pic.destruct     = av_destruct_packet;
         st->attached_pic.stream_index = st->index;
+        st->attached_pic.flags       |= AV_PKT_FLAG_KEY;
 
         apic->data = NULL;
         apic->len  = 0;
