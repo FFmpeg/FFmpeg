@@ -484,29 +484,29 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         if (zret != Z_OK) {
             av_log(avctx, AV_LOG_ERROR, "Inflate reset error: %d\n", zret);
             return -1;
-         }
+        }
 
-         tmp = av_realloc(c->cur,  avctx->width * avctx->height * (c->bpp / 8));
-         if (!tmp)
-             return AVERROR(ENOMEM);
-         c->cur = tmp;
-         tmp = av_realloc(c->prev, avctx->width * avctx->height * (c->bpp / 8));
-         if (!tmp)
-             return AVERROR(ENOMEM);
-         c->prev = tmp;
-         c->bx = (c->width + c->bw - 1) / c->bw;
-         c->by = (c->height+ c->bh - 1) / c->bh;
-     }
+        tmp = av_realloc(c->cur,  avctx->width * avctx->height * (c->bpp / 8));
+        if (!tmp)
+            return AVERROR(ENOMEM);
+        c->cur = tmp;
+        tmp = av_realloc(c->prev, avctx->width * avctx->height * (c->bpp / 8));
+        if (!tmp)
+            return AVERROR(ENOMEM);
+        c->prev = tmp;
+        c->bx   = (c->width  + c->bw - 1) / c->bw;
+        c->by   = (c->height + c->bh - 1) / c->bh;
+    }
 
-     if (c->decode_intra == NULL) {
-         av_log(avctx, AV_LOG_ERROR, "Error! Got no format or no keyframe!\n");
-         return AVERROR_INVALIDDATA;
-     }
+    if (c->decode_intra == NULL) {
+        av_log(avctx, AV_LOG_ERROR, "Error! Got no format or no keyframe!\n");
+        return AVERROR_INVALIDDATA;
+    }
 
-     if (c->comp == 0) { //Uncompressed data
-         memcpy(c->decomp_buf, buf, len);
-         c->decomp_size = 1;
-     } else { // ZLIB-compressed data
+    if (c->comp == 0) { //Uncompressed data
+        memcpy(c->decomp_buf, buf, len);
+        c->decomp_size = 1;
+    } else { // ZLIB-compressed data
         c->zstream.total_in = c->zstream.total_out = 0;
         c->zstream.next_in = buf;
         c->zstream.avail_in = len;
