@@ -761,6 +761,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             av_log(avctx, AV_LOG_ERROR, "Buffer contains IP frames!\n");
     }
 
+    if (ctx->frame_type >= FRAMETYPE_NULL_FIRST)
+        return buf_size;
+
     if (ctx->frame.data[0])
         avctx->release_buffer(avctx, &ctx->frame);
 
