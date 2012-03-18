@@ -27,9 +27,23 @@
 #include "avfiltergraph.h"
 #include "internal.h"
 
+#include "libavutil/log.h"
+
+static const AVClass filtergraph_class = {
+    .class_name = "AVFilterGraph",
+    .item_name  = av_default_item_name,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVFilterGraph *avfilter_graph_alloc(void)
 {
-    return av_mallocz(sizeof(AVFilterGraph));
+    AVFilterGraph *ret = av_mallocz(sizeof(AVFilterGraph));
+    if (!ret)
+        return NULL;
+#if FF_API_GRAPH_AVCLASS
+    ret->av_class = &filtergraph_class;
+#endif
+    return ret;
 }
 
 void avfilter_graph_free(AVFilterGraph **graph)
