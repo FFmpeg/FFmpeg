@@ -71,6 +71,10 @@ static int pnm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         n  = avctx->width * 6;
         break;
     case PIX_FMT_YUV420P:
+        if (avctx->width & 1) {
+            av_log(avctx, AV_LOG_ERROR, "pgmyuv needs even width\n");
+            return AVERROR(EINVAL);
+        }
         c  = '5';
         n  = avctx->width;
         h1 = (h * 3) / 2;
