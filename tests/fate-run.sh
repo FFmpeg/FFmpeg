@@ -31,8 +31,7 @@ repfile="${outdir}/${test}.rep"
 # $1=value1, $2=value2, $3=threshold
 # prints 0 if absolute difference between value1 and value2 is <= threshold
 compare(){
-    v=$(echo "scale=2; if ($1 >= $2) { $1 - $2 } else { $2 - $1 }" | bc)
-    echo "if ($v <= $3) { 0 } else { 1 }" | bc
+    echo "scale=2; v = $1 - $2; if (v < 0) v = -v; if (v > $3) r = 1; r" | bc
 }
 
 do_tiny_psnr(){
