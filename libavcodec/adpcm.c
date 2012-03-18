@@ -448,7 +448,7 @@ static int get_nb_samples(AVCodecContext *avctx, const uint8_t *buf,
     case CODEC_ID_ADPCM_IMA_DK3:
         if (avctx->block_align > 0)
             buf_size = FFMIN(buf_size, avctx->block_align);
-        nb_samples = ((buf_size - 16) * 8 / 3) / ch;
+        nb_samples = ((buf_size - 16) * 2 / 3 * 4) / ch;
         break;
     case CODEC_ID_ADPCM_IMA_DK4:
         nb_samples = 1 + (buf_size - 4 * ch) * 2 / ch;
