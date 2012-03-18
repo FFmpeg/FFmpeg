@@ -14,6 +14,7 @@ version <next>:
 - WMA Lossless decoder
 - XBM encoder
 - RealAudio Lossless decoder
+- ZeroCodec decoder
 
 
 version 0.8:

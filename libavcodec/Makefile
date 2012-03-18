@@ -448,6 +448,7 @@ OBJS-$(CONFIG_XSUB_ENCODER)            += xsubenc.o
 OBJS-$(CONFIG_XWD_DECODER)             += xwddec.o
 OBJS-$(CONFIG_XWD_ENCODER)             += xwdenc.o
 OBJS-$(CONFIG_YOP_DECODER)             += yop.o
+OBJS-$(CONFIG_ZEROCODEC_DECODER)       += zerocodec.o
 OBJS-$(CONFIG_ZLIB_DECODER)            += lcldec.o
 OBJS-$(CONFIG_ZLIB_ENCODER)            += lclenc.o
 OBJS-$(CONFIG_ZMBV_DECODER)            += zmbv.o
