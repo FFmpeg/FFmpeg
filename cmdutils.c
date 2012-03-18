@@ -872,12 +872,12 @@ FILE *get_preset_file(char *filename, size_t filename_size,
         for (i = 0; i < 3 && !f; i++) {
             if (!base[i])
                 continue;
-            snprintf(filename, filename_size, "%s%s/%s.ffpreset", base[i],
+            snprintf(filename, filename_size, "%s%s/%s.avpreset", base[i],
                      i != 1 ? "" : "/.avconv", preset_name);
             f = fopen(filename, "r");
             if (!f && codec_name) {
                 snprintf(filename, filename_size,
-                         "%s%s/%s-%s.ffpreset",
+                         "%s%s/%s-%s.avpreset",
                          base[i], i != 1 ? "" : "/.avconv", codec_name,
                          preset_name);
                 f = fopen(filename, "r");
