@@ -601,7 +601,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         if (zret != Z_OK) {
             av_log(avctx, AV_LOG_ERROR, "Inflate init error: %d\n", zret);
             av_freep(&c->decomp_buf);
-            return AVERROR_UNKNOWN;
+            return AVERROR_INVALIDDATA;
         }
     }
 #endif
