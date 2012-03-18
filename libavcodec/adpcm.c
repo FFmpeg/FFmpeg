@@ -353,6 +353,7 @@ static int xa_decode(AVCodecContext *avctx,
  *                           number of samples in each frame.
  */
 static int get_nb_samples(AVCodecContext *avctx, const uint8_t *buf,
+                          GetByteContext *gb,
                           int buf_size, int *coded_samples)
 {
     ADPCMDecodeContext *s = avctx->priv_data;
@@ -410,9 +411,7 @@ static int get_nb_samples(AVCodecContext *avctx, const uint8_t *buf,
         break;
     case CODEC_ID_ADPCM_IMA_EA_EACS:
         has_coded_samples = 1;
-        if (buf_size < 4)
-            return 0;
-        *coded_samples = AV_RL32(buf);
+        *coded_samples = bytestream2_get_le32(gb);
         nb_samples     = (buf_size - (4 + 8 * ch)) * 2 / ch;
         break;
     case CODEC_ID_ADPCM_EA_MAXIS_XA:
@@ -529,7 +528,8 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
     int nb_samples, coded_samples, ret;
     GetByteContext gb;
 
-    nb_samples = get_nb_samples(avctx, buf, buf_size, &coded_samples);
+    bytestream2_init(&gb, buf, buf_size);
+    nb_samples = get_nb_samples(avctx, buf, &gb, buf_size, &coded_samples);
     if (nb_samples <= 0) {
         av_log(avctx, AV_LOG_ERROR, "invalid number of samples in packet\n");
         return AVERROR_INVALIDDATA;
@@ -552,7 +552,6 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     src = buf;
-    bytestream2_init(&gb, buf, buf_size);
 
     st = avctx->channels == 2 ? 1 : 0;
 
@@ -843,16 +842,21 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         }
         break;
     case CODEC_ID_ADPCM_IMA_EA_EACS:
-        src += 4; // skip sample count (already read)
-
+        for (i=0; i<=st; i++) {
+            c->status[i].step_index = bytestream2_get_le32u(&gb);
+            if (c->status[i].step_index > 88u) {
+                av_log(avctx, AV_LOG_ERROR, "ERROR: step_index[%d] = %i\n",
+                       i, c->status[i].step_index);
+                return AVERROR_INVALIDDATA;
+            }
+        }
         for (i=0; i<=st; i++)
-            c->status[i].step_index = av_clip(bytestream_get_le32(&src), 0, 88);
-        for (i=0; i<=st; i++)
-            c->status[i].predictor  = bytestream_get_le32(&src);
+            c->status[i].predictor  = bytestream2_get_le32u(&gb);
 
-        for (n = nb_samples >> (1 - st); n > 0; n--, src++) {
-            *samples++ = adpcm_ima_expand_nibble(&c->status[0],  *src>>4,   3);
-            *samples++ = adpcm_ima_expand_nibble(&c->status[st], *src&0x0F, 3);
+        for (n = nb_samples >> (1 - st); n > 0; n--) {
+            int byte   = bytestream2_get_byteu(&gb);
+            *samples++ = adpcm_ima_expand_nibble(&c->status[0],  byte >> 4,   3);
+            *samples++ = adpcm_ima_expand_nibble(&c->status[st], byte & 0x0F, 3);
         }
         break;
     case CODEC_ID_ADPCM_IMA_EA_SEAD:
