@@ -128,8 +128,8 @@ void ff_rv40dsp_init_neon(RV34DSPContext *c, DSPContext* dsp)
     c->avg_chroma_pixels_tab[0] = ff_avg_rv40_chroma_mc8_neon;
     c->avg_chroma_pixels_tab[1] = ff_avg_rv40_chroma_mc4_neon;
 
-    c->rv40_weight_pixels_tab[0] = ff_rv40_weight_func_16_neon;
-    c->rv40_weight_pixels_tab[1] = ff_rv40_weight_func_8_neon;
+    c->rv40_weight_pixels_tab[0][0] = ff_rv40_weight_func_16_neon;
+    c->rv40_weight_pixels_tab[0][1] = ff_rv40_weight_func_8_neon;
 
     c->rv40_loop_filter_strength[0] = ff_rv40_h_loop_filter_strength_neon;
     c->rv40_loop_filter_strength[1] = ff_rv40_v_loop_filter_strength_neon;

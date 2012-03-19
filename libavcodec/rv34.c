@@ -521,7 +521,7 @@ static void rv34_pred_mv(RV34DecContext *r, int block_type, int subblock_no, int
  */
 static int calc_add_mv(RV34DecContext *r, int dir, int val)
 {
-    int mul = dir ? -r->weight2 : r->weight1;
+    int mul = dir ? -r->mv_weight2 : r->mv_weight1;
 
     return (val * mul + 0x2000) >> 14;
 }
@@ -776,24 +776,24 @@ static void rv34_mc_1mv(RV34DecContext *r, const int block_type,
 
 static void rv4_weight(RV34DecContext *r)
 {
-    r->rdsp.rv40_weight_pixels_tab[0](r->s.dest[0],
-                                      r->tmp_b_block_y[0],
-                                      r->tmp_b_block_y[1],
-                                      r->weight1,
-                                      r->weight2,
-                                      r->s.linesize);
-    r->rdsp.rv40_weight_pixels_tab[1](r->s.dest[1],
-                                      r->tmp_b_block_uv[0],
-                                      r->tmp_b_block_uv[2],
-                                      r->weight1,
-                                      r->weight2,
-                                      r->s.uvlinesize);
-    r->rdsp.rv40_weight_pixels_tab[1](r->s.dest[2],
-                                      r->tmp_b_block_uv[1],
-                                      r->tmp_b_block_uv[3],
-                                      r->weight1,
-                                      r->weight2,
-                                      r->s.uvlinesize);
+    r->rdsp.rv40_weight_pixels_tab[r->scaled_weight][0](r->s.dest[0],
+                                                        r->tmp_b_block_y[0],
+                                                        r->tmp_b_block_y[1],
+                                                        r->weight1,
+                                                        r->weight2,
+                                                        r->s.linesize);
+    r->rdsp.rv40_weight_pixels_tab[r->scaled_weight][1](r->s.dest[1],
+                                                        r->tmp_b_block_uv[0],
+                                                        r->tmp_b_block_uv[2],
+                                                        r->weight1,
+                                                        r->weight2,
+                                                        r->s.uvlinesize);
+    r->rdsp.rv40_weight_pixels_tab[r->scaled_weight][1](r->s.dest[2],
+                                                        r->tmp_b_block_uv[1],
+                                                        r->tmp_b_block_uv[3],
+                                                        r->weight1,
+                                                        r->weight2,
+                                                        r->s.uvlinesize);
 }
 
 static void rv34_mc_2mv(RV34DecContext *r, const int block_type)
@@ -1703,11 +1703,21 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
             int dist0   = GET_PTS_DIFF(r->cur_pts,  r->last_pts);
             int dist1   = GET_PTS_DIFF(r->next_pts, r->cur_pts);
 
-            if (!refdist) {
-                r->weight1 = r->weight2 = 8192;
-            } else {
-                r->weight1 = (dist0 << 14) / refdist;
-                r->weight2 = (dist1 << 14) / refdist;
+            if(!refdist){
+                r->mv_weight1 = r->mv_weight2 = r->weight1 = r->weight2 = 8192;
+                r->scaled_weight = 0;
+            }else{
+                r->mv_weight1 = (dist0 << 14) / refdist;
+                r->mv_weight2 = (dist1 << 14) / refdist;
+                if((r->mv_weight1|r->mv_weight2) & 511){
+                    r->weight1 = r->mv_weight1;
+                    r->weight2 = r->mv_weight2;
+                    r->scaled_weight = 0;
+                }else{
+                    r->weight1 = r->mv_weight1 >> 9;
+                    r->weight2 = r->mv_weight2 >> 9;
+                    r->scaled_weight = 1;
+                }
             }
         }
         s->mb_x = s->mb_y = 0;

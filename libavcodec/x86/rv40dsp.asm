@@ -139,69 +139,61 @@ SECTION .text
 
 ; rv40_weight_func_%1(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w1, int w2, int stride)
 ; %1=size  %2=num of xmm regs
-%macro RV40_WEIGHT  2
-cglobal rv40_weight_func_%1, 6, 7, %2
+; The weights are FP0.14 notation of fractions depending on pts.
+; For timebases without rounding error (i.e. PAL), the fractions
+; can be simplified, and several operations can be avoided.
+; Therefore, we check here whether they are multiples of 2^9 for
+; those simplifications to occur.
+%macro RV40_WEIGHT  3
+cglobal rv40_weight_func_%1_%2, 6, 7, %3
 %if cpuflag(ssse3)
     mova       m1, [shift_round]
 %else
     mova       m1, [pw_16]
 %endif
     pxor       m0, m0
-    mov        r6, r3
-    or         r6, r4
-    ; The weights are FP0.14 notation of fractions depending on pts.
-    ; For timebases without rounding error (i.e. PAL), the fractions
-    ; can be simplified, and several operations can be avoided.
-    ; Therefore, we check here whether they are multiples of 2^9 for
-    ; those simplifications to occur.
-    and        r6, 0x1FF
     ; Set loop counter and increments
 %if mmsize == 8
-    mov        r6, %1
+    mov        r6, %2
 %else
-    mov        r6, (%1 * %1) / mmsize
+    mov        r6, (%2 * %2) / mmsize
 %endif
 
-    ; Use result of test now
-    jz .loop_512
     movd       m2, r3
     movd       m3, r4
+%ifidn %1,rnd
+%define  RND   0
     SPLATW     m2, m2
+%else
+%define  RND   1
+%if cpuflag(ssse3)
+    punpcklbw  m3, m2
+%else
+    SPLATW     m2, m2
+%endif
+%endif
     SPLATW     m3, m3
 
 .loop:
-    MAIN_LOOP  %1, 0
+    MAIN_LOOP  %2, RND
     jnz        .loop
     REP_RET
-
-    ; Weights are multiple of 512, which allows some shortcuts
-.loop_512:
-    sar        r3, 9
-    sar        r4, 9
-    movd       m2, r3
-    movd       m3, r4
-%if cpuflag(ssse3)
-    punpcklbw  m3, m2
-    SPLATW     m3, m3
-%else
-    SPLATW     m2, m2
-    SPLATW     m3, m3
-%endif
-.loop2:
-    MAIN_LOOP  %1, 1
-    jnz        .loop2
-    REP_RET
-
 %endmacro
 
 INIT_MMX mmx
-RV40_WEIGHT    8, 0
-RV40_WEIGHT   16, 0
+RV40_WEIGHT   rnd,    8, 3
+RV40_WEIGHT   rnd,   16, 4
+RV40_WEIGHT   nornd,  8, 3
+RV40_WEIGHT   nornd, 16, 4
 
 INIT_XMM sse2
-RV40_WEIGHT    8, 8
-RV40_WEIGHT   16, 8
+RV40_WEIGHT   rnd,    8, 3
+RV40_WEIGHT   rnd,   16, 4
+RV40_WEIGHT   nornd,  8, 3
+RV40_WEIGHT   nornd, 16, 4
 
 INIT_XMM ssse3
-RV40_WEIGHT    8, 8
-RV40_WEIGHT   16, 8
+RV40_WEIGHT   rnd,    8, 3
+RV40_WEIGHT   rnd,   16, 4
+RV40_WEIGHT   nornd,  8, 3
+RV40_WEIGHT   nornd, 16, 4
