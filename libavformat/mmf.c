@@ -68,7 +68,7 @@ static int mmf_write_header(AVFormatContext *s)
 
     rate = mmf_rate_code(s->streams[0]->codec->sample_rate);
     if(rate < 0) {
-        av_log(s, AV_LOG_ERROR, "Unsupported sample rate %d\n", s->streams[0]->codec->sample_rate);
+        av_log(s, AV_LOG_ERROR, "Unsupported sample rate %d, supported are 4000, 8000, 11025, 22050 and 44100\n", s->streams[0]->codec->sample_rate);
         return -1;
     }
 
