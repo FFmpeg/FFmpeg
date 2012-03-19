@@ -936,6 +936,10 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if (s->transparency) {
         av_log(avctx, AV_LOG_WARNING, "Storing alpha plane, this will require a recent FFV1 decoder to playback!\n");
     }
+    if (avctx->context_model > 1U) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid context model %d, valid values are 0 and 1\n", avctx->context_model);
+        return AVERROR(EINVAL);
+    }
 
     for(i=0; i<256; i++){
         s->quant_table_count=2;
