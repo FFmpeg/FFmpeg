@@ -163,6 +163,7 @@ typedef struct SnowContext{
     MpegEncContext m; // needed for motion estimation, should not be used for anything else, the idea is to eventually make the motion estimation independent of MpegEncContext, so this will be removed then (FIXME/XXX)
 
     uint8_t *scratchbuf;
+    int *runs;
 }SnowContext;
 
 /* Tables */

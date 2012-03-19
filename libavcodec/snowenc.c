@@ -248,6 +248,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
         }
     }
 
+    s->runs = av_malloc(avctx->width * avctx->height * sizeof(*s->runs));
+
     return 0;
 }
 
@@ -834,7 +836,6 @@ static int encode_subband_c0run(SnowContext *s, SubBand *b, const IDWTELEM *src,
 
     if(1){
         int run=0;
-        int runs[w*h];
         int run_index=0;
         int max_index;
 
@@ -868,7 +869,7 @@ static int encode_subband_c0run(SnowContext *s, SubBand *b, const IDWTELEM *src,
                 }
                 if(!(/*ll|*/l|lt|t|rt|p)){
                     if(v){
-                        runs[run_index++]= run;
+                        s->runs[run_index++]= run;
                         run=0;
                     }else{
                         run++;
@@ -877,9 +878,9 @@ static int encode_subband_c0run(SnowContext *s, SubBand *b, const IDWTELEM *src,
             }
         }
         max_index= run_index;
-        runs[run_index++]= run;
+        s->runs[run_index++]= run;
         run_index=0;
-        run= runs[run_index++];
+        run= s->runs[run_index++];
 
         put_symbol2(&s->c, b->state[30], max_index, 0);
         if(run_index <= max_index)
@@ -923,7 +924,7 @@ static int encode_subband_c0run(SnowContext *s, SubBand *b, const IDWTELEM *src,
                     put_rac(&s->c, &b->state[0][context], !!v);
                 }else{
                     if(!run){
-                        run= runs[run_index++];
+                        run= s->runs[run_index++];
 
                         if(run_index <= max_index)
                             put_symbol2(&s->c, b->state[1], run, 3);
@@ -1897,6 +1898,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
     if (s->input_picture.data[0])
         avctx->release_buffer(avctx, &s->input_picture);
     av_free(avctx->stats_out);
+    av_freep(&s->runs);
 
     return 0;
 }
