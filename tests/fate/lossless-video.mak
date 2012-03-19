@@ -18,3 +18,6 @@ fate-vble: CMD = framecrc -i $(SAMPLES)/vble/flowers-partial-2MB.avi
 
 FATE_TESTS += fate-zlib
 fate-zlib: CMD = framecrc -i $(SAMPLES)/lcl/zlib-1frame.avi
+
+FATE_TESTS += fate-zerocodec
+fate-zerocodec: CMD = framecrc -i $(SAMPLES)/zerocodec/sample-zeco.avi
