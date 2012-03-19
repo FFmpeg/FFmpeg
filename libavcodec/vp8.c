@@ -641,7 +641,7 @@ void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y, uint8_
 
     if (s->segmentation.update_map)
         *segment = vp8_rac_get_tree(c, vp8_segmentid_tree, s->prob->segmentid);
-    else
+    else if (s->segmentation.enabled)
         *segment = ref ? *ref : *segment;
     s->segment = *segment;
 
