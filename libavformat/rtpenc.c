@@ -126,7 +126,7 @@ static int rtp_write_header(AVFormatContext *s1)
     s->max_payload_size = s1->packet_size - 12;
 
     s->max_frames_per_packet = 0;
-    if (s1->max_delay) {
+    if (s1->max_delay > 0) {
         if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             int frame_size = av_get_audio_frame_duration(st->codec, 0);
             if (!frame_size)

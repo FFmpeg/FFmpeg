@@ -1426,6 +1426,9 @@ int ff_rtsp_connect(AVFormatContext *s)
     if (!ff_network_init())
         return AVERROR(EIO);
 
+    if (s->max_delay < 0) /* Not set by the caller */
+        s->max_delay = 0;
+
     rt->control_transport = RTSP_MODE_PLAIN;
     if (rt->lower_transport_mask & (1 << RTSP_LOWER_TRANSPORT_HTTP)) {
         rt->lower_transport_mask = 1 << RTSP_LOWER_TRANSPORT_TCP;
@@ -1865,6 +1868,9 @@ static int sdp_read_header(AVFormatContext *s)
 
     if (!ff_network_init())
         return AVERROR(EIO);
+
+    if (s->max_delay < 0) /* Not set by the caller */
+        s->max_delay = 0;
 
     /* read the whole sdp file */
     /* XXX: better loading */
