@@ -1024,7 +1024,7 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
                    implement encode2() */
                 buf_size = 2 * avctx->frame_size * avctx->channels *
                            av_get_bytes_per_sample(avctx->sample_fmt);
-                buf_size += FF_MIN_BUFFER_SIZE;
+                buf_size += 2*FF_MIN_BUFFER_SIZE;
             }
         }
         if ((ret = ff_alloc_packet(avpkt, buf_size)))
