@@ -30,13 +30,13 @@
 #include "intfloat_readwrite.h"
 
 double av_int2dbl(int64_t v){
-    if(v+v > 0xFFEULL<<52)
+    if((uint64_t)v+v > 0xFFEULL<<52)
         return NAN;
     return ldexp(((v&((1LL<<52)-1)) + (1LL<<52)) * (v>>63|1), (v>>52&0x7FF)-1075);
 }
 
 float av_int2flt(int32_t v){
-    if(v+v > 0xFF000000U)
+    if((uint32_t)v+v > 0xFF000000U)
         return NAN;
     return ldexp(((v&0x7FFFFF) + (1<<23)) * (v>>31|1), (v>>23&0xFF)-150);
 }

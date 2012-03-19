@@ -108,7 +108,10 @@ int ff_h264_check_intra4x4_pred_mode(H264Context *h){
     return 0;
 } //FIXME cleanup like check_intra_pred_mode
 
-static int check_intra_pred_mode(H264Context *h, int mode, int is_chroma){
+/**
+ * checks if the top & left blocks are available if needed & changes the dc mode so it only uses the available blocks.
+ */
+int ff_h264_check_intra_pred_mode(H264Context *h, int mode, int is_chroma){
     MpegEncContext * const s = &h->s;
     static const int8_t top [7]= {LEFT_DC_PRED8x8, 1,-1,-1};
     static const int8_t left[7]= { TOP_DC_PRED8x8,-1, 2,-1,DC_128_PRED8x8};
@@ -139,23 +142,6 @@ static int check_intra_pred_mode(H264Context *h, int mode, int is_chroma){
 
     return mode;
 }
-
-/**
- * checks if the top & left blocks are available if needed & changes the dc mode so it only uses the available blocks.
- */
-int ff_h264_check_intra16x16_pred_mode(H264Context *h, int mode)
-{
-    return check_intra_pred_mode(h, mode, 0);
-}
-
-/**
- * checks if the top & left blocks are available if needed & changes the dc mode so it only uses the available blocks.
- */
-int ff_h264_check_intra_chroma_pred_mode(H264Context *h, int mode)
-{
-    return check_intra_pred_mode(h, mode, 1);
-}
-
 
 const uint8_t *ff_h264_decode_nal(H264Context *h, const uint8_t *src, int *dst_length, int *consumed, int length){
     int i, si, di;
@@ -2231,7 +2217,11 @@ static void implicit_weight_table(H264Context *h, int field){
     }
 
     if(field < 0){
-        cur_poc = s->current_picture_ptr->poc;
+        if (s->picture_structure == PICT_FRAME) {
+            cur_poc = s->current_picture_ptr->poc;
+        } else {
+            cur_poc = s->current_picture_ptr->field_poc[s->picture_structure - 1];
+        }
     if(   h->ref_count[0] == 1 && h->ref_count[1] == 1 && !FRAME_MBAFF
        && h->ref_list[0][0].poc + h->ref_list[1][0].poc == 2*cur_poc){
         h->use_weight= 0;
@@ -3761,7 +3751,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
                 case NAL_IDR_SLICE:
                 case NAL_SLICE:
                     init_get_bits(&hx->s.gb, ptr, bit_length);
-                    if(!get_ue_golomb(&hx->s.gb))
+                    if (!get_ue_golomb(&hx->s.gb))
                         nals_needed = nal_index;
             }
             continue;
