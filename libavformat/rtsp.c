@@ -1929,7 +1929,7 @@ AVInputFormat ff_sdp_demuxer = {
     .read_header    = sdp_read_header,
     .read_packet    = ff_rtsp_fetch_packet,
     .read_close     = sdp_read_close,
-    .priv_class     = &sdp_demuxer_class
+    .priv_class     = &sdp_demuxer_class,
 };
 #endif /* CONFIG_SDP_DEMUXER */
 
@@ -2047,7 +2047,7 @@ AVInputFormat ff_rtp_demuxer = {
     .read_header    = rtp_read_header,
     .read_packet    = ff_rtsp_fetch_packet,
     .read_close     = sdp_read_close,
-    .flags = AVFMT_NOFILE,
-    .priv_class     = &rtp_demuxer_class
+    .flags          = AVFMT_NOFILE,
+    .priv_class     = &rtp_demuxer_class,
 };
 #endif /* CONFIG_RTP_DEMUXER */

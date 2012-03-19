@@ -409,8 +409,8 @@ AVInputFormat ff_rtsp_demuxer = {
     .read_packet    = rtsp_read_packet,
     .read_close     = rtsp_read_close,
     .read_seek      = rtsp_read_seek,
-    .flags = AVFMT_NOFILE,
-    .read_play = rtsp_read_play,
-    .read_pause = rtsp_read_pause,
-    .priv_class = &rtsp_demuxer_class,
+    .flags          = AVFMT_NOFILE,
+    .read_play      = rtsp_read_play,
+    .read_pause     = rtsp_read_pause,
+    .priv_class     = &rtsp_demuxer_class,
 };
