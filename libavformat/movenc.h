@@ -149,6 +149,7 @@ typedef struct MOVMuxContext {
 
     int fragments;
     int max_fragment_duration;
+    int min_fragment_duration;
     int max_fragment_size;
     int ism_lookahead;
     AVIOContext *mdat_buf;

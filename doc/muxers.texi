@@ -172,7 +172,14 @@ Allow the caller to manually choose when to cut fragments, by
 calling @code{av_write_frame(ctx, NULL)} to write a fragment with
 the packets written so far. (This is only useful with other
 applications integrating libavformat, not from @command{avconv}.)
+@item -min_frag_duration @var{duration}
+Don't create fragments that are shorter than @var{duration} microseconds long.
 @end table
+
+If more than one condition is specified, fragments are cut when
+one of the specified conditions is fulfilled. The exception to this is
+@code{-min_frag_duration}, which has to be fulfilled for any of the other
+conditions to apply.
 
 Additionally, the way the output file is written can be adjusted
 through a few other options:
