@@ -288,9 +288,9 @@ Accept packets only from negotiated peer address and port.
 @end table
 
 When receiving data over UDP, the demuxer tries to reorder received packets
-(since they may arrive out of order, or packets may get lost totally). In
-order for this to be enabled, a maximum delay must be specified in the
-@code{max_delay} field of AVFormatContext.
+(since they may arrive out of order, or packets may get lost totally). This
+can be disabled by setting the maximum demuxing delay to zero (via
+the @code{max_delay} field of AVFormatContext).
 
 When watching multi-bitrate Real-RTSP streams with @file{avplay}, the
 streams to display can be chosen with @code{-vst} @var{n} and
