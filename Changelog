@@ -13,6 +13,7 @@ version next:
 - iLBC encoding/decoding via libilbc
 - Microsoft Screen 1 decoder
 - showwaves filter
+- LucasArts SMUSH playback support
 
 
 version 0.11:
