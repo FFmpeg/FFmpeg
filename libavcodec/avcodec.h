@@ -332,6 +332,7 @@ enum CodecID {
     CODEC_ID_ADPCM_IMA_ISS,
     CODEC_ID_ADPCM_G722,
     CODEC_ID_ADPCM_IMA_APC,
+    CODEC_ID_VIMA       = MKBETAG('V','I','M','A'),
 
     /* AMR */
     CODEC_ID_AMR_NB = 0x12000,

@@ -395,6 +395,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (ADPCM_THP, adpcm_thp);
     REGISTER_DECODER (ADPCM_XA, adpcm_xa);
     REGISTER_ENCDEC  (ADPCM_YAMAHA, adpcm_yamaha);
+    REGISTER_DECODER (VIMA, vima);
 
     /* subtitles */
     REGISTER_ENCDEC  (ASS, ass);
