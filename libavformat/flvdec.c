@@ -518,7 +518,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         stream_type=FLV_STREAM_TYPE_VIDEO;
         flags = avio_r8(s->pb);
         size--;
-        if ((flags & 0xf0) == 0x50) /* video info / command frame */
+        if ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_VIDEO_INFO_CMD)
             goto skip;
     } else if (type == FLV_TAG_TYPE_META) {
         if (size > 13+1+4 && dts == 0) { // Header-type metadata stuff
