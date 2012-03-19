@@ -2912,7 +2912,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
 
     pps_id = get_ue_golomb(&s->gb);
     if (pps_id >= MAX_PPS_COUNT) {
-        av_log(h->s.avctx, AV_LOG_ERROR, "pps_id out of range\n");
+        av_log(h->s.avctx, AV_LOG_ERROR, "pps_id %d out of range\n", pps_id);
         return -1;
     }
     if (!h0->pps_buffers[pps_id]) {
