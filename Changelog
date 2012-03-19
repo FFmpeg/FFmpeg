@@ -15,6 +15,7 @@ version <next>:
 - support decoding 16-bit RLE SGI images
 - VP7 video decoder
 - LucasArts SMUSH SANM video decoder
+- LucasArts SMUSH VIMA audio decoder (ADPCM)
 
 
 version 10:
