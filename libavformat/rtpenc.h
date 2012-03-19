@@ -34,7 +34,6 @@ struct RTPMuxContext {
     uint32_t timestamp;
     uint32_t base_timestamp;
     uint32_t cur_timestamp;
-    int max_packet_size;
     int max_payload_size;
     int num_frames;
 
