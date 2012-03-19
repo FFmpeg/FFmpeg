@@ -2576,9 +2576,9 @@ void ff_vp3_idct_put_sse2(uint8_t *dest, int line_size, DCTELEM *block);
 void ff_vp3_idct_add_sse2(uint8_t *dest, int line_size, DCTELEM *block);
 
 int32_t ff_scalarproduct_int16_mmx2(const int16_t *v1, const int16_t *v2,
-                                    int order, int shift);
+                                    int order);
 int32_t ff_scalarproduct_int16_sse2(const int16_t *v1, const int16_t *v2,
-                                    int order, int shift);
+                                    int order);
 int32_t ff_scalarproduct_and_madd_int16_mmx2(int16_t *v1, const int16_t *v2,
                                              const int16_t *v3,
                                              int order, int mul);
