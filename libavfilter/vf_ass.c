@@ -30,11 +30,14 @@
 
 #include "libavutil/avstring.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/opt.h"
+#include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "drawutils.h"
 #include "avfilter.h"
 
 typedef struct {
+    const AVClass *class;
     ASS_Library  *library;
     ASS_Renderer *renderer;
     ASS_Track    *track;
@@ -42,7 +45,27 @@ typedef struct {
     char *filename;
     uint8_t rgba_map[4];
     int     pix_step[4];       ///< steps per pixel for each plane of the main output
+    char *dar_str;
+    AVRational dar;
 } AssContext;
+
+#define OFFSET(x) offsetof(AssContext, x)
+
+static const AVOption ass_options[] = {
+    {"dar",  "set subtitles display aspect ratio", OFFSET(dar_str), AV_OPT_TYPE_STRING, {.str = "1.0"},  CHAR_MIN, CHAR_MAX },
+    {NULL},
+};
+
+static const char *ass_get_name(void *ctx)
+{
+    return "ass";
+}
+
+static const AVClass ass_class = {
+    "AssContext",
+    ass_get_name,
+    ass_options
+};
 
 /* libass supports a log level ranging from 0 to 7 */
 int ass_libav_log_level_map[] = {
@@ -67,11 +90,27 @@ static void ass_log(int ass_level, const char *fmt, va_list args, void *ctx)
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     AssContext *ass = ctx->priv;
+    int ret;
+
+    ass->class = &ass_class;
+    av_opt_set_defaults(ass);
 
     if (args)
         ass->filename = av_get_token(&args, ":");
     if (!ass->filename || !*ass->filename) {
         av_log(ctx, AV_LOG_ERROR, "No filename provided!\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (*args++ == ':' && (ret = av_set_options_string(ass, args, "=", ":")) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
+        return ret;
+    }
+
+    if (av_parse_ratio(&ass->dar, ass->dar_str, 100, 0, ctx) < 0 ||
+        ass->dar.num < 0 || ass->dar.den <= 0) {
+        av_log(ctx, AV_LOG_ERROR,
+               "Invalid string '%s' or value for display aspect ratio.\n", ass->dar_str);
         return AVERROR(EINVAL);
     }
 
@@ -98,6 +137,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 
     ass_set_fonts(ass->renderer, NULL, NULL, 1, NULL, 1);
 
+    av_log(ctx, AV_LOG_INFO, "dar:%f\n", av_q2d(ass->dar));
     return 0;
 }
 
@@ -106,6 +146,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     AssContext *ass = ctx->priv;
 
     av_freep(&ass->filename);
+    av_freep(&ass->dar_str);
     if (ass->track)
         ass_free_track(ass->track);
     if (ass->renderer)
@@ -142,7 +183,7 @@ static int config_input(AVFilterLink *inlink)
     ass->vsub = pix_desc->log2_chroma_h;
 
     ass_set_frame_size  (ass->renderer, inlink->w, inlink->h);
-    ass_set_aspect_ratio(ass->renderer, 1.0, sar);
+    ass_set_aspect_ratio(ass->renderer, av_q2d(ass->dar), sar);
 
     return 0;
 }
