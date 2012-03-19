@@ -19,6 +19,7 @@
  */
 
 #include <zlib.h>
+
 #include "avcodec.h"
 
 typedef struct {
@@ -75,7 +76,8 @@ static int zerocodec_decode_frame(AVCodecContext *avctx, void *data,
             zret = inflate(zstream, Z_SYNC_FLUSH);
 
             if (zret != Z_OK && zret != Z_STREAM_END) {
-                av_log(avctx, AV_LOG_ERROR, "Inflate failed with return code: %d\n", zret);
+                av_log(avctx, AV_LOG_ERROR,
+                       "Inflate failed with return code: %d\n", zret);
                 return AVERROR(EINVAL);
             }
 
@@ -94,7 +96,8 @@ static int zerocodec_decode_frame(AVCodecContext *avctx, void *data,
             zret = inflate(zstream, Z_SYNC_FLUSH);
 
             if (zret != Z_OK && zret != Z_STREAM_END) {
-                av_log(avctx, AV_LOG_ERROR, "Inflate failed with return code: %d\n", zret);
+                av_log(avctx, AV_LOG_ERROR,
+                       "Inflate failed with return code: %d\n", zret);
                 return AVERROR(EINVAL);
             }
 

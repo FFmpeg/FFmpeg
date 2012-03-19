@@ -495,10 +495,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         c->decode_intra= decode_intra;
     }
 
-     if (c->decode_intra == NULL) {
-         av_log(avctx, AV_LOG_ERROR, "Error! Got no format or no keyframe!\n");
-         return AVERROR_INVALIDDATA;
-     }
+    if (c->decode_intra == NULL) {
+        av_log(avctx, AV_LOG_ERROR, "Error! Got no format or no keyframe!\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     if (c->comp == 0) { //Uncompressed data
         memcpy(c->decomp_buf, buf, len);
@@ -509,7 +509,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         c->zstream.avail_in = len;
         c->zstream.next_out = c->decomp_buf;
         c->zstream.avail_out = c->decomp_size;
-        inflate(&c->zstream, Z_FINISH);
+        zret = inflate(&c->zstream, Z_SYNC_FLUSH);
+        if (zret != Z_OK && zret != Z_STREAM_END) {
+            av_log(avctx, AV_LOG_ERROR, "inflate error %d\n", zret);
+            return AVERROR_INVALIDDATA;
+        }
         c->decomp_len = c->zstream.total_out;
     }
     if (c->flags & ZMBV_KEYFRAME) {

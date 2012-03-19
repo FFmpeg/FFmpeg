@@ -63,7 +63,7 @@ typedef struct URLProtocol {
     /**
      * Read data from the protocol.
      * If data is immediately available (even less than size), EOF is
-     * reached or an error occurs (including EINTR), return immediately,
+     * reached or an error occurs (including EINTR), return immediately.
      * Otherwise:
      * In non-blocking mode, return AVERROR(EAGAIN) immediately.
      * In blocking mode, wait for data/EOF/error with a short timeout (0.1s),

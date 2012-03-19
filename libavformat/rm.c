@@ -42,5 +42,6 @@ const AVCodecTag ff_rm_codec_tags[] = {
     { CODEC_ID_SIPR,   MKTAG('s','i','p','r') },
     { CODEC_ID_AAC,    MKTAG('r','a','a','c') },
     { CODEC_ID_AAC,    MKTAG('r','a','c','p') },
+    { CODEC_ID_RALF,   MKTAG('L','S','D',':') },
     { CODEC_ID_NONE },
 };

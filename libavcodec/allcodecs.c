@@ -305,6 +305,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (QDM2, qdm2);
     REGISTER_ENCDEC  (RA_144, ra_144);
     REGISTER_DECODER (RA_288, ra_288);
+    REGISTER_DECODER (RALF, ralf);
     REGISTER_DECODER (SHORTEN, shorten);
     REGISTER_DECODER (SIPR, sipr);
     REGISTER_DECODER (SMACKAUD, smackaud);

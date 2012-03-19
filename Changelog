@@ -16,6 +16,7 @@ version next:
 - swapuv filter
 - bbox filter
 - XBM encoder
+- RealAudio Lossless decoder
 - ZeroCodec decoder
 
 

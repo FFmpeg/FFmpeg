@@ -532,7 +532,7 @@ static int init_input(AVFormatContext *s, const char *filename, AVDictionary **o
     if (s->pb) {
         s->flags |= AVFMT_FLAG_CUSTOM_IO;
         if (!s->iformat)
-            return av_probe_input_buffer(s->pb, &s->iformat, filename, s, 0, 0);
+            return av_probe_input_buffer(s->pb, &s->iformat, filename, s, 0, s->probesize);
         else if (s->iformat->flags & AVFMT_NOFILE)
             av_log(s, AV_LOG_WARNING, "Custom AVIOContext makes no sense and "
                                       "will be ignored with AVFMT_NOFILE format.\n");
@@ -548,7 +548,7 @@ static int init_input(AVFormatContext *s, const char *filename, AVDictionary **o
         return ret;
     if (s->iformat)
         return 0;
-    return av_probe_input_buffer(s->pb, &s->iformat, filename, s, 0, 0);
+    return av_probe_input_buffer(s->pb, &s->iformat, filename, s, 0, s->probesize);
 }
 
 static AVPacket *add_to_pktbuf(AVPacketList **packet_buffer, AVPacket *pkt,
