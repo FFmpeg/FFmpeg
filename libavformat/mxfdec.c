@@ -1725,6 +1725,9 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             /* next partition pack - keep going, seek to previous partition or stop */
             if(mxf_parse_handle_partition_or_eof(mxf) <= 0)
                 break;
+            else if (mxf->parsing_backward)
+                continue;
+            /* we're still parsing forward. proceed to parsing this partition pack */
         }
 
         for (metadata = mxf_metadata_read_table; metadata->read; metadata++) {
