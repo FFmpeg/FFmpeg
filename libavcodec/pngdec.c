@@ -416,12 +416,16 @@ static int decode_frame(AVCodecContext *avctx,
     if (ret != Z_OK)
         return -1;
     for(;;) {
-        if (bytestream2_get_bytes_left(&s->gb) <= 0)
+        if (bytestream2_get_bytes_left(&s->gb) <= 0) {
+            av_log(avctx, AV_LOG_ERROR, "No bytes left\n");
             goto fail;
+        }
 
         length = bytestream2_get_be32(&s->gb);
-        if (length > 0x7fffffff || length > bytestream2_get_bytes_left(&s->gb))
+        if (length > 0x7fffffff || length > bytestream2_get_bytes_left(&s->gb))  {
+            av_log(avctx, AV_LOG_ERROR, "chunk too big\n");
             goto fail;
+        }
         tag = bytestream2_get_le32(&s->gb);
         if (avctx->debug & FF_DEBUG_STARTCODE)
             av_log(avctx, AV_LOG_DEBUG, "png: tag=%c%c%c%c length=%u\n",
@@ -437,6 +441,7 @@ static int decode_frame(AVCodecContext *avctx,
             s->height = bytestream2_get_be32(&s->gb);
             if(av_image_check_size(s->width, s->height, 0, avctx)){
                 s->width= s->height= 0;
+                av_log(avctx, AV_LOG_ERROR, "Invalid image size\n");
                 goto fail;
             }
             s->bit_depth        = bytestream2_get_byte(&s->gb);
@@ -452,8 +457,10 @@ static int decode_frame(AVCodecContext *avctx,
                     s->compression_type, s->filter_type, s->interlace_type);
             break;
         case MKTAG('I', 'D', 'A', 'T'):
-            if (!(s->state & PNG_IHDR))
+            if (!(s->state & PNG_IHDR)) {
+                av_log(avctx, AV_LOG_ERROR, "IDAT without IHDR\n");
                 goto fail;
+            }
             if (!(s->state & PNG_IDAT)) {
                 /* init image info */
                 avctx->width = s->width;
@@ -587,8 +594,10 @@ static int decode_frame(AVCodecContext *avctx,
             }
             break;
         case MKTAG('I', 'E', 'N', 'D'):
-            if (!(s->state & PNG_ALLIMAGE))
+            if (!(s->state & PNG_ALLIMAGE)) {
+                av_log(avctx, AV_LOG_ERROR, "IEND without all image\n");
                 goto fail;
+            }
             bytestream2_skip(&s->gb, 4); /* crc */
             goto exit_loop;
         default:
