@@ -80,10 +80,9 @@ static int xa_read_header(AVFormatContext *s)
     avio_skip(pb, 2);       /* Skip the tag */
     st->codec->channels     = avio_rl16(pb);
     st->codec->sample_rate  = avio_rl32(pb);
-    /* Value in file is average byte rate*/
-    st->codec->bit_rate     = avio_rl32(pb) * 8;
-    st->codec->block_align  = avio_rl16(pb);
-    st->codec->bits_per_coded_sample = avio_rl16(pb);
+    avio_skip(pb, 4);       /* Skip average byte rate */
+    avio_skip(pb, 2);       /* Skip block align */
+    avio_skip(pb, 2);       /* Skip bits-per-sample */
 
     avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
     st->start_time = 0;
