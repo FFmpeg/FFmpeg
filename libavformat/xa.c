@@ -84,6 +84,9 @@ static int xa_read_header(AVFormatContext *s)
     avio_skip(pb, 2);       /* Skip block align */
     avio_skip(pb, 2);       /* Skip bits-per-sample */
 
+    st->codec->bit_rate = av_clip(15LL * st->codec->channels * 8 *
+                                  st->codec->sample_rate / 28, 0, INT_MAX);
+
     avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
     st->start_time = 0;
 
