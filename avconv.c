@@ -887,8 +887,10 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
      * reordering, see do_video_out()
      */
     if (!(avctx->codec_type == AVMEDIA_TYPE_VIDEO && avctx->codec)) {
-        if (ost->frame_number >= ost->max_frames)
+        if (ost->frame_number >= ost->max_frames) {
+            av_free_packet(pkt);
             return;
+        }
         ost->frame_number++;
     }
 
