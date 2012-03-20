@@ -31,6 +31,7 @@ API changes, most recent first:
 
 2012-02-25 - c9bca80 - lavu 51.24.0 - error.h
   Add AVERROR_UNKNOWN
+  NOTE: this was backported to 0.8
 
 2012-02-20 - e9cda85 - lavc 54.2.0
   Add duration field to AVCodecParserContext
@@ -51,19 +52,26 @@ API changes, most recent first:
 
 2012-01-31 - dd6d3b0 - lavf 54.01.0
   Add avformat_get_riff_video_tags() and avformat_get_riff_audio_tags().
+  NOTE: this was backported to 0.8
 
 2012-01-31 - af08d9a - lavc 54.01.0
   Add avcodec_is_open() function.
+  NOTE: this was backported to 0.8
 
 2012-01-30 - 8b93312 - lavu 51.22.0 - intfloat.h
   Add a new installed header libavutil/intfloat.h with int/float punning
   functions.
+  NOTE: this was backported to 0.8
 
 2012-01-25 - lavf 53.22.0
   f1caf01 Allow doing av_write_frame(ctx, NULL) for flushing possible
           buffered data within a muxer. Added AVFMT_ALLOW_FLUSH for
           muxers supporting it (av_write_frame makes sure it is called
           only for muxers with this flag).
+
+------------------------------8<-------------------------------------
+                   0.8 branch was cut here
+----------------------------->8--------------------------------------
 
 2012-01-15 - lavc 53.34.0
   New audio encoding API:
