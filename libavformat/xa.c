@@ -100,8 +100,8 @@ static int xa_read_packet(AVFormatContext *s,
     unsigned int packet_size;
     int ret;
 
-    if(xa->sent_bytes > xa->out_size)
-        return AVERROR(EIO);
+    if (xa->sent_bytes >= xa->out_size)
+        return AVERROR_EOF;
     /* 1 byte header and 14 bytes worth of samples * number channels per block */
     packet_size = 15*st->codec->channels;
 
