@@ -642,7 +642,7 @@ void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y, uint8_
     if (s->segmentation.update_map) {
         int bit  = vp56_rac_get_prob(c, s->prob->segmentid[0]);
         *segment = vp56_rac_get_prob(c, s->prob->segmentid[1+bit]) + 2*bit;
-    } else
+    } else if (s->segmentation.enabled)
         *segment = ref ? *ref : *segment;
     s->segment = *segment;
 

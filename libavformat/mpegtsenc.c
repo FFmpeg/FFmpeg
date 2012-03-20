@@ -491,6 +491,9 @@ static int mpegts_write_header(AVFormatContext *s)
     const char *provider_name;
     int *pids;
 
+    if (s->max_delay < 0) /* Not set by the caller */
+        s->max_delay = 0;
+
     // round up to a whole number of TS packets
     ts->pes_payload_size = (ts->pes_payload_size + 14 + 183) / 184 * 184 - 14;
 

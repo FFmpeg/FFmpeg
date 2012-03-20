@@ -1332,7 +1332,11 @@ int av_find_best_stream(AVFormatContext *ic,
                         AVCodec **decoder_ret,
                         int flags);
 
+#if FF_API_READ_PACKET
 /**
+ * @deprecated use AVFMT_FLAG_NOFILLIN | AVFMT_FLAG_NOPARSE to read raw
+ * unprocessed packets
+ *
  * Read a transport packet from a media file.
  *
  * This function is obsolete and should never be used.
@@ -1342,7 +1346,9 @@ int av_find_best_stream(AVFormatContext *ic,
  * @param pkt is filled
  * @return 0 if OK, AVERROR_xxx on error
  */
+attribute_deprecated
 int av_read_packet(AVFormatContext *s, AVPacket *pkt);
+#endif
 
 /**
  * Return the next frame of a stream.
@@ -1539,23 +1545,15 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt);
  */
 int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt);
 
+#if FF_API_INTERLEAVE_PACKET
 /**
- * Interleave a packet per dts in an output media file.
- *
- * Packets with pkt->destruct == av_destruct_packet will be freed inside this
- * function, so they cannot be used after it. Note that calling av_free_packet()
- * on them is still safe.
- *
- * @param s media file handle
- * @param out the interleaved packet will be output here
- * @param pkt the input packet
- * @param flush 1 if no further packets are available as input and all
- *              remaining packets should be output
- * @return 1 if a packet was output, 0 if no packet could be output,
- *         < 0 if an error occurred
+ * @deprecated this function was never meant to be called by the user
+ * programs.
  */
+attribute_deprecated
 int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
                                  AVPacket *pkt, int flush);
+#endif
 
 /**
  * Write the stream trailer to an output media file and free the

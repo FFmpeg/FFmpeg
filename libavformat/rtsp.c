@@ -56,6 +56,7 @@
 #define MAX_TIMEOUTS READ_PACKET_TIMEOUT_S * 1000 / POLL_TIMEOUT_MS
 #define SDP_MAX_SIZE 16384
 #define RECVBUF_SIZE 10 * RTP_MAX_PACKET_LENGTH
+#define DEFAULT_REORDERING_DELAY 100000
 
 #define OFFSET(x) offsetof(RTSPState, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
@@ -1421,6 +1422,9 @@ int ff_rtsp_connect(AVFormatContext *s)
     if (!ff_network_init())
         return AVERROR(EIO);
 
+    if (s->max_delay < 0) /* Not set by the caller */
+        s->max_delay = s->iformat ? DEFAULT_REORDERING_DELAY : 0;
+
     rt->control_transport = RTSP_MODE_PLAIN;
     if (rt->lower_transport_mask & (1 << RTSP_LOWER_TRANSPORT_HTTP)) {
         rt->lower_transport_mask = 1 << RTSP_LOWER_TRANSPORT_TCP;
@@ -1860,6 +1864,9 @@ static int sdp_read_header(AVFormatContext *s)
 
     if (!ff_network_init())
         return AVERROR(EIO);
+
+    if (s->max_delay < 0) /* Not set by the caller */
+        s->max_delay = DEFAULT_REORDERING_DELAY;
 
     /* read the whole sdp file */
     /* XXX: better loading */

@@ -256,7 +256,7 @@ static int asfrtp_parse_packet(AVFormatContext *s, PayloadContext *asf,
     for (;;) {
         int i;
 
-        res = av_read_packet(rt->asf_ctx, pkt);
+        res = ff_read_packet(rt->asf_ctx, pkt);
         rt->asf_pb_pos = avio_tell(pb);
         if (res != 0)
             break;

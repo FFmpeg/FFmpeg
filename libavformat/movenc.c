@@ -57,6 +57,7 @@ static const AVOption options[] = {
     { "iods_audio_profile", "iods audio profile atom.", offsetof(MOVMuxContext, iods_audio_profile), AV_OPT_TYPE_INT, {.dbl = -1}, -1, 255, AV_OPT_FLAG_ENCODING_PARAM},
     { "iods_video_profile", "iods video profile atom.", offsetof(MOVMuxContext, iods_video_profile), AV_OPT_TYPE_INT, {.dbl = -1}, -1, 255, AV_OPT_FLAG_ENCODING_PARAM},
     { "frag_duration", "Maximum fragment duration", offsetof(MOVMuxContext, max_fragment_duration), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
+    { "min_frag_duration", "Minimum fragment duration", offsetof(MOVMuxContext, min_fragment_duration), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { "frag_size", "Maximum fragment size", offsetof(MOVMuxContext, max_fragment_size), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { "ism_lookahead", "Number of lookahead entries for ISM files", offsetof(MOVMuxContext, ism_lookahead), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
@@ -2893,21 +2894,25 @@ static int mov_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     unsigned int samples_in_chunk = 0;
     int size= pkt->size;
     uint8_t *reformatted_data = NULL;
+    int64_t frag_duration = 0;
 
     if (!s->pb->seekable && !(mov->flags & FF_MOV_FLAG_EMPTY_MOOV))
         return 0; /* Can't handle that */
 
     if (!size) return 0; /* Discard 0 sized packets */
 
-    if ((mov->max_fragment_duration && trk->entry &&
-         av_rescale_q(pkt->dts - trk->cluster[0].dts,
-                      s->streams[pkt->stream_index]->time_base,
-                      AV_TIME_BASE_Q) >= mov->max_fragment_duration) ||
+    if (trk->entry)
+        frag_duration = av_rescale_q(pkt->dts - trk->cluster[0].dts,
+                                     s->streams[pkt->stream_index]->time_base,
+                                     AV_TIME_BASE_Q);
+    if ((mov->max_fragment_duration &&
+         frag_duration >= mov->max_fragment_duration) ||
          (mov->max_fragment_size && mov->mdat_size + size >= mov->max_fragment_size) ||
          (mov->flags & FF_MOV_FLAG_FRAG_KEYFRAME &&
           enc->codec_type == AVMEDIA_TYPE_VIDEO &&
           trk->entry && pkt->flags & AV_PKT_FLAG_KEY)) {
-        mov_flush_fragment(s);
+        if (frag_duration >= mov->min_fragment_duration)
+            mov_flush_fragment(s);
     }
 
     if (mov->flags & FF_MOV_FLAG_FRAGMENT) {

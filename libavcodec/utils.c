@@ -1069,8 +1069,15 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
         if (fs_tmp)
             avctx->frame_size = fs_tmp;
     }
-    if (!ret)
+    if (!ret) {
+        if (!user_packet && avpkt->data) {
+            uint8_t *new_data = av_realloc(avpkt->data, avpkt->size);
+            if (new_data)
+                avpkt->data = new_data;
+        }
+
         avctx->frame_number++;
+    }
 
     if (ret < 0 || !*got_packet_ptr)
         av_free_packet(avpkt);

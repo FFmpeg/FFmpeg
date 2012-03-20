@@ -568,10 +568,22 @@ static AVPacket *add_to_pktbuf(AVPacketList **packet_buffer, AVPacket *pkt,
     return &pktl->pkt;
 }
 
+static void queue_attached_pictures(AVFormatContext *s)
+{
+    int i;
+    for (i = 0; i < s->nb_streams; i++)
+        if (s->streams[i]->disposition & AV_DISPOSITION_ATTACHED_PIC &&
+            s->streams[i]->discard < AVDISCARD_ALL) {
+            AVPacket copy = s->streams[i]->attached_pic;
+            copy.destruct = NULL;
+            add_to_pktbuf(&s->raw_packet_buffer, &copy, &s->raw_packet_buffer_end);
+        }
+}
+
 int avformat_open_input(AVFormatContext **ps, const char *filename, AVInputFormat *fmt, AVDictionary **options)
 {
     AVFormatContext *s = *ps;
-    int i, ret = 0;
+    int ret = 0;
     AVDictionary *tmp = NULL;
     ID3v2ExtraMeta *id3v2_extra_meta = NULL;
 
@@ -627,13 +639,7 @@ int avformat_open_input(AVFormatContext **ps, const char *filename, AVInputForma
         goto fail;
     ff_id3v2_free_extra_meta(&id3v2_extra_meta);
 
-    /* queue attached pictures */
-    for (i = 0; i < s->nb_streams; i++)
-        if (s->streams[i]->disposition & AV_DISPOSITION_ATTACHED_PIC) {
-            AVPacket copy = s->streams[i]->attached_pic;
-            copy.destruct = NULL;
-            add_to_pktbuf(&s->raw_packet_buffer, &copy, &s->raw_packet_buffer_end);
-        }
+    queue_attached_pictures(s);
 
     if (!(s->flags&AVFMT_FLAG_PRIV_OPT) && s->pb && !s->data_offset)
         s->data_offset = avio_tell(s->pb);
@@ -659,7 +665,7 @@ fail:
 
 /*******************************************************/
 
-int av_read_packet(AVFormatContext *s, AVPacket *pkt)
+int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, i;
     AVStream *st;
@@ -755,6 +761,14 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 }
+
+#if FF_API_READ_PACKET
+int av_read_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    return ff_read_packet(s, pkt);
+}
+#endif
+
 
 /**********************************************************/
 
@@ -1228,7 +1242,7 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
         AVPacket cur_pkt;
 
         /* read next packet */
-        ret = av_read_packet(s, &cur_pkt);
+        ret = ff_read_packet(s, &cur_pkt);
         if (ret < 0) {
             if (ret == AVERROR(EAGAIN))
                 return ret;
@@ -1255,7 +1269,7 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                    cur_pkt.size);
         }
         if (s->debug & FF_FDEBUG_TS)
-            av_log(s, AV_LOG_DEBUG, "av_read_packet stream=%d, pts=%"PRId64", dts=%"PRId64", size=%d, duration=%d, flags=%d\n",
+            av_log(s, AV_LOG_DEBUG, "ff_read_packet stream=%d, pts=%"PRId64", dts=%"PRId64", size=%d, duration=%d, flags=%d\n",
                    cur_pkt.stream_index,
                    cur_pkt.pts,
                    cur_pkt.dts,
@@ -1827,7 +1841,8 @@ static int seek_frame_generic(AVFormatContext *s,
     return 0;
 }
 
-int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp, int flags)
+static int seek_frame_internal(AVFormatContext *s, int stream_index,
+                               int64_t timestamp, int flags)
 {
     int ret;
     AVStream *st;
@@ -1872,14 +1887,29 @@ int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp, int f
         return -1;
 }
 
+int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp, int flags)
+{
+    int ret = seek_frame_internal(s, stream_index, timestamp, flags);
+
+    if (ret >= 0)
+        queue_attached_pictures(s);
+
+    return ret;
+}
+
 int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
 {
     if(min_ts > ts || max_ts < ts)
         return -1;
 
     if (s->iformat->read_seek2) {
+        int ret;
         ff_read_frame_flush(s);
-        return s->iformat->read_seek2(s, stream_index, min_ts, ts, max_ts, flags);
+        ret = s->iformat->read_seek2(s, stream_index, min_ts, ts, max_ts, flags);
+
+        if (ret >= 0)
+            queue_attached_pictures(s);
+        return ret;
     }
 
     if(s->iformat->read_timestamp){
@@ -2071,7 +2101,7 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
                 break;
 
             do {
-                ret = av_read_packet(ic, pkt);
+                ret = ff_read_packet(ic, pkt);
             } while(ret == AVERROR(EAGAIN));
             if (ret != 0)
                 break;
@@ -3354,7 +3384,9 @@ static int ff_interleave_compare_dts(AVFormatContext *s, AVPacket *next, AVPacke
     return comp > 0;
 }
 
-int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush){
+int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
+                                 AVPacket *pkt, int flush)
+{
     AVPacketList *pktl;
     int stream_count=0, noninterleaved_count=0;
     int64_t delta_dts_max = 0;
@@ -3413,6 +3445,14 @@ int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out, AVPacket *pk
     }
 }
 
+#if FF_API_INTERLEAVE_PACKET
+int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
+                                 AVPacket *pkt, int flush)
+{
+    return ff_interleave_packet_per_dts(s, out, pkt, flush);
+}
+#endif
+
 /**
  * Interleave an AVPacket correctly so it can be muxed.
  * @param out the interleaved packet will be output here
@@ -3429,7 +3469,7 @@ static int interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *in, in
             av_free_packet(in);
         return ret;
     } else
-        return av_interleave_packet_per_dts(s, out, in, flush);
+        return ff_interleave_packet_per_dts(s, out, in, flush);
 }
 
 int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt){
