@@ -29,12 +29,12 @@ $(GENTEXI): doc/avoptions_%.texi: doc/print_options
 doc/%.html: TAG = HTML
 doc/%.html: doc/%.texi $(SRC_PATH)/doc/t2h.init $(GENTEXI)
 	$(Q)$(TEXIDEP)
-	$(M)texi2html -monolithic --init-file $(SRC_PATH)/doc/t2h.init --output $@ $<
+	$(M)texi2html -I doc -monolithic --init-file $(SRC_PATH)/doc/t2h.init --output $@ $<
 
 doc/%.pod: TAG = POD
 doc/%.pod: doc/%.texi $(GENTEXI)
 	$(Q)$(TEXIDEP)
-	$(M)$(SRC_PATH)/doc/texi2pod.pl $< $@
+	$(M)$(SRC_PATH)/doc/texi2pod.pl -Idoc $< $@
 
 doc/%.1: TAG = MAN
 doc/%.1: doc/%.pod $(GENTEXI)
