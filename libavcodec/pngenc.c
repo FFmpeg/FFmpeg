@@ -229,7 +229,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     p->pict_type= AV_PICTURE_TYPE_I;
     p->key_frame= 1;
 
-    max_packet_size = IOBUF_SIZE*avctx->height + FF_MIN_BUFFER_SIZE;
+    max_packet_size = avctx->width * avctx->height * 9 + FF_MIN_BUFFER_SIZE;
     if (!pkt->data &&
         (ret = av_new_packet(pkt, max_packet_size)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Could not allocate output packet of size %d.\n",
