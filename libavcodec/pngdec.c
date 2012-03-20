@@ -594,8 +594,9 @@ static int decode_frame(AVCodecContext *avctx,
             }
             break;
         case MKTAG('I', 'E', 'N', 'D'):
-            if (!(s->state & (PNG_ALLIMAGE|PNG_IDAT))) {
+            if (!(s->state & PNG_ALLIMAGE))
                 av_log(avctx, AV_LOG_ERROR, "IEND without all image\n");
+            if (!(s->state & (PNG_ALLIMAGE|PNG_IDAT))) {
                 goto fail;
             }
             bytestream2_skip(&s->gb, 4); /* crc */
