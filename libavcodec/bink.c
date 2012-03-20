@@ -146,6 +146,8 @@ enum BlockTypes {
  */
 static void init_lengths(BinkContext *c, int width, int bw)
 {
+    width = FFALIGN(width, 7);
+
     c->bundle[BINK_SRC_BLOCK_TYPES].len = av_log2((width >> 3) + 511) + 1;
 
     c->bundle[BINK_SRC_SUB_BLOCK_TYPES].len = av_log2((width >> 4) + 511) + 1;
