@@ -41,6 +41,6 @@ fate-vp8-sign-bias$(1): REF = $(SRC_PATH)/tests/ref/fate/vp8-sign-bias
 endef
 
 $(eval $(call FATE_VP8_FULL))
-$(eval $(call FATE_VP8_FULL,-emu-edge,-flags emu_edge))
+$(eval $(call FATE_VP8_FULL,-emu-edge,-flags +emu_edge))
 FATE_TESTS += $(FATE_VP8)
 fate-vp8: $(FATE_VP8)
