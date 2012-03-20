@@ -38,7 +38,6 @@
 typedef struct MaxisXADemuxContext {
     uint32_t out_size;
     uint32_t sent_bytes;
-    uint32_t audio_frame_counter;
 } MaxisXADemuxContext;
 
 static int xa_probe(AVProbeData *p)
@@ -87,6 +86,7 @@ static int xa_read_header(AVFormatContext *s)
     st->codec->bits_per_coded_sample = avio_rl16(pb);
 
     avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+    st->start_time = 0;
 
     return 0;
 }
@@ -111,9 +111,7 @@ static int xa_read_packet(AVFormatContext *s,
 
     pkt->stream_index = st->index;
     xa->sent_bytes += packet_size;
-    pkt->pts = xa->audio_frame_counter;
-    /* 14 bytes Samples per channel with 2 samples per byte */
-    xa->audio_frame_counter += 28 * st->codec->channels;
+    pkt->duration = 28;
 
     return ret;
 }
