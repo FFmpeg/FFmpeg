@@ -12,20 +12,20 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
-2012-03-xx - xxxxxxx - lavu 51.25.0 - cpu.h
+2012-03-06 - 4d851f8 - lavu 51.25.0 - cpu.h
   Add av_set_cpu_flags_mask().
 
-2012-xx-xx - lavc 54.8.0
-  xxxxxxx Add av_get_exact_bits_per_sample()
-  xxxxxxx Add av_get_audio_frame_duration()
+2012-03-05 - lavc 54.8.0
+  6699d07 Add av_get_exact_bits_per_sample()
+  9524cf7 Add av_get_audio_frame_duration()
 
-2012-03-xx - xxxxxxx - lavc 54.7.0 - avcodec.h
+2012-03-04 - 44fe77b - lavc 54.7.0 - avcodec.h
   Add av_codec_is_encoder/decoder().
 
-2012-xx-xx - xxxxxxx - lavc 54.3.0 - avcodec.h
+2012-03-01 - 442c132 - lavc 54.3.0 - avcodec.h
   Add av_packet_shrink_side_data.
 
-2012-xx-xx - xxxxxxx - lavf 54.2.0 - avformat.h
+2012-02-29 - dd2a4bc - lavf 54.2.0 - avformat.h
   Add AVStream.attached_pic and AV_DISPOSITION_ATTACHED_PIC,
   used for dealing with attached pictures/cover art.
 
