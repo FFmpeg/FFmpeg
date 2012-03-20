@@ -25,8 +25,8 @@
 #include "get_bits.h"
 
 #define BIT_PLANAR   0x00
-#define BYTE_PLANAR  0x20
-#define CHUNKY       0x40
+#define CHUNKY       0x20
+#define BYTE_PLANAR  0x40
 #define BIT_LINE     0x80
 #define BYTE_LINE    0xC0
 
