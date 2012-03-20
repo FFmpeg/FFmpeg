@@ -55,7 +55,7 @@ static void png_get_interlaced_row(uint8_t *dst, int row_size,
     uint8_t *d;
     const uint8_t *s;
 
-    mask = ff_png_pass_mask[pass];
+    mask =  (int[]){0x80, 0x08, 0x88, 0x22, 0xaa, 0x55, 0xff}[pass];
     switch(bits_per_pixel) {
     case 1:
         memset(dst, 0, row_size);
