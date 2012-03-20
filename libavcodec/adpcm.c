@@ -128,7 +128,7 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
         }
         break;
     case CODEC_ID_ADPCM_IMA_WS:
-        if (avctx->extradata && avctx->extradata_size >= 42)
+        if (avctx->extradata && avctx->extradata_size >= 2)
             c->vqa_version = AV_RL16(avctx->extradata);
         break;
     default:
