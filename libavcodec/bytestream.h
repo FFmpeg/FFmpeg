@@ -198,6 +198,16 @@ static av_always_inline int bytestream2_tell_p(PutByteContext *p)
     return (int)(p->buffer - p->buffer_start);
 }
 
+static av_always_inline int bytestream2_size(GetByteContext *g)
+{
+    return (int)(g->buffer_end - g->buffer_start);
+}
+
+static av_always_inline int bytestream2_size_p(PutByteContext *p)
+{
+    return (int)(p->buffer_end - p->buffer_start);
+}
+
 static av_always_inline int bytestream2_seek(GetByteContext *g,
                                              int offset,
                                              int whence)
