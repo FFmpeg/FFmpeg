@@ -37,7 +37,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     aspect->ratio = (AVRational) {0, 1};
 
     if (args) {
-        if (av_parse_ratio(&aspect->ratio, args, 100, 0, ctx) ||
+        if (av_parse_ratio(&aspect->ratio, args, 100, 0, ctx) < 0 ||
             aspect->ratio.num < 0 || aspect->ratio.den <= 0) {
             av_log(ctx, AV_LOG_ERROR,
                    "Invalid string '%s' for aspect ratio.\n", args);
