@@ -870,7 +870,6 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
     if (!(avctx->codec->capabilities & CODEC_CAP_DELAY) && !frame) {
         av_free_packet(avpkt);
         av_init_packet(avpkt);
-        avpkt->size = 0;
         return 0;
     }
 
