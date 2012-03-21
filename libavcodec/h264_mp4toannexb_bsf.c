@@ -82,8 +82,6 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
 
         /* retrieve length coded size */
         ctx->length_size = (*extradata++ & 0x3) + 1;
-        if (ctx->length_size == 3)
-            return AVERROR(EINVAL);
 
         /* retrieve sps and pps unit(s) */
         unit_nb = *extradata++ & 0x1f; /* number of sps unit(s) */
@@ -142,12 +140,8 @@ pps:
         if (buf + ctx->length_size > buf_end)
             goto fail;
 
-        if (ctx->length_size == 1) {
-            nal_size = buf[0];
-        } else if (ctx->length_size == 2) {
-            nal_size = AV_RB16(buf);
-        } else
-            nal_size = AV_RB32(buf);
+        for(nal_size = 0, unit_type = 0; unit_type<ctx->length_size; unit_type++)
+            nal_size = (nal_size << 8) | buf[unit_type];
 
         buf += ctx->length_size;
         unit_type = *buf & 0x1f;
