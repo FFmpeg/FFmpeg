@@ -83,7 +83,7 @@ static void smc_decode_stream(SmcContext *s)
     int stride = s->frame.linesize[0];
     int i;
     int chunk_size;
-    int buf_size = (int) (s->gb.buffer_end - s->gb.buffer_start);
+    int buf_size = bytestream2_size(&s->gb);
     unsigned char opcode;
     int n_blocks;
     unsigned int color_flags;
