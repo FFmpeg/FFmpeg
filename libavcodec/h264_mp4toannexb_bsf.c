@@ -59,6 +59,7 @@ static int h264_mp4toannexb_filter(AVBitStreamFilterContext *bsfc,
                                    const uint8_t *buf, int      buf_size,
                                    int keyframe) {
     H264BSFContext *ctx = bsfc->priv_data;
+    int i;
     uint8_t unit_type;
     int32_t nal_size;
     uint32_t cumul_size = 0;
@@ -140,8 +141,8 @@ pps:
         if (buf + ctx->length_size > buf_end)
             goto fail;
 
-        for(nal_size = 0, unit_type = 0; unit_type<ctx->length_size; unit_type++)
-            nal_size = (nal_size << 8) | buf[unit_type];
+        for (nal_size = 0, i = 0; i<ctx->length_size; i++)
+            nal_size = (nal_size << 8) | buf[i];
 
         buf += ctx->length_size;
         unit_type = *buf & 0x1f;
