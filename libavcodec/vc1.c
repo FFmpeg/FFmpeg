@@ -535,6 +535,8 @@ int ff_vc1_decode_entry_point(AVCodecContext *avctx, VC1Context *v, GetBitContex
     v->panscanflag    = get_bits1(gb);
     v->refdist_flag   = get_bits1(gb);
     v->s.loop_filter  = get_bits1(gb);
+    if (v->s.avctx->skip_loop_filter >= AVDISCARD_ALL)
+        v->s.loop_filter = 0;
     v->fastuvmc       = get_bits1(gb);
     v->extended_mv    = get_bits1(gb);
     v->dquant         = get_bits(gb, 2);
