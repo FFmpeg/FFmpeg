@@ -142,6 +142,8 @@ static int print_stats = 1;
 
 static uint8_t *audio_buf;
 static unsigned int allocated_audio_buf_size;
+static uint8_t *async_buf;
+static unsigned int allocated_async_buf_size;
 
 #define DEFAULT_PASS_LOGFILENAME_PREFIX "av2pass"
 
@@ -718,6 +720,8 @@ void exit_program(int ret)
     uninit_opts();
     av_free(audio_buf);
     allocated_audio_buf_size = 0;
+    av_free(async_buf);
+    allocated_async_buf_size = 0;
 
 #if CONFIG_AVFILTER
     avfilter_uninit();
@@ -1117,8 +1121,12 @@ need_realloc:
                         return;
                     ist->is_start = 0;
                 } else {
-                    static uint8_t *input_tmp = NULL;
-                    input_tmp = av_realloc(input_tmp, byte_delta + size);
+                    av_fast_malloc(&async_buf, &allocated_async_buf_size,
+                                   byte_delta + size);
+                    if (!async_buf) {
+                        av_log(NULL, AV_LOG_FATAL, "Out of memory in do_audio_out\n");
+                        exit_program(1);
+                    }
 
                     if (byte_delta > allocated_for_size - size) {
                         allocated_for_size = byte_delta + (int64_t)size;
@@ -1126,9 +1134,9 @@ need_realloc:
                     }
                     ist->is_start = 0;
 
-                    generate_silence(input_tmp, dec->sample_fmt, byte_delta);
-                    memcpy(input_tmp + byte_delta, buf, size);
-                    buf = input_tmp;
+                    generate_silence(async_buf, dec->sample_fmt, byte_delta);
+                    memcpy(async_buf + byte_delta, buf, size);
+                    buf = async_buf;
                     size += byte_delta;
                     av_log(NULL, AV_LOG_VERBOSE, "adding %d audio samples of silence\n", idelta);
                 }
