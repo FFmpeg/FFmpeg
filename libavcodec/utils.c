@@ -885,8 +885,9 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
         }
     }
 
-        ret = avctx->codec->encode2(avctx, avpkt, frame, got_packet_ptr);
-        if (!ret && *got_packet_ptr) {
+    ret = avctx->codec->encode2(avctx, avpkt, frame, got_packet_ptr);
+    if (!ret) {
+        if (*got_packet_ptr) {
             if (!(avctx->codec->capabilities & CODEC_CAP_DELAY)) {
                 if (avpkt->pts == AV_NOPTS_VALUE)
                     avpkt->pts = frame->pts;
@@ -899,7 +900,6 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
             avpkt->size = 0;
         }
 
-    if (!ret) {
         if (!user_packet && avpkt->size) {
             uint8_t *new_data = av_realloc(avpkt->data, avpkt->size);
             if (new_data)
