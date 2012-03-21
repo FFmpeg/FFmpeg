@@ -1020,7 +1020,7 @@ static int alloc_audio_output_buf(AVCodecContext *dec, AVCodecContext *enc,
     /* calculate required number of samples to allocate */
     audio_buf_samples = ((int64_t)nb_samples * enc->sample_rate + dec->sample_rate) /
                         dec->sample_rate;
-    audio_buf_samples = audio_buf_samples * 2 + 10000; // safety factors for the deprecated resampling API
+    audio_buf_samples = 4 * audio_buf_samples + 16; // safety factors for resampling
     audio_buf_samples = FFMAX(audio_buf_samples, enc->frame_size);
     if (audio_buf_samples > INT_MAX)
         return AVERROR(EINVAL);
