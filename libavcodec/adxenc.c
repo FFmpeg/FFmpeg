@@ -119,18 +119,13 @@ static av_cold int adx_encode_init(AVCodecContext *avctx)
     }
     avctx->frame_size = BLOCK_SAMPLES;
 
-    avctx->coded_frame = avcodec_alloc_frame();
+    avcodec_get_frame_defaults(&c->frame);
+    avctx->coded_frame = &c->frame;
 
     /* the cutoff can be adjusted, but this seems to work pretty well */
     c->cutoff = 500;
     ff_adx_calculate_coeffs(c->cutoff, avctx->sample_rate, COEFF_BITS, c->coeff);
 
-    return 0;
-}
-
-static av_cold int adx_encode_close(AVCodecContext *avctx)
-{
-    av_freep(&avctx->coded_frame);
     return 0;
 }
 
@@ -171,7 +166,6 @@ AVCodec ff_adpcm_adx_encoder = {
     .priv_data_size = sizeof(ADXContext),
     .init           = adx_encode_init,
     .encode         = adx_encode_frame,
-    .close          = adx_encode_close,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16,
                                                       AV_SAMPLE_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("SEGA CRI ADX ADPCM"),
