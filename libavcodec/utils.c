@@ -909,8 +909,11 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
         avctx->frame_number++;
     }
 
-    if (ret < 0 || !*got_packet_ptr)
+    if (ret < 0 || !*got_packet_ptr) {
         av_free_packet(avpkt);
+        av_init_packet(avpkt);
+        return ret;
+    }
 
     /* NOTE: if we add any audio encoders which output non-keyframe packets,
              this needs to be moved to the encoders, but for now we can do it
