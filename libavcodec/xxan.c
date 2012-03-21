@@ -257,7 +257,7 @@ static int xan_decode_frame_type0(AVCodecContext *avctx)
     if ((ret = xan_decode_chroma(avctx, chroma_off)) != 0)
         return ret;
 
-    if (corr_off >= (s->gb.buffer_end - s->gb.buffer_start)) {
+    if (corr_off >= bytestream2_size(&s->gb)) {
         av_log(avctx, AV_LOG_WARNING, "Ignoring invalid correction block position\n");
         corr_off = 0;
     }
