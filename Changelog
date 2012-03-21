@@ -19,6 +19,7 @@ version next:
 - RealAudio Lossless decoder
 - ZeroCodec decoder
 - tile video filter
+- Metal Gear Solid: The Twin Snakes demuxer
 
 
 version 0.10:
