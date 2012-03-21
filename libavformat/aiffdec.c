@@ -123,6 +123,13 @@ static unsigned int get_aiff_header(AVFormatContext *s, int size,
         aiff->block_duration = 1;
     } else {
         switch (codec->codec_id) {
+        case CODEC_ID_PCM_F32BE:
+        case CODEC_ID_PCM_F64BE:
+        case CODEC_ID_PCM_S16LE:
+        case CODEC_ID_PCM_ALAW:
+        case CODEC_ID_PCM_MULAW:
+            aiff->block_duration = 1;
+            break;
         case CODEC_ID_ADPCM_IMA_QT:
             codec->block_align = 34*codec->channels;
             break;
