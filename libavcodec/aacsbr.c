@@ -1399,7 +1399,7 @@ static int sbr_x_gen(SpectralBandReplication *sbr, float X[2][38][64],
 /** High Frequency Adjustment (14496-3 sp04 p217) and Mapping
  * (14496-3 sp04 p217)
  */
-static void sbr_mapping(AACContext *ac, SpectralBandReplication *sbr,
+static int sbr_mapping(AACContext *ac, SpectralBandReplication *sbr,
                         SBRData *ch_data, int e_a[2])
 {
     int e, i, m;
@@ -1410,6 +1410,12 @@ static void sbr_mapping(AACContext *ac, SpectralBandReplication *sbr,
         uint16_t *table = ch_data->bs_freq_res[e + 1] ? sbr->f_tablehigh : sbr->f_tablelow;
         int k;
 
+        if (sbr->kx[1] != table[0]) {
+            av_log(ac->avctx, AV_LOG_ERROR, "kx != f_table{high,low}[0]. "
+                   "Derived frequency tables were not regenerated.\n");
+            sbr_turnoff(sbr);
+            return AVERROR_BUG;
+        }
         for (i = 0; i < ilim; i++)
             for (m = table[i]; m < table[i + 1]; m++)
                 sbr->e_origmapped[e][m - sbr->kx[1]] = ch_data->env_facs[e+1][i];
@@ -1444,6 +1450,7 @@ static void sbr_mapping(AACContext *ac, SpectralBandReplication *sbr,
     }
 
     memcpy(ch_data->s_indexmapped[0], ch_data->s_indexmapped[ch_data->bs_num_env], sizeof(ch_data->s_indexmapped[0]));
+    return 0;
 }
 
 /// Estimation of current envelope (14496-3 sp04 p218)
@@ -1644,6 +1651,7 @@ void ff_sbr_apply(AACContext *ac, SpectralBandReplication *sbr, int id_aac,
     int downsampled = ac->m4ac.ext_sample_rate < sbr->sample_rate;
     int ch;
     int nch = (id_aac == TYPE_CPE) ? 2 : 1;
+    int err;
 
     if (!sbr->kx_and_m_pushed) {
         sbr->kx[0] = sbr->kx[1];
@@ -1670,12 +1678,14 @@ void ff_sbr_apply(AACContext *ac, SpectralBandReplication *sbr, int id_aac,
                        sbr->data[ch].bs_num_env);
 
             // hf_adj
-            sbr_mapping(ac, sbr, &sbr->data[ch], sbr->data[ch].e_a);
-            sbr_env_estimate(sbr->e_curr, sbr->X_high, sbr, &sbr->data[ch]);
-            sbr_gain_calc(ac, sbr, &sbr->data[ch], sbr->data[ch].e_a);
-            sbr_hf_assemble(sbr->data[ch].Y[sbr->data[ch].Ypos],
-                            sbr->X_high, sbr, &sbr->data[ch],
-                            sbr->data[ch].e_a);
+            err = sbr_mapping(ac, sbr, &sbr->data[ch], sbr->data[ch].e_a);
+            if (!err) {
+                sbr_env_estimate(sbr->e_curr, sbr->X_high, sbr, &sbr->data[ch]);
+                sbr_gain_calc(ac, sbr, &sbr->data[ch], sbr->data[ch].e_a);
+                sbr_hf_assemble(sbr->data[ch].Y[sbr->data[ch].Ypos],
+                                sbr->X_high, sbr, &sbr->data[ch],
+                                sbr->data[ch].e_a);
+            }
         }
 
         /* synthesis */
