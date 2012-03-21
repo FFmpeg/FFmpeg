@@ -68,7 +68,7 @@ cglobal sbr_sum_square, 2, 3, 6
     shufps      m0, m0, 1
     addss       m0, m1
 %if ARCH_X86_64 == 0
-    movd        r0m,  m0
+    movss       r0m,  m0
     fld         dword r0m
 %endif
     RET
