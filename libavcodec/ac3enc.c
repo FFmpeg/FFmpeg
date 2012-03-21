@@ -2050,7 +2050,9 @@ av_cold int ff_ac3_encode_close(AVCodecContext *avctx)
 
     s->mdct_end(s);
 
+#if FF_API_OLD_ENCODE_AUDIO
     av_freep(&avctx->coded_frame);
+#endif
     return 0;
 }
 
@@ -2434,6 +2436,7 @@ av_cold int ff_ac3_encode_init(AVCodecContext *avctx)
         return ret;
 
     avctx->frame_size = AC3_BLOCK_SIZE * s->num_blocks;
+    avctx->delay      = AC3_BLOCK_SIZE;
 
     s->bitstream_mode = avctx->audio_service_type;
     if (s->bitstream_mode == AV_AUDIO_SERVICE_TYPE_KARAOKE)
@@ -2479,9 +2482,13 @@ av_cold int ff_ac3_encode_init(AVCodecContext *avctx)
     if (ret)
         goto init_fail;
 
+#if FF_API_OLD_ENCODE_AUDIO
     avctx->coded_frame= avcodec_alloc_frame();
-    if (!avctx->coded_frame)
+    if (!avctx->coded_frame) {
+        ret = AVERROR(ENOMEM);
         goto init_fail;
+    }
+#endif
 
     ff_dsputil_init(&s->dsp, avctx);
     ff_ac3dsp_init(&s->ac3dsp, avctx->flags & CODEC_FLAG_BITEXACT);

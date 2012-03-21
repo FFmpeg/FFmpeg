@@ -330,10 +330,12 @@ static av_cold int g726_encode_init(AVCodecContext *avctx)
 
     g726_reset(c);
 
+#if FF_API_OLD_ENCODE_AUDIO
     avctx->coded_frame = avcodec_alloc_frame();
     if (!avctx->coded_frame)
         return AVERROR(ENOMEM);
     avctx->coded_frame->key_frame = 1;
+#endif
 
     /* select a frame size that will end on a byte boundary and have a size of
        approximately 1024 bytes */
@@ -342,28 +344,37 @@ static av_cold int g726_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
+#if FF_API_OLD_ENCODE_AUDIO
 static av_cold int g726_encode_close(AVCodecContext *avctx)
 {
     av_freep(&avctx->coded_frame);
     return 0;
 }
+#endif
 
-static int g726_encode_frame(AVCodecContext *avctx,
-                            uint8_t *dst, int buf_size, void *data)
+static int g726_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
+                             const AVFrame *frame, int *got_packet_ptr)
 {
     G726Context *c = avctx->priv_data;
-    const int16_t *samples = data;
+    const int16_t *samples = (const int16_t *)frame->data[0];
     PutBitContext pb;
-    int i;
+    int i, ret, out_size;
 
-    init_put_bits(&pb, dst, 1024*1024);
+    out_size = (frame->nb_samples * c->code_size + 7) / 8;
+    if ((ret = ff_alloc_packet(avpkt, out_size))) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
+        return ret;
+    }
+    init_put_bits(&pb, avpkt->data, avpkt->size);
 
-    for (i = 0; i < avctx->frame_size; i++)
+    for (i = 0; i < frame->nb_samples; i++)
         put_bits(&pb, c->code_size, g726_encode(c, *samples++));
 
     flush_put_bits(&pb);
 
-    return put_bits_count(&pb)>>3;
+    avpkt->size = out_size;
+    *got_packet_ptr = 1;
+    return 0;
 }
 
 #define OFFSET(x) offsetof(G726Context, x)
@@ -391,8 +402,10 @@ AVCodec ff_adpcm_g726_encoder = {
     .id             = CODEC_ID_ADPCM_G726,
     .priv_data_size = sizeof(G726Context),
     .init           = g726_encode_init,
-    .encode         = g726_encode_frame,
+    .encode2        = g726_encode_frame,
+#if FF_API_OLD_ENCODE_AUDIO
     .close          = g726_encode_close,
+#endif
     .capabilities = CODEC_CAP_SMALL_LAST_FRAME,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("G.726 ADPCM"),

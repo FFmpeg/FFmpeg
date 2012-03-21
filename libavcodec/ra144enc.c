@@ -28,6 +28,8 @@
 #include <float.h>
 
 #include "avcodec.h"
+#include "audio_frame_queue.h"
+#include "internal.h"
 #include "put_bits.h"
 #include "celp_filters.h"
 #include "ra144.h"
@@ -37,7 +39,10 @@ static av_cold int ra144_encode_close(AVCodecContext *avctx)
 {
     RA144Context *ractx = avctx->priv_data;
     ff_lpc_end(&ractx->lpc_ctx);
+    ff_af_queue_close(&ractx->afq);
+#if FF_API_OLD_ENCODE_AUDIO
     av_freep(&avctx->coded_frame);
+#endif
     return 0;
 }
 
@@ -64,11 +69,15 @@ static av_cold int ra144_encode_init(AVCodecContext * avctx)
     if (ret < 0)
         goto error;
 
+    ff_af_queue_init(avctx, &ractx->afq);
+
+#if FF_API_OLD_ENCODE_AUDIO
     avctx->coded_frame = avcodec_alloc_frame();
     if (!avctx->coded_frame) {
         ret = AVERROR(ENOMEM);
         goto error;
     }
+#endif
 
     return 0;
 error:
@@ -429,8 +438,8 @@ static void ra144_encode_subblock(RA144Context *ractx,
 }
 
 
-static int ra144_encode_frame(AVCodecContext *avctx, uint8_t *frame,
-                              int buf_size, void *data)
+static int ra144_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
+                              const AVFrame *frame, int *got_packet_ptr)
 {
     static const uint8_t sizes[LPC_ORDER] = {64, 32, 32, 16, 16, 8, 8, 8, 8, 4};
     static const uint8_t bit_sizes[LPC_ORDER] = {6, 5, 5, 4, 4, 3, 3, 3, 3, 2};
@@ -442,16 +451,16 @@ static int ra144_encode_frame(AVCodecContext *avctx, uint8_t *frame,
     int16_t block_coefs[NBLOCKS][LPC_ORDER];
     int lpc_refl[LPC_ORDER];    /**< reflection coefficients of the frame */
     unsigned int refl_rms[NBLOCKS]; /**< RMS of the reflection coefficients */
-    const int16_t *samples = data;
+    const int16_t *samples = frame ? (const int16_t *)frame->data[0] : NULL;
     int energy = 0;
-    int i, idx;
+    int i, idx, ret;
 
     if (ractx->last_frame)
         return 0;
 
-    if (buf_size < FRAMESIZE) {
-        av_log(avctx, AV_LOG_ERROR, "output buffer too small\n");
-        return 0;
+    if ((ret = ff_alloc_packet(avpkt, FRAMESIZE))) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
+        return ret;
     }
 
     /**
@@ -465,9 +474,9 @@ static int ra144_encode_frame(AVCodecContext *avctx, uint8_t *frame,
         lpc_data[i] = ractx->curr_block[BLOCKSIZE + BLOCKSIZE / 2 + i];
         energy += (lpc_data[i] * lpc_data[i]) >> 4;
     }
-    if (data) {
+    if (frame) {
         int j;
-        for (j = 0; j < avctx->frame_size && i < NBLOCKS * BLOCKSIZE; i++, j++) {
+        for (j = 0; j < frame->nb_samples && i < NBLOCKS * BLOCKSIZE; i++, j++) {
             lpc_data[i] = samples[j] >> 2;
             energy += (lpc_data[i] * lpc_data[i]) >> 4;
         }
@@ -499,7 +508,7 @@ static int ra144_encode_frame(AVCodecContext *avctx, uint8_t *frame,
             memset(lpc_refl, 0, sizeof(lpc_refl));
         }
     }
-    init_put_bits(&pb, frame, buf_size);
+    init_put_bits(&pb, avpkt->data, avpkt->size);
     for (i = 0; i < LPC_ORDER; i++) {
         idx = quantize(lpc_refl[i], ff_lpc_refl_cb[i], sizes[i]);
         put_bits(&pb, bit_sizes[i], idx);
@@ -525,15 +534,24 @@ static int ra144_encode_frame(AVCodecContext *avctx, uint8_t *frame,
 
     /* copy input samples to current block for processing in next call */
     i = 0;
-    if (data) {
-        for (; i < avctx->frame_size; i++)
+    if (frame) {
+        for (; i < frame->nb_samples; i++)
             ractx->curr_block[i] = samples[i] >> 2;
+
+        if ((ret = ff_af_queue_add(&ractx->afq, frame) < 0))
+            return ret;
     } else
         ractx->last_frame = 1;
     memset(&ractx->curr_block[i], 0,
            (NBLOCKS * BLOCKSIZE - i) * sizeof(*ractx->curr_block));
 
-    return FRAMESIZE;
+    /* Get the next frame pts/duration */
+    ff_af_queue_remove(&ractx->afq, avctx->frame_size, &avpkt->pts,
+                       &avpkt->duration);
+
+    avpkt->size = FRAMESIZE;
+    *got_packet_ptr = 1;
+    return 0;
 }
 
 
@@ -543,7 +561,7 @@ AVCodec ff_ra_144_encoder = {
     .id             = CODEC_ID_RA_144,
     .priv_data_size = sizeof(RA144Context),
     .init           = ra144_encode_init,
-    .encode         = ra144_encode_frame,
+    .encode2        = ra144_encode_frame,
     .close          = ra144_encode_close,
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_SMALL_LAST_FRAME,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,

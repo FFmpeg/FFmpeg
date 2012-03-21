@@ -23,25 +23,61 @@
 #include <vo-aacenc/cmnMemory.h>
 
 #include "avcodec.h"
+#include "audio_frame_queue.h"
+#include "internal.h"
 #include "mpeg4audio.h"
+
+#define FRAME_SIZE 1024
+#define ENC_DELAY  1600
 
 typedef struct AACContext {
     VO_AUDIO_CODECAPI codec_api;
     VO_HANDLE handle;
     VO_MEM_OPERATOR mem_operator;
     VO_CODEC_INIT_USERDATA user_data;
+    VO_PBYTE end_buffer;
+    AudioFrameQueue afq;
+    int last_frame;
+    int last_samples;
 } AACContext;
+
+
+static int aac_encode_close(AVCodecContext *avctx)
+{
+    AACContext *s = avctx->priv_data;
+
+    s->codec_api.Uninit(s->handle);
+#if FF_API_OLD_ENCODE_AUDIO
+    av_freep(&avctx->coded_frame);
+#endif
+    av_freep(&avctx->extradata);
+    ff_af_queue_close(&s->afq);
+    av_freep(&s->end_buffer);
+
+    return 0;
+}
 
 static av_cold int aac_encode_init(AVCodecContext *avctx)
 {
     AACContext *s = avctx->priv_data;
     AACENC_PARAM params = { 0 };
-    int index;
+    int index, ret;
 
+#if FF_API_OLD_ENCODE_AUDIO
     avctx->coded_frame = avcodec_alloc_frame();
     if (!avctx->coded_frame)
         return AVERROR(ENOMEM);
-    avctx->frame_size = 1024;
+#endif
+    avctx->frame_size = FRAME_SIZE;
+    avctx->delay      = ENC_DELAY;
+    s->last_frame     = 2;
+    ff_af_queue_init(avctx, &s->afq);
+
+    s->end_buffer = av_mallocz(avctx->frame_size * avctx->channels * 2);
+    if (!s->end_buffer) {
+        ret = AVERROR(ENOMEM);
+        goto error;
+    }
 
     voGetAACEncAPI(&s->codec_api);
 
@@ -61,7 +97,8 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     if (s->codec_api.SetParam(s->handle, VO_PID_AAC_ENCPARAM, &params)
         != VO_ERR_NONE) {
         av_log(avctx, AV_LOG_ERROR, "Unable to set encoding parameters\n");
-        return AVERROR(EINVAL);
+        ret = AVERROR(EINVAL);
+        goto error;
     }
 
     for (index = 0; index < 16; index++)
@@ -70,43 +107,69 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     if (index == 16) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported sample rate %d\n",
                                     avctx->sample_rate);
-        return AVERROR(ENOSYS);
+        ret = AVERROR(ENOSYS);
+        goto error;
     }
     if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
         avctx->extradata_size = 2;
         avctx->extradata      = av_mallocz(avctx->extradata_size +
                                            FF_INPUT_BUFFER_PADDING_SIZE);
-        if (!avctx->extradata)
-            return AVERROR(ENOMEM);
+        if (!avctx->extradata) {
+            ret = AVERROR(ENOMEM);
+            goto error;
+        }
 
         avctx->extradata[0] = 0x02 << 3 | index >> 1;
         avctx->extradata[1] = (index & 0x01) << 7 | avctx->channels << 3;
     }
     return 0;
+error:
+    aac_encode_close(avctx);
+    return ret;
 }
 
-static int aac_encode_close(AVCodecContext *avctx)
-{
-    AACContext *s = avctx->priv_data;
-
-    s->codec_api.Uninit(s->handle);
-    av_freep(&avctx->coded_frame);
-
-    return 0;
-}
-
-static int aac_encode_frame(AVCodecContext *avctx,
-                            unsigned char *frame/*out*/,
-                            int buf_size, void *data/*in*/)
+static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
+                            const AVFrame *frame, int *got_packet_ptr)
 {
     AACContext *s = avctx->priv_data;
     VO_CODECBUFFER input = { 0 }, output = { 0 };
     VO_AUDIO_OUTPUTINFO output_info = { { 0 } };
+    VO_PBYTE samples;
+    int ret;
 
-    input.Buffer = data;
-    input.Length = 2 * avctx->channels * avctx->frame_size;
-    output.Buffer = frame;
-    output.Length = buf_size;
+    /* handle end-of-stream small frame and flushing */
+    if (!frame) {
+        if (s->last_frame <= 0)
+            return 0;
+        if (s->last_samples > 0 && s->last_samples < ENC_DELAY - FRAME_SIZE) {
+            s->last_samples = 0;
+            s->last_frame--;
+        }
+        s->last_frame--;
+        memset(s->end_buffer, 0, 2 * avctx->channels * avctx->frame_size);
+        samples = s->end_buffer;
+    } else {
+        if (frame->nb_samples < avctx->frame_size) {
+            s->last_samples = frame->nb_samples;
+            memcpy(s->end_buffer, frame->data[0], 2 * avctx->channels * frame->nb_samples);
+            samples = s->end_buffer;
+        } else {
+            samples = (VO_PBYTE)frame->data[0];
+        }
+        /* add current frame to the queue */
+        if ((ret = ff_af_queue_add(&s->afq, frame) < 0))
+            return ret;
+    }
+
+    if ((ret = ff_alloc_packet(avpkt, FFMAX(8192, 768 * avctx->channels)))) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
+        return ret;
+    }
+
+    input.Buffer  = samples;
+    input.Length  = 2 * avctx->channels * avctx->frame_size;
+    output.Buffer = avpkt->data;
+    output.Length = avpkt->size;
 
     s->codec_api.SetInputData(s->handle, &input);
     if (s->codec_api.GetOutputData(s->handle, &output, &output_info)
@@ -114,7 +177,14 @@ static int aac_encode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "Unable to encode frame\n");
         return AVERROR(EINVAL);
     }
-    return output.Length;
+
+    /* Get the next frame pts/duration */
+    ff_af_queue_remove(&s->afq, avctx->frame_size, &avpkt->pts,
+                       &avpkt->duration);
+
+    avpkt->size = output.Length;
+    *got_packet_ptr = 1;
+    return 0;
 }
 
 AVCodec ff_libvo_aacenc_encoder = {
@@ -123,8 +193,9 @@ AVCodec ff_libvo_aacenc_encoder = {
     .id             = CODEC_ID_AAC,
     .priv_data_size = sizeof(AACContext),
     .init           = aac_encode_init,
-    .encode         = aac_encode_frame,
+    .encode2        = aac_encode_frame,
     .close          = aac_encode_close,
+    .capabilities   = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("Android VisualOn AAC"),
 };

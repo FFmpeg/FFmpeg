@@ -80,6 +80,7 @@ static av_cold int MPA_encode_init(AVCodecContext *avctx)
     bitrate = bitrate / 1000;
     s->nb_channels = channels;
     avctx->frame_size = MPA_FRAME_SIZE;
+    avctx->delay      = 512 - 32 + 1;
 
     /* encoding freq */
     s->lsf = 0;
@@ -180,9 +181,11 @@ static av_cold int MPA_encode_init(AVCodecContext *avctx)
         total_quant_bits[i] = 12 * v;
     }
 
+#if FF_API_OLD_ENCODE_AUDIO
     avctx->coded_frame= avcodec_alloc_frame();
     if (!avctx->coded_frame)
         return AVERROR(ENOMEM);
+#endif
 
     return 0;
 }
@@ -726,14 +729,14 @@ static void encode_frame(MpegAudioContext *s,
     flush_put_bits(p);
 }
 
-static int MPA_encode_frame(AVCodecContext *avctx,
-                            unsigned char *frame, int buf_size, void *data)
+static int MPA_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
+                            const AVFrame *frame, int *got_packet_ptr)
 {
     MpegAudioContext *s = avctx->priv_data;
-    const short *samples = data;
+    const int16_t *samples = (const int16_t *)frame->data[0];
     short smr[MPA_MAX_CHANNELS][SBLIMIT];
     unsigned char bit_alloc[MPA_MAX_CHANNELS][SBLIMIT];
-    int padding, i;
+    int padding, i, ret;
 
     for(i=0;i<s->nb_channels;i++) {
         filter(s, i, samples + i, s->nb_channels);
@@ -748,16 +751,28 @@ static int MPA_encode_frame(AVCodecContext *avctx,
     }
     compute_bit_allocation(s, smr, bit_alloc, &padding);
 
-    init_put_bits(&s->pb, frame, MPA_MAX_CODED_FRAME_SIZE);
+    if ((ret = ff_alloc_packet(avpkt, MPA_MAX_CODED_FRAME_SIZE))) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
+        return ret;
+    }
+
+    init_put_bits(&s->pb, avpkt->data, avpkt->size);
 
     encode_frame(s, bit_alloc, padding);
 
-    return put_bits_ptr(&s->pb) - s->pb.buf;
+    if (frame->pts != AV_NOPTS_VALUE)
+        avpkt->pts = frame->pts - ff_samples_to_time_base(avctx, avctx->delay);
+
+    avpkt->size = put_bits_count(&s->pb) / 8;
+    *got_packet_ptr = 1;
+    return 0;
 }
 
 static av_cold int MPA_encode_close(AVCodecContext *avctx)
 {
+#if FF_API_OLD_ENCODE_AUDIO
     av_freep(&avctx->coded_frame);
+#endif
     return 0;
 }
 
@@ -772,7 +787,7 @@ AVCodec ff_mp2_encoder = {
     .id             = CODEC_ID_MP2,
     .priv_data_size = sizeof(MpegAudioContext),
     .init           = MPA_encode_init,
-    .encode         = MPA_encode_frame,
+    .encode2        = MPA_encode_frame,
     .close          = MPA_encode_close,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .supported_samplerates= (const int[]){44100, 48000,  32000, 22050, 24000, 16000, 0},

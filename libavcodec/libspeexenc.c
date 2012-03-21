@@ -70,6 +70,7 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "internal.h"
+#include "audio_frame_queue.h"
 
 typedef struct {
     AVClass *class;             ///< AVClass for private options
@@ -81,8 +82,7 @@ typedef struct {
     int cbr_quality;            ///< CBR quality 0 to 10
     int abr;                    ///< flag to enable ABR
     int pkt_frame_count;        ///< frame count for the current packet
-    int64_t next_pts;           ///< next pts, in sample_rate time base
-    int pkt_sample_count;       ///< sample count in the current packet
+    AudioFrameQueue afq;        ///< frame queue
 } LibSpeexEncContext;
 
 static av_cold void print_enc_params(AVCodecContext *avctx,
@@ -200,6 +200,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     /* set encoding delay */
     speex_encoder_ctl(s->enc_state, SPEEX_GET_LOOKAHEAD, &avctx->delay);
+    ff_af_queue_init(avctx, &s->afq);
 
     /* create header packet bytes from header struct */
     /* note: libspeex allocates the memory for header_data, which is freed
@@ -208,13 +209,22 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     /* allocate extradata and coded_frame */
     avctx->extradata   = av_malloc(header_size + FF_INPUT_BUFFER_PADDING_SIZE);
-    avctx->coded_frame = avcodec_alloc_frame();
-    if (!avctx->extradata || !avctx->coded_frame) {
+    if (!avctx->extradata) {
         speex_header_free(header_data);
         speex_encoder_destroy(s->enc_state);
         av_log(avctx, AV_LOG_ERROR, "memory allocation error\n");
         return AVERROR(ENOMEM);
     }
+#if FF_API_OLD_ENCODE_AUDIO
+    avctx->coded_frame = avcodec_alloc_frame();
+    if (!avctx->coded_frame) {
+        av_freep(&avctx->extradata);
+        speex_header_free(header_data);
+        speex_encoder_destroy(s->enc_state);
+        av_log(avctx, AV_LOG_ERROR, "memory allocation error\n");
+        return AVERROR(ENOMEM);
+    }
+#endif
 
     /* copy header packet to extradata */
     memcpy(avctx->extradata, header_data, header_size);
@@ -228,19 +238,21 @@ static av_cold int encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int encode_frame(AVCodecContext *avctx, uint8_t *frame, int buf_size,
-                        void *data)
+static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
+                        const AVFrame *frame, int *got_packet_ptr)
 {
     LibSpeexEncContext *s = avctx->priv_data;
-    int16_t *samples      = data;
+    int16_t *samples      = frame ? (int16_t *)frame->data[0] : NULL;
+    int ret;
 
-    if (data) {
+    if (samples) {
         /* encode Speex frame */
         if (avctx->channels == 2)
             speex_encode_stereo_int(samples, s->header.frame_size, &s->bits);
         speex_encode_int(s->enc_state, samples, &s->bits);
         s->pkt_frame_count++;
-        s->pkt_sample_count += avctx->frame_size;
+        if ((ret = ff_af_queue_add(&s->afq, frame) < 0))
+            return ret;
     } else {
         /* handle end-of-stream */
         if (!s->pkt_frame_count)
@@ -255,18 +267,20 @@ static int encode_frame(AVCodecContext *avctx, uint8_t *frame, int buf_size,
     /* write output if all frames for the packet have been encoded */
     if (s->pkt_frame_count == s->frames_per_packet) {
         s->pkt_frame_count = 0;
-        avctx->coded_frame->pts = ff_samples_to_time_base(avctx, s->next_pts -
-                                                          avctx->delay);
-        s->next_pts += s->pkt_sample_count;
-        s->pkt_sample_count = 0;
-        if (buf_size > speex_bits_nbytes(&s->bits)) {
-            int ret = speex_bits_write(&s->bits, frame, buf_size);
-            speex_bits_reset(&s->bits);
+        if ((ret = ff_alloc_packet(avpkt, speex_bits_nbytes(&s->bits)))) {
+            av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
             return ret;
-        } else {
-            av_log(avctx, AV_LOG_ERROR, "output buffer too small");
-            return AVERROR(EINVAL);
         }
+        ret = speex_bits_write(&s->bits, avpkt->data, avpkt->size);
+        speex_bits_reset(&s->bits);
+
+        /* Get the next frame pts/duration */
+        ff_af_queue_remove(&s->afq, s->frames_per_packet * avctx->frame_size,
+                           &avpkt->pts, &avpkt->duration);
+
+        avpkt->size = ret;
+        *got_packet_ptr = 1;
+        return 0;
     }
     return 0;
 }
@@ -278,7 +292,10 @@ static av_cold int encode_close(AVCodecContext *avctx)
     speex_bits_destroy(&s->bits);
     speex_encoder_destroy(s->enc_state);
 
+    ff_af_queue_close(&s->afq);
+#if FF_API_OLD_ENCODE_AUDIO
     av_freep(&avctx->coded_frame);
+#endif
     av_freep(&avctx->extradata);
 
     return 0;
@@ -312,7 +329,7 @@ AVCodec ff_libspeex_encoder = {
     .id             = CODEC_ID_SPEEX,
     .priv_data_size = sizeof(LibSpeexEncContext),
     .init           = encode_init,
-    .encode         = encode_frame,
+    .encode2        = encode_frame,
     .close          = encode_close,
     .capabilities   = CODEC_CAP_DELAY,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE },
