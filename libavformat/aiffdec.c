@@ -157,8 +157,10 @@ static unsigned int get_aiff_header(AVFormatContext *s, int size,
     if (!codec->block_align)
         codec->block_align = (codec->bits_per_coded_sample * codec->channels) >> 3;
 
-    codec->bit_rate = codec->sample_rate * (codec->block_align << 3) /
-                      aiff->block_duration;
+    if (aiff->block_duration) {
+        codec->bit_rate = codec->sample_rate * (codec->block_align << 3) /
+                          aiff->block_duration;
+    }
 
     /* Chunk is over */
     if (size)
