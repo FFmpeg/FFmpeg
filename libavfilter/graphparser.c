@@ -184,13 +184,15 @@ static AVFilterInOut *extract_inout(const char *label, AVFilterInOut **links)
 {
     AVFilterInOut *ret;
 
-    while (*links && strcmp((*links)->name, label))
+    while (*links && (!(*links)->name || strcmp((*links)->name, label)))
         links = &((*links)->next);
 
     ret = *links;
 
-    if (ret)
+    if (ret) {
         *links = ret->next;
+        ret->next = NULL;
+    }
 
     return ret;
 }
@@ -201,6 +203,18 @@ static void insert_inout(AVFilterInOut **inouts, AVFilterInOut *element)
     *inouts = element;
 }
 
+static void append_inout(AVFilterInOut **inouts, AVFilterInOut **element)
+{
+    while (*inouts && (*inouts)->next)
+        inouts = &((*inouts)->next);
+
+    if (!*inouts)
+        *inouts = *element;
+    else
+        (*inouts)->next = *element;
+    *element = NULL;
+}
+
 static int link_filter_inouts(AVFilterContext *filt_ctx,
                               AVFilterInOut **curr_inputs,
                               AVFilterInOut **open_inputs, void *log_ctx)
@@ -209,14 +223,11 @@ static int link_filter_inouts(AVFilterContext *filt_ctx,
 
     while (pad--) {
         AVFilterInOut *p = *curr_inputs;
-        if (!p) {
-            av_log(log_ctx, AV_LOG_ERROR,
-                   "Not enough inputs specified for the \"%s\" filter.\n",
-                   filt_ctx->filter->name);
-            return AVERROR(EINVAL);
-        }
 
-        *curr_inputs = (*curr_inputs)->next;
+        if (p)
+            *curr_inputs = (*curr_inputs)->next;
+        else if (!(p = av_mallocz(sizeof(*p))))
+            return AVERROR(ENOMEM);
 
         if (p->filter_ctx) {
             if ((ret = link_filter(p->filter_ctx, p->pad_idx, filt_ctx, pad, log_ctx)) < 0)
@@ -329,18 +340,22 @@ static int parse_outputs(const char **buf, AVFilterInOut **curr_inputs,
     return pad;
 }
 
-int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
-                         AVFilterInOut *open_inputs,
-                         AVFilterInOut *open_outputs, void *log_ctx)
+#if FF_API_GRAPH_AVCLASS
+#define log_ctx graph
+#else
+#define log_ctx NULL
+#endif
+int avfilter_graph_parse2(AVFilterGraph *graph, const char *filters,
+                          AVFilterInOut **inputs,
+                          AVFilterInOut **outputs)
 {
     int index = 0, ret;
     char chr = 0;
 
-    AVFilterInOut *curr_inputs = NULL;
+    AVFilterInOut *curr_inputs = NULL, *open_inputs = NULL, *open_outputs = NULL;
 
     do {
         AVFilterContext *filter;
-        const char *filterchain = filters;
         filters += strspn(filters, WHITESPACES);
 
         if ((ret = parse_inputs(&filters, &curr_inputs, &open_outputs, log_ctx)) < 0)
@@ -349,12 +364,6 @@ int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
         if ((ret = parse_filter(&filter, &filters, graph, index, log_ctx)) < 0)
             goto fail;
 
-        if (filter->input_count == 1 && !curr_inputs && !index) {
-            /* First input can be omitted if it is "[in]" */
-            const char *tmp = "[in]";
-            if ((ret = parse_inputs(&tmp, &curr_inputs, &open_outputs, log_ctx)) < 0)
-                goto fail;
-        }
 
         if ((ret = link_filter_inouts(filter, &curr_inputs, &open_inputs, log_ctx)) < 0)
             goto fail;
@@ -366,13 +375,8 @@ int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
         filters += strspn(filters, WHITESPACES);
         chr = *filters++;
 
-        if (chr == ';' && curr_inputs) {
-            av_log(log_ctx, AV_LOG_ERROR,
-                   "Invalid filterchain containing an unlabelled output pad: \"%s\"\n",
-                   filterchain);
-            ret = AVERROR(EINVAL);
-            goto fail;
-        }
+        if (chr == ';' && curr_inputs)
+            append_inout(&open_outputs, &curr_inputs);
         index++;
     } while (chr == ',' || chr == ';');
 
@@ -384,14 +388,10 @@ int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
         goto fail;
     }
 
-    if (open_inputs && !strcmp(open_inputs->name, "out") && curr_inputs) {
-        /* Last output can be omitted if it is "[out]" */
-        const char *tmp = "[out]";
-        if ((ret = parse_outputs(&tmp, &curr_inputs, &open_inputs, &open_outputs,
-                                 log_ctx)) < 0)
-            goto fail;
-    }
+    append_inout(&open_outputs, &curr_inputs);
 
+    *inputs  = open_inputs;
+    *outputs = open_outputs;
     return 0;
 
  fail:
@@ -401,5 +401,73 @@ int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
     free_inout(open_inputs);
     free_inout(open_outputs);
     free_inout(curr_inputs);
+
+    *inputs  = NULL;
+    *outputs = NULL;
+
+    return ret;
+}
+#undef log_ctx
+
+int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
+                         AVFilterInOut *open_inputs,
+                         AVFilterInOut *open_outputs, void *log_ctx)
+{
+    int ret;
+    AVFilterInOut *cur, *match, *inputs = NULL, *outputs = NULL;
+
+    if ((ret = avfilter_graph_parse2(graph, filters, &inputs, &outputs)) < 0)
+        goto fail;
+
+    /* First input can be omitted if it is "[in]" */
+    if (inputs && !inputs->name)
+        inputs->name = av_strdup("in");
+    for (cur = inputs; cur; cur = cur->next) {
+        if (!cur->name) {
+              av_log(log_ctx, AV_LOG_ERROR,
+                     "Not enough inputs specified for the \"%s\" filter.\n",
+                     cur->filter_ctx->filter->name);
+              ret = AVERROR(EINVAL);
+              goto fail;
+        }
+        if (!(match = extract_inout(cur->name, &open_outputs)))
+            continue;
+        ret = avfilter_link(match->filter_ctx, match->pad_idx,
+                            cur->filter_ctx,   cur->pad_idx);
+        free_inout(match);
+        if (ret < 0)
+            goto fail;
+    }
+
+    /* Last output can be omitted if it is "[out]" */
+    if (outputs && !outputs->name)
+        outputs->name = av_strdup("out");
+    for (cur = outputs; cur; cur = cur->next) {
+        if (!cur->name) {
+            av_log(log_ctx, AV_LOG_ERROR,
+                   "Invalid filterchain containing an unlabelled output pad: \"%s\"\n",
+                   filters);
+            ret = AVERROR(EINVAL);
+            goto fail;
+        }
+        if (!(match = extract_inout(cur->name, &open_inputs)))
+            continue;
+        ret = avfilter_link(cur->filter_ctx,   cur->pad_idx,
+                            match->filter_ctx, match->pad_idx);
+        free_inout(match);
+        if (ret < 0)
+            goto fail;
+    }
+
+ fail:
+    if (ret < 0) {
+        for (; graph->filter_count > 0; graph->filter_count--)
+            avfilter_free(graph->filters[graph->filter_count - 1]);
+        av_freep(&graph->filters);
+    }
+    free_inout(inputs);
+    free_inout(outputs);
+    free_inout(open_inputs);
+    free_inout(open_outputs);
     return ret;
 }
