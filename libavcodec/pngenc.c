@@ -235,7 +235,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     PNGEncContext *s = avctx->priv_data;
     AVFrame * const p= &s->picture;
     int bit_depth, color_type, y, len, row_size, ret, is_progressive;
-    int bits_per_pixel, pass_row_size, max_packet_size;
+    int bits_per_pixel, pass_row_size, enc_row_size, max_packet_size;
     int compression_level;
     uint8_t *ptr, *top;
     uint8_t *crow_base = NULL, *crow_buf, *crow;
@@ -246,18 +246,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     *p = *pict;
     p->pict_type= AV_PICTURE_TYPE_I;
     p->key_frame= 1;
-
-    max_packet_size = IOBUF_SIZE*avctx->height + FF_MIN_BUFFER_SIZE;
-    if (!pkt->data &&
-        (ret = av_new_packet(pkt, max_packet_size)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Could not allocate output packet of size %d.\n",
-               max_packet_size);
-        return ret;
-    }
-
-    s->bytestream_start =
-    s->bytestream       = pkt->data;
-    s->bytestream_end   = pkt->data + pkt->size;
 
     is_progressive = !!(avctx->flags & CODEC_FLAG_INTERLACED_DCT);
     switch(avctx->pix_fmt) {
@@ -297,6 +285,22 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                        Z_DEFLATED, 15, 8, Z_DEFAULT_STRATEGY);
     if (ret != Z_OK)
         return -1;
+
+    enc_row_size    = deflateBound(&s->zstream, row_size);
+    max_packet_size = avctx->height * (enc_row_size +
+                                       ((enc_row_size + IOBUF_SIZE - 1) / IOBUF_SIZE) * 12)
+                      + FF_MIN_BUFFER_SIZE;
+    if (!pkt->data &&
+        (ret = av_new_packet(pkt, max_packet_size)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Could not allocate output packet of size %d.\n",
+               max_packet_size);
+        return ret;
+    }
+
+    s->bytestream_start =
+    s->bytestream       = pkt->data;
+    s->bytestream_end   = pkt->data + pkt->size;
+
     crow_base = av_malloc((row_size + 32) << (s->filter_type == PNG_FILTER_VALUE_MIXED));
     if (!crow_base)
         goto fail;
