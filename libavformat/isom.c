@@ -342,7 +342,7 @@ int ff_mov_lang_to_iso639(unsigned code, char to[4])
     memset(to, 0, 4);
     /* is it the mangled iso code? */
     /* see http://www.geocities.com/xhelmboyx/quicktime/formats/mp4-layout.txt */
-    if (code > 138) {
+    if (code >= 0x400 && code != 0x7fff) {
         for (i = 2; i >= 0; i--) {
             to[i] = 0x60 + (code & 0x1f);
             code >>= 5;
