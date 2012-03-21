@@ -96,10 +96,8 @@ typedef struct WmallDecodeCtx {
     uint32_t        frame_num;                      ///< current frame number (not used for decoding)
     GetBitContext   gb;                             ///< bitstream reader context
     int             buf_bit_size;                   ///< buffer size in bits
-    int16_t         *samples_16;                    ///< current samplebuffer pointer (16-bit)
-    int16_t         *samples_16_end;                ///< maximum samplebuffer pointer
-    int             *samples_32;                    ///< current samplebuffer pointer (24-bit)
-    int             *samples_32_end;                ///< maximum samplebuffer pointer
+    int16_t         *samples_16[WMALL_MAX_CHANNELS]; ///< current samplebuffer pointer (16-bit)
+    int32_t         *samples_32[WMALL_MAX_CHANNELS]; ///< current samplebuffer pointer (24-bit)
     uint8_t         drc_gain;                       ///< gain for the DRC tool
     int8_t          skip_frame;                     ///< skip output step
     int8_t          parsed_all_subframes;           ///< all subframes decoded?
@@ -961,13 +959,20 @@ static int decode_subframe(WmallDecodeCtx *s)
                 s->channel_residues[i][j] *= s->quant_stepsize;
 
     /* Write to proper output buffer depending on bit-depth */
-    for (i = 0; i < subframe_len; i++)
-        for (j = 0; j < s->num_channels; j++) {
-            if (s->bits_per_sample == 16)
-                *s->samples_16++ = (int16_t) s->channel_residues[j][i];
-            else
-                *s->samples_32++ = s->channel_residues[j][i];
+    for (i = 0; i < s->channels_for_cur_subframe; i++) {
+        int c = s->channel_indexes_for_cur_subframe[i];
+        int subframe_len = s->channel[c].subframe_len[s->channel[c].cur_subframe];
+
+        for (j = 0; j < subframe_len; j++) {
+            if (s->bits_per_sample == 16) {
+                *s->samples_16[c] = (int16_t) s->channel_residues[c][j];
+                s->samples_16[c] += s->num_channels;
+            } else {
+                *s->samples_32[c] = s->channel_residues[c][j];
+                s->samples_32[c] += s->num_channels;
+            }
         }
+    }
 
     /* handled one subframe */
     for (i = 0; i < s->channels_for_cur_subframe; i++) {
@@ -1000,8 +1005,10 @@ static int decode_frame(WmallDecodeCtx *s)
         s->packet_loss = 1;
         return ret;
     }
-    s->samples_16 = (int16_t *)s->frame.data[0];
-    s->samples_32 = (int32_t *)s->frame.data[0];
+    for (i = 0; i < s->num_channels; i++) {
+        s->samples_16[i] = (int16_t *)s->frame.data[0] + i;
+        s->samples_32[i] = (int32_t *)s->frame.data[0] + i;
+    }
 
     /* get frame length */
     if (s->len_prefix)
