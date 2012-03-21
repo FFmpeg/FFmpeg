@@ -127,11 +127,22 @@ av_cold void ff_aac_sbr_init(void)
     ff_ps_init();
 }
 
+/** Places SBR in pure upsampling mode. */
+static void sbr_turnoff(SpectralBandReplication *sbr) {
+    sbr->start = 0;
+    // Init defults used in pure upsampling mode
+    sbr->kx[1] = 32; //Typo in spec, kx' inits to 32
+    sbr->m[1] = 0;
+    // Reset values for first SBR header
+    sbr->data[0].e_a[1] = sbr->data[1].e_a[1] = -1;
+    memset(&sbr->spectrum_params, -1, sizeof(SpectrumParameters));
+}
+
 av_cold void ff_aac_sbr_ctx_init(AACContext *ac, SpectralBandReplication *sbr)
 {
     float mdct_scale;
-    sbr->kx[0] = sbr->kx[1] = 32; //Typo in spec, kx' inits to 32
-    sbr->data[0].e_a[1] = sbr->data[1].e_a[1] = -1;
+    sbr->kx[0] = sbr->kx[1];
+    sbr_turnoff(sbr);
     sbr->data[0].synthesis_filterbank_samples_offset = SBR_SYNTHESIS_BUF_SIZE - (1280 - 128);
     sbr->data[1].synthesis_filterbank_samples_offset = SBR_SYNTHESIS_BUF_SIZE - (1280 - 128);
     /* SBR requires samples to be scaled to +/-32768.0 to work correctly.
@@ -994,18 +1005,18 @@ static unsigned int read_sbr_data(AACContext *ac, SpectralBandReplication *sbr,
 
     if (id_aac == TYPE_SCE || id_aac == TYPE_CCE) {
         if (read_sbr_single_channel_element(ac, sbr, gb)) {
-            sbr->start = 0;
+            sbr_turnoff(sbr);
             return get_bits_count(gb) - cnt;
         }
     } else if (id_aac == TYPE_CPE) {
         if (read_sbr_channel_pair_element(ac, sbr, gb)) {
-            sbr->start = 0;
+            sbr_turnoff(sbr);
             return get_bits_count(gb) - cnt;
         }
     } else {
         av_log(ac->avctx, AV_LOG_ERROR,
             "Invalid bitstream - cannot apply SBR to element type %d\n", id_aac);
-        sbr->start = 0;
+        sbr_turnoff(sbr);
         return get_bits_count(gb) - cnt;
     }
     if (get_bits1(gb)) { // bs_extended_data
@@ -1037,7 +1048,7 @@ static void sbr_reset(AACContext *ac, SpectralBandReplication *sbr)
     if (err < 0) {
         av_log(ac->avctx, AV_LOG_ERROR,
                "SBR reset failed. Switching SBR to pure upsampling mode.\n");
-        sbr->start = 0;
+        sbr_turnoff(sbr);
     }
 }
 
@@ -1072,6 +1083,7 @@ int ff_decode_sbr_extension(AACContext *ac, SpectralBandReplication *sbr,
     //Save some state from the previous frame.
     sbr->kx[0] = sbr->kx[1];
     sbr->m[0] = sbr->m[1];
+    sbr->kx_and_m_pushed = 1;
 
     num_sbr_bits++;
     if (get_bits1(gb)) // bs_header_flag
@@ -1633,6 +1645,13 @@ void ff_sbr_apply(AACContext *ac, SpectralBandReplication *sbr, int id_aac,
     int ch;
     int nch = (id_aac == TYPE_CPE) ? 2 : 1;
 
+    if (!sbr->kx_and_m_pushed) {
+        sbr->kx[0] = sbr->kx[1];
+        sbr->m[0] = sbr->m[1];
+    } else {
+        sbr->kx_and_m_pushed = 0;
+    }
+
     if (sbr->start) {
         sbr_dequant(sbr, id_aac);
     }
@@ -1642,6 +1661,7 @@ void ff_sbr_apply(AACContext *ac, SpectralBandReplication *sbr, int id_aac,
                          (float*)sbr->qmf_filter_scratch,
                          sbr->data[ch].W);
         sbr_lf_gen(ac, sbr, sbr->X_low, sbr->data[ch].W);
+        sbr->data[ch].Ypos ^= 1;
         if (sbr->start) {
             sbr_hf_inverse_filter(&sbr->dsp, sbr->alpha0, sbr->alpha1, sbr->X_low, sbr->k[0]);
             sbr_chirp(sbr, &sbr->data[ch]);
@@ -1653,7 +1673,6 @@ void ff_sbr_apply(AACContext *ac, SpectralBandReplication *sbr, int id_aac,
             sbr_mapping(ac, sbr, &sbr->data[ch], sbr->data[ch].e_a);
             sbr_env_estimate(sbr->e_curr, sbr->X_high, sbr, &sbr->data[ch]);
             sbr_gain_calc(ac, sbr, &sbr->data[ch], sbr->data[ch].e_a);
-            sbr->data[ch].Ypos ^= 1;
             sbr_hf_assemble(sbr->data[ch].Y[sbr->data[ch].Ypos],
                             sbr->X_high, sbr, &sbr->data[ch],
                             sbr->data[ch].e_a);

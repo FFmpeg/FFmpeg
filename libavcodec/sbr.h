@@ -133,6 +133,7 @@ typedef struct {
     unsigned           kx[2];
     ///M' and M respectively, M is the number of QMF subbands that use SBR.
     unsigned           m[2];
+    unsigned           kx_and_m_pushed;
     ///The number of frequency bands in f_master
     unsigned           n_master;
     SBRData            data[2];
