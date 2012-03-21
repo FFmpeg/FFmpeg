@@ -144,6 +144,7 @@ static unsigned int get_aiff_header(AVFormatContext *s, int size,
             aiff->block_duration = 160;
             break;
         default:
+            aiff->block_duration = 1;
             break;
         }
         size -= 4;
