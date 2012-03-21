@@ -275,6 +275,10 @@ int ff_ps_read_data(AVCodecContext *avctx, GetBitContext *gb_host, PSContext *ps
 err:
     ps->start = 0;
     skip_bits_long(gb_host, bits_left);
+    memset(ps->iid_par, 0, sizeof(ps->iid_par));
+    memset(ps->icc_par, 0, sizeof(ps->icc_par));
+    memset(ps->ipd_par, 0, sizeof(ps->ipd_par));
+    memset(ps->opd_par, 0, sizeof(ps->opd_par));
     return bits_left;
 }
 
