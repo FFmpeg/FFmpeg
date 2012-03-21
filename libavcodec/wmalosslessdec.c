@@ -1229,7 +1229,7 @@ static int decode_packet(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     }
 
     *(AVFrame *)data = s->frame;
-    *got_frame_ptr   = 1;
+    *got_frame_ptr   = s->frame.nb_samples > 0;
     s->packet_offset = get_bits_count(gb) & 7;
 
     return (s->packet_loss) ? AVERROR_INVALIDDATA : get_bits_count(gb) >> 3;
@@ -1243,6 +1243,6 @@ AVCodec ff_wmalossless_decoder = {
     .priv_data_size = sizeof(WmallDecodeCtx),
     .init           = decode_init,
     .decode         = decode_packet,
-    .capabilities   = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1,
+    .capabilities   = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Audio Lossless"),
 };
