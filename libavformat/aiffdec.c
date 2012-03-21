@@ -123,28 +123,27 @@ static unsigned int get_aiff_header(AVFormatContext *s, int size,
             break;
         case CODEC_ID_ADPCM_IMA_QT:
             codec->block_align = 34*codec->channels;
-            aiff->block_duration = 64;
             break;
         case CODEC_ID_MACE3:
             codec->block_align = 2*codec->channels;
-            aiff->block_duration = 6;
             break;
         case CODEC_ID_MACE6:
             codec->block_align = 1*codec->channels;
-            aiff->block_duration = 6;
             break;
         case CODEC_ID_GSM:
             codec->block_align = 33;
-            aiff->block_duration = 160;
             break;
         case CODEC_ID_QCELP:
             codec->block_align = 35;
-            aiff->block_duration = 160;
             break;
         default:
             break;
         }
         size -= 4;
+
+        if (codec->block_align > 0)
+            aiff->block_duration = av_get_audio_frame_duration(codec,
+                                                               codec->block_align);
     } else {
         /* Need the codec type */
         codec->codec_id = aiff_codec_get_id(codec->bits_per_coded_sample);
