@@ -112,6 +112,8 @@ static int wsvqa_read_header(AVFormatContext *s)
     st->codec->width = AV_RL16(&header[6]);
     st->codec->height = AV_RL16(&header[8]);
     fps = header[12];
+    st->nb_frames =
+    st->duration  = AV_RL16(&header[4]);
     if (fps < 1 || fps > 30) {
         av_log(s, AV_LOG_ERROR, "invalid fps: %d\n", fps);
         return AVERROR_INVALIDDATA;
