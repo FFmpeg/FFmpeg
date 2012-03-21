@@ -396,7 +396,7 @@ static int vqa_decode_chunk(VqaContext *s)
         bytestream2_seek(&s->gb, cpl0_chunk, SEEK_SET);
         chunk_size = bytestream2_get_be32(&s->gb);
         /* sanity check the palette size */
-        if (chunk_size / 3 > 256) {
+        if (chunk_size / 3 > 256 || chunk_size > bytestream2_get_bytes_left(&s->gb)) {
             av_log(s->avctx, AV_LOG_ERROR, "  VQA video: problem: found a palette chunk with %d colors\n",
                 chunk_size / 3);
             return AVERROR_INVALIDDATA;
