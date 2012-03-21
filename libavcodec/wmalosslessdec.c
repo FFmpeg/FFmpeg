@@ -330,19 +330,26 @@ static int decode_tilehdr(WmallDecodeCtx *s)
 
     /* loop until the frame data is split between the subframes */
     do {
-        int subframe_len;
+        int subframe_len, in_use = 0;
 
         /* check which channels contain the subframe */
         for (c = 0; c < s->num_channels; c++) {
             if (num_samples[c] == min_channel_len) {
                 if (fixed_channel_layout || channels_for_cur_subframe == 1 ||
                    (min_channel_len == s->samples_per_frame - s->min_samples_per_subframe)) {
-                    contains_subframe[c] = 1;
+                    contains_subframe[c] = in_use = 1;
                 } else {
-                    contains_subframe[c] = get_bits1(&s->gb);
+                    if (get_bits1(&s->gb))
+                        contains_subframe[c] = in_use = 1;
                 }
             } else
                 contains_subframe[c] = 0;
+        }
+
+        if (!in_use) {
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "Found empty subframe\n");
+            return AVERROR_INVALIDDATA;
         }
 
         /* get subframe length, subframe_len == 0 is not allowed */
