@@ -66,6 +66,7 @@ typedef struct EaDemuxContext {
     enum CodecID video_codec;
     AVRational time_base;
     int width, height;
+    int nb_frames;
     int video_stream_index;
 
     enum CodecID audio_codec;
@@ -274,7 +275,9 @@ static int process_video_header_vp6(AVFormatContext *s)
     EaDemuxContext *ea = s->priv_data;
     AVIOContext *pb = s->pb;
 
-    avio_skip(pb, 16);
+    avio_skip(pb, 8);
+    ea->nb_frames = avio_rl32(pb);
+    avio_skip(pb, 4);
     ea->time_base.den = avio_rl32(pb);
     ea->time_base.num = avio_rl32(pb);
     ea->video_codec = CODEC_ID_VP6;
@@ -433,6 +436,7 @@ static int ea_read_header(AVFormatContext *s)
         st->codec->codec_tag = 0;  /* no fourcc */
         st->codec->width = ea->width;
         st->codec->height = ea->height;
+        st->duration = st->nb_frames = ea->nb_frames;
         if (ea->time_base.num)
             avpriv_set_pts_info(st, 64, ea->time_base.num, ea->time_base.den);
         st->r_frame_rate = st->avg_frame_rate = (AVRational){ea->time_base.den,
