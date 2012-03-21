@@ -2713,7 +2713,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     pkt->stream_index = sc->ffindex;
     pkt->dts = sample->timestamp;
-    if (sc->ctts_data) {
+    if (sc->ctts_data && sc->ctts_index < sc->ctts_count) {
         pkt->pts = pkt->dts + sc->dts_shift + sc->ctts_data[sc->ctts_index].duration;
         /* update ctts context */
         sc->ctts_sample++;
