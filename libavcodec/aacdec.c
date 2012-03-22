@@ -961,11 +961,11 @@ static int decode_ics_info(AACContext *ac, IndividualChannelStream *ics,
         if (ics->predictor_present) {
             if (ac->m4ac.object_type == AOT_AAC_MAIN) {
                 if (decode_prediction(ac, ics, gb)) {
-                    return AVERROR_INVALIDDATA;
+                    goto fail;
                 }
             } else if (ac->m4ac.object_type == AOT_AAC_LC) {
                 av_log(ac->avctx, AV_LOG_ERROR, "Prediction is not allowed in AAC-LC.\n");
-                return AVERROR_INVALIDDATA;
+                goto fail;
             } else {
                 if ((ics->ltp.present = get_bits(gb, 1)))
                     decode_ltp(ac, &ics->ltp, gb, ics->max_sfb);
@@ -977,10 +977,13 @@ static int decode_ics_info(AACContext *ac, IndividualChannelStream *ics,
         av_log(ac->avctx, AV_LOG_ERROR,
                "Number of scalefactor bands in group (%d) exceeds limit (%d).\n",
                ics->max_sfb, ics->num_swb);
-        return AVERROR_INVALIDDATA;
+        goto fail;
     }
 
     return 0;
+fail:
+    ics->max_sfb = 0;
+    return AVERROR_INVALIDDATA;
 }
 
 /**
