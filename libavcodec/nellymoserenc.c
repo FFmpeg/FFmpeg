@@ -401,8 +401,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         s->last_frame = 1;
     }
 
-    if ((ret = ff_alloc_packet(avpkt, NELLY_BLOCK_LEN))) {
-        av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
+    if ((ret = ff_alloc_packet2(avctx, avpkt, NELLY_BLOCK_LEN))) {
         return ret;
     }
     encode_block(s, avpkt->data, avpkt->size);
