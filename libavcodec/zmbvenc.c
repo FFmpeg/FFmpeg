@@ -228,8 +228,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     pkt_size = c->zstream.total_out + 1 + 6*keyframe;
-    if ((ret = ff_alloc_packet(pkt, pkt_size)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Error getting packet of size %d.\n", pkt_size);
+    if ((ret = ff_alloc_packet2(avctx, pkt, pkt_size)) < 0) {
         return ret;
     }
     buf = pkt->data;
