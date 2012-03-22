@@ -174,11 +174,13 @@ static int seg_write_header(AVFormatContext *s)
 
 fail:
     if (ret) {
-        oc->streams = NULL;
-        oc->nb_streams = 0;
+        if (oc) {
+            oc->streams = NULL;
+            oc->nb_streams = 0;
+            avformat_free_context(oc);
+        }
         if (seg->list)
             avio_close(seg->pb);
-        avformat_free_context(oc);
     }
     return ret;
 }
