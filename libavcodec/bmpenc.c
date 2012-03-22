@@ -120,8 +120,7 @@ static int bmp_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 #define SIZE_BITMAPINFOHEADER 40
     hsize = SIZE_BITMAPFILEHEADER + SIZE_BITMAPINFOHEADER + (pal_entries << 2);
     n_bytes = n_bytes_image + hsize;
-    if ((ret = ff_alloc_packet(pkt, n_bytes)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Error getting output packet.\n");
+    if ((ret = ff_alloc_packet2(avctx, pkt, n_bytes)) < 0) {
         return ret;
     }
     buf = pkt->data;
