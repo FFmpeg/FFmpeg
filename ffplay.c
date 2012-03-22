@@ -64,7 +64,6 @@ const char program_name[] = "ffplay";
 const int program_birth_year = 2003;
 
 #define MAX_QUEUE_SIZE (15 * 1024 * 1024)
-#define MIN_AUDIOQ_SIZE (20 * 16 * 1024)
 #define MIN_FRAMES 5
 
 /* SDL audio buffer size, in samples. Should be small to have precise
@@ -2253,6 +2252,7 @@ static int stream_component_open(VideoState *is, int stream_index)
         avctx->flags |= CODEC_FLAG_EMU_EDGE;
 
     if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
+        memset(&is->audio_pkt_temp, 0, sizeof(is->audio_pkt_temp));
         env = SDL_getenv("SDL_AUDIO_CHANNELS");
         if (env)
             wanted_channel_layout = av_get_default_channel_layout(SDL_atoi(env));
@@ -2611,7 +2611,7 @@ static int read_thread(void *arg)
 
         /* if the queue are full, no need to read more */
         if (   is->audioq.size + is->videoq.size + is->subtitleq.size > MAX_QUEUE_SIZE
-            || (   (is->audioq   .size  > MIN_AUDIOQ_SIZE || is->audio_stream < 0)
+            || (   (is->audioq   .nb_packets > MIN_FRAMES || is->audio_stream < 0)
                 && (is->videoq   .nb_packets > MIN_FRAMES || is->video_stream < 0)
                 && (is->subtitleq.nb_packets > MIN_FRAMES || is->subtitle_stream < 0))) {
             /* wait 10 ms */
