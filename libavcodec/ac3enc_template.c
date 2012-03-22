@@ -437,8 +437,7 @@ int AC3_NAME(encode_frame)(AVCodecContext *avctx, AVPacket *avpkt,
 
     ff_ac3_quantize_mantissas(s);
 
-    if ((ret = ff_alloc_packet(avpkt, s->frame_size))) {
-        av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
+    if ((ret = ff_alloc_packet2(avctx, avpkt, s->frame_size))) {
         return ret;
     }
     ff_ac3_output_frame(s, avpkt->data);
