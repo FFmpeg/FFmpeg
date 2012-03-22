@@ -161,8 +161,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             return ret;
     }
 
-    if ((ret = ff_alloc_packet(avpkt, FFMAX(8192, 768 * avctx->channels)))) {
-        av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
+    if ((ret = ff_alloc_packet2(avctx, avpkt, FFMAX(8192, 768 * avctx->channels)))) {
         return ret;
     }
 
