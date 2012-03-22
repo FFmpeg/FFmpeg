@@ -160,3 +160,34 @@ int ff_isom_write_avcc(AVIOContext *pb, const uint8_t *data, int len)
     }
     return 0;
 }
+
+int ff_avc_write_annexb_extradata(const uint8_t *in, uint8_t **buf, int *size)
+{
+    uint16_t sps_size, pps_size;
+    uint8_t *out;
+    int out_size;
+
+    *buf = NULL;
+    if (*size >= 4 && (AV_RB32(in) == 0x00000001 || AV_RB24(in) == 0x000001))
+        return 0;
+    if (*size < 11 || in[0] != 1)
+        return AVERROR_INVALIDDATA;
+
+    sps_size = AV_RB16(&in[6]);
+    if (11 + sps_size > *size)
+        return AVERROR_INVALIDDATA;
+    pps_size = AV_RB16(&in[9 + sps_size]);
+    if (11 + sps_size + pps_size > *size)
+        return AVERROR_INVALIDDATA;
+    out_size = 8 + sps_size + pps_size;
+    out = av_mallocz(out_size);
+    if (!out)
+        return AVERROR(ENOMEM);
+    AV_WB32(&out[0], 0x00000001);
+    memcpy(out + 4, &in[8], sps_size);
+    AV_WB32(&out[4 + sps_size], 0x00000001);
+    memcpy(out + 8 + sps_size, &in[11 + sps_size], pps_size);
+    *buf = out;
+    *size = out_size;
+    return 0;
+}

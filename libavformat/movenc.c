@@ -2096,26 +2096,6 @@ static void param_write_hex(AVIOContext *pb, const char *name, const uint8_t *va
     avio_printf(pb, "<param name=\"%s\" value=\"%s\" valuetype=\"data\"/>\n", name, buf);
 }
 
-static void write_h264_extradata(AVIOContext *pb, AVCodecContext *enc)
-{
-    uint16_t sps_size, pps_size, len;
-    char buf[150];
-    sps_size = AV_RB16(&enc->extradata[6]);
-    if (11 + sps_size > enc->extradata_size)
-        return;
-    pps_size = AV_RB16(&enc->extradata[9 + sps_size]);
-    if (11 + sps_size + pps_size > enc->extradata_size)
-        return;
-    len = FFMIN(sizeof(buf)/2 - 1, sps_size);
-    ff_data_to_hex(buf, &enc->extradata[8], len, 0);
-    buf[2*len] = '\0';
-    avio_printf(pb, "<param name=\"CodecPrivateData\" value=\"00000001%s", buf);
-    len = FFMIN(sizeof(buf)/2 - 1, pps_size);
-    ff_data_to_hex(buf, &enc->extradata[11 + sps_size], len, 0);
-    buf[2*len] = '\0';
-    avio_printf(pb, "00000001%s\" valuetype=\"data\"/>\n", buf);
-}
-
 static int mov_write_isml_manifest(AVIOContext *pb, MOVMuxContext *mov)
 {
     int64_t pos = avio_tell(pb);
@@ -2157,10 +2137,16 @@ static int mov_write_isml_manifest(AVIOContext *pb, MOVMuxContext *mov)
         param_write_int(pb, "systemBitrate", track->enc->bit_rate);
         param_write_int(pb, "trackID", track_id);
         if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO) {
-            if (track->enc->codec_id == CODEC_ID_H264 &&
-                track->enc->extradata_size >= 11 &&
-                track->enc->extradata[0] == 1) {
-                write_h264_extradata(pb, track->enc);
+            if (track->enc->codec_id == CODEC_ID_H264) {
+                uint8_t *ptr;
+                int size = track->enc->extradata_size;
+                if (!ff_avc_write_annexb_extradata(track->enc->extradata, &ptr,
+                                                   &size)) {
+                    param_write_hex(pb, "CodecPrivateData",
+                                    ptr ? ptr : track->enc->extradata,
+                                    size);
+                    av_free(ptr);
+                }
             } else {
                 param_write_hex(pb, "CodecPrivateData", track->enc->extradata,
                                 track->enc->extradata_size);
