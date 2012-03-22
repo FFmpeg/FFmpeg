@@ -1286,8 +1286,7 @@ static int dvvideo_encode_frame(AVCodecContext *c, AVPacket *pkt,
     s->sys = avpriv_dv_codec_profile(c);
     if (!s->sys || dv_init_dynamic_tables(s->sys))
         return -1;
-    if ((ret = ff_alloc_packet(pkt, s->sys->frame_size)) < 0) {
-        av_log(c, AV_LOG_ERROR, "Error getting output packet.\n");
+    if ((ret = ff_alloc_packet2(c, pkt, s->sys->frame_size)) < 0) {
         return ret;
     }
 
