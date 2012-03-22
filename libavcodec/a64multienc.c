@@ -308,8 +308,7 @@ static int a64multi_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         /* any frames to encode? */
         if (c->mc_lifetime) {
             req_size = charset_size + c->mc_lifetime*(screen_size + colram_size);
-            if ((ret = ff_alloc_packet(pkt, req_size)) < 0) {
-                av_log(avctx, AV_LOG_ERROR, "Error getting output packet of size %d.\n", req_size);
+            if ((ret = ff_alloc_packet2(avctx, pkt, req_size)) < 0) {
                 return ret;
             }
             buf = pkt->data;
