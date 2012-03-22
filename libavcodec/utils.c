@@ -987,6 +987,7 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
     int ret;
     AVPacket user_pkt = *avpkt;
     int nb_samples;
+    int needs_realloc = !user_pkt.data;
 
     *got_packet_ptr = 0;
 
@@ -1090,6 +1091,7 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
             avctx->frame_size = fs_tmp;
     }
     if (avpkt->data && avpkt->data == avctx->internal->byte_buffer) {
+        needs_realloc = 0;
         if (user_pkt.data) {
             if (user_pkt.size >= avpkt->size) {
                 memcpy(user_pkt.data, avpkt->data, avpkt->size);
@@ -1108,7 +1110,7 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
     }
 
     if (!ret) {
-        if (!user_pkt.data && avpkt->data) {
+        if (needs_realloc && avpkt->data) {
             uint8_t *new_data = av_realloc(avpkt->data, avpkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
             if (new_data)
                 avpkt->data = new_data;
@@ -1246,6 +1248,7 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
 {
     int ret;
     AVPacket user_pkt = *avpkt;
+    int needs_realloc = !user_pkt.data;
 
     *got_packet_ptr = 0;
 
@@ -1265,6 +1268,7 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
     av_assert0(ret <= 0);
 
     if (avpkt->data && avpkt->data == avctx->internal->byte_buffer) {
+        needs_realloc = 0;
         if (user_pkt.data) {
             if (user_pkt.size >= avpkt->size) {
                 memcpy(user_pkt.data, avpkt->data, avpkt->size);
@@ -1288,7 +1292,7 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
         else if (!(avctx->codec->capabilities & CODEC_CAP_DELAY))
             avpkt->pts = avpkt->dts = frame->pts;
 
-        if (!user_pkt.data && avpkt->data &&
+        if (needs_realloc && avpkt->data &&
             avpkt->destruct == av_destruct_packet) {
             uint8_t *new_data = av_realloc(avpkt->data, avpkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
             if (new_data)
