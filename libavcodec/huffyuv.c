@@ -29,6 +29,7 @@
  */
 
 #include "avcodec.h"
+#include "internal.h"
 #include "get_bits.h"
 #include "put_bits.h"
 #include "dsputil.h"
@@ -1278,9 +1279,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     AVFrame * const p= &s->picture;
     int i, j, size = 0, ret;
 
-    if (!pkt->data &&
-        (ret = av_new_packet(pkt, width * height * 3 * 4 + FF_MIN_BUFFER_SIZE)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Error allocating output packet.\n");
+    if ((ret = ff_alloc_packet2(avctx, pkt, width * height * 3 * 4 + FF_MIN_BUFFER_SIZE)) < 0) {
         return ret;
     }
 
