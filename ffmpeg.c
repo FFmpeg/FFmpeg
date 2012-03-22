@@ -360,9 +360,6 @@ typedef struct OptionsContext {
     int     nb_stream_maps;
     AudioChannelMap *audio_channel_maps; ///< one info entry per -map_channel
     int           nb_audio_channel_maps; ///< number of (valid) -map_channel settings
-    /* first item specifies output metadata, second is input */
-    MetadataMap (*meta_data_maps)[2];
-    int nb_meta_data_maps;
     int metadata_global_manual;
     int metadata_streams_manual;
     int metadata_chapters_manual;
@@ -461,7 +458,6 @@ static void reset_options(OptionsContext *o, int is_input)
 
     av_freep(&o->stream_maps);
     av_freep(&o->audio_channel_maps);
-    av_freep(&o->meta_data_maps);
     av_freep(&o->streamid_map);
 
     memset(o, 0, sizeof(*o));
