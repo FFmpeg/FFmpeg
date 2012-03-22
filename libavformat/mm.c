@@ -175,7 +175,6 @@ static int read_packet(AVFormatContext *s,
         case MM_TYPE_AUDIO :
             if (av_get_packet(s->pb, pkt, length)<0)
                 return AVERROR(ENOMEM);
-            pkt->size = length;
             pkt->stream_index = 1;
             pkt->pts = mm->audio_pts++;
             return 0;
