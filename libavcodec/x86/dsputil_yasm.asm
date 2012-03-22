@@ -475,7 +475,7 @@ cglobal scalarproduct_float_sse, 3,3,2, v1, v2, offset
     shufps  xmm0, xmm0, 1
     addss   xmm0, xmm1
 %ifndef ARCH_X86_64
-    movd    r0m,  xmm0
+    movss   r0m,  xmm0
     fld     dword r0m
 %endif
     RET
