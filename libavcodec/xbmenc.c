@@ -41,8 +41,7 @@ static int xbm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     linesize = (avctx->width + 7) / 8;
     size     = avctx->height * (linesize * 7 + 2) + 110;
-    if ((ret = ff_alloc_packet(pkt, size)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Error getting output packet.\n");
+    if ((ret = ff_alloc_packet2(avctx, pkt, size)) < 0) {
         return ret;
     }
 
