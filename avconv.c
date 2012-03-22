@@ -1307,7 +1307,6 @@ static void do_subtitle_out(AVFormatContext *s,
 
 static void do_video_out(AVFormatContext *s,
                          OutputStream *ost,
-                         InputStream *ist,
                          AVFrame *in_picture,
                          int *frame_size, float quality)
 {
@@ -1980,7 +1979,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
             if (!ost->frame_aspect_ratio)
                 ost->st->codec->sample_aspect_ratio = ost->picref->video->pixel_aspect;
 
-            do_video_out(output_files[ost->file_index].ctx, ost, ist, filtered_frame, &frame_size,
+            do_video_out(output_files[ost->file_index].ctx, ost, filtered_frame, &frame_size,
                          same_quant ? quality : ost->st->codec->global_quality);
             if (vstats_filename && frame_size)
                 do_video_stats(output_files[ost->file_index].ctx, ost, frame_size);
