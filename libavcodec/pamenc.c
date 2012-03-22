@@ -88,8 +88,7 @@ static int pam_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return -1;
     }
 
-    if ((ret = ff_alloc_packet(pkt, n*h + 200)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "encoded frame too large\n");
+    if ((ret = ff_alloc_packet2(avctx, pkt, n*h + 200)) < 0) {
         return ret;
     }
 
