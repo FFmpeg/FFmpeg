@@ -328,8 +328,7 @@ static int encode_frame(AVCodecContext* avc_context, AVPacket *pkt,
     }
 
     /* Copy ogg_packet content out to buffer */
-    if ((ret = ff_alloc_packet(pkt, o_packet.bytes)) < 0) {
-        av_log(avc_context, AV_LOG_ERROR, "Error getting output packet of size %ld.\n", o_packet.bytes);
+    if ((ret = ff_alloc_packet2(avc_context, pkt, o_packet.bytes)) < 0) {
         return ret;
     }
     memcpy(pkt->data, o_packet.packet, o_packet.bytes);
