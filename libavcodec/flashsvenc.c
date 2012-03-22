@@ -228,10 +228,7 @@ static int flashsv_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         I_frame = 1;
     }
 
-    if ((res = ff_alloc_packet(pkt, s->image_width * s->image_height * 3)) < 0) {
-        //Conservative upper bound check for compressed data
-        av_log(avctx, AV_LOG_ERROR, "Error getting output packet of size %d.\n",
-               s->image_width * s->image_height * 3);
+    if ((res = ff_alloc_packet2(avctx, pkt, s->image_width * s->image_height * 3)) < 0) {
         return res;
     }
 
