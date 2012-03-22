@@ -139,9 +139,10 @@ static int tqi_decode_frame(AVCodecContext *avctx,
     for (s->mb_x=0; s->mb_x<(avctx->width+15)/16; s->mb_x++)
     {
         if(tqi_decode_mb(s, t->block) < 0)
-            break;
+            goto end;
         tqi_idct_put(t, t->block);
     }
+    end:
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = t->frame;
