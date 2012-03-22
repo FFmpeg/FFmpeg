@@ -27,8 +27,8 @@ int ff_calculate_bounding_box(FFBoundingBox *bbox,
     int x, y;
     int start_x;
     int start_y;
-    int end_x = w - 1;
-    int end_y = h - 1;
+    int end_x;
+    int end_y;
     const uint8_t *line;
 
     /* left bound */
