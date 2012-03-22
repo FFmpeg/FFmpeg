@@ -87,8 +87,7 @@ static int encode_nals(AVCodecContext *ctx, AVPacket *pkt,
     for (i = 0; i < nnal; i++)
         size += nals[i].i_payload;
 
-    if ((ret = ff_alloc_packet(pkt, size)) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error getting output packet of size %d.\n", size);
+    if ((ret = ff_alloc_packet2(ctx, pkt, size)) < 0) {
         return ret;
     }
     p = pkt->data;
@@ -144,7 +143,7 @@ static int XAVS_frame(AVCodecContext *ctx, AVPacket *pkt,
 
     if (!ret) {
         if (!frame && !(x4->end_of_stream)) {
-            if ((ret = ff_alloc_packet(pkt, 4)) < 0)
+            if ((ret = ff_alloc_packet2(ctx, pkt, 4)) < 0)
                 return ret;
 
             pkt->data[0] = 0x0;
