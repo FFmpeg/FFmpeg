@@ -462,7 +462,7 @@ static int decode_mb_info(IVI4DecContext *ctx, IVIBandDesc *band,
                           IVITile *tile, AVCodecContext *avctx)
 {
     int         x, y, mv_x, mv_y, mv_delta, offs, mb_offset, blks_per_mb,
-                mv_scale, mb_type_bits;
+                mv_scale, mb_type_bits, s;
     IVIMbInfo   *mb, *ref_mb;
     int         row_offset = band->mb_size * band->pitch;
 
@@ -556,6 +556,15 @@ static int decode_mb_info(IVI4DecContext *ctx, IVIBandDesc *band,
                         mb->mv_y = mv_y;
                     }
                 }
+            }
+
+            s= band->is_halfpel;
+            if (mb->type)
+            if ( x +  (mv_x   >>s) +                 (y+               (mv_y   >>s))*band->pitch < 0 ||
+                 x + ((mv_x+s)>>s) + band->mb_size - 1
+                   + (y+band->mb_size - 1 +((mv_y+s)>>s))*band->pitch > band->height*band->pitch -1) {
+                av_log(avctx, AV_LOG_ERROR, "motion vector %d %d outside reference\n", x*s + mv_x, y*s + mv_y);
+                return AVERROR_INVALIDDATA;
             }
 
             mb++;
