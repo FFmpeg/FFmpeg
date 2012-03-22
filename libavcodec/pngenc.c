@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avcodec.h"
+#include "internal.h"
 #include "bytestream.h"
 #include "dsputil.h"
 #include "png.h"
@@ -230,10 +231,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     p->key_frame= 1;
 
     max_packet_size = avctx->width * avctx->height * 9 + FF_MIN_BUFFER_SIZE;
-    if (!pkt->data &&
-        (ret = av_new_packet(pkt, max_packet_size)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Could not allocate output packet of size %d.\n",
-               max_packet_size);
+    if ((ret = ff_alloc_packet2(avctx, pkt, max_packet_size)) < 0) {
         return ret;
     }
 
