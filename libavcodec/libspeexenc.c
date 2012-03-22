@@ -267,8 +267,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     /* write output if all frames for the packet have been encoded */
     if (s->pkt_frame_count == s->frames_per_packet) {
         s->pkt_frame_count = 0;
-        if ((ret = ff_alloc_packet(avpkt, speex_bits_nbytes(&s->bits)))) {
-            av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
+        if ((ret = ff_alloc_packet2(avctx, avpkt, speex_bits_nbytes(&s->bits)))) {
             return ret;
         }
         ret = speex_bits_write(&s->bits, avpkt->data, avpkt->size);
