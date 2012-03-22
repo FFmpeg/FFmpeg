@@ -371,8 +371,7 @@ static int encode_superframe(AVCodecContext *avctx, AVPacket *avpkt,
         }
     }
 
-    if ((ret = ff_alloc_packet(avpkt, 2 * MAX_CODED_SUPERFRAME_SIZE))) {
-        av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
+    if ((ret = ff_alloc_packet2(avctx, avpkt, 2 * MAX_CODED_SUPERFRAME_SIZE))) {
         return ret;
     }
 
