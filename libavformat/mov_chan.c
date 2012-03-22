@@ -155,6 +155,7 @@ static const struct MovChannelLayoutMap mov_ch_layout_map_misc[] = {
 
 static const struct MovChannelLayoutMap mov_ch_layout_map_1ch[] = {
     { MOV_CH_LAYOUT_MONO,               AV_CH_LAYOUT_MONO }, // C
+    { 0, 0 },
 };
 
 static const struct MovChannelLayoutMap mov_ch_layout_map_2ch[] = {
