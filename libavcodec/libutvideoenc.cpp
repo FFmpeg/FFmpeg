@@ -130,8 +130,7 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     uint8_t *dst;
 
     /* Alloc buffer */
-    if ((ret = ff_alloc_packet(pkt, utv->buf_size)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Error getting output packet.\n");
+    if ((ret = ff_alloc_packet2(avctx, pkt, utv->buf_size)) < 0) {
         return ret;
     }
 
