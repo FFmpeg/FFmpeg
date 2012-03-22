@@ -22,6 +22,7 @@
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "dsputil.h"
 #include "dwt.h"
 #include "snow.h"
@@ -1613,9 +1614,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     uint8_t rc_header_bak[sizeof(s->header_state)];
     uint8_t rc_block_bak[sizeof(s->block_state)];
 
-    if (!pkt->data &&
-        (ret = av_new_packet(pkt, s->b_width*s->b_height*MB_SIZE*MB_SIZE*3 + FF_MIN_BUFFER_SIZE)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Error getting output packet.\n");
+    if ((ret = ff_alloc_packet2(avctx, pkt, s->b_width*s->b_height*MB_SIZE*MB_SIZE*3 + FF_MIN_BUFFER_SIZE)) < 0) {
         return ret;
     }
 
