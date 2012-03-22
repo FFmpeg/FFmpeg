@@ -27,6 +27,7 @@
 
 #include <float.h>
 #include "avcodec.h"
+#include "internal.h"
 #include "bytestream.h"
 #include "j2k.h"
 #include "libavutil/common.h"
@@ -926,9 +927,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int tileno, ret;
     J2kEncoderContext *s = avctx->priv_data;
 
-    if (!pkt->data &&
-        (ret = av_new_packet(pkt, avctx->width*avctx->height*9 + FF_MIN_BUFFER_SIZE)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Error getting output packet.\n");
+    if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width*avctx->height*9 + FF_MIN_BUFFER_SIZE)) < 0) {
         return ret;
     }
 
