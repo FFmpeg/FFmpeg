@@ -389,7 +389,7 @@ static inline void cx_pktcpy(struct FrameListData *dst,
 static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
                       AVPacket *pkt, AVFrame *coded_frame)
 {
-    int ret = ff_alloc_packet(pkt, cx_frame->sz);
+    int ret = ff_alloc_packet2(avctx, pkt, cx_frame->sz);
     if (ret >= 0) {
         memcpy(pkt->data, cx_frame->buf, pkt->size);
         pkt->pts = pkt->dts    = cx_frame->pts;
@@ -402,8 +402,6 @@ static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
         } else
             coded_frame->pict_type = AV_PICTURE_TYPE_P;
     } else {
-        av_log(avctx, AV_LOG_ERROR,
-               "Error getting output packet of size %zu.\n", cx_frame->sz);
         return ret;
     }
     return pkt->size;
