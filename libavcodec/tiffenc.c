@@ -463,7 +463,7 @@ fail:
     av_free(strip_sizes);
     av_free(strip_offsets);
     av_free(yuv_line);
-    return ret;
+    return ret < 0 ? ret : 0;
 }
 
 #define OFFSET(x) offsetof(TiffEncoderContext, x)
