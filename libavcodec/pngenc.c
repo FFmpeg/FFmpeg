@@ -219,7 +219,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     PNGEncContext *s = avctx->priv_data;
     AVFrame * const p= &s->picture;
     int bit_depth, color_type, y, len, row_size, ret, is_progressive;
-    int bits_per_pixel, pass_row_size, enc_row_size, max_packet_size;
+    int bits_per_pixel, pass_row_size, enc_row_size;
+    int64_t max_packet_size;
     int compression_level;
     uint8_t *ptr, *top;
     uint8_t *crow_base = NULL, *crow_buf, *crow;
@@ -286,9 +287,11 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return -1;
 
     enc_row_size    = deflateBound(&s->zstream, row_size);
-    max_packet_size = avctx->height * (enc_row_size +
+    max_packet_size = avctx->height * (int64_t)(enc_row_size +
                                        ((enc_row_size + IOBUF_SIZE - 1) / IOBUF_SIZE) * 12)
                       + FF_MIN_BUFFER_SIZE;
+    if (max_packet_size > INT_MAX)
+        return AVERROR(ENOMEM);
     if ((ret = ff_alloc_packet2(avctx, pkt, max_packet_size)) < 0) {
         return ret;
     }
