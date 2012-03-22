@@ -1913,6 +1913,9 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
 
     rate_emu_sleep(ist);
 
+    if (ist->st->sample_aspect_ratio.num)
+        decoded_frame->sample_aspect_ratio = ist->st->sample_aspect_ratio;
+
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost = &output_streams[i];
         int frame_size, resample_changed;
@@ -1941,8 +1944,6 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
             ost->resample_pix_fmt = decoded_frame->format;
         }
 
-        if (ist->st->sample_aspect_ratio.num)
-            decoded_frame->sample_aspect_ratio = ist->st->sample_aspect_ratio;
         if (ist->st->codec->codec->capabilities & CODEC_CAP_DR1) {
             FrameBuffer      *buf = decoded_frame->opaque;
             AVFilterBufferRef *fb = avfilter_get_video_buffer_ref_from_arrays(
