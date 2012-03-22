@@ -49,8 +49,7 @@ static int v410_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     uint32_t val;
     int i, j, ret;
 
-    if ((ret = ff_alloc_packet(pkt, avctx->width * avctx->height * 4)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Error getting output packet.\n");
+    if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width * avctx->height * 4)) < 0) {
         return ret;
     }
     dst = pkt->data;
