@@ -164,6 +164,11 @@ static av_cold int vqa_decode_init(AVCodecContext *avctx)
     if (!s->next_codebook_buffer)
         goto fail;
 
+    if (s->width % s->vector_width || s->height % s->vector_height) {
+        av_log(avctx, AV_LOG_ERROR, "Picture dimensions are not a multiple of the vector size\n");
+        goto fail;
+    }
+
     /* allocate decode buffer */
     s->decode_buffer_size = (s->width / s->vector_width) *
         (s->height / s->vector_height) * 2;
