@@ -255,7 +255,7 @@ static void video_encode_example(const char *filename, int codec_id)
     }
 
     /* alloc image and output buffer */
-    outbuf_size = 100000;
+    outbuf_size = 100000 + 12*c->width*c->height;
     outbuf = malloc(outbuf_size);
 
     /* the image can be allocated by any means and av_image_alloc() is
