@@ -129,7 +129,6 @@ read_header:
         if (s->bottom_field != s->interlace_polarity && second_field_offs)
         {
             buf_ptr = buf + second_field_offs;
-            second_field_offs = 0;
             goto read_header;
             }
     }
