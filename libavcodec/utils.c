@@ -1039,7 +1039,7 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
                 buf_size += 2*FF_MIN_BUFFER_SIZE;
             }
         }
-        if ((ret = ff_alloc_packet(avpkt, buf_size)))
+        if ((ret = ff_alloc_packet2(avctx, avpkt, buf_size)))
             return ret;
 
         /* Encoders using AVCodec.encode() that support
