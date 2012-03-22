@@ -24,3 +24,4 @@ fate-zerocodec: CMD = framecrc -i $(SAMPLES)/zerocodec/sample-zeco.avi
 
 FATE_TESTS += $(FATE_LOSSLESS_VIDEO)
 fate-lossless-video: $(FATE_LOSSLESS_VIDEO)
+

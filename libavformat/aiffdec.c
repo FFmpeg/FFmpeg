@@ -112,47 +112,48 @@ static unsigned int get_aiff_header(AVFormatContext *s, int size,
     codec->sample_rate = sample_rate;
     size -= 18;
 
-    /* Got an AIFF-C? */
+    /* get codec id for AIFF-C */
     if (version == AIFF_C_VERSION1) {
         codec->codec_tag = avio_rl32(pb);
         codec->codec_id  = ff_codec_get_id(ff_codec_aiff_tags, codec->codec_tag);
+        size -= 4;
+    }
 
+    if (version != AIFF_C_VERSION1 || codec->codec_id == CODEC_ID_PCM_S16BE) {
+        codec->codec_id = aiff_codec_get_id(codec->bits_per_coded_sample);
+        codec->bits_per_coded_sample = av_get_bits_per_sample(codec->codec_id);
+        aiff->block_duration = 1;
+    } else {
         switch (codec->codec_id) {
-        case CODEC_ID_PCM_S16BE:
-            codec->codec_id = aiff_codec_get_id(codec->bits_per_coded_sample);
-            codec->bits_per_coded_sample = av_get_bits_per_sample(codec->codec_id);
+        case CODEC_ID_PCM_F32BE:
+        case CODEC_ID_PCM_F64BE:
+        case CODEC_ID_PCM_S16LE:
+        case CODEC_ID_PCM_ALAW:
+        case CODEC_ID_PCM_MULAW:
             aiff->block_duration = 1;
             break;
         case CODEC_ID_ADPCM_IMA_QT:
             codec->block_align = 34*codec->channels;
-            aiff->block_duration = 64;
             break;
         case CODEC_ID_MACE3:
             codec->block_align = 2*codec->channels;
-            aiff->block_duration = 6;
             break;
         case CODEC_ID_MACE6:
             codec->block_align = 1*codec->channels;
-            aiff->block_duration = 6;
             break;
         case CODEC_ID_GSM:
             codec->block_align = 33;
-            aiff->block_duration = 160;
             break;
         case CODEC_ID_QCELP:
             codec->block_align = 35;
-            aiff->block_duration = 160;
             break;
         default:
             aiff->block_duration = 1;
             break;
         }
-        size -= 4;
-    } else {
-        /* Need the codec type */
-        codec->codec_id = aiff_codec_get_id(codec->bits_per_coded_sample);
-        codec->bits_per_coded_sample = av_get_bits_per_sample(codec->codec_id);
-        aiff->block_duration = 1;
+        if (codec->block_align > 0)
+            aiff->block_duration = av_get_audio_frame_duration(codec,
+                                                               codec->block_align);
     }
 
     /* Block align needs to be computed in all cases, as the definition
@@ -160,8 +161,10 @@ static unsigned int get_aiff_header(AVFormatContext *s, int size,
     if (!codec->block_align)
         codec->block_align = (codec->bits_per_coded_sample * codec->channels) >> 3;
 
-    codec->bit_rate = codec->sample_rate * (codec->block_align << 3) /
-                      aiff->block_duration;
+    if (aiff->block_duration) {
+        codec->bit_rate = codec->sample_rate * (codec->block_align << 3) /
+                          aiff->block_duration;
+    }
 
     /* Chunk is over */
     if (size)
