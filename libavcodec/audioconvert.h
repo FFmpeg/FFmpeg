@@ -33,15 +33,6 @@
 #include "avcodec.h"
 #include "libavutil/audioconvert.h"
 
-/**
- * Guess the channel layout
- * @param nb_channels
- * @param codec_id Codec identifier, or CODEC_ID_NONE if unknown
- * @param fmt_name Format name, or NULL if unknown
- * @return Channel layout mask
- */
-uint64_t avcodec_guess_channel_layout(int nb_channels, enum CodecID codec_id, const char *fmt_name);
-
 struct AVAudioConvert;
 typedef struct AVAudioConvert AVAudioConvert;
 
