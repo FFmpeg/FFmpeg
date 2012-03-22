@@ -42,6 +42,7 @@
 #include <stdlib.h>
 
 #include "avcodec.h"
+#include "internal.h"
 #include "lcl.h"
 
 #include <zlib.h>
@@ -77,9 +78,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int zret; // Zlib return code
     int max_size = deflateBound(&c->zstream, avctx->width * avctx->height * 3);
 
-    if (!pkt->data &&
-        (ret = av_new_packet(pkt, max_size)) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "Error allocating packet of size %d.\n", max_size);
+    if ((ret = ff_alloc_packet2(avctx, pkt, max_size)) < 0) {
             return ret;
     }
 
