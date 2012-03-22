@@ -26,6 +26,7 @@
  */
 
 #include "avcodec.h"
+#include "internal.h"
 #include "put_bits.h"
 #include "bytestream.h"
 #include "dsputil.h"
@@ -493,9 +494,7 @@ static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int frame_size = FFALIGN(avctx->width, 16) * FFALIGN(avctx->height, 16)*16 + 500 + FF_MIN_BUFFER_SIZE; //FIXME choose tighter limit
 
 
-    if (!pkt->data &&
-        (ret = av_new_packet(pkt, frame_size + FF_MIN_BUFFER_SIZE)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Error getting output packet.\n");
+    if ((ret = ff_alloc_packet2(avctx, pkt, frame_size + FF_MIN_BUFFER_SIZE)) < 0) {
         return ret;
     }
 
