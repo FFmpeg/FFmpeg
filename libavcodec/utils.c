@@ -1071,7 +1071,7 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
     }
     if (!ret) {
         if (!user_packet && avpkt->data) {
-            uint8_t *new_data = av_realloc(avpkt->data, avpkt->size);
+            uint8_t *new_data = av_realloc(avpkt->data, avpkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
             if (new_data)
                 avpkt->data = new_data;
         }
