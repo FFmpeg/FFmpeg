@@ -43,8 +43,7 @@ static int v408_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     uint8_t *y, *u, *v, *a;
     int i, j, ret;
 
-    if ((ret = ff_alloc_packet(pkt, avctx->width * avctx->height * 4)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Out buffer is too small.\n");
+    if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width * avctx->height * 4)) < 0) {
         return ret;
     }
     dst = pkt->data;
