@@ -117,9 +117,8 @@ static int amr_wb_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     const int16_t *samples = (const int16_t *)frame->data[0];
     int size, ret;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, MAX_PACKET_SIZE))) {
+    if ((ret = ff_alloc_packet2(avctx, avpkt, MAX_PACKET_SIZE)))
         return ret;
-    }
 
     if (s->last_bitrate != avctx->bit_rate) {
         s->mode         = get_wb_bitrate_mode(avctx->bit_rate, avctx);

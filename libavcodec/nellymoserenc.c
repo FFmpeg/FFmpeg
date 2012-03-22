@@ -401,9 +401,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         s->last_frame = 1;
     }
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, NELLY_BLOCK_LEN))) {
+    if ((ret = ff_alloc_packet2(avctx, avpkt, NELLY_BLOCK_LEN)))
         return ret;
-    }
     encode_block(s, avpkt->data, avpkt->size);
 
     /* Get the next frame pts/duration */

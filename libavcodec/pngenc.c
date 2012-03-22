@@ -292,9 +292,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                       + FF_MIN_BUFFER_SIZE;
     if (max_packet_size > INT_MAX)
         return AVERROR(ENOMEM);
-    if ((ret = ff_alloc_packet2(avctx, pkt, max_packet_size)) < 0) {
+    if ((ret = ff_alloc_packet2(avctx, pkt, max_packet_size)) < 0)
         return ret;
-    }
 
     s->bytestream_start =
     s->bytestream       = pkt->data;

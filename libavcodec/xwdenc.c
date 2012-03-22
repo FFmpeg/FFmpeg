@@ -148,9 +148,8 @@ static int xwd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     header_size = XWD_HEADER_SIZE + WINDOW_NAME_SIZE;
     out_size    = header_size + ncolors * XWD_CMAP_SIZE + avctx->height * lsize;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, out_size)) < 0) {
+    if ((ret = ff_alloc_packet2(avctx, pkt, out_size)) < 0)
         return ret;
-    }
     buf = pkt->data;
 
     avctx->coded_frame->key_frame = 1;

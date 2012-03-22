@@ -34,9 +34,8 @@ static int pnm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     if ((ret = ff_alloc_packet2(avctx, pkt, avpicture_get_size(avctx->pix_fmt,
                                                        avctx->width,
-                                                       avctx->height) + 200)) < 0) {
+                                                       avctx->height) + 200)) < 0)
         return ret;
-    }
 
     *p           = *pict;
     p->pict_type = AV_PICTURE_TYPE_I;

@@ -139,9 +139,8 @@ static int adx_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     int ch, out_size, ret;
 
     out_size = BLOCK_SIZE * avctx->channels + !c->header_parsed * HEADER_SIZE;
-    if ((ret = ff_alloc_packet2(avctx, avpkt, out_size)) < 0) {
+    if ((ret = ff_alloc_packet2(avctx, avpkt, out_size)) < 0)
         return ret;
-    }
     dst = avpkt->data;
 
     if (!c->header_parsed) {

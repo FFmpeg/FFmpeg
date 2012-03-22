@@ -834,9 +834,8 @@ static int flashsv2_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     *p = *pict;
 
-    if ((res = ff_alloc_packet2(avctx, pkt, s->frame_size + FF_MIN_BUFFER_SIZE)) < 0) {
+    if ((res = ff_alloc_packet2(avctx, pkt, s->frame_size + FF_MIN_BUFFER_SIZE)) < 0)
         return res;
-    }
 
     /* First frame needs to be a keyframe */
     if (avctx->frame_number == 0)

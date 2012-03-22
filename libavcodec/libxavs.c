@@ -87,9 +87,8 @@ static int encode_nals(AVCodecContext *ctx, AVPacket *pkt,
     for (i = 0; i < nnal; i++)
         size += nals[i].i_payload;
 
-    if ((ret = ff_alloc_packet2(ctx, pkt, size)) < 0) {
+    if ((ret = ff_alloc_packet2(ctx, pkt, size)) < 0)
         return ret;
-    }
     p = pkt->data;
 
     /* Write the SEI as part of the first frame. */

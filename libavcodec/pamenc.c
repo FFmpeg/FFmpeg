@@ -88,9 +88,8 @@ static int pam_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return -1;
     }
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, n*h + 200)) < 0) {
+    if ((ret = ff_alloc_packet2(avctx, pkt, n*h + 200)) < 0)
         return ret;
-    }
 
     *p           = *pict;
     p->pict_type = AV_PICTURE_TYPE_I;

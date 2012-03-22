@@ -146,9 +146,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         { 0xCB2A0000, 0xCB250000 },
     };
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, 32*avctx->height*avctx->width/4)) < 0) {
+    if ((ret = ff_alloc_packet2(avctx, pkt, 32*avctx->height*avctx->width/4)) < 0)
         return ret;
-    }
 
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     avctx->coded_frame->key_frame = 1;

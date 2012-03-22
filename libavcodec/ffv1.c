@@ -1155,9 +1155,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int i, ret;
 
     if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width*avctx->height*((8*2+1+1)*4)/8
-                                  + FF_MIN_BUFFER_SIZE)) < 0) {
+                                  + FF_MIN_BUFFER_SIZE)) < 0)
         return ret;
-    }
 
     ff_init_range_encoder(c, pkt->data, pkt->size);
     ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);

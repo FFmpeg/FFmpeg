@@ -48,9 +48,8 @@ static int y41p_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     uint8_t *y, *u, *v;
     int i, j, ret;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width * avctx->height * 1.5)) < 0) {
+    if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width * avctx->height * 1.5)) < 0)
         return ret;
-    }
 
     avctx->coded_frame->reference = 0;
     avctx->coded_frame->key_frame = 1;

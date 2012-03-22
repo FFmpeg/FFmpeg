@@ -113,9 +113,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     else // assume ff_rl_encode() produces at most 2x size of input
         length += tablesize * 2 + depth * height * (2 * width + 1);
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, bytes_per_channel * length)) < 0) {
+    if ((ret = ff_alloc_packet2(avctx, pkt, bytes_per_channel * length)) < 0)
         return ret;
-    }
     buf     = pkt->data;
     end_buf = pkt->data + pkt->size;
 

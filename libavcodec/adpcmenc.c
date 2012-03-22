@@ -494,9 +494,8 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         pkt_size = (2 + avctx->channels * (22 + 4 * (frame->nb_samples - 1)) + 7) / 8;
     else
         pkt_size = avctx->block_align;
-    if ((ret = ff_alloc_packet2(avctx, avpkt, pkt_size))) {
+    if ((ret = ff_alloc_packet2(avctx, avpkt, pkt_size)))
         return ret;
-    }
     dst = avpkt->data;
 
     switch(avctx->codec->id) {

@@ -458,9 +458,8 @@ static int ra144_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     if (ractx->last_frame)
         return 0;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, FRAMESIZE))) {
+    if ((ret = ff_alloc_packet2(avctx, avpkt, FRAMESIZE)))
         return ret;
-    }
 
     /**
      * Since the LPC coefficients are calculated on a frame centered over the

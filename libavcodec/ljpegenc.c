@@ -57,9 +57,8 @@ static int encode_picture_lossless(AVCodecContext *avctx, AVPacket *pkt,
         max_pkt_size += mb_width * mb_height * 3 * 4
                         * s->mjpeg_hsample[0] * s->mjpeg_vsample[0];
     }
-    if ((ret = ff_alloc_packet2(avctx, pkt, max_pkt_size)) < 0) {
+    if ((ret = ff_alloc_packet2(avctx, pkt, max_pkt_size)) < 0)
         return ret;
-    }
 
     init_put_bits(&s->pb, pkt->data, pkt->size);
 

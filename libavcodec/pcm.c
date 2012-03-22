@@ -96,9 +96,8 @@ static int pcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     n           = frame->nb_samples * avctx->channels;
     samples     = (const short *)frame->data[0];
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, n * sample_size))) {
+    if ((ret = ff_alloc_packet2(avctx, avpkt, n * sample_size)))
         return ret;
-    }
     dst = avpkt->data;
 
     switch(avctx->codec->id) {

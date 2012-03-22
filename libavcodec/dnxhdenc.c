@@ -910,9 +910,8 @@ static int dnxhd_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
     int offset, i, ret;
     uint8_t *buf;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, ctx->cid_table->frame_size)) < 0) {
+    if ((ret = ff_alloc_packet2(avctx, pkt, ctx->cid_table->frame_size)) < 0)
         return ret;
-    }
     buf = pkt->data;
 
     dnxhd_load_picture(ctx, frame);

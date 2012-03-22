@@ -57,9 +57,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     const uint16_t *v = (const uint16_t*)pic->data[2];
     PutByteContext p;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, avctx->height * stride)) < 0) {
+    if ((ret = ff_alloc_packet2(avctx, pkt, avctx->height * stride)) < 0)
         return ret;
-    }
 
     bytestream2_init_writer(&p, pkt->data, pkt->size);
 

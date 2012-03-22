@@ -1281,9 +1281,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     AVFrame * const p= &s->picture;
     int i, j, size = 0, ret;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, width * height * 3 * 4 + FF_MIN_BUFFER_SIZE)) < 0) {
+    if ((ret = ff_alloc_packet2(avctx, pkt, width * height * 3 * 4 + FF_MIN_BUFFER_SIZE)) < 0)
         return ret;
-    }
 
     *p = *pict;
     p->pict_type= AV_PICTURE_TYPE_I;

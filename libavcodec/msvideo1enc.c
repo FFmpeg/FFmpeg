@@ -76,9 +76,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int i, j, k, x, y, ret;
     int skips = 0;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width*avctx->height*9 + FF_MIN_BUFFER_SIZE)) < 0) {
+    if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width*avctx->height*9 + FF_MIN_BUFFER_SIZE)) < 0)
         return ret;
-    }
     dst= buf= pkt->data;
 
     *p = *pict;

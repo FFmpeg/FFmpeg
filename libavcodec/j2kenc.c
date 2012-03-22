@@ -927,9 +927,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int tileno, ret;
     J2kEncoderContext *s = avctx->priv_data;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width*avctx->height*9 + FF_MIN_BUFFER_SIZE)) < 0) {
+    if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width*avctx->height*9 + FF_MIN_BUFFER_SIZE)) < 0)
         return ret;
-    }
 
     // init:
     s->buf = s->buf_start = pkt->data;

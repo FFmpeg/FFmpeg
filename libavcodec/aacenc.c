@@ -574,9 +574,8 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     do {
         int frame_bits;
 
-        if ((ret = ff_alloc_packet2(avctx, avpkt, 768 * s->channels))) {
+        if ((ret = ff_alloc_packet2(avctx, avpkt, 768 * s->channels)))
             return ret;
-        }
         init_put_bits(&s->pb, avpkt->data, avpkt->size);
 
         if ((avctx->frame_number & 0xFF)==1 && !(avctx->flags & CODEC_FLAG_BITEXACT))
