@@ -255,8 +255,7 @@ static int mp3lame_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     av_dlog(avctx, "in:%d packet-len:%d index:%d\n", avctx->frame_size, len,
             s->buffer_index);
     if (len <= s->buffer_index) {
-        if ((ret = ff_alloc_packet(avpkt, len))) {
-            av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
+        if ((ret = ff_alloc_packet2(avctx, avpkt, len))) {
             return ret;
         }
         memcpy(avpkt->data, s->buffer, len);
