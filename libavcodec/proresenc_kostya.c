@@ -700,8 +700,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     pkt_size = ctx->frame_size + FF_MIN_BUFFER_SIZE;
 
-    if ((ret = ff_alloc_packet(pkt, pkt_size)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Error getting output packet.\n");
+    if ((ret = ff_alloc_packet2(avctx, pkt, pkt_size)) < 0) {
         return ret;
     }
 
