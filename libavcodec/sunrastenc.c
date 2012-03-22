@@ -84,7 +84,6 @@ static void sunrast_image_write_image(AVCodecContext *avctx,
         uint8_t value, value2;
         int run;
 
-        y = 0;
         ptr = pixels;
 
 #define GET_VALUE y >= avctx->height ? 0 : x >= len ? ptr[len-1] : ptr[x]
