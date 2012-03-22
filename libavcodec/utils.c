@@ -939,24 +939,36 @@ free_and_end:
     goto end;
 }
 
-int ff_alloc_packet(AVPacket *avpkt, int size)
+int ff_alloc_packet2(AVCodecContext *avctx, AVPacket *avpkt, int size)
 {
-    if (size > INT_MAX - FF_INPUT_BUFFER_PADDING_SIZE)
+    if (size < 0 || avpkt->size < 0 || size > INT_MAX - FF_INPUT_BUFFER_PADDING_SIZE) {
+        av_log(avctx, AV_LOG_ERROR, "Size %d invalid\n", size);
         return AVERROR(EINVAL);
+    }
 
     if (avpkt->data) {
         void *destruct = avpkt->destruct;
 
-        if (avpkt->size < size)
+        if (avpkt->size < size) {
+            av_log(avctx, AV_LOG_ERROR, "User packet is too small (%d < %d)\n", avpkt->size, size);
             return AVERROR(EINVAL);
+        }
 
         av_init_packet(avpkt);
         avpkt->destruct = destruct;
         avpkt->size = size;
         return 0;
     } else {
-        return av_new_packet(avpkt, size);
+        int ret = av_new_packet(avpkt, size);
+        if (ret < 0)
+            av_log(avctx, AV_LOG_ERROR, "Failed to allocate packet of size %d\n", size);
+        return ret;
     }
+}
+
+int ff_alloc_packet(AVPacket *avpkt, int size)
+{
+    return ff_alloc_packet2(NULL, avpkt, size);
 }
 
 int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
