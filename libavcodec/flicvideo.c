@@ -93,7 +93,6 @@ static av_cold int flic_decode_init(AVCodecContext *avctx)
 
     s->fli_type = AV_RL16(&fli_header[4]); /* Might be overridden if a Magic Carpet FLC */
 
-    depth = 0;
     if (s->avctx->extradata_size == 12) {
         /* special case for magic carpet FLIs */
         s->fli_type = FLC_MAGIC_CARPET_SYNTHETIC_TYPE_CODE;
