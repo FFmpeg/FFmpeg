@@ -2074,7 +2074,7 @@ static av_cold int set_channel_info(AC3EncodeContext *s, int channels,
         return AVERROR(EINVAL);
     ch_layout = *channel_layout;
     if (!ch_layout)
-        ch_layout = avcodec_guess_channel_layout(channels, CODEC_ID_AC3, NULL);
+        ch_layout = av_get_default_channel_layout(channels);
 
     s->lfe_on       = !!(ch_layout & AV_CH_LOW_FREQUENCY);
     s->channels     = channels;

@@ -153,3 +153,18 @@ int av_get_channel_layout_nb_channels(uint64_t channel_layout)
         x &= x-1; // unset lowest set bit
     return count;
 }
+
+uint64_t av_get_default_channel_layout(int nb_channels)
+{
+    switch(nb_channels) {
+    case 1: return AV_CH_LAYOUT_MONO;
+    case 2: return AV_CH_LAYOUT_STEREO;
+    case 3: return AV_CH_LAYOUT_SURROUND;
+    case 4: return AV_CH_LAYOUT_QUAD;
+    case 5: return AV_CH_LAYOUT_5POINT0;
+    case 6: return AV_CH_LAYOUT_5POINT1;
+    case 7: return AV_CH_LAYOUT_6POINT1;
+    case 8: return AV_CH_LAYOUT_7POINT1;
+    default: return 0;
+    }
+}

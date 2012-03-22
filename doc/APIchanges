@@ -12,6 +12,9 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2012-xx-xx - xxxxxxx - lavu 51.26.0 - audioconvert.h
+  Add av_get_default_channel_layout()
+
 2012-03-06 - 4d851f8 - lavu 51.25.0 - cpu.h
   Add av_set_cpu_flags_mask().
 
