@@ -67,6 +67,11 @@ typedef struct PNGDecContext {
     z_stream zstream;
 } PNGDecContext;
 
+/* Mask to determine which pixels are valid in a pass */
+static const uint8_t png_pass_mask[NB_PASSES] = {
+    0x01, 0x01, 0x11, 0x11, 0x55, 0x55, 0xff,
+};
+
 /* Mask to determine which y pixels can be written in a pass */
 static const uint8_t png_pass_dsp_ymask[NB_PASSES] = {
     0xff, 0xff, 0x0f, 0xff, 0x33, 0xff, 0x55,
@@ -88,7 +93,7 @@ static void png_put_interlaced_row(uint8_t *dst, int width,
     uint8_t *d;
     const uint8_t *s;
 
-    mask = ff_png_pass_mask[pass];
+    mask = png_pass_mask[pass];
     dsp_mask = png_pass_dsp_mask[pass];
     switch(bits_per_pixel) {
     case 1:

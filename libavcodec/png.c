@@ -39,11 +39,6 @@ static const uint8_t ff_png_pass_xshift[NB_PASSES] = {
     3, 3, 2, 2, 1, 1, 0
 };
 
-/* Mask to determine which pixels are valid in a pass */
-const uint8_t ff_png_pass_mask[NB_PASSES] = {
-    0x01, 0x01, 0x11, 0x11, 0x55, 0x55, 0xff,
-};
-
 void *ff_png_zalloc(void *opaque, unsigned int items, unsigned int size)
 {
     if(items >= UINT_MAX / size)

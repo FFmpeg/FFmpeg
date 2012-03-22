@@ -55,9 +55,6 @@ extern const uint8_t ff_mngsig[8];
 /* Mask to determine which y pixels are valid in a pass */
 extern const uint8_t ff_png_pass_ymask[NB_PASSES];
 
-/* Mask to determine which pixels are valid in a pass */
-extern const uint8_t ff_png_pass_mask[NB_PASSES];
-
 void *ff_png_zalloc(void *opaque, unsigned int items, unsigned int size);
 
 void ff_png_zfree(void *opaque, void *ptr);
