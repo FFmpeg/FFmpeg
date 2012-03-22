@@ -761,9 +761,10 @@ separated by ":".
 A description of the accepted options follows.
 
 @table @option
-@item dar
-Specifies the display aspect ratio adopted for rendering the
-subtitles. Default value is "1.0".
+@item original_size
+Specifies the size of the original video, the video for which the ASS file
+was composed. Due to a misdesign in ASS aspect ratio arithmetic, this is
+necessary to correctly scale the fonts if the aspect ratio has been changed.
 @end table
 
 For example, to render the file @file{sub.ass} on top of the input

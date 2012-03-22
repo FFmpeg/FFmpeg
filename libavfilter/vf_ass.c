@@ -45,14 +45,14 @@ typedef struct {
     char *filename;
     uint8_t rgba_map[4];
     int     pix_step[4];       ///< steps per pixel for each plane of the main output
-    char *dar_str;
-    AVRational dar;
+    char *original_size_str;
+    int original_w, original_h;
 } AssContext;
 
 #define OFFSET(x) offsetof(AssContext, x)
 
 static const AVOption ass_options[] = {
-    {"dar",  "set subtitles display aspect ratio", OFFSET(dar_str), AV_OPT_TYPE_STRING, {.str = "1.0"},  CHAR_MIN, CHAR_MAX },
+    {"original_size",  "set the size of the original video (used to scale fonts)", OFFSET(original_size_str), AV_OPT_TYPE_STRING, {.str = NULL},  CHAR_MIN, CHAR_MAX },
     {NULL},
 };
 
@@ -107,10 +107,11 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
         return ret;
     }
 
-    if (av_parse_ratio(&ass->dar, ass->dar_str, 100, 0, ctx) < 0 ||
-        ass->dar.num < 0 || ass->dar.den <= 0) {
+    if (ass->original_size_str &&
+        av_parse_video_size(&ass->original_w, &ass->original_h,
+                            ass->original_size_str) < 0) {
         av_log(ctx, AV_LOG_ERROR,
-               "Invalid string '%s' or value for display aspect ratio.\n", ass->dar_str);
+               "Invalid original size '%s'.\n", ass->original_size_str);
         return AVERROR(EINVAL);
     }
 
@@ -136,8 +137,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     }
 
     ass_set_fonts(ass->renderer, NULL, NULL, 1, NULL, 1);
-
-    av_log(ctx, AV_LOG_INFO, "dar:%f\n", av_q2d(ass->dar));
     return 0;
 }
 
@@ -146,7 +145,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     AssContext *ass = ctx->priv;
 
     av_freep(&ass->filename);
-    av_freep(&ass->dar_str);
+    av_freep(&ass->original_size_str);
     if (ass->track)
         ass_free_track(ass->track);
     if (ass->renderer)
@@ -173,8 +172,6 @@ static int config_input(AVFilterLink *inlink)
 {
     AssContext *ass = inlink->dst->priv;
     const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[inlink->format];
-    double sar = inlink->sample_aspect_ratio.num ?
-        av_q2d(inlink->sample_aspect_ratio) : 1;
 
     av_image_fill_max_pixsteps(ass->pix_step, NULL, pix_desc);
     ff_fill_rgba_map(ass->rgba_map, inlink->format);
@@ -183,7 +180,9 @@ static int config_input(AVFilterLink *inlink)
     ass->vsub = pix_desc->log2_chroma_h;
 
     ass_set_frame_size  (ass->renderer, inlink->w, inlink->h);
-    ass_set_aspect_ratio(ass->renderer, av_q2d(ass->dar), sar);
+    if (ass->original_w && ass->original_h)
+        ass_set_aspect_ratio(ass->renderer, (double)inlink->w / inlink->h,
+                             (double)ass->original_w / ass->original_h);
 
     return 0;
 }
