@@ -999,6 +999,10 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
     AVCodecContext          *avctx = ost->st->codec;
     int ret;
 
+    if ((avctx->codec_type == AVMEDIA_TYPE_VIDEO && video_sync_method == VSYNC_DROP) ||
+        (avctx->codec_type == AVMEDIA_TYPE_AUDIO && audio_sync_method < 0))
+        pkt->pts = pkt->dts = AV_NOPTS_VALUE;
+
     /*
      * Audio encoders may split the packets --  #frames in != #packets out.
      * But there is no reordering, so we can limit the number of output packets
@@ -1227,7 +1231,7 @@ need_realloc:
 
     av_assert0(ost->audio_resample || dec->sample_fmt==enc->sample_fmt);
 
-    if (audio_sync_method) {
+    if (audio_sync_method > 0) {
         double delta = get_sync_ipts(ost, ist->pts) * enc->sample_rate - ost->sync_opts -
                        av_fifo_size(ost->fifo) / (enc->channels * osize);
         int idelta = delta * dec->sample_rate / enc->sample_rate;
@@ -1651,9 +1655,6 @@ static void do_video_out(AVFormatContext *s, OutputStream *ost,
                            av_ts2str(pkt.pts), av_ts2timestr(pkt.pts, &ost->st->time_base),
                            av_ts2str(pkt.dts), av_ts2timestr(pkt.dts, &ost->st->time_base));
                 }
-
-                if (format_video_sync == VSYNC_DROP)
-                    pkt.pts = pkt.dts = AV_NOPTS_VALUE;
 
                 write_frame(s, &pkt, ost);
                 frame_size = pkt.size;
