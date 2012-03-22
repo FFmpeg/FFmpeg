@@ -70,6 +70,12 @@ typedef struct AVCodecInternal {
      */
     int sample_count;
 #endif
+
+    /**
+     * temporary buffer used for encoders to store their bitstream
+     */
+    uint8_t *byte_buffer;
+    unsigned int byte_buffer_size;
 } AVCodecInternal;
 
 struct AVCodecDefault {
