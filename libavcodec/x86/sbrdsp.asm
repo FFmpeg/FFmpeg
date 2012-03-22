@@ -81,6 +81,7 @@ cglobal sbr_hf_g_filt, 5, 6, 5
     lea         r2, [r2 + r3*4]
     lea         r0, [r0 + r3*8]
     neg         r3
+    jz          .loop1
 .loop4:
     movlps      m0, [r2 + 4*r3 + 0]
     movlps      m1, [r2 + 4*r3 + 8]
