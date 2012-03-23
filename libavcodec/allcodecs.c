@@ -249,7 +249,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (WNV1, wnv1);
     REGISTER_DECODER (XAN_WC3, xan_wc3);
     REGISTER_DECODER (XAN_WC4, xan_wc4);
-    REGISTER_ENCODER (XBM, xbm);
+    REGISTER_ENCDEC  (XBM, xbm);
     REGISTER_DECODER (XL, xl);
     REGISTER_ENCDEC  (XWD, xwd);
     REGISTER_ENCDEC  (Y41P, y41p);
