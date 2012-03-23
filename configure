@@ -1636,7 +1636,6 @@ v4l2_indev_deps_any="linux_videodev2_h sys_videoio_h"
 vfwcap_indev_deps="capCreateCaptureWindow vfwcap_defines"
 vfwcap_indev_extralibs="-lavicap32"
 x11_grab_device_indev_deps="x11grab XShmCreateImage"
-x11_grab_device_indev_extralibs="-lX11 -lXext -lXfixes"
 
 # protocols
 bluray_protocol_deps="libbluray"
@@ -3279,13 +3278,10 @@ enabled_any sndio_indev sndio_outdev && check_lib2 sndio.h sio_open -lsndio
 enabled libcdio &&
     check_lib2 "cdio/cdda.h cdio/paranoia.h" cdio_cddap_open "-lcdio_paranoia -lcdio_cdda -lcdio"
 
-enabled x11grab                         &&
-check_header X11/Xlib.h                 &&
-check_header X11/extensions/XShm.h      &&
-check_header X11/extensions/Xfixes.h    &&
-check_func XOpenDisplay -lX11           &&
-check_func XShmCreateImage -lX11 -lXext &&
-check_func XFixesGetCursorImage -lX11 -lXext -lXfixes
+enabled x11grab                                           &&
+require X11 X11/Xlib.h XOpenDisplay -lX11                 &&
+require Xext X11/extensions/XShm.h XShmCreateImage -lXext &&
+require Xfixes X11/extensions/Xfixes.h XFixesGetCursorImage -lXfixes
 
 if ! disabled vaapi; then
     check_lib va/va.h vaInitialize -lva && {

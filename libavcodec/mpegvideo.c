@@ -1237,10 +1237,12 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             i = ff_find_unused_picture(s, 0);
             if (i < 0)
                 return i;
-            s->last_picture_ptr= &s->picture[i];
+            s->last_picture_ptr = &s->picture[i];
             s->last_picture_ptr->f.key_frame = 0;
-            if (ff_alloc_picture(s, s->last_picture_ptr, 0) < 0)
+            if (ff_alloc_picture(s, s->last_picture_ptr, 0) < 0) {
+                s->last_picture_ptr = NULL;
                 return -1;
+            }
 
             if(s->codec_id == CODEC_ID_FLV1 || s->codec_id == CODEC_ID_H263){
                 for(i=0; i<avctx->height; i++)
@@ -1258,10 +1260,12 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             i = ff_find_unused_picture(s, 0);
             if (i < 0)
                 return i;
-            s->next_picture_ptr= &s->picture[i];
+            s->next_picture_ptr = &s->picture[i];
             s->next_picture_ptr->f.key_frame = 0;
-            if (ff_alloc_picture(s, s->next_picture_ptr, 0) < 0)
+            if (ff_alloc_picture(s, s->next_picture_ptr, 0) < 0) {
+                s->next_picture_ptr = NULL;
                 return -1;
+            }
             ff_thread_report_progress(&s->next_picture_ptr->f, INT_MAX, 0);
             ff_thread_report_progress(&s->next_picture_ptr->f, INT_MAX, 1);
             s->next_picture_ptr->f.reference = 3;

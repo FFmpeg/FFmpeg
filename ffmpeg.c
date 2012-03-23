@@ -179,8 +179,8 @@ static int debug_ts = 0;
 
 static uint8_t *audio_buf;
 static unsigned int allocated_audio_buf_size;
-
-static uint8_t *input_tmp= NULL;
+static uint8_t *async_buf;
+static unsigned int allocated_async_buf_size;
 
 #define DEFAULT_PASS_LOGFILENAME_PREFIX "ffmpeg2pass"
 
@@ -868,15 +868,15 @@ void av_noreturn exit_program(int ret)
     av_freep(&output_files);
 
     uninit_opts();
-    av_free(audio_buf);
+    av_freep(&audio_buf);
     allocated_audio_buf_size = 0;
+    av_freep(&async_buf);
+    allocated_async_buf_size = 0;
 
 #if CONFIG_AVFILTER
     avfilter_uninit();
 #endif
     avformat_network_deinit();
-
-    av_freep(&input_tmp);
 
     if (received_sigterm) {
         av_log(NULL, AV_LOG_INFO, "Received signal %d: terminating.\n",
@@ -1126,11 +1126,38 @@ static int encode_audio_frame(AVFormatContext *s, OutputStream *ost,
     return ret;
 }
 
+static int alloc_audio_output_buf(AVCodecContext *dec, AVCodecContext *enc,
+                                  int nb_samples)
+{
+    int64_t audio_buf_samples;
+    int audio_buf_size;
+
+    /* calculate required number of samples to allocate */
+    audio_buf_samples = ((int64_t)nb_samples * enc->sample_rate + dec->sample_rate) /
+                        dec->sample_rate;
+    audio_buf_samples = 4 * audio_buf_samples + 10000; // safety factors for resampling
+    audio_buf_samples = FFMAX(audio_buf_samples, enc->frame_size);
+    if (audio_buf_samples > INT_MAX)
+        return AVERROR(EINVAL);
+
+    audio_buf_size = av_samples_get_buffer_size(NULL, enc->channels,
+                                                audio_buf_samples,
+                                                enc->sample_fmt, 32);
+    if (audio_buf_size < 0)
+        return audio_buf_size;
+
+    av_fast_malloc(&audio_buf, &allocated_audio_buf_size, audio_buf_size);
+    if (!audio_buf)
+        return AVERROR(ENOMEM);
+
+    return 0;
+}
+
 static void do_audio_out(AVFormatContext *s, OutputStream *ost,
                          InputStream *ist, AVFrame *decoded_frame)
 {
     uint8_t *buftmp;
-    int64_t audio_buf_size, size_out;
+    int64_t size_out;
 
     int frame_bytes, resample_changed;
     AVCodecContext *enc = ost->st->codec;
@@ -1140,7 +1167,6 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
     uint8_t *buf[AV_NUM_DATA_POINTERS];
     int size     = decoded_frame->nb_samples * dec->channels * isize;
     int planes   = av_sample_fmt_is_planar(dec->sample_fmt) ? dec->channels : 1;
-    int64_t allocated_for_size = size;
     int i;
 
     av_assert0(planes <= AV_NUM_DATA_POINTERS);
@@ -1148,21 +1174,8 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
     for(i=0; i<planes; i++)
         buf[i]= decoded_frame->data[i];
 
-need_realloc:
-    audio_buf_size  = (allocated_for_size + isize * dec->channels - 1) / (isize * dec->channels);
-    audio_buf_size  = (audio_buf_size * enc->sample_rate + dec->sample_rate) / dec->sample_rate;
-    audio_buf_size  = audio_buf_size * 2 + 10000; // safety factors for the deprecated resampling API
-    audio_buf_size  = FFMAX(audio_buf_size, enc->frame_size);
-    audio_buf_size *= osize * enc->channels;
-
-    if (audio_buf_size > INT_MAX) {
-        av_log(NULL, AV_LOG_FATAL, "Buffer sizes too large\n");
-        exit_program(1);
-    }
-
-    av_fast_malloc(&audio_buf, &allocated_audio_buf_size, audio_buf_size);
-    if (!audio_buf) {
-        av_log(NULL, AV_LOG_FATAL, "Out of memory in do_audio_out\n");
+    if (alloc_audio_output_buf(dec, enc, decoded_frame->nb_samples) < 0) {
+        av_log(NULL, AV_LOG_FATAL, "Error allocating audio buffer\n");
         exit_program(1);
     }
 
@@ -1251,16 +1264,21 @@ need_realloc:
                         return;
                     ist->is_start = 0;
                 } else {
-                    input_tmp = av_realloc(input_tmp, byte_delta + size);
+                    av_fast_malloc(&async_buf, &allocated_async_buf_size,
+                                   byte_delta + size);
+                    if (!async_buf) {
+                        av_log(NULL, AV_LOG_FATAL, "Out of memory in do_audio_out\n");
+                        exit_program(1);
+                    }
 
-                    if (byte_delta > allocated_for_size - size) {
-                        allocated_for_size = byte_delta + (int64_t)size;
-                        goto need_realloc;
+                    if (alloc_audio_output_buf(dec, enc, decoded_frame->nb_samples + idelta) < 0) {
+                        av_log(NULL, AV_LOG_FATAL, "Error allocating audio buffer\n");
+                        exit_program(1);
                     }
                     ist->is_start = 0;
 
                     for (i=0; i<planes; i++) {
-                        uint8_t *t = input_tmp + i*((byte_delta + size)/planes);
+                        uint8_t *t = async_buf + i*((byte_delta + size)/planes);
                         generate_silence(t, dec->sample_fmt, byte_delta/planes);
                         memcpy(t + byte_delta/planes, buf[i], size/planes);
                         buf[i] = t;
@@ -1283,7 +1301,7 @@ need_realloc:
 
     if (ost->audio_resample || ost->audio_channels_mapped) {
         buftmp = audio_buf;
-        size_out = swr_convert(ost->swr, (      uint8_t*[]){buftmp}, audio_buf_size / (enc->channels * osize),
+        size_out = swr_convert(ost->swr, (      uint8_t*[]){buftmp}, allocated_audio_buf_size / (enc->channels * osize),
                                          buf, size / (dec->channels * isize));
         if (size_out < 0) {
             av_log(NULL, AV_LOG_FATAL, "swr_convert failed\n");
