@@ -210,6 +210,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     return 0;
 }
 
+#if CONFIG_BINTEXT_DECODER
 AVCodec ff_bintext_decoder = {
     .name           = "bintext",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -221,7 +222,8 @@ AVCodec ff_bintext_decoder = {
     .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Binary text"),
 };
-
+#endif
+#if CONFIG_XBIN_DECODER
 AVCodec ff_xbin_decoder = {
     .name           = "xbin",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -233,7 +235,8 @@ AVCodec ff_xbin_decoder = {
     .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("eXtended BINary text"),
 };
-
+#endif
+#if CONFIG_IDF_DECODER
 AVCodec ff_idf_decoder = {
     .name           = "idf",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -245,3 +248,4 @@ AVCodec ff_idf_decoder = {
     .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("iCEDraw text"),
 };
+#endif
