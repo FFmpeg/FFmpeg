@@ -424,9 +424,8 @@ static void reset_options(OptionsContext *o)
     init_opts();
 }
 
-static int alloc_buffer(InputStream *ist, FrameBuffer **pbuf)
+static int alloc_buffer(InputStream *ist, AVCodecContext *s, FrameBuffer **pbuf)
 {
-    AVCodecContext *s = ist->st->codec;
     FrameBuffer  *buf = av_mallocz(sizeof(*buf));
     int i, ret;
     const int pixel_size = av_pix_fmt_descriptors[s->pix_fmt].comp[0].step_minus1+1;
@@ -502,7 +501,7 @@ static int codec_get_buffer(AVCodecContext *s, AVFrame *frame)
     FrameBuffer *buf;
     int ret, i;
 
-    if (!ist->buffer_pool && (ret = alloc_buffer(ist, &ist->buffer_pool)) < 0)
+    if (!ist->buffer_pool && (ret = alloc_buffer(ist, s, &ist->buffer_pool)) < 0)
         return ret;
 
     buf              = ist->buffer_pool;
@@ -511,7 +510,7 @@ static int codec_get_buffer(AVCodecContext *s, AVFrame *frame)
     if (buf->w != s->width || buf->h != s->height || buf->pix_fmt != s->pix_fmt) {
         av_freep(&buf->base[0]);
         av_free(buf);
-        if ((ret = alloc_buffer(ist, &buf)) < 0)
+        if ((ret = alloc_buffer(ist, s, &buf)) < 0)
             return ret;
     }
     buf->refcount++;
@@ -520,6 +519,10 @@ static int codec_get_buffer(AVCodecContext *s, AVFrame *frame)
     frame->type          = FF_BUFFER_TYPE_USER;
     frame->extended_data = frame->data;
     frame->pkt_pts       = s->pkt ? s->pkt->pts : AV_NOPTS_VALUE;
+    frame->width         = buf->w;
+    frame->height        = buf->h;
+    frame->format        = buf->pix_fmt;
+    frame->sample_aspect_ratio = s->sample_aspect_ratio;
 
     for (i = 0; i < FF_ARRAY_ELEMS(buf->data); i++) {
         frame->base[i]     = buf->base[i];  // XXX h264.c uses base though it shouldn't
