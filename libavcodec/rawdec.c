@@ -158,6 +158,11 @@ static int raw_decode(AVCodecContext *avctx,
     if(buf_size < context->length - (avctx->pix_fmt==PIX_FMT_PAL8 ? 256*4 : 0))
         return -1;
 
+    if (avctx->width <= 0 || avctx->height <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "w/h is invalid\n");
+        return AVERROR(EINVAL);
+    }
+
     //2bpp and 4bpp raw in avi and mov (yes this is ugly ...)
     if (context->buffer) {
         int i;
