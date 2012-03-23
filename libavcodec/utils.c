@@ -2285,6 +2285,11 @@ void ff_thread_await_progress(AVFrame *f, int progress, int field)
 {
 }
 
+int ff_thread_can_start_frame(AVCodecContext *avctx)
+{
+    return 1;
+}
+
 #endif
 
 enum AVMediaType avcodec_get_type(enum CodecID codec_id)
