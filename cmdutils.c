@@ -1036,9 +1036,11 @@ static void null_end_frame(AVFilterLink *inlink) { }
 static int sink_query_formats(AVFilterContext *ctx)
 {
     SinkContext *priv = ctx->priv;
-    enum PixelFormat pix_fmts[] = { priv->pix_fmt, PIX_FMT_NONE };
 
-    avfilter_set_common_formats(ctx, avfilter_make_format_list(pix_fmts));
+    if (priv->pix_fmts)
+        avfilter_set_common_formats(ctx, avfilter_make_format_list(priv->pix_fmts));
+    else
+        avfilter_default_query_formats(ctx);
     return 0;
 }
 

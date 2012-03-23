@@ -252,6 +252,8 @@ typedef struct OutputStream {
     int stream_copy;
     const char *attachment_filename;
     int copy_initial_nonkeyframes;
+
+    enum PixelFormat pix_fmts[2];
 } OutputStream;
 
 
@@ -543,13 +545,24 @@ static void filter_release_buffer(AVFilterBuffer *fb)
     unref_buffer(buf->ist, buf);
 }
 
+static const enum PixelFormat *choose_pixel_fmts(OutputStream *ost)
+{
+    if (ost->st->codec->pix_fmt != PIX_FMT_NONE) {
+        ost->pix_fmts[0] = ost->st->codec->pix_fmt;
+        return ost->pix_fmts;
+    } else if (ost->enc->pix_fmts)
+        return ost->enc->pix_fmts;
+    else
+        return NULL;
+}
+
 static int configure_video_filters(InputStream *ist, OutputStream *ost)
 {
     AVFilterContext *last_filter, *filter;
     /** filter graph containing all filters including input & output */
     AVCodecContext *codec = ost->st->codec;
     AVCodecContext *icodec = ist->st->codec;
-    SinkContext sink_ctx = { .pix_fmt = codec->pix_fmt };
+    SinkContext sink_ctx = { .pix_fmts = choose_pixel_fmts(ost) };
     AVRational sample_aspect_ratio;
     char args[255];
     int ret;
@@ -621,6 +634,7 @@ static int configure_video_filters(InputStream *ist, OutputStream *ost)
         ost->frame_aspect_ratio ? // overridden by the -aspect cli option
         av_d2q(ost->frame_aspect_ratio * codec->height/codec->width, 255) :
         ost->output_video_filter->inputs[0]->sample_aspect_ratio;
+    codec->pix_fmt = ost->output_video_filter->inputs[0]->format;
 
     return 0;
 }
@@ -830,34 +844,6 @@ static void choose_sample_rate(AVStream *st, AVCodec *codec)
             av_log(st->codec, AV_LOG_WARNING, "Requested sampling rate unsupported using closest supported (%d)\n", best);
         }
         st->codec->sample_rate = best;
-    }
-}
-
-static void choose_pixel_fmt(AVStream *st, AVCodec *codec)
-{
-    if (codec && codec->pix_fmts) {
-        const enum PixelFormat *p = codec->pix_fmts;
-        if (st->codec->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL) {
-            if (st->codec->codec_id == CODEC_ID_MJPEG) {
-                p = (const enum PixelFormat[]) { PIX_FMT_YUVJ420P, PIX_FMT_YUVJ422P, PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_NONE };
-            } else if (st->codec->codec_id == CODEC_ID_LJPEG) {
-                p = (const enum PixelFormat[]) { PIX_FMT_YUVJ420P, PIX_FMT_YUVJ422P, PIX_FMT_YUVJ444P, PIX_FMT_YUV420P,
-                                                 PIX_FMT_YUV422P, PIX_FMT_YUV444P, PIX_FMT_BGRA, PIX_FMT_NONE };
-            }
-        }
-        for (; *p != PIX_FMT_NONE; p++) {
-            if (*p == st->codec->pix_fmt)
-                break;
-        }
-        if (*p == PIX_FMT_NONE) {
-            if (st->codec->pix_fmt != PIX_FMT_NONE)
-                av_log(NULL, AV_LOG_WARNING,
-                       "Incompatible pixel format '%s' for codec '%s', auto-selecting format '%s'\n",
-                       av_pix_fmt_descriptors[st->codec->pix_fmt].name,
-                       codec->name,
-                       av_pix_fmt_descriptors[codec->pix_fmts[0]].name);
-            st->codec->pix_fmt = codec->pix_fmts[0];
-        }
     }
 }
 
@@ -2401,30 +2387,10 @@ static int transcode_init(void)
                 ost->resample_channels    = icodec->channels;
                 break;
             case AVMEDIA_TYPE_VIDEO:
-                if (codec->pix_fmt == PIX_FMT_NONE)
-                    codec->pix_fmt = icodec->pix_fmt;
-                choose_pixel_fmt(ost->st, ost->enc);
-
-                if (ost->st->codec->pix_fmt == PIX_FMT_NONE) {
-                    av_log(NULL, AV_LOG_FATAL, "Video pixel format is unknown, stream cannot be encoded\n");
-                    exit_program(1);
-                }
-
                 if (!codec->width || !codec->height) {
                     codec->width  = icodec->width;
                     codec->height = icodec->height;
                 }
-
-                ost->video_resample = codec->width   != icodec->width  ||
-                                      codec->height  != icodec->height ||
-                                      codec->pix_fmt != icodec->pix_fmt;
-                if (ost->video_resample) {
-                    codec->bits_per_raw_sample = 0;
-                }
-
-                ost->resample_height  = icodec->height;
-                ost->resample_width   = icodec->width;
-                ost->resample_pix_fmt = icodec->pix_fmt;
 
                 /*
                  * We want CFR output if and only if one of those is true:
@@ -2455,6 +2421,18 @@ static int transcode_init(void)
                     av_log(NULL, AV_LOG_FATAL, "Error opening filters!\n");
                     exit(1);
                 }
+
+                ost->video_resample = codec->width   != icodec->width  ||
+                                      codec->height  != icodec->height ||
+                                      codec->pix_fmt != icodec->pix_fmt;
+                if (ost->video_resample) {
+                    codec->bits_per_raw_sample = 0;
+                }
+
+                ost->resample_height  = icodec->height;
+                ost->resample_width   = icodec->width;
+                ost->resample_pix_fmt = icodec->pix_fmt;
+
                 break;
             case AVMEDIA_TYPE_SUBTITLE:
                 codec->time_base = (AVRational){1, 1000};
@@ -3535,6 +3513,9 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
         st->codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
 
     av_opt_get_int(sws_opts, "sws_flags", 0, &ost->sws_flags);
+
+    ost->pix_fmts[0] = ost->pix_fmts[1] = PIX_FMT_NONE;
+
     return ost;
 }
 

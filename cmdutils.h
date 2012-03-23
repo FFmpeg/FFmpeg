@@ -368,7 +368,7 @@ FILE *get_preset_file(char *filename, size_t filename_size,
                       const char *preset_name, int is_path, const char *codec_name);
 
 typedef struct {
-    enum PixelFormat pix_fmt;
+    const enum PixelFormat *pix_fmts;
 } SinkContext;
 
 extern AVFilter sink;
