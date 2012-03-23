@@ -16,6 +16,7 @@ version <next>:
 - RealAudio Lossless decoder
 - ZeroCodec decoder
 - drop support for avconv without libavfilter
+- add libavresample audio conversion library
 
 
 version 0.8:

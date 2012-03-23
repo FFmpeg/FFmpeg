@@ -2,15 +2,19 @@ Never assume the API of libav* to be stable unless at least 1 month has passed
 since the last major version increase.
 
 The last version increases were:
-libavcodec:  2012-01-27
-libavdevice: 2011-04-18
-libavfilter: 2011-04-18
-libavformat: 2012-01-27
-libswscale:  2011-06-20
-libavutil:   2011-04-18
+libavcodec:    2012-01-27
+libavdevice:   2011-04-18
+libavfilter:   2011-04-18
+libavformat:   2012-01-27
+libavresample: 2012-xx-xx
+libswscale:    2011-06-20
+libavutil:     2011-04-18
 
 
 API changes, most recent first:
+
+2012-xx-xx - xxxxxxx - lavr 0.0.0
+  Add libavresample audio conversion library
 
 2012-xx-xx - xxxxxxx - lavu 51.28.0 - audio_fifo.h
   Add audio FIFO functions:
