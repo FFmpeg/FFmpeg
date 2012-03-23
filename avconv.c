@@ -215,7 +215,6 @@ typedef struct OutputStream {
     AVFrame *output_frame;
 
     /* video only */
-    int video_resample;
     int resample_height;
     int resample_width;
     int resample_pix_fmt;
@@ -2422,10 +2421,9 @@ static int transcode_init(void)
                     exit(1);
                 }
 
-                ost->video_resample = codec->width   != icodec->width  ||
-                                      codec->height  != icodec->height ||
-                                      codec->pix_fmt != icodec->pix_fmt;
-                if (ost->video_resample) {
+                if (codec->width   != icodec->width  ||
+                    codec->height  != icodec->height ||
+                    codec->pix_fmt != icodec->pix_fmt) {
                     codec->bits_per_raw_sample = 0;
                 }
 
