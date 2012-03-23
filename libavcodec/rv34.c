@@ -1677,6 +1677,13 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
         if (s->width != si.width || s->height != si.height) {
             int err;
 
+            if (HAVE_THREADS &&
+                (s->avctx->active_thread_type & FF_THREAD_FRAME)) {
+                av_log_missing_feature(s->avctx, "Width/height changing with "
+                                       "frame threading is", 0);
+                return AVERROR_PATCHWELCOME;
+            }
+
             av_log(s->avctx, AV_LOG_WARNING, "Changing dimensions to %dx%d\n",
                    si.width, si.height);
             MPV_common_end(s);
