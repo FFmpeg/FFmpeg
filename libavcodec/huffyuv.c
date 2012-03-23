@@ -551,6 +551,11 @@ s->bgr32=1;
         return AVERROR_INVALIDDATA;
     }
 
+    if ((avctx->pix_fmt == PIX_FMT_YUV422P || avctx->pix_fmt == PIX_FMT_YUV420P) && avctx->width & 1) {
+        av_log(avctx, AV_LOG_ERROR, "width must be even for this colorspace\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     alloc_temp(s);
 
 //    av_log(NULL, AV_LOG_DEBUG, "pred:%d bpp:%d hbpp:%d il:%d\n", s->predictor, s->bitstream_bpp, avctx->bits_per_coded_sample, s->interlaced);
@@ -620,10 +625,12 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     switch(avctx->pix_fmt){
     case PIX_FMT_YUV420P:
-        s->bitstream_bpp= 12;
-        break;
     case PIX_FMT_YUV422P:
-        s->bitstream_bpp= 16;
+        if (s->width & 1) {
+            av_log(avctx, AV_LOG_ERROR, "width must be even for this colorspace\n");
+            return AVERROR(EINVAL);
+        }
+        s->bitstream_bpp = avctx->pix_fmt == PIX_FMT_YUV420P ? 12 : 16;
         break;
     case PIX_FMT_RGB32:
         s->bitstream_bpp= 32;
