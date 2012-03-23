@@ -74,7 +74,7 @@ typedef struct IpvideoContext {
 
 #define CHECK_STREAM_PTR(stream_ptr, stream_end, n) \
     if (stream_end - stream_ptr < n) { \
-        av_log(s->avctx, AV_LOG_ERROR, "Interplay video warning: stream_ptr out of bounds (%p >= %p)\n", \
+        av_log(s->avctx, AV_LOG_ERROR, "stream_ptr out of bounds (%p >= %p)\n", \
                stream_ptr + n, stream_end); \
         return -1; \
     }
@@ -85,10 +85,10 @@ static int copy_from(IpvideoContext *s, AVFrame *src, int delta_x, int delta_y)
     int motion_offset = current_offset + delta_y * s->current_frame.linesize[0]
                        + delta_x * (1 + s->is_16bpp);
     if (motion_offset < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, " Interplay video: motion offset < 0 (%d)\n", motion_offset);
+        av_log(s->avctx, AV_LOG_ERROR, "motion offset < 0 (%d)\n", motion_offset);
         return -1;
     } else if (motion_offset > s->upper_motion_limit_offset) {
-        av_log(s->avctx, AV_LOG_ERROR, " Interplay video: motion offset above limit (%d >= %d)\n",
+        av_log(s->avctx, AV_LOG_ERROR, "motion offset above limit (%d >= %d)\n",
             motion_offset, s->upper_motion_limit_offset);
         return -1;
     }
@@ -206,7 +206,7 @@ static int ipvideo_decode_block_opcode_0x5(IpvideoContext *s)
 static int ipvideo_decode_block_opcode_0x6(IpvideoContext *s)
 {
     /* mystery opcode? skip multiple blocks? */
-    av_log(s->avctx, AV_LOG_ERROR, "  Interplay video: Help! Mystery opcode 0x6 seen\n");
+    av_log(s->avctx, AV_LOG_ERROR, "Help! Mystery opcode 0x6 seen\n");
 
     /* report success */
     return 0;
@@ -996,14 +996,14 @@ static void ipvideo_decode_opcodes(IpvideoContext *s)
                 ret = ipvideo_decode_block16[opcode](s);
             }
             if (ret != 0) {
-                av_log(s->avctx, AV_LOG_ERROR, " Interplay video: decode problem on frame %d, @ block (%d, %d)\n",
+                av_log(s->avctx, AV_LOG_ERROR, "decode problem on frame %d, @ block (%d, %d)\n",
                        frame, x, y);
                 return;
             }
         }
     }
     if (s->stream_end - s->stream_ptr > 1) {
-        av_log(s->avctx, AV_LOG_ERROR, " Interplay video: decode finished with %td bytes left over\n",
+        av_log(s->avctx, AV_LOG_ERROR, "decode finished with %td bytes left over\n",
                s->stream_end - s->stream_ptr);
     }
 }
@@ -1051,7 +1051,7 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
 
     s->current_frame.reference = 3;
     if (avctx->get_buffer(avctx, &s->current_frame)) {
-        av_log(avctx, AV_LOG_ERROR, "  Interplay Video: get_buffer() failed\n");
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
 
