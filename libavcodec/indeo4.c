@@ -444,6 +444,11 @@ static int decode_band_hdr(IVI4DecContext *ctx, IVIBandDesc *band,
 
     align_get_bits(&ctx->gb);
 
+    if (!band->scan) {
+        av_log(avctx, AV_LOG_ERROR, "band->scan not set\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     return 0;
 }
 
