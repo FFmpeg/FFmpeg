@@ -226,6 +226,11 @@ int swr_init(struct SwrContext *s){
         return -1;
     }
 
+    if ((!s->out_ch_layout || !s->in_ch_layout) && s->used_ch_count != s->out.ch_count && !s->rematrix_custom) {
+        av_log(s, AV_LOG_ERROR, "Rematrix is needed but there is not enough information to do it\n");
+        return -1;
+    }
+
 av_assert0(s->used_ch_count);
 av_assert0(s->out.ch_count);
     s->resample_first= RSC*s->out.ch_count/s->in.ch_count - RSC < s->out_sample_rate/(float)s-> in_sample_rate - 1.0;
