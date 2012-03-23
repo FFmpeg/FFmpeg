@@ -2007,6 +2007,10 @@ static int transcode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
     if (ret < 0) {
         return ret;
     }
+    if (avctx->sample_rate <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "Sample rate %d invalid\n", avctx->sample_rate);
+        return AVERROR_INVALIDDATA;
+    }
 
     if (!*got_output) {
         /* no audio frame */
