@@ -275,6 +275,10 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
             s->h_max = s->h_count[i];
         if (s->v_count[i] > s->v_max)
             s->v_max = s->v_count[i];
+        if (!s->h_count[i] || !s->v_count[i]) {
+            av_log(s->avctx, AV_LOG_ERROR, "h/v_count is 0\n");
+            return -1;
+        }
         s->quant_index[i] = get_bits(&s->gb, 8);
         if (s->quant_index[i] >= 4)
             return -1;
