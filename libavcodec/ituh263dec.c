@@ -1085,6 +1085,20 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
         skip_bits(&s->gb, 2); /* Quantization information for B-pictures */
     }
 
+    if (s->pict_type!=AV_PICTURE_TYPE_B) {
+        s->time= s->picture_number;
+        s->pp_time= s->time - s->last_non_b_time;
+        s->last_non_b_time= s->time;
+    }else{
+        s->time= s->picture_number;
+        s->pb_time= s->pp_time - (s->last_non_b_time - s->time);
+        if(s->pp_time <=s->pb_time || s->pp_time <= s->pp_time - s->pb_time || s->pp_time<=0){
+            s->pp_time = 2;
+            s->pb_time = 1;
+        }
+        ff_mpeg4_init_direct_mv(s);
+    }
+
     /* PEI */
     while (get_bits1(&s->gb) != 0) {
         skip_bits(&s->gb, 8);
