@@ -83,15 +83,18 @@ static void sunrast_image_write_image(AVCodecContext *avctx,
      if (s->type == RT_BYTE_ENCODED) {
         uint8_t value, value2;
         int run;
-        const uint8_t *end = pixels + avctx->height * linesize;
+        const uint8_t *start = linesize < 0 ? pixels + (avctx->height - 1) * linesize
+                                            : pixels;
+        const uint8_t *end   = linesize < 0 ? pixels - linesize
+                                            : pixels + avctx->height * linesize;
 
         ptr = pixels;
 
-#define GET_VALUE ptr >= end ? 0 : x >= len ? ptr[len-1] : ptr[x]
+#define GET_VALUE ptr >= end || ptr < start ? 0 : x >= len ? ptr[len-1] : ptr[x]
 
         x = 0;
         value2 = GET_VALUE;
-        while (ptr < end) {
+        while (ptr < end && ptr >= start) {
             run = 1;
             value = value2;
             x++;
@@ -101,7 +104,7 @@ static void sunrast_image_write_image(AVCodecContext *avctx,
             }
 
             value2 = GET_VALUE;
-            while (value2 == value && run < 256 && ptr < end) {
+            while (value2 == value && run < 256 && ptr < end && ptr >= start) {
                 x++;
                 run++;
                 if (x >= alen) {
