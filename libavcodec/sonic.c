@@ -860,7 +860,7 @@ static int sonic_decode_frame(AVCodecContext *avctx,
     SonicContext *s = avctx->priv_data;
     GetBitContext gb;
     int i, quant, ch, j, ret;
-    short *samples;
+    int16_t *samples;
 
     if (buf_size == 0) return 0;
 
@@ -869,7 +869,7 @@ static int sonic_decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    samples = s->frame.data[0];
+    samples = (int16_t *)s->frame.data[0];
 
 //    av_log(NULL, AV_LOG_INFO, "buf_size: %d\n", buf_size);
 
