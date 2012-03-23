@@ -149,6 +149,10 @@ static av_cold int che_configure(AACContext *ac,
             ff_aac_sbr_ctx_init(ac, &ac->che[type][id]->sbr);
         }
         if (type != TYPE_CCE) {
+            if (*channels >= MAX_CHANNELS - (type == TYPE_CPE || (type == TYPE_SCE && ac->m4ac.ps == 1))) {
+                av_log(ac->avctx, AV_LOG_ERROR, "Too many channels\n");
+                return AVERROR_INVALIDDATA;
+            }
             ac->output_data[(*channels)++] = ac->che[type][id]->ch[0].ret;
             if (type == TYPE_CPE ||
                 (type == TYPE_SCE && ac->m4ac.ps == 1)) {
