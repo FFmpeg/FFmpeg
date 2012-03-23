@@ -517,7 +517,7 @@ static int decode_mb_info(IVI4DecContext *ctx, IVIBandDesc *band,
                     }
                 }
             } else {
-                if (band->inherit_mv) {
+                if (band->inherit_mv && ref_mb) {
                     mb->type = ref_mb->type; /* copy mb_type from corresponding reference mb */
                 } else if (ctx->frame_type == FRAMETYPE_INTRA) {
                     mb->type = 0; /* mb_type is always INTRA for intra-frames */
