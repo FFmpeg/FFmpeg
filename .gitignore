@@ -15,6 +15,9 @@ avconv
 avplay
 avprobe
 avserver
+doc/avoptions_codec.texi
+doc/avoptions_format.texi
+doc/print_options
 libavcodec/*_tablegen
 libavcodec/*_tables.c
 libavcodec/*_tables.h
