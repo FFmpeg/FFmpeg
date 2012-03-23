@@ -157,6 +157,8 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
     VLC_TYPE (*table)[2];
 
     table_size = 1 << table_nb_bits;
+    if (table_nb_bits > 30)
+       return -1;
     table_index = alloc_table(vlc, table_size, flags & INIT_VLC_USE_NEW_STATIC);
     av_dlog(NULL, "new table index=%d size=%d\n", table_index, table_size);
     if (table_index < 0)
