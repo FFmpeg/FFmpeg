@@ -358,13 +358,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
-    const uint8_t *buf_end = buf + buf_size;
     UtvideoContext *c = avctx->priv_data;
-    const uint8_t *ptr;
     int i, j;
     const uint8_t *plane_start[5];
     int plane_size, max_slice_size = 0, slice_start, slice_end, slice_size;
     int ret;
+    GetByteContext gb;
 
     if (c->pic.data[0])
         ff_thread_release_buffer(avctx, &c->pic);
@@ -379,20 +378,21 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     ff_thread_finish_setup(avctx);
 
     /* parse plane structure to retrieve frame flags and validate slice offsets */
-    ptr = buf;
+    bytestream2_init(&gb, buf, buf_size);
     for (i = 0; i < c->planes; i++) {
-        plane_start[i] = ptr;
-        if (buf_end - ptr < 256 + 4 * c->slices) {
+        plane_start[i] = gb.buffer;
+        if (bytestream2_get_bytes_left(&gb) < 256 + 4 * c->slices) {
             av_log(avctx, AV_LOG_ERROR, "Insufficient data for a plane\n");
             return AVERROR_INVALIDDATA;
         }
-        ptr += 256;
+        bytestream2_skipu(&gb, 256);
         slice_start = 0;
         slice_end   = 0;
         for (j = 0; j < c->slices; j++) {
-            slice_end   = bytestream_get_le32(&ptr);
+            slice_end   = bytestream2_get_le32u(&gb);
             slice_size  = slice_end - slice_start;
-            if (slice_size < 0) {
+            if (slice_end <= 0 || slice_size <= 0 ||
+                bytestream2_get_bytes_left(&gb) < slice_end) {
                 av_log(avctx, AV_LOG_ERROR, "Incorrect slice size\n");
                 return AVERROR_INVALIDDATA;
             }
@@ -400,18 +400,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
             max_slice_size = FFMAX(max_slice_size, slice_size);
         }
         plane_size = slice_end;
-        if (buf_end - ptr < plane_size) {
-            av_log(avctx, AV_LOG_ERROR, "Plane size is bigger than available data\n");
-            return AVERROR_INVALIDDATA;
-        }
-        ptr += plane_size;
+        bytestream2_skipu(&gb, plane_size);
     }
-    plane_start[c->planes] = ptr;
-    if (buf_end - ptr < c->frame_info_size) {
+    plane_start[c->planes] = gb.buffer;
+    if (bytestream2_get_bytes_left(&gb) < c->frame_info_size) {
         av_log(avctx, AV_LOG_ERROR, "Not enough data for frame information\n");
         return AVERROR_INVALIDDATA;
     }
-    c->frame_info = AV_RL32(ptr);
+    c->frame_info = bytestream2_get_le32u(&gb);
     av_log(avctx, AV_LOG_DEBUG, "frame information flags %X\n", c->frame_info);
 
     c->frame_pred = (c->frame_info >> 8) & 3;
