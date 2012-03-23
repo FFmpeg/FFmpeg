@@ -214,6 +214,49 @@ static void pick_format(AVFilterLink *link)
     avfilter_formats_unref(&link->out_formats);
 }
 
+static int reduce_formats_on_filter(AVFilterContext *filter)
+{
+    int i, j, k, ret = 0;
+
+    for (i = 0; i < filter->input_count; i++) {
+        AVFilterLink *link = filter->inputs[i];
+        int         format = link->out_formats->formats[0];
+
+        if (link->out_formats->format_count != 1)
+            continue;
+
+        for (j = 0; j < filter->output_count; j++) {
+            AVFilterLink *out_link = filter->outputs[j];
+            AVFilterFormats  *fmts = out_link->in_formats;
+
+            if (link->type != out_link->type ||
+                out_link->in_formats->format_count == 1)
+                continue;
+
+            for (k = 0; k < out_link->in_formats->format_count; k++)
+                if (fmts->formats[k] == format) {
+                    fmts->formats[0]   = format;
+                    fmts->format_count = 1;
+                    ret = 1;
+                    break;
+                }
+        }
+    }
+    return ret;
+}
+
+static void reduce_formats(AVFilterGraph *graph)
+{
+    int i, reduced;
+
+    do {
+        reduced = 0;
+
+        for (i = 0; i < graph->filter_count; i++)
+            reduced |= reduce_formats_on_filter(graph->filters[i]);
+    } while (reduced);
+}
+
 static void pick_formats(AVFilterGraph *graph)
 {
     int i, j;
@@ -237,7 +280,10 @@ int ff_avfilter_graph_config_formats(AVFilterGraph *graph, AVClass *log_ctx)
         return ret;
 
     /* Once everything is merged, it's possible that we'll still have
-     * multiple valid media format choices. We pick the first one. */
+     * multiple valid media format choices. We try to minimize the amount
+     * of format conversion inside filters */
+    reduce_formats(graph);
+
     pick_formats(graph);
 
     return 0;
