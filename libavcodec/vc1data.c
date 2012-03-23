@@ -1019,21 +1019,21 @@ const uint8_t ff_vc1_mv_diff_bits[4][73] = {
 /* DC differentials low+hi-mo, p217 are the same as in msmpeg4data .h */
 
 /* Table 232 */
-const int8_t ff_vc1_simple_progressive_4x4_zz [16] = {
+const uint8_t ff_vc1_simple_progressive_4x4_zz [16] = {
      0,     8,    16,     1,
      9,    24,    17,     2,
     10,    18,    25,     3,
     11,    26,    19,    27
 };
 
-const int8_t ff_vc1_adv_progressive_8x4_zz [32] = { /* Table 233 */
+const uint8_t ff_vc1_adv_progressive_8x4_zz [32] = { /* Table 233 */
      0,     8,     1,    16,     2,     9,    10,     3,
     24,    17,     4,    11,    18,    12,     5,    19,
     25,    13,    20,    26,    27,     6,    21,    28,
     14,    22,    29,     7,    30,    15,    23,    31
 };
 
-const int8_t ff_vc1_adv_progressive_4x8_zz [32] = { /* Table 234 */
+const uint8_t ff_vc1_adv_progressive_4x8_zz [32] = { /* Table 234 */
      0,     1,     8,     2,
      9,    16,    17,    24,
     10,    32,    25,    18,
@@ -1044,7 +1044,7 @@ const int8_t ff_vc1_adv_progressive_4x8_zz [32] = { /* Table 234 */
     35,    43,    51,    59
 };
 
-const int8_t ff_vc1_adv_interlaced_8x8_zz [64] = { /* Table 235 */
+const uint8_t ff_vc1_adv_interlaced_8x8_zz [64] = { /* Table 235 */
      0,     8,     1,    16,    24,     9,     2,    32,
     40,    48,    56,    17,    10,     3,    25,    18,
     11,     4,    33,    41,    49,    57,    26,    34,
@@ -1055,14 +1055,14 @@ const int8_t ff_vc1_adv_interlaced_8x8_zz [64] = { /* Table 235 */
     61,    62,    54,    46,    39,    47,    55,    63
 };
 
-const int8_t ff_vc1_adv_interlaced_8x4_zz [32] = { /* Table 236 */
+const uint8_t ff_vc1_adv_interlaced_8x4_zz [32] = { /* Table 236 */
      0,     8,    16,    24,     1,     9,     2,    17,
     25,    10,     3,    18,    26,     4,    11,    19,
     12,     5,    13,    20,    27,     6,    21,    28,
     14,    22,    29,     7,    30,    15,    23,    31
 };
 
-const int8_t ff_vc1_adv_interlaced_4x8_zz [32] = { /* Table 237 */
+const uint8_t ff_vc1_adv_interlaced_4x8_zz [32] = { /* Table 237 */
      0,     1,     2,     8,
     16,     9,    24,    17,
     10,     3,    32,    40,
@@ -1073,7 +1073,7 @@ const int8_t ff_vc1_adv_interlaced_4x8_zz [32] = { /* Table 237 */
     35,    43,    51,    59
 };
 
-const int8_t ff_vc1_adv_interlaced_4x4_zz [16] = { /* Table 238 */
+const uint8_t ff_vc1_adv_interlaced_4x4_zz [16] = { /* Table 238 */
      0,     8,    16,    24,
      1,     9,    17,     2,
     25,    10,    18,     3,
