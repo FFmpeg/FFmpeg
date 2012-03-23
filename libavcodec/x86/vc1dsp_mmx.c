@@ -751,6 +751,8 @@ void ff_vc1dsp_init_mmx(VC1DSPContext *dsp)
         dsp->put_vc1_mspel_pixels_tab[ 7] = put_vc1_mspel_mc31_mmx;
         dsp->put_vc1_mspel_pixels_tab[11] = put_vc1_mspel_mc32_mmx;
         dsp->put_vc1_mspel_pixels_tab[15] = put_vc1_mspel_mc33_mmx;
+
+        dsp->put_no_rnd_vc1_chroma_pixels_tab[0]= ff_put_vc1_chroma_mc8_mmx_nornd;
     }
 
     if (mm_flags & AV_CPU_FLAG_MMX2){
@@ -778,6 +780,15 @@ void ff_vc1dsp_init_mmx(VC1DSPContext *dsp)
         dsp->vc1_inv_trans_4x8_dc = vc1_inv_trans_4x8_dc_mmx2;
         dsp->vc1_inv_trans_8x4_dc = vc1_inv_trans_8x4_dc_mmx2;
         dsp->vc1_inv_trans_4x4_dc = vc1_inv_trans_4x4_dc_mmx2;
+
+        dsp->avg_no_rnd_vc1_chroma_pixels_tab[0]= ff_avg_vc1_chroma_mc8_mmx2_nornd;
+    } else if (mm_flags & AV_CPU_FLAG_3DNOW) {
+        dsp->avg_no_rnd_vc1_chroma_pixels_tab[0]= ff_avg_vc1_chroma_mc8_3dnow_nornd;
+    }
+
+    if (mm_flags & AV_CPU_FLAG_SSSE3) {
+        dsp->put_no_rnd_vc1_chroma_pixels_tab[0]= ff_put_vc1_chroma_mc8_ssse3_nornd;
+        dsp->avg_no_rnd_vc1_chroma_pixels_tab[0]= ff_avg_vc1_chroma_mc8_ssse3_nornd;
     }
 
 #define ASSIGN_LF(EXT) \
@@ -791,14 +802,10 @@ void ff_vc1dsp_init_mmx(VC1DSPContext *dsp)
 #if HAVE_YASM
     if (mm_flags & AV_CPU_FLAG_MMX) {
         ASSIGN_LF(mmx);
-        dsp->put_no_rnd_vc1_chroma_pixels_tab[0]= ff_put_vc1_chroma_mc8_mmx_nornd;
     }
     return;
     if (mm_flags & AV_CPU_FLAG_MMX2) {
         ASSIGN_LF(mmx2);
-        dsp->avg_no_rnd_vc1_chroma_pixels_tab[0]= ff_avg_vc1_chroma_mc8_mmx2_nornd;
-    } else if (mm_flags & AV_CPU_FLAG_3DNOW) {
-        dsp->avg_no_rnd_vc1_chroma_pixels_tab[0]= ff_avg_vc1_chroma_mc8_3dnow_nornd;
     }
 
     if (mm_flags & AV_CPU_FLAG_SSE2) {
@@ -809,8 +816,6 @@ void ff_vc1dsp_init_mmx(VC1DSPContext *dsp)
     }
     if (mm_flags & AV_CPU_FLAG_SSSE3) {
         ASSIGN_LF(ssse3);
-        dsp->put_no_rnd_vc1_chroma_pixels_tab[0]= ff_put_vc1_chroma_mc8_ssse3_nornd;
-        dsp->avg_no_rnd_vc1_chroma_pixels_tab[0]= ff_avg_vc1_chroma_mc8_ssse3_nornd;
     }
     if (mm_flags & AV_CPU_FLAG_SSE4) {
         dsp->vc1_h_loop_filter8  = ff_vc1_h_loop_filter8_sse4;
