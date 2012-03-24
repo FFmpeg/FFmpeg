@@ -361,6 +361,6 @@ AVCodec ff_libopenjpeg_decoder = {
     .decode         = libopenjpeg_decode_frame,
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
     .max_lowres     = 5,
-    .long_name      = NULL_IF_CONFIG_SMALL("OpenJPEG based JPEG 2000 decoder"),
+    .long_name      = NULL_IF_CONFIG_SMALL("OpenJPEG JPEG 2000"),
     .init_thread_copy = ONLY_IF_THREADS_ENABLED(libopenjpeg_decode_init_thread_copy)
 };
