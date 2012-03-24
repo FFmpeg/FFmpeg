@@ -1316,6 +1316,10 @@ static int mov_write_hdlr_tag(AVIOContext *pb, MOVTrack *track)
         } else if (track->enc->codec_tag == MKTAG('r','t','p',' ')) {
             hdlr_type = "hint";
             descr = "HintHandler";
+        } else {
+            hdlr = "dhlr";
+            hdlr_type = "url ";
+            descr = "DataHandler";
         }
     }
 
@@ -3207,6 +3211,8 @@ static int mov_write_header(AVFormatContext *s)
             }
         }else if(st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE){
             track->timescale = st->codec->time_base.den;
+        }else{
+            track->timescale = MOV_TIMESCALE;
         }
         if (!track->height)
             track->height = st->codec->height;
