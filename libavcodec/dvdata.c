@@ -311,6 +311,10 @@ const DVprofile* avpriv_dv_frame_profile2(AVCodecContext* codec, const DVprofile
     if (sys && buf_size == sys->frame_size)
         return sys;
 
+    /* hack for trac issue #217, dv files created with QuickTime 3 */
+    if ((frame[3] & 0x7f) == 0x3f && frame[80 * 5 + 48 + 3] == 0xff)
+        return &dv_profiles[dsf];
+
     return NULL;
 }
 
