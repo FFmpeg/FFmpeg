@@ -2370,6 +2370,7 @@ static inline int vc1_pred_dc(MpegEncContext *s, int overlap, int pq, int n,
     int16_t *dc_val;
     int mb_pos = s->mb_x + s->mb_y * s->mb_stride;
     int q1, q2 = 0;
+    int dqscale_index;
 
     wrap = s->block_wrap[n];
     dc_val = s->dc_val[0] + s->block_index[n];
@@ -2382,15 +2383,18 @@ static inline int vc1_pred_dc(MpegEncContext *s, int overlap, int pq, int n,
     a = dc_val[ - wrap];
     /* scale predictors if needed */
     q1 = s->current_picture.f.qscale_table[mb_pos];
+    dqscale_index = s->y_dc_scale_table[q1] - 1;
+    if (dqscale_index < 0)
+        return 0;
     if (c_avail && (n != 1 && n != 3)) {
         q2 = s->current_picture.f.qscale_table[mb_pos - 1];
         if (q2 && q2 != q1)
-            c = (c * s->y_dc_scale_table[q2] * ff_vc1_dqscale[s->y_dc_scale_table[q1] - 1] + 0x20000) >> 18;
+            c = (c * s->y_dc_scale_table[q2] * ff_vc1_dqscale[dqscale_index] + 0x20000) >> 18;
     }
     if (a_avail && (n != 2 && n != 3)) {
         q2 = s->current_picture.f.qscale_table[mb_pos - s->mb_stride];
         if (q2 && q2 != q1)
-            a = (a * s->y_dc_scale_table[q2] * ff_vc1_dqscale[s->y_dc_scale_table[q1] - 1] + 0x20000) >> 18;
+            a = (a * s->y_dc_scale_table[q2] * ff_vc1_dqscale[dqscale_index] + 0x20000) >> 18;
     }
     if (a_avail && c_avail && (n != 3)) {
         int off = mb_pos;
@@ -2400,7 +2404,7 @@ static inline int vc1_pred_dc(MpegEncContext *s, int overlap, int pq, int n,
             off -= s->mb_stride;
         q2 = s->current_picture.f.qscale_table[off];
         if (q2 && q2 != q1)
-            b = (b * s->y_dc_scale_table[q2] * ff_vc1_dqscale[s->y_dc_scale_table[q1] - 1] + 0x20000) >> 18;
+            b = (b * s->y_dc_scale_table[q2] * ff_vc1_dqscale[dqscale_index] + 0x20000) >> 18;
     }
 
     if (a_avail && c_avail) {
@@ -2817,6 +2821,8 @@ static int vc1_decode_i_block_adv(VC1Context *v, DCTELEM block[64], int n,
                 q1 = q1 * 2 + ((q1 == v->pq) ? v->halfpq : 0) - 1;
                 q2 = q2 * 2 + ((q2 == v->pq) ? v->halfpq : 0) - 1;
 
+                if (q1 < 1)
+                    return AVERROR_INVALIDDATA;
                 if (dc_pred_dir) { // left
                     for (k = 1; k < 8; k++)
                         block[k << v->left_blk_sh] += (ac_val[k] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
@@ -2859,6 +2865,8 @@ static int vc1_decode_i_block_adv(VC1Context *v, DCTELEM block[64], int n,
                 if (q2 && q1 != q2) {
                     q1 = q1 * 2 + ((q1 == v->pq) ? v->halfpq : 0) - 1;
                     q2 = q2 * 2 + ((q2 == v->pq) ? v->halfpq : 0) - 1;
+                    if (q1 < 1)
+                        return AVERROR_INVALIDDATA;
                     for (k = 1; k < 8; k++)
                         ac_val2[k] = (ac_val2[k] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
                 }
@@ -2869,6 +2877,8 @@ static int vc1_decode_i_block_adv(VC1Context *v, DCTELEM block[64], int n,
                 if (q2 && q1 != q2) {
                     q1 = q1 * 2 + ((q1 == v->pq) ? v->halfpq : 0) - 1;
                     q2 = q2 * 2 + ((q2 == v->pq) ? v->halfpq : 0) - 1;
+                    if (q1 < 1)
+                        return AVERROR_INVALIDDATA;
                     for (k = 1; k < 8; k++)
                         ac_val2[k + 8] = (ac_val2[k + 8] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
                 }
@@ -3027,6 +3037,8 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n,
                 q1 = q1 * 2 + ((q1 == v->pq) ? v->halfpq : 0) - 1;
                 q2 = q2 * 2 + ((q2 == v->pq) ? v->halfpq : 0) - 1;
 
+                if (q1 < 1)
+                    return AVERROR_INVALIDDATA;
                 if (dc_pred_dir) { // left
                     for (k = 1; k < 8; k++)
                         block[k << v->left_blk_sh] += (ac_val[k] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
@@ -3069,6 +3081,8 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n,
                 if (q2 && q1 != q2) {
                     q1 = q1 * 2 + ((q1 == v->pq) ? v->halfpq : 0) - 1;
                     q2 = q2 * 2 + ((q2 == v->pq) ? v->halfpq : 0) - 1;
+                    if (q1 < 1)
+                        return AVERROR_INVALIDDATA;
                     for (k = 1; k < 8; k++)
                         ac_val2[k] = (ac_val2[k] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
                 }
@@ -3079,6 +3093,8 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n,
                 if (q2 && q1 != q2) {
                     q1 = q1 * 2 + ((q1 == v->pq) ? v->halfpq : 0) - 1;
                     q2 = q2 * 2 + ((q2 == v->pq) ? v->halfpq : 0) - 1;
+                    if (q1 < 1)
+                        return AVERROR_INVALIDDATA;
                     for (k = 1; k < 8; k++)
                         ac_val2[k + 8] = (ac_val2[k + 8] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
                 }

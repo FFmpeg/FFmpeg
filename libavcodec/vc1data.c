@@ -84,7 +84,7 @@ const uint8_t ff_vc1_mbmode_intfrp[2][15][4] = {
     }
 };
 
-const int ff_vc1_fps_nr[5] = { 24, 25, 30, 50, 60 },
+const int ff_vc1_fps_nr[7] = { 24, 25, 30, 50, 60, 48, 72 },
           ff_vc1_fps_dr[2] = { 1000, 1001 };
 const uint8_t ff_vc1_pquant_table[3][32] = {
     /* Implicit quantizer */
