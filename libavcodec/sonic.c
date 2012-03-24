@@ -955,7 +955,7 @@ AVCodec ff_sonic_decoder = {
     .init           = sonic_decode_init,
     .close          = sonic_decode_close,
     .decode         = sonic_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_EXPERIMENTAL,
     .long_name = NULL_IF_CONFIG_SMALL("Sonic"),
 };
 #endif /* CONFIG_SONIC_DECODER */
@@ -968,6 +968,7 @@ AVCodec ff_sonic_encoder = {
     .priv_data_size = sizeof(SonicContext),
     .init           = sonic_encode_init,
     .encode         = sonic_encode_frame,
+    .capabilities   = CODEC_CAP_EXPERIMENTAL,
     .close          = sonic_encode_close,
     .long_name = NULL_IF_CONFIG_SMALL("Sonic"),
 };
@@ -981,6 +982,7 @@ AVCodec ff_sonic_ls_encoder = {
     .priv_data_size = sizeof(SonicContext),
     .init           = sonic_encode_init,
     .encode         = sonic_encode_frame,
+    .capabilities   = CODEC_CAP_EXPERIMENTAL,
     .close          = sonic_encode_close,
     .long_name = NULL_IF_CONFIG_SMALL("Sonic lossless"),
 };
