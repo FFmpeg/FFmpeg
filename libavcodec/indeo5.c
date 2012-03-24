@@ -76,6 +76,8 @@ typedef struct {
     int             is_scalable;
     uint32_t        lock_word;
     IVIPicConfig    pic_conf;
+
+    int gop_invalid;
 } IVI5DecContext;
 
 
@@ -336,8 +338,10 @@ static int decode_pic_hdr(IVI5DecContext *ctx, AVCodecContext *avctx)
     ctx->frame_num = get_bits(&ctx->gb, 8);
 
     if (ctx->frame_type == FRAMETYPE_INTRA) {
+        ctx->gop_invalid = 1;
         if (decode_gop_header(ctx, avctx))
             return -1;
+        ctx->gop_invalid = 0;
     }
 
     if (ctx->frame_type != FRAMETYPE_NULL) {
@@ -751,7 +755,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     ctx->frame_size = buf_size;
 
     result = decode_pic_hdr(ctx, avctx);
-    if (result) {
+    if (result || ctx->gop_invalid) {
         av_log(avctx, AV_LOG_ERROR,
                "Error while decoding picture header: %d\n", result);
         return -1;
