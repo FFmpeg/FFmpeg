@@ -2857,6 +2857,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     unsigned int slice_type, tmp, i, j;
     int default_ref_list_done = 0;
     int last_pic_structure, last_pic_dropable;
+    int must_reinit;
 
     /* FIXME: 2tap qpel isn't implemented for high bit depth. */
     if ((s->avctx->flags2 & CODEC_FLAG2_FAST) &&
@@ -2935,6 +2936,19 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     s->avctx->level   = h->sps.level_idc;
     s->avctx->refs    = h->sps.ref_frame_count;
 
+    must_reinit = (s->context_initialized &&
+                    (   16*h->sps.mb_width != s->avctx->coded_width
+                     || 16*h->sps.mb_height * (2 - h->sps.frame_mbs_only_flag) != s->avctx->coded_height
+                     || s->avctx->bits_per_raw_sample != h->sps.bit_depth_luma
+                     || h->cur_chroma_format_idc != h->sps.chroma_format_idc
+                     || av_cmp_q(h->sps.sar, s->avctx->sample_aspect_ratio)));
+
+    if(must_reinit && (h != h0 || (s->avctx->active_thread_type & FF_THREAD_FRAME))) {
+        av_log_missing_feature(s->avctx,
+                                "Width/height/bit depth/chroma idc changing with threads is", 0);
+        return -1;   // width / height changed during parallelized decoding
+    }
+
     s->mb_width  = h->sps.mb_width;
     s->mb_height = h->sps.mb_height * (2 - h->sps.frame_mbs_only_flag);
 
@@ -2946,16 +2960,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     s->height = 16 * s->mb_height;
 
 
-    if (s->context_initialized &&
-        (   s->width != s->avctx->coded_width || s->height != s->avctx->coded_height
-            || s->avctx->bits_per_raw_sample != h->sps.bit_depth_luma
-            || h->cur_chroma_format_idc != h->sps.chroma_format_idc
-            || av_cmp_q(h->sps.sar, s->avctx->sample_aspect_ratio))) {
-        if(h != h0 || (s->avctx->active_thread_type & FF_THREAD_FRAME)) {
-            av_log_missing_feature(s->avctx,
-                                   "Width/height/bit depth/chroma idc changing with threads is", 0);
-            return -1;   // width / height changed during parallelized decoding
-        }
+    if(must_reinit) {
         free_tables(h, 0);
         flush_dpb(s->avctx);
         ff_MPV_common_end(s);
