@@ -404,6 +404,10 @@ static int decode_band_hdr(IVI4DecContext *ctx, IVIBandDesc *band,
                 av_log(avctx, AV_LOG_ERROR, "Custom quant matrix encountered!\n");
                 return AVERROR_INVALIDDATA;
             }
+            if (band->quant_mat > 21) {
+                av_log(avctx, AV_LOG_ERROR, "Invalid quant matrix encountered!\n");
+                return AVERROR_INVALIDDATA;
+            }
         }
 
         /* decode block huffman codebook */
