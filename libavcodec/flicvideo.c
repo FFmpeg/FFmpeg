@@ -83,7 +83,8 @@ static av_cold int flic_decode_init(AVCodecContext *avctx)
     unsigned char *fli_header = (unsigned char *)avctx->extradata;
     int depth;
 
-    if (avctx->extradata_size != 12 &&
+    if (avctx->extradata_size != 0 &&
+        avctx->extradata_size != 12 &&
         avctx->extradata_size != 128) {
         av_log(avctx, AV_LOG_ERROR, "Expected extradata of 12 or 128 bytes\n");
         return AVERROR_INVALIDDATA;
@@ -91,13 +92,16 @@ static av_cold int flic_decode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
 
-    s->fli_type = AV_RL16(&fli_header[4]); /* Might be overridden if a Magic Carpet FLC */
-
     if (s->avctx->extradata_size == 12) {
         /* special case for magic carpet FLIs */
         s->fli_type = FLC_MAGIC_CARPET_SYNTHETIC_TYPE_CODE;
         depth = 8;
+    } else if (avctx->extradata_size == 0) {
+        /* FLI in MOV, see e.g. FFmpeg trac issue #626 */
+        s->fli_type = FLI_TYPE_CODE;
+        depth = 8;
     } else {
+        s->fli_type = AV_RL16(&fli_header[4]);
         depth = AV_RL16(&fli_header[12]);
     }
 
