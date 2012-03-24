@@ -41,7 +41,7 @@ extern const int ff_vc1_ttfrm_to_tt[4];
 extern const uint8_t ff_vc1_mv_pmode_table[2][5];
 extern const uint8_t ff_vc1_mv_pmode_table2[2][4];
 
-extern const int ff_vc1_fps_nr[5], ff_vc1_fps_dr[2];
+extern const int ff_vc1_fps_nr[7], ff_vc1_fps_dr[2];
 extern const uint8_t ff_vc1_pquant_table[3][32];
 
 /* MBMODE table for interlaced frame P-picture */
