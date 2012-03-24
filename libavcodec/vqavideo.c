@@ -544,7 +544,7 @@ static int vqa_decode_chunk(VqaContext *s)
         s->next_codebook_buffer_index += chunk_size;
 
         s->partial_countdown--;
-        if (s->partial_countdown == 0) {
+        if (s->partial_countdown <= 0) {
 
             /* time to replace codebook */
             memcpy(s->codebook, s->next_codebook_buffer,
@@ -567,7 +567,7 @@ static int vqa_decode_chunk(VqaContext *s)
         s->next_codebook_buffer_index += chunk_size;
 
         s->partial_countdown--;
-        if (s->partial_countdown == 0) {
+        if (s->partial_countdown <= 0) {
             GetByteContext gb;
 
             bytestream2_init(&gb, s->next_codebook_buffer, s->next_codebook_buffer_index);
