@@ -28,6 +28,7 @@
 #include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "libavutil/intreadwrite.h"
+#include "internal.h"
 #define  OPJ_STATIC
 #include <openjpeg.h>
 
@@ -201,7 +202,7 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int libopenjpeg_copy_packed8(AVCodecContext *avctx, AVFrame *frame, opj_image_t *image)
+static int libopenjpeg_copy_packed8(AVCodecContext *avctx, const AVFrame *frame, opj_image_t *image)
 {
     int compno;
     int x;
@@ -231,7 +232,7 @@ static int libopenjpeg_copy_packed8(AVCodecContext *avctx, AVFrame *frame, opj_i
     return 1;
 }
 
-static int libopenjpeg_copy_packed16(AVCodecContext *avctx, AVFrame *frame, opj_image_t *image)
+static int libopenjpeg_copy_packed16(AVCodecContext *avctx, const AVFrame *frame, opj_image_t *image)
 {
     int compno;
     int x;
@@ -262,7 +263,7 @@ static int libopenjpeg_copy_packed16(AVCodecContext *avctx, AVFrame *frame, opj_
     return 1;
 }
 
-static int libopenjpeg_copy_unpacked8(AVCodecContext *avctx, AVFrame *frame, opj_image_t *image)
+static int libopenjpeg_copy_unpacked8(AVCodecContext *avctx, const AVFrame *frame, opj_image_t *image)
 {
     int compno;
     int x;
@@ -295,7 +296,7 @@ static int libopenjpeg_copy_unpacked8(AVCodecContext *avctx, AVFrame *frame, opj
     return 1;
 }
 
-static int libopenjpeg_copy_unpacked16(AVCodecContext *avctx, AVFrame *frame, opj_image_t *image)
+static int libopenjpeg_copy_unpacked16(AVCodecContext *avctx, const AVFrame *frame, opj_image_t *image)
 {
     int compno;
     int x;
@@ -330,15 +331,15 @@ static int libopenjpeg_copy_unpacked16(AVCodecContext *avctx, AVFrame *frame, op
     return 1;
 }
 
-static int libopenjpeg_encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_size, void *data)
+static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
+                                    const AVFrame *frame, int *got_packet)
 {
-    AVFrame *frame = data;
     LibOpenJPEGContext *ctx = avctx->priv_data;
     opj_cinfo_t *compress = ctx->compress;
     opj_image_t *image = ctx->image;
     opj_cio_t *stream;
     int cpyresult = 0;
-    int len = 0;
+    int ret, len;
 
     // x0, y0 is the top left corner of the image
     // x1, y1 is the width, height of the reference grid
@@ -402,15 +403,16 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf
     }
 
     len = cio_tell(stream);
-    if (len > buf_size) {
+    if ((ret = ff_alloc_packet2(avctx, pkt, len)) < 0) {
         opj_cio_close(stream);
-        av_log(avctx, AV_LOG_ERROR, "Error with buf_size, not large enough to hold the frame\n");
-        return -1;
+        return ret;
     }
 
-    memcpy(buf, stream->buffer, len);
+    memcpy(pkt->data, stream->buffer, len);
+    pkt->flags |= AV_PKT_FLAG_KEY;
+    *got_packet = 1;
     opj_cio_close(stream);
-    return len;
+    return 0;
 }
 
 static av_cold int libopenjpeg_encode_close(AVCodecContext *avctx)
@@ -430,7 +432,7 @@ AVCodec ff_libopenjpeg_encoder = {
     .id             = CODEC_ID_JPEG2000,
     .priv_data_size = sizeof(LibOpenJPEGContext),
     .init           = libopenjpeg_encode_init,
-    .encode         = libopenjpeg_encode_frame,
+    .encode2        = libopenjpeg_encode_frame,
     .close          = libopenjpeg_encode_close,
     .capabilities   = 0,
     .pix_fmts = (const enum PixelFormat[]){PIX_FMT_RGB24,PIX_FMT_RGBA,PIX_FMT_RGB48,PIX_FMT_RGBA64,
