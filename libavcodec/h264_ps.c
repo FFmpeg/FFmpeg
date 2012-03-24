@@ -334,7 +334,7 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
         sps->chroma_format_idc= get_ue_golomb_31(&s->gb);
         if(sps->chroma_format_idc > 3) {
             av_log(h->s.avctx, AV_LOG_ERROR, "chroma_format_idc (%u) out of range\n", sps->chroma_format_idc);
-            return -1;
+            goto fail;
         } else if(sps->chroma_format_idc == 3) {
             sps->residual_color_transform_flag = get_bits1(&s->gb);
         }
