@@ -418,6 +418,10 @@ static void decode_mb_b(AVSContext *h, enum cavs_mb mb_type) {
 static inline int decode_slice_header(AVSContext *h, GetBitContext *gb) {
     if(h->stc > 0xAF)
         av_log(h->s.avctx, AV_LOG_ERROR, "unexpected start code 0x%02x\n", h->stc);
+
+    if (h->stc >= h->mb_height)
+        return -1;
+
     h->mby = h->stc;
     h->mbidx = h->mby*h->mb_width;
 
