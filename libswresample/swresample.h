@@ -30,7 +30,7 @@
 #include "libavutil/samplefmt.h"
 
 #define LIBSWRESAMPLE_VERSION_MAJOR 0
-#define LIBSWRESAMPLE_VERSION_MINOR 9
+#define LIBSWRESAMPLE_VERSION_MINOR 10
 #define LIBSWRESAMPLE_VERSION_MICRO 100
 
 #define LIBSWRESAMPLE_VERSION_INT  AV_VERSION_INT(LIBSWRESAMPLE_VERSION_MAJOR, \
@@ -108,8 +108,8 @@ void swr_free(struct SwrContext **s);
  *
  * @return number of samples output per channel, negative value on error
  */
-int swr_convert(struct SwrContext *s, uint8_t *out[SWR_CH_MAX], int out_count,
-                                const uint8_t *in [SWR_CH_MAX], int in_count);
+int swr_convert(struct SwrContext *s, uint8_t **out, int out_count,
+                                const uint8_t **in , int in_count);
 
 /**
  * Activate resampling compensation.
