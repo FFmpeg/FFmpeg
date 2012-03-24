@@ -256,6 +256,11 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
     int len, toks;
     TM2Codes codes;
 
+    if (buf_size < 4) {
+        av_log(ctx->avctx, AV_LOG_ERROR, "not enough space for len left\n");
+        return -1;
+    }
+
     /* get stream length in dwords */
     len = AV_RB32(buf); buf += 4; cur += 4;
     skip = len * 4 + 4;
@@ -795,7 +800,7 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     for(i = 0; i < TM2_NUM_STREAMS; i++){
-        t = tm2_read_stream(l, l->buffer + skip, tm2_stream_order[i], buf_size);
+        t = tm2_read_stream(l, l->buffer + skip, tm2_stream_order[i], buf_size - skip);
         if(t == -1){
             return -1;
         }
