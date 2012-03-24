@@ -30,7 +30,7 @@
 #include "libavutil/samplefmt.h"
 
 #define LIBSWRESAMPLE_VERSION_MAJOR 0
-#define LIBSWRESAMPLE_VERSION_MINOR 8
+#define LIBSWRESAMPLE_VERSION_MINOR 9
 #define LIBSWRESAMPLE_VERSION_MICRO 100
 
 #define LIBSWRESAMPLE_VERSION_INT  AV_VERSION_INT(LIBSWRESAMPLE_VERSION_MAJOR, \
@@ -44,7 +44,7 @@
 //long term TODO can we enable this dynamically?
 
 
-struct SwrContext;
+typedef struct SwrContext SwrContext;
 
 /**
  * Allocate SwrContext.
