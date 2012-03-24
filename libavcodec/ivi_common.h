@@ -248,6 +248,8 @@ typedef struct IVI45DecContext {
     int             (*decode_mb_info)  (struct IVI45DecContext *ctx, IVIBandDesc *band, IVITile *tile, AVCodecContext *avctx);
     void            (*switch_buffers)  (struct IVI45DecContext *ctx);
     int             (*is_nonnull_frame)(struct IVI45DecContext *ctx);
+
+    int gop_invalid;
 } IVI45DecContext;
 
 /** compare some properties of two pictures */

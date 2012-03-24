@@ -739,6 +739,8 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                "Error while decoding picture header: %d\n", result);
         return -1;
     }
+    if (ctx->gop_invalid)
+        return AVERROR_INVALIDDATA;
 
     if (ctx->gop_flags & IVI5_IS_PROTECTED) {
         av_log(avctx, AV_LOG_ERROR, "Password-protected clip!\n");
