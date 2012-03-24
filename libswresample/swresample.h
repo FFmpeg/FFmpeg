@@ -37,7 +37,9 @@
                                                   LIBSWRESAMPLE_VERSION_MINOR, \
                                                   LIBSWRESAMPLE_VERSION_MICRO)
 
+#if LIBSWRESAMPLE_VERSION_MAJOR < 1
 #define SWR_CH_MAX 32   ///< Maximum number of channels
+#endif
 
 #define SWR_FLAG_RESAMPLE 1 ///< Force resampling even if equal sample rate
 //TODO use int resample ?
