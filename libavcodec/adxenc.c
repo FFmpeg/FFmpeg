@@ -118,9 +118,8 @@ static av_cold int adx_encode_init(AVCodecContext *avctx)
     avctx->frame_size = BLOCK_SAMPLES;
 
 #if FF_API_OLD_ENCODE_AUDIO
-    avctx->coded_frame = avcodec_alloc_frame();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
+    avcodec_get_frame_defaults(&c->frame);
+    avctx->coded_frame = &c->frame;
 #endif
 
     /* the cutoff can be adjusted, but this seems to work pretty well */
