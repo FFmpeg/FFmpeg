@@ -875,7 +875,8 @@ static int frame_thread_init(AVCodecContext *avctx)
 
         if (err) goto error;
 
-        p->thread_init= !pthread_create(&p->thread, NULL, frame_worker_thread, p);
+        err = AVERROR(pthread_create(&p->thread, NULL, frame_worker_thread, p));
+        p->thread_init= !err;
         if(!p->thread_init)
             goto error;
     }
