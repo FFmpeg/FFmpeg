@@ -765,8 +765,30 @@ the parameter is the maximum samples per second by which the audio is changed.
 without any later correction.
 @item -copyts
 Copy timestamps from input to output.
-@item -copytb
-Copy input stream time base from input to output when stream copying.
+@item -copytb @var{mode}
+Specify how to set the encoder timebase when stream copying.  @var{mode} is an
+integer numeric value, and can assume one of the following values:
+
+@table @option
+@item 1
+Use the demuxer timebase.
+
+The time base is copied to the output encoder from the corresponding input
+demuxer. This is sometimes required to avoid non monotonically increasing
+timestamps when copying video streams with variable frame rate.
+
+@item 0
+Use the decoder timebase.
+
+The time base is copied to the output encoder from the corresponding input
+decoder.
+
+@item -1
+Try to make the choice automatically, in order to generate a sane output.
+@end table
+
+Default value is -1.
+
 @item -shortest
 Finish encoding when the shortest input stream ends.
 @item -dts_delta_threshold
