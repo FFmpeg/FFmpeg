@@ -951,6 +951,10 @@ int ff_thread_get_buffer(AVCodecContext *avctx, AVFrame *f)
             ff_thread_finish_setup(avctx);
     }
 
+    if (err) {
+        free_progress(f);
+        f->thread_opaque = NULL;
+    }
     pthread_mutex_unlock(&p->parent->buffer_mutex);
 
     return err;
