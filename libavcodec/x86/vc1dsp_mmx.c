@@ -752,7 +752,8 @@ void ff_vc1dsp_init_mmx(VC1DSPContext *dsp)
         dsp->put_vc1_mspel_pixels_tab[11] = put_vc1_mspel_mc32_mmx;
         dsp->put_vc1_mspel_pixels_tab[15] = put_vc1_mspel_mc33_mmx;
 
-        dsp->put_no_rnd_vc1_chroma_pixels_tab[0]= ff_put_vc1_chroma_mc8_mmx_nornd;
+        if (HAVE_YASM)
+            dsp->put_no_rnd_vc1_chroma_pixels_tab[0]= ff_put_vc1_chroma_mc8_mmx_nornd;
     }
 
     if (mm_flags & AV_CPU_FLAG_MMX2){
@@ -781,12 +782,13 @@ void ff_vc1dsp_init_mmx(VC1DSPContext *dsp)
         dsp->vc1_inv_trans_8x4_dc = vc1_inv_trans_8x4_dc_mmx2;
         dsp->vc1_inv_trans_4x4_dc = vc1_inv_trans_4x4_dc_mmx2;
 
-        dsp->avg_no_rnd_vc1_chroma_pixels_tab[0]= ff_avg_vc1_chroma_mc8_mmx2_nornd;
-    } else if (mm_flags & AV_CPU_FLAG_3DNOW) {
+        if (HAVE_YASM)
+            dsp->avg_no_rnd_vc1_chroma_pixels_tab[0]= ff_avg_vc1_chroma_mc8_mmx2_nornd;
+    } else if (HAVE_YASM && mm_flags & AV_CPU_FLAG_3DNOW) {
         dsp->avg_no_rnd_vc1_chroma_pixels_tab[0]= ff_avg_vc1_chroma_mc8_3dnow_nornd;
     }
 
-    if (mm_flags & AV_CPU_FLAG_SSSE3) {
+    if (HAVE_YASM && mm_flags & AV_CPU_FLAG_SSSE3) {
         dsp->put_no_rnd_vc1_chroma_pixels_tab[0]= ff_put_vc1_chroma_mc8_ssse3_nornd;
         dsp->avg_no_rnd_vc1_chroma_pixels_tab[0]= ff_avg_vc1_chroma_mc8_ssse3_nornd;
     }
