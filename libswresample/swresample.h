@@ -30,14 +30,14 @@
 #include "libavutil/samplefmt.h"
 
 #define LIBSWRESAMPLE_VERSION_MAJOR 0
-#define LIBSWRESAMPLE_VERSION_MINOR 7
+#define LIBSWRESAMPLE_VERSION_MINOR 8
 #define LIBSWRESAMPLE_VERSION_MICRO 100
 
 #define LIBSWRESAMPLE_VERSION_INT  AV_VERSION_INT(LIBSWRESAMPLE_VERSION_MAJOR, \
                                                   LIBSWRESAMPLE_VERSION_MINOR, \
                                                   LIBSWRESAMPLE_VERSION_MICRO)
 
-#define SWR_CH_MAX 16   ///< Maximum number of channels
+#define SWR_CH_MAX 32   ///< Maximum number of channels
 
 #define SWR_FLAG_RESAMPLE 1 ///< Force resampling even if equal sample rate
 //TODO use int resample ?
