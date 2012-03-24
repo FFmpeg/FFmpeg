@@ -24,18 +24,21 @@
  * Interface to libaacplus for aac+ (sbr+ps) encoding.
  */
 
-#include "avcodec.h"
 #include <aacplus.h>
+
+#include "avcodec.h"
+#include "internal.h"
 
 typedef struct aacPlusAudioContext {
     aacplusEncHandle aacplus_handle;
+    unsigned long max_output_bytes;
+    unsigned long samples_input;
 } aacPlusAudioContext;
 
 static av_cold int aacPlus_encode_init(AVCodecContext *avctx)
 {
     aacPlusAudioContext *s = avctx->priv_data;
     aacplusEncConfiguration *aacplus_cfg;
-    unsigned long samples_input, max_bytes_output;
 
     /* number of channels */
     if (avctx->channels < 1 || avctx->channels > 2) {
@@ -43,9 +46,8 @@ static av_cold int aacPlus_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    s->aacplus_handle = aacplusEncOpen(avctx->sample_rate,
-                                 avctx->channels,
-                                 &samples_input, &max_bytes_output);
+    s->aacplus_handle = aacplusEncOpen(avctx->sample_rate, avctx->channels,
+                                       &s->samples_input, &s->max_output_bytes);
     if(!s->aacplus_handle) {
             av_log(avctx, AV_LOG_ERROR, "can't open encoder\n");
             return -1;
@@ -70,10 +72,12 @@ static av_cold int aacPlus_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    avctx->frame_size = samples_input / avctx->channels;
+    avctx->frame_size = s->samples_input / avctx->channels;
 
+#if FF_API_OLD_ENCODE_AUDIO
     avctx->coded_frame= avcodec_alloc_frame();
     avctx->coded_frame->key_frame= 1;
+#endif
 
     /* Set decoder specific info */
     avctx->extradata_size = 0;
@@ -95,26 +99,30 @@ static av_cold int aacPlus_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int aacPlus_encode_frame(AVCodecContext *avctx,
-                             unsigned char *frame, int buf_size, void *data)
+static int aacPlus_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
+                                const AVFrame *frame, int *got_packet)
 {
     aacPlusAudioContext *s = avctx->priv_data;
-    int bytes_written;
+    int32_t *input_buffer = (int32_t *)frame->data[0];
+    int ret;
 
-    bytes_written = aacplusEncEncode(s->aacplus_handle,
-                                  data,
-                                  avctx->frame_size * avctx->channels,
-                                  frame,
-                                  buf_size);
+    if ((ret = ff_alloc_packet2(avctx, pkt, s->max_output_bytes)))
+        return ret;
 
-    return bytes_written;
+    pkt->size = aacplusEncEncode(s->aacplus_handle, input_buffer,
+                                 s->samples_input, pkt->data, pkt->size);
+    *got_packet   = 1;
+    pkt->pts      = frame->pts;
+    return 0;
 }
 
 static av_cold int aacPlus_encode_close(AVCodecContext *avctx)
 {
     aacPlusAudioContext *s = avctx->priv_data;
 
+#if FF_API_OLD_ENCODE_AUDIO
     av_freep(&avctx->coded_frame);
+#endif
     av_freep(&avctx->extradata);
 
     aacplusEncClose(s->aacplus_handle);
@@ -127,7 +135,7 @@ AVCodec ff_libaacplus_encoder = {
     .id             = CODEC_ID_AAC,
     .priv_data_size = sizeof(aacPlusAudioContext),
     .init           = aacPlus_encode_init,
-    .encode         = aacPlus_encode_frame,
+    .encode2        = aacPlus_encode_frame,
     .close          = aacPlus_encode_close,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("libaacplus AAC+ (Advanced Audio Codec with SBR+PS)"),
