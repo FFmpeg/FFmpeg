@@ -364,7 +364,7 @@ static int png_decode_idat(PNGDecContext *s, int length)
 {
     int ret;
     s->zstream.avail_in = FFMIN(length, bytestream2_get_bytes_left(&s->gb));
-    s->zstream.next_in = s->gb.buffer;
+    s->zstream.next_in = (unsigned char *)s->gb.buffer;
     bytestream2_skip(&s->gb, length);
 
     /* decode one line if possible */
