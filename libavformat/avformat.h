@@ -558,7 +558,12 @@ typedef struct AVIndexEntry {
  */
 typedef struct AVStream {
     int index;    /**< stream index in AVFormatContext */
-    int id;       /**< format-specific stream ID */
+    /**
+     * Format-specific stream ID.
+     * decoding: set by libavformat
+     * encoding: set by the user
+     */
+    int id;
     AVCodecContext *codec; /**< codec context */
     /**
      * Real base framerate of the stream.

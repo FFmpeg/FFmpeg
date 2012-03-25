@@ -490,6 +490,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         break;
     }
 
+    c->pic.key_frame = 1;
+    c->pic.pict_type = AV_PICTURE_TYPE_I;
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = c->pic;
 
