@@ -160,6 +160,8 @@ int swr_init(struct SwrContext *s){
     swri_audio_convert_free(&s->out_convert);
     swri_audio_convert_free(&s->full_convert);
 
+    s->flushed = 0;
+
     s-> in.planar= av_sample_fmt_is_planar(s-> in_sample_fmt);
     s->out.planar= av_sample_fmt_is_planar(s->out_sample_fmt);
     s-> in_sample_fmt= av_get_alt_sample_fmt(s-> in_sample_fmt, 0);
@@ -529,8 +531,6 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
 //FIXME packed doesnt need more than 1 chan here!
         swri_audio_convert(s->out_convert, out, preout, out_count);
     }
-    if(!in_arg)
-        s->in_buffer_count = 0;
     return out_count;
 }
 
