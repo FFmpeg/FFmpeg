@@ -54,7 +54,6 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
     opj_image_cmptparm_t *cmptparm;
     opj_image_t *img;
     int i;
-    int bpp = 8;
     int sub_dx[4];
     int sub_dy[4];
     int numcomps;
@@ -76,7 +75,6 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
         break;
     case PIX_FMT_GRAY16:
         color_space = CLRSPC_GRAY;
-        bpp = 16;
         break;
     case PIX_FMT_RGB24:
         color_space = CLRSPC_SRGB;
@@ -86,11 +84,9 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
         break;
     case PIX_FMT_RGB48:
         color_space = CLRSPC_SRGB;
-        bpp = 16;
         break;
     case PIX_FMT_RGBA64:
         color_space = CLRSPC_SRGB;
-        bpp = 16;
         break;
     case PIX_FMT_YUV420P:
         color_space = CLRSPC_SYCC;
@@ -111,19 +107,16 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
     case PIX_FMT_YUV422P9:
     case PIX_FMT_YUV444P9:
         color_space = CLRSPC_SYCC;
-        bpp = 9;
         break;
     case PIX_FMT_YUV420P10:
     case PIX_FMT_YUV422P10:
     case PIX_FMT_YUV444P10:
         color_space = CLRSPC_SYCC;
-        bpp = 10;
         break;
     case PIX_FMT_YUV420P16:
     case PIX_FMT_YUV422P16:
     case PIX_FMT_YUV444P16:
         color_space = CLRSPC_SYCC;
-        bpp = 16;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "The requested pixel format '%s' is not supported\n", av_get_pix_fmt_name(avctx->pix_fmt));
@@ -136,8 +129,8 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
         return NULL;
     }
     for (i = 0; i < numcomps; i++) {
-        cmptparm[i].prec = bpp;
-        cmptparm[i].bpp = bpp;
+        cmptparm[i].prec = av_pix_fmt_descriptors[avctx->pix_fmt].comp[i].depth_minus1 + 1;
+        cmptparm[i].bpp = av_pix_fmt_descriptors[avctx->pix_fmt].comp[i].depth_minus1 + 1;
         cmptparm[i].sgnd = 0;
         cmptparm[i].dx = sub_dx[i];
         cmptparm[i].dy = sub_dy[i];
