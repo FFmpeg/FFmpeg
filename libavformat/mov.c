@@ -319,6 +319,16 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         if (atom.size >= 8) {
             a.size = avio_rb32(pb);
             a.type = avio_rl32(pb);
+            if (atom.type != MKTAG('r','o','o','t') &&
+                atom.type != MKTAG('m','o','o','v'))
+            {
+                if (a.type == MKTAG('t','r','a','k') || a.type == MKTAG('m','d','a','t'))
+                {
+                    av_log(c->fc, AV_LOG_ERROR, "Broken file, trak/mdat not at top-level\n");
+                    avio_skip(pb, -8);
+                    return 0;
+                }
+            }
             total_size += 8;
             if (a.size == 1) { /* 64 bit extended size */
                 a.size = avio_rb64(pb) - 8;
