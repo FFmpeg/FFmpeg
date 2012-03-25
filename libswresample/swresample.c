@@ -527,7 +527,7 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
             out_count= resample(s, preout, out_count, midbuf, in_count);
     }
 
-    if(preout != out){
+    if(preout != out && out_count){
 //FIXME packed doesnt need more than 1 chan here!
         swri_audio_convert(s->out_convert, out, preout, out_count);
     }
