@@ -102,6 +102,10 @@ void swr_free(struct SwrContext **s);
  * in and in_count can be set to 0 to flush the last few samples out at the
  * end.
  *
+ * If more input is provided than output space then the input will be buffered.
+ * You can avoid this buffering by providing more output space than input.
+ * Convertion will run directly without copying whenever possible.
+ *
  * @param s         allocated Swr context, with parameters set
  * @param out       output buffers, only the first one need be set in case of packed audio
  * @param out_count amount of space available for output in samples per channel
