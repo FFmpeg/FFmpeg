@@ -296,7 +296,6 @@ static int realloc_audio(AudioData *a, int count){
     countb= FFALIGN(count*a->bps, 32);
     old= *a;
 
-    av_assert0(a->planar);
     av_assert0(a->bps);
     av_assert0(a->ch_count);
 
@@ -307,6 +306,7 @@ static int realloc_audio(AudioData *a, int count){
         a->ch[i]= a->data + i*(a->planar ? countb : a->bps);
         if(a->planar) memcpy(a->ch[i], old.ch[i], a->count*a->bps);
     }
+    if(!a->planar) memcpy(a->ch[0], old.ch[0], a->count*a->ch_count*a->bps);
     av_free(old.data);
     a->count= count;
 
