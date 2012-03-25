@@ -50,6 +50,7 @@ static int read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
 
+    st->need_parsing = AVSTREAM_PARSE_HEADERS;
     st->start_time = 0;
     st->nb_frames  =
     st->duration   = avio_rb32(pb);
@@ -88,6 +89,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     if (ret < 0)
         return ret;
 
+    pkt->pos -= 16;
     pkt->duration = 1;
     avio_skip(pb, chunk_size - (ret + 16));
 
@@ -100,4 +102,5 @@ AVInputFormat ff_mgsts_demuxer = {
     .read_probe  = read_probe,
     .read_header = read_header,
     .read_packet = read_packet,
+    .flags       = AVFMT_GENERIC_INDEX,
 };
