@@ -357,17 +357,17 @@ static av_always_inline int smk_get_code(GetBitContext *gb, int *recode, int *la
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPacket *avpkt)
 {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
     SmackVContext * const smk = avctx->priv_data;
     uint8_t *out;
     uint32_t *pal;
+    GetByteContext gb2;
     GetBitContext gb;
     int blocks, blk, bw, bh;
     int i;
     int stride;
+    int flags;
 
-    if(buf_size <= 769)
+    if (avpkt->size <= 769)
         return 0;
 
     smk->pic.reference = 1;
@@ -379,23 +379,23 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
 
     /* make the palette available on the way out */
     pal = (uint32_t*)smk->pic.data[1];
-    smk->pic.palette_has_changed = buf[0] & 1;
-    smk->pic.key_frame = !!(buf[0] & 2);
+    bytestream2_init(&gb2, avpkt->data, avpkt->size);
+    flags = bytestream2_get_byteu(&gb2);
+    smk->pic.palette_has_changed = flags & 1;
+    smk->pic.key_frame = !!(flags & 2);
     if(smk->pic.key_frame)
         smk->pic.pict_type = AV_PICTURE_TYPE_I;
     else
         smk->pic.pict_type = AV_PICTURE_TYPE_P;
 
-    buf++;
     for(i = 0; i < 256; i++)
-        *pal++ = bytestream_get_be24(&buf);
-    buf_size -= 769;
+        *pal++ = bytestream2_get_be24u(&gb2);
 
     last_reset(smk->mmap_tbl, smk->mmap_last);
     last_reset(smk->mclr_tbl, smk->mclr_last);
     last_reset(smk->full_tbl, smk->full_last);
     last_reset(smk->type_tbl, smk->type_last);
-    init_get_bits(&gb, buf, buf_size * 8);
+    init_get_bits(&gb, avpkt->data + 769, (avpkt->size - 769) * 8);
 
     blk = 0;
     bw = avctx->width >> 2;
@@ -506,7 +506,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     *(AVFrame*)data = smk->pic;
 
     /* always report that the buffer was completely consumed */
-    return buf_size;
+    return avpkt->size;
 }
 
 
