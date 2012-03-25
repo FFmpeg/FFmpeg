@@ -281,7 +281,7 @@ typedef struct OutputStream {
     AVFifoBuffer *fifo;     /* for compression: one audio fifo per codec */
     FILE *logfile;
 
-    struct SwrContext *swr;
+    SwrContext *swr;
 
 #if CONFIG_AVFILTER
     AVFilterContext *output_video_filter;
