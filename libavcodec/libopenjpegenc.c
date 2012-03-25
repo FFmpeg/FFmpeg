@@ -57,7 +57,7 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
     int bpp = 8;
     int sub_dx[4];
     int sub_dy[4];
-    int numcomps = 0;
+    int numcomps;
     OPJ_COLOR_SPACE color_space = CLRSPC_UNKNOWN;
 
     sub_dx[0] = sub_dx[3] = 1;
@@ -65,77 +65,64 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
     sub_dx[1] = sub_dx[2] = 1<<av_pix_fmt_descriptors[avctx->pix_fmt].log2_chroma_w;
     sub_dy[1] = sub_dy[2] = 1<<av_pix_fmt_descriptors[avctx->pix_fmt].log2_chroma_h;
 
+    numcomps = av_pix_fmt_descriptors[avctx->pix_fmt].nb_components;
+
     switch (avctx->pix_fmt) {
     case PIX_FMT_GRAY8:
         color_space = CLRSPC_GRAY;
-        numcomps = 1;
         break;
     case PIX_FMT_GRAY8A:
         color_space = CLRSPC_GRAY;
-        numcomps = 2;
         break;
     case PIX_FMT_GRAY16:
         color_space = CLRSPC_GRAY;
-        numcomps = 1;
         bpp = 16;
         break;
     case PIX_FMT_RGB24:
         color_space = CLRSPC_SRGB;
-        numcomps = 3;
         break;
     case PIX_FMT_RGBA:
         color_space = CLRSPC_SRGB;
-        numcomps = 4;
         break;
     case PIX_FMT_RGB48:
         color_space = CLRSPC_SRGB;
-        numcomps = 3;
         bpp = 16;
         break;
     case PIX_FMT_RGBA64:
         color_space = CLRSPC_SRGB;
-        numcomps = 4;
         bpp = 16;
         break;
     case PIX_FMT_YUV420P:
         color_space = CLRSPC_SYCC;
-        numcomps = 3;
         break;
     case PIX_FMT_YUV422P:
         color_space = CLRSPC_SYCC;
-        numcomps = 3;
         break;
     case PIX_FMT_YUV440P:
         color_space = CLRSPC_SYCC;
-        numcomps = 3;
         break;
     case PIX_FMT_YUV444P:
         color_space = CLRSPC_SYCC;
-        numcomps = 3;
         break;
     case PIX_FMT_YUVA420P:
         color_space = CLRSPC_SYCC;
-        numcomps = 4;
         break;
     case PIX_FMT_YUV420P9:
     case PIX_FMT_YUV422P9:
     case PIX_FMT_YUV444P9:
         color_space = CLRSPC_SYCC;
-        numcomps = 3;
         bpp = 9;
         break;
     case PIX_FMT_YUV420P10:
     case PIX_FMT_YUV422P10:
     case PIX_FMT_YUV444P10:
         color_space = CLRSPC_SYCC;
-        numcomps = 3;
         bpp = 10;
         break;
     case PIX_FMT_YUV420P16:
     case PIX_FMT_YUV422P16:
     case PIX_FMT_YUV444P16:
         color_space = CLRSPC_SYCC;
-        numcomps = 3;
         bpp = 16;
         break;
     default:
