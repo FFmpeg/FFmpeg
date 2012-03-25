@@ -352,9 +352,9 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
         if (sps->chroma_format_idc > 3U) {
             av_log(h->s.avctx, AV_LOG_ERROR, "chroma_format_idc %d is illegal\n", sps->chroma_format_idc);
             goto fail;
-        }
-        if(sps->chroma_format_idc == 3)
+        } else if(sps->chroma_format_idc == 3) {
             sps->residual_color_transform_flag = get_bits1(&s->gb);
+        }
         sps->bit_depth_luma   = get_ue_golomb(&s->gb) + 8;
         sps->bit_depth_chroma = get_ue_golomb(&s->gb) + 8;
         if (sps->bit_depth_luma > 12U || sps->bit_depth_chroma > 12U) {

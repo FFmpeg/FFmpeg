@@ -2209,14 +2209,11 @@ static int mov_write_isml_manifest(AVIOContext *pb, MOVMuxContext *mov)
                                     size);
                     av_free(ptr);
                 }
-            } else {
-                param_write_hex(pb, "CodecPrivateData", track->enc->extradata,
-                                track->enc->extradata_size);
-            }
-            if (track->enc->codec_id == CODEC_ID_H264) {
                 param_write_string(pb, "FourCC", "H264");
             } else if (track->enc->codec_id == CODEC_ID_VC1) {
                 param_write_string(pb, "FourCC", "WVC1");
+                param_write_hex(pb, "CodecPrivateData", track->enc->extradata,
+                                track->enc->extradata_size);
             }
             param_write_int(pb, "MaxWidth", track->enc->width);
             param_write_int(pb, "MaxHeight", track->enc->height);
