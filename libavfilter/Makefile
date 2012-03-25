@@ -155,7 +155,6 @@ OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_qp.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_rectangle.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_rotate.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_sab.o
-OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_screenshot.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_smartblur.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_softpulldown.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_softskip.o

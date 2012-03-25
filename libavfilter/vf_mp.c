@@ -169,7 +169,6 @@ extern const vf_info_t vf_info_rectangle;
 extern const vf_info_t vf_info_rotate;
 extern const vf_info_t vf_info_sab;
 extern const vf_info_t vf_info_scale;
-extern const vf_info_t vf_info_screenshot;
 extern const vf_info_t vf_info_smartblur;
 extern const vf_info_t vf_info_softpulldown;
 extern const vf_info_t vf_info_softskip;
@@ -226,7 +225,6 @@ static const vf_info_t* const filters[]={
     &vf_info_rectangle,
     &vf_info_rotate,
     &vf_info_sab,
-    &vf_info_screenshot,
     &vf_info_smartblur,
     &vf_info_softpulldown,
     &vf_info_softskip,
