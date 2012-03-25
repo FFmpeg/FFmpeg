@@ -294,11 +294,11 @@ int swri_resample(ResampleContext *c, int16_t *dst, const int16_t *src, int *con
             int sample_index= index >> c->phase_shift;
             FELEM2 val=0;
 
-            if(sample_index < 0){
-                for(i=0; i<c->filter_length; i++)
-                    val += src[FFABS(sample_index + i) % src_size] * filter[i];
-            }else if(sample_index + c->filter_length > src_size){
+            if(sample_index + c->filter_length > src_size || -sample_index >= src_size){
                 break;
+            }else if(sample_index < 0){
+                for(i=0; i<c->filter_length; i++)
+                    val += src[FFABS(sample_index + i)] * filter[i];
             }else if(c->linear){
                 FELEM2 v2=0;
                 for(i=0; i<c->filter_length; i++){
