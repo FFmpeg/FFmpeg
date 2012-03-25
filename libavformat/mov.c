@@ -1830,7 +1830,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
 
         current_dts -= sc->dts_shift;
 
-        if (!sc->sample_count)
+        if (!sc->sample_count || st->nb_index_entries)
             return;
         if (sc->sample_count >= UINT_MAX / sizeof(*st->index_entries))
             return;
