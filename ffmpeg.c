@@ -4822,7 +4822,7 @@ static int opt_target(OptionsContext *o, const char *opt, const char *arg)
         opt_default("maxrate", "2516000");
         opt_default("minrate", "0"); // 1145000;
         opt_default("bufsize", "1835008"); // 224*1024*8;
-        opt_default("flags", "+scan_offset");
+        opt_default("scan_offset", "1");
 
 
         opt_default("b:a", "224000");
