@@ -68,51 +68,27 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
 
     switch (avctx->pix_fmt) {
     case PIX_FMT_GRAY8:
-        color_space = CLRSPC_GRAY;
-        break;
     case PIX_FMT_GRAY8A:
-        color_space = CLRSPC_GRAY;
-        break;
     case PIX_FMT_GRAY16:
         color_space = CLRSPC_GRAY;
         break;
     case PIX_FMT_RGB24:
-        color_space = CLRSPC_SRGB;
-        break;
     case PIX_FMT_RGBA:
-        color_space = CLRSPC_SRGB;
-        break;
     case PIX_FMT_RGB48:
-        color_space = CLRSPC_SRGB;
-        break;
     case PIX_FMT_RGBA64:
         color_space = CLRSPC_SRGB;
         break;
     case PIX_FMT_YUV420P:
-        color_space = CLRSPC_SYCC;
-        break;
     case PIX_FMT_YUV422P:
-        color_space = CLRSPC_SYCC;
-        break;
     case PIX_FMT_YUV440P:
-        color_space = CLRSPC_SYCC;
-        break;
     case PIX_FMT_YUV444P:
-        color_space = CLRSPC_SYCC;
-        break;
     case PIX_FMT_YUVA420P:
-        color_space = CLRSPC_SYCC;
-        break;
     case PIX_FMT_YUV420P9:
     case PIX_FMT_YUV422P9:
     case PIX_FMT_YUV444P9:
-        color_space = CLRSPC_SYCC;
-        break;
     case PIX_FMT_YUV420P10:
     case PIX_FMT_YUV422P10:
     case PIX_FMT_YUV444P10:
-        color_space = CLRSPC_SYCC;
-        break;
     case PIX_FMT_YUV420P16:
     case PIX_FMT_YUV422P16:
     case PIX_FMT_YUV444P16:
