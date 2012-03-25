@@ -121,6 +121,13 @@ typedef struct {
      * This field is internal to libavformat and access from outside is not allowed.
      */
      int64_t maxsize;
+
+     /**
+      * avio_read and avio_write should if possible be satisfied directly
+      * instead of going through a buffer, and avio_seek will always
+      * call the underlying seek function directly.
+      */
+     int direct;
 } AVIOContext;
 
 /* unbuffered I/O */
@@ -318,6 +325,14 @@ int avio_get_str16be(AVIOContext *pb, int maxlen, char *buf, int buflen);
  * silently ignored.
  */
 #define AVIO_FLAG_NONBLOCK 8
+
+/**
+ * Use direct mode.
+ * avio_read and avio_write should if possible be satisfied directly
+ * instead of going through a buffer, and avio_seek will always
+ * call the underlying seek function directly.
+ */
+#define AVIO_FLAG_DIRECT 0x8000
 
 /**
  * Create and initialize a AVIOContext for accessing the

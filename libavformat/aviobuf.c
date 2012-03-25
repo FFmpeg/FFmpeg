@@ -80,6 +80,7 @@ int ffio_init_context(AVIOContext *s,
     s->buffer_size = buffer_size;
     s->buf_ptr = buffer;
     s->opaque = opaque;
+    s->direct = 0;
     url_resetbuf(s, write_flag ? AVIO_FLAG_WRITE : AVIO_FLAG_READ);
     s->write_packet = write_packet;
     s->read_packet = read_packet;
@@ -117,20 +118,25 @@ AVIOContext *avio_alloc_context(
     return s;
 }
 
+static void writeout(AVIOContext *s, const uint8_t *data, int len)
+{
+    if (s->write_packet && !s->error){
+        int ret= s->write_packet(s->opaque, data, len);
+        if(ret < 0){
+            s->error = ret;
+        }
+    }
+    s->pos += len;
+}
+
 static void flush_buffer(AVIOContext *s)
 {
     if (s->buf_ptr > s->buffer) {
-        if (s->write_packet && !s->error){
-            int ret= s->write_packet(s->opaque, s->buffer, s->buf_ptr - s->buffer);
-            if(ret < 0){
-                s->error = ret;
-            }
-        }
+        writeout(s, s->buffer, s->buf_ptr - s->buffer);
         if(s->update_checksum){
             s->checksum= s->update_checksum(s->checksum, s->checksum_ptr, s->buf_ptr - s->checksum_ptr);
             s->checksum_ptr= s->buffer;
         }
-        s->pos += s->buf_ptr - s->buffer;
     }
     s->buf_ptr = s->buffer;
 }
@@ -158,6 +164,11 @@ void ffio_fill(AVIOContext *s, int b, int count)
 
 void avio_write(AVIOContext *s, const unsigned char *buf, int size)
 {
+    if (s->direct && !s->update_checksum) {
+        avio_flush(s);
+        writeout(s, buf, size);
+        return;
+    }
     while (size > 0) {
         int len = FFMIN(s->buf_end - s->buf_ptr, size);
         memcpy(s->buf_ptr, buf, len);
@@ -199,13 +210,14 @@ int64_t avio_seek(AVIOContext *s, int64_t offset, int whence)
         offset += offset1;
     }
     offset1 = offset - pos;
-    if (!s->must_flush &&
+    if (!s->must_flush && (!s->direct || !s->seek) &&
         offset1 >= 0 && offset1 <= (s->buf_end - s->buffer)) {
         /* can do the seek inside the buffer */
         s->buf_ptr = s->buffer + offset1;
     } else if ((!s->seekable ||
                offset1 <= s->buf_end + SHORT_SEEK_THRESHOLD - s->buffer) &&
                !s->write_flag && offset1 >= 0 &&
+               (!s->direct || !s->seek) &&
               (whence != SEEK_END || force)) {
         while(s->pos < offset && !s->eof_reached)
             fill_buffer(s);
@@ -458,7 +470,7 @@ int avio_read(AVIOContext *s, unsigned char *buf, int size)
         if (len > size)
             len = size;
         if (len == 0) {
-            if(size > s->buffer_size && !s->update_checksum){
+            if((s->direct || size > s->buffer_size) && !s->update_checksum){
                 if(s->read_packet)
                     len = s->read_packet(s->opaque, buf, size);
                 if (len <= 0) {
@@ -670,6 +682,7 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
         av_free(buffer);
         return AVERROR(ENOMEM);
     }
+    (*s)->direct = h->flags & AVIO_FLAG_DIRECT;
     (*s)->seekable = h->is_streamed ? 0 : AVIO_SEEKABLE_NORMAL;
     (*s)->max_packet_size = max_packet_size;
     if(h->prot) {
