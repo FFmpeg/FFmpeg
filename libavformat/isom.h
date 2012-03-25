@@ -103,7 +103,8 @@ typedef struct MOVStreamContext {
     unsigned *stps_data;  ///< partial sync sample for mpeg-2 open gop
     int ctts_index;
     int ctts_sample;
-    unsigned int sample_size;
+    unsigned int sample_size; ///< may contain value calculated from stsd or value from stsz atom
+    unsigned int alt_sample_size; ///< always contains sample size from stsz atom
     unsigned int sample_count;
     int *sample_sizes;
     unsigned int keyframe_count;
