@@ -1133,6 +1133,9 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
         av_init_packet(&flush_pkt);
         pkt = &flush_pkt;
         got_output = 1;
+    } else if (!size && st->parser->flags & PARSER_FLAG_COMPLETE_FRAMES) {
+        // preserve 0-size sync packets
+        compute_pkt_fields(s, st, st->parser, pkt);
     }
 
     while (size > 0 || (pkt == &flush_pkt && got_output)) {
