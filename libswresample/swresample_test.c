@@ -67,6 +67,18 @@ static void  set(uint8_t *a[], int ch, int index, int ch_count, enum AVSampleFor
     }
 }
 
+static void shift(uint8_t *a[], int index, int ch_count, enum AVSampleFormat f){
+    int i, ch;
+
+    if(av_sample_fmt_is_planar(f)){
+        f= av_get_alt_sample_fmt(f, 0);
+        for(ch= 0; ch<ch_count; ch++)
+            a[ch] += index*av_get_bytes_per_sample(f);
+    }else{
+        a[0] += index*ch_count*av_get_bytes_per_sample(f);
+    }
+}
+
 uint64_t layouts[]={
 AV_CH_LAYOUT_MONO                    ,
 AV_CH_LAYOUT_STEREO                  ,
@@ -109,9 +121,15 @@ int main(int argc, char **argv){
     uint8_t *ain[SWR_CH_MAX];
     uint8_t *aout[SWR_CH_MAX];
     uint8_t *amid[SWR_CH_MAX];
+    int flush_i=0;
 
     struct SwrContext * forw_ctx= NULL;
     struct SwrContext *backw_ctx= NULL;
+
+    in_sample_rate=16000;
+    for(osr=0; osr<5; osr++){
+        out_sample_rate= sample_rates[osr];
+    }
 
     in_sample_rate=16000;
     for(osr=0; osr<5; osr++){
@@ -178,7 +196,12 @@ int main(int argc, char **argv){
                             fprintf(stderr, "[%f %f %f] len:%5d\n", sqrt(sse/out_count), x, maxdiff, out_count);
                         }
 
-                        flush_count=swr_convert(backw_ctx,aout, SAMPLES, 0, 0);
+                        flush_i++;
+                        flush_i%=21;
+                        flush_count = swr_convert(backw_ctx,aout, flush_i, 0, 0);
+                        shift(aout,  flush_i, in_ch_count, in_sample_fmt);
+                        flush_count+= swr_convert(backw_ctx,aout, SAMPLES-flush_i, 0, 0);
+                        shift(aout, -flush_i, in_ch_count, in_sample_fmt);
                         if(flush_count){
                             for(ch=0; ch<in_ch_count; ch++){
                                 double sse, x, maxdiff=0;
@@ -200,7 +223,7 @@ int main(int argc, char **argv){
                                 x = sum_ab/sum_bb;
                                 sse= sum_aa + sum_bb*x*x - 2*x*sum_ab;
 
-                                fprintf(stderr, "[%f %f %f] len:%5d\n", sqrt(sse/flush_count), x, maxdiff, flush_count);
+                                fprintf(stderr, "[%f %f %f] len:%5d F:%3d\n", sqrt(sse/flush_count), x, maxdiff, flush_count, flush_i);
                             }
                         }
 
