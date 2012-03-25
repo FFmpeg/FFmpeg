@@ -122,6 +122,7 @@ int main(int argc, char **argv){
     uint8_t *aout[SWR_CH_MAX];
     uint8_t *amid[SWR_CH_MAX];
     int flush_i=0;
+    int mode = 0;
 
     struct SwrContext * forw_ctx= NULL;
     struct SwrContext *backw_ctx= NULL;
@@ -165,7 +166,29 @@ int main(int argc, char **argv){
                             for(i=0; i<SAMPLES; i++)
                                 set(ain, ch, i, in_ch_count, av_get_alt_sample_fmt(in_sample_fmt, 1), sin(i*i*3/SAMPLES));
                         }
-                        mid_count= swr_convert(forw_ctx, amid, 3*SAMPLES, ain, SAMPLES);
+                        mode++;
+                        mode%=3;
+                        if(mode==0 /*|| out_sample_rate == in_sample_rate*/) {
+                            mid_count= swr_convert(forw_ctx, amid, 3*SAMPLES, ain, SAMPLES);
+                        } else if(mode==1){
+                            mid_count= swr_convert(forw_ctx, amid,         0, ain, SAMPLES);
+                            mid_count+=swr_convert(forw_ctx, amid, 3*SAMPLES, ain,       0);
+                        } else {
+                            int tmp_count;
+                            mid_count= swr_convert(forw_ctx, amid,         0, ain,       1);
+                            av_assert0(mid_count==0);
+                            shift(ain,  1, in_ch_count, av_get_alt_sample_fmt(in_sample_fmt, 1));
+                            mid_count+=swr_convert(forw_ctx, amid, 3*SAMPLES, ain,       0);
+                            shift(amid,  mid_count, out_ch_count, av_get_alt_sample_fmt(out_sample_fmt, 1)); tmp_count = mid_count;
+                            mid_count+=swr_convert(forw_ctx, amid,         2, ain,       2);
+                            shift(amid,  mid_count-tmp_count, out_ch_count, av_get_alt_sample_fmt(out_sample_fmt, 1)); tmp_count = mid_count;
+                            shift(ain,  2, in_ch_count, av_get_alt_sample_fmt(in_sample_fmt, 1));
+                            mid_count+=swr_convert(forw_ctx, amid,         1, ain, SAMPLES-3);
+                            shift(amid,  mid_count-tmp_count, out_ch_count, av_get_alt_sample_fmt(out_sample_fmt, 1)); tmp_count = mid_count;
+                            shift(ain, -3, in_ch_count, av_get_alt_sample_fmt(in_sample_fmt, 1));
+                            mid_count+=swr_convert(forw_ctx, amid, 3*SAMPLES, ain,       0);
+                            shift(amid,  -tmp_count, out_ch_count, av_get_alt_sample_fmt(out_sample_fmt, 1));
+                        }
                         out_count= swr_convert(backw_ctx,aout, SAMPLES, amid, mid_count);
 
                         for(ch=0; ch<in_ch_count; ch++){
