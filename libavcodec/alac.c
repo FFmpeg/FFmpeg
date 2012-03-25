@@ -571,29 +571,30 @@ buf_alloc_fail:
 
 static int alac_set_info(ALACContext *alac)
 {
-    const unsigned char *ptr = alac->avctx->extradata;
+    GetByteContext gb;
 
-    ptr += 4; /* size */
-    ptr += 4; /* alac */
-    ptr += 4; /* version */
+    bytestream2_init(&gb, alac->avctx->extradata,
+                     alac->avctx->extradata_size);
 
-    if(AV_RB32(ptr) >= UINT_MAX/4){
-        av_log(alac->avctx, AV_LOG_ERROR, "setinfo_max_samples_per_frame too large\n");
-        return -1;
-    }
+    bytestream2_skipu(&gb, 12); // size:4, alac:4, version:4
 
     /* buffer size / 2 ? */
-    alac->setinfo_max_samples_per_frame = bytestream_get_be32(&ptr);
-    ptr++;                          /* compatible version */
-    alac->setinfo_sample_size           = *ptr++;
-    alac->setinfo_rice_historymult      = *ptr++;
-    alac->setinfo_rice_initialhistory   = *ptr++;
-    alac->setinfo_rice_kmodifier        = *ptr++;
-    alac->numchannels                   = *ptr++;
-    bytestream_get_be16(&ptr);      /* maxRun */
-    bytestream_get_be32(&ptr);      /* max coded frame size */
-    bytestream_get_be32(&ptr);      /* average bitrate */
-    bytestream_get_be32(&ptr);      /* samplerate */
+    alac->setinfo_max_samples_per_frame = bytestream2_get_be32u(&gb);
+    if (alac->setinfo_max_samples_per_frame >= UINT_MAX/4){
+        av_log(alac->avctx, AV_LOG_ERROR,
+               "setinfo_max_samples_per_frame too large\n");
+        return AVERROR_INVALIDDATA;
+    }
+    bytestream2_skipu(&gb, 1);  // compatible version
+    alac->setinfo_sample_size           = bytestream2_get_byteu(&gb);
+    alac->setinfo_rice_historymult      = bytestream2_get_byteu(&gb);
+    alac->setinfo_rice_initialhistory   = bytestream2_get_byteu(&gb);
+    alac->setinfo_rice_kmodifier        = bytestream2_get_byteu(&gb);
+    alac->numchannels                   = bytestream2_get_byteu(&gb);
+    bytestream2_get_be16u(&gb); // maxRun
+    bytestream2_get_be32u(&gb); // max coded frame size
+    bytestream2_get_be32u(&gb); // average bitrate
+    bytestream2_get_be32u(&gb); // samplerate
 
     return 0;
 }
