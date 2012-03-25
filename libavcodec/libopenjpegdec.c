@@ -106,6 +106,10 @@ libopenjpeg_rgb:
 
 static inline int libopenjpeg_ispacked(enum PixelFormat pix_fmt) {
     int i, component_plane;
+
+    if (pix_fmt == PIX_FMT_GRAY16)
+        return 0;
+
     component_plane = av_pix_fmt_descriptors[pix_fmt].comp[0].plane;
     for(i = 1; i < av_pix_fmt_descriptors[pix_fmt].nb_components; i++) {
         if (component_plane != av_pix_fmt_descriptors[pix_fmt].comp[i].plane)
