@@ -129,11 +129,6 @@ int main(int argc, char **argv){
     in_sample_rate=16000;
     for(osr=0; osr<5; osr++){
         out_sample_rate= sample_rates[osr];
-    }
-
-    in_sample_rate=16000;
-    for(osr=0; osr<5; osr++){
-        out_sample_rate= sample_rates[osr];
         for(in_sample_fmt= AV_SAMPLE_FMT_U8; in_sample_fmt<=AV_SAMPLE_FMT_DBL; in_sample_fmt++){
             for(out_sample_fmt= AV_SAMPLE_FMT_U8; out_sample_fmt<=AV_SAMPLE_FMT_DBL; out_sample_fmt++){
                 for(in_ch_layout_index=0; layouts[in_ch_layout_index]; in_ch_layout_index++){
