@@ -13,32 +13,32 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
-2012-03-26 - xxxxxxx - lavfi 2.66.100
+2012-03-26 - a67d9cf - lavfi 2.66.100
   Add avfilter_fill_frame_from_{audio_,}buffer_ref() functions.
 
-2012-03-21 - xxxxxxx - lavu 51.43.100
+2012-03-21 - b75c67d - lavu 51.43.100
   Add bprint.h for bprint API.
 
-2012-02-21 - xxxxxxx - lavc 54.4.100
+2012-02-21 - 9cbf17e - lavc 54.4.100
   Add av_get_pcm_codec() function.
 
-2012-02-16 - xxxxxxx - libswr 0.7.100
+2012-02-16 - 560b224 - libswr 0.7.100
   Add swr_set_matrix() function.
 
-2012-02-09 - xxxxxxx - lavu 51.39.100
+2012-02-09 - c28e7af - lavu 51.39.100
   Add a new installed header libavutil/timestamp.h with timestamp
   utilities.
 
-2012-02-06 - xxxxxxx - lavu 51.38.100
+2012-02-06 - 70ffda3 - lavu 51.38.100
   Add av_parse_ratio() function to parseutils.h.
 
-2012-02-06 - xxxxxxx - lavu 51.38.100
+2012-02-06 - 70ffda3 - lavu 51.38.100
   Add AV_LOG_MAX_OFFSET macro to log.h.
 
-2012-02-02 - xxxxxxx - lavu 51.37.100
+2012-02-02 - 0eaa123 - lavu 51.37.100
   Add public timecode helpers.
 
-2012-01-24 - xxxxxxx - lavfi 2.60.100
+2012-01-24 - 0c3577b - lavfi 2.60.100
   Add avfilter_graph_dump.
 
 2012-03-05 - lavc 54.8.0
@@ -109,13 +109,13 @@ API changes, most recent first:
 2011-12-08 - a502939 - lavfi 2.52.0
   Add av_buffersink_poll_frame() to buffersink.h.
 
-2011-12-08 - xxxxxxx - lavu 51.31.0
+2011-12-08 - 26c6fec - lavu 51.31.0
   Add av_log_format_line.
 
-2011-12-03 - xxxxxxx - lavu 51.30.0
+2011-12-03 - 976b095 - lavu 51.30.0
   Add AVERROR_BUG.
 
-2011-xx-xx - xxxxxxx - lavu 51.28.1
+2011-11-24 - 573ffbb - lavu 51.28.1
   Add av_get_alt_sample_fmt() to samplefmt.h.
 
 2011-11-03 - 96949da - lavu 51.23.0
