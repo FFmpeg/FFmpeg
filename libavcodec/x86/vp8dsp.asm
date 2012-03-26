@@ -144,6 +144,8 @@ filter_h6_shuf1: db 0, 5, 1, 6, 2, 7, 3, 8, 4, 9, 5, 10, 6, 11,  7, 12
 filter_h6_shuf2: db 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6,  7, 7,  8,  8,  9
 filter_h6_shuf3: db 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8,  9, 9, 10, 10, 11
 
+pw_256:  times 8 dw 256
+
 pw_20091: times 4 dw 20091
 pw_17734: times 4 dw 17734
 
@@ -205,8 +207,7 @@ cglobal put_vp8_epel%1_h6, 6, 6 + npicregs, 8, dst, dststride, src, srcstride, h
     pmaddubsw m2, m7
     paddsw    m0, m1
     paddsw    m0, m2
-    paddsw    m0, [pw_64]
-    psraw     m0, 7
+    pmulhrsw  m0, [pw_256]
     packuswb  m0, m0
     movh  [dstq], m0        ; store
 
@@ -219,7 +220,7 @@ cglobal put_vp8_epel%1_h6, 6, 6 + npicregs, 8, dst, dststride, src, srcstride, h
 
 cglobal put_vp8_epel%1_h4, 6, 6 + npicregs, 7, dst, dststride, src, srcstride, height, mx, picreg
     shl      mxd, 4
-    mova      m2, [pw_64]
+    mova      m2, [pw_256]
     mova      m3, [filter_h2_shuf]
     mova      m4, [filter_h4_shuf]
 %ifdef PIC
@@ -235,9 +236,8 @@ cglobal put_vp8_epel%1_h4, 6, 6 + npicregs, 7, dst, dststride, src, srcstride, h
     pshufb    m1, m4
     pmaddubsw m0, m5
     pmaddubsw m1, m6
-    paddsw    m0, m2
     paddsw    m0, m1
-    psraw     m0, 7
+    pmulhrsw  m0, m2
     packuswb  m0, m0
     movh  [dstq], m0        ; store
 
@@ -255,7 +255,7 @@ cglobal put_vp8_epel%1_v4, 7, 7, 8, dst, dststride, src, srcstride, height, picr
 %endif
     mova      m5, [fourtap_filter_hb+myq-16]
     mova      m6, [fourtap_filter_hb+myq]
-    mova      m7, [pw_64]
+    mova      m7, [pw_256]
 
     ; read 3 lines
     sub     srcq, srcstrideq
@@ -275,8 +275,7 @@ cglobal put_vp8_epel%1_v4, 7, 7, 8, dst, dststride, src, srcstride, height, picr
     pmaddubsw m2, m6
     paddsw    m4, m2
     mova      m2, m3
-    paddsw    m4, m7
-    psraw     m4, 7
+    pmulhrsw  m4, m7
     packuswb  m4, m4
     movh  [dstq], m4
 
@@ -319,9 +318,8 @@ cglobal put_vp8_epel%1_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picr
     paddsw    m6, m1
     paddsw    m6, m7
     mova      m1, m2
-    paddsw    m6, [pw_64]
     mova      m2, m3
-    psraw     m6, 7
+    pmulhrsw  m6, [pw_256]
     mova      m3, m4
     packuswb  m6, m6
     mova      m4, m5
