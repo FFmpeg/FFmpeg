@@ -801,6 +801,10 @@ static int parse_bintree(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
                 /* get motion vector index and setup the pointer to the mv set */
                 if (!ctx->need_resync)
                     ctx->next_cell_data = &ctx->gb.buffer[(get_bits_count(&ctx->gb) + 7) >> 3];
+                if (ctx->next_cell_data >= ctx->last_byte) {
+                    av_log(avctx, AV_LOG_ERROR, "motion vector out of array\n");
+                    return AVERROR_INVALIDDATA;
+                }
                 mv_idx = *(ctx->next_cell_data++);
                 if (mv_idx >= ctx->num_vectors) {
                     av_log(avctx, AV_LOG_ERROR, "motion vector index out of range\n");
