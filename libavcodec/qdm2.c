@@ -884,9 +884,12 @@ static int synthfilt_build_sb_samples (QDM2Context *q, GetBitContext *gb, int le
                         break;
 
                     case 30:
-                        if (BITS_LEFT(length,gb) >= 4)
-                            samples[0] = type30_dequant[qdm2_get_vlc(gb, &vlc_tab_type30, 0, 1)];
-                        else
+                        if (BITS_LEFT(length,gb) >= 4) {
+                            unsigned v = qdm2_get_vlc(gb, &vlc_tab_type30, 0, 1);
+                            if (v >= FF_ARRAY_ELEMS(type30_dequant))
+                                return AVERROR_INVALIDDATA;
+                            samples[0] = type30_dequant[v];
+                        } else
                             samples[0] = SB_DITHERING_NOISE(sb,q->noise_idx);
 
                         run = 1;
