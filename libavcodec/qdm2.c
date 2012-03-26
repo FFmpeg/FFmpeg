@@ -766,7 +766,7 @@ static void fill_coding_method_array (sb_int8_array tone_level_idx, sb_int8_arra
  * @param sb_min    lower subband processed (sb_min included)
  * @param sb_max    higher subband processed (sb_max excluded)
  */
-static void synthfilt_build_sb_samples (QDM2Context *q, GetBitContext *gb, int length, int sb_min, int sb_max)
+static int synthfilt_build_sb_samples (QDM2Context *q, GetBitContext *gb, int length, int sb_min, int sb_max)
 {
     int sb, j, k, n, ch, run, channels;
     int joined_stereo, zero_encoding, chs;
@@ -780,7 +780,7 @@ static void synthfilt_build_sb_samples (QDM2Context *q, GetBitContext *gb, int l
         for (sb=sb_min; sb < sb_max; sb++)
             build_sb_samples_from_noise (q, sb);
 
-        return;
+        return 0;
     }
 
     for (sb = sb_min; sb < sb_max; sb++) {
@@ -900,7 +900,10 @@ static void synthfilt_build_sb_samples (QDM2Context *q, GetBitContext *gb, int l
                                 type34_predictor = samples[0];
                                 type34_first = 0;
                             } else {
-                                samples[0] = type34_delta[qdm2_get_vlc(gb, &vlc_tab_type34, 0, 1)] / type34_div + type34_predictor;
+                                unsigned v = qdm2_get_vlc(gb, &vlc_tab_type34, 0, 1);
+                                if (v >= FF_ARRAY_ELEMS(type34_delta))
+                                    return AVERROR_INVALIDDATA;
+                                samples[0] = type34_delta[v] / type34_div + type34_predictor;
                                 type34_predictor = samples[0];
                             }
                         } else {
@@ -936,6 +939,7 @@ static void synthfilt_build_sb_samples (QDM2Context *q, GetBitContext *gb, int l
             } // j loop
         } // channel loop
     } // subband loop
+    return 0;
 }
 
 
