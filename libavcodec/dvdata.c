@@ -25,6 +25,7 @@
  */
 
 #include "libavutil/rational.h"
+#include "libavutil/pixdesc.h"
 #include "avcodec.h"
 #include "dvdata.h"
 
@@ -321,4 +322,15 @@ const DVprofile* avpriv_dv_codec_profile(AVCodecContext* codec)
                return &dv_profiles[i];
 
     return NULL;
+}
+
+void ff_dv_print_profiles(void *logctx, int loglevel)
+{
+    int i;
+    for (i = 0; i < FF_ARRAY_ELEMS(dv_profiles); i++) {
+        const DVprofile *p = &dv_profiles[i];
+        av_log(logctx, loglevel, "Frame size: %dx%d; pixel format: %s, "
+               "framerate: %d/%d\n", p->width, p->height, av_get_pix_fmt_name(p->pix_fmt),
+               p->time_base.den, p->time_base.num);
+    }
 }

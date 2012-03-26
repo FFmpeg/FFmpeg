@@ -154,4 +154,9 @@ static inline void dv_calculate_mb_xy(DVVideoContext *s, DVwork_chunk *work_chun
      }
 }
 
+/**
+ *  Print all allowed DV profiles into logctx at specified logging level.
+ */
+void ff_dv_print_profiles(void *logctx, int loglevel);
+
 #endif /* AVCODEC_DVDATA_H */
