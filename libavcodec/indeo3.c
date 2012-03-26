@@ -840,13 +840,13 @@ static int decode_plane(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
 
     /* each plane data starts with mc_vector_count field, */
     /* an optional array of motion vectors followed by the vq data */
-    num_vectors = bytestream_get_le32(&data);
+    num_vectors = bytestream_get_le32(&data); data_size -= 4;
     if (num_vectors > 256) {
         av_log(ctx->avctx, AV_LOG_ERROR,
                "Read invalid number of motion vectors %d\n", num_vectors);
         return AVERROR_INVALIDDATA;
     }
-    if (num_vectors * 2 >= data_size)
+    if (num_vectors * 2 > data_size)
         return AVERROR_INVALIDDATA;
 
     ctx->num_vectors = num_vectors;
@@ -857,7 +857,7 @@ static int decode_plane(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
     ctx->skip_bits   = 0;
     ctx->need_resync = 0;
 
-    ctx->last_byte = data + data_size - 1;
+    ctx->last_byte = data + data_size;
 
     /* initialize the 1st cell and set its dimensions to whole plane */
     curr_cell.xpos   = curr_cell.ypos = 0;
@@ -894,6 +894,7 @@ static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
 
     /* parse the bitstream header */
     bs_hdr = buf_ptr;
+    buf_size -= 16;
 
     if (bytestream_get_le16(&buf_ptr) != 32) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported codec version!\n");
