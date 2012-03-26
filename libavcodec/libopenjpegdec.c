@@ -295,6 +295,11 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     // Decode the codestream
     image = opj_decode_with_info(dec, stream, NULL);
     opj_cio_close(stream);
+    if(!image) {
+        av_log(avctx, AV_LOG_ERROR, "Error decoding codestream.\n");
+        opj_destroy_decompress(dec);
+        return -1;
+    }
 
     pixel_size = av_pix_fmt_descriptors[avctx->pix_fmt].comp[0].step_minus1 + 1;
     ispacked = libopenjpeg_ispacked(avctx->pix_fmt);
