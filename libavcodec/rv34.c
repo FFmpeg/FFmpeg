@@ -1576,6 +1576,7 @@ static int finish_frame(AVCodecContext *avctx, AVFrame *pict)
 
     ff_er_frame_end(s);
     ff_MPV_frame_end(s);
+    s->mb_num_left = 0;
 
     if (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME))
         ff_thread_report_progress(&s->current_picture_ptr->f, INT_MAX, 0);
@@ -1774,6 +1775,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
              * only complete frames */
             ff_er_frame_end(s);
             ff_MPV_frame_end(s);
+            s->mb_num_left = 0;
             ff_thread_report_progress(&s->current_picture_ptr->f, INT_MAX, 0);
             return AVERROR_INVALIDDATA;
         }
