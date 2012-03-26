@@ -145,7 +145,6 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
     ctx->enc_params.cp_fixed_quality = ctx->fixed_quality;
     ctx->enc_params.tcp_numlayers = ctx->numlayers;
     ctx->enc_params.tcp_rates[0] = FFMAX(avctx->compression_level, 0) * 2;
-    ctx->enc_params.cp_disto_alloc = 1;
 
     ctx->compress = opj_create_compress(ctx->format);
     if (!ctx->compress) {
