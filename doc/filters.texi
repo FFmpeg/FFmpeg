@@ -2280,6 +2280,8 @@ select interlaced aware scaling depending on whether the source frames
 are flagged as interlaced or not
 @end table
 
+Unless @var{interl} is set to one of the above options, interlaced scaling will not be used.
+
 Some examples follow:
 @example
 # scale the input video to a size of 200x100.
@@ -2289,6 +2291,9 @@ scale=200:100
 scale=2*iw:2*ih
 # the above is the same as
 scale=2*in_w:2*in_h
+
+# scale the input to 2x with forced interlaced scaling
+scale=2*iw:2*ih:interl=1
 
 # scale the input to half size
 scale=iw/2:ih/2
