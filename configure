@@ -115,7 +115,6 @@ Component options:
   --enable-x11grab         enable X11 grabbing [no]
   --disable-network        disable network support [no]
   --disable-dct            disable DCT code
-  --disable-fft            disable FFT code
   --disable-mdct           disable MDCT code
   --disable-rdft           disable RDFT code
   --disable-fft            disable FFT code
