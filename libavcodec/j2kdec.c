@@ -1096,6 +1096,6 @@ AVCodec ff_jpeg2000_decoder = {
     .init           = j2kdec_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities = CODEC_CAP_EXPERIMENTAL,
-    .long_name = NULL_IF_CONFIG_SMALL("JPEG 2000"),
+    .capabilities   = CODEC_CAP_EXPERIMENTAL,
+    .long_name      = NULL_IF_CONFIG_SMALL("JPEG 2000"),
 };
