@@ -816,6 +816,7 @@ AVCodec ff_aac_encoder = {
     .init           = aac_encode_init,
     .encode2        = aac_encode_frame,
     .close          = aac_encode_end,
+    .supported_samplerates = avpriv_mpeg4audio_sample_rates,
     .capabilities = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY | CODEC_CAP_EXPERIMENTAL,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_FLT,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("Advanced Audio Coding"),
