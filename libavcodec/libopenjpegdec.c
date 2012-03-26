@@ -278,7 +278,7 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
 
     if(ff_thread_get_buffer(avctx, picture) < 0){
         av_log(avctx, AV_LOG_ERROR, "ff_thread_get_buffer() failed\n");
-        return -1;
+        goto done;
     }
 
     ctx->dec_params.cp_limit_decoding = NO_LIMITATION;
@@ -288,17 +288,16 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     stream = opj_cio_open((opj_common_ptr)dec, buf, buf_size);
     if(!stream) {
         av_log(avctx, AV_LOG_ERROR, "Codestream could not be opened for reading.\n");
-        opj_destroy_decompress(dec);
-        return -1;
+        goto done;
     }
 
+    opj_image_destroy(image);
     // Decode the codestream
     image = opj_decode_with_info(dec, stream, NULL);
     opj_cio_close(stream);
     if(!image) {
         av_log(avctx, AV_LOG_ERROR, "Error decoding codestream.\n");
-        opj_destroy_decompress(dec);
-        return -1;
+        goto done;
     }
 
     pixel_size = av_pix_fmt_descriptors[avctx->pix_fmt].comp[0].step_minus1 + 1;
