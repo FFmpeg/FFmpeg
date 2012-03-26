@@ -1,6 +1,6 @@
 OBJS                                   += ppc/dsputil_ppc.o             \
 
-FFT-OBJS-$(HAVE_GNU_AS)                += ppc/fft_altivec_s.o           \
+FFT-OBJS-$(HAVE_GNU_AS)                += ppc/fft_altivec_s.o
 ALTIVEC-OBJS-$(CONFIG_FFT)             += ppc/fft_altivec.o             \
                                           $(FFT-OBJS-yes)
 ALTIVEC-OBJS-$(CONFIG_H264DSP)         += ppc/h264_altivec.o
