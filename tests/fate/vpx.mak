@@ -38,6 +38,10 @@ $(foreach N,$(VP8_SUITE),$(eval $(call FATE_VP8_SUITE,$(N),$(1),$(2))))
 FATE_VP8 += fate-vp8-sign-bias$(1)
 fate-vp8-sign-bias$(1): CMD = framemd5 $(2) -i $(SAMPLES)/vp8/sintel-signbias.ivf
 fate-vp8-sign-bias$(1): REF = $(SRC_PATH)/tests/ref/fate/vp8-sign-bias
+
+FATE_VP8 += fate-vp8-size-change$(1)
+fate-vp8-size-change$(1): CMD = framemd5 $(2) -i $(SAMPLES)/vp8/frame_size_change.webm -frames:v 30
+fate-vp8-size-change$(1): REF = $(SRC_PATH)/tests/ref/fate/vp8-size-change
 endef
 
 $(eval $(call FATE_VP8_FULL))
