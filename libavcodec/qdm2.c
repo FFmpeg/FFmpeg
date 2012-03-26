@@ -955,23 +955,26 @@ static int synthfilt_build_sb_samples (QDM2Context *q, GetBitContext *gb, int le
  * @param gb        bitreader context
  * @param length    packet length in bits
  */
-static void init_quantized_coeffs_elem0 (int8_t *quantized_coeffs, GetBitContext *gb, int length)
+static int init_quantized_coeffs_elem0 (int8_t *quantized_coeffs, GetBitContext *gb, int length)
 {
     int i, k, run, level, diff;
 
     if (BITS_LEFT(length,gb) < 16)
-        return;
+        return -1;
     level = qdm2_get_vlc(gb, &vlc_tab_level, 0, 2);
 
     quantized_coeffs[0] = level;
 
     for (i = 0; i < 7; ) {
         if (BITS_LEFT(length,gb) < 16)
-            break;
+            return -1;
         run = qdm2_get_vlc(gb, &vlc_tab_run, 0, 1) + 1;
 
+        if (i + run >= 8)
+            return -1;
+
         if (BITS_LEFT(length,gb) < 16)
-            break;
+            return -1;
         diff = qdm2_get_se_vlc(&vlc_tab_diff, gb, 2);
 
         for (k = 1; k <= run; k++)
@@ -980,6 +983,7 @@ static void init_quantized_coeffs_elem0 (int8_t *quantized_coeffs, GetBitContext
         level += diff;
         i += run;
     }
+    return 0;
 }
 
 
@@ -1055,7 +1059,7 @@ static void init_tone_level_dequantization (QDM2Context *q, GetBitContext *gb, i
  * @param q       context
  * @param node    pointer to node with packet
  */
-static void process_subpacket_9 (QDM2Context *q, QDM2SubPNode *node)
+static int process_subpacket_9 (QDM2Context *q, QDM2SubPNode *node)
 {
     GetBitContext gb;
     int i, j, k, n, ch, run, level, diff;
@@ -1073,6 +1077,9 @@ static void process_subpacket_9 (QDM2Context *q, QDM2SubPNode *node)
                 run = qdm2_get_vlc(&gb, &vlc_tab_run, 0, 1) + 1;
                 diff = qdm2_get_se_vlc(&vlc_tab_diff, &gb, 2);
 
+                if (j + run >= 8)
+                    return -1;
+
                 for (k = 1; k <= run; k++)
                     q->quantized_coeffs[ch][i][j + k] = (level + ((k*diff) / run));
 
@@ -1084,6 +1091,8 @@ static void process_subpacket_9 (QDM2Context *q, QDM2SubPNode *node)
     for (ch = 0; ch < q->nb_channels; ch++)
         for (i = 0; i < 8; i++)
             q->quantized_coeffs[ch][0][i] = 0;
+
+    return 0;
 }
 
 
