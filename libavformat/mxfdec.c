@@ -1070,7 +1070,7 @@ static int mxf_edit_unit_absolute_offset(MXFContext *mxf, MXFIndexTable *index_t
                 if (s->nb_index_entries == 2 * s->index_duration + 1)
                     index *= 2;     /* Avid index */
 
-                if (index < 0 || index > s->nb_index_entries) {
+                if (index < 0 || index >= s->nb_index_entries) {
                     av_log(mxf->fc, AV_LOG_ERROR, "IndexSID %i segment at %"PRId64" IndexEntryArray too small\n",
                            index_table->index_sid, s->index_start_position);
                     return AVERROR_INVALIDDATA;
