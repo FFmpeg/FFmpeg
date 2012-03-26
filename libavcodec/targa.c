@@ -229,7 +229,7 @@ static int decode_frame(AVCodecContext *avctx,
             buf += res;
         }else{
             size_t img_size = s->width * ((s->bpp + 1) >> 3);
-            CHECK_BUFFER_SIZE(buf, buf_end, img_size, "image data");
+            CHECK_BUFFER_SIZE(buf, buf_end, img_size * s->height , "image data");
             for(y = 0; y < s->height; y++){
                     memcpy(dst, buf, img_size);
 
