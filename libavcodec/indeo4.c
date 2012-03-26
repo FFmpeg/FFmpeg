@@ -569,10 +569,10 @@ static int decode_mb_info(IVI4DecContext *ctx, IVIBandDesc *band,
 
             s= band->is_halfpel;
             if (mb->type)
-            if ( x +  (mv_x   >>s) +                 (y+               (mv_y   >>s))*band->pitch < 0 ||
-                 x + ((mv_x+s)>>s) + band->mb_size - 1
-                   + (y+band->mb_size - 1 +((mv_y+s)>>s))*band->pitch > band->height*band->pitch -1) {
-                av_log(avctx, AV_LOG_ERROR, "motion vector %d %d outside reference\n", x*s + mv_x, y*s + mv_y);
+            if ( x +  (mb->mv_x   >>s) +                 (y+               (mb->mv_y   >>s))*band->pitch < 0 ||
+                 x + ((mb->mv_x+s)>>s) + band->mb_size - 1
+                   + (y+band->mb_size - 1 +((mb->mv_y+s)>>s))*band->pitch > band->bufsize -1) {
+                av_log(avctx, AV_LOG_ERROR, "motion vector %d %d outside reference\n", x*s + mb->mv_x, y*s + mb->mv_y);
                 return AVERROR_INVALIDDATA;
             }
 
