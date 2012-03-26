@@ -209,6 +209,7 @@ int av_cold ff_ivi_init_planes(IVIPlaneDesc *planes, const IVIPicConfig *cfg)
             band->pitch    = width_aligned;
             band->bufs[0]  = av_malloc(buf_size);
             band->bufs[1]  = av_malloc(buf_size);
+            band->bufsize  = buf_size/2;
             if (!band->bufs[0] || !band->bufs[1])
                 return AVERROR(ENOMEM);
 
