@@ -25,6 +25,8 @@
  * @author Kamil Nowosad
  */
 
+// #define DEBUG
+
 #include "avcodec.h"
 #include "bytestream.h"
 #include "j2k.h"
@@ -47,6 +49,7 @@ typedef struct {
 typedef struct {
     AVCodecContext *avctx;
     AVFrame picture;
+    GetByteContext g;
 
     int width, height; ///< image width and height
     int image_offset_x, image_offset_y;
@@ -64,9 +67,6 @@ typedef struct {
     J2kCodingStyle codsty[4];
     J2kQuantStyle  qntsty[4];
 
-    const uint8_t *buf_start;
-    const uint8_t *buf;
-    const uint8_t *buf_end;
     int bit_index;
 
     int16_t curtileno;
@@ -77,26 +77,23 @@ typedef struct {
 static int get_bits(J2kDecoderContext *s, int n)
 {
     int res = 0;
-    if (s->buf_end - s->buf < ((n - s->bit_index) >> 8))
-        return AVERROR(EINVAL);
+
     while (--n >= 0){
         res <<= 1;
-        if (s->bit_index == 0){
-            s->bit_index = 7 + (*s->buf != 0xff);
-            s->buf++;
+        if (s->bit_index == 0) {
+            s->bit_index = 7 + (bytestream2_get_byte(&s->g) != 0xFFu);
         }
         s->bit_index--;
-        res |= (*s->buf >> s->bit_index) & 1;
+        res |= (bytestream2_peek_byte(&s->g) >> s->bit_index) & 1;
     }
     return res;
 }
 
 static void j2k_flush(J2kDecoderContext *s)
 {
-    if (*s->buf == 0xff)
-        s->buf++;
+    if (bytestream2_get_byte(&s->g) == 0xff)
+        bytestream2_skip(&s->g, 1);
     s->bit_index = 8;
-    s->buf++;
 }
 #if 0
 void printcomp(J2kComponent *comp)
@@ -205,34 +202,34 @@ static int get_siz(J2kDecoderContext *s)
 {
     int i, ret;
 
-    if (s->buf_end - s->buf < 36)
+    if (bytestream2_get_bytes_left(&s->g) < 36)
         return AVERROR(EINVAL);
 
-                        bytestream_get_be16(&s->buf); // Rsiz (skipped)
-             s->width = bytestream_get_be32(&s->buf); // width
-            s->height = bytestream_get_be32(&s->buf); // height
-    s->image_offset_x = bytestream_get_be32(&s->buf); // X0Siz
-    s->image_offset_y = bytestream_get_be32(&s->buf); // Y0Siz
+                        bytestream2_get_be16u(&s->g); // Rsiz (skipped)
+             s->width = bytestream2_get_be32u(&s->g); // width
+            s->height = bytestream2_get_be32u(&s->g); // height
+    s->image_offset_x = bytestream2_get_be32u(&s->g); // X0Siz
+    s->image_offset_y = bytestream2_get_be32u(&s->g); // Y0Siz
 
-        s->tile_width = bytestream_get_be32(&s->buf); // XTSiz
-       s->tile_height = bytestream_get_be32(&s->buf); // YTSiz
-     s->tile_offset_x = bytestream_get_be32(&s->buf); // XT0Siz
-     s->tile_offset_y = bytestream_get_be32(&s->buf); // YT0Siz
-       s->ncomponents = bytestream_get_be16(&s->buf); // CSiz
+        s->tile_width = bytestream2_get_be32u(&s->g); // XTSiz
+       s->tile_height = bytestream2_get_be32u(&s->g); // YTSiz
+     s->tile_offset_x = bytestream2_get_be32u(&s->g); // XT0Siz
+     s->tile_offset_y = bytestream2_get_be32u(&s->g); // YT0Siz
+       s->ncomponents = bytestream2_get_be16u(&s->g); // CSiz
 
     if(s->tile_width<=0 || s->tile_height<=0)
         return AVERROR(EINVAL);
 
-    if (s->buf_end - s->buf < 2 * s->ncomponents)
+    if (bytestream2_get_bytes_left(&s->g) < 3 * s->ncomponents)
         return AVERROR(EINVAL);
 
     for (i = 0; i < s->ncomponents; i++){ // Ssiz_i XRsiz_i, YRsiz_i
-        uint8_t x = bytestream_get_byte(&s->buf);
+        uint8_t x = bytestream2_get_byteu(&s->g);
         s->cbps[i] = (x & 0x7f) + 1;
         s->precision = FFMAX(s->cbps[i], s->precision);
         s->sgnd[i] = !!(x & 0x80);
-        s->cdx[i] = bytestream_get_byte(&s->buf);
-        s->cdy[i] = bytestream_get_byte(&s->buf);
+        s->cdx[i] = bytestream2_get_byteu(&s->g);
+        s->cdy[i] = bytestream2_get_byteu(&s->g);
     }
 
     s->numXtiles = ff_j2k_ceildiv(s->width - s->tile_offset_x, s->tile_width);
@@ -253,19 +250,27 @@ static int get_siz(J2kDecoderContext *s)
             return AVERROR(ENOMEM);
     }
 
-    s->avctx->width = s->width - s->image_offset_x;
+    s->avctx->width  = s->width  - s->image_offset_x;
     s->avctx->height = s->height - s->image_offset_y;
 
     switch(s->ncomponents){
-        case 1: if (s->precision > 8) {
-                    s->avctx->pix_fmt    = PIX_FMT_GRAY16;
-                } else s->avctx->pix_fmt = PIX_FMT_GRAY8;
-                break;
-        case 3: if (s->precision > 8) {
-                    s->avctx->pix_fmt    = PIX_FMT_RGB48;
-                } else s->avctx->pix_fmt = PIX_FMT_RGB24;
-                break;
-        case 4: s->avctx->pix_fmt = PIX_FMT_BGRA; break;
+    case 1:
+        if (s->precision > 8) {
+            s->avctx->pix_fmt = PIX_FMT_GRAY16;
+        } else {
+            s->avctx->pix_fmt = PIX_FMT_GRAY8;
+        }
+        break;
+    case 3:
+        if (s->precision > 8) {
+            s->avctx->pix_fmt = PIX_FMT_RGB48;
+        } else {
+            s->avctx->pix_fmt = PIX_FMT_RGB24;
+        }
+        break;
+    case 4:
+        s->avctx->pix_fmt = PIX_FMT_BGRA;
+        break;
     }
 
     if (s->picture.data[0])
@@ -283,21 +288,22 @@ static int get_siz(J2kDecoderContext *s)
 /** get common part for COD and COC segments */
 static int get_cox(J2kDecoderContext *s, J2kCodingStyle *c)
 {
-    if (s->buf_end - s->buf < 5)
+    if (bytestream2_get_bytes_left(&s->g) < 5)
         return AVERROR(EINVAL);
-          c->nreslevels = bytestream_get_byte(&s->buf) + 1; // num of resolution levels - 1
-     c->log2_cblk_width = bytestream_get_byte(&s->buf) + 2; // cblk width
-    c->log2_cblk_height = bytestream_get_byte(&s->buf) + 2; // cblk height
+          c->nreslevels = bytestream2_get_byteu(&s->g) + 1; // num of resolution levels - 1
+     c->log2_cblk_width = bytestream2_get_byteu(&s->g) + 2; // cblk width
+    c->log2_cblk_height = bytestream2_get_byteu(&s->g) + 2; // cblk height
 
-    c->cblk_style = bytestream_get_byte(&s->buf);
+    c->cblk_style = bytestream2_get_byteu(&s->g);
     if (c->cblk_style != 0){ // cblk style
         av_log(s->avctx, AV_LOG_WARNING, "extra cblk styles %X\n", c->cblk_style);
     }
-    c->transform = bytestream_get_byte(&s->buf); // transformation
+    c->transform = bytestream2_get_byteu(&s->g); // transformation
     if (c->csty & J2K_CSTY_PREC) {
         int i;
+
         for (i = 0; i < c->nreslevels; i++)
-            bytestream_get_byte(&s->buf);
+            bytestream2_get_byte(&s->g);
     }
     return 0;
 }
@@ -308,21 +314,21 @@ static int get_cod(J2kDecoderContext *s, J2kCodingStyle *c, uint8_t *properties)
     J2kCodingStyle tmp;
     int compno;
 
-    if (s->buf_end - s->buf < 5)
+    if (bytestream2_get_bytes_left(&s->g) < 5)
         return AVERROR(EINVAL);
 
     tmp.log2_prec_width  =
     tmp.log2_prec_height = 15;
 
-    tmp.csty = bytestream_get_byte(&s->buf);
+    tmp.csty = bytestream2_get_byteu(&s->g);
 
-    if (bytestream_get_byte(&s->buf)){ // progression level
+    if (bytestream2_get_byteu(&s->g)){ // progression level
         av_log(s->avctx, AV_LOG_ERROR, "only LRCP progression supported\n");
         return -1;
     }
 
-    tmp.nlayers = bytestream_get_be16(&s->buf);
-        tmp.mct = bytestream_get_byte(&s->buf); // multiple component transformation
+    tmp.nlayers = bytestream2_get_be16u(&s->g);
+        tmp.mct = bytestream2_get_byteu(&s->g); // multiple component transformation
 
     get_cox(s, &tmp);
     for (compno = 0; compno < s->ncomponents; compno++){
@@ -337,13 +343,13 @@ static int get_coc(J2kDecoderContext *s, J2kCodingStyle *c, uint8_t *properties)
 {
     int compno;
 
-    if (s->buf_end - s->buf < 2)
+    if (bytestream2_get_bytes_left(&s->g) < 2)
         return AVERROR(EINVAL);
 
-    compno = bytestream_get_byte(&s->buf);
+    compno = bytestream2_get_byteu(&s->g);
 
     c += compno;
-    c->csty = bytestream_get_byte(&s->buf);
+    c->csty = bytestream2_get_byte(&s->g);
     get_cox(s, c);
 
     properties[compno] |= HAD_COC;
@@ -355,24 +361,24 @@ static int get_qcx(J2kDecoderContext *s, int n, J2kQuantStyle *q)
 {
     int i, x;
 
-    if (s->buf_end - s->buf < 1)
+    if (bytestream2_get_bytes_left(&s->g) < 1)
         return AVERROR(EINVAL);
 
-    x = bytestream_get_byte(&s->buf); // Sqcd
+    x = bytestream2_get_byteu(&s->g); // Sqcd
 
     q->nguardbits = x >> 5;
       q->quantsty = x & 0x1f;
 
     if (q->quantsty == J2K_QSTY_NONE){
         n -= 3;
-        if (s->buf_end - s->buf < n || 32*3 < n)
+        if (bytestream2_get_bytes_left(&s->g) < n || 32*3 < n)
             return AVERROR(EINVAL);
         for (i = 0; i < n; i++)
-            q->expn[i] = bytestream_get_byte(&s->buf) >> 3;
+            q->expn[i] = bytestream2_get_byteu(&s->g) >> 3;
     } else if (q->quantsty == J2K_QSTY_SI){
-        if (s->buf_end - s->buf < 2)
+        if (bytestream2_get_bytes_left(&s->g) < 2)
             return AVERROR(EINVAL);
-        x = bytestream_get_be16(&s->buf);
+        x = bytestream2_get_be16u(&s->g);
         q->expn[0] = x >> 11;
         q->mant[0] = x & 0x7ff;
         for (i = 1; i < 32 * 3; i++){
@@ -382,10 +388,10 @@ static int get_qcx(J2kDecoderContext *s, int n, J2kQuantStyle *q)
         }
     } else{
         n = (n - 3) >> 1;
-        if (s->buf_end - s->buf < n || 32*3 < n)
+        if (bytestream2_get_bytes_left(&s->g) < 2 * n || 32*3 < n)
             return AVERROR(EINVAL);
         for (i = 0; i < n; i++){
-            x = bytestream_get_be16(&s->buf);
+            x = bytestream2_get_be16u(&s->g);
             q->expn[i] = x >> 11;
             q->mant[i] = x & 0x7ff;
         }
@@ -412,10 +418,10 @@ static int get_qcc(J2kDecoderContext *s, int n, J2kQuantStyle *q, uint8_t *prope
 {
     int compno;
 
-    if (s->buf_end - s->buf < 1)
+    if (bytestream2_get_bytes_left(&s->g) < 1)
         return AVERROR(EINVAL);
 
-    compno = bytestream_get_byte(&s->buf);
+    compno = bytestream2_get_byteu(&s->g);
     properties[compno] |= HAD_QCC;
     return get_qcx(s, n-1, q+compno);
 }
@@ -423,25 +429,25 @@ static int get_qcc(J2kDecoderContext *s, int n, J2kQuantStyle *q, uint8_t *prope
 /** get start of tile segment */
 static uint8_t get_sot(J2kDecoderContext *s)
 {
-    if (s->buf_end - s->buf < 4)
+    if (bytestream2_get_bytes_left(&s->g) < 8)
         return AVERROR(EINVAL);
 
-    s->curtileno = bytestream_get_be16(&s->buf); ///< Isot
+    s->curtileno = bytestream2_get_be16u(&s->g); ///< Isot
     if((unsigned)s->curtileno >= s->numXtiles * s->numYtiles){
         s->curtileno=0;
         return AVERROR(EINVAL);
     }
 
-    s->buf += 4; ///< Psot (ignored)
+    bytestream2_skipu(&s->g, 4); ///< Psot (ignored)
 
-    if (!bytestream_get_byte(&s->buf)){ ///< TPsot
+    if (!bytestream2_get_byteu(&s->g)){ ///< TPsot
         J2kTile *tile = s->tile + s->curtileno;
 
         /* copy defaults */
         memcpy(tile->codsty, s->codsty, s->ncomponents * sizeof(J2kCodingStyle));
         memcpy(tile->qntsty, s->qntsty, s->ncomponents * sizeof(J2kQuantStyle));
     }
-    bytestream_get_byte(&s->buf); ///< TNsot
+    bytestream2_get_byteu(&s->g); ///< TNsot
 
     return 0;
 }
@@ -549,8 +555,8 @@ static int decode_packet(J2kDecoderContext *s, J2kCodingStyle *codsty, J2kResLev
     j2k_flush(s);
 
     if (codsty->csty & J2K_CSTY_EPH) {
-        if (AV_RB16(s->buf) == J2K_EPH) {
-            s->buf += 2;
+        if (bytestream2_peek_be16(&s->g) == J2K_EPH) {
+            bytestream2_skip(&s->g, 2);
         } else {
             av_log(s->avctx, AV_LOG_ERROR, "EPH marker not found.\n");
         }
@@ -563,9 +569,9 @@ static int decode_packet(J2kDecoderContext *s, J2kCodingStyle *codsty, J2kResLev
             int xi;
             for (xi = band->prec[precno].xi0; xi < band->prec[precno].xi1; xi++){
                 J2kCblk *cblk = band->cblk + yi * cblknw + xi;
-                if (s->buf_end - s->buf < cblk->lengthinc)
+                if (bytestream2_get_bytes_left(&s->g) < cblk->lengthinc)
                     return AVERROR(EINVAL);
-                bytestream_get_buffer(&s->buf, cblk->data, cblk->lengthinc);
+                bytestream2_get_bufferu(&s->g, cblk->data, cblk->lengthinc);
                 cblk->length += cblk->lengthinc;
                 cblk->lengthinc = 0;
             }
@@ -873,10 +879,12 @@ static int decode_tile(J2kDecoderContext *s, J2kTile *tile)
             line = s->picture.data[0] + y * s->picture.linesize[0];
             for (; y < tile->comp[compno].coord[1][1] - s->image_offset_y; y += s->cdy[compno]) {
                 uint16_t *dst;
+
                 x = tile->comp[compno].coord[0][0] - s->image_offset_x;
-                dst = line + (x * s->ncomponents + compno) * 2;
+                dst = (uint16_t *)(line + (x * s->ncomponents + compno) * 2);
                 for (; x < tile->comp[compno].coord[0][1] - s->image_offset_x; x += s-> cdx[compno]) {
                     int32_t val;
+
                     val = *src[compno]++ << (16 - s->cbps[compno]);
                     val += 1 << 15;
                     val = av_clip(val, 0, (1 << 16) - 1);
@@ -912,58 +920,68 @@ static int decode_codestream(J2kDecoderContext *s)
     uint8_t *properties = s->properties;
 
     for (;;){
-        int marker, len, ret = 0;
-        const uint8_t *oldbuf;
-        if (s->buf_end - s->buf < 2){
+        int oldpos, marker, len, ret = 0;
+
+        if (bytestream2_get_bytes_left(&s->g) < 2){
             av_log(s->avctx, AV_LOG_ERROR, "Missing EOC\n");
             break;
         }
 
-        marker = bytestream_get_be16(&s->buf);
-        if(s->avctx->debug & FF_DEBUG_STARTCODE)
-            av_log(s->avctx, AV_LOG_DEBUG, "marker 0x%.4X at pos 0x%tx\n", marker, s->buf - s->buf_start - 4);
-        oldbuf = s->buf;
+        marker = bytestream2_get_be16u(&s->g);
+        av_dlog(s->avctx, "marker 0x%.4X at pos 0x%tx\n", marker, bytestream2_tell(&s->g) - 4);
+        oldpos = bytestream2_tell(&s->g);
 
         if (marker == J2K_SOD){
             J2kTile *tile = s->tile + s->curtileno;
-            if (ret = init_tile(s, s->curtileno))
+            if (ret = init_tile(s, s->curtileno)) {
+                av_log(s->avctx, AV_LOG_ERROR, "tile initialization failed\n");
                 return ret;
-            if (ret = decode_packets(s, tile))
+            }
+            if (ret = decode_packets(s, tile)) {
+                av_log(s->avctx, AV_LOG_ERROR, "packets decoding failed\n");
                 return ret;
+            }
             continue;
         }
         if (marker == J2K_EOC)
             break;
 
-        if (s->buf_end - s->buf < 2)
+        if (bytestream2_get_bytes_left(&s->g) < 2)
             return AVERROR(EINVAL);
-        len = bytestream_get_be16(&s->buf);
-        switch(marker){
-            case J2K_SIZ:
-                ret = get_siz(s); break;
-            case J2K_COC:
-                ret = get_coc(s, codsty, properties); break;
-            case J2K_COD:
-                ret = get_cod(s, codsty, properties); break;
-            case J2K_QCC:
-                ret = get_qcc(s, len, qntsty, properties); break;
-            case J2K_QCD:
-                ret = get_qcd(s, len, qntsty, properties); break;
-            case J2K_SOT:
-                if (!(ret = get_sot(s))){
-                    codsty = s->tile[s->curtileno].codsty;
-                    qntsty = s->tile[s->curtileno].qntsty;
-                    properties = s->tile[s->curtileno].properties;
-                }
-                break;
-            case J2K_COM:
-                // the comment is ignored
-                s->buf += len - 2; break;
-            default:
-                av_log(s->avctx, AV_LOG_ERROR, "unsupported marker 0x%.4X at pos 0x%tx\n", marker, s->buf - s->buf_start - 4);
-                s->buf += len - 2; break;
+        len = bytestream2_get_be16u(&s->g);
+        switch (marker){
+        case J2K_SIZ:
+            ret = get_siz(s);
+            break;
+        case J2K_COC:
+            ret = get_coc(s, codsty, properties);
+            break;
+        case J2K_COD:
+            ret = get_cod(s, codsty, properties);
+            break;
+        case J2K_QCC:
+            ret = get_qcc(s, len, qntsty, properties);
+            break;
+        case J2K_QCD:
+            ret = get_qcd(s, len, qntsty, properties);
+            break;
+        case J2K_SOT:
+            if (!(ret = get_sot(s))){
+                codsty = s->tile[s->curtileno].codsty;
+                qntsty = s->tile[s->curtileno].qntsty;
+                properties = s->tile[s->curtileno].properties;
+            }
+            break;
+        case J2K_COM:
+            // the comment is ignored
+            bytestream2_skip(&s->g, len - 2);
+            break;
+        default:
+            av_log(s->avctx, AV_LOG_ERROR, "unsupported marker 0x%.4X at pos 0x%tx\n", marker, bytestream2_tell(&s->g) - 4);
+            bytestream2_skip(&s->g, len - 2);
+            break;
         }
-        if (s->buf - oldbuf != len || ret){
+        if (bytestream2_tell(&s->g) - oldpos != len || ret){
             av_log(s->avctx, AV_LOG_ERROR, "error during processing marker segment %.4x\n", marker);
             return ret ? ret : -1;
         }
@@ -973,26 +991,23 @@ static int decode_codestream(J2kDecoderContext *s)
 
 static int jp2_find_codestream(J2kDecoderContext *s)
 {
-    uint32_t atom_size;
+    uint32_t atom_size, atom;
     int found_codestream = 0, search_range = 10;
 
-    // skip jpeg2k signature atom
-    s->buf += 12;
-
-    while(!found_codestream && search_range && s->buf_end - s->buf >= 8) {
-        atom_size = AV_RB32(s->buf);
-        if(AV_RB32(s->buf + 4) == JP2_CODESTREAM) {
+    while(!found_codestream && search_range && bytestream2_get_bytes_left(&s->g) >= 8) {
+        atom_size = bytestream2_get_be32u(&s->g);
+        atom      = bytestream2_get_be32u(&s->g);
+        if (atom == JP2_CODESTREAM) {
             found_codestream = 1;
-            s->buf += 8;
         } else {
-            if (s->buf_end - s->buf < atom_size)
+            if (bytestream2_get_bytes_left(&s->g) < atom_size - 8)
                 return 0;
-            s->buf += atom_size;
+            bytestream2_skipu(&s->g, atom_size - 8);
             search_range--;
         }
     }
 
-    if(found_codestream)
+    if (found_codestream)
         return 1;
     return 0;
 }
@@ -1006,32 +1021,31 @@ static int decode_frame(AVCodecContext *avctx,
     int tileno, ret;
 
     s->avctx = avctx;
-    av_log(s->avctx, AV_LOG_DEBUG, "start\n");
-
-    // init
-    s->buf = s->buf_start = avpkt->data;
-    s->buf_end = s->buf_start + avpkt->size;
+    bytestream2_init(&s->g, avpkt->data, avpkt->size);
     s->curtileno = -1;
 
     ff_j2k_init_tier1_luts();
 
-    if (s->buf_end - s->buf < 2) {
+    if (bytestream2_get_bytes_left(&s->g) < 2) {
         ret = AVERROR(EINVAL);
         goto err_out;
     }
 
     // check if the image is in jp2 format
-    if(s->buf_end - s->buf >= 12 &&
-       (AV_RB32(s->buf) == 12) && (AV_RB32(s->buf + 4) == JP2_SIG_TYPE) &&
-       (AV_RB32(s->buf + 8) == JP2_SIG_VALUE)) {
+    if (bytestream2_get_bytes_left(&s->g) >= 12 &&
+       (bytestream2_get_be32u(&s->g) == 12) &&
+       (bytestream2_get_be32u(&s->g) == JP2_SIG_TYPE) &&
+       (bytestream2_get_be32u(&s->g) == JP2_SIG_VALUE)) {
         if(!jp2_find_codestream(s)) {
             av_log(avctx, AV_LOG_ERROR, "couldn't find jpeg2k codestream atom\n");
             ret = -1;
             goto err_out;
         }
+    } else {
+        bytestream2_seek(&s->g, 0, SEEK_SET);
     }
 
-    if (bytestream_get_be16(&s->buf) != J2K_SOC){
+    if (bytestream2_get_be16u(&s->g) != J2K_SOC){
         av_log(avctx, AV_LOG_ERROR, "SOC marker not present\n");
         ret = -1;
         goto err_out;
@@ -1044,12 +1058,11 @@ static int decode_frame(AVCodecContext *avctx,
             goto err_out;
 
     cleanup(s);
-    av_log(s->avctx, AV_LOG_DEBUG, "end\n");
 
     *data_size = sizeof(AVPicture);
     *picture = s->picture;
 
-    return s->buf - s->buf_start;
+    return bytestream2_tell(&s->g);
 
 err_out:
     cleanup(s);
