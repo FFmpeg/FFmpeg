@@ -66,11 +66,23 @@
  * set by user for input, always set by user for output (unless you are dealing
  * with an AVFMT_NOFILE format).
  *
+ * @section lavf_options Passing options to (de)muxers
+ * Lavf allows to configure muxers and demuxers using the @ref avoptions
+ * mechanism. Generic (format-independent) libavformat options are provided by
+ * AVFormatContext, they can be examined from a user program by calling
+ * av_opt_next() / av_opt_find() on an allocated AVFormatContext (or its AVClass
+ * from avformat_get_class()). Private (format-specific) options are provided by
+ * AVFormatContext.priv_data if and only if AVInputFormat.priv_class /
+ * AVOutputFormat.priv_class of the corresponding format struct is non-NULL.
+ * Further options may be provided by the @ref AVFormatContext.pb "I/O context",
+ * if its AVClass is non-NULL, and the protocols layer. See the discussion on
+ * nesting in @ref avoptions documentation to learn how to access those.
+ *
  * @defgroup lavf_decoding Demuxing
  * @{
  * Demuxers read a media file and split it into chunks of data (@em packets). A
- * @ref AVPacket "packet" contains one or more frames which belong a single
- * elementary stream. In lavf API this process is represented by the
+ * @ref AVPacket "packet" contains one or more encoded frames which belongs to a
+ * single elementary stream. In the lavf API this process is represented by the
  * avformat_open_input() function for opening a file, av_read_frame() for
  * reading a single packet and finally avformat_close_input(), which does the
  * cleanup.
@@ -100,10 +112,55 @@
  * your reading callbacks to it. Then set the @em pb field of your
  * AVFormatContext to newly created AVIOContext.
  *
+ * Since the format of the opened file is in general not known until after
+ * avformat_open_input() has returned, it is not possible to set demuxer private
+ * options on a preallocated context. Instead, the options should be passed to
+ * avformat_open_input() wrapped in an AVDictionary:
+ * @code
+ * AVDictionary *options = NULL;
+ * av_dict_set(&options, "video_size", "640x480", 0);
+ * av_dict_set(&options, "pixel_format", "rgb24", 0);
+ *
+ * if (avformat_open_input(&s, url, NULL, &options) < 0)
+ *     abort();
+ * av_dict_free(&options);
+ * @endcode
+ * This code passes the private options 'video_size' and 'pixel_format' to the
+ * demuxer. They would be necessary for e.g. the rawvideo demuxer, since it
+ * cannot know how to interpret raw video data otherwise. If the format turns
+ * out to be something different than raw video, those options will not be
+ * recognized by the demuxer and therefore will not be applied. Such unrecognized
+ * options are then returned in the options dictionary (recognized options are
+ * consumed). The calling program can handle such unrecognized options as it
+ * wishes, e.g.
+ * @code
+ * AVDictionaryEntry *e;
+ * if (e = av_dict_get(options, "", NULL, AV_DICT_IGNORE_SUFFIX)) {
+ *     fprintf(stderr, "Option %s not recognized by the demuxer.\n", e->key);
+ *     abort();
+ * }
+ * @endcode
+ *
  * After you have finished reading the file, you must close it with
  * avformat_close_input(). It will free everything associated with the file.
  *
  * @section lavf_decoding_read Reading from an opened file
+ * Reading data from an opened AVFormatContext is done by repeatedly calling
+ * av_read_frame() on it. Each call, if successful, will return an AVPacket
+ * containing encoded data for one AVStream, identified by
+ * AVPacket.stream_index. This packet may be passed straight into the libavcodec
+ * decoding functions avcodec_decode_video2(), avcodec_decode_audio4() or
+ * avcodec_decode_subtitle2() if the caller wishes to decode the data.
+ *
+ * AVPacket.pts, AVPacket.dts and AVPacket.duration timing information will be
+ * set if known. They may also be unset (i.e. AV_NOPTS_VALUE for
+ * pts/dts, 0 for duration) if the stream does not provide them. The timing
+ * information will be in AVStream.time_base units, i.e. it has to be
+ * multiplied by the timebase to convert them to seconds.
+ *
+ * The packet data belongs to the demuxer and is invalid after the next call to
+ * av_read_frame(). The user must free the packet with av_free_packet() before
+ * calling av_read_frame() again or closing the file.
  *
  * @section lavf_decoding_seek Seeking
  * @}
@@ -564,7 +621,18 @@ typedef struct AVStream {
      * encoding: set by the user
      */
     int id;
-    AVCodecContext *codec; /**< codec context */
+    /**
+     * Codec context associated with this stream. Allocated and freed by
+     * libavformat.
+     *
+     * - decoding: The demuxer exports codec information stored in the headers
+     *             here.
+     * - encoding: The user sets codec information, the muxer writes it to the
+     *             output. Mandatory fields as specified in AVCodecContext
+     *             documentation must be set even if this AVCodecContext is
+     *             not actually used for encoding.
+     */
+    AVCodecContext *codec;
     /**
      * Real base framerate of the stream.
      * This is the lowest framerate with which all timestamps can be
@@ -583,10 +651,12 @@ typedef struct AVStream {
 
     /**
      * This is the fundamental unit of time (in seconds) in terms
-     * of which frame timestamps are represented. For fixed-fps content,
-     * time base should be 1/framerate and timestamp increments should be 1.
+     * of which frame timestamps are represented.
+     *
      * decoding: set by libavformat
-     * encoding: set by libavformat in av_write_header
+     * encoding: set by libavformat in av_write_header. The muxer may use the
+     * user-provided value of @ref AVCodecContext.time_base "codec->time_base"
+     * as a hint.
      */
     AVRational time_base;
 

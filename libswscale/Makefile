@@ -5,8 +5,14 @@ FFLIBS = avutil
 
 HEADERS = swscale.h
 
-OBJS = input.o options.o output.o rgb2rgb.o swscale.o \
-       swscale_unscaled.o utils.o yuv2rgb.o
+OBJS = input.o                                          \
+       options.o                                        \
+       output.o                                         \
+       rgb2rgb.o                                        \
+       swscale.o                                        \
+       swscale_unscaled.o                               \
+       utils.o                                          \
+       yuv2rgb.o                                        \
 
 OBJS-$(ARCH_BFIN)          +=  bfin/internal_bfin.o     \
                                bfin/swscale_bfin.o      \
@@ -27,5 +33,3 @@ $(SUBDIR)x86/swscale_mmx.o: CFLAGS += $(NOREDZONE_FLAGS)
 OBJS-$(CONFIG_XMM_CLOBBER_TEST) += x86/w64xmmtest.o
 
 TESTPROGS = colorspace swscale
-
-DIRS = bfin ppc sparc x86

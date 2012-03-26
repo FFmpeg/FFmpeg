@@ -1545,7 +1545,7 @@ vda_deps="VideoDecodeAcceleration_VDADecoder_h pthreads"
 vdpau_deps="vdpau_vdpau_h vdpau_vdpau_x11_h"
 
 # parsers
-h264_parser_select="golomb h264chroma h264dsp h264pred h264qpel"
+h264_parser_select="golomb h264dsp h264pred"
 
 # external libraries
 libaacplus_encoder_deps="libaacplus"

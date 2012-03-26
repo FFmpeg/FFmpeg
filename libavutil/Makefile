@@ -82,14 +82,11 @@ OBJS = adler32.o                                                        \
 OBJS-$(ARCH_PPC) += ppc/cpu.o
 OBJS-$(ARCH_X86) += x86/cpu.o
 
-
 TESTPROGS = adler32 aes avstring base64 bprint cpu crc des eval file fifo \
             lfg lls md5 opt pca parseutils random_seed rational sha tree
 TESTPROGS-$(HAVE_LZO1X_999_COMPRESS) += lzo
 
 TOOLS = ffeval
-
-DIRS = arm avr32 bfin mips ppc sh4 tomi x86
 
 ARCH_HEADERS = bswap.h intmath.h intreadwrite.h timer.h
 

@@ -64,9 +64,10 @@ config.h: .config
 	@-printf '\nWARNING: $(?F) newer than config.h, rerun configure\n\n'
 	@-tput sgr0 2>/dev/null
 
-SUBDIR_VARS := OBJS FFLIBS CLEANFILES DIRS TESTPROGS EXAMPLES SKIPHEADERS \
-               ALTIVEC-OBJS MMX-OBJS NEON-OBJS YASM-OBJS                  \
-               HOSTPROGS BUILT_HEADERS TESTOBJS ARCH_HEADERS ARMV6-OBJS TOOLS
+SUBDIR_VARS := CLEANFILES EXAMPLES FFLIBS HOSTPROGS TESTPROGS TOOLS      \
+               ARCH_HEADERS BUILT_HEADERS SKIPHEADERS                    \
+               ALTIVEC-OBJS ARMV6-OBJS MMX-OBJS NEON-OBJS YASM-OBJS      \
+               OBJS TESTOBJS
 
 define RESET
 $(1) :=

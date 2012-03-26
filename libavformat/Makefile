@@ -6,6 +6,8 @@ FFLIBS = avcodec avutil
 HEADERS = avformat.h avio.h version.h
 
 OBJS = allformats.o         \
+       avio.o               \
+       aviobuf.o            \
        cutils.o             \
        id3v1.o              \
        id3v2.o              \
@@ -351,8 +353,6 @@ OBJS-$(CONFIG_LIBNUT_MUXER)              += libnut.o
 OBJS-$(CONFIG_LIBRTMP)                   += librtmp.o
 
 # protocols I/O
-OBJS+= avio.o aviobuf.o
-
 OBJS-$(CONFIG_APPLEHTTP_PROTOCOL)        += hlsproto.o
 OBJS-$(CONFIG_BLURAY_PROTOCOL)           += bluray.o
 OBJS-$(CONFIG_CACHE_PROTOCOL)            += cache.o

@@ -168,8 +168,6 @@ OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_yvu9.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/pullup.o
 
 
-DIRS = x86 libmpcodecs
-
 TESTPROGS = drawutils formats
 
 TOOLS = graph2dot lavfi-showfiltfmts
