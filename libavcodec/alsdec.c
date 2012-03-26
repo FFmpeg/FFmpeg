@@ -700,7 +700,7 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
                     int offset     = parcor_rice_table[sconf->coef_table][k][0];
                     quant_cof[k] = decode_rice(gb, rice_param) + offset;
                     if (quant_cof[k] < -64 || quant_cof[k] > 63) {
-                        av_log(avctx, AV_LOG_ERROR, "Quantization coefficient %d is out of range.\n", quant_cof[k]);
+                        av_log(avctx, AV_LOG_ERROR, "Quantization coefficient %d is out of range!\n", quant_cof[k]);
                         return AVERROR_INVALIDDATA;
                     }
                 }
@@ -1130,7 +1130,7 @@ static int decode_blocks(ALSDecContext *ctx, unsigned int ra_frame,
         // reconstruct joint-stereo blocks
         if (bd[0].js_blocks) {
             if (bd[1].js_blocks)
-                av_log(ctx->avctx, AV_LOG_WARNING, "Invalid channel pair!\n");
+                av_log(ctx->avctx, AV_LOG_WARNING, "Invalid channel pair.\n");
 
             for (s = 0; s < div_blocks[b]; s++)
                 bd[0].raw_samples[s] = bd[1].raw_samples[s] - bd[0].raw_samples[s];
@@ -1224,7 +1224,7 @@ static int revert_channel_correlation(ALSDecContext *ctx, ALSBlockData *bd,
     }
 
     if (dep == channels) {
-        av_log(ctx->avctx, AV_LOG_WARNING, "Invalid channel correlation!\n");
+        av_log(ctx->avctx, AV_LOG_WARNING, "Invalid channel correlation.\n");
         return -1;
     }
 
@@ -1530,7 +1530,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
         // check CRC sums if this is the last frame
         if (ctx->cur_frame_length != sconf->frame_length &&
             ctx->crc_org != ctx->crc) {
-            av_log(avctx, AV_LOG_ERROR, "CRC error.\n");
+            av_log(avctx, AV_LOG_ERROR, "CRC error!\n");
         }
     }
 
@@ -1592,12 +1592,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ctx->avctx = avctx;
 
     if (!avctx->extradata) {
-        av_log(avctx, AV_LOG_ERROR, "Missing required ALS extradata.\n");
+        av_log(avctx, AV_LOG_ERROR, "Missing required ALS extradata!\n");
         return -1;
     }
 
     if (read_specific_config(ctx)) {
-        av_log(avctx, AV_LOG_ERROR, "Reading ALSSpecificConfig failed.\n");
+        av_log(avctx, AV_LOG_ERROR, "Reading ALSSpecificConfig failed!\n");
         decode_end(avctx);
         return -1;
     }
@@ -1643,7 +1643,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (!ctx->quant_cof              || !ctx->lpc_cof        ||
         !ctx->quant_cof_buffer       || !ctx->lpc_cof_buffer ||
         !ctx->lpc_cof_reversed_buffer) {
-        av_log(avctx, AV_LOG_ERROR, "Allocating buffer memory failed.\n");
+        av_log(avctx, AV_LOG_ERROR, "Allocating buffer memory failed!\n");
         return AVERROR(ENOMEM);
     }
 
@@ -1668,7 +1668,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         !ctx->opt_order || !ctx->store_prev_samples ||
         !ctx->use_ltp  || !ctx->ltp_lag ||
         !ctx->ltp_gain || !ctx->ltp_gain_buffer) {
-        av_log(avctx, AV_LOG_ERROR, "Allocating buffer memory failed.\n");
+        av_log(avctx, AV_LOG_ERROR, "Allocating buffer memory failed!\n");
         decode_end(avctx);
         return AVERROR(ENOMEM);
     }
@@ -1686,7 +1686,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
                                            num_buffers);
 
         if (!ctx->chan_data_buffer || !ctx->chan_data || !ctx->reverted_channels) {
-            av_log(avctx, AV_LOG_ERROR, "Allocating buffer memory failed.\n");
+            av_log(avctx, AV_LOG_ERROR, "Allocating buffer memory failed!\n");
             decode_end(avctx);
             return AVERROR(ENOMEM);
         }
@@ -1707,7 +1707,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     // allocate previous raw sample buffer
     if (!ctx->prev_raw_samples || !ctx->raw_buffer|| !ctx->raw_samples) {
-        av_log(avctx, AV_LOG_ERROR, "Allocating buffer memory failed.\n");
+        av_log(avctx, AV_LOG_ERROR, "Allocating buffer memory failed!\n");
         decode_end(avctx);
         return AVERROR(ENOMEM);
     }
@@ -1725,7 +1725,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
                                     avctx->channels *
                                     av_get_bytes_per_sample(avctx->sample_fmt));
         if (!ctx->crc_buffer) {
-            av_log(avctx, AV_LOG_ERROR, "Allocating buffer memory failed.\n");
+            av_log(avctx, AV_LOG_ERROR, "Allocating buffer memory failed!\n");
             decode_end(avctx);
             return AVERROR(ENOMEM);
         }
