@@ -85,8 +85,9 @@ static av_cold int flic_decode_init(AVCodecContext *avctx)
 
     if (avctx->extradata_size != 0 &&
         avctx->extradata_size != 12 &&
-        avctx->extradata_size != 128) {
-        av_log(avctx, AV_LOG_ERROR, "Expected extradata of 12 or 128 bytes\n");
+        avctx->extradata_size != 128 &&
+        avctx->extradata_size != 1024) {
+        av_log(avctx, AV_LOG_ERROR, "Expected extradata of 12, 128 or 1024 bytes\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -95,6 +96,15 @@ static av_cold int flic_decode_init(AVCodecContext *avctx)
     if (s->avctx->extradata_size == 12) {
         /* special case for magic carpet FLIs */
         s->fli_type = FLC_MAGIC_CARPET_SYNTHETIC_TYPE_CODE;
+        depth = 8;
+    } else if (avctx->extradata_size == 1024) {
+        uint8_t *ptr = avctx->extradata;
+        int i;
+
+        for (i = 0; i < 256; i++) {
+            s->palette[i] = AV_RL32(ptr);
+            ptr += 4;
+        }
         depth = 8;
     } else if (avctx->extradata_size == 0) {
         /* FLI in MOV, see e.g. FFmpeg trac issue #626 */
@@ -433,9 +443,8 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
     }
 
     /* by the end of the chunk, the stream ptr should equal the frame
-     * size (minus 1, possibly); if it doesn't, issue a warning */
-    if ((bytestream2_get_bytes_left(&g2) != 0) &&
-        (bytestream2_get_bytes_left(&g2) != 1))
+     * size (minus 1 or 2, possibly); if it doesn't, issue a warning */
+    if (bytestream2_get_bytes_left(&g2) > 2)
         av_log(avctx, AV_LOG_ERROR, "Processed FLI chunk where chunk size = %d " \
                "and final chunk ptr = %d\n", buf_size,
                buf_size - bytestream2_get_bytes_left(&g2));
