@@ -127,6 +127,7 @@ const char *ff_id3v2_picture_types[21] = {
 const CodecMime ff_id3v2_mime_tags[] = {
     {"image/gif" , CODEC_ID_GIF},
     {"image/jpeg", CODEC_ID_MJPEG},
+    {"image/jpg" , CODEC_ID_MJPEG},
     {"image/png" , CODEC_ID_PNG},
     {"image/tiff", CODEC_ID_TIFF},
     {"",           CODEC_ID_NONE},
