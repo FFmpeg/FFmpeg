@@ -1348,7 +1348,7 @@ static int read_frame_data(ALSDecContext *ctx, unsigned int ra_frame)
         }
     } else { // multi-channel coding
         ALSBlockData   bd = { 0 };
-        int            b;
+        int            b, ret;
         int            *reverted_channels = ctx->reverted_channels;
         unsigned int   offset             = 0;
 
@@ -1381,9 +1381,10 @@ static int read_frame_data(ALSDecContext *ctx, unsigned int ra_frame)
                 bd.raw_samples = ctx->raw_samples[c] + offset;
                 bd.raw_other   = NULL;
 
-                read_block(ctx, &bd);
-                if (read_channel_data(ctx, ctx->chan_data[c], c))
-                    return -1;
+                if ((ret = read_block(ctx, &bd)) < 0)
+                    return ret;
+                if ((ret = read_channel_data(ctx, ctx->chan_data[c], c)) < 0)
+                    return ret;
             }
 
             for (c = 0; c < avctx->channels; c++)
@@ -1402,7 +1403,8 @@ static int read_frame_data(ALSDecContext *ctx, unsigned int ra_frame)
                 bd.lpc_cof     = ctx->lpc_cof[c];
                 bd.quant_cof   = ctx->quant_cof[c];
                 bd.raw_samples = ctx->raw_samples[c] + offset;
-                decode_block(ctx, &bd);
+                if ((ret = decode_block(ctx, &bd)) < 0)
+                    return ret;
             }
 
             memset(reverted_channels, 0, avctx->channels * sizeof(*reverted_channels));
