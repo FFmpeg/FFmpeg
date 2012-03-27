@@ -377,7 +377,7 @@ static int oma_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (oc->encrypted) {
         /* previous unencrypted block saved in IV for the next packet (CBC mode) */
-        av_des_crypt(&oc->av_des, pkt->data, pkt->data, (packet_size >> 3), oc->iv, 1);
+        av_des_crypt(&oc->av_des, pkt->data, pkt->data, (ret >> 3), oc->iv, 1);
     }
 
     return ret;
