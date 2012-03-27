@@ -39,6 +39,7 @@
 #include "simple_idct.h"
 #include "mathops.h"
 #include "vdpau_internal.h"
+#include "libavutil/avassert.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -1137,6 +1138,7 @@ static av_always_inline void get_mvdata_interlaced(VC1Context *v, int *dmv_x,
         }
     }
     else {
+        av_assert0(index < esc);
         if (extend_x)
             offs_tab = offset_table2;
         else
