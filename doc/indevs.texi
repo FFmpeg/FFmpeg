@@ -59,7 +59,7 @@ BSD video input device.
 
 Windows DirectShow input device.
 
-DirectShow support is enabled when FFmpeg is built with mingw-w64.
+DirectShow support is enabled when FFmpeg is built with the mingw-w64 project.
 Currently only audio and video devices are supported.
 
 Multiple devices may be opened as separate inputs, but they may also be
