@@ -155,9 +155,6 @@ static int raw_decode(AVCodecContext *avctx,
         frame->top_field_first  = context->tff;
     }
 
-    if(buf_size < context->length - (avctx->pix_fmt==PIX_FMT_PAL8 ? 256*4 : 0))
-        return -1;
-
     if (avctx->width <= 0 || avctx->height <= 0) {
         av_log(avctx, AV_LOG_ERROR, "w/h is invalid\n");
         return AVERROR(EINVAL);
@@ -189,6 +186,9 @@ static int raw_decode(AVCodecContext *avctx,
     if(avctx->codec_tag == MKTAG('A', 'V', '1', 'x') ||
        avctx->codec_tag == MKTAG('A', 'V', 'u', 'p'))
         buf += buf_size - context->length;
+
+    if(buf_size < context->length - (avctx->pix_fmt==PIX_FMT_PAL8 ? 256*4 : 0))
+        return -1;
 
     avpicture_fill(picture, buf, avctx->pix_fmt, avctx->width, avctx->height);
     if((avctx->pix_fmt==PIX_FMT_PAL8 && buf_size < context->length) ||
