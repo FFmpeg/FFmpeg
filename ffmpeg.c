@@ -1100,7 +1100,7 @@ static int encode_audio_frame(AVFormatContext *s, OutputStream *ost,
                              (enc->channels * av_get_bytes_per_sample(enc->sample_fmt));
         if ((ret = avcodec_fill_audio_frame(frame, enc->channels, enc->sample_fmt,
                                             buf, buf_size, 1)) < 0) {
-            av_log(NULL, AV_LOG_FATAL, "Audio encoding failed\n");
+            av_log(NULL, AV_LOG_FATAL, "Audio encoding failed (avcodec_fill_audio_frame)\n");
             exit_program(1);
         }
 
@@ -1110,7 +1110,7 @@ static int encode_audio_frame(AVFormatContext *s, OutputStream *ost,
 
     got_packet = 0;
     if (avcodec_encode_audio2(enc, &pkt, frame, &got_packet) < 0) {
-        av_log(NULL, AV_LOG_FATAL, "Audio encoding failed\n");
+        av_log(NULL, AV_LOG_FATAL, "Audio encoding failed (avcodec_encode_audio2)\n");
         exit_program(1);
     }
 
