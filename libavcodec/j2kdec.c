@@ -1021,8 +1021,6 @@ static int decode_frame(AVCodecContext *avctx,
     bytestream2_init(&s->g, avpkt->data, avpkt->size);
     s->curtileno = -1;
 
-    ff_j2k_init_tier1_luts();
-
     if (bytestream2_get_bytes_left(&s->g) < 2) {
         ret = AVERROR(EINVAL);
         goto err_out;
@@ -1072,6 +1070,9 @@ static av_cold int j2kdec_init(AVCodecContext *avctx)
 
     avcodec_get_frame_defaults((AVFrame*)&s->picture);
     avctx->coded_frame = (AVFrame*)&s->picture;
+
+    ff_j2k_init_tier1_luts();
+
     return 0;
 }
 
