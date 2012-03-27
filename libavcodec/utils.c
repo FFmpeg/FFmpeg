@@ -960,7 +960,7 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
             avctx->frame_size = fs_tmp;
     }
     if (!ret) {
-        if (!user_packet && avpkt->data) {
+        if (!user_packet && avpkt->size) {
             uint8_t *new_data = av_realloc(avpkt->data, avpkt->size);
             if (new_data)
                 avpkt->data = new_data;
@@ -1123,7 +1123,7 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
         else if (!(avctx->codec->capabilities & CODEC_CAP_DELAY))
             avpkt->pts = avpkt->dts = frame->pts;
 
-        if (!user_packet && avpkt->data) {
+        if (!user_packet && avpkt->size) {
             uint8_t *new_data = av_realloc(avpkt->data, avpkt->size);
             if (new_data)
                 avpkt->data = new_data;
