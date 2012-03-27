@@ -1021,7 +1021,6 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame *picture = data;
     int tileno, ret;
 
-    s->avctx = avctx;
     bytestream2_init(&s->g, avpkt->data, avpkt->size);
     s->curtileno = -1;
 
@@ -1072,6 +1071,7 @@ static av_cold int j2kdec_init(AVCodecContext *avctx)
 {
     J2kDecoderContext *s = avctx->priv_data;
 
+    s->avctx = avctx;
     avcodec_get_frame_defaults((AVFrame*)&s->picture);
     avctx->coded_frame = (AVFrame*)&s->picture;
 
