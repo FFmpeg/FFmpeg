@@ -269,7 +269,7 @@ static int get_siz(J2kDecoderContext *s)
         }
         break;
     case 4:
-        s->avctx->pix_fmt = PIX_FMT_BGRA;
+        s->avctx->pix_fmt = PIX_FMT_RGBA;
         break;
     }
 
@@ -847,9 +847,6 @@ static int decode_tile(J2kDecoderContext *s, J2kTile *tile)
     }
     if (tile->codsty[0].mct)
         mct_decode(s, tile);
-
-    if (s->avctx->pix_fmt == PIX_FMT_BGRA) // RGBA -> BGRA
-        FFSWAP(int *, src[0], src[2]);
 
     if (s->precision <= 8) {
         for (compno = 0; compno < s->ncomponents; compno++){
