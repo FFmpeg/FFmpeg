@@ -2299,7 +2299,7 @@ static int stream_component_open(VideoState *is, int stream_index)
             wanted_channel_layout &= ~AV_CH_LAYOUT_STEREO_DOWNMIX;
             wanted_nb_channels = av_get_channel_layout_nb_channels(wanted_channel_layout);
             /* SDL only supports 1, 2, 4 or 6 channels at the moment, so we have to make sure not to request anything else. */
-            while (wanted_nb_channels > 0 && (wanted_nb_channels == 3 || wanted_nb_channels == 5 || wanted_nb_channels > 6)) {
+            while (wanted_nb_channels > 0 && (wanted_nb_channels == 3 || wanted_nb_channels == 5 || wanted_nb_channels > (SDL_VERSION_ATLEAST(1, 2, 8) ? 6 : 2))) {
                 wanted_nb_channels--;
                 wanted_channel_layout = av_get_default_channel_layout(wanted_nb_channels);
             }
