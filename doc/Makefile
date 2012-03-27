@@ -40,7 +40,7 @@ doc/%.1: TAG = MAN
 doc/%.1: doc/%.pod $(GENTEXI)
 	$(M)pod2man --section=1 --center=" " --release=" " $< > $@
 
-$(DOCS): | doc
+$(DOCS): | doc/
 
 install-progs-$(CONFIG_DOC): install-man
 
