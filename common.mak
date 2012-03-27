@@ -5,7 +5,7 @@
 # first so "all" becomes default target
 all: all-yes
 
-OBJS-$(HAVE_MMX) +=  $(MMX-OBJS-yes)
+include $(SRC_PATH)/arch.mak
 
 OBJS      += $(OBJS-yes)
 FFLIBS    := $(FFLIBS-yes) $(FFLIBS)
