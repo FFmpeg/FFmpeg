@@ -1083,7 +1083,7 @@ static int encode_audio_frame(AVFormatContext *s, OutputStream *ost,
     pkt.data = NULL;
     pkt.size = 0;
 
-    if (buf) {
+    if (buf && buf_size) {
         if (!ost->output_frame) {
             ost->output_frame = avcodec_alloc_frame();
             if (!ost->output_frame) {
