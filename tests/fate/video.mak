@@ -127,6 +127,9 @@ fate-iff-ilbm: CMD = framecrc -i $(SAMPLES)/iff/lms-matriks.ilbm -pix_fmt rgb24
 FATE_TESTS += $(FATE_IFF)
 fate-iff: $(FATE_IFF)
 
+FATE_TESTS += fate-kgv1
+fate-kgv1: CMD = framecrc -i $(SAMPLES)/kega/kgv1.avi -pix_fmt rgb555le -an
+
 FATE_TESTS += fate-kmvc
 fate-kmvc: CMD = framecrc -i $(SAMPLES)/KMVC/LOGO1.AVI -an -t 3 -pix_fmt rgb24
 
