@@ -60,6 +60,7 @@ flac_header (AVFormatContext * s, int idx)
 
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codec->codec_id = CODEC_ID_FLAC;
+        st->need_parsing = AVSTREAM_PARSE_HEADERS;
 
         st->codec->extradata =
             av_malloc(FLAC_STREAMINFO_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
