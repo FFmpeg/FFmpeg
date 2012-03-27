@@ -2179,8 +2179,10 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple,
                                uvlinesize, 1, 0, simple, pixel_shift);
 
             if (simple || !CONFIG_GRAY || !(s->flags & CODEC_FLAG_GRAY)) {
-                h->hpc.pred8x8[h->chroma_pred_mode](dest_cb, uvlinesize);
-                h->hpc.pred8x8[h->chroma_pred_mode](dest_cr, uvlinesize);
+                if (CHROMA) {
+                    h->hpc.pred8x8[h->chroma_pred_mode](dest_cb, uvlinesize);
+                    h->hpc.pred8x8[h->chroma_pred_mode](dest_cr, uvlinesize);
+                }
             }
 
             hl_decode_mb_predict_luma(h, mb_type, is_h264, simple,
