@@ -127,6 +127,8 @@ library:
 @item American Laser Games MM   @tab   @tab X
     @tab Multimedia format used in games like Mad Dog McCree.
 @item 3GPP AMR                  @tab X @tab X
+@item Amazing Studio Packed Animation File        @tab   @tab X
+    @tab Multimedia format used in game Heart Of Darkness.
 @item Apple HTTP Live Streaming @tab   @tab X
 @item Artworx Data Format       @tab   @tab X
 @item ASF                       @tab X @tab X
@@ -441,6 +443,7 @@ following image formats are supported:
 @item 8SVX fibonacci         @tab     @tab  X
 @item A64 multicolor         @tab  X  @tab
     @tab Creates video suitable to be played on a commodore 64 (multicolor mode).
+@item Amazing Studio PAF Video @tab     @tab  X
 @item American Laser Games MM  @tab    @tab X
     @tab Used in games like Mad Dog McCree.
 @item AMV Video              @tab  X  @tab  X
@@ -735,6 +738,7 @@ following image formats are supported:
     @tab encoding supported through external library libopencore-amrnb
 @item AMR-WB                 @tab  E  @tab  X
     @tab encoding supported through external library libvo-amrwbenc
+@item Amazing Studio PAF Audio @tab     @tab  X
 @item Apple lossless audio   @tab  X  @tab  X
     @tab QuickTime fourcc 'alac'
 @item Atrac 1                @tab     @tab  X

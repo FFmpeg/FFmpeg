@@ -337,6 +337,8 @@ OBJS-$(CONFIG_NELLYMOSER_DECODER)      += nellymoserdec.o nellymoser.o
 OBJS-$(CONFIG_NELLYMOSER_ENCODER)      += nellymoserenc.o nellymoser.o \
                                           audio_frame_queue.o
 OBJS-$(CONFIG_NUV_DECODER)             += nuv.o rtjpeg.o
+OBJS-$(CONFIG_PAF_VIDEO_DECODER)       += paf.o
+OBJS-$(CONFIG_PAF_AUDIO_DECODER)       += paf.o
 OBJS-$(CONFIG_PAM_DECODER)             += pnmdec.o pnm.o
 OBJS-$(CONFIG_PAM_ENCODER)             += pamenc.o pnm.o
 OBJS-$(CONFIG_PBM_DECODER)             += pnmdec.o pnm.o

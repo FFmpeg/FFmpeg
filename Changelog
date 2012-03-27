@@ -19,6 +19,7 @@ version next:
 - LucasArts SMUSH playback support
 - SAMI demuxer and decoder
 - RealText demuxer and decoder
+- Heart Of Darkness PAF playback support
 
 
 version 0.11:
