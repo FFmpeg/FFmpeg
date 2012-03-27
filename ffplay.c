@@ -867,7 +867,8 @@ static void video_audio_display(VideoState *s)
             }
         }
         SDL_UpdateRect(screen, s->xpos, s->ytop, 1, s->height);
-        s->xpos++;
+        if (!s->paused)
+            s->xpos++;
         if (s->xpos >= s->width)
             s->xpos= s->xleft;
     }
