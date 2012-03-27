@@ -1428,17 +1428,19 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         return;
 
     clear_program(ts, h->id);
-    pcr_pid = get16(&p, p_end) & 0x1fff;
+    pcr_pid = get16(&p, p_end);
     if (pcr_pid < 0)
         return;
+    pcr_pid &= 0x1fff;
     add_pid_to_pmt(ts, h->id, pcr_pid);
     set_pcr_pid(ts->stream, h->id, pcr_pid);
 
     av_dlog(ts->stream, "pcr_pid=0x%x\n", pcr_pid);
 
-    program_info_length = get16(&p, p_end) & 0xfff;
+    program_info_length = get16(&p, p_end);
     if (program_info_length < 0)
         return;
+    program_info_length &= 0xfff;
     while(program_info_length >= 2) {
         uint8_t tag, len;
         tag = get8(&p, p_end);
@@ -1476,9 +1478,10 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         stream_type = get8(&p, p_end);
         if (stream_type < 0)
             break;
-        pid = get16(&p, p_end) & 0x1fff;
+        pid = get16(&p, p_end);
         if (pid < 0)
             break;
+        pid &= 0x1fff;
 
         /* now create stream */
         if (ts->pids[pid] && ts->pids[pid]->type == MPEGTS_PES) {
@@ -1516,9 +1519,10 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
 
         ff_program_add_stream_index(ts->stream, h->id, st->index);
 
-        desc_list_len = get16(&p, p_end) & 0xfff;
+        desc_list_len = get16(&p, p_end);
         if (desc_list_len < 0)
             break;
+        desc_list_len &= 0xfff;
         desc_list_end = p + desc_list_len;
         if (desc_list_end > p_end)
             break;
@@ -1565,9 +1569,10 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         sid = get16(&p, p_end);
         if (sid < 0)
             break;
-        pmt_pid = get16(&p, p_end) & 0x1fff;
+        pmt_pid = get16(&p, p_end);
         if (pmt_pid < 0)
             break;
+        pmt_pid &= 0x1fff;
 
         av_dlog(ts->stream, "sid=0x%x pid=0x%x\n", sid, pmt_pid);
 
@@ -1617,9 +1622,10 @@ static void sdt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         val = get8(&p, p_end);
         if (val < 0)
             break;
-        desc_list_len = get16(&p, p_end) & 0xfff;
+        desc_list_len = get16(&p, p_end);
         if (desc_list_len < 0)
             break;
+        desc_list_len &= 0xfff;
         desc_list_end = p + desc_list_len;
         if (desc_list_end > p_end)
             break;
