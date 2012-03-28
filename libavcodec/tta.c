@@ -251,11 +251,14 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
         av_log(s->avctx, AV_LOG_DEBUG, "data_length: %d frame_length: %d last: %d total: %d\n",
             s->data_length, s->frame_length, s->last_frame_length, s->total_frames);
 
+        if (s->total_frames < 0)
+            return AVERROR_INVALIDDATA;
+
         // FIXME: seek table
         if (get_bits_left(&s->gb) < 32 * s->total_frames + 32)
             av_log(avctx, AV_LOG_WARNING, "Seek table missing or too small\n");
         else if (avctx->err_recognition & AV_EF_CRCCHECK) {
-            if (tta_check_crc(s, avctx->extradata + 22, s->total_frames * 4))
+            if (avctx->extradata_size < 26 + s->total_frames * 4 || tta_check_crc(s, avctx->extradata + 22, s->total_frames * 4))
                 return AVERROR_INVALIDDATA;
         }
         skip_bits_long(&s->gb, 32 * s->total_frames);
