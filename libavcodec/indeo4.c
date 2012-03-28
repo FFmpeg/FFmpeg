@@ -608,6 +608,7 @@ static int decode_band(IVI4DecContext *ctx, int plane_num,
 {
     int         result, i, t, pos, idx1, idx2;
     IVITile     *tile;
+    int         ret = 0;
 
     band->buf     = band->bufs[ctx->dst_buf];
     band->ref_buf = band->bufs[ctx->ref_buf];
@@ -651,7 +652,8 @@ static int decode_band(IVI4DecContext *ctx, int plane_num,
             tile->data_size = ff_ivi_dec_tile_data_size(&ctx->gb);
             if (!tile->data_size) {
                 av_log(avctx, AV_LOG_ERROR, "Tile data size is zero!\n");
-                return AVERROR_INVALIDDATA;
+                ret = AVERROR_INVALIDDATA;
+                break;
             }
 
             result = decode_mb_info(ctx, band, tile, avctx);
@@ -693,7 +695,7 @@ static int decode_band(IVI4DecContext *ctx, int plane_num,
 
     align_get_bits(&ctx->gb);
 
-    return 0;
+    return ret;
 }
 
 
