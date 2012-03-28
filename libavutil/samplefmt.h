@@ -139,7 +139,7 @@ int av_samples_get_buffer_size(int *linesize, int nb_channels, int nb_samples,
  * for packed layout.
  *
  * @param[out] audio_data  array to be filled with the pointer for each channel
- * @param[out] linesize    calculated linesize
+ * @param[out] linesize    calculated linesize, may be NULL
  * @param buf              the pointer to a buffer containing the samples
  * @param nb_channels      the number of channels
  * @param nb_samples       the number of samples in a single channel
@@ -157,7 +157,7 @@ int av_samples_fill_arrays(uint8_t **audio_data, int *linesize, uint8_t *buf,
  * The allocated samples buffer can be freed by using av_freep(&audio_data[0])
  *
  * @param[out] audio_data  array to be filled with the pointer for each channel
- * @param[out] linesize    aligned size for audio buffer(s)
+ * @param[out] linesize    aligned size for audio buffer(s), may be NULL
  * @param nb_channels      number of audio channels
  * @param nb_samples       number of samples per channel
  * @param align            buffer size alignment (1 = no alignment required)
