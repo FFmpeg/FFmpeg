@@ -393,6 +393,10 @@ static int decode_band_hdr(IVI4DecContext *ctx, IVIBandDesc *band,
             band->is_2d_trans   = transforms[transform_id].is_2d_trans;
 
             scan_indx = get_bits(&ctx->gb, 4);
+            if ((scan_indx>4 && scan_indx<10) != (band->blk_size==4)) {
+                av_log(avctx, AV_LOG_ERROR, "mismatching scan table!\n");
+                return AVERROR_INVALIDDATA;
+            }
             if (scan_indx == 15) {
                 av_log(avctx, AV_LOG_ERROR, "Custom scan pattern encountered!\n");
                 return AVERROR_INVALIDDATA;
