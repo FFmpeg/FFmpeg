@@ -587,6 +587,8 @@ retry:
 
         if (HAVE_THREADS && (s->avctx->active_thread_type&FF_THREAD_FRAME)) {
             av_log_missing_feature(s->avctx, "Width/height/bit depth/chroma idc changing with threads is", 0);
+            s->width = avctx->coded_width;
+            s->height= avctx->coded_height;
             return -1;   // width / height changed during parallelized decoding
         }
 
