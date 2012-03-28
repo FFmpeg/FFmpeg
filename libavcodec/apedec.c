@@ -217,7 +217,7 @@ static av_cold int ape_decode_init(AVCodecContext *avctx)
 
     av_log(avctx, AV_LOG_DEBUG, "Compression Level: %d - Flags: %d\n",
            s->compression_level, s->flags);
-    if (s->compression_level % 1000 || s->compression_level > COMPRESSION_LEVEL_INSANE) {
+    if (s->compression_level % 1000 || s->compression_level > COMPRESSION_LEVEL_INSANE || !s->compression_level) {
         av_log(avctx, AV_LOG_ERROR, "Incorrect compression level %d\n",
                s->compression_level);
         return AVERROR_INVALIDDATA;
