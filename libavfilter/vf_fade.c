@@ -191,9 +191,9 @@ static int config_props(AVFilterLink *inlink)
     fade->alpha = fade->alpha ? ff_fmt_is_in(inlink->format, alpha_pix_fmts) : 0;
     fade->is_packed_rgb = ff_fill_rgba_map(fade->rgba_map, inlink->format) >= 0;
 
-    /* CCIR601/709 black level unless input is RGB or has alpha */
+    /* use CCIR601/709 black level for studio-level pixel non-alpha components */
     fade->black_level =
-            ff_fmt_is_in(inlink->format, studio_level_pix_fmts) || fade->alpha ? 0 : 16;
+            ff_fmt_is_in(inlink->format, studio_level_pix_fmts) && !fade->alpha ? 16 : 0;
     /* 32768 = 1 << 15, it is an integer representation
      * of 0.5 and is for rounding. */
     fade->black_level_scaled = (fade->black_level << 16) + 32768;
