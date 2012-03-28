@@ -32,7 +32,6 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
-#include "libavutil/pixdesc.h"
 #include "drawutils.h"
 #include "avfilter.h"
 
@@ -41,12 +40,12 @@ typedef struct {
     ASS_Library  *library;
     ASS_Renderer *renderer;
     ASS_Track    *track;
-    int hsub, vsub;
     char *filename;
     uint8_t rgba_map[4];
     int     pix_step[4];       ///< steps per pixel for each plane of the main output
     char *original_size_str;
     int original_w, original_h;
+    FFDrawContext draw;
 } AssContext;
 
 #define OFFSET(x) offsetof(AssContext, x)
@@ -156,28 +155,15 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    static const enum PixelFormat pix_fmts[] = {
-        PIX_FMT_ARGB,  PIX_FMT_RGBA,
-        PIX_FMT_ABGR,  PIX_FMT_BGRA,
-        PIX_FMT_RGB24, PIX_FMT_BGR24,
-        PIX_FMT_NONE
-    };
-
-    avfilter_set_common_pixel_formats(ctx, avfilter_make_format_list(pix_fmts));
-
+    avfilter_set_common_pixel_formats(ctx, ff_draw_supported_pixel_formats(0));
     return 0;
 }
 
 static int config_input(AVFilterLink *inlink)
 {
     AssContext *ass = inlink->dst->priv;
-    const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[inlink->format];
 
-    av_image_fill_max_pixsteps(ass->pix_step, NULL, pix_desc);
-    ff_fill_rgba_map(ass->rgba_map, inlink->format);
-
-    ass->hsub = pix_desc->log2_chroma_w;
-    ass->vsub = pix_desc->log2_chroma_h;
+    ff_draw_init(&ass->draw, inlink->format, 0);
 
     ass_set_frame_size  (ass->renderer, inlink->w, inlink->h);
     if (ass->original_w && ass->original_h)
@@ -189,47 +175,24 @@ static int config_input(AVFilterLink *inlink)
 
 static void null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { }
 
-#define R 0
-#define G 1
-#define B 2
-#define A 3
-
-#define SET_PIXEL_RGB(picref, rgba_color, val, x, y, pixel_step, r_off, g_off, b_off) { \
-    p   = picref->data[0] + (x) * pixel_step + ((y) * picref->linesize[0]);             \
-    alpha = rgba_color[A] * (val) * 129;                                                \
-    *(p+r_off) = (alpha * rgba_color[R] + (255*255*129 - alpha) * *(p+r_off)) >> 23;    \
-    *(p+g_off) = (alpha * rgba_color[G] + (255*255*129 - alpha) * *(p+g_off)) >> 23;    \
-    *(p+b_off) = (alpha * rgba_color[B] + (255*255*129 - alpha) * *(p+b_off)) >> 23;    \
-}
-
 /* libass stores an RGBA color in the format RRGGBBTT, where TT is the transparency level */
 #define AR(c)  ( (c)>>24)
 #define AG(c)  (((c)>>16)&0xFF)
 #define AB(c)  (((c)>>8) &0xFF)
 #define AA(c)  ((0xFF-c) &0xFF)
 
-static void overlay_ass_image(AVFilterBufferRef *picref, const uint8_t *rgba_map, const int pix_step,
+static void overlay_ass_image(AssContext *ass, AVFilterBufferRef *picref,
                               const ASS_Image *image)
 {
-    int i, j;
-    int alpha;
-    uint8_t *p;
-    const int ro = rgba_map[R];
-    const int go = rgba_map[G];
-    const int bo = rgba_map[B];
-
     for (; image; image = image->next) {
         uint8_t rgba_color[] = {AR(image->color), AG(image->color), AB(image->color), AA(image->color)};
-        unsigned char *row = image->bitmap;
-
-        for (i = 0; i < image->h; i++) {
-            for (j = 0; j < image->w; j++) {
-                if (row[j]) {
-                    SET_PIXEL_RGB(picref, rgba_color, row[j], image->dst_x + j, image->dst_y + i, pix_step, ro, go, bo);
-                }
-            }
-            row += image->stride;
-        }
+        FFDrawColor color;
+        ff_draw_color(&ass->draw, &color, rgba_color);
+        ff_blend_mask(&ass->draw, &color,
+                      picref->data, picref->linesize,
+                      picref->video->w, picref->video->h,
+                      image->bitmap, image->stride, image->w, image->h,
+                      3, 0, image->dst_x, image->dst_y);
     }
 }
 
@@ -247,7 +210,7 @@ static void end_frame(AVFilterLink *inlink)
     if (detect_change)
         av_log(ctx, AV_LOG_DEBUG, "Change happened at time ms:%f\n", time_ms);
 
-    overlay_ass_image(picref, ass->rgba_map, ass->pix_step[0], image);
+    overlay_ass_image(ass, picref, image);
 
     avfilter_draw_slice(outlink, 0, picref->video->h, 1);
     avfilter_end_frame(outlink);
