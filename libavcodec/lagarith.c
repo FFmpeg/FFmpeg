@@ -311,7 +311,7 @@ handle_zeros:
 }
 
 static int lag_decode_zero_run_line(LagarithContext *l, uint8_t *dst,
-                                    const uint8_t *src, int width,
+                                    const uint8_t *src, const uint8_t *srcend, int width,
                                     int esc_count)
 {
     int i = 0;
@@ -334,6 +334,8 @@ output_zeros:
         i = 0;
         while (!zero_run && dst + i < end) {
             i++;
+            if (i+2 >= srcend - src)
+                return src - start;
             zero_run =
                 !(src[i] | (src[i + 1] & mask1) | (src[i + 2] & mask2));
         }
@@ -364,15 +366,22 @@ static int lag_decode_arith_plane(LagarithContext *l, uint8_t *dst,
     int read = 0;
     uint32_t length;
     uint32_t offset = 1;
-    int esc_count = src[0];
+    int esc_count;
     GetBitContext gb;
     lag_rac rac;
+    const uint8_t *srcend = src + src_size;
 
     rac.avctx = l->avctx;
     l->zeros = 0;
 
+    if(src_size < 2)
+        return AVERROR_INVALIDDATA;
+
+    esc_count = src[0];
     if (esc_count < 4) {
         length = width * height;
+        if(src_size < 5)
+            return AVERROR_INVALIDDATA;
         if (esc_count && AV_RL32(src + 1) < length) {
             length = AV_RL32(src + 1);
             offset += 4;
@@ -398,9 +407,11 @@ static int lag_decode_arith_plane(LagarithContext *l, uint8_t *dst,
         if (esc_count > 0) {
             /* Zero run coding only, no range coding. */
             for (i = 0; i < height; i++)
-                src += lag_decode_zero_run_line(l, dst + (i * stride), src,
+                src += lag_decode_zero_run_line(l, dst + (i * stride), src, srcend,
                                                 width, esc_count);
         } else {
+            if (src_size < height * width)
+                return -1;
             /* Plane is stored uncompressed */
             for (i = 0; i < height; i++) {
                 memcpy(dst + (i * stride), src, width);
@@ -441,7 +452,7 @@ static int lag_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
+    unsigned int buf_size = avpkt->size;
     LagarithContext *l = avctx->priv_data;
     AVFrame *const p = &l->picture;
     uint8_t frametype = 0;
@@ -507,11 +518,15 @@ static int lag_decode_frame(AVCodecContext *avctx,
         }
         for (i = 0; i < planes; i++)
             srcs[i] = l->rgb_planes + (i + 1) * l->rgb_stride * avctx->height - l->rgb_stride;
-        for (i = 0; i < planes; i++)
+        for (i = 0; i < planes; i++) {
+            if (buf_size <= offs[i]) {
+                return AVERROR_INVALIDDATA;
+            }
             lag_decode_arith_plane(l, srcs[i],
                                    avctx->width, avctx->height,
                                    -l->rgb_stride, buf + offs[i],
-                                   buf_size);
+                                   buf_size - offs[i]);
+        }
         dst = p->data[0];
         for (i = 0; i < planes; i++)
             srcs[i] = l->rgb_planes + i * l->rgb_stride * avctx->height;
@@ -544,16 +559,19 @@ static int lag_decode_frame(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return -1;
         }
+        if (buf_size <= offset_ry || buf_size <= offset_gu || buf_size <= offset_bv) {
+            return AVERROR_INVALIDDATA;
+        }
 
         lag_decode_arith_plane(l, p->data[0], avctx->width, avctx->height,
                                p->linesize[0], buf + offset_ry,
-                               buf_size);
+                               buf_size - offset_ry);
         lag_decode_arith_plane(l, p->data[2], avctx->width / 2,
                                avctx->height / 2, p->linesize[2],
-                               buf + offset_gu, buf_size);
+                               buf + offset_gu, buf_size - offset_gu);
         lag_decode_arith_plane(l, p->data[1], avctx->width / 2,
                                avctx->height / 2, p->linesize[1],
-                               buf + offset_bv, buf_size);
+                               buf + offset_bv, buf_size - offset_bv);
         break;
     default:
         av_log(avctx, AV_LOG_ERROR,
