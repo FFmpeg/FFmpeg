@@ -351,7 +351,7 @@ output_zeros:
             src += i;
         }
     }
-    return start - src;
+    return  src - start;
 }
 
 
