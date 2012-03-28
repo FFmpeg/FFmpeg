@@ -339,8 +339,13 @@ static inline int GET_TOK(TM2Context *ctx,int type) {
         av_log(ctx->avctx, AV_LOG_ERROR, "Read token from stream %i out of bounds (%i>=%i)\n", type, ctx->tok_ptrs[type], ctx->tok_lens[type]);
         return 0;
     }
-    if(type <= TM2_MOT)
+    if(type <= TM2_MOT) {
+        if (ctx->tokens[type][ctx->tok_ptrs[type]] >= TM2_DELTAS) {
+            av_log(ctx->avctx, AV_LOG_ERROR, "token %d is too large\n", ctx->tokens[type][ctx->tok_ptrs[type]]);
+            return 0;
+        }
         return ctx->deltas[type][ctx->tokens[type][ctx->tok_ptrs[type]++]];
+    }
     return ctx->tokens[type][ctx->tok_ptrs[type]++];
 }
 
