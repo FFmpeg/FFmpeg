@@ -25,6 +25,7 @@
  */
 
 #include "avcodec.h"
+#include "bytestream.h"
 #include "get_bits.h"
 #include "dsputil.h"
 
@@ -248,13 +249,14 @@ static int tm2_read_deltas(TM2Context *ctx, int stream_id) {
 static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, int buf_size)
 {
     int i;
-    int cur = 0;
     int skip = 0;
-    int len, toks;
+    int len, toks, pos;
     TM2Codes codes;
+    GetByteContext gb;
 
     /* get stream length in dwords */
-    len = AV_RB32(buf); buf += 4; cur += 4;
+    bytestream2_init(&gb, buf, buf_size);
+    len  = bytestream2_get_be32(&gb);
     skip = len * 4 + 4;
 
     if(len == 0)
@@ -265,36 +267,37 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
         return -1;
     }
 
-    toks = AV_RB32(buf); buf += 4; cur += 4;
+    toks = bytestream2_get_be32(&gb);
     if(toks & 1) {
-        len = AV_RB32(buf); buf += 4; cur += 4;
+        len = bytestream2_get_be32(&gb);
         if(len == TM2_ESCAPE) {
-            len = AV_RB32(buf); buf += 4; cur += 4;
+            len = bytestream2_get_be32(&gb);
         }
         if(len > 0) {
-            if (skip <= cur)
+            pos = bytestream2_tell(&gb);
+            if (skip <= pos)
                 return -1;
-            init_get_bits(&ctx->gb, buf, (skip - cur) * 8);
+            init_get_bits(&ctx->gb, buf + pos, (skip - pos) * 8);
             if(tm2_read_deltas(ctx, stream_id) == -1)
                 return -1;
-            buf += ((get_bits_count(&ctx->gb) + 31) >> 5) << 2;
-            cur += ((get_bits_count(&ctx->gb) + 31) >> 5) << 2;
+            bytestream2_skip(&gb, ((get_bits_count(&ctx->gb) + 31) >> 5) << 2);
         }
     }
     /* skip unused fields */
-    if(AV_RB32(buf) == TM2_ESCAPE) {
-        buf += 4; cur += 4; /* some unknown length - could be escaped too */
+    len = bytestream2_get_be32(&gb);
+    if(len == TM2_ESCAPE) { /* some unknown length - could be escaped too */
+        bytestream2_skip(&gb, 8); /* unused by decoder */
+    } else {
+        bytestream2_skip(&gb, 4); /* unused by decoder */
     }
-    buf += 4; cur += 4;
-    buf += 4; cur += 4; /* unused by decoder */
 
-    if (skip <= cur)
+    pos = bytestream2_tell(&gb);
+    if (skip <= pos)
         return -1;
-    init_get_bits(&ctx->gb, buf, (skip - cur) * 8);
+    init_get_bits(&ctx->gb, buf + pos, (skip - pos) * 8);
     if(tm2_build_huff_table(ctx, &codes) == -1)
         return -1;
-    buf += ((get_bits_count(&ctx->gb) + 31) >> 5) << 2;
-    cur += ((get_bits_count(&ctx->gb) + 31) >> 5) << 2;
+    bytestream2_skip(&gb, ((get_bits_count(&ctx->gb) + 31) >> 5) << 2);
 
     toks >>= 1;
     /* check if we have sane number of tokens */
@@ -305,11 +308,12 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
     }
     ctx->tokens[stream_id] = av_realloc(ctx->tokens[stream_id], toks * sizeof(int));
     ctx->tok_lens[stream_id] = toks;
-    len = AV_RB32(buf); buf += 4; cur += 4;
+    len = bytestream2_get_be32(&gb);
     if(len > 0) {
-        if (skip <= cur)
+        pos = bytestream2_tell(&gb);
+        if (skip <= pos)
             return -1;
-        init_get_bits(&ctx->gb, buf, (skip - cur) * 8);
+        init_get_bits(&ctx->gb, buf + pos, (skip - pos) * 8);
         for(i = 0; i < toks; i++) {
             if (get_bits_left(&ctx->gb) <= 0) {
                 av_log(ctx->avctx, AV_LOG_ERROR, "Incorrect number of tokens: %i\n", toks);
@@ -762,7 +766,7 @@ static int decode_frame(AVCodecContext *avctx,
                         AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
+    int buf_size = avpkt->size & ~3;
     TM2Context * const l = avctx->priv_data;
     AVFrame * const p= (AVFrame*)&l->pic;
     int i, skip, t;
@@ -790,7 +794,11 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     for(i = 0; i < TM2_NUM_STREAMS; i++){
-        t = tm2_read_stream(l, swbuf + skip, tm2_stream_order[i], buf_size);
+        if (skip >= buf_size) {
+            av_free(swbuf);
+            return AVERROR_INVALIDDATA;
+        }
+        t = tm2_read_stream(l, swbuf + skip, tm2_stream_order[i], buf_size - skip);
         if(t == -1){
             av_free(swbuf);
             return -1;
