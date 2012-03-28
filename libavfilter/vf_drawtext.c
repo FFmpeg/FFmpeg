@@ -31,13 +31,11 @@
 
 #include "config.h"
 #include "libavutil/avstring.h"
-#include "libavutil/colorspace.h"
 #include "libavutil/file.h"
 #include "libavutil/eval.h"
 #include "libavutil/opt.h"
 #include "libavutil/random_seed.h"
 #include "libavutil/parseutils.h"
-#include "libavutil/pixdesc.h"
 #include "libavutil/timecode.h"
 #include "libavutil/tree.h"
 #include "libavutil/lfg.h"
@@ -129,26 +127,20 @@ typedef struct {
     char *fontcolor_string;         ///< font color as string
     char *boxcolor_string;          ///< box color as string
     char *shadowcolor_string;       ///< shadow color as string
-    uint8_t fontcolor[4];           ///< foreground color
-    uint8_t boxcolor[4];            ///< background color
-    uint8_t shadowcolor[4];         ///< shadow color
-    uint8_t fontcolor_rgba[4];      ///< foreground color in RGBA
-    uint8_t boxcolor_rgba[4];       ///< background color in RGBA
-    uint8_t shadowcolor_rgba[4];    ///< shadow color in RGBA
 
     short int draw_box;             ///< draw box around text - true or false
     int use_kerning;                ///< font kerning is used - true/false
     int tabsize;                    ///< tab size
     int fix_bounds;                 ///< do we let it go out of frame bounds - t/f
 
+    FFDrawContext dc;
+    FFDrawColor fontcolor;          ///< foreground color
+    FFDrawColor shadowcolor;        ///< shadow color
+    FFDrawColor boxcolor;           ///< background color
+
     FT_Library library;             ///< freetype font library handle
     FT_Face face;                   ///< freetype font face handle
     struct AVTreeNode *glyphs;      ///< rendered glyphs, stored using the UTF-32 char code
-    int hsub, vsub;                 ///< chroma subsampling values
-    int is_packed_rgb;
-    int pixel_step[4];              ///< distance in bytes between the component of each pixel
-    uint8_t rgba_map[4];            ///< map RGBA offsets to the positions in the packed RGBA format
-    uint8_t *box_line[4];           ///< line used for filling the box background
     char *x_expr;                   ///< expression for x position
     char *y_expr;                   ///< expression for y position
     AVExpr *x_pexpr, *y_pexpr;      ///< parsed expressions for x and y
@@ -365,19 +357,19 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
         return AVERROR(EINVAL);
     }
 
-    if ((err = av_parse_color(dtext->fontcolor_rgba, dtext->fontcolor_string, -1, ctx))) {
+    if ((err = av_parse_color(dtext->fontcolor.rgba, dtext->fontcolor_string, -1, ctx))) {
         av_log(ctx, AV_LOG_ERROR,
                "Invalid font color '%s'\n", dtext->fontcolor_string);
         return err;
     }
 
-    if ((err = av_parse_color(dtext->boxcolor_rgba, dtext->boxcolor_string, -1, ctx))) {
+    if ((err = av_parse_color(dtext->boxcolor.rgba, dtext->boxcolor_string, -1, ctx))) {
         av_log(ctx, AV_LOG_ERROR,
                "Invalid box color '%s'\n", dtext->boxcolor_string);
         return err;
     }
 
-    if ((err = av_parse_color(dtext->shadowcolor_rgba, dtext->shadowcolor_string, -1, ctx))) {
+    if ((err = av_parse_color(dtext->shadowcolor.rgba, dtext->shadowcolor_string, -1, ctx))) {
         av_log(ctx, AV_LOG_ERROR,
                "Invalid shadow color '%s'\n", dtext->shadowcolor_string);
         return err;
@@ -418,17 +410,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    static const enum PixelFormat pix_fmts[] = {
-        PIX_FMT_ARGB,    PIX_FMT_RGBA,
-        PIX_FMT_ABGR,    PIX_FMT_BGRA,
-        PIX_FMT_RGB24,   PIX_FMT_BGR24,
-        PIX_FMT_YUV420P, PIX_FMT_YUV444P,
-        PIX_FMT_YUV422P, PIX_FMT_YUV411P,
-        PIX_FMT_YUV410P, PIX_FMT_YUV440P,
-        PIX_FMT_NONE
-    };
-
-    avfilter_set_common_pixel_formats(ctx, avfilter_make_format_list(pix_fmts));
+    avfilter_set_common_pixel_formats(ctx, ff_draw_supported_pixel_formats(0));
     return 0;
 }
 
@@ -441,7 +423,6 @@ static int glyph_enu_free(void *opaque, void *elem)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     DrawTextContext *dtext = ctx->priv;
-    int i;
 
     av_expr_free(dtext->x_pexpr); dtext->x_pexpr = NULL;
     av_expr_free(dtext->y_pexpr); dtext->y_pexpr = NULL;
@@ -464,11 +445,6 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     FT_Done_Face(dtext->face);
     FT_Done_FreeType(dtext->library);
-
-    for (i = 0; i < 4; i++) {
-        av_freep(&dtext->box_line[i]);
-        dtext->pixel_step[i] = 0;
-    }
 }
 
 static inline int is_newline(uint32_t c)
@@ -480,38 +456,19 @@ static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     DrawTextContext *dtext = ctx->priv;
-    const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[inlink->format];
     int ret;
 
-    dtext->hsub = pix_desc->log2_chroma_w;
-    dtext->vsub = pix_desc->log2_chroma_h;
-
-    if ((ret =
-         ff_fill_line_with_color(dtext->box_line, dtext->pixel_step,
-                                 inlink->w, dtext->boxcolor,
-                                 inlink->format, dtext->boxcolor_rgba,
-                                 &dtext->is_packed_rgb, dtext->rgba_map)) < 0)
-        return ret;
-
-    if (!dtext->is_packed_rgb) {
-        uint8_t *rgba = dtext->fontcolor_rgba;
-        dtext->fontcolor[0] = RGB_TO_Y_CCIR(rgba[0], rgba[1], rgba[2]);
-        dtext->fontcolor[1] = RGB_TO_U_CCIR(rgba[0], rgba[1], rgba[2], 0);
-        dtext->fontcolor[2] = RGB_TO_V_CCIR(rgba[0], rgba[1], rgba[2], 0);
-        dtext->fontcolor[3] = rgba[3];
-        rgba = dtext->shadowcolor_rgba;
-        dtext->shadowcolor[0] = RGB_TO_Y_CCIR(rgba[0], rgba[1], rgba[2]);
-        dtext->shadowcolor[1] = RGB_TO_U_CCIR(rgba[0], rgba[1], rgba[2], 0);
-        dtext->shadowcolor[2] = RGB_TO_V_CCIR(rgba[0], rgba[1], rgba[2], 0);
-        dtext->shadowcolor[3] = rgba[3];
-    }
+    ff_draw_init(&dtext->dc, inlink->format, 0);
+    ff_draw_color(&dtext->dc, &dtext->fontcolor,   dtext->fontcolor.rgba);
+    ff_draw_color(&dtext->dc, &dtext->shadowcolor, dtext->shadowcolor.rgba);
+    ff_draw_color(&dtext->dc, &dtext->boxcolor,    dtext->boxcolor.rgba);
 
     dtext->var_values[VAR_w]     = dtext->var_values[VAR_W]     = dtext->var_values[VAR_MAIN_W] = inlink->w;
     dtext->var_values[VAR_h]     = dtext->var_values[VAR_H]     = dtext->var_values[VAR_MAIN_H] = inlink->h;
     dtext->var_values[VAR_SAR]   = inlink->sample_aspect_ratio.num ? av_q2d(inlink->sample_aspect_ratio) : 1;
     dtext->var_values[VAR_DAR]   = (double)inlink->w / inlink->h * dtext->var_values[VAR_SAR];
-    dtext->var_values[VAR_HSUB]  = 1<<pix_desc->log2_chroma_w;
-    dtext->var_values[VAR_VSUB]  = 1<<pix_desc->log2_chroma_h;
+    dtext->var_values[VAR_HSUB]  = 1 << dtext->dc.hsub_max;
+    dtext->var_values[VAR_VSUB]  = 1 << dtext->dc.vsub_max;
     dtext->var_values[VAR_X]     = NAN;
     dtext->var_values[VAR_Y]     = NAN;
     if (!dtext->reinit)
@@ -548,110 +505,8 @@ static int command(AVFilterContext *ctx, const char *cmd, const char *arg, char 
     return AVERROR(ENOSYS);
 }
 
-#define GET_BITMAP_VAL(r, c)                                            \
-    bitmap->pixel_mode == FT_PIXEL_MODE_MONO ?                          \
-        (bitmap->buffer[(r) * bitmap->pitch + ((c)>>3)] & (0x80 >> ((c)&7))) * 255 : \
-         bitmap->buffer[(r) * bitmap->pitch +  (c)]
-
-#define SET_PIXEL_YUV(picref, yuva_color, val, x, y, hsub, vsub) {           \
-    luma_pos    = ((x)          ) + ((y)          ) * picref->linesize[0]; \
-    alpha = yuva_color[3] * (val) * 129;                               \
-    picref->data[0][luma_pos]    = (alpha * yuva_color[0] + (255*255*129 - alpha) * picref->data[0][luma_pos]   ) >> 23; \
-    if (((x) & ((1<<(hsub)) - 1)) == 0 && ((y) & ((1<<(vsub)) - 1)) == 0) {\
-        chroma_pos1 = ((x) >> (hsub)) + ((y) >> (vsub)) * picref->linesize[1]; \
-        chroma_pos2 = ((x) >> (hsub)) + ((y) >> (vsub)) * picref->linesize[2]; \
-        picref->data[1][chroma_pos1] = (alpha * yuva_color[1] + (255*255*129 - alpha) * picref->data[1][chroma_pos1]) >> 23; \
-        picref->data[2][chroma_pos2] = (alpha * yuva_color[2] + (255*255*129 - alpha) * picref->data[2][chroma_pos2]) >> 23; \
-    }\
-}
-
-static inline int draw_glyph_yuv(AVFilterBufferRef *picref, FT_Bitmap *bitmap,
-                                 int x, int y, int width, int height,
-                                 const uint8_t yuva_color[4], int hsub, int vsub)
-{
-    int r, c, alpha;
-    unsigned int luma_pos, chroma_pos1, chroma_pos2;
-    uint8_t src_val;
-
-    for (r = 0; r < bitmap->rows && r+y < height; r++) {
-        for (c = 0; c < bitmap->width && c+x < width; c++) {
-            if (c+x < 0 || r+y < 0)
-                continue;
-
-            /* get intensity value in the glyph bitmap (source) */
-            src_val = GET_BITMAP_VAL(r, c);
-            if (!src_val)
-                continue;
-
-            SET_PIXEL_YUV(picref, yuva_color, src_val, c+x, y+r, hsub, vsub);
-        }
-    }
-
-    return 0;
-}
-
-#define SET_PIXEL_RGB(picref, rgba_color, val, x, y, pixel_step, r_off, g_off, b_off, a_off) { \
-    p   = picref->data[0] + (x) * pixel_step + ((y) * picref->linesize[0]); \
-    alpha = rgba_color[3] * (val) * 129;                              \
-    *(p+r_off) = (alpha * rgba_color[0] + (255*255*129 - alpha) * *(p+r_off)) >> 23; \
-    *(p+g_off) = (alpha * rgba_color[1] + (255*255*129 - alpha) * *(p+g_off)) >> 23; \
-    *(p+b_off) = (alpha * rgba_color[2] + (255*255*129 - alpha) * *(p+b_off)) >> 23; \
-}
-
-static inline int draw_glyph_rgb(AVFilterBufferRef *picref, FT_Bitmap *bitmap,
-                                 int x, int y, int width, int height, int pixel_step,
-                                 const uint8_t rgba_color[4], const uint8_t rgba_map[4])
-{
-    int r, c, alpha;
-    uint8_t *p;
-    uint8_t src_val;
-
-    for (r = 0; r < bitmap->rows && r+y < height; r++) {
-        for (c = 0; c < bitmap->width && c+x < width; c++) {
-            if (c+x < 0 || r+y < 0)
-                continue;
-            /* get intensity value in the glyph bitmap (source) */
-            src_val = GET_BITMAP_VAL(r, c);
-            if (!src_val)
-                continue;
-
-            SET_PIXEL_RGB(picref, rgba_color, src_val, c+x, y+r, pixel_step,
-                          rgba_map[0], rgba_map[1], rgba_map[2], rgba_map[3]);
-        }
-    }
-
-    return 0;
-}
-
-static inline void drawbox(AVFilterBufferRef *picref, int x, int y,
-                           int width, int height,
-                           uint8_t *line[4], int pixel_step[4], uint8_t color[4],
-                           int hsub, int vsub, int is_rgba_packed, uint8_t rgba_map[4])
-{
-    int i, j, alpha;
-
-    if (color[3] != 0xFF) {
-        if (is_rgba_packed) {
-            uint8_t *p;
-            for (j = 0; j < height; j++)
-                for (i = 0; i < width; i++)
-                    SET_PIXEL_RGB(picref, color, 255, i+x, y+j, pixel_step[0],
-                                  rgba_map[0], rgba_map[1], rgba_map[2], rgba_map[3]);
-        } else {
-            unsigned int luma_pos, chroma_pos1, chroma_pos2;
-            for (j = 0; j < height; j++)
-                for (i = 0; i < width; i++)
-                    SET_PIXEL_YUV(picref, color, 255, i+x, y+j, hsub, vsub);
-        }
-    } else {
-        ff_draw_rectangle(picref->data, picref->linesize,
-                          line, pixel_step, hsub, vsub,
-                          x, y, width, height);
-    }
-}
-
 static int draw_glyphs(DrawTextContext *dtext, AVFilterBufferRef *picref,
-                       int width, int height, const uint8_t rgbcolor[4], const uint8_t yuvcolor[4], int x, int y)
+                       int width, int height, const uint8_t rgbcolor[4], FFDrawColor *color, int x, int y)
 {
     char *text = dtext->expanded_text;
     uint32_t code = 0;
@@ -677,15 +532,12 @@ static int draw_glyphs(DrawTextContext *dtext, AVFilterBufferRef *picref,
         x1 = dtext->positions[i].x+dtext->x+x;
         y1 = dtext->positions[i].y+dtext->y+y;
 
-        if (dtext->is_packed_rgb) {
-            draw_glyph_rgb(picref, &glyph->bitmap,
-                           x1, y1, width, height,
-                           dtext->pixel_step[0], rgbcolor, dtext->rgba_map);
-        } else {
-            draw_glyph_yuv(picref, &glyph->bitmap,
-                           x1, y1, width, height,
-                           yuvcolor, dtext->hsub, dtext->vsub);
-        }
+        ff_blend_mask(&dtext->dc, color,
+                      picref->data, picref->linesize, width, height,
+                      glyph->bitmap.buffer, glyph->bitmap.pitch,
+                      glyph->bitmap.width, glyph->bitmap.rows,
+                      glyph->bitmap.pixel_mode == FT_PIXEL_MODE_MONO ? 0 : 3,
+                      0, x1, y1);
     }
 
     return 0;
@@ -829,26 +681,23 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
     if(!dtext->draw)
         return 0;
 
-    dtext->x &= ~((1 << dtext->hsub) - 1);
-    dtext->y &= ~((1 << dtext->vsub) - 1);
-
     box_w = FFMIN(width - 1 , max_text_line_w);
     box_h = FFMIN(height - 1, y + dtext->max_glyph_h);
 
     /* draw box */
     if (dtext->draw_box)
-        drawbox(picref, dtext->x, dtext->y, box_w, box_h,
-                dtext->box_line, dtext->pixel_step, dtext->is_packed_rgb ? dtext->boxcolor_rgba : dtext->boxcolor,
-                dtext->hsub, dtext->vsub, dtext->is_packed_rgb, dtext->rgba_map);
+        ff_blend_rectangle(&dtext->dc, &dtext->boxcolor,
+                           picref->data, picref->linesize, width, height,
+                           dtext->x, dtext->y, box_w, box_h);
 
     if (dtext->shadowx || dtext->shadowy) {
-        if ((ret = draw_glyphs(dtext, picref, width, height, dtext->shadowcolor_rgba,
-                               dtext->shadowcolor, dtext->shadowx, dtext->shadowy)) < 0)
+        if ((ret = draw_glyphs(dtext, picref, width, height, dtext->shadowcolor.rgba,
+                               &dtext->shadowcolor, dtext->shadowx, dtext->shadowy)) < 0)
             return ret;
     }
 
-    if ((ret = draw_glyphs(dtext, picref, width, height, dtext->fontcolor_rgba,
-                           dtext->fontcolor, 0, 0)) < 0)
+    if ((ret = draw_glyphs(dtext, picref, width, height, dtext->fontcolor.rgba,
+                           &dtext->fontcolor, 0, 0)) < 0)
         return ret;
 
     return 0;
