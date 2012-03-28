@@ -104,6 +104,10 @@ int av_samples_get_buffer_size(int *linesize, int nb_channels, int nb_samples,
     if (!sample_size || nb_samples <= 0 || nb_channels <= 0)
         return AVERROR(EINVAL);
 
+    /* auto-select alignment if not specified */
+    if (!align)
+        align = 32;
+
     /* check for integer overflow */
     if (nb_channels > INT_MAX / align ||
         (int64_t)nb_channels * nb_samples > (INT_MAX - (align * nb_channels)) / sample_size)
