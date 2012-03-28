@@ -310,7 +310,7 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
     int width_shift = 0;
     int new_pix_fmt;
     struct frame_header header;
-    uint8_t header_buffer[128];  /* logical maximum size of the header */
+    uint8_t header_buffer[128] = { 0 };  /* logical maximum size of the header */
     const uint8_t *sel_vector_table;
 
     header.header_size = ((s->buf[0] >> 5) | (s->buf[0] << 3)) & 0x7f;
@@ -321,7 +321,6 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
     }
 
     /* unscramble the header bytes with a XOR operation */
-    memset(header_buffer, 0, 128);
     for (i = 1; i < header.header_size; i++)
         header_buffer[i - 1] = s->buf[i] ^ s->buf[i + 1];
 

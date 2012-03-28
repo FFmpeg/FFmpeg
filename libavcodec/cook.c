@@ -411,10 +411,10 @@ static void categorize(COOKContext *q, COOKSubpacket *p, const int *quant_index_
                        int *category, int *category_index)
 {
     int exp_idx, bias, tmpbias1, tmpbias2, bits_left, num_bits, index, v, i, j;
-    int exp_index2[102];
-    int exp_index1[102];
+    int exp_index2[102] = { 0 };
+    int exp_index1[102] = { 0 };
 
-    int tmp_categorize_array[128 * 2];
+    int tmp_categorize_array[128 * 2] = { 0 };
     int tmp_categorize_array1_idx = p->numvector_size;
     int tmp_categorize_array2_idx = p->numvector_size;
 
@@ -425,10 +425,6 @@ static void categorize(COOKContext *q, COOKSubpacket *p, const int *quant_index_
                     ((bits_left - q->samples_per_channel) * 5) / 8;
         //av_log(q->avctx, AV_LOG_ERROR, "bits_left = %d\n",bits_left);
     }
-
-    memset(&exp_index1,           0, sizeof(exp_index1));
-    memset(&exp_index2,           0, sizeof(exp_index2));
-    memset(&tmp_categorize_array, 0, sizeof(tmp_categorize_array));
 
     bias = -32;
 
@@ -649,13 +645,10 @@ static void decode_vectors(COOKContext *q, COOKSubpacket *p, int *category,
  */
 static int mono_decode(COOKContext *q, COOKSubpacket *p, float *mlt_buffer)
 {
-    int category_index[128];
+    int category_index[128] = { 0 };
+    int category[128]       = { 0 };
     int quant_index_table[102];
-    int category[128];
     int res, i;
-
-    memset(&category,       0, sizeof(category));
-    memset(&category_index, 0, sizeof(category_index));
 
     if ((res = decode_envelope(q, p, quant_index_table)) < 0)
         return res;
@@ -829,13 +822,12 @@ static int joint_decode(COOKContext *q, COOKSubpacket *p, float *mlt_buffer1,
                         float *mlt_buffer2)
 {
     int i, j, res;
-    int decouple_tab[SUBBAND_SIZE];
+    int decouple_tab[SUBBAND_SIZE] = { 0 };
     float *decode_buffer = q->decode_buffer_0;
     int idx, cpl_tmp;
     float f1, f2;
     const float *cplscale;
 
-    memset(decouple_tab, 0, sizeof(decouple_tab));
     memset(decode_buffer, 0, sizeof(q->decode_buffer_0));
 
     /* Make sure the buffers are zeroed out. */

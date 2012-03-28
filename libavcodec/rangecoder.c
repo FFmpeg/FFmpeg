@@ -119,7 +119,7 @@ int main(void){
     uint8_t b[9*SIZE];
     uint8_t r[9*SIZE];
     int i;
-    uint8_t state[10]= {0};
+    uint8_t state[10];
     AVLFG prng;
 
     av_lfg_init(&prng, 1);

@@ -389,9 +389,8 @@ static av_unused FFPsyWindowInfo psy_3gpp_window(FFPsyContext *ctx,
     AacPsyChannel *pch  = &pctx->ch[channel];
     uint8_t grouping     = 0;
     int next_type        = pch->next_window_seq;
-    FFPsyWindowInfo wi;
+    FFPsyWindowInfo wi  = { { 0 } };
 
-    memset(&wi, 0, sizeof(wi));
     if (la) {
         float s[8], v;
         int switch_to_eight = 0;
@@ -785,9 +784,8 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
     int uselongblock = 1;
     int attacks[AAC_NUM_BLOCKS_SHORT + 1] = { 0 };
     int i;
-    FFPsyWindowInfo wi;
+    FFPsyWindowInfo wi = { { 0 } };
 
-    memset(&wi, 0, sizeof(wi));
     if (la) {
         float hpfsmpl[AAC_BLOCK_SIZE_LONG];
         float const *pf = hpfsmpl;

@@ -135,7 +135,7 @@ static void guess_palette(uint32_t *rgba_palette,
         {0x00, 0x80, 0xff},
         {0x00, 0x55, 0xaa, 0xff},
     };
-    uint8_t color_used[16];
+    uint8_t color_used[16] = { 0 };
     int nb_opaque_colors, i, level, j, r, g, b;
     uint8_t *colormap = ctx->colormap, *alpha = ctx->alpha;
 
@@ -149,7 +149,6 @@ static void guess_palette(uint32_t *rgba_palette,
     for(i = 0; i < 4; i++)
         rgba_palette[i] = 0;
 
-    memset(color_used, 0, 16);
     nb_opaque_colors = 0;
     for(i = 0; i < 4; i++) {
         if (alpha[i] != 0 && !color_used[colormap[i]]) {
@@ -397,14 +396,13 @@ static int is_transp(const uint8_t *buf, int pitch, int n,
 /* return 0 if empty rectangle, 1 if non empty */
 static int find_smallest_bounding_rectangle(AVSubtitle *s)
 {
-    uint8_t transp_color[256];
+    uint8_t transp_color[256] = { 0 };
     int y1, y2, x1, x2, y, w, h, i;
     uint8_t *bitmap;
 
     if (s->num_rects == 0 || s->rects == NULL || s->rects[0]->w <= 0 || s->rects[0]->h <= 0)
         return 0;
 
-    memset(transp_color, 0, 256);
     for(i = 0; i < s->rects[0]->nb_colors; i++) {
         if ((((uint32_t*)s->rects[0]->pict.data[1])[i] >> 24) == 0)
             transp_color[i] = 1;

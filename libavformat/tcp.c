@@ -37,7 +37,7 @@ typedef struct TCPContext {
 /* return non zero if error */
 static int tcp_open(URLContext *h, const char *uri, int flags)
 {
-    struct addrinfo hints, *ai, *cur_ai;
+    struct addrinfo hints = { 0 }, *ai, *cur_ai;
     int port, fd = -1;
     TCPContext *s = h->priv_data;
     int listen_socket = 0;
@@ -62,7 +62,6 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
             timeout = strtol(buf, NULL, 10);
         }
     }
-    memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     snprintf(portstr, sizeof(portstr), "%d", port);

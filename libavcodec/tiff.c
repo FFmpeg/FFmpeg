@@ -82,10 +82,9 @@ static unsigned tget(const uint8_t **p, int type, int le) {
 #if CONFIG_ZLIB
 static int tiff_uncompress(uint8_t *dst, unsigned long *len, const uint8_t *src, int size)
 {
-    z_stream zstream;
+    z_stream zstream = { 0 };
     int zret;
 
-    memset(&zstream, 0, sizeof(zstream));
     zstream.next_in = src;
     zstream.avail_in = size;
     zstream.next_out = dst;

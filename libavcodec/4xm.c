@@ -578,7 +578,7 @@ static int decode_i_mb(FourXContext *f)
 static const uint8_t *read_huffman_tables(FourXContext *f,
                                           const uint8_t * const buf, int buf_size)
 {
-    int frequency[512];
+    int frequency[512] = { 0 };
     uint8_t flag[512];
     int up[512];
     uint8_t len_tab[257];
@@ -588,7 +588,6 @@ static const uint8_t *read_huffman_tables(FourXContext *f,
     const uint8_t *ptr_end = buf + buf_size;
     int j;
 
-    memset(frequency, 0, sizeof(frequency));
     memset(up, -1, sizeof(up));
 
     start = *ptr++;
@@ -691,10 +690,9 @@ static int decode_i2_frame(FourXContext *f, const uint8_t *buf, int length)
 
     for (y = 0; y < height; y += 16) {
         for (x = 0; x < width; x += 16) {
-            unsigned int color[4], bits;
+            unsigned int color[4] = { 0 }, bits;
             if (buf_end - buf < 8)
                 return -1;
-            memset(color, 0, sizeof(color));
             // warning following is purely guessed ...
             color[0] = bytestream2_get_le16u(&g3);
             color[1] = bytestream2_get_le16u(&g3);

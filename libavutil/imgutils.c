@@ -101,12 +101,10 @@ int av_image_fill_linesizes(int linesizes[4], enum PixelFormat pix_fmt, int widt
 int av_image_fill_pointers(uint8_t *data[4], enum PixelFormat pix_fmt, int height,
                            uint8_t *ptr, const int linesizes[4])
 {
-    int i, total_size, size[4], has_plane[4];
+    int i, total_size, size[4] = { 0 }, has_plane[4] = { 0 };
 
     const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
     memset(data     , 0, sizeof(data[0])*4);
-    memset(size     , 0, sizeof(size));
-    memset(has_plane, 0, sizeof(has_plane));
 
     if ((unsigned)pix_fmt >= PIX_FMT_NB || desc->flags & PIX_FMT_HWACCEL)
         return AVERROR(EINVAL);

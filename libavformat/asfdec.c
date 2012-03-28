@@ -1249,7 +1249,7 @@ static void asf_build_simple_index(AVFormatContext *s, int stream_index)
             last_pos=pos;
             }
         }
-        asf->index_read= 1;
+        asf->index_read= ict > 0;
     }
     avio_seek(s->pb, current_pos, SEEK_SET);
 }

@@ -74,17 +74,11 @@ struct algo {
     int nonspec;
 };
 
-#ifndef FAAN_POSTSCALE
-#define FAAN_SCALE SCALE_PERM
-#else
-#define FAAN_SCALE NO_PERM
-#endif
-
 static int cpu_flags;
 
 static const struct algo fdct_tab[] = {
     { "REF-DBL",        ff_ref_fdct,           NO_PERM    },
-    { "FAAN",           ff_faandct,            FAAN_SCALE },
+    { "FAAN",           ff_faandct,            NO_PERM    },
     { "IJG-AAN-INT",    ff_fdct_ifast,         SCALE_PERM },
     { "IJG-LLM-INT",    ff_jpeg_fdct_islow_8,  NO_PERM    },
 

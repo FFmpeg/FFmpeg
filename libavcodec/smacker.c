@@ -180,7 +180,7 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
     int res;
     HuffContext huff;
     HuffContext tmp1, tmp2;
-    VLC vlc[2];
+    VLC vlc[2] = { { 0 } };
     int escapes[3];
     DBCtx ctx;
     int err = 0;
@@ -203,9 +203,6 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
     tmp2.bits = av_mallocz(256 * 4);
     tmp2.lengths = av_mallocz(256 * sizeof(int));
     tmp2.values = av_mallocz(256 * sizeof(int));
-
-    memset(&vlc[0], 0, sizeof(VLC));
-    memset(&vlc[1], 0, sizeof(VLC));
 
     if(get_bits1(gb)) {
         smacker_decode_tree(gb, &tmp1, 0, 0);
@@ -597,8 +594,8 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     GetBitContext gb;
-    HuffContext h[4];
-    VLC vlc[4];
+    HuffContext h[4] = { { 0 } };
+    VLC vlc[4]       = { { 0 } };
     int16_t *samples;
     uint8_t *samples8;
     int val;
@@ -641,8 +638,6 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
     samples  = (int16_t *)s->frame.data[0];
     samples8 =            s->frame.data[0];
 
-    memset(vlc, 0, sizeof(VLC) * 4);
-    memset(h, 0, sizeof(HuffContext) * 4);
     // Initialize
     for(i = 0; i < (1 << (bits + stereo)); i++) {
         h[i].length = 256;

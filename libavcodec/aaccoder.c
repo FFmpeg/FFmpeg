@@ -714,7 +714,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
 {
     int start = 0, i, w, w2, g;
     int destbits = avctx->bit_rate * 1024.0 / avctx->sample_rate / avctx->channels;
-    float dists[128], uplims[128];
+    float dists[128] = { 0 }, uplims[128];
     float maxvals[128];
     int fflag, minscaler;
     int its  = 0;
@@ -722,7 +722,6 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
     float minthr = INFINITY;
 
     //XXX: some heuristic to determine initial quantizers will reduce search time
-    memset(dists, 0, sizeof(dists));
     //determine zero bands and upper limits
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
         for (g = 0;  g < sce->ics.num_swb; g++) {

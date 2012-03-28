@@ -304,11 +304,8 @@ static av_cold void decode_init_static(void)
     for (i = 1; i < 16; i++) {
         const HuffTable *h = &mpa_huff_tables[i];
         int xsize, x, y;
-        uint8_t  tmp_bits [512];
-        uint16_t tmp_codes[512];
-
-        memset(tmp_bits , 0, sizeof(tmp_bits ));
-        memset(tmp_codes, 0, sizeof(tmp_codes));
+        uint8_t  tmp_bits [512] = { 0 };
+        uint16_t tmp_codes[512] = { 0 };
 
         xsize = h->xsize;
 

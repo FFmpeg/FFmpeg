@@ -554,7 +554,7 @@ static void rv34_pred_mv_b(RV34DecContext *r, int block_type, int dir)
     MpegEncContext *s = &r->s;
     int mb_pos = s->mb_x + s->mb_y * s->mb_stride;
     int mv_pos = s->mb_x * 2 + s->mb_y * 2 * s->b8_stride;
-    int A[2], B[2], C[2];
+    int A[2] = { 0 }, B[2] = { 0 }, C[2] = { 0 };
     int has_A = 0, has_B = 0, has_C = 0;
     int mx, my;
     int i, j;
@@ -562,9 +562,6 @@ static void rv34_pred_mv_b(RV34DecContext *r, int block_type, int dir)
     const int mask = dir ? MB_TYPE_L1 : MB_TYPE_L0;
     int type = cur_pic->f.mb_type[mb_pos];
 
-    memset(A, 0, sizeof(A));
-    memset(B, 0, sizeof(B));
-    memset(C, 0, sizeof(C));
     if((r->avail_cache[6-1] & type) & mask){
         A[0] = cur_pic->f.motion_val[dir][mv_pos - 1][0];
         A[1] = cur_pic->f.motion_val[dir][mv_pos - 1][1];

@@ -753,9 +753,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
     int downmix_output;
     int cpl_in_use;
     GetBitContext *gbc = &s->gbc;
-    uint8_t bit_alloc_stages[AC3_MAX_CHANNELS];
-
-    memset(bit_alloc_stages, 0, AC3_MAX_CHANNELS);
+    uint8_t bit_alloc_stages[AC3_MAX_CHANNELS] = { 0 };
 
     /* block switch flags */
     different_transforms = 0;

@@ -4073,7 +4073,7 @@ int ff_url_join(char *str, int size, const char *proto,
                 int port, const char *fmt, ...)
 {
 #if CONFIG_NETWORK
-    struct addrinfo hints, *ai;
+    struct addrinfo hints = { 0 }, *ai;
 #endif
 
     str[0] = '\0';
@@ -4084,7 +4084,6 @@ int ff_url_join(char *str, int size, const char *proto,
 #if CONFIG_NETWORK && defined(AF_INET6)
     /* Determine if hostname is a numerical IPv6 address,
      * properly escape it within [] in that case. */
-    memset(&hints, 0, sizeof(hints));
     hints.ai_flags = AI_NUMERICHOST;
     if (!getaddrinfo(hostname, NULL, &hints, &ai)) {
         if (ai->ai_family == AF_INET6) {

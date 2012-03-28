@@ -1021,7 +1021,7 @@ static int mov_write_pasp_tag(AVIOContext *pb, MOVTrack *track)
 static int mov_write_video_tag(AVIOContext *pb, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
-    char compressor_name[32];
+    char compressor_name[32] = { 0 };
 
     avio_wb32(pb, 0); /* size */
     avio_wl32(pb, track->tag); // store it byteswapped
@@ -1052,7 +1052,6 @@ static int mov_write_video_tag(AVIOContext *pb, MOVTrack *track)
     avio_wb32(pb, 0); /* Data size (= 0) */
     avio_wb16(pb, 1); /* Frame count (= 1) */
 
-    memset(compressor_name,0,32);
     /* FIXME not sure, ISO 14496-1 draft where it shall be set to 0 */
     if (track->mode == MODE_MOV && track->enc->codec && track->enc->codec->name)
         av_strlcpy(compressor_name,track->enc->codec->name,32);

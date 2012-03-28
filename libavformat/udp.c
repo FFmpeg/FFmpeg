@@ -161,7 +161,7 @@ static int udp_leave_multicast_group(int sockfd, struct sockaddr *addr)
 static struct addrinfo* udp_resolve_host(const char *hostname, int port,
                                          int type, int family, int flags)
 {
-    struct addrinfo hints, *res = 0;
+    struct addrinfo hints = { 0 }, *res = 0;
     int error;
     char sport[16];
     const char *node = 0, *service = "0";
@@ -173,7 +173,6 @@ static struct addrinfo* udp_resolve_host(const char *hostname, int port,
     if ((hostname) && (hostname[0] != '\0') && (hostname[0] != '?')) {
         node = hostname;
     }
-    memset(&hints, 0, sizeof(hints));
     hints.ai_socktype = type;
     hints.ai_family   = family;
     hints.ai_flags = flags;

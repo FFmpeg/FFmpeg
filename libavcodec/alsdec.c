@@ -1035,9 +1035,7 @@ static int decode_blocks_ind(ALSDecContext *ctx, unsigned int ra_frame,
                              unsigned int *js_blocks)
 {
     unsigned int b;
-    ALSBlockData bd;
-
-    memset(&bd, 0, sizeof(ALSBlockData));
+    ALSBlockData bd = { 0 };
 
     bd.ra_block         = ra_frame;
     bd.const_block      = ctx->const_block;
@@ -1078,9 +1076,7 @@ static int decode_blocks(ALSDecContext *ctx, unsigned int ra_frame,
     ALSSpecificConfig *sconf = &ctx->sconf;
     unsigned int offset = 0;
     unsigned int b;
-    ALSBlockData bd[2];
-
-    memset(bd, 0, 2 * sizeof(ALSBlockData));
+    ALSBlockData bd[2] = { { 0 } };
 
     bd[0].ra_block         = ra_frame;
     bd[0].const_block      = ctx->const_block;
@@ -1346,7 +1342,7 @@ static int read_frame_data(ALSDecContext *ctx, unsigned int ra_frame)
                     sizeof(*ctx->raw_samples[c]) * sconf->max_order);
         }
     } else { // multi-channel coding
-        ALSBlockData   bd;
+        ALSBlockData   bd = { 0 };
         int            b;
         int            *reverted_channels = ctx->reverted_channels;
         unsigned int   offset             = 0;
@@ -1357,7 +1353,6 @@ static int read_frame_data(ALSDecContext *ctx, unsigned int ra_frame)
                 return -1;
             }
 
-        memset(&bd,               0, sizeof(ALSBlockData));
         memset(reverted_channels, 0, sizeof(*reverted_channels) * avctx->channels);
 
         bd.ra_block         = ra_frame;

@@ -43,7 +43,6 @@
 #include "simple_idct.h"
 #include "dvdata.h"
 #include "dvquant.h"
-#include "dv_tablegen.h"
 
 typedef struct BlockInfo {
     const uint32_t *factor_table;

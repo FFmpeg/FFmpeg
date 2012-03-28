@@ -157,8 +157,7 @@ static void rtsp_parse_range_npt(const char *p, int64_t *start, int64_t *end)
 
 static int get_sockaddr(const char *buf, struct sockaddr_storage *sock)
 {
-    struct addrinfo hints, *ai = NULL;
-    memset(&hints, 0, sizeof(hints));
+    struct addrinfo hints = { 0 }, *ai = NULL;
     hints.ai_flags = AI_NUMERICHOST;
     if (getaddrinfo(buf, NULL, &hints, &ai))
         return -1;
@@ -497,9 +496,8 @@ int ff_sdp_parse(AVFormatContext *s, const char *content)
      * The Vorbis FMTP line can be up to 16KB - see xiph_parse_sdp_line
      * in rtpdec_xiph.c. */
     char buf[16384], *q;
-    SDPParseState sdp_parse_state, *s1 = &sdp_parse_state;
+    SDPParseState sdp_parse_state = { { 0 } }, *s1 = &sdp_parse_state;
 
-    memset(s1, 0, sizeof(SDPParseState));
     p = content;
     for (;;) {
         p += strspn(p, SPACE_CHARS);
@@ -1950,7 +1948,7 @@ static int rtp_read_header(AVFormatContext *s)
     int ret, port;
     URLContext* in = NULL;
     int payload_type;
-    AVCodecContext codec;
+    AVCodecContext codec = { 0 };
     struct sockaddr_storage addr;
     AVIOContext pb;
     socklen_t addrlen = sizeof(addr);
@@ -1991,7 +1989,6 @@ static int rtp_read_header(AVFormatContext *s)
     ffurl_close(in);
     in = NULL;
 
-    memset(&codec, 0, sizeof(codec));
     if (ff_rtp_get_codec_info(&codec, payload_type)) {
         av_log(s, AV_LOG_ERROR, "Unable to receive RTP payload type %d "
                                 "without an SDP file describing it\n",

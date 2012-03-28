@@ -140,7 +140,7 @@ void ff_asfcrypt_dec(const uint8_t key[20], uint8_t *data, int len) {
     struct AVRC4 rc4;
     int num_qwords = len >> 3;
     uint8_t *qwords = data;
-    uint64_t rc4buff[8];
+    uint64_t rc4buff[8] = { 0 };
     uint64_t packetkey;
     uint32_t ms_keys[12];
     uint64_t ms_state;
@@ -151,7 +151,6 @@ void ff_asfcrypt_dec(const uint8_t key[20], uint8_t *data, int len) {
         return;
     }
 
-    memset(rc4buff, 0, sizeof(rc4buff));
     av_rc4_init(&rc4, key, 12 * 8, 1);
     av_rc4_crypt(&rc4, (uint8_t *)rc4buff, NULL, sizeof(rc4buff), NULL, 1);
     multiswap_init((uint8_t *)rc4buff, ms_keys);

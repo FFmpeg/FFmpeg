@@ -517,7 +517,7 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
 {
     const char *p;
     int64_t t;
-    struct tm dt;
+    struct tm dt = { 0 };
     int i;
     static const char * const date_fmt[] = {
         "%Y-%m-%d",
@@ -541,8 +541,6 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
     else
         lastch = '\0';
     is_utc = (lastch == 'z' || lastch == 'Z');
-
-    memset(&dt, 0, sizeof(dt));
 
     p = timestr;
     q = NULL;

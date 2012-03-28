@@ -318,10 +318,9 @@ static av_cold int decode_vbmtree(GetBitContext *gb, int8_t vbm_tree[25])
           0x0ffc, 0x0ffd, 0x0ffe,        //   1111111111+00/01/10
           0x3ffc, 0x3ffd, 0x3ffe, 0x3fff // 111111111111+xx
     };
-    int cntr[8], n, res;
+    int cntr[8] = { 0 }, n, res;
 
     memset(vbm_tree, 0xff, sizeof(vbm_tree[0]) * 25);
-    memset(cntr,     0,    sizeof(cntr));
     for (n = 0; n < 17; n++) {
         res = get_bits(gb, 3);
         if (cntr[res] > 3) // should be >= 3 + (res == 7))

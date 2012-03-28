@@ -47,7 +47,7 @@ static void refill(CABACContext *c){
         c->low+= c->bytestream[0]<<1;
 #endif
     c->low -= CABAC_MASK;
-    c->bytestream+= CABAC_BITS/8;
+    c->bytestream += CABAC_BITS / 8;
 }
 
 static inline void renorm_cabac_decoder_once(CABACContext *c){
@@ -74,7 +74,7 @@ static void refill2(CABACContext *c){
 #endif
 
     c->low += x<<i;
-    c->bytestream+= CABAC_BITS/8;
+    c->bytestream += CABAC_BITS/8;
 }
 
 static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const state){

@@ -31,8 +31,6 @@
 
 #include "dsputil.h"
 
-#define FAAN_POSTSCALE
-
 void ff_faandct(DCTELEM * data);
 void ff_faandct248(DCTELEM * data);
 
