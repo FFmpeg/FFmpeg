@@ -631,6 +631,10 @@ static int decode_band(IVI4DecContext *ctx, int plane_num,
         idx2 = band->corr[i * 2 + 1];
         FFSWAP(uint8_t, band->rv_map->runtab[idx1], band->rv_map->runtab[idx2]);
         FFSWAP(int16_t, band->rv_map->valtab[idx1], band->rv_map->valtab[idx2]);
+        if (idx1 == band->rv_map->eob_sym || idx2 == band->rv_map->eob_sym)
+            band->rv_map->eob_sym ^= idx1 ^ idx2;
+        if (idx1 == band->rv_map->esc_sym || idx2 == band->rv_map->esc_sym)
+            band->rv_map->esc_sym ^= idx1 ^ idx2;
     }
 
     pos = get_bits_count(&ctx->gb);
@@ -670,6 +674,10 @@ static int decode_band(IVI4DecContext *ctx, int plane_num,
         idx2 = band->corr[i * 2 + 1];
         FFSWAP(uint8_t, band->rv_map->runtab[idx1], band->rv_map->runtab[idx2]);
         FFSWAP(int16_t, band->rv_map->valtab[idx1], band->rv_map->valtab[idx2]);
+        if (idx1 == band->rv_map->eob_sym || idx2 == band->rv_map->eob_sym)
+            band->rv_map->eob_sym ^= idx1 ^ idx2;
+        if (idx1 == band->rv_map->esc_sym || idx2 == band->rv_map->esc_sym)
+            band->rv_map->esc_sym ^= idx1 ^ idx2;
     }
 
 #if defined(DEBUG) && IVI4_DEBUG_CHECKSUM
