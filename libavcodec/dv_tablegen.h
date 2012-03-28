@@ -24,6 +24,8 @@
 #define AVCODEC_DV_TABLEGEN_H
 
 #include <stdint.h>
+
+#include "libavutil/attributes.h"
 #include "dv_vlc_data.h"
 
 #if CONFIG_SMALL
@@ -46,7 +48,7 @@ typedef struct dv_vlc_pair {
 #else
 static struct dv_vlc_pair dv_vlc_map[DV_VLC_MAP_RUN_SIZE][DV_VLC_MAP_LEV_SIZE];
 
-static void dv_vlc_map_tableinit(void)
+static void av_unused dv_vlc_map_tableinit(void)
 {
     int i, j;
     for (i = 0; i < NB_DV_VLC - 1; i++) {

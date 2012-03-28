@@ -52,7 +52,6 @@ doc/%.1: doc/%.pod $(GENTEXI)
 	$(M)pod2man --section=1 --center=" " --release=" " $< > $@
 
 $(DOCS): | doc
-OBJDIRS += doc
 
 install-progs-$(CONFIG_DOC): install-man
 
