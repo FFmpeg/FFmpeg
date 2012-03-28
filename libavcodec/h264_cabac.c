@@ -1630,6 +1630,7 @@ decode_cabac_residual_internal(H264Context *h, DCTELEM *block,
     cc.range     = h->cabac.range;
     cc.low       = h->cabac.low;
     cc.bytestream= h->cabac.bytestream;
+    cc.bytestream_end = h->cabac.bytestream_end;
 #else
 #define CC &h->cabac
 #endif
