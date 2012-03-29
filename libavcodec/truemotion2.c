@@ -130,7 +130,7 @@ static int tm2_build_huff_table(TM2Context *ctx, TM2Codes *code)
 
     /* check for correct codes parameters */
     if((huff.val_bits < 1) || (huff.val_bits > 32) ||
-       (huff.max_bits < 0) || (huff.max_bits > 32)) {
+       (huff.max_bits < 0) || (huff.max_bits > 25)) {
         av_log(ctx->avctx, AV_LOG_ERROR, "Incorrect tree parameters - literal length: %i, max code length: %i\n",
                huff.val_bits, huff.max_bits);
         return -1;
@@ -322,10 +322,21 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
                 return -1;
             }
             ctx->tokens[stream_id][i] = tm2_get_token(&ctx->gb, &codes);
+            if (stream_id <= TM2_MOT && ctx->tokens[stream_id][i] >= TM2_DELTAS) {
+                av_log(ctx->avctx, AV_LOG_ERROR, "Invalid delta token index %d for type %d, n=%d\n",
+                       ctx->tokens[stream_id][i], stream_id, i);
+                return AVERROR_INVALIDDATA;
+            }
         }
     } else {
-        for(i = 0; i < toks; i++)
+        for(i = 0; i < toks; i++) {
             ctx->tokens[stream_id][i] = codes.recode[0];
+            if (stream_id <= TM2_MOT && ctx->tokens[stream_id][i] >= TM2_DELTAS) {
+                av_log(ctx->avctx, AV_LOG_ERROR, "Invalid delta token index %d for type %d, n=%d\n",
+                       ctx->tokens[stream_id][i], stream_id, i);
+                return AVERROR_INVALIDDATA;
+            }
+        }
     }
     tm2_free_codes(&codes);
 
@@ -837,9 +848,9 @@ static int decode_frame(AVCodecContext *avctx,
             return AVERROR_INVALIDDATA;
         }
         t = tm2_read_stream(l, swbuf + skip, tm2_stream_order[i], buf_size - skip);
-        if(t == -1){
+        if(t < 0){
             av_free(swbuf);
-            return -1;
+            return t;
         }
         skip += t;
     }
