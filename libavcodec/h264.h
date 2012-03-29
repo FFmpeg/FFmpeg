@@ -663,7 +663,6 @@ void ff_h264_hl_decode_mb(H264Context *h);
 int ff_h264_frame_start(H264Context *h);
 int ff_h264_decode_extradata(H264Context *h);
 av_cold int ff_h264_decode_init(AVCodecContext *avctx);
-av_cold int ff_h264_decode_end(AVCodecContext *avctx);
 av_cold void ff_h264_decode_init_vlc(void);
 
 /**
