@@ -565,7 +565,6 @@ static int codec_get_buffer(AVCodecContext *s, AVFrame *frame)
     if (buf->w != s->width || buf->h != s->height || buf->pix_fmt != s->pix_fmt) {
         av_freep(&buf->base[0]);
         av_free(buf);
-        ist->dr1 = 0;
         if ((ret = alloc_buffer(ist, s, &buf)) < 0)
             return ret;
     }
