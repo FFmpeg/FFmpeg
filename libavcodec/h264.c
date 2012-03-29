@@ -262,7 +262,7 @@ nsc:
  * Identify the exact end of the bitstream
  * @return the length of the trailing, or 0 if damaged
  */
-static int ff_h264_decode_rbsp_trailing(H264Context *h, const uint8_t *src)
+static int decode_rbsp_trailing(H264Context *h, const uint8_t *src)
 {
     int v = *src;
     int r;
@@ -4225,7 +4225,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
                     dst_length--;
             bit_length = !dst_length ? 0
                                      : (8 * dst_length -
-                                        ff_h264_decode_rbsp_trailing(h, ptr + dst_length - 1));
+                                        decode_rbsp_trailing(h, ptr + dst_length - 1));
 
             if (s->avctx->debug & FF_DEBUG_STARTCODE)
                 av_log(h->s.avctx, AV_LOG_DEBUG,
