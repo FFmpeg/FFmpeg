@@ -165,7 +165,6 @@ typedef struct InputStream {
     int decoding_needed;     /* true if the packets must be decoded in 'raw_fifo' */
     AVCodec *dec;
     AVFrame *decoded_frame;
-    AVFrame *filtered_frame;
 
     int64_t       start;     /* time when read started */
     /* predicted dts of the next packet read for this stream or (when there are
@@ -217,6 +216,7 @@ typedef struct OutputStream {
     AVCodec *enc;
     int64_t max_frames;
     AVFrame *output_frame;
+    AVFrame *filtered_frame;
 
     /* video only */
     AVRational frame_rate;
@@ -700,6 +700,7 @@ void exit_program(int ret)
         }
 
         av_freep(&output_streams[i]->avfilter);
+        av_freep(&output_streams[i]->filtered_frame);
         av_freep(&output_streams[i]);
     }
     for (i = 0; i < nb_input_files; i++) {
@@ -708,7 +709,6 @@ void exit_program(int ret)
     }
     for (i = 0; i < nb_input_streams; i++) {
         av_freep(&input_streams[i]->decoded_frame);
-        av_freep(&input_streams[i]->filtered_frame);
         av_dict_free(&input_streams[i]->opts);
         free_buffer_pool(input_streams[i]);
         av_freep(&input_streams[i]);
@@ -1950,12 +1950,12 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
             av_vsrc_buffer_add_frame(ost->input_video_filter, decoded_frame,
                                      decoded_frame->pts, decoded_frame->sample_aspect_ratio);
 
-        if (!ist->filtered_frame && !(ist->filtered_frame = avcodec_alloc_frame())) {
+        if (!ost->filtered_frame && !(ost->filtered_frame = avcodec_alloc_frame())) {
             ret = AVERROR(ENOMEM);
             goto fail;
         } else
-            avcodec_get_frame_defaults(ist->filtered_frame);
-        filtered_frame = ist->filtered_frame;
+            avcodec_get_frame_defaults(ost->filtered_frame);
+        filtered_frame = ost->filtered_frame;
 
         frame_available = avfilter_poll_frame(ost->output_video_filter->inputs[0]);
         while (frame_available) {
