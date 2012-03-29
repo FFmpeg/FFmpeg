@@ -179,6 +179,10 @@ typedef struct InputStream {
     int showed_multi_packet_warning;
     AVDictionary *opts;
 
+    int resample_height;
+    int resample_width;
+    int resample_pix_fmt;
+
     /* a pool of free buffers for decoded data */
     FrameBuffer *buffer_pool;
 } InputStream;
@@ -215,9 +219,6 @@ typedef struct OutputStream {
     AVFrame *output_frame;
 
     /* video only */
-    int resample_height;
-    int resample_width;
-    int resample_pix_fmt;
     AVRational frame_rate;
     int force_fps;
     int top_field_first;
@@ -1869,7 +1870,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
 {
     AVFrame *decoded_frame, *filtered_frame = NULL;
     void *buffer_to_free = NULL;
-    int i, ret = 0;
+    int i, ret = 0, resample_changed;
     float quality;
     int frame_available = 1;
 
@@ -1902,32 +1903,34 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
     if (ist->st->sample_aspect_ratio.num)
         decoded_frame->sample_aspect_ratio = ist->st->sample_aspect_ratio;
 
+    resample_changed = ist->resample_width   != decoded_frame->width  ||
+                       ist->resample_height  != decoded_frame->height ||
+                       ist->resample_pix_fmt != decoded_frame->format;
+    if (resample_changed) {
+        av_log(NULL, AV_LOG_INFO,
+               "Input stream #%d:%d frame changed from size:%dx%d fmt:%s to size:%dx%d fmt:%s\n",
+               ist->file_index, ist->st->index,
+               ist->resample_width,  ist->resample_height,  av_get_pix_fmt_name(ist->resample_pix_fmt),
+               decoded_frame->width, decoded_frame->height, av_get_pix_fmt_name(decoded_frame->format));
+
+        ist->resample_width   = decoded_frame->width;
+        ist->resample_height  = decoded_frame->height;
+        ist->resample_pix_fmt = decoded_frame->format;
+    }
+
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
-        int frame_size, resample_changed;
+        int frame_size;
 
         if (!check_output_constraints(ist, ost) || !ost->encoding_needed)
             continue;
 
-        resample_changed = ost->resample_width   != decoded_frame->width  ||
-                           ost->resample_height  != decoded_frame->height ||
-                           ost->resample_pix_fmt != decoded_frame->format;
         if (resample_changed) {
-            av_log(NULL, AV_LOG_INFO,
-                    "Input stream #%d:%d frame changed from size:%dx%d fmt:%s to size:%dx%d fmt:%s\n",
-                    ist->file_index, ist->st->index,
-                    ost->resample_width,  ost->resample_height,  av_get_pix_fmt_name(ost->resample_pix_fmt),
-                    decoded_frame->width, decoded_frame->height, av_get_pix_fmt_name(decoded_frame->format));
-
             avfilter_graph_free(&ost->graph);
             if (configure_video_filters(ist, ost)) {
                 av_log(NULL, AV_LOG_FATAL, "Error reinitializing filters!\n");
                 exit_program(1);
             }
-
-            ost->resample_width   = decoded_frame->width;
-            ost->resample_height  = decoded_frame->height;
-            ost->resample_pix_fmt = decoded_frame->format;
         }
 
         if (ist->st->codec->codec->capabilities & CODEC_CAP_DR1) {
@@ -2426,10 +2429,6 @@ static int transcode_init(void)
                     codec->pix_fmt != icodec->pix_fmt) {
                     codec->bits_per_raw_sample = 0;
                 }
-
-                ost->resample_height  = icodec->height;
-                ost->resample_width   = icodec->width;
-                ost->resample_pix_fmt = icodec->pix_fmt;
 
                 break;
             case AVMEDIA_TYPE_SUBTITLE:
@@ -3135,6 +3134,10 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
                 dec->height >>= dec->lowres;
                 dec->width  >>= dec->lowres;
             }
+
+            ist->resample_height  = dec->height;
+            ist->resample_width   = dec->width;
+            ist->resample_pix_fmt = dec->pix_fmt;
 
             break;
         case AVMEDIA_TYPE_AUDIO:
