@@ -464,14 +464,14 @@ int main(int argc, char **argv)
         audio_st = add_audio_stream(oc, fmt->audio_codec);
     }
 
-    av_dump_format(oc, 0, filename, 1);
-
     /* now that all the parameters are set, we can open the audio and
        video codecs and allocate the necessary encode buffers */
     if (video_st)
         open_video(oc, video_st);
     if (audio_st)
         open_audio(oc, audio_st);
+
+    av_dump_format(oc, 0, filename, 1);
 
     /* open the output file, if needed */
     if (!(fmt->flags & AVFMT_NOFILE)) {
