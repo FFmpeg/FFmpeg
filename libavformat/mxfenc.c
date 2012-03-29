@@ -1412,12 +1412,13 @@ static int mxf_write_header(AVFormatContext *s)
             return AVERROR(ENOMEM);
         st->priv_data = sc;
 
+        if ((i == 0) ^ (st->codec->codec_type == AVMEDIA_TYPE_VIDEO)) {
+            av_log(s, AV_LOG_ERROR, "there must be exactly one video stream and it must be the first one\n");
+            return -1;
+        }
+
         if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
             AVRational rate;
-            if (i != 0) {
-                av_log(s, AV_LOG_ERROR, "video stream must be first track\n");
-                return -1;
-            }
             if (fabs(av_q2d(st->codec->time_base) - 1/25.0) < 0.0001) {
                 samples_per_frame = PAL_samples_per_frame;
                 mxf->time_base = (AVRational){ 1, 25 };
