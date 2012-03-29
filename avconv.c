@@ -243,7 +243,6 @@ typedef struct OutputStream {
 
     AVFilterContext *output_video_filter;
     AVFilterContext *input_video_filter;
-    AVFilterBufferRef *picref;
     char *avfilter;
     AVFilterGraph *graph;
 
@@ -1971,21 +1970,22 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
 
         frame_available = avfilter_poll_frame(ost->output_video_filter->inputs[0]);
         while (frame_available) {
+            AVFilterBufferRef *picref;
             AVRational ist_pts_tb;
             if ((ret = get_filtered_video_frame(ost->output_video_filter,
-                                                filtered_frame, &ost->picref,
+                                                filtered_frame, &picref,
                                                 &ist_pts_tb)) < 0)
                 goto fail;
-            filtered_frame->pts = av_rescale_q(ost->picref->pts, ist_pts_tb, AV_TIME_BASE_Q);
+            filtered_frame->pts = av_rescale_q(picref->pts, ist_pts_tb, AV_TIME_BASE_Q);
             if (!ost->frame_aspect_ratio)
-                ost->st->codec->sample_aspect_ratio = ost->picref->video->pixel_aspect;
+                ost->st->codec->sample_aspect_ratio = picref->video->pixel_aspect;
 
             do_video_out(output_files[ost->file_index].ctx, ost, filtered_frame, &frame_size,
                          same_quant ? quality : ost->st->codec->global_quality);
             if (vstats_filename && frame_size)
                 do_video_stats(output_files[ost->file_index].ctx, ost, frame_size);
             frame_available = ost->output_video_filter && avfilter_poll_frame(ost->output_video_filter->inputs[0]);
-            avfilter_unref_buffer(ost->picref);
+            avfilter_unref_buffer(picref);
         }
     }
 
