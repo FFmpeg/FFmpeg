@@ -35,12 +35,6 @@
 #ifndef GLOB_NOMAGIC
 #define GLOB_NOMAGIC 0
 #endif
-#ifndef GLOB_TILDE
-#define GLOB_TILDE 0
-#endif
-#ifndef GLOB_TILDE_CHECK
-#define GLOB_TILDE_CHECK GLOB_TILDE
-#endif
 #ifndef GLOB_BRACE
 #define GLOB_BRACE 0
 #endif
@@ -249,7 +243,7 @@ static int read_header(AVFormatContext *s1)
             *p = 0;
             av_free(dup);
 
-            gerr = glob(s->path, GLOB_NOCHECK|GLOB_BRACE|GLOB_NOMAGIC|GLOB_TILDE_CHECK, NULL, &s->globstate);
+            gerr = glob(s->path, GLOB_NOCHECK|GLOB_BRACE|GLOB_NOMAGIC, NULL, &s->globstate);
             if (gerr != 0) {
                 return AVERROR(ENOENT);
             }
