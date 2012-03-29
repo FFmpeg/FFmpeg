@@ -138,7 +138,7 @@ static void get_audio_frame(int16_t *samples, int frame_size, int nb_channels)
 static void write_audio_frame(AVFormatContext *oc, AVStream *st)
 {
     AVCodecContext *c;
-    AVPacket pkt;
+    AVPacket pkt = { 0 }; // data and size must be 0;
     AVFrame *frame = avcodec_alloc_frame();
     int got_packet;
 
