@@ -3258,7 +3258,7 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt){
         return AVERROR(EINVAL);
     }
     if(pkt->dts != AV_NOPTS_VALUE && pkt->pts != AV_NOPTS_VALUE && pkt->pts < pkt->dts){
-        av_log(s, AV_LOG_ERROR, "pts < dts in stream %d\n", st->index);
+        av_log(s, AV_LOG_ERROR, "pts (%"PRId64") < dts (%"PRId64") in stream %d\n", pkt->pts, pkt->dts, st->index);
         return AVERROR(EINVAL);
     }
 
