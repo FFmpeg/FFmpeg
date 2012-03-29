@@ -84,6 +84,8 @@ int avfilter_fill_frame_from_video_buffer_ref(AVFrame *frame,
     frame->key_frame        = picref->video->key_frame;
     frame->pict_type        = picref->video->pict_type;
     frame->sample_aspect_ratio = picref->video->sample_aspect_ratio;
+    frame->width            = picref->video->w;
+    frame->height           = picref->video->h;
 
     return 0;
 }
