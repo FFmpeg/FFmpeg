@@ -1570,7 +1570,9 @@ static void do_video_out(AVFormatContext *s, OutputStream *ost,
 
     if (ist->st->start_time != AV_NOPTS_VALUE && ist->st->first_dts != AV_NOPTS_VALUE) {
         duration = FFMAX(av_q2d(ist->st->time_base), av_q2d(ist->st->codec->time_base));
-        if(ist->st->avg_frame_rate.num)
+        if(ist->st->r_frame_rate.num)
+            duration= FFMAX(duration, 1/av_q2d(ist->st->r_frame_rate));
+        if(ist->st->avg_frame_rate.num && 0)
             duration= FFMAX(duration, 1/av_q2d(ist->st->avg_frame_rate));
 
         duration /= av_q2d(enc->time_base);
