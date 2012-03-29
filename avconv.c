@@ -561,7 +561,6 @@ static int configure_video_filters(InputStream *ist, OutputStream *ost)
     AVFilterContext *last_filter, *filter;
     /** filter graph containing all filters including input & output */
     AVCodecContext *codec = ost->st->codec;
-    AVCodecContext *icodec = ist->st->codec;
     SinkContext sink_ctx = { .pix_fmts = choose_pixel_fmts(ost) };
     AVRational sample_aspect_ratio;
     char args[255];
@@ -588,7 +587,7 @@ static int configure_video_filters(InputStream *ist, OutputStream *ost)
         return ret;
     last_filter = ost->input_video_filter;
 
-    if (codec->width != icodec->width || codec->height != icodec->height) {
+    if (codec->width || codec->height) {
         snprintf(args, 255, "%d:%d:flags=0x%X",
                  codec->width,
                  codec->height,
@@ -2389,11 +2388,6 @@ static int transcode_init(void)
                 ost->resample_channels    = icodec->channels;
                 break;
             case AVMEDIA_TYPE_VIDEO:
-                if (!codec->width || !codec->height) {
-                    codec->width  = icodec->width;
-                    codec->height = icodec->height;
-                }
-
                 /*
                  * We want CFR output if and only if one of those is true:
                  * 1) user specified output framerate with -r
