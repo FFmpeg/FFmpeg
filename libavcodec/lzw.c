@@ -102,7 +102,7 @@ void ff_lzw_decode_tail(LZWState *p)
 
     if(s->mode == FF_LZW_GIF) {
         while (s->bs > 0) {
-            if (s->pbuf + s->bs >= s->ebuf) {
+            if (s->bs >= s->ebuf - s->pbuf) {
                 s->pbuf = s->ebuf;
                 break;
             } else {
