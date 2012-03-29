@@ -411,6 +411,10 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "Unhandled pixel format 0x%x\n", pix_fmt_id);
         return -1;
     }
+    if ((s->upscale_h || s->upscale_v) && s->avctx->lowres) {
+        av_log(s->avctx, AV_LOG_ERROR, "lowres not supported for weird subsampling\n");
+        return AVERROR_PATCHWELCOME;
+    }
     if (s->ls) {
         s->upscale_h = s->upscale_v = 0;
         if (s->nb_components > 1)
