@@ -633,9 +633,9 @@ static int configure_video_filters(InputStream *ist, OutputStream *ost)
     } else
         sample_aspect_ratio = ist->st->codec->sample_aspect_ratio;
 
-    snprintf(args, 255, "%d:%d:%d:%d:%d:%d:%d", ist->st->codec->width,
+    snprintf(args, 255, "%d:%d:%d:%d:%d:%d:%d:flags=%d", ist->st->codec->width,
              ist->st->codec->height, ist->st->codec->pix_fmt, 1, AV_TIME_BASE,
-             sample_aspect_ratio.num, sample_aspect_ratio.den);
+             sample_aspect_ratio.num, sample_aspect_ratio.den, SWS_BILINEAR + ((icodec->flags&CODEC_FLAG_BITEXACT) ? SWS_BITEXACT:0));
 
     ret = avfilter_graph_create_filter(&ost->input_video_filter, avfilter_get_by_name("buffer"),
                                        "src", args, NULL, ost->graph);
