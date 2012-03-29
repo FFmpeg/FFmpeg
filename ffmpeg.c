@@ -2174,10 +2174,13 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
     for(i=0;i<nb_output_streams;i++) {
         OutputStream *ost = ost = &output_streams[i];
         if(check_output_constraints(ist, ost) && ost->encoding_needed){
+            int changed =    ist->st->codec->width   != ost->input_video_filter->outputs[0]->w
+                          || ist->st->codec->height  != ost->input_video_filter->outputs[0]->h
+                          || ist->st->codec->pix_fmt != ost->input_video_filter->outputs[0]->format;
             if (!frame_sample_aspect->num)
                 *frame_sample_aspect = ist->st->sample_aspect_ratio;
             decoded_frame->pts = ist->pts;
-            if (ist->dr1 && decoded_frame->type==FF_BUFFER_TYPE_USER) {
+            if (ist->dr1 && decoded_frame->type==FF_BUFFER_TYPE_USER && !changed) {
                 FrameBuffer      *buf = decoded_frame->opaque;
                 AVFilterBufferRef *fb = avfilter_get_video_buffer_ref_from_arrays(
                                             decoded_frame->data, decoded_frame->linesize,
