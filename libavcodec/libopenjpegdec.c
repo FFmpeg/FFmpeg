@@ -266,7 +266,7 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     avcodec_set_dimensions(avctx, width, height);
 
     switch (image->numcomps) {
-    case 1:  avctx->pix_fmt = (image->comps[0].bpp == 8) ? PIX_FMT_GRAY8 : PIX_FMT_GRAY16;
+    case 1:  avctx->pix_fmt = (image->comps[0].prec == 8) ? PIX_FMT_GRAY8 : PIX_FMT_GRAY16;
              break;
     case 2:  avctx->pix_fmt = PIX_FMT_GRAY8A;
              break;
