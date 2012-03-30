@@ -271,7 +271,7 @@ nsc:
  * Identify the exact end of the bitstream
  * @return the length of the trailing, or 0 if damaged
  */
-static int ff_h264_decode_rbsp_trailing(H264Context *h, const uint8_t *src)
+static int decode_rbsp_trailing(H264Context *h, const uint8_t *src)
 {
     int v = *src;
     int r;
@@ -4260,7 +4260,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
                     dst_length--;
             bit_length = !dst_length ? 0
                                      : (8 * dst_length -
-                                        ff_h264_decode_rbsp_trailing(h, ptr + dst_length - 1));
+                                        decode_rbsp_trailing(h, ptr + dst_length - 1));
 
             if (s->avctx->debug & FF_DEBUG_STARTCODE)
                 av_log(h->s.avctx, AV_LOG_DEBUG, "NAL %d/%d at %d/%d length %d pass %d\n", hx->nal_unit_type, hx->nal_ref_idc, buf_index, buf_size, dst_length, pass);
@@ -4606,7 +4606,7 @@ av_cold void ff_h264_free_context(H264Context *h)
         av_freep(h->pps_buffers + i);
 }
 
-av_cold int ff_h264_decode_end(AVCodecContext *avctx)
+static av_cold int h264_decode_end(AVCodecContext *avctx)
 {
     H264Context *h    = avctx->priv_data;
     MpegEncContext *s = &h->s;
@@ -4664,7 +4664,7 @@ AVCodec ff_h264_decoder = {
     .id                    = CODEC_ID_H264,
     .priv_data_size        = sizeof(H264Context),
     .init                  = ff_h264_decode_init,
-    .close                 = ff_h264_decode_end,
+    .close                 = h264_decode_end,
     .decode                = decode_frame,
     .capabilities          = /*CODEC_CAP_DRAW_HORIZ_BAND |*/ CODEC_CAP_DR1 |
                              CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS |
@@ -4684,7 +4684,7 @@ AVCodec ff_h264_vdpau_decoder = {
     .id             = CODEC_ID_H264,
     .priv_data_size = sizeof(H264Context),
     .init           = ff_h264_decode_init,
-    .close          = ff_h264_decode_end,
+    .close          = h264_decode_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_HWACCEL_VDPAU,
     .flush          = flush_dpb,
