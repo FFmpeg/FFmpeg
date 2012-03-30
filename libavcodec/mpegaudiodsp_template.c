@@ -192,7 +192,7 @@ void RENAME(ff_mpa_synth_filter)(MPADSPContext *s, MPA_INT *synth_buf_ptr,
     *synth_buf_offset = offset;
 }
 
-void av_cold RENAME(ff_mpa_synth_init)(MPA_INT *window)
+av_cold void RENAME(ff_mpa_synth_init)(MPA_INT *window)
 {
     int i, j;
 

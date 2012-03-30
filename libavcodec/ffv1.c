@@ -322,7 +322,7 @@ do{\
 #undef put_rac
 }
 
-static void av_noinline put_symbol(RangeCoder *c, uint8_t *state, int v, int is_signed){
+static av_noinline void put_symbol(RangeCoder *c, uint8_t *state, int v, int is_signed){
     put_symbol_inline(c, state, v, is_signed, NULL, NULL);
 }
 
@@ -346,7 +346,7 @@ static inline av_flatten int get_symbol_inline(RangeCoder *c, uint8_t *state, in
     }
 }
 
-static int av_noinline get_symbol(RangeCoder *c, uint8_t *state, int is_signed){
+static av_noinline int get_symbol(RangeCoder *c, uint8_t *state, int is_signed){
     return get_symbol_inline(c, state, is_signed);
 }
 

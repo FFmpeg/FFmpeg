@@ -70,7 +70,7 @@ int ff_sse16_armv6(void *s, uint8_t *blk1, uint8_t *blk2,
 int ff_pix_norm1_armv6(uint8_t *pix, int line_size);
 int ff_pix_sum_armv6(uint8_t *pix, int line_size);
 
-void av_cold ff_dsputil_init_armv6(DSPContext* c, AVCodecContext *avctx)
+av_cold void ff_dsputil_init_armv6(DSPContext *c, AVCodecContext *avctx)
 {
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 

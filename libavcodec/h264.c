@@ -2424,17 +2424,17 @@ hl_decode_mb_simple(1, 16)
 /**
  * Process a macroblock; this handles edge cases, such as interlacing.
  */
-static void av_noinline hl_decode_mb_complex(H264Context *h)
+static av_noinline void hl_decode_mb_complex(H264Context *h)
 {
     hl_decode_mb_internal(h, 0, h->pixel_shift);
 }
 
-static void av_noinline hl_decode_mb_444_complex(H264Context *h)
+static av_noinline void hl_decode_mb_444_complex(H264Context *h)
 {
     hl_decode_mb_444_internal(h, 0, h->pixel_shift);
 }
 
-static void av_noinline hl_decode_mb_444_simple(H264Context *h)
+static av_noinline void hl_decode_mb_444_simple(H264Context *h)
 {
     hl_decode_mb_444_internal(h, 1, 0);
 }

@@ -95,7 +95,7 @@ typedef struct {
     uint8_t *data;           ///< framebuffer data
 } FBDevContext;
 
-av_cold static int fbdev_read_header(AVFormatContext *avctx)
+static av_cold int fbdev_read_header(AVFormatContext *avctx)
 {
     FBDevContext *fbdev = avctx->priv_data;
     AVStream *st = NULL;
@@ -233,7 +233,7 @@ static int fbdev_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     return fbdev->frame_size;
 }
 
-av_cold static int fbdev_read_close(AVFormatContext *avctx)
+static av_cold int fbdev_read_close(AVFormatContext *avctx)
 {
     FBDevContext *fbdev = avctx->priv_data;
 
