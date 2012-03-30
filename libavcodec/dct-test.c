@@ -99,7 +99,7 @@ static const struct algo fdct_tab[] = {
     { 0 }
 };
 
-#if HAVE_MMX
+#if HAVE_MMX && HAVE_YASM
 void ff_prores_idct_put_10_sse2(uint16_t *dst, int linesize,
                                 DCTELEM *block, int16_t *qmat);
 
@@ -130,7 +130,7 @@ static const struct algo idct_tab[] = {
     { "XVID-MMX",       ff_idct_xvid_mmx,      NO_PERM,   AV_CPU_FLAG_MMX,  1 },
     { "XVID-MMX2",      ff_idct_xvid_mmx2,     NO_PERM,   AV_CPU_FLAG_MMX2, 1 },
     { "XVID-SSE2",      ff_idct_xvid_sse2,     SSE2_PERM, AV_CPU_FLAG_SSE2, 1 },
-#if ARCH_X86_64
+#if ARCH_X86_64 && HAVE_YASM
     { "PR-SSE2",        ff_prores_idct_put_10_sse2_wrap,     TRANSPOSE_PERM, AV_CPU_FLAG_SSE2, 1 },
 #endif
 #endif
