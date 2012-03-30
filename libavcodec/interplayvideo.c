@@ -908,7 +908,7 @@ static void ipvideo_decode_opcodes(IpvideoContext *s)
             opcode = get_bits(&gb, 4);
 
             av_dlog(s->avctx, "block @ (%3d, %3d): encoding 0x%X, data ptr @ %p\n",
-                    x, y, opcode, s->stream_ptr);
+                    x, y, opcode, s->stream_ptr.buffer);
 
             if (!s->is_16bpp) {
                 s->pixel_ptr = s->current_frame.data[0] + x
