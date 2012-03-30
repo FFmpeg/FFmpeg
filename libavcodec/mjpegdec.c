@@ -862,7 +862,7 @@ static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int predictor,
                         pred &= (-1)<<(8-s->bits);
                         *ptr= pred + (dc << point_transform);
                         }else{
-                            ptr16 = s->picture.data[c] + 2*(linesize * (v * mb_y + y)) + 2*(h * mb_x + x); //FIXME optimize this crap
+                            ptr16 = (uint16_t*)(s->picture.data[c] + 2*(linesize * (v * mb_y + y)) + 2*(h * mb_x + x)); //FIXME optimize this crap
                             if(y==0 && toprow){
                                 if(x==0 && leftcol){
                                     pred= 1 << (bits - 1);
@@ -918,7 +918,7 @@ static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int predictor,
                             pred &= (-1)<<(8-s->bits);
                             *ptr = pred + (dc << point_transform);
                         }else{
-                            ptr16 = s->picture.data[c] + 2*(linesize * (v * mb_y + y)) + 2*(h * mb_x + x); //FIXME optimize this crap
+                            ptr16 = (uint16_t*)(s->picture.data[c] + 2*(linesize * (v * mb_y + y)) + 2*(h * mb_x + x)); //FIXME optimize this crap
                             PREDICT(pred, ptr16[-linesize-1], ptr16[-linesize], ptr16[-1], predictor);
 
                             pred &= (-1)<<(16-s->bits);
