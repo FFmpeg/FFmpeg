@@ -662,7 +662,7 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
     }
     if(bits) { //decode 16-bit data
         for(i = stereo; i >= 0; i--)
-            pred[i] = av_bswap16(get_bits(&gb, 16));
+            pred[i] = sign_extend(av_bswap16(get_bits(&gb, 16)), 16);
         for(i = 0; i <= stereo; i++)
             *samples++ = pred[i];
         for(; i < unp_size / 2; i++) {
