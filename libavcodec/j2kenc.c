@@ -457,7 +457,7 @@ static void init_quantization(J2kEncoderContext *s)
     }
 }
 
-static void init_luts()
+static void init_luts(void)
 {
     int i, a,
         mask = ~((1<<NMSEDEC_FRACBITS)-1);
