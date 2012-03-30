@@ -925,7 +925,7 @@ static int decode_codestream(J2kDecoderContext *s)
         }
 
         marker = bytestream2_get_be16u(&s->g);
-        av_dlog(s->avctx, "marker 0x%.4X at pos 0x%tx\n", marker, bytestream2_tell(&s->g) - 4);
+        av_dlog(s->avctx, "marker 0x%.4X at pos 0x%x\n", marker, bytestream2_tell(&s->g) - 4);
         oldpos = bytestream2_tell(&s->g);
 
         if (marker == J2K_SOD){
@@ -974,7 +974,7 @@ static int decode_codestream(J2kDecoderContext *s)
             bytestream2_skip(&s->g, len - 2);
             break;
         default:
-            av_log(s->avctx, AV_LOG_ERROR, "unsupported marker 0x%.4X at pos 0x%tx\n", marker, bytestream2_tell(&s->g) - 4);
+            av_log(s->avctx, AV_LOG_ERROR, "unsupported marker 0x%.4X at pos 0x%x\n", marker, bytestream2_tell(&s->g) - 4);
             bytestream2_skip(&s->g, len - 2);
             break;
         }
