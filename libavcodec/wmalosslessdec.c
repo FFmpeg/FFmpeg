@@ -1153,14 +1153,6 @@ static void save_bits(WmallDecodeCtx *s, GetBitContext* gb, int len,
     skip_bits(&s->gb, s->frame_offset);
 }
 
-/**
- * @brief Decode a single WMA packet.
- * @param avctx     codec context
- * @param data      the output buffer
- * @param data_size number of bytes that were written to the output buffer
- * @param avpkt     input packet
- * @return number of bytes that were read from the input buffer
- */
 static int decode_packet(AVCodecContext *avctx, void *data, int *got_frame_ptr,
                          AVPacket* avpkt)
 {
