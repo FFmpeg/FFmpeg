@@ -3282,41 +3282,41 @@ static int opt_map(OptionsContext *o, const char *opt, const char *arg)
             exit_program(1);
         }
     } else {
-    file_idx = strtol(map, &p, 0);
-    if (file_idx >= nb_input_files || file_idx < 0) {
-        av_log(NULL, AV_LOG_FATAL, "Invalid input file index: %d.\n", file_idx);
-        exit_program(1);
-    }
-    if (negative)
-        /* disable some already defined maps */
-        for (i = 0; i < o->nb_stream_maps; i++) {
-            m = &o->stream_maps[i];
-            if (file_idx == m->file_index &&
-                check_stream_specifier(input_files[m->file_index]->ctx,
-                                       input_files[m->file_index]->ctx->streams[m->stream_index],
-                                       *p == ':' ? p + 1 : p) > 0)
-                m->disabled = 1;
+        file_idx = strtol(map, &p, 0);
+        if (file_idx >= nb_input_files || file_idx < 0) {
+            av_log(NULL, AV_LOG_FATAL, "Invalid input file index: %d.\n", file_idx);
+            exit_program(1);
         }
-    else
-        for (i = 0; i < input_files[file_idx]->nb_streams; i++) {
-            if (check_stream_specifier(input_files[file_idx]->ctx, input_files[file_idx]->ctx->streams[i],
-                        *p == ':' ? p + 1 : p) <= 0)
-                continue;
-            o->stream_maps = grow_array(o->stream_maps, sizeof(*o->stream_maps),
-                                        &o->nb_stream_maps, o->nb_stream_maps + 1);
-            m = &o->stream_maps[o->nb_stream_maps - 1];
-
-            m->file_index   = file_idx;
-            m->stream_index = i;
-
-            if (sync_file_idx >= 0) {
-                m->sync_file_index   = sync_file_idx;
-                m->sync_stream_index = sync_stream_idx;
-            } else {
-                m->sync_file_index   = file_idx;
-                m->sync_stream_index = i;
+        if (negative)
+            /* disable some already defined maps */
+            for (i = 0; i < o->nb_stream_maps; i++) {
+                m = &o->stream_maps[i];
+                if (file_idx == m->file_index &&
+                    check_stream_specifier(input_files[m->file_index]->ctx,
+                                           input_files[m->file_index]->ctx->streams[m->stream_index],
+                                           *p == ':' ? p + 1 : p) > 0)
+                    m->disabled = 1;
             }
-        }
+        else
+            for (i = 0; i < input_files[file_idx]->nb_streams; i++) {
+                if (check_stream_specifier(input_files[file_idx]->ctx, input_files[file_idx]->ctx->streams[i],
+                            *p == ':' ? p + 1 : p) <= 0)
+                    continue;
+                o->stream_maps = grow_array(o->stream_maps, sizeof(*o->stream_maps),
+                                            &o->nb_stream_maps, o->nb_stream_maps + 1);
+                m = &o->stream_maps[o->nb_stream_maps - 1];
+
+                m->file_index   = file_idx;
+                m->stream_index = i;
+
+                if (sync_file_idx >= 0) {
+                    m->sync_file_index   = sync_file_idx;
+                    m->sync_stream_index = sync_stream_idx;
+                } else {
+                    m->sync_file_index   = file_idx;
+                    m->sync_stream_index = i;
+                }
+            }
     }
 
     if (!m) {
@@ -4316,24 +4316,24 @@ loop_end:
                 }
                 init_output_filter(ofilter, o, oc);
             } else {
-            ist = input_streams[input_files[map->file_index]->ist_index + map->stream_index];
-            switch (ist->st->codec->codec_type) {
-            case AVMEDIA_TYPE_VIDEO:    ost = new_video_stream(o, oc);    break;
-            case AVMEDIA_TYPE_AUDIO:    ost = new_audio_stream(o, oc);    break;
-            case AVMEDIA_TYPE_SUBTITLE: ost = new_subtitle_stream(o, oc); break;
-            case AVMEDIA_TYPE_DATA:     ost = new_data_stream(o, oc);     break;
-            case AVMEDIA_TYPE_ATTACHMENT: ost = new_attachment_stream(o, oc); break;
-            default:
-                av_log(NULL, AV_LOG_FATAL, "Cannot map stream #%d:%d - unsupported type.\n",
-                       map->file_index, map->stream_index);
-                exit_program(1);
-            }
+                ist = input_streams[input_files[map->file_index]->ist_index + map->stream_index];
+                switch (ist->st->codec->codec_type) {
+                case AVMEDIA_TYPE_VIDEO:    ost = new_video_stream(o, oc);    break;
+                case AVMEDIA_TYPE_AUDIO:    ost = new_audio_stream(o, oc);    break;
+                case AVMEDIA_TYPE_SUBTITLE: ost = new_subtitle_stream(o, oc); break;
+                case AVMEDIA_TYPE_DATA:     ost = new_data_stream(o, oc);     break;
+                case AVMEDIA_TYPE_ATTACHMENT: ost = new_attachment_stream(o, oc); break;
+                default:
+                    av_log(NULL, AV_LOG_FATAL, "Cannot map stream #%d:%d - unsupported type.\n",
+                           map->file_index, map->stream_index);
+                    exit_program(1);
+                }
 
-            ost->source_index = input_files[map->file_index]->ist_index + map->stream_index;
-            ost->sync_ist     = input_streams[input_files[map->sync_file_index]->ist_index +
-                                           map->sync_stream_index];
-            ist->discard = 0;
-            ist->st->discard = AVDISCARD_NONE;
+                ost->source_index = input_files[map->file_index]->ist_index + map->stream_index;
+                ost->sync_ist     = input_streams[input_files[map->sync_file_index]->ist_index +
+                                               map->sync_stream_index];
+                ist->discard = 0;
+                ist->st->discard = AVDISCARD_NONE;
             }
         }
     }
