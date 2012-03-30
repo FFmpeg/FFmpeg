@@ -697,6 +697,8 @@ static int cavs_decode_frame(AVCodecContext * avctx,void *data, int *data_size,
             *data_size = 0;
             if(!h->got_keyframe)
                 break;
+            if(!h->top_qp)
+                break;
             init_get_bits(&s->gb, buf_ptr, input_size);
             h->stc = stc;
             if(decode_pic(h))
