@@ -52,6 +52,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     uint8_t *ptr;
     int dsize;
     const uint8_t *buf0 = buf;
+    GetByteContext gb;
 
     if(buf_size < 14){
         av_log(avctx, AV_LOG_ERROR, "buf size too small (%d)\n", buf_size);
@@ -265,7 +266,8 @@ static int bmp_decode_frame(AVCodecContext *avctx,
             p->data[0] += p->linesize[0] * (avctx->height - 1);
             p->linesize[0] = -p->linesize[0];
         }
-        ff_msrle_decode(avctx, (AVPicture*)p, depth, buf, dsize);
+        bytestream2_init(&gb, buf, dsize);
+        ff_msrle_decode(avctx, (AVPicture*)p, depth, &gb);
         if(height < 0){
             p->data[0] += p->linesize[0] * (avctx->height - 1);
             p->linesize[0] = -p->linesize[0];
