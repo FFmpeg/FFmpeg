@@ -55,6 +55,9 @@ void ff_ivi_recompose53(const IVIPlaneDesc *plane, uint8_t *dst,
     b3_ptr = plane->bands[3].buf;
 
     for (y = 0; y < plane->height; y += 2) {
+
+        if (y+2 >= plane->height)
+            pitch= 0;
         /* load storage variables with values */
         if (num_bands > 0) {
             b0_1 = b0_ptr[0];
