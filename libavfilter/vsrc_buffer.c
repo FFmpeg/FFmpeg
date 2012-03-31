@@ -32,6 +32,7 @@
 
 typedef struct {
     AVFilterBufferRef *picref;
+    AVFilterContext   *scale;
     int               h, w;
     enum PixelFormat  pix_fmt;
     AVRational        time_base;     ///< time_base to set in the output link
@@ -81,14 +82,14 @@ int av_vsrc_buffer_add_video_buffer_ref(AVFilterContext *buffer_filter,
             if ((ret = avfilter_open(&scale, f, "Input equalizer")) < 0)
                 return ret;
 
+            c->scale = scale;
+
             snprintf(scale_param, sizeof(scale_param)-1, "%d:%d:%s", c->w, c->h, c->sws_param);
             if ((ret = avfilter_init_filter(scale, scale_param, NULL)) < 0) {
-                avfilter_free(scale);
                 return ret;
             }
 
             if ((ret = avfilter_insert_filter(buffer_filter->outputs[0], scale, 0, 0)) < 0) {
-                avfilter_free(scale);
                 return ret;
             }
             scale->outputs[0]->time_base = scale->inputs[0]->time_base;
@@ -188,6 +189,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     if (s->picref)
         avfilter_unref_buffer(s->picref);
     s->picref = NULL;
+    avfilter_free(s->scale);
+    s->scale = NULL;
 }
 
 static int query_formats(AVFilterContext *ctx)
