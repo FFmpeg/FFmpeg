@@ -22,6 +22,7 @@
 #include "libavutil/crc.h"
 #include "libavutil/opt.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/opt.h"
 #include "libavutil/random_seed.h"
 #include "libavcodec/xiph.h"
 #include "libavcodec/bytestream.h"
@@ -69,18 +70,22 @@ typedef struct {
     int pref_size; ///< preferred page size (0 => fill all segments)
 } OGGContext;
 
+#define OFFSET(x) offsetof(OGGContext, x)
+#define PARAM AV_OPT_FLAG_ENCODING_PARAM
 
 static const AVOption options[] = {
     { "oggpagesize", "Set preferred Ogg page size.",
       offsetof(OGGContext, pref_size), AV_OPT_TYPE_INT, {.dbl = 0}, 0, MAX_PAGE_SIZE, AV_OPT_FLAG_ENCODING_PARAM},
+    { "pagesize", "preferred page size in bytes",
+        OFFSET(pref_size), AV_OPT_TYPE_INT, { 0 }, 0, MAX_PAGE_SIZE, PARAM },
     { NULL },
 };
 
 static const AVClass ogg_muxer_class = {
-    "Ogg muxer",
-    av_default_item_name,
-    options,
-    LIBAVUTIL_VERSION_INT,
+    .class_name = "Ogg muxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 
@@ -209,8 +214,7 @@ static int ogg_buffer_data(AVFormatContext *s, AVStream *st,
     // them as such, otherwise seeking will not work correctly at the very
     // least with old libogg versions.
     // Do not try to flush header packets though, that will create broken files.
-    if (st->codec->codec_id == CODEC_ID_THEORA &&
-        !header &&
+    if (st->codec->codec_id == CODEC_ID_THEORA && !header &&
         (ogg_granule_to_timestamp(oggstream, granule) >
          ogg_granule_to_timestamp(oggstream, oggstream->last_granule) + 1 ||
          ogg_key_granule(oggstream, granule))) {
@@ -241,8 +245,8 @@ static int ogg_buffer_data(AVFormatContext *s, AVStream *st,
         if (i == total_segments)
             page->granule = granule;
 
-        if(page->segments_count == 255 ||
-           (ogg->pref_size > 0 && page->size >= ogg->pref_size)) {
+        if (!header && (page->segments_count == 255 ||
+            (ogg->pref_size > 0 && page->size >= ogg->pref_size))) {
            ogg_buffer_page(s, oggstream);
         }
     }
@@ -547,5 +551,5 @@ AVOutputFormat ff_ogg_muxer = {
     .write_header      = ogg_write_header,
     .write_packet      = ogg_write_packet,
     .write_trailer     = ogg_write_trailer,
-    .priv_class = &ogg_muxer_class,
+    .priv_class        = &ogg_muxer_class,
 };

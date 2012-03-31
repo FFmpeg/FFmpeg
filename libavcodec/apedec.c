@@ -425,8 +425,8 @@ static inline int ape_decode_value(APEContext *ctx, APERice *rice)
             x = range_decode_bits(ctx, 16);
             x |= (range_decode_bits(ctx, tmpk - 16) << 16);
         } else {
-            av_log(ctx->avctx, AV_LOG_ERROR, "too many bits\n");
-            return -1;
+            av_log(ctx->avctx, AV_LOG_ERROR, "Too many bits: %d\n", tmpk);
+            return AVERROR_INVALIDDATA;
         }
         x += overflow << tmpk;
     } else {
