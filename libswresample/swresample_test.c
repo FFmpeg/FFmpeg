@@ -68,7 +68,7 @@ static void  set(uint8_t *a[], int ch, int index, int ch_count, enum AVSampleFor
 }
 
 static void shift(uint8_t *a[], int index, int ch_count, enum AVSampleFormat f){
-    int i, ch;
+    int ch;
 
     if(av_sample_fmt_is_planar(f)){
         f= av_get_alt_sample_fmt(f, 0);
