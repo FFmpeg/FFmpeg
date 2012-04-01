@@ -464,21 +464,21 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
 
     unsync = flags & 0x80;
 
-    /* Extended header present, just skip over it */
-    if (isv34 && flags & 0x40) {
-        int size = get_size(s->pb, 4);
-        if (size < 6) {
-            reason = "extended header too short.";
+    if (isv34 && flags & 0x40) { /* Extended header present, just skip over it */
+        int extlen = get_size(s->pb, 4);
+        if (version == 4)
+            extlen -= 4;     // in v2.4 the length includes the length field we just read
+
+        if (extlen < 0) {
+            reason = "invalid extended header length";
             goto error;
         }
-        len -= size;
+        avio_skip(s->pb, extlen);
+        len -= extlen + 4;
         if (len < 0) {
             reason = "extended header too long.";
             goto error;
         }
-        /* already seeked past size, skip the reset */
-        size -= 4;
-        avio_skip(s->pb, size);
     }
 
     while (len >= taghdrlen) {
