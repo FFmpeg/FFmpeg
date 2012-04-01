@@ -207,6 +207,9 @@ codec-dependent.
 @var{filter_graph} is a description of the filter graph to apply to
 the stream. Use @code{-filters} to show all the available filters
 (including also sources and sinks).
+
+See also the @option{-filter_complex} option if you want to create filter graphs
+with multiple inputs and/or outputs.
 @item -pre[:@var{stream_specifier}] @var{preset_name} (@emph{output,per-stream})
 Specify the preset for matching stream(s).
 
@@ -460,7 +463,7 @@ Synchronize read on input.
 @section Advanced options
 
 @table @option
-@item -map [-]@var{input_file_id}[:@var{stream_specifier}][,@var{sync_file_id}[:@var{stream_specifier}]] (@emph{output})
+@item -map [-]@var{input_file_id}[:@var{stream_specifier}][,@var{sync_file_id}[:@var{stream_specifier}]] | @var{[linklabel]} (@emph{output})
 
 Designate one or more input streams as a source for the output file. Each input
 stream is identified by the input file index @var{input_file_id} and
@@ -475,6 +478,10 @@ the source for output stream 1, etc.
 
 A @code{-} character before the stream identifier creates a "negative" mapping.
 It disables matching streams from already created mappings.
+
+An alternative @var{[linklabel]} form will map outputs from complex filter
+graphs (see the @option{-filter_complex} option) to the output file.
+@var{linklabel} must correspond to a defined output link label in the graph.
 
 For example, to map ALL streams from the first input file to output
 @example
@@ -639,6 +646,44 @@ Force a tag/fourcc for matching streams.
 @item -cpuflags mask (@emph{global})
 Set a mask that's applied to autodetected CPU flags.  This option is intended
 for testing. Do not use it unless you know what you're doing.
+
+@item -filter_complex @var{filtergraph} (@emph{global})
+Define a complex filter graph, i.e. one with arbitrary number of inputs and/or
+outputs. For simple graphs -- those with one input and one output of the same
+type -- see the @option{-filter} options. @var{filtergraph} is a description of
+the filter graph, as described in @ref{Filtergraph syntax}.
+
+Input link labels must refer to input streams using the
+@code{[file_index:stream_specifier]} syntax (i.e. the same as @option{-map}
+uses). If @var{stream_specifier} matches multiple streams, the first one will be
+used. An unlabeled input will be connected to the first unused input stream of
+the matching type.
+
+Output link labels are referred to with @option{-map}. Unlabeled outputs are
+added to the first output file.
+
+For example, to overlay an image over video
+@example
+avconv -i video.mkv -i image.png -filter_complex '[0:v][1:v]overlay[out]' -map
+'[out]' out.mkv
+@end example
+Here @code{[0:v]} refers to the first video stream in the first input file,
+which is linked to the first (main) input of the overlay filter. Similarly the
+first video stream in the second input is linked to the second (overlay) input
+of overlay.
+
+Assuming there is only one video stream in each input file, we can omit input
+labels, so the above is equivalent to
+@example
+avconv -i video.mkv -i image.png -filter_complex 'overlay[out]' -map
+'[out]' out.mkv
+@end example
+
+Furthermore we can omit the output label and the single output from the filter
+graph will be added to the output file automatically, so we can simply write
+@example
+avconv -i video.mkv -i image.png -filter_complex 'overlay' out.mkv
+@end example
 @end table
 @c man end OPTIONS
 
