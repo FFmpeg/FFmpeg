@@ -2216,6 +2216,9 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
     quality = same_quant ? decoded_frame->quality : 0;
     if (!*got_output) {
         /* no picture yet */
+        if (!pkt->size)
+            for (i = 0; i < ist->nb_filters; i++)
+                av_buffersrc_buffer(ist->filters[i]->filter, NULL);
         return ret;
     }
     decoded_frame->pts = guess_correct_pts(&ist->pts_ctx, decoded_frame->pkt_pts,
