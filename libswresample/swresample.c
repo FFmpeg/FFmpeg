@@ -545,7 +545,6 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
         AudioData tmp= *in;
         int ret2=0;
         int ret, size;
-        int in_buffer_count= s->in_buffer_count;
         size = FFMIN(out_count, s->in_buffer_count);
         if(size){
             buf_set(&tmp, &s->in_buffer, s->in_buffer_index);
