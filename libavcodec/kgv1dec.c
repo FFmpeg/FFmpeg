@@ -30,19 +30,26 @@
 
 typedef struct {
     AVCodecContext *avctx;
-    AVFrame pic;
-    uint16_t *prev, *cur;
+    AVFrame prev, cur;
 } KgvContext;
+
+static void decode_flush(AVCodecContext *avctx)
+{
+    KgvContext * const c = avctx->priv_data;
+
+    if (c->prev.data[0])
+        avctx->release_buffer(avctx, &c->prev);
+}
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     const uint8_t *buf_end = buf + avpkt->size;
     KgvContext * const c = avctx->priv_data;
-    int offsets[7];
+    int offsets[8];
     uint16_t *out, *prev;
     int outcnt = 0, maxcnt;
-    int w, h, i;
+    int w, h, i, res;
 
     if (avpkt->size < 2)
         return -1;
@@ -54,22 +61,25 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     if (av_image_check_size(w, h, 0, avctx))
         return -1;
 
-    if (w != avctx->width || h != avctx->height)
+    if (w != avctx->width || h != avctx->height) {
+        if (c->prev.data[0])
+            avctx->release_buffer(avctx, &c->prev);
         avcodec_set_dimensions(avctx, w, h);
+    }
 
     maxcnt = w * h;
 
-    out = av_realloc(c->cur, w * h * 2);
-    if (!out)
-        return -1;
-    c->cur = out;
+    c->cur.reference = 3;
+    if ((res = avctx->get_buffer(avctx, &c->cur)) < 0)
+        return res;
+    out  = (uint16_t *) c->cur.data[0];
+    if (c->prev.data[0]) {
+        prev = (uint16_t *) c->prev.data[0];
+    } else {
+        prev = NULL;
+    }
 
-    prev = av_realloc(c->prev, w * h * 2);
-    if (!prev)
-        return -1;
-    c->prev = prev;
-
-    for (i = 0; i < 7; i++)
+    for (i = 0; i < 8; i++)
         offsets[i] = -1;
 
     while (outcnt < maxcnt && buf_end - 2 > buf) {
@@ -80,6 +90,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
             out[outcnt++] = code; // rgb555 pixel coded directly
         } else {
             int count;
+            int inp_off;
             uint16_t *inp;
 
             if ((code & 0x6000) == 0x6000) {
@@ -101,7 +112,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
                 if (maxcnt - start < count)
                     break;
 
-                inp = prev + start;
+                if (!prev) {
+                    av_log(avctx, AV_LOG_ERROR,
+                           "Frame reference does not exist\n");
+                    break;
+                }
+
+                inp = prev;
+                inp_off = start;
             } else {
                 // copy from earlier in this frame
                 int offset = (code & 0x1FFF) + 1;
@@ -119,27 +137,28 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
                 if (outcnt < offset)
                     break;
 
-                inp = out + outcnt - offset;
+                inp = out;
+                inp_off = outcnt - offset;
             }
 
             if (maxcnt - outcnt < count)
                 break;
 
-            for (i = 0; i < count; i++)
+            for (i = inp_off; i < count + inp_off; i++) {
                 out[outcnt++] = inp[i];
+            }
         }
     }
 
     if (outcnt - maxcnt)
         av_log(avctx, AV_LOG_DEBUG, "frame finished with %d diff\n", outcnt - maxcnt);
 
-    c->pic.data[0]     = (uint8_t *)c->cur;
-    c->pic.linesize[0] = w * 2;
-
     *data_size = sizeof(AVFrame);
-    *(AVFrame*)data = c->pic;
+    *(AVFrame*)data = c->cur;
 
-    FFSWAP(uint16_t *, c->cur, c->prev);
+    if (c->prev.data[0])
+        avctx->release_buffer(avctx, &c->prev);
+    FFSWAP(AVFrame, c->cur, c->prev);
 
     return avpkt->size;
 }
@@ -150,29 +169,25 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     c->avctx = avctx;
     avctx->pix_fmt = PIX_FMT_RGB555;
-    avcodec_get_frame_defaults(&c->pic);
+    avctx->flags  |= CODEC_FLAG_EMU_EDGE;
 
     return 0;
 }
 
 static av_cold int decode_end(AVCodecContext *avctx)
 {
-    KgvContext * const c = avctx->priv_data;
-
-    av_freep(&c->cur);
-    av_freep(&c->prev);
-
+    decode_flush(avctx);
     return 0;
 }
 
 AVCodec ff_kgv1_decoder = {
-    "kgv1",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_KGV1,
-    sizeof(KgvContext),
-    decode_init,
-    NULL,
-    decode_end,
-    decode_frame,
+    .name           = "kgv1",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_KGV1,
+    .priv_data_size = sizeof(KgvContext),
+    .init           = decode_init,
+    .close          = decode_end,
+    .decode         = decode_frame,
+    .flush          = decode_flush,
     .long_name = NULL_IF_CONFIG_SMALL("Kega Game Video"),
 };

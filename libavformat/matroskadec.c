@@ -664,16 +664,19 @@ static int ebml_read_float(AVIOContext *pb, int size, double *num)
  */
 static int ebml_read_ascii(AVIOContext *pb, int size, char **str)
 {
-    av_free(*str);
+    char *res;
+
     /* EBML strings are usually not 0-terminated, so we allocate one
      * byte more, read the string and NULL-terminate it ourselves. */
-    if (!(*str = av_malloc(size + 1)))
+    if (!(res = av_malloc(size + 1)))
         return AVERROR(ENOMEM);
-    if (avio_read(pb, (uint8_t *) *str, size) != size) {
-        av_freep(str);
+    if (avio_read(pb, (uint8_t *) res, size) != size) {
+        av_free(res);
         return AVERROR(EIO);
     }
-    (*str)[size] = '\0';
+    (res)[size] = '\0';
+    av_free(*str);
+    *str = res;
 
     return 0;
 }
@@ -1427,7 +1430,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         } else if (codec_id == CODEC_ID_AAC && !track->codec_priv.size) {
             int profile = matroska_aac_profile(track->codec_id);
             int sri = matroska_aac_sri(track->audio.samplerate);
-            extradata = av_malloc(5);
+            extradata = av_mallocz(5 + FF_INPUT_BUFFER_PADDING_SIZE);
             if (extradata == NULL)
                 return AVERROR(ENOMEM);
             extradata[0] = (profile << 3) | ((sri&0x0E) >> 1);
@@ -1836,15 +1839,31 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                 if (!track->audio.pkt_cnt) {
                     if (track->audio.sub_packet_cnt == 0)
                         track->audio.buf_timecode = timecode;
-                    if (st->codec->codec_id == CODEC_ID_RA_288)
+                    if (st->codec->codec_id == CODEC_ID_RA_288) {
+                        if (size < cfs * h / 2) {
+                            av_log(matroska->ctx, AV_LOG_ERROR,
+                                   "Corrupt int4 RM-style audio packet size\n");
+                            return AVERROR_INVALIDDATA;
+                        }
                         for (x=0; x<h/2; x++)
                             memcpy(track->audio.buf+x*2*w+y*cfs,
                                    data+x*cfs, cfs);
-                    else if (st->codec->codec_id == CODEC_ID_SIPR)
+                    } else if (st->codec->codec_id == CODEC_ID_SIPR) {
+                        if (size < w) {
+                            av_log(matroska->ctx, AV_LOG_ERROR,
+                                   "Corrupt sipr RM-style audio packet size\n");
+                            return AVERROR_INVALIDDATA;
+                        }
                         memcpy(track->audio.buf + y*w, data, w);
-                    else
+                    } else {
+                        if (size < sps * w / sps) {
+                            av_log(matroska->ctx, AV_LOG_ERROR,
+                                   "Corrupt generic RM-style audio packet size\n");
+                            return AVERROR_INVALIDDATA;
+                        }
                         for (x=0; x<w/sps; x++)
                             memcpy(track->audio.buf+sps*(h*x+((h+1)/2)*(y&1)+(y>>1)), data+x*sps, sps);
+                    }
 
                     if (++track->audio.sub_packet_cnt >= h) {
                         if (st->codec->codec_id == CODEC_ID_SIPR)
