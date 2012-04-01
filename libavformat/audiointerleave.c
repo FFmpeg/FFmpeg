@@ -47,6 +47,10 @@ int ff_audio_interleave_init(AVFormatContext *s,
     if (!samples_per_frame)
         return -1;
 
+    if (!time_base.num) {
+        av_log(s, AV_LOG_ERROR, "timebase not set for audio interleave\n");
+        return -1;
+    }
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
         AudioInterleaveContext *aic = st->priv_data;
