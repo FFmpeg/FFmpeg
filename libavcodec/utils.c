@@ -1404,6 +1404,11 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
     // copy to ensure we do not change avpkt
     AVPacket tmp = *avpkt;
 
+    if (avctx->codec->type != AVMEDIA_TYPE_VIDEO) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid media type for video\n");
+        return AVERROR(EINVAL);
+    }
+
     *got_picture_ptr= 0;
     if((avctx->coded_width||avctx->coded_height) && av_image_check_size(avctx->coded_width, avctx->coded_height, 0, avctx))
         return -1;
@@ -1513,6 +1518,10 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "invalid packet: NULL data, size != 0\n");
         return AVERROR(EINVAL);
     }
+    if (avctx->codec->type != AVMEDIA_TYPE_AUDIO) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid media type for audio\n");
+        return AVERROR(EINVAL);
+    }
 
     if ((avctx->codec->capabilities & CODEC_CAP_DELAY) || avpkt->size) {
         av_packet_split_side_data(avpkt);
@@ -1535,6 +1544,11 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
                             AVPacket *avpkt)
 {
     int ret;
+
+    if (avctx->codec->type != AVMEDIA_TYPE_SUBTITLE) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid media type for subtitles\n");
+        return AVERROR(EINVAL);
+    }
 
     avctx->pkt = avpkt;
     *got_sub_ptr = 0;
