@@ -162,7 +162,7 @@ static int request_frame(AVFilterLink *link)
     if (!av_fifo_size(c->fifo)) {
         av_log(link->src, AV_LOG_ERROR,
                "request_frame() called with no available frame!\n");
-        //return -1;
+        return AVERROR(EINVAL);
     }
     av_fifo_generic_read(c->fifo, &buf, sizeof(buf), NULL);
 
