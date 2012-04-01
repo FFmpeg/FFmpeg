@@ -35,6 +35,7 @@ typedef struct {
     enum PixelFormat  pix_fmt;
     AVRational        time_base;     ///< time_base to set in the output link
     AVRational        pixel_aspect;
+    int eof;
 } BufferSourceContext;
 
 #define CHECK_PARAM_CHANGE(s, c, width, height, format)\
@@ -49,6 +50,12 @@ int av_vsrc_buffer_add_frame(AVFilterContext *buffer_filter, AVFrame *frame,
     BufferSourceContext *c = buffer_filter->priv;
     AVFilterBufferRef *buf;
     int ret;
+
+    if (!buf) {
+        c->eof = 1;
+        return 0;
+    } else if (c->eof)
+        return AVERROR(EINVAL);
 
     if (!av_fifo_space(c->fifo) &&
         (ret = av_fifo_realloc2(c->fifo, av_fifo_size(c->fifo) +
@@ -78,6 +85,12 @@ int av_buffersrc_buffer(AVFilterContext *s, AVFilterBufferRef *buf)
 {
     BufferSourceContext *c = s->priv;
     int ret;
+
+    if (!buf) {
+        c->eof = 1;
+        return 0;
+    } else if (c->eof)
+        return AVERROR(EINVAL);
 
     if (!av_fifo_space(c->fifo) &&
         (ret = av_fifo_realloc2(c->fifo, av_fifo_size(c->fifo) +
@@ -160,6 +173,8 @@ static int request_frame(AVFilterLink *link)
     AVFilterBufferRef *buf;
 
     if (!av_fifo_size(c->fifo)) {
+        if (c->eof)
+            return AVERROR_EOF;
         av_log(link->src, AV_LOG_ERROR,
                "request_frame() called with no available frame!\n");
         return AVERROR(EINVAL);
@@ -177,7 +192,10 @@ static int request_frame(AVFilterLink *link)
 static int poll_frame(AVFilterLink *link)
 {
     BufferSourceContext *c = link->src->priv;
-    return !!av_fifo_size(c->fifo);
+    int size = av_fifo_size(c->fifo);
+    if (!size && c->eof)
+        return AVERROR_EOF;
+    return size/sizeof(AVFilterBufferRef*);
 }
 
 AVFilter avfilter_vsrc_buffer = {
