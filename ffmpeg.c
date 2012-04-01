@@ -5009,6 +5009,15 @@ static int opt_qscale(OptionsContext *o, const char *opt, const char *arg)
     return ret;
 }
 
+static int opt_profile(OptionsContext *o, const char *opt, const char *arg)
+{
+    if(!strcmp(opt, "profile")){
+        av_log(NULL, AV_LOG_WARNING, "Please use -profile:a or -profile:v, -profile is ambiguous\n");
+        return parse_option(o, "profile:v", arg, options);
+    }
+    return opt_default(opt, arg);
+}
+
 static int opt_video_filters(OptionsContext *o, const char *opt, const char *arg)
 {
     return parse_option(o, "filter:v", arg, options);
@@ -5087,6 +5096,7 @@ static const OptionDef options[] = {
     { "tag",   OPT_STRING | HAS_ARG | OPT_SPEC, {.off = OFFSET(codec_tags)}, "force codec tag/fourcc", "fourcc/tag" },
     { "q", HAS_ARG | OPT_EXPERT | OPT_DOUBLE | OPT_SPEC, {.off = OFFSET(qscale)}, "use fixed quality scale (VBR)", "q" },
     { "qscale", HAS_ARG | OPT_EXPERT | OPT_FUNC2, {(void*)opt_qscale}, "use fixed quality scale (VBR)", "q" },
+    { "profile", HAS_ARG | OPT_EXPERT | OPT_FUNC2, {(void*)opt_profile}, "set profile", "profile" },
 #if CONFIG_AVFILTER
     { "filter", HAS_ARG | OPT_STRING | OPT_SPEC, {.off = OFFSET(filters)}, "set stream filterchain", "filter_list" },
 #endif
