@@ -28,11 +28,12 @@
 #include "avcodec.h"
 #include "buffersrc.h"
 #include "vsrc_buffer.h"
+#include "libavutil/fifo.h"
 #include "libavutil/imgutils.h"
 
 typedef struct {
-    AVFilterBufferRef *picref;
-    AVFilterContext   *scale;
+    AVFilterContext  *scale;
+    AVFifoBuffer     *fifo;
     int               h, w;
     enum PixelFormat  pix_fmt;
     AVRational        time_base;     ///< time_base to set in the output link
@@ -51,19 +52,18 @@ int av_vsrc_buffer_add_video_buffer_ref(AVFilterContext *buffer_filter,
 {
     BufferSourceContext *c = buffer_filter->priv;
     AVFilterLink *outlink = buffer_filter->outputs[0];
+    AVFilterBufferRef *buf;
     int ret;
 
-    if (c->picref) {
+    if (av_fifo_size(c->fifo)) {
         if (flags & AV_VSRC_BUF_FLAG_OVERWRITE) {
-            avfilter_unref_buffer(c->picref);
-            c->picref = NULL;
-        } else {
-            av_log(buffer_filter, AV_LOG_ERROR,
-                   "Buffering several frames is not supported. "
-                   "Please consume all available frames before adding a new one.\n");
-            return AVERROR(EINVAL);
+            //FIXME not implemented
         }
     }
+    if (!av_fifo_space(c->fifo) &&
+        (ret = av_fifo_realloc2(c->fifo, av_fifo_size(c->fifo) +
+                                         sizeof(buf))) < 0)
+        return ret;
 
     if (picref->video->w != c->w || picref->video->h != c->h || picref->format != c->pix_fmt) {
         AVFilterContext *scale = buffer_filter->outputs[0]->dst;
@@ -110,12 +110,17 @@ int av_vsrc_buffer_add_video_buffer_ref(AVFilterContext *buffer_filter,
             return ret;
     }
 
-    c->picref = avfilter_get_video_buffer(outlink, AV_PERM_WRITE,
-                                          picref->video->w, picref->video->h);
-    av_image_copy(c->picref->data, c->picref->linesize,
+    buf = avfilter_get_video_buffer(outlink, AV_PERM_WRITE,
+                                    picref->video->w, picref->video->h);
+    av_image_copy(buf->data, buf->linesize,
                   (void*)picref->data, picref->linesize,
                   picref->format, picref->video->w, picref->video->h);
-    avfilter_copy_buffer_ref_props(c->picref, picref);
+    avfilter_copy_buffer_ref_props(buf, picref);
+
+    if ((ret = av_fifo_generic_write(c->fifo, &buf, sizeof(buf), NULL)) < 0) {
+        avfilter_unref_buffer(buf);
+        return ret;
+    }
 
     return 0;
 }
@@ -123,18 +128,17 @@ int av_vsrc_buffer_add_video_buffer_ref(AVFilterContext *buffer_filter,
 int av_buffersrc_buffer(AVFilterContext *s, AVFilterBufferRef *buf)
 {
     BufferSourceContext *c = s->priv;
+    int ret;
 
-    if (c->picref) {
-        av_log(s, AV_LOG_ERROR,
-               "Buffering several frames is not supported. "
-               "Please consume all available frames before adding a new one.\n"
-            );
-        return AVERROR(EINVAL);
-    }
+    if (!av_fifo_space(c->fifo) &&
+        (ret = av_fifo_realloc2(c->fifo, av_fifo_size(c->fifo) +
+                                         sizeof(buf))) < 0)
+        return ret;
 
 //     CHECK_PARAM_CHANGE(s, c, buf->video->w, buf->video->h, buf->format);
 
-    c->picref = buf;
+    if ((ret = av_fifo_generic_write(c->fifo, &buf, sizeof(buf), NULL)) < 0)
+        return ret;
 
     return 0;
 }
@@ -176,6 +180,9 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     if ((ret = ff_parse_pixel_format(&c->pix_fmt, pix_fmt_str, ctx)) < 0)
         return ret;
 
+    if (!(c->fifo = av_fifo_alloc(sizeof(AVFilterBufferRef*))))
+        return AVERROR(ENOMEM);
+
     av_log(ctx, AV_LOG_INFO, "w:%d h:%d pixfmt:%s tb:%d/%d sar:%d/%d sws_param:%s\n",
            c->w, c->h, av_pix_fmt_descriptors[c->pix_fmt].name,
            c->time_base.num, c->time_base.den,
@@ -186,9 +193,13 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     BufferSourceContext *s = ctx->priv;
-    if (s->picref)
-        avfilter_unref_buffer(s->picref);
-    s->picref = NULL;
+    while (av_fifo_size(s->fifo)) {
+        AVFilterBufferRef *buf;
+        av_fifo_generic_read(s->fifo, &buf, sizeof(buf), NULL);
+        avfilter_unref_buffer(buf);
+    }
+    av_fifo_free(s->fifo);
+    s->fifo = NULL;
     avfilter_free(s->scale);
     s->scale = NULL;
 }
@@ -217,18 +228,19 @@ static int config_props(AVFilterLink *link)
 static int request_frame(AVFilterLink *link)
 {
     BufferSourceContext *c = link->src->priv;
+    AVFilterBufferRef *buf;
 
-    if (!c->picref) {
+    if (!av_fifo_size(c->fifo)) {
         av_log(link->src, AV_LOG_WARNING,
                "request_frame() called with no available frame!\n");
         return AVERROR(EINVAL);
     }
+    av_fifo_generic_read(c->fifo, &buf, sizeof(buf), NULL);
 
-    avfilter_start_frame(link, avfilter_ref_buffer(c->picref, ~0));
+    avfilter_start_frame(link, avfilter_ref_buffer(buf, ~0));
     avfilter_draw_slice(link, 0, link->h, 1);
     avfilter_end_frame(link);
-    avfilter_unref_buffer(c->picref);
-    c->picref = NULL;
+    avfilter_unref_buffer(buf);
 
     return 0;
 }
@@ -236,7 +248,7 @@ static int request_frame(AVFilterLink *link)
 static int poll_frame(AVFilterLink *link)
 {
     BufferSourceContext *c = link->src->priv;
-    return !!c->picref;
+    return !!av_fifo_size(c->fifo);
 }
 
 AVFilter avfilter_vsrc_buffer = {
