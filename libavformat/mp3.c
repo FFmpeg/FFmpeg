@@ -246,8 +246,17 @@ static void id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t fl
         goto error;
     }
 
-    if(isv34 && flags & 0x40) /* Extended header present, just skip over it */
-        url_fskip(s->pb, id3v2_get_size(s->pb, 4));
+    if (isv34 && flags & 0x40) { /* Extended header present, just skip over it */
+        int extlen = id3v2_get_size(s->pb, 4);
+        if (version == 4)
+            extlen -= 4;     // in v2.4 the length includes the length field we just read
+
+        if (extlen < 0) {
+            reason = "invalid extended header length";
+            goto error;
+        }
+        url_fskip(s->pb, extlen);
+    }
 
     while(len >= taghdrlen) {
         if(isv34) {
