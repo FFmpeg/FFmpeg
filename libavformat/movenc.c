@@ -2887,7 +2887,7 @@ static int mov_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
 
     if (!size) return 0; /* Discard 0 sized packets */
 
-    if (trk->entry)
+    if (trk->entry && pkt->stream_index < s->nb_streams)
         frag_duration = av_rescale_q(pkt->dts - trk->cluster[0].dts,
                                      s->streams[pkt->stream_index]->time_base,
                                      AV_TIME_BASE_Q);
