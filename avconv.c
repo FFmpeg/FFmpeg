@@ -3054,6 +3054,13 @@ static int transcode(void)
         }
         if (ret < 0) {
             input_files[file_index]->eof_reached = 1;
+
+            for (i = 0; i < input_files[file_index]->nb_streams; i++) {
+                ist = input_streams[input_files[file_index]->ist_index + i];
+                if (ist->decoding_needed)
+                    output_packet(ist, NULL);
+            }
+
             if (opt_shortest)
                 break;
             else
@@ -3125,7 +3132,7 @@ static int transcode(void)
     /* at the end of stream, we must flush the decoder buffers */
     for (i = 0; i < nb_input_streams; i++) {
         ist = input_streams[i];
-        if (ist->decoding_needed) {
+        if (!input_files[ist->file_index]->eof_reached && ist->decoding_needed) {
             output_packet(ist, NULL);
         }
     }
