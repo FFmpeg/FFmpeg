@@ -138,8 +138,12 @@ static void gen_connect(URLContext *s, RTMPContext *rt, const char *proto,
         ff_amf_write_bool(&p, 0);
         ff_amf_write_field_name(&p, "capabilities");
         ff_amf_write_number(&p, 15.0);
+
+        /* Tell the server we support all the audio codecs except
+         * SUPPORT_SND_INTEL (0x0008) and SUPPORT_SND_UNUSED (0x0010)
+         * which are unused in the RTMP protocol implementation. */
         ff_amf_write_field_name(&p, "audioCodecs");
-        ff_amf_write_number(&p, 1639.0);
+        ff_amf_write_number(&p, 4071.0);
         ff_amf_write_field_name(&p, "videoCodecs");
         ff_amf_write_number(&p, 252.0);
         ff_amf_write_field_name(&p, "videoFunction");
