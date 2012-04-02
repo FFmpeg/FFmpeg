@@ -300,7 +300,7 @@ static int altivec_ ## name(SwsContext *c, const unsigned char **in,          \
     vector signed short R1, G1, B1;                                           \
     vector unsigned char R, G, B;                                             \
                                                                               \
-    vector unsigned char *y1ivP, *y2ivP, *uivP, *vivP;                        \
+    const vector unsigned char *y1ivP, *y2ivP, *uivP, *vivP;                  \
     vector unsigned char align_perm;                                          \
                                                                               \
     vector signed short lCY       = c->CY;                                    \
@@ -335,10 +335,10 @@ static int altivec_ ## name(SwsContext *c, const unsigned char **in,          \
         vec_dstst(oute, (0x02000002 | (((w * 3 + 32) / 32) << 16)), 1);       \
                                                                               \
         for (j = 0; j < w / 16; j++) {                                        \
-            y1ivP = (vector unsigned char *) y1i;                             \
-            y2ivP = (vector unsigned char *) y2i;                             \
-            uivP  = (vector unsigned char *) ui;                              \
-            vivP  = (vector unsigned char *) vi;                              \
+            y1ivP = (const vector unsigned char *) y1i;                       \
+            y2ivP = (const vector unsigned char *) y2i;                       \
+            uivP  = (const vector unsigned char *) ui;                        \
+            vivP  = (const vector unsigned char *) vi;                        \
                                                                               \
             align_perm = vec_lvsl(0, y1i);                                    \
             y0 = (vector unsigned char)                                       \

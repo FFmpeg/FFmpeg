@@ -79,7 +79,8 @@ static int ssd_int8_vs_int16_altivec(const int8_t *pix1, const int16_t *pix2,
     return u.score[3];
 }
 
-static int32_t scalarproduct_int16_altivec(const int16_t * v1, const int16_t * v2, int order, const int shift)
+static int32_t scalarproduct_int16_altivec(int16_t *v1, const int16_t *v2,
+                                           int order, const int shift)
 {
     int i;
     LOAD_ZERO;
