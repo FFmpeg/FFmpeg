@@ -390,7 +390,8 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
 
     if ((!avctx->rc_max_rate) != (!avctx->rc_buffer_size)) {
         av_log(avctx, AV_LOG_ERROR, "Either both buffer size and max rate or neither must be specified\n");
-        return -1;
+        if (avctx->rc_max_rate && !avctx->rc_buffer_size)
+            return -1;
     }
 
     if (avctx->rc_min_rate && avctx->rc_max_rate != avctx->rc_min_rate) {
