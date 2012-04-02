@@ -103,7 +103,7 @@ static const struct algo fdct_tab[] = {
 void ff_prores_idct_put_10_sse2(uint16_t *dst, int linesize,
                                 DCTELEM *block, int16_t *qmat);
 
-static void ff_prores_idct_put_10_sse2_wrap(uint16_t *dst){
+static void ff_prores_idct_put_10_sse2_wrap(DCTELEM *dst){
     int16_t qmat[64]; int i;
     int16_t tmp[64];
 
