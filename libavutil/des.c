@@ -417,10 +417,10 @@ int main(void) {
     for (i = 0; i < 1000; i++) {
         key[0] = rand64(); key[1] = rand64(); key[2] = rand64();
         data = rand64();
-        av_des_init(&d, key, 192, 0);
-        av_des_crypt(&d, &ct, &data, 1, NULL, 0);
-        av_des_init(&d, key, 192, 1);
-        av_des_crypt(&d, &ct, &ct, 1, NULL, 1);
+        av_des_init(&d, (uint8_t*)key, 192, 0);
+        av_des_crypt(&d, (uint8_t*)&ct, (uint8_t*)&data, 1, NULL, 0);
+        av_des_init(&d, (uint8_t*)key, 192, 1);
+        av_des_crypt(&d, (uint8_t*)&ct, (uint8_t*)&ct, 1, NULL, 1);
         if (ct != data) {
             printf("Test 2 failed\n");
             return 1;
