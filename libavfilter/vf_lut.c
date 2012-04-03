@@ -318,8 +318,10 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
             outrow = outpic->data[plane] + (y>>vsub) * outpic->linesize[plane];
 
             for (i = 0; i < h>>vsub; i ++) {
-                for (j = 0; j < inlink->w>>hsub; j++)
-                    outrow[j] = lut->lut[plane][inrow[j]];
+                const uint8_t *tab = lut->lut[plane];
+                int w = inlink->w>>hsub;
+                for (j = 0; j < w; j++)
+                    outrow[j] = tab[inrow[j]];
                 inrow  += inpic ->linesize[plane];
                 outrow += outpic->linesize[plane];
             }
