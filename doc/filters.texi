@@ -1695,6 +1695,11 @@ a float number which specifies chroma temporal strength, defaults to
 @var{luma_tmp}*@var{chroma_spatial}/@var{luma_spatial}
 @end table
 
+@section idet
+
+Interlaceing detect filter. This filter tries to detect if the input is
+interlaced or progressive. Top or bottom field first.
+
 @section lut, lutrgb, lutyuv
 
 Compute a look-up table for binding each pixel component input value
