@@ -72,10 +72,10 @@ const char *avformat_license(void)
     return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
 }
 
-#define RELATIVE_TS_BASE (INT64_MAX - (1LL<<32))
+#define RELATIVE_TS_BASE (INT64_MAX - (1LL<<48))
 
 static int is_relative(int64_t ts) {
-    return ts > (RELATIVE_TS_BASE - (1LL<<32));
+    return ts > (RELATIVE_TS_BASE - (1LL<<48));
 }
 
 /* fraction handling */
