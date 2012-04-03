@@ -244,6 +244,9 @@ static int config_props(AVFilterLink *inlink)
 
     for (comp = 0; comp < desc->nb_components; comp++) {
         double res;
+        int tcomp;
+        for (tcomp = 0; lut->rgba_map[tcomp] != comp; tcomp++)
+            ;
 
         /* create the parsed expression */
         ret = av_expr_parse(&lut->comp_expr[comp], lut->comp_expr_str[comp],
@@ -273,8 +276,8 @@ static int config_props(AVFilterLink *inlink)
                        lut->comp_expr_str[comp], val, comp);
                 return AVERROR(EINVAL);
             }
-            lut->lut[comp][val] = av_clip((int)res, min[comp], max[comp]);
-            av_log(ctx, AV_LOG_DEBUG, "val[%d][%d] = %d\n", comp, val, lut->lut[comp][val]);
+            lut->lut[tcomp][val] = av_clip((int)res, min[comp], max[comp]);
+            av_log(ctx, AV_LOG_DEBUG, "val[%d][%d] = %d\n", comp, val, lut->lut[tcomp][val]);
         }
     }
 
@@ -298,16 +301,17 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 
         for (i = 0; i < h; i ++) {
             int w = inlink->w;
+            const uint8_t (*tab)[256] = lut->lut;
             inrow  = inrow0;
             outrow = outrow0;
             for (j = 0; j < w; j++) {
-                outrow[0] = lut->lut[lut->rgba_map[0]][inrow[0]];
+                outrow[0] = tab[0][inrow[0]];
                 if (lut->step>1) {
-                    outrow[1] = lut->lut[lut->rgba_map[1]][inrow[1]];
+                    outrow[1] = tab[1][inrow[1]];
                     if (lut->step>2) {
-                        outrow[2] = lut->lut[lut->rgba_map[2]][inrow[2]];
+                        outrow[2] = tab[2][inrow[2]];
                         if (lut->step>3) {
-                            outrow[3] = lut->lut[lut->rgba_map[3]][inrow[3]];
+                            outrow[3] = tab[3][inrow[3]];
                         }
                     }
                 }
