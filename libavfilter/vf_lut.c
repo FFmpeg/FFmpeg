@@ -297,11 +297,20 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
         outrow0 = outpic->data[0] + y * outpic->linesize[0];
 
         for (i = 0; i < h; i ++) {
+            int w = inlink->w;
             inrow  = inrow0;
             outrow = outrow0;
-            for (j = 0; j < inlink->w; j++) {
-                for (k = 0; k < lut->step; k++)
-                    outrow[k] = lut->lut[lut->rgba_map[k]][inrow[k]];
+            for (j = 0; j < w; j++) {
+                outrow[0] = lut->lut[lut->rgba_map[0]][inrow[0]];
+                if (lut->step>1) {
+                    outrow[1] = lut->lut[lut->rgba_map[1]][inrow[1]];
+                    if (lut->step>2) {
+                        outrow[2] = lut->lut[lut->rgba_map[2]][inrow[2]];
+                        if (lut->step>3) {
+                            outrow[3] = lut->lut[lut->rgba_map[3]][inrow[3]];
+                        }
+                    }
+                }
                 outrow += lut->step;
                 inrow  += lut->step;
             }
