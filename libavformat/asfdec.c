@@ -81,10 +81,6 @@ typedef struct {
 #define FRAME_HEADER_SIZE 17
 // Fix Me! FRAME_HEADER_SIZE may be different.
 
-static const ff_asf_guid index_guid = {
-    0x90, 0x08, 0x00, 0x33, 0xb1, 0xe5, 0xcf, 0x11, 0x89, 0xf4, 0x00, 0xa0, 0xc9, 0x03, 0x49, 0xcb
-};
-
 #ifdef DEBUG
 static const ff_asf_guid stream_bitrate_guid = { /* (http://get.to/sdp) */
     0xce, 0x75, 0xf8, 0x7b, 0x8d, 0x46, 0xd1, 0x11, 0x8d, 0x82, 0x00, 0x60, 0x97, 0xc9, 0xa2, 0xb2
@@ -109,7 +105,7 @@ static void print_guid(const ff_asf_guid *g)
     else PRINT_IF_GUID(g, ff_asf_codec_comment_header);
     else PRINT_IF_GUID(g, ff_asf_codec_comment1_header);
     else PRINT_IF_GUID(g, ff_asf_data_header);
-    else PRINT_IF_GUID(g, index_guid);
+    else PRINT_IF_GUID(g, ff_asf_simple_index_header);
     else PRINT_IF_GUID(g, ff_asf_head1_guid);
     else PRINT_IF_GUID(g, ff_asf_head2_guid);
     else PRINT_IF_GUID(g, ff_asf_my_guid);
@@ -1215,7 +1211,7 @@ static void asf_build_simple_index(AVFormatContext *s, int stream_index)
 
     /* the data object can be followed by other top-level objects,
        skip them until the simple index object is reached */
-    while (ff_guidcmp(&g, &index_guid)) {
+    while (ff_guidcmp(&g, &ff_asf_simple_index_header)) {
         int64_t gsize= avio_rl64(s->pb);
         if (gsize < 24 || url_feof(s->pb)) {
             avio_seek(s->pb, current_pos, SEEK_SET);
