@@ -194,13 +194,13 @@ static void pthread_cond_broadcast(pthread_cond_t *cond)
     pthread_mutex_unlock(&win32_cond->mtx_broadcast);
 }
 
-static void pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
+static int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
 {
     win32_cond_t *win32_cond = cond->ptr;
     int last_waiter;
     if (cond_wait) {
         cond_wait(cond, mutex, INFINITE);
-        return;
+        return 0;
     }
 
     /* non native condition variables */
