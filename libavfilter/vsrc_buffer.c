@@ -55,11 +55,6 @@ int av_vsrc_buffer_add_video_buffer_ref(AVFilterContext *buffer_filter,
     AVFilterBufferRef *buf;
     int ret;
 
-    if (av_fifo_size(c->fifo)) {
-        if (flags & AV_VSRC_BUF_FLAG_OVERWRITE) {
-            //FIXME not implemented
-        }
-    }
     if (!av_fifo_space(c->fifo) &&
         (ret = av_fifo_realloc2(c->fifo, av_fifo_size(c->fifo) +
                                          sizeof(buf))) < 0)
