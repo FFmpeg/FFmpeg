@@ -30,7 +30,7 @@
 
 
 #define ASF_INDEXED_INTERVAL    10000000
-#define ASF_INDEX_BLOCK         600
+#define ASF_INDEX_BLOCK         (1<<9)
 
 #define ASF_PACKET_ERROR_CORRECTION_DATA_SIZE 0x2
 #define ASF_PACKET_ERROR_CORRECTION_FLAGS (\
@@ -810,11 +810,11 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
     if ((!asf->is_streamed) && (flags & AV_PKT_FLAG_KEY)) {
         start_sec = (int)(duration / INT64_C(10000000));
         if (start_sec != (int)(asf->last_indexed_pts / INT64_C(10000000))) {
+            if (start_sec > asf->nb_index_memory_alloc) {
+                asf->nb_index_memory_alloc = (start_sec + ASF_INDEX_BLOCK) & ~(ASF_INDEX_BLOCK - 1);
+                asf->index_ptr = (ASFIndex*)av_realloc( asf->index_ptr, sizeof(ASFIndex) * asf->nb_index_memory_alloc );
+            }
             for(i=asf->nb_index_count;i<start_sec;i++) {
-                if (i>=asf->nb_index_memory_alloc) {
-                    asf->nb_index_memory_alloc += ASF_INDEX_BLOCK;
-                    asf->index_ptr = (ASFIndex*)av_realloc( asf->index_ptr, sizeof(ASFIndex) * asf->nb_index_memory_alloc );
-                }
                 // store
                 asf->index_ptr[i].packet_number = (uint32_t)packet_st;
                 asf->index_ptr[i].packet_count  = (uint16_t)(asf->nb_packets-packet_st);
