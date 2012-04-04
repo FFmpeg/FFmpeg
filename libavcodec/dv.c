@@ -46,7 +46,6 @@
 #include "put_bits.h"
 #include "simple_idct.h"
 #include "dvdata.h"
-#include "dvquant.h"
 #include "dv_tablegen.h"
 
 /* XXX: also include quantization */
@@ -204,11 +203,11 @@ int ff_dv_init_dynamic_tables(const DVprofile *d)
         factor1 = &d->idct_factor[0];
         factor2 = &d->idct_factor[DV_PROFILE_IS_HD(d)?4096:2816];
         if (d->height == 720) {
-            iweight1 = &dv_iweight_720_y[0];
-            iweight2 = &dv_iweight_720_c[0];
+            iweight1 = &ff_dv_iweight_720_y[0];
+            iweight2 = &ff_dv_iweight_720_c[0];
         } else {
-            iweight1 = &dv_iweight_1080_y[0];
-            iweight2 = &dv_iweight_1080_c[0];
+            iweight1 = &ff_dv_iweight_1080_y[0];
+            iweight2 = &ff_dv_iweight_1080_c[0];
         }
         if (DV_PROFILE_IS_HD(d)) {
             for (c = 0; c < 4; c++) {
@@ -220,12 +219,12 @@ int ff_dv_init_dynamic_tables(const DVprofile *d)
                 }
             }
         } else {
-            iweight1 = &dv_iweight_88[0];
-            for (j = 0; j < 2; j++, iweight1 = &dv_iweight_248[0]) {
+            iweight1 = &ff_dv_iweight_88[0];
+            for (j = 0; j < 2; j++, iweight1 = &ff_dv_iweight_248[0]) {
                 for (s = 0; s < 22; s++) {
                     for (i = c = 0; c < 4; c++) {
                         for (; i < dv_quant_areas[c]; i++) {
-                            *factor1   = iweight1[i] << (dv_quant_shifts[s][c] + 1);
+                            *factor1   = iweight1[i] << (ff_dv_quant_shifts[s][c] + 1);
                             *factor2++ = (*factor1++) << 1;
                         }
                     }
@@ -609,7 +608,7 @@ static inline void dv_guess_qnos(EncBlockInfo* blks, int* qnos)
           size[i] = 0;
           for (j = 0; j < 6; j++, b++) {
              for (a = 0; a < 4; a++) {
-                if (b->area_q[a] != dv_quant_shifts[qnos[i] + dv_quant_offset[b->cno]][a]) {
+                if (b->area_q[a] != ff_dv_quant_shifts[qnos[i] + ff_dv_quant_offset[b->cno]][a]) {
                     b->bit_size[a] = 1; // 4 areas 4 bits for EOB :)
                     b->area_q[a]++;
                     prev = b->prev[a];
