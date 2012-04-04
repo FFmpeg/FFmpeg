@@ -401,7 +401,6 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC  (XSUB, xsub);
 
     /* external libraries */
-    REGISTER_ENCODER (LIBAACPLUS, libaacplus);
     REGISTER_DECODER (LIBCELT, libcelt);
     REGISTER_DECODER (LIBDIRAC, libdirac);
     REGISTER_ENCODER (LIBFAAC, libfaac);
@@ -424,6 +423,7 @@ void avcodec_register_all(void)
     REGISTER_ENCODER (LIBX264RGB, libx264rgb);
     REGISTER_ENCODER (LIBXAVS, libxavs);
     REGISTER_ENCODER (LIBXVID, libxvid);
+    REGISTER_ENCODER (LIBAACPLUS, libaacplus);
 
     /* text */
     REGISTER_DECODER (BINTEXT, bintext);
