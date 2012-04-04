@@ -971,19 +971,23 @@ static int mxf_get_sorted_table_segments(MXFContext *mxf, int *nb_sorted_segment
     /* sort segments by {BodySID, IndexSID, IndexStartPosition}, remove duplicates while we're at it */
     for (i = 0; i < nb_segments; i++) {
         int best = -1, best_body_sid = -1, best_index_sid = -1, best_index_start = -1;
+        uint64_t best_index_duration = 0;
 
         for (j = 0; j < nb_segments; j++) {
             MXFIndexTableSegment *s = unsorted_segments[j];
 
             /* Require larger BosySID, IndexSID or IndexStartPosition then the previous entry. This removes duplicates.
              * We want the smallest values for the keys than what we currently have, unless this is the first such entry this time around.
+             * If we come across an entry with the same IndexStartPosition but larger IndexDuration, then we'll prefer it over the one we currently have.
              */
             if ((i == 0     || s->body_sid > last_body_sid || s->index_sid > last_index_sid || s->index_start_position > last_index_start) &&
-                (best == -1 || s->body_sid < best_body_sid || s->index_sid < best_index_sid || s->index_start_position < best_index_start)) {
+                (best == -1 || s->body_sid < best_body_sid || s->index_sid < best_index_sid || s->index_start_position < best_index_start ||
+                (s->index_start_position == best_index_start && s->index_duration > best_index_duration))) {
                 best             = j;
                 best_body_sid    = s->body_sid;
                 best_index_sid   = s->index_sid;
                 best_index_start = s->index_start_position;
+                best_index_duration = s->index_duration;
             }
         }
 
