@@ -54,6 +54,8 @@ typedef struct BlockInfo {
     int shift_offset;
 } BlockInfo;
 
+static const int dv_iweight_bits = 14;
+
 /* decode AC coefficients */
 static void dv_decode_ac(GetBitContext *gb, BlockInfo *mb, DCTELEM *block)
 {
