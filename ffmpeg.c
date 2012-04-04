@@ -2684,8 +2684,8 @@ static int transcode_init(OutputFile *output_files, int nb_output_files,
                 codec->time_base = (AVRational){ost->frame_rate.den, ost->frame_rate.num};
                 if (   av_q2d(codec->time_base) < 0.001 && video_sync_method != VSYNC_PASSTHROUGH
                    && (video_sync_method == VSYNC_CFR || (video_sync_method == VSYNC_AUTO && !(oc->oformat->flags & AVFMT_VARIABLE_FPS)))){
-                    av_log(oc, AV_LOG_WARNING, "Frame rate very high for a muxer not effciciently supporting it.\n"
-                                               "Please consider specifiying a lower framerate, a different muxer or -vsync 2\n");
+                    av_log(oc, AV_LOG_WARNING, "Frame rate very high for a muxer not efficiently supporting it.\n"
+                                               "Please consider specifying a lower framerate, a different muxer or -vsync 2\n");
                 }
                 for (j = 0; j < ost->forced_kf_count; j++)
                     ost->forced_kf_pts[j] = av_rescale_q(ost->forced_kf_pts[j],
@@ -3122,7 +3122,7 @@ static int transcode(OutputFile *output_files, int nb_output_files,
                 if ( delta < -1LL*dts_error_threshold*AV_TIME_BASE ||
                     (delta > 1LL*dts_error_threshold*AV_TIME_BASE && ist->st->codec->codec_type != AVMEDIA_TYPE_SUBTITLE) ||
                      pkt_dts+1<ist->pts){
-                    av_log(NULL, AV_LOG_WARNING, "DTS %"PRId64", next:%"PRId64" st:%d invalid droping\n", pkt.dts, ist->next_dts, pkt.stream_index);
+                    av_log(NULL, AV_LOG_WARNING, "DTS %"PRId64", next:%"PRId64" st:%d invalid dropping\n", pkt.dts, ist->next_dts, pkt.stream_index);
                     pkt.dts = AV_NOPTS_VALUE;
                 }
                 if (pkt.pts != AV_NOPTS_VALUE){
@@ -3131,7 +3131,7 @@ static int transcode(OutputFile *output_files, int nb_output_files,
                     if ( delta < -1LL*dts_error_threshold*AV_TIME_BASE ||
                         (delta > 1LL*dts_error_threshold*AV_TIME_BASE && ist->st->codec->codec_type != AVMEDIA_TYPE_SUBTITLE) ||
                         pkt_pts+1<ist->pts) {
-                        av_log(NULL, AV_LOG_WARNING, "PTS %"PRId64", next:%"PRId64" invalid droping st:%d\n", pkt.pts, ist->next_dts, pkt.stream_index);
+                        av_log(NULL, AV_LOG_WARNING, "PTS %"PRId64", next:%"PRId64" invalid dropping st:%d\n", pkt.pts, ist->next_dts, pkt.stream_index);
                         pkt.pts = AV_NOPTS_VALUE;
                     }
                 }
