@@ -103,15 +103,22 @@ static void filter(AVFilterContext *ctx)
     if      (alpha[0] / (float)alpha[1] > idet->interlace_threshold){
         av_log(ctx, AV_LOG_INFO, "Interlaced, top field first\n");
         idet->stat_tff++;
+        idet->cur->video->top_field_first = 1;
+        idet->cur->video->interlaced = 1;
     }else if(alpha[1] / (float)alpha[0] > idet->interlace_threshold){
         av_log(ctx, AV_LOG_INFO, "Interlaced, bottom field first\n");
         idet->stat_bff++;
+        idet->cur->video->top_field_first = 0;
+        idet->cur->video->interlaced = 1;
     }else if(alpha[1] / (float)delta    > idet->progressive_threshold){
         av_log(ctx, AV_LOG_INFO, "Progressive\n");
         idet->stat_progressive++;
+        idet->cur->video->interlaced = 0;
     }else{
         av_log(ctx, AV_LOG_INFO, "Undetermined\n");
         idet->stat_undetermined++;
+        idet->cur->video->interlaced      = idet->prev->video->interlaced;
+        idet->cur->video->top_field_first = idet->prev->video->top_field_first;
     }
 //     av_log(ctx,0, "t%d b%d p%d u%d\n", t,b,p,u);
 }
