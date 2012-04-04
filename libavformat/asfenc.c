@@ -208,11 +208,13 @@ typedef struct {
     /* only for reading */
     uint64_t data_offset;                ///< beginning of the first data packet
 
-    int64_t last_indexed_pts;
     ASFIndex* index_ptr;
-    uint32_t nb_index_count;
     uint32_t nb_index_memory_alloc;
     uint16_t maximum_packet;
+    uint32_t next_packet_number;
+    uint16_t next_packet_count;
+    int      next_start_sec;
+    int      end_sec;
 } ASFContext;
 
 static const AVCodecTag codec_asf_bmp_tags[] = {
@@ -557,10 +559,8 @@ static int asf_write_header(AVFormatContext *s)
     s->packet_size  = PACKET_SIZE;
     asf->nb_packets = 0;
 
-    asf->last_indexed_pts = 0;
     asf->index_ptr = av_malloc( sizeof(ASFIndex) * ASF_INDEX_BLOCK );
     asf->nb_index_memory_alloc = ASF_INDEX_BLOCK;
-    asf->nb_index_count = 0;
     asf->maximum_packet = 0;
 
     /* the data-chunk-size has to be 50, which is data_size - asf->data_offset
@@ -782,6 +782,34 @@ static void put_frame(
     stream->seq++;
 }
 
+static void update_index(AVFormatContext *s, int start_sec,
+                         uint32_t packet_number, uint16_t packet_count)
+{
+    ASFContext *asf = s->priv_data;
+
+    if (start_sec > asf->next_start_sec) {
+        int i;
+
+        if (!asf->next_start_sec) {
+            asf->next_packet_number = packet_number;
+            asf->next_packet_count  = packet_count;
+        }
+
+        if (start_sec > asf->nb_index_memory_alloc) {
+            asf->nb_index_memory_alloc = (start_sec + ASF_INDEX_BLOCK) & ~(ASF_INDEX_BLOCK - 1);
+            asf->index_ptr = av_realloc( asf->index_ptr, sizeof(ASFIndex) * asf->nb_index_memory_alloc );
+        }
+        for (i = asf->next_start_sec; i < start_sec; i++) {
+            asf->index_ptr[i].packet_number = asf->next_packet_number;
+            asf->index_ptr[i].packet_count  = asf->next_packet_count;
+        }
+    }
+    asf->maximum_packet     = FFMAX(asf->maximum_packet, packet_count);
+    asf->next_packet_number = packet_number;
+    asf->next_packet_count  = packet_count;
+    asf->next_start_sec     = start_sec;
+}
+
 static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ASFContext *asf = s->priv_data;
@@ -789,7 +817,7 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVCodecContext *codec;
     uint32_t packet_number;
     int64_t pts;
-    int start_sec,i;
+    int start_sec;
     int flags= pkt->flags;
 
     codec = s->streams[pkt->stream_index]->codec;
@@ -806,25 +834,16 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
     packet_number = asf->nb_packets;
     put_frame(s, stream, s->streams[pkt->stream_index], pkt->dts, pkt->data, pkt->size, flags);
 
+    start_sec = (int)((PREROLL_TIME * 10000 + pts + ASF_INDEXED_INTERVAL - 1)
+              / ASF_INDEXED_INTERVAL);
+
     /* check index */
     if ((!asf->is_streamed) && (flags & AV_PKT_FLAG_KEY)) {
         uint16_t packet_count = asf->nb_packets - packet_number;
-        start_sec = (int)(pts / INT64_C(10000000));
-        if (start_sec != (int)(asf->last_indexed_pts / INT64_C(10000000))) {
-            if (start_sec > asf->nb_index_memory_alloc) {
-                asf->nb_index_memory_alloc = (start_sec + ASF_INDEX_BLOCK) & ~(ASF_INDEX_BLOCK - 1);
-                asf->index_ptr = av_realloc( asf->index_ptr, sizeof(ASFIndex) * asf->nb_index_memory_alloc );
-            }
-            for(i=asf->nb_index_count;i<start_sec;i++) {
-                // store
-                asf->index_ptr[i].packet_number = packet_number;
-                asf->index_ptr[i].packet_count  = packet_count;
-                asf->maximum_packet = FFMAX(asf->maximum_packet, packet_count);
-            }
-            asf->nb_index_count = start_sec;
-            asf->last_indexed_pts = pts;
-        }
+        update_index(s, start_sec, packet_number, packet_count);
     }
+    asf->end_sec = start_sec;
+
     return 0;
 }
 
@@ -859,8 +878,9 @@ static int asf_write_trailer(AVFormatContext *s)
 
     /* write index */
     data_size = avio_tell(s->pb);
-    if ((!asf->is_streamed) && (asf->nb_index_count != 0)) {
-        asf_write_index(s, asf->index_ptr, asf->maximum_packet, asf->nb_index_count);
+    if (!asf->is_streamed && asf->next_start_sec) {
+        update_index(s, asf->end_sec + 1, 0, 0);
+        asf_write_index(s, asf->index_ptr, asf->maximum_packet, asf->next_start_sec);
     }
     avio_flush(s->pb);
 
