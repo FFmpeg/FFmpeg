@@ -121,8 +121,8 @@ MCAxA_OP %1,%2,%3,%4,%5,%6,%7,%8
 %endmacro
 
 %macro MCAxA_OP 8
-cglobal %2_h264_qpel%5_%3_10_%1, %6,%7,%8
 %if ARCH_X86_32
+cglobal %2_h264_qpel%5_%3_10_%1, %6,%7,%8
     call stub_%2_h264_qpel%4_%3_10_%1
     mov  r0, r0m
     mov  r1, r1m
@@ -141,17 +141,19 @@ cglobal %2_h264_qpel%5_%3_10_%1, %6,%7,%8
     call stub_%2_h264_qpel%4_%3_10_%1
     RET
 %else ; ARCH_X86_64
-    mov r10, r0
-    mov r11, r1
+cglobal %2_h264_qpel%5_%3_10_%1, %6,%7 + 2,%8
+    mov r%7, r0
+%assign p1 %7+1
+    mov r %+ p1, r1
     call stub_%2_h264_qpel%4_%3_10_%1
-    lea  r0, [r10+%4*2]
-    lea  r1, [r11+%4*2]
+    lea  r0, [r%7+%4*2]
+    lea  r1, [r %+ p1+%4*2]
     call stub_%2_h264_qpel%4_%3_10_%1
-    lea  r0, [r10+r2*%4]
-    lea  r1, [r11+r2*%4]
+    lea  r0, [r%7+r2*%4]
+    lea  r1, [r %+ p1+r2*%4]
     call stub_%2_h264_qpel%4_%3_10_%1
-    lea  r0, [r10+r2*%4+%4*2]
-    lea  r1, [r11+r2*%4+%4*2]
+    lea  r0, [r%7+r2*%4+%4*2]
+    lea  r1, [r %+ p1+r2*%4+%4*2]
 %if UNIX64 == 0 ; fall through to function
     call stub_%2_h264_qpel%4_%3_10_%1
     RET

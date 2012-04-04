@@ -127,7 +127,7 @@ WEIGHT_FUNC_HALF_MM 8, 8, sse2
 
 %macro BIWEIGHT_SETUP 0
 %if ARCH_X86_64
-%define off_regd r11d
+%define off_regd r7d
 %else
 %define off_regd r3d
 %endif
@@ -175,7 +175,7 @@ WEIGHT_FUNC_HALF_MM 8, 8, sse2
 %endmacro
 
 INIT_MMX
-cglobal h264_biweight_16_mmx2, 7, 7, 0
+cglobal h264_biweight_16_mmx2, 7, 8, 0
     BIWEIGHT_SETUP
     movifnidn r3d, r3m
 .nextrow
@@ -194,7 +194,7 @@ cglobal h264_biweight_16_mmx2, 7, 7, 0
     REP_RET
 
 %macro BIWEIGHT_FUNC_MM 3
-cglobal h264_biweight_%1_%3, 7, 7, %2
+cglobal h264_biweight_%1_%3, 7, 8, %2
     BIWEIGHT_SETUP
     movifnidn r3d, r3m
 .nextrow
@@ -215,7 +215,7 @@ INIT_XMM
 BIWEIGHT_FUNC_MM 16, 8, sse2
 
 %macro BIWEIGHT_FUNC_HALF_MM 3
-cglobal h264_biweight_%1_%3, 7, 7, %2
+cglobal h264_biweight_%1_%3, 7, 8, %2
     BIWEIGHT_SETUP
     movifnidn r3d, r3m
     sar        r3, 1
@@ -245,7 +245,7 @@ BIWEIGHT_FUNC_HALF_MM 8, 8, sse2
 
 %macro BIWEIGHT_SSSE3_SETUP 0
 %if ARCH_X86_64
-%define off_regd r11d
+%define off_regd r7d
 %else
 %define off_regd r3d
 %endif
@@ -277,7 +277,7 @@ BIWEIGHT_FUNC_HALF_MM 8, 8, sse2
 %endmacro
 
 INIT_XMM
-cglobal h264_biweight_16_ssse3, 7, 7, 8
+cglobal h264_biweight_16_ssse3, 7, 8, 8
     BIWEIGHT_SSSE3_SETUP
     movifnidn r3d, r3m
 
@@ -296,7 +296,7 @@ cglobal h264_biweight_16_ssse3, 7, 7, 8
     REP_RET
 
 INIT_XMM
-cglobal h264_biweight_8_ssse3, 7, 7, 8
+cglobal h264_biweight_8_ssse3, 7, 8, 8
     BIWEIGHT_SSSE3_SETUP
     movifnidn r3d, r3m
     sar        r3, 1

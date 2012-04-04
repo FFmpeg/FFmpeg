@@ -53,7 +53,7 @@ SECTION .text
 %ifnidn %3, X
 cglobal hscale%1to%2_%4, %5, 7, %6, pos0, dst, w, src, filter, fltpos, pos1
 %else
-cglobal hscale%1to%2_%4, %5, 7, %6, pos0, dst, w, srcmem, filter, fltpos, fltsize
+cglobal hscale%1to%2_%4, %5, 10, %6, pos0, dst, w, srcmem, filter, fltpos, fltsize
 %endif
 %if ARCH_X86_64
     movsxd        wq, wd
@@ -245,10 +245,9 @@ cglobal hscale%1to%2_%4, %5, 7, %6, pos0, dst, w, srcmem, filter, fltpos, fltsiz
 %define dlt 0
 %endif ; %4 ==/!= X4
 %if ARCH_X86_64
-    push         r12
-%define srcq    r11
-%define pos1q   r10
-%define srcendq r12
+%define srcq    r8
+%define pos1q   r7
+%define srcendq r9
     movsxd  fltsizeq, fltsized                  ; filterSize
     lea      srcendq, [srcmemq+(fltsizeq-dlt)*srcmul] ; &src[filterSize&~4]
 %else ; x86-32
@@ -388,16 +387,7 @@ cglobal hscale%1to%2_%4, %5, 7, %6, pos0, dst, w, srcmem, filter, fltpos, fltsiz
     add           wq, 2
 %endif ; %3 ==/!= X
     jl .loop
-%ifnidn %3, X
     REP_RET
-%else ; %3 == X
-%if ARCH_X86_64
-    pop          r12
-    RET
-%else ; x86-32
-    REP_RET
-%endif ; x86-32/64
-%endif ; %3 ==/!= X
 %endmacro
 
 ; SCALE_FUNCS source_width, intermediate_nbits, n_xmm

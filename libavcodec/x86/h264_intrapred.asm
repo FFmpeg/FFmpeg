@@ -289,7 +289,7 @@ cglobal pred16x16_tm_vp8_sse2, 2,6,6
 ;-----------------------------------------------------------------------------
 
 %macro H264_PRED16x16_PLANE 3
-cglobal pred16x16_plane_%3_%1, 2, 7, %2
+cglobal pred16x16_plane_%3_%1, 2, 9, %2
     mov          r2, r1           ; +stride
     neg          r1               ; -stride
 
@@ -349,7 +349,7 @@ cglobal pred16x16_plane_%3_%1, 2, 7, %2
     add          r4, r2
 
 %if ARCH_X86_64
-%define e_reg r11
+%define e_reg r8
 %else
 %define e_reg r0
 %endif
@@ -370,8 +370,8 @@ cglobal pred16x16_plane_%3_%1, 2, 7, %2
 
     movzx     e_reg, byte [r3        ]
 %if ARCH_X86_64
-    movzx       r10, byte [r4+r2     ]
-    sub         r10, e_reg
+    movzx        r7, byte [r4+r2     ]
+    sub          r7, e_reg
 %else
     movzx        r6, byte [r4+r2     ]
     sub          r6, e_reg
@@ -386,7 +386,7 @@ cglobal pred16x16_plane_%3_%1, 2, 7, %2
     movzx        r6, byte [r3        ]
     sub          r6, r4
 %if ARCH_X86_64
-    lea          r6, [r10+r6*2]
+    lea          r6, [r7+r6*2]
     lea          r5, [r5+r6*2]
     add          r5, r6
 %else
@@ -396,9 +396,9 @@ cglobal pred16x16_plane_%3_%1, 2, 7, %2
 
     movzx        r4, byte [e_reg     ]
 %if ARCH_X86_64
-    movzx       r10, byte [r3   +r2  ]
-    sub         r10, r4
-    sub          r5, r10
+    movzx        r7, byte [r3   +r2  ]
+    sub          r7, r4
+    sub          r5, r7
 %else
     movzx        r6, byte [r3   +r2  ]
     sub          r6, r4
@@ -410,7 +410,7 @@ cglobal pred16x16_plane_%3_%1, 2, 7, %2
     movzx        r6, byte [r3   +r2*2]
     sub          r6, r4
 %if ARCH_X86_64
-    add          r6, r10
+    add          r6, r7
 %endif
     lea          r5, [r5+r6*8]
 
@@ -588,7 +588,7 @@ H264_PRED16x16_PLANE ssse3, 8, svq3
 ;-----------------------------------------------------------------------------
 
 %macro H264_PRED8x8_PLANE 2
-cglobal pred8x8_plane_%1, 2, 7, %2
+cglobal pred8x8_plane_%1, 2, 9, %2
     mov          r2, r1           ; +stride
     neg          r1               ; -stride
 
@@ -642,7 +642,7 @@ cglobal pred8x8_plane_%1, 2, 7, %2
     add          r4, r2
 
 %if ARCH_X86_64
-%define e_reg r11
+%define e_reg r8
 %else
 %define e_reg r0
 %endif
@@ -653,9 +653,9 @@ cglobal pred8x8_plane_%1, 2, 7, %2
 
     movzx     e_reg, byte [r3        ]
 %if ARCH_X86_64
-    movzx       r10, byte [r4+r2     ]
-    sub         r10, e_reg
-    sub          r5, r10
+    movzx        r7, byte [r4+r2     ]
+    sub          r7, e_reg
+    sub          r5, r7
 %else
     movzx        r6, byte [r4+r2     ]
     sub          r6, e_reg
@@ -667,7 +667,7 @@ cglobal pred8x8_plane_%1, 2, 7, %2
     movzx        r6, byte [r4+r2*2   ]
     sub          r6, e_reg
 %if ARCH_X86_64
-    add          r6, r10
+    add          r6, r7
 %endif
     lea          r5, [r5+r6*4]
 

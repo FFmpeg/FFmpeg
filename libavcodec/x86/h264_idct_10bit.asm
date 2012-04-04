@@ -29,24 +29,6 @@ SECTION_RODATA
 
 pw_pixel_max: times 8 dw ((1 << 10)-1)
 pd_32:        times 4 dd 32
-scan8_mem: db  4+ 1*8, 5+ 1*8, 4+ 2*8, 5+ 2*8
-           db  6+ 1*8, 7+ 1*8, 6+ 2*8, 7+ 2*8
-           db  4+ 3*8, 5+ 3*8, 4+ 4*8, 5+ 4*8
-           db  6+ 3*8, 7+ 3*8, 6+ 4*8, 7+ 4*8
-           db  4+ 6*8, 5+ 6*8, 4+ 7*8, 5+ 7*8
-           db  6+ 6*8, 7+ 6*8, 6+ 7*8, 7+ 7*8
-           db  4+ 8*8, 5+ 8*8, 4+ 9*8, 5+ 9*8
-           db  6+ 8*8, 7+ 8*8, 6+ 9*8, 7+ 9*8
-           db  4+11*8, 5+11*8, 4+12*8, 5+12*8
-           db  6+11*8, 7+11*8, 6+12*8, 7+12*8
-           db  4+13*8, 5+13*8, 4+14*8, 5+14*8
-           db  6+13*8, 7+13*8, 6+14*8, 7+14*8
-
-%ifdef PIC
-%define scan8 r11
-%else
-%define scan8 scan8_mem
-%endif
 
 SECTION .text
 
@@ -315,9 +297,9 @@ IDCT_ADD16INTRA_10 avx
 ; h264_idct_add8(pixel **dst, const int *block_offset, dctcoef *block, int stride, const uint8_t nnzc[6*8])
 ;-----------------------------------------------------------------------------
 %macro IDCT_ADD8 1
-cglobal h264_idct_add8_10_%1,5,7,7
+cglobal h264_idct_add8_10_%1,5,8,7
 %if ARCH_X86_64
-    mov r10, r0
+    mov      r7, r0
 %endif
     add      r2, 1024
     mov      r0, [r0]
@@ -325,7 +307,7 @@ cglobal h264_idct_add8_10_%1,5,7,7
     ADD16_OP_INTRA %1, 18, 4+ 7*8
     add      r2, 1024-128*2
 %if ARCH_X86_64
-    mov      r0, [r10+gprsize]
+    mov      r0, [r7+gprsize]
 %else
     mov      r0, r0m
     mov      r0, [r0+gprsize]
