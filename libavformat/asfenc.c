@@ -808,6 +808,7 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     /* check index */
     if ((!asf->is_streamed) && (flags & AV_PKT_FLAG_KEY)) {
+        uint16_t packet_count = asf->nb_packets - packet_number;
         start_sec = (int)(pts / INT64_C(10000000));
         if (start_sec != (int)(asf->last_indexed_pts / INT64_C(10000000))) {
             if (start_sec > asf->nb_index_memory_alloc) {
@@ -817,8 +818,8 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
             for(i=asf->nb_index_count;i<start_sec;i++) {
                 // store
                 asf->index_ptr[i].packet_number = (uint32_t)packet_number;
-                asf->index_ptr[i].packet_count  = (uint16_t)(asf->nb_packets-packet_number);
-                asf->maximum_packet = FFMAX(asf->maximum_packet, (uint16_t)(asf->nb_packets-packet_number));
+                asf->index_ptr[i].packet_count  = (uint16_t)packet_count;
+                asf->maximum_packet = FFMAX(asf->maximum_packet, (uint16_t)packet_count);
             }
             asf->nb_index_count = start_sec;
             asf->last_indexed_pts = pts;
