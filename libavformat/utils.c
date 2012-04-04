@@ -774,9 +774,9 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int determinable_frame_size(AVCodecContext *avctx)
 {
-    if (/*avctx->codec_id == CODEC_ID_AAC ||
+    if (/*avctx->codec_id == CODEC_ID_AAC ||*/
         avctx->codec_id == CODEC_ID_MP1 ||
-        avctx->codec_id == CODEC_ID_MP2 ||*/
+        avctx->codec_id == CODEC_ID_MP2 ||
         avctx->codec_id == CODEC_ID_MP3/* ||
         avctx->codec_id == CODEC_ID_CELT*/)
         return 1;
