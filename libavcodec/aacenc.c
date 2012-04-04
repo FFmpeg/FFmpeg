@@ -477,7 +477,7 @@ static void put_bitstream_info(AVCodecContext *avctx, AACEncContext *s,
  * Deinterleave input samples.
  * Channels are reordered from Libav's default order to AAC order.
  */
-static void deinterleave_input_samples(AACEncContext *s, AVFrame *frame)
+static void deinterleave_input_samples(AACEncContext *s, const AVFrame *frame)
 {
     int ch, i;
     const int sinc = s->channels;
