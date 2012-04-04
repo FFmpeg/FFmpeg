@@ -112,10 +112,6 @@ static void filter(AVFilterContext *ctx)
 //     av_log(ctx,0, "t%d b%d p%d u%d\n", t,b,p,u);
 }
 
-static void return_frame(AVFilterContext *ctx)
-{
-}
-
 static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
     AVFilterContext *ctx = link->dst;
