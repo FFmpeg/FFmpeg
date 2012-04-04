@@ -30,6 +30,11 @@ typedef struct {
     float interlace_threshold;
     float progressive_threshold;
 
+    int stat_tff;
+    int stat_bff;
+    int stat_progressive;
+    int stat_undetermined;
+
     AVFilterBufferRef *cur;
     AVFilterBufferRef *next;
     AVFilterBufferRef *prev;
@@ -70,7 +75,6 @@ static void filter(AVFilterContext *ctx)
     int y, i;
     int64_t alpha[2]={0};
     int64_t delta=0;
-    static int p=0, t=0, b=0, u=0;
 
     for (i = 0; i < idet->csp->nb_components; i++) {
         int w = idet->cur->video->w;
@@ -98,16 +102,16 @@ static void filter(AVFilterContext *ctx)
 
     if      (alpha[0] / (float)alpha[1] > idet->interlace_threshold){
         av_log(ctx, AV_LOG_INFO, "Interlaced, top field first\n");
-        t++;
+        idet->stat_tff++;
     }else if(alpha[1] / (float)alpha[0] > idet->interlace_threshold){
         av_log(ctx, AV_LOG_INFO, "Interlaced, bottom field first\n");
-        b++;
+        idet->stat_bff++;
     }else if(alpha[1] / (float)delta    > idet->progressive_threshold){
         av_log(ctx, AV_LOG_INFO, "Progressive\n");
-        p++;
+        idet->stat_progressive++;
     }else{
         av_log(ctx, AV_LOG_INFO, "Undetermined\n");
-        u++;
+        idet->stat_undetermined++;
     }
 //     av_log(ctx,0, "t%d b%d p%d u%d\n", t,b,p,u);
 }
