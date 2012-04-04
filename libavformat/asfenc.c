@@ -400,7 +400,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
 
         enc = s->streams[n]->codec;
         asf->streams[n].num = n + 1;
-        asf->streams[n].seq = 0;
+        asf->streams[n].seq = 1;
 
 
         switch(enc->codec_type) {
