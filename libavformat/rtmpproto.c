@@ -138,8 +138,12 @@ static void gen_connect(URLContext *s, RTMPContext *rt, const char *proto,
         ff_amf_write_bool(&p, 0);
         ff_amf_write_field_name(&p, "capabilities");
         ff_amf_write_number(&p, 15.0);
+
+        /* Tell the server we support all the audio codecs except
+         * SUPPORT_SND_INTEL (0x0008) and SUPPORT_SND_UNUSED (0x0010)
+         * which are unused in the RTMP protocol implementation. */
         ff_amf_write_field_name(&p, "audioCodecs");
-        ff_amf_write_number(&p, 1639.0);
+        ff_amf_write_number(&p, 4071.0);
         ff_amf_write_field_name(&p, "videoCodecs");
         ff_amf_write_number(&p, 252.0);
         ff_amf_write_field_name(&p, "videoFunction");
@@ -338,6 +342,21 @@ static void gen_pong(URLContext *s, RTMPContext *rt, RTMPPacket *ppkt)
     p = pkt.data;
     bytestream_put_be16(&p, 7);
     bytestream_put_be32(&p, AV_RB32(ppkt->data+2));
+    ff_rtmp_packet_write(rt->stream, &pkt, rt->chunk_size, rt->prev_pkt[1]);
+    ff_rtmp_packet_destroy(&pkt);
+}
+
+/**
+ * Generate server bandwidth message and send it to the server.
+ */
+static void gen_server_bw(URLContext *s, RTMPContext *rt)
+{
+    RTMPPacket pkt;
+    uint8_t *p;
+
+    ff_rtmp_packet_create(&pkt, RTMP_NETWORK_CHANNEL, RTMP_PT_SERVER_BW, 0, 4);
+    p = pkt.data;
+    bytestream_put_be32(&p, 2500000);
     ff_rtmp_packet_write(rt->stream, &pkt, rt->chunk_size, rt->prev_pkt[1]);
     ff_rtmp_packet_destroy(&pkt);
 }
@@ -603,6 +622,7 @@ static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
                     gen_fcpublish_stream(s, rt);
                     rt->state = STATE_RELEASING;
                 } else {
+                    gen_server_bw(s, rt);
                     rt->state = STATE_CONNECTING;
                 }
                 gen_create_stream(s, rt);

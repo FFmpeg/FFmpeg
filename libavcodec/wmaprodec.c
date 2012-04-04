@@ -237,7 +237,7 @@ typedef struct WMAProDecodeCtx {
  *@brief helper function to print the most important members of the context
  *@param s context
  */
-static void av_cold dump_context(WMAProDecodeCtx *s)
+static av_cold void dump_context(WMAProDecodeCtx *s)
 {
 #define PRINT(a, b)     av_log(s->avctx, AV_LOG_DEBUG, " %s = %d\n", a, b);
 #define PRINT_HEX(a, b) av_log(s->avctx, AV_LOG_DEBUG, " %s = %x\n", a, b);

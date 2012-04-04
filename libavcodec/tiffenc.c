@@ -77,7 +77,7 @@ typedef struct TiffEncoderContext {
  * @param need Needed bytes
  * @return 0 - ok, 1 - no free space
  */
-inline static int check_size(TiffEncoderContext * s, uint64_t need)
+static inline int check_size(TiffEncoderContext * s, uint64_t need)
 {
     if (s->buf_size < *s->buf - s->buf_start + need) {
         *s->buf = s->buf_start + s->buf_size + 1;

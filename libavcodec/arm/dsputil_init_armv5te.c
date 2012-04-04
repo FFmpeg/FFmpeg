@@ -27,7 +27,7 @@ void ff_simple_idct_add_armv5te(uint8_t *dest, int line_size, DCTELEM *data);
 
 void ff_prefetch_arm(void *mem, int stride, int h);
 
-void av_cold ff_dsputil_init_armv5te(DSPContext* c, AVCodecContext *avctx)
+av_cold void ff_dsputil_init_armv5te(DSPContext *c, AVCodecContext *avctx)
 {
     if (!avctx->lowres && avctx->bits_per_raw_sample <= 8 &&
         (avctx->idct_algo == FF_IDCT_AUTO ||

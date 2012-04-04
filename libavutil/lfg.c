@@ -27,7 +27,7 @@
 #include "intreadwrite.h"
 #include "attributes.h"
 
-void av_cold av_lfg_init(AVLFG *c, unsigned int seed)
+av_cold void av_lfg_init(AVLFG *c, unsigned int seed)
 {
     uint8_t tmp[16] = { 0 };
     int i;
