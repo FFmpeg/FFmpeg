@@ -120,7 +120,6 @@ static void filter(AVFilterContext *ctx)
         idet->cur->video->interlaced      = idet->prev->video->interlaced;
         idet->cur->video->top_field_first = idet->prev->video->top_field_first;
     }
-//     av_log(ctx,0, "t%d b%d p%d u%d\n", t,b,p,u);
 }
 
 static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
@@ -197,6 +196,13 @@ static int poll_frame(AVFilterLink *link)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     IDETContext *idet = ctx->priv;
+
+    av_log(ctx, AV_LOG_INFO, "TFF:%d BFF:%d Progressive:%d Undetermined:%d\n",
+           idet->stat_tff,
+           idet->stat_bff,
+           idet->stat_progressive,
+           idet->stat_undetermined
+    );
 
     if (idet->prev) avfilter_unref_buffer(idet->prev);
     if (idet->cur ) avfilter_unref_buffer(idet->cur );
