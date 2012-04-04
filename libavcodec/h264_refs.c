@@ -655,6 +655,8 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
 
     if(err >= 0 && h->long_ref_count==0 && h->short_ref_count<=2 && h->pps.ref_count[0]<=1 + (s->picture_structure != PICT_FRAME) && s->current_picture_ptr->f.pict_type == AV_PICTURE_TYPE_I){
         s->current_picture_ptr->sync |= 1;
+        if(!h->s.avctx->has_b_frames)
+            h->sync = 2;
     }
 
     return (h->s.avctx->err_recognition & AV_EF_EXPLODE) ? err : 0;
