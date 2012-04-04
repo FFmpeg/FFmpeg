@@ -786,9 +786,9 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ASFContext *asf = s->priv_data;
     ASFStream *stream;
-    int64_t duration;
     AVCodecContext *codec;
-    int64_t packet_st,pts;
+    uint32_t packet_number;
+    int64_t pts;
     int start_sec,i;
     int flags= pkt->flags;
 
@@ -800,15 +800,15 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     pts = (pkt->pts != AV_NOPTS_VALUE) ? pkt->pts : pkt->dts;
     assert(pts != AV_NOPTS_VALUE);
-    duration = pts * 10000;
-    asf->duration= FFMAX(asf->duration, duration + pkt->duration * 10000);
+    pts *= 10000;
+    asf->duration= FFMAX(asf->duration, pts + pkt->duration * 10000);
 
-    packet_st = asf->nb_packets;
+    packet_number = asf->nb_packets;
     put_frame(s, stream, s->streams[pkt->stream_index], pkt->dts, pkt->data, pkt->size, flags);
 
     /* check index */
     if ((!asf->is_streamed) && (flags & AV_PKT_FLAG_KEY)) {
-        start_sec = (int)(duration / INT64_C(10000000));
+        start_sec = (int)(pts / INT64_C(10000000));
         if (start_sec != (int)(asf->last_indexed_pts / INT64_C(10000000))) {
             if (start_sec > asf->nb_index_memory_alloc) {
                 asf->nb_index_memory_alloc = (start_sec + ASF_INDEX_BLOCK) & ~(ASF_INDEX_BLOCK - 1);
@@ -816,12 +816,12 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
             }
             for(i=asf->nb_index_count;i<start_sec;i++) {
                 // store
-                asf->index_ptr[i].packet_number = (uint32_t)packet_st;
-                asf->index_ptr[i].packet_count  = (uint16_t)(asf->nb_packets-packet_st);
-                asf->maximum_packet = FFMAX(asf->maximum_packet, (uint16_t)(asf->nb_packets-packet_st));
+                asf->index_ptr[i].packet_number = (uint32_t)packet_number;
+                asf->index_ptr[i].packet_count  = (uint16_t)(asf->nb_packets-packet_number);
+                asf->maximum_packet = FFMAX(asf->maximum_packet, (uint16_t)(asf->nb_packets-packet_number));
             }
             asf->nb_index_count = start_sec;
-            asf->last_indexed_pts = duration;
+            asf->last_indexed_pts = pts;
         }
     }
     return 0;
