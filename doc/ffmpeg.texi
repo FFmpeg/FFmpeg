@@ -1077,11 +1077,19 @@ ffmpeg -f image2 -i foo-%03d.jpeg -r 12 -s WxH foo.avi
 The syntax @code{foo-%03d.jpeg} specifies to use a decimal number
 composed of three digits padded with zeroes to express the sequence
 number. It is the same syntax supported by the C printf function, but
-only formats accepting a normal integer are suitable. When importing
-an image sequence, -i also accepts shell-like wildcard patterns such as
-@code{foo-*.jpeg}, @code{foo-???.jpeg} or @code{foo-00[234]*.jpeg}.
-It will probably be necessary to escape these patterns so they do not
-get interpreted by your shell.
+only formats accepting a normal integer are suitable.
+
+When importing an image sequence, -i also supports expanding shell-like
+wildcard patterns (globbing) internally. To lower the chance of interfering
+with your actual file names and the shell's glob expansion, you are required
+to activate glob meta characters by prefixing them with a single @code{%}
+character, like in @code{foo-%*.jpeg}, @code{foo-%?%?%?.jpeg} or
+@code{foo-00%[234%]%*.jpeg}.
+If your filename actually contains a character sequence of a @code{%} character
+followed by a glob character, you must double the @code{%} character to escape
+it. Imagine your files begin with @code{%?-foo-}, then you could use a glob
+pattern like @code{%%?-foo-%*.jpeg}. For input patterns that could be both a
+printf or a glob pattern, ffmpeg will assume it is a glob pattern.
 
 @item
 You can put many streams of the same type in the output:
