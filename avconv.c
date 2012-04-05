@@ -1014,7 +1014,7 @@ static int alloc_audio_output_buf(AVCodecContext *dec, AVCodecContext *enc,
 
     audio_buf_size = av_samples_get_buffer_size(NULL, enc->channels,
                                                 audio_buf_samples,
-                                                enc->sample_fmt, 32);
+                                                enc->sample_fmt, 0);
     if (audio_buf_size < 0)
         return audio_buf_size;
 
