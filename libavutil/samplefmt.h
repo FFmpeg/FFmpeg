@@ -54,6 +54,28 @@ const char *av_get_sample_fmt_name(enum AVSampleFormat sample_fmt);
 enum AVSampleFormat av_get_sample_fmt(const char *name);
 
 /**
+ * Get the packed alternative form of the given sample format.
+ *
+ * If the passed sample_fmt is already in packed format, the format returned is
+ * the same as the input.
+ *
+ * @return  the packed alternative form of the given sample format or
+            AV_SAMPLE_FMT_NONE on error.
+ */
+enum AVSampleFormat av_get_packed_sample_fmt(enum AVSampleFormat sample_fmt);
+
+/**
+ * Get the planar alternative form of the given sample format.
+ *
+ * If the passed sample_fmt is already in planar format, the format returned is
+ * the same as the input.
+ *
+ * @return  the planar alternative form of the given sample format or
+            AV_SAMPLE_FMT_NONE on error.
+ */
+enum AVSampleFormat av_get_planar_sample_fmt(enum AVSampleFormat sample_fmt);
+
+/**
  * Generate a string corresponding to the sample format with
  * sample_fmt, or a header if sample_fmt is negative.
  *
