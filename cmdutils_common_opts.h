@@ -14,6 +14,7 @@
     { "loglevel", HAS_ARG, {(void*)opt_loglevel}, "set libav* logging level", "loglevel" },
     { "v", HAS_ARG, {(void*)opt_loglevel}, "set libav* logging level", "loglevel" },
     { "debug", HAS_ARG, {(void*)opt_codec_debug}, "set debug flags", "flags" },
+    { "fdebug", HAS_ARG, {(void*)opt_codec_debug}, "set debug flags", "flags" },
     { "report", 0, {(void*)opt_report}, "generate a report" },
     { "max_alloc", HAS_ARG, {(void*)opt_max_alloc}, "set maximum size of a single allocated block", "bytes" },
     { "cpuflags", HAS_ARG | OPT_EXPERT, {(void*)opt_cpuflags}, "force specific cpu flags", "flags" },
