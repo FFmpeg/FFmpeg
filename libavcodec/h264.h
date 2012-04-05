@@ -602,6 +602,7 @@ typedef struct H264Context{
 
 
 extern const uint8_t ff_h264_chroma_qp[5][QP_MAX_NUM+1]; ///< One chroma qp table for each possible bit depth (8-12).
+extern const uint16_t ff_h264_mb_sizes[4];
 
 /**
  * Decode SEI

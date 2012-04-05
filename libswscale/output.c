@@ -320,7 +320,7 @@ yuv2mono_X_c_template(SwsContext *c, const int16_t *lumFilter,
     int i;
     unsigned acc = 0;
 
-    for (i = 0; i < dstW - 1; i += 2) {
+    for (i = 0; i < dstW; i += 2) {
         int j;
         int Y1 = 1 << 18;
         int Y2 = 1 << 18;
@@ -341,6 +341,10 @@ yuv2mono_X_c_template(SwsContext *c, const int16_t *lumFilter,
             output_pixel(*dest++, acc);
         }
     }
+
+    if (i & 6) {
+        output_pixel(*dest, acc);
+    }
 }
 
 static av_always_inline void
@@ -355,7 +359,7 @@ yuv2mono_2_c_template(SwsContext *c, const int16_t *buf[2],
     int  yalpha1 = 4095 - yalpha;
     int i;
 
-    for (i = 0; i < dstW - 7; i += 8) {
+    for (i = 0; i < dstW; i += 8) {
         int Y, acc = 0;
 
         Y = (buf0[i + 0] * yalpha1 + buf1[i + 0] * yalpha) >> 19;
@@ -388,7 +392,7 @@ yuv2mono_1_c_template(SwsContext *c, const int16_t *buf0,
     const uint8_t * const d128 = dither_8x8_220[y & 7];
     int i;
 
-    for (i = 0; i < dstW - 7; i += 8) {
+    for (i = 0; i < dstW; i += 8) {
         int acc = 0;
 
         accumulate_bit(acc, ((buf0[i + 0] + 64) >> 7) + d128[0]);

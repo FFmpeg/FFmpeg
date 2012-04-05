@@ -765,8 +765,8 @@ decode_intra_mb:
 
     if(IS_INTRA_PCM(mb_type)){
         unsigned int x;
-        static const uint16_t mb_sizes[4] = {256,384,512,768};
-        const int mb_size = mb_sizes[h->sps.chroma_format_idc]*h->sps.bit_depth_luma >> 3;
+        const int mb_size = ff_h264_mb_sizes[h->sps.chroma_format_idc] *
+                            h->sps.bit_depth_luma >> 3;
 
         // We assume these blocks are very rare so we do not optimize it.
         align_get_bits(&s->gb);

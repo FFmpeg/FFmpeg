@@ -104,7 +104,7 @@ static void apply_unsharp(      uint8_t *dst, int dst_stride,
             }
             if (x >= fp->steps_x && y >= fp->steps_y) {
                 const uint8_t *srx = src - fp->steps_y * src_stride + x - fp->steps_x;
-                uint8_t       *dsx = dst - fp->steps_y * dst_stride + x - fp->steps_x;
+                uint8_t *dsx       = dst - fp->steps_y * dst_stride + x - fp->steps_x;
 
                 res = (int32_t)*srx + ((((int32_t) * srx - (int32_t)((tmp1 + fp->halfscale) >> fp->scalebits)) * fp->amount) >> 16);
                 *dsx = av_clip_uint8(res);
