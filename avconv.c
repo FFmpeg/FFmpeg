@@ -4377,6 +4377,41 @@ static void parse_cpuflags(int argc, char **argv, const OptionDef *options)
         opt_cpuflags("cpuflags", argv[idx + 1]);
 }
 
+static int opt_channel_layout(OptionsContext *o, const char *opt, const char *arg)
+{
+    char layout_str[32];
+    char *stream_str;
+    char *ac_str;
+    int ret, channels, ac_str_size;
+    uint64_t layout;
+
+    layout = av_get_channel_layout(arg);
+    if (!layout) {
+        av_log(NULL, AV_LOG_ERROR, "Unknown channel layout: %s\n", arg);
+        return AVERROR(EINVAL);
+    }
+    snprintf(layout_str, sizeof(layout_str), "%"PRIu64, layout);
+    ret = opt_default(opt, layout_str);
+    if (ret < 0)
+        return ret;
+
+    /* set 'ac' option based on channel layout */
+    channels = av_get_channel_layout_nb_channels(layout);
+    snprintf(layout_str, sizeof(layout_str), "%d", channels);
+    stream_str = strchr(opt, ':');
+    ac_str_size = 3 + (stream_str ? strlen(stream_str) : 0);
+    ac_str = av_mallocz(ac_str_size);
+    if (!ac_str)
+        return AVERROR(ENOMEM);
+    av_strlcpy(ac_str, "ac", 3);
+    if (stream_str)
+        av_strlcat(ac_str, stream_str, ac_str_size);
+    ret = parse_option(o, ac_str, layout_str, options);
+    av_free(ac_str);
+
+    return ret;
+}
+
 #define OFFSET(x) offsetof(OptionsContext, x)
 static const OptionDef options[] = {
     /* main options */
@@ -4465,6 +4500,7 @@ static const OptionDef options[] = {
     { "atag", HAS_ARG | OPT_EXPERT | OPT_AUDIO | OPT_FUNC2, {(void*)opt_audio_tag}, "force audio tag/fourcc", "fourcc/tag" },
     { "vol", OPT_INT | HAS_ARG | OPT_AUDIO, {(void*)&audio_volume}, "change audio volume (256=normal)" , "volume" }, //
     { "sample_fmt", HAS_ARG | OPT_EXPERT | OPT_AUDIO | OPT_SPEC | OPT_STRING, {.off = OFFSET(sample_fmts)}, "set sample format", "format" },
+    { "channel_layout", HAS_ARG | OPT_EXPERT | OPT_AUDIO | OPT_FUNC2, {(void*)opt_channel_layout}, "set channel layout", "layout" },
 
     /* subtitle options */
     { "sn", OPT_BOOL | OPT_SUBTITLE | OPT_OFFSET, {.off = OFFSET(subtitle_disable)}, "disable subtitle" },
