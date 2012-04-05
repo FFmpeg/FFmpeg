@@ -49,6 +49,16 @@ typedef struct {
     const AVPixFmtDescriptor *csp;
 } IDETContext;
 
+static const char *type2str(Type type)
+{
+    switch(type) {
+        case TFF         : return "Top Field First   ";
+        case BFF         : return "Bottom Field First";
+        case PROGRSSIVE  : return "Progressive       ";
+        case UNDETERMINED: return "Undetermined      ";
+    }
+    return NULL;
+}
 
 static int filter_line_c(const uint8_t *a, const uint8_t *b, const uint8_t *c, int w)
 {
@@ -107,16 +117,12 @@ static void filter(AVFilterContext *ctx)
 #endif
 
     if      (alpha[0] / (float)alpha[1] > idet->interlace_threshold){
-        av_log(ctx, AV_LOG_INFO, "Interlaced, top field first\n");
         type = TFF;
     }else if(alpha[1] / (float)alpha[0] > idet->interlace_threshold){
-        av_log(ctx, AV_LOG_INFO, "Interlaced, bottom field first\n");
         type = BFF;
     }else if(alpha[1] / (float)delta    > idet->progressive_threshold){
-        av_log(ctx, AV_LOG_INFO, "Progressive\n");
         type = PROGRSSIVE;
     }else{
-        av_log(ctx, AV_LOG_INFO, "Undetermined\n");
         type = UNDETERMINED;
     }
 
@@ -134,6 +140,8 @@ static void filter(AVFilterContext *ctx)
     }else if(idet->last_type == PROGRSSIVE){
         idet->cur->video->interlaced = 0;
     }
+
+    av_log(ctx, AV_LOG_INFO, "Single frame:%s, Multi frame:%s\n", type2str(type), type2str(idet->last_type));
 }
 
 static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
