@@ -292,7 +292,7 @@ static int audio_get_buffer(AVCodecContext *avctx, AVFrame *frame)
 
     buf_size = av_samples_get_buffer_size(NULL, avctx->channels,
                                           frame->nb_samples, avctx->sample_fmt,
-                                          32);
+                                          0);
     if (buf_size < 0)
         return AVERROR(EINVAL);
 
@@ -334,7 +334,7 @@ static int audio_get_buffer(AVCodecContext *avctx, AVFrame *frame)
         }
         if ((ret = avcodec_fill_audio_frame(frame, avctx->channels,
                                             avctx->sample_fmt, buf->data[0],
-                                            buf->audio_data_size, 32)))
+                                            buf->audio_data_size, 0)))
             return ret;
 
         if (frame->extended_data == frame->data)
