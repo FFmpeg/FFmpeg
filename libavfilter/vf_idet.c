@@ -142,7 +142,7 @@ static void filter(AVFilterContext *ctx)
 
     idet->prestat [           type] ++;
     idet->poststat[idet->last_type] ++;
-    av_log(ctx, AV_LOG_INFO, "Single frame:%s, Multi frame:%s\n", type2str(type), type2str(idet->last_type));
+    av_log(ctx, AV_LOG_DEBUG, "Single frame:%s, Multi frame:%s\n", type2str(type), type2str(idet->last_type));
 }
 
 static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
