@@ -534,7 +534,9 @@ static int mov_read_hdlr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             return AVERROR(ENOMEM);
         avio_read(pb, title_str, title_size);
         title_str[title_size] = 0;
-        av_dict_set(&st->metadata, "handler_name", title_str, 0);
+        if (title_str[0])
+            av_dict_set(&st->metadata, "handler_name", title_str +
+                        (!c->isom && title_str[0] == title_size - 1), 0);
         av_freep(&title_str);
     }
 
