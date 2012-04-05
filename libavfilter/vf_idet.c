@@ -39,6 +39,7 @@ typedef struct {
 
     Type last_type;
     Type prestat[4];
+    Type poststat[4];
 
     AVFilterBufferRef *cur;
     AVFilterBufferRef *next;
@@ -126,8 +127,6 @@ static void filter(AVFilterContext *ctx)
         type = UNDETERMINED;
     }
 
-    idet->prestat[type] ++;
-
     if (type != UNDETERMINED)
         idet->last_type = type;
 
@@ -141,6 +140,8 @@ static void filter(AVFilterContext *ctx)
         idet->cur->video->interlaced = 0;
     }
 
+    idet->prestat [           type] ++;
+    idet->poststat[idet->last_type] ++;
     av_log(ctx, AV_LOG_INFO, "Single frame:%s, Multi frame:%s\n", type2str(type), type2str(idet->last_type));
 }
 
@@ -219,11 +220,17 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     IDETContext *idet = ctx->priv;
 
-    av_log(ctx, AV_LOG_INFO, "TFF:%d BFF:%d Progressive:%d Undetermined:%d\n",
+    av_log(ctx, AV_LOG_INFO, "Single frame detection: TFF:%d BFF:%d Progressive:%d Undetermined:%d\n",
            idet->prestat[TFF],
            idet->prestat[BFF],
            idet->prestat[PROGRSSIVE],
            idet->prestat[UNDETERMINED]
+    );
+    av_log(ctx, AV_LOG_INFO, "Multi frame detection: TFF:%d BFF:%d Progressive:%d Undetermined:%d\n",
+           idet->poststat[TFF],
+           idet->poststat[BFF],
+           idet->poststat[PROGRSSIVE],
+           idet->poststat[UNDETERMINED]
     );
 
     if (idet->prev) avfilter_unref_buffer(idet->prev);
