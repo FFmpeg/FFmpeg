@@ -26,14 +26,19 @@
 #undef NDEBUG
 #include <assert.h>
 
+typedef enum {
+    TFF,
+    BFF,
+    PROGRSSIVE,
+    UNDETERMINED,
+} Type;
+
 typedef struct {
     float interlace_threshold;
     float progressive_threshold;
 
-    int stat_tff;
-    int stat_bff;
-    int stat_progressive;
-    int stat_undetermined;
+
+    Type prestat[4];
 
     AVFilterBufferRef *cur;
     AVFilterBufferRef *next;
@@ -75,6 +80,7 @@ static void filter(AVFilterContext *ctx)
     int y, i;
     int64_t alpha[2]={0};
     int64_t delta=0;
+    Type type;
 
     for (i = 0; i < idet->csp->nb_components; i++) {
         int w = idet->cur->video->w;
@@ -101,22 +107,30 @@ static void filter(AVFilterContext *ctx)
 #endif
 
     if      (alpha[0] / (float)alpha[1] > idet->interlace_threshold){
+        type = TFF;
+    }else if(alpha[1] / (float)alpha[0] > idet->interlace_threshold){
+        type = BFF;
+    }else if(alpha[1] / (float)delta    > idet->progressive_threshold){
+        type = PROGRSSIVE;
+    }else{
+        type = UNDETERMINED;
+    }
+
+    idet->prestat[type] ++;
+
+    if      (type == TFF){
         av_log(ctx, AV_LOG_INFO, "Interlaced, top field first\n");
-        idet->stat_tff++;
         idet->cur->video->top_field_first = 1;
         idet->cur->video->interlaced = 1;
-    }else if(alpha[1] / (float)alpha[0] > idet->interlace_threshold){
+    }else if(type == BFF){
         av_log(ctx, AV_LOG_INFO, "Interlaced, bottom field first\n");
-        idet->stat_bff++;
         idet->cur->video->top_field_first = 0;
         idet->cur->video->interlaced = 1;
-    }else if(alpha[1] / (float)delta    > idet->progressive_threshold){
+    }else if(type == PROGRSSIVE){
         av_log(ctx, AV_LOG_INFO, "Progressive\n");
-        idet->stat_progressive++;
         idet->cur->video->interlaced = 0;
     }else{
         av_log(ctx, AV_LOG_INFO, "Undetermined\n");
-        idet->stat_undetermined++;
         idet->cur->video->interlaced      = idet->prev->video->interlaced;
         idet->cur->video->top_field_first = idet->prev->video->top_field_first;
     }
@@ -198,10 +212,10 @@ static av_cold void uninit(AVFilterContext *ctx)
     IDETContext *idet = ctx->priv;
 
     av_log(ctx, AV_LOG_INFO, "TFF:%d BFF:%d Progressive:%d Undetermined:%d\n",
-           idet->stat_tff,
-           idet->stat_bff,
-           idet->stat_progressive,
-           idet->stat_undetermined
+           idet->prestat[TFF],
+           idet->prestat[BFF],
+           idet->prestat[PROGRSSIVE],
+           idet->prestat[UNDETERMINED]
     );
 
     if (idet->prev) avfilter_unref_buffer(idet->prev);
