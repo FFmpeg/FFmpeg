@@ -26,6 +26,8 @@
 #undef NDEBUG
 #include <assert.h>
 
+#define HIST_SIZE 4
+
 typedef enum {
     TFF,
     BFF,
@@ -40,6 +42,8 @@ typedef struct {
     Type last_type;
     Type prestat[4];
     Type poststat[4];
+
+    uint8_t history[HIST_SIZE];
 
     AVFilterBufferRef *cur;
     AVFilterBufferRef *next;
@@ -91,7 +95,8 @@ static void filter(AVFilterContext *ctx)
     int y, i;
     int64_t alpha[2]={0};
     int64_t delta=0;
-    Type type;
+    Type type, best_type;
+    int match = 0;
 
     for (i = 0; i < idet->csp->nb_components; i++) {
         int w = idet->cur->video->w;
@@ -127,8 +132,27 @@ static void filter(AVFilterContext *ctx)
         type = UNDETERMINED;
     }
 
-    if (type != UNDETERMINED)
-        idet->last_type = type;
+    memmove(idet->history+1, idet->history, HIST_SIZE-1);
+    idet->history[0] = type;
+    best_type = UNDETERMINED;
+    for(i=0; i<HIST_SIZE; i++){
+        if(idet->history[i] != UNDETERMINED){
+            if(best_type == UNDETERMINED)
+                best_type = idet->history[i];
+
+            if(idet->history[i] == best_type) {
+                match++;
+            }else{
+                match=0;
+                break;
+            }
+        }
+    }
+    if(idet->last_type == UNDETERMINED){
+        if(match  ) idet->last_type = best_type;
+    }else{
+        if(match>2) idet->last_type = best_type;
+    }
 
     if      (idet->last_type == TFF){
         idet->cur->video->top_field_first = 1;
@@ -281,6 +305,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     if (args) sscanf(args, "%f:%f", &idet->interlace_threshold, &idet->progressive_threshold);
 
     idet->last_type = UNDETERMINED;
+    memset(idet->history, UNDETERMINED, HIST_SIZE);
 
     idet->filter_line = filter_line_c;
 
