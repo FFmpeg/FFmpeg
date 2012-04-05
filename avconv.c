@@ -2145,6 +2145,51 @@ static void print_sdp(OutputFile *output_files, int n)
     av_freep(&avc);
 }
 
+static void get_default_channel_layouts(OutputStream *ost, InputStream *ist)
+{
+    char layout_name[256];
+    AVCodecContext *enc = ost->st->codec;
+    AVCodecContext *dec = ist->st->codec;
+
+    if (!dec->channel_layout) {
+        if (enc->channel_layout && dec->channels == enc->channels) {
+            dec->channel_layout = enc->channel_layout;
+        } else {
+            dec->channel_layout = av_get_default_channel_layout(dec->channels);
+
+            if (!dec->channel_layout) {
+                av_log(NULL, AV_LOG_FATAL, "Unable to find default channel "
+                       "layout for Input Stream #%d.%d\n", ist->file_index,
+                       ist->st->index);
+                exit_program(1);
+            }
+        }
+        av_get_channel_layout_string(layout_name, sizeof(layout_name),
+                                     dec->channels, dec->channel_layout);
+        av_log(NULL, AV_LOG_WARNING, "Guessed Channel Layout for  Input Stream "
+               "#%d.%d : %s\n", ist->file_index, ist->st->index, layout_name);
+    }
+    if (!enc->channel_layout) {
+        if (dec->channels == enc->channels) {
+            enc->channel_layout = dec->channel_layout;
+            return;
+        } else {
+            enc->channel_layout = av_get_default_channel_layout(enc->channels);
+        }
+        if (!enc->channel_layout) {
+            av_log(NULL, AV_LOG_FATAL, "Unable to find default channel layout "
+                   "for Output Stream #%d.%d\n", ost->file_index,
+                   ost->st->index);
+            exit_program(1);
+        }
+        av_get_channel_layout_string(layout_name, sizeof(layout_name),
+                                     enc->channels, enc->channel_layout);
+        av_log(NULL, AV_LOG_WARNING, "Guessed Channel Layout for Output Stream "
+               "#%d.%d : %s\n", ost->file_index, ost->st->index, layout_name);
+    }
+}
+
+
 static int init_input_stream(int ist_index, OutputStream *output_streams, int nb_output_streams,
                              char *error, int error_len)
 {
@@ -2183,6 +2228,17 @@ static int init_input_stream(int ist_index, OutputStream *output_streams, int nb
         }
         assert_codec_experimental(ist->st->codec, 0);
         assert_avoptions(ist->opts);
+
+        if (ist->st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+            for (i = 0; i < nb_output_streams; i++) {
+                OutputStream *ost = &output_streams[i];
+                if (ost->source_index == ist_index) {
+                    if (!ist->st->codec->channel_layout || !ost->st->codec->channel_layout)
+                        get_default_channel_layouts(ost, ist);
+                    break;
+                }
+            }
+        }
     }
 
     ist->last_dts = ist->st->avg_frame_rate.num ? - ist->st->codec->has_b_frames * AV_TIME_BASE / av_q2d(ist->st->avg_frame_rate) : 0;
