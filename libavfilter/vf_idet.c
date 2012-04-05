@@ -37,7 +37,7 @@ typedef struct {
     float interlace_threshold;
     float progressive_threshold;
 
-
+    Type last_type;
     Type prestat[4];
 
     AVFilterBufferRef *cur;
@@ -107,32 +107,32 @@ static void filter(AVFilterContext *ctx)
 #endif
 
     if      (alpha[0] / (float)alpha[1] > idet->interlace_threshold){
+        av_log(ctx, AV_LOG_INFO, "Interlaced, top field first\n");
         type = TFF;
     }else if(alpha[1] / (float)alpha[0] > idet->interlace_threshold){
+        av_log(ctx, AV_LOG_INFO, "Interlaced, bottom field first\n");
         type = BFF;
     }else if(alpha[1] / (float)delta    > idet->progressive_threshold){
+        av_log(ctx, AV_LOG_INFO, "Progressive\n");
         type = PROGRSSIVE;
     }else{
+        av_log(ctx, AV_LOG_INFO, "Undetermined\n");
         type = UNDETERMINED;
     }
 
     idet->prestat[type] ++;
 
-    if      (type == TFF){
-        av_log(ctx, AV_LOG_INFO, "Interlaced, top field first\n");
+    if (type != UNDETERMINED)
+        idet->last_type = type;
+
+    if      (idet->last_type == TFF){
         idet->cur->video->top_field_first = 1;
         idet->cur->video->interlaced = 1;
-    }else if(type == BFF){
-        av_log(ctx, AV_LOG_INFO, "Interlaced, bottom field first\n");
+    }else if(idet->last_type == BFF){
         idet->cur->video->top_field_first = 0;
         idet->cur->video->interlaced = 1;
-    }else if(type == PROGRSSIVE){
-        av_log(ctx, AV_LOG_INFO, "Progressive\n");
+    }else if(idet->last_type == PROGRSSIVE){
         idet->cur->video->interlaced = 0;
-    }else{
-        av_log(ctx, AV_LOG_INFO, "Undetermined\n");
-        idet->cur->video->interlaced      = idet->prev->video->interlaced;
-        idet->cur->video->top_field_first = idet->prev->video->top_field_first;
     }
 }
 
@@ -264,6 +264,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     idet->progressive_threshold = 2.5;
 
     if (args) sscanf(args, "%f:%f", &idet->interlace_threshold, &idet->progressive_threshold);
+
+    idet->last_type = UNDETERMINED;
 
     idet->filter_line = filter_line_c;
 
