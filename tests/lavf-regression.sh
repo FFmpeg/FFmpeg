@@ -107,6 +107,7 @@ do_lavf flv -an
 fi
 
 if [ -n "$do_mov" ] ; then
+do_lavf mov "-movflags +rtphint -acodec pcm_alaw -vcodec mpeg4"
 do_lavf_timecode mov "-acodec pcm_alaw -vcodec mpeg4"
 fi
 
