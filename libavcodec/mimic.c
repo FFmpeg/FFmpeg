@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005  Ole André Vadla Ravnås <oleavr@gmail.com>
+ * Copyright (C) 2005  Ole AndrÃ© Vadla RavnÃ¥s <oleavr@gmail.com>
  * Copyright (C) 2008  Ramiro Polla
  *
  * This file is part of Libav.
