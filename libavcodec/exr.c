@@ -158,7 +158,7 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame *const p = &s->picture;
     uint8_t *ptr;
 
-    int x, y, stride, magic_number, version_flag;
+    int i, x, y, stride, magic_number, version_flag;
     int w = 0;
     int h = 0;
     unsigned int xmin   = ~0;
@@ -329,7 +329,7 @@ static int decode_frame(AVCodecContext *avctx,
         }
 
         // Process unknown variables
-        for (int i = 0; i < 2; i++) {
+        for (i = 0; i < 2; i++) {
             // Skip variable name/type
             while (++buf < buf_end)
                 if (buf[0] == 0x0)
