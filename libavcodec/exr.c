@@ -174,7 +174,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     magic_number = bytestream_get_le32(&buf);
     if (magic_number != 20000630) { // As per documentation of OpenEXR it's supposed to be int 20000630 little-endian
-        av_log(avctx, AVERROR_INVALIDDATA, "Wrong magic number %d\n", magic_number);
+        av_log(avctx, AV_LOG_ERROR, "Wrong magic number %d\n", magic_number);
         return -1;
     }
 
@@ -214,19 +214,19 @@ static int decode_frame(AVCodecContext *avctx,
                     continue; /* skip */
 
                 if (channel_list_end - * &buf < 4) {
-                    av_log(avctx, AVERROR_INVALIDDATA, "Incomplete header\n");
+                    av_log(avctx, AV_LOG_ERROR, "Incomplete header\n");
                     return -1;
                 }
 
                 current_bits_per_color_id = bytestream_get_le32(&buf);
                 if (current_bits_per_color_id > 2) {
-                    av_log(avctx, AVERROR_NOFMT, "Unknown color format\n");
+                    av_log(avctx, AV_LOG_ERROR, "Unknown color format\n");
                     return -1;
                 }
 
                 if (channel_index >= 0) {
                     if (s->bits_per_color_id != -1 && s->bits_per_color_id != current_bits_per_color_id) {
-                        av_log(avctx, AVERROR_NOFMT, "RGB channels not of the same depth\n");
+                        av_log(avctx, AV_LOG_ERROR, "RGB channels not of the same depth\n");
                         return -1;
                     }
                     s->bits_per_color_id  = current_bits_per_color_id;
@@ -244,11 +244,11 @@ static int decode_frame(AVCodecContext *avctx,
                        s->channel_offsets[1],
                        s->channel_offsets[2]) < 0) {
                 if (s->channel_offsets[0] < 0)
-                    av_log(avctx, AVERROR_NOFMT, "Missing red channel\n");
+                    av_log(avctx, AV_LOG_ERROR, "Missing red channel\n");
                 if (s->channel_offsets[1] < 0)
-                    av_log(avctx, AVERROR_NOFMT, "Missing green channel\n");
+                    av_log(avctx, AV_LOG_ERROR, "Missing green channel\n");
                 if (s->channel_offsets[2] < 0)
-                    av_log(avctx, AVERROR_NOFMT, "Missing blue channel\n");
+                    av_log(avctx, AV_LOG_ERROR, "Missing blue channel\n");
                 return -1;
             }
 
@@ -289,7 +289,7 @@ static int decode_frame(AVCodecContext *avctx,
                 return -1;
 
             if (*buf) {
-                av_log(avctx, AVERROR_NOFMT, "Doesn't support this line order : %d\n", *buf);
+                av_log(avctx, AV_LOG_ERROR, "Doesn't support this line order : %d\n", *buf);
                 return -1;
             }
 
@@ -312,7 +312,7 @@ static int decode_frame(AVCodecContext *avctx,
             case EXR_PIZ:
             case EXR_B44:
             default:
-                av_log(avctx, AVERROR_NOFMT, "This type of compression is not supported\n");
+                av_log(avctx, AV_LOG_ERROR, "This type of compression is not supported\n");
                 return -1;
             }
 
@@ -322,7 +322,7 @@ static int decode_frame(AVCodecContext *avctx,
 
         // Check if there is enough bytes for a header
         if (buf_end - buf <= 9) {
-            av_log(avctx, AVERROR_INVALIDDATA, "Incomplete header\n");
+            av_log(avctx, AV_LOG_ERROR, "Incomplete header\n");
             return -1;
         }
 
@@ -338,7 +338,7 @@ static int decode_frame(AVCodecContext *avctx,
         if (buf_end - buf >= 5) {
             variable_buffer_data_size = get_header_variable_length(&buf, buf_end);
             if (!variable_buffer_data_size) {
-                av_log(avctx, AVERROR_INVALIDDATA, "Incomplete header\n");
+                av_log(avctx, AV_LOG_ERROR, "Incomplete header\n");
                 return -1;
             }
             buf += variable_buffer_data_size;
@@ -346,7 +346,7 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     if (buf >= buf_end) {
-        av_log(avctx, AVERROR_EOF, "Incomplete file\n");
+        av_log(avctx, AV_LOG_ERROR, "Incomplete frame\n");
         return -1;
     }
     buf++;
@@ -361,7 +361,7 @@ static int decode_frame(AVCodecContext *avctx,
         av_log_missing_feature(avctx, "8-bit OpenEXR", 1);
         return -1;
     default:
-        av_log(avctx, AVERROR_NOFMT, "Unknown color format : %d\n", s->bits_per_color_id);
+        av_log(avctx, AV_LOG_ERROR, "Unknown color format : %d\n", s->bits_per_color_id);
         return -1;
     }
 
@@ -376,7 +376,7 @@ static int decode_frame(AVCodecContext *avctx,
         ymin > h || ymin == ~0 ||
         ymax > h || ymax == ~0 ||
         xdelta == ~0) {
-        av_log(avctx, AVERROR_INVALIDDATA, "Wrong sizing or missing size information\n");
+        av_log(avctx, AV_LOG_ERROR, "Wrong sizing or missing size information\n");
         return -1;
     }
 
@@ -385,7 +385,7 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     if (avctx->get_buffer(avctx, p) < 0) {
-        av_log(avctx, AVERROR_IO, "get_buffer() failed\n");
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
 
