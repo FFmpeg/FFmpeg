@@ -1391,7 +1391,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
             goto fail;
     }
 
-    if (reply->timeout > 0)
+    if (rt->nb_rtsp_streams && reply->timeout > 0)
         rt->timeout = reply->timeout;
 
     if (rt->server_type == RTSP_SERVER_REAL)
