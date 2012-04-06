@@ -162,7 +162,7 @@ AVOutputFormat ff_libnut_muxer = {
     .write_header      = nut_write_header,
     .write_packet      = nut_write_packet,
     .write_trailer     = nut_write_trailer,
-    .flags = AVFMT_GLOBALHEADER,
+    .flags             = AVFMT_GLOBALHEADER,
 };
 #endif /* CONFIG_LIBNUT_MUXER */
 
@@ -307,5 +307,5 @@ AVInputFormat ff_libnut_demuxer = {
     .read_packet    = nut_read_packet,
     .read_close     = nut_read_close,
     .read_seek      = nut_read_seek,
-    .extensions = "nut",
+    .extensions     = "nut",
 };

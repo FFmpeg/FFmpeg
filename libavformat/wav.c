@@ -216,8 +216,8 @@ AVOutputFormat ff_wav_muxer = {
     .write_header      = wav_write_header,
     .write_packet      = wav_write_packet,
     .write_trailer     = wav_write_trailer,
-    .codec_tag= (const AVCodecTag* const []){ff_codec_wav_tags, 0},
-    .priv_class = &wav_muxer_class,
+    .codec_tag         = (const AVCodecTag* const []){ ff_codec_wav_tags, 0 },
+    .priv_class        = &wav_muxer_class,
 };
 #endif /* CONFIG_WAV_MUXER */
 
@@ -593,8 +593,8 @@ AVInputFormat ff_wav_demuxer = {
     .read_header    = wav_read_header,
     .read_packet    = wav_read_packet,
     .read_seek      = wav_read_seek,
-    .flags= AVFMT_GENERIC_INDEX,
-    .codec_tag= (const AVCodecTag* const []){ff_codec_wav_tags, 0},
+    .flags          = AVFMT_GENERIC_INDEX,
+    .codec_tag      = (const AVCodecTag* const []){ ff_codec_wav_tags, 0 },
 };
 #endif /* CONFIG_WAV_DEMUXER */
 
@@ -681,7 +681,7 @@ AVInputFormat ff_w64_demuxer = {
     .read_header    = w64_read_header,
     .read_packet    = wav_read_packet,
     .read_seek      = wav_read_seek,
-    .flags = AVFMT_GENERIC_INDEX,
-    .codec_tag = (const AVCodecTag* const []){ff_codec_wav_tags, 0},
+    .flags          = AVFMT_GENERIC_INDEX,
+    .codec_tag      = (const AVCodecTag* const []){ ff_codec_wav_tags, 0 },
 };
 #endif /* CONFIG_W64_DEMUXER */

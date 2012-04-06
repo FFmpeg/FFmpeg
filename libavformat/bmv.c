@@ -133,5 +133,5 @@ AVInputFormat ff_bmv_demuxer = {
     .read_header    = bmv_read_header,
     .read_packet    = bmv_read_packet,
     .read_close     = bmv_read_close,
-    .extensions     = "bmv"
+    .extensions     = "bmv",
 };

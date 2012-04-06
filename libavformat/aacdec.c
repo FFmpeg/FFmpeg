@@ -87,7 +87,7 @@ AVInputFormat ff_aac_demuxer = {
     .read_probe     = adts_aac_probe,
     .read_header    = adts_aac_read_header,
     .read_packet    = ff_raw_read_partial_packet,
-    .flags= AVFMT_GENERIC_INDEX,
-    .extensions = "aac",
+    .flags          = AVFMT_GENERIC_INDEX,
+    .extensions     = "aac",
     .raw_codec_id   = CODEC_ID_AAC,
 };

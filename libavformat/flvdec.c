@@ -707,10 +707,10 @@ AVInputFormat ff_flv_demuxer = {
     .read_probe     = flv_probe,
     .read_header    = flv_read_header,
     .read_packet    = flv_read_packet,
-    .read_seek = flv_read_seek,
+    .read_seek      = flv_read_seek,
 #if 0
-    .read_seek2 = flv_read_seek2,
+    .read_seek2     = flv_read_seek2,
 #endif
-    .read_close = flv_read_close,
-    .extensions = "flv",
+    .read_close     = flv_read_close,
+    .extensions     = "flv",
 };

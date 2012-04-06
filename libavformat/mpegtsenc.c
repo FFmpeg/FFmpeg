@@ -1125,5 +1125,5 @@ AVOutputFormat ff_mpegts_muxer = {
     .write_packet      = mpegts_write_packet,
     .write_trailer     = mpegts_write_end,
     .flags             = AVFMT_ALLOW_FLUSH,
-    .priv_class = &mpegts_muxer_class,
+    .priv_class        = &mpegts_muxer_class,
 };

@@ -234,5 +234,5 @@ AVInputFormat ff_sap_demuxer = {
     .read_header    = sap_read_header,
     .read_packet    = sap_fetch_packet,
     .read_close     = sap_read_close,
-    .flags = AVFMT_NOFILE,
+    .flags          = AVFMT_NOFILE,
 };

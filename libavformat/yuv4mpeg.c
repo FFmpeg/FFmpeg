@@ -419,6 +419,6 @@ AVInputFormat ff_yuv4mpegpipe_demuxer = {
     .read_probe     = yuv4_probe,
     .read_header    = yuv4_read_header,
     .read_packet    = yuv4_read_packet,
-    .extensions     = "y4m"
+    .extensions     = "y4m",
 };
 #endif

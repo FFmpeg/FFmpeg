@@ -130,5 +130,5 @@ AVInputFormat ff_mvi_demuxer = {
     .priv_data_size = sizeof(MviDemuxContext),
     .read_header    = read_header,
     .read_packet    = read_packet,
-    .extensions = "mvi"
+    .extensions     = "mvi",
 };

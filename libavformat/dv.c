@@ -542,6 +542,6 @@ AVInputFormat ff_dv_demuxer = {
     .read_packet    = dv_read_packet,
     .read_close     = dv_read_close,
     .read_seek      = dv_read_seek,
-    .extensions = "dv,dif",
+    .extensions     = "dv,dif",
 };
 #endif

@@ -166,5 +166,5 @@ AVInputFormat ff_tta_demuxer = {
     .read_header    = tta_read_header,
     .read_packet    = tta_read_packet,
     .read_seek      = tta_read_seek,
-    .extensions = "tta",
+    .extensions     = "tta",
 };

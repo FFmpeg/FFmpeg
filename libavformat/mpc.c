@@ -231,5 +231,5 @@ AVInputFormat ff_mpc_demuxer = {
     .read_packet    = mpc_read_packet,
     .read_close     = mpc_read_close,
     .read_seek      = mpc_read_seek,
-    .extensions = "mpc",
+    .extensions     = "mpc",
 };

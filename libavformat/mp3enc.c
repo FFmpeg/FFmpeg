@@ -319,6 +319,6 @@ AVOutputFormat ff_mp3_muxer = {
     .write_packet      = mp3_write_packet,
     .write_trailer     = mp3_write_trailer,
     .flags             = AVFMT_NOTIMESTAMPS,
-    .priv_class = &mp3_muxer_class,
+    .priv_class        = &mp3_muxer_class,
 };
 #endif

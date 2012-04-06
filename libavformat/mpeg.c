@@ -614,5 +614,5 @@ AVInputFormat ff_mpegps_demuxer = {
     .read_header    = mpegps_read_header,
     .read_packet    = mpegps_read_packet,
     .read_timestamp = mpegps_read_dts,
-    .flags = AVFMT_SHOW_IDS|AVFMT_TS_DISCONT,
+    .flags          = AVFMT_SHOW_IDS | AVFMT_TS_DISCONT,
 };

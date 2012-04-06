@@ -155,7 +155,7 @@ AVInputFormat ff_flac_demuxer = {
     .read_probe     = flac_probe,
     .read_header    = flac_read_header,
     .read_packet    = ff_raw_read_partial_packet,
-    .flags= AVFMT_GENERIC_INDEX,
-    .extensions = "flac",
+    .flags          = AVFMT_GENERIC_INDEX,
+    .extensions     = "flac",
     .raw_codec_id   = CODEC_ID_FLAC,
 };

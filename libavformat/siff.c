@@ -237,5 +237,5 @@ AVInputFormat ff_siff_demuxer = {
     .read_probe     = siff_probe,
     .read_header    = siff_read_header,
     .read_packet    = siff_read_packet,
-    .extensions = "vb,son"
+    .extensions     = "vb,son",
 };

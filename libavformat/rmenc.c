@@ -471,5 +471,5 @@ AVOutputFormat ff_rm_muxer = {
     .write_header      = rm_write_header,
     .write_packet      = rm_write_packet,
     .write_trailer     = rm_write_trailer,
-    .codec_tag= (const AVCodecTag* const []){ff_rm_codec_tags, 0},
+    .codec_tag         = (const AVCodecTag* const []){ ff_rm_codec_tags, 0 },
 };

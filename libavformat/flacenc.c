@@ -127,5 +127,5 @@ AVOutputFormat ff_flac_muxer = {
     .write_header      = flac_write_header,
     .write_packet      = flac_write_packet,
     .write_trailer     = flac_write_trailer,
-    .flags= AVFMT_NOTIMESTAMPS,
+    .flags             = AVFMT_NOTIMESTAMPS,
 };

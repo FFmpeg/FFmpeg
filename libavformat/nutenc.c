@@ -877,6 +877,9 @@ AVOutputFormat ff_nut_muxer = {
     .write_header   = nut_write_header,
     .write_packet   = nut_write_packet,
     .write_trailer  = nut_write_trailer,
-    .flags = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS,
-    .codec_tag = (const AVCodecTag * const []){ ff_codec_bmp_tags, ff_nut_video_tags, ff_codec_wav_tags, ff_nut_subtitle_tags, 0 },
+    .flags          = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS,
+    .codec_tag      = (const AVCodecTag * const []){
+        ff_codec_bmp_tags, ff_nut_video_tags, ff_codec_wav_tags,
+        ff_nut_subtitle_tags, 0
+    },
 };

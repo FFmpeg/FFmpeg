@@ -213,6 +213,6 @@ AVInputFormat ff_yop_demuxer = {
     .read_packet    = yop_read_packet,
     .read_close     = yop_read_close,
     .read_seek      = yop_read_seek,
-    .extensions = "yop",
-    .flags = AVFMT_GENERIC_INDEX,
+    .extensions     = "yop",
+    .flags          = AVFMT_GENERIC_INDEX,
 };

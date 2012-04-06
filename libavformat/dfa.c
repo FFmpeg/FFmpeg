@@ -114,5 +114,5 @@ AVInputFormat ff_dfa_demuxer = {
     .read_probe     = dfa_probe,
     .read_header    = dfa_read_header,
     .read_packet    = dfa_read_packet,
-    .flags = AVFMT_GENERIC_INDEX,
+    .flags          = AVFMT_GENERIC_INDEX,
 };

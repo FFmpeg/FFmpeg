@@ -188,5 +188,5 @@ AVInputFormat ff_tmv_demuxer = {
     .read_header    = tmv_read_header,
     .read_packet    = tmv_read_packet,
     .read_seek      = tmv_read_seek,
-    .flags = AVFMT_GENERIC_INDEX,
+    .flags          = AVFMT_GENERIC_INDEX,
 };

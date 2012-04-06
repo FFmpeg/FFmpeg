@@ -503,5 +503,5 @@ AVOutputFormat ff_rtp_muxer = {
     .write_header      = rtp_write_header,
     .write_packet      = rtp_write_packet,
     .write_trailer     = rtp_write_trailer,
-    .priv_class = &rtp_muxer_class,
+    .priv_class        = &rtp_muxer_class,
 };

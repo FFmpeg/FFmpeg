@@ -208,5 +208,5 @@ AVInputFormat ff_pva_demuxer = {
     .read_probe     = pva_probe,
     .read_header    = pva_read_header,
     .read_packet    = pva_read_packet,
-    .read_timestamp = pva_read_timestamp
+    .read_timestamp = pva_read_timestamp,
 };

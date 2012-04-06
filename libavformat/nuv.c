@@ -266,5 +266,5 @@ AVInputFormat ff_nuv_demuxer = {
     .read_probe     = nuv_probe,
     .read_header    = nuv_header,
     .read_packet    = nuv_packet,
-    .flags = AVFMT_GENERIC_INDEX,
+    .flags          = AVFMT_GENERIC_INDEX,
 };

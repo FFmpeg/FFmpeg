@@ -2266,9 +2266,9 @@ AVInputFormat ff_mpegts_demuxer = {
     .read_close     = mpegts_read_close,
     .read_seek      = read_seek,
     .read_timestamp = mpegts_get_pcr,
-    .flags = AVFMT_SHOW_IDS|AVFMT_TS_DISCONT,
+    .flags          = AVFMT_SHOW_IDS | AVFMT_TS_DISCONT,
 #ifdef USE_SYNCPOINT_SEARCH
-    .read_seek2 = read_seek2,
+    .read_seek2     = read_seek2,
 #endif
 };
 
@@ -2281,9 +2281,9 @@ AVInputFormat ff_mpegtsraw_demuxer = {
     .read_close     = mpegts_read_close,
     .read_seek      = read_seek,
     .read_timestamp = mpegts_get_pcr,
-    .flags = AVFMT_SHOW_IDS|AVFMT_TS_DISCONT,
+    .flags          = AVFMT_SHOW_IDS | AVFMT_TS_DISCONT,
 #ifdef USE_SYNCPOINT_SEARCH
-    .read_seek2 = read_seek2,
+    .read_seek2     = read_seek2,
 #endif
-    .priv_class = &mpegtsraw_class,
+    .priv_class     = &mpegtsraw_class,
 };
