@@ -231,5 +231,5 @@ AVInputFormat ff_spdif_demuxer = {
     .read_probe     = spdif_probe,
     .read_header    = spdif_read_header,
     .read_packet    = spdif_read_packet,
-    .flags = AVFMT_GENERIC_INDEX,
+    .flags          = AVFMT_GENERIC_INDEX,
 };

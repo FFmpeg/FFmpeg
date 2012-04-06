@@ -86,6 +86,6 @@ AVInputFormat ff_ivf_demuxer = {
     .read_probe     = probe,
     .read_header    = read_header,
     .read_packet    = read_packet,
-    .flags= AVFMT_GENERIC_INDEX,
-    .codec_tag = (const AVCodecTag*[]){ff_codec_bmp_tags, 0},
+    .flags          = AVFMT_GENERIC_INDEX,
+    .codec_tag      = (const AVCodecTag*[]){ ff_codec_bmp_tags, 0 },
 };

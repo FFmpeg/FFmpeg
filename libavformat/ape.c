@@ -438,5 +438,5 @@ AVInputFormat ff_ape_demuxer = {
     .read_packet    = ape_read_packet,
     .read_close     = ape_read_close,
     .read_seek      = ape_read_seek,
-    .extensions = "ape,apl,mac"
+    .extensions     = "ape,apl,mac",
 };

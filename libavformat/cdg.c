@@ -73,6 +73,6 @@ AVInputFormat ff_cdg_demuxer = {
     .long_name      = NULL_IF_CONFIG_SMALL("CD Graphics Format"),
     .read_header    = read_header,
     .read_packet    = read_packet,
-    .flags= AVFMT_GENERIC_INDEX,
-    .extensions = "cdg"
+    .flags          = AVFMT_GENERIC_INDEX,
+    .extensions     = "cdg",
 };

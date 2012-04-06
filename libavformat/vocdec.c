@@ -171,5 +171,5 @@ AVInputFormat ff_voc_demuxer = {
     .read_probe     = voc_probe,
     .read_header    = voc_read_header,
     .read_packet    = voc_read_packet,
-    .codec_tag=(const AVCodecTag* const []){ff_voc_codec_tags, 0},
+    .codec_tag      = (const AVCodecTag* const []){ ff_voc_codec_tags, 0 },
 };

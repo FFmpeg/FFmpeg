@@ -97,5 +97,5 @@ AVInputFormat ff_nc_demuxer = {
     .read_probe     = nc_probe,
     .read_header    = nc_read_header,
     .read_packet    = nc_read_packet,
-    .extensions = "v",
+    .extensions     = "v",
 };

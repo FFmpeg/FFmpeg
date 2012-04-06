@@ -100,6 +100,6 @@ AVInputFormat ff_aea_demuxer = {
     .read_header    = aea_read_header,
     .read_packet    = aea_read_packet,
     .read_seek      = ff_pcm_read_seek,
-    .flags= AVFMT_GENERIC_INDEX,
-    .extensions = "aea",
+    .flags          = AVFMT_GENERIC_INDEX,
+    .extensions     = "aea",
 };

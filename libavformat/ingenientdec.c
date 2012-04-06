@@ -66,8 +66,8 @@ AVInputFormat ff_ingenient_demuxer = {
     .priv_data_size = sizeof(FFRawVideoDemuxerContext),
     .read_header    = ff_raw_video_read_header,
     .read_packet    = ingenient_read_packet,
-    .flags= AVFMT_GENERIC_INDEX,
-    .extensions = "cgi", // FIXME
+    .flags          = AVFMT_GENERIC_INDEX,
+    .extensions     = "cgi", // FIXME
     .raw_codec_id   = CODEC_ID_MJPEG,
     .priv_class     = &ingenient_demuxer_class,
 };

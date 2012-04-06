@@ -59,11 +59,11 @@ static int ivf_write_packet(AVFormatContext *s, AVPacket *pkt)
 }
 
 AVOutputFormat ff_ivf_muxer = {
-    .name = "ivf",
-    .long_name = NULL_IF_CONFIG_SMALL("On2 IVF"),
-    .extensions = "ivf",
-    .audio_codec = CODEC_ID_NONE,
-    .video_codec = CODEC_ID_VP8,
+    .name         = "ivf",
+    .long_name    = NULL_IF_CONFIG_SMALL("On2 IVF"),
+    .extensions   = "ivf",
+    .audio_codec  = CODEC_ID_NONE,
+    .video_codec  = CODEC_ID_VP8,
     .write_header = ivf_write_header,
     .write_packet = ivf_write_packet,
 };

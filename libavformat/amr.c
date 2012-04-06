@@ -177,7 +177,7 @@ AVInputFormat ff_amr_demuxer = {
     .read_probe     = amr_probe,
     .read_header    = amr_read_header,
     .read_packet    = amr_read_packet,
-    .flags = AVFMT_GENERIC_INDEX,
+    .flags          = AVFMT_GENERIC_INDEX,
 };
 #endif
 

@@ -75,7 +75,7 @@ AVInputFormat ff_daud_demuxer = {
     .long_name      = NULL_IF_CONFIG_SMALL("D-Cinema audio format"),
     .read_header    = daud_header,
     .read_packet    = daud_packet,
-    .extensions = "302",
+    .extensions     = "302",
 };
 #endif
 

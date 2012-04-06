@@ -1301,5 +1301,5 @@ AVInputFormat ff_asf_demuxer = {
     .read_close     = asf_read_close,
     .read_seek      = asf_read_seek,
     .read_timestamp = asf_read_pts,
-    .flags = AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH,
+    .flags          = AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH,
 };
