@@ -74,6 +74,9 @@ static int s302m_parse_frame_header(AVCodecContext *avctx, const uint8_t *buf,
         case 4:
             avctx->channel_layout = AV_CH_LAYOUT_QUAD;
             break;
+        case 6:
+            avctx->channel_layout = AV_CH_LAYOUT_5POINT1_BACK;
+            break;
         case 8:
             avctx->channel_layout = AV_CH_LAYOUT_5POINT1_BACK | AV_CH_LAYOUT_STEREO_DOWNMIX;
     }
