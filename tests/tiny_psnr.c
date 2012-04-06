@@ -103,34 +103,20 @@ static uint64_t int_sqrt(uint64_t a)
     return ret;
 }
 
-int main(int argc, char *argv[])
+static int run_psnr(FILE *f[2], int len, int shift, int skip_bytes)
 {
     int i, j;
     uint64_t sse = 0;
     uint64_t dev;
-    FILE *f[2];
     uint8_t buf[2][SIZE];
     uint64_t psnr;
-    int len        = argc < 4 ? 1 : atoi(argv[3]);
     int64_t max    = (1 << (8 * len)) - 1;
-    int shift      = argc < 5 ? 0 : atoi(argv[4]);
-    int skip_bytes = argc < 6 ? 0 : atoi(argv[5]);
     int size0      = 0;
     int size1      = 0;
     int maxdist    = 0;
 
-    if (argc < 3) {
-        printf("tiny_psnr <file1> <file2> [<elem size> [<shift> [<skip bytes>]]]\n");
-        printf("WAV headers are skipped automatically.\n");
-        return 1;
-    }
-
-    f[0] = fopen(argv[1], "rb");
-    f[1] = fopen(argv[2], "rb");
-    if (!f[0] || !f[1]) {
-        fprintf(stderr, "Could not open input files.\n");
-        return 1;
-    }
+    rewind(f[0]);
+    rewind(f[1]);
 
     for (i = 0; i < 2; i++) {
         uint8_t *p = buf[i];
@@ -193,5 +179,41 @@ int main(int argc, char *argv[])
            (int)(dev / F), (int)(dev % F),
            (int)(psnr / F), (int)(psnr % F),
            maxdist, size0, size1);
+    return psnr;
+}
+
+int main(int argc, char *argv[])
+{
+    FILE *f[2];
+    int len        = argc < 4 ? 1 : atoi(argv[3]);
+    int shift_first= argc < 5 ? 0 : atoi(argv[4]);
+    int skip_bytes = argc < 6 ? 0 : atoi(argv[5]);
+    int shift_last = shift_first + (argc < 7 ? 0 : atoi(argv[6]));
+    int shift;
+    int max_psnr   = -1;
+    int max_psnr_shift = 0;
+
+    if (argc < 3) {
+        printf("tiny_psnr <file1> <file2> [<elem size> [<shift> [<skip bytes> [<shift search range>]]]]\n");
+        printf("WAV headers are skipped automatically.\n");
+        return 1;
+    }
+
+    f[0] = fopen(argv[1], "rb");
+    f[1] = fopen(argv[2], "rb");
+    if (!f[0] || !f[1]) {
+        fprintf(stderr, "Could not open input files.\n");
+        return 1;
+    }
+
+    for (shift = shift_first; shift <= shift_last; shift++) {
+        int psnr = run_psnr(f, len, shift, skip_bytes);
+        if (psnr > max_psnr || (shift < 0 && psnr == max_psnr)) {
+            max_psnr = psnr;
+            max_psnr_shift = shift;
+        }
+    }
+    if (shift_last > shift_first)
+        printf("Best PSNR is %3d.%02d for shift %i\n", (int)(max_psnr / F), (int)(max_psnr % F), max_psnr_shift);
     return 0;
 }
