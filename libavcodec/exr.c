@@ -117,9 +117,9 @@ static unsigned int get_header_variable_length(const uint8_t **buf,
  * @param minimum_length minimum length of the variable data
  * @param variable_buffer_data_size variable length read from the header
  * after it's checked
- * @return zero if variable is invalid and 1 if good
+ * @return negative if variable is invalid
  */
-static unsigned int check_header_variable(AVCodecContext *avctx,
+static int check_header_variable(AVCodecContext *avctx,
                                               const uint8_t **buf,
                                               const uint8_t *buf_end,
                                               const char *value_name,
@@ -133,13 +133,15 @@ static unsigned int check_header_variable(AVCodecContext *avctx,
             *buf += strlen(value_type)+1;
             *variable_buffer_data_size = get_header_variable_length(buf, buf_end);
             if (!*variable_buffer_data_size)
-                av_log(avctx, AVERROR_INVALIDDATA, "Incomplete header\n");
+                av_log(avctx, AV_LOG_ERROR, "Incomplete header\n");
+            if (*variable_buffer_data_size > buf_end - *buf)
+                return -1;
             return 1;
         }
         *buf -= strlen(value_name)+1;
         av_log(avctx, AV_LOG_WARNING, "Unknown data type for header variable %s\n", value_name);
     }
-    return 0;
+    return -1;
 }
 
 static int decode_frame(AVCodecContext *avctx,
@@ -172,6 +174,11 @@ static int decode_frame(AVCodecContext *avctx,
     s->channel_offsets[2] = -1;
     s->bits_per_color_id = -1;
 
+    if (buf_end - buf < 10) {
+        av_log(avctx, AV_LOG_ERROR, "Too short header to parse\n");
+        return -1;
+    }
+
     magic_number = bytestream_get_le32(&buf);
     if (magic_number != 20000630) { // As per documentation of OpenEXR it's supposed to be int 20000630 little-endian
         av_log(avctx, AV_LOG_ERROR, "Wrong magic number %d\n", magic_number);
@@ -180,20 +187,15 @@ static int decode_frame(AVCodecContext *avctx,
 
     version_flag = bytestream_get_le32(&buf);
     if ((version_flag & 0x200) == 0x200) {
-        av_log(avctx, AVERROR_NOFMT, "Tile based images are not supported\n");
-        return -1;
-    }
-
-    if (buf_end - buf < 10) {
-        av_log(avctx, AVERROR_INVALIDDATA, "Too short header to parse\n");
+        av_log(avctx, AV_LOG_ERROR, "Tile based images are not supported\n");
         return -1;
     }
 
     // Parse the header
-    while (buf[0] != 0x0) {
+    while (buf < buf_end && buf[0]) {
         unsigned int variable_buffer_data_size;
         // Process the channel list
-        if (check_header_variable(avctx, &buf, buf_end, "channels", "chlist", 38, &variable_buffer_data_size)) {
+        if (check_header_variable(avctx, &buf, buf_end, "channels", "chlist", 38, &variable_buffer_data_size) >= 0) {
             const uint8_t *channel_list_end;
             if (!variable_buffer_data_size)
                 return -1;
@@ -257,7 +259,7 @@ static int decode_frame(AVCodecContext *avctx,
         }
 
         // Process the dataWindow variable
-        if (check_header_variable(avctx, &buf, buf_end, "dataWindow", "box2i", 31, &variable_buffer_data_size)) {
+        if (check_header_variable(avctx, &buf, buf_end, "dataWindow", "box2i", 31, &variable_buffer_data_size) >= 0) {
             if (!variable_buffer_data_size)
                 return -1;
 
@@ -272,7 +274,7 @@ static int decode_frame(AVCodecContext *avctx,
         }
 
         // Process the displayWindow variable
-        if (check_header_variable(avctx, &buf, buf_end, "displayWindow", "box2i", 34, &variable_buffer_data_size)) {
+        if (check_header_variable(avctx, &buf, buf_end, "displayWindow", "box2i", 34, &variable_buffer_data_size) >= 0) {
             if (!variable_buffer_data_size)
                 return -1;
 
@@ -284,7 +286,7 @@ static int decode_frame(AVCodecContext *avctx,
         }
 
         // Process the lineOrder variable
-        if (check_header_variable(avctx, &buf, buf_end, "lineOrder", "lineOrder", 25, &variable_buffer_data_size)) {
+        if (check_header_variable(avctx, &buf, buf_end, "lineOrder", "lineOrder", 25, &variable_buffer_data_size) >= 0) {
             if (!variable_buffer_data_size)
                 return -1;
 
@@ -298,7 +300,7 @@ static int decode_frame(AVCodecContext *avctx,
         }
 
         // Process the compression variable
-        if (check_header_variable(avctx, &buf, buf_end, "compression", "compression", 29, &variable_buffer_data_size)) {
+        if (check_header_variable(avctx, &buf, buf_end, "compression", "compression", 29, &variable_buffer_data_size) >= 0) {
             if (!variable_buffer_data_size)
                 return -1;
 
@@ -329,7 +331,7 @@ static int decode_frame(AVCodecContext *avctx,
         // Process unknown variables
         for (int i = 0; i < 2; i++) {
             // Skip variable name/type
-            while (buf++ < buf_end)
+            while (++buf < buf_end)
                 if (buf[0] == 0x0)
                     break;
         }
@@ -371,11 +373,7 @@ static int decode_frame(AVCodecContext *avctx,
         return -1;
 
     // Verify the xmin, xmax, ymin, ymax and xdelta before setting the actual image size
-    if (xmin > w || xmin == ~0 ||
-        xmax > w || xmax == ~0 ||
-        ymin > h || ymin == ~0 ||
-        ymax > h || ymax == ~0 ||
-        xdelta == ~0) {
+    if (xmin > xmax || ymin > ymax || xdelta != xmax - xmin + 1 || xmax >= w || ymax >= h) {
         av_log(avctx, AV_LOG_ERROR, "Wrong sizing or missing size information\n");
         return -1;
     }
@@ -445,7 +443,7 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     // Zero out the end if ymax+1 is not h
-    for (y = ymax; y < avctx->height; y++) {
+    for (y = ymax + 1; y < avctx->height; y++) {
         memset(ptr, 0, avctx->width * 6);
         ptr += stride;
     }
