@@ -571,13 +571,14 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         }
         start_ch += chans;
     }
+    if ((ret = ff_alloc_packet(avpkt, 768 * s->channels))) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
+        return ret;
+    }
+
     do {
         int frame_bits;
 
-        if ((ret = ff_alloc_packet(avpkt, 768 * s->channels))) {
-            av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
-            return ret;
-        }
         init_put_bits(&s->pb, avpkt->data, avpkt->size);
 
         if ((avctx->frame_number & 0xFF)==1 && !(avctx->flags & CODEC_FLAG_BITEXACT))
