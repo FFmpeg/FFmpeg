@@ -130,6 +130,8 @@ int ff_wms_parse_sdp_a_line(AVFormatContext *s, const char *p)
 static int asfrtp_parse_sdp_line(AVFormatContext *s, int stream_index,
                                  PayloadContext *asf, const char *line)
 {
+    if (stream_index < 0)
+        return 0;
     if (av_strstart(line, "stream:", &line)) {
         RTSPState *rt = s->priv_data;
 

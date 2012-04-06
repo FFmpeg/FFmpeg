@@ -357,10 +357,15 @@ static void h264_free_context(PayloadContext *data)
 static int parse_h264_sdp_line(AVFormatContext *s, int st_index,
                                PayloadContext *h264_data, const char *line)
 {
-    AVStream *stream = s->streams[st_index];
-    AVCodecContext *codec = stream->codec;
+    AVStream *stream;
+    AVCodecContext *codec;
     const char *p = line;
 
+    if (st_index < 0)
+        return 0;
+
+    stream = s->streams[st_index];
+    codec = stream->codec;
     assert(h264_data->cookie == MAGIC_COOKIE);
 
     if (av_strstart(p, "framesize:", &p)) {
