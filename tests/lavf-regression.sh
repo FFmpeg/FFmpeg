@@ -135,6 +135,10 @@ if [ -n "$do_mkv" ] ; then
 do_lavf mkv "-acodec mp2 -ab 64k -vcodec mpeg4"
 fi
 
+if [ -n "$do_mp3" ] ; then
+do_lavf_fate mp3 "mp3-conformance/he_32khz.bit"
+fi
+
 if [ -n "$do_ogg_vp3" ] ; then
 # -idct simple causes different results on different systems
 DEC_OPTS="$DEC_OPTS -idct auto"
