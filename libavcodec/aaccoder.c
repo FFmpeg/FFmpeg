@@ -721,6 +721,9 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
     int allz = 0;
     float minthr = INFINITY;
 
+    // for values above this the decoder might end up in an endless loop
+    // due to always having more bits than what can be encoded.
+    destbits = FFMIN(destbits, 5800);
     //XXX: some heuristic to determine initial quantizers will reduce search time
     //determine zero bands and upper limits
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
