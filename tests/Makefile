@@ -6,6 +6,7 @@ REFS = $(AREF) $(VREF)
 
 $(VREF): ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm
 $(AREF): ffmpeg$(EXESUF) tests/data/asynth1.sw
+$(AREF): CMP=
 
 ffservertest: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/data/asynth1.sw
 	@echo
