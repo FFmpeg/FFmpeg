@@ -1,0 +1,5 @@
+d6740bee5e20fa665e6c94298125b834 *./tests/data/acodec/ra144.ra
+53227 ./tests/data/acodec/ra144.ra
+16d1a0d6cae06cf8a4db009d0fe7a952 *./tests/data/ra144.acodec.out.wav
+stddev: 9525.99 PSNR: 16.75 MAXDIFF:55906 bytes:  1059200/  1058400
+stddev: 5696.26 PSNR: 21.22 MAXDIFF:44956 bytes:  1058560/  1058400

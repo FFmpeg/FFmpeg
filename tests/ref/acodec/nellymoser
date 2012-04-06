@@ -1,0 +1,5 @@
+46830431216729f78e15c634e91e6ebf *./tests/data/acodec/nellymoser.flv
+82916 ./tests/data/acodec/nellymoser.flv
+ae1e5ec9f206e0e665e54c1c4559fc61 *./tests/data/nellymoser.acodec.out.wav
+stddev:10148.84 PSNR: 16.20 MAXDIFF:55923 bytes:  1058816/  1058400
+stddev: 8398.32 PSNR: 17.85 MAXDIFF:55915 bytes:  1058564/  1058400

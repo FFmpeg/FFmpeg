@@ -439,6 +439,30 @@ do_audio_encoding flac.flac "-acodec flac -compression_level 2"
 do_audio_decoding
 fi
 
+if [ -n "$do_aac" ] ; then
+do_audio_encoding aac.aac "-b:a 512k -strict -2 -acodec aac"
+do_audio_decoding
+$tiny_psnr $pcm_dst $pcm_ref 2 4096
+fi
+
+if [ -n "$do_dca" ] ; then
+do_audio_encoding dca.dts "-strict -2 -channel_layout 3 -acodec dca"
+do_audio_decoding
+$tiny_psnr $pcm_dst $pcm_ref 2 1920
+fi
+
+if [ -n "$do_ra144" ] ; then
+do_audio_encoding ra144.ra "-ac 1 -acodec real_144"
+do_audio_decoding "-ac 2"
+$tiny_psnr $pcm_dst $pcm_ref 2 640
+fi
+
+if [ -n "$do_nellymoser" ] ; then
+do_audio_encoding nellymoser.flv "-ac 1 -acodec nellymoser"
+do_audio_decoding "-ac 2"
+$tiny_psnr $pcm_dst $pcm_ref 2 252
+fi
+
 #if [ -n "$do_vorbis" ] ; then
 # vorbis
 #disabled because it is broken

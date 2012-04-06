@@ -120,5 +120,5 @@ do_audio_encoding()
 
 do_audio_decoding()
 {
-    do_avconv $pcm_dst $DEC_OPTS -i $target_path/$file -sample_fmt s16 -f wav
+    do_avconv $pcm_dst $DEC_OPTS -i $target_path/$file -sample_fmt s16 -f wav $1
 }

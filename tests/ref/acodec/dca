@@ -1,0 +1,5 @@
+66bd0e602be7fb97dc19151554c0ee29 *./tests/data/acodec/dca.dts
+1097124 ./tests/data/acodec/dca.dts
+e1842f7616c65612b10b23245645ac40 *./tests/data/dca.acodec.out.wav
+stddev: 8944.44 PSNR: 17.30 MAXDIFF:56478 bytes:  1060864/  1058400
+stddev: 2424.93 PSNR: 28.64 MAXDIFF:13723 bytes:  1058944/  1058400

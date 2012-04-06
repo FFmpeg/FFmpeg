@@ -1,0 +1,5 @@
+021a46cb2d8edd42b8c4e1afa31b3896 *./tests/data/acodec/aac.aac
+206625 ./tests/data/acodec/aac.aac
+17bff7905bed1a3defb62febf64b7532 *./tests/data/aac.acodec.out.wav
+stddev:10838.47 PSNR: 15.63 MAXDIFF:65356 bytes:  1064960/  1058400
+stddev: 1862.44 PSNR: 30.93 MAXDIFF:43902 bytes:  1060864/  1058400
