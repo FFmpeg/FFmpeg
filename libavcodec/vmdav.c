@@ -658,7 +658,7 @@ AVCodec ff_vmdvideo_decoder = {
     .close          = vmdvideo_decode_end,
     .decode         = vmdvideo_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Sierra VMD video"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Sierra VMD video"),
 };
 
 AVCodec ff_vmdaudio_decoder = {
@@ -669,5 +669,5 @@ AVCodec ff_vmdaudio_decoder = {
     .init           = vmdaudio_decode_init,
     .decode         = vmdaudio_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Sierra VMD audio"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Sierra VMD audio"),
 };

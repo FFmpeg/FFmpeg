@@ -217,5 +217,5 @@ AVCodec ff_eacmv_decoder = {
     .close          = cmv_decode_end,
     .decode         = cmv_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Electronic Arts CMV video"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Electronic Arts CMV video"),
 };

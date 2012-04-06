@@ -475,5 +475,5 @@ AVCodec ff_cinepak_decoder = {
     .close          = cinepak_decode_end,
     .decode         = cinepak_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Cinepak"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Cinepak"),
 };

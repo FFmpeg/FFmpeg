@@ -2773,18 +2773,18 @@ static av_cold int latm_decode_init(AVCodecContext *avctx)
 
 
 AVCodec ff_aac_decoder = {
-    .name           = "aac",
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_AAC,
-    .priv_data_size = sizeof(AACContext),
-    .init           = aac_decode_init,
-    .close          = aac_decode_close,
-    .decode         = aac_decode_frame,
-    .long_name = NULL_IF_CONFIG_SMALL("Advanced Audio Coding"),
-    .sample_fmts = (const enum AVSampleFormat[]) {
+    .name            = "aac",
+    .type            = AVMEDIA_TYPE_AUDIO,
+    .id              = CODEC_ID_AAC,
+    .priv_data_size  = sizeof(AACContext),
+    .init            = aac_decode_init,
+    .close           = aac_decode_close,
+    .decode          = aac_decode_frame,
+    .long_name       = NULL_IF_CONFIG_SMALL("Advanced Audio Coding"),
+    .sample_fmts     = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE
     },
-    .capabilities = CODEC_CAP_CHANNEL_CONF | CODEC_CAP_DR1,
+    .capabilities    = CODEC_CAP_CHANNEL_CONF | CODEC_CAP_DR1,
     .channel_layouts = aac_channel_layout,
 };
 
@@ -2794,17 +2794,17 @@ AVCodec ff_aac_decoder = {
     To do a more complex LATM demuxing a separate LATM demuxer should be used.
 */
 AVCodec ff_aac_latm_decoder = {
-    .name = "aac_latm",
-    .type = AVMEDIA_TYPE_AUDIO,
-    .id   = CODEC_ID_AAC_LATM,
-    .priv_data_size = sizeof(struct LATMContext),
-    .init   = latm_decode_init,
-    .close  = aac_decode_close,
-    .decode = latm_decode_frame,
-    .long_name = NULL_IF_CONFIG_SMALL("AAC LATM (Advanced Audio Codec LATM syntax)"),
-    .sample_fmts = (const enum AVSampleFormat[]) {
+    .name            = "aac_latm",
+    .type            = AVMEDIA_TYPE_AUDIO,
+    .id              = CODEC_ID_AAC_LATM,
+    .priv_data_size  = sizeof(struct LATMContext),
+    .init            = latm_decode_init,
+    .close           = aac_decode_close,
+    .decode          = latm_decode_frame,
+    .long_name       = NULL_IF_CONFIG_SMALL("AAC LATM (Advanced Audio Codec LATM syntax)"),
+    .sample_fmts     = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE
     },
-    .capabilities = CODEC_CAP_CHANNEL_CONF | CODEC_CAP_DR1,
+    .capabilities    = CODEC_CAP_CHANNEL_CONF | CODEC_CAP_DR1,
     .channel_layouts = aac_channel_layout,
 };

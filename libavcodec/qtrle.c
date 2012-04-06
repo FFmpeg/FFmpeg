@@ -504,5 +504,5 @@ AVCodec ff_qtrle_decoder = {
     .close          = qtrle_decode_end,
     .decode         = qtrle_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("QuickTime Animation (RLE) video"),
+    .long_name      = NULL_IF_CONFIG_SMALL("QuickTime Animation (RLE) video"),
 };

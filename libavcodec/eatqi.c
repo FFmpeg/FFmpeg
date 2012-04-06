@@ -162,5 +162,5 @@ AVCodec ff_eatqi_decoder = {
     .close          = tqi_decode_end,
     .decode         = tqi_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Electronic Arts TQI Video"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Electronic Arts TQI Video"),
 };

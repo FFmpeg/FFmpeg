@@ -426,5 +426,5 @@ AVCodec ff_ulti_decoder = {
     .close          = ulti_decode_end,
     .decode         = ulti_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("IBM UltiMotion"),
+    .long_name      = NULL_IF_CONFIG_SMALL("IBM UltiMotion"),
 };

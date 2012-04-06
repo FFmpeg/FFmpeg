@@ -1922,7 +1922,7 @@ AVCodec ff_snow_encoder = {
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_end,
-    .long_name = NULL_IF_CONFIG_SMALL("Snow"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Snow"),
     .priv_class     = &snowenc_class,
 };
 #endif

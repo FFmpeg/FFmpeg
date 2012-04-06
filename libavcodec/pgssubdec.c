@@ -476,5 +476,5 @@ AVCodec ff_pgssub_decoder = {
     .init           = init_decoder,
     .close          = close_decoder,
     .decode         = decode,
-    .long_name = NULL_IF_CONFIG_SMALL("HDMV Presentation Graphic Stream subtitles"),
+    .long_name      = NULL_IF_CONFIG_SMALL("HDMV Presentation Graphic Stream subtitles"),
 };

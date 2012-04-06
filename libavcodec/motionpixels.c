@@ -317,5 +317,5 @@ AVCodec ff_motionpixels_decoder = {
     .close          = mp_decode_end,
     .decode         = mp_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Motion Pixels video"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Motion Pixels video"),
 };

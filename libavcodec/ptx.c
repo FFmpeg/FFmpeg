@@ -125,5 +125,5 @@ AVCodec ff_ptx_decoder = {
     .close          = ptx_end,
     .decode         = ptx_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("V.Flash PTX image"),
+    .long_name      = NULL_IF_CONFIG_SMALL("V.Flash PTX image"),
 };

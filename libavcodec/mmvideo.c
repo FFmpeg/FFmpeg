@@ -235,5 +235,5 @@ AVCodec ff_mmvideo_decoder = {
     .close          = mm_decode_end,
     .decode         = mm_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("American Laser Games MM Video"),
+    .long_name      = NULL_IF_CONFIG_SMALL("American Laser Games MM Video"),
 };

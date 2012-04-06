@@ -187,7 +187,7 @@ AVCodec ff_aura_decoder = {
     .close          = cyuv_decode_end,
     .decode         = cyuv_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Auravision AURA"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Auravision AURA"),
 };
 #endif
 
@@ -201,6 +201,6 @@ AVCodec ff_cyuv_decoder = {
     .close          = cyuv_decode_end,
     .decode         = cyuv_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Creative YUV (CYUV)"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Creative YUV (CYUV)"),
 };
 #endif

@@ -287,5 +287,5 @@ AVCodec ff_vp5_decoder = {
     .close          = ff_vp56_free,
     .decode         = ff_vp56_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("On2 VP5"),
+    .long_name      = NULL_IF_CONFIG_SMALL("On2 VP5"),
 };

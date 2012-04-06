@@ -338,5 +338,5 @@ AVCodec ff_mxpeg_decoder = {
     .close          = mxpeg_decode_end,
     .decode         = mxpeg_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .max_lowres     = 3
+    .max_lowres     = 3,
 };

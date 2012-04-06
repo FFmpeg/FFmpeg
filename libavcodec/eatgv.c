@@ -342,5 +342,5 @@ AVCodec ff_eatgv_decoder = {
     .init           = tgv_decode_init,
     .close          = tgv_decode_end,
     .decode         = tgv_decode_frame,
-    .long_name = NULL_IF_CONFIG_SMALL("Electronic Arts TGV video"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Electronic Arts TGV video"),
 };

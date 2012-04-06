@@ -342,5 +342,5 @@ AVCodec ff_msvideo1_decoder = {
     .close          = msvideo1_decode_end,
     .decode         = msvideo1_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name= NULL_IF_CONFIG_SMALL("Microsoft Video 1"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Microsoft Video 1"),
 };

@@ -162,12 +162,15 @@ static av_cold int targa_encode_init(AVCodecContext *avctx)
 }
 
 AVCodec ff_targa_encoder = {
-    .name = "targa",
-    .type = AVMEDIA_TYPE_VIDEO,
-    .id = CODEC_ID_TARGA,
+    .name           = "targa",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_TARGA,
     .priv_data_size = sizeof(TargaContext),
-    .init = targa_encode_init,
-    .encode2 = targa_encode_frame,
-    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_BGR24, PIX_FMT_BGRA, PIX_FMT_RGB555LE, PIX_FMT_GRAY8, PIX_FMT_NONE},
+    .init           = targa_encode_init,
+    .encode2        = targa_encode_frame,
+    .pix_fmts       = (const enum PixelFormat[]){
+        PIX_FMT_BGR24, PIX_FMT_BGRA, PIX_FMT_RGB555LE, PIX_FMT_GRAY8,
+        PIX_FMT_NONE
+    },
     .long_name= NULL_IF_CONFIG_SMALL("Truevision Targa image"),
 };

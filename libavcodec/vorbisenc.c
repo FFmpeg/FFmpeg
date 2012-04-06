@@ -1213,7 +1213,8 @@ AVCodec ff_vorbis_encoder = {
     .init           = vorbis_encode_init,
     .encode2        = vorbis_encode_frame,
     .close          = vorbis_encode_close,
-    .capabilities= CODEC_CAP_DELAY | CODEC_CAP_EXPERIMENTAL,
-    .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
-    .long_name = NULL_IF_CONFIG_SMALL("Vorbis"),
+    .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_EXPERIMENTAL,
+    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
+                                                     AV_SAMPLE_FMT_NONE },
+    .long_name      = NULL_IF_CONFIG_SMALL("Vorbis"),
 };

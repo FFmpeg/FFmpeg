@@ -179,5 +179,5 @@ AVCodec ff_avs_decoder = {
     .decode         = avs_decode_frame,
     .close          = avs_decode_end,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("AVS (Audio Video Standard) video"),
+    .long_name      = NULL_IF_CONFIG_SMALL("AVS (Audio Video Standard) video"),
 };

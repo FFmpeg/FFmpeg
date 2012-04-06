@@ -255,5 +255,5 @@ AVCodec ff_yop_decoder = {
     .init           = yop_decode_init,
     .close          = yop_decode_close,
     .decode         = yop_decode_frame,
-    .long_name = NULL_IF_CONFIG_SMALL("Psygnosis YOP Video"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Psygnosis YOP Video"),
 };

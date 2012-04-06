@@ -1624,6 +1624,6 @@ AVCodec ff_wmapro_decoder = {
     .close          = decode_end,
     .decode         = decode_packet,
     .capabilities   = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1,
-    .flush= flush,
-    .long_name = NULL_IF_CONFIG_SMALL("Windows Media Audio 9 Professional"),
+    .flush          = flush,
+    .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Audio 9 Professional"),
 };

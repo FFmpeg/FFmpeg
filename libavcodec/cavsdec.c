@@ -724,6 +724,6 @@ AVCodec ff_cavs_decoder = {
     .close          = ff_cavs_end,
     .decode         = cavs_decode_frame,
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY,
-    .flush= cavs_flush,
-    .long_name= NULL_IF_CONFIG_SMALL("Chinese AVS video (AVS1-P2, JiZhun profile)"),
+    .flush          = cavs_flush,
+    .long_name      = NULL_IF_CONFIG_SMALL("Chinese AVS video (AVS1-P2, JiZhun profile)"),
 };

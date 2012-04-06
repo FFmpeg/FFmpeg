@@ -264,5 +264,5 @@ AVCodec ff_targa_decoder = {
     .close          = targa_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Truevision Targa image"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Truevision Targa image"),
 };

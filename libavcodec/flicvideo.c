@@ -741,5 +741,5 @@ AVCodec ff_flic_decoder = {
     .close          = flic_decode_end,
     .decode         = flic_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Autodesk Animator Flic video"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Autodesk Animator Flic video"),
 };

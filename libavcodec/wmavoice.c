@@ -2052,6 +2052,6 @@ AVCodec ff_wmavoice_decoder = {
     .close          = wmavoice_decode_end,
     .decode         = wmavoice_decode_packet,
     .capabilities   = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1,
-    .flush     = wmavoice_flush,
-    .long_name = NULL_IF_CONFIG_SMALL("Windows Media Audio Voice"),
+    .flush          = wmavoice_flush,
+    .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Audio Voice"),
 };

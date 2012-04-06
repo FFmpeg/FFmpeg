@@ -636,5 +636,5 @@ AVCodec ff_shorten_decoder = {
     .close          = shorten_decode_close,
     .decode         = shorten_decode_frame,
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_DR1,
-    .long_name= NULL_IF_CONFIG_SMALL("Shorten"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Shorten"),
 };

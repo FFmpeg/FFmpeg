@@ -408,5 +408,5 @@ AVCodec ff_dvbsub_encoder = {
     .id             = CODEC_ID_DVB_SUBTITLE,
     .priv_data_size = sizeof(DVBSubtitleContext),
     .encode         = dvbsub_encode,
-    .long_name = NULL_IF_CONFIG_SMALL("DVB subtitles"),
+    .long_name      = NULL_IF_CONFIG_SMALL("DVB subtitles"),
 };

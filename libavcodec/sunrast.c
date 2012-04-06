@@ -202,5 +202,5 @@ AVCodec ff_sunrast_decoder = {
     .close          = sunrast_end,
     .decode         = sunrast_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Sun Rasterfile image"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Sun Rasterfile image"),
 };

@@ -727,9 +727,9 @@ AVCodec ff_rv10_decoder = {
     .close          = rv10_decode_end,
     .decode         = rv10_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .max_lowres = 3,
-    .long_name = NULL_IF_CONFIG_SMALL("RealVideo 1.0"),
-    .pix_fmts= ff_pixfmt_list_420,
+    .max_lowres     = 3,
+    .long_name      = NULL_IF_CONFIG_SMALL("RealVideo 1.0"),
+    .pix_fmts       = ff_pixfmt_list_420,
 };
 
 AVCodec ff_rv20_decoder = {
@@ -741,8 +741,8 @@ AVCodec ff_rv20_decoder = {
     .close          = rv10_decode_end,
     .decode         = rv10_decode_frame,
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY,
-    .flush= ff_mpeg_flush,
-    .max_lowres = 3,
-    .long_name = NULL_IF_CONFIG_SMALL("RealVideo 2.0"),
-    .pix_fmts= ff_pixfmt_list_420,
+    .flush          = ff_mpeg_flush,
+    .max_lowres     = 3,
+    .long_name      = NULL_IF_CONFIG_SMALL("RealVideo 2.0"),
+    .pix_fmts       = ff_pixfmt_list_420,
 };

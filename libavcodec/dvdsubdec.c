@@ -489,5 +489,5 @@ AVCodec ff_dvdsub_decoder = {
     .type           = AVMEDIA_TYPE_SUBTITLE,
     .id             = CODEC_ID_DVD_SUBTITLE,
     .decode         = dvdsub_decode,
-    .long_name = NULL_IF_CONFIG_SMALL("DVD subtitles"),
+    .long_name      = NULL_IF_CONFIG_SMALL("DVD subtitles"),
 };

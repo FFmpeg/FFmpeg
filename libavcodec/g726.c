@@ -406,9 +406,10 @@ AVCodec ff_adpcm_g726_encoder = {
 #if FF_API_OLD_ENCODE_AUDIO
     .close          = g726_encode_close,
 #endif
-    .capabilities = CODEC_CAP_SMALL_LAST_FRAME,
-    .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
-    .long_name = NULL_IF_CONFIG_SMALL("G.726 ADPCM"),
+    .capabilities   = CODEC_CAP_SMALL_LAST_FRAME,
+    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
+                                                     AV_SAMPLE_FMT_NONE },
+    .long_name      = NULL_IF_CONFIG_SMALL("G.726 ADPCM"),
     .priv_class     = &class,
     .defaults       = defaults,
 };
@@ -496,6 +497,6 @@ AVCodec ff_adpcm_g726_decoder = {
     .decode         = g726_decode_frame,
     .flush          = g726_decode_flush,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("G.726 ADPCM"),
+    .long_name      = NULL_IF_CONFIG_SMALL("G.726 ADPCM"),
 };
 #endif

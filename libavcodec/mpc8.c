@@ -427,5 +427,5 @@ AVCodec ff_mpc8_decoder = {
     .init           = mpc8_decode_init,
     .decode         = mpc8_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Musepack SV8"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Musepack SV8"),
 };

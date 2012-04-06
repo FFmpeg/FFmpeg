@@ -726,8 +726,8 @@ AVCodec ff_ ## name_ ## _encoder = {                        \
     .init           = adpcm_encode_init,                    \
     .encode2        = adpcm_encode_frame,                   \
     .close          = adpcm_encode_close,                   \
-    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16,   \
-                                                      AV_SAMPLE_FMT_NONE}, \
+    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16,    \
+                                                      AV_SAMPLE_FMT_NONE }, \
     .long_name      = NULL_IF_CONFIG_SMALL(long_name_),     \
 }
 

@@ -118,5 +118,5 @@ AVCodec ff_aasc_decoder = {
     .close          = aasc_decode_end,
     .decode         = aasc_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Autodesk RLE"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Autodesk RLE"),
 };

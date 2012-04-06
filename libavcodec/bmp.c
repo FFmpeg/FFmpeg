@@ -368,5 +368,5 @@ AVCodec ff_bmp_decoder = {
     .close          = bmp_decode_end,
     .decode         = bmp_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("BMP image"),
+    .long_name      = NULL_IF_CONFIG_SMALL("BMP image"),
 };

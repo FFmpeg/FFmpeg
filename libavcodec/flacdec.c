@@ -689,5 +689,5 @@ AVCodec ff_flac_decoder = {
     .close          = flac_decode_close,
     .decode         = flac_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name= NULL_IF_CONFIG_SMALL("FLAC (Free Lossless Audio Codec)"),
+    .long_name      = NULL_IF_CONFIG_SMALL("FLAC (Free Lossless Audio Codec)"),
 };

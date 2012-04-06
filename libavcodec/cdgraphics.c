@@ -376,5 +376,5 @@ AVCodec ff_cdgraphics_decoder = {
     .close          = cdg_decode_end,
     .decode         = cdg_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("CD Graphics video"),
+    .long_name      = NULL_IF_CONFIG_SMALL("CD Graphics video"),
 };

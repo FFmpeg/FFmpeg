@@ -120,5 +120,5 @@ AVCodec ff_frwu_decoder = {
     .close          = decode_close,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Forward Uncompressed"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Forward Uncompressed"),
 };

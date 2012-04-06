@@ -428,5 +428,5 @@ AVCodec ff_kmvc_decoder = {
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Karl Morton's video codec"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Karl Morton's video codec"),
 };

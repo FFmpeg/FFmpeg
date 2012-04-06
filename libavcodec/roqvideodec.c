@@ -221,5 +221,5 @@ AVCodec ff_roq_decoder = {
     .close          = roq_decode_end,
     .decode         = roq_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("id RoQ video"),
+    .long_name      = NULL_IF_CONFIG_SMALL("id RoQ video"),
 };

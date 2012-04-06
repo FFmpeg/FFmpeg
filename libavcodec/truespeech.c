@@ -365,5 +365,5 @@ AVCodec ff_truespeech_decoder = {
     .init           = truespeech_decode_init,
     .decode         = truespeech_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("DSP Group TrueSpeech"),
+    .long_name      = NULL_IF_CONFIG_SMALL("DSP Group TrueSpeech"),
 };

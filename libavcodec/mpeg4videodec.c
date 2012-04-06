@@ -2255,20 +2255,22 @@ static const AVProfile mpeg4_video_profiles[] = {
 };
 
 AVCodec ff_mpeg4_decoder = {
-    .name           = "mpeg4",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_MPEG4,
-    .priv_data_size = sizeof(MpegEncContext),
-    .init           = decode_init,
-    .close          = ff_h263_decode_end,
-    .decode         = ff_h263_decode_frame,
-    .capabilities   = CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY | CODEC_CAP_FRAME_THREADS,
-    .flush= ff_mpeg_flush,
-    .max_lowres= 3,
-    .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2"),
-    .pix_fmts= ff_hwaccel_pixfmt_list_420,
-    .profiles = NULL_IF_CONFIG_SMALL(mpeg4_video_profiles),
-    .update_thread_context= ONLY_IF_THREADS_ENABLED(ff_mpeg_update_thread_context)
+    .name                  = "mpeg4",
+    .type                  = AVMEDIA_TYPE_VIDEO,
+    .id                    = CODEC_ID_MPEG4,
+    .priv_data_size        = sizeof(MpegEncContext),
+    .init                  = decode_init,
+    .close                 = ff_h263_decode_end,
+    .decode                = ff_h263_decode_frame,
+    .capabilities          = CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 |
+                             CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY |
+                             CODEC_CAP_FRAME_THREADS,
+    .flush                 = ff_mpeg_flush,
+    .max_lowres            = 3,
+    .long_name             = NULL_IF_CONFIG_SMALL("MPEG-4 part 2"),
+    .pix_fmts              = ff_hwaccel_pixfmt_list_420,
+    .profiles              = NULL_IF_CONFIG_SMALL(mpeg4_video_profiles),
+    .update_thread_context = ONLY_IF_THREADS_ENABLED(ff_mpeg_update_thread_context),
 };
 
 
@@ -2281,8 +2283,10 @@ AVCodec ff_mpeg4_vdpau_decoder = {
     .init           = decode_init,
     .close          = ff_h263_decode_end,
     .decode         = ff_h263_decode_frame,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY | CODEC_CAP_HWACCEL_VDPAU,
-    .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2 (VDPAU)"),
-    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_VDPAU_MPEG4, PIX_FMT_NONE},
+    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY |
+                      CODEC_CAP_HWACCEL_VDPAU,
+    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-4 part 2 (VDPAU)"),
+    .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_VDPAU_MPEG4,
+                                                  PIX_FMT_NONE },
 };
 #endif

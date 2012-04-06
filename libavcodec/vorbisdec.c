@@ -1714,18 +1714,18 @@ static av_cold void vorbis_decode_flush(AVCodecContext *avccontext)
 }
 
 AVCodec ff_vorbis_decoder = {
-    .name           = "vorbis",
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_VORBIS,
-    .priv_data_size = sizeof(vorbis_context),
-    .init           = vorbis_decode_init,
-    .close          = vorbis_decode_close,
-    .decode         = vorbis_decode_frame,
-    .flush          = vorbis_decode_flush,
-    .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Vorbis"),
+    .name            = "vorbis",
+    .type            = AVMEDIA_TYPE_AUDIO,
+    .id              = CODEC_ID_VORBIS,
+    .priv_data_size  = sizeof(vorbis_context),
+    .init            = vorbis_decode_init,
+    .close           = vorbis_decode_close,
+    .decode          = vorbis_decode_frame,
+    .flush           = vorbis_decode_flush,
+    .capabilities    = CODEC_CAP_DR1,
+    .long_name       = NULL_IF_CONFIG_SMALL("Vorbis"),
     .channel_layouts = ff_vorbis_channel_layouts,
-    .sample_fmts = (const enum AVSampleFormat[]) {
+    .sample_fmts     = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE
     },
 };

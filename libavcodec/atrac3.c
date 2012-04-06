@@ -1066,13 +1066,13 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
 
 AVCodec ff_atrac3_decoder =
 {
-    .name = "atrac3",
-    .type = AVMEDIA_TYPE_AUDIO,
-    .id = CODEC_ID_ATRAC3,
+    .name           = "atrac3",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_ATRAC3,
     .priv_data_size = sizeof(ATRAC3Context),
-    .init = atrac3_decode_init,
-    .close = atrac3_decode_close,
-    .decode = atrac3_decode_frame,
-    .capabilities = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Atrac 3 (Adaptive TRansform Acoustic Coding 3)"),
+    .init           = atrac3_decode_init,
+    .close          = atrac3_decode_close,
+    .decode         = atrac3_decode_frame,
+    .capabilities   = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1,
+    .long_name      = NULL_IF_CONFIG_SMALL("Atrac 3 (Adaptive TRansform Acoustic Coding 3)"),
 };

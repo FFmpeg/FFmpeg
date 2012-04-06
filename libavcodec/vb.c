@@ -274,5 +274,5 @@ AVCodec ff_vb_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .long_name = NULL_IF_CONFIG_SMALL("Beam Software VB"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Beam Software VB"),
 };

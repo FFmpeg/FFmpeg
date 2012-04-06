@@ -427,7 +427,8 @@ AVCodec ff_wmav1_encoder = {
     .init           = encode_init,
     .encode2        = encode_superframe,
     .close          = ff_wma_end,
-    .sample_fmts    = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
+    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
+                                                     AV_SAMPLE_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Audio 1"),
 };
 
@@ -439,6 +440,7 @@ AVCodec ff_wmav2_encoder = {
     .init           = encode_init,
     .encode2        = encode_superframe,
     .close          = ff_wma_end,
-    .sample_fmts    = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
+    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
+                                                     AV_SAMPLE_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Audio 2"),
 };

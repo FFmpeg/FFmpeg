@@ -239,5 +239,5 @@ AVCodec ff_indeo2_decoder = {
     .close          = ir2_decode_end,
     .decode         = ir2_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Intel Indeo 2"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Intel Indeo 2"),
 };

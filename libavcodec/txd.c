@@ -162,5 +162,5 @@ AVCodec ff_txd_decoder = {
     .close          = txd_end,
     .decode         = txd_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Renderware TXD (TeXture Dictionary) image"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Renderware TXD (TeXture Dictionary) image"),
 };

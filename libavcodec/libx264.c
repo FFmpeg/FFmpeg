@@ -546,16 +546,16 @@ static const AVCodecDefault x264_defaults[] = {
 };
 
 AVCodec ff_libx264_encoder = {
-    .name           = "libx264",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_H264,
-    .priv_data_size = sizeof(X264Context),
-    .init           = X264_init,
-    .encode2        = X264_frame,
-    .close          = X264_close,
-    .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_AUTO_THREADS,
-    .long_name      = NULL_IF_CONFIG_SMALL("libx264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
-    .priv_class     = &class,
-    .defaults       = x264_defaults,
+    .name             = "libx264",
+    .type             = AVMEDIA_TYPE_VIDEO,
+    .id               = CODEC_ID_H264,
+    .priv_data_size   = sizeof(X264Context),
+    .init             = X264_init,
+    .encode2          = X264_frame,
+    .close            = X264_close,
+    .capabilities     = CODEC_CAP_DELAY | CODEC_CAP_AUTO_THREADS,
+    .long_name        = NULL_IF_CONFIG_SMALL("libx264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
+    .priv_class       = &class,
+    .defaults         = x264_defaults,
     .init_static_data = X264_init_static,
 };

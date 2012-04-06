@@ -227,5 +227,5 @@ AVCodec ff_rl2_decoder = {
     .close          = rl2_decode_end,
     .decode         = rl2_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("RL2 video"),
+    .long_name      = NULL_IF_CONFIG_SMALL("RL2 video"),
 };

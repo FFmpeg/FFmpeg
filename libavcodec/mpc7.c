@@ -337,7 +337,7 @@ AVCodec ff_mpc7_decoder = {
     .init           = mpc7_decode_init,
     .close          = mpc7_decode_close,
     .decode         = mpc7_decode_frame,
-    .flush = mpc7_decode_flush,
+    .flush          = mpc7_decode_flush,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Musepack SV7"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Musepack SV7"),
 };
