@@ -473,12 +473,12 @@ AVCodec ff_tiff_encoder = {
     .priv_data_size = sizeof(TiffEncoderContext),
     .encode2        = encode_frame,
     .pix_fmts       = (const enum PixelFormat[]) {
-                              PIX_FMT_RGB24, PIX_FMT_PAL8, PIX_FMT_GRAY8,
-                              PIX_FMT_MONOBLACK, PIX_FMT_MONOWHITE,
-                              PIX_FMT_YUV420P, PIX_FMT_YUV422P,
-                              PIX_FMT_YUV444P, PIX_FMT_YUV410P,
-                              PIX_FMT_YUV411P,
-                              PIX_FMT_NONE },
+        PIX_FMT_RGB24, PIX_FMT_PAL8, PIX_FMT_GRAY8,
+        PIX_FMT_MONOBLACK, PIX_FMT_MONOWHITE,
+        PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_YUV444P,
+        PIX_FMT_YUV410P, PIX_FMT_YUV411P,
+        PIX_FMT_NONE
+    },
     .long_name      = NULL_IF_CONFIG_SMALL("TIFF image"),
     .priv_class     = &tiffenc_class,
 };
