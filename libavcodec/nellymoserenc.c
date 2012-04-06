@@ -389,7 +389,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         memcpy(s->buf + NELLY_BUF_LEN, frame->data[0],
                frame->nb_samples * sizeof(*s->buf));
         if (frame->nb_samples < NELLY_SAMPLES) {
-            memset(s->buf + NELLY_BUF_LEN + avctx->frame_size, 0,
+            memset(s->buf + NELLY_BUF_LEN + frame->nb_samples, 0,
                    (NELLY_SAMPLES - frame->nb_samples) * sizeof(*s->buf));
             if (frame->nb_samples >= NELLY_BUF_LEN)
                 s->last_frame = 1;
