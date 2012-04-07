@@ -169,8 +169,7 @@ static void encode_codeword(PutBitContext *pb, int val, int codebook)
         exp = av_log2(val);
         zeros = exp - exp_order + switch_bits + 1;
         put_bits(pb, zeros, 0);
-        put_bits(pb, 1, 1);
-        put_bits(pb, exp, val);
+        put_bits(pb, exp + 1, val);
     } else if (rice_order) {
         mask = (1 << rice_order) - 1;
         put_bits(pb, (val >> rice_order), 0);
