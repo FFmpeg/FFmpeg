@@ -65,6 +65,7 @@ typedef struct {
     int pack_header_freq;     /* frequency (in packets^-1) at which we send pack headers */
     int system_header_freq;
     int system_header_size;
+    int user_mux_rate; /* bitrate in units of bits/s */
     int mux_rate; /* bitrate in units of 50 bytes/s */
     /* stream info */
     int audio_bound;
@@ -423,7 +424,9 @@ static int mpeg_mux_init(AVFormatContext *ctx)
             video_bitrate += codec_rate;
     }
 
-    if (!s->mux_rate) {
+    if (s->user_mux_rate) {
+        s->mux_rate = (s->user_mux_rate + (8 * 50) - 1) / (8 * 50);
+    } else {
         /* we increase slightly the bitrate to take into account the
            headers. XXX: compute it exactly */
         bitrate += bitrate / 20;
@@ -1237,7 +1240,7 @@ static int mpeg_mux_end(AVFormatContext *ctx)
 #define OFFSET(x) offsetof(MpegMuxContext, x)
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "muxrate", NULL, OFFSET(mux_rate), AV_OPT_TYPE_INT, {0}, 0, INT_MAX, E },
+    { "muxrate", NULL, OFFSET(user_mux_rate), AV_OPT_TYPE_INT, {0}, 0, INT_MAX, E },
     { "preload", "Initial demux-decode delay in microseconds.", OFFSET(preload),  AV_OPT_TYPE_INT, {500000}, 0, INT_MAX, E},
     { NULL },
 };
