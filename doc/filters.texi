@@ -1414,6 +1414,9 @@ with or without text parameter. @var{rate} option must be specified.
 frame rate (timecode only)
 @end table
 
+If libavfilter was built with @code{--enable-fontconfig}, then
+@option{fontfile} can be a fontconfig pattern or omitted.
+
 Some examples follow.
 
 @itemize
@@ -1467,10 +1470,19 @@ The glyph baseline is placed at half screen height.
 drawtext=fontsize=60:fontfile=FreeSerif.ttf:fontcolor=green:text=g:x=(w-max_glyph_w)/2:y=h/2-ascent
 @end example
 
+@item
+Use fontconfig to set the font. Note that the colons need to be escaped.
+@example
+drawtext='fontfile=Linux Libertine O-40\\:style=Semibold:text=FFmpeg'
+@end example
+
 @end itemize
 
 For more information about libfreetype, check:
 @url{http://www.freetype.org/}.
+
+For more information about fontconfig, check:
+@url{http://freedesktop.org/software/fontconfig/fontconfig-user.html}.
 
 @section fade
 

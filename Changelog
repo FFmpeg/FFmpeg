@@ -23,6 +23,7 @@ version next:
 - OpenEXR image decoder
 - removelogo filter
 - drop support for ffmpeg without libavfilter
+- drawtext video filter: fontconfig support
 
 
 version 0.10:

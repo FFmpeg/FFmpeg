@@ -48,6 +48,9 @@
 #include <freetype/config/ftheader.h>
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
+#if CONFIG_FONTCONFIG
+#include <fontconfig/fontconfig.h>
+#endif
 
 static const char *const var_names[] = {
     "main_w", "w", "W",       ///< width  of the input video
@@ -167,7 +170,7 @@ static const AVOption drawtext_options[]= {
 {"boxcolor",    "set box color",        OFFSET(boxcolor_string),    AV_OPT_TYPE_STRING, {.str="white"}, CHAR_MIN, CHAR_MAX },
 {"shadowcolor", "set shadow color",     OFFSET(shadowcolor_string), AV_OPT_TYPE_STRING, {.str="black"}, CHAR_MIN, CHAR_MAX },
 {"box",      "set box",              OFFSET(draw_box),           AV_OPT_TYPE_INT,    {.dbl=0},     0,        1        },
-{"fontsize", "set font size",        OFFSET(fontsize),           AV_OPT_TYPE_INT,    {.dbl=16},    1,        INT_MAX  },
+{"fontsize", "set font size",        OFFSET(fontsize),           AV_OPT_TYPE_INT,    {.dbl=0},     0,        INT_MAX  },
 {"x",        "set x expression",     OFFSET(x_expr),             AV_OPT_TYPE_STRING, {.str="0"},   CHAR_MIN, CHAR_MAX },
 {"y",        "set y expression",     OFFSET(y_expr),             AV_OPT_TYPE_STRING, {.str="0"},   CHAR_MIN, CHAR_MAX },
 {"shadowx",  "set x",                OFFSET(shadowx),            AV_OPT_TYPE_INT,    {.dbl=0},     INT_MIN,  INT_MAX  },
@@ -298,6 +301,91 @@ error:
     return ret;
 }
 
+static int load_font_file(AVFilterContext *ctx, const char *path, int index,
+                          const char **error)
+{
+    DrawTextContext *dtext = ctx->priv;
+    int err;
+
+    err = FT_New_Face(dtext->library, path, index, &dtext->face);
+    if (err) {
+        *error = FT_ERRMSG(err);
+        return AVERROR(EINVAL);
+    }
+    return 0;
+}
+
+#if CONFIG_FONTCONFIG
+static int load_font_fontconfig(AVFilterContext *ctx, const char **error)
+{
+    DrawTextContext *dtext = ctx->priv;
+    FcConfig *fontconfig;
+    FcPattern *pattern, *fpat;
+    FcResult result = FcResultMatch;
+    FcChar8 *filename;
+    int err, index;
+    double size;
+
+    fontconfig = FcInitLoadConfigAndFonts();
+    if (!fontconfig) {
+        *error = "impossible to init fontconfig\n";
+        return AVERROR(EINVAL);
+    }
+    pattern = FcNameParse(dtext->fontfile ? dtext->fontfile :
+                          (uint8_t *)(intptr_t)"default");
+    if (!pattern) {
+        *error = "could not parse fontconfig pattern";
+        return AVERROR(EINVAL);
+    }
+    if (!FcConfigSubstitute(fontconfig, pattern, FcMatchPattern)) {
+        *error = "could not substitue fontconfig options"; /* very unlikely */
+        return AVERROR(EINVAL);
+    }
+    FcDefaultSubstitute(pattern);
+    fpat = FcFontMatch(fontconfig, pattern, &result);
+    if (!fpat || result != FcResultMatch) {
+        *error = "impossible to find a matching font";
+        return AVERROR(EINVAL);
+    }
+    if (FcPatternGetString (fpat, FC_FILE,  0, &filename) != FcResultMatch ||
+        FcPatternGetInteger(fpat, FC_INDEX, 0, &index   ) != FcResultMatch ||
+        FcPatternGetDouble (fpat, FC_SIZE,  0, &size    ) != FcResultMatch) {
+        *error = "impossible to find font information";
+        return AVERROR(EINVAL);
+    }
+    av_log(ctx, AV_LOG_INFO, "Using \"%s\"\n", filename);
+    if (!dtext->fontsize)
+        dtext->fontsize = size + 0.5;
+    err = load_font_file(ctx, filename, index, error);
+    if (err)
+        return err;
+    FcPatternDestroy(fpat);
+    FcPatternDestroy(pattern);
+    FcConfigDestroy(fontconfig);
+    return 0;
+}
+#endif
+
+static int load_font(AVFilterContext *ctx)
+{
+    DrawTextContext *dtext = ctx->priv;
+    int err;
+    const char *error = "unknown error\n";
+
+    /* load the face, and set up the encoding, which is by default UTF-8 */
+    err = load_font_file(ctx, dtext->fontfile, 0, &error);
+    if (!err)
+        return 0;
+#if CONFIG_FONTCONFIG
+    err = load_font_fontconfig(ctx, &error);
+    if (!err)
+        return 0;
+#endif
+    av_log(ctx, AV_LOG_ERROR, "Could not load font \"%s\": %s\n",
+           dtext->fontfile, error);
+    return err;
+}
+
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     int err;
@@ -312,7 +400,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
         return err;
     }
 
-    if (!dtext->fontfile) {
+    if (!dtext->fontfile && !CONFIG_FONTCONFIG) {
         av_log(ctx, AV_LOG_ERROR, "No font filename provided\n");
         return AVERROR(EINVAL);
     }
@@ -381,12 +469,11 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
         return AVERROR(EINVAL);
     }
 
-    /* load the face, and set up the encoding, which is by default UTF-8 */
-    if ((err = FT_New_Face(dtext->library, dtext->fontfile, 0, &dtext->face))) {
-        av_log(ctx, AV_LOG_ERROR, "Could not load fontface from file '%s': %s\n",
-               dtext->fontfile, FT_ERRMSG(err));
-        return AVERROR(EINVAL);
-    }
+    err = load_font(ctx);
+    if (err)
+        return err;
+    if (!dtext->fontsize)
+        dtext->fontsize = 16;
     if ((err = FT_Set_Pixel_Sizes(dtext->face, 0, dtext->fontsize))) {
         av_log(ctx, AV_LOG_ERROR, "Could not set font size to %d pixels: %s\n",
                dtext->fontsize, FT_ERRMSG(err));
