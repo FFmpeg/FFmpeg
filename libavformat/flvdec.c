@@ -25,6 +25,7 @@
  */
 
 #include "libavutil/avstring.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/dict.h"
 #include "libavutil/opt.h"
 #include "libavutil/intfloat.h"
@@ -749,6 +750,8 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         bits_per_coded_sample = (flags & FLV_AUDIO_SAMPLESIZE_MASK) ? 16 : 8;
         if(!st->codec->channels || !st->codec->sample_rate || !st->codec->bits_per_coded_sample) {
             st->codec->channels              = channels;
+            st->codec->channel_layout        = channels == 1 ? AV_CH_LAYOUT_MONO :
+                                                               AV_CH_LAYOUT_STEREO;
             st->codec->sample_rate           = sample_rate;
             st->codec->bits_per_coded_sample = bits_per_coded_sample;
         }
@@ -794,6 +797,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
                 avpriv_mpeg4audio_get_config(&cfg, st->codec->extradata,
                                              st->codec->extradata_size * 8, 1);
                 st->codec->channels = cfg.channels;
+                st->codec->channel_layout = 0;
                 if (cfg.ext_sample_rate)
                     st->codec->sample_rate = cfg.ext_sample_rate;
                 else
