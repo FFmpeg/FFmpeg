@@ -29,6 +29,7 @@
 #include <stdint.h>
 
 #include "libavcodec/avcodec.h"
+#include "avformat.h"
 
 /**
  * Get the channel layout for the specified channel layout tag.
@@ -38,14 +39,6 @@
  * @return             channel layout
  */
 uint64_t ff_mov_get_channel_layout(uint32_t tag, uint32_t bitmap);
-
-/**
- * Get the channel layout for the specified channel label.
- *
- * @param[in]  label   channel label
- * @return             channel layout mask fragment
- */
-uint32_t ff_mov_get_channel_label(uint32_t label);
 
 /**
  * Get the channel layout tag for the specified codec id and channel layout.
@@ -59,5 +52,15 @@ uint32_t ff_mov_get_channel_label(uint32_t label);
 uint32_t ff_mov_get_channel_layout_tag(enum CodecID codec_id,
                                        uint64_t channel_layout,
                                        uint32_t *bitmap);
+
+/**
+ * Read 'chan' tag from the input stream.
+ *
+ * @param s     AVFormatContext
+ * @param st    The stream to set codec values for
+ * @param size  Remaining size in the 'chan' tag
+ * @return      0 if ok, or negative AVERROR code on failure
+ */
+int ff_mov_read_chan(AVFormatContext *s, AVStream *st, int64_t size);
 
 #endif /* AVFORMAT_MOV_CHAN_H */

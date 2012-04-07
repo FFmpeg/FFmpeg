@@ -29,6 +29,7 @@
 #include "internal.h"
 #include "riff.h"
 #include "isom.h"
+#include "mov_chan.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/dict.h"
@@ -264,6 +265,11 @@ static int read_header(AVFormatContext *s)
             if (caf->data_size > 0 && pb->seekable)
                 avio_skip(pb, caf->data_size);
             found_data = 1;
+            break;
+
+        case MKBETAG('c','h','a','n'):
+            if ((ret = ff_mov_read_chan(s, st, size)) < 0)
+                return ret;
             break;
 
         /* magic cookie chunk */
