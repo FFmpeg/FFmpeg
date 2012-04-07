@@ -277,6 +277,8 @@ Developer options (useful when working on FFmpeg itself):
   --disable-optimizations  disable compiler optimizations
   --enable-extra-warnings  enable more compiler warnings
   --disable-stripping      disable stripping of executables and shared libraries
+  --assert_level=level     0(default), 1 or 2, amount of assertion testing,
+                           2 causes a slowdown at runtime.
   --valgrind=VALGRIND      run "make fate" tests through valgrind to detect memory
                            leaks and errors, using the specified valgrind binary.
                            Cannot be combined with --target-exec
@@ -1304,6 +1306,7 @@ CMDLINE_SET="
     ar
     arch
     as
+    assert_level
     build_suffix
     cc
     cpu
@@ -3720,6 +3723,9 @@ cat > $TMPH <<EOF
 #define EXTERN_ASM ${extern_prefix}
 #define SLIBSUF "$SLIBSUF"
 EOF
+
+test -n "$assert_level" &&
+    echo "#define ASSERT_LEVEL $assert_level" >>$TMPH
 
 test -n "$malloc_prefix" &&
     echo "#define MALLOC_PREFIX $malloc_prefix" >>$TMPH
