@@ -1222,7 +1222,9 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
                 id = ff_codec_get_id(ff_codec_bmp_tags, format);
             if (id > 0)
                 st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            else if (st->codec->codec_type == AVMEDIA_TYPE_DATA){
+            else if (st->codec->codec_type == AVMEDIA_TYPE_DATA ||
+                     (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE &&
+                      st->codec->codec_id == CODEC_ID_NONE)){
                 id = ff_codec_get_id(ff_codec_movsubtitle_tags, format);
                 if (id > 0)
                     st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
