@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavcodec/get_bits.h"
 #include "avformat.h"
 #include "internal.h"
@@ -91,6 +92,7 @@ static int mpc_read_header(AVFormatContext *s)
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id = AV_CODEC_ID_MUSEPACK7;
     st->codec->channels = 2;
+    st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
     st->codec->bits_per_coded_sample = 16;
 
     st->codec->extradata_size = 16;
