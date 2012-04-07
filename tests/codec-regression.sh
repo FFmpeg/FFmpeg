@@ -441,7 +441,8 @@ fi
 
 if [ -n "$do_dca" ] ; then
 do_audio_encoding dca.dts "-strict -2 -channel_layout 3 -acodec dca"
-do_audio_decoding
+# decoding is not bit-exact, so skip md5 of decoded file
+do_audio_decoding_nomd5
 $tiny_psnr $pcm_dst $pcm_ref 2 1920
 fi
 

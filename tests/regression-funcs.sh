@@ -122,3 +122,8 @@ do_audio_decoding()
 {
     do_avconv $pcm_dst $DEC_OPTS -i $target_path/$file -sample_fmt s16 -f wav $1
 }
+
+do_audio_decoding_nomd5()
+{
+    do_avconv_nomd5 $pcm_dst $DEC_OPTS -i $target_path/$file -sample_fmt s16 -f wav $1
+}
