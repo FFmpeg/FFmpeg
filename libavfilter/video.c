@@ -230,6 +230,10 @@ void avfilter_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
         link->cur_buf = avfilter_get_video_buffer(link, dst->min_perms, link->w, link->h);
         link->src_buf = picref;
         avfilter_copy_buffer_ref_props(link->cur_buf, link->src_buf);
+
+        /* copy palette if required */
+        if (av_pix_fmt_descriptors[link->format].flags & PIX_FMT_PAL)
+            memcpy(link->cur_buf->data[1], link->src_buf-> data[1], AVPALETTE_SIZE);
     }
     else
         link->cur_buf = picref;
