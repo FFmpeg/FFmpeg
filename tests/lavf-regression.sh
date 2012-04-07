@@ -136,7 +136,7 @@ do_lavf mkv "-acodec mp2 -ab 64k -vcodec mpeg4"
 fi
 
 if [ -n "$do_mp3" ] ; then
-do_lavf_fate mp3 "mp3-conformance/he_32khz.bit"
+do_lavf_fate mp3 "mp3-conformance/he_32khz.bit" "-acodec copy"
 fi
 
 if [ -n "$do_ogg_vp3" ] ; then
