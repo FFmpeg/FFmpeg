@@ -27,6 +27,7 @@
  * @see http://www.svatopluk.com/andux/docs/dfvid.html
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
@@ -239,6 +240,7 @@ static int vid_read_packet(AVFormatContext *s,
                 st->codec->codec_type            = AVMEDIA_TYPE_AUDIO;
                 st->codec->codec_id              = AV_CODEC_ID_PCM_U8;
                 st->codec->channels              = 1;
+                st->codec->channel_layout        = AV_CH_LAYOUT_MONO;
                 st->codec->bits_per_coded_sample = 8;
                 st->codec->sample_rate           = vid->sample_rate;
                 st->codec->bit_rate              = 8 * st->codec->sample_rate;
