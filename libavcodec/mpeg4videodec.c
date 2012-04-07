@@ -2073,6 +2073,7 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
              s->f_code = get_bits(gb, 3);       /* fcode_for */
              if(s->f_code==0){
                  av_log(s->avctx, AV_LOG_ERROR, "Error, header damaged or not MPEG4 header (f_code=0)\n");
+                 s->f_code=1;
                  return -1; // makes no sense to continue, as the MV decoding will break very quickly
              }
          }else
@@ -2080,6 +2081,11 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
 
          if (s->pict_type == AV_PICTURE_TYPE_B) {
              s->b_code = get_bits(gb, 3);
+             if(s->b_code==0){
+                 av_log(s->avctx, AV_LOG_ERROR, "Error, header damaged or not MPEG4 header (b_code=0)\n");
+                 s->b_code=1;
+                 return -1; // makes no sense to continue, as the MV decoding will break very quickly
+             }
          }else
              s->b_code=1;
 
