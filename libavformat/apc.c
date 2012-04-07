@@ -20,6 +20,8 @@
  */
 
 #include <string.h>
+
+#include "libavutil/channel_layout.h"
 #include "avformat.h"
 
 static int apc_probe(AVProbeData *p)
@@ -58,9 +60,13 @@ static int apc_read_header(AVFormatContext *s)
     /* initial predictor values for adpcm decoder */
     avio_read(pb, st->codec->extradata, 2 * 4);
 
-    st->codec->channels = 1;
-    if (avio_rl32(pb))
-        st->codec->channels = 2;
+    if (avio_rl32(pb)) {
+        st->codec->channels       = 2;
+        st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+    } else {
+        st->codec->channels       = 1;
+        st->codec->channel_layout = AV_CH_LAYOUT_MONO;
+    }
 
     st->codec->bits_per_coded_sample = 4;
     st->codec->bit_rate = st->codec->bits_per_coded_sample * st->codec->channels
