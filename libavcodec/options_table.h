@@ -72,6 +72,7 @@ static const AVOption options[]={
 #endif
 {"noout", "skip bitstream encoding", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_NO_OUTPUT }, INT_MIN, INT_MAX, V|E, "flags2"},
 {"local_header", "place global headers at every keyframe instead of in extradata", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_LOCAL_HEADER }, INT_MIN, INT_MAX, V|E, "flags2"},
+{"chunks", "Frame data might be split into multiple chunks", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_CHUNKS }, INT_MIN, INT_MAX, V|D, "flags2"},
 {"showall", "Show all frames before the first keyframe", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_SHOW_ALL }, INT_MIN, INT_MAX, V|D, "flags2"},
 #if FF_API_SUB_ID
 {"sub_id", NULL, OFFSET(sub_id), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
