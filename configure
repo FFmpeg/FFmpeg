@@ -277,7 +277,7 @@ Developer options (useful when working on FFmpeg itself):
   --disable-optimizations  disable compiler optimizations
   --enable-extra-warnings  enable more compiler warnings
   --disable-stripping      disable stripping of executables and shared libraries
-  --assert_level=level     0(default), 1 or 2, amount of assertion testing,
+  --assert-level=level     0(default), 1 or 2, amount of assertion testing,
                            2 causes a slowdown at runtime.
   --valgrind=VALGRIND      run "make fate" tests through valgrind to detect memory
                            leaks and errors, using the specified valgrind binary.
