@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/avstring.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
 #include "avformat.h"
@@ -140,6 +141,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
             avio_skip(pb, header_size + startpos - avio_tell(pb));
         st->codec->sample_rate = 8000;
         st->codec->channels = 1;
+        st->codec->channel_layout = AV_CH_LAYOUT_MONO;
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codec->codec_id = AV_CODEC_ID_RA_144;
         ast->deint_id = DEINT_ID_INT0;
