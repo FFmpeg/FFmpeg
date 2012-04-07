@@ -621,6 +621,7 @@ OBJS-$(CONFIG_QSVENC)                     += qsvenc.o
 
 OBJS-$(CONFIG_H264_MMAL_DECODER)          += mmaldec.o
 OBJS-$(CONFIG_H264_NVENC_ENCODER)         += nvenc_h264.o
+OBJS-$(CONFIG_H264_OMX_ENCODER)           += omx.o
 OBJS-$(CONFIG_H264_QSV_DECODER)           += qsvdec_h2645.o
 OBJS-$(CONFIG_H264_QSV_ENCODER)           += qsvenc_h264.o
 OBJS-$(CONFIG_H264_VAAPI_ENCODER)         += vaapi_encode_h264.o vaapi_encode_h26x.o
@@ -630,6 +631,7 @@ OBJS-$(CONFIG_HEVC_QSV_ENCODER)           += qsvenc_hevc.o hevc_ps_enc.o h2645_p
 OBJS-$(CONFIG_HEVC_VAAPI_ENCODER)         += vaapi_encode_h265.o vaapi_encode_h26x.o
 OBJS-$(CONFIG_MPEG2_QSV_DECODER)          += qsvdec_mpeg2.o
 OBJS-$(CONFIG_MPEG2_QSV_ENCODER)          += qsvenc_mpeg2.o
+OBJS-$(CONFIG_MPEG4_OMX_ENCODER)          += omx.o
 
 # libavformat dependencies
 OBJS-$(CONFIG_ISO_MEDIA)               += mpeg4audio.o mpegaudiodata.o

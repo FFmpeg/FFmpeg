@@ -54,6 +54,7 @@ version <next>:
 - VAAPI-accelerated format conversion and scaling
 - libnpp/CUDA-accelerated format conversion and scaling
 - VAAPI-accelerate H.264/HEVC/MJPEG encoding
+- Generic OpenMAX IL encoder
 
 
 version 11:

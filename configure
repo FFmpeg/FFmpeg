@@ -144,6 +144,7 @@ Hardware-accelerated decoding/encoding:
   --enable-libmfx          enable HW acceleration through libmfx
   --enable-mmal            enable decoding via MMAL [no]
   --enable-nvenc           enable encoding via NVENC [no]
+  --enable-omx             enable encoding via OpenMAX IL [no]
 
 Individual component options:
   --disable-everything     disable all components listed below
@@ -1272,6 +1273,7 @@ HW_CODECS_LIST="
     libmfx
     mmal
     nvenc
+    omx
 "
 
 HWACCEL_LIST="
@@ -2106,6 +2108,7 @@ h264_mmal_decoder_deps="mmal"
 h264_mmal_hwaccel_deps="mmal"
 h264_mmal_decoder_select="h264_decoder"
 h264_mmal_encoder_deps="mmal"
+h264_omx_encoder_deps="omx"
 h264_qsv_hwaccel_deps="libmfx"
 h264_vaapi_hwaccel_deps="vaapi"
 h264_vaapi_hwaccel_select="h264_decoder"
@@ -2133,6 +2136,7 @@ mpeg2_vaapi_hwaccel_deps="vaapi"
 mpeg2_vaapi_hwaccel_select="mpeg2video_decoder"
 mpeg2_vdpau_hwaccel_deps="vdpau"
 mpeg2_vdpau_hwaccel_select="mpeg2video_decoder"
+mpeg4_omx_encoder_deps="omx"
 mpeg4_vaapi_hwaccel_deps="vaapi"
 mpeg4_vaapi_hwaccel_select="mpeg4_decoder"
 mpeg4_vdpau_hwaccel_deps="vdpau"
@@ -2153,6 +2157,8 @@ wmv3_vdpau_hwaccel_select="vc1_vdpau_hwaccel"
 # hardware-accelerated codecs
 nvenc_deps_any="dlopen LoadLibrary"
 nvenc_extralibs='$ldl'
+omx_deps="dlopen pthreads"
+omx_extralibs='$ldl'
 qsvdec_select="qsv"
 qsvenc_select="qsv"
 vaapi_encode_deps="vaapi"
@@ -4615,6 +4621,7 @@ enabled mmal              && { check_lib interface/mmal/mmal.h mmal_port_connect
                                     check_lib interface/mmal/mmal.h mmal_port_connect ; }
                                 check_lib interface/mmal/mmal.h mmal_port_connect ; } ||
                                die "ERROR: mmal not found"; }
+enabled omx               && { check_header OMX_Core.h || die "ERROR: OpenMAX IL headers not found"; }
 enabled openssl           && { check_pkg_config openssl openssl/ssl.h SSL_library_init && {
                                add_cflags $openssl_cflags && add_extralibs $openssl_libs; }||
                                check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto ||
