@@ -1674,6 +1674,9 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
             s->quant_precision = get_bits(gb, 4); /* quant_precision */
             if(get_bits(gb, 4)!=8) av_log(s->avctx, AV_LOG_ERROR, "N-bit not supported\n"); /* bits_per_pixel */
             if(s->quant_precision!=5) av_log(s->avctx, AV_LOG_ERROR, "quant precision %d\n", s->quant_precision);
+            if(s->quant_precision<3 || s->quant_precision>9) {
+                s->quant_precision = 5;
+            }
         } else {
             s->quant_precision = 5;
         }
