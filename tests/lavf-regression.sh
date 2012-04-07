@@ -222,8 +222,8 @@ fi
 
 if [ -n "$do_dpx" ] ; then
 do_image_formats dpx
-do_image_formats dpx "-pix_fmt rgb48le"
-do_image_formats dpx "-pix_fmt rgb48le -bits_per_raw_sample 10"
+do_image_formats dpx "-pix_fmt rgb48le" "-pix_fmt rgb48le"
+do_image_formats dpx "-pix_fmt rgb48le -bits_per_raw_sample 10" "-pix_fmt rgb48le"
 fi
 
 if [ -n "$do_xwd" ] ; then
