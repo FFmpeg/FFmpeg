@@ -27,6 +27,7 @@
  *   http://www.pcisys.net/~melanson/codecs/
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
@@ -132,7 +133,13 @@ static int vmd_read_header(AVFormatContext *s)
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codec->codec_id = AV_CODEC_ID_VMDAUDIO;
         st->codec->codec_tag = 0;  /* no fourcc */
-        st->codec->channels = (vmd->vmd_header[811] & 0x80) ? 2 : 1;
+        if (vmd->vmd_header[811] & 0x80) {
+            st->codec->channels       = 2;
+            st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+        } else {
+            st->codec->channels       = 1;
+            st->codec->channel_layout = AV_CH_LAYOUT_MONO;
+        }
         st->codec->sample_rate = vmd->sample_rate;
         st->codec->block_align = AV_RL16(&vmd->vmd_header[806]);
         if (st->codec->block_align & 0x8000) {
