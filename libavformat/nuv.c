@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
 #include "avformat.h"
@@ -99,6 +100,7 @@ static int get_codec_data(AVIOContext *pb, AVStream *vst,
                     ast->codec->sample_rate = avio_rl32(pb);
                     ast->codec->bits_per_coded_sample = avio_rl32(pb);
                     ast->codec->channels = avio_rl32(pb);
+                    ast->codec->channel_layout = 0;
                     ast->codec->codec_id =
                         ff_wav_codec_get_id(ast->codec->codec_tag,
                                          ast->codec->bits_per_coded_sample);
@@ -179,6 +181,7 @@ static int nuv_header(AVFormatContext *s) {
         ast->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         ast->codec->codec_id = AV_CODEC_ID_PCM_S16LE;
         ast->codec->channels = 2;
+        ast->codec->channel_layout = AV_CH_LAYOUT_STEREO;
         ast->codec->sample_rate = 44100;
         ast->codec->bit_rate = 2 * 2 * 44100 * 8;
         ast->codec->block_align = 2 * 2;
