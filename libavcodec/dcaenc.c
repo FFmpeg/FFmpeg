@@ -534,11 +534,18 @@ static int encode_init(AVCodecContext *avctx)
 {
     DCAContext *c = avctx->priv_data;
     int i;
+    uint64_t layout = avctx->channel_layout;
 
     c->prim_channels = avctx->channels;
     c->lfe_channel   = (avctx->channels == 3 || avctx->channels == 6);
 
-    switch (avctx->channel_layout) {
+    if (!layout) {
+        av_log(avctx, AV_LOG_WARNING, "No channel layout specified. The "
+                                      "encoder will guess the layout, but it "
+                                      "might be incorrect.\n");
+        layout = av_get_default_channel_layout(avctx->channels);
+    }
+    switch (layout) {
     case AV_CH_LAYOUT_STEREO:       c->a_mode = 2; c->num_channel = 2; break;
     case AV_CH_LAYOUT_5POINT0:      c->a_mode = 9; c->num_channel = 9; break;
     case AV_CH_LAYOUT_5POINT1:      c->a_mode = 9; c->num_channel = 9; break;
