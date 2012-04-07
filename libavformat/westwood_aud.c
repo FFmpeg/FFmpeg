@@ -33,6 +33,7 @@
  * qualify a file. Refer to wsaud_probe() for the precise parameters.
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
@@ -120,6 +121,8 @@ static int wsaud_read_header(AVFormatContext *s)
     avpriv_set_pts_info(st, 64, 1, sample_rate);
     st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
     st->codec->channels    = channels;
+    st->codec->channel_layout = channels == 1 ? AV_CH_LAYOUT_MONO :
+                                                AV_CH_LAYOUT_STEREO;
     st->codec->sample_rate = sample_rate;
 
     return 0;
