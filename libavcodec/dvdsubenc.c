@@ -220,5 +220,5 @@ AVCodec ff_dvdsub_encoder = {
     .type           = AVMEDIA_TYPE_SUBTITLE,
     .id             = CODEC_ID_DVD_SUBTITLE,
     .encode         = dvdsub_encode,
-    .long_name = NULL_IF_CONFIG_SMALL("DVD subtitles"),
+    .long_name      = NULL_IF_CONFIG_SMALL("DVD subtitles"),
 };

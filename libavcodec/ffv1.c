@@ -1851,8 +1851,9 @@ AVCodec ff_ffv1_decoder = {
     .init           = decode_init,
     .close          = common_end,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1 /*| CODEC_CAP_DRAW_HORIZ_BAND*/ | CODEC_CAP_SLICE_THREADS,
-    .long_name= NULL_IF_CONFIG_SMALL("FFmpeg video codec #1"),
+    .capabilities   = CODEC_CAP_DR1 /*| CODEC_CAP_DRAW_HORIZ_BAND*/ |
+                      CODEC_CAP_SLICE_THREADS,
+    .long_name      = NULL_IF_CONFIG_SMALL("FFmpeg video codec #1"),
 };
 
 #if CONFIG_FFV1_ENCODER
@@ -1864,8 +1865,8 @@ AVCodec ff_ffv1_encoder = {
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = common_end,
-    .capabilities = CODEC_CAP_SLICE_THREADS,
+    .capabilities   = CODEC_CAP_SLICE_THREADS,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUVA420P, PIX_FMT_YUV444P, PIX_FMT_YUVA444P, PIX_FMT_YUV440P, PIX_FMT_YUV422P, PIX_FMT_YUV411P, PIX_FMT_YUV410P, PIX_FMT_0RGB32, PIX_FMT_RGB32, PIX_FMT_YUV420P16, PIX_FMT_YUV422P16, PIX_FMT_YUV444P16, PIX_FMT_YUV444P9, PIX_FMT_YUV422P9, PIX_FMT_YUV420P9, PIX_FMT_YUV420P10, PIX_FMT_YUV422P10, PIX_FMT_YUV444P10, PIX_FMT_GRAY16, PIX_FMT_GRAY8, PIX_FMT_NONE},
-    .long_name= NULL_IF_CONFIG_SMALL("FFmpeg video codec #1"),
+    .long_name      = NULL_IF_CONFIG_SMALL("FFmpeg video codec #1"),
 };
 #endif

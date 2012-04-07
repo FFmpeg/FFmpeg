@@ -252,5 +252,5 @@ AVCodec ff_eatgq_decoder = {
     .close          = tgq_decode_end,
     .decode         = tgq_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Electronic Arts TGQ video"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Electronic Arts TGQ video"),
 };

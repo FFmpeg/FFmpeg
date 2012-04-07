@@ -381,6 +381,6 @@ AVCodec ff_dvvideo_decoder = {
     .close          = dvvideo_close,
     .decode         = dvvideo_decode_frame,
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_SLICE_THREADS,
-    .max_lowres = 3,
-    .long_name = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
+    .max_lowres     = 3,
+    .long_name      = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
 };

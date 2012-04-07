@@ -189,5 +189,5 @@ AVCodec ff_kgv1_decoder = {
     .close          = decode_end,
     .decode         = decode_frame,
     .flush          = decode_flush,
-    .long_name = NULL_IF_CONFIG_SMALL("Kega Game Video"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Kega Game Video"),
 };

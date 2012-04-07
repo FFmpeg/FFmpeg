@@ -256,6 +256,6 @@ AVCodec ff_rawvideo_decoder = {
     .init           = raw_init_decoder,
     .close          = raw_close_decoder,
     .decode         = raw_decode,
-    .long_name = NULL_IF_CONFIG_SMALL("raw video"),
-    .priv_class= &class,
+    .long_name      = NULL_IF_CONFIG_SMALL("raw video"),
+    .priv_class     = &class,
 };

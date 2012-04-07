@@ -474,5 +474,5 @@ AVCodec ff_smc_decoder = {
     .close          = smc_decode_end,
     .decode         = smc_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("QuickTime Graphics (SMC)"),
+    .long_name      = NULL_IF_CONFIG_SMALL("QuickTime Graphics (SMC)"),
 };

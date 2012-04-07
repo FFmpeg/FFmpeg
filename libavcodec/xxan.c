@@ -427,5 +427,5 @@ AVCodec ff_xan_wc4_decoder = {
     .close          = xan_decode_end,
     .decode         = xan_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Wing Commander IV / Xxan"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Wing Commander IV / Xxan"),
 };

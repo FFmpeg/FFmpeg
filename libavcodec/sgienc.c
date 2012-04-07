@@ -212,10 +212,12 @@ AVCodec ff_sgi_encoder = {
     .priv_data_size = sizeof(SgiContext),
     .init           = encode_init,
     .encode2        = encode_frame,
-    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGBA,
-                                          PIX_FMT_RGB48LE, PIX_FMT_RGB48BE,
-                                          PIX_FMT_RGBA64LE, PIX_FMT_RGBA64BE,
-                                          PIX_FMT_GRAY16LE, PIX_FMT_GRAY16BE,
-                                          PIX_FMT_GRAY8, PIX_FMT_NONE},
-    .long_name= NULL_IF_CONFIG_SMALL("SGI image"),
+    .pix_fmts       = (const enum PixelFormat[]){
+        PIX_FMT_RGB24, PIX_FMT_RGBA,
+        PIX_FMT_RGB48LE, PIX_FMT_RGB48BE,
+        PIX_FMT_RGBA64LE, PIX_FMT_RGBA64BE,
+        PIX_FMT_GRAY16LE, PIX_FMT_GRAY16BE,
+        PIX_FMT_GRAY8, PIX_FMT_NONE
+    },
+    .long_name      = NULL_IF_CONFIG_SMALL("SGI image"),
 };

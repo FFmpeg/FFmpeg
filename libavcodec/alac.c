@@ -693,5 +693,5 @@ AVCodec ff_alac_decoder = {
     .close          = alac_decode_close,
     .decode         = alac_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("ALAC (Apple Lossless Audio Codec)"),
+    .long_name      = NULL_IF_CONFIG_SMALL("ALAC (Apple Lossless Audio Codec)"),
 };

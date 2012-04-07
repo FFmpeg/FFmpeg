@@ -1026,5 +1026,5 @@ AVCodec ff_interplay_video_decoder = {
     .close          = ipvideo_decode_end,
     .decode         = ipvideo_decode_frame,
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_PARAM_CHANGE,
-    .long_name = NULL_IF_CONFIG_SMALL("Interplay MVE video"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Interplay MVE video"),
 };

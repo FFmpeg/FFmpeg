@@ -559,5 +559,5 @@ AVCodec ff_snow_decoder = {
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1 /*| CODEC_CAP_DRAW_HORIZ_BAND*/,
-    .long_name = NULL_IF_CONFIG_SMALL("Snow"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Snow"),
 };

@@ -429,5 +429,5 @@ AVCodec ff_dnxhd_decoder = {
     .close          = dnxhd_decode_close,
     .decode         = dnxhd_decode_frame,
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
-    .long_name = NULL_IF_CONFIG_SMALL("VC3/DNxHD"),
+    .long_name      = NULL_IF_CONFIG_SMALL("VC3/DNxHD"),
 };

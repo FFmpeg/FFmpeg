@@ -334,5 +334,5 @@ AVCodec ff_gif_decoder = {
     .close          = gif_decode_close,
     .decode         = gif_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("GIF (Graphics Interchange Format)"),
+    .long_name      = NULL_IF_CONFIG_SMALL("GIF (Graphics Interchange Format)"),
 };

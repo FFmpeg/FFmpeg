@@ -731,5 +731,5 @@ AVCodec ff_tiff_decoder = {
     .close          = tiff_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("TIFF image"),
+    .long_name      = NULL_IF_CONFIG_SMALL("TIFF image"),
 };

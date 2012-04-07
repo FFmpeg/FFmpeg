@@ -744,7 +744,7 @@ AVCodec ff_smacker_decoder = {
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Smacker video"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Smacker video"),
 };
 
 AVCodec ff_smackaud_decoder = {
@@ -755,5 +755,5 @@ AVCodec ff_smackaud_decoder = {
     .init           = smka_decode_init,
     .decode         = smka_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Smacker audio"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Smacker audio"),
 };

@@ -632,5 +632,5 @@ AVCodec ff_lagarith_decoder = {
     .close          = lag_decode_end,
     .decode         = lag_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Lagarith lossless"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Lagarith lossless"),
 };

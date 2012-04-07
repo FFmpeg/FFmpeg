@@ -977,5 +977,5 @@ AVCodec ff_truemotion2_decoder = {
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Duck TrueMotion 2.0"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Duck TrueMotion 2.0"),
 };

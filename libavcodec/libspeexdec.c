@@ -168,5 +168,5 @@ AVCodec ff_libspeex_decoder = {
     .decode         = libspeex_decode_frame,
     .flush          = libspeex_decode_flush,
     .capabilities   = CODEC_CAP_SUBFRAMES | CODEC_CAP_DELAY | CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("libspeex Speex"),
+    .long_name      = NULL_IF_CONFIG_SMALL("libspeex Speex"),
 };

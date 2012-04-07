@@ -297,7 +297,7 @@ AVCodec ff_mace3_decoder = {
     .init           = mace_decode_init,
     .decode         = mace_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("MACE (Macintosh Audio Compression/Expansion) 3:1"),
+    .long_name      = NULL_IF_CONFIG_SMALL("MACE (Macintosh Audio Compression/Expansion) 3:1"),
 };
 
 AVCodec ff_mace6_decoder = {
@@ -308,5 +308,5 @@ AVCodec ff_mace6_decoder = {
     .init           = mace_decode_init,
     .decode         = mace_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("MACE (Macintosh Audio Compression/Expansion) 6:1"),
+    .long_name      = NULL_IF_CONFIG_SMALL("MACE (Macintosh Audio Compression/Expansion) 6:1"),
 };

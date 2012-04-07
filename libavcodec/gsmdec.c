@@ -114,7 +114,7 @@ AVCodec ff_gsm_decoder = {
     .decode         = gsm_decode_frame,
     .flush          = gsm_flush,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("GSM"),
+    .long_name      = NULL_IF_CONFIG_SMALL("GSM"),
 };
 
 AVCodec ff_gsm_ms_decoder = {
@@ -126,5 +126,5 @@ AVCodec ff_gsm_ms_decoder = {
     .decode         = gsm_decode_frame,
     .flush          = gsm_flush,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("GSM Microsoft variant"),
+    .long_name      = NULL_IF_CONFIG_SMALL("GSM Microsoft variant"),
 };

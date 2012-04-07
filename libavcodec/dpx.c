@@ -241,5 +241,5 @@ AVCodec ff_dpx_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .long_name = NULL_IF_CONFIG_SMALL("DPX image"),
+    .long_name      = NULL_IF_CONFIG_SMALL("DPX image"),
 };

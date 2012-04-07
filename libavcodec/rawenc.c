@@ -73,5 +73,5 @@ AVCodec ff_rawvideo_encoder = {
     .priv_data_size = sizeof(AVFrame),
     .init           = raw_init_encoder,
     .encode2        = raw_encode,
-    .long_name = NULL_IF_CONFIG_SMALL("raw video"),
+    .long_name      = NULL_IF_CONFIG_SMALL("raw video"),
 };

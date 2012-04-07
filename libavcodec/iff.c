@@ -683,7 +683,7 @@ AVCodec ff_iff_ilbm_decoder = {
     .close          = decode_end,
     .decode         = decode_frame_ilbm,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("IFF ILBM"),
+    .long_name      = NULL_IF_CONFIG_SMALL("IFF ILBM"),
 };
 
 AVCodec ff_iff_byterun1_decoder = {
@@ -695,5 +695,5 @@ AVCodec ff_iff_byterun1_decoder = {
     .close          = decode_end,
     .decode         = decode_frame_byterun1,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("IFF ByteRun1"),
+    .long_name      = NULL_IF_CONFIG_SMALL("IFF ByteRun1"),
 };

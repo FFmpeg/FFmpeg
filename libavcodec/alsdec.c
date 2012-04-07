@@ -1759,7 +1759,7 @@ AVCodec ff_als_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .flush = flush,
-    .capabilities = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("MPEG-4 Audio Lossless Coding (ALS)"),
+    .flush          = flush,
+    .capabilities   = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1,
+    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-4 Audio Lossless Coding (ALS)"),
 };

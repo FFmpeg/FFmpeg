@@ -157,5 +157,5 @@ AVCodec ff_msrle_decoder = {
     .close          = msrle_decode_end,
     .decode         = msrle_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name= NULL_IF_CONFIG_SMALL("Microsoft RLE"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Microsoft RLE"),
 };

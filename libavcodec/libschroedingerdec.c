@@ -353,6 +353,6 @@ AVCodec ff_libschroedinger_decoder = {
     .close          = libschroedinger_decode_close,
     .decode         = libschroedinger_decode_frame,
     .capabilities   = CODEC_CAP_DELAY,
-    .flush = libschroedinger_flush,
-    .long_name = NULL_IF_CONFIG_SMALL("libschroedinger Dirac 2.2"),
+    .flush          = libschroedinger_flush,
+    .long_name      = NULL_IF_CONFIG_SMALL("libschroedinger Dirac 2.2"),
 };

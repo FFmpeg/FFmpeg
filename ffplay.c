@@ -1844,7 +1844,7 @@ static int video_thread(void *arg)
             frame->opaque = picref;
         }
 
-        if (av_cmp_q(tb, is->video_st->time_base)) {
+        if (ret >= 0 && av_cmp_q(tb, is->video_st->time_base)) {
             av_unused int64_t pts1 = pts_int;
             pts_int = av_rescale_q(pts_int, tb, is->video_st->time_base);
             av_dlog(NULL, "video_thread(): "

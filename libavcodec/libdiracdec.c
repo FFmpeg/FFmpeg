@@ -203,6 +203,6 @@ AVCodec ff_libdirac_decoder = {
     .close          = libdirac_decode_close,
     .decode         = libdirac_decode_frame,
     .capabilities   = CODEC_CAP_DELAY,
-    .flush = libdirac_flush,
-    .long_name = NULL_IF_CONFIG_SMALL("libdirac Dirac 2.2"),
+    .flush          = libdirac_flush,
+    .long_name      = NULL_IF_CONFIG_SMALL("libdirac Dirac 2.2"),
 };

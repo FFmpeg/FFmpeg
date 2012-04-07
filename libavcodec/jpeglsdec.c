@@ -376,5 +376,5 @@ AVCodec ff_jpegls_decoder = {
     .close          = ff_mjpeg_decode_end,
     .decode         = ff_mjpeg_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("JPEG-LS"),
+    .long_name      = NULL_IF_CONFIG_SMALL("JPEG-LS"),
 };
