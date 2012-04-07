@@ -371,6 +371,12 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
     }
 
     sps->log2_max_frame_num= get_ue_golomb(&s->gb) + 4;
+    if (sps->log2_max_frame_num < 4 || sps->log2_max_frame_num > 16) {
+        av_log(h->s.avctx, AV_LOG_ERROR, "illegal log2_max_frame_num %d\n",
+               sps->log2_max_frame_num);
+        goto fail;
+    }
+
     sps->poc_type= get_ue_golomb_31(&s->gb);
 
     if(sps->poc_type == 0){ //FIXME #define
