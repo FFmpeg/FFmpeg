@@ -3,6 +3,9 @@
  *
  * Copyright (c) 2012 Konstantin Shishkov
  *
+ * This encoder appears to be based on Anatoliy Wassermans considering
+ * similarities in the bugs.
+ *
  * This file is part of Libav.
  *
  * Libav is free software; you can redistribute it and/or
