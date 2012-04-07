@@ -28,6 +28,7 @@
  *  http://wiki.multimedia.cx/index.php?title=Bink_Container
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
@@ -141,7 +142,13 @@ static int read_header(AVFormatContext *s)
             flags = avio_rl16(pb);
             ast->codec->codec_id = flags & BINK_AUD_USEDCT ?
                                    AV_CODEC_ID_BINKAUDIO_DCT : AV_CODEC_ID_BINKAUDIO_RDFT;
-            ast->codec->channels = flags & BINK_AUD_STEREO ? 2 : 1;
+            if (flags & BINK_AUD_STEREO) {
+                ast->codec->channels       = 2;
+                ast->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+            } else {
+                ast->codec->channels       = 1;
+                ast->codec->channel_layout = AV_CH_LAYOUT_MONO;
+            }
             ast->codec->extradata = av_mallocz(4 + FF_INPUT_BUFFER_PADDING_SIZE);
             if (!ast->codec->extradata)
                 return AVERROR(ENOMEM);
