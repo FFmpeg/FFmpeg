@@ -64,7 +64,7 @@ and video frame. By default audio frames are converted to signed
 CRC.
 
 The output of the muxer consists of a line for each audio and video
-frame of the form: @var{stream_index}, @var{frame_dts},
+frame of the form: @var{stream_index}, @var{frame_dts}, @var{frame_pts}, @var{frame_duration},
 @var{frame_size}, 0x@var{CRC}, where @var{CRC} is a hexadecimal
 number 0-padded to 8 digits containing the CRC of the decoded frame.
 
