@@ -1909,9 +1909,6 @@ the "VIDEO FILTERS" section in the MPlayer manual.
 
 Some examples follow:
 @example
-# remove a logo by interpolating the surrounding pixels
-mp=delogo=200:200:80:20:1
-
 # adjust gamma, brightness, contrast
 mp=eq2=1.0:2:0.5
 
