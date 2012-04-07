@@ -32,6 +32,7 @@
  * up and sending out the chunks.
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
@@ -600,6 +601,8 @@ static int ipmovie_read_header(AVFormatContext *s)
         st->codec->codec_id = ipmovie->audio_type;
         st->codec->codec_tag = 0;  /* no tag */
         st->codec->channels = ipmovie->audio_channels;
+        st->codec->channel_layout = st->codec->channels == 1 ? AV_CH_LAYOUT_MONO :
+                                                               AV_CH_LAYOUT_STEREO;
         st->codec->sample_rate = ipmovie->audio_sample_rate;
         st->codec->bits_per_coded_sample = ipmovie->audio_bits;
         st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
