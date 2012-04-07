@@ -30,6 +30,7 @@
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
+#include "libavutil/avassert.h"
 #include "mathops.h"
 
 /*
@@ -222,6 +223,7 @@ static inline int get_sbits(GetBitContext *s, int n)
 {
     register int tmp;
     OPEN_READER(re, s);
+    av_assert2(n>0 && n<=25);
     UPDATE_CACHE(re, s);
     tmp = SHOW_SBITS(re, s, n);
     LAST_SKIP_BITS(re, s, n);
@@ -236,6 +238,7 @@ static inline unsigned int get_bits(GetBitContext *s, int n)
 {
     register int tmp;
     OPEN_READER(re, s);
+    av_assert2(n>0 && n<=25);
     UPDATE_CACHE(re, s);
     tmp = SHOW_UBITS(re, s, n);
     LAST_SKIP_BITS(re, s, n);
@@ -250,6 +253,7 @@ static inline unsigned int show_bits(GetBitContext *s, int n)
 {
     register int tmp;
     OPEN_READER(re, s);
+    av_assert2(n>0 && n<=25);
     UPDATE_CACHE(re, s);
     tmp = SHOW_UBITS(re, s, n);
     return tmp;
