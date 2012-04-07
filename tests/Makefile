@@ -5,7 +5,7 @@ VREF = fate-vsynth1-vref fate-vsynth2-vref
 REFS = $(AREF) $(VREF)
 
 $(VREF): ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm
-$(AREF): ffmpeg$(EXESUF) tests/data/asynth1.sw
+$(AREF): ffmpeg$(EXESUF) tests/data/asynth1.sw tests/data/asynth-16000-1.sw
 $(AREF): CMP=
 
 ffservertest: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/data/asynth1.sw
