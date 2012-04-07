@@ -372,7 +372,7 @@ static int xiph_parse_fmtp_pair(AVStream* stream,
 }
 
 static int xiph_parse_sdp_line(AVFormatContext *s, int st_index,
-                                 PayloadContext *data, const char *line)
+                               PayloadContext *data, const char *line)
 {
     const char *p;
 
