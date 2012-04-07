@@ -53,6 +53,7 @@ static int do_show_frames  = 0;
 static AVDictionary *fmt_entries_to_show = NULL;
 static int do_show_packets = 0;
 static int do_show_streams = 0;
+static int do_show_data    = 0;
 static int do_show_program_version  = 0;
 static int do_show_library_versions = 0;
 
@@ -359,6 +360,34 @@ static void writer_print_ts(WriterContext *wctx, const char *key, int64_t ts, in
 static inline void writer_show_tags(WriterContext *wctx, AVDictionary *dict)
 {
     wctx->writer->show_tags(wctx, dict);
+}
+
+static void writer_print_data(WriterContext *wctx, const char *name,
+                              uint8_t *data, int size)
+{
+    AVBPrint bp;
+    int offset = 0, l, i;
+
+    av_bprint_init(&bp, 0, AV_BPRINT_SIZE_UNLIMITED);
+    av_bprintf(&bp, "\n");
+    while (size) {
+        av_bprintf(&bp, "%08x: ", offset);
+        l = FFMIN(size, 16);
+        for (i = 0; i < l; i++) {
+            av_bprintf(&bp, "%02x", data[i]);
+            if (i & 1)
+                av_bprintf(&bp, " ");
+        }
+        av_bprint_chars(&bp, ' ', 41 - 2 * i - i / 2);
+        for (i = 0; i < l; i++)
+            av_bprint_chars(&bp, data[i] - 32U < 95 ? data[i] : '.', 1);
+        av_bprintf(&bp, "\n");
+        offset += l;
+        data   += l;
+        size   -= l;
+    }
+    writer_print_string(wctx, name, bp.str, 0);
+    av_bprint_finalize(&bp, NULL);
 }
 
 #define MAX_REGISTERED_WRITERS_NB 64
@@ -1556,6 +1585,8 @@ static void show_packet(WriterContext *w, AVFormatContext *fmt_ctx, AVPacket *pk
     if (pkt->pos != -1) print_fmt    ("pos", "%"PRId64, pkt->pos);
     else                print_str_opt("pos", "N/A");
     print_fmt("flags", "%c",      pkt->flags & AV_PKT_FLAG_KEY ? 'K' : '_');
+    if (do_show_data)
+        writer_print_data(w, "data", pkt->data, pkt->size);
     print_section_footer("packet");
 
     av_bprint_finalize(&pbuf, NULL);
@@ -1796,6 +1827,9 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
     if (nb_streams_packets[stream_idx]) print_fmt    ("nb_read_packets", "%"PRIu64, nb_streams_packets[stream_idx]);
     else                                print_str_opt("nb_read_packets", "N/A");
     show_tags(stream->metadata);
+    if (do_show_data)
+        writer_print_data(w, "extradata", dec_ctx->extradata,
+                                          dec_ctx->extradata_size);
 
     print_section_footer("stream");
     av_bprint_finalize(&pbuf, NULL);
@@ -2079,6 +2113,7 @@ static const OptionDef options[] = {
     { "print_format", OPT_STRING | HAS_ARG, {(void*)&print_format},
       "set the output printing format (available formats are: default, compact, csv, flat, ini, json, xml)", "format" },
     { "of", OPT_STRING | HAS_ARG, {(void*)&print_format}, "alias for -print_format", "format" },
+    { "show_data",    OPT_BOOL, {(void*)&do_show_data}, "show packets data" },
     { "show_error",   OPT_BOOL, {(void*)&do_show_error} ,  "show probing error" },
     { "show_format",  OPT_BOOL, {(void*)&do_show_format} , "show format/container info" },
     { "show_frames",  OPT_BOOL, {(void*)&do_show_frames} , "show frames info" },

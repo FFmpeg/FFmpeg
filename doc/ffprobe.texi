@@ -94,6 +94,13 @@ For example for printing the output in JSON format, specify:
 For more details on the available output printing formats, see the
 Writers section below.
 
+@item -show_data
+Show payload data, as an hexadecimal and ASCII dump. Coupled with
+@option{-show_packets}, it will dump the packets' data. Coupled with
+@option{-show_streams}, it will dump the codec extradata.
+
+The dump is printed as the "data" field. It may contain newlines.
+
 @item -show_error
 Show information about the error found when trying to probe the input.
 

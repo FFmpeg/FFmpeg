@@ -8,6 +8,7 @@ version next:
 - channelsplit audio filter
 - setnsamples audio filter
 - atempo filter
+- ffprobe -show_data option
 
 
 version 0.11:
