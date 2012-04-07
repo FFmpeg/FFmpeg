@@ -56,31 +56,37 @@ See also the @ref{framecrc} muxer.
 @anchor{framecrc}
 @section framecrc
 
-Per-frame CRC (Cyclic Redundancy Check) testing format.
+Per-packet CRC (Cyclic Redundancy Check) testing format.
 
-This muxer computes and prints the Adler-32 CRC for each decoded audio
-and video frame. By default audio frames are converted to signed
+This muxer computes and prints the Adler-32 CRC for each audio
+and video packet. By default audio frames are converted to signed
 16-bit raw audio and video frames to raw video before computing the
 CRC.
 
 The output of the muxer consists of a line for each audio and video
-frame of the form: @var{stream_index}, @var{frame_dts}, @var{frame_pts}, @var{frame_duration},
-@var{frame_size}, 0x@var{CRC}, where @var{CRC} is a hexadecimal
-number 0-padded to 8 digits containing the CRC of the decoded frame.
+packet of the form:
+@example
+@var{stream_index}, @var{packet_dts}, @var{packet_pts}, @var{packet_duration}, @var{packet_size}, 0x@var{CRC}
+@end example
 
-For example to compute the CRC of each decoded frame in the input, and
-store it in the file @file{out.crc}:
+@var{CRC} is a hexadecimal number 0-padded to 8 digits containing the
+CRC of the packet.
+
+For example to compute the CRC of the audio and video frames in
+@file{INPUT}, converted to raw audio and video packets, and store it
+in the file @file{out.crc}:
 @example
 ffmpeg -i INPUT -f framecrc out.crc
 @end example
 
-You can print the CRC of each decoded frame to stdout with the command:
+To print the information to stdout, use the command:
 @example
 ffmpeg -i INPUT -f framecrc -
 @end example
 
-You can select the output format of each frame with @command{ffmpeg} by
-specifying the audio and video codec and format. For example, to
+With @command{ffmpeg}, you can select the output format to which the
+audio and video frames are encoded before computing the CRC for each
+packet by specifying the audio and video codec. For example, to
 compute the CRC of each decoded input audio frame converted to PCM
 unsigned 8-bit and of each decoded input video frame converted to
 MPEG-2 video, use the command:
