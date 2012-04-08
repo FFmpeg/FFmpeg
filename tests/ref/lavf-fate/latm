@@ -1,3 +1,3 @@
-9c8d1afdb2d336976102f175ba577471 *./tests/data/lavf-fate/lavf.latm
-71926 ./tests/data/lavf-fate/lavf.latm
-./tests/data/lavf-fate/lavf.latm CRC=0xd846c4b3
+eb13788e71c9b5bc7d62ceb748312bbb *./tests/data/lavf-fate/lavf.latm
+67876 ./tests/data/lavf-fate/lavf.latm
+./tests/data/lavf-fate/lavf.latm CRC=0xcf94c59d
