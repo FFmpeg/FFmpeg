@@ -1,6 +1,53 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 0.7.5:
+
+Security updates:
+
+- kgv1dec: Increase offsets array size so it is large enough. (CVE-2011-3945)
+- mjpegbdec: Fix overflow in SOS. (CVE-2011-3947)
+- shorten: Use separate pointers for the allocated memory for decoded samples. (CVE-2012-0858)
+- atrac3: Fix crash in tonal component decoding. (CVE-2012-0853)
+- ws_snd1: Fix wrong samples count and crash. (CVE-2012-0848)
+- h263dec: Disallow width/height changing with frame threads. (CVE-2011-3937)
+- dv: Several bugfixes (CVE-2011-3929 and CVE-2011-3936)
+- nsvdec: Several bugfixes (CVE-2011-3940)
+
+Further bugfixes in the following codecs:
+
+  4xm, AAC, AC3, ADPCM.C, ALS, ANM, AVS, Atrac3, Bink, Bitmap Brothers
+  JV, COOK, CamStudio, Cinepak, DCA, DSI CIN, EA CMV, FLAC, Fraps FPS1,
+  H263, H264, Huffyuv, KMVC, Kega Game Video, LCL, MJPEG, MPEG1/2
+  encoder, Motion Pixels, Musepack SV7, Musepack SV8, Nellymoser, QCELP,
+  QDM2, QT RPZA, QT SVQ3, Qt RLE, QuickDraw, RAW, RV10, RV34, SIPR,
+  Shorten, Smacker, SubRib, TIFF, Tiertex Limited SEQ, Truemotion2,
+  V.Flash PTX, VC1, VMware Screen Codec, VP5, VP6, VP8, Vorbis, WMA, WMA
+  PRO, WMA Voice.c, Wavpack, Westwood SNDx, Wing Commander/Xan
+
+Further bugfixes in the following formats
+
+  4xm, ASF, AVS, DV, FLV, Matroska, Musepack SV8, MPEG, MXF, NSV, RM,
+  Segafilm, Smacker, Sierra SOL, SWF
+
+Further bugfixes in the following filters included in libavfilter:
+
+  avfiltergraph: use meaningful error codes
+  lavfi: fix realloc size computation in avfilter_add_format()
+  vf_unsharp: fix out-of-buffer read
+  vf_scale: apply the same transform to the aspect during init that is applied per frame
+  vf_pad: fix "vsub" variable value computation
+  vf_yadif: correct documentation on the parity parameter
+  vf_yadif: copy buffer properties like aspect for second frame as well
+
+Libswscale updates:
+
+  fix another integer overflow.
+  take first/lastline over/underflows into account for MMX.
+  fix overflows in filterPos[] calculation for large sizes.
+  enforce a minimum filtersize.
+
+
 version 0.7.4:
 
 - vorbis: An additional defense in the Vorbis codec. (CVE-2011-3895)
