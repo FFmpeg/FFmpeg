@@ -51,14 +51,11 @@ static const AVClass latm_muxer_class = {
 
 static int latm_decode_extradata(LATMContext *ctx, uint8_t *buf, int size)
 {
-    GetBitContext gb;
     MPEG4AudioConfig m4ac;
 
-    init_get_bits(&gb, buf, size * 8);
     ctx->off = avpriv_mpeg4audio_get_config(&m4ac, buf, size * 8, 1);
     if (ctx->off < 0)
         return ctx->off;
-    skip_bits_long(&gb, ctx->off);
 
     /* FIXME: are any formats not allowed in LATM? */
 
