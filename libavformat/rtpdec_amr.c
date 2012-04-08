@@ -169,6 +169,9 @@ static int amr_parse_sdp_line(AVFormatContext *s, int st_index,
     const char *p;
     int ret;
 
+    if (st_index < 0)
+        return 0;
+
     /* Parse an fmtp line this one:
      * a=fmtp:97 octet-align=1; interleaving=0
      * That is, a normal fmtp: line followed by semicolon & space
