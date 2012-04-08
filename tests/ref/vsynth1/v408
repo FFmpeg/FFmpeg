@@ -1,0 +1,4 @@
+98057c4d5ce12a1b1b3ca15839f47c95 *./tests/data/vsynth1/v408.avi
+20282060 ./tests/data/vsynth1/v408.avi
+c5ccac874dbf808e9088bc3107860042 *./tests/data/v408.vsynth1.out.yuv
+stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  7603200/  7603200
