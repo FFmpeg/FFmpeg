@@ -762,6 +762,7 @@ enum AVPacketSideDataType {
 
     /**
      * An AV_PKT_DATA_PARAM_CHANGE side data packet is laid out as follows:
+     * @code
      * u32le param_flags
      * if (param_flags & AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_COUNT)
      *     s32le channel_count
@@ -772,6 +773,7 @@ enum AVPacketSideDataType {
      * if (param_flags & AV_SIDE_DATA_PARAM_CHANGE_DIMENSIONS)
      *     s32le width
      *     s32le height
+     * @endcode
      */
     AV_PKT_DATA_PARAM_CHANGE,
 
@@ -783,6 +785,7 @@ enum AVPacketSideDataType {
      * as long as the distance between macroblocks in the info is smaller
      * than the target payload size.
      * Each MB info structure is 12 bytes, and is laid out as follows:
+     * @code
      * u32le bit offset from the start of the packet
      * u8    current quantizer at the start of the macroblock
      * u8    GOB number
@@ -791,6 +794,7 @@ enum AVPacketSideDataType {
      * u8    vertical MV predictor
      * u8    horizontal MV predictor for block number 3
      * u8    vertical MV predictor for block number 3
+     * @endcode
      */
     AV_PKT_DATA_H263_MB_INFO,
 };
