@@ -18,7 +18,8 @@ FATE_WMV8_DRM += fate-wmv8-drm-nodec
 fate-wmv8-drm-nodec: CMD = framecrc -cryptokey 137381538c84c068111902a59c5cf6c340247c39 -i $(SAMPLES)/wmv8/wmv_drm.wmv -acodec copy -vcodec copy
 
 #FATE_MICROSOFT += fate-wmv8-x8intra
-#fate-wmv8-x8intra: CMD = framecrc -flags +bitexact -idct 19 -i $(SAMPLES)/wmv8/wmv8_x8intra.wmv -an
+FATE_TESTS-no += fate-wmv8-x8intra
+fate-wmv8-x8intra: CMD = framecrc -flags +bitexact -idct 19 -i $(SAMPLES)/wmv8/wmv8_x8intra.wmv -an
 
 FATE_MICROSOFT += $(FATE_WMV8_DRM)
 fate-wmv8_drm: $(FATE_WMV8_DRM)
