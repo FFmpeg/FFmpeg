@@ -72,6 +72,7 @@ typedef struct {
     int hsub, vsub;             ///< chroma subsampling
     int slice_y;                ///< top of current output slice
     int input_is_pal;           ///< set to 1 if the input format is paletted
+    int output_is_pal;          ///< set to 1 if the output format is paletted
     int interlaced;
 
     char w_expr[256];           ///< width  expression string
@@ -211,6 +212,8 @@ static int config_props(AVFilterLink *outlink)
     scale->input_is_pal = av_pix_fmt_descriptors[inlink->format].flags & PIX_FMT_PAL ||
                           av_pix_fmt_descriptors[inlink->format].flags & PIX_FMT_PSEUDOPAL;
     if (outfmt == PIX_FMT_PAL8) outfmt = PIX_FMT_BGR8;
+    scale->output_is_pal = av_pix_fmt_descriptors[outfmt].flags & PIX_FMT_PAL ||
+                           av_pix_fmt_descriptors[outfmt].flags & PIX_FMT_PSEUDOPAL;
 
     if (scale->sws)
         sws_freeContext(scale->sws);
@@ -303,10 +306,10 @@ static int scale_slice(AVFilterLink *link, struct SwsContext *sws, int y, int h,
          in[i] = cur_pic->data[i] + ((y>>vsub)+field) * cur_pic->linesize[i];
         out[i] = out_buf->data[i] +            field  * out_buf->linesize[i];
     }
-    if(scale->input_is_pal){
+    if(scale->input_is_pal)
          in[1] = cur_pic->data[1];
+    if(scale->output_is_pal)
         out[1] = out_buf->data[1];
-    }
 
     return sws_scale(sws, in, in_stride, y/mul, h,
                          out,out_stride);
