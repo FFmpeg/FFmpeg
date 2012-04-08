@@ -1556,7 +1556,7 @@ static int read_extra_header(FFV1Context *f){
     }
     f->colorspace= get_symbol(c, state, 0); //YUV cs type
     f->avctx->bits_per_raw_sample= get_symbol(c, state, 0);
-    get_rac(c, state); //no chroma = false
+    f->chroma_planes= get_rac(c, state);
     f->chroma_h_shift= get_symbol(c, state, 0);
     f->chroma_v_shift= get_symbol(c, state, 0);
     f->transparency= get_rac(c, state);
