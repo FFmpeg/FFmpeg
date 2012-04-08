@@ -435,6 +435,7 @@ enum CodecID {
 #define FF_INPUT_BUFFER_PADDING_SIZE 8
 
 /**
+ * @ingroup lavc_encoding
  * minimum encoding buffer size
  * Used to avoid some checks during header writing.
  */
@@ -442,6 +443,7 @@ enum CodecID {
 
 
 /**
+ * @ingroup lavc_encoding
  * motion estimation type.
  */
 enum Motion_Est_ID {
@@ -537,6 +539,9 @@ enum AVAudioServiceType {
     AV_AUDIO_SERVICE_TYPE_NB                   , ///< Not part of ABI
 };
 
+/**
+ * @ingroup lavc_encoding
+ */
 typedef struct RcOverride{
     int start_frame;
     int end_frame;
@@ -3752,6 +3757,167 @@ void av_parser_close(AVCodecParserContext *s);
  * @}
  */
 
+/**
+ * @addtogroup lavc_encoding
+ * @{
+ */
+
+/**
+ * Find a registered encoder with a matching codec ID.
+ *
+ * @param id CodecID of the requested encoder
+ * @return An encoder if one was found, NULL otherwise.
+ */
+AVCodec *avcodec_find_encoder(enum CodecID id);
+
+/**
+ * Find a registered encoder with the specified name.
+ *
+ * @param name name of the requested encoder
+ * @return An encoder if one was found, NULL otherwise.
+ */
+AVCodec *avcodec_find_encoder_by_name(const char *name);
+
+#if FF_API_OLD_ENCODE_AUDIO
+/**
+ * Encode an audio frame from samples into buf.
+ *
+ * @deprecated Use avcodec_encode_audio2 instead.
+ *
+ * @note The output buffer should be at least FF_MIN_BUFFER_SIZE bytes large.
+ * However, for codecs with avctx->frame_size equal to 0 (e.g. PCM) the user
+ * will know how much space is needed because it depends on the value passed
+ * in buf_size as described below. In that case a lower value can be used.
+ *
+ * @param avctx the codec context
+ * @param[out] buf the output buffer
+ * @param[in] buf_size the output buffer size
+ * @param[in] samples the input buffer containing the samples
+ * The number of samples read from this buffer is frame_size*channels,
+ * both of which are defined in avctx.
+ * For codecs which have avctx->frame_size equal to 0 (e.g. PCM) the number of
+ * samples read from samples is equal to:
+ * buf_size * 8 / (avctx->channels * av_get_bits_per_sample(avctx->codec_id))
+ * This also implies that av_get_bits_per_sample() must not return 0 for these
+ * codecs.
+ * @return On error a negative value is returned, on success zero or the number
+ * of bytes used to encode the data read from the input buffer.
+ */
+int attribute_deprecated avcodec_encode_audio(AVCodecContext *avctx,
+                                              uint8_t *buf, int buf_size,
+                                              const short *samples);
+#endif
+
+/**
+ * Encode a frame of audio.
+ *
+ * Takes input samples from frame and writes the next output packet, if
+ * available, to avpkt. The output packet does not necessarily contain data for
+ * the most recent frame, as encoders can delay, split, and combine input frames
+ * internally as needed.
+ *
+ * @param avctx     codec context
+ * @param avpkt     output AVPacket.
+ *                  The user can supply an output buffer by setting
+ *                  avpkt->data and avpkt->size prior to calling the
+ *                  function, but if the size of the user-provided data is not
+ *                  large enough, encoding will fail. All other AVPacket fields
+ *                  will be reset by the encoder using av_init_packet(). If
+ *                  avpkt->data is NULL, the encoder will allocate it.
+ *                  The encoder will set avpkt->size to the size of the
+ *                  output packet.
+ *
+ *                  If this function fails or produces no output, avpkt will be
+ *                  freed using av_free_packet() (i.e. avpkt->destruct will be
+ *                  called to free the user supplied buffer).
+ * @param[in] frame AVFrame containing the raw audio data to be encoded.
+ *                  May be NULL when flushing an encoder that has the
+ *                  CODEC_CAP_DELAY capability set.
+ *                  There are 2 codec capabilities that affect the allowed
+ *                  values of frame->nb_samples.
+ *                  If CODEC_CAP_SMALL_LAST_FRAME is set, then only the final
+ *                  frame may be smaller than avctx->frame_size, and all other
+ *                  frames must be equal to avctx->frame_size.
+ *                  If CODEC_CAP_VARIABLE_FRAME_SIZE is set, then each frame
+ *                  can have any number of samples.
+ *                  If neither is set, frame->nb_samples must be equal to
+ *                  avctx->frame_size for all frames.
+ * @param[out] got_packet_ptr This field is set to 1 by libavcodec if the
+ *                            output packet is non-empty, and to 0 if it is
+ *                            empty. If the function returns an error, the
+ *                            packet can be assumed to be invalid, and the
+ *                            value of got_packet_ptr is undefined and should
+ *                            not be used.
+ * @return          0 on success, negative error code on failure
+ */
+int avcodec_encode_audio2(AVCodecContext *avctx, AVPacket *avpkt,
+                          const AVFrame *frame, int *got_packet_ptr);
+
+#if FF_API_OLD_ENCODE_VIDEO
+/**
+ * @deprecated use avcodec_encode_video2() instead.
+ *
+ * Encode a video frame from pict into buf.
+ * The input picture should be
+ * stored using a specific format, namely avctx.pix_fmt.
+ *
+ * @param avctx the codec context
+ * @param[out] buf the output buffer for the bitstream of encoded frame
+ * @param[in] buf_size the size of the output buffer in bytes
+ * @param[in] pict the input picture to encode
+ * @return On error a negative value is returned, on success zero or the number
+ * of bytes used from the output buffer.
+ */
+attribute_deprecated
+int avcodec_encode_video(AVCodecContext *avctx, uint8_t *buf, int buf_size,
+                         const AVFrame *pict);
+#endif
+
+/**
+ * Encode a frame of video.
+ *
+ * Takes input raw video data from frame and writes the next output packet, if
+ * available, to avpkt. The output packet does not necessarily contain data for
+ * the most recent frame, as encoders can delay and reorder input frames
+ * internally as needed.
+ *
+ * @param avctx     codec context
+ * @param avpkt     output AVPacket.
+ *                  The user can supply an output buffer by setting
+ *                  avpkt->data and avpkt->size prior to calling the
+ *                  function, but if the size of the user-provided data is not
+ *                  large enough, encoding will fail. All other AVPacket fields
+ *                  will be reset by the encoder using av_init_packet(). If
+ *                  avpkt->data is NULL, the encoder will allocate it.
+ *                  The encoder will set avpkt->size to the size of the
+ *                  output packet. The returned data (if any) belongs to the
+ *                  caller, he is responsible for freeing it.
+ *
+ *                  If this function fails or produces no output, avpkt will be
+ *                  freed using av_free_packet() (i.e. avpkt->destruct will be
+ *                  called to free the user supplied buffer).
+ * @param[in] frame AVFrame containing the raw video data to be encoded.
+ *                  May be NULL when flushing an encoder that has the
+ *                  CODEC_CAP_DELAY capability set.
+ * @param[out] got_packet_ptr This field is set to 1 by libavcodec if the
+ *                            output packet is non-empty, and to 0 if it is
+ *                            empty. If the function returns an error, the
+ *                            packet can be assumed to be invalid, and the
+ *                            value of got_packet_ptr is undefined and should
+ *                            not be used.
+ * @return          0 on success, negative error code on failure
+ */
+int avcodec_encode_video2(AVCodecContext *avctx, AVPacket *avpkt,
+                          const AVFrame *frame, int *got_packet_ptr);
+
+int avcodec_encode_subtitle(AVCodecContext *avctx, uint8_t *buf, int buf_size,
+                            const AVSubtitle *sub);
+
+
+/**
+ * @}
+ */
+
 /* resample.c */
 
 struct ReSampleContext;
@@ -3986,22 +4152,6 @@ int avpicture_deinterlace(AVPicture *dst, const AVPicture *src,
 
 /* external high level API */
 
-/**
- * Find a registered encoder with a matching codec ID.
- *
- * @param id CodecID of the requested encoder
- * @return An encoder if one was found, NULL otherwise.
- */
-AVCodec *avcodec_find_encoder(enum CodecID id);
-
-/**
- * Find a registered encoder with the specified name.
- *
- * @param name name of the requested encoder
- * @return An encoder if one was found, NULL otherwise.
- */
-AVCodec *avcodec_find_encoder_by_name(const char *name);
-
 void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode);
 
 /**
@@ -4018,81 +4168,6 @@ enum PixelFormat avcodec_default_get_format(struct AVCodecContext *s, const enum
 int avcodec_default_execute(AVCodecContext *c, int (*func)(AVCodecContext *c2, void *arg2),void *arg, int *ret, int count, int size);
 int avcodec_default_execute2(AVCodecContext *c, int (*func)(AVCodecContext *c2, void *arg2, int, int),void *arg, int *ret, int count);
 //FIXME func typedef
-
-#if FF_API_OLD_ENCODE_AUDIO
-/**
- * Encode an audio frame from samples into buf.
- *
- * @deprecated Use avcodec_encode_audio2 instead.
- *
- * @note The output buffer should be at least FF_MIN_BUFFER_SIZE bytes large.
- * However, for codecs with avctx->frame_size equal to 0 (e.g. PCM) the user
- * will know how much space is needed because it depends on the value passed
- * in buf_size as described below. In that case a lower value can be used.
- *
- * @param avctx the codec context
- * @param[out] buf the output buffer
- * @param[in] buf_size the output buffer size
- * @param[in] samples the input buffer containing the samples
- * The number of samples read from this buffer is frame_size*channels,
- * both of which are defined in avctx.
- * For codecs which have avctx->frame_size equal to 0 (e.g. PCM) the number of
- * samples read from samples is equal to:
- * buf_size * 8 / (avctx->channels * av_get_bits_per_sample(avctx->codec_id))
- * This also implies that av_get_bits_per_sample() must not return 0 for these
- * codecs.
- * @return On error a negative value is returned, on success zero or the number
- * of bytes used to encode the data read from the input buffer.
- */
-int attribute_deprecated avcodec_encode_audio(AVCodecContext *avctx,
-                                              uint8_t *buf, int buf_size,
-                                              const short *samples);
-#endif
-
-/**
- * Encode a frame of audio.
- *
- * Takes input samples from frame and writes the next output packet, if
- * available, to avpkt. The output packet does not necessarily contain data for
- * the most recent frame, as encoders can delay, split, and combine input frames
- * internally as needed.
- *
- * @param avctx     codec context
- * @param avpkt     output AVPacket.
- *                  The user can supply an output buffer by setting
- *                  avpkt->data and avpkt->size prior to calling the
- *                  function, but if the size of the user-provided data is not
- *                  large enough, encoding will fail. All other AVPacket fields
- *                  will be reset by the encoder using av_init_packet(). If
- *                  avpkt->data is NULL, the encoder will allocate it.
- *                  The encoder will set avpkt->size to the size of the
- *                  output packet.
- *
- *                  If this function fails or produces no output, avpkt will be
- *                  freed using av_free_packet() (i.e. avpkt->destruct will be
- *                  called to free the user supplied buffer).
- * @param[in] frame AVFrame containing the raw audio data to be encoded.
- *                  May be NULL when flushing an encoder that has the
- *                  CODEC_CAP_DELAY capability set.
- *                  There are 2 codec capabilities that affect the allowed
- *                  values of frame->nb_samples.
- *                  If CODEC_CAP_SMALL_LAST_FRAME is set, then only the final
- *                  frame may be smaller than avctx->frame_size, and all other
- *                  frames must be equal to avctx->frame_size.
- *                  If CODEC_CAP_VARIABLE_FRAME_SIZE is set, then each frame
- *                  can have any number of samples.
- *                  If neither is set, frame->nb_samples must be equal to
- *                  avctx->frame_size for all frames.
- * @param[out] got_packet_ptr This field is set to 1 by libavcodec if the
- *                            output packet is non-empty, and to 0 if it is
- *                            empty. If the function returns an error, the
- *                            packet can be assumed to be invalid, and the
- *                            value of got_packet_ptr is undefined and should
- *                            not be used.
- * @return          0 on success, negative error code on failure
- */
-int avcodec_encode_audio2(AVCodecContext *avctx, AVPacket *avpkt,
-                          const AVFrame *frame, int *got_packet_ptr);
 
 /**
  * Fill audio frame data and linesize.
@@ -4113,66 +4188,6 @@ int avcodec_encode_audio2(AVCodecContext *avctx, AVPacket *avpkt,
 int avcodec_fill_audio_frame(AVFrame *frame, int nb_channels,
                              enum AVSampleFormat sample_fmt, const uint8_t *buf,
                              int buf_size, int align);
-
-#if FF_API_OLD_ENCODE_VIDEO
-/**
- * @deprecated use avcodec_encode_video2() instead.
- *
- * Encode a video frame from pict into buf.
- * The input picture should be
- * stored using a specific format, namely avctx.pix_fmt.
- *
- * @param avctx the codec context
- * @param[out] buf the output buffer for the bitstream of encoded frame
- * @param[in] buf_size the size of the output buffer in bytes
- * @param[in] pict the input picture to encode
- * @return On error a negative value is returned, on success zero or the number
- * of bytes used from the output buffer.
- */
-attribute_deprecated
-int avcodec_encode_video(AVCodecContext *avctx, uint8_t *buf, int buf_size,
-                         const AVFrame *pict);
-#endif
-
-/**
- * Encode a frame of video.
- *
- * Takes input raw video data from frame and writes the next output packet, if
- * available, to avpkt. The output packet does not necessarily contain data for
- * the most recent frame, as encoders can delay and reorder input frames
- * internally as needed.
- *
- * @param avctx     codec context
- * @param avpkt     output AVPacket.
- *                  The user can supply an output buffer by setting
- *                  avpkt->data and avpkt->size prior to calling the
- *                  function, but if the size of the user-provided data is not
- *                  large enough, encoding will fail. All other AVPacket fields
- *                  will be reset by the encoder using av_init_packet(). If
- *                  avpkt->data is NULL, the encoder will allocate it.
- *                  The encoder will set avpkt->size to the size of the
- *                  output packet. The returned data (if any) belongs to the
- *                  caller, he is responsible for freeing it.
- *
- *                  If this function fails or produces no output, avpkt will be
- *                  freed using av_free_packet() (i.e. avpkt->destruct will be
- *                  called to free the user supplied buffer).
- * @param[in] frame AVFrame containing the raw video data to be encoded.
- *                  May be NULL when flushing an encoder that has the
- *                  CODEC_CAP_DELAY capability set.
- * @param[out] got_packet_ptr This field is set to 1 by libavcodec if the
- *                            output packet is non-empty, and to 0 if it is
- *                            empty. If the function returns an error, the
- *                            packet can be assumed to be invalid, and the
- *                            value of got_packet_ptr is undefined and should
- *                            not be used.
- * @return          0 on success, negative error code on failure
- */
-int avcodec_encode_video2(AVCodecContext *avctx, AVPacket *avpkt,
-                          const AVFrame *frame, int *got_packet_ptr);
-
-int avcodec_encode_subtitle(AVCodecContext *avctx, uint8_t *buf, int buf_size,
-                            const AVSubtitle *sub);
 
 /**
  * Flush buffers, should be called when seeking or when switching to a different stream.
