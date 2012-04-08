@@ -23,6 +23,12 @@
 #ifndef AVCODEC_VDA_H
 #define AVCODEC_VDA_H
 
+/**
+ * @file
+ * @ingroup lavc_codec_hwaccel_vda
+ * Public libavcodec VDA header.
+ */
+
 #include <pthread.h>
 #include <stdint.h>
 
@@ -33,6 +39,13 @@
 #define Picture QuickdrawPicture
 #include <VideoDecodeAcceleration/VDADecoder.h>
 #undef Picture
+
+/**
+ * @defgroup lavc_codec_hwaccel_vda VDA
+ * @ingroup lavc_codec_hwaccel
+ *
+ * @{
+ */
 
 /**
  *  This structure is used to store a decoded frame information and data.
@@ -140,5 +153,9 @@ vda_frame *ff_vda_queue_pop(struct vda_context *vda_ctx);
 
 /** Release the given frame. */
 void ff_vda_release_vda_frame(vda_frame *frame);
+
+/**
+ * @}
+ */
 
 #endif /* AVCODEC_VDA_H */

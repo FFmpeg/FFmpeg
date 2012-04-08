@@ -21,9 +21,22 @@
 #ifndef AVCODEC_XVMC_H
 #define AVCODEC_XVMC_H
 
+/**
+ * @file
+ * @ingroup lavc_codec_hwaccel_xvmc
+ * Public libavcodec XvMC header.
+ */
+
 #include <X11/extensions/XvMC.h>
 
 #include "avcodec.h"
+
+/**
+ * @defgroup lavc_codec_hwaccel_xvmc XvMC
+ * @ingroup lavc_codec_hwaccel
+ *
+ * @{
+ */
 
 #define AV_XVMC_ID                    0x1DC711C0  /**< special value to ensure that regular pixel routines haven't corrupted the struct
                                                        the number is 1337 speak for the letters IDCT MCo (motion compensation) */
@@ -147,5 +160,9 @@ struct xvmc_pix_fmt {
     */
     int             next_free_data_block_num;
 };
+
+/**
+ * @}
+ */
 
 #endif /* AVCODEC_XVMC_H */
