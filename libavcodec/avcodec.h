@@ -3006,6 +3006,13 @@ typedef struct AVHWAccel {
 } AVHWAccel;
 
 /**
+ * @defgroup lavc_picture AVPicture
+ *
+ * Functions for working with AVPicture
+ * @{
+ */
+
+/**
  * four components are given, that's all.
  * the last component is alpha
  */
@@ -3013,6 +3020,10 @@ typedef struct AVPicture {
     uint8_t *data[AV_NUM_DATA_POINTERS];
     int linesize[AV_NUM_DATA_POINTERS];     ///< number of bytes per line
 } AVPicture;
+
+/**
+ * @}
+ */
 
 #define AVPALETTE_SIZE 1024
 #define AVPALETTE_COUNT 256
@@ -4006,6 +4017,11 @@ void av_resample_close(struct AVResampleContext *c);
  */
 
 /**
+ * @addtogroup lavc_picture
+ * @{
+ */
+
+/**
  * Allocate memory for a picture.  Call avpicture_free() to free it.
  *
  * @see avpicture_fill()
@@ -4081,6 +4097,34 @@ int avpicture_layout(const AVPicture* src, enum PixelFormat pix_fmt, int width, 
  * @return Image data size in bytes or -1 on error (e.g. too large dimensions).
  */
 int avpicture_get_size(enum PixelFormat pix_fmt, int width, int height);
+
+/**
+ *  deinterlace - if not supported return -1
+ */
+int avpicture_deinterlace(AVPicture *dst, const AVPicture *src,
+                          enum PixelFormat pix_fmt, int width, int height);
+/**
+ * Copy image src to dst. Wraps av_picture_data_copy() above.
+ */
+void av_picture_copy(AVPicture *dst, const AVPicture *src,
+                     enum PixelFormat pix_fmt, int width, int height);
+
+/**
+ * Crop image top and left side.
+ */
+int av_picture_crop(AVPicture *dst, const AVPicture *src,
+                    enum PixelFormat pix_fmt, int top_band, int left_band);
+
+/**
+ * Pad image.
+ */
+int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width, enum PixelFormat pix_fmt,
+            int padtop, int padbottom, int padleft, int padright, int *color);
+
+/**
+ * @}
+ */
+
 void avcodec_get_chroma_sub_sample(enum PixelFormat pix_fmt, int *h_shift, int *v_shift);
 
 void avcodec_set_dimensions(AVCodecContext *s, int width, int height);
@@ -4152,11 +4196,6 @@ int avcodec_get_pix_fmt_loss(enum PixelFormat dst_pix_fmt, enum PixelFormat src_
  */
 enum PixelFormat avcodec_find_best_pix_fmt(int64_t pix_fmt_mask, enum PixelFormat src_pix_fmt,
                               int has_alpha, int *loss_ptr);
-
-/* deinterlace a picture */
-/* deinterlace - if not supported return -1 */
-int avpicture_deinterlace(AVPicture *dst, const AVPicture *src,
-                          enum PixelFormat pix_fmt, int width, int height);
 
 /* external high level API */
 
@@ -4295,24 +4334,6 @@ void av_fast_malloc(void *ptr, unsigned int *size, size_t min_size);
  *
  */
 void av_fast_padded_malloc(void *ptr, unsigned int *size, size_t min_size);
-
-/**
- * Copy image src to dst. Wraps av_picture_data_copy() above.
- */
-void av_picture_copy(AVPicture *dst, const AVPicture *src,
-                     enum PixelFormat pix_fmt, int width, int height);
-
-/**
- * Crop image top and left side.
- */
-int av_picture_crop(AVPicture *dst, const AVPicture *src,
-                    enum PixelFormat pix_fmt, int top_band, int left_band);
-
-/**
- * Pad image.
- */
-int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width, enum PixelFormat pix_fmt,
-            int padtop, int padbottom, int padleft, int padright, int *color);
 
 /**
  * Encode extradata length to a buffer. Used by xiph codecs.
