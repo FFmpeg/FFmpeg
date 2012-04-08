@@ -1065,8 +1065,15 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
 
     if(s->version>1){
-        s->num_h_slices=2;
-        s->num_v_slices=2;
+        for(s->num_v_slices=2; s->num_v_slices<9; s->num_v_slices++){
+            for(s->num_h_slices=s->num_v_slices; s->num_h_slices<2*s->num_v_slices; s->num_h_slices++){
+                if(avctx->slices == s->num_h_slices * s->num_v_slices && avctx->slices <= 64)
+                    goto slices_ok;
+            }
+        }
+        av_log(avctx, AV_LOG_ERROR, "Unsupported number %d of slices requested\n", avctx->slices);
+        return -1;
+        slices_ok:
         write_extra_header(s);
     }
 
