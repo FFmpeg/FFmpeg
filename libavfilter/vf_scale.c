@@ -28,6 +28,7 @@
 #include "libavutil/eval.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/avassert.h"
 #include "libswscale/swscale.h"
 
@@ -279,6 +280,8 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     outpicref->video->h = outlink->h;
 
     outlink->out_buf = outpicref;
+    if(scale->output_is_pal)
+        ff_set_systematic_pal2(outpicref->data[1], outlink->format == PIX_FMT_PAL8 ? PIX_FMT_BGR8 : outlink->format);
 
     av_reduce(&outpicref->video->sample_aspect_ratio.num, &outpicref->video->sample_aspect_ratio.den,
               (int64_t)picref->video->sample_aspect_ratio.num * outlink->h * link->w,
