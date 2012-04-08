@@ -1508,7 +1508,7 @@ int attribute_align_arg avcodec_decode_audio3(AVCodecContext *avctx, int16_t *sa
 int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
                                               AVFrame *frame,
                                               int *got_frame_ptr,
-                                              AVPacket *avpkt)
+                                              const AVPacket *avpkt)
 {
     int ret = 0;
 
@@ -1524,17 +1524,23 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
     }
 
     if ((avctx->codec->capabilities & CODEC_CAP_DELAY) || avpkt->size) {
-        av_packet_split_side_data(avpkt);
-        apply_param_change(avctx, avpkt);
+        // copy to ensure we do not change avpkt
+        AVPacket tmp = *avpkt;
+        int did_split = av_packet_split_side_data(&tmp);
+        apply_param_change(avctx, &tmp);
 
-        avctx->pkt = avpkt;
-        ret = avctx->codec->decode(avctx, frame, got_frame_ptr, avpkt);
+        avctx->pkt = &tmp;
+        ret = avctx->codec->decode(avctx, frame, got_frame_ptr, &tmp);
         if (ret >= 0 && *got_frame_ptr) {
             avctx->frame_number++;
             frame->pkt_dts = avpkt->dts;
             if (frame->format == AV_SAMPLE_FMT_NONE)
                 frame->format = avctx->sample_fmt;
         }
+
+        avctx->pkt = NULL;
+        if (did_split)
+            ff_packet_free_side_data(&tmp);
     }
     return ret;
 }
