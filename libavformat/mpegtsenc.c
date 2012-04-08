@@ -306,6 +306,14 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                 *q++=1; // 1 byte, all flags sets to 0
                 *q++=0; // omit all fields...
             }
+            if(st->codec->codec_id==CODEC_ID_S302M){
+                *q++ = 0x05; /* MPEG-2 registration descriptor*/
+                *q++ = 4;
+                *q++ = 'B';
+                *q++ = 'S';
+                *q++ = 'S';
+                *q++ = 'D';
+            }
 
             if (lang) {
                 char *p;
