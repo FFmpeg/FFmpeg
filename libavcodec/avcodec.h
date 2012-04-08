@@ -67,6 +67,14 @@
  *
  */
 
+/**
+ * @defgroup lavc_core Core functions/structures.
+ * @ingroup libavc
+ *
+ * Basic definitions, functions for querying libavcodec capabilities,
+ * allocating core structures, etc.
+ * @{
+ */
 
 /**
  * Identify the syntax and semantics of the bitstream.
@@ -3038,6 +3046,175 @@ typedef struct AVSubtitle {
     int64_t pts;    ///< Same as packet pts, in AV_TIME_BASE
 } AVSubtitle;
 
+/**
+ * If c is NULL, returns the first registered codec,
+ * if c is non-NULL, returns the next registered codec after c,
+ * or NULL if c is the last one.
+ */
+AVCodec *av_codec_next(AVCodec *c);
+
+/**
+ * Return the LIBAVCODEC_VERSION_INT constant.
+ */
+unsigned avcodec_version(void);
+
+/**
+ * Return the libavcodec build-time configuration.
+ */
+const char *avcodec_configuration(void);
+
+/**
+ * Return the libavcodec license.
+ */
+const char *avcodec_license(void);
+
+/**
+ * Register the codec codec and initialize libavcodec.
+ *
+ * @warning either this function or avcodec_register_all() must be called
+ * before any other libavcodec functions.
+ *
+ * @see avcodec_register_all()
+ */
+void avcodec_register(AVCodec *codec);
+
+/**
+ * Register all the codecs, parsers and bitstream filters which were enabled at
+ * configuration time. If you do not call this function you can select exactly
+ * which formats you want to support, by using the individual registration
+ * functions.
+ *
+ * @see avcodec_register
+ * @see av_register_codec_parser
+ * @see av_register_bitstream_filter
+ */
+void avcodec_register_all(void);
+
+/**
+ * Allocate an AVCodecContext and set its fields to default values.  The
+ * resulting struct can be deallocated by calling avcodec_close() on it followed
+ * by av_free().
+ *
+ * @param codec if non-NULL, allocate private data and initialize defaults
+ *              for the given codec. It is illegal to then call avcodec_open2()
+ *              with a different codec.
+ *              If NULL, then the codec-specific defaults won't be initialized,
+ *              which may result in suboptimal default settings (this is
+ *              important mainly for encoders, e.g. libx264).
+ *
+ * @return An AVCodecContext filled with default values or NULL on failure.
+ * @see avcodec_get_context_defaults
+ */
+AVCodecContext *avcodec_alloc_context3(AVCodec *codec);
+
+/**
+ * Set the fields of the given AVCodecContext to default values corresponding
+ * to the given codec (defaults may be codec-dependent).
+ *
+ * Do not call this function if a non-NULL codec has been passed
+ * to avcodec_alloc_context3() that allocated this AVCodecContext.
+ * If codec is non-NULL, it is illegal to call avcodec_open2() with a
+ * different codec on this AVCodecContext.
+ */
+int avcodec_get_context_defaults3(AVCodecContext *s, AVCodec *codec);
+
+/**
+ * Get the AVClass for AVCodecContext. It can be used in combination with
+ * AV_OPT_SEARCH_FAKE_OBJ for examining options.
+ *
+ * @see av_opt_find().
+ */
+const AVClass *avcodec_get_class(void);
+
+/**
+ * Copy the settings of the source AVCodecContext into the destination
+ * AVCodecContext. The resulting destination codec context will be
+ * unopened, i.e. you are required to call avcodec_open2() before you
+ * can use this AVCodecContext to decode/encode video/audio data.
+ *
+ * @param dest target codec context, should be initialized with
+ *             avcodec_alloc_context3(), but otherwise uninitialized
+ * @param src source codec context
+ * @return AVERROR() on error (e.g. memory allocation error), 0 on success
+ */
+int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src);
+
+/**
+ * Allocate an AVFrame and set its fields to default values.  The resulting
+ * struct can be deallocated by simply calling av_free().
+ *
+ * @return An AVFrame filled with default values or NULL on failure.
+ * @see avcodec_get_frame_defaults
+ */
+AVFrame *avcodec_alloc_frame(void);
+
+/**
+ * Set the fields of the given AVFrame to default values.
+ *
+ * @param pic The AVFrame of which the fields should be set to default values.
+ */
+void avcodec_get_frame_defaults(AVFrame *pic);
+
+/**
+ * Initialize the AVCodecContext to use the given AVCodec. Prior to using this
+ * function the context has to be allocated with avcodec_alloc_context3().
+ *
+ * The functions avcodec_find_decoder_by_name(), avcodec_find_encoder_by_name(),
+ * avcodec_find_decoder() and avcodec_find_encoder() provide an easy way for
+ * retrieving a codec.
+ *
+ * @warning This function is not thread safe!
+ *
+ * @code
+ * avcodec_register_all();
+ * av_dict_set(&opts, "b", "2.5M", 0);
+ * codec = avcodec_find_decoder(CODEC_ID_H264);
+ * if (!codec)
+ *     exit(1);
+ *
+ * context = avcodec_alloc_context3(codec);
+ *
+ * if (avcodec_open2(context, codec, opts) < 0)
+ *     exit(1);
+ * @endcode
+ *
+ * @param avctx The context to initialize.
+ * @param codec The codec to open this context for. If a non-NULL codec has been
+ *              previously passed to avcodec_alloc_context3() or
+ *              avcodec_get_context_defaults3() for this context, then this
+ *              parameter MUST be either NULL or equal to the previously passed
+ *              codec.
+ * @param options A dictionary filled with AVCodecContext and codec-private options.
+ *                On return this object will be filled with options that were not found.
+ *
+ * @return zero on success, a negative value on error
+ * @see avcodec_alloc_context3(), avcodec_find_decoder(), avcodec_find_encoder(),
+ *      av_dict_set(), av_opt_find().
+ */
+int avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVDictionary **options);
+
+/**
+ * Close a given AVCodecContext and free all the data associated with it
+ * (but not the AVCodecContext itself).
+ *
+ * Calling this function on an AVCodecContext that hasn't been opened will free
+ * the codec-specific data allocated in avcodec_alloc_context3() /
+ * avcodec_get_context_defaults3() with a non-NULL codec. Subsequent calls will
+ * do nothing.
+ */
+int avcodec_close(AVCodecContext *avctx);
+
+/**
+ * Free all allocated data in the given subtitle struct.
+ *
+ * @param sub AVSubtitle to free.
+ */
+void avsubtitle_free(AVSubtitle *sub);
+
+/**
+ * @}
+ */
+
 /* packet functions */
 
 /**
@@ -3364,38 +3541,6 @@ int avpicture_deinterlace(AVPicture *dst, const AVPicture *src,
 /* external high level API */
 
 /**
- * If c is NULL, returns the first registered codec,
- * if c is non-NULL, returns the next registered codec after c,
- * or NULL if c is the last one.
- */
-AVCodec *av_codec_next(AVCodec *c);
-
-/**
- * Return the LIBAVCODEC_VERSION_INT constant.
- */
-unsigned avcodec_version(void);
-
-/**
- * Return the libavcodec build-time configuration.
- */
-const char *avcodec_configuration(void);
-
-/**
- * Return the libavcodec license.
- */
-const char *avcodec_license(void);
-
-/**
- * Register the codec codec and initialize libavcodec.
- *
- * @warning either this function or avcodec_register_all() must be called
- * before any other libavcodec functions.
- *
- * @see avcodec_register_all()
- */
-void avcodec_register(AVCodec *codec);
-
-/**
  * Find a registered encoder with a matching codec ID.
  *
  * @param id CodecID of the requested encoder
@@ -3437,63 +3582,6 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode);
  */
 const char *av_get_profile_name(const AVCodec *codec, int profile);
 
-/**
- * Set the fields of the given AVCodecContext to default values corresponding
- * to the given codec (defaults may be codec-dependent).
- *
- * Do not call this function if a non-NULL codec has been passed
- * to avcodec_alloc_context3() that allocated this AVCodecContext.
- * If codec is non-NULL, it is illegal to call avcodec_open2() with a
- * different codec on this AVCodecContext.
- */
-int avcodec_get_context_defaults3(AVCodecContext *s, AVCodec *codec);
-
-/**
- * Allocate an AVCodecContext and set its fields to default values.  The
- * resulting struct can be deallocated by calling avcodec_close() on it followed
- * by av_free().
- *
- * @param codec if non-NULL, allocate private data and initialize defaults
- *              for the given codec. It is illegal to then call avcodec_open2()
- *              with a different codec.
- *              If NULL, then the codec-specific defaults won't be initialized,
- *              which may result in suboptimal default settings (this is
- *              important mainly for encoders, e.g. libx264).
- *
- * @return An AVCodecContext filled with default values or NULL on failure.
- * @see avcodec_get_context_defaults
- */
-AVCodecContext *avcodec_alloc_context3(AVCodec *codec);
-
-/**
- * Copy the settings of the source AVCodecContext into the destination
- * AVCodecContext. The resulting destination codec context will be
- * unopened, i.e. you are required to call avcodec_open2() before you
- * can use this AVCodecContext to decode/encode video/audio data.
- *
- * @param dest target codec context, should be initialized with
- *             avcodec_alloc_context3(), but otherwise uninitialized
- * @param src source codec context
- * @return AVERROR() on error (e.g. memory allocation error), 0 on success
- */
-int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src);
-
-/**
- * Set the fields of the given AVFrame to default values.
- *
- * @param pic The AVFrame of which the fields should be set to default values.
- */
-void avcodec_get_frame_defaults(AVFrame *pic);
-
-/**
- * Allocate an AVFrame and set its fields to default values.  The resulting
- * struct can be deallocated by simply calling av_free().
- *
- * @return An AVFrame filled with default values or NULL on failure.
- * @see avcodec_get_frame_defaults
- */
-AVFrame *avcodec_alloc_frame(void);
-
 int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic);
 void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic);
 int avcodec_default_reget_buffer(AVCodecContext *s, AVFrame *pic);
@@ -3533,44 +3621,6 @@ enum PixelFormat avcodec_default_get_format(struct AVCodecContext *s, const enum
 int avcodec_default_execute(AVCodecContext *c, int (*func)(AVCodecContext *c2, void *arg2),void *arg, int *ret, int count, int size);
 int avcodec_default_execute2(AVCodecContext *c, int (*func)(AVCodecContext *c2, void *arg2, int, int),void *arg, int *ret, int count);
 //FIXME func typedef
-
-/**
- * Initialize the AVCodecContext to use the given AVCodec. Prior to using this
- * function the context has to be allocated with avcodec_alloc_context3().
- *
- * The functions avcodec_find_decoder_by_name(), avcodec_find_encoder_by_name(),
- * avcodec_find_decoder() and avcodec_find_encoder() provide an easy way for
- * retrieving a codec.
- *
- * @warning This function is not thread safe!
- *
- * @code
- * avcodec_register_all();
- * av_dict_set(&opts, "b", "2.5M", 0);
- * codec = avcodec_find_decoder(CODEC_ID_H264);
- * if (!codec)
- *     exit(1);
- *
- * context = avcodec_alloc_context3(codec);
- *
- * if (avcodec_open2(context, codec, opts) < 0)
- *     exit(1);
- * @endcode
- *
- * @param avctx The context to initialize.
- * @param codec The codec to open this context for. If a non-NULL codec has been
- *              previously passed to avcodec_alloc_context3() or
- *              avcodec_get_context_defaults3() for this context, then this
- *              parameter MUST be either NULL or equal to the previously passed
- *              codec.
- * @param options A dictionary filled with AVCodecContext and codec-private options.
- *                On return this object will be filled with options that were not found.
- *
- * @return zero on success, a negative value on error
- * @see avcodec_alloc_context3(), avcodec_find_decoder(), avcodec_find_encoder(),
- *      av_dict_set(), av_opt_find().
- */
-int avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVDictionary **options);
 
 #if FF_API_OLD_DECODE_AUDIO
 /**
@@ -3733,13 +3783,6 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
                             int *got_sub_ptr,
                             AVPacket *avpkt);
 
-/**
- * Free all allocated data in the given subtitle struct.
- *
- * @param sub AVSubtitle to free.
- */
-void avsubtitle_free(AVSubtitle *sub);
-
 #if FF_API_OLD_ENCODE_AUDIO
 /**
  * Encode an audio frame from samples into buf.
@@ -3894,29 +3937,6 @@ int avcodec_encode_video2(AVCodecContext *avctx, AVPacket *avpkt,
 
 int avcodec_encode_subtitle(AVCodecContext *avctx, uint8_t *buf, int buf_size,
                             const AVSubtitle *sub);
-
-/**
- * Close a given AVCodecContext and free all the data associated with it
- * (but not the AVCodecContext itself).
- *
- * Calling this function on an AVCodecContext that hasn't been opened will free
- * the codec-specific data allocated in avcodec_alloc_context3() /
- * avcodec_get_context_defaults3() with a non-NULL codec. Subsequent calls will
- * do nothing.
- */
-int avcodec_close(AVCodecContext *avctx);
-
-/**
- * Register all the codecs, parsers and bitstream filters which were enabled at
- * configuration time. If you do not call this function you can select exactly
- * which formats you want to support, by using the individual registration
- * functions.
- *
- * @see avcodec_register
- * @see av_register_codec_parser
- * @see av_register_bitstream_filter
- */
-void avcodec_register_all(void);
 
 /**
  * Flush buffers, should be called when seeking or when switching to a different stream.
@@ -4305,14 +4325,6 @@ int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op));
  * Get the type of the given codec.
  */
 enum AVMediaType avcodec_get_type(enum CodecID codec_id);
-
-/**
- * Get the AVClass for AVCodecContext. It can be used in combination with
- * AV_OPT_SEARCH_FAKE_OBJ for examining options.
- *
- * @see av_opt_find().
- */
-const AVClass *avcodec_get_class(void);
 
 /**
  * @return a positive value if s is open (i.e. avcodec_open2() was called on it
