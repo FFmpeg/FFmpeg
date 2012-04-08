@@ -4125,9 +4125,23 @@ int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width, 
  * @}
  */
 
-void avcodec_get_chroma_sub_sample(enum PixelFormat pix_fmt, int *h_shift, int *v_shift);
+/**
+ * @defgroup lavc_misc Utility functions
+ * @ingroup libavc
+ *
+ * Miscellaneous utility functions related to both encoding and decoding
+ * (or neither).
+ * @{
+ */
 
-void avcodec_set_dimensions(AVCodecContext *s, int width, int height);
+/**
+ * @defgroup lavc_misc_pixfmt Pixel formats
+ *
+ * Functions for working with pixel formats.
+ * @{
+ */
+
+void avcodec_get_chroma_sub_sample(enum PixelFormat pix_fmt, int *h_shift, int *v_shift);
 
 /**
  * Return a value representing the fourCC code associated to the
@@ -4135,15 +4149,6 @@ void avcodec_set_dimensions(AVCodecContext *s, int width, int height);
  * found.
  */
 unsigned int avcodec_pix_fmt_to_codec_tag(enum PixelFormat pix_fmt);
-
-/**
- * Put a string representing the codec tag codec_tag in buf.
- *
- * @param buf_size size in bytes of buf
- * @return the length of the string that would have been generated if
- * enough space had been available, excluding the trailing null
- */
-size_t av_get_codec_tag_string(char *buf, size_t buf_size, unsigned int codec_tag);
 
 #define FF_LOSS_RESOLUTION  0x0001 /**< loss due to resolution change */
 #define FF_LOSS_DEPTH       0x0002 /**< loss due to color depth change */
@@ -4197,7 +4202,22 @@ int avcodec_get_pix_fmt_loss(enum PixelFormat dst_pix_fmt, enum PixelFormat src_
 enum PixelFormat avcodec_find_best_pix_fmt(int64_t pix_fmt_mask, enum PixelFormat src_pix_fmt,
                               int has_alpha, int *loss_ptr);
 
-/* external high level API */
+enum PixelFormat avcodec_default_get_format(struct AVCodecContext *s, const enum PixelFormat * fmt);
+
+/**
+ * @}
+ */
+
+void avcodec_set_dimensions(AVCodecContext *s, int width, int height);
+
+/**
+ * Put a string representing the codec tag codec_tag in buf.
+ *
+ * @param buf_size size in bytes of buf
+ * @return the length of the string that would have been generated if
+ * enough space had been available, excluding the trailing null
+ */
+size_t av_get_codec_tag_string(char *buf, size_t buf_size, unsigned int codec_tag);
 
 void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode);
 
@@ -4209,8 +4229,6 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode);
  * @return A name for the profile if found, NULL otherwise.
  */
 const char *av_get_profile_name(const AVCodec *codec, int profile);
-
-enum PixelFormat avcodec_default_get_format(struct AVCodecContext *s, const enum PixelFormat * fmt);
 
 int avcodec_default_execute(AVCodecContext *c, int (*func)(AVCodecContext *c2, void *arg2),void *arg, int *ret, int count, int size);
 int avcodec_default_execute2(AVCodecContext *c, int (*func)(AVCodecContext *c2, void *arg2, int, int),void *arg, int *ret, int count);
@@ -4242,8 +4260,6 @@ int avcodec_fill_audio_frame(AVFrame *frame, int nb_channels,
 void avcodec_flush_buffers(AVCodecContext *avctx);
 
 void avcodec_default_free_buffers(AVCodecContext *s);
-
-/* misc useful functions */
 
 /**
  * Return codec bits per sample.
@@ -4426,5 +4442,9 @@ int av_codec_is_encoder(AVCodec *codec);
  * @return a non-zero number if codec is a decoder, zero otherwise
  */
 int av_codec_is_decoder(AVCodec *codec);
+
+/**
+ * @}
+ */
 
 #endif /* AVCODEC_AVCODEC_H */
