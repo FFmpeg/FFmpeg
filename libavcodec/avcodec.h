@@ -3918,8 +3918,12 @@ int avcodec_encode_subtitle(AVCodecContext *avctx, uint8_t *buf, int buf_size,
  * @}
  */
 
-/* resample.c */
-
+/**
+ * @defgroup lavc_resample Audio resampling
+ * @ingroup libavc
+ *
+ * @{
+ */
 struct ReSampleContext;
 struct AVResampleContext;
 
@@ -3996,6 +4000,10 @@ int av_resample(struct AVResampleContext *c, short *dst, short *src, int *consum
  */
 void av_resample_compensate(struct AVResampleContext *c, int sample_delta, int compensation_distance);
 void av_resample_close(struct AVResampleContext *c);
+
+/**
+ * @}
+ */
 
 /**
  * Allocate memory for a picture.  Call avpicture_free() to free it.
