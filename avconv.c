@@ -1101,7 +1101,7 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
         ost->reformat_pair = MAKE_SFMT_PAIR(enc->sample_fmt,dec->sample_fmt);
     }
 
-    if (audio_sync_method) {
+    if (audio_sync_method > 0) {
         double delta = get_sync_ipts(ost, ist->last_dts) * enc->sample_rate - ost->sync_opts -
                        av_fifo_size(ost->fifo) / (enc->channels * osize);
         int idelta = delta * dec->sample_rate / enc->sample_rate;
@@ -1148,7 +1148,7 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
                 av_resample_compensate(*(struct AVResampleContext**)ost->resample, comp, enc->sample_rate);
             }
         }
-    } else
+    } else if (audio_sync_method == 0)
         ost->sync_opts = lrintf(get_sync_ipts(ost, ist->last_dts) * enc->sample_rate) -
                                 av_fifo_size(ost->fifo) / (enc->channels * osize); // FIXME wrong
 
