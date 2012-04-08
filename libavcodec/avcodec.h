@@ -978,7 +978,7 @@ typedef struct AVFrame {
     uint8_t *base[AV_NUM_DATA_POINTERS];
 
     /**
-     * sample aspect ratio for the video frame, 0/1 if unknown\unspecified
+     * sample aspect ratio for the video frame, 0/1 if unknown/unspecified
      * - encoding: unused
      * - decoding: Read by user.
      */
