@@ -134,7 +134,7 @@ int ff_draw_init(FFDrawContext *draw, enum PixelFormat format, unsigned flags)
 
     if (!desc->name)
         return AVERROR(EINVAL);
-    if (desc->flags & ~(PIX_FMT_PLANAR | PIX_FMT_RGB))
+    if (desc->flags & ~(PIX_FMT_PLANAR | PIX_FMT_RGB | PIX_FMT_PSEUDOPAL))
         return AVERROR(ENOSYS);
     for (i = 0; i < desc->nb_components; i++) {
         c = &desc->comp[i];

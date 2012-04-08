@@ -262,7 +262,7 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     AVFilterBufferRef *outpicref = avfilter_ref_buffer(inpicref, ~0);
     int plane;
 
-    for (plane = 0; plane < 4 && outpicref->data[plane]; plane++) {
+    for (plane = 0; plane < 4 && outpicref->data[plane] && pad->draw.pixelstep[plane]; plane++) {
         int hsub = pad->draw.hsub[plane];
         int vsub = pad->draw.vsub[plane];
 

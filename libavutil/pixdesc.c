@@ -220,6 +220,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
         .comp = {
             { 0, 0, 1, 0, 7 },        /* Y */
         },
+        .flags = PIX_FMT_PSEUDOPAL,
     },
     [PIX_FMT_MONOWHITE] = {
         .name = "monow",
