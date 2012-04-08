@@ -174,7 +174,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     ff_dsputil_init(&s->dsp, avctx);
 
     /* Generate overlap window */
-    ff_sine_window_init(ff_sine_128, 128);
+    ff_init_ff_sine_windows(7);
     for (i = 0; i < POW_TABLE_SIZE; i++)
         pow_table[i] = -pow(2, -i / 2048.0 - 3.0 + POW_TABLE_OFFSET);
 
