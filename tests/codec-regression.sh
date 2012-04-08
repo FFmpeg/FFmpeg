@@ -453,6 +453,11 @@ do_audio_decoding "-ac 2"
 $tiny_psnr $pcm_dst $pcm_ref 2 640
 fi
 
+if [ -n "$do_roqaudio" ] ; then
+do_audio_encoding roqaudio.roq "-ar 22050 -acodec roq_dpcm"
+do_audio_decoding "-ar 44100"
+fi
+
 # AAC and nellymoser are not bit-exact across platforms,
 # they were moved to enc_dec_pcm tests instead.
 
