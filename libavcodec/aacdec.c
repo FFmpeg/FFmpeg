@@ -683,9 +683,9 @@ static int decode_audio_specific_config(AACContext *ac,
     GetBitContext gb;
     int i;
 
-    av_dlog(avctx, "extradata size %d\n", avctx->extradata_size);
-    for (i = 0; i < avctx->extradata_size; i++)
-         av_dlog(avctx, "%02x ", avctx->extradata[i]);
+    av_dlog(avctx, "audio specific config size %d\n", bit_size >> 3);
+    for (i = 0; i < bit_size >> 3; i++)
+         av_dlog(avctx, "%02x ", data[i]);
     av_dlog(avctx, "\n");
 
     init_get_bits(&gb, data, bit_size);
