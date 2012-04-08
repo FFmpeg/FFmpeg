@@ -425,6 +425,7 @@ enum CodecID {
 #endif
 
 /**
+ * @ingroup lavc_decoding
  * Required number of additionally allocated bytes at the end of the input bitstream for decoding.
  * This is mainly needed because some optimized bitstream readers read
  * 32 or 64 bit at once and could read over the end.<br>
@@ -456,6 +457,9 @@ enum Motion_Est_ID {
     ME_TESA,        ///< transformed exhaustive search algorithm
 };
 
+/**
+ * @ingroup lavc_decoding
+ */
 enum AVDiscard{
     /* We leave some space between them for extensions (drop some
      * keyframes for intra-only or drop just some bidir frames). */
@@ -3326,6 +3330,428 @@ uint8_t* av_packet_get_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
  * @}
  */
 
+/**
+ * @addtogroup lavc_decoding
+ * @{
+ */
+
+/**
+ * Find a registered decoder with a matching codec ID.
+ *
+ * @param id CodecID of the requested decoder
+ * @return A decoder if one was found, NULL otherwise.
+ */
+AVCodec *avcodec_find_decoder(enum CodecID id);
+
+/**
+ * Find a registered decoder with the specified name.
+ *
+ * @param name name of the requested decoder
+ * @return A decoder if one was found, NULL otherwise.
+ */
+AVCodec *avcodec_find_decoder_by_name(const char *name);
+
+int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic);
+void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic);
+int avcodec_default_reget_buffer(AVCodecContext *s, AVFrame *pic);
+
+/**
+ * Return the amount of padding in pixels which the get_buffer callback must
+ * provide around the edge of the image for codecs which do not have the
+ * CODEC_FLAG_EMU_EDGE flag.
+ *
+ * @return Required padding in pixels.
+ */
+unsigned avcodec_get_edge_width(void);
+
+/**
+ * Modify width and height values so that they will result in a memory
+ * buffer that is acceptable for the codec if you do not use any horizontal
+ * padding.
+ *
+ * May only be used if a codec with CODEC_CAP_DR1 has been opened.
+ * If CODEC_FLAG_EMU_EDGE is not set, the dimensions must have been increased
+ * according to avcodec_get_edge_width() before.
+ */
+void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height);
+
+/**
+ * Modify width and height values so that they will result in a memory
+ * buffer that is acceptable for the codec if you also ensure that all
+ * line sizes are a multiple of the respective linesize_align[i].
+ *
+ * May only be used if a codec with CODEC_CAP_DR1 has been opened.
+ * If CODEC_FLAG_EMU_EDGE is not set, the dimensions must have been increased
+ * according to avcodec_get_edge_width() before.
+ */
+void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
+                               int linesize_align[AV_NUM_DATA_POINTERS]);
+
+#if FF_API_OLD_DECODE_AUDIO
+/**
+ * Wrapper function which calls avcodec_decode_audio4.
+ *
+ * @deprecated Use avcodec_decode_audio4 instead.
+ *
+ * Decode the audio frame of size avpkt->size from avpkt->data into samples.
+ * Some decoders may support multiple frames in a single AVPacket, such
+ * decoders would then just decode the first frame. In this case,
+ * avcodec_decode_audio3 has to be called again with an AVPacket that contains
+ * the remaining data in order to decode the second frame etc.
+ * If no frame
+ * could be outputted, frame_size_ptr is zero. Otherwise, it is the
+ * decompressed frame size in bytes.
+ *
+ * @warning You must set frame_size_ptr to the allocated size of the
+ * output buffer before calling avcodec_decode_audio3().
+ *
+ * @warning The input buffer must be FF_INPUT_BUFFER_PADDING_SIZE larger than
+ * the actual read bytes because some optimized bitstream readers read 32 or 64
+ * bits at once and could read over the end.
+ *
+ * @warning The end of the input buffer avpkt->data should be set to 0 to ensure that
+ * no overreading happens for damaged MPEG streams.
+ *
+ * @warning You must not provide a custom get_buffer() when using
+ * avcodec_decode_audio3().  Doing so will override it with
+ * avcodec_default_get_buffer.  Use avcodec_decode_audio4() instead,
+ * which does allow the application to provide a custom get_buffer().
+ *
+ * @note You might have to align the input buffer avpkt->data and output buffer
+ * samples. The alignment requirements depend on the CPU: On some CPUs it isn't
+ * necessary at all, on others it won't work at all if not aligned and on others
+ * it will work but it will have an impact on performance.
+ *
+ * In practice, avpkt->data should have 4 byte alignment at minimum and
+ * samples should be 16 byte aligned unless the CPU doesn't need it
+ * (AltiVec and SSE do).
+ *
+ * @note Codecs which have the CODEC_CAP_DELAY capability set have a delay
+ * between input and output, these need to be fed with avpkt->data=NULL,
+ * avpkt->size=0 at the end to return the remaining frames.
+ *
+ * @param avctx the codec context
+ * @param[out] samples the output buffer, sample type in avctx->sample_fmt
+ *                     If the sample format is planar, each channel plane will
+ *                     be the same size, with no padding between channels.
+ * @param[in,out] frame_size_ptr the output buffer size in bytes
+ * @param[in] avpkt The input AVPacket containing the input buffer.
+ *            You can create such packet with av_init_packet() and by then setting
+ *            data and size, some decoders might in addition need other fields.
+ *            All decoders are designed to use the least fields possible though.
+ * @return On error a negative value is returned, otherwise the number of bytes
+ * used or zero if no frame data was decompressed (used) from the input AVPacket.
+ */
+attribute_deprecated int avcodec_decode_audio3(AVCodecContext *avctx, int16_t *samples,
+                         int *frame_size_ptr,
+                         AVPacket *avpkt);
+#endif
+
+/**
+ * Decode the audio frame of size avpkt->size from avpkt->data into frame.
+ *
+ * Some decoders may support multiple frames in a single AVPacket. Such
+ * decoders would then just decode the first frame. In this case,
+ * avcodec_decode_audio4 has to be called again with an AVPacket containing
+ * the remaining data in order to decode the second frame, etc...
+ * Even if no frames are returned, the packet needs to be fed to the decoder
+ * with remaining data until it is completely consumed or an error occurs.
+ *
+ * @warning The input buffer, avpkt->data must be FF_INPUT_BUFFER_PADDING_SIZE
+ *          larger than the actual read bytes because some optimized bitstream
+ *          readers read 32 or 64 bits at once and could read over the end.
+ *
+ * @note You might have to align the input buffer. The alignment requirements
+ *       depend on the CPU and the decoder.
+ *
+ * @param      avctx the codec context
+ * @param[out] frame The AVFrame in which to store decoded audio samples.
+ *                   Decoders request a buffer of a particular size by setting
+ *                   AVFrame.nb_samples prior to calling get_buffer(). The
+ *                   decoder may, however, only utilize part of the buffer by
+ *                   setting AVFrame.nb_samples to a smaller value in the
+ *                   output frame.
+ * @param[out] got_frame_ptr Zero if no frame could be decoded, otherwise it is
+ *                           non-zero.
+ * @param[in]  avpkt The input AVPacket containing the input buffer.
+ *                   At least avpkt->data and avpkt->size should be set. Some
+ *                   decoders might also require additional fields to be set.
+ * @return A negative error code is returned if an error occurred during
+ *         decoding, otherwise the number of bytes consumed from the input
+ *         AVPacket is returned.
+ */
+int avcodec_decode_audio4(AVCodecContext *avctx, AVFrame *frame,
+                          int *got_frame_ptr, AVPacket *avpkt);
+
+/**
+ * Decode the video frame of size avpkt->size from avpkt->data into picture.
+ * Some decoders may support multiple frames in a single AVPacket, such
+ * decoders would then just decode the first frame.
+ *
+ * @warning The input buffer must be FF_INPUT_BUFFER_PADDING_SIZE larger than
+ * the actual read bytes because some optimized bitstream readers read 32 or 64
+ * bits at once and could read over the end.
+ *
+ * @warning The end of the input buffer buf should be set to 0 to ensure that
+ * no overreading happens for damaged MPEG streams.
+ *
+ * @note You might have to align the input buffer avpkt->data.
+ * The alignment requirements depend on the CPU: on some CPUs it isn't
+ * necessary at all, on others it won't work at all if not aligned and on others
+ * it will work but it will have an impact on performance.
+ *
+ * In practice, avpkt->data should have 4 byte alignment at minimum.
+ *
+ * @note Codecs which have the CODEC_CAP_DELAY capability set have a delay
+ * between input and output, these need to be fed with avpkt->data=NULL,
+ * avpkt->size=0 at the end to return the remaining frames.
+ *
+ * @param avctx the codec context
+ * @param[out] picture The AVFrame in which the decoded video frame will be stored.
+ *             Use avcodec_alloc_frame to get an AVFrame, the codec will
+ *             allocate memory for the actual bitmap.
+ *             with default get/release_buffer(), the decoder frees/reuses the bitmap as it sees fit.
+ *             with overridden get/release_buffer() (needs CODEC_CAP_DR1) the user decides into what buffer the decoder
+ *                   decodes and the decoder tells the user once it does not need the data anymore,
+ *                   the user app can at this point free/reuse/keep the memory as it sees fit.
+ *
+ * @param[in] avpkt The input AVpacket containing the input buffer.
+ *            You can create such packet with av_init_packet() and by then setting
+ *            data and size, some decoders might in addition need other fields like
+ *            flags&AV_PKT_FLAG_KEY. All decoders are designed to use the least
+ *            fields possible.
+ * @param[in,out] got_picture_ptr Zero if no frame could be decompressed, otherwise, it is nonzero.
+ * @return On error a negative value is returned, otherwise the number of bytes
+ * used or zero if no frame could be decompressed.
+ */
+int avcodec_decode_video2(AVCodecContext *avctx, AVFrame *picture,
+                         int *got_picture_ptr,
+                         AVPacket *avpkt);
+
+/**
+ * Decode a subtitle message.
+ * Return a negative value on error, otherwise return the number of bytes used.
+ * If no subtitle could be decompressed, got_sub_ptr is zero.
+ * Otherwise, the subtitle is stored in *sub.
+ * Note that CODEC_CAP_DR1 is not available for subtitle codecs. This is for
+ * simplicity, because the performance difference is expect to be negligible
+ * and reusing a get_buffer written for video codecs would probably perform badly
+ * due to a potentially very different allocation pattern.
+ *
+ * @param avctx the codec context
+ * @param[out] sub The AVSubtitle in which the decoded subtitle will be stored, must be
+                   freed with avsubtitle_free if *got_sub_ptr is set.
+ * @param[in,out] got_sub_ptr Zero if no subtitle could be decompressed, otherwise, it is nonzero.
+ * @param[in] avpkt The input AVPacket containing the input buffer.
+ */
+int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
+                            int *got_sub_ptr,
+                            AVPacket *avpkt);
+
+/**
+ * @defgroup lavc_parsing Frame parsing
+ * @{
+ */
+
+typedef struct AVCodecParserContext {
+    void *priv_data;
+    struct AVCodecParser *parser;
+    int64_t frame_offset; /* offset of the current frame */
+    int64_t cur_offset; /* current offset
+                           (incremented by each av_parser_parse()) */
+    int64_t next_frame_offset; /* offset of the next frame */
+    /* video info */
+    int pict_type; /* XXX: Put it back in AVCodecContext. */
+    /**
+     * This field is used for proper frame duration computation in lavf.
+     * It signals, how much longer the frame duration of the current frame
+     * is compared to normal frame duration.
+     *
+     * frame_duration = (1 + repeat_pict) * time_base
+     *
+     * It is used by codecs like H.264 to display telecined material.
+     */
+    int repeat_pict; /* XXX: Put it back in AVCodecContext. */
+    int64_t pts;     /* pts of the current frame */
+    int64_t dts;     /* dts of the current frame */
+
+    /* private data */
+    int64_t last_pts;
+    int64_t last_dts;
+    int fetch_timestamp;
+
+#define AV_PARSER_PTS_NB 4
+    int cur_frame_start_index;
+    int64_t cur_frame_offset[AV_PARSER_PTS_NB];
+    int64_t cur_frame_pts[AV_PARSER_PTS_NB];
+    int64_t cur_frame_dts[AV_PARSER_PTS_NB];
+
+    int flags;
+#define PARSER_FLAG_COMPLETE_FRAMES           0x0001
+#define PARSER_FLAG_ONCE                      0x0002
+/// Set if the parser has a valid file offset
+#define PARSER_FLAG_FETCHED_OFFSET            0x0004
+
+    int64_t offset;      ///< byte offset from starting packet start
+    int64_t cur_frame_end[AV_PARSER_PTS_NB];
+
+    /**
+     * Set by parser to 1 for key frames and 0 for non-key frames.
+     * It is initialized to -1, so if the parser doesn't set this flag,
+     * old-style fallback using AV_PICTURE_TYPE_I picture type as key frames
+     * will be used.
+     */
+    int key_frame;
+
+    /**
+     * Time difference in stream time base units from the pts of this
+     * packet to the point at which the output from the decoder has converged
+     * independent from the availability of previous frames. That is, the
+     * frames are virtually identical no matter if decoding started from
+     * the very first frame or from this keyframe.
+     * Is AV_NOPTS_VALUE if unknown.
+     * This field is not the display duration of the current frame.
+     * This field has no meaning if the packet does not have AV_PKT_FLAG_KEY
+     * set.
+     *
+     * The purpose of this field is to allow seeking in streams that have no
+     * keyframes in the conventional sense. It corresponds to the
+     * recovery point SEI in H.264 and match_time_delta in NUT. It is also
+     * essential for some types of subtitle streams to ensure that all
+     * subtitles are correctly displayed after seeking.
+     */
+    int64_t convergence_duration;
+
+    // Timestamp generation support:
+    /**
+     * Synchronization point for start of timestamp generation.
+     *
+     * Set to >0 for sync point, 0 for no sync point and <0 for undefined
+     * (default).
+     *
+     * For example, this corresponds to presence of H.264 buffering period
+     * SEI message.
+     */
+    int dts_sync_point;
+
+    /**
+     * Offset of the current timestamp against last timestamp sync point in
+     * units of AVCodecContext.time_base.
+     *
+     * Set to INT_MIN when dts_sync_point unused. Otherwise, it must
+     * contain a valid timestamp offset.
+     *
+     * Note that the timestamp of sync point has usually a nonzero
+     * dts_ref_dts_delta, which refers to the previous sync point. Offset of
+     * the next frame after timestamp sync point will be usually 1.
+     *
+     * For example, this corresponds to H.264 cpb_removal_delay.
+     */
+    int dts_ref_dts_delta;
+
+    /**
+     * Presentation delay of current frame in units of AVCodecContext.time_base.
+     *
+     * Set to INT_MIN when dts_sync_point unused. Otherwise, it must
+     * contain valid non-negative timestamp delta (presentation time of a frame
+     * must not lie in the past).
+     *
+     * This delay represents the difference between decoding and presentation
+     * time of the frame.
+     *
+     * For example, this corresponds to H.264 dpb_output_delay.
+     */
+    int pts_dts_delta;
+
+    /**
+     * Position of the packet in file.
+     *
+     * Analogous to cur_frame_pts/dts
+     */
+    int64_t cur_frame_pos[AV_PARSER_PTS_NB];
+
+    /**
+     * Byte position of currently parsed frame in stream.
+     */
+    int64_t pos;
+
+    /**
+     * Previous frame byte position.
+     */
+    int64_t last_pos;
+
+    /**
+     * Duration of the current frame.
+     * For audio, this is in units of 1 / AVCodecContext.sample_rate.
+     * For all other types, this is in units of AVCodecContext.time_base.
+     */
+    int duration;
+} AVCodecParserContext;
+
+typedef struct AVCodecParser {
+    int codec_ids[5]; /* several codec IDs are permitted */
+    int priv_data_size;
+    int (*parser_init)(AVCodecParserContext *s);
+    int (*parser_parse)(AVCodecParserContext *s,
+                        AVCodecContext *avctx,
+                        const uint8_t **poutbuf, int *poutbuf_size,
+                        const uint8_t *buf, int buf_size);
+    void (*parser_close)(AVCodecParserContext *s);
+    int (*split)(AVCodecContext *avctx, const uint8_t *buf, int buf_size);
+    struct AVCodecParser *next;
+} AVCodecParser;
+
+AVCodecParser *av_parser_next(AVCodecParser *c);
+
+void av_register_codec_parser(AVCodecParser *parser);
+AVCodecParserContext *av_parser_init(int codec_id);
+
+/**
+ * Parse a packet.
+ *
+ * @param s             parser context.
+ * @param avctx         codec context.
+ * @param poutbuf       set to pointer to parsed buffer or NULL if not yet finished.
+ * @param poutbuf_size  set to size of parsed buffer or zero if not yet finished.
+ * @param buf           input buffer.
+ * @param buf_size      input length, to signal EOF, this should be 0 (so that the last frame can be output).
+ * @param pts           input presentation timestamp.
+ * @param dts           input decoding timestamp.
+ * @param pos           input byte position in stream.
+ * @return the number of bytes of the input bitstream used.
+ *
+ * Example:
+ * @code
+ *   while(in_len){
+ *       len = av_parser_parse2(myparser, AVCodecContext, &data, &size,
+ *                                        in_data, in_len,
+ *                                        pts, dts, pos);
+ *       in_data += len;
+ *       in_len  -= len;
+ *
+ *       if(size)
+ *          decode_frame(data, size);
+ *   }
+ * @endcode
+ */
+int av_parser_parse2(AVCodecParserContext *s,
+                     AVCodecContext *avctx,
+                     uint8_t **poutbuf, int *poutbuf_size,
+                     const uint8_t *buf, int buf_size,
+                     int64_t pts, int64_t dts,
+                     int64_t pos);
+
+int av_parser_change(AVCodecParserContext *s,
+                     AVCodecContext *avctx,
+                     uint8_t **poutbuf, int *poutbuf_size,
+                     const uint8_t *buf, int buf_size, int keyframe);
+void av_parser_close(AVCodecParserContext *s);
+
+/**
+ * @}
+ * @}
+ */
+
 /* resample.c */
 
 struct ReSampleContext;
@@ -3576,21 +4002,6 @@ AVCodec *avcodec_find_encoder(enum CodecID id);
  */
 AVCodec *avcodec_find_encoder_by_name(const char *name);
 
-/**
- * Find a registered decoder with a matching codec ID.
- *
- * @param id CodecID of the requested decoder
- * @return A decoder if one was found, NULL otherwise.
- */
-AVCodec *avcodec_find_decoder(enum CodecID id);
-
-/**
- * Find a registered decoder with the specified name.
- *
- * @param name name of the requested decoder
- * @return A decoder if one was found, NULL otherwise.
- */
-AVCodec *avcodec_find_decoder_by_name(const char *name);
 void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode);
 
 /**
@@ -3602,206 +4013,11 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode);
  */
 const char *av_get_profile_name(const AVCodec *codec, int profile);
 
-int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic);
-void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic);
-int avcodec_default_reget_buffer(AVCodecContext *s, AVFrame *pic);
-
-/**
- * Return the amount of padding in pixels which the get_buffer callback must
- * provide around the edge of the image for codecs which do not have the
- * CODEC_FLAG_EMU_EDGE flag.
- *
- * @return Required padding in pixels.
- */
-unsigned avcodec_get_edge_width(void);
-/**
- * Modify width and height values so that they will result in a memory
- * buffer that is acceptable for the codec if you do not use any horizontal
- * padding.
- *
- * May only be used if a codec with CODEC_CAP_DR1 has been opened.
- * If CODEC_FLAG_EMU_EDGE is not set, the dimensions must have been increased
- * according to avcodec_get_edge_width() before.
- */
-void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height);
-/**
- * Modify width and height values so that they will result in a memory
- * buffer that is acceptable for the codec if you also ensure that all
- * line sizes are a multiple of the respective linesize_align[i].
- *
- * May only be used if a codec with CODEC_CAP_DR1 has been opened.
- * If CODEC_FLAG_EMU_EDGE is not set, the dimensions must have been increased
- * according to avcodec_get_edge_width() before.
- */
-void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
-                               int linesize_align[AV_NUM_DATA_POINTERS]);
-
 enum PixelFormat avcodec_default_get_format(struct AVCodecContext *s, const enum PixelFormat * fmt);
 
 int avcodec_default_execute(AVCodecContext *c, int (*func)(AVCodecContext *c2, void *arg2),void *arg, int *ret, int count, int size);
 int avcodec_default_execute2(AVCodecContext *c, int (*func)(AVCodecContext *c2, void *arg2, int, int),void *arg, int *ret, int count);
 //FIXME func typedef
-
-#if FF_API_OLD_DECODE_AUDIO
-/**
- * Wrapper function which calls avcodec_decode_audio4.
- *
- * @deprecated Use avcodec_decode_audio4 instead.
- *
- * Decode the audio frame of size avpkt->size from avpkt->data into samples.
- * Some decoders may support multiple frames in a single AVPacket, such
- * decoders would then just decode the first frame. In this case,
- * avcodec_decode_audio3 has to be called again with an AVPacket that contains
- * the remaining data in order to decode the second frame etc.
- * If no frame
- * could be outputted, frame_size_ptr is zero. Otherwise, it is the
- * decompressed frame size in bytes.
- *
- * @warning You must set frame_size_ptr to the allocated size of the
- * output buffer before calling avcodec_decode_audio3().
- *
- * @warning The input buffer must be FF_INPUT_BUFFER_PADDING_SIZE larger than
- * the actual read bytes because some optimized bitstream readers read 32 or 64
- * bits at once and could read over the end.
- *
- * @warning The end of the input buffer avpkt->data should be set to 0 to ensure that
- * no overreading happens for damaged MPEG streams.
- *
- * @warning You must not provide a custom get_buffer() when using
- * avcodec_decode_audio3().  Doing so will override it with
- * avcodec_default_get_buffer.  Use avcodec_decode_audio4() instead,
- * which does allow the application to provide a custom get_buffer().
- *
- * @note You might have to align the input buffer avpkt->data and output buffer
- * samples. The alignment requirements depend on the CPU: On some CPUs it isn't
- * necessary at all, on others it won't work at all if not aligned and on others
- * it will work but it will have an impact on performance.
- *
- * In practice, avpkt->data should have 4 byte alignment at minimum and
- * samples should be 16 byte aligned unless the CPU doesn't need it
- * (AltiVec and SSE do).
- *
- * @note Codecs which have the CODEC_CAP_DELAY capability set have a delay
- * between input and output, these need to be fed with avpkt->data=NULL,
- * avpkt->size=0 at the end to return the remaining frames.
- *
- * @param avctx the codec context
- * @param[out] samples the output buffer, sample type in avctx->sample_fmt
- *                     If the sample format is planar, each channel plane will
- *                     be the same size, with no padding between channels.
- * @param[in,out] frame_size_ptr the output buffer size in bytes
- * @param[in] avpkt The input AVPacket containing the input buffer.
- *            You can create such packet with av_init_packet() and by then setting
- *            data and size, some decoders might in addition need other fields.
- *            All decoders are designed to use the least fields possible though.
- * @return On error a negative value is returned, otherwise the number of bytes
- * used or zero if no frame data was decompressed (used) from the input AVPacket.
- */
-attribute_deprecated int avcodec_decode_audio3(AVCodecContext *avctx, int16_t *samples,
-                         int *frame_size_ptr,
-                         AVPacket *avpkt);
-#endif
-
-/**
- * Decode the audio frame of size avpkt->size from avpkt->data into frame.
- *
- * Some decoders may support multiple frames in a single AVPacket. Such
- * decoders would then just decode the first frame. In this case,
- * avcodec_decode_audio4 has to be called again with an AVPacket containing
- * the remaining data in order to decode the second frame, etc...
- * Even if no frames are returned, the packet needs to be fed to the decoder
- * with remaining data until it is completely consumed or an error occurs.
- *
- * @warning The input buffer, avpkt->data must be FF_INPUT_BUFFER_PADDING_SIZE
- *          larger than the actual read bytes because some optimized bitstream
- *          readers read 32 or 64 bits at once and could read over the end.
- *
- * @note You might have to align the input buffer. The alignment requirements
- *       depend on the CPU and the decoder.
- *
- * @param      avctx the codec context
- * @param[out] frame The AVFrame in which to store decoded audio samples.
- *                   Decoders request a buffer of a particular size by setting
- *                   AVFrame.nb_samples prior to calling get_buffer(). The
- *                   decoder may, however, only utilize part of the buffer by
- *                   setting AVFrame.nb_samples to a smaller value in the
- *                   output frame.
- * @param[out] got_frame_ptr Zero if no frame could be decoded, otherwise it is
- *                           non-zero.
- * @param[in]  avpkt The input AVPacket containing the input buffer.
- *                   At least avpkt->data and avpkt->size should be set. Some
- *                   decoders might also require additional fields to be set.
- * @return A negative error code is returned if an error occurred during
- *         decoding, otherwise the number of bytes consumed from the input
- *         AVPacket is returned.
- */
-int avcodec_decode_audio4(AVCodecContext *avctx, AVFrame *frame,
-                          int *got_frame_ptr, AVPacket *avpkt);
-
-/**
- * Decode the video frame of size avpkt->size from avpkt->data into picture.
- * Some decoders may support multiple frames in a single AVPacket, such
- * decoders would then just decode the first frame.
- *
- * @warning The input buffer must be FF_INPUT_BUFFER_PADDING_SIZE larger than
- * the actual read bytes because some optimized bitstream readers read 32 or 64
- * bits at once and could read over the end.
- *
- * @warning The end of the input buffer buf should be set to 0 to ensure that
- * no overreading happens for damaged MPEG streams.
- *
- * @note You might have to align the input buffer avpkt->data.
- * The alignment requirements depend on the CPU: on some CPUs it isn't
- * necessary at all, on others it won't work at all if not aligned and on others
- * it will work but it will have an impact on performance.
- *
- * In practice, avpkt->data should have 4 byte alignment at minimum.
- *
- * @note Codecs which have the CODEC_CAP_DELAY capability set have a delay
- * between input and output, these need to be fed with avpkt->data=NULL,
- * avpkt->size=0 at the end to return the remaining frames.
- *
- * @param avctx the codec context
- * @param[out] picture The AVFrame in which the decoded video frame will be stored.
- *             Use avcodec_alloc_frame to get an AVFrame, the codec will
- *             allocate memory for the actual bitmap.
- *             with default get/release_buffer(), the decoder frees/reuses the bitmap as it sees fit.
- *             with overridden get/release_buffer() (needs CODEC_CAP_DR1) the user decides into what buffer the decoder
- *                   decodes and the decoder tells the user once it does not need the data anymore,
- *                   the user app can at this point free/reuse/keep the memory as it sees fit.
- *
- * @param[in] avpkt The input AVpacket containing the input buffer.
- *            You can create such packet with av_init_packet() and by then setting
- *            data and size, some decoders might in addition need other fields like
- *            flags&AV_PKT_FLAG_KEY. All decoders are designed to use the least
- *            fields possible.
- * @param[in,out] got_picture_ptr Zero if no frame could be decompressed, otherwise, it is nonzero.
- * @return On error a negative value is returned, otherwise the number of bytes
- * used or zero if no frame could be decompressed.
- */
-int avcodec_decode_video2(AVCodecContext *avctx, AVFrame *picture,
-                         int *got_picture_ptr,
-                         AVPacket *avpkt);
-
-/**
- * Decode a subtitle message.
- * Return a negative value on error, otherwise return the number of bytes used.
- * If no subtitle could be decompressed, got_sub_ptr is zero.
- * Otherwise, the subtitle is stored in *sub.
- * Note that CODEC_CAP_DR1 is not available for subtitle codecs. This is for
- * simplicity, because the performance difference is expect to be negligible
- * and reusing a get_buffer written for video codecs would probably perform badly
- * due to a potentially very different allocation pattern.
- *
- * @param avctx the codec context
- * @param[out] sub The AVSubtitle in which the decoded subtitle will be stored, must be
-                   freed with avsubtitle_free if *got_sub_ptr is set.
- * @param[in,out] got_sub_ptr Zero if no subtitle could be decompressed, otherwise, it is nonzero.
- * @param[in] avpkt The input AVPacket containing the input buffer.
- */
-int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
-                            int *got_sub_ptr,
-                            AVPacket *avpkt);
 
 #if FF_API_OLD_ENCODE_AUDIO
 /**
@@ -3994,201 +4210,6 @@ int av_get_exact_bits_per_sample(enum CodecID codec_id);
  *                     determine.
  */
 int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes);
-
-/* frame parsing */
-typedef struct AVCodecParserContext {
-    void *priv_data;
-    struct AVCodecParser *parser;
-    int64_t frame_offset; /* offset of the current frame */
-    int64_t cur_offset; /* current offset
-                           (incremented by each av_parser_parse()) */
-    int64_t next_frame_offset; /* offset of the next frame */
-    /* video info */
-    int pict_type; /* XXX: Put it back in AVCodecContext. */
-    /**
-     * This field is used for proper frame duration computation in lavf.
-     * It signals, how much longer the frame duration of the current frame
-     * is compared to normal frame duration.
-     *
-     * frame_duration = (1 + repeat_pict) * time_base
-     *
-     * It is used by codecs like H.264 to display telecined material.
-     */
-    int repeat_pict; /* XXX: Put it back in AVCodecContext. */
-    int64_t pts;     /* pts of the current frame */
-    int64_t dts;     /* dts of the current frame */
-
-    /* private data */
-    int64_t last_pts;
-    int64_t last_dts;
-    int fetch_timestamp;
-
-#define AV_PARSER_PTS_NB 4
-    int cur_frame_start_index;
-    int64_t cur_frame_offset[AV_PARSER_PTS_NB];
-    int64_t cur_frame_pts[AV_PARSER_PTS_NB];
-    int64_t cur_frame_dts[AV_PARSER_PTS_NB];
-
-    int flags;
-#define PARSER_FLAG_COMPLETE_FRAMES           0x0001
-#define PARSER_FLAG_ONCE                      0x0002
-/// Set if the parser has a valid file offset
-#define PARSER_FLAG_FETCHED_OFFSET            0x0004
-
-    int64_t offset;      ///< byte offset from starting packet start
-    int64_t cur_frame_end[AV_PARSER_PTS_NB];
-
-    /**
-     * Set by parser to 1 for key frames and 0 for non-key frames.
-     * It is initialized to -1, so if the parser doesn't set this flag,
-     * old-style fallback using AV_PICTURE_TYPE_I picture type as key frames
-     * will be used.
-     */
-    int key_frame;
-
-    /**
-     * Time difference in stream time base units from the pts of this
-     * packet to the point at which the output from the decoder has converged
-     * independent from the availability of previous frames. That is, the
-     * frames are virtually identical no matter if decoding started from
-     * the very first frame or from this keyframe.
-     * Is AV_NOPTS_VALUE if unknown.
-     * This field is not the display duration of the current frame.
-     * This field has no meaning if the packet does not have AV_PKT_FLAG_KEY
-     * set.
-     *
-     * The purpose of this field is to allow seeking in streams that have no
-     * keyframes in the conventional sense. It corresponds to the
-     * recovery point SEI in H.264 and match_time_delta in NUT. It is also
-     * essential for some types of subtitle streams to ensure that all
-     * subtitles are correctly displayed after seeking.
-     */
-    int64_t convergence_duration;
-
-    // Timestamp generation support:
-    /**
-     * Synchronization point for start of timestamp generation.
-     *
-     * Set to >0 for sync point, 0 for no sync point and <0 for undefined
-     * (default).
-     *
-     * For example, this corresponds to presence of H.264 buffering period
-     * SEI message.
-     */
-    int dts_sync_point;
-
-    /**
-     * Offset of the current timestamp against last timestamp sync point in
-     * units of AVCodecContext.time_base.
-     *
-     * Set to INT_MIN when dts_sync_point unused. Otherwise, it must
-     * contain a valid timestamp offset.
-     *
-     * Note that the timestamp of sync point has usually a nonzero
-     * dts_ref_dts_delta, which refers to the previous sync point. Offset of
-     * the next frame after timestamp sync point will be usually 1.
-     *
-     * For example, this corresponds to H.264 cpb_removal_delay.
-     */
-    int dts_ref_dts_delta;
-
-    /**
-     * Presentation delay of current frame in units of AVCodecContext.time_base.
-     *
-     * Set to INT_MIN when dts_sync_point unused. Otherwise, it must
-     * contain valid non-negative timestamp delta (presentation time of a frame
-     * must not lie in the past).
-     *
-     * This delay represents the difference between decoding and presentation
-     * time of the frame.
-     *
-     * For example, this corresponds to H.264 dpb_output_delay.
-     */
-    int pts_dts_delta;
-
-    /**
-     * Position of the packet in file.
-     *
-     * Analogous to cur_frame_pts/dts
-     */
-    int64_t cur_frame_pos[AV_PARSER_PTS_NB];
-
-    /**
-     * Byte position of currently parsed frame in stream.
-     */
-    int64_t pos;
-
-    /**
-     * Previous frame byte position.
-     */
-    int64_t last_pos;
-
-    /**
-     * Duration of the current frame.
-     * For audio, this is in units of 1 / AVCodecContext.sample_rate.
-     * For all other types, this is in units of AVCodecContext.time_base.
-     */
-    int duration;
-} AVCodecParserContext;
-
-typedef struct AVCodecParser {
-    int codec_ids[5]; /* several codec IDs are permitted */
-    int priv_data_size;
-    int (*parser_init)(AVCodecParserContext *s);
-    int (*parser_parse)(AVCodecParserContext *s,
-                        AVCodecContext *avctx,
-                        const uint8_t **poutbuf, int *poutbuf_size,
-                        const uint8_t *buf, int buf_size);
-    void (*parser_close)(AVCodecParserContext *s);
-    int (*split)(AVCodecContext *avctx, const uint8_t *buf, int buf_size);
-    struct AVCodecParser *next;
-} AVCodecParser;
-
-AVCodecParser *av_parser_next(AVCodecParser *c);
-
-void av_register_codec_parser(AVCodecParser *parser);
-AVCodecParserContext *av_parser_init(int codec_id);
-
-/**
- * Parse a packet.
- *
- * @param s             parser context.
- * @param avctx         codec context.
- * @param poutbuf       set to pointer to parsed buffer or NULL if not yet finished.
- * @param poutbuf_size  set to size of parsed buffer or zero if not yet finished.
- * @param buf           input buffer.
- * @param buf_size      input length, to signal EOF, this should be 0 (so that the last frame can be output).
- * @param pts           input presentation timestamp.
- * @param dts           input decoding timestamp.
- * @param pos           input byte position in stream.
- * @return the number of bytes of the input bitstream used.
- *
- * Example:
- * @code
- *   while(in_len){
- *       len = av_parser_parse2(myparser, AVCodecContext, &data, &size,
- *                                        in_data, in_len,
- *                                        pts, dts, pos);
- *       in_data += len;
- *       in_len  -= len;
- *
- *       if(size)
- *          decode_frame(data, size);
- *   }
- * @endcode
- */
-int av_parser_parse2(AVCodecParserContext *s,
-                     AVCodecContext *avctx,
-                     uint8_t **poutbuf, int *poutbuf_size,
-                     const uint8_t *buf, int buf_size,
-                     int64_t pts, int64_t dts,
-                     int64_t pos);
-
-int av_parser_change(AVCodecParserContext *s,
-                     AVCodecContext *avctx,
-                     uint8_t **poutbuf, int *poutbuf_size,
-                     const uint8_t *buf, int buf_size, int keyframe);
-void av_parser_close(AVCodecParserContext *s);
 
 
 typedef struct AVBitStreamFilterContext {
