@@ -68,8 +68,10 @@ void *av_malloc(size_t size)
     long diff;
 #endif
 
+    assert(size);
+
     /* let's disallow possible ambiguous cases */
-    if(size > (INT_MAX-32) )
+    if (size > (INT_MAX-32) || !size)
         return NULL;
 
 #if CONFIG_MEMALIGN_HACK
