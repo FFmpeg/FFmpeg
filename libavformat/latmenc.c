@@ -111,6 +111,8 @@ static void latm_write_frame_header(AVFormatContext *s, PutBitContext *bs)
             header_size = avctx->extradata_size-(ctx->off >> 3);
             avpriv_copy_bits(bs, &avctx->extradata[ctx->off >> 3], header_size);
         } else {
+            // + 3 assumes not scalable and dependsOnCoreCoder == 0,
+            // see decode_ga_specific_config in libavcodec/aacdec.c
             avpriv_copy_bits(bs, avctx->extradata, ctx->off + 3);
 
             if (!ctx->channel_conf) {
