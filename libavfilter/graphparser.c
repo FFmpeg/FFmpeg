@@ -349,6 +349,30 @@ static int parse_outputs(const char **buf, AVFilterInOut **curr_inputs,
 #else
 #define log_ctx NULL
 #endif
+
+static int parse_sws_flags(const char **buf, AVFilterGraph *graph)
+{
+    char *p = strchr(*buf, ';');
+
+    if (strncmp(*buf, "sws_flags=", 10))
+        return 0;
+
+    if (!p) {
+        av_log(log_ctx, AV_LOG_ERROR, "sws_flags not terminated with ';'.\n");
+        return AVERROR(EINVAL);
+    }
+
+    *buf += 4;  // keep the 'flags=' part
+
+    av_freep(&graph->scale_sws_opts);
+    if (!(graph->scale_sws_opts = av_mallocz(p - *buf + 1)))
+        return AVERROR(ENOMEM);
+    av_strlcpy(graph->scale_sws_opts, *buf, p - *buf + 1);
+
+    *buf = p + 1;
+    return 0;
+}
+
 int avfilter_graph_parse2(AVFilterGraph *graph, const char *filters,
                           AVFilterInOut **inputs,
                           AVFilterInOut **outputs)
@@ -357,6 +381,11 @@ int avfilter_graph_parse2(AVFilterGraph *graph, const char *filters,
     char chr = 0;
 
     AVFilterInOut *curr_inputs = NULL, *open_inputs = NULL, *open_outputs = NULL;
+
+    filters += strspn(filters, WHITESPACES);
+
+    if ((ret = parse_sws_flags(&filters, graph)) < 0)
+        goto fail;
 
     do {
         AVFilterContext *filter;
