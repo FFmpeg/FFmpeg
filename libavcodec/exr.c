@@ -77,15 +77,13 @@ static inline uint16_t exr_flt2uint(uint32_t v)
  */
 static inline uint16_t exr_halflt2uint(uint16_t v)
 {
-    int exp = v >> 10;
-    if (v & 0x8000)
-        return 0;
-    if (!exp)
-        return (v >> 9) & 1;
-    if (exp >= 15)
-        return 0xffff;
+    unsigned exp = 14 - (v >> 10);
+    if (exp >= 14) {
+        if (exp == 14) return (v >> 9) & 1;
+        else           return (v & 0x8000) ? 0 : 0xffff;
+    }
     v <<= 6;
-    return (v + (1 << 16)) >> (15 - exp);
+    return (v + (1 << 16)) >> (exp + 1);
 }
 
 /**
