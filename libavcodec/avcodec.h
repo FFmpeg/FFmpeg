@@ -4018,7 +4018,7 @@ int avcodec_encode_audio2(AVCodecContext *avctx, AVPacket *avpkt,
  * @param sample_fmt  sample format
  * @param buf         buffer to use for frame data
  * @param buf_size    size of buffer
- * @param align       plane size sample alignment
+ * @param align       plane size sample alignment (0 = default)
  * @return            0 on success, negative error code on failure
  */
 int avcodec_fill_audio_frame(AVFrame *frame, int nb_channels,

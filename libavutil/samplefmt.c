@@ -69,6 +69,24 @@ enum AVSampleFormat av_get_alt_sample_fmt(enum AVSampleFormat sample_fmt, int pl
     return sample_fmt_info[sample_fmt].altform;
 }
 
+enum AVSampleFormat av_get_packed_sample_fmt(enum AVSampleFormat sample_fmt)
+{
+    if (sample_fmt < 0 || sample_fmt >= AV_SAMPLE_FMT_NB)
+        return AV_SAMPLE_FMT_NONE;
+    if (sample_fmt_info[sample_fmt].planar)
+        return sample_fmt_info[sample_fmt].altform;
+    return sample_fmt;
+}
+
+enum AVSampleFormat av_get_planar_sample_fmt(enum AVSampleFormat sample_fmt)
+{
+    if (sample_fmt < 0 || sample_fmt >= AV_SAMPLE_FMT_NB)
+        return AV_SAMPLE_FMT_NONE;
+    if (sample_fmt_info[sample_fmt].planar)
+        return sample_fmt;
+    return sample_fmt_info[sample_fmt].altform;
+}
+
 char *av_get_sample_fmt_string (char *buf, int buf_size, enum AVSampleFormat sample_fmt)
 {
     /* print header */
@@ -114,6 +132,10 @@ int av_samples_get_buffer_size(int *linesize, int nb_channels, int nb_samples,
     if (!sample_size || nb_samples <= 0 || nb_channels <= 0)
         return AVERROR(EINVAL);
 
+    /* auto-select alignment if not specified */
+    if (!align)
+        align = 32;
+
     /* check for integer overflow */
     if (nb_channels > INT_MAX / align ||
         (int64_t)nb_channels * nb_samples > (INT_MAX - (align * nb_channels)) / sample_size)
@@ -131,17 +153,20 @@ int av_samples_fill_arrays(uint8_t **audio_data, int *linesize,
                            uint8_t *buf, int nb_channels, int nb_samples,
                            enum AVSampleFormat sample_fmt, int align)
 {
-    int ch, planar, buf_size;
+    int ch, planar, buf_size, line_size;
 
     planar   = av_sample_fmt_is_planar(sample_fmt);
-    buf_size = av_samples_get_buffer_size(linesize, nb_channels, nb_samples,
+    buf_size = av_samples_get_buffer_size(&line_size, nb_channels, nb_samples,
                                           sample_fmt, align);
     if (buf_size < 0)
         return buf_size;
 
     audio_data[0] = buf;
     for (ch = 1; planar && ch < nb_channels; ch++)
-        audio_data[ch] = audio_data[ch-1] + *linesize;
+        audio_data[ch] = audio_data[ch-1] + line_size;
+
+    if (linesize)
+        *linesize = line_size;
 
     return 0;
 }

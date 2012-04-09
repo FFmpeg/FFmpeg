@@ -272,7 +272,6 @@ typedef struct OutputStream {
 
     AVFilterContext *output_video_filter;
     AVFilterContext *input_video_filter;
-    AVFilterBufferRef *picref;
     char *avfilter;
     AVFilterGraph *graph;
 
@@ -1130,7 +1129,7 @@ static int alloc_audio_output_buf(AVCodecContext *dec, AVCodecContext *enc,
 
     audio_buf_size = av_samples_get_buffer_size(NULL, enc->channels,
                                                 audio_buf_samples,
-                                                enc->sample_fmt, 32);
+                                                enc->sample_fmt, 0);
     if (audio_buf_size < 0)
         return audio_buf_size;
 
@@ -2116,6 +2115,9 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
 
     rate_emu_sleep(ist);
 
+    if (ist->st->sample_aspect_ratio.num)
+        decoded_frame->sample_aspect_ratio = ist->st->sample_aspect_ratio;
+
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost = &output_streams[i];
 
@@ -2125,8 +2127,9 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
         while (av_buffersink_poll_frame(ost->output_video_filter)) {
             AVRational ist_pts_tb = ost->output_video_filter->inputs[0]->time_base;
             AVFrame *filtered_frame;
+            AVFilterBufferRef *picref;
 
-            if (av_buffersink_get_buffer_ref(ost->output_video_filter, &ost->picref, 0) < 0){
+            if (av_buffersink_get_buffer_ref(ost->output_video_filter, &picref, 0) < 0){
                 av_log(NULL, AV_LOG_WARNING, "AV Filter told us it has a frame available but failed to output one\n");
                 goto cont;
             }
@@ -2136,13 +2139,13 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
             }
             filtered_frame = ist->filtered_frame;
             *filtered_frame= *decoded_frame; //for me_threshold
-            avfilter_fill_frame_from_video_buffer_ref(filtered_frame, ost->picref);
-            filtered_frame->pts = av_rescale_q(ost->picref->pts, ist_pts_tb, AV_TIME_BASE_Q);
+            avfilter_fill_frame_from_video_buffer_ref(filtered_frame, picref);
+            filtered_frame->pts = av_rescale_q(picref->pts, ist_pts_tb, AV_TIME_BASE_Q);
             if (!ost->frame_aspect_ratio)
-                ost->st->codec->sample_aspect_ratio = ost->picref->video->sample_aspect_ratio;
+                ost->st->codec->sample_aspect_ratio = picref->video->sample_aspect_ratio;
             do_video_out(output_files[ost->file_index].ctx, ost, ist, filtered_frame);
             cont:
-            avfilter_unref_buffer(ost->picref);
+            avfilter_unref_buffer(picref);
         }
     }
 
