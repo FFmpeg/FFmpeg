@@ -27,6 +27,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/eval.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libswscale/swscale.h"
 
@@ -91,7 +92,15 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     if (args) {
         sscanf(args, "%255[^:]:%255[^:]", scale->w_expr, scale->h_expr);
         p = strstr(args,"flags=");
-        if (p) scale->flags = strtoul(p+6, NULL, 0);
+        if (p) {
+            const AVClass *class = sws_get_class();
+            const AVOption    *o = av_opt_find(&class, "sws_flags", NULL, 0,
+                                               AV_OPT_SEARCH_FAKE_OBJ);
+            int ret = av_opt_eval_flags(&class, o, p + 6, &scale->flags);
+
+            if (ret < 0)
+                return ret;
+        }
     }
 
     return 0;
