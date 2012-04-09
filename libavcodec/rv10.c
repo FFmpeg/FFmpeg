@@ -371,10 +371,19 @@ static int rv20_decode_picture_header(RVDecContext *rv)
             new_h= s->orig_height;
         }
         if(new_w != s->width || new_h != s->height){
+            AVRational old_aspect = s->avctx->sample_aspect_ratio;
             av_log(s->avctx, AV_LOG_DEBUG, "attempting to change resolution to %dx%d\n", new_w, new_h);
             if (av_image_check_size(new_w, new_h, 0, s->avctx) < 0)
                 return -1;
             ff_MPV_common_end(s);
+
+            // attempt to keep aspect during typical resolution switches
+            if (!old_aspect.num)
+                old_aspect = (AVRational){1, 1};
+            if (2 * new_w * s->height == new_h * s->width)
+                s->avctx->sample_aspect_ratio = av_mul_q(old_aspect, (AVRational){2, 1});
+            if (new_w * s->height == 2 * new_h * s->width)
+                s->avctx->sample_aspect_ratio = av_mul_q(old_aspect, (AVRational){1, 2});
             avcodec_set_dimensions(s->avctx, new_w, new_h);
             s->width  = new_w;
             s->height = new_h;
