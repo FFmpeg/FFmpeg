@@ -2421,7 +2421,7 @@ static void compute_chapters_end(AVFormatContext *s)
 }
 
 static int get_std_framerate(int i){
-    if(i<60*12) return i*1001;
+    if(i<60*12) return (i+1)*1001;
     else        return ((const int[]){24,30,60,12,15,48})[i-60*12]*1000*12;
 }
 
@@ -2618,7 +2618,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 
 //                 if(st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
 //                     av_log(NULL, AV_LOG_ERROR, "%f\n", dts);
-                for (i=1; i<FF_ARRAY_ELEMS(st->info->duration_error[0][0]); i++) {
+                for (i=0; i<FF_ARRAY_ELEMS(st->info->duration_error[0][0]); i++) {
                     int framerate= get_std_framerate(i);
                     double sdts= dts*framerate/(1001*12);
                     for(j=0; j<2; j++){
@@ -2727,7 +2727,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 int num = 0;
                 double best_error= 0.01;
 
-                for (j=1; j<FF_ARRAY_ELEMS(st->info->duration_error[0][0]); j++) {
+                for (j=0; j<FF_ARRAY_ELEMS(st->info->duration_error[0][0]); j++) {
                     int k;
 
                     if(st->info->codec_info_duration && st->info->codec_info_duration*av_q2d(st->time_base) < (1001*12.0)/get_std_framerate(j))
