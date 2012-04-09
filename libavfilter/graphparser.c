@@ -219,9 +219,9 @@ static int link_filter_inouts(AVFilterContext *filt_ctx,
                               AVFilterInOut **curr_inputs,
                               AVFilterInOut **open_inputs, void *log_ctx)
 {
-    int pad = filt_ctx->input_count, ret;
+    int pad, ret;
 
-    while (pad--) {
+    for (pad = 0; pad < filt_ctx->input_count; pad++) {
         AVFilterInOut *p = *curr_inputs;
 
         if (p)
@@ -264,6 +264,7 @@ static int link_filter_inouts(AVFilterContext *filt_ctx,
 static int parse_inputs(const char **buf, AVFilterInOut **curr_inputs,
                         AVFilterInOut **open_outputs, void *log_ctx)
 {
+    AVFilterInOut *parsed_inputs = NULL;
     int pad = 0;
 
     while (**buf == '[') {
@@ -286,11 +287,14 @@ static int parse_inputs(const char **buf, AVFilterInOut **curr_inputs,
             match->pad_idx = pad;
         }
 
-        insert_inout(curr_inputs, match);
+        append_inout(&parsed_inputs, &match);
 
         *buf += strspn(*buf, WHITESPACES);
         pad++;
     }
+
+    append_inout(&parsed_inputs, curr_inputs);
+    *curr_inputs = parsed_inputs;
 
     return pad;
 }
