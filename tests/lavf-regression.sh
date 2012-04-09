@@ -174,13 +174,13 @@ file=${outfile}lavf.gif
 do_avconv $file $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $ENC_OPTS -t 1 -qscale 10 -pix_fmt rgb24
 do_avconv_crc $file $DEC_OPTS -i $target_path/$file -pix_fmt rgb24
 # and this the gif encoder
-do_image_formats gif
-do_image_formats gif "-pix_fmt rgb4_byte"
-do_image_formats gif "-pix_fmt bgr4_byte"
-do_image_formats gif "-pix_fmt rgb8"
-do_image_formats gif "-pix_fmt bgr8"
-do_image_formats gif "-pix_fmt gray"
-do_image_formats gif "-pix_fmt pal8"
+do_image_formats gif "" "-pix_fmt rgb24"
+do_image_formats gif "-pix_fmt rgb4_byte" "-pix_fmt rgb24"
+do_image_formats gif "-pix_fmt bgr4_byte" "-pix_fmt rgb24"
+do_image_formats gif "-pix_fmt rgb8" "-pix_fmt rgb24"
+do_image_formats gif "-pix_fmt bgr8" "-pix_fmt rgb24"
+do_image_formats gif "-pix_fmt gray" "-pix_fmt rgb24"
+do_image_formats gif "-pix_fmt pal8" "-pix_fmt rgb24"
 fi
 
 if [ -n "$do_yuv4mpeg" ] ; then
