@@ -138,7 +138,7 @@ static int latm_write_packet(AVFormatContext *s, AVPacket *pkt)
     PutBitContext bs;
     int i, len;
     uint8_t loas_header[] = "\x56\xe0\x00";
-    uint8_t *buf;
+    uint8_t *buf = NULL;
 
     if (s->streams[0]->codec->codec_id == CODEC_ID_AAC_LATM)
         return ff_raw_write_packet(s, pkt);
@@ -147,6 +147,8 @@ static int latm_write_packet(AVFormatContext *s, AVPacket *pkt)
         av_log(s, AV_LOG_ERROR, "ADTS header detected - ADTS will not be incorrectly muxed into LATM\n");
         return AVERROR_INVALIDDATA;
     }
+    if (pkt->size > 0x1fff)
+        goto too_large;
 
     buf = av_malloc(pkt->size+1024);
     if (!buf)
@@ -173,6 +175,9 @@ static int latm_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     len = put_bits_count(&bs) >> 3;
 
+    if (len > 0x1fff)
+        goto too_large;
+
     loas_header[1] |= (len >> 8) & 0x1f;
     loas_header[2] |= len & 0xff;
 
@@ -182,6 +187,11 @@ static int latm_write_packet(AVFormatContext *s, AVPacket *pkt)
     av_free(buf);
 
     return 0;
+
+too_large:
+    av_log(s, AV_LOG_ERROR, "LATM packet size larger than maximum size 0x1fff\n");
+    av_free(buf);
+    return AVERROR_INVALIDDATA;
 }
 
 AVOutputFormat ff_latm_muxer = {
