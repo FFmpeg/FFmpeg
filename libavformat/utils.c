@@ -3567,6 +3567,8 @@ int av_write_trailer(AVFormatContext *s)
     if(s->oformat->write_trailer)
         ret = s->oformat->write_trailer(s);
 fail:
+    if (s->pb)
+       avio_flush(s->pb);
     if(ret == 0)
        ret = s->pb ? s->pb->error : 0;
     for(i=0;i<s->nb_streams;i++) {
