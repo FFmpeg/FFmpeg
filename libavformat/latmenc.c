@@ -84,7 +84,7 @@ static int latm_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int latm_write_frame_header(AVFormatContext *s, PutBitContext *bs)
+static void latm_write_frame_header(AVFormatContext *s, PutBitContext *bs)
 {
     LATMContext *ctx = s->priv_data;
     AVCodecContext *avctx = s->streams[0]->codec;
@@ -125,8 +125,6 @@ static int latm_write_frame_header(AVFormatContext *s, PutBitContext *bs)
 
     ctx->counter++;
     ctx->counter %= ctx->mod;
-
-    return 0;
 }
 
 static int latm_write_packet(AVFormatContext *s, AVPacket *pkt)
