@@ -510,6 +510,18 @@ static void null_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir) {
 
 static void null_end_frame(AVFilterLink *inlink) { }
 
+static int poll_frame(AVFilterLink *link)
+{
+    AVFilterContext   *s = link->src;
+    OverlayContext *over = s->priv;
+    int ret = avfilter_poll_frame(s->inputs[OVERLAY]);
+
+    if (ret == AVERROR_EOF)
+        ret = !!over->overpicref;
+
+    return ret && avfilter_poll_frame(s->inputs[MAIN]);
+}
+
 AVFilter avfilter_vf_overlay = {
     .name      = "overlay",
     .description = NULL_IF_CONFIG_SMALL("Overlay a video source on top of the input."),
@@ -541,6 +553,7 @@ AVFilter avfilter_vf_overlay = {
                                   { .name = NULL}},
     .outputs   = (const AVFilterPad[]) {{ .name      = "default",
                                     .type            = AVMEDIA_TYPE_VIDEO,
-                                    .config_props    = config_output, },
+                                    .config_props    = config_output,
+                                    .poll_frame      = poll_frame },
                                   { .name = NULL}},
 };

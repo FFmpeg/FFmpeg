@@ -32,13 +32,14 @@ SECTION .text
 
 ; %1=5bits weights?, %2=dst %3=src1 %4=src3 %5=stride if sse2
 %macro RV40_WCORE  4-5
-    movh       m4, [%3 + 0]
-    movh       m5, [%4 + 0]
+    movh       m4, [%3 + r6 + 0]
+    movh       m5, [%4 + r6 + 0]
 %if %0 == 4
-%define OFFSET mmsize / 2
+%define OFFSET r6 + mmsize / 2
 %else
     ; 8x8 block and sse2, stride was provided
-%define OFFSET %5
+%define OFFSET r6
+    add        r6, r5
 %endif
     movh       m6, [%3 + OFFSET]
     movh       m7, [%4 + OFFSET]
@@ -99,10 +100,12 @@ SECTION .text
     packuswb   m4, m6
 %if %0 == 5
     ; Only called for 8x8 blocks and sse2
-    movh       [%2 +  0], m4
-    movhps     [%2 + %5], m4
+    sub        r6, r5
+    movh       [%2 + r6], m4
+    add        r6, r5
+    movhps     [%2 + r6], m4
 %else
-    mova       [%2], m4
+    mova       [%2 + r6], m4
 %endif
 %endmacro
 
@@ -115,93 +118,79 @@ SECTION .text
 %endif
 
     ; Prepare for next loop
-    add        r0, r5
-    add        r1, r5
-    add        r2, r5
+    add        r6, r5
 %else
 %ifidn %1, 8
     RV40_WCORE %2, r0, r1, r2, r5
     ; Prepare 2 next lines
-    lea        r0, [r0 + 2 * r5]
-    lea        r1, [r1 + 2 * r5]
-    lea        r2, [r2 + 2 * r5]
+    add        r6, r5
 %else
     RV40_WCORE %2, r0, r1, r2
     ; Prepare single next line
-    add        r0, r5
-    add        r1, r5
-    add        r2, r5
+    add        r6, r5
 %endif
 %endif
 
-    dec        r6
 %endmacro
 
 ; rv40_weight_func_%1(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w1, int w2, int stride)
 ; %1=size  %2=num of xmm regs
-%macro RV40_WEIGHT  2
-cglobal rv40_weight_func_%1, 6, 7, %2
+; The weights are FP0.14 notation of fractions depending on pts.
+; For timebases without rounding error (i.e. PAL), the fractions
+; can be simplified, and several operations can be avoided.
+; Therefore, we check here whether they are multiples of 2^9 for
+; those simplifications to occur.
+%macro RV40_WEIGHT  3
+cglobal rv40_weight_func_%1_%2, 6, 7, 8
 %if cpuflag(ssse3)
     mova       m1, [shift_round]
 %else
     mova       m1, [pw_16]
 %endif
     pxor       m0, m0
-    mov        r6, r3
-    or         r6, r4
-    ; The weights are FP0.14 notation of fractions depending on pts.
-    ; For timebases without rounding error (i.e. PAL), the fractions
-    ; can be simplified, and several operations can be avoided.
-    ; Therefore, we check here whether they are multiples of 2^9 for
-    ; those simplifications to occur.
-    and        r6, 0x1FF
     ; Set loop counter and increments
-%if mmsize == 8
-    mov        r6, %1
-%else
-    mov        r6, (%1 * %1) / mmsize
-%endif
+    mov        r6, r5
+    shl        r6, %3
+    add        r0, r6
+    add        r1, r6
+    add        r2, r6
+    neg        r6
 
-    ; Use result of test now
-    jz .loop_512
     movd       m2, r3d
     movd       m3, r4d
+%ifidn %1,rnd
+%define  RND   0
     SPLATW     m2, m2
+%else
+%define  RND   1
+%if cpuflag(ssse3)
+    punpcklbw  m3, m2
+%else
+    SPLATW     m2, m2
+%endif
+%endif
     SPLATW     m3, m3
 
 .loop:
-    MAIN_LOOP  %1, 0
+    MAIN_LOOP  %2, RND
     jnz        .loop
     REP_RET
-
-    ; Weights are multiple of 512, which allows some shortcuts
-.loop_512:
-    sar        r3, 9
-    sar        r4, 9
-    movd       m2, r3d
-    movd       m3, r4d
-%if cpuflag(ssse3)
-    punpcklbw  m3, m2
-    SPLATW     m3, m3
-%else
-    SPLATW     m2, m2
-    SPLATW     m3, m3
-%endif
-.loop2:
-    MAIN_LOOP  %1, 1
-    jnz        .loop2
-    REP_RET
-
 %endmacro
 
 INIT_MMX mmx
-RV40_WEIGHT    8, 0
-RV40_WEIGHT   16, 0
+RV40_WEIGHT   rnd,    8, 3
+RV40_WEIGHT   rnd,   16, 4
+RV40_WEIGHT   nornd,  8, 3
+RV40_WEIGHT   nornd, 16, 4
 
 INIT_XMM sse2
-RV40_WEIGHT    8, 8
-RV40_WEIGHT   16, 8
+RV40_WEIGHT   rnd,    8, 3
+RV40_WEIGHT   rnd,   16, 4
+RV40_WEIGHT   nornd,  8, 3
+RV40_WEIGHT   nornd, 16, 4
 
 INIT_XMM ssse3
-RV40_WEIGHT    8, 8
-RV40_WEIGHT   16, 8
+RV40_WEIGHT   rnd,    8, 3
+RV40_WEIGHT   rnd,   16, 4
+RV40_WEIGHT   nornd,  8, 3
+RV40_WEIGHT   nornd, 16, 4
