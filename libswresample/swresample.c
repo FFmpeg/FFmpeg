@@ -190,7 +190,7 @@ int swr_init(struct SwrContext *s){
 
 
     if (s->out_sample_rate!=s->in_sample_rate || (s->flags & SWR_FLAG_RESAMPLE)){
-        s->resample = swri_resample_init(s->resample, s->out_sample_rate, s->in_sample_rate, 16, 10, 0, 0.8);
+        s->resample = swri_resample_init(s->resample, s->out_sample_rate, s->in_sample_rate, 16, 10, 0, 0.8, s->int_sample_fmt);
     }else
         swri_resample_free(&s->resample);
     if(s->int_sample_fmt != AV_SAMPLE_FMT_S16 && s->resample){
