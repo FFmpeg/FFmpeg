@@ -276,6 +276,7 @@ void swri_sum2(enum AVSampleFormat format, void *dst, const void *src0, const vo
     if(format == AV_SAMPLE_FMT_FLT){
         sum2_float((float  *)dst, (const float  *)src0, (const float  *)src1, coef0, coef1, len);
     }else{
+        av_assert1(format == AV_SAMPLE_FMT_S16);
         sum2_s16  ((int16_t*)dst, (const int16_t*)src0, (const int16_t*)src1, lrintf(coef0 * 32768), lrintf(coef1 * 32768), len);
     }
 }
