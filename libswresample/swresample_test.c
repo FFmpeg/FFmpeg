@@ -140,7 +140,7 @@ int main(int argc, char **argv){
                         int out_count, mid_count, out_ch_count;
                         out_ch_layout= layouts[out_ch_layout_index];
                         out_ch_count= av_get_channel_layout_nb_channels(out_ch_layout);
-                        fprintf(stderr, "ch %d->%d, rate:%5d->%5d, fmt:%s->%s",
+                        fprintf(stderr, "ch %d->%d, rate:%5d->%5d, fmt:%s->%s\n",
                                in_ch_count, out_ch_count,
                                in_sample_rate, out_sample_rate,
                                av_get_sample_fmt_name(in_sample_fmt), av_get_sample_fmt_name(out_sample_fmt));
