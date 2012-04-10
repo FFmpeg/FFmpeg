@@ -430,6 +430,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_expr_free(dtext->x_pexpr); dtext->x_pexpr = NULL;
     av_expr_free(dtext->y_pexpr); dtext->y_pexpr = NULL;
+    av_expr_free(dtext->d_pexpr); dtext->d_pexpr = NULL;
 
     av_freep(&dtext->boxcolor_string);
     av_freep(&dtext->expanded_text);
@@ -439,6 +440,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&dtext->text);
     av_freep(&dtext->x_expr);
     av_freep(&dtext->y_expr);
+    av_freep(&dtext->d_expr);
 
     av_freep(&dtext->positions);
     dtext->nb_positions = 0;
