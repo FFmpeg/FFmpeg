@@ -205,6 +205,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
             st->codec->block_align = coded_framesize;
             break;
         case CODEC_ID_COOK:
+            st->need_parsing = AVSTREAM_PARSE_HEADERS;
         case CODEC_ID_ATRAC3:
         case CODEC_ID_SIPR:
             avio_rb16(pb); avio_r8(pb);
