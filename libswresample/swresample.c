@@ -53,6 +53,7 @@ static const AVOption options[]={
 {"rmvol", "rematrix volume"     , OFFSET(rematrix_volume), AV_OPT_TYPE_FLOAT, {.dbl=1.0}, -1000, 1000, 0},
 {"flags", NULL                  , OFFSET(flags)        , AV_OPT_TYPE_FLAGS, {.dbl=0}, 0,  UINT_MAX, 0, "flags"},
 {"res", "force resampling", 0, AV_OPT_TYPE_CONST, {.dbl=SWR_FLAG_RESAMPLE}, INT_MIN, INT_MAX, 0, "flags"},
+{"dither", "dither method"      , OFFSET(dither_method), AV_OPT_TYPE_INT, {.dbl=0}, 0, SWR_DITHER_NB-1, 0},
 
 {0}
 };
@@ -139,6 +140,7 @@ void swr_free(SwrContext **ss){
         free_temp(&s->midbuf);
         free_temp(&s->preout);
         free_temp(&s->in_buffer);
+        free_temp(&s->dither);
         swri_audio_convert_free(&s-> in_convert);
         swri_audio_convert_free(&s->out_convert);
         swri_audio_convert_free(&s->full_convert);
@@ -156,6 +158,7 @@ int swr_init(struct SwrContext *s){
     free_temp(&s->midbuf);
     free_temp(&s->preout);
     free_temp(&s->in_buffer);
+    free_temp(&s->dither);
     swri_audio_convert_free(&s-> in_convert);
     swri_audio_convert_free(&s->out_convert);
     swri_audio_convert_free(&s->full_convert);
@@ -280,6 +283,8 @@ av_assert0(s->out.ch_count);
         s->in_buffer.bps    = s->int_bps;
         s->in_buffer.planar = 1;
     }
+
+    s->dither = s->preout;
 
     if(s->rematrix)
         return swri_rematrix_init(s);
@@ -505,6 +510,21 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
     }
 
     if(preout != out && out_count){
+        if(s->dither_method){
+            int ch, i;
+            av_assert0(preout != in);
+
+            if((ret=realloc_audio(&s->dither, out_count))<0)
+                return ret;
+            if(ret)
+                for(ch=0; ch<s->dither.ch_count; ch++)
+                    swri_get_dither(s->dither.ch[ch], s->dither.count, 12345678913579<<ch, s->out_sample_fmt, s->int_sample_fmt, s->dither_method);
+            av_assert0(s->dither.ch_count == preout->ch_count);
+
+            for(ch=0; ch<preout->ch_count; ch++){
+                swri_sum2(s->int_sample_fmt, preout->ch[ch], preout->ch[ch], s->dither.ch[ch], 1, 1, out_count);
+            }
+        }
 //FIXME packed doesnt need more than 1 chan here!
         swri_audio_convert(s->out_convert, out, preout, out_count);
     }
