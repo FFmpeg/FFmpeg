@@ -128,7 +128,7 @@ static void h261_encode_motion(H261Context * h, int val){
     int sign, code;
     if(val==0){
         code = 0;
-        put_bits(&s->pb,h261_mv_tab[code][1],h261_mv_tab[code][0]);
+        put_bits(&s->pb,ff_h261_mv_tab[code][1],ff_h261_mv_tab[code][0]);
     }
     else{
         if(val > 15)
@@ -137,7 +137,7 @@ static void h261_encode_motion(H261Context * h, int val){
             val+=32;
         sign = val < 0;
         code = sign ? -val : val;
-        put_bits(&s->pb,h261_mv_tab[code][1],h261_mv_tab[code][0]);
+        put_bits(&s->pb,ff_h261_mv_tab[code][1],ff_h261_mv_tab[code][0]);
         put_bits(&s->pb,1,sign);
     }
 }
@@ -182,7 +182,7 @@ void ff_h261_encode_mb(MpegEncContext * s,
     }
 
     /* MB is not skipped, encode MBA */
-    put_bits(&s->pb, h261_mba_bits[(h->current_mba-h->previous_mba)-1], h261_mba_code[(h->current_mba-h->previous_mba)-1]);
+    put_bits(&s->pb, ff_h261_mba_bits[(h->current_mba-h->previous_mba)-1], ff_h261_mba_code[(h->current_mba-h->previous_mba)-1]);
 
     /* calculate MTYPE */
     if(!s->mb_intra){
@@ -200,9 +200,9 @@ void ff_h261_encode_mb(MpegEncContext * s,
     if(s->dquant)
         h->mtype++;
 
-    put_bits(&s->pb, h261_mtype_bits[h->mtype], h261_mtype_code[h->mtype]);
+    put_bits(&s->pb, ff_h261_mtype_bits[h->mtype], ff_h261_mtype_code[h->mtype]);
 
-    h->mtype = h261_mtype_map[h->mtype];
+    h->mtype = ff_h261_mtype_map[h->mtype];
 
     if(IS_QUANT(h->mtype)){
         ff_set_qscale(s,s->qscale+s->dquant);
@@ -222,7 +222,7 @@ void ff_h261_encode_mb(MpegEncContext * s,
 
     if(HAS_CBP(h->mtype)){
         assert(cbp>0);
-        put_bits(&s->pb,h261_cbp_tab[cbp-1][1],h261_cbp_tab[cbp-1][0]);
+        put_bits(&s->pb,ff_h261_cbp_tab[cbp-1][1],ff_h261_cbp_tab[cbp-1][0]);
     }
     for(i=0; i<6; i++) {
         /* encode each block */
@@ -240,7 +240,7 @@ void ff_h261_encode_init(MpegEncContext *s){
 
     if (!done) {
         done = 1;
-        ff_init_rl(&h261_rl_tcoeff, ff_h261_rl_table_store);
+        ff_init_rl(&ff_h261_rl_tcoeff, ff_h261_rl_table_store);
     }
 
     s->min_qcoeff= -127;
@@ -260,7 +260,7 @@ static void h261_encode_block(H261Context * h, DCTELEM * block, int n){
     int level, run, i, j, last_index, last_non_zero, sign, slevel, code;
     RLTable *rl;
 
-    rl = &h261_rl_tcoeff;
+    rl = &ff_h261_rl_tcoeff;
     if (s->mb_intra) {
         /* DC coef */
         level = block[0];

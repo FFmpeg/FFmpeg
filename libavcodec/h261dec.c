@@ -55,19 +55,19 @@ static av_cold void h261_decode_init_vlc(H261Context *h){
     if(!done){
         done = 1;
         INIT_VLC_STATIC(&h261_mba_vlc, H261_MBA_VLC_BITS, 35,
-                 h261_mba_bits, 1, 1,
-                 h261_mba_code, 1, 1, 662);
+                 ff_h261_mba_bits, 1, 1,
+                 ff_h261_mba_code, 1, 1, 662);
         INIT_VLC_STATIC(&h261_mtype_vlc, H261_MTYPE_VLC_BITS, 10,
-                 h261_mtype_bits, 1, 1,
-                 h261_mtype_code, 1, 1, 80);
+                 ff_h261_mtype_bits, 1, 1,
+                 ff_h261_mtype_code, 1, 1, 80);
         INIT_VLC_STATIC(&h261_mv_vlc, H261_MV_VLC_BITS, 17,
-                 &h261_mv_tab[0][1], 2, 1,
-                 &h261_mv_tab[0][0], 2, 1, 144);
+                 &ff_h261_mv_tab[0][1], 2, 1,
+                 &ff_h261_mv_tab[0][0], 2, 1, 144);
         INIT_VLC_STATIC(&h261_cbp_vlc, H261_CBP_VLC_BITS, 63,
-                 &h261_cbp_tab[0][1], 2, 1,
-                 &h261_cbp_tab[0][0], 2, 1, 512);
-        ff_init_rl(&h261_rl_tcoeff, ff_h261_rl_table_store);
-        INIT_VLC_RL(h261_rl_tcoeff, 552);
+                 &ff_h261_cbp_tab[0][1], 2, 1,
+                 &ff_h261_cbp_tab[0][0], 2, 1, 512);
+        ff_init_rl(&ff_h261_rl_tcoeff, ff_h261_rl_table_store);
+        INIT_VLC_RL(ff_h261_rl_tcoeff, 552);
     }
 }
 
@@ -228,6 +228,9 @@ static int h261_decode_mb_skipped(H261Context *h, int mba1, int mba2 )
 }
 
 static int decode_mv_component(GetBitContext *gb, int v){
+    static const int mvmap[17] = {
+        0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15, -16
+    };
     int mv_diff = get_vlc2(gb, h261_mv_vlc.table, H261_MV_VLC_BITS, 2);
 
     /* check if mv_diff is valid */
@@ -290,7 +293,7 @@ static int h261_decode_mb(H261Context *h){
         av_log(s->avctx, AV_LOG_ERROR, "illegal mtype %d\n", h->mtype);
         return SLICE_ERROR;
     }
-    h->mtype = h261_mtype_map[h->mtype];
+    h->mtype = ff_h261_mtype_map[h->mtype];
 
     // Read mquant
     if ( IS_QUANT ( h->mtype ) ){
@@ -367,7 +370,7 @@ static int h261_decode_block(H261Context * h, DCTELEM * block,
 {
     MpegEncContext * const s = &h->s;
     int code, level, i, j, run;
-    RLTable *rl = &h261_rl_tcoeff;
+    RLTable *rl = &ff_h261_rl_tcoeff;
     const uint8_t *scan_table;
 
     // For the variable length encoding there are two code tables, one being used for
