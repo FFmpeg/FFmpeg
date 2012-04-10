@@ -168,7 +168,7 @@ static int latm_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     /* The LATM payload is written unaligned */
 
-    i = 0;
+    /* PayloadMux() */
     if (pkt->size && (pkt->data[0] & 0xe1) == 0x81) {
         // Convert byte-aligned DSE to non-aligned.
         // Due to the input format encoding we know that
@@ -179,11 +179,9 @@ static int latm_write_packet(AVFormatContext *s, AVPacket *pkt)
         // This allows us to remux our FATE AAC samples into latm
         // files that are still playable with minimal effort.
         put_bits(&bs, 8, pkt->data[0] & 0xfe);
-        i++;
-    }
-    /* PayloadMux() */
-    for (; i < pkt->size; i++)
-        put_bits(&bs, 8, pkt->data[i]);
+        avpriv_copy_bits(&bs, pkt->data + 1, 8*pkt->size - 8);
+    } else
+        avpriv_copy_bits(&bs, pkt->data, 8*pkt->size);
 
     avpriv_align_put_bits(&bs);
     flush_put_bits(&bs);
