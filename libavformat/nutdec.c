@@ -985,7 +985,6 @@ static int nut_read_close(AVFormatContext *s)
     return 0;
 }
 
-#if CONFIG_NUT_DEMUXER
 AVInputFormat ff_nut_demuxer = {
     .name           = "nut",
     .long_name      = NULL_IF_CONFIG_SMALL("NUT format"),
@@ -1001,4 +1000,3 @@ AVInputFormat ff_nut_demuxer = {
         ff_nut_subtitle_tags, 0
     },
 };
-#endif

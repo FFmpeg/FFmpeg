@@ -152,7 +152,6 @@ static void dwt_quantize(SnowContext *s, Plane *p, DWTELEM *buffer, int width, i
 
 #endif /* QUANTIZE2==1 */
 
-#if CONFIG_SNOW_ENCODER
 static av_cold int encode_init(AVCodecContext *avctx)
 {
     SnowContext *s = avctx->priv_data;
@@ -1925,4 +1924,3 @@ AVCodec ff_snow_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("Snow"),
     .priv_class     = &snowenc_class,
 };
-#endif

@@ -114,8 +114,6 @@ int ff_tempfile(const char *prefix, char **filename) {
     return fd; /* success */
 }
 
-#if CONFIG_LIBXVID_ENCODER
-
 /**
  * Create the private context for the encoder.
  * All buffers are allocated, settings are loaded from the user,
@@ -830,5 +828,3 @@ AVCodec ff_libxvid_encoder = {
     .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_YUV420P, PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("libxvidcore MPEG-4 part 2"),
 };
-
-#endif /* CONFIG_LIBXVID_ENCODER */
