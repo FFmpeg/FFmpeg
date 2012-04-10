@@ -512,7 +512,7 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
 
     if(preout != out && out_count){
         if(s->dither_method){
-            int ch, i;
+            int ch;
             av_assert0(preout != in);
 
             if((ret=realloc_audio(&s->dither, out_count))<0)
