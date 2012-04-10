@@ -1,6 +1,6 @@
 /*
  * audio resampling
- * Copyright (c) 2004 Michael Niedermayer <michaelni@gmx.at>
+ * Copyright (c) 2004-2012 Michael Niedermayer <michaelni@gmx.at>
  *
  * This file is part of FFmpeg.
  *
