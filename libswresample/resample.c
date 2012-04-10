@@ -143,6 +143,10 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
             for(i=0;i<tap_count;i++)
                 ((float*)filter)[ph * tap_count + i] = tab[i] * scale / norm;
             break;
+        case AV_SAMPLE_FMT_DBL:
+            for(i=0;i<tap_count;i++)
+                ((double*)filter)[ph * tap_count + i] = tab[i] * scale / norm;
+            break;
         }
     }
 #if 0
@@ -209,6 +213,10 @@ ResampleContext *swri_resample_init(ResampleContext *c, int out_rate, int in_rat
             break;
         case AV_SAMPLE_FMT_FLT:
             c->felem_size   = 4;
+            c->filter_shift = 0;
+            break;
+        case AV_SAMPLE_FMT_DBL:
+            c->felem_size   = 8;
             c->filter_shift = 0;
             break;
         default:
@@ -330,6 +338,26 @@ int swr_set_compensation(struct SwrContext *s, int sample_delta, int compensatio
 #define OUT(d, v) d = v
 #include "resample_template.c"
 
+#undef RENAME
+#undef FELEM
+#undef FELEM2
+#undef DELEM
+#undef FELEML
+#undef OUT
+#undef FELEM_MIN
+#undef FELEM_MAX
+#undef FILTER_SHIFT
+
+
+#define RENAME(N) N ## _double
+#define FILTER_SHIFT 0
+#define DELEM  double
+#define FELEM  double
+#define FELEM2 double
+#define FELEML double
+#define OUT(d, v) d = v
+#include "resample_template.c"
+
 
 int swri_multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, AudioData *src, int src_size, int *consumed){
     int i, ret= -1;
@@ -338,6 +366,7 @@ int swri_multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, Aud
         if(c->format == AV_SAMPLE_FMT_S16) ret= swri_resample_int16(c, (int16_t*)dst->ch[i], (const int16_t*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
         if(c->format == AV_SAMPLE_FMT_S32) ret= swri_resample_int32(c, (int32_t*)dst->ch[i], (const int32_t*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
         if(c->format == AV_SAMPLE_FMT_FLT) ret= swri_resample_float(c, (float  *)dst->ch[i], (const float  *)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
+        if(c->format == AV_SAMPLE_FMT_DBL) ret= swri_resample_double(c,(double *)dst->ch[i], (const double *)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
     }
 
     return ret;
