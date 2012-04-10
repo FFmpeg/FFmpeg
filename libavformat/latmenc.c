@@ -27,6 +27,8 @@
 #include "avformat.h"
 #include "rawenc.h"
 
+#define MAX_EXTRADATA_SIZE 1024
+
 typedef struct {
     AVClass *av_class;
     int off;
@@ -53,6 +55,10 @@ static int latm_decode_extradata(LATMContext *ctx, uint8_t *buf, int size)
 {
     MPEG4AudioConfig m4ac;
 
+    if (size > MAX_EXTRADATA_SIZE) {
+        av_log(ctx, AV_LOG_ERROR, "Extradata is larger than currently supported.\n");
+        return AVERROR_INVALIDDATA;
+    }
     ctx->off = avpriv_mpeg4audio_get_config(&m4ac, buf, size * 8, 1);
     if (ctx->off < 0)
         return ctx->off;
@@ -152,11 +158,11 @@ static int latm_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (pkt->size > 0x1fff)
         goto too_large;
 
-    buf = av_malloc(pkt->size+1024);
+    buf = av_malloc(pkt->size+1024+MAX_EXTRADATA_SIZE);
     if (!buf)
         return AVERROR(ENOMEM);
 
-    init_put_bits(&bs, buf, pkt->size+1024);
+    init_put_bits(&bs, buf, pkt->size+1024+MAX_EXTRADATA_SIZE);
 
     latm_write_frame_header(s, &bs);
 
