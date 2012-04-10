@@ -119,7 +119,7 @@ struct SwrContext *swr_alloc_set_opts(struct SwrContext *s,
     av_opt_set_int(s, "icl", in_ch_layout,    0);
     av_opt_set_int(s, "isf", in_sample_fmt,   0);
     av_opt_set_int(s, "isr", in_sample_rate,  0);
-    av_opt_set_int(s, "tsf", AV_SAMPLE_FMT_S16, 0);
+    av_opt_set_int(s, "tsf", AV_SAMPLE_FMT_NONE,   0);
     av_opt_set_int(s, "ich", av_get_channel_layout_nb_channels(s-> in_ch_layout), 0);
     av_opt_set_int(s, "och", av_get_channel_layout_nb_channels(s->out_ch_layout), 0);
     av_opt_set_int(s, "uch", 0, 0);
@@ -176,25 +176,28 @@ int swr_init(struct SwrContext *s){
         return AVERROR(EINVAL);
     }
 
-    if(   s->int_sample_fmt != AV_SAMPLE_FMT_S16
-        &&s->int_sample_fmt != AV_SAMPLE_FMT_FLT){
-        av_log(s, AV_LOG_ERROR, "Requested sample format %s is not supported internally, only float & S16 is supported\n", av_get_sample_fmt_name(s->int_sample_fmt));
-        return AVERROR(EINVAL);
-    }
-
     //FIXME should we allow/support using FLT on material that doesnt need it ?
     if(s->in_sample_fmt <= AV_SAMPLE_FMT_S16 || s->int_sample_fmt==AV_SAMPLE_FMT_S16){
         s->int_sample_fmt= AV_SAMPLE_FMT_S16;
     }else
         s->int_sample_fmt= AV_SAMPLE_FMT_FLT;
 
+    if(   s->int_sample_fmt != AV_SAMPLE_FMT_S16
+        &&s->int_sample_fmt != AV_SAMPLE_FMT_S32
+        &&s->int_sample_fmt != AV_SAMPLE_FMT_FLT){
+        av_log(s, AV_LOG_ERROR, "Requested sample format %s is not supported internally, S16/S32/FLT is supported\n", av_get_sample_fmt_name(s->int_sample_fmt));
+        return AVERROR(EINVAL);
+    }
 
     if (s->out_sample_rate!=s->in_sample_rate || (s->flags & SWR_FLAG_RESAMPLE)){
         s->resample = swri_resample_init(s->resample, s->out_sample_rate, s->in_sample_rate, 16, 10, 0, 0.8, s->int_sample_fmt);
     }else
         swri_resample_free(&s->resample);
-    if(s->int_sample_fmt != AV_SAMPLE_FMT_S16 && s->resample){
-        av_log(s, AV_LOG_ERROR, "Resampling only supported with internal s16 currently\n"); //FIXME
+    if(    s->int_sample_fmt != AV_SAMPLE_FMT_S16
+        && s->int_sample_fmt != AV_SAMPLE_FMT_S32
+        && s->int_sample_fmt != AV_SAMPLE_FMT_FLT
+        && s->resample){
+        av_log(s, AV_LOG_ERROR, "Resampling only supported with internal s16/s32/flt\n");
         return -1;
     }
 
