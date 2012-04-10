@@ -57,6 +57,11 @@ static int latm_decode_extradata(LATMContext *ctx, uint8_t *buf, int size)
     if (ctx->off < 0)
         return ctx->off;
 
+    if (ctx->object_type == AOT_ALS && (ctx->off & 7)) {
+        // as long as avpriv_mpeg4audio_get_config works correctly this is impossible
+        av_log(ctx, AV_LOG_ERROR, "BUG: ALS offset is not byte-aligned\n");
+        return AVERROR_INVALIDDATA;
+    }
     /* FIXME: are any formats not allowed in LATM? */
 
     if (m4ac.object_type > AOT_SBR && m4ac.object_type != AOT_ALS) {
@@ -106,8 +111,8 @@ static void latm_write_frame_header(AVFormatContext *s, PutBitContext *bs)
 
         /* AudioSpecificConfig */
         if (ctx->object_type == AOT_ALS) {
-            header_size = avctx->extradata_size-(ctx->off + 7) >> 3;
-            avpriv_copy_bits(bs, &avctx->extradata[ctx->off], header_size);
+            header_size = avctx->extradata_size-(ctx->off >> 3);
+            avpriv_copy_bits(bs, &avctx->extradata[ctx->off >> 3], header_size);
         } else {
             avpriv_copy_bits(bs, avctx->extradata, ctx->off + 3);
 
