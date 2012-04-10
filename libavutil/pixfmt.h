@@ -29,6 +29,9 @@
 
 #include "libavutil/avconfig.h"
 
+#define AVPALETTE_SIZE 1024
+#define AVPALETTE_COUNT 256
+
 /**
  * Pixel format.
  *
