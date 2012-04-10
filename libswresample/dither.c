@@ -40,6 +40,11 @@ void swri_get_dither(void *dst, int len, unsigned seed, enum AVSampleFormat out_
 
         switch(method){
             case SWR_DITHER_RECTANGULAR: v= ((double)seed) / UINT_MAX - 0.5; break;
+            case SWR_DITHER_TRIANGULAR :
+                v = ((double)seed) / UINT_MAX;
+                seed = seed*1664525 + 1013904223;
+                v-= ((double)seed) / UINT_MAX;
+                break;
             default: av_assert0(0);
         }
 
