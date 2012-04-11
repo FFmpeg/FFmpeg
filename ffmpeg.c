@@ -133,6 +133,7 @@ static const char *subtitle_codec_name = NULL;
 static int file_overwrite = 0;
 static int no_file_overwrite = 0;
 static int do_benchmark = 0;
+static int do_benchmark_all = 0;
 static int do_hex_dump = 0;
 static int do_pkt_dump = 0;
 static int do_psnr = 0;
@@ -165,6 +166,7 @@ static float dts_error_threshold = 3600*30;
 
 static int print_stats = 1;
 static int debug_ts = 0;
+static int current_time;
 
 static uint8_t *audio_buf;
 static unsigned int allocated_audio_buf_size;
@@ -432,6 +434,23 @@ static int64_t getutime(void)
 #else
     return av_gettime();
 #endif
+}
+
+static void update_benchmark(const char *fmt, ...)
+{
+    if (do_benchmark_all) {
+        int64_t t = getutime();
+        va_list va;
+        char buf[1024];
+
+        if (fmt) {
+            va_start(va, fmt);
+            vsnprintf(buf, sizeof(buf), fmt, va);
+            va_end(va);
+            printf("bench: %8"PRIu64" %s \n", t - current_time, buf);
+        }
+        current_time = t;
+    }
 }
 
 static void reset_options(OptionsContext *o, int is_input)
@@ -1101,10 +1120,12 @@ static int encode_audio_frame(AVFormatContext *s, OutputStream *ost,
     }
 
     got_packet = 0;
+    update_benchmark(NULL);
     if (avcodec_encode_audio2(enc, &pkt, frame, &got_packet) < 0) {
         av_log(NULL, AV_LOG_FATAL, "Audio encoding failed (avcodec_encode_audio2)\n");
         exit_program(1);
     }
+    update_benchmark("encode_audio %d.%d", ost->file_index, ost->index);
 
     ret = pkt.size;
 
@@ -1601,7 +1622,9 @@ static void do_video_out(AVFormatContext *s, OutputStream *ost,
                 big_picture.pict_type = AV_PICTURE_TYPE_I;
                 ost->forced_kf_index++;
             }
+            update_benchmark(NULL);
             ret = avcodec_encode_video2(enc, &pkt, &big_picture, &got_packet);
+            update_benchmark("encode_video %d.%d", ost->file_index, ost->index);
             if (ret < 0) {
                 av_log(NULL, AV_LOG_FATAL, "Video encoding failed\n");
                 exit_program(1);
@@ -1835,7 +1858,9 @@ static void flush_encoders(OutputStream *ost_table, int nb_ostreams)
                 }
                 break;
             case AVMEDIA_TYPE_VIDEO:
+                update_benchmark(NULL);
                 ret = avcodec_encode_video2(enc, &pkt, NULL, &got_packet);
+                update_benchmark("encode_video %d.%d", ost->file_index, ost->index);
                 if (ret < 0) {
                     av_log(NULL, AV_LOG_FATAL, "Video encoding failed\n");
                     exit_program(1);
@@ -1970,7 +1995,9 @@ static int transcode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
         avcodec_get_frame_defaults(ist->decoded_frame);
     decoded_frame = ist->decoded_frame;
 
+    update_benchmark(NULL);
     ret = avcodec_decode_audio4(avctx, decoded_frame, got_output, pkt);
+    update_benchmark("decode_audio %d.%d", ist->file_index, ist->st->index);
     if (ret < 0) {
         return ret;
     }
@@ -2085,8 +2112,10 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
     pkt->dts  = ist->dts;
     *pkt_pts  = AV_NOPTS_VALUE;
 
+    update_benchmark(NULL);
     ret = avcodec_decode_video2(ist->st->codec,
                                 decoded_frame, got_output, pkt);
+    update_benchmark("decode_video %d.%d", ist->file_index, ist->st->index);
     if (ret < 0)
         return ret;
 
@@ -5068,6 +5097,8 @@ static const OptionDef options[] = {
     { "dframes", HAS_ARG | OPT_FUNC2, {(void*)opt_data_frames}, "set the number of data frames to record", "number" },
     { "benchmark", OPT_BOOL | OPT_EXPERT, {(void*)&do_benchmark},
       "add timings for benchmarking" },
+    { "benchmark_all", OPT_BOOL | OPT_EXPERT, {(void*)&do_benchmark_all},
+      "add timings for each task" },
     { "timelimit", HAS_ARG, {(void*)opt_timelimit}, "set max runtime in seconds", "limit" },
     { "dump", OPT_BOOL | OPT_EXPERT, {(void*)&do_pkt_dump},
       "dump each input packet" },
@@ -5233,7 +5264,7 @@ int main(int argc, char **argv)
         exit_program(1);
     }
 
-    ti = getutime();
+    current_time = ti = getutime();
     if (transcode(output_files, nb_output_files, input_files, nb_input_files) < 0)
         exit_program(1);
     ti = getutime() - ti;

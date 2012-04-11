@@ -24,6 +24,7 @@ version next:
 - removelogo filter
 - drop support for ffmpeg without libavfilter
 - drawtext video filter: fontconfig support
+- ffmpeg -benchmark_all option
 
 
 version 0.10:
