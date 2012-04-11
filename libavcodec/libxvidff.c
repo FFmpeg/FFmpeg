@@ -77,7 +77,6 @@ int xvid_strip_vol_header(AVCodecContext *avctx, AVPacket *pkt, unsigned int hea
 int xvid_ff_2pass(void *ref, int opt, void *p1, void *p2);
 void xvid_correct_framerate(AVCodecContext *avctx);
 
-#if CONFIG_LIBXVID_ENCODER
 
 /**
  * Create the private context for the encoder.
@@ -791,5 +790,3 @@ AVCodec ff_libxvid_encoder = {
     .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_YUV420P, PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("libxvidcore MPEG-4 part 2"),
 };
-
-#endif /* CONFIG_LIBXVID_ENCODER */
