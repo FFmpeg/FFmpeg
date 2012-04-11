@@ -36,6 +36,7 @@ typedef struct {
     int object_type;
     int counter;
     int mod;
+    uint8_t buffer[0x1fff + MAX_EXTRADATA_SIZE + 1024];
 } LATMContext;
 
 static const AVOption options[] = {
@@ -142,11 +143,11 @@ static void latm_write_frame_header(AVFormatContext *s, PutBitContext *bs)
 
 static int latm_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
+    LATMContext *ctx = s->priv_data;
     AVIOContext *pb = s->pb;
     PutBitContext bs;
     int i, len;
     uint8_t loas_header[] = "\x56\xe0\x00";
-    uint8_t *buf = NULL;
 
     if (s->streams[0]->codec->codec_id == CODEC_ID_AAC_LATM)
         return ff_raw_write_packet(s, pkt);
@@ -158,11 +159,7 @@ static int latm_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (pkt->size > 0x1fff)
         goto too_large;
 
-    buf = av_malloc(pkt->size+1024+MAX_EXTRADATA_SIZE);
-    if (!buf)
-        return AVERROR(ENOMEM);
-
-    init_put_bits(&bs, buf, pkt->size+1024+MAX_EXTRADATA_SIZE);
+    init_put_bits(&bs, ctx->buffer, pkt->size+1024+MAX_EXTRADATA_SIZE);
 
     latm_write_frame_header(s, &bs);
 
@@ -201,15 +198,12 @@ static int latm_write_packet(AVFormatContext *s, AVPacket *pkt)
     loas_header[2] |= len & 0xff;
 
     avio_write(pb, loas_header, 3);
-    avio_write(pb, buf, len);
-
-    av_free(buf);
+    avio_write(pb, ctx->buffer, len);
 
     return 0;
 
 too_large:
     av_log(s, AV_LOG_ERROR, "LATM packet size larger than maximum size 0x1fff\n");
-    av_free(buf);
     return AVERROR_INVALIDDATA;
 }
 
