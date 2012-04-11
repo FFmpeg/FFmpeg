@@ -34,6 +34,7 @@
 #include "libavdevice/avdevice.h"
 #include "libavresample/avresample.h"
 #include "libswscale/swscale.h"
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/parseutils.h"
@@ -905,6 +906,7 @@ int check_stream_specifier(AVFormatContext *s, AVStream *st, const char *spec)
         case 's': type = AVMEDIA_TYPE_SUBTITLE;   break;
         case 'd': type = AVMEDIA_TYPE_DATA;       break;
         case 't': type = AVMEDIA_TYPE_ATTACHMENT; break;
+        default:  av_assert0(0);
         }
         if (type != st->codec->codec_type)
             return 0;
