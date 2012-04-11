@@ -51,6 +51,7 @@ extern const int this_year;
 extern AVCodecContext *avcodec_opts[AVMEDIA_TYPE_NB];
 extern AVFormatContext *avformat_opts;
 extern struct SwsContext *sws_opts;
+extern struct SwrContext *swr_opts;
 extern AVDictionary *format_opts, *codec_opts;
 
 /**
