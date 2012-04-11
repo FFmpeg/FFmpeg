@@ -55,6 +55,14 @@ enum SwrDitherType {
 typedef struct SwrContext SwrContext;
 
 /**
+ * Get the AVClass for swrContext. It can be used in combination with
+ * AV_OPT_SEARCH_FAKE_OBJ for examining options.
+ *
+ * @see av_opt_find().
+ */
+const AVClass *swr_get_class(void);
+
+/**
  * Allocate SwrContext.
  *
  * If you use this function you will need to set the parameters (manually or

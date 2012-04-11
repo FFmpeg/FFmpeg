@@ -97,6 +97,11 @@ int swr_set_channel_mapping(struct SwrContext *s, const int *channel_map){
     return 0;
 }
 
+const AVClass *swr_get_class(void)
+{
+    return &av_class;
+}
+
 struct SwrContext *swr_alloc(void){
     SwrContext *s= av_mallocz(sizeof(SwrContext));
     if(s){
