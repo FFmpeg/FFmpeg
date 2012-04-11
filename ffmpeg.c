@@ -276,6 +276,8 @@ typedef struct OutputStream {
     AVFilterGraph *graph;
 
     int64_t sws_flags;
+    int64_t swr_dither_method;
+    double swr_dither_scale;
     AVDictionary *opts;
     int is_past_recording_time;
     int stream_copy;
@@ -1199,6 +1201,8 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
                                           enc->channel_layout, enc->sample_fmt, enc->sample_rate,
                                           dec->channel_layout, dec->sample_fmt, dec->sample_rate,
                                           0, NULL);
+            av_opt_set_int(ost->swr, "dither_method", ost->swr_dither_method,0);
+            av_opt_set_int(ost->swr, "dither_scale", ost->swr_dither_scale,0);
             if (ost->audio_channels_mapped)
                 swr_set_channel_mapping(ost->swr, ost->audio_channels_map);
             av_opt_set_double(ost->swr, "rmvol", ost->rematrix_volume, 0);
@@ -3965,6 +3969,8 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
         st->codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
 
     av_opt_get_int(sws_opts, "sws_flags", 0, &ost->sws_flags);
+    av_opt_get_int   (swr_opts, "dither_method", 0, &ost->swr_dither_method);
+    av_opt_get_double(swr_opts, "dither_scale" , 0, &ost->swr_dither_scale);
 
     ost->source_index = source_index;
     if (source_index >= 0) {
