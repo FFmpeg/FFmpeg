@@ -245,9 +245,11 @@ static int config_props(AVFilterLink *inlink)
     for (comp = 0; comp < desc->nb_components; comp++) {
         double res;
         int tcomp;
-        for (tcomp = 0; lut->rgba_map[tcomp] != comp; tcomp++)
-            ;
-
+        if (lut->is_rgb) {
+            for (tcomp = 0; lut->rgba_map[tcomp] != comp; tcomp++)
+                ;
+        } else
+            tcomp = comp;
         /* create the parsed expression */
         ret = av_expr_parse(&lut->comp_expr[comp], lut->comp_expr_str[comp],
                             var_names, funcs1_names, funcs1, NULL, NULL, 0, ctx);
