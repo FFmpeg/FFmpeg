@@ -2816,9 +2816,6 @@ static int mov_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     uint8_t *reformatted_data = NULL;
     int64_t frag_duration = 0;
 
-    if (!s->pb->seekable && !(mov->flags & FF_MOV_FLAG_EMPTY_MOOV))
-        return 0; /* Can't handle that */
-
     if (!size) return 0; /* Discard 0 sized packets */
 
     if (trk->entry)
