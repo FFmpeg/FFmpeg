@@ -322,7 +322,6 @@ static int vorbis_packet(AVFormatContext *s, int idx)
         s->streams[idx]->start_time = os->lastpts + first_duration;
         if (s->streams[idx]->duration)
             s->streams[idx]->duration -= s->streams[idx]->start_time;
-        s->streams[idx]->cur_dts    = AV_NOPTS_VALUE;
         priv->final_pts             = AV_NOPTS_VALUE;
         avpriv_vorbis_parse_reset(&priv->vp);
     }
