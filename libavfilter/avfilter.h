@@ -22,6 +22,17 @@
 #ifndef AVFILTER_AVFILTER_H
 #define AVFILTER_AVFILTER_H
 
+/**
+ * @file
+ * @ingroup lavfi
+ * Main libavfilter public API header
+ */
+
+/**
+ * @defgroup lavfi Libavfilter - graph-based frame editing library
+ * @{
+ */
+
 #include "libavutil/avutil.h"
 #include "libavutil/frame.h"
 #include "libavutil/log.h"
@@ -959,5 +970,9 @@ int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
 int avfilter_graph_parse2(AVFilterGraph *graph, const char *filters,
                           AVFilterInOut **inputs,
                           AVFilterInOut **outputs);
+
+/**
+ * @}
+ */
 
 #endif /* AVFILTER_AVFILTER_H */

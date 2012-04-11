@@ -35,7 +35,7 @@
  * provided by Libav.
  *
  * @li @ref libavc "libavcodec" encoding/decoding library
- * @li @subpage libavfilter graph based frame editing library
+ * @li @ref lavfi "libavfilter" graph-based frame editing library
  * @li @ref libavf "libavformat" I/O and muxing/demuxing library
  * @li @ref lavd "libavdevice" special devices muxing/demuxing library
  * @li @ref lavu "libavutil" common utility library
