@@ -27,15 +27,15 @@
 typedef struct AudioFrame {
     int64_t pts;
     int duration;
-    struct AudioFrame *next;
 } AudioFrame;
 
 typedef struct AudioFrameQueue {
     AVCodecContext *avctx;
-    int64_t next_pts;
     int remaining_delay;
     int remaining_samples;
-    AudioFrame *frame_queue;
+    AudioFrame *frames;
+    unsigned frame_count;
+    unsigned frame_alloc;
 } AudioFrameQueue;
 
 /**
