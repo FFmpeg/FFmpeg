@@ -211,7 +211,7 @@ static void video_encode_example(const char *filename, int codec_id)
 {
     AVCodec *codec;
     AVCodecContext *c= NULL;
-    int i, out_size, size, x, y, outbuf_size;
+    int i, out_size, x, y, outbuf_size;
     FILE *f;
     AVFrame *picture;
     uint8_t *outbuf;
