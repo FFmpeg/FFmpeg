@@ -527,7 +527,7 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
                 return ret;
             if(ret)
                 for(ch=0; ch<s->dither.ch_count; ch++)
-                    swri_get_dither(s->dither.ch[ch], s->dither.count, 12345678913579<<ch, s->out_sample_fmt, s->int_sample_fmt, s->dither_method);
+                    swri_get_dither(s, s->dither.ch[ch], s->dither.count, 12345678913579<<ch, s->out_sample_fmt, s->int_sample_fmt);
             av_assert0(s->dither.ch_count == preout->ch_count);
 
             if(s->dither_pos + out_count > s->dither.count)

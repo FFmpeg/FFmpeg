@@ -21,7 +21,7 @@
 #include "libavutil/avassert.h"
 #include "swresample_internal.h"
 
-void swri_get_dither(void *dst, int len, unsigned seed, enum AVSampleFormat out_fmt, enum AVSampleFormat in_fmt, enum SwrDitherType method) {
+void swri_get_dither(SwrContext *s, void *dst, int len, unsigned seed, enum AVSampleFormat out_fmt, enum AVSampleFormat in_fmt) {
     double scale = 0;
 #define TMP_EXTRA 2
     double *tmp = av_malloc((len + TMP_EXTRA) * sizeof(double));
@@ -40,7 +40,7 @@ void swri_get_dither(void *dst, int len, unsigned seed, enum AVSampleFormat out_
         double v;
         seed = seed* 1664525 + 1013904223;
 
-        switch(method){
+        switch(s->dither_method){
             case SWR_DITHER_RECTANGULAR: v= ((double)seed) / UINT_MAX - 0.5; break;
             case SWR_DITHER_TRIANGULAR :
             case SWR_DITHER_TRIANGULAR_HIGHPASS :
@@ -56,7 +56,7 @@ void swri_get_dither(void *dst, int len, unsigned seed, enum AVSampleFormat out_
     for(i=0; i<len; i++){
         double v;
 
-        switch(method){
+        switch(s->dither_method){
             case SWR_DITHER_RECTANGULAR:
             case SWR_DITHER_TRIANGULAR :
                 v = tmp[i];
