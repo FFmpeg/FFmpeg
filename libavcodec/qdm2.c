@@ -200,8 +200,6 @@ typedef struct {
 } QDM2Context;
 
 
-static uint8_t empty_buffer[FF_INPUT_BUFFER_PADDING_SIZE];
-
 static VLC vlc_tab_level;
 static VLC vlc_tab_diff;
 static VLC vlc_tab_run;
@@ -1083,13 +1081,12 @@ static void process_subpacket_9 (QDM2Context *q, QDM2SubPNode *node)
  * @param node      pointer to node with packet
  * @param length    packet length in bits
  */
-static void process_subpacket_10 (QDM2Context *q, QDM2SubPNode *node, int length)
+static void process_subpacket_10 (QDM2Context *q, QDM2SubPNode *node)
 {
     GetBitContext gb;
 
-    init_get_bits(&gb, ((node == NULL) ? empty_buffer : node->packet->data), ((node == NULL) ? 0 : node->packet->size*8));
-
-    if (length != 0) {
+    if (node) {
+        init_get_bits(&gb, node->packet->data, node->packet->size * 8);
         init_tone_level_dequantization(q, &gb);
         fill_tone_level_array(q, 1);
     } else {
@@ -1103,13 +1100,17 @@ static void process_subpacket_10 (QDM2Context *q, QDM2SubPNode *node, int length
  *
  * @param q         context
  * @param node      pointer to node with packet
- * @param length    packet length in bit
  */
-static void process_subpacket_11 (QDM2Context *q, QDM2SubPNode *node, int length)
+static void process_subpacket_11 (QDM2Context *q, QDM2SubPNode *node)
 {
     GetBitContext gb;
+    int length = 0;
 
-    init_get_bits(&gb, ((node == NULL) ? empty_buffer : node->packet->data), ((node == NULL) ? 0 : node->packet->size*8));
+    if (node) {
+        length = node->packet->size * 8;
+        init_get_bits(&gb, node->packet->data, length);
+    }
+
     if (length >= 32) {
         int c = get_bits (&gb, 13);
 
@@ -1129,11 +1130,16 @@ static void process_subpacket_11 (QDM2Context *q, QDM2SubPNode *node, int length
  * @param node      pointer to node with packet
  * @param length    packet length in bits
  */
-static void process_subpacket_12 (QDM2Context *q, QDM2SubPNode *node, int length)
+static void process_subpacket_12 (QDM2Context *q, QDM2SubPNode *node)
 {
     GetBitContext gb;
+    int length = 0;
 
-    init_get_bits(&gb, ((node == NULL) ? empty_buffer : node->packet->data), ((node == NULL) ? 0 : node->packet->size*8));
+    if (node) {
+        length = node->packet->size * 8;
+        init_get_bits(&gb, node->packet->data, length);
+    }
+
     synthfilt_build_sb_samples(q, &gb, length, 8, QDM2_SB_USED(q->sub_sampling));
 }
 
@@ -1153,21 +1159,21 @@ static void process_synthesis_subpackets (QDM2Context *q, QDM2SubPNode *list)
 
     nodes[1] = qdm2_search_subpacket_type_in_list(list, 10);
     if (nodes[1] != NULL)
-        process_subpacket_10(q, nodes[1], nodes[1]->packet->size << 3);
+        process_subpacket_10(q, nodes[1]);
     else
-        process_subpacket_10(q, NULL, 0);
+        process_subpacket_10(q, NULL);
 
     nodes[2] = qdm2_search_subpacket_type_in_list(list, 11);
     if (nodes[0] != NULL && nodes[1] != NULL && nodes[2] != NULL)
-        process_subpacket_11(q, nodes[2], (nodes[2]->packet->size << 3));
+        process_subpacket_11(q, nodes[2]);
     else
-        process_subpacket_11(q, NULL, 0);
+        process_subpacket_11(q, NULL);
 
     nodes[3] = qdm2_search_subpacket_type_in_list(list, 12);
     if (nodes[0] != NULL && nodes[1] != NULL && nodes[3] != NULL)
-        process_subpacket_12(q, nodes[3], (nodes[3]->packet->size << 3));
+        process_subpacket_12(q, nodes[3]);
     else
-        process_subpacket_12(q, NULL, 0);
+        process_subpacket_12(q, NULL);
 }
 
 
@@ -1289,9 +1295,9 @@ static void qdm2_decode_super_block (QDM2Context *q)
         process_synthesis_subpackets(q, q->sub_packet_list_D);
         q->do_synth_filter = 1;
     } else if (q->do_synth_filter) {
-        process_subpacket_10(q, NULL, 0);
-        process_subpacket_11(q, NULL, 0);
-        process_subpacket_12(q, NULL, 0);
+        process_subpacket_10(q, NULL);
+        process_subpacket_11(q, NULL);
+        process_subpacket_12(q, NULL);
     }
 /* **************************************************************** */
 }
