@@ -955,7 +955,8 @@ static int decode_subframe(WmallDecodeCtx *s)
                 else
                     use_normal_update_speed(s, i);
                 revert_cdlms(s, i, 0, subframe_len);
-            }
+            } else
+                memset(s->channel_residues, 0, sizeof(s->channel_residues));
     }
     if (s->do_mclms)
         revert_mclms(s, subframe_len);
