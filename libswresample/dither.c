@@ -23,6 +23,8 @@
 
 void swri_get_dither(void *dst, int len, unsigned seed, enum AVSampleFormat out_fmt, enum AVSampleFormat in_fmt, enum SwrDitherType method) {
     double scale = 0;
+#define TMP_EXTRA 2
+    double *tmp = av_malloc((len + TMP_EXTRA) * sizeof(double));
     int i;
 
     if(in_fmt == AV_SAMPLE_FMT_FLT || in_fmt == AV_SAMPLE_FMT_DBL){
@@ -34,16 +36,33 @@ void swri_get_dither(void *dst, int len, unsigned seed, enum AVSampleFormat out_
     if(in_fmt == AV_SAMPLE_FMT_S32 && out_fmt == AV_SAMPLE_FMT_U8 ) scale = 1L<<24;
     if(in_fmt == AV_SAMPLE_FMT_S16 && out_fmt == AV_SAMPLE_FMT_U8 ) scale = 1L<<8;
 
-    for(i=0; i<len; i++){
+    for(i=0; i<len + TMP_EXTRA; i++){
         double v;
         seed = seed* 1664525 + 1013904223;
 
         switch(method){
             case SWR_DITHER_RECTANGULAR: v= ((double)seed) / UINT_MAX - 0.5; break;
             case SWR_DITHER_TRIANGULAR :
+            case SWR_DITHER_TRIANGULAR_HIGHPASS :
                 v = ((double)seed) / UINT_MAX;
                 seed = seed*1664525 + 1013904223;
                 v-= ((double)seed) / UINT_MAX;
+                break;
+            default: av_assert0(0);
+        }
+        tmp[i] = v;
+    }
+
+    for(i=0; i<len; i++){
+        double v;
+
+        switch(method){
+            case SWR_DITHER_RECTANGULAR:
+            case SWR_DITHER_TRIANGULAR :
+                v = tmp[i];
+                break;
+            case SWR_DITHER_TRIANGULAR_HIGHPASS :
+                v = (- tmp[i] + 2*tmp[i+1] - tmp[i+2]) / sqrt(6);
                 break;
             default: av_assert0(0);
         }
@@ -58,4 +77,6 @@ void swri_get_dither(void *dst, int len, unsigned seed, enum AVSampleFormat out_
             default: av_assert0(0);
         }
     }
+
+    av_free(tmp);
 }

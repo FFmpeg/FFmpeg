@@ -49,6 +49,7 @@ enum SwrDitherType {
     SWR_DITHER_NONE = 0,
     SWR_DITHER_RECTANGULAR,
     SWR_DITHER_TRIANGULAR,
+    SWR_DITHER_TRIANGULAR_HIGHPASS,
     SWR_DITHER_NB,              ///< not part of API/ABI
 };
 
