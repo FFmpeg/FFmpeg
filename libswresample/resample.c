@@ -202,21 +202,17 @@ ResampleContext *swri_resample_init(ResampleContext *c, int out_rate, int in_rat
 
         c->format= format;
 
+        c->felem_size= av_get_bytes_per_sample(c->format);
+
         switch(c->format){
         case AV_SAMPLE_FMT_S16:
-            c->felem_size   = 2;
             c->filter_shift = 15;
             break;
         case AV_SAMPLE_FMT_S32:
-            c->felem_size   = 4;
             c->filter_shift = 30;
             break;
         case AV_SAMPLE_FMT_FLT:
-            c->felem_size   = 4;
-            c->filter_shift = 0;
-            break;
         case AV_SAMPLE_FMT_DBL:
-            c->felem_size   = 8;
             c->filter_shift = 0;
             break;
         default:
