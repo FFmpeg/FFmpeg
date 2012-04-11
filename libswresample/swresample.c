@@ -519,18 +519,22 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
     if(preout != out && out_count){
         if(s->dither_method){
             int ch;
+            int dither_count= FFMAX(out_count, 1<<16);
             av_assert0(preout != in);
 
-            if((ret=realloc_audio(&s->dither, out_count))<0)
+            if((ret=realloc_audio(&s->dither, dither_count))<0)
                 return ret;
             if(ret)
                 for(ch=0; ch<s->dither.ch_count; ch++)
                     swri_get_dither(s->dither.ch[ch], s->dither.count, 12345678913579<<ch, s->out_sample_fmt, s->int_sample_fmt, s->dither_method);
             av_assert0(s->dither.ch_count == preout->ch_count);
 
-            for(ch=0; ch<preout->ch_count; ch++){
-                swri_sum2(s->int_sample_fmt, preout->ch[ch], preout->ch[ch], s->dither.ch[ch], 1, 1, out_count);
-            }
+            if(s->dither_pos + out_count > s->dither.count)
+                s->dither_pos = 0;
+            for(ch=0; ch<preout->ch_count; ch++)
+                swri_sum2(s->int_sample_fmt, preout->ch[ch], preout->ch[ch], s->dither.ch[ch] + s->dither.bps * s->dither_pos, 1, 1, out_count);
+
+            s->dither_pos += out_count;
         }
 //FIXME packed doesnt need more than 1 chan here!
         swri_audio_convert(s->out_convert, out, preout, out_count);
