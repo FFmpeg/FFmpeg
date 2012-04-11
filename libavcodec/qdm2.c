@@ -499,7 +499,7 @@ static void fix_coding_method_array (int sb, int channels, sb_int8_array coding_
     int j,k;
     int ch;
     int run, case_val;
-    int switchtable[23] = {0,5,1,5,5,5,5,5,2,5,5,5,5,5,5,5,3,5,5,5,5,5,4};
+    static const int switchtable[23] = {0,5,1,5,5,5,5,5,2,5,5,5,5,5,5,5,3,5,5,5,5,5,4};
 
     for (ch = 0; ch < channels; ch++) {
         for (j = 0; j < 64; ) {
