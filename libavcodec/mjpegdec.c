@@ -974,6 +974,10 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
                "Can not flip image with CODEC_FLAG_EMU_EDGE set!\n");
         s->flipped = 0;
     }
+    if (s->flipped && s->avctx->lowres) {
+        av_log(s->avctx, AV_LOG_ERROR, "Can not flip image with lowres\n");
+        s->flipped = 0;
+    }
 
     for (i = 0; i < nb_components; i++) {
         int c   = s->comp_index[i];
