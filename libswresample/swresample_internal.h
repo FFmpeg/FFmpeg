@@ -51,6 +51,7 @@ struct SwrContext {
     int used_ch_count;                              ///< number of used input channels (mapped channel count if channel_map, otherwise in.ch_count)
     enum SwrDitherType dither_method;
     int dither_pos;
+    float dither_scale;
 
     int int_bps;                                    ///< internal bytes per sample
     int resample_first;                             ///< 1 if resampling must come first, 0 if rematrixing

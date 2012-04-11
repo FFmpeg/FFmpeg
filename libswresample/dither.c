@@ -36,6 +36,8 @@ void swri_get_dither(SwrContext *s, void *dst, int len, unsigned seed, enum AVSa
     if(in_fmt == AV_SAMPLE_FMT_S32 && out_fmt == AV_SAMPLE_FMT_U8 ) scale = 1L<<24;
     if(in_fmt == AV_SAMPLE_FMT_S16 && out_fmt == AV_SAMPLE_FMT_U8 ) scale = 1L<<8;
 
+    scale *= s->dither_scale;
+
     for(i=0; i<len + TMP_EXTRA; i++){
         double v;
         seed = seed* 1664525 + 1013904223;
