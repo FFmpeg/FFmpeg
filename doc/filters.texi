@@ -1865,7 +1865,6 @@ the named filter.
 
 The list of the currently supported filters follows:
 @table @var
-@item 2xsai
 @item decimate
 @item denoise3d
 @item detc
