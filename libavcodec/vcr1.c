@@ -172,19 +172,12 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
     return size * 4;
 }
 
-static av_cold int encode_init(AVCodecContext *avctx)
-{
-    common_init(avctx);
-
-    return 0;
-}
-
 AVCodec ff_vcr1_encoder = {
     .name           = "vcr1",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_VCR1,
     .priv_data_size = sizeof(VCR1Context),
-    .init           = encode_init,
+    .init           = common_init,
     .encode         = encode_frame,
     .long_name      = NULL_IF_CONFIG_SMALL("ATI VCR1"),
 };
