@@ -65,6 +65,14 @@ git clone git@@git.libav.org:libav.git <target>
 This will put the Libav sources into the directory @var{<target>} and let
 you push back your changes to the remote repository.
 
+Make sure that you do not have Windows line endings in your checkouts,
+otherwise you may experience spurious compilation failures. One way to
+achieve this is to run
+
+@example
+git config --global core.autocrlf false
+@end example
+
 
 @section Updating the source tree to the latest revision
 
