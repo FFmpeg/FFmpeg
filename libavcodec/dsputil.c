@@ -2700,37 +2700,6 @@ static void ff_jref_idct_add(uint8_t *dest, int line_size, DCTELEM *block)
     ff_add_pixels_clamped_c(block, dest, line_size);
 }
 
-static void ff_jref_idct4_put(uint8_t *dest, int line_size, DCTELEM *block)
-{
-    ff_j_rev_dct4 (block);
-    put_pixels_clamped4_c(block, dest, line_size);
-}
-static void ff_jref_idct4_add(uint8_t *dest, int line_size, DCTELEM *block)
-{
-    ff_j_rev_dct4 (block);
-    add_pixels_clamped4_c(block, dest, line_size);
-}
-
-static void ff_jref_idct2_put(uint8_t *dest, int line_size, DCTELEM *block)
-{
-    ff_j_rev_dct2 (block);
-    put_pixels_clamped2_c(block, dest, line_size);
-}
-static void ff_jref_idct2_add(uint8_t *dest, int line_size, DCTELEM *block)
-{
-    ff_j_rev_dct2 (block);
-    add_pixels_clamped2_c(block, dest, line_size);
-}
-
-static void ff_jref_idct1_put(uint8_t *dest, int line_size, DCTELEM *block)
-{
-    dest[0] = av_clip_uint8((block[0] + 4)>>3);
-}
-static void ff_jref_idct1_add(uint8_t *dest, int line_size, DCTELEM *block)
-{
-    dest[0] = av_clip_uint8(dest[0] + ((block[0] + 4)>>3));
-}
-
 static void just_return(void *mem av_unused, int stride av_unused, int h av_unused) { return; }
 
 /* init static data */
@@ -2797,28 +2766,12 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
     }
 #endif //CONFIG_ENCODERS
 
-    if(avctx->lowres==1){
-        c->idct_put= ff_jref_idct4_put;
-        c->idct_add= ff_jref_idct4_add;
-        c->idct    = ff_j_rev_dct4;
-        c->idct_permutation_type= FF_NO_IDCT_PERM;
-    }else if(avctx->lowres==2){
-        c->idct_put= ff_jref_idct2_put;
-        c->idct_add= ff_jref_idct2_add;
-        c->idct    = ff_j_rev_dct2;
-        c->idct_permutation_type= FF_NO_IDCT_PERM;
-    }else if(avctx->lowres==3){
-        c->idct_put= ff_jref_idct1_put;
-        c->idct_add= ff_jref_idct1_add;
-        c->idct    = ff_j_rev_dct1;
-        c->idct_permutation_type= FF_NO_IDCT_PERM;
-    }else{
-        if (avctx->bits_per_raw_sample == 10) {
-            c->idct_put              = ff_simple_idct_put_10;
-            c->idct_add              = ff_simple_idct_add_10;
-            c->idct                  = ff_simple_idct_10;
-            c->idct_permutation_type = FF_NO_IDCT_PERM;
-        } else {
+    if (avctx->bits_per_raw_sample == 10) {
+        c->idct_put              = ff_simple_idct_put_10;
+        c->idct_add              = ff_simple_idct_add_10;
+        c->idct                  = ff_simple_idct_10;
+        c->idct_permutation_type = FF_NO_IDCT_PERM;
+    } else {
         if(avctx->idct_algo==FF_IDCT_INT){
             c->idct_put= ff_jref_idct_put;
             c->idct_add= ff_jref_idct_add;
@@ -2848,7 +2801,6 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
             c->idct_add = ff_simple_idct_add_8;
             c->idct     = ff_simple_idct_8;
             c->idct_permutation_type= FF_NO_IDCT_PERM;
-        }
         }
     }
 

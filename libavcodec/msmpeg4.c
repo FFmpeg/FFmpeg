@@ -1216,7 +1216,6 @@ AVCodec ff_msmpeg4v1_decoder = {
     .close          = ff_h263_decode_end,
     .decode         = ff_h263_decode_frame,
     .capabilities   = CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
-    .max_lowres     = 3,
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 1"),
     .pix_fmts       = ff_pixfmt_list_420,
 };
@@ -1230,7 +1229,6 @@ AVCodec ff_msmpeg4v2_decoder = {
     .close          = ff_h263_decode_end,
     .decode         = ff_h263_decode_frame,
     .capabilities   = CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
-    .max_lowres     = 3,
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 2"),
     .pix_fmts       = ff_pixfmt_list_420,
 };
@@ -1244,7 +1242,6 @@ AVCodec ff_msmpeg4v3_decoder = {
     .close          = ff_h263_decode_end,
     .decode         = ff_h263_decode_frame,
     .capabilities   = CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
-    .max_lowres     = 3,
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 3"),
     .pix_fmts       = ff_pixfmt_list_420,
 };
@@ -1258,7 +1255,6 @@ AVCodec ff_wmv1_decoder = {
     .close          = ff_h263_decode_end,
     .decode         = ff_h263_decode_frame,
     .capabilities   = CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
-    .max_lowres     = 3,
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Video 7"),
     .pix_fmts       = ff_pixfmt_list_420,
 };

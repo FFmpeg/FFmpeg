@@ -158,7 +158,6 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     ff_thread_finish_setup(avctx);
 
     ctx->dec_params.cp_limit_decoding = NO_LIMITATION;
-    ctx->dec_params.cp_reduce = avctx->lowres;
     // Tie decoder with decoding parameters
     opj_setup_decoder(dec, &ctx->dec_params);
     stream = opj_cio_open((opj_common_ptr)dec, buf, buf_size);
@@ -219,7 +218,6 @@ AVCodec ff_libopenjpeg_decoder = {
     .close            = libopenjpeg_decode_close,
     .decode           = libopenjpeg_decode_frame,
     .capabilities     = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
-    .max_lowres       = 5,
     .long_name        = NULL_IF_CONFIG_SMALL("OpenJPEG based JPEG 2000 decoder"),
     .init_thread_copy = ONLY_IF_THREADS_ENABLED(libopenjpeg_decode_init_thread_copy),
 };

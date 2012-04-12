@@ -3527,12 +3527,6 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
 
         switch (dec->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
-            if (dec->lowres) {
-                dec->flags |= CODEC_FLAG_EMU_EDGE;
-                dec->height >>= dec->lowres;
-                dec->width  >>= dec->lowres;
-            }
-
             ist->resample_height  = dec->height;
             ist->resample_width   = dec->width;
             ist->resample_pix_fmt = dec->pix_fmt;

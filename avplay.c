@@ -244,7 +244,6 @@ static int step = 0;
 static int workaround_bugs = 1;
 static int fast = 0;
 static int genpts = 0;
-static int lowres = 0;
 static int idct = FF_IDCT_AUTO;
 static enum AVDiscard skip_frame       = AVDISCARD_DEFAULT;
 static enum AVDiscard skip_idct        = AVDISCARD_DEFAULT;
@@ -1298,7 +1297,7 @@ static void alloc_picture(void *opaque)
         /* SDL allocates a buffer smaller than requested if the video
          * overlay hardware is unable to support the requested size. */
         fprintf(stderr, "Error: the video system does not support an image\n"
-                        "size of %dx%d pixels. Try using -lowres or -vf \"scale=w:h\"\n"
+                        "size of %dx%d pixels. Try using -vf \"scale=w:h\"\n"
                         "to reduce the image size.\n", vp->width, vp->height );
         do_exit();
     }
@@ -2185,14 +2184,12 @@ static int stream_component_open(VideoState *is, int stream_index)
     avctx->debug_mv          = debug_mv;
     avctx->debug             = debug;
     avctx->workaround_bugs   = workaround_bugs;
-    avctx->lowres            = lowres;
     avctx->idct_algo         = idct;
     avctx->skip_frame        = skip_frame;
     avctx->skip_idct         = skip_idct;
     avctx->skip_loop_filter  = skip_loop_filter;
     avctx->error_concealment = error_concealment;
 
-    if (lowres) avctx->flags  |= CODEC_FLAG_EMU_EDGE;
     if (fast)   avctx->flags2 |= CODEC_FLAG2_FAST;
 
     if (!av_dict_get(opts, "threads", NULL, 0))
@@ -2979,7 +2976,6 @@ static const OptionDef options[] = {
     { "fast", OPT_BOOL | OPT_EXPERT, { (void*)&fast }, "non spec compliant optimizations", "" },
     { "genpts", OPT_BOOL | OPT_EXPERT, { (void*)&genpts }, "generate pts", "" },
     { "drp", OPT_INT | HAS_ARG | OPT_EXPERT, { (void*)&decoder_reorder_pts }, "let decoder reorder pts 0=off 1=on -1=auto", ""},
-    { "lowres", OPT_INT | HAS_ARG | OPT_EXPERT, { (void*)&lowres }, "", "" },
     { "skiploop", OPT_INT | HAS_ARG | OPT_EXPERT, { (void*)&skip_loop_filter }, "", "" },
     { "skipframe", OPT_INT | HAS_ARG | OPT_EXPERT, { (void*)&skip_frame }, "", "" },
     { "skipidct", OPT_INT | HAS_ARG | OPT_EXPERT, { (void*)&skip_idct }, "", "" },

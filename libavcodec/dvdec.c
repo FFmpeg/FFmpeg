@@ -144,7 +144,7 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
     LOCAL_ALIGNED_16(DCTELEM, sblock, [5*DV_MAX_BPM], [64]);
     LOCAL_ALIGNED_16(uint8_t, mb_bit_buffer, [  80 + FF_INPUT_BUFFER_PADDING_SIZE]); /* allow some slack */
     LOCAL_ALIGNED_16(uint8_t, vs_bit_buffer, [5*80 + FF_INPUT_BUFFER_PADDING_SIZE]); /* allow some slack */
-    const int log2_blocksize = 3-s->avctx->lowres;
+    const int log2_blocksize = 3;
     int is_field_mode[5];
 
     assert((((int)mb_bit_buffer) & 7) == 0);
@@ -381,6 +381,5 @@ AVCodec ff_dvvideo_decoder = {
     .close          = dvvideo_close,
     .decode         = dvvideo_decode_frame,
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_SLICE_THREADS,
-    .max_lowres     = 3,
     .long_name      = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
 };
