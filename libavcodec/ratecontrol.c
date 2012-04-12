@@ -49,6 +49,10 @@ void ff_write_pass1_stats(MpegEncContext *s){
              s->f_code, s->b_code, s->current_picture.mc_mb_var_sum, s->current_picture.mb_var_sum, s->i_count, s->skip_count, s->header_bits);
 }
 
+static double get_fps(AVCodecContext *avctx){
+    return 1.0 / av_q2d(avctx->time_base) / FFMAX(avctx->ticks_per_frame, 1);
+}
+
 static inline double qp2bits(RateControlEntry *rce, double qp){
     if(qp<=0.0){
         av_log(NULL, AV_LOG_ERROR, "qp<=0.0\n");
@@ -242,7 +246,7 @@ int ff_rate_control_init(MpegEncContext *s)
                 rcc->frame_count[rce.pict_type] ++;
 
                 get_qscale(s, &rce, rcc->pass1_wanted_bits/rcc->pass1_rc_eq_output_sum, i);
-                rcc->pass1_wanted_bits+= s->bit_rate/(1/av_q2d(s->avctx->time_base)); //FIXME misbehaves a little for variable fps
+                rcc->pass1_wanted_bits+= s->bit_rate/get_fps(s); //FIXME misbehaves a little for variable fps
             }
         }
 
@@ -267,7 +271,7 @@ void ff_rate_control_uninit(MpegEncContext *s)
 
 int ff_vbv_update(MpegEncContext *s, int frame_size){
     RateControlContext *rcc= &s->rc_context;
-    const double fps= 1/av_q2d(s->avctx->time_base);
+    const double fps= get_fps(s->avctx);
     const int buffer_size= s->avctx->rc_buffer_size;
     const double min_rate= s->avctx->rc_min_rate/fps;
     const double max_rate= s->avctx->rc_max_rate/fps;
@@ -436,7 +440,7 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce, double q, 
     int qmin, qmax;
     const int pict_type= rce->new_pict_type;
     const double buffer_size= s->avctx->rc_buffer_size;
-    const double fps= 1/av_q2d(s->avctx->time_base);
+    const double fps= get_fps(s->avctx);
     const double min_rate= s->avctx->rc_min_rate / fps;
     const double max_rate= s->avctx->rc_max_rate / fps;
 
@@ -685,7 +689,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
 
     get_qminmax(&qmin, &qmax, s, pict_type);
 
-    fps= 1/av_q2d(s->avctx->time_base);
+    fps= get_fps(s->avctx);
 //printf("input_pic_num:%d pic_num:%d frame_rate:%d\n", s->input_picture_number, s->picture_number, s->frame_rate);
         /* update predictors */
     if(picture_number>2 && !dry_run){
@@ -822,7 +826,7 @@ static int init_pass2(MpegEncContext *s)
     RateControlContext *rcc= &s->rc_context;
     AVCodecContext *a= s->avctx;
     int i, toobig;
-    double fps= 1/av_q2d(s->avctx->time_base);
+    double fps= get_fps(s->avctx);
     double complexity[5]={0,0,0,0,0};   // aproximate bits at quant=1
     uint64_t const_bits[5]={0,0,0,0,0}; // quantizer independent bits
     uint64_t all_const_bits;
