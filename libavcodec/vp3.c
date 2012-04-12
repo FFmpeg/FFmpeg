@@ -396,6 +396,7 @@ static void init_loop_filter(Vp3DecodeContext *s)
     int value;
 
     filter_limit = s->filter_limit_values[s->qps[0]];
+    av_assert0(filter_limit < 128U);
 
     /* set up the bounding values */
     memset(s->bounding_values_array, 0, 256 * sizeof(int));
