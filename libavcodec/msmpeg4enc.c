@@ -275,7 +275,8 @@ void ff_msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
 
 void ff_msmpeg4_encode_ext_header(MpegEncContext * s)
 {
-        put_bits(&s->pb, 5, s->avctx->time_base.den / s->avctx->time_base.num); //yes 29.97 -> 29
+        unsigned fps = s->avctx->time_base.den / s->avctx->time_base.num / FFMAX(s->avctx->ticks_per_frame, 1);
+        put_bits(&s->pb, 5, FFMIN(fps, 31)); //yes 29.97 -> 29
 
         put_bits(&s->pb, 11, FFMIN(s->bit_rate/1024, 2047));
 
