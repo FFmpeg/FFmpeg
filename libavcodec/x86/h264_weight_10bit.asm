@@ -155,7 +155,7 @@ WEIGHT_FUNC_HALF_MM sse4
 %if ARCH_X86_32
 DECLARE_REG_TMP 3
 %else
-DECLARE_REG_TMP 10
+DECLARE_REG_TMP 7
 %endif
 
 %macro BIWEIGHT_PROLOGUE 0
@@ -218,7 +218,7 @@ DECLARE_REG_TMP 10
 %endmacro
 
 %macro BIWEIGHT_FUNC_DBL 1
-cglobal h264_biweight_16_10_%1
+cglobal h264_biweight_16_10_%1, 0, 8, 8
     BIWEIGHT_PROLOGUE
     BIWEIGHT_SETUP %1
 .nextrow
@@ -238,7 +238,7 @@ BIWEIGHT_FUNC_DBL sse2
 BIWEIGHT_FUNC_DBL sse4
 
 %macro BIWEIGHT_FUNC 1
-cglobal h264_biweight_8_10_%1
+cglobal h264_biweight_8_10_%1, 0, 8, 8
     BIWEIGHT_PROLOGUE
     BIWEIGHT_SETUP %1
 .nextrow
@@ -256,7 +256,7 @@ BIWEIGHT_FUNC sse2
 BIWEIGHT_FUNC sse4
 
 %macro BIWEIGHT_FUNC_HALF 1
-cglobal h264_biweight_4_10_%1
+cglobal h264_biweight_4_10_%1, 0, 8, 8
     BIWEIGHT_PROLOGUE
     BIWEIGHT_SETUP %1
     sar        r3d, 1
