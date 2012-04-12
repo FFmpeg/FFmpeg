@@ -223,7 +223,8 @@ cglobal float_to_fixed24_3dnow, 3,3,0, dst, src, len
     add  dstq, 32
     sub  lend, 8
     ja .loop
-    REP_RET
+    femms
+    RET
 
 INIT_XMM
 cglobal float_to_fixed24_sse, 3,3,3, dst, src, len
@@ -247,7 +248,8 @@ cglobal float_to_fixed24_sse, 3,3,3, dst, src, len
     add      dstq, 32
     sub      lend, 8
     ja .loop
-    REP_RET
+    emms
+    RET
 
 INIT_XMM
 cglobal float_to_fixed24_sse2, 3,3,9, dst, src, len
