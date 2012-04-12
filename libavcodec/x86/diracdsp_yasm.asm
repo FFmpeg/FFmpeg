@@ -136,10 +136,10 @@ cglobal put_signed_rect_clamped_%1, 5,7,3, dst, dst_stride, src, src_stride, w, 
     and     wd, ~(mmsize-1)
 
 %if ARCH_X86_64
-    mov   r10d, r5m
-    mov   r11d, wd
-    %define wspill r11d
-    %define hd r10d
+    mov   r7d, r5m
+    mov   r8d, wd
+    %define wspill r8d
+    %define hd r7d
 %else
     mov    r4m, wd
     %define wspill r4m

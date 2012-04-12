@@ -2,7 +2,7 @@ OBJS-$(CONFIG_MLP_DECODER)             += x86/mlpdsp.o
 OBJS-$(CONFIG_TRUEHD_DECODER)          += x86/mlpdsp.o
 OBJS-$(CONFIG_XMM_CLOBBER_TEST)        += x86/w64xmmtest.o
 
-OBJS-$(HAVE_MMX)                       += x86/dsputil_mmx.o             \
+MMX-OBJS                               += x86/dsputil_mmx.o             \
                                           x86/fdct_mmx.o                \
                                           x86/fmtconvert_mmx.o          \
                                           x86/idct_mmx_xvid.o           \
@@ -74,7 +74,6 @@ YASM-OBJS-$(CONFIG_VP6_DECODER)        += x86/vp3dsp.o                  \
                                           x86/vp56dsp.o
 YASM-OBJS-$(CONFIG_VP8_DECODER)        += x86/vp8dsp.o
 
-MMX-OBJS-$(HAVE_YASM)                  += x86/dsputil_yasm.o            \
+YASM-OBJS                              += x86/dsputil_yasm.o            \
                                           x86/deinterlace.o             \
                                           x86/fmtconvert.o              \
-                                          $(YASM-OBJS-yes)

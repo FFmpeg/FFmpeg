@@ -179,9 +179,8 @@ FLOAT_TO_INT16_INTERLEAVE2 sse2
 
 %macro FLOAT_TO_INT16_INTERLEAVE6 1
 ; void float_to_int16_interleave6_sse(int16_t *dst, const float **src, int len)
-cglobal float_to_int16_interleave6_%1, 2,7,0, dst, src, src1, src2, src3, src4, src5
+cglobal float_to_int16_interleave6_%1, 2,8,0, dst, src, src1, src2, src3, src4, src5, len
 %if ARCH_X86_64
-    %define lend r10d
     mov     lend, r2d
 %else
     %define lend dword r2m
@@ -240,9 +239,8 @@ FLOAT_TO_INT16_INTERLEAVE6 3dn2
 ;-----------------------------------------------------------------------------
 
 %macro FLOAT_INTERLEAVE6 2
-cglobal float_interleave6_%1, 2,7,%2, dst, src, src1, src2, src3, src4, src5
+cglobal float_interleave6_%1, 2,8,%2, dst, src, src1, src2, src3, src4, src5, len
 %if ARCH_X86_64
-    %define lend r10d
     mov     lend, r2d
 %else
     %define lend dword r2m

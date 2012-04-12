@@ -73,7 +73,7 @@ COMPILE_S = $(call COMPILE,AS)
 $(OBJS):
 endif
 
-OBJS-$(HAVE_MMX) +=  $(MMX-OBJS-yes)
+include $(SRC_PATH)/arch.mak
 
 OBJS      += $(OBJS-yes)
 FFLIBS    := $(FFLIBS-yes) $(FFLIBS)

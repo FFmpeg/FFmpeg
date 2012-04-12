@@ -40,9 +40,9 @@ typedef struct BFIContext {
 static av_cold int bfi_decode_init(AVCodecContext *avctx)
 {
     BFIContext *bfi = avctx->priv_data;
-    avctx->pix_fmt = PIX_FMT_PAL8;
+    avctx->pix_fmt  = PIX_FMT_PAL8;
     avcodec_get_frame_defaults(&bfi->frame);
-    bfi->dst = av_mallocz(avctx->width * avctx->height);
+    bfi->dst        = av_mallocz(avctx->width * avctx->height);
     return 0;
 }
 
@@ -50,9 +50,9 @@ static int bfi_decode_frame(AVCodecContext *avctx, void *data,
                             int *data_size, AVPacket *avpkt)
 {
     GetByteContext g;
-    int buf_size = avpkt->size;
+    int buf_size    = avpkt->size;
     BFIContext *bfi = avctx->priv_data;
-    uint8_t *dst = bfi->dst;
+    uint8_t *dst    = bfi->dst;
     uint8_t *src, *dst_offset, colour1, colour2;
     uint8_t *frame_end = bfi->dst + avctx->width * avctx->height;
     uint32_t *pal;
@@ -84,9 +84,8 @@ static int bfi_decode_frame(AVCodecContext *avctx, void *data,
             int shift = 16;
             *pal = 0xFF << 24;
             for (j = 0; j < 3; j++, shift -= 8)
-                *pal +=
-                    ((avctx->extradata[i * 3 + j] << 2) |
-                    (avctx->extradata[i * 3 + j] >> 4)) << shift;
+                *pal += ((avctx->extradata[i * 3 + j] << 2) |
+                         (avctx->extradata[i * 3 + j] >> 4)) << shift;
             pal++;
         }
         memcpy(bfi->pal, bfi->frame.data[1], sizeof(bfi->pal));
@@ -112,7 +111,7 @@ static int bfi_decode_frame(AVCodecContext *avctx, void *data,
             return -1;
         }
 
-        /* Get length and offset(if required) */
+        /* Get length and offset (if required) */
         if (length == 0) {
             if (code == 1) {
                 length = bytestream2_get_byte(&g);
@@ -132,8 +131,7 @@ static int bfi_decode_frame(AVCodecContext *avctx, void *data,
             break;
 
         switch (code) {
-
-        case 0:                //Normal Chain
+        case 0:                // normal chain
             if (length >= bytestream2_get_bytes_left(&g)) {
                 av_log(avctx, AV_LOG_ERROR, "Frame larger than buffer.\n");
                 return -1;
@@ -141,21 +139,18 @@ static int bfi_decode_frame(AVCodecContext *avctx, void *data,
             bytestream2_get_buffer(&g, dst, length);
             dst += length;
             break;
-
-        case 1:                //Back Chain
+        case 1:                // back chain
             dst_offset = dst - offset;
-            length *= 4;        //Convert dwords to bytes.
+            length    *= 4;     // Convert dwords to bytes.
             if (dst_offset < bfi->dst)
                 break;
             while (length--)
                 *dst++ = *dst_offset++;
             break;
-
-        case 2:                //Skip Chain
+        case 2:                // skip chain
             dst += length;
             break;
-
-        case 3:                //Fill Chain
+        case 3:                // fill chain
             colour1 = bytestream2_get_byte(&g);
             colour2 = bytestream2_get_byte(&g);
             while (length--) {
@@ -163,7 +158,6 @@ static int bfi_decode_frame(AVCodecContext *avctx, void *data,
                 *dst++ = colour2;
             }
             break;
-
         }
     }
 
@@ -174,12 +168,12 @@ static int bfi_decode_frame(AVCodecContext *avctx, void *data,
         src += avctx->width;
         dst += bfi->frame.linesize[0];
     }
-    *data_size = sizeof(AVFrame);
+    *data_size       = sizeof(AVFrame);
     *(AVFrame *)data = bfi->frame;
     return buf_size;
 }
 
-static av_cold int bfi_decode_close(AVCodecContext * avctx)
+static av_cold int bfi_decode_close(AVCodecContext *avctx)
 {
     BFIContext *bfi = avctx->priv_data;
     if (bfi->frame.data[0])
