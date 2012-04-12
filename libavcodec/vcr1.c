@@ -28,7 +28,6 @@
 #include "dsputil.h"
 
 typedef struct VCR1Context {
-    AVCodecContext *avctx;
     AVFrame picture;
     int delta[16];
     int offset[4];
@@ -39,7 +38,6 @@ static av_cold void common_init(AVCodecContext *avctx)
     VCR1Context *const a = avctx->priv_data;
 
     avctx->coded_frame = &a->picture;
-    a->avctx           = avctx;
 }
 
 static av_cold int decode_init(AVCodecContext *avctx)
