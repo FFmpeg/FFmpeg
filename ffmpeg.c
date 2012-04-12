@@ -2562,6 +2562,7 @@ static int transcode_init(OutputFile *output_files, int nb_output_files,
                     codec->time_base = icodec->time_base;
                     codec->time_base.num *= icodec->ticks_per_frame;
                     codec->time_base.den *= 2;
+                    codec->ticks_per_frame = 2;
                 }
             } else if(!(oc->oformat->flags & AVFMT_VARIABLE_FPS)
                       && strcmp(oc->oformat->name, "mov") && strcmp(oc->oformat->name, "mp4") && strcmp(oc->oformat->name, "3gp")
