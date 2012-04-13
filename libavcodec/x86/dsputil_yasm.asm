@@ -594,7 +594,7 @@ cglobal emu_edge_core, 2, 7, 0
 %define valw2 r7w
 %define valw3 r3w
 %if WIN64
-%define valw4 r4w
+%define valw4 r7w
 %else ; unix64
 %define valw4 r3w
 %endif
