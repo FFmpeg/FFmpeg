@@ -131,14 +131,14 @@ static int mp3_write_xing(AVFormatContext *s)
             break;
         }
     if (i == FF_ARRAY_ELEMS(avpriv_mpa_freq_tab)) {
-        av_log(s, AV_LOG_ERROR, "Unsupported sample rate.\n");
+        av_log(s, AV_LOG_WARNING, "Unsupported sample rate, not writing Xing header.\n");
         return -1;
     }
 
     switch (codec->channels) {
     case 1:  channels = MPA_MONO;                                          break;
     case 2:  channels = MPA_STEREO;                                        break;
-    default: av_log(s, AV_LOG_ERROR, "Unsupported number of channels.\n"); return -1;
+    default: av_log(s, AV_LOG_WARNING, "Unsupported number of channels, not writing Xing header.\n"); return -1;
     }
 
     /* dummy MPEG audio header */
