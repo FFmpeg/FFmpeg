@@ -1754,7 +1754,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
         unsigned int stts_sample = 0;
         unsigned int sample_size;
         unsigned int distance = 0;
-        int key_off = sc->keyframes && sc->keyframes[0] == 1;
+        int key_off = (sc->keyframes && sc->keyframes[0] == 1) || (sc->stps_data && sc->stps_data[0] == 1);
 
         current_dts -= sc->dts_shift;
 
