@@ -1534,7 +1534,10 @@ static int mov_read_stss(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     av_dlog(c->fc, "keyframe_count = %d\n", entries);
 
     if (!entries)
+    {
+        sc->keyframe_absent = 1;
         return 0;
+    }
     if (entries >= UINT_MAX / sizeof(int))
         return AVERROR_INVALIDDATA;
     sc->keyframes = av_malloc(entries * sizeof(int));
@@ -1776,7 +1779,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                     return;
                 }
 
-                if (!sc->keyframe_count || current_sample+key_off == sc->keyframes[stss_index]) {
+                if (!sc->keyframe_absent && (!sc->keyframe_count || current_sample+key_off == sc->keyframes[stss_index])) {
                     keyframe = 1;
                     if (stss_index + 1 < sc->keyframe_count)
                         stss_index++;

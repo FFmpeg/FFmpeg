@@ -106,6 +106,7 @@ typedef struct MOVStreamContext {
     unsigned int sample_size;
     unsigned int sample_count;
     int *sample_sizes;
+    int keyframe_absent;
     unsigned int keyframe_count;
     int *keyframes;
     int time_scale;
