@@ -438,7 +438,7 @@ static inline int get_vlc_symbol(GetBitContext *gb, VlcState * const state, int 
 
 #if CONFIG_FFV1_ENCODER
 static av_always_inline int encode_line(FFV1Context *s, int w,
-                                        int16_t *sample[2],
+                                        int16_t *sample[3],
                                         int plane_index, int bits)
 {
     PlaneContext * const p= &s->plane[plane_index];
