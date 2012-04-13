@@ -2782,6 +2782,7 @@ static int mov_read_close(AVFormatContext *s)
         av_freep(&sc->drefs);
         if (sc->pb && sc->pb != s->pb)
             avio_close(sc->pb);
+        sc->pb = NULL;
         av_freep(&sc->chunk_offsets);
         av_freep(&sc->keyframes);
         av_freep(&sc->sample_sizes);
