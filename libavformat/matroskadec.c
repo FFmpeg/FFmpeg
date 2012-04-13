@@ -1940,6 +1940,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                         if (size < cfs * h / 2) {
                             av_log(matroska->ctx, AV_LOG_ERROR,
                                    "Corrupt int4 RM-style audio packet size\n");
+                            av_free(lace_size);
                             return AVERROR_INVALIDDATA;
                         }
                         for (x=0; x<h/2; x++)
@@ -1949,6 +1950,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                         if (size < w) {
                             av_log(matroska->ctx, AV_LOG_ERROR,
                                    "Corrupt sipr RM-style audio packet size\n");
+                            av_free(lace_size);
                             return AVERROR_INVALIDDATA;
                         }
                         memcpy(track->audio.buf + y*w, data, w);
@@ -1956,6 +1958,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                         if (size < sps * w / sps) {
                             av_log(matroska->ctx, AV_LOG_ERROR,
                                    "Corrupt generic RM-style audio packet size\n");
+                            av_free(lace_size);
                             return AVERROR_INVALIDDATA;
                         }
                         for (x=0; x<w/sps; x++)
