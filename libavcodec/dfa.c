@@ -149,7 +149,7 @@ static int decode_dds1(GetByteContext *gb, uint8_t *frame, int width, int height
             bitbuf = bytestream2_get_le16u(gb);
             mask = 1;
         }
-        if (frame_end - frame < 2)
+        if (frame_end - frame < width + 2)
             return -1;
         if (bitbuf & mask) {
             v = bytestream2_get_le16(gb);
