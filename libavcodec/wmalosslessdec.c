@@ -936,6 +936,11 @@ static int decode_subframe(WmallDecodeCtx *s)
 
     if (rawpcm_tile) {
         int bits = s->bits_per_sample - padding_zeroes;
+        if (bits <= 0) {
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "Invalid number of padding bits in raw PCM tile\n");
+            return AVERROR_INVALIDDATA;
+        }
         av_dlog(s->avctx, "RAWPCM %d bits per sample. "
                 "total %d bits, remain=%d\n", bits,
                 bits * s->num_channels * subframe_len, get_bits_count(&s->gb));
