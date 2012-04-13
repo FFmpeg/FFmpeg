@@ -1182,6 +1182,8 @@ static int decode_packet(AVCodecContext *avctx, void *data, int *got_frame_ptr,
         packet_sequence_number   = get_bits(gb, 4);
         skip_bits(gb, 1);   // Skip seekable_frame_in_packet, currently ununused
         spliced_packet           = get_bits1(gb);
+        if (spliced_packet)
+            av_log_missing_feature(avctx, "Bitstream splicing", 1);
 
         /* get number of bits that need to be added to the previous frame */
         num_bits_prev_frame = get_bits(gb, s->log2_frame_size);
