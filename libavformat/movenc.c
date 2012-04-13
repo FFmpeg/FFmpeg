@@ -939,7 +939,7 @@ static const AVCodecTag codec_3gp_tags[] = {
 
 static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
-    int tag = track->enc->codec_tag;
+    int tag;
 
     if (track->mode == MODE_MP4 || track->mode == MODE_PSP)
         tag = mp4_get_codec_tag(s, track);

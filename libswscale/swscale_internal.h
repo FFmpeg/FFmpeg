@@ -657,8 +657,8 @@ const char *sws_format_name(enum PixelFormat format);
           (x)==PIX_FMT_GBR24P     \
     )
 
-#define isALPHA(x) \
-    (av_pix_fmt_descriptors[x].nb_components == 2 || \
+#define isALPHA(x)                                             \
+    (av_pix_fmt_descriptors[x].nb_components == 2          ||  \
      av_pix_fmt_descriptors[x].nb_components == 4)
 
 #if 1
@@ -677,7 +677,7 @@ const char *sws_format_name(enum PixelFormat format);
      (x) == PIX_FMT_PAL8)
 
 #endif
-#define isPlanar(x) \
+#define isPlanar(x)                                            \
     (av_pix_fmt_descriptors[x].nb_components >= 2          &&  \
      (av_pix_fmt_descriptors[x].flags & PIX_FMT_PLANAR))
 
@@ -689,7 +689,7 @@ const char *sws_format_name(enum PixelFormat format);
     ((av_pix_fmt_descriptors[x].flags                        & \
      (PIX_FMT_PLANAR | PIX_FMT_RGB)) == (PIX_FMT_PLANAR | PIX_FMT_RGB))
 
-#define usePal(x) ((av_pix_fmt_descriptors[x].flags & PIX_FMT_PAL) ||       \
+#define usePal(x) ((av_pix_fmt_descriptors[x].flags & PIX_FMT_PAL)       || \
                    (av_pix_fmt_descriptors[x].flags & PIX_FMT_PSEUDOPAL) || \
                    (x) == PIX_FMT_Y400A)
 

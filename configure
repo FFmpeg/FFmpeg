@@ -2803,7 +2803,11 @@ case $target_os in
         ;;
 esac
 
-echo "config:$arch:$subarch:$cpu:$target_os:$cc_ident:$FFMPEG_CONFIGURATION" >config.fate
+esc(){
+    echo "$*" | sed 's/%/%25/g;s/:/%3a/g'
+}
+
+echo "config:$arch:$subarch:$cpu:$target_os:$(esc $cc_ident):$(esc $FFMPEG_CONFIGURATION)" >config.fate
 
 check_cpp_condition stdlib.h "defined(__PIC__) || defined(__pic__) || defined(PIC)" && enable pic
 

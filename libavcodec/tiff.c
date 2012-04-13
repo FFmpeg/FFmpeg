@@ -145,13 +145,18 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
     int c, line, pixels, code;
     const uint8_t *ssrc = src;
     int width = ((s->width * s->bpp) + 7) >> 3;
-#if CONFIG_ZLIB
-    uint8_t *zbuf; unsigned long outlen;
 
+    if (size <= 0)
+        return AVERROR_INVALIDDATA;
+
+#if CONFIG_ZLIB
     if(s->compr == TIFF_DEFLATE || s->compr == TIFF_ADOBE_DEFLATE){
+        uint8_t *zbuf; unsigned long outlen;
         int ret;
         outlen = width * lines;
         zbuf = av_malloc(outlen);
+        if (!zbuf)
+            return AVERROR(ENOMEM);
         ret = tiff_uncompress(zbuf, &outlen, src, size);
         if(ret != Z_OK){
             av_log(s->avctx, AV_LOG_ERROR, "Uncompressing failed (%lu of %lu) with error %d\n", outlen, (unsigned long)width * lines, ret);
@@ -180,11 +185,11 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
     }
     if(s->compr == TIFF_CCITT_RLE || s->compr == TIFF_G3 || s->compr == TIFF_G4){
         int i, ret = 0;
-        uint8_t *src2 = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
+        uint8_t *src2 = av_malloc((unsigned)size + FF_INPUT_BUFFER_PADDING_SIZE);
 
-        if(!src2 || (unsigned)size + FF_INPUT_BUFFER_PADDING_SIZE < (unsigned)size){
+        if (!src2) {
             av_log(s->avctx, AV_LOG_ERROR, "Error allocating temporary buffer\n");
-            return -1;
+            return AVERROR(ENOMEM);
         }
         if(s->fax_opts & 2){
             av_log(s->avctx, AV_LOG_ERROR, "Uncompressed fax mode is not supported (yet)\n");

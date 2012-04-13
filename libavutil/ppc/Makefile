@@ -1,0 +1,1 @@
+OBJS += ppc/cpu.o                                                       \
