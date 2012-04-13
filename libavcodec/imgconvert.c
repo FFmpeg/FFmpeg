@@ -340,8 +340,11 @@ int avpicture_layout(const AVPicture* src, enum PixelFormat pix_fmt, int width, 
         return size;
     }
 
-    if (desc->flags & PIX_FMT_PAL)
-        memcpy((unsigned char *)(((size_t)dest + 3) & ~3), src->data[1], 256 * 4);
+    if (desc->flags & PIX_FMT_PAL) {
+        uint32_t *d32 = (unsigned char *)(((size_t)dest + 3) & ~3);
+        for (i = 0; i<256; i++)
+            AV_WL32(d32 + i, AV_RN32(src->data[1] + 4*i));
+    }
 
     return size;
 }
