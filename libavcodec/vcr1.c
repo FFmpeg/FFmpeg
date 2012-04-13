@@ -151,6 +151,9 @@ AVCodec ff_vcr1_decoder = {
 #define CONFIG_VCR1_ENCODER 0
 
 #if CONFIG_VCR1_ENCODER
+
+#include "put_bits.h"
+
 static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
                         int buf_size, void *data)
 {
@@ -164,10 +167,9 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
     p->key_frame = 1;
 
     avpriv_align_put_bits(&a->pb);
-    while (get_bit_count(&a->pb) & 31)
-        put_bits(&a->pb, 8, 0);
+    flush_put_bits(&a->pb);
 
-    size = get_bit_count(&a->pb) / 32;
+    size = put_bits_count(&a->pb) / 32;
 
     return size * 4;
 }
