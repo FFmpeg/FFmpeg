@@ -603,11 +603,12 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
      * If we're still receiving the initial packets, don't return a frame.
      */
 
-    if (fctx->delaying && avpkt->size) {
+    if (fctx->delaying) {
         if (fctx->next_decoding >= (avctx->thread_count-1)) fctx->delaying = 0;
 
         *got_picture_ptr=0;
-        return avpkt->size;
+        if (avpkt->size)
+            return avpkt->size;
     }
 
     /*
