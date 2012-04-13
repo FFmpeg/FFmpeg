@@ -1005,14 +1005,16 @@ yuv2rgb_2_c_template(SwsContext *c, const int16_t *buf[2],
         int U  = (ubuf0[i]        * uvalpha1 + ubuf1[i]        * uvalpha) >> 19;
         int V  = (vbuf0[i]        * uvalpha1 + vbuf1[i]        * uvalpha) >> 19;
         int A1, A2;
-        const void *r =  c->table_rV[V],
-                   *g = (c->table_gU[U] + c->table_gV[V]),
-                   *b =  c->table_bU[U];
+        const void *r, *g, *b;
 
         Y1 = av_clip_uint8(Y1);
         Y2 = av_clip_uint8(Y2);
         U  = av_clip_uint8(U);
         V  = av_clip_uint8(V);
+
+        r =  c->table_rV[V];
+        g = (c->table_gU[U] + c->table_gV[V]);
+        b =  c->table_bU[U];
 
         if (hasAlpha) {
             A1 = (abuf0[i * 2    ] * yalpha1 + abuf1[i * 2    ] * yalpha) >> 19;
@@ -1043,14 +1045,16 @@ yuv2rgb_1_c_template(SwsContext *c, const int16_t *buf0,
             int U  = ubuf0[i]        >> 7;
             int V  = vbuf0[i]        >> 7;
             int A1, A2;
-            const void *r =  c->table_rV[V],
-                       *g = (c->table_gU[U] + c->table_gV[V]),
-                       *b =  c->table_bU[U];
+            const void *r, *g, *b;
 
             Y1 = av_clip_uint8(Y1);
             Y2 = av_clip_uint8(Y2);
             U  = av_clip_uint8(U);
             V  = av_clip_uint8(V);
+
+            r =  c->table_rV[V];
+            g = (c->table_gU[U] + c->table_gV[V]);
+            b =  c->table_bU[U];
 
             if (hasAlpha) {
                 A1 = abuf0[i * 2    ] >> 7;
@@ -1070,14 +1074,16 @@ yuv2rgb_1_c_template(SwsContext *c, const int16_t *buf0,
             int U  = (ubuf0[i] + ubuf1[i]) >> 8;
             int V  = (vbuf0[i] + vbuf1[i]) >> 8;
             int A1, A2;
-            const void *r =  c->table_rV[V],
-                       *g = (c->table_gU[U] + c->table_gV[V]),
-                       *b =  c->table_bU[U];
+            const void *r, *g, *b;
 
             Y1 = av_clip_uint8(Y1);
             Y2 = av_clip_uint8(Y2);
             U  = av_clip_uint8(U);
             V  = av_clip_uint8(V);
+
+            r =  c->table_rV[V];
+            g = (c->table_gU[U] + c->table_gV[V]);
+            b =  c->table_bU[U];
 
             if (hasAlpha) {
                 A1 = abuf0[i * 2    ] >> 7;
