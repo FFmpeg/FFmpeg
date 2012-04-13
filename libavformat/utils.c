@@ -1315,6 +1315,12 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             /* free packet */
             av_free_packet(&cur_pkt);
         }
+        if (pkt->flags & AV_PKT_FLAG_KEY)
+            st->skip_to_keyframe = 0;
+        if (st->skip_to_keyframe) {
+            av_free_packet(&cur_pkt);
+            got_packet = 0;
+        }
     }
 
     if (!got_packet && s->parse_queue)

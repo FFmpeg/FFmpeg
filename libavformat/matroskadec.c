@@ -1839,9 +1839,14 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
     }
 
     if (matroska->skip_to_keyframe && track->type != MATROSKA_TRACK_TYPE_SUBTITLE) {
-        if (!is_keyframe || timecode < matroska->skip_to_timecode)
+        if (timecode < matroska->skip_to_timecode)
             return res;
-        matroska->skip_to_keyframe = 0;
+        if (!st->skip_to_keyframe) {
+            av_log(matroska->ctx, AV_LOG_ERROR, "File is broken, keyframes not correctly marked!\n");
+            matroska->skip_to_keyframe = 0;
+        }
+        if (is_keyframe)
+            matroska->skip_to_keyframe = 0;
     }
 
     switch ((flags & 0x06) >> 1) {
@@ -2147,6 +2152,7 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
 
     avio_seek(s->pb, st->index_entries[index_min].pos, SEEK_SET);
     matroska->current_id = 0;
+    st->skip_to_keyframe =
     matroska->skip_to_keyframe = !(flags & AVSEEK_FLAG_ANY);
     matroska->skip_to_timecode = st->index_entries[index].timestamp;
     matroska->done = 0;
@@ -2158,6 +2164,7 @@ err:
     // the generic seeking code.
     matroska_clear_queue(matroska);
     matroska->current_id = 0;
+    st->skip_to_keyframe =
     matroska->skip_to_keyframe = 0;
     matroska->done = 0;
     matroska->num_levels = 0;

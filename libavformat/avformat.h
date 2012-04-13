@@ -787,6 +787,11 @@ typedef struct AVStream {
      * NOT PART OF PUBLIC API
      */
     int request_probe;
+    /**
+     * Indicates that everything up to the next keyframe
+     * should be discarded.
+     */
+    int skip_to_keyframe;
 } AVStream;
 
 #define AV_PROGRAM_RUNNING 1
