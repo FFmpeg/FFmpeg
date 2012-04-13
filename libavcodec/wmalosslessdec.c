@@ -1164,8 +1164,7 @@ static int decode_packet(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     GetBitContext* gb  = &s->pgb;
     const uint8_t* buf = avpkt->data;
     int buf_size       = avpkt->size;
-    int num_bits_prev_frame, packet_sequence_number,
-        seekable_frame_in_packet, spliced_packet;
+    int num_bits_prev_frame, packet_sequence_number, spliced_packet;
 
     if (s->packet_done || s->packet_loss) {
         s->packet_done = 0;
@@ -1181,7 +1180,7 @@ static int decode_packet(AVCodecContext *avctx, void *data, int *got_frame_ptr,
         /* parse packet header */
         init_get_bits(gb, buf, s->buf_bit_size);
         packet_sequence_number   = get_bits(gb, 4);
-        seekable_frame_in_packet = get_bits1(gb);
+        skip_bits(gb, 1);   // Skip seekable_frame_in_packet, currently ununused
         spliced_packet           = get_bits1(gb);
 
         /* get number of bits that need to be added to the previous frame */
