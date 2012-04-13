@@ -48,10 +48,10 @@ enum MXFMetadataSetType {
 
 enum MXFFrameLayout {
     FullFrame = 0,
-    MixedFields,
+    SeparateFields,
     OneField,
+    MixedFields,
     SegmentedFrame,
-    SeparateFields
 };
 
 typedef struct {
