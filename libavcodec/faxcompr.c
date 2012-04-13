@@ -275,12 +275,17 @@ int ff_ccitt_unpack(AVCodecContext *avctx,
 {
     int j;
     GetBitContext gb;
-    int *runs, *ref, *runend;
+    int *runs, *ref = NULL, *runend;
     int ret;
     int runsize= avctx->width + 2;
+    int err = 0;
 
     runs = av_malloc(runsize * sizeof(runs[0]));
     ref  = av_malloc(runsize * sizeof(ref[0]));
+    if (!runs || ! ref) {
+        err = AVERROR(ENOMEM);
+        goto fail;
+    }
     ref[0] = avctx->width;
     ref[1] = 0;
     ref[2] = 0;
@@ -290,9 +295,8 @@ int ff_ccitt_unpack(AVCodecContext *avctx,
         if(compr == TIFF_G4){
             ret = decode_group3_2d_line(avctx, &gb, avctx->width, runs, runend, ref);
             if(ret < 0){
-                av_free(runs);
-                av_free(ref);
-                return -1;
+                err = -1;
+                goto fail;
             }
         }else{
             int g3d1 = (compr == TIFF_G3) && !(opts & 1);
@@ -313,7 +317,8 @@ int ff_ccitt_unpack(AVCodecContext *avctx,
         }
         dst += stride;
     }
+fail:
     av_free(runs);
     av_free(ref);
-    return 0;
+    return err;
 }
