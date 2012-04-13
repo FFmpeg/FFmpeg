@@ -418,7 +418,7 @@ void parse_loglevel(int argc, char **argv, const OptionDef *options)
 #define FLAGS(o) ((o)->type == AV_OPT_TYPE_FLAGS) ? AV_DICT_APPEND : 0
 int opt_default(const char *opt, const char *arg)
 {
-    const AVOption *oc, *of, *os, *oswr;
+    const AVOption *oc, *of, *os, *oswr = NULL;
     char opt_stripped[128];
     const char *p;
     const AVClass *cc = avcodec_get_class(), *fc = avformat_get_class(), *sc, *swr_class;
