@@ -1236,6 +1236,7 @@ static int avi_read_idx1(AVFormatContext *s, int size)
     AVIStream *ast;
     unsigned int index, tag, flags, pos, len, first_packet = 1;
     unsigned last_pos= -1;
+    unsigned last_len= 0;
     int64_t idx1_pos, first_packet_pos = 0, data_offset = 0;
 
     nb_index_entries = size / 16;
@@ -1278,12 +1279,16 @@ static int avi_read_idx1(AVFormatContext *s, int size)
         av_dlog(s, "%d cum_len=%"PRId64"\n", len, ast->cum_len);
 
 
+        // even if we have only a single stream, we should
+        // switch to non-interleaved to get correct timestamps
         if(last_pos == pos)
             avi->non_interleaved= 1;
-        else if(len || !ast->sample_size)
+        if((last_pos != pos || !last_len) && (len || !ast->sample_size)) {
             av_add_index_entry(st, pos, ast->cum_len, len, 0, (flags&AVIIF_INDEX) ? AVINDEX_KEYFRAME : 0);
+        }
         ast->cum_len += get_duration(ast, len);
         last_pos= pos;
+        last_len= len;
     }
     return 0;
 }
