@@ -173,7 +173,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     WmallDecodeCtx *s  = avctx->priv_data;
     uint8_t *edata_ptr = avctx->extradata;
     unsigned int channel_mask;
-    int i, log2_max_num_subframes, num_possible_block_sizes;
+    int i, log2_max_num_subframes;
 
     s->avctx = avctx;
     init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
@@ -225,7 +225,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->max_subframe_len_bit = 0;
     s->subframe_len_bits    = av_log2(log2_max_num_subframes) + 1;
 
-    num_possible_block_sizes     = log2_max_num_subframes + 1;
     s->min_samples_per_subframe  = s->samples_per_frame / s->max_num_subframes;
     s->dynamic_range_compression = s->decode_flags & 0x80;
     s->bV3RTM                    = s->decode_flags & 0x100;
