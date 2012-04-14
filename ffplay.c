@@ -2242,18 +2242,18 @@ static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
     is->audio_current_pts_drift = is->audio_current_pts - audio_callback_time / 1000000.0;
 }
 
-static int audio_open(void *opaque, int64_t channel_layout, int channels, int sample_rate, struct AudioParams *audio)
+static int audio_open(void *opaque, int64_t wanted_channel_layout, int wanted_nb_channels, int wanted_sample_rate, struct AudioParams *audio_hw_params)
 {
     SDL_AudioSpec wanted_spec, spec;
     const char *env;
-    int64_t wanted_channel_layout = 0;
-    int wanted_nb_channels;
 
     env = SDL_getenv("SDL_AUDIO_CHANNELS");
-    if (env)
-        wanted_channel_layout = av_get_default_channel_layout(SDL_atoi(env));
-    if (!wanted_channel_layout) {
-        wanted_channel_layout = (channel_layout && channels == av_get_channel_layout_nb_channels(channel_layout)) ? channel_layout : av_get_default_channel_layout(channels);
+    if (env) {
+        wanted_nb_channels = SDL_atoi(env);
+        wanted_channel_layout = av_get_default_channel_layout(wanted_nb_channels);
+    }
+    if (!wanted_channel_layout || wanted_nb_channels != av_get_channel_layout_nb_channels(wanted_channel_layout)) {
+        wanted_channel_layout = av_get_default_channel_layout(wanted_nb_channels);
         wanted_channel_layout &= ~AV_CH_LAYOUT_STEREO_DOWNMIX;
         wanted_nb_channels = av_get_channel_layout_nb_channels(wanted_channel_layout);
         /* SDL only supports 1, 2, 4 or 6 channels at the moment, so we have to make sure not to request anything else. */
@@ -2263,7 +2263,7 @@ static int audio_open(void *opaque, int64_t channel_layout, int channels, int sa
         }
     }
     wanted_spec.channels = av_get_channel_layout_nb_channels(wanted_channel_layout);
-    wanted_spec.freq = sample_rate;
+    wanted_spec.freq = wanted_sample_rate;
     if (wanted_spec.freq <= 0 || wanted_spec.channels <= 0) {
         fprintf(stderr, "Invalid sample rate or channel count!\n");
         return -1;
@@ -2289,10 +2289,10 @@ static int audio_open(void *opaque, int64_t channel_layout, int channels, int sa
         }
     }
 
-    audio->fmt = AV_SAMPLE_FMT_S16;
-    audio->freq = spec.freq;
-    audio->channel_layout = wanted_channel_layout;
-    audio->channels =  spec.channels;
+    audio_hw_params->fmt = AV_SAMPLE_FMT_S16;
+    audio_hw_params->freq = spec.freq;
+    audio_hw_params->channel_layout = wanted_channel_layout;
+    audio_hw_params->channels =  spec.channels;
     return spec.size;
 }
 
