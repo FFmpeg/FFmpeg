@@ -66,6 +66,7 @@ int avfilter_fill_frame_from_audio_buffer_ref(AVFrame *frame,
     frame->pkt_pos    = samplesref->pos;
     frame->format     = samplesref->format;
     frame->nb_samples = samplesref->audio->nb_samples;
+    frame->pts        = samplesref->pts;
 
     return 0;
 }
@@ -86,6 +87,8 @@ int avfilter_fill_frame_from_video_buffer_ref(AVFrame *frame,
     frame->sample_aspect_ratio = picref->video->sample_aspect_ratio;
     frame->width            = picref->video->w;
     frame->height           = picref->video->h;
+    frame->format           = picref->format;
+    frame->pts              = picref->pts;
 
     return 0;
 }
