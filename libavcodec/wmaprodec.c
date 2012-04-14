@@ -1174,7 +1174,12 @@ static int decode_subframe(WMAProDecodeCtx *s)
             int num_bits = av_log2((s->subframe_len + 3)/4) + 1;
             for (i = 0; i < s->channels_for_cur_subframe; i++) {
                 int c = s->channel_indexes_for_cur_subframe[i];
-                s->channel[c].num_vec_coeffs = get_bits(&s->gb, num_bits) << 2;
+                int num_vec_coeffs = get_bits(&s->gb, num_bits) << 2;
+                if (num_vec_coeffs > WMAPRO_BLOCK_MAX_SIZE) {
+                    av_log(s->avctx, AV_LOG_ERROR, "num_vec_coeffs %d is too large\n", num_vec_coeffs);
+                    return AVERROR_INVALIDDATA;
+                }
+                s->channel[c].num_vec_coeffs = num_vec_coeffs;
             }
         } else {
             for (i = 0; i < s->channels_for_cur_subframe; i++) {
