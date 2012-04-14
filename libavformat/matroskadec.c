@@ -1581,9 +1581,11 @@ static int matroska_read_header(AVFormatContext *s)
         } else if (codec_id == CODEC_ID_RA_144) {
             track->audio.out_samplerate = 8000;
             track->audio.channels = 1;
-        } else if (codec_id == CODEC_ID_RA_288 || codec_id == CODEC_ID_COOK ||
-                   codec_id == CODEC_ID_ATRAC3 || codec_id == CODEC_ID_SIPR) {
+        } else if ((codec_id == CODEC_ID_RA_288 || codec_id == CODEC_ID_COOK ||
+                    codec_id == CODEC_ID_ATRAC3 || codec_id == CODEC_ID_SIPR)
+                    && track->codec_priv.data) {
             int flavor;
+
             ffio_init_context(&b, track->codec_priv.data,track->codec_priv.size,
                           0, NULL, NULL, NULL, NULL);
             avio_skip(&b, 22);
