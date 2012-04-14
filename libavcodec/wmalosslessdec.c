@@ -157,14 +157,14 @@ typedef struct WmallDecodeCtx {
 
     int ave_sum[2];
 
-    int channel_residues[2][2048];
+    int channel_residues[2][WMALL_BLOCK_MAX_SIZE];
 
     int lpc_coefs[2][40];
     int lpc_order;
     int lpc_scaling;
     int lpc_intbits;
 
-    int channel_coeffs[2][2048];
+    int channel_coeffs[2][WMALL_BLOCK_MAX_SIZE];
 } WmallDecodeCtx;
 
 
@@ -173,7 +173,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     WmallDecodeCtx *s  = avctx->priv_data;
     uint8_t *edata_ptr = avctx->extradata;
     unsigned int channel_mask;
-    int i, log2_max_num_subframes, num_possible_block_sizes;
+    int i, bits, log2_max_num_subframes, num_possible_block_sizes;
 
     s->avctx = avctx;
     init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
@@ -212,8 +212,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->len_prefix  = s->decode_flags & 0x40;
 
     /* get frame len */
-    s->samples_per_frame = 1 << ff_wma_get_frame_len_bits(avctx->sample_rate,
-                                                          3, s->decode_flags);
+    bits = ff_wma_get_frame_len_bits(avctx->sample_rate, 3, s->decode_flags);
+    if (bits > WMALL_BLOCK_MAX_BITS) {
+        av_log_missing_feature(avctx, "big-bits block sizes", 1);
+        return AVERROR_INVALIDDATA;
+    }
+    s->samples_per_frame = 1 << bits;
 
     /* init previous block len */
     for (i = 0; i < avctx->channels; i++)
