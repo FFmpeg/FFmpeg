@@ -71,7 +71,10 @@ typedef struct SchroParseUnitContext {
 
 
 static void libschroedinger_decode_buffer_free(SchroBuffer *schro_buf,
-                                               void *priv);
+                                               void *priv)
+{
+    av_freep(&priv);
+}
 
 static void SchroParseContextInit(SchroParseUnitContext *parse_ctx,
                                   const uint8_t *buf, int buf_size)
@@ -154,12 +157,6 @@ static av_cold int libschroedinger_decode_init(AVCodecContext *avccontext)
     /* Initialize the decoded frame queue. */
     ff_dirac_schro_queue_init(&p_schro_params->dec_frame_queue);
     return 0;
-}
-
-static void libschroedinger_decode_buffer_free(SchroBuffer *schro_buf,
-                                               void *priv)
-{
-    av_freep(&priv);
 }
 
 static void libschroedinger_decode_frame_free(void *frame)
