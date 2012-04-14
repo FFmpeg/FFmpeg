@@ -2242,7 +2242,7 @@ static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
     is->audio_current_pts_drift = is->audio_current_pts - audio_callback_time / 1000000.0;
 }
 
-static int audio_open(VideoState *is, int64_t channel_layout, int channels, int sample_rate)
+static int audio_open(void *opaque, int64_t channel_layout, int channels, int sample_rate, struct AudioParams *audio)
 {
     SDL_AudioSpec wanted_spec, spec;
     const char *env;
@@ -2272,7 +2272,7 @@ static int audio_open(VideoState *is, int64_t channel_layout, int channels, int 
     wanted_spec.silence = 0;
     wanted_spec.samples = SDL_AUDIO_BUFFER_SIZE;
     wanted_spec.callback = sdl_audio_callback;
-    wanted_spec.userdata = is;
+    wanted_spec.userdata = opaque;
     if (SDL_OpenAudio(&wanted_spec, &spec) < 0) {
         fprintf(stderr, "SDL_OpenAudio: %s\n", SDL_GetError());
         return -1;
@@ -2289,12 +2289,11 @@ static int audio_open(VideoState *is, int64_t channel_layout, int channels, int 
         }
     }
 
-    is->audio_hw_buf_size = spec.size;
-    is->audio_src.fmt = is->audio_tgt.fmt = AV_SAMPLE_FMT_S16;
-    is->audio_src.freq = is->audio_tgt.freq = spec.freq;
-    is->audio_src.channel_layout = is->audio_tgt.channel_layout = wanted_channel_layout;
-    is->audio_src.channels = is->audio_tgt.channels = spec.channels;
-    return 0;
+    audio->fmt = AV_SAMPLE_FMT_S16;
+    audio->freq = spec.freq;
+    audio->channel_layout = wanted_channel_layout;
+    audio->channels =  spec.channels;
+    return spec.size;
 }
 
 /* open a given stream. Return 0 if OK */
@@ -2351,8 +2350,11 @@ static int stream_component_open(VideoState *is, int stream_index)
 
     /* prepare audio output */
     if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
-        if (audio_open(is, avctx->channel_layout, avctx->channels, avctx->sample_rate) < 0)
+        int audio_hw_buf_size = audio_open(is, avctx->channel_layout, avctx->channels, avctx->sample_rate, &is->audio_src);
+        if (audio_hw_buf_size < 0)
             return -1;
+        is->audio_hw_buf_size = audio_hw_buf_size;
+        is->audio_tgt = is->audio_src;
     }
 
     ic->streams[stream_index]->discard = AVDISCARD_DEFAULT;
