@@ -406,7 +406,8 @@ static void decode_ac_filter(WmallDecodeCtx *s)
     s->acfilter_scaling = get_bits(&s->gb, 4);
 
     for (i = 0; i < s->acfilter_order; i++)
-        s->acfilter_coeffs[i] = get_bits(&s->gb, s->acfilter_scaling) + 1;
+        s->acfilter_coeffs[i] = (s->acfilter_scaling ?
+                                 get_bits(&s->gb, s->acfilter_scaling) : 0) + 1;
 }
 
 static void decode_mclms(WmallDecodeCtx *s)
