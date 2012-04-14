@@ -2241,18 +2241,69 @@ static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
     is->audio_current_pts_drift = is->audio_current_pts - audio_callback_time / 1000000.0;
 }
 
+static int audio_open(VideoState *is, int64_t channel_layout, int channels, int sample_rate)
+{
+    SDL_AudioSpec wanted_spec, spec;
+    const char *env;
+    int64_t wanted_channel_layout = 0;
+    int wanted_nb_channels;
+
+    env = SDL_getenv("SDL_AUDIO_CHANNELS");
+    if (env)
+        wanted_channel_layout = av_get_default_channel_layout(SDL_atoi(env));
+    if (!wanted_channel_layout) {
+        wanted_channel_layout = (channel_layout && channels == av_get_channel_layout_nb_channels(channel_layout)) ? channel_layout : av_get_default_channel_layout(channels);
+        wanted_channel_layout &= ~AV_CH_LAYOUT_STEREO_DOWNMIX;
+        wanted_nb_channels = av_get_channel_layout_nb_channels(wanted_channel_layout);
+        /* SDL only supports 1, 2, 4 or 6 channels at the moment, so we have to make sure not to request anything else. */
+        while (wanted_nb_channels > 0 && (wanted_nb_channels == 3 || wanted_nb_channels == 5 || wanted_nb_channels > (SDL_VERSION_ATLEAST(1, 2, 8) ? 6 : 2))) {
+            wanted_nb_channels--;
+            wanted_channel_layout = av_get_default_channel_layout(wanted_nb_channels);
+        }
+    }
+    wanted_spec.channels = av_get_channel_layout_nb_channels(wanted_channel_layout);
+    wanted_spec.freq = sample_rate;
+    if (wanted_spec.freq <= 0 || wanted_spec.channels <= 0) {
+        fprintf(stderr, "Invalid sample rate or channel count!\n");
+        return -1;
+    }
+    wanted_spec.format = AUDIO_S16SYS;
+    wanted_spec.silence = 0;
+    wanted_spec.samples = SDL_AUDIO_BUFFER_SIZE;
+    wanted_spec.callback = sdl_audio_callback;
+    wanted_spec.userdata = is;
+    if (SDL_OpenAudio(&wanted_spec, &spec) < 0) {
+        fprintf(stderr, "SDL_OpenAudio: %s\n", SDL_GetError());
+        return -1;
+    }
+    if (spec.format != AUDIO_S16SYS) {
+        fprintf(stderr, "SDL advised audio format %d is not supported!\n", spec.format);
+        return -1;
+    }
+    if (spec.channels != wanted_spec.channels) {
+        wanted_channel_layout = av_get_default_channel_layout(spec.channels);
+        if (!wanted_channel_layout) {
+            fprintf(stderr, "SDL advised channel count %d is not supported!\n", spec.channels);
+            return -1;
+        }
+    }
+
+    is->audio_hw_buf_size = spec.size;
+    is->audio_src_fmt = is->audio_tgt_fmt = AV_SAMPLE_FMT_S16;
+    is->audio_src_freq = is->audio_tgt_freq = spec.freq;
+    is->audio_src_channel_layout = is->audio_tgt_channel_layout = wanted_channel_layout;
+    is->audio_src_channels = is->audio_tgt_channels = spec.channels;
+    return 0;
+}
+
 /* open a given stream. Return 0 if OK */
 static int stream_component_open(VideoState *is, int stream_index)
 {
     AVFormatContext *ic = is->ic;
     AVCodecContext *avctx;
     AVCodec *codec;
-    SDL_AudioSpec wanted_spec, spec;
     AVDictionary *opts;
     AVDictionaryEntry *t = NULL;
-    int64_t wanted_channel_layout = 0;
-    int wanted_nb_channels;
-    const char *env;
 
     if (stream_index < 0 || stream_index >= ic->nb_streams)
         return -1;
@@ -2287,29 +2338,6 @@ static int stream_component_open(VideoState *is, int stream_index)
     if(codec->capabilities & CODEC_CAP_DR1)
         avctx->flags |= CODEC_FLAG_EMU_EDGE;
 
-    if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
-        memset(&is->audio_pkt_temp, 0, sizeof(is->audio_pkt_temp));
-        env = SDL_getenv("SDL_AUDIO_CHANNELS");
-        if (env)
-            wanted_channel_layout = av_get_default_channel_layout(SDL_atoi(env));
-        if (!wanted_channel_layout) {
-            wanted_channel_layout = (avctx->channel_layout && avctx->channels == av_get_channel_layout_nb_channels(avctx->channel_layout)) ? avctx->channel_layout : av_get_default_channel_layout(avctx->channels);
-            wanted_channel_layout &= ~AV_CH_LAYOUT_STEREO_DOWNMIX;
-            wanted_nb_channels = av_get_channel_layout_nb_channels(wanted_channel_layout);
-            /* SDL only supports 1, 2, 4 or 6 channels at the moment, so we have to make sure not to request anything else. */
-            while (wanted_nb_channels > 0 && (wanted_nb_channels == 3 || wanted_nb_channels == 5 || wanted_nb_channels > (SDL_VERSION_ATLEAST(1, 2, 8) ? 6 : 2))) {
-                wanted_nb_channels--;
-                wanted_channel_layout = av_get_default_channel_layout(wanted_nb_channels);
-            }
-        }
-        wanted_spec.channels = av_get_channel_layout_nb_channels(wanted_channel_layout);
-        wanted_spec.freq = avctx->sample_rate;
-        if (wanted_spec.freq <= 0 || wanted_spec.channels <= 0) {
-            fprintf(stderr, "Invalid sample rate or channel count!\n");
-            return -1;
-        }
-    }
-
     if (!av_dict_get(opts, "threads", NULL, 0))
         av_dict_set(&opts, "threads", "auto", 0);
     if (!codec ||
@@ -2322,31 +2350,8 @@ static int stream_component_open(VideoState *is, int stream_index)
 
     /* prepare audio output */
     if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
-        wanted_spec.format = AUDIO_S16SYS;
-        wanted_spec.silence = 0;
-        wanted_spec.samples = SDL_AUDIO_BUFFER_SIZE;
-        wanted_spec.callback = sdl_audio_callback;
-        wanted_spec.userdata = is;
-        if (SDL_OpenAudio(&wanted_spec, &spec) < 0) {
-            fprintf(stderr, "SDL_OpenAudio: %s\n", SDL_GetError());
+        if (audio_open(is, avctx->channel_layout, avctx->channels, avctx->sample_rate) < 0)
             return -1;
-        }
-        is->audio_hw_buf_size = spec.size;
-        if (spec.format != AUDIO_S16SYS) {
-            fprintf(stderr, "SDL advised audio format %d is not supported!\n", spec.format);
-            return -1;
-        }
-        if (spec.channels != wanted_spec.channels) {
-            wanted_channel_layout = av_get_default_channel_layout(spec.channels);
-            if (!wanted_channel_layout) {
-                fprintf(stderr, "SDL advised channel count %d is not supported!\n", spec.channels);
-                return -1;
-            }
-        }
-        is->audio_src_fmt = is->audio_tgt_fmt = AV_SAMPLE_FMT_S16;
-        is->audio_src_freq = is->audio_tgt_freq = spec.freq;
-        is->audio_src_channel_layout = is->audio_tgt_channel_layout = wanted_channel_layout;
-        is->audio_src_channels = is->audio_tgt_channels = spec.channels;
     }
 
     ic->streams[stream_index]->discard = AVDISCARD_DEFAULT;
@@ -2362,9 +2367,10 @@ static int stream_component_open(VideoState *is, int stream_index)
         is->audio_diff_avg_count = 0;
         /* since we do not have a precise anough audio fifo fullness,
            we correct audio sync only if larger than this threshold */
-        is->audio_diff_threshold = 2.0 * SDL_AUDIO_BUFFER_SIZE / wanted_spec.freq;
+        is->audio_diff_threshold = 2.0 * SDL_AUDIO_BUFFER_SIZE / avctx->sample_rate;
 
         memset(&is->audio_pkt, 0, sizeof(is->audio_pkt));
+        memset(&is->audio_pkt_temp, 0, sizeof(is->audio_pkt_temp));
         packet_queue_start(&is->audioq);
         SDL_PauseAudio(0);
         break;
