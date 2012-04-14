@@ -335,6 +335,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
+    if (s->min_samples_per_subframe < (1<<WMAPRO_BLOCK_MIN_BITS)) {
+        av_log(avctx, AV_LOG_ERROR, "min_samples_per_subframe of %d too small\n",
+               s->min_samples_per_subframe);
+        return AVERROR_INVALIDDATA;
+    }
+
     s->num_channels = avctx->channels;
 
     if (s->num_channels < 0) {
