@@ -75,14 +75,14 @@ static void libschroedinger_decode_buffer_free(SchroBuffer *schro_buf,
     av_freep(&priv);
 }
 
-static void SchroParseContextInit(SchroParseUnitContext *parse_ctx,
-                                  const uint8_t *buf, int buf_size)
+static void parse_context_init(SchroParseUnitContext *parse_ctx,
+                               const uint8_t *buf, int buf_size)
 {
     parse_ctx->buf           = buf;
     parse_ctx->buf_size      = buf_size;
 }
 
-static SchroBuffer *FindNextSchroParseUnit(SchroParseUnitContext *parse_ctx)
+static SchroBuffer *find_next_parse_unit(SchroParseUnitContext *parse_ctx)
 {
     SchroBuffer *enc_buf = NULL;
     int next_pu_offset = 0;
@@ -219,7 +219,7 @@ static int libschroedinger_decode_frame(AVCodecContext *avccontext,
 
     *data_size = 0;
 
-    SchroParseContextInit(&parse_ctx, buf, buf_size);
+    parse_context_init(&parse_ctx, buf, buf_size);
     if (!buf_size) {
         if (!p_schro_params->eos_signalled) {
             state = schro_decoder_push_end_of_stream(decoder);
@@ -229,7 +229,7 @@ static int libschroedinger_decode_frame(AVCodecContext *avccontext,
 
     /* Loop through all the individual parse units in the input buffer */
     do {
-        if ((enc_buf = FindNextSchroParseUnit(&parse_ctx))) {
+        if ((enc_buf = find_next_parse_unit(&parse_ctx))) {
             /* Push buffer into decoder. */
             if (SCHRO_PARSE_CODE_IS_PICTURE(enc_buf->data[4]) &&
                 SCHRO_PARSE_CODE_NUM_REFS(enc_buf->data[4]) > 0)

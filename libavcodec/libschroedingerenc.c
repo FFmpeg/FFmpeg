@@ -79,7 +79,7 @@ typedef struct SchroEncoderParams {
 /**
 * Works out Schro-compatible chroma format.
 */
-static int SetSchroChromaFormat(AVCodecContext *avccontext)
+static int set_chroma_format(AVCodecContext *avccontext)
 {
     int num_formats = sizeof(schro_pixel_format_map) /
                       sizeof(schro_pixel_format_map[0]);
@@ -128,7 +128,7 @@ static int libschroedinger_encode_init(AVCodecContext *avccontext)
     p_schro_params->format->width  = avccontext->width;
     p_schro_params->format->height = avccontext->height;
 
-    if (SetSchroChromaFormat(avccontext) == -1)
+    if (set_chroma_format(avccontext) == -1)
         return -1;
 
     if (avccontext->color_primaries == AVCOL_PRI_BT709) {
@@ -258,7 +258,7 @@ static SchroFrame *libschroedinger_frame_from_data(AVCodecContext *avccontext,
     return in_frame;
 }
 
-static void SchroedingerFreeFrame(void *data)
+static void libschroedinger_free_frame(void *data)
 {
     FFSchroEncodedFrame *enc_frame = data;
 
@@ -411,7 +411,7 @@ static int libschroedinger_encode_frame(AVCodecContext *avccontext, AVPacket *pk
 
 error:
     /* free frame */
-    SchroedingerFreeFrame(p_frame_output);
+    libschroedinger_free_frame(p_frame_output);
     return ret;
 }
 
@@ -425,7 +425,7 @@ static int libschroedinger_encode_close(AVCodecContext *avccontext)
 
     /* Free data in the output frame queue. */
     ff_schro_queue_free(&p_schro_params->enc_frame_queue,
-                        SchroedingerFreeFrame);
+                        libschroedinger_free_frame);
 
 
     /* Free the encoder buffer. */

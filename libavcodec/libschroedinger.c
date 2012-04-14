@@ -163,7 +163,7 @@ int ff_get_schro_frame_format (SchroChromaFormat schro_pix_fmt,
     return -1;
 }
 
-static void FreeSchroFrame(SchroFrame *frame, void *priv)
+static void free_schro_frame(SchroFrame *frame, void *priv)
 {
     AVPicture *p_pic = priv;
 
@@ -195,7 +195,7 @@ SchroFrame *ff_create_schro_frame(AVCodecContext *avccontext,
     p_frame->format = schro_frame_fmt;
     p_frame->width  = y_width;
     p_frame->height = y_height;
-    schro_frame_set_free_callback(p_frame, FreeSchroFrame, (void *)p_pic);
+    schro_frame_set_free_callback(p_frame, free_schro_frame, (void *)p_pic);
 
     for (i = 0; i < 3; ++i) {
         p_frame->components[i].width  = i ? uv_width : y_width;
