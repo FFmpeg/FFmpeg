@@ -1590,12 +1590,12 @@ vbv_retry:
         avctx->frame_bits  = s->frame_bits;
 
         pkt->pts = s->current_picture.f.pts;
-        if (!s->low_delay) {
+        if (!s->low_delay && s->pict_type != AV_PICTURE_TYPE_B) {
             if (!s->current_picture.f.coded_picture_number)
                 pkt->dts = pkt->pts - s->dts_delta;
             else
                 pkt->dts = s->reordered_pts;
-            s->reordered_pts = s->input_picture[0]->f.pts;
+            s->reordered_pts = pkt->pts;
         } else
             pkt->dts = pkt->pts;
         if (s->current_picture.f.key_frame)
