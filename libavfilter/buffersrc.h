@@ -32,6 +32,7 @@
  *
  * @param buf buffer containing frame data to be passed down the filtergraph.
  * This function will take ownership of buf, the user must not free it.
+ * A NULL buf signals EOF -- i.e. no more frames will be sent to this filter.
  */
 int av_buffersrc_buffer(AVFilterContext *s, AVFilterBufferRef *buf);
 

@@ -72,11 +72,276 @@ struct xvid_ff_pass1 {
     struct xvid_context *context;   /**< Pointer to private context */
 };
 
-/* Prototypes - See function implementation for details */
-int xvid_strip_vol_header(AVCodecContext *avctx, AVPacket *pkt, unsigned int header_len, unsigned int frame_len);
-int xvid_ff_2pass(void *ref, int opt, void *p1, void *p2);
-void xvid_correct_framerate(AVCodecContext *avctx);
+/*
+ * Xvid 2-Pass Kludge Section
+ *
+ * Xvid's default 2-pass doesn't allow us to create data as we need to, so
+ * this section spends time replacing the first pass plugin so we can write
+ * statistic information as libavcodec requests in. We have another kludge
+ * that allows us to pass data to the second pass in Xvid without a custom
+ * rate-control plugin.
+ */
 
+
+/**
+ * Initialize the two-pass plugin and context.
+ *
+ * @param param Input construction parameter structure
+ * @param handle Private context handle
+ * @return Returns XVID_ERR_xxxx on failure, or 0 on success.
+ */
+static int xvid_ff_2pass_create(xvid_plg_create_t * param,
+                                void ** handle) {
+    struct xvid_ff_pass1 *x = (struct xvid_ff_pass1 *)param->param;
+    char *log = x->context->twopassbuffer;
+
+    /* Do a quick bounds check */
+    if( log == NULL )
+        return XVID_ERR_FAIL;
+
+    /* We use snprintf() */
+    /* This is because we can safely prevent a buffer overflow */
+    log[0] = 0;
+    snprintf(log, BUFFER_REMAINING(log),
+        "# ffmpeg 2-pass log file, using xvid codec\n");
+    snprintf(BUFFER_CAT(log), BUFFER_REMAINING(log),
+        "# Do not modify. libxvidcore version: %d.%d.%d\n\n",
+        XVID_VERSION_MAJOR(XVID_VERSION),
+        XVID_VERSION_MINOR(XVID_VERSION),
+        XVID_VERSION_PATCH(XVID_VERSION));
+
+    *handle = x->context;
+    return 0;
+}
+
+/**
+ * Destroy the two-pass plugin context.
+ *
+ * @param ref Context pointer for the plugin
+ * @param param Destrooy context
+ * @return Returns 0, success guaranteed
+ */
+static int xvid_ff_2pass_destroy(struct xvid_context *ref,
+                                xvid_plg_destroy_t *param) {
+    /* Currently cannot think of anything to do on destruction */
+    /* Still, the framework should be here for reference/use */
+    if( ref->twopassbuffer != NULL )
+        ref->twopassbuffer[0] = 0;
+    return 0;
+}
+
+/**
+ * Enable fast encode mode during the first pass.
+ *
+ * @param ref Context pointer for the plugin
+ * @param param Frame data
+ * @return Returns 0, success guaranteed
+ */
+static int xvid_ff_2pass_before(struct xvid_context *ref,
+                                xvid_plg_data_t *param) {
+    int motion_remove;
+    int motion_replacements;
+    int vop_remove;
+
+    /* Nothing to do here, result is changed too much */
+    if( param->zone && param->zone->mode == XVID_ZONE_QUANT )
+        return 0;
+
+    /* We can implement a 'turbo' first pass mode here */
+    param->quant = 2;
+
+    /* Init values */
+    motion_remove = ~XVID_ME_CHROMA_PVOP &
+                    ~XVID_ME_CHROMA_BVOP &
+                    ~XVID_ME_EXTSEARCH16 &
+                    ~XVID_ME_ADVANCEDDIAMOND16;
+    motion_replacements = XVID_ME_FAST_MODEINTERPOLATE |
+                          XVID_ME_SKIP_DELTASEARCH |
+                          XVID_ME_FASTREFINE16 |
+                          XVID_ME_BFRAME_EARLYSTOP;
+    vop_remove = ~XVID_VOP_MODEDECISION_RD &
+                 ~XVID_VOP_FAST_MODEDECISION_RD &
+                 ~XVID_VOP_TRELLISQUANT &
+                 ~XVID_VOP_INTER4V &
+                 ~XVID_VOP_HQACPRED;
+
+    param->vol_flags &= ~XVID_VOL_GMC;
+    param->vop_flags &= vop_remove;
+    param->motion_flags &= motion_remove;
+    param->motion_flags |= motion_replacements;
+
+    return 0;
+}
+
+/**
+ * Capture statistic data and write it during first pass.
+ *
+ * @param ref Context pointer for the plugin
+ * @param param Statistic data
+ * @return Returns XVID_ERR_xxxx on failure, or 0 on success
+ */
+static int xvid_ff_2pass_after(struct xvid_context *ref,
+                                xvid_plg_data_t *param) {
+    char *log = ref->twopassbuffer;
+    const char *frame_types = " ipbs";
+    char frame_type;
+
+    /* Quick bounds check */
+    if( log == NULL )
+        return XVID_ERR_FAIL;
+
+    /* Convert the type given to us into a character */
+    if( param->type < 5 && param->type > 0 ) {
+        frame_type = frame_types[param->type];
+    } else {
+        return XVID_ERR_FAIL;
+    }
+
+    snprintf(BUFFER_CAT(log), BUFFER_REMAINING(log),
+        "%c %d %d %d %d %d %d\n",
+        frame_type, param->stats.quant, param->stats.kblks, param->stats.mblks,
+        param->stats.ublks, param->stats.length, param->stats.hlength);
+
+    return 0;
+}
+
+/**
+ * Dispatch function for our custom plugin.
+ * This handles the dispatch for the Xvid plugin. It passes data
+ * on to other functions for actual processing.
+ *
+ * @param ref Context pointer for the plugin
+ * @param cmd The task given for us to complete
+ * @param p1 First parameter (varies)
+ * @param p2 Second parameter (varies)
+ * @return Returns XVID_ERR_xxxx on failure, or 0 on success
+ */
+static int xvid_ff_2pass(void *ref, int cmd, void *p1, void *p2)
+{
+    switch( cmd ) {
+        case XVID_PLG_INFO:
+        case XVID_PLG_FRAME:
+            return 0;
+
+        case XVID_PLG_BEFORE:
+            return xvid_ff_2pass_before(ref, p1);
+
+        case XVID_PLG_CREATE:
+            return xvid_ff_2pass_create(p1, p2);
+
+        case XVID_PLG_AFTER:
+            return xvid_ff_2pass_after(ref, p1);
+
+        case XVID_PLG_DESTROY:
+            return xvid_ff_2pass_destroy(ref, p1);
+
+        default:
+            return XVID_ERR_FAIL;
+    }
+}
+
+/**
+ * Routine to create a global VO/VOL header for MP4 container.
+ * What we do here is extract the header from the Xvid bitstream
+ * as it is encoded. We also strip the repeated headers from the
+ * bitstream when a global header is requested for MPEG-4 ISO
+ * compliance.
+ *
+ * @param avctx AVCodecContext pointer to context
+ * @param frame Pointer to encoded frame data
+ * @param header_len Length of header to search
+ * @param frame_len Length of encoded frame data
+ * @return Returns new length of frame data
+ */
+static int xvid_strip_vol_header(AVCodecContext *avctx,
+                  AVPacket *pkt,
+                  unsigned int header_len,
+                  unsigned int frame_len) {
+    int vo_len = 0, i;
+
+    for( i = 0; i < header_len - 3; i++ ) {
+        if( pkt->data[i] == 0x00 &&
+            pkt->data[i+1] == 0x00 &&
+            pkt->data[i+2] == 0x01 &&
+            pkt->data[i+3] == 0xB6 ) {
+            vo_len = i;
+            break;
+        }
+    }
+
+    if( vo_len > 0 ) {
+        /* We need to store the header, so extract it */
+        if( avctx->extradata == NULL ) {
+            avctx->extradata = av_malloc(vo_len);
+            memcpy(avctx->extradata, pkt->data, vo_len);
+            avctx->extradata_size = vo_len;
+        }
+        /* Less dangerous now, memmove properly copies the two
+           chunks of overlapping data */
+        memmove(pkt->data, &pkt->data[vo_len], frame_len - vo_len);
+        pkt->size = frame_len - vo_len;
+    }
+    return 0;
+}
+
+/**
+ * Routine to correct a possibly erroneous framerate being fed to us.
+ * Xvid currently chokes on framerates where the ticks per frame is
+ * extremely large. This function works to correct problems in this area
+ * by estimating a new framerate and taking the simpler fraction of
+ * the two presented.
+ *
+ * @param avctx Context that contains the framerate to correct.
+ */
+static void xvid_correct_framerate(AVCodecContext *avctx)
+{
+    int frate, fbase;
+    int est_frate, est_fbase;
+    int gcd;
+    float est_fps, fps;
+
+    frate = avctx->time_base.den;
+    fbase = avctx->time_base.num;
+
+    gcd = av_gcd(frate, fbase);
+    if( gcd > 1 ) {
+        frate /= gcd;
+        fbase /= gcd;
+    }
+
+    if( frate <= 65000 && fbase <= 65000 ) {
+        avctx->time_base.den = frate;
+        avctx->time_base.num = fbase;
+        return;
+    }
+
+    fps = (float)frate / (float)fbase;
+    est_fps = roundf(fps * 1000.0) / 1000.0;
+
+    est_frate = (int)est_fps;
+    if( est_fps > (int)est_fps ) {
+        est_frate = (est_frate + 1) * 1000;
+        est_fbase = (int)roundf((float)est_frate / est_fps);
+    } else
+        est_fbase = 1;
+
+    gcd = av_gcd(est_frate, est_fbase);
+    if( gcd > 1 ) {
+        est_frate /= gcd;
+        est_fbase /= gcd;
+    }
+
+    if( fbase > est_fbase ) {
+        avctx->time_base.den = est_frate;
+        avctx->time_base.num = est_fbase;
+        av_log(avctx, AV_LOG_DEBUG,
+            "Xvid: framerate re-estimated: %.2f, %.3f%% correction\n",
+            est_fps, (((est_fps - fps)/fps) * 100.0));
+    } else {
+        avctx->time_base.den = frate;
+        avctx->time_base.num = fbase;
+    }
+}
 
 /**
  * Create the private context for the encoder.
@@ -506,274 +771,6 @@ static av_cold int xvid_encode_close(AVCodecContext *avctx) {
     av_free(x->inter_matrix);
 
     return 0;
-}
-
-/**
- * Routine to create a global VO/VOL header for MP4 container.
- * What we do here is extract the header from the Xvid bitstream
- * as it is encoded. We also strip the repeated headers from the
- * bitstream when a global header is requested for MPEG-4 ISO
- * compliance.
- *
- * @param avctx AVCodecContext pointer to context
- * @param frame Pointer to encoded frame data
- * @param header_len Length of header to search
- * @param frame_len Length of encoded frame data
- * @return Returns new length of frame data
- */
-int xvid_strip_vol_header(AVCodecContext *avctx,
-                  AVPacket *pkt,
-                  unsigned int header_len,
-                  unsigned int frame_len) {
-    int vo_len = 0, i;
-
-    for( i = 0; i < header_len - 3; i++ ) {
-        if( pkt->data[i] == 0x00 &&
-            pkt->data[i+1] == 0x00 &&
-            pkt->data[i+2] == 0x01 &&
-            pkt->data[i+3] == 0xB6 ) {
-            vo_len = i;
-            break;
-        }
-    }
-
-    if( vo_len > 0 ) {
-        /* We need to store the header, so extract it */
-        if( avctx->extradata == NULL ) {
-            avctx->extradata = av_malloc(vo_len);
-            memcpy(avctx->extradata, pkt->data, vo_len);
-            avctx->extradata_size = vo_len;
-        }
-        /* Less dangerous now, memmove properly copies the two
-           chunks of overlapping data */
-        memmove(pkt->data, &pkt->data[vo_len], frame_len - vo_len);
-        pkt->size = frame_len - vo_len;
-    }
-    return 0;
-}
-
-/**
- * Routine to correct a possibly erroneous framerate being fed to us.
- * Xvid currently chokes on framerates where the ticks per frame is
- * extremely large. This function works to correct problems in this area
- * by estimating a new framerate and taking the simpler fraction of
- * the two presented.
- *
- * @param avctx Context that contains the framerate to correct.
- */
-void xvid_correct_framerate(AVCodecContext *avctx) {
-    int frate, fbase;
-    int est_frate, est_fbase;
-    int gcd;
-    float est_fps, fps;
-
-    frate = avctx->time_base.den;
-    fbase = avctx->time_base.num;
-
-    gcd = av_gcd(frate, fbase);
-    if( gcd > 1 ) {
-        frate /= gcd;
-        fbase /= gcd;
-    }
-
-    if( frate <= 65000 && fbase <= 65000 ) {
-        avctx->time_base.den = frate;
-        avctx->time_base.num = fbase;
-        return;
-    }
-
-    fps = (float)frate / (float)fbase;
-    est_fps = roundf(fps * 1000.0) / 1000.0;
-
-    est_frate = (int)est_fps;
-    if( est_fps > (int)est_fps ) {
-        est_frate = (est_frate + 1) * 1000;
-        est_fbase = (int)roundf((float)est_frate / est_fps);
-    } else
-        est_fbase = 1;
-
-    gcd = av_gcd(est_frate, est_fbase);
-    if( gcd > 1 ) {
-        est_frate /= gcd;
-        est_fbase /= gcd;
-    }
-
-    if( fbase > est_fbase ) {
-        avctx->time_base.den = est_frate;
-        avctx->time_base.num = est_fbase;
-        av_log(avctx, AV_LOG_DEBUG,
-            "Xvid: framerate re-estimated: %.2f, %.3f%% correction\n",
-            est_fps, (((est_fps - fps)/fps) * 100.0));
-    } else {
-        avctx->time_base.den = frate;
-        avctx->time_base.num = fbase;
-    }
-}
-
-/*
- * Xvid 2-Pass Kludge Section
- *
- * Xvid's default 2-pass doesn't allow us to create data as we need to, so
- * this section spends time replacing the first pass plugin so we can write
- * statistic information as libavcodec requests in. We have another kludge
- * that allows us to pass data to the second pass in Xvid without a custom
- * rate-control plugin.
- */
-
-/**
- * Initialize the two-pass plugin and context.
- *
- * @param param Input construction parameter structure
- * @param handle Private context handle
- * @return Returns XVID_ERR_xxxx on failure, or 0 on success.
- */
-static int xvid_ff_2pass_create(xvid_plg_create_t * param,
-                                void ** handle) {
-    struct xvid_ff_pass1 *x = (struct xvid_ff_pass1 *)param->param;
-    char *log = x->context->twopassbuffer;
-
-    /* Do a quick bounds check */
-    if( log == NULL )
-        return XVID_ERR_FAIL;
-
-    /* We use snprintf() */
-    /* This is because we can safely prevent a buffer overflow */
-    log[0] = 0;
-    snprintf(log, BUFFER_REMAINING(log),
-        "# ffmpeg 2-pass log file, using xvid codec\n");
-    snprintf(BUFFER_CAT(log), BUFFER_REMAINING(log),
-        "# Do not modify. libxvidcore version: %d.%d.%d\n\n",
-        XVID_VERSION_MAJOR(XVID_VERSION),
-        XVID_VERSION_MINOR(XVID_VERSION),
-        XVID_VERSION_PATCH(XVID_VERSION));
-
-    *handle = x->context;
-    return 0;
-}
-
-/**
- * Destroy the two-pass plugin context.
- *
- * @param ref Context pointer for the plugin
- * @param param Destrooy context
- * @return Returns 0, success guaranteed
- */
-static int xvid_ff_2pass_destroy(struct xvid_context *ref,
-                                xvid_plg_destroy_t *param) {
-    /* Currently cannot think of anything to do on destruction */
-    /* Still, the framework should be here for reference/use */
-    if( ref->twopassbuffer != NULL )
-        ref->twopassbuffer[0] = 0;
-    return 0;
-}
-
-/**
- * Enable fast encode mode during the first pass.
- *
- * @param ref Context pointer for the plugin
- * @param param Frame data
- * @return Returns 0, success guaranteed
- */
-static int xvid_ff_2pass_before(struct xvid_context *ref,
-                                xvid_plg_data_t *param) {
-    int motion_remove;
-    int motion_replacements;
-    int vop_remove;
-
-    /* Nothing to do here, result is changed too much */
-    if( param->zone && param->zone->mode == XVID_ZONE_QUANT )
-        return 0;
-
-    /* We can implement a 'turbo' first pass mode here */
-    param->quant = 2;
-
-    /* Init values */
-    motion_remove = ~XVID_ME_CHROMA_PVOP &
-                    ~XVID_ME_CHROMA_BVOP &
-                    ~XVID_ME_EXTSEARCH16 &
-                    ~XVID_ME_ADVANCEDDIAMOND16;
-    motion_replacements = XVID_ME_FAST_MODEINTERPOLATE |
-                          XVID_ME_SKIP_DELTASEARCH |
-                          XVID_ME_FASTREFINE16 |
-                          XVID_ME_BFRAME_EARLYSTOP;
-    vop_remove = ~XVID_VOP_MODEDECISION_RD &
-                 ~XVID_VOP_FAST_MODEDECISION_RD &
-                 ~XVID_VOP_TRELLISQUANT &
-                 ~XVID_VOP_INTER4V &
-                 ~XVID_VOP_HQACPRED;
-
-    param->vol_flags &= ~XVID_VOL_GMC;
-    param->vop_flags &= vop_remove;
-    param->motion_flags &= motion_remove;
-    param->motion_flags |= motion_replacements;
-
-    return 0;
-}
-
-/**
- * Capture statistic data and write it during first pass.
- *
- * @param ref Context pointer for the plugin
- * @param param Statistic data
- * @return Returns XVID_ERR_xxxx on failure, or 0 on success
- */
-static int xvid_ff_2pass_after(struct xvid_context *ref,
-                                xvid_plg_data_t *param) {
-    char *log = ref->twopassbuffer;
-    const char *frame_types = " ipbs";
-    char frame_type;
-
-    /* Quick bounds check */
-    if( log == NULL )
-        return XVID_ERR_FAIL;
-
-    /* Convert the type given to us into a character */
-    if( param->type < 5 && param->type > 0 ) {
-        frame_type = frame_types[param->type];
-    } else {
-        return XVID_ERR_FAIL;
-    }
-
-    snprintf(BUFFER_CAT(log), BUFFER_REMAINING(log),
-        "%c %d %d %d %d %d %d\n",
-        frame_type, param->stats.quant, param->stats.kblks, param->stats.mblks,
-        param->stats.ublks, param->stats.length, param->stats.hlength);
-
-    return 0;
-}
-
-/**
- * Dispatch function for our custom plugin.
- * This handles the dispatch for the Xvid plugin. It passes data
- * on to other functions for actual processing.
- *
- * @param ref Context pointer for the plugin
- * @param cmd The task given for us to complete
- * @param p1 First parameter (varies)
- * @param p2 Second parameter (varies)
- * @return Returns XVID_ERR_xxxx on failure, or 0 on success
- */
-int xvid_ff_2pass(void *ref, int cmd, void *p1, void *p2) {
-    switch( cmd ) {
-        case XVID_PLG_INFO:
-        case XVID_PLG_FRAME:
-            return 0;
-
-        case XVID_PLG_BEFORE:
-            return xvid_ff_2pass_before(ref, p1);
-
-        case XVID_PLG_CREATE:
-            return xvid_ff_2pass_create(p1, p2);
-
-        case XVID_PLG_AFTER:
-            return xvid_ff_2pass_after(ref, p1);
-
-        case XVID_PLG_DESTROY:
-            return xvid_ff_2pass_destroy(ref, p1);
-
-        default:
-            return XVID_ERR_FAIL;
-    }
 }
 
 /**

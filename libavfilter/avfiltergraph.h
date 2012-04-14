@@ -91,11 +91,11 @@ void avfilter_graph_free(AVFilterGraph **graph);
 /**
  * A linked-list of the inputs/outputs of the filter chain.
  *
- * This is mainly useful for avfilter_graph_parse(), since this
- * function may accept a description of a graph with not connected
- * input/output pads. This struct specifies, per each not connected
- * pad contained in the graph, the filter context and the pad index
- * required for establishing a link.
+ * This is mainly useful for avfilter_graph_parse() / avfilter_graph_parse2(),
+ * where it is used to communicate open (unlinked) inputs and outputs from and
+ * to the caller.
+ * This struct specifies, per each not connected pad contained in the graph, the
+ * filter context and the pad index required for establishing a link.
  */
 typedef struct AVFilterInOut {
     /** unique name for this input/output in the list */
@@ -112,13 +112,14 @@ typedef struct AVFilterInOut {
 } AVFilterInOut;
 
 /**
- * Create an AVFilterInOut.
- * Must be free with avfilter_inout_free().
+ * Allocate a single AVFilterInOut entry.
+ * Must be freed with avfilter_inout_free().
+ * @return allocated AVFilterInOut on success, NULL on failure.
  */
 AVFilterInOut *avfilter_inout_alloc(void);
 
 /**
- * Free the AVFilterInOut in *inout, and set its pointer to NULL.
+ * Free the supplied list of AVFilterInOut and set *inout to NULL.
  * If *inout is NULL, do nothing.
  */
 void avfilter_inout_free(AVFilterInOut **inout);
@@ -139,6 +140,41 @@ void avfilter_inout_free(AVFilterInOut **inout);
 int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
                          AVFilterInOut **inputs, AVFilterInOut **outputs,
                          void *log_ctx);
+
+/**
+ * Add a graph described by a string to a graph.
+ *
+ * @param[in]  graph   the filter graph where to link the parsed graph context
+ * @param[in]  filters string to be parsed
+ * @param[out] inputs  a linked list of all free (unlinked) inputs of the
+ *                     parsed graph will be returned here. It is to be freed
+ *                     by the caller using avfilter_inout_free().
+ * @param[out] outputs a linked list of all free (unlinked) outputs of the
+ *                     parsed graph will be returned here. It is to be freed by the
+ *                     caller using avfilter_inout_free().
+ * @return zero on success, a negative AVERROR code on error
+ *
+ * @note the difference between avfilter_graph_parse2() and
+ * avfilter_graph_parse() is that in avfilter_graph_parse(), the caller provides
+ * the lists of inputs and outputs, which therefore must be known before calling
+ * the function. On the other hand, avfilter_graph_parse2() \em returns the
+ * inputs and outputs that are left unlinked after parsing the graph and the
+ * caller then deals with them. Another difference is that in
+ * avfilter_graph_parse(), the inputs parameter describes inputs of the
+ * <em>already existing</em> part of the graph; i.e. from the point of view of
+ * the newly created part, they are outputs. Similarly the outputs parameter
+ * describes outputs of the already existing filters, which are provided as
+ * inputs to the parsed filters.
+ * avfilter_graph_parse2() takes the opposite approach -- it makes no reference
+ * whatsoever to already existing parts of the graph and the inputs parameter
+ * will on return contain inputs of the newly parsed part of the graph.
+ * Analogously the outputs parameter will contain outputs of the newly created
+ * filters.
+ */
+int avfilter_graph_parse2(AVFilterGraph *graph, const char *filters,
+                          AVFilterInOut **inputs,
+                          AVFilterInOut **outputs);
+
 
 /**
  * Send a command to one or more filter instances.

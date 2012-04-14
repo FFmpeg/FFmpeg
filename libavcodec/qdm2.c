@@ -140,7 +140,6 @@ typedef struct {
     /// Parameters built from header parameters, do not change during playback
     int group_order;         ///< order of frame group
     int fft_order;           ///< order of FFT (actually fftorder+1)
-    int fft_frame_size;      ///< size of fft frame, in components (1 comples = re + im)
     int frame_size;          ///< size of data frame
     int frequency_range;
     int sub_sampling;        ///< subsampling: 0=25%, 1=50%, 2=100% */
@@ -1607,13 +1606,17 @@ static void qdm2_fft_tone_synthesizer (QDM2Context *q, int sub_packet)
 static void qdm2_calculate_fft (QDM2Context *q, int channel, int sub_packet)
 {
     const float gain = (q->channels == 1 && q->nb_channels == 2) ? 0.5f : 1.0f;
+    float *out = q->output_buffer + channel;
     int i;
     q->fft.complex[channel][0].re *= 2.0f;
     q->fft.complex[channel][0].im = 0.0f;
     q->rdft_ctx.rdft_calc(&q->rdft_ctx, (FFTSample *)q->fft.complex[channel]);
     /* add samples to output buffer */
-    for (i = 0; i < ((q->fft_frame_size + 15) & ~15); i++)
-        q->output_buffer[q->channels * i + channel] += ((float *) q->fft.complex[channel])[i] * gain;
+    for (i = 0; i < FFALIGN(q->fft_size, 8); i++) {
+        out[0]           += q->fft.complex[channel][i].re * gain;
+        out[q->channels] += q->fft.complex[channel][i].im * gain;
+        out += 2 * q->channels;
+    }
 }
 
 
@@ -1688,7 +1691,6 @@ static void dump_context(QDM2Context *q)
     PRINT("checksum_size",q->checksum_size);
     PRINT("channels",q->channels);
     PRINT("nb_channels",q->nb_channels);
-    PRINT("fft_frame_size",q->fft_frame_size);
     PRINT("fft_size",q->fft_size);
     PRINT("sub_sampling",q->sub_sampling);
     PRINT("fft_order",q->fft_order);
@@ -1843,7 +1845,6 @@ static av_cold int qdm2_decode_init(AVCodecContext *avctx)
     }
 
     s->fft_order = av_log2(s->fft_size) + 1;
-    s->fft_frame_size = 2 * s->fft_size; // complex has two floats
 
     // something like max decodable tones
     s->group_order = av_log2(s->group_size) + 1;

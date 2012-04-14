@@ -31,15 +31,11 @@
 #undef NDEBUG
 #include <assert.h>
 
-extern unsigned int xvid_debug;
-
 int ff_xvid_rate_control_init(MpegEncContext *s){
     char *tmp_name;
     int fd, i;
     xvid_plg_create_t xvid_plg_create = { 0 };
     xvid_plugin_2pass2_t xvid_2pass2  = { 0 };
-
-//xvid_debug=-1;
 
     fd=av_tempfile("xvidrc.", &tmp_name, 0, s->avctx);
     if (fd == -1) {
@@ -58,7 +54,6 @@ int ff_xvid_rate_control_init(MpegEncContext *s){
             frame_types[rce->pict_type], (int)lrintf(rce->qscale / FF_QP2LAMBDA), rce->i_count, s->mb_num - rce->i_count - rce->skip_count,
             rce->skip_count, (rce->i_tex_bits + rce->p_tex_bits + rce->misc_bits+7)/8, (rce->header_bits+rce->mv_bits+7)/8);
 
-//av_log(NULL, AV_LOG_ERROR, "%s\n", tmp);
         if (write(fd, tmp, strlen(tmp)) < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error %s writing 2pass logfile\n", strerror(errno));
             return AVERROR(errno);
