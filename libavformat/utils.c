@@ -2410,6 +2410,9 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     int orig_nb_streams = ic->nb_streams;        // new streams might appear, no options for those
     int flush_codecs = 1;
 
+    if(ic->pb)
+        av_log(ic, AV_LOG_DEBUG, "File position before avformat_find_stream_info() is %"PRId64"\n", avio_tell(ic->pb));
+
     for(i=0;i<ic->nb_streams;i++) {
         AVCodec *codec;
         AVDictionary *thread_opt = NULL;
@@ -2723,6 +2726,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             ic->streams[i]->codec->thread_count = 0;
         av_freep(&ic->streams[i]->info);
     }
+    if(ic->pb)
+        av_log(ic, AV_LOG_DEBUG, "File position after avformat_find_stream_info() is %"PRId64"\n", avio_tell(ic->pb));
     return ret;
 }
 
