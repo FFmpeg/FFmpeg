@@ -51,7 +51,7 @@ int av_vsrc_buffer_add_frame(AVFilterContext *buffer_filter, AVFrame *frame,
     AVFilterBufferRef *buf;
     int ret;
 
-    if (!buf) {
+    if (!frame) {
         c->eof = 1;
         return 0;
     } else if (c->eof)
