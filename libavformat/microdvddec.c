@@ -90,6 +90,15 @@ static int64_t get_pts(const char *buf)
     return AV_NOPTS_VALUE;
 }
 
+static int get_duration(const char *buf)
+{
+    int frame_start, frame_end;
+
+    if (sscanf(buf, "{%d}{%d}", &frame_start, &frame_end) == 2)
+        return frame_end - frame_start;
+    return 0;
+}
+
 static int microdvd_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MicroDVDContext *microdvd = s->priv_data;
@@ -114,6 +123,8 @@ static int microdvd_read_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->flags |= AV_PKT_FLAG_KEY;
         pkt->pos = pos;
         pkt->pts = pkt->dts = get_pts(buffer);
+        if (pkt->pts != AV_NOPTS_VALUE) // TODO: handle "{}" duration
+            pkt->duration = get_duration(buffer);
     }
     return res;
 }
