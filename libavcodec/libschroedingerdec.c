@@ -29,7 +29,6 @@
 
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
-#include "libdirac_libschro.h"
 #include "libschroedinger.h"
 
 #undef NDEBUG
@@ -52,7 +51,7 @@ typedef struct SchroDecoderParams {
     SchroDecoder* decoder;
 
     /** queue storing decoded frames */
-    DiracSchroQueue dec_frame_queue;
+    FFSchroQueue dec_frame_queue;
 
     /** end of sequence signalled */
     int eos_signalled;
@@ -155,7 +154,7 @@ static av_cold int libschroedinger_decode_init(AVCodecContext *avccontext)
         return -1;
 
     /* Initialize the decoded frame queue. */
-    ff_dirac_schro_queue_init(&p_schro_params->dec_frame_queue);
+    ff_schro_queue_init(&p_schro_params->dec_frame_queue);
     return 0;
 }
 
@@ -267,8 +266,8 @@ static int libschroedinger_decode_frame(AVCodecContext *avccontext,
                 frame = schro_decoder_pull(decoder);
 
                 if (frame)
-                    ff_dirac_schro_queue_push_back(&p_schro_params->dec_frame_queue,
-                                                   frame);
+                    ff_schro_queue_push_back(&p_schro_params->dec_frame_queue,
+                                             frame);
                 break;
             case SCHRO_DECODER_EOS:
                 go = 0;
@@ -285,7 +284,7 @@ static int libschroedinger_decode_frame(AVCodecContext *avccontext,
     } while (outer);
 
     /* Grab next frame to be returned from the top of the queue. */
-    frame = ff_dirac_schro_queue_pop(&p_schro_params->dec_frame_queue);
+    frame = ff_schro_queue_pop(&p_schro_params->dec_frame_queue);
 
     if (frame) {
         memcpy(p_schro_params->dec_pic.data[0],
@@ -324,8 +323,8 @@ static av_cold int libschroedinger_decode_close(AVCodecContext *avccontext)
     avpicture_free(&p_schro_params->dec_pic);
 
     /* Free data in the output frame queue. */
-    ff_dirac_schro_queue_free(&p_schro_params->dec_frame_queue,
-                              libschroedinger_decode_frame_free);
+    ff_schro_queue_free(&p_schro_params->dec_frame_queue,
+                        libschroedinger_decode_frame_free);
 
     return 0;
 }
@@ -337,10 +336,10 @@ static void libschroedinger_flush(AVCodecContext *avccontext)
     SchroDecoderParams *p_schro_params = avccontext->priv_data;
 
     /* Free data in the output frame queue. */
-    ff_dirac_schro_queue_free(&p_schro_params->dec_frame_queue,
-                              libschroedinger_decode_frame_free);
+    ff_schro_queue_free(&p_schro_params->dec_frame_queue,
+                        libschroedinger_decode_frame_free);
 
-    ff_dirac_schro_queue_init(&p_schro_params->dec_frame_queue);
+    ff_schro_queue_init(&p_schro_params->dec_frame_queue);
     schro_decoder_reset(p_schro_params->decoder);
     p_schro_params->eos_pulled = 0;
     p_schro_params->eos_signalled = 0;

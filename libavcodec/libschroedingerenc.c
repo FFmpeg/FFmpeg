@@ -36,7 +36,6 @@
 
 #include "avcodec.h"
 #include "internal.h"
-#include "libdirac_libschro.h"
 #include "libschroedinger.h"
 #include "bytestream.h"
 
@@ -65,7 +64,7 @@ typedef struct SchroEncoderParams {
     int enc_buf_size;
 
     /** queue storing encoded frames */
-    DiracSchroQueue enc_frame_queue;
+    FFSchroQueue enc_frame_queue;
 
     /** end of sequence signalled */
     int eos_signalled;
@@ -236,7 +235,7 @@ static int libschroedinger_encode_init(AVCodecContext *avccontext)
     schro_encoder_start(p_schro_params->encoder);
 
     /* Initialize the encoded frame queue. */
-    ff_dirac_schro_queue_init(&p_schro_params->enc_frame_queue);
+    ff_schro_queue_init(&p_schro_params->enc_frame_queue);
     return 0;
 }
 
@@ -261,7 +260,7 @@ static SchroFrame *libschroedinger_frame_from_data(AVCodecContext *avccontext,
 
 static void SchroedingerFreeFrame(void *data)
 {
-    DiracSchroEncodedFrame *enc_frame = data;
+    FFSchroEncodedFrame *enc_frame = data;
 
     av_freep(&enc_frame->p_encbuf);
     av_free(enc_frame);
@@ -273,7 +272,7 @@ static int libschroedinger_encode_frame(AVCodecContext *avccontext, AVPacket *pk
     int enc_size = 0;
     SchroEncoderParams *p_schro_params = avccontext->priv_data;
     SchroEncoder *encoder = p_schro_params->encoder;
-    struct DiracSchroEncodedFrame *p_frame_output = NULL;
+    struct FFSchroEncodedFrame *p_frame_output = NULL;
     int go = 1;
     SchroBuffer *enc_buf;
     int presentation_frame;
@@ -333,7 +332,7 @@ static int libschroedinger_encode_frame(AVCodecContext *avccontext, AVPacket *pk
             }
 
             /* Create output frame. */
-            p_frame_output = av_mallocz(sizeof(DiracSchroEncodedFrame));
+            p_frame_output = av_mallocz(sizeof(FFSchroEncodedFrame));
             /* Set output data. */
             p_frame_output->size     = p_schro_params->enc_buf_size;
             p_frame_output->p_encbuf = p_schro_params->enc_buf;
@@ -345,8 +344,8 @@ static int libschroedinger_encode_frame(AVCodecContext *avccontext, AVPacket *pk
              * through 17 represesent the frame number. */
             p_frame_output->frame_num = AV_RB32(enc_buf->data + 13);
 
-            ff_dirac_schro_queue_push_back(&p_schro_params->enc_frame_queue,
-                                           p_frame_output);
+            ff_schro_queue_push_back(&p_schro_params->enc_frame_queue,
+                                     p_frame_output);
             p_schro_params->enc_buf_size = 0;
             p_schro_params->enc_buf      = NULL;
 
@@ -373,7 +372,7 @@ static int libschroedinger_encode_frame(AVCodecContext *avccontext, AVPacket *pk
         p_schro_params->eos_pulled)
         last_frame_in_sequence = 1;
 
-    p_frame_output = ff_dirac_schro_queue_pop(&p_schro_params->enc_frame_queue);
+    p_frame_output = ff_schro_queue_pop(&p_schro_params->enc_frame_queue);
 
     if (!p_frame_output)
         return 0;
@@ -425,8 +424,8 @@ static int libschroedinger_encode_close(AVCodecContext *avccontext)
     schro_encoder_free(p_schro_params->encoder);
 
     /* Free data in the output frame queue. */
-    ff_dirac_schro_queue_free(&p_schro_params->enc_frame_queue,
-                              SchroedingerFreeFrame);
+    ff_schro_queue_free(&p_schro_params->enc_frame_queue,
+                        SchroedingerFreeFrame);
 
 
     /* Free the encoder buffer. */
