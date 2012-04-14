@@ -805,6 +805,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     if (ctx->frame.data[0])
         avctx->release_buffer(avctx, &ctx->frame);
 
+    avcodec_set_dimensions(avctx, ctx->planes[0].width, ctx->planes[0].height);
     ctx->frame.reference = 0;
     if ((result = avctx->get_buffer(avctx, &ctx->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
