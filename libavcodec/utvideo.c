@@ -112,7 +112,7 @@ static int build_huff(const uint8_t *src, VLC *vlc, int *fsym)
 static int decode_plane(UtvideoContext *c, int plane_no,
                         uint8_t *dst, int step, int stride,
                         int width, int height,
-                        const uint8_t *src, int src_size, int use_pred)
+                        const uint8_t *src, int use_pred)
 {
     int i, j, slice, pix;
     int sstart, send;
@@ -151,7 +151,6 @@ static int decode_plane(UtvideoContext *c, int plane_no,
     }
 
     src      += 256;
-    src_size -= 256;
 
     send = 0;
     for (slice = 0; slice < c->slices; slice++) {
@@ -429,8 +428,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         for (i = 0; i < c->planes; i++) {
             ret = decode_plane(c, i, c->pic.data[0] + rgb_order[i], c->planes,
                                c->pic.linesize[0], avctx->width, avctx->height,
-                               plane_start[i], plane_start[i + 1] - plane_start[i],
-                               c->frame_pred == PRED_LEFT);
+                               plane_start[i], c->frame_pred == PRED_LEFT);
             if (ret)
                 return ret;
             if (c->frame_pred == PRED_MEDIAN)
@@ -445,8 +443,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         for (i = 0; i < 3; i++) {
             ret = decode_plane(c, i, c->pic.data[i], 1,
                                c->pic.linesize[i], avctx->width >> !!i, avctx->height >> !!i,
-                               plane_start[i], plane_start[i + 1] - plane_start[i],
-                               c->frame_pred == PRED_LEFT);
+                               plane_start[i], c->frame_pred == PRED_LEFT);
             if (ret)
                 return ret;
             if (c->frame_pred == PRED_MEDIAN) {
@@ -467,8 +464,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         for (i = 0; i < 3; i++) {
             ret = decode_plane(c, i, c->pic.data[i], 1,
                                c->pic.linesize[i], avctx->width >> !!i, avctx->height,
-                               plane_start[i], plane_start[i + 1] - plane_start[i],
-                               c->frame_pred == PRED_LEFT);
+                               plane_start[i], c->frame_pred == PRED_LEFT);
             if (ret)
                 return ret;
             if (c->frame_pred == PRED_MEDIAN) {
