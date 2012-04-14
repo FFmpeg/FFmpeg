@@ -37,6 +37,11 @@ HEADERS = adler32.h                                                     \
           samplefmt.h                                                   \
           sha.h                                                         \
 
+ARCH_HEADERS = bswap.h                                                  \
+               intmath.h                                                \
+               intreadwrite.h                                           \
+               timer.h                                                  \
+
 BUILT_HEADERS = avconfig.h
 
 OBJS = adler32.o                                                        \
@@ -74,7 +79,19 @@ OBJS = adler32.o                                                        \
        tree.o                                                           \
        utils.o                                                          \
 
-TESTPROGS = adler32 aes avstring base64 cpu crc des eval fifo lfg lls \
-            md5 opt parseutils sha tree
-
-ARCH_HEADERS = bswap.h intmath.h intreadwrite.h timer.h
+TESTPROGS = adler32                                                     \
+            aes                                                         \
+            avstring                                                    \
+            base64                                                      \
+            cpu                                                         \
+            crc                                                         \
+            des                                                         \
+            eval                                                        \
+            fifo                                                        \
+            lfg                                                         \
+            lls                                                         \
+            md5                                                         \
+            opt                                                         \
+            parseutils                                                  \
+            sha                                                         \
+            tree                                                        \

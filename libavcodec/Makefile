@@ -1,7 +1,14 @@
 NAME = avcodec
 FFLIBS = avutil
 
-HEADERS = avcodec.h avfft.h dxva2.h vaapi.h vda.h vdpau.h version.h xvmc.h
+HEADERS = avcodec.h                                                     \
+          avfft.h                                                       \
+          dxva2.h                                                       \
+          vaapi.h                                                       \
+          vda.h                                                         \
+          vdpau.h                                                       \
+          version.h                                                     \
+          xvmc.h                                                        \
 
 OBJS = allcodecs.o                                                      \
        audioconvert.o                                                   \
@@ -700,13 +707,27 @@ SKIPHEADERS-$(HAVE_W32THREADS)         += w32pthreads.h
 
 EXAMPLES = api
 
-TESTPROGS = cabac dct fft fft-fixed golomb iirfilter rangecoder
+TESTPROGS = cabac                                                       \
+            dct                                                         \
+            fft                                                         \
+            fft-fixed                                                   \
+            golomb                                                      \
+            iirfilter                                                   \
+            rangecoder                                                  \
+
 TESTPROGS-$(HAVE_MMX) += motion
 TESTOBJS = dctref.o
 
-HOSTPROGS = aac_tablegen aacps_tablegen cbrt_tablegen cos_tablegen      \
-            dv_tablegen motionpixels_tablegen mpegaudio_tablegen        \
-            pcm_tablegen qdm2_tablegen sinewin_tablegen
+HOSTPROGS = aac_tablegen                                                \
+            aacps_tablegen                                              \
+            cbrt_tablegen                                               \
+            cos_tablegen                                                \
+            dv_tablegen                                                 \
+            motionpixels_tablegen                                       \
+            mpegaudio_tablegen                                          \
+            pcm_tablegen                                                \
+            qdm2_tablegen                                               \
+            sinewin_tablegen                                            \
 
 CLEANFILES = *_tables.c *_tables.h *_tablegen$(HOSTEXESUF)
 

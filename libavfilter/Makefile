@@ -2,7 +2,11 @@ NAME = avfilter
 FFLIBS = avutil swscale
 FFLIBS-$(CONFIG_MOVIE_FILTER) += avformat avcodec
 
-HEADERS = avfilter.h avfiltergraph.h buffersrc.h version.h vsrc_buffer.h
+HEADERS = avfilter.h                                                    \
+          avfiltergraph.h                                               \
+          buffersrc.h                                                   \
+          version.h                                                     \
+          vsrc_buffer.h                                                 \
 
 OBJS = allfilters.o                                                     \
        avfilter.o                                                       \
@@ -68,4 +72,5 @@ OBJS-$(CONFIG_TESTSRC_FILTER)                += vsrc_testsrc.o
 
 OBJS-$(CONFIG_NULLSINK_FILTER)               += vsink_nullsink.o
 
-TOOLS = graph2dot lavfi-showfiltfmts
+TOOLS = graph2dot                                                       \
+        lavfi-showfiltfmts                                              \
