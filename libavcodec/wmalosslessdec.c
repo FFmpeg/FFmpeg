@@ -129,8 +129,8 @@ typedef struct WmallDecodeCtx {
     int8_t  mclms_scaling;
     int16_t mclms_coeffs[128];
     int16_t mclms_coeffs_cur[4];
-    int16_t mclms_prevvalues[64];
-    int16_t mclms_updates[64];
+    int16_t mclms_prevvalues[WMALL_MAX_CHANNELS * 2 * 32];
+    int16_t mclms_updates[WMALL_MAX_CHANNELS * 2 * 32];
     int     mclms_recent;
 
     int     movave_scaling;
