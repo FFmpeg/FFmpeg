@@ -1485,9 +1485,7 @@ static void do_video_stats(AVFormatContext *os, OutputStream *ost,
     }
 }
 
-static void print_report(OutputFile *output_files,
-                         OutputStream *ost_table, int nb_ostreams,
-                         int is_last_report, int64_t timer_start)
+static void print_report(int is_last_report, int64_t timer_start)
 {
     char buf[1024];
     OutputStream *ost;
@@ -1525,9 +1523,9 @@ static void print_report(OutputFile *output_files,
     buf[0] = '\0';
     ti1 = 1e10;
     vid = 0;
-    for (i = 0; i < nb_ostreams; i++) {
+    for (i = 0; i < nb_output_streams; i++) {
         float q = -1;
-        ost = &ost_table[i];
+        ost = &output_streams[i];
         enc = ost->st->codec;
         if (!ost->stream_copy && enc->coded_frame)
             q = enc->coded_frame->quality / (float)FF_QP2LAMBDA;
@@ -1608,12 +1606,12 @@ static void print_report(OutputFile *output_files,
     }
 }
 
-static void flush_encoders(OutputStream *ost_table, int nb_ostreams)
+static void flush_encoders(void)
 {
     int i, ret;
 
-    for (i = 0; i < nb_ostreams; i++) {
-        OutputStream   *ost = &ost_table[i];
+    for (i = 0; i < nb_output_streams; i++) {
+        OutputStream   *ost = &output_streams[i];
         AVCodecContext *enc = ost->st->codec;
         AVFormatContext *os = output_files[ost->file_index].ctx;
         int stop_encoding = 0;
@@ -2020,9 +2018,7 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
 }
 
 /* pkt = NULL means EOF (needed to flush decoder buffers) */
-static int output_packet(InputStream *ist,
-                         OutputStream *ost_table, int nb_ostreams,
-                         const AVPacket *pkt)
+static int output_packet(InputStream *ist, const AVPacket *pkt)
 {
     int i;
     int got_output;
@@ -2116,8 +2112,8 @@ static int output_packet(InputStream *ist,
             break;
         }
     }
-    for (i = 0; pkt && i < nb_ostreams; i++) {
-        OutputStream *ost = &ost_table[i];
+    for (i = 0; pkt && i < nb_output_streams; i++) {
+        OutputStream *ost = &output_streams[i];
 
         if (!check_output_constraints(ist, ost) || ost->encoding_needed)
             continue;
@@ -2128,18 +2124,18 @@ static int output_packet(InputStream *ist,
     return 0;
 }
 
-static void print_sdp(OutputFile *output_files, int n)
+static void print_sdp(void)
 {
     char sdp[2048];
     int i;
-    AVFormatContext **avc = av_malloc(sizeof(*avc) * n);
+    AVFormatContext **avc = av_malloc(sizeof(*avc) * nb_output_files);
 
     if (!avc)
         exit_program(1);
-    for (i = 0; i < n; i++)
+    for (i = 0; i < nb_output_files; i++)
         avc[i] = output_files[i].ctx;
 
-    av_sdp_create(avc, n, sdp, sizeof(sdp));
+    av_sdp_create(avc, nb_output_files, sdp, sizeof(sdp));
     printf("SDP:\n%s\n", sdp);
     fflush(stdout);
     av_freep(&avc);
@@ -2190,8 +2186,7 @@ static void get_default_channel_layouts(OutputStream *ost, InputStream *ist)
 }
 
 
-static int init_input_stream(int ist_index, OutputStream *output_streams, int nb_output_streams,
-                             char *error, int error_len)
+static int init_input_stream(int ist_index, char *error, int error_len)
 {
     int i;
     InputStream *ist = &input_streams[ist_index];
@@ -2249,10 +2244,7 @@ static int init_input_stream(int ist_index, OutputStream *output_streams, int nb
     return 0;
 }
 
-static int transcode_init(OutputFile *output_files,
-                          int nb_output_files,
-                          InputFile *input_files,
-                          int nb_input_files)
+static int transcode_init(void)
 {
     int ret = 0, i, j, k;
     AVFormatContext *oc;
@@ -2544,7 +2536,7 @@ static int transcode_init(OutputFile *output_files,
 
     /* init input streams */
     for (i = 0; i < nb_input_streams; i++)
-        if ((ret = init_input_stream(i, output_streams, nb_output_streams, error, sizeof(error))) < 0)
+        if ((ret = init_input_stream(i, error, sizeof(error))) < 0)
             goto dump_format;
 
     /* discard unused programs */
@@ -2620,7 +2612,7 @@ static int transcode_init(OutputFile *output_files,
     }
 
     if (want_sdp) {
-        print_sdp(output_files, nb_output_files);
+        print_sdp();
     }
 
     return 0;
@@ -2629,10 +2621,7 @@ static int transcode_init(OutputFile *output_files,
 /*
  * The following code is the main loop of the file converter
  */
-static int transcode(OutputFile *output_files,
-                     int nb_output_files,
-                     InputFile *input_files,
-                     int nb_input_files)
+static int transcode(void)
 {
     int ret, i;
     AVFormatContext *is, *os;
@@ -2645,7 +2634,7 @@ static int transcode(OutputFile *output_files,
     if (!(no_packet = av_mallocz(nb_input_files)))
         exit_program(1);
 
-    ret = transcode_init(output_files, nb_output_files, input_files, nb_input_files);
+    ret = transcode_init();
     if (ret < 0)
         goto fail;
 
@@ -2770,7 +2759,7 @@ static int transcode(OutputFile *output_files,
         }
 
         // fprintf(stderr,"read #%d.%d size=%d\n", ist->file_index, ist->st->index, pkt.size);
-        if (output_packet(ist, output_streams, nb_output_streams, &pkt) < 0) {
+        if (output_packet(ist, &pkt) < 0) {
 
             av_log(NULL, AV_LOG_ERROR, "Error while decoding stream #%d:%d\n",
                    ist->file_index, ist->st->index);
@@ -2784,17 +2773,17 @@ static int transcode(OutputFile *output_files,
         av_free_packet(&pkt);
 
         /* dump report by using the output first video and audio streams */
-        print_report(output_files, output_streams, nb_output_streams, 0, timer_start);
+        print_report(0, timer_start);
     }
 
     /* at the end of stream, we must flush the decoder buffers */
     for (i = 0; i < nb_input_streams; i++) {
         ist = &input_streams[i];
         if (ist->decoding_needed) {
-            output_packet(ist, output_streams, nb_output_streams, NULL);
+            output_packet(ist, NULL);
         }
     }
-    flush_encoders(output_streams, nb_output_streams);
+    flush_encoders();
 
     term_exit();
 
@@ -2805,7 +2794,7 @@ static int transcode(OutputFile *output_files,
     }
 
     /* dump report by using the first video and audio streams */
-    print_report(output_files, output_streams, nb_output_streams, 1, timer_start);
+    print_report(1, timer_start);
 
     /* close each encoder */
     for (i = 0; i < nb_output_streams; i++) {
@@ -4622,7 +4611,7 @@ int main(int argc, char **argv)
     }
 
     ti = getutime();
-    if (transcode(output_files, nb_output_files, input_files, nb_input_files) < 0)
+    if (transcode() < 0)
         exit_program(1);
     ti = getutime() - ti;
     if (do_benchmark) {
