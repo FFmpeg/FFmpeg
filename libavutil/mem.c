@@ -61,9 +61,10 @@ void  free(void *ptr);
 
 #define ALIGN (HAVE_AVX ? 32 : 16)
 
-/* You can redefine av_malloc and av_free in your project to use your
-   memory allocator. You do not need to suppress this file because the
-   linker will do it automatically. */
+/* NOTE: if you want to override these functions with your own
+ * implementations (not recommended) you have to link libav* as
+ * dynamic libraries and remove -Wl,-Bsymbolic from the linker flags.
+ * Note that this will cost performance. */
 
 static size_t max_alloc_size= INT_MAX;
 
