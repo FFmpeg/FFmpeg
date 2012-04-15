@@ -114,10 +114,13 @@ static int run_psnr(FILE *f[2], int len, int shift, int skip_bytes)
     int size0      = 0;
     int size1      = 0;
     int maxdist    = 0;
+    int noseek;
 
-    rewind(f[0]);
-    rewind(f[1]);
+    noseek = fseek(f[0], 0, SEEK_SET) ||
+             fseek(f[1], 0, SEEK_SET);
 
+    if (!noseek) {
+        /* TODO reindent */
     for (i = 0; i < 2; i++) {
         uint8_t *p = buf[i];
         if (fread(p, 1, 12, f[i]) != 12)
@@ -141,6 +144,7 @@ static int run_psnr(FILE *f[2], int len, int shift, int skip_bytes)
 
     fseek(f[0], skip_bytes, SEEK_CUR);
     fseek(f[1], skip_bytes, SEEK_CUR);
+    }
 
     for (;;) {
         int s0 = fread(buf[0], 1, SIZE, f[0]);
