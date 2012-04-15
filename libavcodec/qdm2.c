@@ -1358,6 +1358,10 @@ static void qdm2_fft_decode_tones (QDM2Context *q, int duration, GetBitContext *
     while (get_bits_left(gb)>0) {
         if (q->superblocktype_2_3) {
             while ((n = qdm2_get_vlc(gb, &vlc_tab_fft_tone_offset[local_int_8], 1, 2)) < 2) {
+                if (get_bits_left(gb)<0) {
+                    av_log(0, AV_LOG_ERROR, "overread in qdm2_fft_decode_tones()\n");
+                    return;
+                }
                 offset = 1;
                 if (n == 0) {
                     local_int_4 += local_int_10;
