@@ -675,7 +675,10 @@ static int decode_frame(AVCodecContext *avctx,
 
      /* handle p-frames only if a predecessor frame is available */
      if(s->last_picture->data[0] != NULL) {
-         if(!(avpkt->flags & AV_PKT_FLAG_KEY)) {
+         if(   !(avpkt->flags & AV_PKT_FLAG_KEY)
+            && s->last_picture->width == s->current_picture->width
+            && s->last_picture->height== s->current_picture->height
+         ) {
             int i, j;
             uint8_t *pd = s->current_picture->data[0];
             uint8_t *pd_last = s->last_picture->data[0];
