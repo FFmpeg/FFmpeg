@@ -167,6 +167,11 @@ static int decode_gop_header(IVI5DecContext *ctx, AVCodecContext *avctx)
             blk_size = 8 >> get_bits1(&ctx->gb);
             mb_size  = blk_size << !mb_size;
 
+            if (p==0 && blk_size==4) {
+                av_log(avctx, AV_LOG_ERROR, "4x4 luma blocks are unsupported!\n");
+                return AVERROR_PATCHWELCOME;
+            }
+
             blk_size_changed = mb_size != band->mb_size || blk_size != band->blk_size;
             if (blk_size_changed) {
                 band->mb_size  = mb_size;
