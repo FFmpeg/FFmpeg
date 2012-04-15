@@ -120,30 +120,29 @@ static int run_psnr(FILE *f[2], int len, int shift, int skip_bytes)
              fseek(f[1], 0, SEEK_SET);
 
     if (!noseek) {
-        /* TODO reindent */
-    for (i = 0; i < 2; i++) {
-        uint8_t *p = buf[i];
-        if (fread(p, 1, 12, f[i]) != 12)
-            return 1;
-        if (!memcmp(p, "RIFF", 4) &&
-            !memcmp(p + 8, "WAVE", 4)) {
-            if (fread(p, 1, 8, f[i]) != 8)
+        for (i = 0; i < 2; i++) {
+            uint8_t *p = buf[i];
+            if (fread(p, 1, 12, f[i]) != 12)
                 return 1;
-            while (memcmp(p, "data", 4)) {
-                int s = p[4] | p[5] << 8 | p[6] << 16 | p[7] << 24;
-                fseek(f[i], s, SEEK_CUR);
+            if (!memcmp(p, "RIFF", 4) &&
+                !memcmp(p + 8, "WAVE", 4)) {
                 if (fread(p, 1, 8, f[i]) != 8)
                     return 1;
+                while (memcmp(p, "data", 4)) {
+                    int s = p[4] | p[5] << 8 | p[6] << 16 | p[7] << 24;
+                    fseek(f[i], s, SEEK_CUR);
+                    if (fread(p, 1, 8, f[i]) != 8)
+                        return 1;
+                }
+            } else {
+                fseek(f[i], -12, SEEK_CUR);
             }
-        } else {
-            fseek(f[i], -12, SEEK_CUR);
         }
-    }
 
-    fseek(f[shift < 0], abs(shift), SEEK_CUR);
+        fseek(f[shift < 0], abs(shift), SEEK_CUR);
 
-    fseek(f[0], skip_bytes, SEEK_CUR);
-    fseek(f[1], skip_bytes, SEEK_CUR);
+        fseek(f[0], skip_bytes, SEEK_CUR);
+        fseek(f[1], skip_bytes, SEEK_CUR);
     }
 
     for (;;) {
