@@ -785,10 +785,10 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
             k    [sb] = s[sb] > b ? s[sb] - b : 0;
             delta[sb] = 5 - s[sb] + k[sb];
 
-            ff_bgmc_decode(gb, sb_length, current_res,
+            ff_bgmc_decode(gb, sb_length - i, current_res,
                         delta[sb], sx[sb], &high, &low, &value, ctx->bgmc_lut, ctx->bgmc_lut_status);
 
-            current_res += sb_length;
+            current_res += sb_length - i;
         }
 
         ff_bgmc_decode_end(gb);
