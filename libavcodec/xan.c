@@ -288,6 +288,7 @@ static int xan_wc3_decode_frame(XanContext *s) {
     const unsigned char *size_segment;
     const unsigned char *vector_segment;
     const unsigned char *imagedata_segment;
+    const unsigned char *buf_end = s->buf + s->size;
     int huffman_offset, size_offset, vector_offset, imagedata_offset,
         imagedata_size;
 
@@ -392,6 +393,10 @@ static int xan_wc3_decode_frame(XanContext *s) {
                 imagedata_size -= size;
             }
         } else {
+            if (vector_segment >= buf_end) {
+                av_log(s->avctx, AV_LOG_ERROR, "vector_segment overread\n");
+                return AVERROR_INVALIDDATA;
+            }
             /* run-based motion compensation from last frame */
             motion_x = sign_extend(*vector_segment >> 4,  4);
             motion_y = sign_extend(*vector_segment & 0xF, 4);
