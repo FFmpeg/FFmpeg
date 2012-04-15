@@ -383,6 +383,10 @@ static int decode_band_hdr(IVI4DecContext *ctx, IVIBandDesc *band,
                 return AVERROR_PATCHWELCOME;
             }
 
+            if (transform_id < 10 && band->blk_size < 8) {
+                av_log(avctx, AV_LOG_ERROR, "wrong transform size!\n");
+                return AVERROR_INVALIDDATA;
+            }
 #if IVI4_STREAM_ANALYSER
             if ((transform_id >= 0 && transform_id <= 2) || transform_id == 10)
                 ctx->uses_haar = 1;
@@ -391,6 +395,7 @@ static int decode_band_hdr(IVI4DecContext *ctx, IVIBandDesc *band,
             band->inv_transform = transforms[transform_id].inv_trans;
             band->dc_transform  = transforms[transform_id].dc_trans;
             band->is_2d_trans   = transforms[transform_id].is_2d_trans;
+            band->transform_size= (transform_id < 10) ? 8 : 4;
 
             scan_indx = get_bits(&ctx->gb, 4);
             if ((scan_indx>4 && scan_indx<10) != (band->blk_size==4)) {

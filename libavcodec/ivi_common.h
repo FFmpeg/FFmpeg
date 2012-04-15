@@ -160,6 +160,7 @@ typedef struct {
     InvTransformPtr *inv_transform;
     DCTransformPtr  *dc_transform;
     int             is_2d_trans;    ///< 1 indicates that the two-dimensional inverse transform is used
+    int             transform_size; ///< block size of the transform
     int32_t         checksum;       ///< for debug purposes
     int             checksum_present;
     int             bufsize;        ///< band buffer size in bytes

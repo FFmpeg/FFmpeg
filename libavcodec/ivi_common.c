@@ -440,7 +440,10 @@ int ff_ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile)
                     trvec[0]      = prev_dc;
                     col_flags[0] |= !!prev_dc;
                 }
-
+                if(band->transform_size > band->blk_size){
+                    av_log(0, AV_LOG_ERROR, "Too large transform\n");
+                    return AVERROR_INVALIDDATA;
+                }
                 /* apply inverse transform */
                 band->inv_transform(trvec, band->buf + buf_offs,
                                     band->pitch, col_flags);
