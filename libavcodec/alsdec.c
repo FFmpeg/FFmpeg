@@ -770,7 +770,6 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
         int          delta[8];
         unsigned int k    [8];
         unsigned int b = av_clip((av_ceil_log2(bd->block_length) - 3) >> 1, 0, 5);
-        unsigned int i;
 
         // read most significant bits
         unsigned int high;
@@ -782,28 +781,29 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
         current_res = bd->raw_samples + start;
 
         for (sb = 0; sb < sub_blocks; sb++) {
+            unsigned int sb_len  = sb_length - (sb ? 0 : start);
+
             k    [sb] = s[sb] > b ? s[sb] - b : 0;
             delta[sb] = 5 - s[sb] + k[sb];
 
-            ff_bgmc_decode(gb, sb_length, current_res,
+            ff_bgmc_decode(gb, sb_len, current_res,
                         delta[sb], sx[sb], &high, &low, &value, ctx->bgmc_lut, ctx->bgmc_lut_status);
 
-            current_res += sb_length;
+            current_res += sb_len;
         }
 
         ff_bgmc_decode_end(gb);
 
 
         // read least significant bits and tails
-        i = start;
         current_res = bd->raw_samples + start;
 
-        for (sb = 0; sb < sub_blocks; sb++, i = 0) {
+        for (sb = 0; sb < sub_blocks; sb++, start = 0) {
             unsigned int cur_tail_code = tail_code[sx[sb]][delta[sb]];
             unsigned int cur_k         = k[sb];
             unsigned int cur_s         = s[sb];
 
-            for (; i < sb_length; i++) {
+            for (; start < sb_length; start++) {
                 int32_t res = *current_res;
 
                 if (res == cur_tail_code) {
