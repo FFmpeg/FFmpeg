@@ -184,30 +184,35 @@ static int decode_gop_header(IVI5DecContext *ctx, AVCodecContext *avctx)
                 band->inv_transform = ff_ivi_inverse_slant_8x8;
                 band->dc_transform  = ff_ivi_dc_slant_2d;
                 band->scan          = ff_zigzag_direct;
+                band->transform_size= 8;
                 break;
 
             case 1:
                 band->inv_transform = ff_ivi_row_slant8;
                 band->dc_transform  = ff_ivi_dc_row_slant;
                 band->scan          = ff_ivi_vertical_scan_8x8;
+                band->transform_size= 8;
                 break;
 
             case 2:
                 band->inv_transform = ff_ivi_col_slant8;
                 band->dc_transform  = ff_ivi_dc_col_slant;
                 band->scan          = ff_ivi_horizontal_scan_8x8;
+                band->transform_size= 8;
                 break;
 
             case 3:
                 band->inv_transform = ff_ivi_put_pixels_8x8;
                 band->dc_transform  = ff_ivi_put_dc_pixel_8x8;
                 band->scan          = ff_ivi_horizontal_scan_8x8;
+                band->transform_size= 8;
                 break;
 
             case 4:
                 band->inv_transform = ff_ivi_inverse_slant_4x4;
                 band->dc_transform  = ff_ivi_dc_slant_2d;
                 band->scan          = ff_ivi_direct_scan_4x4;
+                band->transform_size= 4;
                 break;
             }
 
@@ -258,6 +263,7 @@ static int decode_gop_header(IVI5DecContext *ctx, AVCodecContext *avctx)
         band2->inv_transform = band1->inv_transform;
         band2->dc_transform  = band1->dc_transform;
         band2->is_2d_trans   = band1->is_2d_trans;
+        band2->transform_size= band1->transform_size;
     }
 
     /* reallocate internal structures if needed */
