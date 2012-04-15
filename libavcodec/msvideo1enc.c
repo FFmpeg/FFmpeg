@@ -276,6 +276,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     avcodec_get_frame_defaults(&c->pic);
     avctx->coded_frame = (AVFrame*)&c->pic;
+    avctx->bits_per_coded_sample = 16;
 
     c->keyint = avctx->keyint_min;
     av_lfg_init(&c->rnd, 1);
