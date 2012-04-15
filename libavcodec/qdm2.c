@@ -343,7 +343,14 @@ static int qdm2_get_vlc (GetBitContext *gb, VLC *vlc, int flag, int depth)
 
     /* stage-3, optional */
     if (flag) {
-        int tmp = vlc_stage3_values[value];
+        int tmp;
+
+        if (value >= 60) {
+            av_log(0, AV_LOG_ERROR, "value %d in qdm2_get_vlc too large\n", value);
+            return 0;
+        }
+
+        tmp= vlc_stage3_values[value];
 
         if ((value & ~3) > 0)
             tmp += get_bits (gb, (value >> 2));
