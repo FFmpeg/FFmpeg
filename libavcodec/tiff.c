@@ -253,6 +253,10 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
             break;
         case TIFF_PACKBITS:
             for (pixels = 0; pixels < width;) {
+                if (ssrc + size - src < 2) {
+                    av_log(s->avctx, AV_LOG_ERROR, "Read went out of bounds\n");
+                    return AVERROR_INVALIDDATA;
+                }
                 code = (int8_t) * src++;
                 if (code >= 0) {
                     code++;
@@ -260,6 +264,10 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
                         av_log(s->avctx, AV_LOG_ERROR,
                                "Copy went out of bounds\n");
                         return -1;
+                    }
+                    if (ssrc + size - src < code) {
+                        av_log(s->avctx, AV_LOG_ERROR, "Read went out of bounds\n");
+                        return AVERROR_INVALIDDATA;
                     }
                     horizontal_fill(s->bpp * (s->avctx->pix_fmt == PIX_FMT_PAL8),
                                     dst, 1, src, 0, code, pixels);
