@@ -218,9 +218,20 @@ static void return_frame(AVFilterContext *ctx, int is_second)
     if (is_second) {
         if (yadif->next->pts != AV_NOPTS_VALUE &&
             yadif->cur->pts != AV_NOPTS_VALUE) {
-            yadif->out->pts =
-                (yadif->next->pts&yadif->cur->pts) +
-                ((yadif->next->pts^yadif->cur->pts)>>1);
+            uint64_t next_pts = yadif->next->pts;
+            uint64_t cur_pts  = yadif->cur->pts;
+            uint64_t prev_pts = yadif->prev->pts;
+
+            uint64_t ft = FFMIN3( cur_pts-prev_pts,
+                                  next_pts-cur_pts,
+                                 (next_pts-prev_pts)/2);
+
+            if(next_pts - cur_pts < 2*ft)
+                yadif->out->pts =
+                    (next_pts&cur_pts) +
+                    ((next_pts^cur_pts)>>1);
+            else
+                yadif->out->pts = cur_pts + ft/2;
         } else {
             yadif->out->pts = AV_NOPTS_VALUE;
         }
