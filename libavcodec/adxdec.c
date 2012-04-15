@@ -100,6 +100,7 @@ static int adx_decode_frame(AVCodecContext *avctx, void *data,
     ADXContext *c       = avctx->priv_data;
     int16_t *samples;
     const uint8_t *buf  = avpkt->data;
+    const uint8_t *buf_end = buf + avpkt->size;
     int num_blocks, ch, ret;
 
     if (c->eof) {
@@ -148,7 +149,7 @@ static int adx_decode_frame(AVCodecContext *avctx, void *data,
 
     while (num_blocks--) {
         for (ch = 0; ch < c->channels; ch++) {
-            if (adx_decode(c, samples + ch, buf, ch)) {
+            if (buf_end - buf < BLOCK_SIZE || adx_decode(c, samples + ch, buf, ch)) {
                 c->eof = 1;
                 buf = avpkt->data + avpkt->size;
                 break;
