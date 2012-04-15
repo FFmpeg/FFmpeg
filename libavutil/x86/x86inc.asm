@@ -116,7 +116,11 @@
 %endif
 
 ; Always use long nops (reduces 0x90 spam in disassembly on x86_32)
+; Not supported by NASM (except via smartalign package + ALIGNMODE k8,
+; however that fails when used together with the -M option)
+%ifdef __YASM_VER__
 CPU amdnop
+%endif
 
 ; Macros to eliminate most code duplication between x86_32 and x86_64:
 ; Currently this works only for leaf functions which load all their arguments
@@ -161,10 +165,10 @@ CPU amdnop
         %define r%1mp %2
     %elif ARCH_X86_64 ; memory
         %define r%1m [rsp + stack_offset + %6]
-        %define r%1mp qword r %+ %1m
+        %define r%1mp qword r %+ %1 %+ m
     %else
         %define r%1m [esp + stack_offset + %6]
-        %define r%1mp dword r %+ %1m
+        %define r%1mp dword r %+ %1 %+ m
     %endif
     %define r%1  %2
 %endmacro
