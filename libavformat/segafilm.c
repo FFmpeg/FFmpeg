@@ -290,7 +290,7 @@ static int film_read_packet(AVFormatContext *s,
 
         left = 0;
         right = sample->sample_size / 2;
-        for (i = 0; i < sample->sample_size; ) {
+        for (i = 0; i + 1 + 2*(film->audio_bits != 8) < sample->sample_size; ) {
             if (film->audio_bits == 8) {
                 pkt->data[i++] = film->stereo_buffer[left++];
                 pkt->data[i++] = film->stereo_buffer[right++];
