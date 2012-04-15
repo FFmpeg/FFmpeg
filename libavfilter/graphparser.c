@@ -229,9 +229,10 @@ static int link_filter_inouts(AVFilterContext *filt_ctx,
     for (pad = 0; pad < filt_ctx->input_count; pad++) {
         AVFilterInOut *p = *curr_inputs;
 
-        if (p)
+        if (p) {
             *curr_inputs = (*curr_inputs)->next;
-        else if (!(p = av_mallocz(sizeof(*p))))
+            p->next = NULL;
+        } else if (!(p = av_mallocz(sizeof(*p))))
             return AVERROR(ENOMEM);
 
         if (p->filter_ctx) {
