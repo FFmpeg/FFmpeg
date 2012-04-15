@@ -100,8 +100,8 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamplesref
     avfilter_copy_buffer_ref_props(outsamplesref, insamplesref);
     outsamplesref->audio->sample_rate = outlink->sample_rate;
     outsamplesref->audio->nb_samples  = n_out;
-    outsamplesref->pts = av_rescale(outlink->sample_rate, insamplesref->pts,
-                                    inlink ->sample_rate);
+    outsamplesref->pts = insamplesref->pts == AV_NOPTS_VALUE ? AV_NOPTS_VALUE :
+        av_rescale(outlink->sample_rate, insamplesref->pts, inlink ->sample_rate);
 
     avfilter_filter_samples(outlink, outsamplesref);
     avfilter_unref_buffer(insamplesref);
