@@ -43,6 +43,7 @@
 //#define DEBUG
 
 #define APP_MAX_LENGTH 128
+#define PLAYPATH_MAX_LENGTH 256
 
 /** RTMP protocol handler state */
 typedef enum {
@@ -64,7 +65,7 @@ typedef struct RTMPContext {
     RTMPPacket    prev_pkt[2][RTMP_CHANNELS]; ///< packet history used when reading and sending packets
     int           chunk_size;                 ///< size of the chunks RTMP packets are divided into
     int           is_input;                   ///< input/output flag
-    char          playpath[256];              ///< path to filename to play (with possible "mp4:" prefix)
+    char          *playpath;                  ///< stream identifier to play (with possible "mp4:" prefix)
     char          *app;                       ///< name of application
     ClientState   state;                      ///< current state
     int           main_channel_id;            ///< an additional channel ID which is used for some invocations
@@ -890,14 +891,22 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
         rt->app = old_app;
     }
 
-    if (!strchr(fname, ':') &&
-        (!strcmp(fname + strlen(fname) - 4, ".f4v") ||
-         !strcmp(fname + strlen(fname) - 4, ".mp4"))) {
-        memcpy(rt->playpath, "mp4:", 5);
-    } else {
-        rt->playpath[0] = 0;
+    if (!rt->playpath) {
+        rt->playpath = av_malloc(PLAYPATH_MAX_LENGTH);
+        if (!rt->playpath) {
+            rtmp_close(s);
+            return AVERROR(ENOMEM);
+        }
+
+        if (!strchr(fname, ':') &&
+            (!strcmp(fname + strlen(fname) - 4, ".f4v") ||
+             !strcmp(fname + strlen(fname) - 4, ".mp4"))) {
+            memcpy(rt->playpath, "mp4:", 5);
+        } else {
+            rt->playpath[0] = 0;
+        }
+        strncat(rt->playpath, fname, PLAYPATH_MAX_LENGTH - 5);
     }
-    strncat(rt->playpath, fname, sizeof(rt->playpath) - 5);
 
     rt->client_report_size = 1048576;
     rt->bytes_read = 0;
@@ -1041,6 +1050,7 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
 
 static const AVOption rtmp_options[] = {
     {"rtmp_app", "Name of application to connect to on the RTMP server", OFFSET(app), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+    {"rtmp_playpath", "Stream identifier to play or to publish", OFFSET(playpath), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     { NULL },
 };
 
