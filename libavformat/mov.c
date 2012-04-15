@@ -400,6 +400,7 @@ static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     entries = avio_rb32(pb);
     if (entries >= UINT_MAX / sizeof(*sc->drefs))
         return AVERROR_INVALIDDATA;
+    av_free(sc->drefs);
     sc->drefs = av_mallocz(entries * sizeof(*sc->drefs));
     if (!sc->drefs)
         return AVERROR(ENOMEM);
@@ -3038,6 +3039,7 @@ static const AVOption options[] = {
     {NULL}
 };
 static const AVClass class = {"mov,mp4,m4a,3gp,3g2,mj2", av_default_item_name, options, LIBAVUTIL_VERSION_INT};
+
 
 AVInputFormat ff_mov_demuxer = {
     .name           = "mov,mp4,m4a,3gp,3g2,mj2",

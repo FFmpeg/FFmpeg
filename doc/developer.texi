@@ -198,10 +198,16 @@ autocmd InsertEnter * match ForbiddenWhitespace /\t\|\s\+\%#\@@<!$/
 
 For Emacs, add these roughly equivalent lines to your @file{.emacs.d/init.el}:
 @example
-(setq c-default-style "k&r")
-(setq-default c-basic-offset 4)
-(setq-default indent-tabs-mode nil)
-(setq-default show-trailing-whitespace t)
+(c-add-style "ffmpeg"
+             '("k&r"
+               (c-basic-offset . 4)
+               (indent-tabs-mode nil)
+               (show-trailing-whitespace t)
+               (c-offsets-alist
+                (statement-cont . (c-lineup-assignments +)))
+               )
+             )
+(setq c-default-style "ffmpeg")
 @end example
 
 @section Development Policy

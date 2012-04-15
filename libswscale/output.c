@@ -356,7 +356,7 @@ yuv2mono_2_c_template(SwsContext *c, const int16_t *buf[2],
 {
     const int16_t *buf0  = buf[0],  *buf1  = buf[1];
     const uint8_t * const d128 = dither_8x8_220[y & 7];
-    int  yalpha1 = 4095 - yalpha;
+    int  yalpha1 = 4096 - yalpha;
     int i;
 
     for (i = 0; i < dstW; i += 8) {
@@ -508,8 +508,8 @@ yuv2422_2_c_template(SwsContext *c, const int16_t *buf[2],
     const int16_t *buf0  = buf[0],  *buf1  = buf[1],
                   *ubuf0 = ubuf[0], *ubuf1 = ubuf[1],
                   *vbuf0 = vbuf[0], *vbuf1 = vbuf[1];
-    int  yalpha1 = 4095 - yalpha;
-    int uvalpha1 = 4095 - uvalpha;
+    int  yalpha1 = 4096 - yalpha;
+    int uvalpha1 = 4096 - uvalpha;
     int i;
 
     for (i = 0; i < ((dstW + 1) >> 1); i++) {
@@ -667,8 +667,8 @@ yuv2rgb48_2_c_template(SwsContext *c, const int32_t *buf[2],
     const int32_t *buf0  = buf[0],  *buf1  = buf[1],
                   *ubuf0 = ubuf[0], *ubuf1 = ubuf[1],
                   *vbuf0 = vbuf[0], *vbuf1 = vbuf[1];
-    int  yalpha1 = 4095 - yalpha;
-    int uvalpha1 = 4095 - uvalpha;
+    int  yalpha1 = 4096 - yalpha;
+    int uvalpha1 = 4096 - uvalpha;
     int i;
 
     for (i = 0; i < ((dstW + 1) >> 1); i++) {
@@ -1008,8 +1008,8 @@ yuv2rgb_2_c_template(SwsContext *c, const int16_t *buf[2],
                   *vbuf0 = vbuf[0], *vbuf1 = vbuf[1],
                   *abuf0 = hasAlpha ? abuf[0] : NULL,
                   *abuf1 = hasAlpha ? abuf[1] : NULL;
-    int  yalpha1 = 4095 - yalpha;
-    int uvalpha1 = 4095 - uvalpha;
+    int  yalpha1 = 4096 - yalpha;
+    int uvalpha1 = 4096 - uvalpha;
     int i;
 
     for (i = 0; i < ((dstW + 1) >> 1); i++) {
