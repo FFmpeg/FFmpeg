@@ -13,6 +13,9 @@ libavutil:     2011-04-18
 
 API changes, most recent first:
 
+2012-07-xx - xxxxxxx - lavfi 3.0.0 - avfilter.h
+  Add avfilter_unref_bufferp().
+
 2012-07-10 - 5fade8a - lavu 51.37.0
   Add av_malloc_array() and av_mallocz_array()
 
