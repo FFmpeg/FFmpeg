@@ -31,10 +31,14 @@
 #include "random_seed.h"
 #include "parseutils.h"
 
+#undef time
+
 #ifdef TEST
 
 #define av_get_random_seed av_get_random_seed_deterministic
 static uint32_t av_get_random_seed_deterministic(void);
+
+#define time(t) 1331972053
 
 #endif
 
@@ -541,7 +545,6 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
     q = NULL;
     *timeval = INT64_MIN;
     if (!duration) {
-#undef time
         now = time(0);
 
         if (!av_strcasecmp(timestr, "now")) {
@@ -773,6 +776,52 @@ int main(void)
                 printf("%s -> R(%d) G(%d) B(%d) A(%d)\n", color_names[i], rgba[0], rgba[1], rgba[2], rgba[3]);
             else
                 printf("%s -> error\n", color_names[i]);
+        }
+    }
+
+    printf("\nTesting av_parse_time()\n");
+    {
+        int i;
+        int64_t tv;
+        time_t tvi;
+        struct tm *tm;
+        const char *time_string[] = {
+            "now",
+            "12:35:46",
+            "2000-12-20 0:02:47.5z",
+            "2000-12-20T010247.6",
+        };
+        const char *duration_string[] = {
+            "2:34:56.79",
+            "-1:23:45.67",
+            "42.1729",
+            "-1729.42",
+            "12:34",
+        };
+
+        av_log_set_level(AV_LOG_DEBUG);
+        setenv("TZ", "CET-1", 1);
+        printf("(now is 2012-03-17 09:14:13 +0100, local time is UTC+1)\n");
+        for (i = 0;  i < FF_ARRAY_ELEMS(time_string); i++) {
+            printf("%-24s -> ", time_string[i]);
+            if (av_parse_time(&tv, time_string[i], 0)) {
+                printf("error\n");
+            } else {
+                tvi = tv / 1000000;
+                tm = gmtime(&tvi);
+                printf("%14"PRIi64".%06d = %04d-%02d-%02dT%02d:%02d:%02dZ\n",
+                       tv / 1000000, (int)(tv % 1000000),
+                       tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
+                       tm->tm_hour, tm->tm_min, tm->tm_sec);
+            }
+        }
+        for (i = 0;  i < FF_ARRAY_ELEMS(duration_string); i++) {
+            printf("%-24s -> ", duration_string[i]);
+            if (av_parse_time(&tv, duration_string[i], 1)) {
+                printf("error\n");
+            } else {
+                printf("%+21"PRIi64"\n", tv);
+            }
         }
     }
 
