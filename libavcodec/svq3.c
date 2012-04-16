@@ -906,7 +906,7 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
                 int offset = (get_bits_count(&gb)+7)>>3;
                 uint8_t *buf;
 
-                if ((uint64_t)watermark_width*4 > UINT_MAX/watermark_height)
+                if (watermark_height<=0 || (uint64_t)watermark_width*4 > UINT_MAX/watermark_height)
                     return -1;
 
                 buf = av_malloc(buf_len);
