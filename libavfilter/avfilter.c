@@ -160,6 +160,12 @@ void avfilter_unref_buffer(AVFilterBufferRef *ref)
     av_free(ref);
 }
 
+void avfilter_unref_bufferp(AVFilterBufferRef **ref)
+{
+    avfilter_unref_buffer(*ref);
+    *ref = NULL;
+}
+
 void avfilter_insert_pad(unsigned idx, unsigned *count, size_t padidx_off,
                          AVFilterPad **pads, AVFilterLink ***links,
                          AVFilterPad *newpad)

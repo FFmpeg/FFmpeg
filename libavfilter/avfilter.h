@@ -188,6 +188,15 @@ AVFilterBufferRef *avfilter_ref_buffer(AVFilterBufferRef *ref, int pmask);
 void avfilter_unref_buffer(AVFilterBufferRef *ref);
 
 /**
+ * Remove a reference to a buffer and set the pointer to NULL.
+ * If this is the last reference to the buffer, the buffer itself
+ * is also automatically freed.
+ *
+ * @param ref pointer to the buffer reference
+ */
+void avfilter_unref_bufferp(AVFilterBufferRef **ref);
+
+/**
  * A list of supported formats for one end of a filter link. This is used
  * during the format negotiation process to try to pick the best format to
  * use to minimize the number of necessary conversions. Each filter gives a

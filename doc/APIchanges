@@ -13,6 +13,9 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2012-04-20 - xxxxxxx - lavfi 2.70.100
+  Add avfilter_unref_bufferp() to avfilter.h.
+
 2012-04-12 - xxxxxxx - lavfi 2.68.100
   Install libavfilter/asrc_abuffer.h public header.
 
