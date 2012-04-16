@@ -980,6 +980,11 @@ static int dirac_unpack_idwt_params(DiracContext *s)
         s->lowdelay.bytes.num = svq3_get_ue_golomb(gb);
         s->lowdelay.bytes.den = svq3_get_ue_golomb(gb);
 
+        if (s->lowdelay.bytes.den <= 0) {
+            av_log(s->avctx,AV_LOG_ERROR,"Invalid lowdelay.bytes.den\n");
+            return AVERROR_INVALIDDATA;
+        }
+
         /* [DIRAC_STD] 11.3.5 Quantisation matrices (low-delay syntax). quant_matrix() */
         if (get_bits1(gb)) {
             av_log(s->avctx,AV_LOG_DEBUG,"Low Delay: Has Custom Quantization Matrix!\n");
