@@ -3627,8 +3627,16 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
         av_dict_set(&format_opts, "sample_rate", buf, 0);
     }
     if (o->nb_audio_channels) {
-        snprintf(buf, sizeof(buf), "%d", o->audio_channels[o->nb_audio_channels - 1].u.i);
-        av_dict_set(&format_opts, "channels", buf, 0);
+        /* because we set audio_channels based on both the "ac" and
+         * "channel_layout" options, we need to check that the specified
+         * demuxer actually has the "channels" option before setting it */
+        if (file_iformat && file_iformat->priv_class &&
+            av_opt_find(&file_iformat->priv_class, "channels", NULL, 0,
+                        AV_OPT_SEARCH_FAKE_OBJ)) {
+            snprintf(buf, sizeof(buf), "%d",
+                     o->audio_channels[o->nb_audio_channels - 1].u.i);
+            av_dict_set(&format_opts, "channels", buf, 0);
+        }
     }
     if (o->nb_frame_rates) {
         av_dict_set(&format_opts, "framerate", o->frame_rates[o->nb_frame_rates - 1].u.str, 0);
