@@ -129,6 +129,10 @@ static int fourxm_read_header(AVFormatContext *s,
     for (i = 0; i < header_size - 8; i++) {
         fourcc_tag = AV_RL32(&header[i]);
         size = AV_RL32(&header[i + 4]);
+        if (size > header_size - i - 8 && (fourcc_tag == vtrk_TAG || fourcc_tag == strk_TAG)) {
+            av_log(s, AV_LOG_ERROR, "chunk larger than array %d>%d\n", size, header_size - i - 8);
+            return AVERROR_INVALIDDATA;
+        }
 
         if (fourcc_tag == std__TAG) {
             fourxm->fps = av_int2float(AV_RL32(&header[i + 12]));
