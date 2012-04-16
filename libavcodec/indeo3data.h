@@ -247,8 +247,8 @@
  * Expand a pair of delta values (a,b)
  * into two/four delta entries.
  */
-#define E2(a, b) PD(a, b), PD(-a, -b)
-#define E4(a, b) PD(a, b), PD(-a, -b), PD(b, a), PD(-b, -a)
+#define E2(a, b) PD(a, b), PD(-(a), -(b))
+#define E4(a, b) PD(a, b), PD(-(a), -(b)), PD(b, a), PD(-(b), -(a))
 
 /*
  * VQ tables for 4x4 block modes.
