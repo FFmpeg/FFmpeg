@@ -1564,6 +1564,10 @@ static int input_get_buffer(AVCodecContext *codec, AVFrame *pic)
     pic->opaque = ref;
     pic->type   = FF_BUFFER_TYPE_USER;
     pic->reordered_opaque = codec->reordered_opaque;
+    pic->width               = codec->width;
+    pic->height              = codec->height;
+    pic->format              = codec->pix_fmt;
+    pic->sample_aspect_ratio = codec->sample_aspect_ratio;
     if (codec->pkt) pic->pkt_pts = codec->pkt->pts;
     else            pic->pkt_pts = AV_NOPTS_VALUE;
     return 0;
