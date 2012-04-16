@@ -327,6 +327,7 @@ static int decode_band_hdr(IVI4DecContext *ctx, IVIBandDesc *band,
 {
     int plane, band_num, indx, transform_id, scan_indx;
     int i;
+    int quant_mat;
 
     plane    = get_bits(&ctx->gb, 2);
     band_num = get_bits(&ctx->gb, 4);
@@ -408,15 +409,16 @@ static int decode_band_hdr(IVI4DecContext *ctx, IVIBandDesc *band,
             }
             band->scan = scan_index_to_tab[scan_indx];
 
-            band->quant_mat = get_bits(&ctx->gb, 5);
-            if (band->quant_mat == 31) {
+            quant_mat = get_bits(&ctx->gb, 5);
+            if (quant_mat == 31) {
                 av_log(avctx, AV_LOG_ERROR, "Custom quant matrix encountered!\n");
                 return AVERROR_INVALIDDATA;
             }
-            if (band->quant_mat > 21) {
+            if (quant_mat > 21) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid quant matrix encountered!\n");
                 return AVERROR_INVALIDDATA;
             }
+            band->quant_mat = quant_mat;
         }
 
         /* decode block huffman codebook */
