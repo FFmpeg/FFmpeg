@@ -36,6 +36,11 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/avassert.h"
 
+#ifdef __INTEL_COMPILER
+#undef av_flatten
+#define av_flatten
+#endif
+
 #define MAX_PLANES 4
 #define CONTEXT_SIZE 32
 
