@@ -93,6 +93,7 @@ FATE_SEEK    = $(SEEK_TESTS:seek_%=fate-seek-%)
 FATE = $(FATE_ACODEC)                                                   \
        $(FATE_VCODEC)                                                   \
        $(FATE_LAVF)                                                     \
+       $(FATE_LIBAVUTIL)                                                \
        $(FATE_SEEK)                                                     \
 
 FATE-$(CONFIG_AVFILTER) += $(FATE_LAVFI)
