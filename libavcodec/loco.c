@@ -210,7 +210,7 @@ static int decode_frame(AVCodecContext *avctx,
         decoded = loco_decode_plane(l, p->data[0] + p->linesize[0]*(avctx->height-1) + 2, avctx->width, avctx->height,
                                     -p->linesize[0], buf, buf_size, 3);
         break;
-    case LOCO_RGBA:
+    case LOCO_CRGBA: LOCO_RGBA:
         decoded = loco_decode_plane(l, p->data[0], avctx->width, avctx->height,
                                     p->linesize[0], buf, buf_size, 4);
         buf += decoded; buf_size -= decoded;
