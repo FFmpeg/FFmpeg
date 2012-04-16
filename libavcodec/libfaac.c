@@ -29,6 +29,7 @@
 #include "avcodec.h"
 #include "audio_frame_queue.h"
 #include "internal.h"
+#include "libavutil/audioconvert.h"
 
 
 /* libfaac has an encoder delay of 1024 samples */
@@ -214,6 +215,16 @@ static const AVProfile profiles[] = {
     { FF_PROFILE_UNKNOWN },
 };
 
+static const uint64_t faac_channel_layouts[] = {
+    AV_CH_LAYOUT_MONO,
+    AV_CH_LAYOUT_STEREO,
+    AV_CH_LAYOUT_SURROUND,
+    AV_CH_LAYOUT_4POINT0,
+    AV_CH_LAYOUT_5POINT0_BACK,
+    AV_CH_LAYOUT_5POINT1_BACK,
+    0
+};
+
 AVCodec ff_libfaac_encoder = {
     .name           = "libfaac",
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -227,4 +238,5 @@ AVCodec ff_libfaac_encoder = {
                                                      AV_SAMPLE_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("libfaac AAC (Advanced Audio Codec)"),
     .profiles       = NULL_IF_CONFIG_SMALL(profiles),
+    .channel_layouts = faac_channel_layouts,
 };
