@@ -371,6 +371,8 @@ static av_cold int decoder_init(AVCodecContext * avctx)
 
     ctx->exc = &ctx->exc_base[PITCH_DELAY_MAX+INTERPOL_LEN];
 
+    ctx->pitch_delay_int_prev = PITCH_DELAY_MIN;
+
     /* random seed initialization */
     ctx->rand_value = 21845;
 
