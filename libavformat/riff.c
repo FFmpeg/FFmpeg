@@ -482,7 +482,7 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc)
     if(waveformatextensible) {                                    /* write WAVEFORMATEXTENSIBLE extensions */
         hdrsize += 22;
         avio_wl16(pb, riff_extradata - riff_extradata_start + 22); /* 22 is WAVEFORMATEXTENSIBLE size */
-        avio_wl16(pb, enc->bits_per_coded_sample);                 /* ValidBitsPerSample || SamplesPerBlock || Reserved */
+        avio_wl16(pb, bps);                                        /* ValidBitsPerSample || SamplesPerBlock || Reserved */
         avio_wl32(pb, enc->channel_layout);                        /* dwChannelMask */
         avio_wl32(pb, enc->codec_tag);                             /* GUID + next 3 */
         avio_wl32(pb, 0x00100000);
