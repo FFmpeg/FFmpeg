@@ -3158,6 +3158,12 @@ typedef struct AVSubtitleRect {
      * struct.
      */
     char *ass;
+
+    /**
+     * 1 indicates this subtitle is a forced subtitle.
+     * A forced subtitle should be displayed even when subtitles are hidden.
+     */
+    int forced;
 } AVSubtitleRect;
 
 typedef struct AVSubtitle {
