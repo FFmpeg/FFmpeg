@@ -37,7 +37,7 @@ enum {
     OMA_CODECID_WMA     = 5,
 };
 
-extern const uint16_t ff_oma_srate_tab[6];
+extern const uint16_t ff_oma_srate_tab[8];
 
 extern const AVCodecTag ff_oma_codec_tags[];
 
