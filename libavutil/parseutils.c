@@ -522,9 +522,11 @@ time_t av_timegm(struct tm *tm)
 
 int av_parse_time(int64_t *timeval, const char *timestr, int duration)
 {
-    const char *p;
+    const char *p, *q;
     int64_t t;
+    time_t now;
     struct tm dt = { 0 };
+    int today = 0, negative = 0, microseconds = 0;
     int i;
     static const char * const date_fmt[] = {
         "%Y-%m-%d",
@@ -534,25 +536,15 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
         "%H:%M:%S",
         "%H%M%S",
     };
-    const char *q;
-    int is_utc, len;
-    char lastch;
-    int negative = 0;
-
-#undef time
-    time_t now = time(0);
-
-    len = strlen(timestr);
-    if (len > 0)
-        lastch = timestr[len - 1];
-    else
-        lastch = '\0';
-    is_utc = (lastch == 'z' || lastch == 'Z');
 
     p = timestr;
     q = NULL;
+    *timeval = INT64_MIN;
     if (!duration) {
-        if (!av_strncasecmp(timestr, "now", len)) {
+#undef time
+        now = time(0);
+
+        if (!av_strcasecmp(timestr, "now")) {
             *timeval = (int64_t) now * 1000000;
             return 0;
         }
@@ -560,23 +552,17 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
         /* parse the year-month-day part */
         for (i = 0; i < FF_ARRAY_ELEMS(date_fmt); i++) {
             q = small_strptime(p, date_fmt[i], &dt);
-            if (q) {
+            if (q)
                 break;
-            }
         }
 
         /* if the year-month-day part is missing, then take the
          * current year-month-day time */
         if (!q) {
-            if (is_utc) {
-                dt = *gmtime(&now);
-            } else {
-                dt = *localtime(&now);
-            }
-            dt.tm_hour = dt.tm_min = dt.tm_sec = 0;
-        } else {
-            p = q;
+            today = 1;
+            q = p;
         }
+        p = q;
 
         if (*p == 'T' || *p == 't' || *p == ' ')
             p++;
@@ -584,9 +570,8 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
         /* parse the hour-minute-second part */
         for (i = 0; i < FF_ARRAY_ELEMS(time_fmt); i++) {
             q = small_strptime(p, time_fmt[i], &dt);
-            if (q) {
+            if (q)
                 break;
-            }
         }
     } else {
         /* parse timestr as a duration */
@@ -599,46 +584,49 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
         if (!q) {
             /* parse timestr as S+ */
             dt.tm_sec = strtol(p, (void *)&q, 10);
-            if (q == p) {
-                /* the parsing didn't succeed */
-                *timeval = INT64_MIN;
+            if (q == p) /* the parsing didn't succeed */
                 return AVERROR(EINVAL);
-            }
             dt.tm_min = 0;
             dt.tm_hour = 0;
         }
     }
 
     /* Now we have all the fields that we can get */
-    if (!q) {
-        *timeval = INT64_MIN;
+    if (!q)
         return AVERROR(EINVAL);
+
+    /* parse the .m... part */
+    if (*q == '.') {
+        int n;
+        q++;
+        for (n = 100000; n >= 1; n /= 10, q++) {
+            if (!isdigit(*q))
+                break;
+            microseconds += n * (*q - '0');
+        }
     }
 
     if (duration) {
         t = dt.tm_hour * 3600 + dt.tm_min * 60 + dt.tm_sec;
     } else {
-        dt.tm_isdst = -1;       /* unknown */
-        if (is_utc) {
-            t = av_timegm(&dt);
-        } else {
-            t = mktime(&dt);
+        int is_utc = *q == 'Z' || *q == 'z';
+        q += is_utc;
+        if (today) { /* fill in today's date */
+            struct tm dt2 = is_utc ? *gmtime(&now) : *localtime(&now);
+            dt2.tm_hour = dt.tm_hour;
+            dt2.tm_min  = dt.tm_min;
+            dt2.tm_sec  = dt.tm_sec;
+            dt = dt2;
         }
+        t = is_utc ? av_timegm(&dt) : mktime(&dt);
     }
+
+    /* Check that we are at the end of the string */
+    if (*q)
+        return AVERROR(EINVAL);
 
     t *= 1000000;
-
-    /* parse the .m... part */
-    if (*q == '.') {
-        int val, n;
-        q++;
-        for (val = 0, n = 100000; n >= 1; n /= 10, q++) {
-            if (!isdigit(*q))
-                break;
-            val += n * (*q - '0');
-        }
-        t += val;
-    }
+    t += microseconds;
     *timeval = negative ? -t : t;
     return 0;
 }
