@@ -2292,6 +2292,7 @@ static const AVProfile mpeg4_video_profiles[] = {
     { FF_PROFILE_MPEG4_ADVANCED_SCALABLE_TEXTURE, "Advanced Scalable Texture Profile" },
     { FF_PROFILE_MPEG4_SIMPLE_STUDIO,             "Simple Studio Profile" },
     { FF_PROFILE_MPEG4_ADVANCED_SIMPLE,           "Advanced Simple Profile" },
+    { FF_PROFILE_UNKNOWN },
 };
 
 static const AVOption mpeg4_options[] = {
