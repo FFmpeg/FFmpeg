@@ -485,6 +485,7 @@ enum PixelFormat avcodec_find_best_pix_fmt2(enum PixelFormat dst_pix_fmt1, enum 
         ~(FF_LOSS_COLORSPACE | FF_LOSS_RESOLUTION),
         ~FF_LOSS_COLORQUANT,
         ~FF_LOSS_DEPTH,
+        ~(FF_LOSS_DEPTH|FF_LOSS_COLORSPACE),
         ~(FF_LOSS_RESOLUTION | FF_LOSS_DEPTH | FF_LOSS_COLORSPACE | FF_LOSS_ALPHA |
           FF_LOSS_COLORQUANT | FF_LOSS_CHROMA),
         0x80000, //non zero entry that combines all loss variants including future additions
