@@ -247,6 +247,9 @@ static int ogg_read_page(AVFormatContext *s, int *str)
         if (ogg->headers) {
             int n;
 
+            if (ogg->nstreams != 1)
+                return idx;
+
             for (n = 0; n < ogg->nstreams; n++) {
                 av_freep(&ogg->streams[n].buf);
                 if (!ogg->state || ogg->state->streams[n].private != ogg->streams[n].private)
