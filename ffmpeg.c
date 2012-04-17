@@ -702,7 +702,7 @@ static enum PixelFormat choose_pixel_fmt(AVStream *st, AVCodec *codec, enum Pixe
 static const enum PixelFormat *choose_pixel_fmts(OutputStream *ost)
 {
     if (ost->st->codec->pix_fmt != PIX_FMT_NONE) {
-        ost->pix_fmts[0] = ost->st->codec->pix_fmt;
+        ost->pix_fmts[0] = choose_pixel_fmt(ost->st, ost->enc, ost->st->codec->pix_fmt);
         return ost->pix_fmts;
     } else if (ost->enc->pix_fmts)
         return ost->enc->pix_fmts;
