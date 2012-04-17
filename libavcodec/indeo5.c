@@ -78,6 +78,7 @@ typedef struct {
     IVIPicConfig    pic_conf;
 
     int gop_invalid;
+    int buf_invalid[3];
 } IVI5DecContext;
 
 
@@ -797,6 +798,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     //{ START_TIMER;
 
     if (ctx->frame_type != FRAMETYPE_NULL) {
+        ctx->buf_invalid[ctx->dst_buf] = 1;
         for (p = 0; p < 3; p++) {
             for (b = 0; b < ctx->planes[p].num_bands; b++) {
                 result = decode_band(ctx, p, &ctx->planes[p].bands[b], avctx);
@@ -807,7 +809,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                 }
             }
         }
+        ctx->buf_invalid[ctx->dst_buf] = 0;
     }
+    if (ctx->buf_invalid[ctx->dst_buf])
+        return -1;
 
     //STOP_TIMER("decode_planes"); }
 
