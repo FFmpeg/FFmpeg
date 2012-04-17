@@ -451,6 +451,8 @@ struct AVFilterPad {
      * Frame request callback. A call to this should result in at least one
      * frame being output over the given link. This should return zero on
      * success, and another value on error.
+     * See avfilter_request_frame() for the error codes with a specific
+     * meaning.
      *
      * Output video pads only.
      */
@@ -777,7 +779,10 @@ avfilter_get_audio_buffer_ref_from_arrays(uint8_t *data[8], int linesize[8], int
  * Request an input frame from the filter at the other end of the link.
  *
  * @param link the input link
- * @return     zero on success
+ * @return     zero on success or a negative error code; in particular:
+ *             AVERROR_EOF means that the end of frames have been reached;
+ *             AVERROR(EAGAIN) means that no frame could be immediately
+ *             produced.
  */
 int avfilter_request_frame(AVFilterLink *link);
 
