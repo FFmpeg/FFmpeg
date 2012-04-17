@@ -313,7 +313,7 @@ static inline int rv34_decode_block(DCTELEM *dst, GetBitContext *gb, RV34VLC *rv
         code = get_vlc2(gb, rvlc->third_pattern[sc].table, 9, 2);
         decode_subblock(dst + 4*2+2, code, 0, gb, &rvlc->coefficient, q_ac2);
     }
-    return has_ac || pattern;
+    return has_ac | pattern;
 }
 
 /**
