@@ -187,6 +187,8 @@ the following snippet into your @file{.vimrc}:
 set expandtab
 set shiftwidth=4
 set softtabstop=4
+set cindent
+set cinoptions=(0
 " allow tabs in Makefiles
 autocmd FileType make set noexpandtab shiftwidth=8 softtabstop=8
 " Trailing whitespace and tabs are forbidden, so highlight them.

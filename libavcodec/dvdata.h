@@ -104,6 +104,16 @@ enum dv_pack_type {
      dv_unknown_pack  = 0xff,
 };
 
+extern const uint8_t ff_dv_quant_shifts[22][4];
+extern const uint8_t ff_dv_quant_offset[4];
+
+extern const int ff_dv_iweight_88[64];
+extern const int ff_dv_iweight_248[64];
+extern const int ff_dv_iweight_1080_y[64];
+extern const int ff_dv_iweight_1080_c[64];
+extern const int ff_dv_iweight_720_y[64];
+extern const int ff_dv_iweight_720_c[64];
+
 #define DV_PROFILE_IS_HD(p) ((p)->video_stype & 0x10)
 #define DV_PROFILE_IS_1080i50(p) (((p)->video_stype == 0x14) && ((p)->dsf == 1))
 #define DV_PROFILE_IS_720p50(p)  (((p)->video_stype == 0x18) && ((p)->dsf == 1))

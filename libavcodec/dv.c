@@ -46,7 +46,6 @@
 #include "put_bits.h"
 #include "simple_idct.h"
 #include "dvdata.h"
-#include "dvquant.h"
 #include "dv_tablegen.h"
 
 /* XXX: also include quantization */
@@ -167,6 +166,15 @@ static inline void dv_calc_mb_coordinates(const DVprofile *d, int chan, int seq,
     }
 }
 
+/* quantization quanta by QNO for DV100 */
+static const uint8_t dv100_qstep[16] = {
+    1, /* QNO = 0 and 1 both have no quantization */
+    1,
+    2, 3, 4, 5, 6, 7, 8, 16, 18, 20, 22, 24, 28, 52
+};
+
+static const uint8_t dv_quant_areas[4]  = { 6, 21, 43, 64 };
+
 int ff_dv_init_dynamic_tables(const DVprofile *d)
 {
     int j,i,c,s,p;
@@ -195,11 +203,11 @@ int ff_dv_init_dynamic_tables(const DVprofile *d)
         factor1 = &d->idct_factor[0];
         factor2 = &d->idct_factor[DV_PROFILE_IS_HD(d)?4096:2816];
         if (d->height == 720) {
-            iweight1 = &dv_iweight_720_y[0];
-            iweight2 = &dv_iweight_720_c[0];
+            iweight1 = &ff_dv_iweight_720_y[0];
+            iweight2 = &ff_dv_iweight_720_c[0];
         } else {
-            iweight1 = &dv_iweight_1080_y[0];
-            iweight2 = &dv_iweight_1080_c[0];
+            iweight1 = &ff_dv_iweight_1080_y[0];
+            iweight2 = &ff_dv_iweight_1080_c[0];
         }
         if (DV_PROFILE_IS_HD(d)) {
             for (c = 0; c < 4; c++) {
@@ -211,12 +219,12 @@ int ff_dv_init_dynamic_tables(const DVprofile *d)
                 }
             }
         } else {
-            iweight1 = &dv_iweight_88[0];
-            for (j = 0; j < 2; j++, iweight1 = &dv_iweight_248[0]) {
+            iweight1 = &ff_dv_iweight_88[0];
+            for (j = 0; j < 2; j++, iweight1 = &ff_dv_iweight_248[0]) {
                 for (s = 0; s < 22; s++) {
                     for (i = c = 0; c < 4; c++) {
                         for (; i < dv_quant_areas[c]; i++) {
-                            *factor1   = iweight1[i] << (dv_quant_shifts[s][c] + 1);
+                            *factor1   = iweight1[i] << (ff_dv_quant_shifts[s][c] + 1);
                             *factor2++ = (*factor1++) << 1;
                         }
                     }
@@ -467,6 +475,28 @@ static av_always_inline int dv_guess_dct_mode(DVVideoContext *s, uint8_t *data, 
     return 0;
 }
 
+static const int dv_weight_bits = 18;
+static const int dv_weight_88[64] = {
+ 131072, 257107, 257107, 242189, 252167, 242189, 235923, 237536,
+ 237536, 235923, 229376, 231390, 223754, 231390, 229376, 222935,
+ 224969, 217965, 217965, 224969, 222935, 200636, 218652, 211916,
+ 212325, 211916, 218652, 200636, 188995, 196781, 205965, 206433,
+ 206433, 205965, 196781, 188995, 185364, 185364, 200636, 200704,
+ 200636, 185364, 185364, 174609, 180568, 195068, 195068, 180568,
+ 174609, 170091, 175557, 189591, 175557, 170091, 165371, 170627,
+ 170627, 165371, 160727, 153560, 160727, 144651, 144651, 136258,
+};
+static const int dv_weight_248[64] = {
+ 131072, 242189, 257107, 237536, 229376, 200636, 242189, 223754,
+ 224969, 196781, 262144, 242189, 229376, 200636, 257107, 237536,
+ 211916, 185364, 235923, 217965, 229376, 211916, 206433, 180568,
+ 242189, 223754, 224969, 196781, 211916, 185364, 235923, 217965,
+ 200704, 175557, 222935, 205965, 200636, 185364, 195068, 170627,
+ 229376, 211916, 206433, 180568, 200704, 175557, 222935, 205965,
+ 175557, 153560, 188995, 174609, 165371, 144651, 200636, 185364,
+ 195068, 170627, 175557, 153560, 188995, 174609, 165371, 144651,
+};
+
 static av_always_inline int dv_init_enc_block(EncBlockInfo* bi, uint8_t *data, int linesize, DVVideoContext *s, int bias)
 {
     const int *weight;
@@ -578,7 +608,7 @@ static inline void dv_guess_qnos(EncBlockInfo* blks, int* qnos)
           size[i] = 0;
           for (j = 0; j < 6; j++, b++) {
              for (a = 0; a < 4; a++) {
-                if (b->area_q[a] != dv_quant_shifts[qnos[i] + dv_quant_offset[b->cno]][a]) {
+                if (b->area_q[a] != ff_dv_quant_shifts[qnos[i] + ff_dv_quant_offset[b->cno]][a]) {
                     b->bit_size[a] = 1; // 4 areas 4 bits for EOB :)
                     b->area_q[a]++;
                     prev = b->prev[a];
