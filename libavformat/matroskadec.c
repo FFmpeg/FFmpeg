@@ -1011,6 +1011,10 @@ static int matroska_decode_buffer(uint8_t** buf, int* buf_size,
 
     switch (encodings[0].compression.algo) {
     case MATROSKA_TRACK_ENCODING_COMP_HEADERSTRIP:
+        if (encodings[0].compression.settings.size && !encodings[0].compression.settings.data) {
+            av_log(0, AV_LOG_ERROR, "Compression size but no data in headerstrip\n");
+            return -1;
+        }
         return encodings[0].compression.settings.size;
     case MATROSKA_TRACK_ENCODING_COMP_LZO:
         do {
