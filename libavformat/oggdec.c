@@ -29,6 +29,7 @@
  */
 
 #include <stdio.h>
+#include "libavutil/avassert.h"
 #include "oggdec.h"
 #include "avformat.h"
 #include "internal.h"
@@ -690,6 +691,7 @@ static int ogg_read_seek(AVFormatContext *s, int stream_index,
     struct ogg_stream *os = ogg->streams + stream_index;
     int ret;
 
+    av_assert0(stream_index < ogg->nstreams);
     // Ensure everything is reset even when seeking via
     // the generated index.
     ogg_reset(ogg);
