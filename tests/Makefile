@@ -16,9 +16,6 @@ tests/vsynth2/00.pgm: tests/rotozoom$(HOSTEXESUF) | tests/vsynth2
 tests/data/asynth1.sw: tests/audiogen$(HOSTEXESUF) | tests/data
 	$(M)./$< $@
 
-tests/data/asynth-16000-1.sw: tests/audiogen$(HOSTEXESUF) | tests/data
-	$(M)./$< $@ 16000 1
-
 tests/data/asynth-%.wav: tests/audiogen$(HOSTEXESUF) | tests/data
 	$(M)./$< $@ $(subst -, ,$*)
 

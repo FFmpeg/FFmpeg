@@ -1,9 +1,13 @@
-FATE_TESTS += fate-g722dec-1
+FATE_G722 += fate-g722dec-1
 fate-g722dec-1: CMD = framecrc -i $(SAMPLES)/g722/conf-adminmenu-162.g722
 
-FATE_TESTS += fate-g722enc
-fate-g722enc: tests/data/asynth-16000-1.sw
-fate-g722enc: CMD = md5 -ar 16000 -ac 1 -f s16le -i $(TARGET_PATH)/tests/data/asynth-16000-1.sw -acodec g722 -ac 1 -f g722
+FATE_G722 += fate-g722-encode
+fate-g722-encode: tests/data/asynth-16000-1.wav
+fate-g722-encode: SRC = tests/data/asynth-16000-1.wav
+fate-g722-encode: CMD = enc_dec_pcm wav md5 s16le $(SRC) -c:a g722
+
+FATE_TESTS += $(FATE_G722)
+fate-g722: $(FATE_G722)
 
 FATE_GSM += fate-gsm-ms
 fate-gsm-ms: CMD = framecrc -i $(SAMPLES)/gsm/ciao.wav
