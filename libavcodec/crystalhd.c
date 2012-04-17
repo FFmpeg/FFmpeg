@@ -741,6 +741,56 @@ static inline CopyRet receive_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_VERBOSE, "CrystalHD: Initial format change\n");
         avctx->width  = output.PicInfo.width;
         avctx->height = output.PicInfo.height;
+        switch ( output.PicInfo.aspect_ratio ) {
+        case vdecAspectRatioSquare:
+            avctx->sample_aspect_ratio = (AVRational) {  1,  1};
+            break;
+        case vdecAspectRatio12_11:
+            avctx->sample_aspect_ratio = (AVRational) { 12, 11};
+            break;
+        case vdecAspectRatio10_11:
+            avctx->sample_aspect_ratio = (AVRational) { 10, 11};
+            break;
+        case vdecAspectRatio16_11:
+            avctx->sample_aspect_ratio = (AVRational) { 16, 11};
+            break;
+        case vdecAspectRatio40_33:
+            avctx->sample_aspect_ratio = (AVRational) { 40, 33};
+            break;
+        case vdecAspectRatio24_11:
+            avctx->sample_aspect_ratio = (AVRational) { 24, 11};
+            break;
+        case vdecAspectRatio20_11:
+            avctx->sample_aspect_ratio = (AVRational) { 20, 11};
+            break;
+        case vdecAspectRatio32_11:
+            avctx->sample_aspect_ratio = (AVRational) { 32, 11};
+            break;
+        case vdecAspectRatio80_33:
+            avctx->sample_aspect_ratio = (AVRational) { 80, 33};
+            break;
+        case vdecAspectRatio18_11:
+            avctx->sample_aspect_ratio = (AVRational) { 18, 11};
+            break;
+        case vdecAspectRatio15_11:
+            avctx->sample_aspect_ratio = (AVRational) { 15, 11};
+            break;
+        case vdecAspectRatio64_33:
+            avctx->sample_aspect_ratio = (AVRational) { 64, 33};
+            break;
+        case vdecAspectRatio160_99:
+            avctx->sample_aspect_ratio = (AVRational) {160, 99};
+            break;
+        case vdecAspectRatio4_3:
+            avctx->sample_aspect_ratio = (AVRational) {  4,  3};
+            break;
+        case vdecAspectRatio16_9:
+            avctx->sample_aspect_ratio = (AVRational) { 16,  9};
+            break;
+        case vdecAspectRatio221_1:
+            avctx->sample_aspect_ratio = (AVRational) {221,  1};
+            break;
+        }
         return RET_COPY_AGAIN;
     } else if (ret == BC_STS_SUCCESS) {
         int copy_ret = -1;
