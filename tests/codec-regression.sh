@@ -419,6 +419,3 @@ fi
 if [ -n "$do_pcm_f64le" ] ; then
 do_audio_enc_dec wav dbl pcm_f64le
 fi
-if [ -n "$do_pcm_s24daud" ] ; then
-do_audio_enc_dec 302 s16 pcm_s24daud "-ac 6 -ar 96000"
-fi
