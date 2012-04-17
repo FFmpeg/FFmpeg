@@ -431,7 +431,7 @@ static void rv40_loop_filter(RV34DecContext *r, int row)
             y_v_deblock &= ~MASK_Y_LEFT_COL;
         if(!row)
             y_h_deblock &= ~MASK_Y_TOP_ROW;
-        if(row == s->mb_height - 1 || (mb_strong[POS_CUR] || mb_strong[POS_BOTTOM]))
+        if(row == s->mb_height - 1 || (mb_strong[POS_CUR] | mb_strong[POS_BOTTOM]))
             y_h_deblock &= ~(MASK_Y_TOP_ROW << 16);
         /* Calculating chroma patterns is similar and easier since there is
          * no motion vector pattern for them.
@@ -448,7 +448,7 @@ static void rv40_loop_filter(RV34DecContext *r, int row)
                 c_v_deblock[i] &= ~MASK_C_LEFT_COL;
             if(!row)
                 c_h_deblock[i] &= ~MASK_C_TOP_ROW;
-            if(row == s->mb_height - 1 || mb_strong[POS_CUR] || mb_strong[POS_BOTTOM])
+            if(row == s->mb_height - 1 || (mb_strong[POS_CUR] | mb_strong[POS_BOTTOM]))
                 c_h_deblock[i] &= ~(MASK_C_TOP_ROW << 4);
         }
 
@@ -469,7 +469,7 @@ static void rv40_loop_filter(RV34DecContext *r, int row)
                                               0, 0, 0);
                 }
                 // filter left block edge in ordinary mode (with low filtering strength)
-                if(y_v_deblock & (MASK_CUR << ij) && (i || !(mb_strong[POS_CUR] || mb_strong[POS_LEFT]))){
+                if(y_v_deblock & (MASK_CUR << ij) && (i || !(mb_strong[POS_CUR] | mb_strong[POS_LEFT]))){
                     if(!i)
                         clip_left = mvmasks[POS_LEFT] & (MASK_RIGHT << j) ? clip[POS_LEFT] : 0;
                     else
@@ -480,14 +480,14 @@ static void rv40_loop_filter(RV34DecContext *r, int row)
                                               alpha, beta, betaY, 0, 0, 1);
                 }
                 // filter top edge of the current macroblock when filtering strength is high
-                if(!j && y_h_deblock & (MASK_CUR << i) && (mb_strong[POS_CUR] || mb_strong[POS_TOP])){
+                if(!j && y_h_deblock & (MASK_CUR << i) && (mb_strong[POS_CUR] | mb_strong[POS_TOP])){
                     rv40_adaptive_loop_filter(&r->rdsp, Y, s->linesize, dither,
                                        clip_cur,
                                        mvmasks[POS_TOP] & (MASK_TOP << i) ? clip[POS_TOP] : 0,
                                        alpha, beta, betaY, 0, 1, 0);
                 }
                 // filter left block edge in edge mode (with high filtering strength)
-                if(y_v_deblock & (MASK_CUR << ij) && !i && (mb_strong[POS_CUR] || mb_strong[POS_LEFT])){
+                if(y_v_deblock & (MASK_CUR << ij) && !i && (mb_strong[POS_CUR] | mb_strong[POS_LEFT])){
                     clip_left = mvmasks[POS_LEFT] & (MASK_RIGHT << j) ? clip[POS_LEFT] : 0;
                     rv40_adaptive_loop_filter(&r->rdsp, Y, s->linesize, dither,
                                        clip_cur,
@@ -509,7 +509,7 @@ static void rv40_loop_filter(RV34DecContext *r, int row)
                                            clip_cur,
                                            alpha, beta, betaC, 1, 0, 0);
                     }
-                    if((c_v_deblock[k] & (MASK_CUR << ij)) && (i || !(mb_strong[POS_CUR] || mb_strong[POS_LEFT]))){
+                    if((c_v_deblock[k] & (MASK_CUR << ij)) && (i || !(mb_strong[POS_CUR] | mb_strong[POS_LEFT]))){
                         if(!i)
                             clip_left = uvcbp[POS_LEFT][k] & (MASK_CUR << (2*j+1)) ? clip[POS_LEFT] : 0;
                         else
@@ -519,14 +519,14 @@ static void rv40_loop_filter(RV34DecContext *r, int row)
                                            clip_left,
                                            alpha, beta, betaC, 1, 0, 1);
                     }
-                    if(!j && c_h_deblock[k] & (MASK_CUR << ij) && (mb_strong[POS_CUR] || mb_strong[POS_TOP])){
+                    if(!j && c_h_deblock[k] & (MASK_CUR << ij) && (mb_strong[POS_CUR] | mb_strong[POS_TOP])){
                         int clip_top = uvcbp[POS_TOP][k] & (MASK_CUR << (ij+2)) ? clip[POS_TOP] : 0;
                         rv40_adaptive_loop_filter(&r->rdsp, C, s->uvlinesize, i*8,
                                            clip_cur,
                                            clip_top,
                                            alpha, beta, betaC, 1, 1, 0);
                     }
-                    if(c_v_deblock[k] & (MASK_CUR << ij) && !i && (mb_strong[POS_CUR] || mb_strong[POS_LEFT])){
+                    if(c_v_deblock[k] & (MASK_CUR << ij) && !i && (mb_strong[POS_CUR] | mb_strong[POS_LEFT])){
                         clip_left = uvcbp[POS_LEFT][k] & (MASK_CUR << (2*j+1)) ? clip[POS_LEFT] : 0;
                         rv40_adaptive_loop_filter(&r->rdsp, C, s->uvlinesize, j*8,
                                            clip_cur,
