@@ -954,6 +954,11 @@ start_sync:
             st = s->streams[n];
             ast = st->priv_data;
 
+            if (!ast) {
+                av_log(s, AV_LOG_WARNING, "Skiping foreign stream %d packet\n", n);
+                continue;
+            }
+
             if(s->nb_streams>=2){
                 AVStream *st1  = s->streams[1];
                 AVIStream *ast1= st1->priv_data;
