@@ -1498,7 +1498,9 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
     int bitrate;
     AVRational display_aspect_ratio;
 
-    if (encode)
+    if (enc->codec)
+        p = enc->codec;
+    else if (encode)
         p = avcodec_find_encoder(enc->codec_id);
     else
         p = avcodec_find_decoder(enc->codec_id);
