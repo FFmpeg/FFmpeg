@@ -40,7 +40,7 @@ fate-vp8-sign-bias$(1): CMD = framemd5 $(2) -i $(SAMPLES)/vp8/sintel-signbias.iv
 fate-vp8-sign-bias$(1): REF = $(SRC_PATH)/tests/ref/fate/vp8-sign-bias
 
 FATE_VP8 += fate-vp8-size-change$(1)
-fate-vp8-size-change$(1): CMD = framemd5 $(2) -flags +bitexact -i $(SAMPLES)/vp8/frame_size_change.webm -frames:v 30
+fate-vp8-size-change$(1): CMD = framemd5 $(2) -flags +bitexact -i $(SAMPLES)/vp8/frame_size_change.webm -frames:v 30 -sws_flags bitexact+bilinear
 fate-vp8-size-change$(1): REF = $(SRC_PATH)/tests/ref/fate/vp8-size-change
 endef
 
