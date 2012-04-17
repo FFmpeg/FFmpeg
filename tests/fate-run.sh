@@ -91,7 +91,7 @@ enc_dec_pcm(){
     encfile="${outdir}/${test}.${out_fmt}"
     cleanfiles=$encfile
     avconv -i $ref "$@" -f $out_fmt -y ${target_path}/${encfile} || return
-    avconv -i ${target_path}/${encfile} -c:a pcm_${pcm_fmt} -f wav -
+    avconv -f $out_fmt -i ${target_path}/${encfile} -c:a pcm_${pcm_fmt} -f wav -
 }
 
 regtest(){
