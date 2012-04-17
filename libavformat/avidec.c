@@ -895,6 +895,10 @@ static int get_stream_idx(int *d){
     }
 }
 
+/**
+ *
+ * @param exit_early set to 1 to just gather packet position without making the changes needed to actually read & return the packet
+ */
 static int avi_sync(AVFormatContext *s, int exit_early)
 {
     AVIContext *avi = s->priv_data;
