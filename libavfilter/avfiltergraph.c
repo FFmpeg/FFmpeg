@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include "libavutil/audioconvert.h"
+#include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "avfiltergraph.h"
 #include "internal.h"
@@ -252,13 +253,26 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
     return 0;
 }
 
-static void pick_format(AVFilterLink *link)
+static void pick_format(AVFilterLink *link, AVFilterLink *ref)
 {
     if (!link || !link->in_formats)
         return;
 
+    if (link->type == AVMEDIA_TYPE_VIDEO) {
+        if(ref && ref->type == AVMEDIA_TYPE_VIDEO){
+            int has_alpha= av_pix_fmt_descriptors[ref->format].nb_components % 2 == 0;
+            enum PixelFormat best= PIX_FMT_NONE;
+            int i;
+            for (i=0; i<link->in_formats->format_count; i++) {
+                enum PixelFormat p = link->in_formats->formats[i];
+                best= avcodec_find_best_pix_fmt2(best, p, ref->format, has_alpha, NULL);
+            }
+            link->format = best;
+        }else
+            link->format = link->in_formats->formats[0];
+    }
+
     link->in_formats->format_count = 1;
-    link->format = link->in_formats->formats[0];
     avfilter_formats_unref(&link->in_formats);
     avfilter_formats_unref(&link->out_formats);
 
@@ -324,11 +338,21 @@ static void pick_formats(AVFilterGraph *graph)
 
     for (i = 0; i < graph->filter_count; i++) {
         AVFilterContext *filter = graph->filters[i];
-
-        for (j = 0; j < filter->input_count; j++)
-            pick_format(filter->inputs[j]);
-        for (j = 0; j < filter->output_count; j++)
-            pick_format(filter->outputs[j]);
+        if (filter->input_count && filter->output_count) {
+            for (j = 0; j < filter->input_count; j++)
+                pick_format(filter->inputs[j], NULL);
+            for (j = 0; j < filter->output_count; j++)
+                pick_format(filter->outputs[j], filter->inputs[0]);
+        }
+    }
+    for (i = 0; i < graph->filter_count; i++) {
+        AVFilterContext *filter = graph->filters[i];
+        if (!(filter->input_count && filter->output_count)) {
+            for (j = 0; j < filter->input_count; j++)
+                pick_format(filter->inputs[j], NULL);
+            for (j = 0; j < filter->output_count; j++)
+                pick_format(filter->outputs[j], NULL);
+        }
     }
 }
 
