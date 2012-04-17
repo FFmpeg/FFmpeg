@@ -9,6 +9,29 @@ fate-g722-encode: CMD = enc_dec_pcm wav md5 s16le $(SRC) -c:a g722
 FATE_TESTS += $(FATE_G722)
 fate-g722: $(FATE_G722)
 
+FATE_G726 += fate-g726-encode-2bit
+fate-g726-encode-2bit: tests/data/asynth-8000-1.wav
+fate-g726-encode-2bit: SRC = tests/data/asynth-8000-1.wav
+fate-g726-encode-2bit: CMD = enc_dec_pcm wav md5 s16le $(SRC) -c:a g726 -b:a 16k
+
+FATE_G726 += fate-g726-encode-3bit
+fate-g726-encode-3bit: tests/data/asynth-8000-1.wav
+fate-g726-encode-3bit: SRC = tests/data/asynth-8000-1.wav
+fate-g726-encode-3bit: CMD = enc_dec_pcm wav md5 s16le $(SRC) -c:a g726 -b:a 24k
+
+FATE_G726 += fate-g726-encode-4bit
+fate-g726-encode-4bit: tests/data/asynth-8000-1.wav
+fate-g726-encode-4bit: SRC = tests/data/asynth-8000-1.wav
+fate-g726-encode-4bit: CMD = enc_dec_pcm wav md5 s16le $(SRC) -c:a g726 -b:a 32k
+
+FATE_G726 += fate-g726-encode-5bit
+fate-g726-encode-5bit: tests/data/asynth-8000-1.wav
+fate-g726-encode-5bit: SRC = tests/data/asynth-8000-1.wav
+fate-g726-encode-5bit: CMD = enc_dec_pcm wav md5 s16le $(SRC) -c:a g726 -b:a 40k
+
+FATE_TESTS += $(FATE_G726)
+fate-g726: $(FATE_G726)
+
 FATE_GSM += fate-gsm-ms
 fate-gsm-ms: CMD = framecrc -i $(SAMPLES)/gsm/ciao.wav
 

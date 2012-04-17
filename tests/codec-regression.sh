@@ -311,11 +311,6 @@ do_audio_encoding ac3.ac3 "-vn -acodec ac3_fixed"
 #$tiny_psnr $pcm_dst $pcm_ref 2 1024
 fi
 
-if [ -n "$do_g726" ] ; then
-do_audio_encoding g726.wav "-b 32k -ac 1 -ar 8000 -acodec g726"
-do_audio_decoding
-fi
-
 if [ -n "$do_adpcm_adx" ] ; then
 do_audio_encoding adpcm_adx.adx "-acodec adpcm_adx"
 do_audio_decoding
