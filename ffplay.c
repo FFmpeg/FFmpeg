@@ -1740,9 +1740,9 @@ static AVFilter input_filter =
 
 static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const char *vfilters)
 {
+    static const enum PixelFormat pix_fmts[] = { PIX_FMT_YUV420P, PIX_FMT_NONE };
     char sws_flags_str[128];
     int ret;
-    enum PixelFormat pix_fmts[] = { PIX_FMT_YUV420P, PIX_FMT_NONE };
     AVBufferSinkParams *buffersink_params = av_buffersink_params_alloc();
     AVFilterContext *filt_src = NULL, *filt_out = NULL;
     snprintf(sws_flags_str, sizeof(sws_flags_str), "flags=%d", sws_flags);

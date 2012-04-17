@@ -370,6 +370,7 @@ int cmdutils_read_file(const char *filename, char **bufptr, size_t *size);
 FILE *get_preset_file(char *filename, size_t filename_size,
                       const char *preset_name, int is_path, const char *codec_name);
 
+
 /**
  * Do all the necessary cleanup and abort.
  * This function is implemented in the avtools, not cmdutils.

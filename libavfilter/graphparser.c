@@ -242,7 +242,7 @@ static int link_filter_inouts(AVFilterContext *filt_ctx,
         } else {
             p->filter_ctx = filt_ctx;
             p->pad_idx = pad;
-            insert_inout(open_inputs, p);
+            append_inout(open_inputs, &p);
         }
     }
 
