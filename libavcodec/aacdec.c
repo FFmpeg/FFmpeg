@@ -2451,13 +2451,15 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
                 break;
             }
             if (pce_found) {
-                av_log(avctx, AV_LOG_INFO,
-                       "Evaluating a further program_config_element.\n");
+                av_log(avctx, AV_LOG_ERROR,
+                       "Not evaluating a further program_config_element as this construct is dubious at best.\n");
+                pop_output_configuration(ac);
+            } else {
+                err = output_configure(ac, layout_map, tags, 0, OC_TRIAL_PCE);
+                if (!err)
+                    ac->oc[1].m4ac.chan_config = 0;
+                pce_found = 1;
             }
-            err = output_configure(ac, layout_map, tags, 0, OC_TRIAL_PCE);
-            if (!err)
-                ac->oc[1].m4ac.chan_config = 0;
-            pce_found = 1;
             break;
         }
 
