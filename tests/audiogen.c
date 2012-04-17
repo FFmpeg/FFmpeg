@@ -22,7 +22,9 @@
  */
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 #define MAX_CHANNELS 8
 
@@ -93,10 +95,43 @@ static int int_cos(int a)
 
 FILE *outfile;
 
-static void put_sample(int v)
+static void put16(int16_t v)
 {
-    fputc(v & 0xff, outfile);
+    fputc( v       & 0xff, outfile);
     fputc((v >> 8) & 0xff, outfile);
+}
+
+static void put32(uint32_t v)
+{
+    fputc( v        & 0xff, outfile);
+    fputc((v >>  8) & 0xff, outfile);
+    fputc((v >> 16) & 0xff, outfile);
+    fputc((v >> 24) & 0xff, outfile);
+}
+
+#define HEADER_SIZE      46
+#define FMT_SIZE         18
+#define SAMPLE_SIZE       2
+#define WFORMAT_PCM  0x0001
+
+static void put_wav_header(int sample_rate, int channels, int nb_samples)
+{
+    int block_align = SAMPLE_SIZE * channels;
+    int data_size   = block_align * nb_samples;
+
+    fputs("RIFF", outfile);
+    put32(HEADER_SIZE + data_size);
+    fputs("WAVEfmt ", outfile);
+    put32(FMT_SIZE);
+    put16(WFORMAT_PCM);
+    put16(channels);
+    put32(sample_rate);
+    put32(block_align * sample_rate);
+    put16(block_align);
+    put16(SAMPLE_SIZE * 8);
+    put16(0);
+    fputs("data", outfile);
+    put32(data_size);
 }
 
 int main(int argc, char **argv)
@@ -107,10 +142,12 @@ int main(int argc, char **argv)
     int taba[MAX_CHANNELS];
     int sample_rate = 44100;
     int nb_channels = 2;
+    char *ext;
 
     if (argc < 2 || argc > 4) {
         printf("usage: %s file [<sample rate> [<channels>]]\n"
                "generate a test raw 16 bit audio stream\n"
+               "If the file extension is .wav a WAVE header will be added.\n"
                "default: 44100 Hz stereo\n", argv[0]);
         exit(1);
     }
@@ -137,12 +174,15 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    if ((ext = strrchr(argv[1], '.')) != NULL && !strcmp(ext, ".wav"))
+        put_wav_header(sample_rate, nb_channels, 6 * sample_rate);
+
     /* 1 second of single freq sinus at 1000 Hz */
     a = 0;
     for (i = 0; i < 1 * sample_rate; i++) {
         v = (int_cos(a) * 10000) >> FRAC_BITS;
         for (j = 0; j < nb_channels; j++)
-            put_sample(v);
+            put16(v);
         a += (1000 * FRAC_ONE) / sample_rate;
     }
 
@@ -151,7 +191,7 @@ int main(int argc, char **argv)
     for (i = 0; i < 1 * sample_rate; i++) {
         v = (int_cos(a) * 10000) >> FRAC_BITS;
         for (j = 0; j < nb_channels; j++)
-            put_sample(v);
+            put16(v);
         f  = 100 + (((10000 - 100) * i) / sample_rate);
         a += (f * FRAC_ONE) / sample_rate;
     }
@@ -160,14 +200,14 @@ int main(int argc, char **argv)
     for (i = 0; i < sample_rate / 2; i++) {
         v = myrnd(&seed, 20000) - 10000;
         for (j = 0; j < nb_channels; j++)
-            put_sample(v);
+            put16(v);
     }
 
     /* 0.5 second of high amplitude white noise */
     for (i = 0; i < sample_rate / 2; i++) {
         v = myrnd(&seed, 65535) - 32768;
         for (j = 0; j < nb_channels; j++)
-            put_sample(v);
+            put16(v);
     }
 
     /* 1 second of unrelated ramps for each channel */
@@ -179,7 +219,7 @@ int main(int argc, char **argv)
     for (i = 0; i < 1 * sample_rate; i++) {
         for (j = 0; j < nb_channels; j++) {
             v = (int_cos(taba[j]) * 10000) >> FRAC_BITS;
-            put_sample(v);
+            put16(v);
             f        = tabf1[j] + (((tabf2[j] - tabf1[j]) * i) / sample_rate);
             taba[j] += (f * FRAC_ONE) / sample_rate;
         }
@@ -194,7 +234,7 @@ int main(int argc, char **argv)
             if (j & 1)
                 amp = 10000 - amp;
             v = (int_cos(a) * amp) >> FRAC_BITS;
-            put_sample(v);
+            put16(v);
             a    += (500 * FRAC_ONE) / sample_rate;
             ampa += (2 * FRAC_ONE) / sample_rate;
         }
