@@ -29,7 +29,7 @@ fate-eac3-4: CMP = oneoff
 fate-eac3-4: REF = $(SAMPLES)/eac3/serenity_english_5.1_1536_small.pcm
 
 FATE_AC3 += fate-ac3-encode
-fate-ac3-encode: CMD = enc_dec_pcm ac3 s16le -c:a ac3 -b:a 128k
+fate-ac3-encode: CMD = enc_dec_pcm ac3 wav s16le $(REF) -c:a ac3 -b:a 128k
 fate-ac3-encode: CMP = stddev
 fate-ac3-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
 fate-ac3-encode: CMP_SHIFT = -1024
@@ -37,7 +37,7 @@ fate-ac3-encode: CMP_TARGET = 399.62
 fate-ac3-encode: SIZE_TOLERANCE = 488
 
 FATE_AC3 += fate-eac3-encode
-fate-eac3-encode: CMD = enc_dec_pcm eac3 s16le -c:a eac3 -b:a 128k
+fate-eac3-encode: CMD = enc_dec_pcm eac3 wav s16le $(REF) -c:a eac3 -b:a 128k
 fate-eac3-encode: CMP = stddev
 fate-eac3-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
 fate-eac3-encode: CMP_SHIFT = -1024
