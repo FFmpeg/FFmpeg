@@ -29,6 +29,7 @@
 #include "avcodec.h"
 #include "audio_frame_queue.h"
 #include "internal.h"
+#include "libavutil/audioconvert.h"
 
 
 /* libfaac has an encoder delay of 1024 samples */
@@ -38,13 +39,6 @@ typedef struct FaacAudioContext {
     faacEncHandle faac_handle;
     AudioFrameQueue afq;
 } FaacAudioContext;
-
-static const int channel_maps[][6] = {
-    { 2, 0, 1 },          //< C L R
-    { 2, 0, 1, 3 },       //< C L R Cs
-    { 2, 0, 1, 3, 4 },    //< C L R Ls Rs
-    { 2, 0, 1, 4, 5, 3 }, //< C L R Ls Rs LFE
-};
 
 static av_cold int Faac_encode_close(AVCodecContext *avctx)
 {
@@ -61,6 +55,13 @@ static av_cold int Faac_encode_close(AVCodecContext *avctx)
 
     return 0;
 }
+
+static const int channel_maps[][6] = {
+    { 2, 0, 1 },          //< C L R
+    { 2, 0, 1, 3 },       //< C L R Cs
+    { 2, 0, 1, 3, 4 },    //< C L R Ls Rs
+    { 2, 0, 1, 4, 5, 3 }, //< C L R Ls Rs LFE
+};
 
 static av_cold int Faac_encode_init(AVCodecContext *avctx)
 {
@@ -184,8 +185,10 @@ static int Faac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     int num_samples  = frame ? frame->nb_samples : 0;
     void *samples    = frame ? frame->data[0]    : NULL;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, (7 + 768) * avctx->channels)))
+    if ((ret = ff_alloc_packet2(avctx, avpkt, (7 + 768) * avctx->channels))) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
         return ret;
+    }
 
     bytes_written = faacEncEncode(s->faac_handle, samples,
                                   num_samples * avctx->channels,
@@ -221,6 +224,16 @@ static const AVProfile profiles[] = {
     { FF_PROFILE_UNKNOWN },
 };
 
+static const uint64_t faac_channel_layouts[] = {
+    AV_CH_LAYOUT_MONO,
+    AV_CH_LAYOUT_STEREO,
+    AV_CH_LAYOUT_SURROUND,
+    AV_CH_LAYOUT_4POINT0,
+    AV_CH_LAYOUT_5POINT0_BACK,
+    AV_CH_LAYOUT_5POINT1_BACK,
+    0
+};
+
 AVCodec ff_libfaac_encoder = {
     .name           = "libfaac",
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -234,4 +247,5 @@ AVCodec ff_libfaac_encoder = {
                                                      AV_SAMPLE_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("libfaac AAC (Advanced Audio Codec)"),
     .profiles       = NULL_IF_CONFIG_SMALL(profiles),
+    .channel_layouts = faac_channel_layouts,
 };

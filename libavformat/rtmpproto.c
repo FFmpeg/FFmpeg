@@ -28,6 +28,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/lfg.h"
+#include "libavutil/opt.h"
 #include "libavutil/sha.h"
 #include "avformat.h"
 #include "internal.h"
@@ -40,6 +41,9 @@
 #include "url.h"
 
 //#define DEBUG
+
+#define APP_MAX_LENGTH 128
+#define PLAYPATH_MAX_LENGTH 256
 
 /** RTMP protocol handler state */
 typedef enum {
@@ -56,12 +60,13 @@ typedef enum {
 
 /** protocol handler context */
 typedef struct RTMPContext {
+    const AVClass *class;
     URLContext*   stream;                     ///< TCP stream used in interactions with RTMP server
     RTMPPacket    prev_pkt[2][RTMP_CHANNELS]; ///< packet history used when reading and sending packets
     int           chunk_size;                 ///< size of the chunks RTMP packets are divided into
     int           is_input;                   ///< input/output flag
-    char          playpath[256];              ///< path to filename to play (with possible "mp4:" prefix)
-    char          app[128];                   ///< application
+    char          *playpath;                  ///< stream identifier to play (with possible "mp4:" prefix)
+    char          *app;                       ///< name of application
     ClientState   state;                      ///< current state
     int           main_channel_id;            ///< an additional channel ID which is used for some invocations
     uint8_t*      flv_data;                   ///< buffer with data for demuxer
@@ -822,6 +827,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
 {
     RTMPContext *rt = s->priv_data;
     char proto[8], hostname[256], path[1024], *fname;
+    char *old_app;
     uint8_t buf[2048];
     int port;
     int ret;
@@ -847,6 +853,16 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
 
     rt->chunk_size = 128;
     rt->state = STATE_HANDSHAKED;
+
+    // Keep the application name when it has been defined by the user.
+    old_app = rt->app;
+
+    rt->app = av_malloc(APP_MAX_LENGTH);
+    if (!rt->app) {
+        rtmp_close(s);
+        return AVERROR(ENOMEM);
+    }
+
     //extract "app" part from path
     if (!strncmp(path, "/ondemand/", 10)) {
         fname = path + 10;
@@ -868,14 +884,29 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
             }
         }
     }
-    if (!strchr(fname, ':') &&
-        (!strcmp(fname + strlen(fname) - 4, ".f4v") ||
-         !strcmp(fname + strlen(fname) - 4, ".mp4"))) {
-        memcpy(rt->playpath, "mp4:", 5);
-    } else {
-        rt->playpath[0] = 0;
+
+    if (old_app) {
+        // The name of application has been defined by the user, override it.
+        av_free(rt->app);
+        rt->app = old_app;
     }
-    strncat(rt->playpath, fname, sizeof(rt->playpath) - 5);
+
+    if (!rt->playpath) {
+        rt->playpath = av_malloc(PLAYPATH_MAX_LENGTH);
+        if (!rt->playpath) {
+            rtmp_close(s);
+            return AVERROR(ENOMEM);
+        }
+
+        if (!strchr(fname, ':') &&
+            (!strcmp(fname + strlen(fname) - 4, ".f4v") ||
+             !strcmp(fname + strlen(fname) - 4, ".mp4"))) {
+            memcpy(rt->playpath, "mp4:", 5);
+        } else {
+            rt->playpath[0] = 0;
+        }
+        strncat(rt->playpath, fname, PLAYPATH_MAX_LENGTH - 5);
+    }
 
     rt->client_report_size = 1048576;
     rt->bytes_read = 0;
@@ -1013,6 +1044,23 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
     return size;
 }
 
+#define OFFSET(x) offsetof(RTMPContext, x)
+#define DEC AV_OPT_FLAG_DECODING_PARAM
+#define ENC AV_OPT_FLAG_ENCODING_PARAM
+
+static const AVOption rtmp_options[] = {
+    {"rtmp_app", "Name of application to connect to on the RTMP server", OFFSET(app), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+    {"rtmp_playpath", "Stream identifier to play or to publish", OFFSET(playpath), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+    { NULL },
+};
+
+static const AVClass rtmp_class = {
+    .class_name = "rtmp",
+    .item_name  = av_default_item_name,
+    .option     = rtmp_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 URLProtocol ff_rtmp_protocol = {
     .name           = "rtmp",
     .url_open       = rtmp_open,
@@ -1021,4 +1069,5 @@ URLProtocol ff_rtmp_protocol = {
     .url_close      = rtmp_close,
     .priv_data_size = sizeof(RTMPContext),
     .flags          = URL_PROTOCOL_FLAG_NETWORK,
+    .priv_data_class= &rtmp_class,
 };

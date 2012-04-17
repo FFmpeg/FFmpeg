@@ -112,6 +112,15 @@ enum OCStatus {
     OC_LOCKED,      ///< Output configuration locked in place
 };
 
+typedef struct {
+    MPEG4AudioConfig m4ac;
+    uint8_t layout_map[MAX_ELEM_ID*4][3];
+    int layout_map_tags;
+    int channels;
+    uint64_t channel_layout;
+    enum OCStatus status;
+} OutputConfiguration;
+
 /**
  * Predictor State
  */
@@ -254,8 +263,6 @@ typedef struct {
     AVCodecContext *avctx;
     AVFrame frame;
 
-    MPEG4AudioConfig m4ac;
-
     int is_saved;                 ///< Set if elements have stored overlap from previous frame.
     DynamicRangeControl che_drc;
 
@@ -263,8 +270,6 @@ typedef struct {
      * @name Channel element related data
      * @{
      */
-    uint8_t layout_map[MAX_ELEM_ID*4][3];
-    int layout_map_tags;
     ChannelElement          *che[4][MAX_ELEM_ID];
     ChannelElement  *tag_che_map[4][MAX_ELEM_ID];
     int tags_mapped;
@@ -299,7 +304,7 @@ typedef struct {
 
     DECLARE_ALIGNED(32, float, temp)[128];
 
-    enum OCStatus output_configured;
+    OutputConfiguration oc[2];
     int warned_num_aac_frames;
 } AACContext;
 
