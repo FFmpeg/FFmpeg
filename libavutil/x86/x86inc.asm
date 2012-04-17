@@ -60,19 +60,38 @@
 ; and x264's strides are all positive), but is not guaranteed by the ABI.
 
 ; Name of the .rodata section.
-; Kludge: Something on OS X fails to align .rodata even given an align attribute,
-; so use a different read-only section.
 %macro SECTION_RODATA 0-1 16
-    %ifidn __OUTPUT_FORMAT__,macho64
-        SECTION .text align=%1
-    %elifidn __OUTPUT_FORMAT__,macho
-        SECTION .text align=%1
-        fakegot:
-    %elifidn __OUTPUT_FORMAT__,aout
+    ; Kludge: Something on OS X fails to align .rodata even given an align
+    ; attribute, so use a different read-only section. This has been fixed in
+    ; yasm 0.8.0 and nasm 2.6.
+    %ifdef __YASM_VERSION_ID__
+        %if __YASM_VERSION_ID__ < 00080000h
+            %define NEED_MACHO_RODATA_KLUDGE
+        %endif
+    %elifdef __NASM_VERSION_ID__
+        %if __NASM_VERSION_ID__ < 02060000h
+            %define NEED_MACHO_RODATA_KLUDGE
+        %endif
+    %endif
+
+    %ifidn __OUTPUT_FORMAT__,aout
         section .text
     %else
-        SECTION .rodata align=%1
+        %ifndef NEED_MACHO_RODATA_KLUDGE
+            SECTION .rodata align=%1
+        %else
+            %ifidn __OUTPUT_FORMAT__,macho64
+                SECTION .text align=%1
+            %elifidn __OUTPUT_FORMAT__,macho
+                SECTION .text align=%1
+                fakegot:
+            %else
+                SECTION .rodata align=%1
+            %endif
+        %endif
     %endif
+
+    %undef NEED_MACHO_RODATA_KLUDGE
 %endmacro
 
 ; aout does not support align=
