@@ -667,11 +667,11 @@ static void filter_release_buffer(AVFilterBuffer *fb)
     unref_buffer(buf->ist, buf);
 }
 
-static void choose_pixel_fmt(AVStream *st, AVCodec *codec)
+static enum PixelFormat choose_pixel_fmt(AVStream *st, AVCodec *codec, enum PixelFormat target)
 {
     if (codec && codec->pix_fmts) {
         const enum PixelFormat *p = codec->pix_fmts;
-        int has_alpha= av_pix_fmt_descriptors[st->codec->pix_fmt].nb_components % 2 == 0;
+        int has_alpha= av_pix_fmt_descriptors[target].nb_components % 2 == 0;
         enum PixelFormat best= PIX_FMT_NONE;
         if (st->codec->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL) {
             if (st->codec->codec_id == CODEC_ID_MJPEG) {
@@ -682,20 +682,21 @@ static void choose_pixel_fmt(AVStream *st, AVCodec *codec)
             }
         }
         for (; *p != PIX_FMT_NONE; p++) {
-            best= avcodec_find_best_pix_fmt2(best, *p, st->codec->pix_fmt, has_alpha, NULL);
-            if (*p == st->codec->pix_fmt)
+            best= avcodec_find_best_pix_fmt2(best, *p, target, has_alpha, NULL);
+            if (*p == target)
                 break;
         }
         if (*p == PIX_FMT_NONE) {
-            if (st->codec->pix_fmt != PIX_FMT_NONE)
+            if (target != PIX_FMT_NONE)
                 av_log(NULL, AV_LOG_WARNING,
                        "Incompatible pixel format '%s' for codec '%s', auto-selecting format '%s'\n",
-                       av_pix_fmt_descriptors[st->codec->pix_fmt].name,
+                       av_pix_fmt_descriptors[target].name,
                        codec->name,
                        av_pix_fmt_descriptors[best].name);
-            st->codec->pix_fmt = best;
+            return best;
         }
     }
+    return target;
 }
 
 static const enum PixelFormat *choose_pixel_fmts(OutputStream *ost)
@@ -4789,7 +4790,7 @@ static int read_ffserver_streams(OptionsContext *o, AVFormatContext *s, const ch
         if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO && !ost->stream_copy)
             choose_sample_fmt(st, codec);
         else if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO && !ost->stream_copy)
-            choose_pixel_fmt(st, codec);
+            choose_pixel_fmt(st, codec, st->codec->pix_fmt);
     }
 
     avformat_close_input(&ic);
