@@ -704,9 +704,17 @@ static const enum PixelFormat *choose_pixel_fmts(OutputStream *ost)
     if (ost->st->codec->pix_fmt != PIX_FMT_NONE) {
         ost->pix_fmts[0] = choose_pixel_fmt(ost->st, ost->enc, ost->st->codec->pix_fmt);
         return ost->pix_fmts;
-    } else if (ost->enc->pix_fmts)
+    } else if (ost->enc->pix_fmts) {
+        if (ost->st->codec->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL) {
+            if (ost->st->codec->codec_id == CODEC_ID_MJPEG) {
+                return (const enum PixelFormat[]) { PIX_FMT_YUVJ420P, PIX_FMT_YUVJ422P, PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_NONE };
+            } else if (ost->st->codec->codec_id == CODEC_ID_LJPEG) {
+                return (const enum PixelFormat[]) { PIX_FMT_YUVJ420P, PIX_FMT_YUVJ422P, PIX_FMT_YUVJ444P, PIX_FMT_YUV420P,
+                                                    PIX_FMT_YUV422P, PIX_FMT_YUV444P, PIX_FMT_BGRA, PIX_FMT_NONE };
+            }
+        }
         return ost->enc->pix_fmts;
-    else
+    } else
         return NULL;
 }
 
