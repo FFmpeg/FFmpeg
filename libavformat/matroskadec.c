@@ -1550,9 +1550,11 @@ static int matroska_read_header(AVFormatContext *s)
                       255);
             if (st->codec->codec_id != CODEC_ID_H264)
             st->need_parsing = AVSTREAM_PARSE_HEADERS;
-            if (track->default_duration)
-                st->r_frame_rate   =
-                st->avg_frame_rate = av_d2q(1000000000.0/track->default_duration, INT_MAX);
+            if (track->default_duration) {
+                av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den,
+                          1000000000, track->default_duration, 30000);
+                st->avg_frame_rate = st->r_frame_rate;
+            }
         } else if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
             st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
             st->codec->sample_rate = track->audio.out_samplerate;
