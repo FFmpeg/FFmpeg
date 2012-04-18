@@ -2975,6 +2975,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
         flush_dpb(s->avctx);
         ff_MPV_common_end(s);
         h->list_count = 0;
+        h->current_slice = 0;
     }
     if (!s->context_initialized) {
         if (h != h0) {
