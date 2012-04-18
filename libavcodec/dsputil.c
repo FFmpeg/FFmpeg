@@ -131,9 +131,6 @@ void ff_init_scantable(uint8_t *permutation, ScanTable *st, const uint8_t *src_s
         int j;
         j = src_scantable[i];
         st->permutated[i] = permutation[j];
-#if ARCH_PPC
-        st->inverse[j] = i;
-#endif
     }
 
     end=-1;

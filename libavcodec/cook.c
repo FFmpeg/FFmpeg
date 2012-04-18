@@ -280,8 +280,8 @@ static av_cold void init_cplscales_table(COOKContext *q)
 static inline int decode_bytes(const uint8_t *inbuffer, uint8_t *out, int bytes)
 {
     static const uint32_t tab[4] = {
-        AV_BE2NE32C(0x37c511f2U), AV_BE2NE32C(0xf237c511U),
-        AV_BE2NE32C(0x11f237c5U), AV_BE2NE32C(0xc511f237U),
+        AV_BE2NE32C(0x37c511f2u), AV_BE2NE32C(0xf237c511u),
+        AV_BE2NE32C(0x11f237c5u), AV_BE2NE32C(0xc511f237u),
     };
     int i, off;
     uint32_t c;

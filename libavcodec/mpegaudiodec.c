@@ -1733,6 +1733,10 @@ static int decode_frame_adu(AVCodecContext *avctx, void *data,
     s->frame_size = len;
 
     out_size = mp_decode_frame(s, NULL, buf, buf_size);
+    if (out_size < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Error while decoding MPEG audio frame.\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     *got_frame_ptr   = 1;
     *(AVFrame *)data = s->frame;

@@ -1757,8 +1757,11 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
     codec_type = av_get_media_type_string(enc->codec_type);
     codec_name = avcodec_get_name(enc->codec_id);
     if (enc->profile != FF_PROFILE_UNKNOWN) {
-        p = encode ? avcodec_find_encoder(enc->codec_id) :
-                     avcodec_find_decoder(enc->codec_id);
+        if (enc->codec)
+            p = enc->codec;
+        else
+            p = encode ? avcodec_find_encoder(enc->codec_id) :
+                        avcodec_find_decoder(enc->codec_id);
         if (p)
             profile = av_get_profile_name(p, enc->profile);
     }

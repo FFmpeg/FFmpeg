@@ -197,10 +197,6 @@ typedef struct ScanTable{
     const uint8_t *scantable;
     uint8_t permutated[64];
     uint8_t raster_end[64];
-#if ARCH_PPC
-                /** Used by dct_quantize_altivec to find last-non-zero */
-    DECLARE_ALIGNED(16, uint8_t, inverse)[64];
-#endif
 } ScanTable;
 
 void ff_init_scantable(uint8_t *, ScanTable *st, const uint8_t *src_scantable);
