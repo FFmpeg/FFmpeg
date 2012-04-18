@@ -3292,6 +3292,14 @@ const AVClass *avcodec_get_class(void);
 const AVClass *avcodec_get_frame_class(void);
 
 /**
+ * Get the AVClass for AVSubtitleRect. It can be used in combination with
+ * AV_OPT_SEARCH_FAKE_OBJ for examining options.
+ *
+ * @see av_opt_find().
+ */
+const AVClass *avcodec_get_subtitle_rect_class(void);
+
+/**
  * Copy the settings of the source AVCodecContext into the destination
  * AVCodecContext. The resulting destination codec context will be
  * unopened, i.e. you are required to call avcodec_open2() before you
