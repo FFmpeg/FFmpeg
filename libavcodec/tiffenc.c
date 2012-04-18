@@ -252,23 +252,28 @@ static int encode_frame(AVCodecContext * avctx, AVPacket *pkt,
         bpp_tab[3] = 16;
         break;
     case PIX_FMT_RGBA:
+        avctx->bits_per_coded_sample =
         s->bpp = 32;
         s->photometric_interpretation = 2;
         break;
     case PIX_FMT_RGB24:
+        avctx->bits_per_coded_sample =
         s->bpp = 24;
         s->photometric_interpretation = 2;
         break;
     case PIX_FMT_GRAY8:
+        avctx->bits_per_coded_sample = 0x28;
         s->bpp = 8;
         s->photometric_interpretation = 1;
         break;
     case PIX_FMT_PAL8:
+        avctx->bits_per_coded_sample =
         s->bpp = 8;
         s->photometric_interpretation = 3;
         break;
     case PIX_FMT_MONOBLACK:
     case PIX_FMT_MONOWHITE:
+        avctx->bits_per_coded_sample =
         s->bpp = 1;
         s->photometric_interpretation = avctx->pix_fmt == PIX_FMT_MONOBLACK;
         bpp_tab[0] = 1;
