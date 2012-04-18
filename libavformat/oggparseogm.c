@@ -89,7 +89,7 @@ ogm_header(AVFormatContext *s, int idx)
             st->codec->channels = bytestream_get_le16(&p);
             p += 2;                 /* block_align */
             st->codec->bit_rate = bytestream_get_le32(&p) * 8;
-            st->codec->sample_rate = spu * 10000000 / time_unit;
+            st->codec->sample_rate = time_unit ? spu * 10000000 / time_unit : 0;
             avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
             if (size >= 56 && st->codec->codec_id == CODEC_ID_AAC) {
                 p += 4;
