@@ -400,6 +400,8 @@ static int Stagefright_decode_frame(AVCodecContext *avctx, void *data,
                 frame->size = orig_size;
             }
             memcpy(frame->buffer, ptr, orig_size);
+            if (avpkt == &pkt)
+                av_free(avpkt->data);
 
             frame->time = ++s->frame_index;
             (*s->ts_map)[s->frame_index].pts = avpkt->pts;
