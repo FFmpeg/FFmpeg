@@ -48,8 +48,7 @@ struct Frame {
     int64_t time;
     int key;
     uint8_t *buffer;
-    MediaBuffer* mbuffer;
-    int32_t w, h;
+    AVFrame *vframe;
 };
 
 struct TimeStamp {
@@ -74,7 +73,7 @@ struct StagefrightContext {
     bool source_done;
     volatile sig_atomic_t thread_started, thread_exited, stop_decode;
 
-    AVFrame ret_frame;
+    AVFrame *prev_frame;
     std::map<int64_t, TimeStamp> *ts_map;
     int64_t frame_index;
 
@@ -156,7 +155,13 @@ void* decode_thread(void *arg)
     StagefrightContext *s = (StagefrightContext*)avctx->priv_data;
     Frame* frame;
     MediaBuffer *buffer;
+    int32_t w, h;
     int decode_done = 0;
+    int ret;
+    int src_linesize[3];
+    const uint8_t *src_data[3];
+    int64_t out_frame_index = 0;
+
     do {
         buffer = NULL;
         frame = (Frame*)av_mallocz(sizeof(Frame));
@@ -165,14 +170,63 @@ void* decode_thread(void *arg)
             frame->status = AVERROR(ENOMEM);
             decode_done   = 1;
             s->end_frame  = NULL;
-        } else {
-            frame->status = (*s->decoder)->read(&buffer);
-            if (frame->status == OK) {
-                sp<MetaData> outFormat = (*s->decoder)->getFormat();
-                outFormat->findInt32(kKeyWidth , &frame->w);
-                outFormat->findInt32(kKeyHeight, &frame->h);
-                frame->size    = buffer->range_length();
-                frame->mbuffer = buffer;
+            goto push_frame;
+        }
+        frame->status = (*s->decoder)->read(&buffer);
+        if (frame->status == OK) {
+            sp<MetaData> outFormat = (*s->decoder)->getFormat();
+            outFormat->findInt32(kKeyWidth , &w);
+            outFormat->findInt32(kKeyHeight, &h);
+            frame->vframe = (AVFrame*)av_mallocz(sizeof(AVFrame));
+            if (!frame->vframe) {
+                frame->status = AVERROR(ENOMEM);
+                decode_done   = 1;
+                buffer->release();
+                goto push_frame;
+            }
+            ret = avctx->get_buffer(avctx, frame->vframe);
+            if (ret < 0) {
+                av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+                frame->status = ret;
+                decode_done   = 1;
+                buffer->release();
+                goto push_frame;
+            }
+
+            // The OMX.SEC decoder doesn't signal the modified width/height
+            if (s->decoder_component && !strncmp(s->decoder_component, "OMX.SEC", 7) &&
+                (w & 15 || h & 15)) {
+                if (((w + 15)&~15) * ((h + 15)&~15) * 3/2 == buffer->range_length()) {
+                    w = (w + 15)&~15;
+                    h = (h + 15)&~15;
+                }
+            }
+
+            if (!avctx->width || !avctx->height || avctx->width > w || avctx->height > h) {
+                avctx->width  = w;
+                avctx->height = h;
+            }
+
+            src_linesize[0] = w;
+            if (avctx->pix_fmt == PIX_FMT_YUV420P)
+                src_linesize[1] = src_linesize[2] = w/2;
+            else if (avctx->pix_fmt == PIX_FMT_NV21)
+                src_linesize[1] = w;
+
+            src_data[0] = (uint8_t*)buffer->data();
+            src_data[1] = src_data[0] + src_linesize[0] * h;
+            src_data[2] = src_data[1] + src_linesize[1] * h/2;
+            av_image_copy(frame->vframe->data, frame->vframe->linesize,
+                          src_data, src_linesize,
+                          avctx->pix_fmt, avctx->width, avctx->height);
+
+            buffer->meta_data()->findInt64(kKeyTime, &out_frame_index);
+            if (out_frame_index && s->ts_map->count(out_frame_index) > 0) {
+                frame->vframe->pts = (*s->ts_map)[out_frame_index].pts;
+                frame->vframe->reordered_opaque = (*s->ts_map)[out_frame_index].reordered_opaque;
+                s->ts_map->erase(out_frame_index);
+            }
+            buffer->release();
             } else if (frame->status == INFO_FORMAT_CHANGED) {
                 if (buffer)
                     buffer->release();
@@ -181,7 +235,7 @@ void* decode_thread(void *arg)
             } else {
                 decode_done = 1;
             }
-        }
+push_frame:
         while (true) {
             pthread_mutex_lock(&s->out_mutex);
             if (s->out_queue->size() >= 10) {
@@ -301,17 +355,10 @@ static int Stagefright_decode_frame(AVCodecContext *avctx, void *data,
 {
     StagefrightContext *s = (StagefrightContext*)avctx->priv_data;
     Frame *frame;
-    MediaBuffer *mbuffer;
     status_t status;
-    size_t size;
-    uint8_t *buf;
-    const uint8_t *src_data[3];
-    int w, h;
-    int src_linesize[3];
     int orig_size = avpkt->size;
     AVPacket pkt = *avpkt;
-    int64_t out_frame_index = 0;
-    int ret;
+    AVFrame *ret_frame;
 
     if (!s->thread_started) {
         pthread_create(&s->decode_thread_id, NULL, &decode_thread, avctx);
@@ -392,11 +439,8 @@ static int Stagefright_decode_frame(AVCodecContext *avctx, void *data,
     s->out_queue->erase(s->out_queue->begin());
     pthread_mutex_unlock(&s->out_mutex);
 
-    mbuffer = frame->mbuffer;
+    ret_frame = frame->vframe;
     status  = frame->status;
-    size    = frame->size;
-    w       = frame->w;
-    h       = frame->h;
     av_freep(&frame);
 
     if (status == ERROR_END_OF_STREAM)
@@ -408,52 +452,15 @@ static int Stagefright_decode_frame(AVCodecContext *avctx, void *data,
         return -1;
     }
 
-    // The OMX.SEC decoder doesn't signal the modified width/height
-    if (s->decoder_component && !strncmp(s->decoder_component, "OMX.SEC", 7) &&
-        (w & 15 || h & 15)) {
-        if (((w + 15)&~15) * ((h + 15)&~15) * 3/2 == size) {
-            w = (w + 15)&~15;
-            h = (h + 15)&~15;
-        }
+    if (s->prev_frame) {
+        avctx->release_buffer(avctx, s->prev_frame);
+        av_freep(&s->prev_frame);
     }
+    s->prev_frame = ret_frame;
 
-    if (!avctx->width || !avctx->height || avctx->width > w || avctx->height > h) {
-        avctx->width  = w;
-        avctx->height = h;
-    }
-
-    ret = avctx->reget_buffer(avctx, &s->ret_frame);
-    if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR, "reget buffer() failed\n");
-        goto end;
-    }
-
-    src_linesize[0] = w;
-    if (avctx->pix_fmt == PIX_FMT_YUV420P)
-        src_linesize[1] = src_linesize[2] = w/2;
-    else if (avctx->pix_fmt == PIX_FMT_NV21)
-        src_linesize[1] = w;
-
-    buf = (uint8_t*)mbuffer->data();
-    src_data[0] = buf;
-    src_data[1] = buf + src_linesize[0] * h;
-    src_data[2] = src_data[1] + src_linesize[1] * h/2;
-    av_image_copy(s->ret_frame.data, s->ret_frame.linesize,
-                  src_data, src_linesize,
-                  avctx->pix_fmt, avctx->width, avctx->height);
-
-    mbuffer->meta_data()->findInt64(kKeyTime, &out_frame_index);
-    if (out_frame_index && s->ts_map->count(out_frame_index) > 0) {
-        s->ret_frame.pts = (*s->ts_map)[out_frame_index].pts;
-        s->ret_frame.reordered_opaque = (*s->ts_map)[out_frame_index].reordered_opaque;
-        s->ts_map->erase(out_frame_index);
-    }
     *data_size = sizeof(AVFrame);
-    *(AVFrame*)data = s->ret_frame;
-    ret = orig_size;
-end:
-    mbuffer->release();
-    return ret;
+    *(AVFrame*)data = *ret_frame;
+    return orig_size;
 }
 
 static av_cold int Stagefright_close(AVCodecContext *avctx)
@@ -470,8 +477,10 @@ static av_cold int Stagefright_close(AVCodecContext *avctx)
             while (!s->out_queue->empty()) {
                 frame = *s->out_queue->begin();
                 s->out_queue->erase(s->out_queue->begin());
-                if (frame->size)
-                    frame->mbuffer->release();
+                if (frame->vframe) {
+                    avctx->release_buffer(avctx, frame->vframe);
+                    av_freep(&frame->vframe);
+                }
                 av_freep(&frame);
             }
             pthread_mutex_unlock(&s->out_mutex);
@@ -501,8 +510,10 @@ static av_cold int Stagefright_close(AVCodecContext *avctx)
 
         pthread_join(s->decode_thread_id, NULL);
 
-        if (s->ret_frame.data[0])
-            avctx->release_buffer(avctx, &s->ret_frame);
+        if (s->prev_frame) {
+            avctx->release_buffer(avctx, s->prev_frame);
+            av_freep(&s->prev_frame);
+        }
 
         s->thread_started = false;
     }
@@ -518,8 +529,10 @@ static av_cold int Stagefright_close(AVCodecContext *avctx)
     while (!s->out_queue->empty()) {
         frame = *s->out_queue->begin();
         s->out_queue->erase(s->out_queue->begin());
-        if (frame->size)
-            frame->mbuffer->release();
+        if (frame->vframe) {
+            avctx->release_buffer(avctx, frame->vframe);
+            av_freep(&frame->vframe);
+        }
         av_freep(&frame);
     }
 
