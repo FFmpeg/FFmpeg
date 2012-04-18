@@ -153,6 +153,7 @@ void* decode_thread(void *arg)
 {
     AVCodecContext *avctx = (AVCodecContext*)arg;
     StagefrightContext *s = (StagefrightContext*)avctx->priv_data;
+    const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[avctx->pix_fmt];
     Frame* frame;
     MediaBuffer *buffer;
     int32_t w, h;
@@ -207,15 +208,13 @@ void* decode_thread(void *arg)
                 avctx->height = h;
             }
 
-            src_linesize[0] = w;
-            if (avctx->pix_fmt == PIX_FMT_YUV420P)
-                src_linesize[1] = src_linesize[2] = w/2;
-            else if (avctx->pix_fmt == PIX_FMT_NV21)
-                src_linesize[1] = w;
+            src_linesize[0] = av_image_get_linesize(avctx->pix_fmt, w, 0);
+            src_linesize[1] = av_image_get_linesize(avctx->pix_fmt, w, 1);
+            src_linesize[2] = av_image_get_linesize(avctx->pix_fmt, w, 2);
 
             src_data[0] = (uint8_t*)buffer->data();
             src_data[1] = src_data[0] + src_linesize[0] * h;
-            src_data[2] = src_data[1] + src_linesize[1] * h/2;
+            src_data[2] = src_data[1] + src_linesize[1] * -(-h>>pix_desc->log2_chroma_h);
             av_image_copy(frame->vframe->data, frame->vframe->linesize,
                           src_data, src_linesize,
                           avctx->pix_fmt, avctx->width, avctx->height);
@@ -327,6 +326,10 @@ static av_cold int Stagefright_init(AVCodecContext *avctx)
     if (colorFormat == OMX_QCOM_COLOR_FormatYVU420SemiPlanar ||
         colorFormat == OMX_COLOR_FormatYUV420SemiPlanar)
         avctx->pix_fmt = PIX_FMT_NV21;
+    else if (colorFormat == OMX_COLOR_FormatYCbYCr)
+        avctx->pix_fmt = PIX_FMT_YUYV422;
+    else if (colorFormat == OMX_COLOR_FormatCbYCrY)
+        avctx->pix_fmt = PIX_FMT_UYVY422;
     else
         avctx->pix_fmt = PIX_FMT_YUV420P;
 
