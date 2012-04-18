@@ -856,7 +856,7 @@ static int dirac_unpack_prediction_parameters(DiracContext *s)
     /*[DIRAC_STD] 11.2.4 motion_data_dimensions()
       Calculated in function dirac_unpack_block_motion_data */
 
-    if (s->plane[0].xbsep < s->plane[0].xblen/2 || s->plane[0].ybsep < s->plane[0].yblen/2) {
+    if (!s->plane[0].xbsep || !s->plane[0].ybsep || s->plane[0].xbsep < s->plane[0].xblen/2 || s->plane[0].ybsep < s->plane[0].yblen/2) {
         av_log(s->avctx, AV_LOG_ERROR, "Block separation too small\n");
         return -1;
     }
