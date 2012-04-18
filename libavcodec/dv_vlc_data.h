@@ -36,7 +36,7 @@
  * between (run, level) and vlc is not 1-1. So you have to watch out for that
  * when building misc. tables. E.g. (1, 0) can be either 0x7cf or 0x1f82.
  */
-static const uint16_t dv_vlc_bits[409] = {
+static const uint16_t dv_vlc_bits[NB_DV_VLC] = {
  0x0000, 0x0002, 0x0007, 0x0008, 0x0009, 0x0014, 0x0015, 0x0016,
  0x0017, 0x0030, 0x0031, 0x0032, 0x0033, 0x0068, 0x0069, 0x006a,
  0x006b, 0x006c, 0x006d, 0x006e, 0x006f, 0x00e0, 0x00e1, 0x00e2,
@@ -91,7 +91,7 @@ static const uint16_t dv_vlc_bits[409] = {
  0x0006,
 };
 
-static const uint8_t dv_vlc_len[409] = {
+static const uint8_t dv_vlc_len[NB_DV_VLC] = {
   2,  3,  4,  4,  4,  5,  5,  5,
   5,  6,  6,  6,  6,  7,  7,  7,
   7,  7,  7,  7,  7,  8,  8,  8,
@@ -146,7 +146,7 @@ static const uint8_t dv_vlc_len[409] = {
   4,
 };
 
-static const uint8_t dv_vlc_run[409] = {
+static const uint8_t dv_vlc_run[NB_DV_VLC] = {
   0,  0,  1,  0,  0,  2,  1,  0,
   0,  3,  4,  0,  0,  5,  6,  2,
   1,  1,  0,  0,  0,  7,  8,  9,
@@ -201,7 +201,7 @@ static const uint8_t dv_vlc_run[409] = {
 127,
 };
 
-static const uint8_t dv_vlc_level[409] = {
+static const uint8_t dv_vlc_level[NB_DV_VLC] = {
    1,   2,   1,   3,   4,   1,   2,   5,
    6,   1,   1,   7,   8,   1,   1,   2,
    3,   4,   9,  10,  11,   1,   1,   1,
