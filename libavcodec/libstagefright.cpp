@@ -31,6 +31,7 @@
 #include <media/stagefright/OMXCodec.h>
 #include <utils/List.h>
 #include <new>
+#include <map>
 
 extern "C" {
 #include "avcodec.h"
@@ -51,6 +52,11 @@ struct Frame {
     int32_t w, h;
 };
 
+struct TimeStamp {
+    int64_t pts;
+    int64_t reordered_opaque;
+};
+
 class CustomSource;
 
 struct StagefrightContext {
@@ -69,6 +75,8 @@ struct StagefrightContext {
     volatile sig_atomic_t thread_started, thread_exited, stop_decode;
 
     AVFrame ret_frame;
+    std::map<int64_t, TimeStamp> *ts_map;
+    int64_t frame_index;
 
     uint8_t *dummy_buf;
     int dummy_bufsize;
@@ -234,10 +242,11 @@ static av_cold int Stagefright_init(AVCodecContext *avctx)
     *s->source   = new CustomSource(avctx, meta);
     s->in_queue  = new List<Frame*>;
     s->out_queue = new List<Frame*>;
+    s->ts_map    = new std::map<int64_t, TimeStamp>;
     s->client    = new OMXClient;
     s->end_frame = (Frame*)av_mallocz(sizeof(Frame));
     if (s->source == NULL || !s->in_queue || !s->out_queue || !s->client ||
-        !s->end_frame) {
+        !s->ts_map || !s->end_frame) {
         ret = AVERROR(ENOMEM);
         goto fail;
     }
@@ -282,6 +291,7 @@ fail:
     av_freep(&s->end_frame);
     delete s->in_queue;
     delete s->out_queue;
+    delete s->ts_map;
     delete s->client;
     return ret;
 }
@@ -300,6 +310,7 @@ static int Stagefright_decode_frame(AVCodecContext *avctx, void *data,
     int src_linesize[3];
     int orig_size = avpkt->size;
     AVPacket pkt = *avpkt;
+    int64_t out_frame_index = 0;
     int ret;
 
     if (!s->thread_started) {
@@ -326,10 +337,6 @@ static int Stagefright_decode_frame(AVCodecContext *avctx, void *data,
         if (avpkt->data) {
             frame->status  = OK;
             frame->size    = avpkt->size;
-            // Stagefright can't handle negative timestamps -
-            // if needed, work around this by offsetting them manually?
-            if (avpkt->pts >= 0)
-                frame->time    = avpkt->pts;
             frame->key     = avpkt->flags & AV_PKT_FLAG_KEY ? 1 : 0;
             frame->buffer  = (uint8_t*)av_malloc(avpkt->size);
             if (!frame->buffer) {
@@ -343,6 +350,10 @@ static int Stagefright_decode_frame(AVCodecContext *avctx, void *data,
                 frame->size = orig_size;
             }
             memcpy(frame->buffer, ptr, orig_size);
+
+            frame->time = ++s->frame_index;
+            (*s->ts_map)[s->frame_index].pts = avpkt->pts;
+            (*s->ts_map)[s->frame_index].reordered_opaque = avctx->reordered_opaque;
         } else {
             frame->status  = ERROR_END_OF_STREAM;
             s->source_done = true;
@@ -431,6 +442,12 @@ static int Stagefright_decode_frame(AVCodecContext *avctx, void *data,
                   src_data, src_linesize,
                   avctx->pix_fmt, avctx->width, avctx->height);
 
+    mbuffer->meta_data()->findInt64(kKeyTime, &out_frame_index);
+    if (out_frame_index && s->ts_map->count(out_frame_index) > 0) {
+        s->ret_frame.pts = (*s->ts_map)[out_frame_index].pts;
+        s->ret_frame.reordered_opaque = (*s->ts_map)[out_frame_index].reordered_opaque;
+        s->ts_map->erase(out_frame_index);
+    }
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = s->ret_frame;
     ret = orig_size;
@@ -523,6 +540,7 @@ static av_cold int Stagefright_close(AVCodecContext *avctx)
 
     delete s->in_queue;
     delete s->out_queue;
+    delete s->ts_map;
     delete s->client;
     delete s->decoder;
     delete s->source;

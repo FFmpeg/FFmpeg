@@ -28,6 +28,7 @@ TOOLCHAIN=`echo $NDK/toolchains/arm-linux-androideabi-4.4.3/prebuilt/*-x86`
 export PATH=$TOOLCHAIN/bin:$PATH
 ANDROID_SOURCE=../android-source
 ANDROID_LIBS=../android-libs
+ABI="armeabi-v7a"
 
 rm -rf ../build/stagefright
 mkdir -p ../build/stagefright
@@ -40,12 +41,11 @@ FLAGS="$FLAGS --disable-avdevice --disable-decoder=h264 --disable-decoder=h264_v
 EXTRA_CFLAGS="-I$ANDROID_SOURCE/frameworks/base/include -I$ANDROID_SOURCE/system/core/include"
 EXTRA_CFLAGS="$EXTRA_CFLAGS -I$ANDROID_SOURCE/frameworks/base/media/libstagefright"
 EXTRA_CFLAGS="$EXTRA_CFLAGS -I$ANDROID_SOURCE/frameworks/base/include/media/stagefright/openmax"
-EXTRA_CFLAGS="$EXTRA_CFLAGS -I$NDK/sources/cxx-stl/system/include"
+EXTRA_CFLAGS="$EXTRA_CFLAGS -I$NDK/sources/cxx-stl/gnu-libstdc++/include -I$NDK/sources/cxx-stl/gnu-libstdc++/libs/$ABI/include"
 
 EXTRA_CFLAGS="$EXTRA_CFLAGS -march=armv7-a -mfloat-abi=softfp -mfpu=neon"
-EXTRA_LDFLAGS="-Wl,--fix-cortex-a8 -L$ANDROID_LIBS -Wl,-rpath-link,$ANDROID_LIBS"
+EXTRA_LDFLAGS="-Wl,--fix-cortex-a8 -L$ANDROID_LIBS -Wl,-rpath-link,$ANDROID_LIBS -L$NDK/sources/cxx-stl/gnu-libstdc++/libs/$ABI"
 EXTRA_CXXFLAGS="-Wno-multichar -fno-exceptions -fno-rtti"
-ABI="armeabi-v7a"
 DEST="$DEST/$ABI"
 FLAGS="$FLAGS --prefix=$DEST"
 
