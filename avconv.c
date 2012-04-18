@@ -2684,8 +2684,16 @@ static int transcode_init(void)
                 abort();
             }
         } else {
-            if (!ost->enc)
-                ost->enc = avcodec_find_encoder(ost->st->codec->codec_id);
+            if (!ost->enc) {
+                /* should only happen when a default codec is not present. */
+                snprintf(error, sizeof(error), "Automatic encoder selection "
+                         "failed for output stream #%d:%d. Default encoder for "
+                         "format %s is probably disabled. Please choose an "
+                         "encoder manually.\n", ost->file_index, ost->index,
+                         oc->oformat->name);
+                ret = AVERROR(EINVAL);
+                goto dump_format;
+            }
 
             if (ist)
                 ist->decoding_needed = 1;
@@ -2819,12 +2827,6 @@ static int transcode_init(void)
         if (ost->encoding_needed) {
             AVCodec      *codec = ost->enc;
             AVCodecContext *dec = NULL;
-            if (!codec) {
-                snprintf(error, sizeof(error), "Encoder (codec id %d) not found for output stream #%d:%d",
-                         ost->st->codec->codec_id, ost->file_index, ost->index);
-                ret = AVERROR(EINVAL);
-                goto dump_format;
-            }
 
             if ((ist = get_input_stream(ost)))
                 dec = ist->st->codec;
