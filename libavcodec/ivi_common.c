@@ -128,7 +128,7 @@ int ff_ivi_dec_huff_desc(GetBitContext *gb, int desc_coded, int which_tab,
                 new_huff.xbits[i] = get_bits(gb, 4);
 
             /* Have we got the same custom table? Rebuild if not. */
-            if (ff_ivi_huff_desc_cmp(&new_huff, &huff_tab->cust_desc)) {
+            if (ff_ivi_huff_desc_cmp(&new_huff, &huff_tab->cust_desc) || !huff_tab->cust_tab.table) {
                 ff_ivi_huff_desc_copy(&huff_tab->cust_desc, &new_huff);
 
                 if (huff_tab->cust_tab.table)
