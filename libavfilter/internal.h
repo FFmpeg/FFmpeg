@@ -65,6 +65,11 @@ int ff_avfilter_graph_config_links(AVFilterGraph *graphctx, AVClass *log_ctx);
  */
 int ff_avfilter_graph_config_formats(AVFilterGraph *graphctx, AVClass *log_ctx);
 
+/**
+ * Update the position of a link in the age heap.
+ */
+void ff_avfilter_graph_update_heap(AVFilterGraph *graph, AVFilterLink *link);
+
 /** default handler for freeing audio/video buffer when there are no references left */
 void ff_avfilter_default_free_buffer(AVFilterBuffer *buf);
 

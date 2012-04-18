@@ -33,6 +33,16 @@ typedef struct AVFilterGraph {
     AVFilterContext **filters;
 
     char *scale_sws_opts; ///< sws options to use for the auto-inserted scale filters
+
+    /**
+     * Private fields
+     *
+     * The following fields are for internal use only.
+     * Their type, offset, number and semantic can change without notice.
+     */
+
+    AVFilterLink **sink_links;
+    int sink_links_count;
 } AVFilterGraph;
 
 /**
@@ -220,5 +230,19 @@ int avfilter_graph_queue_command(AVFilterGraph *graph, const char *target, const
  *          the string must be freed using av_free
  */
 char *avfilter_graph_dump(AVFilterGraph *graph, const char *options);
+
+/**
+ * Request a frame on the oldest sink link.
+ *
+ * If the request returns AVERROR_EOF, try the next.
+ *
+ * Note that this function is not meant to be the sole scheduling mechanism
+ * of a filtergraph, only a convenience function to help drain a filtergraph
+ * in a balanced way under normal circumstances.
+ *
+ * @return  the return value of avfilter_request_frame,
+ *          or AVERROR_EOF of all links returned AVERROR_EOF.
+ */
+int avfilter_graph_request_oldest(AVFilterGraph *graph);
 
 #endif /* AVFILTER_AVFILTERGRAPH_H */

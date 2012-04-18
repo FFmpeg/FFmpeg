@@ -696,6 +696,23 @@ struct AVFilterLink {
      */
     struct AVFilterGraph *graph;
 
+    /**
+     * Current timestamp of the link, as defined by the most recent
+     * frame(s), in AV_TIME_BASE units.
+     */
+    int64_t current_pts;
+
+    /**
+     * Private fields
+     *
+     * The following fields are for internal use only.
+     * Their type, offset, number and semantic can change without notice.
+     */
+
+    /**
+     * Index in the age array.
+     */
+    int age_index;
 };
 
 /**
