@@ -96,13 +96,16 @@ static int targa_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     /* image descriptor byte: origin is always top-left, bits 0-3 specify alpha */
     pkt->data[17] = 0x20 | (avctx->pix_fmt == PIX_FMT_BGRA ? 8 : 0);
 
+    avctx->bits_per_coded_sample = av_get_bits_per_pixel(&av_pix_fmt_descriptors[avctx->pix_fmt]);
     switch(avctx->pix_fmt) {
     case PIX_FMT_GRAY8:
         pkt->data[2]  = TGA_BW;     /* uncompressed grayscale image */
+        avctx->bits_per_coded_sample = 0x28;
         pkt->data[16] = 8;          /* bpp */
         break;
     case PIX_FMT_RGB555LE:
         pkt->data[2]  = TGA_RGB;    /* uncompresses true-color image */
+        avctx->bits_per_coded_sample =
         pkt->data[16] = 16;         /* bpp */
         break;
     case PIX_FMT_BGR24:
