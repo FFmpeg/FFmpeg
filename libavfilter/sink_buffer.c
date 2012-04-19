@@ -126,6 +126,8 @@ int av_buffersink_get_buffer_ref(AVFilterContext *ctx,
 
     /* no picref available, fetch it from the filterchain */
     if (!av_fifo_size(buf->fifo)) {
+        if (flags & AV_BUFFERSINK_FLAG_NO_REQUEST)
+            return AVERROR(EAGAIN);
         if ((ret = avfilter_request_frame(inlink)) < 0)
             return ret;
     }
