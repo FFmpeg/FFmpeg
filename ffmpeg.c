@@ -2047,8 +2047,12 @@ static int poll_filters(void)
 {
     AVFilterBufferRef *picref;
     AVFrame *filtered_frame = NULL;
-    int i, ret;
+    int i, ret, ret_all;
+    unsigned nb_success, nb_eof;
 
+    while (1) {
+        /* Reap all buffers present in the buffer sinks */
+        /* TODO reindent */
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
         OutputFile    *of = output_files[ost->file_index];
@@ -2062,13 +2066,18 @@ static int poll_filters(void)
             avcodec_get_frame_defaults(ost->filtered_frame);
         filtered_frame = ost->filtered_frame;
 
-        while (avfilter_poll_frame(ost->filter->filter->inputs[0])) {
+        while (1) {
             AVRational ist_pts_tb = ost->filter->filter->inputs[0]->time_base;
-            if ((ret = av_buffersink_get_buffer_ref(ost->filter->filter,
-                                                            &picref,
-                                                            0)) < 0) {
-                av_log(NULL, AV_LOG_WARNING, "AV Filter told us it has a frame available but failed to output one\n");
-                return ret;
+            ret = av_buffersink_get_buffer_ref(ost->filter->filter, &picref,
+                                               AV_BUFFERSINK_FLAG_NO_REQUEST);
+            if (ret < 0) {
+                if (ret != AVERROR(EAGAIN)) {
+                    char buf[256];
+                    av_strerror(ret, buf, sizeof(buf));
+                    av_log(NULL, AV_LOG_WARNING,
+                           "Error in av_buffersink_get_buffer_ref(): %s\n", buf);
+                }
+                break;
             }
             filtered_frame->pts = av_rescale_q(picref->pts, ist_pts_tb, AV_TIME_BASE_Q);
 //             if (ost->source_index >= 0)
@@ -2095,7 +2104,27 @@ static int poll_filters(void)
             avfilter_unref_buffer(picref);
         }
     }
-    return 0;
+        /* Request frames through all the graphs */
+        ret_all = nb_success = nb_eof = 0;
+        for (i = 0; i < nb_filtergraphs; i++) {
+            ret = avfilter_graph_request_oldest(filtergraphs[i]->graph);
+            if (!ret) {
+                nb_success++;
+            } else if (ret == AVERROR_EOF) {
+                nb_eof++;
+            } else if (ret != AVERROR(EAGAIN)) {
+                char buf[256];
+                av_strerror(ret, buf, sizeof(buf));
+                av_log(NULL, AV_LOG_WARNING,
+                       "Error in request_frame(): %s\n", buf);
+                ret_all = ret;
+            }
+        }
+        if (!nb_success)
+            break;
+        /* Try again if anything succeeded */
+    }
+    return nb_eof == nb_filtergraphs ? AVERROR_EOF : ret_all;
 }
 
 static void print_report(int is_last_report, int64_t timer_start, int64_t cur_time)
