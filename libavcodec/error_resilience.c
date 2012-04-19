@@ -65,7 +65,8 @@ static void decode_mb(MpegEncContext *s, int ref)
         fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, ref, 1);
         fill_rectangle(h->mv_cache[0][scan8[0]], 4, 4, 8,
                        pack16to32(s->mv[0][0][0], s->mv[0][0][1]), 4);
-        assert(!FRAME_MBAFF);
+        h->mb_mbaff =
+        h->mb_field_decoding_flag = 0;
         ff_h264_hl_decode_mb(h);
     } else {
         assert(ref == 0);
