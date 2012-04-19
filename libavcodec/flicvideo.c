@@ -87,7 +87,7 @@ static av_cold int flic_decode_init(AVCodecContext *avctx)
         avctx->extradata_size != 12 &&
         avctx->extradata_size != 128 &&
         avctx->extradata_size != 1024) {
-        av_log(avctx, AV_LOG_ERROR, "Expected extradata of 12, 128 or 1024 bytes\n");
+        av_log(avctx, AV_LOG_ERROR, "Expected extradata of 12, 128 or 1024 bytes, got %d\n", avctx->extradata_size);
         return AVERROR_INVALIDDATA;
     }
 
