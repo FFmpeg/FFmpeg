@@ -40,6 +40,7 @@ typedef struct {
     AVRational        sample_aspect_ratio;
     char              sws_param[256];
     int eof;
+    unsigned          nb_failed_requests;
 } BufferSourceContext;
 
 #define CHECK_PARAM_CHANGE(s, c, width, height, format)\
@@ -123,6 +124,7 @@ int av_vsrc_buffer_add_video_buffer_ref(AVFilterContext *buffer_filter,
         avfilter_unref_buffer(buf);
         return ret;
     }
+    c->nb_failed_requests = 0;
 
     return 0;
 }
@@ -147,6 +149,7 @@ int av_buffersrc_buffer(AVFilterContext *s, AVFilterBufferRef *buf)
 
     if ((ret = av_fifo_generic_write(c->fifo, &buf, sizeof(buf), NULL)) < 0)
         return ret;
+    c->nb_failed_requests = 0;
 
     return 0;
 }
@@ -177,6 +180,11 @@ int av_vsrc_buffer_add_frame(AVFilterContext *buffer_src,
     return ret;
 }
 #endif
+
+unsigned av_vsrc_buffer_get_nb_failed_requests(AVFilterContext *buffer_src)
+{
+    return ((BufferSourceContext *)buffer_src->priv)->nb_failed_requests;
+}
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
@@ -249,6 +257,7 @@ static int request_frame(AVFilterLink *link)
     if (!av_fifo_size(c->fifo)) {
         if (c->eof)
             return AVERROR_EOF;
+        c->nb_failed_requests++;
         return AVERROR(EAGAIN);
     }
     av_fifo_generic_read(c->fifo, &buf, sizeof(buf), NULL);
