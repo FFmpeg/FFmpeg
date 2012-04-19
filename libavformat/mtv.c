@@ -57,7 +57,7 @@ static int mtv_probe(AVProbeData *p)
         return 0;
 
     /* Check for nonzero in bpp and (width|height) header fields */
-    if(!(p->buf[51] && AV_RL16(&p->buf[52]) | AV_RL16(&p->buf[54])))
+    if(p->buf_size < 57 || !(p->buf[51] && AV_RL16(&p->buf[52]) | AV_RL16(&p->buf[54])))
         return 0;
 
     /* If width or height are 0 then imagesize header field should not */
