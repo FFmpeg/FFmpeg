@@ -28,6 +28,11 @@ errfile="${outdir}/${test}.err"
 cmpfile="${outdir}/${test}.diff"
 repfile="${outdir}/${test}.rep"
 
+target_path(){
+    test ${1} = ${1#/} && p=${target_path}/
+    echo ${p}${1}
+}
+
 # $1=value1, $2=value2, $3=threshold
 # prints 0 if absolute difference between value1 and value2 is <= threshold
 compare(){
@@ -86,12 +91,15 @@ pcm(){
 
 enc_dec_pcm(){
     out_fmt=$1
-    pcm_fmt=$2
-    shift 2
+    dec_fmt=$2
+    pcm_fmt=$3
+    src_file=$(target_path $4)
+    shift 4
     encfile="${outdir}/${test}.${out_fmt}"
     cleanfiles=$encfile
-    avconv -i $ref "$@" -f $out_fmt -y ${target_path}/${encfile} || return
-    avconv -i ${target_path}/${encfile} -c:a pcm_${pcm_fmt} -f wav -
+    encfile=$(target_path ${encfile})
+    avconv -i $src_file "$@" -f $out_fmt -y ${encfile} || return
+    avconv -i ${encfile} -c:a pcm_${pcm_fmt} -f ${dec_fmt} -
 }
 
 regtest(){

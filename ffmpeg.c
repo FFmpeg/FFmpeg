@@ -1381,6 +1381,58 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
     }
 }
 
+static void get_default_channel_layouts(OutputStream *ost, InputStream *ist)
+{
+    char layout_name[256];
+    AVCodecContext *enc = ost->st->codec;
+    AVCodecContext *dec = ist->st->codec;
+
+    if (dec->channel_layout &&
+        av_get_channel_layout_nb_channels(dec->channel_layout) != dec->channels) {
+        av_get_channel_layout_string(layout_name, sizeof(layout_name),
+                                     dec->channels, dec->channel_layout);
+        av_log(NULL, AV_LOG_ERROR, "New channel layout (%s) is invalid\n",
+               layout_name);
+        dec->channel_layout = 0;
+    }
+    if (!dec->channel_layout) {
+        if (enc->channel_layout && dec->channels == enc->channels) {
+            dec->channel_layout = enc->channel_layout;
+        } else {
+            dec->channel_layout = av_get_default_channel_layout(dec->channels);
+
+            if (!dec->channel_layout) {
+                av_log(NULL, AV_LOG_FATAL, "Unable to find default channel "
+                       "layout for Input Stream #%d.%d\n", ist->file_index,
+                       ist->st->index);
+                exit_program(1);
+            }
+        }
+        av_get_channel_layout_string(layout_name, sizeof(layout_name),
+                                     dec->channels, dec->channel_layout);
+        av_log(NULL, AV_LOG_WARNING, "Guessed Channel Layout for  Input Stream "
+               "#%d.%d : %s\n", ist->file_index, ist->st->index, layout_name);
+    }
+    if (!enc->channel_layout) {
+        if (dec->channels == enc->channels) {
+            enc->channel_layout = dec->channel_layout;
+            return;
+        } else {
+            enc->channel_layout = av_get_default_channel_layout(enc->channels);
+        }
+        if (!enc->channel_layout) {
+            av_log(NULL, AV_LOG_FATAL, "Unable to find default channel layout "
+                   "for Output Stream #%d.%d\n", ost->file_index,
+                   ost->st->index);
+            exit_program(1);
+        }
+        av_get_channel_layout_string(layout_name, sizeof(layout_name),
+                                     enc->channels, enc->channel_layout);
+        av_log(NULL, AV_LOG_WARNING, "Guessed Channel Layout for Output Stream "
+               "#%d.%d : %s\n", ost->file_index, ost->st->index, layout_name);
+    }
+}
+
 static void generate_silence(uint8_t* buf, enum AVSampleFormat sample_fmt, size_t size)
 {
     int fill_char = 0x00;
@@ -1514,6 +1566,8 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
 
     for(i=0; i<planes; i++)
         buf[i]= decoded_frame->data[i];
+
+    get_default_channel_layouts(ost, ist);
 
     if (alloc_audio_output_buf(dec, enc, decoded_frame->nb_samples) < 0) {
         av_log(NULL, AV_LOG_FATAL, "Error allocating audio buffer\n");
@@ -2741,51 +2795,6 @@ static void print_sdp(void)
     fflush(stdout);
     av_freep(&avc);
 }
-
-static void get_default_channel_layouts(OutputStream *ost, InputStream *ist)
-{
-    char layout_name[256];
-    AVCodecContext *enc = ost->st->codec;
-    AVCodecContext *dec = ist->st->codec;
-
-    if (!dec->channel_layout) {
-        if (enc->channel_layout && dec->channels == enc->channels) {
-            dec->channel_layout = enc->channel_layout;
-        } else {
-            dec->channel_layout = av_get_default_channel_layout(dec->channels);
-
-            if (!dec->channel_layout) {
-                av_log(NULL, AV_LOG_FATAL, "Unable to find default channel "
-                       "layout for Input Stream #%d.%d\n", ist->file_index,
-                       ist->st->index);
-                exit_program(1);
-            }
-        }
-        av_get_channel_layout_string(layout_name, sizeof(layout_name),
-                                     dec->channels, dec->channel_layout);
-        av_log(NULL, AV_LOG_WARNING, "Guessed Channel Layout for  Input Stream "
-               "#%d.%d : %s\n", ist->file_index, ist->st->index, layout_name);
-    }
-    if (!enc->channel_layout) {
-        if (dec->channels == enc->channels) {
-            enc->channel_layout = dec->channel_layout;
-            return;
-        } else {
-            enc->channel_layout = av_get_default_channel_layout(enc->channels);
-        }
-        if (!enc->channel_layout) {
-            av_log(NULL, AV_LOG_FATAL, "Unable to find default channel layout "
-                   "for Output Stream #%d.%d\n", ost->file_index,
-                   ost->st->index);
-            exit_program(1);
-        }
-        av_get_channel_layout_string(layout_name, sizeof(layout_name),
-                                     enc->channels, enc->channel_layout);
-        av_log(NULL, AV_LOG_WARNING, "Guessed Channel Layout for Output Stream "
-               "#%d.%d : %s\n", ost->file_index, ost->st->index, layout_name);
-    }
-}
-
 
 static int init_input_stream(int ist_index, char *error, int error_len)
 {

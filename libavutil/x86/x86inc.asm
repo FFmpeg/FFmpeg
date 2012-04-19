@@ -856,7 +856,7 @@ INIT_XMM
 
 ;%1 == instruction
 ;%2 == 1 if float, 0 if int
-;%3 == 1 if 4-operand (xmm, xmm, xmm, imm), 0 if 3-operand (xmm, xmm, xmm)
+;%3 == 1 if 4-operand (xmm, xmm, xmm, imm), 0 if 2- or 3-operand (xmm, xmm, xmm)
 ;%4 == number of operands given
 ;%5+: operands
 %macro RUN_AVX_INSTR 6-7+
@@ -866,7 +866,11 @@ INIT_XMM
         %define %%size mmsize
     %endif
     %if %%size==32
-        v%1 %5, %6, %7
+        %if %0 >= 7
+            v%1 %5, %6, %7
+        %else
+            v%1 %5, %6
+        %endif
     %else
         %if %%size==8
             %define %%regmov movq
@@ -952,6 +956,8 @@ AVX_INSTR cmppd, 1, 0, 0
 AVX_INSTR cmpps, 1, 0, 0
 AVX_INSTR cmpsd, 1, 0, 0
 AVX_INSTR cmpss, 1, 0, 0
+AVX_INSTR cvtdq2ps, 1, 0, 0
+AVX_INSTR cvtps2dq, 1, 0, 0
 AVX_INSTR divpd, 1, 0, 0
 AVX_INSTR divps, 1, 0, 0
 AVX_INSTR divsd, 1, 0, 0

@@ -2344,6 +2344,24 @@ elif $cc -v 2>&1 | grep -q Open64; then
     speed_cflags='-O2'
     size_cflags='-Os'
     filter_cflags='filter_out -Wdisabled-optimization|-Wtype-limits|-fno-signed-zeros'
+elif $cc -V 2>&1 | grep -q Portland; then
+    cc_type=pgi
+    cc_version='AV_STRINGIFY(__PGIC__.__PGIC_MINOR__.__PGIC_PATCHLEVEL__)'
+    cc_ident="PGI $($cc -V 2>&1 | awk '/^pgcc/ { print $2; exit }')"
+    opt_common='-alias=ansi -Mlre -Mpre'
+    speed_cflags="-O3 -Mautoinline -Munroll=c:4 $opt_common"
+    size_cflags="-O2 -Munroll=c:1 $opt_common"
+    noopt_cflags="-O1"
+    filter_cflags=pgi_flags
+    pgi_flags(){
+        for flag; do
+            case $flag in
+                -fomit-frame-pointer) echo -Mnoframe ;;
+                -g)                   echo -gopt ;;
+                *)                    echo $flag ;;
+            esac
+        done
+    }
 fi
 
 test -n "$cc_type" && enable $cc_type ||

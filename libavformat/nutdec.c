@@ -305,14 +305,18 @@ static int decode_main_header(NUTContext *nut)
         GET_V(nut->header_count, tmp < 128U)
         nut->header_count++;
         for (i = 1; i < nut->header_count; i++) {
+            uint8_t *hdr;
             GET_V(nut->header_len[i], tmp > 0 && tmp < 256);
             rem -= nut->header_len[i];
             if (rem < 0) {
                 av_log(s, AV_LOG_ERROR, "invalid elision header\n");
                 return AVERROR_INVALIDDATA;
             }
-            nut->header[i] = av_malloc(nut->header_len[i]);
-            avio_read(bc, nut->header[i], nut->header_len[i]);
+            hdr = av_malloc(nut->header_len[i]);
+            if (!hdr)
+                return AVERROR(ENOMEM);
+            avio_read(bc, hdr, nut->header_len[i]);
+            nut->header[i] = hdr;
         }
         assert(nut->header_len[0] == 0);
     }
