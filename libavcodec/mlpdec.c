@@ -366,6 +366,7 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
     const int max_matrix_channel = m->avctx->codec_id == CODEC_ID_MLP
                                  ? MAX_MATRIX_CHANNEL_MLP
                                  : MAX_MATRIX_CHANNEL_TRUEHD;
+    int max_channel, min_channel, matrix_channel;
 
     sync_word = get_bits(gbp, 13);
 
@@ -384,18 +385,18 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
 
     skip_bits(gbp, 16); /* Output timestamp */
 
-    s->min_channel        = get_bits(gbp, 4);
-    s->max_channel        = get_bits(gbp, 4);
-    s->max_matrix_channel = get_bits(gbp, 4);
+    min_channel    = get_bits(gbp, 4);
+    max_channel    = get_bits(gbp, 4);
+    matrix_channel = get_bits(gbp, 4);
 
-    if (s->max_matrix_channel > max_matrix_channel) {
+    if (matrix_channel > max_matrix_channel) {
         av_log(m->avctx, AV_LOG_ERROR,
                "Max matrix channel cannot be greater than %d.\n",
                max_matrix_channel);
         return AVERROR_INVALIDDATA;
     }
 
-    if (s->max_channel != s->max_matrix_channel) {
+    if (max_channel != matrix_channel) {
         av_log(m->avctx, AV_LOG_ERROR,
                "Max channel must be equal max matrix channel.\n");
         return AVERROR_INVALIDDATA;
@@ -403,18 +404,22 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
 
     /* This should happen for TrueHD streams with >6 channels and MLP's noise
      * type. It is not yet known if this is allowed. */
-    if (s->max_channel > MAX_MATRIX_CHANNEL_MLP && !s->noise_type) {
+    if (max_channel > MAX_MATRIX_CHANNEL_MLP && !s->noise_type) {
         av_log_ask_for_sample(m->avctx,
                "Number of channels %d is larger than the maximum supported "
-               "by the decoder.\n", s->max_channel + 2);
+               "by the decoder.\n", max_channel + 2);
         return AVERROR_PATCHWELCOME;
     }
 
-    if (s->min_channel > s->max_channel) {
+    if (min_channel > max_channel) {
         av_log(m->avctx, AV_LOG_ERROR,
                "Substream min channel cannot be greater than max channel.\n");
         return AVERROR_INVALIDDATA;
     }
+
+    s->min_channel = min_channel;
+    s->max_channel = max_channel;
+    s->max_matrix_channel = matrix_channel;
 
     if (m->avctx->request_channels > 0
         && s->max_channel + 1 >= m->avctx->request_channels
