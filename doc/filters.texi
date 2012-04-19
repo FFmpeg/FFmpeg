@@ -1896,7 +1896,6 @@ The list of the currently supported filters follows:
 @item ivtc
 @item kerndeint
 @item mcdeint
-@item mirror
 @item noise
 @item ow
 @item palette
