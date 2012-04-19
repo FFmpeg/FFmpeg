@@ -438,7 +438,7 @@ retry:
         ret = ff_h263_decode_picture_header(s);
     }
 
-    if (HAVE_THREADS && (s->avctx->active_thread_type&FF_THREAD_FRAME) && ret < 0) {
+    if (ret < 0) {
         if (   s->width  != avctx->coded_width
             || s->height != avctx->coded_height) {
                 av_log(s->avctx, AV_LOG_WARNING, "Reverting picture dimensions change due to header decoding failure\n");
