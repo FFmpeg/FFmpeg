@@ -53,7 +53,7 @@ static void decode_mb(MpegEncContext *s, int ref)
         H264Context *h = (void*)s;
         h->mb_xy = s->mb_x + s->mb_y * s->mb_stride;
         memset(h->non_zero_count_cache, 0, sizeof(h->non_zero_count_cache));
-        assert(ref >= 0);
+        av_assert1(ref >= 0);
         /* FIXME: It is possible albeit uncommon that slice references
          * differ between slices. We take the easy approach and ignore
          * it for now. If this turns out to have any relevance in
@@ -81,7 +81,7 @@ static void set_mv_strides(MpegEncContext *s, int *mv_step, int *stride)
 {
     if (s->codec_id == CODEC_ID_H264) {
         H264Context *h = (void*)s;
-        assert(s->quarter_sample);
+        av_assert0(s->quarter_sample);
         *mv_step = 4;
         *stride  = h->b_stride;
     } else {
@@ -493,8 +493,8 @@ static void guess_mv(MpegEncContext *s)
 
                     if (fixed[mb_xy] == MV_FROZEN)
                         continue;
-                    assert(!IS_INTRA(s->current_picture.f.mb_type[mb_xy]));
-                    assert(s->last_picture_ptr && s->last_picture_ptr->f.data[0]);
+                    av_assert1(!IS_INTRA(s->current_picture.f.mb_type[mb_xy]));
+                    av_assert1(s->last_picture_ptr && s->last_picture_ptr->f.data[0]);
 
                     j = 0;
                     if (mb_x > 0             && fixed[mb_xy - 1]         == MV_FROZEN)
