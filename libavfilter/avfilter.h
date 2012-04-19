@@ -690,6 +690,12 @@ struct AVFilterLink {
     AVRational time_base;
 
     struct AVFilterPool *pool;
+
+    /**
+     * Graph the filter belongs to.
+     */
+    struct AVFilterGraph *graph;
+
 };
 
 /**

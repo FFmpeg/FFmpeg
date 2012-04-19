@@ -374,6 +374,21 @@ int ff_avfilter_graph_config_formats(AVFilterGraph *graph, AVClass *log_ctx)
     return 0;
 }
 
+static void ff_avfilter_graph_config_pointers(AVFilterGraph *graph,
+                                              AVClass *log_ctx)
+{
+    unsigned i, j;;
+    AVFilterContext *f;
+
+    for (i = 0; i < graph->filter_count; i++) {
+        f = graph->filters[i];
+        for (j = 0; j < f->input_count; j++)
+            f->inputs[j]->graph = graph;
+        for (j = 0; j < f->output_count; j++)
+            f->outputs[j]->graph = graph;
+    }
+}
+
 int avfilter_graph_config(AVFilterGraph *graphctx, void *log_ctx)
 {
     int ret;
@@ -384,6 +399,7 @@ int avfilter_graph_config(AVFilterGraph *graphctx, void *log_ctx)
         return ret;
     if ((ret = ff_avfilter_graph_config_links(graphctx, log_ctx)))
         return ret;
+    ff_avfilter_graph_config_pointers(graphctx, log_ctx);
 
     return 0;
 }
