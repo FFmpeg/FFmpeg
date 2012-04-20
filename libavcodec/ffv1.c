@@ -1508,6 +1508,9 @@ static int decode_slice(AVCodecContext *c, void *arg){
     const int ps= (c->bits_per_raw_sample>8)+1;
     AVFrame * const p= &f->picture;
 
+    if(f->picture.key_frame)
+        clear_slice_state(f, fs);
+
     av_assert1(width && height);
     if(f->colorspace==0){
         const int chroma_width = -((-width )>>f->chroma_h_shift);
@@ -1839,8 +1842,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
             return -1;
         if(init_slices_state(f) < 0)
             return -1;
-
-        clear_state(f);
     }else{
         p->key_frame= 0;
     }
