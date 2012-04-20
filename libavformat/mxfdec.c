@@ -2118,8 +2118,8 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
     if ((ret64 = avio_seek(s->pb, pos, SEEK_SET)) < 0)
         return ret64;
 
-        if ((ret = av_get_packet(s->pb, pkt, size)) != size)
-            return ret < 0 ? ret : AVERROR_EOF;
+    if ((size = av_get_packet(s->pb, pkt, size)) < 0)
+        return size;
 
     if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO && t->ptses &&
         mxf->current_edit_unit >= 0 && mxf->current_edit_unit < t->nb_ptses) {
