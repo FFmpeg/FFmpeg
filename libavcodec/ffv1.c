@@ -192,6 +192,7 @@ typedef struct FFV1Context{
     int16_t *sample_buffer;
     int gob_count;
     int packed_at_lsb;
+    int ec;
 
     int quant_table_count;
 
@@ -833,6 +834,10 @@ static int write_extra_header(FFV1Context *f){
         }
     }
 
+    if(f->version > 2){
+        put_symbol(c, state, f->ec, 0);
+    }
+
     f->avctx->extradata_size= ff_rac_terminate(c);
     v = av_crc(av_crc_get_table(AV_CRC_32_IEEE), 0, f->avctx->extradata, f->avctx->extradata_size);
     AV_WL32(f->avctx->extradata + f->avctx->extradata_size, v);
@@ -1290,6 +1295,10 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             AV_WB24(buf_p+bytes, bytes);
             bytes+=3;
         }
+        if(f->ec){
+            unsigned v = av_crc(av_crc_get_table(AV_CRC_32_IEEE), 0, buf_p, bytes);
+            AV_WL32(buf_p + bytes, v); bytes += 4;
+        }
         buf_p += bytes;
     }
 
@@ -1727,6 +1736,10 @@ static int read_extra_header(FFV1Context *f){
     }
 
     if(f->version > 2){
+        f->ec = get_symbol(c, state, 0);
+    }
+
+    if(f->version > 2){
         unsigned v;
         v = av_crc(av_crc_get_table(AV_CRC_32_IEEE), 0, f->avctx->extradata, f->avctx->extradata_size);
         if(v){
@@ -1959,15 +1972,23 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     buf_p= buf + buf_size;
     for(i=f->slice_count-1; i>=0; i--){
         FFV1Context *fs= f->slice_context[i];
+        int trailer = 3 + 4*!!f->ec;
         int v;
 
-        if(i) v = AV_RB24(buf_p-3)+3;
+        if(i) v = AV_RB24(buf_p-trailer)+trailer;
         else  v = buf_p - c->bytestream_start;
         if(buf_p - c->bytestream_start < v){
             av_log(avctx, AV_LOG_ERROR, "Slice pointer chain broken\n");
             return -1;
         }
         buf_p -= v;
+
+        if(f->ec){
+            unsigned crc = av_crc(av_crc_get_table(AV_CRC_32_IEEE), 0, buf_p, v);
+            if(crc){
+                av_log(f->avctx, AV_LOG_ERROR, "CRC mismatch %X!\n", crc);
+            }
+        }
 
         if(i){
             if(fs->ac){
