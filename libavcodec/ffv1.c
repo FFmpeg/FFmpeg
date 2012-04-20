@@ -1862,28 +1862,31 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     if(avctx->debug&FF_DEBUG_PICT_INFO)
         av_log(avctx, AV_LOG_ERROR, "keyframe:%d coder:%d\n", p->key_frame, f->ac);
 
-    if(!f->ac){
-        bytes_read = c->bytestream - c->bytestream_start - 1;
-        if(bytes_read ==0) av_log(avctx, AV_LOG_ERROR, "error at end of AC stream\n"); //FIXME
-//printf("pos=%d\n", bytes_read);
-        init_get_bits(&f->slice_context[0]->gb, buf + bytes_read, (buf_size - bytes_read) * 8);
-    } else {
-        bytes_read = 0; /* avoid warning */
-    }
-
     buf_p= buf + buf_size;
-    for(i=f->slice_count-1; i>0; i--){
+    for(i=f->slice_count-1; i>=0; i--){
         FFV1Context *fs= f->slice_context[i];
-        int v= AV_RB24(buf_p-3)+3;
-        if(buf_p - buf <= v){
+        int v;
+
+        if(i) v = AV_RB24(buf_p-3)+3;
+        else  v = buf_p - c->bytestream_start;
+        if(buf_p - c->bytestream_start < v){
             av_log(avctx, AV_LOG_ERROR, "Slice pointer chain broken\n");
             return -1;
         }
         buf_p -= v;
-        if(fs->ac){
-            ff_init_range_decoder(&fs->c, buf_p, v);
+
+        if(i){
+            if(fs->ac){
+                ff_init_range_decoder(&fs->c, buf_p, v);
+            }else{
+                init_get_bits(&fs->gb, buf_p, v * 8);
+            }
         }else{
-            init_get_bits(&fs->gb, buf_p, v * 8);
+            if(!f->ac){
+                bytes_read = c->bytestream - c->bytestream_start - 1;
+                if(bytes_read ==0) av_log(avctx, AV_LOG_ERROR, "error at end of AC stream\n"); //FIXME
+                init_get_bits(&fs->gb, buf + bytes_read, (buf_size - bytes_read) * 8);
+            }
         }
     }
 
