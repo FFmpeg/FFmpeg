@@ -1395,6 +1395,10 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
         if (s->out_channels < s->channels)
             s->output_mode  = s->out_channels == 1 ? AC3_CHMODE_MONO : AC3_CHMODE_STEREO;
     }
+    if (avctx->channels != s->out_channels) {
+        av_log(avctx, AV_LOG_ERROR, "channel number mismatching on damaged frame\n");
+        return AVERROR_INVALIDDATA;
+    }
     /* set audio service type based on bitstream mode for AC-3 */
     avctx->audio_service_type = s->bitstream_mode;
     if (s->bitstream_mode == 0x7 && s->channels > 1)
