@@ -25,5 +25,10 @@ fate-pcm_u8-stereo: CMD = md5 -i $(SAMPLES)/qt-surge-suite/surge-2-8-raw.mov -f 
 FATE_PCM += fate-w64
 fate-w64: CMD = crc -i $(SAMPLES)/w64/w64-pcm16.w64
 
+FATE_PCM += fate-dcinema-encode
+fate-dcinema-encode: tests/data/asynth-96000-6.wav
+fate-dcinema-encode: SRC = tests/data/asynth-96000-6.wav
+fate-dcinema-encode: CMD = enc_dec_pcm daud md5 s16le $(SRC) -c:a pcm_s24daud
+
 FATE_TESTS += $(FATE_PCM)
 fate-pcm: $(FATE_PCM)
