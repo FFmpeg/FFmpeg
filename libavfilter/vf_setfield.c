@@ -40,19 +40,22 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
         if (sscanf(args, "%d%c", &setfield->top_field_first, &c) != 1) {
             if      (!strcmp("tff",  args)) setfield->top_field_first = 1;
             else if (!strcmp("bff",  args)) setfield->top_field_first = 0;
+            else if (!strcmp("prog", args)) setfield->top_field_first = 2;
             else if (!strcmp("auto", args)) setfield->top_field_first = -1;
             else {
                 av_log(ctx, AV_LOG_ERROR, "Invalid argument '%s'\n", args);
                 return AVERROR(EINVAL);
             }
+        } else {
+            if (setfield->top_field_first < -1 || setfield->top_field_first > 1) {
+                av_log(ctx, AV_LOG_ERROR,
+                       "Provided integer value %d must be included between -1 and +1\n",
+                       setfield->top_field_first);
+                return AVERROR(EINVAL);
+            }
+            av_log(ctx, AV_LOG_WARNING,
+                   "Using -1/0/1 is deprecated, use auto/tff/bff/prog\n", args);
         }
-    }
-
-    if (setfield->top_field_first < -1 || setfield->top_field_first > 1) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Provided integer value %d must be included between -1 and +1\n",
-               setfield->top_field_first);
-        return AVERROR(EINVAL);
     }
 
     return 0;
@@ -63,7 +66,9 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     SetFieldContext *setfield = inlink->dst->priv;
     AVFilterBufferRef *outpicref = avfilter_ref_buffer(inpicref, ~0);
 
-    if (setfield->top_field_first != -1) {
+    if (setfield->top_field_first == 2) {
+        outpicref->video->interlaced = 0;
+    } else if (setfield->top_field_first != -1) {
         outpicref->video->interlaced = 1;
         outpicref->video->top_field_first = setfield->top_field_first;
     }
