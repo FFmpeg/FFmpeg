@@ -3013,6 +3013,12 @@ static int transcode_init(void)
         } else {
             if (!ost->enc)
                 ost->enc = avcodec_find_encoder(codec->codec_id);
+            if (!ost->enc) {
+                snprintf(error, sizeof(error), "Encoder (codec %s) not found for output stream #%d:%d",
+                         avcodec_get_name(ost->st->codec->codec_id), ost->file_index, ost->index);
+                ret = AVERROR(EINVAL);
+                goto dump_format;
+            }
 
             if (ist)
                 ist->decoding_needed = 1;
@@ -3154,12 +3160,6 @@ static int transcode_init(void)
         if (ost->encoding_needed) {
             AVCodec      *codec = ost->enc;
             AVCodecContext *dec = NULL;
-            if (!codec) {
-                snprintf(error, sizeof(error), "Encoder (codec %s) not found for output stream #%d:%d",
-                         avcodec_get_name(ost->st->codec->codec_id), ost->file_index, ost->index);
-                ret = AVERROR(EINVAL);
-                goto dump_format;
-            }
 
             if ((ist = get_input_stream(ost)))
                 dec = ist->st->codec;
