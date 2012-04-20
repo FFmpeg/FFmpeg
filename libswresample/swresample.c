@@ -360,12 +360,14 @@ static void fill_audiodata(AudioData *out, uint8_t *in_arg [SWR_CH_MAX]){
  * out may be equal in.
  */
 static void buf_set(AudioData *out, AudioData *in, int count){
+    int ch;
     if(in->planar){
-        int ch;
         for(ch=0; ch<out->ch_count; ch++)
             out->ch[ch]= in->ch[ch] + count*out->bps;
-    }else
-        out->ch[0]= in->ch[0] + count*out->ch_count*out->bps;
+    }else{
+        for(ch=0; ch<out->ch_count; ch++)
+            out->ch[ch]= in->ch[0] + (ch + count*out->ch_count) * out->bps;
+    }
 }
 
 /**
