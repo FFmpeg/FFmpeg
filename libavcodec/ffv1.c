@@ -1118,11 +1118,9 @@ static av_cold int encode_init(AVCodecContext *avctx)
 #endif /* CONFIG_FFV1_ENCODER */
 
 
-static void clear_state(FFV1Context *f){
-    int i, si, j;
+static void clear_slice_state(FFV1Context *f, FFV1Context *fs){
+    int i, j;
 
-    for(si=0; si<f->slice_count; si++){
-        FFV1Context *fs= f->slice_context[si];
         for(i=0; i<f->plane_count; i++){
             PlaneContext *p= &fs->plane[i];
 
@@ -1143,6 +1141,14 @@ static void clear_state(FFV1Context *f){
                 }
             }
         }
+}
+
+static void clear_state(FFV1Context *f){
+    int si;
+
+    for(si=0; si<f->slice_count; si++){
+        FFV1Context *fs= f->slice_context[si];
+        clear_slice_state(f, fs);
     }
 }
 
