@@ -38,8 +38,8 @@
 typedef struct {
     AVFrame frame;
     DSPContext dsp;
-    DECLARE_ALIGNED(16, float,   sp_lpc)[FFALIGN(36, 8)];   ///< LPC coefficients for speech data (spec: A)
-    DECLARE_ALIGNED(16, float, gain_lpc)[FFALIGN(10, 8)];   ///< LPC coefficients for gain        (spec: GB)
+    DECLARE_ALIGNED(32, float,   sp_lpc)[FFALIGN(36, 16)];   ///< LPC coefficients for speech data (spec: A)
+    DECLARE_ALIGNED(32, float, gain_lpc)[FFALIGN(10, 16)];   ///< LPC coefficients for gain        (spec: GB)
 
     /** speech data history                                      (spec: SB).
      *  Its first 70 coefficients are updated only at backward filtering.
@@ -133,11 +133,11 @@ static void do_hybrid_window(RA288Context *ractx,
     int i;
     float buffer1[MAX_BACKWARD_FILTER_ORDER + 1];
     float buffer2[MAX_BACKWARD_FILTER_ORDER + 1];
-    LOCAL_ALIGNED_16(float, work, [FFALIGN(MAX_BACKWARD_FILTER_ORDER +
-                                           MAX_BACKWARD_FILTER_LEN   +
-                                           MAX_BACKWARD_FILTER_NONREC, 8)]);
+    LOCAL_ALIGNED(32, float, work, [FFALIGN(MAX_BACKWARD_FILTER_ORDER +
+                                            MAX_BACKWARD_FILTER_LEN   +
+                                            MAX_BACKWARD_FILTER_NONREC, 16)]);
 
-    ractx->dsp.vector_fmul(work, window, hist, FFALIGN(order + n + non_rec, 8));
+    ractx->dsp.vector_fmul(work, window, hist, FFALIGN(order + n + non_rec, 16));
 
     convolve(buffer1, work + order    , n      , order);
     convolve(buffer2, work + order + n, non_rec, order);
@@ -164,7 +164,7 @@ static void backward_filter(RA288Context *ractx,
     do_hybrid_window(ractx, order, n, non_rec, temp, hist, rec, window);
 
     if (!compute_lpc_coefs(temp, order, lpc, 0, 1, 1))
-        ractx->dsp.vector_fmul(lpc, lpc, tab, FFALIGN(order, 8));
+        ractx->dsp.vector_fmul(lpc, lpc, tab, FFALIGN(order, 16));
 
     memmove(hist, hist + n, move_size*sizeof(*hist));
 }

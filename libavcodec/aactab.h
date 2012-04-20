@@ -44,8 +44,8 @@
 /* @name window coefficients
  * @{
  */
-DECLARE_ALIGNED(16, extern float,  ff_aac_kbd_long_1024)[1024];
-DECLARE_ALIGNED(16, extern float,  ff_aac_kbd_short_128)[128];
+DECLARE_ALIGNED(32, extern float,  ff_aac_kbd_long_1024)[1024];
+DECLARE_ALIGNED(32, extern float,  ff_aac_kbd_short_128)[128];
 // @}
 
 /* @name number of scalefactor window bands for long and short transform windows respectively

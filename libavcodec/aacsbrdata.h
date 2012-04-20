@@ -267,8 +267,8 @@ static const int8_t sbr_offset[6][16] = {
 };
 
 ///< window coefficients for analysis/synthesis QMF banks
-static DECLARE_ALIGNED(16, float, sbr_qmf_window_ds)[320];
-static DECLARE_ALIGNED(16, float, sbr_qmf_window_us)[640] = {
+static DECLARE_ALIGNED(32, float, sbr_qmf_window_ds)[320];
+static DECLARE_ALIGNED(32, float, sbr_qmf_window_us)[640] = {
      0.0000000000, -0.0005525286, -0.0005617692, -0.0004947518,
     -0.0004875227, -0.0004893791, -0.0005040714, -0.0005226564,
     -0.0005466565, -0.0005677802, -0.0005870930, -0.0006132747,

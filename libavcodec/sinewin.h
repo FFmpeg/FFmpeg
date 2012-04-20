@@ -31,7 +31,7 @@
 #endif
 
 #define SINETABLE(size) \
-    SINETABLE_CONST DECLARE_ALIGNED(16, float, ff_sine_##size)[size]
+    SINETABLE_CONST DECLARE_ALIGNED(32, float, ff_sine_##size)[size]
 
 /**
  * Generate a sine window.

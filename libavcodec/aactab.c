@@ -33,8 +33,8 @@
 
 #include <stdint.h>
 
-DECLARE_ALIGNED(16, float,  ff_aac_kbd_long_1024)[1024];
-DECLARE_ALIGNED(16, float,  ff_aac_kbd_short_128)[128];
+DECLARE_ALIGNED(32, float,  ff_aac_kbd_long_1024)[1024];
+DECLARE_ALIGNED(32, float,  ff_aac_kbd_short_128)[128];
 
 const uint8_t ff_aac_num_swb_1024[] = {
     41, 41, 47, 49, 49, 51, 47, 47, 43, 43, 43, 40, 40
