@@ -696,11 +696,9 @@ static av_cold int common_init(AVCodecContext *avctx){
     return 0;
 }
 
-static int init_slice_state(FFV1Context *f){
-    int i, j;
+static int init_slice_state(FFV1Context *f, FFV1Context *fs){
+    int j;
 
-    for(i=0; i<f->slice_count; i++){
-        FFV1Context *fs= f->slice_context[i];
         fs->plane_count= f->plane_count;
         fs->transparency= f->transparency;
         for(j=0; j<f->plane_count; j++){
@@ -724,8 +722,17 @@ static int init_slice_state(FFV1Context *f){
                 fs->c.zero_state[256-j]= 256-fs->c.one_state [j];
             }
         }
-    }
 
+    return 0;
+}
+
+static int init_slices_state(FFV1Context *f){
+    int i;
+    for(i=0; i<f->slice_count; i++){
+        FFV1Context *fs= f->slice_context[i];
+        if(init_slice_state(f, fs) < 0)
+            return -1;
+    }
     return 0;
 }
 
@@ -1089,7 +1096,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     if(init_slice_contexts(s) < 0)
         return -1;
-    if(init_slice_state(s) < 0)
+    if(init_slices_state(s) < 0)
         return -1;
 
 #define STATS_OUT_SIZE 1024*1024*6
@@ -1824,7 +1831,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         p->key_frame= 1;
         if(read_header(f) < 0)
             return -1;
-        if(init_slice_state(f) < 0)
+        if(init_slices_state(f) < 0)
             return -1;
 
         clear_state(f);
