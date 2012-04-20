@@ -83,6 +83,44 @@ CONV_S16_TO_FLT
 INIT_XMM sse4
 CONV_S16_TO_FLT
 
+;------------------------------------------------------------------------------
+; void ff_conv_s32_to_s16(int16_t *dst, const int32_t *src, int len);
+;------------------------------------------------------------------------------
+
+%macro CONV_S32_TO_S16 0
+cglobal conv_s32_to_s16, 3,3,4, dst, src, len
+    lea     lenq, [2*lend]
+    lea     srcq, [srcq+2*lenq]
+    add     dstq, lenq
+    neg     lenq
+.loop:
+    mova      m0, [srcq+2*lenq         ]
+    mova      m1, [srcq+2*lenq+  mmsize]
+    mova      m2, [srcq+2*lenq+2*mmsize]
+    mova      m3, [srcq+2*lenq+3*mmsize]
+    psrad     m0, 16
+    psrad     m1, 16
+    psrad     m2, 16
+    psrad     m3, 16
+    packssdw  m0, m1
+    packssdw  m2, m3
+    mova  [dstq+lenq       ], m0
+    mova  [dstq+lenq+mmsize], m2
+    add     lenq, mmsize*2
+    jl .loop
+%if mmsize == 8
+    emms
+    RET
+%else
+    REP_RET
+%endif
+%endmacro
+
+INIT_MMX mmx
+CONV_S32_TO_S16
+INIT_XMM sse2
+CONV_S32_TO_S16
+
 ;-----------------------------------------------------------------------------
 ; void ff_conv_fltp_to_flt_6ch(float *dst, float *const *src, int len,
 ;                              int channels);
