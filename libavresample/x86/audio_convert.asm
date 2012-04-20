@@ -1,6 +1,7 @@
 ;******************************************************************************
 ;* x86 optimized Format Conversion Utils
 ;* Copyright (c) 2008 Loren Merritt
+;* Copyright (c) 2012 Justin Ruggles <justin.ruggles@gmail.com>
 ;*
 ;* This file is part of Libav.
 ;*
@@ -23,6 +24,28 @@
 %include "x86util.asm"
 
 SECTION_TEXT
+
+;------------------------------------------------------------------------------
+; void ff_conv_s16_to_s32(int32_t *dst, const int16_t *src, int len);
+;------------------------------------------------------------------------------
+
+INIT_XMM sse2
+cglobal conv_s16_to_s32, 3,3,3, dst, src, len
+    lea      lenq, [2*lend]
+    lea      dstq, [dstq+2*lenq]
+    add      srcq, lenq
+    neg      lenq
+.loop:
+    mova       m2, [srcq+lenq]
+    pxor       m0, m0
+    pxor       m1, m1
+    punpcklwd  m0, m2
+    punpckhwd  m1, m2
+    mova  [dstq+2*lenq       ], m0
+    mova  [dstq+2*lenq+mmsize], m1
+    add      lenq, mmsize
+    jl .loop
+    REP_RET
 
 ;-----------------------------------------------------------------------------
 ; void ff_conv_fltp_to_flt_6ch(float *dst, float *const *src, int len,
