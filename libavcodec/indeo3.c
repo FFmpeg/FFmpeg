@@ -148,13 +148,10 @@ static av_cold void build_requant_tab(void)
 
 
 static av_cold int allocate_frame_buffers(Indeo3DecodeContext *ctx,
-                                          AVCodecContext *avctx)
+                                          AVCodecContext *avctx, int luma_width, int luma_height)
 {
-    int p, luma_width, luma_height, chroma_width, chroma_height;
+    int p, chroma_width, chroma_height;
     int luma_pitch, chroma_pitch, luma_size, chroma_size;
-
-    luma_width  = ctx->width;
-    luma_height = ctx->height;
 
     if (luma_width  < 16 || luma_width  > 640 ||
         luma_height < 16 || luma_height > 480 ||
@@ -163,6 +160,9 @@ static av_cold int allocate_frame_buffers(Indeo3DecodeContext *ctx,
                luma_width, luma_height);
         return AVERROR_INVALIDDATA;
     }
+
+    ctx->width  = luma_width ;
+    ctx->height = luma_height;
 
     chroma_width  = FFALIGN(luma_width  >> 2, 4);
     chroma_height = FFALIGN(luma_height >> 2, 4);
@@ -203,6 +203,9 @@ static av_cold int allocate_frame_buffers(Indeo3DecodeContext *ctx,
 static av_cold void free_frame_buffers(Indeo3DecodeContext *ctx)
 {
     int p;
+
+    ctx->width=
+    ctx->height= 0;
 
     for (p = 0; p < 3; p++) {
         av_freep(&ctx->planes[p].buffers[0]);
@@ -928,11 +931,8 @@ static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
 
         av_dlog(avctx, "Frame dimensions changed!\n");
 
-        ctx->width  = width;
-        ctx->height = height;
-
         free_frame_buffers(ctx);
-        if ((res = allocate_frame_buffers(ctx, avctx)) < 0)
+        if ((res = allocate_frame_buffers(ctx, avctx, width, height)) < 0)
              return res;
         avcodec_set_dimensions(avctx, width, height);
     }
@@ -1024,8 +1024,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     Indeo3DecodeContext *ctx = avctx->priv_data;
 
     ctx->avctx     = avctx;
-    ctx->width     = avctx->width;
-    ctx->height    = avctx->height;
     avctx->pix_fmt = PIX_FMT_YUV410P;
     avcodec_get_frame_defaults(&ctx->frame);
 
@@ -1033,7 +1031,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     ff_dsputil_init(&ctx->dsp, avctx);
 
-    return allocate_frame_buffers(ctx, avctx);
+    return allocate_frame_buffers(ctx, avctx, avctx->width, avctx->height);
 }
 
 
