@@ -1279,7 +1279,7 @@ static void read_packets(WriterContext *w, AVFormatContext *fmt_ctx)
         }
         if (do_read_frames) {
             pkt1 = pkt;
-            while (1) {
+            while (pkt1.size) {
                 avcodec_get_frame_defaults(&frame);
                 ret = get_decoded_frame(fmt_ctx, &frame, &got_frame, &pkt1);
                 if (ret < 0 || !got_frame)
