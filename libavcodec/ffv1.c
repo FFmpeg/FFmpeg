@@ -659,6 +659,7 @@ static void write_header(FFV1Context *f){
         write_quant_tables(c, f->quant_table);
     }else{
         put_symbol(c, state, f->slice_count, 0);
+        if(f->version < 3){
         for(i=0; i<f->slice_count; i++){
             FFV1Context *fs= f->slice_context[i];
             put_symbol(c, state, (fs->slice_x     +1)*f->num_h_slices / f->width   , 0);
@@ -669,6 +670,7 @@ static void write_header(FFV1Context *f){
                 put_symbol(c, state, f->plane[j].quant_table_index, 0);
                 av_assert0(f->plane[j].quant_table_index == f->avctx->context_model);
             }
+        }
         }
     }
 }
@@ -1153,6 +1155,27 @@ static void clear_state(FFV1Context *f){
 }
 
 #if CONFIG_FFV1_ENCODER
+
+static void encode_slice_header(FFV1Context *f, FFV1Context *fs){
+    RangeCoder *c = &fs->c;
+    uint8_t state[CONTEXT_SIZE];
+    int j;
+    memset(state, 128, sizeof(state));
+
+    put_symbol(c, state, (fs->slice_x     +1)*f->num_h_slices / f->width   , 0);
+    put_symbol(c, state, (fs->slice_y     +1)*f->num_v_slices / f->height  , 0);
+    put_symbol(c, state, (fs->slice_width +1)*f->num_h_slices / f->width -1, 0);
+    put_symbol(c, state, (fs->slice_height+1)*f->num_v_slices / f->height-1, 0);
+    for(j=0; j<f->plane_count; j++){
+        put_symbol(c, state, f->plane[j].quant_table_index, 0);
+        av_assert0(f->plane[j].quant_table_index == f->avctx->context_model);
+    }
+    if(!f->picture.interlaced_frame) put_symbol(c, state, 3, 0);
+    else                             put_symbol(c, state, 1 + !f->picture.top_field_first, 0);
+    put_symbol(c, state, f->picture.sample_aspect_ratio.num, 0);
+    put_symbol(c, state, f->picture.sample_aspect_ratio.den, 0);
+}
+
 static int encode_slice(AVCodecContext *c, void *arg){
     FFV1Context *fs= *(void**)arg;
     FFV1Context *f= fs->avctx->priv_data;
@@ -1162,6 +1185,10 @@ static int encode_slice(AVCodecContext *c, void *arg){
     int y= fs->slice_y;
     AVFrame * const p= &f->picture;
     const int ps= (f->bits_per_raw_sample>8)+1;
+
+    if(f->version > 2){
+        encode_slice_header(f, fs);
+    }
 
     if(f->colorspace==0){
         const int chroma_width = -((-width )>>f->chroma_h_shift);
@@ -1498,18 +1525,83 @@ static void decode_rgb_frame(FFV1Context *s, uint32_t *src, int w, int h, int st
     }
 }
 
+static int decode_slice_header(FFV1Context *f, FFV1Context *fs){
+    RangeCoder *c = &fs->c;
+    uint8_t state[CONTEXT_SIZE];
+    unsigned ps, i, context_count;
+    memset(state, 128, sizeof(state));
+
+    av_assert0(f->version > 2);
+
+    fs->slice_x     = get_symbol(c, state, 0)   *f->width ;
+    fs->slice_y     = get_symbol(c, state, 0)   *f->height;
+    fs->slice_width =(get_symbol(c, state, 0)+1)*f->width  + fs->slice_x;
+    fs->slice_height=(get_symbol(c, state, 0)+1)*f->height + fs->slice_y;
+
+    fs->slice_x /= f->num_h_slices;
+    fs->slice_y /= f->num_v_slices;
+    fs->slice_width  = fs->slice_width /f->num_h_slices - fs->slice_x;
+    fs->slice_height = fs->slice_height/f->num_v_slices - fs->slice_y;
+    if((unsigned)fs->slice_width > f->width || (unsigned)fs->slice_height > f->height)
+        return -1;
+    if(    (unsigned)fs->slice_x + (uint64_t)fs->slice_width  > f->width
+        || (unsigned)fs->slice_y + (uint64_t)fs->slice_height > f->height)
+        return -1;
+
+    for(i=0; i<f->plane_count; i++){
+        PlaneContext * const p= &fs->plane[i];
+        int idx=get_symbol(c, state, 0);
+        if(idx > (unsigned)f->quant_table_count){
+            av_log(f->avctx, AV_LOG_ERROR, "quant_table_index out of range\n");
+            return -1;
+        }
+        p->quant_table_index= idx;
+        memcpy(p->quant_table, f->quant_tables[idx], sizeof(p->quant_table));
+        context_count= f->context_count[idx];
+
+        if(p->context_count < context_count){
+            av_freep(&p->state);
+            av_freep(&p->vlc_state);
+        }
+        p->context_count= context_count;
+    }
+
+    ps = get_symbol(c, state, 0);
+    if(ps==1){
+        f->picture.interlaced_frame = 1;
+        f->picture.top_field_first  = 1;
+    } else if(ps==2){
+        f->picture.interlaced_frame = 1;
+        f->picture.top_field_first  = 0;
+    } else if(ps==3){
+        f->picture.interlaced_frame = 0;
+    }
+    f->picture.sample_aspect_ratio.num = get_symbol(c, state, 0);
+    f->picture.sample_aspect_ratio.den = get_symbol(c, state, 0);
+
+    return 0;
+}
+
 static int decode_slice(AVCodecContext *c, void *arg){
     FFV1Context *fs= *(void**)arg;
     FFV1Context *f= fs->avctx->priv_data;
-    int width = fs->slice_width;
-    int height= fs->slice_height;
-    int x= fs->slice_x;
-    int y= fs->slice_y;
+    int width, height, x, y;
     const int ps= (c->bits_per_raw_sample>8)+1;
     AVFrame * const p= &f->picture;
 
+    if(f->version > 2){
+        if(decode_slice_header(f, fs) < 0)
+            return AVERROR_INVALIDDATA;
+
+        if(init_slice_state(f, fs) < 0)
+            return AVERROR(ENOMEM);
+    }
     if(f->picture.key_frame)
         clear_slice_state(f, fs);
+    width = fs->slice_width;
+    height= fs->slice_height;
+    x= fs->slice_x;
+    y= fs->slice_y;
 
     av_assert1(width && height);
     if(f->colorspace==0){
@@ -1757,7 +1849,7 @@ static int read_header(FFV1Context *f){
         fs->ac= f->ac;
         fs->packed_at_lsb= f->packed_at_lsb;
 
-        if(f->version >= 2){
+        if(f->version == 2){
             fs->slice_x     = get_symbol(c, state, 0)   *f->width ;
             fs->slice_y     = get_symbol(c, state, 0)   *f->height;
             fs->slice_width =(get_symbol(c, state, 0)+1)*f->width  + fs->slice_x;
@@ -1777,7 +1869,7 @@ static int read_header(FFV1Context *f){
         for(i=0; i<f->plane_count; i++){
             PlaneContext * const p= &fs->plane[i];
 
-            if(f->version >= 2){
+            if(f->version == 2){
                 int idx=get_symbol(c, state, 0);
                 if(idx > (unsigned)f->quant_table_count){
                     av_log(f->avctx, AV_LOG_ERROR, "quant_table_index out of range\n");
@@ -1790,11 +1882,13 @@ static int read_header(FFV1Context *f){
                 memcpy(p->quant_table, f->quant_table, sizeof(p->quant_table));
             }
 
+            if(f->version <= 2){
             if(p->context_count < context_count){
                 av_freep(&p->state);
                 av_freep(&p->vlc_state);
             }
             p->context_count= context_count;
+            }
         }
     }
     return 0;
