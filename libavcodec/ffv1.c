@@ -35,6 +35,7 @@
 #include "mathops.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/avassert.h"
+#include "libavutil/crc.h"
 
 #ifdef __INTEL_COMPILER
 #undef av_flatten
@@ -775,6 +776,7 @@ static int write_extra_header(FFV1Context *f){
     uint8_t state[CONTEXT_SIZE];
     int i, j, k;
     uint8_t state2[32][CONTEXT_SIZE];
+    unsigned v;
 
     memset(state2, 128, sizeof(state2));
     memset(state, 128, sizeof(state));
@@ -823,6 +825,9 @@ static int write_extra_header(FFV1Context *f){
     }
 
     f->avctx->extradata_size= ff_rac_terminate(c);
+    v = av_crc(av_crc_get_table(AV_CRC_32_IEEE), 0, f->avctx->extradata, f->avctx->extradata_size);
+    AV_WL32(f->avctx->extradata + f->avctx->extradata_size, v);
+    f->avctx->extradata_size += 4;
 
     return 0;
 }
@@ -1613,6 +1618,15 @@ static int read_extra_header(FFV1Context *f){
         }
     }
 
+    if(f->version > 2){
+        unsigned v;
+        v = av_crc(av_crc_get_table(AV_CRC_32_IEEE), 0, f->avctx->extradata, f->avctx->extradata_size);
+        if(v){
+            av_log(f->avctx, AV_LOG_ERROR, "CRC mismatch %X!\n", v);
+            return AVERROR_INVALIDDATA;
+        }
+    }
+
     return 0;
 }
 
@@ -1767,7 +1781,6 @@ static int read_header(FFV1Context *f){
             p->context_count= context_count;
         }
     }
-
     return 0;
 }
 
