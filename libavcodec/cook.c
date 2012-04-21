@@ -1238,6 +1238,11 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
         q->subpacket[s].gains2.now      = q->subpacket[s].gain_3;
         q->subpacket[s].gains2.previous = q->subpacket[s].gain_4;
 
+        if (q->num_subpackets + q->subpacket[s].num_channels > q->nb_channels) {
+            av_log(avctx, AV_LOG_ERROR, "Too many subpackets %d for channels %d\n", q->num_subpackets, q->nb_channels);
+            return AVERROR_INVALIDDATA;
+        }
+
         q->num_subpackets++;
         s++;
         if (s > MAX_SUBPACKETS) {
