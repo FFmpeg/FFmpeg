@@ -28,11 +28,28 @@ run make clean
 run make
 run sudo make install
 
-2.freetype
+5.freetype
 
 ./freetype.sh
 
-4.zlib
+6.vorbis
+
+./vorbis.sh
+
+7.speex
+
+./speex.sh
+
+8.lame
+
+./lame.sh
+
+7.ogg
+
+./ogg.sh
+
+
+8.zlib
 
 make clean
 make
