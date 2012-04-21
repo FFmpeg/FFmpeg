@@ -1171,6 +1171,8 @@ static int decode_packet(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     int buf_size       = avpkt->size;
     int num_bits_prev_frame, packet_sequence_number, spliced_packet;
 
+    s->frame.nb_samples = 0;
+
     if (s->packet_done || s->packet_loss) {
         s->packet_done = 0;
 
