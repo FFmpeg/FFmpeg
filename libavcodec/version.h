@@ -78,5 +78,8 @@
 #ifndef FF_API_SUB_ID
 #define FF_API_SUB_ID           (LIBAVCODEC_VERSION_MAJOR < 55)
 #endif
+#ifndef FF_API_DSP_MASK
+#define FF_API_DSP_MASK         (LIBAVCODEC_VERSION_MAJOR < 55)
+#endif
 
 #endif /* AVCODEC_VERSION_H */

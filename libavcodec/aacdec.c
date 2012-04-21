@@ -410,6 +410,13 @@ static int output_configure(AACContext *ac,
         if (ret < 0)
             return ret;
     }
+    if (ac->oc[1].m4ac.ps == 1 && channels == 2) {
+        if (layout == AV_CH_FRONT_CENTER) {
+            layout = AV_CH_FRONT_LEFT|AV_CH_FRONT_RIGHT;
+        } else {
+            layout = 0;
+        }
+    }
 
     memcpy(ac->tag_che_map, ac->che, 4 * MAX_ELEM_ID * sizeof(ac->che[0][0]));
     if (layout) avctx->channel_layout = layout;

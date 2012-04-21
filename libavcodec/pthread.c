@@ -467,7 +467,6 @@ static int update_context_from_user(AVCodecContext *dst, AVCodecContext *src)
     dst->release_buffer = src->release_buffer;
 
     dst->opaque   = src->opaque;
-    dst->dsp_mask = src->dsp_mask;
     dst->debug    = src->debug;
     dst->debug_mv = src->debug_mv;
 

@@ -3185,13 +3185,6 @@ void ff_dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx)
 {
     int mm_flags = av_get_cpu_flags();
 
-    if (avctx->dsp_mask) {
-        if (avctx->dsp_mask & AV_CPU_FLAG_FORCE)
-            mm_flags |=   avctx->dsp_mask & 0xffff;
-        else
-            mm_flags &= ~(avctx->dsp_mask & 0xffff);
-    }
-
 #if 0
     av_log(avctx, AV_LOG_INFO, "libavcodec: CPU flags:");
     if (mm_flags & AV_CPU_FLAG_MMX)
