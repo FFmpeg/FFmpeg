@@ -25,32 +25,39 @@
 
 #include "avfilter.h"
 
+enum SetFieldMode {
+    MODE_AUTO = -1,
+    MODE_BFF,
+    MODE_TFF,
+    MODE_PROG,
+};
+
 typedef struct {
-    int top_field_first;
+    enum SetFieldMode mode;
 } SetFieldContext;
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     SetFieldContext *setfield = ctx->priv;
 
-    setfield->top_field_first = -1;
+    setfield->mode = MODE_AUTO;
 
     if (args) {
         char c;
-        if (sscanf(args, "%d%c", &setfield->top_field_first, &c) != 1) {
-            if      (!strcmp("tff",  args)) setfield->top_field_first = 1;
-            else if (!strcmp("bff",  args)) setfield->top_field_first = 0;
-            else if (!strcmp("prog", args)) setfield->top_field_first = 2;
-            else if (!strcmp("auto", args)) setfield->top_field_first = -1;
+        if (sscanf(args, "%d%c", &setfield->mode, &c) != 1) {
+            if      (!strcmp("tff",  args)) setfield->mode = MODE_TFF;
+            else if (!strcmp("bff",  args)) setfield->mode = MODE_BFF;
+            else if (!strcmp("prog", args)) setfield->mode = MODE_PROG;
+            else if (!strcmp("auto", args)) setfield->mode = MODE_AUTO;
             else {
                 av_log(ctx, AV_LOG_ERROR, "Invalid argument '%s'\n", args);
                 return AVERROR(EINVAL);
             }
         } else {
-            if (setfield->top_field_first < -1 || setfield->top_field_first > 1) {
+            if (setfield->mode < -1 || setfield->mode > 1) {
                 av_log(ctx, AV_LOG_ERROR,
                        "Provided integer value %d must be included between -1 and +1\n",
-                       setfield->top_field_first);
+                       setfield->mode);
                 return AVERROR(EINVAL);
             }
             av_log(ctx, AV_LOG_WARNING,
@@ -66,11 +73,11 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     SetFieldContext *setfield = inlink->dst->priv;
     AVFilterBufferRef *outpicref = avfilter_ref_buffer(inpicref, ~0);
 
-    if (setfield->top_field_first == 2) {
+    if (setfield->mode == MODE_PROG) {
         outpicref->video->interlaced = 0;
-    } else if (setfield->top_field_first != -1) {
+    } else if (setfield->mode != MODE_AUTO) {
         outpicref->video->interlaced = 1;
-        outpicref->video->top_field_first = setfield->top_field_first;
+        outpicref->video->top_field_first = setfield->mode;
     }
     avfilter_start_frame(inlink->dst->outputs[0], outpicref);
 }
