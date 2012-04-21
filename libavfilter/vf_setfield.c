@@ -61,7 +61,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
                 return AVERROR(EINVAL);
             }
             av_log(ctx, AV_LOG_WARNING,
-                   "Using -1/0/1 is deprecated, use auto/tff/bff/prog\n", args);
+                   "Using -1/0/1 is deprecated, use auto/tff/bff/prog\n");
         }
     }
 
