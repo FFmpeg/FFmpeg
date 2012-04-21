@@ -1688,6 +1688,7 @@ static int input_request_frame(AVFilterLink *link)
     av_free_packet(&pkt);
 
     avfilter_copy_frame_props(picref, priv->frame);
+    picref->video->sample_aspect_ratio = av_guess_sample_aspect_ratio(priv->is->ic, priv->is->video_st, priv->frame);
     picref->pts = pts;
 
     avfilter_start_frame(link, picref);
