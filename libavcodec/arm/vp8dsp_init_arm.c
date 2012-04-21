@@ -17,6 +17,8 @@
  */
 
 #include <stdint.h>
+
+#include "libavutil/arm/cpu.h"
 #include "libavcodec/vp8dsp.h"
 
 void ff_vp8_luma_dc_wht_neon(DCTELEM block[4][4][16], DCTELEM dc[16]);
@@ -83,7 +85,9 @@ VP8_MC(bilin4_hv);
 
 av_cold void ff_vp8dsp_init_arm(VP8DSPContext *dsp)
 {
-    if (HAVE_NEON) {
+    int cpu_flags = av_get_cpu_flags();
+
+    if (have_neon(cpu_flags)) {
         dsp->vp8_luma_dc_wht    = ff_vp8_luma_dc_wht_neon;
         dsp->vp8_luma_dc_wht_dc = ff_vp8_luma_dc_wht_dc_neon;
 

@@ -1,6 +1,4 @@
 /*
- * Copyright (c) 2010 Mans Rullgard <mans@mansr.com>
- *
  * This file is part of Libav.
  *
  * Libav is free software; you can redistribute it and/or
@@ -18,21 +16,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stdint.h>
+#include "libavutil/cpu.h"
+#include "config.h"
 
-#include "libavutil/arm/cpu.h"
-#include "libavcodec/avcodec.h"
-#include "libavcodec/vp56dsp.h"
-
-void ff_vp6_edge_filter_hor_neon(uint8_t *yuv, int stride, int t);
-void ff_vp6_edge_filter_ver_neon(uint8_t *yuv, int stride, int t);
-
-void ff_vp56dsp_init_arm(VP56DSPContext *s, enum CodecID codec)
+int ff_get_cpu_flags_arm(void)
 {
-    int cpu_flags = av_get_cpu_flags();
-
-    if (codec != CODEC_ID_VP5 && have_neon(cpu_flags)) {
-        s->edge_filter_hor = ff_vp6_edge_filter_hor_neon;
-        s->edge_filter_ver = ff_vp6_edge_filter_ver_neon;
-    }
+    return AV_CPU_FLAG_ARMV5TE * HAVE_ARMV5TE |
+           AV_CPU_FLAG_ARMV6   * HAVE_ARMV6   |
+           AV_CPU_FLAG_ARMV6T2 * HAVE_ARMV6T2 |
+           AV_CPU_FLAG_VFP     * HAVE_ARMVFP  |
+           AV_CPU_FLAG_VFPV3   * HAVE_VFPV3   |
+           AV_CPU_FLAG_NEON    * HAVE_NEON;
 }

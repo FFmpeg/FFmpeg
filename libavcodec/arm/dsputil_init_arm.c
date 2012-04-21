@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/arm/cpu.h"
 #include "libavcodec/dsputil.h"
 #include "dsputil_arm.h"
 
@@ -76,6 +77,7 @@ static void simple_idct_arm_add(uint8_t *dest, int line_size, DCTELEM *block)
 void ff_dsputil_init_arm(DSPContext* c, AVCodecContext *avctx)
 {
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
+    int cpu_flags = av_get_cpu_flags();
 
     ff_put_pixels_clamped = c->put_pixels_clamped;
     ff_add_pixels_clamped = c->add_pixels_clamped;
@@ -117,8 +119,8 @@ void ff_dsputil_init_arm(DSPContext* c, AVCodecContext *avctx)
     c->put_no_rnd_pixels_tab[1][3] = ff_put_no_rnd_pixels8_xy2_arm;
     }
 
-    if (HAVE_ARMV5TE) ff_dsputil_init_armv5te(c, avctx);
-    if (HAVE_ARMV6)   ff_dsputil_init_armv6(c, avctx);
-    if (HAVE_ARMVFP)  ff_dsputil_init_vfp(c, avctx);
-    if (HAVE_NEON)    ff_dsputil_init_neon(c, avctx);
+    if (have_armv5te(cpu_flags)) ff_dsputil_init_armv5te(c, avctx);
+    if (have_armv6(cpu_flags))   ff_dsputil_init_armv6(c, avctx);
+    if (have_vfp(cpu_flags))     ff_dsputil_init_vfp(c, avctx);
+    if (have_neon(cpu_flags))    ff_dsputil_init_neon(c, avctx);
 }

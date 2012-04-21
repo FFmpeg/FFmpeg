@@ -20,6 +20,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/arm/cpu.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/h264dsp.h"
 
@@ -97,5 +98,8 @@ static void ff_h264dsp_init_neon(H264DSPContext *c, const int bit_depth, const i
 
 void ff_h264dsp_init_arm(H264DSPContext *c, const int bit_depth, const int chroma_format_idc)
 {
-    if (HAVE_NEON) ff_h264dsp_init_neon(c, bit_depth, chroma_format_idc);
+    int cpu_flags = av_get_cpu_flags();
+
+    if (have_neon(cpu_flags))
+        ff_h264dsp_init_neon(c, bit_depth, chroma_format_idc);
 }

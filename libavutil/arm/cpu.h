@@ -1,6 +1,4 @@
 /*
- * Copyright (c) 2010 Mans Rullgard <mans@mansr.com>
- *
  * This file is part of Libav.
  *
  * Libav is free software; you can redistribute it and/or
@@ -18,21 +16,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stdint.h>
+#ifndef AVUTIL_ARM_CPU_H
+#define AVUTIL_ARM_CPU_H
 
-#include "libavutil/arm/cpu.h"
-#include "libavcodec/avcodec.h"
-#include "libavcodec/vp56dsp.h"
+#include "config.h"
+#include "libavutil/cpu.h"
 
-void ff_vp6_edge_filter_hor_neon(uint8_t *yuv, int stride, int t);
-void ff_vp6_edge_filter_ver_neon(uint8_t *yuv, int stride, int t);
+#define have_armv5te(flags) (HAVE_ARMV5TE && ((flags) & AV_CPU_FLAG_ARMV5TE))
+#define have_armv6(flags)   (HAVE_ARMV6   && ((flags) & AV_CPU_FLAG_ARMV6))
+#define have_armv6t2(flags) (HAVE_ARMV6T2 && ((flags) & AV_CPU_FLAG_ARMV6T2))
+#define have_vfp(flags)     (HAVE_ARMVFP  && ((flags) & AV_CPU_FLAG_VFP))
+#define have_vfpv3(flags)   (HAVE_VFPV3   && ((flags) & AV_CPU_FLAG_VFPV3))
+#define have_neon(flags)    (HAVE_NEON    && ((flags) & AV_CPU_FLAG_NEON))
 
-void ff_vp56dsp_init_arm(VP56DSPContext *s, enum CodecID codec)
-{
-    int cpu_flags = av_get_cpu_flags();
-
-    if (codec != CODEC_ID_VP5 && have_neon(cpu_flags)) {
-        s->edge_filter_hor = ff_vp6_edge_filter_hor_neon;
-        s->edge_filter_ver = ff_vp6_edge_filter_ver_neon;
-    }
-}
+#endif

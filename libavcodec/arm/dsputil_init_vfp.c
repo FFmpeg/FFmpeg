@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/arm/cpu.h"
 #include "libavcodec/dsputil.h"
 #include "dsputil_arm.h"
 
@@ -28,7 +29,9 @@ void ff_vector_fmul_reverse_vfp(float *dst, const float *src0,
 
 void ff_dsputil_init_vfp(DSPContext* c, AVCodecContext *avctx)
 {
-    if (!HAVE_VFPV3)
+    int cpu_flags = av_get_cpu_flags();
+
+    if (!have_vfpv3(cpu_flags))
         c->vector_fmul = ff_vector_fmul_vfp;
     c->vector_fmul_reverse = ff_vector_fmul_reverse_vfp;
 }

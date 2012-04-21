@@ -19,6 +19,7 @@
  */
 
 #include "config.h"
+#include "libavutil/arm/cpu.h"
 #include "libavutil/attributes.h"
 #include "libavcodec/sbrdsp.h"
 
@@ -51,7 +52,9 @@ void ff_sbr_hf_apply_noise_3_neon(float Y[64][2], const float *s_m,
 
 av_cold void ff_sbrdsp_init_arm(SBRDSPContext *s)
 {
-    if (HAVE_NEON) {
+    int cpu_flags = av_get_cpu_flags();
+
+    if (have_neon(cpu_flags)) {
         s->sum64x5 = ff_sbr_sum64x5_neon;
         s->sum_square = ff_sbr_sum_square_neon;
         s->neg_odd_64 = ff_sbr_neg_odd_64_neon;

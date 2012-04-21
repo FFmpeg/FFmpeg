@@ -18,6 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/arm/cpu.h"
+
 #define CONFIG_FFT_FLOAT 0
 #include "libavcodec/fft.h"
 
@@ -27,7 +29,9 @@ void ff_mdct_fixed_calcw_neon(FFTContext *s, FFTDouble *o, const FFTSample *i);
 
 av_cold void ff_fft_fixed_init_arm(FFTContext *s)
 {
-    if (HAVE_NEON) {
+    int cpu_flags = av_get_cpu_flags();
+
+    if (have_neon(cpu_flags)) {
         s->fft_permutation = FF_FFT_PERM_SWAP_LSBS;
         s->fft_calc        = ff_fft_fixed_calc_neon;
 
