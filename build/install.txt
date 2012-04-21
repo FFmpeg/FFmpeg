@@ -1,0 +1,46 @@
+1.disable sudo secure path on ubuntu
+
+sudo visudo
+add Defaults !secure_path behind Defaults env_reset
+
+
+2.faac
+
+./faac.sh
+
+3.libgsm
+
+run make clean
+run make
+
+ignore the following errors
+./src/toast.o:toast.c:(.text+0xd84): undefined reference to `_fchmod'
+./src/toast.o:toast.c:(.text+0xdc5): undefined reference to `_fchown'
+
+sudo mkdir /usr/i686-mingw32/include/gsm
+sudo mkdir /usr/i686-mingw32/man/
+sudo mkdir /usr/i686-mingw32/man/man3
+run sudo make install
+
+4.libnut 
+
+run make clean
+run make
+run sudo make install
+
+2.freetype
+
+./freetype.sh
+
+4.zlib
+
+make clean
+make
+sudo cp zlib.h zconf.h /usr/i686-mingw32/include/
+
+
+
+
+
+
+
