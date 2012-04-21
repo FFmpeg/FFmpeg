@@ -233,6 +233,11 @@ typedef struct VideoState {
     int refresh;
 } VideoState;
 
+typedef struct AllocEventProps {
+    VideoState *is;
+    AVFrame *frame;
+} AllocEventProps;
+
 static int opt_help(const char *opt, const char *arg);
 
 /* options specified by the user */
@@ -934,6 +939,7 @@ static int video_open(VideoState *is, int force_set_video_mode)
 {
     int flags = SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL;
     int w,h;
+    VideoPicture *vp = &is->pictq[is->pictq_rindex];
 
     if (is_full_screen) flags |= SDL_FULLSCREEN;
     else                flags |= SDL_RESIZABLE;
@@ -944,15 +950,9 @@ static int video_open(VideoState *is, int force_set_video_mode)
     } else if (!is_full_screen && screen_width) {
         w = screen_width;
         h = screen_height;
-#if CONFIG_AVFILTER
-    } else if (is->out_video_filter && is->out_video_filter->inputs[0]) {
-        w = is->out_video_filter->inputs[0]->w;
-        h = is->out_video_filter->inputs[0]->h;
-#else
-    } else if (is->video_st && is->video_st->codec->width) {
-        w = is->video_st->codec->width;
-        h = is->video_st->codec->height;
-#endif
+    } else if (vp->width) {
+        w = vp->width;
+        h = vp->height;
     } else {
         w = 640;
         h = 480;
@@ -1293,9 +1293,10 @@ display:
 
 /* allocate a picture (needs to do that in main thread to avoid
    potential locking problems */
-static void alloc_picture(void *opaque)
+static void alloc_picture(AllocEventProps *event_props)
 {
-    VideoState *is = opaque;
+    VideoState *is = event_props->is;
+    AVFrame *frame = event_props->frame;
     VideoPicture *vp;
 
     vp = &is->pictq[is->pictq_windex];
@@ -1307,15 +1308,13 @@ static void alloc_picture(void *opaque)
     if (vp->picref)
         avfilter_unref_buffer(vp->picref);
     vp->picref = NULL;
-
-    vp->width   = is->out_video_filter->inputs[0]->w;
-    vp->height  = is->out_video_filter->inputs[0]->h;
-    vp->pix_fmt = is->out_video_filter->inputs[0]->format;
-#else
-    vp->width   = is->video_st->codec->width;
-    vp->height  = is->video_st->codec->height;
-    vp->pix_fmt = is->video_st->codec->pix_fmt;
 #endif
+
+    vp->width   = frame->width;
+    vp->height  = frame->height;
+    vp->pix_fmt = frame->format;
+
+    video_open(event_props->is, 0);
 
     vp->bmp = SDL_CreateYUVOverlay(vp->width, vp->height,
                                    SDL_YV12_OVERLAY,
@@ -1378,22 +1377,22 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
 
     /* alloc or resize hardware picture buffer */
     if (!vp->bmp || vp->reallocate ||
-#if CONFIG_AVFILTER
-        vp->width  != is->out_video_filter->inputs[0]->w ||
-        vp->height != is->out_video_filter->inputs[0]->h) {
-#else
-        vp->width != is->video_st->codec->width ||
-        vp->height != is->video_st->codec->height) {
-#endif
+        vp->width  != src_frame->width ||
+        vp->height != src_frame->height) {
         SDL_Event event;
+        AllocEventProps event_props;
+
+        event_props.frame = src_frame;
+        event_props.is = is;
 
         vp->allocated  = 0;
         vp->reallocate = 0;
 
         /* the allocation must be done in the main thread to avoid
-           locking problems */
+           locking problems. We wait in this block for the event to complete,
+           so we can pass a pointer to event_props to it. */
         event.type = FF_ALLOC_EVENT;
-        event.user.data1 = is;
+        event.user.data1 = &event_props;
         SDL_PushEvent(&event);
 
         /* wait until the picture is allocated */
@@ -2972,7 +2971,6 @@ static void event_loop(VideoState *cur_stream)
             do_exit(cur_stream);
             break;
         case FF_ALLOC_EVENT:
-            video_open(event.user.data1, 0);
             alloc_picture(event.user.data1);
             break;
         case FF_REFRESH_EVENT:
