@@ -300,7 +300,7 @@ static int xmv_process_packet_header(AVFormatContext *s)
     xmv->current_stream = 0;
     if (!xmv->video.frame_count) {
         xmv->video.frame_count = 1;
-        xmv->current_stream    = 1;
+        xmv->current_stream    = xmv->stream_count > 1;
     }
 
     /* Packet audio header */
