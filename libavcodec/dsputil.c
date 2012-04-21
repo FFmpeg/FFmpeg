@@ -380,38 +380,6 @@ void ff_put_pixels_clamped_c(const DCTELEM *block, uint8_t *restrict pixels,
     }
 }
 
-static void put_pixels_clamped4_c(const DCTELEM *block, uint8_t *restrict pixels,
-                                 int line_size)
-{
-    int i;
-
-    /* read the pixels */
-    for(i=0;i<4;i++) {
-        pixels[0] = av_clip_uint8(block[0]);
-        pixels[1] = av_clip_uint8(block[1]);
-        pixels[2] = av_clip_uint8(block[2]);
-        pixels[3] = av_clip_uint8(block[3]);
-
-        pixels += line_size;
-        block += 8;
-    }
-}
-
-static void put_pixels_clamped2_c(const DCTELEM *block, uint8_t *restrict pixels,
-                                 int line_size)
-{
-    int i;
-
-    /* read the pixels */
-    for(i=0;i<2;i++) {
-        pixels[0] = av_clip_uint8(block[0]);
-        pixels[1] = av_clip_uint8(block[1]);
-
-        pixels += line_size;
-        block += 8;
-    }
-}
-
 void ff_put_signed_pixels_clamped_c(const DCTELEM *block,
                                     uint8_t *restrict pixels,
                                     int line_size)
@@ -448,36 +416,6 @@ void ff_add_pixels_clamped_c(const DCTELEM *block, uint8_t *restrict pixels,
         pixels[5] = av_clip_uint8(pixels[5] + block[5]);
         pixels[6] = av_clip_uint8(pixels[6] + block[6]);
         pixels[7] = av_clip_uint8(pixels[7] + block[7]);
-        pixels += line_size;
-        block += 8;
-    }
-}
-
-static void add_pixels_clamped4_c(const DCTELEM *block, uint8_t *restrict pixels,
-                          int line_size)
-{
-    int i;
-
-    /* read the pixels */
-    for(i=0;i<4;i++) {
-        pixels[0] = av_clip_uint8(pixels[0] + block[0]);
-        pixels[1] = av_clip_uint8(pixels[1] + block[1]);
-        pixels[2] = av_clip_uint8(pixels[2] + block[2]);
-        pixels[3] = av_clip_uint8(pixels[3] + block[3]);
-        pixels += line_size;
-        block += 8;
-    }
-}
-
-static void add_pixels_clamped2_c(const DCTELEM *block, uint8_t *restrict pixels,
-                          int line_size)
-{
-    int i;
-
-    /* read the pixels */
-    for(i=0;i<2;i++) {
-        pixels[0] = av_clip_uint8(pixels[0] + block[0]);
-        pixels[1] = av_clip_uint8(pixels[1] + block[1]);
         pixels += line_size;
         block += 8;
     }
