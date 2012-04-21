@@ -2522,6 +2522,12 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         if (read_size >= ic->probesize) {
             ret = count;
             av_log(ic, AV_LOG_DEBUG, "Probe buffer size limit %d reached\n", ic->probesize);
+            for (i = 0; i < ic->nb_streams; i++)
+                if (!ic->streams[i]->r_frame_rate.num &&
+                    ic->streams[i]->info->duration_count <= 1)
+                    av_log(ic, AV_LOG_WARNING,
+                           "Stream #%d: not enough frames to estimate rate; "
+                           "consider increasing probesize\n", i);
             break;
         }
 
