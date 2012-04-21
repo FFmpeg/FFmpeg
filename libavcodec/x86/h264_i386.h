@@ -36,7 +36,7 @@
 
 //FIXME use some macros to avoid duplicating get_cabac (cannot be done yet
 //as that would make optimization work hard)
-#if HAVE_7REGS
+#if HAVE_7REGS && !defined(BROKEN_RELOCATIONS)
 static int decode_significance_x86(CABACContext *c, int max_coeff,
                                    uint8_t *significant_coeff_ctx_base,
                                    int *index, x86_reg last_off){
@@ -45,31 +45,20 @@ static int decode_significance_x86(CABACContext *c, int max_coeff,
     int minusindex= 4-(intptr_t)index;
     int bit;
     x86_reg coeff_count;
-
-#ifdef BROKEN_RELOCATIONS
-    int *rip;
-
-    __asm__ volatile(
-        "1:                        \n\t"
-        "lea    1b(%%rip), %0      \n\t"
-        : "=&r"(rip)
-    );
-#endif
-
     __asm__ volatile(
         "3:                                     \n\t"
 
-        BRANCHLESS_GET_CABAC("%4", "%q4", "(%1)", "%3", "%w3",
-                             "%5", "%q5", "%k0", "%b0",
-                             "%a11(%6)", "%a12(%6)", "%13")
+        BRANCHLESS_GET_CABAC("%4", "(%1)", "%3", "%w3",
+                             "%5", "%k0", "%b0",
+                             "%a11(%6)", "%a12(%6)")
 
         "test $1, %4                            \n\t"
         " jz 4f                                 \n\t"
         "add  %10, %1                           \n\t"
 
-        BRANCHLESS_GET_CABAC("%4", "%q4", "(%1)", "%3", "%w3",
-                             "%5", "%q5", "%k0", "%b0",
-                             "%a11(%6)", "%a12(%6)", "%13")
+        BRANCHLESS_GET_CABAC("%4", "(%1)", "%3", "%w3",
+                             "%5", "%k0", "%b0",
+                             "%a11(%6)", "%a12(%6)")
 
         "sub  %10, %1                           \n\t"
         "mov  %2, %0                            \n\t"
@@ -97,7 +86,7 @@ static int decode_significance_x86(CABACContext *c, int max_coeff,
           "+&r"(c->low), "=&r"(bit), "+&r"(c->range)
         : "r"(c), "m"(minusstart), "m"(end), "m"(minusindex), "m"(last_off),
           "i"(offsetof(CABACContext, bytestream)),
-          "i"(offsetof(CABACContext, bytestream_end)) RIP_ARG
+          "i"(offsetof(CABACContext, bytestream_end))
         : "%"REG_c, "memory"
     );
     return coeff_count;
@@ -111,17 +100,6 @@ static int decode_significance_8x8_x86(CABACContext *c,
     x86_reg coeff_count;
     x86_reg last=0;
     x86_reg state;
-
-#ifdef BROKEN_RELOCATIONS
-    int *rip;
-
-    __asm__ volatile(
-        "1:                        \n\t"
-        "lea    1b(%%rip), %0      \n\t"
-        : "=&r"(rip)
-    );
-#endif
-
     __asm__ volatile(
         "mov %1, %6                             \n\t"
         "3:                                     \n\t"
@@ -130,24 +108,20 @@ static int decode_significance_8x8_x86(CABACContext *c,
         "movzbl (%0, %6), %k6                   \n\t"
         "add %9, %6                             \n\t"
 
-        BRANCHLESS_GET_CABAC("%4", "%q4", "(%6)", "%3", "%w3",
-                             "%5", "%q5", "%k0", "%b0",
-                             "%a12(%7)", "%a13(%7)", "%14")
+        BRANCHLESS_GET_CABAC("%4", "(%6)", "%3", "%w3",
+                             "%5", "%k0", "%b0",
+                             "%a12(%7)", "%a13(%7)")
 
         "mov %1, %k6                            \n\t"
         "test $1, %4                            \n\t"
         " jz 4f                                 \n\t"
 
-#ifdef BROKEN_RELOCATIONS
-        "movzbl last_coeff_flag_offset_8x8-1b(%14, %q6), %k6\n\t"
-#else
-        "movzbl last_coeff_flag_offset_8x8(%k6), %k6\n\t"
-#endif
+        "movzbl "MANGLE(last_coeff_flag_offset_8x8)"(%k6), %k6\n\t"
         "add %11, %6                            \n\t"
 
-        BRANCHLESS_GET_CABAC("%4", "%q4", "(%6)", "%3", "%w3",
-                             "%5", "%q5", "%k0", "%b0",
-                             "%a12(%7)", "%a13(%7)", "%14")
+        BRANCHLESS_GET_CABAC("%4", "(%6)", "%3", "%w3",
+                             "%5", "%k0", "%b0",
+                             "%a12(%7)", "%a13(%7)")
 
         "mov %2, %0                             \n\t"
         "mov %1, %k6                            \n\t"
@@ -173,7 +147,7 @@ static int decode_significance_8x8_x86(CABACContext *c,
         : "r"(c), "m"(minusindex), "m"(significant_coeff_ctx_base),
           "m"(sig_off), "m"(last_coeff_ctx_base),
           "i"(offsetof(CABACContext, bytestream)),
-          "i"(offsetof(CABACContext, bytestream_end)) RIP_ARG
+          "i"(offsetof(CABACContext, bytestream_end))
         : "%"REG_c, "memory"
     );
     return coeff_count;
