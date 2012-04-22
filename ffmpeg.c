@@ -596,7 +596,7 @@ static void free_buffer_pool(InputStream *ist)
 
 static void unref_buffer(InputStream *ist, FrameBuffer *buf)
 {
-    av_assert0(buf->refcount);
+    av_assert0(buf->refcount > 0);
     buf->refcount--;
     if (!buf->refcount) {
         buf->next = ist->buffer_pool;
