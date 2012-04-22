@@ -833,7 +833,7 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
             }
         } else if (!ff_guidcmp(g, ff_data_guid)) {
             int stream_index = ff_find_stream_index(s, sid);
-            if (mode == SEEK_TO_DATA && stream_index >= 0 && len > 32) {
+            if (mode == SEEK_TO_DATA && stream_index >= 0 && len > 32 && s->streams[stream_index]->priv_data) {
                 WtvStream *wst = s->streams[stream_index]->priv_data;
                 wst->seen_data = 1;
                 if (len_ptr) {
