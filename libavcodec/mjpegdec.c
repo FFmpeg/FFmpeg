@@ -1148,6 +1148,13 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s, const uint8_t *mb_bitmask,
     const int block_size = s->lossless ? 1 : 8;
     int ilv, prev_shift;
 
+    if (!s->got_picture) {
+        av_log(s->avctx, AV_LOG_WARNING,
+                "Can not process SOS before SOF, skipping\n");
+        return -1;
+    }
+
+    av_assert0(s->picture_ptr->data[0]);
     /* XXX: verify len field validity */
     len = get_bits(&s->gb, 16);
     nb_components = get_bits(&s->gb, 8);
@@ -1699,11 +1706,6 @@ eoi_parser:
 
                 goto the_end;
             case SOS:
-                if (!s->got_picture) {
-                    av_log(avctx, AV_LOG_WARNING,
-                           "Can not process SOS before SOF, skipping\n");
-                    break;
-                    }
                 if (ff_mjpeg_decode_sos(s, NULL, NULL) < 0 &&
                     (avctx->err_recognition & AV_EF_EXPLODE))
                     return AVERROR_INVALIDDATA;
