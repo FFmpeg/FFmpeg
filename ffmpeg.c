@@ -2614,6 +2614,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
             fb->buf->priv           = buf;
             fb->buf->free           = filter_release_buffer;
 
+            av_assert0(buf->refcount>0);
             buf->refcount++;
             av_buffersrc_buffer(ist->filters[i]->filter, fb);
         } else
