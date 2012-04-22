@@ -1,6 +1,4 @@
 /*
- * Copyright (c) 2011 Mans Rullgard
- *
  * This file is part of Libav.
  *
  * Libav is free software; you can redistribute it and/or
@@ -18,20 +16,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stdint.h>
-
-#include "libavutil/arm/cpu.h"
-#include "libavcodec/mpegaudiodsp.h"
+#include "libavutil/cpu.h"
 #include "config.h"
 
-void ff_mpadsp_apply_window_fixed_armv6(int32_t *synth_buf, int32_t *window,
-                                        int *dither, int16_t *out, int incr);
-
-void ff_mpadsp_init_arm(MPADSPContext *s)
+int ff_get_cpu_flags_arm(void)
 {
-    int cpu_flags = av_get_cpu_flags();
-
-    if (have_armv6(cpu_flags)) {
-        s->apply_window_fixed = ff_mpadsp_apply_window_fixed_armv6;
-    }
+    return AV_CPU_FLAG_ARMV5TE * HAVE_ARMV5TE |
+           AV_CPU_FLAG_ARMV6   * HAVE_ARMV6   |
+           AV_CPU_FLAG_ARMV6T2 * HAVE_ARMV6T2 |
+           AV_CPU_FLAG_VFP     * HAVE_ARMVFP  |
+           AV_CPU_FLAG_VFPV3   * HAVE_VFPV3   |
+           AV_CPU_FLAG_NEON    * HAVE_NEON;
 }

@@ -45,6 +45,13 @@
 #define AV_CPU_FLAG_FMA4         0x0800 ///< Bulldozer FMA4 functions
 #define AV_CPU_FLAG_ALTIVEC      0x0001 ///< standard
 
+#define AV_CPU_FLAG_ARMV5TE      (1 << 0)
+#define AV_CPU_FLAG_ARMV6        (1 << 1)
+#define AV_CPU_FLAG_ARMV6T2      (1 << 2)
+#define AV_CPU_FLAG_VFP          (1 << 3)
+#define AV_CPU_FLAG_VFPV3        (1 << 4)
+#define AV_CPU_FLAG_NEON         (1 << 5)
+
 /**
  * Return the flags which specify extensions supported by the CPU.
  */
@@ -66,6 +73,7 @@ void av_force_cpu_flags(int flags);
 attribute_deprecated void av_set_cpu_flags_mask(int mask);
 
 /* The following CPU-specific functions shall not be called directly. */
+int ff_get_cpu_flags_arm(void);
 int ff_get_cpu_flags_ppc(void);
 int ff_get_cpu_flags_x86(void);
 

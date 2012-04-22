@@ -17,6 +17,8 @@
  */
 
 #include <stdint.h>
+
+#include "libavutil/arm/cpu.h"
 #include "libavcodec/vp8dsp.h"
 
 void ff_vp8_luma_dc_wht_dc_armv6(DCTELEM block[4][4][16], DCTELEM dc[16]);
@@ -301,7 +303,9 @@ av_cold void ff_vp8dsp_init_arm(VP8DSPContext *dsp)
         dsp->put_vp8_bilinear_pixels_tab[2][2][0] = ff_put_vp8_bilin4_v_##opt; \
         dsp->put_vp8_bilinear_pixels_tab[2][2][1] = ff_put_vp8_bilin4_hv_##opt; \
         dsp->put_vp8_bilinear_pixels_tab[2][2][2] = ff_put_vp8_bilin4_hv_##opt
-    if (HAVE_NEON) {
+    int cpu_flags = av_get_cpu_flags();
+
+    if (have_neon(cpu_flags)) {
         set_func_ptrs(neon);
     } else if (HAVE_ARMV6) {
         set_func_ptrs(armv6);

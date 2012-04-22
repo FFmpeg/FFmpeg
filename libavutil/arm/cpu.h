@@ -1,6 +1,4 @@
 /*
- * Copyright (c) 2011 Mans Rullgard
- *
  * This file is part of Libav.
  *
  * Libav is free software; you can redistribute it and/or
@@ -18,20 +16,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stdint.h>
+#ifndef AVUTIL_ARM_CPU_H
+#define AVUTIL_ARM_CPU_H
 
-#include "libavutil/arm/cpu.h"
-#include "libavcodec/mpegaudiodsp.h"
 #include "config.h"
+#include "libavutil/cpu.h"
 
-void ff_mpadsp_apply_window_fixed_armv6(int32_t *synth_buf, int32_t *window,
-                                        int *dither, int16_t *out, int incr);
+#define have_armv5te(flags) (HAVE_ARMV5TE && ((flags) & AV_CPU_FLAG_ARMV5TE))
+#define have_armv6(flags)   (HAVE_ARMV6   && ((flags) & AV_CPU_FLAG_ARMV6))
+#define have_armv6t2(flags) (HAVE_ARMV6T2 && ((flags) & AV_CPU_FLAG_ARMV6T2))
+#define have_vfp(flags)     (HAVE_ARMVFP  && ((flags) & AV_CPU_FLAG_VFP))
+#define have_vfpv3(flags)   (HAVE_VFPV3   && ((flags) & AV_CPU_FLAG_VFPV3))
+#define have_neon(flags)    (HAVE_NEON    && ((flags) & AV_CPU_FLAG_NEON))
 
-void ff_mpadsp_init_arm(MPADSPContext *s)
-{
-    int cpu_flags = av_get_cpu_flags();
-
-    if (have_armv6(cpu_flags)) {
-        s->apply_window_fixed = ff_mpadsp_apply_window_fixed_armv6;
-    }
-}
+#endif

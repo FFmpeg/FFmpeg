@@ -31,6 +31,7 @@ int av_get_cpu_flags(void)
     if (checked)
         return flags;
 
+    if (ARCH_ARM) flags = ff_get_cpu_flags_arm();
     if (ARCH_PPC) flags = ff_get_cpu_flags_ppc();
     if (ARCH_X86) flags = ff_get_cpu_flags_x86();
 
@@ -54,7 +55,14 @@ static const struct {
     int flag;
     const char *name;
 } cpu_flag_tab[] = {
-#if   ARCH_PPC
+#if   ARCH_ARM
+    { AV_CPU_FLAG_ARMV5TE,   "armv5te"    },
+    { AV_CPU_FLAG_ARMV6,     "armv6"      },
+    { AV_CPU_FLAG_ARMV6T2,   "armv6t2"    },
+    { AV_CPU_FLAG_VFP,       "vfp"        },
+    { AV_CPU_FLAG_VFPV3,     "vfpv3"      },
+    { AV_CPU_FLAG_NEON,      "neon"       },
+#elif ARCH_PPC
     { AV_CPU_FLAG_ALTIVEC,   "altivec"    },
 #elif ARCH_X86
     { AV_CPU_FLAG_MMX,       "mmx"        },

@@ -907,7 +907,7 @@ void ff_er_frame_end(MpegEncContext *s)
 
     /* We do not support ER of field pictures yet,
      * though it should not crash if enabled. */
-    if (!s->err_recognition || s->error_count == 0 || s->avctx->lowres ||
+    if (!s->err_recognition || s->error_count == 0                     ||
         s->avctx->hwaccel                                              ||
         s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU          ||
         s->picture_structure != PICT_FRAME                             ||

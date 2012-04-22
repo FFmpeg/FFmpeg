@@ -941,21 +941,6 @@ static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int predictor,
     return 0;
 }
 
-static av_always_inline void mjpeg_copy_block(uint8_t *dst, const uint8_t *src,
-                                              int linesize, int lowres)
-{
-    switch (lowres) {
-    case 0: copy_block8(dst, src, linesize, linesize, 8);
-        break;
-    case 1: copy_block4(dst, src, linesize, linesize, 4);
-        break;
-    case 2: copy_block2(dst, src, linesize, linesize, 2);
-        break;
-    case 3: *dst = *src;
-        break;
-    }
-}
-
 static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
                              int Al, const uint8_t *mb_bitmask,
                              const AVFrame *reference)
@@ -1018,16 +1003,16 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
                 x = 0;
                 y = 0;
                 for (j = 0; j < n; j++) {
-                    block_offset = (((linesize[c] * (v * mb_y + y) * 8) +
-                                     (h * mb_x + x) * 8) >> s->avctx->lowres);
+                    block_offset = ((linesize[c] * (v * mb_y + y) * 8) +
+                                    (h * mb_x + x) * 8);
 
                     if (s->interlaced && s->bottom_field)
                         block_offset += linesize[c] >> 1;
                     ptr = data[c] + block_offset;
                     if (!s->progressive) {
                         if (copy_mb)
-                            mjpeg_copy_block(ptr, reference_data[c] + block_offset,
-                                             linesize[c], s->avctx->lowres);
+                            copy_block8(ptr, reference_data[c] + block_offset,
+                                        linesize[c], linesize[c], 8);
                         else {
                             s->dsp.clear_block(s->block);
                             if (decode_block(s, s->block, i,
@@ -1829,7 +1814,6 @@ AVCodec ff_mjpeg_decoder = {
     .close          = ff_mjpeg_decode_end,
     .decode         = ff_mjpeg_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .max_lowres     = 3,
     .long_name      = NULL_IF_CONFIG_SMALL("MJPEG (Motion JPEG)"),
     .priv_class     = &mjpegdec_class,
 };
@@ -1843,6 +1827,5 @@ AVCodec ff_thp_decoder = {
     .close          = ff_mjpeg_decode_end,
     .decode         = ff_mjpeg_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .max_lowres     = 3,
     .long_name      = NULL_IF_CONFIG_SMALL("Nintendo Gamecube THP video"),
 };

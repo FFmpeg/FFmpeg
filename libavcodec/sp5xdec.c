@@ -102,7 +102,6 @@ AVCodec ff_sp5x_decoder = {
     .close          = ff_mjpeg_decode_end,
     .decode         = sp5x_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .max_lowres     = 3,
     .long_name      = NULL_IF_CONFIG_SMALL("Sunplus JPEG (SP5X)"),
 };
 
