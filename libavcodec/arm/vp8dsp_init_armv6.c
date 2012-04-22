@@ -17,17 +17,18 @@
  */
 
 #include <stdint.h>
-
-#include "libavutil/arm/cpu.h"
 #include "libavcodec/vp8dsp.h"
 #include "vp8dsp.h"
 
-av_cold void ff_vp8dsp_init_arm(VP8DSPContext *dsp)
-{
-    int cpu_flags = av_get_cpu_flags();
+void ff_vp8_luma_dc_wht_dc_armv6(DCTELEM block[4][4][16], DCTELEM dc[16]);
 
-    if (have_armv6(cpu_flags))
-        ff_vp8dsp_init_armv6(dsp);
-    if (have_neon(cpu_flags))
-        ff_vp8dsp_init_neon(dsp);
+VP8_MC(pixels4, armv6);
+
+av_cold void ff_vp8dsp_init_armv6(VP8DSPContext *dsp)
+{
+    dsp->vp8_luma_dc_wht_dc = ff_vp8_luma_dc_wht_dc_armv6;
+
+    dsp->put_vp8_epel_pixels_tab[2][0][0] = ff_put_vp8_pixels4_armv6;
+
+    dsp->put_vp8_bilinear_pixels_tab[2][0][0] = ff_put_vp8_pixels4_armv6;
 }
