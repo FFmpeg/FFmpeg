@@ -599,6 +599,9 @@ static void unref_buffer(InputStream *ist, FrameBuffer *buf)
     av_assert0(buf->refcount > 0);
     buf->refcount--;
     if (!buf->refcount) {
+        FrameBuffer *tmp;
+        for(tmp= ist->buffer_pool; tmp; tmp= tmp->next)
+            av_assert1(tmp != buf);
         buf->next = ist->buffer_pool;
         ist->buffer_pool = buf;
     }
