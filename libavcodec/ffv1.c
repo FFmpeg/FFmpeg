@@ -193,6 +193,7 @@ typedef struct FFV1Context{
     int gob_count;
     int packed_at_lsb;
     int ec;
+    int key_frame_ok;
 
     int quant_table_count;
 
@@ -1945,11 +1946,17 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     p->pict_type= AV_PICTURE_TYPE_I; //FIXME I vs. P
     if(get_rac(c, &keystate)){
         p->key_frame= 1;
+        f->key_frame_ok = 0;
         if(read_header(f) < 0)
             return -1;
         if(init_slices_state(f) < 0)
             return -1;
+        f->key_frame_ok = 1;
     }else{
+        if (!f->key_frame_ok) {
+            av_log(avctx, AV_LOG_ERROR, "Cant decode non keyframe without valid keyframe\n");
+            return AVERROR_INVALIDDATA;
+        }
         p->key_frame= 0;
     }
     if(f->ac>1){
