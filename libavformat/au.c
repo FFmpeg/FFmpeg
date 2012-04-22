@@ -170,7 +170,7 @@ static int au_read_header(AVFormatContext *s)
     st->codec->channels = channels;
     st->codec->sample_rate = rate;
     if (data_size != AU_UNKNOWN_SIZE)
-    st->duration = (((int64_t)data_size)<<3) / (st->codec->channels * bps);
+    st->duration = (((int64_t)data_size)<<3) / (st->codec->channels * (int64_t)bps);
     avpriv_set_pts_info(st, 64, 1, rate);
     return 0;
 }
