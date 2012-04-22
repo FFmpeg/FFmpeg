@@ -862,8 +862,8 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
         char *p;
         int file_idx = strtol(in->name, &p, 0);
 
-        if (file_idx < 0 || file_idx > nb_input_files) {
-            av_log(NULL, AV_LOG_FATAL, "Invalid file index %d in filtegraph description %s.\n",
+        if (file_idx < 0 || file_idx >= nb_input_files) {
+            av_log(NULL, AV_LOG_FATAL, "Invalid file index %d in filtergraph description %s.\n",
                    file_idx, fg->graph_desc);
             exit_program(1);
         }
