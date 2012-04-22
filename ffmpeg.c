@@ -628,6 +628,7 @@ static int codec_get_buffer(AVCodecContext *s, AVFrame *frame)
         if ((ret = alloc_buffer(ist, s, &buf)) < 0)
             return ret;
     }
+    av_assert0(!buf->refcount);
     buf->refcount++;
 
     frame->opaque        = buf;
