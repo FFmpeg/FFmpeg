@@ -2289,6 +2289,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
 
     if (avctx->extradata && !avctx->frame_number) {
         int ret = decode_chunks(avctx, picture, data_size, avctx->extradata, avctx->extradata_size);
+        *data_size = 0;
         if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
             return ret;
     }
