@@ -553,8 +553,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
     ff_init_scantable(a->dsp.idct_permutation, &a->scantable, scantab);
     avctx->pix_fmt= PIX_FMT_YUV420P;
 
-    a->inv_qscale= avctx->extradata[0];
-    if(a->inv_qscale == 0){
+    if(avctx->extradata_size < 1 || (a->inv_qscale= avctx->extradata[0]) == 0){
         av_log(avctx, AV_LOG_ERROR, "illegal qscale 0\n");
         if(avctx->codec_id == CODEC_ID_ASV1)
             a->inv_qscale= 6;
