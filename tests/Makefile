@@ -26,19 +26,9 @@ tests/vsynth2/00.pgm: tests/rotozoom$(HOSTEXESUF) | tests/vsynth2
 tests/data/asynth1.sw: tests/audiogen$(HOSTEXESUF) | tests/data
 	$(M)./$< $@
 
-tests/data/asynth-16000-1.sw: tests/audiogen$(HOSTEXESUF) | tests/data
-	$(M)./$< $@ 16000 1
-
+tests/data/asynth-%.sw \
 tests/data/asynth-%.wav: tests/audiogen$(HOSTEXESUF) | tests/data
 	$(M)./$< $@ $(subst -, ,$*)
-
-tests/data/mapchan-6ch.sw: tests/audiogen$(HOSTEXESUF)
-	@mkdir -p tests/data
-	$(M)./$< $@ 22050 6
-
-tests/data/mapchan-mono.sw: tests/audiogen$(HOSTEXESUF)
-	@mkdir -p tests/data
-	$(M)./$< $@ 22050 1
 
 tests/data/%.sw tests/data/asynth% tests/vsynth%/00.pgm: TAG = GEN
 
