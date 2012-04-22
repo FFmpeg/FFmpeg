@@ -1872,6 +1872,8 @@ static int video_thread(void *arg)
         ret = get_video_frame(is, frame, &pts_int, &pkt);
         pos = pkt.pos;
         av_free_packet(&pkt);
+        if (ret == 0)
+            continue;
 #endif
 
         if (ret < 0)
