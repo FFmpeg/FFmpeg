@@ -356,6 +356,12 @@ static int decode_pic_hdr(IVI5DecContext *ctx, AVCodecContext *avctx)
         ctx->gop_invalid = 0;
     }
 
+    if (ctx->frame_type == FRAMETYPE_INTER_SCAL && !ctx->is_scalable) {
+        av_log(avctx, AV_LOG_ERROR, "Scalable inter frame in non scaleable stream\n");
+        ctx->frame_type = FRAMETYPE_INTER;
+        return AVERROR_INVALIDDATA;
+    }
+
     if (ctx->frame_type != FRAMETYPE_NULL) {
         ctx->frame_flags = get_bits(&ctx->gb, 8);
 
