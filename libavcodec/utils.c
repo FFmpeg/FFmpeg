@@ -149,8 +149,8 @@ unsigned avcodec_get_edge_width(void)
 void avcodec_set_dimensions(AVCodecContext *s, int width, int height){
     s->coded_width = width;
     s->coded_height= height;
-    s->width  = width;
-    s->height = height;
+    s->width = -((-width )>>s->lowres);
+    s->height= -((-height)>>s->lowres);
 }
 
 #define INTERNAL_BUFFER_SIZE (32+1)
@@ -239,8 +239,9 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
 
     *width = FFALIGN(*width , w_align);
     *height= FFALIGN(*height, h_align);
-    if (s->codec_id == CODEC_ID_H264)
+    if(s->codec_id == CODEC_ID_H264 || s->lowres)
         *height+=2; // some of the optimized chroma MC reads one line too much
+                    // which is also done in mpeg decoders with lowres > 0
 
     for (i = 0; i < 4; i++)
         linesize_align[i] = STRIDE_ALIGN;

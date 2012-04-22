@@ -1938,8 +1938,8 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
         qpel_mc_func (*op_qpix)[16];
         const int linesize   = s->current_picture.f.linesize[0]; //not s->linesize as this would be wrong for field pics
         const int uvlinesize = s->current_picture.f.linesize[1];
-        const int readable= s->pict_type != AV_PICTURE_TYPE_B || s->encoding || s->avctx->draw_horiz_band;
-        const int block_size = 8;
+        const int readable= s->pict_type != AV_PICTURE_TYPE_B || s->encoding || s->avctx->draw_horiz_band || s->avctx->lowres;
+        const int block_size= 8 >> s->avctx->lowres;
 
         /* avoid copy if macroblock skipped in last frame too */
         /* skip only during decoding as we might trash the buffers during encoding a bit */
@@ -2016,9 +2016,9 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
             if(s->encoding || !(   s->msmpeg4_version || s->codec_id==CODEC_ID_MPEG1VIDEO || s->codec_id==CODEC_ID_MPEG2VIDEO
                                 || (s->codec_id==CODEC_ID_MPEG4 && !s->mpeg_quant))){
                 add_dequant_dct(s, block[0], 0, dest_y                          , dct_linesize, s->qscale);
-                add_dequant_dct(s, block[1], 1, dest_y              + block_size, dct_linesize, s->qscale);
+                add_dequant_dct(s, block[1], 1, dest_y              + 8         , dct_linesize, s->qscale);
                 add_dequant_dct(s, block[2], 2, dest_y + dct_offset             , dct_linesize, s->qscale);
-                add_dequant_dct(s, block[3], 3, dest_y + dct_offset + block_size, dct_linesize, s->qscale);
+                add_dequant_dct(s, block[3], 3, dest_y + dct_offset + 8         , dct_linesize, s->qscale);
 
                 if(!CONFIG_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
                     if (s->chroma_y_shift){
@@ -2035,9 +2035,9 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
                 }
             } else if(is_mpeg12 || (s->codec_id != CODEC_ID_WMV2)){
                 add_dct(s, block[0], 0, dest_y                          , dct_linesize);
-                add_dct(s, block[1], 1, dest_y              + block_size, dct_linesize);
+                add_dct(s, block[1], 1, dest_y              + 8         , dct_linesize);
                 add_dct(s, block[2], 2, dest_y + dct_offset             , dct_linesize);
-                add_dct(s, block[3], 3, dest_y + dct_offset + block_size, dct_linesize);
+                add_dct(s, block[3], 3, dest_y + dct_offset + 8         , dct_linesize);
 
                 if(!CONFIG_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
                     if(s->chroma_y_shift){//Chroma420
@@ -2046,17 +2046,17 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
                     }else{
                         //chroma422
                         dct_linesize = uvlinesize << s->interlaced_dct;
-                        dct_offset   = s->interlaced_dct ? uvlinesize : uvlinesize*block_size;
+                        dct_offset   = s->interlaced_dct ? uvlinesize : uvlinesize*8;
 
                         add_dct(s, block[4], 4, dest_cb, dct_linesize);
                         add_dct(s, block[5], 5, dest_cr, dct_linesize);
                         add_dct(s, block[6], 6, dest_cb+dct_offset, dct_linesize);
                         add_dct(s, block[7], 7, dest_cr+dct_offset, dct_linesize);
                         if(!s->chroma_x_shift){//Chroma444
-                            add_dct(s, block[8], 8, dest_cb+block_size, dct_linesize);
-                            add_dct(s, block[9], 9, dest_cr+block_size, dct_linesize);
-                            add_dct(s, block[10], 10, dest_cb+block_size+dct_offset, dct_linesize);
-                            add_dct(s, block[11], 11, dest_cr+block_size+dct_offset, dct_linesize);
+                            add_dct(s, block[8], 8, dest_cb+8, dct_linesize);
+                            add_dct(s, block[9], 9, dest_cr+8, dct_linesize);
+                            add_dct(s, block[10], 10, dest_cb+8+dct_offset, dct_linesize);
+                            add_dct(s, block[11], 11, dest_cr+8+dct_offset, dct_linesize);
                         }
                     }
                 }//fi gray
@@ -2087,9 +2087,9 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
                 }
             }else{
                 s->dsp.idct_put(dest_y                          , dct_linesize, block[0]);
-                s->dsp.idct_put(dest_y              + block_size, dct_linesize, block[1]);
+                s->dsp.idct_put(dest_y              + 8         , dct_linesize, block[1]);
                 s->dsp.idct_put(dest_y + dct_offset             , dct_linesize, block[2]);
-                s->dsp.idct_put(dest_y + dct_offset + block_size, dct_linesize, block[3]);
+                s->dsp.idct_put(dest_y + dct_offset + 8         , dct_linesize, block[3]);
 
                 if(!CONFIG_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
                     if(s->chroma_y_shift){
@@ -2098,17 +2098,17 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
                     }else{
 
                         dct_linesize = uvlinesize << s->interlaced_dct;
-                        dct_offset   = s->interlaced_dct? uvlinesize : uvlinesize*block_size;
+                        dct_offset   = s->interlaced_dct? uvlinesize : uvlinesize*8;
 
                         s->dsp.idct_put(dest_cb,              dct_linesize, block[4]);
                         s->dsp.idct_put(dest_cr,              dct_linesize, block[5]);
                         s->dsp.idct_put(dest_cb + dct_offset, dct_linesize, block[6]);
                         s->dsp.idct_put(dest_cr + dct_offset, dct_linesize, block[7]);
                         if(!s->chroma_x_shift){//Chroma444
-                            s->dsp.idct_put(dest_cb + block_size,              dct_linesize, block[8]);
-                            s->dsp.idct_put(dest_cr + block_size,              dct_linesize, block[9]);
-                            s->dsp.idct_put(dest_cb + block_size + dct_offset, dct_linesize, block[10]);
-                            s->dsp.idct_put(dest_cr + block_size + dct_offset, dct_linesize, block[11]);
+                            s->dsp.idct_put(dest_cb + 8,              dct_linesize, block[8]);
+                            s->dsp.idct_put(dest_cr + 8,              dct_linesize, block[9]);
+                            s->dsp.idct_put(dest_cb + 8 + dct_offset, dct_linesize, block[10]);
+                            s->dsp.idct_put(dest_cr + 8 + dct_offset, dct_linesize, block[11]);
                         }
                     }
                 }//gray
@@ -2204,7 +2204,7 @@ void ff_draw_horiz_band(MpegEncContext *s, int y, int h){
 void ff_init_block_index(MpegEncContext *s){ //FIXME maybe rename
     const int linesize   = s->current_picture.f.linesize[0]; //not s->linesize as this would be wrong for field pics
     const int uvlinesize = s->current_picture.f.linesize[1];
-    const int mb_size= 4;
+    const int mb_size= 4 - s->avctx->lowres;
 
     s->block_index[0]= s->b8_stride*(s->mb_y*2    ) - 2 + s->mb_x*2;
     s->block_index[1]= s->b8_stride*(s->mb_y*2    ) - 1 + s->mb_x*2;
