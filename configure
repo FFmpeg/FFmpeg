@@ -179,7 +179,6 @@ External library support:
   --enable-libcdio         enable audio CD grabbing with libcdio
   --enable-libdc1394       enable IIDC-1394 grabbing using libdc1394
                            and libraw1394 [no]
-  --enable-libdirac        enable Dirac support via libdirac [no]
   --enable-libfaac         enable FAAC support via libfaac [no]
   --enable-libfreetype     enable libfreetype [no]
   --enable-libgsm          enable GSM support via libgsm [no]
@@ -1035,7 +1034,6 @@ CONFIG_LIST="
     libcdio
     libcelt
     libdc1394
-    libdirac
     libfaac
     libfreetype
     libgsm
@@ -1557,7 +1555,6 @@ h264_parser_select="golomb h264dsp h264pred"
 # external libraries
 libaacplus_encoder_deps="libaacplus"
 libcelt_decoder_deps="libcelt"
-libdirac_decoder_deps="libdirac !libschroedinger"
 libfaac_encoder_deps="libfaac"
 libgsm_decoder_deps="libgsm"
 libgsm_encoder_deps="libgsm"
@@ -3200,9 +3197,6 @@ enabled libbluray  && require libbluray libbluray/bluray.h bd_open -lbluray
 enabled libcelt    && require libcelt celt/celt.h celt_decode -lcelt0 &&
                       { check_lib celt/celt.h celt_decoder_create_custom -lcelt0 ||
                         die "ERROR: libcelt version must be >= 0.11.0."; }
-enabled libdirac   && require_pkg_config dirac                          \
-    "libdirac_decoder/dirac_parser.h"  \
-    "dirac_decoder_init"
 enabled libfaac    && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
 enabled libfreetype && require_pkg_config freetype2 "ft2build.h freetype/freetype.h" FT_Init_FreeType
 enabled libgsm     && require  libgsm gsm/gsm.h gsm_create -lgsm
@@ -3572,7 +3566,6 @@ echo "libass enabled            ${libass-no}"
 echo "libcdio support           ${libcdio-no}"
 echo "libcelt enabled           ${libcelt-no}"
 echo "libdc1394 support         ${libdc1394-no}"
-echo "libdirac enabled          ${libdirac-no}"
 echo "libfaac enabled           ${libfaac-no}"
 echo "libgsm enabled            ${libgsm-no}"
 echo "libmodplug enabled        ${libmodplug-no}"

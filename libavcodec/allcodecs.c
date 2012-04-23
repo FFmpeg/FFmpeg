@@ -403,7 +403,6 @@ void avcodec_register_all(void)
 
     /* external libraries */
     REGISTER_DECODER (LIBCELT, libcelt);
-    REGISTER_DECODER (LIBDIRAC, libdirac);
     REGISTER_ENCODER (LIBFAAC, libfaac);
     REGISTER_ENCDEC  (LIBGSM, libgsm);
     REGISTER_ENCDEC  (LIBGSM_MS, libgsm_ms);
