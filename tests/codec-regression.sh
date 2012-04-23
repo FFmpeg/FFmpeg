@@ -17,7 +17,7 @@ do_avconv $raw_ref -f image2 -vcodec pgmyuv -i $raw_src -an -f rawvideo
 fi
 if [ -n "$do_aref" ]; then
 do_avconv $pcm_ref -b 128k -ac 2 -ar 44100 -f s16le -i $pcm_src -f wav
-do_avconv $pcm_ref_1ch -b 128k -ac 1 -ar 16000 -f s16le -i $pcm_src_1ch -f wav
+do_avconv $pcm_ref_1ch -b 128k -i $pcm_src_1ch -f wav
 fi
 
 if [ -n "$do_cljr" ] ; then
