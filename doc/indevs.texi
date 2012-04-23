@@ -179,6 +179,55 @@ ffmpeg -f fbdev -frames:v 1 -r 1 -i /dev/fb0 screenshot.jpeg
 
 See also @url{http://linux-fbdev.sourceforge.net/}, and fbset(1).
 
+@section iec61883
+
+FireWire DV/HDV input device using libiec61883.
+
+The iec61883 capture device supports capturing from a video device
+connected via IEEE1394 (FireWire), using libiec61883 and the new Linux
+FireWire stack (juju). This is the default DV/HDV input method in Linux
+Kernel 2.6.37 and later, since the old FireWire stack was removed.
+
+Specify the FireWire port to be used as input file, or "auto"
+to choose the first port connected.
+
+@subsection Options
+
+@table @option
+
+@item dvtype
+Override autodetection of DV/HDV. This should only be used if auto
+detection does not work, or if usage of a different device type
+should be prohibited. Treating a DV device as HDV (or vice versa) will
+not work and result in undefined behavior.
+The values @option{auto}, @option{dv} and @option{hdv} are supported.
+
+@item dvbuffer
+Set maxiumum size of buffer for incoming data, in frames. For DV, this
+is an exact value. For HDV, it is not frame exact, since HDV does
+not have a fixed frame size.
+
+@end table
+
+@subsection Examples
+
+@itemize
+
+@item
+Grab and show the input of a FireWire DV/HDV device.
+@example
+ffplay -f iec61883 -i auto
+@end example
+
+@item
+Grab and record the input of a FireWire DV/HDV device,
+using a packet buffer of 100000 packets if the source is HDV.
+@example
+ffmpeg -f iec61883 -i auto -hdvbuffer 100000 out.mpg
+@end example
+
+@end itemize
+
 @section jack
 
 JACK input device.
