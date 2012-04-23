@@ -3254,7 +3254,7 @@ number or a valid video frame rate abbreviation. The default value is
 @item duration, d
 Set the video duration of the sourced video. The accepted syntax is:
 @example
-[-]HH[:MM[:SS[.m...]]]
+[-]HH:MM:SS[.m...]
 [-]S+[.m...]
 @end example
 See also the function @code{av_parse_time()}.

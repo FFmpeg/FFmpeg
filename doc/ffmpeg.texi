@@ -164,7 +164,7 @@ streams are delayed by @var{offset} seconds.
 Set the recording timestamp in the container.
 The syntax for @var{time} is:
 @example
-now|([(YYYY-MM-DD|YYYYMMDD)[T|t| ]]((HH[:MM[:SS[.m...]]])|(HH[MM[SS[.m...]]]))[Z|z])
+now|([(YYYY-MM-DD|YYYYMMDD)[T|t| ]]((HH:MM:SS[.m...])|(HHMMSS[.m...]))[Z|z])
 @end example
 If the value is "now" it takes the current time.
 Time is local time unless 'Z' or 'z' is appended, in which case it is
