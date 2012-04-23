@@ -109,3 +109,44 @@ INIT_XMM sse2
 MIX_2_TO_1_S16P_FLT
 INIT_XMM sse4
 MIX_2_TO_1_S16P_FLT
+
+;-----------------------------------------------------------------------------
+; void ff_mix_2_to_1_s16p_q8(int16_t **src, int16_t **matrix, int len,
+;                            int out_ch, int in_ch);
+;-----------------------------------------------------------------------------
+
+INIT_XMM sse2
+cglobal mix_2_to_1_s16p_q8, 3,4,6, src, matrix, len, src1
+    mov       src1q, [srcq+gprsize]
+    mov        srcq, [srcq]
+    sub       src1q, srcq
+    mov     matrixq, [matrixq]
+    movd         m4, [matrixq]
+    movd         m5, [matrixq]
+    SPLATW       m4, m4, 0
+    SPLATW       m5, m5, 1
+    pxor         m0, m0
+    punpcklwd    m4, m0
+    punpcklwd    m5, m0
+    ALIGN 16
+.loop:
+    mova         m0, [srcq      ]
+    mova         m2, [srcq+src1q]
+    punpckhwd    m1, m0, m0
+    punpcklwd    m0, m0
+    punpckhwd    m3, m2, m2
+    punpcklwd    m2, m2
+    pmaddwd      m0, m4
+    pmaddwd      m1, m4
+    pmaddwd      m2, m5
+    pmaddwd      m3, m5
+    paddd        m0, m2
+    paddd        m1, m3
+    psrad        m0, 8
+    psrad        m1, 8
+    packssdw     m0, m1
+    mova     [srcq], m0
+    add        srcq, mmsize
+    sub        lend, mmsize/2
+    jg .loop
+    REP_RET
