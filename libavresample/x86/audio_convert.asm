@@ -26,6 +26,7 @@
 
 SECTION_RODATA 32
 
+pf_s32_inv_scale: times 8 dd 0x30000000
 pf_s16_inv_scale: times 4 dd 0x38000000
 
 SECTION_TEXT
@@ -120,6 +121,42 @@ INIT_MMX mmx
 CONV_S32_TO_S16
 INIT_XMM sse2
 CONV_S32_TO_S16
+
+;------------------------------------------------------------------------------
+; void ff_conv_s32_to_flt(float *dst, const int32_t *src, int len);
+;------------------------------------------------------------------------------
+
+%macro CONV_S32_TO_FLT 0
+cglobal conv_s32_to_flt, 3,3,3, dst, src, len
+    lea     lenq, [4*lend]
+    add     srcq, lenq
+    add     dstq, lenq
+    neg     lenq
+    mova      m0, [pf_s32_inv_scale]
+    ALIGN 16
+.loop:
+    cvtdq2ps  m1, [srcq+lenq       ]
+    cvtdq2ps  m2, [srcq+lenq+mmsize]
+    mulps     m1, m1, m0
+    mulps     m2, m2, m0
+    mova  [dstq+lenq       ], m1
+    mova  [dstq+lenq+mmsize], m2
+    add     lenq, mmsize*2
+    jl .loop
+%if mmsize == 32
+    vzeroupper
+    RET
+%else
+    REP_RET
+%endif
+%endmacro
+
+INIT_XMM sse2
+CONV_S32_TO_FLT
+%if HAVE_AVX
+INIT_YMM avx
+CONV_S32_TO_FLT
+%endif
 
 ;-----------------------------------------------------------------------------
 ; void ff_conv_fltp_to_flt_6ch(float *dst, float *const *src, int len,
