@@ -145,6 +145,11 @@ static int au_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
+    if (channels == 0 || channels > 64) {
+        av_log(s, AV_LOG_ERROR, "Invalid number of channels %d\n", channels);
+        return AVERROR_INVALIDDATA;
+    }
+
     if (size >= 24) {
         /* skip unused data */
         avio_skip(pb, size - 24);
