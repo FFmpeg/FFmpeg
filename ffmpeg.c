@@ -235,6 +235,7 @@ typedef struct InputStream {
     int64_t       pts;       ///< current pts of the decoded frame
     double ts_scale;
     int is_start;            /* is 1 at the start and after a discontinuity */
+    int saw_first_ts;
     int showed_multi_packet_warning;
     AVDictionary *opts;
 
@@ -2691,6 +2692,15 @@ static int output_packet(InputStream *ist, const AVPacket *pkt)
     int64_t pkt_pts = AV_NOPTS_VALUE;
 
     AVPacket avpkt;
+    if (!ist->saw_first_ts) {
+        ist->dts = ist->st->avg_frame_rate.num ? - ist->st->codec->has_b_frames * AV_TIME_BASE / av_q2d(ist->st->avg_frame_rate) : 0;
+        ist->pts = 0;
+        if (pkt != NULL && pkt->pts != AV_NOPTS_VALUE && !ist->decoding_needed) {
+            ist->dts += av_rescale_q(pkt->pts, ist->st->time_base, AV_TIME_BASE_Q);
+            ist->pts = ist->dts; //unused but better to set it to a value thats not totally wrong
+        }
+        ist->saw_first_ts = 1;
+    }
 
     if (ist->next_dts == AV_NOPTS_VALUE)
         ist->next_dts = ist->dts;
@@ -2872,7 +2882,6 @@ static int init_input_stream(int ist_index, char *error, int error_len)
         }
     }
 
-    ist->dts = ist->st->avg_frame_rate.num ? - ist->st->codec->has_b_frames * AV_TIME_BASE / av_q2d(ist->st->avg_frame_rate) : 0;
     ist->next_pts = AV_NOPTS_VALUE;
     ist->next_dts = AV_NOPTS_VALUE;
     ist->is_start = 1;
