@@ -191,7 +191,7 @@ static int init_offset(ShortenContext *s)
             mean = 0;
             break;
         default:
-            av_log(s->avctx, AV_LOG_ERROR, "unknown audio type");
+            av_log(s->avctx, AV_LOG_ERROR, "unknown audio type\n");
             return AVERROR_INVALIDDATA;
     }
 
