@@ -1292,7 +1292,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         }
         if(i>0){
             av_assert0(bytes < pkt->size/f->slice_count);
-            memmove(buf_p, fs->ac ? fs->c.bytestream_start : fs->pb.buf, bytes);
+            memmove(buf_p, fs->c.bytestream_start, bytes);
             av_assert0(bytes < (1<<24));
             AV_WB24(buf_p+bytes, bytes);
             bytes+=3;
