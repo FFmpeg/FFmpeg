@@ -394,7 +394,11 @@ int av_parse_color(uint8_t *rgba_color, const char *color_string, int slen,
         if (!strncmp(alpha_string, "0x", 2)) {
             alpha = strtoul(alpha_string, &tail, 16);
         } else {
-            alpha = 255 * strtod(alpha_string, &tail);
+            double norm_alpha = strtod(alpha_string, &tail);
+            if (norm_alpha < 0.0 || norm_alpha > 1.0)
+                alpha = 256;
+            else
+                alpha = 255 * norm_alpha;
         }
 
         if (tail == alpha_string || *tail || alpha > 255) {
