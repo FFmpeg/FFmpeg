@@ -181,6 +181,7 @@ typedef struct FFV1Context{
     AVFrame picture;
     int plane_count;
     int ac;                              ///< 1=range coder <-> 0=golomb rice
+    int ac_byte_count;                   ///< number of bytes used for AC coding
     PlaneContext plane[MAX_PLANES];
     int16_t quant_table[MAX_CONTEXT_INPUTS][256];
     int16_t quant_tables[MAX_QUANT_TABLES][MAX_CONTEXT_INPUTS][256];
@@ -1195,6 +1196,10 @@ static int encode_slice(AVCodecContext *c, void *arg){
     if(f->version > 2){
         encode_slice_header(f, fs);
     }
+    if(!fs->ac){
+        fs->ac_byte_count = f->version > 2 || (!x&&!y) ? ff_rac_terminate(&fs->c) : 0;
+        init_put_bits(&fs->pb, fs->c.bytestream_start + fs->ac_byte_count, fs->c.bytestream_end - fs->c.bytestream_start - fs->ac_byte_count);
+    }
 
     if(f->colorspace==0){
         const int chroma_width = -((-width )>>f->chroma_h_shift);
@@ -1250,11 +1255,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         p->key_frame= 0;
     }
 
-    if(!f->ac){
-        used_count += ff_rac_terminate(c);
-//printf("pos=%d\n", used_count);
-        init_put_bits(&f->slice_context[0]->pb, pkt->data + used_count, pkt->size - used_count);
-    }else if (f->ac>1){
+    if (f->ac>1){
         int i;
         for(i=1; i<256; i++){
             c->one_state[i]= f->state_transition[i];
@@ -1267,11 +1268,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         uint8_t *start = pkt->data + (pkt->size-used_count)*i/f->slice_count;
         int len = pkt->size/f->slice_count;
 
-        if(fs->ac){
-            ff_init_range_encoder(&fs->c, start, len);
-        }else{
-            init_put_bits(&fs->pb, start, len);
-        }
+        ff_init_range_encoder(&fs->c, start, len);
     }
     avctx->execute(avctx, encode_slice, &f->slice_context[0], NULL, f->slice_count, sizeof(void*));
 
@@ -1286,8 +1283,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             bytes= ff_rac_terminate(&fs->c);
         }else{
             flush_put_bits(&fs->pb); //nicer padding FIXME
-            bytes= used_count + (put_bits_count(&fs->pb)+7)/8;
-            used_count= 0;
+            bytes= fs->ac_byte_count + (put_bits_count(&fs->pb)+7)/8;
         }
         if(i>0){
             av_assert0(bytes < pkt->size/f->slice_count);
