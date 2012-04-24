@@ -3621,7 +3621,8 @@ static int transcode(void)
         }
 
         // fprintf(stderr,"read #%d.%d size=%d\n", ist->file_index, ist->st->index, pkt.size);
-        if (output_packet(ist, &pkt) < 0 || poll_filters() < 0) {
+        if (output_packet(ist, &pkt) < 0 ||
+            ((ret = poll_filters()) < 0 && ret != AVERROR_EOF)) {
             av_log(NULL, AV_LOG_ERROR, "Error while decoding stream #%d:%d\n",
                    ist->file_index, ist->st->index);
             if (exit_on_error)
