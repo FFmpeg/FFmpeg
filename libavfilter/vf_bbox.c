@@ -76,7 +76,7 @@ static void end_frame(AVFilterLink *inlink)
 
     if (has_bbox) {
         av_log(ctx, AV_LOG_INFO,
-               "x1:%d x2:%d y1:%d y2:%d w:%d h:%d"
+               " x1:%d x2:%d y1:%d y2:%d w:%d h:%d"
                " crop=%d:%d:%d:%d drawbox=%d:%d:%d:%d",
                box.x1, box.x2, box.y1, box.y2, w, h,
                w, h, box.x1, box.y1,    /* crop params */
