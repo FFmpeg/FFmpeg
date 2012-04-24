@@ -1614,6 +1614,13 @@ static int decode_slice(AVCodecContext *c, void *arg){
     x= fs->slice_x;
     y= fs->slice_y;
 
+    if(!fs->ac){
+        fs->ac_byte_count = f->version > 2 || (!x&&!y) ? fs->c.bytestream - fs->c.bytestream_start - 1 : 0;
+        init_get_bits(&fs->gb,
+                      fs->c.bytestream_start + fs->ac_byte_count,
+                      (fs->c.bytestream_end - fs->c.bytestream_start - fs->ac_byte_count) * 8);
+    }
+
     av_assert1(width && height);
     if(f->colorspace==0){
         const int chroma_width = -((-width )>>f->chroma_h_shift);
@@ -1999,17 +2006,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         }
 
         if(i){
-            if(fs->ac){
-                ff_init_range_decoder(&fs->c, buf_p, v);
-            }else{
-                init_get_bits(&fs->gb, buf_p, v * 8);
-            }
-        }else{
-            if(!f->ac){
-                bytes_read = c->bytestream - c->bytestream_start - 1;
-                if(bytes_read ==0) av_log(avctx, AV_LOG_ERROR, "error at end of AC stream\n"); //FIXME
-                init_get_bits(&fs->gb, buf + bytes_read, (buf_size - bytes_read) * 8);
-            }
+            ff_init_range_decoder(&fs->c, buf_p, v);
         }
     }
 
