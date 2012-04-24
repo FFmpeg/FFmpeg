@@ -22,6 +22,11 @@
 
 %include "x86inc.asm"
 %include "x86util.asm"
+%include "util.asm"
+
+SECTION_RODATA 32
+
+pf_s16_inv_scale: times 4 dd 0x38000000
 
 SECTION_TEXT
 
@@ -46,6 +51,37 @@ cglobal conv_s16_to_s32, 3,3,3, dst, src, len
     add      lenq, mmsize
     jl .loop
     REP_RET
+
+;------------------------------------------------------------------------------
+; void ff_conv_s16_to_flt(float *dst, const int16_t *src, int len);
+;------------------------------------------------------------------------------
+
+%macro CONV_S16_TO_FLT 0
+cglobal conv_s16_to_flt, 3,3,3, dst, src, len
+    lea      lenq, [2*lend]
+    add      srcq, lenq
+    lea      dstq, [dstq + 2*lenq]
+    neg      lenq
+    mova       m2, [pf_s16_inv_scale]
+    ALIGN 16
+.loop:
+    mova       m0, [srcq+lenq]
+    S16_TO_S32_SX 0, 1
+    cvtdq2ps   m0, m0
+    cvtdq2ps   m1, m1
+    mulps      m0, m2
+    mulps      m1, m2
+    mova  [dstq+2*lenq       ], m0
+    mova  [dstq+2*lenq+mmsize], m1
+    add      lenq, mmsize
+    jl .loop
+    REP_RET
+%endmacro
+
+INIT_XMM sse2
+CONV_S16_TO_FLT
+INIT_XMM sse4
+CONV_S16_TO_FLT
 
 ;-----------------------------------------------------------------------------
 ; void ff_conv_fltp_to_flt_6ch(float *dst, float *const *src, int len,
