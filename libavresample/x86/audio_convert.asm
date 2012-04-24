@@ -28,6 +28,7 @@ SECTION_RODATA 32
 
 pf_s32_inv_scale: times 8 dd 0x30000000
 pf_s16_inv_scale: times 4 dd 0x38000000
+pf_s16_scale:     times 4 dd 0x47000000
 
 SECTION_TEXT
 
@@ -157,6 +158,38 @@ CONV_S32_TO_FLT
 INIT_YMM avx
 CONV_S32_TO_FLT
 %endif
+
+;------------------------------------------------------------------------------
+; void ff_conv_flt_to_s16(int16_t *dst, const float *src, int len);
+;------------------------------------------------------------------------------
+
+INIT_XMM sse2
+cglobal conv_flt_to_s16, 3,3,5, dst, src, len
+    lea     lenq, [2*lend]
+    lea     srcq, [srcq+2*lenq]
+    add     dstq, lenq
+    neg     lenq
+    mova      m4, [pf_s16_scale]
+.loop:
+    mova      m0, [srcq+2*lenq         ]
+    mova      m1, [srcq+2*lenq+1*mmsize]
+    mova      m2, [srcq+2*lenq+2*mmsize]
+    mova      m3, [srcq+2*lenq+3*mmsize]
+    mulps     m0, m4
+    mulps     m1, m4
+    mulps     m2, m4
+    mulps     m3, m4
+    cvtps2dq  m0, m0
+    cvtps2dq  m1, m1
+    cvtps2dq  m2, m2
+    cvtps2dq  m3, m3
+    packssdw  m0, m1
+    packssdw  m2, m3
+    mova  [dstq+lenq       ], m0
+    mova  [dstq+lenq+mmsize], m2
+    add     lenq, mmsize*2
+    jl .loop
+    REP_RET
 
 ;-----------------------------------------------------------------------------
 ; void ff_conv_fltp_to_flt_6ch(float *dst, float *const *src, int len,
