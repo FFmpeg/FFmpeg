@@ -27,6 +27,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/timestamp.h"
 #include "avfilter.h"
+#include "internal.h"
 
 typedef struct {
     unsigned int frame;
@@ -79,6 +80,7 @@ static void end_frame(AVFilterLink *inlink)
     av_log(ctx, AV_LOG_INFO, "]\n");
 
     showinfo->frame++;
+    avfilter_unref_buffer(picref);
     avfilter_end_frame(inlink->dst->outputs[0]);
 }
 
@@ -92,7 +94,7 @@ AVFilter avfilter_vf_showinfo = {
     .inputs    = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
                                     .get_video_buffer = avfilter_null_get_video_buffer,
-                                    .start_frame      = avfilter_null_start_frame,
+                                    .start_frame      = ff_null_start_frame_keep_ref,
                                     .end_frame        = end_frame,
                                     .min_perms        = AV_PERM_READ, },
                                   { .name = NULL}},

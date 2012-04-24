@@ -180,6 +180,7 @@ static void end_frame(AVFilterLink *inlink)
 
     blackdetect->frame_count++;
     blackdetect->nb_black_pixels = 0;
+    avfilter_unref_buffer(picref);
     avfilter_end_frame(inlink->dst->outputs[0]);
 }
 
@@ -196,7 +197,7 @@ AVFilter avfilter_vf_blackdetect = {
           .config_props     = config_input,
           .draw_slice       = draw_slice,
           .get_video_buffer = avfilter_null_get_video_buffer,
-          .start_frame      = avfilter_null_start_frame,
+          .start_frame      = ff_null_start_frame_keep_ref,
           .end_frame        = end_frame, },
         { .name = NULL }
     },
