@@ -903,6 +903,11 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if((avctx->flags & (CODEC_FLAG_PASS1|CODEC_FLAG_PASS2)) || avctx->slices>1)
         s->version = FFMAX(s->version, 2);
 
+    if(avctx->level == 3){
+        s->version = 3;
+        s->ec = 1;
+    }
+
     if(s->version >= 2 && avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
         av_log(avctx, AV_LOG_ERROR, "Version 2 needed for requested features but version 2 is experimental and not enabled\n");
         return -1;
