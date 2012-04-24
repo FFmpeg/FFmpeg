@@ -245,7 +245,9 @@ const AVCodecTag ff_codec_movaudio_tags[] = {
     { CODEC_ID_ALAC,            MKTAG('a', 'l', 'a', 'c') },
     { CODEC_ID_AMR_NB,          MKTAG('s', 'a', 'm', 'r') }, /* AMR-NB 3gp */
     { CODEC_ID_AMR_WB,          MKTAG('s', 'a', 'w', 'b') }, /* AMR-WB 3gp */
-    { CODEC_ID_DTS,             MKTAG('d', 't', 's', 'c') }, /* mp4ra.org */
+    { CODEC_ID_DTS,             MKTAG('d', 't', 's', 'c') }, /* DTS formats prior to DTS-HD */
+    { CODEC_ID_DTS,             MKTAG('d', 't', 's', 'h') }, /* DTS-HD audio formats */
+    { CODEC_ID_DTS,             MKTAG('d', 't', 's', 'l') }, /* DTS-HD Lossless formats */
     { CODEC_ID_DTS,             MKTAG('D', 'T', 'S', ' ') }, /* non-standard */
     { CODEC_ID_DVAUDIO,         MKTAG('v', 'd', 'v', 'a') },
     { CODEC_ID_DVAUDIO,         MKTAG('d', 'v', 'c', 'a') },

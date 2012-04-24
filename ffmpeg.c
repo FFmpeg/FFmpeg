@@ -2959,7 +2959,11 @@ static int transcode_init(void)
         }
 
         if (ost->stream_copy) {
-            uint64_t extra_size = (uint64_t)icodec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE;
+            uint64_t extra_size;
+
+            av_assert0(ist && !ost->filter);
+
+            extra_size = (uint64_t)icodec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE;
 
             if (extra_size > INT_MAX) {
                 return AVERROR(EINVAL);
@@ -4892,6 +4896,13 @@ static void init_output_filter(OutputFilter *ofilter, OptionsContext *o,
     ost->filter       = ofilter;
 
     ofilter->ost      = ost;
+
+    if (ost->stream_copy) {
+        av_log(NULL, AV_LOG_ERROR, "Streamcopy requested for output stream %d:%d, "
+               "which is fed from a complex filtergraph. Filtering and streamcopy "
+               "cannot be used together.\n", ost->file_index, ost->index);
+        exit_program(1);
+    }
 
     if (configure_output_filter(ofilter->graph, ofilter, ofilter->out_tmp) < 0) {
         av_log(NULL, AV_LOG_FATAL, "Error configuring filter.\n");
