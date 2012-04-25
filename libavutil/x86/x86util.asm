@@ -585,3 +585,12 @@
     pminsd  %1, %3
     pmaxsd  %1, %2
 %endmacro
+
+%macro VBROADCASTSS 2 ; dst xmm/ymm, src m32
+%if cpuflag(avx)
+    vbroadcastss %1, %2
+%else ; sse
+    movss        %1, %2
+    shufps       %1, %1, 0
+%endif
+%endmacro

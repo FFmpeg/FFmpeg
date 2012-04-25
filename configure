@@ -112,6 +112,7 @@ Component options:
   --disable-swscale        disable libswscale build
   --disable-postproc       disable libpostproc build
   --disable-avfilter       disable video filter support [no]
+  --disable-avresample     disable libavresample build [no]
   --disable-pthreads       disable pthreads [auto]
   --disable-w32threads     disable Win32 threads [auto]
   --disable-os2threads     disable OS/2 threads [auto]
@@ -1013,6 +1014,7 @@ CONFIG_LIST="
     avdevice
     avfilter
     avformat
+    avresample
     avisynth
     bzlib
     crystalhd
@@ -1870,6 +1872,7 @@ enable avcodec
 enable avdevice
 enable avfilter
 enable avformat
+enable avresample
 enable avutil
 enable postproc
 enable stripping
@@ -3724,6 +3727,7 @@ get_version LIBAVCODEC  libavcodec/version.h
 get_version LIBAVDEVICE libavdevice/avdevice.h
 get_version LIBAVFILTER libavfilter/version.h
 get_version LIBAVFORMAT libavformat/version.h
+get_version LIBAVRESAMPLE libavresample/version.h
 get_version LIBAVUTIL   libavutil/avutil.h
 get_version LIBPOSTPROC libpostproc/postprocess.h
 get_version LIBSWRESAMPLE libswresample/swresample.h
@@ -3869,5 +3873,6 @@ pkgconfig_generate libavformat "FFmpeg container format library" "$LIBAVFORMAT_V
 pkgconfig_generate libavdevice "FFmpeg device handling library" "$LIBAVDEVICE_VERSION" "$extralibs" "$libavdevice_pc_deps"
 pkgconfig_generate libavfilter "FFmpeg video filtering library" "$LIBAVFILTER_VERSION" "$extralibs" "$libavfilter_pc_deps"
 pkgconfig_generate libpostproc "FFmpeg postprocessing library" "$LIBPOSTPROC_VERSION" "" "libavutil = $LIBAVUTIL_VERSION"
+pkgconfig_generate libavresample "Libav audio resampling library" "$LIBAVRESAMPLE_VERSION" "$extralibs"
 pkgconfig_generate libswscale "FFmpeg image rescaling library" "$LIBSWSCALE_VERSION" "$LIBM" "libavutil = $LIBAVUTIL_VERSION"
 pkgconfig_generate libswresample "FFmpeg audio rescaling library" "$LIBSWRESAMPLE_VERSION" "$LIBM" "libavutil = $LIBAVUTIL_VERSION"

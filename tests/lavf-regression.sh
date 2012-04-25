@@ -118,7 +118,7 @@ fi
 if [ -n "$do_dv_fmt" ] ; then
 do_lavf_timecode_nodrop dv "-ar 48000 -r 25 -s pal -ac 2"
 do_lavf_timecode_drop   dv "-ar 48000 -pix_fmt yuv411p -s ntsc -ac 2"
-do_lavf dv "-ar 48000" "-r 25 -s pal -ac 2"
+do_lavf dv "-ar 48000 -channel_layout stereo" "-r 25 -s pal"
 fi
 
 if [ -n "$do_gxf" ] ; then

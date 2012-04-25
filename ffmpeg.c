@@ -36,7 +36,6 @@
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
 #include "libavutil/opt.h"
-#include "libavcodec/audioconvert.h"
 #include "libavutil/audioconvert.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/samplefmt.h"
@@ -300,6 +299,7 @@ typedef struct OutputStream {
     int audio_channels_mapped;           ///< number of channels in audio_channels_map
     int resample_sample_fmt;
     int resample_channels;
+    uint64_t resample_channel_layout;
     int resample_sample_rate;
     float rematrix_volume;
     AVFifoBuffer *fifo;     /* for compression: one audio fifo per codec */
@@ -1525,7 +1525,7 @@ static int encode_audio_frame(AVFormatContext *s, OutputStream *ost,
 }
 
 static int alloc_audio_output_buf(AVCodecContext *dec, AVCodecContext *enc,
-                                  int nb_samples)
+                                  int nb_samples, int *buf_linesize)
 {
     int64_t audio_buf_samples;
     int audio_buf_size;
@@ -1538,7 +1538,7 @@ static int alloc_audio_output_buf(AVCodecContext *dec, AVCodecContext *enc,
     if (audio_buf_samples > INT_MAX)
         return AVERROR(EINVAL);
 
-    audio_buf_size = av_samples_get_buffer_size(NULL, enc->channels,
+    audio_buf_size = av_samples_get_buffer_size(buf_linesize, enc->channels,
                                                 audio_buf_samples,
                                                 enc->sample_fmt, 0);
     if (audio_buf_size < 0)
@@ -1557,7 +1557,7 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
     uint8_t *buftmp;
     int64_t size_out;
 
-    int frame_bytes, resample_changed;
+    int frame_bytes, resample_changed, ret;
     AVCodecContext *enc = ost->st->codec;
     AVCodecContext *dec = ist->st->codec;
     int osize = av_get_bytes_per_sample(enc->sample_fmt);
@@ -1566,37 +1566,46 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
     int size     = decoded_frame->nb_samples * dec->channels * isize;
     int planes   = av_sample_fmt_is_planar(dec->sample_fmt) ? dec->channels : 1;
     int i;
+    int out_linesize = 0;
+    int buf_linesize = decoded_frame->linesize[0];
 
     av_assert0(planes <= AV_NUM_DATA_POINTERS);
 
     for(i=0; i<planes; i++)
         buf[i]= decoded_frame->data[i];
 
+
     get_default_channel_layouts(ost, ist);
 
-    if (alloc_audio_output_buf(dec, enc, decoded_frame->nb_samples) < 0) {
+    if (alloc_audio_output_buf(dec, enc, decoded_frame->nb_samples, &out_linesize) < 0) {
         av_log(NULL, AV_LOG_FATAL, "Error allocating audio buffer\n");
         exit_program(1);
     }
 
-    if (enc->channels != dec->channels
-     || enc->sample_fmt != dec->sample_fmt
-     || enc->sample_rate!= dec->sample_rate
-    )
+    if (audio_sync_method > 1                      ||
+        enc->channels       != dec->channels       ||
+        enc->channel_layout != dec->channel_layout ||
+        enc->sample_rate    != dec->sample_rate    ||
+        dec->sample_fmt     != enc->sample_fmt)
         ost->audio_resample = 1;
 
     resample_changed = ost->resample_sample_fmt  != dec->sample_fmt ||
                        ost->resample_channels    != dec->channels   ||
+                       ost->resample_channel_layout != dec->channel_layout ||
                        ost->resample_sample_rate != dec->sample_rate;
 
     if ((ost->audio_resample && !ost->swr) || resample_changed || ost->audio_channels_mapped) {
+
         if (resample_changed) {
-            av_log(NULL, AV_LOG_INFO, "Input stream #%d:%d frame changed from rate:%d fmt:%s ch:%d to rate:%d fmt:%s ch:%d\n",
+            av_log(NULL, AV_LOG_INFO, "Input stream #%d:%d frame changed from rate:%d fmt:%s ch:%d chl:0x%"PRIx64" to rate:%d fmt:%s ch:%d chl:0x%"PRIx64"\n",
                    ist->file_index, ist->st->index,
-                   ost->resample_sample_rate, av_get_sample_fmt_name(ost->resample_sample_fmt), ost->resample_channels,
-                   dec->sample_rate, av_get_sample_fmt_name(dec->sample_fmt), dec->channels);
+                   ost->resample_sample_rate, av_get_sample_fmt_name(ost->resample_sample_fmt),
+                   ost->resample_channels, ost->resample_channel_layout,
+                   dec->sample_rate, av_get_sample_fmt_name(dec->sample_fmt),
+                   dec->channels, dec->channel_layout);
             ost->resample_sample_fmt  = dec->sample_fmt;
             ost->resample_channels    = dec->channels;
+            ost->resample_channel_layout = dec->channel_layout;
             ost->resample_sample_rate = dec->sample_rate;
             swr_free(&ost->swr);
         }
@@ -1604,6 +1613,7 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
         if (audio_sync_method <= 1 && !ost->audio_channels_mapped &&
             ost->resample_sample_fmt  == enc->sample_fmt &&
             ost->resample_channels    == enc->channels   &&
+            ost->resample_channel_layout == enc->channel_layout &&
             ost->resample_sample_rate == enc->sample_rate) {
             //ost->swr = NULL;
             ost->audio_resample = 0;
@@ -1673,7 +1683,7 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
                         exit_program(1);
                     }
 
-                    if (alloc_audio_output_buf(dec, enc, decoded_frame->nb_samples + idelta) < 0) {
+                    if (alloc_audio_output_buf(dec, enc, decoded_frame->nb_samples + idelta, &out_linesize) < 0) {
                         av_log(NULL, AV_LOG_FATAL, "Error allocating audio buffer\n");
                         exit_program(1);
                     }
@@ -1686,11 +1696,11 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
                         buf[i] = t;
                     }
                     size += byte_delta;
+                    buf_linesize = allocated_async_buf_size;
                     av_log(NULL, AV_LOG_VERBOSE, "adding %d audio samples of silence\n", idelta);
                 }
             } else if (audio_sync_method > 1) {
                 int comp = av_clip(delta, -audio_sync_method, audio_sync_method);
-                av_assert0(ost->audio_resample);
                 av_log(NULL, AV_LOG_VERBOSE, "compensating audio timestamp drift:%f compensation:%d in:%d\n",
                        delta, comp, enc->sample_rate);
 //                fprintf(stderr, "drift:%f len:%d opts:%"PRId64" ipts:%"PRId64" fifo:%d\n", delta, -1, ost->sync_opts, (int64_t)(get_sync_ipts(ost) * enc->sample_rate), av_fifo_size(ost->fifo)/(ost->st->codec->channels * 2));
@@ -1703,8 +1713,10 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
 
     if (ost->audio_resample || ost->audio_channels_mapped) {
         buftmp = audio_buf;
-        size_out = swr_convert(ost->swr, (      uint8_t*[]){buftmp}, allocated_audio_buf_size / (enc->channels * osize),
-                                         buf, size / (dec->channels * isize));
+        size_out = swr_convert(ost->swr, (      uint8_t*[]){buftmp},
+                                      allocated_audio_buf_size / (enc->channels * osize),
+                                      buf,
+                                      size / (dec->channels * isize));
         if (size_out < 0) {
             av_log(NULL, AV_LOG_FATAL, "swr_convert failed\n");
             exit_program(1);
@@ -3078,6 +3090,7 @@ static int transcode_init(void)
                 if (!ost->fifo) {
                     return AVERROR(ENOMEM);
                 }
+
                 if (!codec->sample_rate)
                     codec->sample_rate = icodec->sample_rate;
                 choose_sample_rate(ost->st, ost->enc);
@@ -3110,13 +3123,15 @@ static int transcode_init(void)
                 if (av_get_channel_layout_nb_channels(codec->channel_layout) != codec->channels)
                     codec->channel_layout = 0;
 
-                ost->audio_resample       = codec->sample_rate != icodec->sample_rate || audio_sync_method > 1;
-                ost->audio_resample      |=    codec->sample_fmt     != icodec->sample_fmt
-                                            || codec->channel_layout != icodec->channel_layout;
-                icodec->request_channels  = codec->channels;
+
+//                 ost->audio_resample       = codec->sample_rate != icodec->sample_rate || audio_sync_method > 1;
+//                 ost->audio_resample      |=    codec->sample_fmt     != icodec->sample_fmt
+//                                             || codec->channel_layout != icodec->channel_layout;
+                icodec->request_channels  = codec-> channels;
                 ost->resample_sample_fmt  = icodec->sample_fmt;
                 ost->resample_sample_rate = icodec->sample_rate;
                 ost->resample_channels    = icodec->channels;
+                ost->resample_channel_layout = icodec->channel_layout;
                 break;
             case AVMEDIA_TYPE_VIDEO:
                 if (!ost->filter) {

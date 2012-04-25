@@ -26,6 +26,7 @@ version next:
 - drawtext video filter: fontconfig support
 - ffmpeg -benchmark_all option
 - super2xsai filter ported from libmpcodecs
+- add libavresample audio conversion library for compatibility
 
 
 version 0.10:
