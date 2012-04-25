@@ -1109,6 +1109,8 @@ function ff_vp8_h_loop_filter8uv_armv6, export=1
         b               vp8_h_loop_filter_armv6
 endfunc
 
+.ltorg
+
 @ MC
 
 @ void put_vp8_pixels16(uint8_t *dst, int dststride, uint8_t *src,
