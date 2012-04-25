@@ -1102,7 +1102,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
                     goto slices_ok;
             }
         }
-        av_log(avctx, AV_LOG_ERROR, "Unsupported number %d of slices requested\n", avctx->slices);
+        av_log(avctx, AV_LOG_ERROR, "Unsupported number %d of slices requested, please specify a supported number with -slices\n", avctx->slices);
         return -1;
         slices_ok:
         write_extra_header(s);
