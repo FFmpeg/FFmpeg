@@ -52,6 +52,10 @@ struct SwrContext {
     enum SwrDitherType dither_method;
     int dither_pos;
     float dither_scale;
+    int filter_size;                                /**< length of each FIR filter in the resampling filterbank relative to the cutoff frequency */
+    int phase_shift;                                /**< log2 of the number of entries in the resampling polyphase filterbank */
+    int linear_interp;                              /**< if 1 then the resampling FIR filter will be linearly interpolated */
+    double cutoff;                                  /**< resampling cutoff frequency. 1.0 corresponds to half the output sample rate */
 
     int int_bps;                                    ///< internal bytes per sample
     int resample_first;                             ///< 1 if resampling must come first, 0 if rematrixing
