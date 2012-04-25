@@ -1196,6 +1196,8 @@ static int encode_slice(AVCodecContext *c, void *arg){
     AVFrame * const p= &f->picture;
     const int ps= (f->bits_per_raw_sample>8)+1;
 
+    if(p->key_frame)
+        clear_slice_state(f, fs);
     if(f->version > 2){
         encode_slice_header(f, fs);
     }
@@ -1252,7 +1254,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         p->key_frame= 1;
         f->gob_count++;
         write_header(f);
-        clear_state(f);
     }else{
         put_rac(c, &keystate, 0);
         p->key_frame= 0;
