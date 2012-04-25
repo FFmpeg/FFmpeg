@@ -1290,7 +1290,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             flush_put_bits(&fs->pb); //nicer padding FIXME
             bytes= fs->ac_byte_count + (put_bits_count(&fs->pb)+7)/8;
         }
-        if(i>0){
+        if(i>0 || f->ec){
             av_assert0(bytes < pkt->size/f->slice_count);
             memmove(buf_p, fs->c.bytestream_start, bytes);
             av_assert0(bytes < (1<<24));
@@ -1990,8 +1990,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         int trailer = 3 + 4*!!f->ec;
         int v;
 
-        if(i) v = AV_RB24(buf_p-trailer)+trailer;
-        else  v = buf_p - c->bytestream_start;
+        if(i || f->ec) v = AV_RB24(buf_p-trailer)+trailer;
+        else           v = buf_p - c->bytestream_start;
         if(buf_p - c->bytestream_start < v){
             av_log(avctx, AV_LOG_ERROR, "Slice pointer chain broken\n");
             return -1;
