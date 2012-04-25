@@ -301,12 +301,10 @@ static int rtp_new_av_stream(HTTPContext *c,
                              HTTPContext *rtsp_c);
 
 static const char *my_program_name;
-static const char *my_program_dir;
 
 static const char *config_filename = "/etc/avserver.conf";
 
 static int avserver_debug;
-static int avserver_daemon;
 static int no_launch;
 static int need_to_start_children;
 
@@ -523,9 +521,6 @@ static void start_children(FFStream *feed)
                         close(i);
                     }
                 }
-
-                /* This is needed to make relative pathnames work */
-                chdir(my_program_dir);
 
                 signal(SIGPIPE, SIG_DFL);
 
@@ -4081,8 +4076,6 @@ static int parse_ffconfig(const char *filename)
             if (resolve_host(&my_http_addr.sin_addr, arg) != 0) {
                 ERROR("%s:%d: Invalid host/IP address: %s\n", arg);
             }
-        } else if (!av_strcasecmp(cmd, "NoDaemon")) {
-            avserver_daemon = 0;
         } else if (!av_strcasecmp(cmd, "RTSPPort")) {
             get_arg(arg, sizeof(arg), &p);
             val = atoi(arg);
@@ -4655,7 +4648,6 @@ static void handle_child_exit(int sig)
 static void opt_debug(void)
 {
     avserver_debug = 1;
-    avserver_daemon = 0;
     logfilename[0] = '-';
 }
 
@@ -4686,8 +4678,6 @@ int main(int argc, char **argv)
     show_banner();
 
     my_program_name = argv[0];
-    my_program_dir = getcwd(0, 0);
-    avserver_daemon = 1;
 
     parse_options(NULL, argc, argv, options, NULL);
 
@@ -4719,36 +4709,8 @@ int main(int argc, char **argv)
 
     compute_bandwidth();
 
-    /* put the process in background and detach it from its TTY */
-    if (avserver_daemon) {
-        int pid;
-
-        pid = fork();
-        if (pid < 0) {
-            perror("fork");
-            exit(1);
-        } else if (pid > 0) {
-            /* parent : exit */
-            exit(0);
-        } else {
-            /* child */
-            setsid();
-            close(0);
-            open("/dev/null", O_RDWR);
-            if (strcmp(logfilename, "-") != 0) {
-                close(1);
-                dup(0);
-            }
-            close(2);
-            dup(0);
-        }
-    }
-
     /* signal init */
     signal(SIGPIPE, SIG_IGN);
-
-    if (avserver_daemon)
-        chdir("/");
 
     if (http_server() < 0) {
         http_log("Could not start server\n");

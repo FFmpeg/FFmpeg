@@ -9,6 +9,7 @@ version <next>:
 version 9_beta2:
 - metadata (INFO tag) support in WAV muxer
 - support for building DLLs using MSVC
+- remove avserver daemon mode
 
 
 version 9_beta1:

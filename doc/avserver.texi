@@ -31,11 +31,6 @@ several live feeds, streaming from files and time shifting on live feeds
 (you can seek to positions in the past on each live feed, provided you
 specify a big enough feed storage in avserver.conf).
 
-avserver runs in daemon mode by default; that is, it puts itself in
-the background and detaches from its TTY, unless it is launched in
-debug mode or a NoDaemon option is specified in the configuration
-file.
-
 This documentation covers only the streaming aspects of avserver /
 avconv. All questions about parameters for avconv, codec questions,
 etc. are not covered here. Read @file{avconv.html} for more
@@ -257,8 +252,7 @@ within the various <Stream> sections. Since avserver will not launch
 any avconv instances, you will have to launch them manually.
 @item -d
 Enable debug mode. This option increases log verbosity, directs log
-messages to stdout and causes avserver to run in the foreground
-rather than as a daemon.
+messages to stdout.
 @end table
 @c man end
 
