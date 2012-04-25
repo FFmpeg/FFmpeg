@@ -1917,11 +1917,11 @@ static int read_header(FFV1Context *f){
             }
 
             if(f->version <= 2){
-            if(p->context_count < context_count){
-                av_freep(&p->state);
-                av_freep(&p->vlc_state);
-            }
-            p->context_count= context_count;
+                if(p->context_count < context_count){
+                    av_freep(&p->state);
+                    av_freep(&p->vlc_state);
+                }
+                p->context_count= context_count;
             }
         }
     }
