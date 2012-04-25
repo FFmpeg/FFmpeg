@@ -660,9 +660,8 @@ static void write_header(FFV1Context *f){
         put_rac(c, state, f->transparency);
 
         write_quant_tables(c, f->quant_table);
-    }else{
+    }else if(f->version < 3){
         put_symbol(c, state, f->slice_count, 0);
-        if(f->version < 3){
         for(i=0; i<f->slice_count; i++){
             FFV1Context *fs= f->slice_context[i];
             put_symbol(c, state, (fs->slice_x     +1)*f->num_h_slices / f->width   , 0);
@@ -673,7 +672,6 @@ static void write_header(FFV1Context *f){
                 put_symbol(c, state, f->plane[j].quant_table_index, 0);
                 av_assert0(f->plane[j].quant_table_index == f->avctx->context_model);
             }
-        }
         }
     }
 }
@@ -1862,10 +1860,21 @@ static int read_header(FFV1Context *f){
                 av_log(f->avctx, AV_LOG_ERROR, "read_quant_table error\n");
                 return -1;
         }
-    }else{
+    }else if(f->version < 3){
         f->slice_count= get_symbol(c, state, 0);
-        if(f->slice_count > (unsigned)MAX_SLICES)
-            return -1;
+    }else{
+        const uint8_t *p= c->bytestream_end;
+        for(f->slice_count = 0; f->slice_count < MAX_SLICES && 3 < p - c->bytestream_start; f->slice_count++){
+            int trailer = 3 + 5*!!f->ec;
+            int size = AV_RB24(p-trailer);
+            if(size + trailer > p - c->bytestream_start)
+                break;
+            p -= size + trailer;
+        }
+    }
+    if(f->slice_count > (unsigned)MAX_SLICES || f->slice_count <= 0){
+        av_log(f->avctx, AV_LOG_ERROR, "slice count %d is invalid\n", f->slice_count);
+        return -1;
     }
 
     for(j=0; j<f->slice_count; j++){
