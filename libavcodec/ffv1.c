@@ -1601,12 +1601,13 @@ static int decode_slice(AVCodecContext *c, void *arg){
     AVFrame * const p= &f->picture;
 
     if(f->version > 2){
-        if(decode_slice_header(f, fs) < 0)
-            return AVERROR_INVALIDDATA;
-
         if(init_slice_state(f, fs) < 0)
             return AVERROR(ENOMEM);
+        if(decode_slice_header(f, fs) < 0)
+            return AVERROR_INVALIDDATA;
     }
+    if(init_slice_state(f, fs) < 0)
+        return AVERROR(ENOMEM);
     if(f->picture.key_frame)
         clear_slice_state(f, fs);
     width = fs->slice_width;
@@ -1968,8 +1969,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         f->key_frame_ok = 0;
         if(read_header(f) < 0)
             return -1;
-        if(init_slices_state(f) < 0)
-            return -1;
         f->key_frame_ok = 1;
     }else{
         if (!f->key_frame_ok) {
@@ -1977,13 +1976,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
             return AVERROR_INVALIDDATA;
         }
         p->key_frame= 0;
-    }
-    if(f->ac>1){
-        int i;
-        for(i=1; i<256; i++){
-            c->one_state[i]= f->state_transition[i];
-            c->zero_state[256-i]= 256-c->one_state[i];
-        }
     }
 
     p->reference= 0;
