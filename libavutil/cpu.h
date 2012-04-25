@@ -62,6 +62,13 @@ int av_get_cpu_flags(void);
  */
 void av_set_cpu_flags_mask(int mask);
 
+/**
+ * Parse CPU flags from a string.
+ *
+ * @return a combination of AV_CPU_* flags, negative on error.
+ */
+int av_parse_cpu_flags(const char *s);
+
 /* The following CPU-specific functions shall not be called directly. */
 int ff_get_cpu_flags_arm(void);
 int ff_get_cpu_flags_ppc(void);
