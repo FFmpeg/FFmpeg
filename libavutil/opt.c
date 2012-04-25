@@ -684,7 +684,7 @@ static int parse_key_value_pair(void *ctx, const char **buf,
         return AVERROR(EINVAL);
     }
 
-    av_log(ctx, AV_LOG_DEBUG, "Setting value '%s' for key '%s'\n", val, key);
+    av_log(ctx, AV_LOG_DEBUG, "Setting entry with key '%s' to value '%s'\n", key, val);
 
     ret = av_opt_set(ctx, key, val, 0);
     if (ret == AVERROR_OPTION_NOT_FOUND)
