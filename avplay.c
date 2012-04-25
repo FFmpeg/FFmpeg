@@ -34,7 +34,7 @@
 #include "libavformat/avformat.h"
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
-#include "libavcodec/audioconvert.h"
+#include "libavresample/avresample.h"
 #include "libavutil/opt.h"
 #include "libavcodec/avfft.h"
 
@@ -159,8 +159,12 @@ typedef struct VideoState {
     int audio_buf_index; /* in bytes */
     AVPacket audio_pkt_temp;
     AVPacket audio_pkt;
-    enum AVSampleFormat audio_src_fmt;
-    AVAudioConvert *reformat_ctx;
+    enum AVSampleFormat sdl_sample_fmt;
+    uint64_t sdl_channel_layout;
+    int sdl_channels;
+    enum AVSampleFormat resample_sample_fmt;
+    uint64_t resample_channel_layout;
+    AVAudioResampleContext *avr;
     AVFrame *frame;
 
     int show_audio; /* if true, display audio samples */
@@ -743,7 +747,7 @@ static void video_audio_display(VideoState *s)
     nb_freq = 1 << (rdft_bits - 1);
 
     /* compute display index : center on currently output samples */
-    channels = s->audio_st->codec->channels;
+    channels = s->sdl_channels;
     nb_display_channels = channels;
     if (!s->paused) {
         int data_used = s->show_audio == 1 ? s->width : (2 * nb_freq);
@@ -957,8 +961,8 @@ static double get_audio_clock(VideoState *is)
     hw_buf_size = audio_write_get_buf_size(is);
     bytes_per_sec = 0;
     if (is->audio_st) {
-        bytes_per_sec = is->audio_st->codec->sample_rate *
-                        2 * is->audio_st->codec->channels;
+        bytes_per_sec = is->audio_st->codec->sample_rate * is->sdl_channels *
+                        av_get_bytes_per_sample(is->sdl_sample_fmt);
     }
     if (bytes_per_sec)
         pts -= (double)hw_buf_size / bytes_per_sec;
@@ -1937,7 +1941,7 @@ static int synchronize_audio(VideoState *is, short *samples,
     int n, samples_size;
     double ref_clock;
 
-    n = 2 * is->audio_st->codec->channels;
+    n = is->sdl_channels * av_get_bytes_per_sample(is->sdl_sample_fmt);
     samples_size = samples_size1;
 
     /* if not master, then we try to remove or add samples to correct the clock */
@@ -2018,6 +2022,8 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
     for (;;) {
         /* NOTE: the audio packet can contain several frames */
         while (pkt_temp->size > 0 || (!pkt_temp->data && new_packet)) {
+            int resample_changed, audio_resample;
+
             if (!is->frame) {
                 if (!(is->frame = avcodec_alloc_frame()))
                     return AVERROR(ENOMEM);
@@ -2047,39 +2053,67 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
                                                    is->frame->nb_samples,
                                                    dec->sample_fmt, 1);
 
-            if (dec->sample_fmt != is->audio_src_fmt) {
-                if (is->reformat_ctx)
-                    av_audio_convert_free(is->reformat_ctx);
-                is->reformat_ctx= av_audio_convert_alloc(AV_SAMPLE_FMT_S16, 1,
-                                                         dec->sample_fmt, 1, NULL, 0);
-                if (!is->reformat_ctx) {
-                    fprintf(stderr, "Cannot convert %s sample format to %s sample format\n",
-                        av_get_sample_fmt_name(dec->sample_fmt),
-                        av_get_sample_fmt_name(AV_SAMPLE_FMT_S16));
+            audio_resample = dec->sample_fmt     != is->sdl_sample_fmt ||
+                             dec->channel_layout != is->sdl_channel_layout;
+
+            resample_changed = dec->sample_fmt     != is->resample_sample_fmt ||
+                               dec->channel_layout != is->resample_channel_layout;
+
+            if ((!is->avr && audio_resample) || resample_changed) {
+                if (is->avr)
+                    avresample_close(is->avr);
+                else if (audio_resample) {
+                    int ret;
+                    is->avr = avresample_alloc_context();
+                    if (!is->avr) {
+                        fprintf(stderr, "error allocating AVAudioResampleContext\n");
                         break;
+                    }
+                    av_opt_set_int(is->avr, "in_channel_layout",  dec->channel_layout,    0);
+                    av_opt_set_int(is->avr, "in_sample_fmt",      dec->sample_fmt,        0);
+                    av_opt_set_int(is->avr, "in_sample_rate",     dec->sample_rate,       0);
+                    av_opt_set_int(is->avr, "out_channel_layout", is->sdl_channel_layout, 0);
+                    av_opt_set_int(is->avr, "out_sample_fmt",     is->sdl_sample_fmt,     0);
+                    av_opt_set_int(is->avr, "out_sample_rate",    dec->sample_rate,       0);
+                    if (av_get_bytes_per_sample(dec->sample_fmt) <= 2)
+                        av_opt_set_int(is->avr, "internal_sample_fmt", AV_SAMPLE_FMT_S16P, 0);
+
+                    if ((ret = avresample_open(is->avr)) < 0) {
+                        fprintf(stderr, "error initializing libavresample\n");
+                        break;
+                    }
                 }
-                is->audio_src_fmt= dec->sample_fmt;
+                is->resample_sample_fmt     = dec->sample_fmt;
+                is->resample_channel_layout = dec->channel_layout;
             }
 
-            if (is->reformat_ctx) {
-                const void *ibuf[6] = { is->frame->data[0] };
-                void *obuf[6];
-                int istride[6] = { av_get_bytes_per_sample(dec->sample_fmt) };
-                int ostride[6] = { 2 };
-                int len= data_size/istride[0];
-                obuf[0] = av_realloc(is->audio_buf1, FFALIGN(len * ostride[0], 32));
-                if (!obuf[0]) {
+            if (audio_resample) {
+                void *tmp_out;
+                int out_samples, out_size, out_linesize;
+                int osize      = av_get_bytes_per_sample(is->sdl_sample_fmt);
+                int nb_samples = is->frame->nb_samples;
+
+                out_size = av_samples_get_buffer_size(&out_linesize,
+                                                      is->sdl_channels,
+                                                      nb_samples,
+                                                      is->sdl_sample_fmt, 0);
+                tmp_out = av_realloc(is->audio_buf1, out_size);
+                if (!tmp_out)
                     return AVERROR(ENOMEM);
-                }
-                is->audio_buf1 = obuf[0];
-                if (av_audio_convert(is->reformat_ctx, obuf, ostride, ibuf, istride, len) < 0) {
-                    printf("av_audio_convert() failed\n");
+                is->audio_buf1 = tmp_out;
+
+                out_samples = avresample_convert(is->avr,
+                                                 (void **)&is->audio_buf1,
+                                                 out_linesize, nb_samples,
+                                                 (void **)is->frame->data,
+                                                 is->frame->linesize[0],
+                                                 is->frame->nb_samples);
+                if (out_samples < 0) {
+                    fprintf(stderr, "avresample_convert() failed\n");
                     break;
                 }
                 is->audio_buf = is->audio_buf1;
-                /* FIXME: existing code assume that data_size equals framesize*channels*2
-                          remove this legacy cruft */
-                data_size = len * 2;
+                data_size = out_samples * osize * is->sdl_channels;
             } else {
                 is->audio_buf = is->frame->data[0];
             }
@@ -2087,7 +2121,7 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
             /* if no pts, then compute it */
             pts = is->audio_clock;
             *pts_ptr = pts;
-            n = 2 * dec->channels;
+            n = is->sdl_channels * av_get_bytes_per_sample(is->sdl_sample_fmt);
             is->audio_clock += (double)data_size /
                 (double)(n * dec->sample_rate);
 #ifdef DEBUG
@@ -2206,7 +2240,20 @@ static int stream_component_open(VideoState *is, int stream_index)
     if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
         wanted_spec.freq = avctx->sample_rate;
         wanted_spec.format = AUDIO_S16SYS;
-        wanted_spec.channels = avctx->channels;
+
+        if (!avctx->channel_layout)
+            avctx->channel_layout = av_get_default_channel_layout(avctx->channels);
+        if (!avctx->channel_layout) {
+            fprintf(stderr, "unable to guess channel layout\n");
+            return -1;
+        }
+        if (avctx->channels == 1)
+            is->sdl_channel_layout = AV_CH_LAYOUT_MONO;
+        else
+            is->sdl_channel_layout = AV_CH_LAYOUT_STEREO;
+        is->sdl_channels = av_get_channel_layout_nb_channels(is->sdl_channel_layout);
+
+        wanted_spec.channels = is->sdl_channels;
         wanted_spec.silence = 0;
         wanted_spec.samples = SDL_AUDIO_BUFFER_SIZE;
         wanted_spec.callback = sdl_audio_callback;
@@ -2216,7 +2263,9 @@ static int stream_component_open(VideoState *is, int stream_index)
             return -1;
         }
         is->audio_hw_buf_size = spec.size;
-        is->audio_src_fmt = AV_SAMPLE_FMT_S16;
+        is->sdl_sample_fmt          = AV_SAMPLE_FMT_S16;
+        is->resample_sample_fmt     = is->sdl_sample_fmt;
+        is->resample_channel_layout = is->sdl_channel_layout;
     }
 
     ic->streams[stream_index]->discard = AVDISCARD_DEFAULT;
@@ -2275,9 +2324,8 @@ static void stream_component_close(VideoState *is, int stream_index)
 
         packet_queue_end(&is->audioq);
         av_free_packet(&is->audio_pkt);
-        if (is->reformat_ctx)
-            av_audio_convert_free(is->reformat_ctx);
-        is->reformat_ctx = NULL;
+        if (is->avr)
+            avresample_free(&is->avr);
         av_freep(&is->audio_buf1);
         is->audio_buf = NULL;
         av_freep(&is->frame);
