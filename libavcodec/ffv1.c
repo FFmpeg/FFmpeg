@@ -1298,7 +1298,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             bytes+=3;
         }
         if(f->ec){
-            unsigned v = av_crc(av_crc_get_table(AV_CRC_32_IEEE), 0, buf_p, bytes);
+            unsigned v;
+            buf_p[bytes++] = 0;
+            v = av_crc(av_crc_get_table(AV_CRC_32_IEEE), 0, buf_p, bytes);
             AV_WL32(buf_p + bytes, v); bytes += 4;
         }
         buf_p += bytes;
@@ -1987,7 +1989,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     buf_p= buf + buf_size;
     for(i=f->slice_count-1; i>=0; i--){
         FFV1Context *fs= f->slice_context[i];
-        int trailer = 3 + 4*!!f->ec;
+        int trailer = 3 + 5*!!f->ec;
         int v;
 
         if(i || f->ec) v = AV_RB24(buf_p-trailer)+trailer;
