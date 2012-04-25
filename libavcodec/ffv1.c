@@ -1155,15 +1155,6 @@ static void clear_slice_state(FFV1Context *f, FFV1Context *fs){
         }
 }
 
-static void clear_state(FFV1Context *f){
-    int si;
-
-    for(si=0; si<f->slice_count; si++){
-        FFV1Context *fs= f->slice_context[si];
-        clear_slice_state(f, fs);
-    }
-}
-
 #if CONFIG_FFV1_ENCODER
 
 static void encode_slice_header(FFV1Context *f, FFV1Context *fs){
