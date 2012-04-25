@@ -637,16 +637,17 @@ static int rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
 #if CONFIG_RTSP_DEMUXER || CONFIG_RTSP_MUXER
 static void rtsp_parse_range(int *min_ptr, int *max_ptr, const char **pp)
 {
-    const char *p;
+    const char *q;
+    char *p;
     int v;
 
-    p = *pp;
-    p += strspn(p, SPACE_CHARS);
-    v = strtol(p, (char **)&p, 10);
+    q = *pp;
+    q += strspn(q, SPACE_CHARS);
+    v = strtol(q, &p, 10);
     if (*p == '-') {
         p++;
         *min_ptr = v;
-        v = strtol(p, (char **)&p, 10);
+        v = strtol(p, &p, 10);
         *max_ptr = v;
     } else {
         *min_ptr = v;
