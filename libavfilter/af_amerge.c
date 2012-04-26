@@ -141,11 +141,12 @@ static int request_frame(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     AMergeContext *am = ctx->priv;
-    int i;
+    int i, ret;
 
     for (i = 0; i < 2; i++)
         if (!am->queue[i].nb_samples)
-            avfilter_request_frame(ctx->inputs[i]);
+            if ((ret = avfilter_request_frame(ctx->inputs[i])) < 0)
+                return ret;
     return 0;
 }
 
