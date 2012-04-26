@@ -94,20 +94,20 @@ static const enum AVSampleFormat formats[] = {
 };
 
 uint64_t layouts[]={
-AV_CH_LAYOUT_MONO                    ,
-AV_CH_LAYOUT_STEREO                  ,
-AV_CH_LAYOUT_2_1                     ,
-AV_CH_LAYOUT_SURROUND                ,
-AV_CH_LAYOUT_4POINT0                 ,
-AV_CH_LAYOUT_2_2                     ,
-AV_CH_LAYOUT_QUAD                    ,
-AV_CH_LAYOUT_5POINT0                 ,
-AV_CH_LAYOUT_5POINT1                 ,
-AV_CH_LAYOUT_5POINT0_BACK            ,
-AV_CH_LAYOUT_5POINT1_BACK            ,
-AV_CH_LAYOUT_7POINT0                 ,
-AV_CH_LAYOUT_7POINT1                 ,
-AV_CH_LAYOUT_7POINT1_WIDE            ,
+    AV_CH_LAYOUT_MONO                    ,
+    AV_CH_LAYOUT_STEREO                  ,
+    AV_CH_LAYOUT_2_1                     ,
+    AV_CH_LAYOUT_SURROUND                ,
+    AV_CH_LAYOUT_4POINT0                 ,
+    AV_CH_LAYOUT_2_2                     ,
+    AV_CH_LAYOUT_QUAD                    ,
+    AV_CH_LAYOUT_5POINT0                 ,
+    AV_CH_LAYOUT_5POINT1                 ,
+    AV_CH_LAYOUT_5POINT0_BACK            ,
+    AV_CH_LAYOUT_5POINT1_BACK            ,
+    AV_CH_LAYOUT_7POINT0                 ,
+    AV_CH_LAYOUT_7POINT1                 ,
+    AV_CH_LAYOUT_7POINT1_WIDE            ,
 0
 };
 
