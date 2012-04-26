@@ -216,8 +216,7 @@ static void audiogen(void *data, enum AVSampleFormat sample_fmt,
 }
 
 int main(int argc, char **argv){
-    int in_sample_rate, out_sample_rate, ch ,i, in_ch_layout_index, out_ch_layout_index, osr, flush_count;
-    int in_sample_fmt_index, out_sample_fmt_index;
+    int in_sample_rate, out_sample_rate, ch ,i, flush_count;
     uint64_t in_ch_layout, out_ch_layout;
     enum AVSampleFormat in_sample_fmt, out_sample_fmt;
     uint8_t array_in[SAMPLES*8*8];
@@ -333,7 +332,7 @@ int main(int argc, char **argv){
         out_count= swr_convert(backw_ctx,aout, SAMPLES, amid, mid_count);
 
         for(ch=0; ch<in_ch_count; ch++){
-            double sse, x, maxdiff=0;
+            double sse, maxdiff=0;
             double sum_a= 0;
             double sum_b= 0;
             double sum_aa= 0;
@@ -362,7 +361,7 @@ int main(int argc, char **argv){
         shift(aout, -flush_i, in_ch_count, in_sample_fmt);
         if(flush_count){
             for(ch=0; ch<in_ch_count; ch++){
-                double sse, x, maxdiff=0;
+                double sse, maxdiff=0;
                 double sum_a= 0;
                 double sum_b= 0;
                 double sum_aa= 0;
