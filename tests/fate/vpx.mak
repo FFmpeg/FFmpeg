@@ -1,8 +1,11 @@
-FATE_TESTS += fate-ea-vp60
+FATE_EA_VP6 += fate-ea-vp60
 fate-ea-vp60: CMD = framecrc -i $(SAMPLES)/ea-vp6/g36.vp6
 
-FATE_TESTS += fate-ea-vp61
+FATE_EA_VP6 += fate-ea-vp61
 fate-ea-vp61: CMD = framecrc -i $(SAMPLES)/ea-vp6/MovieSkirmishGondor.vp6 -t 4
+
+FATE_TESTS += $(FATE_EA_VP6)
+fate-ea-vp6: $(FATE_EA_VP6)
 
 FATE_VP3 += fate-vp31
 fate-vp31: CMD = framecrc -i $(SAMPLES)/vp3/vp31.avi
