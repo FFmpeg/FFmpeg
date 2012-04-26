@@ -59,11 +59,11 @@ static void  set(uint8_t *a[], int ch, int index, int ch_count, enum AVSampleFor
         index= ch + index*ch_count;
     }
     switch(f){
-    case AV_SAMPLE_FMT_U8 : ((uint8_t*)p)[index]= (v+1.0)*255.0/2; break;
-    case AV_SAMPLE_FMT_S16: ((int16_t*)p)[index]= v*32767;         break;
-    case AV_SAMPLE_FMT_S32: ((int32_t*)p)[index]= v*2147483647;    break;
-    case AV_SAMPLE_FMT_FLT: ((float  *)p)[index]= v;               break;
-    case AV_SAMPLE_FMT_DBL: ((double *)p)[index]= v;               break;
+    case AV_SAMPLE_FMT_U8 : ((uint8_t*)p)[index]= av_clip_uint8 (lrint((v+1.0)*255.0/2)); break;
+    case AV_SAMPLE_FMT_S16: ((int16_t*)p)[index]= av_clip_int16 (lrint(v*32767));         break;
+    case AV_SAMPLE_FMT_S32: ((int32_t*)p)[index]= av_clipl_int32(lrint(v*2147483647));    break;
+    case AV_SAMPLE_FMT_FLT: ((float  *)p)[index]= v;                                      break;
+    case AV_SAMPLE_FMT_DBL: ((double *)p)[index]= v;                                      break;
     default: av_assert2(0);
     }
 }
