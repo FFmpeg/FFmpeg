@@ -47,7 +47,7 @@ typedef struct AudioMix {
     mix_func *mix;
     mix_func *mix_generic;
 
-    int16_t *matrix_q6[AVRESAMPLE_MAX_CHANNELS];
+    int16_t *matrix_q8[AVRESAMPLE_MAX_CHANNELS];
     int32_t *matrix_q15[AVRESAMPLE_MAX_CHANNELS];
     float   *matrix_flt[AVRESAMPLE_MAX_CHANNELS];
     void   **matrix;

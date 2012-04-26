@@ -39,7 +39,7 @@ typedef struct AVAudioResampleContext AVAudioResampleContext;
 
 /** Mixing Coefficient Types */
 enum AVMixCoeffType {
-    AV_MIX_COEFF_TYPE_Q6,   /** 16-bit 10.6 fixed-point                     */
+    AV_MIX_COEFF_TYPE_Q8,   /** 16-bit 8.8 fixed-point                      */
     AV_MIX_COEFF_TYPE_Q15,  /** 32-bit 17.15 fixed-point                    */
     AV_MIX_COEFF_TYPE_FLT,  /** floating-point                              */
     AV_MIX_COEFF_TYPE_NB,   /** Number of coeff types. Not part of ABI      */

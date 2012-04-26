@@ -257,14 +257,14 @@ int avresample_get_matrix(AVAudioResampleContext *avr, double *matrix,
     }
 
     switch (avr->mix_coeff_type) {
-    case AV_MIX_COEFF_TYPE_Q6:
-        if (!avr->am->matrix_q6[0]) {
+    case AV_MIX_COEFF_TYPE_Q8:
+        if (!avr->am->matrix_q8[0]) {
             av_log(avr, AV_LOG_ERROR, "matrix is not set\n");
             return AVERROR(EINVAL);
         }
         for (o = 0; o < out_channels; o++)
             for (i = 0; i < in_channels; i++)
-                matrix[o * stride + i] = avr->am->matrix_q6[o][i] / 64.0;
+                matrix[o * stride + i] = avr->am->matrix_q8[o][i] / 256.0;
         break;
     case AV_MIX_COEFF_TYPE_Q15:
         if (!avr->am->matrix_q15[0]) {
@@ -325,8 +325,8 @@ int avresample_set_matrix(AVAudioResampleContext *avr, const double *matrix,
     avr->am->matrix = (void **)avr->am->matrix_## type;
 
     switch (avr->mix_coeff_type) {
-    case AV_MIX_COEFF_TYPE_Q6:
-        CONVERT_MATRIX(q6, av_clip_int16(lrint(64.0 * v)))
+    case AV_MIX_COEFF_TYPE_Q8:
+        CONVERT_MATRIX(q8, av_clip_int16(lrint(256.0 * v)))
         break;
     case AV_MIX_COEFF_TYPE_Q15:
         CONVERT_MATRIX(q15, av_clipl_int32(llrint(32768.0 * v)))
