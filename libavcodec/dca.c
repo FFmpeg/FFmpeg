@@ -51,12 +51,14 @@
 //#define TRACE
 
 #define DCA_PRIM_CHANNELS_MAX  (7)
-#define DCA_SUBBANDS          (32)
+#define DCA_SUBBANDS          (64)
 #define DCA_ABITS_MAX         (32)      /* Should be 28 */
 #define DCA_SUBSUBFRAMES_MAX   (4)
 #define DCA_SUBFRAMES_MAX     (16)
 #define DCA_BLOCKS_MAX        (16)
 #define DCA_LFE_MAX            (3)
+#define DCA_CHSETS_MAX         (4)
+#define DCA_CHSET_CHANS_MAX    (8)
 
 enum DCAMode {
     DCA_MONO = 0,
@@ -1564,6 +1566,166 @@ static int dca_exss_parse_asset_header(DCAContext *s)
     return 0;
 }
 
+static int dca_xbr_parse_frame(DCAContext *s)
+{
+    int scale_table_high[DCA_CHSET_CHANS_MAX][DCA_SUBBANDS][2];
+    int active_bands[DCA_CHSETS_MAX][DCA_CHSET_CHANS_MAX];
+    int abits_high[DCA_CHSET_CHANS_MAX][DCA_SUBBANDS];
+    int anctemp[DCA_CHSET_CHANS_MAX];
+    int chset_fsize[DCA_CHSETS_MAX];
+    int n_xbr_ch[DCA_CHSETS_MAX];
+    int hdr_size, num_chsets, xbr_tmode, hdr_pos;
+    int i, j, k, l, chset, chan_base;
+
+    av_log(s->avctx, AV_LOG_DEBUG, "DTS-XBR: decoding XBR extension\n");
+
+    /* get bit position of sync header */
+    hdr_pos = get_bits_count(&s->gb) - 32;
+
+    hdr_size = get_bits(&s->gb, 6) + 1;
+    num_chsets = get_bits(&s->gb, 2) + 1;
+
+    for(i = 0; i < num_chsets; i++)
+        chset_fsize[i] = get_bits(&s->gb, 14) + 1;
+
+    xbr_tmode = get_bits1(&s->gb);
+
+    for(i = 0; i < num_chsets; i++) {
+        n_xbr_ch[i] = get_bits(&s->gb, 3) + 1;
+        k = get_bits(&s->gb, 2) + 5;
+        for(j = 0; j < n_xbr_ch[i]; j++)
+            active_bands[i][j] = get_bits(&s->gb, k) + 1;
+    }
+
+    /* skip to the end of the header */
+    i = get_bits_count(&s->gb);
+    if(hdr_pos + hdr_size * 8 > i)
+        skip_bits_long(&s->gb, hdr_pos + hdr_size * 8 - i);
+
+    /* loop over the channel data sets */
+    /* only decode as many channels as we've decoded base data for */
+    for(chset = 0, chan_base = 0;
+        chset < num_chsets && chan_base + n_xbr_ch[chset] <= s->prim_channels;
+        chan_base += n_xbr_ch[chset++]) {
+        int start_posn = get_bits_count(&s->gb);
+        int subsubframe = 0;
+        int subframe = 0;
+
+        /* loop over subframes */
+        for (k = 0; k < (s->sample_blocks / 8); k++) {
+            /* parse header if we're on first subsubframe of a block */
+            if(subsubframe == 0) {
+                /* Parse subframe header */
+                for(i = 0; i < n_xbr_ch[chset]; i++) {
+                    anctemp[i] = get_bits(&s->gb, 2) + 2;
+                }
+
+                for(i = 0; i < n_xbr_ch[chset]; i++) {
+                    get_array(&s->gb, abits_high[i], active_bands[chset][i], anctemp[i]);
+                }
+
+                for(i = 0; i < n_xbr_ch[chset]; i++) {
+                    anctemp[i] = get_bits(&s->gb, 3);
+                    if(anctemp[i] < 1) {
+                        av_log(s->avctx, AV_LOG_ERROR, "DTS-XBR: SYNC ERROR\n");
+                        return AVERROR_INVALIDDATA;
+                    }
+                }
+
+                /* generate scale factors */
+                for(i = 0; i < n_xbr_ch[chset]; i++) {
+                    const uint32_t *scale_table;
+                    int nbits;
+
+                    if (s->scalefactor_huffman[chan_base+i] == 6) {
+                        scale_table = scale_factor_quant7;
+                    } else {
+                        scale_table = scale_factor_quant6;
+                    }
+
+                    nbits = anctemp[i];
+
+                    for(j = 0; j < active_bands[chset][i]; j++) {
+                        if(abits_high[i][j] > 0) {
+                            scale_table_high[i][j][0] =
+                                scale_table[get_bits(&s->gb, nbits)];
+
+                            if(xbr_tmode && s->transition_mode[i][j]) {
+                                scale_table_high[i][j][1] =
+                                    scale_table[get_bits(&s->gb, nbits)];
+                            }
+                        }
+                    }
+                }
+            }
+
+            /* decode audio array for this block */
+            for(i = 0; i < n_xbr_ch[chset]; i++) {
+                for(j = 0; j < active_bands[chset][i]; j++) {
+                    const int xbr_abits = abits_high[i][j];
+                    const float quant_step_size = lossless_quant_d[xbr_abits];
+                    const int sfi = xbr_tmode && s->transition_mode[i][j] && subsubframe >= s->transition_mode[i][j];
+                    const float rscale = quant_step_size * scale_table_high[i][j][sfi];
+                    float *subband_samples = s->subband_samples[k][chan_base+i][j];
+                    int block[8];
+
+                    if(xbr_abits <= 0)
+                        continue;
+
+                    if(xbr_abits > 7) {
+                        get_array(&s->gb, block, 8, xbr_abits - 3);
+                    } else {
+                        int block_code1, block_code2, size, levels, err;
+
+                        size   = abits_sizes[xbr_abits - 1];
+                        levels = abits_levels[xbr_abits - 1];
+
+                        block_code1 = get_bits(&s->gb, size);
+                        block_code2 = get_bits(&s->gb, size);
+                        err = decode_blockcodes(block_code1, block_code2,
+                                                levels, block);
+                        if (err) {
+                            av_log(s->avctx, AV_LOG_ERROR,
+                                   "ERROR: DTS-XBR: block code look-up failed\n");
+                            return AVERROR_INVALIDDATA;
+                        }
+                    }
+
+                    /* scale & sum into subband */
+                    for(l = 0; l < 8; l++)
+                        subband_samples[l] += (float)block[l] * rscale;
+                }
+            }
+
+            /* check DSYNC marker */
+            if(s->aspf || subsubframe == s->subsubframes[subframe] - 1) {
+                if(get_bits(&s->gb, 16) != 0xffff) {
+                    av_log(s->avctx, AV_LOG_ERROR, "DTS-XBR: Didn't get subframe DSYNC\n");
+                    return AVERROR_INVALIDDATA;
+                }
+            }
+
+            /* advance sub-sub-frame index */
+            if(++subsubframe >= s->subsubframes[subframe]) {
+                subsubframe = 0;
+                subframe++;
+            }
+        }
+
+        /* skip to next channel set */
+        i = get_bits_count(&s->gb);
+        if(start_posn + chset_fsize[chset] * 8 != i) {
+            j = start_posn + chset_fsize[chset] * 8 - i;
+            if(j < 0 || j >= 8)
+                av_log(s->avctx, AV_LOG_ERROR, "DTS-XBR: end of channel set,"
+                       " skipping further than expected (%d bits)\n", j);
+            skip_bits_long(&s->gb, j);
+        }
+    }
+
+    return 0;
+}
+
 /**
  * Parse extension substream header (HD)
  */
@@ -1575,15 +1737,20 @@ static void dca_exss_parse_header(DCAContext *s)
     int num_assets = 1;
     int active_ss_mask[8];
     int i, j;
+    int start_posn;
+    int hdrsize;
+    uint32_t mkr;
 
     if (get_bits_left(&s->gb) < 52)
         return;
+
+    start_posn = get_bits_count(&s->gb) - 32;
 
     skip_bits(&s->gb, 8); // user data
     ss_index = get_bits(&s->gb, 2);
 
     blownup = get_bits1(&s->gb);
-    skip_bits(&s->gb,  8 + 4 * blownup); // header_size
+    hdrsize = get_bits(&s->gb,  8 + 4 * blownup) + 1; // header_size
     skip_bits(&s->gb, 16 + 4 * blownup); // hd_size
 
     s->static_fields = get_bits1(&s->gb);
@@ -1644,6 +1811,18 @@ static void dca_exss_parse_header(DCAContext *s)
 
     /* not parsed further, we were only interested in the extensions mask
      * from the asset header */
+
+    if(num_assets > 0) {
+        j = get_bits_count(&s->gb);
+        if(start_posn + hdrsize * 8 > j)
+            skip_bits_long(&s->gb, start_posn + hdrsize * 8 - j);
+
+        /* check first asset for XBR -- should also check extension mask! */
+        mkr = get_bits_long(&s->gb, 32);
+
+        if(mkr == 0x655e315e)
+            dca_xbr_parse_frame(s);
+    }
 }
 
 /**
