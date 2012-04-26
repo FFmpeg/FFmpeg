@@ -23,6 +23,7 @@
  * FFT and MDCT tests.
  */
 
+#include "libavutil/cpu.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/lfg.h"
 #include "libavutil/log.h"
@@ -240,6 +241,7 @@ int main(int argc, char **argv)
     FFTComplex *tab, *tab1, *tab_ref;
     FFTSample *tab2;
     int it, i, c;
+    int cpuflags;
     int do_speed = 0;
     int err = 1;
     enum tf_transform transform = TRANSFORM_FFT;
@@ -258,7 +260,7 @@ int main(int argc, char **argv)
 
     fft_nbits = 9;
     for(;;) {
-        c = getopt(argc, argv, "hsimrdn:f:");
+        c = getopt(argc, argv, "hsimrdn:f:c:");
         if (c == -1)
             break;
         switch(c) {
@@ -285,6 +287,12 @@ int main(int argc, char **argv)
             break;
         case 'f':
             scale = atof(optarg);
+            break;
+        case 'c':
+            cpuflags = av_parse_cpu_flags(optarg);
+            if (cpuflags < 0)
+                return 1;
+            av_set_cpu_flags_mask(cpuflags);
             break;
         }
     }

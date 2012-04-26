@@ -88,6 +88,13 @@ ELF     .size   \name, . - \name
 \name:
 .endm
 
+#if !HAVE_ARMV6T2
+.macro  movw    rd, val
+        mov     \rd, \val &  255
+        orr     \rd, \val & ~255
+.endm
+#endif
+
 .macro  mov32   rd, val
 #if HAVE_ARMV6T2
         movw            \rd, #(\val) & 0xffff
@@ -120,7 +127,7 @@ T       sub             \rn, \rn, \rm
 T       ldr             \rt, [\rn]
 .endm
 
-.macro  ldr_dpren       rt,  rn,  rm:vararg
+.macro  ldr_nreg        rt,  rn,  rm:vararg
 A       ldr             \rt, [\rn, -\rm]
 T       sub             \rt, \rn, \rm
 T       ldr             \rt, [\rt]
