@@ -132,6 +132,10 @@ static void setup_array(uint8_t *out[SWR_CH_MAX], uint8_t *in, enum AVSampleForm
     }
 }
 
+static int cmp(const int *a, const int *b){
+    return *a - *b;
+}
+
 int main(int argc, char **argv){
     int in_sample_rate, out_sample_rate, ch ,i, in_ch_layout_index, out_ch_layout_index, osr, flush_count;
     int in_sample_fmt_index, out_sample_fmt_index;
@@ -145,24 +149,50 @@ int main(int argc, char **argv){
     uint8_t *amid[SWR_CH_MAX];
     int flush_i=0;
     int mode = 0;
+    int max_tests = FF_ARRAY_ELEMS(rates) * FF_ARRAY_ELEMS(layouts) * FF_ARRAY_ELEMS(formats) * FF_ARRAY_ELEMS(layouts) * FF_ARRAY_ELEMS(formats);
+    int num_tests = 10000;
+    uint32_t seed = 0;
+    int remaining_tests[max_tests];
+    int test;
 
     struct SwrContext * forw_ctx= NULL;
     struct SwrContext *backw_ctx= NULL;
 
+    if (argc > 1) {
+        if (!strcmp(argv[1], "-h")) {
+            av_log(NULL, AV_LOG_INFO, "Usage: swresample-test [<num_tests>]\n"
+                   "Default is %d\n", num_tests);
+            return 0;
+        }
+        num_tests = strtol(argv[1], NULL, 0);
+        if(num_tests<= 0 || num_tests>max_tests)
+            num_tests = max_tests;
+    }
+
+    for(i=0; i<max_tests; i++)
+        remaining_tests[i] = i;
+
+    for(test=0; test<num_tests; test++){
+        unsigned r;
+        seed = seed * 1664525 + 1013904223;
+        r = (seed * (uint64_t)(max_tests - test)) >>32;
+        FFSWAP(int, remaining_tests[r], remaining_tests[max_tests - test - 1]);
+    }
+    qsort(remaining_tests + max_tests - num_tests, num_tests, sizeof(remaining_tests[0]), cmp);
     in_sample_rate=16000;
-    for(osr=0; osr<FF_ARRAY_ELEMS(rates); osr++){
-        out_sample_rate= rates[osr];
-        for(in_sample_fmt_index=0; in_sample_fmt_index<FF_ARRAY_ELEMS(formats); in_sample_fmt_index++){
-            in_sample_fmt = formats[in_sample_fmt_index];
-            for(out_sample_fmt_index=0; out_sample_fmt_index<FF_ARRAY_ELEMS(formats); out_sample_fmt_index++){
-                out_sample_fmt = formats[out_sample_fmt_index];
-                for(in_ch_layout_index=0; in_ch_layout_index < FF_ARRAY_ELEMS(layouts); in_ch_layout_index++){
+    for(test=0; test<num_tests; test++){
+        unsigned vector= remaining_tests[max_tests - test - 1];
+
+        in_ch_layout    = layouts[vector % FF_ARRAY_ELEMS(layouts)]; vector /= FF_ARRAY_ELEMS(layouts);
+        out_ch_layout   = layouts[vector % FF_ARRAY_ELEMS(layouts)]; vector /= FF_ARRAY_ELEMS(layouts);
+        in_sample_fmt   = formats[vector % FF_ARRAY_ELEMS(formats)]; vector /= FF_ARRAY_ELEMS(formats);
+        out_sample_fmt  = formats[vector % FF_ARRAY_ELEMS(formats)]; vector /= FF_ARRAY_ELEMS(formats);
+        out_sample_rate = rates  [vector % FF_ARRAY_ELEMS(rates  )]; vector /= FF_ARRAY_ELEMS(rates);
+        av_assert0(!vector);
+
                     int in_ch_count;
-                    in_ch_layout= layouts[in_ch_layout_index];
                     in_ch_count= av_get_channel_layout_nb_channels(in_ch_layout);
-                    for(out_ch_layout_index=0; out_ch_layout_index < FF_ARRAY_ELEMS(layouts); out_ch_layout_index++){
                         int out_count, mid_count, out_ch_count;
-                        out_ch_layout= layouts[out_ch_layout_index];
                         out_ch_count= av_get_channel_layout_nb_channels(out_ch_layout);
                         fprintf(stderr, "ch %d->%d, rate:%5d->%5d, fmt:%s->%s\n",
                                in_ch_count, out_ch_count,
@@ -271,10 +301,6 @@ int main(int argc, char **argv){
 
 
                         fprintf(stderr, "\n");
-                    }
-                }
-            }
-        }
     }
 
     return 0;
