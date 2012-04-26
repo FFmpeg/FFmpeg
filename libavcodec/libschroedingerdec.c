@@ -106,6 +106,11 @@ static SchroBuffer *FindNextSchroParseUnit(SchroParseUnitContext *parse_ctx)
         return NULL;
 
     in_buf = av_malloc(next_pu_offset);
+    if (!in_buf) {
+        av_log(parse_ctx, AV_LOG_ERROR, "Unable to allocate input buffer\n");
+        return NULL;
+    }
+
     memcpy(in_buf, parse_ctx->buf, next_pu_offset);
     enc_buf       = schro_buffer_new_with_data(in_buf, next_pu_offset);
     enc_buf->free = libschroedinger_decode_buffer_free;
