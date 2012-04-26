@@ -16,12 +16,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define SCALEBITS 8
 #define ONE_HALF  (1 << (SCALEBITS - 1))
 #define FIX(x)    ((int) ((x) * (1L << SCALEBITS) + 0.5))
+
+#define err_if(expr) do {                                              \
+    if (expr) {                                                        \
+        fprintf(stderr, "%s\n", strerror(errno));                      \
+        exit(1);                                                       \
+    }                                                                  \
+} while (0)
 
 static void rgb24_to_yuv420p(unsigned char *lum, unsigned char *cb,
                              unsigned char *cr, unsigned char *src,
@@ -108,14 +117,14 @@ static void pgmyuv_save(const char *filename, int w, int h,
 
     f = fopen(filename, "wb");
     fprintf(f, "P5\n%d %d\n%d\n", w, h * 3 / 2, 255);
-    fwrite(lum_tab, 1, w * h, f);
+    err_if(fwrite(lum_tab, 1, w * h, f) != w * h);
     h2 = h / 2;
     w2 = w / 2;
     cb = cb_tab;
     cr = cr_tab;
     for (i = 0; i < h2; i++) {
-        fwrite(cb, 1, w2, f);
-        fwrite(cr, 1, w2, f);
+        err_if(fwrite(cb, 1, w2, f) != w2);
+        err_if(fwrite(cr, 1, w2, f) != w2);
         cb += w2;
         cr += w2;
     }
