@@ -334,11 +334,8 @@ static int request_frame(AVFilterLink *outlink)
     ABufferSourceContext *abuffer = outlink->src->priv;
     AVFilterBufferRef *samplesref;
 
-    if (!av_fifo_size(abuffer->fifo)) {
-        av_log(outlink->src, AV_LOG_ERROR,
-               "request_frame() called with no available frames!\n");
-        return AVERROR(EINVAL);
-    }
+    if (!av_fifo_size(abuffer->fifo))
+        return AVERROR(EAGAIN);
 
     av_fifo_generic_read(abuffer->fifo, &samplesref, sizeof(samplesref), NULL);
     avfilter_filter_samples(outlink, avfilter_ref_buffer(samplesref, ~0));
