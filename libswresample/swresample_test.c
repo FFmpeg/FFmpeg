@@ -266,10 +266,9 @@ int main(int argc, char **argv){
                                 sum_ab+= a*b;
                                 maxdiff= FFMAX(maxdiff, FFABS(a-b));
                             }
-                            x = sum_ab/sum_bb;
-                            sse= sum_aa + sum_bb*x*x - 2*x*sum_ab;
+                            sse= sum_aa + sum_bb - 2*sum_ab;
 
-                            fprintf(stderr, "[%f %f %f] len:%5d\n", sqrt(sse/out_count), x, maxdiff, out_count);
+                            fprintf(stderr, "[e:%f c:%f max:%f] len:%5d\n", sqrt(sse/out_count), sum_ab/(sqrt(sum_aa*sum_bb)), maxdiff, out_count);
                         }
 
                         flush_i++;
@@ -296,10 +295,9 @@ int main(int argc, char **argv){
                                     sum_ab+= a*b;
                                     maxdiff= FFMAX(maxdiff, FFABS(a-b));
                                 }
-                                x = sum_ab/sum_bb;
-                                sse= sum_aa + sum_bb*x*x - 2*x*sum_ab;
+                                sse= sum_aa + sum_bb - 2*sum_ab;
 
-                                fprintf(stderr, "[%f %f %f] len:%5d F:%3d\n", sqrt(sse/flush_count), x, maxdiff, flush_count, flush_i);
+                                fprintf(stderr, "[e:%f c:%f max:%f] len:%5d F:%3d\n", sqrt(sse/flush_count), sum_ab/(sqrt(sum_aa*sum_bb)), maxdiff, flush_count, flush_i);
                             }
                         }
 
