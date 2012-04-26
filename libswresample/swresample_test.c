@@ -134,6 +134,7 @@ static void setup_array(uint8_t *out[SWR_CH_MAX], uint8_t *in, enum AVSampleForm
 
 int main(int argc, char **argv){
     int in_sample_rate, out_sample_rate, ch ,i, in_ch_layout_index, out_ch_layout_index, osr, flush_count;
+    int in_sample_fmt_index, out_sample_fmt_index;
     uint64_t in_ch_layout, out_ch_layout;
     enum AVSampleFormat in_sample_fmt, out_sample_fmt;
     uint8_t array_in[SAMPLES*8*8];
@@ -151,8 +152,10 @@ int main(int argc, char **argv){
     in_sample_rate=16000;
     for(osr=0; osr<FF_ARRAY_ELEMS(rates); osr++){
         out_sample_rate= rates[osr];
-        for(in_sample_fmt= AV_SAMPLE_FMT_U8; in_sample_fmt<=AV_SAMPLE_FMT_DBL; in_sample_fmt++){
-            for(out_sample_fmt= AV_SAMPLE_FMT_U8; out_sample_fmt<=AV_SAMPLE_FMT_DBL; out_sample_fmt++){
+        for(in_sample_fmt_index=0; in_sample_fmt_index<FF_ARRAY_ELEMS(formats); in_sample_fmt_index++){
+            in_sample_fmt = formats[in_sample_fmt_index];
+            for(out_sample_fmt_index=0; out_sample_fmt_index<FF_ARRAY_ELEMS(formats); out_sample_fmt_index++){
+                out_sample_fmt = formats[out_sample_fmt_index];
                 for(in_ch_layout_index=0; in_ch_layout_index < FF_ARRAY_ELEMS(layouts); in_ch_layout_index++){
                     int in_ch_count;
                     in_ch_layout= layouts[in_ch_layout_index];
