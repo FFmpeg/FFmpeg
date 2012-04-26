@@ -117,7 +117,6 @@ uint64_t layouts[]={
     AV_CH_LAYOUT_7POINT0                 ,
     AV_CH_LAYOUT_7POINT1                 ,
     AV_CH_LAYOUT_7POINT1_WIDE            ,
-0
 };
 
 static void setup_array(uint8_t *out[SWR_CH_MAX], uint8_t *in, enum AVSampleFormat format, int samples){
@@ -154,11 +153,11 @@ int main(int argc, char **argv){
         out_sample_rate= rates[osr];
         for(in_sample_fmt= AV_SAMPLE_FMT_U8; in_sample_fmt<=AV_SAMPLE_FMT_DBL; in_sample_fmt++){
             for(out_sample_fmt= AV_SAMPLE_FMT_U8; out_sample_fmt<=AV_SAMPLE_FMT_DBL; out_sample_fmt++){
-                for(in_ch_layout_index=0; layouts[in_ch_layout_index]; in_ch_layout_index++){
+                for(in_ch_layout_index=0; in_ch_layout_index < FF_ARRAY_ELEMS(layouts); in_ch_layout_index++){
                     int in_ch_count;
                     in_ch_layout= layouts[in_ch_layout_index];
                     in_ch_count= av_get_channel_layout_nb_channels(in_ch_layout);
-                    for(out_ch_layout_index=0; layouts[out_ch_layout_index]; out_ch_layout_index++){
+                    for(out_ch_layout_index=0; out_ch_layout_index < FF_ARRAY_ELEMS(layouts); out_ch_layout_index++){
                         int out_count, mid_count, out_ch_count;
                         out_ch_layout= layouts[out_ch_layout_index];
                         out_ch_count= av_get_channel_layout_nb_channels(out_ch_layout);
