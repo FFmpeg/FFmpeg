@@ -93,6 +93,15 @@ static const enum AVSampleFormat formats[] = {
     AV_SAMPLE_FMT_DBL,
 };
 
+static const int rates[] = {
+    8000,
+    11025,
+    16000,
+    22050,
+    32000,
+    48000,
+};
+
 uint64_t layouts[]={
     AV_CH_LAYOUT_MONO                    ,
     AV_CH_LAYOUT_STEREO                  ,
@@ -128,7 +137,6 @@ int main(int argc, char **argv){
     int in_sample_rate, out_sample_rate, ch ,i, in_ch_layout_index, out_ch_layout_index, osr, flush_count;
     uint64_t in_ch_layout, out_ch_layout;
     enum AVSampleFormat in_sample_fmt, out_sample_fmt;
-    int sample_rates[]={8000,11025,16000,22050,32000};
     uint8_t array_in[SAMPLES*8*8];
     uint8_t array_mid[SAMPLES*8*8*3];
     uint8_t array_out[SAMPLES*8*8+100];
@@ -142,8 +150,8 @@ int main(int argc, char **argv){
     struct SwrContext *backw_ctx= NULL;
 
     in_sample_rate=16000;
-    for(osr=0; osr<5; osr++){
-        out_sample_rate= sample_rates[osr];
+    for(osr=0; osr<FF_ARRAY_ELEMS(rates); osr++){
+        out_sample_rate= rates[osr];
         for(in_sample_fmt= AV_SAMPLE_FMT_U8; in_sample_fmt<=AV_SAMPLE_FMT_DBL; in_sample_fmt++){
             for(out_sample_fmt= AV_SAMPLE_FMT_U8; out_sample_fmt<=AV_SAMPLE_FMT_DBL; out_sample_fmt++){
                 for(in_ch_layout_index=0; layouts[in_ch_layout_index]; in_ch_layout_index++){
