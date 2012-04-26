@@ -262,6 +262,8 @@ int main(int argc, char **argv){
         char  in_layout_string[256];
         char out_layout_string[256];
         unsigned vector= remaining_tests[max_tests - test - 1];
+        int in_ch_count;
+        int out_count, mid_count, out_ch_count;
 
         in_ch_layout    = layouts[vector % FF_ARRAY_ELEMS(layouts)]; vector /= FF_ARRAY_ELEMS(layouts);
         out_ch_layout   = layouts[vector % FF_ARRAY_ELEMS(layouts)]; vector /= FF_ARRAY_ELEMS(layouts);
@@ -270,9 +272,7 @@ int main(int argc, char **argv){
         out_sample_rate = rates  [vector % FF_ARRAY_ELEMS(rates  )]; vector /= FF_ARRAY_ELEMS(rates);
         av_assert0(!vector);
 
-        int in_ch_count;
         in_ch_count= av_get_channel_layout_nb_channels(in_ch_layout);
-        int out_count, mid_count, out_ch_count;
         out_ch_count= av_get_channel_layout_nb_channels(out_ch_layout);
         av_get_channel_layout_string( in_layout_string, sizeof( in_layout_string),  in_ch_count,  in_ch_layout);
         av_get_channel_layout_string(out_layout_string, sizeof(out_layout_string), out_ch_count, out_ch_layout);
