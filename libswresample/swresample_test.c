@@ -80,6 +80,19 @@ static void shift(uint8_t *a[], int index, int ch_count, enum AVSampleFormat f){
     }
 }
 
+static const enum AVSampleFormat formats[] = {
+    AV_SAMPLE_FMT_S16,
+    AV_SAMPLE_FMT_FLTP,
+    AV_SAMPLE_FMT_S16P,
+    AV_SAMPLE_FMT_FLT,
+    AV_SAMPLE_FMT_S32P,
+    AV_SAMPLE_FMT_S32,
+    AV_SAMPLE_FMT_U8P,
+    AV_SAMPLE_FMT_U8,
+    AV_SAMPLE_FMT_DBLP,
+    AV_SAMPLE_FMT_DBL,
+};
+
 uint64_t layouts[]={
 AV_CH_LAYOUT_MONO                    ,
 AV_CH_LAYOUT_STEREO                  ,
