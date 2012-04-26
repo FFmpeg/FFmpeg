@@ -202,11 +202,11 @@ int main(int argc, char **argv){
                                in_layout_string, out_layout_string,
                                in_sample_rate, out_sample_rate,
                                av_get_sample_fmt_name(in_sample_fmt), av_get_sample_fmt_name(out_sample_fmt));
-                        forw_ctx  = swr_alloc_set_opts(forw_ctx, out_ch_layout, av_get_alt_sample_fmt(out_sample_fmt, 1), out_sample_rate,
-                                                                  in_ch_layout, av_get_alt_sample_fmt( in_sample_fmt, 1),  in_sample_rate,
+                        forw_ctx  = swr_alloc_set_opts(forw_ctx, out_ch_layout, out_sample_fmt,  out_sample_rate,
+                                                                  in_ch_layout,  in_sample_fmt,  in_sample_rate,
                                                        0, 0);
                         backw_ctx = swr_alloc_set_opts(backw_ctx, in_ch_layout,  in_sample_fmt,             in_sample_rate,
-                                                                 out_ch_layout, av_get_alt_sample_fmt(out_sample_fmt, 1), out_sample_rate,
+                                                                 out_ch_layout, out_sample_fmt, out_sample_rate,
                                                        0, 0);
                         if(swr_init( forw_ctx) < 0)
                             fprintf(stderr, "swr_init(->) failed\n");
@@ -217,12 +217,12 @@ int main(int argc, char **argv){
                         if(!backw_ctx)
                             fprintf(stderr, "Failed to init backw_ctx\n");
                                //FIXME test planar
-                        setup_array(ain , array_in , av_get_alt_sample_fmt( in_sample_fmt, 1),   SAMPLES);
-                        setup_array(amid, array_mid, av_get_alt_sample_fmt(out_sample_fmt, 1), 3*SAMPLES);
+                        setup_array(ain , array_in ,  in_sample_fmt,   SAMPLES);
+                        setup_array(amid, array_mid, out_sample_fmt, 3*SAMPLES);
                         setup_array(aout, array_out,  in_sample_fmt           ,   SAMPLES);
                         for(ch=0; ch<in_ch_count; ch++){
                             for(i=0; i<SAMPLES; i++)
-                                set(ain, ch, i, in_ch_count, av_get_alt_sample_fmt(in_sample_fmt, 1), sin(i*i*3/SAMPLES));
+                                set(ain, ch, i, in_ch_count, in_sample_fmt, sin(i*i*3/SAMPLES));
                         }
                         mode++;
                         mode%=3;
@@ -235,17 +235,17 @@ int main(int argc, char **argv){
                             int tmp_count;
                             mid_count= swr_convert(forw_ctx, amid,         0, ain,       1);
                             av_assert0(mid_count==0);
-                            shift(ain,  1, in_ch_count, av_get_alt_sample_fmt(in_sample_fmt, 1));
+                            shift(ain,  1, in_ch_count, in_sample_fmt);
                             mid_count+=swr_convert(forw_ctx, amid, 3*SAMPLES, ain,       0);
-                            shift(amid,  mid_count, out_ch_count, av_get_alt_sample_fmt(out_sample_fmt, 1)); tmp_count = mid_count;
+                            shift(amid,  mid_count, out_ch_count, out_sample_fmt); tmp_count = mid_count;
                             mid_count+=swr_convert(forw_ctx, amid,         2, ain,       2);
-                            shift(amid,  mid_count-tmp_count, out_ch_count, av_get_alt_sample_fmt(out_sample_fmt, 1)); tmp_count = mid_count;
-                            shift(ain,  2, in_ch_count, av_get_alt_sample_fmt(in_sample_fmt, 1));
+                            shift(amid,  mid_count-tmp_count, out_ch_count, out_sample_fmt); tmp_count = mid_count;
+                            shift(ain,  2, in_ch_count, in_sample_fmt);
                             mid_count+=swr_convert(forw_ctx, amid,         1, ain, SAMPLES-3);
-                            shift(amid,  mid_count-tmp_count, out_ch_count, av_get_alt_sample_fmt(out_sample_fmt, 1)); tmp_count = mid_count;
-                            shift(ain, -3, in_ch_count, av_get_alt_sample_fmt(in_sample_fmt, 1));
+                            shift(amid,  mid_count-tmp_count, out_ch_count, out_sample_fmt); tmp_count = mid_count;
+                            shift(ain, -3, in_ch_count, in_sample_fmt);
                             mid_count+=swr_convert(forw_ctx, amid, 3*SAMPLES, ain,       0);
-                            shift(amid,  -tmp_count, out_ch_count, av_get_alt_sample_fmt(out_sample_fmt, 1));
+                            shift(amid,  -tmp_count, out_ch_count, out_sample_fmt);
                         }
                         out_count= swr_convert(backw_ctx,aout, SAMPLES, amid, mid_count);
 
@@ -257,7 +257,7 @@ int main(int argc, char **argv){
                             double sum_bb= 0;
                             double sum_ab= 0;
                             for(i=0; i<out_count; i++){
-                                double a= get(ain , ch, i, in_ch_count, av_get_alt_sample_fmt(in_sample_fmt, 1));
+                                double a= get(ain , ch, i, in_ch_count, in_sample_fmt);
                                 double b= get(aout, ch, i, in_ch_count, in_sample_fmt);
                                 sum_a += a;
                                 sum_b += b;
@@ -286,7 +286,7 @@ int main(int argc, char **argv){
                                 double sum_bb= 0;
                                 double sum_ab= 0;
                                 for(i=0; i<flush_count; i++){
-                                    double a= get(ain , ch, i+out_count, in_ch_count, av_get_alt_sample_fmt(in_sample_fmt, 1));
+                                    double a= get(ain , ch, i+out_count, in_ch_count, in_sample_fmt);
                                     double b= get(aout, ch, i, in_ch_count, in_sample_fmt);
                                     sum_a += a;
                                     sum_b += b;
