@@ -6,20 +6,20 @@ libavcodec:    2012-01-27
 libavdevice:   2011-04-18
 libavfilter:   2011-04-18
 libavformat:   2012-01-27
-libavresample: 2012-xx-xx
+libavresample: 2012-04-24
 libswscale:    2011-06-20
 libavutil:     2011-04-18
 
 
 API changes, most recent first:
 
-2012-04-25 - xxxxxxx - lavu 51.29.0 - cpu.h
+2012-04-25 - 3527a73 - lavu 51.29.0 - cpu.h
   Add av_parse_cpu_flags()
 
-2012-xx-xx - xxxxxxx - lavr 0.0.0
+2012-04-24 - c8af852 - lavr 0.0.0
   Add libavresample audio conversion library
 
-2012-xx-xx - xxxxxxx - lavu 51.28.0 - audio_fifo.h
+2012-04-20 - 0c0d1bc - lavu 51.28.0 - audio_fifo.h
   Add audio FIFO functions:
     av_audio_fifo_free()
     av_audio_fifo_alloc()
@@ -31,14 +31,14 @@ API changes, most recent first:
     av_audio_fifo_size()
     av_audio_fifo_space()
 
-2012-xx-xx - xxxxxxx - lavfi 2.16.0 - avfiltergraph.h
-  Add avfilter_graph_parse2(), avfilter_inout_alloc() and
-  avfilter_inout_free() functions.
+2012-04-14 - lavfi 2.16.0 - avfiltergraph.h
+  d7bcc71 Add avfilter_graph_parse2().
+  91d3cbe Add avfilter_inout_alloc() and avfilter_inout_free().
 
-2012-xx-xx - xxxxxxx - lavu 51.27.0 - samplefmt.h
+2012-04-08 - 4d693b0 - lavu 51.27.0 - samplefmt.h
   Add av_get_packed_sample_fmt() and av_get_planar_sample_fmt()
 
-2012-xx-xx - xxxxxxx - lavu 51.26.0 - audioconvert.h
+2012-04-05 - 5cc51a5 - lavu 51.26.0 - audioconvert.h
   Add av_get_default_channel_layout()
 
 2012-03-06 - 4d851f8 - lavu 51.25.0 - cpu.h
