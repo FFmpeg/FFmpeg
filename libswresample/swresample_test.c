@@ -40,7 +40,7 @@ static double get(uint8_t *a[], int ch, int index, int ch_count, enum AVSampleFo
     }
 
     switch(f){
-    case AV_SAMPLE_FMT_U8 : return ((const uint8_t*)p)[index]/255.0*2-1.0;
+    case AV_SAMPLE_FMT_U8 : return ((const uint8_t*)p)[index]/127.0-1.0;
     case AV_SAMPLE_FMT_S16: return ((const int16_t*)p)[index]/32767.0;
     case AV_SAMPLE_FMT_S32: return ((const int32_t*)p)[index]/2147483647.0;
     case AV_SAMPLE_FMT_FLT: return ((const float  *)p)[index];
@@ -59,7 +59,7 @@ static void  set(uint8_t *a[], int ch, int index, int ch_count, enum AVSampleFor
         index= ch + index*ch_count;
     }
     switch(f){
-    case AV_SAMPLE_FMT_U8 : ((uint8_t*)p)[index]= av_clip_uint8 (lrint((v+1.0)*255.0/2)); break;
+    case AV_SAMPLE_FMT_U8 : ((uint8_t*)p)[index]= av_clip_uint8 (lrint((v+1.0)*127));     break;
     case AV_SAMPLE_FMT_S16: ((int16_t*)p)[index]= av_clip_int16 (lrint(v*32767));         break;
     case AV_SAMPLE_FMT_S32: ((int32_t*)p)[index]= av_clipl_int32(lrint(v*2147483647));    break;
     case AV_SAMPLE_FMT_FLT: ((float  *)p)[index]= v;                                      break;
