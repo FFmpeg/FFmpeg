@@ -985,6 +985,8 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
                 }
             }
 
+            if (pkt->pts != AV_NOPTS_VALUE || pkt->dts != AV_NOPTS_VALUE ||
+                duration) {
             /* presentation is not delayed : PTS and DTS are the same */
             if(pkt->pts == AV_NOPTS_VALUE)
                 pkt->pts = pkt->dts;
@@ -994,6 +996,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             pkt->dts = pkt->pts;
             if(pkt->pts != AV_NOPTS_VALUE)
                 st->cur_dts = pkt->pts + duration;
+            }
         }
     }
 
