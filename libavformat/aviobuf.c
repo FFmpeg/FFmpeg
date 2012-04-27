@@ -756,8 +756,12 @@ int avio_open2(AVIOContext **s, const char *filename, int flags,
 
 int avio_close(AVIOContext *s)
 {
-    URLContext *h = s->opaque;
+    URLContext *h;
 
+    if (!s)
+        return 0;
+
+    h = s->opaque;
     av_free(s->buffer);
     av_free(s);
     return ffurl_close(h);
