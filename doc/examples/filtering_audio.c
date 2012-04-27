@@ -199,7 +199,7 @@ int main(int argc, char **argv)
             av_free_packet(&packet);
             if (ret < 0) {
                 av_log(NULL, AV_LOG_ERROR, "Error decoding audio\n");
-                break;
+                continue;
             }
 
             if (got_frame) {
