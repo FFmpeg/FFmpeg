@@ -69,8 +69,8 @@ typedef struct {
         return AVERROR(EINVAL);\
     }
 
-int av_vsrc_buffer_add_video_buffer_ref(AVFilterContext *buffer_filter,
-                                        AVFilterBufferRef *picref, int flags)
+int av_buffersrc_add_ref(AVFilterContext *buffer_filter,
+                         AVFilterBufferRef *picref, int flags)
 {
     BufferSourceContext *c = buffer_filter->priv;
     AVFilterLink *outlink = buffer_filter->outputs[0];
@@ -88,6 +88,8 @@ int av_vsrc_buffer_add_video_buffer_ref(AVFilterContext *buffer_filter,
                                          sizeof(buf))) < 0)
         return ret;
 
+    if (!(flags & AV_BUFFERSRC_FLAG_NO_CHECK_FORMAT)) {
+        /* TODO reindent */
     if (picref->video->w != c->w || picref->video->h != c->h || picref->format != c->pix_fmt) {
         AVFilterContext *scale = buffer_filter->outputs[0]->dst;
         AVFilterLink *link;
@@ -132,7 +134,11 @@ int av_vsrc_buffer_add_video_buffer_ref(AVFilterContext *buffer_filter,
         if ((ret =  link->srcpad->config_props(link)) < 0)
             return ret;
     }
+    }
 
+    if (flags & AV_BUFFERSRC_FLAG_NO_COPY) {
+        buf = picref;
+    } else {
     buf = avfilter_get_video_buffer(outlink, AV_PERM_WRITE,
                                     picref->video->w, picref->video->h);
     av_image_copy(buf->data, buf->linesize,
@@ -140,8 +146,11 @@ int av_vsrc_buffer_add_video_buffer_ref(AVFilterContext *buffer_filter,
                   picref->format, picref->video->w, picref->video->h);
     avfilter_copy_buffer_ref_props(buf, picref);
 
+    }
+
     if ((ret = av_fifo_generic_write(c->fifo, &buf, sizeof(buf), NULL)) < 0) {
-        avfilter_unref_buffer(buf);
+        if (buf != picref)
+            avfilter_unref_buffer(buf);
         return ret;
     }
     c->nb_failed_requests = 0;
@@ -149,29 +158,16 @@ int av_vsrc_buffer_add_video_buffer_ref(AVFilterContext *buffer_filter,
     return 0;
 }
 
+int av_vsrc_buffer_add_video_buffer_ref(AVFilterContext *buffer_filter,
+                                        AVFilterBufferRef *picref, int flags)
+{
+    return av_buffersrc_add_ref(buffer_filter, picref, 0);
+}
+
 int av_buffersrc_buffer(AVFilterContext *s, AVFilterBufferRef *buf)
 {
-    BufferSourceContext *c = s->priv;
-    int ret;
-
-    if (!buf) {
-        c->eof = 1;
-        return 0;
-    } else if (c->eof)
-        return AVERROR(EINVAL);
-
-    if (!av_fifo_space(c->fifo) &&
-        (ret = av_fifo_realloc2(c->fifo, av_fifo_size(c->fifo) +
-                                         sizeof(buf))) < 0)
-        return ret;
-
-//     CHECK_PARAM_CHANGE(s, c, buf->video->w, buf->video->h, buf->format);
-
-    if ((ret = av_fifo_generic_write(c->fifo, &buf, sizeof(buf), NULL)) < 0)
-        return ret;
-    c->nb_failed_requests = 0;
-
-    return 0;
+    return av_buffersrc_add_ref(s, buf, AV_BUFFERSRC_FLAG_NO_CHECK_FORMAT |
+                                        AV_BUFFERSRC_FLAG_NO_COPY);
 }
 
 #if CONFIG_AVCODEC

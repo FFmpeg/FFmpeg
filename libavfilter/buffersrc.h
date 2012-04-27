@@ -27,6 +27,32 @@
 
 #include "avfilter.h"
 
+enum {
+
+    /**
+     * Do not check for format changes.
+     */
+    AV_BUFFERSRC_FLAG_NO_CHECK_FORMAT = 1,
+
+    /**
+     * Do not copy buffer data.
+     */
+    AV_BUFFERSRC_FLAG_NO_COPY = 2,
+
+};
+
+/**
+ * Add video buffer data in picref to buffer_src.
+ *
+ * @param buffer_src  pointer to a buffer source context
+ * @param picref      a buffer reference, or NULL to mark EOF
+ * @param flags       a combination of AV_BUFFERSRC_FLAG_*
+ * @return            >= 0 in case of success, a negative AVERROR code
+ *                    in case of failure
+ */
+int av_buffersrc_add_ref(AVFilterContext *buffer_src,
+                         AVFilterBufferRef *picref, int flags);
+
 /**
  * Add a buffer to the filtergraph s.
  *
