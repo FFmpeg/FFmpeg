@@ -82,8 +82,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     TInterlaceContext *tinterlace = ctx->priv;
 
-    if (tinterlace->cur ) avfilter_unref_buffer(tinterlace->cur );
-    if (tinterlace->next) avfilter_unref_buffer(tinterlace->next);
+    if (tinterlace->cur ) avfilter_unref_bufferp(&tinterlace->cur );
+    if (tinterlace->next) avfilter_unref_bufferp(&tinterlace->next);
 
     av_freep(&tinterlace->black_data[0]);
 }
@@ -204,15 +204,13 @@ static void end_frame(AVFilterLink *inlink)
                            next->data, next->linesize,
                            inlink->format, inlink->w, inlink->h,
                            FIELD_UPPER_AND_LOWER, 1, FIELD_LOWER);
-        avfilter_unref_buffer(tinterlace->next);
-        tinterlace->next = NULL;
+        avfilter_unref_bufferp(&tinterlace->next);
         break;
 
     case 1: /* only output even frames, odd  frames are dropped; height unchanged, half framerate */
     case 2: /* only output odd  frames, even frames are dropped; height unchanged, half framerate */
         out = avfilter_ref_buffer(tinterlace->mode == 2 ? cur : next, AV_PERM_READ);
-        avfilter_unref_buffer(tinterlace->next);
-        tinterlace->next = NULL;
+        avfilter_unref_bufferp(&tinterlace->next);
         break;
 
     case 3: /* expand each frame to double height, but pad alternate
@@ -254,8 +252,7 @@ static void end_frame(AVFilterLink *inlink)
                            next->data, next->linesize,
                            inlink->format, inlink->w, inlink->h,
                            tff ? FIELD_LOWER : FIELD_UPPER, 1, tff ? FIELD_LOWER : FIELD_UPPER);
-        avfilter_unref_buffer(tinterlace->next);
-        tinterlace->next = NULL;
+        avfilter_unref_bufferp(&tinterlace->next);
         break;
     }
 
