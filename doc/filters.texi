@@ -1666,6 +1666,19 @@ not specified it will use the default value of 16.
 Adding this in the beginning of filter chains should make filtering
 faster due to better use of the memory cache.
 
+@section split
+
+Split input video into several identical outputs.
+
+The filter accepts a single parameter which specifies the number of outputs. If
+unspecified, it defaults to 2.
+
+For example
+@example
+avconv -i INPUT -filter_complex split=5 OUTPUT
+@end example
+will create 5 copies of the input video.
+
 @section transpose
 
 Transpose rows with columns in the input video and optionally flip it.
