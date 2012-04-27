@@ -145,10 +145,11 @@ static void audiogen(void *data, enum AVSampleFormat sample_fmt,
     double tabf1[SWR_CH_MAX];
     double tabf2[SWR_CH_MAX];
     double taba[SWR_CH_MAX];
-    unsigned static seed;
+    unsigned static rnd;
 
 #define PUT_SAMPLE set(data, ch, k, channels, sample_fmt, v);
-#define dbl_rand(x) ((seed = seed * 1664525 + 1013904223)*2.0 / (double)UINT_MAX - 1)
+#define uint_rand(x) (x = x * 1664525 + 1013904223)
+#define dbl_rand(x) (uint_rand(x)*2.0 / (double)UINT_MAX - 1)
     k = 0;
 
     /* 1 second of single freq sinus at 1000 Hz */
@@ -187,8 +188,8 @@ static void audiogen(void *data, enum AVSampleFormat sample_fmt,
     /* 1 second of unrelated ramps for each channel */
     for (ch = 0; ch < channels; ch++) {
         taba[ch]  = 0;
-        tabf1[ch] = 100 + (seed = seed * 1664525 + 1013904223) % 5000;
-        tabf2[ch] = 100 + (seed = seed * 1664525 + 1013904223) % 5000;
+        tabf1[ch] = 100 + uint_rand(rnd) % 5000;
+        tabf2[ch] = 100 + uint_rand(rnd) % 5000;
     }
     for (i = 0; i < 1 * sample_rate && k < nb_samples; i++, k++) {
         for (ch = 0; ch < channels; ch++) {
