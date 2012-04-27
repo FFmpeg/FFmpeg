@@ -570,27 +570,7 @@ int av_asrc_buffer_add_audio_buffer_ref(AVFilterContext *ctx,
                                         AVFilterBufferRef *samplesref,
                                         int av_unused flags)
 {
-    BufferSourceContext *abuffer = ctx->priv;
-    int ret;
-
-    if (av_fifo_space(abuffer->fifo) < sizeof(samplesref)) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Buffering limit reached. Please consume some available frames "
-               "before adding new ones.\n");
-        return AVERROR(EINVAL);
-    }
-
-    ret = check_format_change(ctx, samplesref);
-    if (ret < 0)
-        return ret;
-
-    if (sizeof(samplesref) != av_fifo_generic_write(abuffer->fifo, &samplesref,
-                                                    sizeof(samplesref), NULL)) {
-        av_log(ctx, AV_LOG_ERROR, "Error while writing to FIFO\n");
-        return AVERROR(EINVAL);
-    }
-
-    return 0;
+    return av_buffersrc_add_ref(ctx, samplesref, AV_BUFFERSRC_FLAG_NO_COPY);
 }
 
 int av_asrc_buffer_add_samples(AVFilterContext *ctx,
