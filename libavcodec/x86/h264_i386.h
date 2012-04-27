@@ -45,12 +45,13 @@ static int decode_significance_x86(CABACContext *c, int max_coeff,
     int minusindex= 4-(intptr_t)index;
     int bit;
     x86_reg coeff_count;
+
     __asm__ volatile(
         "3:                                     \n\t"
 
         BRANCHLESS_GET_CABAC("%4", "(%1)", "%3", "%w3",
                              "%5", "%k0", "%b0",
-                             "%a11(%6)", "%a12(%6)")
+                             "%a11(%6)", "%a12(%6)", "%a13", "%a14", "%a15")
 
         "test $1, %4                            \n\t"
         " jz 4f                                 \n\t"
@@ -58,7 +59,7 @@ static int decode_significance_x86(CABACContext *c, int max_coeff,
 
         BRANCHLESS_GET_CABAC("%4", "(%1)", "%3", "%w3",
                              "%5", "%k0", "%b0",
-                             "%a11(%6)", "%a12(%6)")
+                             "%a11(%6)", "%a12(%6)", "%a13", "%a14", "%a15")
 
         "sub  %10, %1                           \n\t"
         "mov  %2, %0                            \n\t"
@@ -86,7 +87,10 @@ static int decode_significance_x86(CABACContext *c, int max_coeff,
           "+&r"(c->low), "=&r"(bit), "+&r"(c->range)
         : "r"(c), "m"(minusstart), "m"(end), "m"(minusindex), "m"(last_off),
           "i"(offsetof(CABACContext, bytestream)),
-          "i"(offsetof(CABACContext, bytestream_end))
+          "i"(offsetof(CABACContext, bytestream_end)),
+          "i"(H264_NORM_SHIFT_OFFSET),
+          "i"(H264_LPS_RANGE_OFFSET),
+          "i"(H264_MLPS_STATE_OFFSET)
         : "%"REG_c, "memory"
     );
     return coeff_count;
@@ -100,6 +104,7 @@ static int decode_significance_8x8_x86(CABACContext *c,
     x86_reg coeff_count;
     x86_reg last=0;
     x86_reg state;
+
     __asm__ volatile(
         "mov %1, %6                             \n\t"
         "3:                                     \n\t"
@@ -110,18 +115,19 @@ static int decode_significance_8x8_x86(CABACContext *c,
 
         BRANCHLESS_GET_CABAC("%4", "(%6)", "%3", "%w3",
                              "%5", "%k0", "%b0",
-                             "%a12(%7)", "%a13(%7)")
+                             "%a12(%7)", "%a13(%7)", "%a14", "%a15", "%a16")
 
         "mov %1, %k6                            \n\t"
         "test $1, %4                            \n\t"
         " jz 4f                                 \n\t"
 
-        "movzbl "MANGLE(last_coeff_flag_offset_8x8)"(%k6), %k6\n\t"
+        "movzbl "MANGLE(ff_h264_cabac_tables)"+%a17(%k6), %k6\n\t"
+
         "add %11, %6                            \n\t"
 
         BRANCHLESS_GET_CABAC("%4", "(%6)", "%3", "%w3",
                              "%5", "%k0", "%b0",
-                             "%a12(%7)", "%a13(%7)")
+                             "%a12(%7)", "%a13(%7)", "%a14", "%a15", "%a16")
 
         "mov %2, %0                             \n\t"
         "mov %1, %k6                            \n\t"
@@ -147,7 +153,11 @@ static int decode_significance_8x8_x86(CABACContext *c,
         : "r"(c), "m"(minusindex), "m"(significant_coeff_ctx_base),
           "m"(sig_off), "m"(last_coeff_ctx_base),
           "i"(offsetof(CABACContext, bytestream)),
-          "i"(offsetof(CABACContext, bytestream_end))
+          "i"(offsetof(CABACContext, bytestream_end)),
+          "i"(H264_NORM_SHIFT_OFFSET),
+          "i"(H264_LPS_RANGE_OFFSET),
+          "i"(H264_MLPS_STATE_OFFSET),
+          "i"(H264_LAST_COEFF_FLAG_OFFSET_8x8_OFFSET)
         : "%"REG_c, "memory"
     );
     return coeff_count;
