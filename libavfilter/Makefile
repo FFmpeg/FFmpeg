@@ -42,7 +42,6 @@ OBJS-$(CONFIG_PAN_FILTER)                    += af_pan.o
 OBJS-$(CONFIG_SILENCEDETECT_FILTER)          += af_silencedetect.o
 OBJS-$(CONFIG_VOLUME_FILTER)                 += af_volume.o
 
-OBJS-$(CONFIG_ABUFFER_FILTER)                += asrc_abuffer.o
 OBJS-$(CONFIG_AEVALSRC_FILTER)               += asrc_aevalsrc.o
 OBJS-$(CONFIG_AMOVIE_FILTER)                 += src_movie.o
 OBJS-$(CONFIG_ANULLSRC_FILTER)               += asrc_anullsrc.o
