@@ -367,21 +367,6 @@ int64_t guess_correct_pts(PtsCorrectionContext *ctx, int64_t pts, int64_t dts);
 FILE *get_preset_file(char *filename, size_t filename_size,
                       const char *preset_name, int is_path, const char *codec_name);
 
-typedef struct {
-    const enum PixelFormat *pix_fmts;
-} SinkContext;
-
-extern AVFilter sink;
-
-/**
- * Extract a frame from sink.
- *
- * @return a negative error in case of failure, 1 if one frame has
- * been extracted successfully.
- */
-int get_filtered_video_frame(AVFilterContext *sink, AVFrame *frame,
-                             AVFilterBufferRef **picref, AVRational *pts_tb);
-
 /**
  * Do all the necessary cleanup and abort.
  * This function is implemented in the avtools, not cmdutils.

@@ -41,6 +41,7 @@
 #if CONFIG_AVFILTER
 # include "libavfilter/avfilter.h"
 # include "libavfilter/avfiltergraph.h"
+# include "libavfilter/buffersink.h"
 #endif
 
 #include "cmdutils.h"
@@ -1708,20 +1709,27 @@ static AVFilter input_filter =
 
 static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const char *vfilters)
 {
-    static const enum PixelFormat pix_fmts[] = { PIX_FMT_YUV420P, PIX_FMT_NONE };
     char sws_flags_str[128];
     int ret;
-    SinkContext sink_ctx = { .pix_fmts = pix_fmts };
-    AVFilterContext *filt_src = NULL, *filt_out = NULL;
+    AVFilterContext *filt_src = NULL, *filt_out = NULL, *filt_format;
     snprintf(sws_flags_str, sizeof(sws_flags_str), "flags=%d", sws_flags);
     graph->scale_sws_opts = av_strdup(sws_flags_str);
 
     if ((ret = avfilter_graph_create_filter(&filt_src, &input_filter, "src",
                                             NULL, is, graph)) < 0)
         return ret;
-    if ((ret = avfilter_graph_create_filter(&filt_out, &sink, "out",
-                                            NULL, &sink_ctx, graph)) < 0)
+    if ((ret = avfilter_graph_create_filter(&filt_out,
+                                            avfilter_get_by_name("buffersink"),
+                                            "out", NULL, NULL, graph)) < 0)
         return ret;
+
+    if ((ret = avfilter_graph_create_filter(&filt_format,
+                                            avfilter_get_by_name("format"),
+                                            "format", "yuv420p", NULL, graph)) < 0)
+        return ret;
+    if ((ret = avfilter_link(filt_format, 0, filt_out, 0)) < 0)
+        return ret;
+
 
     if (vfilters) {
         AVFilterInOut *outputs = avfilter_inout_alloc();
@@ -1733,14 +1741,14 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
         outputs->next    = NULL;
 
         inputs->name    = av_strdup("out");
-        inputs->filter_ctx = filt_out;
+        inputs->filter_ctx = filt_format;
         inputs->pad_idx = 0;
         inputs->next    = NULL;
 
         if ((ret = avfilter_graph_parse(graph, vfilters, inputs, outputs, NULL)) < 0)
             return ret;
     } else {
-        if ((ret = avfilter_link(filt_src, 0, filt_out, 0)) < 0)
+        if ((ret = avfilter_link(filt_src, 0, filt_format, 0)) < 0)
             return ret;
     }
 
@@ -1796,11 +1804,16 @@ static int video_thread(void *arg)
             last_w = is->video_st->codec->width;
             last_h = is->video_st->codec->height;
         }
-        ret = get_filtered_video_frame(filt_out, frame, &picref, &tb);
+        ret = av_buffersink_read(filt_out, &picref);
         if (picref) {
+            avfilter_copy_buf_props(frame, picref);
+
             pts_int = picref->pts;
+            tb      = filt_out->inputs[0]->time_base;
             pos     = picref->pos;
             frame->opaque = picref;
+
+            ret = 1;
         }
 
         if (ret >= 0 && av_cmp_q(tb, is->video_st->time_base)) {

@@ -2078,6 +2078,14 @@ will generate a video with a duration of 5.3 seconds, with size
 
 Below is a description of the currently available video sinks.
 
+@section buffersink
+
+Buffer video frames, and make them available to the end of the filter
+graph.
+
+This sink is intended for a programmatic use through the interface defined in
+@file{libavfilter/buffersink.h}.
+
 @section nullsink
 
 Null video sink, do absolutely nothing with the input video. It is

@@ -1540,7 +1540,7 @@ avfilter_deps="swscale"
 avformat_deps="avcodec"
 
 # programs
-avconv_deps="avcodec avfilter avformat avresample swscale"
+avconv_deps="avcodec avfilter avformat avresample swscale format_filter"
 avplay_deps="avcodec avformat swscale sdl"
 avplay_select="rdft"
 avprobe_deps="avcodec avformat"

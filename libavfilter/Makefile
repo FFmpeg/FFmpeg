@@ -4,6 +4,7 @@ FFLIBS-$(CONFIG_MOVIE_FILTER) += avformat avcodec
 
 HEADERS = avfilter.h                                                    \
           avfiltergraph.h                                               \
+          buffersink.h                                                  \
           buffersrc.h                                                   \
           version.h                                                     \
           vsrc_buffer.h                                                 \
@@ -11,6 +12,7 @@ HEADERS = avfilter.h                                                    \
 OBJS = allfilters.o                                                     \
        avfilter.o                                                       \
        avfiltergraph.o                                                  \
+       buffersink.o                                                     \
        defaults.o                                                       \
        drawutils.o                                                      \
        formats.o                                                        \

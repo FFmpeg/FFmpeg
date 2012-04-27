@@ -50,6 +50,7 @@
 # include "libavfilter/avfilter.h"
 # include "libavfilter/avfiltergraph.h"
 # include "libavfilter/buffersrc.h"
+# include "libavfilter/buffersink.h"
 # include "libavfilter/vsrc_buffer.h"
 
 #if HAVE_SYS_RESOURCE_H
@@ -582,14 +583,25 @@ static void filter_release_buffer(AVFilterBuffer *fb)
     unref_buffer(buf->ist, buf);
 }
 
-static const enum PixelFormat *choose_pixel_fmts(OutputStream *ost)
+static char *choose_pixel_fmts(OutputStream *ost)
 {
     if (ost->st->codec->pix_fmt != PIX_FMT_NONE) {
-        ost->pix_fmts[0] = ost->st->codec->pix_fmt;
-        return ost->pix_fmts;
-    } else if (ost->enc->pix_fmts)
-        return ost->enc->pix_fmts;
-    else
+        return av_strdup(av_get_pix_fmt_name(ost->st->codec->pix_fmt));
+    } else if (ost->enc->pix_fmts) {
+        const enum PixelFormat *p;
+        AVIOContext *s = NULL;
+        uint8_t *ret;
+        int len;
+
+        if (avio_open_dyn_buf(&s) < 0)
+            exit_program(1);
+
+        for (p = ost->enc->pix_fmts; *p != PIX_FMT_NONE; p++)
+            avio_printf(s, "%s:", av_get_pix_fmt_name(*p));
+        len = avio_close_dyn_buf(s, &ret);
+        ret[len - 1] = 0;
+        return ret;
+    } else
         return NULL;
 }
 
@@ -597,9 +609,9 @@ static int configure_video_filters(FilterGraph *fg)
 {
     InputStream  *ist = fg->inputs[0]->ist;
     OutputStream *ost = fg->outputs[0]->ost;
-    AVFilterContext *last_filter, *filter;
+    AVFilterContext *in_filter, *out_filter, *filter;
     AVCodecContext *codec = ost->st->codec;
-    SinkContext sink_ctx = { .pix_fmts = choose_pixel_fmts(ost) };
+    char *pix_fmts;
     AVRational sample_aspect_ratio;
     char args[255];
     int ret;
@@ -621,11 +633,13 @@ static int configure_video_filters(FilterGraph *fg)
                                        "src", args, NULL, fg->graph);
     if (ret < 0)
         return ret;
-    ret = avfilter_graph_create_filter(&fg->outputs[0]->filter, &sink,
-                                       "out", NULL, &sink_ctx, fg->graph);
+    ret = avfilter_graph_create_filter(&fg->outputs[0]->filter,
+                                       avfilter_get_by_name("buffersink"),
+                                       "out", NULL, NULL, fg->graph);
     if (ret < 0)
         return ret;
-    last_filter = fg->inputs[0]->filter;
+    in_filter  = fg->inputs[0]->filter;
+    out_filter = fg->outputs[0]->filter;
 
     if (codec->width || codec->height) {
         snprintf(args, 255, "%d:%d:flags=0x%X",
@@ -635,9 +649,22 @@ static int configure_video_filters(FilterGraph *fg)
         if ((ret = avfilter_graph_create_filter(&filter, avfilter_get_by_name("scale"),
                                                 NULL, args, NULL, fg->graph)) < 0)
             return ret;
-        if ((ret = avfilter_link(last_filter, 0, filter, 0)) < 0)
+        if ((ret = avfilter_link(in_filter, 0, filter, 0)) < 0)
             return ret;
-        last_filter = filter;
+        in_filter = filter;
+    }
+
+    if ((pix_fmts = choose_pixel_fmts(ost))) {
+        if ((ret = avfilter_graph_create_filter(&filter,
+                                                avfilter_get_by_name("format"),
+                                                "format", pix_fmts, NULL,
+                                                fg->graph)) < 0)
+            return ret;
+        if ((ret = avfilter_link(filter, 0, out_filter, 0)) < 0)
+            return ret;
+
+        out_filter = filter;
+        av_freep(&pix_fmts);
     }
 
     snprintf(args, sizeof(args), "flags=0x%X", (unsigned)ost->sws_flags);
@@ -648,19 +675,19 @@ static int configure_video_filters(FilterGraph *fg)
         AVFilterInOut *inputs  = avfilter_inout_alloc();
 
         outputs->name    = av_strdup("in");
-        outputs->filter_ctx = last_filter;
+        outputs->filter_ctx = in_filter;
         outputs->pad_idx = 0;
         outputs->next    = NULL;
 
         inputs->name    = av_strdup("out");
-        inputs->filter_ctx = fg->outputs[0]->filter;
+        inputs->filter_ctx = out_filter;
         inputs->pad_idx = 0;
         inputs->next    = NULL;
 
         if ((ret = avfilter_graph_parse(fg->graph, ost->avfilter, inputs, outputs, NULL)) < 0)
             return ret;
     } else {
-        if ((ret = avfilter_link(last_filter, 0, fg->outputs[0]->filter, 0)) < 0)
+        if ((ret = avfilter_link(in_filter, 0, out_filter, 0)) < 0)
             return ret;
     }
 
@@ -776,31 +803,50 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
 
 static int configure_output_filter(FilterGraph *fg, OutputFilter *ofilter, AVFilterInOut *out)
 {
-    SinkContext  sink_ctx;
+    char *pix_fmts;
     AVCodecContext *codec = ofilter->ost->st->codec;
     AVFilterContext *last_filter = out->filter_ctx;
     int pad_idx = out->pad_idx;
     int ret;
 
-    sink_ctx.pix_fmts = choose_pixel_fmts(ofilter->ost);
 
-    ret = avfilter_graph_create_filter(&ofilter->filter, &sink,
-                                       "out", NULL, &sink_ctx, fg->graph);
+    ret = avfilter_graph_create_filter(&ofilter->filter,
+                                       avfilter_get_by_name("buffersink"),
+                                       "out", NULL, pix_fmts, fg->graph);
     if (ret < 0)
         return ret;
 
     if (codec->width || codec->height) {
         char args[255];
+        AVFilterContext *filter;
+
         snprintf(args, sizeof(args), "%d:%d:flags=0x%X",
                  codec->width,
                  codec->height,
                  (unsigned)ofilter->ost->sws_flags);
-        if ((ret = avfilter_graph_create_filter(&last_filter, avfilter_get_by_name("scale"),
+        if ((ret = avfilter_graph_create_filter(&filter, avfilter_get_by_name("scale"),
                                                 NULL, args, NULL, fg->graph)) < 0)
             return ret;
-        if ((ret = avfilter_link(out->filter_ctx, out->pad_idx, last_filter, 0)) < 0)
+        if ((ret = avfilter_link(last_filter, pad_idx, filter, 0)) < 0)
             return ret;
+
+        last_filter = filter;
         pad_idx = 0;
+    }
+
+    if ((pix_fmts = choose_pixel_fmts(ofilter->ost))) {
+        AVFilterContext *filter;
+        if ((ret = avfilter_graph_create_filter(&filter,
+                                                avfilter_get_by_name("format"),
+                                                "format", pix_fmts, NULL,
+                                                fg->graph)) < 0)
+            return ret;
+        if ((ret = avfilter_link(last_filter, pad_idx, filter, 0)) < 0)
+            return ret;
+
+        last_filter = filter;
+        pad_idx     = 0;
+        av_freep(&pix_fmts);
     }
 
     if ((ret = avfilter_link(last_filter, pad_idx, ofilter->filter, 0)) < 0)
@@ -1801,7 +1847,7 @@ static int poll_filters(void)
 {
     AVFilterBufferRef *picref;
     AVFrame *filtered_frame = NULL;
-    int i, frame_size, ret;
+    int i, frame_size;
 
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
@@ -1816,13 +1862,11 @@ static int poll_filters(void)
             avcodec_get_frame_defaults(ost->filtered_frame);
         filtered_frame = ost->filtered_frame;
 
-        while (avfilter_poll_frame(ost->filter->filter->inputs[0])) {
-            AVRational ist_pts_tb;
-            if ((ret = get_filtered_video_frame(ost->filter->filter,
-                                                filtered_frame, &picref,
-                                                &ist_pts_tb)) < 0)
-                return ret;
-            filtered_frame->pts = av_rescale_q(picref->pts, ist_pts_tb, AV_TIME_BASE_Q);
+        while (av_buffersink_read(ost->filter->filter, &picref) >= 0) {
+            avfilter_copy_buf_props(filtered_frame, picref);
+            filtered_frame->pts = av_rescale_q(picref->pts,
+                                               ost->filter->filter->inputs[0]->time_base,
+                                               AV_TIME_BASE_Q);
 
             if (of->start_time && filtered_frame->pts < of->start_time)
                 return 0;
