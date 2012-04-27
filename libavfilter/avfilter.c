@@ -570,11 +570,11 @@ int avfilter_poll_frame(AVFilterLink *link)
     return min;
 }
 
-static void update_link_current_pts(AVFilterLink *link)
+static void update_link_current_pts(AVFilterLink *link, int64_t pts)
 {
-    if (link->cur_buf->pts == AV_NOPTS_VALUE)
+    if (pts == AV_NOPTS_VALUE)
         return;
-    link->current_pts =  link->cur_buf->pts; /* TODO use duration */
+    link->current_pts =  pts; /* TODO use duration */
     if (link->graph && link->age_index >= 0)
         ff_avfilter_graph_update_heap(link->graph, link);
 }
@@ -619,7 +619,7 @@ void avfilter_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     }
 
     start_frame(link, link->cur_buf);
-    update_link_current_pts(link);
+    update_link_current_pts(link, link->cur_buf->pts);
 }
 
 void avfilter_end_frame(AVFilterLink *link)
@@ -696,6 +696,7 @@ void avfilter_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
     void (*filter_samples)(AVFilterLink *, AVFilterBufferRef *);
     AVFilterPad *dst = link->dstpad;
     int i;
+    int64_t pts;
 
     FF_DPRINTF_START(NULL, filter_samples); ff_dlog_link(NULL, link, 1);
 
@@ -723,8 +724,9 @@ void avfilter_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
     } else
         link->cur_buf = samplesref;
 
+    pts = link->cur_buf->pts;
     filter_samples(link, link->cur_buf);
-    update_link_current_pts(link);
+    update_link_current_pts(link, pts);
 }
 
 #define MAX_REGISTERED_AVFILTERS_NB 128
