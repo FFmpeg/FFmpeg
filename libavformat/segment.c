@@ -113,10 +113,15 @@ static int seg_write_header(AVFormatContext *s)
     seg->offset_time = 0;
     seg->recording_time = seg->time * 1000000;
 
+    oc = avformat_alloc_context();
+
+    if (!oc)
+        return AVERROR(ENOMEM);
+
     if (seg->list)
         if ((ret = avio_open2(&seg->pb, seg->list, AVIO_FLAG_WRITE,
                               &s->interrupt_callback, NULL)) < 0)
-            return ret;
+            goto fail;
 
     for (i = 0; i< s->nb_streams; i++)
         seg->has_video +=
@@ -126,13 +131,6 @@ static int seg_write_header(AVFormatContext *s)
         av_log(s, AV_LOG_WARNING,
                "More than a single video stream present, "
                "expect issues decoding it.\n");
-
-    oc = avformat_alloc_context();
-
-    if (!oc) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
 
     oc->oformat = av_guess_format(seg->format, s->filename, NULL);
 
