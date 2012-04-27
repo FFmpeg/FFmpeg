@@ -80,27 +80,18 @@ static int ssd_int8_vs_int16_altivec(const int8_t *pix1, const int16_t *pix2,
 }
 
 static int32_t scalarproduct_int16_altivec(int16_t *v1, const int16_t *v2,
-                                           int order, const int shift)
+                                           int order)
 {
     int i;
     LOAD_ZERO;
     register vec_s16 vec1, *pv;
     register vec_s32 res = vec_splat_s32(0), t;
-    register vec_u32 shifts;
     int32_t ires;
-
-    shifts = zero_u32v;
-    if(shift & 0x10) shifts = vec_add(shifts, vec_sl(vec_splat_u32(0x08), vec_splat_u32(0x1)));
-    if(shift & 0x08) shifts = vec_add(shifts, vec_splat_u32(0x08));
-    if(shift & 0x04) shifts = vec_add(shifts, vec_splat_u32(0x04));
-    if(shift & 0x02) shifts = vec_add(shifts, vec_splat_u32(0x02));
-    if(shift & 0x01) shifts = vec_add(shifts, vec_splat_u32(0x01));
 
     for(i = 0; i < order; i += 8){
         pv = (vec_s16*)v1;
         vec1 = vec_perm(pv[0], pv[1], vec_lvsl(0, v1));
         t = vec_msum(vec1, vec_ld(0, v2), zero_s32v);
-        t = vec_sr(t, shifts);
         res = vec_sums(t, res);
         v1 += 8;
         v2 += 8;
