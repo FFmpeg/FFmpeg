@@ -131,7 +131,7 @@ static int config_out_props(AVFilterLink *outlink)
  * Copy picture field from src to dst.
  *
  * @param src_field copy from upper, lower field or both
- * @param interleave leave a padding line between each copied field
+ * @param interleave leave a padding line between each copied line
  * @param dst_field copy to upper or lower field,
  *        only meaningful when interleave is selected
  */
