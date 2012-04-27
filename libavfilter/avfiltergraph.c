@@ -95,6 +95,11 @@ fail:
     return ret;
 }
 
+void avfilter_graph_set_auto_convert(AVFilterGraph *graph, unsigned flags)
+{
+    graph->disable_auto_convert = flags;
+}
+
 int ff_avfilter_graph_check_validity(AVFilterGraph *graph, AVClass *log_ctx)
 {
     AVFilterContext *filt;
@@ -159,6 +164,14 @@ static int insert_conv_filter(AVFilterGraph *graph, AVFilterLink *link,
     static int auto_count = 0, ret;
     char inst_name[32];
     AVFilterContext *filt_ctx;
+
+    if (graph->disable_auto_convert) {
+        av_log(NULL, AV_LOG_ERROR,
+               "The filters '%s' and '%s' do not have a common format "
+               "and automatic conversion is disabled.\n",
+               link->src->name, link->dst->name);
+        return AVERROR(EINVAL);
+    }
 
     snprintf(inst_name, sizeof(inst_name), "auto-inserted %s %d",
             filt_name, auto_count++);

@@ -43,6 +43,8 @@ typedef struct AVFilterGraph {
 
     AVFilterLink **sink_links;
     int sink_links_count;
+
+    unsigned disable_auto_convert;
 } AVFilterGraph;
 
 /**
@@ -82,6 +84,21 @@ int avfilter_graph_add_filter(AVFilterGraph *graphctx, AVFilterContext *filter);
 int avfilter_graph_create_filter(AVFilterContext **filt_ctx, AVFilter *filt,
                                  const char *name, const char *args, void *opaque,
                                  AVFilterGraph *graph_ctx);
+
+/**
+ * Enable or disable automatic format conversion inside the graph.
+ *
+ * Note that format conversion can still happen inside explicitly inserted
+ * scale and aconvert filters.
+ *
+ * @param flags  any of the AVFILTER_AUTO_CONVERT_* constants
+ */
+void avfilter_graph_set_auto_convert(AVFilterGraph *graph, unsigned flags);
+
+enum {
+    AVFILTER_AUTO_CONVERT_ALL  =  0, /**< all automatic conversions enabled */
+    AVFILTER_AUTO_CONVERT_NONE = -1, /**< all automatic conversions disabled */
+};
 
 /**
  * Check validity and configure all the links and formats in the graph.
