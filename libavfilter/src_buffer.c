@@ -69,6 +69,28 @@ typedef struct {
         return AVERROR(EINVAL);\
     }
 
+static int insert_filter(BufferSourceContext *abuffer,
+                         AVFilterLink *link, AVFilterContext **filt_ctx,
+                         const char *filt_name);
+static void remove_filter(AVFilterContext **filt_ctx);
+static int reconfigure_filter(BufferSourceContext *abuffer, AVFilterContext *filt_ctx);
+
+static inline void log_input_change(void *ctx, AVFilterLink *link, AVFilterBufferRef *ref)
+{
+    char old_layout_str[16], new_layout_str[16];
+    av_get_channel_layout_string(old_layout_str, sizeof(old_layout_str),
+                                 -1, link->channel_layout);
+    av_get_channel_layout_string(new_layout_str, sizeof(new_layout_str),
+                                 -1, ref->audio->channel_layout);
+    av_log(ctx, AV_LOG_INFO,
+           "Audio input format changed: "
+           "%s:%s:%d -> %s:%s:%d, normalizing\n",
+           av_get_sample_fmt_name(link->format),
+           old_layout_str, (int)link->sample_rate,
+           av_get_sample_fmt_name(ref->format),
+           new_layout_str, ref->audio->sample_rate);
+}
+
 static int check_format_change_video(AVFilterContext *buffer_filter,
                                      AVFilterBufferRef *picref)
 {
@@ -122,12 +144,72 @@ static int check_format_change_video(AVFilterContext *buffer_filter,
     return 0;
 }
 
+static int check_format_change_audio(AVFilterContext *ctx,
+                                     AVFilterBufferRef *samplesref)
+{
+    BufferSourceContext *abuffer = ctx->priv;
+    AVFilterLink *link;
+    int ret, logged = 0;
+
+    link = ctx->outputs[0];
+    if (samplesref->audio->sample_rate != link->sample_rate) {
+
+        log_input_change(ctx, link, samplesref);
+        logged = 1;
+
+        abuffer->sample_rate = samplesref->audio->sample_rate;
+
+        if (!abuffer->aresample) {
+            ret = insert_filter(abuffer, link, &abuffer->aresample, "aresample");
+            if (ret < 0) return ret;
+        } else {
+            link = abuffer->aresample->outputs[0];
+            if (samplesref->audio->sample_rate == link->sample_rate)
+                remove_filter(&abuffer->aresample);
+            else
+                if ((ret = reconfigure_filter(abuffer, abuffer->aresample)) < 0)
+                    return ret;
+        }
+    }
+
+    link = ctx->outputs[0];
+    if (samplesref->format                != link->format         ||
+        samplesref->audio->channel_layout != link->channel_layout ||
+        samplesref->audio->planar         != link->planar) {
+
+        if (!logged) log_input_change(ctx, link, samplesref);
+
+        abuffer->sample_format  = samplesref->format;
+        abuffer->channel_layout = samplesref->audio->channel_layout;
+        abuffer->packing_format = samplesref->audio->planar;
+
+        if (!abuffer->aconvert) {
+            ret = insert_filter(abuffer, link, &abuffer->aconvert, "aconvert");
+            if (ret < 0) return ret;
+        } else {
+            link = abuffer->aconvert->outputs[0];
+            if (samplesref->format                == link->format         &&
+                samplesref->audio->channel_layout == link->channel_layout &&
+                samplesref->audio->planar         == link->planar
+               )
+                remove_filter(&abuffer->aconvert);
+            else
+                if ((ret = reconfigure_filter(abuffer, abuffer->aconvert)) < 0)
+                    return ret;
+        }
+    }
+
+    return 0;
+}
+
 static int check_format_change(AVFilterContext *buffer_filter,
                                AVFilterBufferRef *picref)
 {
     switch (buffer_filter->outputs[0]->type) {
     case AVMEDIA_TYPE_VIDEO:
         return check_format_change_video(buffer_filter, picref);
+    case AVMEDIA_TYPE_AUDIO:
+        return check_format_change_audio(buffer_filter, picref);
     default:
         return AVERROR(ENOSYS);
     }
@@ -484,29 +566,12 @@ static void remove_filter(AVFilterContext **filt_ctx)
     set_link_source(src, outlink);
 }
 
-static inline void log_input_change(void *ctx, AVFilterLink *link, AVFilterBufferRef *ref)
-{
-    char old_layout_str[16], new_layout_str[16];
-    av_get_channel_layout_string(old_layout_str, sizeof(old_layout_str),
-                                 -1, link->channel_layout);
-    av_get_channel_layout_string(new_layout_str, sizeof(new_layout_str),
-                                 -1, ref->audio->channel_layout);
-    av_log(ctx, AV_LOG_INFO,
-           "Audio input format changed: "
-           "%s:%s:%d -> %s:%s:%d, normalizing\n",
-           av_get_sample_fmt_name(link->format),
-           old_layout_str, (int)link->sample_rate,
-           av_get_sample_fmt_name(ref->format),
-           new_layout_str, ref->audio->sample_rate);
-}
-
 int av_asrc_buffer_add_audio_buffer_ref(AVFilterContext *ctx,
                                         AVFilterBufferRef *samplesref,
                                         int av_unused flags)
 {
     BufferSourceContext *abuffer = ctx->priv;
-    AVFilterLink *link;
-    int ret, logged = 0;
+    int ret;
 
     if (av_fifo_space(abuffer->fifo) < sizeof(samplesref)) {
         av_log(ctx, AV_LOG_ERROR,
@@ -515,55 +580,9 @@ int av_asrc_buffer_add_audio_buffer_ref(AVFilterContext *ctx,
         return AVERROR(EINVAL);
     }
 
-    // Normalize input
-
-    link = ctx->outputs[0];
-    if (samplesref->audio->sample_rate != link->sample_rate) {
-
-        log_input_change(ctx, link, samplesref);
-        logged = 1;
-
-        abuffer->sample_rate = samplesref->audio->sample_rate;
-
-        if (!abuffer->aresample) {
-            ret = insert_filter(abuffer, link, &abuffer->aresample, "aresample");
-            if (ret < 0) return ret;
-        } else {
-            link = abuffer->aresample->outputs[0];
-            if (samplesref->audio->sample_rate == link->sample_rate)
-                remove_filter(&abuffer->aresample);
-            else
-                if ((ret = reconfigure_filter(abuffer, abuffer->aresample)) < 0)
-                    return ret;
-        }
-    }
-
-    link = ctx->outputs[0];
-    if (samplesref->format                != link->format         ||
-        samplesref->audio->channel_layout != link->channel_layout ||
-        samplesref->audio->planar         != link->planar) {
-
-        if (!logged) log_input_change(ctx, link, samplesref);
-
-        abuffer->sample_format  = samplesref->format;
-        abuffer->channel_layout = samplesref->audio->channel_layout;
-        abuffer->packing_format = samplesref->audio->planar;
-
-        if (!abuffer->aconvert) {
-            ret = insert_filter(abuffer, link, &abuffer->aconvert, "aconvert");
-            if (ret < 0) return ret;
-        } else {
-            link = abuffer->aconvert->outputs[0];
-            if (samplesref->format                == link->format         &&
-                samplesref->audio->channel_layout == link->channel_layout &&
-                samplesref->audio->planar         == link->planar
-               )
-                remove_filter(&abuffer->aconvert);
-            else
-                if ((ret = reconfigure_filter(abuffer, abuffer->aconvert)) < 0)
-                    return ret;
-        }
-    }
+    ret = check_format_change(ctx, samplesref);
+    if (ret < 0)
+        return ret;
 
     if (sizeof(samplesref) != av_fifo_generic_write(abuffer->fifo, &samplesref,
                                                     sizeof(samplesref), NULL)) {
