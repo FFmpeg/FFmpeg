@@ -789,6 +789,7 @@ int main(void)
         int64_t tv;
         time_t tvi;
         struct tm *tm;
+        static char tzstr[] = "TZ=CET-1";
         const char *time_string[] = {
             "now",
             "12:35:46",
@@ -804,7 +805,7 @@ int main(void)
         };
 
         av_log_set_level(AV_LOG_DEBUG);
-        setenv("TZ", "CET-1", 1);
+        putenv(tzstr);
         printf("(now is 2012-03-17 09:14:13 +0100, local time is UTC+1)\n");
         for (i = 0;  i < FF_ARRAY_ELEMS(time_string); i++) {
             printf("%-24s -> ", time_string[i]);
