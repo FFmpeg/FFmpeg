@@ -47,9 +47,16 @@ struct AudioConvert {
 #define CONV_FUNC(ofmt, otype, ifmt, expr)\
 static void CONV_FUNC_NAME(ofmt, ifmt)(uint8_t *po, const uint8_t *pi, int is, int os, uint8_t *end)\
 {\
-    do{\
+    uint8_t *end2 = end - 3*os;\
+    while(po < end2){\
         *(otype*)po = expr; pi += is; po += os;\
-    }while(po < end);\
+        *(otype*)po = expr; pi += is; po += os;\
+        *(otype*)po = expr; pi += is; po += os;\
+        *(otype*)po = expr; pi += is; po += os;\
+    }\
+    while(po < end){\
+        *(otype*)po = expr; pi += is; po += os;\
+    }\
 }
 
 //FIXME put things below under ifdefs so we do not waste space for cases no codec will need
