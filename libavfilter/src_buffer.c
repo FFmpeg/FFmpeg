@@ -133,11 +133,33 @@ static int check_format_change(AVFilterContext *buffer_filter,
     }
 }
 
+static AVFilterBufferRef *copy_buffer_ref(AVFilterContext *ctx,
+                                          AVFilterBufferRef *ref)
+{
+    AVFilterLink *outlink = ctx->outputs[0];
+    AVFilterBufferRef *buf;
+
+    switch (outlink->type) {
+
+    case AVMEDIA_TYPE_VIDEO:
+        buf = avfilter_get_video_buffer(outlink, AV_PERM_WRITE,
+                                        ref->video->w, ref->video->h);
+        av_image_copy(buf->data, buf->linesize,
+                      (void*)ref->data, ref->linesize,
+                      ref->format, ref->video->w, ref->video->h);
+        break;
+
+    default:
+        return NULL;
+    }
+    avfilter_copy_buffer_ref_props(buf, ref);
+    return buf;
+}
+
 int av_buffersrc_add_ref(AVFilterContext *buffer_filter,
                          AVFilterBufferRef *picref, int flags)
 {
     BufferSourceContext *c = buffer_filter->priv;
-    AVFilterLink *outlink = buffer_filter->outputs[0];
     AVFilterBufferRef *buf;
     int ret;
 
@@ -157,17 +179,10 @@ int av_buffersrc_add_ref(AVFilterContext *buffer_filter,
         if (ret < 0)
             return ret;
     }
-    if (flags & AV_BUFFERSRC_FLAG_NO_COPY) {
+    if (flags & AV_BUFFERSRC_FLAG_NO_COPY)
         buf = picref;
-    } else {
-    buf = avfilter_get_video_buffer(outlink, AV_PERM_WRITE,
-                                    picref->video->w, picref->video->h);
-    av_image_copy(buf->data, buf->linesize,
-                  (void*)picref->data, picref->linesize,
-                  picref->format, picref->video->w, picref->video->h);
-    avfilter_copy_buffer_ref_props(buf, picref);
-
-    }
+    else
+        buf = copy_buffer_ref(buffer_filter, picref);
 
     if ((ret = av_fifo_generic_write(c->fifo, &buf, sizeof(buf), NULL)) < 0) {
         if (buf != picref)
