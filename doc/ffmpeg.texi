@@ -418,6 +418,14 @@ also sources and sinks).  This is an alias for @code{-filter:v}.
 @item -pix_fmt[:@var{stream_specifier}] @var{format} (@emph{input/output,per-stream})
 Set pixel format. Use @code{-pix_fmts} to show all the supported
 pixel formats.
+If the selected pixel format can not be selected, ffmpeg will print a
+warning and select the best pixel format supported by the encoder.
+If @var{pix_fmt} is prefixed by a @code{+}, ffmpeg will exit with an error
+if the requested pixel format can not be selected, and automatic conversions
+inside filter graphs are disabled.
+If @var{pix_fmt} is a single @code{+}, ffmpeg selects the same pixel format
+as the input (or graph output) and automatic conversions are disabled.
+
 @item -sws_flags @var{flags} (@emph{input/output})
 Set SwScaler flags.
 @item -vdt @var{n}

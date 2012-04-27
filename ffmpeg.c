@@ -319,6 +319,7 @@ typedef struct OutputStream {
     int copy_initial_nonkeyframes;
 
     enum PixelFormat pix_fmts[2];
+    int keep_pix_fmt;
 } OutputStream;
 
 
@@ -706,6 +707,15 @@ static enum PixelFormat choose_pixel_fmt(AVStream *st, AVCodec *codec, enum Pixe
 
 static char *choose_pixel_fmts(OutputStream *ost)
 {
+    if (ost->keep_pix_fmt) {
+        if (ost->filter)
+            avfilter_graph_set_auto_convert(ost->filter->graph->graph,
+                                            AVFILTER_AUTO_CONVERT_NONE);
+        if (ost->st->codec->pix_fmt == PIX_FMT_NONE)
+            return NULL;
+        ost->pix_fmts[0] = ost->st->codec->pix_fmt;
+        return ost->pix_fmts;
+    }
     if (ost->st->codec->pix_fmt != PIX_FMT_NONE) {
         return av_strdup(av_get_pix_fmt_name(choose_pixel_fmt(ost->st, ost->enc, ost->st->codec->pix_fmt)));
     } else if (ost->enc->pix_fmts) {
@@ -834,6 +844,10 @@ static int configure_video_filters(FilterGraph *fg)
         if ((ret = avfilter_link(in_filter, 0, out_filter, 0)) < 0)
             return ret;
     }
+
+    if (ost->keep_pix_fmt)
+        avfilter_graph_set_auto_convert(fg->graph,
+                                        AVFILTER_AUTO_CONVERT_NONE);
 
     if ((ret = avfilter_graph_config(fg->graph, NULL)) < 0)
         return ret;
@@ -4661,6 +4675,11 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
 
         video_enc->bits_per_raw_sample = frame_bits_per_raw_sample;
         MATCH_PER_STREAM_OPT(frame_pix_fmts, str, frame_pix_fmt, oc, st);
+        if (frame_pix_fmt && *frame_pix_fmt == '+') {
+            ost->keep_pix_fmt = 1;
+            if (!*++frame_pix_fmt)
+                frame_pix_fmt = NULL;
+        }
         if (frame_pix_fmt && (video_enc->pix_fmt = av_get_pix_fmt(frame_pix_fmt)) == PIX_FMT_NONE) {
             av_log(NULL, AV_LOG_FATAL, "Unknown pixel format requested: %s.\n", frame_pix_fmt);
             exit_program(1);

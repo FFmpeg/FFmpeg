@@ -29,6 +29,7 @@ version next:
 - add libavresample audio conversion library for compatibility
 - MicroDVD decoder
 - Avid Meridien (AVUI) decoder
+- accept + prefix to -pix_fmt option to disable automatic conversions.
 
 
 version 0.10:
