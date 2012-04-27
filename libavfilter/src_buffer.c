@@ -69,27 +69,12 @@ typedef struct {
         return AVERROR(EINVAL);\
     }
 
-int av_buffersrc_add_ref(AVFilterContext *buffer_filter,
-                         AVFilterBufferRef *picref, int flags)
+static int check_format_change_video(AVFilterContext *buffer_filter,
+                                     AVFilterBufferRef *picref)
 {
     BufferSourceContext *c = buffer_filter->priv;
-    AVFilterLink *outlink = buffer_filter->outputs[0];
-    AVFilterBufferRef *buf;
     int ret;
 
-    if (!picref) {
-        c->eof = 1;
-        return 0;
-    } else if (c->eof)
-        return AVERROR(EINVAL);
-
-    if (!av_fifo_space(c->fifo) &&
-        (ret = av_fifo_realloc2(c->fifo, av_fifo_size(c->fifo) +
-                                         sizeof(buf))) < 0)
-        return ret;
-
-    if (!(flags & AV_BUFFERSRC_FLAG_NO_CHECK_FORMAT)) {
-        /* TODO reindent */
     if (picref->video->w != c->w || picref->video->h != c->h || picref->format != c->pix_fmt) {
         AVFilterContext *scale = buffer_filter->outputs[0]->dst;
         AVFilterLink *link;
@@ -134,8 +119,44 @@ int av_buffersrc_add_ref(AVFilterContext *buffer_filter,
         if ((ret =  link->srcpad->config_props(link)) < 0)
             return ret;
     }
-    }
+    return 0;
+}
 
+static int check_format_change(AVFilterContext *buffer_filter,
+                               AVFilterBufferRef *picref)
+{
+    switch (buffer_filter->outputs[0]->type) {
+    case AVMEDIA_TYPE_VIDEO:
+        return check_format_change_video(buffer_filter, picref);
+    default:
+        return AVERROR(ENOSYS);
+    }
+}
+
+int av_buffersrc_add_ref(AVFilterContext *buffer_filter,
+                         AVFilterBufferRef *picref, int flags)
+{
+    BufferSourceContext *c = buffer_filter->priv;
+    AVFilterLink *outlink = buffer_filter->outputs[0];
+    AVFilterBufferRef *buf;
+    int ret;
+
+    if (!picref) {
+        c->eof = 1;
+        return 0;
+    } else if (c->eof)
+        return AVERROR(EINVAL);
+
+    if (!av_fifo_space(c->fifo) &&
+        (ret = av_fifo_realloc2(c->fifo, av_fifo_size(c->fifo) +
+                                         sizeof(buf))) < 0)
+        return ret;
+
+    if (!(flags & AV_BUFFERSRC_FLAG_NO_CHECK_FORMAT)) {
+        ret = check_format_change(buffer_filter, picref);
+        if (ret < 0)
+            return ret;
+    }
     if (flags & AV_BUFFERSRC_FLAG_NO_COPY) {
         buf = picref;
     } else {
