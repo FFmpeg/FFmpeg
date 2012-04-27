@@ -708,6 +708,36 @@ int avfilter_copy_frame_props(AVFilterBufferRef *dst, const AVFrame *src)
     return 0;
 }
 
+int avfilter_copy_buf_props(AVFrame *dst, const AVFilterBufferRef *src)
+{
+    memcpy(dst->data, src->data, sizeof(dst->data));
+    memcpy(dst->linesize, src->linesize, sizeof(dst->linesize));
+
+    dst->pts     = src->pts;
+    dst->format  = src->format;
+
+    switch (src->type) {
+    case AVMEDIA_TYPE_VIDEO:
+        dst->width               = src->video->w;
+        dst->height              = src->video->h;
+        dst->sample_aspect_ratio = src->video->pixel_aspect;
+        dst->interlaced_frame    = src->video->interlaced;
+        dst->top_field_first     = src->video->top_field_first;
+        dst->key_frame           = src->video->key_frame;
+        dst->pict_type           = src->video->pict_type;
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        dst->sample_rate         = src->audio->sample_rate;
+        dst->channel_layout      = src->audio->channel_layout;
+        dst->nb_samples          = src->audio->nb_samples;
+        break;
+    default:
+        return AVERROR(EINVAL);
+    }
+
+    return 0;
+}
+
 void avfilter_copy_buffer_ref_props(AVFilterBufferRef *dst, AVFilterBufferRef *src)
 {
     // copy common properties

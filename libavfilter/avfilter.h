@@ -848,4 +848,12 @@ static inline void avfilter_insert_outpad(AVFilterContext *f, unsigned index,
  */
 int avfilter_copy_frame_props(AVFilterBufferRef *dst, const AVFrame *src);
 
+/**
+ * Copy the frame properties and data pointers of src to dst, without copying
+ * the actual data.
+ *
+ * @return 0 on success, a negative number on error.
+ */
+int avfilter_copy_buf_props(AVFrame *dst, const AVFilterBufferRef *src);
+
 #endif /* AVFILTER_AVFILTER_H */
