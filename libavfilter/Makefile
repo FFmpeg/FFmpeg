@@ -22,8 +22,8 @@ OBJS = allfilters.o                                                     \
        formats.o                                                        \
        graphdump.o                                                      \
        graphparser.o                                                    \
+       src_buffer.o                                                     \
        transform.o                                                      \
-       vsrc_buffer.o
 
 OBJS-$(CONFIG_AVCODEC)                       += avcodec.o
 OBJS-$(CONFIG_AVFORMAT)                      += lavfutils.o
