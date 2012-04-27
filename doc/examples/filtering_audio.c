@@ -114,6 +114,7 @@ static int init_filters(const char *filters_descr)
     abuffersink_params->packing_fmts    = packing_fmts;
     ret = avfilter_graph_create_filter(&buffersink_ctx, abuffersink, "out",
                                        NULL, abuffersink_params, filter_graph);
+    av_free(abuffersink_params);
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR, "Cannot create audio buffer sink\n");
         return ret;
