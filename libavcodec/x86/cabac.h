@@ -24,6 +24,7 @@
 #include "libavcodec/cabac.h"
 #include "libavutil/attributes.h"
 #include "libavutil/x86_cpu.h"
+#include "libavutil/internal.h"
 #include "config.h"
 
 #if HAVE_FAST_CMOV
@@ -51,16 +52,16 @@
         "xor    "tmp"       , "ret"     \n\t"
 #endif /* HAVE_FAST_CMOV */
 
-#define BRANCHLESS_GET_CABAC(ret, statep, low, lowword, range, tmp, tmpbyte, byte, end) \
+#define BRANCHLESS_GET_CABAC(ret, statep, low, lowword, range, tmp, tmpbyte, byte, end, norm_off, lps_off, mlps_off) \
         "movzbl "statep"    , "ret"                                     \n\t"\
         "mov    "range"     , "tmp"                                     \n\t"\
         "and    $0xC0       , "range"                                   \n\t"\
-        "movzbl "MANGLE(ff_h264_lps_range)"("ret", "range", 2), "range" \n\t"\
+        "movzbl "MANGLE(ff_h264_cabac_tables)"+"lps_off"("ret", "range", 2), "range" \n\t"\
         "sub    "range"     , "tmp"                                     \n\t"\
         BRANCHLESS_GET_CABAC_UPDATE(ret, low, range, tmp)                    \
-        "movzbl " MANGLE(ff_h264_norm_shift) "("range"), %%ecx          \n\t"\
+        "movzbl "MANGLE(ff_h264_cabac_tables)"+"norm_off"("range"), %%ecx    \n\t"\
         "shl    %%cl        , "range"                                   \n\t"\
-        "movzbl "MANGLE(ff_h264_mlps_state)"+128("ret"), "tmp"          \n\t"\
+        "movzbl "MANGLE(ff_h264_cabac_tables)"+"mlps_off"+128("ret"), "tmp"  \n\t"\
         "shl    %%cl        , "low"                                     \n\t"\
         "mov    "tmpbyte"   , "statep"                                  \n\t"\
         "test   "lowword"   , "lowword"                                 \n\t"\
@@ -76,7 +77,7 @@
         "shr    $15         , %%ecx                                     \n\t"\
         "bswap  "tmp"                                                   \n\t"\
         "shr    $15         , "tmp"                                     \n\t"\
-        "movzbl " MANGLE(ff_h264_norm_shift) "(%%ecx), %%ecx            \n\t"\
+        "movzbl "MANGLE(ff_h264_cabac_tables)"+"norm_off"(%%ecx), %%ecx \n\t"\
         "sub    $0xFFFF     , "tmp"                                     \n\t"\
         "neg    %%ecx                                                   \n\t"\
         "add    $7          , %%ecx                                     \n\t"\
@@ -94,11 +95,14 @@ static av_always_inline int get_cabac_inline_x86(CABACContext *c,
     __asm__ volatile(
         BRANCHLESS_GET_CABAC("%0", "(%4)", "%1", "%w1",
                              "%2", "%3", "%b3",
-                             "%a6(%5)", "%a7(%5)")
+                             "%a6(%5)", "%a7(%5)", "%a8", "%a9", "%a10")
         : "=&r"(bit), "+&r"(c->low), "+&r"(c->range), "=&q"(tmp)
         : "r"(state), "r"(c),
           "i"(offsetof(CABACContext, bytestream)),
-          "i"(offsetof(CABACContext, bytestream_end))
+          "i"(offsetof(CABACContext, bytestream_end)),
+          "i"(H264_NORM_SHIFT_OFFSET),
+          "i"(H264_LPS_RANGE_OFFSET),
+          "i"(H264_MLPS_STATE_OFFSET)
         : "%"REG_c, "memory"
     );
     return bit & 1;

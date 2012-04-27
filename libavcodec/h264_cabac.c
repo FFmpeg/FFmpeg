@@ -1560,13 +1560,6 @@ static av_always_inline int get_cabac_cbf_ctx( H264Context *h, int cat, int idx,
     return base_ctx[cat] + ctx;
 }
 
-DECLARE_ASM_CONST(1, uint8_t, last_coeff_flag_offset_8x8)[63] = {
-    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-    3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4,
-    5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8
-};
-
 static av_always_inline void
 decode_cabac_residual_internal(H264Context *h, DCTELEM *block,
                                int cat, int n, const uint8_t *scantable,
@@ -1670,7 +1663,7 @@ decode_cabac_residual_internal(H264Context *h, DCTELEM *block,
                                                  last_coeff_ctx_base-significant_coeff_ctx_base);
         }
 #else
-        DECODE_SIGNIFICANCE( 63, sig_off[last], last_coeff_flag_offset_8x8[last] );
+        DECODE_SIGNIFICANCE( 63, sig_off[last], ff_h264_last_coeff_flag_offset_8x8[last] );
     } else {
         if (is_dc && chroma422) { // dc 422
             DECODE_SIGNIFICANCE(7, sig_coeff_offset_dc[last], sig_coeff_offset_dc[last]);
