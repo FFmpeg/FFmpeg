@@ -37,7 +37,7 @@ struct SwrContext {
     int log_level_offset;                           ///< logging level offset
     void *log_ctx;                                  ///< parent logging context
     enum AVSampleFormat  in_sample_fmt;             ///< input sample format
-    enum AVSampleFormat int_sample_fmt;             ///< internal sample format (AV_SAMPLE_FMT_FLT or AV_SAMPLE_FMT_S16)
+    enum AVSampleFormat int_sample_fmt;             ///< internal sample format (AV_SAMPLE_FMT_FLTP or AV_SAMPLE_FMT_S16P)
     enum AVSampleFormat out_sample_fmt;             ///< output sample format
     int64_t  in_ch_layout;                          ///< input channel layout
     int64_t out_ch_layout;                          ///< output channel layout

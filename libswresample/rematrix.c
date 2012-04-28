@@ -227,8 +227,8 @@ static int auto_matrix(SwrContext *s)
     if(s->rematrix_volume  < 0)
         maxcoef = -s->rematrix_volume;
 
-    if((   s->out_sample_fmt < AV_SAMPLE_FMT_FLT
-        || s->int_sample_fmt < AV_SAMPLE_FMT_FLT) && maxcoef > 1.0){
+    if((   av_get_packed_sample_fmt(s->out_sample_fmt) < AV_SAMPLE_FMT_FLT
+        || av_get_packed_sample_fmt(s->int_sample_fmt) < AV_SAMPLE_FMT_FLT) && maxcoef > 1.0){
         for(i=0; i<SWR_CH_MAX; i++)
             for(j=0; j<SWR_CH_MAX; j++){
                 s->matrix[i][j] /= maxcoef;
@@ -273,10 +273,10 @@ int swri_rematrix_init(SwrContext *s){
 }
 
 void swri_sum2(enum AVSampleFormat format, void *dst, const void *src0, const void *src1, float coef0, float coef1, int len){
-    if(format == AV_SAMPLE_FMT_FLT){
+    if(format == AV_SAMPLE_FMT_FLTP){
         sum2_float((float  *)dst, (const float  *)src0, (const float  *)src1, coef0, coef1, len);
     }else{
-        av_assert1(format == AV_SAMPLE_FMT_S16);
+        av_assert1(format == AV_SAMPLE_FMT_S16P);
         sum2_s16  ((int16_t*)dst, (const int16_t*)src0, (const int16_t*)src1, lrintf(coef0 * 32768), lrintf(coef1 * 32768), len);
     }
 }
@@ -295,7 +295,7 @@ int swri_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int mus
         case 1:
             in_i= s->matrix_ch[out_i][1];
             if(mustcopy || s->matrix[out_i][in_i]!=1.0){
-                if(s->int_sample_fmt == AV_SAMPLE_FMT_FLT){
+                if(s->int_sample_fmt == AV_SAMPLE_FMT_FLTP){
                     copy_float((float  *)out->ch[out_i], (const float  *)in->ch[in_i], s->matrix  [out_i][in_i], len);
                 }else
                     copy_s16  ((int16_t*)out->ch[out_i], (const int16_t*)in->ch[in_i], s->matrix32[out_i][in_i], len);
@@ -308,7 +308,7 @@ int swri_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int mus
                         s->matrix[out_i][ s->matrix_ch[out_i][1] ], s->matrix[out_i][ s->matrix_ch[out_i][2] ], len);
             break;
         default:
-            if(s->int_sample_fmt == AV_SAMPLE_FMT_FLT){
+            if(s->int_sample_fmt == AV_SAMPLE_FMT_FLTP){
                 for(i=0; i<len; i++){
                     float v=0;
                     for(j=0; j<s->matrix_ch[out_i][0]; j++){

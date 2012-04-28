@@ -52,8 +52,8 @@ static const AVOption options[]={
 {"in_sample_fmt"        ,    "Input Sample Format"      , OFFSET( in_sample_fmt ), AV_OPT_TYPE_INT  , {.dbl=AV_SAMPLE_FMT_S16     }, 0      , AV_SAMPLE_FMT_NB-1+256, PARAM},
 {"osf"                  ,   "Output Sample Format"      , OFFSET(out_sample_fmt ), AV_OPT_TYPE_INT  , {.dbl=AV_SAMPLE_FMT_S16     }, 0      , AV_SAMPLE_FMT_NB-1+256, PARAM},
 {"out_sample_fmt"       ,   "Output Sample Format"      , OFFSET(out_sample_fmt ), AV_OPT_TYPE_INT  , {.dbl=AV_SAMPLE_FMT_S16     }, 0      , AV_SAMPLE_FMT_NB-1+256, PARAM},
-{"tsf"                  , "Internal Sample Format"      , OFFSET(int_sample_fmt ), AV_OPT_TYPE_INT  , {.dbl=AV_SAMPLE_FMT_NONE    }, -1     , AV_SAMPLE_FMT_FLT, PARAM},
-{"internal_sample_fmt"  , "Internal Sample Format"      , OFFSET(int_sample_fmt ), AV_OPT_TYPE_INT  , {.dbl=AV_SAMPLE_FMT_NONE    }, -1     , AV_SAMPLE_FMT_FLT, PARAM},
+{"tsf"                  , "Internal Sample Format"      , OFFSET(int_sample_fmt ), AV_OPT_TYPE_INT  , {.dbl=AV_SAMPLE_FMT_NONE    }, -1     , AV_SAMPLE_FMT_FLTP, PARAM},
+{"internal_sample_fmt"  , "Internal Sample Format"      , OFFSET(int_sample_fmt ), AV_OPT_TYPE_INT  , {.dbl=AV_SAMPLE_FMT_NONE    }, -1     , AV_SAMPLE_FMT_FLTP, PARAM},
 {"icl"                  ,   "Input Channel Layout"      , OFFSET( in_ch_layout  ), AV_OPT_TYPE_INT64, {.dbl=0                     }, 0      , INT64_MAX , PARAM, "channel_layout"},
 {"in_channel_layout"    ,   "Input Channel Layout"      , OFFSET( in_ch_layout  ), AV_OPT_TYPE_INT64, {.dbl=0                     }, 0      , INT64_MAX , PARAM, "channel_layout"},
 {"ocl"                  ,  "Output Channel Layout"      , OFFSET(out_ch_layout  ), AV_OPT_TYPE_INT64, {.dbl=0                     }, 0      , INT64_MAX , PARAM, "channel_layout"},
@@ -193,8 +193,6 @@ int swr_init(struct SwrContext *s){
 
     s-> in.planar= av_sample_fmt_is_planar(s-> in_sample_fmt);
     s->out.planar= av_sample_fmt_is_planar(s->out_sample_fmt);
-    s-> in_sample_fmt= av_get_alt_sample_fmt(s-> in_sample_fmt, 0);
-    s->out_sample_fmt= av_get_alt_sample_fmt(s->out_sample_fmt, 0);
 
     if(s-> in_sample_fmt >= AV_SAMPLE_FMT_NB){
         av_log(s, AV_LOG_ERROR, "Requested input sample format %d is invalid\n", s->in_sample_fmt);
@@ -206,14 +204,14 @@ int swr_init(struct SwrContext *s){
     }
 
     //FIXME should we allow/support using FLT on material that doesnt need it ?
-    if(s->in_sample_fmt <= AV_SAMPLE_FMT_S16 || s->int_sample_fmt==AV_SAMPLE_FMT_S16){
-        s->int_sample_fmt= AV_SAMPLE_FMT_S16;
+    if(av_get_planar_sample_fmt(s->in_sample_fmt) <= AV_SAMPLE_FMT_S16P || s->int_sample_fmt==AV_SAMPLE_FMT_S16P){
+        s->int_sample_fmt= AV_SAMPLE_FMT_S16P;
     }else
-        s->int_sample_fmt= AV_SAMPLE_FMT_FLT;
+        s->int_sample_fmt= AV_SAMPLE_FMT_FLTP;
 
-    if(   s->int_sample_fmt != AV_SAMPLE_FMT_S16
-        &&s->int_sample_fmt != AV_SAMPLE_FMT_S32
-        &&s->int_sample_fmt != AV_SAMPLE_FMT_FLT){
+    if(   s->int_sample_fmt != AV_SAMPLE_FMT_S16P
+        &&s->int_sample_fmt != AV_SAMPLE_FMT_S32P
+        &&s->int_sample_fmt != AV_SAMPLE_FMT_FLTP){
         av_log(s, AV_LOG_ERROR, "Requested sample format %s is not supported internally, S16/S32/FLT is supported\n", av_get_sample_fmt_name(s->int_sample_fmt));
         return AVERROR(EINVAL);
     }
@@ -222,9 +220,9 @@ int swr_init(struct SwrContext *s){
         s->resample = swri_resample_init(s->resample, s->out_sample_rate, s->in_sample_rate, s->filter_size, s->phase_shift, s->linear_interp, s->cutoff, s->int_sample_fmt);
     }else
         swri_resample_free(&s->resample);
-    if(    s->int_sample_fmt != AV_SAMPLE_FMT_S16
-        && s->int_sample_fmt != AV_SAMPLE_FMT_S32
-        && s->int_sample_fmt != AV_SAMPLE_FMT_FLT
+    if(    s->int_sample_fmt != AV_SAMPLE_FMT_S16P
+        && s->int_sample_fmt != AV_SAMPLE_FMT_S32P
+        && s->int_sample_fmt != AV_SAMPLE_FMT_FLTP
         && s->resample){
         av_log(s, AV_LOG_ERROR, "Resampling only supported with internal s16/s32/flt\n");
         return -1;

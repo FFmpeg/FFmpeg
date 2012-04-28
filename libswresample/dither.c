@@ -27,6 +27,9 @@ void swri_get_dither(SwrContext *s, void *dst, int len, unsigned seed, enum AVSa
     double *tmp = av_malloc((len + TMP_EXTRA) * sizeof(double));
     int i;
 
+    out_fmt = av_get_packed_sample_fmt(out_fmt);
+    in_fmt  = av_get_packed_sample_fmt( in_fmt);
+
     if(in_fmt == AV_SAMPLE_FMT_FLT || in_fmt == AV_SAMPLE_FMT_DBL){
         if(out_fmt == AV_SAMPLE_FMT_S32) scale = 1.0/(1L<<31);
         if(out_fmt == AV_SAMPLE_FMT_S16) scale = 1.0/(1L<<15);

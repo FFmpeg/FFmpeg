@@ -131,19 +131,19 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
 
         /* normalize so that an uniform color remains the same */
         switch(c->format){
-        case AV_SAMPLE_FMT_S16:
+        case AV_SAMPLE_FMT_S16P:
             for(i=0;i<tap_count;i++)
                 ((int16_t*)filter)[ph * tap_count + i] = av_clip(lrintf(tab[i] * scale / norm), INT16_MIN, INT16_MAX);
             break;
-        case AV_SAMPLE_FMT_S32:
+        case AV_SAMPLE_FMT_S32P:
             for(i=0;i<tap_count;i++)
                 ((int32_t*)filter)[ph * tap_count + i] = av_clip(lrintf(tab[i] * scale / norm), INT32_MIN, INT32_MAX);
             break;
-        case AV_SAMPLE_FMT_FLT:
+        case AV_SAMPLE_FMT_FLTP:
             for(i=0;i<tap_count;i++)
                 ((float*)filter)[ph * tap_count + i] = tab[i] * scale / norm;
             break;
-        case AV_SAMPLE_FMT_DBL:
+        case AV_SAMPLE_FMT_DBLP:
             for(i=0;i<tap_count;i++)
                 ((double*)filter)[ph * tap_count + i] = tab[i] * scale / norm;
             break;
@@ -205,14 +205,14 @@ ResampleContext *swri_resample_init(ResampleContext *c, int out_rate, int in_rat
         c->felem_size= av_get_bytes_per_sample(c->format);
 
         switch(c->format){
-        case AV_SAMPLE_FMT_S16:
+        case AV_SAMPLE_FMT_S16P:
             c->filter_shift = 15;
             break;
-        case AV_SAMPLE_FMT_S32:
+        case AV_SAMPLE_FMT_S32P:
             c->filter_shift = 30;
             break;
-        case AV_SAMPLE_FMT_FLT:
-        case AV_SAMPLE_FMT_DBL:
+        case AV_SAMPLE_FMT_FLTP:
+        case AV_SAMPLE_FMT_DBLP:
             c->filter_shift = 0;
             break;
         default:
@@ -359,10 +359,10 @@ int swri_multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, Aud
     int i, ret= -1;
 
     for(i=0; i<dst->ch_count; i++){
-        if(c->format == AV_SAMPLE_FMT_S16) ret= swri_resample_int16(c, (int16_t*)dst->ch[i], (const int16_t*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
-        if(c->format == AV_SAMPLE_FMT_S32) ret= swri_resample_int32(c, (int32_t*)dst->ch[i], (const int32_t*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
-        if(c->format == AV_SAMPLE_FMT_FLT) ret= swri_resample_float(c, (float  *)dst->ch[i], (const float  *)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
-        if(c->format == AV_SAMPLE_FMT_DBL) ret= swri_resample_double(c,(double *)dst->ch[i], (const double *)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
+        if(c->format == AV_SAMPLE_FMT_S16P) ret= swri_resample_int16(c, (int16_t*)dst->ch[i], (const int16_t*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
+        if(c->format == AV_SAMPLE_FMT_S32P) ret= swri_resample_int32(c, (int32_t*)dst->ch[i], (const int32_t*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
+        if(c->format == AV_SAMPLE_FMT_FLTP) ret= swri_resample_float(c, (float  *)dst->ch[i], (const float  *)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
+        if(c->format == AV_SAMPLE_FMT_DBLP) ret= swri_resample_double(c,(double *)dst->ch[i], (const double *)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
     }
 
     return ret;
