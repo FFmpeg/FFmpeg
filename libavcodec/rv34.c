@@ -282,7 +282,7 @@ static inline void decode_subblock3(DCTELEM *dst, int code, GetBitContext *gb, V
  *  o--o
  */
 
-static inline int rv34_decode_block(DCTELEM *dst, GetBitContext *gb, RV34VLC *rvlc, int fc, int sc, int q_dc, int q_ac1, int q_ac2)
+static int rv34_decode_block(DCTELEM *dst, GetBitContext *gb, RV34VLC *rvlc, int fc, int sc, int q_dc, int q_ac1, int q_ac2)
 {
     int code, pattern, has_ac = 1;
 
