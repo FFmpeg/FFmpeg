@@ -203,17 +203,8 @@ int main(int argc, char **argv)
             }
 
             if (got_frame) {
-                const int bps = av_get_bytes_per_sample(dec_ctx->sample_fmt);
-                const int decoded_data_size = frame.nb_samples * dec_ctx->channels * bps;
-
                 /* push the audio data from decoded frame into the filtergraph */
-                if (av_asrc_buffer_add_buffer(buffersrc_ctx,
-                                              frame.data[0],
-                                              decoded_data_size,
-                                              dec_ctx->sample_rate,
-                                              dec_ctx->sample_fmt,
-                                              dec_ctx->channel_layout,
-                                              0, frame.pts, 0) < 0) {
+                if (av_buffersrc_add_frame(buffersrc_ctx, &frame, 0) < 0) {
                     av_log(NULL, AV_LOG_ERROR, "Error while feeding the audio filtergraph\n");
                     break;
                 }
