@@ -21,6 +21,10 @@
 %include "libavutil/x86/x86inc.asm"
 %include "libavutil/x86/x86util.asm"
 
+SECTION_RODATA
+
+flt2pm31: times 8 dd 4.6566129e-10
+
 SECTION .text
 
 %macro INT16_TO_INT32 1
@@ -55,6 +59,42 @@ int16_to_int32_u_int %+ SUFFIX
     REP_RET
 %endmacro
 
+%macro INT32_TO_FLOAT 1
+cglobal int32_to_float_%1, 3, 3, 3, dst, src, len
+    mov srcq, [srcq]
+    mov dstq, [dstq]
+%ifidn %1, a
+    test dstq, mmsize-1
+        jne int32_to_float_u_int %+ SUFFIX
+    test srcq, mmsize-1
+        jne int32_to_float_u_int %+ SUFFIX
+%else
+int32_to_float_u_int %+ SUFFIX
+%endif
+    add     srcq, lenq
+    add     dstq, lenq
+    neg     lenq
+    mova      m2, [flt2pm31]
+.next:
+%ifidn %1, a
+    cvtdq2ps  m0, [         srcq+lenq]
+    cvtdq2ps  m1, [mmsize + srcq+lenq]
+%else
+    movu      m0, [         srcq+lenq]
+    movu      m1, [mmsize + srcq+lenq]
+    cvtdq2ps  m0, m0
+    cvtdq2ps  m1, m1
+%endif
+    mulps m0, m2
+    mulps m1, m2
+    mov%1 [         dstq+lenq], m0
+    mov%1 [mmsize + dstq+lenq], m1
+    add lenq, 2*mmsize
+        jl .next
+    REP_RET
+%endmacro
+
+
 INIT_MMX mmx
 INT16_TO_INT32 u
 INT16_TO_INT32 a
@@ -62,3 +102,7 @@ INT16_TO_INT32 a
 INIT_XMM sse
 INT16_TO_INT32 u
 INT16_TO_INT32 a
+
+INIT_XMM sse2
+INT32_TO_FLOAT u
+INT32_TO_FLOAT a
