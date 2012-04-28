@@ -552,7 +552,7 @@ static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
     //picture should be flipped upside-down
     for(i=0; i < 3; i++) {
         int vsample = i ? 2 >> chroma_v_shift : 2;
-        pic->data[i] += (pic->linesize[i] * (vsample * (8 * s->mb_height -((s->height/V_MAX)&7)) - 1 ));
+        pic->data[i] += pic->linesize[i] * (vsample * s->height / V_MAX - 1);
         pic->linesize[i] *= -1;
     }
     ret = ff_MPV_encode_picture(avctx, pkt, pic, got_packet);
