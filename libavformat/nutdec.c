@@ -21,15 +21,13 @@
  */
 
 #include "libavutil/avstring.h"
+#include "libavutil/avassert.h"
 #include "libavutil/bswap.h"
 #include "libavutil/dict.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/tree.h"
 #include "avio_internal.h"
 #include "nut.h"
-
-#undef NDEBUG
-#include <assert.h>
 
 #define NUT_MAX_STREAMS 256    /* arbitrary sanity check value */
 
@@ -298,7 +296,7 @@ static int decode_main_header(NUTContext *nut)
             nut->frame_code[i].header_idx     = tmp_head_idx;
         }
     }
-    assert(nut->frame_code['N'].flags == FLAG_INVALID);
+    av_assert0(nut->frame_code['N'].flags == FLAG_INVALID);
 
     if (end > avio_tell(bc) + 4) {
         int rem = 1024;
@@ -318,7 +316,7 @@ static int decode_main_header(NUTContext *nut)
             avio_read(bc, hdr, nut->header_len[i]);
             nut->header[i] = hdr;
         }
-        assert(nut->header_len[0] == 0);
+        av_assert0(nut->header_len[0] == 0);
     }
 
     if (skip_reserved(bc, end) || ffio_get_checksum(bc)) {
@@ -617,7 +615,7 @@ static int find_and_decode_index(NUTContext *nut)
                 av_log(s, AV_LOG_ERROR, "keyframe before first syncpoint in index\n");
                 goto fail;
             }
-            assert(n <= syncpoint_count + 1);
+            av_assert0(n <= syncpoint_count + 1);
             for (; j < n && j < syncpoint_count; j++) {
                 if (has_keyframe[j]) {
                     uint64_t B, A = ffio_read_varlen(bc);
@@ -704,7 +702,7 @@ static int nut_read_header(AVFormatContext *s)
         find_and_decode_index(nut);
         avio_seek(bc, orig_pos, SEEK_SET);
     }
-    assert(nut->next_startcode == SYNCPOINT_STARTCODE);
+    av_assert0(nut->next_startcode == SYNCPOINT_STARTCODE);
 
     ff_metadata_conv_ctx(s, NULL, ff_nut_metadata_conv);
 
@@ -897,13 +895,13 @@ static int64_t nut_read_timestamp(AVFormatContext *s, int stream_index,
     do {
         pos = find_startcode(bc, SYNCPOINT_STARTCODE, pos) + 1;
         if (pos < 1) {
-            assert(nut->next_startcode == 0);
+            av_assert0(nut->next_startcode == 0);
             av_log(s, AV_LOG_ERROR, "read_timestamp failed.\n");
             return AV_NOPTS_VALUE;
         }
     } while (decode_syncpoint(nut, &pts, &back_ptr) < 0);
     *pos_arg = pos - 1;
-    assert(nut->last_syncpoint_pos == *pos_arg);
+    av_assert0(nut->last_syncpoint_pos == *pos_arg);
 
     av_log(s, AV_LOG_DEBUG, "return %"PRId64" %"PRId64"\n", pts, back_ptr);
     if (stream_index == -1)
@@ -911,7 +909,7 @@ static int64_t nut_read_timestamp(AVFormatContext *s, int stream_index,
     else if (stream_index == -2)
         return back_ptr;
 
-    assert(0);
+    av_assert0(0);
 }
 
 static int read_seek(AVFormatContext *s, int stream_index,
@@ -960,7 +958,7 @@ static int read_seek(AVFormatContext *s, int stream_index,
         sp = av_tree_find(nut->syncpoints, &dummy, (void *) ff_nut_sp_pos_cmp,
                           NULL);
 
-        assert(sp);
+        av_assert0(sp);
         pos2 = sp->back_ptr - 15;
     }
     av_log(NULL, AV_LOG_DEBUG, "SEEKTO: %"PRId64"\n", pos2);
