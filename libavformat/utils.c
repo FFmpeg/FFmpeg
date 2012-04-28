@@ -1977,8 +1977,6 @@ static int has_duration(AVFormatContext *ic)
 {
     int i;
     AVStream *st;
-    if(ic->duration != AV_NOPTS_VALUE)
-        return 1;
 
     for(i = 0;i < ic->nb_streams; i++) {
         st = ic->streams[i];
