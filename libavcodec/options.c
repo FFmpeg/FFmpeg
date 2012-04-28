@@ -239,6 +239,7 @@ static const AVOption frame_options[]={
 {"width", "", FOFFSET(width), AV_OPT_TYPE_INT, {.dbl = 0 }, 0, INT_MAX, 0},
 {"height", "", FOFFSET(height), AV_OPT_TYPE_INT, {.dbl = 0 }, 0, INT_MAX, 0},
 {"format", "", FOFFSET(format), AV_OPT_TYPE_INT, {.dbl = -1 }, 0, INT_MAX, 0},
+{"channel_layout", "", FOFFSET(channel_layout), AV_OPT_TYPE_INT64, {.dbl = 0 }, 0, INT64_MAX, 0},
 {NULL},
 };
 

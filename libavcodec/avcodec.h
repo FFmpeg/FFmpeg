@@ -1257,6 +1257,16 @@ typedef struct AVFrame {
      * - decoding: Read by user.
      */
     int64_t pkt_pos;
+
+    /**
+     * channel layout of the audio frame
+     * - encoding: unused
+     * - decoding: read by user.
+     * Code outside libavcodec should access this field using:
+     * av_opt_ptr(avcodec_get_frame_class(), frame, "channel_layout")
+     */
+    int64_t channel_layout;
+
 } AVFrame;
 
 struct AVCodecInternal;
