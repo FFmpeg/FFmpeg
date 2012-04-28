@@ -104,6 +104,7 @@ typedef struct VideoPicture {
     int skip;
     SDL_Overlay *bmp;
     int width, height; /* source height & width */
+    AVRational sample_aspect_ratio;
     int allocated;
     int reallocate;
     enum PixelFormat pix_fmt;
@@ -671,21 +672,11 @@ static void video_image_display(VideoState *is)
 
     vp = &is->pictq[is->pictq_rindex];
     if (vp->bmp) {
-#if CONFIG_AVFILTER
-         if (vp->picref->video->sample_aspect_ratio.num == 0)
-             aspect_ratio = 0;
-         else
-             aspect_ratio = av_q2d(vp->picref->video->sample_aspect_ratio);
-#else
-
-        /* XXX: use variable in the frame */
-        if (is->video_st->sample_aspect_ratio.num)
-            aspect_ratio = av_q2d(is->video_st->sample_aspect_ratio);
-        else if (is->video_st->codec->sample_aspect_ratio.num)
-            aspect_ratio = av_q2d(is->video_st->codec->sample_aspect_ratio);
-        else
+        if (vp->sample_aspect_ratio.num == 0)
             aspect_ratio = 0;
-#endif
+        else
+            aspect_ratio = av_q2d(vp->sample_aspect_ratio);
+
         if (aspect_ratio <= 0.0)
             aspect_ratio = 1.0;
         aspect_ratio *= (float)vp->width / (float)vp->height;
@@ -1436,6 +1427,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
         // FIXME use direct rendering
         av_picture_copy(&pict, (AVPicture *)src_frame,
                         vp->pix_fmt, vp->width, vp->height);
+        vp->sample_aspect_ratio = vp->picref->video->sample_aspect_ratio;
 #else
         sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
         is->img_convert_ctx = sws_getCachedContext(is->img_convert_ctx,
@@ -1447,6 +1439,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
         }
         sws_scale(is->img_convert_ctx, src_frame->data, src_frame->linesize,
                   0, vp->height, pict.data, pict.linesize);
+        vp->sample_aspect_ratio = av_guess_sample_aspect_ratio(is->ic, is->video_st, src_frame);
 #endif
         /* update the bitmap content */
         SDL_UnlockYUVOverlay(vp->bmp);
