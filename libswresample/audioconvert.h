@@ -33,8 +33,15 @@
 #include "libavutil/cpu.h"
 #include "libavutil/audioconvert.h"
 
-struct AudioConvert;
-typedef struct AudioConvert AudioConvert;
+
+typedef void (conv_func_type)(uint8_t *po, const uint8_t *pi, int is, int os, uint8_t *end);
+
+typedef struct AudioConvert {
+    int channels;
+    conv_func_type *conv_f;
+    const int *ch_map;
+    uint8_t silence[8]; ///< silence input sample
+}AudioConvert;
 
 /**
  * Create an audio sample format converter context

@@ -32,15 +32,6 @@
 #include "audioconvert.h"
 
 
-typedef void (conv_func_type)(uint8_t *po, const uint8_t *pi, int is, int os, uint8_t *end);
-
-struct AudioConvert {
-    int channels;
-    conv_func_type *conv_f;
-    const int *ch_map;
-    uint8_t silence[8]; ///< silence input sample
-};
-
 #define CONV_FUNC_NAME(dst_fmt, src_fmt) conv_ ## src_fmt ## _to_ ## dst_fmt
 
 //FIXME rounding ?
