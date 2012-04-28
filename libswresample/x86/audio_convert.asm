@@ -23,18 +23,26 @@
 
 SECTION .text
 
-%macro INT16_TO_INT32 0
+%macro INT16_TO_INT32 1
 cglobal int16_to_int32_%1, 3, 3, 0, dst, src, len
     mov srcq, [srcq]
     mov dstq, [dstq]
+%ifidn %1, a
+    test dstq, mmsize-1
+        jne int16_to_int32_u_int %+ SUFFIX
+    test srcq, mmsize-1
+        jne int16_to_int32_u_int %+ SUFFIX
+%else
+int16_to_int32_u_int %+ SUFFIX
+%endif
 .next
-    movu m4, [srcq]
+    mov%1 m4, [srcq]
     pxor m0, m0
     pxor m1, m1
     punpcklwd m0, m4
     punpckhwd m1, m4
-    movu [         dstq], m0
-    movu [mmsize + dstq], m1
+    mov%1 [         dstq], m0
+    mov%1 [mmsize + dstq], m1
     add srcq, mmsize
     add dstq, 2*mmsize
     sub lenq, 2*mmsize
@@ -46,7 +54,9 @@ cglobal int16_to_int32_%1, 3, 3, 0, dst, src, len
 %endmacro
 
 INIT_MMX mmx
-INT16_TO_INT32
+INT16_TO_INT32 u
+INT16_TO_INT32 a
 
 INIT_XMM sse
-INT16_TO_INT32
+INT16_TO_INT32 u
+INT16_TO_INT32 a

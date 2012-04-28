@@ -22,7 +22,7 @@
 #include "libswresample/audioconvert.h"
 
 #define MULTI_CAPS_FUNC_DECL(cap) \
-    void ff_int16_to_int32_ ## cap(uint8_t **dst, const uint8_t **src, int len);
+    void ff_int16_to_int32_a_ ## cap(uint8_t **dst, const uint8_t **src, int len);
 MULTI_CAPS_FUNC_DECL(mmx)
 MULTI_CAPS_FUNC_DECL(sse)
 
@@ -39,7 +39,7 @@ void swri_audio_convert_init_x86(struct AudioConvert *ac,
 #define MULTI_CAPS_FUNC(flag, cap) \
     if (mm_flags & flag) {\
         if(   out_fmt == AV_SAMPLE_FMT_S32  && in_fmt == AV_SAMPLE_FMT_S16 || out_fmt == AV_SAMPLE_FMT_S32P && in_fmt == AV_SAMPLE_FMT_S16P)\
-            ac->simd_f =  ff_int16_to_int32_ ## cap;\
+            ac->simd_f =  ff_int16_to_int32_a_ ## cap;\
     }
 
 MULTI_CAPS_FUNC(AV_CPU_FLAG_MMX, mmx)
