@@ -303,27 +303,37 @@ int av_buffersrc_buffer(AVFilterContext *s, AVFilterBufferRef *buf)
 #if CONFIG_AVCODEC
 #include "avcodec.h"
 
-int av_vsrc_buffer_add_frame(AVFilterContext *buffer_src,
-                             const AVFrame *frame, int flags)
+int av_buffersrc_add_frame(AVFilterContext *buffer_src,
+                           const AVFrame *frame, int flags)
 {
-    BufferSourceContext *c = buffer_src->priv;
     AVFilterBufferRef *picref;
     int ret;
 
-    if (!frame) {
-        c->eof = 1;
-        return 0;
-    } else if (c->eof)
-        return AVERROR(EINVAL);
+    if (!frame) /* NULL for EOF */
+        return av_buffersrc_add_ref(buffer_src, NULL, flags);
 
-    picref = avfilter_get_video_buffer_ref_from_frame(frame, AV_PERM_WRITE);
+    switch (buffer_src->outputs[0]->type) {
+    case AVMEDIA_TYPE_VIDEO:
+        picref = avfilter_get_video_buffer_ref_from_frame(frame, AV_PERM_WRITE);
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        picref = avfilter_get_audio_buffer_ref_from_frame(frame, AV_PERM_WRITE);
+        break;
+    default:
+        return AVERROR(ENOSYS);
+    }
     if (!picref)
         return AVERROR(ENOMEM);
-    ret = av_vsrc_buffer_add_video_buffer_ref(buffer_src, picref, flags);
+    ret = av_buffersrc_add_ref(buffer_src, picref, flags);
     picref->buf->data[0] = NULL;
     avfilter_unref_buffer(picref);
-
     return ret;
+}
+
+int av_vsrc_buffer_add_frame(AVFilterContext *buffer_src,
+                             const AVFrame *frame, int flags)
+{
+    return av_buffersrc_add_frame(buffer_src, frame, 0);
 }
 #endif
 

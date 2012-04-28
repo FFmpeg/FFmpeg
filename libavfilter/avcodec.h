@@ -92,6 +92,18 @@ int avfilter_fill_frame_from_buffer_ref(AVFrame *frame,
 /**
  * Add frame data to buffer_src.
  *
+ * @param buffer_src  pointer to a buffer source context
+ * @param frame       a frame, or NULL to mark EOF
+ * @param flags       a combination of AV_BUFFERSRC_FLAG_*
+ * @return            >= 0 in case of success, a negative AVERROR code
+ *                    in case of failure
+ */
+int av_buffersrc_add_frame(AVFilterContext *buffer_src,
+                           const AVFrame *frame, int flags);
+
+/**
+ * Add frame data to buffer_src.
+ *
  * @param buffer_src pointer to a buffer source context
  * @param flags a combination of AV_VSRC_BUF_FLAG_* flags
  * @return >= 0 in case of success, a negative AVERROR code in case of
