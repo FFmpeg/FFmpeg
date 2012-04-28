@@ -229,7 +229,7 @@ int ffurl_alloc(URLContext **puc, const char *filename, int flags,
             return url_alloc_for_protocol (puc, up, filename, flags, int_cb);
     }
     *puc = NULL;
-    return AVERROR(ENOENT);
+    return AVERROR_PROTOCOL_NOT_FOUND;
 }
 
 int ffurl_open(URLContext **puc, const char *filename, int flags,
