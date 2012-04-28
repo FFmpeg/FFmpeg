@@ -35,18 +35,20 @@ cglobal int16_to_int32_%1, 3, 3, 3, dst, src, len
 %else
 int16_to_int32_u_int %+ SUFFIX
 %endif
+    add     dstq, lenq
+    shr     lenq, 1
+    add     srcq, lenq
+    neg     lenq
 .next
-    mov%1 m4, [srcq]
-    pxor m0, m0
-    pxor m1, m1
-    punpcklwd m0, m4
-    punpckhwd m1, m4
-    mov%1 [         dstq], m0
-    mov%1 [mmsize + dstq], m1
-    add srcq, mmsize
-    add dstq, 2*mmsize
-    sub lenq, 2*mmsize
-        jg .next
+    mov%1     m2, [srcq+lenq]
+    pxor      m0, m0
+    pxor      m1, m1
+    punpcklwd m0, m2
+    punpckhwd m1, m2
+    mov%1 [         dstq+2*lenq], m0
+    mov%1 [mmsize + dstq+2*lenq], m1
+    add lenq, mmsize
+        jl .next
 %if mmsize == 8
     emms
 %endif
