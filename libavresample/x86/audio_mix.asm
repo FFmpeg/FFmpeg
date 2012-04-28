@@ -60,5 +60,7 @@ cglobal mix_2_to_1_fltp_flt, 3,4,6, src, matrix, len, src1
 
 INIT_XMM sse
 MIX_2_TO_1_FLTP_FLT
+%if HAVE_AVX
 INIT_YMM avx
 MIX_2_TO_1_FLTP_FLT
+%endif
