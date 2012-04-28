@@ -27,6 +27,7 @@ MULTI_CAPS_FUNC_DECL(mmx)
 MULTI_CAPS_FUNC_DECL(sse)
 
 void ff_int32_to_float_a_sse2(uint8_t **dst, const uint8_t **src, int len);
+void ff_int16_to_float_a_sse2(uint8_t **dst, const uint8_t **src, int len);
 
 void swri_audio_convert_init_x86(struct AudioConvert *ac,
                                  enum AVSampleFormat out_fmt,
@@ -50,5 +51,7 @@ MULTI_CAPS_FUNC(AV_CPU_FLAG_SSE, sse)
     if(mm_flags & AV_CPU_FLAG_SSE2) {
         if(   out_fmt == AV_SAMPLE_FMT_FLT  && in_fmt == AV_SAMPLE_FMT_S32 || out_fmt == AV_SAMPLE_FMT_FLTP && in_fmt == AV_SAMPLE_FMT_S32P)
             ac->simd_f =  ff_int32_to_float_a_sse2;
+        if(   out_fmt == AV_SAMPLE_FMT_FLT  && in_fmt == AV_SAMPLE_FMT_S16 || out_fmt == AV_SAMPLE_FMT_FLTP && in_fmt == AV_SAMPLE_FMT_S16P)
+            ac->simd_f =  ff_int16_to_float_a_sse2;
     }
 }
