@@ -125,6 +125,9 @@ AudioConvert *swri_audio_convert_alloc(enum AVSampleFormat out_fmt,
     ctx->ch_map   = ch_map;
     if (in_fmt == AV_SAMPLE_FMT_U8)
         memset(ctx->silence, 0x80, sizeof(ctx->silence));
+
+    if(HAVE_YASM && HAVE_MMX) swri_audio_convert_init_x86(ctx, out_fmt, in_fmt, channels);
+
     return ctx;
 }
 
@@ -136,21 +139,36 @@ void swri_audio_convert_free(AudioConvert **ctx)
 int swri_audio_convert(AudioConvert *ctx, AudioData *out, AudioData *in, int len)
 {
     int ch;
+    int off=0;
+    const int os= (out->planar ? 1 :out->ch_count) *out->bps;
 
     av_assert0(ctx->channels == out->ch_count);
 
     //FIXME optimize common cases
 
+    if(ctx->simd_f && !ctx->ch_map){
+        int planes = out->planar ? out->ch_count : 1;
+        off = len/16 * 16;
+        av_assert1(out->planar == in->planar);
+        av_assert1(off>=0);
+        if(off>0)
+            for(ch=0; ch<planes; ch++){
+                ctx->simd_f(out->ch+ch, in->ch+ch, off*os);
+            }
+        av_assert1(off<=len);
+        if(off == len)
+            return 0;
+    }
+
     for(ch=0; ch<ctx->channels; ch++){
         const int ich= ctx->ch_map ? ctx->ch_map[ch] : ch;
         const int is= ich < 0 ? 0 : (in->planar ? 1 : in->ch_count) * in->bps;
-        const int os= (out->planar ? 1 :out->ch_count) *out->bps;
         const uint8_t *pi= ich < 0 ? ctx->silence : in->ch[ich];
         uint8_t       *po= out->ch[ch];
         uint8_t *end= po + os*len;
         if(!po)
             continue;
-        ctx->conv_f(po, pi, is, os, end);
+        ctx->conv_f(po+off*os, pi+off*is, is, os, end);
     }
     return 0;
 }
