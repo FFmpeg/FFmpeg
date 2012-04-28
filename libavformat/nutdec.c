@@ -904,12 +904,10 @@ static int64_t nut_read_timestamp(AVFormatContext *s, int stream_index,
     av_assert0(nut->last_syncpoint_pos == *pos_arg);
 
     av_log(s, AV_LOG_DEBUG, "return %"PRId64" %"PRId64"\n", pts, back_ptr);
-    if (stream_index == -1)
-        return pts;
-    else if (stream_index == -2)
+    if (stream_index == -2)
         return back_ptr;
-
-    av_assert0(0);
+    av_assert0(stream_index == -1);
+    return pts;
 }
 
 static int read_seek(AVFormatContext *s, int stream_index,
