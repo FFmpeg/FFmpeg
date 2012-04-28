@@ -56,6 +56,20 @@ AVFilterBufferRef *avfilter_get_video_buffer_ref_from_frame(const AVFrame *frame
     return picref;
 }
 
+AVFilterBufferRef *avfilter_get_audio_buffer_ref_from_frame(const AVFrame *frame,
+                                                            int perms)
+{
+    AVFilterBufferRef *picref =
+        avfilter_get_audio_buffer_ref_from_arrays((uint8_t **)frame->data, (int *)frame->linesize, perms,
+                                                  frame->nb_samples, frame->format,
+                                                  av_frame_get_channel_layout(frame),
+                                                  av_sample_fmt_is_planar(frame->format));
+    if (!picref)
+        return NULL;
+    avfilter_copy_frame_props(picref, frame);
+    return picref;
+}
+
 int avfilter_fill_frame_from_audio_buffer_ref(AVFrame *frame,
                                               const AVFilterBufferRef *samplesref)
 {

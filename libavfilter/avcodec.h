@@ -46,6 +46,16 @@ int avfilter_copy_frame_props(AVFilterBufferRef *dst, const AVFrame *src);
  */
 AVFilterBufferRef *avfilter_get_video_buffer_ref_from_frame(const AVFrame *frame, int perms);
 
+
+/**
+ * Create and return a picref reference from the data and properties
+ * contained in frame.
+ *
+ * @param perms permissions to assign to the new buffer reference
+ */
+AVFilterBufferRef *avfilter_get_audio_buffer_ref_from_frame(const AVFrame *frame,
+                                                            int perms);
+
 /**
  * Fill an AVFrame with the information stored in samplesref.
  *
