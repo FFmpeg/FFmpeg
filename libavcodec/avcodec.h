@@ -1267,6 +1267,15 @@ typedef struct AVFrame {
      */
     int64_t channel_layout;
 
+    /**
+     * sample rate of the audio frame
+     * - encoding: unused
+     * - decoding: read by user.
+     * Code outside libavcodec should access this field using:
+     * av_opt_ptr(avcodec_get_frame_class(), frame, "sample_rate")
+     */
+    int sample_rate;
+
 } AVFrame;
 
 struct AVCodecInternal;

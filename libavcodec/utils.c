@@ -1547,6 +1547,8 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
                 frame->format = avctx->sample_fmt;
             if (!frame->channel_layout)
                 frame->channel_layout = avctx->channel_layout;
+            if (!frame->sample_rate)
+                frame->sample_rate = avctx->sample_rate;
         }
 
         avctx->pkt = NULL;
