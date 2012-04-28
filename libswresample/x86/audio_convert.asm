@@ -24,7 +24,7 @@
 SECTION .text
 
 %macro INT16_TO_INT32 1
-cglobal int16_to_int32_%1, 3, 3, 0, dst, src, len
+cglobal int16_to_int32_%1, 3, 3, 3, dst, src, len
     mov srcq, [srcq]
     mov dstq, [dstq]
 %ifidn %1, a
