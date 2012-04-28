@@ -22,6 +22,7 @@
  */
 
 #include "avcodec.h"
+#include "libavutil/opt.h"
 
 int avfilter_copy_frame_props(AVFilterBufferRef *dst, const AVFrame *src)
 {
@@ -38,6 +39,12 @@ int avfilter_copy_frame_props(AVFilterBufferRef *dst, const AVFrame *src)
         dst->video->top_field_first     = src->top_field_first;
         dst->video->key_frame           = src->key_frame;
         dst->video->pict_type           = src->pict_type;
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        dst->audio->sample_rate         = av_frame_get_sample_rate(src);
+        break;
+    default:
+        return AVERROR(ENOSYS);
     }
 
     return 0;
