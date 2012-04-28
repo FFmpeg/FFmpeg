@@ -365,6 +365,7 @@ static int request_frame(AVFilterLink *link)
         break;
     case AVMEDIA_TYPE_AUDIO:
         avfilter_filter_samples(link, avfilter_ref_buffer(buf, ~0));
+        avfilter_unref_buffer(buf);
         break;
     default:
         return AVERROR(ENOSYS);
