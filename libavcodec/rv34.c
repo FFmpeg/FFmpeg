@@ -260,20 +260,15 @@ static inline void decode_subblock1(DCTELEM *dst, int code, GetBitContext *gb, V
     decode_coeff(dst, coeff, 3, gb, vlc, q);
 }
 
-static inline void decode_subblock3(DCTELEM *dst, int code, const int is_block2, GetBitContext *gb, VLC *vlc,
+static inline void decode_subblock3(DCTELEM *dst, int code, GetBitContext *gb, VLC *vlc,
                                     int q_dc, int q_ac1, int q_ac2)
 {
     int flags = modulo_three_table[code];
 
-    decode_coeff(    dst+0*4+0, (flags >> 6)    , 3, gb, vlc, q_dc);
-    if(is_block2){
-        decode_coeff(dst+1*4+0, (flags >> 4) & 3, 2, gb, vlc, q_ac1);
-        decode_coeff(dst+0*4+1, (flags >> 2) & 3, 2, gb, vlc, q_ac1);
-    }else{
-        decode_coeff(dst+0*4+1, (flags >> 4) & 3, 2, gb, vlc, q_ac1);
-        decode_coeff(dst+1*4+0, (flags >> 2) & 3, 2, gb, vlc, q_ac1);
-    }
-    decode_coeff(    dst+1*4+1, (flags >> 0) & 3, 2, gb, vlc, q_ac2);
+    decode_coeff(dst+0*4+0, (flags >> 6)    , 3, gb, vlc, q_dc);
+    decode_coeff(dst+0*4+1, (flags >> 4) & 3, 2, gb, vlc, q_ac1);
+    decode_coeff(dst+1*4+0, (flags >> 2) & 3, 2, gb, vlc, q_ac1);
+    decode_coeff(dst+1*4+1, (flags >> 0) & 3, 2, gb, vlc, q_ac2);
 }
 
 /**
@@ -287,7 +282,7 @@ static inline void decode_subblock3(DCTELEM *dst, int code, const int is_block2,
  *  o--o
  */
 
-static inline int rv34_decode_block(DCTELEM *dst, GetBitContext *gb, RV34VLC *rvlc, int fc, int sc, int q_dc, int q_ac1, int q_ac2)
+static int rv34_decode_block(DCTELEM *dst, GetBitContext *gb, RV34VLC *rvlc, int fc, int sc, int q_dc, int q_ac1, int q_ac2)
 {
     int code, pattern, has_ac = 1;
 
@@ -298,7 +293,7 @@ static inline int rv34_decode_block(DCTELEM *dst, GetBitContext *gb, RV34VLC *rv
     code >>= 3;
 
     if (modulo_three_table[code] & 0x3F) {
-        decode_subblock3(dst, code, 0, gb, &rvlc->coefficient, q_dc, q_ac1, q_ac2);
+        decode_subblock3(dst, code, gb, &rvlc->coefficient, q_dc, q_ac1, q_ac2);
     } else {
         decode_subblock1(dst, code, gb, &rvlc->coefficient, q_dc);
         if (!pattern)
@@ -318,7 +313,7 @@ static inline int rv34_decode_block(DCTELEM *dst, GetBitContext *gb, RV34VLC *rv
         code = get_vlc2(gb, rvlc->third_pattern[sc].table, 9, 2);
         decode_subblock(dst + 4*2+2, code, 0, gb, &rvlc->coefficient, q_ac2);
     }
-    return has_ac || pattern;
+    return has_ac | pattern;
 }
 
 /**

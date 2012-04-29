@@ -3043,7 +3043,7 @@ static void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
     const int bit_depth      = avctx->bits_per_raw_sample;
     const int high_bit_depth = bit_depth > 8;
 
-    if (mm_flags & AV_CPU_FLAG_3DNOW) {
+    if (!(mm_flags & AV_CPU_FLAG_SSE2SLOW)) {
         // these functions are slower than mmx on AMD, but faster on Intel
         if (!high_bit_depth) {
             c->put_pixels_tab[0][0]        = put_pixels16_sse2;
