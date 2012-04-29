@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFILTER_VSINK_BUFFER_H
-#define AVFILTER_VSINK_BUFFER_H
+#ifndef AVFILTER_BUFFERSINK_H
+#define AVFILTER_BUFFERSINK_H
 
 /**
  * @file
@@ -98,4 +98,4 @@ int av_vsink_buffer_get_video_buffer_ref(AVFilterContext *buffer_sink,
                                          AVFilterBufferRef **picref, int flags);
 #endif
 
-#endif /* AVFILTER_VSINK_BUFFER_H */
+#endif /* AVFILTER_BUFFERSINK_H */
