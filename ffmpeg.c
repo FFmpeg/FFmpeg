@@ -546,12 +546,13 @@ static int alloc_buffer(InputStream *ist, AVCodecContext *s, FrameBuffer **pbuf)
     if (!buf)
         return AVERROR(ENOMEM);
 
+    avcodec_align_dimensions(s, &w, &h);
+
     if (!(s->flags & CODEC_FLAG_EMU_EDGE)) {
         w += 2*edge;
         h += 2*edge;
     }
 
-    avcodec_align_dimensions(s, &w, &h);
     if ((ret = av_image_alloc(buf->base, buf->linesize, w, h,
                               s->pix_fmt, 32)) < 0) {
         av_freep(&buf);
