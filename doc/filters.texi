@@ -2801,6 +2801,13 @@ even frames, generating a frame with unchanged height at half framerate.
 @item 5
 Interleave the lower field from odd frames with the upper field from
 even frames, generating a frame with unchanged height at half framerate.
+
+@item 6
+Double frame rate with unchanged height. Frames are inserted each
+containing the second temporal field from the previous input frame and
+the first temporal field from the next input frame. This mode relies on
+the top_field_first flag. Useful for interlaced video displays with no
+field synchronisation.
 @end table
 
 Default mode is 0.

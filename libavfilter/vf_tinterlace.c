@@ -68,9 +68,9 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     if (args) {
         n = sscanf(args, "%d", &tinterlace->mode);
 
-        if (n != 1 || tinterlace->mode < 0 || tinterlace->mode > 5) {
+        if (n != 1 || tinterlace->mode < 0 || tinterlace->mode > 6) {
             av_log(ctx, AV_LOG_ERROR,
-                   "Invalid mode '%s', use an integer between 0 and 5\n", args);
+                   "Invalid mode '%s', use an integer between 0 and 6\n", args);
             return AVERROR(EINVAL);
         }
     }
@@ -252,6 +252,31 @@ static void end_frame(AVFilterLink *inlink)
                            inlink->format, inlink->w, inlink->h,
                            tff ? FIELD_LOWER : FIELD_UPPER, 1, tff ? FIELD_LOWER : FIELD_UPPER);
         avfilter_unref_bufferp(&tinterlace->next);
+        break;
+    case 6: /* re-interlace preserving image height, double frame rate */
+        /* output current frame first */
+        out = avfilter_ref_buffer(cur, AV_PERM_READ);
+
+        avfilter_start_frame(outlink, out);
+        avfilter_draw_slice(outlink, 0, outlink->h, 1);
+        avfilter_end_frame(outlink);
+
+        /* output mix of current and next frame */
+        tff = next->video->top_field_first;
+        out = avfilter_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+        avfilter_copy_buffer_ref_props(out, next);
+        out->video->interlaced = 1;
+
+        /* write current frame second field lines into the second field of the new frame */
+        copy_picture_field(out->data, out->linesize,
+                           cur->data, cur->linesize,
+                           inlink->format, inlink->w, inlink->h,
+                           tff ? FIELD_LOWER : FIELD_UPPER, 1, tff ? FIELD_LOWER : FIELD_UPPER);
+        /* write next frame first field lines into the first field of the new frame */
+        copy_picture_field(out->data, out->linesize,
+                           next->data, next->linesize,
+                           inlink->format, inlink->w, inlink->h,
+                           tff ? FIELD_UPPER : FIELD_LOWER, 1, tff ? FIELD_UPPER : FIELD_LOWER);
         break;
     }
 
