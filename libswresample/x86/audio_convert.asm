@@ -194,14 +194,45 @@ float_to_int16_u_int %+ SUFFIX
     REP_RET
 %endmacro
 
+%macro INT32_TO_INT16 1
+cglobal int32_to_int16_%1, 3, 3, 2, dst, src, len
+    mov srcq, [srcq]
+    mov dstq, [dstq]
+%ifidn %1, a
+    test dstq, mmsize-1
+        jne int32_to_int16_u_int %+ SUFFIX
+    test srcq, mmsize-1
+        jne int32_to_int16_u_int %+ SUFFIX
+%else
+int32_to_int16_u_int %+ SUFFIX
+%endif
+    lea     srcq, [srcq + 2*lenq]
+    add     dstq, lenq
+    neg     lenq
+.next:
+    mov%1     m0, [         srcq+2*lenq]
+    mov%1     m1, [mmsize + srcq+2*lenq]
+    psrad     m0, 16
+    psrad     m1, 16
+    packssdw  m0, m1
+    mov%1 [         dstq+lenq], m0
+    add lenq, mmsize
+        jl .next
+    REP_RET
+%endmacro
+
 
 INIT_MMX mmx
 INT16_TO_INT32 u
 INT16_TO_INT32 a
+INT32_TO_INT16 u
+INT32_TO_INT16 a
 
 INIT_XMM sse
 INT16_TO_INT32 u
 INT16_TO_INT32 a
+INT32_TO_INT16 u
+INT32_TO_INT16 a
 
 INIT_XMM sse2
 INT32_TO_FLOAT u
