@@ -83,6 +83,9 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
     if ((ret = avctx->get_buffer(avctx, p)) < 0)
         return ret;
 
+    // goto start of image data
+    ptr += strcspn(ptr, "{") + 1;
+
     linesize = (avctx->width + 7) / 8;
     for (i = 0; i < avctx->height; i++) {
         dst = p->data[0] + i * p->linesize[0];
