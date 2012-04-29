@@ -57,7 +57,6 @@ struct SwrContext {
     int linear_interp;                              /**< if 1 then the resampling FIR filter will be linearly interpolated */
     double cutoff;                                  /**< resampling cutoff frequency. 1.0 corresponds to half the output sample rate */
 
-    int int_bps;                                    ///< internal bytes per sample
     int resample_first;                             ///< 1 if resampling must come first, 0 if rematrixing
     int rematrix;                                   ///< flag to indicate if rematrixing is needed (basically if input and output layouts mismatch)
     int rematrix_custom;                            ///< flag to indicate that a custom matrix has been defined

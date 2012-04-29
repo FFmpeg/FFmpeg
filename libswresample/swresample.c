@@ -153,6 +153,10 @@ struct SwrContext *swr_alloc_set_opts(struct SwrContext *s,
     return s;
 }
 
+static void set_audiodata_fmt(AudioData *a, enum AVSampleFormat fmt){
+    a->bps   = av_get_bytes_per_sample(fmt);
+    a->planar= av_sample_fmt_is_planar(fmt);
+}
 
 static void free_temp(AudioData *a){
     av_free(a->data);
@@ -191,9 +195,6 @@ int swr_init(struct SwrContext *s){
 
     s->flushed = 0;
 
-    s-> in.planar= av_sample_fmt_is_planar(s-> in_sample_fmt);
-    s->out.planar= av_sample_fmt_is_planar(s->out_sample_fmt);
-
     if(s-> in_sample_fmt >= AV_SAMPLE_FMT_NB){
         av_log(s, AV_LOG_ERROR, "Requested input sample format %d is invalid\n", s->in_sample_fmt);
         return AVERROR(EINVAL);
@@ -215,6 +216,9 @@ int swr_init(struct SwrContext *s){
         av_log(s, AV_LOG_ERROR, "Requested sample format %s is not supported internally, S16/S32/FLT is supported\n", av_get_sample_fmt_name(s->int_sample_fmt));
         return AVERROR(EINVAL);
     }
+
+    set_audiodata_fmt(&s-> in, s-> in_sample_fmt);
+    set_audiodata_fmt(&s->out, s->out_sample_fmt);
 
     if (s->out_sample_rate!=s->in_sample_rate || (s->flags & SWR_FLAG_RESAMPLE)){
         s->resample = swri_resample_init(s->resample, s->out_sample_rate, s->in_sample_rate, s->filter_size, s->phase_shift, s->linear_interp, s->cutoff, s->int_sample_fmt);
@@ -267,9 +271,6 @@ av_assert0(s->used_ch_count);
 av_assert0(s->out.ch_count);
     s->resample_first= RSC*s->out.ch_count/s->in.ch_count - RSC < s->out_sample_rate/(float)s-> in_sample_rate - 1.0;
 
-    s-> in.bps= av_get_bytes_per_sample(s-> in_sample_fmt);
-    s->int_bps= av_get_bytes_per_sample(s->int_sample_fmt);
-    s->out.bps= av_get_bytes_per_sample(s->out_sample_fmt);
     s->in_buffer= s->in;
 
     if(!s->resample && !s->rematrix && !s->channel_map){
@@ -300,12 +301,12 @@ av_assert0(s->out.ch_count);
             s->in_buffer.ch_count = s->out.ch_count;
     }
 
-    s->postin.bps    = s->midbuf.bps    = s->preout.bps    =  s->int_bps;
-    s->postin.planar = s->midbuf.planar = s->preout.planar =  1;
+    set_audiodata_fmt(&s->postin, s->int_sample_fmt);
+    set_audiodata_fmt(&s->midbuf, s->int_sample_fmt);
+    set_audiodata_fmt(&s->preout, s->int_sample_fmt);
 
     if(s->resample){
-        s->in_buffer.bps    = s->int_bps;
-        s->in_buffer.planar = 1;
+        set_audiodata_fmt(&s->in_buffer, s->int_sample_fmt);
     }
 
     s->dither = s->preout;
