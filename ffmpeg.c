@@ -2570,7 +2570,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
     AVFrame *decoded_frame;
     void *buffer_to_free = NULL;
     int i, ret = 0, resample_changed;
-    int64_t *best_effort_timestamp;
+    int64_t best_effort_timestamp;
     AVRational *frame_sample_aspect;
     float quality;
 
@@ -2599,9 +2599,9 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
         return ret;
     }
 
-    best_effort_timestamp= av_opt_ptr(avcodec_get_frame_class(), decoded_frame, "best_effort_timestamp");
-    if(*best_effort_timestamp != AV_NOPTS_VALUE)
-        ist->next_pts = ist->pts = decoded_frame->pts = *best_effort_timestamp;
+    best_effort_timestamp= av_frame_get_best_effort_timestamp(decoded_frame);
+    if(best_effort_timestamp != AV_NOPTS_VALUE)
+        ist->next_pts = ist->pts = decoded_frame->pts = best_effort_timestamp;
 
     pkt->size = 0;
 
