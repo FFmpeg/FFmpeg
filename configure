@@ -2462,7 +2462,6 @@ case $target_os in
         oss_outdev_extralibs="-lossaudio"
         ;;
     openbsd)
-        enable malloc_aligned
         # On OpenBSD 4.5. the compiler does not use PIC unless
         # explicitly using -fPIC. Libav builds fine without PIC,
         # however the generated executable will not do anything
@@ -2475,17 +2474,14 @@ case $target_os in
         oss_outdev_extralibs="-lossaudio"
         ;;
     dragonfly)
-        enable malloc_aligned
         disable symver
         ;;
     freebsd)
-        enable malloc_aligned
         ;;
     bsd/os)
         add_extralibs -lpoll -lgnugetopt
         ;;
     darwin)
-        enable malloc_aligned
         gas="gas-preprocessor.pl $cc"
         enabled ppc && add_asflags -force_cpusubtype_ALL
         SHFLAGS='-dynamiclib -Wl,-single_module -Wl,-install_name,$(SHLIBDIR)/$(SLIBNAME_WITH_MAJOR),-current_version,$(LIBVERSION),-compatibility_version,$(LIBMAJOR)'
@@ -2508,7 +2504,6 @@ case $target_os in
         fi
         LIBTARGET=i386
         if enabled x86_64; then
-            enable malloc_aligned
             LIBTARGET="i386:x86-64"
         elif enabled arm; then
             LIBTARGET=arm-wince
@@ -3188,7 +3183,7 @@ check_deps $CONFIG_LIST       \
 
 enabled asm || { arch=c; disable $ARCH_LIST $ARCH_EXT_LIST; }
 
-! enabled_any memalign posix_memalign malloc_aligned &&
+! enabled_any memalign posix_memalign &&
     enabled_any $need_memalign && enable memalign_hack
 
 echo "install prefix            $prefix"
