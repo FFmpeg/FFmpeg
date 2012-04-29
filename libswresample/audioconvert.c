@@ -107,6 +107,10 @@ static conv_func_type * const fmt_pair_to_conv_functions[AV_SAMPLE_FMT_NB*AV_SAM
     FMT_PAIR_FUNC(AV_SAMPLE_FMT_DBL, AV_SAMPLE_FMT_DBL),
 };
 
+static void cpy(uint8_t **dst, const uint8_t **src, int len){
+    memcpy(*dst, *src, len);
+}
+
 AudioConvert *swri_audio_convert_alloc(enum AVSampleFormat out_fmt,
                                        enum AVSampleFormat in_fmt,
                                        int channels, const int *ch_map,
@@ -125,6 +129,9 @@ AudioConvert *swri_audio_convert_alloc(enum AVSampleFormat out_fmt,
     ctx->ch_map   = ch_map;
     if (in_fmt == AV_SAMPLE_FMT_U8)
         memset(ctx->silence, 0x80, sizeof(ctx->silence));
+
+    if(out_fmt == in_fmt && !ch_map)
+        ctx->simd_f = cpy;
 
     if(HAVE_YASM && HAVE_MMX) swri_audio_convert_init_x86(ctx, out_fmt, in_fmt, channels);
 
