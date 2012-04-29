@@ -57,8 +57,10 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
         int number, len;
 
         ptr += strcspn(ptr, "#");
-        if (sscanf(ptr, "#define %256s %u", name, &number) != 2)
+        if (sscanf(ptr, "#define %256s %u", name, &number) != 2) {
+            av_log(avctx, AV_LOG_ERROR, "Unexpected preprocessor directive\n");
             return AVERROR_INVALIDDATA;
+        }
 
         len = strlen(name);
         if ((len > 6) && !avctx->height && !memcmp(name + len - 7, "_height", 7)) {
@@ -66,6 +68,7 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
         } else if ((len > 5) && !avctx->width && !memcmp(name + len - 6, "_width", 6)) {
                 avctx->width = number;
         } else {
+            av_log(avctx, AV_LOG_ERROR, "Unknown define '%s'\n", name);
             return AVERROR_INVALIDDATA;
         }
         ptr += strcspn(ptr, "\n\r") + 1;
@@ -94,6 +97,7 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
                     val = (val << 4) + convert(*ptr);
                 *dst++ = av_reverse[val];
             } else {
+                av_log(avctx, AV_LOG_ERROR, "Unexpected data at '%.8s'\n", ptr);
                 return AVERROR_INVALIDDATA;
             }
         }
