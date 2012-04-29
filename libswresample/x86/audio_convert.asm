@@ -24,6 +24,7 @@
 SECTION_RODATA
 
 flt2pm31: times 8 dd 4.6566129e-10
+flt2p31 : times 8 dd 2147483648.0
 
 SECTION .text
 
@@ -128,6 +129,40 @@ int16_to_float_u_int %+ SUFFIX
     REP_RET
 %endmacro
 
+%macro FLOAT_TO_INT32 1
+cglobal float_to_int32_%1, 3, 3, 5, dst, src, len
+    mov srcq, [srcq]
+    mov dstq, [dstq]
+%ifidn %1, a
+    test dstq, mmsize-1
+        jne float_to_int32_u_int %+ SUFFIX
+    test srcq, mmsize-1
+        jne float_to_int32_u_int %+ SUFFIX
+%else
+float_to_int32_u_int %+ SUFFIX
+%endif
+    add     srcq, lenq
+    add     dstq, lenq
+    neg     lenq
+    mova      m2, [flt2p31]
+.next:
+    mov%1     m0, [         srcq+lenq]
+    mov%1     m1, [mmsize + srcq+lenq]
+    mulps m0, m2
+    mulps m1, m2
+    cvtps2dq  m3, m0
+    cvtps2dq  m4, m1
+    cmpnltps m0, m2
+    cmpnltps m1, m2
+    paddd m0, m3
+    paddd m1, m4
+    mov%1 [         dstq+lenq], m0
+    mov%1 [mmsize + dstq+lenq], m1
+    add lenq, 2*mmsize
+        jl .next
+    REP_RET
+%endmacro
+
 
 INIT_MMX mmx
 INT16_TO_INT32 u
@@ -142,3 +177,5 @@ INT32_TO_FLOAT u
 INT32_TO_FLOAT a
 INT16_TO_FLOAT u
 INT16_TO_FLOAT a
+FLOAT_TO_INT32 u
+FLOAT_TO_INT32 a
