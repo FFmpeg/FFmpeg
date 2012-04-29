@@ -1500,7 +1500,7 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
         int ret = 1;
 
         if (decoder_reorder_pts == -1) {
-            *pts = *(int64_t*)av_opt_ptr(avcodec_get_frame_class(), frame, "best_effort_timestamp");
+            *pts = av_frame_get_best_effort_timestamp(frame);
         } else if (decoder_reorder_pts) {
             *pts = frame->pkt_pts;
         } else {
