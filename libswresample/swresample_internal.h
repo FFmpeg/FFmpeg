@@ -30,6 +30,7 @@ typedef struct AudioData{
     int bps;                    ///< bytes per sample
     int count;                  ///< number of samples
     int planar;                 ///< 1 if planar audio, 0 otherwise
+    enum AVSampleFormat fmt;    ///< sample format
 } AudioData;
 
 struct SwrContext {

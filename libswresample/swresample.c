@@ -154,6 +154,7 @@ struct SwrContext *swr_alloc_set_opts(struct SwrContext *s,
 }
 
 static void set_audiodata_fmt(AudioData *a, enum AVSampleFormat fmt){
+    a->fmt   = fmt;
     a->bps   = av_get_bytes_per_sample(fmt);
     a->planar= av_sample_fmt_is_planar(fmt);
 }
