@@ -2778,31 +2778,31 @@ This filter accepts a single parameter specifying the mode. Available
 modes are:
 
 @table @samp
-@item 0
+@item merge, 0
 Move odd frames into the upper field, even into the lower field,
 generating a double height frame at half framerate.
 
-@item 1
+@item drop_odd, 1
 Only output even frames, odd frames are dropped, generating a frame with
 unchanged height at half framerate.
 
-@item 2
+@item drop_even, 2
 Only output odd frames, even frames are dropped, generating a frame with
 unchanged height at half framerate.
 
-@item 3
+@item pad, 3
 Expand each frame to full height, but pad alternate lines with black,
 generating a frame with double height at the same input framerate.
 
-@item 4
+@item interleave_top, 4
 Interleave the upper field from odd frames with the lower field from
 even frames, generating a frame with unchanged height at half framerate.
 
-@item 5
+@item interleave_bottom, 5
 Interleave the lower field from odd frames with the upper field from
 even frames, generating a frame with unchanged height at half framerate.
 
-@item 6
+@item interlacex2, 6
 Double frame rate with unchanged height. Frames are inserted each
 containing the second temporal field from the previous input frame and
 the first temporal field from the next input frame. This mode relies on
@@ -2810,7 +2810,10 @@ the top_field_first flag. Useful for interlaced video displays with no
 field synchronisation.
 @end table
 
-Default mode is 0.
+Numeric values are deprecated but are accepted for backward
+compatibility reasons.
+
+Default mode is @code{merge}.
 
 @section transpose
 

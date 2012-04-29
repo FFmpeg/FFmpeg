@@ -29,8 +29,29 @@
 #include "avfilter.h"
 #include "internal.h"
 
+enum TInterlaceMode {
+    MODE_MERGE = 0,
+    MODE_DROP_EVEN,
+    MODE_DROP_ODD,
+    MODE_PAD,
+    MODE_INTERLEAVE_TOP,
+    MODE_INTERLEAVE_BOTTOM,
+    MODE_INTERLACEX2,
+};
+
+static const char *tinterlace_mode_str[] = {
+    "merge",
+    "drop_even",
+    "drop_odd",
+    "pad",
+    "interleave_top",
+    "interleave_bottom",
+    "interlacex2",
+    NULL
+};
+
 typedef struct {
-    int mode;                   ///< interlace mode selected
+    enum TInterlaceMode mode;   ///< interlace mode selected
     int frame;                  ///< number of the output frame
     int vsub;                   ///< chroma vertical subsampling
     AVFilterBufferRef *cur;
@@ -62,16 +83,32 @@ static int query_formats(AVFilterContext *ctx)
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     TInterlaceContext *tinterlace = ctx->priv;
-    int n;
-    tinterlace->mode = 0;
+    int i;
+    char c;
+
+    tinterlace->mode = MODE_MERGE;
 
     if (args) {
-        n = sscanf(args, "%d", &tinterlace->mode);
+        if (sscanf(args, "%d%c", (int *)&tinterlace->mode, &c) == 1) {
+            if (tinterlace->mode > 6) {
+                av_log(ctx, AV_LOG_ERROR,
+                       "Invalid mode '%s', use an integer between 0 and 6\n", args);
+                return AVERROR(EINVAL);
+            }
 
-        if (n != 1 || tinterlace->mode < 0 || tinterlace->mode > 6) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "Invalid mode '%s', use an integer between 0 and 6\n", args);
-            return AVERROR(EINVAL);
+            av_log(ctx, AV_LOG_WARNING,
+                   "Using numeric constant is deprecated, use symbolic values\n");
+        } else {
+            for (i = 0; tinterlace_mode_str[i]; i++) {
+                if (!strcmp(tinterlace_mode_str[i], args)) {
+                    tinterlace->mode = i;
+                    break;
+                }
+            }
+            if (!tinterlace_mode_str[i]) {
+                av_log(ctx, AV_LOG_ERROR, "Invalid argument '%s'\n", args);
+                return AVERROR(EINVAL);
+            }
         }
     }
 
@@ -97,10 +134,10 @@ static int config_out_props(AVFilterLink *outlink)
 
     tinterlace->vsub = desc->log2_chroma_h;
     outlink->w = inlink->w;
-    outlink->h = tinterlace->mode == 0 || tinterlace->mode == 3 ?
+    outlink->h = tinterlace->mode == MODE_MERGE || tinterlace->mode == MODE_PAD ?
         inlink->h*2 : inlink->h;
 
-    if (tinterlace->mode == 3) {
+    if (tinterlace->mode == MODE_PAD) {
         uint8_t black[4] = { 16, 128, 128, 16 };
         int i, ret;
         if (ff_fmt_is_in(outlink->format, full_scale_yuvj_pix_fmts))
@@ -117,8 +154,8 @@ static int config_out_props(AVFilterLink *outlink)
                    tinterlace->black_linesize[i] * h);
         }
     }
-    av_log(ctx, AV_LOG_INFO, "mode:%d h:%d -> h:%d\n",
-           tinterlace->mode, inlink->h, outlink->h);
+    av_log(ctx, AV_LOG_INFO, "mode:%s h:%d -> h:%d\n",
+           tinterlace_mode_str[tinterlace->mode], inlink->h, outlink->h);
 
     return 0;
 }
@@ -185,7 +222,7 @@ static void end_frame(AVFilterLink *inlink)
         return;
 
     switch (tinterlace->mode) {
-    case 0: /* move the odd frame into the upper field of the new image, even into
+    case MODE_MERGE: /* move the odd frame into the upper field of the new image, even into
              * the lower field, generating a double-height video at half framerate */
         out = avfilter_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
         avfilter_copy_buffer_ref_props(out, cur);
@@ -206,14 +243,14 @@ static void end_frame(AVFilterLink *inlink)
         avfilter_unref_bufferp(&tinterlace->next);
         break;
 
-    case 1: /* only output even frames, odd  frames are dropped; height unchanged, half framerate */
-    case 2: /* only output odd  frames, even frames are dropped; height unchanged, half framerate */
-        out = avfilter_ref_buffer(tinterlace->mode == 2 ? cur : next, AV_PERM_READ);
+    case MODE_DROP_ODD:  /* only output even frames, odd  frames are dropped; height unchanged, half framerate */
+    case MODE_DROP_EVEN: /* only output odd  frames, even frames are dropped; height unchanged, half framerate */
+        out = avfilter_ref_buffer(tinterlace->mode == MODE_DROP_EVEN ? cur : next, AV_PERM_READ);
         avfilter_unref_bufferp(&tinterlace->next);
         break;
 
-    case 3: /* expand each frame to double height, but pad alternate
-             * lines with black; framerate unchanged */
+    case MODE_PAD: /* expand each frame to double height, but pad alternate
+                    * lines with black; framerate unchanged */
         out = avfilter_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
         avfilter_copy_buffer_ref_props(out, cur);
         out->video->h = outlink->h;
@@ -233,9 +270,9 @@ static void end_frame(AVFilterLink *inlink)
 
         /* interleave upper/lower lines from odd frames with lower/upper lines from even frames,
          * halving the frame rate and preserving image height */
-    case 4: /* top    field first */
-    case 5: /* bottom field first */
-        tff = tinterlace->mode == 4;
+    case MODE_INTERLEAVE_TOP:    /* top    field first */
+    case MODE_INTERLEAVE_BOTTOM: /* bottom field first */
+        tff = tinterlace->mode == MODE_INTERLEAVE_TOP;
         out = avfilter_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
         avfilter_copy_buffer_ref_props(out, cur);
         out->video->interlaced = 1;
@@ -253,7 +290,7 @@ static void end_frame(AVFilterLink *inlink)
                            tff ? FIELD_LOWER : FIELD_UPPER, 1, tff ? FIELD_LOWER : FIELD_UPPER);
         avfilter_unref_bufferp(&tinterlace->next);
         break;
-    case 6: /* re-interlace preserving image height, double frame rate */
+    case MODE_INTERLACEX2: /* re-interlace preserving image height, double frame rate */
         /* output current frame first */
         out = avfilter_ref_buffer(cur, AV_PERM_READ);
         out->video->interlaced = 1;
