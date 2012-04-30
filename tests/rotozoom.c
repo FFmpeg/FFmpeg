@@ -160,8 +160,8 @@ static void pgmyuv_save(const char *filename, int w, int h,
     free(cr_tab);
 }
 
-unsigned char *rgb_tab;
-int width, height, wrap;
+static unsigned char *rgb_tab;
+static int width, height, wrap;
 
 static void put_pixel(int x, int y, int r, int g, int b)
 {
@@ -177,12 +177,12 @@ static void put_pixel(int x, int y, int r, int g, int b)
     p[2] = b;
 }
 
-unsigned char tab_r[256 * 256];
-unsigned char tab_g[256 * 256];
-unsigned char tab_b[256 * 256];
+static unsigned char tab_r[256 * 256];
+static unsigned char tab_g[256 * 256];
+static unsigned char tab_b[256 * 256];
 
-int h_cos[360];
-int h_sin[360];
+static int h_cos[360];
+static int h_sin[360];
 
 static int ipol(uint8_t *src, int x, int y)
 {

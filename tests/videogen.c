@@ -137,8 +137,8 @@ static void pgmyuv_save(const char *filename, int w, int h,
     free(cr_tab);
 }
 
-unsigned char *rgb_tab;
-int width, height, wrap;
+static unsigned char *rgb_tab;
+static int width, height, wrap;
 
 static void put_pixel(int x, int y, int r, int g, int b)
 {
@@ -200,9 +200,9 @@ typedef struct VObj {
     int r, g, b;
 } VObj;
 
-VObj objs[NB_OBJS];
+static VObj objs[NB_OBJS];
 
-unsigned int seed = 1;
+static unsigned int seed = 1;
 
 static void gen_image(int num, int w, int h)
 {
