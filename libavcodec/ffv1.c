@@ -165,6 +165,7 @@ typedef struct PlaneContext{
 #define MAX_SLICES 256
 
 typedef struct FFV1Context{
+    AVClass *class;
     AVCodecContext *avctx;
     RangeCoder c;
     GetBitContext gb;
