@@ -294,7 +294,7 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
     AVFilterBufferRef *inpic  = inlink ->cur_buf;
     AVFilterBufferRef *outpic = outlink->out_buf;
     uint8_t *inrow, *outrow, *inrow0, *outrow0;
-    int i, j, k, plane;
+    int i, j, plane;
 
     if (lut->is_rgb) {
         /* packed */
