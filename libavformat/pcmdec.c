@@ -36,6 +36,7 @@ static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     ret= av_get_packet(s->pb, pkt, size);
 
+    pkt->flags &= ~AV_PKT_FLAG_CORRUPT;
     pkt->stream_index = 0;
     if (ret < 0)
         return ret;

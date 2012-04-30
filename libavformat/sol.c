@@ -133,6 +133,7 @@ static int sol_read_packet(AVFormatContext *s,
     ret= av_get_packet(s->pb, pkt, MAX_SIZE);
     if (ret < 0)
         return ret;
+    pkt->flags &= ~AV_PKT_FLAG_CORRUPT;
     pkt->stream_index = 0;
 
     /* note: we need to modify the packet size here to handle the last

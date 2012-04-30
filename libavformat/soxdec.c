@@ -138,6 +138,7 @@ static int sox_read_packet(AVFormatContext *s,
     ret = av_get_packet(s->pb, pkt, size);
     if (ret < 0)
         return AVERROR(EIO);
+    pkt->flags &= ~AV_PKT_FLAG_CORRUPT;
     pkt->stream_index = 0;
     pkt->size = ret;
 

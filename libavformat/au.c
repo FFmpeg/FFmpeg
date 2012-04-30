@@ -187,6 +187,7 @@ static int au_read_packet(AVFormatContext *s,
                        av_get_bits_per_sample(s->streams[0]->codec->codec_id) >> 3);
     if (ret < 0)
         return ret;
+    pkt->flags &= ~AV_PKT_FLAG_CORRUPT;
     pkt->stream_index = 0;
 
     /* note: we need to modify the packet size here to handle the last

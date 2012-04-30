@@ -322,6 +322,8 @@ static int aiff_read_packet(AVFormatContext *s,
     if (res < 0)
         return res;
 
+    if (size >= st->codec->block_align)
+        pkt->flags &= ~AV_PKT_FLAG_CORRUPT;
     /* Only one stream in an AIFF file */
     pkt->stream_index = 0;
     pkt->duration     = (res / st->codec->block_align) * aiff->block_duration;

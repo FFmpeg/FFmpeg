@@ -80,6 +80,7 @@ static int rso_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (ret < 0)
         return ret;
 
+    pkt->flags &= ~AV_PKT_FLAG_CORRUPT;
     pkt->stream_index = 0;
 
     /* note: we need to modify the packet size here to handle the last packet */
