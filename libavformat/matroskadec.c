@@ -1849,7 +1849,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
 
     if ((n = matroska_ebmlnum_uint(matroska, data, size, &num)) < 0) {
         av_log(matroska->ctx, AV_LOG_ERROR, "EBML block data error\n");
-        return AVERROR_INVALIDDATA;
+        return n;
     }
     data += n;
     size -= n;
