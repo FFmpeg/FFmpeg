@@ -256,6 +256,7 @@ static void end_frame(AVFilterLink *inlink)
     case 6: /* re-interlace preserving image height, double frame rate */
         /* output current frame first */
         out = avfilter_ref_buffer(cur, AV_PERM_READ);
+        out->video->interlaced = 1;
 
         avfilter_start_frame(outlink, out);
         avfilter_draw_slice(outlink, 0, outlink->h, 1);
