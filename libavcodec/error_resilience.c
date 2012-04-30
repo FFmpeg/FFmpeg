@@ -48,6 +48,8 @@ static void decode_mb(MpegEncContext *s, int ref)
 
     ff_init_block_index(s);
     ff_update_block_index(s);
+    s->dest[1] += (16 >> s->chroma_x_shift) - 8;
+    s->dest[2] += (16 >> s->chroma_x_shift) - 8;
 
     if (CONFIG_H264_DECODER && s->codec_id == CODEC_ID_H264) {
         H264Context *h = (void*)s;
