@@ -2247,10 +2247,18 @@ static void parse_forced_key_frames(char *kf, OutputStream *ost,
         av_log(NULL, AV_LOG_FATAL, "Could not allocate forced key frames array.\n");
         exit_program(1);
     }
+
+    p = kf;
     for (i = 0; i < n; i++) {
-        p = i ? strchr(p, ',') + 1 : kf;
+        char *next = strchr(p, ',');
+
+        if (next)
+            *next++ = 0;
+
         t = parse_time_or_die("force_key_frames", p, 1);
         ost->forced_kf_pts[i] = av_rescale_q(t, AV_TIME_BASE_Q, avctx->time_base);
+
+        p = next;
     }
 }
 
