@@ -36,6 +36,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/avassert.h"
 #include "libavutil/crc.h"
+#include "libavutil/opt.h"
 
 #ifdef __INTEL_COMPILER
 #undef av_flatten
@@ -903,7 +904,10 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     if(avctx->level == 3){
         s->version = 3;
-        s->ec = 1;
+    }
+
+    if(s->ec < 0){
+        s->ec = (s->version >= 3);
     }
 
     if(s->version >= 2 && avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
@@ -2028,6 +2032,21 @@ AVCodec ff_ffv1_decoder = {
 };
 
 #if CONFIG_FFV1_ENCODER
+
+#define OFFSET(x) offsetof(FFV1Context, x)
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "slicecrc",        "Protect slices with CRCs",               OFFSET(ec),              AV_OPT_TYPE_INT, {-1}, -1, 1, VE},
+{NULL}
+};
+
+static const AVClass class = {
+    .class_name = "ffv1 encoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_ffv1_encoder = {
     .name           = "ffv1",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -2039,5 +2058,6 @@ AVCodec ff_ffv1_encoder = {
     .capabilities   = CODEC_CAP_SLICE_THREADS,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUVA420P, PIX_FMT_YUV444P, PIX_FMT_YUVA444P, PIX_FMT_YUV440P, PIX_FMT_YUV422P, PIX_FMT_YUV411P, PIX_FMT_YUV410P, PIX_FMT_0RGB32, PIX_FMT_RGB32, PIX_FMT_YUV420P16, PIX_FMT_YUV422P16, PIX_FMT_YUV444P16, PIX_FMT_YUV444P9, PIX_FMT_YUV422P9, PIX_FMT_YUV420P9, PIX_FMT_YUV420P10, PIX_FMT_YUV422P10, PIX_FMT_YUV444P10, PIX_FMT_GRAY16, PIX_FMT_GRAY8, PIX_FMT_NONE},
     .long_name      = NULL_IF_CONFIG_SMALL("FFmpeg video codec #1"),
+    .priv_class     = &class,
 };
 #endif
