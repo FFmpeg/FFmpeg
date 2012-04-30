@@ -252,7 +252,6 @@ const AVCodecTag ff_codec_movaudio_tags[] = {
     { CODEC_ID_EAC3,            MKTAG('e', 'c', '-', '3') }, /* ETSI TS 102 366 Annex F (only valid in ISOBMFF) */
     { CODEC_ID_DVAUDIO,         MKTAG('v', 'd', 'v', 'a') },
     { CODEC_ID_DVAUDIO,         MKTAG('d', 'v', 'c', 'a') },
-    { CODEC_ID_EAC3,            MKTAG('e', 'c', '-', '3') }, /* ETSI TS 102 366 Annex F (only valid in ISOBMFF) */
     { CODEC_ID_GSM,             MKTAG('a', 'g', 's', 'm') },
     { CODEC_ID_MACE3,           MKTAG('M', 'A', 'C', '3') },
     { CODEC_ID_MACE6,           MKTAG('M', 'A', 'C', '6') },
