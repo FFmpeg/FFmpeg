@@ -268,6 +268,8 @@ int swri_rematrix_init(SwrContext *s){
             for (j = 0; j < nb_in; j++)
                 ((int*)s->native_matrix)[i * nb_in + j] = lrintf(s->matrix[i][j] * 32768);
         *((int*)s->native_one) = 32768;
+        s->mix_1_1_f = copy_s16;
+        s->mix_2_1_f = sum2_s16;
     }else if(s->midbuf.fmt == AV_SAMPLE_FMT_FLTP){
         s->native_matrix = av_mallocz(nb_in * nb_out * sizeof(float));
         s->native_one    = av_mallocz(sizeof(float));
@@ -275,6 +277,8 @@ int swri_rematrix_init(SwrContext *s){
             for (j = 0; j < nb_in; j++)
                 ((float*)s->native_matrix)[i * nb_in + j] = s->matrix[i][j];
         *((float*)s->native_one) = 1.0;
+        s->mix_1_1_f = copy_float;
+        s->mix_2_1_f = sum2_float;
     }else
         av_assert0(0);
     //FIXME quantize for integeres
@@ -288,15 +292,6 @@ int swri_rematrix_init(SwrContext *s){
         s->matrix_ch[i][0]= ch_in;
     }
     return 0;
-}
-
-void swri_sum2(enum AVSampleFormat format, void *dst, const void *src0, const void *src1, float coef0, float coef1, int len){
-    if(format == AV_SAMPLE_FMT_FLTP){
-        sum2_float((float  *)dst, (const float  *)src0, (const float  *)src1, coef0, coef1, len);
-    }else{
-        av_assert1(format == AV_SAMPLE_FMT_S16P);
-        sum2_s16  ((int16_t*)dst, (const int16_t*)src0, (const int16_t*)src1, lrintf(coef0 * 32768), lrintf(coef1 * 32768), len);
-    }
 }
 
 void swri_rematrix_free(SwrContext *s){
@@ -317,19 +312,19 @@ int swri_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int mus
             break;
         case 1:
             in_i= s->matrix_ch[out_i][1];
-            if(mustcopy || s->matrix[out_i][in_i]!=1.0){
-                if(s->int_sample_fmt == AV_SAMPLE_FMT_FLTP){
-                    copy_float((float  *)out->ch[out_i], (const float  *)in->ch[in_i], s->matrix  [out_i][in_i], len);
-                }else
-                    copy_s16  ((int16_t*)out->ch[out_i], (const int16_t*)in->ch[in_i], s->matrix32[out_i][in_i], len);
+            if(s->matrix[out_i][in_i]!=1.0){
+                s->mix_1_1_f(out->ch[out_i], in->ch[in_i], s->native_matrix, in->ch_count*out_i + in_i, len);
+            }else if(mustcopy){
+                memcpy(out->ch[out_i], in->ch[in_i], len*out->bps);
             }else{
                 out->ch[out_i]= in->ch[in_i];
             }
             break;
-        case 2:
-            swri_sum2(s->int_sample_fmt, out->ch[out_i], in->ch[ s->matrix_ch[out_i][1] ],           in->ch[ s->matrix_ch[out_i][2] ],
-                        s->matrix[out_i][ s->matrix_ch[out_i][1] ], s->matrix[out_i][ s->matrix_ch[out_i][2] ], len);
-            break;
+        case 2: {
+            int in_i1 = s->matrix_ch[out_i][1];
+            int in_i2 = s->matrix_ch[out_i][2];
+            s->mix_2_1_f(out->ch[out_i], in->ch[in_i1], in->ch[in_i2], s->native_matrix, in->ch_count*out_i + in_i1, in->ch_count*out_i + in_i2, len);
+            break;}
         default:
             if(s->int_sample_fmt == AV_SAMPLE_FMT_FLTP){
                 for(i=0; i<len; i++){

@@ -314,7 +314,7 @@ av_assert0(s->out.ch_count);
 
     s->dither = s->preout;
 
-    if(s->rematrix)
+    if(s->rematrix || s->dither_method)
         return swri_rematrix_init(s);
 
     return 0;
@@ -554,8 +554,9 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
 
             if(s->dither_pos + out_count > s->dither.count)
                 s->dither_pos = 0;
+
             for(ch=0; ch<preout->ch_count; ch++)
-                swri_sum2(s->int_sample_fmt, preout->ch[ch], preout->ch[ch], s->dither.ch[ch] + s->dither.bps * s->dither_pos, 1, 1, out_count);
+                s->mix_2_1_f(preout->ch[ch], preout->ch[ch], s->dither.ch[ch] + s->dither.bps * s->dither_pos, s->native_one, 0, 0, out_count);
 
             s->dither_pos += out_count;
         }

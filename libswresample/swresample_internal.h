@@ -23,6 +23,9 @@
 
 #include "swresample.h"
 
+typedef void (mix_1_1_func_type)(void *out, const void *in, void *coeffp, int index, int len);
+typedef void (mix_2_1_func_type)(void *out, const void *in1, const void *in2, void *coeffp, int index1, int index2, int len);
+
 typedef struct AudioData{
     uint8_t *ch[SWR_CH_MAX];    ///< samples buffer per channel
     uint8_t *data;              ///< samples buffer
@@ -84,6 +87,8 @@ struct SwrContext {
     uint8_t *native_one;
     int32_t matrix32[SWR_CH_MAX][SWR_CH_MAX];       ///< 17.15 fixed point rematrixing coefficients
     uint8_t matrix_ch[SWR_CH_MAX][SWR_CH_MAX+1];    ///< Lists of input channels per output channel that have non zero rematrixing coefficients
+    mix_1_1_func_type *mix_1_1_f;
+    mix_2_1_func_type *mix_2_1_f;
 
     /* TODO: callbacks for ASM optimizations */
 };
@@ -100,7 +105,6 @@ int swri_resample_double(struct ResampleContext *c,double  *dst, const double  *
 int swri_rematrix_init(SwrContext *s);
 void swri_rematrix_free(SwrContext *s);
 int swri_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int mustcopy);
-void swri_sum2(enum AVSampleFormat format, void *dst, const void *src0, const void *src1, float coef0, float coef1, int len);
 
 void swri_get_dither(SwrContext *s, void *dst, int len, unsigned seed, enum AVSampleFormat out_fmt, enum AVSampleFormat in_fmt);
 

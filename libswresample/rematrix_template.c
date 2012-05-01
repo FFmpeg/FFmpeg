@@ -19,20 +19,19 @@
  */
 
 
-static void RENAME(sum2)(SAMPLE *out, const SAMPLE *in1, const SAMPLE *in2, COEFF coeff1, COEFF coeff2, int len){
+static void RENAME(sum2)(SAMPLE *out, const SAMPLE *in1, const SAMPLE *in2, COEFF *coeffp, int index1, int index2, int len){
     int i;
+    COEFF coeff1 = coeffp[index1];
+    COEFF coeff2 = coeffp[index2];
 
     for(i=0; i<len; i++)
         out[i] = R(coeff1*in1[i] + coeff2*in2[i]);
 }
 
-static void RENAME(copy)(SAMPLE *out, const SAMPLE *in, COEFF coeff, int len){
-    if(coeff == ONE){
-        memcpy(out, in, sizeof(SAMPLE)*len);
-    }else{
-        int i;
-        for(i=0; i<len; i++)
-            out[i] = R(coeff*in[i]);
-    }
+static void RENAME(copy)(SAMPLE *out, const SAMPLE *in, COEFF *coeffp, int index, int len){
+    int i;
+    COEFF coeff = coeffp[index];
+    for(i=0; i<len; i++)
+        out[i] = R(coeff*in[i]);
 }
 
