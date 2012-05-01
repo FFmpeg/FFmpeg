@@ -184,8 +184,15 @@ static int auto_matrix(SwrContext *s)
 
     if(unaccounted & AV_CH_SIDE_LEFT){
         if(s->out_ch_layout & AV_CH_BACK_LEFT){
-            matrix[ BACK_LEFT][ SIDE_LEFT]+= 1.0;
-            matrix[BACK_RIGHT][SIDE_RIGHT]+= 1.0;
+            /* if back channels do not exist in the input, just copy side
+               channels to back channels, otherwise mix side into back */
+            if (s->in_ch_layout & AV_CH_BACK_LEFT) {
+                matrix[BACK_LEFT ][SIDE_LEFT ] += M_SQRT1_2;
+                matrix[BACK_RIGHT][SIDE_RIGHT] += M_SQRT1_2;
+            } else {
+                matrix[BACK_LEFT ][SIDE_LEFT ] += 1.0;
+                matrix[BACK_RIGHT][SIDE_RIGHT] += 1.0;
+            }
         }else if(s->out_ch_layout & AV_CH_BACK_CENTER){
             matrix[BACK_CENTER][ SIDE_LEFT]+= M_SQRT1_2;
             matrix[BACK_CENTER][SIDE_RIGHT]+= M_SQRT1_2;
