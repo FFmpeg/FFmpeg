@@ -1347,7 +1347,7 @@ of UTF-8 encoded characters.
 This parameter is mandatory if no text string is specified with the
 parameter @var{text}.
 
-If both text and textfile are specified, an error is thrown.
+If both @var{text} and @var{textfile} are specified, an error is thrown.
 
 @item x, y
 The expressions which specify the offsets where text will be drawn
