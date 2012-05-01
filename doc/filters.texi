@@ -1364,11 +1364,11 @@ output image.
 
 The default value of @var{x} and @var{y} is "0".
 
-See below for the list of accepted constants.
+See below for the list of accepted constants and functions.
 @end table
 
 The parameters for @var{x} and @var{y} are expressions containing the
-following constants:
+following constants and functions:
 
 @table @option
 @item dar
@@ -1411,6 +1411,9 @@ contained in the rendered text
 
 @item n
 the number of input frame, starting from 0
+
+@item rand(min, max)
+return a random number included between @var{min} and @var{max}
 
 @item sar
 input sample aspect ratio
