@@ -1624,7 +1624,7 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
                                           dec->channel_layout, dec->sample_fmt, dec->sample_rate,
                                           0, NULL);
             av_opt_set_int(ost->swr, "dither_method", ost->swr_dither_method,0);
-            av_opt_set_int(ost->swr, "dither_scale", ost->swr_dither_scale,0);
+            av_opt_set_double(ost->swr, "dither_scale", ost->swr_dither_scale,0);
             if (ost->audio_channels_mapped)
                 swr_set_channel_mapping(ost->swr, ost->audio_channels_map);
             av_opt_set_double(ost->swr, "rmvol", ost->rematrix_volume, 0);
