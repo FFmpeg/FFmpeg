@@ -216,8 +216,9 @@ int swr_init(struct SwrContext *s){
 
     if(   s->int_sample_fmt != AV_SAMPLE_FMT_S16P
         &&s->int_sample_fmt != AV_SAMPLE_FMT_S32P
-        &&s->int_sample_fmt != AV_SAMPLE_FMT_FLTP){
-        av_log(s, AV_LOG_ERROR, "Requested sample format %s is not supported internally, S16/S32/FLT is supported\n", av_get_sample_fmt_name(s->int_sample_fmt));
+        &&s->int_sample_fmt != AV_SAMPLE_FMT_FLTP
+        &&s->int_sample_fmt != AV_SAMPLE_FMT_DBLP){
+        av_log(s, AV_LOG_ERROR, "Requested sample format %s is not supported internally, S16/S32/FLT/DBL is supported\n", av_get_sample_fmt_name(s->int_sample_fmt));
         return AVERROR(EINVAL);
     }
 

@@ -34,6 +34,18 @@
 #undef ONE
 #undef COEFF
 
+#define ONE (1.0)
+#define R(x) x
+#define SAMPLE double
+#define COEFF double
+#define RENAME(x) x ## _double
+#include "rematrix_template.c"
+#undef SAMPLE
+#undef RENAME
+#undef R
+#undef ONE
+#undef COEFF
+
 #define ONE (-32768)
 #define R(x) (((x) + 16384)>>15)
 #define SAMPLE int16_t
@@ -297,6 +309,15 @@ int swri_rematrix_init(SwrContext *s){
         *((float*)s->native_one) = 1.0;
         s->mix_1_1_f = copy_float;
         s->mix_2_1_f = sum2_float;
+    }else if(s->midbuf.fmt == AV_SAMPLE_FMT_DBLP){
+        s->native_matrix = av_mallocz(nb_in * nb_out * sizeof(double));
+        s->native_one    = av_mallocz(sizeof(double));
+        for (i = 0; i < nb_out; i++)
+            for (j = 0; j < nb_in; j++)
+                ((double*)s->native_matrix)[i * nb_in + j] = s->matrix[i][j];
+        *((double*)s->native_one) = 1.0;
+        s->mix_1_1_f = copy_double;
+        s->mix_2_1_f = sum2_double;
     }else
         av_assert0(0);
     //FIXME quantize for integeres
@@ -352,6 +373,15 @@ int swri_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int mus
                         v+= ((float*)in->ch[in_i])[i] * s->matrix[out_i][in_i];
                     }
                     ((float*)out->ch[out_i])[i]= v;
+                }
+            }else if(s->int_sample_fmt == AV_SAMPLE_FMT_DBLP){
+                for(i=0; i<len; i++){
+                    double v=0;
+                    for(j=0; j<s->matrix_ch[out_i][0]; j++){
+                        in_i= s->matrix_ch[out_i][1+j];
+                        v+= ((double*)in->ch[in_i])[i] * s->matrix[out_i][in_i];
+                    }
+                    ((double*)out->ch[out_i])[i]= v;
                 }
             }else{
                 for(i=0; i<len; i++){
