@@ -274,7 +274,7 @@ av_assert0(s->out.ch_count);
 
     s->in_buffer= s->in;
 
-    if(!s->resample && !s->rematrix && !s->channel_map){
+    if(!s->resample && !s->rematrix && !s->channel_map && !s->dither_method){
         s->full_convert = swri_audio_convert_alloc(s->out_sample_fmt,
                                                    s-> in_sample_fmt, s-> in.ch_count, NULL, 0);
         return 0;
