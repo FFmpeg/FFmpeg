@@ -1423,6 +1423,12 @@ the height of the rendered text
 
 @item text_w, tw
 the width of the rendered text
+
+@item x, y
+the x and y offset coordinates where the text is drawn.
+
+These parameters allow the @var{x} and @var{y} expressions to refer
+each other, so you can for example specify @code{y=x/dar}.
 @end table
 
 If libavfilter was built with @code{--enable-fontconfig}, then
