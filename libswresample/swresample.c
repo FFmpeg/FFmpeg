@@ -208,11 +208,16 @@ int swr_init(struct SwrContext *s){
         return AVERROR(EINVAL);
     }
 
-    //FIXME should we allow/support using FLT on material that doesnt need it ?
-    if(av_get_planar_sample_fmt(s->in_sample_fmt) <= AV_SAMPLE_FMT_S16P || s->int_sample_fmt==AV_SAMPLE_FMT_S16P){
-        s->int_sample_fmt= AV_SAMPLE_FMT_S16P;
-    }else
-        s->int_sample_fmt= AV_SAMPLE_FMT_FLTP;
+    if(s->int_sample_fmt == AV_SAMPLE_FMT_NONE){
+        if(av_get_planar_sample_fmt(s->in_sample_fmt) <= AV_SAMPLE_FMT_S16P){
+            s->int_sample_fmt= AV_SAMPLE_FMT_S16P;
+        }else if(av_get_planar_sample_fmt(s->in_sample_fmt) <= AV_SAMPLE_FMT_FLTP){
+            s->int_sample_fmt= AV_SAMPLE_FMT_FLTP;
+        }else{
+            av_log(s, AV_LOG_DEBUG, "Using double precission mode\n");
+            s->int_sample_fmt= AV_SAMPLE_FMT_DBLP;
+        }
+    }
 
     if(   s->int_sample_fmt != AV_SAMPLE_FMT_S16P
         &&s->int_sample_fmt != AV_SAMPLE_FMT_S32P
