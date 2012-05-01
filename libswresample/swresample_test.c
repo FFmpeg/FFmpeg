@@ -24,6 +24,9 @@
 #include "libavutil/audioconvert.h"
 #include "libavutil/opt.h"
 #include "swresample.h"
+
+#undef time
+#include "time.h"
 #undef fprintf
 
 #define SAMPLES 1000
@@ -245,6 +248,10 @@ int main(int argc, char **argv){
             return 0;
         }
         num_tests = strtol(argv[1], NULL, 0);
+        if(num_tests < 0) {
+            num_tests = -num_tests;
+            rand_seed = time(0);
+        }
         if(num_tests<= 0 || num_tests>max_tests)
             num_tests = max_tests;
     }
