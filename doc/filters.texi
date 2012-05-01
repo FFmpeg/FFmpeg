@@ -1363,21 +1363,6 @@ The parameters for @var{x} and @var{y} are expressions containing the
 following constants:
 
 @table @option
-@item W, H
-the input width and height
-
-@item tw, text_w
-the width of the rendered text
-
-@item th, text_h
-the height of the rendered text
-
-@item lh, line_h
-the height of each text line
-
-@item sar
-input sample aspect ratio
-
 @item dar
 input display aspect ratio, it is the same as (@var{w} / @var{h}) * @var{sar}
 
@@ -1385,17 +1370,16 @@ input display aspect ratio, it is the same as (@var{w} / @var{h}) * @var{sar}
 horizontal and vertical chroma subsample values. For example for the
 pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
 
-@item max_glyph_w
-maximum glyph width, that is the maximum width for all the glyphs
-contained in the rendered text
+@item line_h, lh
+the height of each text line
 
-@item max_glyph_h
-maximum glyph height, that is the maximum height for all the glyphs
-contained in the rendered text, it is equivalent to @var{ascent} -
-@var{descent}.
+@item main_h, h, H
+the input height
+
+@item main_w, w, W
+the input width
 
 @item max_glyph_a, ascent
-
 the maximum distance from the baseline to the highest/upper grid
 coordinate used to place a glyph outline point, for all the rendered
 glyphs.
@@ -1408,11 +1392,29 @@ used to place a glyph outline point, for all the rendered glyphs.
 This is a negative value, due to the grid's orientation, with the Y axis
 upwards.
 
+@item max_glyph_h
+maximum glyph height, that is the maximum height for all the glyphs
+contained in the rendered text, it is equivalent to @var{ascent} -
+@var{descent}.
+
+@item max_glyph_w
+maximum glyph width, that is the maximum width for all the glyphs
+contained in the rendered text
+
 @item n
 the number of input frame, starting from 0
 
+@item sar
+input sample aspect ratio
+
 @item t
 timestamp expressed in seconds, NAN if the input timestamp is unknown
+
+@item text_h, th
+the height of the rendered text
+
+@item text_w, tw
+the width of the rendered text
 
 @item timecode
 initial timecode representation in "hh:mm:ss[:;.]ff" format. It can be used

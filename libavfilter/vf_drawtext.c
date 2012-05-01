@@ -53,23 +53,22 @@
 #endif
 
 static const char *const var_names[] = {
-    "main_w", "w", "W",       ///< width  of the input video
+    "dar",
+    "hsub", "vsub",
+    "line_h", "lh",           ///< line height, same as max_glyph_h
     "main_h", "h", "H",       ///< height of the input video
-    "tw", "text_w",           ///< width  of the rendered text
-    "th", "text_h",           ///< height of the rendered text
-    "max_glyph_w",            ///< max glyph width
-    "max_glyph_h",            ///< max glyph height
+    "main_w", "w", "W",       ///< width  of the input video
     "max_glyph_a", "ascent",  ///< max glyph ascent
     "max_glyph_d", "descent", ///< min glyph descent
-    "line_h", "lh",           ///< line height, same as max_glyph_h
+    "max_glyph_h",            ///< max glyph height
+    "max_glyph_w",            ///< max glyph width
+    "n",                      ///< number of frame
     "sar",
-    "dar",
-    "hsub",
-    "vsub",
+    "t",                      ///< timestamp expressed in seconds
+    "text_h", "th",           ///< height of the rendered text
+    "text_w", "tw",           ///< width  of the rendered text
     "x",
     "y",
-    "n",                      ///< number of frame
-    "t",                      ///< timestamp expressed in seconds
     NULL
 };
 
@@ -90,23 +89,22 @@ static const eval_func2 fun2[] = {
 };
 
 enum var_name {
-    VAR_MAIN_W, VAR_w, VAR_W,
+    VAR_DAR,
+    VAR_HSUB, VAR_VSUB,
+    VAR_LINE_H, VAR_LH,
     VAR_MAIN_H, VAR_h, VAR_H,
-    VAR_TW, VAR_TEXT_W,
-    VAR_TH, VAR_TEXT_H,
-    VAR_MAX_GLYPH_W,
-    VAR_MAX_GLYPH_H,
+    VAR_MAIN_W, VAR_w, VAR_W,
     VAR_MAX_GLYPH_A, VAR_ASCENT,
     VAR_MAX_GLYPH_D, VAR_DESCENT,
-    VAR_LINE_H, VAR_LH,
+    VAR_MAX_GLYPH_H,
+    VAR_MAX_GLYPH_W,
+    VAR_N,
     VAR_SAR,
-    VAR_DAR,
-    VAR_HSUB,
-    VAR_VSUB,
+    VAR_T,
+    VAR_TEXT_H, VAR_TH,
+    VAR_TEXT_W, VAR_TW,
     VAR_X,
     VAR_Y,
-    VAR_N,
-    VAR_T,
     VAR_VARS_NB
 };
 
