@@ -253,7 +253,7 @@ int main(int argc, char **argv){
 
     for(test=0; test<num_tests; test++){
         unsigned r;
-        seed = seed * 1664525 + 1013904223;
+        uint_rand(seed);
         r = (seed * (uint64_t)(max_tests - test)) >>32;
         FFSWAP(int, remaining_tests[r], remaining_tests[max_tests - test - 1]);
     }
