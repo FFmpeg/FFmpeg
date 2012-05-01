@@ -227,10 +227,11 @@ int main(int argc, char **argv){
     uint8_t *aout[SWR_CH_MAX];
     uint8_t *amid[SWR_CH_MAX];
     int flush_i=0;
-    int mode = 0;
+    int mode;
     int max_tests = FF_ARRAY_ELEMS(rates) * FF_ARRAY_ELEMS(layouts) * FF_ARRAY_ELEMS(formats) * FF_ARRAY_ELEMS(layouts) * FF_ARRAY_ELEMS(formats);
     int num_tests = 10000;
     uint32_t seed = 0;
+    uint32_t rand_seed = 0;
     int remaining_tests[max_tests];
     int test;
 
@@ -307,8 +308,7 @@ int main(int argc, char **argv){
 #else
         audiogen(ain, in_sample_fmt, in_ch_count, SAMPLES/6+1, SAMPLES);
 #endif
-        mode++;
-        mode%=3;
+        mode = uint_rand(rand_seed) % 3;
         if(mode==0 /*|| out_sample_rate == in_sample_rate*/) {
             mid_count= swr_convert(forw_ctx, amid, 3*SAMPLES, (const uint8_t **)ain, SAMPLES);
         } else if(mode==1){
