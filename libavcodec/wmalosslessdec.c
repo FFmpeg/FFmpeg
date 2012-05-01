@@ -1216,8 +1216,8 @@ static int decode_packet(AVCodecContext *avctx, void *data, int *got_frame_ptr,
             save_bits(s, gb, num_bits_prev_frame, 1);
 
             /* decode the cross packet frame if it is valid */
-            if (!s->packet_loss)
-                decode_frame(s);
+            if (num_bits_prev_frame < remaining_packet_bits && !s->packet_loss)
+                    decode_frame(s);
         } else if (s->num_saved_bits - s->frame_offset) {
             av_dlog(avctx, "ignoring %x previously saved bits\n",
                     s->num_saved_bits - s->frame_offset);

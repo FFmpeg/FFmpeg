@@ -1212,12 +1212,14 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         int prev[2][2];
         int ch;
 
-        for (i = 0; i < 32; i++)
-            table[0][i] = sign_extend(bytestream2_get_be16u(&gb), 16);
+        for (i = 0; i < 2; i++)
+            for (n = 0; n < 16; n++)
+                table[i][n] = sign_extend(bytestream2_get_be16u(&gb), 16);
 
         /* Initialize the previous sample.  */
-        for (i = 0; i < 4; i++)
-            prev[i>>1][i&1] = sign_extend(bytestream2_get_be16u(&gb), 16);
+        for (i = 0; i < 2; i++)
+            for (n = 0; n < 2; n++)
+                prev[i][n] = sign_extend(bytestream2_get_be16u(&gb), 16);
 
         for (ch = 0; ch <= st; ch++) {
             samples = (short *)c->frame.data[0] + ch;

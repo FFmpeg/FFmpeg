@@ -79,28 +79,20 @@ static int ssd_int8_vs_int16_altivec(const int8_t *pix1, const int16_t *pix2,
     return u.score[3];
 }
 
-static int32_t scalarproduct_int16_altivec(int16_t *v1, const int16_t *v2,
-                                           int order, const int shift)
+static int32_t scalarproduct_int16_altivec(const int16_t *v1, const int16_t *v2,
+                                           int order)
 {
     int i;
     LOAD_ZERO;
-    register vec_s16 vec1, *pv;
+    const vec_s16 *pv;
+    register vec_s16 vec1;
     register vec_s32 res = vec_splat_s32(0), t;
-    register vec_u32 shifts;
     int32_t ires;
 
-    shifts = zero_u32v;
-    if(shift & 0x10) shifts = vec_add(shifts, vec_sl(vec_splat_u32(0x08), vec_splat_u32(0x1)));
-    if(shift & 0x08) shifts = vec_add(shifts, vec_splat_u32(0x08));
-    if(shift & 0x04) shifts = vec_add(shifts, vec_splat_u32(0x04));
-    if(shift & 0x02) shifts = vec_add(shifts, vec_splat_u32(0x02));
-    if(shift & 0x01) shifts = vec_add(shifts, vec_splat_u32(0x01));
-
     for(i = 0; i < order; i += 8){
-        pv = (vec_s16*)v1;
+        pv = (const vec_s16*)v1;
         vec1 = vec_perm(pv[0], pv[1], vec_lvsl(0, v1));
         t = vec_msum(vec1, vec_ld(0, v2), zero_s32v);
-        t = vec_sr(t, shifts);
         res = vec_sums(t, res);
         v1 += 8;
         v2 += 8;
@@ -114,31 +106,31 @@ static int32_t scalarproduct_and_madd_int16_altivec(int16_t *v1, const int16_t *
 {
     LOAD_ZERO;
     vec_s16 *pv1 = (vec_s16*)v1;
-    vec_s16 *pv2 = (vec_s16*)v2;
-    vec_s16 *pv3 = (vec_s16*)v3;
     register vec_s16 muls = {mul,mul,mul,mul,mul,mul,mul,mul};
-    register vec_s16 t0, t1, i0, i1;
-    register vec_s16 i2 = pv2[0], i3 = pv3[0];
+    register vec_s16 t0, t1, i0, i1, i4;
+    register vec_s16 i2 = vec_ld(0, v2), i3 = vec_ld(0, v3);
     register vec_s32 res = zero_s32v;
     register vec_u8 align = vec_lvsl(0, v2);
     int32_t ires;
     order >>= 4;
     do {
-        t0 = vec_perm(i2, pv2[1], align);
-        i2 = pv2[2];
-        t1 = vec_perm(pv2[1], i2, align);
+        i1 = vec_ld(16, v2);
+        t0 = vec_perm(i2, i1, align);
+        i2 = vec_ld(32, v2);
+        t1 = vec_perm(i1, i2, align);
         i0 = pv1[0];
         i1 = pv1[1];
         res = vec_msum(t0, i0, res);
         res = vec_msum(t1, i1, res);
-        t0 = vec_perm(i3, pv3[1], align);
-        i3 = pv3[2];
-        t1 = vec_perm(pv3[1], i3, align);
+        i4 = vec_ld(16, v3);
+        t0 = vec_perm(i3, i4, align);
+        i3 = vec_ld(32, v3);
+        t1 = vec_perm(i4, i3, align);
         pv1[0] = vec_mladd(t0, muls, i0);
         pv1[1] = vec_mladd(t1, muls, i1);
         pv1 += 2;
-        pv2 += 2;
-        pv3 += 2;
+        v2  += 8;
+        v3  += 8;
     } while(--order);
     res = vec_splat(vec_sums(res, zero_s32v), 3);
     vec_ste(res, 0, &ires);
