@@ -176,6 +176,7 @@ void swr_free(SwrContext **ss){
         swri_audio_convert_free(&s->out_convert);
         swri_audio_convert_free(&s->full_convert);
         swri_resample_free(&s->resample);
+        swri_rematrix_free(s);
     }
 
     av_freep(ss);
@@ -193,6 +194,7 @@ int swr_init(struct SwrContext *s){
     swri_audio_convert_free(&s-> in_convert);
     swri_audio_convert_free(&s->out_convert);
     swri_audio_convert_free(&s->full_convert);
+    swri_rematrix_free(s);
 
     s->flushed = 0;
 

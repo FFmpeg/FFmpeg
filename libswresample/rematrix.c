@@ -253,12 +253,30 @@ static int auto_matrix(SwrContext *s)
 
 int swri_rematrix_init(SwrContext *s){
     int i, j;
+    int nb_in  = av_get_channel_layout_nb_channels(s->in_ch_layout);
+    int nb_out = av_get_channel_layout_nb_channels(s->out_ch_layout);
 
     if (!s->rematrix_custom) {
         int r = auto_matrix(s);
         if (r)
             return r;
     }
+    if (s->midbuf.fmt == AV_SAMPLE_FMT_S16P){
+        s->native_matrix = av_mallocz(nb_in * nb_out * sizeof(int));
+        s->native_one    = av_mallocz(sizeof(int));
+        for (i = 0; i < nb_out; i++)
+            for (j = 0; j < nb_in; j++)
+                ((int*)s->native_matrix)[i * nb_in + j] = lrintf(s->matrix[i][j] * 32768);
+        *((int*)s->native_one) = 32768;
+    }else if(s->midbuf.fmt == AV_SAMPLE_FMT_FLTP){
+        s->native_matrix = av_mallocz(nb_in * nb_out * sizeof(float));
+        s->native_one    = av_mallocz(sizeof(float));
+        for (i = 0; i < nb_out; i++)
+            for (j = 0; j < nb_in; j++)
+                ((float*)s->native_matrix)[i * nb_in + j] = s->matrix[i][j];
+        *((float*)s->native_one) = 1.0;
+    }else
+        av_assert0(0);
     //FIXME quantize for integeres
     for (i = 0; i < SWR_CH_MAX; i++) {
         int ch_in=0;
@@ -279,6 +297,11 @@ void swri_sum2(enum AVSampleFormat format, void *dst, const void *src0, const vo
         av_assert1(format == AV_SAMPLE_FMT_S16P);
         sum2_s16  ((int16_t*)dst, (const int16_t*)src0, (const int16_t*)src1, lrintf(coef0 * 32768), lrintf(coef1 * 32768), len);
     }
+}
+
+void swri_rematrix_free(SwrContext *s){
+    av_freep(&s->native_matrix);
+    av_freep(&s->native_one);
 }
 
 int swri_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int mustcopy){

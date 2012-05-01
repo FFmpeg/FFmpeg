@@ -80,6 +80,8 @@ struct SwrContext {
     struct ResampleContext *resample;               ///< resampling context
 
     float matrix[SWR_CH_MAX][SWR_CH_MAX];           ///< floating point rematrixing coefficients
+    uint8_t *native_matrix;
+    uint8_t *native_one;
     int32_t matrix32[SWR_CH_MAX][SWR_CH_MAX];       ///< 17.15 fixed point rematrixing coefficients
     uint8_t matrix_ch[SWR_CH_MAX][SWR_CH_MAX+1];    ///< Lists of input channels per output channel that have non zero rematrixing coefficients
 
@@ -96,6 +98,7 @@ int swri_resample_float(struct ResampleContext *c, float   *dst, const float   *
 int swri_resample_double(struct ResampleContext *c,double  *dst, const double  *src, int *consumed, int src_size, int dst_size, int update_ctx);
 
 int swri_rematrix_init(SwrContext *s);
+void swri_rematrix_free(SwrContext *s);
 int swri_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int mustcopy);
 void swri_sum2(enum AVSampleFormat format, void *dst, const void *src0, const void *src1, float coef0, float coef1, int len);
 
