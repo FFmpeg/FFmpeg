@@ -1319,6 +1319,9 @@ Default value is "render".
 For more information consult the documentation for the FT_LOAD_*
 libfreetype flags.
 
+@item rate, r
+Set the timecode frame rate (timecode only).
+
 @item shadowcolor
 The color to be used for drawing a shadow behind the drawn text.  It
 can be a color name (e.g. "yellow") or a string in the 0xRRGGBB[AA]
@@ -1333,6 +1336,11 @@ values. Default value for both is "0".
 @item tabsize
 The size in number of spaces to use for rendering the tab.
 Default value is 4.
+
+@item timecode
+Set the initial timecode representation in "hh:mm:ss[:;.]ff"
+format. It can be used with or without text parameter. @var{rate}
+option must be specified.
 
 @item text
 The text string to be drawn. The text must be a sequence of UTF-8
@@ -1415,13 +1423,6 @@ the height of the rendered text
 
 @item text_w, tw
 the width of the rendered text
-
-@item timecode
-initial timecode representation in "hh:mm:ss[:;.]ff" format. It can be used
-with or without text parameter. @var{rate} option must be specified.
-
-@item r, rate
-frame rate (timecode only)
 @end table
 
 If libavfilter was built with @code{--enable-fontconfig}, then
