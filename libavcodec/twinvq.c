@@ -1000,14 +1000,16 @@ static av_cold void construct_perm_table(TwinContext *tctx,enum FrameType ftype)
 {
     int block_size;
     const ModeTab *mtab = tctx->mtab;
-    int size = tctx->avctx->channels*mtab->fmode[ftype].sub;
+    int size;
     int16_t *tmp_perm = (int16_t *) tctx->tmp_buf;
 
     if (ftype == FT_PPC) {
         size  = tctx->avctx->channels;
         block_size = mtab->ppc_shape_len;
-    } else
+    } else {
+        size       = tctx->avctx->channels * mtab->fmode[ftype].sub;
         block_size = mtab->size / mtab->fmode[ftype].sub;
+    }
 
     permutate_in_line(tmp_perm, tctx->n_div[ftype], size,
                       block_size, tctx->length[ftype],
