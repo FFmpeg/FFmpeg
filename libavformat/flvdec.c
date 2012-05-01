@@ -653,9 +653,8 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     ret= av_get_packet(s->pb, pkt, size);
-    if (ret < 0) {
-        return AVERROR(EIO);
-    }
+    if (ret < 0)
+        return ret;
     pkt->dts = dts;
     pkt->pts = pts == AV_NOPTS_VALUE ? dts : pts;
     pkt->stream_index = st->index;
