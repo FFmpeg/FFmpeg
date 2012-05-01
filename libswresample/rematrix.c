@@ -216,6 +216,17 @@ static int auto_matrix(SwrContext *s)
         }else
             av_assert0(0);
     }
+    /* mix LFE into front left/right or center */
+    if (unaccounted & AV_CH_LOW_FREQUENCY) {
+        if (s->out_ch_layout & AV_CH_FRONT_CENTER) {
+            matrix[FRONT_CENTER][LOW_FREQUENCY] += s->lfe_mix_level;
+        } else if (s->out_ch_layout & AV_CH_FRONT_LEFT) {
+            matrix[FRONT_LEFT ][LOW_FREQUENCY] += s->lfe_mix_level * M_SQRT1_2;
+            matrix[FRONT_RIGHT][LOW_FREQUENCY] += s->lfe_mix_level * M_SQRT1_2;
+        } else
+            av_assert0(0);
+    }
+
     for(out_i=i=0; i<64; i++){
         double sum=0;
         int in_i=0;

@@ -50,6 +50,7 @@ struct SwrContext {
     int flags;                                      ///< miscellaneous flags such as SWR_FLAG_RESAMPLE
     float slev;                                     ///< surround mixing level
     float clev;                                     ///< center mixing level
+    float lfe_mix_level;                            ///< LFE mixing level
     float rematrix_volume;                          ///< rematrixing volume coefficient
     const int *channel_map;                         ///< channel index (or -1 if muted channel) map
     int used_ch_count;                              ///< number of used input channels (mapped channel count if channel_map, otherwise in.ch_count)

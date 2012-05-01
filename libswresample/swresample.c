@@ -62,6 +62,7 @@ static const AVOption options[]={
 {"center_mix_level"     ,    "Center Mix Level"         , OFFSET(clev           ), AV_OPT_TYPE_FLOAT, {.dbl=C_30DB                }, -32    , 32        , PARAM},
 {"slev"                 , "Sourround Mix Level"         , OFFSET(slev           ), AV_OPT_TYPE_FLOAT, {.dbl=C_30DB                }, -32    , 32        , PARAM},
 {"surround_mix_level"   , "Sourround Mix Level"         , OFFSET(slev           ), AV_OPT_TYPE_FLOAT, {.dbl=C_30DB                }, -32    , 32        , PARAM},
+{"lfe_mix_level"        , "LFE Mix Level"               , OFFSET(lfe_mix_level  ), AV_OPT_TYPE_FLOAT, {.dbl=0                     }, -32    , 32        , PARAM},
 {"rmvol"                , "Rematrix Volume"             , OFFSET(rematrix_volume), AV_OPT_TYPE_FLOAT, {.dbl=1.0                   }, -1000  , 1000      , PARAM},
 {"rematrix_volume"      , "Rematrix Volume"             , OFFSET(rematrix_volume), AV_OPT_TYPE_FLOAT, {.dbl=1.0                   }, -1000  , 1000      , PARAM},
 {"flags"                , NULL                          , OFFSET(flags          ), AV_OPT_TYPE_FLAGS, {.dbl=0                     }, 0      , UINT_MAX  , PARAM, "flags"},
