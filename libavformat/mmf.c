@@ -275,17 +275,13 @@ static int mmf_read_packet(AVFormatContext *s,
     if(!size)
         return AVERROR(EIO);
 
-    if (av_new_packet(pkt, size))
-        return AVERROR(EIO);
-    pkt->stream_index = 0;
-
-    ret = avio_read(s->pb, pkt->data, pkt->size);
+    ret = av_get_packet(s->pb, pkt, size);
     if (ret < 0)
-        av_free_packet(pkt);
+        return ret;
 
+    pkt->stream_index = 0;
     mmf->data_size -= ret;
 
-    pkt->size = ret;
     return ret;
 }
 

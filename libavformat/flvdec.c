@@ -656,9 +656,6 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (ret < 0) {
         return AVERROR(EIO);
     }
-    /* note: we need to modify the packet size here to handle the last
-       packet */
-    pkt->size = ret;
     pkt->dts = dts;
     pkt->pts = pts == AV_NOPTS_VALUE ? dts : pts;
     pkt->stream_index = st->index;

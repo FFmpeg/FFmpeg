@@ -44,17 +44,10 @@ static int ingenient_read_packet(AVFormatContext *s, AVPacket *pkt)
     av_log(s, AV_LOG_DEBUG, "Ingenient packet: size=%d, width=%d, height=%d, unk1=%d unk2=%d\n",
         size, w, h, unk1, unk2);
 
-    if (av_new_packet(pkt, size) < 0)
-        return AVERROR(ENOMEM);
-
-    pkt->pos = avio_tell(s->pb);
-    pkt->stream_index = 0;
-    ret = avio_read(s->pb, pkt->data, size);
-    if (ret < 0) {
-        av_free_packet(pkt);
+    ret = av_get_packet(s->pb, pkt, size);
+    if (ret < 0)
         return ret;
-    }
-    pkt->size = ret;
+    pkt->stream_index = 0;
     return ret;
 }
 

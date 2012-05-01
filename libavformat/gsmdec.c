@@ -47,7 +47,6 @@ static int gsm_read_packet(AVFormatContext *s, AVPacket *pkt)
         av_free_packet(pkt);
         return ret < 0 ? ret : AVERROR(EIO);
     }
-    pkt->size     = ret;
     pkt->duration = 1;
     pkt->pts      = pkt->pos / GSM_BLOCK_SIZE;
 
