@@ -30,6 +30,8 @@ pf_s32_inv_scale: times 8 dd 0x30000000
 pf_s32_scale:     times 8 dd 0x4f000000
 pf_s16_inv_scale: times 4 dd 0x38000000
 pf_s16_scale:     times 4 dd 0x47000000
+pb_shuf_unpack_even:      db -1, -1,  0,  1, -1, -1,  2,  3, -1, -1,  8,  9, -1, -1, 10, 11
+pb_shuf_unpack_odd:       db -1, -1,  4,  5, -1, -1,  6,  7, -1, -1, 12, 13, -1, -1, 14, 15
 
 SECTION_TEXT
 
@@ -430,6 +432,110 @@ CONV_S16P_TO_FLT_2CH
 %if HAVE_AVX
 INIT_XMM avx
 CONV_S16P_TO_FLT_2CH
+%endif
+
+;------------------------------------------------------------------------------
+; void ff_conv_s16p_to_flt_6ch(float *dst, int16_t *const *src, int len,
+;                              int channels);
+;------------------------------------------------------------------------------
+
+%macro CONV_S16P_TO_FLT_6CH 0
+%if ARCH_X86_64
+cglobal conv_s16p_to_flt_6ch, 3,8,8, dst, src, len, src1, src2, src3, src4, src5
+%else
+cglobal conv_s16p_to_flt_6ch, 2,7,8, dst, src, src1, src2, src3, src4, src5
+%define lend dword r2m
+%endif
+    mov     src1q, [srcq+1*gprsize]
+    mov     src2q, [srcq+2*gprsize]
+    mov     src3q, [srcq+3*gprsize]
+    mov     src4q, [srcq+4*gprsize]
+    mov     src5q, [srcq+5*gprsize]
+    mov      srcq, [srcq]
+    sub     src1q, srcq
+    sub     src2q, srcq
+    sub     src3q, srcq
+    sub     src4q, srcq
+    sub     src5q, srcq
+    mova       m7, [pf_s32_inv_scale]
+%if cpuflag(ssse3)
+    %define unpack_even m6
+    mova       m6, [pb_shuf_unpack_even]
+%if ARCH_X86_64
+    %define unpack_odd m8
+    mova       m8, [pb_shuf_unpack_odd]
+%else
+    %define unpack_odd [pb_shuf_unpack_odd]
+%endif
+%endif
+.loop:
+    movq       m0, [srcq      ]  ; m0 =  0,  6, 12, 18,  x,  x,  x,  x
+    movq       m1, [srcq+src1q]  ; m1 =  1,  7, 13, 19,  x,  x,  x,  x
+    movq       m2, [srcq+src2q]  ; m2 =  2,  8, 14, 20,  x,  x,  x,  x
+    movq       m3, [srcq+src3q]  ; m3 =  3,  9, 15, 21,  x,  x,  x,  x
+    movq       m4, [srcq+src4q]  ; m4 =  4, 10, 16, 22,  x,  x,  x,  x
+    movq       m5, [srcq+src5q]  ; m5 =  5, 11, 17, 23,  x,  x,  x,  x
+                                 ; unpack words:
+    punpcklwd  m0, m1            ; m0 =  0,  1,  6,  7, 12, 13, 18, 19
+    punpcklwd  m2, m3            ; m2 =  2,  3,  8,  9, 14, 15, 20, 21
+    punpcklwd  m4, m5            ; m4 =  4,  5, 10, 11, 16, 17, 22, 23
+                                 ; blend dwords
+    shufps     m1, m4, m0, q3120 ; m1 =  4,  5, 16, 17,  6,  7, 18, 19
+    shufps         m0, m2, q2020 ; m0 =  0,  1, 12, 13,  2,  3, 14, 15
+    shufps         m2, m4, q3131 ; m2 =  8,  9, 20, 21, 10, 11, 22, 23
+%if cpuflag(ssse3)
+    pshufb     m3, m0, unpack_odd   ; m3 =  12,     13,     14,     15
+    pshufb         m0, unpack_even  ; m0 =   0,      1,      2,      3
+    pshufb     m4, m1, unpack_odd   ; m4 =  16,     17,     18,     19
+    pshufb         m1, unpack_even  ; m1 =   4,      5,      6,      7
+    pshufb     m5, m2, unpack_odd   ; m5 =  20,     21,     22,     23
+    pshufb         m2, unpack_even  ; m2 =   8,      9,     10,     11
+%else
+                                 ; shuffle dwords
+    pshufd     m0, m0, q3120     ; m0 =  0,  1,  2,  3, 12, 13, 14, 15
+    pshufd     m1, m1, q3120     ; m1 =  4,  5,  6,  7, 16, 17, 18, 19
+    pshufd     m2, m2, q3120     ; m2 =  8,  9, 10, 11, 20, 21, 22, 23
+    pxor       m6, m6            ; convert s16 in m0-m2 to s32 in m0-m5
+    punpcklwd  m3, m6, m0        ; m3 =      0,      1,      2,      3
+    punpckhwd  m4, m6, m0        ; m4 =     12,     13,     14,     15
+    punpcklwd  m0, m6, m1        ; m0 =      4,      5,      6,      7
+    punpckhwd  m5, m6, m1        ; m5 =     16,     17,     18,     19
+    punpcklwd  m1, m6, m2        ; m1 =      8,      9,     10,     11
+    punpckhwd      m6, m2        ; m6 =     20,     21,     22,     23
+    SWAP 6,2,1,0,3,4,5           ; swap registers 3,0,1,4,5,6 to 0,1,2,3,4,5
+%endif
+    cvtdq2ps   m0, m0            ; convert s32 to float
+    cvtdq2ps   m1, m1
+    cvtdq2ps   m2, m2
+    cvtdq2ps   m3, m3
+    cvtdq2ps   m4, m4
+    cvtdq2ps   m5, m5
+    mulps      m0, m7            ; scale float from s32 range to [-1.0,1.0]
+    mulps      m1, m7
+    mulps      m2, m7
+    mulps      m3, m7
+    mulps      m4, m7
+    mulps      m5, m7
+    mova  [dstq         ], m0
+    mova  [dstq+  mmsize], m1
+    mova  [dstq+2*mmsize], m2
+    mova  [dstq+3*mmsize], m3
+    mova  [dstq+4*mmsize], m4
+    mova  [dstq+5*mmsize], m5
+    add      srcq, mmsize/2
+    add      dstq, mmsize*6
+    sub      lend, mmsize/4
+    jg .loop
+    REP_RET
+%endmacro
+
+INIT_XMM sse2
+CONV_S16P_TO_FLT_6CH
+INIT_XMM ssse3
+CONV_S16P_TO_FLT_6CH
+%if HAVE_AVX
+INIT_XMM avx
+CONV_S16P_TO_FLT_6CH
 %endif
 
 ;-----------------------------------------------------------------------------

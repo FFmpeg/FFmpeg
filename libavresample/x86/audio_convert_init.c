@@ -59,6 +59,13 @@ extern void ff_conv_s16p_to_flt_2ch_sse2(float *dst, int16_t *const *src,
 extern void ff_conv_s16p_to_flt_2ch_avx (float *dst, int16_t *const *src,
                                          int len, int channels);
 
+extern void ff_conv_s16p_to_flt_6ch_sse2 (float *dst, int16_t *const *src,
+                                          int len, int channels);
+extern void ff_conv_s16p_to_flt_6ch_ssse3(float *dst, int16_t *const *src,
+                                         int len, int channels);
+extern void ff_conv_s16p_to_flt_6ch_avx  (float *dst, int16_t *const *src,
+                                          int len, int channels);
+
 extern void ff_conv_fltp_to_flt_6ch_mmx (float *dst, float *const *src, int len,
                                          int channels);
 extern void ff_conv_fltp_to_flt_6ch_sse4(float *dst, float *const *src, int len,
@@ -101,6 +108,12 @@ av_cold void ff_audio_convert_init_x86(AudioConvert *ac)
                                   2, 16, 16, "SSE2", ff_conv_s16p_to_s16_2ch_sse2);
         ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16P,
                                   2, 16, 8, "SSE2", ff_conv_s16p_to_flt_2ch_sse2);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16P,
+                                  6, 16, 4, "SSE2", ff_conv_s16p_to_flt_6ch_sse2);
+    }
+    if (mm_flags & AV_CPU_FLAG_SSSE3 && HAVE_SSE) {
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16P,
+                                  6, 16, 4, "SSSE3", ff_conv_s16p_to_flt_6ch_ssse3);
     }
     if (mm_flags & AV_CPU_FLAG_SSE4 && HAVE_SSE) {
         ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16,
@@ -119,6 +132,8 @@ av_cold void ff_audio_convert_init_x86(AudioConvert *ac)
                                   6, 16, 8, "AVX", ff_conv_s16p_to_s16_6ch_avx);
         ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16P,
                                   2, 16, 8, "AVX", ff_conv_s16p_to_flt_2ch_avx);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16P,
+                                  6, 16, 4, "AVX", ff_conv_s16p_to_flt_6ch_avx);
         ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_FLTP,
                                   6, 16, 4, "AVX", ff_conv_fltp_to_flt_6ch_avx);
     }
