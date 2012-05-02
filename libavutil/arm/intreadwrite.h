@@ -27,8 +27,13 @@
 #define AV_RN16 AV_RN16
 static av_always_inline unsigned AV_RN16(const void *p)
 {
+    const uint8_t *q = p;
     unsigned v;
-    __asm__ ("ldrh %0, %1" : "=r"(v) : "m"(*(const uint16_t *)p));
+#ifdef __thumb__
+    __asm__ ("ldrh %0, %1" : "=r"(v) : "m"(q[0]), "m"(q[1]));
+#else
+    __asm__ ("ldrh %0, %1" : "=r"(v) : "Uq"(q[0]), "m"(q[1]));
+#endif
     return v;
 }
 
@@ -41,8 +46,9 @@ static av_always_inline void AV_WN16(void *p, uint16_t v)
 #define AV_RN32 AV_RN32
 static av_always_inline uint32_t AV_RN32(const void *p)
 {
+    const struct __attribute__((packed)) { uint32_t v; } *q = p;
     uint32_t v;
-    __asm__ ("ldr  %0, %1" : "=r"(v) : "m"(*(const uint32_t *)p));
+    __asm__ ("ldr  %0, %1" : "=r"(v) : "m"(*q));
     return v;
 }
 
@@ -55,11 +61,12 @@ static av_always_inline void AV_WN32(void *p, uint32_t v)
 #define AV_RN64 AV_RN64
 static av_always_inline uint64_t AV_RN64(const void *p)
 {
+    const struct __attribute__((packed)) { uint32_t v; } *q = p;
     uint64_t v;
     __asm__ ("ldr   %Q0, %1  \n\t"
              "ldr   %R0, %2  \n\t"
              : "=&r"(v)
-             : "m"(*(const uint32_t*)p), "m"(*((const uint32_t*)p+1)));
+             : "m"(q[0]), "m"(q[1]));
     return v;
 }
 
