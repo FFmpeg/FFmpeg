@@ -1165,3 +1165,35 @@ CONV_FLT_TO_S16P_6CH
 INIT_XMM avx
 CONV_FLT_TO_S16P_6CH
 %endif
+
+;------------------------------------------------------------------------------
+; void ff_conv_flt_to_fltp_2ch(float *const *dst, float *src, int len,
+;                              int channels);
+;------------------------------------------------------------------------------
+
+%macro CONV_FLT_TO_FLTP_2CH 0
+cglobal conv_flt_to_fltp_2ch, 3,4,3, dst0, src, len, dst1
+    lea    lenq, [4*lend]
+    mov   dst1q, [dst0q+gprsize]
+    mov   dst0q, [dst0q        ]
+    lea    srcq, [srcq+2*lenq]
+    add   dst0q, lenq
+    add   dst1q, lenq
+    neg    lenq
+.loop:
+    mova     m0, [srcq+2*lenq       ]
+    mova     m1, [srcq+2*lenq+mmsize]
+    DEINT2_PS 0, 1, 2
+    mova  [dst0q+lenq], m0
+    mova  [dst1q+lenq], m1
+    add    lenq, mmsize
+    jl .loop
+    REP_RET
+%endmacro
+
+INIT_XMM sse
+CONV_FLT_TO_FLTP_2CH
+%if HAVE_AVX
+INIT_XMM avx
+CONV_FLT_TO_FLTP_2CH
+%endif

@@ -132,6 +132,11 @@ extern void ff_conv_flt_to_s16p_6ch_ssse3(int16_t *const *dst, float *src,
 extern void ff_conv_flt_to_s16p_6ch_avx  (int16_t *const *dst, float *src,
                                           int len, int channels);
 
+extern void ff_conv_flt_to_fltp_2ch_sse(float *const *dst, float *src, int len,
+                                        int channels);
+extern void ff_conv_flt_to_fltp_2ch_avx(float *const *dst, float *src, int len,
+                                        int channels);
+
 av_cold void ff_audio_convert_init_x86(AudioConvert *ac)
 {
 #if HAVE_YASM
@@ -148,6 +153,8 @@ av_cold void ff_audio_convert_init_x86(AudioConvert *ac)
                                   6, 1, 2, "SSE", ff_conv_fltp_to_s16_6ch_sse);
         ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_FLTP,
                                   2, 16, 8, "SSE", ff_conv_fltp_to_flt_2ch_sse);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_FLT,
+                                  2, 16, 4, "SSE", ff_conv_flt_to_fltp_2ch_sse);
     }
     if (mm_flags & AV_CPU_FLAG_SSE2 && HAVE_SSE) {
         if (!(mm_flags & AV_CPU_FLAG_SSE2SLOW)) {
@@ -241,6 +248,8 @@ av_cold void ff_audio_convert_init_x86(AudioConvert *ac)
                                   2, 16, 8, "AVX", ff_conv_flt_to_s16p_2ch_avx);
         ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_FLT,
                                   6, 16, 4, "AVX", ff_conv_flt_to_s16p_6ch_avx);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_FLT,
+                                  2, 16, 4, "AVX", ff_conv_flt_to_fltp_2ch_avx);
     }
 #endif
 }
