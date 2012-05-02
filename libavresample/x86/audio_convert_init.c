@@ -22,6 +22,8 @@
 #include "libavutil/cpu.h"
 #include "libavresample/audio_convert.h"
 
+/* flat conversions */
+
 extern void ff_conv_s16_to_s32_sse2(int16_t *dst, const int32_t *src, int len);
 
 extern void ff_conv_s16_to_flt_sse2(float *dst, const int16_t *src, int len);
@@ -37,6 +39,13 @@ extern void ff_conv_flt_to_s16_sse2(int16_t *dst, const float *src, int len);
 
 extern void ff_conv_flt_to_s32_sse2(int32_t *dst, const float *src, int len);
 extern void ff_conv_flt_to_s32_avx (int32_t *dst, const float *src, int len);
+
+/* interleave conversions */
+
+extern void ff_conv_s16p_to_s16_2ch_sse2(int16_t *dst, int16_t *const *src,
+                                         int len, int channels);
+extern void ff_conv_s16p_to_s16_2ch_avx (int16_t *dst, int16_t *const *src,
+                                         int len, int channels);
 
 extern void ff_conv_fltp_to_flt_6ch_mmx (float *dst, float *const *src, int len,
                                          int channels);
@@ -71,6 +80,8 @@ av_cold void ff_audio_convert_init_x86(AudioConvert *ac)
                                   0, 16, 16, "SSE2", ff_conv_flt_to_s16_sse2);
         ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_FLT,
                                   0, 16, 16, "SSE2", ff_conv_flt_to_s32_sse2);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S16P,
+                                  2, 16, 16, "SSE2", ff_conv_s16p_to_s16_2ch_sse2);
     }
     if (mm_flags & AV_CPU_FLAG_SSE4 && HAVE_SSE) {
         ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16,
@@ -83,6 +94,8 @@ av_cold void ff_audio_convert_init_x86(AudioConvert *ac)
                                   0, 32, 16, "AVX", ff_conv_s32_to_flt_avx);
         ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_FLT,
                                   0, 32, 32, "AVX", ff_conv_flt_to_s32_avx);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S16P,
+                                  2, 16, 16, "AVX", ff_conv_s16p_to_s16_2ch_avx);
         ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_FLTP,
                                   6, 16, 4, "AVX", ff_conv_fltp_to_flt_6ch_avx);
     }

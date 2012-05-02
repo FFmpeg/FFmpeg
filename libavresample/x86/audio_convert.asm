@@ -223,6 +223,43 @@ INIT_YMM avx
 CONV_FLT_TO_S32
 %endif
 
+;------------------------------------------------------------------------------
+; void ff_conv_s16p_to_s16_2ch(int16_t *dst, int16_t *const *src, int len,
+;                              int channels);
+;------------------------------------------------------------------------------
+
+%macro CONV_S16P_TO_S16_2CH 0
+cglobal conv_s16p_to_s16_2ch, 3,4,5, dst, src0, len, src1
+    mov       src1q, [src0q+gprsize]
+    mov       src0q, [src0q        ]
+    lea        lenq, [2*lend]
+    add       src0q, lenq
+    add       src1q, lenq
+    lea        dstq, [dstq+2*lenq]
+    neg        lenq
+.loop
+    mova         m0, [src0q+lenq       ]
+    mova         m1, [src1q+lenq       ]
+    mova         m2, [src0q+lenq+mmsize]
+    mova         m3, [src1q+lenq+mmsize]
+    SBUTTERFLY2  wd, 0, 1, 4
+    SBUTTERFLY2  wd, 2, 3, 4
+    mova  [dstq+2*lenq+0*mmsize], m0
+    mova  [dstq+2*lenq+1*mmsize], m1
+    mova  [dstq+2*lenq+2*mmsize], m2
+    mova  [dstq+2*lenq+3*mmsize], m3
+    add        lenq, 2*mmsize
+    jl .loop
+    REP_RET
+%endmacro
+
+INIT_XMM sse2
+CONV_S16P_TO_S16_2CH
+%if HAVE_AVX
+INIT_XMM avx
+CONV_S16P_TO_S16_2CH
+%endif
+
 ;-----------------------------------------------------------------------------
 ; void ff_conv_fltp_to_flt_6ch(float *dst, float *const *src, int len,
 ;                              int channels);
