@@ -1091,3 +1091,77 @@ CONV_FLT_TO_S16P_2CH
 INIT_XMM avx
 CONV_FLT_TO_S16P_2CH
 %endif
+
+;------------------------------------------------------------------------------
+; void ff_conv_flt_to_s16p_6ch(int16_t *const *dst, float *src, int len,
+;                              int channels);
+;------------------------------------------------------------------------------
+
+%macro CONV_FLT_TO_S16P_6CH 0
+%if ARCH_X86_64
+cglobal conv_flt_to_s16p_6ch, 3,8,7, dst, src, len, dst1, dst2, dst3, dst4, dst5
+%else
+cglobal conv_flt_to_s16p_6ch, 2,7,7, dst, src, dst1, dst2, dst3, dst4, dst5
+%define lend dword r2m
+%endif
+    mov     dst1q, [dstq+  gprsize]
+    mov     dst2q, [dstq+2*gprsize]
+    mov     dst3q, [dstq+3*gprsize]
+    mov     dst4q, [dstq+4*gprsize]
+    mov     dst5q, [dstq+5*gprsize]
+    mov      dstq, [dstq          ]
+    sub     dst1q, dstq
+    sub     dst2q, dstq
+    sub     dst3q, dstq
+    sub     dst4q, dstq
+    sub     dst5q, dstq
+    mova       m6, [pf_s16_scale]
+.loop:
+    mulps      m0, m6, [srcq+0*mmsize]
+    mulps      m3, m6, [srcq+1*mmsize]
+    mulps      m1, m6, [srcq+2*mmsize]
+    mulps      m4, m6, [srcq+3*mmsize]
+    mulps      m2, m6, [srcq+4*mmsize]
+    mulps      m5, m6, [srcq+5*mmsize]
+    cvtps2dq   m0, m0
+    cvtps2dq   m1, m1
+    cvtps2dq   m2, m2
+    cvtps2dq   m3, m3
+    cvtps2dq   m4, m4
+    cvtps2dq   m5, m5
+    packssdw   m0, m3               ; m0 =  0,  1,  2,  3,  4,  5,  6,  7
+    packssdw   m1, m4               ; m1 =  8,  9, 10, 11, 12, 13, 14, 15
+    packssdw   m2, m5               ; m2 = 16, 17, 18, 19, 20, 21, 22, 23
+    PALIGNR    m3, m1, m0, 12, m4   ; m3 =  6,  7,  8,  9, 10, 11,  x,  x
+    shufps     m1, m2, q1032        ; m1 = 12, 13, 14, 15, 16, 17, 18, 19
+    psrldq     m2, 4                ; m2 = 18, 19, 20, 21, 22, 23,  x,  x
+    SBUTTERFLY2 wd, 0, 3, 4         ; m0 =  0,  6,  1,  7,  2,  8,  3,  9
+                                    ; m3 =  4, 10,  5, 11,  x,  x,  x,  x
+    SBUTTERFLY2 wd, 1, 2, 4         ; m1 = 12, 18, 13, 19, 14, 20, 15, 21
+                                    ; m2 = 16, 22, 17, 23,  x,  x,  x,  x
+    SBUTTERFLY2 dq, 0, 1, 4         ; m0 =  0,  6, 12, 18,  1,  7, 13, 19
+                                    ; m1 =  2,  8, 14, 20,  3,  9, 15, 21
+    punpckldq  m3, m2               ; m3 =  4, 10, 16, 22,  5, 11, 17, 23
+    movq    [dstq      ], m0
+    movhps  [dstq+dst1q], m0
+    movq    [dstq+dst2q], m1
+    movhps  [dstq+dst3q], m1
+    movq    [dstq+dst4q], m3
+    movhps  [dstq+dst5q], m3
+    add      srcq, mmsize*6
+    add      dstq, mmsize/2
+    sub      lend, mmsize/4
+    jg .loop
+    REP_RET
+%endmacro
+
+%define PALIGNR PALIGNR_MMX
+INIT_XMM sse2
+CONV_FLT_TO_S16P_6CH
+%define PALIGNR PALIGNR_SSSE3
+INIT_XMM ssse3
+CONV_FLT_TO_S16P_6CH
+%if HAVE_AVX
+INIT_XMM avx
+CONV_FLT_TO_S16P_6CH
+%endif
