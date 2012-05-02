@@ -21,8 +21,9 @@
 
 #include <stdint.h>
 #include "config.h"
+#include "libavutil/attributes.h"
 
-#if HAVE_FAST_UNALIGNED && HAVE_INLINE_ASM
+#if HAVE_FAST_UNALIGNED && HAVE_INLINE_ASM && !AV_GCC_VERSION_AT_LEAST(4,7)
 
 #define AV_RN16 AV_RN16
 static av_always_inline unsigned AV_RN16(const void *p)
