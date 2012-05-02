@@ -260,6 +260,129 @@ INIT_XMM avx
 CONV_S16P_TO_S16_2CH
 %endif
 
+;------------------------------------------------------------------------------
+; void ff_conv_s16p_to_s16_6ch(int16_t *dst, int16_t *const *src, int len,
+;                              int channels);
+;------------------------------------------------------------------------------
+
+;------------------------------------------------------------------------------
+; NOTE: In the 6-channel functions, len could be used as an index on x86-64
+;       instead of just a counter, which would avoid incrementing the
+;       pointers, but the extra complexity and amount of code is not worth
+;       the small gain. On x86-32 there are not enough registers to use len
+;       as an index without keeping two of the pointers on the stack and
+;       loading them in each iteration.
+;------------------------------------------------------------------------------
+
+%macro CONV_S16P_TO_S16_6CH 0
+%if ARCH_X86_64
+cglobal conv_s16p_to_s16_6ch, 3,8,7, dst, src0, len, src1, src2, src3, src4, src5
+%else
+cglobal conv_s16p_to_s16_6ch, 2,7,7, dst, src0, src1, src2, src3, src4, src5
+%define lend dword r2m
+%endif
+    mov      src1q, [src0q+1*gprsize]
+    mov      src2q, [src0q+2*gprsize]
+    mov      src3q, [src0q+3*gprsize]
+    mov      src4q, [src0q+4*gprsize]
+    mov      src5q, [src0q+5*gprsize]
+    mov      src0q, [src0q]
+    sub      src1q, src0q
+    sub      src2q, src0q
+    sub      src3q, src0q
+    sub      src4q, src0q
+    sub      src5q, src0q
+.loop:
+%if cpuflag(sse2slow)
+    movq        m0, [src0q      ]   ; m0 =  0,  6, 12, 18,  x,  x,  x,  x
+    movq        m1, [src0q+src1q]   ; m1 =  1,  7, 13, 19,  x,  x,  x,  x
+    movq        m2, [src0q+src2q]   ; m2 =  2,  8, 14, 20,  x,  x,  x,  x
+    movq        m3, [src0q+src3q]   ; m3 =  3,  9, 15, 21,  x,  x,  x,  x
+    movq        m4, [src0q+src4q]   ; m4 =  4, 10, 16, 22,  x,  x,  x,  x
+    movq        m5, [src0q+src5q]   ; m5 =  5, 11, 17, 23,  x,  x,  x,  x
+                                    ; unpack words:
+    punpcklwd   m0, m1              ; m0 =  0,  1,  6,  7, 12, 13, 18, 19
+    punpcklwd   m2, m3              ; m2 =  4,  5, 10, 11, 16, 17, 22, 23
+    punpcklwd   m4, m5              ; m4 =  2,  3,  8,  9, 14, 15, 20, 21
+                                    ; blend dwords
+    shufps      m1, m0, m2, q2020   ; m1 =  0,  1, 12, 13,  2,  3, 14, 15
+    shufps      m0, m4, q2031       ; m0 =  6,  7, 18, 19,  4,  5, 16, 17
+    shufps      m2, m4, q3131       ; m2 =  8,  9, 20, 21, 10, 11, 22, 23
+                                    ; shuffle dwords
+    pshufd      m0, m0, q1302       ; m0 =  4,  5,  6,  7, 16, 17, 18, 19
+    pshufd      m1, m1, q3120       ; m1 =  0,  1,  2,  3, 12, 13, 14, 15
+    pshufd      m2, m2, q3120       ; m2 =  8,  9, 10, 11, 20, 21, 22, 23
+    movq   [dstq+0*mmsize/2], m1
+    movq   [dstq+1*mmsize/2], m0
+    movq   [dstq+2*mmsize/2], m2
+    movhps [dstq+3*mmsize/2], m1
+    movhps [dstq+4*mmsize/2], m0
+    movhps [dstq+5*mmsize/2], m2
+    add      src0q, mmsize/2
+    add       dstq, mmsize*3
+    sub       lend, mmsize/4
+%else
+    mova        m0, [src0q      ]   ; m0 =  0,  6, 12, 18, 24, 30, 36, 42
+    mova        m1, [src0q+src1q]   ; m1 =  1,  7, 13, 19, 25, 31, 37, 43
+    mova        m2, [src0q+src2q]   ; m2 =  2,  8, 14, 20, 26, 32, 38, 44
+    mova        m3, [src0q+src3q]   ; m3 =  3,  9, 15, 21, 27, 33, 39, 45
+    mova        m4, [src0q+src4q]   ; m4 =  4, 10, 16, 22, 28, 34, 40, 46
+    mova        m5, [src0q+src5q]   ; m5 =  5, 11, 17, 23, 29, 35, 41, 47
+                                    ; unpack words:
+    SBUTTERFLY2 wd, 0, 1, 6         ; m0 =  0,  1,  6,  7, 12, 13, 18, 19
+                                    ; m1 = 24, 25, 30, 31, 36, 37, 42, 43
+    SBUTTERFLY2 wd, 2, 3, 6         ; m2 =  2,  3,  8,  9, 14, 15, 20, 21
+                                    ; m3 = 26, 27, 32, 33, 38, 39, 44, 45
+    SBUTTERFLY2 wd, 4, 5, 6         ; m4 =  4,  5, 10, 11, 16, 17, 22, 23
+                                    ; m5 = 28, 29, 34, 35, 40, 41, 46, 47
+                                    ; blend dwords
+    shufps      m6, m0, m2, q2020   ; m6 =  0,  1, 12, 13,  2,  3, 14, 15
+    shufps      m0, m4, q2031       ; m0 =  6,  7, 18, 19,  4,  5, 16, 17
+    shufps      m2, m4, q3131       ; m2 =  8,  9, 20, 21, 10, 11, 22, 23
+    SWAP 4,6                        ; m4 =  0,  1, 12, 13,  2,  3, 14, 15
+    shufps      m6, m1, m3, q2020   ; m6 = 24, 25, 36, 37, 26, 27, 38, 39
+    shufps      m1, m5, q2031       ; m1 = 30, 31, 42, 43, 28, 29, 40, 41
+    shufps      m3, m5, q3131       ; m3 = 32, 33, 44, 45, 34, 35, 46, 47
+    SWAP 5,6                        ; m5 = 24, 25, 36, 37, 26, 27, 38, 39
+                                    ; shuffle dwords
+    pshufd      m0, m0, q1302       ; m0 =  4,  5,  6,  7, 16, 17, 18, 19
+    pshufd      m2, m2, q3120       ; m2 =  8,  9, 10, 11, 20, 21, 22, 23
+    pshufd      m4, m4, q3120       ; m4 =  0,  1,  2,  3, 12, 13, 14, 15
+    pshufd      m1, m1, q1302       ; m1 = 28, 29, 30, 31, 40, 41, 42, 43
+    pshufd      m3, m3, q3120       ; m3 = 32, 33, 34, 35, 44, 45, 46, 47
+    pshufd      m5, m5, q3120       ; m5 = 24, 25, 26, 27, 36, 37, 38, 39
+                                    ; shuffle qwords
+    punpcklqdq  m6, m4, m0          ; m6 =  0,  1,  2,  3,  4,  5,  6,  7
+    punpckhqdq  m0, m2              ; m0 = 16, 17, 18, 19, 20, 21, 22, 23
+    shufps      m2, m4, q3210       ; m2 =  8,  9, 10, 11, 12, 13, 14, 15
+    SWAP 4,6                        ; m4 =  0,  1,  2,  3,  4,  5,  6,  7
+    punpcklqdq  m6, m5, m1          ; m6 = 24, 25, 26, 27, 28, 29, 30, 31
+    punpckhqdq  m1, m3              ; m1 = 40, 41, 42, 43, 44, 45, 46, 47
+    shufps      m3, m5, q3210       ; m3 = 32, 33, 34, 35, 36, 37, 38, 39
+    SWAP 5,6                        ; m5 = 24, 25, 26, 27, 28, 29, 30, 31
+    mova   [dstq+0*mmsize], m4
+    mova   [dstq+1*mmsize], m2
+    mova   [dstq+2*mmsize], m0
+    mova   [dstq+3*mmsize], m5
+    mova   [dstq+4*mmsize], m3
+    mova   [dstq+5*mmsize], m1
+    add      src0q, mmsize
+    add       dstq, mmsize*6
+    sub       lend, mmsize/2
+%endif
+    jg .loop
+    REP_RET
+%endmacro
+
+INIT_XMM sse2
+CONV_S16P_TO_S16_6CH
+INIT_XMM sse2slow
+CONV_S16P_TO_S16_6CH
+%if HAVE_AVX
+INIT_XMM avx
+CONV_S16P_TO_S16_6CH
+%endif
+
 ;-----------------------------------------------------------------------------
 ; void ff_conv_fltp_to_flt_6ch(float *dst, float *const *src, int len,
 ;                              int channels);
