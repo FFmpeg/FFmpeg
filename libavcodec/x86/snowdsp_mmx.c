@@ -675,14 +675,14 @@ static void ff_snow_vertical_compose97i_mmx(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM
 
 #define snow_inner_add_yblock_sse2_end_8\
              "sal $1, %%"REG_c"              \n\t"\
-             "add $"PTR_SIZE"*2, %1          \n\t"\
+             "addl $"PTR_SIZE"*2, %1         \n\t"\
              snow_inner_add_yblock_sse2_end_common1\
              "sar $1, %%"REG_c"              \n\t"\
              "sub $2, %2                     \n\t"\
              snow_inner_add_yblock_sse2_end_common2
 
 #define snow_inner_add_yblock_sse2_end_16\
-             "add $"PTR_SIZE"*1, %1          \n\t"\
+             "addl $"PTR_SIZE"*1, %1         \n\t"\
              snow_inner_add_yblock_sse2_end_common1\
              "dec %2                         \n\t"\
              snow_inner_add_yblock_sse2_end_common2
