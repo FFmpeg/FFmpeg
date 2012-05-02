@@ -1197,3 +1197,66 @@ CONV_FLT_TO_FLTP_2CH
 INIT_XMM avx
 CONV_FLT_TO_FLTP_2CH
 %endif
+
+;------------------------------------------------------------------------------
+; void ff_conv_flt_to_fltp_6ch(float *const *dst, float *src, int len,
+;                              int channels);
+;------------------------------------------------------------------------------
+
+%macro CONV_FLT_TO_FLTP_6CH 0
+%if ARCH_X86_64
+cglobal conv_flt_to_fltp_6ch, 3,8,7, dst, src, len, dst1, dst2, dst3, dst4, dst5
+%else
+cglobal conv_flt_to_fltp_6ch, 2,7,7, dst, src, dst1, dst2, dst3, dst4, dst5
+%define lend dword r2m
+%endif
+    mov     dst1q, [dstq+  gprsize]
+    mov     dst2q, [dstq+2*gprsize]
+    mov     dst3q, [dstq+3*gprsize]
+    mov     dst4q, [dstq+4*gprsize]
+    mov     dst5q, [dstq+5*gprsize]
+    mov      dstq, [dstq          ]
+    sub     dst1q, dstq
+    sub     dst2q, dstq
+    sub     dst3q, dstq
+    sub     dst4q, dstq
+    sub     dst5q, dstq
+.loop:
+    mova       m0, [srcq+0*mmsize]  ; m0 =  0,  1,  2,  3
+    mova       m1, [srcq+1*mmsize]  ; m1 =  4,  5,  6,  7
+    mova       m2, [srcq+2*mmsize]  ; m2 =  8,  9, 10, 11
+    mova       m3, [srcq+3*mmsize]  ; m3 = 12, 13, 14, 15
+    mova       m4, [srcq+4*mmsize]  ; m4 = 16, 17, 18, 19
+    mova       m5, [srcq+5*mmsize]  ; m5 = 20, 21, 22, 23
+
+    SBUTTERFLY2 dq, 0, 3, 6         ; m0 =  0, 12,  1, 13
+                                    ; m3 =  2, 14,  3, 15
+    SBUTTERFLY2 dq, 1, 4, 6         ; m1 =  4, 16,  5, 17
+                                    ; m4 =  6, 18,  7, 19
+    SBUTTERFLY2 dq, 2, 5, 6         ; m2 =  8, 20,  9, 21
+                                    ; m5 = 10, 22, 11, 23
+    SBUTTERFLY2 dq, 0, 4, 6         ; m0 =  0,  6, 12, 18
+                                    ; m4 =  1,  7, 13, 19
+    SBUTTERFLY2 dq, 3, 2, 6         ; m3 =  2,  8, 14, 20
+                                    ; m2 =  3,  9, 15, 21
+    SBUTTERFLY2 dq, 1, 5, 6         ; m1 =  4, 10, 16, 22
+                                    ; m5 =  5, 11, 17, 23
+    mova [dstq      ], m0
+    mova [dstq+dst1q], m4
+    mova [dstq+dst2q], m3
+    mova [dstq+dst3q], m2
+    mova [dstq+dst4q], m1
+    mova [dstq+dst5q], m5
+    add      srcq, mmsize*6
+    add      dstq, mmsize
+    sub      lend, mmsize/4
+    jg .loop
+    REP_RET
+%endmacro
+
+INIT_XMM sse2
+CONV_FLT_TO_FLTP_6CH
+%if HAVE_AVX
+INIT_XMM avx
+CONV_FLT_TO_FLTP_6CH
+%endif
