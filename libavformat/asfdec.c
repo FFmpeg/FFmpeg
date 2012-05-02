@@ -1100,6 +1100,8 @@ static int ff_asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pk
             //printf("packet %d %d\n", asf_st->pkt.size, asf->packet_frag_size);
             asf_st->pkt.size = 0;
             asf_st->pkt.data = 0;
+            asf_st->pkt.side_data_elems = 0;
+            asf_st->pkt.side_data = NULL;
             break; // packet completed
         }
     }

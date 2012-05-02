@@ -1440,14 +1440,15 @@ static int synth_frame(AVCodecContext *ctx, GetBitContext *gb, int frame_idx,
     int pitch[MAX_BLOCKS], last_block_pitch;
 
     /* Parse frame type ("frame header"), see frame_descs */
-    int bd_idx = s->vbm_tree[get_vlc2(gb, frame_type_vlc.table, 6, 3)],
-        block_nsamples = MAX_FRAMESIZE / frame_descs[bd_idx].n_blocks;
+    int bd_idx = s->vbm_tree[get_vlc2(gb, frame_type_vlc.table, 6, 3)], block_nsamples;
 
     if (bd_idx < 0) {
         av_log(ctx, AV_LOG_ERROR,
                "Invalid frame type VLC code, skipping\n");
         return -1;
     }
+
+    block_nsamples = MAX_FRAMESIZE / frame_descs[bd_idx].n_blocks;
 
     /* Pitch calculation for ACB_TYPE_ASYMMETRIC ("pitch-per-frame") */
     if (frame_descs[bd_idx].acb_type == ACB_TYPE_ASYMMETRIC) {

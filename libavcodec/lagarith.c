@@ -247,24 +247,26 @@ static void lag_pred_line(LagarithContext *l, uint8_t *buf,
 {
     int L, TL;
 
-    /* Left pixel is actually prev_row[width] */
-    L = buf[width - stride - 1];
     if (!line) {
         /* Left prediction only for first line */
         L = l->dsp.add_hfyu_left_prediction(buf + 1, buf + 1,
                                             width - 1, buf[0]);
-        return;
-    } else if (line == 1) {
-        /* Second line, left predict first pixel, the rest of the line is median predicted
-         * NOTE: In the case of RGB this pixel is top predicted */
-        TL = l->avctx->pix_fmt == PIX_FMT_YUV420P ? buf[-stride] : L;
     } else {
-        /* Top left is 2 rows back, last pixel */
-        TL = buf[width - (2 * stride) - 1];
-    }
+        /* Left pixel is actually prev_row[width] */
+        L = buf[width - stride - 1];
 
-    add_lag_median_prediction(buf, buf - stride, buf,
-                              width, &L, &TL);
+        if (line == 1) {
+            /* Second line, left predict first pixel, the rest of the line is median predicted
+             * NOTE: In the case of RGB this pixel is top predicted */
+            TL = l->avctx->pix_fmt == PIX_FMT_YUV420P ? buf[-stride] : L;
+        } else {
+            /* Top left is 2 rows back, last pixel */
+            TL = buf[width - (2 * stride) - 1];
+        }
+
+        add_lag_median_prediction(buf, buf - stride, buf,
+                                  width, &L, &TL);
+    }
 }
 
 static int lag_decode_line(LagarithContext *l, lag_rac *rac,
@@ -310,13 +312,13 @@ handle_zeros:
 }
 
 static int lag_decode_zero_run_line(LagarithContext *l, uint8_t *dst,
-                                    const uint8_t *src, int width,
-                                    int esc_count)
+                                    const uint8_t *src, const uint8_t *src_end,
+                                    int width, int esc_count)
 {
     int i = 0;
     int count;
     uint8_t zero_run = 0;
-    const uint8_t *start = src;
+    const uint8_t *src_start = src;
     uint8_t mask1 = -(esc_count < 2);
     uint8_t mask2 = -(esc_count < 3);
     uint8_t *end = dst + (width - 2);
@@ -333,6 +335,8 @@ output_zeros:
         i = 0;
         while (!zero_run && dst + i < end) {
             i++;
+            if (src + i >= src_end)
+                return AVERROR_INVALIDDATA;
             zero_run =
                 !(src[i] | (src[i + 1] & mask1) | (src[i + 2] & mask2));
         }
@@ -348,9 +352,10 @@ output_zeros:
         } else {
             memcpy(dst, src, i);
             src += i;
+            dst += i;
         }
     }
-    return start - src;
+    return src_start - src;
 }
 
 
@@ -366,6 +371,7 @@ static int lag_decode_arith_plane(LagarithContext *l, uint8_t *dst,
     int esc_count = src[0];
     GetBitContext gb;
     lag_rac rac;
+    const uint8_t *src_end = src + src_size;
 
     rac.avctx = l->avctx;
     l->zeros = 0;
@@ -396,10 +402,16 @@ static int lag_decode_arith_plane(LagarithContext *l, uint8_t *dst,
         esc_count -= 4;
         if (esc_count > 0) {
             /* Zero run coding only, no range coding. */
-            for (i = 0; i < height; i++)
-                src += lag_decode_zero_run_line(l, dst + (i * stride), src,
-                                                width, esc_count);
+            for (i = 0; i < height; i++) {
+                int res = lag_decode_zero_run_line(l, dst + (i * stride), src,
+                                                   src_end, width, esc_count);
+                if (res < 0)
+                    return res;
+                src += res;
+            }
         } else {
+            if (src_size < width * height)
+                return AVERROR_INVALIDDATA; // buffer not big enough
             /* Plane is stored uncompressed */
             for (i = 0; i < height; i++) {
                 memcpy(dst + (i * stride), src, width);
@@ -500,11 +512,19 @@ static int lag_decode_frame(AVCodecContext *avctx,
         }
         for (i = 0; i < 4; i++)
             srcs[i] = l->rgb_planes + (i + 1) * l->rgb_stride * avctx->height - l->rgb_stride;
+        if (offset_ry >= buf_size ||
+            offset_gu >= buf_size ||
+            offset_bv >= buf_size ||
+            offs[3] >= buf_size) {
+            av_log(avctx, AV_LOG_ERROR,
+                    "Invalid frame offsets\n");
+            return AVERROR_INVALIDDATA;
+        }
         for (i = 0; i < 4; i++)
             lag_decode_arith_plane(l, srcs[i],
                                    avctx->width, avctx->height,
                                    -l->rgb_stride, buf + offs[i],
-                                   buf_size);
+                                   buf_size - offs[i]);
         dst = p->data[0];
         for (i = 0; i < 4; i++)
             srcs[i] = l->rgb_planes + i * l->rgb_stride * avctx->height;
@@ -576,15 +596,23 @@ static int lag_decode_frame(AVCodecContext *avctx,
             return -1;
         }
 
+        if (offset_ry >= buf_size ||
+            offset_gu >= buf_size ||
+            offset_bv >= buf_size) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Invalid frame offsets\n");
+            return AVERROR_INVALIDDATA;
+        }
+
         lag_decode_arith_plane(l, p->data[0], avctx->width, avctx->height,
                                p->linesize[0], buf + offset_ry,
-                               buf_size);
+                               buf_size - offset_ry);
         lag_decode_arith_plane(l, p->data[2], avctx->width / 2,
                                avctx->height / 2, p->linesize[2],
-                               buf + offset_gu, buf_size);
+                               buf + offset_gu, buf_size - offset_gu);
         lag_decode_arith_plane(l, p->data[1], avctx->width / 2,
                                avctx->height / 2, p->linesize[1],
-                               buf + offset_bv, buf_size);
+                               buf + offset_bv, buf_size - offset_bv);
         break;
     default:
         av_log(avctx, AV_LOG_ERROR,

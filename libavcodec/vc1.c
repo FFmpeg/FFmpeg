@@ -493,7 +493,7 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
                 int nr, dr;
                 nr = get_bits(gb, 8);
                 dr = get_bits(gb, 4);
-                if (nr && nr < 8 && dr && dr < 3) {
+                if (nr > 0 && nr < 8 && dr > 0 && dr < 3) {
                     v->s.avctx->time_base.num = ff_vc1_fps_dr[dr - 1];
                     v->s.avctx->time_base.den = ff_vc1_fps_nr[nr - 1] * 1000;
                 }

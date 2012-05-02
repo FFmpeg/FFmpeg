@@ -372,7 +372,8 @@ static int decode_band_hdr(IVI4DecContext *ctx, IVIBandDesc *band,
 
         if (!get_bits1(&ctx->gb) || ctx->frame_type == FRAMETYPE_INTRA) {
             transform_id = get_bits(&ctx->gb, 5);
-            if (!transforms[transform_id].inv_trans) {
+            if (transform_id >= FF_ARRAY_ELEMS(transforms) ||
+                !transforms[transform_id].inv_trans) {
                 av_log_ask_for_sample(avctx, "Unimplemented transform: %d!\n", transform_id);
                 return AVERROR_PATCHWELCOME;
             }

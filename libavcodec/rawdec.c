@@ -139,6 +139,7 @@ static int raw_decode(AVCodecContext *avctx,
     int buf_size = avpkt->size;
     int linesize_align = 4;
     RawVideoContext *context = avctx->priv_data;
+    int res;
 
     AVFrame * frame = (AVFrame *) data;
     AVPicture * picture = (AVPicture *) data;
@@ -185,7 +186,9 @@ static int raw_decode(AVCodecContext *avctx,
        avctx->codec_tag == MKTAG('A', 'V', 'u', 'p'))
         buf += buf_size - context->length;
 
-    avpicture_fill(picture, buf, avctx->pix_fmt, avctx->width, avctx->height);
+    if ((res = avpicture_fill(picture, buf, avctx->pix_fmt,
+                              avctx->width, avctx->height)) < 0)
+        return res;
     if((avctx->pix_fmt==PIX_FMT_PAL8 && buf_size < context->length) ||
        (avctx->pix_fmt!=PIX_FMT_PAL8 &&
         (av_pix_fmt_descriptors[avctx->pix_fmt].flags & PIX_FMT_PAL))){

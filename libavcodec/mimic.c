@@ -259,8 +259,8 @@ static int decode(MimicContext *ctx, int quality, int num_coeffs,
                         int index = (ctx->cur_index+backref)&15;
                         uint8_t *p = ctx->flipped_ptrs[index].data[0];
 
-                        ff_thread_await_progress(&ctx->buf_ptrs[index], cur_row, 0);
-                        if(p) {
+                        if (index != ctx->cur_index && p) {
+                            ff_thread_await_progress(&ctx->buf_ptrs[index], cur_row, 0);
                             p += src -
                                 ctx->flipped_ptrs[ctx->prev_index].data[plane];
                             ctx->dsp.put_pixels_tab[1][0](dst, p, stride, 8);
@@ -310,6 +310,7 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
     int width, height;
     int quality, num_coeffs;
     int swap_buf_size = buf_size - MIMIC_HEADER_SIZE;
+    int res;
 
     if(buf_size < MIMIC_HEADER_SIZE) {
         av_log(avctx, AV_LOG_ERROR, "insufficient data\n");
@@ -376,10 +377,10 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
                         swap_buf_size>>2);
     init_get_bits(&ctx->gb, ctx->swap_buf, swap_buf_size << 3);
 
-    if(!decode(ctx, quality, num_coeffs, !is_pframe)) {
-        if (avctx->active_thread_type&FF_THREAD_FRAME)
-            ff_thread_report_progress(&ctx->buf_ptrs[ctx->cur_index], INT_MAX, 0);
-        else {
+    res = decode(ctx, quality, num_coeffs, !is_pframe);
+    ff_thread_report_progress(&ctx->buf_ptrs[ctx->cur_index], INT_MAX, 0);
+    if (!res) {
+        if (!(avctx->active_thread_type & FF_THREAD_FRAME)) {
             ff_thread_release_buffer(avctx, &ctx->buf_ptrs[ctx->cur_index]);
             return -1;
         }
