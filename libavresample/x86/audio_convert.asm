@@ -581,6 +581,120 @@ CONV_FLTP_TO_S16_2CH
 INIT_XMM ssse3
 CONV_FLTP_TO_S16_2CH
 
+;------------------------------------------------------------------------------
+; void ff_conv_fltp_to_s16_6ch(int16_t *dst, float *const *src, int len,
+;                              int channels);
+;------------------------------------------------------------------------------
+
+%macro CONV_FLTP_TO_S16_6CH 0
+%if ARCH_X86_64
+cglobal conv_fltp_to_s16_6ch, 3,8,7, dst, src, len, src1, src2, src3, src4, src5
+%else
+cglobal conv_fltp_to_s16_6ch, 2,7,7, dst, src, src1, src2, src3, src4, src5
+%define lend dword r2m
+%endif
+    mov        src1q, [srcq+1*gprsize]
+    mov        src2q, [srcq+2*gprsize]
+    mov        src3q, [srcq+3*gprsize]
+    mov        src4q, [srcq+4*gprsize]
+    mov        src5q, [srcq+5*gprsize]
+    mov         srcq, [srcq]
+    sub        src1q, srcq
+    sub        src2q, srcq
+    sub        src3q, srcq
+    sub        src4q, srcq
+    sub        src5q, srcq
+    movaps      xmm6, [pf_s16_scale]
+.loop:
+%if cpuflag(sse2)
+    mulps         m0, m6, [srcq      ]
+    mulps         m1, m6, [srcq+src1q]
+    mulps         m2, m6, [srcq+src2q]
+    mulps         m3, m6, [srcq+src3q]
+    mulps         m4, m6, [srcq+src4q]
+    mulps         m5, m6, [srcq+src5q]
+    cvtps2dq      m0, m0
+    cvtps2dq      m1, m1
+    cvtps2dq      m2, m2
+    cvtps2dq      m3, m3
+    cvtps2dq      m4, m4
+    cvtps2dq      m5, m5
+    packssdw      m0, m3            ; m0 =  0,  6, 12, 18,  3,  9, 15, 21
+    packssdw      m1, m4            ; m1 =  1,  7, 13, 19,  4, 10, 16, 22
+    packssdw      m2, m5            ; m2 =  2,  8, 14, 20,  5, 11, 17, 23
+                                    ; unpack words:
+    movhlps       m3, m0            ; m3 =  3,  9, 15, 21,  x,  x,  x,  x
+    punpcklwd     m0, m1            ; m0 =  0,  1,  6,  7, 12, 13, 18, 19
+    punpckhwd     m1, m2            ; m1 =  4,  5, 10, 11, 16, 17, 22, 23
+    punpcklwd     m2, m3            ; m2 =  2,  3,  8,  9, 14, 15, 20, 21
+                                    ; blend dwords:
+    shufps        m3, m0, m2, q2020 ; m3 =  0,  1, 12, 13,  2,  3, 14, 15
+    shufps        m0, m1, q2031     ; m0 =  6,  7, 18, 19,  4,  5, 16, 17
+    shufps        m2, m1, q3131     ; m2 =  8,  9, 20, 21, 10, 11, 22, 23
+                                    ; shuffle dwords:
+    shufps        m1, m2, m3, q3120 ; m1 =  8,  9, 10, 11, 12, 13, 14, 15
+    shufps        m3, m0,     q0220 ; m3 =  0,  1,  2,  3,  4,  5,  6,  7
+    shufps        m0, m2,     q3113 ; m0 = 16, 17, 18, 19, 20, 21, 22, 23
+    mova  [dstq+0*mmsize], m3
+    mova  [dstq+1*mmsize], m1
+    mova  [dstq+2*mmsize], m0
+%else ; sse
+    movlps      xmm0, [srcq      ]
+    movlps      xmm1, [srcq+src1q]
+    movlps      xmm2, [srcq+src2q]
+    movlps      xmm3, [srcq+src3q]
+    movlps      xmm4, [srcq+src4q]
+    movlps      xmm5, [srcq+src5q]
+    mulps       xmm0, xmm6
+    mulps       xmm1, xmm6
+    mulps       xmm2, xmm6
+    mulps       xmm3, xmm6
+    mulps       xmm4, xmm6
+    mulps       xmm5, xmm6
+    cvtps2pi     mm0, xmm0
+    cvtps2pi     mm1, xmm1
+    cvtps2pi     mm2, xmm2
+    cvtps2pi     mm3, xmm3
+    cvtps2pi     mm4, xmm4
+    cvtps2pi     mm5, xmm5
+    packssdw     mm0, mm3           ; m0 =  0,  6,  3,  9
+    packssdw     mm1, mm4           ; m1 =  1,  7,  4, 10
+    packssdw     mm2, mm5           ; m2 =  2,  8,  5, 11
+                                    ; unpack words
+    pshufw       mm3, mm0, q1032    ; m3 =  3,  9,  0,  6
+    punpcklwd    mm0, mm1           ; m0 =  0,  1,  6,  7
+    punpckhwd    mm1, mm2           ; m1 =  4,  5, 10, 11
+    punpcklwd    mm2, mm3           ; m2 =  2,  3,  8,  9
+                                    ; unpack dwords
+    pshufw       mm3, mm0, q1032    ; m3 =  6,  7,  0,  1
+    punpckldq    mm0, mm2           ; m0 =  0,  1,  2,  3 (final)
+    punpckhdq    mm2, mm1           ; m2 =  8,  9, 10, 11 (final)
+    punpckldq    mm1, mm3           ; m1 =  4,  5,  6,  7 (final)
+    mova  [dstq+0*mmsize], mm0
+    mova  [dstq+1*mmsize], mm1
+    mova  [dstq+2*mmsize], mm2
+%endif
+    add       srcq, mmsize
+    add       dstq, mmsize*3
+    sub       lend, mmsize/4
+    jg .loop
+%if mmsize == 8
+    emms
+    RET
+%else
+    REP_RET
+%endif
+%endmacro
+
+INIT_MMX sse
+CONV_FLTP_TO_S16_6CH
+INIT_XMM sse2
+CONV_FLTP_TO_S16_6CH
+%if HAVE_AVX
+INIT_XMM avx
+CONV_FLTP_TO_S16_6CH
+%endif
+
 ;-----------------------------------------------------------------------------
 ; void ff_conv_fltp_to_flt_6ch(float *dst, float *const *src, int len,
 ;                              int channels);
