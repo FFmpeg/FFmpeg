@@ -27,7 +27,7 @@
 #include "audio_data.h"
 #include "audio_mix.h"
 
-static const char *coeff_type_names[] = { "q6", "q15", "flt" };
+static const char *coeff_type_names[] = { "q8", "q15", "flt" };
 
 void ff_audio_mix_set_func(AudioMix *am, enum AVSampleFormat fmt,
                            enum AVMixCoeffType coeff_type, int in_channels,
@@ -89,7 +89,7 @@ static void MIX_FUNC_NAME(fmt, cfmt)(stype **samples, ctype **matrix,       \
 MIX_FUNC_GENERIC(FLTP, FLT, float,   float,   float,   sum)
 MIX_FUNC_GENERIC(S16P, FLT, int16_t, float,   float,   av_clip_int16(lrintf(sum)))
 MIX_FUNC_GENERIC(S16P, Q15, int16_t, int32_t, int64_t, av_clip_int16(sum >> 15))
-MIX_FUNC_GENERIC(S16P, Q6,  int16_t, int16_t, int32_t, av_clip_int16(sum >> 6))
+MIX_FUNC_GENERIC(S16P, Q8,  int16_t, int16_t, int32_t, av_clip_int16(sum >>  8))
 
 /* TODO: templatize the channel-specific C functions */
 
@@ -221,8 +221,8 @@ static int mix_function_init(AudioMix *am)
     ff_audio_mix_set_func(am, AV_SAMPLE_FMT_S16P, AV_MIX_COEFF_TYPE_Q15,
                           0, 0, 1, 1, "C", MIX_FUNC_NAME(S16P, Q15));
 
-    ff_audio_mix_set_func(am, AV_SAMPLE_FMT_S16P, AV_MIX_COEFF_TYPE_Q6,
-                          0, 0, 1, 1, "C", MIX_FUNC_NAME(S16P, Q6));
+    ff_audio_mix_set_func(am, AV_SAMPLE_FMT_S16P, AV_MIX_COEFF_TYPE_Q8,
+                          0, 0, 1, 1, "C", MIX_FUNC_NAME(S16P, Q8));
 
     /* channel-specific C versions */
 
@@ -320,7 +320,7 @@ void ff_audio_mix_close(AudioMix *am)
         av_free(am->matrix[0]);
         am->matrix = NULL;
     }
-    memset(am->matrix_q6,  0, sizeof(am->matrix_q6 ));
+    memset(am->matrix_q8,  0, sizeof(am->matrix_q8 ));
     memset(am->matrix_q15, 0, sizeof(am->matrix_q15));
     memset(am->matrix_flt, 0, sizeof(am->matrix_flt));
 }
