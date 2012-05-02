@@ -596,7 +596,9 @@ int ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size)
         cbSize = FFMIN(size, cbSize);
         if (cbSize >= 22 && id == 0xfffe) { /* WAVEFORMATEXTENSIBLE */
             ff_asf_guid subformat;
-            codec->bits_per_coded_sample = avio_rl16(pb);
+            int bps = avio_rl16(pb);
+            if (bps)
+                codec->bits_per_coded_sample = bps;
             codec->channel_layout = avio_rl32(pb); /* dwChannelMask */
             ff_get_guid(pb, &subformat);
             if (!memcmp(subformat + 4, (const uint8_t[]){FF_MEDIASUBTYPE_BASE_GUID}, 12)) {
