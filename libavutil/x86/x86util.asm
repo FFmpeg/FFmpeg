@@ -637,3 +637,15 @@
         %rotate 1
     %endrep
 %endmacro
+
+%macro PMOVSXWD 2; dst, src
+%if cpuflag(sse4)
+    pmovsxwd     %1, %2
+%else
+    %ifnidn %1, %2
+    mova         %1, %2
+    %endif
+    punpcklwd    %1, %1
+    psrad        %1, 16
+%endif
+%endmacro

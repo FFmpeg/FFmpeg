@@ -962,3 +962,86 @@ CONV_S16_TO_FLTP_2CH
 INIT_XMM avx
 CONV_S16_TO_FLTP_2CH
 %endif
+
+;------------------------------------------------------------------------------
+; void ff_conv_s16_to_fltp_6ch(float *const *dst, int16_t *src, int len,
+;                              int channels);
+;------------------------------------------------------------------------------
+
+%macro CONV_S16_TO_FLTP_6CH 0
+%if ARCH_X86_64
+cglobal conv_s16_to_fltp_6ch, 3,8,7, dst, src, len, dst1, dst2, dst3, dst4, dst5
+%else
+cglobal conv_s16_to_fltp_6ch, 2,7,7, dst, src, dst1, dst2, dst3, dst4, dst5
+%define lend dword r2m
+%endif
+    mov     dst1q, [dstq+  gprsize]
+    mov     dst2q, [dstq+2*gprsize]
+    mov     dst3q, [dstq+3*gprsize]
+    mov     dst4q, [dstq+4*gprsize]
+    mov     dst5q, [dstq+5*gprsize]
+    mov      dstq, [dstq          ]
+    sub     dst1q, dstq
+    sub     dst2q, dstq
+    sub     dst3q, dstq
+    sub     dst4q, dstq
+    sub     dst5q, dstq
+    mova       m6, [pf_s16_inv_scale]
+.loop:
+    mova       m0, [srcq+0*mmsize]  ; m0 =  0,  1,  2,  3,  4,  5,  6,  7
+    mova       m3, [srcq+1*mmsize]  ; m3 =  8,  9, 10, 11, 12, 13, 14, 15
+    mova       m2, [srcq+2*mmsize]  ; m2 = 16, 17, 18, 19, 20, 21, 22, 23
+    PALIGNR    m1, m3, m0, 12, m4   ; m1 =  6,  7,  8,  9, 10, 11,  x,  x
+    shufps     m3, m2, q1032        ; m3 = 12, 13, 14, 15, 16, 17, 18, 19
+    psrldq     m2, 4                ; m2 = 18, 19, 20, 21, 22, 23,  x,  x
+    SBUTTERFLY2 wd, 0, 1, 4         ; m0 =  0,  6,  1,  7,  2,  8,  3,  9
+                                    ; m1 =  4, 10,  5, 11,  x,  x,  x,  x
+    SBUTTERFLY2 wd, 3, 2, 4         ; m3 = 12, 18, 13, 19, 14, 20, 15, 21
+                                    ; m2 = 16, 22, 17, 23,  x,  x,  x,  x
+    SBUTTERFLY2 dq, 0, 3, 4         ; m0 =  0,  6, 12, 18,  1,  7, 13, 19
+                                    ; m3 =  2,  8, 14, 20,  3,  9, 15, 21
+    punpckldq  m1, m2               ; m1 =  4, 10, 16, 22,  5, 11, 17, 23
+    S16_TO_S32_SX 0, 2              ; m0 =      0,      6,     12,     18
+                                    ; m2 =      1,      7,     13,     19
+    S16_TO_S32_SX 3, 4              ; m3 =      2,      8,     14,     20
+                                    ; m4 =      3,      9,     15,     21
+    S16_TO_S32_SX 1, 5              ; m1 =      4,     10,     16,     22
+                                    ; m5 =      5,     11,     17,     23
+    SWAP 1,2,3,4
+    cvtdq2ps   m0, m0
+    cvtdq2ps   m1, m1
+    cvtdq2ps   m2, m2
+    cvtdq2ps   m3, m3
+    cvtdq2ps   m4, m4
+    cvtdq2ps   m5, m5
+    mulps      m0, m6
+    mulps      m1, m6
+    mulps      m2, m6
+    mulps      m3, m6
+    mulps      m4, m6
+    mulps      m5, m6
+    mova  [dstq      ], m0
+    mova  [dstq+dst1q], m1
+    mova  [dstq+dst2q], m2
+    mova  [dstq+dst3q], m3
+    mova  [dstq+dst4q], m4
+    mova  [dstq+dst5q], m5
+    add      srcq, mmsize*3
+    add      dstq, mmsize
+    sub      lend, mmsize/4
+    jg .loop
+    REP_RET
+%endmacro
+
+%define PALIGNR PALIGNR_MMX
+INIT_XMM sse2
+CONV_S16_TO_FLTP_6CH
+%define PALIGNR PALIGNR_SSSE3
+INIT_XMM ssse3
+CONV_S16_TO_FLTP_6CH
+INIT_XMM sse4
+CONV_S16_TO_FLTP_6CH
+%if HAVE_AVX
+INIT_XMM avx
+CONV_S16_TO_FLTP_6CH
+%endif
