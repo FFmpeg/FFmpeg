@@ -33,6 +33,7 @@ pf_s16_scale:     times 4 dd 0x47000000
 pb_shuf_unpack_even:      db -1, -1,  0,  1, -1, -1,  2,  3, -1, -1,  8,  9, -1, -1, 10, 11
 pb_shuf_unpack_odd:       db -1, -1,  4,  5, -1, -1,  6,  7, -1, -1, 12, 13, -1, -1, 14, 15
 pb_interleave_words: SHUFFLE_MASK_W  0,  4,  1,  5,  2,  6,  3,  7
+pb_deinterleave_words: SHUFFLE_MASK_W  0,  2,  4,  6,  1,  3,  5,  7
 
 SECTION_TEXT
 
@@ -811,4 +812,53 @@ CONV_FLTP_TO_FLT_6CH
 %if HAVE_AVX
 INIT_XMM avx
 CONV_FLTP_TO_FLT_6CH
+%endif
+
+;------------------------------------------------------------------------------
+; void ff_conv_s16_to_s16p_2ch(int16_t *const *dst, int16_t *src, int len,
+;                              int channels);
+;------------------------------------------------------------------------------
+
+%macro CONV_S16_TO_S16P_2CH 0
+cglobal conv_s16_to_s16p_2ch, 3,4,4, dst0, src, len, dst1
+    lea       lenq, [2*lend]
+    mov      dst1q, [dst0q+gprsize]
+    mov      dst0q, [dst0q        ]
+    lea       srcq, [srcq+2*lenq]
+    add      dst0q, lenq
+    add      dst1q, lenq
+    neg       lenq
+%if cpuflag(ssse3)
+    mova        m3, [pb_deinterleave_words]
+%endif
+.loop:
+    mova        m0, [srcq+2*lenq       ]  ; m0 =  0,  1,  2,  3,  4,  5,  6,  7
+    mova        m1, [srcq+2*lenq+mmsize]  ; m1 =  8,  9, 10, 11, 12, 13, 14, 15
+%if cpuflag(ssse3)
+    pshufb      m0, m3                    ; m0 =  0,  2,  4,  6,  1,  3,  5,  7
+    pshufb      m1, m3                    ; m1 =  8, 10, 12, 14,  9, 11, 13, 15
+    SBUTTERFLY2 qdq, 0, 1, 2              ; m0 =  0,  2,  4,  6,  8, 10, 12, 14
+                                          ; m1 =  1,  3,  5,  7,  9, 11, 13, 15
+%else ; sse2
+    pshuflw     m0, m0, q3120             ; m0 =  0,  2,  1,  3,  4,  5,  6,  7
+    pshufhw     m0, m0, q3120             ; m0 =  0,  2,  1,  3,  4,  6,  5,  7
+    pshuflw     m1, m1, q3120             ; m1 =  8, 10,  9, 11, 12, 13, 14, 15
+    pshufhw     m1, m1, q3120             ; m1 =  8, 10,  9, 11, 12, 14, 13, 15
+    DEINT2_PS    0, 1, 2                  ; m0 =  0,  2,  4,  6,  8, 10, 12, 14
+                                          ; m1 =  1,  3,  5,  7,  9, 11, 13, 15
+%endif
+    mova  [dst0q+lenq], m0
+    mova  [dst1q+lenq], m1
+    add       lenq, mmsize
+    jl .loop
+    REP_RET
+%endmacro
+
+INIT_XMM sse2
+CONV_S16_TO_S16P_2CH
+INIT_XMM ssse3
+CONV_S16_TO_S16P_2CH
+%if HAVE_AVX
+INIT_XMM avx
+CONV_S16_TO_S16P_2CH
 %endif
