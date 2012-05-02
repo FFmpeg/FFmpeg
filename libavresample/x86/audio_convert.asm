@@ -383,6 +383,55 @@ INIT_XMM avx
 CONV_S16P_TO_S16_6CH
 %endif
 
+;------------------------------------------------------------------------------
+; void ff_conv_s16p_to_flt_2ch(float *dst, int16_t *const *src, int len,
+;                              int channels);
+;------------------------------------------------------------------------------
+
+%macro CONV_S16P_TO_FLT_2CH 0
+cglobal conv_s16p_to_flt_2ch, 3,4,6, dst, src0, len, src1
+    lea       lenq, [2*lend]
+    mov      src1q, [src0q+gprsize]
+    mov      src0q, [src0q        ]
+    lea       dstq, [dstq+4*lenq]
+    add      src0q, lenq
+    add      src1q, lenq
+    neg       lenq
+    mova        m5, [pf_s32_inv_scale]
+.loop:
+    mova        m2, [src0q+lenq]    ; m2 =  0,  2,  4,  6,  8, 10, 12, 14
+    mova        m4, [src1q+lenq]    ; m4 =  1,  3,  5,  7,  9, 11, 13, 15
+    SBUTTERFLY2 wd, 2, 4, 3         ; m2 =  0,  1,  2,  3,  4,  5,  6,  7
+                                    ; m4 =  8,  9, 10, 11, 12, 13, 14, 15
+    pxor        m3, m3
+    punpcklwd   m0, m3, m2          ; m0 =      0,      1,      2,      3
+    punpckhwd   m1, m3, m2          ; m1 =      4,      5,      6,      7
+    punpcklwd   m2, m3, m4          ; m2 =      8,      9,     10,     11
+    punpckhwd   m3, m4              ; m3 =     12,     13,     14,     15
+    cvtdq2ps    m0, m0
+    cvtdq2ps    m1, m1
+    cvtdq2ps    m2, m2
+    cvtdq2ps    m3, m3
+    mulps       m0, m5
+    mulps       m1, m5
+    mulps       m2, m5
+    mulps       m3, m5
+    mova  [dstq+4*lenq         ], m0
+    mova  [dstq+4*lenq+  mmsize], m1
+    mova  [dstq+4*lenq+2*mmsize], m2
+    mova  [dstq+4*lenq+3*mmsize], m3
+    add       lenq, mmsize
+    jl .loop
+    REP_RET
+%endmacro
+
+INIT_XMM sse2
+CONV_S16P_TO_FLT_2CH
+%if HAVE_AVX
+INIT_XMM avx
+CONV_S16P_TO_FLT_2CH
+%endif
+
 ;-----------------------------------------------------------------------------
 ; void ff_conv_fltp_to_flt_6ch(float *dst, float *const *src, int len,
 ;                              int channels);
