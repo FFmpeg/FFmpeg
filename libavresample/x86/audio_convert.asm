@@ -1045,3 +1045,49 @@ CONV_S16_TO_FLTP_6CH
 INIT_XMM avx
 CONV_S16_TO_FLTP_6CH
 %endif
+
+;------------------------------------------------------------------------------
+; void ff_conv_flt_to_s16p_2ch(int16_t *const *dst, float *src, int len,
+;                              int channels);
+;------------------------------------------------------------------------------
+
+%macro CONV_FLT_TO_S16P_2CH 0
+cglobal conv_flt_to_s16p_2ch, 3,4,6, dst0, src, len, dst1
+    lea       lenq, [2*lend]
+    mov      dst1q, [dst0q+gprsize]
+    mov      dst0q, [dst0q        ]
+    lea       srcq, [srcq+4*lenq]
+    add      dst0q, lenq
+    add      dst1q, lenq
+    neg       lenq
+    mova        m5, [pf_s16_scale]
+.loop:
+    mova       m0, [srcq+4*lenq         ]
+    mova       m1, [srcq+4*lenq+  mmsize]
+    mova       m2, [srcq+4*lenq+2*mmsize]
+    mova       m3, [srcq+4*lenq+3*mmsize]
+    DEINT2_PS   0, 1, 4
+    DEINT2_PS   2, 3, 4
+    mulps      m0, m0, m5
+    mulps      m1, m1, m5
+    mulps      m2, m2, m5
+    mulps      m3, m3, m5
+    cvtps2dq   m0, m0
+    cvtps2dq   m1, m1
+    cvtps2dq   m2, m2
+    cvtps2dq   m3, m3
+    packssdw   m0, m2
+    packssdw   m1, m3
+    mova  [dst0q+lenq], m0
+    mova  [dst1q+lenq], m1
+    add      lenq, mmsize
+    jl .loop
+    REP_RET
+%endmacro
+
+INIT_XMM sse2
+CONV_FLT_TO_S16P_2CH
+%if HAVE_AVX
+INIT_XMM avx
+CONV_FLT_TO_S16P_2CH
+%endif
