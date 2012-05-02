@@ -34,6 +34,7 @@ pb_shuf_unpack_even:      db -1, -1,  0,  1, -1, -1,  2,  3, -1, -1,  8,  9, -1,
 pb_shuf_unpack_odd:       db -1, -1,  4,  5, -1, -1,  6,  7, -1, -1, 12, 13, -1, -1, 14, 15
 pb_interleave_words: SHUFFLE_MASK_W  0,  4,  1,  5,  2,  6,  3,  7
 pb_deinterleave_words: SHUFFLE_MASK_W  0,  2,  4,  6,  1,  3,  5,  7
+pw_zero_even:     times 4 dw 0x0000, 0xffff
 
 SECTION_TEXT
 
@@ -922,4 +923,42 @@ CONV_S16_TO_S16P_6CH
 %if HAVE_AVX
 INIT_XMM avx
 CONV_S16_TO_S16P_6CH
+%endif
+
+;------------------------------------------------------------------------------
+; void ff_conv_s16_to_fltp_2ch(float *const *dst, int16_t *src, int len,
+;                              int channels);
+;------------------------------------------------------------------------------
+
+%macro CONV_S16_TO_FLTP_2CH 0
+cglobal conv_s16_to_fltp_2ch, 3,4,5, dst0, src, len, dst1
+    lea       lenq, [4*lend]
+    mov      dst1q, [dst0q+gprsize]
+    mov      dst0q, [dst0q        ]
+    add       srcq, lenq
+    add      dst0q, lenq
+    add      dst1q, lenq
+    neg       lenq
+    mova        m3, [pf_s32_inv_scale]
+    mova        m4, [pw_zero_even]
+.loop:
+    mova        m1, [srcq+lenq]
+    pslld       m0, m1, 16
+    pand        m1, m4
+    cvtdq2ps    m0, m0
+    cvtdq2ps    m1, m1
+    mulps       m0, m0, m3
+    mulps       m1, m1, m3
+    mova  [dst0q+lenq], m0
+    mova  [dst1q+lenq], m1
+    add       lenq, mmsize
+    jl .loop
+    REP_RET
+%endmacro
+
+INIT_XMM sse2
+CONV_S16_TO_FLTP_2CH
+%if HAVE_AVX
+INIT_XMM avx
+CONV_S16_TO_FLTP_2CH
 %endif
