@@ -42,10 +42,9 @@
 %endmacro
 
 %macro SBUTTERFLYPS 3
-    movaps   m%3, m%1
-    unpcklps m%1, m%2
-    unpckhps m%3, m%2
-    SWAP %2, %3
+    unpcklps m%3, m%1, m%2
+    unpckhps m%1, m%1, m%2
+    SWAP %1, %3, %2
 %endmacro
 
 %macro TRANSPOSE4x4B 5
