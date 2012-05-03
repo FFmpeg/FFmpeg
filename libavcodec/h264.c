@@ -2956,7 +2956,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     if(must_reinit && (h != h0 || (s->avctx->active_thread_type & FF_THREAD_FRAME))) {
         av_log_missing_feature(s->avctx,
                                 "Width/height/bit depth/chroma idc changing with threads is", 0);
-        return -1;   // width / height changed during parallelized decoding
+        return AVERROR_PATCHWELCOME;   // width / height changed during parallelized decoding
     }
 
     s->mb_width  = h->sps.mb_width;

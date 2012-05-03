@@ -793,7 +793,7 @@ static void revert_inter_ch_decorr(WmallDecodeCtx *s, int tile_size)
 {
     if (s->num_channels != 2)
         return;
-    else {
+    else if (s->is_channel_coded[0] || s->is_channel_coded[1]) {
         int icoef;
         for (icoef = 0; icoef < tile_size; icoef++) {
             s->channel_residues[0][icoef] -= s->channel_residues[1][icoef] >> 1;
@@ -959,8 +959,9 @@ static int decode_subframe(WmallDecodeCtx *s)
                 else
                     use_normal_update_speed(s, i);
                 revert_cdlms(s, i, 0, subframe_len);
-            } else
-                memset(s->channel_residues[i], 0, sizeof(s->channel_residues[i]));
+            } else {
+                memset(s->channel_residues[i], 0, sizeof(**s->channel_residues) * subframe_len);
+            }
     }
     if (s->do_mclms)
         revert_mclms(s, subframe_len);
@@ -1217,7 +1218,7 @@ static int decode_packet(AVCodecContext *avctx, void *data, int *got_frame_ptr,
 
             /* decode the cross packet frame if it is valid */
             if (num_bits_prev_frame < remaining_packet_bits && !s->packet_loss)
-                    decode_frame(s);
+                decode_frame(s);
         } else if (s->num_saved_bits - s->frame_offset) {
             av_dlog(avctx, "ignoring %x previously saved bits\n",
                     s->num_saved_bits - s->frame_offset);

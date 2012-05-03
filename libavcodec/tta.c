@@ -61,7 +61,8 @@ typedef struct TTAContext {
     GetBitContext gb;
     const AVCRC *crc_table;
 
-    int format, channels, bps, data_length;
+    int format, channels, bps;
+    unsigned data_length;
     int frame_length, last_frame_length, total_frames;
 
     int32_t *decode_buffer;
@@ -235,7 +236,7 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
         }
 
         // prevent overflow
-        if (avctx->sample_rate > 0x7FFFFF) {
+        if (avctx->sample_rate > 0x7FFFFFu) {
             av_log(avctx, AV_LOG_ERROR, "sample_rate too large\n");
             return AVERROR(EINVAL);
         }
@@ -255,7 +256,8 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
             return AVERROR_INVALIDDATA;
 
         // FIXME: seek table
-        if (get_bits_left(&s->gb) < 32 * s->total_frames + 32)
+        if (avctx->extradata_size <= 26 || s->total_frames > INT_MAX / 4 ||
+            avctx->extradata_size - 26 < s->total_frames * 4)
             av_log(avctx, AV_LOG_WARNING, "Seek table missing or too small\n");
         else if (avctx->err_recognition & AV_EF_CRCCHECK) {
             if (avctx->extradata_size < 26 + s->total_frames * 4 || tta_check_crc(s, avctx->extradata + 22, s->total_frames * 4))

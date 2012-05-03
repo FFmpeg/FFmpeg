@@ -1834,6 +1834,8 @@ static int vp8_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
         (s_src->mb_width != s->mb_width || s_src->mb_height != s->mb_height)) {
         free_buffers(s);
         s->maps_are_invalid = 1;
+        s->mb_width  = s_src->mb_width;
+        s->mb_height = s_src->mb_height;
     }
 
     s->prob[0] = s_src->prob[!s_src->update_probabilities];
