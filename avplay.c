@@ -2060,15 +2060,17 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
                                dec->channel_layout != is->resample_channel_layout;
 
             if ((!is->avr && audio_resample) || resample_changed) {
+                int ret;
                 if (is->avr)
                     avresample_close(is->avr);
                 else if (audio_resample) {
-                    int ret;
                     is->avr = avresample_alloc_context();
                     if (!is->avr) {
                         fprintf(stderr, "error allocating AVAudioResampleContext\n");
                         break;
                     }
+                }
+                if (audio_resample) {
                     av_opt_set_int(is->avr, "in_channel_layout",  dec->channel_layout,    0);
                     av_opt_set_int(is->avr, "in_sample_fmt",      dec->sample_fmt,        0);
                     av_opt_set_int(is->avr, "in_sample_rate",     dec->sample_rate,       0);
