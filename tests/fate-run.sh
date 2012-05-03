@@ -71,6 +71,10 @@ run(){
     $target_exec $target_path/"$@"
 }
 
+probefmt(){
+    run avprobe -show_format_entry format_name -v 0 "$@"
+}
+
 avconv(){
     run avconv -nostats -threads $threads -thread_type $thread_type -cpuflags $cpuflags "$@"
 }
