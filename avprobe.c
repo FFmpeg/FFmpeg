@@ -33,6 +33,7 @@ const char program_name[] = "avprobe";
 const int program_birth_year = 2007;
 
 static int do_show_format  = 0;
+static AVDictionary *fmt_entries_to_show = NULL;
 static int do_show_packets = 0;
 static int do_show_streams = 0;
 
@@ -58,6 +59,7 @@ static const char unit_bit_per_second_str[] = "bit/s";
 
 void exit_program(int ret)
 {
+    av_dict_free(&fmt_entries_to_show);
     exit(ret);
 }
 
@@ -257,36 +259,53 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
     printf("[/STREAM]\n");
 }
 
+static void print_format_entry(const char *tag,
+                               const char *val)
+{
+    if (!fmt_entries_to_show) {
+        if (tag) {
+            printf("%s=%s\n", tag, val);
+        } else {
+            printf("%s\n", val);
+        }
+    } else if (tag && av_dict_get(fmt_entries_to_show, tag, NULL, 0)) {
+        printf("%s=%s\n", tag, val);
+    }
+}
+
 static void show_format(AVFormatContext *fmt_ctx)
 {
     AVDictionaryEntry *tag = NULL;
     char val_str[128];
     int64_t size = fmt_ctx->pb ? avio_size(fmt_ctx->pb) : -1;
 
-    printf("[FORMAT]\n");
-
-    printf("filename=%s\n", fmt_ctx->filename);
-    printf("nb_streams=%d\n", fmt_ctx->nb_streams);
-    printf("format_name=%s\n", fmt_ctx->iformat->name);
-    printf("format_long_name=%s\n", fmt_ctx->iformat->long_name);
-    printf("start_time=%s\n",
-           time_value_string(val_str, sizeof(val_str),
-                             fmt_ctx->start_time, &AV_TIME_BASE_Q));
-    printf("duration=%s\n",
-           time_value_string(val_str, sizeof(val_str),
-                             fmt_ctx->duration, &AV_TIME_BASE_Q));
-    printf("size=%s\n", size >= 0 ? value_string(val_str, sizeof(val_str),
-                                                 size, unit_byte_str)
+    print_format_entry(NULL, "[FORMAT]");
+    print_format_entry("filename",         fmt_ctx->filename);
+    snprintf(val_str, sizeof(val_str) - 1, "%d", fmt_ctx->nb_streams);
+    print_format_entry("nb_streams",       val_str);
+    print_format_entry("format_name",      fmt_ctx->iformat->name);
+    print_format_entry("format_long_name", fmt_ctx->iformat->long_name);
+    print_format_entry("start_time",
+                       time_value_string(val_str, sizeof(val_str),
+                                         fmt_ctx->start_time, &AV_TIME_BASE_Q));
+    print_format_entry("duration",
+                       time_value_string(val_str, sizeof(val_str),
+                                         fmt_ctx->duration, &AV_TIME_BASE_Q));
+    print_format_entry("size",
+                       size >= 0 ? value_string(val_str, sizeof(val_str),
+                                                size, unit_byte_str)
                                   : "unknown");
-    printf("bit_rate=%s\n",
-           value_string(val_str, sizeof(val_str),
-                        fmt_ctx->bit_rate, unit_bit_per_second_str));
+    print_format_entry("bit_rate",
+                       value_string(val_str, sizeof(val_str),
+                                    fmt_ctx->bit_rate, unit_bit_per_second_str));
 
     while ((tag = av_dict_get(fmt_ctx->metadata, "", tag,
-                              AV_DICT_IGNORE_SUFFIX)))
-        printf("TAG:%s=%s\n", tag->key, tag->value);
+                              AV_DICT_IGNORE_SUFFIX))) {
+        snprintf(val_str, sizeof(val_str) - 1, "TAG:%s", tag->key);
+        print_format_entry(val_str, tag->value);
+    }
 
-    printf("[/FORMAT]\n");
+    print_format_entry(NULL, "[/FORMAT]");
 }
 
 static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
@@ -372,6 +391,13 @@ static int opt_format(const char *opt, const char *arg)
     return 0;
 }
 
+static int opt_show_format_entry(const char *opt, const char *arg)
+{
+    do_show_format = 1;
+    av_dict_set(&fmt_entries_to_show, arg, "", 0);
+    return 0;
+}
+
 static void opt_input_file(void *optctx, const char *arg)
 {
     if (input_filename) {
@@ -416,6 +442,8 @@ static const OptionDef options[] = {
     { "pretty", 0, {(void*)&opt_pretty},
       "prettify the format of displayed values, make it more human readable" },
     { "show_format",  OPT_BOOL, {(void*)&do_show_format} , "show format/container info" },
+    { "show_format_entry", HAS_ARG, {(void*)opt_show_format_entry},
+      "show a particular entry from the format/container info", "entry" },
     { "show_packets", OPT_BOOL, {(void*)&do_show_packets}, "show packets info" },
     { "show_streams", OPT_BOOL, {(void*)&do_show_streams}, "show streams info" },
     { "default", HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {(void*)opt_default},
