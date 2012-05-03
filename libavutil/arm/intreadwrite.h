@@ -30,7 +30,9 @@ static av_always_inline unsigned AV_RN16(const void *p)
 {
     const uint8_t *q = p;
     unsigned v;
-#ifdef __thumb__
+#if !AV_GCC_VERSION_AT_LEAST(4,6)
+    __asm__ ("ldrh %0, %1" : "=r"(v) : "m"(*(const uint16_t *)q));
+#elif defined __thumb__
     __asm__ ("ldrh %0, %1" : "=r"(v) : "m"(q[0]), "m"(q[1]));
 #else
     __asm__ ("ldrh %0, %1" : "=r"(v) : "Uq"(q[0]), "m"(q[1]));
