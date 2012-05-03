@@ -655,6 +655,8 @@ static void mclms_predict(WmallDecodeCtx *s, int icoef, int *pred)
 
     for (ich = 0; ich < num_channels; ich++) {
         pred[ich] = 0;
+        if (!s->is_channel_coded[ich])
+            continue;
         for (i = 0; i < order * num_channels; i++)
             pred[ich] += s->mclms_prevvalues[i + s->mclms_recent] *
                          s->mclms_coeffs[i + order * num_channels * ich];
