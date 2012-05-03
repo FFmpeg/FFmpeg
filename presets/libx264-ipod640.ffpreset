@@ -1,3 +1,5 @@
+vcodec=libx264
+
 vprofile=baseline
 level=30
 maxrate=10000000
