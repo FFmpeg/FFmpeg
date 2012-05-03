@@ -471,11 +471,10 @@ static int request_frame(AVFilterLink *link)
 
     switch (link->type) {
     case AVMEDIA_TYPE_VIDEO:
-        /* TODO reindent */
-    avfilter_start_frame(link, avfilter_ref_buffer(buf, ~0));
-    avfilter_draw_slice(link, 0, link->h, 1);
-    avfilter_end_frame(link);
-    avfilter_unref_buffer(buf);
+        avfilter_start_frame(link, avfilter_ref_buffer(buf, ~0));
+        avfilter_draw_slice(link, 0, link->h, 1);
+        avfilter_end_frame(link);
+        avfilter_unref_buffer(buf);
         break;
     case AVMEDIA_TYPE_AUDIO:
         avfilter_filter_samples(link, avfilter_ref_buffer(buf, ~0));
