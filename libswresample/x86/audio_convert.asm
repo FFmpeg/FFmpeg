@@ -22,7 +22,7 @@
 %include "libavutil/x86/x86util.asm"
 
 SECTION_RODATA
-
+align 32
 flt2pm31: times 8 dd 4.6566129e-10
 flt2p31 : times 8 dd 2147483648.0
 flt2p15 : times 8 dd 32768.0
@@ -87,8 +87,8 @@ int32_to_float_u_int %+ SUFFIX
     cvtdq2ps  m0, m0
     cvtdq2ps  m1, m1
 %endif
-    mulps m0, m2
-    mulps m1, m2
+    mulps m0, m0, m2
+    mulps m1, m1, m2
     mov%1 [         dstq+lenq], m0
     mov%1 [mmsize + dstq+lenq], m1
     add lenq, 2*mmsize
@@ -243,3 +243,9 @@ FLOAT_TO_INT32 u
 FLOAT_TO_INT32 a
 FLOAT_TO_INT16 u
 FLOAT_TO_INT16 a
+
+%if HAVE_AVX
+INIT_YMM avx
+INT32_TO_FLOAT u
+INT32_TO_FLOAT a
+%endif
