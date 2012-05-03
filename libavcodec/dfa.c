@@ -170,6 +170,8 @@ static int decode_dds1(GetByteContext *gb, uint8_t *frame, int width, int height
         } else if (bitbuf & (mask << 1)) {
             frame += bytestream2_get_le16(gb) * 2;
         } else {
+            if (frame_end - frame < width + 2)
+                return AVERROR_INVALIDDATA;
             frame[0] = frame[1] =
             frame[width] = frame[width + 1] =  bytestream2_get_byte(gb);
             frame += 2;
@@ -230,6 +232,7 @@ static int decode_wdlt(GetByteContext *gb, uint8_t *frame, int width, int height
     const uint8_t *frame_end   = frame + width * height;
     uint8_t *line_ptr;
     int count, i, v, lines, segments;
+    int y = 0;
 
     lines = bytestream2_get_le16(gb);
     if (lines > height)
@@ -240,10 +243,12 @@ static int decode_wdlt(GetByteContext *gb, uint8_t *frame, int width, int height
             return -1;
         segments = bytestream2_get_le16u(gb);
         while ((segments & 0xC000) == 0xC000) {
+            unsigned skip_lines = -(int16_t)segments;
             unsigned delta = -((int16_t)segments * width);
-            if (frame_end - frame <= delta)
+            if (frame_end - frame <= delta || y + lines + skip_lines > height)
                 return -1;
             frame    += delta;
+            y        += skip_lines;
             segments = bytestream2_get_le16(gb);
         }
         if (segments & 0x8000) {
@@ -252,6 +257,7 @@ static int decode_wdlt(GetByteContext *gb, uint8_t *frame, int width, int height
         }
         line_ptr = frame;
         frame += width;
+        y++;
         while (segments--) {
             if (frame - line_ptr <= bytestream2_peek_byte(gb))
                 return -1;
