@@ -1,0 +1,158 @@
+@chapter Syntax
+@c man begin SYNTAX
+
+When evaluating specific formats, FFmpeg uses internal library parsing
+functions, shared by the tools. This section documents the syntax of
+some of these formats.
+
+@anchor{date syntax}
+@section Date
+
+The accepted syntax is:
+@example
+[(YYYY-MM-DD|YYYYMMDD)[T|t| ]]((HH:MM:SS[.m...]]])|(HHMMSS[.m...]]]))[Z]
+now
+@end example
+
+If the value is "now" it takes the current time.
+
+Time is local time unless Z is appended, in which case it is
+interpreted as UTC.
+If the year-month-day part is not specified it takes the current
+year-month-day.
+
+@anchor{time duration syntax}
+@section Time duration
+
+The accepted syntax is:
+@example
+[-]HH:MM:SS[.m...]
+[-]S+[.m...]
+@end example
+
+@var{HH} expresses the number of hours, @var{MM} the number a of minutes
+and @var{SS} the number of seconds.
+
+@anchor{video size syntax}
+@section Video size
+Specify the size of the sourced video, it may be a string of the form
+@var{width}x@var{height}, or the name of a size abbreviation.
+
+The following abbreviations are recognized:
+@table @samp
+@item sqcif
+128x96
+@item qcif
+176x144
+@item cif
+352x288
+@item 4cif
+704x576
+@item 16cif
+1408x1152
+@item qqvga
+160x120
+@item qvga
+320x240
+@item vga
+640x480
+@item svga
+800x600
+@item xga
+1024x768
+@item uxga
+1600x1200
+@item qxga
+2048x1536
+@item sxga
+1280x1024
+@item qsxga
+2560x2048
+@item hsxga
+5120x4096
+@item wvga
+852x480
+@item wxga
+1366x768
+@item wsxga
+1600x1024
+@item wuxga
+1920x1200
+@item woxga
+2560x1600
+@item wqsxga
+3200x2048
+@item wquxga
+3840x2400
+@item whsxga
+6400x4096
+@item whuxga
+7680x4800
+@item cga
+320x200
+@item ega
+640x350
+@item hd480
+852x480
+@item hd720
+1280x720
+@item hd1080
+1920x1080
+@end table
+
+@anchor{video rate syntax}
+@section Video rate
+
+Specify the frame rate of a video, expressed as the number of frames
+generated per second. It has to be a string in the format
+@var{frame_rate_num}/@var{frame_rate_den}, an integer number, a float
+number or a valid video frame rate abbreviation.
+
+The following abbreviations are recognized:
+@table @samp
+@item ntsc
+30000/1001
+@item pal
+25/1
+@item qntsc
+30000/1
+@item qpal
+25/1
+@item sntsc
+30000/1
+@item spal
+25/1
+@item film
+24/1
+@item ntsc-film
+24000/1
+@end table
+
+@anchor{ratio syntax}
+@section Ratio
+
+A ratio can be expressed as an expression, or in the form
+@var{numerator}:@var{denominator}.
+
+Note that a ratio with infinite (1/0) or negative value is
+considered valid, so you should check on the returned value if you
+want to exclude those values.
+
+The undefined value can be expressed using the "0:0" string.
+
+@anchor{color syntax}
+@section Color
+
+It can be the name of a color (case insensitive match) or a
+[0x|#]RRGGBB[AA] sequence, possibly followed by "@" and a string
+representing the alpha component.
+
+The alpha component may be a string composed by "0x" followed by an
+hexadecimal number or a decimal number between 0.0 and 1.0, which
+represents the opacity value (0x00/0.0 means completely transparent,
+0xff/1.0 completely opaque).
+If the alpha component is not specified then 0xff is assumed.
+
+The string "random" will result in a random color.
+
+@c man end SYNTAX

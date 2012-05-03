@@ -8,6 +8,7 @@ HTMLPAGES   = $(PROGS-yes:%=doc/%.html)                                 \
               doc/git-howto.html                                        \
               doc/libavfilter.html                                      \
               doc/platform.html                                         \
+              doc/syntax.html                                           \
 
 TXTPAGES    = doc/fate.txt                                              \
 
