@@ -979,10 +979,10 @@ static int decode_subframe(WmallDecodeCtx *s)
 
         for (j = 0; j < subframe_len; j++) {
             if (s->bits_per_sample == 16) {
-                *s->samples_16[c] = (int16_t) s->channel_residues[c][j];
+                *s->samples_16[c] = (int16_t) s->channel_residues[c][j] << padding_zeroes;
                 s->samples_16[c] += s->num_channels;
             } else {
-                *s->samples_32[c] = s->channel_residues[c][j];
+                *s->samples_32[c] = s->channel_residues[c][j] << padding_zeroes;
                 s->samples_32[c] += s->num_channels;
             }
         }
