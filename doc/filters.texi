@@ -1476,7 +1476,7 @@ within the parameter list.
 @item
 Show the text at the center of the video frame:
 @example
-drawtext=fontsize=30:fontfile=FreeSerif.ttf:text='hello world':x=(w-text_w)/2:y=(h-text_h-line_h)/2"
+drawtext="fontsize=30:fontfile=FreeSerif.ttf:text='hello world':x=(w-text_w)/2:y=(h-text_h-line_h)/2"
 @end example
 
 @item
@@ -1484,20 +1484,20 @@ Show a text line sliding from right to left in the last row of the video
 frame. The file @file{LONG_LINE} is assumed to contain a single line
 with no newlines.
 @example
-drawtext=fontsize=15:fontfile=FreeSerif.ttf:text=LONG_LINE:y=h-line_h:x=-50*t
+drawtext="fontsize=15:fontfile=FreeSerif.ttf:text=LONG_LINE:y=h-line_h:x=-50*t"
 @end example
 
 @item
 Show the content of file @file{CREDITS} off the bottom of the frame and scroll up.
 @example
-drawtext=fontsize=20:fontfile=FreeSerif.ttf:textfile=CREDITS:y=h-20*t"
+drawtext="fontsize=20:fontfile=FreeSerif.ttf:textfile=CREDITS:y=h-20*t"
 @end example
 
 @item
 Draw a single green letter "g", at the center of the input video.
 The glyph baseline is placed at half screen height.
 @example
-drawtext=fontsize=60:fontfile=FreeSerif.ttf:fontcolor=green:text=g:x=(w-max_glyph_w)/2:y=h/2-ascent
+drawtext="fontsize=60:fontfile=FreeSerif.ttf:fontcolor=green:text=g:x=(w-max_glyph_w)/2:y=h/2-ascent"
 @end example
 
 @item
