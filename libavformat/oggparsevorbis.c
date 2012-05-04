@@ -318,8 +318,8 @@ static int vorbis_packet(AVFormatContext *s, int idx)
             }
             next_pkt += os->segments[seg];
         }
-        os->lastpts = os->lastdts   = os->granule - duration;
-        s->streams[idx]->start_time = os->lastpts + first_duration;
+        os->lastpts = os->lastdts   = os->granule - duration + first_duration;
+        s->streams[idx]->start_time = os->lastpts;
         if (s->streams[idx]->duration)
             s->streams[idx]->duration -= s->streams[idx]->start_time;
         priv->final_pts             = AV_NOPTS_VALUE;
