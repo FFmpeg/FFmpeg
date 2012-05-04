@@ -73,6 +73,10 @@ const char *avfilter_configuration(void)
 @}
 @end example
 @item
+Do not check for NULL values by comparison, @samp{if (p)} and
+@samp{if (!p)} are correct; @samp{if (p == NULL)} and @samp{if (p != NULL)}
+are not.
+@item
 In case of a single-statement if, no curly braces are required:
 @example
 if (!pic || !picref)
