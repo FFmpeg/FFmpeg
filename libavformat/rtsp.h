@@ -171,6 +171,11 @@ typedef struct RTSPMessageHeader {
      * returned
      */
     char reason[256];
+
+    /**
+     * Content type header
+     */
+    char content_type[64];
 } RTSPMessageHeader;
 
 /**

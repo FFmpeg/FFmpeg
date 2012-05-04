@@ -870,6 +870,9 @@ void ff_rtsp_parse_line(RTSPMessageHeader *reply, const char *buf,
     } else if (av_stristart(p, "x-Accept-Dynamic-Rate:", &p) && rt) {
         p += strspn(p, SPACE_CHARS);
         rt->accept_dynamic_rate = atoi(p);
+    } else if (av_stristart(p, "Content-Type:", &p)) {
+        p += strspn(p, SPACE_CHARS);
+        av_strlcpy(reply->content_type, p, sizeof(reply->content_type));
     }
 }
 
