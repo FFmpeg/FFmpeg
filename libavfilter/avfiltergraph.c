@@ -152,8 +152,7 @@ AVFilterContext *avfilter_graph_get_filter(AVFilterGraph *graph, char *name)
 static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
 {
     int i, j, ret;
-    int scaler_count = 0;
-    char inst_name[30];
+    int scaler_count = 0, resampler_count = 0;
 
     /* ask all the sub-filters for their supported media formats */
     for (i = 0; i < graph->filter_count; i++) {
@@ -172,23 +171,50 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
             if (link && link->in_formats != link->out_formats) {
                 if (!avfilter_merge_formats(link->in_formats,
                                             link->out_formats)) {
-                    AVFilterContext *scale;
+                    AVFilterContext *convert;
+                    AVFilter *filter;
+                    AVFilterLink *inlink, *outlink;
                     char scale_args[256];
-                    /* couldn't merge format lists. auto-insert scale filter */
-                    snprintf(inst_name, sizeof(inst_name), "auto-inserted scaler %d",
-                             scaler_count++);
-                    snprintf(scale_args, sizeof(scale_args), "0:0:%s", graph->scale_sws_opts);
-                    if ((ret = avfilter_graph_create_filter(&scale, avfilter_get_by_name("scale"),
-                                                            inst_name, scale_args, NULL, graph)) < 0)
-                        return ret;
-                    if ((ret = avfilter_insert_filter(link, scale, 0, 0)) < 0)
+                    char inst_name[30];
+
+                    /* couldn't merge format lists. auto-insert conversion filter */
+                    switch (link->type) {
+                    case AVMEDIA_TYPE_VIDEO:
+                        snprintf(inst_name, sizeof(inst_name), "auto-inserted scaler %d",
+                                 scaler_count++);
+                        snprintf(scale_args, sizeof(scale_args), "0:0:%s", graph->scale_sws_opts);
+                        if ((ret = avfilter_graph_create_filter(&convert,
+                                                                avfilter_get_by_name("scale"),
+                                                                inst_name, scale_args, NULL,
+                                                                graph)) < 0)
+                            return ret;
+                        break;
+                    case AVMEDIA_TYPE_AUDIO:
+                        if (!(filter = avfilter_get_by_name("resample"))) {
+                            av_log(log_ctx, AV_LOG_ERROR, "'resample' filter "
+                                   "not present, cannot convert audio formats.\n");
+                            return AVERROR(EINVAL);
+                        }
+
+                        snprintf(inst_name, sizeof(inst_name), "auto-inserted resampler %d",
+                                 resampler_count++);
+                        if ((ret = avfilter_graph_create_filter(&convert,
+                                                                avfilter_get_by_name("resample"),
+                                                                inst_name, NULL, NULL, graph)) < 0)
+                            return ret;
+                        break;
+                    default:
+                        return AVERROR(EINVAL);
+                    }
+
+                    if ((ret = avfilter_insert_filter(link, convert, 0, 0)) < 0)
                         return ret;
 
-                    scale->filter->query_formats(scale);
-                    if (((link = scale-> inputs[0]) &&
-                         !avfilter_merge_formats(link->in_formats, link->out_formats)) ||
-                        ((link = scale->outputs[0]) &&
-                         !avfilter_merge_formats(link->in_formats, link->out_formats))) {
+                    convert->filter->query_formats(convert);
+                    inlink  = convert->inputs[0];
+                    outlink = convert->outputs[0];
+                    if (!avfilter_merge_formats( inlink->in_formats,  inlink->out_formats) ||
+                        !avfilter_merge_formats(outlink->in_formats, outlink->out_formats)) {
                         av_log(log_ctx, AV_LOG_ERROR,
                                "Impossible to convert between the formats supported by the filter "
                                "'%s' and the filter '%s'\n", link->src->name, link->dst->name);
