@@ -117,8 +117,9 @@ static int ogg_restore(AVFormatContext *s, int discard)
     return 0;
 }
 
-static int ogg_reset(struct ogg *ogg)
+static int ogg_reset(AVFormatContext *s)
 {
+    struct ogg *ogg = s->priv_data;
     int i;
 
     for (i = 0; i < ogg->nstreams; i++){
@@ -659,7 +660,7 @@ static int64_t ogg_read_timestamp(AVFormatContext *s, int stream_index,
     int i = -1;
     int pstart, psize;
     avio_seek(bc, *pos_arg, SEEK_SET);
-    ogg_reset(ogg);
+    ogg_reset(s);
 
     while (avio_tell(bc) < pos_limit && !ogg_packet(s, &i, &pstart, &psize, pos_arg)) {
         if (i == stream_index) {
@@ -680,7 +681,7 @@ static int64_t ogg_read_timestamp(AVFormatContext *s, int stream_index,
         if (pts != AV_NOPTS_VALUE)
             break;
     }
-    ogg_reset(ogg);
+    ogg_reset(s);
     return pts;
 }
 
@@ -694,7 +695,7 @@ static int ogg_read_seek(AVFormatContext *s, int stream_index,
     av_assert0(stream_index < ogg->nstreams);
     // Ensure everything is reset even when seeking via
     // the generated index.
-    ogg_reset(ogg);
+    ogg_reset(s);
 
     // Try seeking to a keyframe first. If this fails (very possible),
     // av_seek_frame will fall back to ignoring keyframes
