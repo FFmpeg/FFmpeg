@@ -255,8 +255,10 @@ static int ogg_read_page(AVFormatContext *s, int *str)
         if (ogg->headers) {
             int n;
 
-            if (ogg->nstreams != 1)
+            if (ogg->nstreams != 1) {
+                av_log_missing_feature(s, "Changing stream parameters in multistream ogg is", 0);
                 return idx;
+            }
 
             for (n = 0; n < ogg->nstreams; n++) {
                 av_freep(&ogg->streams[n].buf);
