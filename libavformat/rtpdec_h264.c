@@ -272,7 +272,7 @@ static int h264_handle_packet(AVFormatContext *ctx,
         av_log(ctx, AV_LOG_ERROR,
                "Unhandled type (%d) (See RFC for implementation details\n",
                type);
-        result= -1;
+        result = AVERROR(ENOSYS);
         break;
 
     case 28:                   // FU-A (fragmented nal)
@@ -319,7 +319,7 @@ static int h264_handle_packet(AVFormatContext *ctx,
     case 31:                   // undefined
     default:
         av_log(ctx, AV_LOG_ERROR, "Undefined type (%d)", type);
-        result= -1;
+        result = AVERROR_INVALIDDATA;
         break;
     }
 
