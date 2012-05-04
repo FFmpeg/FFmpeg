@@ -713,7 +713,7 @@ static char *choose_pix_fmts(OutputStream *ost)
     }
     if (ost->st->codec->pix_fmt != PIX_FMT_NONE) {
         return av_strdup(av_get_pix_fmt_name(choose_pixel_fmt(ost->st, ost->enc, ost->st->codec->pix_fmt)));
-    } else if (ost->enc->pix_fmts) {
+    } else if (ost->enc && ost->enc->pix_fmts) {
         const enum PixelFormat *p;
         AVIOContext *s = NULL;
         uint8_t *ret;
