@@ -35,6 +35,7 @@ void avfilter_register_all(void)
     initialized = 1;
 
     REGISTER_FILTER (ANULL,       anull,       af);
+    REGISTER_FILTER (RESAMPLE,    resample,    af);
 
     REGISTER_FILTER (ANULLSRC,    anullsrc,    asrc);
 

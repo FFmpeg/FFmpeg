@@ -111,6 +111,12 @@ Below is a description of the currently available audio filters.
 
 Pass the audio source unchanged to the output.
 
+@section resample
+Convert the audio sample format, sample rate and channel layout. This filter is
+not meant to be used directly, it is inserted automatically by libavfilter
+whenever conversion is needed. Use the @var{aformat} filter to force a specific
+conversion.
+
 @c man end AUDIO FILTERS
 
 @chapter Audio Sources

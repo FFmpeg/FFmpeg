@@ -1,6 +1,7 @@
 NAME = avfilter
 FFLIBS = avutil swscale
 FFLIBS-$(CONFIG_MOVIE_FILTER) += avformat avcodec
+FFLIBS-$(CONFIG_RESAMPLE_FILTER) += avresample
 
 HEADERS = avfilter.h                                                    \
           avfiltergraph.h                                               \
@@ -22,6 +23,7 @@ OBJS = allfilters.o                                                     \
        vsrc_buffer.o                                                    \
 
 OBJS-$(CONFIG_ANULL_FILTER)                  += af_anull.o
+OBJS-$(CONFIG_RESAMPLE_FILTER)               += af_resample.o
 
 OBJS-$(CONFIG_ANULLSRC_FILTER)               += asrc_anullsrc.o
 
