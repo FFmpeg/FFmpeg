@@ -164,7 +164,7 @@ static int parse_setup_header(AVCodecContext *avctx, VorbisParseContext *s,
     skip_bits_long(&gb, got_framing_bit);
     for (i = mode_count - 1; i >= 0; i--) {
         skip_bits_long(&gb, 40);
-        s->mode_blocksize[i] = s->blocksize[get_bits1(&gb)];
+        s->mode_blocksize[i] = get_bits1(&gb);
     }
 
 bad_header:
@@ -195,7 +195,7 @@ int avpriv_vorbis_parse_extradata(AVCodecContext *avctx, VorbisParseContext *s)
         return ret;
 
     s->valid_extradata = 1;
-    s->previous_blocksize = s->mode_blocksize[0];
+    s->previous_blocksize = s->blocksize[s->mode_blocksize[0]];
 
     return 0;
 }
@@ -221,11 +221,11 @@ int avpriv_vorbis_parse_frame(VorbisParseContext *s, const uint8_t *buf,
             av_log(s->avctx, AV_LOG_ERROR, "Invalid mode in packet\n");
             return AVERROR_INVALIDDATA;
         }
-        if (mode) {
+        if(s->mode_blocksize[mode]){
             int flag = !!(buf[0] & s->prev_mask);
             previous_blocksize = s->blocksize[flag];
         }
-        current_blocksize     = s->mode_blocksize[mode];
+        current_blocksize     = s->blocksize[s->mode_blocksize[mode]];
         duration              = (previous_blocksize + current_blocksize) >> 2;
         s->previous_blocksize = current_blocksize;
     }
@@ -236,7 +236,7 @@ int avpriv_vorbis_parse_frame(VorbisParseContext *s, const uint8_t *buf,
 void avpriv_vorbis_parse_reset(VorbisParseContext *s)
 {
     if (s->valid_extradata)
-        s->previous_blocksize = 0;
+        s->previous_blocksize = s->blocksize[0];
 }
 
 #if CONFIG_VORBIS_PARSER
