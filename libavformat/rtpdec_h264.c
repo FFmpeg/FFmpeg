@@ -218,7 +218,7 @@ static int h264_handle_packet(AVFormatContext *ctx,
                 const uint8_t *src= buf;
                 int src_len= len;
 
-                do {
+                while (src_len > 2) {
                     uint16_t nal_size = AV_RB16(src); // this going to be a problem if unaligned (can it be?)
 
                     // consume the length of the aggregate...
@@ -252,7 +252,7 @@ static int h264_handle_packet(AVFormatContext *ctx,
                     if (src_len < 0)
                         av_log(ctx, AV_LOG_ERROR,
                                "Consumed more bytes than we got! (%d)\n", src_len);
-                } while (src_len > 2);      // because there could be rtp padding..
+                }
 
                 if(pass==0) {
                     // now we know the total size of the packet (with the start sequences added)
