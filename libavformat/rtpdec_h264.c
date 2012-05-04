@@ -53,8 +53,6 @@
     RTP/H264 specific private data.
 */
 struct PayloadContext {
-    unsigned long cookie;       ///< sanity check, to make sure we get the pointer we're expecting.
-
     //sdp setup parameters
     uint8_t profile_idc;        ///< from the sdp setup parameters.
     uint8_t profile_iop;        ///< from the sdp setup parameters.
@@ -64,9 +62,6 @@ struct PayloadContext {
     int packet_types_received[32];
 #endif
 };
-
-#define MAGIC_COOKIE (0xdeadbeef)       ///< Cookie for the extradata; to verify we are what we think we are, and that we haven't been freed.
-#define DEAD_COOKIE (0xdeaddead)        ///< Cookie for the extradata; once it is freed.
 
 /* ---------------- private code */
 static int sdp_parse_fmtp_config_h264(AVStream * stream,
@@ -187,7 +182,6 @@ static int h264_handle_packet(AVFormatContext *ctx,
 
 #ifdef DEBUG
     assert(data);
-    assert(data->cookie == MAGIC_COOKIE);
 #endif
     assert(buf);
 
@@ -331,15 +325,7 @@ static int h264_handle_packet(AVFormatContext *ctx,
 /* ---------------- public code */
 static PayloadContext *h264_new_context(void)
 {
-    PayloadContext *data =
-        av_mallocz(sizeof(PayloadContext) +
-                   FF_INPUT_BUFFER_PADDING_SIZE);
-
-    if (data) {
-        data->cookie = MAGIC_COOKIE;
-    }
-
-    return data;
+    return av_mallocz(sizeof(PayloadContext) + FF_INPUT_BUFFER_PADDING_SIZE);
 }
 
 static void h264_free_context(PayloadContext *data)
@@ -354,13 +340,6 @@ static void h264_free_context(PayloadContext *data)
     }
 #endif
 
-    assert(data);
-    assert(data->cookie == MAGIC_COOKIE);
-
-    // avoid stale pointers (assert)
-    data->cookie = DEAD_COOKIE;
-
-    // and clear out this...
     av_free(data);
 }
 
@@ -376,7 +355,6 @@ static int parse_h264_sdp_line(AVFormatContext *s, int st_index,
 
     stream = s->streams[st_index];
     codec = stream->codec;
-    assert(h264_data->cookie == MAGIC_COOKIE);
 
     if (av_strstart(p, "framesize:", &p)) {
         char buf1[50];
