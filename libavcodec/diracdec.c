@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavcodec/diracdec.c
+ * @file
  * Dirac Decoder
  * @author Marco Gerards <marco@gnu.org>, David Conrad, Jordi Ortiz <nenjordi@gmail.com>
  */

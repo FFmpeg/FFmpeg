@@ -20,7 +20,8 @@
  */
 
 /**
- * @file advanced blur-based logo removing filter
+ * @file
+ * Advanced blur-based logo removing filter
  *
  * This filter loads an image mask file showing where a logo is and
  * uses a blur transform to remove the logo.

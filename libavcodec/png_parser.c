@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/png_parser.c
+ * @file
  * PNG parser
  */
 

@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/exr.c
+ * @file
  * OpenEXR decoder
  * @author Jimmy Christensen
  *

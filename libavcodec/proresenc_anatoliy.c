@@ -21,7 +21,8 @@
  */
 
 /**
- * @file libavcodec/proresenc.c
+ * @file
+ * Apple ProRes encoder (Anatoliy Wasserman version)
  * Known FOURCCs: 'apch' (HQ), 'apcn' (SD), 'apcs' (LT), 'acpo' (Proxy)
  */
 
