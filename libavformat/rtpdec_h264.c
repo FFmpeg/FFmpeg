@@ -170,9 +170,7 @@ static int h264_handle_packet(AVFormatContext *ctx,
     nal  = buf[0];
     type = nal & 0x1f;
 
-#ifdef DEBUG
     assert(data);
-#endif
     assert(buf);
 
     if (type >= 1 && type <= 23)
