@@ -20,7 +20,7 @@
  */
 
 /**
-* @file
+ * @file
  * @brief H.264 / RTP Code (RFC3984)
  * @author Ryan Martell <rdm4@martellventures.com>
  *
@@ -29,7 +29,8 @@
  * This currently supports packetization mode:
  * Single Nal Unit Mode (0), or
  * Non-Interleaved Mode (1).  It currently does not support
- * Interleaved Mode (2). (This requires implementing STAP-B, MTAP16, MTAP24, FU-B packet types)
+ * Interleaved Mode (2). (This requires implementing STAP-B, MTAP16, MTAP24,
+ *                        FU-B packet types)
  */
 
 #include "libavutil/base64.h"
@@ -46,7 +47,7 @@
 #include "rtpdec_formats.h"
 
 struct PayloadContext {
-    //sdp setup parameters
+    // sdp setup parameters
     uint8_t profile_idc;
     uint8_t profile_iop;
     uint8_t level_idc;
@@ -68,10 +69,11 @@ static int sdp_parse_fmtp_config_h264(AVStream * stream,
         av_log(codec, AV_LOG_DEBUG, "RTP Packetization Mode: %d\n", atoi(value));
         h264_data->packetization_mode = atoi(value);
         /*
-           Packetization Mode:
-           0 or not present: Single NAL mode (Only nals from 1-23 are allowed)
-           1: Non-interleaved Mode: 1-23, 24 (STAP-A), 28 (FU-A) are allowed.
-           2: Interleaved Mode: 25 (STAP-B), 26 (MTAP16), 27 (MTAP24), 28 (FU-A), and 29 (FU-B) are allowed.
+         * Packetization Mode:
+         * 0 or not present: Single NAL mode (Only nals from 1-23 are allowed)
+         * 1: Non-interleaved Mode: 1-23, 24 (STAP-A), 28 (FU-A) are allowed.
+         * 2: Interleaved Mode: 25 (STAP-B), 26 (MTAP16), 27 (MTAP24), 28 (FU-A),
+         *                      and 29 (FU-B) are allowed.
          */
         if (h264_data->packetization_mode > 1)
             av_log(codec, AV_LOG_ERROR,
@@ -149,7 +151,7 @@ static int sdp_parse_fmtp_config_h264(AVStream * stream,
     return 0;
 }
 
-// return 0 on packet, no more left, 1 on packet, 1 on partial packet...
+// return 0 on packet, no more left, 1 on packet, 1 on partial packet
 static int h264_handle_packet(AVFormatContext *ctx,
                               PayloadContext *data,
                               AVStream *st,
@@ -173,8 +175,10 @@ static int h264_handle_packet(AVFormatContext *ctx,
     assert(data);
     assert(buf);
 
+    /* Simplify the case (these are all the nal types used internally by
+     * the h264 codec). */
     if (type >= 1 && type <= 23)
-        type = 1;              // simplify the case. (these are all the nal types used internally by the h264 codec)
+        type = 1;
     switch (type) {
     case 0:                    // undefined, but pass them through
     case 1:
@@ -190,7 +194,7 @@ static int h264_handle_packet(AVFormatContext *ctx,
         // consume the STAP-A NAL
         buf++;
         len--;
-        // first we are going to figure out the total size....
+        // first we are going to figure out the total size
         {
             int pass= 0;
             int total_length= 0;
@@ -203,13 +207,13 @@ static int h264_handle_packet(AVFormatContext *ctx,
                 while (src_len > 2) {
                     uint16_t nal_size = AV_RB16(src);
 
-                    // consume the length of the aggregate...
+                    // consume the length of the aggregate
                     src += 2;
                     src_len -= 2;
 
                     if (nal_size <= src_len) {
                         if(pass==0) {
-                            // counting...
+                            // counting
                             total_length+= sizeof(start_sequence)+nal_size;
                         } else {
                             // copying
@@ -227,7 +231,7 @@ static int h264_handle_packet(AVFormatContext *ctx,
                                "nal size exceeds length: %d %d\n", nal_size, src_len);
                     }
 
-                    // eat what we handled...
+                    // eat what we handled
                     src += nal_size;
                     src_len -= nal_size;
 
@@ -237,7 +241,8 @@ static int h264_handle_packet(AVFormatContext *ctx,
                 }
 
                 if(pass==0) {
-                    // now we know the total size of the packet (with the start sequences added)
+                    /* now we know the total size of the packet (with the
+                     * start sequences added) */
                     av_new_packet(pkt, total_length);
                     dst= pkt->data;
                 } else {
@@ -259,9 +264,9 @@ static int h264_handle_packet(AVFormatContext *ctx,
 
     case 28:                   // FU-A (fragmented nal)
         buf++;
-        len--;                  // skip the fu_indicator
+        len--;                 // skip the fu_indicator
         if (len > 1) {
-            // these are the same as above, we just redo them here for clarity...
+            // these are the same as above, we just redo them here for clarity
             uint8_t fu_indicator = nal;
             uint8_t fu_header = *buf;
             uint8_t start_bit = fu_header >> 7;
@@ -269,11 +274,13 @@ static int h264_handle_packet(AVFormatContext *ctx,
             uint8_t nal_type = (fu_header & 0x1f);
             uint8_t reconstructed_nal;
 
-            // reconstruct this packet's true nal; only the data follows..
-            reconstructed_nal = fu_indicator & (0xe0);  // the original nal forbidden bit and NRI are stored in this packet's nal;
+            // Reconstruct this packet's true nal; only the data follows.
+            /* The original nal forbidden bit and NRI are stored in this
+             * packet's nal. */
+            reconstructed_nal = fu_indicator & (0xe0);
             reconstructed_nal |= nal_type;
 
-            // skip the fu_header...
+            // skip the fu_header
             buf++;
             len--;
 
@@ -282,7 +289,7 @@ static int h264_handle_packet(AVFormatContext *ctx,
                 data->packet_types_received[nal_type]++;
 #endif
             if(start_bit) {
-                // copy in the start sequence, and the reconstructed nal....
+                /* copy in the start sequence, and the reconstructed nal */
                 av_new_packet(pkt, sizeof(start_sequence)+sizeof(nal)+len);
                 memcpy(pkt->data, start_sequence, sizeof(start_sequence));
                 pkt->data[sizeof(start_sequence)]= reconstructed_nal;
@@ -347,7 +354,7 @@ static int parse_h264_sdp_line(AVFormatContext *s, int st_index,
         char buf1[50];
         char *dst = buf1;
 
-        // remove the protocol identifier..
+        // remove the protocol identifier
         while (*p && *p == ' ') p++; // strip spaces.
         while (*p && *p != ' ') p++; // eat protocol identifier
         while (*p && *p == ' ') p++; // strip trailing spaces.
@@ -357,7 +364,7 @@ static int parse_h264_sdp_line(AVFormatContext *s, int st_index,
         *dst = '\0';
 
         // a='framesize:96 320-240'
-        // set our parameters..
+        // set our parameters
         codec->width = atoi(buf1);
         codec->height = atoi(p + 1); // skip the -
         codec->pix_fmt = PIX_FMT_YUV420P;
