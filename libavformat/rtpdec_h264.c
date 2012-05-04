@@ -63,6 +63,8 @@ struct PayloadContext {
 #define COUNT_NAL_TYPE(data, nal) do { } while (0)
 #endif
 
+static const uint8_t start_sequence[] = { 0, 0, 0, 1 };
+
 static int sdp_parse_fmtp_config_h264(AVStream *stream,
                                       PayloadContext *h264_data,
                                       char *attr, char *value)
@@ -111,7 +113,6 @@ static int sdp_parse_fmtp_config_h264(AVStream *stream,
             h264_data->level_idc   = level_idc;
         }
     } else if (!strcmp(attr, "sprop-parameter-sets")) {
-        uint8_t start_sequence[] = { 0, 0, 0, 1 };
         codec->extradata_size = 0;
         codec->extradata      = NULL;
 
@@ -172,7 +173,6 @@ static int h264_handle_packet(AVFormatContext *ctx, PayloadContext *data,
     uint8_t nal;
     uint8_t type;
     int result = 0;
-    uint8_t start_sequence[] = { 0, 0, 0, 1 };
 
     if (!len) {
         av_log(ctx, AV_LOG_ERROR, "Empty H264 RTP packet\n");
