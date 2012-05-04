@@ -672,7 +672,7 @@ static int64_t ogg_read_timestamp(AVFormatContext *s, int stream_index,
     avio_seek(bc, *pos_arg, SEEK_SET);
     ogg_reset(s);
 
-    while (avio_tell(bc) < pos_limit && !ogg_packet(s, &i, &pstart, &psize, pos_arg)) {
+    while (avio_tell(bc) <= pos_limit && !ogg_packet(s, &i, &pstart, &psize, pos_arg)) {
         if (i == stream_index) {
             struct ogg_stream *os = ogg->streams + stream_index;
             pts = ogg_calc_pts(s, i, NULL);
