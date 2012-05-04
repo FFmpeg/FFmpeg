@@ -61,18 +61,25 @@ int main(int argc, char **argv)
     const char *filename;
     AVFormatContext *ic = NULL;
     int i, ret, stream_id;
+    int j;
     int64_t timestamp;
     AVDictionary *format_opts = NULL;
-    int64_t seekfirst;
+    int64_t seekfirst = AV_NOPTS_VALUE;
     int firstback=0;
+    int frame_count = 1;
 
-    if(argc == 4 && !strcmp(argv[2], "-seekforw")){
-        seekfirst = atoi(argv[3]);
-    } else if(argc == 4 && !strcmp(argv[2], "-seekback")){
-        seekfirst = atoi(argv[3]);
-        firstback = 1;
-    } else
-        seekfirst = AV_NOPTS_VALUE;
+    for(i=2; i<argc; i+=2){
+        if       (!strcmp(argv[i], "-seekforw")){
+            seekfirst = atoi(argv[i+1]);
+        } else if(!strcmp(argv[i], "-seekback")){
+            seekfirst = atoi(argv[i+1]);
+            firstback = 1;
+        } else if(!strcmp(argv[i], "-frames")){
+            frame_count = atoi(argv[i+1]);
+        } else {
+            argc = 1;
+        }
+    }
 
     av_dict_set(&format_opts, "channels", "1", 0);
     av_dict_set(&format_opts, "sample_rate", "22050", 0);
@@ -111,6 +118,7 @@ int main(int argc, char **argv)
         char ts_buf[60];
 
         if(ret>=0){
+            for(j=0; j<frame_count; j++) {
             ret= av_read_frame(ic, &pkt);
             if(ret>=0){
                 char dts_buf[60];
@@ -122,6 +130,7 @@ int main(int argc, char **argv)
             } else
                 printf("ret:%s", ret_str(ret)); // necessary to avoid trailing whitespace
             printf("\n");
+            }
         }
 
         if(i>25) break;
