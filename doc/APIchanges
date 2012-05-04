@@ -13,6 +13,9 @@ libavutil:     2011-04-18
 
 API changes, most recent first:
 
+2012-xx-xx - xxxxxxx - lavc 54.13.0 - avcodec.h
+  Add sample_rate and channel_layout fields to AVFrame.
+
 2012-xx-xx - xxxxxxx - lavr 0.0.1
   Change AV_MIX_COEFF_TYPE_Q6 to AV_MIX_COEFF_TYPE_Q8.
 

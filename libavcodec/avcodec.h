@@ -1207,6 +1207,22 @@ typedef struct AVFrame {
      * - decoding: Set by libavcodec.
      */
     uint8_t motion_subsample_log2;
+
+    /**
+     * Sample rate of the audio data.
+     *
+     * - encoding: unused
+     * - decoding: set by get_buffer()
+     */
+    int sample_rate;
+
+    /**
+     * Channel layout of the audio data.
+     *
+     * - encoding: unused
+     * - decoding: set by get_buffer()
+     */
+    uint64_t channel_layout;
 } AVFrame;
 
 struct AVCodecInternal;
