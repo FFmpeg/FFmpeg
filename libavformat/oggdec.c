@@ -121,6 +121,7 @@ static int ogg_reset(AVFormatContext *s)
 {
     struct ogg *ogg = s->priv_data;
     int i;
+    int64_t start_pos = avio_tell(s->pb);
 
     for (i = 0; i < ogg->nstreams; i++){
         struct ogg_stream *os = ogg->streams + i;
@@ -135,6 +136,9 @@ static int ogg_reset(AVFormatContext *s)
         os->nsegs = 0;
         os->segp = 0;
         os->incomplete = 0;
+        if (start_pos <= s->data_offset) {
+            os->lastpts = 0;
+        }
     }
 
     ogg->curidx = -1;
