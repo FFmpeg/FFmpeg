@@ -45,7 +45,7 @@ AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
     AVFilterFormats *ret;
     unsigned i, j, k = 0, m_count;
 
-    ret = av_mallocz(sizeof(AVFilterFormats));
+    ret = av_mallocz(sizeof(*ret));
 
     /* merge list of formats */
     m_count = FFMIN(a->format_count, b->format_count);
@@ -65,7 +65,7 @@ AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
         return NULL;
     }
 
-    ret->refs = av_malloc(sizeof(AVFilterFormats**)*(a->refcount+b->refcount));
+    ret->refs = av_malloc(sizeof(*ret->refs) * (a->refcount + b->refcount));
 
     merge_ref(ret, a);
     merge_ref(ret, b);
@@ -92,7 +92,7 @@ AVFilterFormats *avfilter_make_format_list(const int *fmts)
     for (count = 0; fmts[count] != -1; count++)
         ;
 
-    formats               = av_mallocz(sizeof(AVFilterFormats));
+    formats               = av_mallocz(sizeof(*formats));
     if (count)
         formats->formats  = av_malloc(sizeof(*formats->formats) * count);
     formats->format_count = count;
@@ -105,7 +105,7 @@ int avfilter_add_format(AVFilterFormats **avff, int fmt)
 {
     int *fmts;
 
-    if (!(*avff) && !(*avff = av_mallocz(sizeof(AVFilterFormats))))
+    if (!(*avff) && !(*avff = av_mallocz(sizeof(**avff))))
         return AVERROR(ENOMEM);
 
     fmts = av_realloc((*avff)->formats,
@@ -136,7 +136,7 @@ AVFilterFormats *avfilter_all_formats(enum AVMediaType type)
 void avfilter_formats_ref(AVFilterFormats *f, AVFilterFormats **ref)
 {
     *ref = f;
-    f->refs = av_realloc(f->refs, sizeof(AVFilterFormats**) * ++f->refcount);
+    f->refs = av_realloc(f->refs, sizeof(*f->refs) * ++f->refcount);
     f->refs[f->refcount-1] = ref;
 }
 
@@ -159,8 +159,8 @@ void avfilter_formats_unref(AVFilterFormats **ref)
     idx = find_ref_index(ref);
 
     if(idx >= 0)
-        memmove((*ref)->refs + idx, (*ref)->refs + idx+1,
-            sizeof(AVFilterFormats**) * ((*ref)->refcount-idx-1));
+        memmove((*ref)->refs + idx, (*ref)->refs + idx + 1,
+            sizeof(*(*ref)->refs) * ((*ref)->refcount - idx - 1));
 
     if(!--(*ref)->refcount) {
         av_free((*ref)->formats);
