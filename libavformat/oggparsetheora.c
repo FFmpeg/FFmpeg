@@ -162,26 +162,21 @@ static int theora_packet(AVFormatContext *s, int idx)
        the total duration to the page granule to find the encoder delay and
        set the first timestamp */
 
-    if (!os->lastpts) {
+    if ((!os->lastpts || os->lastpts == AV_NOPTS_VALUE) && !(os->flags & OGG_FLAG_EOS)) {
         int seg;
-        uint8_t *last_pkt = os->buf + os->pstart;
-        uint8_t *next_pkt = last_pkt;
-        int first_duration = 0;
 
-        duration = 0;
-        for (seg = 0; seg < os->nsegs; seg++) {
-            if (os->segments[seg] < 255) {
-                if (!duration)
-                    first_duration = 1;
-                duration++;
-                last_pkt = next_pkt + os->segments[seg];
-            }
-            next_pkt += os->segments[seg];
+        duration = 1;
+        for (seg = os->segp; seg < os->nsegs; seg++) {
+            if (os->segments[seg] < 255)
+                duration ++;
         }
+
         os->lastpts = os->lastdts   = theora_gptopts(s, idx, os->granule, NULL) - duration;
-        s->streams[idx]->start_time = os->lastpts + first_duration;
-        if (s->streams[idx]->duration)
-            s->streams[idx]->duration -= s->streams[idx]->start_time;
+        if(s->streams[idx]->start_time == AV_NOPTS_VALUE) {
+            s->streams[idx]->start_time = os->lastpts;
+            if (s->streams[idx]->duration)
+                s->streams[idx]->duration -= s->streams[idx]->start_time;
+        }
     }
 
     /* parse packet duration */
