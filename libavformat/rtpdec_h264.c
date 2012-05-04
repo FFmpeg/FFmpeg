@@ -137,26 +137,25 @@ static int sdp_parse_fmtp_config_h264(AVStream *stream,
                 uint8_t *dest = av_malloc(packet_size + sizeof(start_sequence) +
                                           codec->extradata_size +
                                           FF_INPUT_BUFFER_PADDING_SIZE);
-                if (dest) {
-                    if (codec->extradata_size) {
-                        memcpy(dest, codec->extradata, codec->extradata_size);
-                        av_free(codec->extradata);
-                    }
-
-                    memcpy(dest + codec->extradata_size, start_sequence,
-                           sizeof(start_sequence));
-                    memcpy(dest + codec->extradata_size + sizeof(start_sequence),
-                           decoded_packet, packet_size);
-                    memset(dest + codec->extradata_size + sizeof(start_sequence) +
-                           packet_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
-
-                    codec->extradata       = dest;
-                    codec->extradata_size += sizeof(start_sequence) + packet_size;
-                } else {
+                if (!dest) {
                     av_log(codec, AV_LOG_ERROR,
                            "Unable to allocate memory for extradata!");
                     return AVERROR(ENOMEM);
                 }
+                if (codec->extradata_size) {
+                    memcpy(dest, codec->extradata, codec->extradata_size);
+                    av_free(codec->extradata);
+                }
+
+                memcpy(dest + codec->extradata_size, start_sequence,
+                       sizeof(start_sequence));
+                memcpy(dest + codec->extradata_size + sizeof(start_sequence),
+                       decoded_packet, packet_size);
+                memset(dest + codec->extradata_size + sizeof(start_sequence) +
+                       packet_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+
+                codec->extradata       = dest;
+                codec->extradata_size += sizeof(start_sequence) + packet_size;
             }
         }
         av_log(codec, AV_LOG_DEBUG, "Extradata set to %p (size: %d)!",
