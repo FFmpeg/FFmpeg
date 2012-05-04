@@ -239,8 +239,10 @@ static int ogg_read_page(AVFormatContext *s, int *str)
         return AVERROR_INVALIDDATA;
     }
 
-    if (avio_r8(bc) != 0)      /* version */
+    if (avio_r8(bc) != 0){      /* version */
+        av_log (s, AV_LOG_ERROR, "ogg page, unsupported version\n");
         return AVERROR_INVALIDDATA;
+    }
 
     flags = avio_r8(bc);
     gp = avio_rl64 (bc);
