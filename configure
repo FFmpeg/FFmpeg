@@ -2481,8 +2481,11 @@ elif enabled ppc; then
         74*|ppc74*|powerpc74*)
             cpuflags="-mcpu=7400 -mpowerpc-gfxopt"
         ;;
-        g5|970|ppc970|powerpc970|power4*)
+        g5|970|ppc970|powerpc970)
             cpuflags="-mcpu=970 -mpowerpc-gfxopt -mpowerpc64"
+        ;;
+        power[3-7]*)
+            cpuflags="-mcpu=$cpu -mpowerpc-gfxopt -mpowerpc64"
         ;;
         cell)
             cpuflags="-mcpu=cell"

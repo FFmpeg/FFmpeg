@@ -155,6 +155,11 @@ static av_cold int vqa_decode_init(AVCodecContext *avctx)
         return -1;
     }
 
+    if (s->width % s->vector_width || s->height % s->vector_height) {
+        av_log(avctx, AV_LOG_ERROR, "Image size not multiple of block size\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     /* allocate codebooks */
     s->codebook_size = MAX_CODEBOOK_SIZE;
     s->codebook = av_malloc(s->codebook_size);
@@ -163,11 +168,6 @@ static av_cold int vqa_decode_init(AVCodecContext *avctx)
     s->next_codebook_buffer = av_malloc(s->codebook_size);
     if (!s->next_codebook_buffer)
         goto fail;
-
-    if (s->width % s->vector_width || s->height % s->vector_height) {
-        av_log(avctx, AV_LOG_ERROR, "Picture dimensions are not a multiple of the vector size\n");
-        goto fail;
-    }
 
     /* allocate decode buffer */
     s->decode_buffer_size = (s->width / s->vector_width) *
