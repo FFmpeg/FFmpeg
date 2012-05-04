@@ -15,12 +15,12 @@ OBJS = allfilters.o                                                     \
        avfilter.o                                                       \
        avfiltergraph.o                                                  \
        buffersink.o                                                     \
+       buffersrc.o                                                      \
        defaults.o                                                       \
        drawutils.o                                                      \
        formats.o                                                        \
        graphparser.o                                                    \
        vf_scale.o                                                       \
-       vsrc_buffer.o                                                    \
 
 OBJS-$(CONFIG_ANULL_FILTER)                  += af_anull.o
 OBJS-$(CONFIG_RESAMPLE_FILTER)               += af_resample.o
