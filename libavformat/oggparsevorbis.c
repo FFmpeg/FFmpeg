@@ -297,28 +297,33 @@ static int vorbis_packet(AVFormatContext *s, int idx)
        the total duration to the page granule to find the encoder delay and
        set the first timestamp */
     if (!os->lastpts) {
-        int seg;
+        int seg, d;
         uint8_t *last_pkt = os->buf + os->pstart;
         uint8_t *next_pkt = last_pkt;
-        int first_duration = 0;
 
         avpriv_vorbis_parse_reset(&priv->vp);
         duration = 0;
-        for (seg = 0; seg < os->nsegs; seg++) {
+        seg = os->segp;
+        d = avpriv_vorbis_parse_frame(&priv->vp, last_pkt, 1);
+        if (d < 0) {
+            os->pflags |= AV_PKT_FLAG_CORRUPT;
+            return 0;
+        }
+        duration += d;
+        last_pkt = next_pkt =  next_pkt + os->psize;
+        for (; seg < os->nsegs; seg++) {
             if (os->segments[seg] < 255) {
                 int d = avpriv_vorbis_parse_frame(&priv->vp, last_pkt, 1);
                 if (d < 0) {
                     duration = os->granule;
                     break;
                 }
-                if (!duration)
-                    first_duration = d;
                 duration += d;
                 last_pkt = next_pkt + os->segments[seg];
             }
             next_pkt += os->segments[seg];
         }
-        os->lastpts = os->lastdts   = os->granule - duration + first_duration;
+        os->lastpts = os->lastdts   = os->granule - duration;
         s->streams[idx]->start_time = os->lastpts;
         if (s->streams[idx]->duration)
             s->streams[idx]->duration -= s->streams[idx]->start_time;
@@ -329,7 +334,7 @@ static int vorbis_packet(AVFormatContext *s, int idx)
     /* parse packet duration */
     if (os->psize > 0) {
         duration = avpriv_vorbis_parse_frame(&priv->vp, os->buf + os->pstart, 1);
-        if (duration <= 0) {
+        if (duration < 0) {
             os->pflags |= AV_PKT_FLAG_CORRUPT;
             return 0;
         }

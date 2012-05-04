@@ -226,7 +226,8 @@ int avpriv_vorbis_parse_frame(VorbisParseContext *s, const uint8_t *buf,
             previous_blocksize = s->blocksize[flag];
         }
         current_blocksize     = s->mode_blocksize[mode];
-        duration              = (previous_blocksize + current_blocksize) >> 2;
+        if(previous_blocksize)
+            duration              = (previous_blocksize + current_blocksize) >> 2;
         s->previous_blocksize = current_blocksize;
     }
 
@@ -236,7 +237,7 @@ int avpriv_vorbis_parse_frame(VorbisParseContext *s, const uint8_t *buf,
 void avpriv_vorbis_parse_reset(VorbisParseContext *s)
 {
     if (s->valid_extradata)
-        s->previous_blocksize = s->mode_blocksize[0];
+        s->previous_blocksize = 0;
 }
 
 #if CONFIG_VORBIS_PARSER
