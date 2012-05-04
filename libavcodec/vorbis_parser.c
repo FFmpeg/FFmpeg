@@ -226,8 +226,7 @@ int avpriv_vorbis_parse_frame(VorbisParseContext *s, const uint8_t *buf,
             previous_blocksize = s->blocksize[flag];
         }
         current_blocksize     = s->mode_blocksize[mode];
-        if(previous_blocksize)
-            duration              = (previous_blocksize + current_blocksize) >> 2;
+        duration              = (previous_blocksize + current_blocksize) >> 2;
         s->previous_blocksize = current_blocksize;
     }
 
