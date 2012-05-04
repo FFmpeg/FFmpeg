@@ -23,23 +23,47 @@
  * memory buffer source filter
  */
 
+#include "audio.h"
 #include "avfilter.h"
 #include "buffersrc.h"
+#include "formats.h"
 #include "vsrc_buffer.h"
+
+#include "libavutil/audioconvert.h"
 #include "libavutil/fifo.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/opt.h"
+#include "libavutil/samplefmt.h"
 
 typedef struct {
+    const AVClass    *class;
     AVFifoBuffer     *fifo;
+    AVRational        time_base;     ///< time_base to set in the output link
+
+    /* video only */
     int               h, w;
     enum PixelFormat  pix_fmt;
-    AVRational        time_base;     ///< time_base to set in the output link
     AVRational        pixel_aspect;
+
+    /* audio only */
+    int sample_rate;
+    enum AVSampleFormat sample_fmt;
+    char               *sample_fmt_str;
+    uint64_t channel_layout;
+    char    *channel_layout_str;
+
     int eof;
 } BufferSourceContext;
 
-#define CHECK_PARAM_CHANGE(s, c, width, height, format)\
+#define CHECK_VIDEO_PARAM_CHANGE(s, c, width, height, format)\
     if (c->w != width || c->h != height || c->pix_fmt != format) {\
+        av_log(s, AV_LOG_ERROR, "Changing frame properties on the fly is not supported.\n");\
+        return AVERROR(EINVAL);\
+    }
+
+#define CHECK_AUDIO_PARAM_CHANGE(s, c, srate, ch_layout, format)\
+    if (c->sample_fmt != format || c->sample_rate != srate ||\
+        c->channel_layout != ch_layout) {\
         av_log(s, AV_LOG_ERROR, "Changing frame properties on the fly is not supported.\n");\
         return AVERROR(EINVAL);\
     }
@@ -80,12 +104,28 @@ int av_buffersrc_write_frame(AVFilterContext *buffer_filter, AVFrame *frame)
                                          sizeof(buf))) < 0)
         return ret;
 
-    CHECK_PARAM_CHANGE(buffer_filter, c, frame->width, frame->height, frame->format);
-
-    buf = avfilter_get_video_buffer(buffer_filter->outputs[0], AV_PERM_WRITE,
-                                    c->w, c->h);
-    av_image_copy(buf->data, buf->linesize, frame->data, frame->linesize,
-                  c->pix_fmt, c->w, c->h);
+    switch (buffer_filter->outputs[0]->type) {
+    case AVMEDIA_TYPE_VIDEO:
+        CHECK_VIDEO_PARAM_CHANGE(buffer_filter, c, frame->width, frame->height,
+                                 frame->format);
+        buf = avfilter_get_video_buffer(buffer_filter->outputs[0], AV_PERM_WRITE,
+                                        c->w, c->h);
+        av_image_copy(buf->data, buf->linesize, frame->data, frame->linesize,
+                      c->pix_fmt, c->w, c->h);
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        CHECK_AUDIO_PARAM_CHANGE(buffer_filter, c, frame->sample_rate, frame->channel_layout,
+                                 frame->format);
+        buf = ff_get_audio_buffer(buffer_filter->outputs[0], AV_PERM_WRITE,
+                                  frame->nb_samples);
+        av_samples_copy(buf->extended_data, frame->extended_data,
+                        0, 0, frame->nb_samples,
+                        av_get_channel_layout_nb_channels(frame->channel_layout),
+                        frame->format);
+        break;
+    default:
+        return AVERROR(EINVAL);
+    }
 
     avfilter_copy_frame_props(buf, frame);
 
@@ -113,7 +153,17 @@ int av_buffersrc_buffer(AVFilterContext *s, AVFilterBufferRef *buf)
                                          sizeof(buf))) < 0)
         return ret;
 
-    CHECK_PARAM_CHANGE(s, c, buf->video->w, buf->video->h, buf->format);
+    switch (s->outputs[0]->type) {
+    case AVMEDIA_TYPE_VIDEO:
+        CHECK_VIDEO_PARAM_CHANGE(s, c, buf->video->w, buf->video->h, buf->format);
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        CHECK_AUDIO_PARAM_CHANGE(s, c, buf->audio->sample_rate, buf->audio->channel_layout,
+                                 buf->format);
+        break;
+    default:
+        return AVERROR(EINVAL);
+    }
 
     if ((ret = av_fifo_generic_write(c->fifo, &buf, sizeof(buf), NULL)) < 0)
         return ret;
@@ -121,7 +171,7 @@ int av_buffersrc_buffer(AVFilterContext *s, AVFilterBufferRef *buf)
     return 0;
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init_video(AVFilterContext *ctx, const char *args, void *opaque)
 {
     BufferSourceContext *c = ctx->priv;
     char pix_fmt_str[128];
@@ -150,6 +200,69 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     return 0;
 }
 
+#define OFFSET(x) offsetof(BufferSourceContext, x)
+#define A AV_OPT_FLAG_AUDIO_PARAM
+static const AVOption audio_options[] = {
+    { "time_base",      NULL, OFFSET(time_base),           AV_OPT_TYPE_RATIONAL, { 0 }, 0, INT_MAX, A },
+    { "sample_rate",    NULL, OFFSET(sample_rate),         AV_OPT_TYPE_INT,      { 0 }, 0, INT_MAX, A },
+    { "sample_fmt",     NULL, OFFSET(sample_fmt_str),      AV_OPT_TYPE_STRING,             .flags = A },
+    { "channel_layout", NULL, OFFSET(channel_layout_str),  AV_OPT_TYPE_STRING,             .flags = A },
+    { NULL },
+};
+
+static const AVClass abuffer_class = {
+    .class_name = "abuffer source",
+    .item_name  = av_default_item_name,
+    .option     = audio_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+static av_cold int init_audio(AVFilterContext *ctx, const char *args, void *opaque)
+{
+    BufferSourceContext *s = ctx->priv;
+    int ret = 0;
+
+    s->class = &abuffer_class;
+    av_opt_set_defaults(s);
+
+    if ((ret = av_set_options_string(s, args, "=", ":")) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Error parsing options string: %s.\n", args);
+        goto fail;
+    }
+
+    s->sample_fmt = av_get_sample_fmt(s->sample_fmt_str);
+    if (s->sample_fmt == AV_SAMPLE_FMT_NONE) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid sample format %s.\n",
+               s->sample_fmt_str);
+        ret = AVERROR(EINVAL);
+        goto fail;
+    }
+
+    s->channel_layout = av_get_channel_layout(s->channel_layout_str);
+    if (!s->channel_layout) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid channel layout %s.\n",
+               s->channel_layout_str);
+        ret = AVERROR(EINVAL);
+        goto fail;
+    }
+
+    if (!(s->fifo = av_fifo_alloc(sizeof(AVFilterBufferRef*)))) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    if (!s->time_base.num)
+        s->time_base = (AVRational){1, s->sample_rate};
+
+    av_log(ctx, AV_LOG_VERBOSE, "tb:%d/%d samplefmt:%s samplerate: %d "
+           "ch layout:%s\n", s->time_base.num, s->time_base.den, s->sample_fmt_str,
+           s->sample_rate, s->channel_layout_str);
+
+fail:
+    av_opt_free(s);
+    return ret;
+}
+
 static av_cold void uninit(AVFilterContext *ctx)
 {
     BufferSourceContext *s = ctx->priv;
@@ -165,9 +278,29 @@ static av_cold void uninit(AVFilterContext *ctx)
 static int query_formats(AVFilterContext *ctx)
 {
     BufferSourceContext *c = ctx->priv;
-    enum PixelFormat pix_fmts[] = { c->pix_fmt, PIX_FMT_NONE };
+    AVFilterChannelLayouts *channel_layouts = NULL;
+    AVFilterFormats *formats = NULL;
+    AVFilterFormats *samplerates = NULL;
 
-    avfilter_set_common_formats(ctx, avfilter_make_format_list(pix_fmts));
+    switch (ctx->outputs[0]->type) {
+    case AVMEDIA_TYPE_VIDEO:
+        avfilter_add_format(&formats, c->pix_fmt);
+        avfilter_set_common_formats(ctx, formats);
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        avfilter_add_format(&formats,           c->sample_fmt);
+        avfilter_set_common_formats(ctx, formats);
+
+        avfilter_add_format(&samplerates,       c->sample_rate);
+        ff_set_common_samplerates(ctx, samplerates);
+
+        ff_add_channel_layout(&channel_layouts, c->channel_layout);
+        ff_set_common_channel_layouts(ctx, channel_layouts);
+        break;
+    default:
+        return AVERROR(EINVAL);
+    }
+
     return 0;
 }
 
@@ -175,11 +308,21 @@ static int config_props(AVFilterLink *link)
 {
     BufferSourceContext *c = link->src->priv;
 
-    link->w = c->w;
-    link->h = c->h;
-    link->sample_aspect_ratio = c->pixel_aspect;
-    link->time_base = c->time_base;
+    switch (link->type) {
+    case AVMEDIA_TYPE_VIDEO:
+        link->w = c->w;
+        link->h = c->h;
+        link->sample_aspect_ratio = c->pixel_aspect;
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        link->channel_layout = c->channel_layout;
+        link->sample_rate    = c->sample_rate;
+        break;
+    default:
+        return AVERROR(EINVAL);
+    }
 
+    link->time_base = c->time_base;
     return 0;
 }
 
@@ -195,9 +338,19 @@ static int request_frame(AVFilterLink *link)
     }
     av_fifo_generic_read(c->fifo, &buf, sizeof(buf), NULL);
 
-    avfilter_start_frame(link, avfilter_ref_buffer(buf, ~0));
-    avfilter_draw_slice(link, 0, link->h, 1);
-    avfilter_end_frame(link);
+    switch (link->type) {
+    case AVMEDIA_TYPE_VIDEO:
+        avfilter_start_frame(link, avfilter_ref_buffer(buf, ~0));
+        avfilter_draw_slice(link, 0, link->h, 1);
+        avfilter_end_frame(link);
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        ff_filter_samples(link, avfilter_ref_buffer(buf, ~0));
+        break;
+    default:
+        return AVERROR(EINVAL);
+    }
+
     avfilter_unref_buffer(buf);
 
     return 0;
@@ -218,12 +371,30 @@ AVFilter avfilter_vsrc_buffer = {
     .priv_size = sizeof(BufferSourceContext),
     .query_formats = query_formats,
 
-    .init      = init,
+    .init      = init_video,
     .uninit    = uninit,
 
     .inputs    = (AVFilterPad[]) {{ .name = NULL }},
     .outputs   = (AVFilterPad[]) {{ .name            = "default",
                                     .type            = AVMEDIA_TYPE_VIDEO,
+                                    .request_frame   = request_frame,
+                                    .poll_frame      = poll_frame,
+                                    .config_props    = config_props, },
+                                  { .name = NULL}},
+};
+
+AVFilter avfilter_asrc_abuffer = {
+    .name          = "abuffer",
+    .description   = NULL_IF_CONFIG_SMALL("Buffer audio frames, and make them accessible to the filterchain."),
+    .priv_size     = sizeof(BufferSourceContext),
+    .query_formats = query_formats,
+
+    .init      = init_audio,
+    .uninit    = uninit,
+
+    .inputs    = (AVFilterPad[]) {{ .name = NULL }},
+    .outputs   = (AVFilterPad[]) {{ .name            = "default",
+                                    .type            = AVMEDIA_TYPE_AUDIO,
                                     .request_frame   = request_frame,
                                     .poll_frame      = poll_frame,
                                     .config_props    = config_props, },

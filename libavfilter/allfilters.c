@@ -96,6 +96,10 @@ void avfilter_register_all(void)
         avfilter_register(&avfilter_vsrc_buffer);
     }
     {
+        extern AVFilter avfilter_asrc_abuffer;
+        avfilter_register(&avfilter_asrc_abuffer);
+    }
+    {
         extern AVFilter avfilter_vsink_buffer;
         avfilter_register(&avfilter_vsink_buffer);
     }
