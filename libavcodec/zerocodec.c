@@ -65,6 +65,10 @@ static int zerocodec_decode_frame(AVCodecContext *avctx, void *data,
         pic->key_frame = 1;
         pic->pict_type = AV_PICTURE_TYPE_I;
     } else {
+        if (!prev) {
+            av_log(avctx, AV_LOG_ERROR, "Missing reference frame!\n");
+            return AVERROR_INVALIDDATA;
+        }
         pic->key_frame = 0;
         pic->pict_type = AV_PICTURE_TYPE_P;
     }
