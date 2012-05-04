@@ -63,6 +63,16 @@ int main(int argc, char **argv)
     int i, ret, stream_id;
     int64_t timestamp;
     AVDictionary *format_opts = NULL;
+    int64_t seekfirst;
+    int firstback=0;
+
+    if(argc == 4 && !strcmp(argv[2], "-seekforw")){
+        seekfirst = atoi(argv[3]);
+    } else if(argc == 4 && !strcmp(argv[2], "-seekback")){
+        seekfirst = atoi(argv[3]);
+        firstback = 1;
+    } else
+        seekfirst = AV_NOPTS_VALUE;
 
     av_dict_set(&format_opts, "channels", "1", 0);
     av_dict_set(&format_opts, "sample_rate", "22050", 0);
@@ -70,7 +80,7 @@ int main(int argc, char **argv)
     /* initialize libavcodec, and register all codecs and formats */
     av_register_all();
 
-    if (argc != 2) {
+    if (argc < 2) {
         printf("usage: %s input_file\n"
                "\n", argv[0]);
         return 1;
@@ -91,6 +101,10 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    if(seekfirst != AV_NOPTS_VALUE){
+        if(firstback)   avformat_seek_file(ic, -1, INT64_MIN, seekfirst, seekfirst, 0);
+        else            avformat_seek_file(ic, -1, seekfirst, seekfirst, INT64_MAX, 0);
+    }
     for(i=0; ; i++){
         AVPacket pkt = { 0 };
         AVStream *av_uninit(st);
