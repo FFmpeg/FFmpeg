@@ -57,6 +57,12 @@ struct PayloadContext {
 #endif
 };
 
+#ifdef DEBUG
+#define COUNT_NAL_TYPE(data, nal) data->packet_types_received[(nal) & 0x1f]++
+#else
+#define COUNT_NAL_TYPE(data, nal) do { } while (0)
+#endif
+
 static int sdp_parse_fmtp_config_h264(AVStream *stream,
                                       PayloadContext *h264_data,
                                       char *attr, char *value)
@@ -188,9 +194,7 @@ static int h264_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         av_new_packet(pkt, len + sizeof(start_sequence));
         memcpy(pkt->data, start_sequence, sizeof(start_sequence));
         memcpy(pkt->data + sizeof(start_sequence), buf, len);
-#ifdef DEBUG
-        data->packet_types_received[nal & 0x1f]++;
-#endif
+        COUNT_NAL_TYPE(data, nal);
         break;
 
     case 24:                   // STAP-A (one packet, multiple nals)
@@ -224,9 +228,7 @@ static int h264_handle_packet(AVFormatContext *ctx, PayloadContext *data,
                             memcpy(dst, start_sequence, sizeof(start_sequence));
                             dst += sizeof(start_sequence);
                             memcpy(dst, src, nal_size);
-#ifdef DEBUG
-                            data->packet_types_received[*src & 0x1f]++;
-#endif
+                            COUNT_NAL_TYPE(data, *src);
                             dst += nal_size;
                         }
                     } else {
@@ -287,10 +289,8 @@ static int h264_handle_packet(AVFormatContext *ctx, PayloadContext *data,
             buf++;
             len--;
 
-#ifdef DEBUG
             if (start_bit)
-                data->packet_types_received[nal_type]++;
-#endif
+                COUNT_NAL_TYPE(data, nal_type);
             if (start_bit) {
                 /* copy in the start sequence, and the reconstructed nal */
                 av_new_packet(pkt, sizeof(start_sequence) + sizeof(nal) + len);
