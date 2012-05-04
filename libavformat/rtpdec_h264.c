@@ -173,10 +173,17 @@ static int h264_handle_packet(AVFormatContext *ctx,
                               const uint8_t * buf,
                               int len, int flags)
 {
-    uint8_t nal = buf[0];
-    uint8_t type = (nal & 0x1f);
+    uint8_t nal;
+    uint8_t type;
     int result= 0;
     uint8_t start_sequence[] = { 0, 0, 0, 1 };
+
+    if (!len) {
+        av_log(ctx, AV_LOG_ERROR, "Empty H264 RTP packet\n");
+        return AVERROR_INVALIDDATA;
+    }
+    nal  = buf[0];
+    type = nal & 0x1f;
 
 #ifdef DEBUG
     assert(data);
@@ -271,7 +278,7 @@ static int h264_handle_packet(AVFormatContext *ctx,
     case 28:                   // FU-A (fragmented nal)
         buf++;
         len--;                  // skip the fu_indicator
-        {
+        if (len > 1) {
             // these are the same as above, we just redo them here for clarity...
             uint8_t fu_indicator = nal;
             uint8_t fu_header = *buf;   // read the fu_header.
@@ -302,6 +309,9 @@ static int h264_handle_packet(AVFormatContext *ctx,
                 av_new_packet(pkt, len);
                 memcpy(pkt->data, buf, len);
             }
+        } else {
+            av_log(ctx, AV_LOG_ERROR, "Too short data for FU-A H264 RTP packet\n");
+            result = AVERROR_INVALIDDATA;
         }
         break;
 
