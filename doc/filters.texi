@@ -191,6 +191,13 @@ Null audio sink, do absolutely nothing with the input audio. It is
 mainly useful as a template and to be employed in analysis / debugging
 tools.
 
+@section abuffersink
+This sink is intended for programmatic use. Frames that arrive on this sink can
+be retrieved by the calling program using the interface defined in
+@file{libavfilter/buffersink.h}.
+
+This filter accepts no parameters.
+
 @c man end AUDIO SINKS
 
 @chapter Video Filters

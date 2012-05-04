@@ -104,6 +104,10 @@ void avfilter_register_all(void)
         avfilter_register(&avfilter_vsink_buffer);
     }
     {
+        extern AVFilter avfilter_asink_abuffer;
+        avfilter_register(&avfilter_asink_abuffer);
+    }
+    {
         extern AVFilter avfilter_vf_scale;
         avfilter_register(&avfilter_vf_scale);
     }
