@@ -265,7 +265,7 @@ static int h264_handle_packet(AVFormatContext *ctx,
             uint8_t fu_indicator = nal;
             uint8_t fu_header = *buf;
             uint8_t start_bit = fu_header >> 7;
-//            uint8_t end_bit = (fu_header & 0x40) >> 6;
+            uint8_t av_unused end_bit = (fu_header & 0x40) >> 6;
             uint8_t nal_type = (fu_header & 0x1f);
             uint8_t reconstructed_nal;
 
