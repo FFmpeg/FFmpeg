@@ -27,6 +27,7 @@
 
 #include "avfilter.h"
 
+#if 1
 enum {
 
     /**
@@ -62,6 +63,7 @@ int av_buffersrc_add_ref(AVFilterContext *buffer_src,
  */
 unsigned av_buffersrc_get_nb_failed_requests(AVFilterContext *buffer_src);
 
+#else
 /**
  * Add a buffer to the filtergraph s.
  *
@@ -81,5 +83,6 @@ int av_buffersrc_buffer(AVFilterContext *s, AVFilterBufferRef *buf);
  *          hit. Use av_buffersrc_buffer() to avoid copying the data.
  */
 int av_buffersrc_write_frame(AVFilterContext *s, AVFrame *frame);
+#endif
 
 #endif /* AVFILTER_BUFFERSRC_H */
