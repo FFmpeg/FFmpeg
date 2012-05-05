@@ -53,13 +53,4 @@ enum {
 int av_buffersrc_add_ref(AVFilterContext *buffer_src,
                          AVFilterBufferRef *picref, int flags);
 
-/**
- * Add a buffer to the filtergraph s.
- *
- * @param buf buffer containing frame data to be passed down the filtergraph.
- * This function will take ownership of buf, the user must not free it.
- * A NULL buf signals EOF -- i.e. no more frames will be sent to this filter.
- */
-int av_buffersrc_buffer(AVFilterContext *s, AVFilterBufferRef *buf);
-
 #endif /* AVFILTER_BUFFERSRC_H */

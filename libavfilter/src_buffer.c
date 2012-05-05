@@ -294,12 +294,6 @@ int av_vsrc_buffer_add_video_buffer_ref(AVFilterContext *buffer_filter,
     return av_buffersrc_add_ref(buffer_filter, picref, 0);
 }
 
-int av_buffersrc_buffer(AVFilterContext *s, AVFilterBufferRef *buf)
-{
-    return av_buffersrc_add_ref(s, buf, AV_BUFFERSRC_FLAG_NO_CHECK_FORMAT |
-                                        AV_BUFFERSRC_FLAG_NO_COPY);
-}
-
 #if CONFIG_AVCODEC
 #include "avcodec.h"
 
