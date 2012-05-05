@@ -12,7 +12,7 @@ FFLIBS-$(CONFIG_REMOVELOGO_FILTER)           += swscale avformat avcodec
 FFLIBS-$(CONFIG_SCALE_FILTER)                += swscale
 FFLIBS-$(CONFIG_MP_FILTER)                   += avcodec postproc
 
-HEADERS = asrc_abuffer.h avcodec.h avfilter.h avfiltergraph.h buffersink.h version.h vsrc_buffer.h
+HEADERS = asrc_abuffer.h avcodec.h avfilter.h avfiltergraph.h buffersink.h buffersrc.h version.h vsrc_buffer.h
 
 OBJS = allfilters.o                                                     \
        avfilter.o                                                       \
