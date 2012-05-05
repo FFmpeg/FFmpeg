@@ -62,142 +62,7 @@ int16_to_int32_u_int %+ SUFFIX
     REP_RET
 %endmacro
 
-%macro INT32_TO_FLOAT 1
-cglobal int32_to_float_%1, 3, 3, 3, dst, src, len
-    mov srcq, [srcq]
-    mov dstq, [dstq]
-    shl     lenq, 2
-%ifidn %1, a
-    test dstq, mmsize-1
-        jne int32_to_float_u_int %+ SUFFIX
-    test srcq, mmsize-1
-        jne int32_to_float_u_int %+ SUFFIX
-%else
-int32_to_float_u_int %+ SUFFIX
-%endif
-    add     srcq, lenq
-    add     dstq, lenq
-    neg     lenq
-    mova      m2, [flt2pm31]
-.next:
-%ifidn %1, a
-    cvtdq2ps  m0, [         srcq+lenq]
-    cvtdq2ps  m1, [mmsize + srcq+lenq]
-%else
-    movu      m0, [         srcq+lenq]
-    movu      m1, [mmsize + srcq+lenq]
-    cvtdq2ps  m0, m0
-    cvtdq2ps  m1, m1
-%endif
-    mulps m0, m0, m2
-    mulps m1, m1, m2
-    mov%1 [         dstq+lenq], m0
-    mov%1 [mmsize + dstq+lenq], m1
-    add lenq, 2*mmsize
-        jl .next
-    REP_RET
-%endmacro
 
-%macro INT16_TO_FLOAT 1
-cglobal int16_to_float_%1, 3, 3, 4, dst, src, len
-    mov srcq, [srcq]
-    mov dstq, [dstq]
-    shl     lenq, 2
-%ifidn %1, a
-    test dstq, mmsize-1
-        jne int16_to_float_u_int %+ SUFFIX
-    test srcq, mmsize-1
-        jne int16_to_float_u_int %+ SUFFIX
-%else
-int16_to_float_u_int %+ SUFFIX
-%endif
-    add     dstq, lenq
-    shr     lenq, 1
-    add     srcq, lenq
-    neg     lenq
-    mova      m3, [flt2pm31]
-.next:
-    mov%1     m2, [srcq+lenq]
-    pxor      m0, m0
-    pxor      m1, m1
-    punpcklwd m0, m2
-    punpckhwd m1, m2
-    cvtdq2ps  m0, m0
-    cvtdq2ps  m1, m1
-    mulps m0, m3
-    mulps m1, m3
-    mov%1 [         dstq+2*lenq], m0
-    mov%1 [mmsize + dstq+2*lenq], m1
-    add lenq, mmsize
-        jl .next
-    REP_RET
-%endmacro
-
-%macro FLOAT_TO_INT32 1
-cglobal float_to_int32_%1, 3, 3, 5, dst, src, len
-    mov srcq, [srcq]
-    mov dstq, [dstq]
-    shl     lenq, 2
-%ifidn %1, a
-    test dstq, mmsize-1
-        jne float_to_int32_u_int %+ SUFFIX
-    test srcq, mmsize-1
-        jne float_to_int32_u_int %+ SUFFIX
-%else
-float_to_int32_u_int %+ SUFFIX
-%endif
-    add     srcq, lenq
-    add     dstq, lenq
-    neg     lenq
-    mova      m2, [flt2p31]
-.next:
-    mov%1     m0, [         srcq+lenq]
-    mov%1     m1, [mmsize + srcq+lenq]
-    mulps m0, m2
-    mulps m1, m2
-    cvtps2dq  m3, m0
-    cvtps2dq  m4, m1
-    cmpnltps m0, m2
-    cmpnltps m1, m2
-    paddd m0, m3
-    paddd m1, m4
-    mov%1 [         dstq+lenq], m0
-    mov%1 [mmsize + dstq+lenq], m1
-    add lenq, 2*mmsize
-        jl .next
-    REP_RET
-%endmacro
-
-%macro FLOAT_TO_INT16 1
-cglobal float_to_int16_%1, 3, 3, 3, dst, src, len
-    mov srcq, [srcq]
-    mov dstq, [dstq]
-    add lenq    , lenq
-%ifidn %1, a
-    test dstq, mmsize-1
-        jne float_to_int16_u_int %+ SUFFIX
-    test srcq, mmsize-1
-        jne float_to_int16_u_int %+ SUFFIX
-%else
-float_to_int16_u_int %+ SUFFIX
-%endif
-    lea     srcq, [srcq + 2*lenq]
-    add     dstq, lenq
-    neg     lenq
-    mova      m2, [flt2p15]
-.next:
-    mov%1     m0, [         srcq+2*lenq]
-    mov%1     m1, [mmsize + srcq+2*lenq]
-    mulps m0, m2
-    mulps m1, m2
-    cvtps2dq  m0, m0
-    cvtps2dq  m1, m1
-    packssdw  m0, m1
-    mov%1 [         dstq+lenq], m0
-    add lenq, mmsize
-        jl .next
-    REP_RET
-%endmacro
 
 %macro INT32_TO_INT16 1
 cglobal int32_to_int16_%1, 3, 3, 2, dst, src, len
@@ -275,6 +140,43 @@ pack_2ch_%1_to_%2_u_int %+ SUFFIX
     add lenq, 4*mmsize/(2<<%4)
 %else
     add lenq, 2*mmsize/(2<<%4)
+%endif
+        jl .next
+    REP_RET
+%endmacro
+
+%macro CONV 5-7
+cglobal %2_to_%1_%3, 3, 3, 6, dst, src, len
+    mov srcq    , [srcq]
+    mov dstq    , [dstq]
+%ifidn %3, a
+    test dstq, mmsize-1
+        jne %2_to_%1_u_int %+ SUFFIX
+    test srcq, mmsize-1
+        jne %2_to_%1_u_int %+ SUFFIX
+%else
+%2_to_%1_u_int %+ SUFFIX
+%endif
+    lea     srcq , [srcq  + (1<<%5)*lenq]
+    lea     dstq , [dstq  + (1<<%4)*lenq]
+    neg     lenq
+    %7
+.next:
+    mov%3     m0, [           srcq +(1<<%5)*lenq]
+    mov%3     m1, [  mmsize + srcq +(1<<%5)*lenq]
+%if %4 < %5
+    mov%3     m2, [2*mmsize + srcq +(1<<%5)*lenq]
+    mov%3     m3, [3*mmsize + srcq +(1<<%5)*lenq]
+%endif
+    %6
+    mov%3 [           dstq+(1<<%4)*lenq], m0
+    mov%3 [  mmsize + dstq+(1<<%4)*lenq], m1
+%if %4 > %5
+    mov%3 [2*mmsize + dstq+(1<<%4)*lenq], m2
+    mov%3 [3*mmsize + dstq+(1<<%4)*lenq], m3
+    add lenq, 4*mmsize/(1<<%4)
+%else
+    add lenq, 2*mmsize/(1<<%4)
 %endif
         jl .next
     REP_RET
@@ -379,14 +281,14 @@ PACK_2CH int16, int32, u, 1, 2, INT32_TO_INT16_N
 PACK_2CH int16, int32, a, 1, 2, INT32_TO_INT16_N
 
 INIT_XMM sse2
-INT32_TO_FLOAT u
-INT32_TO_FLOAT a
-INT16_TO_FLOAT u
-INT16_TO_FLOAT a
-FLOAT_TO_INT32 u
-FLOAT_TO_INT32 a
-FLOAT_TO_INT16 u
-FLOAT_TO_INT16 a
+CONV float, int32, u, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
+CONV float, int32, a, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
+CONV int32, float, u, 2, 2, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
+CONV int32, float, a, 2, 2, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
+CONV float, int16, u, 2, 1, INT16_TO_FLOAT_N, INT16_TO_FLOAT_INIT
+CONV float, int16, a, 2, 1, INT16_TO_FLOAT_N, INT16_TO_FLOAT_INIT
+CONV int16, float, u, 1, 2, FLOAT_TO_INT16_N, FLOAT_TO_INT16_INIT
+CONV int16, float, a, 1, 2, FLOAT_TO_INT16_N, FLOAT_TO_INT16_INIT
 
 PACK_2CH float, int32, u, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
 PACK_2CH float, int32, a, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
@@ -400,6 +302,6 @@ PACK_2CH int16, float, a, 1, 2, FLOAT_TO_INT16_N, FLOAT_TO_INT16_INIT
 
 %if HAVE_AVX
 INIT_YMM avx
-INT32_TO_FLOAT u
-INT32_TO_FLOAT a
+CONV float, int32, u, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
+CONV float, int32, a, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
 %endif
