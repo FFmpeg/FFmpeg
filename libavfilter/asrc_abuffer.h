@@ -38,7 +38,10 @@
  * @param planar flag to indicate if audio data is planar or packed
  * @param pts presentation timestamp of the audio buffer
  * @param flags unused
+ *
+ * @deprecated use av_buffersrc_add_ref() instead.
  */
+attribute_deprecated
 int av_asrc_buffer_add_samples(AVFilterContext *abuffersrc,
                                uint8_t *data[8], int linesize[8],
                                int nb_samples, int sample_rate,
@@ -59,7 +62,10 @@ int av_asrc_buffer_add_samples(AVFilterContext *abuffersrc,
  * @param ch_layout channel layout of the audio data
  * @param pts presentation timestamp of the audio buffer
  * @param flags unused
+ *
+ * @deprecated use av_buffersrc_add_ref() instead.
  */
+attribute_deprecated
 int av_asrc_buffer_add_buffer(AVFilterContext *abuffersrc,
                               uint8_t *buf, int buf_size,
                               int sample_rate,
@@ -72,7 +78,10 @@ int av_asrc_buffer_add_buffer(AVFilterContext *abuffersrc,
  * @param abuffersrc audio source buffer context
  * @param samplesref buffer ref to queue
  * @param flags unused
+ *
+ * @deprecated use av_buffersrc_add_ref() instead.
  */
+attribute_deprecated
 int av_asrc_buffer_add_audio_buffer_ref(AVFilterContext *abuffersrc,
                                         AVFilterBufferRef *samplesref,
                                         int av_unused flags);

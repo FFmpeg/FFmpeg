@@ -607,7 +607,9 @@ int av_asrc_buffer_add_samples(AVFilterContext *ctx,
     samplesref->pts = pts;
     samplesref->audio->sample_rate = sample_rate;
 
+    AV_NOWARN_DEPRECATED(
     return av_asrc_buffer_add_audio_buffer_ref(ctx, samplesref, 0);
+    )
 }
 
 int av_asrc_buffer_add_buffer(AVFilterContext *ctx,
@@ -624,11 +626,13 @@ int av_asrc_buffer_add_buffer(AVFilterContext *ctx,
                            buf, nb_channels, nb_samples,
                            sample_fmt, 16);
 
+    AV_NOWARN_DEPRECATED(
     return av_asrc_buffer_add_samples(ctx,
                                       data, linesize, nb_samples,
                                       sample_rate,
                                       sample_fmt, channel_layout, planar,
                                       pts, flags);
+    )
 }
 
 AVFilter avfilter_vsrc_buffer = {
