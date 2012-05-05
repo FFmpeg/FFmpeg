@@ -35,6 +35,16 @@ void ff_float_to_int16_a_sse2(uint8_t **dst, const uint8_t **src, int len);
 
 void ff_int32_to_float_a_avx(uint8_t **dst, const uint8_t **src, int len);
 
+void ff_pack_2ch_int16_to_int16_a_sse(uint8_t **dst, const uint8_t **src, int len);
+void ff_pack_2ch_int32_to_int32_a_sse(uint8_t **dst, const uint8_t **src, int len);
+void ff_pack_2ch_int16_to_int32_a_sse(uint8_t **dst, const uint8_t **src, int len);
+void ff_pack_2ch_int32_to_int16_a_sse(uint8_t **dst, const uint8_t **src, int len);
+
+void ff_pack_2ch_int32_to_float_a_sse2(uint8_t **dst, const uint8_t **src, int len);
+void ff_pack_2ch_float_to_int32_a_sse2(uint8_t **dst, const uint8_t **src, int len);
+void ff_pack_2ch_int16_to_float_a_sse2(uint8_t **dst, const uint8_t **src, int len);
+void ff_pack_2ch_float_to_int16_a_sse2(uint8_t **dst, const uint8_t **src, int len);
+
 void swri_audio_convert_init_x86(struct AudioConvert *ac,
                                  enum AVSampleFormat out_fmt,
                                  enum AVSampleFormat in_fmt,
@@ -56,6 +66,19 @@ void swri_audio_convert_init_x86(struct AudioConvert *ac,
 MULTI_CAPS_FUNC(AV_CPU_FLAG_MMX, mmx)
 MULTI_CAPS_FUNC(AV_CPU_FLAG_SSE, sse)
 
+    if(mm_flags & AV_CPU_FLAG_SSE) {
+        if(channels == 2) {
+            if(   out_fmt == AV_SAMPLE_FMT_FLT  && in_fmt == AV_SAMPLE_FMT_FLTP || out_fmt == AV_SAMPLE_FMT_S32 && in_fmt == AV_SAMPLE_FMT_S32P)
+                ac->simd_f =  ff_pack_2ch_int32_to_int32_a_sse;
+            if(   out_fmt == AV_SAMPLE_FMT_S16  && in_fmt == AV_SAMPLE_FMT_S16P)
+                ac->simd_f =  ff_pack_2ch_int16_to_int16_a_sse;
+            if(   out_fmt == AV_SAMPLE_FMT_S32  && in_fmt == AV_SAMPLE_FMT_S16P)
+                ac->simd_f =  ff_pack_2ch_int16_to_int32_a_sse;
+            if(   out_fmt == AV_SAMPLE_FMT_S16  && in_fmt == AV_SAMPLE_FMT_S32P)
+                ac->simd_f =  ff_pack_2ch_int32_to_int16_a_sse;
+        }
+    }
+
     if(mm_flags & AV_CPU_FLAG_SSE2) {
         if(   out_fmt == AV_SAMPLE_FMT_FLT  && in_fmt == AV_SAMPLE_FMT_S32 || out_fmt == AV_SAMPLE_FMT_FLTP && in_fmt == AV_SAMPLE_FMT_S32P)
             ac->simd_f =  ff_int32_to_float_a_sse2;
@@ -65,6 +88,17 @@ MULTI_CAPS_FUNC(AV_CPU_FLAG_SSE, sse)
             ac->simd_f =  ff_float_to_int32_a_sse2;
         if(   out_fmt == AV_SAMPLE_FMT_S16  && in_fmt == AV_SAMPLE_FMT_FLT || out_fmt == AV_SAMPLE_FMT_S16P && in_fmt == AV_SAMPLE_FMT_FLTP)
             ac->simd_f =  ff_float_to_int16_a_sse2;
+
+        if(channels == 2) {
+            if(   out_fmt == AV_SAMPLE_FMT_FLT  && in_fmt == AV_SAMPLE_FMT_S32P)
+                ac->simd_f =  ff_pack_2ch_int32_to_float_a_sse2;
+            if(   out_fmt == AV_SAMPLE_FMT_S32  && in_fmt == AV_SAMPLE_FMT_FLTP)
+                ac->simd_f =  ff_pack_2ch_float_to_int32_a_sse2;
+            if(   out_fmt == AV_SAMPLE_FMT_FLT  && in_fmt == AV_SAMPLE_FMT_S16P)
+                ac->simd_f =  ff_pack_2ch_int16_to_float_a_sse2;
+            if(   out_fmt == AV_SAMPLE_FMT_S16  && in_fmt == AV_SAMPLE_FMT_FLTP)
+                ac->simd_f =  ff_pack_2ch_float_to_int16_a_sse2;
+        }
     }
     if(HAVE_AVX && mm_flags & AV_CPU_FLAG_AVX) {
         if(   out_fmt == AV_SAMPLE_FMT_FLT  && in_fmt == AV_SAMPLE_FMT_S32 || out_fmt == AV_SAMPLE_FMT_FLTP && in_fmt == AV_SAMPLE_FMT_S32P)
