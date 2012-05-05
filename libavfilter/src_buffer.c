@@ -652,7 +652,7 @@ AVFilter avfilter_vsrc_buffer = {
                                   { .name = NULL}},
 };
 
-#ifdef CONFIG_ABUFFER_FILTER
+#if CONFIG_ABUFFER_FILTER
 
 AVFilter avfilter_asrc_abuffer = {
     .name        = "abuffer",
