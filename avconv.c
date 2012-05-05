@@ -598,7 +598,6 @@ static int configure_video_filters(FilterGraph *fg)
     InputStream  *ist = fg->inputs[0]->ist;
     OutputStream *ost = fg->outputs[0]->ost;
     AVFilterContext *last_filter, *filter;
-    /** filter graph containing all filters including input & output */
     AVCodecContext *codec = ost->st->codec;
     SinkContext sink_ctx = { .pix_fmts = choose_pixel_fmts(ost) };
     AVRational sample_aspect_ratio;
