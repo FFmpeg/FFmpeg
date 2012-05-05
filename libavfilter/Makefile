@@ -1,7 +1,6 @@
 NAME = avfilter
-FFLIBS = avutil
+FFLIBS = avutil swscale
 FFLIBS-$(CONFIG_MOVIE_FILTER) += avformat avcodec
-FFLIBS-$(CONFIG_SCALE_FILTER) += swscale
 
 HEADERS = avfilter.h avfiltergraph.h buffersrc.h version.h vsrc_buffer.h
 
@@ -12,6 +11,7 @@ OBJS = allfilters.o                                                     \
        drawutils.o                                                      \
        formats.o                                                        \
        graphparser.o                                                    \
+       vf_scale.o                                                       \
        vsrc_buffer.o
 
 OBJS-$(CONFIG_ANULL_FILTER)                  += af_anull.o
@@ -46,7 +46,6 @@ OBJS-$(CONFIG_OCV_FILTER)                    += vf_libopencv.o
 OBJS-$(CONFIG_OVERLAY_FILTER)                += vf_overlay.o
 OBJS-$(CONFIG_PAD_FILTER)                    += vf_pad.o
 OBJS-$(CONFIG_PIXDESCTEST_FILTER)            += vf_pixdesctest.o
-OBJS-$(CONFIG_SCALE_FILTER)                  += vf_scale.o
 OBJS-$(CONFIG_SELECT_FILTER)                 += vf_select.o
 OBJS-$(CONFIG_SETDAR_FILTER)                 += vf_aspect.o
 OBJS-$(CONFIG_SETPTS_FILTER)                 += vf_setpts.o

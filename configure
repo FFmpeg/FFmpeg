@@ -1530,11 +1530,11 @@ frei0r_src_filter_deps="frei0r dlopen strtok_r"
 frei0r_src_filter_extralibs='$ldl'
 hqdn3d_filter_deps="gpl"
 ocv_filter_deps="libopencv"
-scale_filter_deps="swscale"
 yadif_filter_deps="gpl"
 
 # libraries
 avdevice_deps="avcodec avformat"
+avfilter_deps="swscale"
 avformat_deps="avcodec"
 
 # programs
