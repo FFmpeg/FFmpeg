@@ -435,6 +435,11 @@ Set the audio codec. This is an alias for @code{-codec:a}.
 @item -sample_fmt[:@var{stream_specifier}] @var{sample_fmt} (@emph{output,per-stream})
 Set the audio sample format. Use @code{-sample_fmts} to get a list
 of supported sample formats.
+@item -af @var{filter_graph} (@emph{output})
+@var{filter_graph} is a description of the filter graph to apply to
+the input audio.
+Use the option "-filters" to show all the available filters (including
+also sources and sinks).  This is an alias for @code{-filter:a}.
 @end table
 
 @section Advanced Audio options:
