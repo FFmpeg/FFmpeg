@@ -237,14 +237,15 @@ int main(int argc, char **argv){
     uint32_t rand_seed = 0;
     int remaining_tests[max_tests];
     int test;
+    int specific_test= -1;
 
     struct SwrContext * forw_ctx= NULL;
     struct SwrContext *backw_ctx= NULL;
 
     if (argc > 1) {
         if (!strcmp(argv[1], "-h")) {
-            av_log(NULL, AV_LOG_INFO, "Usage: swresample-test [<num_tests>]\n"
-                   "Default is %d\n", num_tests);
+            av_log(NULL, AV_LOG_INFO, "Usage: swresample-test [<num_tests>[ <test>]]  \n"
+                   "num_tests           Default is %d\n", num_tests);
             return 0;
         }
         num_tests = strtol(argv[1], NULL, 0);
@@ -254,6 +255,9 @@ int main(int argc, char **argv){
         }
         if(num_tests<= 0 || num_tests>max_tests)
             num_tests = max_tests;
+        if(argc > 2) {
+            specific_test = strtol(argv[1], NULL, 0);
+        }
     }
 
     for(i=0; i<max_tests; i++)
@@ -280,6 +284,11 @@ int main(int argc, char **argv){
         out_sample_fmt  = formats[vector % FF_ARRAY_ELEMS(formats)]; vector /= FF_ARRAY_ELEMS(formats);
         out_sample_rate = rates  [vector % FF_ARRAY_ELEMS(rates  )]; vector /= FF_ARRAY_ELEMS(rates);
         av_assert0(!vector);
+
+        if(specific_test == 0){
+            if(out_sample_rate != in_sample_rate || in_ch_layout != out_ch_layout)
+                continue;
+        }
 
         in_ch_count= av_get_channel_layout_nb_channels(in_ch_layout);
         out_ch_count= av_get_channel_layout_nb_channels(out_ch_layout);
