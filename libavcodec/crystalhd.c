@@ -713,11 +713,20 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
     }
 
     /*
-     * Testing has shown that in all cases where we don't want to return the
-     * full frame immediately, VDEC_FLAG_UNKNOWN_SRC is set.
+     * The logic here is purely based on empirical testing with samples.
+     * If we need a second field, it could come from a second input packet,
+     * or it could come from the same field-pair input packet at the current
+     * field. In the first case, we should return and wait for the next time
+     * round to get the second field, while in the second case, we should
+     * ask the decoder for it immediately.
+     *
+     * Testing has shown that we are dealing with the fieldpair -> two fields
+     * case if the VDEC_FLAG_UNKNOWN_SRC is not set or if the input picture
+     * type was PICT_FRAME (in this second case, the flag might still be set)
      */
     return priv->need_second_field &&
-           !(output->PicInfo.flags & VDEC_FLAG_UNKNOWN_SRC) ?
+           (!(output->PicInfo.flags & VDEC_FLAG_UNKNOWN_SRC) ||
+            pic_type == PICT_FRAME) ?
            RET_COPY_NEXT_FIELD : RET_OK;
 }
 
