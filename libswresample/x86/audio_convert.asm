@@ -94,7 +94,7 @@ int32_to_int16_u_int %+ SUFFIX
 
 ;to, from, a/u, log2_outsize, log_intsize, const
 %macro PACK_2CH 5-7
-cglobal pack_2ch_%2_to_%1_%3, 3, 4, 5, dst, src, len, src2
+cglobal pack_2ch_%2_to_%1_%3, 3, 4, 6, dst, src, len, src2
     mov src2q   , [srcq+gprsize]
     mov srcq    , [srcq]
     mov dstq    , [dstq]
