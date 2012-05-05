@@ -114,7 +114,7 @@ static int sdp_parse_fmtp_config_h264(AVStream *stream,
         }
     } else if (!strcmp(attr, "sprop-parameter-sets")) {
         codec->extradata_size = 0;
-        codec->extradata      = NULL;
+        av_freep(&codec->extradata);
 
         while (*value) {
             char base64packet[1024];
