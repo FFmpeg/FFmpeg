@@ -239,6 +239,8 @@ static int mpc8_read_header(AVFormatContext *s)
     avpriv_set_pts_info(st, 32, 1152  << (st->codec->extradata[1]&3)*2, st->codec->sample_rate);
     st->duration = c->samples / (1152 << (st->codec->extradata[1]&3)*2);
     size -= avio_tell(pb) - pos;
+    if (size > 0)
+        avio_skip(pb, size);
 
     return 0;
 }
