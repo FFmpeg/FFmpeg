@@ -24,6 +24,8 @@
 /**
  * @file
  * memory buffer source API for video
+ *
+ * @deprecated use buffersrc.h instead.
  */
 
 #include "avfilter.h"
