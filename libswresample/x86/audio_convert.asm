@@ -33,6 +33,7 @@ SECTION .text
 cglobal int16_to_int32_%1, 3, 3, 3, dst, src, len
     mov srcq, [srcq]
     mov dstq, [dstq]
+    shl     lenq, 2
 %ifidn %1, a
     test dstq, mmsize-1
         jne int16_to_int32_u_int %+ SUFFIX
@@ -65,6 +66,7 @@ int16_to_int32_u_int %+ SUFFIX
 cglobal int32_to_float_%1, 3, 3, 3, dst, src, len
     mov srcq, [srcq]
     mov dstq, [dstq]
+    shl     lenq, 2
 %ifidn %1, a
     test dstq, mmsize-1
         jne int32_to_float_u_int %+ SUFFIX
@@ -100,6 +102,7 @@ int32_to_float_u_int %+ SUFFIX
 cglobal int16_to_float_%1, 3, 3, 4, dst, src, len
     mov srcq, [srcq]
     mov dstq, [dstq]
+    shl     lenq, 2
 %ifidn %1, a
     test dstq, mmsize-1
         jne int16_to_float_u_int %+ SUFFIX
@@ -134,6 +137,7 @@ int16_to_float_u_int %+ SUFFIX
 cglobal float_to_int32_%1, 3, 3, 5, dst, src, len
     mov srcq, [srcq]
     mov dstq, [dstq]
+    shl     lenq, 2
 %ifidn %1, a
     test dstq, mmsize-1
         jne float_to_int32_u_int %+ SUFFIX
@@ -168,6 +172,7 @@ float_to_int32_u_int %+ SUFFIX
 cglobal float_to_int16_%1, 3, 3, 3, dst, src, len
     mov srcq, [srcq]
     mov dstq, [dstq]
+    add lenq    , lenq
 %ifidn %1, a
     test dstq, mmsize-1
         jne float_to_int16_u_int %+ SUFFIX
@@ -198,6 +203,7 @@ float_to_int16_u_int %+ SUFFIX
 cglobal int32_to_int16_%1, 3, 3, 2, dst, src, len
     mov srcq, [srcq]
     mov dstq, [dstq]
+    add lenq    , lenq
 %ifidn %1, a
     test dstq, mmsize-1
         jne int32_to_int16_u_int %+ SUFFIX

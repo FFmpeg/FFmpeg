@@ -160,7 +160,7 @@ int swri_audio_convert(AudioConvert *ctx, AudioData *out, AudioData *in, int len
         av_assert1(off>=0);
         if(off>0)
             for(ch=0; ch<planes; ch++){
-                ctx->simd_f(out->ch+ch, in->ch+ch, off*os);
+                ctx->simd_f(out->ch+ch, in->ch+ch, off * (out->planar ? 1 :out->ch_count));
             }
         av_assert1(off<=len);
         if(off == len)
