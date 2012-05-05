@@ -42,7 +42,10 @@
  * @param flags a combination of AV_VSRC_BUF_FLAG_* flags
  * @return >= 0 in case of success, a negative AVERROR code in case of
  * failure
+ *
+ * @deprecated use av_buffersrc_add_ref() instead.
  */
+attribute_deprecated
 int av_vsrc_buffer_add_video_buffer_ref(AVFilterContext *buffer_src,
                                         AVFilterBufferRef *picref, int flags);
 
