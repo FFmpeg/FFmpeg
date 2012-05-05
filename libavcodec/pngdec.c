@@ -501,7 +501,7 @@ static int decode_frame(AVCodecContext *avctx,
                     avctx->pix_fmt = PIX_FMT_MONOBLACK;
                 } else if (s->bit_depth == 8 &&
                            s->color_type == PNG_COLOR_TYPE_GRAY_ALPHA) {
-                    avctx->pix_fmt = PIX_FMT_GRAY8A;
+                    avctx->pix_fmt = PIX_FMT_Y400A;
                 } else {
                     av_log(avctx, AV_LOG_ERROR, "unsupported bit depth %d "
                                                 "and color type %d\n",

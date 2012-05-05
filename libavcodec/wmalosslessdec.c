@@ -658,9 +658,9 @@ static void mclms_predict(WmallDecodeCtx *s, int icoef, int *pred)
     int num_channels = s->num_channels;
 
     for (ich = 0; ich < num_channels; ich++) {
+        pred[ich] = 0;
         if (!s->is_channel_coded[ich])
             continue;
-        pred[ich] = 0;
         for (i = 0; i < order * num_channels; i++)
             pred[ich] += s->mclms_prevvalues[i + s->mclms_recent] *
                          s->mclms_coeffs[i + order * num_channels * ich];
@@ -983,10 +983,10 @@ static int decode_subframe(WmallDecodeCtx *s)
 
         for (j = 0; j < subframe_len; j++) {
             if (s->bits_per_sample == 16) {
-                *s->samples_16[c] = (int16_t) s->channel_residues[c][j];
+                *s->samples_16[c] = (int16_t) s->channel_residues[c][j] << padding_zeroes;
                 s->samples_16[c] += s->num_channels;
             } else {
-                *s->samples_32[c] = s->channel_residues[c][j];
+                *s->samples_32[c] = s->channel_residues[c][j] << padding_zeroes;
                 s->samples_32[c] += s->num_channels;
             }
         }

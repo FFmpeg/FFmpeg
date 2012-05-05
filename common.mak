@@ -115,6 +115,6 @@ OBJDIRS := $(OBJDIRS) $(dir $(OBJS) $(HOSTOBJS) $(TESTOBJS))
 
 CLEANSUFFIXES     = *.d *.o *~ *.ho *.map *.ver *.gcno *.gcda
 DISTCLEANSUFFIXES = *.pc
-LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a *.exp
+LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a
 
 -include $(wildcard $(OBJS:.o=.d) $(TESTOBJS:.o=.d))
