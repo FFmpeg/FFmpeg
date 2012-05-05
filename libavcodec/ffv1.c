@@ -1946,7 +1946,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     FFV1Context *f = avctx->priv_data;
     RangeCoder * const c= &f->slice_context[0]->c;
     AVFrame * const p= &f->picture;
-    int bytes_read, i;
+    int i;
     uint8_t keystate= 128;
     const uint8_t *buf_p;
 
