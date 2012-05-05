@@ -66,6 +66,7 @@ typedef struct RTMPContext {
     int           chunk_size;                 ///< size of the chunks RTMP packets are divided into
     int           is_input;                   ///< input/output flag
     char          *playpath;                  ///< stream identifier to play (with possible "mp4:" prefix)
+    int           live;                       ///< 0: recorded, -1: live, -2: both
     char          *app;                       ///< name of application
     ClientState   state;                      ///< current state
     int           main_channel_id;            ///< an additional channel ID which is used for some invocations
@@ -287,7 +288,7 @@ static void gen_play(URLContext *s, RTMPContext *rt)
 
     av_log(s, AV_LOG_DEBUG, "Sending play command for '%s'\n", rt->playpath);
     ff_rtmp_packet_create(&pkt, RTMP_VIDEO_CHANNEL, RTMP_PT_INVOKE, 0,
-                          20 + strlen(rt->playpath));
+                          29 + strlen(rt->playpath));
     pkt.extra = rt->main_channel_id;
 
     p = pkt.data;
@@ -295,6 +296,7 @@ static void gen_play(URLContext *s, RTMPContext *rt)
     ff_amf_write_number(&p, ++rt->nb_invokes);
     ff_amf_write_null(&p);
     ff_amf_write_string(&p, rt->playpath);
+    ff_amf_write_number(&p, rt->live);
 
     ff_rtmp_packet_write(rt->stream, &pkt, rt->chunk_size, rt->prev_pkt[1]);
     ff_rtmp_packet_destroy(&pkt);
@@ -1050,6 +1052,10 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
 
 static const AVOption rtmp_options[] = {
     {"rtmp_app", "Name of application to connect to on the RTMP server", OFFSET(app), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+    {"rtmp_live", "Specify that the media is a live stream.", OFFSET(live), AV_OPT_TYPE_INT, {-2}, INT_MIN, INT_MAX, DEC, "rtmp_live"},
+    {"any", "both", 0, AV_OPT_TYPE_CONST, {-2}, 0, 0, DEC, "rtmp_live"},
+    {"live", "live stream", 0, AV_OPT_TYPE_CONST, {-1}, 0, 0, DEC, "rtmp_live"},
+    {"recorded", "recorded stream", 0, AV_OPT_TYPE_CONST, {0}, 0, 0, DEC, "rtmp_live"},
     {"rtmp_playpath", "Stream identifier to play or to publish", OFFSET(playpath), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     { NULL },
 };
