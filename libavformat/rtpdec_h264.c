@@ -85,7 +85,7 @@ static int sdp_parse_fmtp_config_h264(AVStream *stream,
          */
         if (h264_data->packetization_mode > 1)
             av_log(codec, AV_LOG_ERROR,
-                   "Interleaved RTP mode is not supported yet.");
+                   "Interleaved RTP mode is not supported yet.\n");
     } else if (!strcmp(attr, "profile-level-id")) {
         if (strlen(value) == 6) {
             char buffer[3];
@@ -139,7 +139,7 @@ static int sdp_parse_fmtp_config_h264(AVStream *stream,
                                           FF_INPUT_BUFFER_PADDING_SIZE);
                 if (!dest) {
                     av_log(codec, AV_LOG_ERROR,
-                           "Unable to allocate memory for extradata!");
+                           "Unable to allocate memory for extradata!\n");
                     return AVERROR(ENOMEM);
                 }
                 if (codec->extradata_size) {
@@ -158,7 +158,7 @@ static int sdp_parse_fmtp_config_h264(AVStream *stream,
                 codec->extradata_size += sizeof(start_sequence) + packet_size;
             }
         }
-        av_log(codec, AV_LOG_DEBUG, "Extradata set to %p (size: %d)!",
+        av_log(codec, AV_LOG_DEBUG, "Extradata set to %p (size: %d)!\n",
                codec->extradata, codec->extradata_size);
     }
     return 0;
@@ -309,7 +309,7 @@ static int h264_handle_packet(AVFormatContext *ctx, PayloadContext *data,
     case 30:                   // undefined
     case 31:                   // undefined
     default:
-        av_log(ctx, AV_LOG_ERROR, "Undefined type (%d)", type);
+        av_log(ctx, AV_LOG_ERROR, "Undefined type (%d)\n", type);
         result = AVERROR_INVALIDDATA;
         break;
     }
