@@ -4,11 +4,15 @@ releases are sorted from youngest to oldest.
 version next:
 
 
-version 0.10.2:
+version 0.10.3:
+
+- Security fixes in the 4xm demuxer, avi demuxer, cook decoder,
+  mm demuxer, mpegvideo decoder, vqavideo decoder (CVE-2012-0947) and
+  xmv demuxer.
 
 - Several bugs and crashes have been fixed in the following codecs: AAC,
   APE, H.263, H.264, Indeo 4, Mimic, MJPEG, Motion Pixels Video, RAW,
-  TTA, VC1, VQA, WMA Voice, vqavideo (CVE-2012-0947).
+  TTA, VC1, VQA, WMA Voice, vqavideo.
 
 - Several bugs and crashes have been fixed in the following formats:
   ASF, ID3v2, MOV, xWMA
