@@ -24,6 +24,8 @@
 /**
  * @file
  * memory buffer source for audio
+ *
+ * @deprecated use buffersrc.h instead.
  */
 
 /**
