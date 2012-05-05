@@ -57,8 +57,8 @@ struct PayloadContext {
 #endif
 };
 
-static int sdp_parse_fmtp_config_h264(AVStream * stream,
-                                      PayloadContext * h264_data,
+static int sdp_parse_fmtp_config_h264(AVStream *stream,
+                                      PayloadContext *h264_data,
                                       char *attr, char *value)
 {
     AVCodecContext *codec = stream->codec;
@@ -86,24 +86,28 @@ static int sdp_parse_fmtp_config_h264(AVStream * stream,
             uint8_t profile_iop;
             uint8_t level_idc;
 
-            buffer[0] = value[0]; buffer[1] = value[1]; buffer[2] = '\0';
+            buffer[0]   = value[0];
+            buffer[1]   = value[1];
+            buffer[2]   = '\0';
             profile_idc = strtol(buffer, NULL, 16);
-            buffer[0] = value[2]; buffer[1] = value[3];
+            buffer[0]   = value[2];
+            buffer[1]   = value[3];
             profile_iop = strtol(buffer, NULL, 16);
-            buffer[0] = value[4]; buffer[1] = value[5];
-            level_idc = strtol(buffer, NULL, 16);
+            buffer[0]   = value[4];
+            buffer[1]   = value[5];
+            level_idc   = strtol(buffer, NULL, 16);
 
             av_log(codec, AV_LOG_DEBUG,
                    "RTP Profile IDC: %x Profile IOP: %x Level: %x\n",
                    profile_idc, profile_iop, level_idc);
             h264_data->profile_idc = profile_idc;
             h264_data->profile_iop = profile_iop;
-            h264_data->level_idc = level_idc;
+            h264_data->level_idc   = level_idc;
         }
-    } else  if (!strcmp(attr, "sprop-parameter-sets")) {
+    } else if (!strcmp(attr, "sprop-parameter-sets")) {
         uint8_t start_sequence[] = { 0, 0, 0, 1 };
-        codec->extradata_size= 0;
-        codec->extradata= NULL;
+        codec->extradata_size = 0;
+        codec->extradata      = NULL;
 
         while (*value) {
             char base64packet[1024];
@@ -120,49 +124,48 @@ static int sdp_parse_fmtp_config_h264(AVStream * stream,
             if (*value == ',')
                 value++;
 
-            packet_size= av_base64_decode(decoded_packet, base64packet, sizeof(decoded_packet));
+            packet_size = av_base64_decode(decoded_packet, base64packet,
+                                           sizeof(decoded_packet));
             if (packet_size > 0) {
                 uint8_t *dest = av_malloc(packet_size + sizeof(start_sequence) +
-                                         codec->extradata_size +
-                                         FF_INPUT_BUFFER_PADDING_SIZE);
-                if(dest)
-                {
-                    if(codec->extradata_size)
-                    {
+                                          codec->extradata_size +
+                                          FF_INPUT_BUFFER_PADDING_SIZE);
+                if (dest) {
+                    if (codec->extradata_size) {
                         memcpy(dest, codec->extradata, codec->extradata_size);
                         av_free(codec->extradata);
                     }
 
-                    memcpy(dest+codec->extradata_size, start_sequence, sizeof(start_sequence));
-                    memcpy(dest+codec->extradata_size+sizeof(start_sequence), decoded_packet, packet_size);
-                    memset(dest+codec->extradata_size+sizeof(start_sequence)+
+                    memcpy(dest + codec->extradata_size, start_sequence,
+                           sizeof(start_sequence));
+                    memcpy(dest + codec->extradata_size + sizeof(start_sequence),
+                           decoded_packet, packet_size);
+                    memset(dest + codec->extradata_size + sizeof(start_sequence) +
                            packet_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
 
-                    codec->extradata= dest;
-                    codec->extradata_size+= sizeof(start_sequence)+packet_size;
+                    codec->extradata       = dest;
+                    codec->extradata_size += sizeof(start_sequence) + packet_size;
                 } else {
-                    av_log(codec, AV_LOG_ERROR, "Unable to allocate memory for extradata!");
+                    av_log(codec, AV_LOG_ERROR,
+                           "Unable to allocate memory for extradata!");
                     return AVERROR(ENOMEM);
                 }
             }
         }
-        av_log(codec, AV_LOG_DEBUG, "Extradata set to %p (size: %d)!", codec->extradata, codec->extradata_size);
+        av_log(codec, AV_LOG_DEBUG, "Extradata set to %p (size: %d)!",
+               codec->extradata, codec->extradata_size);
     }
     return 0;
 }
 
 // return 0 on packet, no more left, 1 on packet, 1 on partial packet
-static int h264_handle_packet(AVFormatContext *ctx,
-                              PayloadContext *data,
-                              AVStream *st,
-                              AVPacket * pkt,
-                              uint32_t * timestamp,
-                              const uint8_t * buf,
-                              int len, int flags)
+static int h264_handle_packet(AVFormatContext *ctx, PayloadContext *data,
+                              AVStream *st, AVPacket *pkt, uint32_t *timestamp,
+                              const uint8_t *buf, int len, int flags)
 {
     uint8_t nal;
     uint8_t type;
-    int result= 0;
+    int result = 0;
     uint8_t start_sequence[] = { 0, 0, 0, 1 };
 
     if (!len) {
@@ -182,9 +185,9 @@ static int h264_handle_packet(AVFormatContext *ctx,
     switch (type) {
     case 0:                    // undefined, but pass them through
     case 1:
-        av_new_packet(pkt, len+sizeof(start_sequence));
+        av_new_packet(pkt, len + sizeof(start_sequence));
         memcpy(pkt->data, start_sequence, sizeof(start_sequence));
-        memcpy(pkt->data+sizeof(start_sequence), buf, len);
+        memcpy(pkt->data + sizeof(start_sequence), buf, len);
 #ifdef DEBUG
         data->packet_types_received[nal & 0x1f]++;
 #endif
@@ -196,35 +199,35 @@ static int h264_handle_packet(AVFormatContext *ctx,
         len--;
         // first we are going to figure out the total size
         {
-            int pass= 0;
-            int total_length= 0;
-            uint8_t *dst= NULL;
+            int pass         = 0;
+            int total_length = 0;
+            uint8_t *dst     = NULL;
 
-            for(pass= 0; pass<2; pass++) {
-                const uint8_t *src= buf;
-                int src_len= len;
+            for (pass = 0; pass < 2; pass++) {
+                const uint8_t *src = buf;
+                int src_len        = len;
 
                 while (src_len > 2) {
                     uint16_t nal_size = AV_RB16(src);
 
                     // consume the length of the aggregate
-                    src += 2;
+                    src     += 2;
                     src_len -= 2;
 
                     if (nal_size <= src_len) {
-                        if(pass==0) {
+                        if (pass == 0) {
                             // counting
-                            total_length+= sizeof(start_sequence)+nal_size;
+                            total_length += sizeof(start_sequence) + nal_size;
                         } else {
                             // copying
                             assert(dst);
                             memcpy(dst, start_sequence, sizeof(start_sequence));
-                            dst+= sizeof(start_sequence);
+                            dst += sizeof(start_sequence);
                             memcpy(dst, src, nal_size);
 #ifdef DEBUG
                             data->packet_types_received[*src & 0x1f]++;
 #endif
-                            dst+= nal_size;
+                            dst += nal_size;
                         }
                     } else {
                         av_log(ctx, AV_LOG_ERROR,
@@ -232,7 +235,7 @@ static int h264_handle_packet(AVFormatContext *ctx,
                     }
 
                     // eat what we handled
-                    src += nal_size;
+                    src     += nal_size;
                     src_len -= nal_size;
 
                     if (src_len < 0)
@@ -240,13 +243,13 @@ static int h264_handle_packet(AVFormatContext *ctx,
                                "Consumed more bytes than we got! (%d)\n", src_len);
                 }
 
-                if(pass==0) {
+                if (pass == 0) {
                     /* now we know the total size of the packet (with the
                      * start sequences added) */
                     av_new_packet(pkt, total_length);
-                    dst= pkt->data;
+                    dst = pkt->data;
                 } else {
-                    assert(dst-pkt->data==total_length);
+                    assert(dst - pkt->data == total_length);
                 }
             }
         }
@@ -267,17 +270,17 @@ static int h264_handle_packet(AVFormatContext *ctx,
         len--;                 // skip the fu_indicator
         if (len > 1) {
             // these are the same as above, we just redo them here for clarity
-            uint8_t fu_indicator = nal;
-            uint8_t fu_header = *buf;
-            uint8_t start_bit = fu_header >> 7;
+            uint8_t fu_indicator      = nal;
+            uint8_t fu_header         = *buf;
+            uint8_t start_bit         = fu_header >> 7;
             uint8_t av_unused end_bit = (fu_header & 0x40) >> 6;
-            uint8_t nal_type = (fu_header & 0x1f);
+            uint8_t nal_type          = fu_header & 0x1f;
             uint8_t reconstructed_nal;
 
             // Reconstruct this packet's true nal; only the data follows.
             /* The original nal forbidden bit and NRI are stored in this
              * packet's nal. */
-            reconstructed_nal = fu_indicator & (0xe0);
+            reconstructed_nal  = fu_indicator & 0xe0;
             reconstructed_nal |= nal_type;
 
             // skip the fu_header
@@ -288,12 +291,12 @@ static int h264_handle_packet(AVFormatContext *ctx,
             if (start_bit)
                 data->packet_types_received[nal_type]++;
 #endif
-            if(start_bit) {
+            if (start_bit) {
                 /* copy in the start sequence, and the reconstructed nal */
-                av_new_packet(pkt, sizeof(start_sequence)+sizeof(nal)+len);
+                av_new_packet(pkt, sizeof(start_sequence) + sizeof(nal) + len);
                 memcpy(pkt->data, start_sequence, sizeof(start_sequence));
-                pkt->data[sizeof(start_sequence)]= reconstructed_nal;
-                memcpy(pkt->data+sizeof(start_sequence)+sizeof(nal), buf, len);
+                pkt->data[sizeof(start_sequence)] = reconstructed_nal;
+                memcpy(pkt->data + sizeof(start_sequence) + sizeof(nal), buf, len);
             } else {
                 av_new_packet(pkt, len);
                 memcpy(pkt->data, buf, len);
@@ -348,25 +351,27 @@ static int parse_h264_sdp_line(AVFormatContext *s, int st_index,
         return 0;
 
     stream = s->streams[st_index];
-    codec = stream->codec;
+    codec  = stream->codec;
 
     if (av_strstart(p, "framesize:", &p)) {
         char buf1[50];
         char *dst = buf1;
 
         // remove the protocol identifier
-        while (*p && *p == ' ') p++; // strip spaces.
-        while (*p && *p != ' ') p++; // eat protocol identifier
-        while (*p && *p == ' ') p++; // strip trailing spaces.
-        while (*p && *p != '-' && (dst - buf1) < sizeof(buf1) - 1) {
+        while (*p && *p == ' ')
+            p++;                     // strip spaces.
+        while (*p && *p != ' ')
+            p++;                     // eat protocol identifier
+        while (*p && *p == ' ')
+            p++;                     // strip trailing spaces.
+        while (*p && *p != '-' && (dst - buf1) < sizeof(buf1) - 1)
             *dst++ = *p++;
-        }
         *dst = '\0';
 
         // a='framesize:96 320-240'
         // set our parameters
-        codec->width = atoi(buf1);
-        codec->height = atoi(p + 1); // skip the -
+        codec->width   = atoi(buf1);
+        codec->height  = atoi(p + 1); // skip the -
         codec->pix_fmt = PIX_FMT_YUV420P;
     } else if (av_strstart(p, "fmtp:", &p)) {
         return ff_parse_fmtp(stream, h264_data, p, sdp_parse_fmtp_config_h264);
