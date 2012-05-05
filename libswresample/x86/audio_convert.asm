@@ -29,68 +29,6 @@ flt2p15 : times 8 dd 32768.0
 
 SECTION .text
 
-%macro INT16_TO_INT32 1
-cglobal int16_to_int32_%1, 3, 3, 3, dst, src, len
-    mov srcq, [srcq]
-    mov dstq, [dstq]
-    shl     lenq, 2
-%ifidn %1, a
-    test dstq, mmsize-1
-        jne int16_to_int32_u_int %+ SUFFIX
-    test srcq, mmsize-1
-        jne int16_to_int32_u_int %+ SUFFIX
-%else
-int16_to_int32_u_int %+ SUFFIX
-%endif
-    add     dstq, lenq
-    shr     lenq, 1
-    add     srcq, lenq
-    neg     lenq
-.next
-    mov%1     m2, [srcq+lenq]
-    pxor      m0, m0
-    pxor      m1, m1
-    punpcklwd m0, m2
-    punpckhwd m1, m2
-    mov%1 [         dstq+2*lenq], m0
-    mov%1 [mmsize + dstq+2*lenq], m1
-    add lenq, mmsize
-        jl .next
-%if mmsize == 8
-    emms
-%endif
-    REP_RET
-%endmacro
-
-
-
-%macro INT32_TO_INT16 1
-cglobal int32_to_int16_%1, 3, 3, 2, dst, src, len
-    mov srcq, [srcq]
-    mov dstq, [dstq]
-    add lenq    , lenq
-%ifidn %1, a
-    test dstq, mmsize-1
-        jne int32_to_int16_u_int %+ SUFFIX
-    test srcq, mmsize-1
-        jne int32_to_int16_u_int %+ SUFFIX
-%else
-int32_to_int16_u_int %+ SUFFIX
-%endif
-    lea     srcq, [srcq + 2*lenq]
-    add     dstq, lenq
-    neg     lenq
-.next:
-    mov%1     m0, [         srcq+2*lenq]
-    mov%1     m1, [mmsize + srcq+2*lenq]
-    psrad     m0, 16
-    psrad     m1, 16
-    packssdw  m0, m1
-    mov%1 [         dstq+lenq], m0
-    add lenq, mmsize
-        jl .next
-    REP_RET
-%endmacro
 
 ;to, from, a/u, log2_outsize, log_intsize, const
 %macro PACK_2CH 5-7
@@ -260,16 +198,16 @@ cglobal %2_to_%1_%3, 3, 3, 6, dst, src, len
 %endmacro
 
 INIT_MMX mmx
-INT16_TO_INT32 u
-INT16_TO_INT32 a
-INT32_TO_INT16 u
-INT32_TO_INT16 a
+CONV int32, int16, u, 2, 1, INT16_TO_INT32_N
+CONV int32, int16, a, 2, 1, INT16_TO_INT32_N
+CONV int16, int32, u, 1, 2, INT32_TO_INT16_N
+CONV int16, int32, a, 1, 2, INT32_TO_INT16_N
 
 INIT_XMM sse
-INT16_TO_INT32 u
-INT16_TO_INT32 a
-INT32_TO_INT16 u
-INT32_TO_INT16 a
+CONV int32, int16, u, 2, 1, INT16_TO_INT32_N
+CONV int32, int16, a, 2, 1, INT16_TO_INT32_N
+CONV int16, int32, u, 1, 2, INT32_TO_INT16_N
+CONV int16, int32, a, 1, 2, INT32_TO_INT16_N
 
 PACK_2CH int16, int16, u, 1, 1
 PACK_2CH int16, int16, a, 1, 1
