@@ -100,13 +100,13 @@ cglobal pack_2ch_%2_to_%1_%3, 3, 4, 6, dst, src, len, src2
     mov dstq    , [dstq]
 %ifidn %3, a
     test dstq, mmsize-1
-        jne pack_2ch_%1_to_%2_u_int %+ SUFFIX
+        jne pack_2ch_%2_to_%1_u_int %+ SUFFIX
     test srcq, mmsize-1
-        jne pack_2ch_%1_to_%2_u_int %+ SUFFIX
+        jne pack_2ch_%2_to_%1_u_int %+ SUFFIX
     test src2q, mmsize-1
-        jne pack_2ch_%1_to_%2_u_int %+ SUFFIX
+        jne pack_2ch_%2_to_%1_u_int %+ SUFFIX
 %else
-pack_2ch_%1_to_%2_u_int %+ SUFFIX
+pack_2ch_%2_to_%1_u_int %+ SUFFIX
 %endif
     lea     srcq , [srcq  + (1<<%5)*lenq]
     lea     src2q, [src2q + (1<<%5)*lenq]
