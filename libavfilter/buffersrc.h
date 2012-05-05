@@ -53,4 +53,13 @@ enum {
 int av_buffersrc_add_ref(AVFilterContext *buffer_src,
                          AVFilterBufferRef *picref, int flags);
 
+/**
+ * Get the number of failed requests.
+ *
+ * A failed request is when the request_frame method is called while no
+ * frame is present in the buffer.
+ * The number is reset when a frame is added.
+ */
+unsigned av_buffersrc_get_nb_failed_requests(AVFilterContext *buffer_src);
+
 #endif /* AVFILTER_BUFFERSRC_H */

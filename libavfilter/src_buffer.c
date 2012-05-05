@@ -331,6 +331,11 @@ int av_vsrc_buffer_add_frame(AVFilterContext *buffer_src,
 }
 #endif
 
+unsigned av_buffersrc_get_nb_failed_requests(AVFilterContext *buffer_src)
+{
+    return ((BufferSourceContext *)buffer_src->priv)->nb_failed_requests;
+}
+
 unsigned av_vsrc_buffer_get_nb_failed_requests(AVFilterContext *buffer_src)
 {
     return ((BufferSourceContext *)buffer_src->priv)->nb_failed_requests;
