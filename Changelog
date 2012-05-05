@@ -3,6 +3,21 @@ releases are sorted from youngest to oldest.
 
 version next:
 
+
+version 0.10.2:
+
+- Several bugs and crashes have been fixed in the following codecs: AAC,
+  APE, H.263, H.264, Indeo 4, Mimic, MJPEG, Motion Pixels Video, RAW,
+  TTA, VC1, VQA, WMA Voice, vqavideo (CVE-2012-0947).
+
+- Several bugs and crashes have been fixed in the following formats:
+  ASF, ID3v2, MOV, xWMA
+
+- This release additionally updates the following codecs to the
+  bytestream2 API, and therefore benefit from additional overflow
+  checks: truemotion2, utvideo, vqavideo
+
+
 version 0.10.1
 - Several security fixes, many bugfixes affecting many formats and
   codecs, the list below is not complete.
