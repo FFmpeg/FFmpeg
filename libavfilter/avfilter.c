@@ -684,19 +684,26 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
 
 int avfilter_copy_frame_props(AVFilterBufferRef *dst, const AVFrame *src)
 {
-    if (dst->type != AVMEDIA_TYPE_VIDEO)
-        return AVERROR(EINVAL);
-
     dst->pts    = src->pts;
     dst->format = src->format;
 
-    dst->video->w                   = src->width;
-    dst->video->h                   = src->height;
-    dst->video->pixel_aspect        = src->sample_aspect_ratio;
-    dst->video->interlaced          = src->interlaced_frame;
-    dst->video->top_field_first     = src->top_field_first;
-    dst->video->key_frame           = src->key_frame;
-    dst->video->pict_type           = src->pict_type;
+    switch (dst->type) {
+    case AVMEDIA_TYPE_VIDEO:
+        dst->video->w                   = src->width;
+        dst->video->h                   = src->height;
+        dst->video->pixel_aspect        = src->sample_aspect_ratio;
+        dst->video->interlaced          = src->interlaced_frame;
+        dst->video->top_field_first     = src->top_field_first;
+        dst->video->key_frame           = src->key_frame;
+        dst->video->pict_type           = src->pict_type;
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        dst->audio->sample_rate         = src->sample_rate;
+        dst->audio->channel_layout      = src->channel_layout;
+        break;
+    default:
+        return AVERROR(EINVAL);
+    }
 
     return 0;
 }
