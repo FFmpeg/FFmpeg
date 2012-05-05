@@ -24,7 +24,6 @@
  * PNG parser
  */
 
-#include "libavutil/intreadwrite.h"
 #include "parser.h"
 
 #define PNGSIG 0x89504e470d0a1a0a
@@ -76,7 +75,7 @@ static int png_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     for (;ppc->pc.frame_start_found && i < buf_size; i++) {
         ppc->pc.state = (ppc->pc.state<<8) | buf[i];
         if (ppc->index == 3) {
-            ppc->chunk_length = AV_RL32(&ppc->pc.state);
+            ppc->chunk_length = ppc->pc.state;
             if (ppc->chunk_length > 0x7fffffff) {
                 ppc->index = ppc->pc.frame_start_found = 0;
                 goto flush;
@@ -85,7 +84,7 @@ static int png_parse(AVCodecParserContext *s, AVCodecContext *avctx,
         } else if (ppc->index == 7) {
             if (ppc->chunk_length >= buf_size - i)
                     ppc->remaining_size = ppc->chunk_length - buf_size + i + 1;
-            if (AV_RB32(&ppc->pc.state) == MKTAG('I', 'E', 'N', 'D')) {
+            if (ppc->pc.state == MKBETAG('I', 'E', 'N', 'D')) {
                 if (ppc->remaining_size)
                     ppc->index = -1;
                 else
