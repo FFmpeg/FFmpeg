@@ -124,6 +124,12 @@ AudioConvert *swri_audio_convert_alloc(enum AVSampleFormat out_fmt,
     ctx = av_mallocz(sizeof(*ctx));
     if (!ctx)
         return NULL;
+
+    if(channels == 1){
+         in_fmt = av_get_planar_sample_fmt( in_fmt);
+        out_fmt = av_get_planar_sample_fmt(out_fmt);
+    }
+
     ctx->channels = channels;
     ctx->conv_f   = f;
     ctx->ch_map   = ch_map;
