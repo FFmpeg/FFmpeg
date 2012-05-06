@@ -52,6 +52,7 @@ pack_2ch_%2_to_%1_u_int %+ SUFFIX
     neg     lenq
     %7
 .next:
+%if %4 >= %5
     mov%3     m0, [         srcq +(1<<%5)*lenq]
     mova      m1, m0
     mov%3     m2, [         src2q+(1<<%5)*lenq]
@@ -62,14 +63,18 @@ pack_2ch_%2_to_%1_u_int %+ SUFFIX
     punpckldq m0, m2
     punpckhdq m1, m2
 %endif
-%if %4 < %5
-    mov%3     m2, [mmsize + srcq +(1<<%5)*lenq]
-    mova      m3, m2
-    mov%3     m4, [mmsize + src2q+(1<<%5)*lenq]
-    punpckldq m2, m4
-    punpckhdq m3, m4
-%endif
     %6
+%else
+    mov%3     m0, [         srcq +(1<<%5)*lenq]
+    mov%3     m1, [mmsize + srcq +(1<<%5)*lenq]
+    mov%3     m2, [         src2q+(1<<%5)*lenq]
+    mov%3     m3, [mmsize + src2q+(1<<%5)*lenq]
+    %6
+    mova      m2, m0
+    punpcklwd m0, m1
+    punpckhwd m2, m1
+    SWAP 1,2
+%endif
     mov%3 [           dstq+(2<<%4)*lenq], m0
     mov%3 [  mmsize + dstq+(2<<%4)*lenq], m1
 %if %4 > %5
