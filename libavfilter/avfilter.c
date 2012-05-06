@@ -28,6 +28,7 @@
 #include "libavcodec/avcodec.h"
 
 #include "avfilter.h"
+#include "formats.h"
 #include "internal.h"
 
 unsigned avfilter_version(void) {
@@ -176,6 +177,12 @@ int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
     if (link->out_formats)
         avfilter_formats_changeref(&link->out_formats,
                                    &filt->outputs[filt_dstpad_idx]->out_formats);
+    if (link->out_samplerates)
+        avfilter_formats_changeref(&link->out_samplerates,
+                                   &filt->outputs[filt_dstpad_idx]->out_samplerates);
+    if (link->out_channel_layouts)
+        ff_channel_layouts_changeref(&link->out_channel_layouts,
+                                     &filt->outputs[filt_dstpad_idx]->out_channel_layouts);
 
     return 0;
 }
@@ -215,12 +222,6 @@ int avfilter_config_links(AVFilterContext *filter)
             if (link->sample_aspect_ratio.num == 0 && link->sample_aspect_ratio.den == 0)
                 link->sample_aspect_ratio = link->src->input_count ?
                     link->src->inputs[0]->sample_aspect_ratio : (AVRational){1,1};
-
-            if (link->sample_rate == 0 && link->src && link->src->input_count)
-                link->sample_rate = link->src->inputs[0]->sample_rate;
-
-            if (link->channel_layout == 0 && link->src && link->src->input_count)
-                link->channel_layout = link->src->inputs[0]->channel_layout;
 
             if ((config_link = link->dstpad->config_props))
                 if ((ret = config_link(link)) < 0)
@@ -614,6 +615,10 @@ void avfilter_free(AVFilterContext *filter)
                 link->src->outputs[link->srcpad - link->src->output_pads] = NULL;
             avfilter_formats_unref(&link->in_formats);
             avfilter_formats_unref(&link->out_formats);
+            avfilter_formats_unref(&link->in_samplerates);
+            avfilter_formats_unref(&link->out_samplerates);
+            ff_channel_layouts_unref(&link->in_channel_layouts);
+            ff_channel_layouts_unref(&link->out_channel_layouts);
         }
         av_freep(&link);
     }
@@ -623,6 +628,10 @@ void avfilter_free(AVFilterContext *filter)
                 link->dst->inputs[link->dstpad - link->dst->input_pads] = NULL;
             avfilter_formats_unref(&link->in_formats);
             avfilter_formats_unref(&link->out_formats);
+            avfilter_formats_unref(&link->in_samplerates);
+            avfilter_formats_unref(&link->out_samplerates);
+            ff_channel_layouts_unref(&link->in_channel_layouts);
+            ff_channel_layouts_unref(&link->out_channel_layouts);
         }
         av_freep(&link);
     }

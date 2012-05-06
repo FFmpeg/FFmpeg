@@ -25,6 +25,7 @@
 
 #include "avfilter.h"
 #include "internal.h"
+#include "formats.h"
 
 /* TODO: buffer pool.  see comment for avfilter_default_get_video_buffer() */
 void ff_avfilter_default_free_buffer(AVFilterBuffer *ptr)
@@ -112,9 +113,6 @@ int avfilter_default_config_output_link(AVFilterLink *link)
             link->w = link->src->inputs[0]->w;
             link->h = link->src->inputs[0]->h;
             link->time_base = link->src->inputs[0]->time_base;
-        } else if (link->type == AVMEDIA_TYPE_AUDIO) {
-            link->channel_layout = link->src->inputs[0]->channel_layout;
-            link->sample_rate    = link->src->inputs[0]->sample_rate;
         }
     } else {
         /* XXX: any non-simple filter which would cause this branch to be taken
@@ -125,36 +123,53 @@ int avfilter_default_config_output_link(AVFilterLink *link)
     return 0;
 }
 
+#define SET_COMMON_FORMATS(ctx, fmts, in_fmts, out_fmts, ref, list) \
+{                                                                   \
+    int count = 0, i;                                               \
+                                                                    \
+    for (i = 0; i < ctx->input_count; i++) {                        \
+        if (ctx->inputs[i]) {                                       \
+            ref(fmts, &ctx->inputs[i]->out_fmts);                   \
+            count++;                                                \
+        }                                                           \
+    }                                                               \
+    for (i = 0; i < ctx->output_count; i++) {                       \
+        if (ctx->outputs[i]) {                                      \
+            ref(fmts, &ctx->outputs[i]->in_fmts);                   \
+            count++;                                                \
+        }                                                           \
+    }                                                               \
+                                                                    \
+    if (!count) {                                                   \
+        av_freep(&fmts->list);                                      \
+        av_freep(&fmts->refs);                                      \
+        av_freep(&fmts);                                            \
+    }                                                               \
+}
+
+void ff_set_common_channel_layouts(AVFilterContext *ctx,
+                                   AVFilterChannelLayouts *layouts)
+{
+    SET_COMMON_FORMATS(ctx, layouts, in_channel_layouts, out_channel_layouts,
+                       ff_channel_layouts_ref, channel_layouts);
+}
+
+void ff_set_common_samplerates(AVFilterContext *ctx,
+                               AVFilterFormats *samplerates)
+{
+    SET_COMMON_FORMATS(ctx, samplerates, in_samplerates, out_samplerates,
+                       avfilter_formats_ref, formats);
+}
+
 /**
  * A helper for query_formats() which sets all links to the same list of
  * formats. If there are no links hooked to this filter, the list of formats is
  * freed.
- *
- * FIXME: this will need changed for filters with a mix of pad types
- * (video + audio, etc)
  */
 void avfilter_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats)
 {
-    int count = 0, i;
-
-    for (i = 0; i < ctx->input_count; i++) {
-        if (ctx->inputs[i]) {
-            avfilter_formats_ref(formats, &ctx->inputs[i]->out_formats);
-            count++;
-        }
-    }
-    for (i = 0; i < ctx->output_count; i++) {
-        if (ctx->outputs[i]) {
-            avfilter_formats_ref(formats, &ctx->outputs[i]->in_formats);
-            count++;
-        }
-    }
-
-    if (!count) {
-        av_free(formats->formats);
-        av_free(formats->refs);
-        av_free(formats);
-    }
+    SET_COMMON_FORMATS(ctx, formats, in_formats, out_formats,
+                       avfilter_formats_ref, formats);
 }
 
 int avfilter_default_query_formats(AVFilterContext *ctx)
@@ -164,6 +179,11 @@ int avfilter_default_query_formats(AVFilterContext *ctx)
                             AVMEDIA_TYPE_VIDEO;
 
     avfilter_set_common_formats(ctx, avfilter_all_formats(type));
+    if (type == AVMEDIA_TYPE_AUDIO) {
+        ff_set_common_channel_layouts(ctx, ff_all_channel_layouts());
+        ff_set_common_samplerates(ctx, ff_all_samplerates());
+    }
+
     return 0;
 }
 
