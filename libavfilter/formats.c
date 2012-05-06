@@ -22,58 +22,132 @@
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "internal.h"
+#include "formats.h"
 
 /**
  * Add all refs from a to ret and destroy a.
  */
-static void merge_ref(AVFilterFormats *ret, AVFilterFormats *a)
-{
-    int i;
+#define MERGE_REF(ret, a, fmts, type, fail)                                \
+do {                                                                       \
+    type ***tmp;                                                           \
+    int i;                                                                 \
+                                                                           \
+    if (!(tmp = av_realloc(ret->refs,                                      \
+                           sizeof(*tmp) * (ret->refcount + a->refcount)))) \
+        goto fail;                                                         \
+    ret->refs = tmp;                                                       \
+                                                                           \
+    for (i = 0; i < a->refcount; i ++) {                                   \
+        ret->refs[ret->refcount] = a->refs[i];                             \
+        *ret->refs[ret->refcount++] = ret;                                 \
+    }                                                                      \
+                                                                           \
+    av_freep(&a->refs);                                                    \
+    av_freep(&a->fmts);                                                    \
+    av_freep(&a);                                                          \
+} while (0)
 
-    for(i = 0; i < a->refcount; i ++) {
-        ret->refs[ret->refcount] = a->refs[i];
-        *ret->refs[ret->refcount++] = ret;
-    }
-
-    av_free(a->refs);
-    av_free(a->formats);
-    av_free(a);
-}
+/**
+ * Add all formats common for a and b to ret, copy the refs and destroy
+ * a and b.
+ */
+#define MERGE_FORMATS(ret, a, b, fmts, nb, type, fail)                          \
+do {                                                                            \
+    int i, j, k = 0, count = FFMIN(a->nb, b->nb);                               \
+                                                                                \
+    if (!(ret = av_mallocz(sizeof(*ret))))                                      \
+        goto fail;                                                              \
+                                                                                \
+    if (count) {                                                                \
+        if (!(ret->fmts = av_malloc(sizeof(*ret->fmts) * count)))               \
+            goto fail;                                                          \
+        for (i = 0; i < a->nb; i++)                                             \
+            for (j = 0; j < b->nb; j++)                                         \
+                if (a->fmts[i] == b->fmts[j])                                   \
+                    ret->fmts[k++] = a->fmts[i];                                \
+                                                                                \
+        ret->nb = k;                                                            \
+    }                                                                           \
+    /* check that there was at least one common format */                       \
+    if (!ret->nb)                                                               \
+        goto fail;                                                              \
+                                                                                \
+    MERGE_REF(ret, a, fmts, type, fail);                                        \
+    MERGE_REF(ret, b, fmts, type, fail);                                        \
+} while (0)
 
 AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
 {
-    AVFilterFormats *ret;
-    unsigned i, j, k = 0, m_count;
+    AVFilterFormats *ret = NULL;
 
     if (a == b)
         return a;
 
-    ret = av_mallocz(sizeof(*ret));
-
-    /* merge list of formats */
-    m_count = FFMIN(a->format_count, b->format_count);
-    if (m_count) {
-        ret->formats = av_malloc(sizeof(*ret->formats) * m_count);
-        for(i = 0; i < a->format_count; i ++)
-            for(j = 0; j < b->format_count; j ++)
-                if(a->formats[i] == b->formats[j])
-                    ret->formats[k++] = a->formats[i];
-
-        ret->format_count = k;
-    }
-    /* check that there was at least one common format */
-    if(!ret->format_count) {
-        av_free(ret->formats);
-        av_free(ret);
-        return NULL;
-    }
-
-    ret->refs = av_malloc(sizeof(*ret->refs) * (a->refcount + b->refcount));
-
-    merge_ref(ret, a);
-    merge_ref(ret, b);
+    MERGE_FORMATS(ret, a, b, formats, format_count, AVFilterFormats, fail);
 
     return ret;
+fail:
+    if (ret) {
+        av_freep(&ret->refs);
+        av_freep(&ret->formats);
+    }
+    av_freep(&ret);
+    return NULL;
+}
+
+AVFilterFormats *ff_merge_samplerates(AVFilterFormats *a,
+                                      AVFilterFormats *b)
+{
+    AVFilterFormats *ret = NULL;
+
+    if (a == b) return a;
+
+    if (a->format_count && b->format_count) {
+        MERGE_FORMATS(ret, a, b, formats, format_count, AVFilterFormats, fail);
+    } else if (a->format_count) {
+        MERGE_REF(a, b, formats, AVFilterFormats, fail);
+        ret = a;
+    } else {
+        MERGE_REF(b, a, formats, AVFilterFormats, fail);
+        ret = b;
+    }
+
+    return ret;
+fail:
+    if (ret) {
+        av_freep(&ret->refs);
+        av_freep(&ret->formats);
+    }
+    av_freep(&ret);
+    return NULL;
+}
+
+AVFilterChannelLayouts *ff_merge_channel_layouts(AVFilterChannelLayouts *a,
+                                                 AVFilterChannelLayouts *b)
+{
+    AVFilterChannelLayouts *ret = NULL;
+
+    if (a == b) return a;
+
+    if (a->nb_channel_layouts && b->nb_channel_layouts) {
+        MERGE_FORMATS(ret, a, b, channel_layouts, nb_channel_layouts,
+                      AVFilterChannelLayouts, fail);
+    } else if (a->nb_channel_layouts) {
+        MERGE_REF(a, b, channel_layouts, AVFilterChannelLayouts, fail);
+        ret = a;
+    } else {
+        MERGE_REF(b, a, channel_layouts, AVFilterChannelLayouts, fail);
+        ret = b;
+    }
+
+    return ret;
+fail:
+    if (ret) {
+        av_freep(&ret->refs);
+        av_freep(&ret->channel_layouts);
+    }
+    av_freep(&ret);
+    return NULL;
 }
 
 int ff_fmt_is_in(int fmt, const int *fmts)
@@ -104,21 +178,31 @@ AVFilterFormats *avfilter_make_format_list(const int *fmts)
     return formats;
 }
 
+#define ADD_FORMAT(f, fmt, type, list, nb)                  \
+do {                                                        \
+    type *fmts;                                             \
+                                                            \
+    if (!(*f) && !(*f = av_mallocz(sizeof(**f))))           \
+        return AVERROR(ENOMEM);                             \
+                                                            \
+    fmts = av_realloc((*f)->list,                           \
+                      sizeof(*(*f)->list) * ((*f)->nb + 1));\
+    if (!fmts)                                              \
+        return AVERROR(ENOMEM);                             \
+                                                            \
+    (*f)->list = fmts;                                      \
+    (*f)->list[(*f)->nb++] = fmt;                           \
+    return 0;                                               \
+} while (0)
+
 int avfilter_add_format(AVFilterFormats **avff, int fmt)
 {
-    int *fmts;
+    ADD_FORMAT(avff, fmt, int, formats, format_count);
+}
 
-    if (!(*avff) && !(*avff = av_mallocz(sizeof(**avff))))
-        return AVERROR(ENOMEM);
-
-    fmts = av_realloc((*avff)->formats,
-                      sizeof(*(*avff)->formats) * ((*avff)->format_count+1));
-    if (!fmts)
-        return AVERROR(ENOMEM);
-
-    (*avff)->formats = fmts;
-    (*avff)->formats[(*avff)->format_count++] = fmt;
-    return 0;
+int ff_add_channel_layout(AVFilterChannelLayouts **l, uint64_t channel_layout)
+{
+    ADD_FORMAT(l, channel_layout, uint64_t, channel_layouts, nb_channel_layouts);
 }
 
 AVFilterFormats *avfilter_all_formats(enum AVMediaType type)
@@ -136,51 +220,97 @@ AVFilterFormats *avfilter_all_formats(enum AVMediaType type)
     return ret;
 }
 
-void avfilter_formats_ref(AVFilterFormats *f, AVFilterFormats **ref)
+AVFilterFormats *ff_all_samplerates(void)
 {
-    *ref = f;
-    f->refs = av_realloc(f->refs, sizeof(*f->refs) * ++f->refcount);
-    f->refs[f->refcount-1] = ref;
+    AVFilterFormats *ret = av_mallocz(sizeof(*ret));
+    return ret;
 }
 
-static int find_ref_index(AVFilterFormats **ref)
+AVFilterChannelLayouts *ff_all_channel_layouts(void)
 {
-    int i;
-    for(i = 0; i < (*ref)->refcount; i ++)
-        if((*ref)->refs[i] == ref)
-            return i;
-    return -1;
+    AVFilterChannelLayouts *ret = av_mallocz(sizeof(*ret));
+    return ret;
 }
+
+#define FORMATS_REF(f, ref)                                          \
+do {                                                                 \
+    *ref = f;                                                        \
+    f->refs = av_realloc(f->refs, sizeof(*f->refs) * ++f->refcount); \
+    f->refs[f->refcount-1] = ref;                                    \
+} while (0)
+
+void ff_channel_layouts_ref(AVFilterChannelLayouts *f, AVFilterChannelLayouts **ref)
+{
+    FORMATS_REF(f, ref);
+}
+
+void avfilter_formats_ref(AVFilterFormats *f, AVFilterFormats **ref)
+{
+    FORMATS_REF(f, ref);
+}
+
+#define FIND_REF_INDEX(ref, idx)            \
+do {                                        \
+    int i;                                  \
+    for (i = 0; i < (*ref)->refcount; i ++) \
+        if((*ref)->refs[i] == ref) {        \
+            idx = i;                        \
+            break;                          \
+        }                                   \
+} while (0)
+
+#define FORMATS_UNREF(ref, list)                                   \
+do {                                                               \
+    int idx = -1;                                                  \
+                                                                   \
+    if (!*ref)                                                     \
+        return;                                                    \
+                                                                   \
+    FIND_REF_INDEX(ref, idx);                                      \
+                                                                   \
+    if (idx >= 0)                                                  \
+        memmove((*ref)->refs + idx, (*ref)->refs + idx + 1,        \
+            sizeof(*(*ref)->refs) * ((*ref)->refcount - idx - 1)); \
+                                                                   \
+    if(!--(*ref)->refcount) {                                      \
+        av_free((*ref)->list);                                     \
+        av_free((*ref)->refs);                                     \
+        av_free(*ref);                                             \
+    }                                                              \
+    *ref = NULL;                                                   \
+} while (0)
 
 void avfilter_formats_unref(AVFilterFormats **ref)
 {
-    int idx;
+    FORMATS_UNREF(ref, formats);
+}
 
-    if (!*ref)
-        return;
+void ff_channel_layouts_unref(AVFilterChannelLayouts **ref)
+{
+    FORMATS_UNREF(ref, channel_layouts);
+}
 
-    idx = find_ref_index(ref);
+#define FORMATS_CHANGEREF(oldref, newref)       \
+do {                                            \
+    int idx = -1;                               \
+                                                \
+    FIND_REF_INDEX(oldref, idx);                \
+                                                \
+    if (idx >= 0) {                             \
+        (*oldref)->refs[idx] = newref;          \
+        *newref = *oldref;                      \
+        *oldref = NULL;                         \
+    }                                           \
+} while (0)
 
-    if(idx >= 0)
-        memmove((*ref)->refs + idx, (*ref)->refs + idx + 1,
-            sizeof(*(*ref)->refs) * ((*ref)->refcount - idx - 1));
-
-    if(!--(*ref)->refcount) {
-        av_free((*ref)->formats);
-        av_free((*ref)->refs);
-        av_free(*ref);
-    }
-    *ref = NULL;
+void ff_channel_layouts_changeref(AVFilterChannelLayouts **oldref,
+                                  AVFilterChannelLayouts **newref)
+{
+    FORMATS_CHANGEREF(oldref, newref);
 }
 
 void avfilter_formats_changeref(AVFilterFormats **oldref,
                                 AVFilterFormats **newref)
 {
-    int idx = find_ref_index(oldref);
-
-    if(idx >= 0) {
-        (*oldref)->refs[idx] = newref;
-        *newref = *oldref;
-        *oldref = NULL;
-    }
+    FORMATS_CHANGEREF(oldref, newref);
 }

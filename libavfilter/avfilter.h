@@ -618,6 +618,22 @@ struct AVFilterLink {
      * input link is assumed to be an unchangeable property.
      */
     AVRational time_base;
+
+    /*****************************************************************
+     * All fields below this line are not part of the public API. They
+     * may not be used outside of libavfilter and can be changed and
+     * removed at will.
+     * New public fields should be added right above.
+     *****************************************************************
+     */
+    /**
+     * Lists of channel layouts and sample rates used for automatic
+     * negotiation.
+     */
+    AVFilterFormats  *in_samplerates;
+    AVFilterFormats *out_samplerates;
+    struct AVFilterChannelLayouts  *in_channel_layouts;
+    struct AVFilterChannelLayouts *out_channel_layouts;
 };
 
 /**
