@@ -107,8 +107,17 @@ static conv_func_type * const fmt_pair_to_conv_functions[AV_SAMPLE_FMT_NB*AV_SAM
     FMT_PAIR_FUNC(AV_SAMPLE_FMT_DBL, AV_SAMPLE_FMT_DBL),
 };
 
-static void cpy(uint8_t **dst, const uint8_t **src, int len){
+static void cpy1(uint8_t **dst, const uint8_t **src, int len){
     memcpy(*dst, *src, len);
+}
+static void cpy2(uint8_t **dst, const uint8_t **src, int len){
+    memcpy(*dst, *src, 2*len);
+}
+static void cpy4(uint8_t **dst, const uint8_t **src, int len){
+    memcpy(*dst, *src, 4*len);
+}
+static void cpy8(uint8_t **dst, const uint8_t **src, int len){
+    memcpy(*dst, *src, 8*len);
 }
 
 AudioConvert *swri_audio_convert_alloc(enum AVSampleFormat out_fmt,
@@ -136,8 +145,14 @@ AudioConvert *swri_audio_convert_alloc(enum AVSampleFormat out_fmt,
     if (in_fmt == AV_SAMPLE_FMT_U8)
         memset(ctx->silence, 0x80, sizeof(ctx->silence));
 
-    if(out_fmt == in_fmt && !ch_map)
-        ctx->simd_f = cpy;
+    if(out_fmt == in_fmt && !ch_map) {
+        switch(av_get_bytes_per_sample(in_fmt)){
+            case 1:ctx->simd_f = cpy1; break;
+            case 2:ctx->simd_f = cpy2; break;
+            case 4:ctx->simd_f = cpy4; break;
+            case 8:ctx->simd_f = cpy8; break;
+        }
+    }
 
     if(HAVE_YASM && HAVE_MMX) swri_audio_convert_init_x86(ctx, out_fmt, in_fmt, channels);
 
