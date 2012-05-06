@@ -27,6 +27,7 @@
 #include "aacps.h"
 #include "aacps_tablegen.h"
 #include "aacpsdata.c"
+#include "dsputil.h"
 
 #define PS_BASELINE 0  ///< Operate in Baseline PS mode
                        ///< Baseline implies 10 or 20 stereo bands,
@@ -284,7 +285,7 @@ err:
 
 /** Split one subband into 2 subsubbands with a symmetric real filter.
  * The filter must have its non-center even coefficients equal to zero. */
-static void hybrid2_re(float (*in)[2], float (*out)[32][2], const float filter[7], int len, int reverse)
+static void hybrid2_re(float (*in)[2], float (*out)[32][2], const float filter[8], int len, int reverse)
 {
     int i, j;
     for (i = 0; i < len; i++, in++) {
@@ -304,26 +305,14 @@ static void hybrid2_re(float (*in)[2], float (*out)[32][2], const float filter[7
 }
 
 /** Split one subband into 6 subsubbands with a complex filter */
-static void hybrid6_cx(float (*in)[2], float (*out)[32][2], const float (*filter)[7][2], int len)
+static void hybrid6_cx(PSDSPContext *dsp, float (*in)[2], float (*out)[32][2], const float (*filter)[8][2], int len)
 {
-    int i, j, ssb;
+    int i;
     int N = 8;
-    float temp[8][2];
+    LOCAL_ALIGNED_16(float, temp, [8], [2]);
 
     for (i = 0; i < len; i++, in++) {
-        for (ssb = 0; ssb < N; ssb++) {
-            float sum_re = filter[ssb][6][0] * in[6][0], sum_im = filter[ssb][6][0] * in[6][1];
-            for (j = 0; j < 6; j++) {
-                float in0_re = in[j][0];
-                float in0_im = in[j][1];
-                float in1_re = in[12-j][0];
-                float in1_im = in[12-j][1];
-                sum_re += filter[ssb][j][0] * (in0_re + in1_re) - filter[ssb][j][1] * (in0_im - in1_im);
-                sum_im += filter[ssb][j][0] * (in0_im + in1_im) + filter[ssb][j][1] * (in0_re - in1_re);
-            }
-            temp[ssb][0] = sum_re;
-            temp[ssb][1] = sum_im;
-        }
+        dsp->hybrid_analysis(temp, in, filter, 1, N);
         out[0][i][0] = temp[6][0];
         out[0][i][1] = temp[6][1];
         out[1][i][0] = temp[7][0];
@@ -339,28 +328,18 @@ static void hybrid6_cx(float (*in)[2], float (*out)[32][2], const float (*filter
     }
 }
 
-static void hybrid4_8_12_cx(float (*in)[2], float (*out)[32][2], const float (*filter)[7][2], int N, int len)
+static void hybrid4_8_12_cx(PSDSPContext *dsp, float (*in)[2], float (*out)[32][2], const float (*filter)[8][2], int N, int len)
 {
-    int i, j, ssb;
+    int i;
 
     for (i = 0; i < len; i++, in++) {
-        for (ssb = 0; ssb < N; ssb++) {
-            float sum_re = filter[ssb][6][0] * in[6][0], sum_im = filter[ssb][6][0] * in[6][1];
-            for (j = 0; j < 6; j++) {
-                float in0_re = in[j][0];
-                float in0_im = in[j][1];
-                float in1_re = in[12-j][0];
-                float in1_im = in[12-j][1];
-                sum_re += filter[ssb][j][0] * (in0_re + in1_re) - filter[ssb][j][1] * (in0_im - in1_im);
-                sum_im += filter[ssb][j][0] * (in0_im + in1_im) + filter[ssb][j][1] * (in0_re - in1_re);
-            }
-            out[ssb][i][0] = sum_re;
-            out[ssb][i][1] = sum_im;
-        }
+        dsp->hybrid_analysis(out[0] + i, in, filter, 32, N);
     }
 }
 
-static void hybrid_analysis(float out[91][32][2], float in[5][44][2], float L[2][38][64], int is34, int len)
+static void hybrid_analysis(PSDSPContext *dsp, float out[91][32][2],
+                            float in[5][44][2], float L[2][38][64],
+                            int is34, int len)
 {
     int i, j;
     for (i = 0; i < 5; i++) {
@@ -370,27 +349,17 @@ static void hybrid_analysis(float out[91][32][2], float in[5][44][2], float L[2]
         }
     }
     if (is34) {
-        hybrid4_8_12_cx(in[0], out,    f34_0_12, 12, len);
-        hybrid4_8_12_cx(in[1], out+12, f34_1_8,   8, len);
-        hybrid4_8_12_cx(in[2], out+20, f34_2_4,   4, len);
-        hybrid4_8_12_cx(in[3], out+24, f34_2_4,   4, len);
-        hybrid4_8_12_cx(in[4], out+28, f34_2_4,   4, len);
-        for (i = 0; i < 59; i++) {
-            for (j = 0; j < len; j++) {
-                out[i+32][j][0] = L[0][j][i+5];
-                out[i+32][j][1] = L[1][j][i+5];
-            }
-        }
+        hybrid4_8_12_cx(dsp, in[0], out,    f34_0_12, 12, len);
+        hybrid4_8_12_cx(dsp, in[1], out+12, f34_1_8,   8, len);
+        hybrid4_8_12_cx(dsp, in[2], out+20, f34_2_4,   4, len);
+        hybrid4_8_12_cx(dsp, in[3], out+24, f34_2_4,   4, len);
+        hybrid4_8_12_cx(dsp, in[4], out+28, f34_2_4,   4, len);
+        dsp->hybrid_analysis_ileave(out + 27, L, 5, len);
     } else {
-        hybrid6_cx(in[0], out, f20_0_8, len);
+        hybrid6_cx(dsp, in[0], out, f20_0_8, len);
         hybrid2_re(in[1], out+6, g1_Q2, len, 1);
         hybrid2_re(in[2], out+8, g1_Q2, len, 0);
-        for (i = 0; i < 61; i++) {
-            for (j = 0; j < len; j++) {
-                out[i+10][j][0] = L[0][j][i+3];
-                out[i+10][j][1] = L[1][j][i+3];
-            }
-        }
+        dsp->hybrid_analysis_ileave(out + 7, L, 3, len);
     }
     //update in_buf
     for (i = 0; i < 5; i++) {
@@ -398,7 +367,8 @@ static void hybrid_analysis(float out[91][32][2], float in[5][44][2], float L[2]
     }
 }
 
-static void hybrid_synthesis(float out[2][38][64], float in[91][32][2], int is34, int len)
+static void hybrid_synthesis(PSDSPContext *dsp, float out[2][38][64],
+                             float in[91][32][2], int is34, int len)
 {
     int i, n;
     if (is34) {
@@ -422,12 +392,7 @@ static void hybrid_synthesis(float out[2][38][64], float in[91][32][2], int is34
                 out[1][n][4] += in[28+i][n][1];
             }
         }
-        for (i = 0; i < 59; i++) {
-            for (n = 0; n < len; n++) {
-                out[0][n][i+5] = in[i+32][n][0];
-                out[1][n][i+5] = in[i+32][n][1];
-            }
-        }
+        dsp->hybrid_synthesis_deint(out, in + 27, 5, len);
     } else {
         for (n = 0; n < len; n++) {
             out[0][n][0] = in[0][n][0] + in[1][n][0] + in[2][n][0] +
@@ -439,12 +404,7 @@ static void hybrid_synthesis(float out[2][38][64], float in[91][32][2], int is34
             out[0][n][2] = in[8][n][0] + in[9][n][0];
             out[1][n][2] = in[8][n][1] + in[9][n][1];
         }
-        for (i = 0; i < 61; i++) {
-            for (n = 0; n < len; n++) {
-                out[0][n][i+3] = in[i+10][n][0];
-                out[1][n][i+3] = in[i+10][n][1];
-            }
-        }
+        dsp->hybrid_synthesis_deint(out, in + 7, 3, len);
     }
 }
 
@@ -648,8 +608,8 @@ static void map_val_20_to_34(float par[PS_MAX_NR_IIDICC])
 
 static void decorrelation(PSContext *ps, float (*out)[32][2], const float (*s)[32][2], int is34)
 {
-    float power[34][PS_QMF_TIME_SLOTS] = {{0}};
-    float transient_gain[34][PS_QMF_TIME_SLOTS];
+    LOCAL_ALIGNED_16(float, power, [34], [PS_QMF_TIME_SLOTS]);
+    LOCAL_ALIGNED_16(float, transient_gain, [34], [PS_QMF_TIME_SLOTS]);
     float *peak_decay_nrg = ps->peak_decay_nrg;
     float *power_smooth = ps->power_smooth;
     float *peak_decay_diff_smooth = ps->peak_decay_diff_smooth;
@@ -661,10 +621,8 @@ static void decorrelation(PSContext *ps, float (*out)[32][2], const float (*s)[3
     const float a_smooth          = 0.25f; ///< Smoothing coefficient
     int i, k, m, n;
     int n0 = 0, nL = 32;
-    static const int link_delay[] = { 3, 4, 5 };
-    static const float a[] = { 0.65143905753106f,
-                               0.56471812200776f,
-                               0.48954165955695f };
+
+    memset(power, 0, 34 * sizeof(*power));
 
     if (is34 != ps->is34bands_old) {
         memset(ps->peak_decay_nrg,         0, sizeof(ps->peak_decay_nrg));
@@ -674,11 +632,9 @@ static void decorrelation(PSContext *ps, float (*out)[32][2], const float (*s)[3
         memset(ps->ap_delay,               0, sizeof(ps->ap_delay));
     }
 
-    for (n = n0; n < nL; n++) {
-        for (k = 0; k < NR_BANDS[is34]; k++) {
-            int i = k_to_i[k];
-            power[i][n] += s[k][n][0] * s[k][n][0] + s[k][n][1] * s[k][n][1];
-        }
+    for (k = 0; k < NR_BANDS[is34]; k++) {
+        int i = k_to_i[k];
+        ps->dsp.add_squares(power[i], s[k], nL - n0);
     }
 
     //Transient detection
@@ -706,54 +662,31 @@ static void decorrelation(PSContext *ps, float (*out)[32][2], const float (*s)[3
     for (k = 0; k < NR_ALLPASS_BANDS[is34]; k++) {
         int b = k_to_i[k];
         float g_decay_slope = 1.f - DECAY_SLOPE * (k - DECAY_CUTOFF[is34]);
-        float ag[PS_AP_LINKS];
         g_decay_slope = av_clipf(g_decay_slope, 0.f, 1.f);
         memcpy(delay[k], delay[k]+nL, PS_MAX_DELAY*sizeof(delay[k][0]));
         memcpy(delay[k]+PS_MAX_DELAY, s[k], numQMFSlots*sizeof(delay[k][0]));
         for (m = 0; m < PS_AP_LINKS; m++) {
             memcpy(ap_delay[k][m],   ap_delay[k][m]+numQMFSlots,           5*sizeof(ap_delay[k][m][0]));
-            ag[m] = a[m] * g_decay_slope;
         }
-        for (n = n0; n < nL; n++) {
-            float in_re = delay[k][n+PS_MAX_DELAY-2][0] * phi_fract[is34][k][0] -
-                          delay[k][n+PS_MAX_DELAY-2][1] * phi_fract[is34][k][1];
-            float in_im = delay[k][n+PS_MAX_DELAY-2][0] * phi_fract[is34][k][1] +
-                          delay[k][n+PS_MAX_DELAY-2][1] * phi_fract[is34][k][0];
-            for (m = 0; m < PS_AP_LINKS; m++) {
-                float a_re                = ag[m] * in_re;
-                float a_im                = ag[m] * in_im;
-                float link_delay_re       = ap_delay[k][m][n+5-link_delay[m]][0];
-                float link_delay_im       = ap_delay[k][m][n+5-link_delay[m]][1];
-                float fractional_delay_re = Q_fract_allpass[is34][k][m][0];
-                float fractional_delay_im = Q_fract_allpass[is34][k][m][1];
-                ap_delay[k][m][n+5][0] = in_re;
-                ap_delay[k][m][n+5][1] = in_im;
-                in_re = link_delay_re * fractional_delay_re - link_delay_im * fractional_delay_im - a_re;
-                in_im = link_delay_re * fractional_delay_im + link_delay_im * fractional_delay_re - a_im;
-                ap_delay[k][m][n+5][0] += ag[m] * in_re;
-                ap_delay[k][m][n+5][1] += ag[m] * in_im;
-            }
-            out[k][n][0] = transient_gain[b][n] * in_re;
-            out[k][n][1] = transient_gain[b][n] * in_im;
-        }
+        ps->dsp.decorrelate(out[k], delay[k] + PS_MAX_DELAY - 2, ap_delay[k],
+                            phi_fract[is34][k], Q_fract_allpass[is34][k],
+                            transient_gain[b], g_decay_slope, nL - n0);
     }
     for (; k < SHORT_DELAY_BAND[is34]; k++) {
+        int i = k_to_i[k];
         memcpy(delay[k], delay[k]+nL, PS_MAX_DELAY*sizeof(delay[k][0]));
         memcpy(delay[k]+PS_MAX_DELAY, s[k], numQMFSlots*sizeof(delay[k][0]));
-        for (n = n0; n < nL; n++) {
-            //H = delay 14
-            out[k][n][0] = transient_gain[k_to_i[k]][n] * delay[k][n+PS_MAX_DELAY-14][0];
-            out[k][n][1] = transient_gain[k_to_i[k]][n] * delay[k][n+PS_MAX_DELAY-14][1];
-        }
+        //H = delay 14
+        ps->dsp.mul_pair_single(out[k], delay[k] + PS_MAX_DELAY - 14,
+                                transient_gain[i], nL - n0);
     }
     for (; k < NR_BANDS[is34]; k++) {
+        int i = k_to_i[k];
         memcpy(delay[k], delay[k]+nL, PS_MAX_DELAY*sizeof(delay[k][0]));
         memcpy(delay[k]+PS_MAX_DELAY, s[k], numQMFSlots*sizeof(delay[k][0]));
-        for (n = n0; n < nL; n++) {
-            //H = delay 1
-            out[k][n][0] = transient_gain[k_to_i[k]][n] * delay[k][n+PS_MAX_DELAY-1][0];
-            out[k][n][1] = transient_gain[k_to_i[k]][n] * delay[k][n+PS_MAX_DELAY-1][1];
-        }
+        //H = delay 1
+        ps->dsp.mul_pair_single(out[k], delay[k] + PS_MAX_DELAY - 1,
+                                transient_gain[i], nL - n0);
     }
 }
 
@@ -797,7 +730,7 @@ static void remap20(int8_t (**p_par_mapped)[PS_MAX_NR_IIDICC],
 
 static void stereo_processing(PSContext *ps, float (*l)[32][2], float (*r)[32][2], int is34)
 {
-    int e, b, k, n;
+    int e, b, k;
 
     float (*H11)[PS_MAX_NUM_ENV+1][PS_MAX_NR_IIDICC] = ps->H11;
     float (*H12)[PS_MAX_NUM_ENV+1][PS_MAX_NR_IIDICC] = ps->H12;
@@ -909,78 +842,52 @@ static void stereo_processing(PSContext *ps, float (*l)[32][2], float (*r)[32][2
             H22[0][e+1][b] = h22;
         }
         for (k = 0; k < NR_BANDS[is34]; k++) {
-            float h11r, h12r, h21r, h22r;
-            float h11i, h12i, h21i, h22i;
-            float h11r_step, h12r_step, h21r_step, h22r_step;
-            float h11i_step, h12i_step, h21i_step, h22i_step;
+            float h[2][4];
+            float h_step[2][4];
             int start = ps->border_position[e];
             int stop  = ps->border_position[e+1];
             float width = 1.f / (stop - start);
             b = k_to_i[k];
-            h11r = H11[0][e][b];
-            h12r = H12[0][e][b];
-            h21r = H21[0][e][b];
-            h22r = H22[0][e][b];
+            h[0][0] = H11[0][e][b];
+            h[0][1] = H12[0][e][b];
+            h[0][2] = H21[0][e][b];
+            h[0][3] = H22[0][e][b];
             if (!PS_BASELINE && ps->enable_ipdopd) {
             //Is this necessary? ps_04_new seems unchanged
             if ((is34 && k <= 13 && k >= 9) || (!is34 && k <= 1)) {
-                h11i = -H11[1][e][b];
-                h12i = -H12[1][e][b];
-                h21i = -H21[1][e][b];
-                h22i = -H22[1][e][b];
+                h[1][0] = -H11[1][e][b];
+                h[1][1] = -H12[1][e][b];
+                h[1][2] = -H21[1][e][b];
+                h[1][3] = -H22[1][e][b];
             } else {
-                h11i = H11[1][e][b];
-                h12i = H12[1][e][b];
-                h21i = H21[1][e][b];
-                h22i = H22[1][e][b];
+                h[1][0] = H11[1][e][b];
+                h[1][1] = H12[1][e][b];
+                h[1][2] = H21[1][e][b];
+                h[1][3] = H22[1][e][b];
             }
             }
             //Interpolation
-            h11r_step = (H11[0][e+1][b] - h11r) * width;
-            h12r_step = (H12[0][e+1][b] - h12r) * width;
-            h21r_step = (H21[0][e+1][b] - h21r) * width;
-            h22r_step = (H22[0][e+1][b] - h22r) * width;
+            h_step[0][0] = (H11[0][e+1][b] - h[0][0]) * width;
+            h_step[0][1] = (H12[0][e+1][b] - h[0][1]) * width;
+            h_step[0][2] = (H21[0][e+1][b] - h[0][2]) * width;
+            h_step[0][3] = (H22[0][e+1][b] - h[0][3]) * width;
             if (!PS_BASELINE && ps->enable_ipdopd) {
-                h11i_step = (H11[1][e+1][b] - h11i) * width;
-                h12i_step = (H12[1][e+1][b] - h12i) * width;
-                h21i_step = (H21[1][e+1][b] - h21i) * width;
-                h22i_step = (H22[1][e+1][b] - h22i) * width;
+                h_step[1][0] = (H11[1][e+1][b] - h[1][0]) * width;
+                h_step[1][1] = (H12[1][e+1][b] - h[1][1]) * width;
+                h_step[1][2] = (H21[1][e+1][b] - h[1][2]) * width;
+                h_step[1][3] = (H22[1][e+1][b] - h[1][3]) * width;
             }
-            for (n = start + 1; n <= stop; n++) {
-                //l is s, r is d
-                float l_re = l[k][n][0];
-                float l_im = l[k][n][1];
-                float r_re = r[k][n][0];
-                float r_im = r[k][n][1];
-                h11r += h11r_step;
-                h12r += h12r_step;
-                h21r += h21r_step;
-                h22r += h22r_step;
-                if (!PS_BASELINE && ps->enable_ipdopd) {
-                    h11i += h11i_step;
-                    h12i += h12i_step;
-                    h21i += h21i_step;
-                    h22i += h22i_step;
-
-                    l[k][n][0] = h11r*l_re + h21r*r_re - h11i*l_im - h21i*r_im;
-                    l[k][n][1] = h11r*l_im + h21r*r_im + h11i*l_re + h21i*r_re;
-                    r[k][n][0] = h12r*l_re + h22r*r_re - h12i*l_im - h22i*r_im;
-                    r[k][n][1] = h12r*l_im + h22r*r_im + h12i*l_re + h22i*r_re;
-                } else {
-                    l[k][n][0] = h11r*l_re + h21r*r_re;
-                    l[k][n][1] = h11r*l_im + h21r*r_im;
-                    r[k][n][0] = h12r*l_re + h22r*r_re;
-                    r[k][n][1] = h12r*l_im + h22r*r_im;
-                }
-            }
+            ps->dsp.stereo_interpolate[!PS_BASELINE && ps->enable_ipdopd](
+                l[k] + start + 1, r[k] + start + 1,
+                h, h_step, stop - start);
         }
     }
 }
 
 int ff_ps_apply(AVCodecContext *avctx, PSContext *ps, float L[2][38][64], float R[2][38][64], int top)
 {
-    float Lbuf[91][32][2];
-    float Rbuf[91][32][2];
+    LOCAL_ALIGNED_16(float, Lbuf, [91], [32][2]);
+    LOCAL_ALIGNED_16(float, Rbuf, [91], [32][2]);
     const int len = 32;
     int is34 = ps->is34bands;
 
@@ -989,11 +896,11 @@ int ff_ps_apply(AVCodecContext *avctx, PSContext *ps, float L[2][38][64], float 
     if (top < NR_ALLPASS_BANDS[is34])
         memset(ps->ap_delay + top, 0, (NR_ALLPASS_BANDS[is34] - top)*sizeof(ps->ap_delay[0]));
 
-    hybrid_analysis(Lbuf, ps->in_buf, L, is34, len);
+    hybrid_analysis(&ps->dsp, Lbuf, ps->in_buf, L, is34, len);
     decorrelation(ps, Rbuf, Lbuf, is34);
     stereo_processing(ps, Lbuf, Rbuf, is34);
-    hybrid_synthesis(L, Lbuf, is34, len);
-    hybrid_synthesis(R, Rbuf, is34, len);
+    hybrid_synthesis(&ps->dsp, L, Lbuf, is34, len);
+    hybrid_synthesis(&ps->dsp, R, Rbuf, is34, len);
 
     return 0;
 }
@@ -1041,4 +948,5 @@ av_cold void ff_ps_init(void) {
 
 av_cold void ff_ps_ctx_init(PSContext *ps)
 {
+    ff_psdsp_init(&ps->dsp);
 }

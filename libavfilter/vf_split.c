@@ -25,24 +25,67 @@
 
 #include "avfilter.h"
 
+static int split_init(AVFilterContext *ctx, const char *args, void *opaque)
+{
+    int i, nb_outputs = 2;
+
+    if (args) {
+        nb_outputs = strtol(args, NULL, 0);
+        if (nb_outputs <= 0) {
+            av_log(ctx, AV_LOG_ERROR, "Invalid number of outputs specified: %d.\n",
+                   nb_outputs);
+            return AVERROR(EINVAL);
+        }
+    }
+
+    for (i = 0; i < nb_outputs; i++) {
+        char name[32];
+        AVFilterPad pad = { 0 };
+
+        snprintf(name, sizeof(name), "output%d", i);
+        pad.type = AVMEDIA_TYPE_VIDEO;
+        pad.name = av_strdup(name);
+
+        avfilter_insert_outpad(ctx, i, &pad);
+    }
+
+    return 0;
+}
+
+static void split_uninit(AVFilterContext *ctx)
+{
+    int i;
+
+    for (i = 0; i < ctx->output_count; i++)
+        av_freep(&ctx->output_pads[i].name);
+}
+
 static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
-    avfilter_start_frame(inlink->dst->outputs[0],
-                         avfilter_ref_buffer(picref, ~AV_PERM_WRITE));
-    avfilter_start_frame(inlink->dst->outputs[1],
-                         avfilter_ref_buffer(picref, ~AV_PERM_WRITE));
+    AVFilterContext *ctx = inlink->dst;
+    int i;
+
+    for (i = 0; i < ctx->output_count; i++)
+        avfilter_start_frame(ctx->outputs[i],
+                             avfilter_ref_buffer(picref, ~AV_PERM_WRITE));
 }
 
 static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 {
-    avfilter_draw_slice(inlink->dst->outputs[0], y, h, slice_dir);
-    avfilter_draw_slice(inlink->dst->outputs[1], y, h, slice_dir);
+    AVFilterContext *ctx = inlink->dst;
+    int i;
+
+    for (i = 0; i < ctx->output_count; i++)
+        avfilter_draw_slice(ctx->outputs[i], y, h, slice_dir);
 }
 
 static void end_frame(AVFilterLink *inlink)
 {
-    avfilter_end_frame(inlink->dst->outputs[0]);
-    avfilter_end_frame(inlink->dst->outputs[1]);
+    AVFilterContext *ctx = inlink->dst;
+    int i;
+
+    for (i = 0; i < ctx->output_count; i++)
+        avfilter_end_frame(ctx->outputs[i]);
 
     avfilter_unref_buffer(inlink->cur_buf);
 }
@@ -51,6 +94,9 @@ AVFilter avfilter_vf_split = {
     .name      = "split",
     .description = NULL_IF_CONFIG_SMALL("Pass on the input to two outputs."),
 
+    .init   = split_init,
+    .uninit = split_uninit,
+
     .inputs    = (const AVFilterPad[]) {{ .name      = "default",
                                     .type            = AVMEDIA_TYPE_VIDEO,
                                     .get_video_buffer= avfilter_null_get_video_buffer,
@@ -58,9 +104,5 @@ AVFilter avfilter_vf_split = {
                                     .draw_slice      = draw_slice,
                                     .end_frame       = end_frame, },
                                   { .name = NULL}},
-    .outputs   = (const AVFilterPad[]) {{ .name      = "output1",
-                                    .type            = AVMEDIA_TYPE_VIDEO, },
-                                  { .name            = "output2",
-                                    .type            = AVMEDIA_TYPE_VIDEO, },
-                                  { .name = NULL}},
+    .outputs   = (AVFilterPad[]) {{ .name = NULL}},
 };

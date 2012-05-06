@@ -1697,6 +1697,7 @@ yadif_filter_deps="gpl"
 
 # libraries
 avdevice_deps="avcodec avformat"
+avfilter_deps="swscale"
 avformat_deps="avcodec"
 postproc_deps="gpl"
 

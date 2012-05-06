@@ -2722,7 +2722,7 @@ typedef struct AVCodecContext {
 
     /**
      * Set by the client if its custom get_buffer() callback can be called
-     * from another thread, which allows faster multithreaded decoding.
+     * synchronously from another thread, which allows faster multithreaded decoding.
      * draw_horiz_band() will be called from other threads regardless of this setting.
      * Ignored if the default get_buffer() is used.
      * - encoding: Set by user.

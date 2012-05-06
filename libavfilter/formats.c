@@ -49,7 +49,7 @@ AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
 
     if (a == b) return a;
 
-    ret = av_mallocz(sizeof(AVFilterFormats));
+    ret = av_mallocz(sizeof(*ret));
 
     /* merge list of formats */
     ret->formats = av_malloc(sizeof(*ret->formats) * FFMIN(a->format_count,
@@ -74,7 +74,7 @@ AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
         return NULL;
     }
 
-    ret->refs = av_malloc(sizeof(AVFilterFormats**)*(a->refcount+b->refcount));
+    ret->refs = av_malloc(sizeof(*ret->refs) * (a->refcount + b->refcount));
 
     merge_ref(ret, a);
     merge_ref(ret, b);
@@ -158,7 +158,7 @@ int avfilter_add_format(AVFilterFormats **avff, int64_t fmt)
 {
     int64_t *fmts;
 
-    if (!(*avff) && !(*avff = av_mallocz(sizeof(AVFilterFormats))))
+    if (!(*avff) && !(*avff = av_mallocz(sizeof(**avff))))
         return AVERROR(ENOMEM);
 
     fmts = av_realloc((*avff)->formats,
@@ -217,7 +217,7 @@ AVFilterFormats *avfilter_make_all_packing_formats(void)
 void avfilter_formats_ref(AVFilterFormats *f, AVFilterFormats **ref)
 {
     *ref = f;
-    f->refs = av_realloc(f->refs, sizeof(AVFilterFormats**) * ++f->refcount);
+    f->refs = av_realloc(f->refs, sizeof(*f->refs) * ++f->refcount);
     f->refs[f->refcount-1] = ref;
 }
 
@@ -239,9 +239,9 @@ void avfilter_formats_unref(AVFilterFormats **ref)
 
     idx = find_ref_index(ref);
 
-    if (idx >= 0)
-        memmove((*ref)->refs + idx, (*ref)->refs + idx+1,
-            sizeof(AVFilterFormats**) * ((*ref)->refcount-idx-1));
+    if(idx >= 0)
+        memmove((*ref)->refs + idx, (*ref)->refs + idx + 1,
+            sizeof(*(*ref)->refs) * ((*ref)->refcount - idx - 1));
 
     if (!--(*ref)->refcount) {
         av_free((*ref)->formats);

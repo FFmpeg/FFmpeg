@@ -24,6 +24,7 @@
 
 #include <stdint.h>
 
+#include "aacpsdsp.h"
 #include "avcodec.h"
 #include "get_bits.h"
 
@@ -60,18 +61,19 @@ typedef struct {
     int    is34bands;
     int    is34bands_old;
 
-    float  in_buf[5][44][2];
-    float  delay[PS_MAX_SSB][PS_QMF_TIME_SLOTS + PS_MAX_DELAY][2];
-    float  ap_delay[PS_MAX_AP_BANDS][PS_AP_LINKS][PS_QMF_TIME_SLOTS + PS_MAX_AP_DELAY][2];
-    float  peak_decay_nrg[34];
-    float  power_smooth[34];
-    float  peak_decay_diff_smooth[34];
-    float  H11[2][PS_MAX_NUM_ENV+1][PS_MAX_NR_IIDICC];
-    float  H12[2][PS_MAX_NUM_ENV+1][PS_MAX_NR_IIDICC];
-    float  H21[2][PS_MAX_NUM_ENV+1][PS_MAX_NR_IIDICC];
-    float  H22[2][PS_MAX_NUM_ENV+1][PS_MAX_NR_IIDICC];
+    DECLARE_ALIGNED(16, float, in_buf)[5][44][2];
+    DECLARE_ALIGNED(16, float, delay)[PS_MAX_SSB][PS_QMF_TIME_SLOTS + PS_MAX_DELAY][2];
+    DECLARE_ALIGNED(16, float, ap_delay)[PS_MAX_AP_BANDS][PS_AP_LINKS][PS_QMF_TIME_SLOTS + PS_MAX_AP_DELAY][2];
+    DECLARE_ALIGNED(16, float, peak_decay_nrg)[34];
+    DECLARE_ALIGNED(16, float, power_smooth)[34];
+    DECLARE_ALIGNED(16, float, peak_decay_diff_smooth)[34];
+    DECLARE_ALIGNED(16, float, H11)[2][PS_MAX_NUM_ENV+1][PS_MAX_NR_IIDICC];
+    DECLARE_ALIGNED(16, float, H12)[2][PS_MAX_NUM_ENV+1][PS_MAX_NR_IIDICC];
+    DECLARE_ALIGNED(16, float, H21)[2][PS_MAX_NUM_ENV+1][PS_MAX_NR_IIDICC];
+    DECLARE_ALIGNED(16, float, H22)[2][PS_MAX_NUM_ENV+1][PS_MAX_NR_IIDICC];
     int8_t opd_hist[PS_MAX_NR_IIDICC];
     int8_t ipd_hist[PS_MAX_NR_IIDICC];
+    PSDSPContext dsp;
 } PSContext;
 
 void ff_ps_init(void);

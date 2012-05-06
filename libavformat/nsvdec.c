@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/mathematics.h"
 #include "avformat.h"
 #include "internal.h"
@@ -272,7 +273,7 @@ static int nsv_parse_NSVf_header(AVFormatContext *s)
 {
     NSVContext *nsv = s->priv_data;
     AVIOContext *pb = s->pb;
-    unsigned int file_size;
+    unsigned int av_unused file_size;
     unsigned int size;
     int64_t duration;
     int strings_size;
@@ -594,7 +595,7 @@ null_chunk_retry:
     av_dlog(s, "NSV CHUNK %d aux, %u bytes video, %d bytes audio\n", auxcount, vsize, asize);
     /* skip aux stuff */
     for (i = 0; i < auxcount; i++) {
-        uint32_t auxtag;
+        uint32_t av_unused auxtag;
         auxsize = avio_rl16(pb);
         auxtag = avio_rl32(pb);
         av_dlog(s, "NSV aux data: '%c%c%c%c', %d bytes\n",

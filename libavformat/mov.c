@@ -25,6 +25,7 @@
 //#define DEBUG
 //#define MOV_EXPORT_ALL_METADATA
 
+#include "libavutil/attributes.h"
 #include "libavutil/audioconvert.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
@@ -627,8 +628,9 @@ static int mov_read_dec3(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 static int mov_read_chan(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
-    uint8_t version;
-    uint32_t flags, layout_tag, bitmap, num_descr, label_mask;
+    uint8_t av_unused version;
+    uint32_t av_unused flags;
+    uint32_t layout_tag, bitmap, num_descr, label_mask;
     int i;
 
     if (c->fc->nb_streams < 1)

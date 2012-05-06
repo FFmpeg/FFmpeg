@@ -2735,8 +2735,16 @@ faster due to better use of the memory cache.
 
 @section split
 
-Pass on the input video to two outputs. Both outputs are identical to
-the input video.
+Split input video into several identical outputs.
+
+The filter accepts a single parameter which specifies the number of outputs. If
+unspecified, it defaults to 2.
+
+For example
+@example
+ffmpeg -i INPUT -filter_complex split=5 OUTPUT
+@end example
+will create 5 copies of the input video.
 
 For example:
 @example

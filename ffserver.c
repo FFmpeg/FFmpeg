@@ -2585,8 +2585,11 @@ static int http_start_receive_data(HTTPContext *c)
     if (c->stream->truncate) {
         /* truncate feed file */
         ffm_write_write_index(c->feed_fd, FFM_PACKET_SIZE);
-        ftruncate(c->feed_fd, FFM_PACKET_SIZE);
         http_log("Truncating feed file '%s'\n", c->stream->feed_filename);
+        if (ftruncate(c->feed_fd, FFM_PACKET_SIZE) < 0) {
+            http_log("Error truncating feed file: %s\n", strerror(errno));
+            return -1;
+        }
     } else {
         if ((c->stream->feed_write_index = ffm_read_write_index(fd)) < 0) {
             http_log("Error reading write index from feed file: %s\n", strerror(errno));

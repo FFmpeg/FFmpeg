@@ -835,6 +835,12 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
 
         if (stuffing_size < 0)
             stuffing_size = 0;
+
+        if (startcode == PRIVATE_STREAM_1 && id >= 0xa0) {
+            if (payload_size < av_fifo_size(stream->fifo))
+                stuffing_size += payload_size % stream->lpcm_align;
+        }
+
         if (stuffing_size > 16) {    /*<=16 for MPEG-1, <=32 for MPEG-2*/
             pad_packet_bytes += stuffing_size;
             packet_size      -= stuffing_size;

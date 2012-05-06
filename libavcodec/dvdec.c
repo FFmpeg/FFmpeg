@@ -313,7 +313,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
                                  void *data, int *data_size,
                                  AVPacket *avpkt)
 {
-    const uint8_t *buf = avpkt->data;
+    uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     DVVideoContext *s = avctx->priv_data;
     const uint8_t* vsc_pack;
