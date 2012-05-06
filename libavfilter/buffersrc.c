@@ -137,7 +137,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     BufferSourceContext *s = ctx->priv;
-    while (av_fifo_size(s->fifo)) {
+    while (s->fifo && av_fifo_size(s->fifo)) {
         AVFilterBufferRef *buf;
         av_fifo_generic_read(s->fifo, &buf, sizeof(buf), NULL);
         avfilter_unref_buffer(buf);
