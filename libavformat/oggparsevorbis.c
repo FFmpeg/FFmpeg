@@ -223,6 +223,8 @@ vorbis_header (AVFormatContext * s, int idx)
 
     priv->len[pkt_type >> 1] = os->psize;
     priv->packet[pkt_type >> 1] = av_mallocz(os->psize);
+    if (!priv->packet[pkt_type >> 1])
+        return AVERROR(ENOMEM);
     memcpy(priv->packet[pkt_type >> 1], os->buf + os->pstart, os->psize);
     if (os->buf[os->pstart] == 1) {
         const uint8_t *p = os->buf + os->pstart + 7; /* skip "\001vorbis" tag */
