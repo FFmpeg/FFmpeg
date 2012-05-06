@@ -107,6 +107,32 @@ build.
 
 Below is a description of the currently available audio filters.
 
+@section aformat
+
+Convert the input audio to one of the specified formats. The framework will
+negotiate the most appropriate format to minimize conversions.
+
+The filter accepts the following named parameters:
+@table @option
+
+@item sample_fmts
+A comma-separated list of requested sample formats.
+
+@item sample_rates
+A comma-separated list of requested sample rates.
+
+@item channel_layouts
+A comma-separated list of requested channel layouts.
+
+@end table
+
+If a parameter is omitted, all values are allowed.
+
+For example to force the output to either unsigned 8-bit or signed 16-bit stereo:
+@example
+aformat=sample_fmts\=u8\,s16:channel_layouts\=stereo
+@end example
+
 @section anull
 
 Pass the audio source unchanged to the output.
