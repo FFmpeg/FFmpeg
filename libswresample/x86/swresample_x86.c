@@ -24,7 +24,7 @@
 #define PROTO(pre, in, out, cap) void ff ## pre ## _ ##in## _to_ ##out## _a_ ##cap(uint8_t **dst, const uint8_t **src, int len);
 #define PROTO2(pre, out, cap) PROTO(pre, int16, out, cap) PROTO(pre, int32, out, cap) PROTO(pre, float, out, cap)
 #define PROTO3(pre, cap) PROTO2(pre, int16, cap) PROTO2(pre, int32, cap) PROTO2(pre, float, cap)
-#define PROTO4(pre) PROTO3(pre, mmx) PROTO3(pre, sse) PROTO3(pre, sse2) PROTO3(pre, avx)
+#define PROTO4(pre) PROTO3(pre, mmx) PROTO3(pre, sse) PROTO3(pre, sse2) PROTO3(pre, ssse3) PROTO3(pre, avx)
 PROTO4()
 PROTO4(_pack_2ch)
 PROTO4(_unpack_2ch)
@@ -99,6 +99,16 @@ MULTI_CAPS_FUNC(AV_CPU_FLAG_SSE, sse)
                 ac->simd_f =  ff_unpack_2ch_int16_to_float_a_sse2;
             if(   out_fmt == AV_SAMPLE_FMT_S16P  && in_fmt == AV_SAMPLE_FMT_FLT)
                 ac->simd_f =  ff_unpack_2ch_float_to_int16_a_sse2;
+        }
+    }
+    if(mm_flags & AV_CPU_FLAG_SSSE3) {
+        if(channels == 2) {
+            if(   out_fmt == AV_SAMPLE_FMT_S16P  && in_fmt == AV_SAMPLE_FMT_S16)
+                ac->simd_f =  ff_unpack_2ch_int16_to_int16_a_ssse3;
+            if(   out_fmt == AV_SAMPLE_FMT_S32P  && in_fmt == AV_SAMPLE_FMT_S16)
+                ac->simd_f =  ff_unpack_2ch_int16_to_int32_a_ssse3;
+            if(   out_fmt == AV_SAMPLE_FMT_FLTP  && in_fmt == AV_SAMPLE_FMT_S16)
+                ac->simd_f =  ff_unpack_2ch_int16_to_float_a_ssse3;
         }
     }
     if(HAVE_AVX && mm_flags & AV_CPU_FLAG_AVX) {

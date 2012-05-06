@@ -27,6 +27,8 @@ flt2pm31: times 8 dd 4.6566129e-10
 flt2p31 : times 8 dd 2147483648.0
 flt2p15 : times 8 dd 32768.0
 
+word_unpack_shuf : db  0, 1, 4, 5, 8, 9,12,13, 2, 3, 6, 7,10,11,14,15
+
 SECTION .text
 
 
@@ -89,7 +91,7 @@ pack_2ch_%2_to_%1_u_int %+ SUFFIX
 %endmacro
 
 %macro UNPACK_2CH 5-7
-cglobal unpack_2ch_%2_to_%1_%3, 3, 4, 6, dst, src, len, dst2
+cglobal unpack_2ch_%2_to_%1_%3, 3, 4, 7, dst, src, len, dst2
     mov dst2q   , [dstq+gprsize]
     mov srcq    , [srcq]
     mov dstq    , [dstq]
@@ -108,11 +110,19 @@ unpack_2ch_%2_to_%1_u_int %+ SUFFIX
     lea     dst2q, [dst2q + (1<<%4)*lenq]
     neg     lenq
     %7
+    mova      m6, [word_unpack_shuf]
 .next:
     mov%3     m0, [           srcq +(2<<%5)*lenq]
-    mova      m1, m0
     mov%3     m2, [  mmsize + srcq +(2<<%5)*lenq]
 %if %5 == 1
+%ifidn SUFFIX, _ssse3
+    pshufb    m0, m6
+    mova      m1, m0
+    pshufb    m2, m6
+    punpcklqdq m0,m2
+    punpckhqdq m1,m2
+%else
+    mova      m1, m0
     punpcklwd m0,m2
     punpckhwd m1,m2
 
@@ -123,7 +133,9 @@ unpack_2ch_%2_to_%1_u_int %+ SUFFIX
     mova      m1, m0
     punpcklwd m0,m2
     punpckhwd m1,m2
+%endif
 %else
+    mova      m1, m0
     shufps    m0, m2, 10001000b
     shufps    m1, m2, 11011101b
 %endif
@@ -321,6 +333,15 @@ UNPACK_2CH float, int16, u, 2, 1, INT16_TO_FLOAT_N, INT16_TO_FLOAT_INIT
 UNPACK_2CH float, int16, a, 2, 1, INT16_TO_FLOAT_N, INT16_TO_FLOAT_INIT
 UNPACK_2CH int16, float, u, 1, 2, FLOAT_TO_INT16_N, FLOAT_TO_INT16_INIT
 UNPACK_2CH int16, float, a, 1, 2, FLOAT_TO_INT16_N, FLOAT_TO_INT16_INIT
+
+
+INIT_XMM ssse3
+UNPACK_2CH int16, int16, u, 1, 1
+UNPACK_2CH int16, int16, a, 1, 1
+UNPACK_2CH int32, int16, u, 2, 1, INT16_TO_INT32_N
+UNPACK_2CH int32, int16, a, 2, 1, INT16_TO_INT32_N
+UNPACK_2CH float, int16, u, 2, 1, INT16_TO_FLOAT_N, INT16_TO_FLOAT_INIT
+UNPACK_2CH float, int16, a, 2, 1, INT16_TO_FLOAT_N, INT16_TO_FLOAT_INIT
 
 %if HAVE_AVX
 INIT_YMM avx
