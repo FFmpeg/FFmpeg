@@ -42,7 +42,7 @@ enum {
 };
 
 /**
- * Add video buffer data in picref to buffer_src.
+ * Add buffer data in picref to buffer_src.
  *
  * @param buffer_src  pointer to a buffer source context
  * @param picref      a buffer reference, or NULL to mark EOF
