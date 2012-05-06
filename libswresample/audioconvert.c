@@ -142,7 +142,7 @@ AudioConvert *swri_audio_convert_alloc(enum AVSampleFormat out_fmt,
     ctx->channels = channels;
     ctx->conv_f   = f;
     ctx->ch_map   = ch_map;
-    if (in_fmt == AV_SAMPLE_FMT_U8)
+    if (in_fmt == AV_SAMPLE_FMT_U8 || in_fmt == AV_SAMPLE_FMT_U8P)
         memset(ctx->silence, 0x80, sizeof(ctx->silence));
 
     if(out_fmt == in_fmt && !ch_map) {
