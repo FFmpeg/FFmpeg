@@ -60,6 +60,15 @@ MULTI_CAPS_FUNC(AV_CPU_FLAG_SSE, sse)
                 ac->simd_f =  ff_pack_2ch_int16_to_int32_a_sse;
             if(   out_fmt == AV_SAMPLE_FMT_S16  && in_fmt == AV_SAMPLE_FMT_S32P)
                 ac->simd_f =  ff_pack_2ch_int32_to_int16_a_sse;
+
+            if(   out_fmt == AV_SAMPLE_FMT_FLTP  && in_fmt == AV_SAMPLE_FMT_FLT || out_fmt == AV_SAMPLE_FMT_S32P && in_fmt == AV_SAMPLE_FMT_S32)
+                ac->simd_f =  ff_unpack_2ch_int32_to_int32_a_sse;
+            if(   out_fmt == AV_SAMPLE_FMT_S16P  && in_fmt == AV_SAMPLE_FMT_S16)
+                ac->simd_f =  ff_unpack_2ch_int16_to_int16_a_sse;
+            if(   out_fmt == AV_SAMPLE_FMT_S32P  && in_fmt == AV_SAMPLE_FMT_S16)
+                ac->simd_f =  ff_unpack_2ch_int16_to_int32_a_sse;
+            if(   out_fmt == AV_SAMPLE_FMT_S16P  && in_fmt == AV_SAMPLE_FMT_S32)
+                ac->simd_f =  ff_unpack_2ch_int32_to_int16_a_sse;
         }
     }
 
@@ -82,6 +91,14 @@ MULTI_CAPS_FUNC(AV_CPU_FLAG_SSE, sse)
                 ac->simd_f =  ff_pack_2ch_int16_to_float_a_sse2;
             if(   out_fmt == AV_SAMPLE_FMT_S16  && in_fmt == AV_SAMPLE_FMT_FLTP)
                 ac->simd_f =  ff_pack_2ch_float_to_int16_a_sse2;
+            if(   out_fmt == AV_SAMPLE_FMT_FLTP  && in_fmt == AV_SAMPLE_FMT_S32)
+                ac->simd_f =  ff_unpack_2ch_int32_to_float_a_sse2;
+            if(   out_fmt == AV_SAMPLE_FMT_S32P  && in_fmt == AV_SAMPLE_FMT_FLT)
+                ac->simd_f =  ff_unpack_2ch_float_to_int32_a_sse2;
+            if(   out_fmt == AV_SAMPLE_FMT_FLTP  && in_fmt == AV_SAMPLE_FMT_S16)
+                ac->simd_f =  ff_unpack_2ch_int16_to_float_a_sse2;
+            if(   out_fmt == AV_SAMPLE_FMT_S16P  && in_fmt == AV_SAMPLE_FMT_FLT)
+                ac->simd_f =  ff_unpack_2ch_float_to_int16_a_sse2;
         }
     }
     if(HAVE_AVX && mm_flags & AV_CPU_FLAG_AVX) {

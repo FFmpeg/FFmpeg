@@ -88,6 +88,68 @@ pack_2ch_%2_to_%1_u_int %+ SUFFIX
     REP_RET
 %endmacro
 
+%macro UNPACK_2CH 5-7
+cglobal unpack_2ch_%2_to_%1_%3, 3, 4, 6, dst, src, len, dst2
+    mov dst2q   , [dstq+gprsize]
+    mov srcq    , [srcq]
+    mov dstq    , [dstq]
+%ifidn %3, a
+    test dstq, mmsize-1
+        jne unpack_2ch_%2_to_%1_u_int %+ SUFFIX
+    test srcq, mmsize-1
+        jne unpack_2ch_%2_to_%1_u_int %+ SUFFIX
+    test dst2q, mmsize-1
+        jne unpack_2ch_%2_to_%1_u_int %+ SUFFIX
+%else
+unpack_2ch_%2_to_%1_u_int %+ SUFFIX
+%endif
+    lea     srcq , [srcq  + (2<<%5)*lenq]
+    lea     dstq , [dstq  + (1<<%4)*lenq]
+    lea     dst2q, [dst2q + (1<<%4)*lenq]
+    neg     lenq
+    %7
+.next:
+    mov%3     m0, [           srcq +(2<<%5)*lenq]
+    mova      m1, m0
+    mov%3     m2, [  mmsize + srcq +(2<<%5)*lenq]
+%if %5 == 1
+    punpcklwd m0,m2
+    punpckhwd m1,m2
+
+    mova      m2, m0
+    punpcklwd m0,m1
+    punpckhwd m2,m1
+
+    mova      m1, m0
+    punpcklwd m0,m2
+    punpckhwd m1,m2
+%else
+    shufps    m0, m2, 10001000b
+    shufps    m1, m2, 11011101b
+%endif
+%if %4 < %5
+    mov%3     m2, [2*mmsize + srcq +(2<<%5)*lenq]
+    mova      m3, m2
+    mov%3     m4, [3*mmsize + srcq +(2<<%5)*lenq]
+    shufps    m2, m4, 10001000b
+    shufps    m3, m4, 11011101b
+    SWAP 1,2
+%endif
+    %6
+    mov%3 [           dstq+(1<<%4)*lenq], m0
+%if %4 > %5
+    mov%3 [          dst2q+(1<<%4)*lenq], m2
+    mov%3 [ mmsize +  dstq+(1<<%4)*lenq], m1
+    mov%3 [ mmsize + dst2q+(1<<%4)*lenq], m3
+    add lenq, 2*mmsize/(1<<%4)
+%else
+    mov%3 [          dst2q+(1<<%4)*lenq], m1
+    add lenq, mmsize/(1<<%4)
+%endif
+        jl .next
+    REP_RET
+%endmacro
+
 %macro CONV 5-7
 cglobal %2_to_%1_%3, 3, 3, 6, dst, src, len
     mov srcq    , [srcq]
@@ -223,6 +285,15 @@ PACK_2CH int32, int16, a, 2, 1, INT16_TO_INT32_N
 PACK_2CH int16, int32, u, 1, 2, INT32_TO_INT16_N
 PACK_2CH int16, int32, a, 1, 2, INT32_TO_INT16_N
 
+UNPACK_2CH int16, int16, u, 1, 1
+UNPACK_2CH int16, int16, a, 1, 1
+UNPACK_2CH int32, int32, u, 2, 2
+UNPACK_2CH int32, int32, a, 2, 2
+UNPACK_2CH int32, int16, u, 2, 1, INT16_TO_INT32_N
+UNPACK_2CH int32, int16, a, 2, 1, INT16_TO_INT32_N
+UNPACK_2CH int16, int32, u, 1, 2, INT32_TO_INT16_N
+UNPACK_2CH int16, int32, a, 1, 2, INT32_TO_INT16_N
+
 INIT_XMM sse2
 CONV float, int32, u, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
 CONV float, int32, a, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
@@ -242,6 +313,14 @@ PACK_2CH float, int16, a, 2, 1, INT16_TO_FLOAT_N, INT16_TO_FLOAT_INIT
 PACK_2CH int16, float, u, 1, 2, FLOAT_TO_INT16_N, FLOAT_TO_INT16_INIT
 PACK_2CH int16, float, a, 1, 2, FLOAT_TO_INT16_N, FLOAT_TO_INT16_INIT
 
+UNPACK_2CH float, int32, u, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
+UNPACK_2CH float, int32, a, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
+UNPACK_2CH int32, float, u, 2, 2, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
+UNPACK_2CH int32, float, a, 2, 2, FLOAT_TO_INT32_N, FLOAT_TO_INT32_INIT
+UNPACK_2CH float, int16, u, 2, 1, INT16_TO_FLOAT_N, INT16_TO_FLOAT_INIT
+UNPACK_2CH float, int16, a, 2, 1, INT16_TO_FLOAT_N, INT16_TO_FLOAT_INIT
+UNPACK_2CH int16, float, u, 1, 2, FLOAT_TO_INT16_N, FLOAT_TO_INT16_INIT
+UNPACK_2CH int16, float, a, 1, 2, FLOAT_TO_INT16_N, FLOAT_TO_INT16_INIT
 
 %if HAVE_AVX
 INIT_YMM avx
