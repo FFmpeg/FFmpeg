@@ -2883,6 +2883,7 @@ AVCodec ff_aac_decoder = {
     },
     .capabilities    = CODEC_CAP_CHANNEL_CONF | CODEC_CAP_DR1,
     .channel_layouts = aac_channel_layout,
+    .flush = flush,
 };
 
 /*
