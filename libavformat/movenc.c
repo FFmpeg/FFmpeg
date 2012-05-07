@@ -3186,8 +3186,8 @@ static int mov_write_header(AVFormatContext *s)
         }else if(st->codec->codec_type == AVMEDIA_TYPE_AUDIO){
             track->timescale = st->codec->sample_rate;
             if(!st->codec->frame_size && !av_get_bits_per_sample(st->codec->codec_id)) {
-                av_log(s, AV_LOG_ERROR, "track %d: codec frame size is not set\n", i);
-                goto error;
+                av_log(s, AV_LOG_WARNING, "track %d: codec frame size is not set\n", i);
+                track->audio_vbr = 1;
             }else if(st->codec->codec_id == CODEC_ID_ADPCM_MS ||
                      st->codec->codec_id == CODEC_ID_ADPCM_IMA_WAV){
                 if (!st->codec->block_align) {
