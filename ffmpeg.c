@@ -3604,8 +3604,9 @@ static int transcode(void)
 
         if (debug_ts) {
             av_log(NULL, AV_LOG_INFO, "demuxer -> ist_index:%d type:%s "
-                    "next_pts:%s next_pts_time:%s pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s off:%"PRId64"\n",
+                    "next_dts:%s next_dts_time:%s next_pts:%s next_pts_time:%s  pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s off:%"PRId64"\n",
                     ist_index, av_get_media_type_string(ist->st->codec->codec_type),
+                    av_ts2str(ist->next_dts), av_ts2timestr(ist->next_dts, &ist->st->time_base),
                     av_ts2str(ist->next_pts), av_ts2timestr(ist->next_pts, &ist->st->time_base),
                     av_ts2str(pkt.pts), av_ts2timestr(pkt.pts, &ist->st->time_base),
                     av_ts2str(pkt.dts), av_ts2timestr(pkt.dts, &ist->st->time_base),
