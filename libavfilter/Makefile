@@ -10,6 +10,7 @@ HEADERS = avfilter.h                                                    \
           vsrc_buffer.h                                                 \
 
 OBJS = allfilters.o                                                     \
+       audio.o                                                          \
        avfilter.o                                                       \
        avfiltergraph.o                                                  \
        buffersink.o                                                     \

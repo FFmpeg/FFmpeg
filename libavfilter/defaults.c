@@ -23,7 +23,6 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/samplefmt.h"
 
-#include "audio.h"
 #include "avfilter.h"
 #include "internal.h"
 
@@ -57,37 +56,6 @@ AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link, int per
     }
 
     return picref;
-}
-
-AVFilterBufferRef *ff_default_get_audio_buffer(AVFilterLink *link, int perms,
-                                               int nb_samples)
-{
-    AVFilterBufferRef *samplesref = NULL;
-    uint8_t **data;
-    int planar      = av_sample_fmt_is_planar(link->format);
-    int nb_channels = av_get_channel_layout_nb_channels(link->channel_layout);
-    int planes      = planar ? nb_channels : 1;
-    int linesize;
-
-    if (!(data = av_mallocz(sizeof(*data) * planes)))
-        goto fail;
-
-    if (av_samples_alloc(data, &linesize, nb_channels, nb_samples, link->format, 0) < 0)
-        goto fail;
-
-    samplesref = avfilter_get_audio_buffer_ref_from_arrays(data, linesize, perms,
-                                                           nb_samples, link->format,
-                                                           link->channel_layout);
-    if (!samplesref)
-        goto fail;
-
-    av_freep(&data);
-
-fail:
-    if (data)
-        av_freep(&data[0]);
-    av_freep(&data);
-    return samplesref;
 }
 
 void avfilter_default_start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
@@ -132,27 +100,6 @@ void avfilter_default_end_frame(AVFilterLink *inlink)
         }
         avfilter_end_frame(outlink);
     }
-}
-
-/* FIXME: samplesref is same as link->cur_buf. Need to consider removing the redundant parameter. */
-void ff_default_filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
-{
-    AVFilterLink *outlink = NULL;
-
-    if (inlink->dst->output_count)
-        outlink = inlink->dst->outputs[0];
-
-    if (outlink) {
-        outlink->out_buf = ff_default_get_audio_buffer(inlink, AV_PERM_WRITE,
-                                                       samplesref->audio->nb_samples);
-        outlink->out_buf->pts                = samplesref->pts;
-        outlink->out_buf->audio->sample_rate = samplesref->audio->sample_rate;
-        ff_filter_samples(outlink, avfilter_ref_buffer(outlink->out_buf, ~0));
-        avfilter_unref_buffer(outlink->out_buf);
-        outlink->out_buf = NULL;
-    }
-    avfilter_unref_buffer(samplesref);
-    inlink->cur_buf = NULL;
 }
 
 /**
@@ -235,18 +182,7 @@ void avfilter_null_end_frame(AVFilterLink *link)
     avfilter_end_frame(link->dst->outputs[0]);
 }
 
-void ff_null_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
-{
-    ff_filter_samples(link->dst->outputs[0], samplesref);
-}
-
 AVFilterBufferRef *avfilter_null_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
 {
     return avfilter_get_video_buffer(link->dst->outputs[0], perms, w, h);
-}
-
-AVFilterBufferRef *ff_null_get_audio_buffer(AVFilterLink *link, int perms,
-                                            int nb_samples)
-{
-    return ff_get_audio_buffer(link->dst->outputs[0], perms, nb_samples);
 }
