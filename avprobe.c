@@ -34,6 +34,7 @@ const int program_birth_year = 2007;
 
 static int do_show_format  = 0;
 static AVDictionary *fmt_entries_to_show = NULL;
+static int nb_fmt_entries_to_show;
 static int do_show_packets = 0;
 static int do_show_streams = 0;
 
@@ -269,7 +270,9 @@ static void print_format_entry(const char *tag,
             printf("%s\n", val);
         }
     } else if (tag && av_dict_get(fmt_entries_to_show, tag, NULL, 0)) {
-        printf("%s=%s\n", tag, val);
+        if (nb_fmt_entries_to_show > 1)
+            printf("%s=", tag);
+        printf("%s\n", val);
     }
 }
 
@@ -408,6 +411,7 @@ static int opt_format(const char *opt, const char *arg)
 static int opt_show_format_entry(const char *opt, const char *arg)
 {
     do_show_format = 1;
+    nb_fmt_entries_to_show++;
     av_dict_set(&fmt_entries_to_show, arg, "", 0);
     return 0;
 }
