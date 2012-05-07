@@ -119,7 +119,7 @@ FATE_UTILS = base64 tiny_psnr
 
 fate: $(FATE)
 
-$(FATE): avconv$(EXESUF) $(FATE_UTILS:%=tests/%$(HOSTEXESUF))
+$(FATE): avconv$(EXESUF) avprobe$(EXESUF) $(FATE_UTILS:%=tests/%$(HOSTEXESUF))
 	@echo "TEST    $(@:fate-%=%)"
 	$(Q)$(SRC_PATH)/tests/fate-run.sh $@ "$(SAMPLES)" "$(TARGET_EXEC)" "$(TARGET_PATH)" '$(CMD)' '$(CMP)' '$(REF)' '$(FUZZ)' '$(THREADS)' '$(THREAD_TYPE)' '$(CPUFLAGS)' '$(CMP_SHIFT)' '$(CMP_TARGET)' '$(SIZE_TOLERANCE)'
 
