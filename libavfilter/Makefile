@@ -16,7 +16,7 @@ OBJS = allfilters.o                                                     \
        formats.o                                                        \
        graphparser.o                                                    \
        vf_scale.o                                                       \
-       vsrc_buffer.o
+       vsrc_buffer.o                                                    \
 
 OBJS-$(CONFIG_ANULL_FILTER)                  += af_anull.o
 

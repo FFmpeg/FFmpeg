@@ -2,7 +2,7 @@ NAME = avresample
 FFLIBS = avutil
 
 HEADERS = avresample.h                                                  \
-          version.h
+          version.h                                                     \
 
 OBJS = audio_convert.o                                                  \
        audio_data.o                                                     \
@@ -10,6 +10,6 @@ OBJS = audio_convert.o                                                  \
        audio_mix_matrix.o                                               \
        options.o                                                        \
        resample.o                                                       \
-       utils.o
+       utils.o                                                          \
 
 TESTPROGS = avresample
