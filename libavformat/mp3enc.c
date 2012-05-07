@@ -273,9 +273,7 @@ static int mp3_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     else {
         MP3Context  *mp3 = s->priv_data;
         MPADecodeHeader c;
-#ifdef FILTER_VBR_HEADERS
-        int base;
-#endif
+        int av_unused base;
 
         avpriv_mpegaudio_decode_header(&c, AV_RB32(pkt->data));
 
