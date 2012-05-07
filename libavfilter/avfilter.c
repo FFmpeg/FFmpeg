@@ -26,6 +26,8 @@
 #include "libavutil/audioconvert.h"
 #include "libavutil/imgutils.h"
 #include "libavcodec/avcodec.h"
+
+#include "audio.h"
 #include "avfilter.h"
 #include "internal.h"
 
@@ -366,8 +368,8 @@ fail:
     return NULL;
 }
 
-AVFilterBufferRef *avfilter_get_audio_buffer(AVFilterLink *link, int perms,
-                                             int nb_samples)
+AVFilterBufferRef *ff_get_audio_buffer(AVFilterLink *link, int perms,
+                                       int nb_samples)
 {
     AVFilterBufferRef *ret = NULL;
 
@@ -375,7 +377,7 @@ AVFilterBufferRef *avfilter_get_audio_buffer(AVFilterLink *link, int perms,
         ret = link->dstpad->get_audio_buffer(link, perms, nb_samples);
 
     if (!ret)
-        ret = avfilter_default_get_audio_buffer(link, perms, nb_samples);
+        ret = ff_default_get_audio_buffer(link, perms, nb_samples);
 
     if (ret)
         ret->type = AVMEDIA_TYPE_AUDIO;
@@ -570,7 +572,7 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
     draw_slice(link, y, h, slice_dir);
 }
 
-void avfilter_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
+void ff_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
 {
     void (*filter_samples)(AVFilterLink *, AVFilterBufferRef *);
     AVFilterPad *dst = link->dstpad;
@@ -578,7 +580,7 @@ void avfilter_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
     FF_DPRINTF_START(NULL, filter_samples); ff_dlog_link(NULL, link, 1);
 
     if (!(filter_samples = dst->filter_samples))
-        filter_samples = avfilter_default_filter_samples;
+        filter_samples = ff_default_filter_samples;
 
     /* prepare to copy the samples if the buffer has insufficient permissions */
     if ((dst->min_perms & samplesref->perms) != dst->min_perms ||
@@ -591,8 +593,8 @@ void avfilter_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
                "Copying audio data in avfilter (have perms %x, need %x, reject %x)\n",
                samplesref->perms, link->dstpad->min_perms, link->dstpad->rej_perms);
 
-        link->cur_buf = avfilter_default_get_audio_buffer(link, dst->min_perms,
-                                                          samplesref->audio->nb_samples);
+        link->cur_buf = ff_default_get_audio_buffer(link, dst->min_perms,
+                                                    samplesref->audio->nb_samples);
         link->cur_buf->pts                = samplesref->pts;
         link->cur_buf->audio->sample_rate = samplesref->audio->sample_rate;
 

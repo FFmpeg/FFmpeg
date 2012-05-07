@@ -21,6 +21,7 @@
  * null audio filter
  */
 
+#include "audio.h"
 #include "avfilter.h"
 
 AVFilter avfilter_af_anull = {
@@ -31,8 +32,8 @@ AVFilter avfilter_af_anull = {
 
     .inputs    = (AVFilterPad[]) {{ .name             = "default",
                                     .type             = AVMEDIA_TYPE_AUDIO,
-                                    .get_audio_buffer = avfilter_null_get_audio_buffer,
-                                    .filter_samples   = avfilter_null_filter_samples },
+                                    .get_audio_buffer = ff_null_get_audio_buffer,
+                                    .filter_samples   = ff_null_filter_samples },
                                   { .name = NULL}},
 
     .outputs   = (AVFilterPad[]) {{ .name             = "default",
