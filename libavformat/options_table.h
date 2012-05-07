@@ -19,6 +19,11 @@
 #ifndef AVFORMAT_OPTIONS_TABLE
 #define AVFORMAT_OPTIONS_TABLE
 
+#include <limits.h>
+
+#include "libavutil/opt.h"
+#include "avformat.h"
+
 #define OFFSET(x) offsetof(AVFormatContext,x)
 #define DEFAULT 0 //should be NAN but it does not work as it is not a constant in glibc as required by ANSI/ISO C
 //these names are too long to be readable
