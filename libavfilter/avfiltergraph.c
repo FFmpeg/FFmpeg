@@ -191,70 +191,70 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
             }
 
             if (convert_needed) {
-                    AVFilterContext *convert;
-                    AVFilter *filter;
-                    AVFilterLink *inlink, *outlink;
-                    char scale_args[256];
-                    char inst_name[30];
+                AVFilterContext *convert;
+                AVFilter *filter;
+                AVFilterLink *inlink, *outlink;
+                char scale_args[256];
+                char inst_name[30];
 
-                    /* couldn't merge format lists. auto-insert conversion filter */
-                    switch (link->type) {
-                    case AVMEDIA_TYPE_VIDEO:
-                        snprintf(inst_name, sizeof(inst_name), "auto-inserted scaler %d",
-                                 scaler_count++);
-                        snprintf(scale_args, sizeof(scale_args), "0:0:%s", graph->scale_sws_opts);
-                        if ((ret = avfilter_graph_create_filter(&convert,
-                                                                avfilter_get_by_name("scale"),
-                                                                inst_name, scale_args, NULL,
-                                                                graph)) < 0)
-                            return ret;
-                        break;
-                    case AVMEDIA_TYPE_AUDIO:
-                        if (!(filter = avfilter_get_by_name("resample"))) {
-                            av_log(log_ctx, AV_LOG_ERROR, "'resample' filter "
-                                   "not present, cannot convert audio formats.\n");
-                            return AVERROR(EINVAL);
-                        }
-
-                        snprintf(inst_name, sizeof(inst_name), "auto-inserted resampler %d",
-                                 resampler_count++);
-                        if ((ret = avfilter_graph_create_filter(&convert,
-                                                                avfilter_get_by_name("resample"),
-                                                                inst_name, NULL, NULL, graph)) < 0)
-                            return ret;
-                        break;
-                    default:
+                /* couldn't merge format lists. auto-insert conversion filter */
+                switch (link->type) {
+                case AVMEDIA_TYPE_VIDEO:
+                    snprintf(inst_name, sizeof(inst_name), "auto-inserted scaler %d",
+                             scaler_count++);
+                    snprintf(scale_args, sizeof(scale_args), "0:0:%s", graph->scale_sws_opts);
+                    if ((ret = avfilter_graph_create_filter(&convert,
+                                                            avfilter_get_by_name("scale"),
+                                                            inst_name, scale_args, NULL,
+                                                            graph)) < 0)
+                        return ret;
+                    break;
+                case AVMEDIA_TYPE_AUDIO:
+                    if (!(filter = avfilter_get_by_name("resample"))) {
+                        av_log(log_ctx, AV_LOG_ERROR, "'resample' filter "
+                               "not present, cannot convert audio formats.\n");
                         return AVERROR(EINVAL);
                     }
 
-                    if ((ret = avfilter_insert_filter(link, convert, 0, 0)) < 0)
+                    snprintf(inst_name, sizeof(inst_name), "auto-inserted resampler %d",
+                             resampler_count++);
+                    if ((ret = avfilter_graph_create_filter(&convert,
+                                                            avfilter_get_by_name("resample"),
+                                                            inst_name, NULL, NULL, graph)) < 0)
                         return ret;
+                    break;
+                default:
+                    return AVERROR(EINVAL);
+                }
 
-                    convert->filter->query_formats(convert);
-                    inlink  = convert->inputs[0];
-                    outlink = convert->outputs[0];
-                    if (!avfilter_merge_formats( inlink->in_formats,  inlink->out_formats) ||
-                        !avfilter_merge_formats(outlink->in_formats, outlink->out_formats))
-                        ret |= AVERROR(ENOSYS);
-                    if (inlink->type == AVMEDIA_TYPE_AUDIO &&
-                        (!ff_merge_samplerates(inlink->in_samplerates,
-                                               inlink->out_samplerates) ||
-                         !ff_merge_channel_layouts(inlink->in_channel_layouts,
-                                                   inlink->out_channel_layouts)))
-                        ret |= AVERROR(ENOSYS);
-                    if (outlink->type == AVMEDIA_TYPE_AUDIO &&
-                        (!ff_merge_samplerates(outlink->in_samplerates,
-                                               outlink->out_samplerates) ||
-                         !ff_merge_channel_layouts(outlink->in_channel_layouts,
-                                                   outlink->out_channel_layouts)))
-                        ret |= AVERROR(ENOSYS);
+                if ((ret = avfilter_insert_filter(link, convert, 0, 0)) < 0)
+                    return ret;
 
-                    if (ret < 0) {
-                        av_log(log_ctx, AV_LOG_ERROR,
-                               "Impossible to convert between the formats supported by the filter "
-                               "'%s' and the filter '%s'\n", link->src->name, link->dst->name);
-                        return ret;
-                    }
+                convert->filter->query_formats(convert);
+                inlink  = convert->inputs[0];
+                outlink = convert->outputs[0];
+                if (!avfilter_merge_formats( inlink->in_formats,  inlink->out_formats) ||
+                    !avfilter_merge_formats(outlink->in_formats, outlink->out_formats))
+                    ret |= AVERROR(ENOSYS);
+                if (inlink->type == AVMEDIA_TYPE_AUDIO &&
+                    (!ff_merge_samplerates(inlink->in_samplerates,
+                                           inlink->out_samplerates) ||
+                     !ff_merge_channel_layouts(inlink->in_channel_layouts,
+                                               inlink->out_channel_layouts)))
+                    ret |= AVERROR(ENOSYS);
+                if (outlink->type == AVMEDIA_TYPE_AUDIO &&
+                    (!ff_merge_samplerates(outlink->in_samplerates,
+                                           outlink->out_samplerates) ||
+                     !ff_merge_channel_layouts(outlink->in_channel_layouts,
+                                               outlink->out_channel_layouts)))
+                    ret |= AVERROR(ENOSYS);
+
+                if (ret < 0) {
+                    av_log(log_ctx, AV_LOG_ERROR,
+                           "Impossible to convert between the formats supported by the filter "
+                           "'%s' and the filter '%s'\n", link->src->name, link->dst->name);
+                    return ret;
+                }
             }
         }
     }
