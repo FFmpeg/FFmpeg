@@ -94,6 +94,8 @@ typedef struct MP3Context {
     uint32_t seen;
     uint32_t pos;
     uint64_t bag[VBR_NUM_BAGS];
+    int initial_bitrate;
+    int has_variable_bitrate;
 
     /* index of the audio stream */
     int audio_stream_idx;
@@ -238,6 +240,16 @@ static void mp3_fix_xing(AVFormatContext *s)
     int i;
 
     avio_flush(s->pb);
+
+    /* replace "Xing" identification string with "Info" for CBR files. */
+    if (!mp3->has_variable_bitrate) {
+        int64_t tag_offset = mp3->frames_offset
+            - 4   // frames/size/toc flags
+            - 4;  // xing tag
+        avio_seek(s->pb, tag_offset, SEEK_SET);
+        avio_wb32(s->pb, MKBETAG('I', 'n', 'f', 'o'));
+    }
+
     avio_seek(s->pb, mp3->frames_offset, SEEK_SET);
     avio_wb32(s->pb, mp3->frames);
     avio_wb32(s->pb, mp3->size);
@@ -260,12 +272,21 @@ static int mp3_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         return ff_raw_write_packet(s, pkt);
     else {
         MP3Context  *mp3 = s->priv_data;
-#ifdef FILTER_VBR_HEADERS
         MPADecodeHeader c;
+#ifdef FILTER_VBR_HEADERS
         int base;
+#endif
 
-        ff_mpegaudio_decode_header(&c, AV_RB32(pkt->data));
+        avpriv_mpegaudio_decode_header(&c, AV_RB32(pkt->data));
 
+        if (!mp3->initial_bitrate)
+            mp3->initial_bitrate = c.bit_rate;
+        if (!mp3->has_variable_bitrate) {
+            if ((c.bit_rate == 0) || (mp3->initial_bitrate != c.bit_rate))
+                mp3->has_variable_bitrate = 1;
+        }
+
+#ifdef FILTER_VBR_HEADERS
         /* filter out XING and INFO headers. */
         base = 4 + xing_offtbl[c.lsf == 1][c.nb_channels == 1];
 
