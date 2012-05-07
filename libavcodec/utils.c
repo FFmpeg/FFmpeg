@@ -908,6 +908,7 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
                                               const AVFrame *frame,
                                               int *got_packet_ptr)
 {
+    AVFrame tmp;
     AVFrame *padded_frame = NULL;
     int ret;
     int user_packet = !!avpkt->data;
@@ -918,6 +919,22 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
         av_free_packet(avpkt);
         av_init_packet(avpkt);
         return 0;
+    }
+
+    /* ensure that extended_data is properly set */
+    if (frame && !frame->extended_data) {
+        if (av_sample_fmt_is_planar(avctx->sample_fmt) &&
+            avctx->channels > AV_NUM_DATA_POINTERS) {
+            av_log(avctx, AV_LOG_ERROR, "Encoding to a planar sample format, "
+                   "with more than %d channels, but extended_data is not set.\n",
+                   AV_NUM_DATA_POINTERS);
+            return AVERROR(EINVAL);
+        }
+        av_log(avctx, AV_LOG_WARNING, "extended_data is not set.\n");
+
+        tmp = *frame;
+        tmp.extended_data = tmp.data;
+        frame = &tmp;
     }
 
     /* check for valid frame size */
