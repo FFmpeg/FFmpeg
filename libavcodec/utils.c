@@ -390,6 +390,10 @@ static int audio_get_buffer(AVCodecContext *avctx, AVFrame *frame)
 
     frame->reordered_opaque = avctx->reordered_opaque;
 
+    frame->sample_rate    = avctx->sample_rate;
+    frame->format         = avctx->sample_fmt;
+    frame->channel_layout = avctx->channel_layout;
+
     if (avctx->debug & FF_DEBUG_BUFFERS)
         av_log(avctx, AV_LOG_DEBUG, "default_get_buffer called on frame %p, "
                "internal audio buffer used\n", frame);

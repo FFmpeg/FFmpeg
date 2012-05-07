@@ -11,7 +11,14 @@ FFLIBS-$(CONFIG_PAN_FILTER)                  += swresample
 FFLIBS-$(CONFIG_REMOVELOGO_FILTER)           += avformat avcodec
 FFLIBS-$(CONFIG_MP_FILTER)                   += avcodec postproc
 
-HEADERS = asrc_abuffer.h avcodec.h avfilter.h avfiltergraph.h buffersink.h buffersrc.h version.h vsrc_buffer.h
+HEADERS = asrc_abuffer.h                                                \
+          avcodec.h                                                     \
+          avfilter.h                                                    \
+          avfiltergraph.h                                               \
+          buffersink.h                                                  \
+          buffersrc.h                                                   \
+          version.h                                                     \
+          vsrc_buffer.h                                                 \
 
 OBJS = allfilters.o                                                     \
        avfilter.o                                                       \
@@ -171,4 +178,5 @@ OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/pullup.o
 
 TESTPROGS = drawutils formats
 
-TOOLS = graph2dot lavfi-showfiltfmts
+TOOLS = graph2dot                                                       \
+        lavfi-showfiltfmts                                              \

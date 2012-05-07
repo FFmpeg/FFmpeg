@@ -3,7 +3,14 @@ include $(SUBDIR)../config.mak
 NAME = avcodec
 FFLIBS = avutil
 
-HEADERS = avcodec.h avfft.h dxva2.h vaapi.h vda.h vdpau.h version.h xvmc.h
+HEADERS = avcodec.h                                                     \
+          avfft.h                                                       \
+          dxva2.h                                                       \
+          vaapi.h                                                       \
+          vda.h                                                         \
+          vdpau.h                                                       \
+          version.h                                                     \
+          xvmc.h                                                        \
 
 OBJS = allcodecs.o                                                      \
        audioconvert.o                                                   \
@@ -651,11 +658,9 @@ OBJS-$(CONFIG_LIBOPENCORE_AMRWB_DECODER)  += libopencore-amr.o
 OBJS-$(CONFIG_LIBOPENJPEG_DECODER)        += libopenjpegdec.o
 OBJS-$(CONFIG_LIBOPENJPEG_ENCODER)        += libopenjpegenc.o
 OBJS-$(CONFIG_LIBSCHROEDINGER_DECODER)    += libschroedingerdec.o \
-                                             libschroedinger.o    \
-                                             libdirac_libschro.o
+                                             libschroedinger.o
 OBJS-$(CONFIG_LIBSCHROEDINGER_ENCODER)    += libschroedingerenc.o \
-                                             libschroedinger.o    \
-                                             libdirac_libschro.o
+                                             libschroedinger.o
 OBJS-$(CONFIG_LIBSPEEX_DECODER)           += libspeexdec.o
 OBJS-$(CONFIG_LIBSPEEX_ENCODER)           += libspeexenc.o audio_frame_queue.o
 OBJS-$(CONFIG_LIBSTAGEFRIGHT_H264_DECODER)+= libstagefright.o
@@ -753,7 +758,8 @@ SKIPHEADERS                            += %_tablegen.h                  \
                                           aac_tablegen_decl.h           \
                                           fft-internal.h                \
                                           tableprint.h                  \
-                                          $(ARCH)/vp56_arith.h
+                                          $(ARCH)/vp56_arith.h          \
+
 SKIPHEADERS-$(CONFIG_DXVA2)            += dxva2.h dxva2_internal.h
 SKIPHEADERS-$(CONFIG_LIBSCHROEDINGER)  += libschroedinger.h
 SKIPHEADERS-$(CONFIG_MPEG_XVMC_DECODER) += xvmc.h
@@ -762,13 +768,28 @@ SKIPHEADERS-$(CONFIG_VDA)              += vda_internal.h
 SKIPHEADERS-$(CONFIG_VDPAU)            += vdpau.h
 SKIPHEADERS-$(HAVE_W32THREADS)         += w32pthreads.h
 
-TESTPROGS = cabac dct fft fft-fixed golomb iirfilter rangecoder snowenc
+TESTPROGS = cabac                                                       \
+            dct                                                         \
+            fft                                                         \
+            fft-fixed                                                   \
+            golomb                                                      \
+            iirfilter                                                   \
+            rangecoder                                                  \
+            snowenc                                                     \
+
 TESTPROGS-$(HAVE_MMX) += motion
 TESTOBJS = dctref.o
 
-HOSTPROGS = aac_tablegen aacps_tablegen cbrt_tablegen cos_tablegen      \
-            dv_tablegen motionpixels_tablegen mpegaudio_tablegen        \
-            pcm_tablegen qdm2_tablegen sinewin_tablegen
+HOSTPROGS = aac_tablegen                                                \
+            aacps_tablegen                                              \
+            cbrt_tablegen                                               \
+            cos_tablegen                                                \
+            dv_tablegen                                                 \
+            motionpixels_tablegen                                       \
+            mpegaudio_tablegen                                          \
+            pcm_tablegen                                                \
+            qdm2_tablegen                                               \
+            sinewin_tablegen                                            \
 
 CLEANFILES = *_tables.c *_tables.h *_tablegen$(HOSTEXESUF)
 

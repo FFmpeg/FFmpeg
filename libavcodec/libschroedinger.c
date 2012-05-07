@@ -23,12 +23,97 @@
 * function definitions common to libschroedinger decoder and encoder
 */
 
-#include "libdirac_libschro.h"
 #include "libschroedinger.h"
+
+static const SchroVideoFormatInfo ff_schro_video_format_info[] = {
+    { 640,  480,  24000, 1001},
+    { 176,  120,  15000, 1001},
+    { 176,  144,  25,    2   },
+    { 352,  240,  15000, 1001},
+    { 352,  288,  25,    2   },
+    { 704,  480,  15000, 1001},
+    { 704,  576,  25,    2   },
+    { 720,  480,  30000, 1001},
+    { 720,  576,  25,    1   },
+    { 1280, 720,  60000, 1001},
+    { 1280, 720,  50,    1   },
+    { 1920, 1080, 30000, 1001},
+    { 1920, 1080, 25,    1   },
+    { 1920, 1080, 60000, 1001},
+    { 1920, 1080, 50,    1   },
+    { 2048, 1080, 24,    1   },
+    { 4096, 2160, 24,    1   },
+};
+
+static unsigned int get_video_format_idx(AVCodecContext *avccontext)
+{
+    unsigned int ret_idx = 0;
+    unsigned int idx;
+    unsigned int num_formats = sizeof(ff_schro_video_format_info) /
+                               sizeof(ff_schro_video_format_info[0]);
+
+    for (idx = 1; idx < num_formats; ++idx) {
+        const SchroVideoFormatInfo *vf = &ff_schro_video_format_info[idx];
+        if (avccontext->width  == vf->width &&
+            avccontext->height == vf->height) {
+            ret_idx = idx;
+            if (avccontext->time_base.den == vf->frame_rate_num &&
+                avccontext->time_base.num == vf->frame_rate_denom)
+                return idx;
+        }
+    }
+    return ret_idx;
+}
+
+void ff_schro_queue_init(FFSchroQueue *queue)
+{
+    queue->p_head = queue->p_tail = NULL;
+    queue->size = 0;
+}
+
+void ff_schro_queue_free(FFSchroQueue *queue, void (*free_func)(void *))
+{
+    while (queue->p_head)
+        free_func(ff_schro_queue_pop(queue));
+}
+
+int ff_schro_queue_push_back(FFSchroQueue *queue, void *p_data)
+{
+    FFSchroQueueElement *p_new = av_mallocz(sizeof(FFSchroQueueElement));
+
+    if (!p_new)
+        return -1;
+
+    p_new->data = p_data;
+
+    if (!queue->p_head)
+        queue->p_head = p_new;
+    else
+        queue->p_tail->next = p_new;
+    queue->p_tail = p_new;
+
+    ++queue->size;
+    return 0;
+}
+
+void *ff_schro_queue_pop(FFSchroQueue *queue)
+{
+    FFSchroQueueElement *top = queue->p_head;
+
+    if (top) {
+        void *data = top->data;
+        queue->p_head = queue->p_head->next;
+        --queue->size;
+        av_freep(&top);
+        return data;
+    }
+
+    return NULL;
+}
 
 /**
 * Schroedinger video preset table. Ensure that this tables matches up correctly
-* with the ff_dirac_schro_video_format_info table in libdirac_libschro.c.
+* with the ff_schro_video_format_info table.
 */
 static const SchroVideoFormatEnum ff_schro_video_formats[]={
     SCHRO_VIDEO_FORMAT_CUSTOM     ,
@@ -55,7 +140,7 @@ SchroVideoFormatEnum ff_get_schro_video_format_preset(AVCodecContext *avccontext
     unsigned int num_formats = sizeof(ff_schro_video_formats) /
                                sizeof(ff_schro_video_formats[0]);
 
-    unsigned int idx = ff_dirac_schro_get_video_format_idx (avccontext);
+    unsigned int idx = get_video_format_idx(avccontext);
 
     return (idx < num_formats) ? ff_schro_video_formats[idx] :
                                  SCHRO_VIDEO_FORMAT_CUSTOM;
@@ -78,7 +163,7 @@ int ff_get_schro_frame_format (SchroChromaFormat schro_pix_fmt,
     return -1;
 }
 
-static void FreeSchroFrame(SchroFrame *frame, void *priv)
+static void free_schro_frame(SchroFrame *frame, void *priv)
 {
     AVPicture *p_pic = priv;
 
@@ -110,7 +195,7 @@ SchroFrame *ff_create_schro_frame(AVCodecContext *avccontext,
     p_frame->format = schro_frame_fmt;
     p_frame->width  = y_width;
     p_frame->height = y_height;
-    schro_frame_set_free_callback(p_frame, FreeSchroFrame, (void *)p_pic);
+    schro_frame_set_free_callback(p_frame, free_schro_frame, (void *)p_pic);
 
     for (i = 0; i < 3; ++i) {
         p_frame->components[i].width  = i ? uv_width : y_width;

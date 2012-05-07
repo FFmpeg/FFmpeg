@@ -856,7 +856,7 @@ typedef struct AVFormatContext {
      */
     void *priv_data;
 
-    /*
+    /**
      * I/O context.
      *
      * decoding: either set by the user before avformat_open_input() (then

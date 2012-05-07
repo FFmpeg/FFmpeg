@@ -42,6 +42,11 @@ HEADERS = adler32.h                                                     \
           timecode.h                                                    \
           timestamp.h                                                   \
 
+ARCH_HEADERS = bswap.h                                                  \
+               intmath.h                                                \
+               intreadwrite.h                                           \
+               timer.h                                                  \
+
 BUILT_HEADERS = avconfig.h
 
 OBJS = adler32.o                                                        \
@@ -81,12 +86,30 @@ OBJS = adler32.o                                                        \
        tree.o                                                           \
        utils.o                                                          \
 
-TESTPROGS = adler32 aes avstring base64 bprint cpu crc des eval file fifo \
-            lfg lls md5 opt pca parseutils random_seed rational sha tree
+TESTPROGS = adler32                                                     \
+            aes                                                         \
+            avstring                                                    \
+            base64                                                      \
+            bprint                                                      \
+            cpu                                                         \
+            crc                                                         \
+            des                                                         \
+            eval                                                        \
+            file                                                        \
+            fifo                                                        \
+            lfg                                                         \
+            lls                                                         \
+            md5                                                         \
+            opt                                                         \
+            pca                                                         \
+            parseutils                                                  \
+            random_seed                                                 \
+            rational                                                    \
+            sha                                                         \
+            tree                                                        \
+
 TESTPROGS-$(HAVE_LZO1X_999_COMPRESS) += lzo
 
 TOOLS = ffeval
-
-ARCH_HEADERS = bswap.h intmath.h intreadwrite.h timer.h
 
 $(SUBDIR)lzo-test$(EXESUF): ELIBS = -llzo2

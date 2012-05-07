@@ -41,10 +41,11 @@ int avfilter_copy_frame_props(AVFilterBufferRef *dst, const AVFrame *src)
         dst->video->pict_type           = src->pict_type;
         break;
     case AVMEDIA_TYPE_AUDIO:
-        dst->audio->sample_rate         = av_frame_get_sample_rate(src);
+        dst->audio->sample_rate         = src->sample_rate;
+        dst->audio->channel_layout      = src->channel_layout;
         break;
     default:
-        return AVERROR(ENOSYS);
+        return AVERROR(EINVAL);
     }
 
     return 0;

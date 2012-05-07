@@ -50,6 +50,7 @@ static int do_read_packets = 0;
 static int do_show_error   = 0;
 static int do_show_format  = 0;
 static int do_show_frames  = 0;
+static AVDictionary *fmt_entries_to_show = NULL;
 static int do_show_packets = 0;
 static int do_show_streams = 0;
 static int do_show_program_version  = 0;
@@ -81,6 +82,7 @@ static uint64_t *nb_streams_frames;
 
 void av_noreturn exit_program(int ret)
 {
+    av_dict_free(&fmt_entries_to_show);
     exit(ret);
 }
 
@@ -279,8 +281,10 @@ static inline void writer_print_section_footer(WriterContext *wctx,
 static inline void writer_print_integer(WriterContext *wctx,
                                         const char *key, long long int val)
 {
-    wctx->writer->print_integer(wctx, key, val);
-    wctx->nb_item++;
+    if (!fmt_entries_to_show || (key && av_dict_get(fmt_entries_to_show, key, NULL, 0))) {
+        wctx->writer->print_integer(wctx, key, val);
+        wctx->nb_item++;
+    }
 }
 
 static inline void writer_print_string(WriterContext *wctx,
@@ -288,8 +292,10 @@ static inline void writer_print_string(WriterContext *wctx,
 {
     if (opt && !(wctx->writer->flags & WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS))
         return;
-    wctx->writer->print_string(wctx, key, val);
-    wctx->nb_item++;
+    if (!fmt_entries_to_show || (key && av_dict_get(fmt_entries_to_show, key, NULL, 0))) {
+        wctx->writer->print_string(wctx, key, val);
+        wctx->nb_item++;
+    }
 }
 
 static void writer_print_time(WriterContext *wctx, const char *key,
@@ -297,12 +303,14 @@ static void writer_print_time(WriterContext *wctx, const char *key,
 {
     char buf[128];
 
-    if (ts == AV_NOPTS_VALUE) {
-        writer_print_string(wctx, key, "N/A", 1);
-    } else {
-        double d = ts * av_q2d(*time_base);
-        value_string(buf, sizeof(buf), (struct unit_value){.val.d=d, .unit=unit_second_str});
-        writer_print_string(wctx, key, buf, 0);
+    if (!fmt_entries_to_show || (key && av_dict_get(fmt_entries_to_show, key, NULL, 0))) {
+        if (ts == AV_NOPTS_VALUE) {
+            writer_print_string(wctx, key, "N/A", 1);
+        } else {
+            double d = ts * av_q2d(*time_base);
+            value_string(buf, sizeof(buf), (struct unit_value){.val.d=d, .unit=unit_second_str});
+            writer_print_string(wctx, key, buf, 0);
+        }
     }
 }
 
@@ -1428,6 +1436,20 @@ static void show_streams(WriterContext *w, AVFormatContext *fmt_ctx)
         show_stream(w, fmt_ctx, i);
 }
 
+static void print_format_entry(const char *tag,
+                               const char *val)
+{
+    if (!fmt_entries_to_show) {
+        if (tag) {
+            printf("%s=%s\n", tag, val);
+        } else {
+            printf("%s\n", val);
+        }
+    } else if (tag && av_dict_get(fmt_entries_to_show, tag, NULL, 0)) {
+        printf("%s=%s\n", tag, val);
+    }
+}
+
 static void show_format(WriterContext *w, AVFormatContext *fmt_ctx)
 {
     char val_str[128];
@@ -1621,6 +1643,13 @@ static int opt_format(const char *opt, const char *arg)
     return 0;
 }
 
+static int opt_show_format_entry(const char *opt, const char *arg)
+{
+    do_show_format = 1;
+    av_dict_set(&fmt_entries_to_show, arg, "", 0);
+    return 0;
+}
+
 static void opt_input_file(void *optctx, const char *arg)
 {
     if (input_filename) {
@@ -1678,6 +1707,8 @@ static const OptionDef options[] = {
     { "show_error",   OPT_BOOL, {(void*)&do_show_error} ,  "show probing error" },
     { "show_format",  OPT_BOOL, {(void*)&do_show_format} , "show format/container info" },
     { "show_frames",  OPT_BOOL, {(void*)&do_show_frames} , "show frames info" },
+    { "show_format_entry", HAS_ARG, {(void*)opt_show_format_entry},
+      "show a particular entry from the format/container info", "entry" },
     { "show_packets", OPT_BOOL, {(void*)&do_show_packets}, "show packets info" },
     { "show_streams", OPT_BOOL, {(void*)&do_show_streams}, "show streams info" },
     { "count_frames", OPT_BOOL, {(void*)&do_count_frames}, "count the number of frames per stream" },

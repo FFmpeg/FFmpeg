@@ -30,7 +30,6 @@
 #include <stdint.h>
 #include "dsputil.h"
 
-//typedef void (*h264_chroma_mc_func)(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int srcStride, int h, int x, int y);
 typedef void (*h264_weight_func)(uint8_t *block, int stride, int height,
                                  int log2_denom, int weight, int offset);
 typedef void (*h264_biweight_func)(uint8_t *dst, uint8_t *src, int stride, int height,

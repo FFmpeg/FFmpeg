@@ -3,7 +3,9 @@ include $(SUBDIR)../config.mak
 NAME = avformat
 FFLIBS = avcodec avutil
 
-HEADERS = avformat.h avio.h version.h
+HEADERS = avformat.h                                                    \
+          avio.h                                                        \
+          version.h                                                     \
 
 OBJS = allformats.o         \
        avio.o               \
@@ -378,4 +380,8 @@ OBJS-$(CONFIG_UDP_PROTOCOL)              += udp.o
 
 SKIPHEADERS-$(CONFIG_NETWORK)            += network.h rtsp.h
 TESTPROGS = seek
-TOOLS     = aviocat ismindex pktdumper probetest
+
+TOOLS     = aviocat                                                     \
+            ismindex                                                    \
+            pktdumper                                                   \
+            probetest                                                   \

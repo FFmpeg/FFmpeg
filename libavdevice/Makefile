@@ -6,7 +6,8 @@ FFLIBS-$(CONFIG_LAVFI_INDEV) += avfilter
 
 HEADERS = avdevice.h
 
-OBJS    = alldevices.o avdevice.o
+OBJS    = alldevices.o                                                  \
+          avdevice.o                                                    \
 
 # input/output devices
 OBJS-$(CONFIG_ALSA_INDEV)                += alsa-audio-common.o \

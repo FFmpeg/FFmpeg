@@ -1243,6 +1243,22 @@ typedef struct AVFrame {
     uint8_t motion_subsample_log2;
 
     /**
+     * Sample rate of the audio data.
+     *
+     * - encoding: unused
+     * - decoding: read by user
+     */
+    int sample_rate;
+
+    /**
+     * Channel layout of the audio data.
+     *
+     * - encoding: unused
+     * - decoding: read by user.
+     */
+    uint64_t channel_layout;
+
+    /**
      * frame timestamp estimated using various heuristics, in stream time base
      * Code outside libavcodec should access this field using:
      * av_frame_get_best_effort_timestamp(frame)
@@ -1259,24 +1275,6 @@ typedef struct AVFrame {
      * - decoding: Read by user.
      */
     int64_t pkt_pos;
-
-    /**
-     * channel layout of the audio frame
-     * - encoding: unused
-     * - decoding: read by user.
-     * Code outside libavcodec should access this field using:
-     * av_frame_get_channel_layout(frame)
-     */
-    int64_t channel_layout;
-
-    /**
-     * sample rate of the audio frame
-     * - encoding: unused
-     * - decoding: read by user.
-     * Code outside libavcodec should access this field using:
-     * av_frame_get_channel_layout(frame)
-     */
-    int sample_rate;
 
 } AVFrame;
 

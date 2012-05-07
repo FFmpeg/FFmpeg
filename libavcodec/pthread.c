@@ -1051,6 +1051,11 @@ static void validate_thread_parameters(AVCodecContext *avctx)
         avctx->thread_count       = 1;
         avctx->active_thread_type = 0;
     }
+
+    if (avctx->thread_count > MAX_AUTO_THREADS)
+        av_log(avctx, AV_LOG_WARNING,
+               "Application has requested %d threads. Using a thread count greater than %d is not recommended.\n",
+               avctx->thread_count, MAX_AUTO_THREADS);
 }
 
 int ff_thread_init(AVCodecContext *avctx)
