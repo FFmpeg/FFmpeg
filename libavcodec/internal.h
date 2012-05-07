@@ -70,6 +70,12 @@ typedef struct AVCodecInternal {
      */
     int sample_count;
 #endif
+
+    /**
+     * An audio frame with less than required samples has been submitted and
+     * padded with silence. Reject all subsequent frames.
+     */
+    int last_audio_frame;
 } AVCodecInternal;
 
 struct AVCodecDefault {

@@ -13,6 +13,12 @@ libavutil:     2011-04-18
 
 API changes, most recent first:
 
+2012-xx-xx - xxxxxxx - lavc 54.13.1
+  For audio formats with fixed frame size, the last frame
+  no longer needs to be padded with silence, libavcodec
+  will handle this internally (effectively all encoders
+  behave as if they had CODEC_CAP_SMALL_LAST_FRAME set).
+
 2012-xx-xx - xxxxxxx - lavc 54.13.0 - avcodec.h
   Add sample_rate and channel_layout fields to AVFrame.
 

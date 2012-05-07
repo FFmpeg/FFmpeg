@@ -2048,14 +2048,6 @@ static void flush_encoders(void)
 
                     av_fifo_generic_read(ost->fifo, audio_buf, fifo_bytes, NULL);
 
-                    /* pad last frame with silence if needed */
-                    if (!(enc->codec->capabilities & CODEC_CAP_SMALL_LAST_FRAME)) {
-                        frame_bytes = enc->frame_size * enc->channels *
-                                      av_get_bytes_per_sample(enc->sample_fmt);
-                        if (allocated_audio_buf_size < frame_bytes)
-                            exit_program(1);
-                        generate_silence(audio_buf+fifo_bytes, enc->sample_fmt, frame_bytes - fifo_bytes);
-                    }
                     encode_audio_frame(os, ost, audio_buf, frame_bytes);
                 } else {
                     /* flush encoder with NULL frames until it is done
