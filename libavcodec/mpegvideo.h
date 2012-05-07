@@ -58,7 +58,7 @@ enum OutputFormat {
 #define MAX_FCODE 7
 #define MAX_MV 2048
 
-#define MAX_THREADS 16
+#define MAX_THREADS 32
 
 #define MAX_PICTURE_COUNT 32
 
