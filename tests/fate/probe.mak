@@ -1,14 +1,14 @@
 FATE_PROBE_FORMAT += fate-probe-format-roundup997
-fate-probe-format-roundup997:  REF = mpeg
+fate-probe-format-roundup997:  REF = format_name=mpeg
 
 FATE_PROBE_FORMAT += fate-probe-format-roundup1383
-fate-probe-format-roundup1383: REF = mp3
+fate-probe-format-roundup1383: REF = format_name=mp3
 
 FATE_PROBE_FORMAT += fate-probe-format-roundup1414
-fate-probe-format-roundup1414: REF = mpeg
+fate-probe-format-roundup1414: REF = format_name=mpeg
 
 FATE_PROBE_FORMAT += fate-probe-format-roundup2015
-fate-probe-format-roundup2015: REF = dv
+fate-probe-format-roundup2015: REF = format_name=dv
 
 FATE_TESTS += $(FATE_PROBE_FORMAT)
 fate-probe-format: $(FATE_PROBE_FORMAT)
