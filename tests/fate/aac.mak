@@ -71,7 +71,7 @@ FATE_AAC_CT = sbr_bc-ps_i.3gp  \
 
 FATE_AAC += $(FATE_AAC_CT:%=fate-aac-ct-%)
 
-FATE_TESTS += $(FATE_AAC)
+FATE_AVCONV += $(FATE_AAC)
 fate-aac: $(FATE_AAC)
 $(FATE_AAC): CMP = oneoff
 $(FATE_AAC): FUZZ = 2

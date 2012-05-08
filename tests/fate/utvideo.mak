@@ -22,5 +22,5 @@ fate-utvideo_yuv422_left: CMD = framecrc -i $(SAMPLES)/utvideo/utvideo_yuv422_le
 FATE_UTVIDEO += fate-utvideo_yuv422_median
 fate-utvideo_yuv422_median: CMD = framecrc -i $(SAMPLES)/utvideo/utvideo_yuv422_median.avi
 
-FATE_TESTS += $(FATE_UTVIDEO)
+FATE_AVCONV += $(FATE_UTVIDEO)
 fate-utvideo: $(FATE_UTVIDEO)

@@ -52,5 +52,5 @@ fate-adpcm-thp: CMD = framecrc -i $(SAMPLES)/thp/pikmin2-opening1-partial.thp -v
 FATE_ADPCM += fate-adpcm_ms-stereo
 fate-adpcm_ms-stereo: CMD = md5 -i $(SAMPLES)/qt-surge-suite/surge-2-16-L-ms02.mov -f s16le
 
-FATE_TESTS += $(FATE_ADPCM)
+FATE_AVCONV += $(FATE_ADPCM)
 fate-adpcm: $(FATE_ADPCM)

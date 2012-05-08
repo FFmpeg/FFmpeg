@@ -18,5 +18,5 @@ fate-atrac3-3: CMD = pcm -i $(SAMPLES)/atrac3/mc_sich_at3_132_small.wav
 fate-atrac3-3: CMP = oneoff
 fate-atrac3-3: REF = $(SAMPLES)/atrac3/mc_sich_at3_132_small.pcm
 
-FATE_TESTS += $(FATE_ATRAC)
+FATE_AVCONV += $(FATE_ATRAC)
 fate-atrac: $(FATE_ATRAC)

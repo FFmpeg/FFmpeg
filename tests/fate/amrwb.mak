@@ -58,5 +58,5 @@ fate-amrwb-23k85-2: CMP = stddev
 fate-amrwb-23k85-2: REF = $(SAMPLES)/amrwb/deus-23k85.pcm
 fate-amrwb-23k85-2: FUZZ = 1
 
-FATE_TESTS += $(FATE_AMRWB)
+FATE_AVCONV += $(FATE_AMRWB)
 fate-amrwb: $(FATE_AMRWB)

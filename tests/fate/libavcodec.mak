@@ -7,5 +7,4 @@ FATE_LIBAVCODEC += fate-iirfilter
 fate-iirfilter: libavcodec/iirfilter-test$(EXESUF)
 fate-iirfilter: CMD = run libavcodec/iirfilter-test
 
-FATE_TESTS += $(FATE_LIBAVCODEC)
 fate-libavcodec: $(FATE_LIBAVCODEC)

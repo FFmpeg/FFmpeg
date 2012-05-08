@@ -79,9 +79,15 @@ FATE = $(FATE_ACODEC)                                                   \
        $(FATE_LAVF)                                                     \
        $(FATE_SEEK)                                                     \
 
+FATE_AVCONV += $(FATE_AVCONV-yes)
+
+FATE-$(CONFIG_AVCODEC)  += $(FATE_LIBAVCODEC)
 FATE-$(CONFIG_AVFILTER) += $(FATE_LAVFI)
 
 FATE += $(FATE-yes)
+FATE += $(FATE_LIBAVUTIL)
+
+$(FATE_AVCONV): avconv$(EXESUF)
 
 $(filter-out %-aref,$(FATE_ACODEC)): $(AREF)
 $(filter-out %-vref,$(FATE_VSYNTH1)): fate-vsynth1-vref
@@ -105,7 +111,7 @@ fate-lavfi:  $(FATE_LAVFI)
 fate-seek:   $(FATE_SEEK)
 
 ifdef SAMPLES
-FATE += $(FATE_TESTS) $(FATE_TESTS-yes)
+FATE += $(FATE_AVCONV)
 fate-rsync:
 	rsync -vaLW rsync://fate-suite.libav.org/fate-suite/ $(SAMPLES)
 else
@@ -119,7 +125,7 @@ FATE_UTILS = base64 tiny_psnr
 
 fate: $(FATE)
 
-$(FATE): avconv$(EXESUF) $(FATE_UTILS:%=tests/%$(HOSTEXESUF))
+$(FATE): $(FATE_UTILS:%=tests/%$(HOSTEXESUF))
 	@echo "TEST    $(@:fate-%=%)"
 	$(Q)$(SRC_PATH)/tests/fate-run.sh $@ "$(SAMPLES)" "$(TARGET_EXEC)" "$(TARGET_PATH)" '$(CMD)' '$(CMP)' '$(REF)' '$(FUZZ)' '$(THREADS)' '$(THREAD_TYPE)' '$(CPUFLAGS)' '$(CMP_SHIFT)' '$(CMP_TARGET)' '$(SIZE_TOLERANCE)'
 

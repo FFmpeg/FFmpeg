@@ -46,5 +46,5 @@ fate-amrnb-12k2: CMP = stddev
 fate-amrnb-12k2: REF = $(SAMPLES)/amrnb/12.2k.pcm
 fate-amrnb-12k2: FUZZ = 1
 
-FATE_TESTS += $(FATE_AMRNB)
+FATE_AVCONV += $(FATE_AMRNB)
 fate-amrnb: $(FATE_AMRNB)

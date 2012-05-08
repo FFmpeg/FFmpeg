@@ -31,5 +31,5 @@ fate-dfa10: CMD = framecrc -i $(SAMPLES)/chronomaster-dfa/0009.dfa -pix_fmt rgb2
 FATE_DFA += fate-dfa11
 fate-dfa11: CMD = framecrc -i $(SAMPLES)/chronomaster-dfa/0010.dfa -pix_fmt rgb24
 
-FATE_TESTS += $(FATE_DFA)
+FATE_AVCONV += $(FATE_DFA)
 fate-dfa: $(FATE_DFA)
