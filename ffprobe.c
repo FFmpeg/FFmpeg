@@ -265,17 +265,21 @@ static inline void writer_print_chapter_footer(WriterContext *wctx,
 static inline void writer_print_section_header(WriterContext *wctx,
                                                const char *section)
 {
-    if (wctx->writer->print_section_header)
-        wctx->writer->print_section_header(wctx, section);
-    wctx->nb_item = 0;
+    if (!fmt_entries_to_show || (section && av_dict_get(fmt_entries_to_show, section, NULL, 0))) {
+        if (wctx->writer->print_section_header)
+            wctx->writer->print_section_header(wctx, section);
+        wctx->nb_item = 0;
+    }
 }
 
 static inline void writer_print_section_footer(WriterContext *wctx,
                                                const char *section)
 {
-    if (wctx->writer->print_section_footer)
-        wctx->writer->print_section_footer(wctx, section);
-    wctx->nb_section++;
+    if (!fmt_entries_to_show || (section && av_dict_get(fmt_entries_to_show, section, NULL, 0))) {
+        if (wctx->writer->print_section_footer)
+            wctx->writer->print_section_footer(wctx, section);
+        wctx->nb_section++;
+    }
 }
 
 static inline void writer_print_integer(WriterContext *wctx,
@@ -448,7 +452,8 @@ static void default_show_tags(WriterContext *wctx, AVDictionary *dict)
 {
     AVDictionaryEntry *tag = NULL;
     while ((tag = av_dict_get(dict, "", tag, AV_DICT_IGNORE_SUFFIX))) {
-        printf("TAG:");
+        if (!fmt_entries_to_show || (tag->key && av_dict_get(fmt_entries_to_show, tag->key, NULL, 0)))
+            printf("TAG:");
         writer_print_string(wctx, tag->key, tag->value, 0);
     }
 }

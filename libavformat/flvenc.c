@@ -68,18 +68,19 @@ typedef struct FLVStreamContext {
     int64_t last_ts;    ///< last timestamp for each stream
 } FLVStreamContext;
 
-static int get_audio_flags(AVCodecContext *enc){
+static int get_audio_flags(AVFormatContext *s, AVCodecContext *enc)
+{
     int flags = (enc->bits_per_coded_sample == 16) ? FLV_SAMPLESSIZE_16BIT : FLV_SAMPLESSIZE_8BIT;
 
     if (enc->codec_id == CODEC_ID_AAC) // specs force these parameters
         return FLV_CODECID_AAC | FLV_SAMPLERATE_44100HZ | FLV_SAMPLESSIZE_16BIT | FLV_STEREO;
     else if (enc->codec_id == CODEC_ID_SPEEX) {
         if (enc->sample_rate != 16000) {
-            av_log(enc, AV_LOG_ERROR, "flv only supports wideband (16kHz) Speex audio\n");
+            av_log(s, AV_LOG_ERROR, "flv only supports wideband (16kHz) Speex audio\n");
             return -1;
         }
         if (enc->channels != 1) {
-            av_log(enc, AV_LOG_ERROR, "flv only supports mono Speex audio\n");
+            av_log(s, AV_LOG_ERROR, "flv only supports mono Speex audio\n");
             return -1;
         }
         return FLV_CODECID_SPEEX | FLV_SAMPLERATE_11025HZ | FLV_SAMPLESSIZE_16BIT;
@@ -102,7 +103,7 @@ static int get_audio_flags(AVCodecContext *enc){
                 break;
             }
         default:
-            av_log(enc, AV_LOG_ERROR, "flv does not support that sample rate, choose from (44100, 22050, 11025).\n");
+            av_log(s, AV_LOG_ERROR, "flv does not support that sample rate, choose from (44100, 22050, 11025).\n");
             return -1;
     }
     }
@@ -140,7 +141,7 @@ static int get_audio_flags(AVCodecContext *enc){
         flags |= enc->codec_tag<<4;
         break;
     default:
-        av_log(enc, AV_LOG_ERROR, "codec not compatible with flv\n");
+        av_log(s, AV_LOG_ERROR, "codec not compatible with flv\n");
         return -1;
     }
 
@@ -198,12 +199,12 @@ static int flv_write_header(AVFormatContext *s)
             }
             video_enc = enc;
             if(enc->codec_tag == 0) {
-                av_log(enc, AV_LOG_ERROR, "video codec not compatible with flv\n");
+                av_log(s, AV_LOG_ERROR, "video codec not compatible with flv\n");
                 return -1;
             }
         } else if (enc->codec_type == AVMEDIA_TYPE_AUDIO) {
             audio_enc = enc;
-            if(get_audio_flags(enc)<0)
+            if (get_audio_flags(s, enc) < 0)
                 return -1;
         }
         avpriv_set_pts_info(s->streams[i], 32, 1, 1000); /* 32 bit pts in ms */
@@ -344,7 +345,7 @@ static int flv_write_header(AVFormatContext *s)
             avio_wb24(pb, 0); // streamid
             pos = avio_tell(pb);
             if (enc->codec_id == CODEC_ID_AAC) {
-                avio_w8(pb, get_audio_flags(enc));
+                avio_w8(pb, get_audio_flags(s, enc));
                 avio_w8(pb, 0); // AAC sequence header
                 avio_write(pb, enc->extradata, enc->extradata_size);
             } else {
@@ -420,13 +421,13 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
 
         flags = enc->codec_tag;
         if(flags == 0) {
-            av_log(enc, AV_LOG_ERROR, "video codec %s not compatible with flv\n", avcodec_get_name(enc->codec_id));
+            av_log(s, AV_LOG_ERROR, "video codec %s not compatible with flv\n", avcodec_get_name(enc->codec_id));
             return -1;
         }
 
         flags |= pkt->flags & AV_PKT_FLAG_KEY ? FLV_FRAME_KEY : FLV_FRAME_INTER;
     } else if (enc->codec_type == AVMEDIA_TYPE_AUDIO) {
-        flags = get_audio_flags(enc);
+        flags = get_audio_flags(s, enc);
 
         assert(size);
 

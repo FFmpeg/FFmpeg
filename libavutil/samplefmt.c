@@ -152,7 +152,7 @@ int av_samples_get_buffer_size(int *linesize, int nb_channels, int nb_samples,
 }
 
 int av_samples_fill_arrays(uint8_t **audio_data, int *linesize,
-                           uint8_t *buf, int nb_channels, int nb_samples,
+                           const uint8_t *buf, int nb_channels, int nb_samples,
                            enum AVSampleFormat sample_fmt, int align)
 {
     int ch, planar, buf_size, line_size;

@@ -887,10 +887,10 @@ static int synthfilt_build_sb_samples (QDM2Context *q, GetBitContext *gb, int le
 
                     case 30:
                         if (get_bits_left(gb) >= 4) {
-                            unsigned v = qdm2_get_vlc(gb, &vlc_tab_type30, 0, 1);
-                            if (v >= FF_ARRAY_ELEMS(type30_dequant))
+                            unsigned index = qdm2_get_vlc(gb, &vlc_tab_type30, 0, 1);
+                            if (index >= FF_ARRAY_ELEMS(type30_dequant))
                                 return AVERROR_INVALIDDATA;
-                            samples[0] = type30_dequant[v];
+                            samples[0] = type30_dequant[index];
                         } else
                             samples[0] = SB_DITHERING_NOISE(sb,q->noise_idx);
 
@@ -905,10 +905,10 @@ static int synthfilt_build_sb_samples (QDM2Context *q, GetBitContext *gb, int le
                                 type34_predictor = samples[0];
                                 type34_first = 0;
                             } else {
-                                unsigned v = qdm2_get_vlc(gb, &vlc_tab_type34, 0, 1);
-                                if (v >= FF_ARRAY_ELEMS(type34_delta))
+                                unsigned index = qdm2_get_vlc(gb, &vlc_tab_type34, 0, 1);
+                                if (index >= FF_ARRAY_ELEMS(type34_delta))
                                     return AVERROR_INVALIDDATA;
-                                samples[0] = type34_delta[v] / type34_div + type34_predictor;
+                                samples[0] = type34_delta[index] / type34_div + type34_predictor;
                                 type34_predictor = samples[0];
                             }
                         } else {
