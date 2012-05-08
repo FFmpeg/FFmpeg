@@ -137,6 +137,25 @@ aformat=sample_fmts\=u8\,s16:channel_layouts\=stereo
 
 Pass the audio source unchanged to the output.
 
+@section asyncts
+Synchronize audio data with timestamps by squeezing/stretching it and/or
+dropping samples/adding silence when needed.
+
+The filter accepts the following named parameters:
+@table @option
+
+@item compensate
+Enable stretching/squeezing the data to make it match the timestamps.
+
+@item min_delta
+Minimum difference between timestamps and audio data (in seconds) to trigger
+adding/dropping samples.
+
+@item max_comp
+Maximum compensation in samples per second.
+
+@end table
+
 @section resample
 Convert the audio sample format, sample rate and channel layout. This filter is
 not meant to be used directly, it is inserted automatically by libavfilter
