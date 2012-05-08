@@ -209,4 +209,16 @@ int av_samples_copy(uint8_t **dst, uint8_t * const *src, int dst_offset,
                     int src_offset, int nb_samples, int nb_channels,
                     enum AVSampleFormat sample_fmt);
 
+/**
+ * Fill an audio buffer with silence.
+ *
+ * @param audio_data  array of pointers to data planes
+ * @param offset      offset in samples at which to start filling
+ * @param nb_samples  number of samples to fill
+ * @param nb_channels number of audio channels
+ * @param sample_fmt  audio sample format
+ */
+int av_samples_set_silence(uint8_t **audio_data, int offset, int nb_samples,
+                           int nb_channels, enum AVSampleFormat sample_fmt);
+
 #endif /* AVUTIL_SAMPLEFMT_H */
