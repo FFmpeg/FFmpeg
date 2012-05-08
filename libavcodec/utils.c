@@ -554,7 +554,7 @@ void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic){
     InternalBuffer *buf, *last;
     AVCodecInternal *avci = s->internal;
 
-    assert(s->codec_type == AVMEDIA_TYPE_VIDEO);
+    av_assert0(s->codec_type == AVMEDIA_TYPE_VIDEO);
 
     assert(pic->type==FF_BUFFER_TYPE_INTERNAL);
     assert(avci->buffer_count);
@@ -566,7 +566,7 @@ void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic){
             if (buf->data[0] == pic->data[0])
                 break;
         }
-        assert(i < avci->buffer_count);
+        av_assert0(i < avci->buffer_count);
         avci->buffer_count--;
         last = &avci->buffer[avci->buffer_count];
 
@@ -589,7 +589,7 @@ int avcodec_default_reget_buffer(AVCodecContext *s, AVFrame *pic){
     AVFrame temp_pic;
     int i;
 
-    assert(s->codec_type == AVMEDIA_TYPE_VIDEO);
+    av_assert0(s->codec_type == AVMEDIA_TYPE_VIDEO);
 
     if (pic->data[0] && (pic->width != s->width || pic->height != s->height || pic->format != s->pix_fmt)) {
         av_log(s, AV_LOG_WARNING, "Picture changed from size:%dx%d fmt:%s to size:%dx%d fmt:%s in reget buffer()\n",
