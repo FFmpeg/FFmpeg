@@ -401,14 +401,60 @@ fail:
 
 /* Default output */
 
+typedef struct DefaultContext {
+    const AVClass *class;
+    int noprint_wrappers;
+} DefaultContext;
+
+#define OFFSET(x) offsetof(DefaultContext, x)
+
+static const AVOption default_options[] = {
+    { "noprint_wrappers", "do not print headers and footers", OFFSET(noprint_wrappers), AV_OPT_TYPE_INT, {.dbl=0}, 0, 1 },
+    { "nw",               "do not print headers and footers", OFFSET(noprint_wrappers), AV_OPT_TYPE_INT, {.dbl=0}, 0, 1 },
+    {NULL},
+};
+
+static const char *default_get_name(void *ctx)
+{
+    return "default";
+}
+
+static const AVClass default_class = {
+    "DefaultContext",
+    default_get_name,
+    default_options
+};
+
+static av_cold int default_init(WriterContext *wctx, const char *args, void *opaque)
+{
+    DefaultContext *def = wctx->priv;
+    int err;
+
+    def->class = &default_class;
+    av_opt_set_defaults(def);
+
+    if (args &&
+        (err = (av_set_options_string(def, args, "=", ":"))) < 0) {
+        av_log(wctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
+        return err;
+    }
+
+    return 0;
+}
+
 static void default_print_footer(WriterContext *wctx)
 {
-    printf("\n");
+    DefaultContext *def = wctx->priv;
+
+    if (!def->noprint_wrappers)
+        printf("\n");
 }
 
 static void default_print_chapter_header(WriterContext *wctx, const char *chapter)
 {
-    if (wctx->nb_chapter)
+    DefaultContext *def = wctx->priv;
+
+    if (!def->noprint_wrappers && wctx->nb_chapter)
         printf("\n");
 }
 
@@ -424,18 +470,22 @@ static inline char *upcase_string(char *dst, size_t dst_size, const char *src)
 
 static void default_print_section_header(WriterContext *wctx, const char *section)
 {
+    DefaultContext *def = wctx->priv;
     char buf[32];
 
     if (wctx->nb_section)
         printf("\n");
-    printf("[%s]\n", upcase_string(buf, sizeof(buf), section));
+    if (!def->noprint_wrappers)
+        printf("[%s]\n", upcase_string(buf, sizeof(buf), section));
 }
 
 static void default_print_section_footer(WriterContext *wctx, const char *section)
 {
+    DefaultContext *def = wctx->priv;
     char buf[32];
 
-    printf("[/%s]", upcase_string(buf, sizeof(buf), section));
+    if (!def->noprint_wrappers)
+        printf("[/%s]", upcase_string(buf, sizeof(buf), section));
 }
 
 static void default_print_str(WriterContext *wctx, const char *key, const char *value)
@@ -460,6 +510,7 @@ static void default_show_tags(WriterContext *wctx, AVDictionary *dict)
 
 static const Writer default_writer = {
     .name                  = "default",
+    .init                  = default_init,
     .print_footer          = default_print_footer,
     .print_chapter_header  = default_print_chapter_header,
     .print_section_header  = default_print_section_header,
@@ -534,6 +585,7 @@ typedef struct CompactContext {
     const char * (*escape_str)(AVBPrint *dst, const char *src, const char sep, void *log_ctx);
 } CompactContext;
 
+#undef OFFSET
 #define OFFSET(x) offsetof(CompactContext, x)
 
 static const AVOption compact_options[]= {

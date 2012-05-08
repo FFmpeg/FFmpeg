@@ -195,6 +195,19 @@ keyN=valN
 Metadata tags are printed as a line in the corresponding FORMAT or
 STREAM section, and are prefixed by the string "TAG:".
 
+This writer accepts options as a list of @var{key}=@var{value} pairs,
+separated by ":".
+
+A description of the accepted options follows.
+
+@table @option
+
+@item noprint_wrappers, nw
+If set to 1 specify not to print the section header and footer.
+Default value is 0.
+
+@end table
+
 @section compact
 Compact format.
 
