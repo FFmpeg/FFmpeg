@@ -130,6 +130,7 @@ const PixelFormatTag ff_raw_pix_fmt_tags[] = {
     { PIX_FMT_YUV444P16LE, MKTAG('Y', '3',  0 , 16 ) },
     { PIX_FMT_YUV444P16BE, MKTAG(16 ,  0 , '3', 'Y') },
     { PIX_FMT_YUVA420P,    MKTAG('Y', '4', 11 ,  8 ) },
+    { PIX_FMT_YUVA422P,    MKTAG('Y', '4', 10 ,  8 ) },
     { PIX_FMT_YUVA444P,    MKTAG('Y', '4',  0 ,  8 ) },
     { PIX_FMT_GRAY8A,      MKTAG('Y', '2',  0 ,  8 ) },
 
