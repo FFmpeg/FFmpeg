@@ -374,6 +374,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_NE( PIX_FMT_YUV422P16BE, PIX_FMT_YUV422P16LE ),
         AV_NE( PIX_FMT_YUV444P16BE, PIX_FMT_YUV444P16LE ),
         PIX_FMT_YUVA420P,
+        PIX_FMT_YUVA422P,
         PIX_FMT_YUVA444P,
         PIX_FMT_NONE
     };
