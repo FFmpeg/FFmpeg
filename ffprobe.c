@@ -1441,20 +1441,6 @@ static void show_streams(WriterContext *w, AVFormatContext *fmt_ctx)
         show_stream(w, fmt_ctx, i);
 }
 
-static void print_format_entry(const char *tag,
-                               const char *val)
-{
-    if (!fmt_entries_to_show) {
-        if (tag) {
-            printf("%s=%s\n", tag, val);
-        } else {
-            printf("%s\n", val);
-        }
-    } else if (tag && av_dict_get(fmt_entries_to_show, tag, NULL, 0)) {
-        printf("%s=%s\n", tag, val);
-    }
-}
-
 static void show_format(WriterContext *w, AVFormatContext *fmt_ctx)
 {
     char val_str[128];
