@@ -183,7 +183,7 @@ static int mp3_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR_EOF;
     }
 
-    if (ret > ID3v1_TAG_SIZE &&
+    if (ret >= ID3v1_TAG_SIZE &&
         memcmp(&pkt->data[ret - ID3v1_TAG_SIZE], "TAG", 3) == 0)
         ret -= ID3v1_TAG_SIZE;
 
