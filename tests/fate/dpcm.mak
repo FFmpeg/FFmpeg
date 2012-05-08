@@ -1,5 +1,5 @@
 FATE_DPCM += fate-dpcm-idroq
-fate-dpcm-idroq: CMD = framecrc -i $(SAMPLES)/idroq/idlogo.roq
+fate-dpcm-idroq: CMD = framecrc -i $(SAMPLES)/idroq/idlogo.roq -vn
 
 FATE_DPCM += fate-dpcm-sierra
 fate-dpcm-sierra: CMD = md5 -i $(SAMPLES)/sol/lsl7sample.sol -f s16le
