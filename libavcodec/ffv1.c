@@ -964,6 +964,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         s->colorspace= 0;
         break;
     case PIX_FMT_YUVA444P:
+    case PIX_FMT_YUVA422P:
     case PIX_FMT_YUVA420P:
         s->chroma_planes= 1;
         s->colorspace= 0;
@@ -1804,6 +1805,7 @@ static int read_header(FFV1Context *f){
         }else if(f->avctx->bits_per_raw_sample<=8 && f->transparency){
             switch(16*f->chroma_h_shift + f->chroma_v_shift){
             case 0x00: f->avctx->pix_fmt= PIX_FMT_YUVA444P; break;
+            case 0x10: f->avctx->pix_fmt= PIX_FMT_YUVA422P; break;
             case 0x11: f->avctx->pix_fmt= PIX_FMT_YUVA420P; break;
             default:
                 av_log(f->avctx, AV_LOG_ERROR, "format not supported\n");
