@@ -1641,6 +1641,10 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *got_frame_ptr,
         return AVERROR_INVALIDDATA;
 
     header = AV_RB32(buf);
+    if (header>>8 == AV_RB32("TAG")>>8) {
+        av_log(avctx, AV_LOG_DEBUG, "discarding ID3 tag\n");
+        return buf_size;
+    }
     if (ff_mpa_check_header(header) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Header missing\n");
         return AVERROR_INVALIDDATA;
