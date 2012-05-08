@@ -114,6 +114,10 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
         .color_type = FF_COLOR_YUV,
     },
 
+    [PIX_FMT_YUVA422P] = {
+        .color_type = FF_COLOR_YUV,
+    },
+
     [PIX_FMT_YUVA444P] = {
         .color_type = FF_COLOR_YUV,
     },

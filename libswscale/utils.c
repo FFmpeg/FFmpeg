@@ -113,6 +113,7 @@ static const FormatEntry format_entries[PIX_FMT_NB] = {
     [PIX_FMT_YUV440P]     = { 1, 1 },
     [PIX_FMT_YUVJ440P]    = { 1, 1 },
     [PIX_FMT_YUVA420P]    = { 1, 1 },
+    [PIX_FMT_YUVA422P]    = { 1, 1 },
     [PIX_FMT_YUVA444P]    = { 1, 1 },
     [PIX_FMT_RGB48BE]     = { 1, 1 },
     [PIX_FMT_RGB48LE]     = { 1, 1 },
