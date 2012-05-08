@@ -178,6 +178,8 @@ struct WriterContext {
     unsigned int nb_item;           ///< number of the item printed in the given section, starting at 0
     unsigned int nb_section;        ///< number of the section printed in the given section sequence, starting at 0
     unsigned int nb_chapter;        ///< number of the chapter, starting at 0
+
+    int is_fmt_chapter;             ///< tells if the current chapter is "format", required by the print_format_entry option
 };
 
 static const char *writer_get_name(void *p)
@@ -252,6 +254,8 @@ static inline void writer_print_chapter_header(WriterContext *wctx,
     if (wctx->writer->print_chapter_header)
         wctx->writer->print_chapter_header(wctx, chapter);
     wctx->nb_section = 0;
+
+    wctx->is_fmt_chapter = !strcmp(chapter, "format");
 }
 
 static inline void writer_print_chapter_footer(WriterContext *wctx,
@@ -265,27 +269,23 @@ static inline void writer_print_chapter_footer(WriterContext *wctx,
 static inline void writer_print_section_header(WriterContext *wctx,
                                                const char *section)
 {
-    if (!fmt_entries_to_show || (section && av_dict_get(fmt_entries_to_show, section, NULL, 0))) {
-        if (wctx->writer->print_section_header)
-            wctx->writer->print_section_header(wctx, section);
-        wctx->nb_item = 0;
-    }
+    if (wctx->writer->print_section_header)
+        wctx->writer->print_section_header(wctx, section);
+    wctx->nb_item = 0;
 }
 
 static inline void writer_print_section_footer(WriterContext *wctx,
                                                const char *section)
 {
-    if (!fmt_entries_to_show || (section && av_dict_get(fmt_entries_to_show, section, NULL, 0))) {
-        if (wctx->writer->print_section_footer)
-            wctx->writer->print_section_footer(wctx, section);
-        wctx->nb_section++;
-    }
+    if (wctx->writer->print_section_footer)
+        wctx->writer->print_section_footer(wctx, section);
+    wctx->nb_section++;
 }
 
 static inline void writer_print_integer(WriterContext *wctx,
                                         const char *key, long long int val)
 {
-    if (!fmt_entries_to_show || (key && av_dict_get(fmt_entries_to_show, key, NULL, 0))) {
+    if (!wctx->is_fmt_chapter || !fmt_entries_to_show || av_dict_get(fmt_entries_to_show, key, NULL, 0)) {
         wctx->writer->print_integer(wctx, key, val);
         wctx->nb_item++;
     }
@@ -296,7 +296,7 @@ static inline void writer_print_string(WriterContext *wctx,
 {
     if (opt && !(wctx->writer->flags & WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS))
         return;
-    if (!fmt_entries_to_show || (key && av_dict_get(fmt_entries_to_show, key, NULL, 0))) {
+    if (!wctx->is_fmt_chapter || !fmt_entries_to_show || av_dict_get(fmt_entries_to_show, key, NULL, 0)) {
         wctx->writer->print_string(wctx, key, val);
         wctx->nb_item++;
     }
@@ -307,7 +307,7 @@ static void writer_print_time(WriterContext *wctx, const char *key,
 {
     char buf[128];
 
-    if (!fmt_entries_to_show || (key && av_dict_get(fmt_entries_to_show, key, NULL, 0))) {
+    if (!wctx->is_fmt_chapter || !fmt_entries_to_show || av_dict_get(fmt_entries_to_show, key, NULL, 0)) {
         if (ts == AV_NOPTS_VALUE) {
             writer_print_string(wctx, key, "N/A", 1);
         } else {
