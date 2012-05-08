@@ -27,6 +27,7 @@
 
 #include "avcodec.h"
 #define BITSTREAM_READER_LE
+#include "internal.h"
 #include "get_bits.h"
 #include "acelp_vectors.h"
 #include "celp_filters.h"
@@ -2093,8 +2094,8 @@ static int pack_bitstream(G723_1_Context *p, unsigned char *frame, int size)
     return frame_size[info_bits];
 }
 
-static int g723_1_encode_frame(AVCodecContext *avctx, unsigned char *buf,
-                               int buf_size, void *data)
+static int g723_1_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
+                            const AVFrame *frame, int *got_packet_ptr)
 {
     G723_1_Context *p = avctx->priv_data;
     int16_t unq_lpc[LPC_ORDER * SUBFRAMES];
@@ -2102,8 +2103,8 @@ static int g723_1_encode_frame(AVCodecContext *avctx, unsigned char *buf,
     int16_t cur_lsp[LPC_ORDER];
     int16_t weighted_lpc[LPC_ORDER * SUBFRAMES << 1];
     int16_t vector[FRAME_LEN + PITCH_MAX];
-    int offset;
-    int16_t *in = data;
+    int offset, ret;
+    int16_t *in = (const int16_t *)frame->data[0];
 
     HFParam hf[4];
     int i, j;
@@ -2213,7 +2214,12 @@ static int g723_1_encode_frame(AVCodecContext *avctx, unsigned char *buf,
         offset += LPC_ORDER;
     }
 
-    return pack_bitstream(p, buf, buf_size);
+    if ((ret = ff_alloc_packet2(avctx, avpkt, 24)))
+        return ret;
+
+    *got_packet_ptr = 1;
+    avpkt->size = pack_bitstream(p, avpkt->data, avpkt->size);
+    return 0;
 }
 
 AVCodec ff_g723_1_encoder = {
@@ -2222,7 +2228,7 @@ AVCodec ff_g723_1_encoder = {
     .id             = CODEC_ID_G723_1,
     .priv_data_size = sizeof(G723_1_Context),
     .init           = g723_1_encode_init,
-    .encode         = g723_1_encode_frame,
+    .encode2        = g723_1_encode_frame,
     .long_name      = NULL_IF_CONFIG_SMALL("G.723.1"),
     .sample_fmts    = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,
                                                     AV_SAMPLE_FMT_NONE},
