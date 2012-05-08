@@ -1221,6 +1221,7 @@ HAVE_LIST="
     PeekNamedPipe
     poll_h
     posix_memalign
+    pthread_cancel
     round
     roundf
     sched_getaffinity
@@ -3174,6 +3175,10 @@ for thread in $THREADS_LIST; do
             thread_type="$thread"
     fi
 done
+
+if enabled pthreads; then
+  check_func pthread_cancel
+fi
 
 check_lib math.h sin -lm && LIBM="-lm"
 disabled crystalhd || check_lib libcrystalhd/libcrystalhd_if.h DtsCrystalHDVersion -lcrystalhd || disable crystalhd
