@@ -28,6 +28,7 @@ version next:
 - super2xsai filter ported from libmpcodecs
 - add libavresample audio conversion library for compatibility
 - MicroDVD decoder
+- Avid Meridien (AVUI) decoder
 
 
 version 0.10:
