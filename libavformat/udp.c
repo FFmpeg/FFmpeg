@@ -38,7 +38,7 @@
 #include "os_support.h"
 #include "url.h"
 
-#if HAVE_PTHREADS
+#if HAVE_PTHREAD_CANCEL
 #include <pthread.h>
 #endif
 
@@ -68,7 +68,7 @@ typedef struct {
     int circular_buffer_size;
     AVFifoBuffer *fifo;
     int circular_buffer_error;
-#if HAVE_PTHREADS
+#if HAVE_PTHREAD_CANCEL
     pthread_t circular_buffer_thread;
     pthread_mutex_t mutex;
     pthread_cond_t cond;
@@ -321,7 +321,7 @@ static int udp_get_file_handle(URLContext *h)
     return s->udp_fd;
 }
 
-#if HAVE_PTHREADS
+#if HAVE_PTHREAD_CANCEL
 static void *circular_buffer_task( void *_URLContext)
 {
     URLContext *h = _URLContext;
@@ -526,7 +526,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 
     s->udp_fd = udp_fd;
 
-#if HAVE_PTHREADS
+#if HAVE_PTHREAD_CANCEL
     if (!is_output && s->circular_buffer_size) {
         int ret;
 
@@ -552,7 +552,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 #endif
 
     return 0;
-#if HAVE_PTHREADS
+#if HAVE_PTHREAD_CANCEL
  thread_fail:
     pthread_cond_destroy(&s->cond);
  cond_fail:
@@ -571,7 +571,7 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
     int ret;
     int avail, nonblock = h->flags & AVIO_FLAG_NONBLOCK;
 
-#if HAVE_PTHREADS
+#if HAVE_PTHREAD_CANCEL
     if (s->fifo) {
         pthread_mutex_lock(&s->mutex);
         do {
@@ -652,7 +652,7 @@ static int udp_close(URLContext *h)
         udp_leave_multicast_group(s->udp_fd, (struct sockaddr *)&s->dest_addr);
     closesocket(s->udp_fd);
     av_fifo_free(s->fifo);
-#if HAVE_PTHREADS
+#if HAVE_PTHREAD_CANCEL
     if (s->thread_started) {
         pthread_cancel(s->circular_buffer_thread);
         ret = pthread_join(s->circular_buffer_thread, NULL);
