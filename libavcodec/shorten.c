@@ -414,7 +414,7 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
     /* allocate internal bitstream buffer */
     if(s->max_framesize == 0){
         void *tmp_ptr;
-        s->max_framesize= 1024; // should hopefully be enough for the first header
+        s->max_framesize= 8192; // should hopefully be enough for the first header
         tmp_ptr = av_fast_realloc(s->bitstream, &s->allocated_bitstream_size,
                                   s->max_framesize);
         if (!tmp_ptr) {
