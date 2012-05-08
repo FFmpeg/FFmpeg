@@ -82,7 +82,7 @@ static int aasc_decode_frame(AVCodecContext *avctx,
         }
         break;
     case 1:
-        bytestream2_init(&s->gb, buf - 4, buf_size + 4);
+        bytestream2_init(&s->gb, buf, buf_size);
         ff_msrle_decode(avctx, (AVPicture*)&s->frame, 8, &s->gb);
         break;
     default:
