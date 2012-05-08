@@ -29,6 +29,10 @@
 #include "id3v1.h"
 #include "libavcodec/mpegaudiodecheader.h"
 
+typedef struct {
+    int64_t filesize;
+} MP3Context;
+
 /* mp3 read */
 
 static int mp3_read_probe(AVProbeData *p)
@@ -136,6 +140,7 @@ static int mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
 
 static int mp3_read_header(AVFormatContext *s)
 {
+    MP3Context *mp3 = s->priv_data;
     AVStream *st;
     int64_t off;
 
@@ -157,6 +162,9 @@ static int mp3_read_header(AVFormatContext *s)
     if (!av_dict_get(s->metadata, "", NULL, AV_DICT_IGNORE_SUFFIX))
         ff_id3v1_read(s);
 
+    if(s->pb->seekable)
+        mp3->filesize = avio_size(s->pb);
+
     if (mp3_parse_vbr_tags(s, st, off) < 0)
         avio_seek(s->pb, off, SEEK_SET);
 
@@ -168,10 +176,15 @@ static int mp3_read_header(AVFormatContext *s)
 
 static int mp3_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
+    MP3Context *mp3 = s->priv_data;
     int ret, size;
+    int64_t pos;
     //    AVStream *st = s->streams[0];
 
     size= MP3_PACKET_SIZE;
+    pos = avio_tell(s->pb);
+    if(mp3->filesize > ID3v1_TAG_SIZE && pos < mp3->filesize)
+        size= FFMIN(size, mp3->filesize - pos);
 
     ret= av_get_packet(s->pb, pkt, size);
 
@@ -196,6 +209,7 @@ static int mp3_read_packet(AVFormatContext *s, AVPacket *pkt)
 AVInputFormat ff_mp3_demuxer = {
     .name           = "mp3",
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG audio layer 2/3"),
+    .priv_data_size = sizeof(MP3Context),
     .read_probe     = mp3_read_probe,
     .read_header    = mp3_read_header,
     .read_packet    = mp3_read_packet,
