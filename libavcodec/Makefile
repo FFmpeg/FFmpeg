@@ -616,7 +616,7 @@ OBJS-$(CONFIG_LIBVPX_DECODER)             += libvpxdec.o
 OBJS-$(CONFIG_LIBVPX_ENCODER)             += libvpxenc.o
 OBJS-$(CONFIG_LIBX264_ENCODER)            += libx264.o
 OBJS-$(CONFIG_LIBXAVS_ENCODER)            += libxavs.o
-OBJS-$(CONFIG_LIBXVID_ENCODER)            += libxvidff.o
+OBJS-$(CONFIG_LIBXVID_ENCODER)            += libxvid.o
 
 # parsers
 OBJS-$(CONFIG_AAC_PARSER)              += aac_parser.o aac_ac3_parser.o \

@@ -28,7 +28,7 @@
 #endif
 
 #include "avcodec.h"
-#include "libxvid_internal.h"
+#include "libxvid.h"
 //#include "dsputil.h"
 #include "mpegvideo.h"
 

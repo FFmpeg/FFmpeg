@@ -31,7 +31,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
-#include "libxvid_internal.h"
+#include "libxvid.h"
 #include "mpegvideo.h"
 
 /**
