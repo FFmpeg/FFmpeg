@@ -3,6 +3,7 @@ FFMPEG_LIBS=    libavdevice                        \
                 libavformat                        \
                 libavfilter                        \
                 libavcodec                         \
+                libswresample                      \
                 libswscale                         \
                 libavutil                          \
 
