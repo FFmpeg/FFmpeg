@@ -48,6 +48,7 @@ tests/vsynth1
 tests/vsynth2
 tools/aviocat
 tools/cws2fws
+tools/ffeval
 tools/graph2dot
 tools/ismindex
 tools/lavfi-showfiltfmts
