@@ -86,6 +86,7 @@ typedef struct RTMPContext {
     int           create_stream_invoke;       ///< invoke id for the create stream command
     char*         tcurl;                      ///< url of the target stream
     char*         flashver;                   ///< version of the flash plugin
+    char*         swfurl;                     ///< url of the swf player
 } RTMPContext;
 
 #define PLAYER_KEY_OPEN_PART_LEN 30   ///< length of partial key used for first client digest signing
@@ -134,6 +135,12 @@ static void gen_connect(URLContext *s, RTMPContext *rt)
     }
     ff_amf_write_field_name(&p, "flashVer");
     ff_amf_write_string(&p, rt->flashver);
+
+    if (rt->swfurl) {
+        ff_amf_write_field_name(&p, "swfUrl");
+        ff_amf_write_string(&p, rt->swfurl);
+    }
+
     ff_amf_write_field_name(&p, "tcUrl");
     ff_amf_write_string(&p, rt->tcurl);
     if (rt->is_input) {
@@ -1073,6 +1080,7 @@ static const AVOption rtmp_options[] = {
     {"live", "live stream", 0, AV_OPT_TYPE_CONST, {-1}, 0, 0, DEC, "rtmp_live"},
     {"recorded", "recorded stream", 0, AV_OPT_TYPE_CONST, {0}, 0, 0, DEC, "rtmp_live"},
     {"rtmp_playpath", "Stream identifier to play or to publish", OFFSET(playpath), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+    {"rtmp_swfurl", "URL of the SWF player. By default no value will be sent", OFFSET(swfurl), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     {"rtmp_tcurl", "URL of the target stream. Defaults to rtmp://host[:port]/app.", OFFSET(tcurl), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     { NULL },
 };
