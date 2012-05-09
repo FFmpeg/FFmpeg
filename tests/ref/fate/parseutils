@@ -1,29 +1,29 @@
 Testing av_parse_video_rate()
-'-inf' -> -1/0 ret:-22
-'inf' -> 1/0 ret:-22
-'nan' -> 0/0 ret:-22
-'123/0' -> 1/0 ret:-22
-'-123 / 0' -> -1/0 ret:-22
-'' -> 0/0 ret:-22
-'/' -> 0/0 ret:-22
-' 123  /  321' -> 41/107 ret:0
-'foo/foo' -> 0/0 ret:-22
-'foo/1' -> 0/0 ret:-22
-'1/foo' -> 1/0 ret:-22
-'0/0' -> 0/0 ret:-22
-'/0' -> 0/0 ret:-22
-'1/' -> 1/0 ret:-22
-'1' -> 1/1 ret:0
-'0' -> 0/1 ret:-22
-'-123/123' -> -1/1 ret:-22
-'-foo' -> 0/0 ret:-22
-'123.23' -> 12323/100 ret:0
-'.23' -> 23/100 ret:0
-'-.23' -> -23/100 ret:-22
-'-0.234' -> -117/500 ret:-22
-'-0.0000001' -> 0/1 ret:-22
-'  21332.2324   ' -> 917286/43 ret:0
-' -21332.2324   ' -> -917286/43 ret:-22
+'-inf' -> -1/0 ret:Invalid argument
+'inf' -> 1/0 ret:Invalid argument
+'nan' -> 0/0 ret:Invalid argument
+'123/0' -> 1/0 ret:Invalid argument
+'-123 / 0' -> -1/0 ret:Invalid argument
+'' -> 0/0 ret:Invalid argument
+'/' -> 0/0 ret:Invalid argument
+' 123  /  321' -> 41/107 ret:Success
+'foo/foo' -> 0/0 ret:Invalid argument
+'foo/1' -> 0/0 ret:Invalid argument
+'1/foo' -> 1/0 ret:Invalid argument
+'0/0' -> 0/0 ret:Invalid argument
+'/0' -> 0/0 ret:Invalid argument
+'1/' -> 1/0 ret:Invalid argument
+'1' -> 1/1 ret:Success
+'0' -> 0/1 ret:Invalid argument
+'-123/123' -> -1/1 ret:Invalid argument
+'-foo' -> 0/0 ret:Invalid argument
+'123.23' -> 12323/100 ret:Success
+'.23' -> 23/100 ret:Success
+'-.23' -> -23/100 ret:Invalid argument
+'-0.234' -> -117/500 ret:Invalid argument
+'-0.0000001' -> 0/1 ret:Invalid argument
+'  21332.2324   ' -> 917286/43 ret:Success
+' -21332.2324   ' -> -917286/43 ret:Invalid argument
 
 Testing av_parse_color()
 bikeshed -> R(80) G(64) B(140) A(59)
