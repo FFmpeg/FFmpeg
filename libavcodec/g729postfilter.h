@@ -22,6 +22,7 @@
 #define FFMPEG_G729POSTFILTER_H
 
 #include <stdint.h>
+#include "dsputil.h"
 
 /**
  * tilt compensation factor (G.729, k1>0)
