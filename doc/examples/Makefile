@@ -6,8 +6,9 @@ FFMPEG_LIBS=    libavdevice                        \
                 libswscale                         \
                 libavutil                          \
 
-CFLAGS+=-Wall $(shell pkg-config  --cflags $(FFMPEG_LIBS))
-LDLIBS+=$(shell pkg-config --libs $(FFMPEG_LIBS))
+CFLAGS += -Wall -O2
+CFLAGS += $(shell pkg-config --cflags $(FFMPEG_LIBS))
+LDLIBS += $(shell pkg-config --libs $(FFMPEG_LIBS))
 
 EXAMPLES=       decoding_encoding                  \
                 filtering_video                    \
