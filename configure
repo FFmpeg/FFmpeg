@@ -266,6 +266,14 @@ Developer options (useful when working on Libav itself):
                            \$LIBAV_SAMPLES at make invocation time.
   --enable-xmm-clobber-test check XMM registers for clobbering (Win64-only;
                            should be used only for debugging purposes)
+  --enable-random          randomly enable/disable components
+  --disable-random
+  --enable-random=LIST     randomly enable/disable specific components or
+  --disable-random=LIST    component groups. LIST is a comma-separated list
+                           of NAME[:PROB] entries where NAME is a component
+                           (group) and PROB the probability associated with
+                           NAME (default 0.5).
+  --random-seed=VALUE      seed value for --enable/disable-random
 
 NOTE: Object files are built at the place where configure is launched.
 EOF
@@ -1270,6 +1278,7 @@ CMDLINE_SET="
     nm
     optflags
     pkg_config
+    random_seed
     samples
     sysinclude
     sysroot
@@ -1846,6 +1855,27 @@ show_list() {
     exit 0
 }
 
+rand_list(){
+    IFS=', '
+    set -- $*
+    unset IFS
+    for thing; do
+        comp=${thing%:*}
+        prob=${thing#$comp}
+        prob=${prob#:}
+        is_in ${comp} $COMPONENT_LIST && eval comp=\$$(toupper ${comp%s})_LIST
+        echo "prob ${prob:-0.5}"
+        printf '%s\n' $comp
+    done
+}
+
+do_random(){
+    action=$1
+    shift
+    random_seed=$(awk "BEGIN { srand($random_seed); print srand() }")
+    $action $(rand_list "$@" | awk "BEGIN { srand($random_seed) } \$1 == \"prob\" { prob = \$2; next } rand() < prob { print }")
+}
+
 for opt do
     optval="${opt#*=}"
     case "$opt" in
@@ -1859,6 +1889,14 @@ for opt do
     ;;
     --disable-everything)
     map 'eval unset \${$(toupper ${v%s})_LIST}' $COMPONENT_LIST
+    ;;
+    --enable-random|--disable-random)
+    action=${opt%%-random}
+    do_random ${action#--} $COMPONENT_LIST
+    ;;
+    --enable-random=*|--disable-random=*)
+    action=${opt%%-random=*}
+    do_random ${action#--} $optval
     ;;
     --enable-*=*|--disable-*=*)
     eval $(echo "${opt%%=*}" | sed 's/--/action=/;s/-/ thing=/')
@@ -3390,6 +3428,8 @@ echo "libxvid enabled           ${libxvid-no}"
 echo "openssl enabled           ${openssl-no}"
 echo "zlib enabled              ${zlib-no}"
 echo "bzlib enabled             ${bzlib-no}"
+test -n "$random_seed" &&
+    echo "random seed               ${random_seed}"
 echo
 
 for type in decoder encoder hwaccel parser demuxer muxer protocol filter bsf indev outdev; do
