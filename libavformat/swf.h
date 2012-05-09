@@ -23,6 +23,8 @@
 #ifndef AVFORMAT_SWF_H
 #define AVFORMAT_SWF_H
 
+#include "config.h"
+
 #if CONFIG_ZLIB
 #include <zlib.h>
 #endif
