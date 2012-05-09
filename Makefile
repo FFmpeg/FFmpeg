@@ -40,6 +40,7 @@ FFLIBS-$(CONFIG_SWSCALE)  += swscale
 FFLIBS := avutil
 
 DATA_FILES := $(wildcard $(SRC_PATH)/presets/*.ffpreset) $(SRC_PATH)/doc/ffprobe.xsd
+EXAMPLES_FILES := $(wildcard $(SRC_PATH)/doc/examples/*.c) $(SRC_PATH)/doc/examples/Makefile
 
 SKIPHEADERS = cmdutils_common_opts.h
 
@@ -125,9 +126,10 @@ install-progs: install-progs-yes $(PROGS)
 	$(Q)mkdir -p "$(BINDIR)"
 	$(INSTALL) -c -m 755 $(INSTPROGS) "$(BINDIR)"
 
-install-data: $(DATA_FILES)
-	$(Q)mkdir -p "$(DATADIR)"
+install-data: $(DATA_FILES) $(EXAMPLES_FILES)
+	$(Q)mkdir -p "$(DATADIR)/examples"
 	$(INSTALL) -m 644 $(DATA_FILES) "$(DATADIR)"
+	$(INSTALL) -m 644 $(EXAMPLES_FILES) "$(DATADIR)/examples"
 
 uninstall: uninstall-libs uninstall-headers uninstall-progs uninstall-data
 
