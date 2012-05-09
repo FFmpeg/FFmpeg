@@ -17,6 +17,10 @@ EXAMPLES=       decoding_encoding                  \
 
 OBJS=$(addsuffix .o,$(EXAMPLES))
 
+# the following examples make explicit use of the math library
+decoding_encoding: LDLIBS += -lm
+muxing:            LDLIBS += -lm
+
 %: %.o
 	$(CC) $< $(LDLIBS) -o $@
 
