@@ -281,7 +281,7 @@ AVFilterFormats *avfilter_make_all_formats(enum AVMediaType type)
 }
 
 const int64_t avfilter_all_channel_layouts[] = {
-#include "all_channel_layouts.h"
+#include "all_channel_layouts.inc"
     -1
 };
 
