@@ -121,17 +121,21 @@ static int mp3_write_xing(AVFormatContext *s)
     int64_t          xing_offset;
     int32_t          header, mask;
     MPADecodeHeader  c;
-    int              srate_idx, i, channels;
+    int              srate_idx, ver = 0, i, channels;
     int              needed;
 
     if (!s->pb->seekable)
         return 0;
 
-    for (i = 0; i < FF_ARRAY_ELEMS(avpriv_mpa_freq_tab); i++)
-        if (avpriv_mpa_freq_tab[i] == codec->sample_rate) {
-            srate_idx = i;
-            break;
-        }
+    for (i = 0; i < FF_ARRAY_ELEMS(avpriv_mpa_freq_tab); i++) {
+        const uint16_t base_freq = avpriv_mpa_freq_tab[i];
+        if      (codec->sample_rate == base_freq)     ver = 0x3; // MPEG 1
+        else if (codec->sample_rate == base_freq / 2) ver = 0x2; // MPEG 2
+        else if (codec->sample_rate == base_freq / 4) ver = 0x0; // MPEG 2.5
+        else continue;
+        srate_idx = i;
+        break;
+    }
     if (i == FF_ARRAY_ELEMS(avpriv_mpa_freq_tab)) {
         av_log(s, AV_LOG_WARNING, "Unsupported sample rate, not writing Xing header.\n");
         return -1;
@@ -145,7 +149,7 @@ static int mp3_write_xing(AVFormatContext *s)
 
     /* dummy MPEG audio header */
     header  =  0xff                                  << 24; // sync
-    header |= (0x7 << 5 | 0x3 << 3 | 0x1 << 1 | 0x1) << 16; // sync/mpeg-1/layer 3/no crc*/
+    header |= (0x7 << 5 | ver << 3 | 0x1 << 1 | 0x1) << 16; // sync/audio-version/layer 3/no crc*/
     header |= (srate_idx << 2) <<  8;
     header |= channels << 6;
 
