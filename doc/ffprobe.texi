@@ -202,10 +202,13 @@ A description of the accepted options follows.
 
 @table @option
 
+@item nokey, nk
+If set to 1 specify not to print the key of each field. Default value
+is 0.
+
 @item noprint_wrappers, nw
 If set to 1 specify not to print the section header and footer.
 Default value is 0.
-
 @end table
 
 @section compact

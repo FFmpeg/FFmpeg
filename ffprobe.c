@@ -403,6 +403,7 @@ fail:
 
 typedef struct DefaultContext {
     const AVClass *class;
+    int nokey;
     int noprint_wrappers;
 } DefaultContext;
 
@@ -411,6 +412,8 @@ typedef struct DefaultContext {
 static const AVOption default_options[] = {
     { "noprint_wrappers", "do not print headers and footers", OFFSET(noprint_wrappers), AV_OPT_TYPE_INT, {.dbl=0}, 0, 1 },
     { "nw",               "do not print headers and footers", OFFSET(noprint_wrappers), AV_OPT_TYPE_INT, {.dbl=0}, 0, 1 },
+    { "nokey",          "force no key printing",     OFFSET(nokey),          AV_OPT_TYPE_INT, {.dbl=0}, 0, 1 },
+    { "nk",             "force no key printing",     OFFSET(nokey),          AV_OPT_TYPE_INT, {.dbl=0}, 0, 1 },
     {NULL},
 };
 
@@ -490,12 +493,19 @@ static void default_print_section_footer(WriterContext *wctx, const char *sectio
 
 static void default_print_str(WriterContext *wctx, const char *key, const char *value)
 {
-    printf("%s=%s\n", key, value);
+    DefaultContext *def = wctx->priv;
+    if (!def->nokey)
+        printf("%s=", key);
+    printf("%s\n", value);
 }
 
 static void default_print_int(WriterContext *wctx, const char *key, long long int value)
 {
-    printf("%s=%lld\n", key, value);
+    DefaultContext *def = wctx->priv;
+
+    if (!def->nokey)
+        printf("%s=", key);
+    printf("%lld\n", value);
 }
 
 static void default_show_tags(WriterContext *wctx, AVDictionary *dict)
