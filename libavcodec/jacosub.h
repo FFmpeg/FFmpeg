@@ -26,6 +26,8 @@
 #ifndef AVCODEC_JACOSUB_H
 #define AVCODEC_JACOSUB_H
 
+#include "libavutil/common.h"
+
 #define JSS_MAX_LINESIZE 512
 
 static av_always_inline int jss_whitespace(char c)
