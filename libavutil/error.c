@@ -42,6 +42,8 @@ int av_strerror(int errnum, char *errbuf, size_t errbuf_size)
     case AVERROR_PROTOCOL_NOT_FOUND:errstr = "Protocol not found"                           ; break;
     case AVERROR_STREAM_NOT_FOUND:  errstr = "Stream not found"                             ; break;
     case AVERROR_UNKNOWN:           errstr = "Unknown error occurred"                       ; break;
+    case AVERROR(EINVAL):           errstr = "Invalid argument"                             ; break;
+    case 0:                         errstr = "Success"                                      ; break;
     }
 
     if (errstr) {
