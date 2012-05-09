@@ -1909,15 +1909,8 @@ static void do_video_out(AVFormatContext *s, OutputStream *ost,
 
     enc = ost->st->codec;
 
-    if (ist && ist->st->start_time != AV_NOPTS_VALUE && ist->st->first_dts != AV_NOPTS_VALUE) {
-        duration = FFMAX(av_q2d(ist->st->time_base), av_q2d(ist->st->codec->time_base));
-        if(ist->st->r_frame_rate.num)
-            duration= FFMAX(duration, 1/av_q2d(ist->st->r_frame_rate));
-        if(ist->st->avg_frame_rate.num && 0)
-            duration= FFMAX(duration, 1/av_q2d(ist->st->avg_frame_rate));
-
-        duration /= av_q2d(enc->time_base);
-    }
+    if(ist && ist->st->start_time != AV_NOPTS_VALUE && ist->st->first_dts != AV_NOPTS_VALUE && ost->frame_rate.num)
+        duration = 1/(av_q2d(ost->frame_rate) * av_q2d(enc->time_base));
 
     sync_ipts = get_sync_ipts(ost, in_picture->pts) / av_q2d(enc->time_base);
     delta = sync_ipts - ost->sync_opts + duration;
