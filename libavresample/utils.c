@@ -385,6 +385,8 @@ int avresample_available(AVAudioResampleContext *avr)
 
 int avresample_read(AVAudioResampleContext *avr, void **output, int nb_samples)
 {
+    if (!output)
+        return av_audio_fifo_drain(avr->out_fifo, nb_samples);
     return av_audio_fifo_read(avr->out_fifo, output, nb_samples);
 }
 

@@ -274,7 +274,8 @@ int avresample_available(AVAudioResampleContext *avr);
  * @see avresample_convert()
  *
  * @param avr         audio resample context
- * @param output      output data pointers
+ * @param output      output data pointers. May be NULL, in which case
+ *                    nb_samples of data is discarded from output FIFO.
  * @param nb_samples  number of samples to read from the FIFO
  * @return            the number of samples written to output
  */
