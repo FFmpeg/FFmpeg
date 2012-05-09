@@ -28,6 +28,8 @@
 #ifndef AVCODEC_G729_DATA_H
 #define AVCODEC_G729_DATA_H
 
+#include <stdint.h>
+
 #define SUBFRAMES       4
 #define SUBFRAME_LEN    60
 #define FRAME_LEN       (SUBFRAME_LEN << 2)
