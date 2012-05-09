@@ -24,6 +24,9 @@
  *     'ULY0' (YCbCr 4:2:0), 'ULY2' (YCbCr 4:2:2), 'ULRG' (RGB), 'ULRA' (RGBA)
  */
 
+#ifndef AVCODEC_LIBUTVIDEO_H
+#define AVCODEC_LIBUTVIDEO_H
+
 #include <stdlib.h>
 #include <utvideo/utvideo.h>
 #include <utvideo/Codec.h>
@@ -40,3 +43,5 @@ typedef struct {
     unsigned int buf_size;
     uint8_t *buffer;
 } UtVideoContext;
+
+#endif /* AVCODEC_LIBUTVIDEO_H */
