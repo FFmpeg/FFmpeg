@@ -90,25 +90,34 @@ typedef struct MP3Context {
     AVPacketList *queue, *queue_end;
 } MP3Context;
 
+static const uint8_t xing_offtbl[2][2] = {{32, 17}, {17, 9}};
+
 /* insert a dummy frame containing number of frames */
 static void mp3_write_xing(AVFormatContext *s)
 {
     MP3Context       *mp3 = s->priv_data;
     AVCodecContext *codec = s->streams[mp3->audio_stream_idx]->codec;
     int       bitrate_idx = 1;    // 32 kbps
-    int64_t   xing_offset = (codec->channels == 2) ? 32 : 17;
     int32_t        header;
     MPADecodeHeader  mpah;
     int srate_idx, i, channels;
+    int xing_offset;
+    int ver = 0;
 
     if (!s->pb->seekable)
         return;
 
-    for (i = 0; i < FF_ARRAY_ELEMS(avpriv_mpa_freq_tab); i++)
-        if (avpriv_mpa_freq_tab[i] == codec->sample_rate) {
-            srate_idx = i;
-            break;
-        }
+    for (i = 0; i < FF_ARRAY_ELEMS(avpriv_mpa_freq_tab); i++) {
+        const uint16_t base_freq = avpriv_mpa_freq_tab[i];
+
+        if      (codec->sample_rate == base_freq)     ver = 0x3; // MPEG 1
+        else if (codec->sample_rate == base_freq / 2) ver = 0x2; // MPEG 2
+        else if (codec->sample_rate == base_freq / 4) ver = 0x0; // MPEG 2.5
+        else continue;
+
+        srate_idx = i;
+        break;
+    }
     if (i == FF_ARRAY_ELEMS(avpriv_mpa_freq_tab)) {
         av_log(s, AV_LOG_WARNING, "Unsupported sample rate, not writing Xing "
                "header.\n");
@@ -125,13 +134,14 @@ static void mp3_write_xing(AVFormatContext *s)
 
     /* dummy MPEG audio header */
     header  =  0xff                                  << 24; // sync
-    header |= (0x7 << 5 | 0x3 << 3 | 0x1 << 1 | 0x1) << 16; // sync/mpeg-1/layer 3/no crc*/
+    header |= (0x7 << 5 | ver << 3 | 0x1 << 1 | 0x1) << 16; // sync/audio-version/layer 3/no crc*/
     header |= (bitrate_idx << 4 | srate_idx << 2)    <<  8;
     header |= channels << 6;
     avio_wb32(s->pb, header);
 
     avpriv_mpegaudio_decode_header(&mpah, header);
 
+    xing_offset = xing_offtbl[ver != 3][codec->channels == 1];
     ffio_fill(s->pb, 0, xing_offset);
     ffio_wfourcc(s->pb, "Xing");
     avio_wb32(s->pb, 0x1);    // only number of frames
