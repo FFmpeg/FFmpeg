@@ -44,6 +44,7 @@
 
 #define APP_MAX_LENGTH 128
 #define PLAYPATH_MAX_LENGTH 256
+#define TCURL_MAX_LENGTH 512
 
 /** RTMP protocol handler state */
 typedef enum {
@@ -82,6 +83,7 @@ typedef struct RTMPContext {
     int           flv_header_bytes;           ///< number of initialized bytes in flv_header
     int           nb_invokes;                 ///< keeps track of invoke messages
     int           create_stream_invoke;       ///< invoke id for the create stream command
+    char*         tcurl;                      ///< url of the target stream
 } RTMPContext;
 
 #define PLAYER_KEY_OPEN_PART_LEN 30   ///< length of partial key used for first client digest signing
@@ -110,17 +112,14 @@ static const uint8_t rtmp_server_key[] = {
 /**
  * Generate 'connect' call and send it to the server.
  */
-static void gen_connect(URLContext *s, RTMPContext *rt, const char *proto,
-                        const char *host, int port)
+static void gen_connect(URLContext *s, RTMPContext *rt)
 {
     RTMPPacket pkt;
     uint8_t ver[64], *p;
-    char tcurl[512];
 
     ff_rtmp_packet_create(&pkt, RTMP_SYSTEM_CHANNEL, RTMP_PT_INVOKE, 0, 4096);
     p = pkt.data;
 
-    ff_url_join(tcurl, sizeof(tcurl), proto, NULL, host, port, "/%s", rt->app);
     ff_amf_write_string(&p, "connect");
     ff_amf_write_number(&p, ++rt->nb_invokes);
     ff_amf_write_object_start(&p);
@@ -138,7 +137,7 @@ static void gen_connect(URLContext *s, RTMPContext *rt, const char *proto,
     ff_amf_write_field_name(&p, "flashVer");
     ff_amf_write_string(&p, ver);
     ff_amf_write_field_name(&p, "tcUrl");
-    ff_amf_write_string(&p, tcurl);
+    ff_amf_write_string(&p, rt->tcurl);
     if (rt->is_input) {
         ff_amf_write_field_name(&p, "fpad");
         ff_amf_write_bool(&p, 0);
@@ -910,13 +909,19 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
         strncat(rt->playpath, fname, PLAYPATH_MAX_LENGTH - 5);
     }
 
+    if (!rt->tcurl) {
+        rt->tcurl = av_malloc(TCURL_MAX_LENGTH);
+        ff_url_join(rt->tcurl, TCURL_MAX_LENGTH, proto, NULL, hostname,
+                    port, "/%s", rt->app);
+    }
+
     rt->client_report_size = 1048576;
     rt->bytes_read = 0;
     rt->last_bytes_read = 0;
 
     av_log(s, AV_LOG_DEBUG, "Proto = %s, path = %s, app = %s, fname = %s\n",
            proto, path, rt->app, rt->playpath);
-    gen_connect(s, rt, proto, hostname, port);
+    gen_connect(s, rt);
 
     do {
         ret = get_packet(s, 1);
@@ -1057,6 +1062,7 @@ static const AVOption rtmp_options[] = {
     {"live", "live stream", 0, AV_OPT_TYPE_CONST, {-1}, 0, 0, DEC, "rtmp_live"},
     {"recorded", "recorded stream", 0, AV_OPT_TYPE_CONST, {0}, 0, 0, DEC, "rtmp_live"},
     {"rtmp_playpath", "Stream identifier to play or to publish", OFFSET(playpath), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+    {"rtmp_tcurl", "URL of the target stream. Defaults to rtmp://host[:port]/app.", OFFSET(tcurl), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     { NULL },
 };
 
