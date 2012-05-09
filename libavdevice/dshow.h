@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVDEVICE_DSHOW_H
+#define AVDEVICE_DSHOW_H
+
 #define DSHOWDEBUG 0
 
 #include "avdevice.h"
@@ -266,3 +269,5 @@ long          WINAPI libAVFilter_QueryVendorInfo(libAVFilter *, wchar_t **);
 
 void                 libAVFilter_Destroy(libAVFilter *);
 libAVFilter         *libAVFilter_Create (void *, void *, enum dshowDeviceType);
+
+#endif /* AVDEVICE_DSHOW_H */
