@@ -25,7 +25,7 @@
 #define AVUTIL_ERROR_H
 
 #include <errno.h>
-#include "avutil.h"
+#include <stddef.h>
 
 /**
  * @addtogroup lavu_error
