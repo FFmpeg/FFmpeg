@@ -45,6 +45,7 @@
 #define APP_MAX_LENGTH 128
 #define PLAYPATH_MAX_LENGTH 256
 #define TCURL_MAX_LENGTH 512
+#define FLASHVER_MAX_LENGTH 64
 
 /** RTMP protocol handler state */
 typedef enum {
@@ -84,6 +85,7 @@ typedef struct RTMPContext {
     int           nb_invokes;                 ///< keeps track of invoke messages
     int           create_stream_invoke;       ///< invoke id for the create stream command
     char*         tcurl;                      ///< url of the target stream
+    char*         flashver;                   ///< version of the flash plugin
 } RTMPContext;
 
 #define PLAYER_KEY_OPEN_PART_LEN 30   ///< length of partial key used for first client digest signing
@@ -115,7 +117,7 @@ static const uint8_t rtmp_server_key[] = {
 static void gen_connect(URLContext *s, RTMPContext *rt)
 {
     RTMPPacket pkt;
-    uint8_t ver[64], *p;
+    uint8_t *p;
 
     ff_rtmp_packet_create(&pkt, RTMP_SYSTEM_CHANNEL, RTMP_PT_INVOKE, 0, 4096);
     p = pkt.data;
@@ -126,16 +128,12 @@ static void gen_connect(URLContext *s, RTMPContext *rt)
     ff_amf_write_field_name(&p, "app");
     ff_amf_write_string(&p, rt->app);
 
-    if (rt->is_input) {
-        snprintf(ver, sizeof(ver), "%s %d,%d,%d,%d", RTMP_CLIENT_PLATFORM, RTMP_CLIENT_VER1,
-                 RTMP_CLIENT_VER2, RTMP_CLIENT_VER3, RTMP_CLIENT_VER4);
-    } else {
-        snprintf(ver, sizeof(ver), "FMLE/3.0 (compatible; %s)", LIBAVFORMAT_IDENT);
+    if (!rt->is_input) {
         ff_amf_write_field_name(&p, "type");
         ff_amf_write_string(&p, "nonprivate");
     }
     ff_amf_write_field_name(&p, "flashVer");
-    ff_amf_write_string(&p, ver);
+    ff_amf_write_string(&p, rt->flashver);
     ff_amf_write_field_name(&p, "tcUrl");
     ff_amf_write_string(&p, rt->tcurl);
     if (rt->is_input) {
@@ -915,6 +913,18 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
                     port, "/%s", rt->app);
     }
 
+    if (!rt->flashver) {
+        rt->flashver = av_malloc(FLASHVER_MAX_LENGTH);
+        if (rt->is_input) {
+            snprintf(rt->flashver, FLASHVER_MAX_LENGTH, "%s %d,%d,%d,%d",
+                    RTMP_CLIENT_PLATFORM, RTMP_CLIENT_VER1, RTMP_CLIENT_VER2,
+                    RTMP_CLIENT_VER3, RTMP_CLIENT_VER4);
+        } else {
+            snprintf(rt->flashver, FLASHVER_MAX_LENGTH,
+                    "FMLE/3.0 (compatible; %s)", LIBAVFORMAT_IDENT);
+        }
+    }
+
     rt->client_report_size = 1048576;
     rt->bytes_read = 0;
     rt->last_bytes_read = 0;
@@ -1057,6 +1067,7 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
 
 static const AVOption rtmp_options[] = {
     {"rtmp_app", "Name of application to connect to on the RTMP server", OFFSET(app), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+    {"rtmp_flashver", "Version of the Flash plugin used to run the SWF player.", OFFSET(flashver), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     {"rtmp_live", "Specify that the media is a live stream.", OFFSET(live), AV_OPT_TYPE_INT, {-2}, INT_MIN, INT_MAX, DEC, "rtmp_live"},
     {"any", "both", 0, AV_OPT_TYPE_CONST, {-2}, 0, 0, DEC, "rtmp_live"},
     {"live", "live stream", 0, AV_OPT_TYPE_CONST, {-1}, 0, 0, DEC, "rtmp_live"},
