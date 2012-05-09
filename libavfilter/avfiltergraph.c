@@ -337,19 +337,42 @@ static void reduce_formats(AVFilterGraph *graph)
 static void pick_formats(AVFilterGraph *graph)
 {
     int i, j;
+    int change;
+
+    do{
+        change = 0;
+        for (i = 0; i < graph->filter_count; i++) {
+            AVFilterContext *filter = graph->filters[i];
+            if (filter->input_count){
+                for (j = 0; j < filter->input_count; j++){
+                    if(filter->inputs[j]->in_formats && filter->inputs[j]->in_formats->format_count == 1) {
+                        pick_format(filter->inputs[j], NULL);
+                        change = 1;
+                    }
+                }
+            }
+            if (filter->output_count){
+                for (j = 0; j < filter->output_count; j++){
+                    if(filter->outputs[j]->in_formats && filter->outputs[j]->in_formats->format_count == 1) {
+                        pick_format(filter->outputs[j], NULL);
+                        change = 1;
+                    }
+                }
+            }
+            if (filter->input_count && filter->output_count && filter->inputs[0]->format>=0) {
+                for (j = 0; j < filter->output_count; j++) {
+                    if(filter->outputs[j]->format<0) {
+                        pick_format(filter->outputs[j], filter->inputs[0]);
+                        change = 1;
+                    }
+                }
+            }
+        }
+    }while(change);
 
     for (i = 0; i < graph->filter_count; i++) {
         AVFilterContext *filter = graph->filters[i];
-        if (filter->input_count && filter->output_count) {
-            for (j = 0; j < filter->input_count; j++)
-                pick_format(filter->inputs[j], NULL);
-            for (j = 0; j < filter->output_count; j++)
-                pick_format(filter->outputs[j], filter->inputs[0]);
-        }
-    }
-    for (i = 0; i < graph->filter_count; i++) {
-        AVFilterContext *filter = graph->filters[i];
-        if (!(filter->input_count && filter->output_count)) {
+        if (1) {
             for (j = 0; j < filter->input_count; j++)
                 pick_format(filter->inputs[j], NULL);
             for (j = 0; j < filter->output_count; j++)
