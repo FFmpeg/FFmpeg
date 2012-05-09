@@ -31,10 +31,10 @@
 
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
-#include <libavfilter/asrc_abuffer.h>
 #include <libavfilter/avfiltergraph.h>
 #include <libavfilter/avcodec.h>
 #include <libavfilter/buffersink.h>
+#include <libavfilter/buffersrc.h>
 
 const char *filter_descr = "aresample=8000,aconvert=s16:mono";
 const char *player       = "ffplay -f s16le -ar 8000 -ac 1 -";
