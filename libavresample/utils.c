@@ -375,7 +375,8 @@ int avresample_convert(AVAudioResampleContext *avr, void **output,
         }
     }
 
-    return handle_buffered_output(avr, &output_buffer, current_buffer);
+    return handle_buffered_output(avr, output ? &output_buffer : NULL,
+                                  current_buffer);
 }
 
 int avresample_available(AVAudioResampleContext *avr)
