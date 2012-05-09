@@ -373,6 +373,8 @@ void avfilter_formats_changeref(AVFilterFormats **oldref,
 
 /**
  * A filter pad used for either input or output.
+ *
+ * See doc/filter_design.txt for details on how to implement the methods.
  */
 struct AVFilterPad {
     /**

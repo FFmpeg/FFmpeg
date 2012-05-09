@@ -1,0 +1,115 @@
+Filter design
+=============
+
+This document explains guidelines that should be observed (or ignored with
+good reason) when writing filters for libavfilter.
+
+In this document, the word “frame” indicates either a video frame or a group
+of audio samples, as stored in an AVFilterBuffer structure.
+
+
+Format negociation
+==================
+
+  The query_formats method should set, for each input and each output links,
+  the list supported formats.
+
+  For video links, that means pixel format. For audio links, that means
+  channel layout, sample format and sample packing.
+
+  The lists are not just lists, they are references to shared objects. When
+  the negociation mechanism computes the intersection of the formats
+  supported at each ends of a link, all references to both lists are
+  replaced with a reference to the intersection. And when a single format is
+  eventually chosen for a link amongst the remaining list, again, all
+  references to the list are updated.
+
+  That means that if a filter requires that its input and output have the
+  same format amongst a supported list, all it have to do is use a reference
+  to the same list of formats.
+
+
+Buffer references ownership and permissions
+===========================================
+
+  TODO
+
+
+Frame scheduling
+================
+
+  The purpose of these rules is to ensure that frames flow in the filter
+  graph without getting stuck and accumulating somewhere.
+
+  Simple filters that output one frame for each input frame should not have
+  to worry about it.
+
+  start_frame / filter_samples
+  ----------------------------
+
+    These methods are called when a frame is pushed to the filter's input.
+    They can be called at any time except in a reentrant way.
+
+    If the input frame is enough to produce output, then the filter should
+    push the output frames on the output link immediately.
+
+    As an exception to the previous rule, if the input frame is enough to
+    produce several output frames, then the filter needs output only at
+    least one per link. The additional frames can be left buffered in the
+    filter; these buffered frames must be flushed immediately if a new input
+    produces new output.
+
+    ( Example: framerate-doubling filter: start_frame must (1) flush the
+    second copy of the previous frame, it it is stille there, (2) push the
+    first copy of the incoming frame, (3) keep the second copy for later. )
+
+    If the input frame is not enough to produce output, the filter must not
+    call request_frame to get more. It must just process the frame or queue
+    it. The task of requesting more frames is left to the filter's
+    request_frame method or the application.
+
+    If a filter has several inputs, the filter must be ready for frames
+    arriving randomly on any input. Therefore, any filter with several input
+    will most likely require some kind of queuing mechanism. It is perfectly
+    acceptable to have a limited queue and to drop frames when the inputs
+    are too unbalanced.
+
+  request_frame
+  -------------
+
+    This method is called when a frame is wanted on an output.
+
+    For an input, it should directly call start_frame or filter_samples on
+    the corresponding output.
+
+    For a filter, if there are queued frames already ready, one of these
+    frames should be pushed. If not, the filter should request a frame on
+    one of its input, repeatedly until at least one frame has been pushed.
+
+    Return values:
+    if request_frame could produce a frame, it should return 0;
+    if it could not for temporary reasons, it should return AVERROR(EAGAIN);
+    if it could not because there are no more frames, it shous return
+    AVERROR_EOF.
+
+    The typical implementation of request_frame for a filter with several
+    inputs will look like that:
+
+        if (frames_queued) {
+            push_one_frame();
+            return 0;
+        }
+        while (!frame_pushed) {
+            input = input_where_a_frame_is_most_needed();
+            ret = avfilter_request_frame(input);
+            if (ret == AVERROR_EOF) {
+                process_eof_on_input();
+            } else if (ret < 0) {
+                return ret;
+            }
+        }
+        return 0;
+
+    Note that, except for filters that can have queued frames, request_frame
+    does not push frames: it requests them to its input, and as a reaction,
+    the start_frame / filter_samples method will be called and do the work.
