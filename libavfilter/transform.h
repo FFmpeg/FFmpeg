@@ -22,6 +22,8 @@
 #ifndef AVFILTER_TRANSFORM_H
 #define AVFILTER_TRANSFORM_H
 
+#include <stdint.h>
+
 /**
  * @file
  * transform input video
