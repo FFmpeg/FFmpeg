@@ -703,6 +703,33 @@ static int configure_audio_filters(FilterGraph *fg, AVFilterContext **in_filter,
         *out_filter = format;
     }
 
+    if (audio_sync_method > 0) {
+        AVFilterContext *async;
+        char args[256];
+        int  len = 0;
+
+        av_log(NULL, AV_LOG_WARNING, "-async has been deprecated. Used the "
+               "asyncts audio filter instead.\n");
+
+        if (audio_sync_method > 1)
+            len += snprintf(args + len, sizeof(args) - len, "compensate=1:"
+                            "max_comp=%d:", audio_sync_method);
+        snprintf(args + len, sizeof(args) - len, "min_delta=%f",
+                 audio_drift_threshold);
+
+        ret = avfilter_graph_create_filter(&async,
+                                           avfilter_get_by_name("asyncts"),
+                                           "async", args, NULL, fg->graph);
+        if (ret < 0)
+            return ret;
+
+        ret = avfilter_link(*in_filter, 0, async, 0);
+        if (ret < 0)
+            return ret;
+
+        *in_filter = async;
+    }
+
     return 0;
 }
 
