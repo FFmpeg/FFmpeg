@@ -25,6 +25,9 @@
  * G723.1 compatible decoder data tables
  */
 
+#ifndef AVCODEC_G729_DATA_H
+#define AVCODEC_G729_DATA_H
+
 #define SUBFRAMES       4
 #define SUBFRAME_LEN    60
 #define FRAME_LEN       (SUBFRAME_LEN << 2)
@@ -1313,3 +1316,5 @@ static const int16_t percept_flt_tbl[2][LPC_ORDER] = {
     /* Pole part */
     {16384,  8192,  4096,  2048,  1024,   512,   256,   128,    64,    32}
 };
+
+#endif /* AVCODEC_G729_DATA_H */
