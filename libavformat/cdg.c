@@ -60,7 +60,8 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     pkt->stream_index = 0;
-    pkt->dts=pkt->pts= s->streams[0]->cur_dts;
+    pkt->dts=
+    pkt->pts= pkt->pos / CDG_PACKET_SIZE;
 
     if(ret>5 && (pkt->data[0]&0x3F) == 9 && (pkt->data[1]&0x3F)==1 && !(pkt->data[2+2+1] & 0x0F)){
         pkt->flags = AV_PKT_FLAG_KEY;
