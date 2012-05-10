@@ -49,7 +49,7 @@ typedef struct {
     AVFilterBufferRef *next;
     AVFilterBufferRef *prev;
     AVFilterBufferRef *out;
-    int (*filter_line)(uint8_t *prev, uint8_t *cur, uint8_t *next, int w);
+    int (*filter_line)(const uint8_t *prev, const uint8_t *cur, const uint8_t *next, int w);
 
     const AVPixFmtDescriptor *csp;
 } IDETContext;
