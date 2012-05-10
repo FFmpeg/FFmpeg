@@ -36,73 +36,6 @@ void ff_avfilter_default_free_buffer(AVFilterBuffer *ptr)
     av_free(ptr);
 }
 
-/* TODO: set the buffer's priv member to a context structure for the whole
- * filter chain.  This will allow for a buffer pool instead of the constant
- * alloc & free cycle currently implemented. */
-AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
-{
-    int linesize[4];
-    uint8_t *data[4];
-    AVFilterBufferRef *picref = NULL;
-
-    // +2 is needed for swscaler, +16 to be SIMD-friendly
-    if (av_image_alloc(data, linesize, w, h, link->format, 16) < 0)
-        return NULL;
-
-    picref = avfilter_get_video_buffer_ref_from_arrays(data, linesize,
-                                                       perms, w, h, link->format);
-    if (!picref) {
-        av_free(data[0]);
-        return NULL;
-    }
-
-    return picref;
-}
-
-void avfilter_default_start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
-{
-    AVFilterLink *outlink = NULL;
-
-    if (inlink->dst->output_count)
-        outlink = inlink->dst->outputs[0];
-
-    if (outlink) {
-        outlink->out_buf = avfilter_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
-        avfilter_copy_buffer_ref_props(outlink->out_buf, picref);
-        avfilter_start_frame(outlink, avfilter_ref_buffer(outlink->out_buf, ~0));
-    }
-}
-
-void avfilter_default_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
-{
-    AVFilterLink *outlink = NULL;
-
-    if (inlink->dst->output_count)
-        outlink = inlink->dst->outputs[0];
-
-    if (outlink)
-        avfilter_draw_slice(outlink, y, h, slice_dir);
-}
-
-void avfilter_default_end_frame(AVFilterLink *inlink)
-{
-    AVFilterLink *outlink = NULL;
-
-    if (inlink->dst->output_count)
-        outlink = inlink->dst->outputs[0];
-
-    avfilter_unref_buffer(inlink->cur_buf);
-    inlink->cur_buf = NULL;
-
-    if (outlink) {
-        if (outlink->out_buf) {
-            avfilter_unref_buffer(outlink->out_buf);
-            outlink->out_buf = NULL;
-        }
-        avfilter_end_frame(outlink);
-    }
-}
-
 /**
  * default config_link() implementation for output video links to simplify
  * the implementation of one input one output video filters */
@@ -185,24 +118,4 @@ int avfilter_default_query_formats(AVFilterContext *ctx)
     }
 
     return 0;
-}
-
-void avfilter_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
-{
-    avfilter_start_frame(link->dst->outputs[0], picref);
-}
-
-void avfilter_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
-{
-    avfilter_draw_slice(link->dst->outputs[0], y, h, slice_dir);
-}
-
-void avfilter_null_end_frame(AVFilterLink *link)
-{
-    avfilter_end_frame(link->dst->outputs[0]);
-}
-
-AVFilterBufferRef *avfilter_null_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
-{
-    return avfilter_get_video_buffer(link->dst->outputs[0], perms, w, h);
 }

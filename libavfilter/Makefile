@@ -22,6 +22,7 @@ OBJS = allfilters.o                                                     \
        formats.o                                                        \
        graphparser.o                                                    \
        vf_scale.o                                                       \
+       video.o                                                          \
 
 OBJS-$(CONFIG_AFORMAT_FILTER)                += af_aformat.o
 OBJS-$(CONFIG_ANULL_FILTER)                  += af_anull.o
