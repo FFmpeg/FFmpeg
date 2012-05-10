@@ -22,6 +22,6 @@ fate-zlib: CMD = framecrc -i $(SAMPLES)/lcl/zlib-1frame.avi
 FATE_LOSSLESS_VIDEO += fate-zerocodec
 fate-zerocodec: CMD = framecrc -i $(SAMPLES)/zerocodec/sample-zeco.avi
 
-FATE_TESTS += $(FATE_LOSSLESS_VIDEO)
+FATE_FFMPEG += $(FATE_LOSSLESS_VIDEO)
 fate-lossless-video: $(FATE_LOSSLESS_VIDEO)
 

@@ -75,6 +75,6 @@ FATE_VORBIS += fate-vorbis-19
 fate-vorbis-19: CMD = pcm -i $(SAMPLES)/vorbis/test-short2_small.ogg
 fate-vorbis-19: REF = $(SAMPLES)/vorbis/test-short2_small.pcm
 
-FATE_TESTS += $(FATE_VORBIS)
+FATE_AVCONV += $(FATE_VORBIS)
 fate-vorbis: $(FATE_VORBIS)
 $(FATE_VORBIS): CMP = oneoff

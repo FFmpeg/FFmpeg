@@ -88,7 +88,8 @@ fate-aac-ln-encode: CMP_SHIFT = -4096
 fate-aac-ln-encode: CMP_TARGET = 65
 fate-aac-ln-encode: SIZE_TOLERANCE = 3560
 
-FATE_TESTS += $(FATE_AAC) $(FATE_AAC_ENCODE)
+FATE_FFMPEG += $(FATE_AAC) $(FATE_AAC_ENCODE)
 fate-aac: $(FATE_AAC) $(FATE_AAC_ENCODE)
+
 $(FATE_AAC): CMP = oneoff
 $(FATE_AAC): FUZZ = 2

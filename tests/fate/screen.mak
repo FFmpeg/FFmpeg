@@ -59,5 +59,5 @@ fate-zmbv-32bit: CMD = framecrc -i $(SAMPLES)/zmbv/zmbv_32bit.avi -pix_fmt rgb24
 FATE_SCREEN += $(FATE_ZMBV)
 fate-zmbv: $(FATE_ZMBV)
 
-FATE_TESTS += $(FATE_SCREEN)
+FATE_FFMPEG += $(FATE_SCREEN)
 fate-screen: $(FATE_SCREEN)

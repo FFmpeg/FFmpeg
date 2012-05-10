@@ -10,5 +10,5 @@ fate-musepack7: CMP = oneoff
 fate-musepack7: REF = $(SAMPLES)/musepack/inside-mp7.pcm
 fate-musepack7: FUZZ = 1
 
-FATE_TESTS += $(FATE_MPC)
+FATE_FFMPEG += $(FATE_MPC)
 fate-mpc: $(FATE_MPC)

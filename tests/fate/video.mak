@@ -133,6 +133,9 @@ fate-kgv1: CMD = framecrc -i $(SAMPLES)/kega/kgv1.avi -pix_fmt rgb555le -an
 FATE_VIDEO += fate-kmvc
 fate-kmvc: CMD = framecrc -i $(SAMPLES)/KMVC/LOGO1.AVI -an -t 3 -pix_fmt rgb24
 
+FATE_VIDEO += fate-mdec
+fate-mdec: CMD = framecrc -idct simple -i $(SAMPLES)/ea-dct/NFS2Esprit-partial.dct -an
+
 FATE_VIDEO += fate-mimic
 fate-mimic: CMD = framecrc -idct simple -i $(SAMPLES)/mimic/mimic2-womanloveffmpeg.cam
 
@@ -145,6 +148,7 @@ fate-motionpixels: CMD = framecrc -i $(SAMPLES)/motion-pixels/INTRO-partial.MVI 
 FATE_VIDEO += fate-mpeg2-field-enc
 fate-mpeg2-field-enc: CMD = framecrc -flags +bitexact -dct fastint -idct simple -i $(SAMPLES)/mpeg2/mpeg2_field_encoding.ts -an
 
+# FIXME dropped frames in this test because of coarse timebase
 FATE_VIDEO += fate-nuv
 fate-nuv: CMD = framecrc -idct simple -i $(SAMPLES)/nuv/Today.nuv -an
 
@@ -157,6 +161,9 @@ fate-r210: CMD = framecrc -i $(SAMPLES)/r210/r210.avi -pix_fmt rgb48le
 FATE_VIDEO += fate-rl2
 fate-rl2: CMD = framecrc -i $(SAMPLES)/rl2/Z4915300.RL2 -pix_fmt rgb24 -an
 
+FATE_VIDEO += fate-roqvideo
+fate-roqvideo: CMD = framecrc -i $(SAMPLES)/idroq/idlogo.roq -an
+
 FATE_VIDEO += fate-smacker
 fate-smacker: CMD = framecrc -i $(SAMPLES)/smacker/wetlogo.smk -pix_fmt rgb24
 
@@ -168,6 +175,9 @@ fate-sp5x: CMD = framecrc -idct simple -i $(SAMPLES)/sp5x/sp5x_problem.avi
 
 FATE_VIDEO += fate-sub-srt
 fate-sub-srt: CMD = md5 -i $(SAMPLES)/sub/SubRip_capability_tester.srt -f ass
+
+FATE_VIDEO += fate-thp
+fate-thp: CMD = framecrc -idct simple -i $(SAMPLES)/thp/pikmin2-opening1-partial.thp -an
 
 FATE_VIDEO += fate-tiertex-seq
 fate-tiertex-seq: CMD = framecrc -i $(SAMPLES)/tiertex-seq/Gameover.seq -pix_fmt rgb24
@@ -218,5 +228,5 @@ fate-yop: CMD = framecrc -i $(SAMPLES)/yop/test1.yop -pix_fmt rgb24 -an
 FATE_VIDEO += fate-xxan-wc4
 fate-xxan-wc4: CMD = framecrc -i $(SAMPLES)/wc4-xan/wc4trailer-partial.avi -an
 
-FATE_TESTS += $(FATE_VIDEO)
+FATE_FFMPEG += $(FATE_VIDEO)
 fate-video: $(FATE_VIDEO)

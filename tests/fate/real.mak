@@ -1,5 +1,5 @@
-FATE_REAL += fate-real-14_4
-fate-real-14_4: CMD = md5 -i $(SAMPLES)/real/ra3_in_rm_file.rm -f s16le
+FATE_REAL += fate-ra-144
+fate-ra-144: CMD = md5 -i $(SAMPLES)/real/ra3_in_rm_file.rm -f s16le
 
 FATE_REAL += fate-ra-288
 fate-ra-288: CMD = pcm -i $(SAMPLES)/real/ra_288.rm
@@ -18,8 +18,8 @@ fate-ralf: CMD = md5 -i $(SAMPLES)/lossless-audio/luckynight-partial.rmvb -vn -f
 FATE_REAL += fate-rv30
 fate-rv30: CMD = framecrc -flags +bitexact -dct fastint -idct simple -i $(SAMPLES)/real/rv30.rm -an
 
-FATE_REAL += fate-real-rv40
-fate-real-rv40: CMD = framecrc -i $(SAMPLES)/real/spygames-2MB.rmvb -t 10 -an
+FATE_REAL += fate-rv40
+fate-rv40: CMD = framecrc -i $(SAMPLES)/real/spygames-2MB.rmvb -t 10 -an
 
 FATE_SIPR += fate-sipr-5k0
 fate-sipr-5k0: CMD = pcm -i $(SAMPLES)/sipr/sipr_5k0.rm
@@ -44,5 +44,5 @@ fate-sipr-16k: REF = $(SAMPLES)/sipr/sipr_16k.pcm
 FATE_REAL += $(FATE_SIPR)
 fate-sipr: $(FATE_SIPR)
 
-FATE_TESTS += $(FATE_REAL)
+FATE_FFMPEG += $(FATE_REAL)
 fate-real: $(FATE_REAL)

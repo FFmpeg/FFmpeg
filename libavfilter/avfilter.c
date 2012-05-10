@@ -68,6 +68,7 @@ AVFilterBufferRef *avfilter_ref_buffer(AVFilterBufferRef *ref, int pmask)
             return NULL;
         }
         *ret->video = *ref->video;
+        ret->extended_data = ret->data;
     } else if (ref->type == AVMEDIA_TYPE_AUDIO) {
         ret->audio = av_malloc(sizeof(AVFilterBufferRefAudioProps));
         if (!ret->audio) {
@@ -75,6 +76,19 @@ AVFilterBufferRef *avfilter_ref_buffer(AVFilterBufferRef *ref, int pmask)
             return NULL;
         }
         *ret->audio = *ref->audio;
+
+        if (ref->extended_data != ref->data) {
+            int nb_channels = av_get_channel_layout_nb_channels(ref->audio->channel_layout);
+            if (!(ret->extended_data = av_malloc(sizeof(*ret->extended_data) *
+                                                 nb_channels))) {
+                av_freep(&ret->audio);
+                av_freep(&ret);
+                return NULL;
+            }
+            memcpy(ret->extended_data, ref->extended_data,
+                   sizeof(*ret->extended_data) * nb_channels);
+        } else
+            ret->extended_data = ret->data;
     }
     ret->perms &= pmask;
     ret->buf->refcount ++;
@@ -155,6 +169,8 @@ void avfilter_unref_buffer(AVFilterBufferRef *ref)
         }
         ref->buf->free(ref->buf);
     }
+    if (ref->extended_data != ref->data)
+        av_freep(&ref->extended_data);
     av_freep(&ref->video);
     av_freep(&ref->audio);
     av_free(ref);
@@ -472,6 +488,9 @@ avfilter_get_video_buffer_ref_from_arrays(uint8_t * const data[4], const int lin
     memcpy(picref->data,     pic->data,     sizeof(picref->data));
     memcpy(picref->linesize, pic->linesize, sizeof(picref->linesize));
 
+    pic->   extended_data = pic->data;
+    picref->extended_data = picref->data;
+
     return picref;
 
 fail:
@@ -536,6 +555,74 @@ avfilter_get_audio_buffer_ref_from_arrays(uint8_t *data[8], int linesize[8], int
 fail:
     if (samplesref && samplesref->audio)
         av_freep(&samplesref->audio);
+    av_freep(&samplesref);
+    av_freep(&samples);
+    return NULL;
+}
+
+AVFilterBufferRef *avfilter_get_audio_buffer_ref_from_arrays_alt(uint8_t **data,
+                                                             int linesize, int perms,
+                                                             int nb_samples,
+                                                             enum AVSampleFormat sample_fmt,
+                                                             uint64_t channel_layout)
+{
+    int planes;
+    AVFilterBuffer    *samples    = av_mallocz(sizeof(*samples));
+    AVFilterBufferRef *samplesref = av_mallocz(sizeof(*samplesref));
+
+    if (!samples || !samplesref)
+        goto fail;
+
+    samplesref->buf         = samples;
+    samplesref->buf->free   = ff_avfilter_default_free_buffer;
+    if (!(samplesref->audio = av_mallocz(sizeof(*samplesref->audio))))
+        goto fail;
+
+    samplesref->audio->nb_samples     = nb_samples;
+    samplesref->audio->channel_layout = channel_layout;
+    samplesref->audio->planar         = av_sample_fmt_is_planar(sample_fmt);
+
+    planes = samplesref->audio->planar ? av_get_channel_layout_nb_channels(channel_layout) : 1;
+
+    /* make sure the buffer gets read permission or it's useless for output */
+    samplesref->perms = perms | AV_PERM_READ;
+
+    samples->refcount  = 1;
+    samplesref->type   = AVMEDIA_TYPE_AUDIO;
+    samplesref->format = sample_fmt;
+
+    memcpy(samples->data, data,
+           FFMIN(FF_ARRAY_ELEMS(samples->data), planes)*sizeof(samples->data[0]));
+    memcpy(samplesref->data, samples->data, sizeof(samples->data));
+
+    samples->linesize[0] = samplesref->linesize[0] = linesize;
+
+    if (planes > FF_ARRAY_ELEMS(samples->data)) {
+        samples->   extended_data = av_mallocz(sizeof(*samples->extended_data) *
+                                               planes);
+        samplesref->extended_data = av_mallocz(sizeof(*samplesref->extended_data) *
+                                               planes);
+
+        if (!samples->extended_data || !samplesref->extended_data)
+            goto fail;
+
+        memcpy(samples->   extended_data, data, sizeof(*data)*planes);
+        memcpy(samplesref->extended_data, data, sizeof(*data)*planes);
+    } else {
+        samples->extended_data    = samples->data;
+        samplesref->extended_data = samplesref->data;
+    }
+
+    return samplesref;
+
+fail:
+    if (samples && samples->extended_data != samples->data)
+        av_freep(&samples->extended_data);
+    if (samplesref) {
+        av_freep(&samplesref->audio);
+        if (samplesref->extended_data != samplesref->data)
+            av_freep(&samplesref->extended_data);
+    }
     av_freep(&samplesref);
     av_freep(&samples);
     return NULL;

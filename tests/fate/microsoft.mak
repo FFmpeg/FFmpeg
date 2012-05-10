@@ -42,5 +42,5 @@ fate-vc1-ism: CMD = framecrc -i $(SAMPLES)/isom/vc1-wmapro.ism -an
 FATE_MICROSOFT += $(FATE_VC1)
 fate-vc1: $(FATE_VC1)
 
-FATE_TESTS += $(FATE_MICROSOFT)
+FATE_FFMPEG += $(FATE_MICROSOFT)
 fate-microsoft: $(FATE_MICROSOFT)

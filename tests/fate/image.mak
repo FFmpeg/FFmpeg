@@ -70,6 +70,6 @@ fate-tiff-fax-g3s: CMD = framecrc -i $(SAMPLES)/CCITT_fax/G31DS.TIF
 FATE_IMAGE += $(FATE_TIFF)
 fate-tiff: $(FATE_TIFF)
 
-FATE_TESTS += $(FATE_IMAGE)
+FATE_FFMPEG += $(FATE_IMAGE)
 fate-image: $(FATE_IMAGE)
 

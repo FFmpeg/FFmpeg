@@ -10,5 +10,5 @@ fate-indeo4: CMD = framecrc -i $(SAMPLES)/iv41/indeo41-partial.avi -an
 FATE_INDEO += fate-indeo5
 fate-indeo5: CMD = framecrc -i $(SAMPLES)/iv50/Educ_Movie_DeadlyForce.avi -an
 
-FATE_TESTS += $(FATE_INDEO)
+FATE_AVCONV += $(FATE_INDEO)
 fate-indeo: $(FATE_INDEO)

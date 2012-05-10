@@ -938,7 +938,7 @@ frame rate or decrease the frame size.
 @item
 If your computer is not fast enough, you can speed up the
 compression at the expense of the compression ratio. You can use
-'-me zero' to speed up motion estimation, and '-intra' to disable
+'-me zero' to speed up motion estimation, and '-g 0' to disable
 motion estimation completely (you have only I-frames, which means it
 is about as good as JPEG compression).
 

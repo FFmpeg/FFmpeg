@@ -51,10 +51,9 @@
  */
 int ff_jpegls_decode_lse(MJpegDecodeContext *s)
 {
-    int av_unused(len), id;
+    int id;
 
-    /* XXX: verify len field validity */
-    len = get_bits(&s->gb, 16);
+    skip_bits(&s->gb, 16);  /* length: FIXME: verify field validity */
     id = get_bits(&s->gb, 8);
 
     switch(id){

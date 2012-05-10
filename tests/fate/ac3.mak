@@ -44,5 +44,5 @@ fate-eac3-encode: CMP_SHIFT = -1024
 fate-eac3-encode: CMP_TARGET = 514.02
 fate-eac3-encode: SIZE_TOLERANCE = 488
 
-FATE_TESTS += $(FATE_AC3)
+FATE_AVCONV += $(FATE_AC3)
 fate-ac3: $(FATE_AC3)

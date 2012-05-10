@@ -89,12 +89,17 @@ FATE_SEEK    = $(SEEK_TESTS:seek_%=fate-seek-%)
 FATE = $(FATE_ACODEC)                                                   \
        $(FATE_VCODEC)                                                   \
        $(FATE_LAVF)                                                     \
-       $(FATE_LIBAVUTIL)                                                \
        $(FATE_SEEK)                                                     \
 
+FATE_FFMPEG += $(FATE_FFMPEG-yes) $(FATE_AVCONV) $(FATE_AVCONV-yes)
+
+FATE-$(CONFIG_AVCODEC)  += $(FATE_LIBAVCODEC)
 FATE-$(CONFIG_AVFILTER) += $(FATE_LAVFI)
 
 FATE += $(FATE-yes)
+FATE += $(FATE_LIBAVUTIL)
+
+$(FATE_FFMPEG) $(FATE_LAVF_FATE): ffmpeg$(EXESUF)
 
 $(filter-out %-aref,$(FATE_ACODEC)): $(AREF)
 $(filter-out %-vref,$(FATE_VSYNTH1)): fate-vsynth1-vref
@@ -121,7 +126,7 @@ fate-seek:   $(FATE_SEEK)
 
 ifdef SAMPLES
 FATE += $(FATE_LAVF_FATE)
-FATE += $(FATE_TESTS) $(FATE_TESTS-yes)
+FATE += $(FATE_FFMPEG)
 fate-rsync:
 	rsync -vaLW --timeout=60 --contimeout=60 rsync://fate.ffmpeg.org/fate-suite/ $(SAMPLES)
 else
@@ -139,7 +144,7 @@ TOOL = ffmpeg
 
 fate:: $(FATE)
 
-$(FATE) $(FATE_TESTS-no): ffmpeg$(EXESUF) ffprobe$(EXESUF) $(FATE_UTILS:%=tests/%$(HOSTEXESUF))
+$(FATE) $(FATE_TESTS-no): $(FATE_UTILS:%=tests/%$(HOSTEXESUF))
 	@echo "TEST    $(@:fate-%=%)"
 	$(Q)$(SRC_PATH)/tests/fate-run.sh $@ "$(SAMPLES)" "$(TARGET_EXEC)" "$(TARGET_PATH)" '$(CMD)' '$(CMP)' '$(REF)' '$(FUZZ)' '$(THREADS)' '$(THREAD_TYPE)' '$(CPUFLAGS)' '$(CMP_SHIFT)' '$(CMP_TARGET)' '$(SIZE_TOLERANCE)'
 

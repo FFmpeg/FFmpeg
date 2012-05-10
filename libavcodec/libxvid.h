@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_LIBXVID_INTERNAL_H
-#define AVCODEC_LIBXVID_INTERNAL_H
+#ifndef AVCODEC_LIBXVID_H
+#define AVCODEC_LIBXVID_H
 
 /**
  * @file
@@ -29,4 +29,4 @@
 
 int ff_tempfile(const char *prefix, char **filename);
 
-#endif /* AVCODEC_LIBXVID_INTERNAL_H */
+#endif /* AVCODEC_LIBXVID_H */

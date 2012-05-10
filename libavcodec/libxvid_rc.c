@@ -20,11 +20,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
 #include <xvid.h>
 #include <unistd.h>
 #include "libavutil/file.h"
 #include "avcodec.h"
-#include "libxvid_internal.h"
+#include "libxvid.h"
 //#include "dsputil.h"
 #include "mpegvideo.h"
 

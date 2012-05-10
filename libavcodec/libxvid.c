@@ -33,7 +33,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
-#include "libxvid_internal.h"
+#include "libxvid.h"
 #include "mpegvideo.h"
 
 /**
@@ -81,7 +81,6 @@ struct xvid_ff_pass1 {
  * that allows us to pass data to the second pass in Xvid without a custom
  * rate-control plugin.
  */
-
 
 /**
  * Initialize the two-pass plugin and context.

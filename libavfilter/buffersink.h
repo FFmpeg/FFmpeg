@@ -98,4 +98,18 @@ int av_vsink_buffer_get_video_buffer_ref(AVFilterContext *buffer_sink,
                                          AVFilterBufferRef **picref, int flags);
 #endif
 
+/**
+ * Get a buffer with filtered data from sink and put it in buf.
+ *
+ * @param sink pointer to a context of a buffersink AVFilter.
+ * @param buf pointer to the buffer will be written here if buf is non-NULL. buf
+ *            must be freed by the caller using avfilter_unref_buffer().
+ *            Buf may also be NULL to query whether a buffer is ready to be
+ *            output.
+ *
+ * @return >= 0 in case of success, a negative AVERROR code in case of
+ *         failure.
+ */
+int av_buffersink_read(AVFilterContext *sink, AVFilterBufferRef **buf);
+
 #endif /* AVFILTER_BUFFERSINK_H */

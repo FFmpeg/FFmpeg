@@ -94,5 +94,5 @@ fate-xmv-demux: CMD = framecrc -i $(SAMPLES)/xmv/logos1p.fmv -vcodec copy -acode
 FATE_DEMUX += fate-xwma-demux
 fate-xwma-demux: CMD = crc -i $(SAMPLES)/xwma/ergon.xwma -acodec copy
 
-FATE_TESTS += $(FATE_DEMUX)
+FATE_FFMPEG += $(FATE_DEMUX)
 fate-demux: $(FATE_DEMUX)

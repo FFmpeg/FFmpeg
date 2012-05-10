@@ -1,4 +1,4 @@
-# Lossless
+# lossless
 
 FATE_WAVPACK += fate-wavpack-lossless-float
 fate-wavpack-lossless-float: CMD = md5 -i $(SAMPLES)/wavpack/lossless/32bit_float-partial.wv -f f32le
@@ -18,7 +18,7 @@ fate-wavpack-lossless-24bit: CMD = md5 -i $(SAMPLES)/wavpack/lossless/24bit-part
 FATE_WAVPACK += fate-wavpack-lossless-32bit
 fate-wavpack-lossless-32bit: CMD = md5 -i $(SAMPLES)/wavpack/lossless/32bit_int-partial.wv -f s32le
 
-# Lossy
+# lossy
 
 FATE_WAVPACK += fate-wavpack-lossy-float
 fate-wavpack-lossy-float: CMD = md5 -i $(SAMPLES)/wavpack/lossy/2.0_32-bit_float.wv -f f32le
@@ -35,7 +35,7 @@ fate-wavpack-lossy-24bit: CMD = md5 -i $(SAMPLES)/wavpack/lossy/4.0_24-bit.wv -f
 FATE_WAVPACK += fate-wavpack-lossy-32bit
 fate-wavpack-lossy-32bit: CMD = md5 -i $(SAMPLES)/wavpack/lossy/4.0_32-bit_int.wv -f s32le
 
-# Channel configurations
+# channel configurations
 
 FATE_WAVPACK += fate-wavpack-channels-monofloat
 fate-wavpack-channels-monofloat: CMD = md5 -i $(SAMPLES)/wavpack/num_channels/mono_float-partial.wv -f f32le
@@ -55,7 +55,7 @@ fate-wavpack-channels-6.1: CMD = md5 -i $(SAMPLES)/wavpack/num_channels/eva_2.22
 FATE_WAVPACK += fate-wavpack-channels-7.1
 fate-wavpack-channels-7.1: CMD = md5 -i $(SAMPLES)/wavpack/num_channels/panslab_sample_7.1_16bit-partial.wv -f s16le
 
-# Speed modes
+# speed modes
 
 FATE_WAVPACK += fate-wavpack-speed-default
 fate-wavpack-speed-default: CMD = md5 -i $(SAMPLES)/wavpack/speed_modes/default-partial.wv  -f s16le
@@ -69,7 +69,7 @@ fate-wavpack-speed-high: CMD = md5 -i $(SAMPLES)/wavpack/speed_modes/high-partia
 FATE_WAVPACK += fate-wavpack-speed-vhigh
 fate-wavpack-speed-vhigh: CMD = md5 -i $(SAMPLES)/wavpack/speed_modes/vhigh-partial.wv  -f s16le
 
-# Special Cases
+# special cases
 
 FATE_WAVPACK += fate-wavpack-cuesheet
 fate-wavpack-cuesheet: CMD = md5 -i $(SAMPLES)/wavpack/special/cue_sheet.wv -f s16le
@@ -86,5 +86,5 @@ fate-wavpack-falsestereo: CMD = md5 -i $(SAMPLES)/wavpack/special/false_stereo.w
 FATE_WAVPACK += fate-wavpack-matroskamode
 fate-wavpack-matroskamode: CMD = md5 -i $(SAMPLES)/wavpack/special/matroska_mode.mka -f s16le
 
-FATE_TESTS += $(FATE_WAVPACK)
+FATE_AVCONV += $(FATE_WAVPACK)
 fate-wavpack: $(FATE_WAVPACK)

@@ -72,6 +72,12 @@ typedef struct AVCodecInternal {
 #endif
 
     /**
+     * An audio frame with less than required samples has been submitted and
+     * padded with silence. Reject all subsequent frames.
+     */
+    int last_audio_frame;
+
+    /**
      * temporary buffer used for encoders to store their bitstream
      */
     uint8_t *byte_buffer;

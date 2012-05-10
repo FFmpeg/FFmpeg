@@ -10,5 +10,5 @@ FATE_MAPCHAN += fate-mapchan-silent-mono
 fate-mapchan-silent-mono: tests/data/asynth-22050-1.wav
 fate-mapchan-silent-mono: CMD = md5 -i $(TARGET_PATH)/tests/data/asynth-22050-1.wav -map_channel -1 -map_channel 0.0.0 -f wav
 
-FATE_TESTS += $(FATE_MAPCHAN)
+FATE_FFMPEG += $(FATE_MAPCHAN)
 fate-mapchan: $(FATE_MAPCHAN)

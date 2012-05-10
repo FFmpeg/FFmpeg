@@ -1001,11 +1001,59 @@ int ff_alloc_packet(AVPacket *avpkt, int size)
     return ff_alloc_packet2(NULL, avpkt, size);
 }
 
+/**
+ * Pad last frame with silence.
+ */
+static int pad_last_frame(AVCodecContext *s, AVFrame **dst, const AVFrame *src)
+{
+    AVFrame *frame = NULL;
+    uint8_t *buf   = NULL;
+    int ret;
+
+    if (!(frame = avcodec_alloc_frame()))
+        return AVERROR(ENOMEM);
+    *frame = *src;
+
+    if ((ret = av_samples_get_buffer_size(&frame->linesize[0], s->channels,
+                                          s->frame_size, s->sample_fmt, 0)) < 0)
+        goto fail;
+
+    if (!(buf = av_malloc(ret))) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    frame->nb_samples = s->frame_size;
+    if ((ret = avcodec_fill_audio_frame(frame, s->channels, s->sample_fmt,
+                                        buf, ret, 0)) < 0)
+        goto fail;
+    if ((ret = av_samples_copy(frame->extended_data, src->extended_data, 0, 0,
+                               src->nb_samples, s->channels, s->sample_fmt)) < 0)
+        goto fail;
+    if ((ret = av_samples_set_silence(frame->extended_data, src->nb_samples,
+                                      frame->nb_samples - src->nb_samples,
+                                      s->channels, s->sample_fmt)) < 0)
+        goto fail;
+
+    *dst = frame;
+
+    return 0;
+
+fail:
+    if (frame->extended_data != frame->data)
+        av_freep(&frame->extended_data);
+    av_freep(&buf);
+    av_freep(&frame);
+    return ret;
+}
+
 int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
                                               AVPacket *avpkt,
                                               const AVFrame *frame,
                                               int *got_packet_ptr)
 {
+    AVFrame tmp;
+    AVFrame *padded_frame = NULL;
     int ret;
     AVPacket user_pkt = *avpkt;
     int needs_realloc = !user_pkt.data;
@@ -1018,12 +1066,38 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
         return 0;
     }
 
+    /* ensure that extended_data is properly set */
+    if (frame && !frame->extended_data) {
+        if (av_sample_fmt_is_planar(avctx->sample_fmt) &&
+            avctx->channels > AV_NUM_DATA_POINTERS) {
+            av_log(avctx, AV_LOG_ERROR, "Encoding to a planar sample format, "
+                   "with more than %d channels, but extended_data is not set.\n",
+                   AV_NUM_DATA_POINTERS);
+            return AVERROR(EINVAL);
+        }
+        av_log(avctx, AV_LOG_WARNING, "extended_data is not set.\n");
+
+        tmp = *frame;
+        tmp.extended_data = tmp.data;
+        frame = &tmp;
+    }
+
     /* check for valid frame size */
     if (frame) {
         if (avctx->codec->capabilities & CODEC_CAP_SMALL_LAST_FRAME) {
             if (frame->nb_samples > avctx->frame_size)
                 return AVERROR(EINVAL);
         } else if (!(avctx->codec->capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE)) {
+            if (frame->nb_samples < avctx->frame_size &&
+                !avctx->internal->last_audio_frame) {
+                ret = pad_last_frame(avctx, &padded_frame, frame);
+                if (ret < 0)
+                    return ret;
+
+                frame = padded_frame;
+                avctx->internal->last_audio_frame = 1;
+            }
+
             if (frame->nb_samples != avctx->frame_size)
                 return AVERROR(EINVAL);
         }
@@ -1083,6 +1157,13 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
              this needs to be moved to the encoders, but for now we can do it
              here to simplify things */
     avpkt->flags |= AV_PKT_FLAG_KEY;
+
+    if (padded_frame) {
+        av_freep(&padded_frame->data[0]);
+        if (padded_frame->extended_data != padded_frame->data)
+            av_freep(&padded_frame->extended_data);
+        av_freep(&padded_frame);
+    }
 
     return ret;
 }

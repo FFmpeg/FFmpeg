@@ -49,5 +49,5 @@ fate-svq1: CMD = framecrc -i $(SAMPLES)/svq1/marymary-shackles.mov -an -t 10
 FATE_QT += fate-svq3
 fate-svq3: CMD = framecrc -i $(SAMPLES)/svq3/Vertical400kbit.sorenson3.mov -t 6 -an
 
-FATE_TESTS += $(FATE_QT)
+FATE_FFMPEG += $(FATE_QT)
 fate-qt: $(FATE_QT)

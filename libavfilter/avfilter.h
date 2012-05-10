@@ -84,6 +84,22 @@ typedef struct AVFilterBuffer {
 
     int format;                 ///< media format
     int w, h;                   ///< width and height of the allocated buffer
+
+    /**
+     * pointers to the data planes/channels.
+     *
+     * For video, this should simply point to data[].
+     *
+     * For planar audio, each channel has a separate data pointer, and
+     * linesize[0] contains the size of each channel buffer.
+     * For packed audio, there is just one data pointer, and linesize[0]
+     * contains the total size of the buffer for all channels.
+     *
+     * Note: Both data and extended_data will always be set, but for planar
+     * audio with more channels that can fit in data, extended_data must be used
+     * in order to access all channels.
+     */
+    uint8_t **extended_data;
 } AVFilterBuffer;
 
 #define AV_PERM_READ     0x01   ///< can read from the buffer
@@ -150,6 +166,22 @@ typedef struct AVFilterBufferRef {
     enum AVMediaType type;      ///< media type of buffer data
     AVFilterBufferRefVideoProps *video; ///< video buffer specific properties
     AVFilterBufferRefAudioProps *audio; ///< audio buffer specific properties
+
+    /**
+     * pointers to the data planes/channels.
+     *
+     * For video, this should simply point to data[].
+     *
+     * For planar audio, each channel has a separate data pointer, and
+     * linesize[0] contains the size of each channel buffer.
+     * For packed audio, there is just one data pointer, and linesize[0]
+     * contains the total size of the buffer for all channels.
+     *
+     * Note: Both data and extended_data will always be set, but for planar
+     * audio with more channels that can fit in data, extended_data must be used
+     * in order to access all channels.
+     */
+    uint8_t **extended_data;
 } AVFilterBufferRef;
 
 /**
@@ -783,10 +815,31 @@ AVFilterBufferRef *avfilter_get_audio_buffer(AVFilterLink *link, int perms,
  * @param channel_layout the channel layout of the buffer
  * @param planar         audio data layout - planar or packed
  */
-AVFilterBufferRef *
-avfilter_get_audio_buffer_ref_from_arrays(uint8_t *data[8], int linesize[8], int perms,
-                                          int nb_samples, enum AVSampleFormat sample_fmt,
-                                          uint64_t channel_layout, int planar);
+AVFilterBufferRef *avfilter_get_audio_buffer_ref_from_arrays(uint8_t *data[8],
+                                                             int linesize[8],
+                                                             int perms,
+                                                             int nb_samples,
+                                                             enum AVSampleFormat sample_fmt,
+                                                             uint64_t channel_layout,
+                                                             int planar);
+/**
+ * Create an audio buffer reference wrapped around an already
+ * allocated samples buffer.
+ *
+ * @param data           pointers to the samples plane buffers
+ * @param linesize       linesize for the samples plane buffers
+ * @param perms          the required access permissions
+ * @param nb_samples     number of samples per channel
+ * @param sample_fmt     the format of each sample in the buffer to allocate
+ * @param channel_layout the channel layout of the buffer
+ */
+AVFilterBufferRef *avfilter_get_audio_buffer_ref_from_arrays_alt(uint8_t **data,
+                                                             int linesize,
+                                                             int perms,
+                                                             int nb_samples,
+                                                             enum AVSampleFormat sample_fmt,
+                                                             uint64_t channel_layout);
+
 /**
  * Request an input frame from the filter at the other end of the link.
  *

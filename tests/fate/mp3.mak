@@ -38,7 +38,7 @@ fate-mp3-float-extra_overread: CMD = pcm -c:a mp3float -i $(SAMPLES)/mpegaudio/e
 fate-mp3-float-extra_overread: CMP = stddev
 fate-mp3-float-extra_overread: REF = $(SAMPLES)/mpegaudio/extra_overread.pcm
 
-FATE_TESTS += $(FATE_MP3)
+FATE_AVCONV += $(FATE_MP3)
 fate-mp3: $(FATE_MP3)
 $(FATE_MP3): CMP = stddev
 $(FATE_MP3): FUZZ = 0.07

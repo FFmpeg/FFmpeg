@@ -23,6 +23,7 @@ HEADERS = asrc_abuffer.h                                                \
 OBJS = allfilters.o                                                     \
        avfilter.o                                                       \
        avfiltergraph.o                                                  \
+       buffersink.o                                                     \
        defaults.o                                                       \
        drawutils.o                                                      \
        formats.o                                                        \

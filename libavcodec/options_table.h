@@ -22,6 +22,12 @@
 #ifndef AVCODEC_OPTIONS_TABLE
 #define AVCODEC_OPTIONS_TABLE
 
+#include <float.h>
+#include <limits.h>
+
+#include "libavutil/opt.h"
+#include "avcodec.h"
+
 #define OFFSET(x) offsetof(AVCodecContext,x)
 #define DEFAULT 0 //should be NAN but it does not work as it is not a constant in glibc as required by ANSI/ISO C
 //these names are too long to be readable
