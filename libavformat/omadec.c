@@ -219,7 +219,9 @@ static int decrypt_init(AVFormatContext *s, ID3v2ExtraMeta *em, uint8_t *header)
         av_log(s, AV_LOG_ERROR, "Invalid encryption header\n");
         return -1;
     }
-    if (oc->k_size + oc->e_size + oc->i_size > geob->datasize) {
+    if (   OMA_ENC_HEADER_SIZE + oc->k_size + oc->e_size + oc->i_size + 8 > geob->datasize
+        || OMA_ENC_HEADER_SIZE + 48 > geob->datasize
+    ) {
         av_log(s, AV_LOG_ERROR, "Too little GEOB data\n");
         return AVERROR_INVALIDDATA;
     }
