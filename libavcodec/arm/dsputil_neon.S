@@ -136,9 +136,7 @@ endfunc
         sub             r3,  r3,  #2
         vld1.64         {d0-d2},  [r1], r2
         vld1.64         {d4-d6},  [r1], r2
-  .ifeq \rnd
-        vmov.i16        q13, #1
-  .endif
+NRND    vmov.i16        q13, #1
         pld             [r1]
         pld             [r1, r2]
         vext.8          q1,  q0,  q1,  #1
@@ -151,15 +149,11 @@ endfunc
         vld1.64         {d0-d2},  [r1], r2
         vadd.u16        q12, q8,  q9
         pld             [r1]
-  .ifeq \rnd
-        vadd.u16        q12, q12, q13
-  .endif
+NRND    vadd.u16        q12, q12, q13
         vext.8          q15, q0,  q1,  #1
         vadd.u16        q1 , q10, q11
         shrn            d28, q12, #2
-  .ifeq \rnd
-        vadd.u16        q1,  q1,  q13
-  .endif
+NRND    vadd.u16        q1,  q1,  q13
         shrn            d29, q1,  #2
   .if \avg
         vld1.8          {q8},     [r0,:128]
@@ -171,15 +165,11 @@ endfunc
         vst1.64         {q14},    [r0,:128], r2
         vadd.u16        q12, q8,  q9
         pld             [r1, r2]
-  .ifeq \rnd
-        vadd.u16        q12, q12, q13
-  .endif
+NRND    vadd.u16        q12, q12, q13
         vext.8          q2,  q1,  q2,  #1
         vadd.u16        q0,  q10, q11
         shrn            d30, q12, #2
-  .ifeq \rnd
-        vadd.u16        q0,  q0,  q13
-  .endif
+NRND    vadd.u16        q0,  q0,  q13
         shrn            d31, q0,  #2
   .if \avg
         vld1.8          {q9},     [r0,:128]
@@ -192,15 +182,11 @@ endfunc
 
         vld1.64         {d0-d2},  [r1], r2
         vadd.u16        q12, q8,  q9
-  .ifeq \rnd
-        vadd.u16        q12, q12, q13
-  .endif
+NRND    vadd.u16        q12, q12, q13
         vext.8          q15, q0,  q1,  #1
         vadd.u16        q1 , q10, q11
         shrn            d28, q12, #2
-  .ifeq \rnd
-        vadd.u16        q1,  q1,  q13
-  .endif
+NRND    vadd.u16        q1,  q1,  q13
         shrn            d29, q1,  #2
   .if \avg
         vld1.8          {q8},     [r0,:128]
@@ -210,14 +196,10 @@ endfunc
         vaddl.u8        q10, d1,  d31
         vst1.64         {q14},    [r0,:128], r2
         vadd.u16        q12, q8,  q9
-  .ifeq \rnd
-        vadd.u16        q12, q12, q13
-  .endif
+NRND    vadd.u16        q12, q12, q13
         vadd.u16        q0,  q10, q11
         shrn            d30, q12, #2
-  .ifeq \rnd
-        vadd.u16        q0,  q0,  q13
-  .endif
+NRND    vadd.u16        q0,  q0,  q13
         shrn            d31, q0,  #2
   .if \avg
         vld1.8          {q9},     [r0,:128]
@@ -319,9 +301,7 @@ endfunc
         sub             r3,  r3,  #2
         vld1.64         {q0},     [r1], r2
         vld1.64         {q1},     [r1], r2
-  .ifeq \rnd
-        vmov.i16        q11, #1
-  .endif
+NRND    vmov.i16        q11, #1
         pld             [r1]
         pld             [r1, r2]
         vext.8          d4,  d0,  d1,  #1
@@ -333,9 +313,7 @@ endfunc
         pld             [r1]
         vadd.u16        q10, q8,  q9
         vext.8          d4,  d0,  d1,  #1
-  .ifeq \rnd
-        vadd.u16        q10, q10, q11
-  .endif
+NRND    vadd.u16        q10, q10, q11
         vaddl.u8        q8,  d0,  d4
         shrn            d5,  q10, #2
         vld1.64         {q1},     [r1], r2
@@ -345,9 +323,7 @@ endfunc
         vld1.8          {d7},     [r0,:64]
         vrhadd.u8       d5,  d5,  d7
   .endif
-  .ifeq \rnd
-        vadd.u16        q10, q10, q11
-  .endif
+NRND    vadd.u16        q10, q10, q11
         vst1.64         {d5},     [r0,:64], r2
         shrn            d7,  q10, #2
   .if \avg
@@ -362,9 +338,7 @@ endfunc
         vld1.64         {q0},     [r1], r2
         vadd.u16        q10, q8,  q9
         vext.8          d4,  d0,  d1,  #1
-  .ifeq \rnd
-        vadd.u16        q10, q10, q11
-  .endif
+NRND    vadd.u16        q10, q10, q11
         vaddl.u8        q8,  d0,  d4
         shrn            d5,  q10, #2
         vadd.u16        q10, q8,  q9
@@ -372,9 +346,7 @@ endfunc
         vld1.8          {d7},     [r0,:64]
         vrhadd.u8       d5,  d5,  d7
   .endif
-  .ifeq \rnd
-        vadd.u16        q10, q10, q11
-  .endif
+NRND    vadd.u16        q10, q10, q11
         vst1.64         {d5},     [r0,:64], r2
         shrn            d7,  q10, #2
   .if \avg
@@ -394,6 +366,8 @@ endfunc
     .macro shrn rd, rn, rm
         vrshrn.u16      \rd, \rn, \rm
     .endm
+    .macro NRND insn:vararg
+    .endm
   .else
     .macro avg  rd, rn, rm
         vhadd.u8        \rd, \rn, \rm
@@ -401,12 +375,16 @@ endfunc
     .macro shrn rd, rn, rm
         vshrn.u16       \rd, \rn, \rm
     .endm
+    .macro NRND insn:vararg
+        \insn
+    .endm
   .endif
 function ff_\pfx\name\suf\()_neon, export=1
         \name           \rnd, \avg
 endfunc
         .purgem         avg
         .purgem         shrn
+        .purgem         NRND
 .endm
 
 .macro  pixfunc2        pfx, name, avg=0
