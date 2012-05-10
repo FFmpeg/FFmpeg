@@ -27,15 +27,6 @@
 #include "internal.h"
 #include "formats.h"
 
-/* TODO: buffer pool.  see comment for avfilter_default_get_video_buffer() */
-void ff_avfilter_default_free_buffer(AVFilterBuffer *ptr)
-{
-    if (ptr->extended_data != ptr->data)
-        av_freep(&ptr->extended_data);
-    av_free(ptr->data[0]);
-    av_free(ptr);
-}
-
 /**
  * default config_link() implementation for output video links to simplify
  * the implementation of one input one output video filters */

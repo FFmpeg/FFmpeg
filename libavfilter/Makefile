@@ -15,6 +15,7 @@ OBJS = allfilters.o                                                     \
        audio.o                                                          \
        avfilter.o                                                       \
        avfiltergraph.o                                                  \
+       buffer.o                                                         \
        buffersink.o                                                     \
        buffersrc.o                                                      \
        defaults.o                                                       \
