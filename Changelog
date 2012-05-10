@@ -2,6 +2,20 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 
+version 0.5.8:
+
+- id3v2: fix skipping extended header in id3v2.4
+- nsvdec: Several bugfixes related to CVE-2011-3940
+- dv: check stype
+- dv: Fix null pointer dereference due to ach=0
+- dv: Fix small stack overread related to CVE-2011-3929 and CVE-2011-3936.
+- atrac3: Fix crash in tonal component decoding, fixes CVE-2012-0853
+- mjpegbdec: Fix overflow in SOS, fixes CVE-2011-3947
+- motionpixels: Clip YUV values after applying a gradient.
+- vqavideo: return error if image size is not a multiple of block size,
+  fixes CVE-2012-0947.
+
+
 version 0.5.7:
 - vorbis: An additional defense in the Vorbis codec. (CVE-2011-3895)
 - vorbisdec: Fix decoding bug with channel handling.

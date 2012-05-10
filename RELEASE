@@ -187,3 +187,19 @@ demuxer (CVE-2011-3893 and CVE-2011-3895).
 Distributors and system integrators are encouraged
 to update and share their patches against this branch.  For a full list
 of changes please see the Changelog file.
+
+* 0.5.8 May 10, 2012
+
+General notes
+-------------
+
+This maintenance-only release that addresses a number a number of
+security issues that have been brought to our attention. Among other
+(rather minor) fixes, this release features fixes for the DV decoder
+(CVE-2011-3929 and CVE-2011-3936), nsvdec (CVE-2011-3940), Atrac3
+(CVE-2012-0853), mjpegdec (CVE-2011-3947) and the VQA video decoder
+(CVE-2012-0947).
+
+Distributors and system integrators are encouraged
+to update and share their patches against this branch.  For a full list
+of changes please see the Changelog file.
