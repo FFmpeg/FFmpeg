@@ -878,7 +878,7 @@ static FilterGraph *init_simple_filtergraph(InputStream *ist, OutputStream *ost)
 
 static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
 {
-    InputStream *ist;
+    InputStream *ist = NULL;
     enum AVMediaType type = in->filter_ctx->input_pads[in->pad_idx].type;
     int i;
 
