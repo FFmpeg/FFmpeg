@@ -1760,7 +1760,7 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
         buftmp = audio_buf;
         size_out = swr_convert(ost->swr, (      uint8_t*[]){buftmp},
                                       allocated_audio_buf_size / (enc->channels * osize),
-                                      buf,
+                                      (const uint8_t **)buf,
                                       size / (dec->channels * isize));
         if (size_out < 0) {
             av_log(NULL, AV_LOG_FATAL, "swr_convert failed\n");
