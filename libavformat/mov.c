@@ -1051,7 +1051,7 @@ static int mov_read_glbl(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return AVERROR_INVALIDDATA;
 
     if (atom.size >= 10) {
-        // Broken files created by legacy versions of Libav and FFmpeg will
+        // Broken files created by legacy versions of libavformat will
         // wrap a whole fiel atom inside of a glbl atom.
         unsigned size = avio_rb32(pb);
         unsigned type = avio_rl32(pb);

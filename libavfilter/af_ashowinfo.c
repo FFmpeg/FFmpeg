@@ -83,7 +83,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
     av_log(ctx, AV_LOG_INFO, "]\n");
 
     showinfo->frame++;
-    avfilter_filter_samples(inlink->dst->outputs[0], samplesref);
+    ff_filter_samples(inlink->dst->outputs[0], samplesref);
 }
 
 AVFilter avfilter_af_ashowinfo = {
@@ -95,7 +95,7 @@ AVFilter avfilter_af_ashowinfo = {
 
     .inputs    = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_AUDIO,
-                                    .get_audio_buffer = avfilter_null_get_audio_buffer,
+                                    .get_audio_buffer = ff_null_get_audio_buffer,
                                     .filter_samples   = filter_samples,
                                     .min_perms        = AV_PERM_READ, },
                                   { .name = NULL}},

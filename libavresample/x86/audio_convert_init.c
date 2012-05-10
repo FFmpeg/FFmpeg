@@ -22,8 +22,9 @@
 #include "libavutil/cpu.h"
 #include "libavresample/audio_convert.h"
 
-extern void ff_conv_fltp_to_flt_6ch_mmx(float *dst, float *const *src, int len);
-extern void ff_conv_fltp_to_flt_6ch_sse(float *dst, float *const *src, int len);
+extern void ff_conv_fltp_to_flt_6ch_mmx (float *dst, float *const *src, int len);
+extern void ff_conv_fltp_to_flt_6ch_sse4(float *dst, float *const *src, int len);
+extern void ff_conv_fltp_to_flt_6ch_avx (float *dst, float *const *src, int len);
 
 av_cold void ff_audio_convert_init_x86(AudioConvert *ac)
 {
@@ -34,9 +35,13 @@ av_cold void ff_audio_convert_init_x86(AudioConvert *ac)
         ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_FLTP,
                                   6, 1, 4, "MMX", ff_conv_fltp_to_flt_6ch_mmx);
     }
-    if (mm_flags & AV_CPU_FLAG_SSE && HAVE_SSE) {
+    if (mm_flags & AV_CPU_FLAG_SSE4 && HAVE_SSE) {
         ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_FLTP,
-                                  6, 16, 4, "SSE", ff_conv_fltp_to_flt_6ch_sse);
+                                  6, 16, 4, "SSE4", ff_conv_fltp_to_flt_6ch_sse4);
+    }
+    if (mm_flags & AV_CPU_FLAG_AVX && HAVE_AVX) {
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_FLTP,
+                                  6, 16, 4, "AVX", ff_conv_fltp_to_flt_6ch_avx);
     }
 #endif
 }

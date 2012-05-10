@@ -149,4 +149,10 @@ static inline void ff_null_start_frame_keep_ref(AVFilterLink *inlink,
     avfilter_start_frame(inlink->dst->outputs[0], avfilter_ref_buffer(picref, ~0));
 }
 
+void ff_update_link_current_pts(AVFilterLink *link, int64_t pts);
+
+#define FF_DPRINTF_START(ctx, func) av_dlog(NULL, "%-16s: ", #func)
+
+void ff_dlog_link(void *ctx, AVFilterLink *link, int end);
+
 #endif /* AVFILTER_INTERNAL_H */

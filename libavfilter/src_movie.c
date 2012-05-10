@@ -437,7 +437,7 @@ static int amovie_get_samples(AVFilterLink *outlink)
         if (data_size < 0)
             return data_size;
         movie->samplesref =
-            avfilter_get_audio_buffer(outlink, AV_PERM_WRITE, nb_samples);
+            ff_get_audio_buffer(outlink, AV_PERM_WRITE, nb_samples);
         memcpy(movie->samplesref->data[0], movie->frame->data[0], data_size);
         movie->samplesref->pts = movie->pkt.pts;
         movie->samplesref->pos = movie->pkt.pos;
@@ -463,7 +463,7 @@ static int amovie_request_frame(AVFilterLink *outlink)
             return ret;
     } while (!movie->samplesref);
 
-    avfilter_filter_samples(outlink, avfilter_ref_buffer(movie->samplesref, ~0));
+    ff_filter_samples(outlink, avfilter_ref_buffer(movie->samplesref, ~0));
     avfilter_unref_buffer(movie->samplesref);
     movie->samplesref = NULL;
 

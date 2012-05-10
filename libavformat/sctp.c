@@ -227,7 +227,7 @@ static int sctp_open(URLContext *h, const char *uri, int flags)
     if (s->max_streams) {
         initparams.sinit_max_instreams = s->max_streams;
         initparams.sinit_num_ostreams  = s->max_streams;
-        if (setsockopt(fd, SOL_SCTP, SCTP_INITMSG, &initparams,
+        if (setsockopt(fd, IPPROTO_SCTP, SCTP_INITMSG, &initparams,
                        sizeof(initparams)) < 0)
             av_log(h, AV_LOG_ERROR,
                    "SCTP ERROR: Unable to initialize socket max streams %d\n",

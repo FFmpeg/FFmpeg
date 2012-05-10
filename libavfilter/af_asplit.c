@@ -27,9 +27,9 @@
 
 static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 {
-    avfilter_filter_samples(inlink->dst->outputs[0],
+    ff_filter_samples(inlink->dst->outputs[0],
                             avfilter_ref_buffer(insamples, ~AV_PERM_WRITE));
-    avfilter_filter_samples(inlink->dst->outputs[1],
+    ff_filter_samples(inlink->dst->outputs[1],
                             avfilter_ref_buffer(insamples, ~AV_PERM_WRITE));
     avfilter_unref_buffer(insamples);
 }
@@ -41,7 +41,7 @@ AVFilter avfilter_af_asplit = {
     .inputs = (const AVFilterPad[]) {
         { .name             = "default",
           .type             = AVMEDIA_TYPE_AUDIO,
-          .get_audio_buffer = avfilter_null_get_audio_buffer,
+          .get_audio_buffer = ff_null_get_audio_buffer,
           .filter_samples   = filter_samples, },
         { .name = NULL}
     },

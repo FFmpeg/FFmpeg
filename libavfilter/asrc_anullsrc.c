@@ -108,13 +108,13 @@ static int request_frame(AVFilterLink *outlink)
     AVFilterBufferRef *samplesref;
 
     samplesref =
-        avfilter_get_audio_buffer(outlink, AV_PERM_WRITE, null->nb_samples);
+        ff_get_audio_buffer(outlink, AV_PERM_WRITE, null->nb_samples);
     samplesref->pts = null->pts;
     samplesref->pos = -1;
     samplesref->audio->channel_layout = null->channel_layout;
     samplesref->audio->sample_rate = outlink->sample_rate;
 
-    avfilter_filter_samples(outlink, avfilter_ref_buffer(samplesref, ~0));
+    ff_filter_samples(outlink, avfilter_ref_buffer(samplesref, ~0));
     avfilter_unref_buffer(samplesref);
 
     null->pts += null->nb_samples;

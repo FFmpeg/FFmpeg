@@ -21,6 +21,7 @@ HEADERS = asrc_abuffer.h                                                \
           vsrc_buffer.h                                                 \
 
 OBJS = allfilters.o                                                     \
+       audio.o                                                          \
        avfilter.o                                                       \
        avfiltergraph.o                                                  \
        buffersink.o                                                     \

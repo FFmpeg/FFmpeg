@@ -122,7 +122,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
     AVFilterLink *outlink = inlink->dst->outputs[0];
     int16_t *taps, *endin, *in, *out;
     AVFilterBufferRef *outsamples =
-        avfilter_get_audio_buffer(inlink, AV_PERM_WRITE,
+        ff_get_audio_buffer(inlink, AV_PERM_WRITE,
                                   insamples->audio->nb_samples);
     avfilter_copy_buffer_ref_props(outsamples, insamples);
 
@@ -141,7 +141,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
     // save part of input for next round
     memcpy(taps, endin, NUMTAPS * sizeof(*taps));
 
-    avfilter_filter_samples(outlink, outsamples);
+    ff_filter_samples(outlink, outsamples);
     avfilter_unref_buffer(insamples);
 }
 

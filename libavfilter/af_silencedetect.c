@@ -123,7 +123,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
         }
     }
 
-    avfilter_filter_samples(inlink->dst->outputs[0], insamples);
+    ff_filter_samples(inlink->dst->outputs[0], insamples);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -163,7 +163,7 @@ AVFilter avfilter_af_silencedetect = {
     .inputs = (const AVFilterPad[]) {
         { .name             = "default",
           .type             = AVMEDIA_TYPE_AUDIO,
-          .get_audio_buffer = avfilter_null_get_audio_buffer,
+          .get_audio_buffer = ff_null_get_audio_buffer,
           .filter_samples   = filter_samples, },
         { .name = NULL }
     },

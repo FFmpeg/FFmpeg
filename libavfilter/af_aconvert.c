@@ -144,7 +144,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamplesref
     AConvertContext *aconvert = inlink->dst->priv;
     const int n = insamplesref->audio->nb_samples;
     AVFilterLink *const outlink = inlink->dst->outputs[0];
-    AVFilterBufferRef *outsamplesref = avfilter_get_audio_buffer(outlink, AV_PERM_WRITE, n);
+    AVFilterBufferRef *outsamplesref = ff_get_audio_buffer(outlink, AV_PERM_WRITE, n);
 
     swr_convert(aconvert->swr, outsamplesref->data, n,
                         (void *)insamplesref->data, n);
@@ -153,7 +153,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamplesref
     outsamplesref->audio->channel_layout = outlink->channel_layout;
     outsamplesref->audio->planar         = outlink->planar;
 
-    avfilter_filter_samples(outlink, outsamplesref);
+    ff_filter_samples(outlink, outsamplesref);
     avfilter_unref_buffer(insamplesref);
 }
 

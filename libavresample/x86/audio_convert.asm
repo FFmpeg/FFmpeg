@@ -54,26 +54,24 @@ cglobal conv_fltp_to_flt_6ch, 2,8,7, dst, src, src1, src2, src3, src4, src5, len
     mova      m3, [srcq+src3q]
     mova      m4, [srcq+src4q]
     mova      m5, [srcq+src5q]
-%if cpuflag(sse)
+%if cpuflag(sse4)
     SBUTTERFLYPS 0, 1, 6
     SBUTTERFLYPS 2, 3, 6
     SBUTTERFLYPS 4, 5, 6
 
-    movaps    m6, m4
-    shufps    m4, m0, q3210
+    blendps   m6, m4, m0, 1100b
     movlhps   m0, m2
-    movhlps   m6, m2
-    movaps [dstq   ], m0
-    movaps [dstq+16], m4
-    movaps [dstq+32], m6
-
-    movaps    m6, m5
-    shufps    m5, m1, q3210
+    movhlps   m4, m2
+    blendps   m2, m5, m1, 1100b
     movlhps   m1, m3
-    movhlps   m6, m3
+    movhlps   m5, m3
+
+    movaps [dstq   ], m0
+    movaps [dstq+16], m6
+    movaps [dstq+32], m4
     movaps [dstq+48], m1
-    movaps [dstq+64], m5
-    movaps [dstq+80], m6
+    movaps [dstq+64], m2
+    movaps [dstq+80], m5
 %else ; mmx
     SBUTTERFLY dq, 0, 1, 6
     SBUTTERFLY dq, 2, 3, 6
@@ -100,5 +98,9 @@ cglobal conv_fltp_to_flt_6ch, 2,8,7, dst, src, src1, src2, src3, src4, src5, len
 
 INIT_MMX mmx
 CONV_FLTP_TO_FLT_6CH
-INIT_XMM sse
+INIT_XMM sse4
 CONV_FLTP_TO_FLT_6CH
+%if HAVE_AVX
+INIT_XMM avx
+CONV_FLTP_TO_FLT_6CH
+%endif

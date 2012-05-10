@@ -2662,7 +2662,7 @@ case $target_os in
         SHFLAGS='-shared -Wl,-h,$$(@F)'
         enabled x86 && SHFLAGS="-mimpure-text $SHFLAGS"
         network_extralibs="-lsocket -lnsl"
-        add_cppflags -D__EXTENSIONS__
+        add_cppflags -D__EXTENSIONS__ -D_XOPEN_SOURCE=600
         # When using suncc to build, the Solaris linker will mark
         # an executable with each instruction set encountered by
         # the Solaris assembler.  As our libraries contain their own

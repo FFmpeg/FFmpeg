@@ -430,7 +430,8 @@ struct AVFilterPad {
      *
      * Input audio pads only.
      */
-    AVFilterBufferRef *(*get_audio_buffer)(AVFilterLink *link, int perms, int nb_samples);
+    AVFilterBufferRef *(*get_audio_buffer)(AVFilterLink *link, int perms,
+                                           int nb_samples);
 
     /**
      * Callback called after the slices of a frame are completely sent. If
@@ -508,16 +509,10 @@ void avfilter_default_draw_slice(AVFilterLink *link, int y, int h, int slice_dir
 /** default handler for end_frame() for video inputs */
 void avfilter_default_end_frame(AVFilterLink *link);
 
-/** default handler for filter_samples() for audio inputs */
-void avfilter_default_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref);
-
 /** default handler for get_video_buffer() for video inputs */
 AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link,
                                                      int perms, int w, int h);
 
-/** default handler for get_audio_buffer() for audio inputs */
-AVFilterBufferRef *avfilter_default_get_audio_buffer(AVFilterLink *link,
-                                                     int perms, int nb_samples);
 
 /**
  * Helpers for query_formats() which set all links to the same list of
@@ -541,16 +536,9 @@ void avfilter_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
 /** end_frame() handler for filters which simply pass video along */
 void avfilter_null_end_frame(AVFilterLink *link);
 
-/** filter_samples() handler for filters which simply pass audio along */
-void avfilter_null_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref);
-
 /** get_video_buffer() handler for filters which simply pass video along */
 AVFilterBufferRef *avfilter_null_get_video_buffer(AVFilterLink *link,
                                                   int perms, int w, int h);
-
-/** get_audio_buffer() handler for filters which simply pass audio along */
-AVFilterBufferRef *avfilter_null_get_audio_buffer(AVFilterLink *link,
-                                                  int perms, int nb_samples);
 
 /**
  * Filter definition. This defines the pads a filter contains, and all the
@@ -665,7 +653,7 @@ struct AVFilterLink {
     AVRational sample_aspect_ratio; ///< agreed upon sample aspect ratio
     /* These parameters apply only to audio */
     uint64_t channel_layout;    ///< channel layout of current buffer (see libavutil/audioconvert.h)
-#if LIBAVFILTER_VERSION_MAJOR < 3
+#if FF_API_SAMPLERATE64
     int64_t sample_rate;        ///< samples per second
 #else
     int sample_rate;            ///< samples per second
@@ -791,19 +779,6 @@ avfilter_get_video_buffer_ref_from_arrays(uint8_t * const data[4], const int lin
                                           int w, int h, enum PixelFormat format);
 
 /**
- * Request an audio samples buffer with a specific set of permissions.
- *
- * @param link           the output link to the filter from which the buffer will
- *                       be requested
- * @param perms          the required access permissions
- * @param nb_samples     the number of samples per channel
- * @return               A reference to the samples. This must be unreferenced with
- *                       avfilter_unref_buffer when you are finished with it.
- */
-AVFilterBufferRef *avfilter_get_audio_buffer(AVFilterLink *link, int perms,
-                                             int nb_samples);
-
-/**
  * Create an audio buffer reference wrapped around an already
  * allocated samples buffer.
  *
@@ -904,17 +879,7 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
  */
 int avfilter_process_command(AVFilterContext *filter, const char *cmd, const char *arg, char *res, int res_len, int flags);
 
-/**
- * Send a buffer of audio samples to the next filter.
- *
- * @param link       the output link over which the audio samples are being sent
- * @param samplesref a reference to the buffer of audio samples being sent. The
- *                   receiving filter will free this reference when it no longer
- *                   needs it or pass it on to the next filter.
- */
-void avfilter_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref);
-
-/** Initialize the filter system. Register all built-in filters. */
+/** Initialize the filter system. Register all builtin filters. */
 void avfilter_register_all(void);
 
 /** Uninitialize the filter system. Unregister all filters. */
@@ -1023,5 +988,7 @@ static inline void avfilter_insert_outpad(AVFilterContext *f, unsigned index,
     avfilter_insert_pad(index, &f->output_count, offsetof(AVFilterLink, srcpad),
                         &f->output_pads, &f->outputs, p);
 }
+
+#include "audio.h"
 
 #endif /* AVFILTER_AVFILTER_H */
