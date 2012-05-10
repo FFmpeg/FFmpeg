@@ -3958,18 +3958,22 @@ Libs: -L\${libdir} -l${shortname} $(enabled shared || echo $libs)
 Libs.private: $(enabled shared && echo $libs)
 Cflags: -I\${includedir}
 EOF
-cat <<EOF > $name/$name-uninstalled.pc
+
+mkdir -p doc/examples/pc-uninstalled
+includedir=${source_path}
+[ "$includedir" = . ] && includedir="\${pcfiledir}/../../.."
+cat <<EOF > doc/examples/pc-uninstalled/$name.pc
 prefix=
 exec_prefix=
-libdir=\${pcfiledir}
-includedir=${source_path}
+libdir=\${pcfiledir}/../../../$name
+includedir=${includedir}
 
 Name: $name
 Description: $comment
 Version: $version
 Requires: $requires
 Conflicts:
-Libs: \${libdir}/${LIBPREF}${shortname}${LIBSUF} $libs
+Libs: -L\${libdir} -l${shortname} $(enabled shared || echo $libs)
 Cflags: -I\${includedir}
 EOF
 }
