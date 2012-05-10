@@ -1604,7 +1604,7 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
     uint8_t *buftmp;
     int64_t size_out;
 
-    int frame_bytes, resample_changed, ret;
+    int frame_bytes, resample_changed;
     AVCodecContext *enc = ost->st->codec;
     AVCodecContext *dec = ist->st->codec;
     int osize = av_get_bytes_per_sample(enc->sample_fmt);
@@ -1614,7 +1614,6 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
     int planes   = av_sample_fmt_is_planar(dec->sample_fmt) ? dec->channels : 1;
     int i;
     int out_linesize = 0;
-    int buf_linesize = decoded_frame->linesize[0];
 
     av_assert0(planes <= AV_NUM_DATA_POINTERS);
 
@@ -1743,7 +1742,6 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
                         buf[i] = t;
                     }
                     size += byte_delta;
-                    buf_linesize = allocated_async_buf_size;
                     av_log(NULL, AV_LOG_VERBOSE, "adding %d audio samples of silence\n", idelta);
                 }
             } else if (audio_sync_method > 1) {
