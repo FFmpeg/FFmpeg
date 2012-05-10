@@ -24,12 +24,6 @@ OBJS=$(addsuffix .o,$(EXAMPLES))
 decoding_encoding: LDLIBS += -lm
 muxing:            LDLIBS += -lm
 
-%: %.o
-	$(CC) $< $(LDLIBS) -o $@
-
-%.o: %.c
-	$(CC) $< $(CFLAGS) -c -o $@
-
 .phony: all clean
 
 all: $(OBJS) $(EXAMPLES)
