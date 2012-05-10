@@ -303,7 +303,7 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 
         for (i = 0; i < h; i ++) {
             int w = inlink->w;
-            const uint8_t (*tab)[256] = lut->lut;
+            const uint8_t (*tab)[256] = (const uint8_t (*)[256])lut->lut;
             inrow  = inrow0;
             outrow = outrow0;
             for (j = 0; j < w; j++) {
