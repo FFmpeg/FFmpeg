@@ -102,7 +102,6 @@ static void filter(AVFilterContext *ctx)
         int w = idet->cur->video->w;
         int h = idet->cur->video->h;
         int refs = idet->cur->linesize[i];
-        int df = (idet->csp->comp[i].depth_minus1 + 8) / 8;
 
         if (i && i<3) {
             w >>= idet->csp->log2_chroma_w;
@@ -295,7 +294,6 @@ static int query_formats(AVFilterContext *ctx)
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     IDETContext *idet = ctx->priv;
-    int cpu_flags = av_get_cpu_flags();
 
     idet->csp = NULL;
 
