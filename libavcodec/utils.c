@@ -2070,8 +2070,8 @@ int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes)
     bps = av_get_exact_bits_per_sample(avctx->codec_id);
 
     /* codecs with an exact constant bits per sample */
-    if (bps > 0 && ch > 0 && frame_bytes > 0)
-        return (frame_bytes * 8) / (bps * ch);
+    if (bps > 0 && ch > 0 && frame_bytes > 0 && ch < 32768 && bps < 32768)
+        return (frame_bytes * 8LL) / (bps * ch);
     bps = avctx->bits_per_coded_sample;
 
     /* codecs with a fixed packet duration */
