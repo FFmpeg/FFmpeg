@@ -52,6 +52,9 @@ fate-adpcm-ima_wav-stereo: CMD = md5 -i $(SAMPLES)/qt-surge-suite/surge-2-16-L-m
 FATE_ADPCM += fate-adpcm-ima-ws
 fate-adpcm-ima-ws: CMD = framecrc -i $(SAMPLES)/vqa/cc-demo1-partial.vqa -vn
 
+FATE_ADPCM += fate-adpcm-ms-mono
+fate-adpcm-ms-mono: CMD = framecrc -i $(SAMPLES)/dxa/meetsquid.dxa -t 2 -vn
+
 FATE_ADPCM += fate-adpcm-psx-str-v3
 fate-adpcm-psx-str-v3: CMD = framecrc -i $(SAMPLES)/psx-str/abc000_cut.str -vn
 

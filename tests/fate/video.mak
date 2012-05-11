@@ -89,7 +89,7 @@ FATE_AVCONV += fate-truemotion2
 fate-truemotion2: CMD = framecrc -i $(SAMPLES)/duck/tm20.avi
 
 FATE_DXA += fate-dxa-feeble
-fate-dxa-feeble: CMD = framecrc -i $(SAMPLES)/dxa/meetsquid.dxa -t 2 -pix_fmt rgb24
+fate-dxa-feeble: CMD = framecrc -i $(SAMPLES)/dxa/meetsquid.dxa -t 2 -pix_fmt rgb24 -an
 
 FATE_DXA += fate-dxa-scummvm
 fate-dxa-scummvm: CMD = framecrc -i $(SAMPLES)/dxa/scummvm.dxa -pix_fmt rgb24
