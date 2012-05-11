@@ -55,9 +55,6 @@ fate-qcp-demux: CMD = crc -i $(SAMPLES)/qcp/0036580847.QCP -acodec copy
 FATE_AVCONV += fate-redcode-demux
 fate-redcode-demux: CMD = framecrc -i $(SAMPLES)/r3d/4MB-sample.r3d -vcodec copy -acodec copy
 
-FATE_AVCONV += fate-sierra-vmd
-fate-sierra-vmd: CMD = framecrc -i $(SAMPLES)/vmd/12.vmd -pix_fmt rgb24
-
 FATE_AVCONV += fate-siff
 fate-siff: CMD = framecrc -i $(SAMPLES)/SIFF/INTRO_B.VB -t 3 -pix_fmt rgb24
 
