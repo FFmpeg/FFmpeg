@@ -49,6 +49,9 @@ fate-adpcm-ima-smjpeg: CMD = framecrc -i $(SAMPLES)/smjpeg/scenwin.mjpg -vn
 FATE_ADPCM += fate-adpcm-ima_wav-stereo
 fate-adpcm-ima_wav-stereo: CMD = md5 -i $(SAMPLES)/qt-surge-suite/surge-2-16-L-ms11.mov -f s16le
 
+FATE_ADPCM += fate-adpcm-ima-ws
+fate-adpcm-ima-ws: CMD = framecrc -i $(SAMPLES)/vqa/cc-demo1-partial.vqa -vn
+
 FATE_ADPCM += fate-adpcm-psx-str-v3
 fate-adpcm-psx-str-v3: CMD = framecrc -i $(SAMPLES)/psx-str/abc000_cut.str -vn
 

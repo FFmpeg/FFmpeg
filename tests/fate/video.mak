@@ -217,7 +217,7 @@ FATE_AVCONV += fate-videoxl
 fate-videoxl: CMD = framecrc -i $(SAMPLES)/vixl/pig-vixl.avi
 
 FATE_AVCONV += fate-vqa-cc
-fate-vqa-cc: CMD = framecrc -i $(SAMPLES)/vqa/cc-demo1-partial.vqa -pix_fmt rgb24
+fate-vqa-cc: CMD = framecrc -i $(SAMPLES)/vqa/cc-demo1-partial.vqa -pix_fmt rgb24 -an
 
 FATE_AVCONV += fate-wc3movie-xan
 fate-wc3movie-xan: CMD = framecrc -i $(SAMPLES)/wc3movie/SC_32-part.MVE -pix_fmt rgb24
