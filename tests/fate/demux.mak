@@ -16,9 +16,6 @@ fate-cdxl-demux: CMD = framecrc -i $(SAMPLES)/cdxl/mirage.cdxl -vcodec copy -aco
 FATE_AVCONV += fate-d-cinema-demux
 fate-d-cinema-demux: CMD = framecrc -i $(SAMPLES)/d-cinema/THX_Science_FLT_1920-partial.302 -acodec copy -pix_fmt rgb24
 
-FATE_AVCONV += fate-funcom-iss
-fate-funcom-iss: CMD = md5 -i $(SAMPLES)/funcom-iss/0004010100.iss -f s16le
-
 FATE_AVCONV += fate-interplay-mve-16bit
 fate-interplay-mve-16bit: CMD = framecrc -i $(SAMPLES)/interplay-mve/descent3-level5-16bit-partial.mve -pix_fmt rgb24
 
