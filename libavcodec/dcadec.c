@@ -1086,12 +1086,10 @@ static const uint8_t abits_sizes[7]  = { 7, 10, 12, 13, 15, 17, 19 };
 static const uint8_t abits_levels[7] = { 3,  5,  7,  9, 13, 17, 25 };
 
 #ifndef int8x8_fmul_int32
-static inline void int8x8_fmul_int32(float *dst, const int8_t *src, int scale)
+static inline void int8x8_fmul_int32(DCADSPContext *dsp, float *dst,
+                                     const int8_t *src, int scale)
 {
-    float fscale = scale / 16.0;
-    int i;
-    for (i = 0; i < 8; i++)
-        dst[i] = src[i] * fscale;
+    dsp->int8x8_fmul_int32(dst, src, scale);
 }
 #endif
 
@@ -1219,7 +1217,7 @@ static int dca_subsubframe(DCAContext *s, int base_channel, int block_index)
                 s->debug_flag |= 0x01;
             }
 
-            int8x8_fmul_int32(subband_samples[k][l],
+            int8x8_fmul_int32(&s->dcadsp, subband_samples[k][l],
                               &high_freq_vq[hfvq][subsubframe * 8],
                               s->scale_factor[k][l][0]);
         }
