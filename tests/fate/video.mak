@@ -130,6 +130,12 @@ fate-iff-ilbm: CMD = framecrc -i $(SAMPLES)/iff/lms-matriks.ilbm -pix_fmt rgb24
 FATE_AVCONV += $(FATE_IFF)
 fate-iff: $(FATE_IFF)
 
+FATE_AVCONV += fate-interplay-mve-8bit
+fate-interplay-mve-8bit: CMD = framecrc -i $(SAMPLES)/interplay-mve/interplay-logo-2MB.mve -pix_fmt rgb24 -an
+
+FATE_AVCONV += fate-interplay-mve-16bit
+fate-interplay-mve-16bit: CMD = framecrc -i $(SAMPLES)/interplay-mve/descent3-level5-16bit-partial.mve -pix_fmt rgb24 -an
+
 FATE_AVCONV += fate-kgv1
 fate-kgv1: CMD = framecrc -i $(SAMPLES)/kega/kgv1.avi -pix_fmt rgb555le -an
 
