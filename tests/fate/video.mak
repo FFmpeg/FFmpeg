@@ -14,7 +14,7 @@ FATE_AVCONV += fate-alg-mm
 fate-alg-mm: CMD = framecrc -i $(SAMPLES)/alg-mm/ibmlogo.mm -an -pix_fmt rgb24
 
 FATE_AVCONV += fate-amv
-fate-amv: CMD = framecrc -idct simple -i $(SAMPLES)/amv/MTV_high_res_320x240_sample_Penguin_Joke_MTV_from_WMV.amv -t 10
+fate-amv: CMD = framecrc -idct simple -i $(SAMPLES)/amv/MTV_high_res_320x240_sample_Penguin_Joke_MTV_from_WMV.amv -t 10 -an
 
 FATE_AVCONV += fate-ansi
 fate-ansi: CMD = framecrc -chars_per_frame 44100 -i $(SAMPLES)/ansi/TRE-IOM5.ANS -pix_fmt rgb24
