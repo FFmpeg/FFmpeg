@@ -24,7 +24,7 @@ int ff_load_image(uint8_t *data[4], int linesize[4],
                   const char *filename, void *log_ctx)
 {
     AVInputFormat *iformat = NULL;
-    AVFormatContext *format_ctx;
+    AVFormatContext *format_ctx = NULL;
     AVCodec *codec;
     AVCodecContext *codec_ctx;
     AVFrame *frame;
