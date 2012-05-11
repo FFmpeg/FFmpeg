@@ -50,6 +50,9 @@
 #if ARCH_ARM
 #   include "arm/dca.h"
 #endif
+#if ARCH_X86
+#   include "x86/dca.h"
+#endif
 
 //#define TRACE
 
