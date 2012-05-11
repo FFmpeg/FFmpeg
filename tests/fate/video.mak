@@ -37,6 +37,9 @@ fate-bfi: CMD = framecrc -i $(SAMPLES)/bfi/2287.bfi -pix_fmt rgb24
 FATE_AVCONV += fate-bink-video
 fate-bink-video: CMD = framecrc -i $(SAMPLES)/bink/hol2br.bik
 
+FATE_AVCONV += fate-bmv-video
+fate-bmv-video: CMD = framecrc -i $(SAMPLES)/bmv/SURFING-partial.BMV -pix_fmt rgb24 -an
+
 FATE_AVCONV += fate-cdgraphics
 fate-cdgraphics: CMD = framecrc -i $(SAMPLES)/cdgraphics/BrotherJohn.cdg -pix_fmt rgb24 -t 1
 

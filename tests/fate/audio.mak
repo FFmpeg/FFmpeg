@@ -13,6 +13,9 @@ fate-binkaudio-rdft: FUZZ = 2
 FATE_AVCONV += $(FATE_BINKAUDIO)
 fate-binkaudio: $(FATE_BINKAUDIO)
 
+FATE_AVCONV += fate-bmv-audio
+fate-bmv-audio: CMD = framecrc -i $(SAMPLES)/bmv/SURFING-partial.BMV -vn
+
 FATE_AVCONV += fate-delphine-cin-audio
 fate-delphine-cin-audio: CMD = framecrc -i $(SAMPLES)/delphine-cin/LOGO-partial.CIN -vn
 

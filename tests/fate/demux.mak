@@ -7,9 +7,6 @@ fate-aea-demux: CMD = crc -i $(SAMPLES)/aea/chirp.aea -acodec copy
 FATE_AVCONV += fate-bink-demux
 fate-bink-demux: CMD = crc -i $(SAMPLES)/bink/Snd0a7d9b58.dee -vn -acodec copy
 
-FATE_AVCONV += fate-bmv
-fate-bmv: CMD = framecrc -i $(SAMPLES)/bmv/SURFING-partial.BMV -pix_fmt rgb24
-
 FATE_AVCONV += fate-caf
 fate-caf: CMD = crc -i $(SAMPLES)/caf/caf-pcm16.caf
 
