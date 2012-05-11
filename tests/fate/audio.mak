@@ -34,5 +34,8 @@ fate-nellymoser: CMD = pcm -i $(SAMPLES)/nellymoser/nellymoser.flv
 fate-nellymoser: CMP = oneoff
 fate-nellymoser: REF = $(SAMPLES)/nellymoser/nellymoser.pcm
 
+FATE_AVCONV += fate-smacker-audio
+fate-smacker-audio: CMD = framecrc -i $(SAMPLES)/smacker/wetlogo.smk -vn
+
 FATE_AVCONV += fate-ws_snd
 fate-ws_snd: CMD = md5 -i $(SAMPLES)/vqa/ws_snd.vqa -f s16le
