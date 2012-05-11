@@ -74,10 +74,10 @@ FATE_AVCONV += fate-deluxepaint-anm
 fate-deluxepaint-anm: CMD = framecrc -i $(SAMPLES)/deluxepaint-anm/INTRO1.ANM -pix_fmt rgb24
 
 FATE_TRUEMOTION1 += fate-truemotion1-15
-fate-truemotion1-15: CMD = framecrc -i $(SAMPLES)/duck/phant2-940.duk -pix_fmt rgb24
+fate-truemotion1-15: CMD = framecrc -i $(SAMPLES)/duck/phant2-940.duk -pix_fmt rgb24 -an
 
 FATE_TRUEMOTION1 += fate-truemotion1-24
-fate-truemotion1-24: CMD = framecrc -i $(SAMPLES)/duck/sonic3dblast_intro-partial.avi -pix_fmt rgb24
+fate-truemotion1-24: CMD = framecrc -i $(SAMPLES)/duck/sonic3dblast_intro-partial.avi -pix_fmt rgb24 -an
 
 FATE_AVCONV += $(FATE_TRUEMOTION1)
 fate-truemotion1: $(FATE_TRUEMOTION1)
