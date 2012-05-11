@@ -31,6 +31,9 @@ fate-adpcm-ea-r1: CMD = framecrc -i $(SAMPLES)/ea-mad/NFS6LogoE.mad -vn
 FATE_ADPCM += fate-adpcm-ima-amv
 fate-adpcm-ima-amv: CMD = framecrc -i $(SAMPLES)/amv/MTV_high_res_320x240_sample_Penguin_Joke_MTV_from_WMV.amv -t 10 -vn
 
+FATE_ADPCM += fate-adpcm-ima-apc
+fate-adpcm-ima-apc: CMD = md5 -i $(SAMPLES)/cryo-apc/cine007.APC -f s16le
+
 FATE_ADPCM += fate-adpcm-ima-dk3
 fate-adpcm-ima-dk3: CMD = md5 -i $(SAMPLES)/duck/sop-audio-only.avi -f s16le
 

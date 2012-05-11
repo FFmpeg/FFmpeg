@@ -13,9 +13,6 @@ fate-caf: CMD = crc -i $(SAMPLES)/caf/caf-pcm16.caf
 FATE_AVCONV += fate-cdxl-demux
 fate-cdxl-demux: CMD = framecrc -i $(SAMPLES)/cdxl/mirage.cdxl -vcodec copy -acodec copy
 
-FATE_AVCONV += fate-cryo-apc
-fate-cryo-apc: CMD = md5 -i $(SAMPLES)/cryo-apc/cine007.APC -f s16le
-
 FATE_AVCONV += fate-d-cinema-demux
 fate-d-cinema-demux: CMD = framecrc -i $(SAMPLES)/d-cinema/THX_Science_FLT_1920-partial.302 -acodec copy -pix_fmt rgb24
 
