@@ -31,6 +31,7 @@ typedef struct DCADSPContext {
                             int *synth_buf_offset, float synth_buf2[32],
                             const float window[512], float *samples_out,
                             float raXin[32], float scale);
+    void (*int8x8_fmul_int32)(float *dst, const int8_t *src, int scale);
 } DCADSPContext;
 
 void ff_dcadsp_init(DCADSPContext *s);
