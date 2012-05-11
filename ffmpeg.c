@@ -1980,11 +1980,11 @@ static void do_video_out(AVFormatContext *s, OutputStream *ost,
         if (delta <= -0.6)
             nb_frames = 0;
         else if (delta > 0.6)
-            ost->sync_opts = lrintf(sync_ipts);
+            ost->sync_opts = lrint(sync_ipts);
         break;
     case VSYNC_DROP:
     case VSYNC_PASSTHROUGH:
-        ost->sync_opts = lrintf(sync_ipts);
+        ost->sync_opts = lrint(sync_ipts);
         break;
     default:
         av_assert0(0);

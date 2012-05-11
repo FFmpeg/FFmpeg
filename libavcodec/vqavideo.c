@@ -473,11 +473,9 @@ static int vqa_decode_chunk(VqaContext *s)
         index_shift = 4;
     else
         index_shift = 3;
-    for (y = 0; y < s->frame.linesize[0] * s->height;
-        y += s->frame.linesize[0] * s->vector_height) {
-
-        for (x = y; x < y + s->width; x += 4, lobytes++, hibytes++) {
-            pixel_ptr = x;
+    for (y = 0; y < s->height; y += s->vector_height) {
+        for (x = 0; x < s->width; x += 4, lobytes++, hibytes++) {
+            pixel_ptr = y * s->frame.linesize[0] + x;
 
             /* get the vector index, the method for which varies according to
              * VQA file version */
