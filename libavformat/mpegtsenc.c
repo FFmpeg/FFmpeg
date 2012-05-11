@@ -990,7 +990,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     uint8_t *data= NULL;
     MpegTSWrite *ts = s->priv_data;
     MpegTSWriteStream *ts_st = st->priv_data;
-    const uint64_t delay = av_rescale(s->max_delay, 90000, AV_TIME_BASE)*2;
+    const int64_t delay = av_rescale(s->max_delay, 90000, AV_TIME_BASE)*2;
     int64_t dts = AV_NOPTS_VALUE, pts = AV_NOPTS_VALUE;
 
     if (ts->reemit_pat_pmt) {
