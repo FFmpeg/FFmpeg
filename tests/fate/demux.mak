@@ -41,7 +41,7 @@ FATE_AVCONV += fate-maxis-xa
 fate-maxis-xa: CMD = framecrc -i $(SAMPLES)/maxis-xa/SC2KBUG.XA -frames:a 30 -c:a copy
 
 FATE_AVCONV += fate-mtv
-fate-mtv: CMD = framecrc -i $(SAMPLES)/mtv/comedian_auto-partial.mtv -acodec copy -pix_fmt rgb24
+fate-mtv: CMD = framecrc -i $(SAMPLES)/mtv/comedian_auto-partial.mtv -c copy
 
 FATE_AVCONV += fate-mxf-demux
 fate-mxf-demux: CMD = framecrc -i $(SAMPLES)/mxf/C0023S01.mxf -acodec copy -vcodec copy
