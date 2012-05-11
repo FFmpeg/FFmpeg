@@ -67,8 +67,8 @@ fate-cyberia-c93: CMD = framecrc -i $(SAMPLES)/cyberia-c93/intro1.c93 -t 3 -pix_
 FATE_AVCONV += fate-cyuv
 fate-cyuv: CMD = framecrc -i $(SAMPLES)/cyuv/cyuv.avi
 
-FATE_AVCONV += fate-delphine-cin
-fate-delphine-cin: CMD = framecrc -i $(SAMPLES)/delphine-cin/LOGO-partial.CIN -pix_fmt rgb24
+FATE_AVCONV += fate-delphine-cin-video
+fate-delphine-cin-video: CMD = framecrc -i $(SAMPLES)/delphine-cin/LOGO-partial.CIN -pix_fmt rgb24 -an
 
 FATE_AVCONV += fate-deluxepaint-anm
 fate-deluxepaint-anm: CMD = framecrc -i $(SAMPLES)/deluxepaint-anm/INTRO1.ANM -pix_fmt rgb24
