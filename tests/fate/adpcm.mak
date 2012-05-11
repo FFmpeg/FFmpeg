@@ -43,6 +43,9 @@ fate-adpcm-ima-ea-eacs: CMD = framecrc -i $(SAMPLES)/ea-tgv/INTRO8K-partial.TGV 
 FATE_ADPCM += fate-adpcm-ima-ea-sead
 fate-adpcm-ima-ea-sead: CMD = framecrc -i $(SAMPLES)/ea-tgv/INTEL_S.TGV -vn
 
+FATE_ADPCM += fate-adpcm-ima-smjpeg
+fate-adpcm-ima-smjpeg: CMD = framecrc -i $(SAMPLES)/smjpeg/scenwin.mjpg -vn
+
 FATE_ADPCM += fate-adpcm-ima_wav-stereo
 fate-adpcm-ima_wav-stereo: CMD = md5 -i $(SAMPLES)/qt-surge-suite/surge-2-16-L-ms11.mov -f s16le
 
