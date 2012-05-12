@@ -192,6 +192,11 @@ static av_cold int flashsv2_encode_init(AVCodecContext * avctx)
                "Input dimensions too large, input must be max 4096x4096 !\n");
         return -1;
     }
+    if ((avctx->width < 16) || (avctx->height < 16)) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Input dimensions too small, input must be max 16x16 !\n");
+        return -1;
+    }
 
     if (av_image_check_size(avctx->width, avctx->height, 0, avctx) < 0)
         return -1;
