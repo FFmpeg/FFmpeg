@@ -8,7 +8,7 @@ FFMPEG_LIBS=    libavdevice                        \
                 libswscale                         \
                 libavutil                          \
 
-CFLAGS += -Wall -O2
+CFLAGS += -Wall -O2 -g
 CFLAGS += $(shell pkg-config --cflags $(FFMPEG_LIBS))
 LDLIBS += $(shell pkg-config --libs $(FFMPEG_LIBS))
 
