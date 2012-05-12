@@ -293,6 +293,8 @@ static void read_ttag(AVFormatContext *s, AVIOContext *pb, int taglen, const cha
     }
     else if (*dst)
         dict_flags |= AV_DICT_DONT_STRDUP_VAL;
+    else
+        av_freep(&dst);
 
     if (dst)
         av_dict_set(&s->metadata, key, dst, dict_flags);
