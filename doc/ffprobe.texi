@@ -320,25 +320,29 @@ This option automatically sets @option{fully_qualified} to 1.
 
 For more information about the XML format, see
 @url{http://www.w3.org/XML/}.
+@c man end WRITERS
 
 @chapter Timecode
+@c man begin TIMECODE
 
 @command{ffprobe} supports Timecode extraction:
 
 @itemize
 
-@item MPEG1/2 timecode is extracted from the GOP, and is available in the video
+@item
+MPEG1/2 timecode is extracted from the GOP, and is available in the video
 stream details (@option{-show_streams}, see @var{timecode}).
 
-@item MOV timecode is extracted from tmcd track, so is available in the tmcd
+@item
+MOV timecode is extracted from tmcd track, so is available in the tmcd
 stream metadata (@option{-show_streams}, see @var{TAG:timecode}).
 
-@item DV and GXF timecodes are available in format metadata
+@item
+DV and GXF timecodes are available in format metadata
 (@option{-show_format}, see @var{TAG:timecode}).
 
 @end itemize
-
-@c man end WRITERS
+@c man end TIMECODE
 
 @include decoders.texi
 @include demuxers.texi
