@@ -66,7 +66,7 @@ AVABufferSinkParams *av_abuffersink_params_alloc(void);
 #define AV_BUFFERSINK_FLAG_PEEK 1
 
 /**
- * Tell av_buffersink_get_buffer_ref() not to request a frame fom its input.
+ * Tell av_buffersink_get_buffer_ref() not to request a frame from its input.
  * If a frame is already buffered, it is read (and removed from the buffer),
  * but if no frame is present, return AVERROR(EAGAIN).
  */
