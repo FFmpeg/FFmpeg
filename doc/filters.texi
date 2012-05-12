@@ -502,6 +502,10 @@ volume=-12dB
 @end example
 @end itemize
 
+@section resample
+Convert the audio sample format, sample rate and channel layout. This filter is
+not meant to be used directly.
+
 @c man end AUDIO FILTERS
 
 @chapter Audio Sources

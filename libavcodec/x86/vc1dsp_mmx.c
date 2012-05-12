@@ -701,7 +701,6 @@ static void vc1_h_loop_filter16_ ## EXT(uint8_t *src, int stride, int pq) \
 }
 
 #if HAVE_YASM
-LOOP_FILTER(mmx)
 LOOP_FILTER(mmx2)
 LOOP_FILTER(sse2)
 LOOP_FILTER(ssse3)
@@ -803,7 +802,6 @@ void ff_vc1dsp_init_mmx(VC1DSPContext *dsp)
 
 #if HAVE_YASM
     if (mm_flags & AV_CPU_FLAG_MMX) {
-        ASSIGN_LF(mmx);
     }
     return;
     if (mm_flags & AV_CPU_FLAG_MMX2) {
