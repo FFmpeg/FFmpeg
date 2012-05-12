@@ -78,7 +78,7 @@ AVFilterBufferRef *avfilter_ref_buffer(AVFilterBufferRef *ref, int pmask)
         }
         *ret->audio = *ref->audio;
 
-        if (ref->extended_data != ref->data) {
+        if (ref->extended_data && ref->extended_data != ref->data) {
             int nb_channels = av_get_channel_layout_nb_channels(ref->audio->channel_layout);
             if (!(ret->extended_data = av_malloc(sizeof(*ret->extended_data) *
                                                  nb_channels))) {
