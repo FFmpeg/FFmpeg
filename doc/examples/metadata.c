@@ -50,6 +50,6 @@ int main (int argc, char **argv)
     while ((tag = av_dict_get(fmt_ctx->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
         printf("%s=%s\n", tag->key, tag->value);
 
-    avformat_free_context(fmt_ctx);
+    avformat_close_input(&fmt_ctx);
     return 0;
 }
