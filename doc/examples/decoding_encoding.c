@@ -54,7 +54,7 @@ static void audio_encode_example(const char *filename)
     float t, tincr;
     uint8_t *outbuf;
 
-    printf("Audio encoding\n");
+    printf("Encode audio file %s\n", filename);
 
     /* find the MP2 encoder */
     codec = avcodec_find_encoder(CODEC_ID_MP2);
@@ -125,7 +125,7 @@ static void audio_decode_example(const char *outfilename, const char *filename)
 
     av_init_packet(&avpkt);
 
-    printf("Audio decoding\n");
+    printf("Decode audio file %s\n", filename);
 
     /* find the mpeg audio decoder */
     codec = avcodec_find_decoder(CODEC_ID_MP2);
@@ -219,7 +219,7 @@ static void video_encode_example(const char *filename, int codec_id)
     uint8_t *outbuf;
     int had_output=0;
 
-    printf("Video encoding\n");
+    printf("Encode video file %s\n", filename);
 
     /* find the mpeg1 video encoder */
     codec = avcodec_find_encoder(codec_id);
@@ -351,7 +351,7 @@ static void video_decode_example(const char *outfilename, const char *filename)
     /* set end of buffer to 0 (this ensures that no overreading happens for damaged mpeg streams) */
     memset(inbuf + INBUF_SIZE, 0, FF_INPUT_BUFFER_PADDING_SIZE);
 
-    printf("Video decoding\n");
+    printf("Decode video file %s\n", filename);
 
     /* find the mpeg1 video decoder */
     codec = avcodec_find_decoder(CODEC_ID_MPEG1VIDEO);
