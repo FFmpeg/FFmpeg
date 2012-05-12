@@ -8,7 +8,7 @@ FATE_AVCONV += fate-bink-demux
 fate-bink-demux: CMD = crc -i $(SAMPLES)/bink/Snd0a7d9b58.dee -vn -acodec copy
 
 FATE_AVCONV += fate-caf
-fate-caf: CMD = crc -i $(SAMPLES)/caf/caf-pcm16.caf
+fate-caf: CMD = crc -i $(SAMPLES)/caf/caf-pcm16.caf -c copy
 
 FATE_AVCONV += fate-cdxl-demux
 fate-cdxl-demux: CMD = framecrc -i $(SAMPLES)/cdxl/mirage.cdxl -vcodec copy -acodec copy
