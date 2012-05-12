@@ -198,9 +198,8 @@ int main(int argc, char **argv)
             }
 
             if (got_frame) {
-                if (frame.pts == AV_NOPTS_VALUE)
-                    frame.pts = frame.pkt_dts == AV_NOPTS_VALUE ?
-                        frame.pkt_dts : frame.pkt_pts;
+                frame.pts = av_frame_get_best_effort_timestamp(&frame);
+
                 /* push the decoded frame into the filtergraph */
                 av_vsrc_buffer_add_frame(buffersrc_ctx, &frame, 0);
 
