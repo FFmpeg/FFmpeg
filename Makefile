@@ -177,5 +177,5 @@ $(sort $(OBJDIRS)):
 # so this saves some time on slow systems.
 .SUFFIXES:
 
-.PHONY: all all-yes alltools check *clean config examples install*
+.PHONY: all all-yes alltools check *clean config install*
 .PHONY: testprogs uninstall*
