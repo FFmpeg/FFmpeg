@@ -65,7 +65,7 @@ FATE_AVCONV += fate-smjpeg
 fate-smjpeg: CMD = framecrc -i $(SAMPLES)/smjpeg/scenwin.mjpg -vcodec copy
 
 FATE_AVCONV += fate-westwood-aud
-fate-westwood-aud: CMD = md5 -i $(SAMPLES)/westwood-aud/excellent.aud -f s16le
+fate-westwood-aud: CMD = framecrc -i $(SAMPLES)/westwood-aud/excellent.aud -c copy
 
 FATE_AVCONV += fate-wtv-demux
 fate-wtv-demux: CMD = framecrc -i $(SAMPLES)/wtv/law-and-order-partial.wtv -vcodec copy -acodec copy
