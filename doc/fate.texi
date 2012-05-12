@@ -87,8 +87,9 @@ Specify a mask to be applied to autodetected CPU flags.
 In order to automatically testing specific configurations, e.g. multiple
 compilers, @command{tests/fate.sh} is provided.
 
-This shell script builds Libav, runs the regression tests and prepares a
-report that can be sent to @url{fate.libav.org} or directly examined locally.
+This shell script builds Libav, runs the regression tests and prepares
+a report that can be sent to @url{http://fate.libav.org/} or directly
+examined locally.
 
 @section Testing Profiles
 The configuration file passed to @command{fate.sh} is shell scripts as well.
