@@ -3033,6 +3033,7 @@ static int transcode_init(void)
             }
             memcpy(codec->extradata, icodec->extradata, icodec->extradata_size);
             codec->extradata_size= icodec->extradata_size;
+            codec->bits_per_coded_sample  = icodec->bits_per_coded_sample;
 
             codec->time_base = ist->st->time_base;
             /*
