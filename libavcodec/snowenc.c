@@ -1712,6 +1712,10 @@ redo_frame:
     else
         s->spatial_decomposition_count= 5;
 
+    while(   !(width >>(s->chroma_h_shift + s->spatial_decomposition_count))
+          || !(height>>(s->chroma_v_shift + s->spatial_decomposition_count)))
+        s->spatial_decomposition_count--;
+
     s->m.pict_type = pic->pict_type;
     s->qbias = pic->pict_type == AV_PICTURE_TYPE_P ? 2 : 0;
 
