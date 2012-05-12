@@ -1,4 +1,4 @@
-# use pkg-config for getting CFLAGS abd LDLIBS
+# use pkg-config for getting CFLAGS and LDLIBS
 FFMPEG_LIBS=    libavdevice                        \
                 libavformat                        \
                 libavfilter                        \
