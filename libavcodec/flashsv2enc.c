@@ -205,6 +205,11 @@ static av_cold int flashsv2_encode_init(AVCodecContext * avctx)
     s->block_width  = (s->image_width /  12) & ~15;
     s->block_height = (s->image_height / 12) & ~15;
 
+    if(!s->block_width)
+        s->block_width = 1;
+    if(!s->block_height)
+        s->block_height = 1;
+
     s->rows = (s->image_height + s->block_height - 1) / s->block_height;
     s->cols = (s->image_width +  s->block_width -  1) / s->block_width;
 
