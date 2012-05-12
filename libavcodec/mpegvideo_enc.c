@@ -480,6 +480,14 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
                    avctx->sample_aspect_ratio.num,  avctx->sample_aspect_ratio.den, 255);
     }
 
+    if ((s->codec_id == CODEC_ID_H263  ||
+         s->codec_id == CODEC_ID_H263P) &&
+        (avctx->width  > 2048 ||
+         avctx->height > 1152 )) {
+        av_log(avctx, AV_LOG_ERROR, "H.263 does not support resolutions above 2048x1152\n");
+        return -1;
+    }
+
     if ((s->flags & (CODEC_FLAG_INTERLACED_DCT | CODEC_FLAG_INTERLACED_ME)) &&
         s->codec_id != CODEC_ID_MPEG4 && s->codec_id != CODEC_ID_MPEG2VIDEO) {
         av_log(avctx, AV_LOG_ERROR, "interlacing not supported by codec\n");
