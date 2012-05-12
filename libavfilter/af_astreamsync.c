@@ -25,6 +25,7 @@
 
 #include "libavutil/eval.h"
 #include "avfilter.h"
+#include "audio.h"
 #include "internal.h"
 
 #define QUEUE_SIZE 16

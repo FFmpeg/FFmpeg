@@ -26,6 +26,7 @@
 
 #include "libavutil/audioconvert.h"
 #include "libavutil/eval.h"
+#include "audio.h"
 #include "avfilter.h"
 
 typedef struct {

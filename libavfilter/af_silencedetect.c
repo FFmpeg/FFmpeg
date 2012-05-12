@@ -25,6 +25,7 @@
 
 #include "libavutil/opt.h"
 #include "libavutil/timestamp.h"
+#include "audio.h"
 #include "avfilter.h"
 
 typedef struct {

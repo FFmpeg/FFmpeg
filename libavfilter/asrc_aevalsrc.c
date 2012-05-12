@@ -30,6 +30,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "avfilter.h"
+#include "audio.h"
 #include "internal.h"
 
 static const char * const var_names[] = {

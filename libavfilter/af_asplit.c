@@ -24,6 +24,7 @@
  */
 
 #include "avfilter.h"
+#include "audio.h"
 
 static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 {

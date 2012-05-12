@@ -35,6 +35,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
 #include "libavformat/avformat.h"
+#include "audio.h"
 #include "avcodec.h"
 #include "avfilter.h"
 

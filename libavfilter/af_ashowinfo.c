@@ -26,6 +26,7 @@
 #include "libavutil/adler32.h"
 #include "libavutil/audioconvert.h"
 #include "libavutil/timestamp.h"
+#include "audio.h"
 #include "avfilter.h"
 
 typedef struct {

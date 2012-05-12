@@ -31,6 +31,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "libswresample/swresample.h"
+#include "audio.h"
 #include "avfilter.h"
 
 #define MAX_CHANNELS 63

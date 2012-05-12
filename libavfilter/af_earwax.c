@@ -31,6 +31,7 @@
 
 #include "libavutil/audioconvert.h"
 #include "avfilter.h"
+#include "audio.h"
 
 #define NUMTAPS 64
 

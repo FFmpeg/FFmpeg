@@ -25,6 +25,7 @@
 
 #include "libswresample/swresample.h" // only for SWR_CH_MAX
 #include "avfilter.h"
+#include "audio.h"
 #include "internal.h"
 
 #define QUEUE_SIZE 16
