@@ -42,7 +42,6 @@ AVBufferSinkParams *av_buffersink_params_alloc(void)
 AVABufferSinkParams *av_abuffersink_params_alloc(void)
 {
     static const int sample_fmts[] = { -1 };
-    static const int packing_fmts[] = { -1 };
     static const int64_t channel_layouts[] = { -1 };
     AVABufferSinkParams *params = av_malloc(sizeof(AVABufferSinkParams));
 
@@ -51,7 +50,6 @@ AVABufferSinkParams *av_abuffersink_params_alloc(void)
 
     params->sample_fmts = sample_fmts;
     params->channel_layouts = channel_layouts;
-    params->packing_fmts = packing_fmts;
     return params;
 }
 
@@ -64,7 +62,6 @@ typedef struct {
     /* only used for audio */
     enum AVSampleFormat *sample_fmts;       ///< list of accepted sample formats, terminated by AV_SAMPLE_FMT_NONE
     int64_t *channel_layouts;               ///< list of accepted channel layouts, terminated by -1
-    int *packing_fmts;                      ///< list of accepted packing formats, terminated by -1
 } BufferSinkContext;
 
 #define FIFO_INIT_SIZE 8
@@ -244,11 +241,9 @@ static av_cold int asink_init(AVFilterContext *ctx, const char *args, void *opaq
 
     buf->sample_fmts     = ff_copy_int_list  (params->sample_fmts);
     buf->channel_layouts = ff_copy_int64_list(params->channel_layouts);
-    buf->packing_fmts    = ff_copy_int_list  (params->packing_fmts);
-    if (!buf->sample_fmts || !buf->channel_layouts || !buf->sample_fmts) {
+    if (!buf->sample_fmts || !buf->channel_layouts) {
         av_freep(&buf->sample_fmts);
         av_freep(&buf->channel_layouts);
-        av_freep(&buf->packing_fmts);
         return AVERROR(ENOMEM);
     }
 
@@ -261,7 +256,6 @@ static av_cold void asink_uninit(AVFilterContext *ctx)
 
     av_freep(&buf->sample_fmts);
     av_freep(&buf->channel_layouts);
-    av_freep(&buf->packing_fmts);
     return common_uninit(ctx);
 }
 
@@ -278,11 +272,6 @@ static int asink_query_formats(AVFilterContext *ctx)
     if (!(layouts = avfilter_make_format64_list(buf->channel_layouts)))
         return AVERROR(ENOMEM);
     ff_set_common_channel_layouts(ctx, layouts);
-
-    if (!(formats = avfilter_make_format_list(buf->packing_fmts)))
-        return AVERROR(ENOMEM);
-    avfilter_set_common_packing_formats(ctx, formats);
-
     ff_set_common_samplerates          (ctx, ff_all_samplerates());
 
     return 0;

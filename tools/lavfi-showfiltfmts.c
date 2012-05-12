@@ -54,14 +54,6 @@ static void print_formats(AVFilterContext *filter_ctx)
                 printf(#INOUT "PUT[%d] %s: chlayout:%s\n",              \
                        i, filter_ctx->filter->inout##puts[i].name, buf); \
             }                                                           \
-                                                                        \
-            fmts = filter_ctx->inout##puts[i]->outin##_packing;         \
-            for (j = 0; j < fmts->format_count; j++) {                  \
-                printf(#INOUT "PUT[%d] %s: packing:%s\n",               \
-                       i, filter_ctx->filter->inout##puts[i].name,      \
-                       fmts->formats[j] == AVFILTER_PACKED ?            \
-                                           "packed" : "planar");        \
-            }                                                           \
         }                                                               \
     }                                                                   \
 

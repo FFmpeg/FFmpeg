@@ -148,9 +148,6 @@ int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
     if (link->out_channel_layouts)
         ff_channel_layouts_changeref(&link->out_channel_layouts,
                                      &filt->outputs[filt_dstpad_idx]->out_channel_layouts);
-    if (link->out_packing)
-        avfilter_formats_changeref(&link->out_packing,
-                                   &filt->outputs[filt_dstpad_idx]->out_packing);
     if (link->out_samplerates)
         avfilter_formats_changeref(&link->out_samplerates,
                                    &filt->outputs[filt_dstpad_idx]->out_samplerates);

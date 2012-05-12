@@ -289,6 +289,7 @@ const int64_t avfilter_all_channel_layouts[] = {
 //     return avfilter_make_format64_list(avfilter_all_channel_layouts);
 // }
 
+#if FF_API_PACKING
 AVFilterFormats *avfilter_make_all_packing_formats(void)
 {
     static const int packing[] = {
@@ -299,6 +300,7 @@ AVFilterFormats *avfilter_make_all_packing_formats(void)
 
     return avfilter_make_format_list(packing);
 }
+#endif
 
 AVFilterFormats *ff_all_samplerates(void)
 {
@@ -515,23 +517,6 @@ int ff_parse_channel_layout(int64_t *ret, const char *arg, void *log_ctx)
         }
     }
     *ret = chlayout;
-    return 0;
-}
-
-int ff_parse_packing_format(int *ret, const char *arg, void *log_ctx)
-{
-    char *tail;
-    int planar = strtol(arg, &tail, 10);
-    if (*tail) {
-        planar = !strcmp(arg, "packed") ? 0:
-                 !strcmp(arg, "planar") ? 1: -1;
-    }
-
-    if (planar != 0 && planar != 1) {
-        av_log(log_ctx, AV_LOG_ERROR, "Invalid packing format '%s'\n", arg);
-        return AVERROR(EINVAL);
-    }
-    *ret = planar;
     return 0;
 }
 

@@ -50,7 +50,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
     int linesize =
         samplesref->audio->nb_samples *
         av_get_bytes_per_sample(samplesref->format);
-    if (!samplesref->audio->planar) /* packed layout */
+    if (!av_sample_fmt_is_planar(samplesref->format))
         linesize *= av_get_channel_layout_nb_channels(samplesref->audio->channel_layout);
 
     for (plane = 0; samplesref->data[plane] && plane < 8; plane++) {
@@ -66,7 +66,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
 
     av_log(ctx, AV_LOG_INFO,
            "n:%d pts:%s pts_time:%s pos:%"PRId64" "
-           "fmt:%s chlayout:%s nb_samples:%d rate:%d planar:%d "
+           "fmt:%s chlayout:%s nb_samples:%d rate:%d "
            "checksum:%08X plane_checksum[%08X",
            showinfo->frame,
            av_ts2str(samplesref->pts), av_ts2timestr(samplesref->pts, &inlink->time_base),
@@ -75,7 +75,6 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
            chlayout_str,
            samplesref->audio->nb_samples,
            samplesref->audio->sample_rate,
-           samplesref->audio->planar,
            checksum,
            plane_checksum[0]);
 

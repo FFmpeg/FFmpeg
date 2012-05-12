@@ -146,7 +146,7 @@ Convert the input audio to one of the specified formats. The framework will
 negotiate the most appropriate format to minimize conversions.
 
 The filter accepts three lists of formats, separated by ":", in the form:
-"@var{sample_formats}:@var{channel_layouts}:@var{packing_formats}".
+"@var{sample_formats}:@var{channel_layouts}".
 
 Elements in each list are separated by "," which has to be escaped in the
 filtergraph specification.
@@ -156,9 +156,9 @@ supported formats.
 
 Some examples follow:
 @example
-aformat=u8\\,s16:mono:packed
+aformat=u8\\,s16:mono
 
-aformat=s16:mono\\,stereo:all
+aformat=s16:mono\\,stereo
 @end example
 
 @section amerge
@@ -184,7 +184,7 @@ On the other hand, if both input are in stereo, the output channels will be
 in the default order: a1, a2, b1, b2, and the channel layout will be
 arbitrarily set to 4.0, which may or may not be the expected value.
 
-Both inputs must have the same sample rate, format and packing.
+Both inputs must have the same sample rate, and format.
 
 If inputs do not have the same duration, the output will stop with the
 shortest.
@@ -292,9 +292,6 @@ number of samples (per each channel) contained in the filtered frame
 
 @item rate
 sample rate for the audio frame
-
-@item planar
-if the packing format is planar, 0 if packed
 
 @item checksum
 Adler-32 checksum (printed in hexadecimal) of all the planes of the input frame
@@ -566,7 +563,7 @@ This source is mainly intended for a programmatic use, in particular
 through the interface defined in @file{libavfilter/asrc_abuffer.h}.
 
 It accepts the following mandatory parameters:
-@var{sample_rate}:@var{sample_fmt}:@var{channel_layout}:@var{packing}
+@var{sample_rate}:@var{sample_fmt}:@var{channel_layout}
 
 @table @option
 
@@ -584,23 +581,19 @@ Either a channel layout name from channel_layout_map in
 @file{libavutil/audioconvert.c} or its corresponding integer representation
 from the AV_CH_LAYOUT_* macros in @file{libavutil/audioconvert.h}
 
-@item packing
-Either "packed" or "planar", or their integer representation: 0 or 1
-respectively.
-
 @end table
 
 For example:
 @example
-abuffer=44100:s16:stereo:planar
+abuffer=44100:s16p:stereo
 @end example
 
 will instruct the source to accept planar 16bit signed stereo at 44100Hz.
-Since the sample format with name "s16" corresponds to the number
-1 and the "stereo" channel layout corresponds to the value 0x3, this is
+Since the sample format with name "s16p" corresponds to the number
+6 and the "stereo" channel layout corresponds to the value 0x3, this is
 equivalent to:
 @example
-abuffer=44100:1:0x3:1
+abuffer=44100:6:0x3
 @end example
 
 @section aevalsrc

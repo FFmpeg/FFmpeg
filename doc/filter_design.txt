@@ -15,7 +15,8 @@ Format negotiation
   the list supported formats.
 
   For video links, that means pixel format. For audio links, that means
-  channel layout, sample format and sample packing.
+  channel layout, and sample format (the sample packing is implied by the
+  sample format).
 
   The lists are not just lists, they are references to shared objects. When
   the negotiation mechanism computes the intersection of the formats

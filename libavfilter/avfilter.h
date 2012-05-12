@@ -121,7 +121,9 @@ typedef struct AVFilterBufferRefAudioProps {
     uint64_t channel_layout;    ///< channel layout of audio buffer
     int nb_samples;             ///< number of audio samples per channel
     int sample_rate;            ///< audio buffer sample rate
+#if FF_API_PACKING
     int planar;                 ///< audio buffer - planar or packed
+#endif
 } AVFilterBufferRefAudioProps;
 
 /**
@@ -303,10 +305,12 @@ AVFilterFormats *avfilter_make_all_formats(enum AVMediaType type);
  */
 extern const int64_t avfilter_all_channel_layouts[];
 
+#if FF_API_PACKING
 /**
  * Return a list of all audio packing formats.
  */
 AVFilterFormats *avfilter_make_all_packing_formats(void);
+#endif
 
 /**
  * Return a format list which contains the intersection of the formats of
@@ -519,7 +523,9 @@ void avfilter_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats)
 void avfilter_set_common_pixel_formats(AVFilterContext *ctx, AVFilterFormats *formats);
 void avfilter_set_common_sample_formats(AVFilterContext *ctx, AVFilterFormats *formats);
 void avfilter_set_common_channel_layouts(AVFilterContext *ctx, AVFilterFormats *formats);
+#if FF_API_PACKING
 void avfilter_set_common_packing_formats(AVFilterContext *ctx, AVFilterFormats *formats);
+#endif
 
 /** Default handler for query_formats() */
 int avfilter_default_query_formats(AVFilterContext *ctx);
@@ -616,10 +622,12 @@ struct AVFilterContext {
     struct AVFilterCommand *command_queue;
 };
 
+#if FF_API_PACKING
 enum AVFilterPacking {
     AVFILTER_PACKED = 0,
     AVFILTER_PLANAR,
 };
+#endif
 
 /**
  * A link between two filters. This contains pointers to the source and
@@ -655,7 +663,9 @@ struct AVFilterLink {
 #else
     int sample_rate;            ///< samples per second
 #endif
+#if FF_API_PACKING
     int planar;                 ///< agreed upon packing mode of audio buffers. true if planar.
+#endif
 
     int format;                 ///< agreed upon media format
 
@@ -669,8 +679,10 @@ struct AVFilterLink {
     AVFilterFormats *in_formats;
     AVFilterFormats *out_formats;
 
+#if FF_API_PACKING
     AVFilterFormats *in_packing;
     AVFilterFormats *out_packing;
+#endif
 
     /**
      * The buffer reference currently being sent across the link by the source

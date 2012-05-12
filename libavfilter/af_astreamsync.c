@@ -87,9 +87,6 @@ static int query_formats(AVFilterContext *ctx)
         formats = ctx->inputs[i]->in_formats;
         avfilter_formats_ref(formats, &ctx->inputs[i]->out_formats);
         avfilter_formats_ref(formats, &ctx->outputs[i]->in_formats);
-        formats = ctx->inputs[i]->in_packing;
-        avfilter_formats_ref(formats, &ctx->inputs[i]->out_packing);
-        avfilter_formats_ref(formats, &ctx->outputs[i]->in_packing);
         layouts = ctx->inputs[i]->in_channel_layouts;
         ff_channel_layouts_ref(layouts, &ctx->inputs[i]->out_channel_layouts);
         ff_channel_layouts_ref(layouts, &ctx->outputs[i]->in_channel_layouts);

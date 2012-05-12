@@ -100,9 +100,9 @@ AVFilterBufferRef* avfilter_get_audio_buffer_ref_from_arrays(uint8_t **data,
 
     samplesref->audio->nb_samples     = nb_samples;
     samplesref->audio->channel_layout = channel_layout;
-    samplesref->audio->planar         = av_sample_fmt_is_planar(sample_fmt);
 
-    planes = samplesref->audio->planar ? av_get_channel_layout_nb_channels(channel_layout) : 1;
+    planes = av_sample_fmt_is_planar(sample_fmt) ?
+        av_get_channel_layout_nb_channels(channel_layout) : 1;
 
     /* make sure the buffer gets read permission or it's useless for output */
     samplesref->perms = perms | AV_PERM_READ;

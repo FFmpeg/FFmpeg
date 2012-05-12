@@ -54,7 +54,6 @@ static int query_formats(AVFilterContext *ctx)
 {
     AMergeContext *am = ctx->priv;
     int64_t inlayout[2], outlayout;
-    const int packing_fmts[] = { AVFILTER_PACKED, -1 };
     AVFilterFormats *formats;
     AVFilterChannelLayouts *layouts;
     int i;
@@ -97,10 +96,8 @@ static int query_formats(AVFilterContext *ctx)
                 if ((inlayout[i] >> c) & 1)
                     *(route[i]++) = out_ch_number++;
     }
-    formats = avfilter_make_all_formats(AVMEDIA_TYPE_AUDIO);
+    formats = avfilter_make_format_list(ff_packed_sample_fmts);
     avfilter_set_common_sample_formats(ctx, formats);
-    formats = avfilter_make_format_list(packing_fmts);
-    avfilter_set_common_packing_formats(ctx, formats);
     for (i = 0; i < 2; i++) {
         layouts = NULL;
         ff_add_channel_layout(&layouts, inlayout[i]);
@@ -222,7 +219,6 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
     avfilter_copy_buffer_ref_props(outbuf, *inbuf[0]);
     outbuf->audio->nb_samples     = nb_samples;
     outbuf->audio->channel_layout = outlink->channel_layout;
-    outbuf->audio->planar         = outlink->planar;
 
     while (nb_samples) {
         ns = nb_samples;

@@ -73,7 +73,6 @@ static int query_formats(AVFilterContext *ctx)
     AConvertContext *aconvert = ctx->priv;
     AVFilterLink *inlink  = ctx->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
-    int out_packing = av_sample_fmt_is_planar(aconvert->out_sample_fmt);
     AVFilterChannelLayouts *layouts;
 
     avfilter_formats_ref(avfilter_make_all_formats(AVMEDIA_TYPE_AUDIO),
@@ -95,12 +94,6 @@ static int query_formats(AVFilterContext *ctx)
     } else
         ff_channel_layouts_ref(ff_all_channel_layouts(),
                              &outlink->in_channel_layouts);
-
-    avfilter_formats_ref(avfilter_make_all_packing_formats(),
-                         &inlink->out_packing);
-    formats = NULL;
-    avfilter_add_format(&formats, out_packing);
-    avfilter_formats_ref(formats, &outlink->in_packing);
 
     return 0;
 }
@@ -134,9 +127,9 @@ static int config_output(AVFilterLink *outlink)
     av_get_channel_layout_string(buf2, sizeof(buf2),
                                  -1, outlink->channel_layout);
     av_log(ctx, AV_LOG_INFO,
-           "fmt:%s cl:%s planar:%i -> fmt:%s cl:%s planar:%i\n",
-           av_get_sample_fmt_name(inlink ->format), buf1, inlink ->planar,
-           av_get_sample_fmt_name(outlink->format), buf2, outlink->planar);
+           "fmt:%s cl:%s -> fmt:%s cl:%s\n",
+           av_get_sample_fmt_name(inlink ->format), buf1,
+           av_get_sample_fmt_name(outlink->format), buf2);
 
     return 0;
 }
@@ -153,7 +146,6 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamplesref
 
     avfilter_copy_buffer_ref_props(outsamplesref, insamplesref);
     outsamplesref->audio->channel_layout = outlink->channel_layout;
-    outsamplesref->audio->planar         = outlink->planar;
 
     ff_filter_samples(outlink, outsamplesref);
     avfilter_unref_buffer(insamplesref);
@@ -161,7 +153,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamplesref
 
 AVFilter avfilter_af_aconvert = {
     .name          = "aconvert",
-    .description   = NULL_IF_CONFIG_SMALL("Convert the input audio to sample_fmt:channel_layout:packed_fmt."),
+    .description   = NULL_IF_CONFIG_SMALL("Convert the input audio to sample_fmt:channel_layout."),
     .priv_size     = sizeof(AConvertContext),
     .init          = init,
     .uninit        = uninit,

@@ -218,7 +218,6 @@ static int query_formats(AVFilterContext *ctx)
     pan->pure_gains = are_gains_pure(pan);
     /* libswr supports any sample and packing formats */
     avfilter_set_common_sample_formats(ctx, avfilter_make_all_formats(AVMEDIA_TYPE_AUDIO));
-    avfilter_set_common_packing_formats(ctx, avfilter_make_all_packing_formats());
 
     // inlink supports any channel layout
     layouts = ff_all_channel_layouts();
@@ -348,7 +347,6 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
     swr_convert(pan->swr, outsamples->data, n, (void *)insamples->data, n);
     avfilter_copy_buffer_ref_props(outsamples, insamples);
     outsamples->audio->channel_layout = outlink->channel_layout;
-    outsamples->audio->planar         = outlink->planar;
 
     ff_filter_samples(outlink, outsamples);
     avfilter_unref_buffer(insamples);

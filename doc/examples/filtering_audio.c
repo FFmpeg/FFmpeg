@@ -88,7 +88,6 @@ static int init_filters(const char *filters_descr)
     AVFilterInOut *outputs = avfilter_inout_alloc();
     AVFilterInOut *inputs  = avfilter_inout_alloc();
     const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_S16, -1 };
-    const int packing_fmts[]                = { AVFILTER_PACKED, -1 };
     const int64_t *chlayouts                = avfilter_all_channel_layouts;
     AVABufferSinkParams *abuffersink_params;
     const AVFilterLink *outlink;
@@ -98,7 +97,7 @@ static int init_filters(const char *filters_descr)
     /* buffer audio source: the decoded frames from the decoder will be inserted here. */
     if (!dec_ctx->channel_layout)
         dec_ctx->channel_layout = av_get_default_channel_layout(dec_ctx->channels);
-    snprintf(args, sizeof(args), "%d:%d:0x%"PRIx64":packed",
+    snprintf(args, sizeof(args), "%d:%d:0x%"PRIx64,
              dec_ctx->sample_rate, dec_ctx->sample_fmt, dec_ctx->channel_layout);
     ret = avfilter_graph_create_filter(&buffersrc_ctx, abuffersrc, "in",
                                        args, NULL, filter_graph);
@@ -111,7 +110,6 @@ static int init_filters(const char *filters_descr)
     abuffersink_params = av_abuffersink_params_alloc();
     abuffersink_params->sample_fmts     = sample_fmts;
     abuffersink_params->channel_layouts = chlayouts;
-    abuffersink_params->packing_fmts    = packing_fmts;
     ret = avfilter_graph_create_filter(&buffersink_ctx, abuffersink, "out",
                                        NULL, abuffersink_params, filter_graph);
     av_free(abuffersink_params);

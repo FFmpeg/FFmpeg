@@ -211,11 +211,9 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
                                                   AV_SAMPLE_FMT_S32,
                                                   AV_SAMPLE_FMT_FLT,
                                                   AV_SAMPLE_FMT_DBL, -1 };
-            const int packing_fmts[] = { AVFILTER_PACKED, -1 };
             const int64_t *chlayouts = avfilter_all_channel_layouts;
             AVABufferSinkParams *abuffersink_params = av_abuffersink_params_alloc();
             abuffersink_params->sample_fmts = sample_fmts;
-            abuffersink_params->packing_fmts = packing_fmts;
             abuffersink_params->channel_layouts = chlayouts;
 
             ret = avfilter_graph_create_filter(&sink, abuffersink,

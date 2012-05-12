@@ -187,11 +187,9 @@ static int query_formats(AVFilterContext *ctx)
     EvalContext *eval = ctx->priv;
     enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_DBL, AV_SAMPLE_FMT_NONE };
     int64_t chlayouts[] = { eval->chlayout, -1 };
-    int packing_fmts[] = { AVFILTER_PLANAR, -1 };
 
     avfilter_set_common_sample_formats (ctx, avfilter_make_format_list(sample_fmts));
     ff_set_common_channel_layouts(ctx, avfilter_make_format64_list(chlayouts));
-    avfilter_set_common_packing_formats(ctx, avfilter_make_format_list(packing_fmts));
 
     return 0;
 }
