@@ -218,11 +218,11 @@ static void return_frame(AVFilterContext *ctx, int is_second)
     filter(ctx, yadif->out, tff ^ !is_second, tff);
 
     if (is_second) {
-        if (yadif->next->pts != AV_NOPTS_VALUE &&
-            yadif->cur->pts != AV_NOPTS_VALUE) {
-            yadif->out->pts =
-                (yadif->next->pts&yadif->cur->pts) +
-                ((yadif->next->pts^yadif->cur->pts)>>1);
+        int64_t cur_pts  = yadif->cur->pts;
+        int64_t next_pts = yadif->next->pts;
+
+        if (next_pts != AV_NOPTS_VALUE && cur_pts != AV_NOPTS_VALUE) {
+            yadif->out->pts = cur_pts + next_pts;
         } else {
             yadif->out->pts = AV_NOPTS_VALUE;
         }
@@ -255,6 +255,8 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
         yadif->out  = avfilter_ref_buffer(yadif->cur, AV_PERM_READ);
         avfilter_unref_buffer(yadif->prev);
         yadif->prev = NULL;
+        if (yadif->out->pts != AV_NOPTS_VALUE)
+            yadif->out->pts *= 2;
         avfilter_start_frame(ctx->outputs[0], yadif->out);
         return;
     }
@@ -267,6 +269,8 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 
     avfilter_copy_buffer_ref_props(yadif->out, yadif->cur);
     yadif->out->video->interlaced = 0;
+    if (yadif->out->pts != AV_NOPTS_VALUE)
+        yadif->out->pts *= 2;
     avfilter_start_frame(ctx->outputs[0], yadif->out);
 }
 
@@ -400,6 +404,16 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 
 static void null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { }
 
+static int config_props(AVFilterLink *link)
+{
+    link->time_base.num = link->src->inputs[0]->time_base.num;
+    link->time_base.den = link->src->inputs[0]->time_base.den * 2;
+    link->w             = link->src->inputs[0]->w;
+    link->h             = link->src->inputs[0]->h;
+
+    return 0;
+}
+
 AVFilter avfilter_vf_yadif = {
     .name          = "yadif",
     .description   = NULL_IF_CONFIG_SMALL("Deinterlace the input image"),
@@ -420,6 +434,7 @@ AVFilter avfilter_vf_yadif = {
     .outputs   = (AVFilterPad[]) {{ .name             = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
                                     .poll_frame       = poll_frame,
-                                    .request_frame    = request_frame, },
+                                    .request_frame    = request_frame,
+                                    .config_props     = config_props, },
                                   { .name = NULL}},
 };
