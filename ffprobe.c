@@ -358,44 +358,6 @@ static const Writer *writer_get_by_name(const char *name)
     return NULL;
 }
 
-/* Print helpers */
-
-struct print_buf {
-    char *s;
-    int len;
-};
-
-static char *fast_asprintf(struct print_buf *pbuf, const char *fmt, ...)
-{
-    va_list va;
-    int len;
-
-    va_start(va, fmt);
-    len = vsnprintf(NULL, 0, fmt, va);
-    va_end(va);
-    if (len < 0)
-        goto fail;
-
-    if (pbuf->len < len) {
-        char *p = av_realloc(pbuf->s, len + 1);
-        if (!p)
-            goto fail;
-        pbuf->s   = p;
-        pbuf->len = len;
-    }
-
-    va_start(va, fmt);
-    len = vsnprintf(pbuf->s, len + 1, fmt, va);
-    va_end(va);
-    if (len < 0)
-        goto fail;
-    return pbuf->s;
-
-fail:
-    av_freep(&pbuf->s);
-    pbuf->len = 0;
-    return NULL;
-}
 
 /* WRITERS */
 
@@ -1214,13 +1176,9 @@ static void writer_register_all(void)
 }
 
 #define print_fmt(k, f, ...) do {              \
-    if (fast_asprintf(&pbuf, f, __VA_ARGS__))  \
-        writer_print_string(w, k, pbuf.s, 0);  \
-} while (0)
-
-#define print_fmt_opt(k, f, ...) do {          \
-    if (fast_asprintf(&pbuf, f, __VA_ARGS__))  \
-        writer_print_string(w, k, pbuf.s, 1);  \
+    av_bprint_clear(&pbuf);                    \
+    av_bprintf(&pbuf, f, __VA_ARGS__);         \
+    writer_print_string(w, k, pbuf.str, 0);    \
 } while (0)
 
 #define print_int(k, v)         writer_print_integer(w, k, v)
@@ -1238,8 +1196,10 @@ static void show_packet(WriterContext *w, AVFormatContext *fmt_ctx, AVPacket *pk
 {
     char val_str[128];
     AVStream *st = fmt_ctx->streams[pkt->stream_index];
-    struct print_buf pbuf = {.s = NULL};
+    AVBPrint pbuf;
     const char *s;
+
+    av_bprint_init(&pbuf, 1, AV_BPRINT_SIZE_UNLIMITED);
 
     print_section_header("packet");
     s = av_get_media_type_string(st->codec->codec_type);
@@ -1258,14 +1218,16 @@ static void show_packet(WriterContext *w, AVFormatContext *fmt_ctx, AVPacket *pk
     print_fmt("flags", "%c",      pkt->flags & AV_PKT_FLAG_KEY ? 'K' : '_');
     print_section_footer("packet");
 
-    av_free(pbuf.s);
+    av_bprint_finalize(&pbuf, NULL);
     fflush(stdout);
 }
 
 static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream)
 {
-    struct print_buf pbuf = {.s = NULL};
+    AVBPrint pbuf;
     const char *s;
+
+    av_bprint_init(&pbuf, 1, AV_BPRINT_SIZE_UNLIMITED);
 
     print_section_header("frame");
 
@@ -1313,7 +1275,7 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream)
 
     print_section_footer("frame");
 
-    av_free(pbuf.s);
+    av_bprint_finalize(&pbuf, NULL);
     fflush(stdout);
 }
 
@@ -1392,7 +1354,9 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
     char val_str[128];
     const char *s;
     AVRational display_aspect_ratio;
-    struct print_buf pbuf = {.s = NULL};
+    AVBPrint pbuf;
+
+    av_bprint_init(&pbuf, 1, AV_BPRINT_SIZE_UNLIMITED);
 
     print_section_header("stream");
 
@@ -1492,7 +1456,7 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
     show_tags(stream->metadata);
 
     print_section_footer("stream");
-    av_free(pbuf.s);
+    av_bprint_finalize(&pbuf, NULL);
     fflush(stdout);
 }
 
@@ -1640,7 +1604,8 @@ static void show_usage(void)
 
 static void ffprobe_show_program_version(WriterContext *w)
 {
-    struct print_buf pbuf = {.s = NULL};
+    AVBPrint pbuf;
+    av_bprint_init(&pbuf, 1, AV_BPRINT_SIZE_UNLIMITED);
 
     writer_print_chapter_header(w, "program_version");
     print_section_header("program_version");
@@ -1655,7 +1620,7 @@ static void ffprobe_show_program_version(WriterContext *w)
     print_section_footer("program_version");
     writer_print_chapter_footer(w, "program_version");
 
-    av_free(pbuf.s);
+    av_bprint_finalize(&pbuf, NULL);
 }
 
 #define SHOW_LIB_VERSION(libname, LIBNAME)                              \
