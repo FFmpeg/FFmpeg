@@ -283,19 +283,6 @@ pack_6ch_%2_to_%1_u_int %+ SUFFIX
 %endif
 %endmacro
 
-INIT_MMX mmx
-CONV_FLTP_TO_FLT_6CH float,float,u
-CONV_FLTP_TO_FLT_6CH float,float,a
-INIT_XMM sse4
-CONV_FLTP_TO_FLT_6CH float,float,u
-CONV_FLTP_TO_FLT_6CH float,float,a
-%if HAVE_AVX
-INIT_XMM avx
-CONV_FLTP_TO_FLT_6CH float,float,u
-CONV_FLTP_TO_FLT_6CH float,float,a
-%endif
-
-
 %macro INT16_TO_INT32_N 0
     pxor      m2, m2
     pxor      m3, m3
@@ -379,6 +366,9 @@ CONV int32, int16, a, 2, 1, INT16_TO_INT32_N
 CONV int16, int32, u, 1, 2, INT32_TO_INT16_N
 CONV int16, int32, a, 1, 2, INT32_TO_INT16_N
 
+CONV_FLTP_TO_FLT_6CH float,float,u
+CONV_FLTP_TO_FLT_6CH float,float,a
+
 INIT_XMM sse
 CONV int32, int16, u, 2, 1, INT16_TO_INT32_N
 CONV int32, int16, a, 2, 1, INT16_TO_INT32_N
@@ -440,7 +430,15 @@ UNPACK_2CH int32, int16, a, 2, 1, INT16_TO_INT32_N
 UNPACK_2CH float, int16, u, 2, 1, INT16_TO_FLOAT_N, INT16_TO_FLOAT_INIT
 UNPACK_2CH float, int16, a, 2, 1, INT16_TO_FLOAT_N, INT16_TO_FLOAT_INIT
 
+INIT_XMM sse4
+CONV_FLTP_TO_FLT_6CH float,float,u
+CONV_FLTP_TO_FLT_6CH float,float,a
+
 %if HAVE_AVX
+INIT_XMM avx
+CONV_FLTP_TO_FLT_6CH float,float,u
+CONV_FLTP_TO_FLT_6CH float,float,a
+
 INIT_YMM avx
 CONV float, int32, u, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
 CONV float, int32, a, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
