@@ -1684,6 +1684,8 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
     assert(mb_y < s->mb_height);
 
     init_get_bits(&s->gb, *buf, buf_size * 8);
+    if(s->codec_id != CODEC_ID_MPEG1VIDEO && s->mb_height > 2800/16)
+        skip_bits(&s->gb, 3);
 
     ff_mpeg1_clean_buffers(s);
     s->interlaced_dct = 0;
@@ -1923,7 +1925,10 @@ static int slice_decode_thread(AVCodecContext *c, void *arg)
 
         start_code = -1;
         buf = avpriv_mpv_find_start_code(buf, s->gb.buffer_end, &start_code);
-        mb_y= (start_code - SLICE_MIN_START_CODE) << field_pic;
+        mb_y= start_code - SLICE_MIN_START_CODE;
+        if(s->codec_id != CODEC_ID_MPEG1VIDEO && s->mb_height > 2800/16)
+            mb_y += (*buf&0xE0)<<2;
+        mb_y <<= field_pic;
         if (s->picture_structure == PICT_BOTTOM_FIELD)
             mb_y++;
         if (mb_y < 0 || mb_y >= s->end_mb_y)
@@ -2443,9 +2448,12 @@ static int decode_chunks(AVCodecContext *avctx,
             if (start_code >= SLICE_MIN_START_CODE &&
                 start_code <= SLICE_MAX_START_CODE && last_code != 0) {
                 const int field_pic = s2->picture_structure != PICT_FRAME;
-                int mb_y = (start_code - SLICE_MIN_START_CODE) << field_pic;
+                int mb_y = start_code - SLICE_MIN_START_CODE;
                 last_code = SLICE_MIN_START_CODE;
+                if(s2->codec_id != CODEC_ID_MPEG1VIDEO && s2->mb_height > 2800/16)
+                    mb_y += (*buf_ptr&0xE0)<<2;
 
+                mb_y <<= field_pic;
                 if (s2->picture_structure == PICT_BOTTOM_FIELD)
                     mb_y++;
 
