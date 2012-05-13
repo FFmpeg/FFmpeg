@@ -321,12 +321,12 @@ pack_6ch_%2_to_%1_u_int %+ SUFFIX
 %macro FLOAT_TO_INT32_N 6
     mulps %1, %5
     mulps %2, %5
-    cvtps2dq  %3, %1
-    cvtps2dq  %4, %2
+    cvtps2dq  %6, %1
     cmpnltps %1, %5
+    paddd %1, %6
+    cvtps2dq  %6, %2
     cmpnltps %2, %5
-    paddd %1, %3
-    paddd %2, %4
+    paddd %2, %6
 %endmacro
 
 %macro INT16_TO_FLOAT_INIT 6
