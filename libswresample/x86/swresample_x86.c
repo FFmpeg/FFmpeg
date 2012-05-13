@@ -24,9 +24,10 @@
 #define PROTO(pre, in, out, cap) void ff ## pre ## _ ##in## _to_ ##out## _a_ ##cap(uint8_t **dst, const uint8_t **src, int len);
 #define PROTO2(pre, out, cap) PROTO(pre, int16, out, cap) PROTO(pre, int32, out, cap) PROTO(pre, float, out, cap)
 #define PROTO3(pre, cap) PROTO2(pre, int16, cap) PROTO2(pre, int32, cap) PROTO2(pre, float, cap)
-#define PROTO4(pre) PROTO3(pre, mmx) PROTO3(pre, sse) PROTO3(pre, sse2) PROTO3(pre, ssse3) PROTO3(pre, avx)
+#define PROTO4(pre) PROTO3(pre, mmx) PROTO3(pre, sse) PROTO3(pre, sse2) PROTO3(pre, ssse3) PROTO3(pre, sse4) PROTO3(pre, avx)
 PROTO4()
 PROTO4(_pack_2ch)
+PROTO4(_pack_6ch)
 PROTO4(_unpack_2ch)
 
 void swri_audio_convert_init_x86(struct AudioConvert *ac,
@@ -49,6 +50,13 @@ void swri_audio_convert_init_x86(struct AudioConvert *ac,
 
 MULTI_CAPS_FUNC(AV_CPU_FLAG_MMX, mmx)
 MULTI_CAPS_FUNC(AV_CPU_FLAG_SSE, sse)
+
+    if(mm_flags & AV_CPU_FLAG_MMX) {
+        if(channels == 6) {
+            if(   out_fmt == AV_SAMPLE_FMT_FLT  && in_fmt == AV_SAMPLE_FMT_FLTP || out_fmt == AV_SAMPLE_FMT_S32 && in_fmt == AV_SAMPLE_FMT_S32P)
+                ac->simd_f =  ff_pack_6ch_float_to_float_a_mmx;
+        }
+    }
 
     if(mm_flags & AV_CPU_FLAG_SSE) {
         if(channels == 2) {
@@ -111,8 +119,18 @@ MULTI_CAPS_FUNC(AV_CPU_FLAG_SSE, sse)
                 ac->simd_f =  ff_unpack_2ch_int16_to_float_a_ssse3;
         }
     }
+    if(mm_flags & AV_CPU_FLAG_SSE4) {
+        if(channels == 6) {
+            if(   out_fmt == AV_SAMPLE_FMT_FLT  && in_fmt == AV_SAMPLE_FMT_FLTP || out_fmt == AV_SAMPLE_FMT_S32 && in_fmt == AV_SAMPLE_FMT_S32P)
+                ac->simd_f =  ff_pack_6ch_float_to_float_a_sse4;
+        }
+    }
     if(HAVE_AVX && mm_flags & AV_CPU_FLAG_AVX) {
         if(   out_fmt == AV_SAMPLE_FMT_FLT  && in_fmt == AV_SAMPLE_FMT_S32 || out_fmt == AV_SAMPLE_FMT_FLTP && in_fmt == AV_SAMPLE_FMT_S32P)
             ac->simd_f =  ff_int32_to_float_a_avx;
+        if(channels == 6) {
+            if(   out_fmt == AV_SAMPLE_FMT_FLT  && in_fmt == AV_SAMPLE_FMT_FLTP || out_fmt == AV_SAMPLE_FMT_S32 && in_fmt == AV_SAMPLE_FMT_S32P)
+                ac->simd_f =  ff_pack_6ch_float_to_float_a_avx;
+        }
     }
 }
