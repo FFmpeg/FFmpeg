@@ -758,6 +758,7 @@ OBJS-$(!CONFIG_SMALL)                  += inverse.o
 SKIPHEADERS                            += %_tablegen.h                  \
                                           %_tables.h                    \
                                           aac_tablegen_decl.h           \
+                                          codec_names.h                 \
                                           fft-internal.h                \
                                           tableprint.h                  \
                                           $(ARCH)/vp56_arith.h          \
