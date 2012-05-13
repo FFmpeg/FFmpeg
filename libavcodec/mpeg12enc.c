@@ -331,7 +331,7 @@ static av_always_inline void put_qscale(MpegEncContext *s)
 }
 
 void ff_mpeg1_encode_slice_header(MpegEncContext *s){
-    if (s->height > 2800) {
+    if (s->codec_id == CODEC_ID_MPEG2VIDEO && s->height > 2800) {
         put_header(s, SLICE_MIN_START_CODE + (s->mb_y & 127));
         put_bits(&s->pb, 3, s->mb_y >> 7);  /* slice_vertical_position_extension */
     } else {
