@@ -37,6 +37,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/parseutils.h"
+#include "libavutil/timestamp.h"
 #include "riff.h"
 #include "audiointerleave.h"
 #include "url.h"
@@ -1041,7 +1042,8 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     if(pkt->dts != AV_NOPTS_VALUE && pkt->pts != AV_NOPTS_VALUE && pkt->pts > pkt->dts)
         presentation_delayed = 1;
 
-//    av_log(NULL, AV_LOG_DEBUG, "IN delayed:%d pts:%"PRId64", dts:%"PRId64" cur_dts:%"PRId64" st:%d pc:%p duration:%d\n", presentation_delayed, pkt->pts, pkt->dts, st->cur_dts, pkt->stream_index, pc, pkt->duration);
+//    av_log(NULL, AV_LOG_DEBUG, "IN delayed:%d pts:%s, dts:%s cur_dts:%s st:%d pc:%p duration:%d\n",
+//           presentation_delayed, av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(st->cur_dts), pkt->stream_index, pc, pkt->duration);
     /* interpolate PTS and DTS if they are not present */
     //We skip H264 currently because delay and has_b_frames are not reliably set
     if((delay==0 || (delay==1 && pc)) && st->codec->codec_id != CODEC_ID_H264){
@@ -1077,7 +1079,8 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
                        !strcmp(s->iformat->name, "mpegts"))){
                     pkt->pts += duration;
                     av_log(s, AV_LOG_WARNING, "Adjusting PTS forward\n");
-    //                av_log(NULL, AV_LOG_DEBUG, "id:%d old:%"PRId64" new:%"PRId64" dur:%d cur:%"PRId64" size:%d\n", pkt->stream_index, old_diff, new_diff, pkt->duration, st->cur_dts, pkt->size);
+//                    av_log(NULL, AV_LOG_DEBUG, "id:%d old:%"PRId64" new:%"PRId64" dur:%d cur:%s size:%d\n",
+//                           pkt->stream_index, old_diff, new_diff, pkt->duration, av_ts2str(st->cur_dts), pkt->size);
                 }
             }
 
@@ -1107,7 +1110,8 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             st->cur_dts = pkt->dts;
     }
 
-//    av_log(NULL, AV_LOG_ERROR, "OUTdelayed:%d/%d pts:%"PRId64", dts:%"PRId64" cur_dts:%"PRId64"\n", presentation_delayed, delay, pkt->pts, pkt->dts, st->cur_dts);
+//    av_log(NULL, AV_LOG_ERROR, "OUTdelayed:%d/%d pts:%s, dts:%s cur_dts:%s\n",
+//           presentation_delayed, delay, av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(st->cur_dts));
 
     /* update flags */
     if(is_intra_only(st->codec))
@@ -1276,17 +1280,17 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
         if (cur_pkt.pts != AV_NOPTS_VALUE &&
             cur_pkt.dts != AV_NOPTS_VALUE &&
             cur_pkt.pts < cur_pkt.dts) {
-            av_log(s, AV_LOG_WARNING, "Invalid timestamps stream=%d, pts=%"PRId64", dts=%"PRId64", size=%d\n",
+            av_log(s, AV_LOG_WARNING, "Invalid timestamps stream=%d, pts=%s, dts=%s, size=%d\n",
                    cur_pkt.stream_index,
-                   cur_pkt.pts,
-                   cur_pkt.dts,
+                   av_ts2str(cur_pkt.pts),
+                   av_ts2str(cur_pkt.dts),
                    cur_pkt.size);
         }
         if (s->debug & FF_FDEBUG_TS)
-            av_log(s, AV_LOG_DEBUG, "ff_read_packet stream=%d, pts=%"PRId64", dts=%"PRId64", size=%d, duration=%d, flags=%d\n",
+            av_log(s, AV_LOG_DEBUG, "ff_read_packet stream=%d, pts=%s, dts=%s, size=%d, duration=%d, flags=%d\n",
                    cur_pkt.stream_index,
-                   cur_pkt.pts,
-                   cur_pkt.dts,
+                   av_ts2str(cur_pkt.pts),
+                   av_ts2str(cur_pkt.dts),
                    cur_pkt.size,
                    cur_pkt.duration,
                    cur_pkt.flags);
@@ -1335,10 +1339,10 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
         ret = read_from_packet_buffer(&s->parse_queue, &s->parse_queue_end, pkt);
 
     if(s->debug & FF_FDEBUG_TS)
-        av_log(s, AV_LOG_DEBUG, "read_frame_internal stream=%d, pts=%"PRId64", dts=%"PRId64", size=%d, duration=%d, flags=%d\n",
+        av_log(s, AV_LOG_DEBUG, "read_frame_internal stream=%d, pts=%s, dts=%s, size=%d, duration=%d, flags=%d\n",
             pkt->stream_index,
-            pkt->pts,
-            pkt->dts,
+            av_ts2str(pkt->pts),
+            av_ts2str(pkt->dts),
             pkt->size,
             pkt->duration,
             pkt->flags);
@@ -1625,7 +1629,7 @@ int ff_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
     if (stream_index < 0)
         return -1;
 
-    av_dlog(s, "read_seek: %d %"PRId64"\n", stream_index, target_ts);
+    av_dlog(s, "read_seek: %d %s\n", stream_index, av_ts2str(target_ts));
 
     ts_max=
     ts_min= AV_NOPTS_VALUE;
@@ -1642,8 +1646,8 @@ int ff_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
         if(e->timestamp <= target_ts || e->pos == e->min_distance){
             pos_min= e->pos;
             ts_min= e->timestamp;
-            av_dlog(s, "using cached pos_min=0x%"PRIx64" dts_min=%"PRId64"\n",
-                    pos_min,ts_min);
+            av_dlog(s, "using cached pos_min=0x%"PRIx64" dts_min=%s\n",
+                    pos_min, av_ts2str(ts_min));
         }else{
             assert(index==0);
         }
@@ -1656,8 +1660,8 @@ int ff_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
             pos_max= e->pos;
             ts_max= e->timestamp;
             pos_limit= pos_max - e->min_distance;
-            av_dlog(s, "using cached pos_max=0x%"PRIx64" pos_limit=0x%"PRIx64" dts_max=%"PRId64"\n",
-                    pos_max,pos_limit, ts_max);
+            av_dlog(s, "using cached pos_max=0x%"PRIx64" pos_limit=0x%"PRIx64" dts_max=%s\n",
+                    pos_max, pos_limit, av_ts2str(ts_max));
         }
     }
 
@@ -1684,7 +1688,7 @@ int64_t ff_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts,
     int64_t start_pos, filesize;
     int no_change;
 
-    av_dlog(s, "gen_seek: %d %"PRId64"\n", stream_index, target_ts);
+    av_dlog(s, "gen_seek: %d %s\n", stream_index, av_ts2str(target_ts));
 
     if(ts_min == AV_NOPTS_VALUE){
         pos_min = s->data_offset;
@@ -1736,8 +1740,8 @@ int64_t ff_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts,
 
     no_change=0;
     while (pos_min < pos_limit) {
-        av_dlog(s, "pos_min=0x%"PRIx64" pos_max=0x%"PRIx64" dts_min=%"PRId64" dts_max=%"PRId64"\n",
-                pos_min, pos_max, ts_min, ts_max);
+        av_dlog(s, "pos_min=0x%"PRIx64" pos_max=0x%"PRIx64" dts_min=%s dts_max=%s\n",
+                pos_min, pos_max, av_ts2str(ts_min), av_ts2str(ts_max));
         assert(pos_limit <= pos_max);
 
         if(no_change==0){
@@ -1764,8 +1768,9 @@ int64_t ff_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts,
             no_change++;
         else
             no_change=0;
-        av_dlog(s, "%"PRId64" %"PRId64" %"PRId64" / %"PRId64" %"PRId64" %"PRId64" target:%"PRId64" limit:%"PRId64" start:%"PRId64" noc:%d\n",
-                pos_min, pos, pos_max, ts_min, ts, ts_max, target_ts,
+        av_dlog(s, "%"PRId64" %"PRId64" %"PRId64" / %s %s %s target:%s limit:%"PRId64" start:%"PRId64" noc:%d\n",
+                pos_min, pos, pos_max,
+                av_ts2str(ts_min), av_ts2str(ts), av_ts2str(ts_max), av_ts2str(target_ts),
                 pos_limit, start_pos, no_change);
         if(ts == AV_NOPTS_VALUE){
             av_log(s, AV_LOG_ERROR, "read_timestamp() failed in the middle\n");
@@ -1790,8 +1795,8 @@ int64_t ff_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts,
     ts_min = read_timestamp(s, stream_index, &pos_min, INT64_MAX);
     pos_min++;
     ts_max = read_timestamp(s, stream_index, &pos_min, INT64_MAX);
-    av_dlog(s, "pos=0x%"PRIx64" %"PRId64"<=%"PRId64"<=%"PRId64"\n",
-            pos, ts_min, target_ts, ts_max);
+    av_dlog(s, "pos=0x%"PRIx64" %s<=%s<=%s\n",
+            pos, av_ts2str(ts_min), av_ts2str(target_ts), av_ts2str(ts_max));
 #endif
     *ts_ret= ts;
     return pos;
@@ -3264,8 +3269,8 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt){
     int delay = FFMAX(st->codec->has_b_frames, !!st->codec->max_b_frames);
     int num, den, frame_size, i;
 
-    av_dlog(s, "compute_pkt_fields2: pts:%"PRId64" dts:%"PRId64" cur_dts:%"PRId64" b:%d size:%d st:%d\n",
-            pkt->pts, pkt->dts, st->cur_dts, delay, pkt->size, pkt->stream_index);
+    av_dlog(s, "compute_pkt_fields2: pts:%s dts:%s cur_dts:%s b:%d size:%d st:%d\n",
+            av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(st->cur_dts), delay, pkt->size, pkt->stream_index);
 
     /* duration field */
     if (pkt->duration == 0) {
@@ -3303,16 +3308,17 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt){
 
     if(st->cur_dts && st->cur_dts != AV_NOPTS_VALUE && ((!(s->oformat->flags & AVFMT_TS_NONSTRICT) && st->cur_dts >= pkt->dts) || st->cur_dts > pkt->dts)){
         av_log(s, AV_LOG_ERROR,
-               "Application provided invalid, non monotonically increasing dts to muxer in stream %d: %"PRId64" >= %"PRId64"\n",
-               st->index, st->cur_dts, pkt->dts);
+               "Application provided invalid, non monotonically increasing dts to muxer in stream %d: %s >= %s\n",
+               st->index, av_ts2str(st->cur_dts), av_ts2str(pkt->dts));
         return AVERROR(EINVAL);
     }
     if(pkt->dts != AV_NOPTS_VALUE && pkt->pts != AV_NOPTS_VALUE && pkt->pts < pkt->dts){
-        av_log(s, AV_LOG_ERROR, "pts (%"PRId64") < dts (%"PRId64") in stream %d\n", pkt->pts, pkt->dts, st->index);
+        av_log(s, AV_LOG_ERROR, "pts (%s) < dts (%s) in stream %d\n",
+               av_ts2str(pkt->pts), av_ts2str(pkt->dts), st->index);
         return AVERROR(EINVAL);
     }
 
-//    av_log(s, AV_LOG_DEBUG, "av_write_frame: pts2:%"PRId64" dts2:%"PRId64"\n", pkt->pts, pkt->dts);
+//    av_log(s, AV_LOG_DEBUG, "av_write_frame: pts2:%s dts2:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
     st->cur_dts= pkt->dts;
     st->pts.val= pkt->dts;
 
@@ -3540,8 +3546,8 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt){
         if(st->codec->codec_type == AVMEDIA_TYPE_AUDIO && pkt->size==0)
             return 0;
 
-        av_dlog(s, "av_interleaved_write_frame size:%d dts:%"PRId64" pts:%"PRId64"\n",
-                pkt->size, pkt->dts, pkt->pts);
+        av_dlog(s, "av_interleaved_write_frame size:%d dts:%s pts:%s\n",
+                pkt->size, av_ts2str(pkt->dts), av_ts2str(pkt->pts));
         if((ret = compute_pkt_fields2(s, st, pkt)) < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
             return ret;
 
