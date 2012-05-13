@@ -110,6 +110,11 @@ void av_bprintf(AVBPrint *buf, const char *fmt, ...) av_printf_format(2, 3);
 void av_bprint_chars(AVBPrint *buf, char c, unsigned n);
 
 /**
+ * Reset the string to "" but keep internal allocated data.
+ */
+void av_bprint_clear(AVBPrint *buf);
+
+/**
  * Test if the print buffer is complete (not truncated).
  *
  * It may have been truncated due to a memory allocation failure

@@ -119,6 +119,14 @@ void av_bprint_chars(AVBPrint *buf, char c, unsigned n)
     av_bprint_grow(buf, n);
 }
 
+void av_bprint_clear(AVBPrint *buf)
+{
+    if (buf->len) {
+        *buf->str = 0;
+        buf->len  = 0;
+    }
+}
+
 int av_bprint_finalize(AVBPrint *buf, char **ret_str)
 {
     unsigned real_size = FFMIN(buf->len + 1, buf->size);
