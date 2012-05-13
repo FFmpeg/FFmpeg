@@ -52,7 +52,7 @@ pack_2ch_%2_to_%1_u_int %+ SUFFIX
     lea     src2q, [src2q + (1<<%5)*lenq]
     lea     dstq , [dstq  + (2<<%4)*lenq]
     neg     lenq
-    %7
+    %7 m0,m1,m2,m3,m4,m5
 .next:
 %if %4 >= %5
     mov%3     m0, [         srcq +(1<<%5)*lenq]
@@ -65,13 +65,13 @@ pack_2ch_%2_to_%1_u_int %+ SUFFIX
     punpckldq m0, m2
     punpckhdq m1, m2
 %endif
-    %6
+    %6 m0,m1,m2,m3,m4,m5
 %else
     mov%3     m0, [         srcq +(1<<%5)*lenq]
     mov%3     m1, [mmsize + srcq +(1<<%5)*lenq]
     mov%3     m2, [         src2q+(1<<%5)*lenq]
     mov%3     m3, [mmsize + src2q+(1<<%5)*lenq]
-    %6
+    %6 m0,m1,m2,m3,m4,m5
     mova      m2, m0
     punpcklwd m0, m1
     punpckhwd m2, m1
@@ -109,7 +109,7 @@ unpack_2ch_%2_to_%1_u_int %+ SUFFIX
     lea     dstq , [dstq  + (1<<%4)*lenq]
     lea     dst2q, [dst2q + (1<<%4)*lenq]
     neg     lenq
-    %7
+    %7 m0,m1,m2,m3,m4,m5
     mova      m6, [word_unpack_shuf]
 .next:
     mov%3     m0, [           srcq +(2<<%5)*lenq]
@@ -147,7 +147,7 @@ unpack_2ch_%2_to_%1_u_int %+ SUFFIX
     shufps    m3, m4, 11011101b
     SWAP 1,2
 %endif
-    %6
+    %6 m0,m1,m2,m3,m4,m5
     mov%3 [           dstq+(1<<%4)*lenq], m0
 %if %4 > %5
     mov%3 [          dst2q+(1<<%4)*lenq], m2
@@ -177,7 +177,7 @@ cglobal %2_to_%1_%3, 3, 3, 6, dst, src, len
     lea     srcq , [srcq  + (1<<%5)*lenq]
     lea     dstq , [dstq  + (1<<%4)*lenq]
     neg     lenq
-    %7
+    %7 m0,m1,m2,m3,m4,m5
 .next:
     mov%3     m0, [           srcq +(1<<%5)*lenq]
     mov%3     m1, [  mmsize + srcq +(1<<%5)*lenq]
@@ -185,7 +185,7 @@ cglobal %2_to_%1_%3, 3, 3, 6, dst, src, len
     mov%3     m2, [2*mmsize + srcq +(1<<%5)*lenq]
     mov%3     m3, [3*mmsize + srcq +(1<<%5)*lenq]
 %endif
-    %6
+    %6 m0,m1,m2,m3,m4,m5
     mov%3 [           dstq+(1<<%4)*lenq], m0
     mov%3 [  mmsize + dstq+(1<<%4)*lenq], m1
 %if %4 > %5
@@ -283,7 +283,7 @@ pack_6ch_%2_to_%1_u_int %+ SUFFIX
 %endif
 %endmacro
 
-%macro INT16_TO_INT32_N 0
+%macro INT16_TO_INT32_N 6
     pxor      m2, m2
     pxor      m3, m3
     punpcklwd m2, m1
@@ -295,7 +295,7 @@ pack_6ch_%2_to_%1_u_int %+ SUFFIX
     punpckhwd m1, m4
 %endmacro
 
-%macro INT32_TO_INT16_N 0
+%macro INT32_TO_INT16_N 6
     psrad     m0, 16
     psrad     m1, 16
     psrad     m2, 16
@@ -305,35 +305,35 @@ pack_6ch_%2_to_%1_u_int %+ SUFFIX
     SWAP 1,2
 %endmacro
 
-%macro INT32_TO_FLOAT_INIT 0
-    mova      m3, [flt2pm31]
+%macro INT32_TO_FLOAT_INIT 6
+    mova      %5, [flt2pm31]
 %endmacro
-%macro INT32_TO_FLOAT_N 0
-    cvtdq2ps  m0, m0
-    cvtdq2ps  m1, m1
-    mulps m0, m0, m3
-    mulps m1, m1, m3
-%endmacro
-
-%macro FLOAT_TO_INT32_INIT 0
-    mova      m3, [flt2p31]
-%endmacro
-%macro FLOAT_TO_INT32_N 0
-    mulps m0, m3
-    mulps m1, m3
-    cvtps2dq  m2, m0
-    cvtps2dq  m4, m1
-    cmpnltps m0, m3
-    cmpnltps m1, m3
-    paddd m0, m2
-    paddd m1, m4
+%macro INT32_TO_FLOAT_N 6
+    cvtdq2ps  %1, %1
+    cvtdq2ps  %2, %2
+    mulps %1, %1, %5
+    mulps %2, %2, %5
 %endmacro
 
-%macro INT16_TO_FLOAT_INIT 0
+%macro FLOAT_TO_INT32_INIT 6
+    mova      %5, [flt2p31]
+%endmacro
+%macro FLOAT_TO_INT32_N 6
+    mulps %1, %5
+    mulps %2, %5
+    cvtps2dq  %3, %1
+    cvtps2dq  %4, %2
+    cmpnltps %1, %5
+    cmpnltps %2, %5
+    paddd %1, %3
+    paddd %2, %4
+%endmacro
+
+%macro INT16_TO_FLOAT_INIT 6
     mova      m5, [flt2pm31]
 %endmacro
-%macro INT16_TO_FLOAT_N 0
-    INT16_TO_INT32_N
+%macro INT16_TO_FLOAT_N 6
+    INT16_TO_INT32_N %1,%2,%3,%4,%5,%6
     cvtdq2ps  m0, m0
     cvtdq2ps  m1, m1
     cvtdq2ps  m2, m2
@@ -344,10 +344,10 @@ pack_6ch_%2_to_%1_u_int %+ SUFFIX
     mulps m3, m3, m5
 %endmacro
 
-%macro FLOAT_TO_INT16_INIT 0
+%macro FLOAT_TO_INT16_INIT 6
     mova      m5, [flt2p15]
 %endmacro
-%macro FLOAT_TO_INT16_N 0
+%macro FLOAT_TO_INT16_N 6
     mulps m0, m5
     mulps m1, m5
     mulps m2, m5
@@ -360,38 +360,41 @@ pack_6ch_%2_to_%1_u_int %+ SUFFIX
     packssdw  m1, m3
 %endmacro
 
+%macro NOP_N 6
+%endmacro
+
 INIT_MMX mmx
-CONV int32, int16, u, 2, 1, INT16_TO_INT32_N
-CONV int32, int16, a, 2, 1, INT16_TO_INT32_N
-CONV int16, int32, u, 1, 2, INT32_TO_INT16_N
-CONV int16, int32, a, 1, 2, INT32_TO_INT16_N
+CONV int32, int16, u, 2, 1, INT16_TO_INT32_N, NOP_N
+CONV int32, int16, a, 2, 1, INT16_TO_INT32_N, NOP_N
+CONV int16, int32, u, 1, 2, INT32_TO_INT16_N, NOP_N
+CONV int16, int32, a, 1, 2, INT32_TO_INT16_N, NOP_N
 
 CONV_FLTP_TO_FLT_6CH float,float,u
 CONV_FLTP_TO_FLT_6CH float,float,a
 
 INIT_XMM sse
-CONV int32, int16, u, 2, 1, INT16_TO_INT32_N
-CONV int32, int16, a, 2, 1, INT16_TO_INT32_N
-CONV int16, int32, u, 1, 2, INT32_TO_INT16_N
-CONV int16, int32, a, 1, 2, INT32_TO_INT16_N
+CONV int32, int16, u, 2, 1, INT16_TO_INT32_N, NOP_N
+CONV int32, int16, a, 2, 1, INT16_TO_INT32_N, NOP_N
+CONV int16, int32, u, 1, 2, INT32_TO_INT16_N, NOP_N
+CONV int16, int32, a, 1, 2, INT32_TO_INT16_N, NOP_N
 
-PACK_2CH int16, int16, u, 1, 1
-PACK_2CH int16, int16, a, 1, 1
-PACK_2CH int32, int32, u, 2, 2
-PACK_2CH int32, int32, a, 2, 2
-PACK_2CH int32, int16, u, 2, 1, INT16_TO_INT32_N
-PACK_2CH int32, int16, a, 2, 1, INT16_TO_INT32_N
-PACK_2CH int16, int32, u, 1, 2, INT32_TO_INT16_N
-PACK_2CH int16, int32, a, 1, 2, INT32_TO_INT16_N
+PACK_2CH int16, int16, u, 1, 1, NOP_N, NOP_N
+PACK_2CH int16, int16, a, 1, 1, NOP_N, NOP_N
+PACK_2CH int32, int32, u, 2, 2, NOP_N, NOP_N
+PACK_2CH int32, int32, a, 2, 2, NOP_N, NOP_N
+PACK_2CH int32, int16, u, 2, 1, INT16_TO_INT32_N, NOP_N
+PACK_2CH int32, int16, a, 2, 1, INT16_TO_INT32_N, NOP_N
+PACK_2CH int16, int32, u, 1, 2, INT32_TO_INT16_N, NOP_N
+PACK_2CH int16, int32, a, 1, 2, INT32_TO_INT16_N, NOP_N
 
-UNPACK_2CH int16, int16, u, 1, 1
-UNPACK_2CH int16, int16, a, 1, 1
-UNPACK_2CH int32, int32, u, 2, 2
-UNPACK_2CH int32, int32, a, 2, 2
-UNPACK_2CH int32, int16, u, 2, 1, INT16_TO_INT32_N
-UNPACK_2CH int32, int16, a, 2, 1, INT16_TO_INT32_N
-UNPACK_2CH int16, int32, u, 1, 2, INT32_TO_INT16_N
-UNPACK_2CH int16, int32, a, 1, 2, INT32_TO_INT16_N
+UNPACK_2CH int16, int16, u, 1, 1, NOP_N, NOP_N
+UNPACK_2CH int16, int16, a, 1, 1, NOP_N, NOP_N
+UNPACK_2CH int32, int32, u, 2, 2, NOP_N, NOP_N
+UNPACK_2CH int32, int32, a, 2, 2, NOP_N, NOP_N
+UNPACK_2CH int32, int16, u, 2, 1, INT16_TO_INT32_N, NOP_N
+UNPACK_2CH int32, int16, a, 2, 1, INT16_TO_INT32_N, NOP_N
+UNPACK_2CH int16, int32, u, 1, 2, INT32_TO_INT16_N, NOP_N
+UNPACK_2CH int16, int32, a, 1, 2, INT32_TO_INT16_N, NOP_N
 
 INIT_XMM sse2
 CONV float, int32, u, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
@@ -423,10 +426,10 @@ UNPACK_2CH int16, float, a, 1, 2, FLOAT_TO_INT16_N, FLOAT_TO_INT16_INIT
 
 
 INIT_XMM ssse3
-UNPACK_2CH int16, int16, u, 1, 1
-UNPACK_2CH int16, int16, a, 1, 1
-UNPACK_2CH int32, int16, u, 2, 1, INT16_TO_INT32_N
-UNPACK_2CH int32, int16, a, 2, 1, INT16_TO_INT32_N
+UNPACK_2CH int16, int16, u, 1, 1, NOP_N, NOP_N
+UNPACK_2CH int16, int16, a, 1, 1, NOP_N, NOP_N
+UNPACK_2CH int32, int16, u, 2, 1, INT16_TO_INT32_N, NOP_N
+UNPACK_2CH int32, int16, a, 2, 1, INT16_TO_INT32_N, NOP_N
 UNPACK_2CH float, int16, u, 2, 1, INT16_TO_FLOAT_N, INT16_TO_FLOAT_INIT
 UNPACK_2CH float, int16, a, 2, 1, INT16_TO_FLOAT_N, INT16_TO_FLOAT_INIT
 
