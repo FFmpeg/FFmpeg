@@ -508,6 +508,14 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "MPEG-2 does not support resolutions above 16383x16383\n");
         return -1;
     }
+
+    if ((s->codec_id == CODEC_ID_WMV1 ||
+         s->codec_id == CODEC_ID_WMV2) &&
+         avctx->width & 1) {
+         av_log(avctx, AV_LOG_ERROR, "width must be multiple of 2\n");
+         return -1;
+    }
+
     if ((s->flags & (CODEC_FLAG_INTERLACED_DCT | CODEC_FLAG_INTERLACED_ME)) &&
         s->codec_id != CODEC_ID_MPEG4 && s->codec_id != CODEC_ID_MPEG2VIDEO) {
         av_log(avctx, AV_LOG_ERROR, "interlacing not supported by codec\n");
