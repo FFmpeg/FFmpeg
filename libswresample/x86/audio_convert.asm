@@ -360,7 +360,7 @@ pack_6ch_%2_to_%1_u_int %+ SUFFIX
     packssdw  m1, m3
 %endmacro
 
-%macro NOP_N 6
+%macro NOP_N 0-6
 %endmacro
 
 INIT_MMX mmx
