@@ -123,6 +123,8 @@ MULTI_CAPS_FUNC(AV_CPU_FLAG_SSE, sse)
         if(channels == 6) {
             if(   out_fmt == AV_SAMPLE_FMT_FLT  && in_fmt == AV_SAMPLE_FMT_FLTP || out_fmt == AV_SAMPLE_FMT_S32 && in_fmt == AV_SAMPLE_FMT_S32P)
                 ac->simd_f =  ff_pack_6ch_float_to_float_a_sse4;
+            if(   out_fmt == AV_SAMPLE_FMT_FLT  && in_fmt == AV_SAMPLE_FMT_S32P)
+                ac->simd_f =  ff_pack_6ch_int32_to_float_a_sse4;
         }
     }
     if(HAVE_AVX && mm_flags & AV_CPU_FLAG_AVX) {
@@ -131,6 +133,8 @@ MULTI_CAPS_FUNC(AV_CPU_FLAG_SSE, sse)
         if(channels == 6) {
             if(   out_fmt == AV_SAMPLE_FMT_FLT  && in_fmt == AV_SAMPLE_FMT_FLTP || out_fmt == AV_SAMPLE_FMT_S32 && in_fmt == AV_SAMPLE_FMT_S32P)
                 ac->simd_f =  ff_pack_6ch_float_to_float_a_avx;
+            if(   out_fmt == AV_SAMPLE_FMT_FLT  && in_fmt == AV_SAMPLE_FMT_S32P)
+                ac->simd_f =  ff_pack_6ch_int32_to_float_a_avx;
         }
     }
 }

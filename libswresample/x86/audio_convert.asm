@@ -199,7 +199,7 @@ cglobal %2_to_%1_%3, 3, 3, 6, dst, src, len
     REP_RET
 %endmacro
 
-%macro PACK_6CH 3
+%macro PACK_6CH 5-7
 cglobal pack_6ch_%2_to_%1_%3, 2,8,7, dst, src, src1, src2, src3, src4, src5, len
 %if ARCH_X86_64
     mov     lend, r2d
@@ -241,6 +241,7 @@ pack_6ch_%2_to_%1_u_int %+ SUFFIX
     mov%3     m3, [srcq+src3q]
     mov%3     m4, [srcq+src4q]
     mov%3     m5, [srcq+src5q]
+    %7 x,x,x,x,m7,x
 %if cpuflag(sse4)
     SBUTTERFLYPS 0, 1, 6
     SBUTTERFLYPS 2, 3, 6
@@ -252,6 +253,10 @@ pack_6ch_%2_to_%1_u_int %+ SUFFIX
     blendps   m2, m5, m1, 1100b
     movlhps   m1, m3
     movhlps   m5, m3
+
+    %6 m0,m6,x,x,m7,m3
+    %6 m4,m1,x,x,m7,m3
+    %6 m2,m5,x,x,m7,m3
 
     mov %+ %3 %+ ps [dstq   ], m0
     mov %+ %3 %+ ps [dstq+16], m6
@@ -369,8 +374,8 @@ CONV int32, int16, a, 2, 1, INT16_TO_INT32_N, NOP_N
 CONV int16, int32, u, 1, 2, INT32_TO_INT16_N, NOP_N
 CONV int16, int32, a, 1, 2, INT32_TO_INT16_N, NOP_N
 
-PACK_6CH float,float,u
-PACK_6CH float,float,a
+PACK_6CH float, float, u, 2, 2, NOP_N, NOP_N
+PACK_6CH float, float, a, 2, 2, NOP_N, NOP_N
 
 INIT_XMM sse
 CONV int32, int16, u, 2, 1, INT16_TO_INT32_N, NOP_N
@@ -434,13 +439,19 @@ UNPACK_2CH float, int16, u, 2, 1, INT16_TO_FLOAT_N, INT16_TO_FLOAT_INIT
 UNPACK_2CH float, int16, a, 2, 1, INT16_TO_FLOAT_N, INT16_TO_FLOAT_INIT
 
 INIT_XMM sse4
-PACK_6CH float,float,u
-PACK_6CH float,float,a
+PACK_6CH float, float, u, 2, 2, NOP_N, NOP_N
+PACK_6CH float, float, a, 2, 2, NOP_N, NOP_N
+
+PACK_6CH float, int32, u, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
+PACK_6CH float, int32, a, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
 
 %if HAVE_AVX
 INIT_XMM avx
-PACK_6CH float,float,u
-PACK_6CH float,float,a
+PACK_6CH float, float, u, 2, 2, NOP_N, NOP_N
+PACK_6CH float, float, a, 2, 2, NOP_N, NOP_N
+
+PACK_6CH float, int32, u, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
+PACK_6CH float, int32, a, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
 
 INIT_YMM avx
 CONV float, int32, u, 2, 2, INT32_TO_FLOAT_N, INT32_TO_FLOAT_INIT
