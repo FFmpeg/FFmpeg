@@ -229,6 +229,7 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     int width, height, ret = -1;
     int pixel_size = 0;
     int ispacked = 0;
+    int i;
 
     *data_size = 0;
 
@@ -291,6 +292,9 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "Unable to determine pixel format\n");
         goto done;
     }
+    for (i = 0; i < image->numcomps; i++)
+        if (image->comps[i].prec > avctx->bits_per_raw_sample)
+            avctx->bits_per_raw_sample = image->comps[i].prec;
 
     if(picture->data[0])
         ff_thread_release_buffer(avctx, picture);
