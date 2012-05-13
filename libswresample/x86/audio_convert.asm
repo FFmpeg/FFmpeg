@@ -213,18 +213,34 @@ cglobal pack_6ch_%2_to_%1_%3, 2,8,7, dst, src, src1, src2, src3, src4, src5, len
     mov    src5q, [srcq+5*gprsize]
     mov     srcq, [srcq]
     mov     dstq, [dstq]
+%ifidn %3, a
+    test dstq, mmsize-1
+        jne pack_6ch_%2_to_%1_u_int %+ SUFFIX
+    test srcq, mmsize-1
+        jne pack_6ch_%2_to_%1_u_int %+ SUFFIX
+    test src2q, mmsize-1
+        jne pack_6ch_%2_to_%1_u_int %+ SUFFIX
+    test src3q, mmsize-1
+        jne pack_6ch_%2_to_%1_u_int %+ SUFFIX
+    test src4q, mmsize-1
+        jne pack_6ch_%2_to_%1_u_int %+ SUFFIX
+    test src5q, mmsize-1
+        jne pack_6ch_%2_to_%1_u_int %+ SUFFIX
+%else
+pack_6ch_%2_to_%1_u_int %+ SUFFIX
+%endif
     sub    src1q, srcq
     sub    src2q, srcq
     sub    src3q, srcq
     sub    src4q, srcq
     sub    src5q, srcq
 .loop:
-    mova      m0, [srcq      ]
-    mova      m1, [srcq+src1q]
-    mova      m2, [srcq+src2q]
-    mova      m3, [srcq+src3q]
-    mova      m4, [srcq+src4q]
-    mova      m5, [srcq+src5q]
+    mov%3     m0, [srcq      ]
+    mov%3     m1, [srcq+src1q]
+    mov%3     m2, [srcq+src2q]
+    mov%3     m3, [srcq+src3q]
+    mov%3     m4, [srcq+src4q]
+    mov%3     m5, [srcq+src5q]
 %if cpuflag(sse4)
     SBUTTERFLYPS 0, 1, 6
     SBUTTERFLYPS 2, 3, 6
@@ -237,12 +253,12 @@ cglobal pack_6ch_%2_to_%1_%3, 2,8,7, dst, src, src1, src2, src3, src4, src5, len
     movlhps   m1, m3
     movhlps   m5, m3
 
-    movaps [dstq   ], m0
-    movaps [dstq+16], m6
-    movaps [dstq+32], m4
-    movaps [dstq+48], m1
-    movaps [dstq+64], m2
-    movaps [dstq+80], m5
+    mov %+ %3 %+ ps [dstq   ], m0
+    mov %+ %3 %+ ps [dstq+16], m6
+    mov %+ %3 %+ ps [dstq+32], m4
+    mov %+ %3 %+ ps [dstq+48], m1
+    mov %+ %3 %+ ps [dstq+64], m2
+    mov %+ %3 %+ ps [dstq+80], m5
 %else ; mmx
     SBUTTERFLY dq, 0, 1, 6
     SBUTTERFLY dq, 2, 3, 6
@@ -268,11 +284,14 @@ cglobal pack_6ch_%2_to_%1_%3, 2,8,7, dst, src, src1, src2, src3, src4, src5, len
 %endmacro
 
 INIT_MMX mmx
+CONV_FLTP_TO_FLT_6CH float,float,u
 CONV_FLTP_TO_FLT_6CH float,float,a
 INIT_XMM sse4
+CONV_FLTP_TO_FLT_6CH float,float,u
 CONV_FLTP_TO_FLT_6CH float,float,a
 %if HAVE_AVX
 INIT_XMM avx
+CONV_FLTP_TO_FLT_6CH float,float,u
 CONV_FLTP_TO_FLT_6CH float,float,a
 %endif
 
