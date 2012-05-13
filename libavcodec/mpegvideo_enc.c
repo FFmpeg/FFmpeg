@@ -495,6 +495,13 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
+    if (s->codec_id == CODEC_ID_MPEG1VIDEO &&
+        (avctx->width  > 4095 ||
+         avctx->height > 4095 )) {
+        av_log(avctx, AV_LOG_ERROR, "MPEG-1 does not support resolutions above 4095x4095\n");
+        return -1;
+    }
+
     if ((s->flags & (CODEC_FLAG_INTERLACED_DCT | CODEC_FLAG_INTERLACED_ME)) &&
         s->codec_id != CODEC_ID_MPEG4 && s->codec_id != CODEC_ID_MPEG2VIDEO) {
         av_log(avctx, AV_LOG_ERROR, "interlacing not supported by codec\n");
