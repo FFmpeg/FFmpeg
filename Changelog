@@ -17,6 +17,7 @@ version <next>:
 - ZeroCodec decoder
 - drop support for avconv without libavfilter
 - add libavresample audio conversion library
+- audio filters support in libavfilter and avconv
 
 
 version 0.8:
