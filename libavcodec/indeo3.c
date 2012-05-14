@@ -344,8 +344,10 @@ if (*data_ptr >= last_ptr) \
         fill_64(dst, pix64, num_lines << 1, row_offset)
 
 #define APPLY_DELTA_4 \
-    AV_WN16A(dst + line_offset    , AV_RN16A(ref    ) + delta_tab->deltas[dyad1]);\
-    AV_WN16A(dst + line_offset + 2, AV_RN16A(ref + 2) + delta_tab->deltas[dyad2]);\
+    AV_WN16A(dst + line_offset    ,\
+             (AV_RN16A(ref    ) + delta_tab->deltas[dyad1]) & 0x7F7F);\
+    AV_WN16A(dst + line_offset + 2,\
+             (AV_RN16A(ref + 2) + delta_tab->deltas[dyad2]) & 0x7F7F);\
     if (mode >= 3) {\
         if (is_top_of_cell && !cell->ypos) {\
             AV_COPY32(dst, dst + row_offset);\
@@ -358,14 +360,14 @@ if (*data_ptr >= last_ptr) \
     /* apply two 32-bit VQ deltas to next even line */\
     if (is_top_of_cell) { \
         AV_WN32A(dst + row_offset    , \
-                 replicate32(AV_RN32A(ref    )) + delta_tab->deltas_m10[dyad1]);\
+                 (replicate32(AV_RN32A(ref    )) + delta_tab->deltas_m10[dyad1]) & 0x7F7F7F7F);\
         AV_WN32A(dst + row_offset + 4, \
-                 replicate32(AV_RN32A(ref + 4)) + delta_tab->deltas_m10[dyad2]);\
+                 (replicate32(AV_RN32A(ref + 4)) + delta_tab->deltas_m10[dyad2]) & 0x7F7F7F7F);\
     } else { \
         AV_WN32A(dst + row_offset    , \
-                 AV_RN32A(ref    ) + delta_tab->deltas_m10[dyad1]);\
+                 (AV_RN32A(ref    ) + delta_tab->deltas_m10[dyad1]) & 0x7F7F7F7F);\
         AV_WN32A(dst + row_offset + 4, \
-                 AV_RN32A(ref + 4) + delta_tab->deltas_m10[dyad2]);\
+                 (AV_RN32A(ref + 4) + delta_tab->deltas_m10[dyad2]) & 0x7F7F7F7F);\
     } \
     /* odd lines are not coded but rather interpolated/replicated */\
     /* first line of the cell on the top of image? - replicate */\
@@ -379,22 +381,22 @@ if (*data_ptr >= last_ptr) \
 #define APPLY_DELTA_1011_INTER \
     if (mode == 10) { \
         AV_WN32A(dst                 , \
-                 AV_RN32A(dst                 ) + delta_tab->deltas_m10[dyad1]);\
+                 (AV_RN32A(dst                 ) + delta_tab->deltas_m10[dyad1]) & 0x7F7F7F7F);\
         AV_WN32A(dst + 4             , \
-                 AV_RN32A(dst + 4             ) + delta_tab->deltas_m10[dyad2]);\
+                 (AV_RN32A(dst + 4             ) + delta_tab->deltas_m10[dyad2]) & 0x7F7F7F7F);\
         AV_WN32A(dst + row_offset    , \
-                 AV_RN32A(dst + row_offset    ) + delta_tab->deltas_m10[dyad1]);\
+                 (AV_RN32A(dst + row_offset    ) + delta_tab->deltas_m10[dyad1]) & 0x7F7F7F7F);\
         AV_WN32A(dst + row_offset + 4, \
-                 AV_RN32A(dst + row_offset + 4) + delta_tab->deltas_m10[dyad2]);\
+                 (AV_RN32A(dst + row_offset + 4) + delta_tab->deltas_m10[dyad2]) & 0x7F7F7F7F);\
     } else { \
         AV_WN16A(dst                 , \
-                 AV_RN16A(dst                 ) + delta_tab->deltas[dyad1]);\
+                 (AV_RN16A(dst                 ) + delta_tab->deltas[dyad1]) & 0x7F7F);\
         AV_WN16A(dst + 2             , \
-                 AV_RN16A(dst + 2             ) + delta_tab->deltas[dyad2]);\
+                 (AV_RN16A(dst + 2             ) + delta_tab->deltas[dyad2]) & 0x7F7F);\
         AV_WN16A(dst + row_offset    , \
-                 AV_RN16A(dst + row_offset    ) + delta_tab->deltas[dyad1]);\
+                 (AV_RN16A(dst + row_offset    ) + delta_tab->deltas[dyad1]) & 0x7F7F);\
         AV_WN16A(dst + row_offset + 2, \
-                 AV_RN16A(dst + row_offset + 2) + delta_tab->deltas[dyad2]);\
+                 (AV_RN16A(dst + row_offset + 2) + delta_tab->deltas[dyad2]) & 0x7F7F);\
     }
 
 
