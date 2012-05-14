@@ -352,6 +352,20 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
     return 0;
 }
 
+static void close_input_file(AVFormatContext **ctx_ptr)
+{
+    int i;
+    AVFormatContext *fmt_ctx = *ctx_ptr;
+
+    /* close decoder for each stream */
+    for (i = 0; i < fmt_ctx->nb_streams; i++) {
+        AVStream *stream = fmt_ctx->streams[i];
+
+        avcodec_close(stream->codec);
+    }
+    avformat_close_input(ctx_ptr);
+}
+
 static int probe_file(const char *filename)
 {
     AVFormatContext *fmt_ctx;
@@ -370,7 +384,7 @@ static int probe_file(const char *filename)
     if (do_show_format)
         show_format(fmt_ctx);
 
-    avformat_close_input(&fmt_ctx);
+    close_input_file(&fmt_ctx);
     return 0;
 }
 
