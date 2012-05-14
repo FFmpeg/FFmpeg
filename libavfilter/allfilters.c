@@ -97,6 +97,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER (FPS,         fps,         vf);
     REGISTER_FILTER (FRAMESTEP,   framestep,   vf);
     REGISTER_FILTER (FREI0R,      frei0r,      vf);
+    REGISTER_FILTER (GEQ,         geq,         vf);
     REGISTER_FILTER (GRADFUN,     gradfun,     vf);
     REGISTER_FILTER (HFLIP,       hflip,       vf);
     REGISTER_FILTER (HQDN3D,      hqdn3d,      vf);

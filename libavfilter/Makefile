@@ -105,6 +105,7 @@ OBJS-$(CONFIG_FORMAT_FILTER)                 += vf_format.o
 OBJS-$(CONFIG_FRAMESTEP_FILTER)              += vf_framestep.o
 OBJS-$(CONFIG_FPS_FILTER)                    += vf_fps.o
 OBJS-$(CONFIG_FREI0R_FILTER)                 += vf_frei0r.o
+OBJS-$(CONFIG_GEQ_FILTER)                    += vf_geq.o
 OBJS-$(CONFIG_GRADFUN_FILTER)                += vf_gradfun.o
 OBJS-$(CONFIG_HFLIP_FILTER)                  += vf_hflip.o
 OBJS-$(CONFIG_HQDN3D_FILTER)                 += vf_hqdn3d.o

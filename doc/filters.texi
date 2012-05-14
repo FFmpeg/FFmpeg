@@ -2364,6 +2364,81 @@ frei0r=perspective:0.2/0.2:0.8/0.2
 For more information see:
 @url{http://frei0r.dyne.org}
 
+@section geq
+
+The filter takes one, two or three equations as parameter, separated by ':'.
+The first equation is mandatory and applies to the luma plane. The two
+following are respectively for chroma blue and chroma red planes.
+
+The filter syntax allows named parameters:
+
+@table @option
+@item lum_expr
+the luminance expression
+@item cb_expr
+the chrominance blue expression
+@item cr_expr
+the chrominance red expression
+@end table
+
+If one of the chrominance expression is not defined, it falls back on the other
+one. If none of them are specified, they will evaluate the luminance
+expression.
+
+The expressions can use the following variables and functions:
+
+@table @option
+@item N
+The sequential number of the filtered frame, starting from @code{0}.
+
+@item X, Y
+The coordinates of the current sample.
+
+@item W, H
+The width and height of the image.
+
+@item SW, SH
+Width and height scale depending on the currently filtered plane. It is the
+ratio between the corresponding luma plane number of pixels and the current
+plane ones. E.g. for YUV4:2:0 the values are @code{1,1} for the luma plane, and
+@code{0.5,0.5} for chroma planes.
+
+@item p(x, y)
+Return the value of the pixel at location (@var{x},@var{y}) of the current
+plane.
+
+@item lum(x, y)
+Return the value of the pixel at location (@var{x},@var{y}) of the luminance
+plane.
+
+@item cb(x, y)
+Return the value of the pixel at location (@var{x},@var{y}) of the
+blue-difference chroma plane.
+
+@item cr(x, y)
+Return the value of the pixel at location (@var{x},@var{y}) of the
+red-difference chroma plane.
+@end table
+
+For functions, if @var{x} and @var{y} are outside the area, the value will be
+automatically clipped to the closer edge.
+
+Some examples follow:
+
+@itemize
+@item
+Flip the image horizontally:
+@example
+geq=p(W-X\,Y)
+@end example
+
+@item
+Generate a fancy enigmatic moving light:
+@example
+nullsrc=s=256x256,geq=random(1)/hypot(X-cos(N*0.07)*W/2-W/2\,Y-sin(N*0.09)*H/2-H/2)^2*1000000*sin(N*0.02):128:128
+@end example
+@end itemize
+
 @section gradfun
 
 Fix the banding artifacts that are sometimes introduced into nearly flat
@@ -4469,9 +4544,9 @@ color=c=red@@0.2:s=qcif:r=10
 
 If the input content is to be ignored, @code{nullsrc} can be used. The
 following command generates noise in the luminance plane by employing
-the @code{mp=geq} filter:
+the @code{geq} filter:
 @example
-nullsrc=s=256x256, mp=geq=random(1)*255:128:128
+nullsrc=s=256x256, geq=random(1)*255:128:128
 @end example
 
 @c man end VIDEO SOURCES

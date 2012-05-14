@@ -22,6 +22,7 @@ version <next>:
 - metadata (info chunk) support in CAF muxer
 - field filter ported from libmpcodecs
 - AVR demuxer
+- geq filter ported from libmpcodecs
 
 
 version 1.0:
