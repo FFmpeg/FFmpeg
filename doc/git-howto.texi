@@ -346,6 +346,61 @@ git checkout -b svn_23456 $SHA1
 
 where @var{$SHA1} is the commit hash from the @command{git log} output.
 
+
+@chapter pre-push checklist
+
+Once you have a set of commits that you feel are ready for pushing,
+work through the following checklist to doublecheck everything is in
+proper order. This list tries to be exhaustive. In case you are just
+pushing a typo in a comment, some of the steps may be unnecessary.
+Apply your common sense, but if in doubt, err on the side of caution.
+
+First make sure your Git repository is on a branch that is a direct
+descendant of the Libav master branch, which is the only one from which
+pushing to Libav is possible. Then run the following command:
+
+@itemize
+@item @command{git log --patch --stat origin/master..}
+
+to make sure that only the commits you want to push are pending, that
+the log messages of the commits are correct and descriptive and contain
+no cruft from @command{git am} and to doublecheck that the commits you
+want to push really only contain the changes they are supposed to contain.
+
+@item @command{git status}
+
+to ensure no local changes still need to be committed and that no local
+changes may have thrown off the results of your testing.
+@end itemize
+
+Next let the code pass through a full run of our testsuite. Before you do,
+the command @command{make fate-rsync} will update the test samples. Changes
+to the samples set are not very common and commits depending on samples
+changes are delayed for at least 24 hours to allow the new samples to
+propagate, so updating it once per day is sufficient.  Now execute
+
+@itemize
+@item @command{make distclean}
+@item @command{/path/to/libav/configure}
+@item @command{make check}
+@end itemize
+
+While the test suite covers a wide range of possible problems, it is not
+a panacea. Do not hesitate to perform any other tests necessary to convince
+yourself that the changes you are about to push actually work as expected.
+
+Also note that every single commit should pass the test suite, not just
+the result of a series of patches. So if you have a series of related
+commits, run the test suite on every single commit.
+
+Finally, after pushing, mark all patches as committed on
+@url{http://patches.libav.org/,patchwork}.
+Sometimes this is not automatically done when a patch has been
+slightly modified from the version on the mailing list.
+Also update previous incarnations of the patches you push so that
+patchwork is not cluttered with cruft.
+
+
 @chapter Server Issues
 
 Contact the project admins @email{git@@libav.org} if you have technical
