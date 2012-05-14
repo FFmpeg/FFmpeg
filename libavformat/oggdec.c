@@ -55,6 +55,8 @@ static const struct ogg_codec * const ogg_codecs[] = {
     NULL
 };
 
+static int64_t ogg_calc_pts(AVFormatContext *s, int idx, int64_t *dts);
+
 //FIXME We could avoid some structure duplication
 static int ogg_save(AVFormatContext *s)
 {
@@ -521,19 +523,16 @@ static int ogg_get_length(AVFormatContext *s)
 
     ogg_save (s);
     avio_seek (s->pb, s->data_offset, SEEK_SET);
-    while (!ogg_read_page (s, &i)){
-        if (ogg->streams[i].granule != -1 && ogg->streams[i].granule != 0 &&
-            ogg->streams[i].codec) {
-            if(s->streams[i]->duration && s->streams[i]->start_time == AV_NOPTS_VALUE && !ogg->streams[i].got_start){
-                int64_t start= ogg_gptopts (s, i, ogg->streams[i].granule, NULL);
-                if(av_rescale_q(start, s->streams[i]->time_base, AV_TIME_BASE_Q) > AV_TIME_BASE)
-                    s->streams[i]->duration -= start;
-                ogg->streams[i].got_start= 1;
-                streams_left--;
-            }
+    ogg_reset(s);
+    while (!ogg_packet(s, &i, NULL, NULL, NULL)) {
+        int64_t pts = ogg_calc_pts(s, i, NULL);
+        if (pts != AV_NOPTS_VALUE && s->streams[i]->start_time == AV_NOPTS_VALUE && !ogg->streams[i].got_start){
+            s->streams[i]->duration -= pts;
+            ogg->streams[i].got_start= 1;
+            streams_left--;
+        }
             if(streams_left<=0)
                 break;
-        }
     }
     ogg_restore (s, 0);
 
