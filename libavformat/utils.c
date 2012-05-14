@@ -938,6 +938,14 @@ static void update_initial_durations(AVFormatContext *s, AVStream *st,
                 cur_dts -= duration;
             }
         }
+        if(pktl && pktl->pkt.dts != st->first_dts) {
+            av_log(s, AV_LOG_DEBUG, "first_dts %"PRIi64" not matching first dts %"PRIi64" in que\n", st->first_dts, pktl->pkt.dts);
+            return;
+        }
+        if(!pktl) {
+            av_log(s, AV_LOG_DEBUG, "first_dts %"PRIi64" but no packet with dts in ques\n", st->first_dts);
+            return;
+        }
         pktl= s->parse_queue ? s->parse_queue : s->packet_buffer;
         st->first_dts = cur_dts;
     }else if(st->cur_dts != RELATIVE_TS_BASE)
