@@ -33,11 +33,13 @@ typedef struct VCR1Context {
     int offset[4];
 } VCR1Context;
 
-static av_cold void common_init(AVCodecContext *avctx)
+static av_cold int common_init(AVCodecContext *avctx)
 {
     VCR1Context *const a = avctx->priv_data;
 
     avctx->coded_frame = &a->picture;
+
+    return 0;
 }
 
 static av_cold int decode_init(AVCodecContext *avctx)
