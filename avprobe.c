@@ -491,6 +491,9 @@ int main(int argc, char **argv)
 
     ret = probe_file(input_filename);
 
+    uninit_opts();
+    av_dict_free(&fmt_entries_to_show);
+
     avformat_network_deinit();
 
     return ret;
