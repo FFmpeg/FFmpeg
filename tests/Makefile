@@ -127,6 +127,7 @@ fate-seek:   $(FATE_SEEK)
 ifdef SAMPLES
 FATE += $(FATE_LAVF_FATE)
 FATE += $(FATE_FFMPEG)
+FATE += $(FATE_FULL) $(FATE_FULL-yes)
 fate-rsync:
 	rsync -vaLW --timeout=60 --contimeout=60 rsync://fate.ffmpeg.org/fate-suite/ $(SAMPLES)
 else
