@@ -1,8 +1,8 @@
 FATE_QTRLE += fate-qtrle-1bit
-fate-qtrle-1bit: CMD = framecrc -i $(SAMPLES)/qtrle/Animation-Monochrome.mov
+fate-qtrle-1bit: CMD = framecrc -i $(SAMPLES)/qtrle/Animation-Monochrome.mov -an
 
 FATE_QTRLE += fate-qtrle-2bit
-fate-qtrle-2bit: CMD = framecrc -i $(SAMPLES)/qtrle/Animation-4Greys.mov -pix_fmt rgb24
+fate-qtrle-2bit: CMD = framecrc -i $(SAMPLES)/qtrle/Animation-4Greys.mov -pix_fmt rgb24 -an
 
 FATE_QTRLE += fate-qtrle-4bit
 fate-qtrle-4bit: CMD = framecrc -i $(SAMPLES)/qtrle/Animation-16Greys.mov -pix_fmt rgb24 -an

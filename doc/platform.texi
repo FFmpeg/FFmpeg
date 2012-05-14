@@ -89,7 +89,7 @@ section and the FAQ.
 
 FFmpeg does not build out-of-the-box with the packages the automated MinGW
 installer provides. It also requires coreutils to be installed and many other
-packages updated to the latest version. The minimum version for some packages
+packages updated to the latest version. The minimum versions for some packages
 are listed below:
 
 @itemize
@@ -109,14 +109,11 @@ Notes:
 @item Building natively using MSYS can be sped up by disabling implicit rules
 in the Makefile by calling @code{make -r} instead of plain @code{make}. This
 speed up is close to non-existent for normal one-off builds and is only
-noticeable when running make for a second time (for example in
+noticeable when running make for a second time (for example during
 @code{make install}).
 
 @item In order to compile FFplay, you must have the MinGW development library
-of @uref{http://www.libsdl.org/, SDL}.
-Edit the @file{bin/sdl-config} script so that it points to the correct prefix
-where SDL was installed. Verify that @file{sdl-config} can be launched from
-the MSYS command line.
+of @uref{http://www.libsdl.org/, SDL} and @code{pkg-config} installed.
 
 @item By using @code{./configure --enable-shared} when configuring FFmpeg,
 you can build the FFmpeg libraries (e.g. libavutil, libavcodec,
@@ -140,7 +137,7 @@ you might have to modify the procedures slightly.
 
 @subsection Using static libraries
 
-Assuming you have just built and installed FFmpeg in @file{/usr/local}.
+Assuming you have just built and installed FFmpeg in @file{/usr/local}:
 
 @enumerate
 
@@ -288,13 +285,10 @@ are stored.
 @item Generate new import libraries with @file{lib.exe}:
 
 @example
-lib /machine:i386 /def:..\lib\avcodec-53.def  /out:avcodec.lib
-lib /machine:i386 /def:..\lib\avdevice-53.def /out:avdevice.lib
-lib /machine:i386 /def:..\lib\avfilter-2.def  /out:avfilter.lib
-lib /machine:i386 /def:..\lib\avformat-53.def /out:avformat.lib
-lib /machine:i386 /def:..\lib\avutil-51.def   /out:avutil.lib
-lib /machine:i386 /def:..\lib\swscale-2.def   /out:swscale.lib
+lib /machine:i386 /def:..\lib\foo-version.def  /out:foo.lib
 @end example
+
+Replace @code{foo-version} and @code{foo} with the respective library names.
 
 @end enumerate
 
@@ -337,8 +331,8 @@ Then run
 
 to make a static build.
 
-The current @code{gcc4-core} package is buggy and needs this flag to build
-shared libraries:
+To build shared libraries add a special compiler flag to work around current
+@code{gcc4-core} package bugs in addition to the normal configure flags:
 
 @example
 ./configure --enable-shared --disable-static --extra-cflags=-fno-reorder-functions
@@ -358,11 +352,8 @@ yasm, libSDL-devel, libfaac-devel, libaacplus-devel, libgsm-devel, libmp3lame-de
 libschroedinger1.0-devel, speex-devel, libtheora-devel, libxvidcore-devel
 @end example
 
-The recommendation for libnut and x264 is to build them from source by
-yourself, as they evolve too quickly for Cygwin Ports to be up to date.
-
-Cygwin 1.7.x has IPv6 support. You can add IPv6 to Cygwin 1.5.x by means
-of the @code{libgetaddrinfo-devel} package, available at Cygwin Ports.
+The recommendation for x264 is to build it from source, as it evolves too
+quickly for Cygwin Ports to be up to date.
 
 @section Crosscompilation for Windows under Cygwin
 

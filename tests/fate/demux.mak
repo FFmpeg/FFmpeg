@@ -10,29 +10,14 @@ fate-aea-demux: CMD = crc -i $(SAMPLES)/aea/chirp.aea -acodec copy
 FATE_DEMUX += fate-bink-demux
 fate-bink-demux: CMD = crc -i $(SAMPLES)/bink/Snd0a7d9b58.dee -vn -acodec copy
 
-FATE_DEMUX += fate-bmv
-fate-bmv: CMD = framecrc -i $(SAMPLES)/bmv/SURFING-partial.BMV -pix_fmt rgb24
-
 FATE_DEMUX += fate-caf
-fate-caf: CMD = crc -i $(SAMPLES)/caf/caf-pcm16.caf
+fate-caf: CMD = crc -i $(SAMPLES)/caf/caf-pcm16.caf -c copy
 
 FATE_DEMUX += fate-cdxl-demux
 fate-cdxl-demux: CMD = framecrc -i $(SAMPLES)/cdxl/mirage.cdxl -vcodec copy -acodec copy
 
-FATE_DEMUX += fate-cryo-apc
-fate-cryo-apc: CMD = md5 -i $(SAMPLES)/cryo-apc/cine007.APC -f s16le
-
 FATE_DEMUX += fate-d-cinema-demux
-fate-d-cinema-demux: CMD = framecrc -i $(SAMPLES)/d-cinema/THX_Science_FLT_1920-partial.302 -acodec copy -pix_fmt rgb24
-
-FATE_DEMUX += fate-funcom-iss
-fate-funcom-iss: CMD = md5 -i $(SAMPLES)/funcom-iss/0004010100.iss -f s16le
-
-FATE_DEMUX += fate-interplay-mve-16bit
-fate-interplay-mve-16bit: CMD = framecrc -i $(SAMPLES)/interplay-mve/descent3-level5-16bit-partial.mve -pix_fmt rgb24
-
-FATE_DEMUX += fate-interplay-mve-8bit
-fate-interplay-mve-8bit: CMD = framecrc -i $(SAMPLES)/interplay-mve/interplay-logo-2MB.mve -pix_fmt rgb24
+fate-d-cinema-demux: CMD = framecrc -i $(SAMPLES)/d-cinema/THX_Science_FLT_1920-partial.302 -acodec copy
 
 FATE_DEMUX += fate-iv8-demux
 fate-iv8-demux: CMD = framecrc -i $(SAMPLES)/iv8/zzz-partial.mpg -vcodec copy
@@ -44,7 +29,7 @@ FATE_DEMUX += fate-maxis-xa
 fate-maxis-xa: CMD = framecrc -i $(SAMPLES)/maxis-xa/SC2KBUG.XA -frames:a 30 -c:a copy
 
 FATE_DEMUX += fate-mtv
-fate-mtv: CMD = framecrc -i $(SAMPLES)/mtv/comedian_auto-partial.mtv -acodec copy -pix_fmt rgb24
+fate-mtv: CMD = framecrc -i $(SAMPLES)/mtv/comedian_auto-partial.mtv -c copy
 
 FATE_DEMUX += fate-mxf-demux
 fate-mxf-demux: CMD = framecrc -i $(SAMPLES)/mxf/C0023S01.mxf -acodec copy -vcodec copy
@@ -83,7 +68,7 @@ FATE_DEMUX += fate-smjpeg
 fate-smjpeg: CMD = framecrc -i $(SAMPLES)/smjpeg/scenwin.mjpg -vcodec copy
 
 FATE_DEMUX += fate-westwood-aud
-fate-westwood-aud: CMD = md5 -i $(SAMPLES)/westwood-aud/excellent.aud -f s16le
+fate-westwood-aud: CMD = framecrc -i $(SAMPLES)/westwood-aud/excellent.aud -c copy
 
 FATE_DEMUX += fate-wtv-demux
 fate-wtv-demux: CMD = framecrc -i $(SAMPLES)/wtv/law-and-order-partial.wtv -vcodec copy -acodec copy
