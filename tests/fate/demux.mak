@@ -43,9 +43,6 @@ fate-oma-demux: CMD = crc -i $(SAMPLES)/oma/01-Untitled-partial.oma -acodec copy
 FATE_AVCONV += fate-psx-str-demux
 fate-psx-str-demux: CMD = framecrc -i $(SAMPLES)/psx-str/descent-partial.str -c copy
 
-FATE_AVCONV += fate-psx-str-v3-mdec
-fate-psx-str-v3-mdec: CMD = framecrc -i $(SAMPLES)/psx-str/abc000_cut.str -an
-
 FATE_AVCONV += fate-pva-demux
 fate-pva-demux: CMD = framecrc -idct simple -i $(SAMPLES)/pva/PVA_test-partial.pva -t 0.6 -acodec copy -vn
 
