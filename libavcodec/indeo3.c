@@ -194,6 +194,8 @@ static av_cold int allocate_frame_buffers(Indeo3DecodeContext *ctx,
         /* set buffer pointers = buf_ptr + pitch and thus skip the INTRA prediction line */
         ctx->planes[p].pixels[0] = ctx->planes[p].buffers[0] + ctx->planes[p].pitch;
         ctx->planes[p].pixels[1] = ctx->planes[p].buffers[1] + ctx->planes[p].pitch;
+        memset(ctx->planes[p].pixels[0], 0, ctx->planes[p].pitch * ctx->planes[p].height);
+        memset(ctx->planes[p].pixels[1], 0, ctx->planes[p].pitch * ctx->planes[p].height);
     }
 
     return 0;
