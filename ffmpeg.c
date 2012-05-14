@@ -2114,6 +2114,7 @@ static int poll_filters(void)
     AVFrame *filtered_frame = NULL;
     int i, ret, ret_all;
     unsigned nb_success, nb_eof;
+    int64_t frame_pts;
 
     while (1) {
         /* Reap all buffers present in the buffer sinks */
@@ -2143,7 +2144,7 @@ static int poll_filters(void)
                     }
                     break;
                 }
-                filtered_frame->pts = av_rescale_q(picref->pts, ist_pts_tb, AV_TIME_BASE_Q);
+                filtered_frame->pts = frame_pts = av_rescale_q(picref->pts, ist_pts_tb, AV_TIME_BASE_Q);
                 //if (ost->source_index >= 0)
                 //    *filtered_frame= *input_streams[ost->source_index]->decoded_frame; //for me_threshold
 
@@ -2153,6 +2154,7 @@ static int poll_filters(void)
                 switch (ost->filter->filter->inputs[0]->type) {
                 case AVMEDIA_TYPE_VIDEO:
                     avfilter_fill_frame_from_video_buffer_ref(filtered_frame, picref);
+                    filtered_frame->pts = frame_pts;
                     if (!ost->frame_aspect_ratio)
                         ost->st->codec->sample_aspect_ratio = picref->video->sample_aspect_ratio;
 
