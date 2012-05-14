@@ -29,6 +29,9 @@ To inform the build system about the testsuite location, pass
 @var{SAMPLES} Make variable or the @var{LIBAV_SAMPLES} environment variable
 to a suitable value.
 
+To use a custom wrapper to run the test, pass @option{--target-exec} to
+@command{configure} or set the @var{TARGET_EXEC} Make variable.
+
 The dataset is available through @command{rsync}, is possible to fetch
 the current sample using the straight rsync command or through a specific
 @ref{Makefile target}.
@@ -57,7 +60,7 @@ Shortcut to download the fate test samples to the specified testsuite location.
 Run the FATE test suite (requires the fate-suite dataset).
 @end table
 
-@section Fate Makefile variables
+@section FATE Makefile variables
 @table @option
 @item V
 Verbosity level, can be set to 0, 1 or 2.
@@ -77,6 +80,8 @@ Specify how many threads to use while running regression tests, it is
 quite useful to detect thread-related regressions.
 @item CPUFLAGS
 Specify a mask to be applied to autodetected CPU flags.
+@item TARGET_EXEC
+Specify or override the wrapper used to run the tests.
 @end table
 
 @example
@@ -130,6 +135,11 @@ makeopts=       # extra options passed to 'make'
 #tar=           # command to create a tar archive from its arguments on
                 # stdout, defaults to 'tar c'
 @end example
+
+@section Special Instances
+The @var{TARGET_EXEC} option provides a way to run FATE wrapped in
+@command{valgrind}, @command{qemu-user} or @command{wine} or on remote targets
+through @command{ssh}.
 
 @section Submitting Reports
 In order to send reports you need to create an @command{ssh} key and send it
