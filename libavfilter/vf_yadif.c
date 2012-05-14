@@ -61,6 +61,7 @@ typedef struct {
                         int w, int prefs, int mrefs, int parity, int mode);
 
     const AVPixFmtDescriptor *csp;
+    int eof;
 } YADIFContext;
 
 #define CHECK(j)\
@@ -304,8 +305,21 @@ static int request_frame(AVFilterLink *link)
     do {
         int ret;
 
-        if ((ret = avfilter_request_frame(link->src->inputs[0])))
+        if (yadif->eof)
+            return AVERROR_EOF;
+
+        ret  = avfilter_request_frame(link->src->inputs[0]);
+
+        if (ret == AVERROR_EOF && yadif->next) {
+            AVFilterBufferRef *next = avfilter_ref_buffer(yadif->next, AV_PERM_READ);
+            next->pts = yadif->next->pts * 2 - yadif->cur->pts;
+
+            start_frame(link->src->inputs[0], next);
+            end_frame(link->src->inputs[0]);
+            yadif->eof = 1;
+        } else if (ret < 0) {
             return ret;
+        }
     } while (!yadif->cur);
 
     return 0;
