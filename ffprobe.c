@@ -482,6 +482,7 @@ static void default_show_tags(WriterContext *wctx, AVDictionary *dict)
 
 static const Writer default_writer = {
     .name                  = "default",
+    .priv_size             = sizeof(DefaultContext),
     .init                  = default_init,
     .print_footer          = default_print_footer,
     .print_chapter_header  = default_print_chapter_header,
