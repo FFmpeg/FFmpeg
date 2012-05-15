@@ -31,6 +31,8 @@ static av_cold int ass_decode_init(AVCodecContext *avctx)
     memcpy(avctx->subtitle_header, avctx->extradata, avctx->extradata_size);
     avctx->subtitle_header_size = avctx->extradata_size;
     avctx->priv_data = ff_ass_split(avctx->extradata);
+    if(!avctx->priv_data)
+        return -1;
     return 0;
 }
 
