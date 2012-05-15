@@ -275,6 +275,23 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     AVFilterLink *outlink = link->dst->outputs[0];
     AVFilterBufferRef *outpicref;
 
+    if(   picref->video->w != link->w
+       || picref->video->h != link->h
+       || picref->format   != link->format) {
+        AVFilterLink *out_link;
+        int ret;
+        snprintf(scale->w_expr, sizeof(scale->w_expr)-1, "%d", outlink->w);
+        snprintf(scale->h_expr, sizeof(scale->h_expr)-1, "%d", outlink->h);
+
+        link->dst->inputs[0]->format = picref->format;
+        link->dst->inputs[0]->w      = picref->video->w;
+        link->dst->inputs[0]->h      = picref->video->h;
+
+        if ((ret = config_props(outlink)) < 0)
+            av_assert0(0); //what to do here ?
+    }
+
+
     if (!scale->sws) {
         avfilter_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
         return;
