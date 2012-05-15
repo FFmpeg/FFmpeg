@@ -292,7 +292,8 @@ const DVprofile* avpriv_dv_frame_profile2(AVCodecContext* codec, const DVprofile
     stype = frame[80 * 5 + 48 + 3] & 0x1f;
 
     /* 576i50 25Mbps 4:1:1 is a special case */
-    if (dsf == 1 && stype == 0 && frame[4] & 0x07 /* the APT field */) {
+    if ((dsf == 1 && stype == 0 && frame[4] & 0x07 /* the APT field */) ||
+        (stype == 31 && codec && codec->codec_tag==AV_RL32("SL25") && codec->coded_width==720 && codec->coded_height==576)) {
         return &dv_profiles[2];
     }
 
