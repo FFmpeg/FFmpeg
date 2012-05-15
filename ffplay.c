@@ -1672,10 +1672,10 @@ static int input_request_frame(AVFilterLink *link)
     if (priv->use_dr1 && priv->frame->opaque) {
         picref = avfilter_ref_buffer(priv->frame->opaque, ~0);
     } else {
-        picref = avfilter_get_video_buffer(link, AV_PERM_WRITE, link->w, link->h);
+        picref = avfilter_get_video_buffer(link, AV_PERM_WRITE, priv->frame->width, priv->frame->height);
         av_image_copy(picref->data, picref->linesize,
                       (const uint8_t **)(void **)priv->frame->data, priv->frame->linesize,
-                      picref->format, link->w, link->h);
+                      picref->format, priv->frame->width, priv->frame->height);
     }
     av_free_packet(&pkt);
 
@@ -1684,7 +1684,7 @@ static int input_request_frame(AVFilterLink *link)
     picref->pts = pts;
 
     avfilter_start_frame(link, picref);
-    avfilter_draw_slice(link, 0, link->h, 1);
+    avfilter_draw_slice(link, 0, picref->video->h, 1);
     avfilter_end_frame(link);
 
     return 0;
