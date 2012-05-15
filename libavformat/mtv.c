@@ -136,7 +136,7 @@ static int mtv_read_header(AVFormatContext *s)
     avpriv_set_pts_info(st, 64, 1, mtv->video_fps);
     st->codec->codec_type      = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id        = CODEC_ID_RAWVIDEO;
-    st->codec->pix_fmt         = PIX_FMT_RGB565;
+    st->codec->pix_fmt         = PIX_FMT_RGB565BE;
     st->codec->width           = mtv->img_width;
     st->codec->height          = mtv->img_height;
     st->codec->sample_rate     = mtv->video_fps;
@@ -169,9 +169,6 @@ static int mtv_read_packet(AVFormatContext *s, AVPacket *pkt)
     MTVDemuxContext *mtv = s->priv_data;
     AVIOContext *pb = s->pb;
     int ret;
-#if !HAVE_BIGENDIAN
-    int i;
-#endif
 
     if((avio_tell(pb) - s->data_offset + mtv->img_segment_size) % mtv->full_segment_size)
     {
@@ -190,17 +187,6 @@ static int mtv_read_packet(AVFormatContext *s, AVPacket *pkt)
         if(ret < 0)
             return ret;
 
-#if !HAVE_BIGENDIAN
-
-        /* pkt->data is GGGRRRR BBBBBGGG
-         * and we need RRRRRGGG GGGBBBBB
-         * for PIX_FMT_RGB565 so here we
-         * just swap bytes as they come
-         */
-
-        for(i=0;i<ret/2;i++)
-            *((uint16_t *)pkt->data+i) = av_bswap16(*((uint16_t *)pkt->data+i));
-#endif
         pkt->stream_index = 0;
     }
 
