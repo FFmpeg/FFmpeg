@@ -198,7 +198,7 @@ static int decode_frame(AVCodecContext *avctx,
             if (!variable_buffer_data_size)
                 return -1;
 
-            channel_list_end = buf + variable_buffer_data_size + 4;
+            channel_list_end = buf + variable_buffer_data_size;
             while (channel_list_end - buf >= 19) {
                 int current_bits_per_color_id = -1;
                 int channel_index = -1;
