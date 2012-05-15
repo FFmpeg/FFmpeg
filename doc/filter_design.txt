@@ -8,7 +8,7 @@ In this document, the word “frame” indicates either a video frame or a group
 of audio samples, as stored in an AVFilterBuffer structure.
 
 
-Format negociation
+Format negotiation
 ==================
 
   The query_formats method should set, for each input and each output links,
@@ -18,7 +18,7 @@ Format negociation
   channel layout, sample format and sample packing.
 
   The lists are not just lists, they are references to shared objects. When
-  the negociation mechanism computes the intersection of the formats
+  the negotiation mechanism computes the intersection of the formats
   supported at each ends of a link, all references to both lists are
   replaced with a reference to the intersection. And when a single format is
   eventually chosen for a link amongst the remaining list, again, all
