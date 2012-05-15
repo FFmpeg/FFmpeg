@@ -100,7 +100,7 @@ void ff_af_queue_remove(AudioFrameQueue *afq, int nb_samples, int64_t *pts,
 
     if(nb_samples){
         av_assert0(!afq->frame_count);
-        if(afq->frames[0].pts != AV_NOPTS_VALUE)
+        if(afq->frames && afq->frames[0].pts != AV_NOPTS_VALUE)
             afq->frames[0].pts += nb_samples;
         av_log(afq->avctx, AV_LOG_DEBUG, "Trying to remove %d more samples than are in the que\n", nb_samples);
     }
