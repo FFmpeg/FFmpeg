@@ -33,38 +33,6 @@ AVFilterBufferRef *ff_null_get_audio_buffer(AVFilterLink *link, int perms,
 }
 
 AVFilterBufferRef *ff_default_get_audio_buffer(AVFilterLink *link, int perms,
-                                                     int nb_samples)
-{
-    AVFilterBufferRef *samplesref = NULL;
-    int linesize[8] = {0};
-    uint8_t *data[8] = {0};
-    int ch, nb_channels = av_get_channel_layout_nb_channels(link->channel_layout);
-
-    /* right now we don't support more than 8 channels */
-    av_assert0(nb_channels <= 8);
-
-    /* Calculate total buffer size, round to multiple of 16 to be SIMD friendly */
-    if (av_samples_alloc(data, linesize,
-                         nb_channels, nb_samples,
-                         av_get_alt_sample_fmt(link->format, link->planar),
-                         16) < 0)
-        return NULL;
-
-    for (ch = 1; link->planar && ch < nb_channels; ch++)
-        linesize[ch] = linesize[0];
-    samplesref =
-        avfilter_get_audio_buffer_ref_from_arrays(data, linesize, perms,
-                                                  nb_samples, link->format,
-                                                  link->channel_layout, link->planar);
-    if (!samplesref) {
-        av_free(data[0]);
-        return NULL;
-    }
-
-    return samplesref;
-}
-
-static AVFilterBufferRef *ff_default_get_audio_buffer_alt(AVFilterLink *link, int perms,
                                                int nb_samples)
 {
     AVFilterBufferRef *samplesref = NULL;
@@ -80,7 +48,7 @@ static AVFilterBufferRef *ff_default_get_audio_buffer_alt(AVFilterLink *link, in
     if (av_samples_alloc(data, &linesize, nb_channels, nb_samples, link->format, 0) < 0)
         goto fail;
 
-    samplesref = avfilter_get_audio_buffer_ref_from_arrays_alt(data, linesize, perms,
+    samplesref = avfilter_get_audio_buffer_ref_from_arrays(data, linesize, perms,
                                                            nb_samples, link->format,
                                                            link->channel_layout);
     if (!samplesref)
@@ -112,49 +80,7 @@ AVFilterBufferRef *ff_get_audio_buffer(AVFilterLink *link, int perms,
     return ret;
 }
 
-AVFilterBufferRef *
-avfilter_get_audio_buffer_ref_from_arrays(uint8_t *data[8], int linesize[8], int perms,
-                                          int nb_samples, enum AVSampleFormat sample_fmt,
-                                          uint64_t channel_layout, int planar)
-{
-    AVFilterBuffer *samples = av_mallocz(sizeof(AVFilterBuffer));
-    AVFilterBufferRef *samplesref = av_mallocz(sizeof(AVFilterBufferRef));
-
-    if (!samples || !samplesref)
-        goto fail;
-
-    samplesref->buf = samples;
-    samplesref->buf->free = ff_avfilter_default_free_buffer;
-    if (!(samplesref->audio = av_mallocz(sizeof(AVFilterBufferRefAudioProps))))
-        goto fail;
-
-    samplesref->audio->nb_samples     = nb_samples;
-    samplesref->audio->channel_layout = channel_layout;
-    samplesref->audio->planar         = planar;
-
-    /* make sure the buffer gets read permission or it's useless for output */
-    samplesref->perms = perms | AV_PERM_READ;
-
-    samples->refcount = 1;
-    samplesref->type = AVMEDIA_TYPE_AUDIO;
-    samplesref->format = sample_fmt;
-
-    memcpy(samples->data,        data,     sizeof(samples->data));
-    memcpy(samples->linesize,    linesize, sizeof(samples->linesize));
-    memcpy(samplesref->data,     data,     sizeof(samplesref->data));
-    memcpy(samplesref->linesize, linesize, sizeof(samplesref->linesize));
-
-    return samplesref;
-
-fail:
-    if (samplesref && samplesref->audio)
-        av_freep(&samplesref->audio);
-    av_freep(&samplesref);
-    av_freep(&samples);
-    return NULL;
-}
-
-AVFilterBufferRef* avfilter_get_audio_buffer_ref_from_arrays_alt(uint8_t **data,
+AVFilterBufferRef* avfilter_get_audio_buffer_ref_from_arrays(uint8_t **data,
                                                              int linesize,int perms,
                                                              int nb_samples,
                                                              enum AVSampleFormat sample_fmt,

@@ -790,27 +790,8 @@ avfilter_get_video_buffer_ref_from_arrays(uint8_t * const data[4], const int lin
  * @param nb_samples     number of samples per channel
  * @param sample_fmt     the format of each sample in the buffer to allocate
  * @param channel_layout the channel layout of the buffer
- * @param planar         audio data layout - planar or packed
  */
-AVFilterBufferRef *avfilter_get_audio_buffer_ref_from_arrays(uint8_t *data[8],
-                                                             int linesize[8],
-                                                             int perms,
-                                                             int nb_samples,
-                                                             enum AVSampleFormat sample_fmt,
-                                                             uint64_t channel_layout,
-                                                             int planar);
-/**
- * Create an audio buffer reference wrapped around an already
- * allocated samples buffer.
- *
- * @param data           pointers to the samples plane buffers
- * @param linesize       linesize for the samples plane buffers
- * @param perms          the required access permissions
- * @param nb_samples     number of samples per channel
- * @param sample_fmt     the format of each sample in the buffer to allocate
- * @param channel_layout the channel layout of the buffer
- */
-AVFilterBufferRef *avfilter_get_audio_buffer_ref_from_arrays_alt(uint8_t **data,
+AVFilterBufferRef *avfilter_get_audio_buffer_ref_from_arrays(uint8_t **data,
                                                              int linesize,
                                                              int perms,
                                                              int nb_samples,

@@ -597,9 +597,9 @@ int av_asrc_buffer_add_samples(AVFilterContext *ctx,
     AVFilterBufferRef *samplesref;
 
     samplesref = avfilter_get_audio_buffer_ref_from_arrays(
-                     data, linesize, AV_PERM_WRITE,
+                     data, linesize[0], AV_PERM_WRITE,
                      nb_samples,
-                     sample_fmt, channel_layout, planar);
+                     sample_fmt, channel_layout);
     if (!samplesref)
         return AVERROR(ENOMEM);
 
