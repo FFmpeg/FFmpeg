@@ -52,7 +52,7 @@ void ff_rv40_weight_func_nornd_16_##opt(uint8_t *dst, uint8_t *src1, uint8_t *sr
                                         int w1, int w2, ptrdiff_t stride); \
 void ff_rv40_weight_func_nornd_8_##opt (uint8_t *dst, uint8_t *src1, uint8_t *src2, \
                                         int w1, int w2, ptrdiff_t stride);
-DECLARE_WEIGHT(mmx)
+DECLARE_WEIGHT(mmx2)
 DECLARE_WEIGHT(sse2)
 DECLARE_WEIGHT(ssse3)
 
@@ -190,10 +190,6 @@ void ff_rv40dsp_init_x86(RV34DSPContext *c, DSPContext *dsp)
     if (mm_flags & AV_CPU_FLAG_MMX) {
         c->put_chroma_pixels_tab[0] = ff_put_rv40_chroma_mc8_mmx;
         c->put_chroma_pixels_tab[1] = ff_put_rv40_chroma_mc4_mmx;
-        c->rv40_weight_pixels_tab[0][0] = ff_rv40_weight_func_rnd_16_mmx;
-        c->rv40_weight_pixels_tab[0][1] = ff_rv40_weight_func_rnd_8_mmx;
-        c->rv40_weight_pixels_tab[1][0] = ff_rv40_weight_func_nornd_16_mmx;
-        c->rv40_weight_pixels_tab[1][1] = ff_rv40_weight_func_nornd_8_mmx;
         c->put_pixels_tab[0][15] = ff_put_rv40_qpel16_mc33_mmx;
         c->put_pixels_tab[1][15] = ff_put_rv40_qpel8_mc33_mmx;
         c->avg_pixels_tab[0][15] = ff_avg_rv40_qpel16_mc33_mmx;
@@ -205,6 +201,10 @@ void ff_rv40dsp_init_x86(RV34DSPContext *c, DSPContext *dsp)
     if (mm_flags & AV_CPU_FLAG_MMX2) {
         c->avg_chroma_pixels_tab[0] = ff_avg_rv40_chroma_mc8_mmx2;
         c->avg_chroma_pixels_tab[1] = ff_avg_rv40_chroma_mc4_mmx2;
+        c->rv40_weight_pixels_tab[0][0] = ff_rv40_weight_func_rnd_16_mmx2;
+        c->rv40_weight_pixels_tab[0][1] = ff_rv40_weight_func_rnd_8_mmx2;
+        c->rv40_weight_pixels_tab[1][0] = ff_rv40_weight_func_nornd_16_mmx2;
+        c->rv40_weight_pixels_tab[1][1] = ff_rv40_weight_func_nornd_8_mmx2;
 #if ARCH_X86_32
         QPEL_MC_SET(avg_, _mmx2)
 #endif

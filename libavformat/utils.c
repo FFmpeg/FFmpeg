@@ -875,6 +875,7 @@ static int is_intra_only(AVCodecContext *enc){
         case CODEC_ID_VCR1:
         case CODEC_ID_DNXHD:
         case CODEC_ID_JPEG2000:
+        case CODEC_ID_MDEC:
         case CODEC_ID_UTVIDEO:
             return 1;
         default: break;

@@ -148,6 +148,9 @@ fate-kmvc: CMD = framecrc -i $(SAMPLES)/KMVC/LOGO1.AVI -an -t 3 -pix_fmt rgb24
 FATE_VIDEO += fate-mdec
 fate-mdec: CMD = framecrc -idct simple -i $(SAMPLES)/ea-dct/NFS2Esprit-partial.dct -an
 
+FATE_VIDEO += fate-mdec-v3
+fate-mdec-v3: CMD = framecrc -idct simple -i $(SAMPLES)/psx-str/abc000_cut.str -an
+
 FATE_VIDEO += fate-mimic
 fate-mimic: CMD = framecrc -idct simple -i $(SAMPLES)/mimic/mimic2-womanloveffmpeg.cam
 

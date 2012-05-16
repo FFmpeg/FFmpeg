@@ -70,7 +70,7 @@ do_avconv()
     elif [ $f = $pcm_dst ] ; then
         $tiny_psnr $f $pcm_ref 2
     else
-        wc -c $f
+        echo $(wc -c $f)
     fi
 }
 
@@ -85,7 +85,7 @@ do_avconv_nomd5()
     elif [ $f = $pcm_dst ] ; then
         $tiny_psnr $f $pcm_ref 2
     else
-        wc -c $f
+        echo $(wc -c $f)
     fi
 }
 

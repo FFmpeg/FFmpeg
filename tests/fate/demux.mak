@@ -43,11 +43,8 @@ fate-nsv-demux: CMD = framecrc -i $(SAMPLES)/nsv/witchblade-51kbps.nsv -t 6 -vco
 FATE_DEMUX += fate-oma-demux
 fate-oma-demux: CMD = crc -i $(SAMPLES)/oma/01-Untitled-partial.oma -acodec copy
 
-FATE_DEMUX += fate-psx-str
-fate-psx-str: CMD = framecrc -i $(SAMPLES)/psx-str/descent-partial.str
-
-FATE_DEMUX += fate-psx-str-v3-mdec
-fate-psx-str-v3-mdec: CMD = framecrc -i $(SAMPLES)/psx-str/abc000_cut.str -an
+FATE_DEMUX += fate-psx-str-demux
+fate-psx-str-demux: CMD = framecrc -i $(SAMPLES)/psx-str/descent-partial.str -c copy
 
 FATE_DEMUX += fate-pva-demux
 fate-pva-demux: CMD = framecrc -idct simple -i $(SAMPLES)/pva/PVA_test-partial.pva -t 0.6 -acodec copy

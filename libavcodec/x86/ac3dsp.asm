@@ -91,12 +91,36 @@ AC3_EXPONENT_MIN sse2
 ;        This is used for mmxext and sse2 because they have pminsw/pmaxsw.
 ;-----------------------------------------------------------------------------
 
-%macro AC3_MAX_MSB_ABS_INT16 2
-cglobal ac3_max_msb_abs_int16_%1, 2,2,5, src, len
+; logical 'or' of 4 or 8 words in an mmx or xmm register into the low word
+%macro OR_WORDS_HORIZ 2 ; src, tmp
+%if cpuflag(sse2)
+    movhlps     %2, %1
+    por         %1, %2
+    pshuflw     %2, %1, q0032
+    por         %1, %2
+    pshuflw     %2, %1, q0001
+    por         %1, %2
+%elif cpuflag(mmx2)
+    pshufw      %2, %1, q0032
+    por         %1, %2
+    pshufw      %2, %1, q0001
+    por         %1, %2
+%else ; mmx
+    movq        %2, %1
+    psrlq       %2, 32
+    por         %1, %2
+    movq        %2, %1
+    psrlq       %2, 16
+    por         %1, %2
+%endif
+%endmacro
+
+%macro AC3_MAX_MSB_ABS_INT16 1
+cglobal ac3_max_msb_abs_int16, 2,2,5, src, len
     pxor        m2, m2
     pxor        m3, m3
 .loop:
-%ifidn %2, min_max
+%ifidn %1, min_max
     mova        m0, [srcq]
     mova        m1, [srcq+mmsize]
     pminsw      m2, m0
@@ -104,7 +128,7 @@ cglobal ac3_max_msb_abs_int16_%1, 2,2,5, src, len
     pmaxsw      m3, m0
     pmaxsw      m3, m1
 %else ; or_abs
-%ifidn %1, mmx
+%if notcpuflag(ssse3)
     mova        m0, [srcq]
     mova        m1, [srcq+mmsize]
     ABS2        m0, m1, m3, m4
@@ -119,34 +143,27 @@ cglobal ac3_max_msb_abs_int16_%1, 2,2,5, src, len
     add       srcq, mmsize*2
     sub       lend, mmsize
     ja .loop
-%ifidn %2, min_max
+%ifidn %1, min_max
     ABS2        m2, m3, m0, m1
     por         m2, m3
 %endif
-%ifidn mmsize, 16
-    movhlps     m0, m2
-    por         m2, m0
-%endif
-    PSHUFLW     m0, m2, 0xe
-    por         m2, m0
-    PSHUFLW     m0, m2, 0x1
-    por         m2, m0
+    OR_WORDS_HORIZ m2, m0
     movd       eax, m2
     and        eax, 0xFFFF
     RET
 %endmacro
 
-INIT_MMX
+INIT_MMX mmx
 %define ABS2 ABS2_MMX
-%define PSHUFLW pshufw
-AC3_MAX_MSB_ABS_INT16 mmx, or_abs
+AC3_MAX_MSB_ABS_INT16 or_abs
+INIT_MMX mmx2
 %define ABS2 ABS2_MMX2
-AC3_MAX_MSB_ABS_INT16 mmxext, min_max
-INIT_XMM
-%define PSHUFLW pshuflw
-AC3_MAX_MSB_ABS_INT16 sse2, min_max
+AC3_MAX_MSB_ABS_INT16 min_max
+INIT_XMM sse2
+AC3_MAX_MSB_ABS_INT16 min_max
+INIT_XMM ssse3
 %define ABS2 ABS2_SSSE3
-AC3_MAX_MSB_ABS_INT16 ssse3, or_abs
+AC3_MAX_MSB_ABS_INT16 or_abs
 
 ;-----------------------------------------------------------------------------
 ; macro used for ff_ac3_lshift_int16() and ff_ac3_rshift_int32()

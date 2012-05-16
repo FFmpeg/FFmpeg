@@ -402,7 +402,7 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
         if (cur_chan < (s->channels-1))
             cur_chan++;
         else {
-            // decorrelate in case of stereo integer
+            // decorrelate in case of multiple channels
             if (s->channels > 1) {
                 int32_t *r = p - 1;
                 for (*p += *r / 2; r > p - s->channels; r--)

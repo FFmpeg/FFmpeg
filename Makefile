@@ -161,6 +161,8 @@ coverage-html: coverage.info
 	$(Q)genhtml -o $@ $<
 	$(Q)touch $@
 
+check: all alltools checkheaders examples testprogs fate
+
 include $(SRC_PATH)/doc/Makefile
 include $(SRC_PATH)/tests/Makefile
 
@@ -175,5 +177,5 @@ $(sort $(OBJDIRS)):
 # so this saves some time on slow systems.
 .SUFFIXES:
 
-.PHONY: all all-yes alltools *clean config examples install*
+.PHONY: all all-yes alltools check *clean config examples install*
 .PHONY: testprogs uninstall*

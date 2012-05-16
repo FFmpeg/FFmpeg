@@ -487,7 +487,7 @@ cglobal rv40_weight_func_%1_%2, 6, 7, 8
     REP_RET
 %endmacro
 
-INIT_MMX mmx
+INIT_MMX mmx2
 RV40_WEIGHT   rnd,    8, 3
 RV40_WEIGHT   rnd,   16, 4
 RV40_WEIGHT   nornd,  8, 3
