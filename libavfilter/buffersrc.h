@@ -63,6 +63,15 @@ int av_buffersrc_add_ref(AVFilterContext *buffer_src,
 unsigned av_buffersrc_get_nb_failed_requests(AVFilterContext *buffer_src);
 
 /**
+ * Add a buffer to the filtergraph s.
+ *
+ * @param buf buffer containing frame data to be passed down the filtergraph.
+ * This function will take ownership of buf, the user must not free it.
+ * A NULL buf signals EOF -- i.e. no more frames will be sent to this filter.
+ */
+int av_buffersrc_buffer(AVFilterContext *s, AVFilterBufferRef *buf);
+
+/**
  * Add a frame to the buffer source.
  *
  * @param s an instance of the buffersrc filter.

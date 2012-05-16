@@ -138,7 +138,7 @@ int av_buffersrc_write_frame(AVFilterContext *buffer_filter, AVFrame *frame)
     return 0;
 }
 
-static int av_buffersrc_buffer(AVFilterContext *s, AVFilterBufferRef *buf)
+int av_buffersrc_buffer(AVFilterContext *s, AVFilterBufferRef *buf)
 {
     BufferSourceContext *c = s->priv;
     int ret;
