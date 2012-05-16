@@ -93,7 +93,15 @@ fail:
     return ret;
 }
 
-int ff_avfilter_graph_check_validity(AVFilterGraph *graph, AVClass *log_ctx)
+/**
+ * Check for the validity of graph.
+ *
+ * A graph is considered valid if all its input and output pads are
+ * connected.
+ *
+ * @return 0 in case of success, a negative value otherwise
+ */
+static int graph_check_validity(AVFilterGraph *graph, AVClass *log_ctx)
 {
     AVFilterContext *filt;
     int i, j;
@@ -123,7 +131,12 @@ int ff_avfilter_graph_check_validity(AVFilterGraph *graph, AVClass *log_ctx)
     return 0;
 }
 
-int ff_avfilter_graph_config_links(AVFilterGraph *graph, AVClass *log_ctx)
+/**
+ * Configure all the links of graphctx.
+ *
+ * @return 0 in case of success, a negative value otherwise
+ */
+static int graph_config_links(AVFilterGraph *graph, AVClass *log_ctx)
 {
     AVFilterContext *filt;
     int i, ret;
@@ -546,7 +559,10 @@ static int pick_formats(AVFilterGraph *graph)
     return 0;
 }
 
-int ff_avfilter_graph_config_formats(AVFilterGraph *graph, AVClass *log_ctx)
+/**
+ * Configure the formats of all the links in the graph.
+ */
+static int graph_config_formats(AVFilterGraph *graph, AVClass *log_ctx)
 {
     int ret;
 
@@ -575,11 +591,11 @@ int avfilter_graph_config(AVFilterGraph *graphctx, void *log_ctx)
 {
     int ret;
 
-    if ((ret = ff_avfilter_graph_check_validity(graphctx, log_ctx)))
+    if ((ret = graph_check_validity(graphctx, log_ctx)))
         return ret;
-    if ((ret = ff_avfilter_graph_config_formats(graphctx, log_ctx)))
+    if ((ret = graph_config_formats(graphctx, log_ctx)))
         return ret;
-    if ((ret = ff_avfilter_graph_config_links(graphctx, log_ctx)))
+    if ((ret = graph_config_links(graphctx, log_ctx)))
         return ret;
 
     return 0;
