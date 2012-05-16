@@ -68,6 +68,12 @@ static int aasc_decode_frame(AVCodecContext *avctx,
     compr = AV_RL32(buf);
     buf += 4;
     buf_size -= 4;
+    switch (avctx->codec_tag) {
+    case MKTAG('A', 'A', 'S', '4'):
+        bytestream2_init(&s->gb, buf - 4, buf_size + 4);
+        ff_msrle_decode(avctx, (AVPicture*)&s->frame, 8, &s->gb);
+        break;
+    case MKTAG('A', 'A', 'S', 'C'):
     switch(compr){
     case 0:
         stride = (avctx->width * 3 + 3) & ~3;
@@ -87,6 +93,11 @@ static int aasc_decode_frame(AVCodecContext *avctx,
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unknown compression type %d\n", compr);
+        return -1;
+    }
+        break;
+    default:
+        av_log(avctx, AV_LOG_ERROR, "Unknown FourCC: %X\n", avctx->codec_tag);
         return -1;
     }
 
