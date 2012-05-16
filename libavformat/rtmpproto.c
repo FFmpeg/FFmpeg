@@ -895,9 +895,10 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
         fname = path + 10;
         memcpy(rt->app, "ondemand", 9);
     } else {
-        char *p = strchr(path + 1, '/');
+        char *next = *path ? path + 1 : path;
+        char *p = strchr(next, '/');
         if (!p) {
-            fname = path + 1;
+            fname = next;
             rt->app[0] = '\0';
         } else {
             char *c = strchr(p + 1, ':');
