@@ -2639,7 +2639,11 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
         /* no picture yet */
         if (!pkt->size)
             for (i = 0; i < ist->nb_filters; i++)
+#ifdef SRCA
+                av_buffersrc_buffer(ist->filters[i]->filter, NULL);
+#else
                 av_buffersrc_add_ref(ist->filters[i]->filter, NULL, 0);
+#endif
         return ret;
     }
 
@@ -2703,11 +2707,17 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
 
             av_assert0(buf->refcount>0);
             buf->refcount++;
+#ifdef SRCA
+            av_buffersrc_buffer(ist->filters[i]->filter, fb);
+        } else
+        if(av_buffersrc_write_frame(ist->filters[i]->filter, decoded_frame)<0) {
+#else
             av_buffersrc_add_ref(ist->filters[i]->filter, fb,
                                  AV_BUFFERSRC_FLAG_NO_CHECK_FORMAT |
                                  AV_BUFFERSRC_FLAG_NO_COPY);
         } else
         if(av_buffersrc_add_frame(ist->filters[i]->filter, decoded_frame, 0)<0) {
+#endif
             av_log(NULL, AV_LOG_FATAL, "Failed to inject frame into filter network\n");
             exit_program(1);
         }
