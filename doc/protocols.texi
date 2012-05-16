@@ -36,7 +36,7 @@ resource to be concatenated, each one possibly specifying a distinct
 protocol.
 
 For example to read a sequence of files @file{split1.mpeg},
-@file{split2.mpeg}, @file{split3.mpeg} with @file{avplay} use the
+@file{split2.mpeg}, @file{split3.mpeg} with @command{avplay} use the
 command:
 @example
 avplay concat:split1.mpeg\|split2.mpeg\|split3.mpeg
@@ -187,7 +187,7 @@ application specified in @var{app}, may be prefixed by "mp4:".
 
 @end table
 
-For example to read with @file{avplay} a multimedia resource named
+For example to read with @command{avplay} a multimedia resource named
 "sample" from the application "vod" from an RTMP server "myserver":
 @example
 avplay rtmp://myserver/vod/sample
@@ -228,7 +228,7 @@ For example, to stream a file in real-time to an RTMP server using
 avconv -re -i myfile -f flv rtmp://myserver/live/mystream
 @end example
 
-To play the same stream using @file{avplay}:
+To play the same stream using @command{avplay}:
 @example
 avplay "rtmp://myserver/live/mystream live=1"
 @end example
@@ -253,7 +253,7 @@ The required syntax for a RTSP url is:
 rtsp://@var{hostname}[:@var{port}]/@var{path}
 @end example
 
-The following options (set on the @command{avconv}/@file{avplay} command
+The following options (set on the @command{avconv}/@command{avplay} command
 line, or set in code via @code{AVOption}s or in @code{avformat_open_input}),
 are supported:
 
@@ -292,7 +292,7 @@ When receiving data over UDP, the demuxer tries to reorder received packets
 can be disabled by setting the maximum demuxing delay to zero (via
 the @code{max_delay} field of AVFormatContext).
 
-When watching multi-bitrate Real-RTSP streams with @file{avplay}, the
+When watching multi-bitrate Real-RTSP streams with @command{avplay}, the
 streams to display can be chosen with @code{-vst} @var{n} and
 @code{-ast} @var{n} for video and audio respectively, and can be switched
 on the fly by pressing @code{v} and @code{a}.
