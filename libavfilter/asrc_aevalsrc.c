@@ -100,12 +100,6 @@ static int init(AVFilterContext *ctx, const char *args, void *opaque)
     buf = args1;
     i = 0;
     while (expr = av_strtok(buf, ":", &bufptr)) {
-        if (i >= 8) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "More than 8 expressions provided, unsupported.\n");
-            ret = AVERROR(EINVAL);
-            return ret;
-        }
         ret = av_expr_parse(&eval->expr[i], expr, var_names,
                             NULL, NULL, NULL, NULL, 0, ctx);
         if (ret < 0)
@@ -214,7 +208,7 @@ static int request_frame(AVFilterLink *outlink)
         eval->var_values[VAR_T] = eval->var_values[VAR_N] * (double)1/eval->sample_rate;
 
         for (j = 0; j < eval->nb_channels; j++) {
-            *((double *) samplesref->data[j] + i) =
+            *((double *) samplesref->extended_data[j] + i) =
                 av_expr_eval(eval->expr[j], eval->var_values, NULL);
         }
     }
