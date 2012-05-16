@@ -1573,7 +1573,7 @@ static void close_input_file(AVFormatContext **ctx_ptr)
 static int probe_file(WriterContext *wctx, const char *filename)
 {
     AVFormatContext *fmt_ctx;
-    int ret, i;
+    int ret;
 
     do_read_frames = do_show_frames || do_count_frames;
     do_read_packets = do_show_packets || do_count_packets;
