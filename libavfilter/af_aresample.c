@@ -107,7 +107,7 @@ static int config_output(AVFilterLink *outlink)
 
     //TODO: make the resampling parameters (filter size, phrase shift, linear, cutoff) configurable
     aresample->swr = swr_alloc_set_opts(aresample->swr,
-                                        inlink->channel_layout, inlink->format, aresample->out_rate,
+                                        outlink->channel_layout, outlink->format, outlink->sample_rate,
                                         inlink->channel_layout, inlink->format, inlink->sample_rate,
                                         0, ctx);
     if (!aresample->swr)
