@@ -149,6 +149,14 @@ struct AVFilterPad {
      * and another value on error.
      */
     int (*config_props)(AVFilterLink *link);
+
+    /**
+     * The filter expects a fifo to be inserted on its input link,
+     * typically because it has a delay.
+     *
+     * input pads only.
+     */
+    int needs_fifo;
 };
 #endif
 

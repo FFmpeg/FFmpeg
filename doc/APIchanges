@@ -4,7 +4,7 @@ since the last major version increase.
 The last version increases were:
 libavcodec:    2012-01-27
 libavdevice:   2011-04-18
-libavfilter:   2011-04-18
+libavfilter:   2012-06-22
 libavformat:   2012-01-27
 libavresample: 2012-04-24
 libswscale:    2011-06-20
