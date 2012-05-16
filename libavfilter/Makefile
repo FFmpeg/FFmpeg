@@ -25,6 +25,7 @@ OBJS = allfilters.o                                                     \
        vf_scale.o                                                       \
        video.o                                                          \
 
+OBJS-$(CONFIG_AFIFO_FILTER)                  += fifo.o
 OBJS-$(CONFIG_AFORMAT_FILTER)                += af_aformat.o
 OBJS-$(CONFIG_AMIX_FILTER)                   += af_amix.o
 OBJS-$(CONFIG_ANULL_FILTER)                  += af_anull.o

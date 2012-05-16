@@ -20,21 +20,22 @@
 
 /**
  * @file
- * FIFO buffering video filter
+ * FIFO buffering filter
  */
 
+#include "audio.h"
 #include "avfilter.h"
 #include "internal.h"
 #include "video.h"
 
-typedef struct BufPic {
-    AVFilterBufferRef *picref;
-    struct BufPic     *next;
-} BufPic;
+typedef struct Buf {
+    AVFilterBufferRef *buf;
+    struct Buf        *next;
+} Buf;
 
 typedef struct {
-    BufPic  root;
-    BufPic *last;   ///< last buffered picture
+    Buf  root;
+    Buf *last;   ///< last buffered frame
 } FifoContext;
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
@@ -49,22 +50,22 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     FifoContext *fifo = ctx->priv;
-    BufPic *pic, *tmp;
+    Buf *buf, *tmp;
 
-    for (pic = fifo->root.next; pic; pic = tmp) {
-        tmp = pic->next;
-        avfilter_unref_buffer(pic->picref);
-        av_free(pic);
+    for (buf = fifo->root.next; buf; buf = tmp) {
+        tmp = buf->next;
+        avfilter_unref_buffer(buf->buf);
+        av_free(buf);
     }
 }
 
-static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
+static void add_to_queue(AVFilterLink *inlink, AVFilterBufferRef *buf)
 {
     FifoContext *fifo = inlink->dst->priv;
 
-    fifo->last->next = av_mallocz(sizeof(BufPic));
+    fifo->last->next = av_mallocz(sizeof(Buf));
     fifo->last = fifo->last->next;
-    fifo->last->picref = picref;
+    fifo->last->buf = buf;
 }
 
 static void end_frame(AVFilterLink *inlink) { }
@@ -74,7 +75,7 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir) { }
 static int request_frame(AVFilterLink *outlink)
 {
     FifoContext *fifo = outlink->src->priv;
-    BufPic *tmp;
+    Buf *tmp;
     int ret;
 
     if (!fifo->root.next) {
@@ -84,9 +85,18 @@ static int request_frame(AVFilterLink *outlink)
 
     /* by doing this, we give ownership of the reference to the next filter,
      * so we don't have to worry about dereferencing it ourselves. */
-    ff_start_frame(outlink, fifo->root.next->picref);
-    ff_draw_slice (outlink, 0, outlink->h, 1);
-    ff_end_frame  (outlink);
+    switch (outlink->type) {
+    case AVMEDIA_TYPE_VIDEO:
+        ff_start_frame(outlink, fifo->root.next->buf);
+        ff_draw_slice (outlink, 0, outlink->h, 1);
+        ff_end_frame  (outlink);
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        ff_filter_samples(outlink, fifo->root.next->buf);
+        break;
+    default:
+        return AVERROR(EINVAL);
+    }
 
     if (fifo->last == fifo->root.next)
         fifo->last = &fifo->root;
@@ -109,7 +119,7 @@ AVFilter avfilter_vf_fifo = {
     .inputs    = (AVFilterPad[]) {{ .name            = "default",
                                     .type            = AVMEDIA_TYPE_VIDEO,
                                     .get_video_buffer= ff_null_get_video_buffer,
-                                    .start_frame     = start_frame,
+                                    .start_frame     = add_to_queue,
                                     .draw_slice      = draw_slice,
                                     .end_frame       = end_frame,
                                     .rej_perms       = AV_PERM_REUSE2, },
@@ -117,5 +127,26 @@ AVFilter avfilter_vf_fifo = {
     .outputs   = (AVFilterPad[]) {{ .name            = "default",
                                     .type            = AVMEDIA_TYPE_VIDEO,
                                     .request_frame   = request_frame, },
+                                  { .name = NULL}},
+};
+
+AVFilter avfilter_af_afifo = {
+    .name        = "afifo",
+    .description = NULL_IF_CONFIG_SMALL("Buffer input frames and send them when they are requested."),
+
+    .init      = init,
+    .uninit    = uninit,
+
+    .priv_size = sizeof(FifoContext),
+
+    .inputs    = (AVFilterPad[]) {{ .name             = "default",
+                                    .type             = AVMEDIA_TYPE_AUDIO,
+                                    .get_audio_buffer = ff_null_get_audio_buffer,
+                                    .filter_samples   = add_to_queue,
+                                    .rej_perms        = AV_PERM_REUSE2, },
+                                  { .name = NULL}},
+    .outputs   = (AVFilterPad[]) {{ .name             = "default",
+                                    .type             = AVMEDIA_TYPE_AUDIO,
+                                    .request_frame    = request_frame, },
                                   { .name = NULL}},
 };
