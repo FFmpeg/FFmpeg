@@ -310,7 +310,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                         return ret;
                     break;
                 case AVMEDIA_TYPE_AUDIO:
-                    if (!(filter = avfilter_get_by_name("resample"))) {
+                    if (!(filter = avfilter_get_by_name("aresample"))) {
                         av_log(log_ctx, AV_LOG_ERROR, "'resample' filter "
                                "not present, cannot convert audio formats.\n");
                         return AVERROR(EINVAL);
@@ -319,7 +319,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                     snprintf(inst_name, sizeof(inst_name), "auto-inserted resampler %d",
                              resampler_count++);
                     if ((ret = avfilter_graph_create_filter(&convert,
-                                                            avfilter_get_by_name("resample"),
+                                                            avfilter_get_by_name("aresample"),
                                                             inst_name, NULL, NULL, graph)) < 0)
                         return ret;
                     break;
