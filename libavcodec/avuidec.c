@@ -41,19 +41,31 @@ static int avui_decode_frame(AVCodecContext *avctx, void *data,
 {
     AVFrame *pic = avctx->coded_frame;
     const uint8_t *src = avpkt->data;
-    const uint8_t *srca = src + 2 * (avctx->height + 16) * avctx->width + 9;
+    const uint8_t *srca;
     uint8_t *y, *u, *v, *a;
-    int transparent = 0, i, j, k;
+    int transparent, interlaced = 1, skip[2], i, j, k;
 
     if (pic->data[0])
         avctx->release_buffer(avctx, pic);
 
-    if (avpkt->size < 2 * avctx->width * (avctx->height + 16) + 4) {
+    if (!memcmp(&avctx->extradata[4], "APRGAPRG0001", 12) &&
+        avctx->extradata_size >= 24)
+        interlaced = avctx->extradata[19] != 1;
+    skip[0] = skip[1] = 16;
+    if (avctx->height == 486) {
+        skip[0] =  8;
+        skip[1] = 12;
+    }
+    if (avpkt->size < avctx->width * (2 * avctx->height + skip[0] + skip[1])
+                      + 4 * interlaced) {
         av_log(avctx, AV_LOG_ERROR, "Insufficient input data.\n");
         return AVERROR(EINVAL);
     }
-    if (avpkt->size >= 4 * avctx->width * (avctx->height + 16) + 13)
-        transparent = 1;
+    transparent = avctx->bits_per_coded_sample == 32 &&
+                  avpkt->size >= (2 * avctx->height + skip[0] + skip[1]) *
+                                 2 * avctx->width + 4 + 8 * interlaced;
+    srca = src + (2 * avctx->height + skip[0] + skip[1]) * avctx->width
+           + 5 + interlaced * 4;
 
     pic->reference = 0;
 
@@ -65,16 +77,21 @@ static int avui_decode_frame(AVCodecContext *avctx, void *data,
     pic->key_frame = 1;
     pic->pict_type = AV_PICTURE_TYPE_I;
 
-    for (i = 0; i < 2; i++) {
-        src  += avctx->width * 16;
-        srca += avctx->width * 16;
+    if (!interlaced) {
+        src  += avctx->width * skip[1];
+        srca += avctx->width * skip[1];
+    }
+
+    for (i = 0; i < interlaced + 1; i++) {
+        src  += avctx->width * skip[i];
+        srca += avctx->width * skip[i];
         y = pic->data[0] + i * pic->linesize[0];
         u = pic->data[1] + i * pic->linesize[1];
         v = pic->data[2] + i * pic->linesize[2];
         a = pic->data[3] + i * pic->linesize[3];
 
-        for (j = 0; j < (avctx->height + 1) >> 1; j++) {
-            for (k = 0; k < (avctx->width + 1) >> 1; k++) {
+        for (j = 0; j < avctx->height >> interlaced; j++) {
+            for (k = 0; k < avctx->width >> 1; k++) {
                 u[    k    ] = *src++;
                 y[2 * k    ] = *src++;
                 a[2 * k    ] = 0xFF - (transparent ? *srca++ : 0);
@@ -85,10 +102,10 @@ static int avui_decode_frame(AVCodecContext *avctx, void *data,
                 srca++;
             }
 
-            y += 2 * pic->linesize[0];
-            u += 2 * pic->linesize[1];
-            v += 2 * pic->linesize[2];
-            a += 2 * pic->linesize[3];
+            y += (interlaced + 1) * pic->linesize[0];
+            u += (interlaced + 1) * pic->linesize[1];
+            v += (interlaced + 1) * pic->linesize[2];
+            a += (interlaced + 1) * pic->linesize[3];
         }
         src  += 4;
         srca += 4;
