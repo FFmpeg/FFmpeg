@@ -26,6 +26,7 @@
 
 #include "avfilter.h"
 #include "avfiltergraph.h"
+#include "formats.h"
 
 #define POOL_SIZE 32
 typedef struct AVFilterPool {
@@ -150,6 +151,10 @@ static inline void ff_null_start_frame_keep_ref(AVFilterLink *inlink,
 }
 
 void ff_update_link_current_pts(AVFilterLink *link, int64_t pts);
+
+void ff_free_pool(AVFilterPool *pool);
+
+void ff_command_queue_pop(AVFilterContext *filter);
 
 #define FF_DPRINTF_START(ctx, func) av_dlog(NULL, "%-16s: ", #func)
 

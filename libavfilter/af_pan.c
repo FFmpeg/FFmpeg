@@ -33,6 +33,7 @@
 #include "libswresample/swresample.h"
 #include "audio.h"
 #include "avfilter.h"
+#include "formats.h"
 
 #define MAX_CHANNELS 63
 
@@ -212,7 +213,7 @@ static int query_formats(AVFilterContext *ctx)
     PanContext *pan = ctx->priv;
     AVFilterLink *inlink  = ctx->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
-    AVFilterFormats *formats;
+    AVFilterChannelLayouts *layouts;
 
     pan->pure_gains = are_gains_pure(pan);
     /* libswr supports any sample and packing formats */
@@ -220,13 +221,13 @@ static int query_formats(AVFilterContext *ctx)
     avfilter_set_common_packing_formats(ctx, avfilter_make_all_packing_formats());
 
     // inlink supports any channel layout
-    formats = avfilter_make_all_channel_layouts();
-    avfilter_formats_ref(formats, &inlink->out_chlayouts);
+    layouts = ff_all_channel_layouts();
+    ff_channel_layouts_ref(layouts, &inlink->out_channel_layouts);
 
     // outlink supports only requested output channel layout
-    formats = NULL;
-    avfilter_add_format(&formats, pan->out_channel_layout);
-    avfilter_formats_ref(formats, &outlink->in_chlayouts);
+    layouts = NULL;
+    ff_add_channel_layout(&layouts, pan->out_channel_layout);
+    ff_channel_layouts_ref(layouts, &outlink->in_channel_layouts);
     return 0;
 }
 

@@ -190,7 +190,7 @@ static int query_formats(AVFilterContext *ctx)
     int packing_fmts[] = { AVFILTER_PLANAR, -1 };
 
     avfilter_set_common_sample_formats (ctx, avfilter_make_format_list(sample_fmts));
-    avfilter_set_common_channel_layouts(ctx, avfilter_make_format64_list(chlayouts));
+    ff_set_common_channel_layouts(ctx, avfilter_make_format64_list(chlayouts));
     avfilter_set_common_packing_formats(ctx, avfilter_make_format_list(packing_fmts));
 
     return 0;

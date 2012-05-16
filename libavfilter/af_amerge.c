@@ -56,17 +56,18 @@ static int query_formats(AVFilterContext *ctx)
     int64_t inlayout[2], outlayout;
     const int packing_fmts[] = { AVFILTER_PACKED, -1 };
     AVFilterFormats *formats;
+    AVFilterChannelLayouts *layouts;
     int i;
 
     for (i = 0; i < 2; i++) {
-        if (!ctx->inputs[i]->in_chlayouts ||
-            !ctx->inputs[i]->in_chlayouts->format_count) {
+        if (!ctx->inputs[i]->in_channel_layouts ||
+            !ctx->inputs[i]->in_channel_layouts->nb_channel_layouts) {
             av_log(ctx, AV_LOG_ERROR,
                    "No channel layout for input %d\n", i + 1);
             return AVERROR(EINVAL);
         }
-        inlayout[i] = ctx->inputs[i]->in_chlayouts->formats[0];
-        if (ctx->inputs[i]->in_chlayouts->format_count > 1) {
+        inlayout[i] = ctx->inputs[i]->in_channel_layouts->channel_layouts[0];
+        if (ctx->inputs[i]->in_channel_layouts->nb_channel_layouts > 1) {
             char buf[256];
             av_get_channel_layout_string(buf, sizeof(buf), 0, inlayout[i]);
             av_log(ctx, AV_LOG_INFO, "Using \"%s\" for input %d\n", buf, i + 1);
@@ -101,13 +102,13 @@ static int query_formats(AVFilterContext *ctx)
     formats = avfilter_make_format_list(packing_fmts);
     avfilter_set_common_packing_formats(ctx, formats);
     for (i = 0; i < 2; i++) {
-        formats = NULL;
-        avfilter_add_format(&formats, inlayout[i]);
-        avfilter_formats_ref(formats, &ctx->inputs[i]->out_chlayouts);
+        layouts = NULL;
+        ff_add_channel_layout(&layouts, inlayout[i]);
+        ff_channel_layouts_ref(layouts, &ctx->inputs[i]->out_channel_layouts);
     }
-    formats = NULL;
-    avfilter_add_format(&formats, outlayout);
-    avfilter_formats_ref(formats, &ctx->outputs[0]->in_chlayouts);
+    layouts = NULL;
+    ff_add_channel_layout(&layouts, outlayout);
+    ff_channel_layouts_ref(layouts, &ctx->outputs[0]->in_channel_layouts);
     return 0;
 }
 

@@ -24,11 +24,11 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/rational.h"
 #include "libavutil/audioconvert.h"
-#include "libavutil/imgutils.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 
 #include "avfilter.h"
+#include "formats.h"
 #include "internal.h"
 
 unsigned avfilter_version(void) {
@@ -47,140 +47,13 @@ const char *avfilter_license(void)
     return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
 }
 
-static void command_queue_pop(AVFilterContext *filter)
+void ff_command_queue_pop(AVFilterContext *filter)
 {
     AVFilterCommand *c= filter->command_queue;
     av_freep(&c->arg);
     av_freep(&c->command);
     filter->command_queue= c->next;
     av_free(c);
-}
-
-AVFilterBufferRef *avfilter_ref_buffer(AVFilterBufferRef *ref, int pmask)
-{
-    AVFilterBufferRef *ret = av_malloc(sizeof(AVFilterBufferRef));
-    if (!ret)
-        return NULL;
-    *ret = *ref;
-    if (ref->type == AVMEDIA_TYPE_VIDEO) {
-        ret->video = av_malloc(sizeof(AVFilterBufferRefVideoProps));
-        if (!ret->video) {
-            av_free(ret);
-            return NULL;
-        }
-        *ret->video = *ref->video;
-        ret->extended_data = ret->data;
-    } else if (ref->type == AVMEDIA_TYPE_AUDIO) {
-        ret->audio = av_malloc(sizeof(AVFilterBufferRefAudioProps));
-        if (!ret->audio) {
-            av_free(ret);
-            return NULL;
-        }
-        *ret->audio = *ref->audio;
-
-        if (ref->extended_data && ref->extended_data != ref->data) {
-            int nb_channels = av_get_channel_layout_nb_channels(ref->audio->channel_layout);
-            if (!(ret->extended_data = av_malloc(sizeof(*ret->extended_data) *
-                                                 nb_channels))) {
-                av_freep(&ret->audio);
-                av_freep(&ret);
-                return NULL;
-            }
-            memcpy(ret->extended_data, ref->extended_data,
-                   sizeof(*ret->extended_data) * nb_channels);
-        } else
-            ret->extended_data = ret->data;
-    }
-    ret->perms &= pmask;
-    ret->buf->refcount ++;
-    return ret;
-}
-
-static void free_pool(AVFilterPool *pool)
-{
-    int i;
-
-    av_assert0(pool->refcount > 0);
-
-    for (i = 0; i < POOL_SIZE; i++) {
-        if (pool->pic[i]) {
-            AVFilterBufferRef *picref = pool->pic[i];
-            /* free buffer: picrefs stored in the pool are not
-             * supposed to contain a free callback */
-            av_assert0(!picref->buf->refcount);
-            av_freep(&picref->buf->data[0]);
-            av_freep(&picref->buf);
-
-            av_freep(&picref->audio);
-            av_freep(&picref->video);
-            av_freep(&pool->pic[i]);
-            pool->count--;
-        }
-    }
-    pool->draining = 1;
-
-    if (!--pool->refcount) {
-        av_assert0(!pool->count);
-        av_free(pool);
-    }
-}
-
-static void store_in_pool(AVFilterBufferRef *ref)
-{
-    int i;
-    AVFilterPool *pool= ref->buf->priv;
-
-    av_assert0(ref->buf->data[0]);
-    av_assert0(pool->refcount>0);
-
-    if (pool->count == POOL_SIZE) {
-        AVFilterBufferRef *ref1 = pool->pic[0];
-        av_freep(&ref1->video);
-        av_freep(&ref1->audio);
-        av_freep(&ref1->buf->data[0]);
-        av_freep(&ref1->buf);
-        av_free(ref1);
-        memmove(&pool->pic[0], &pool->pic[1], sizeof(void*)*(POOL_SIZE-1));
-        pool->count--;
-        pool->pic[POOL_SIZE-1] = NULL;
-    }
-
-    for (i = 0; i < POOL_SIZE; i++) {
-        if (!pool->pic[i]) {
-            pool->pic[i] = ref;
-            pool->count++;
-            break;
-        }
-    }
-    if (pool->draining) {
-        free_pool(pool);
-    } else
-        --pool->refcount;
-}
-
-void avfilter_unref_buffer(AVFilterBufferRef *ref)
-{
-    if (!ref)
-        return;
-    av_assert0(ref->buf->refcount > 0);
-    if (!(--ref->buf->refcount)) {
-        if (!ref->buf->free) {
-            store_in_pool(ref);
-            return;
-        }
-        ref->buf->free(ref->buf);
-    }
-    if (ref->extended_data != ref->data)
-        av_freep(&ref->extended_data);
-    av_freep(&ref->video);
-    av_freep(&ref->audio);
-    av_free(ref);
-}
-
-void avfilter_unref_bufferp(AVFilterBufferRef **ref)
-{
-    avfilter_unref_buffer(*ref);
-    *ref = NULL;
 }
 
 void avfilter_insert_pad(unsigned idx, unsigned *count, size_t padidx_off,
@@ -240,7 +113,7 @@ void avfilter_link_free(AVFilterLink **link)
         return;
 
     if ((*link)->pool)
-        free_pool((*link)->pool);
+        ff_free_pool((*link)->pool);
 
     av_freep(link);
 }
@@ -272,12 +145,15 @@ int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
     if (link->out_formats)
         avfilter_formats_changeref(&link->out_formats,
                                    &filt->outputs[filt_dstpad_idx]->out_formats);
-    if (link->out_chlayouts)
-        avfilter_formats_changeref(&link->out_chlayouts,
-                                   &filt->outputs[filt_dstpad_idx]->out_chlayouts);
+    if (link->out_channel_layouts)
+        ff_channel_layouts_changeref(&link->out_channel_layouts,
+                                     &filt->outputs[filt_dstpad_idx]->out_channel_layouts);
     if (link->out_packing)
         avfilter_formats_changeref(&link->out_packing,
                                    &filt->outputs[filt_dstpad_idx]->out_packing);
+    if (link->out_samplerates)
+        avfilter_formats_changeref(&link->out_samplerates,
+                                   &filt->outputs[filt_dstpad_idx]->out_samplerates);
 
     return 0;
 }
@@ -329,6 +205,7 @@ int avfilter_config_links(AVFilterContext *filter)
                     link->sample_aspect_ratio = inlink ?
                         inlink->sample_aspect_ratio : (AVRational){1,1};
 
+#if 1
                 if (inlink) {
                     if (!link->w)
                         link->w = inlink->w;
@@ -359,6 +236,7 @@ int avfilter_config_links(AVFilterContext *filter)
                     link->time_base = (AVRational) {1, link->sample_rate};
             }
 
+#endif
             if ((config_link = link->dstpad->config_props))
                 if ((ret = config_link(link)) < 0)
                     return ret;
@@ -368,47 +246,6 @@ int avfilter_config_links(AVFilterContext *filter)
     }
 
     return 0;
-}
-
-static char *ff_get_ref_perms_string(char *buf, size_t buf_size, int perms)
-{
-    snprintf(buf, buf_size, "%s%s%s%s%s%s",
-             perms & AV_PERM_READ      ? "r" : "",
-             perms & AV_PERM_WRITE     ? "w" : "",
-             perms & AV_PERM_PRESERVE  ? "p" : "",
-             perms & AV_PERM_REUSE     ? "u" : "",
-             perms & AV_PERM_REUSE2    ? "U" : "",
-             perms & AV_PERM_NEG_LINESIZES ? "n" : "");
-    return buf;
-}
-
-static void ff_dlog_ref(void *ctx, AVFilterBufferRef *ref, int end)
-{
-    av_unused char buf[16];
-    av_dlog(ctx,
-            "ref[%p buf:%p refcount:%d perms:%s data:%p linesize[%d, %d, %d, %d] pts:%"PRId64" pos:%"PRId64,
-            ref, ref->buf, ref->buf->refcount, ff_get_ref_perms_string(buf, sizeof(buf), ref->perms), ref->data[0],
-            ref->linesize[0], ref->linesize[1], ref->linesize[2], ref->linesize[3],
-            ref->pts, ref->pos);
-
-    if (ref->video) {
-        av_dlog(ctx, " a:%d/%d s:%dx%d i:%c iskey:%d type:%c",
-                ref->video->sample_aspect_ratio.num, ref->video->sample_aspect_ratio.den,
-                ref->video->w, ref->video->h,
-                !ref->video->interlaced     ? 'P' :         /* Progressive  */
-                ref->video->top_field_first ? 'T' : 'B',    /* Top / Bottom */
-                ref->video->key_frame,
-                av_get_picture_type_char(ref->video->pict_type));
-    }
-    if (ref->audio) {
-        av_dlog(ctx, " cl:%"PRId64"d n:%d r:%d p:%d",
-                ref->audio->channel_layout,
-                ref->audio->nb_samples,
-                ref->audio->sample_rate,
-                ref->audio->planar);
-    }
-
-    av_dlog(ctx, "]%s", end ? "\n" : "");
 }
 
 void ff_dlog_link(void *ctx, AVFilterLink *link, int end)
@@ -433,71 +270,6 @@ void ff_dlog_link(void *ctx, AVFilterLink *link, int end)
                 link->dst ? link->dst->filter->name : "",
                 end ? "\n" : "");
     }
-}
-
-AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
-{
-    AVFilterBufferRef *ret = NULL;
-
-    av_unused char buf[16];
-    FF_DPRINTF_START(NULL, get_video_buffer); ff_dlog_link(NULL, link, 0);
-    av_dlog(NULL, " perms:%s w:%d h:%d\n", ff_get_ref_perms_string(buf, sizeof(buf), perms), w, h);
-
-    if (link->dstpad->get_video_buffer)
-        ret = link->dstpad->get_video_buffer(link, perms, w, h);
-
-    if (!ret)
-        ret = avfilter_default_get_video_buffer(link, perms, w, h);
-
-    if (ret)
-        ret->type = AVMEDIA_TYPE_VIDEO;
-
-    FF_DPRINTF_START(NULL, get_video_buffer); ff_dlog_link(NULL, link, 0); av_dlog(NULL, " returning "); ff_dlog_ref(NULL, ret, 1);
-
-    return ret;
-}
-
-AVFilterBufferRef *
-avfilter_get_video_buffer_ref_from_arrays(uint8_t * const data[4], const int linesize[4], int perms,
-                                          int w, int h, enum PixelFormat format)
-{
-    AVFilterBuffer *pic = av_mallocz(sizeof(AVFilterBuffer));
-    AVFilterBufferRef *picref = av_mallocz(sizeof(AVFilterBufferRef));
-
-    if (!pic || !picref)
-        goto fail;
-
-    picref->buf = pic;
-    picref->buf->free = ff_avfilter_default_free_buffer;
-    if (!(picref->video = av_mallocz(sizeof(AVFilterBufferRefVideoProps))))
-        goto fail;
-
-    pic->w = picref->video->w = w;
-    pic->h = picref->video->h = h;
-
-    /* make sure the buffer gets read permission or it's useless for output */
-    picref->perms = perms | AV_PERM_READ;
-
-    pic->refcount = 1;
-    picref->type = AVMEDIA_TYPE_VIDEO;
-    pic->format = picref->format = format;
-
-    memcpy(pic->data,        data,          4*sizeof(data[0]));
-    memcpy(pic->linesize,    linesize,      4*sizeof(linesize[0]));
-    memcpy(picref->data,     pic->data,     sizeof(picref->data));
-    memcpy(picref->linesize, pic->linesize, sizeof(picref->linesize));
-
-    pic->   extended_data = pic->data;
-    picref->extended_data = picref->data;
-
-    return picref;
-
-fail:
-    if (picref && picref->video)
-        av_free(picref->video);
-    av_free(picref);
-    av_free(pic);
-    return NULL;
 }
 
 int avfilter_request_frame(AVFilterLink *link)
@@ -536,107 +308,6 @@ void ff_update_link_current_pts(AVFilterLink *link, int64_t pts)
     link->current_pts =  pts; /* TODO use duration */
     if (link->graph && link->age_index >= 0)
         ff_avfilter_graph_update_heap(link->graph, link);
-}
-
-/* XXX: should we do the duplicating of the picture ref here, instead of
- * forcing the source filter to do it? */
-void avfilter_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
-{
-    void (*start_frame)(AVFilterLink *, AVFilterBufferRef *);
-    AVFilterPad *dst = link->dstpad;
-    int perms = picref->perms;
-    AVFilterCommand *cmd= link->dst->command_queue;
-
-    FF_DPRINTF_START(NULL, start_frame); ff_dlog_link(NULL, link, 0); av_dlog(NULL, " "); ff_dlog_ref(NULL, picref, 1);
-
-    if (!(start_frame = dst->start_frame))
-        start_frame = avfilter_default_start_frame;
-
-    if (picref->linesize[0] < 0)
-        perms |= AV_PERM_NEG_LINESIZES;
-    /* prepare to copy the picture if it has insufficient permissions */
-    if ((dst->min_perms & perms) != dst->min_perms || dst->rej_perms & perms) {
-        av_log(link->dst, AV_LOG_DEBUG,
-                "frame copy needed (have perms %x, need %x, reject %x)\n",
-                picref->perms,
-                link->dstpad->min_perms, link->dstpad->rej_perms);
-
-        link->cur_buf = avfilter_get_video_buffer(link, dst->min_perms, link->w, link->h);
-        link->src_buf = picref;
-        avfilter_copy_buffer_ref_props(link->cur_buf, link->src_buf);
-    }
-    else
-        link->cur_buf = picref;
-
-    while(cmd && cmd->time <= picref->pts * av_q2d(link->time_base)){
-        av_log(link->dst, AV_LOG_DEBUG,
-               "Processing command time:%f command:%s arg:%s\n",
-               cmd->time, cmd->command, cmd->arg);
-        avfilter_process_command(link->dst, cmd->command, cmd->arg, 0, 0, cmd->flags);
-        command_queue_pop(link->dst);
-        cmd= link->dst->command_queue;
-    }
-
-    start_frame(link, link->cur_buf);
-    ff_update_link_current_pts(link, link->cur_buf->pts);
-}
-
-void avfilter_end_frame(AVFilterLink *link)
-{
-    void (*end_frame)(AVFilterLink *);
-
-    if (!(end_frame = link->dstpad->end_frame))
-        end_frame = avfilter_default_end_frame;
-
-    end_frame(link);
-
-    /* unreference the source picture if we're feeding the destination filter
-     * a copied version dues to permission issues */
-    if (link->src_buf) {
-        avfilter_unref_buffer(link->src_buf);
-        link->src_buf = NULL;
-    }
-}
-
-void avfilter_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
-{
-    uint8_t *src[4], *dst[4];
-    int i, j, vsub;
-    void (*draw_slice)(AVFilterLink *, int, int, int);
-
-    FF_DPRINTF_START(NULL, draw_slice); ff_dlog_link(NULL, link, 0); av_dlog(NULL, " y:%d h:%d dir:%d\n", y, h, slice_dir);
-
-    /* copy the slice if needed for permission reasons */
-    if (link->src_buf) {
-        vsub = av_pix_fmt_descriptors[link->format].log2_chroma_h;
-
-        for (i = 0; i < 4; i++) {
-            if (link->src_buf->data[i]) {
-                src[i] = link->src_buf-> data[i] +
-                    (y >> (i==1 || i==2 ? vsub : 0)) * link->src_buf-> linesize[i];
-                dst[i] = link->cur_buf->data[i] +
-                    (y >> (i==1 || i==2 ? vsub : 0)) * link->cur_buf->linesize[i];
-            } else
-                src[i] = dst[i] = NULL;
-        }
-
-        for (i = 0; i < 4; i++) {
-            int planew =
-                av_image_get_linesize(link->format, link->cur_buf->video->w, i);
-
-            if (!src[i]) continue;
-
-            for (j = 0; j < h >> (i==1 || i==2 ? vsub : 0); j++) {
-                memcpy(dst[i], src[i], planew);
-                src[i] += link->src_buf->linesize[i];
-                dst[i] += link->cur_buf->linesize[i];
-            }
-        }
-    }
-
-    if (!(draw_slice = link->dstpad->draw_slice))
-        draw_slice = avfilter_default_draw_slice;
-    draw_slice(link, y, h, slice_dir);
 }
 
 int avfilter_process_command(AVFilterContext *filter, const char *cmd, const char *arg, char *res, int res_len, int flags)
@@ -788,6 +459,10 @@ void avfilter_free(AVFilterContext *filter)
                 link->src->outputs[link->srcpad - link->src->output_pads] = NULL;
             avfilter_formats_unref(&link->in_formats);
             avfilter_formats_unref(&link->out_formats);
+            avfilter_formats_unref(&link->in_samplerates);
+            avfilter_formats_unref(&link->out_samplerates);
+            ff_channel_layouts_unref(&link->in_channel_layouts);
+            ff_channel_layouts_unref(&link->out_channel_layouts);
         }
         avfilter_link_free(&link);
     }
@@ -797,6 +472,10 @@ void avfilter_free(AVFilterContext *filter)
                 link->dst->inputs[link->dstpad - link->dst->input_pads] = NULL;
             avfilter_formats_unref(&link->in_formats);
             avfilter_formats_unref(&link->out_formats);
+            avfilter_formats_unref(&link->in_samplerates);
+            avfilter_formats_unref(&link->out_samplerates);
+            ff_channel_layouts_unref(&link->in_channel_layouts);
+            ff_channel_layouts_unref(&link->out_channel_layouts);
         }
         avfilter_link_free(&link);
     }
@@ -808,7 +487,7 @@ void avfilter_free(AVFilterContext *filter)
     av_freep(&filter->outputs);
     av_freep(&filter->priv);
     while(filter->command_queue){
-        command_queue_pop(filter);
+        ff_command_queue_pop(filter);
     }
     av_free(filter);
 }
@@ -820,17 +499,4 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
     if (filter->filter->init)
         ret = filter->filter->init(filter, args, opaque);
     return ret;
-}
-
-void avfilter_copy_buffer_ref_props(AVFilterBufferRef *dst, AVFilterBufferRef *src)
-{
-    // copy common properties
-    dst->pts             = src->pts;
-    dst->pos             = src->pos;
-
-    switch (src->type) {
-    case AVMEDIA_TYPE_VIDEO: *dst->video = *src->video; break;
-    case AVMEDIA_TYPE_AUDIO: *dst->audio = *src->audio; break;
-    default: break;
-    }
 }

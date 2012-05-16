@@ -25,72 +25,110 @@
 
 #include "libavutil/audioconvert.h"
 #include "libavutil/avstring.h"
-#include "avfilter.h"
+#include "libavutil/opt.h"
+
 #include "audio.h"
+#include "avfilter.h"
+#include "formats.h"
 #include "internal.h"
 
-typedef struct {
-    AVFilterFormats *formats, *chlayouts, *packing;
+typedef struct AFormatContext {
+    const AVClass   *class;
+
+    AVFilterFormats *formats;
+    AVFilterFormats *sample_rates;
+    AVFilterChannelLayouts *channel_layouts;
+
+    char *formats_str;
+    char *sample_rates_str;
+    char *channel_layouts_str;
 } AFormatContext;
+
+#define OFFSET(x) offsetof(AFormatContext, x)
+#define A AV_OPT_FLAG_AUDIO_PARAM
+static const AVOption options[] = {
+    { "sample_fmts",     "A comma-separated list of sample formats.",  OFFSET(formats_str),         AV_OPT_TYPE_STRING, .flags = A },
+    { "sample_rates",    "A comma-separated list of sample rates.",    OFFSET(sample_rates_str),    AV_OPT_TYPE_STRING, .flags = A },
+    { "channel_layouts", "A comma-separated list of channel layouts.", OFFSET(channel_layouts_str), AV_OPT_TYPE_STRING, .flags = A },
+    { NULL },
+};
+
+static const AVClass aformat_class = {
+    .class_name = "aformat filter",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+#define PARSE_FORMATS(str, type, list, add_to_list, get_fmt, none, desc)    \
+do {                                                                        \
+    char *next, *cur = str;                                                 \
+    while (cur) {                                                           \
+        type fmt;                                                           \
+        next = strchr(cur, ',');                                            \
+        if (next)                                                           \
+            *next++ = 0;                                                    \
+                                                                            \
+        if ((fmt = get_fmt(cur)) == none) {                                 \
+            av_log(ctx, AV_LOG_ERROR, "Error parsing " desc ": %s.\n", cur);\
+            ret = AVERROR(EINVAL);                                          \
+            goto fail;                                                      \
+        }                                                                   \
+        add_to_list(&list, fmt);                                            \
+                                                                            \
+        cur = next;                                                         \
+    }                                                                       \
+} while (0)
+
+static int get_sample_rate(const char *samplerate)
+{
+    int ret = strtol(samplerate, NULL, 0);
+    return FFMAX(ret, 0);
+}
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
-    AFormatContext * const aformat = ctx->priv;
-    char *fmts_str = NULL, *fmt_str, *ptr = NULL;
-    int64_t fmt;
+    AFormatContext *s = ctx->priv;
     int ret;
 
-    if (!args)
-        goto arg_fail;
+    if (!args) {
+        av_log(ctx, AV_LOG_ERROR, "No parameters supplied.\n");
+        return AVERROR(EINVAL);
+    }
 
-#define ADD_FORMATS(all_formats, fmt_name, fmt_type, fmts_list) do {    \
-    fmts_str = av_get_token(&args, ":");                                \
-    if (!fmts_str || !*fmts_str)                                        \
-        goto arg_fail;                                                  \
-    if (!strcmp(fmts_str, "all")) {                                     \
-        aformat->fmts_list = all_formats;                               \
-    } else {                                                            \
-        for (fmt_str = fmts_str;                                        \
-             fmt_str = av_strtok(fmt_str, ",", &ptr); fmt_str = NULL) { \
-            if ((ret = ff_parse_##fmt_name((fmt_type *)&fmt,            \
-                                           fmt_str, ctx)) < 0) {        \
-                av_freep(&fmts_str);                                    \
-                return ret;                                             \
-            }                                                           \
-            avfilter_add_format(&aformat->fmts_list, fmt);              \
-        }                                                               \
-    }                                                                   \
-    av_freep(&fmts_str);                                                \
-    if (*args)                                                          \
-        args++;                                                         \
-} while (0)
+    s->class = &aformat_class;
+    av_opt_set_defaults(s);
 
-    ADD_FORMATS(avfilter_make_all_formats(AVMEDIA_TYPE_AUDIO), sample_format, int, formats);
-    ADD_FORMATS(avfilter_make_all_channel_layouts(), channel_layout, int64_t, chlayouts);
-    ADD_FORMATS(avfilter_make_all_packing_formats(), packing_format, int, packing);
+    if ((ret = av_set_options_string(s, args, "=", ":")) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Error parsing options string '%s'.\n", args);
+        return ret;
+    }
 
-    return 0;
+    PARSE_FORMATS(s->formats_str, enum AVSampleFormat, s->formats,
+                  avfilter_add_format, av_get_sample_fmt, AV_SAMPLE_FMT_NONE, "sample format");
+    PARSE_FORMATS(s->sample_rates_str, int, s->sample_rates, avfilter_add_format,
+                  get_sample_rate, 0, "sample rate");
+    PARSE_FORMATS(s->channel_layouts_str, uint64_t, s->channel_layouts,
+                  ff_add_channel_layout, av_get_channel_layout, 0,
+                  "channel layout");
 
-arg_fail:
-    av_log(ctx, AV_LOG_ERROR, "Invalid arguments, they must be of the form "
-                              "sample_fmts:channel_layouts:packing_fmts\n");
-    av_freep(&fmts_str);
-    return AVERROR(EINVAL);
+fail:
+    av_opt_free(s);
+    return ret;
 }
 
 static int query_formats(AVFilterContext *ctx)
 {
-    AFormatContext * const aformat = ctx->priv;
+    AFormatContext *s = ctx->priv;
 
-    avfilter_set_common_sample_formats (ctx, aformat->formats);
-    avfilter_set_common_channel_layouts(ctx, aformat->chlayouts);
-    avfilter_set_common_packing_formats(ctx, aformat->packing);
+    avfilter_set_common_formats(ctx, s->formats ? s->formats :
+                                                  avfilter_all_formats(AVMEDIA_TYPE_AUDIO));
+    ff_set_common_samplerates(ctx, s->sample_rates ? s->sample_rates :
+                                                     ff_all_samplerates());
+    ff_set_common_channel_layouts(ctx, s->channel_layouts ? s->channel_layouts :
+                                                            ff_all_channel_layouts());
+
     return 0;
-}
-
-static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamplesref)
-{
-    ff_filter_samples(inlink->dst->outputs[0], insamplesref);
 }
 
 AVFilter avfilter_af_aformat = {
@@ -100,11 +138,11 @@ AVFilter avfilter_af_aformat = {
     .query_formats = query_formats,
     .priv_size     = sizeof(AFormatContext),
 
-    .inputs        = (const AVFilterPad[]) {{ .name      = "default",
+    .inputs        = (AVFilterPad[]) {{ .name            = "default",
                                         .type            = AVMEDIA_TYPE_AUDIO,
-                                        .filter_samples  = filter_samples},
+                                        .filter_samples  = ff_null_filter_samples },
                                       { .name = NULL}},
-    .outputs       = (const AVFilterPad[]) {{ .name      = "default",
+    .outputs       = (AVFilterPad[]) {{ .name            = "default",
                                         .type            = AVMEDIA_TYPE_AUDIO},
                                       { .name = NULL}},
 };

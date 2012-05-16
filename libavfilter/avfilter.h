@@ -258,8 +258,8 @@ void avfilter_unref_bufferp(AVFilterBufferRef **ref);
  * pointer to each of the pointers to itself.
  */
 typedef struct AVFilterFormats {
-    unsigned format_count;      ///< number of formats
     int64_t *formats;           ///< list of media formats
+    unsigned format_count;      ///< number of formats
 
     unsigned refcount;          ///< number of references to this list
     struct AVFilterFormats ***refs; ///< references to this list
@@ -274,7 +274,6 @@ typedef struct AVFilterFormats {
  * @return the format list, with no existing references
  */
 AVFilterFormats *avfilter_make_format_list(const int *fmts);
-AVFilterFormats *avfilter_make_format64_list(const int64_t *fmts);
 
 /**
  * Add fmt to the list of media formats contained in *avff.
@@ -303,11 +302,6 @@ AVFilterFormats *avfilter_make_all_formats(enum AVMediaType type);
  * A list of all channel layouts supported by libavfilter.
  */
 extern const int64_t avfilter_all_channel_layouts[];
-
-/**
- * Return a list of all channel layouts supported by FFmpeg.
- */
-AVFilterFormats *avfilter_make_all_channel_layouts(void);
 
 /**
  * Return a list of all audio packing formats.
@@ -521,6 +515,7 @@ AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link,
  * formats/layouts. If there are no links hooked to this filter, the list
  * of formats is freed.
  */
+void avfilter_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats);
 void avfilter_set_common_pixel_formats(AVFilterContext *ctx, AVFilterFormats *formats);
 void avfilter_set_common_sample_formats(AVFilterContext *ctx, AVFilterFormats *formats);
 void avfilter_set_common_channel_layouts(AVFilterContext *ctx, AVFilterFormats *formats);
@@ -674,8 +669,6 @@ struct AVFilterLink {
     AVFilterFormats *in_formats;
     AVFilterFormats *out_formats;
 
-    AVFilterFormats *in_chlayouts;
-    AVFilterFormats *out_chlayouts;
     AVFilterFormats *in_packing;
     AVFilterFormats *out_packing;
 
@@ -713,17 +706,26 @@ struct AVFilterLink {
      */
     int64_t current_pts;
 
-    /**
-     * Private fields
-     *
-     * The following fields are for internal use only.
-     * Their type, offset, number and semantic can change without notice.
+    /*****************************************************************
+     * All fields below this line are not part of the public API. They
+     * may not be used outside of libavfilter and can be changed and
+     * removed at will.
+     * New public fields should be added right above.
+     *****************************************************************
      */
-
     /**
      * Index in the age array.
      */
     int age_index;
+
+    /**
+     * Lists of channel layouts and sample rates used for automatic
+     * negotiation.
+     */
+    AVFilterFormats  *in_samplerates;
+    AVFilterFormats *out_samplerates;
+    struct AVFilterChannelLayouts  *in_channel_layouts;
+    struct AVFilterChannelLayouts *out_channel_layouts;
 };
 
 /**

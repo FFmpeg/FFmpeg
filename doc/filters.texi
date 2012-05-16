@@ -211,6 +211,32 @@ amovie=input.mkv:si=5 [a5];
 [x3][a5] amerge" -c:a pcm_s16le output.mkv
 @end example
 
+@section aformat
+
+Convert the input audio to one of the specified formats. The framework will
+negotiate the most appropriate format to minimize conversions.
+
+The filter accepts the following named parameters:
+@table @option
+
+@item sample_fmts
+A comma-separated list of requested sample formats.
+
+@item sample_rates
+A comma-separated list of requested sample rates.
+
+@item channel_layouts
+A comma-separated list of requested channel layouts.
+
+@end table
+
+If a parameter is omitted, all values are allowed.
+
+For example to force the output to either unsigned 8-bit or signed 16-bit stereo:
+@example
+aformat=sample_fmts\=u8\,s16:channel_layouts\=stereo
+@end example
+
 @section anull
 
 Pass the audio source unchanged to the output.
@@ -502,6 +528,25 @@ volume=-12dB
 @end example
 @end itemize
 
+@section asyncts
+Synchronize audio data with timestamps by squeezing/stretching it and/or
+dropping samples/adding silence when needed.
+
+The filter accepts the following named parameters:
+@table @option
+
+@item compensate
+Enable stretching/squeezing the data to make it match the timestamps.
+
+@item min_delta
+Minimum difference between timestamps and audio data (in seconds) to trigger
+adding/dropping samples.
+
+@item max_comp
+Maximum compensation in samples per second.
+
+@end table
+
 @section resample
 Convert the audio sample format, sample rate and channel layout. This filter is
 not meant to be used directly.
@@ -721,6 +766,33 @@ anullsrc=r=48000:cl=4
 anullsrc=r=48000:cl=mono
 @end example
 
+@section abuffer
+Buffer audio frames, and make them available to the filter chain.
+
+This source is not intended to be part of user-supplied graph descriptions but
+for insertion by calling programs through the interface defined in
+@file{libavfilter/buffersrc.h}.
+
+It accepts the following named parameters:
+@table @option
+
+@item time_base
+Timebase which will be used for timestamps of submitted frames. It must be
+either a floating-point number or in @var{numerator}/@var{denominator} form.
+
+@item sample_rate
+Audio sample rate.
+
+@item sample_fmt
+Name of the sample format, as returned by @code{av_get_sample_fmt_name()}.
+
+@item channel_layout
+Channel layout of the audio data, in the form that can be accepted by
+@code{av_get_channel_layout()}.
+@end table
+
+All the parameters need to be explicitly defined.
+
 @c man end AUDIO SOURCES
 
 @chapter Audio Sinks
@@ -744,6 +816,13 @@ parameter to @code{avfilter_init_filter} for initialization.
 Null audio sink, do absolutely nothing with the input audio. It is
 mainly useful as a template and to be employed in analysis / debugging
 tools.
+
+@section abuffersink
+This sink is intended for programmatic use. Frames that arrive on this sink can
+be retrieved by the calling program using the interface defined in
+@file{libavfilter/buffersink.h}.
+
+This filter accepts no parameters.
 
 @c man end AUDIO SINKS
 

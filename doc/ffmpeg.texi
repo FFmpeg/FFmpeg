@@ -499,6 +499,11 @@ Set the audio codec. This is an alias for @code{-codec:a}.
 @item -sample_fmt[:@var{stream_specifier}] @var{sample_fmt} (@emph{output,per-stream})
 Set the audio sample format. Use @code{-sample_fmts} to get a list
 of supported sample formats.
+@item -af @var{filter_graph} (@emph{output})
+@var{filter_graph} is a description of the filter graph to apply to
+the input audio.
+Use the option "-filters" to show all the available filters (including
+also sources and sinks).  This is an alias for @code{-filter:a}.
 @end table
 
 @section Advanced Audio options:
@@ -781,6 +786,7 @@ Audio sync method. "Stretches/squeezes" the audio stream to match the timestamps
 the parameter is the maximum samples per second by which the audio is changed.
 -async 1 is a special case where only the start of the audio stream is corrected
 without any later correction.
+This option has been deprecated. Use the @code{asyncts} audio filter instead.
 @item -copyts
 Copy timestamps from input to output.
 @item -copytb @var{mode}

@@ -269,18 +269,21 @@ static int asink_query_formats(AVFilterContext *ctx)
 {
     BufferSinkContext *buf = ctx->priv;
     AVFilterFormats *formats = NULL;
+    AVFilterChannelLayouts *layouts = NULL;
 
     if (!(formats = avfilter_make_format_list(buf->sample_fmts)))
         return AVERROR(ENOMEM);
     avfilter_set_common_sample_formats(ctx, formats);
 
-    if (!(formats = avfilter_make_format64_list(buf->channel_layouts)))
+    if (!(layouts = avfilter_make_format64_list(buf->channel_layouts)))
         return AVERROR(ENOMEM);
-    avfilter_set_common_channel_layouts(ctx, formats);
+    ff_set_common_channel_layouts(ctx, layouts);
 
     if (!(formats = avfilter_make_format_list(buf->packing_fmts)))
         return AVERROR(ENOMEM);
     avfilter_set_common_packing_formats(ctx, formats);
+
+    ff_set_common_samplerates          (ctx, ff_all_samplerates());
 
     return 0;
 }

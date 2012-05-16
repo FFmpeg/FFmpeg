@@ -30,6 +30,7 @@ version next:
 - MicroDVD decoder
 - Avid Meridien (AVUI) decoder
 - accept + prefix to -pix_fmt option to disable automatic conversions.
+- audio filters support in libavfilter and avconv
 
 
 version 0.10:

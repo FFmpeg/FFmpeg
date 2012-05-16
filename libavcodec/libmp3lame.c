@@ -26,6 +26,7 @@
 
 #include <lame/lame.h>
 
+#include "libavutil/audioconvert.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
@@ -76,13 +77,7 @@ static av_cold int mp3lame_encode_init(AVCodecContext *avctx)
     if ((s->gfp = lame_init()) == NULL)
         return AVERROR(ENOMEM);
 
-    /* channels */
-    if (avctx->channels > 2) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Invalid number of channels %d, must be <= 2\n", avctx->channels);
-        ret =  AVERROR(EINVAL);
-        goto error;
-    }
+
     lame_set_num_channels(s->gfp, avctx->channels);
     lame_set_mode(s->gfp, avctx->channels > 1 ? JOINT_STEREO : MONO);
 
@@ -308,6 +303,8 @@ AVCodec ff_libmp3lame_encoder = {
                                                              AV_SAMPLE_FMT_S16,
                                                              AV_SAMPLE_FMT_NONE },
     .supported_samplerates = libmp3lame_sample_rates,
+    .channel_layouts       = (const uint64_t[]) { AV_CH_LAYOUT_MONO,
+                                                  AV_CH_LAYOUT_STEREO },
     .long_name             = NULL_IF_CONFIG_SMALL("libmp3lame MP3 (MPEG audio layer 3)"),
     .priv_class            = &libmp3lame_class,
     .defaults              = libmp3lame_defaults,

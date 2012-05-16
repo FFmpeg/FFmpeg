@@ -176,8 +176,11 @@ fate-rl2: CMD = framecrc -i $(SAMPLES)/rl2/Z4915300.RL2 -pix_fmt rgb24 -an
 FATE_VIDEO += fate-roqvideo
 fate-roqvideo: CMD = framecrc -i $(SAMPLES)/idroq/idlogo.roq -an
 
-FATE_VIDEO += fate-smacker
-fate-smacker: CMD = framecrc -i $(SAMPLES)/smacker/wetlogo.smk -pix_fmt rgb24
+FATA_VIDEO += fate-sierra-vmd-video
+fate-sierra-vmd-video: CMD = framecrc -i $(SAMPLES)/vmd/12.vmd -pix_fmt rgb24 -an
+
+FATA_VIDEO += fate-smacker-video
+fate-smacker-video: CMD = framecrc -i $(SAMPLES)/smacker/wetlogo.smk -pix_fmt rgb24 -an
 
 FATE_VIDEO += fate-smc
 fate-smc: CMD = framecrc -i $(SAMPLES)/smc/cass_schi.qt -pix_fmt rgb24

@@ -26,6 +26,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/timestamp.h"
 #include "audio.h"
+#include "formats.h"
 #include "avfilter.h"
 
 typedef struct {
@@ -130,16 +131,17 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 static int query_formats(AVFilterContext *ctx)
 {
     AVFilterFormats *formats = NULL;
+    AVFilterChannelLayouts *layouts = NULL;
     enum AVSampleFormat sample_fmts[] = {
         AV_SAMPLE_FMT_DBL,
         AV_SAMPLE_FMT_NONE
     };
     int packing_fmts[] = { AVFILTER_PACKED, -1 };
 
-    formats = avfilter_make_all_channel_layouts();
-    if (!formats)
+    layouts = ff_all_channel_layouts();
+    if (!layouts)
         return AVERROR(ENOMEM);
-    avfilter_set_common_channel_layouts(ctx, formats);
+    ff_set_common_channel_layouts(ctx, layouts);
 
     formats = avfilter_make_format_list(sample_fmts);
     if (!formats)
@@ -150,6 +152,11 @@ static int query_formats(AVFilterContext *ctx)
     if (!formats)
         return AVERROR(ENOMEM);
     avfilter_set_common_packing_formats(ctx, formats);
+
+    formats = ff_all_samplerates();
+    if (!formats)
+        return AVERROR(ENOMEM);
+    ff_set_common_samplerates(ctx, formats);
 
     return 0;
 }

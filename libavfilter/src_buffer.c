@@ -507,14 +507,15 @@ static int query_formats_audio(AVFilterContext *ctx)
 {
     BufferSourceContext *abuffer = ctx->priv;
     AVFilterFormats *formats;
+    AVFilterChannelLayouts *layouts;
 
     formats = NULL;
     avfilter_add_format(&formats, abuffer->sample_format);
     avfilter_set_common_sample_formats(ctx, formats);
 
-    formats = NULL;
-    avfilter_add_format(&formats, abuffer->channel_layout);
-    avfilter_set_common_channel_layouts(ctx, formats);
+    layouts = NULL;
+    ff_add_channel_layout(&layouts, abuffer->channel_layout);
+    ff_set_common_channel_layouts(ctx, layouts);
 
     formats = NULL;
     avfilter_add_format(&formats, abuffer->packing_format);
@@ -653,8 +654,6 @@ AVFilter avfilter_vsrc_buffer = {
                                   { .name = NULL}},
 };
 
-#if CONFIG_ABUFFER_FILTER
-
 AVFilter avfilter_asrc_abuffer = {
     .name        = "abuffer",
     .description = NULL_IF_CONFIG_SMALL("Buffer audio frames, and make them accessible to the filterchain."),
@@ -673,4 +672,3 @@ AVFilter avfilter_asrc_abuffer = {
                                     { .name = NULL}},
 };
 
-#endif

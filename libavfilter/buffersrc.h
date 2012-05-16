@@ -62,4 +62,15 @@ int av_buffersrc_add_ref(AVFilterContext *buffer_src,
  */
 unsigned av_buffersrc_get_nb_failed_requests(AVFilterContext *buffer_src);
 
+/**
+ * Add a frame to the buffer source.
+ *
+ * @param s an instance of the buffersrc filter.
+ * @param frame frame to be added.
+ *
+ * @warning frame data will be memcpy()ed, which may be a big performance
+ *          hit. Use av_buffersrc_buffer() to avoid copying the data.
+ */
+int av_buffersrc_write_frame(AVFilterContext *s, AVFrame *frame);
+
 #endif /* AVFILTER_BUFFERSRC_H */

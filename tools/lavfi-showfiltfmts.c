@@ -46,7 +46,7 @@ static void print_formats(AVFilterContext *filter_ctx)
                        i, filter_ctx->filter->inout##puts[i].name,      \
                        av_get_sample_fmt_name(fmts->formats[j]));       \
                                                                         \
-            fmts = filter_ctx->inout##puts[i]->outin##_chlayouts;       \
+            fmts = filter_ctx->inout##puts[i]->outin##_channel_layouts; \
             for (j = 0; j < fmts->format_count; j++) {                  \
                 char buf[256];                                          \
                 av_get_channel_layout_string(buf, sizeof(buf), -1,      \

@@ -43,6 +43,12 @@ fate-nellymoser-aref-encode: CMP_SHIFT = -1172
 fate-nellymoser-aref-encode: CMP_TARGET = 9617
 fate-nellymoser-aref-encode: SIZE_TOLERANCE = 268
 
+FATE_AUDIO += fate-sierra-vmd-audio
+fate-sierra-vmd-audio: CMD = framecrc -i $(SAMPLES)/vmd/12.vmd -vn
+
+FATE_AUDIO += fate-smacker-audio
+fate-smacker-audio: CMD = framecrc -i $(SAMPLES)/smacker/wetlogo.smk -vn
+
 FATE_AUDIO += fate-ws_snd
 fate-ws_snd: CMD = md5 -i $(SAMPLES)/vqa/ws_snd.vqa -f s16le
 

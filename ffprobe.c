@@ -1549,6 +1549,19 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
     return 0;
 }
 
+static void close_input_file(AVFormatContext **ctx_ptr)
+{
+    int i;
+    AVFormatContext *fmt_ctx = *ctx_ptr;
+
+    /* close decoder for each stream */
+    for (i = 0; i < fmt_ctx->nb_streams; i++)
+        if (fmt_ctx->streams[i]->codec->codec_id != CODEC_ID_NONE)
+            avcodec_close(fmt_ctx->streams[i]->codec);
+
+    avformat_close_input(ctx_ptr);
+}
+
 #define PRINT_CHAPTER(name) do {                                        \
     if (do_show_ ## name) {                                             \
         writer_print_chapter_header(wctx, #name);                       \
@@ -1586,10 +1599,7 @@ static int probe_file(WriterContext *wctx, const char *filename)
         }
         PRINT_CHAPTER(streams);
         PRINT_CHAPTER(format);
-        for (i = 0; i < fmt_ctx->nb_streams; i++)
-            if (fmt_ctx->streams[i]->codec->codec_id != CODEC_ID_NONE)
-                avcodec_close(fmt_ctx->streams[i]->codec);
-        avformat_close_input(&fmt_ctx);
+        close_input_file(&fmt_ctx);
         av_freep(&nb_streams_frames);
         av_freep(&nb_streams_packets);
     }
@@ -1803,6 +1813,10 @@ int main(int argc, char **argv)
 
 end:
     av_freep(&print_format);
+
+    uninit_opts();
+    av_dict_free(&fmt_entries_to_show);
+
     avformat_network_deinit();
 
     return ret;

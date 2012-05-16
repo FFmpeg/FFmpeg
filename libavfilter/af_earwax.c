@@ -32,6 +32,7 @@
 #include "libavutil/audioconvert.h"
 #include "avfilter.h"
 #include "audio.h"
+#include "formats.h"
 
 #define NUMTAPS 64
 
@@ -76,15 +77,19 @@ typedef struct {
 
 static int query_formats(AVFilterContext *ctx)
 {
+    int sample_rates[] = { 44100, -1 };
+
     AVFilterFormats *formats = NULL;
+    AVFilterChannelLayouts *layout = NULL;
+
     avfilter_add_format(&formats, AV_SAMPLE_FMT_S16);
     avfilter_set_common_sample_formats(ctx, formats);
-    formats = NULL;
-    avfilter_add_format(&formats, AV_CH_LAYOUT_STEREO);
-    avfilter_set_common_channel_layouts(ctx, formats);
+    ff_add_channel_layout(&layout, AV_CH_LAYOUT_STEREO);
+    ff_set_common_channel_layouts(ctx, layout);
     formats = NULL;
     avfilter_add_format(&formats, AVFILTER_PACKED);
     avfilter_set_common_packing_formats(ctx, formats);
+    ff_set_common_samplerates(ctx, avfilter_make_format_list(sample_rates));
 
     return 0;
 }

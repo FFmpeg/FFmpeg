@@ -56,6 +56,42 @@ static av_cold void uninit(AVFilterContext *ctx)
     swr_free(&aresample->swr);
 }
 
+static int query_formats(AVFilterContext *ctx)
+{
+    AResampleContext *aresample = ctx->priv;
+
+    AVFilterLink *inlink  = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
+
+    AVFilterFormats        *in_formats      = avfilter_all_formats(AVMEDIA_TYPE_AUDIO);
+    AVFilterFormats        *out_formats     = avfilter_all_formats(AVMEDIA_TYPE_AUDIO);
+    AVFilterFormats        *in_samplerates  = ff_all_samplerates();
+    AVFilterFormats        *out_samplerates;
+
+
+    AVFilterChannelLayouts *in_layouts      = ff_all_channel_layouts();
+    AVFilterChannelLayouts *out_layouts     = ff_all_channel_layouts();
+
+    avfilter_formats_ref(in_formats,  &inlink->out_formats);
+    avfilter_formats_ref(out_formats, &outlink->in_formats);
+
+    avfilter_formats_ref(in_samplerates,  &inlink->out_samplerates);
+
+    ff_channel_layouts_ref(in_layouts,  &inlink->out_channel_layouts);
+    ff_channel_layouts_ref(out_layouts, &outlink->in_channel_layouts);
+
+    if(aresample->out_rate > 0) {
+        int sample_rates[] = { aresample->out_rate, -1 };
+        ff_set_common_samplerates(ctx, avfilter_make_format_list(sample_rates));
+    } else {
+        out_samplerates = ff_all_samplerates();
+        avfilter_formats_ref(out_samplerates, &outlink->in_samplerates);
+    }
+
+    return 0;
+}
+
+
 static int config_output(AVFilterLink *outlink)
 {
     int ret;
@@ -113,6 +149,7 @@ AVFilter avfilter_af_aresample = {
     .description   = NULL_IF_CONFIG_SMALL("Resample audio data."),
     .init          = init,
     .uninit        = uninit,
+    .query_formats = query_formats,
     .priv_size     = sizeof(AResampleContext),
 
     .inputs    = (const AVFilterPad[]) {{ .name      = "default",

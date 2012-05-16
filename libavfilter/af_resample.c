@@ -31,6 +31,7 @@
 
 #include "audio.h"
 #include "avfilter.h"
+#include "formats.h"
 #include "internal.h"
 
 typedef struct ResampleContext {
@@ -56,9 +57,19 @@ static int query_formats(AVFilterContext *ctx)
 
     AVFilterFormats        *in_formats      = avfilter_all_formats(AVMEDIA_TYPE_AUDIO);
     AVFilterFormats        *out_formats     = avfilter_all_formats(AVMEDIA_TYPE_AUDIO);
+    AVFilterFormats        *in_samplerates  = ff_all_samplerates();
+    AVFilterFormats        *out_samplerates = ff_all_samplerates();
+    AVFilterChannelLayouts *in_layouts      = ff_all_channel_layouts();
+    AVFilterChannelLayouts *out_layouts     = ff_all_channel_layouts();
 
     avfilter_formats_ref(in_formats,  &inlink->out_formats);
     avfilter_formats_ref(out_formats, &outlink->in_formats);
+
+    avfilter_formats_ref(in_samplerates,  &inlink->out_samplerates);
+    avfilter_formats_ref(out_samplerates, &outlink->in_samplerates);
+
+    ff_channel_layouts_ref(in_layouts,  &inlink->out_channel_layouts);
+    ff_channel_layouts_ref(out_layouts, &outlink->in_channel_layouts);
 
     return 0;
 }
