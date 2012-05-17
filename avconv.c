@@ -215,7 +215,7 @@ typedef struct InputStream {
     FrameBuffer *buffer_pool;
 
     /* decoded data from this stream goes into all those filters
-     * currently video only */
+     * currently video and audio only */
     InputFilter **filters;
     int        nb_filters;
 } InputStream;
@@ -889,8 +889,9 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
     int i;
 
     // TODO: support other filter types
-    if (type != AVMEDIA_TYPE_VIDEO) {
-        av_log(NULL, AV_LOG_FATAL, "Only video filters supported currently.\n");
+    if (type != AVMEDIA_TYPE_VIDEO && type != AVMEDIA_TYPE_AUDIO) {
+        av_log(NULL, AV_LOG_FATAL, "Only video and audio filters supported "
+               "currently.\n");
         exit_program(1);
     }
 
@@ -951,7 +952,7 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
     ist->filters[ist->nb_filters - 1] = fg->inputs[fg->nb_inputs - 1];
 }
 
-static int configure_output_filter(FilterGraph *fg, OutputFilter *ofilter, AVFilterInOut *out)
+static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter, AVFilterInOut *out)
 {
     char *pix_fmts;
     AVCodecContext *codec = ofilter->ost->st->codec;
@@ -1005,6 +1006,104 @@ static int configure_output_filter(FilterGraph *fg, OutputFilter *ofilter, AVFil
     return 0;
 }
 
+static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter, AVFilterInOut *out)
+{
+    OutputStream *ost = ofilter->ost;
+    AVCodecContext *codec  = ost->st->codec;
+    AVFilterContext *last_filter = out->filter_ctx;
+    int pad_idx = out->pad_idx;
+    char *sample_fmts, *sample_rates, *channel_layouts;
+    int ret;
+
+    ret = avfilter_graph_create_filter(&ofilter->filter,
+                                       avfilter_get_by_name("abuffersink"),
+                                       "out", NULL, NULL, fg->graph);
+    if (ret < 0)
+        return ret;
+
+    if (codec->channels && !codec->channel_layout)
+        codec->channel_layout = av_get_default_channel_layout(codec->channels);
+
+    sample_fmts     = choose_sample_fmts(ost);
+    sample_rates    = choose_sample_rates(ost);
+    channel_layouts = choose_channel_layouts(ost);
+    if (sample_fmts || sample_rates || channel_layouts) {
+        AVFilterContext *format;
+        char args[256];
+        int len = 0;
+
+        if (sample_fmts)
+            len += snprintf(args + len, sizeof(args) - len, "sample_fmts=%s:",
+                            sample_fmts);
+        if (sample_rates)
+            len += snprintf(args + len, sizeof(args) - len, "sample_rates=%s:",
+                            sample_rates);
+        if (channel_layouts)
+            len += snprintf(args + len, sizeof(args) - len, "channel_layouts=%s:",
+                            channel_layouts);
+        args[len - 1] = 0;
+
+        av_freep(&sample_fmts);
+        av_freep(&sample_rates);
+        av_freep(&channel_layouts);
+
+        ret = avfilter_graph_create_filter(&format,
+                                           avfilter_get_by_name("aformat"),
+                                           "aformat", args, NULL, fg->graph);
+        if (ret < 0)
+            return ret;
+
+        ret = avfilter_link(last_filter, pad_idx, format, 0);
+        if (ret < 0)
+            return ret;
+
+        last_filter = format;
+        pad_idx = 0;
+    }
+
+    if (audio_sync_method > 0) {
+        AVFilterContext *async;
+        char args[256];
+        int  len = 0;
+
+        av_log(NULL, AV_LOG_WARNING, "-async has been deprecated. Used the "
+               "asyncts audio filter instead.\n");
+
+        if (audio_sync_method > 1)
+            len += snprintf(args + len, sizeof(args) - len, "compensate=1:"
+                            "max_comp=%d:", audio_sync_method);
+        snprintf(args + len, sizeof(args) - len, "min_delta=%f",
+                 audio_drift_threshold);
+
+        ret = avfilter_graph_create_filter(&async,
+                                           avfilter_get_by_name("asyncts"),
+                                           "async", args, NULL, fg->graph);
+        if (ret < 0)
+            return ret;
+
+        ret = avfilter_link(last_filter, pad_idx, async, 0);
+        if (ret < 0)
+            return ret;
+
+        last_filter = async;
+        pad_idx = 0;
+    }
+
+    if ((ret = avfilter_link(last_filter, pad_idx, ofilter->filter, 0)) < 0)
+        return ret;
+
+    return 0;
+}
+
+static int configure_output_filter(FilterGraph *fg, OutputFilter *ofilter, AVFilterInOut *out)
+{
+    switch (out->filter_ctx->output_pads[out->pad_idx].type) {
+    case AVMEDIA_TYPE_VIDEO: return configure_output_video_filter(fg, ofilter, out);
+    case AVMEDIA_TYPE_AUDIO: return configure_output_audio_filter(fg, ofilter, out);
+    default: av_assert0(0);
+    }
+}
+
 static int configure_complex_filter(FilterGraph *fg)
 {
     AVFilterInOut *inputs, *outputs, *cur;
@@ -1024,16 +1123,34 @@ static int configure_complex_filter(FilterGraph *fg)
         InputFilter *ifilter = fg->inputs[i];
         InputStream     *ist = ifilter->ist;
         AVRational       sar;
+        AVFilter     *filter;
         char            args[255];
 
-        sar = ist->st->sample_aspect_ratio.num ? ist->st->sample_aspect_ratio :
-                                                 ist->st->codec->sample_aspect_ratio;
-        snprintf(args, sizeof(args), "%d:%d:%d:%d:%d:%d:%d", ist->st->codec->width,
-                 ist->st->codec->height, ist->st->codec->pix_fmt, 1, AV_TIME_BASE,
-                 sar.num, sar.den);
+        switch (cur->filter_ctx->input_pads[cur->pad_idx].type) {
+        case AVMEDIA_TYPE_VIDEO:
+            sar = ist->st->sample_aspect_ratio.num ?
+                  ist->st->sample_aspect_ratio :
+                  ist->st->codec->sample_aspect_ratio;
+            snprintf(args, sizeof(args), "%d:%d:%d:%d:%d:%d:%d", ist->st->codec->width,
+                     ist->st->codec->height, ist->st->codec->pix_fmt, 1, AV_TIME_BASE,
+                     sar.num, sar.den);
+            filter = avfilter_get_by_name("buffer");
+            break;
+        case AVMEDIA_TYPE_AUDIO:
+            snprintf(args, sizeof(args), "time_base=%d/%d:sample_rate=%d:"
+                     "sample_fmt=%s:channel_layout=0x%"PRIx64,
+                     ist->st->time_base.num, ist->st->time_base.den,
+                     ist->st->codec->sample_rate,
+                     av_get_sample_fmt_name(ist->st->codec->sample_fmt),
+                     ist->st->codec->channel_layout);
+            filter = avfilter_get_by_name("abuffer");
+            break;
+        default:
+            av_assert0(0);
+        }
 
         if ((ret = avfilter_graph_create_filter(&ifilter->filter,
-                                                avfilter_get_by_name("buffer"), cur->name,
+                                                filter, cur->name,
                                                 args, NULL, fg->graph)) < 0)
             return ret;
         if ((ret = avfilter_link(ifilter->filter, 0,
@@ -4087,12 +4204,15 @@ static void init_output_filter(OutputFilter *ofilter, OptionsContext *o,
 {
     OutputStream *ost;
 
-    if (ofilter->out_tmp->filter_ctx->output_pads[ofilter->out_tmp->pad_idx].type != AVMEDIA_TYPE_VIDEO) {
-        av_log(NULL, AV_LOG_FATAL, "Only video filters are supported currently.\n");
+    switch (ofilter->out_tmp->filter_ctx->output_pads[ofilter->out_tmp->pad_idx].type) {
+    case AVMEDIA_TYPE_VIDEO: ost = new_video_stream(o, oc); break;
+    case AVMEDIA_TYPE_AUDIO: ost = new_audio_stream(o, oc); break;
+    default:
+        av_log(NULL, AV_LOG_FATAL, "Only video and audio filters are supported "
+               "currently.\n");
         exit_program(1);
     }
 
-    ost               = new_video_stream(o, oc);
     ost->source_index = -1;
     ost->filter       = ofilter;
 
