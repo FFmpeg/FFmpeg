@@ -1704,8 +1704,10 @@ static int poll_filters(void)
                                                    AV_TIME_BASE_Q,
                                                    ost->st->codec->time_base);
 
-            if (of->start_time && filtered_frame->pts < of->start_time)
-                return 0;
+            if (of->start_time && filtered_frame->pts < of->start_time) {
+                avfilter_unref_buffer(picref);
+                continue;
+            }
 
             switch (ost->filter->filter->inputs[0]->type) {
             case AVMEDIA_TYPE_VIDEO:
