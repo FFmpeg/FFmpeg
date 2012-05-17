@@ -606,8 +606,9 @@ audio signal.
 
 It accepts the syntax: @var{exprs}[::@var{options}].
 @var{exprs} is a list of expressions separated by ":", one for each
-separate channel. The output channel layout depends on the number of
-provided expressions, up to 8 channels are supported.
+separate channel. In case the @var{channel_layout} is not
+specified, the selected channel layout depends on the number of
+provided expressions.
 
 @var{options} is an optional sequence of @var{key}=@var{value} pairs,
 separated by ":".
@@ -615,6 +616,10 @@ separated by ":".
 The description of the accepted options follows.
 
 @table @option
+
+@item channel_layout, c
+Set the channel layout. The number of channels in the specified layout
+must be equal to the number of specified expressions.
 
 @item duration, d
 Set the minimum duration of the sourced audio. See the function
@@ -664,6 +669,13 @@ Generate a sin signal with frequency of 440 Hz, set sample rate to
 8000 Hz:
 @example
 aevalsrc="sin(440*2*PI*t)::s=8000"
+@end example
+
+@item
+Generate a two channels signal, specify the channel layout (Front
+Center + Back Center) explicitly:
+@example
+aevalsrc="sin(420*2*PI*t):cos(430*2*PI*t)::c=FC|BC"
 @end example
 
 @item

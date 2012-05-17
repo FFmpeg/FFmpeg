@@ -52,6 +52,7 @@ typedef struct {
     char *sample_rate_str;
     int sample_rate;
     int64_t chlayout;
+    char *chlayout_str;
     int nb_channels;
     int64_t pts;
     AVExpr *expr[8];
@@ -72,6 +73,8 @@ static const AVOption eval_options[]= {
     { "s",           "set the sample rate",                           OFFSET(sample_rate_str), AV_OPT_TYPE_STRING, {.str = "44100"}, CHAR_MIN, CHAR_MAX },
     { "duration",    "set audio duration", OFFSET(duration_str), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0 },
     { "d",           "set audio duration", OFFSET(duration_str), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0 },
+    { "channel_layout", "set channel layout", OFFSET(chlayout_str), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0 },
+    { "c",              "set channel layout", OFFSET(chlayout_str), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0 },
 {NULL},
 };
 
@@ -111,9 +114,28 @@ static int init(AVFilterContext *ctx, const char *args, void *opaque)
         }
         buf = NULL;
     }
-
-    /* guess channel layout from nb expressions/channels */
     eval->nb_channels = i;
+
+    if (bufptr && (ret = av_set_options_string(eval, bufptr, "=", ":")) < 0)
+        goto end;
+
+    if (eval->chlayout_str) {
+        int n;
+        ret = ff_parse_channel_layout(&eval->chlayout, eval->chlayout_str, ctx);
+        if (ret < 0)
+            goto end;
+
+        n = av_get_channel_layout_nb_channels(eval->chlayout);
+        if (n != eval->nb_channels) {
+            av_log(ctx, AV_LOG_ERROR,
+                   "Mismatch between the specified number of channels '%d' "
+                   "and the number of channels '%d' in the specified channel layout '%s'\n",
+                   eval->nb_channels, n, eval->chlayout_str);
+            ret = AVERROR(EINVAL);
+            goto end;
+        }
+    } else {
+    /* guess channel layout from nb expressions/channels */
     eval->chlayout = av_get_default_channel_layout(eval->nb_channels);
     if (!eval->chlayout) {
         av_log(ctx, AV_LOG_ERROR, "Invalid number of channels '%d' provided\n",
@@ -121,9 +143,7 @@ static int init(AVFilterContext *ctx, const char *args, void *opaque)
         ret = AVERROR(EINVAL);
         goto end;
     }
-
-    if (bufptr && (ret = av_set_options_string(eval, bufptr, "=", ":")) < 0)
-        goto end;
+    }
 
     if ((ret = ff_parse_sample_rate(&eval->sample_rate, eval->sample_rate_str, ctx)))
         goto end;
@@ -153,6 +173,7 @@ static void uninit(AVFilterContext *ctx)
         av_expr_free(eval->expr[i]);
         eval->expr[i] = NULL;
     }
+    av_freep(&eval->chlayout_str);
     av_freep(&eval->duration_str);
     av_freep(&eval->sample_rate_str);
 }
