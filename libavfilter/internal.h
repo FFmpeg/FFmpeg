@@ -112,6 +112,16 @@ int ff_parse_pixel_format(enum PixelFormat *ret, const char *arg, void *log_ctx)
 int ff_parse_sample_rate(int *ret, const char *arg, void *log_ctx);
 
 /**
+ * Parse a time base.
+ *
+ * @param ret unsigned AVRational pointer to where the value should be written
+ * @param arg string to parse
+ * @param log_ctx log context
+ * @return 0 in case of success, a negative AVERROR code on error
+ */
+int ff_parse_time_base(AVRational *ret, const char *arg, void *log_ctx);
+
+/**
  * Parse a sample format name or a corresponding integer representation.
  *
  * @param ret integer pointer to where the value should be written
