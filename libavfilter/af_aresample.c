@@ -24,6 +24,8 @@
  * resampling audio filter
  */
 
+#include "libavutil/avstring.h"
+#include "libavutil/opt.h"
 #include "libswresample/swresample.h"
 #include "avfilter.h"
 #include "audio.h"
@@ -38,16 +40,33 @@ typedef struct {
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     AResampleContext *aresample = ctx->priv;
-    int ret;
+    int ret = 0;
+    char *argd = av_strdup(args);
+
+    aresample->swr = swr_alloc();
+    if (!aresample->swr)
+        return AVERROR(ENOMEM);
 
     if (args) {
-        if ((ret = ff_parse_sample_rate(&aresample->out_rate, args, ctx)) < 0)
-            return ret;
+        char *ptr=argd, *token;
+
+        while(token = av_strtok(ptr, ":", &ptr)) {
+            char *value;
+            av_strtok(token, "=", &value);
+
+            if(value) {
+                if((ret=av_opt_set(aresample->swr, token, value, 0)) < 0)
+                    goto end;
+            } else if ((ret = ff_parse_sample_rate(&aresample->out_rate, token, ctx)) < 0)
+                goto end;
+        }
+
     } else {
         aresample->out_rate = -1;
     }
-
-    return 0;
+end:
+    av_free(argd);
+    return ret;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -105,7 +124,6 @@ static int config_output(AVFilterLink *outlink)
         outlink->sample_rate = aresample->out_rate;
     outlink->time_base = (AVRational) {1, aresample->out_rate};
 
-    //TODO: make the resampling parameters (filter size, phrase shift, linear, cutoff) configurable
     aresample->swr = swr_alloc_set_opts(aresample->swr,
                                         outlink->channel_layout, outlink->format, outlink->sample_rate,
                                         inlink->channel_layout, inlink->format, inlink->sample_rate,
