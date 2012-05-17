@@ -49,6 +49,7 @@
 #include "libavutil/libm.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/timestamp.h"
+#include "libavutil/bprint.h"
 #include "libavformat/os_support.h"
 #include "libswresample/swresample.h"
 
@@ -293,6 +294,10 @@ typedef struct OutputStream {
     int64_t *forced_kf_pts;
     int forced_kf_count;
     int forced_kf_index;
+
+    /* audio only */
+    int audio_channels_map[SWR_CH_MAX];  /* list of the channels id to pick from the source stream */
+    int audio_channels_mapped;           /* number of channels in audio_channels_map */
 
     FILE *logfile;
 
@@ -870,25 +875,46 @@ static int configure_audio_filters(FilterGraph *fg, AVFilterContext **in_filter,
         *out_filter = format;
     }
 
+#define AUTO_INSERT_FILTER(opt_name, filter_name, arg) do {                 \
+    AVFilterContext *filt_ctx;                                              \
+                                                                            \
+    av_log(NULL, AV_LOG_WARNING, opt_name " has been deprecated. "          \
+           "Use the " filter_name " filter instead "                        \
+           "(-af " filter_name "=%s).\n", arg);                             \
+                                                                            \
+    ret = avfilter_graph_create_filter(&filt_ctx,                           \
+                                       avfilter_get_by_name(filter_name),   \
+                                       filter_name, arg, NULL, fg->graph);  \
+    if (ret < 0)                                                            \
+        return ret;                                                         \
+                                                                            \
+    ret = avfilter_link(*in_filter, 0, filt_ctx, 0);                        \
+    if (ret < 0)                                                            \
+        return ret;                                                         \
+                                                                            \
+    *in_filter = filt_ctx;                                                  \
+} while (0)
+
+    if (ost->audio_channels_mapped) {
+        int i;
+        AVBPrint pan_buf;
+
+        av_bprint_init(&pan_buf, 256, 8192);
+        av_bprintf(&pan_buf, "0x%"PRIx64,
+                   av_get_default_channel_layout(ost->audio_channels_mapped));
+        for (i = 0; i < ost->audio_channels_mapped; i++)
+            if (ost->audio_channels_map[i] != -1)
+                av_bprintf(&pan_buf, ":c%d=c%d", i, ost->audio_channels_map[i]);
+
+        AUTO_INSERT_FILTER("-map_channel", "pan", pan_buf.str);
+        av_bprint_finalize(&pan_buf, NULL);
+    }
+
     if (audio_volume != 256) {
-        AVFilterContext *volume;
         char args[256];
 
         snprintf(args, sizeof(args), "%lf", audio_volume / 256.);
-        av_log(NULL, AV_LOG_WARNING, "-vol has been deprecated. Used the "
-               "volume audio filter instead (-af volume=%s).\n", args);
-
-        ret = avfilter_graph_create_filter(&volume,
-                                           avfilter_get_by_name("volume"),
-                                           "volume", args, NULL, fg->graph);
-        if (ret < 0)
-            return ret;
-
-        ret = avfilter_link(*in_filter, 0, volume, 0);
-        if (ret < 0)
-            return ret;
-
-        *in_filter = volume;
+        AUTO_INSERT_FILTER("-vol", "volume", args);
     }
 
     return 0;
@@ -4629,6 +4655,21 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc, in
         MATCH_PER_STREAM_OPT(filters, str, filters, oc, st);
         if (filters)
             ost->avfilter = av_strdup(filters);
+
+        /* check for channel mapping for this audio stream */
+        for (n = 0; n < o->nb_audio_channel_maps; n++) {
+            AudioChannelMap *map = &o->audio_channel_maps[n];
+            InputStream *ist = input_streams[ost->source_index];
+            if ((map->channel_idx == -1 || (ist->file_index == map->file_idx && ist->st->index == map->stream_idx)) &&
+                (map->ofile_idx   == -1 || ost->file_index == map->ofile_idx) &&
+                (map->ostream_idx == -1 || ost->st->index  == map->ostream_idx)) {
+                if (ost->audio_channels_mapped < FF_ARRAY_ELEMS(ost->audio_channels_map))
+                    ost->audio_channels_map[ost->audio_channels_mapped++] = map->channel_idx;
+                else
+                    av_log(NULL, AV_LOG_FATAL, "Max channel mapping for output %d.%d reached\n",
+                           ost->file_index, ost->st->index);
+            }
+        }
     }
 
     return ost;
