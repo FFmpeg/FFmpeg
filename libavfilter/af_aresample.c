@@ -169,6 +169,11 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamplesref
 
     n_out = swr_convert(aresample->swr, outsamplesref->data, n_out,
                                  (void *)insamplesref->data, n_in);
+    if (n_out <= 0) {
+        avfilter_unref_buffer(outsamplesref);
+        avfilter_unref_buffer(insamplesref);
+        return;
+    }
 
     avfilter_copy_buffer_ref_props(outsamplesref, insamplesref);
     outsamplesref->audio->sample_rate = outlink->sample_rate;
