@@ -213,11 +213,17 @@ static int query_formats(AVFilterContext *ctx)
     PanContext *pan = ctx->priv;
     AVFilterLink *inlink  = ctx->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
+    AVFilterFormats *formats = NULL;
     AVFilterChannelLayouts *layouts;
 
     pan->pure_gains = are_gains_pure(pan);
     /* libswr supports any sample and packing formats */
     avfilter_set_common_sample_formats(ctx, avfilter_make_all_formats(AVMEDIA_TYPE_AUDIO));
+
+    formats = ff_all_samplerates();
+    if (!formats)
+        return AVERROR(ENOMEM);
+    ff_set_common_samplerates(ctx, formats);
 
     // inlink supports any channel layout
     layouts = ff_all_channel_layouts();

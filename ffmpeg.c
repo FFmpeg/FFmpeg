@@ -1964,7 +1964,7 @@ static int poll_filters(void)
                                                        AV_BUFFERSINK_FLAG_NO_REQUEST);
 #endif
                 if (ret < 0) {
-                    if (ret != AVERROR(EAGAIN)) {
+                    if (ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
                         char buf[256];
                         av_strerror(ret, buf, sizeof(buf));
                         av_log(NULL, AV_LOG_WARNING,
