@@ -215,19 +215,25 @@ static int check_format_change_audio(AVFilterContext *ctx,
     int ret, logged = 0;
 
     link = ctx->outputs[0];
-    if (samplesref->audio->sample_rate != link->sample_rate) {
+    if (samplesref->audio->sample_rate    != link->sample_rate    ||
+        samplesref->format                != link->format         ||
+        samplesref->audio->channel_layout != link->channel_layout) {
 
         log_input_change(ctx, link, samplesref);
         logged = 1;
 
-        abuffer->sample_rate = samplesref->audio->sample_rate;
+        abuffer->sample_rate    = samplesref->audio->sample_rate;
+        abuffer->sample_format  = samplesref->format;
+        abuffer->channel_layout = samplesref->audio->channel_layout;
 
         if (!abuffer->aresample) {
             ret = insert_filter(abuffer, link, &abuffer->aresample, "aresample");
             if (ret < 0) return ret;
         } else {
             link = abuffer->aresample->outputs[0];
-            if (samplesref->audio->sample_rate == link->sample_rate)
+            if (samplesref->audio->sample_rate    == link->sample_rate    &&
+                samplesref->format                == link->format         &&
+                samplesref->audio->channel_layout == link->channel_layout)
                 remove_filter(&abuffer->aresample);
             else
                 if ((ret = reconfigure_filter(abuffer, abuffer->aresample)) < 0)
@@ -235,28 +241,6 @@ static int check_format_change_audio(AVFilterContext *ctx,
         }
     }
 
-    link = ctx->outputs[0];
-    if (samplesref->format                != link->format         ||
-        samplesref->audio->channel_layout != link->channel_layout) {
-
-        if (!logged) log_input_change(ctx, link, samplesref);
-
-        abuffer->sample_format  = samplesref->format;
-        abuffer->channel_layout = samplesref->audio->channel_layout;
-
-        if (!abuffer->aconvert) {
-            ret = insert_filter(abuffer, link, &abuffer->aconvert, "aconvert");
-            if (ret < 0) return ret;
-        } else {
-            link = abuffer->aconvert->outputs[0];
-            if (samplesref->format                == link->format         &&
-                samplesref->audio->channel_layout == link->channel_layout)
-                remove_filter(&abuffer->aconvert);
-            else
-                if ((ret = reconfigure_filter(abuffer, abuffer->aconvert)) < 0)
-                    return ret;
-        }
-    }
 
     return 0;
 }
