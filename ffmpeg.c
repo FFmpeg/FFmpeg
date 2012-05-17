@@ -2514,8 +2514,7 @@ static int transcode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
 #ifdef SRCA
         av_buffersrc_write_frame(ist->filters[i]->filter, decoded_frame);
 #else
-        AVFilterBufferRef *fb= avfilter_get_audio_buffer_ref_from_frame(decoded_frame, AV_PERM_WRITE);
-        av_buffersrc_add_ref(ist->filters[i]->filter, fb, 0*AV_BUFFERSRC_FLAG_NO_CHECK_FORMAT);
+        av_buffersrc_add_frame(ist->filters[i]->filter, decoded_frame, 0);
 #endif
     }
 
