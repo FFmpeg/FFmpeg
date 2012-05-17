@@ -82,7 +82,7 @@ static int query_formats(AVFilterContext *ctx)
 
     if(aresample->out_rate > 0) {
         int sample_rates[] = { aresample->out_rate, -1 };
-        ff_set_common_samplerates(ctx, avfilter_make_format_list(sample_rates));
+        avfilter_formats_ref(avfilter_make_format_list(sample_rates), &outlink->in_samplerates);
     } else {
         out_samplerates = ff_all_samplerates();
         avfilter_formats_ref(out_samplerates, &outlink->in_samplerates);
