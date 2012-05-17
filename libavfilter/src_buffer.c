@@ -270,6 +270,8 @@ static AVFilterBufferRef *copy_buffer_ref(AVFilterContext *ctx,
     case AVMEDIA_TYPE_VIDEO:
         buf = avfilter_get_video_buffer(outlink, AV_PERM_WRITE,
                                         ref->video->w, ref->video->h);
+        if(!buf)
+            return NULL;
         av_image_copy(buf->data, buf->linesize,
                       (void*)ref->data, ref->linesize,
                       ref->format, ref->video->w, ref->video->h);
@@ -278,6 +280,8 @@ static AVFilterBufferRef *copy_buffer_ref(AVFilterContext *ctx,
     case AVMEDIA_TYPE_AUDIO:
         buf = ff_get_audio_buffer(outlink, AV_PERM_WRITE,
                                         ref->audio->nb_samples);
+        if(!buf)
+            return NULL;
         channels = av_get_channel_layout_nb_channels(ref->audio->channel_layout);
         av_samples_copy(buf->extended_data, ref->buf->extended_data,
                         0, 0, ref->audio->nb_samples,
@@ -319,6 +323,8 @@ int av_buffersrc_add_ref(AVFilterContext *buffer_filter,
         buf = picref;
     else
         buf = copy_buffer_ref(buffer_filter, picref);
+    if(!buf)
+        return -1;
 
     if ((ret = av_fifo_generic_write(c->fifo, &buf, sizeof(buf), NULL)) < 0) {
         if (buf != picref)
