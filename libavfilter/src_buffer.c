@@ -430,6 +430,7 @@ static av_cold int init_audio(AVFilterContext *ctx, const char *args0, void *opa
     if (*args)                                                          \
         arg = av_strtok(NULL, ":", &ptr)
 
+    ADD_FORMAT(time_base);
     ADD_FORMAT(sample_rate);
     ADD_FORMAT(sample_format);
     ADD_FORMAT(channel_layout);
@@ -516,6 +517,7 @@ static int config_output_audio(AVFilterLink *outlink)
 {
     BufferSourceContext *abuffer = outlink->src->priv;
     outlink->sample_rate = abuffer->sample_rate;
+    outlink->time_base   = abuffer->time_base;
     return 0;
 }
 
