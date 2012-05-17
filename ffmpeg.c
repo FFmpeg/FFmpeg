@@ -878,9 +878,8 @@ static int configure_audio_filters(FilterGraph *fg, AVFilterContext **in_filter,
 #define AUTO_INSERT_FILTER(opt_name, filter_name, arg) do {                 \
     AVFilterContext *filt_ctx;                                              \
                                                                             \
-    av_log(NULL, AV_LOG_WARNING, opt_name " has been deprecated. "          \
-           "Use the " filter_name " filter instead "                        \
-           "(-af " filter_name "=%s).\n", arg);                             \
+    av_log(NULL, AV_LOG_INFO, opt_name " is forwarded to lavfi "            \
+           "similarly to -af " filter_name "=%s.\n", arg);                  \
                                                                             \
     ret = avfilter_graph_create_filter(&filt_ctx,                           \
                                        avfilter_get_by_name(filter_name),   \
