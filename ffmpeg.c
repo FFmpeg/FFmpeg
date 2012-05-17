@@ -4652,7 +4652,7 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc, in
     audio_enc->codec_type = AVMEDIA_TYPE_AUDIO;
 
     if (!ost->stream_copy) {
-        char *sample_fmt = NULL, *filters = NULL;;
+        char *sample_fmt = NULL, *filters = NULL;
 
         MATCH_PER_STREAM_OPT(audio_channels, i, audio_enc->channels, oc, st);
 
