@@ -34,6 +34,7 @@
 #include "audio.h"
 #include "avfilter.h"
 #include "formats.h"
+#include "internal.h"
 
 #define MAX_CHANNELS 63
 
@@ -98,7 +99,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args0, void *opaque)
 {
     PanContext *const pan = ctx->priv;
     char *arg, *arg0, *tokenizer, *args = av_strdup(args0);
-    int out_ch_id, in_ch_id, len, named;
+    int out_ch_id, in_ch_id, len, named, ret;
     int nb_in_channels[2] = { 0, 0 }; // number of unnamed and named input channels
     double gain;
 
@@ -111,11 +112,9 @@ static av_cold int init(AVFilterContext *ctx, const char *args0, void *opaque)
     if (!args)
         return AVERROR(ENOMEM);
     arg = av_strtok(args, ":", &tokenizer);
-    pan->out_channel_layout = av_get_channel_layout(arg);
-    if (!pan->out_channel_layout) {
-        av_log(ctx, AV_LOG_ERROR, "Unknown channel layout \"%s\"\n", arg);
-        return AVERROR(EINVAL);
-    }
+    ret = ff_parse_channel_layout(&pan->out_channel_layout, arg, ctx);
+    if (ret < 0)
+        return ret;
     pan->nb_output_channels = av_get_channel_layout_nb_channels(pan->out_channel_layout);
 
     /* parse channel specifications */
