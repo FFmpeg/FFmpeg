@@ -51,6 +51,7 @@ static int do_show_error   = 0;
 static int do_show_format  = 0;
 static int do_show_frames  = 0;
 static AVDictionary *fmt_entries_to_show = NULL;
+static int nb_fmt_entries_to_show;
 static int do_show_packets = 0;
 static int do_show_streams = 0;
 static int do_show_program_version  = 0;
@@ -397,6 +398,9 @@ static av_cold int default_init(WriterContext *wctx, const char *args, void *opa
 
     def->class = &default_class;
     av_opt_set_defaults(def);
+
+    if (nb_fmt_entries_to_show == 1)
+        def->nokey = 1;
 
     if (args &&
         (err = (av_set_options_string(def, args, "=", ":"))) < 0) {
@@ -1675,6 +1679,7 @@ static int opt_format(const char *opt, const char *arg)
 static int opt_show_format_entry(const char *opt, const char *arg)
 {
     do_show_format = 1;
+    nb_fmt_entries_to_show++;
     av_dict_set(&fmt_entries_to_show, arg, "", 0);
     return 0;
 }
