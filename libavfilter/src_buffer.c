@@ -506,6 +506,10 @@ static int query_formats_audio(AVFilterContext *ctx)
     avfilter_add_format(&formats, abuffer->sample_format);
     avfilter_set_common_sample_formats(ctx, formats);
 
+    formats = NULL;
+    avfilter_add_format(&formats, abuffer->sample_rate);
+    ff_set_common_samplerates(ctx, formats);
+
     layouts = NULL;
     ff_add_channel_layout(&layouts, abuffer->channel_layout);
     ff_set_common_channel_layouts(ctx, layouts);
