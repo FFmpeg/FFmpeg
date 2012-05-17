@@ -279,11 +279,10 @@ static AVFilterBufferRef *copy_buffer_ref(AVFilterContext *ctx,
         buf = ff_get_audio_buffer(outlink, AV_PERM_WRITE,
                                         ref->audio->nb_samples);
         channels = av_get_channel_layout_nb_channels(ref->audio->channel_layout);
-        data_size = av_samples_get_buffer_size(NULL, channels,
-                                               ref->audio->nb_samples,
-                                               ref->format, 1);
-        for (i = 0; i < FF_ARRAY_ELEMS(ref->buf->data) && ref->buf->data[i]; i++)
-            memcpy(buf->buf->data[i], ref->buf->data[i], data_size);
+        av_samples_copy(buf->extended_data, ref->buf->extended_data,
+                        0, 0, ref->audio->nb_samples,
+                        channels,
+                        ref->format);
         break;
 
     default:
