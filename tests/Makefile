@@ -14,7 +14,7 @@ tests/vsynth1/00.pgm: tests/videogen$(HOSTEXESUF) | tests/vsynth1
 	$(M)./$< 'tests/vsynth1/'
 
 tests/vsynth2/00.pgm: tests/rotozoom$(HOSTEXESUF) | tests/vsynth2
-	$(M)./$< 'tests/vsynth2/' $(SRC_PATH)/tests/lena.pnm
+	$(M)./$< $(SRC_PATH)/tests/lena.pnm 'tests/vsynth2/'
 
 tests/data/asynth1.sw: tests/audiogen$(HOSTEXESUF) | tests/data
 	$(M)./$< $@
