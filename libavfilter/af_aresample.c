@@ -36,6 +36,7 @@
 typedef struct {
     double ratio;
     struct SwrContext *swr;
+    int64_t next_pts;
 } AResampleContext;
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
@@ -44,6 +45,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     int ret = 0;
     char *argd = av_strdup(args);
 
+    aresample->next_pts = AV_NOPTS_VALUE;
     aresample->swr = swr_alloc();
     if (!aresample->swr)
         return AVERROR(ENOMEM);
@@ -176,13 +178,52 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamplesref
     }
 
     avfilter_copy_buffer_ref_props(outsamplesref, insamplesref);
+
     outsamplesref->audio->sample_rate = outlink->sample_rate;
     outsamplesref->audio->nb_samples  = n_out;
-    outsamplesref->pts = insamplesref->pts == AV_NOPTS_VALUE ? AV_NOPTS_VALUE :
-        av_rescale_q(insamplesref->pts, inlink->time_base, outlink->time_base);
+
+    if(insamplesref->pts != AV_NOPTS_VALUE) {
+        aresample->next_pts = insamplesref->pts;
+        outsamplesref->pts  = av_rescale_q(insamplesref->pts, inlink->time_base, outlink->time_base);
+    } else{
+        outsamplesref->pts  = AV_NOPTS_VALUE; //aresample->next_pts;
+    }
+    if(aresample->next_pts != AV_NOPTS_VALUE)
+        aresample->next_pts += av_rescale_q(n_out, (AVRational){1 ,outlink->sample_rate}, outlink->time_base);
 
     ff_filter_samples(outlink, outsamplesref);
     avfilter_unref_buffer(insamplesref);
+}
+
+static int request_frame(AVFilterLink *outlink)
+{
+    AVFilterContext *ctx = outlink->src;
+    AResampleContext *aresample = ctx->priv;
+    int ret = avfilter_request_frame(ctx->inputs[0]);
+
+    if (ret == AVERROR_EOF) {
+        AVFilterBufferRef *outsamplesref;
+        int n_out = 4096;
+
+        outsamplesref = ff_get_audio_buffer(outlink, AV_PERM_WRITE, n_out);
+        if (!outsamplesref)
+            return AVERROR(ENOMEM);
+        n_out = swr_convert(aresample->swr, outsamplesref->data, n_out, 0, 0);
+        if (n_out <= 0) {
+            avfilter_unref_buffer(outsamplesref);
+            return (n_out == 0) ? AVERROR_EOF : n_out;
+        }
+
+        outsamplesref->audio->sample_rate = outlink->sample_rate;
+        outsamplesref->audio->nb_samples  = n_out;
+        outsamplesref->pts = aresample->next_pts;
+        if(aresample->next_pts != AV_NOPTS_VALUE)
+            aresample->next_pts += av_rescale_q(n_out, (AVRational){1 ,outlink->sample_rate}, outlink->time_base);
+
+        ff_filter_samples(outlink, outsamplesref);
+        return 0;
+    }
+    return ret;
 }
 
 AVFilter avfilter_af_aresample = {
@@ -200,6 +241,7 @@ AVFilter avfilter_af_aresample = {
                                   { .name = NULL}},
     .outputs   = (const AVFilterPad[]) {{ .name      = "default",
                                     .config_props    = config_output,
+                                    .request_frame   = request_frame,
                                     .type            = AVMEDIA_TYPE_AUDIO, },
                                   { .name = NULL}},
 };

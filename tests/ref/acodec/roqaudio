@@ -1,4 +1,4 @@
-3fe1e3c0feeb3963685e07c75d136ed0 *./tests/data/acodec/roqaudio.roq
+c8ff13cf7ebece23af76502f5785202e *./tests/data/acodec/roqaudio.roq
 265992 ./tests/data/acodec/roqaudio.roq
-f27d1906e28e80f0955b75cc4ffe3601 *./tests/data/roqaudio.acodec.out.wav
-stddev: 4610.92 PSNR: 23.05 MAXDIFF:43883 bytes:  1058336/  1058400
+709fd60aea880c73b375094ab5307c77 *./tests/data/roqaudio.acodec.out.wav
+stddev: 4610.71 PSNR: 23.05 MAXDIFF:43883 bytes:  1058400/  1058400
