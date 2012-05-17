@@ -1511,6 +1511,14 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
         (avctx->codec_type == AVMEDIA_TYPE_AUDIO && audio_sync_method < 0))
         pkt->pts = pkt->dts = AV_NOPTS_VALUE;
 
+    if (avctx->codec_type == AVMEDIA_TYPE_AUDIO && pkt->dts != AV_NOPTS_VALUE) {
+        int64_t max = ost->st->cur_dts + !(s->oformat->flags & AVFMT_TS_NONSTRICT);
+        if (ost->st->cur_dts && ost->st->cur_dts != AV_NOPTS_VALUE &&  max > pkt->dts) {
+            av_log(s, max - pkt->dts > 2 ? AV_LOG_WARNING : AV_LOG_DEBUG, "Audio timestamp %"PRId64" < %"PRId64" invalid, cliping\n", pkt->dts, max);
+            pkt->pts = pkt->dts = max;
+        }
+    }
+
     /*
      * Audio encoders may split the packets --  #frames in != #packets out.
      * But there is no reordering, so we can limit the number of output packets
@@ -1599,12 +1607,7 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
         if (pkt.pts != AV_NOPTS_VALUE)
             pkt.pts      = av_rescale_q(pkt.pts,      enc->time_base, ost->st->time_base);
         if (pkt.dts != AV_NOPTS_VALUE) {
-            int64_t max = ost->st->cur_dts + !(s->oformat->flags & AVFMT_TS_NONSTRICT);
             pkt.dts      = av_rescale_q(pkt.dts,      enc->time_base, ost->st->time_base);
-            if (ost->st->cur_dts && ost->st->cur_dts != AV_NOPTS_VALUE &&  max > pkt.dts) {
-                av_log(s, max - pkt.dts > 2 ? AV_LOG_WARNING : AV_LOG_DEBUG, "Audio timestamp %"PRId64" < %"PRId64" invalid, cliping\n", pkt.dts, max);
-                pkt.pts = pkt.dts = max;
-            }
         }
         if (pkt.duration > 0)
             pkt.duration = av_rescale_q(pkt.duration, enc->time_base, ost->st->time_base);
