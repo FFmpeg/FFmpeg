@@ -135,14 +135,14 @@ static int init(AVFilterContext *ctx, const char *args, void *opaque)
             goto end;
         }
     } else {
-    /* guess channel layout from nb expressions/channels */
-    eval->chlayout = av_get_default_channel_layout(eval->nb_channels);
-    if (!eval->chlayout) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid number of channels '%d' provided\n",
-               eval->nb_channels);
-        ret = AVERROR(EINVAL);
-        goto end;
-    }
+        /* guess channel layout from nb expressions/channels */
+        eval->chlayout = av_get_default_channel_layout(eval->nb_channels);
+        if (!eval->chlayout) {
+            av_log(ctx, AV_LOG_ERROR, "Invalid number of channels '%d' provided\n",
+                   eval->nb_channels);
+            ret = AVERROR(EINVAL);
+            goto end;
+        }
     }
 
     if ((ret = ff_parse_sample_rate(&eval->sample_rate, eval->sample_rate_str, ctx)))
