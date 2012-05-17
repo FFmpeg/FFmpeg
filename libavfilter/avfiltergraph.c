@@ -263,7 +263,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                 samplerates = ff_merge_samplerates    (link->in_samplerates, link->out_samplerates);
 
                 if (!formats || !chlayouts || !samplerates)
-                    if (ret = insert_conv_filter(graph, link, "aconvert", NULL))
+                    if (ret = insert_conv_filter(graph, link, "aresample", NULL))
                        return ret;
 #else
             int convert_needed = 0;
