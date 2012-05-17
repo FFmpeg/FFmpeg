@@ -21,6 +21,7 @@ cpuflags=${11:-all}
 cmp_shift=${12:-0}
 cmp_target=${13:-0}
 size_tolerance=${14:-0}
+cmp_unit=${15:-2}
 
 outdir="tests/data/fate"
 outfile="${outdir}/${test}"
@@ -40,7 +41,7 @@ compare(){
 }
 
 do_tiny_psnr(){
-    psnr=$(tests/tiny_psnr "$1" "$2" 2 $cmp_shift 0)
+    psnr=$(tests/tiny_psnr "$1" "$2" $cmp_unit $cmp_shift 0)
     val=$(expr "$psnr" : ".*$3: *\([0-9.]*\)")
     size1=$(expr "$psnr" : '.*bytes: *\([0-9]*\)')
     size2=$(expr "$psnr" : '.*bytes:[ 0-9]*/ *\([0-9]*\)')
