@@ -112,7 +112,7 @@ int av_parse_color(uint8_t *rgba_color, const char *color_string, int slen,
  * @param timestr a string representing a date or a duration.
  * - If a date the syntax is:
  * @code
- * [{YYYY-MM-DD|YYYYMMDD}[T|t| ]]{{HH[:MM[:SS[.m...]]]}|{HH[MM[SS[.m...]]]}}[Z]
+ * [{YYYY-MM-DD|YYYYMMDD}[T|t| ]]{{HH:MM:SS[.m...]]]}|{HHMMSS[.m...]]]}}[Z]
  * now
  * @endcode
  * If the value is "now" it takes the current time.
@@ -122,7 +122,7 @@ int av_parse_color(uint8_t *rgba_color, const char *color_string, int slen,
  * year-month-day.
  * - If a duration the syntax is:
  * @code
- * [-]HH[:MM[:SS[.m...]]]
+ * [-]HH:MM:SS[.m...]]]
  * [-]S+[.m...]
  * @endcode
  * @param duration flag which tells how to interpret timestr, if not
