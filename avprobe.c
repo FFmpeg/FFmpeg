@@ -64,6 +64,262 @@ void exit_program(int ret)
     exit(ret);
 }
 
+/*
+ * The output is structured in array and objects that might contain items
+ * Array could require the objects within to not be named.
+ * Object could require the items within to be named.
+ *
+ * For flat representation the name of each section is saved on prefix so it
+ * can be rendered in order to represent nested structures (e.g. array of
+ * objects for the packets list).
+ *
+ * Within an array each element can need an unique identifier or an index.
+ *
+ * Nesting level is accounted separately.
+ */
+
+typedef enum {
+    ARRAY,
+    OBJECT
+} ProbeElementType;
+
+typedef struct {
+    const char *name;
+    ProbeElementType type;
+    int64_t index;
+    int64_t nb_elems;
+} ProbeElement;
+
+typedef struct {
+    ProbeElement *prefix;
+    int level;
+} OutputContext;
+
+static AVIOContext *probe_out = NULL;
+static OutputContext octx;
+
+/*
+ * Default format, INI
+ *
+ * - all key and values are utf8
+ * - '.' is the subgroup separator
+ * - newlines and the following characters are escaped
+ * - '\' is the escape character
+ * - '#' is the comment
+ * - '=' is the key/value separators
+ * - ':' is not used but usually parsed as key/value separator
+ */
+
+static void ini_print_header(void)
+{
+    avio_printf(probe_out, "# avprobe output\n\n");
+}
+static void ini_print_footer(void)
+{
+    avio_w8(probe_out, '\n');
+}
+
+static void ini_escape_print(const char *s)
+{
+    int i = 0;
+    char c = 0;
+
+    while (c = s[i++]) {
+        switch (c) {
+        case '\r': avio_printf(probe_out, "%s", "\\r"); break;
+        case '\n': avio_printf(probe_out, "%s", "\\n"); break;
+        case '\f': avio_printf(probe_out, "%s", "\\f"); break;
+        case '\b': avio_printf(probe_out, "%s", "\\b"); break;
+        case '\t': avio_printf(probe_out, "%s", "\\t"); break;
+        case '\\':
+        case '#' :
+        case '=' :
+        case ':' : avio_w8(probe_out, '\\');
+        default:
+            if ((unsigned char)c < 32)
+                avio_printf(probe_out, "\\x00%02x", c & 0xff);
+            else
+                avio_w8(probe_out, c);
+        break;
+        }
+    }
+}
+
+static void ini_print_array_header(const char *name)
+{
+    if (octx.prefix[octx.level -1].nb_elems)
+        avio_printf(probe_out, "\n");
+}
+
+static void ini_print_object_header(const char *name)
+{
+    int i;
+    ProbeElement *el = octx.prefix + octx.level -1;
+
+    if (el->nb_elems)
+        avio_printf(probe_out, "\n");
+
+    avio_printf(probe_out, "[");
+
+    for (i = 1; i < octx.level; i++) {
+        el = octx.prefix + i;
+        avio_printf(probe_out, "%s.", el->name);
+        if (el->index >= 0)
+            avio_printf(probe_out, "%"PRId64".", el->index);
+    }
+
+    avio_printf(probe_out, "%s", name);
+    if (el && el->type == ARRAY)
+        avio_printf(probe_out, ".%"PRId64"", el->nb_elems);
+    avio_printf(probe_out, "]\n");
+}
+
+static void ini_print_integer(const char *key, int64_t value)
+{
+    ini_escape_print(key);
+    avio_printf(probe_out, "=%"PRId64"\n", value);
+}
+
+
+static void ini_print_string(const char *key, const char *value)
+{
+    ini_escape_print(key);
+    avio_printf(probe_out, "=");
+    ini_escape_print(value);
+    avio_w8(probe_out, '\n');
+}
+
+/*
+ * Simple Formatter for single entries.
+ */
+
+static void show_format_entry_integer(const char *key, int64_t value)
+{
+    if (key && av_dict_get(fmt_entries_to_show, key, NULL, 0)) {
+        if (nb_fmt_entries_to_show > 1)
+            avio_printf(probe_out, "%s=", key);
+        avio_printf(probe_out, "%"PRId64"\n", value);
+    }
+}
+
+static void show_format_entry_string(const char *key, const char *value)
+{
+    if (key && av_dict_get(fmt_entries_to_show, key, NULL, 0)) {
+        if (nb_fmt_entries_to_show > 1)
+            avio_printf(probe_out, "%s=", key);
+        avio_printf(probe_out, "%s\n", value);
+    }
+}
+
+
+void (*print_header)(void) = ini_print_header;
+void (*print_footer)(void) = ini_print_footer;
+
+void (*print_array_header) (const char *name) = ini_print_array_header;
+void (*print_array_footer) (const char *name);
+void (*print_object_header)(const char *name) = ini_print_object_header;
+void (*print_object_footer)(const char *name);
+
+void (*print_integer) (const char *key, int64_t value)     = ini_print_integer;
+void (*print_string)  (const char *key, const char *value) = ini_print_string;
+
+
+static void probe_group_enter(const char *name, int type)
+{
+    int64_t count = -1;
+
+    octx.prefix =
+        av_realloc(octx.prefix, sizeof(ProbeElement) * (octx.level + 1));
+
+    if (!octx.prefix || !name) {
+        fprintf(stderr, "Out of memory\n");
+        exit(1);
+    }
+
+    if (octx.level) {
+        ProbeElement *parent = octx.prefix + octx.level -1;
+        if (parent->type == ARRAY)
+            count = parent->nb_elems;
+        parent->nb_elems++;
+    }
+
+    octx.prefix[octx.level++] = (ProbeElement){name, type, count, 0};
+}
+
+static void probe_group_leave(void)
+{
+    --octx.level;
+}
+
+static void probe_header(void)
+{
+    if (print_header)
+        print_header();
+    probe_group_enter("root", OBJECT);
+}
+
+static void probe_footer(void)
+{
+    if (print_footer)
+        print_footer();
+    probe_group_leave();
+}
+
+
+static void probe_array_header(const char *name)
+{
+    if (print_array_header)
+        print_array_header(name);
+
+    probe_group_enter(name, ARRAY);
+}
+
+static void probe_array_footer(const char *name)
+{
+    probe_group_leave();
+    if (print_array_footer)
+        print_array_footer(name);
+}
+
+static void probe_object_header(const char *name)
+{
+    if (print_object_header)
+        print_object_header(name);
+
+    probe_group_enter(name, OBJECT);
+}
+
+static void probe_object_footer(const char *name)
+{
+    probe_group_leave();
+    if (print_object_footer)
+        print_object_footer(name);
+}
+
+static void probe_int(const char *key, int64_t value)
+{
+    print_integer(key, value);
+    octx.prefix[octx.level -1].nb_elems++;
+}
+
+static void probe_str(const char *key, const char *value)
+{
+    print_string(key, value);
+    octx.prefix[octx.level -1].nb_elems++;
+}
+
+static void probe_dict(AVDictionary *dict, const char *name)
+{
+    AVDictionaryEntry *entry = NULL;
+    if (!dict)
+        return;
+    probe_object_header(name);
+    while ((entry = av_dict_get(dict, "", entry, AV_DICT_IGNORE_SUFFIX))) {
+        probe_str(entry->key, entry->value);
+    }
+    probe_object_footer(name);
+}
+
 static char *value_string(char *buf, int buf_size, double val, const char *unit)
 {
     if (unit == unit_second_str && use_value_sexagesimal_format) {
@@ -113,7 +369,7 @@ static char *time_value_string(char *buf, int buf_size, int64_t val,
     return buf;
 }
 
-static char *ts_value_string (char *buf, int buf_size, int64_t ts)
+static char *ts_value_string(char *buf, int buf_size, int64_t ts)
 {
     if (ts == AV_NOPTS_VALUE) {
         snprintf(buf, buf_size, "N/A");
@@ -123,6 +379,21 @@ static char *ts_value_string (char *buf, int buf_size, int64_t ts)
 
     return buf;
 }
+
+static char *rational_string(char *buf, int buf_size, const char *sep,
+                             const AVRational *rat)
+{
+    snprintf(buf, buf_size, "%d%s%d", rat->num, sep, rat->den);
+    return buf;
+}
+
+static char *tag_string(char *buf, int buf_size, int tag)
+{
+    snprintf(buf, buf_size, "0x%04x", tag);
+    return buf;
+}
+
+
 
 static const char *media_type_string(enum AVMediaType media_type)
 {
@@ -141,25 +412,25 @@ static void show_packet(AVFormatContext *fmt_ctx, AVPacket *pkt)
     char val_str[128];
     AVStream *st = fmt_ctx->streams[pkt->stream_index];
 
-    printf("[PACKET]\n");
-    printf("codec_type=%s\n", media_type_string(st->codec->codec_type));
-    printf("stream_index=%d\n", pkt->stream_index);
-    printf("pts=%s\n", ts_value_string(val_str, sizeof(val_str), pkt->pts));
-    printf("pts_time=%s\n", time_value_string(val_str, sizeof(val_str),
-                                              pkt->pts, &st->time_base));
-    printf("dts=%s\n", ts_value_string(val_str, sizeof(val_str), pkt->dts));
-    printf("dts_time=%s\n", time_value_string(val_str, sizeof(val_str),
-                                              pkt->dts, &st->time_base));
-    printf("duration=%s\n", ts_value_string(val_str, sizeof(val_str),
-                                            pkt->duration));
-    printf("duration_time=%s\n", time_value_string(val_str, sizeof(val_str),
-                                                   pkt->duration,
-                                                   &st->time_base));
-    printf("size=%s\n", value_string(val_str, sizeof(val_str),
-                                     pkt->size, unit_byte_str));
-    printf("pos=%"PRId64"\n", pkt->pos);
-    printf("flags=%c\n", pkt->flags & AV_PKT_FLAG_KEY ? 'K' : '_');
-    printf("[/PACKET]\n");
+    probe_object_header("packet");
+    probe_str("codec_type", media_type_string(st->codec->codec_type));
+    probe_int("stream_index", pkt->stream_index);
+    probe_str("pts", ts_value_string(val_str, sizeof(val_str), pkt->pts));
+    probe_str("pts_time", time_value_string(val_str, sizeof(val_str),
+                                               pkt->pts, &st->time_base));
+    probe_str("dts", ts_value_string(val_str, sizeof(val_str), pkt->dts));
+    probe_str("dts_time", time_value_string(val_str, sizeof(val_str),
+                                               pkt->dts, &st->time_base));
+    probe_str("duration", ts_value_string(val_str, sizeof(val_str),
+                                             pkt->duration));
+    probe_str("duration_time", time_value_string(val_str, sizeof(val_str),
+                                                    pkt->duration,
+                                                    &st->time_base));
+    probe_str("size", value_string(val_str, sizeof(val_str),
+                                      pkt->size, unit_byte_str));
+    probe_int("pos", pkt->pos);
+    probe_str("flags", pkt->flags & AV_PKT_FLAG_KEY ? "K" : "_");
+    probe_object_footer("packet");
 }
 
 static void show_packets(AVFormatContext *fmt_ctx)
@@ -167,9 +438,10 @@ static void show_packets(AVFormatContext *fmt_ctx)
     AVPacket pkt;
 
     av_init_packet(&pkt);
-
+    probe_array_header("packets");
     while (!av_read_frame(fmt_ctx, &pkt))
         show_packet(fmt_ctx, &pkt);
+    probe_array_footer("packets");
 }
 
 static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
@@ -178,138 +450,120 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
     AVCodecContext *dec_ctx;
     AVCodec *dec;
     char val_str[128];
-    AVDictionaryEntry *tag = NULL;
     AVRational display_aspect_ratio;
 
-    printf("[STREAM]\n");
+    probe_object_header("stream");
 
-    printf("index=%d\n", stream->index);
+    probe_int("index", stream->index);
 
     if ((dec_ctx = stream->codec)) {
         if ((dec = dec_ctx->codec)) {
-            printf("codec_name=%s\n", dec->name);
-            printf("codec_long_name=%s\n", dec->long_name);
+            probe_str("codec_name", dec->name);
+            probe_str("codec_long_name", dec->long_name);
         } else {
-            printf("codec_name=unknown\n");
+            probe_str("codec_name", "unknown");
         }
 
-        printf("codec_type=%s\n", media_type_string(dec_ctx->codec_type));
-        printf("codec_time_base=%d/%d\n",
-               dec_ctx->time_base.num, dec_ctx->time_base.den);
+        probe_str("codec_type", media_type_string(dec_ctx->codec_type));
+        probe_str("codec_time_base",
+                  rational_string(val_str, sizeof(val_str),
+                                  "/", &dec_ctx->time_base));
 
         /* print AVI/FourCC tag */
         av_get_codec_tag_string(val_str, sizeof(val_str), dec_ctx->codec_tag);
-        printf("codec_tag_string=%s\n", val_str);
-        printf("codec_tag=0x%04x\n", dec_ctx->codec_tag);
+        probe_str("codec_tag_string", val_str);
+        probe_str("codec_tag", tag_string(val_str, sizeof(val_str),
+                                          dec_ctx->codec_tag));
 
         switch (dec_ctx->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
-            printf("width=%d\n", dec_ctx->width);
-            printf("height=%d\n", dec_ctx->height);
-            printf("has_b_frames=%d\n", dec_ctx->has_b_frames);
+            probe_int("width", dec_ctx->width);
+            probe_int("height", dec_ctx->height);
+            probe_int("has_b_frames", dec_ctx->has_b_frames);
             if (dec_ctx->sample_aspect_ratio.num) {
-                printf("sample_aspect_ratio=%d:%d\n",
-                       dec_ctx->sample_aspect_ratio.num,
-                       dec_ctx->sample_aspect_ratio.den);
+                probe_str("sample_aspect_ratio",
+                          rational_string(val_str, sizeof(val_str), ":",
+                          &dec_ctx->sample_aspect_ratio));
                 av_reduce(&display_aspect_ratio.num, &display_aspect_ratio.den,
                           dec_ctx->width  * dec_ctx->sample_aspect_ratio.num,
                           dec_ctx->height * dec_ctx->sample_aspect_ratio.den,
                           1024*1024);
-                printf("display_aspect_ratio=%d:%d\n",
-                       display_aspect_ratio.num, display_aspect_ratio.den);
+                probe_str("display_aspect_ratio",
+                          rational_string(val_str, sizeof(val_str), ":",
+                          &display_aspect_ratio));
             }
-            printf("pix_fmt=%s\n",
-                   dec_ctx->pix_fmt != PIX_FMT_NONE ? av_pix_fmt_descriptors[dec_ctx->pix_fmt].name
+            probe_str("pix_fmt",
+                      dec_ctx->pix_fmt != PIX_FMT_NONE ? av_pix_fmt_descriptors[dec_ctx->pix_fmt].name
                                                     : "unknown");
-            printf("level=%d\n", dec_ctx->level);
+            probe_int("level", dec_ctx->level);
             break;
 
         case AVMEDIA_TYPE_AUDIO:
-            printf("sample_rate=%s\n", value_string(val_str, sizeof(val_str),
-                                                    dec_ctx->sample_rate,
-                                                    unit_hertz_str));
-            printf("channels=%d\n", dec_ctx->channels);
-            printf("bits_per_sample=%d\n",
-                   av_get_bits_per_sample(dec_ctx->codec_id));
+            probe_str("sample_rate",
+                      value_string(val_str, sizeof(val_str),
+                                   dec_ctx->sample_rate,
+                                   unit_hertz_str));
+            probe_int("channels", dec_ctx->channels);
+            probe_int("bits_per_sample",
+                      av_get_bits_per_sample(dec_ctx->codec_id));
             break;
         }
     } else {
-        printf("codec_type=unknown\n");
+        probe_str("codec_type", "unknown");
     }
 
     if (fmt_ctx->iformat->flags & AVFMT_SHOW_IDS)
-        printf("id=0x%x\n", stream->id);
-    printf("r_frame_rate=%d/%d\n",
-           stream->r_frame_rate.num, stream->r_frame_rate.den);
-    printf("avg_frame_rate=%d/%d\n",
-           stream->avg_frame_rate.num, stream->avg_frame_rate.den);
-    printf("time_base=%d/%d\n",
-           stream->time_base.num, stream->time_base.den);
-    printf("start_time=%s\n",
-           time_value_string(val_str, sizeof(val_str),
-                             stream->start_time, &stream->time_base));
-    printf("duration=%s\n",
-           time_value_string(val_str, sizeof(val_str),
-                             stream->duration, &stream->time_base));
+        probe_int("id", stream->id);
+    probe_str("r_frame_rate",
+              rational_string(val_str, sizeof(val_str), "/",
+              &stream->r_frame_rate));
+    probe_str("avg_frame_rate",
+              rational_string(val_str, sizeof(val_str), "/",
+              &stream->avg_frame_rate));
+    probe_str("time_base",
+              rational_string(val_str, sizeof(val_str), "/",
+              &stream->time_base));
+    probe_str("start_time",
+              time_value_string(val_str, sizeof(val_str),
+                                stream->start_time, &stream->time_base));
+    probe_str("duration",
+              time_value_string(val_str, sizeof(val_str),
+                                stream->duration, &stream->time_base));
     if (stream->nb_frames)
-        printf("nb_frames=%"PRId64"\n", stream->nb_frames);
+        probe_int("nb_frames", stream->nb_frames);
 
-    while ((tag = av_dict_get(stream->metadata, "", tag,
-                              AV_DICT_IGNORE_SUFFIX)))
-        printf("TAG:%s=%s\n", tag->key, tag->value);
+    probe_dict(stream->metadata, "tags");
 
-    printf("[/STREAM]\n");
-}
-
-static void print_format_entry(const char *tag,
-                               const char *val)
-{
-    if (!fmt_entries_to_show) {
-        if (tag) {
-            printf("%s=%s\n", tag, val);
-        } else {
-            printf("%s\n", val);
-        }
-    } else if (tag && av_dict_get(fmt_entries_to_show, tag, NULL, 0)) {
-        if (nb_fmt_entries_to_show > 1)
-            printf("%s=", tag);
-        printf("%s\n", val);
-    }
+    probe_object_footer("stream");
 }
 
 static void show_format(AVFormatContext *fmt_ctx)
 {
-    AVDictionaryEntry *tag = NULL;
     char val_str[128];
     int64_t size = fmt_ctx->pb ? avio_size(fmt_ctx->pb) : -1;
 
-    print_format_entry(NULL, "[FORMAT]");
-    print_format_entry("filename",         fmt_ctx->filename);
-    snprintf(val_str, sizeof(val_str) - 1, "%d", fmt_ctx->nb_streams);
-    print_format_entry("nb_streams",       val_str);
-    print_format_entry("format_name",      fmt_ctx->iformat->name);
-    print_format_entry("format_long_name", fmt_ctx->iformat->long_name);
-    print_format_entry("start_time",
+    probe_object_header("format");
+    probe_str("filename",         fmt_ctx->filename);
+    probe_int("nb_streams",       fmt_ctx->nb_streams);
+    probe_str("format_name",      fmt_ctx->iformat->name);
+    probe_str("format_long_name", fmt_ctx->iformat->long_name);
+    probe_str("start_time",
                        time_value_string(val_str, sizeof(val_str),
                                          fmt_ctx->start_time, &AV_TIME_BASE_Q));
-    print_format_entry("duration",
+    probe_str("duration",
                        time_value_string(val_str, sizeof(val_str),
                                          fmt_ctx->duration, &AV_TIME_BASE_Q));
-    print_format_entry("size",
+    probe_str("size",
                        size >= 0 ? value_string(val_str, sizeof(val_str),
                                                 size, unit_byte_str)
                                   : "unknown");
-    print_format_entry("bit_rate",
+    probe_str("bit_rate",
                        value_string(val_str, sizeof(val_str),
                                     fmt_ctx->bit_rate, unit_bit_per_second_str));
 
-    while ((tag = av_dict_get(fmt_ctx->metadata, "", tag,
-                              AV_DICT_IGNORE_SUFFIX))) {
-        snprintf(val_str, sizeof(val_str) - 1, "TAG:%s", tag->key);
-        print_format_entry(val_str, tag->value);
-    }
+    probe_dict(fmt_ctx->metadata, "tags");
 
-    print_format_entry(NULL, "[/FORMAT]");
+    probe_object_footer("format");
 }
 
 static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
@@ -378,15 +632,18 @@ static int probe_file(const char *filename)
     if ((ret = open_input_file(&fmt_ctx, filename)))
         return ret;
 
-    if (do_show_packets)
-        show_packets(fmt_ctx);
-
-    if (do_show_streams)
-        for (i = 0; i < fmt_ctx->nb_streams; i++)
-            show_stream(fmt_ctx, i);
-
     if (do_show_format)
         show_format(fmt_ctx);
+
+    if (do_show_streams) {
+        probe_array_header("streams");
+        for (i = 0; i < fmt_ctx->nb_streams; i++)
+            show_stream(fmt_ctx, i);
+        probe_array_footer("streams");
+    }
+
+    if (do_show_packets)
+        show_packets(fmt_ctx);
 
     close_input_file(&fmt_ctx);
     return 0;
@@ -413,6 +670,15 @@ static int opt_show_format_entry(const char *opt, const char *arg)
 {
     do_show_format = 1;
     nb_fmt_entries_to_show++;
+    print_header        = NULL;
+    print_footer        = NULL;
+    print_array_header  = NULL;
+    print_array_footer  = NULL;
+    print_object_header = NULL;
+    print_object_footer = NULL;
+
+    print_integer = show_format_entry_integer;
+    print_string  = show_format_entry_string;
     av_dict_set(&fmt_entries_to_show, arg, "", 0);
     return 0;
 }
@@ -470,9 +736,21 @@ static const OptionDef options[] = {
     { NULL, },
 };
 
+static int probe_buf_write(void *opaque, uint8_t *buf, int buf_size)
+{
+    printf("%.*s", buf_size, buf);
+    return 0;
+}
+
+#define AVP_BUFFSIZE 4096
+
 int main(int argc, char **argv)
 {
     int ret;
+    uint8_t *buffer = av_malloc(AVP_BUFFSIZE);
+
+    if (!buffer)
+        exit(1);
 
     parse_loglevel(argc, argv, options);
     av_register_all();
@@ -494,10 +772,16 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    ret = probe_file(input_filename);
+    probe_out = avio_alloc_context(buffer, AVP_BUFFSIZE, 1, NULL, NULL,
+                                 probe_buf_write, NULL);
+    if (!probe_out)
+        exit(1);
 
-    uninit_opts();
-    av_dict_free(&fmt_entries_to_show);
+    probe_header();
+    ret = probe_file(input_filename);
+    probe_footer();
+    avio_flush(probe_out);
+    avio_close(probe_out);
 
     avformat_network_deinit();
 
