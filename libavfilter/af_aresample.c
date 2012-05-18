@@ -183,7 +183,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamplesref
     outsamplesref->audio->nb_samples  = n_out;
 
     if(insamplesref->pts != AV_NOPTS_VALUE) {
-        aresample->next_pts = insamplesref->pts;
+        aresample->next_pts =
         outsamplesref->pts  = av_rescale_q(insamplesref->pts, inlink->time_base, outlink->time_base);
     } else{
         outsamplesref->pts  = AV_NOPTS_VALUE; //aresample->next_pts;
