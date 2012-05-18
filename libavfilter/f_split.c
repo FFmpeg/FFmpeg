@@ -20,7 +20,7 @@
 
 /**
  * @file
- * Video splitter
+ * audio and video splitter
  */
 
 #include "avfilter.h"
