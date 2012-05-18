@@ -1,4 +1,4 @@
-93fcff0367883ca8e75b3063c527a2ce *./tests/data/acodec/g723_1.tco
-4824 ./tests/data/acodec/g723_1.tco
-9f28820dc27cf207a15b2048789853cd *./tests/data/g723_1.acodec.out.wav
-stddev: 8502.50 PSNR: 17.74 MAXDIFF:26473 bytes:    96480/  1058400
+d34f35011a3d596eb359cc62c92fa737 *./tests/data/acodec/g723_1.tco
+4800 ./tests/data/acodec/g723_1.tco
+bc1807ce2a90997c09df66ced6900ebc *./tests/data/g723_1.acodec.out.wav
+stddev: 8507.27 PSNR: 17.73 MAXDIFF:26473 bytes:    96000/  1058400
