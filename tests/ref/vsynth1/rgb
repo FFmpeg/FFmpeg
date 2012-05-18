@@ -1,4 +1,0 @@
-05f0719cb52486d9a4beb9cfae3f2571 *./tests/data/vsynth1/rgb.avi
-15213260 ./tests/data/vsynth1/rgb.avi
-243325fb2cae1a9245efd49aff936327 *./tests/data/rgb.vsynth1.out.yuv
-stddev:    3.42 PSNR: 37.43 MAXDIFF:   48 bytes:  7603200/  7603200

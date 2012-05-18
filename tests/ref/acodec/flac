@@ -1,4 +1,0 @@
-f582b59cc68adfcb3342dcfd7e020b71 *./tests/data/acodec/flac.flac
-361581 ./tests/data/acodec/flac.flac
-64151e4bcc2b717aa5a8454d424d6a1f *./tests/data/flac.acodec.out.wav
-stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  1058400/  1058400

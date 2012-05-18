@@ -1,4 +1,0 @@
-f90197a8b6e62ae25f82625337f27240 *./tests/data/vsynth2/mpeg2i.mpg
-204579 ./tests/data/vsynth2/mpeg2i.mpg
-ea5057b60146c06d40449cdfc686bf13 *./tests/data/mpeg2_ilace.vsynth2.out.yuv
-stddev:    4.98 PSNR: 34.18 MAXDIFF:   65 bytes:  7603200/  7603200

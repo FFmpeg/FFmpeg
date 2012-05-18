@@ -1,4 +1,0 @@
-4f4ea04faad7212374919aa1ec7ff994 *./tests/data/vsynth1/mpeg4-thread.avi
-774760 ./tests/data/vsynth1/mpeg4-thread.avi
-64b96cddf5301990e118978b3a3bcd0d *./tests/data/mpeg4thread.vsynth1.out.yuv
-stddev:   10.13 PSNR: 28.02 MAXDIFF:  183 bytes:  7603200/  7603200

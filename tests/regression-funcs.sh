@@ -20,17 +20,13 @@ outfile="$datadir/$test_ref/"
 
 # various files
 avconv="$target_exec ${target_path}/avconv"
-tiny_psnr="tests/tiny_psnr"
 raw_src="${target_path}/$raw_src_dir/%02d.pgm"
 raw_dst="$datadir/$this.out.yuv"
-raw_ref="$datadir/$test_ref.ref.yuv"
 pcm_src="$target_datadir/asynth1.sw"
-pcm_dst="$datadir/$this.out.wav"
-pcm_ref="$datadir/$test_ref.ref.wav"
 crcfile="$datadir/$this.crc"
 target_crcfile="$target_datadir/$this.crc"
 
-cleanfiles="$raw_dst $pcm_dst $crcfile"
+cleanfiles="$raw_dst $crcfile"
 trap 'rm -f -- $cleanfiles' EXIT
 
 mkdir -p "$datadir"
@@ -62,13 +58,7 @@ do_avconv()
     set -- $* ${target_path}/$f
     run_avconv $*
     do_md5sum $f
-    if [ $f = $raw_dst ] ; then
-        $tiny_psnr $f $raw_ref
-    elif [ $f = $pcm_dst ] ; then
-        $tiny_psnr $f $pcm_ref 2
-    else
-        echo $(wc -c $f)
-    fi
+    echo $(wc -c $f)
 }
 
 do_avconv_crc()
@@ -77,26 +67,4 @@ do_avconv_crc()
     shift
     run_avconv $* -f crc "$target_crcfile"
     echo "$f $(cat $crcfile)"
-}
-
-do_video_decoding()
-{
-    do_avconv $raw_dst $DEC_OPTS $1 -i $target_path/$file -f rawvideo $ENC_OPTS $2
-}
-
-do_video_encoding()
-{
-    file=${outfile}$1
-    do_avconv $file $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $ENC_OPTS $2
-}
-
-do_audio_encoding()
-{
-    file=${outfile}$1
-    do_avconv $file $DEC_OPTS -ac 2 -ar 44100 -f s16le -i $pcm_src -ab 128k $ENC_OPTS $2
-}
-
-do_audio_decoding()
-{
-    do_avconv $pcm_dst $DEC_OPTS -i $target_path/$file -sample_fmt s16 -f wav
 }

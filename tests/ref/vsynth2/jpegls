@@ -1,4 +1,0 @@
-4fc53937f048c900ae6d50fda9dba206 *./tests/data/vsynth2/jpegls.avi
-8334630 ./tests/data/vsynth2/jpegls.avi
-592b3321994e26a990deb3a0a1415de9 *./tests/data/jpegls.vsynth2.out.yuv
-stddev:    0.65 PSNR: 51.84 MAXDIFF:   14 bytes:  7603200/  7603200

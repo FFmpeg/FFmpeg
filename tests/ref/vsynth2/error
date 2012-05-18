@@ -1,4 +1,0 @@
-90e65096aa9ebafa3fe3f44a5a47cdc4 *./tests/data/vsynth2/error-mpeg4-adv.avi
-176588 ./tests/data/vsynth2/error-mpeg4-adv.avi
-96baa9e4c24c837a3ba5abd8dd2cdd30 *./tests/data/error.vsynth2.out.yuv
-stddev:    8.98 PSNR: 29.06 MAXDIFF:  184 bytes:  7603200/  7603200

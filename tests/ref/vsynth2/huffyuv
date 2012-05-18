@@ -1,4 +1,0 @@
-56cd44907a48990e06bd065e189ff461 *./tests/data/vsynth2/huffyuv.avi
-6455232 ./tests/data/vsynth2/huffyuv.avi
-dde5895817ad9d219f79a52d0bdfb001 *./tests/data/huffyuv.vsynth2.out.yuv
-stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  7603200/  7603200

@@ -1,4 +1,0 @@
-9649a4b68fb1107bad13e8a7574cc72d *./tests/data/vsynth2/asv2.avi
-789072 ./tests/data/vsynth2/asv2.avi
-74a78015b64b2cf8cb9da2e44f508a69 *./tests/data/asv2.vsynth2.out.yuv
-stddev:   10.28 PSNR: 27.89 MAXDIFF:   95 bytes:  7603200/  7603200

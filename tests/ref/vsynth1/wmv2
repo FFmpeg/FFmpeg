@@ -1,4 +1,0 @@
-13efda9d3811345aadc0632fc9a9332b *./tests/data/vsynth1/wmv2.avi
-659852 ./tests/data/vsynth1/wmv2.avi
-5182edba5b5e0354b39ce4f3604b62da *./tests/data/wmv2.vsynth1.out.yuv
-stddev:    7.97 PSNR: 30.09 MAXDIFF:  110 bytes:  7603200/  7603200

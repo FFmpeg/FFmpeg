@@ -1,4 +1,0 @@
-b1467b0e8d8cad730e36d1e8ab49d573 *./tests/data/vsynth2/rv10.rm
-154310 ./tests/data/vsynth2/rv10.rm
-61213b91b359697ebcefb9e0a53ac54a *./tests/data/rv10.vsynth2.out.yuv
-stddev:    5.43 PSNR: 33.42 MAXDIFF:   77 bytes:  7603200/  7603200

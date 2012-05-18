@@ -1,4 +1,0 @@
-dfd005d4c9030a0dc889c828a6408b9c *./tests/data/vsynth2/h261.avi
-191086 ./tests/data/vsynth2/h261.avi
-db7ceff174823b98834faa2320ca89ac *./tests/data/h261.vsynth2.out.yuv
-stddev:    6.37 PSNR: 32.03 MAXDIFF:   77 bytes:  7603200/  7603200

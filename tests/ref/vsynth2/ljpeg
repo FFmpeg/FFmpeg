@@ -1,4 +1,0 @@
-554a4a6a5a9058c588f8bf2de405bc70 *./tests/data/vsynth2/ljpeg.avi
-4766914 ./tests/data/vsynth2/ljpeg.avi
-dde5895817ad9d219f79a52d0bdfb001 *./tests/data/ljpeg.vsynth2.out.yuv
-stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  7603200/  7603200

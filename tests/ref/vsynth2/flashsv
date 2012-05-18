@@ -1,4 +1,0 @@
-0667077971e0cb63b5f49c580006e90e *./tests/data/vsynth2/flashsv.flv
-12368953 ./tests/data/vsynth2/flashsv.flv
-592b3321994e26a990deb3a0a1415de9 *./tests/data/flashsv.vsynth2.out.yuv
-stddev:    0.65 PSNR: 51.84 MAXDIFF:   14 bytes:  7603200/  7603200

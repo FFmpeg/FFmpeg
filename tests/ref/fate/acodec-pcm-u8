@@ -1,0 +1,4 @@
+70fecbae732f81143a560c7315eda49a *tests/data/fate/acodec-pcm-u8.wav
+529246 tests/data/fate/acodec-pcm-u8.wav
+651d4eb8d98dfcdda96ae6c43d8f156b *tests/data/fate/acodec-pcm-u8.out.wav
+stddev:  147.89 PSNR: 52.93 MAXDIFF:  255 bytes:  1058400/  1058400

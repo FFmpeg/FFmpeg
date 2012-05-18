@@ -1,5 +1,0 @@
-f6eb0a205350bbd7fb1028a01c7ae8aa *./tests/data/acodec/mp2.mp2
-96130 ./tests/data/acodec/mp2.mp2
-5a669ca7321adc6ab66a3eade4035909 *./tests/data/mp2.acodec.out.wav
-stddev: 9315.99 PSNR: 16.94 MAXDIFF:65388 bytes:  1059840/  1058400
-stddev: 4384.33 PSNR: 23.49 MAXDIFF:52631 bytes:  1057916/  1058400

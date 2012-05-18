@@ -46,5 +46,12 @@ fate-eac3-encode: CMP_TARGET = 514.02
 fate-eac3-encode: SIZE_TOLERANCE = 488
 fate-eac3-encode: FUZZ = 3
 
+FATE_AC3 += fate-ac3-fixed-encode
+fate-ac3-fixed-encode: tests/data/asynth-44100-2.wav
+fate-ac3-fixed-encode: SRC = tests/data/asynth-44100-2.wav
+fate-ac3-fixed-encode: CMD = md5 -i $(SRC) -c ac3_fixed -b 128k -f ac3
+fate-ac3-fixed-encode: CMP = oneline
+fate-ac3-fixed-encode: REF = a1d1fc116463b771abf5aef7ed37d7b1
+
 FATE_SAMPLES_AVCONV += $(FATE_AC3)
 fate-ac3: $(FATE_AC3)

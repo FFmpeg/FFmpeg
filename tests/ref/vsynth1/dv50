@@ -1,4 +1,0 @@
-26dba84f0ea895b914ef5b333d8394ac *./tests/data/vsynth1/dv50.dv
-14400000 ./tests/data/vsynth1/dv50.dv
-a2ff093e93ffed10f730fa21df02fc50 *./tests/data/dv50.vsynth1.out.yuv
-stddev:    1.72 PSNR: 43.38 MAXDIFF:   29 bytes:  7603200/  7603200

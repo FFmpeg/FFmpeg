@@ -1,4 +1,0 @@
-d72b0960e162d4998b9acbabb07e99ab *./tests/data/vsynth2/ffv1.avi
-3525804 ./tests/data/vsynth2/ffv1.avi
-dde5895817ad9d219f79a52d0bdfb001 *./tests/data/ffv1.vsynth2.out.yuv
-stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  7603200/  7603200
