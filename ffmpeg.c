@@ -2810,7 +2810,6 @@ static void print_sdp(void)
 
 static int init_input_stream(int ist_index, char *error, int error_len)
 {
-    int i;
     InputStream *ist = input_streams[ist_index];
 
     if (ist->decoding_needed) {
