@@ -705,6 +705,22 @@ struct AVFilterLink {
      */
     AVRational time_base;
 
+    /*****************************************************************
+     * All fields below this line are not part of the public API. They
+     * may not be used outside of libavfilter and can be changed and
+     * removed at will.
+     * New public fields should be added right above.
+     *****************************************************************
+     */
+    /**
+     * Lists of channel layouts and sample rates used for automatic
+     * negotiation.
+     */
+    AVFilterFormats  *in_samplerates;
+    AVFilterFormats *out_samplerates;
+    struct AVFilterChannelLayouts  *in_channel_layouts;
+    struct AVFilterChannelLayouts *out_channel_layouts;
+
     struct AVFilterPool *pool;
 
     /**
@@ -718,26 +734,11 @@ struct AVFilterLink {
      */
     int64_t current_pts;
 
-    /*****************************************************************
-     * All fields below this line are not part of the public API. They
-     * may not be used outside of libavfilter and can be changed and
-     * removed at will.
-     * New public fields should be added right above.
-     *****************************************************************
-     */
     /**
      * Index in the age array.
      */
     int age_index;
 
-    /**
-     * Lists of channel layouts and sample rates used for automatic
-     * negotiation.
-     */
-    AVFilterFormats  *in_samplerates;
-    AVFilterFormats *out_samplerates;
-    struct AVFilterChannelLayouts  *in_channel_layouts;
-    struct AVFilterChannelLayouts *out_channel_layouts;
 };
 
 /**
