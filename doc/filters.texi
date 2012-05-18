@@ -304,16 +304,23 @@ expressed in the form "[@var{c0} @var{c1} @var{c2} @var{c3} @var{c4} @var{c5}
 
 @section asplit
 
-Pass on the input audio to two outputs. Both outputs are identical to
-the input audio.
+Split input audio into several identical outputs.
+
+The filter accepts a single parameter which specifies the number of outputs. If
+unspecified, it defaults to 2.
 
 For example:
 @example
-[in] asplit[out0], showaudio[out1]
+[in] asplit [out0][out1]
 @end example
 
-will create two separate outputs from the same input, one cropped and
-one padded.
+will create two separate outputs from the same input.
+
+To create 3 or more outputs, you need to specify the number of
+outputs, like in:
+@example
+[in] asplit=3 [out0][out1][out2]
+@end example
 
 @section astreamsync
 
