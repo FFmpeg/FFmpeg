@@ -810,13 +810,8 @@ static int configure_audio_filters(FilterGraph *fg, AVFilterContext **in_filter,
     if (!(fg->graph = avfilter_graph_alloc()))
         return AVERROR(ENOMEM);
 
-#ifdef SRCA
     snprintf(args, sizeof(args), "time_base=%d/%d:sample_rate=%d:sample_fmt=%s:"
              "channel_layout=0x%"PRIx64, ist->st->time_base.num,
-#else
-    snprintf(args, sizeof(args), "%d/%d:%d:%s:"
-             "0x%"PRIx64, ist->st->time_base.num,
-#endif
              ist->st->time_base.den, icodec->sample_rate,
              av_get_sample_fmt_name(icodec->sample_fmt), icodec->channel_layout);
     ret = avfilter_graph_create_filter(&fg->inputs[0]->filter,
@@ -2426,11 +2421,8 @@ static int transcode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
         /* no audio frame */
         if (!pkt->size)
             for (i = 0; i < ist->nb_filters; i++)
-#ifdef SRCA
-                av_buffersrc_buffer(ist->filters[i]->filter, NULL);
-#else
-                av_buffersrc_add_ref(ist->filters[i]->filter, NULL, 0);
-#endif
+                av_buffersrc_add_ref(ist->filters[i]->filter, NULL,
+                                     AV_BUFFERSRC_FLAG_NO_COPY);
         return ret;
     }
 
@@ -2497,13 +2489,8 @@ static int transcode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
             }
     }
 
-    for (i = 0; i < ist->nb_filters; i++) {
-#ifdef SRCA
-        av_buffersrc_write_frame(ist->filters[i]->filter, decoded_frame);
-#else
+    for (i = 0; i < ist->nb_filters; i++)
         av_buffersrc_add_frame(ist->filters[i]->filter, decoded_frame, 0);
-#endif
-    }
 
     return ret;
 }
@@ -2538,11 +2525,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
         /* no picture yet */
         if (!pkt->size)
             for (i = 0; i < ist->nb_filters; i++)
-#ifdef SRCA
-                av_buffersrc_buffer(ist->filters[i]->filter, NULL);
-#else
-                av_buffersrc_add_ref(ist->filters[i]->filter, NULL, 0);
-#endif
+                av_buffersrc_add_ref(ist->filters[i]->filter, NULL, AV_BUFFERSRC_FLAG_NO_COPY);
         return ret;
     }
 
@@ -2606,17 +2589,11 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
 
             av_assert0(buf->refcount>0);
             buf->refcount++;
-#ifdef SRCA
-            av_buffersrc_buffer(ist->filters[i]->filter, fb);
-        } else
-        if(av_buffersrc_write_frame(ist->filters[i]->filter, decoded_frame)<0) {
-#else
             av_buffersrc_add_ref(ist->filters[i]->filter, fb,
                                  AV_BUFFERSRC_FLAG_NO_CHECK_FORMAT |
                                  AV_BUFFERSRC_FLAG_NO_COPY);
         } else
         if(av_buffersrc_add_frame(ist->filters[i]->filter, decoded_frame, 0)<0) {
-#endif
             av_log(NULL, AV_LOG_FATAL, "Failed to inject frame into filter network\n");
             exit_program(1);
         }
