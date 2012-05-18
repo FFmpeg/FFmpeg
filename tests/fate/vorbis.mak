@@ -49,6 +49,7 @@ fate-vorbis-12: REF = $(SAMPLES)/vorbis/mono_small.pcm
 FATE_VORBIS += fate-vorbis-13
 fate-vorbis-13: CMD = pcm -i $(SAMPLES)/vorbis/moog_small.ogg
 fate-vorbis-13: REF = $(SAMPLES)/vorbis/moog_small.pcm
+fate-vorbis-13: FUZZ = 2
 
 FATE_VORBIS += fate-vorbis-14
 fate-vorbis-14: CMD = pcm -i $(SAMPLES)/vorbis/rc1-test_small.ogg

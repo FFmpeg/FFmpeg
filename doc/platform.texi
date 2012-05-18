@@ -27,11 +27,11 @@ to configure.
 @section BSD
 
 BSD make will not build FFmpeg, you need to install and use GNU Make
-(@file{gmake}).
+(@command{gmake}).
 
 @section (Open)Solaris
 
-GNU Make is required to build FFmpeg, so you have to invoke (@file{gmake}),
+GNU Make is required to build FFmpeg, so you have to invoke (@command{gmake}),
 standard Solaris Make will not work. When building with a non-c99 front-end
 (gcc, generic suncc) add either @code{--extra-libs=/usr/lib/values-xpg6.o}
 or @code{--extra-libs=/usr/lib/64/values-xpg6.o} to the configure options
@@ -272,7 +272,7 @@ To create import libraries that work with the @code{/OPT:REF} option
 
 @enumerate
 
-@item Open @file{Visual Studio 2005 Command Prompt}.
+@item Open @emph{Visual Studio 2005 Command Prompt}.
 
 Alternatively, in a normal command line prompt, call @file{vcvars32.bat}
 which sets up the environment variables for the Visual C++ tools
@@ -282,7 +282,7 @@ which sets up the environment variables for the Visual C++ tools
 @item Enter the @file{bin} directory where the created LIB and DLL files
 are stored.
 
-@item Generate new import libraries with @file{lib.exe}:
+@item Generate new import libraries with @command{lib.exe}:
 
 @example
 lib /machine:i386 /def:..\lib\foo-version.def  /out:foo.lib

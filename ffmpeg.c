@@ -2028,8 +2028,10 @@ static int poll_filters(void)
                 //if (ost->source_index >= 0)
                 //    *filtered_frame= *input_streams[ost->source_index]->decoded_frame; //for me_threshold
 
-                if (of->start_time && filtered_frame->pts < of->start_time)
-                    return 0;
+                if (of->start_time && filtered_frame->pts < of->start_time) {
+                    avfilter_unref_buffer(picref);
+                    continue;
+                }
 
                 switch (ost->filter->filter->inputs[0]->type) {
                 case AVMEDIA_TYPE_VIDEO:
