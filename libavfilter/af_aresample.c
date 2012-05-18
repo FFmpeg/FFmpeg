@@ -184,7 +184,9 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamplesref
 
     if(insamplesref->pts != AV_NOPTS_VALUE) {
         aresample->next_pts =
-        outsamplesref->pts  = av_rescale_q(insamplesref->pts, inlink->time_base, outlink->time_base);
+        outsamplesref->pts  =  av_rescale_q(insamplesref->pts, inlink->time_base, outlink->time_base)
+                             - swr_get_delay(aresample->swr, outlink->time_base.den);
+        av_assert0(outlink->time_base.num == 1);
     } else{
         outsamplesref->pts  = AV_NOPTS_VALUE; //aresample->next_pts;
     }
