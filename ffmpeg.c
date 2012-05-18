@@ -313,7 +313,6 @@ typedef struct OutputStream {
     const char *attachment_filename;
     int copy_initial_nonkeyframes;
 
-    enum PixelFormat pix_fmts[2];
     int keep_pix_fmt;
 } OutputStream;
 
@@ -706,8 +705,7 @@ static char *choose_pix_fmts(OutputStream *ost)
                                             AVFILTER_AUTO_CONVERT_NONE);
         if (ost->st->codec->pix_fmt == PIX_FMT_NONE)
             return NULL;
-        ost->pix_fmts[0] = ost->st->codec->pix_fmt;
-        return ost->pix_fmts;
+        return av_strdup(av_get_pix_fmt_name(ost->st->codec->pix_fmt));
     }
     if (ost->st->codec->pix_fmt != PIX_FMT_NONE) {
         return av_strdup(av_get_pix_fmt_name(choose_pixel_fmt(ost->st, ost->enc, ost->st->codec->pix_fmt)));
@@ -4466,8 +4464,6 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
         input_streams[source_index]->discard = 0;
         input_streams[source_index]->st->discard = AVDISCARD_NONE;
     }
-
-    ost->pix_fmts[0] = ost->pix_fmts[1] = PIX_FMT_NONE;
 
     return ost;
 }
