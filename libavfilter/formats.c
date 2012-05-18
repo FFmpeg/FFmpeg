@@ -196,18 +196,18 @@ int64_t *ff_copy_int64_list(const int64_t * const list)
     return ret;
 }
 
-#define MAKE_FORMAT_LIST()                                              \
-    AVFilterFormats *formats;                                           \
+#define MAKE_FORMAT_LIST(type, field, count_field)                      \
+    type *formats;                                                      \
     int count = 0;                                                      \
     if (fmts)                                                           \
         for (count = 0; fmts[count] != -1; count++)                     \
             ;                                                           \
-    formats = av_mallocz(sizeof(AVFilterFormats));                      \
+    formats = av_mallocz(sizeof(*formats));                             \
     if (!formats) return NULL;                                          \
-    formats->format_count = count;                                      \
+    formats->count_field = count;                                       \
     if (count) {                                                        \
-        formats->formats = av_malloc(sizeof(*formats->formats)*count);  \
-        if (!formats->formats) {                                        \
+        formats->field = av_malloc(sizeof(*formats->field)*count);      \
+        if (!formats->field) {                                          \
             av_free(formats);                                           \
             return NULL;                                                \
         }                                                               \
@@ -215,7 +215,7 @@ int64_t *ff_copy_int64_list(const int64_t * const list)
 
 AVFilterFormats *avfilter_make_format_list(const int *fmts)
 {
-    MAKE_FORMAT_LIST();
+    MAKE_FORMAT_LIST(AVFilterFormats, formats, format_count);
     while (count--)
         formats->formats[count] = fmts[count];
 
@@ -224,11 +224,13 @@ AVFilterFormats *avfilter_make_format_list(const int *fmts)
 
 AVFilterChannelLayouts *avfilter_make_format64_list(const int64_t *fmts)
 {
-    MAKE_FORMAT_LIST();
+    MAKE_FORMAT_LIST(AVFilterChannelLayouts,
+                     channel_layouts, nb_channel_layouts);
     if (count)
-        memcpy(formats->formats, fmts, sizeof(*formats->formats) * count);
+        memcpy(formats->channel_layouts, fmts,
+               sizeof(*formats->channel_layouts) * count);
 
-    return (AVFilterChannelLayouts*)formats;
+    return formats;
 }
 
 #define ADD_FORMAT(f, fmt, type, list, nb)                  \
@@ -250,7 +252,7 @@ do {                                                        \
 
 int avfilter_add_format(AVFilterFormats **avff, int64_t fmt)
 {
-    ADD_FORMAT(avff, fmt, int64_t, formats, format_count);
+    ADD_FORMAT(avff, fmt, int, formats, format_count);
 }
 
 int ff_add_channel_layout(AVFilterChannelLayouts **l, uint64_t channel_layout)

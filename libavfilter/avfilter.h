@@ -260,8 +260,8 @@ void avfilter_unref_bufferp(AVFilterBufferRef **ref);
  * pointer to each of the pointers to itself.
  */
 typedef struct AVFilterFormats {
-    int64_t *formats;           ///< list of media formats
     unsigned format_count;      ///< number of formats
+    int *formats;               ///< list of media formats
 
     unsigned refcount;          ///< number of references to this list
     struct AVFilterFormats ***refs; ///< references to this list
