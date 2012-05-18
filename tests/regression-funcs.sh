@@ -71,21 +71,6 @@ do_avconv()
     fi
 }
 
-do_avconv_nomd5()
-{
-    f="$1"
-    shift
-    set -- $* ${target_path}/$f
-    run_avconv $*
-    if [ $f = $raw_dst ] ; then
-        $tiny_psnr $f $raw_ref
-    elif [ $f = $pcm_dst ] ; then
-        $tiny_psnr $f $pcm_ref 2
-    else
-        echo $(wc -c $f)
-    fi
-}
-
 do_avconv_crc()
 {
     f="$1"
