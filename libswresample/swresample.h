@@ -30,7 +30,7 @@
 #include "libavutil/samplefmt.h"
 
 #define LIBSWRESAMPLE_VERSION_MAJOR 0
-#define LIBSWRESAMPLE_VERSION_MINOR 11
+#define LIBSWRESAMPLE_VERSION_MINOR 12
 #define LIBSWRESAMPLE_VERSION_MICRO 100
 
 #define LIBSWRESAMPLE_VERSION_INT  AV_VERSION_INT(LIBSWRESAMPLE_VERSION_MAJOR, \
@@ -157,6 +157,24 @@ int swr_set_channel_mapping(struct SwrContext *s, const int *channel_map);
  * @return  AVERROR error code in case of failure.
  */
 int swr_set_matrix(struct SwrContext *s, const double *matrix, int stride);
+
+/**
+ * Gets the delay the next input sample will experience relative to the next output sample.
+ *
+ * Swresample can buffer data if more input has been provided than available
+ * output space, also converting between sample rates needs a delay.
+ * This function returns the sum of all such delays.
+ *
+ * @param s     swr context
+ * @param base  timebase in which the returned delay will be
+ *              if its set to 1 the returned delay is in seconds
+ *              if its set to 1000 the returned delay is in milli seconds
+ *              if its set to the input sample rate then the returned delay is in input samples
+ *              if its set to the output sample rate then the returned delay is in output samples
+ *              an exact rounding free delay can be found by using LCM(in_sample_rate, out_sample_rate)
+ * @returns     the delay in 1/base units.
+ */
+int64_t swr_get_delay(struct SwrContext *s, int64_t base);
 
 /**
  * Return the LIBSWRESAMPLE_VERSION_INT constant.

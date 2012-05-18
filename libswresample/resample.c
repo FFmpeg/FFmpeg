@@ -367,3 +367,18 @@ int swri_multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, Aud
 
     return ret;
 }
+
+int64_t swr_get_delay(struct SwrContext *s, int64_t base){
+    ResampleContext *c = s->resample;
+    if(c){
+        int64_t num = s->in_buffer_count - (c->filter_length-1)/2;
+        num <<= c->phase_shift;
+        num -= c->index;
+        num *= c->src_incr;
+        num -= c->frac;
+
+        return av_rescale(num, base, s->in_sample_rate*(int64_t)c->src_incr << c->phase_shift);
+    }else{
+        return (s->in_buffer_count*base + (s->in_sample_rate>>1))/ s->in_sample_rate;
+    }
+}
