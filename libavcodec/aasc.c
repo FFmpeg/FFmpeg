@@ -43,7 +43,17 @@ static av_cold int aasc_decode_init(AVCodecContext *avctx)
     AascContext *s = avctx->priv_data;
 
     s->avctx = avctx;
-    avctx->pix_fmt = PIX_FMT_BGR24;
+    switch (avctx->bits_per_coded_sample) {
+    case 16:
+        avctx->pix_fmt = PIX_FMT_RGB555;
+        break;
+    case 24:
+        avctx->pix_fmt = PIX_FMT_BGR24;
+        break;
+    default:
+        av_log(avctx, AV_LOG_ERROR, "Unsupported bit depth: %d\n", avctx->bits_per_coded_sample);
+        return -1;
+    }
     avcodec_get_frame_defaults(&s->frame);
 
     return 0;
