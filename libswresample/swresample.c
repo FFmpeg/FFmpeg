@@ -667,7 +667,7 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
                 ret2 += ret;
             }
             if(in_count){
-                buf_set(&tmp, &s->in_buffer, s->in_buffer_index);
+                buf_set(&tmp, &s->in_buffer, s->in_buffer_index + s->in_buffer_count);
                 copy(&tmp, in, in_count);
                 s->in_buffer_count += in_count;
             }
