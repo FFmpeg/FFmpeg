@@ -1637,8 +1637,10 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *got_frame_ptr,
     uint32_t header;
     int out_size;
 
-    while(buf_size && !*buf)
+    while(buf_size && !*buf){
         buf++;
+        buf_size--;
+    }
 
     if (buf_size < HEADER_SIZE)
         return AVERROR_INVALIDDATA;
