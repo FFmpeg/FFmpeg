@@ -31,6 +31,7 @@ version next:
 - Avid Meridien (AVUI) decoder
 - accept + prefix to -pix_fmt option to disable automatic conversions.
 - audio filters support in libavfilter and avconv
+- add fps filter
 
 
 version 0.10:

@@ -150,6 +150,8 @@ avfilter_get_video_buffer_ref_from_arrays(uint8_t * const data[4], const int lin
     pic->   extended_data = pic->data;
     picref->extended_data = picref->data;
 
+    picref->pts = AV_NOPTS_VALUE;
+
     return picref;
 
 fail:

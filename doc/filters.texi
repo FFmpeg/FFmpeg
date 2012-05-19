@@ -1730,6 +1730,19 @@ format=yuv420p
 format=yuv420p:yuv444p:yuv410p
 @end example
 
+@section fps
+
+Convert the video to specified constant framerate by duplicating or dropping
+frames as necessary.
+
+This filter accepts the following named parameters:
+@table @option
+
+@item fps
+Desired output framerate.
+
+@end table
+
 @anchor{frei0r}
 @section frei0r
 

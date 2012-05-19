@@ -133,6 +133,8 @@ AVFilterBufferRef* avfilter_get_audio_buffer_ref_from_arrays(uint8_t **data,
         samplesref->extended_data = samplesref->data;
     }
 
+    samplesref->pts = AV_NOPTS_VALUE;
+
     return samplesref;
 
 fail:
