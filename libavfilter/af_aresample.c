@@ -165,7 +165,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamplesref
 {
     AResampleContext *aresample = inlink->dst->priv;
     const int n_in  = insamplesref->audio->nb_samples;
-    int n_out       = n_in * aresample->ratio + 1;
+    int n_out       = n_in * aresample->ratio * 2 ;
     AVFilterLink *const outlink = inlink->dst->outputs[0];
     AVFilterBufferRef *outsamplesref = ff_get_audio_buffer(outlink, AV_PERM_WRITE, n_out);
 
