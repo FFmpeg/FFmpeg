@@ -761,7 +761,7 @@ int64_t swr_next_pts(struct SwrContext *s, int64_t pts){
             if(!s->outpts || fabs(fdelta) > s->min_hard_compensation){
                 if(delta > 0) swr_inject_silence(s,  delta / s->out_sample_rate);
                 else          swr_drop_output   (s, -delta / s-> in_sample_rate);
-            } else {
+            } else if(s->soft_compensation_duration && s->max_soft_compensation) {
                 int duration = s->out_sample_rate * s->soft_compensation_duration;
                 int comp = av_clipf(fdelta, -s->max_soft_compensation, s->max_soft_compensation) * duration ;
                 av_log(s, AV_LOG_VERBOSE, "compensating audio timestamp drift:%f compensation:%d in:%d\n", fdelta, comp, duration);
