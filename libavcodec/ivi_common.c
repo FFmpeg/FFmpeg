@@ -123,6 +123,10 @@ int ff_ivi_dec_huff_desc(GetBitContext *gb, int desc_coded, int which_tab,
         if (huff_tab->tab_sel == 7) {
             /* custom huffman table (explicitly encoded) */
             new_huff.num_rows = get_bits(gb, 4);
+            if (!new_huff.num_rows) {
+                av_log(avctx, AV_LOG_ERROR, "Empty custom Huffman table!\n");
+                return AVERROR_INVALIDDATA;
+            }
 
             for (i = 0; i < new_huff.num_rows; i++)
                 new_huff.xbits[i] = get_bits(gb, 4);
@@ -136,9 +140,10 @@ int ff_ivi_dec_huff_desc(GetBitContext *gb, int desc_coded, int which_tab,
                 result = ff_ivi_create_huff_from_desc(&huff_tab->cust_desc,
                         &huff_tab->cust_tab, 0);
                 if (result) {
+                    huff_tab->cust_desc.num_rows = 0; // reset faulty description
                     av_log(avctx, AV_LOG_ERROR,
                            "Error while initializing custom vlc table!\n");
-                    return -1;
+                    return result;
                 }
             }
             huff_tab->tab = &huff_tab->cust_tab;
