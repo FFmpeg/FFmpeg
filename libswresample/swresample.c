@@ -419,6 +419,10 @@ static int resample(SwrContext *s, AudioData *out_param, int out_count,
     int ret_sum=0;
     int border=0;
 
+    av_assert1(s->in_buffer.ch_count == in_param->ch_count);
+    av_assert1(s->in_buffer.planar   == in_param->planar);
+    av_assert1(s->in_buffer.fmt      == in_param->fmt);
+
     tmp=out=*out_param;
     in =  *in_param;
 
