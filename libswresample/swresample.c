@@ -32,6 +32,7 @@
 #define C_45DB  0.594603558
 #define C_60DB  0.5
 
+#define ALIGN 32
 
 //TODO split options array out?
 #define OFFSET(x) offsetof(SwrContext,x)
@@ -337,7 +338,7 @@ static int realloc_audio(AudioData *a, int count){
 
     count*=2;
 
-    countb= FFALIGN(count*a->bps, 32);
+    countb= FFALIGN(count*a->bps, ALIGN);
     old= *a;
 
     av_assert0(a->bps);
