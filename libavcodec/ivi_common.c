@@ -287,6 +287,7 @@ int av_cold ff_ivi_init_tiles(IVIPlaneDesc *planes, int tile_width, int tile_hei
                 for (x = 0; x < band->width; x += t_width) {
                     tile->xpos     = x;
                     tile->ypos     = y;
+                    tile->mb_size  = band->mb_size;
                     tile->width    = FFMIN(band->width - x,  t_width);
                     tile->height   = FFMIN(band->height - y, t_height);
                     tile->is_empty = tile->data_size = 0;
@@ -672,6 +673,11 @@ static int decode_band(IVI45DecContext *ctx, int plane_num,
     for (t = 0; t < band->num_tiles; t++) {
         tile = &band->tiles[t];
 
+        if (tile->mb_size != band->mb_size) {
+            av_log(avctx, AV_LOG_ERROR, "MB sizes mismatch: %d vs. %d\n",
+                   band->mb_size, tile->mb_size);
+            return AVERROR_INVALIDDATA;
+        }
         tile->is_empty = get_bits1(&ctx->gb);
         if (tile->is_empty) {
             ff_ivi_process_empty_tile(avctx, band, tile,
