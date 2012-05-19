@@ -53,8 +53,8 @@ static int avui_decode_frame(AVCodecContext *avctx, void *data,
         interlaced = avctx->extradata[19] != 1;
     skip[0] = skip[1] = 16;
     if (avctx->height == 486) {
-        skip[0] =  8;
-        skip[1] = 12;
+        skip[0] = 10;
+        skip[1] = 10;
     }
     if (avpkt->size < avctx->width * (2 * avctx->height + skip[0] + skip[1])
                       + 4 * interlaced) {
@@ -85,10 +85,17 @@ static int avui_decode_frame(AVCodecContext *avctx, void *data,
     for (i = 0; i < interlaced + 1; i++) {
         src  += avctx->width * skip[i];
         srca += avctx->width * skip[i];
+        if (interlaced && avctx->height == 486) {
+        y = pic->data[0] + (1 - i) * pic->linesize[0];
+        u = pic->data[1] + (1 - i) * pic->linesize[1];
+        v = pic->data[2] + (1 - i) * pic->linesize[2];
+        a = pic->data[3] + (1 - i) * pic->linesize[3];
+        } else {
         y = pic->data[0] + i * pic->linesize[0];
         u = pic->data[1] + i * pic->linesize[1];
         v = pic->data[2] + i * pic->linesize[2];
         a = pic->data[3] + i * pic->linesize[3];
+        }
 
         for (j = 0; j < avctx->height >> interlaced; j++) {
             for (k = 0; k < avctx->width >> 1; k++) {
