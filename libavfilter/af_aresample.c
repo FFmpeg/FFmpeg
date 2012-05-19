@@ -182,6 +182,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamplesref
     outsamplesref->audio->sample_rate = outlink->sample_rate;
     outsamplesref->audio->nb_samples  = n_out;
 
+#if 0
     if(insamplesref->pts != AV_NOPTS_VALUE) {
         aresample->next_pts =
         outsamplesref->pts  =  av_rescale_q(insamplesref->pts, inlink->time_base, outlink->time_base)
@@ -192,7 +193,16 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamplesref
     }
     if(aresample->next_pts != AV_NOPTS_VALUE)
         aresample->next_pts += av_rescale_q(n_out, (AVRational){1 ,outlink->sample_rate}, outlink->time_base);
-
+#else
+    if(insamplesref->pts != AV_NOPTS_VALUE) {
+        int64_t inpts = av_rescale(insamplesref->pts, inlink->time_base.num * (int64_t)outlink->sample_rate * inlink->sample_rate, inlink->time_base.den);
+        int64_t outpts= swr_next_pts(aresample->swr, inpts);
+        aresample->next_pts =
+        outsamplesref->pts  = (outpts + inlink->sample_rate/2) / inlink->sample_rate;
+    } else {
+        outsamplesref->pts  = AV_NOPTS_VALUE;
+    }
+#endif
     ff_filter_samples(outlink, outsamplesref);
     avfilter_unref_buffer(insamplesref);
 }
@@ -201,6 +211,7 @@ static int request_frame(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     AResampleContext *aresample = ctx->priv;
+    AVFilterLink *const inlink = outlink->src->inputs[0];
     int ret = avfilter_request_frame(ctx->inputs[0]);
 
     if (ret == AVERROR_EOF) {
@@ -218,9 +229,13 @@ static int request_frame(AVFilterLink *outlink)
 
         outsamplesref->audio->sample_rate = outlink->sample_rate;
         outsamplesref->audio->nb_samples  = n_out;
+#if 0
         outsamplesref->pts = aresample->next_pts;
         if(aresample->next_pts != AV_NOPTS_VALUE)
             aresample->next_pts += av_rescale_q(n_out, (AVRational){1 ,outlink->sample_rate}, outlink->time_base);
+#else
+        outsamplesref->pts = (swr_next_pts(aresample->swr, INT64_MIN) + inlink->sample_rate/2) / inlink->sample_rate;
+#endif
 
         ff_filter_samples(outlink, outsamplesref);
         return 0;
