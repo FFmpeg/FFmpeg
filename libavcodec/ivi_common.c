@@ -641,6 +641,10 @@ static int decode_band(IVI45DecContext *ctx, int plane_num,
     IVITile     *tile;
 
     band->buf     = band->bufs[ctx->dst_buf];
+    if (!band->buf) {
+        av_log(avctx, AV_LOG_ERROR, "Band buffer points to no data!\n");
+        return AVERROR_INVALIDDATA;
+    }
     band->ref_buf = band->bufs[ctx->ref_buf];
     band->data_ptr = ctx->frame_data + (get_bits_count(&ctx->gb) >> 3);
 
