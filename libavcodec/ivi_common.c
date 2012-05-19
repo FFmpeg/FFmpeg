@@ -627,6 +627,216 @@ void ff_ivi_output_plane(IVIPlaneDesc *plane, uint8_t *dst, int dst_pitch)
     }
 }
 
+/**
+ *  Decode an Indeo 4 or 5 band.
+ *
+ *  @param[in,out]  ctx    ptr to the decoder context
+ *  @param[in,out]  band   ptr to the band descriptor
+ *  @param[in]      avctx  ptr to the AVCodecContext
+ *  @return         result code: 0 = OK, -1 = error
+ */
+static int decode_band(IVI45DecContext *ctx, int plane_num,
+                       IVIBandDesc *band, AVCodecContext *avctx)
+{
+    int         result, i, t, idx1, idx2, pos;
+    IVITile     *tile;
+
+    band->buf     = band->bufs[ctx->dst_buf];
+    band->ref_buf = band->bufs[ctx->ref_buf];
+    band->data_ptr = ctx->frame_data + (get_bits_count(&ctx->gb) >> 3);
+
+    result = ctx->decode_band_hdr(ctx, band, avctx);
+    if (result) {
+        av_log(avctx, AV_LOG_ERROR, "Error while decoding band header: %d\n",
+               result);
+        return result;
+    }
+
+    if (band->is_empty) {
+        av_log(avctx, AV_LOG_ERROR, "Empty band encountered!\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    band->rv_map = &ctx->rvmap_tabs[band->rvmap_sel];
+
+    /* apply corrections to the selected rvmap table if present */
+    for (i = 0; i < band->num_corr; i++) {
+        idx1 = band->corr[i * 2];
+        idx2 = band->corr[i * 2 + 1];
+        FFSWAP(uint8_t, band->rv_map->runtab[idx1], band->rv_map->runtab[idx2]);
+        FFSWAP(int16_t, band->rv_map->valtab[idx1], band->rv_map->valtab[idx2]);
+    }
+
+    pos = get_bits_count(&ctx->gb);
+
+    for (t = 0; t < band->num_tiles; t++) {
+        tile = &band->tiles[t];
+
+        tile->is_empty = get_bits1(&ctx->gb);
+        if (tile->is_empty) {
+            ff_ivi_process_empty_tile(avctx, band, tile,
+                                      (ctx->planes[0].bands[0].mb_size >> 3) - (band->mb_size >> 3));
+            av_dlog(avctx, "Empty tile encountered!\n");
+        } else {
+            tile->data_size = ff_ivi_dec_tile_data_size(&ctx->gb);
+            if (!tile->data_size) {
+                av_log(avctx, AV_LOG_ERROR, "Tile data size is zero!\n");
+                return AVERROR_INVALIDDATA;
+            }
+
+            result = ctx->decode_mb_info(ctx, band, tile, avctx);
+            if (result < 0)
+                break;
+
+            result = ff_ivi_decode_blocks(&ctx->gb, band, tile);
+            if (result < 0 || ((get_bits_count(&ctx->gb) - pos) >> 3) != tile->data_size) {
+                av_log(avctx, AV_LOG_ERROR, "Corrupted tile data encountered!\n");
+                break;
+            }
+
+            pos += tile->data_size << 3; // skip to next tile
+        }
+    }
+
+    /* restore the selected rvmap table by applying its corrections in reverse order */
+    for (i = band->num_corr-1; i >= 0; i--) {
+        idx1 = band->corr[i*2];
+        idx2 = band->corr[i*2+1];
+        FFSWAP(uint8_t, band->rv_map->runtab[idx1], band->rv_map->runtab[idx2]);
+        FFSWAP(int16_t, band->rv_map->valtab[idx1], band->rv_map->valtab[idx2]);
+    }
+
+#ifdef DEBUG
+    if (band->checksum_present) {
+        uint16_t chksum = ivi_calc_band_checksum(band);
+        if (chksum != band->checksum) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Band checksum mismatch! Plane %d, band %d, received: %x, calculated: %x\n",
+                   band->plane, band->band_num, band->checksum, chksum);
+        }
+    }
+#endif
+
+    align_get_bits(&ctx->gb);
+
+    return result;
+}
+
+int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+                        AVPacket *avpkt)
+{
+    IVI45DecContext *ctx = avctx->priv_data;
+    const uint8_t   *buf = avpkt->data;
+    int             buf_size = avpkt->size;
+    int             result, p, b;
+
+    init_get_bits(&ctx->gb, buf, buf_size * 8);
+    ctx->frame_data = buf;
+    ctx->frame_size = buf_size;
+
+    result = ctx->decode_pic_hdr(ctx, avctx);
+    if (result) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Error while decoding picture header: %d\n", result);
+        return -1;
+    }
+
+    if (ctx->gop_flags & IVI5_IS_PROTECTED) {
+        av_log(avctx, AV_LOG_ERROR, "Password-protected clip!\n");
+        return -1;
+    }
+
+    ctx->switch_buffers(ctx);
+
+    //{ START_TIMER;
+
+    if (ctx->is_nonnull_frame(ctx)) {
+        for (p = 0; p < 3; p++) {
+            for (b = 0; b < ctx->planes[p].num_bands; b++) {
+                result = decode_band(ctx, p, &ctx->planes[p].bands[b], avctx);
+                if (result) {
+                    av_log(avctx, AV_LOG_ERROR,
+                           "Error while decoding band: %d, plane: %d\n", b, p);
+                    return -1;
+                }
+            }
+        }
+    }
+
+    //STOP_TIMER("decode_planes"); }
+
+    /* If the bidirectional mode is enabled, next I and the following P frame will */
+    /* be sent together. Unfortunately the approach below seems to be the only way */
+    /* to handle the B-frames mode. That's exactly the same Intel decoders do.     */
+    if (avctx->codec_id == CODEC_ID_INDEO4 && ctx->frame_type == 0/*FRAMETYPE_INTRA*/) {
+        while (get_bits(&ctx->gb, 8)); // skip version string
+        skip_bits_long(&ctx->gb, 64);  // skip padding, TODO: implement correct 8-bytes alignment
+        if (get_bits_left(&ctx->gb) > 18 && show_bits(&ctx->gb, 18) == 0x3FFF8)
+            av_log(avctx, AV_LOG_ERROR, "Buffer contains IP frames!\n");
+    }
+
+    if (ctx->frame.data[0])
+        avctx->release_buffer(avctx, &ctx->frame);
+
+    ctx->frame.reference = 0;
+    if ((result = avctx->get_buffer(avctx, &ctx->frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return result;
+    }
+
+    if (ctx->is_scalable) {
+        if (avctx->codec_id == CODEC_ID_INDEO4)
+            ff_ivi_recompose_haar(&ctx->planes[0], ctx->frame.data[0], ctx->frame.linesize[0], 4);
+        else
+            ff_ivi_recompose53   (&ctx->planes[0], ctx->frame.data[0], ctx->frame.linesize[0], 4);
+    } else {
+        ff_ivi_output_plane(&ctx->planes[0], ctx->frame.data[0], ctx->frame.linesize[0]);
+    }
+
+    ff_ivi_output_plane(&ctx->planes[2], ctx->frame.data[1], ctx->frame.linesize[1]);
+    ff_ivi_output_plane(&ctx->planes[1], ctx->frame.data[2], ctx->frame.linesize[2]);
+
+    *data_size = sizeof(AVFrame);
+    *(AVFrame*)data = ctx->frame;
+
+    return buf_size;
+}
+
+/**
+ *  Close Indeo5 decoder and clean up its context.
+ */
+av_cold int ff_ivi_decode_close(AVCodecContext *avctx)
+{
+    IVI45DecContext *ctx = avctx->priv_data;
+
+    ff_ivi_free_buffers(&ctx->planes[0]);
+
+    if (ctx->mb_vlc.cust_tab.table)
+        ff_free_vlc(&ctx->mb_vlc.cust_tab);
+
+    if (ctx->frame.data[0])
+        avctx->release_buffer(avctx, &ctx->frame);
+
+#if IVI4_STREAM_ANALYSER
+    if (avctx->codec_id == CODEC_ID_INDEO4) {
+    if (ctx->is_scalable)
+        av_log(avctx, AV_LOG_ERROR, "This video uses scalability mode!\n");
+    if (ctx->uses_tiling)
+        av_log(avctx, AV_LOG_ERROR, "This video uses local decoding!\n");
+    if (ctx->has_b_frames)
+        av_log(avctx, AV_LOG_ERROR, "This video contains B-frames!\n");
+    if (ctx->has_transp)
+        av_log(avctx, AV_LOG_ERROR, "Transparency mode is enabled!\n");
+    if (ctx->uses_haar)
+        av_log(avctx, AV_LOG_ERROR, "This video uses Haar transform!\n");
+    if (ctx->uses_fullpel)
+        av_log(avctx, AV_LOG_ERROR, "This video uses fullpel motion vectors!\n");
+    }
+#endif
+
+    return 0;
+}
+
 
 /**
  * These are 2x8 predefined Huffman codebooks for coding macroblock/block
