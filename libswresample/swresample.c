@@ -384,6 +384,16 @@ static void fill_audiodata(AudioData *out, uint8_t *in_arg [SWR_CH_MAX]){
     }
 }
 
+static void reversefill_audiodata(AudioData *out, uint8_t *in_arg [SWR_CH_MAX]){
+    int i;
+    if(out->planar){
+        for(i=0; i<out->ch_count; i++)
+            in_arg[i]= out->ch[i];
+    }else{
+        in_arg[0]= out->ch[0];
+    }
+}
+
 /**
  *
  * out may be equal in.
