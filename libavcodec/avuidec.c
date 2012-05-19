@@ -43,7 +43,7 @@ static int avui_decode_frame(AVCodecContext *avctx, void *data,
     const uint8_t *src = avpkt->data;
     const uint8_t *srca;
     uint8_t *y, *u, *v, *a;
-    int transparent, interlaced = 1, skip[2], i, j, k;
+    int transparent, interlaced = 1, skip, i, j, k;
 
     if (pic->data[0])
         avctx->release_buffer(avctx, pic);
@@ -51,20 +51,20 @@ static int avui_decode_frame(AVCodecContext *avctx, void *data,
     if (!memcmp(&avctx->extradata[4], "APRGAPRG0001", 12) &&
         avctx->extradata_size >= 24)
         interlaced = avctx->extradata[19] != 1;
-    skip[0] = skip[1] = 16;
     if (avctx->height == 486) {
-        skip[0] = 10;
-        skip[1] = 10;
+        skip = 10;
+    } else {
+        skip = 16;
     }
-    if (avpkt->size < avctx->width * (2 * avctx->height + skip[0] + skip[1])
+    if (avpkt->size < 2 * avctx->width * (avctx->height + skip)
                       + 4 * interlaced) {
         av_log(avctx, AV_LOG_ERROR, "Insufficient input data.\n");
         return AVERROR(EINVAL);
     }
     transparent = avctx->bits_per_coded_sample == 32 &&
-                  avpkt->size >= (2 * avctx->height + skip[0] + skip[1]) *
+                  avpkt->size >= 2 * (avctx->height + skip) *
                                  2 * avctx->width + 4 + 8 * interlaced;
-    srca = src + (2 * avctx->height + skip[0] + skip[1]) * avctx->width
+    srca = src + 2 * (avctx->height + skip) * avctx->width
            + 5 + interlaced * 4;
 
     pic->reference = 0;
@@ -78,13 +78,13 @@ static int avui_decode_frame(AVCodecContext *avctx, void *data,
     pic->pict_type = AV_PICTURE_TYPE_I;
 
     if (!interlaced) {
-        src  += avctx->width * skip[1];
-        srca += avctx->width * skip[1];
+        src  += avctx->width * skip;
+        srca += avctx->width * skip;
     }
 
     for (i = 0; i < interlaced + 1; i++) {
-        src  += avctx->width * skip[i];
-        srca += avctx->width * skip[i];
+        src  += avctx->width * skip;
+        srca += avctx->width * skip;
         if (interlaced && avctx->height == 486) {
         y = pic->data[0] + (1 - i) * pic->linesize[0];
         u = pic->data[1] + (1 - i) * pic->linesize[1];
