@@ -21,4 +21,10 @@
 
 AVFilterBufferRef *ff_default_get_video_buffer(AVFilterLink *link,
                                                int perms, int w, int h);
+AVFilterBufferRef *ff_null_get_video_buffer(AVFilterLink *link, int perms, int w, int h);
+
+void ff_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
+void ff_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
+void ff_null_end_frame(AVFilterLink *link);
+
 #endif /* AVFILTER_VIDEO_H */

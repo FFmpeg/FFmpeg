@@ -27,6 +27,7 @@
 #include "libavutil/fifo.h"
 #include "libavutil/mathematics.h"
 #include "avfilter.h"
+#include "video.h"
 
 static const char *const var_names[] = {
     "E",                 ///< Euler number
@@ -339,7 +340,7 @@ AVFilter avfilter_vf_select = {
 
     .inputs    = (AVFilterPad[]) {{ .name             = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
-                                    .get_video_buffer = avfilter_null_get_video_buffer,
+                                    .get_video_buffer = ff_null_get_video_buffer,
                                     .config_props     = config_input,
                                     .start_frame      = start_frame,
                                     .draw_slice       = draw_slice,

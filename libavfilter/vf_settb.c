@@ -29,6 +29,7 @@
 #include "libavutil/rational.h"
 #include "avfilter.h"
 #include "internal.h"
+#include "video.h"
 
 static const char *const var_names[] = {
     "E",
@@ -130,9 +131,9 @@ AVFilter avfilter_vf_settb = {
 
     .inputs    = (AVFilterPad[]) {{ .name             = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
-                                    .get_video_buffer = avfilter_null_get_video_buffer,
+                                    .get_video_buffer = ff_null_get_video_buffer,
                                     .start_frame      = start_frame,
-                                    .end_frame        = avfilter_null_end_frame },
+                                    .end_frame        = ff_null_end_frame },
                                   { .name = NULL }},
 
     .outputs   = (AVFilterPad[]) {{ .name            = "default",

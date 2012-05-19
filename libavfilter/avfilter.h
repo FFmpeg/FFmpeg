@@ -487,18 +487,24 @@ int avfilter_default_query_formats(AVFilterContext *ctx);
  */
 void avfilter_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats);
 
+#if FF_API_FILTERS_PUBLIC
 /** start_frame() handler for filters which simply pass video along */
+attribute_deprecated
 void avfilter_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
 
 /** draw_slice() handler for filters which simply pass video along */
+attribute_deprecated
 void avfilter_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
 
 /** end_frame() handler for filters which simply pass video along */
+attribute_deprecated
 void avfilter_null_end_frame(AVFilterLink *link);
 
 /** get_video_buffer() handler for filters which simply pass video along */
+attribute_deprecated
 AVFilterBufferRef *avfilter_null_get_video_buffer(AVFilterLink *link,
                                                   int perms, int w, int h);
+#endif
 
 /**
  * Filter definition. This defines the pads a filter contains, and all the

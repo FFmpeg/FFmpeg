@@ -27,6 +27,7 @@
 
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "video.h"
 
 typedef struct {
     int factor, fade_per_frame;
@@ -157,8 +158,8 @@ AVFilter avfilter_vf_fade = {
     .inputs    = (AVFilterPad[]) {{ .name            = "default",
                                     .type            = AVMEDIA_TYPE_VIDEO,
                                     .config_props    = config_props,
-                                    .get_video_buffer = avfilter_null_get_video_buffer,
-                                    .start_frame      = avfilter_null_start_frame,
+                                    .get_video_buffer = ff_null_get_video_buffer,
+                                    .start_frame      = ff_null_start_frame,
                                     .draw_slice      = draw_slice,
                                     .end_frame       = end_frame,
                                     .min_perms       = AV_PERM_READ | AV_PERM_WRITE,

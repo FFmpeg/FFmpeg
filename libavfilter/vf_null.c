@@ -22,6 +22,7 @@
  */
 
 #include "avfilter.h"
+#include "video.h"
 
 AVFilter avfilter_vf_null = {
     .name      = "null",
@@ -31,9 +32,9 @@ AVFilter avfilter_vf_null = {
 
     .inputs    = (AVFilterPad[]) {{ .name             = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
-                                    .get_video_buffer = avfilter_null_get_video_buffer,
-                                    .start_frame      = avfilter_null_start_frame,
-                                    .end_frame        = avfilter_null_end_frame },
+                                    .get_video_buffer = ff_null_get_video_buffer,
+                                    .start_frame      = ff_null_start_frame,
+                                    .end_frame        = ff_null_end_frame },
                                   { .name = NULL}},
 
     .outputs   = (AVFilterPad[]) {{ .name             = "default",

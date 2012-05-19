@@ -41,6 +41,7 @@
 #include "libavutil/lfg.h"
 #include "avfilter.h"
 #include "drawutils.h"
+#include "video.h"
 
 #undef time
 
@@ -875,7 +876,7 @@ AVFilter avfilter_vf_drawtext = {
 
     .inputs    = (AVFilterPad[]) {{ .name             = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
-                                    .get_video_buffer = avfilter_null_get_video_buffer,
+                                    .get_video_buffer = ff_null_get_video_buffer,
                                     .start_frame      = start_frame,
                                     .draw_slice       = null_draw_slice,
                                     .end_frame        = end_frame,

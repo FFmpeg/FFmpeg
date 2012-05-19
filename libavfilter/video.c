@@ -65,7 +65,7 @@ static void ff_dlog_ref(void *ctx, AVFilterBufferRef *ref, int end)
     av_dlog(ctx, "]%s", end ? "\n" : "");
 }
 
-AVFilterBufferRef *avfilter_null_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
+AVFilterBufferRef *ff_null_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
 {
     return avfilter_get_video_buffer(link->dst->outputs[0], perms, w, h);
 }
@@ -160,7 +160,7 @@ AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms, int 
     return ret;
 }
 
-void avfilter_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
+void ff_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
     avfilter_start_frame(link->dst->outputs[0], picref);
 }
@@ -211,7 +211,7 @@ void avfilter_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     start_frame(link, link->cur_buf);
 }
 
-void avfilter_null_end_frame(AVFilterLink *link)
+void ff_null_end_frame(AVFilterLink *link)
 {
     avfilter_end_frame(link->dst->outputs[0]);
 }
@@ -252,7 +252,7 @@ void avfilter_end_frame(AVFilterLink *link)
     }
 }
 
-void avfilter_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
+void ff_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
     avfilter_draw_slice(link->dst->outputs[0], y, h, slice_dir);
 }
@@ -325,5 +325,21 @@ void avfilter_default_end_frame(AVFilterLink *inlink)
 void avfilter_default_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 {
     default_draw_slice(inlink, y, h, slice_dir);
+}
+AVFilterBufferRef *avfilter_null_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
+{
+    return ff_null_get_video_buffer(link, perms, w, h);
+}
+void avfilter_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
+{
+    ff_null_start_frame(link, picref);
+}
+void avfilter_null_end_frame(AVFilterLink *link)
+{
+    ff_null_end_frame(link);
+}
+void avfilter_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
+{
+    ff_null_draw_slice(link, y, h, slice_dir);
 }
 #endif

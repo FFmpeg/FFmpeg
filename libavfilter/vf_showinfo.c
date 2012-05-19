@@ -26,6 +26,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "video.h"
 
 typedef struct {
     unsigned int frame;
@@ -86,8 +87,8 @@ AVFilter avfilter_vf_showinfo = {
 
     .inputs    = (AVFilterPad[]) {{ .name = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
-                                    .get_video_buffer = avfilter_null_get_video_buffer,
-                                    .start_frame      = avfilter_null_start_frame,
+                                    .get_video_buffer = ff_null_get_video_buffer,
+                                    .start_frame      = ff_null_start_frame,
                                     .end_frame        = end_frame,
                                     .min_perms        = AV_PERM_READ, },
                                   { .name = NULL}},
