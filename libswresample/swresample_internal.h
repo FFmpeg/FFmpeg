@@ -77,6 +77,7 @@ struct SwrContext {
     int in_buffer_count;                            ///< cached buffer length
     int resample_in_constraint;                     ///< 1 if the input end was reach before the output end, 0 otherwise
     int flushed;                                    ///< 1 if data is to be flushed and no further input is expected
+    int drop_output;                                ///< number of output samples to drop
 
     struct AudioConvert *in_convert;                ///< input conversion context
     struct AudioConvert *out_convert;               ///< output conversion context

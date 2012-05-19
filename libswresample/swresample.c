@@ -596,6 +596,27 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
     AudioData * in= &s->in;
     AudioData *out= &s->out;
 
+    if(s->drop_output > 0){
+        int ret;
+        AudioData tmp = s->out;
+        uint8_t *tmp_arg[SWR_CH_MAX];
+        tmp.count = 0;
+        tmp.data  = NULL;
+        if((ret=realloc_audio(&tmp, s->drop_output))<0)
+            return ret;
+
+        reversefill_audiodata(&tmp, tmp_arg);
+        s->drop_output *= -1; //FIXME find a less hackish solution
+        ret = swr_convert(s, tmp_arg, -s->drop_output, in_arg, in_count); //FIXME optimize but this is as good as never called so maybe it doesnt matter
+        s->drop_output *= -1;
+        if(ret>0)
+            s->drop_output -= ret;
+
+        av_freep(&tmp.data);
+        if(s->drop_output || !out_arg)
+            return 0;
+    }
+
     if(!in_arg){
         if(s->in_buffer_count){
             if (s->resample && !s->flushed) {
@@ -674,6 +695,16 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
         }
         return ret2;
     }
+}
+
+int swr_drop_output(struct SwrContext *s, int count){
+    s->drop_output += count;
+
+    if(s->drop_output <= 0)
+        return 0;
+
+    av_log(s, AV_LOG_VERBOSE, "discarding %d audio samples\n", count);
+    return swr_convert(s, NULL, s->drop_output, NULL, 0);
 }
 
 int swr_inject_silence(struct SwrContext *s, int count){
