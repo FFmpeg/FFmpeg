@@ -372,7 +372,9 @@ static void copy(AudioData *out, AudioData *in,
 
 static void fill_audiodata(AudioData *out, uint8_t *in_arg [SWR_CH_MAX]){
     int i;
-    if(out->planar){
+    if(!in_arg){
+        memset(out->ch, 0, sizeof(out->ch));
+    }else if(out->planar){
         for(i=0; i<out->ch_count; i++)
             out->ch[i]= in_arg[i];
     }else{
