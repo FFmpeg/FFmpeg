@@ -43,7 +43,7 @@ static int avui_decode_frame(AVCodecContext *avctx, void *data,
     const uint8_t *src = avpkt->data;
     const uint8_t *srca;
     uint8_t *y, *u, *v, *a;
-    int transparent, interlaced = 1, skip, i, j, k;
+    int transparent, interlaced = 1, skip, opaque_length, i, j, k;
 
     if (pic->data[0])
         avctx->release_buffer(avctx, pic);
@@ -56,16 +56,14 @@ static int avui_decode_frame(AVCodecContext *avctx, void *data,
     } else {
         skip = 16;
     }
-    if (avpkt->size < 2 * avctx->width * (avctx->height + skip)
-                      + 4 * interlaced) {
+    opaque_length = 2 * avctx->width * (avctx->height + skip) + 4 * interlaced;
+    if (avpkt->size < opaque_length) {
         av_log(avctx, AV_LOG_ERROR, "Insufficient input data.\n");
         return AVERROR(EINVAL);
     }
     transparent = avctx->bits_per_coded_sample == 32 &&
-                  avpkt->size >= 2 * (avctx->height + skip) *
-                                 2 * avctx->width + 4 + 8 * interlaced;
-    srca = src + 2 * (avctx->height + skip) * avctx->width
-           + 5 + interlaced * 4;
+                  avpkt->size >= opaque_length * 2 + 4;
+    srca = src + opaque_length + 5;
 
     pic->reference = 0;
 
