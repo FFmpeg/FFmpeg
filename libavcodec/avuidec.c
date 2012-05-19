@@ -86,15 +86,15 @@ static int avui_decode_frame(AVCodecContext *avctx, void *data,
         src  += avctx->width * skip;
         srca += avctx->width * skip;
         if (interlaced && avctx->height == 486) {
-        y = pic->data[0] + (1 - i) * pic->linesize[0];
-        u = pic->data[1] + (1 - i) * pic->linesize[1];
-        v = pic->data[2] + (1 - i) * pic->linesize[2];
-        a = pic->data[3] + (1 - i) * pic->linesize[3];
+            y = pic->data[0] + (1 - i) * pic->linesize[0];
+            u = pic->data[1] + (1 - i) * pic->linesize[1];
+            v = pic->data[2] + (1 - i) * pic->linesize[2];
+            a = pic->data[3] + (1 - i) * pic->linesize[3];
         } else {
-        y = pic->data[0] + i * pic->linesize[0];
-        u = pic->data[1] + i * pic->linesize[1];
-        v = pic->data[2] + i * pic->linesize[2];
-        a = pic->data[3] + i * pic->linesize[3];
+            y = pic->data[0] + i * pic->linesize[0];
+            u = pic->data[1] + i * pic->linesize[1];
+            v = pic->data[2] + i * pic->linesize[2];
+            a = pic->data[3] + i * pic->linesize[3];
         }
 
         for (j = 0; j < avctx->height >> interlaced; j++) {
