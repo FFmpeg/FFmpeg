@@ -44,5 +44,5 @@ fate-sipr-16k: REF = $(SAMPLES)/sipr/sipr_16k.pcm
 FATE_REAL += $(FATE_SIPR)
 fate-sipr: $(FATE_SIPR)
 
-FATE_FFMPEG += $(FATE_REAL)
+FATE_SAMPLES_FFMPEG += $(FATE_REAL)
 fate-real: $(FATE_REAL)

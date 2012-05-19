@@ -10,31 +10,31 @@ fate-binkaudio-rdft: CMP = oneoff
 fate-binkaudio-rdft: REF = $(SAMPLES)/bink/binkaudio_rdft.pcm
 fate-binkaudio-rdft: FUZZ = 2
 
-FATE_AUDIO += $(FATE_BINKAUDIO)
+FATE_SAMPLES_AUDIO += $(FATE_BINKAUDIO)
 fate-binkaudio: $(FATE_BINKAUDIO)
 
-FATE_AUDIO += fate-bmv-audio
+FATE_SAMPLES_AUDIO += fate-bmv-audio
 fate-bmv-audio: CMD = framecrc -i $(SAMPLES)/bmv/SURFING-partial.BMV -vn
 
-FATE_AUDIO += fate-delphine-cin-audio
+FATE_SAMPLES_AUDIO += fate-delphine-cin-audio
 fate-delphine-cin-audio: CMD = framecrc -i $(SAMPLES)/delphine-cin/LOGO-partial.CIN -vn
 
-FATE_AUDIO += fate-dts
+FATE_SAMPLES_AUDIO += fate-dts
 fate-dts: CMD = pcm -i $(SAMPLES)/dts/dts.ts
 fate-dts: CMP = oneoff
 fate-dts: REF = $(SAMPLES)/dts/dts.pcm
 
-FATE_AUDIO += fate-imc
+FATE_SAMPLES_AUDIO += fate-imc
 fate-imc: CMD = pcm -i $(SAMPLES)/imc/imc.avi
 fate-imc: CMP = oneoff
 fate-imc: REF = $(SAMPLES)/imc/imc.pcm
 
-FATE_AUDIO += fate-nellymoser
+FATE_SAMPLES_AUDIO += fate-nellymoser
 fate-nellymoser: CMD = pcm -i $(SAMPLES)/nellymoser/nellymoser.flv
 fate-nellymoser: CMP = oneoff
 fate-nellymoser: REF = $(SAMPLES)/nellymoser/nellymoser.pcm
 
-FATE_AUDIO += fate-nellymoser-aref-encode
+FATE_SAMPLES_AUDIO += fate-nellymoser-aref-encode
 fate-nellymoser-aref-encode: $(AREF)
 fate-nellymoser-aref-encode: CMD = enc_dec_pcm flv wav s16le $(REF) -c:a nellymoser
 fate-nellymoser-aref-encode: CMP = stddev
@@ -45,14 +45,14 @@ fate-nellymoser-aref-encode: CMP_SHIFT = -1172
 fate-nellymoser-aref-encode: CMP_TARGET = 10216
 fate-nellymoser-aref-encode: SIZE_TOLERANCE = 1300
 
-FATE_AUDIO += fate-sierra-vmd-audio
+FATE_SAMPLES_AUDIO += fate-sierra-vmd-audio
 fate-sierra-vmd-audio: CMD = framecrc -i $(SAMPLES)/vmd/12.vmd -vn
 
-FATE_AUDIO += fate-smacker-audio
+FATE_SAMPLES_AUDIO += fate-smacker-audio
 fate-smacker-audio: CMD = framecrc -i $(SAMPLES)/smacker/wetlogo.smk -vn
 
-FATE_AUDIO += fate-ws_snd
+FATE_SAMPLES_AUDIO += fate-ws_snd
 fate-ws_snd: CMD = md5 -i $(SAMPLES)/vqa/ws_snd.vqa -f s16le
 
-FATE_FFMPEG += $(FATE_AUDIO)
-fate-audio: $(FATE_AUDIO)
+FATE_SAMPLES_FFMPEG += $(FATE_SAMPLES_AUDIO)
+fate-audio: $(FATE_SAMPLES_AUDIO)

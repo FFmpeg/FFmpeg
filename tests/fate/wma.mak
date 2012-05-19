@@ -13,7 +13,7 @@ fate-wmapro-ism: CMD = pcm -i $(SAMPLES)/isom/vc1-wmapro.ism -vn
 fate-wmapro-ism: CMP = oneoff
 fate-wmapro-ism: REF = $(SAMPLES)/isom/vc1-wmapro.pcm
 
-FATE_AVCONV += $(FATE_WMAPRO)
+FATE_SAMPLES_AVCONV += $(FATE_WMAPRO)
 fate-wmapro: $(FATE_WMAPRO)
 
 FATE_WMAVOICE += fate-wmavoice-7k
@@ -34,7 +34,7 @@ fate-wmavoice-19k: CMP = stddev
 fate-wmavoice-19k: REF = $(SAMPLES)/wmavoice/streaming_CBR-19K.pcm
 fate-wmavoice-19k: FUZZ = 3
 
-FATE_AVCONV += $(FATE_WMAVOICE)
+FATE_SAMPLES_AVCONV += $(FATE_WMAVOICE)
 fate-wmavoice: $(FATE_WMAVOICE)
 
 FATE_WMA_ENCODE += fate-wmav1-encode
@@ -53,5 +53,5 @@ fate-wmav2-encode: CMP_SHIFT = -8192
 fate-wmav2-encode: CMP_TARGET = 258.32
 fate-wmav2-encode: SIZE_TOLERANCE = 4632
 
-FATE_AVCONV += $(FATE_WMA_ENCODE)
+FATE_SAMPLES_AVCONV += $(FATE_WMA_ENCODE)
 fate-wma-encode: $(FATE_WMA_ENCODE)

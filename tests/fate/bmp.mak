@@ -37,5 +37,5 @@ fate-bmp-rle4: CMD = framecrc -i $(SAMPLES)/bmp/testcompress4.bmp -pix_fmt rgb24
 FATE_BMP += fate-bmp-rle8
 fate-bmp-rle8: CMD = framecrc -i $(SAMPLES)/bmp/testcompress8.bmp -pix_fmt rgb24
 
-FATE_AVCONV += $(FATE_BMP)
+FATE_SAMPLES_AVCONV += $(FATE_BMP)
 fate-bmp: $(FATE_BMP)

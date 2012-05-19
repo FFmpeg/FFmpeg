@@ -92,14 +92,18 @@ FATE = $(FATE_ACODEC)                                                   \
        $(FATE_SEEK)                                                     \
 
 FATE_FFMPEG += $(FATE_FFMPEG-yes) $(FATE_AVCONV) $(FATE_AVCONV-yes)
+FATE-$(CONFIG_FFMPEG) += $(FATE_FFMPEG)
 
 FATE-$(CONFIG_AVCODEC)  += $(FATE_LIBAVCODEC)
 FATE-$(CONFIG_AVFILTER) += $(FATE_LAVFI)
 
+FATE_SAMPLES-$(CONFIG_FFMPEG) += $(FATE_SAMPLES_AVCONV) $(FATE_SAMPLES_FFMPEG)
+FATE_SAMPLES += $(FATE_SAMPLES-yes)
+
 FATE += $(FATE-yes)
 FATE += $(FATE_LIBAVUTIL)
 
-$(FATE_FFMPEG) $(FATE_LAVF_FATE): ffmpeg$(EXESUF)
+$(FATE_FFMPEG) $(FATE_LAVF_FATE) $(FATE_SAMPLES_AVCONV) $(FATE_SAMPLES_FFMPEG): ffmpeg$(EXESUF)
 
 $(filter-out %-aref,$(FATE_ACODEC)): $(AREF)
 $(filter-out %-vref,$(FATE_VSYNTH1)): fate-vsynth1-vref
@@ -126,8 +130,8 @@ fate-seek:   $(FATE_SEEK)
 
 ifdef SAMPLES
 FATE += $(FATE_LAVF_FATE)
-FATE += $(FATE_FFMPEG)
 FATE += $(FATE_FULL) $(FATE_FULL-yes)
+FATE += $(FATE_SAMPLES)
 fate-rsync:
 	rsync -vaLW --timeout=60 --contimeout=60 rsync://fate.ffmpeg.org/fate-suite/ $(SAMPLES)
 else
@@ -135,8 +139,8 @@ fate::
 	@echo "warning: only a subset of the fate tests will be run because SAMPLES is not specified"
 fate-rsync:
 	@echo "use 'make fate-rsync SAMPLES=/path/to/samples' to sync the fate suite"
-$(FATE_TESTS):
-	@echo "SAMPLES not specified, cannot run FATE"
+$(FATE_SAMPLES):
+	@echo "$@ requires external samples and SAMPLES not specified"; false
 endif
 
 FATE_UTILS = base64 tiny_psnr

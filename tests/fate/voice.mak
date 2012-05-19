@@ -51,5 +51,5 @@ fate-truespeech: CMD = pcm -i $(SAMPLES)/truespeech/a6.wav
 fate-truespeech: CMP = oneoff
 fate-truespeech: REF = $(SAMPLES)/truespeech/a6.pcm
 
-FATE_FFMPEG += $(FATE_VOICE)
+FATE_SAMPLES_FFMPEG += $(FATE_VOICE)
 fate-voice: $(FATE_VOICE)

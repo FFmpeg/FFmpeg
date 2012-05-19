@@ -10,5 +10,5 @@ fate-dpcm-sierra: CMD = md5 -i $(SAMPLES)/sol/lsl7sample.sol -f s16le
 FATE_DPCM += fate-dpcm-xan
 fate-dpcm-xan: CMD = md5 -i $(SAMPLES)/wc4-xan/wc4_2.avi -vn -f s16le
 
-FATE_AVCONV += $(FATE_DPCM)
+FATE_SAMPLES_AVCONV += $(FATE_DPCM)
 fate-dpcm: $(FATE_DPCM)

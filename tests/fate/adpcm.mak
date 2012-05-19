@@ -70,5 +70,5 @@ fate-adpcm-xa: CMD = framecrc -i $(SAMPLES)/psx-str/abc000_cut.str -vn
 FATE_ADPCM += fate-adpcm_ms-stereo
 fate-adpcm_ms-stereo: CMD = md5 -i $(SAMPLES)/qt-surge-suite/surge-2-16-L-ms02.mov -f s16le
 
-FATE_AVCONV += $(FATE_ADPCM)
+FATE_SAMPLES_AVCONV += $(FATE_ADPCM)
 fate-adpcm: $(FATE_ADPCM)
