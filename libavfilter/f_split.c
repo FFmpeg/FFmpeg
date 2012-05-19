@@ -44,7 +44,7 @@ static int split_init(AVFilterContext *ctx, const char *args, void *opaque)
         AVFilterPad pad = { 0 };
 
         snprintf(name, sizeof(name), "output%d", i);
-        pad.type = !strcmp(ctx->name, "split") ? AVMEDIA_TYPE_VIDEO : AVMEDIA_TYPE_AUDIO;
+        pad.type = ctx->filter->inputs[0].type;
         pad.name = av_strdup(name);
 
         avfilter_insert_outpad(ctx, i, &pad);
