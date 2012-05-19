@@ -598,31 +598,6 @@ uint16_t ivi_calc_band_checksum (IVIBandDesc *band)
 
     return checksum;
 }
-
-int ivi_check_band (IVIBandDesc *band, const uint8_t *ref, int pitch)
-{
-    int         x, y, result;
-    uint8_t     t1, t2;
-    int16_t    *src;
-
-    src = band->buf;
-    result = 0;
-
-    for (y = 0; y < band->height; src += band->pitch, y++) {
-        for (x = 0; x < band->width; x++) {
-            t1 = av_clip(src[x] + 128, 0, 255);
-            t2 = ref[x];
-            if (t1 != t2) {
-                av_log(NULL, AV_LOG_ERROR, "Data mismatch: row %d, column %d\n",
-                       y / band->blk_size, x / band->blk_size);
-                result = -1;
-            }
-        }
-        ref += pitch;
-    }
-
-    return result;
-}
 #endif
 
 void ff_ivi_output_plane(IVIPlaneDesc *plane, uint8_t *dst, int dst_pitch)

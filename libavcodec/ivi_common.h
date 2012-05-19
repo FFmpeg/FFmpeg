@@ -401,11 +401,6 @@ void ff_ivi_output_plane(IVIPlaneDesc *plane, uint8_t *dst, int dst_pitch);
  */
 uint16_t ivi_calc_band_checksum (IVIBandDesc *band);
 
-/**
- *  Verify that band data lies in range.
- */
-int ivi_check_band (IVIBandDesc *band, const uint8_t *ref, int pitch);
-
 int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                         AVPacket *avpkt);
 av_cold int ff_ivi_decode_close(AVCodecContext *avctx);
