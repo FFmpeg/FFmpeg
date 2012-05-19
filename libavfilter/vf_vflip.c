@@ -25,6 +25,7 @@
 
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "video.h"
 
 typedef struct {
     int vsub;   ///< vertical chroma subsampling
@@ -47,7 +48,7 @@ static AVFilterBufferRef *get_video_buffer(AVFilterLink *link, int perms,
     int i;
 
     if (!(perms & AV_PERM_NEG_LINESIZES))
-        return avfilter_default_get_video_buffer(link, perms, w, h);
+        return ff_default_get_video_buffer(link, perms, w, h);
 
     picref = avfilter_get_video_buffer(link->dst->outputs[0], perms, w, h);
     for (i = 0; i < 4; i ++) {

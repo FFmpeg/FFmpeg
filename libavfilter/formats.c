@@ -364,7 +364,7 @@ void avfilter_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats)
                        avfilter_formats_ref, formats);
 }
 
-int avfilter_default_query_formats(AVFilterContext *ctx)
+int ff_default_query_formats(AVFilterContext *ctx)
 {
     enum AVMediaType type = ctx->inputs  && ctx->inputs [0] ? ctx->inputs [0]->type :
                             ctx->outputs && ctx->outputs[0] ? ctx->outputs[0]->type :
@@ -378,3 +378,10 @@ int avfilter_default_query_formats(AVFilterContext *ctx)
 
     return 0;
 }
+
+#if FF_API_FILTERS_PUBLIC
+int avfilter_default_query_formats(AVFilterContext *ctx)
+{
+    return ff_default_query_formats(ctx);
+}
+#endif

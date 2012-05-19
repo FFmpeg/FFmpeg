@@ -21,6 +21,7 @@
 #include "libavformat/avformat.h"
 #include "libavutil/pixdesc.h"
 #include "libavfilter/avfilter.h"
+#include "libavfilter/formats.h"
 
 int main(int argc, char **argv)
 {
@@ -75,7 +76,7 @@ int main(int argc, char **argv)
     if (filter->query_formats)
         filter->query_formats(filter_ctx);
     else
-        avfilter_default_query_formats(filter_ctx);
+        ff_default_query_formats(filter_ctx);
 
     /* print the supported formats in input */
     for (i = 0; i < filter_ctx->input_count; i++) {

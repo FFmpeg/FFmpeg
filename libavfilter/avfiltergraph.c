@@ -161,7 +161,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
         if (graph->filters[i]->filter->query_formats)
             graph->filters[i]->filter->query_formats(graph->filters[i]);
         else
-            avfilter_default_query_formats(graph->filters[i]);
+            ff_default_query_formats(graph->filters[i]);
     }
 
     /* go through and merge as many format lists as possible */

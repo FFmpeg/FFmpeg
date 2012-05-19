@@ -451,13 +451,17 @@ struct AVFilterPad {
     int (*config_props)(AVFilterLink *link);
 };
 
+#if FF_API_FILTERS_PUBLIC
 /** default handler for start_frame() for video inputs */
+attribute_deprecated
 void avfilter_default_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
 
 /** default handler for draw_slice() for video inputs */
+attribute_deprecated
 void avfilter_default_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
 
 /** default handler for end_frame() for video inputs */
+attribute_deprecated
 void avfilter_default_end_frame(AVFilterLink *link);
 
 #if FF_API_DEFAULT_CONFIG_OUTPUT_LINK
@@ -467,8 +471,14 @@ int avfilter_default_config_output_link(AVFilterLink *link);
 #endif
 
 /** default handler for get_video_buffer() for video inputs */
+attribute_deprecated
 AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link,
                                                      int perms, int w, int h);
+
+/** Default handler for query_formats() */
+attribute_deprecated
+int avfilter_default_query_formats(AVFilterContext *ctx);
+#endif
 
 /**
  * A helper for query_formats() which sets all links to the same list of
@@ -476,9 +486,6 @@ AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link,
  * freed.
  */
 void avfilter_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats);
-
-/** Default handler for query_formats() */
-int avfilter_default_query_formats(AVFilterContext *ctx);
 
 /** start_frame() handler for filters which simply pass video along */
 void avfilter_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
