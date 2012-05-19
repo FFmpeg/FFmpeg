@@ -177,7 +177,7 @@ FATE_H264  := $(FATE_H264:%=fate-h264-conformance-%)                    \
               fate-h264-extreme-plane-pred                              \
               fate-h264-bsf-mp4toannexb                                 \
 
-FATE_AVCONV += $(FATE_H264)
+FATE_SAMPLES_AVCONV += $(FATE_H264)
 fate-h264: $(FATE_H264)
 
 fate-h264-conformance-aud_mw_e: CMD = framecrc -i $(SAMPLES)/h264-conformance/AUD_MW_E.264

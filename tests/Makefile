@@ -80,14 +80,18 @@ FATE = $(FATE_ACODEC)                                                   \
        $(FATE_SEEK)                                                     \
 
 FATE_AVCONV += $(FATE_AVCONV-yes)
+FATE-$(CONFIG_AVCONV) += $(FATE_AVCONV)
 
 FATE-$(CONFIG_AVCODEC)  += $(FATE_LIBAVCODEC)
 FATE-$(CONFIG_AVFILTER) += $(FATE_LAVFI)
 
+FATE_SAMPLES-$(CONFIG_AVCONV) += $(FATE_SAMPLES_AVCONV)
+FATE_SAMPLES += $(FATE_SAMPLES-yes)
+
 FATE += $(FATE-yes)
 FATE += $(FATE_LIBAVUTIL)
 
-$(FATE_AVCONV): avconv$(EXESUF)
+$(FATE_AVCONV) $(FATE_SAMPLES_AVCONV): avconv$(EXESUF)
 
 $(filter-out %-aref,$(FATE_ACODEC)): $(AREF)
 $(filter-out %-vref,$(FATE_VSYNTH1)): fate-vsynth1-vref
@@ -111,14 +115,14 @@ fate-lavfi:  $(FATE_LAVFI)
 fate-seek:   $(FATE_SEEK)
 
 ifdef SAMPLES
-FATE += $(FATE_AVCONV)
+FATE += $(FATE_SAMPLES)
 fate-rsync:
 	rsync -vaLW rsync://fate-suite.libav.org/fate-suite/ $(SAMPLES)
 else
 fate-rsync:
 	@echo "use 'make fate-rsync SAMPLES=/path/to/samples' to sync the fate suite"
-$(FATE_TESTS):
-	@echo "SAMPLES not specified, cannot run FATE"
+$(FATE_SAMPLES):
+	@echo "$@ requires external samples and SAMPLES not specified"; false
 endif
 
 FATE_UTILS = base64 tiny_psnr

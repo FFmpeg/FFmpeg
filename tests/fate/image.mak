@@ -1,10 +1,10 @@
-FATE_AVCONV += fate-dpx
+FATE_SAMPLES_AVCONV += fate-dpx
 fate-dpx: CMD = framecrc -i $(SAMPLES)/dpx/lighthouse_rgb48.dpx
 
-FATE_AVCONV += fate-pictor
+FATE_SAMPLES_AVCONV += fate-pictor
 fate-pictor: CMD = framecrc -i $(SAMPLES)/pictor/MFISH.PIC -pix_fmt rgb24
 
-FATE_AVCONV += fate-ptx
+FATE_SAMPLES_AVCONV += fate-ptx
 fate-ptx: CMD = framecrc -i $(SAMPLES)/ptx/_113kw_pic.ptx -pix_fmt rgb24
 
 FATE_SUNRASTER += fate-sunraster-1bit-raw
@@ -28,7 +28,7 @@ fate-sunraster-24bit-raw: CMD = framecrc -i $(SAMPLES)/sunraster/lena-24bit-raw.
 FATE_SUNRASTER += fate-sunraster-24bit-rle
 fate-sunraster-24bit-rle: CMD = framecrc -i $(SAMPLES)/sunraster/lena-24bit-rle.sun
 
-FATE_AVCONV += $(FATE_SUNRASTER)
+FATE_SAMPLES_AVCONV += $(FATE_SUNRASTER)
 fate-sunraster: $(FATE_SUNRASTER)
 
 FATE_TARGA = CBW8       \
@@ -45,7 +45,7 @@ FATE_TARGA = CBW8       \
 FATE_TARGA := $(FATE_TARGA:%=fate-targa-conformance-%)  \
               fate-targa-top-to-bottom
 
-FATE_AVCONV += $(FATE_TARGA)
+FATE_SAMPLES_AVCONV += $(FATE_TARGA)
 fate-targa: $(FATE_TARGA)
 
 fate-targa-conformance-CBW8:  CMD = framecrc -i $(SAMPLES)/targa-conformance/CBW8.TGA
@@ -67,5 +67,5 @@ fate-tiff-fax-g3: CMD = framecrc -i $(SAMPLES)/CCITT_fax/G31D.TIF
 FATE_TIFF += fate-tiff-fax-g3s
 fate-tiff-fax-g3s: CMD = framecrc -i $(SAMPLES)/CCITT_fax/G31DS.TIF
 
-FATE_AVCONV += $(FATE_TIFF)
+FATE_SAMPLES_AVCONV += $(FATE_TIFF)
 fate-tiff: $(FATE_TIFF)
