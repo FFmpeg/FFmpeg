@@ -118,6 +118,7 @@ typedef struct {
     int         ypos;
     int         width;
     int         height;
+    int         mb_size;
     int         is_empty;  ///< = 1 if this tile doesn't contain any data
     int         data_size; ///< size of the data in bytes
     int         num_MBs;   ///< number of macroblocks in this tile
