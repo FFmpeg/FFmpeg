@@ -62,6 +62,11 @@ struct SwrContext {
     int linear_interp;                              /**< if 1 then the resampling FIR filter will be linearly interpolated */
     double cutoff;                                  /**< resampling cutoff frequency. 1.0 corresponds to half the output sample rate */
 
+    float min_compensation;                         ///< minimum below which no compensation will happen
+    float min_hard_compensation;                    ///< minimum below which no silence inject / sample drop will happen
+    float soft_compensation_duration;               ///< duration over which soft compensation is applied
+    float max_soft_compensation;                    ///< maximum soft compensation in seconds over soft_compensation_duration
+
     int resample_first;                             ///< 1 if resampling must come first, 0 if rematrixing
     int rematrix;                                   ///< flag to indicate if rematrixing is needed (basically if input and output layouts mismatch)
     int rematrix_custom;                            ///< flag to indicate that a custom matrix has been defined
@@ -77,6 +82,7 @@ struct SwrContext {
     int in_buffer_count;                            ///< cached buffer length
     int resample_in_constraint;                     ///< 1 if the input end was reach before the output end, 0 otherwise
     int flushed;                                    ///< 1 if data is to be flushed and no further input is expected
+    int64_t outpts;                                 ///< output PTS
     int drop_output;                                ///< number of output samples to drop
 
     struct AudioConvert *in_convert;                ///< input conversion context

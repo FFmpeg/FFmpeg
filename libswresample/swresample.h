@@ -30,7 +30,7 @@
 #include "libavutil/samplefmt.h"
 
 #define LIBSWRESAMPLE_VERSION_MAJOR 0
-#define LIBSWRESAMPLE_VERSION_MINOR 14
+#define LIBSWRESAMPLE_VERSION_MINOR 15
 #define LIBSWRESAMPLE_VERSION_MICRO 100
 
 #define LIBSWRESAMPLE_VERSION_INT  AV_VERSION_INT(LIBSWRESAMPLE_VERSION_MAJOR, \
@@ -131,6 +131,21 @@ void swr_free(struct SwrContext **s);
  */
 int swr_convert(struct SwrContext *s, uint8_t **out, int out_count,
                                 const uint8_t **in , int in_count);
+
+/**
+ * Convert the next timestamp from input to output
+ * timestampe are in 1/(in_sample_rate * out_sample_rate) units.
+ *
+ * @note There are 2 slightly differently behaving modes.
+ *       First is when automatic timestamp compensation is not used, (min_compensation >= FLT_MAX)
+ *              in this case timestamps will be passed through with delays compensated
+ *       Second is when automatic timestamp compensation is used, (min_compensation < FLT_MAX)
+ *              in this case the output timestamps will match output sample numbers
+ *
+ * @param pts   timstamp for the next input sample, INT64_MIN if unknown
+ * @returns the output timestamp for the next output sample
+ */
+int64_t swr_next_pts(struct SwrContext *s, int64_t pts);
 
 /**
  * Activate resampling compensation.

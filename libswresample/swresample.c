@@ -24,6 +24,8 @@
 #include "libavutil/avassert.h"
 #include "libavutil/audioconvert.h"
 
+#include <float.h>
+
 #define  C30DB  M_SQRT2
 #define  C15DB  1.189207115
 #define C__0DB  1.0
@@ -78,6 +80,15 @@ static const AVOption options[]={
 {"phase_shift"          , "Resampling Phase Shift"      , OFFSET(phase_shift)    , AV_OPT_TYPE_INT  , {.dbl=10                    }, 0      , 30        , PARAM },
 {"linear_interp"        , "Use Linear Interpolation"    , OFFSET(linear_interp)  , AV_OPT_TYPE_INT  , {.dbl=0                     }, 0      , 1         , PARAM },
 {"cutoff"               , "Cutoff Frequency Ratio"      , OFFSET(cutoff)         , AV_OPT_TYPE_DOUBLE,{.dbl=0.8                   }, 0      , 1         , PARAM },
+{"min_comp"             , "Minimum difference between timestamps and audio data (in seconds) below which no timestamp compensation of either kind is applied"
+                                                        , OFFSET(min_compensation),AV_OPT_TYPE_FLOAT ,{.dbl=FLT_MAX               }, 0      , FLT_MAX   , PARAM },
+{"min_hard_comp"        , "Minimum difference between timestamps and audio data (in seconds) to trigger padding/trimming the data."
+                                                   , OFFSET(min_hard_compensation),AV_OPT_TYPE_FLOAT ,{.dbl=0.1                   }, 0      , INT_MAX   , PARAM },
+{"comp_duration"        , "Duration (in seconds) over which data is stretched/squeezeed to make it match the timestamps."
+                                              , OFFSET(soft_compensation_duration),AV_OPT_TYPE_FLOAT ,{.dbl=1                     }, 0      , INT_MAX   , PARAM },
+{"max_soft_comp"        , "Maximum factor by which data is stretched/squeezeed to make it match the timestamps."
+                                                   , OFFSET(max_soft_compensation),AV_OPT_TYPE_FLOAT ,{.dbl=0                     }, 0      , INT_MAX   , PARAM },
+
 {0}
 };
 
@@ -644,7 +655,10 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
     fill_audiodata(out, out_arg);
 
     if(s->resample){
-        return swr_convert_internal(s, out, out_count, in, in_count);
+        int ret = swr_convert_internal(s, out, out_count, in, in_count);
+        if(ret>0 && !s->drop_output)
+            s->outpts += ret * (int64_t)s->in_sample_rate;
+        return ret;
     }else{
         AudioData tmp= *in;
         int ret2=0;
@@ -693,6 +707,8 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
                 s->in_buffer_count += in_count;
             }
         }
+        if(ret2>0 && !s->drop_output)
+            s->outpts += ret2 * (int64_t)s->in_sample_rate;
         return ret2;
     }
 }
@@ -730,4 +746,29 @@ int swr_inject_silence(struct SwrContext *s, int count){
     ret = swr_convert(s, NULL, 0, (const uint8_t**)tmp_arg, count);
     av_freep(&silence.data);
     return ret;
+}
+
+int64_t swr_next_pts(struct SwrContext *s, int64_t pts){
+    if(pts == INT64_MIN)
+        return s->outpts;
+    if(s->min_compensation >= FLT_MAX) {
+        return (s->outpts = pts - swr_get_delay(s, s->in_sample_rate * (int64_t)s->out_sample_rate));
+    } else {
+        int64_t delta = pts - swr_get_delay(s, s->in_sample_rate * (int64_t)s->out_sample_rate) - s->outpts;
+        double fdelta = delta /(double)(s->in_sample_rate * (int64_t)s->out_sample_rate);
+
+        if(fabs(fdelta) > s->min_compensation) {
+            if(!s->outpts || fabs(fdelta) > s->min_hard_compensation){
+                if(delta > 0) swr_inject_silence(s,  delta / s->out_sample_rate);
+                else          swr_drop_output   (s, -delta / s-> in_sample_rate);
+            } else {
+                int duration = s->out_sample_rate * s->soft_compensation_duration;
+                int comp = av_clipf(fdelta, -s->max_soft_compensation, s->max_soft_compensation) * duration ;
+                av_log(s, AV_LOG_VERBOSE, "compensating audio timestamp drift:%f compensation:%d in:%d\n", fdelta, comp, duration);
+                swr_set_compensation(s, comp, duration);
+            }
+        }
+
+        return s->outpts;
+    }
 }
