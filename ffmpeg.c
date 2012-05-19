@@ -872,29 +872,6 @@ static int configure_audio_filters(FilterGraph *fg, AVFilterContext **in_filter,
         *out_filter = format;
     }
 
-    if (audio_sync_method > 0) {
-        AVFilterContext *aswr;
-        char args[256] = {0};
-
-        av_strlcatf(args, sizeof(args), "min_comp=0.001:min_hard_comp=%f", audio_drift_threshold);
-
-        if (audio_sync_method > 1)
-            av_strlcatf(args, sizeof(args), ":max_soft_comp=%f", audio_sync_method/(double)icodec->sample_rate);
-
-        av_log(NULL, AV_LOG_INFO, "-async %d is forwarded to lavfi similarly to -af aresample=%s\n", audio_sync_method, args);
-
-        ret = avfilter_graph_create_filter(&aswr, avfilter_get_by_name("aresample"),
-                                           "aresample", args, NULL, fg->graph);
-        if (ret < 0)
-            return ret;
-
-        ret = avfilter_link(*in_filter, 0, aswr, 0);
-        if (ret < 0)
-            return ret;
-
-        *in_filter = aswr;
-    }
-
 #define AUTO_INSERT_FILTER(opt_name, filter_name, arg) do {                 \
     AVFilterContext *filt_ctx;                                              \
                                                                             \
@@ -913,6 +890,15 @@ static int configure_audio_filters(FilterGraph *fg, AVFilterContext **in_filter,
                                                                             \
     *in_filter = filt_ctx;                                                  \
 } while (0)
+
+    if (audio_sync_method > 0) {
+        char args[256] = {0};
+
+        av_strlcatf(args, sizeof(args), "min_comp=0.001:min_hard_comp=%f", audio_drift_threshold);
+        if (audio_sync_method > 1)
+            av_strlcatf(args, sizeof(args), ":max_soft_comp=%f", audio_sync_method/(double)icodec->sample_rate);
+        AUTO_INSERT_FILTER("-async", "aresample", args);
+    }
 
     if (ost->audio_channels_mapped) {
         int i;
