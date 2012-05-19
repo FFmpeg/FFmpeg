@@ -212,14 +212,14 @@ int av_cold ff_ivi_init_planes(IVIPlaneDesc *planes, const IVIPicConfig *cfg)
             band->width    = b_width;
             band->height   = b_height;
             band->pitch    = width_aligned;
-            band->bufs[0]  = av_malloc(buf_size);
-            band->bufs[1]  = av_malloc(buf_size);
+            band->bufs[0]  = av_mallocz(buf_size);
+            band->bufs[1]  = av_mallocz(buf_size);
             if (!band->bufs[0] || !band->bufs[1])
                 return AVERROR(ENOMEM);
 
             /* allocate the 3rd band buffer for scalability mode */
             if (cfg->luma_bands > 1) {
-                band->bufs[2] = av_malloc(buf_size);
+                band->bufs[2] = av_mallocz(buf_size);
                 if (!band->bufs[2])
                     return AVERROR(ENOMEM);
             }
