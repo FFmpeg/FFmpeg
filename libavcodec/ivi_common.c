@@ -212,6 +212,7 @@ int av_cold ff_ivi_init_planes(IVIPlaneDesc *planes, const IVIPicConfig *cfg)
             band->width    = b_width;
             band->height   = b_height;
             band->pitch    = width_aligned;
+            band->aheight  = height_aligned;
             band->bufs[0]  = av_mallocz(buf_size);
             band->bufs[1]  = av_mallocz(buf_size);
             if (!band->bufs[0] || !band->bufs[1])
@@ -382,6 +383,21 @@ int ff_ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile)
                 mc_type = ((mv_y & 1) << 1) | (mv_x & 1);
                 mv_x >>= 1;
                 mv_y >>= 1; /* convert halfpel vectors into fullpel ones */
+            }
+            if (mb->type) {
+                int dmv_x, dmv_y, cx, cy;
+
+                dmv_x = mb->mv_x >> band->is_halfpel;
+                dmv_y = mb->mv_y >> band->is_halfpel;
+                cx    = mb->mv_x &  band->is_halfpel;
+                cy    = mb->mv_y &  band->is_halfpel;
+
+                if (   mb->xpos + dmv_x < 0
+                    || mb->xpos + dmv_x + band->mb_size + cx > band->pitch
+                    || mb->ypos + dmv_y < 0
+                    || mb->ypos + dmv_y + band->mb_size + cy > band->aheight) {
+                    return AVERROR_INVALIDDATA;
+                }
             }
         }
 

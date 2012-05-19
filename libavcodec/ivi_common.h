@@ -135,6 +135,7 @@ typedef struct {
     int             band_num;       ///< band number
     int             width;
     int             height;
+    int             aheight;        ///< aligned band height
     const uint8_t   *data_ptr;      ///< ptr to the first byte of the band data
     int             data_size;      ///< size of the band data
     int16_t         *buf;           ///< pointer to the output buffer for this band
