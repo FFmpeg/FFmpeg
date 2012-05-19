@@ -35,6 +35,7 @@
 #include "libavformat/avformat.h"
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
+#include "libswresample/swresample.h"
 #include "libavutil/opt.h"
 #include "libavutil/audioconvert.h"
 #include "libavutil/parseutils.h"
@@ -51,15 +52,14 @@
 #include "libavutil/timestamp.h"
 #include "libavutil/bprint.h"
 #include "libavformat/os_support.h"
-#include "libswresample/swresample.h"
 
 #include "libavformat/ffm.h" // not public API
 
 # include "libavfilter/avcodec.h"
 # include "libavfilter/avfilter.h"
 # include "libavfilter/avfiltergraph.h"
-# include "libavfilter/buffersink.h"
 # include "libavfilter/buffersrc.h"
+# include "libavfilter/buffersink.h"
 
 #if HAVE_SYS_RESOURCE_H
 #include <sys/types.h>
@@ -97,7 +97,6 @@
 #define VSYNC_VFR         2
 #define VSYNC_DROP        0xff
 
-// #define SRCA
 #define SINKA
 
 const char program_name[] = "ffmpeg";
@@ -228,8 +227,8 @@ typedef struct InputStream {
     /* dts of the last packet read for this stream */
     int64_t       dts;
 
-    int64_t       next_pts;  ///< synthetic pts for the next decode frame
-    int64_t       pts;       ///< current pts of the decoded frame
+    int64_t       next_pts;  /* synthetic pts for the next decode frame */
+    int64_t       pts;       /* current pts of the decoded frame */
     double ts_scale;
     int is_start;            /* is 1 at the start and after a discontinuity */
     int saw_first_ts;
@@ -376,8 +375,8 @@ typedef struct OptionsContext {
     /* output options */
     StreamMap *stream_maps;
     int     nb_stream_maps;
-    AudioChannelMap *audio_channel_maps; ///< one info entry per -map_channel
-    int           nb_audio_channel_maps; ///< number of (valid) -map_channel settings
+    AudioChannelMap *audio_channel_maps; /* one info entry per -map_channel */
+    int           nb_audio_channel_maps; /* number of (valid) -map_channel settings */
     int metadata_global_manual;
     int metadata_streams_manual;
     int metadata_chapters_manual;
@@ -931,8 +930,10 @@ static int configure_video_filters(FilterGraph *fg, AVFilterContext **in_filter,
         sample_aspect_ratio = ist->st->codec->sample_aspect_ratio;
 
     snprintf(args, 255, "%d:%d:%d:%d:%d:%d:%d:flags=%d", ist->st->codec->width,
-             ist->st->codec->height, ist->st->codec->pix_fmt, 1, AV_TIME_BASE,
-             sample_aspect_ratio.num, sample_aspect_ratio.den, SWS_BILINEAR + ((ist->st->codec->flags&CODEC_FLAG_BITEXACT) ? SWS_BITEXACT:0));
+             ist->st->codec->height, ist->st->codec->pix_fmt,
+             1, AV_TIME_BASE,
+             sample_aspect_ratio.num, sample_aspect_ratio.den,
+             SWS_BILINEAR + ((ist->st->codec->flags&CODEC_FLAG_BITEXACT) ? SWS_BITEXACT:0));
 
     ret = avfilter_graph_create_filter(&fg->inputs[0]->filter,
                                        avfilter_get_by_name("buffer"),
@@ -1482,7 +1483,7 @@ void av_noreturn exit_program(int ret)
         exit (255);
     }
 
-    exit(ret); /* not all OS-es handle main() return value */
+    exit(ret);
 }
 
 static void assert_avoptions(AVDictionary *m)
@@ -1645,9 +1646,8 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
     if (got_packet) {
         if (pkt.pts != AV_NOPTS_VALUE)
             pkt.pts      = av_rescale_q(pkt.pts,      enc->time_base, ost->st->time_base);
-        if (pkt.dts != AV_NOPTS_VALUE) {
+        if (pkt.dts != AV_NOPTS_VALUE)
             pkt.dts      = av_rescale_q(pkt.dts,      enc->time_base, ost->st->time_base);
-        }
         if (pkt.duration > 0)
             pkt.duration = av_rescale_q(pkt.duration, enc->time_base, ost->st->time_base);
 
@@ -2534,7 +2534,6 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
         ist->next_pts = ist->pts = decoded_frame->pts = best_effort_timestamp;
 
     pkt->size = 0;
-
     pre_process_video_frame(ist, (AVPicture *)decoded_frame, &buffer_to_free);
 
     rate_emu_sleep(ist);
@@ -3085,7 +3084,7 @@ static int transcode_init(void)
                         size_t logbuffer_size;
                         if (cmdutils_read_file(logfilename, &logbuffer, &logbuffer_size) < 0) {
                             av_log(NULL, AV_LOG_FATAL, "Error reading log file '%s' for pass-2 encoding\n",
-                                logfilename);
+                                   logfilename);
                             exit_program(1);
                         }
                         codec->stats_in = logbuffer;
@@ -4978,7 +4977,7 @@ loop_end:
                 case AVMEDIA_TYPE_ATTACHMENT: ost = new_attachment_stream(o, oc, src_idx); break;
                 default:
                     av_log(NULL, AV_LOG_FATAL, "Cannot map stream #%d:%d - unsupported type.\n",
-                        map->file_index, map->stream_index);
+                           map->file_index, map->stream_index);
                     exit_program(1);
                 }
             }
