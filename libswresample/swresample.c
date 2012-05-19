@@ -394,7 +394,7 @@ static void buf_set(AudioData *out, AudioData *in, int count){
         for(ch=0; ch<out->ch_count; ch++)
             out->ch[ch]= in->ch[ch] + count*out->bps;
     }else{
-        for(ch=0; ch<out->ch_count; ch++)
+        for(ch=out->ch_count-1; ch>=0; ch--)
             out->ch[ch]= in->ch[0] + (ch + count*out->ch_count) * out->bps;
     }
 }
