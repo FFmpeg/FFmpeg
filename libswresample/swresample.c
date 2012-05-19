@@ -676,3 +676,27 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
     }
 }
 
+int swr_inject_silence(struct SwrContext *s, int count){
+    int ret, i;
+    AudioData silence = s->out;
+    uint8_t *tmp_arg[SWR_CH_MAX];
+
+    if(count <= 0)
+        return 0;
+
+    silence.count = 0;
+    silence.data  = NULL;
+    if((ret=realloc_audio(&silence, count))<0)
+        return ret;
+
+    if(silence.planar) for(i=0; i<silence.ch_count; i++) {
+        memset(silence.ch[i], silence.bps==1 ? 0x80 : 0, count*silence.bps);
+    } else
+        memset(silence.ch[0], silence.bps==1 ? 0x80 : 0, count*silence.bps*silence.ch_count);
+
+    reversefill_audiodata(&silence, tmp_arg);
+    av_log(s, AV_LOG_VERBOSE, "adding %d audio samples of silence\n", count);
+    ret = swr_convert(s, NULL, 0, (const uint8_t**)tmp_arg, count);
+    av_freep(&silence.data);
+    return ret;
+}

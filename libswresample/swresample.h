@@ -30,7 +30,7 @@
 #include "libavutil/samplefmt.h"
 
 #define LIBSWRESAMPLE_VERSION_MAJOR 0
-#define LIBSWRESAMPLE_VERSION_MINOR 12
+#define LIBSWRESAMPLE_VERSION_MINOR 13
 #define LIBSWRESAMPLE_VERSION_MICRO 100
 
 #define LIBSWRESAMPLE_VERSION_INT  AV_VERSION_INT(LIBSWRESAMPLE_VERSION_MAJOR, \
@@ -157,6 +157,11 @@ int swr_set_channel_mapping(struct SwrContext *s, const int *channel_map);
  * @return  AVERROR error code in case of failure.
  */
 int swr_set_matrix(struct SwrContext *s, const double *matrix, int stride);
+
+/**
+ * Injects the specified number of silence samples.
+ */
+int swr_inject_silence(struct SwrContext *s, int count);
 
 /**
  * Gets the delay the next input sample will experience relative to the next output sample.
