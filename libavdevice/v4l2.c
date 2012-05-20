@@ -113,8 +113,6 @@ struct video_data {
     unsigned int *buf_len;
     char *standard;
     int channel;
-    char *video_size;   /**< String describing video size,
-                             set by a private option. */
     char *pixel_format; /**< Set by a private option. */
     int list_format;    /**< Set by a private option. */
     char *framerate;    /**< Set by a private option. */
@@ -805,13 +803,6 @@ static int v4l2_read_header(AVFormatContext *s1)
 
     avpriv_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in us */
 
-    if (s->video_size &&
-        (res = av_parse_video_size(&s->width, &s->height, s->video_size)) < 0) {
-        av_log(s1, AV_LOG_ERROR, "Could not parse video size '%s'.\n",
-               s->video_size);
-        goto out;
-    }
-
     if (s->pixel_format) {
         AVCodec *codec = avcodec_find_decoder_by_name(s->pixel_format);
 
@@ -928,7 +919,7 @@ static int v4l2_read_close(AVFormatContext *s1)
 static const AVOption options[] = {
     { "standard",     "TV standard, used only by analog frame grabber",            OFFSET(standard),     AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0,       DEC },
     { "channel",      "TV channel, used only by frame grabber",                    OFFSET(channel),      AV_OPT_TYPE_INT,    {.dbl = 0 },    0, INT_MAX, DEC },
-    { "video_size",   "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size),   AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       DEC },
+    { "video_size",   "A string describing frame size, such as 640x480 or hd720.", OFFSET(width),        AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL},  0, 0,       DEC },
     { "pixel_format", "Preferred pixel format",                                    OFFSET(pixel_format), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       DEC },
     { "input_format", "Preferred pixel format (for raw video) or codec name",      OFFSET(pixel_format), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       DEC },
     { "framerate",    "",                                                          OFFSET(framerate),    AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       DEC },
