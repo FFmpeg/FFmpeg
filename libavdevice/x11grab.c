@@ -63,9 +63,8 @@ struct x11_grab
     AVRational time_base;    /**< Time base */
     int64_t time_frame;      /**< Current time */
 
-    char *video_size;        /**< String describing video size, set by a private option. */
-    int height;              /**< Height of the grab frame */
     int width;               /**< Width of the grab frame */
+    int height;              /**< Height of the grab frame */
     int x_off;               /**< Horizontal top-left corner coordinate */
     int y_off;               /**< Vertical top-left corner coordinate */
 
@@ -179,10 +178,6 @@ x11grab_read_header(AVFormatContext *s1)
         *offset= 0;
     }
 
-    if ((ret = av_parse_video_size(&x11grab->width, &x11grab->height, x11grab->video_size)) < 0) {
-        av_log(s1, AV_LOG_ERROR, "Couldn't parse video size.\n");
-        goto out;
-    }
     if ((ret = av_parse_video_rate(&framerate, x11grab->framerate)) < 0) {
         av_log(s1, AV_LOG_ERROR, "Could not parse framerate: %s.\n", x11grab->framerate);
         goto out;
@@ -586,7 +581,7 @@ x11grab_read_close(AVFormatContext *s1)
 #define OFFSET(x) offsetof(struct x11_grab, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
-    { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), AV_OPT_TYPE_STRING, {.str = "vga"}, 0, 0, DEC },
+    { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(width), AV_OPT_TYPE_IMAGE_SIZE, {.str = "vga"}, 0, 0, DEC },
     { "framerate", "", OFFSET(framerate), AV_OPT_TYPE_STRING, {.str = "ntsc"}, 0, 0, DEC },
     { "draw_mouse", "Draw the mouse pointer.", OFFSET(draw_mouse), AV_OPT_TYPE_INT, { 1 }, 0, 1, DEC },
     { "follow_mouse", "Move the grabbing region when the mouse pointer reaches within specified amount of pixels to the edge of region.",
