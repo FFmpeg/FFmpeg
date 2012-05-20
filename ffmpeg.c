@@ -1982,6 +1982,8 @@ duplicate_frame:
     pkt.data = NULL;
     pkt.size = 0;
 
+    in_picture->pts = ost->sync_opts;
+
     if (s->oformat->flags & AVFMT_RAWPICTURE &&
         enc->codec->id == CODEC_ID_RAWVIDEO) {
         /* raw pictures are written as AVPicture structure to
@@ -2015,7 +2017,6 @@ duplicate_frame:
         big_picture.quality = quality;
         if (!enc->me_threshold)
             big_picture.pict_type = 0;
-        big_picture.pts = ost->sync_opts;
         if (ost->forced_kf_index < ost->forced_kf_count &&
             big_picture.pts >= ost->forced_kf_pts[ost->forced_kf_index]) {
             big_picture.pict_type = AV_PICTURE_TYPE_I;
