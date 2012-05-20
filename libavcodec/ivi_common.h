@@ -396,11 +396,6 @@ void ff_ivi_process_empty_tile(AVCodecContext *avctx, IVIBandDesc *band,
  */
 void ff_ivi_output_plane(IVIPlaneDesc *plane, uint8_t *dst, int dst_pitch);
 
-/**
- *  Calculate band checksum from band data.
- */
-uint16_t ivi_calc_band_checksum (IVIBandDesc *band);
-
 int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                         AVPacket *avpkt);
 av_cold int ff_ivi_decode_close(AVCodecContext *avctx);

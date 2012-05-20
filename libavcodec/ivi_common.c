@@ -584,7 +584,7 @@ void ff_ivi_process_empty_tile(AVCodecContext *avctx, IVIBandDesc *band,
 
 
 #ifdef DEBUG
-uint16_t ivi_calc_band_checksum (IVIBandDesc *band)
+static uint16_t ivi_calc_band_checksum(IVIBandDesc *band)
 {
     int         x, y;
     int16_t     *src, checksum;
