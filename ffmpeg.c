@@ -1680,13 +1680,6 @@ static void choose_sample_fmt(AVStream *st, AVCodec *codec)
     }
 }
 
-static double
-get_sync_ipts(const OutputStream *ost, int64_t pts)
-{
-    OutputFile *of = output_files[ost->file_index];
-    return (double)(pts - of->start_time) / AV_TIME_BASE;
-}
-
 static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
 {
     AVBitStreamFilterContext *bsfc = ost->bitstream_filters;
@@ -1934,7 +1927,7 @@ static void do_video_out(AVFormatContext *s,
     if(ist && ist->st->start_time != AV_NOPTS_VALUE && ist->st->first_dts != AV_NOPTS_VALUE && ost->frame_rate.num)
         duration = 1/(av_q2d(ost->frame_rate) * av_q2d(enc->time_base));
 
-    sync_ipts = get_sync_ipts(ost, in_picture->pts) / av_q2d(enc->time_base);
+    sync_ipts = in_picture->pts;
     delta = sync_ipts - ost->sync_opts + duration;
 
     /* by default, we output a single frame */
@@ -2162,22 +2155,22 @@ static int poll_filters(void)
                     break;
                 }
                 frame_pts = AV_NOPTS_VALUE;
-                if (ost->enc->type == AVMEDIA_TYPE_VIDEO)
-                    filtered_frame->pts = frame_pts = av_rescale_q(picref->pts, ist_pts_tb, AV_TIME_BASE_Q);
-                else if (picref->pts != AV_NOPTS_VALUE)
+                if (picref->pts != AV_NOPTS_VALUE) {
                     filtered_frame->pts = frame_pts = av_rescale_q(picref->pts,
                                                     ost->filter->filter->inputs[0]->time_base,
                                                     ost->st->codec->time_base) -
                                         av_rescale_q(of->start_time,
                                                     AV_TIME_BASE_Q,
                                                     ost->st->codec->time_base);
+
+                    if (of->start_time && filtered_frame->pts < 0) {
+                        avfilter_unref_buffer(picref);
+                        continue;
+                    }
+                }
                 //if (ost->source_index >= 0)
                 //    *filtered_frame= *input_streams[ost->source_index]->decoded_frame; //for me_threshold
 
-                if (of->start_time && filtered_frame->pts < of->start_time) {
-                    avfilter_unref_buffer(picref);
-                    continue;
-                }
 
                 switch (ost->filter->filter->inputs[0]->type) {
                 case AVMEDIA_TYPE_VIDEO:
