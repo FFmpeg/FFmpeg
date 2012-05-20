@@ -2151,6 +2151,7 @@ static int poll_filters(void)
                     }
                     break;
                 }
+                frame_pts = AV_NOPTS_VALUE;
                 if (ost->enc->type == AVMEDIA_TYPE_VIDEO)
                     filtered_frame->pts = frame_pts = av_rescale_q(picref->pts, ist_pts_tb, AV_TIME_BASE_Q);
                 else if (picref->pts != AV_NOPTS_VALUE)
