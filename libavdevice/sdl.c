@@ -36,7 +36,6 @@ typedef struct {
     SDL_Overlay *overlay;
     char *window_title;
     char *icon_title;
-    char *window_size;
     int window_width, window_height;
     int overlay_width, overlay_height;
     int overlay_fmt;
@@ -58,7 +57,6 @@ static int sdl_write_trailer(AVFormatContext *s)
 
     av_freep(&sdl->window_title);
     av_freep(&sdl->icon_title);
-    av_freep(&sdl->window_size);
 
     if (sdl->overlay) {
         SDL_FreeYUVOverlay(sdl->overlay);
@@ -118,15 +116,6 @@ static int sdl_write_header(AVFormatContext *s)
                av_get_pix_fmt_name(encctx->pix_fmt));
         ret = AVERROR(EINVAL);
         goto fail;
-    }
-
-    if (sdl->window_size) {
-        if (av_parse_video_size(&sdl->window_width, &sdl->window_height,
-                                sdl->window_size) < 0) {
-            av_log(s, AV_LOG_ERROR, "Invalid window size '%s'\n", sdl->window_size);
-            ret = AVERROR(EINVAL);
-            goto fail;
-        }
     }
 
     /* compute overlay width and height from the codec context information */
@@ -205,7 +194,7 @@ static int sdl_write_packet(AVFormatContext *s, AVPacket *pkt)
 static const AVOption options[] = {
     { "window_title", "SDL window title",           OFFSET(window_title),  AV_OPT_TYPE_STRING, {.str = NULL }, 0,  0, AV_OPT_FLAG_ENCODING_PARAM },
     { "icon_title",   "SDL iconified window title", OFFSET(icon_title)  ,  AV_OPT_TYPE_STRING, {.str = NULL }, 0,  0, AV_OPT_FLAG_ENCODING_PARAM },
-    { "window_size",  "SDL window forced size",     OFFSET(window_size) ,  AV_OPT_TYPE_STRING, {.str = NULL }, 0,  0, AV_OPT_FLAG_ENCODING_PARAM },
+    { "window_size",  "SDL window forced size",     OFFSET(window_width),  AV_OPT_TYPE_IMAGE_SIZE,{.str=NULL}, 0,  0, AV_OPT_FLAG_ENCODING_PARAM },
     { NULL },
 };
 
