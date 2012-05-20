@@ -263,7 +263,6 @@ void av_register_all(void)
     REGISTER_PROTOCOL (UDP, udp);
 
     /* external libraries */
-    REGISTER_MUXDEMUX (LIBNUT, libnut);
     REGISTER_PROTOCOL (LIBRTMP, librtmp);
     REGISTER_PROTOCOL (LIBRTMPE, librtmpe);
     REGISTER_PROTOCOL (LIBRTMPS, librtmps);

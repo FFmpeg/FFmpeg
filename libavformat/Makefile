@@ -328,8 +328,6 @@ OBJS-$(CONFIG_YUV4MPEGPIPE_MUXER)        += yuv4mpeg.o
 OBJS-$(CONFIG_YUV4MPEGPIPE_DEMUXER)      += yuv4mpeg.o
 
 # external libraries
-OBJS-$(CONFIG_LIBNUT_DEMUXER)            += libnut.o
-OBJS-$(CONFIG_LIBNUT_MUXER)              += libnut.o
 OBJS-$(CONFIG_LIBRTMP)                   += librtmp.o
 
 # protocols I/O
