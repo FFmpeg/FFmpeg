@@ -294,6 +294,10 @@ XML based format.
 The XML output is described in the XML schema description file
 @file{ffprobe.xsd} installed in the FFmpeg datadir.
 
+An updated version of the schema can be retrieved at the url
+@url{http://www.ffmpeg.org/schema/ffprobe.xsd}, which redirects to the
+latest schema committed into the FFmpeg development source code tree.
+
 Note that the output issued will be compliant to the
 @file{ffprobe.xsd} schema only when no special global output options
 (@option{unit}, @option{prefix}, @option{byte_binary_prefix},
