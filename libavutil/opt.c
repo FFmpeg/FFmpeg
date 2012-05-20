@@ -31,6 +31,7 @@
 #include "eval.h"
 #include "dict.h"
 #include "log.h"
+#include "parseutils.h"
 
 #if FF_API_FIND_OPT
 //FIXME order them and do a bin search
@@ -224,6 +225,7 @@ int av_set_string3(void *obj, const char *name, const char *val, int alloc, cons
 
 int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
 {
+    int ret;
     void *dst, *target_obj;
     const AVOption *o = av_opt_find2(obj, name, NULL, 0, search_flags, &target_obj);
     if (!o || !target_obj)
@@ -241,6 +243,11 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
     case AV_OPT_TYPE_FLOAT:
     case AV_OPT_TYPE_DOUBLE:
     case AV_OPT_TYPE_RATIONAL: return set_string_number(obj, o, val, dst);
+    case AV_OPT_TYPE_IMAGE_SIZE:
+        ret = av_parse_video_size(dst, ((int *)dst) + 1, val);
+        if (ret < 0)
+            av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as image size\n", val);
+        return ret;
     }
 
     av_log(obj, AV_LOG_ERROR, "Invalid option type.\n");
@@ -394,6 +401,9 @@ int av_opt_get(void *obj, const char *name, int search_flags, uint8_t **out_val)
         for (i = 0; i < len; i++)
             snprintf(*out_val + i*2, 3, "%02X", bin[i]);
         return 0;
+    case AV_OPT_TYPE_IMAGE_SIZE:
+        ret = snprintf(buf, sizeof(buf), "%dx%d", ((int *)dst)[0], ((int *)dst)[1]);
+        break;
     default:
         return AVERROR(EINVAL);
     }
@@ -563,6 +573,9 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
             case AV_OPT_TYPE_BINARY:
                 av_log(av_log_obj, AV_LOG_INFO, "%-7s ", "<binary>");
                 break;
+            case AV_OPT_TYPE_IMAGE_SIZE:
+                av_log(av_log_obj, AV_LOG_INFO, "%-7s ", "<image_size>");
+                break;
             case AV_OPT_TYPE_CONST:
             default:
                 av_log(av_log_obj, AV_LOG_INFO, "%-7s ", "");
@@ -640,6 +653,7 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
             }
             break;
             case AV_OPT_TYPE_STRING:
+            case AV_OPT_TYPE_IMAGE_SIZE:
                 av_opt_set(s, opt->name, opt->default_val.str, 0);
                 break;
             case AV_OPT_TYPE_BINARY:
