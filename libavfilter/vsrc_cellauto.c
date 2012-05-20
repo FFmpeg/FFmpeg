@@ -44,7 +44,6 @@ typedef struct {
     uint8_t rule;
     uint64_t pts;
     AVRational time_base;
-    char *size;                 ///< video frame size
     char *rate;                 ///< video frame rate
     double   random_fill_ratio;
     uint32_t random_seed;
@@ -63,8 +62,8 @@ static const AVOption cellauto_options[] = {
     { "p",        "set initial pattern", OFFSET(pattern), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0 },
     { "rate",     "set video rate", OFFSET(rate), AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0 },
     { "r",        "set video rate", OFFSET(rate), AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0 },
-    { "size",     "set video size", OFFSET(size), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0 },
-    { "s",        "set video size", OFFSET(size), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0 },
+    { "size",     "set video size", OFFSET(w),    AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0 },
+    { "s",        "set video size", OFFSET(w),    AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0 },
     { "rule",     "set rule",       OFFSET(rule), AV_OPT_TYPE_INT,    {.dbl = 110},  0, 255 },
     { "random_fill_ratio", "set fill ratio for filling initial grid randomly", OFFSET(random_fill_ratio), AV_OPT_TYPE_DOUBLE, {.dbl = 1/M_PHI}, 0, 1 },
     { "ratio",             "set fill ratio for filling initial grid randomly", OFFSET(random_fill_ratio), AV_OPT_TYPE_DOUBLE, {.dbl = 1/M_PHI}, 0, 1 },
@@ -115,7 +114,7 @@ static int init_pattern_from_string(AVFilterContext *ctx)
     w = strlen(cellauto->pattern);
     av_log(ctx, AV_LOG_DEBUG, "w:%d\n", w);
 
-    if (cellauto->size) {
+    if (cellauto->w) {
         if (w > cellauto->w) {
             av_log(ctx, AV_LOG_ERROR,
                    "The specified width is %d which cannot contain the provided string width of %d\n",
@@ -184,14 +183,8 @@ static int init(AVFilterContext *ctx, const char *args, void *opaque)
         return AVERROR(EINVAL);
     }
 
-    if (!cellauto->size && !cellauto->filename && !cellauto->pattern)
+    if (!cellauto->w && !cellauto->filename && !cellauto->pattern)
         av_opt_set(cellauto, "size", "320x518", 0);
-
-    if (cellauto->size &&
-        (ret = av_parse_video_size(&cellauto->w, &cellauto->h, cellauto->size)) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid frame size: %s\n", cellauto->size);
-        return ret;
-    }
 
     cellauto->time_base.num = frame_rate.den;
     cellauto->time_base.den = frame_rate.num;
