@@ -258,7 +258,7 @@ Developer options (useful when working on Libav itself):
   --disable-optimizations  disable compiler optimizations
   --enable-extra-warnings  enable more compiler warnings
   --samples=PATH           location of test samples for FATE, if not set use
-                           \$FATE_SAMPLES at make invocation time.
+                           \$LIBAV_SAMPLES at make invocation time.
   --enable-xmm-clobber-test check XMM registers for clobbering (Win64-only;
                            should be used only for debugging purposes)
 
@@ -3374,7 +3374,7 @@ SLIB_INSTALL_NAME=${SLIB_INSTALL_NAME}
 SLIB_INSTALL_LINKS=${SLIB_INSTALL_LINKS}
 SLIB_INSTALL_EXTRA_LIB=${SLIB_INSTALL_EXTRA_LIB}
 SLIB_INSTALL_EXTRA_SHLIB=${SLIB_INSTALL_EXTRA_SHLIB}
-SAMPLES:=${samples:-\$(FATE_SAMPLES)}
+SAMPLES:=${samples:-\$(LIBAV_SAMPLES)}
 EOF
 
 get_version(){

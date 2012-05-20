@@ -26,7 +26,7 @@ that is provided separately from the actual source distribution.
 
 To inform the build system about the testsuite location, pass
 @option{--samples=<path to the samples>} to @command{configure} or set the
-@var{SAMPLES} Make variable or the @var{FATE_SAMPLES} environment variable
+@var{SAMPLES} Make variable or the @var{LIBAV_SAMPLES} environment variable
 to a suitable value.
 
 The dataset is available through @command{rsync}, is possible to fetch
