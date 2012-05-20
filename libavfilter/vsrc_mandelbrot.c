@@ -57,7 +57,7 @@ typedef struct {
     int w, h;
     AVRational time_base;
     uint64_t pts;
-    char *size, *rate;
+    char *rate;
     int maxiter;
     double start_x;
     double start_y;
@@ -78,8 +78,8 @@ typedef struct {
 #define OFFSET(x) offsetof(MBContext, x)
 
 static const AVOption mandelbrot_options[] = {
-    {"size",        "set frame size",                OFFSET(size),    AV_OPT_TYPE_STRING,     {.str="640x480"},  CHAR_MIN, CHAR_MAX },
-    {"s",           "set frame size",                OFFSET(size),    AV_OPT_TYPE_STRING,     {.str="640x480"},  CHAR_MIN, CHAR_MAX },
+    {"size",        "set frame size",                OFFSET(w),       AV_OPT_TYPE_IMAGE_SIZE, {.str="640x480"},  CHAR_MIN, CHAR_MAX },
+    {"s",           "set frame size",                OFFSET(w),       AV_OPT_TYPE_IMAGE_SIZE, {.str="640x480"},  CHAR_MIN, CHAR_MAX },
     {"rate",        "set frame rate",                OFFSET(rate),    AV_OPT_TYPE_STRING,     {.str="25"},  CHAR_MIN, CHAR_MAX },
     {"r",           "set frame rate",                OFFSET(rate),    AV_OPT_TYPE_STRING,     {.str="25"},  CHAR_MIN, CHAR_MAX },
     {"maxiter",     "set max iterations number",     OFFSET(maxiter), AV_OPT_TYPE_INT,        {.dbl=7189},  1,        INT_MAX  },
@@ -129,10 +129,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     }
     mb->bailout *= mb->bailout;
 
-    if (av_parse_video_size(&mb->w, &mb->h, mb->size) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid frame size: %s\n", mb->size);
-        return AVERROR(EINVAL);
-    }
     mb->start_scale /=mb->h;
     mb->end_scale /=mb->h;
 
@@ -157,7 +153,6 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     MBContext *mb = ctx->priv;
 
-    av_freep(&mb->size);
     av_freep(&mb->rate);
     av_freep(&mb->point_cache);
     av_freep(&mb-> next_cache);
