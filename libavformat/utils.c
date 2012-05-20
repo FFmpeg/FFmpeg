@@ -4420,7 +4420,8 @@ AVRational av_guess_sample_aspect_ratio(AVFormatContext *format, AVStream *strea
 {
     AVRational undef = {0, 1};
     AVRational stream_sample_aspect_ratio = stream ? stream->sample_aspect_ratio : undef;
-    AVRational frame_sample_aspect_ratio  = frame  ? frame->sample_aspect_ratio  : undef;
+    AVRational codec_sample_aspect_ratio  = stream && stream->codec ? stream->codec->sample_aspect_ratio : undef;
+    AVRational frame_sample_aspect_ratio  = frame  ? frame->sample_aspect_ratio  : codec_sample_aspect_ratio;
 
     av_reduce(&stream_sample_aspect_ratio.num, &stream_sample_aspect_ratio.den,
                stream_sample_aspect_ratio.num,  stream_sample_aspect_ratio.den, INT_MAX);
