@@ -43,7 +43,6 @@ typedef struct {
     char *filename;
     uint8_t rgba_map[4];
     int     pix_step[4];       ///< steps per pixel for each plane of the main output
-    char *original_size_str;
     int original_w, original_h;
     FFDrawContext draw;
 } AssContext;
@@ -51,7 +50,7 @@ typedef struct {
 #define OFFSET(x) offsetof(AssContext, x)
 
 static const AVOption ass_options[] = {
-    {"original_size",  "set the size of the original video (used to scale fonts)", OFFSET(original_size_str), AV_OPT_TYPE_STRING, {.str = NULL},  CHAR_MIN, CHAR_MAX },
+    {"original_size",  "set the size of the original video (used to scale fonts)", OFFSET(original_w), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL},  CHAR_MIN, CHAR_MAX },
     {NULL},
 };
 
@@ -106,14 +105,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
         return ret;
     }
 
-    if (ass->original_size_str &&
-        av_parse_video_size(&ass->original_w, &ass->original_h,
-                            ass->original_size_str) < 0) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Invalid original size '%s'.\n", ass->original_size_str);
-        return AVERROR(EINVAL);
-    }
-
     ass->library = ass_library_init();
     if (!ass->library) {
         av_log(ctx, AV_LOG_ERROR, "Could not initialize libass.\n");
@@ -144,7 +135,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     AssContext *ass = ctx->priv;
 
     av_freep(&ass->filename);
-    av_freep(&ass->original_size_str);
     if (ass->track)
         ass_free_track(ass->track);
     if (ass->renderer)
