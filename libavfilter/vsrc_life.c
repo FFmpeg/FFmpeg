@@ -57,7 +57,6 @@ typedef struct {
     uint16_t born_rule;         ///< encode the behavior for empty cells
     uint64_t pts;
     AVRational time_base;
-    char *size;                 ///< video frame size
     char *rate;                 ///< video frame rate
     double   random_fill_ratio;
     uint32_t random_seed;
@@ -79,8 +78,8 @@ typedef struct {
 static const AVOption life_options[] = {
     { "filename", "set source file",  OFFSET(filename), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0 },
     { "f",        "set source file",  OFFSET(filename), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0 },
-    { "size",     "set video size",   OFFSET(size),     AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0 },
-    { "s",        "set video size",   OFFSET(size),     AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0 },
+    { "size",     "set video size",   OFFSET(w),        AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0 },
+    { "s",        "set video size",   OFFSET(w),        AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0 },
     { "rate",     "set video rate",   OFFSET(rate),     AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0 },
     { "r",        "set video rate",   OFFSET(rate),     AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0 },
     { "rule",     "set rule",         OFFSET(rule_str), AV_OPT_TYPE_STRING, {.str = "B3/S23"}, CHAR_MIN, CHAR_MAX },
@@ -190,7 +189,7 @@ static int init_pattern_from_file(AVFilterContext *ctx)
     }
     av_log(ctx, AV_LOG_DEBUG, "h:%d max_w:%d\n", h, max_w);
 
-    if (life->size) {
+    if (life->w) {
         if (max_w > life->w || h > life->h) {
             av_log(ctx, AV_LOG_ERROR,
                    "The specified size is %dx%d which cannot contain the provided file size of %dx%d\n",
@@ -246,15 +245,8 @@ static int init(AVFilterContext *ctx, const char *args, void *opaque)
     }
     av_freep(&life->rate);
 
-    if (!life->size && !life->filename)
+    if (!life->w && !life->filename)
         av_opt_set(life, "size", "320x240", 0);
-
-    if (life->size &&
-        (ret = av_parse_video_size(&life->w, &life->h, life->size)) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid frame size: %s\n", life->size);
-        return ret;
-    }
-    av_freep(&life->size);
 
     if ((ret = parse_rule(&life->born_rule, &life->stay_rule, life->rule_str, ctx)) < 0)
         return ret;
