@@ -1914,12 +1914,15 @@ static void do_subtitle_out(AVFormatContext *s,
     }
 }
 
-static void do_video_out(AVFormatContext *s, OutputStream *ost,
-                         AVFrame *in_picture, float quality)
+static void do_video_out(AVFormatContext *s,
+                         OutputStream *ost,
+                         AVFrame *in_picture,
+                         float quality)
 {
-    int nb_frames, i, ret, format_video_sync;
+    int ret, format_video_sync;
     AVPacket pkt;
-    AVCodecContext *enc;
+    AVCodecContext *enc = ost->st->codec;
+    int nb_frames, i;
     double sync_ipts, delta;
     double duration = 0;
     int frame_size = 0;
@@ -1927,8 +1930,6 @@ static void do_video_out(AVFormatContext *s, OutputStream *ost,
 
     if (ost->source_index >= 0)
         ist = input_streams[ost->source_index];
-
-    enc = ost->st->codec;
 
     if(ist && ist->st->start_time != AV_NOPTS_VALUE && ist->st->first_dts != AV_NOPTS_VALUE && ost->frame_rate.num)
         duration = 1/(av_q2d(ost->frame_rate) * av_q2d(enc->time_base));
