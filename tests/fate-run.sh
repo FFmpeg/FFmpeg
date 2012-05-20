@@ -70,7 +70,7 @@ run(){
 }
 
 probefmt(){
-    run ffprobe -show_format_entry format_name -print_format default=nw=1 -v 0 "$@"
+    run ffprobe -show_format_entry format_name -print_format default=nw=1:nk=1 -v 0 "$@"
 }
 
 avconv(){
