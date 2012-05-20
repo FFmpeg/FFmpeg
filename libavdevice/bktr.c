@@ -56,7 +56,6 @@ typedef struct {
     int width, height;
     uint64_t per_frame;
     int standard;
-    char *video_size; /**< String describing video size, set by a private option. */
     char *framerate;  /**< Set by a private option. */
 } VideoData;
 
@@ -246,14 +245,8 @@ static int grab_read_header(AVFormatContext *s1)
 {
     VideoData *s = s1->priv_data;
     AVStream *st;
-    int width, height;
     AVRational framerate;
     int ret = 0;
-
-    if ((ret = av_parse_video_size(&width, &height, s->video_size)) < 0) {
-        av_log(s1, AV_LOG_ERROR, "Could not parse video size '%s'.\n", s->video_size);
-        goto out;
-    }
 
     if (!s->framerate)
         switch (s->standard) {
@@ -277,20 +270,18 @@ static int grab_read_header(AVFormatContext *s1)
     }
     avpriv_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in use */
 
-    s->width = width;
-    s->height = height;
     s->per_frame = ((uint64_t)1000000 * framerate.den) / framerate.num;
 
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->pix_fmt = PIX_FMT_YUV420P;
     st->codec->codec_id = CODEC_ID_RAWVIDEO;
-    st->codec->width = width;
-    st->codec->height = height;
+    st->codec->width = s->width;
+    st->codec->height = s->height;
     st->codec->time_base.den = framerate.num;
     st->codec->time_base.num = framerate.den;
 
 
-    if (bktr_init(s1->filename, width, height, s->standard,
+    if (bktr_init(s1->filename, s->width, s->height, s->standard,
                   &s->video_fd, &s->tuner_fd, -1, 0.0) < 0) {
         ret = AVERROR(EIO);
         goto out;
@@ -331,7 +322,7 @@ static const AVOption options[] = {
     { "PALN",     "", 0, AV_OPT_TYPE_CONST, {.dbl = PALN},  0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
     { "PALM",     "", 0, AV_OPT_TYPE_CONST, {.dbl = PALM},  0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
     { "NTSCJ",    "", 0, AV_OPT_TYPE_CONST, {.dbl = NTSCJ}, 0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
-    { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), AV_OPT_TYPE_STRING, {.str = "vga"}, 0, 0, DEC },
+    { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(width), AV_OPT_TYPE_IMAGE_SIZE, {.str = "vga"}, 0, 0, DEC },
     { "framerate", "", OFFSET(framerate), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
     { NULL },
 };
