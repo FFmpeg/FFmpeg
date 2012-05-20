@@ -1262,7 +1262,7 @@ static int mov_write_nmhd_tag(AVIOContext *pb)
 
 static int mov_write_gmhd_tag(AVIOContext *pb)
 {
-    avio_wb32(pb, 0x20);   /* size */
+    avio_wb32(pb, 0x4C);   /* size */
     ffio_wfourcc(pb, "gmhd");
     avio_wb32(pb, 0x18);   /* gmin size */
     ffio_wfourcc(pb, "gmin");/* generic media info */
@@ -1273,7 +1273,27 @@ static int mov_write_gmhd_tag(AVIOContext *pb)
     avio_wb16(pb, 0x8000); /* opColor (b?) */
     avio_wb16(pb, 0);      /* balance */
     avio_wb16(pb, 0);      /* reserved */
-    return 0x20;
+
+    /*
+     * This special text atom is required for
+     * Apple Quicktime chapters. The contents
+     * don't appear to be documented, so the
+     * bytes are copied verbatim.
+     */
+    avio_wb32(pb, 0x2C);   /* size */
+    ffio_wfourcc(pb, "text");
+    avio_wb16(pb, 0x01);
+    avio_wb32(pb, 0x00);
+    avio_wb32(pb, 0x00);
+    avio_wb32(pb, 0x00);
+    avio_wb32(pb, 0x01);
+    avio_wb32(pb, 0x00);
+    avio_wb32(pb, 0x00);
+    avio_wb32(pb, 0x00);
+    avio_wb32(pb, 0x00004000);
+    avio_wb16(pb, 0x0000);
+
+    return 0x4C;
 }
 
 static int mov_write_smhd_tag(AVIOContext *pb)
@@ -3052,6 +3072,8 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
 // as samples, and a tref pointing from the other tracks to the chapter one.
 static void mov_create_chapter_track(AVFormatContext *s, int tracknum)
 {
+    AVIOContext *pb;
+
     MOVMuxContext *mov = s->priv_data;
     MOVTrack *track = &mov->tracks[tracknum];
     AVPacket pkt = { .stream_index = tracknum, .flags = AV_PKT_FLAG_KEY };
@@ -3062,6 +3084,50 @@ static void mov_create_chapter_track(AVFormatContext *s, int tracknum)
     track->timescale = MOV_TIMESCALE;
     track->enc = avcodec_alloc_context3(NULL);
     track->enc->codec_type = AVMEDIA_TYPE_SUBTITLE;
+
+    if (avio_open_dyn_buf(&pb) >= 0) {
+        int size;
+        uint8_t *buf;
+
+        /* Stub header (usually for Quicktime chapter track) */
+        // TextSampleEntry
+        avio_wb32(pb, 0x01); // displayFlags
+        avio_w8(pb, 0x00);   // horizontal justification
+        avio_w8(pb, 0x00);   // vertical justification
+        avio_w8(pb, 0x00);   // bgColourRed
+        avio_w8(pb, 0x00);   // bgColourGreen
+        avio_w8(pb, 0x00);   // bgColourBlue
+        avio_w8(pb, 0x00);   // bgColourAlpha
+        // BoxRecord
+        avio_wb16(pb, 0x00); // defTextBoxTop
+        avio_wb16(pb, 0x00); // defTextBoxLeft
+        avio_wb16(pb, 0x00); // defTextBoxBottom
+        avio_wb16(pb, 0x00); // defTextBoxRight
+        // StyleRecord
+        avio_wb16(pb, 0x00); // startChar
+        avio_wb16(pb, 0x00); // endChar
+        avio_wb16(pb, 0x01); // fontID
+        avio_w8(pb, 0x00);   // fontStyleFlags
+        avio_w8(pb, 0x00);   // fontSize
+        avio_w8(pb, 0x00);   // fgColourRed
+        avio_w8(pb, 0x00);   // fgColourGreen
+        avio_w8(pb, 0x00);   // fgColourBlue
+        avio_w8(pb, 0x00);   // fgColourAlpha
+        // FontTableBox
+        avio_wb32(pb, 0x0D); // box size
+        ffio_wfourcc(pb, "ftab"); // box atom name
+        avio_wb16(pb, 0x01); // entry count
+        // FontRecord
+        avio_wb16(pb, 0x01); // font ID
+        avio_w8(pb, 0x00);   // font name length
+
+        if ((size = avio_close_dyn_buf(pb, &buf)) > 0) {
+            track->enc->extradata = buf;
+            track->enc->extradata_size = size;
+        } else {
+            av_free(&buf);
+        }
+    }
 
     for (i = 0; i < s->nb_chapters; i++) {
         AVChapter *c = s->chapters[i];
