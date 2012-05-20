@@ -276,6 +276,9 @@ typedef struct OutputStream {
        for A/V sync */
     struct InputStream *sync_ist; /* input stream to sync against */
     int64_t sync_opts;       /* output frame counter, could be changed to some true timestamp */ // FIXME look at frame_number
+    /* pts of the first frame encoded for this stream, used for limiting
+     * recording time */
+    int64_t first_pts;
     AVBitStreamFilterContext *bitstream_filters;
     AVCodec *enc;
     int64_t max_frames;
@@ -1744,18 +1747,18 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
     }
 }
 
-// static int check_recording_time(OutputStream *ost)
-// {
-//     OutputFile *of = output_files[ost->file_index];
-//
-//     if (of->recording_time != INT64_MAX &&
-//         av_compare_ts(ost->sync_opts - ost->first_pts, ost->st->codec->time_base, of->recording_time,
-//                       AV_TIME_BASE_Q) >= 0) {
-//         ost->is_past_recording_time = 1;
-//         return 0;
-//     }
-//     return 1;
-// }
+static int check_recording_time(OutputStream *ost)
+{
+    OutputFile *of = output_files[ost->file_index];
+
+    if (of->recording_time != INT64_MAX &&
+        av_compare_ts(ost->sync_opts - ost->first_pts, ost->st->codec->time_base, of->recording_time,
+                      AV_TIME_BASE_Q) >= 0) {
+        ost->is_past_recording_time = 1;
+        return 0;
+    }
+    return 1;
+}
 
 static void do_audio_out(AVFormatContext *s, OutputStream *ost,
                          AVFrame *frame)
