@@ -86,16 +86,16 @@ FATE_LAVF    = $(LAVF_TESTS:%=fate-lavf-%)
 FATE_LAVFI   = $(LAVFI_TESTS:%=fate-lavfi-%)
 FATE_SEEK    = $(SEEK_TESTS:seek_%=fate-seek-%)
 
-FATE = $(FATE_ACODEC)                                                   \
-       $(FATE_VCODEC)                                                   \
-       $(FATE_LAVF)                                                     \
-       $(FATE_SEEK)                                                     \
+FATE_AVCONV += $(FATE_ACODEC)                                           \
+               $(FATE_VCODEC)                                           \
+               $(FATE_LAVF)                                             \
+               $(FATE_LAVFI)                                            \
+               $(FATE_SEEK)                                             \
 
 FATE_FFMPEG += $(FATE_FFMPEG-yes) $(FATE_AVCONV) $(FATE_AVCONV-yes)
 FATE-$(CONFIG_FFMPEG) += $(FATE_FFMPEG)
 
 FATE-$(CONFIG_AVCODEC)  += $(FATE_LIBAVCODEC)
-FATE-$(CONFIG_AVFILTER) += $(FATE_LAVFI)
 
 FATE_SAMPLES-$(CONFIG_FFMPEG) += $(FATE_SAMPLES_AVCONV) $(FATE_SAMPLES_FFMPEG)
 FATE_SAMPLES += $(FATE_SAMPLES-yes)

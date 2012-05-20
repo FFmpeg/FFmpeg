@@ -174,9 +174,12 @@ static void ff_region_offset2size(GranuleDef *g)
 
 static void ff_init_short_region(MPADecodeContext *s, GranuleDef *g)
 {
-    if (g->block_type == 2)
-        g->region_size[0] = (36 / 2);
-    else {
+    if (g->block_type == 2) {
+        if (s->sample_rate_index != 8)
+            g->region_size[0] = (36 / 2);
+        else
+            g->region_size[0] = (72 / 2);
+    } else {
         if (s->sample_rate_index <= 2)
             g->region_size[0] = (36 / 2);
         else if (s->sample_rate_index != 8)
@@ -201,14 +204,12 @@ static void ff_compute_band_indexes(MPADecodeContext *s, GranuleDef *g)
     if (g->block_type == 2) {
         if (g->switch_point) {
             /* if switched mode, we handle the 36 first samples as
-                long blocks.  For 8000Hz, we handle the 48 first
-                exponents as long blocks (XXX: check this!) */
+                long blocks.  For 8000Hz, we handle the 72 first
+                exponents as long blocks */
             if (s->sample_rate_index <= 2)
                 g->long_end = 8;
-            else if (s->sample_rate_index != 8)
-                g->long_end = 6;
             else
-                g->long_end = 4; /* 8000 Hz */
+                g->long_end = 6;
 
             g->short_start = 2 + (s->sample_rate_index != 8);
         } else {
@@ -1018,7 +1019,7 @@ static void reorder_block(MPADecodeContext *s, GranuleDef *g)
         if (s->sample_rate_index != 8)
             ptr = g->sb_hybrid + 36;
         else
-            ptr = g->sb_hybrid + 48;
+            ptr = g->sb_hybrid + 72;
     } else {
         ptr = g->sb_hybrid;
     }
