@@ -2640,7 +2640,7 @@ static int transcode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
     return ret;
 }
 
-static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int64_t *pkt_pts)
+static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output)
 {
     AVFrame *decoded_frame;
     void *buffer_to_free = NULL;
@@ -2654,9 +2654,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
     else
         avcodec_get_frame_defaults(ist->decoded_frame);
     decoded_frame = ist->decoded_frame;
-    pkt->pts  = *pkt_pts;
     pkt->dts  = av_rescale_q(ist->dts, AV_TIME_BASE_Q, ist->st->time_base);
-    *pkt_pts  = AV_NOPTS_VALUE;
 
     update_benchmark(NULL);
     ret = avcodec_decode_video2(ist->st->codec,
@@ -2778,7 +2776,6 @@ static int output_packet(InputStream *ist, const AVPacket *pkt)
 {
     int ret = 0, i;
     int got_output;
-    int64_t pkt_pts = AV_NOPTS_VALUE;
 
     AVPacket avpkt;
     if (!ist->saw_first_ts) {
@@ -2811,8 +2808,6 @@ static int output_packet(InputStream *ist, const AVPacket *pkt)
         if (ist->st->codec->codec_type != AVMEDIA_TYPE_VIDEO || !ist->decoding_needed)
             ist->next_pts = ist->pts = av_rescale_q(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q);
     }
-    if(pkt->pts != AV_NOPTS_VALUE)
-        pkt_pts = pkt->pts;
 
     // while we have more to decode or while the decoder did output something on EOF
     while (ist->decoding_needed && (avpkt.size > 0 || (!pkt && got_output))) {
@@ -2833,7 +2828,7 @@ static int output_packet(InputStream *ist, const AVPacket *pkt)
             ret = transcode_audio    (ist, &avpkt, &got_output);
             break;
         case AVMEDIA_TYPE_VIDEO:
-            ret = transcode_video    (ist, &avpkt, &got_output, &pkt_pts);
+            ret = transcode_video    (ist, &avpkt, &got_output);
             if (avpkt.duration) {
                 duration = av_rescale_q(avpkt.duration, ist->st->time_base, AV_TIME_BASE_Q);
             } else if(ist->st->codec->time_base.num != 0 && ist->st->codec->time_base.den != 0) {
