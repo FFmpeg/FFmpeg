@@ -179,18 +179,17 @@ int av_buffersrc_add_ref(AVFilterContext *s, AVFilterBufferRef *buf, int flags)
         return ret;
 
     if (!(flags & AV_BUFFERSRC_FLAG_NO_CHECK_FORMAT)) {
-        /* TODO reindent */
-    switch (s->outputs[0]->type) {
-    case AVMEDIA_TYPE_VIDEO:
-        CHECK_VIDEO_PARAM_CHANGE(s, c, buf->video->w, buf->video->h, buf->format);
-        break;
-    case AVMEDIA_TYPE_AUDIO:
-        CHECK_AUDIO_PARAM_CHANGE(s, c, buf->audio->sample_rate, buf->audio->channel_layout,
-                                 buf->format);
-        break;
-    default:
-        return AVERROR(EINVAL);
-    }
+        switch (s->outputs[0]->type) {
+        case AVMEDIA_TYPE_VIDEO:
+            CHECK_VIDEO_PARAM_CHANGE(s, c, buf->video->w, buf->video->h, buf->format);
+            break;
+        case AVMEDIA_TYPE_AUDIO:
+            CHECK_AUDIO_PARAM_CHANGE(s, c, buf->audio->sample_rate, buf->audio->channel_layout,
+                                     buf->format);
+            break;
+        default:
+            return AVERROR(EINVAL);
+        }
     }
     if (!(flags & AV_BUFFERSRC_FLAG_NO_COPY))
         to_free = buf = copy_buffer_ref(s, buf);
