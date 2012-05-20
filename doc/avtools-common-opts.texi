@@ -41,6 +41,8 @@ streams of this type.
 @item p:@var{program_id}[:@var{stream_index}]
 If @var{stream_index} is given, then matches stream number @var{stream_index} in
 program with id @var{program_id}. Otherwise matches all streams in this program.
+@item #@var{stream_id}
+Matches the stream by format-specific ID.
 @end table
 @section Generic options
 

@@ -1109,6 +1109,12 @@ int check_stream_specifier(AVFormatContext *s, AVStream *st, const char *spec)
                     return 1;
         }
         return 0;
+    } else if (*spec == '#') {
+        int sid;
+        char *endptr;
+        sid = strtol(spec + 1, &endptr, 0);
+        if (!*endptr)
+            return st->id == sid;
     } else if (!*spec) /* empty specifier, matches everything */
         return 1;
 
