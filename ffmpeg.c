@@ -957,7 +957,7 @@ static int configure_video_filters(FilterGraph *fg, AVFilterContext **in_filter,
 
     snprintf(args, 255, "%d:%d:%d:%d:%d:%d:%d:flags=%d", ist->st->codec->width,
              ist->st->codec->height, ist->st->codec->pix_fmt,
-             1, AV_TIME_BASE,
+             ist->st->time_base.num, ist->st->time_base.den,
              sample_aspect_ratio.num, sample_aspect_ratio.den,
              SWS_BILINEAR + ((ist->st->codec->flags&CODEC_FLAG_BITEXACT) ? SWS_BITEXACT:0));
 
@@ -1363,7 +1363,8 @@ static int configure_complex_filter(FilterGraph *fg)
                   ist->st->sample_aspect_ratio :
                   ist->st->codec->sample_aspect_ratio;
             snprintf(args, sizeof(args), "%d:%d:%d:%d:%d:%d:%d", ist->st->codec->width,
-                     ist->st->codec->height, ist->st->codec->pix_fmt, 1, AV_TIME_BASE,
+                     ist->st->codec->height, ist->st->codec->pix_fmt,
+                     ist->st->time_base.num, ist->st->time_base.den,
                      sar.num, sar.den);
             filter = avfilter_get_by_name("buffer");
             break;
@@ -2654,7 +2655,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
         avcodec_get_frame_defaults(ist->decoded_frame);
     decoded_frame = ist->decoded_frame;
     pkt->pts  = *pkt_pts;
-    pkt->dts  = ist->dts;
+    pkt->dts  = av_rescale_q(ist->dts, AV_TIME_BASE_Q, ist->st->time_base);
     *pkt_pts  = AV_NOPTS_VALUE;
 
     update_benchmark(NULL);
@@ -2675,7 +2676,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
 
     best_effort_timestamp= av_frame_get_best_effort_timestamp(decoded_frame);
     if(best_effort_timestamp != AV_NOPTS_VALUE)
-        ist->next_pts = ist->pts = decoded_frame->pts = best_effort_timestamp;
+        ist->next_pts = ist->pts = av_rescale_q(decoded_frame->pts = best_effort_timestamp, ist->st->time_base, AV_TIME_BASE_Q);
 
     pkt->size = 0;
     pre_process_video_frame(ist, (AVPicture *)decoded_frame, &buffer_to_free);
@@ -2811,7 +2812,7 @@ static int output_packet(InputStream *ist, const AVPacket *pkt)
             ist->next_pts = ist->pts = av_rescale_q(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q);
     }
     if(pkt->pts != AV_NOPTS_VALUE)
-        pkt_pts = av_rescale_q(pkt->pts, ist->st->time_base, AV_TIME_BASE_Q);
+        pkt_pts = pkt->pts;
 
     // while we have more to decode or while the decoder did output something on EOF
     while (ist->decoding_needed && (avpkt.size > 0 || (!pkt && got_output))) {
