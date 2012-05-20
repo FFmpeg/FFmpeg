@@ -1991,7 +1991,7 @@ duplicate_frame:
         enc->coded_frame->top_field_first  = in_picture->top_field_first;
         pkt.data   = (uint8_t *)in_picture;
         pkt.size   =  sizeof(AVPicture);
-        pkt.pts    = av_rescale_q(ost->sync_opts, enc->time_base, ost->st->time_base);
+        pkt.pts    = av_rescale_q(in_picture->pts, enc->time_base, ost->st->time_base);
         pkt.flags |= AV_PKT_FLAG_KEY;
 
         write_frame(s, &pkt, ost);
