@@ -19,13 +19,13 @@
  */
 
 #include "libavutil/cpu.h"
+#include "libavutil/ppc/types_altivec.h"
+#include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/h264data.h"
 #include "libavcodec/h264dsp.h"
 
 #include "dsputil_altivec.h"
-#include "util_altivec.h"
-#include "types_altivec.h"
 
 #define PUT_OP_U8_ALTIVEC(d, s, dst) d = s
 #define AVG_OP_U8_ALTIVEC(d, s, dst) d = vec_avg(dst, s)

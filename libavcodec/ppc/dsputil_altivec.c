@@ -24,9 +24,9 @@
 #if HAVE_ALTIVEC_H
 #include <altivec.h>
 #endif
+#include "libavutil/ppc/types_altivec.h"
+#include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/dsputil.h"
-#include "util_altivec.h"
-#include "types_altivec.h"
 #include "dsputil_altivec.h"
 
 static int sad16_x2_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)

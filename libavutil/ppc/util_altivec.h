@@ -21,8 +21,8 @@
  * Contains misc utility macros and inline functions
  */
 
-#ifndef AVCODEC_PPC_UTIL_ALTIVEC_H
-#define AVCODEC_PPC_UTIL_ALTIVEC_H
+#ifndef AVUTIL_PPC_UTIL_ALTIVEC_H
+#define AVUTIL_PPC_UTIL_ALTIVEC_H
 
 #include <stdint.h>
 
@@ -115,4 +115,4 @@ static inline vec_u8 load_with_perm_vec(int offset, uint8_t *src, vec_u8 perm_ve
     return vec_perm(a, b, perm_vec);
 }
 
-#endif /* AVCODEC_PPC_UTIL_ALTIVEC_H */
+#endif /* AVUTIL_PPC_UTIL_ALTIVEC_H */

@@ -20,7 +20,7 @@
  */
 
 #include "dsputil_altivec.h"
-#include "util_altivec.h"
+#include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/mpegaudiodsp.h"
 

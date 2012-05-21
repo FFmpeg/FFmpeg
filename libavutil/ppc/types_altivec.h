@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_PPC_TYPES_ALTIVEC_H
-#define AVCODEC_PPC_TYPES_ALTIVEC_H
+#ifndef AVUTIL_PPC_TYPES_ALTIVEC_H
+#define AVUTIL_PPC_TYPES_ALTIVEC_H
 
 /***********************************************************************
  * Vector types
@@ -44,4 +44,4 @@
 #define zero_u32v (vec_u32) zerov
 #define zero_s32v (vec_s32) zerov
 
-#endif /* AVCODEC_PPC_TYPES_ALTIVEC_H */
+#endif /* AVUTIL_PPC_TYPES_ALTIVEC_H */

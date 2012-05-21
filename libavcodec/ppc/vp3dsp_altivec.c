@@ -18,9 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/ppc/types_altivec.h"
+#include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/dsputil.h"
-#include "util_altivec.h"
-#include "types_altivec.h"
 #include "dsputil_altivec.h"
 
 static const vec_s16 constants =

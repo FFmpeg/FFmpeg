@@ -18,10 +18,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/dsputil.h"
 
 #include "dsputil_altivec.h"
-#include "util_altivec.h"
 
 static void vector_fmul_altivec(float *dst, const float *src0, const float *src1, int len)
 {
