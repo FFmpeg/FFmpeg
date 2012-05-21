@@ -119,7 +119,7 @@ static int config_output(AVFilterLink *outlink)
     av_get_channel_layout_string(buf2, sizeof(buf2),
                                  -1, outlink->channel_layout);
     av_log(ctx, AV_LOG_VERBOSE,
-           "fmt:%s srate: %d cl:%s -> fmt:%s srate: %d cl:%s\n",
+           "fmt:%s srate:%d cl:%s -> fmt:%s srate:%d cl:%s\n",
            av_get_sample_fmt_name(inlink ->format), inlink ->sample_rate, buf1,
            av_get_sample_fmt_name(outlink->format), outlink->sample_rate, buf2);
 
