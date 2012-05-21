@@ -157,7 +157,7 @@ int ff_raw_video_read_header(AVFormatContext *s)
 
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = s->iformat->raw_codec_id;
-    st->need_parsing = AVSTREAM_PARSE_FULL;
+    st->need_parsing = AVSTREAM_PARSE_FULL_RAW;
 
     if ((ret = av_parse_video_rate(&framerate, s1->framerate)) < 0) {
         av_log(s, AV_LOG_ERROR, "Could not parse framerate: %s.\n", s1->framerate);
