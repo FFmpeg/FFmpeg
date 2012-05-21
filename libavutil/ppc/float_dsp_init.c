@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008 Siarhei Siamashka <ssvb@users.sourceforge.net>
+ * Copyright (c) 2006 Luca Barbato <lu_zero@gentoo.org>
  *
  * This file is part of Libav.
  *
@@ -18,13 +18,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/dsputil.h"
-#include "dsputil_arm.h"
+#include "libavutil/cpu.h"
+#include "libavutil/float_dsp.h"
 
-void ff_vector_fmul_reverse_vfp(float *dst, const float *src0,
-                                const float *src1, int len);
+extern void ff_vector_fmul_altivec(float *dst, const float *src0,
+                                   const float *src1, int len);
 
-void ff_dsputil_init_vfp(DSPContext* c, AVCodecContext *avctx)
+void ff_float_dsp_init_ppc(AVFloatDSPContext *fdsp, int bit_exact)
 {
-    c->vector_fmul_reverse = ff_vector_fmul_reverse_vfp;
+#if HAVE_ALTIVEC
+    int mm_flags = av_get_cpu_flags();
+
+    if (!(mm_flags & AV_CPU_FLAG_ALTIVEC))
+        return;
+
+    fdsp->vector_fmul = ff_vector_fmul_altivec;
+#endif
 }

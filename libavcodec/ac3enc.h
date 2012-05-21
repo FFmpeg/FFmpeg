@@ -29,6 +29,8 @@
 #define AVCODEC_AC3ENC_H
 
 #include <stdint.h>
+
+#include "libavutil/float_dsp.h"
 #include "ac3.h"
 #include "ac3dsp.h"
 #include "avcodec.h"
@@ -158,6 +160,7 @@ typedef struct AC3EncodeContext {
     AVCodecContext *avctx;                  ///< parent AVCodecContext
     PutBitContext pb;                       ///< bitstream writer context
     DSPContext dsp;
+    AVFloatDSPContext fdsp;
     AC3DSPContext ac3dsp;                   ///< AC-3 optimized functions
     FFTContext mdct;                        ///< FFT context for MDCT calculation
     const SampleType *mdct_window;          ///< MDCT window function array

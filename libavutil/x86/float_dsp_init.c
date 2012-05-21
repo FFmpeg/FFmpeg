@@ -1,6 +1,4 @@
 /*
- * Copyright (c) 2008 Siarhei Siamashka <ssvb@users.sourceforge.net>
- *
  * This file is part of Libav.
  *
  * Libav is free software; you can redistribute it and/or
@@ -18,13 +16,26 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/dsputil.h"
-#include "dsputil_arm.h"
+#include "config.h"
 
-void ff_vector_fmul_reverse_vfp(float *dst, const float *src0,
-                                const float *src1, int len);
+#include "libavutil/cpu.h"
+#include "libavutil/float_dsp.h"
 
-void ff_dsputil_init_vfp(DSPContext* c, AVCodecContext *avctx)
+extern void ff_vector_fmul_sse(float *dst, const float *src0, const float *src1,
+                               int len);
+extern void ff_vector_fmul_avx(float *dst, const float *src0, const float *src1,
+                               int len);
+
+void ff_float_dsp_init_x86(AVFloatDSPContext *fdsp)
 {
-    c->vector_fmul_reverse = ff_vector_fmul_reverse_vfp;
+#if HAVE_YASM
+    int mm_flags = av_get_cpu_flags();
+
+    if (mm_flags & AV_CPU_FLAG_SSE && HAVE_SSE) {
+        fdsp->vector_fmul = ff_vector_fmul_sse;
+    }
+    if (mm_flags & AV_CPU_FLAG_AVX && HAVE_AVX) {
+        fdsp->vector_fmul = ff_vector_fmul_avx;
+    }
+#endif
 }

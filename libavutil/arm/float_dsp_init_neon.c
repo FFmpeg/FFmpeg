@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2008 Siarhei Siamashka <ssvb@users.sourceforge.net>
+ * ARM NEON optimised Float DSP functions
+ * Copyright (c) 2008 Mans Rullgard <mans@mansr.com>
  *
  * This file is part of Libav.
  *
@@ -18,13 +19,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/dsputil.h"
-#include "dsputil_arm.h"
+#include <stdint.h>
 
-void ff_vector_fmul_reverse_vfp(float *dst, const float *src0,
-                                const float *src1, int len);
+#include "libavutil/float_dsp.h"
+#include "float_dsp_arm.h"
 
-void ff_dsputil_init_vfp(DSPContext* c, AVCodecContext *avctx)
+void ff_vector_fmul_neon(float *dst, const float *src0, const float *src1, int len);
+
+void ff_dsputil_init_neon(AVFloatDSPContext *fdsp)
 {
-    c->vector_fmul_reverse = ff_vector_fmul_reverse_vfp;
+    c->vector_fmul = ff_vector_fmul_neon;
 }

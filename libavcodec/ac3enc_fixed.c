@@ -68,10 +68,11 @@ av_cold int AC3_NAME(mdct_init)(AC3EncodeContext *s)
 /*
  * Apply KBD window to input samples prior to MDCT.
  */
-static void apply_window(DSPContext *dsp, int16_t *output, const int16_t *input,
+static void apply_window(void *dsp, int16_t *output, const int16_t *input,
                          const int16_t *window, unsigned int len)
 {
-    dsp->apply_window_int16(output, input, window, len);
+    DSPContext *dsp0 = dsp;
+    dsp0->apply_window_int16(output, input, window, len);
 }
 
 

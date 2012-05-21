@@ -2494,6 +2494,7 @@ av_cold int ff_ac3_encode_init(AVCodecContext *avctx)
 #endif
 
     ff_dsputil_init(&s->dsp, avctx);
+    avpriv_float_dsp_init(&s->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
     ff_ac3dsp_init(&s->ac3dsp, avctx->flags & CODEC_FLAG_BITEXACT);
 
     dprint_options(s);

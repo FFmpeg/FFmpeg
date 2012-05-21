@@ -35,6 +35,7 @@
  * http://wiki.multimedia.cx/index.php?title=Nellymoser
  */
 
+#include "libavutil/float_dsp.h"
 #include "libavutil/mathematics.h"
 #include "nellymoser.h"
 #include "avcodec.h"
@@ -55,6 +56,7 @@ typedef struct NellyMoserEncodeContext {
     AVCodecContext  *avctx;
     int             last_frame;
     DSPContext      dsp;
+    AVFloatDSPContext fdsp;
     FFTContext      mdct_ctx;
     AudioFrameQueue afq;
     DECLARE_ALIGNED(32, float, mdct_out)[NELLY_SAMPLES];
@@ -120,11 +122,11 @@ static void apply_mdct(NellyMoserEncodeContext *s)
     float *in1 = s->buf + NELLY_BUF_LEN;
     float *in2 = s->buf + 2 * NELLY_BUF_LEN;
 
-    s->dsp.vector_fmul        (s->in_buff,                 in0, ff_sine_128, NELLY_BUF_LEN);
+    s->fdsp.vector_fmul       (s->in_buff,                 in0, ff_sine_128, NELLY_BUF_LEN);
     s->dsp.vector_fmul_reverse(s->in_buff + NELLY_BUF_LEN, in1, ff_sine_128, NELLY_BUF_LEN);
     s->mdct_ctx.mdct_calc(&s->mdct_ctx, s->mdct_out, s->in_buff);
 
-    s->dsp.vector_fmul        (s->in_buff,                 in1, ff_sine_128, NELLY_BUF_LEN);
+    s->fdsp.vector_fmul       (s->in_buff,                 in1, ff_sine_128, NELLY_BUF_LEN);
     s->dsp.vector_fmul_reverse(s->in_buff + NELLY_BUF_LEN, in2, ff_sine_128, NELLY_BUF_LEN);
     s->mdct_ctx.mdct_calc(&s->mdct_ctx, s->mdct_out + NELLY_BUF_LEN, s->in_buff);
 }
@@ -172,6 +174,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if ((ret = ff_mdct_init(&s->mdct_ctx, 8, 0, 32768.0)) < 0)
         goto error;
     ff_dsputil_init(&s->dsp, avctx);
+    avpriv_float_dsp_init(&s->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
 
     /* Generate overlap window */
     ff_sine_window_init(ff_sine_128, 128);

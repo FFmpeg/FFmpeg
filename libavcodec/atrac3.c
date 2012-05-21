@@ -36,9 +36,9 @@
 #include <stddef.h>
 #include <stdio.h>
 
+#include "libavutil/float_dsp.h"
 #include "avcodec.h"
 #include "get_bits.h"
-#include "dsputil.h"
 #include "bytestream.h"
 #include "fft.h"
 #include "fmtconvert.h"
@@ -125,13 +125,13 @@ typedef struct {
 
     FFTContext          mdct_ctx;
     FmtConvertContext   fmt_conv;
+    AVFloatDSPContext   fdsp;
 } ATRAC3Context;
 
 static DECLARE_ALIGNED(32, float, mdct_window)[MDCT_SIZE];
 static VLC              spectral_coeff_tab[7];
 static float            gain_tab1[16];
 static float            gain_tab2[31];
-static DSPContext       dsp;
 
 
 /**
@@ -164,7 +164,7 @@ static void IMLT(ATRAC3Context *q, float *pInput, float *pOutput, int odd_band)
     q->mdct_ctx.imdct_calc(&q->mdct_ctx,pOutput,pInput);
 
     /* Perform windowing on the output. */
-    dsp.vector_fmul(pOutput, pOutput, mdct_window, MDCT_SIZE);
+    q->fdsp.vector_fmul(pOutput, pOutput, mdct_window, MDCT_SIZE);
 
 }
 
@@ -1039,7 +1039,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         q->matrix_coeff_index_next[i] = 3;
     }
 
-    ff_dsputil_init(&dsp, avctx);
+    avpriv_float_dsp_init(&q->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
     ff_fmt_convert_init(&q->fmt_conv, avctx);
 
     q->pUnits = av_mallocz(sizeof(channel_unit)*q->channels);

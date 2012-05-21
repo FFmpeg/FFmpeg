@@ -18,13 +18,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/dsputil.h"
-#include "dsputil_arm.h"
+#include "libavutil/arm/cpu.h"
+#include "libavutil/float_dsp.h"
+#include "float_dsp_arm.h"
 
-void ff_vector_fmul_reverse_vfp(float *dst, const float *src0,
-                                const float *src1, int len);
+void ff_vector_fmul_vfp(float *dst, const float *src0, const float *src1,
+                        int len);
 
 void ff_dsputil_init_vfp(DSPContext* c, AVCodecContext *avctx)
 {
-    c->vector_fmul_reverse = ff_vector_fmul_reverse_vfp;
+    int cpu_flags = av_get_cpu_flags();
+
+    if (!have_vfpv3(cpu_flags))
+        c->vector_fmul = ff_vector_fmul_vfp;
 }

@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/float_dsp.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "dsputil.h"
@@ -176,6 +177,7 @@ typedef struct TwinContext {
     AVCodecContext *avctx;
     AVFrame frame;
     DSPContext      dsp;
+    AVFloatDSPContext fdsp;
     FFTContext mdct_ctx[3];
 
     const ModeTab *mtab;
@@ -787,8 +789,8 @@ static void read_and_decode_spectrum(TwinContext *tctx, GetBitContext *gb,
             dec_bark_env(tctx, bark1[i][j], bark_use_hist[i][j], i,
                          tctx->tmp_buf, gain[sub*i+j], ftype);
 
-            tctx->dsp.vector_fmul(chunk + block_size*j, chunk + block_size*j, tctx->tmp_buf,
-                                  block_size);
+            tctx->fdsp.vector_fmul(chunk + block_size*j, chunk + block_size*j,
+                                   tctx->tmp_buf, block_size);
 
         }
 
@@ -809,7 +811,7 @@ static void read_and_decode_spectrum(TwinContext *tctx, GetBitContext *gb,
         dec_lpc_spectrum_inv(tctx, lsp, ftype, tctx->tmp_buf);
 
         for (j = 0; j < mtab->fmode[ftype].sub; j++) {
-            tctx->dsp.vector_fmul(chunk, chunk, tctx->tmp_buf, block_size);
+            tctx->fdsp.vector_fmul(chunk, chunk, tctx->tmp_buf, block_size);
             chunk += block_size;
         }
     }
@@ -1156,6 +1158,7 @@ static av_cold int twin_decode_init(AVCodecContext *avctx)
     }
 
     ff_dsputil_init(&tctx->dsp, avctx);
+    avpriv_float_dsp_init(&tctx->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
     if ((ret = init_mdct_win(tctx))) {
         av_log(avctx, AV_LOG_ERROR, "Error initializing MDCT\n");
         twin_decode_close(avctx);

@@ -57,6 +57,7 @@ OBJS = adler32.o                                                        \
        eval.o                                                           \
        fifo.o                                                           \
        file.o                                                           \
+       float_dsp.o                                                      \
        imgutils.o                                                       \
        intfloat_readwrite.o                                             \
        inverse.o                                                        \

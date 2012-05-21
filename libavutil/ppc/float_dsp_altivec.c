@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008 Siarhei Siamashka <ssvb@users.sourceforge.net>
+ * Copyright (c) 2006 Luca Barbato <lu_zero@gentoo.org>
  *
  * This file is part of Libav.
  *
@@ -18,13 +18,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/dsputil.h"
-#include "dsputil_arm.h"
+#include "util_altivec.h"
 
-void ff_vector_fmul_reverse_vfp(float *dst, const float *src0,
-                                const float *src1, int len);
-
-void ff_dsputil_init_vfp(DSPContext* c, AVCodecContext *avctx)
+void ff_vector_fmul_altivec(float *dst, const float *src0, const float *src1,
+                            int len)
 {
-    c->vector_fmul_reverse = ff_vector_fmul_reverse_vfp;
+    int i;
+    vector float d0, d1, s, zero = (vector float)vec_splat_u32(0);
+    for (i = 0; i < len - 7; i += 8) {
+        d0 = vec_ld( 0, src0 + i);
+        s  = vec_ld( 0, src1 + i);
+        d1 = vec_ld(16, src0 + i);
+        d0 = vec_madd(d0, s, zero);
+        d1 = vec_madd(d1, vec_ld(16, src1 + i), zero);
+        vec_st(d0,  0, dst + i);
+        vec_st(d1, 16, dst + i);
+    }
 }

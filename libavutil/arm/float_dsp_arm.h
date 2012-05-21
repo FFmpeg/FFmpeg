@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008 Siarhei Siamashka <ssvb@users.sourceforge.net>
+ * Copyright (c) 2009 Mans Rullgard <mans@mansr.com>
  *
  * This file is part of Libav.
  *
@@ -18,13 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/dsputil.h"
-#include "dsputil_arm.h"
+#ifndef AVUTIL_ARM_FLOAT_DSP_ARM_H
+#define AVUTIL_ARM_FLOAT_DSP_ARM_H
 
-void ff_vector_fmul_reverse_vfp(float *dst, const float *src0,
-                                const float *src1, int len);
+#include "libavutil/float_dsp.h"
 
-void ff_dsputil_init_vfp(DSPContext* c, AVCodecContext *avctx)
-{
-    c->vector_fmul_reverse = ff_vector_fmul_reverse_vfp;
-}
+void ff_dsputil_init_vfp (AVFloatDSPContext *fdsp);
+void ff_dsputil_init_neon(AVFloatDSPContext *fdsp);
+
+#endif /* AVUTIL_ARM_FLOAT_DSP_ARM_H */

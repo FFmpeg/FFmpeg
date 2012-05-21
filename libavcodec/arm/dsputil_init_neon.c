@@ -150,7 +150,6 @@ void ff_avg_h264_chroma_mc2_neon(uint8_t *, uint8_t *, int, int, int, int);
 void ff_vp3_v_loop_filter_neon(uint8_t *, int, int *);
 void ff_vp3_h_loop_filter_neon(uint8_t *, int, int *);
 
-void ff_vector_fmul_neon(float *dst, const float *src0, const float *src1, int len);
 void ff_vector_fmul_window_neon(float *dst, const float *src0,
                                 const float *src1, const float *win, int len);
 void ff_vector_fmul_scalar_neon(float *dst, const float *src, float mul,
@@ -328,7 +327,6 @@ void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
         c->vp3_idct_dc_add   = ff_vp3_idct_dc_add_neon;
     }
 
-    c->vector_fmul                = ff_vector_fmul_neon;
     c->vector_fmul_window         = ff_vector_fmul_window_neon;
     c->vector_fmul_scalar         = ff_vector_fmul_scalar_neon;
     c->vector_fmac_scalar         = ff_vector_fmac_scalar_neon;
