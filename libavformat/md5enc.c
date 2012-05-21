@@ -104,6 +104,6 @@ AVOutputFormat ff_framemd5_muxer = {
     .video_codec       = CODEC_ID_RAWVIDEO,
     .write_header      = ff_framehash_write_header,
     .write_packet      = framemd5_write_packet,
-    .flags             = AVFMT_VARIABLE_FPS,
+    .flags             = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT,
 };
 #endif

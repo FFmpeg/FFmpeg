@@ -327,13 +327,35 @@ static inline int has_header(const char *str, const char *header)
     return av_stristart(str, header + 2, NULL) || av_stristr(str, header);
 }
 
+static int http_read_header(URLContext *h, int *new_location)
+{
+    HTTPContext *s = h->priv_data;
+    char line[1024];
+    int err = 0;
+
+    for (;;) {
+        if (http_get_line(s, line, sizeof(line)) < 0)
+            return AVERROR(EIO);
+
+        av_dlog(NULL, "header='%s'\n", line);
+
+        err = process_line(h, line, s->line_count, new_location);
+        if (err < 0)
+            return err;
+        if (err == 0)
+            break;
+        s->line_count++;
+    }
+
+    return err;
+}
+
 static int http_connect(URLContext *h, const char *path, const char *local_path,
                         const char *hoststr, const char *auth,
                         const char *proxyauth, int *new_location)
 {
     HTTPContext *s = h->priv_data;
     int post, err;
-    char line[1024];
     char headers[1024] = "";
     char *authstr = NULL, *proxyauthstr = NULL;
     int64_t off = s->off;
@@ -407,19 +429,9 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     s->chunksize = -1;
 
     /* wait for header */
-    for(;;) {
-        if (http_get_line(s, line, sizeof(line)) < 0)
-            return AVERROR(EIO);
-
-        av_dlog(NULL, "header='%s'\n", line);
-
-        err = process_line(h, line, s->line_count, new_location);
-        if (err < 0)
-            return err;
-        if (err == 0)
-            break;
-        s->line_count++;
-    }
+    err = http_read_header(h, new_location);
+    if (err < 0)
+        return err;
 
     return (off == s->off) ? 0 : -1;
 }
@@ -607,10 +619,11 @@ static int http_proxy_open(URLContext *h, const char *uri, int flags)
     HTTPContext *s = h->priv_data;
     char hostname[1024], hoststr[1024];
     char auth[1024], pathbuf[1024], *path;
-    char line[1024], lower_url[100];
+    char lower_url[100];
     int port, ret = 0, attempts = 0;
     HTTPAuthType cur_auth_type;
     char *authstr;
+    int new_loc;
 
     h->is_streamed = 1;
 
@@ -651,30 +664,19 @@ redo:
     s->filesize = -1;
     cur_auth_type = s->proxy_auth_state.auth_type;
 
-    for (;;) {
-        int new_loc;
-        // Note: This uses buffering, potentially reading more than the
-        // HTTP header. If tunneling a protocol where the server starts
-        // the conversation, we might buffer part of that here, too.
-        // Reading that requires using the proper ffurl_read() function
-        // on this URLContext, not using the fd directly (as the tls
-        // protocol does). This shouldn't be an issue for tls though,
-        // since the client starts the conversation there, so there
-        // is no extra data that we might buffer up here.
-        if (http_get_line(s, line, sizeof(line)) < 0) {
-            ret = AVERROR(EIO);
-            goto fail;
-        }
+    /* Note: This uses buffering, potentially reading more than the
+     * HTTP header. If tunneling a protocol where the server starts
+     * the conversation, we might buffer part of that here, too.
+     * Reading that requires using the proper ffurl_read() function
+     * on this URLContext, not using the fd directly (as the tls
+     * protocol does). This shouldn't be an issue for tls though,
+     * since the client starts the conversation there, so there
+     * is no extra data that we might buffer up here.
+     */
+    ret = http_read_header(h, &new_loc);
+    if (ret < 0)
+        goto fail;
 
-        av_dlog(h, "header='%s'\n", line);
-
-        ret = process_line(h, line, s->line_count, &new_loc);
-        if (ret < 0)
-            goto fail;
-        if (ret == 0)
-            break;
-        s->line_count++;
-    }
     attempts++;
     if (s->http_code == 407 &&
         (cur_auth_type == HTTP_AUTH_NONE || s->proxy_auth_state.stale) &&

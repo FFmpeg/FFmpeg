@@ -224,6 +224,7 @@ AVOutputFormat ff_wav_muxer = {
     .write_header      = wav_write_header,
     .write_packet      = wav_write_packet,
     .write_trailer     = wav_write_trailer,
+    .flags             = AVFMT_TS_NONSTRICT,
     .codec_tag         = (const AVCodecTag* const []){ ff_codec_wav_tags, 0 },
     .priv_class        = &wav_muxer_class,
 };
