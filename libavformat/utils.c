@@ -1316,6 +1316,8 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                 st->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
             } else if(st->need_parsing == AVSTREAM_PARSE_FULL_ONCE) {
                 st->parser->flags |= PARSER_FLAG_ONCE;
+            } else if(st->need_parsing == AVSTREAM_PARSE_FULL_RAW) {
+                st->parser->flags |= PARSER_FLAG_USE_CODEC_TS;
             }
         }
 
@@ -2456,8 +2458,12 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         //only for the split stuff
         if (!st->parser && !(ic->flags & AVFMT_FLAG_NOPARSE)) {
             st->parser = av_parser_init(st->codec->codec_id);
-            if(st->need_parsing == AVSTREAM_PARSE_HEADERS && st->parser){
-                st->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
+            if(st->parser){
+                if(st->need_parsing == AVSTREAM_PARSE_HEADERS){
+                    st->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
+                } else if(st->need_parsing == AVSTREAM_PARSE_FULL_RAW) {
+                    st->parser->flags |= PARSER_FLAG_USE_CODEC_TS;
+                }
             }
         }
         codec = st->codec->codec ? st->codec->codec :
