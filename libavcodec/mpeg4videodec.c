@@ -1854,6 +1854,18 @@ no_cplx_est:
             // bin shape stuff FIXME
         }
     }
+
+    if(s->avctx->debug&FF_DEBUG_PICT_INFO) {
+        av_log(s->avctx, AV_LOG_DEBUG, "tb %d/%d, tincrbits:%d, qp_prec:%d, ps:%d,  %s%s\n",
+               s->avctx->time_base.num, s->avctx->time_base.den,
+               s->time_increment_bits,
+               s->quant_precision,
+               s->progressive_sequence,
+               s->scalability ? "scalability " :"" , s->quarter_sample ? "qpel " : "",
+               s->data_partitioning ? "partition " : "", s->rvlc ? "rvlc " : ""
+        );
+    }
+
     return 0;
 }
 
@@ -2093,12 +2105,16 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
              s->b_code=1;
 
          if(s->avctx->debug&FF_DEBUG_PICT_INFO){
-             av_log(s->avctx, AV_LOG_DEBUG, "qp:%d fc:%d,%d %s size:%d pro:%d alt:%d top:%d %spel part:%d resync:%d w:%d a:%d rnd:%d vot:%d%s dc:%d ce:%d/%d/%d\n",
+             av_log(s->avctx, AV_LOG_DEBUG, "qp:%d fc:%d,%d %s size:%d pro:%d alt:%d top:%d %spel part:%d resync:%d w:%d a:%d rnd:%d vot:%d%s dc:%d ce:%d/%d/%d time:%d tincr:%d\n",
                  s->qscale, s->f_code, s->b_code,
                  s->pict_type == AV_PICTURE_TYPE_I ? "I" : (s->pict_type == AV_PICTURE_TYPE_P ? "P" : (s->pict_type == AV_PICTURE_TYPE_B ? "B" : "S")),
                  gb->size_in_bits,s->progressive_sequence, s->alternate_scan, s->top_field_first,
                  s->quarter_sample ? "q" : "h", s->data_partitioning, s->resync_marker, s->num_sprite_warping_points,
-                 s->sprite_warping_accuracy, 1-s->no_rounding, s->vo_type, s->vol_control_parameters ? " VOLC" : " ", s->intra_dc_threshold, s->cplx_estimation_trash_i, s->cplx_estimation_trash_p, s->cplx_estimation_trash_b);
+                 s->sprite_warping_accuracy, 1-s->no_rounding, s->vo_type, s->vol_control_parameters ? " VOLC" : " ", s->intra_dc_threshold,
+                 s->cplx_estimation_trash_i, s->cplx_estimation_trash_p, s->cplx_estimation_trash_b,
+                 s->time,
+                 time_increment
+                   );
          }
 
          if(!s->scalability){
