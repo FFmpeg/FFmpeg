@@ -40,10 +40,8 @@ fate-nellymoser-aref-encode: CMD = enc_dec_pcm flv wav s16le $(REF) -c:a nellymo
 fate-nellymoser-aref-encode: CMP = stddev
 fate-nellymoser-aref-encode: REF = ./tests/data/acodec-16000-1.ref.wav
 fate-nellymoser-aref-encode: CMP_SHIFT = -1172
-#fate-nellymoser-aref-encode: CMP_TARGET = 9617
-#fate-nellymoser-aref-encode: SIZE_TOLERANCE = 268
-fate-nellymoser-aref-encode: CMP_TARGET = 10216
-fate-nellymoser-aref-encode: SIZE_TOLERANCE = 1300
+fate-nellymoser-aref-encode: CMP_TARGET = 9617
+fate-nellymoser-aref-encode: SIZE_TOLERANCE = 268
 
 FATE_SAMPLES_AUDIO += fate-sierra-vmd-audio
 fate-sierra-vmd-audio: CMD = framecrc -i $(SAMPLES)/vmd/12.vmd -vn
