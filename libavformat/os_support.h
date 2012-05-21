@@ -45,6 +45,12 @@ static inline int is_dos_path(const char *path)
     return 0;
 }
 
+#if defined(_WIN32)
+#define SHUT_RD SD_RECEIVE
+#define SHUT_WR SD_SEND
+#define SHUT_RDWR SD_BOTH
+#endif
+
 #if defined(_WIN32) && !defined(__MINGW32CE__)
 int ff_win32_open(const char *filename, int oflag, int pmode);
 #define open ff_win32_open
