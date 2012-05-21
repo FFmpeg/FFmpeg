@@ -93,6 +93,13 @@ static int av_mpeg4_decode_header(AVCodecParserContext *s1,
     if (s->width && (!avctx->width || !avctx->height || !avctx->coded_width || !avctx->coded_height)) {
         avcodec_set_dimensions(avctx, s->width, s->height);
     }
+    if((s1->flags & PARSER_FLAG_USE_CODEC_TS) && s->avctx->time_base.den>0 && ret>=0){
+        av_assert1(s1->pts == AV_NOPTS_VALUE);
+        av_assert1(s1->dts == AV_NOPTS_VALUE);
+
+        s1->pts = av_rescale_q(s->time, (AVRational){1, s->avctx->time_base.den}, (AVRational){1, 1200000});
+    }
+
     s1->pict_type= s->pict_type;
     pc->first_picture = 0;
     return ret;
