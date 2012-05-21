@@ -1517,8 +1517,9 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                     break; /* The correct thing to do here is fall through, but by breaking we might be
                               able to decode some streams at half the vertical resolution, rather than not al all.
                               It's also for compatibility with the old behavior. */
-                case SeparateFields:
                 case MixedFields:
+                    break;
+                case SeparateFields:
                     st->codec->height *= 2; /* Turn field height into frame height. */
                     break;
                 default:
