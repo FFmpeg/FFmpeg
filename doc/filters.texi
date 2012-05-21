@@ -137,6 +137,19 @@ aformat=sample_fmts\=u8\,s16:channel_layouts\=stereo
 
 Pass the audio source unchanged to the output.
 
+@section asplit
+
+Split input audio into several identical outputs.
+
+The filter accepts a single parameter which specifies the number of outputs. If
+unspecified, it defaults to 2.
+
+For example
+@example
+avconv -i INPUT -filter_complex asplit=5 OUTPUT
+@end example
+will create 5 copies of the input audio.
+
 @section asyncts
 Synchronize audio data with timestamps by squeezing/stretching it and/or
 dropping samples/adding silence when needed.

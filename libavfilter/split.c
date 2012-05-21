@@ -20,10 +20,11 @@
 
 /**
  * @file
- * Video splitter
+ * audio and video splitter
  */
 
 #include "avfilter.h"
+#include "audio.h"
 
 static int split_init(AVFilterContext *ctx, const char *args, void *opaque)
 {
@@ -43,7 +44,7 @@ static int split_init(AVFilterContext *ctx, const char *args, void *opaque)
         AVFilterPad pad = { 0 };
 
         snprintf(name, sizeof(name), "output%d", i);
-        pad.type = AVMEDIA_TYPE_VIDEO;
+        pad.type = ctx->filter->inputs[0].type;
         pad.name = av_strdup(name);
 
         avfilter_insert_outpad(ctx, i, &pad);
@@ -105,4 +106,29 @@ AVFilter avfilter_vf_split = {
                                     .end_frame       = end_frame, },
                                   { .name = NULL}},
     .outputs   = (AVFilterPad[]) {{ .name = NULL}},
+};
+
+static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
+{
+    AVFilterContext *ctx = inlink->dst;
+    int i;
+
+    for (i = 0; i < ctx->output_count; i++)
+        ff_filter_samples(inlink->dst->outputs[i],
+                          avfilter_ref_buffer(samplesref, ~AV_PERM_WRITE));
+}
+
+AVFilter avfilter_af_asplit = {
+    .name        = "asplit",
+    .description = NULL_IF_CONFIG_SMALL("Pass on the audio input to N audio outputs."),
+
+    .init   = split_init,
+    .uninit = split_uninit,
+
+    .inputs  = (const AVFilterPad[]) {{ .name             = "default",
+                                        .type             = AVMEDIA_TYPE_AUDIO,
+                                        .get_audio_buffer = ff_null_get_audio_buffer,
+                                        .filter_samples   = filter_samples },
+                                      { .name = NULL }},
+    .outputs = (const AVFilterPad[]) {{ .name = NULL }},
 };
