@@ -1839,8 +1839,13 @@ static int video_thread(void *arg)
     int last_w = is->video_st->codec->width;
     int last_h = is->video_st->codec->height;
 
-    if ((ret = configure_video_filters(graph, is, vfilters)) < 0)
+    if ((ret = configure_video_filters(graph, is, vfilters)) < 0) {
+        SDL_Event event;
+        event.type = FF_QUIT_EVENT;
+        event.user.data1 = is;
+        SDL_PushEvent(&event);
         goto the_end;
+    }
     filt_out = is->out_video_filter;
 #endif
 
