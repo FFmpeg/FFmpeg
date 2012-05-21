@@ -618,7 +618,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
             if (flv->wrong_dts)
                 dts = AV_NOPTS_VALUE;
         }
-        if (type == 0 && !st->codec->extradata) {
+        if (type == 0 && (!st->codec->extradata || st->codec->codec_id == CODEC_ID_AAC)) {
             if (st->codec->extradata) {
                 if ((ret = flv_queue_extradata(flv, s->pb, stream_type, size)) < 0)
                     return ret;
