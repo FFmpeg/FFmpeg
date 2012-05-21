@@ -232,6 +232,7 @@ typedef struct VideoState {
 #endif
 
     int refresh;
+    int last_video_stream, last_audio_stream, last_subtitle_stream;
 } VideoState;
 
 typedef struct AllocEventProps {
@@ -2263,9 +2264,9 @@ static int stream_component_open(VideoState *is, int stream_index)
     opts = filter_codec_opts(codec_opts, codec, ic, ic->streams[stream_index]);
 
     switch(avctx->codec_type){
-        case AVMEDIA_TYPE_AUDIO   : if(audio_codec_name   ) codec= avcodec_find_decoder_by_name(   audio_codec_name); break;
-        case AVMEDIA_TYPE_SUBTITLE: if(subtitle_codec_name) codec= avcodec_find_decoder_by_name(subtitle_codec_name); break;
-        case AVMEDIA_TYPE_VIDEO   : if(video_codec_name   ) codec= avcodec_find_decoder_by_name(   video_codec_name); break;
+        case AVMEDIA_TYPE_AUDIO   : is->last_audio_stream    = stream_index; if(audio_codec_name   ) codec= avcodec_find_decoder_by_name(   audio_codec_name); break;
+        case AVMEDIA_TYPE_SUBTITLE: is->last_subtitle_stream = stream_index; if(subtitle_codec_name) codec= avcodec_find_decoder_by_name(subtitle_codec_name); break;
+        case AVMEDIA_TYPE_VIDEO   : is->last_video_stream    = stream_index; if(video_codec_name   ) codec= avcodec_find_decoder_by_name(   video_codec_name); break;
     }
     if (!codec)
         return -1;
@@ -2492,9 +2493,9 @@ static int read_thread(void *arg)
     int orig_nb_streams;
 
     memset(st_index, -1, sizeof(st_index));
-    is->video_stream = -1;
-    is->audio_stream = -1;
-    is->subtitle_stream = -1;
+    is->last_video_stream = is->video_stream = -1;
+    is->last_audio_stream = is->audio_stream = -1;
+    is->last_subtitle_stream = is->subtitle_stream = -1;
 
     ic = avformat_alloc_context();
     ic->interrupt_callback.callback = decode_interrupt_cb;
@@ -2772,16 +2773,19 @@ static void stream_cycle_channel(VideoState *is, int codec_type)
 {
     AVFormatContext *ic = is->ic;
     int start_index, stream_index;
+    int old_index;
     AVStream *st;
 
-    if (codec_type == AVMEDIA_TYPE_VIDEO)
-        start_index = is->video_stream;
-    else if (codec_type == AVMEDIA_TYPE_AUDIO)
-        start_index = is->audio_stream;
-    else
-        start_index = is->subtitle_stream;
-    if (start_index < (codec_type == AVMEDIA_TYPE_SUBTITLE ? -1 : 0))
-        return;
+    if (codec_type == AVMEDIA_TYPE_VIDEO) {
+        start_index = is->last_video_stream;
+        old_index = is->video_stream;
+    } else if (codec_type == AVMEDIA_TYPE_AUDIO) {
+        start_index = is->last_audio_stream;
+        old_index = is->audio_stream;
+    } else {
+        start_index = is->last_subtitle_stream;
+        old_index = is->subtitle_stream;
+    }
     stream_index = start_index;
     for (;;) {
         if (++stream_index >= is->ic->nb_streams)
@@ -2789,9 +2793,12 @@ static void stream_cycle_channel(VideoState *is, int codec_type)
             if (codec_type == AVMEDIA_TYPE_SUBTITLE)
             {
                 stream_index = -1;
+                is->last_subtitle_stream = -1;
                 goto the_end;
-            } else
-                stream_index = 0;
+            }
+            if (start_index == -1)
+                return;
+            stream_index = 0;
         }
         if (stream_index == start_index)
             return;
@@ -2813,7 +2820,7 @@ static void stream_cycle_channel(VideoState *is, int codec_type)
         }
     }
  the_end:
-    stream_component_close(is, start_index);
+    stream_component_close(is, old_index);
     stream_component_open(is, stream_index);
 }
 
