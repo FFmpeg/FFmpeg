@@ -477,6 +477,8 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
         int layout_map_tags;
         push_output_configuration(ac);
 
+        av_log(ac->avctx, AV_LOG_DEBUG, "mono with CPE\n");
+
         if (set_default_channel_config(ac->avctx, layout_map, &layout_map_tags,
                                        2) < 0)
             return NULL;
@@ -491,6 +493,8 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
         uint8_t layout_map[MAX_ELEM_ID*4][3];
         int layout_map_tags;
         push_output_configuration(ac);
+
+        av_log(ac->avctx, AV_LOG_DEBUG, "stereo with SCE\n");
 
         if (set_default_channel_config(ac->avctx, layout_map, &layout_map_tags,
                                        1) < 0)
