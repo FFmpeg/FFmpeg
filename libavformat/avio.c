@@ -345,6 +345,13 @@ int ffurl_get_file_handle(URLContext *h)
     return h->prot->url_get_file_handle(h);
 }
 
+int ffurl_shutdown(URLContext *h, int flags)
+{
+    if (!h->prot->url_shutdown)
+        return AVERROR(EINVAL);
+    return h->prot->url_shutdown(h, flags);
+}
+
 int ff_check_interrupt(AVIOInterruptCB *cb)
 {
     int ret;
