@@ -52,7 +52,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "asm.S"
+#include "libavutil/arm/asm.S"
 
 @ idct
 

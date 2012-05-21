@@ -20,7 +20,7 @@
  */
 
 #include "config.h"
-#include "asm.S"
+#include "libavutil/arm/asm.S"
 
 /*
  * Special optimized version of dct_unquantize_h263_helper_c, it

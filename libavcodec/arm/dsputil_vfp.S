@@ -19,7 +19,7 @@
  */
 
 #include "config.h"
-#include "asm.S"
+#include "libavutil/arm/asm.S"
 
 /*
  * VFP is a floating point coprocessor used in some ARM cores. VFP11 has 1 cycle

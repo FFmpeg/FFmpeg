@@ -18,7 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "asm.S"
+#include "libavutil/arm/asm.S"
 
 const   vp3_idct_constants, align=4
 .short 64277, 60547, 54491, 46341, 36410, 25080, 12785
