@@ -421,7 +421,7 @@ struct AVFilterPad {
      *
      * Defaults to just calling the source poll_frame() method.
      *
-     * Output video pads only.
+     * Output pads only.
      */
     int (*poll_frame)(AVFilterLink *link);
 
@@ -430,7 +430,7 @@ struct AVFilterPad {
      * frame being output over the given link. This should return zero on
      * success, and another value on error.
      *
-     * Output video pads only.
+     * Output pads only.
      */
     int (*request_frame)(AVFilterLink *link);
 
