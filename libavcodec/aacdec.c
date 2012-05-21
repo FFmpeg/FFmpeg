@@ -489,7 +489,7 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
         ac->oc[1].m4ac.chan_config = 2;
     }
     // And vice-versa
-    if (!ac->tags_mapped && type == TYPE_SCE && ac->oc[1].m4ac.chan_config == 2 && 0) {
+    if (!ac->tags_mapped && type == TYPE_SCE && ac->oc[1].m4ac.chan_config == 2) {
         uint8_t layout_map[MAX_ELEM_ID*4][3];
         int layout_map_tags;
         push_output_configuration(ac);
