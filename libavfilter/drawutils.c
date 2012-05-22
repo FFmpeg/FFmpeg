@@ -1,4 +1,7 @@
 /*
+ * Copyright 2011 Stefano Sabatini <stefano.sabatini-lala poste it>
+ * Copyright 2012 Nicolas George <nicolas.george normalesup org>
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
