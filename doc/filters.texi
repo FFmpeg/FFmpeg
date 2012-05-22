@@ -322,6 +322,12 @@ outputs, like in:
 [in] asplit=3 [out0][out1][out2]
 @end example
 
+@example
+ffmpeg -i INPUT -filter_complex asplit=5 OUTPUT
+@end example
+will create 5 copies of the input audio.
+
+
 @section astreamsync
 
 Forward two audio streams and control the order the buffers are forwarded.

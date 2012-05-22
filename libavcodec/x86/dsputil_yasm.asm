@@ -1130,6 +1130,111 @@ VECTOR_CLIP_INT32 6, 1, 0, 0
 %endif
 
 ;-----------------------------------------------------------------------------
+; void vector_fmul(float *dst, const float *src0, const float *src1, int len)
+;-----------------------------------------------------------------------------
+%macro VECTOR_FMUL 0
+cglobal vector_fmul, 4,4,2, dst, src0, src1, len
+    lea       lenq, [lend*4 - 2*mmsize]
+ALIGN 16
+.loop
+    mova      m0,   [src0q + lenq]
+    mova      m1,   [src0q + lenq + mmsize]
+    mulps     m0, m0, [src1q + lenq]
+    mulps     m1, m1, [src1q + lenq + mmsize]
+    mova      [dstq + lenq], m0
+    mova      [dstq + lenq + mmsize], m1
+
+    sub       lenq, 2*mmsize
+    jge       .loop
+%if mmsize == 32
+    vzeroupper
+    RET
+%else
+    REP_RET
+%endif
+%endmacro
+
+INIT_XMM sse
+VECTOR_FMUL
+INIT_YMM avx
+VECTOR_FMUL
+
+;-----------------------------------------------------------------------------
+; void vector_fmul_reverse(float *dst, const float *src0, const float *src1,
+;                          int len)
+;-----------------------------------------------------------------------------
+%macro VECTOR_FMUL_REVERSE 0
+cglobal vector_fmul_reverse, 4,4,2, dst, src0, src1, len
+    lea       lenq, [lend*4 - 2*mmsize]
+ALIGN 16
+.loop
+%if cpuflag(avx)
+    vmovaps     xmm0, [src1q + 16]
+    vinsertf128 m0, m0, [src1q], 1
+    vshufps     m0, m0, m0, q0123
+    vmovaps     xmm1, [src1q + mmsize + 16]
+    vinsertf128 m1, m1, [src1q + mmsize], 1
+    vshufps     m1, m1, m1, q0123
+%else
+    mova    m0, [src1q]
+    mova    m1, [src1q + mmsize]
+    shufps  m0, m0, q0123
+    shufps  m1, m1, q0123
+%endif
+    mulps   m0, m0, [src0q + lenq + mmsize]
+    mulps   m1, m1, [src0q + lenq]
+    mova    [dstq + lenq + mmsize], m0
+    mova    [dstq + lenq], m1
+    add     src1q, 2*mmsize
+    sub     lenq,  2*mmsize
+    jge     .loop
+%if mmsize == 32
+    vzeroupper
+    RET
+%else
+    REP_RET
+%endif
+%endmacro
+
+INIT_XMM sse
+VECTOR_FMUL_REVERSE
+INIT_YMM avx
+VECTOR_FMUL_REVERSE
+
+;-----------------------------------------------------------------------------
+; vector_fmul_add(float *dst, const float *src0, const float *src1,
+;                 const float *src2, int len)
+;-----------------------------------------------------------------------------
+%macro VECTOR_FMUL_ADD 0
+cglobal vector_fmul_add, 5,5,2, dst, src0, src1, src2, len
+    lea       lenq, [lend*4 - 2*mmsize]
+ALIGN 16
+.loop
+    mova    m0,   [src0q + lenq]
+    mova    m1,   [src0q + lenq + mmsize]
+    mulps   m0, m0, [src1q + lenq]
+    mulps   m1, m1, [src1q + lenq + mmsize]
+    addps   m0, m0, [src2q + lenq]
+    addps   m1, m1, [src2q + lenq + mmsize]
+    mova    [dstq + lenq], m0
+    mova    [dstq + lenq + mmsize], m1
+
+    sub     lenq,   2*mmsize
+    jge     .loop
+%if mmsize == 32
+    vzeroupper
+    RET
+%else
+    REP_RET
+%endif
+%endmacro
+
+INIT_XMM sse
+VECTOR_FMUL_ADD
+INIT_YMM avx
+VECTOR_FMUL_ADD
+
+;-----------------------------------------------------------------------------
 ; void ff_butterflies_float_interleave(float *dst, const float *src0,
 ;                                      const float *src1, int len);
 ;-----------------------------------------------------------------------------

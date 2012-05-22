@@ -78,8 +78,8 @@ typedef struct {
      * @name State variables
      * @{
      */
-    DECLARE_ALIGNED(16, float, synthesis_filterbank_samples)[SBR_SYNTHESIS_BUF_SIZE];
-    DECLARE_ALIGNED(16, float, analysis_filterbank_samples) [1312];
+    DECLARE_ALIGNED(32, float, synthesis_filterbank_samples)[SBR_SYNTHESIS_BUF_SIZE];
+    DECLARE_ALIGNED(32, float, analysis_filterbank_samples) [1312];
     int                synthesis_filterbank_samples_offset;
     ///l_APrev and l_A
     int                e_a[2];

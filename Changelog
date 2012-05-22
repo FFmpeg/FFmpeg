@@ -32,6 +32,7 @@ version next:
 - accept + prefix to -pix_fmt option to disable automatic conversions.
 - audio filters support in libavfilter and avconv
 - add fps filter
+- audio split filter
 
 
 version 0.10:
