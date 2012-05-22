@@ -344,6 +344,9 @@ static int realloc_audio(AudioData *a, int count){
     int i, countb;
     AudioData old;
 
+    if(count < 0 || count > INT_MAX/2/a->bps/a->ch_count)
+        return AVERROR(EINVAL);
+
     if(a->count >= count)
         return 0;
 
