@@ -137,9 +137,9 @@ typedef struct DWTContext {
                                  : ff_slice_buffer_load_line((slice_buf),   \
                                                              (line_num)))
 
-void ff_slice_buffer_init(slice_buffer *buf, int line_count,
-                          int max_allocated_lines, int line_width,
-                          IDWTELEM *base_buffer);
+int ff_slice_buffer_init(slice_buffer *buf, int line_count,
+                         int max_allocated_lines, int line_width,
+                         IDWTELEM *base_buffer);
 void ff_slice_buffer_release(slice_buffer *buf, int line);
 void ff_slice_buffer_flush(slice_buffer *buf);
 void ff_slice_buffer_destroy(slice_buffer *buf);
