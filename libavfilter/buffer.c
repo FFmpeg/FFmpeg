@@ -1,4 +1,8 @@
 /*
+ * Copyright Stefano Sabatini <stefasab gmail com>
+ * Copyright Anton Khirnov <anton khirnov net>
+ * Copyright Michael Niedermayer <michaelni gmx at>
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
