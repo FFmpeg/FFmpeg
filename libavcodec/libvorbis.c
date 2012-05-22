@@ -226,7 +226,8 @@ static av_cold int oggvorbis_encode_init(AVCodecContext *avctx)
     }
 
     vorbis_comment_init(&s->vc);
-    vorbis_comment_add_tag(&s->vc, "encoder", LIBAVCODEC_IDENT);
+    if (!(avctx->flags & CODEC_FLAG_BITEXACT))
+        vorbis_comment_add_tag(&s->vc, "encoder", LIBAVCODEC_IDENT);
 
     if ((ret = vorbis_analysis_headerout(&s->vd, &s->vc, &header, &header_comm,
                                          &header_code))) {
