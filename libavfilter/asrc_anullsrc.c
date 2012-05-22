@@ -1,4 +1,7 @@
 /*
+ * Copyright 2010 S.N. Hemanth Meenakshisundaram <smeenaks ucsd edu>
+ * Copyright 2010 Stefano Sabatini <stefano.sabatini-lala poste it>
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
