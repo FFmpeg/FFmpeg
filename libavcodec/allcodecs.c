@@ -81,7 +81,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (AURA2, aura2);
     REGISTER_ENCDEC  (AVRP, avrp);
     REGISTER_DECODER (AVS, avs);
-    REGISTER_DECODER (AVUI, avui);
+    REGISTER_ENCDEC  (AVUI, avui);
     REGISTER_ENCDEC  (AYUV, ayuv);
     REGISTER_DECODER (BETHSOFTVID, bethsoftvid);
     REGISTER_DECODER (BFI, bfi);

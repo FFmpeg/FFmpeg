@@ -105,6 +105,7 @@ OBJS-$(CONFIG_AVRP_DECODER)            += r210dec.o
 OBJS-$(CONFIG_AVRP_ENCODER)            += r210enc.o
 OBJS-$(CONFIG_AVS_DECODER)             += avs.o
 OBJS-$(CONFIG_AVUI_DECODER)            += avuidec.o
+OBJS-$(CONFIG_AVUI_ENCODER)            += avuienc.o
 OBJS-$(CONFIG_AYUV_DECODER)            += v408dec.o
 OBJS-$(CONFIG_AYUV_ENCODER)            += v408enc.o
 OBJS-$(CONFIG_BETHSOFTVID_DECODER)     += bethsoftvideo.o

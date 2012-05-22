@@ -350,6 +350,11 @@ do_video_encoding v408.avi "-an -c:v v408 -sws_flags neighbor+bitexact"
 do_video_decoding "" "-sws_flags neighbor+bitexact -pix_fmt yuv420p"
 fi
 
+if [ -n "$do_avui" ] ; then
+do_video_encoding avui.mov "-s pal -an -c:v avui -sws_flags neighbor+bitexact"
+do_video_decoding "" "-s cif -sws_flags neighbor+bitexact -pix_fmt yuv420p"
+fi
+
 if [ -n "$do_yuv" ] ; then
 do_video_encoding yuv.avi "-an -vcodec rawvideo -pix_fmt yuv420p"
 do_video_decoding "" "-pix_fmt yuv420p"
