@@ -1,4 +1,8 @@
 /*
+ * Copyright 2007 Bobby Bingham
+ * Copyright 2012 Robert Nagy <ronag89 gmail com>
+ * Copyright 2012 Anton Khirnov <anton khirnov net>
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
