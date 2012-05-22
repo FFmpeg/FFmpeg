@@ -35,6 +35,7 @@ void avfilter_register_all(void)
     initialized = 1;
 
     REGISTER_FILTER (AFORMAT,     aformat,     af);
+    REGISTER_FILTER (AMIX,        amix,        af);
     REGISTER_FILTER (ANULL,       anull,       af);
     REGISTER_FILTER (ASPLIT,      asplit,      af);
     REGISTER_FILTER (ASYNCTS,     asyncts,     af);

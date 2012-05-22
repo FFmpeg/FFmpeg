@@ -133,6 +133,44 @@ For example to force the output to either unsigned 8-bit or signed 16-bit stereo
 aformat=sample_fmts\=u8\,s16:channel_layouts\=stereo
 @end example
 
+@section amix
+
+Mixes multiple audio inputs into a single output.
+
+For example
+@example
+avconv -i INPUT1 -i INPUT2 -i INPUT3 -filter_complex amix=inputs=3:duration=first:dropout_transition=3 OUTPUT
+@end example
+will mix 3 input audio streams to a single output with the same duration as the
+first input and a dropout transition time of 3 seconds.
+
+The filter accepts the following named parameters:
+@table @option
+
+@item inputs
+Number of inputs. If unspecified, it defaults to 2.
+
+@item duration
+How to determine the end-of-stream.
+@table @option
+
+@item longest
+Duration of longest input. (default)
+
+@item shortest
+Duration of shortest input.
+
+@item first
+Duration of first input.
+
+@end table
+
+@item dropout_transition
+Transition time, in seconds, for volume renormalization when an input
+stream ends. The default value is 2 seconds.
+
+@end table
+
 @section anull
 
 Pass the audio source unchanged to the output.
