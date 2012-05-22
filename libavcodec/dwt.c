@@ -39,7 +39,7 @@ void ff_slice_buffer_init(slice_buffer *buf, int line_count,
         return AVERROR(ENOMEM);
     buf->data_stack  = av_malloc(sizeof(IDWTELEM *) * max_allocated_lines);
     if (!buf->data_stack) {
-        av_free(buf->line);
+        av_freep(&buf->line);
         return AVERROR(ENOMEM);
     }
 
@@ -47,9 +47,9 @@ void ff_slice_buffer_init(slice_buffer *buf, int line_count,
         buf->data_stack[i] = av_malloc(sizeof(IDWTELEM) * line_width);
         if (!buf->data_stack[i]) {
             for (i--; i >=0; i--)
-                av_free(buf->data_stack[i]);
-            av_free(buf->data_stack);
-            av_free(buf->line);
+                av_freep(&buf->data_stack[i]);
+            av_freep(&buf->data_stack);
+            av_freep(&buf->line);
             return AVERROR(ENOMEM);
         }
     }
