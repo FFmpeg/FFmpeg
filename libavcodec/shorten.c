@@ -539,7 +539,7 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
                     sum += s->offset[channel][i];
                 coffset = sum / s->nmean;
                 if (s->version >= 2)
-                    coffset >>= FFMIN(1, s->bitshift);
+                    coffset = s->bitshift == 0 ? coffset : coffset >> s->bitshift - 1 >> 1;
             }
 
             /* decode samples for this channel */
