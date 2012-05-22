@@ -1,4 +1,8 @@
 /*
+ * Copyright 2007 Bobby Bingham
+ * Copyright Stefano Sabatini <stefasab gmail com>
+ * Copyright Vitor Sessak <vitor1001 gmail com>
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
