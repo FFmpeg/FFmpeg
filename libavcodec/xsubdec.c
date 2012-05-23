@@ -60,7 +60,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     // check that at least header fits
     if (buf_size < 27 + 7 * 2 + 4 * 3) {
-        av_log(avctx, AV_LOG_ERROR, "coded frame too small\n");
+        av_log(avctx, AV_LOG_ERROR, "coded frame size %d too small\n", buf_size);
         return -1;
     }
 
