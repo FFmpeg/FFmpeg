@@ -1292,7 +1292,7 @@ static int avi_read_idx1(AVFormatContext *s, int size)
         // switch to non-interleaved to get correct timestamps
         if(last_pos == pos)
             avi->non_interleaved= 1;
-        if((last_pos != pos || !last_len) && (len || !ast->sample_size)) {
+        if((last_pos != pos || !last_len) && len) {
             av_add_index_entry(st, pos, ast->cum_len, len, 0, (flags&AVIIF_INDEX) ? AVINDEX_KEYFRAME : 0);
         }
         ast->cum_len += get_duration(ast, len);
