@@ -488,14 +488,16 @@ static int gen_bytes_read(URLContext *s, RTMPContext *rt, uint32_t ts)
  * @param keylen digest key length
  * @param dst    buffer where calculated digest will be stored (32 bytes)
  */
-static void rtmp_calc_digest(const uint8_t *src, int len, int gap,
-                             const uint8_t *key, int keylen, uint8_t *dst)
+static int rtmp_calc_digest(const uint8_t *src, int len, int gap,
+                            const uint8_t *key, int keylen, uint8_t *dst)
 {
     struct AVSHA *sha;
     uint8_t hmac_buf[64+32] = {0};
     int i;
 
     sha = av_mallocz(av_sha_size);
+    if (!sha)
+        return AVERROR(ENOMEM);
 
     if (keylen < 64) {
         memcpy(hmac_buf, key, keylen);
@@ -524,6 +526,8 @@ static void rtmp_calc_digest(const uint8_t *src, int len, int gap,
     av_sha_final(sha, dst);
 
     av_free(sha);
+
+    return 0;
 }
 
 /**
@@ -536,14 +540,18 @@ static void rtmp_calc_digest(const uint8_t *src, int len, int gap,
 static int rtmp_handshake_imprint_with_digest(uint8_t *buf)
 {
     int i, digest_pos = 0;
+    int ret;
 
     for (i = 8; i < 12; i++)
         digest_pos += buf[i];
     digest_pos = (digest_pos % 728) + 12;
 
-    rtmp_calc_digest(buf, RTMP_HANDSHAKE_PACKET_SIZE, digest_pos,
-                     rtmp_player_key, PLAYER_KEY_OPEN_PART_LEN,
-                     buf + digest_pos);
+    ret = rtmp_calc_digest(buf, RTMP_HANDSHAKE_PACKET_SIZE, digest_pos,
+                           rtmp_player_key, PLAYER_KEY_OPEN_PART_LEN,
+                           buf + digest_pos);
+    if (ret < 0)
+        return ret;
+
     return digest_pos;
 }
 
@@ -558,14 +566,18 @@ static int rtmp_validate_digest(uint8_t *buf, int off)
 {
     int i, digest_pos = 0;
     uint8_t digest[32];
+    int ret;
 
     for (i = 0; i < 4; i++)
         digest_pos += buf[i + off];
     digest_pos = (digest_pos % 728) + off + 4;
 
-    rtmp_calc_digest(buf, RTMP_HANDSHAKE_PACKET_SIZE, digest_pos,
-                     rtmp_server_key, SERVER_KEY_OPEN_PART_LEN,
-                     digest);
+    ret = rtmp_calc_digest(buf, RTMP_HANDSHAKE_PACKET_SIZE, digest_pos,
+                           rtmp_server_key, SERVER_KEY_OPEN_PART_LEN,
+                           digest);
+    if (ret < 0)
+        return ret;
+
     if (!memcmp(digest, buf + digest_pos, 32))
         return digest_pos;
     return 0;
@@ -593,6 +605,7 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
     int i;
     int server_pos, client_pos;
     uint8_t digest[32];
+    int ret;
 
     av_log(s, AV_LOG_DEBUG, "Handshaking...\n");
 
@@ -601,6 +614,8 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
     for (i = 9; i <= RTMP_HANDSHAKE_PACKET_SIZE; i++)
         tosend[i] = av_lfg_get(&rnd) >> 24;
     client_pos = rtmp_handshake_imprint_with_digest(tosend + 1);
+    if (client_pos < 0)
+        return client_pos;
 
     ffurl_write(rt->stream, tosend, RTMP_HANDSHAKE_PACKET_SIZE + 1);
     i = ffurl_read_complete(rt->stream, serverdata, RTMP_HANDSHAKE_PACKET_SIZE + 1);
@@ -619,20 +634,30 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
 
     if (rt->is_input && serverdata[5] >= 3) {
         server_pos = rtmp_validate_digest(serverdata + 1, 772);
+        if (server_pos < 0)
+            return server_pos;
+
         if (!server_pos) {
             server_pos = rtmp_validate_digest(serverdata + 1, 8);
+            if (server_pos < 0)
+                return server_pos;
+
             if (!server_pos) {
                 av_log(s, AV_LOG_ERROR, "Server response validating failed\n");
                 return -1;
             }
         }
 
-        rtmp_calc_digest(tosend + 1 + client_pos, 32, 0,
-                         rtmp_server_key, sizeof(rtmp_server_key),
-                         digest);
-        rtmp_calc_digest(clientdata, RTMP_HANDSHAKE_PACKET_SIZE-32, 0,
-                         digest, 32,
-                         digest);
+        ret = rtmp_calc_digest(tosend + 1 + client_pos, 32, 0, rtmp_server_key,
+                               sizeof(rtmp_server_key), digest);
+        if (ret < 0)
+            return ret;
+
+        ret = rtmp_calc_digest(clientdata, RTMP_HANDSHAKE_PACKET_SIZE - 32, 0,
+                               digest, 32, digest);
+        if (ret < 0)
+            return ret;
+
         if (memcmp(digest, clientdata + RTMP_HANDSHAKE_PACKET_SIZE - 32, 32)) {
             av_log(s, AV_LOG_ERROR, "Signature mismatch\n");
             return -1;
@@ -640,12 +665,17 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
 
         for (i = 0; i < RTMP_HANDSHAKE_PACKET_SIZE; i++)
             tosend[i] = av_lfg_get(&rnd) >> 24;
-        rtmp_calc_digest(serverdata + 1 + server_pos, 32, 0,
-                         rtmp_player_key, sizeof(rtmp_player_key),
-                         digest);
-        rtmp_calc_digest(tosend,  RTMP_HANDSHAKE_PACKET_SIZE - 32, 0,
-                         digest, 32,
-                         tosend + RTMP_HANDSHAKE_PACKET_SIZE - 32);
+        ret = rtmp_calc_digest(serverdata + 1 + server_pos, 32, 0,
+                               rtmp_player_key, sizeof(rtmp_player_key),
+                               digest);
+        if (ret < 0)
+            return ret;
+
+        ret = rtmp_calc_digest(tosend, RTMP_HANDSHAKE_PACKET_SIZE - 32, 0,
+                               digest, 32,
+                               tosend + RTMP_HANDSHAKE_PACKET_SIZE - 32);
+        if (ret < 0)
+            return ret;
 
         // write reply back to the server
         ffurl_write(rt->stream, tosend, RTMP_HANDSHAKE_PACKET_SIZE);
@@ -1016,12 +1046,20 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
 
     if (!rt->tcurl) {
         rt->tcurl = av_malloc(TCURL_MAX_LENGTH);
+        if (!rt->tcurl) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
         ff_url_join(rt->tcurl, TCURL_MAX_LENGTH, proto, NULL, hostname,
                     port, "/%s", rt->app);
     }
 
     if (!rt->flashver) {
         rt->flashver = av_malloc(FLASHVER_MAX_LENGTH);
+        if (!rt->flashver) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
         if (rt->is_input) {
             snprintf(rt->flashver, FLASHVER_MAX_LENGTH, "%s %d,%d,%d,%d",
                     RTMP_CLIENT_PLATFORM, RTMP_CLIENT_VER1, RTMP_CLIENT_VER2,
