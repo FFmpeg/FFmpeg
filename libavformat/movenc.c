@@ -264,14 +264,6 @@ static int mov_write_extradata_tag(AVIOContext *pb, MOVTrack *track)
     return track->enc->extradata_size;
 }
 
-static int mov_write_enda_tag(AVIOContext *pb)
-{
-    avio_wb32(pb, 10);
-    ffio_wfourcc(pb, "enda");
-    avio_wb16(pb, 1); /* little endian */
-    return 10;
-}
-
 static void put_descr(AVIOContext *pb, int tag, unsigned int size)
 {
     int i = 3;
@@ -332,14 +324,6 @@ static int mov_write_esds_tag(AVIOContext *pb, MOVTrack *track) // Basic
     put_descr(pb, 0x06, 1);
     avio_w8(pb, 0x02);
     return update_size(pb, pos);
-}
-
-static int mov_pcm_le_gt16(enum CodecID codec_id)
-{
-    return codec_id == CODEC_ID_PCM_S24LE ||
-           codec_id == CODEC_ID_PCM_S32LE ||
-           codec_id == CODEC_ID_PCM_F32LE ||
-           codec_id == CODEC_ID_PCM_F64LE;
 }
 
 static int mov_write_ms_tag(AVIOContext *pb, MOVTrack *track)
@@ -403,8 +387,6 @@ static int mov_write_wave_tag(AVIOContext *pb, MOVTrack *track)
         ffio_wfourcc(pb, "mp4a");
         avio_wb32(pb, 0);
         mov_write_esds_tag(pb, track);
-    } else if (mov_pcm_le_gt16(track->enc->codec_id)) {
-        mov_write_enda_tag(pb);
     } else if (track->enc->codec_id == CODEC_ID_AMR_NB) {
         mov_write_amr_tag(pb, track);
     } else if (track->enc->codec_id == CODEC_ID_AC3) {
@@ -641,8 +623,7 @@ static int mov_write_audio_tag(AVIOContext *pb, MOVTrack *track)
         track->enc->codec_id == CODEC_ID_AMR_NB ||
         track->enc->codec_id == CODEC_ID_ALAC ||
         track->enc->codec_id == CODEC_ID_ADPCM_MS ||
-        track->enc->codec_id == CODEC_ID_ADPCM_IMA_WAV ||
-        mov_pcm_le_gt16(track->enc->codec_id)))
+        track->enc->codec_id == CODEC_ID_ADPCM_IMA_WAV))
         mov_write_wave_tag(pb, track);
     else if(track->tag == MKTAG('m','p','4','a'))
         mov_write_esds_tag(pb, track);
