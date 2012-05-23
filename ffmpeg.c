@@ -2730,16 +2730,6 @@ static InputStream *get_input_stream(OutputStream *ost)
 {
     if (ost->source_index >= 0)
         return input_streams[ost->source_index];
-
-    if (ost->filter) {
-        FilterGraph *fg = ost->filter->graph;
-        int i;
-
-        for (i = 0; i < fg->nb_inputs; i++)
-            if (fg->inputs[i]->ist->st->codec->codec_type == ost->st->codec->codec_type)
-                return fg->inputs[i]->ist;
-    }
-
     return NULL;
 }
 
