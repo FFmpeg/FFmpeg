@@ -3085,6 +3085,8 @@ static int transcode_init(void)
                 break;
             case AVMEDIA_TYPE_VIDEO:
                 codec->time_base = (AVRational){ost->frame_rate.den, ost->frame_rate.num};
+                if (ost->filter && !(codec->time_base.num && codec->time_base.den))
+                    codec->time_base = ost->filter->filter->inputs[0]->time_base;
                 if (   av_q2d(codec->time_base) < 0.001 && video_sync_method != VSYNC_PASSTHROUGH
                    && (video_sync_method == VSYNC_CFR || (video_sync_method == VSYNC_AUTO && !(oc->oformat->flags & AVFMT_VARIABLE_FPS)))){
                     av_log(oc, AV_LOG_WARNING, "Frame rate very high for a muxer not efficiently supporting it.\n"
