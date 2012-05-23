@@ -43,7 +43,9 @@ static int avui_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                              const AVFrame *pic, int *got_packet)
 {
     uint8_t *dst, *src = pic->data[0];
-    int i, j, skip, ret, size, interlaced = pic->interlaced_frame;
+    int i, j, skip, ret, size, interlaced;
+
+    interlaced = avctx->field_order > AV_FIELD_PROGRESSIVE;
 
     if (avctx->height == 486) {
         skip = 10;
