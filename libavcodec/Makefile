@@ -613,7 +613,8 @@ OBJS-$(CONFIG_ADX_DEMUXER)             += adx.o
 OBJS-$(CONFIG_CAF_DEMUXER)             += mpeg4audio.o mpegaudiodata.o
 OBJS-$(CONFIG_DV_DEMUXER)              += dv_profile.o
 OBJS-$(CONFIG_DV_MUXER)                += dv_profile.o timecode.o
-OBJS-$(CONFIG_FLAC_DEMUXER)            += flacdec.o flacdata.o flac.o vorbis_data.o
+OBJS-$(CONFIG_FLAC_DEMUXER)            += flacdec.o flacdata.o flac.o vorbis_data.o \
+                                          vorbis_parser.o xiph.o
 OBJS-$(CONFIG_FLAC_MUXER)              += flacdec.o flacdata.o flac.o vorbis_data.o
 OBJS-$(CONFIG_FLV_DEMUXER)             += mpeg4audio.o
 OBJS-$(CONFIG_GXF_DEMUXER)             += mpeg12data.o
