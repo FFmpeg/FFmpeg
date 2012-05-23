@@ -4136,7 +4136,7 @@ void avpriv_set_pts_info(AVStream *s, int pts_wrap_bits,
         av_log(NULL, AV_LOG_WARNING, "st:%d has too large timebase, reducing\n", s->index);
 
     if(new_tb.num <= 0 || new_tb.den <= 0) {
-        av_log(NULL, AV_LOG_ERROR, "Ignoring attempt to set invalid timebase for st:%d\n", s->index);
+        av_log(NULL, AV_LOG_ERROR, "Ignoring attempt to set invalid timebase %d/%d for st:%d\n", new_tb.num, new_tb.den, s->index);
         return;
     }
     s->time_base = new_tb;
