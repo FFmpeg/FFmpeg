@@ -106,6 +106,7 @@ static int query_formats(AVFilterContext *ctx)
     layouts = NULL;
     ff_add_channel_layout(&layouts, outlayout);
     ff_channel_layouts_ref(layouts, &ctx->outputs[0]->in_channel_layouts);
+    ff_set_common_samplerates(ctx, ff_all_samplerates());
     return 0;
 }
 
