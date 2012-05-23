@@ -303,13 +303,12 @@ void av_noreturn exit_program(int ret)
     exit(ret);
 }
 
-static int packet_queue_put(PacketQueue *q, AVPacket *pkt)
+static int packet_queue_put_private(PacketQueue *q, AVPacket *pkt)
 {
     AVPacketList *pkt1;
 
-    /* duplicate the packet */
-    if (pkt != &flush_pkt && av_dup_packet(pkt) < 0)
-        return -1;
+    if (q->abort_request)
+       return -1;
 
     pkt1 = av_malloc(sizeof(AVPacketList));
     if (!pkt1)
@@ -317,11 +316,7 @@ static int packet_queue_put(PacketQueue *q, AVPacket *pkt)
     pkt1->pkt = *pkt;
     pkt1->next = NULL;
 
-
-    SDL_LockMutex(q->mutex);
-
     if (!q->last_pkt)
-
         q->first_pkt = pkt1;
     else
         q->last_pkt->next = pkt1;
@@ -330,9 +325,25 @@ static int packet_queue_put(PacketQueue *q, AVPacket *pkt)
     q->size += pkt1->pkt.size + sizeof(*pkt1);
     /* XXX: should duplicate packet data in DV case */
     SDL_CondSignal(q->cond);
-
-    SDL_UnlockMutex(q->mutex);
     return 0;
+}
+
+static int packet_queue_put(PacketQueue *q, AVPacket *pkt)
+{
+    int ret;
+
+    /* duplicate the packet */
+    if (pkt != &flush_pkt && av_dup_packet(pkt) < 0)
+        return -1;
+
+    SDL_LockMutex(q->mutex);
+    ret = packet_queue_put_private(q, pkt);
+    SDL_UnlockMutex(q->mutex);
+
+    if (pkt != &flush_pkt && ret < 0)
+        av_free_packet(pkt);
+
+    return ret;
 }
 
 /* packet queue handling */
@@ -341,7 +352,7 @@ static void packet_queue_init(PacketQueue *q)
     memset(q, 0, sizeof(PacketQueue));
     q->mutex = SDL_CreateMutex();
     q->cond = SDL_CreateCond();
-    packet_queue_put(q, &flush_pkt);
+    q->abort_request = 1;
 }
 
 static void packet_queue_flush(PacketQueue *q)
@@ -361,7 +372,7 @@ static void packet_queue_flush(PacketQueue *q)
     SDL_UnlockMutex(q->mutex);
 }
 
-static void packet_queue_end(PacketQueue *q)
+static void packet_queue_destroy(PacketQueue *q)
 {
     packet_queue_flush(q);
     SDL_DestroyMutex(q->mutex);
@@ -376,6 +387,14 @@ static void packet_queue_abort(PacketQueue *q)
 
     SDL_CondSignal(q->cond);
 
+    SDL_UnlockMutex(q->mutex);
+}
+
+static void packet_queue_start(PacketQueue *q)
+{
+    SDL_LockMutex(q->mutex);
+    q->abort_request = 0;
+    packet_queue_put_private(q, &flush_pkt);
     SDL_UnlockMutex(q->mutex);
 }
 
@@ -877,6 +896,9 @@ static void stream_close(VideoState *is)
     is->abort_request = 1;
     SDL_WaitThread(is->read_tid, NULL);
     SDL_WaitThread(is->refresh_tid, NULL);
+    packet_queue_destroy(&is->videoq);
+    packet_queue_destroy(&is->audioq);
+    packet_queue_destroy(&is->subtitleq);
 
     /* free all pictures */
     for (i = 0; i < VIDEO_PICTURE_QUEUE_SIZE; i++) {
@@ -2343,20 +2365,20 @@ static int stream_component_open(VideoState *is, int stream_index)
         is->audio_diff_threshold = 2.0 * SDL_AUDIO_BUFFER_SIZE / wanted_spec.freq;
 
         memset(&is->audio_pkt, 0, sizeof(is->audio_pkt));
-        packet_queue_init(&is->audioq);
+        packet_queue_start(&is->audioq);
         SDL_PauseAudio(0);
         break;
     case AVMEDIA_TYPE_VIDEO:
         is->video_stream = stream_index;
         is->video_st = ic->streams[stream_index];
 
-        packet_queue_init(&is->videoq);
+        packet_queue_start(&is->videoq);
         is->video_tid = SDL_CreateThread(video_thread, is);
         break;
     case AVMEDIA_TYPE_SUBTITLE:
         is->subtitle_stream = stream_index;
         is->subtitle_st = ic->streams[stream_index];
-        packet_queue_init(&is->subtitleq);
+        packet_queue_start(&is->subtitleq);
 
         is->subtitle_tid = SDL_CreateThread(subtitle_thread, is);
         break;
@@ -2381,7 +2403,7 @@ static void stream_component_close(VideoState *is, int stream_index)
 
         SDL_CloseAudio();
 
-        packet_queue_end(&is->audioq);
+        packet_queue_flush(&is->audioq);
         av_free_packet(&is->audio_pkt);
         if (is->swr_ctx)
             swr_free(&is->swr_ctx);
@@ -2407,7 +2429,7 @@ static void stream_component_close(VideoState *is, int stream_index)
 
         SDL_WaitThread(is->video_tid, NULL);
 
-        packet_queue_end(&is->videoq);
+        packet_queue_flush(&is->videoq);
         break;
     case AVMEDIA_TYPE_SUBTITLE:
         packet_queue_abort(&is->subtitleq);
@@ -2422,7 +2444,7 @@ static void stream_component_close(VideoState *is, int stream_index)
 
         SDL_WaitThread(is->subtitle_tid, NULL);
 
-        packet_queue_end(&is->subtitleq);
+        packet_queue_flush(&is->subtitleq);
         break;
     default:
         break;
@@ -2625,9 +2647,9 @@ static int read_thread(void *arg)
 
         /* if the queue are full, no need to read more */
         if (   is->audioq.size + is->videoq.size + is->subtitleq.size > MAX_QUEUE_SIZE
-            || (   (is->audioq   .nb_packets > MIN_FRAMES || is->audio_stream < 0)
-                && (is->videoq   .nb_packets > MIN_FRAMES || is->video_stream < 0)
-                && (is->subtitleq.nb_packets > MIN_FRAMES || is->subtitle_stream < 0))) {
+            || (   (is->audioq   .nb_packets > MIN_FRAMES || is->audio_stream < 0 || is->audioq.abort_request)
+                && (is->videoq   .nb_packets > MIN_FRAMES || is->video_stream < 0 || is->videoq.abort_request)
+                && (is->subtitleq.nb_packets > MIN_FRAMES || is->subtitle_stream < 0 || is->subtitleq.abort_request))) {
             /* wait 10 ms */
             SDL_Delay(10);
             continue;
@@ -2731,6 +2753,10 @@ static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
 
     is->subpq_mutex = SDL_CreateMutex();
     is->subpq_cond  = SDL_CreateCond();
+
+    packet_queue_init(&is->videoq);
+    packet_queue_init(&is->audioq);
+    packet_queue_init(&is->subtitleq);
 
     is->av_sync_type = av_sync_type;
     is->read_tid     = SDL_CreateThread(read_thread, is);
