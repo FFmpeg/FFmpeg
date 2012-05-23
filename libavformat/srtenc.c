@@ -65,6 +65,7 @@ static int srt_write_packet(AVFormatContext *avf, AVPacket *pkt)
         int len;
 
         if (d <= 0)
+            /* For backward compatibility, fallback to convergence_duration. */
             d = pkt->convergence_duration;
         if (s == AV_NOPTS_VALUE || d <= 0) {
             av_log(avf, AV_LOG_ERROR, "Insufficient timestamps.\n");
