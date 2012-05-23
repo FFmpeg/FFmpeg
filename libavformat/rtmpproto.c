@@ -621,12 +621,12 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
     i = ffurl_read_complete(rt->stream, serverdata, RTMP_HANDSHAKE_PACKET_SIZE + 1);
     if (i != RTMP_HANDSHAKE_PACKET_SIZE + 1) {
         av_log(s, AV_LOG_ERROR, "Cannot read RTMP handshake response\n");
-        return -1;
+        return AVERROR(EIO);
     }
     i = ffurl_read_complete(rt->stream, clientdata, RTMP_HANDSHAKE_PACKET_SIZE);
     if (i != RTMP_HANDSHAKE_PACKET_SIZE) {
         av_log(s, AV_LOG_ERROR, "Cannot read RTMP handshake response\n");
-        return -1;
+        return AVERROR(EIO);
     }
 
     av_log(s, AV_LOG_DEBUG, "Server version %d.%d.%d.%d\n",
@@ -644,7 +644,7 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
 
             if (!server_pos) {
                 av_log(s, AV_LOG_ERROR, "Server response validating failed\n");
-                return -1;
+                return AVERROR(EIO);
             }
         }
 
@@ -660,7 +660,7 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
 
         if (memcmp(digest, clientdata + RTMP_HANDSHAKE_PACKET_SIZE - 32, 32)) {
             av_log(s, AV_LOG_ERROR, "Signature mismatch\n");
-            return -1;
+            return AVERROR(EIO);
         }
 
         for (i = 0; i < RTMP_HANDSHAKE_PACKET_SIZE; i++)
