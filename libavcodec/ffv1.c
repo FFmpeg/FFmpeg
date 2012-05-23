@@ -723,7 +723,7 @@ static int init_slice_state(FFV1Context *f, FFV1Context *fs){
         if (fs->ac>1){
             //FIXME only redo if state_transition changed
             for(j=1; j<256; j++){
-                fs->c.one_state [    j]= fs->state_transition[j];
+                fs->c.one_state [    j]= f->state_transition[j];
                 fs->c.zero_state[256-j]= 256-fs->c.one_state [j];
             }
         }
