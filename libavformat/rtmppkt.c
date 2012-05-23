@@ -79,6 +79,7 @@ int ff_rtmp_packet_read(URLContext *h, RTMPPacket *p,
     uint32_t extra = 0;
     enum RTMPPacketType type;
     int size = 0;
+    int ret;
 
     if (ffurl_read(h, &hdr, 1) != 1)
         return AVERROR(EIO);
@@ -129,8 +130,9 @@ int ff_rtmp_packet_read(URLContext *h, RTMPPacket *p,
     if (hdr != RTMP_PS_TWELVEBYTES)
         timestamp += prev_pkt[channel_id].timestamp;
 
-    if (ff_rtmp_packet_create(p, channel_id, type, timestamp, data_size))
-        return -1;
+    if ((ret = ff_rtmp_packet_create(p, channel_id, type, timestamp,
+                                     data_size)) < 0)
+        return ret;
     p->extra = extra;
     // save history
     prev_pkt[channel_id].channel_id = channel_id;
