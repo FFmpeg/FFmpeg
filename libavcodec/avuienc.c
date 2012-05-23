@@ -35,6 +35,16 @@ static av_cold int avui_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Could not allocate frame.\n");
         return AVERROR(ENOMEM);
     }
+    if (!(avctx->extradata = av_mallocz(24 + FF_INPUT_BUFFER_PADDING_SIZE)))
+        return AVERROR(ENOMEM);
+    avctx->extradata_size = 24;
+    memcpy(avctx->extradata, "\0\0\0\x18""APRGAPRG0001", 16);
+    if (avctx->field_order > AV_FIELD_PROGRESSIVE) {
+        avctx->extradata[19] = 2;
+    } else {
+        avctx->extradata[19] = 1;
+    }
+
 
     return 0;
 }
@@ -56,14 +66,7 @@ static int avui_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if ((ret = ff_alloc_packet2(avctx, pkt, size)) < 0)
         return ret;
     dst = pkt->data;
-    if (!(avctx->extradata = av_mallocz(24 + FF_INPUT_BUFFER_PADDING_SIZE)))
-        return AVERROR(ENOMEM);
-    avctx->extradata_size = 24;
-    memcpy(avctx->extradata, "\0\0\0\x18""APRGAPRG0001", 16);
-    if (interlaced) {
-        avctx->extradata[19] = 2;
-    } else {
-        avctx->extradata[19] = 1;
+    if (!interlaced) {
         dst += avctx->width * skip;
     }
 
