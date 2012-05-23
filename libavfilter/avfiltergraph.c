@@ -227,7 +227,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
         if (graph->filters[i]->filter->query_formats)
             graph->filters[i]->filter->query_formats(graph->filters[i]);
         else
-            avfilter_default_query_formats(graph->filters[i]);
+            ff_default_query_formats(graph->filters[i]);
     }
 
     /* go through and merge as many format lists as possible */
@@ -571,6 +571,74 @@ static void swap_channel_layouts(AVFilterGraph *graph)
         swap_channel_layouts_on_filter(graph->filters[i]);
 }
 
+static void swap_sample_fmts_on_filter(AVFilterContext *filter)
+{
+    AVFilterLink *link = NULL;
+    int format, bps;
+    int i, j;
+
+    for (i = 0; i < filter->input_count; i++) {
+        link = filter->inputs[i];
+
+        if (link->type == AVMEDIA_TYPE_AUDIO &&
+            link->out_formats->format_count == 1)
+            break;
+    }
+    if (i == filter->input_count)
+        return;
+
+    format = link->out_formats->formats[0];
+    bps    = av_get_bytes_per_sample(format);
+
+    for (i = 0; i < filter->output_count; i++) {
+        AVFilterLink *outlink = filter->outputs[i];
+        int best_idx, best_score = INT_MIN;
+
+        if (outlink->type != AVMEDIA_TYPE_AUDIO ||
+            outlink->in_formats->format_count < 2)
+            continue;
+
+        for (j = 0; j < outlink->in_formats->format_count; j++) {
+            int out_format = outlink->in_formats->formats[j];
+            int out_bps    = av_get_bytes_per_sample(out_format);
+            int score;
+
+            if (av_get_packed_sample_fmt(out_format) == format ||
+                av_get_planar_sample_fmt(out_format) == format) {
+                best_idx   = j;
+                break;
+            }
+
+            /* for s32 and float prefer double to prevent loss of information */
+            if (bps == 4 && out_bps == 8) {
+                best_idx = j;
+                break;
+            }
+
+            /* prefer closest higher or equal bps */
+            score = -abs(out_bps - bps);
+            if (out_bps >= bps)
+                score += INT_MAX/2;
+
+            if (score > best_score) {
+                best_score = score;
+                best_idx   = j;
+            }
+        }
+        FFSWAP(int, outlink->in_formats->formats[0],
+               outlink->in_formats->formats[best_idx]);
+    }
+}
+
+static void swap_sample_fmts(AVFilterGraph *graph)
+{
+    int i;
+
+    for (i = 0; i < graph->filter_count; i++)
+        swap_sample_fmts_on_filter(graph->filters[i]);
+
+}
+
 static int pick_formats(AVFilterGraph *graph)
 {
     int i, j, ret;
@@ -633,8 +701,9 @@ int ff_avfilter_graph_config_formats(AVFilterGraph *graph, AVClass *log_ctx)
      * of format conversion inside filters */
     reduce_formats(graph);
 
-    /* for audio filters, ensure the best sample rate and channel layout
+    /* for audio filters, ensure the best format, sample rate and channel layout
      * is selected */
+    swap_sample_fmts(graph);
     swap_samplerates(graph);
     swap_channel_layouts(graph);
 

@@ -202,7 +202,6 @@ int avfilter_config_links(AVFilterContext *filter)
                     link->sample_aspect_ratio = inlink ?
                         inlink->sample_aspect_ratio : (AVRational){1,1};
 
-#if 1
                 if (inlink) {
                     if (!link->w)
                         link->w = inlink->w;
@@ -233,7 +232,6 @@ int avfilter_config_links(AVFilterContext *filter)
                     link->time_base = (AVRational) {1, link->sample_rate};
             }
 
-#endif
             if ((config_link = link->dstpad->config_props))
                 if ((ret = config_link(link)) < 0)
                     return ret;

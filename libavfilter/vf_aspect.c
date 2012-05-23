@@ -26,6 +26,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/parseutils.h"
 #include "avfilter.h"
+#include "video.h"
 
 typedef struct {
     AVRational ratio;
@@ -86,9 +87,9 @@ AVFilter avfilter_vf_setdar = {
     .inputs    = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
                                     .config_props     = setdar_config_props,
-                                    .get_video_buffer = avfilter_null_get_video_buffer,
+                                    .get_video_buffer = ff_null_get_video_buffer,
                                     .start_frame      = start_frame,
-                                    .end_frame        = avfilter_null_end_frame },
+                                    .end_frame        = ff_null_end_frame },
                                   { .name = NULL}},
 
     .outputs   = (const AVFilterPad[]) {{ .name       = "default",
@@ -118,9 +119,9 @@ AVFilter avfilter_vf_setsar = {
     .inputs    = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
                                     .config_props     = setsar_config_props,
-                                    .get_video_buffer = avfilter_null_get_video_buffer,
+                                    .get_video_buffer = ff_null_get_video_buffer,
                                     .start_frame      = start_frame,
-                                    .end_frame        = avfilter_null_end_frame },
+                                    .end_frame        = ff_null_end_frame },
                                   { .name = NULL}},
 
     .outputs   = (const AVFilterPad[]) {{ .name       = "default",

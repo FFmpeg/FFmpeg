@@ -26,6 +26,7 @@
 /* #define DEBUG */
 
 #include "avfilter.h"
+#include "video.h"
 #include "libavutil/eval.h"
 #include "libavutil/avstring.h"
 #include "libavutil/libm.h"
@@ -352,7 +353,7 @@ AVFilter avfilter_vf_crop = {
                                     .start_frame      = start_frame,
                                     .draw_slice       = draw_slice,
                                     .end_frame        = end_frame,
-                                    .get_video_buffer = avfilter_null_get_video_buffer,
+                                    .get_video_buffer = ff_null_get_video_buffer,
                                     .config_props     = config_input, },
                                   { .name = NULL}},
     .outputs   = (const AVFilterPad[]) {{ .name       = "default",

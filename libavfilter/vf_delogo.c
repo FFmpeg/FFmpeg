@@ -29,6 +29,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "video.h"
 
 /**
  * Apply a simple delogo algorithm to the image in dst and put the
@@ -275,7 +276,7 @@ AVFilter avfilter_vf_delogo = {
 
     .inputs    = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
-                                    .get_video_buffer = avfilter_null_get_video_buffer,
+                                    .get_video_buffer = ff_null_get_video_buffer,
                                     .start_frame      = start_frame,
                                     .draw_slice       = null_draw_slice,
                                     .end_frame        = end_frame,

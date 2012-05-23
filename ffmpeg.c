@@ -2538,7 +2538,7 @@ static int guess_input_channel_layout(InputStream *ist)
     return 1;
 }
 
-static int transcode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
+static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
 {
     AVFrame *decoded_frame;
     AVCodecContext *avctx = ist->st->codec;
@@ -2639,7 +2639,7 @@ static int transcode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
     return ret;
 }
 
-static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output)
+static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
 {
     AVFrame *decoded_frame;
     void *buffer_to_free = NULL;
@@ -2824,10 +2824,10 @@ static int output_packet(InputStream *ist, const AVPacket *pkt)
 
         switch (ist->st->codec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
-            ret = transcode_audio    (ist, &avpkt, &got_output);
+            ret = decode_audio    (ist, &avpkt, &got_output);
             break;
         case AVMEDIA_TYPE_VIDEO:
-            ret = transcode_video    (ist, &avpkt, &got_output);
+            ret = decode_video    (ist, &avpkt, &got_output);
             if (avpkt.duration) {
                 duration = av_rescale_q(avpkt.duration, ist->st->time_base, AV_TIME_BASE_Q);
             } else if(ist->st->codec->time_base.num != 0 && ist->st->codec->time_base.den != 0) {

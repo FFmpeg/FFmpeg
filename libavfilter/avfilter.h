@@ -383,7 +383,7 @@ struct AVFilterPad {
     const char *name;
 
     /**
-     * AVFilterPad type. Can be AVMEDIA_TYPE_VIDEO or AVMEDIA_TYPE_AUDIO.
+     * AVFilterPad type.
      */
     enum AVMediaType type;
 
@@ -465,7 +465,7 @@ struct AVFilterPad {
      *
      * Defaults to just calling the source poll_frame() method.
      *
-     * Output video pads only.
+     * Output pads only.
      */
     int (*poll_frame)(AVFilterLink *link);
 
@@ -476,7 +476,7 @@ struct AVFilterPad {
      * See avfilter_request_frame() for the error codes with a specific
      * meaning.
      *
-     * Output video pads only.
+     * Output pads only.
      */
     int (*request_frame)(AVFilterLink *link);
 
@@ -500,19 +500,28 @@ struct AVFilterPad {
     int (*config_props)(AVFilterLink *link);
 };
 
+#if FF_API_FILTERS_PUBLIC
 /** default handler for start_frame() for video inputs */
+attribute_deprecated
 void avfilter_default_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
 
 /** default handler for draw_slice() for video inputs */
+attribute_deprecated
 void avfilter_default_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
 
 /** default handler for end_frame() for video inputs */
+attribute_deprecated
 void avfilter_default_end_frame(AVFilterLink *link);
 
 /** default handler for get_video_buffer() for video inputs */
+attribute_deprecated
 AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link,
                                                      int perms, int w, int h);
 
+/** Default handler for query_formats() */
+attribute_deprecated
+int avfilter_default_query_formats(AVFilterContext *ctx);
+#endif
 
 /**
  * Helpers for query_formats() which set all links to the same list of
@@ -527,21 +536,24 @@ void avfilter_set_common_channel_layouts(AVFilterContext *ctx, AVFilterFormats *
 void avfilter_set_common_packing_formats(AVFilterContext *ctx, AVFilterFormats *formats);
 #endif
 
-/** Default handler for query_formats() */
-int avfilter_default_query_formats(AVFilterContext *ctx);
-
+#if FF_API_FILTERS_PUBLIC
 /** start_frame() handler for filters which simply pass video along */
+attribute_deprecated
 void avfilter_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
 
 /** draw_slice() handler for filters which simply pass video along */
+attribute_deprecated
 void avfilter_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
 
 /** end_frame() handler for filters which simply pass video along */
+attribute_deprecated
 void avfilter_null_end_frame(AVFilterLink *link);
 
 /** get_video_buffer() handler for filters which simply pass video along */
+attribute_deprecated
 AVFilterBufferRef *avfilter_null_get_video_buffer(AVFilterLink *link,
                                                   int perms, int w, int h);
+#endif
 
 /**
  * Filter definition. This defines the pads a filter contains, and all the

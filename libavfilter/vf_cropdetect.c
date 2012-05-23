@@ -25,6 +25,7 @@
 
 #include "libavutil/imgutils.h"
 #include "avfilter.h"
+#include "video.h"
 
 typedef struct {
     int x1, y1, x2, y2;
@@ -203,8 +204,8 @@ AVFilter avfilter_vf_cropdetect = {
     .inputs    = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
                                     .config_props     = config_input,
-                                    .get_video_buffer = avfilter_null_get_video_buffer,
-                                    .start_frame      = avfilter_null_start_frame,
+                                    .get_video_buffer = ff_null_get_video_buffer,
+                                    .start_frame      = ff_null_start_frame,
                                     .end_frame        = end_frame, },
                                   { .name = NULL}},
 

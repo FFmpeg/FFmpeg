@@ -52,6 +52,8 @@ typedef struct {
     char *headers;
     int willclose;          /**< Set if the server correctly handles Connection: close and will close the connection after feeding us the content. */
     int chunked_post;
+    int end_chunked_post;   /**< A flag which indicates if the end of chunked encoding has been sent. */
+    int end_header;         /**< A flag which indicates we have finished to read POST reply. */
 } HTTPContext;
 
 #define OFFSET(x) offsetof(HTTPContext, x)
@@ -251,8 +253,10 @@ static int process_line(URLContext *h, char *line, int line_count,
     char *tag, *p, *end;
 
     /* end of header */
-    if (line[0] == '\0')
+    if (line[0] == '\0') {
+        s->end_header = 1;
         return 0;
+    }
 
     p = line;
     if (line_count == 0) {
@@ -419,6 +423,7 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     s->off = 0;
     s->filesize = -1;
     s->willclose = 0;
+    s->end_chunked_post = 0;
     if (post) {
         /* Pretend that it did work. We didn't read any header yet, since
          * we've still to send the POST data, but the code calling this
@@ -464,6 +469,17 @@ static int http_buf_read(URLContext *h, uint8_t *buf, int size)
 static int http_read(URLContext *h, uint8_t *buf, int size)
 {
     HTTPContext *s = h->priv_data;
+    int err, new_location;
+
+    if (s->end_chunked_post) {
+        if (!s->end_header) {
+            err = http_read_header(h, &new_location);
+            if (err < 0)
+                return err;
+        }
+
+        return http_buf_read(h, buf, size);
+    }
 
     if (s->chunksize >= 0) {
         if (!s->chunksize) {
@@ -516,16 +532,30 @@ static int http_write(URLContext *h, const uint8_t *buf, int size)
     return size;
 }
 
-static int http_close(URLContext *h)
+static int http_shutdown(URLContext *h, int flags)
 {
     int ret = 0;
     char footer[] = "0\r\n\r\n";
     HTTPContext *s = h->priv_data;
 
     /* signal end of chunked encoding if used */
-    if ((h->flags & AVIO_FLAG_WRITE) && s->chunked_post) {
+    if ((flags & AVIO_FLAG_WRITE) && s->chunked_post) {
         ret = ffurl_write(s->hd, footer, sizeof(footer) - 1);
         ret = ret > 0 ? 0 : ret;
+        s->end_chunked_post = 1;
+    }
+
+    return ret;
+}
+
+static int http_close(URLContext *h)
+{
+    int ret = 0;
+    HTTPContext *s = h->priv_data;
+
+    if (!s->end_chunked_post) {
+        /* Close the write direction by sending the end of chunked encoding. */
+        ret = http_shutdown(h, h->flags);
     }
 
     if (s->hd)
@@ -585,6 +615,7 @@ URLProtocol ff_http_protocol = {
     .url_seek            = http_seek,
     .url_close           = http_close,
     .url_get_file_handle = http_get_file_handle,
+    .url_shutdown        = http_shutdown,
     .priv_data_size      = sizeof(HTTPContext),
     .priv_data_class     = &http_context_class,
     .flags               = URL_PROTOCOL_FLAG_NETWORK,

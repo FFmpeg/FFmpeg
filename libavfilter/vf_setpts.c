@@ -29,6 +29,7 @@
 #include "libavutil/eval.h"
 #include "libavutil/mathematics.h"
 #include "avfilter.h"
+#include "video.h"
 
 static const char *const var_names[] = {
     "INTERLACED",  ///< tell if the current frame is interlaced
@@ -139,7 +140,7 @@ AVFilter avfilter_vf_setpts = {
 
     .inputs    = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
-                                    .get_video_buffer = avfilter_null_get_video_buffer,
+                                    .get_video_buffer = ff_null_get_video_buffer,
                                     .config_props     = config_input,
                                     .start_frame      = start_frame, },
                                   { .name = NULL }},

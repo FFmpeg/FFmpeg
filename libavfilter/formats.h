@@ -78,4 +78,6 @@ void ff_channel_layouts_unref(AVFilterChannelLayouts **ref);
 void ff_channel_layouts_changeref(AVFilterChannelLayouts **oldref,
                                   AVFilterChannelLayouts **newref);
 
+int ff_default_query_formats(AVFilterContext *ctx);
+
 #endif // AVFILTER_FORMATS_H

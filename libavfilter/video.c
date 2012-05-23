@@ -20,6 +20,7 @@
 
 #include "avfilter.h"
 #include "internal.h"
+#include "video.h"
 
 static char *ff_get_ref_perms_string(char *buf, size_t buf_size, int perms)
 {
@@ -61,12 +62,12 @@ static void ff_dlog_ref(void *ctx, AVFilterBufferRef *ref, int end)
     av_dlog(ctx, "]%s", end ? "\n" : "");
 }
 
-AVFilterBufferRef *avfilter_null_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
+AVFilterBufferRef *ff_null_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
 {
     return avfilter_get_video_buffer(link->dst->outputs[0], perms, w, h);
 }
 
-AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
+AVFilterBufferRef *ff_default_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
 {
     int linesize[4];
     uint8_t *data[4];
@@ -174,7 +175,7 @@ AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms, int 
         ret = link->dstpad->get_video_buffer(link, perms, w, h);
 
     if (!ret)
-        ret = avfilter_default_get_video_buffer(link, perms, w, h);
+        ret = ff_default_get_video_buffer(link, perms, w, h);
 
     if (ret)
         ret->type = AVMEDIA_TYPE_VIDEO;
@@ -184,12 +185,12 @@ AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms, int 
     return ret;
 }
 
-void avfilter_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
+void ff_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
     avfilter_start_frame(link->dst->outputs[0], picref);
 }
 
-void avfilter_default_start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
+static void default_start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
     AVFilterLink *outlink = NULL;
 
@@ -215,7 +216,7 @@ void avfilter_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     FF_DPRINTF_START(NULL, start_frame); ff_dlog_link(NULL, link, 0); av_dlog(NULL, " "); ff_dlog_ref(NULL, picref, 1);
 
     if (!(start_frame = dst->start_frame))
-        start_frame = avfilter_default_start_frame;
+        start_frame = default_start_frame;
 
     if (picref->linesize[0] < 0)
         perms |= AV_PERM_NEG_LINESIZES;
@@ -246,12 +247,12 @@ void avfilter_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     ff_update_link_current_pts(link, link->cur_buf->pts);
 }
 
-void avfilter_null_end_frame(AVFilterLink *link)
+void ff_null_end_frame(AVFilterLink *link)
 {
     avfilter_end_frame(link->dst->outputs[0]);
 }
 
-void avfilter_default_end_frame(AVFilterLink *inlink)
+static void default_end_frame(AVFilterLink *inlink)
 {
     AVFilterLink *outlink = NULL;
 
@@ -275,7 +276,7 @@ void avfilter_end_frame(AVFilterLink *link)
     void (*end_frame)(AVFilterLink *);
 
     if (!(end_frame = link->dstpad->end_frame))
-        end_frame = avfilter_default_end_frame;
+        end_frame = default_end_frame;
 
     end_frame(link);
 
@@ -287,12 +288,12 @@ void avfilter_end_frame(AVFilterLink *link)
     }
 }
 
-void avfilter_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
+void ff_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
     avfilter_draw_slice(link->dst->outputs[0], y, h, slice_dir);
 }
 
-void avfilter_default_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
+static void default_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 {
     AVFilterLink *outlink = NULL;
 
@@ -340,7 +341,41 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
     }
 
     if (!(draw_slice = link->dstpad->draw_slice))
-        draw_slice = avfilter_default_draw_slice;
+        draw_slice = default_draw_slice;
     draw_slice(link, y, h, slice_dir);
 }
 
+#if FF_API_FILTERS_PUBLIC
+AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
+{
+    return ff_default_get_video_buffer(link, perms, w, h);
+}
+void avfilter_default_start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
+{
+    default_start_frame(inlink, picref);
+}
+void avfilter_default_end_frame(AVFilterLink *inlink)
+{
+    default_end_frame(inlink);
+}
+void avfilter_default_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
+{
+    default_draw_slice(inlink, y, h, slice_dir);
+}
+AVFilterBufferRef *avfilter_null_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
+{
+    return ff_null_get_video_buffer(link, perms, w, h);
+}
+void avfilter_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
+{
+    ff_null_start_frame(link, picref);
+}
+void avfilter_null_end_frame(AVFilterLink *link)
+{
+    ff_null_end_frame(link);
+}
+void avfilter_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
+{
+    ff_null_draw_slice(link, y, h, slice_dir);
+}
+#endif

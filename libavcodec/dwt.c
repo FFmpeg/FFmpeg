@@ -24,9 +24,9 @@
 #include "dwt.h"
 #include "libavcodec/x86/dwt.h"
 
-void ff_slice_buffer_init(slice_buffer *buf, int line_count,
-                          int max_allocated_lines, int line_width,
-                          IDWTELEM *base_buffer)
+int ff_slice_buffer_init(slice_buffer *buf, int line_count,
+                         int max_allocated_lines, int line_width,
+                         IDWTELEM *base_buffer)
 {
     int i;
 
@@ -55,6 +55,7 @@ void ff_slice_buffer_init(slice_buffer *buf, int line_count,
     }
 
     buf->data_stack_top = max_allocated_lines - 1;
+    return 0;
 }
 
 IDWTELEM *ff_slice_buffer_load_line(slice_buffer *buf, int line)

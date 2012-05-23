@@ -396,7 +396,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
 
     // realloc slice buffer for the case that spatial_decomposition_count changed
     ff_slice_buffer_destroy(&s->sb);
-    ff_slice_buffer_init(&s->sb, s->plane[0].height, (MB_SIZE >> s->block_max_depth) + s->spatial_decomposition_count * 8 + 1, s->plane[0].width, s->spatial_idwt_buffer);
+    if ((res = ff_slice_buffer_init(&s->sb, s->plane[0].height,
+                                    (MB_SIZE >> s->block_max_depth) +
+                                    s->spatial_decomposition_count * 8 + 1,
+                                    s->plane[0].width,
+                                    s->spatial_idwt_buffer)) < 0)
+        return res;
 
     for(plane_index=0; plane_index<3; plane_index++){
         Plane *p= &s->plane[plane_index];

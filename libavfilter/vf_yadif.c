@@ -22,6 +22,7 @@
 #include "libavutil/common.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "video.h"
 #include "yadif.h"
 
 #undef NDEBUG
@@ -179,7 +180,7 @@ static AVFilterBufferRef *get_video_buffer(AVFilterLink *link, int perms, int w,
     int height= FFALIGN(h+2, 32);
     int i;
 
-    picref = avfilter_default_get_video_buffer(link, perms, width, height);
+    picref = ff_default_get_video_buffer(link, perms, width, height);
 
     picref->video->w = w;
     picref->video->h = h;

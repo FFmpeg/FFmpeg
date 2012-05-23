@@ -22,6 +22,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/samplefmt.h"
 #include "libavfilter/avfilter.h"
+#include "libavfilter/formats.h"
 
 static void print_formats(AVFilterContext *filter_ctx)
 {
@@ -114,7 +115,7 @@ int main(int argc, char **argv)
     if (filter->query_formats)
         filter->query_formats(filter_ctx);
     else
-        avfilter_default_query_formats(filter_ctx);
+        ff_default_query_formats(filter_ctx);
 
     print_formats(filter_ctx);
 
