@@ -591,8 +591,8 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
         if(!st->codec->codec_id){
             flv_set_audio_codec(s, st, st->codec, flags & FLV_AUDIO_CODECID_MASK);
-            flv->last_sample_rate = st->codec->sample_rate;
-            flv->last_channels    = st->codec->channels;
+            flv->last_sample_rate = sample_rate = st->codec->sample_rate;
+            flv->last_channels    = channels    = st->codec->channels;
         } else {
             AVCodecContext ctx;
             ctx.sample_rate = sample_rate;

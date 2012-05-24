@@ -38,6 +38,7 @@ version 0.11:
 - audio split filter
 - vorbis parser
 - png parser
+- audio mix filter
 
 
 version 0.10:
