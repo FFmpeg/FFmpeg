@@ -2,6 +2,9 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version next:
+
+version 0.11:
+- Fixes CVE-2012-2771 ... 2805
 - v408 Quicktime and Microsoft AYUV Uncompressed 4:4:4:4 encoder and decoder
 - setfield filter
 - CDXL demuxer and decoder
@@ -33,6 +36,8 @@ version next:
 - audio filters support in libavfilter and avconv
 - add fps filter
 - audio split filter
+- vorbis parser
+- png parser
 
 
 version 0.10:
