@@ -1284,6 +1284,6 @@ QPEL16_OP(mc31, MMX)\
 QPEL16_OP(mc32, MMX)\
 QPEL16_OP(mc33, MMX)
 
-#if ARCH_X86_32 && HAVE_YASM // ARCH_X86_64 implies sse2+
+#if CONFIG_H264QPEL && ARCH_X86_32 && HAVE_YASM // ARCH_X86_64 implies sse2+
 QPEL16(mmxext)
 #endif
