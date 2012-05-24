@@ -639,15 +639,16 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
         return ret;
     }
 
-    i = ffurl_read_complete(rt->stream, serverdata, RTMP_HANDSHAKE_PACKET_SIZE + 1);
-    if (i != RTMP_HANDSHAKE_PACKET_SIZE + 1) {
+    if ((ret = ffurl_read_complete(rt->stream, serverdata,
+                                   RTMP_HANDSHAKE_PACKET_SIZE + 1)) < 0) {
         av_log(s, AV_LOG_ERROR, "Cannot read RTMP handshake response\n");
-        return AVERROR(EIO);
+        return ret;
     }
-    i = ffurl_read_complete(rt->stream, clientdata, RTMP_HANDSHAKE_PACKET_SIZE);
-    if (i != RTMP_HANDSHAKE_PACKET_SIZE) {
+
+    if ((ret = ffurl_read_complete(rt->stream, clientdata,
+                                   RTMP_HANDSHAKE_PACKET_SIZE)) < 0) {
         av_log(s, AV_LOG_ERROR, "Cannot read RTMP handshake response\n");
-        return AVERROR(EIO);
+        return ret;
     }
 
     av_log(s, AV_LOG_DEBUG, "Server version %d.%d.%d.%d\n",
