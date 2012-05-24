@@ -133,6 +133,7 @@ static int config_output(AVFilterLink *outlink)
     int out_rate;
     uint64_t out_layout;
     enum AVSampleFormat out_format;
+    char inchl_buf[128], outchl_buf[128];
 
     aresample->swr = swr_alloc_set_opts(aresample->swr,
                                         outlink->channel_layout, outlink->format, outlink->sample_rate,
@@ -156,8 +157,11 @@ static int config_output(AVFilterLink *outlink)
 
     aresample->ratio = (double)outlink->sample_rate / inlink->sample_rate;
 
-    av_log(ctx, AV_LOG_INFO, "r:%"PRId64"Hz -> r:%"PRId64"Hz\n",
-           inlink->sample_rate, outlink->sample_rate);
+    av_get_channel_layout_string(inchl_buf,  sizeof(inchl_buf),  -1, inlink ->channel_layout);
+    av_get_channel_layout_string(outchl_buf, sizeof(outchl_buf), -1, outlink->channel_layout);
+    av_log(ctx, AV_LOG_INFO, "chl:%s fmt:%s r:%"PRId64"Hz -> chl:%s fmt:%s r:%"PRId64"Hz\n",
+           inchl_buf,  av_get_sample_fmt_name(inlink->format),  inlink->sample_rate,
+           outchl_buf, av_get_sample_fmt_name(outlink->format), outlink->sample_rate);
     return 0;
 }
 
