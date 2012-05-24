@@ -1921,6 +1921,7 @@ static int video_thread(void *arg)
             stream_toggle_pause(is);
     }
  the_end:
+    avcodec_flush_buffers(is->video_st->codec);
 #if CONFIG_AVFILTER
     av_freep(&vfilters);
     avfilter_graph_free(&graph);
