@@ -97,6 +97,7 @@ typedef struct {
 
 static AVIOContext *probe_out = NULL;
 static OutputContext octx;
+#define AVP_INDENT() avio_printf(probe_out, "%*c", octx.level * 2, ' ')
 
 /*
  * Default format, INI
@@ -187,6 +188,96 @@ static void ini_print_string(const char *key, const char *value)
     avio_printf(probe_out, "=");
     ini_escape_print(value);
     avio_w8(probe_out, '\n');
+}
+
+/*
+ * Alternate format, JSON
+ */
+
+static void json_print_header(void)
+{
+    avio_printf(probe_out, "{");
+}
+static void json_print_footer(void)
+{
+    avio_printf(probe_out, "}\n");
+}
+
+static void json_print_array_header(const char *name)
+{
+    if (octx.prefix[octx.level -1].nb_elems)
+        avio_printf(probe_out, ",\n");
+    AVP_INDENT();
+    avio_printf(probe_out, "\"%s\" : ", name);
+    avio_printf(probe_out, "[\n");
+}
+
+static void json_print_array_footer(const char *name)
+{
+    avio_printf(probe_out, "\n");
+    AVP_INDENT();
+    avio_printf(probe_out, "]");
+}
+
+static void json_print_object_header(const char *name)
+{
+    if (octx.prefix[octx.level -1].nb_elems)
+        avio_printf(probe_out, ",\n");
+    AVP_INDENT();
+    if (octx.prefix[octx.level -1].type == OBJECT)
+        avio_printf(probe_out, "\"%s\" : ", name);
+    avio_printf(probe_out, "{\n");
+}
+
+static void json_print_object_footer(const char *name)
+{
+    avio_printf(probe_out, "\n");
+    AVP_INDENT();
+    avio_printf(probe_out, "}");
+}
+
+static void json_print_integer(const char *key, int64_t value)
+{
+    if (octx.prefix[octx.level -1].nb_elems)
+        avio_printf(probe_out, ",\n");
+    AVP_INDENT();
+    avio_printf(probe_out, "\"%s\" : %"PRId64"", key, value);
+}
+
+static void json_escape_print(const char *s)
+{
+    int i = 0;
+    char c = 0;
+
+    while (c = s[i++]) {
+        switch (c) {
+        case '\r': avio_printf(probe_out, "%s", "\\r"); break;
+        case '\n': avio_printf(probe_out, "%s", "\\n"); break;
+        case '\f': avio_printf(probe_out, "%s", "\\f"); break;
+        case '\b': avio_printf(probe_out, "%s", "\\b"); break;
+        case '\t': avio_printf(probe_out, "%s", "\\t"); break;
+        case '\\':
+        case '"' : avio_w8(probe_out, '\\');
+        default:
+            if ((unsigned char)c < 32)
+                avio_printf(probe_out, "\\u00%02x", c & 0xff);
+            else
+                avio_w8(probe_out, c);
+        break;
+        }
+    }
+}
+
+static void json_print_string(const char *key, const char *value)
+{
+    if (octx.prefix[octx.level -1].nb_elems)
+        avio_printf(probe_out, ",\n");
+    AVP_INDENT();
+    avio_w8(probe_out, '\"');
+    json_escape_print(key);
+    avio_printf(probe_out, "\" : \"");
+    json_escape_print(value);
+    avio_w8(probe_out, '\"');
 }
 
 /*
@@ -666,6 +757,34 @@ static int opt_format(const char *opt, const char *arg)
     return 0;
 }
 
+static void opt_output_format(const char *opt, const char *arg)
+{
+
+    if (!strcmp(arg, "json")) {
+        print_header        = json_print_header;
+        print_footer        = json_print_footer;
+        print_array_header  = json_print_array_header;
+        print_array_footer  = json_print_array_footer;
+        print_object_header = json_print_object_header;
+        print_object_footer = json_print_object_footer;
+
+        print_integer = json_print_integer;
+        print_string  = json_print_string;
+    } else
+    if (!strcmp(arg, "ini")) {
+        print_header        = ini_print_header;
+        print_footer        = ini_print_footer;
+        print_array_header  = ini_print_array_header;
+        print_object_header = ini_print_object_header;
+
+        print_integer = ini_print_integer;
+        print_string  = ini_print_string;
+    } else {
+        av_log(NULL, AV_LOG_ERROR, "Unsupported formatter %s\n", arg);
+        exit(1);
+    }
+}
+
 static int opt_show_format_entry(const char *opt, const char *arg)
 {
     do_show_format = 1;
@@ -716,6 +835,7 @@ static void opt_pretty(void)
 static const OptionDef options[] = {
 #include "cmdutils_common_opts.h"
     { "f", HAS_ARG, {(void*)opt_format}, "force format", "format" },
+    { "of", HAS_ARG, {(void*)&opt_output_format}, "output the document either as ini or json", "output_format" },
     { "unit", OPT_BOOL, {(void*)&show_value_unit},
       "show unit of the displayed values" },
     { "prefix", OPT_BOOL, {(void*)&use_value_prefix},
