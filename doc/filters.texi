@@ -140,27 +140,6 @@ aconvert=u8:auto
 @end example
 @end itemize
 
-@section aformat
-
-Convert the input audio to one of the specified formats. The framework will
-negotiate the most appropriate format to minimize conversions.
-
-The filter accepts three lists of formats, separated by ":", in the form:
-"@var{sample_formats}:@var{channel_layouts}".
-
-Elements in each list are separated by "," which has to be escaped in the
-filtergraph specification.
-
-The special parameter "all", in place of a list of elements, signifies all
-supported formats.
-
-Some examples follow:
-@example
-aformat=u8\\,s16:mono
-
-aformat=s16:mono\\,stereo
-@end example
-
 @section amerge
 
 Merge two audio streams into a single multi-channel stream.
