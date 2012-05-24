@@ -23,7 +23,7 @@
 #include "libavutil/opt.h"
 #include "libavformat/internal.h"
 #include "avdevice.h"
-#include "dshow.h"
+#include "dshow_capture.h"
 
 struct dshow_ctx {
     const AVClass *class;

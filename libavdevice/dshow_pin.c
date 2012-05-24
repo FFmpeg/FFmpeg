@@ -20,7 +20,7 @@
  */
 
 #define NO_DSHOW_STRSAFE
-#include "dshow.h"
+#include "dshow_capture.h"
 
 #include <stddef.h>
 #define imemoffset offsetof(libAVPin, imemvtbl)
