@@ -1713,7 +1713,7 @@ ffprobe_deps="avcodec avformat"
 ffserver_deps="avformat ffm_muxer fork rtp_protocol rtsp_demuxer"
 ffserver_extralibs='$ldl'
 ffmpeg_deps="avcodec avfilter avformat swscale swresample"
-ffmpeg_select="buffersink_filter format_filter"
+ffmpeg_select="buffersink_filter format_filter aformat_filter"
 
 doc_deps="texi2html"
 
