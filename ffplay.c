@@ -1582,6 +1582,7 @@ static int input_get_buffer(AVCodecContext *codec, AVFrame *pic)
         unsigned hshift = (i == 1 || i == 2) ? av_pix_fmt_descriptors[ref->format].log2_chroma_w : 0;
         unsigned vshift = (i == 1 || i == 2) ? av_pix_fmt_descriptors[ref->format].log2_chroma_h : 0;
 
+        pic->base[i]     = ref->data[i];
         if (ref->data[i]) {
             ref->data[i]    += ((edge * pixel_size) >> hshift) + ((edge * ref->linesize[i]) >> vshift);
         }
