@@ -28,25 +28,23 @@
 AVFormatContext *ff_rtp_chain_mux_open(AVFormatContext *s, AVStream *st,
                                        URLContext *handle, int packet_size)
 {
-    AVFormatContext *rtpctx;
+    AVFormatContext *rtpctx = NULL;
     int ret;
     AVOutputFormat *rtp_format = av_guess_format("rtp", NULL, NULL);
     uint8_t *rtpflags;
     AVDictionary *opts = NULL;
 
     if (!rtp_format)
-        return NULL;
+        goto fail;
 
     /* Allocate an AVFormatContext for each output stream */
     rtpctx = avformat_alloc_context();
     if (!rtpctx)
-        return NULL;
+        goto fail;
 
     rtpctx->oformat = rtp_format;
-    if (!avformat_new_stream(rtpctx, NULL)) {
-        av_free(rtpctx);
-        return NULL;
-    }
+    if (!avformat_new_stream(rtpctx, NULL))
+        goto fail;
     /* Pass the interrupt callback on */
     rtpctx->interrupt_callback = s->interrupt_callback;
     /* Copy the max delay setting; the rtp muxer reads this. */
@@ -82,4 +80,10 @@ AVFormatContext *ff_rtp_chain_mux_open(AVFormatContext *s, AVStream *st,
     }
 
     return rtpctx;
+
+fail:
+    av_free(rtpctx);
+    if (handle)
+        ffurl_close(handle);
+    return NULL;
 }
