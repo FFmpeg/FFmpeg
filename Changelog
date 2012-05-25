@@ -21,7 +21,7 @@ version <next>:
 - add fps filter
 - audio split filter
 - audio mix filter
-
+- avprobe output is now standard INI or JSON.
 
 version 0.8:
 
