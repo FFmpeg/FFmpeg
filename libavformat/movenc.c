@@ -680,7 +680,7 @@ static int mov_write_audio_tag(AVIOContext *pb, MOVTrack *track)
         track->enc->codec_id == CODEC_ID_ALAC ||
         track->enc->codec_id == CODEC_ID_ADPCM_MS ||
         track->enc->codec_id == CODEC_ID_ADPCM_IMA_WAV ||
-        mov_pcm_le_gt16(track->enc->codec_id)))
+        (mov_pcm_le_gt16(track->enc->codec_id) && version==1)))
         mov_write_wave_tag(pb, track);
     else if(track->tag == MKTAG('m','p','4','a'))
         mov_write_esds_tag(pb, track);
