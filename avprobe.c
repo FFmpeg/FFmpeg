@@ -540,6 +540,7 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
     AVStream *stream = fmt_ctx->streams[stream_idx];
     AVCodecContext *dec_ctx;
     AVCodec *dec;
+    const char *profile;
     char val_str[128];
     AVRational display_aspect_ratio;
 
@@ -565,6 +566,10 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
         probe_str("codec_tag_string", val_str);
         probe_str("codec_tag", tag_string(val_str, sizeof(val_str),
                                           dec_ctx->codec_tag));
+
+        /* print profile, if there is one */
+        if (dec && (profile = av_get_profile_name(dec, dec_ctx->profile)))
+            probe_str("profile", profile);
 
         switch (dec_ctx->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
