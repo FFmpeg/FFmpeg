@@ -716,6 +716,7 @@ av_cold void ff_intrax8_common_end(IntraX8Context * w)
  * The parent codec must call MPV_frame_start(), ff_er_frame_start() before calling this function.
  * The parent codec must call ff_er_frame_end(), MPV_frame_end() after calling this function.
  * This function does not use MPV_decode_mb().
+ * lowres decoding is theoretically impossible.
  * @param w pointer to IntraX8Context
  * @param dquant doubled quantizer, it would be odd in case of VC-1 halfpq==1.
  * @param quant_offset offset away from zero

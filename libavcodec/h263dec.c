@@ -151,7 +151,7 @@ static int get_consumed_bytes(MpegEncContext *s, int buf_size){
 
 static int decode_slice(MpegEncContext *s){
     const int part_mask= s->partitioned_frame ? (ER_AC_END|ER_AC_ERROR) : 0x7F;
-    const int mb_size = 16;
+    const int mb_size= 16>>s->avctx->lowres;
     s->last_resync_gb= s->gb;
     s->first_slice_line= 1;
 
@@ -766,6 +766,7 @@ AVCodec ff_h263_decoder = {
     .capabilities   = CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 |
                       CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY,
     .flush          = ff_mpeg_flush,
+    .max_lowres     = 3,
     .long_name      = NULL_IF_CONFIG_SMALL("H.263 / H.263-1996, H.263+ / H.263-1998 / H.263 version 2"),
     .pix_fmts       = ff_hwaccel_pixfmt_list_420,
 };
