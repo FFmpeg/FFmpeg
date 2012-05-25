@@ -757,7 +757,7 @@ static int opt_format(const char *opt, const char *arg)
     return 0;
 }
 
-static void opt_output_format(const char *opt, const char *arg)
+static int opt_output_format(const char *opt, const char *arg)
 {
 
     if (!strcmp(arg, "json")) {
@@ -781,8 +781,9 @@ static void opt_output_format(const char *opt, const char *arg)
         print_string  = ini_print_string;
     } else {
         av_log(NULL, AV_LOG_ERROR, "Unsupported formatter %s\n", arg);
-        exit(1);
+        return AVERROR(EINVAL);
     }
+    return 0;
 }
 
 static int opt_show_format_entry(const char *opt, const char *arg)
