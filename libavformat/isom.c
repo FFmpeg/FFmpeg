@@ -83,6 +83,9 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
     { CODEC_ID_RAWVIDEO, MKTAG('A', 'B', 'G', 'R') },
     { CODEC_ID_RAWVIDEO, MKTAG('b', '1', '6', 'g') },
     { CODEC_ID_RAWVIDEO, MKTAG('b', '4', '8', 'r') },
+    { CODEC_ID_RAWVIDEO, MKTAG('b', 'x', 'b', 'g') },
+    { CODEC_ID_RAWVIDEO, MKTAG('b', 'x', 'r', 'g') },
+    { CODEC_ID_RAWVIDEO, MKTAG('b', 'x', 'y', 'v') },
     { CODEC_ID_RAWVIDEO, MKTAG('D', 'V', 'O', 'O') }, /* Digital Voodoo SD 8 Bit */
 
     { CODEC_ID_R10K,   MKTAG('R', '1', '0', 'k') }, /* UNCOMPRESSED 10BIT RGB */
@@ -92,6 +95,7 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
     { CODEC_ID_AVRP,   MKTAG('A', 'V', 'r', 'p') }, /* Avid 1:1 10-bit RGB Packer */
     { CODEC_ID_AVRP,   MKTAG('S', 'U', 'D', 'S') }, /* Avid DS Uncompressed */
     { CODEC_ID_V210,   MKTAG('v', '2', '1', '0') }, /* UNCOMPRESSED 10BIT 4:2:2 */
+    { CODEC_ID_V210,   MKTAG('b', 'x', 'y', '2') }, /* BOXX 10BIT 4:2:2 */
     { CODEC_ID_V308,   MKTAG('v', '3', '0', '8') }, /* UNCOMPRESSED  8BIT 4:4:4 */
     { CODEC_ID_V408,   MKTAG('v', '4', '0', '8') }, /* UNCOMPRESSED  8BIT 4:4:4:4 */
     { CODEC_ID_V410,   MKTAG('v', '4', '1', '0') }, /* UNCOMPRESSED 10BIT 4:4:4 */
