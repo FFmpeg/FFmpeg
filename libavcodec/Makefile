@@ -783,6 +783,7 @@ TESTPROGS = cabac                                                       \
             golomb                                                      \
             iirfilter                                                   \
             rangecoder                                                  \
+            raw                                                         \
             snowenc                                                     \
 
 TESTPROGS-$(HAVE_MMX) += motion
