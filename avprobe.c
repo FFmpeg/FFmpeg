@@ -90,11 +90,12 @@ static char *value_string(char *buf, int buf_size, double val, const char *unit)
             val  /= pow(10, index * 3);
             prefix_string = decimal_unit_prefixes[index];
         }
-
-        snprintf(buf, buf_size, "%.3f %s%s", val, prefix_string,
+        snprintf(buf, buf_size, "%.*f%s%s",
+                 index ? 3 : 0, val,
+                 prefix_string,
                  show_value_unit ? unit : "");
     } else {
-        snprintf(buf, buf_size, "%f %s", val, show_value_unit ? unit : "");
+        snprintf(buf, buf_size, "%f%s", val, show_value_unit ? unit : "");
     }
 
     return buf;
