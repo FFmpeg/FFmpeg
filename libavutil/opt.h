@@ -560,6 +560,7 @@ int av_opt_set       (void *obj, const char *name, const char *val, int search_f
 int av_opt_set_int   (void *obj, const char *name, int64_t     val, int search_flags);
 int av_opt_set_double(void *obj, const char *name, double      val, int search_flags);
 int av_opt_set_q     (void *obj, const char *name, AVRational  val, int search_flags);
+int av_opt_set_bin   (void *obj, const char *name, const uint8_t *val, int size, int search_flags);
 /**
  * @}
  */

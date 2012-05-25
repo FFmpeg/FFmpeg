@@ -13,6 +13,9 @@ libavutil:     2011-04-18
 
 API changes, most recent first:
 
+2012-05-25 - e0e0793 - lavu 51.31.0 - opt.h
+  Add av_opt_set_bin()
+
 2012-05-xx - xxxxxxx - lavf 54.3.0
   Add AVFMT_TS_NONSTRICT format flag to indicate that a muxer supports
   non-increasing monotone timestamps.
