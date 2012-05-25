@@ -662,19 +662,17 @@ static void compact_show_tags(WriterContext *wctx, AVDictionary *dict)
     AVDictionaryEntry *tag = NULL;
     AVBPrint buf;
 
+    av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
     while ((tag = av_dict_get(dict, "", tag, AV_DICT_IGNORE_SUFFIX))) {
         if (wctx->nb_item) printf("%c", compact->item_sep);
-
         if (!compact->nokey) {
-            av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
+            av_bprint_clear(&buf);
             printf("tag:%s=", compact->escape_str(&buf, tag->key, compact->item_sep, wctx));
-            av_bprint_finalize(&buf, NULL);
         }
-
-        av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
+        av_bprint_clear(&buf);
         printf("%s", compact->escape_str(&buf, tag->value, compact->item_sep, wctx));
-        av_bprint_finalize(&buf, NULL);
     }
+    av_bprint_finalize(&buf, NULL);
 }
 
 static const Writer compact_writer = {
@@ -867,9 +865,7 @@ static inline void json_print_item_str(WriterContext *wctx,
 
     av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
     printf("\"%s\":", json_escape_str(&buf, key,   wctx));
-    av_bprint_finalize(&buf, NULL);
-
-    av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
+    av_bprint_clear(&buf);
     printf(" \"%s\"", json_escape_str(&buf, value, wctx));
     av_bprint_finalize(&buf, NULL);
 }
@@ -1124,6 +1120,7 @@ static void xml_show_tags(WriterContext *wctx, AVDictionary *dict)
     int is_first = 1;
     AVBPrint buf;
 
+    av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
     xml->indent_level++;
     while ((tag = av_dict_get(dict, "", tag, AV_DICT_IGNORE_SUFFIX))) {
         if (is_first) {
@@ -1134,14 +1131,12 @@ static void xml_show_tags(WriterContext *wctx, AVDictionary *dict)
         }
         XML_INDENT();
 
-        av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
+        av_bprint_clear(&buf);
         printf("<tag key=\"%s\"", xml_escape_str(&buf, tag->key, wctx));
-        av_bprint_finalize(&buf, NULL);
-
-        av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
+        av_bprint_clear(&buf);
         printf(" value=\"%s\"/>\n", xml_escape_str(&buf, tag->value, wctx));
-        av_bprint_finalize(&buf, NULL);
     }
+    av_bprint_finalize(&buf, NULL);
     xml->indent_level--;
 }
 
