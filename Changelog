@@ -6,6 +6,7 @@ version next:
 - Scene detection in libavfilter
 - Indeo Audio decoder
 - channelsplit audio filter
+- setnsamples audio filter
 
 
 version 0.11:
