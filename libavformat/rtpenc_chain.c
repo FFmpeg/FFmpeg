@@ -25,8 +25,8 @@
 #include "avio_internal.h"
 #include "libavutil/opt.h"
 
-AVFormatContext *ff_rtp_chain_mux_open(AVFormatContext *s, AVStream *st,
-                                       URLContext *handle, int packet_size)
+int ff_rtp_chain_mux_open(AVFormatContext **out, AVFormatContext *s,
+                          AVStream *st, URLContext *handle, int packet_size)
 {
     AVFormatContext *rtpctx = NULL;
     int ret;
@@ -34,17 +34,23 @@ AVFormatContext *ff_rtp_chain_mux_open(AVFormatContext *s, AVStream *st,
     uint8_t *rtpflags;
     AVDictionary *opts = NULL;
 
-    if (!rtp_format)
+    if (!rtp_format) {
+        ret = AVERROR(ENOSYS);
         goto fail;
+    }
 
     /* Allocate an AVFormatContext for each output stream */
     rtpctx = avformat_alloc_context();
-    if (!rtpctx)
+    if (!rtpctx) {
+        ret = AVERROR(ENOMEM);
         goto fail;
+    }
 
     rtpctx->oformat = rtp_format;
-    if (!avformat_new_stream(rtpctx, NULL))
+    if (!avformat_new_stream(rtpctx, NULL)) {
+        ret = AVERROR(ENOMEM);
         goto fail;
+    }
     /* Pass the interrupt callback on */
     rtpctx->interrupt_callback = s->interrupt_callback;
     /* Copy the max delay setting; the rtp muxer reads this. */
@@ -76,14 +82,15 @@ AVFormatContext *ff_rtp_chain_mux_open(AVFormatContext *s, AVStream *st,
             av_free(ptr);
         }
         avformat_free_context(rtpctx);
-        return NULL;
+        return ret;
     }
 
-    return rtpctx;
+    *out = rtpctx;
+    return 0;
 
 fail:
     av_free(rtpctx);
     if (handle)
         ffurl_close(handle);
-    return NULL;
+    return ret;
 }
