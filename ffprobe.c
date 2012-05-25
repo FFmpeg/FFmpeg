@@ -1364,6 +1364,7 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
     print_int("index", stream->index);
 
     if ((dec_ctx = stream->codec)) {
+        const char *profile = NULL;
         if ((dec = dec_ctx->codec)) {
             print_str("codec_name",      dec->name);
             print_str("codec_long_name", dec->long_name);
@@ -1371,6 +1372,11 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
             print_str_opt("codec_name",      "unknown");
             print_str_opt("codec_long_name", "unknown");
         }
+
+        if (dec && (profile = av_get_profile_name(dec, dec_ctx->profile)))
+            print_str("profile", profile);
+        else
+            print_str_opt("profile", "unknown");
 
         s = av_get_media_type_string(dec_ctx->codec_type);
         if (s) print_str    ("codec_type", s);

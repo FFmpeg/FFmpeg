@@ -83,6 +83,7 @@
       <xsd:attribute name="index"            type="xsd:int" use="required"/>
       <xsd:attribute name="codec_name"       type="xsd:string" />
       <xsd:attribute name="codec_long_name"  type="xsd:string" />
+      <xsd:attribute name="profile"          type="xsd:string" />
       <xsd:attribute name="codec_type"       type="xsd:string" />
       <xsd:attribute name="codec_time_base"  type="xsd:string" use="required"/>
       <xsd:attribute name="codec_tag"        type="xsd:string" use="required"/>
