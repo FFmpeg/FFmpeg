@@ -97,7 +97,7 @@ fate-dxa-scummvm: CMD = framecrc -i $(SAMPLES)/dxa/scummvm.dxa -pix_fmt rgb24
 FATE_VIDEO += $(FATE_DXA)
 fate-dxa: $(FATE_DXA)
 
-FATE_PCM += fate-film-cvid
+FATE_SAMPLES_PCM += fate-film-cvid
 fate-film-cvid: CMD = framecrc -i $(SAMPLES)/film/logo-capcom.cpk -an
 
 FATE_FLIC += fate-flic-af11-palette-change
