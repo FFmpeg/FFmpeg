@@ -59,8 +59,17 @@ parsers.
 Force format to use.
 
 @item -of @var{formatter}
-Use a specific formatter to output the document, either @var{ini} or
-@var{json} available.
+Use a specific formatter to output the document. The following
+formatters are available
+@table @option
+@item ini
+
+@item json
+
+@item old
+Pseudo-INI format that used to be the only one available in old
+avprobe versions.
+@end table
 
 @item -unit
 Show the unit of the displayed values.

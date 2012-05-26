@@ -281,6 +281,50 @@ static void json_print_string(const char *key, const char *value)
 }
 
 /*
+ * old-style pseudo-INI
+ */
+static void old_print_object_header(const char *name)
+{
+    char *str, *p;
+
+    if (!strcmp(name, "tags"))
+        return;
+
+    str = p = av_strdup(name);
+    while (*p) {
+        *p = toupper(*p);
+        p++;
+    }
+
+    avio_printf(probe_out, "[%s]\n", str);
+    av_freep(&str);
+}
+
+static void old_print_object_footer(const char *name)
+{
+    char *str, *p;
+
+    if (!strcmp(name, "tags"))
+        return;
+
+    str = p = av_strdup(name);
+    while (*p) {
+        *p = toupper(*p);
+        p++;
+    }
+
+    avio_printf(probe_out, "[/%s]\n", str);
+    av_freep(&str);
+}
+
+static void old_print_string(const char *key, const char *value)
+{
+    if (!strcmp(octx.prefix[octx.level - 1].name, "tags"))
+        avio_printf(probe_out, "TAG:");
+    ini_print_string(key, value);
+}
+
+/*
  * Simple Formatter for single entries.
  */
 
@@ -783,6 +827,12 @@ static int opt_output_format(const char *opt, const char *arg)
 
         print_integer = ini_print_integer;
         print_string  = ini_print_string;
+    } else if (!strcmp(arg, "old")) {
+        print_header        = NULL;
+        print_object_header = old_print_object_header;
+        print_object_footer = old_print_object_footer;
+
+        print_string        = old_print_string;
     } else {
         av_log(NULL, AV_LOG_ERROR, "Unsupported formatter %s\n", arg);
         return AVERROR(EINVAL);
