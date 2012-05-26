@@ -37,6 +37,7 @@ typedef struct {
     double ratio;
     struct SwrContext *swr;
     int64_t next_pts;
+    int req_fullfilled;
 } AResampleContext;
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
@@ -208,6 +209,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamplesref
     }
 #endif
     ff_filter_samples(outlink, outsamplesref);
+    aresample->req_fullfilled= 1;
     avfilter_unref_buffer(insamplesref);
 }
 
@@ -216,7 +218,12 @@ static int request_frame(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AResampleContext *aresample = ctx->priv;
     AVFilterLink *const inlink = outlink->src->inputs[0];
-    int ret = avfilter_request_frame(ctx->inputs[0]);
+    int ret;
+
+    aresample->req_fullfilled = 0;
+    do{
+        ret = avfilter_request_frame(ctx->inputs[0]);
+    }while(!aresample->req_fullfilled && ret>=0);
 
     if (ret == AVERROR_EOF) {
         AVFilterBufferRef *outsamplesref;
