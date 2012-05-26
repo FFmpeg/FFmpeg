@@ -45,6 +45,13 @@ enum AVMixCoeffType {
     AV_MIX_COEFF_TYPE_NB,   /** Number of coeff types. Not part of ABI      */
 };
 
+/** Resampling Filter Types */
+enum AVResampleFilterType {
+    AV_RESAMPLE_FILTER_TYPE_CUBIC,              /**< Cubic */
+    AV_RESAMPLE_FILTER_TYPE_BLACKMAN_NUTTALL,   /**< Blackman Nuttall Windowed Sinc */
+    AV_RESAMPLE_FILTER_TYPE_KAISER,             /**< Kaiser Windowed Sinc */
+};
+
 /**
  * Return the LIBAVRESAMPLE_VERSION_INT constant.
  */

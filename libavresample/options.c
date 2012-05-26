@@ -56,6 +56,11 @@ static const AVOption options[] = {
         { "none",  "None",               0, AV_OPT_TYPE_CONST, { AV_MATRIX_ENCODING_NONE  }, INT_MIN, INT_MAX, PARAM, "matrix_encoding" },
         { "dolby", "Dolby",              0, AV_OPT_TYPE_CONST, { AV_MATRIX_ENCODING_DOLBY }, INT_MIN, INT_MAX, PARAM, "matrix_encoding" },
         { "dplii", "Dolby Pro Logic II", 0, AV_OPT_TYPE_CONST, { AV_MATRIX_ENCODING_DPLII }, INT_MIN, INT_MAX, PARAM, "matrix_encoding" },
+    { "filter_type",            "Filter Type",              OFFSET(filter_type),            AV_OPT_TYPE_INT,    { AV_RESAMPLE_FILTER_TYPE_KAISER }, AV_RESAMPLE_FILTER_TYPE_CUBIC, AV_RESAMPLE_FILTER_TYPE_KAISER,  PARAM, "filter_type" },
+        { "cubic",            "Cubic",                          0, AV_OPT_TYPE_CONST, { AV_RESAMPLE_FILTER_TYPE_CUBIC            }, INT_MIN, INT_MAX, PARAM, "filter_type" },
+        { "blackman_nuttall", "Blackman Nuttall Windowed Sinc", 0, AV_OPT_TYPE_CONST, { AV_RESAMPLE_FILTER_TYPE_BLACKMAN_NUTTALL }, INT_MIN, INT_MAX, PARAM, "filter_type" },
+        { "kaiser",           "Kaiser Windowed Sinc",           0, AV_OPT_TYPE_CONST, { AV_RESAMPLE_FILTER_TYPE_KAISER           }, INT_MIN, INT_MAX, PARAM, "filter_type" },
+    { "kaiser_beta",            "Kaiser Window Beta",       OFFSET(kaiser_beta),            AV_OPT_TYPE_INT,    { 9                     }, 2,                    16,                     PARAM },
     { NULL },
 };
 

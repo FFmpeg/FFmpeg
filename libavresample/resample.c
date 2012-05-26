@@ -30,7 +30,6 @@
 #define FELEM         float
 #define FELEM2        float
 #define FELEML        float
-#define WINDOW_TYPE   24
 #elifdef CONFIG_RESAMPLE_S32
 /* s32 template */
 #define FILTER_SHIFT  30
@@ -39,7 +38,6 @@
 #define FELEML        int64_t
 #define FELEM_MAX     INT32_MAX
 #define FELEM_MIN     INT32_MIN
-#define WINDOW_TYPE   12
 #else
 /* s16 template */
 #define FILTER_SHIFT  15
@@ -48,7 +46,6 @@
 #define FELEML        int64_t
 #define FELEM_MAX     INT16_MAX
 #define FELEM_MIN     INT16_MIN
-#define WINDOW_TYPE   9
 #endif
 
 struct ResampleContext {
@@ -65,6 +62,8 @@ struct ResampleContext {
     int phase_shift;
     int phase_mask;
     int linear;
+    enum AVResampleFilterType filter_type;
+    int kaiser_beta;
     double factor;
 };
 
@@ -95,13 +94,13 @@ static double bessel(double x)
  * @param      tap_count    tap count
  * @param      phase_count  phase count
  * @param      scale        wanted sum of coefficients for each filter
- * @param      type         0->cubic
- *                          1->blackman nuttall windowed sinc
- *                          2..16->kaiser windowed sinc beta=2..16
+ * @param      filter_type  filter type
+ * @param      kaiser_beta  kaiser window beta
  * @return                  0 on success, negative AVERROR code on failure
  */
 static int build_filter(FELEM *filter, double factor, int tap_count,
-                        int phase_count, int scale, int type)
+                        int phase_count, int scale, int filter_type,
+                        int kaiser_beta)
 {
     int ph, i;
     double x, y, w;
@@ -122,23 +121,23 @@ static int build_filter(FELEM *filter, double factor, int tap_count,
             x = M_PI * ((double)(i - center) - (double)ph / phase_count) * factor;
             if (x == 0) y = 1.0;
             else        y = sin(x) / x;
-            switch (type) {
-            case 0: {
+            switch (filter_type) {
+            case AV_RESAMPLE_FILTER_TYPE_CUBIC: {
                 const float d = -0.5; //first order derivative = -0.5
                 x = fabs(((double)(i - center) - (double)ph / phase_count) * factor);
                 if (x < 1.0) y = 1 - 3 * x*x + 2 * x*x*x + d * (                -x*x + x*x*x);
                 else         y =                           d * (-4 + 8 * x - 5 * x*x + x*x*x);
                 break;
             }
-            case 1:
+            case AV_RESAMPLE_FILTER_TYPE_BLACKMAN_NUTTALL:
                 w  = 2.0 * x / (factor * tap_count) + M_PI;
                 y *= 0.3635819 - 0.4891775 * cos(    w) +
                                  0.1365995 * cos(2 * w) -
                                  0.0106411 * cos(3 * w);
                 break;
-            default:
+            case AV_RESAMPLE_FILTER_TYPE_KAISER:
                 w  = 2.0 * x / (factor * tap_count * M_PI);
-                y *= bessel(type * sqrt(FFMAX(1 - w * w, 0)));
+                y *= bessel(kaiser_beta * sqrt(FFMAX(1 - w * w, 0)));
                 break;
             }
 
@@ -186,13 +185,15 @@ ResampleContext *ff_audio_resample_init(AVAudioResampleContext *avr)
     c->linear        = avr->linear_interp;
     c->factor        = factor;
     c->filter_length = FFMAX((int)ceil(avr->filter_size / factor), 1);
+    c->filter_type   = avr->filter_type;
+    c->kaiser_beta   = avr->kaiser_beta;
 
     c->filter_bank = av_mallocz(c->filter_length * (phase_count + 1) * sizeof(FELEM));
     if (!c->filter_bank)
         goto error;
 
     if (build_filter(c->filter_bank, factor, c->filter_length, phase_count,
-                     1 << FILTER_SHIFT, WINDOW_TYPE) < 0)
+                     1 << FILTER_SHIFT, c->filter_type, c->kaiser_beta) < 0)
         goto error;
 
     memcpy(&c->filter_bank[c->filter_length * phase_count + 1],
