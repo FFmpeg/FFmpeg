@@ -775,8 +775,7 @@ static int opt_output_format(const char *opt, const char *arg)
 
         print_integer = json_print_integer;
         print_string  = json_print_string;
-    } else
-    if (!strcmp(arg, "ini")) {
+    } else if (!strcmp(arg, "ini")) {
         print_header        = ini_print_header;
         print_footer        = ini_print_footer;
         print_array_header  = ini_print_array_header;
