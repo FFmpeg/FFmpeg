@@ -713,6 +713,174 @@ static const Writer csv_writer = {
     .flags = WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS,
 };
 
+/* INI format output */
+
+typedef struct {
+    const AVClass *class;
+    AVBPrint chapter_name, section_name;
+    int print_packets_and_frames;
+    int nb_frame;
+    int nb_packet;
+    int hierarchical;
+} INIContext;
+
+#undef OFFSET
+#define OFFSET(x) offsetof(INIContext, x)
+
+static const AVOption ini_options[] = {
+    {"hierachical", "specify if the section specification should be hierarchical", OFFSET(hierarchical), AV_OPT_TYPE_INT, {.dbl=1}, 0, 1 },
+    {"h",           "specify if the section specification should be hierarchical", OFFSET(hierarchical), AV_OPT_TYPE_INT, {.dbl=1}, 0, 1 },
+    {NULL},
+};
+
+static const char *ini_get_name(void *ctx)
+{
+    return "ini";
+}
+
+static const AVClass ini_class = {
+    "INIContext",
+    ini_get_name,
+    ini_options
+};
+
+static av_cold int ini_init(WriterContext *wctx, const char *args, void *opaque)
+{
+    INIContext *ini = wctx->priv;
+    int err;
+
+    av_bprint_init(&ini->chapter_name, 1, AV_BPRINT_SIZE_UNLIMITED);
+    av_bprint_init(&ini->section_name, 1, AV_BPRINT_SIZE_UNLIMITED);
+    ini->nb_frame = ini->nb_packet = 0;
+
+    ini->class = &ini_class;
+    av_opt_set_defaults(ini);
+
+    if (args && (err = av_set_options_string(ini, args, "=", ":")) < 0) {
+        av_log(wctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
+        return err;
+    }
+
+    return 0;
+}
+
+static av_cold void ini_uninit(WriterContext *wctx)
+{
+    INIContext *ini = wctx->priv;
+    av_bprint_finalize(&ini->chapter_name, NULL);
+    av_bprint_finalize(&ini->section_name, NULL);
+}
+
+static void ini_print_header(WriterContext *wctx)
+{
+    printf("# ffprobe output\n\n");
+}
+
+static char *ini_escape_str(AVBPrint *dst, const char *src)
+{
+    int i = 0;
+    char c = 0;
+
+    while (c = src[i++]) {
+        switch (c) {
+        case '\b': av_bprintf(dst, "%s", "\\b"); break;
+        case '\f': av_bprintf(dst, "%s", "\\f"); break;
+        case '\n': av_bprintf(dst, "%s", "\\n"); break;
+        case '\r': av_bprintf(dst, "%s", "\\r"); break;
+        case '\t': av_bprintf(dst, "%s", "\\t"); break;
+        case '\\':
+        case '#' :
+        case '=' :
+        case ':' : av_bprint_chars(dst, '\\', 1);
+        default:
+            if ((unsigned char)c < 32)
+                av_bprintf(dst, "\\x00%02x", c & 0xff);
+            else
+                av_bprint_chars(dst, c, 1);
+            break;
+        }
+    }
+    return dst->str;
+}
+
+static void ini_print_chapter_header(WriterContext *wctx, const char *chapter)
+{
+    INIContext *ini = wctx->priv;
+
+    av_bprint_clear(&ini->chapter_name);
+    av_bprintf(&ini->chapter_name, "%s", chapter);
+
+    if (wctx->nb_chapter)
+        printf("\n");
+    ini->print_packets_and_frames = !strcmp("packets_and_frames", chapter);
+}
+
+static void ini_print_section_header(WriterContext *wctx, const char *section)
+{
+    INIContext *ini = wctx->priv;
+    int n;
+    if (wctx->nb_section)
+        printf("\n");
+    av_bprint_clear(&ini->section_name);
+
+    if (ini->hierarchical && wctx->multiple_sections)
+        av_bprintf(&ini->section_name, "%s.", ini->chapter_name.str);
+    av_bprintf(&ini->section_name, "%s", section);
+
+    if (ini->print_packets_and_frames)
+        n = !strcmp(section, "packet") ? ini->nb_packet++ : ini->nb_frame++;
+    else
+        n = wctx->nb_section;
+    if (wctx->multiple_sections)
+        av_bprintf(&ini->section_name, ".%d", n);
+    printf("[%s]\n", ini->section_name.str);
+}
+
+static void ini_print_str(WriterContext *wctx, const char *key, const char *value)
+{
+    AVBPrint buf;
+
+    av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
+    printf("%s=", ini_escape_str(&buf, key));
+    av_bprint_clear(&buf);
+    printf("%s\n", ini_escape_str(&buf, value));
+    av_bprint_finalize(&buf, NULL);
+}
+
+static void ini_print_int(WriterContext *wctx, const char *key, long long int value)
+{
+    printf("%s=%lld\n", key, value);
+}
+
+static void ini_show_tags(WriterContext *wctx, AVDictionary *dict)
+{
+    INIContext *ini = wctx->priv;
+    AVDictionaryEntry *tag = NULL;
+    int is_first = 1;
+
+    while ((tag = av_dict_get(dict, "", tag, AV_DICT_IGNORE_SUFFIX))) {
+        if (is_first) {
+            printf("\n[%s.tags]\n", ini->section_name.str);
+            is_first = 0;
+        }
+        writer_print_string(wctx, tag->key, tag->value, 0);
+    }
+}
+
+static const Writer ini_writer = {
+    .name                  = "ini",
+    .priv_size             = sizeof(INIContext),
+    .init                  = ini_init,
+    .uninit                = ini_uninit,
+    .print_header          = ini_print_header,
+    .print_chapter_header  = ini_print_chapter_header,
+    .print_section_header  = ini_print_section_header,
+    .print_integer         = ini_print_int,
+    .print_string          = ini_print_str,
+    .show_tags             = ini_show_tags,
+    .flags = WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS|WRITER_FLAG_PUT_PACKETS_AND_FRAMES_IN_SAME_CHAPTER,
+};
+
 /* JSON output */
 
 typedef struct {
@@ -1168,6 +1336,7 @@ static void writer_register_all(void)
     writer_register(&default_writer);
     writer_register(&compact_writer);
     writer_register(&csv_writer);
+    writer_register(&ini_writer);
     writer_register(&json_writer);
     writer_register(&xml_writer);
 }
@@ -1734,7 +1903,7 @@ static const OptionDef options[] = {
     { "pretty", 0, {(void*)&opt_pretty},
       "prettify the format of displayed values, make it more human readable" },
     { "print_format", OPT_STRING | HAS_ARG, {(void*)&print_format},
-      "set the output printing format (available formats are: default, compact, csv, json, xml)", "format" },
+      "set the output printing format (available formats are: default, compact, csv, ini, json, xml)", "format" },
     { "show_error",   OPT_BOOL, {(void*)&do_show_error} ,  "show probing error" },
     { "show_format",  OPT_BOOL, {(void*)&do_show_format} , "show format/container info" },
     { "show_frames",  OPT_BOOL, {(void*)&do_show_frames} , "show frames info" },

@@ -269,6 +269,45 @@ CSV format.
 This writer is equivalent to
 @code{compact=item_sep=,:nokey=1:escape=csv}.
 
+@section ini
+INI format output.
+
+Print output in an INI based format.
+
+The following conventions are adopted:
+
+@itemize
+@item
+all key and values are UTF-8
+@item
+'.' is the subgroup separator
+@item
+newline, '\t', '\f', '\b' and the following characters are escaped
+@item
+'\' is the escape character
+@item
+'#' is the comment indicator
+@item
+'=' is the key/value separator
+@item
+':' is not used but usually parsed as key/value separator
+@end itemize
+
+This writer accepts options as a list of @var{key}=@var{value} pairs,
+separated by ":".
+
+The description of the accepted options follows.
+
+@table @option
+@item hierarchical, h
+Specify if the section name specification should be hierarchical. If
+set to 1, and if there is more than one section in the current
+chapter, the section name will be prefixed by the name of the
+chapter. A value of 0 will disable this behavior.
+
+Default value is 1.
+@end table
+
 @section json
 JSON based format.
 
