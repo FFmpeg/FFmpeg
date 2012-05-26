@@ -203,6 +203,7 @@ typedef struct InputStream {
     int is_start;            /* is 1 at the start and after a discontinuity */
     int showed_multi_packet_warning;
     AVDictionary *opts;
+    AVRational framerate;               /* framerate forced with -r */
 
     int resample_height;
     int resample_width;
@@ -931,10 +932,15 @@ static int configure_output_filter(FilterGraph *fg, OutputFilter *ofilter, AVFil
 static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
                                         AVFilterInOut *in)
 {
+    AVFilterContext *first_filter = in->filter_ctx;
     AVFilter *filter = avfilter_get_by_name("buffer");
     InputStream *ist = ifilter->ist;
+    AVRational tb = ist->framerate.num ? (AVRational){ist->framerate.den,
+                                                      ist->framerate.num} :
+                                         ist->st->time_base;
     AVRational sar;
     char args[255];
+    int pad_idx = in->pad_idx;
     int ret;
 
     sar = ist->st->sample_aspect_ratio.num ?
@@ -942,13 +948,29 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
           ist->st->codec->sample_aspect_ratio;
     snprintf(args, sizeof(args), "%d:%d:%d:%d:%d:%d:%d", ist->st->codec->width,
              ist->st->codec->height, ist->st->codec->pix_fmt,
-             ist->st->time_base.num, ist->st->time_base.den,
-             sar.num, sar.den);
+             tb.num, tb.den, sar.num, sar.den);
 
     if ((ret = avfilter_graph_create_filter(&ifilter->filter, filter, in->name,
                                             args, NULL, fg->graph)) < 0)
         return ret;
-    if ((ret = avfilter_link(ifilter->filter, 0, in->filter_ctx, in->pad_idx)) < 0)
+
+    if (ist->framerate.num) {
+        AVFilterContext *setpts;
+
+        if ((ret = avfilter_graph_create_filter(&setpts,
+                                                avfilter_get_by_name("setpts"),
+                                                "setpts", "N", NULL,
+                                                fg->graph)) < 0)
+            return ret;
+
+        if ((ret = avfilter_link(setpts, 0, first_filter, pad_idx)) < 0)
+            return ret;
+
+        first_filter = setpts;
+        pad_idx = 0;
+    }
+
+    if ((ret = avfilter_link(ifilter->filter, 0, first_filter, pad_idx)) < 0)
         return ret;
     return 0;
 }
@@ -3358,6 +3380,7 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
         AVStream *st = ic->streams[i];
         AVCodecContext *dec = st->codec;
         InputStream *ist = av_mallocz(sizeof(*ist));
+        char *framerate = NULL;
 
         if (!ist)
             exit_program(1);
@@ -3381,6 +3404,14 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
             ist->resample_height  = dec->height;
             ist->resample_width   = dec->width;
             ist->resample_pix_fmt = dec->pix_fmt;
+
+            MATCH_PER_STREAM_OPT(frame_rates, str, framerate, ic, st);
+            if (framerate && av_parse_video_rate(&ist->framerate,
+                                                 framerate) < 0) {
+                av_log(NULL, AV_LOG_ERROR, "Error parsing framerate %s.\n",
+                       framerate);
+                exit_program(1);
+            }
 
             break;
         case AVMEDIA_TYPE_AUDIO:
@@ -3503,7 +3534,14 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
         }
     }
     if (o->nb_frame_rates) {
-        av_dict_set(&format_opts, "framerate", o->frame_rates[o->nb_frame_rates - 1].u.str, 0);
+        /* set the format-level framerate option;
+         * this is important for video grabbers, e.g. x11 */
+        if (file_iformat && file_iformat->priv_class &&
+            av_opt_find(&file_iformat->priv_class, "framerate", NULL, 0,
+                        AV_OPT_SEARCH_FAKE_OBJ)) {
+            av_dict_set(&format_opts, "framerate",
+                        o->frame_rates[o->nb_frame_rates - 1].u.str, 0);
+        }
     }
     if (o->nb_frame_sizes) {
         av_dict_set(&format_opts, "video_size", o->frame_sizes[o->nb_frame_sizes - 1].u.str, 0);
