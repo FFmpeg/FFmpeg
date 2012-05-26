@@ -497,8 +497,7 @@ static const Writer default_writer = {
 /* Compact output */
 
 /**
- * Escape \n, \r, \\ and sep characters contained in s, and print the
- * resulting string.
+ * Apply C-language-like string escaping.
  */
 static const char *c_escape_str(AVBPrint *dst, const char *src, const char sep, void *log_ctx)
 {
