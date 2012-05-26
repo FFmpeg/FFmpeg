@@ -94,15 +94,9 @@ do_lavfi_pixfmts "crop"    "100:100:100:100"
 do_lavfi_pixfmts "hflip"   ""
 do_lavfi_pixfmts "null"    ""
 do_lavfi_pixfmts "pad"     "500:400:20:20"
+do_lavfi_pixfmts "pixdesctest" ""
 do_lavfi_pixfmts "scale"   "200:100"
 do_lavfi_pixfmts "vflip"   ""
-
-if [ -n "$do_pixdesc" ]; then
-    pix_fmts="$($avconv -pix_fmts list 2>/dev/null | sed -ne '9,$p' | grep '^IO' | cut -d' ' -f2 | sort)"
-    for pix_fmt in $pix_fmts; do
-        do_video_filter $pix_fmt "slicify=random,format=$pix_fmt,pixdesctest" -pix_fmt $pix_fmt
-    done
-fi
 
 do_lavfi_lavd() {
     label=$1
