@@ -1119,6 +1119,65 @@ static int configure_output_filter(FilterGraph *fg, OutputFilter *ofilter, AVFil
     }
 }
 
+static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
+                                        AVFilterInOut *in)
+{
+    AVFilter *filter = avfilter_get_by_name("buffer");
+    InputStream *ist = ifilter->ist;
+    AVRational sar;
+    char args[255];
+    int ret;
+
+    sar = ist->st->sample_aspect_ratio.num ?
+          ist->st->sample_aspect_ratio :
+          ist->st->codec->sample_aspect_ratio;
+    snprintf(args, sizeof(args), "%d:%d:%d:%d:%d:%d:%d", ist->st->codec->width,
+             ist->st->codec->height, ist->st->codec->pix_fmt, 1, AV_TIME_BASE,
+             sar.num, sar.den);
+
+    if ((ret = avfilter_graph_create_filter(&ifilter->filter, filter, in->name,
+                                            args, NULL, fg->graph)) < 0)
+        return ret;
+    if ((ret = avfilter_link(ifilter->filter, 0, in->filter_ctx, in->pad_idx)) < 0)
+        return ret;
+    return 0;
+}
+
+static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
+                                        AVFilterInOut *in)
+{
+    AVFilter *filter = avfilter_get_by_name("abuffer");
+    InputStream *ist = ifilter->ist;
+    char args[255];
+    int ret;
+
+    snprintf(args, sizeof(args), "time_base=%d/%d:sample_rate=%d:sample_fmt=%s"
+             ":channel_layout=0x%"PRIx64,
+             ist->st->time_base.num, ist->st->time_base.den,
+             ist->st->codec->sample_rate,
+             av_get_sample_fmt_name(ist->st->codec->sample_fmt),
+             ist->st->codec->channel_layout);
+
+    if ((ret = avfilter_graph_create_filter(&ifilter->filter, filter,
+                                            in->name, args, NULL,
+                                            fg->graph)) < 0)
+        return ret;
+    if ((ret = avfilter_link(ifilter->filter, 0, in->filter_ctx, in->pad_idx)) < 0)
+        return ret;
+
+    return 0;
+}
+
+static int configure_input_filter(FilterGraph *fg, InputFilter *ifilter,
+                                  AVFilterInOut *in)
+{
+    switch (in->filter_ctx->input_pads[in->pad_idx].type) {
+    case AVMEDIA_TYPE_VIDEO: return configure_input_video_filter(fg, ifilter, in);
+    case AVMEDIA_TYPE_AUDIO: return configure_input_audio_filter(fg, ifilter, in);
+    default: av_assert0(0);
+    }
+}
+
 static int configure_complex_filter(FilterGraph *fg)
 {
     AVFilterInOut *inputs, *outputs, *cur;
@@ -1134,44 +1193,9 @@ static int configure_complex_filter(FilterGraph *fg)
     for (cur = inputs; init && cur; cur = cur->next)
         init_input_filter(fg, cur);
 
-    for (cur = inputs, i = 0; cur; cur = cur->next, i++) {
-        InputFilter *ifilter = fg->inputs[i];
-        InputStream     *ist = ifilter->ist;
-        AVRational       sar;
-        AVFilter     *filter;
-        char            args[255];
-
-        switch (cur->filter_ctx->input_pads[cur->pad_idx].type) {
-        case AVMEDIA_TYPE_VIDEO:
-            sar = ist->st->sample_aspect_ratio.num ?
-                  ist->st->sample_aspect_ratio :
-                  ist->st->codec->sample_aspect_ratio;
-            snprintf(args, sizeof(args), "%d:%d:%d:%d:%d:%d:%d", ist->st->codec->width,
-                     ist->st->codec->height, ist->st->codec->pix_fmt, 1, AV_TIME_BASE,
-                     sar.num, sar.den);
-            filter = avfilter_get_by_name("buffer");
-            break;
-        case AVMEDIA_TYPE_AUDIO:
-            snprintf(args, sizeof(args), "time_base=%d/%d:sample_rate=%d:"
-                     "sample_fmt=%s:channel_layout=0x%"PRIx64,
-                     ist->st->time_base.num, ist->st->time_base.den,
-                     ist->st->codec->sample_rate,
-                     av_get_sample_fmt_name(ist->st->codec->sample_fmt),
-                     ist->st->codec->channel_layout);
-            filter = avfilter_get_by_name("abuffer");
-            break;
-        default:
-            av_assert0(0);
-        }
-
-        if ((ret = avfilter_graph_create_filter(&ifilter->filter,
-                                                filter, cur->name,
-                                                args, NULL, fg->graph)) < 0)
+    for (cur = inputs, i = 0; cur; cur = cur->next, i++)
+        if ((ret = configure_input_filter(fg, fg->inputs[i], cur)) < 0)
             return ret;
-        if ((ret = avfilter_link(ifilter->filter, 0,
-                                 cur->filter_ctx, cur->pad_idx)) < 0)
-            return ret;
-    }
     avfilter_inout_free(&inputs);
 
     if (!init) {
