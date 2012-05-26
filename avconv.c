@@ -146,12 +146,14 @@ typedef struct InputFilter {
     AVFilterContext    *filter;
     struct InputStream *ist;
     struct FilterGraph *graph;
+    uint8_t            *name;
 } InputFilter;
 
 typedef struct OutputFilter {
     AVFilterContext     *filter;
     struct OutputStream *ost;
     struct FilterGraph  *graph;
+    uint8_t             *name;
 
     /* temporary storage until stream maps are processed */
     AVFilterInOut       *out_tmp;
@@ -897,8 +899,28 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
     return 0;
 }
 
+#define DESCRIBE_FILTER_LINK(f, inout, in)                         \
+{                                                                  \
+    AVFilterContext *ctx = inout->filter_ctx;                      \
+    AVFilterPad *pads = in ? ctx->input_pads  : ctx->output_pads;  \
+    int       nb_pads = in ? ctx->input_count : ctx->output_count; \
+    AVIOContext *pb;                                               \
+                                                                   \
+    if (avio_open_dyn_buf(&pb) < 0)                                \
+        exit_program(1);                                           \
+                                                                   \
+    avio_printf(pb, "%s", ctx->filter->name);                      \
+    if (nb_pads > 1)                                               \
+        avio_printf(pb, ":%s", pads[inout->pad_idx].name);         \
+    avio_w8(pb, 0);                                                \
+    avio_close_dyn_buf(pb, &f->name);                              \
+}
+
 static int configure_output_filter(FilterGraph *fg, OutputFilter *ofilter, AVFilterInOut *out)
 {
+    av_freep(&ofilter->name);
+    DESCRIBE_FILTER_LINK(ofilter, out, 0);
+
     switch (out->filter_ctx->output_pads[out->pad_idx].type) {
     case AVMEDIA_TYPE_VIDEO: return configure_output_video_filter(fg, ofilter, out);
     case AVMEDIA_TYPE_AUDIO: return configure_output_audio_filter(fg, ofilter, out);
@@ -989,6 +1011,9 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
 static int configure_input_filter(FilterGraph *fg, InputFilter *ifilter,
                                   AVFilterInOut *in)
 {
+    av_freep(&ifilter->name);
+    DESCRIBE_FILTER_LINK(ifilter, in, 1);
+
     switch (in->filter_ctx->input_pads[in->pad_idx].type) {
     case AVMEDIA_TYPE_VIDEO: return configure_input_video_filter(fg, ifilter, in);
     case AVMEDIA_TYPE_AUDIO: return configure_input_audio_filter(fg, ifilter, in);
@@ -1115,11 +1140,15 @@ void exit_program(int ret)
 
     for (i = 0; i < nb_filtergraphs; i++) {
         avfilter_graph_free(&filtergraphs[i]->graph);
-        for (j = 0; j < filtergraphs[i]->nb_inputs; j++)
+        for (j = 0; j < filtergraphs[i]->nb_inputs; j++) {
+            av_freep(&filtergraphs[i]->inputs[j]->name);
             av_freep(&filtergraphs[i]->inputs[j]);
+        }
         av_freep(&filtergraphs[i]->inputs);
-        for (j = 0; j < filtergraphs[i]->nb_outputs; j++)
+        for (j = 0; j < filtergraphs[i]->nb_outputs; j++) {
+            av_freep(&filtergraphs[i]->outputs[j]->name);
             av_freep(&filtergraphs[i]->outputs[j]);
+        }
         av_freep(&filtergraphs[i]->outputs);
         av_freep(&filtergraphs[i]);
     }
@@ -2742,13 +2771,10 @@ static int transcode_init(void)
         ist = input_streams[i];
 
         for (j = 0; j < ist->nb_filters; j++) {
-            AVFilterLink *link = ist->filters[j]->filter->outputs[0];
             if (ist->filters[j]->graph->graph_desc) {
                 av_log(NULL, AV_LOG_INFO, "  Stream #%d:%d (%s) -> %s",
                        ist->file_index, ist->st->index, ist->dec ? ist->dec->name : "?",
-                       link->dst->filter->name);
-                if (link->dst->input_count > 1)
-                    av_log(NULL, AV_LOG_INFO, ":%s", link->dstpad->name);
+                       ist->filters[j]->name);
                 if (nb_filtergraphs > 1)
                     av_log(NULL, AV_LOG_INFO, " (graph %d)", ist->filters[j]->graph->index);
                 av_log(NULL, AV_LOG_INFO, "\n");
@@ -2768,10 +2794,7 @@ static int transcode_init(void)
 
         if (ost->filter && ost->filter->graph->graph_desc) {
             /* output from a complex graph */
-            AVFilterLink *link = ost->filter->filter->inputs[0];
-            av_log(NULL, AV_LOG_INFO, "  %s", link->src->filter->name);
-            if (link->src->output_count > 1)
-                av_log(NULL, AV_LOG_INFO, ":%s", link->srcpad->name);
+            av_log(NULL, AV_LOG_INFO, "  %s", ost->filter->name);
             if (nb_filtergraphs > 1)
                 av_log(NULL, AV_LOG_INFO, " (graph %d)", ost->filter->graph->index);
 
