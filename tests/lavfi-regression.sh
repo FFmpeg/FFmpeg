@@ -68,19 +68,24 @@ do_lavfi_pixfmts(){
     filter_args=$2
 
     showfiltfmts="$target_exec $target_path/tools/lavfi-showfiltfmts"
-    exclude_fmts=${outfile}${1}_exclude_fmts
-    out_fmts=${outfile}${1}_out_fmts
+    scale_exclude_fmts=${outfile}${1}_scale_exclude_fmts
+    scale_in_fmts=${outfile}${1}_scale_in_fmts
+    scale_out_fmts=${outfile}${1}_scale_out_fmts
+    in_fmts=${outfile}${1}_in_fmts
 
     # exclude pixel formats which are not supported as input
-    $avconv -pix_fmts list 2>/dev/null | sed -ne '9,$p' | grep '^\..\.' | cut -d' ' -f2 | sort >$exclude_fmts
-    $showfiltfmts scale | awk -F '[ \r]' '/^OUTPUT/{ fmt=substr($3, 5); print fmt }' | sort | comm -23 - $exclude_fmts >$out_fmts
+    $showfiltfmts scale | awk -F '[ \r]' '/^INPUT/{ fmt=substr($3, 5); print fmt }' | sort >$scale_in_fmts
+    $showfiltfmts scale | awk -F '[ \r]' '/^OUTPUT/{ fmt=substr($3, 5); print fmt }' | sort >$scale_out_fmts
+    comm -12 $scale_in_fmts $scale_out_fmts >$scale_exclude_fmts
 
-    pix_fmts=$($showfiltfmts $filter $filter_args | awk -F '[ \r]' '/^INPUT/{ fmt=substr($3, 5); print fmt }' | sort | comm -12 - $out_fmts)
+    $showfiltfmts $filter | awk -F '[ \r]' '/^INPUT/{ fmt=substr($3, 5); print fmt }' | sort >$in_fmts
+    pix_fmts=$(comm -12 $scale_exclude_fmts $in_fmts)
+
     for pix_fmt in $pix_fmts; do
         do_video_filter $pix_fmt "slicify=random,format=$pix_fmt,$filter=$filter_args" -pix_fmt $pix_fmt
     done
 
-    rm $exclude_fmts $out_fmts
+    rm $in_fmts $scale_in_fmts $scale_out_fmts $scale_exclude_fmts
 }
 
 # all these filters have exactly one input and exactly one output
