@@ -235,6 +235,16 @@ static int raw_decode(AVCodecContext *avctx,
             line += picture->linesize[0];
         }
     }
+    if(avctx->codec_tag == AV_RL32("YVYU") &&
+       avctx->pix_fmt   == PIX_FMT_YUYV422) {
+        int x, y;
+        uint8_t *line = picture->data[0];
+        for(y = 0; y < avctx->height; y++) {
+            for(x = 0; x < avctx->width - 1; x += 2)
+                FFSWAP(uint8_t, line[2*x + 1], line[2*x + 3]);
+            line += picture->linesize[0];
+        }
+    }
 
     *data_size = sizeof(AVPicture);
     return buf_size;
