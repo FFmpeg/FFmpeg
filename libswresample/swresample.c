@@ -629,6 +629,7 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
         av_freep(&tmp.data);
         if(s->drop_output || !out_arg)
             return 0;
+        in_count = 0;
     }
 
     if(!in_arg){
