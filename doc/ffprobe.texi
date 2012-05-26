@@ -245,9 +245,9 @@ Set the escape mode to use, default to "c".
 It can assume one of the following values:
 @table @option
 @item c
-Perform C-like escaping. Strings containing a newline ('\n') or
-carriage return ('\r'), the escaping character ('\') or the item
-separator character @var{SEP} are escaped using C-like fashioned
+Perform C-like escaping. Strings containing a newline ('\n'), carriage
+return ('\r'), a tab ('\t'), a form feed ('\f'), the escaping
+character ('\') or the item separator character @var{SEP} are escaped using C-like fashioned
 escaping, so that a newline is converted to the sequence "\n", a
 carriage return to "\r", '\' to "\\" and the separator @var{SEP} is
 converted to "\@var{SEP}".
