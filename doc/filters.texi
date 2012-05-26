@@ -2603,6 +2603,12 @@ the frame is bottom-field-first
 @item pos
 the position in the file of the filtered frame, -1 if the information
 is not available (e.g. for synthetic video)
+
+@item scene
+value between 0 and 1 to indicate a new scene; a low value reflects a low
+probability for the current frame to introduce a new scene, while a higher
+value means the current frame is more likely to be one (see the example below)
+
 @end table
 
 The default value of the select expression is "1".
@@ -2634,6 +2640,15 @@ select='gte(t\,10)*lte(t\,20)*eq(pict_type\,I)'
 # select frames with a minimum distance of 10 seconds
 select='isnan(prev_selected_t)+gte(t-prev_selected_t\,10)'
 @end example
+
+Complete example to create a mosaic of the first scenes:
+
+@example
+ffmpeg -i video.avi -vf select='gt(scene\,0.4)',scale=160:120,tile -frames:v 1 preview.png
+@end example
+
+Comparing @var{scene} against a value between 0.3 and 0.5 is generally a sane
+choice.
 
 @section setdar, setsar
 

@@ -3,6 +3,7 @@ releases are sorted from youngest to oldest.
 
 version next:
 - INI output in ffprobe
+- Scene detection in libavfilter
 
 
 version 0.11:

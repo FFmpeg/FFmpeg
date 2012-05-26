@@ -25,7 +25,9 @@
 
 #include "libavutil/eval.h"
 #include "libavutil/fifo.h"
+#include "libavcodec/dsputil.h"
 #include "avfilter.h"
+#include "formats.h"
 #include "video.h"
 
 static const char *const var_names[] = {
@@ -61,6 +63,8 @@ static const char *const var_names[] = {
 
     "key",               ///< tell if the frame is a key frame
     "pos",               ///< original position in the file of the frame
+
+    "scene",
 
     NULL
 };
@@ -99,6 +103,8 @@ enum var_name {
     VAR_KEY,
     VAR_POS,
 
+    VAR_SCENE,
+
     VAR_VARS_NB
 };
 
@@ -107,6 +113,11 @@ enum var_name {
 typedef struct {
     AVExpr *expr;
     double var_values[VAR_VARS_NB];
+    int do_scene_detect;            ///< 1 if the expression requires scene detection variables, 0 otherwise
+    AVCodecContext *avctx;          ///< codec context required for the DSPContext (scene detect only)
+    DSPContext c;                   ///< context providing optimized SAD methods   (scene detect only)
+    double prev_mafd;               ///< previous MAFD                             (scene detect only)
+    AVFilterBufferRef *prev_picref; ///< previous frame                            (scene detect only)
     double select;
     int cache_frames;
     AVFifoBuffer *pending_frames; ///< FIFO buffer of video frames
@@ -128,6 +139,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
         av_log(ctx, AV_LOG_ERROR, "Failed to allocate pending frames buffer.\n");
         return AVERROR(ENOMEM);
     }
+
+    select->do_scene_detect = args && strstr(args, "scene");
     return 0;
 }
 
@@ -160,7 +173,47 @@ static int config_input(AVFilterLink *inlink)
     select->var_values[VAR_INTERLACE_TYPE_T] = INTERLACE_TYPE_T;
     select->var_values[VAR_INTERLACE_TYPE_B] = INTERLACE_TYPE_B;
 
+    if (select->do_scene_detect) {
+        select->avctx = avcodec_alloc_context3(NULL);
+        if (!select->avctx)
+            return AVERROR(ENOMEM);
+        ff_dsputil_init(&select->c, select->avctx);
+    }
     return 0;
+}
+
+static double get_scene_score(AVFilterContext *ctx, AVFilterBufferRef *picref)
+{
+    double ret = 0;
+    SelectContext *select = ctx->priv;
+    AVFilterBufferRef *prev_picref = select->prev_picref;
+
+    if (prev_picref &&
+        picref->video->h    == prev_picref->video->h &&
+        picref->video->w    == prev_picref->video->w &&
+        picref->linesize[0] == prev_picref->linesize[0]) {
+        int x, y;
+        int64_t sad;
+        double mafd, diff;
+        uint8_t *p1 =      picref->data[0];
+        uint8_t *p2 = prev_picref->data[0];
+        const int linesize = picref->linesize[0];
+
+        for (sad = y = 0; y < picref->video->h; y += 8)
+            for (x = 0; x < linesize; x += 8)
+                sad += select->c.sad[1](select,
+                                        p1 + y * linesize + x,
+                                        p2 + y * linesize + x,
+                                        linesize, 8);
+        emms_c();
+        mafd = sad / (picref->video->h * picref->video->w * 3);
+        diff = llabs(mafd - select->prev_mafd);
+        ret  = av_clipf(FFMIN(mafd, diff) / 100., 0, 1);
+        select->prev_mafd = mafd;
+        avfilter_unref_buffer(prev_picref);
+    }
+    select->prev_picref = avfilter_ref_buffer(picref, ~0);
+    return ret;
 }
 
 #define D2TS(d)  (isnan(d) ? AV_NOPTS_VALUE : (int64_t)(d))
@@ -172,6 +225,8 @@ static int select_frame(AVFilterContext *ctx, AVFilterBufferRef *picref)
     AVFilterLink *inlink = ctx->inputs[0];
     double res;
 
+    if (select->do_scene_detect)
+        select->var_values[VAR_SCENE] = get_scene_score(ctx, picref);
     if (isnan(select->var_values[VAR_START_PTS]))
         select->var_values[VAR_START_PTS] = TS2D(picref->pts);
     if (isnan(select->var_values[VAR_START_T]))
@@ -315,6 +370,28 @@ static av_cold void uninit(AVFilterContext *ctx)
         avfilter_unref_buffer(picref);
     av_fifo_free(select->pending_frames);
     select->pending_frames = NULL;
+
+    if (select->do_scene_detect) {
+        avfilter_unref_bufferp(&select->prev_picref);
+        avcodec_close(select->avctx);
+        av_freep(&select->avctx);
+    }
+}
+
+static int query_formats(AVFilterContext *ctx)
+{
+    SelectContext *select = ctx->priv;
+
+    if (!select->do_scene_detect) {
+        return ff_default_query_formats(ctx);
+    } else {
+        static const enum PixelFormat pix_fmts[] = {
+            PIX_FMT_RGB24, PIX_FMT_BGR24,
+            PIX_FMT_NONE
+        };
+        avfilter_set_common_pixel_formats(ctx, avfilter_make_format_list(pix_fmts));
+    }
+    return 0;
 }
 
 AVFilter avfilter_vf_select = {
@@ -322,6 +399,7 @@ AVFilter avfilter_vf_select = {
     .description = NULL_IF_CONFIG_SMALL("Select frames to pass in output."),
     .init      = init,
     .uninit    = uninit,
+    .query_formats = query_formats,
 
     .priv_size = sizeof(SelectContext),
 
