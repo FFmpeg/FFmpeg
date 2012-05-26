@@ -31,6 +31,9 @@ API changes, most recent first:
 2012-03-26 - a67d9cf - lavfi 2.66.100
   Add avfilter_fill_frame_from_{audio_,}buffer_ref() functions.
 
+2012-05-25 - e0e0793 - lavu 51.31.0 - opt.h
+  Add av_opt_set_bin()
+
 2012-05-15 - lavfi 2.17.0
   Add support for audio filters
   ac71230/a2cd9be - add video/audio buffer sink in a new installed

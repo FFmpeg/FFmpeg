@@ -43,9 +43,9 @@ int ff_mov_init_hinting(AVFormatContext *s, int index, int src_index)
     track->enc->codec_type = AVMEDIA_TYPE_DATA;
     track->enc->codec_tag  = track->tag;
 
-    track->rtp_ctx = ff_rtp_chain_mux_open(s, src_st, NULL,
-                                           RTP_MAX_PACKET_SIZE);
-    if (!track->rtp_ctx)
+    ret = ff_rtp_chain_mux_open(&track->rtp_ctx, s, src_st, NULL,
+                                RTP_MAX_PACKET_SIZE);
+    if (ret < 0)
         goto fail;
 
     /* Copy the RTP AVStream timebase back to the hint AVStream */

@@ -1037,9 +1037,10 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
             fname = next;
             rt->app[0] = '\0';
         } else {
+            // make sure we do not mismatch a playpath for an application instance
             char *c = strchr(p + 1, ':');
             fname = strchr(p + 1, '/');
-            if (!fname || c < fname) {
+            if (!fname || (c && c < fname)) {
                 fname = p + 1;
                 av_strlcpy(rt->app, path + 1, p - path);
             } else {

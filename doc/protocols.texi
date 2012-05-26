@@ -194,7 +194,7 @@ content across a TCP/IP network.
 
 The required syntax is:
 @example
-rtmp://@var{server}[:@var{port}][/@var{app}][/@var{playpath}]
+rtmp://@var{server}[:@var{port}][/@var{app}][/@var{instance}][/@var{playpath}]
 @end example
 
 The accepted parameters are:

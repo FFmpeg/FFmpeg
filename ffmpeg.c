@@ -3294,8 +3294,12 @@ static int transcode_init(void)
     for (i = 0; i < nb_output_files; i++) {
         oc = output_files[i]->ctx;
         oc->interrupt_callback = int_cb;
-        if (avformat_write_header(oc, &output_files[i]->opts) < 0) {
-            snprintf(error, sizeof(error), "Could not write header for output file #%d (incorrect codec parameters ?)", i);
+        if ((ret = avformat_write_header(oc, &output_files[i]->opts)) < 0) {
+            char errbuf[128];
+            const char *errbuf_ptr = errbuf;
+            if (av_strerror(ret, errbuf, sizeof(errbuf)) < 0)
+                errbuf_ptr = strerror(AVUNERROR(ret));
+            snprintf(error, sizeof(error), "Could not write header for output file #%d (incorrect codec parameters ?): %s", i, errbuf_ptr);
             ret = AVERROR(EINVAL);
             goto dump_format;
         }
