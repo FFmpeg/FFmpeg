@@ -42,7 +42,7 @@ int ff_scale_image(uint8_t *dst_data[4], int dst_linesize[4],
     if ((ret = av_image_alloc(dst_data, dst_linesize, dst_w, dst_h, dst_pix_fmt, 16)) < 0)
         goto end;
     ret = 0;
-    sws_scale(sws_ctx, src_data, src_linesize, 0, src_h, dst_data, dst_linesize);
+    sws_scale(sws_ctx, (const uint8_t * const*)src_data, src_linesize, 0, src_h, dst_data, dst_linesize);
 
 end:
     sws_freeContext(sws_ctx);
