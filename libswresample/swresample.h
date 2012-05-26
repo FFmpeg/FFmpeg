@@ -53,6 +53,13 @@ enum SwrDitherType {
     SWR_DITHER_NB,              ///< not part of API/ABI
 };
 
+/** Resampling Filter Types */
+enum SwrFilterType {
+    SWR_FILTER_TYPE_CUBIC,              /**< Cubic */
+    SWR_FILTER_TYPE_BLACKMAN_NUTTALL,   /**< Blackman Nuttall Windowed Sinc */
+    SWR_FILTER_TYPE_KAISER,             /**< Kaiser Windowed Sinc */
+};
+
 typedef struct SwrContext SwrContext;
 
 /**

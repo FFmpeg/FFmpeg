@@ -29,9 +29,6 @@
 #include "libavutil/avassert.h"
 #include "swresample_internal.h"
 
-#define WINDOW_TYPE 9
-
-
 
 typedef struct ResampleContext {
     const AVClass *av_class;
@@ -47,6 +44,8 @@ typedef struct ResampleContext {
     int phase_shift;
     int phase_mask;
     int linear;
+    enum SwrFilterType filter_type;
+    int kaiser_beta;
     double factor;
     enum AVSampleFormat format;
     int felem_size;
@@ -87,10 +86,12 @@ static double bessel(double x){
  * builds a polyphase filterbank.
  * @param factor resampling factor
  * @param scale wanted sum of coefficients for each filter
- * @param type 0->cubic, 1->blackman nuttall windowed sinc, 2..16->kaiser windowed sinc beta=2..16
+ * @param filter_type  filter type
+ * @param kaiser_beta  kaiser window beta
  * @return 0 on success, negative on error
  */
-static int build_filter(ResampleContext *c, void *filter, double factor, int tap_count, int alloc, int phase_count, int scale, int type){
+static int build_filter(ResampleContext *c, void *filter, double factor, int tap_count, int alloc, int phase_count, int scale,
+                        int filter_type, int kaiser_beta){
     int ph, i;
     double x, y, w;
     double *tab = av_malloc(tap_count * sizeof(*tab));
@@ -109,21 +110,23 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
             x = M_PI * ((double)(i - center) - (double)ph / phase_count) * factor;
             if (x == 0) y = 1.0;
             else        y = sin(x) / x;
-            switch(type){
-            case 0:{
+            switch(filter_type){
+            case SWR_FILTER_TYPE_CUBIC:{
                 const float d= -0.5; //first order derivative = -0.5
                 x = fabs(((double)(i - center) - (double)ph / phase_count) * factor);
                 if(x<1.0) y= 1 - 3*x*x + 2*x*x*x + d*(            -x*x + x*x*x);
                 else      y=                       d*(-4 + 8*x - 5*x*x + x*x*x);
                 break;}
-            case 1:
+            case SWR_FILTER_TYPE_BLACKMAN_NUTTALL:
                 w = 2.0*x / (factor*tap_count) + M_PI;
                 y *= 0.3635819 - 0.4891775 * cos(w) + 0.1365995 * cos(2*w) - 0.0106411 * cos(3*w);
                 break;
-            default:
+            case SWR_FILTER_TYPE_KAISER:
                 w = 2.0*x / (factor*tap_count*M_PI);
-                y *= bessel(type*sqrt(FFMAX(1-w*w, 0)));
+                y *= bessel(kaiser_beta*sqrt(FFMAX(1-w*w, 0)));
                 break;
+            default:
+                av_assert0(0);
             }
 
             tab[i] = y;
@@ -191,12 +194,14 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
     return 0;
 }
 
-ResampleContext *swri_resample_init(ResampleContext *c, int out_rate, int in_rate, int filter_size, int phase_shift, int linear, double cutoff, enum AVSampleFormat format){
+ResampleContext *swri_resample_init(ResampleContext *c, int out_rate, int in_rate, int filter_size, int phase_shift, int linear,
+                                    double cutoff, enum AVSampleFormat format, enum SwrFilterType filter_type, int kaiser_beta){
     double factor= FFMIN(out_rate * cutoff / in_rate, 1.0);
     int phase_count= 1<<phase_shift;
 
     if (!c || c->phase_shift != phase_shift || c->linear!=linear || c->factor != factor
-           || c->filter_length != FFMAX((int)ceil(filter_size/factor), 1) || c->format != format) {
+           || c->filter_length != FFMAX((int)ceil(filter_size/factor), 1) || c->format != format
+           || c->filter_type != filter_type || c->kaiser_beta != kaiser_beta) {
         c = av_mallocz(sizeof(*c));
         if (!c)
             return NULL;
@@ -228,9 +233,11 @@ ResampleContext *swri_resample_init(ResampleContext *c, int out_rate, int in_rat
         c->filter_length = FFMAX((int)ceil(filter_size/factor), 1);
         c->filter_alloc  = FFALIGN(c->filter_length, 8);
         c->filter_bank   = av_mallocz(c->filter_alloc*(phase_count+1)*c->felem_size);
+        c->filter_type   = filter_type;
+        c->kaiser_beta   = kaiser_beta;
         if (!c->filter_bank)
             goto error;
-        if (build_filter(c, (void*)c->filter_bank, factor, c->filter_length, c->filter_alloc, phase_count, 1<<c->filter_shift, WINDOW_TYPE))
+        if (build_filter(c, (void*)c->filter_bank, factor, c->filter_length, c->filter_alloc, phase_count, 1<<c->filter_shift, filter_type, kaiser_beta))
             goto error;
         memcpy(c->filter_bank + (c->filter_alloc*phase_count+1)*c->felem_size, c->filter_bank, (c->filter_alloc-1)*c->felem_size);
         memcpy(c->filter_bank + (c->filter_alloc*phase_count  )*c->felem_size, c->filter_bank + (c->filter_alloc - 1)*c->felem_size, c->felem_size);
