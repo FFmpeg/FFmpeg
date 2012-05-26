@@ -29,6 +29,8 @@
 typedef struct {
     uint8_t lines[3][MAX_LINESIZE];
     int64_t pos[3];
+    AVPacket last_pkt;
+    int last_pkt_ready;
 } MicroDVDContext;
 
 
@@ -96,7 +98,7 @@ static int get_duration(const char *buf)
 
     if (sscanf(buf, "{%d}{%d}", &frame_start, &frame_end) == 2)
         return frame_end - frame_start;
-    return 0;
+    return -1;
 }
 
 static int microdvd_read_packet(AVFormatContext *s, AVPacket *pkt)
@@ -105,6 +107,13 @@ static int microdvd_read_packet(AVFormatContext *s, AVPacket *pkt)
     char buffer[MAX_LINESIZE];
     int64_t pos = avio_tell(s->pb);
     int i, len = 0, res = AVERROR_EOF;
+
+    // last packet has its duration set but couldn't be raised earlier
+    if (microdvd->last_pkt_ready) {
+        *pkt = microdvd->last_pkt;
+        microdvd->last_pkt_ready = 0;
+        return 0;
+    }
 
     for (i=0; i<FF_ARRAY_ELEMS(microdvd->lines); i++) {
         if (microdvd->lines[i][0]) {
@@ -118,13 +127,40 @@ static int microdvd_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (!len)
         len = ff_get_line(s->pb, buffer, sizeof(buffer));
 
-    if (buffer[0] && !(res = av_new_packet(pkt, len))) {
+    if (microdvd->last_pkt.duration == -1 && !buffer[0]) {
+        // if the previous subtitle line had no duration, last until the end of
+        // the presentation
+        microdvd->last_pkt.duration = 0;
+        *pkt = microdvd->last_pkt;
+        pkt->duration = -1;
+        res = 0;
+    } else if (buffer[0] && !(res = av_new_packet(pkt, len))) {
         memcpy(pkt->data, buffer, len);
         pkt->flags |= AV_PKT_FLAG_KEY;
         pkt->pos = pos;
         pkt->pts = pkt->dts = get_pts(buffer);
-        if (pkt->pts != AV_NOPTS_VALUE) // TODO: handle "{}" duration
+
+        if (pkt->pts != AV_NOPTS_VALUE) {
             pkt->duration = get_duration(buffer);
+            if (microdvd->last_pkt.duration == -1) {
+                // previous packet wasn't raised because it was lacking the
+                // duration info, so set its duration with the new packet pts
+                // and raise it
+                AVPacket tmp_pkt;
+
+                tmp_pkt = microdvd->last_pkt;
+                tmp_pkt.duration = pkt->pts - tmp_pkt.pts;
+                microdvd->last_pkt = *pkt;
+                microdvd->last_pkt_ready = pkt->duration != -1;
+                *pkt = tmp_pkt;
+            } else if (pkt->duration == -1) {
+                // no packet without duration queued, and current one is
+                // lacking the duration info, we need to parse another subtitle
+                // event.
+                microdvd->last_pkt = *pkt;
+                res = AVERROR(EAGAIN);
+            }
+        }
     }
     return res;
 }
