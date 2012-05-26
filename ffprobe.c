@@ -179,6 +179,7 @@ struct WriterContext {
     unsigned int nb_section;        ///< number of the section printed in the given section sequence, starting at 0
     unsigned int nb_chapter;        ///< number of the chapter, starting at 0
 
+    int multiple_sections;          ///< tells if the current chapter can contain multiple sections
     int is_fmt_chapter;             ///< tells if the current chapter is "format", required by the print_format_entry option
 };
 
@@ -255,6 +256,9 @@ static inline void writer_print_chapter_header(WriterContext *wctx,
         wctx->writer->print_chapter_header(wctx, chapter);
     wctx->nb_section = 0;
 
+    wctx->multiple_sections = !strcmp(chapter, "packets") || !strcmp(chapter, "frames" ) ||
+                              !strcmp(chapter, "packets_and_frames") ||
+                              !strcmp(chapter, "streams") || !strcmp(chapter, "library_versions");
     wctx->is_fmt_chapter = !strcmp(chapter, "format");
 }
 
@@ -713,7 +717,6 @@ static const Writer csv_writer = {
 
 typedef struct {
     const AVClass *class;
-    int multiple_entries; ///< tells if the given chapter requires multiple entries
     int print_packets_and_frames;
     int indent_level;
     int compact;
@@ -804,10 +807,7 @@ static void json_print_chapter_header(WriterContext *wctx, const char *chapter)
     if (wctx->nb_chapter)
         printf(",");
     printf("\n");
-    json->multiple_entries = !strcmp(chapter, "packets") || !strcmp(chapter, "frames" ) ||
-                             !strcmp(chapter, "packets_and_frames") ||
-                             !strcmp(chapter, "streams") || !strcmp(chapter, "library_versions");
-    if (json->multiple_entries) {
+    if (wctx->multiple_sections) {
         JSON_INDENT();
         av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
         printf("\"%s\": [\n", json_escape_str(&buf, chapter, wctx));
@@ -821,7 +821,7 @@ static void json_print_chapter_footer(WriterContext *wctx, const char *chapter)
 {
     JSONContext *json = wctx->priv;
 
-    if (json->multiple_entries) {
+    if (wctx->multiple_sections) {
         printf("\n");
         json->indent_level--;
         JSON_INDENT();
@@ -836,7 +836,7 @@ static void json_print_section_header(WriterContext *wctx, const char *section)
     if (wctx->nb_section)
         printf(",\n");
     JSON_INDENT();
-    if (!json->multiple_entries)
+    if (!wctx->multiple_sections)
         printf("\"%s\": ", section);
     printf("{%s", json->item_start_end);
     json->indent_level++;
