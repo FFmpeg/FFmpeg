@@ -74,7 +74,8 @@ int ff_ass_subtitle_header_default(AVCodecContext *avctx);
  * @param sub pointer to the AVSubtitle
  * @param dialog ASS dialog to add to sub
  * @param ts_start start timestamp for this dialog (in 1/100 second unit)
- * @param ts_end end timestamp for this dialog (in 1/100 second unit)
+ * @param duration duration for this dialog (in 1/100 second unit), can be -1
+ *                 to last until the end of the presentation
  * @param raw when set to 1, it indicates that dialog contains a whole ASS
  *                           dialog line which should be copied as is.
  *            when set to 0, it indicates that dialog contains only the Text
@@ -85,6 +86,6 @@ int ff_ass_subtitle_header_default(AVCodecContext *avctx);
  *         A negative value indicates an error.
  */
 int ff_ass_add_rect(AVSubtitle *sub, const char *dialog,
-                    int ts_start, int ts_end, int raw);
+                    int ts_start, int duration, int raw);
 
 #endif /* AVCODEC_ASS_H */

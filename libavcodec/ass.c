@@ -70,15 +70,18 @@ static int ts_to_string(char *str, int strlen, int ts)
 }
 
 int ff_ass_add_rect(AVSubtitle *sub, const char *dialog,
-                    int ts_start, int ts_end, int raw)
+                    int ts_start, int duration, int raw)
 {
-    int len = 0, dlen, duration = ts_end - ts_start;
+    int len = 0, dlen;
     char s_start[16], s_end[16], header[48] = {0};
     AVSubtitleRect **rects;
 
     if (!raw) {
         ts_to_string(s_start, sizeof(s_start), ts_start);
-        ts_to_string(s_end,   sizeof(s_end),   ts_end  );
+        if (duration == -1)
+            snprintf(s_end, sizeof(s_end), "9:59:59.99");
+        else
+            ts_to_string(s_end, sizeof(s_end), ts_start + duration);
         len = snprintf(header, sizeof(header), "Dialogue: 0,%s,%s,",
                        s_start, s_end);
     }

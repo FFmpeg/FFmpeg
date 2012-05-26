@@ -175,8 +175,6 @@ static int jacosub_decode_frame(AVCodecContext *avctx,
         goto end;
 
     if (*ptr) {
-        int ts_start = avpkt->pts;
-        int ts_end   = avpkt->pts + avpkt->duration;
         AVBPrint buffer;
         char *dec_sub;
 
@@ -188,7 +186,7 @@ static int jacosub_decode_frame(AVCodecContext *avctx,
         av_bprint_init(&buffer, JSS_MAX_LINESIZE, JSS_MAX_LINESIZE);
         jacosub_to_ass(avctx, &buffer, ptr);
         av_bprint_finalize(&buffer, &dec_sub);
-        ff_ass_add_rect(sub, dec_sub, ts_start, ts_end, 0);
+        ff_ass_add_rect(sub, dec_sub, avpkt->pts, avpkt->duration, 0);
         av_free(dec_sub);
     }
 
