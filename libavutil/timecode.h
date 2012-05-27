@@ -51,8 +51,19 @@ typedef struct {
  * @param framenum frame number to adjust
  * @return         adjusted frame number
  * @warning        adjustment is only valid in NTSC 29.97
+ * @deprecated     use av_timecode_adjust_ntsc_framenum2 instead
  */
-int av_timecode_adjust_ntsc_framenum(int framenum);
+attribute_deprecated int av_timecode_adjust_ntsc_framenum(int framenum);
+
+/**
+ * Adjust frame number for NTSC drop frame time code.
+ *
+ * @param framenum frame number to adjust
+ * @param fps      frame per second, 30 or 60
+ * @return         adjusted frame number
+ * @warning        adjustment is only valid in NTSC 29.97 and 59.94
+ */
+int av_timecode_adjust_ntsc_framenum2(int framenum, int fps);
 
 /**
  * Convert frame number to SMPTE 12M binary representation.

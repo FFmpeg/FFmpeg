@@ -31,6 +31,7 @@
 #include "log.h"
 #include "error.h"
 
+#ifdef FF_API_OLD_TC_ADJUST_FRAMENUM
 int av_timecode_adjust_ntsc_framenum(int framenum)
 {
     /* only works for NTSC 29.97 */
@@ -38,6 +39,25 @@ int av_timecode_adjust_ntsc_framenum(int framenum)
     int m = framenum % 17982;
     //if (m < 2) m += 2; /* not needed since -2,-1 / 1798 in C returns 0 */
     return framenum + 18 * d + 2 * ((m - 2) / 1798);
+}
+#endif
+
+int av_timecode_adjust_ntsc_framenum2(int framenum, int fps)
+{
+    /* only works for NTSC 29.97 and 59.94 */
+    int drop_frames = 0;
+    int d = framenum / 17982;
+    int m = framenum % 17982;
+
+    if (fps == 30)
+        drop_frames = 2;
+    else if (fps == 60)
+        drop_frames = 4;
+    else
+        return framenum;
+
+    //if (m < 2) m += 2; /* not needed since -2,-1 / 1798 in C returns 0 */
+    return framenum + 9 * drop_frames * d + drop_frames * ((m - 2) / 1798);
 }
 
 uint32_t av_timecode_get_smpte_from_framenum(const AVTimecode *tc, int framenum)
@@ -48,7 +68,7 @@ uint32_t av_timecode_get_smpte_from_framenum(const AVTimecode *tc, int framenum)
 
     framenum += tc->start;
     if (drop)
-        framenum = av_timecode_adjust_ntsc_framenum(framenum);
+        framenum = av_timecode_adjust_ntsc_framenum2(framenum, tc->fps);
     ff = framenum % fps;
     ss = framenum / fps      % 60;
     mm = framenum / (fps*60) % 60;
@@ -77,7 +97,7 @@ char *av_timecode_make_string(const AVTimecode *tc, char *buf, int framenum)
 
     framenum += tc->start;
     if (drop)
-        framenum = av_timecode_adjust_ntsc_framenum(framenum);
+        framenum = av_timecode_adjust_ntsc_framenum2(framenum, fps);
     if (framenum < 0) {
         framenum = -framenum;
         neg = tc->flags & AV_TIMECODE_FLAG_ALLOWNEGATIVE;
@@ -139,7 +159,9 @@ static int check_timecode(void *log_ctx, AVTimecode *tc)
     switch (tc->fps) {
     case 24:
     case 25:
-    case 30: return  0;
+    case 30:
+    case 50:
+    case 60: return  0;
 
     default:
         av_log(log_ctx, AV_LOG_ERROR, "Timecode frame rate not supported\n");

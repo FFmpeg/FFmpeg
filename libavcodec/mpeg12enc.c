@@ -300,7 +300,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             s->gop_picture_number = s->current_picture_ptr->f.coded_picture_number;
             av_assert0(s->drop_frame_timecode == !!(s->tc.flags & AV_TIMECODE_FLAG_DROPFRAME));
             if (s->drop_frame_timecode)
-                time_code = av_timecode_adjust_ntsc_framenum(time_code);
+                time_code = av_timecode_adjust_ntsc_framenum2(time_code, fps);
             put_bits(&s->pb, 5, (uint32_t)((time_code / (fps * 3600)) % 24));
             put_bits(&s->pb, 6, (uint32_t)((time_code / (fps * 60)) % 60));
             put_bits(&s->pb, 1, 1);
