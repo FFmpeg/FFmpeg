@@ -255,9 +255,12 @@ static int avi_write_header(AVFormatContext *s)
 
         ff_parse_specific_params(stream, &au_byterate, &au_ssize, &au_scale);
 
+        avpriv_set_pts_info(s->streams[i], 64, au_scale, au_byterate);
+        if(stream->codec_id == CODEC_ID_XSUB)
+            au_scale = au_byterate = 0;
+
         avio_wl32(pb, au_scale); /* scale */
         avio_wl32(pb, au_byterate); /* rate */
-        avpriv_set_pts_info(s->streams[i], 64, au_scale, au_byterate);
 
         avio_wl32(pb, 0); /* start */
         avist->frames_hdr_strm = avio_tell(pb); /* remember this offset to fill later */
@@ -521,7 +524,7 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
     int size= pkt->size;
 
 //    av_log(s, AV_LOG_DEBUG, "%"PRId64" %d %d\n", pkt->dts, avist->packet_count, stream_index);
-    while(enc->block_align==0 && pkt->dts != AV_NOPTS_VALUE && pkt->dts > avist->packet_count){
+    while(enc->block_align==0 && pkt->dts != AV_NOPTS_VALUE && pkt->dts > avist->packet_count && enc->codec_id != CODEC_ID_XSUB){
         AVPacket empty_packet;
 
         if(pkt->dts - avist->packet_count > 60000){
