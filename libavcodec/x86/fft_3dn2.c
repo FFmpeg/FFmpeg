@@ -30,30 +30,30 @@ DECLARE_ALIGNED(8, static const unsigned int, m1m1)[2] = { 1U<<31, 1U<<31 };
     "movq "#s","#d"\n"\
     "psrlq $32,"#d"\n"\
     "punpckldq "#s","#d"\n"
-#define ff_fft_calc_3dn2 ff_fft_calc_3dn
-#define ff_fft_dispatch_3dn2 ff_fft_dispatch_3dn
-#define ff_fft_dispatch_interleave_3dn2 ff_fft_dispatch_interleave_3dn
-#define ff_imdct_calc_3dn2 ff_imdct_calc_3dn
-#define ff_imdct_half_3dn2 ff_imdct_half_3dn
+#define ff_fft_calc_3dnow2 ff_fft_calc_3dnow
+#define ff_fft_dispatch_3dnow2 ff_fft_dispatch_3dnow
+#define ff_fft_dispatch_interleave_3dnow2 ff_fft_dispatch_interleave_3dnow
+#define ff_imdct_calc_3dnow2 ff_imdct_calc_3dnow
+#define ff_imdct_half_3dnow2 ff_imdct_half_3dnow
 #else
 #define PSWAPD(s,d) "pswapd "#s","#d"\n"
 #endif
 
-void ff_fft_dispatch_3dn2(FFTComplex *z, int nbits);
-void ff_fft_dispatch_interleave_3dn2(FFTComplex *z, int nbits);
+void ff_fft_dispatch_3dnow2(FFTComplex *z, int nbits);
+void ff_fft_dispatch_interleave_3dnow2(FFTComplex *z, int nbits);
 
-void ff_fft_calc_3dn2(FFTContext *s, FFTComplex *z)
+void ff_fft_calc_3dnow2(FFTContext *s, FFTComplex *z)
 {
     int n = 1<<s->nbits;
     int i;
-    ff_fft_dispatch_interleave_3dn2(z, s->nbits);
+    ff_fft_dispatch_interleave_3dnow2(z, s->nbits);
     __asm__ volatile("femms");
     if(n <= 8)
         for(i=0; i<n; i+=2)
             FFSWAP(FFTSample, z[i].im, z[i+1].re);
 }
 
-void ff_imdct_half_3dn2(FFTContext *s, FFTSample *output, const FFTSample *input)
+void ff_imdct_half_3dnow2(FFTContext *s, FFTSample *output, const FFTSample *input)
 {
     x86_reg j, k;
     long n = s->mdct_size;
@@ -101,7 +101,7 @@ void ff_imdct_half_3dn2(FFTContext *s, FFTSample *output, const FFTSample *input
         );
     }
 
-    ff_fft_dispatch_3dn2(z, s->nbits);
+    ff_fft_dispatch_3dnow2(z, s->nbits);
 
 #define CMUL(j,mm0,mm1)\
         "movq  (%2,"#j",2), %%mm6 \n"\
@@ -144,13 +144,13 @@ void ff_imdct_half_3dn2(FFTContext *s, FFTSample *output, const FFTSample *input
     __asm__ volatile("femms");
 }
 
-void ff_imdct_calc_3dn2(FFTContext *s, FFTSample *output, const FFTSample *input)
+void ff_imdct_calc_3dnow2(FFTContext *s, FFTSample *output, const FFTSample *input)
 {
     x86_reg j, k;
     long n = s->mdct_size;
     long n4 = n >> 2;
 
-    ff_imdct_half_3dn2(s, output+n4, input);
+    ff_imdct_half_3dnow2(s, output+n4, input);
 
     j = -n;
     k = n-8;
