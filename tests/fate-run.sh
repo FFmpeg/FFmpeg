@@ -73,28 +73,28 @@ probefmt(){
     run ffprobe -show_format_entry format_name -print_format default=nw=1:nk=1 -v 0 "$@"
 }
 
-avconv(){
+ffmpeg(){
     run ffmpeg -nostats -threads $threads -thread_type $thread_type -cpuflags $cpuflags "$@"
 }
 
 framecrc(){
-    avconv "$@" -f framecrc -
+    ffmpeg "$@" -f framecrc -
 }
 
 framemd5(){
-    avconv "$@" -f framemd5 -
+    ffmpeg "$@" -f framemd5 -
 }
 
 crc(){
-    avconv "$@" -f crc -
+    ffmpeg "$@" -f crc -
 }
 
 md5(){
-    avconv "$@" md5:
+    ffmpeg "$@" md5:
 }
 
 pcm(){
-    avconv "$@" -vn -f s16le -
+    ffmpeg "$@" -vn -f s16le -
 }
 
 enc_dec_pcm(){
@@ -106,8 +106,8 @@ enc_dec_pcm(){
     encfile="${outdir}/${test}.${out_fmt}"
     cleanfiles=$encfile
     encfile=$(target_path ${encfile})
-    avconv -i $src_file "$@" -f $out_fmt -y ${encfile} || return
-    avconv -i ${encfile} -c:a pcm_${pcm_fmt} -f ${dec_fmt} -
+    ffmpeg -i $src_file "$@" -f $out_fmt -y ${encfile} || return
+    ffmpeg -i ${encfile} -c:a pcm_${pcm_fmt} -f ${dec_fmt} -
 }
 
 regtest(){

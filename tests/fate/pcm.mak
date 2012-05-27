@@ -27,6 +27,6 @@ fate-dcinema-encode: tests/data/asynth-96000-6.wav
 fate-dcinema-encode: SRC = tests/data/asynth-96000-6.wav
 fate-dcinema-encode: CMD = enc_dec_pcm daud md5 s16le $(SRC) -c:a pcm_s24daud
 
-FATE_AVCONV += $(FATE_PCM)
+FATE_FFMPEG += $(FATE_PCM)
 FATE_SAMPLES_AVCONV += $(FATE_SAMPLES_PCM)
 fate-pcm: $(FATE_PCM) $(FATE_SAMPLES_PCM)

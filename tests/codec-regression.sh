@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# automatic regression test for avconv
+# automatic regression test for ffmpeg
 #
 #
 #set -x

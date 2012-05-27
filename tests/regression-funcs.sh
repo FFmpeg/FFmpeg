@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# common regression functions for avconv
+# common regression functions for ffmpeg
 #
 #
 
@@ -20,7 +20,7 @@ this="$test.$test_ref"
 outfile="$datadir/$test_ref/"
 
 # various files
-avconv="$target_exec ${target_path}/ffmpeg"
+ffmpeg="$target_exec ${target_path}/ffmpeg"
 tiny_psnr="tests/tiny_psnr"
 raw_src="${target_path}/$raw_src_dir/%02d.pgm"
 raw_dst="$datadir/$this.out.yuv"
@@ -54,8 +54,8 @@ ENC_OPTS="$COMMON_OPTS -threads 1 -dct fastint"
 
 run_avconv()
 {
-    $echov $avconv $AVCONV_OPTS $*
-    $avconv $AVCONV_OPTS $*
+    $echov $ffmpeg $AVCONV_OPTS $*
+    $ffmpeg $AVCONV_OPTS $*
 }
 
 do_avconv()
