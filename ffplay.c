@@ -99,7 +99,6 @@ typedef struct PacketQueue {
 
 typedef struct VideoPicture {
     double pts;                                  ///< presentation time stamp for this picture
-    double duration;                             ///< expected duration of the frame
     int64_t pos;                                 ///< byte position in file
     int skip;
     SDL_Overlay *bmp;
@@ -1194,13 +1193,8 @@ retry:
 
             if (is->pictq_size > 1) {
                 VideoPicture *nextvp = &is->pictq[(is->pictq_rindex + 1) % VIDEO_PICTURE_QUEUE_SIZE];
-                duration = nextvp->pts - vp->pts; // More accurate this way, 1/time_base is often not reflecting FPS
-            } else {
-                duration = vp->duration;
-            }
-
-            if((framedrop>0 || (framedrop && is->audio_st)) && time > is->frame_timer + duration){
-                if(is->pictq_size > 1){
+                duration = nextvp->pts - vp->pts;
+                if((framedrop>0 || (framedrop && is->audio_st)) && time > is->frame_timer + duration){
                     is->frame_drops_late++;
                     pictq_next_picture(is);
                     goto retry;
@@ -1386,8 +1380,6 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
         return -1;
 
     vp = &is->pictq[is->pictq_windex];
-
-    vp->duration = frame_delay;
 
     /* alloc or resize hardware picture buffer */
     if (!vp->bmp || vp->reallocate ||
