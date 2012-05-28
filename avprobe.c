@@ -93,6 +93,16 @@ typedef struct {
 typedef struct {
     ProbeElement *prefix;
     int level;
+    void (*print_header)(void);
+    void (*print_footer)(void);
+
+    void (*print_array_header) (const char *name);
+    void (*print_array_footer) (const char *name);
+    void (*print_object_header)(const char *name);
+    void (*print_object_footer)(const char *name);
+
+    void (*print_integer) (const char *key, int64_t value);
+    void (*print_string)  (const char *key, const char *value);
 } OutputContext;
 
 static AVIOContext *probe_out = NULL;
@@ -346,19 +356,6 @@ static void show_format_entry_string(const char *key, const char *value)
     }
 }
 
-
-void (*print_header)(void) = ini_print_header;
-void (*print_footer)(void) = ini_print_footer;
-
-void (*print_array_header) (const char *name) = ini_print_array_header;
-void (*print_array_footer) (const char *name);
-void (*print_object_header)(const char *name) = ini_print_object_header;
-void (*print_object_footer)(const char *name);
-
-void (*print_integer) (const char *key, int64_t value)     = ini_print_integer;
-void (*print_string)  (const char *key, const char *value) = ini_print_string;
-
-
 static void probe_group_enter(const char *name, int type)
 {
     int64_t count = -1;
@@ -388,23 +385,23 @@ static void probe_group_leave(void)
 
 static void probe_header(void)
 {
-    if (print_header)
-        print_header();
+    if (octx.print_header)
+        octx.print_header();
     probe_group_enter("root", OBJECT);
 }
 
 static void probe_footer(void)
 {
-    if (print_footer)
-        print_footer();
+    if (octx.print_footer)
+        octx.print_footer();
     probe_group_leave();
 }
 
 
 static void probe_array_header(const char *name)
 {
-    if (print_array_header)
-        print_array_header(name);
+    if (octx.print_array_header)
+        octx.print_array_header(name);
 
     probe_group_enter(name, ARRAY);
 }
@@ -412,14 +409,14 @@ static void probe_array_header(const char *name)
 static void probe_array_footer(const char *name)
 {
     probe_group_leave();
-    if (print_array_footer)
-        print_array_footer(name);
+    if (octx.print_array_footer)
+        octx.print_array_footer(name);
 }
 
 static void probe_object_header(const char *name)
 {
-    if (print_object_header)
-        print_object_header(name);
+    if (octx.print_object_header)
+        octx.print_object_header(name);
 
     probe_group_enter(name, OBJECT);
 }
@@ -427,19 +424,19 @@ static void probe_object_header(const char *name)
 static void probe_object_footer(const char *name)
 {
     probe_group_leave();
-    if (print_object_footer)
-        print_object_footer(name);
+    if (octx.print_object_footer)
+        octx.print_object_footer(name);
 }
 
 static void probe_int(const char *key, int64_t value)
 {
-    print_integer(key, value);
+    octx.print_integer(key, value);
     octx.prefix[octx.level -1].nb_elems++;
 }
 
 static void probe_str(const char *key, const char *value)
 {
-    print_string(key, value);
+    octx.print_string(key, value);
     octx.prefix[octx.level -1].nb_elems++;
 }
 
@@ -810,29 +807,29 @@ static int opt_output_format(const char *opt, const char *arg)
 {
 
     if (!strcmp(arg, "json")) {
-        print_header        = json_print_header;
-        print_footer        = json_print_footer;
-        print_array_header  = json_print_array_header;
-        print_array_footer  = json_print_array_footer;
-        print_object_header = json_print_object_header;
-        print_object_footer = json_print_object_footer;
+        octx.print_header        = json_print_header;
+        octx.print_footer        = json_print_footer;
+        octx.print_array_header  = json_print_array_header;
+        octx.print_array_footer  = json_print_array_footer;
+        octx.print_object_header = json_print_object_header;
+        octx.print_object_footer = json_print_object_footer;
 
-        print_integer = json_print_integer;
-        print_string  = json_print_string;
+        octx.print_integer = json_print_integer;
+        octx.print_string  = json_print_string;
     } else if (!strcmp(arg, "ini")) {
-        print_header        = ini_print_header;
-        print_footer        = ini_print_footer;
-        print_array_header  = ini_print_array_header;
-        print_object_header = ini_print_object_header;
+        octx.print_header        = ini_print_header;
+        octx.print_footer        = ini_print_footer;
+        octx.print_array_header  = ini_print_array_header;
+        octx.print_object_header = ini_print_object_header;
 
-        print_integer = ini_print_integer;
-        print_string  = ini_print_string;
+        octx.print_integer = ini_print_integer;
+        octx.print_string  = ini_print_string;
     } else if (!strcmp(arg, "old")) {
-        print_header        = NULL;
-        print_object_header = old_print_object_header;
-        print_object_footer = old_print_object_footer;
+        octx.print_header        = NULL;
+        octx.print_object_header = old_print_object_header;
+        octx.print_object_footer = old_print_object_footer;
 
-        print_string        = old_print_string;
+        octx.print_string        = old_print_string;
     } else {
         av_log(NULL, AV_LOG_ERROR, "Unsupported formatter %s\n", arg);
         return AVERROR(EINVAL);
@@ -844,15 +841,15 @@ static int opt_show_format_entry(const char *opt, const char *arg)
 {
     do_show_format = 1;
     nb_fmt_entries_to_show++;
-    print_header        = NULL;
-    print_footer        = NULL;
-    print_array_header  = NULL;
-    print_array_footer  = NULL;
-    print_object_header = NULL;
-    print_object_footer = NULL;
+    octx.print_header        = NULL;
+    octx.print_footer        = NULL;
+    octx.print_array_header  = NULL;
+    octx.print_array_footer  = NULL;
+    octx.print_object_header = NULL;
+    octx.print_object_footer = NULL;
 
-    print_integer = show_format_entry_integer;
-    print_string  = show_format_entry_string;
+    octx.print_integer = show_format_entry_integer;
+    octx.print_string  = show_format_entry_string;
     av_dict_set(&fmt_entries_to_show, arg, "", 0);
     return 0;
 }
@@ -951,6 +948,15 @@ int main(int argc, char **argv)
                                  probe_buf_write, NULL);
     if (!probe_out)
         exit(1);
+
+    octx.print_header = ini_print_header;
+    octx.print_footer = ini_print_footer;
+
+    octx.print_array_header = ini_print_array_header;
+    octx.print_object_header = ini_print_object_header;
+
+    octx.print_integer = ini_print_integer;
+    octx.print_string = ini_print_string;
 
     probe_header();
     ret = probe_file(input_filename);
