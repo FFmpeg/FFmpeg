@@ -176,7 +176,13 @@ static int extract_header(AVCodecContext *const avctx,
     const uint8_t *buf;
     unsigned buf_size;
     IffContext *s = avctx->priv_data;
-    int palette_size = avctx->extradata_size - AV_RB16(avctx->extradata);
+    int palette_size;
+
+    if (avctx->extradata_size < 2) {
+        av_log(avctx, AV_LOG_ERROR, "not enough extradata\n");
+        return AVERROR_INVALIDDATA;
+    }
+    palette_size = avctx->extradata_size - AV_RB16(avctx->extradata);
 
     if (avpkt) {
         int image_size;
@@ -192,8 +198,6 @@ static int extract_header(AVCodecContext *const avctx,
             return AVERROR_INVALIDDATA;
         }
     } else {
-        if (avctx->extradata_size < 2)
-            return AVERROR_INVALIDDATA;
         buf = avctx->extradata;
         buf_size = bytestream_get_be16(&buf);
         if (buf_size <= 1 || palette_size < 0) {
