@@ -143,6 +143,10 @@ static int decode_frame(AVCodecContext *avctx,
     buf += 5;
 
     if (video_size) {
+        if(video_size < 0) {
+            av_log(avctx, AV_LOG_ERROR, "video size %d invalid\n", video_size);
+            return AVERROR_INVALIDDATA;
+        }
         if (avctx->reget_buffer(avctx, &s->frame) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return -1;
