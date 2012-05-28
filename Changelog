@@ -28,6 +28,7 @@ version <next>:
 - RTMPT protocol support
 - iLBC encoding/decoding via libilbc
 - Microsoft Screen 1 decoder
+- join audio filter
 
 
 version 0.8:

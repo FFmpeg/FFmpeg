@@ -32,6 +32,7 @@ OBJS-$(CONFIG_ANULL_FILTER)                  += af_anull.o
 OBJS-$(CONFIG_ASPLIT_FILTER)                 += split.o
 OBJS-$(CONFIG_ASYNCTS_FILTER)                += af_asyncts.o
 OBJS-$(CONFIG_CHANNELSPLIT_FILTER)           += af_channelsplit.o
+OBJS-$(CONFIG_JOIN_FILTER)                   += af_join.o
 OBJS-$(CONFIG_RESAMPLE_FILTER)               += af_resample.o
 
 OBJS-$(CONFIG_ANULLSRC_FILTER)               += asrc_anullsrc.o
