@@ -53,6 +53,11 @@ static av_cold int mp_decode_init(AVCodecContext *avctx)
 {
     MotionPixelsContext *mp = avctx->priv_data;
 
+    if(avctx->extradata_size < 2){
+        av_log(avctx, AV_LOG_ERROR, "extradata too small\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     motionpixels_tableinit();
     mp->avctx = avctx;
     dsputil_init(&mp->dsp, avctx);
