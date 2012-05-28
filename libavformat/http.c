@@ -139,12 +139,16 @@ static int http_open_cnx(URLContext *h)
     }
 
     ff_url_join(buf, sizeof(buf), lower_proto, NULL, hostname, port, NULL);
-    err = ffurl_open(&hd, buf, AVIO_FLAG_READ_WRITE,
-                     &h->interrupt_callback, NULL);
-    if (err < 0)
-        goto fail;
 
-    s->hd = hd;
+    if (!s->hd) {
+        err = ffurl_open(&hd, buf, AVIO_FLAG_READ_WRITE,
+                         &h->interrupt_callback, NULL);
+        if (err < 0)
+            goto fail;
+
+        s->hd = hd;
+    }
+
     cur_auth_type = s->auth_state.auth_type;
     cur_proxy_auth_type = s->auth_state.auth_type;
     if (http_connect(h, path, local_path, hoststr, auth, proxyauth, &location_changed) < 0)
@@ -185,6 +189,16 @@ static int http_open_cnx(URLContext *h)
         ffurl_close(hd);
     s->hd = NULL;
     return AVERROR(EIO);
+}
+
+int ff_http_do_new_request(URLContext *h, const char *uri)
+{
+    HTTPContext *s = h->priv_data;
+
+    s->off = 0;
+    av_strlcpy(s->location, uri, sizeof(s->location));
+
+    return http_open_cnx(h);
 }
 
 static int http_open(URLContext *h, const char *uri, int flags)
@@ -430,6 +444,7 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     s->filesize = -1;
     s->willclose = 0;
     s->end_chunked_post = 0;
+    s->end_header = 0;
     if (post) {
         /* Pretend that it did work. We didn't read any header yet, since
          * we've still to send the POST data, but the code calling this
