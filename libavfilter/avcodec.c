@@ -60,7 +60,7 @@ int avfilter_fill_frame_from_audio_buffer_ref(AVFrame *frame,
 
     memcpy(frame->data, samplesref->data, sizeof(frame->data));
     memcpy(frame->linesize, samplesref->linesize, sizeof(frame->linesize));
-    frame->pkt_pos        = samplesref->pos;
+    av_frame_set_pkt_pos(frame, samplesref->pos);
     frame->format         = samplesref->format;
     frame->nb_samples     = samplesref->audio->nb_samples;
     frame->pts            = samplesref->pts;
@@ -78,7 +78,7 @@ int avfilter_fill_frame_from_video_buffer_ref(AVFrame *frame,
 
     memcpy(frame->data,     picref->data,     sizeof(frame->data));
     memcpy(frame->linesize, picref->linesize, sizeof(frame->linesize));
-    frame->pkt_pos          = picref->pos;
+    av_frame_set_pkt_pos(frame, picref->pos);
     frame->interlaced_frame = picref->video->interlaced;
     frame->top_field_first  = picref->video->top_field_first;
     frame->key_frame        = picref->video->key_frame;

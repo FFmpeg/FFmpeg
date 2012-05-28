@@ -166,7 +166,7 @@ void avfilter_unref_bufferp(AVFilterBufferRef **ref)
 int avfilter_copy_frame_props(AVFilterBufferRef *dst, const AVFrame *src)
 {
     dst->pts    = src->pts;
-    dst->pos    = src->pkt_pos;
+    dst->pos    = av_frame_get_pkt_pos(src);
     dst->format = src->format;
 
     switch (dst->type) {
