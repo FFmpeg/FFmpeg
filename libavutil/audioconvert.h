@@ -144,6 +144,18 @@ int av_get_channel_layout_nb_channels(uint64_t channel_layout);
 uint64_t av_get_default_channel_layout(int nb_channels);
 
 /**
+ * Get the index of a channel in channel_layout.
+ *
+ * @param channel a channel layout describing exactly one channel which must be
+ *                present in channel_layout.
+ *
+ * @return index of channel in channel_layout on success, a negative AVERROR
+ *         on error.
+ */
+int av_get_channel_layout_channel_index(uint64_t channel_layout,
+                                        uint64_t channel);
+
+/**
  * @}
  */
 
