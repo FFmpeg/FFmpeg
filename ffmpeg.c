@@ -918,7 +918,7 @@ static int configure_audio_filters(FilterGraph *fg, AVFilterContext **in_filter,
     if (audio_volume != 256) {
         char args[256];
 
-        snprintf(args, sizeof(args), "%lf", audio_volume / 256.);
+        snprintf(args, sizeof(args), "%f", audio_volume / 256.);
         AUTO_INSERT_FILTER("-vol", "volume", args);
     }
 
