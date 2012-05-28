@@ -112,7 +112,7 @@ Component options:
   --disable-swscale        disable libswscale build
   --disable-postproc       disable libpostproc build
   --disable-avfilter       disable video filter support [no]
-  --disable-avresample     disable libavresample build [no]
+  --enable-avresample      enable libavresample build [no]
   --disable-pthreads       disable pthreads [auto]
   --disable-w32threads     disable Win32 threads [auto]
   --disable-os2threads     disable OS/2 threads [auto]
@@ -1880,7 +1880,6 @@ enable avcodec
 enable avdevice
 enable avfilter
 enable avformat
-enable avresample
 enable avutil
 enable postproc
 enable stripping
