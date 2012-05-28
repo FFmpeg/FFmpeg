@@ -89,6 +89,11 @@ static av_cold int yop_decode_init(AVCodecContext *avctx)
         return -1;
     }
 
+    if (!avctx->extradata) {
+        av_log(avctx, AV_LOG_ERROR, "extradata missing\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     avctx->pix_fmt = PIX_FMT_PAL8;
 
     avcodec_get_frame_defaults(&s->frame);
