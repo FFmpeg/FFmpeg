@@ -2077,6 +2077,9 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
             } else
                 avcodec_get_frame_defaults(is->frame);
 
+            if (is->paused)
+                return -1;
+
             if (flush_complete)
                 break;
             new_packet = 0;
