@@ -48,8 +48,8 @@ static int avui_decode_frame(AVCodecContext *avctx, void *data,
     if (pic->data[0])
         avctx->release_buffer(avctx, pic);
 
-    if (!memcmp(&avctx->extradata[4], "APRGAPRG0001", 12) &&
-        avctx->extradata_size >= 24)
+    if (avctx->extradata_size >= 24 &&
+        !memcmp(&avctx->extradata[4], "APRGAPRG0001", 12))
         interlaced = avctx->extradata[19] != 1;
     if (avctx->height == 486) {
         skip = 10;
