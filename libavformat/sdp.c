@@ -388,15 +388,20 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
     char *config = NULL;
 
     switch (c->codec_id) {
-        case CODEC_ID_H264:
+        case CODEC_ID_H264: {
+            int mode = 1;
+            if (fmt && fmt->oformat->priv_class &&
+                av_opt_flag_is_set(fmt->priv_data, "rtpflags", "h264_mode0"))
+                mode = 0;
             if (c->extradata_size) {
                 config = extradata2psets(c);
             }
             av_strlcatf(buff, size, "a=rtpmap:%d H264/90000\r\n"
-                                    "a=fmtp:%d packetization-mode=1%s\r\n",
+                                    "a=fmtp:%d packetization-mode=%d%s\r\n",
                                      payload_type,
-                                     payload_type, config ? config : "");
+                                     payload_type, mode, config ? config : "");
             break;
+        }
         case CODEC_ID_H263:
         case CODEC_ID_H263P:
             /* a=framesize is required by 3GPP TS 26.234 (PSS). It

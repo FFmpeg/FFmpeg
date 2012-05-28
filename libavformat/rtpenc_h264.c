@@ -55,6 +55,12 @@ static void nal_send(AVFormatContext *s1, const uint8_t *buf, int size, int last
         uint8_t type = buf[0] & 0x1F;
         uint8_t nri = buf[0] & 0x60;
 
+        if (s->flags & FF_RTP_FLAG_H264_MODE0) {
+            av_log(s1, AV_LOG_ERROR,
+                   "NAL size %d > %d, try -slice-max-size %d\n", size,
+                   s->max_payload_size, s->max_payload_size);
+            return;
+        }
         av_log(s1, AV_LOG_DEBUG, "NAL size %d > %d\n", size, s->max_payload_size);
         s->buf[0] = 28;        /* FU Indicator; Type = 28 ---> FU-A */
         s->buf[0] |= nri;
