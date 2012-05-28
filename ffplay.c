@@ -106,7 +106,6 @@ typedef struct VideoPicture {
     AVRational sample_aspect_ratio;
     int allocated;
     int reallocate;
-    enum PixelFormat pix_fmt;
 
 #if CONFIG_AVFILTER
     AVFilterBufferRef *picref;
@@ -1320,7 +1319,6 @@ static void alloc_picture(AllocEventProps *event_props)
 
     vp->width   = frame->width;
     vp->height  = frame->height;
-    vp->pix_fmt = frame->format;
 
     video_open(event_props->is, 0);
 
@@ -1441,12 +1439,12 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
 #if CONFIG_AVFILTER
         // FIXME use direct rendering
         av_picture_copy(&pict, (AVPicture *)src_frame,
-                        vp->pix_fmt, vp->width, vp->height);
+                        src_frame->format, vp->width, vp->height);
         vp->sample_aspect_ratio = vp->picref->video->sample_aspect_ratio;
 #else
         sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
         is->img_convert_ctx = sws_getCachedContext(is->img_convert_ctx,
-            vp->width, vp->height, vp->pix_fmt, vp->width, vp->height,
+            vp->width, vp->height, src_frame->format, vp->width, vp->height,
             PIX_FMT_YUV420P, sws_flags, NULL, NULL, NULL);
         if (is->img_convert_ctx == NULL) {
             fprintf(stderr, "Cannot initialize the conversion context\n");
