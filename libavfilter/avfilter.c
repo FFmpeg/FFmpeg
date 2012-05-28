@@ -376,6 +376,7 @@ static const AVClass avfilter_class = {
     .class_name = "AVFilter",
     .item_name  = filter_name,
     .version    = LIBAVUTIL_VERSION_INT,
+    .category = AV_CLASS_CATEGORY_FILTER,
 };
 
 int avfilter_open(AVFilterContext **filter_ctx, AVFilter *filter, const char *inst_name)

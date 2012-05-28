@@ -258,6 +258,7 @@ static const AVClass abuffer_class = {
     .item_name  = av_default_item_name,
     .option     = audio_options,
     .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_FILTER,
 };
 
 static av_cold int init_audio(AVFilterContext *ctx, const char *args, void *opaque)

@@ -83,6 +83,7 @@ static const AVClass av_format_context_class = {
     .version        = LIBAVUTIL_VERSION_INT,
     .child_next     = format_child_next,
     .child_class_next = format_child_class_next,
+    .category       = AV_CLASS_CATEGORY_MUXER,
 };
 
 static void avformat_get_context_defaults(AVFormatContext *s)

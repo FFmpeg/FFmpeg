@@ -58,6 +58,7 @@ static const AVClass aformat_class = {
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
+    .category = AV_CLASS_CATEGORY_FILTER,
 };
 
 #define PARSE_FORMATS(str, type, list, add_to_list, get_fmt, none, desc)    \
