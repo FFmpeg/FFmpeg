@@ -351,7 +351,7 @@ do_video_decoding "" "-sws_flags neighbor+bitexact -pix_fmt yuv420p"
 fi
 
 if [ -n "$do_avui" ] ; then
-do_video_encoding avui.mov "-s pal -an -c:v avui -sws_flags neighbor+bitexact"
+do_video_encoding avui.mov "-s pal -an -c:v avui -strict experimental -sws_flags neighbor+bitexact"
 do_video_decoding "" "-s cif -sws_flags neighbor+bitexact -pix_fmt yuv420p"
 fi
 
