@@ -64,10 +64,30 @@ int avresample_open(AVAudioResampleContext *avr)
         enum AVSampleFormat out_fmt = av_get_planar_sample_fmt(avr->out_sample_fmt);
         int max_bps = FFMAX(av_get_bytes_per_sample(in_fmt),
                             av_get_bytes_per_sample(out_fmt));
-        if (avr->resample_needed || max_bps <= 2) {
+        if (max_bps <= 2) {
             avr->internal_sample_fmt = AV_SAMPLE_FMT_S16P;
         } else if (avr->mixing_needed) {
             avr->internal_sample_fmt = AV_SAMPLE_FMT_FLTP;
+        } else {
+            if (max_bps <= 4) {
+                if (in_fmt  == AV_SAMPLE_FMT_S32P ||
+                    out_fmt == AV_SAMPLE_FMT_S32P) {
+                    if (in_fmt  == AV_SAMPLE_FMT_FLTP ||
+                        out_fmt == AV_SAMPLE_FMT_FLTP) {
+                        /* if one is s32 and the other is flt, use dbl */
+                        avr->internal_sample_fmt = AV_SAMPLE_FMT_DBLP;
+                    } else {
+                        /* if one is s32 and the other is s32, s16, or u8, use s32 */
+                        avr->internal_sample_fmt = AV_SAMPLE_FMT_S32P;
+                    }
+                } else {
+                    /* if one is flt and the other is flt, s16 or u8, use flt */
+                    avr->internal_sample_fmt = AV_SAMPLE_FMT_FLTP;
+                }
+            } else {
+                /* if either is dbl, use dbl */
+                avr->internal_sample_fmt = AV_SAMPLE_FMT_DBLP;
+            }
         }
         av_log(avr, AV_LOG_DEBUG, "Using %s as internal sample format\n",
                av_get_sample_fmt_name(avr->internal_sample_fmt));
