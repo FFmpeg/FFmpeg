@@ -512,6 +512,10 @@ static int xan_decode_frame(AVCodecContext *avctx,
             int i;
             tag  = bytestream_get_le32(&buf);
             size = bytestream_get_be32(&buf);
+            if(size < 0) {
+                av_log(avctx, AV_LOG_ERROR, "Invalid tag size %d\n", size);
+                return AVERROR_INVALIDDATA;
+            }
             size = FFMIN(size, buf_end - buf);
             switch (tag) {
             case PALT_TAG:
