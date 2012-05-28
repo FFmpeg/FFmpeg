@@ -41,7 +41,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     int h, w;
     AVFrame *pic = avctx->coded_frame;
     const uint32_t *src = (const uint32_t *)avpkt->data;
-    int aligned_width = FFALIGN(avctx->width, 64);
+    int aligned_width = FFALIGN(avctx->width,
+                                avctx->codec_id == CODEC_ID_R10K ? 1 : 64);
     uint8_t *dst_line;
 
     if (pic->data[0])

@@ -38,7 +38,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         const AVFrame *pic, int *got_packet)
 {
     int i, j, ret;
-    int aligned_width = FFALIGN(avctx->width, 64);
+    int aligned_width = FFALIGN(avctx->width,
+                                avctx->codec_id == CODEC_ID_R10K ? 1 : 64);
     int pad = (aligned_width - avctx->width) * 4;
     uint8_t *src_line;
     uint8_t *dst;
