@@ -156,6 +156,11 @@ int av_get_channel_layout_channel_index(uint64_t channel_layout,
                                         uint64_t channel);
 
 /**
+ * Get the channel with the given index in channel_layout.
+ */
+uint64_t av_channel_layout_extract_channel(uint64_t channel_layout, int index);
+
+/**
  * Get the name of a given channel.
  *
  * @return channel name on success, NULL on error.
