@@ -727,6 +727,164 @@ static const Writer csv_writer = {
     .flags = WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS,
 };
 
+/* Flat output */
+
+typedef struct FlatContext {
+    const AVClass *class;
+    const char *section, *chapter;
+    const char *sep_str;
+    char sep;
+    int hierarchical;
+} FlatContext;
+
+#undef OFFSET
+#define OFFSET(x) offsetof(FlatContext, x)
+
+static const AVOption flat_options[]= {
+    {"sep_char", "set separator",    OFFSET(sep_str),    AV_OPT_TYPE_STRING, {.str="."},  CHAR_MIN, CHAR_MAX },
+    {"s",        "set separator",    OFFSET(sep_str),    AV_OPT_TYPE_STRING, {.str="."},  CHAR_MIN, CHAR_MAX },
+    {"hierachical", "specify if the section specification should be hierarchical", OFFSET(hierarchical), AV_OPT_TYPE_INT, {.dbl=1}, 0, 1 },
+    {"h",           "specify if the section specification should be hierarchical", OFFSET(hierarchical), AV_OPT_TYPE_INT, {.dbl=1}, 0, 1 },
+    {NULL},
+};
+
+static const char *flat_get_name(void *ctx)
+{
+    return "flat";
+}
+
+static const AVClass flat_class = {
+    "FlatContext",
+    flat_get_name,
+    flat_options
+};
+
+static av_cold int flat_init(WriterContext *wctx, const char *args, void *opaque)
+{
+    FlatContext *flat = wctx->priv;
+    int err;
+
+    flat->class = &flat_class;
+    av_opt_set_defaults(flat);
+
+    if (args &&
+        (err = (av_set_options_string(flat, args, "=", ":"))) < 0) {
+        av_log(wctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
+        return err;
+    }
+    if (strlen(flat->sep_str) != 1) {
+        av_log(wctx, AV_LOG_ERROR, "Item separator '%s' specified, but must contain a single character\n",
+               flat->sep_str);
+        return AVERROR(EINVAL);
+    }
+    flat->sep = flat->sep_str[0];
+    return 0;
+}
+
+static const char *flat_escape_key_str(AVBPrint *dst, const char *src, const char sep)
+{
+    const char *p;
+
+    for (p = src; *p; p++) {
+        if (!((*p >= '0' && *p <= '9') ||
+              (*p >= 'a' && *p <= 'z') ||
+              (*p >= 'A' && *p <= 'Z')))
+            av_bprint_chars(dst, '_', 1);
+        else
+            av_bprint_chars(dst, *p, 1);
+    }
+    return dst->str;
+}
+
+static const char *flat_escape_value_str(AVBPrint *dst, const char *src)
+{
+    const char *p;
+
+    for (p = src; *p; p++) {
+        switch (*p) {
+        case '\n': av_bprintf(dst, "%s", "\\n");  break;
+        case '\r': av_bprintf(dst, "%s", "\\r");  break;
+        case '\\': av_bprintf(dst, "%s", "\\\\"); break;
+        case '"':  av_bprintf(dst, "%s", "\\\""); break;
+        default:   av_bprint_chars(dst, *p, 1);   break;
+        }
+    }
+    return dst->str;
+}
+
+static void flat_print_chapter_header(WriterContext *wctx, const char *chapter)
+{
+    FlatContext *flat = wctx->priv;
+    flat->chapter = chapter;
+}
+
+static void flat_print_section_header(WriterContext *wctx, const char *section)
+{
+    FlatContext *flat = wctx->priv;
+    flat->section = section;
+}
+
+static void flat_print_section(WriterContext *wctx)
+{
+    FlatContext *flat = wctx->priv;
+    int n = wctx->is_packets_and_frames ? wctx->nb_section_packet_frame
+                                        : wctx->nb_section;
+
+    if (flat->hierarchical && wctx->multiple_sections)
+        printf("%s%c", flat->chapter, flat->sep);
+    printf("%s%c", flat->section, flat->sep);
+    if (wctx->multiple_sections)
+        printf("%d%c", n, flat->sep);
+}
+
+static void flat_print_int(WriterContext *wctx, const char *key, long long int value)
+{
+    flat_print_section(wctx);
+    printf("%s=%lld\n", key, value);
+}
+
+static void flat_print_str(WriterContext *wctx, const char *key, const char *value)
+{
+    FlatContext *flat = wctx->priv;
+    AVBPrint buf;
+
+    flat_print_section(wctx);
+    av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
+    printf("%s=", flat_escape_key_str(&buf, key, flat->sep));
+    av_bprint_clear(&buf);
+    printf("\"%s\"\n", flat_escape_value_str(&buf, value));
+    av_bprint_finalize(&buf, NULL);
+}
+
+static void flat_show_tags(WriterContext *wctx, AVDictionary *dict)
+{
+    FlatContext *flat = wctx->priv;
+    AVBPrint buf;
+    AVDictionaryEntry *tag = NULL;
+
+    av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
+    while ((tag = av_dict_get(dict, "", tag, AV_DICT_IGNORE_SUFFIX))) {
+        flat_print_section(wctx);
+        av_bprint_clear(&buf);
+        printf("tags%c%s=", flat->sep, flat_escape_key_str(&buf, tag->key, flat->sep));
+        av_bprint_clear(&buf);
+        printf("\"%s\"\n", flat_escape_value_str(&buf, tag->value));
+    }
+    av_bprint_finalize(&buf, NULL);
+}
+
+static const Writer flat_writer = {
+    .name                  = "flat",
+    .priv_size             = sizeof(FlatContext),
+    .init                  = flat_init,
+    .print_chapter_header  = flat_print_chapter_header,
+    .print_section_header  = flat_print_section_header,
+    .print_integer         = flat_print_int,
+    .print_string          = flat_print_str,
+    .show_tags             = flat_show_tags,
+    .flags = WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS|WRITER_FLAG_PUT_PACKETS_AND_FRAMES_IN_SAME_CHAPTER,
+};
+
 /* INI format output */
 
 typedef struct {
@@ -1335,6 +1493,7 @@ static void writer_register_all(void)
     writer_register(&default_writer);
     writer_register(&compact_writer);
     writer_register(&csv_writer);
+    writer_register(&flat_writer);
     writer_register(&ini_writer);
     writer_register(&json_writer);
     writer_register(&xml_writer);
@@ -1902,7 +2061,7 @@ static const OptionDef options[] = {
     { "pretty", 0, {(void*)&opt_pretty},
       "prettify the format of displayed values, make it more human readable" },
     { "print_format", OPT_STRING | HAS_ARG, {(void*)&print_format},
-      "set the output printing format (available formats are: default, compact, csv, ini, json, xml)", "format" },
+      "set the output printing format (available formats are: default, compact, csv, flat, ini, json, xml)", "format" },
     { "of", OPT_STRING | HAS_ARG, {(void*)&print_format}, "alias for -print_format", "format" },
     { "show_error",   OPT_BOOL, {(void*)&do_show_error} ,  "show probing error" },
     { "show_format",  OPT_BOOL, {(void*)&do_show_format} , "show format/container info" },
