@@ -69,7 +69,9 @@ void init_opts(void)
     sws_opts = sws_getContext(16, 16, 0, 16, 16, 0, SWS_BICUBIC,
                               NULL, NULL, NULL);
 #endif
+#if CONFIG_SWRESAMPLE
     swr_opts = swr_alloc();
+#endif
 }
 
 void uninit_opts(void)
@@ -78,7 +80,9 @@ void uninit_opts(void)
     sws_freeContext(sws_opts);
     sws_opts = NULL;
 #endif
+#if CONFIG_SWRESAMPLE
     swr_free(&swr_opts);
+#endif
     av_dict_free(&format_opts);
     av_dict_free(&codec_opts);
 }
@@ -449,6 +453,7 @@ int opt_default(const char *opt, const char *arg)
         }
     }
 #endif
+#if CONFIG_SWRESAMPLE
     swr_class = swr_get_class();
     if (!oc && !of && !os && (oswr = av_opt_find(&swr_class, opt, NULL, 0,
                           AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ))) {
@@ -458,6 +463,7 @@ int opt_default(const char *opt, const char *arg)
             return ret;
         }
     }
+#endif
 
     if (oc || of || os || oswr)
         return 0;
