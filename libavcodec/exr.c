@@ -47,7 +47,7 @@ typedef struct EXRContext {
     AVFrame picture;
     int compr;
     int bits_per_color_id;
-    int8_t channel_offsets[3]; // 0 = red, 1 = green and 2 = blue
+    int8_t channel_offsets[4]; // 0 = red, 1 = green, 2 = blue and 3 = alpha
 } EXRContext;
 
 /**
@@ -170,6 +170,7 @@ static int decode_frame(AVCodecContext *avctx,
     s->channel_offsets[0] = -1;
     s->channel_offsets[1] = -1;
     s->channel_offsets[2] = -1;
+    s->channel_offsets[3] = -1;
     s->bits_per_color_id = -1;
 
     if (buf_end - buf < 10) {
@@ -209,6 +210,8 @@ static int decode_frame(AVCodecContext *avctx,
                     channel_index = 1;
                 if (!strcmp(buf, "B"))
                     channel_index = 2;
+                if (!strcmp(buf, "A"))
+                    channel_index = 3;
 
                 while (bytestream_get_byte(&buf) && buf < channel_list_end)
                     continue; /* skip */
@@ -354,7 +357,10 @@ static int decode_frame(AVCodecContext *avctx,
     switch (s->bits_per_color_id) {
     case 2: // 32-bit
     case 1: // 16-bit
-        avctx->pix_fmt = PIX_FMT_RGB48;
+        if (s->channel_offsets[3] >= 0)
+            avctx->pix_fmt = PIX_FMT_RGBA64;
+        else
+            avctx->pix_fmt = PIX_FMT_RGB48;
         break;
     // 8-bit
     case 0:
@@ -390,7 +396,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     // Zero out the start if ymin is not 0
     for (y = 0; y < ymin; y++) {
-        memset(ptr, 0, avctx->width * 6);
+        memset(ptr, 0, avctx->width * 2 * av_pix_fmt_descriptors[avctx->pix_fmt].nb_components);
         ptr += stride;
     }
 
@@ -405,21 +411,27 @@ static int decode_frame(AVCodecContext *avctx,
             if (line_offset > avpkt->size - xdelta * current_channel_offset) {
                 // Line offset is probably wrong and not inside the buffer
                 av_log(avctx, AV_LOG_WARNING, "Line offset for line %d is out of reach setting it to black\n", y);
-                memset(ptr_x, 0, avctx->width * 6);
+                memset(ptr_x, 0, avctx->width * 2 * av_pix_fmt_descriptors[avctx->pix_fmt].nb_components);
             } else {
                 const uint8_t *red_channel_buffer   = avpkt->data + line_offset + xdelta * s->channel_offsets[0];
                 const uint8_t *green_channel_buffer = avpkt->data + line_offset + xdelta * s->channel_offsets[1];
                 const uint8_t *blue_channel_buffer  = avpkt->data + line_offset + xdelta * s->channel_offsets[2];
+                const uint8_t *alpha_channel_buffer = 0;
+
+                if (s->channel_offsets[3] >= 0)
+                    alpha_channel_buffer = avpkt->data + line_offset + xdelta * s->channel_offsets[3];
 
                 // Zero out the start if xmin is not 0
-                memset(ptr_x, 0, xmin * 6);
-                ptr_x += xmin * 3;
+                memset(ptr_x, 0, xmin * 2 * av_pix_fmt_descriptors[avctx->pix_fmt].nb_components);
+                ptr_x += xmin * av_pix_fmt_descriptors[avctx->pix_fmt].nb_components;
                 if (s->bits_per_color_id == 2) {
                     // 32-bit
                     for (x = 0; x < xdelta; x++) {
                         *ptr_x++ = exr_flt2uint(bytestream_get_le32(&red_channel_buffer));
                         *ptr_x++ = exr_flt2uint(bytestream_get_le32(&green_channel_buffer));
                         *ptr_x++ = exr_flt2uint(bytestream_get_le32(&blue_channel_buffer));
+                        if (alpha_channel_buffer)
+                            *ptr_x++ = exr_flt2uint(bytestream_get_le32(&alpha_channel_buffer));
                     }
                 } else {
                     // 16-bit
@@ -427,12 +439,14 @@ static int decode_frame(AVCodecContext *avctx,
                         *ptr_x++ = exr_halflt2uint(bytestream_get_le16(&red_channel_buffer));
                         *ptr_x++ = exr_halflt2uint(bytestream_get_le16(&green_channel_buffer));
                         *ptr_x++ = exr_halflt2uint(bytestream_get_le16(&blue_channel_buffer));
+                        if (alpha_channel_buffer)
+                            *ptr_x++ = exr_halflt2uint(bytestream_get_le16(&alpha_channel_buffer));
                     }
                 }
 
                 // Zero out the end if xmax+1 is not w
-                memset(ptr_x, 0, (avctx->width - (xmax + 1)) * 6);
-                ptr_x += (avctx->width - (xmax + 1)) * 3;
+                memset(ptr_x, 0, (avctx->width - (xmax + 1)) * 2 * av_pix_fmt_descriptors[avctx->pix_fmt].nb_components);
+                ptr_x += (avctx->width - (xmax + 1)) * av_pix_fmt_descriptors[avctx->pix_fmt].nb_components;
 
             }
             // Move to next line
@@ -442,7 +456,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     // Zero out the end if ymax+1 is not h
     for (y = ymax + 1; y < avctx->height; y++) {
-        memset(ptr, 0, avctx->width * 6);
+        memset(ptr, 0, avctx->width * 2 * av_pix_fmt_descriptors[avctx->pix_fmt].nb_components);
         ptr += stride;
     }
 
