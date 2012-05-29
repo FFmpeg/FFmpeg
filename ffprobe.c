@@ -252,14 +252,14 @@ static inline void writer_print_footer(WriterContext *wctx)
 static inline void writer_print_chapter_header(WriterContext *wctx,
                                                const char *chapter)
 {
-    if (wctx->writer->print_chapter_header)
-        wctx->writer->print_chapter_header(wctx, chapter);
     wctx->nb_section = 0;
-
     wctx->multiple_sections = !strcmp(chapter, "packets") || !strcmp(chapter, "frames" ) ||
                               !strcmp(chapter, "packets_and_frames") ||
                               !strcmp(chapter, "streams") || !strcmp(chapter, "library_versions");
     wctx->is_fmt_chapter = !strcmp(chapter, "format");
+
+    if (wctx->writer->print_chapter_header)
+        wctx->writer->print_chapter_header(wctx, chapter);
 }
 
 static inline void writer_print_chapter_footer(WriterContext *wctx,
