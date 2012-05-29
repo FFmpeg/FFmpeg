@@ -19,6 +19,8 @@
 #ifndef AVFILTER_VIDEO_H
 #define AVFILTER_VIDEO_H
 
+#include "avfilter.h"
+
 AVFilterBufferRef *ff_default_get_video_buffer(AVFilterLink *link,
                                                int perms, int w, int h);
 AVFilterBufferRef *ff_null_get_video_buffer(AVFilterLink *link, int perms, int w, int h);
