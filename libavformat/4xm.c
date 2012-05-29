@@ -200,6 +200,11 @@ static int fourxm_read_header(AVFormatContext *s)
                 ret = AVERROR_INVALIDDATA;
                 goto fail;
             }
+            if(!fourxm->tracks[current_track].adpcm && fourxm->tracks[current_track].bits<8){
+                av_log(s, AV_LOG_ERROR, "bits unspecified for non ADPCM\n");
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
             i += 8 + size;
 
             /* allocate a new AVStream */
