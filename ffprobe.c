@@ -508,7 +508,7 @@ static const char *c_escape_str(AVBPrint *dst, const char *src, const char sep, 
     const char *p;
 
     for (p = src; *p; p++) {
-        switch (*src) {
+        switch (*p) {
         case '\b': av_bprintf(dst, "%s", "\\b");  break;
         case '\f': av_bprintf(dst, "%s", "\\f");  break;
         case '\n': av_bprintf(dst, "%s", "\\n");  break;
