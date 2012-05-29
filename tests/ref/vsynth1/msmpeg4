@@ -1,4 +1,0 @@
-4b08952b0afceb17ee3db31b67f6b778 *./tests/data/vsynth1/msmpeg4.avi
-624718 ./tests/data/vsynth1/msmpeg4.avi
-5ca72c39e3fc5df8e62f223c869589f5 *./tests/data/msmpeg4.vsynth1.out.yuv
-stddev:    7.98 PSNR: 30.09 MAXDIFF:  104 bytes:  7603200/  7603200

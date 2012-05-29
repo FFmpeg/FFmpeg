@@ -54,6 +54,7 @@ typedef struct {
     int chunked_post;
     int end_chunked_post;   /**< A flag which indicates if the end of chunked encoding has been sent. */
     int end_header;         /**< A flag which indicates we have finished to read POST reply. */
+    int multiple_requests;  /**< A flag which indicates if we use persistent connections. */
 } HTTPContext;
 
 #define OFFSET(x) offsetof(HTTPContext, x)
@@ -64,6 +65,7 @@ static const AVOption options[] = {
 {"chunked_post", "use chunked transfer-encoding for posts", OFFSET(chunked_post), AV_OPT_TYPE_INT, {.dbl = 1}, 0, 1, E },
 {"headers", "custom HTTP headers, can override built in default headers", OFFSET(headers), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D|E },
 {"user-agent", "override User-Agent header", OFFSET(user_agent), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC},
+{"multiple_requests", "use persistent connections", OFFSET(multiple_requests), AV_OPT_TYPE_INT, {.dbl = 0}, 0, 1, D|E },
 {NULL}
 };
 #define HTTP_CLASS(flavor)\
@@ -140,12 +142,16 @@ static int http_open_cnx(URLContext *h)
     }
 
     ff_url_join(buf, sizeof(buf), lower_proto, NULL, hostname, port, NULL);
-    err = ffurl_open(&hd, buf, AVIO_FLAG_READ_WRITE,
-                     &h->interrupt_callback, NULL);
-    if (err < 0)
-        goto fail;
 
-    s->hd = hd;
+    if (!s->hd) {
+        err = ffurl_open(&hd, buf, AVIO_FLAG_READ_WRITE,
+                         &h->interrupt_callback, NULL);
+        if (err < 0)
+            goto fail;
+
+        s->hd = hd;
+    }
+
     cur_auth_type = s->auth_state.auth_type;
     cur_proxy_auth_type = s->auth_state.auth_type;
     if (http_connect(h, path, local_path, hoststr, auth, proxyauth, &location_changed) < 0)
@@ -186,6 +192,16 @@ static int http_open_cnx(URLContext *h)
         ffurl_close(hd);
     s->hd = NULL;
     return AVERROR(EIO);
+}
+
+int ff_http_do_new_request(URLContext *h, const char *uri)
+{
+    HTTPContext *s = h->priv_data;
+
+    s->off = 0;
+    av_strlcpy(s->location, uri, sizeof(s->location));
+
+    return http_open_cnx(h);
 }
 
 static int http_open(URLContext *h, const char *uri, int flags)
@@ -386,9 +402,17 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     if (!has_header(s->headers, "\r\nRange: ") && !post)
         len += av_strlcatf(headers + len, sizeof(headers) - len,
                            "Range: bytes=%"PRId64"-\r\n", s->off);
-    if (!has_header(s->headers, "\r\nConnection: "))
-        len += av_strlcpy(headers + len, "Connection: close\r\n",
-                          sizeof(headers)-len);
+
+    if (!has_header(s->headers, "\r\nConnection: ")) {
+        if (s->multiple_requests) {
+            len += av_strlcpy(headers + len, "Connection: keep-alive\r\n",
+                              sizeof(headers) - len);
+        } else {
+            len += av_strlcpy(headers + len, "Connection: close\r\n",
+                              sizeof(headers) - len);
+        }
+    }
+
     if (!has_header(s->headers, "\r\nHost: "))
         len += av_strlcatf(headers + len, sizeof(headers) - len,
                            "Host: %s\r\n", hoststr);
@@ -424,6 +448,7 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     s->filesize = -1;
     s->willclose = 0;
     s->end_chunked_post = 0;
+    s->end_header = 0;
     if (post) {
         /* Pretend that it did work. We didn't read any header yet, since
          * we've still to send the POST data, but the code calling this

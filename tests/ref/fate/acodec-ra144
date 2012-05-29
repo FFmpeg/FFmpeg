@@ -1,0 +1,4 @@
+d6740bee5e20fa665e6c94298125b834 *tests/data/fate/acodec-ra144.rm
+53227 tests/data/fate/acodec-ra144.rm
+16d1a0d6cae06cf8a4db009d0fe7a952 *tests/data/fate/acodec-ra144.out.wav
+stddev: 5696.26 PSNR: 21.22 MAXDIFF:44956 bytes:  1058400/  1058560

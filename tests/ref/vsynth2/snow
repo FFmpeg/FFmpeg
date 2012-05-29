@@ -1,4 +1,0 @@
-af651d8ef0a66257ac8b2ef8b229f27b *./tests/data/vsynth2/snow.avi
-57700 ./tests/data/vsynth2/snow.avi
-8890189af71a0dd3447c4e8424c9a76b *./tests/data/snow.vsynth2.out.yuv
-stddev:   10.47 PSNR: 27.72 MAXDIFF:  119 bytes:  7603200/  7603200

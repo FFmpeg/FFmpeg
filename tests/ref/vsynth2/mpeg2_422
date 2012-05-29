@@ -1,4 +1,0 @@
-2c8e33c2d2efab86fc16a195f6877682 *./tests/data/vsynth2/mpeg2_422.mpg
-356124 ./tests/data/vsynth2/mpeg2_422.mpg
-de44597c6c470f3e7019b31245a3ff69 *./tests/data/mpeg2_422.vsynth2.out.yuv
-stddev:   54.55 PSNR: 13.39 MAXDIFF:  201 bytes: 10137600/  7603200

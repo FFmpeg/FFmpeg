@@ -1,0 +1,4 @@
+4654e7af0d4aa58c3db1eb145e278038 *tests/data/fate/vsynth1-svq1.mov
+1334223 tests/data/fate/vsynth1-svq1.mov
+9cc35c54b2c77d36bd7e308b393c1f81 *tests/data/fate/vsynth1-svq1.out.rawvideo
+stddev:    9.58 PSNR: 28.50 MAXDIFF:  210 bytes:  7603200/  7603200

@@ -1,4 +1,0 @@
-cf8b7b0e539bab3169c234ca63d71dd8 *./tests/data/vsynth1/roqav.roq
-101671 ./tests/data/vsynth1/roqav.roq
-0ad983c291b1ed373645c5b12a108c61 *./tests/data/roq.vsynth1.out.yuv
-stddev:    7.74 PSNR: 30.35 MAXDIFF:   89 bytes:   760320/  7603200

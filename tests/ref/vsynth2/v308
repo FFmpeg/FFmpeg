@@ -1,4 +1,0 @@
-214671673e6c82bad8190d0329f01fdc *./tests/data/vsynth2/v308.avi
-15213260 ./tests/data/vsynth2/v308.avi
-d43cb310c130c69214332d74f6ee5f9a *./tests/data/v308.vsynth2.out.yuv
-stddev:    0.41 PSNR: 55.80 MAXDIFF:    7 bytes:  7603200/  7603200

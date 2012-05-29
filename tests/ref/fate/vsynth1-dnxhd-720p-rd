@@ -1,0 +1,4 @@
+1dc6e95925c4f3a230848ec17c02abed *tests/data/fate/vsynth1-dnxhd-720p-rd.dnxhd
+2293760 tests/data/fate/vsynth1-dnxhd-720p-rd.dnxhd
+02972d2aec120ec1577ec9053d68ae0f *tests/data/fate/vsynth1-dnxhd-720p-rd.out.rawvideo
+stddev:    6.26 PSNR: 32.19 MAXDIFF:   65 bytes:  7603200/   760320

@@ -84,13 +84,12 @@
 %macro TRANSPOSE4x4PS 5
     SBUTTERFLYPS %1, %2, %5
     SBUTTERFLYPS %3, %4, %5
-    movaps  m%5, m%1
-    movlhps m%1, m%3
-    movhlps m%3, m%5
-    movaps  m%5, m%2
-    movlhps m%2, m%4
-    movhlps m%4, m%5
-    SWAP %2, %3
+    movlhps m%5, m%1, m%3
+    movhlps m%3, m%1
+    SWAP %5, %1
+    movlhps m%5, m%2, m%4
+    movhlps m%4, m%2
+    SWAP %5, %2, %3
 %endmacro
 
 %macro TRANSPOSE8x8W 9-11

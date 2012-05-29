@@ -1,4 +1,0 @@
-fd10ee54bd298fc29fd6fc70baa71414 *./tests/data/acodec/pcm_mulaw.wav
-529258 ./tests/data/acodec/pcm_mulaw.wav
-7ae8c3fc804bd574006fd547fe28980c *./tests/data/pcm_mulaw.acodec.out.wav
-stddev:  103.38 PSNR: 56.04 MAXDIFF:  644 bytes:  1058400/  1058400

@@ -1,4 +1,0 @@
-bbcadeceba295e1dad148aea1e57c370 *./tests/data/vsynth1/h263p.avi
-2328348 ./tests/data/vsynth1/h263p.avi
-9554cda00c3487ab3ffda2c3ea22fa2f *./tests/data/h263p.vsynth1.out.yuv
-stddev:    2.06 PSNR: 41.83 MAXDIFF:   20 bytes:  7603200/  7603200

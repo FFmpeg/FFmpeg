@@ -1,4 +1,0 @@
-3d24f1d320c4ead1efbf3c952a902379 *./tests/data/vsynth2/yuv4.avi
-7610060 ./tests/data/vsynth2/yuv4.avi
-dde5895817ad9d219f79a52d0bdfb001 *./tests/data/yuv4.vsynth2.out.yuv
-stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  7603200/  7603200

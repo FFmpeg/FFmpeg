@@ -1,4 +1,0 @@
-f8fe98b7f9bb66857c81dbca409a9037 *./tests/data/vsynth1/prores_kostya.mov
-3858901 ./tests/data/vsynth1/prores_kostya.mov
-0a4153637d0cc0a88a8bcbf04cfaf8c6 *./tests/data/prores_kostya.vsynth1.out.yuv
-stddev:    3.17 PSNR: 38.09 MAXDIFF:   39 bytes:  7603200/  7603200

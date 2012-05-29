@@ -1,4 +1,0 @@
-c02c96e37b321f2c978968e3a102c669 *./tests/data/acodec/pcm_s32be.mov
-2117449 ./tests/data/acodec/pcm_s32be.mov
-64151e4bcc2b717aa5a8454d424d6a1f *./tests/data/pcm_s32be.acodec.out.wav
-stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  1058400/  1058400

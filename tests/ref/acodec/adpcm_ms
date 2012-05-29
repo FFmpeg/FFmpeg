@@ -1,4 +1,0 @@
-a407b87daeef5b25dfb6c5b3f519e9c1 *./tests/data/acodec/adpcm_ms.wav
-268378 ./tests/data/acodec/adpcm_ms.wav
-22863fb278c4e0ebe9c34cb15db5dd6b *./tests/data/adpcm_ms.acodec.out.wav
-stddev: 1050.01 PSNR: 35.91 MAXDIFF:29806 bytes:  1060576/  1058400

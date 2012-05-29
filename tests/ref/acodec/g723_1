@@ -1,4 +1,0 @@
-d34f35011a3d596eb359cc62c92fa737 *./tests/data/acodec/g723_1.tco
-4800 ./tests/data/acodec/g723_1.tco
-bc1807ce2a90997c09df66ced6900ebc *./tests/data/g723_1.acodec.out.wav
-stddev: 8507.27 PSNR: 17.73 MAXDIFF:26473 bytes:    96000/  1058400

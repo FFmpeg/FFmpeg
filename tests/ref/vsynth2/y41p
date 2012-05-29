@@ -1,4 +1,0 @@
-8e0139963e79180a0fc1c154e36cebe5 *./tests/data/vsynth2/y41p.avi
-7610060 ./tests/data/vsynth2/y41p.avi
-0e0996e1d8b62f02af91fabb3c0a6f76 *./tests/data/y41p.vsynth2.out.yuv
-stddev:    9.87 PSNR: 28.24 MAXDIFF:   61 bytes:  7603200/  7603200

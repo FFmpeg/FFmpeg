@@ -1,4 +1,0 @@
-e70658b8b97eb4c7e63b2081c3a602de *./tests/data/vsynth2/msvideo1.avi
-1259308 ./tests/data/vsynth2/msvideo1.avi
-cd83ffcbc73573044e3aead3094229e5 *./tests/data/msvideo1.vsynth2.out.yuv
-stddev:    7.42 PSNR: 30.72 MAXDIFF:  123 bytes:  7603200/  7603200

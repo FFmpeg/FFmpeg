@@ -1,4 +1,0 @@
-3f7c7bb5eba0006feb727badcad2b9bd *./tests/data/vsynth2/avui.mov
-42624903 ./tests/data/vsynth2/avui.mov
-dde5895817ad9d219f79a52d0bdfb001 *./tests/data/avui.vsynth2.out.yuv
-stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  7603200/  7603200

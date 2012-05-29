@@ -1,0 +1,4 @@
+f6eb0a205350bbd7fb1028a01c7ae8aa *tests/data/fate/acodec-mp2.mp2
+96130 tests/data/fate/acodec-mp2.mp2
+5a669ca7321adc6ab66a3eade4035909 *tests/data/fate/acodec-mp2.out.wav
+stddev: 4384.33 PSNR: 23.49 MAXDIFF:52631 bytes:  1058400/  1057916

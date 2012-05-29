@@ -1,4 +1,0 @@
-56b75c3a6dacedcf2ce7b0586aa33594 *./tests/data/acodec/adpcm_ima.wav
-267324 ./tests/data/acodec/adpcm_ima.wav
-ddddfa47302da540abf19224202bef57 *./tests/data/adpcm_ima_wav.acodec.out.wav
-stddev:  903.51 PSNR: 37.21 MAXDIFF:34026 bytes:  1061748/  1058400

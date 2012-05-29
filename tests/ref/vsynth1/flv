@@ -1,4 +1,0 @@
-d6a80659cedee7698aefe9c4a8285fa4 *./tests/data/vsynth1/flv.flv
-636269 ./tests/data/vsynth1/flv.flv
-5ab46d8dd01dbb1d63df2a84858a4b05 *./tests/data/flv.vsynth1.out.yuv
-stddev:    8.02 PSNR: 30.04 MAXDIFF:  105 bytes:  7603200/  7603200

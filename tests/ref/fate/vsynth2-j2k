@@ -1,0 +1,4 @@
+b30dc1851c0fb37726d977ec1d5ad527 *tests/data/fate/vsynth2-j2k.avi
+1151156 tests/data/fate/vsynth2-j2k.avi
+ec5218eec33a021945c28c72093382a5 *tests/data/fate/vsynth2-j2k.out.rawvideo
+stddev:    4.54 PSNR: 34.99 MAXDIFF:   61 bytes:  7603200/  7603200

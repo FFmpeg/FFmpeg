@@ -75,7 +75,7 @@ FATE_AAC_ENCODE += fate-aac-aref-encode
 fate-aac-aref-encode: $(AREF)
 fate-aac-aref-encode: CMD = enc_dec_pcm adts wav s16le $(REF) -strict -2 -c:a aac -b:a 512k
 fate-aac-aref-encode: CMP = stddev
-fate-aac-aref-encode: REF = ./tests/data/acodec.ref.wav
+fate-aac-aref-encode: REF = ./tests/data/asynth-44100-2.wav
 fate-aac-aref-encode: CMP_SHIFT = -4096
 fate-aac-aref-encode: CMP_TARGET = 1862
 fate-aac-aref-encode: SIZE_TOLERANCE = 2464

@@ -1,4 +1,0 @@
-539c26ba470de4d72279855fcf61f5a2 *./tests/data/vsynth1/amv.avi
-1365534 ./tests/data/vsynth1/amv.avi
-27bbe70dd002ec67af0bb219fbae626a *./tests/data/amv.vsynth1.out.yuv
-stddev:   12.46 PSNR: 26.21 MAXDIFF:   97 bytes:  7603200/  7603200

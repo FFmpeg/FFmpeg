@@ -1,0 +1,4 @@
+fe4983e551b48dc555e1aeaf628f649f *tests/data/fate/vsynth1-zlib.avi
+12108644 tests/data/fate/vsynth1-zlib.avi
+93695a27c24a61105076ca7b1f010bbd *tests/data/fate/vsynth1-zlib.out.rawvideo
+stddev:    3.42 PSNR: 37.44 MAXDIFF:   48 bytes:  7603200/  7603200

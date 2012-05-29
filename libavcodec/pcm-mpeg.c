@@ -312,7 +312,7 @@ static int pcm_bluray_decode_frame(AVCodecContext *avctx, void *data,
     if (avctx->debug & FF_DEBUG_BITSTREAM)
         av_dlog(avctx, "pcm_bluray_decode_frame: decoded %d -> %d bytes\n",
                 retval, buf_size);
-    return retval;
+    return retval + 4;
 }
 
 AVCodec ff_pcm_bluray_decoder = {

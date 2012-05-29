@@ -77,6 +77,6 @@ AVInputFormat ff_g723_1_demuxer = {
     .long_name   = NULL_IF_CONFIG_SMALL("G.723.1 format"),
     .read_header = g723_1_init,
     .read_packet = g723_1_read_packet,
-    .extensions = "tco,rco",
+    .extensions = "tco,rco,g723_1",
     .flags = AVFMT_GENERIC_INDEX
 };

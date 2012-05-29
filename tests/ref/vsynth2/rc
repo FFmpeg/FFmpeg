@@ -1,4 +1,0 @@
-c25ede9e268b834a09a63f5136cd1b95 *./tests/data/vsynth2/mpeg4-rc.avi
-226332 ./tests/data/vsynth2/mpeg4-rc.avi
-2b34e606af895b62a250de98749a19b0 *./tests/data/rc.vsynth2.out.yuv
-stddev:    4.23 PSNR: 35.60 MAXDIFF:   85 bytes:  7603200/  7603200

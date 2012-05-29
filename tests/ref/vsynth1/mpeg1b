@@ -1,4 +1,0 @@
-777639666b449ab0a7ef260511e40532 *./tests/data/vsynth1/mpeg1b.mpg
-1030337 ./tests/data/vsynth1/mpeg1b.mpg
-91a7fce732b34748e7bf753ebabe2483 *./tests/data/mpeg1b.vsynth1.out.yuv
-stddev:    6.30 PSNR: 32.13 MAXDIFF:   75 bytes:  7603200/  7603200

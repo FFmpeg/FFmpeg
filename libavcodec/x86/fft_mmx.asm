@@ -442,7 +442,7 @@ fft16_sse:
 
 %macro FFT48_3DN 0
 align 16
-fft4_ %+ cpuname:
+fft4 %+ SUFFIX:
     T2_3DN   m0, m1, Z(0), Z(1)
     mova     m2, Z(2)
     mova     m3, Z(3)
@@ -456,7 +456,7 @@ fft4_ %+ cpuname:
     ret
 
 align 16
-fft8_ %+ cpuname:
+fft8 %+ SUFFIX:
     T2_3DN   m0, m1, Z(0), Z(1)
     mova     m2, Z(2)
     mova     m3, Z(3)
@@ -593,12 +593,15 @@ DECL_PASS pass_interleave_3dnow, PASS_BIG 0
     call r2
 %endmacro ; FFT_DISPATCH
 
-%macro DECL_FFT 1-2 ; nbits, cpu, suffix
-%xdefine cpusuffix _ %+ cpuname
-%xdefine fullsuffix %2_ %+ cpuname
-%xdefine list_of_fft fft4 %+ cpusuffix SECTION_REL, fft8 %+ cpusuffix SECTION_REL
+%macro DECL_FFT 1-2 ; nbits, suffix
+%ifidn %0, 1
+%xdefine fullsuffix SUFFIX
+%else
+%xdefine fullsuffix %2 %+ SUFFIX
+%endif
+%xdefine list_of_fft fft4 %+ SUFFIX SECTION_REL, fft8 %+ SUFFIX SECTION_REL
 %if %1>=5
-%xdefine list_of_fft list_of_fft, fft16 %+ cpusuffix SECTION_REL
+%xdefine list_of_fft list_of_fft, fft16 %+ SUFFIX SECTION_REL
 %endif
 %if %1>=6
 %xdefine list_of_fft list_of_fft, fft32 %+ fullsuffix SECTION_REL
@@ -612,11 +615,11 @@ DECL_PASS pass_interleave_3dnow, PASS_BIG 0
 
 align 16
 fft %+ n %+ fullsuffix:
-    call fft %+ n2 %+ cpusuffix
+    call fft %+ n2 %+ SUFFIX
     add r0, n*4 - (n&(-2<<%1))
-    call fft %+ n4 %+ cpusuffix
+    call fft %+ n4 %+ SUFFIX
     add r0, n*2 - (n2&(-2<<%1))
-    call fft %+ n4 %+ cpusuffix
+    call fft %+ n4 %+ SUFFIX
     sub r0, n*6 + (n2&(-2<<%1))
     lea r1, [cos_ %+ n]
     mov r2d, n4/2
@@ -825,7 +828,7 @@ cglobal imdct_half, 3,12,8; FFTContext *s, FFTSample *output, const FFTSample *i
     mov  r0, r1
     mov  r1d, [r5+FFTContext.nbits]
 
-    FFT_DISPATCH _ %+ cpuname, r1
+    FFT_DISPATCH SUFFIX, r1
 
     mov  r0d, [r5+FFTContext.mdctsize]
     add  r6, r0
