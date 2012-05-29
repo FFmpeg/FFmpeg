@@ -25,11 +25,21 @@
 #include "libavcodec/avcodec.h"
 #include "libavcodec/mpeg4audio.h"
 #include "avformat.h"
-#include "adts.h"
+
+#define ADTS_HEADER_SIZE 7
+
+typedef struct {
+    int write_adts;
+    int objecttype;
+    int sample_rate_index;
+    int channel_conf;
+    int pce_size;
+    uint8_t pce_data[MAX_PCE_SIZE];
+} ADTSContext;
 
 #define ADTS_MAX_FRAME_BYTES ((1 << 13) - 1)
 
-int ff_adts_decode_extradata(AVFormatContext *s, ADTSContext *adts, uint8_t *buf, int size)
+static int adts_decode_extradata(AVFormatContext *s, ADTSContext *adts, uint8_t *buf, int size)
 {
     GetBitContext gb;
     PutBitContext pb;
@@ -84,14 +94,14 @@ static int adts_write_header(AVFormatContext *s)
     AVCodecContext *avc = s->streams[0]->codec;
 
     if (avc->extradata_size > 0 &&
-            ff_adts_decode_extradata(s, adts, avc->extradata, avc->extradata_size) < 0)
+            adts_decode_extradata(s, adts, avc->extradata, avc->extradata_size) < 0)
         return -1;
 
     return 0;
 }
 
-int ff_adts_write_frame_header(ADTSContext *ctx,
-                               uint8_t *buf, int size, int pce_size)
+static int adts_write_frame_header(ADTSContext *ctx,
+                                   uint8_t *buf, int size, int pce_size)
 {
     PutBitContext pb;
 
@@ -137,7 +147,7 @@ static int adts_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (!pkt->size)
         return 0;
     if (adts->write_adts) {
-        int err = ff_adts_write_frame_header(adts, buf, pkt->size,
+        int err = adts_write_frame_header(adts, buf, pkt->size,
                                              adts->pce_size);
         if (err < 0)
             return err;
