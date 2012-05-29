@@ -1,6 +1,13 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+
+version 0.8.3:
+
+- Several bugs and crashes have been fixed in the following codecs: PNG,
+  Electronic Arts TQI, H.264 (CVE-2012-0851) and H.263 (CVE-2011-3937)
+
+
 version 0.8.2:
 
 - Several bugs and crashes have been fixed in the following codecs: AAC,
