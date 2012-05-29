@@ -1,3 +1,10 @@
+fate-vsynth1-%: SRC = tests/data/vsynth1.yuv
+fate-vsynth2-%: SRC = tests/data/vsynth2.yuv
+fate-vsynth%: CODEC = $(word 3, $(subst -, ,$(@)))
+fate-vsynth%: FMT = avi
+fate-vsynth%: CMD = enc_dec "rawvideo -s 352x288 -pix_fmt yuv420p" $(SRC) $(FMT) "-c $(CODEC) $(ENCOPTS)" rawvideo "-s 352x288 -pix_fmt yuv420p $(DECOPTS)" -keep
+fate-vsynth%: CMP_UNIT = 1
+
 FATE_VCODEC += asv1
 fate-vsynth%-asv1:               ENCOPTS = -qscale 10
 
@@ -222,16 +229,6 @@ fate-vsynth%-wmv2:               ENCOPTS = -qscale 10
 
 FATE_VCODEC += yuv
 fate-vsynth%-yuv:                CODEC = rawvideo
-
-fate-vsynth1-%: CODEC = $(word 3, $(subst -, ,$(@)))
-fate-vsynth1-%: FMT   = avi
-fate-vsynth2-%: CODEC = $(word 3, $(subst -, ,$(@)))
-fate-vsynth2-%: FMT   = avi
-
-fate-vsynth1-%: SRC = tests/data/vsynth1.yuv
-fate-vsynth2-%: SRC = tests/data/vsynth2.yuv
-fate-vsynth%: CMD = enc_dec "rawvideo -s 352x288 -pix_fmt yuv420p" $(SRC) $(FMT) "-c $(CODEC) $(ENCOPTS)" rawvideo "-s 352x288 -pix_fmt yuv420p $(DECOPTS)" -keep
-fate-vsynth%: CMP_UNIT = 1
 
 FATE_VSYNTH1 = $(FATE_VCODEC:%=fate-vsynth1-%)
 FATE_VSYNTH2 = $(FATE_VCODEC:%=fate-vsynth2-%)

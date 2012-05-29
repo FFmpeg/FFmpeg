@@ -1,3 +1,8 @@
+fate-acodec-%: CODEC = $(@:fate-acodec-%=%)
+fate-acodec-%: SRC = tests/data/asynth-44100-2.wav
+fate-acodec-%: CMD = enc_dec wav $(SRC) $(FMT) "-b 128k -c $(CODEC)" wav "-c pcm_s16le" -keep
+fate-acodec-%: CMP_UNIT = 2
+
 FATE_ACODEC_PCM = alaw mulaw                                            \
                   s8 u8                                                 \
                   s16be s16le                                           \
@@ -40,10 +45,6 @@ fate-acodec-flac: FMT = flac
 fate-acodec-flac: CODEC = flac -compression_level 2
 
 $(FATE_ACODEC): tests/data/asynth-44100-2.wav
-fate-acodec-%: CODEC = $(@:fate-acodec-%=%)
-fate-acodec-%: SRC = tests/data/asynth-44100-2.wav
-fate-acodec-%: CMD = enc_dec wav $(SRC) $(FMT) "-b 128k -c $(CODEC)" wav "-c pcm_s16le" -keep
-fate-acodec-%: CMP_UNIT = 2
 
 FATE_AVCONV += $(FATE_ACODEC)
 fate-acodec: $(FATE_ACODEC)
