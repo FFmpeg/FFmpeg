@@ -278,6 +278,9 @@ static int ape_read_header(AVFormatContext * s, AVFormatParameters * ap)
             return AVERROR(ENOMEM);
         for (i = 0; i < ape->seektablelength / sizeof(uint32_t); i++)
             ape->seektable[i] = avio_rl32(pb);
+    }else{
+        av_log(s, AV_LOG_ERROR, "Missing seektable\n");
+        return -1;
     }
 
     ape->frames[0].pos     = ape->firstframe;
