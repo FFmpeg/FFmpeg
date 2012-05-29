@@ -933,6 +933,16 @@ int main(int argc, char **argv)
 #endif
 
     show_banner();
+
+    octx.print_header = ini_print_header;
+    octx.print_footer = ini_print_footer;
+
+    octx.print_array_header = ini_print_array_header;
+    octx.print_object_header = ini_print_object_header;
+
+    octx.print_integer = ini_print_integer;
+    octx.print_string = ini_print_string;
+
     parse_options(NULL, argc, argv, options, opt_input_file);
 
     if (!input_filename) {
@@ -948,15 +958,6 @@ int main(int argc, char **argv)
                                  probe_buf_write, NULL);
     if (!probe_out)
         exit(1);
-
-    octx.print_header = ini_print_header;
-    octx.print_footer = ini_print_footer;
-
-    octx.print_array_header = ini_print_array_header;
-    octx.print_object_header = ini_print_object_header;
-
-    octx.print_integer = ini_print_integer;
-    octx.print_string = ini_print_string;
 
     probe_header();
     ret = probe_file(input_filename);
