@@ -177,10 +177,14 @@ struct WriterContext {
     void *priv;                     ///< private data for use by the filter
     unsigned int nb_item;           ///< number of the item printed in the given section, starting at 0
     unsigned int nb_section;        ///< number of the section printed in the given section sequence, starting at 0
+    unsigned int nb_section_packet; ///< number of the packet section in case we are in "packets_and_frames" section
+    unsigned int nb_section_frame;  ///< number of the frame  section in case we are in "packets_and_frames" section
+    unsigned int nb_section_packet_frame; ///< nb_section_packet or nb_section_frame according if is_packets_and_frames
     unsigned int nb_chapter;        ///< number of the chapter, starting at 0
 
     int multiple_sections;          ///< tells if the current chapter can contain multiple sections
     int is_fmt_chapter;             ///< tells if the current chapter is "format", required by the print_format_entry option
+    int is_packets_and_frames;      ///< tells if the current section is "packets_and_frames"
 };
 
 static const char *writer_get_name(void *p)
@@ -252,9 +256,12 @@ static inline void writer_print_footer(WriterContext *wctx)
 static inline void writer_print_chapter_header(WriterContext *wctx,
                                                const char *chapter)
 {
-    wctx->nb_section = 0;
+    wctx->nb_section =
+    wctx->nb_section_packet = wctx->nb_section_frame =
+    wctx->nb_section_packet_frame = 0;
+    wctx->is_packets_and_frames = !strcmp(chapter, "packets_and_frames");
     wctx->multiple_sections = !strcmp(chapter, "packets") || !strcmp(chapter, "frames" ) ||
-                              !strcmp(chapter, "packets_and_frames") ||
+                              wctx->is_packets_and_frames ||
                               !strcmp(chapter, "streams") || !strcmp(chapter, "library_versions");
     wctx->is_fmt_chapter = !strcmp(chapter, "format");
 
@@ -273,6 +280,9 @@ static inline void writer_print_chapter_footer(WriterContext *wctx,
 static inline void writer_print_section_header(WriterContext *wctx,
                                                const char *section)
 {
+    if (wctx->is_packets_and_frames)
+        wctx->nb_section_packet_frame = !strcmp(section, "packet") ? wctx->nb_section_packet
+                                                                   : wctx->nb_section_frame;
     if (wctx->writer->print_section_header)
         wctx->writer->print_section_header(wctx, section);
     wctx->nb_item = 0;
@@ -283,6 +293,10 @@ static inline void writer_print_section_footer(WriterContext *wctx,
 {
     if (wctx->writer->print_section_footer)
         wctx->writer->print_section_footer(wctx, section);
+    if (wctx->is_packets_and_frames) {
+        if (!strcmp(section, "packet")) wctx->nb_section_packet++;
+        else                            wctx->nb_section_frame++;
+    }
     wctx->nb_section++;
 }
 
@@ -718,9 +732,6 @@ static const Writer csv_writer = {
 typedef struct {
     const AVClass *class;
     AVBPrint chapter_name, section_name;
-    int print_packets_and_frames;
-    int nb_frame;
-    int nb_packet;
     int hierarchical;
 } INIContext;
 
@@ -751,7 +762,6 @@ static av_cold int ini_init(WriterContext *wctx, const char *args, void *opaque)
 
     av_bprint_init(&ini->chapter_name, 1, AV_BPRINT_SIZE_UNLIMITED);
     av_bprint_init(&ini->section_name, 1, AV_BPRINT_SIZE_UNLIMITED);
-    ini->nb_frame = ini->nb_packet = 0;
 
     ini->class = &ini_class;
     av_opt_set_defaults(ini);
@@ -812,13 +822,13 @@ static void ini_print_chapter_header(WriterContext *wctx, const char *chapter)
 
     if (wctx->nb_chapter)
         printf("\n");
-    ini->print_packets_and_frames = !strcmp("packets_and_frames", chapter);
 }
 
 static void ini_print_section_header(WriterContext *wctx, const char *section)
 {
     INIContext *ini = wctx->priv;
-    int n;
+    int n = wctx->is_packets_and_frames ? wctx->nb_section_packet_frame
+                                        : wctx->nb_section;
     if (wctx->nb_section)
         printf("\n");
     av_bprint_clear(&ini->section_name);
@@ -827,10 +837,6 @@ static void ini_print_section_header(WriterContext *wctx, const char *section)
         av_bprintf(&ini->section_name, "%s.", ini->chapter_name.str);
     av_bprintf(&ini->section_name, "%s", section);
 
-    if (ini->print_packets_and_frames)
-        n = !strcmp(section, "packet") ? ini->nb_packet++ : ini->nb_frame++;
-    else
-        n = wctx->nb_section;
     if (wctx->multiple_sections)
         av_bprintf(&ini->section_name, ".%d", n);
     printf("[%s]\n", ini->section_name.str);
@@ -885,7 +891,6 @@ static const Writer ini_writer = {
 
 typedef struct {
     const AVClass *class;
-    int print_packets_and_frames;
     int indent_level;
     int compact;
     const char *item_sep, *item_start_end;
@@ -980,7 +985,6 @@ static void json_print_chapter_header(WriterContext *wctx, const char *chapter)
         av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
         printf("\"%s\": [\n", json_escape_str(&buf, chapter, wctx));
         av_bprint_finalize(&buf, NULL);
-        json->print_packets_and_frames = !strcmp(chapter, "packets_and_frames");
         json->indent_level++;
     }
 }
@@ -1009,7 +1013,7 @@ static void json_print_section_header(WriterContext *wctx, const char *section)
     printf("{%s", json->item_start_end);
     json->indent_level++;
     /* this is required so the parser can distinguish between packets and frames */
-    if (json->print_packets_and_frames) {
+    if (wctx->is_packets_and_frames) {
         if (!json->compact)
             JSON_INDENT();
         printf("\"type\": \"%s\"%s", section, json->item_sep);
