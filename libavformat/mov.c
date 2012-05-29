@@ -1874,7 +1874,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
             sc->empty_duration = av_rescale(sc->empty_duration, sc->time_scale, mov->time_scale);
         sc->time_offset = sc->start_time - sc->empty_duration;
         current_dts = -sc->time_offset;
-        if (sc->ctts_data && sc->stts_data &&
+        if (sc->ctts_count>0 && sc->stts_count>0 &&
             sc->ctts_data[0].duration / FFMAX(sc->stts_data[0].duration, 1) > 16) {
             /* more than 16 frames delay, dts are likely wrong
                this happens with files created by iMovie */
