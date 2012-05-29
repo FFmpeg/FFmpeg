@@ -1904,6 +1904,7 @@ static const OptionDef options[] = {
       "prettify the format of displayed values, make it more human readable" },
     { "print_format", OPT_STRING | HAS_ARG, {(void*)&print_format},
       "set the output printing format (available formats are: default, compact, csv, ini, json, xml)", "format" },
+    { "of", OPT_STRING | HAS_ARG, {(void*)&print_format}, "alias for -print_format", "format" },
     { "show_error",   OPT_BOOL, {(void*)&do_show_error} ,  "show probing error" },
     { "show_format",  OPT_BOOL, {(void*)&do_show_format} , "show format/container info" },
     { "show_frames",  OPT_BOOL, {(void*)&do_show_frames} , "show frames info" },
