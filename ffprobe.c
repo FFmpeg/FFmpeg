@@ -1114,7 +1114,6 @@ static const Writer json_writer = {
 typedef struct {
     const AVClass *class;
     int within_tag;
-    int multiple_entries; ///< tells if the given chapter requires multiple entries
     int indent_level;
     int fully_qualified;
     int xsd_strict;
@@ -1229,11 +1228,7 @@ static void xml_print_chapter_header(WriterContext *wctx, const char *chapter)
 
     if (wctx->nb_chapter)
         printf("\n");
-    xml->multiple_entries = !strcmp(chapter, "packets") || !strcmp(chapter, "frames") ||
-                            !strcmp(chapter, "packets_and_frames") ||
-                            !strcmp(chapter, "streams") || !strcmp(chapter, "library_versions");
-
-    if (xml->multiple_entries) {
+    if (wctx->multiple_sections) {
         XML_INDENT(); printf("<%s>\n", chapter);
         xml->indent_level++;
     }
@@ -1243,7 +1238,7 @@ static void xml_print_chapter_footer(WriterContext *wctx, const char *chapter)
 {
     XMLContext *xml = wctx->priv;
 
-    if (xml->multiple_entries) {
+    if (wctx->multiple_sections) {
         xml->indent_level--;
         XML_INDENT(); printf("</%s>\n", chapter);
     }
