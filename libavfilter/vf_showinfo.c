@@ -75,7 +75,7 @@ static void end_frame(AVFilterLink *inlink)
            checksum, plane_checksum[0], plane_checksum[1], plane_checksum[2], plane_checksum[3]);
 
     showinfo->frame++;
-    avfilter_end_frame(inlink->dst->outputs[0]);
+    ff_end_frame(inlink->dst->outputs[0]);
 }
 
 AVFilter avfilter_vf_showinfo = {

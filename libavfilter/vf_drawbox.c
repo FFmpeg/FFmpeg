@@ -119,7 +119,7 @@ static void draw_slice(AVFilterLink *inlink, int y0, int h, int slice_dir)
         }
     }
 
-    avfilter_draw_slice(inlink->dst->outputs[0], y0, h, 1);
+    ff_draw_slice(inlink->dst->outputs[0], y0, h, 1);
 }
 
 AVFilter avfilter_vf_drawbox = {

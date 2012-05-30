@@ -69,8 +69,8 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     int i;
 
     for (i = 0; i < ctx->output_count; i++)
-        avfilter_start_frame(ctx->outputs[i],
-                             avfilter_ref_buffer(picref, ~AV_PERM_WRITE));
+        ff_start_frame(ctx->outputs[i],
+                       avfilter_ref_buffer(picref, ~AV_PERM_WRITE));
 }
 
 static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
@@ -79,7 +79,7 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
     int i;
 
     for (i = 0; i < ctx->output_count; i++)
-        avfilter_draw_slice(ctx->outputs[i], y, h, slice_dir);
+        ff_draw_slice(ctx->outputs[i], y, h, slice_dir);
 }
 
 static void end_frame(AVFilterLink *inlink)
@@ -88,7 +88,7 @@ static void end_frame(AVFilterLink *inlink)
     int i;
 
     for (i = 0; i < ctx->output_count; i++)
-        avfilter_end_frame(ctx->outputs[i]);
+        ff_end_frame(ctx->outputs[i]);
 
     avfilter_unref_buffer(inlink->cur_buf);
 }

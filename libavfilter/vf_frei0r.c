@@ -32,6 +32,7 @@
 #include "libavutil/parseutils.h"
 #include "avfilter.h"
 #include "formats.h"
+#include "video.h"
 
 typedef f0r_instance_t (*f0r_construct_f)(unsigned int width, unsigned int height);
 typedef void (*f0r_destruct_f)(f0r_instance_t instance);
@@ -351,8 +352,8 @@ static void end_frame(AVFilterLink *inlink)
                    (const uint32_t *)inpicref->data[0],
                    (uint32_t *)outpicref->data[0]);
     avfilter_unref_buffer(inpicref);
-    avfilter_draw_slice(outlink, 0, outlink->h, 1);
-    avfilter_end_frame(outlink);
+    ff_draw_slice(outlink, 0, outlink->h, 1);
+    ff_end_frame(outlink);
     avfilter_unref_buffer(outpicref);
 }
 
@@ -436,11 +437,11 @@ static int source_request_frame(AVFilterLink *outlink)
     picref->pts = frei0r->pts++;
     picref->pos = -1;
 
-    avfilter_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
+    ff_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
     frei0r->update(frei0r->instance, av_rescale_q(picref->pts, frei0r->time_base, (AVRational){1,1000}),
                    NULL, (uint32_t *)picref->data[0]);
-    avfilter_draw_slice(outlink, 0, outlink->h, 1);
-    avfilter_end_frame(outlink);
+    ff_draw_slice(outlink, 0, outlink->h, 1);
+    ff_end_frame(outlink);
     avfilter_unref_buffer(picref);
 
     return 0;

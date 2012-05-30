@@ -26,6 +26,7 @@
 
 #include "avfilter.h"
 #include "formats.h"
+#include "video.h"
 #include "libavutil/avstring.h"
 #include "libavutil/eval.h"
 #include "libavutil/pixdesc.h"
@@ -337,12 +338,12 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     outpicref->video->w = pad->w;
     outpicref->video->h = pad->h;
 
-    avfilter_start_frame(inlink->dst->outputs[0], outpicref);
+    ff_start_frame(inlink->dst->outputs[0], outpicref);
 }
 
 static void end_frame(AVFilterLink *link)
 {
-    avfilter_end_frame(link->dst->outputs[0]);
+    ff_end_frame(link->dst->outputs[0]);
     avfilter_unref_buffer(link->cur_buf);
 }
 
@@ -366,7 +367,7 @@ static void draw_send_bar_slice(AVFilterLink *link, int y, int h, int slice_dir,
                           link->dst->outputs[0]->out_buf->linesize,
                           pad->line, pad->line_step, pad->hsub, pad->vsub,
                           0, bar_y, pad->w, bar_h);
-        avfilter_draw_slice(link->dst->outputs[0], bar_y, bar_h, slice_dir);
+        ff_draw_slice(link->dst->outputs[0], bar_y, bar_h, slice_dir);
     }
 }
 
@@ -400,7 +401,7 @@ static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
     ff_draw_rectangle(outpic->data, outpic->linesize,
                       pad->line, pad->line_step, pad->hsub, pad->vsub,
                       pad->x + pad->in_w, y, pad->w - pad->x - pad->in_w, h);
-    avfilter_draw_slice(link->dst->outputs[0], y, h, slice_dir);
+    ff_draw_slice(link->dst->outputs[0], y, h, slice_dir);
 
     draw_send_bar_slice(link, y, h, slice_dir, -1);
 }

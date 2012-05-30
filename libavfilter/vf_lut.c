@@ -31,6 +31,7 @@
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
+#include "video.h"
 
 static const char *const var_names[] = {
     "E",
@@ -338,7 +339,7 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
         }
     }
 
-    avfilter_draw_slice(outlink, y, h, slice_dir);
+    ff_draw_slice(outlink, y, h, slice_dir);
 }
 
 #define DEFINE_LUT_FILTER(name_, description_, init_)                   \

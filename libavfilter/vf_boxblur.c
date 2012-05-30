@@ -30,6 +30,7 @@
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "formats.h"
+#include "video.h"
 
 static const char *const var_names[] = {
     "w",
@@ -328,7 +329,7 @@ static void draw_slice(AVFilterLink *inlink, int y0, int h0, int slice_dir)
               w[plane], h[plane], boxblur->radius[plane], boxblur->power[plane],
               boxblur->temp);
 
-    avfilter_draw_slice(outlink, y0, h0, slice_dir);
+    ff_draw_slice(outlink, y0, h0, slice_dir);
 }
 
 AVFilter avfilter_vf_boxblur = {

@@ -849,7 +849,7 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
             (int)dtext->var_values[VAR_N], dtext->var_values[VAR_T],
             dtext->x, dtext->y, dtext->x+dtext->w, dtext->y+dtext->h);
 
-    avfilter_start_frame(inlink->dst->outputs[0], inpicref);
+    ff_start_frame(inlink->dst->outputs[0], inpicref);
 }
 
 static void end_frame(AVFilterLink *inlink)
@@ -863,8 +863,8 @@ static void end_frame(AVFilterLink *inlink)
 
     dtext->var_values[VAR_N] += 1.0;
 
-    avfilter_draw_slice(outlink, 0, picref->video->h, 1);
-    avfilter_end_frame(outlink);
+    ff_draw_slice(outlink, 0, picref->video->h, 1);
+    ff_end_frame(outlink);
 }
 
 AVFilter avfilter_vf_drawtext = {

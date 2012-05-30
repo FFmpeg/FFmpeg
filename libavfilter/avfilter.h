@@ -620,57 +620,20 @@ AVFilterBufferRef *avfilter_get_audio_buffer_ref_from_arrays(uint8_t **data,
                                                              enum AVSampleFormat sample_fmt,
                                                              uint64_t channel_layout);
 
-/**
- * Request an input frame from the filter at the other end of the link.
- *
- * @param link the input link
- * @return     zero on success
- */
+#if FF_API_FILTERS_PUBLIC
+attribute_deprecated
 int avfilter_request_frame(AVFilterLink *link);
 
-/**
- * Poll a frame from the filter chain.
- *
- * @param  link the input link
- * @return the number of immediately available frames, a negative
- * number in case of error
- */
+attribute_deprecated
 int avfilter_poll_frame(AVFilterLink *link);
 
-/**
- * Notify the next filter of the start of a frame.
- *
- * @param link   the output link the frame will be sent over
- * @param picref A reference to the frame about to be sent. The data for this
- *               frame need only be valid once draw_slice() is called for that
- *               portion. The receiving filter will free this reference when
- *               it no longer needs it.
- */
+attribute_deprecated
 void avfilter_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
-
-/**
- * Notifie the next filter that the current frame has finished.
- *
- * @param link the output link the frame was sent over
- */
+attribute_deprecated
 void avfilter_end_frame(AVFilterLink *link);
-
-/**
- * Send a slice to the next filter.
- *
- * Slices have to be provided in sequential order, either in
- * top-bottom or bottom-top order. If slices are provided in
- * non-sequential order the behavior of the function is undefined.
- *
- * @param link the output link over which the frame is being sent
- * @param y    offset in pixels from the top of the image for this slice
- * @param h    height of this slice in pixels
- * @param slice_dir the assumed direction for sending slices,
- *             from the top slice to the bottom slice if the value is 1,
- *             from the bottom slice to the top slice if the value is -1,
- *             for other values the behavior of the function is undefined.
- */
+attribute_deprecated
 void avfilter_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
+#endif
 
 /** Initialize the filter system. Register all builtin filters. */
 void avfilter_register_all(void);

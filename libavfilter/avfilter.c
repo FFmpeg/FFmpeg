@@ -223,18 +223,18 @@ void ff_dlog_link(void *ctx, AVFilterLink *link, int end)
     }
 }
 
-int avfilter_request_frame(AVFilterLink *link)
+int ff_request_frame(AVFilterLink *link)
 {
     FF_DPRINTF_START(NULL, request_frame); ff_dlog_link(NULL, link, 1);
 
     if (link->srcpad->request_frame)
         return link->srcpad->request_frame(link);
     else if (link->src->inputs[0])
-        return avfilter_request_frame(link->src->inputs[0]);
+        return ff_request_frame(link->src->inputs[0]);
     else return -1;
 }
 
-int avfilter_poll_frame(AVFilterLink *link)
+int ff_poll_frame(AVFilterLink *link)
 {
     int i, min = INT_MAX;
 
@@ -245,7 +245,7 @@ int avfilter_poll_frame(AVFilterLink *link)
         int val;
         if (!link->src->inputs[i])
             return -1;
-        val = avfilter_poll_frame(link->src->inputs[i]);
+        val = ff_poll_frame(link->src->inputs[i]);
         min = FFMIN(min, val);
     }
 
@@ -443,5 +443,13 @@ void avfilter_insert_outpad(AVFilterContext *f, unsigned index,
 {
     ff_insert_pad(index, &f->output_count, offsetof(AVFilterLink, srcpad),
                   &f->output_pads, &f->outputs, p);
+}
+int avfilter_poll_frame(AVFilterLink *link)
+{
+    return ff_poll_frame(link);
+}
+int avfilter_request_frame(AVFilterLink *link)
+{
+    return ff_request_frame(link);
 }
 #endif

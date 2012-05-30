@@ -24,6 +24,7 @@
 
 #include "audio.h"
 #include "avfilter.h"
+#include "internal.h"
 
 typedef struct ASyncContext {
     const AVClass *class;
@@ -116,7 +117,7 @@ static int request_frame(AVFilterLink *link)
 {
     AVFilterContext *ctx = link->src;
     ASyncContext      *s = ctx->priv;
-    int ret = avfilter_request_frame(ctx->inputs[0]);
+    int ret = ff_request_frame(ctx->inputs[0]);
     int nb_samples;
 
     /* flush the fifo */

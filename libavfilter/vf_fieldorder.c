@@ -29,6 +29,7 @@
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "formats.h"
+#include "video.h"
 
 typedef struct
 {
@@ -124,7 +125,7 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     outpicref = avfilter_ref_buffer(inpicref, ~0);
     outlink->out_buf = outpicref;
 
-    avfilter_start_frame(outlink, outpicref);
+    ff_start_frame(outlink, outpicref);
 }
 
 static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
@@ -141,7 +142,7 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
      *  and that complexity will be added later */
     if (  !inpicref->video->interlaced
         || inpicref->video->top_field_first == fieldorder->dst_tff) {
-        avfilter_draw_slice(outlink, y, h, slice_dir);
+        ff_draw_slice(outlink, y, h, slice_dir);
     }
 }
 
@@ -203,13 +204,13 @@ static void end_frame(AVFilterLink *inlink)
             }
         }
         outpicref->video->top_field_first = fieldorder->dst_tff;
-        avfilter_draw_slice(outlink, 0, h, 1);
+        ff_draw_slice(outlink, 0, h, 1);
     } else {
         av_dlog(ctx,
                 "not interlaced or field order already correct\n");
     }
 
-    avfilter_end_frame(outlink);
+    ff_end_frame(outlink);
     avfilter_unref_buffer(inpicref);
 }
 

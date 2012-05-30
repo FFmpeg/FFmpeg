@@ -133,14 +133,14 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
         }
     }
 
-    avfilter_draw_slice(inlink->dst->outputs[0], y, h, slice_dir);
+    ff_draw_slice(inlink->dst->outputs[0], y, h, slice_dir);
 }
 
 static void end_frame(AVFilterLink *inlink)
 {
     FadeContext *fade = inlink->dst->priv;
 
-    avfilter_end_frame(inlink->dst->outputs[0]);
+    ff_end_frame(inlink->dst->outputs[0]);
 
     if (fade->frame_index >= fade->start_frame &&
         fade->frame_index <= fade->stop_frame)

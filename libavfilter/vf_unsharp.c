@@ -38,6 +38,7 @@
 
 #include "avfilter.h"
 #include "formats.h"
+#include "video.h"
 #include "libavutil/common.h"
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
@@ -224,8 +225,8 @@ static void end_frame(AVFilterLink *link)
     apply_unsharp(out->data[2], out->linesize[2], in->data[2], in->linesize[2], cw,      ch,      &unsharp->chroma);
 
     avfilter_unref_buffer(in);
-    avfilter_draw_slice(link->dst->outputs[0], 0, link->h, 1);
-    avfilter_end_frame(link->dst->outputs[0]);
+    ff_draw_slice(link->dst->outputs[0], 0, link->h, 1);
+    ff_end_frame(link->dst->outputs[0]);
     avfilter_unref_buffer(out);
 }
 

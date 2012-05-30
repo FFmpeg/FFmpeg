@@ -364,8 +364,8 @@ static void end_frame(AVFilterLink *inlink)
     fill_picref_from_iplimage(outpicref, &outimg, inlink->format);
 
     avfilter_unref_buffer(inpicref);
-    avfilter_draw_slice(outlink, 0, outlink->h, 1);
-    avfilter_end_frame(outlink);
+    ff_draw_slice(outlink, 0, outlink->h, 1);
+    ff_end_frame(outlink);
     avfilter_unref_buffer(outpicref);
 }
 

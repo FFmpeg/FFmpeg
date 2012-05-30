@@ -190,7 +190,7 @@ static void end_frame(AVFilterLink *inlink)
                w, h, x, y);
     }
 
-    avfilter_end_frame(inlink->dst->outputs[0]);
+    ff_end_frame(inlink->dst->outputs[0]);
 }
 
 AVFilter avfilter_vf_cropdetect = {

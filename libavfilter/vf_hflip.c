@@ -26,6 +26,7 @@
 
 #include "avfilter.h"
 #include "formats.h"
+#include "video.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/imgutils.h"
@@ -140,7 +141,7 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
         }
     }
 
-    avfilter_draw_slice(inlink->dst->outputs[0], y, h, slice_dir);
+    ff_draw_slice(inlink->dst->outputs[0], y, h, slice_dir);
 }
 
 AVFilter avfilter_vf_hflip = {

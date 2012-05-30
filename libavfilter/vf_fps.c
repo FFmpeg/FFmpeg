@@ -27,6 +27,8 @@
 #include "libavutil/parseutils.h"
 
 #include "avfilter.h"
+#include "internal.h"
+#include "video.h"
 
 typedef struct FPSContext {
     const AVClass *class;
@@ -129,7 +131,7 @@ static int request_frame(AVFilterLink *outlink)
     int ret = 0;
 
     while (ret >= 0 && s->frames_out == frames_out)
-        ret = avfilter_request_frame(ctx->inputs[0]);
+        ret = ff_request_frame(ctx->inputs[0]);
 
     /* flush the fifo */
     if (ret == AVERROR_EOF && av_fifo_size(s->fifo)) {
@@ -141,9 +143,9 @@ static int request_frame(AVFilterLink *outlink)
             buf->pts = av_rescale_q(s->first_pts, ctx->inputs[0]->time_base,
                                     outlink->time_base) + s->frames_out;
 
-            avfilter_start_frame(outlink, buf);
-            avfilter_draw_slice(outlink, 0, outlink->h, 1);
-            avfilter_end_frame(outlink);
+            ff_start_frame(outlink, buf);
+            ff_draw_slice(outlink, 0, outlink->h, 1);
+            ff_end_frame(outlink);
             s->frames_out++;
         }
         return 0;
@@ -229,9 +231,9 @@ static void end_frame(AVFilterLink *inlink)
         buf_out->pts = av_rescale_q(s->first_pts, inlink->time_base,
                                     outlink->time_base) + s->frames_out;
 
-        avfilter_start_frame(outlink, buf_out);
-        avfilter_draw_slice(outlink, 0, outlink->h, 1);
-        avfilter_end_frame(outlink);
+        ff_start_frame(outlink, buf_out);
+        ff_draw_slice(outlink, 0, outlink->h, 1);
+        ff_end_frame(outlink);
         s->frames_out++;
     }
     flush_fifo(s->fifo);

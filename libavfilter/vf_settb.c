@@ -119,7 +119,7 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
         avfilter_unref_buffer(picref);
     }
 
-    avfilter_start_frame(outlink, picref2);
+    ff_start_frame(outlink, picref2);
 }
 
 AVFilter avfilter_vf_settb = {

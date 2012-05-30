@@ -130,7 +130,7 @@ static int request_frame(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     ResampleContext   *s = ctx->priv;
-    int ret = avfilter_request_frame(ctx->inputs[0]);
+    int ret = ff_request_frame(ctx->inputs[0]);
 
     /* flush the lavr delay buffer */
     if (ret == AVERROR_EOF && s->avr) {

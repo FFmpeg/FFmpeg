@@ -25,6 +25,7 @@
 
 #include "avfilter.h"
 #include "formats.h"
+#include "video.h"
 #include "libavutil/avstring.h"
 #include "libavutil/eval.h"
 #include "libavutil/mathematics.h"
@@ -257,7 +258,7 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     AVFilterBufferRef *outpicref;
 
     if (!scale->sws) {
-        avfilter_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
+        ff_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
         return;
     }
 
@@ -277,7 +278,7 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
               INT_MAX);
 
     scale->slice_y = 0;
-    avfilter_start_frame(outlink, avfilter_ref_buffer(outpicref, ~0));
+    ff_start_frame(outlink, avfilter_ref_buffer(outpicref, ~0));
 }
 
 static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
@@ -288,7 +289,7 @@ static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
     const uint8_t *data[4];
 
     if (!scale->sws) {
-        avfilter_draw_slice(link->dst->outputs[0], y, h, slice_dir);
+        ff_draw_slice(link->dst->outputs[0], y, h, slice_dir);
         return;
     }
 
@@ -308,7 +309,7 @@ static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 
     if (slice_dir == -1)
         scale->slice_y -= out_h;
-    avfilter_draw_slice(link->dst->outputs[0], scale->slice_y, out_h, slice_dir);
+    ff_draw_slice(link->dst->outputs[0], scale->slice_y, out_h, slice_dir);
     if (slice_dir == 1)
         scale->slice_y += out_h;
 }

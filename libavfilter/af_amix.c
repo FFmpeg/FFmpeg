@@ -349,7 +349,7 @@ static int request_samples(AVFilterContext *ctx, int min_samples)
         if (s->input_state[i] == INPUT_OFF)
             continue;
         while (!ret && av_audio_fifo_size(s->fifos[i]) < min_samples)
-            ret = avfilter_request_frame(ctx->inputs[i]);
+            ret = ff_request_frame(ctx->inputs[i]);
         if (ret == AVERROR_EOF) {
             if (av_audio_fifo_size(s->fifos[i]) == 0) {
                 s->input_state[i] = INPUT_OFF;
@@ -410,7 +410,7 @@ static int request_frame(AVFilterLink *outlink)
     }
 
     if (s->frame_list->nb_frames == 0) {
-        ret = avfilter_request_frame(ctx->inputs[0]);
+        ret = ff_request_frame(ctx->inputs[0]);
         if (ret == AVERROR_EOF) {
             s->input_state[0] = INPUT_OFF;
             if (s->nb_inputs == 1)

@@ -69,4 +69,21 @@ static inline void ff_insert_outpad(AVFilterContext *f, unsigned index,
                   &f->output_pads, &f->outputs, p);
 }
 
+/**
+ * Poll a frame from the filter chain.
+ *
+ * @param  link the input link
+ * @return the number of immediately available frames, a negative
+ * number in case of error
+ */
+int ff_poll_frame(AVFilterLink *link);
+
+/**
+ * Request an input frame from the filter at the other end of the link.
+ *
+ * @param link the input link
+ * @return     zero on success
+ */
+int ff_request_frame(AVFilterLink *link);
+
 #endif /* AVFILTER_INTERNAL_H */
