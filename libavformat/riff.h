@@ -44,7 +44,7 @@ void ff_end_tag(AVIOContext *pb, int64_t start);
  * bits_per_encoded_sample fields. Does not read extradata.
  * @return codec tag
  */
-int ff_get_bmp_header(AVIOContext *pb, AVStream *st);
+int ff_get_bmp_header(AVIOContext *pb, AVStream *st, unsigned *esize);
 
 void ff_put_bmp_header(AVIOContext *pb, AVCodecContext *enc, const AVCodecTag *tags, int for_asf);
 int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc);
