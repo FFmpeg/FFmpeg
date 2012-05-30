@@ -190,7 +190,7 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     AVFilterBufferRef *outpicref;
 
     if (inpicref->perms & AV_PERM_PRESERVE) {
-        outpicref = avfilter_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+        outpicref = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
         avfilter_copy_buffer_ref_props(outpicref, inpicref);
         outpicref->video->w = outlink->w;
         outpicref->video->h = outlink->h;

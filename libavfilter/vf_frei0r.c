@@ -432,7 +432,7 @@ static int source_config_props(AVFilterLink *outlink)
 static int source_request_frame(AVFilterLink *outlink)
 {
     Frei0rContext *frei0r = outlink->src->priv;
-    AVFilterBufferRef *picref = avfilter_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    AVFilterBufferRef *picref = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
     picref->video->pixel_aspect = (AVRational) {1, 1};
     picref->pts = frei0r->pts++;
     picref->pos = -1;

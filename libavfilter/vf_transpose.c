@@ -120,8 +120,8 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
     AVFilterLink *outlink = inlink->dst->outputs[0];
 
-    outlink->out_buf = avfilter_get_video_buffer(outlink, AV_PERM_WRITE,
-                                                 outlink->w, outlink->h);
+    outlink->out_buf = ff_get_video_buffer(outlink, AV_PERM_WRITE,
+                                           outlink->w, outlink->h);
     outlink->out_buf->pts = picref->pts;
 
     if (picref->video->pixel_aspect.num == 0) {

@@ -140,7 +140,7 @@ static int color_config_props(AVFilterLink *inlink)
 static int color_request_frame(AVFilterLink *link)
 {
     ColorContext *color = link->src->priv;
-    AVFilterBufferRef *picref = avfilter_get_video_buffer(link, AV_PERM_WRITE, color->w, color->h);
+    AVFilterBufferRef *picref = ff_get_video_buffer(link, AV_PERM_WRITE, color->w, color->h);
     picref->video->pixel_aspect = (AVRational) {1, 1};
     picref->pts                 = color->pts++;
     picref->pos                 = -1;

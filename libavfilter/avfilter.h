@@ -573,19 +573,11 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
  */
 int avfilter_config_links(AVFilterContext *filter);
 
-/**
- * Request a picture buffer with a specific set of permissions.
- *
- * @param link  the output link to the filter from which the buffer will
- *              be requested
- * @param perms the required access permissions
- * @param w     the minimum width of the buffer to allocate
- * @param h     the minimum height of the buffer to allocate
- * @return      A reference to the buffer. This must be unreferenced with
- *              avfilter_unref_buffer when you are finished with it.
- */
+#if FF_API_FILTERS_PUBLIC
+attribute_deprecated
 AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms,
                                           int w, int h);
+#endif
 
 /**
  * Create a buffer reference wrapped around an already allocated image

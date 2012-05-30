@@ -67,7 +67,7 @@ static void ff_dlog_ref(void *ctx, AVFilterBufferRef *ref, int end)
 
 AVFilterBufferRef *ff_null_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
 {
-    return avfilter_get_video_buffer(link->dst->outputs[0], perms, w, h);
+    return ff_get_video_buffer(link->dst->outputs[0], perms, w, h);
 }
 
 /* TODO: set the buffer's priv member to a context structure for the whole
@@ -138,7 +138,7 @@ fail:
     return NULL;
 }
 
-AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
+AVFilterBufferRef *ff_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
 {
     AVFilterBufferRef *ret = NULL;
 
@@ -173,7 +173,7 @@ static void default_start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
         outlink = inlink->dst->outputs[0];
 
     if (outlink) {
-        outlink->out_buf = avfilter_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+        outlink->out_buf = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
         avfilter_copy_buffer_ref_props(outlink->out_buf, picref);
         ff_start_frame(outlink, avfilter_ref_buffer(outlink->out_buf, ~0));
     }
@@ -201,7 +201,7 @@ void ff_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
                 picref->perms,
                 link->dstpad->min_perms, link->dstpad->rej_perms);
 
-        link->cur_buf = avfilter_get_video_buffer(link, dst->min_perms, link->w, link->h);
+        link->cur_buf = ff_get_video_buffer(link, dst->min_perms, link->w, link->h);
         link->src_buf = picref;
         avfilter_copy_buffer_ref_props(link->cur_buf, link->src_buf);
     }
@@ -353,5 +353,9 @@ void avfilter_end_frame(AVFilterLink *link)
 void avfilter_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
     ff_draw_slice(link, y, h, slice_dir);
+}
+AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
+{
+    return ff_get_video_buffer(link, perms, w, h);
 }
 #endif

@@ -109,8 +109,8 @@ int av_buffersrc_write_frame(AVFilterContext *buffer_filter, AVFrame *frame)
     case AVMEDIA_TYPE_VIDEO:
         CHECK_VIDEO_PARAM_CHANGE(buffer_filter, c, frame->width, frame->height,
                                  frame->format);
-        buf = avfilter_get_video_buffer(buffer_filter->outputs[0], AV_PERM_WRITE,
-                                        c->w, c->h);
+        buf = ff_get_video_buffer(buffer_filter->outputs[0], AV_PERM_WRITE,
+                                  c->w, c->h);
         av_image_copy(buf->data, buf->linesize, frame->data, frame->linesize,
                       c->pix_fmt, c->w, c->h);
         break;

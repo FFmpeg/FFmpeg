@@ -50,7 +50,7 @@ static AVFilterBufferRef *get_video_buffer(AVFilterLink *link, int perms,
     if (!(perms & AV_PERM_NEG_LINESIZES))
         return ff_default_get_video_buffer(link, perms, w, h);
 
-    picref = avfilter_get_video_buffer(link->dst->outputs[0], perms, w, h);
+    picref = ff_get_video_buffer(link->dst->outputs[0], perms, w, h);
     for (i = 0; i < 4; i ++) {
         int vsub = i == 1 || i == 2 ? flip->vsub : 0;
 
