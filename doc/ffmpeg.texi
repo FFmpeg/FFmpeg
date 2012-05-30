@@ -282,10 +282,27 @@ attachments.
 @item -vframes @var{number} (@emph{output})
 Set the number of video frames to record. This is an alias for @code{-frames:v}.
 @item -r[:@var{stream_specifier}] @var{fps} (@emph{input/output,per-stream})
-Set frame rate (Hz value, fraction or abbreviation), (default = 25). For output
-streams implies @code{-vsync cfr}.
+Set frame rate (Hz value, fraction or abbreviation).
+
+As an input option, ignore any timestamps stored in the file and instead
+generate timestamps assuming constant frame rate @var{fps}.
+
+As an output option, duplicate or drop input frames to achieve constant output
+frame rate @var{fps} (note that this actually causes the @code{fps} filter to be
+inserted to the end of the corresponding filtergraph).
+
 @item -s[:@var{stream_specifier}] @var{size} (@emph{input/output,per-stream})
-Set frame size. The format is @samp{wxh} (default - same as source).
+Set frame size.
+
+As an input option, this is a shortcut for the @option{video_size} private
+option, recognized by some demuxers for which the frame size is either not
+stored in the file or is configurable -- e.g. raw video or video grabbers.
+
+As an output option, this inserts the @code{scale} video filter to the
+@emph{end} of the corresponding filtergraph. Please use the @code{scale} filter
+directly to insert it at the beginning or some other place.
+
+The format is @samp{wxh} (default - same as source).
 
 @item -aspect[:@var{stream_specifier}] @var{aspect} (@emph{output,per-stream})
 Set the video display aspect ratio specified by @var{aspect}.
