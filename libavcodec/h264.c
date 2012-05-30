@@ -2968,6 +2968,12 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     else
         s->height = 16 * s->mb_height - (2 << s->chroma_y_shift) * FFMIN(h->sps.crop_bottom, (16 >> s->chroma_y_shift) - 1);
 
+    if (FFALIGN(s->avctx->width,  16) == s->width &&
+        FFALIGN(s->avctx->height, 16) == s->height) {
+        s->width  = s->avctx->width;
+        s->height = s->avctx->height;
+    }
+
     if (s->context_initialized &&
         (s->width != s->avctx->width || s->height != s->avctx->height ||
          av_cmp_q(h->sps.sar, s->avctx->sample_aspect_ratio))) {
