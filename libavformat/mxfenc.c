@@ -189,7 +189,6 @@ typedef struct MXFContext {
     unsigned body_partitions_count;
     int last_key_index;  ///< index of last key frame
     uint64_t duration;
-    char *tc_opt_str;    ///< timecode option string
     AVTimecode tc;       ///< timecode context
     AVStream *timecode_track;
     int timecode_base;       ///< rounded time code base (25 or 30)
@@ -1403,6 +1402,7 @@ static int mxf_write_header(AVFormatContext *s)
     const int *samples_per_frame = NULL;
     AVDictionaryEntry *t;
     int64_t timestamp = 0;
+    AVDictionaryEntry *tcr = av_dict_get(s->metadata, "timecode", NULL, 0);
 
     if (!s->nb_streams)
         return -1;
@@ -1443,9 +1443,10 @@ static int mxf_write_header(AVFormatContext *s)
             }
             rate = (AVRational){mxf->time_base.den, mxf->time_base.num};
             avpriv_set_pts_info(st, 64, mxf->time_base.num, mxf->time_base.den);
-            if (mxf->tc_opt_str)
-                ret = av_timecode_init_from_string(&mxf->tc, rate,
-                                                   mxf->tc_opt_str, s);
+            if (!tcr)
+                tcr = av_dict_get(st->metadata, "timecode", NULL, 0);
+            if (tcr)
+                ret = av_timecode_init_from_string(&mxf->tc, rate, tcr->value, s);
             else
                 ret = av_timecode_init(&mxf->tc, rate, 0, 0, s);
             if (ret < 0)
@@ -1877,26 +1878,6 @@ static int mxf_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int 
                                mxf_interleave_get_packet, mxf_compare_timestamps);
 }
 
-static const AVClass mxf_class = {
-    .class_name = "mxf",
-    .item_name  = av_default_item_name,
-    .version    = LIBAVUTIL_VERSION_INT,
-    .option     = (const AVOption[]){
-        {AV_TIMECODE_OPTION(MXFContext, tc_opt_str, AV_OPT_FLAG_ENCODING_PARAM)},
-        {NULL}
-    },
-};
-
-static const AVClass mxf_d10_class = {
-    .class_name = "mxf_d10",
-    .item_name  = av_default_item_name,
-    .version    = LIBAVUTIL_VERSION_INT,
-    .option     = (const AVOption[]){
-        {AV_TIMECODE_OPTION(MXFContext, tc_opt_str, AV_OPT_FLAG_ENCODING_PARAM)},
-        {NULL}
-    },
-};
-
 AVOutputFormat ff_mxf_muxer = {
     .name              = "mxf",
     .long_name         = NULL_IF_CONFIG_SMALL("Material eXchange Format"),
@@ -1910,7 +1891,6 @@ AVOutputFormat ff_mxf_muxer = {
     .write_trailer     = mxf_write_footer,
     .flags             = AVFMT_NOTIMESTAMPS,
     .interleave_packet = mxf_interleave,
-    .priv_class        = &mxf_class,
 };
 
 AVOutputFormat ff_mxf_d10_muxer = {
@@ -1925,5 +1905,4 @@ AVOutputFormat ff_mxf_d10_muxer = {
     .write_trailer     = mxf_write_footer,
     .flags             = AVFMT_NOTIMESTAMPS,
     .interleave_packet = mxf_interleave,
-    .priv_class        = &mxf_d10_class,
 };

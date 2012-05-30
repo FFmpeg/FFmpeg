@@ -52,7 +52,6 @@ struct DVMuxContext {
     int               has_audio;     /* frame under contruction has audio */
     int               has_video;     /* frame under contruction has video */
     uint8_t           frame_buf[DV_MAX_FRAME_SIZE]; /* frame under contruction */
-    char             *tc_opt_str;    /* timecode option string */
     AVTimecode        tc;            /* timecode context */
 };
 
@@ -356,6 +355,7 @@ static int dv_write_header(AVFormatContext *s)
 {
     AVRational rate;
     DVMuxContext *dvc = s->priv_data;
+    AVDictionaryEntry *tcr = av_dict_get(s->metadata, "timecode", NULL, 0);
 
     if (!dv_init_mux(s)) {
         av_log(s, AV_LOG_ERROR, "Can't initialize DV format!\n"
@@ -366,9 +366,16 @@ static int dv_write_header(AVFormatContext *s)
     }
     rate.num = dvc->sys->ltc_divisor;
     rate.den = 1;
-    if (dvc->tc_opt_str)
-        return av_timecode_init_from_string(&dvc->tc, rate,
-                                            dvc->tc_opt_str, s);
+    if (!tcr) { // no global timecode, look into the streams
+        int i;
+        for (i = 0; i < s->nb_streams; i++) {
+            tcr = av_dict_get(s->streams[i]->metadata, "timecode", NULL, 0);
+            if (tcr)
+                break;
+        }
+    }
+    if (tcr)
+        return av_timecode_init_from_string(&dvc->tc, rate, tcr->value, s);
     return av_timecode_init(&dvc->tc, rate, 0, 0, s);
 }
 
@@ -398,16 +405,6 @@ static int dv_write_trailer(struct AVFormatContext *s)
     return 0;
 }
 
-static const AVClass class = {
-    .class_name = "dv",
-    .item_name  = av_default_item_name,
-    .version    = LIBAVUTIL_VERSION_INT,
-    .option     = (const AVOption[]){
-        {AV_TIMECODE_OPTION(DVMuxContext, tc_opt_str, AV_OPT_FLAG_ENCODING_PARAM)},
-        {NULL},
-    },
-};
-
 AVOutputFormat ff_dv_muxer = {
     .name              = "dv",
     .long_name         = NULL_IF_CONFIG_SMALL("DV video format"),
@@ -418,5 +415,4 @@ AVOutputFormat ff_dv_muxer = {
     .write_header      = dv_write_header,
     .write_packet      = dv_write_packet,
     .write_trailer     = dv_write_trailer,
-    .priv_class        = &class,
 };

@@ -32,12 +32,6 @@
 
 #define AV_TIMECODE_STR_SIZE 16
 
-#define AV_TIMECODE_OPTION(ctx, string_field, flags)                     \
-    "timecode", "set timecode value following hh:mm:ss[:;.]ff format, "  \
-                "use ';' or '.' before frame number for drop frame",     \
-    offsetof(ctx, string_field),                                         \
-    AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, flags
-
 enum AVTimecodeFlag {
     AV_TIMECODE_FLAG_DROPFRAME      = 1<<0, ///< timecode is drop frame
     AV_TIMECODE_FLAG_24HOURSMAX     = 1<<1, ///< timecode wraps after 24 hours
