@@ -1063,7 +1063,7 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
     pad_idx = 0;                                                            \
 } while (0)
 
-    if (audio_sync_method > 0) {
+    if (audio_sync_method > 0 && 0) {
         char args[256] = {0};
 
         av_strlcatf(args, sizeof(args), "min_comp=0.001:min_hard_comp=%f", audio_drift_threshold);
