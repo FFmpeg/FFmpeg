@@ -70,14 +70,14 @@ static int pcm_bluray_parse_header(AVCodecContext *avctx,
     /* get the sample depth and derive the sample format from it */
     avctx->bits_per_coded_sample = bits_per_samples[header[3] >> 6];
     if (!avctx->bits_per_coded_sample) {
-        av_log(avctx, AV_LOG_ERROR, "unsupported sample depth (0)\n");
+        av_log(avctx, AV_LOG_ERROR, "reserved sample depth (0)\n");
         return -1;
     }
     avctx->sample_fmt = avctx->bits_per_coded_sample == 16 ? AV_SAMPLE_FMT_S16 :
                                                              AV_SAMPLE_FMT_S32;
     avctx->bits_per_raw_sample = avctx->bits_per_coded_sample;
 
-    /* get the sample rate. Not all values are known or exist. */
+    /* get the sample rate. Not all values are used. */
     switch (header[2] & 0x0f) {
     case 1:
         avctx->sample_rate = 48000;
@@ -90,13 +90,13 @@ static int pcm_bluray_parse_header(AVCodecContext *avctx,
         break;
     default:
         avctx->sample_rate = 0;
-        av_log(avctx, AV_LOG_ERROR, "unsupported sample rate (%d)\n",
+        av_log(avctx, AV_LOG_ERROR, "reserved sample rate (%d)\n",
                header[2] & 0x0f);
         return -1;
     }
 
     /*
-     * get the channel number (and mapping). Not all values are known or exist.
+     * get the channel number (and mapping). Not all values are used.
      * It must be noted that the number of channels in the MPEG stream can
      * differ from the actual meaningful number, e.g. mono audio still has two
      * channels, one being empty.
@@ -104,7 +104,7 @@ static int pcm_bluray_parse_header(AVCodecContext *avctx,
     avctx->channel_layout  = channel_layouts[channel_layout];
     avctx->channels        =        channels[channel_layout];
     if (!avctx->channels) {
-        av_log(avctx, AV_LOG_ERROR, "unsupported channel configuration (%d)\n",
+        av_log(avctx, AV_LOG_ERROR, "reserved channel configuration (%d)\n",
                channel_layout);
         return -1;
     }
