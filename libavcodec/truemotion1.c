@@ -520,6 +520,10 @@ hres,vres,i,i%vres (0 < i < 4)
 }
 
 #define APPLY_C_PREDICTOR() \
+    if(index > 1023){\
+        av_log(s->avctx, AV_LOG_ERROR, " index %d went out of bounds\n", index); \
+        return; \
+    }\
     predictor_pair = s->c_predictor_table[index]; \
     horiz_pred += (predictor_pair >> 1); \
     if (predictor_pair & 1) { \
@@ -537,6 +541,10 @@ hres,vres,i,i%vres (0 < i < 4)
         index++;
 
 #define APPLY_C_PREDICTOR_24() \
+    if(index > 1023){\
+        av_log(s->avctx, AV_LOG_ERROR, " index %d went out of bounds\n", index); \
+        return; \
+    }\
     predictor_pair = s->c_predictor_table[index]; \
     horiz_pred += (predictor_pair >> 1); \
     if (predictor_pair & 1) { \
@@ -555,6 +563,10 @@ hres,vres,i,i%vres (0 < i < 4)
 
 
 #define APPLY_Y_PREDICTOR() \
+    if(index > 1023){\
+        av_log(s->avctx, AV_LOG_ERROR, " index %d went out of bounds\n", index); \
+        return; \
+    }\
     predictor_pair = s->y_predictor_table[index]; \
     horiz_pred += (predictor_pair >> 1); \
     if (predictor_pair & 1) { \
@@ -572,6 +584,10 @@ hres,vres,i,i%vres (0 < i < 4)
         index++;
 
 #define APPLY_Y_PREDICTOR_24() \
+    if(index > 1023){\
+        av_log(s->avctx, AV_LOG_ERROR, " index %d went out of bounds\n", index); \
+        return; \
+    }\
     predictor_pair = s->y_predictor_table[index]; \
     horiz_pred += (predictor_pair >> 1); \
     if (predictor_pair & 1) { \
