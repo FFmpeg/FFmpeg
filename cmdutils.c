@@ -812,15 +812,18 @@ int opt_codecs(const char *opt, const char *arg)
     AVCodec *p = NULL, *p2;
     const char *last_name;
     printf("Codecs:\n"
-           " D..... = Decoding supported\n"
-           " .E.... = Encoding supported\n"
-           " ..V... = Video codec\n"
-           " ..A... = Audio codec\n"
-           " ..S... = Subtitle codec\n"
-           " ...S.. = Supports draw_horiz_band\n"
-           " ....D. = Supports direct rendering method 1\n"
-           " .....T = Supports weird frame truncation\n"
-           " ------\n");
+           " D...... = Decoding supported\n"
+           " .E..... = Encoding supported\n"
+           " ..V.... = Video codec\n"
+           " ..A.... = Audio codec\n"
+           " ..S.... = Subtitle codec\n"
+           " ...S... = Supports draw_horiz_band\n"
+           " ....D.. = Supports direct rendering method 1\n"
+           " .....T. = Supports weird frame truncation\n"
+           " ......F = Supports frame-based multi-threading\n"
+           " ......S = Supports slice-based multi-threading\n"
+           " ......B = Supports both frame-based and slice-based multi-threading\n"
+           " --------\n");
     last_name= "000";
     for (;;) {
         int decode = 0;
@@ -846,13 +849,15 @@ int opt_codecs(const char *opt, const char *arg)
             break;
         last_name = p2->name;
 
-        printf(" %s%s%c%s%s%s %-15s %s",
+        printf(" %s%s%c%s%s%s%s %-15s %s",
                decode ? "D" : (/* p2->decoder ? "d" : */ " "),
                encode ? "E" : " ",
                get_media_type_char(p2->type),
                cap & CODEC_CAP_DRAW_HORIZ_BAND ? "S" : " ",
                cap & CODEC_CAP_DR1 ? "D" : " ",
                cap & CODEC_CAP_TRUNCATED ? "T" : " ",
+               cap & CODEC_CAP_FRAME_THREADS ? cap & CODEC_CAP_SLICE_THREADS ? "B" : "F" :
+                                               cap & CODEC_CAP_SLICE_THREADS ? "S" : " ",
                p2->name,
                p2->long_name ? p2->long_name : "");
 #if 0
