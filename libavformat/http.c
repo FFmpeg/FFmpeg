@@ -54,6 +54,8 @@ typedef struct {
     int end_chunked_post;   /**< A flag which indicates if the end of chunked encoding has been sent. */
     int end_header;         /**< A flag which indicates we have finished to read POST reply. */
     int multiple_requests;  /**< A flag which indicates if we use persistent connections. */
+    uint8_t *post_data;
+    int post_datalen;
 } HTTPContext;
 
 #define OFFSET(x) offsetof(HTTPContext, x)
@@ -63,6 +65,7 @@ static const AVOption options[] = {
 {"chunked_post", "use chunked transfer-encoding for posts", OFFSET(chunked_post), AV_OPT_TYPE_INT, {.dbl = 1}, 0, 1, E },
 {"headers", "custom HTTP headers, can override built in default headers", OFFSET(headers), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D|E },
 {"multiple_requests", "use persistent connections", OFFSET(multiple_requests), AV_OPT_TYPE_INT, {.dbl = 0}, 0, 1, D|E },
+{"post_data", "custom HTTP post data", OFFSET(post_data), AV_OPT_TYPE_BINARY, .flags = D|E },
 {NULL}
 };
 #define HTTP_CLASS(flavor)\
@@ -382,6 +385,14 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
 
     /* send http header */
     post = h->flags & AVIO_FLAG_WRITE;
+
+    if (s->post_data) {
+        /* force POST method and disable chunked encoding when
+         * custom HTTP post data is set */
+        post = 1;
+        s->chunked_post = 0;
+    }
+
     method = post ? "POST" : "GET";
     authstr = ff_http_auth_create_response(&s->auth_state, auth, local_path,
                                            method);
@@ -412,6 +423,9 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     if (!has_header(s->headers, "\r\nHost: "))
         len += av_strlcatf(headers + len, sizeof(headers) - len,
                            "Host: %s\r\n", hoststr);
+    if (!has_header(s->headers, "\r\nContent-Length: ") && s->post_data)
+        len += av_strlcatf(headers + len, sizeof(headers) - len,
+                           "Content-Length: %d\r\n", s->post_datalen);
 
     /* now add in custom headers */
     if (s->headers)
@@ -436,6 +450,10 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     if (ffurl_write(s->hd, s->buffer, strlen(s->buffer)) < 0)
         return AVERROR(EIO);
 
+    if (s->post_data)
+        if ((err = ffurl_write(s->hd, s->post_data, s->post_datalen)) < 0)
+            return err;
+
     /* init input buffer */
     s->buf_ptr = s->buffer;
     s->buf_end = s->buffer;
@@ -445,7 +463,7 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     s->willclose = 0;
     s->end_chunked_post = 0;
     s->end_header = 0;
-    if (post) {
+    if (post && !s->post_data) {
         /* Pretend that it did work. We didn't read any header yet, since
          * we've still to send the POST data, but the code calling this
          * function will check http_code after we return. */
