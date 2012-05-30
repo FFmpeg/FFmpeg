@@ -220,6 +220,18 @@ AVFilterFormats *ff_all_formats(enum AVMediaType type)
     return ret;
 }
 
+AVFilterFormats *ff_planar_sample_fmts(void)
+{
+    AVFilterFormats *ret = NULL;
+    int fmt;
+
+    for (fmt = 0; fmt < AV_SAMPLE_FMT_NB; fmt++)
+        if (av_sample_fmt_is_planar(fmt))
+            ff_add_format(&ret, fmt);
+
+    return ret;
+}
+
 AVFilterFormats *ff_all_samplerates(void)
 {
     AVFilterFormats *ret = av_mallocz(sizeof(*ret));
