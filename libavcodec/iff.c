@@ -285,7 +285,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
     int err;
 
     if (avctx->bits_per_coded_sample <= 8) {
-        int palette_size = avctx->extradata_size - AV_RB16(avctx->extradata);
+        int palette_size;
+
+        if (avctx->extradata_size >= 2)
+            palette_size = avctx->extradata_size - AV_RB16(avctx->extradata);
+        else
+            palette_size = 0;
         avctx->pix_fmt = (avctx->bits_per_coded_sample < 8) ||
                          (avctx->extradata_size >= 2 && palette_size) ? PIX_FMT_PAL8 : PIX_FMT_GRAY8;
     } else if (avctx->bits_per_coded_sample <= 32) {
