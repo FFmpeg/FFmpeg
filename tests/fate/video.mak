@@ -246,5 +246,7 @@ fate-yop: CMD = framecrc -i $(SAMPLES)/yop/test1.yop -pix_fmt rgb24 -an
 FATE_VIDEO += fate-xxan-wc4
 fate-xxan-wc4: CMD = framecrc -i $(SAMPLES)/wc4-xan/wc4trailer-partial.avi -an
 
+FATE_VIDEO += $(FATE_VIDEO-yes)
+
 FATE_SAMPLES_FFMPEG += $(FATE_VIDEO)
 fate-video: $(FATE_VIDEO)
