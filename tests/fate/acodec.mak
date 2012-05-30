@@ -60,10 +60,12 @@ fate-acodec-flac: FMT = flac
 fate-acodec-flac: CODEC = flac -compression_level 2
 
 FATE_ACODEC += fate-acodec-g723_1
+fate-acodec-g723_1: tests/data/asynth-8000-1.wav
+fate-acodec-g723_1: SRC = tests/data/asynth-8000-1.wav
 fate-acodec-g723_1: FMT = g723_1
 fate-acodec-g723_1: CODEC = g723_1
-fate-acodec-g723_1: ENCOPTS = -b:a 6.3k -ac 1 -ar 8000
-#fate-acodec-g723_1: DECOPTS = -ac 2 -ar 44100
+fate-acodec-g723_1: ENCOPTS = -b:a 6.3k
+fate-acodec-g723_1: CMP_SHIFT = 8
 
 FATE_ACODEC += fate-acodec-ra144
 fate-acodec-ra144: FMT = rm
