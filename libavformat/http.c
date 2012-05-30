@@ -227,7 +227,7 @@ static int http_getc(HTTPContext *s)
     if (s->buf_ptr >= s->buf_end) {
         len = ffurl_read(s->hd, s->buffer, BUFFER_SIZE);
         if (len < 0) {
-            return AVERROR(EIO);
+            return len;
         } else if (len == 0) {
             return -1;
         } else {
@@ -247,7 +247,7 @@ static int http_get_line(HTTPContext *s, char *line, int line_size)
     for(;;) {
         ch = http_getc(s);
         if (ch < 0)
-            return AVERROR(EIO);
+            return ch;
         if (ch == '\n') {
             /* process line */
             if (q > line && q[-1] == '\r')
@@ -354,8 +354,8 @@ static int http_read_header(URLContext *h, int *new_location)
     int err = 0;
 
     for (;;) {
-        if (http_get_line(s, line, sizeof(line)) < 0)
-            return AVERROR(EIO);
+        if ((err = http_get_line(s, line, sizeof(line))) < 0)
+            return err;
 
         av_dlog(NULL, "header='%s'\n", line);
 
@@ -447,8 +447,8 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
 
     av_freep(&authstr);
     av_freep(&proxyauthstr);
-    if (ffurl_write(s->hd, s->buffer, strlen(s->buffer)) < 0)
-        return AVERROR(EIO);
+    if ((err = ffurl_write(s->hd, s->buffer, strlen(s->buffer))) < 0)
+        return err;
 
     if (s->post_data)
         if ((err = ffurl_write(s->hd, s->post_data, s->post_datalen)) < 0)
@@ -526,8 +526,8 @@ static int http_read(URLContext *h, uint8_t *buf, int size)
 
             for(;;) {
                 do {
-                    if (http_get_line(s, line, sizeof(line)) < 0)
-                        return AVERROR(EIO);
+                    if ((err = http_get_line(s, line, sizeof(line))) < 0)
+                        return err;
                 } while (!*line);    /* skip CR LF from last chunk */
 
                 s->chunksize = strtoll(line, NULL, 16);
