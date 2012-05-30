@@ -44,9 +44,9 @@ const char *avfilter_license(void)
     return LICENSE_PREFIX LIBAV_LICENSE + sizeof(LICENSE_PREFIX) - 1;
 }
 
-void avfilter_insert_pad(unsigned idx, unsigned *count, size_t padidx_off,
-                         AVFilterPad **pads, AVFilterLink ***links,
-                         AVFilterPad *newpad)
+void ff_insert_pad(unsigned idx, unsigned *count, size_t padidx_off,
+                   AVFilterPad **pads, AVFilterLink ***links,
+                   AVFilterPad *newpad)
 {
     unsigned i;
 
@@ -425,5 +425,23 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
 int avfilter_default_config_output_link(AVFilterLink *link)
 {
     return 0;
+}
+void avfilter_insert_pad(unsigned idx, unsigned *count, size_t padidx_off,
+                         AVFilterPad **pads, AVFilterLink ***links,
+                         AVFilterPad *newpad)
+{
+    ff_insert_pad(idx, count, padidx_off, pads, links, newpad);
+}
+void avfilter_insert_inpad(AVFilterContext *f, unsigned index,
+                           AVFilterPad *p)
+{
+    ff_insert_pad(index, &f->input_count, offsetof(AVFilterLink, dstpad),
+                  &f->input_pads, &f->inputs, p);
+}
+void avfilter_insert_outpad(AVFilterContext *f, unsigned index,
+                            AVFilterPad *p)
+{
+    ff_insert_pad(index, &f->output_count, offsetof(AVFilterLink, srcpad),
+                  &f->output_pads, &f->outputs, p);
 }
 #endif

@@ -497,7 +497,7 @@ static int init(AVFilterContext *ctx, const char *args, void *opaque)
         pad.name           = av_strdup(name);
         pad.filter_samples = filter_samples;
 
-        avfilter_insert_inpad(ctx, i, &pad);
+        ff_insert_inpad(ctx, i, &pad);
     }
 
     return 0;

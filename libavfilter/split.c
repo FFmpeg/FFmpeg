@@ -25,6 +25,7 @@
 
 #include "avfilter.h"
 #include "audio.h"
+#include "internal.h"
 #include "video.h"
 
 static int split_init(AVFilterContext *ctx, const char *args, void *opaque)
@@ -48,7 +49,7 @@ static int split_init(AVFilterContext *ctx, const char *args, void *opaque)
         pad.type = ctx->filter->inputs[0].type;
         pad.name = av_strdup(name);
 
-        avfilter_insert_outpad(ctx, i, &pad);
+        ff_insert_outpad(ctx, i, &pad);
     }
 
     return 0;
