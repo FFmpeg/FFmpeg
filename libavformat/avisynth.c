@@ -49,10 +49,15 @@ static int avisynth_read_header(AVFormatContext *s)
   DWORD id;
   AVStream *st;
   AVISynthStream *stream;
+  wchar_t filename_wchar[1024] = { 0 };
+  char filename_char[1024] = { 0 };
 
   AVIFileInit();
 
-  res = AVIFileOpen(&avs->file, s->filename, OF_READ|OF_SHARE_DENY_WRITE, NULL);
+  /* avisynth can't accept UTF-8 filename */
+  MultiByteToWideChar(CP_UTF8, 0, s->filename, -1, filename_wchar, 1024);
+  WideCharToMultiByte(CP_THREAD_ACP, 0, filename_wchar, -1, filename_char, 1024, NULL, NULL);
+  res = AVIFileOpen(&avs->file, filename_char, OF_READ|OF_SHARE_DENY_WRITE, NULL);
   if (res != S_OK)
     {
       av_log(s, AV_LOG_ERROR, "AVIFileOpen failed with error %ld", res);
