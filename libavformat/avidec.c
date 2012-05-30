@@ -602,7 +602,8 @@ static int avi_read_header(AVFormatContext *s)
                     }
 
                     if(size > 10*4 && size<(1<<30) && size < avi->fsize){
-                        st->codec->extradata_size= size - 10*4;
+                        if(esize == size-1 && (esize&1)) st->codec->extradata_size= esize - 10*4;
+                        else                             st->codec->extradata_size=  size - 10*4;
                         st->codec->extradata= av_malloc(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
                         if (!st->codec->extradata) {
                             st->codec->extradata_size= 0;
