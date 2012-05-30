@@ -65,13 +65,13 @@ static FILE *report_file;
 
 void init_opts(void)
 {
-#if CONFIG_SWSCALE
-    sws_opts = sws_getContext(16, 16, 0, 16, 16, 0, SWS_BICUBIC,
+
+    if(CONFIG_SWSCALE)
+        sws_opts = sws_getContext(16, 16, 0, 16, 16, 0, SWS_BICUBIC,
                               NULL, NULL, NULL);
-#endif
-#if CONFIG_SWRESAMPLE
-    swr_opts = swr_alloc();
-#endif
+
+    if(CONFIG_SWRESAMPLE)
+        swr_opts = swr_alloc();
 }
 
 void uninit_opts(void)
@@ -80,9 +80,10 @@ void uninit_opts(void)
     sws_freeContext(sws_opts);
     sws_opts = NULL;
 #endif
-#if CONFIG_SWRESAMPLE
-    swr_free(&swr_opts);
-#endif
+
+    if(CONFIG_SWRESAMPLE)
+        swr_free(&swr_opts);
+
     av_dict_free(&format_opts);
     av_dict_free(&codec_opts);
 }
