@@ -305,9 +305,9 @@ static int decode_frame(AVCodecContext *avctx,
             if (!variable_buffer_data_size)
                 return -1;
 
-            switch (*buf) {
+            s->compr = *buf;
+            switch (s->compr) {
             case EXR_RAW:
-                s->compr = *buf;
                 break;
             case EXR_RLE:
             case EXR_ZIP1:
@@ -315,7 +315,7 @@ static int decode_frame(AVCodecContext *avctx,
             case EXR_PIZ:
             case EXR_B44:
             default:
-                av_log(avctx, AV_LOG_ERROR, "This type of compression is not supported\n");
+                av_log(avctx, AV_LOG_ERROR, "Compression type %d is not supported\n", s->compr);
                 return -1;
             }
 
