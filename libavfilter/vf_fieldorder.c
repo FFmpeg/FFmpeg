@@ -28,6 +28,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "formats.h"
 
 typedef struct
 {
@@ -76,12 +77,12 @@ static int query_formats(AVFilterContext *ctx)
                  || av_pix_fmt_descriptors[pix_fmt].flags & PIX_FMT_BITSTREAM)
                 && av_pix_fmt_descriptors[pix_fmt].nb_components
                 && !av_pix_fmt_descriptors[pix_fmt].log2_chroma_h
-                && (ret = avfilter_add_format(&formats, pix_fmt)) < 0) {
-                avfilter_formats_unref(&formats);
+                && (ret = ff_add_format(&formats, pix_fmt)) < 0) {
+                ff_formats_unref(&formats);
                 return ret;
             }
-        avfilter_formats_ref(formats, &ctx->inputs[0]->out_formats);
-        avfilter_formats_ref(formats, &ctx->outputs[0]->in_formats);
+        ff_formats_ref(formats, &ctx->inputs[0]->out_formats);
+        ff_formats_ref(formats, &ctx->outputs[0]->in_formats);
     }
 
     return 0;

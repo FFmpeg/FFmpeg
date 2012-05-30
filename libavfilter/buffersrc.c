@@ -284,14 +284,14 @@ static int query_formats(AVFilterContext *ctx)
 
     switch (ctx->outputs[0]->type) {
     case AVMEDIA_TYPE_VIDEO:
-        avfilter_add_format(&formats, c->pix_fmt);
-        avfilter_set_common_formats(ctx, formats);
+        ff_add_format(&formats, c->pix_fmt);
+        ff_set_common_formats(ctx, formats);
         break;
     case AVMEDIA_TYPE_AUDIO:
-        avfilter_add_format(&formats,           c->sample_fmt);
-        avfilter_set_common_formats(ctx, formats);
+        ff_add_format(&formats,           c->sample_fmt);
+        ff_set_common_formats(ctx, formats);
 
-        avfilter_add_format(&samplerates,       c->sample_rate);
+        ff_add_format(&samplerates,       c->sample_rate);
         ff_set_common_samplerates(ctx, samplerates);
 
         ff_add_channel_layout(&channel_layouts, c->channel_layout);

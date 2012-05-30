@@ -25,6 +25,7 @@
 
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "formats.h"
 #include "video.h"
 
 typedef struct {
@@ -89,7 +90,7 @@ static AVFilterFormats *make_format_list(FormatContext *format, int flag)
 #if CONFIG_FORMAT_FILTER
 static int query_formats_format(AVFilterContext *ctx)
 {
-    avfilter_set_common_formats(ctx, make_format_list(ctx->priv, 1));
+    ff_set_common_formats(ctx, make_format_list(ctx->priv, 1));
     return 0;
 }
 
@@ -119,7 +120,7 @@ AVFilter avfilter_vf_format = {
 #if CONFIG_NOFORMAT_FILTER
 static int query_formats_noformat(AVFilterContext *ctx)
 {
-    avfilter_set_common_formats(ctx, make_format_list(ctx->priv, 0));
+    ff_set_common_formats(ctx, make_format_list(ctx->priv, 0));
     return 0;
 }
 

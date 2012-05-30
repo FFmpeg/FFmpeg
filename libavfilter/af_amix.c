@@ -525,8 +525,8 @@ static void uninit(AVFilterContext *ctx)
 static int query_formats(AVFilterContext *ctx)
 {
     AVFilterFormats *formats = NULL;
-    avfilter_add_format(&formats, AV_SAMPLE_FMT_FLT);
-    avfilter_set_common_formats(ctx, formats);
+    ff_add_format(&formats, AV_SAMPLE_FMT_FLT);
+    ff_set_common_formats(ctx, formats);
     ff_set_common_channel_layouts(ctx, ff_all_channel_layouts());
     ff_set_common_samplerates(ctx, ff_all_samplerates());
     return 0;

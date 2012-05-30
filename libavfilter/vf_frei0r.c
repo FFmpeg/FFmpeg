@@ -31,6 +31,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/parseutils.h"
 #include "avfilter.h"
+#include "formats.h"
 
 typedef f0r_instance_t (*f0r_construct_f)(unsigned int width, unsigned int height);
 typedef void (*f0r_destruct_f)(f0r_instance_t instance);
@@ -320,20 +321,20 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterFormats *formats = NULL;
 
     if        (frei0r->plugin_info.color_model == F0R_COLOR_MODEL_BGRA8888) {
-        avfilter_add_format(&formats, PIX_FMT_BGRA);
+        ff_add_format(&formats, PIX_FMT_BGRA);
     } else if (frei0r->plugin_info.color_model == F0R_COLOR_MODEL_RGBA8888) {
-        avfilter_add_format(&formats, PIX_FMT_RGBA);
+        ff_add_format(&formats, PIX_FMT_RGBA);
     } else {                                   /* F0R_COLOR_MODEL_PACKED32 */
         static const enum PixelFormat pix_fmts[] = {
             PIX_FMT_BGRA, PIX_FMT_ARGB, PIX_FMT_ABGR, PIX_FMT_ARGB, PIX_FMT_NONE
         };
-        formats = avfilter_make_format_list(pix_fmts);
+        formats = ff_make_format_list(pix_fmts);
     }
 
     if (!formats)
         return AVERROR(ENOMEM);
 
-    avfilter_set_common_formats(ctx, formats);
+    ff_set_common_formats(ctx, formats);
     return 0;
 }
 

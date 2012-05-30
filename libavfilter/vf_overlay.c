@@ -26,6 +26,7 @@
  */
 
 #include "avfilter.h"
+#include "formats.h"
 #include "libavutil/eval.h"
 #include "libavutil/avstring.h"
 #include "libavutil/pixdesc.h"
@@ -94,12 +95,12 @@ static int query_formats(AVFilterContext *ctx)
 {
     const enum PixelFormat inout_pix_fmts[] = { PIX_FMT_YUV420P,  PIX_FMT_NONE };
     const enum PixelFormat blend_pix_fmts[] = { PIX_FMT_YUVA420P, PIX_FMT_NONE };
-    AVFilterFormats *inout_formats = avfilter_make_format_list(inout_pix_fmts);
-    AVFilterFormats *blend_formats = avfilter_make_format_list(blend_pix_fmts);
+    AVFilterFormats *inout_formats = ff_make_format_list(inout_pix_fmts);
+    AVFilterFormats *blend_formats = ff_make_format_list(blend_pix_fmts);
 
-    avfilter_formats_ref(inout_formats, &ctx->inputs [MAIN   ]->out_formats);
-    avfilter_formats_ref(blend_formats, &ctx->inputs [OVERLAY]->out_formats);
-    avfilter_formats_ref(inout_formats, &ctx->outputs[MAIN   ]->in_formats );
+    ff_formats_ref(inout_formats, &ctx->inputs [MAIN   ]->out_formats);
+    ff_formats_ref(blend_formats, &ctx->inputs [OVERLAY]->out_formats);
+    ff_formats_ref(inout_formats, &ctx->outputs[MAIN   ]->in_formats );
 
     return 0;
 }

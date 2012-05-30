@@ -27,6 +27,7 @@
 
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "formats.h"
 
 typedef struct {
     int Coefs[4][512*16];
@@ -268,7 +269,7 @@ static int query_formats(AVFilterContext *ctx)
         PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_YUV411P, PIX_FMT_NONE
     };
 
-    avfilter_set_common_formats(ctx, avfilter_make_format_list(pix_fmts));
+    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
 
     return 0;
 }

@@ -29,6 +29,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "formats.h"
 #include "internal.h"
 
 static const char *const var_names[] = {
@@ -163,7 +164,7 @@ static int query_formats(AVFilterContext *ctx)
     enum PixelFormat *pix_fmts = lut->is_rgb ? rgb_pix_fmts :
                                  lut->is_yuv ? yuv_pix_fmts : all_pix_fmts;
 
-    avfilter_set_common_formats(ctx, avfilter_make_format_list(pix_fmts));
+    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
     return 0;
 }
 

@@ -120,10 +120,10 @@ int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
     /* if any information on supported media formats already exists on the
      * link, we need to preserve that */
     if (link->out_formats)
-        avfilter_formats_changeref(&link->out_formats,
+        ff_formats_changeref(&link->out_formats,
                                    &filt->outputs[filt_dstpad_idx]->out_formats);
     if (link->out_samplerates)
-        avfilter_formats_changeref(&link->out_samplerates,
+        ff_formats_changeref(&link->out_samplerates,
                                    &filt->outputs[filt_dstpad_idx]->out_samplerates);
     if (link->out_channel_layouts)
         ff_channel_layouts_changeref(&link->out_channel_layouts,
@@ -380,10 +380,10 @@ void avfilter_free(AVFilterContext *filter)
         if ((link = filter->inputs[i])) {
             if (link->src)
                 link->src->outputs[link->srcpad - link->src->output_pads] = NULL;
-            avfilter_formats_unref(&link->in_formats);
-            avfilter_formats_unref(&link->out_formats);
-            avfilter_formats_unref(&link->in_samplerates);
-            avfilter_formats_unref(&link->out_samplerates);
+            ff_formats_unref(&link->in_formats);
+            ff_formats_unref(&link->out_formats);
+            ff_formats_unref(&link->in_samplerates);
+            ff_formats_unref(&link->out_samplerates);
             ff_channel_layouts_unref(&link->in_channel_layouts);
             ff_channel_layouts_unref(&link->out_channel_layouts);
         }
@@ -393,10 +393,10 @@ void avfilter_free(AVFilterContext *filter)
         if ((link = filter->outputs[i])) {
             if (link->dst)
                 link->dst->inputs[link->dstpad - link->dst->input_pads] = NULL;
-            avfilter_formats_unref(&link->in_formats);
-            avfilter_formats_unref(&link->out_formats);
-            avfilter_formats_unref(&link->in_samplerates);
-            avfilter_formats_unref(&link->out_samplerates);
+            ff_formats_unref(&link->in_formats);
+            ff_formats_unref(&link->out_formats);
+            ff_formats_unref(&link->in_samplerates);
+            ff_formats_unref(&link->out_samplerates);
             ff_channel_layouts_unref(&link->in_channel_layouts);
             ff_channel_layouts_unref(&link->out_channel_layouts);
         }

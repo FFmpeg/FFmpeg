@@ -24,6 +24,7 @@
  */
 
 #include "avfilter.h"
+#include "formats.h"
 #include "libavutil/avstring.h"
 #include "libavutil/eval.h"
 #include "libavutil/mathematics.h"
@@ -123,21 +124,21 @@ static int query_formats(AVFilterContext *ctx)
         formats = NULL;
         for (pix_fmt = 0; pix_fmt < PIX_FMT_NB; pix_fmt++)
             if (   sws_isSupportedInput(pix_fmt)
-                && (ret = avfilter_add_format(&formats, pix_fmt)) < 0) {
-                avfilter_formats_unref(&formats);
+                && (ret = ff_add_format(&formats, pix_fmt)) < 0) {
+                ff_formats_unref(&formats);
                 return ret;
             }
-        avfilter_formats_ref(formats, &ctx->inputs[0]->out_formats);
+        ff_formats_ref(formats, &ctx->inputs[0]->out_formats);
     }
     if (ctx->outputs[0]) {
         formats = NULL;
         for (pix_fmt = 0; pix_fmt < PIX_FMT_NB; pix_fmt++)
             if (    sws_isSupportedOutput(pix_fmt)
-                && (ret = avfilter_add_format(&formats, pix_fmt)) < 0) {
-                avfilter_formats_unref(&formats);
+                && (ret = ff_add_format(&formats, pix_fmt)) < 0) {
+                ff_formats_unref(&formats);
                 return ret;
             }
-        avfilter_formats_ref(formats, &ctx->outputs[0]->in_formats);
+        ff_formats_ref(formats, &ctx->outputs[0]->in_formats);
     }
 
     return 0;

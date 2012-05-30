@@ -76,7 +76,7 @@ do {                                                                            
     MERGE_REF(ret, b, fmts, type, fail);                                        \
 } while (0)
 
-AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
+AVFilterFormats *ff_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
 {
     AVFilterFormats *ret = NULL;
 
@@ -161,7 +161,7 @@ int ff_fmt_is_in(int fmt, const int *fmts)
     return 0;
 }
 
-AVFilterFormats *avfilter_make_format_list(const int *fmts)
+AVFilterFormats *ff_make_format_list(const int *fmts)
 {
     AVFilterFormats *formats;
     int count;
@@ -195,7 +195,7 @@ do {                                                        \
     return 0;                                               \
 } while (0)
 
-int avfilter_add_format(AVFilterFormats **avff, int fmt)
+int ff_add_format(AVFilterFormats **avff, int fmt)
 {
     ADD_FORMAT(avff, fmt, int, formats, format_count);
 }
@@ -205,7 +205,7 @@ int ff_add_channel_layout(AVFilterChannelLayouts **l, uint64_t channel_layout)
     ADD_FORMAT(l, channel_layout, uint64_t, channel_layouts, nb_channel_layouts);
 }
 
-AVFilterFormats *avfilter_all_formats(enum AVMediaType type)
+AVFilterFormats *ff_all_formats(enum AVMediaType type)
 {
     AVFilterFormats *ret = NULL;
     int fmt;
@@ -215,7 +215,7 @@ AVFilterFormats *avfilter_all_formats(enum AVMediaType type)
     for (fmt = 0; fmt < num_formats; fmt++)
         if ((type != AVMEDIA_TYPE_VIDEO) ||
             (type == AVMEDIA_TYPE_VIDEO && !(av_pix_fmt_descriptors[fmt].flags & PIX_FMT_HWACCEL)))
-            avfilter_add_format(&ret, fmt);
+            ff_add_format(&ret, fmt);
 
     return ret;
 }
@@ -244,7 +244,7 @@ void ff_channel_layouts_ref(AVFilterChannelLayouts *f, AVFilterChannelLayouts **
     FORMATS_REF(f, ref);
 }
 
-void avfilter_formats_ref(AVFilterFormats *f, AVFilterFormats **ref)
+void ff_formats_ref(AVFilterFormats *f, AVFilterFormats **ref)
 {
     FORMATS_REF(f, ref);
 }
@@ -280,7 +280,7 @@ do {                                                               \
     *ref = NULL;                                                   \
 } while (0)
 
-void avfilter_formats_unref(AVFilterFormats **ref)
+void ff_formats_unref(AVFilterFormats **ref)
 {
     FORMATS_UNREF(ref, formats);
 }
@@ -309,8 +309,7 @@ void ff_channel_layouts_changeref(AVFilterChannelLayouts **oldref,
     FORMATS_CHANGEREF(oldref, newref);
 }
 
-void avfilter_formats_changeref(AVFilterFormats **oldref,
-                                AVFilterFormats **newref)
+void ff_formats_changeref(AVFilterFormats **oldref, AVFilterFormats **newref)
 {
     FORMATS_CHANGEREF(oldref, newref);
 }
@@ -350,7 +349,7 @@ void ff_set_common_samplerates(AVFilterContext *ctx,
                                AVFilterFormats *samplerates)
 {
     SET_COMMON_FORMATS(ctx, samplerates, in_samplerates, out_samplerates,
-                       avfilter_formats_ref, formats);
+                       ff_formats_ref, formats);
 }
 
 /**
@@ -358,10 +357,10 @@ void ff_set_common_samplerates(AVFilterContext *ctx,
  * formats. If there are no links hooked to this filter, the list of formats is
  * freed.
  */
-void avfilter_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats)
+void ff_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats)
 {
     SET_COMMON_FORMATS(ctx, formats, in_formats, out_formats,
-                       avfilter_formats_ref, formats);
+                       ff_formats_ref, formats);
 }
 
 int ff_default_query_formats(AVFilterContext *ctx)
@@ -370,7 +369,7 @@ int ff_default_query_formats(AVFilterContext *ctx)
                             ctx->outputs && ctx->outputs[0] ? ctx->outputs[0]->type :
                             AVMEDIA_TYPE_VIDEO;
 
-    avfilter_set_common_formats(ctx, avfilter_all_formats(type));
+    ff_set_common_formats(ctx, ff_all_formats(type));
     if (type == AVMEDIA_TYPE_AUDIO) {
         ff_set_common_channel_layouts(ctx, ff_all_channel_layouts());
         ff_set_common_samplerates(ctx, ff_all_samplerates());
@@ -383,5 +382,38 @@ int ff_default_query_formats(AVFilterContext *ctx)
 int avfilter_default_query_formats(AVFilterContext *ctx)
 {
     return ff_default_query_formats(ctx);
+}
+void avfilter_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats)
+{
+    ff_set_common_formats(ctx, formats);
+}
+AVFilterFormats *avfilter_make_format_list(const int *fmts)
+{
+    return ff_make_format_list(fmts);
+}
+int avfilter_add_format(AVFilterFormats **avff, int fmt)
+{
+    return ff_add_format(avff, fmt);
+}
+AVFilterFormats *avfilter_all_formats(enum AVMediaType type)
+{
+    return ff_all_formats(type);
+}
+AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
+{
+    return ff_merge_formats(a, b);
+}
+void avfilter_formats_ref(AVFilterFormats *f, AVFilterFormats **ref)
+{
+    ff_formats_ref(f, ref);
+}
+void avfilter_formats_unref(AVFilterFormats **ref)
+{
+    ff_formats_unref(ref);
+}
+void avfilter_formats_changeref(AVFilterFormats **oldref,
+                                AVFilterFormats **newref)
+{
+    ff_formats_changeref(oldref, newref);
 }
 #endif

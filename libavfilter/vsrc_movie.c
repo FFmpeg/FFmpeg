@@ -36,6 +36,7 @@
 #include "libavutil/imgutils.h"
 #include "libavformat/avformat.h"
 #include "avfilter.h"
+#include "formats.h"
 
 typedef struct {
     const AVClass *class;
@@ -202,7 +203,7 @@ static int query_formats(AVFilterContext *ctx)
     MovieContext *movie = ctx->priv;
     enum PixelFormat pix_fmts[] = { movie->codec_ctx->pix_fmt, PIX_FMT_NONE };
 
-    avfilter_set_common_formats(ctx, avfilter_make_format_list(pix_fmts));
+    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
     return 0;
 }
 
