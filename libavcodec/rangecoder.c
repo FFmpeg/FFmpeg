@@ -148,7 +148,7 @@ STOP_TIMER("put_rac")
     for(i=0; i<SIZE; i++){
 START_TIMER
         if( (r[i]&1) != get_rac(&c, state) )
-            av_log(NULL, AV_LOG_DEBUG, "rac failure at %d\n", i);
+            av_log(NULL, AV_LOG_ERROR, "rac failure at %d\n", i);
 STOP_TIMER("get_rac")
     }
 
