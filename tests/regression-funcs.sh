@@ -86,14 +86,3 @@ do_avconv_crc()
     run_avconv $* -f crc "$target_crcfile"
     echo "$f $(cat $crcfile)"
 }
-
-do_video_encoding_nomd5()
-{
-    file=${outfile}$1
-    do_avconv_nomd5 $file $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $ENC_OPTS $2
-}
-
-do_audio_decoding_nomd5()
-{
-    do_avconv_nomd5 $pcm_dst $DEC_OPTS -i $target_path/$file -sample_fmt s16 -f wav $1
-}
