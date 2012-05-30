@@ -83,6 +83,8 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
 
     if (listen_socket) {
         int fd1;
+        int reuse = 1;
+        setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
         ret = bind(fd, cur_ai->ai_addr, cur_ai->ai_addrlen);
         if (ret) {
             ret = ff_neterrno();
