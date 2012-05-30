@@ -84,8 +84,16 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     if (listen_socket) {
         int fd1;
         ret = bind(fd, cur_ai->ai_addr, cur_ai->ai_addrlen);
+        if (ret) {
+            ret = ff_neterrno();
+            goto fail1;
+        }
         listen(fd, 1);
         fd1 = accept(fd, NULL, NULL);
+        if (fd1 < 0) {
+            ret = ff_neterrno();
+            goto fail1;
+        }
         closesocket(fd);
         fd = fd1;
         ff_socket_nonblock(fd, 1);
