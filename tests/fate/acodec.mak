@@ -40,8 +40,8 @@ FATE_ACODEC += fate-acodec-alac
 fate-acodec-alac: FMT = mov
 fate-acodec-alac: CODEC = alac -compression_level 1
 
-FATE_ACODEC += fate-acodec-dca
-fate-acodec-dca: CMD = enc_dec_pcm dts md5 s16le $(SRC) -c:a dca -strict -2
+#FATE_ACODEC += fate-acodec-dca
+#fate-acodec-dca: CMD = enc_dec_pcm dts md5 s16le $(SRC) -c:a dca -strict -2
 
 FATE_ACODEC += fate-acodec-dca2
 fate-acodec-dca2: CMD = enc_dec_pcm dts wav s16le $(SRC) -c:a dca -strict -2
