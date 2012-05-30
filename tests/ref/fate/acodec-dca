@@ -1,4 +1,1 @@
-66bd0e602be7fb97dc19151554c0ee29 *./tests/data/acodec/dca.dts
-1097124 ./tests/data/acodec/dca.dts
-stddev: 8944.44 PSNR: 17.30 MAXDIFF:56478 bytes:  1060864/  1058400
-stddev: 2424.93 PSNR: 28.64 MAXDIFF:13723 bytes:  1058944/  1058400
+MD5=f93a56223ea845f2e56270bf9138e0da
