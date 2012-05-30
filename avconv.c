@@ -180,7 +180,7 @@ typedef struct FrameBuffer {
     enum PixelFormat pix_fmt;
 
     int refcount;
-    struct InputStream *ist;
+    struct FrameBuffer **pool;  ///< head of the buffer pool
     struct FrameBuffer *next;
 } FrameBuffer;
 
@@ -449,7 +449,7 @@ static void reset_options(OptionsContext *o)
     init_opts();
 }
 
-static int alloc_buffer(InputStream *ist, AVCodecContext *s, FrameBuffer **pbuf)
+static int alloc_buffer(FrameBuffer **pool, AVCodecContext *s, FrameBuffer **pbuf)
 {
     FrameBuffer  *buf = av_mallocz(sizeof(*buf));
     int i, ret;
@@ -493,49 +493,51 @@ static int alloc_buffer(InputStream *ist, AVCodecContext *s, FrameBuffer **pbuf)
     buf->w       = s->width;
     buf->h       = s->height;
     buf->pix_fmt = s->pix_fmt;
-    buf->ist     = ist;
+    buf->pool    = pool;
 
     *pbuf = buf;
     return 0;
 }
 
-static void free_buffer_pool(InputStream *ist)
+static void free_buffer_pool(FrameBuffer **pool)
 {
-    FrameBuffer *buf = ist->buffer_pool;
+    FrameBuffer *buf = *pool;
     while (buf) {
-        ist->buffer_pool = buf->next;
+        *pool = buf->next;
         av_freep(&buf->base[0]);
         av_free(buf);
-        buf = ist->buffer_pool;
+        buf = *pool;
     }
 }
 
-static void unref_buffer(InputStream *ist, FrameBuffer *buf)
+static void unref_buffer(FrameBuffer *buf)
 {
+    FrameBuffer **pool = buf->pool;
+
     av_assert0(buf->refcount);
     buf->refcount--;
     if (!buf->refcount) {
-        buf->next = ist->buffer_pool;
-        ist->buffer_pool = buf;
+        buf->next = *pool;
+        *pool = buf;
     }
 }
 
 static int codec_get_buffer(AVCodecContext *s, AVFrame *frame)
 {
-    InputStream *ist = s->opaque;
+    FrameBuffer **pool = s->opaque;
     FrameBuffer *buf;
     int ret, i;
 
-    if (!ist->buffer_pool && (ret = alloc_buffer(ist, s, &ist->buffer_pool)) < 0)
+    if (!*pool && (ret = alloc_buffer(pool, s, pool)) < 0)
         return ret;
 
-    buf              = ist->buffer_pool;
-    ist->buffer_pool = buf->next;
+    buf              = *pool;
+    *pool            = buf->next;
     buf->next        = NULL;
     if (buf->w != s->width || buf->h != s->height || buf->pix_fmt != s->pix_fmt) {
         av_freep(&buf->base[0]);
         av_free(buf);
-        if ((ret = alloc_buffer(ist, s, &buf)) < 0)
+        if ((ret = alloc_buffer(pool, s, &buf)) < 0)
             return ret;
     }
     buf->refcount++;
@@ -560,21 +562,20 @@ static int codec_get_buffer(AVCodecContext *s, AVFrame *frame)
 
 static void codec_release_buffer(AVCodecContext *s, AVFrame *frame)
 {
-    InputStream *ist = s->opaque;
     FrameBuffer *buf = frame->opaque;
     int i;
 
     for (i = 0; i < FF_ARRAY_ELEMS(frame->data); i++)
         frame->data[i] = NULL;
 
-    unref_buffer(ist, buf);
+    unref_buffer(buf);
 }
 
 static void filter_release_buffer(AVFilterBuffer *fb)
 {
     FrameBuffer *buf = fb->priv;
     av_free(fb);
-    unref_buffer(buf->ist, buf);
+    unref_buffer(buf);
 }
 
 /**
@@ -1205,7 +1206,7 @@ void exit_program(int ret)
     for (i = 0; i < nb_input_streams; i++) {
         av_freep(&input_streams[i]->decoded_frame);
         av_dict_free(&input_streams[i]->opts);
-        free_buffer_pool(input_streams[i]);
+        free_buffer_pool(&input_streams[i]->buffer_pool);
         av_freep(&input_streams[i]->filters);
         av_freep(&input_streams[i]);
     }
@@ -2420,7 +2421,7 @@ static int init_input_stream(int ist_index, char *error, int error_len)
         if (codec->type == AVMEDIA_TYPE_VIDEO && codec->capabilities & CODEC_CAP_DR1) {
             ist->st->codec->get_buffer     = codec_get_buffer;
             ist->st->codec->release_buffer = codec_release_buffer;
-            ist->st->codec->opaque         = ist;
+            ist->st->codec->opaque         = &ist->buffer_pool;
         }
 
         if (!av_dict_get(ist->opts, "threads", NULL, 0))
