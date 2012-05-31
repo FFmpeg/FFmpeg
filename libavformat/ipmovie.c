@@ -529,8 +529,9 @@ static int ipmovie_probe(AVProbeData *p)
     uint8_t *b = p->buf;
     uint8_t *b_end = p->buf + p->buf_size - sizeof(signature);
     do {
-        if (memcmp(b++, signature, sizeof(signature)) == 0)
+        if (b[0] == signature[0] && memcmp(b, signature, sizeof(signature)) == 0)
             return AVPROBE_SCORE_MAX;
+        b++;
     } while (b < b_end);
 
     return 0;
