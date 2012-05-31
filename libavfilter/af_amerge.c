@@ -30,11 +30,11 @@
 #include "internal.h"
 
 typedef struct {
-    int nb_in_ch[2];       /**< number of channels for each input */
     int route[SWR_CH_MAX]; /**< channels routing, see copy_samples */
     int bps;
     struct amerge_input {
         struct FFBufQueue queue;
+        int nb_ch;         /**< number of channels for the input */
         int nb_samples;
         int pos;
     } in[2];
@@ -70,23 +70,23 @@ static int query_formats(AVFilterContext *ctx)
             av_get_channel_layout_string(buf, sizeof(buf), 0, inlayout[i]);
             av_log(ctx, AV_LOG_INFO, "Using \"%s\" for input %d\n", buf, i + 1);
         }
-        am->nb_in_ch[i] = av_get_channel_layout_nb_channels(inlayout[i]);
+        am->in[i].nb_ch = av_get_channel_layout_nb_channels(inlayout[i]);
     }
-    if (am->nb_in_ch[0] + am->nb_in_ch[1] > SWR_CH_MAX) {
+    if (am->in[0].nb_ch + am->in[1].nb_ch > SWR_CH_MAX) {
         av_log(ctx, AV_LOG_ERROR, "Too many channels (max %d)\n", SWR_CH_MAX);
         return AVERROR(EINVAL);
     }
     if (inlayout[0] & inlayout[1]) {
         av_log(ctx, AV_LOG_WARNING,
                "Inputs overlap: output layout will be meaningless\n");
-        for (i = 0; i < am->nb_in_ch[0] + am->nb_in_ch[1]; i++)
+        for (i = 0; i < am->in[0].nb_ch + am->in[1].nb_ch; i++)
             am->route[i] = i;
-        outlayout = av_get_default_channel_layout(am->nb_in_ch[0] +
-                                                  am->nb_in_ch[1]);
+        outlayout = av_get_default_channel_layout(am->in[0].nb_ch +
+                                                  am->in[1].nb_ch);
         if (!outlayout)
-            outlayout = ((int64_t)1 << (am->nb_in_ch[0] + am->nb_in_ch[1])) - 1;
+            outlayout = ((int64_t)1 << (am->in[0].nb_ch + am->in[1].nb_ch)) - 1;
     } else {
-        int *route[2] = { am->route, am->route + am->nb_in_ch[0] };
+        int *route[2] = { am->route, am->route + am->in[0].nb_ch };
         int c, out_ch_number = 0;
 
         outlayout = inlayout[0] | inlayout[1];
@@ -151,11 +151,11 @@ static int request_frame(AVFilterLink *outlink)
 
 /**
  * Copy samples from two input streams to one output stream.
- * @param nb_in_ch  number of channels in each input stream
+ * @param in        inputs; used only for the nb_ch field;
  * @param route     routing values;
  *                  input channel i goes to output channel route[i];
- *                  i <  nb_in_ch[0] are the channels from the first output;
- *                  i >= nb_in_ch[0] are the channels from the second output
+ *                  i <  in[0].nb_ch are the channels from the first output;
+ *                  i >= in[0].nb_ch are the channels from the second output
  * @param ins       pointer to the samples of each inputs, in packed format;
  *                  will be left at the end of the copied samples
  * @param outs      pointer to the samples of the output, in packet format;
@@ -164,7 +164,7 @@ static int request_frame(AVFilterLink *outlink)
  * @param ns        number of samples to copy
  * @param bps       bytes per sample
  */
-static inline void copy_samples(int nb_in_ch[2], int *route, uint8_t *ins[2],
+static inline void copy_samples(struct amerge_input in[2], int *route, uint8_t *ins[2],
                                 uint8_t **outs, int ns, int bps)
 {
     int *route_cur;
@@ -173,12 +173,12 @@ static inline void copy_samples(int nb_in_ch[2], int *route, uint8_t *ins[2],
     while (ns--) {
         route_cur = route;
         for (i = 0; i < 2; i++) {
-            for (c = 0; c < nb_in_ch[i]; c++) {
+            for (c = 0; c < in[i].nb_ch; c++) {
                 memcpy((*outs) + bps * *(route_cur++), ins[i], bps);
                 ins[i] += bps;
             }
         }
-        *outs += (nb_in_ch[0] + nb_in_ch[1]) * bps;
+        *outs += (in[0].nb_ch + in[1].nb_ch) * bps;
     }
 }
 
@@ -204,7 +204,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
     for (i = 0; i < 2; i++) {
         inbuf[i] = ff_bufqueue_peek(&am->in[i].queue, 0);
         ins[i] = inbuf[i]->data[0] +
-                 am->in[i].pos * am->nb_in_ch[i] * am->bps;
+                 am->in[i].pos * am->in[i].nb_ch * am->bps;
     }
     outbuf->pts = inbuf[0]->pts == AV_NOPTS_VALUE ? AV_NOPTS_VALUE :
                   inbuf[0]->pts +
@@ -224,16 +224,16 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
            +~13% overall (including two common decoders) */
         switch (am->bps) {
             case 1:
-                copy_samples(am->nb_in_ch, am->route, ins, &outs, ns, 1);
+                copy_samples(am->in, am->route, ins, &outs, ns, 1);
                 break;
             case 2:
-                copy_samples(am->nb_in_ch, am->route, ins, &outs, ns, 2);
+                copy_samples(am->in, am->route, ins, &outs, ns, 2);
                 break;
             case 4:
-                copy_samples(am->nb_in_ch, am->route, ins, &outs, ns, 4);
+                copy_samples(am->in, am->route, ins, &outs, ns, 4);
                 break;
             default:
-                copy_samples(am->nb_in_ch, am->route, ins, &outs, ns, am->bps);
+                copy_samples(am->in, am->route, ins, &outs, ns, am->bps);
                 break;
         }
 
