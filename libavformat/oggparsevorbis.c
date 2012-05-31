@@ -203,12 +203,12 @@ vorbis_header (AVFormatContext * s, int idx)
     int pkt_type = os->buf[os->pstart];
 
     if (!(pkt_type & 1))
-        return 0;
+        return os->private ? 0 : -1;
 
     if (!os->private) {
         os->private = av_mallocz(sizeof(struct oggvorbis_private));
         if (!os->private)
-            return 0;
+            return -1;
     }
 
     if (os->psize < 1 || pkt_type > 5)
