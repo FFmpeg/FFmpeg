@@ -389,6 +389,10 @@ static int request_frame(AVFilterLink *outlink)
     int ret;
     int wanted_samples, available_samples;
 
+    ret = calc_active_inputs(s);
+    if (ret < 0)
+        return ret;
+
     if (s->input_state[0] == INPUT_OFF) {
         ret = request_samples(ctx, 1);
         if (ret < 0)
@@ -419,15 +423,16 @@ static int request_frame(AVFilterLink *outlink)
     av_assert0(s->frame_list->nb_frames > 0);
 
     wanted_samples = frame_list_next_frame_size(s->frame_list);
-    ret = request_samples(ctx, wanted_samples);
-    if (ret < 0)
-        return ret;
-
-    ret = calc_active_inputs(s);
-    if (ret < 0)
-        return ret;
 
     if (s->active_inputs > 1) {
+        ret = request_samples(ctx, wanted_samples);
+        if (ret < 0)
+            return ret;
+
+        ret = calc_active_inputs(s);
+        if (ret < 0)
+            return ret;
+
         available_samples = get_available_samples(s);
         if (!available_samples)
             return 0;
