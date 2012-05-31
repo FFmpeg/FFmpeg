@@ -37,6 +37,8 @@ static int ac3_eac3_probe(AVProbeData *p, enum CodecID expected_codec_id)
     end = buf + p->buf_size;
 
     for(; buf < end; buf++) {
+        if(buf > p->buf && (buf[0] != 0x0B || buf[1] != 0x77) )
+            continue;
         buf2 = buf;
 
         for(frames = 0; buf2 < end; frames++) {
