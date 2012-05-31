@@ -165,8 +165,8 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    if (argc < 3)
-        err_if(!freopen(NULL, "wb", stdout));
+//     if (argc < 3)
+//         err_if(!freopen(NULL, "wb", stdout));
 
     w = DEFAULT_WIDTH;
     h = DEFAULT_HEIGHT;
