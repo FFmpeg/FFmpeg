@@ -68,11 +68,13 @@ fate-acodec-g723_1: ENCOPTS = -b:a 6.3k
 fate-acodec-g723_1: CMP_SHIFT = 8
 
 FATE_ACODEC += fate-acodec-ra144
-fate-acodec-ra144: FMT = rm
-fate-acodec-ra144: CODEC = real_144
-fate-acodec-ra144: ENCOPTS = -ac 1
-fate-acodec-ra144: DECOPTS = -ac 2
-fate-acodec-ra144: CMP_SHIFT = -640
+fate-acodec-ra144: tests/data/asynth-8000-1.wav
+fate-acodec-ra144: SRC = tests/data/asynth-8000-1.wav
+fate-acodec-ra144: CMD = enc_dec_pcm rm wav s16le $(SRC) -c:a real_144
+fate-acodec-ra144: REF = $(SRC)
+fate-acodec-ra144: CMP = stddev
+fate-acodec-ra144: CMP_TARGET = 4777
+fate-acodec-ra144: CMP_SHIFT = -320
 
 FATE_ACODEC += fate-acodec-roqaudio
 fate-acodec-roqaudio: FMT = roq
