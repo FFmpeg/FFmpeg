@@ -2050,6 +2050,10 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
          if(s->pict_type == AV_PICTURE_TYPE_B)
             skip_bits_long(gb, s->cplx_estimation_trash_b);
 
+         if(get_bits_left(gb) < 3) {
+             av_log(s->avctx, AV_LOG_ERROR, "Header truncated\n");
+             return -1;
+         }
          s->intra_dc_threshold= ff_mpeg4_dc_threshold[ get_bits(gb, 3) ];
          if(!s->progressive_sequence){
              s->top_field_first= get_bits1(gb);
