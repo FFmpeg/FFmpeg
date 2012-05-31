@@ -421,12 +421,12 @@ typedef struct H264Context {
     uint8_t field_scan[16];
     uint8_t field_scan8x8[64];
     uint8_t field_scan8x8_cavlc[64];
-    const uint8_t *zigzag_scan_q0;
-    const uint8_t *zigzag_scan8x8_q0;
-    const uint8_t *zigzag_scan8x8_cavlc_q0;
-    const uint8_t *field_scan_q0;
-    const uint8_t *field_scan8x8_q0;
-    const uint8_t *field_scan8x8_cavlc_q0;
+    uint8_t zigzag_scan_q0[16];
+    uint8_t zigzag_scan8x8_q0[64];
+    uint8_t zigzag_scan8x8_cavlc_q0[64];
+    uint8_t field_scan_q0[16];
+    uint8_t field_scan8x8_q0[64];
+    uint8_t field_scan8x8_cavlc_q0[64];
 
     int x264_build;
 

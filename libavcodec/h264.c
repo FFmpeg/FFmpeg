@@ -2719,19 +2719,19 @@ static void init_scan_tables(H264Context *h)
 #undef T
     }
     if (h->sps.transform_bypass) { // FIXME same ugly
-        h->zigzag_scan_q0          = zigzag_scan;
-        h->zigzag_scan8x8_q0       = ff_zigzag_direct;
-        h->zigzag_scan8x8_cavlc_q0 = zigzag_scan8x8_cavlc;
-        h->field_scan_q0           = field_scan;
-        h->field_scan8x8_q0        = field_scan8x8;
-        h->field_scan8x8_cavlc_q0  = field_scan8x8_cavlc;
+        memcpy(h->zigzag_scan_q0          , zigzag_scan             , sizeof(h->zigzag_scan_q0         ));
+        memcpy(h->zigzag_scan8x8_q0       , ff_zigzag_direct        , sizeof(h->zigzag_scan8x8_q0      ));
+        memcpy(h->zigzag_scan8x8_cavlc_q0 , zigzag_scan8x8_cavlc    , sizeof(h->zigzag_scan8x8_cavlc_q0));
+        memcpy(h->field_scan_q0           , field_scan              , sizeof(h->field_scan_q0          ));
+        memcpy(h->field_scan8x8_q0        , field_scan8x8           , sizeof(h->field_scan8x8_q0       ));
+        memcpy(h->field_scan8x8_cavlc_q0  , field_scan8x8_cavlc     , sizeof(h->field_scan8x8_cavlc_q0 ));
     } else {
-        h->zigzag_scan_q0          = h->zigzag_scan;
-        h->zigzag_scan8x8_q0       = h->zigzag_scan8x8;
-        h->zigzag_scan8x8_cavlc_q0 = h->zigzag_scan8x8_cavlc;
-        h->field_scan_q0           = h->field_scan;
-        h->field_scan8x8_q0        = h->field_scan8x8;
-        h->field_scan8x8_cavlc_q0  = h->field_scan8x8_cavlc;
+        memcpy(h->zigzag_scan_q0          , h->zigzag_scan          , sizeof(h->zigzag_scan_q0         ));
+        memcpy(h->zigzag_scan8x8_q0       , h->zigzag_scan8x8       , sizeof(h->zigzag_scan8x8_q0      ));
+        memcpy(h->zigzag_scan8x8_cavlc_q0 , h->zigzag_scan8x8_cavlc , sizeof(h->zigzag_scan8x8_cavlc_q0));
+        memcpy(h->field_scan_q0           , h->field_scan           , sizeof(h->field_scan_q0          ));
+        memcpy(h->field_scan8x8_q0        , h->field_scan8x8        , sizeof(h->field_scan8x8_q0       ));
+        memcpy(h->field_scan8x8_cavlc_q0  , h->field_scan8x8_cavlc  , sizeof(h->field_scan8x8_cavlc_q0 ));
     }
 }
 
