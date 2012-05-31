@@ -394,6 +394,7 @@ const AVMetadataConv ff_riff_info_conv[] = {
     { "IPRT", "track"      },
     { "ITRK", "track"      },
     { "ISFT", "encoder"    },
+    { "ISMP", "timecode"   },
     { "ITCH", "encoded_by" },
     { 0 },
 };

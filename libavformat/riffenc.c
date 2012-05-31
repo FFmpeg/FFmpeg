@@ -257,7 +257,7 @@ void ff_riff_write_info_tag(AVIOContext *pb, const char *tag, const char *str)
 static const char riff_tags[][5] = {
     "IARL", "IART", "ICMS", "ICMT", "ICOP", "ICRD", "ICRP", "IDIM", "IDPI",
     "IENG", "IGNR", "IKEY", "ILGT", "ILNG", "IMED", "INAM", "IPLT", "IPRD",
-    "IPRT", "ITRK", "ISBJ", "ISFT", "ISHP", "ISRC", "ISRF", "ITCH",
+    "IPRT", "ITRK", "ISBJ", "ISFT", "ISHP", "ISMP", "ISRC", "ISRF", "ITCH",
     { 0 }
 };
 
