@@ -4399,6 +4399,9 @@ again:
                 init_get_bits(&hx->inter_gb, ptr, bit_length);
                 hx->inter_gb_ptr = &hx->inter_gb;
 
+                av_log(h->s.avctx, AV_LOG_ERROR, "Partitioned H.264 support is incomplete\n");
+                return AVERROR_PATCHWELCOME;
+
                 if (hx->redundant_pic_count == 0 &&
                     hx->intra_gb_ptr &&
                     hx->s.data_partitioning &&
