@@ -63,10 +63,13 @@ static int jacosub_probe(AVProbeData *p)
         ptr += 3; /* skip UTF-8 BOM */
 
     while (ptr < ptr_end) {
-        if (timed_line(ptr))
-            return AVPROBE_SCORE_MAX / 2;
         while (jss_whitespace(*ptr))
             ptr++;
+        if (*ptr != '#' && *ptr != '\n') {
+            if (timed_line(ptr))
+                return AVPROBE_SCORE_MAX / 2;
+            return 0;
+        }
         ptr += strcspn(ptr, "\n") + 1;
     }
     return 0;
