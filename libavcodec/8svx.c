@@ -47,7 +47,7 @@ typedef struct EightSvxContext {
     /* buffer used to store the whole audio decoded/interleaved chunk,
      * which is sent with the first packet */
     uint8_t *samples;
-    size_t samples_size;
+    int64_t samples_size;
     int samples_idx;
 } EightSvxContext;
 
