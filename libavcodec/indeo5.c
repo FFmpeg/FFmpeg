@@ -199,6 +199,10 @@ static int decode_gop_header(IVI45DecContext *ctx, AVCodecContext *avctx)
             }
 
             if (band->blk_size == 8) {
+                if(quant_mat >= 5){
+                    av_log(avctx, AV_LOG_ERROR, "quant_mat %d too large!\n", quant_mat);
+                    return -1;
+                }
                 band->intra_base  = &ivi5_base_quant_8x8_intra[quant_mat][0];
                 band->inter_base  = &ivi5_base_quant_8x8_inter[quant_mat][0];
                 band->intra_scale = &ivi5_scale_quant_8x8_intra[quant_mat][0];
