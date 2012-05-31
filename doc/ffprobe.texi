@@ -410,7 +410,7 @@ MOV timecode is extracted from tmcd track, so is available in the tmcd
 stream metadata (@option{-show_streams}, see @var{TAG:timecode}).
 
 @item
-DV and GXF timecodes are available in format metadata
+DV, GXF and AVI timecodes are available in format metadata
 (@option{-show_format}, see @var{TAG:timecode}).
 
 @end itemize

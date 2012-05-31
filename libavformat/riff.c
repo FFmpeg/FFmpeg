@@ -389,6 +389,7 @@ const AVMetadataConv ff_riff_info_conv[] = {
     { "IPRD", "album"     },
     { "IPRT", "track"     },
     { "ISFT", "encoder"   },
+    { "ISMP", "timecode"  },
     { "ITCH", "encoded_by"},
     { 0 },
 };
@@ -396,7 +397,7 @@ const AVMetadataConv ff_riff_info_conv[] = {
 const char ff_riff_tags[][5] = {
     "IARL", "IART", "ICMS", "ICMT", "ICOP", "ICRD", "ICRP", "IDIM", "IDPI",
     "IENG", "IGNR", "IKEY", "ILGT", "ILNG", "IMED", "INAM", "IPLT", "IPRD",
-    "IPRT", "ISBJ", "ISFT", "ISHP", "ISRC", "ISRF", "ITCH",
+    "IPRT", "ISBJ", "ISFT", "ISHP", "ISMP", "ISRC", "ISRF", "ITCH",
     {0}
 };
 

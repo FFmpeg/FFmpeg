@@ -890,6 +890,7 @@ performance on systems without hardware floating point support).
 
 @multitable @columnfractions .4 .1 .1
 @item Codec/format      @tab Read   @tab Write
+@item AVI               @tab X      @tab X
 @item DV                @tab X      @tab X
 @item GXF               @tab X      @tab X
 @item MOV               @tab X      @tab
