@@ -237,6 +237,7 @@ typedef struct InputStream {
     int showed_multi_packet_warning;
     AVDictionary *opts;
     AVRational framerate;               /* framerate forced with -r */
+    int top_field_first;
 
     int resample_height;
     int resample_width;
@@ -2574,6 +2575,9 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
         return ret;
     }
 
+    if(ist->top_field_first>=0)
+        decoded_frame->top_field_first = ist->top_field_first;
+
     best_effort_timestamp= av_frame_get_best_effort_timestamp(decoded_frame);
     if(best_effort_timestamp != AV_NOPTS_VALUE)
         ist->next_pts = ist->pts = av_rescale_q(decoded_frame->pts = best_effort_timestamp, ist->st->time_base, AV_TIME_BASE_Q);
@@ -4081,6 +4085,9 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
                        framerate);
                 exit_program(1);
             }
+
+            ist->top_field_first = -1;
+            MATCH_PER_STREAM_OPT(top_field_first, i, ist->top_field_first, ic, st);
 
             break;
         case AVMEDIA_TYPE_AUDIO:
