@@ -26,28 +26,27 @@
 #include "libswresample/swresample.h" // only for SWR_CH_MAX
 #include "avfilter.h"
 #include "audio.h"
+#include "bufferqueue.h"
 #include "internal.h"
-
-#define QUEUE_SIZE 16
 
 typedef struct {
     int nb_in_ch[2];       /**< number of channels for each input */
     int route[SWR_CH_MAX]; /**< channels routing, see copy_samples */
     int bps;
-    struct amerge_queue {
-        AVFilterBufferRef *buf[QUEUE_SIZE];
-        int nb_buf, nb_samples, pos;
-    } queue[2];
+    struct amerge_input {
+        struct FFBufQueue queue;
+        int nb_samples;
+        int pos;
+    } in[2];
 } AMergeContext;
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
     AMergeContext *am = ctx->priv;
-    int i, j;
+    int i;
 
     for (i = 0; i < 2; i++)
-        for (j = 0; j < am->queue[i].nb_buf; j++)
-            avfilter_unref_buffer(am->queue[i].buf[j]);
+        ff_bufqueue_discard_all(&am->in[i].queue);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -144,7 +143,7 @@ static int request_frame(AVFilterLink *outlink)
     int i, ret;
 
     for (i = 0; i < 2; i++)
-        if (!am->queue[i].nb_samples)
+        if (!am->in[i].nb_samples)
             if ((ret = avfilter_request_frame(ctx->inputs[i])) < 0)
                 return ret;
     return 0;
@@ -189,47 +188,38 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
     AMergeContext *am = ctx->priv;
     AVFilterLink *const outlink = ctx->outputs[0];
     int input_number = inlink == ctx->inputs[1];
-    struct amerge_queue *inq = &am->queue[input_number];
     int nb_samples, ns, i;
-    AVFilterBufferRef *outbuf, **inbuf[2];
+    AVFilterBufferRef *outbuf, *inbuf[2];
     uint8_t *ins[2], *outs;
 
-    if (inq->nb_buf == QUEUE_SIZE) {
-        av_log(ctx, AV_LOG_ERROR, "Packet queue overflow; dropped\n");
-        avfilter_unref_buffer(insamples);
-        return;
-    }
-    inq->buf[inq->nb_buf++] = avfilter_ref_buffer(insamples, AV_PERM_READ |
-                                                             AV_PERM_PRESERVE);
-    inq->nb_samples += insamples->audio->nb_samples;
-    avfilter_unref_buffer(insamples);
-    if (!am->queue[!input_number].nb_samples)
+    ff_bufqueue_add(ctx, &am->in[input_number].queue, insamples);
+    am->in[input_number].nb_samples += insamples->audio->nb_samples;
+    if (!am->in[!input_number].nb_samples)
         return;
 
-    nb_samples = FFMIN(am->queue[0].nb_samples,
-                       am->queue[1].nb_samples);
-    outbuf = ff_get_audio_buffer(ctx->outputs[0], AV_PERM_WRITE,
-                                       nb_samples);
+    nb_samples = FFMIN(am->in[0].nb_samples,
+                       am->in[1].nb_samples);
+    outbuf = ff_get_audio_buffer(ctx->outputs[0], AV_PERM_WRITE, nb_samples);
     outs = outbuf->data[0];
     for (i = 0; i < 2; i++) {
-        inbuf[i] = am->queue[i].buf;
-        ins[i] = (*inbuf[i])->data[0] +
-                 am->queue[i].pos * am->nb_in_ch[i] * am->bps;
+        inbuf[i] = ff_bufqueue_peek(&am->in[i].queue, 0);
+        ins[i] = inbuf[i]->data[0] +
+                 am->in[i].pos * am->nb_in_ch[i] * am->bps;
     }
-    outbuf->pts = (*inbuf[0])->pts == AV_NOPTS_VALUE ? AV_NOPTS_VALUE :
-                  (*inbuf[0])->pts +
-                  av_rescale_q(am->queue[0].pos,
+    outbuf->pts = inbuf[0]->pts == AV_NOPTS_VALUE ? AV_NOPTS_VALUE :
+                  inbuf[0]->pts +
+                  av_rescale_q(am->in[0].pos,
                                (AVRational){ 1, ctx->inputs[0]->sample_rate },
                                ctx->outputs[0]->time_base);
 
-    avfilter_copy_buffer_ref_props(outbuf, *inbuf[0]);
+    avfilter_copy_buffer_ref_props(outbuf, inbuf[0]);
     outbuf->audio->nb_samples     = nb_samples;
     outbuf->audio->channel_layout = outlink->channel_layout;
 
     while (nb_samples) {
         ns = nb_samples;
         for (i = 0; i < 2; i++)
-            ns = FFMIN(ns, (*inbuf[i])->audio->nb_samples - am->queue[i].pos);
+            ns = FFMIN(ns, inbuf[i]->audio->nb_samples - am->in[i].pos);
         /* Unroll the most common sample formats: speed +~350% for the loop,
            +~13% overall (including two common decoders) */
         switch (am->bps) {
@@ -249,23 +239,15 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 
         nb_samples -= ns;
         for (i = 0; i < 2; i++) {
-            am->queue[i].nb_samples -= ns;
-            am->queue[i].pos += ns;
-            if (am->queue[i].pos == (*inbuf[i])->audio->nb_samples) {
-                am->queue[i].pos = 0;
-                avfilter_unref_buffer(*inbuf[i]);
-                *inbuf[i] = NULL;
-                inbuf[i]++;
-                ins[i] = *inbuf[i] ? (*inbuf[i])->data[0] : NULL;
+            am->in[i].nb_samples -= ns;
+            am->in[i].pos += ns;
+            if (am->in[i].pos == inbuf[i]->audio->nb_samples) {
+                am->in[i].pos = 0;
+                avfilter_unref_buffer(inbuf[i]);
+                ff_bufqueue_get(&am->in[i].queue);
+                inbuf[i] = ff_bufqueue_peek(&am->in[i].queue, 0);
+                ins[i] = inbuf[i] ? inbuf[i]->data[0] : NULL;
             }
-        }
-    }
-    for (i = 0; i < 2; i++) {
-        int nbufused = inbuf[i] - am->queue[i].buf;
-        if (nbufused) {
-            am->queue[i].nb_buf -= nbufused;
-            memmove(am->queue[i].buf, inbuf[i],
-                    am->queue[i].nb_buf * sizeof(**inbuf));
         }
     }
     ff_filter_samples(ctx->outputs[0], outbuf);
@@ -283,11 +265,11 @@ AVFilter avfilter_af_amerge = {
         { .name             = "in1",
           .type             = AVMEDIA_TYPE_AUDIO,
           .filter_samples   = filter_samples,
-          .min_perms        = AV_PERM_READ, },
+          .min_perms        = AV_PERM_READ | AV_PERM_PRESERVE, },
         { .name             = "in2",
           .type             = AVMEDIA_TYPE_AUDIO,
           .filter_samples   = filter_samples,
-          .min_perms        = AV_PERM_READ, },
+          .min_perms        = AV_PERM_READ | AV_PERM_PRESERVE, },
         { .name = NULL }
     },
     .outputs   = (const AVFilterPad[]) {
