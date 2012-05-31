@@ -30,6 +30,12 @@
 
 static av_cold int encode_init(AVCodecContext *avctx)
 {
+    if (avctx->width > 65535 || avctx->height > 65535) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Unsupported resolution %dx%d.\n", avctx->width, avctx->height);
+        return AVERROR_INVALIDDATA;
+    }
+
     avctx->coded_frame = av_frame_alloc();
     if (!avctx->coded_frame)
         return AVERROR(ENOMEM);
