@@ -305,6 +305,14 @@ int ff_audio_mix_init(AVAudioResampleContext *avr)
 {
     int ret;
 
+    if (avr->internal_sample_fmt != AV_SAMPLE_FMT_S16P &&
+        avr->internal_sample_fmt != AV_SAMPLE_FMT_FLTP) {
+        av_log(avr, AV_LOG_ERROR, "Unsupported internal format for "
+               "mixing: %s\n",
+               av_get_sample_fmt_name(avr->internal_sample_fmt));
+        return AVERROR(EINVAL);
+    }
+
     /* build matrix if the user did not already set one */
     if (!avr->am->matrix) {
         int i, j;
