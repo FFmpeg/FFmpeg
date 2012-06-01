@@ -161,6 +161,7 @@ static int http_open_cnx(URLContext *h)
         if ((cur_auth_type == HTTP_AUTH_NONE || s->auth_state.stale) &&
             s->auth_state.auth_type != HTTP_AUTH_NONE && attempts < 4) {
             ffurl_close(hd);
+            s->hd = hd = NULL;
             goto redo;
         } else
             goto fail;
@@ -169,6 +170,7 @@ static int http_open_cnx(URLContext *h)
         if ((cur_proxy_auth_type == HTTP_AUTH_NONE || s->proxy_auth_state.stale) &&
             s->proxy_auth_state.auth_type != HTTP_AUTH_NONE && attempts < 4) {
             ffurl_close(hd);
+            s->hd = hd = NULL;
             goto redo;
         } else
             goto fail;
@@ -177,6 +179,7 @@ static int http_open_cnx(URLContext *h)
         && location_changed == 1) {
         /* url moved, get next */
         ffurl_close(hd);
+        s->hd = hd = NULL;
         if (redirects++ >= MAX_REDIRECTS)
             return AVERROR(EIO);
         /* Restart the authentication process with the new target, which
