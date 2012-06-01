@@ -61,7 +61,7 @@ int av_strerror(int errnum, char *errbuf, size_t errbuf_size)
         av_strlcpy(errbuf, entry->str, errbuf_size);
     } else {
 #if HAVE_STRERROR_R
-        ret = strerror_r(AVUNERROR(errnum), errbuf, errbuf_size);
+        ret = AVERROR(strerror_r(AVUNERROR(errnum), errbuf, errbuf_size));
 #else
         ret = -1;
 #endif
