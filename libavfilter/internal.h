@@ -134,7 +134,13 @@ void ff_free_pool(AVFilterPool *pool);
 
 void ff_command_queue_pop(AVFilterContext *filter);
 
+/* misc debug functions */
+
 #define FF_DPRINTF_START(ctx, func) av_dlog(NULL, "%-16s: ", #func)
+
+char *ff_get_ref_perms_string(char *buf, size_t buf_size, int perms);
+
+void ff_dlog_ref(void *ctx, AVFilterBufferRef *ref, int end);
 
 void ff_dlog_link(void *ctx, AVFilterLink *link, int end);
 
