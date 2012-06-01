@@ -76,7 +76,11 @@ typedef struct MpegTSWrite {
     int pmt_start_pid;
     int start_pid;
 
-    int reemit_pat_pmt;
+    int reemit_pat_pmt; // backward compatibility
+
+#define MPEGTS_FLAG_REEMIT_PAT_PMT  0x01
+#define MPEGTS_FLAG_AAC_LATM        0x02
+    int flags;
 } MpegTSWrite;
 
 /* a PES packet header is generated every DEFAULT_PES_HEADER_FREQ packets */
@@ -97,6 +101,15 @@ static const AVOption options[] = {
     { "muxrate", NULL, offsetof(MpegTSWrite, mux_rate), AV_OPT_TYPE_INT, {1}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { "pes_payload_size", "Minimum PES packet payload in bytes",
       offsetof(MpegTSWrite, pes_payload_size), AV_OPT_TYPE_INT, {DEFAULT_PES_PAYLOAD_SIZE}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
+    { "mpegts_flags", "MPEG-TS muxing flags", offsetof(MpegTSWrite, flags), AV_OPT_TYPE_FLAGS, {.dbl = 0}, 0, INT_MAX,
+      AV_OPT_FLAG_ENCODING_PARAM, "mpegts_flags" },
+    { "resend_headers", "Reemit PAT/PMT before writing the next packet",
+      0, AV_OPT_TYPE_CONST, {.dbl = MPEGTS_FLAG_REEMIT_PAT_PMT}, 0, INT_MAX,
+      AV_OPT_FLAG_ENCODING_PARAM, "mpegts_flags"},
+    { "latm", "Use LATM packetization for AAC",
+      0, AV_OPT_TYPE_CONST, {.dbl = MPEGTS_FLAG_AAC_LATM}, 0, INT_MAX,
+      AV_OPT_FLAG_ENCODING_PARAM, "mpegts_flags"},
+    // backward compatibility
     { "resend_headers", "Reemit PAT/PMT before writing the next packet",
       offsetof(MpegTSWrite, reemit_pat_pmt), AV_OPT_TYPE_INT, {0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
@@ -239,7 +252,7 @@ static void mpegts_write_pat(AVFormatContext *s)
 
 static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
 {
-    //    MpegTSWrite *ts = s->priv_data;
+    MpegTSWrite *ts = s->priv_data;
     uint8_t data[1012], *q, *desc_length_ptr, *program_info_length_ptr;
     int val, stream_type, i;
 
@@ -278,7 +291,7 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
             stream_type = STREAM_TYPE_AUDIO_MPEG1;
             break;
         case CODEC_ID_AAC:
-            stream_type = STREAM_TYPE_AUDIO_AAC;
+            stream_type = (ts->flags & MPEGTS_FLAG_AAC_LATM) ? STREAM_TYPE_AUDIO_AAC_LATM : STREAM_TYPE_AUDIO_AAC;
             break;
         case CODEC_ID_AAC_LATM:
             stream_type = STREAM_TYPE_AUDIO_AAC_LATM;
@@ -583,7 +596,11 @@ static int mpegts_write_header(AVFormatContext *s)
                 ret = AVERROR(ENOMEM);
                 goto fail;
             }
-            ts_st->amux->oformat = av_guess_format("adts", NULL, NULL);
+            ts_st->amux->oformat = av_guess_format((ts->flags & MPEGTS_FLAG_AAC_LATM) ? "latm" : "adts", NULL, NULL);
+            if (!ts_st->amux->oformat) {
+                ret = AVERROR(EINVAL);
+                goto fail;
+            }
             ast = avformat_new_stream(ts_st->amux, NULL);
             ret = avcodec_copy_context(ast->codec, st->codec);
             if (ret != 0)
@@ -998,9 +1015,15 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     int64_t dts = AV_NOPTS_VALUE, pts = AV_NOPTS_VALUE;
 
     if (ts->reemit_pat_pmt) {
+        av_log(s, AV_LOG_WARNING, "resend_headers option is deprecated, use -mpegts_flags resend_headers\n");
+        ts->reemit_pat_pmt = 0;
+        ts->flags |= MPEGTS_FLAG_REEMIT_PAT_PMT;
+    }
+
+    if (ts->flags & MPEGTS_FLAG_REEMIT_PAT_PMT) {
         ts->pat_packet_count = ts->pat_packet_period - 1;
         ts->sdt_packet_count = ts->sdt_packet_period - 1;
-        ts->reemit_pat_pmt = 0;
+        ts->flags &= ~MPEGTS_FLAG_REEMIT_PAT_PMT;
     }
 
     if (pkt->pts != AV_NOPTS_VALUE)
