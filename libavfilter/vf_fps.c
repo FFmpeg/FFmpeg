@@ -60,7 +60,7 @@ static const AVOption options[] = {
 
 static const AVClass class = {
     .class_name = "FPS filter",
-    .item_name  = av_default_item_name,
+    .item_name  = avfilter_default_filter_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

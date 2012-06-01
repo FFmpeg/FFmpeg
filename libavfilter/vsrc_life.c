@@ -95,14 +95,9 @@ static const AVOption life_options[] = {
     { NULL },
 };
 
-static const char *life_get_name(void *ctx)
-{
-    return "life";
-}
-
 static const AVClass life_class = {
     "LifeContext",
-    life_get_name,
+    avfilter_default_filter_name,
     life_options
 };
 

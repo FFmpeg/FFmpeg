@@ -366,15 +366,15 @@ static int pad_count(const AVFilterPad *pads)
     return count;
 }
 
-static const char *filter_name(void *p)
+const char *avfilter_default_filter_name(void *filter_ctx)
 {
-    AVFilterContext *filter = p;
-    return filter->filter->name;
+    AVFilterContext *ctx = filter_ctx;
+    return ctx->name ? ctx->name : ctx->filter->name;
 }
 
 static const AVClass avfilter_class = {
     .class_name = "AVFilter",
-    .item_name  = filter_name,
+    .item_name  = avfilter_default_filter_name,
     .version    = LIBAVUTIL_VERSION_INT,
     .category = AV_CLASS_CATEGORY_FILTER,
 };

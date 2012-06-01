@@ -53,14 +53,9 @@ static const AVOption anullsrc_options[]= {
     { NULL },
 };
 
-static const char *anullsrc_get_name(void *ctx)
-{
-    return "anullsrc";
-}
-
 static const AVClass anullsrc_class = {
     "ANullSrcContext",
-    anullsrc_get_name,
+    avfilter_default_filter_name,
     anullsrc_options
 };
 

@@ -78,14 +78,9 @@ static const AVOption eval_options[]= {
 {NULL},
 };
 
-static const char *eval_get_name(void *ctx)
-{
-    return "aevalsrc";
-}
-
 static const AVClass eval_class = {
     "AEvalSrcContext",
-    eval_get_name,
+    avfilter_default_filter_name,
     eval_options
 };
 

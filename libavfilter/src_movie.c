@@ -78,14 +78,9 @@ static const AVOption movie_options[]= {
 {NULL},
 };
 
-static const char *movie_get_name(void *ctx)
-{
-    return "movie";
-}
-
 static const AVClass movie_class = {
     "MovieContext",
-    movie_get_name,
+    avfilter_default_filter_name,
     movie_options
 };
 

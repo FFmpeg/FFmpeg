@@ -205,14 +205,9 @@ static const AVOption drawtext_options[]= {
 {NULL},
 };
 
-static const char *drawtext_get_name(void *ctx)
-{
-    return "drawtext";
-}
-
 static const AVClass drawtext_class = {
     "DrawTextContext",
-    drawtext_get_name,
+    avfilter_default_filter_name,
     drawtext_options
 };
 

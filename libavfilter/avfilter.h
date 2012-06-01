@@ -634,6 +634,12 @@ struct AVFilterContext {
     struct AVFilterCommand *command_queue;
 };
 
+/**
+ * Print the name of the filter given a filter context.
+ */
+const char *avfilter_default_filter_name(void *filter_ctx);
+
+
 #if FF_API_PACKING
 enum AVFilterPacking {
     AVFILTER_PACKED = 0,

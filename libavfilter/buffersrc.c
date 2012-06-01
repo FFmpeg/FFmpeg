@@ -255,7 +255,7 @@ static const AVOption audio_options[] = {
 
 static const AVClass abuffer_class = {
     .class_name = "abuffer source",
-    .item_name  = av_default_item_name,
+    .item_name  = avfilter_default_filter_name,
     .option     = audio_options,
     .version    = LIBAVUTIL_VERSION_INT,
     .category   = AV_CLASS_CATEGORY_FILTER,

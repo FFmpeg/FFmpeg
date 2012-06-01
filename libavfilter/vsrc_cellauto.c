@@ -76,14 +76,9 @@ static const AVOption cellauto_options[] = {
     { NULL },
 };
 
-static const char *cellauto_get_name(void *ctx)
-{
-    return "cellauto";
-}
-
 static const AVClass cellauto_class = {
     "CellAutoContext",
-    cellauto_get_name,
+    avfilter_default_filter_name,
     cellauto_options
 };
 

@@ -89,14 +89,9 @@ static const AVOption lut_options[] = {
     {NULL},
 };
 
-static const char *lut_get_name(void *ctx)
-{
-    return "lut";
-}
-
 static const AVClass lut_class = {
     "LutContext",
-    lut_get_name,
+    avfilter_default_filter_name,
     lut_options
 };
 

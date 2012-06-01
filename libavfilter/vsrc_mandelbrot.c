@@ -103,14 +103,9 @@ static const AVOption mandelbrot_options[] = {
     {NULL},
 };
 
-static const char *mandelbrot_get_name(void *ctx)
-{
-    return "mandelbrot";
-}
-
 static const AVClass mandelbrot_class = {
     "MBContext",
-    mandelbrot_get_name,
+    avfilter_default_filter_name,
     mandelbrot_options
 };
 

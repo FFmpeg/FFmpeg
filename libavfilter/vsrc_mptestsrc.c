@@ -82,14 +82,9 @@ static const AVOption mptestsrc_options[]= {
     { NULL },
 };
 
-static const char *mptestsrc_get_name(void *ctx)
-{
-    return "mptestsrc";
-}
-
 static const AVClass mptestsrc_class = {
     "MPTestContext",
-    mptestsrc_get_name,
+    avfilter_default_filter_name,
     mptestsrc_options
 };
 

@@ -48,14 +48,9 @@ static const AVOption silencedetect_options[] = {
     { NULL },
 };
 
-static const char *silencedetect_get_name(void *ctx)
-{
-    return "silencedetect";
-}
-
 static const AVClass silencedetect_class = {
     .class_name = "SilenceDetectContext",
-    .item_name  = silencedetect_get_name,
+    .item_name  = avfilter_default_filter_name,
     .option     = silencedetect_options,
 };
 

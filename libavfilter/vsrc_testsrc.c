@@ -156,14 +156,9 @@ static int request_frame(AVFilterLink *outlink)
 
 #if CONFIG_NULLSRC_FILTER
 
-static const char *nullsrc_get_name(void *ctx)
-{
-    return "nullsrc";
-}
-
 static const AVClass nullsrc_class = {
     .class_name = "NullSourceContext",
-    .item_name  = nullsrc_get_name,
+    .item_name  = avfilter_default_filter_name,
     .option     = testsrc_options,
 };
 
@@ -196,14 +191,9 @@ AVFilter avfilter_vsrc_nullsrc = {
 
 #if CONFIG_TESTSRC_FILTER
 
-static const char *testsrc_get_name(void *ctx)
-{
-    return "testsrc";
-}
-
 static const AVClass testsrc_class = {
     .class_name = "TestSourceContext",
-    .item_name  = testsrc_get_name,
+    .item_name  = avfilter_default_filter_name,
     .option     = testsrc_options,
 };
 
@@ -423,14 +413,9 @@ AVFilter avfilter_vsrc_testsrc = {
 
 #if CONFIG_RGBTESTSRC_FILTER
 
-static const char *rgbtestsrc_get_name(void *ctx)
-{
-    return "rgbtestsrc";
-}
-
 static const AVClass rgbtestsrc_class = {
     .class_name = "RGBTestSourceContext",
-    .item_name  = rgbtestsrc_get_name,
+    .item_name  = avfilter_default_filter_name,
     .option     = testsrc_options,
 };
 

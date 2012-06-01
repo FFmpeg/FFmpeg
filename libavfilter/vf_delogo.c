@@ -149,14 +149,9 @@ static const AVOption delogo_options[]= {
     {NULL},
 };
 
-static const char *delogo_get_name(void *ctx)
-{
-    return "delogo";
-}
-
 static const AVClass delogo_class = {
     .class_name = "DelogoContext",
-    .item_name  = delogo_get_name,
+    .item_name  = avfilter_default_filter_name,
     .option     = delogo_options,
 };
 

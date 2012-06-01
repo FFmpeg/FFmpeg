@@ -69,14 +69,9 @@ static const AVOption fade_options[] = {
     {NULL},
 };
 
-static const char *fade_get_name(void *ctx)
-{
-    return "fade";
-}
-
 static const AVClass fade_class = {
     "FadeContext",
-    fade_get_name,
+    avfilter_default_filter_name,
     fade_options
 };
 
