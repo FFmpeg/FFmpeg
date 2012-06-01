@@ -2884,6 +2884,28 @@ static int need_output(void)
     return 0;
 }
 
+static int select_input_file(uint8_t *no_packet)
+{
+    int64_t ipts_min = INT64_MAX;
+    int i, file_index = -1;
+
+    for (i = 0; i < nb_input_streams; i++) {
+        InputStream *ist = input_streams[i];
+        int64_t ipts     = ist->last_dts;
+
+        if (ist->discard || no_packet[ist->file_index])
+            continue;
+        if (!input_files[ist->file_index]->eof_reached) {
+            if (ipts < ipts_min) {
+                ipts_min = ipts;
+                file_index = ist->file_index;
+            }
+        }
+    }
+
+    return file_index;
+}
+
 /*
  * The following code is the main loop of the file converter
  */
@@ -2912,9 +2934,6 @@ static int transcode(void)
     for (; received_sigterm == 0;) {
         int file_index, ist_index;
         AVPacket pkt;
-        int64_t ipts_min;
-
-        ipts_min = INT64_MAX;
 
         /* check if there's any stream where output is still needed */
         if (!need_output()) {
@@ -2922,22 +2941,8 @@ static int transcode(void)
             break;
         }
 
-        /* select the stream that we must read now by looking at the
-           smallest output pts */
-        file_index = -1;
-        for (i = 0; i < nb_input_streams; i++) {
-            int64_t ipts;
-            ist = input_streams[i];
-            ipts = ist->last_dts;
-            if (ist->discard || no_packet[ist->file_index])
-                continue;
-            if (!input_files[ist->file_index]->eof_reached) {
-                if (ipts < ipts_min) {
-                    ipts_min = ipts;
-                    file_index = ist->file_index;
-                }
-            }
-        }
+        /* select the stream that we must read now */
+        file_index = select_input_file(no_packet);
         /* if none, if is finished */
         if (file_index < 0) {
             if (no_packet_count) {
