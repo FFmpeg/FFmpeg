@@ -204,7 +204,7 @@ static inline void mmx_emms(void)
 {
 #if HAVE_MMX
     if (cpu_flags & AV_CPU_FLAG_MMX)
-        __asm__ volatile ("emms\n\t");
+        __asm__ volatile ("emms\n\t" ::: "memory");
 #endif
 }
 
