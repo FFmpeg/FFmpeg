@@ -1499,6 +1499,7 @@ void av_noreturn exit_program(int ret)
         output_streams[i]->bitstream_filters = NULL;
 
         av_freep(&output_streams[i]->filtered_frame);
+        av_freep(&output_streams[i]->avfilter);
         av_freep(&output_streams[i]);
     }
     for (i = 0; i < nb_input_files; i++) {
