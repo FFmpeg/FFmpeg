@@ -163,7 +163,8 @@ static int http_open_cnx(URLContext *h)
     if (s->http_code == 401) {
         if ((cur_auth_type == HTTP_AUTH_NONE || s->auth_state.stale) &&
             s->auth_state.auth_type != HTTP_AUTH_NONE && attempts < 4) {
-            ffurl_close(hd);
+            ffurl_closep(&hd);
+            s->hd = NULL;
             goto redo;
         } else
             goto fail;
@@ -171,7 +172,8 @@ static int http_open_cnx(URLContext *h)
     if (s->http_code == 407) {
         if ((cur_proxy_auth_type == HTTP_AUTH_NONE || s->proxy_auth_state.stale) &&
             s->proxy_auth_state.auth_type != HTTP_AUTH_NONE && attempts < 4) {
-            ffurl_close(hd);
+            ffurl_closep(&hd);
+            s->hd = NULL;
             goto redo;
         } else
             goto fail;
@@ -179,7 +181,8 @@ static int http_open_cnx(URLContext *h)
     if ((s->http_code == 301 || s->http_code == 302 || s->http_code == 303 || s->http_code == 307)
         && location_changed == 1) {
         /* url moved, get next */
-        ffurl_close(hd);
+        ffurl_closep(&hd);
+        s->hd = NULL;
         if (redirects++ >= MAX_REDIRECTS)
             return AVERROR(EIO);
         /* Restart the authentication process with the new target, which
@@ -192,7 +195,7 @@ static int http_open_cnx(URLContext *h)
     return 0;
  fail:
     if (hd)
-        ffurl_close(hd);
+        ffurl_closep(&hd);
     s->hd = NULL;
     return AVERROR(EIO);
 }
@@ -602,7 +605,7 @@ static int http_close(URLContext *h)
     }
 
     if (s->hd)
-        ffurl_close(s->hd);
+        ffurl_closep(&s->hd);
     return ret;
 }
 
@@ -684,7 +687,7 @@ static int http_proxy_close(URLContext *h)
 {
     HTTPContext *s = h->priv_data;
     if (s->hd)
-        ffurl_close(s->hd);
+        ffurl_closep(&s->hd);
     return 0;
 }
 
@@ -755,8 +758,7 @@ redo:
     if (s->http_code == 407 &&
         (cur_auth_type == HTTP_AUTH_NONE || s->proxy_auth_state.stale) &&
         s->proxy_auth_state.auth_type != HTTP_AUTH_NONE && attempts < 2) {
-        ffurl_close(s->hd);
-        s->hd = NULL;
+        ffurl_closep(&s->hd);
         goto redo;
     }
 
