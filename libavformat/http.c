@@ -106,7 +106,6 @@ static int http_open_cnx(URLContext *h)
     int port, use_proxy, err, location_changed = 0, redirects = 0, attempts = 0;
     HTTPAuthType cur_auth_type, cur_proxy_auth_type;
     HTTPContext *s = h->priv_data;
-    URLContext *hd = NULL;
 
     proxy_path = getenv("http_proxy");
     use_proxy = (proxy_path != NULL) && !getenv("no_proxy") &&
@@ -147,12 +146,10 @@ static int http_open_cnx(URLContext *h)
     ff_url_join(buf, sizeof(buf), lower_proto, NULL, hostname, port, NULL);
 
     if (!s->hd) {
-        err = ffurl_open(&hd, buf, AVIO_FLAG_READ_WRITE,
+        err = ffurl_open(&s->hd, buf, AVIO_FLAG_READ_WRITE,
                          &h->interrupt_callback, NULL);
         if (err < 0)
             goto fail;
-
-        s->hd = hd;
     }
 
     cur_auth_type = s->auth_state.auth_type;
@@ -163,8 +160,7 @@ static int http_open_cnx(URLContext *h)
     if (s->http_code == 401) {
         if ((cur_auth_type == HTTP_AUTH_NONE || s->auth_state.stale) &&
             s->auth_state.auth_type != HTTP_AUTH_NONE && attempts < 4) {
-            ffurl_closep(&hd);
-            s->hd = NULL;
+            ffurl_closep(&s->hd);
             goto redo;
         } else
             goto fail;
@@ -172,8 +168,7 @@ static int http_open_cnx(URLContext *h)
     if (s->http_code == 407) {
         if ((cur_proxy_auth_type == HTTP_AUTH_NONE || s->proxy_auth_state.stale) &&
             s->proxy_auth_state.auth_type != HTTP_AUTH_NONE && attempts < 4) {
-            ffurl_closep(&hd);
-            s->hd = NULL;
+            ffurl_closep(&s->hd);
             goto redo;
         } else
             goto fail;
@@ -181,8 +176,7 @@ static int http_open_cnx(URLContext *h)
     if ((s->http_code == 301 || s->http_code == 302 || s->http_code == 303 || s->http_code == 307)
         && location_changed == 1) {
         /* url moved, get next */
-        ffurl_closep(&hd);
-        s->hd = NULL;
+        ffurl_closep(&s->hd);
         if (redirects++ >= MAX_REDIRECTS)
             return AVERROR(EIO);
         /* Restart the authentication process with the new target, which
@@ -194,9 +188,8 @@ static int http_open_cnx(URLContext *h)
     }
     return 0;
  fail:
-    if (hd)
-        ffurl_closep(&hd);
-    s->hd = NULL;
+    if (s->hd)
+        ffurl_closep(&s->hd);
     return AVERROR(EIO);
 }
 
@@ -676,6 +669,7 @@ URLProtocol ff_https_protocol = {
     .url_seek            = http_seek,
     .url_close           = http_close,
     .url_get_file_handle = http_get_file_handle,
+    .url_shutdown        = http_shutdown,
     .priv_data_size      = sizeof(HTTPContext),
     .priv_data_class     = &https_context_class,
     .flags               = URL_PROTOCOL_FLAG_NETWORK,
