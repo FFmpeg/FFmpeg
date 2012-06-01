@@ -52,7 +52,7 @@ typedef struct BMVDecContext {
 
 static int decode_bmv_frame(const uint8_t *source, int src_len, uint8_t *frame, int frame_off)
 {
-    int val, saved_val = 0;
+    unsigned val, saved_val = 0;
     int tmplen = src_len;
     const uint8_t *src, *source_end = source + src_len;
     uint8_t *frame_end = frame + SCREEN_WIDE * SCREEN_HIGH;
@@ -140,7 +140,9 @@ static int decode_bmv_frame(const uint8_t *source, int src_len, uint8_t *frame, 
         case 1:
             if (forward) {
                 if (dst - frame + SCREEN_WIDE < frame_off ||
-                        frame_end - dst < frame_off + len)
+                        dst - frame + SCREEN_WIDE + frame_off < 0 ||
+                        frame_end - dst < frame_off + len ||
+                        frame_end - dst < len)
                     return -1;
                 for (i = 0; i < len; i++)
                     dst[i] = dst[frame_off + i];
@@ -148,7 +150,9 @@ static int decode_bmv_frame(const uint8_t *source, int src_len, uint8_t *frame, 
             } else {
                 dst -= len;
                 if (dst - frame + SCREEN_WIDE < frame_off ||
-                        frame_end - dst < frame_off + len)
+                        dst - frame + SCREEN_WIDE + frame_off < 0 ||
+                        frame_end - dst < frame_off + len ||
+                        frame_end - dst < len)
                     return -1;
                 for (i = len - 1; i >= 0; i--)
                     dst[i] = dst[frame_off + i];
