@@ -161,16 +161,16 @@ static int decode_frame(AVCodecContext *avctx,
         unsigned needed_size = avctx->width*avctx->height*3;
         if (version == 0) needed_size /= 2;
         needed_size += header_size;
-        if (buf_size != needed_size && buf_size != header_size) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "Invalid frame length %d (should be %d)\n",
-                   buf_size, needed_size);
-            return -1;
-        }
         /* bit 31 means same as previous pic */
         if (header & (1U<<31)) {
             *data_size = 0;
             return buf_size;
+        }
+        if (buf_size != needed_size) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Invalid frame length %d (should be %d)\n",
+                   buf_size, needed_size);
+            return -1;
         }
     } else {
         /* skip frame */
