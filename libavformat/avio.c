@@ -329,7 +329,7 @@ int ffurl_close(URLContext *h)
     if (h->prot->priv_data_size) {
         if (h->prot->priv_data_class)
             av_opt_free(h->priv_data);
-        av_free(h->priv_data);
+        av_freep(&h->priv_data);
     }
     av_free(h);
     return ret;
