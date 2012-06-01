@@ -921,11 +921,11 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
 #if FF_API_OLD_VSINK_API
     ret = avfilter_graph_create_filter(&ofilter->filter,
                                        avfilter_get_by_name("buffersink"),
-                                       "out", NULL, NULL, fg->graph);
+                                       "ffmpeg_buffersink", NULL, NULL, fg->graph);
 #else
     ret = avfilter_graph_create_filter(&ofilter->filter,
                                        avfilter_get_by_name("buffersink"),
-                                       "out", NULL, buffersink_params, fg->graph);
+                                       "ffmpeg_buffersink", NULL, buffersink_params, fg->graph);
 #endif
     av_freep(&buffersink_params);
 
@@ -1000,7 +1000,7 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
 
     ret = avfilter_graph_create_filter(&ofilter->filter,
                                        avfilter_get_by_name("abuffersink_old"),
-                                       "out", NULL, NULL, fg->graph);
+                                       "ffmpeg_abuffersink_old", NULL, NULL, fg->graph);
     if (ret < 0)
         return ret;
 
