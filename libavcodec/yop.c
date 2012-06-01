@@ -225,6 +225,10 @@ static int yop_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     s->low_nibble = NULL;
 
     is_odd_frame = avpkt->data[0];
+    if(is_odd_frame>1){
+        av_log(avctx, AV_LOG_ERROR, "frame is too odd %d\n", is_odd_frame);
+        return AVERROR_INVALIDDATA;
+    }
     firstcolor   = s->first_color[is_odd_frame];
     palette      = (uint32_t *)s->frame.data[1];
 
