@@ -1004,6 +1004,39 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
     if (ret < 0)
         return ret;
 
+#define AUTO_INSERT_FILTER(opt_name, filter_name, arg) do {                 \
+    AVFilterContext *filt_ctx;                                              \
+                                                                            \
+    av_log(NULL, AV_LOG_INFO, opt_name " is forwarded to lavfi "            \
+           "similarly to -af " filter_name "=%s.\n", arg);                  \
+                                                                            \
+    ret = avfilter_graph_create_filter(&filt_ctx,                           \
+                                       avfilter_get_by_name(filter_name),   \
+                                       filter_name, arg, NULL, fg->graph);  \
+    if (ret < 0)                                                            \
+        return ret;                                                         \
+                                                                            \
+    ret = avfilter_link(last_filter, pad_idx, filt_ctx, 0);                 \
+    if (ret < 0)                                                            \
+        return ret;                                                         \
+                                                                            \
+    last_filter = filt_ctx;                                                 \
+    pad_idx = 0;                                                            \
+} while (0)
+    if (ost->audio_channels_mapped) {
+        int i;
+        AVBPrint pan_buf;
+        av_bprint_init(&pan_buf, 256, 8192);
+        av_bprintf(&pan_buf, "0x%"PRIx64,
+                   av_get_default_channel_layout(ost->audio_channels_mapped));
+        for (i = 0; i < ost->audio_channels_mapped; i++)
+            if (ost->audio_channels_map[i] != -1)
+                av_bprintf(&pan_buf, ":c%d=c%d", i, ost->audio_channels_map[i]);
+
+        AUTO_INSERT_FILTER("-map_channel", "pan", pan_buf.str);
+        av_bprint_finalize(&pan_buf, NULL);
+    }
+
     if (codec->channels && !codec->channel_layout)
         codec->channel_layout = av_get_default_channel_layout(codec->channels);
 
@@ -1044,26 +1077,6 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
         pad_idx = 0;
     }
 
-#define AUTO_INSERT_FILTER(opt_name, filter_name, arg) do {                 \
-    AVFilterContext *filt_ctx;                                              \
-                                                                            \
-    av_log(NULL, AV_LOG_INFO, opt_name " is forwarded to lavfi "            \
-           "similarly to -af " filter_name "=%s.\n", arg);                  \
-                                                                            \
-    ret = avfilter_graph_create_filter(&filt_ctx,                           \
-                                       avfilter_get_by_name(filter_name),   \
-                                       filter_name, arg, NULL, fg->graph);  \
-    if (ret < 0)                                                            \
-        return ret;                                                         \
-                                                                            \
-    ret = avfilter_link(last_filter, pad_idx, filt_ctx, 0);                 \
-    if (ret < 0)                                                            \
-        return ret;                                                         \
-                                                                            \
-    last_filter = filt_ctx;                                                 \
-    pad_idx = 0;                                                            \
-} while (0)
-
     if (audio_sync_method > 0 && 0) {
         char args[256] = {0};
 
@@ -1071,20 +1084,6 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
         if (audio_sync_method > 1)
             av_strlcatf(args, sizeof(args), ":max_soft_comp=%d", -audio_sync_method);
         AUTO_INSERT_FILTER("-async", "aresample", args);
-    }
-
-    if (ost->audio_channels_mapped) {
-        int i;
-        AVBPrint pan_buf;
-        av_bprint_init(&pan_buf, 256, 8192);
-        av_bprintf(&pan_buf, "0x%"PRIx64,
-                   av_get_default_channel_layout(ost->audio_channels_mapped));
-        for (i = 0; i < ost->audio_channels_mapped; i++)
-            if (ost->audio_channels_map[i] != -1)
-                av_bprintf(&pan_buf, ":c%d=c%d", i, ost->audio_channels_map[i]);
-
-        AUTO_INSERT_FILTER("-map_channel", "pan", pan_buf.str);
-        av_bprint_finalize(&pan_buf, NULL);
     }
 
     if (audio_volume != 256) {
