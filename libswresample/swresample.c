@@ -84,9 +84,9 @@ static const AVOption options[]={
                                                         , OFFSET(min_compensation),AV_OPT_TYPE_FLOAT ,{.dbl=FLT_MAX               }, 0      , FLT_MAX   , PARAM },
 {"min_hard_comp"        , "Minimum difference between timestamps and audio data (in seconds) to trigger padding/trimming the data."
                                                    , OFFSET(min_hard_compensation),AV_OPT_TYPE_FLOAT ,{.dbl=0.1                   }, 0      , INT_MAX   , PARAM },
-{"comp_duration"        , "Duration (in seconds) over which data is stretched/squeezeed to make it match the timestamps."
+{"comp_duration"        , "Duration (in seconds) over which data is stretched/squeezed to make it match the timestamps."
                                               , OFFSET(soft_compensation_duration),AV_OPT_TYPE_FLOAT ,{.dbl=1                     }, 0      , INT_MAX   , PARAM },
-{"max_soft_comp"        , "Maximum factor by which data is stretched/squeezeed to make it match the timestamps."
+{"max_soft_comp"        , "Maximum factor by which data is stretched/squeezed to make it match the timestamps."
                                                    , OFFSET(max_soft_compensation),AV_OPT_TYPE_FLOAT ,{.dbl=0                     }, INT_MIN, INT_MAX   , PARAM },
 
 {0}
@@ -226,7 +226,7 @@ int swr_init(struct SwrContext *s){
         }else if(av_get_planar_sample_fmt(s->in_sample_fmt) <= AV_SAMPLE_FMT_FLTP){
             s->int_sample_fmt= AV_SAMPLE_FMT_FLTP;
         }else{
-            av_log(s, AV_LOG_DEBUG, "Using double precission mode\n");
+            av_log(s, AV_LOG_DEBUG, "Using double precision mode\n");
             s->int_sample_fmt= AV_SAMPLE_FMT_DBLP;
         }
     }
