@@ -459,6 +459,7 @@ static int mpegts_write_header(AVFormatContext *s)
     const char *service_name;
     const char *provider_name;
     int *pids;
+    int ret;
 
     if (s->max_delay < 0) /* Not set by the caller */
         s->max_delay = 0;
@@ -499,12 +500,16 @@ static int mpegts_write_header(AVFormatContext *s)
         st = s->streams[i];
         avpriv_set_pts_info(st, 33, 1, 90000);
         ts_st = av_mallocz(sizeof(MpegTSWriteStream));
-        if (!ts_st)
+        if (!ts_st) {
+            ret = AVERROR(ENOMEM);
             goto fail;
+        }
         st->priv_data = ts_st;
         ts_st->payload = av_mallocz(ts->pes_payload_size);
-        if (!ts_st->payload)
+        if (!ts_st->payload) {
+            ret = AVERROR(ENOMEM);
             goto fail;
+        }
         ts_st->service = service;
         /* MPEG pid values < 16 are reserved. Applications which set st->id in
          * this range are assigned a calculated pid. */
@@ -514,15 +519,18 @@ static int mpegts_write_header(AVFormatContext *s)
             ts_st->pid = st->id;
         } else {
             av_log(s, AV_LOG_ERROR, "Invalid stream id %d, must be less than 8191\n", st->id);
+            ret = AVERROR(EINVAL);
             goto fail;
         }
         if (ts_st->pid == service->pmt.pid) {
             av_log(s, AV_LOG_ERROR, "Duplicate stream id %d\n", ts_st->pid);
+            ret = AVERROR(EINVAL);
             goto fail;
         }
         for (j = 0; j < i; j++)
             if (pids[j] == ts_st->pid) {
                 av_log(s, AV_LOG_ERROR, "Duplicate stream id %d\n", ts_st->pid);
+                ret = AVERROR(EINVAL);
                 goto fail;
             }
         pids[i] = ts_st->pid;
@@ -615,7 +623,7 @@ static int mpegts_write_header(AVFormatContext *s)
         }
         av_freep(&st->priv_data);
     }
-    return -1;
+    return ret;
 }
 
 /* send SDT, PAT and PMT tables regulary */
@@ -959,7 +967,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
 
     if (ts_st->first_pts_check && pts == AV_NOPTS_VALUE) {
         av_log(s, AV_LOG_ERROR, "first pts value must set\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
     ts_st->first_pts_check = 0;
 
@@ -970,7 +978,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         if (pkt->size < 5 || AV_RB32(pkt->data) != 0x0000001) {
             av_log(s, AV_LOG_ERROR, "H.264 bitstream malformed, "
                    "no startcode found, use -bsf h264_mp4toannexb\n");
-            return -1;
+            return AVERROR(EINVAL);
         }
 
         do {
@@ -982,7 +990,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         if ((state & 0x1f) != 9) { // AUD NAL
             data = av_malloc(pkt->size+6);
             if (!data)
-                return -1;
+                return AVERROR(ENOMEM);
             memcpy(data+6, pkt->data, pkt->size);
             AV_WB32(data, 0x00000001);
             data[4] = 0x09;
