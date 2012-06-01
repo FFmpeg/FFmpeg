@@ -1948,8 +1948,6 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
                     av_opt_set_int(is->avr, "out_channel_layout", is->sdl_channel_layout, 0);
                     av_opt_set_int(is->avr, "out_sample_fmt",     is->sdl_sample_fmt,     0);
                     av_opt_set_int(is->avr, "out_sample_rate",    dec->sample_rate,       0);
-                    if (av_get_bytes_per_sample(dec->sample_fmt) <= 2)
-                        av_opt_set_int(is->avr, "internal_sample_fmt", AV_SAMPLE_FMT_S16P, 0);
 
                     if ((ret = avresample_open(is->avr)) < 0) {
                         fprintf(stderr, "error initializing libavresample\n");

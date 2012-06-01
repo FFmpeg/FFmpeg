@@ -102,12 +102,6 @@ static int config_output(AVFilterLink *outlink)
     av_opt_set_int(s->avr,  "in_sample_rate",    inlink ->sample_rate,    0);
     av_opt_set_int(s->avr, "out_sample_rate",    outlink->sample_rate,    0);
 
-    /* if both the input and output formats are s16 or u8, use s16 as
-       the internal sample format */
-    if (av_get_bytes_per_sample(inlink->format)  <= 2 &&
-        av_get_bytes_per_sample(outlink->format) <= 2)
-        av_opt_set_int(s->avr, "internal_sample_fmt", AV_SAMPLE_FMT_S16P, 0);
-
     if ((ret = avresample_open(s->avr)) < 0)
         return ret;
 

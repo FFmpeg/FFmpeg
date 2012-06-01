@@ -39,7 +39,7 @@ static const AVOption options[] = {
     { "out_channel_layout",     "Output Channel Layout",    OFFSET(out_channel_layout),     AV_OPT_TYPE_INT64,  { 0                     }, INT64_MIN,            INT64_MAX,              PARAM },
     { "out_sample_fmt",         "Output Sample Format",     OFFSET(out_sample_fmt),         AV_OPT_TYPE_INT,    { AV_SAMPLE_FMT_S16     }, AV_SAMPLE_FMT_U8,     AV_SAMPLE_FMT_NB-1,     PARAM },
     { "out_sample_rate",        "Output Sample Rate",       OFFSET(out_sample_rate),        AV_OPT_TYPE_INT,    { 48000                 }, 1,                    INT_MAX,                PARAM },
-    { "internal_sample_fmt",    "Internal Sample Format",   OFFSET(internal_sample_fmt),    AV_OPT_TYPE_INT,    { AV_SAMPLE_FMT_FLTP    }, AV_SAMPLE_FMT_NONE,   AV_SAMPLE_FMT_NB-1,     PARAM },
+    { "internal_sample_fmt",    "Internal Sample Format",   OFFSET(internal_sample_fmt),    AV_OPT_TYPE_INT,    { AV_SAMPLE_FMT_NONE    }, AV_SAMPLE_FMT_NONE,   AV_SAMPLE_FMT_NB-1,     PARAM },
     { "mix_coeff_type",         "Mixing Coefficient Type",  OFFSET(mix_coeff_type),         AV_OPT_TYPE_INT,    { AV_MIX_COEFF_TYPE_FLT }, AV_MIX_COEFF_TYPE_Q8, AV_MIX_COEFF_TYPE_NB-1, PARAM, "mix_coeff_type" },
         { "q8",  "16-bit 8.8 Fixed-Point",   0, AV_OPT_TYPE_CONST, { AV_MIX_COEFF_TYPE_Q8  }, INT_MIN, INT_MAX, PARAM, "mix_coeff_type" },
         { "q15", "32-bit 17.15 Fixed-Point", 0, AV_OPT_TYPE_CONST, { AV_MIX_COEFF_TYPE_Q15 }, INT_MIN, INT_MAX, PARAM, "mix_coeff_type" },

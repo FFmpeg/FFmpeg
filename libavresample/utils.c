@@ -57,18 +57,23 @@ int avresample_open(AVAudioResampleContext *avr)
     avr->resample_needed   = avr->in_sample_rate != avr->out_sample_rate ||
                              avr->force_resampling;
 
-    /* set sample format conversion parameters */
-    /* override user-requested internal format to avoid unexpected failures
-       TODO: support more internal formats */
-    if (avr->resample_needed && avr->internal_sample_fmt != AV_SAMPLE_FMT_S16P) {
-        av_log(avr, AV_LOG_WARNING, "Using s16p as internal sample format\n");
-        avr->internal_sample_fmt = AV_SAMPLE_FMT_S16P;
-    } else if (avr->mixing_needed &&
-               avr->internal_sample_fmt != AV_SAMPLE_FMT_S16P &&
-               avr->internal_sample_fmt != AV_SAMPLE_FMT_FLTP) {
-        av_log(avr, AV_LOG_WARNING, "Using fltp as internal sample format\n");
-        avr->internal_sample_fmt = AV_SAMPLE_FMT_FLTP;
+    /* select internal sample format if not specified by the user */
+    if (avr->internal_sample_fmt == AV_SAMPLE_FMT_NONE &&
+        (avr->mixing_needed || avr->resample_needed)) {
+        enum AVSampleFormat  in_fmt = av_get_planar_sample_fmt(avr->in_sample_fmt);
+        enum AVSampleFormat out_fmt = av_get_planar_sample_fmt(avr->out_sample_fmt);
+        int max_bps = FFMAX(av_get_bytes_per_sample(in_fmt),
+                            av_get_bytes_per_sample(out_fmt));
+        if (avr->resample_needed || max_bps <= 2) {
+            avr->internal_sample_fmt = AV_SAMPLE_FMT_S16P;
+        } else if (avr->mixing_needed) {
+            avr->internal_sample_fmt = AV_SAMPLE_FMT_FLTP;
+        }
+        av_log(avr, AV_LOG_DEBUG, "Using %s as internal sample format\n",
+               av_get_sample_fmt_name(avr->internal_sample_fmt));
     }
+
+    /* set sample format conversion parameters */
     if (avr->in_channels == 1)
         avr->in_sample_fmt = av_get_planar_sample_fmt(avr->in_sample_fmt);
     if (avr->out_channels == 1)
