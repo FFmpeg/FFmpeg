@@ -205,6 +205,11 @@ static int yop_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     if (s->frame.data[0])
         avctx->release_buffer(avctx, &s->frame);
 
+    if (avpkt->size < 4 + 3*s->num_pal_colors) {
+        av_log(avctx, AV_LOG_ERROR, "packet of size %d too small\n", avpkt->size);
+        return AVERROR_INVALIDDATA;
+    }
+
     ret = avctx->get_buffer(avctx, &s->frame);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
