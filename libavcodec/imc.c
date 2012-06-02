@@ -589,10 +589,12 @@ static void imc_adjust_bit_allocation(IMCContext *q, IMCChannel *chctx,
     }
 }
 
-static void imc_imdct256(IMCContext *q, IMCChannel *chctx)
+static void imc_imdct256(IMCContext *q, IMCChannel *chctx, int channels)
 {
     int i;
     float re, im;
+    float *dst1 = q->out_samples;
+    float *dst2 = q->out_samples + (COEFFS - 1) * channels;
 
     /* prerotation */
     for (i = 0; i < COEFFS / 2; i++) {
@@ -610,10 +612,12 @@ static void imc_imdct256(IMCContext *q, IMCChannel *chctx)
     for (i = 0; i < COEFFS / 2; i++) {
         re = ( q->samples[i].re * q->post_cos[i]) + (-q->samples[i].im * q->post_sin[i]);
         im = (-q->samples[i].im * q->post_cos[i]) - ( q->samples[i].re * q->post_sin[i]);
-        q->out_samples[i * 2]              =  (q->mdct_sine_window[COEFFS - 1 - i * 2] * chctx->last_fft_im[i])
-                                            + (q->mdct_sine_window[i * 2] * re);
-        q->out_samples[COEFFS - 1 - i * 2] =  (q->mdct_sine_window[i * 2] * chctx->last_fft_im[i])
-                                            - (q->mdct_sine_window[COEFFS - 1 - i * 2] * re);
+        *dst1 =  (q->mdct_sine_window[COEFFS - 1 - i * 2] * chctx->last_fft_im[i])
+               + (q->mdct_sine_window[i * 2] * re);
+        *dst2 =  (q->mdct_sine_window[i * 2] * chctx->last_fft_im[i])
+               - (q->mdct_sine_window[COEFFS - 1 - i * 2] * re);
+        dst1 += channels * 2;
+        dst2 -= channels * 2;
         chctx->last_fft_im[i] = im;
     }
 }
@@ -840,7 +844,7 @@ static int imc_decode_block(AVCodecContext *avctx, IMCContext *q, int ch)
 
     memset(chctx->skipFlags, 0, sizeof(chctx->skipFlags));
 
-    imc_imdct256(q, chctx);
+    imc_imdct256(q, chctx, avctx->channels);
 
     return 0;
 }
