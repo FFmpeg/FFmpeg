@@ -21,6 +21,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "libavutil/avassert.h"
 
 enum BMVFlags{
     BMV_NOP = 0,
@@ -52,7 +53,7 @@ typedef struct BMVDecContext {
 
 static int decode_bmv_frame(const uint8_t *source, int src_len, uint8_t *frame, int frame_off)
 {
-    int val, saved_val = 0;
+    unsigned val, saved_val = 0;
     int tmplen = src_len;
     const uint8_t *src, *source_end = source + src_len;
     uint8_t *frame_end = frame + SCREEN_WIDE * SCREEN_HIGH;
@@ -98,6 +99,8 @@ static int decode_bmv_frame(const uint8_t *source, int src_len, uint8_t *frame, 
         }
         if (!(val & 0xC)) {
             for (;;) {
+                if(shift>22)
+                    return -1;
                 if (!read_two_nibbles) {
                     if (src < source || src >= source_end)
                         return -1;
@@ -131,6 +134,7 @@ static int decode_bmv_frame(const uint8_t *source, int src_len, uint8_t *frame, 
         }
         advance_mode = val & 1;
         len = (val >> 1) - 1;
+        av_assert0(len>0);
         mode += 1 + advance_mode;
         if (mode >= 4)
             mode -= 3;
