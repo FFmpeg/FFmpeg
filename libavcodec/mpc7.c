@@ -228,7 +228,7 @@ static int mpc7_decode_frame(AVCodecContext * avctx, void *data,
     buf_size  -= 4;
 
     /* get output buffer */
-    c->frame.nb_samples = last_frame ? c->lastframelen : MPC_FRAME_SIZE;
+    c->frame.nb_samples = MPC_FRAME_SIZE;
     if ((ret = avctx->get_buffer(avctx, &c->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
@@ -298,6 +298,8 @@ static int mpc7_decode_frame(AVCodecContext * avctx, void *data,
             idx_to_quant(c, &gb, bands[i].res[ch], c->Q[ch] + off);
 
     ff_mpc_dequantize_and_synth(c, mb, c->frame.data[0], 2);
+    if(last_frame)
+        c->frame.nb_samples = c->lastframelen;
 
     bits_used = get_bits_count(&gb);
     bits_avail = buf_size * 8;
