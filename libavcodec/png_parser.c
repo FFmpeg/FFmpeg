@@ -45,6 +45,8 @@ static int png_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     int next = END_NOT_FOUND;
     int i = 0;
 
+    s->pict_type = AV_PICTURE_TYPE_NONE;
+
     *poutbuf_size = 0;
     if (buf_size == 0)
         return 0;
