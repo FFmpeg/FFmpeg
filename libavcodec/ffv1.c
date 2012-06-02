@@ -1769,7 +1769,12 @@ static int read_header(FFV1Context *f){
     memset(state, 128, sizeof(state));
 
     if(f->version < 2){
-        f->version= get_symbol(c, state, 0);
+        unsigned v= get_symbol(c, state, 0);
+        if(v >= 2){
+            av_log(f->avctx, AV_LOG_ERROR, "invalid version %d in ver01 header\n", v);
+            return AVERROR_INVALIDDATA;
+        }
+        f->version = v;
         f->ac= f->avctx->coder_type= get_symbol(c, state, 0);
         if(f->ac>1){
             for(i=1; i<256; i++){
