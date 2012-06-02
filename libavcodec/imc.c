@@ -79,7 +79,7 @@ typedef struct IMCChannel {
 typedef struct {
     AVFrame frame;
 
-    IMCChannel chctx[1];
+    IMCChannel chctx[2];
 
     /** MDCT tables */
     //@{
@@ -98,6 +98,9 @@ typedef struct {
     FFTContext fft;
     DECLARE_ALIGNED(32, FFTComplex, samples)[COEFFS / 2];
     float *out_samples;
+
+    int8_t cyclTab[32], cyclTab2[32];
+    float  weights1[31], weights2[31];
 } IMCContext;
 
 static VLC huffman_vlc[4][4];
@@ -117,7 +120,8 @@ static av_cold int imc_decode_init(AVCodecContext *avctx)
     IMCContext *q = avctx->priv_data;
     double r1, r2;
 
-    if (avctx->channels != 1) {
+    if ((avctx->codec_id == CODEC_ID_IMC && avctx->channels != 1)
+        || (avctx->codec_id == CODEC_ID_IAC && avctx->channels > 2)) {
         av_log_ask_for_sample(avctx, "Number of channels is not supported\n");
         return AVERROR_PATCHWELCOME;
     }
@@ -169,6 +173,18 @@ static av_cold int imc_decode_init(AVCodecContext *avctx)
     }
     q->one_div_log2 = 1 / log(2);
 
+    memcpy(q->cyclTab,  cyclTab,  sizeof(cyclTab));
+    memcpy(q->cyclTab2, cyclTab2, sizeof(cyclTab2));
+    if (avctx->codec_id == CODEC_ID_IAC) {
+        q->cyclTab[29]  = 31;
+        q->cyclTab2[31] = 28;
+        memcpy(q->weights1, iac_weights1, sizeof(iac_weights1));
+        memcpy(q->weights2, iac_weights2, sizeof(iac_weights2));
+    } else {
+        memcpy(q->weights1, imc_weights1, sizeof(imc_weights1));
+        memcpy(q->weights2, imc_weights2, sizeof(imc_weights2));
+    }
+
     if ((ret = ff_fft_init(&q->fft, 7, 1))) {
         av_log(avctx, AV_LOG_INFO, "FFT init failed\n");
         return ret;
@@ -210,13 +226,13 @@ static void imc_calculate_coeffs(IMCContext *q, float *flcoeffs1,
     }
 
     for (i = 0; i < BANDS; i++) {
-        for (cnt2 = i; cnt2 < cyclTab[i]; cnt2++)
+        for (cnt2 = i; cnt2 < q->cyclTab[i]; cnt2++)
             flcoeffs5[cnt2] = flcoeffs5[cnt2] + workT3[i];
         workT2[cnt2 - 1] = workT2[cnt2 - 1] + workT3[i];
     }
 
     for (i = 1; i < BANDS; i++) {
-        accum = (workT2[i - 1] + accum) * imc_weights1[i - 1];
+        accum = (workT2[i - 1] + accum) * q->weights1[i - 1];
         flcoeffs5[i] += accum;
     }
 
@@ -224,7 +240,7 @@ static void imc_calculate_coeffs(IMCContext *q, float *flcoeffs1,
         workT2[i] = 0.0;
 
     for (i = 0; i < BANDS; i++) {
-        for (cnt2 = i - 1; cnt2 > cyclTab2[i]; cnt2--)
+        for (cnt2 = i - 1; cnt2 > q->cyclTab2[i]; cnt2--)
             flcoeffs5[cnt2] += workT3[i];
         workT2[cnt2+1] += workT3[i];
     }
@@ -232,7 +248,7 @@ static void imc_calculate_coeffs(IMCContext *q, float *flcoeffs1,
     accum = 0.0;
 
     for (i = BANDS-2; i >= 0; i--) {
-        accum = (workT2[i+1] + accum) * imc_weights2[i];
+        accum = (workT2[i+1] + accum) * q->weights2[i];
         flcoeffs5[i] += accum;
         // there is missing code here, but it seems to never be triggered
     }
@@ -701,16 +717,17 @@ static int imc_decode_block(AVCodecContext *avctx, IMCContext *q, int ch)
 
     /* Check the frame header */
     imc_hdr = get_bits(&q->gb, 9);
-    if (imc_hdr != IMC_FRAME_ID) {
-        av_log(avctx, AV_LOG_ERROR, "imc frame header check failed!\n");
-        av_log(avctx, AV_LOG_ERROR, "got %x instead of 0x21.\n", imc_hdr);
+    if (imc_hdr & 0x18) {
+        av_log(avctx, AV_LOG_ERROR, "frame header check failed!\n");
+        av_log(avctx, AV_LOG_ERROR, "got %X.\n", imc_hdr);
         return AVERROR_INVALIDDATA;
     }
     stream_format_code = get_bits(&q->gb, 3);
 
     if (stream_format_code & 1) {
-        av_log(avctx, AV_LOG_ERROR, "Stream code format %X is not supported\n", stream_format_code);
-        return AVERROR_INVALIDDATA;
+        av_log_ask_for_sample(avctx, "Stream format %X is not supported\n",
+                              stream_format_code);
+        return AVERROR_PATCHWELCOME;
     }
 
 //    av_log(avctx, AV_LOG_DEBUG, "stream_format_code = %d\n", stream_format_code);
@@ -772,6 +789,11 @@ static int imc_decode_block(AVCodecContext *avctx, IMCContext *q, int ch)
                 bitscount      += bits;
             }
         }
+    }
+    if (avctx->codec_id == CODEC_ID_IAC) {
+        bitscount += !!chctx->bandWidthT[BANDS - 1];
+        if (!(stream_format_code & 0x2))
+            bitscount += 16;
     }
 
     if ((ret = bit_allocation(q, chctx, stream_format_code,
@@ -860,8 +882,8 @@ static int imc_decode_frame(AVCodecContext *avctx, void *data,
 
     LOCAL_ALIGNED_16(uint16_t, buf16, [IMC_BLOCK_SIZE / 2]);
 
-    if (buf_size < IMC_BLOCK_SIZE) {
-        av_log(avctx, AV_LOG_ERROR, "imc frame too small!\n");
+    if (buf_size < IMC_BLOCK_SIZE * avctx->channels) {
+        av_log(avctx, AV_LOG_ERROR, "frame too small!\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -883,6 +905,18 @@ static int imc_decode_frame(AVCodecContext *avctx, void *data,
 
         if ((ret = imc_decode_block(avctx, q, i)) < 0)
             return ret;
+    }
+
+    if (avctx->channels == 2) {
+        float *src = (float*)q->frame.data[0], t1, t2;
+
+        for (i = 0; i < COEFFS; i++) {
+            t1     = src[0];
+            t2     = src[1];
+            src[0] = t1 + t2;
+            src[1] = t1 - t2;
+            src   += 2;
+        }
     }
 
     *got_frame_ptr   = 1;
@@ -912,4 +946,16 @@ AVCodec ff_imc_decoder = {
     .decode         = imc_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("IMC (Intel Music Coder)"),
+};
+
+AVCodec ff_iac_decoder = {
+    .name           = "iac",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_IAC,
+    .priv_data_size = sizeof(IMCContext),
+    .init           = imc_decode_init,
+    .close          = imc_decode_close,
+    .decode         = imc_decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
+    .long_name      = NULL_IF_CONFIG_SMALL("IAC (Indeo Audio Coder)"),
 };

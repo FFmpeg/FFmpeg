@@ -23,6 +23,8 @@ version <next>:
 - audio mix filter
 - avprobe output is now standard INI or JSON. The old format can still
   be used with -of old.
+- Indeo Audio decoder
+
 
 version 0.8:
 
