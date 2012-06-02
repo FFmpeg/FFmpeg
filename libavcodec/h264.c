@@ -4032,6 +4032,8 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
                     loop_filter(h, lf_x_start, s->mb_x + 1);
                 return 0;
             }
+            if (h->cabac.bytestream > h->cabac.bytestream_end + 2 )
+                av_log(h->s.avctx, AV_LOG_DEBUG, "bytestream overread %td\n", h->cabac.bytestream_end - h->cabac.bytestream);
             if (ret < 0 || h->cabac.bytestream > h->cabac.bytestream_end + 4) {
                 av_log(h->s.avctx, AV_LOG_ERROR,
                        "error while decoding MB %d %d, bytestream (%td)\n",
