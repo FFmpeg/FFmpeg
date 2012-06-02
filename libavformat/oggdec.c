@@ -530,6 +530,9 @@ static int ogg_get_length(AVFormatContext *s)
             s->streams[i]->duration -= pts;
             ogg->streams[i].got_start= 1;
             streams_left--;
+        }else if(s->streams[i]->start_time != AV_NOPTS_VALUE && !ogg->streams[i].got_start){
+            ogg->streams[i].got_start= 1;
+            streams_left--;
         }
             if(streams_left<=0)
                 break;
