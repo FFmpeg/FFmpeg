@@ -128,6 +128,18 @@ typedef struct {
       * call the underlying seek function directly.
       */
      int direct;
+
+    /**
+     * Bytes read statistic
+     * This field is internal to libavformat and access from outside is not allowed.
+     */
+     int64_t bytes_read;
+
+    /**
+     * seek statistic
+     * This field is internal to libavformat and access from outside is not allowed.
+     */
+     int seek_count;
 } AVIOContext;
 
 /* unbuffered I/O */
