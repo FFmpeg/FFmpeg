@@ -99,7 +99,6 @@ typedef struct PacketQueue {
 
 typedef struct VideoPicture {
     double pts;                                  ///< presentation time stamp for this picture
-    double duration;                             ///< expected duration of the frame
     int64_t pos;                                 ///< byte position in file
     int skip;
     SDL_Overlay *bmp;
@@ -107,7 +106,6 @@ typedef struct VideoPicture {
     AVRational sample_aspect_ratio;
     int allocated;
     int reallocate;
-    enum PixelFormat pix_fmt;
 
 #if CONFIG_AVFILTER
     AVFilterBufferRef *picref;
@@ -1194,13 +1192,8 @@ retry:
 
             if (is->pictq_size > 1) {
                 VideoPicture *nextvp = &is->pictq[(is->pictq_rindex + 1) % VIDEO_PICTURE_QUEUE_SIZE];
-                duration = nextvp->pts - vp->pts; // More accurate this way, 1/time_base is often not reflecting FPS
-            } else {
-                duration = vp->duration;
-            }
-
-            if((framedrop>0 || (framedrop && is->audio_st)) && time > is->frame_timer + duration){
-                if(is->pictq_size > 1){
+                duration = nextvp->pts - vp->pts;
+                if((framedrop>0 || (framedrop && is->audio_st)) && time > is->frame_timer + duration){
                     is->frame_drops_late++;
                     pictq_next_picture(is);
                     goto retry;
@@ -1326,7 +1319,6 @@ static void alloc_picture(AllocEventProps *event_props)
 
     vp->width   = frame->width;
     vp->height  = frame->height;
-    vp->pix_fmt = frame->format;
 
     video_open(event_props->is, 0);
 
@@ -1386,8 +1378,6 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
         return -1;
 
     vp = &is->pictq[is->pictq_windex];
-
-    vp->duration = frame_delay;
 
     /* alloc or resize hardware picture buffer */
     if (!vp->bmp || vp->reallocate ||
@@ -1449,12 +1439,12 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
 #if CONFIG_AVFILTER
         // FIXME use direct rendering
         av_picture_copy(&pict, (AVPicture *)src_frame,
-                        vp->pix_fmt, vp->width, vp->height);
+                        src_frame->format, vp->width, vp->height);
         vp->sample_aspect_ratio = vp->picref->video->sample_aspect_ratio;
 #else
         sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
         is->img_convert_ctx = sws_getCachedContext(is->img_convert_ctx,
-            vp->width, vp->height, vp->pix_fmt, vp->width, vp->height,
+            vp->width, vp->height, src_frame->format, vp->width, vp->height,
             PIX_FMT_YUV420P, sws_flags, NULL, NULL, NULL);
         if (is->img_convert_ctx == NULL) {
             fprintf(stderr, "Cannot initialize the conversion context\n");
@@ -2085,6 +2075,9 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
             } else
                 avcodec_get_frame_defaults(is->frame);
 
+            if (is->paused)
+                return -1;
+
             if (flush_complete)
                 break;
             new_packet = 0;
@@ -2304,7 +2297,7 @@ static int stream_component_open(VideoState *is, int stream_index)
             wanted_channel_layout &= ~AV_CH_LAYOUT_STEREO_DOWNMIX;
             wanted_nb_channels = av_get_channel_layout_nb_channels(wanted_channel_layout);
             /* SDL only supports 1, 2, 4 or 6 channels at the moment, so we have to make sure not to request anything else. */
-            while (wanted_nb_channels > 0 && (wanted_nb_channels == 3 || wanted_nb_channels == 5 || wanted_nb_channels > 6)) {
+            while (wanted_nb_channels > 0 && (wanted_nb_channels == 3 || wanted_nb_channels == 5 || wanted_nb_channels > (SDL_VERSION_ATLEAST(1, 2, 8) ? 6 : 2))) {
                 wanted_nb_channels--;
                 wanted_channel_layout = av_get_default_channel_layout(wanted_nb_channels);
             }
