@@ -1207,6 +1207,9 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
              st->parser->pict_type == AV_PICTURE_TYPE_I))
             out_pkt.flags |= AV_PKT_FLAG_KEY;
 
+        if(st->parser->key_frame == -1 && st->parser->pict_type==AV_PICTURE_TYPE_NONE && (pkt->flags&AV_PKT_FLAG_KEY))
+            out_pkt.flags |= AV_PKT_FLAG_KEY;
+
         compute_pkt_fields(s, st, st->parser, &out_pkt);
 
         if ((s->iformat->flags & AVFMT_GENERIC_INDEX) &&
