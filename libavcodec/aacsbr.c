@@ -1635,13 +1635,17 @@ static void sbr_hf_assemble(float Y1[38][64][2],
                                                    q_filt, indexnoise,
                                                    kx, m_max);
             } else {
-                for (m = 0; m < m_max; m++) {
-                    Y1[i][m + kx][0] +=
-                        sbr->s_m[e][m] * phi[0][indexsine];
-                    Y1[i][m + kx][1] +=
-                        sbr->s_m[e][m] * (phi[1][indexsine] * phi_sign);
-                    phi_sign = -phi_sign;
+                int idx = indexsine&1;
+                int A = (1-((indexsine+(kx & 1))&2));
+                int B = (A^(-idx)) + idx;
+                float *out = &Y1[i][kx][idx];
+                float *in  = sbr->s_m[e];
+                for (m = 0; m+1 < m_max; m+=2) {
+                    out[2*m  ] += in[m  ] * A;
+                    out[2*m+2] += in[m+1] * B;
                 }
+                if(m_max&1)
+                    out[2*m  ] += in[m  ] * A;
             }
             indexnoise = (indexnoise + m_max) & 0x1ff;
             indexsine = (indexsine + 1) & 3;
