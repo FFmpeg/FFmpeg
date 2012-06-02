@@ -51,16 +51,23 @@ static int srt_read_header(AVFormatContext *s)
     return 0;
 }
 
-static int64_t get_pts(const char *buf)
+static int64_t get_pts(const char *buf, int *duration)
 {
-    int i, v, hour, min, sec, hsec;
+    int i, hour, min, sec, hsec;
+    int he, me, se, mse;
 
     for (i=0; i<2; i++) {
-        if (sscanf(buf, "%d:%2d:%2d%*1[,.]%3d --> %*d:%*2d:%*2d%*1[,.]%3d",
-                   &hour, &min, &sec, &hsec, &v) == 5) {
+        int64_t start, end;
+        if (sscanf(buf, "%d:%2d:%2d%*1[,.]%3d --> %d:%2d:%2d%*1[,.]%3d",
+                   &hour, &min, &sec, &hsec, &he, &me, &se, &mse) == 8) {
             min += 60*hour;
             sec += 60*min;
-            return sec*1000+hsec;
+            start = sec*1000+hsec;
+            me += 60*he;
+            se += 60*me;
+            end = se*1000+mse;
+            *duration = end - start;
+            return start;
         }
         buf += strcspn(buf, "\n") + 1;
     }
@@ -87,7 +94,7 @@ static int srt_read_packet(AVFormatContext *s, AVPacket *pkt)
         memcpy(pkt->data, buffer, pkt->size);
         pkt->flags |= AV_PKT_FLAG_KEY;
         pkt->pos = pos;
-        pkt->pts = pkt->dts = get_pts(pkt->data);
+        pkt->pts = pkt->dts = get_pts(pkt->data, &(pkt->duration));
     }
     return res;
 }
