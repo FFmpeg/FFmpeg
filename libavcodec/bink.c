@@ -1128,6 +1128,11 @@ static int bink_decode_plane(BinkContext *c, GetBitContext *gb, int plane_idx,
                 xoff = get_value(c, BINK_SRC_X_OFF);
                 yoff = get_value(c, BINK_SRC_Y_OFF);
                 ref = prev + xoff + yoff * stride;
+                if (ref < ref_start || ref > ref_end) {
+                    av_log(c->avctx, AV_LOG_ERROR, "Copy out of bounds @%d, %d\n",
+                           bx*8 + xoff, by*8 + yoff);
+                    return -1;
+                }
                 c->dsp.put_pixels_tab[1][0](dst, ref, stride, 8);
                 memset(dctblock, 0, sizeof(*dctblock) * 64);
                 dctblock[0] = get_value(c, BINK_SRC_INTER_DC);
