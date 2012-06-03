@@ -77,7 +77,7 @@ int ff_intel_h263_decode_picture_header(MpegEncContext *s)
         }
         if(get_bits(&s->gb, 2))
             av_log(s->avctx, AV_LOG_ERROR, "Bad value for reserved field\n");
-        s->loop_filter = get_bits1(&s->gb);
+        s->loop_filter = get_bits1(&s->gb) * !s->avctx->lowres;
         if(get_bits1(&s->gb))
             av_log(s->avctx, AV_LOG_ERROR, "Bad value for reserved field\n");
         if(get_bits1(&s->gb))
