@@ -117,7 +117,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
 
     RTMP_Init(r);
     if (!RTMP_SetupURL(r, filename)) {
-        rc = -1;
+        rc = AVERROR_UNKNOWN;
         goto fail;
     }
 
@@ -125,7 +125,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
         RTMP_EnableWrite(r);
 
     if (!RTMP_Connect(r, NULL) || !RTMP_ConnectStream(r, 0)) {
-        rc = -1;
+        rc = AVERROR_UNKNOWN;
         goto fail;
     }
 
@@ -159,7 +159,7 @@ static int rtmp_read_pause(URLContext *s, int pause)
     RTMP *r = &ctx->rtmp;
 
     if (!RTMP_Pause(r, pause))
-        return -1;
+        return AVERROR_UNKNOWN;
     return 0;
 }
 
@@ -178,7 +178,7 @@ static int64_t rtmp_read_seek(URLContext *s, int stream_index,
             flags & AVSEEK_FLAG_BACKWARD ? AV_ROUND_DOWN : AV_ROUND_UP);
 
     if (!RTMP_SendSeek(r, timestamp))
-        return -1;
+        return AVERROR_UNKNOWN;
     return timestamp;
 }
 
