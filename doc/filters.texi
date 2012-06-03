@@ -168,9 +168,16 @@ aformat=sample_fmts\=u8\,s16:channel_layouts\=stereo
 
 @section amerge
 
-Merge two audio streams into a single multi-channel stream.
+Merge two or more audio streams into a single multi-channel stream.
 
-This filter does not need any argument.
+The filter accepts the following named options:
+
+@table @option
+
+@item inputs
+Set the number of inputs. Default is 2.
+
+@end table
 
 If the channel layouts of the inputs are disjoint, and therefore compatible,
 the channel layout of the output will be set accordingly and the channels
@@ -189,7 +196,7 @@ On the other hand, if both input are in stereo, the output channels will be
 in the default order: a1, a2, b1, b2, and the channel layout will be
 arbitrarily set to 4.0, which may or may not be the expected value.
 
-Both inputs must have the same sample rate, and format.
+All inputs must have the same sample rate, and format.
 
 If inputs do not have the same duration, the output will stop with the
 shortest.
@@ -199,8 +206,7 @@ Example: merge two mono files into a stereo stream:
 amovie=left.wav [l] ; amovie=right.mp3 [r] ; [l] [r] amerge
 @end example
 
-If you need to do multiple merges (for instance multiple mono audio streams in
-a single video media), you can do:
+Example: multiple merges:
 @example
 ffmpeg -f lavfi -i "
 amovie=input.mkv:si=0 [a0];
@@ -209,11 +215,7 @@ amovie=input.mkv:si=2 [a2];
 amovie=input.mkv:si=3 [a3];
 amovie=input.mkv:si=4 [a4];
 amovie=input.mkv:si=5 [a5];
-[a0][a1] amerge [x0];
-[x0][a2] amerge [x1];
-[x1][a3] amerge [x2];
-[x2][a4] amerge [x3];
-[x3][a5] amerge" -c:a pcm_s16le output.mkv
+[a0][a1][a2][a3][a4][a5] amerge=inputs=6" -c:a pcm_s16le output.mkv
 @end example
 
 @section amix
