@@ -100,6 +100,17 @@ void av_bprint_init(AVBPrint *buf, unsigned size_init, unsigned size_max);
 #define AV_BPRINT_SIZE_COUNT_ONLY 0
 
 /**
+ * Init a print buffer using a pre-existing buffer.
+ *
+ * The buffer will not be reallocated.
+ *
+ * @param buf     buffer structure to init
+ * @param buffer  byte buffer to use for the string data
+ * @param size    size of buffer
+ */
+void av_bprint_init_for_buffer(AVBPrint *buf, char *buffer, unsigned size);
+
+/**
  * Append a formated string to a print buffer.
  */
 void av_bprintf(AVBPrint *buf, const char *fmt, ...) av_printf_format(2, 3);

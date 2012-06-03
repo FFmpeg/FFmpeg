@@ -78,6 +78,15 @@ void av_bprint_init(AVBPrint *buf, unsigned size_init, unsigned size_max)
         av_bprint_alloc(buf, size_init - 1);
 }
 
+void av_bprint_init_for_buffer(AVBPrint *buf, char *buffer, unsigned size)
+{
+    buf->str      = buffer;
+    buf->len      = 0;
+    buf->size     = size;
+    buf->size_max = size;
+    *buf->str = 0;
+}
+
 void av_bprintf(AVBPrint *buf, const char *fmt, ...)
 {
     unsigned room;
@@ -178,6 +187,7 @@ static void bprint_pascal(AVBPrint *b, unsigned size)
 int main(void)
 {
     AVBPrint b;
+    char buf[256];
 
     av_bprint_init(&b, 0, -1);
     bprint_pascal(&b, 5);
@@ -207,6 +217,10 @@ int main(void)
     av_bprint_init(&b, 0, 0);
     bprint_pascal(&b, 25);
     printf("Long text count only buffer: %zu/%u\n", strlen(b.str), b.len);
+
+    av_bprint_init_for_buffer(&b, buf, sizeof(buf));
+    bprint_pascal(&b, 25);
+    printf("Long text count only buffer: %zu/%u\n", strlen(buf), b.len);
 
     return 0;
 }
