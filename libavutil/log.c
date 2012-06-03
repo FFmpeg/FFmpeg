@@ -121,6 +121,11 @@ const char *av_default_item_name(void *ptr)
     return (*(AVClass **) ptr)->class_name;
 }
 
+AVClassCategory av_default_get_category(void *ptr)
+{
+    return (*(AVClass **) ptr)->category;
+}
+
 static void sanitize(uint8_t *line){
     while(*line){
         if(*line < 0x08 || (*line > 0x0D && *line < 0x20))
@@ -129,11 +134,15 @@ static void sanitize(uint8_t *line){
     }
 }
 
-static int get_category(AVClass *avc){
+static int get_category(void *ptr){
+    AVClass *avc = *(AVClass **) ptr;
     if(    !avc
         || (avc->version&0xFF)<100
-        ||  avc->version < (51 << 16 | 56 << 8)
+        ||  avc->version < (51 << 16 | 59 << 8)
         ||  avc->category >= AV_CLASS_CATEGORY_NB) return AV_CLASS_CATEGORY_NA + 16;
+
+    if(avc->get_category)
+        return avc->get_category(ptr) + 16;
 
     return avc->category + 16;
 }
@@ -151,12 +160,12 @@ static void format_line(void *ptr, int level, const char *fmt, va_list vl,
             if (parent && *parent) {
                 snprintf(part[0], part_size, "[%s @ %p] ",
                          (*parent)->item_name(parent), parent);
-                if(type) type[0] = get_category(*parent);
+                if(type) type[0] = get_category(((uint8_t *) ptr) + avc->parent_log_context_offset);
             }
         }
         snprintf(part[1], part_size, "[%s @ %p] ",
                  avc->item_name(ptr), ptr);
-        if(type) type[1] = get_category(avc);
+        if(type) type[1] = get_category(ptr);
     }
 
     vsnprintf(part[2], part_size, fmt, vl);
