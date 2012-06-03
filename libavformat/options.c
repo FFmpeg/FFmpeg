@@ -76,6 +76,12 @@ static const AVClass *format_child_class_next(const AVClass *prev)
     return NULL;
 }
 
+static AVClassCategory get_category(AVFormatContext *s)
+{
+    if(s->iformat) return AV_CLASS_CATEGORY_DEMUXER;
+    else           return AV_CLASS_CATEGORY_MUXER;
+}
+
 static const AVClass av_format_context_class = {
     .class_name     = "AVFormatContext",
     .item_name      = format_to_name,
@@ -84,6 +90,7 @@ static const AVClass av_format_context_class = {
     .child_next     = format_child_next,
     .child_class_next = format_child_class_next,
     .category       = AV_CLASS_CATEGORY_MUXER,
+    .get_category   = get_category,
 };
 
 static void avformat_get_context_defaults(AVFormatContext *s)
