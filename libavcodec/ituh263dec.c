@@ -963,6 +963,8 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
             s->h263_aic = get_bits1(&s->gb); /* Advanced Intra Coding (AIC) */
             s->loop_filter= get_bits1(&s->gb);
             s->unrestricted_mv = s->umvplus || s->obmc || s->loop_filter;
+            if(s->avctx->lowres)
+                s->loop_filter = 0;
 
             s->h263_slice_structured= get_bits1(&s->gb);
             if (get_bits1(&s->gb) != 0) {
