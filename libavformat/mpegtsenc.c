@@ -507,7 +507,7 @@ static void section_write_packet(MpegTSSection *s, const uint8_t *packet)
 static int mpegts_audio_write(void *opaque, uint8_t *buf, int size)
 {
     MpegTSWriteStream *ts_st = (MpegTSWriteStream *)opaque;
-    if (ts_st->adata_pos + size > ts_st->adata_size)
+    if (ts_st->adata_pos + (int64_t)size > ts_st->adata_size)
         return AVERROR(EIO);
 
     memcpy(ts_st->adata + ts_st->adata_pos, buf, size);
