@@ -1,0 +1,14 @@
+Short text in unlimited buffer: 174/174
+       1
+       1       1
+       1       2       1
+       1       3       3       1
+       1       4       6       4       1
+       1       5      10      10       5       1
+
+Long text in unlimited buffer: 2834/2834
+Long text in limited buffer: 2047/2834
+Short text in automatic buffer: 174/174
+Long text in automatic buffer: 1003/2834
+Long text count only buffer: 0/2834
+Long text count only buffer: 255/2834
