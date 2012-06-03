@@ -2199,8 +2199,12 @@ int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes)
                 /* calc from frame_bytes, channels, and bits_per_coded_sample */
                 switch (avctx->codec_id) {
                 case CODEC_ID_PCM_DVD:
+                    if(bps<4)
+                        return 0;
                     return 2 * (frame_bytes / ((bps * 2 / 8) * ch));
                 case CODEC_ID_PCM_BLURAY:
+                    if(bps<4)
+                        return 0;
                     return frame_bytes / ((FFALIGN(ch, 2) * bps) / 8);
                 case CODEC_ID_S302M:
                     return 2 * (frame_bytes / ((bps + 4) / 4)) / ch;
