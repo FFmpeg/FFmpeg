@@ -35,6 +35,7 @@ typedef enum {
     AV_CLASS_CATEGORY_DECODER,
     AV_CLASS_CATEGORY_FILTER,
     AV_CLASS_CATEGORY_BITSTREAM_FILTER,
+    AV_CLASS_CATEGORY_NB, ///< not part of ABI/API
 }AVClassCategory;
 
 /**
