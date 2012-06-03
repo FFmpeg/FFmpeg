@@ -3060,6 +3060,7 @@ int main(int argc, char **argv)
 {
     int flags;
     VideoState *is;
+    char dummy_videodriver[] = "SDL_VIDEODRIVER=dummy";
 
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
     parse_loglevel(argc, argv, options);
@@ -3097,6 +3098,8 @@ int main(int argc, char **argv)
     flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER;
     if (audio_disable)
         flags &= ~SDL_INIT_AUDIO;
+    if (display_disable)
+        SDL_putenv(dummy_videodriver); /* For the event queue, we always need a video driver. */
 #if !defined(__MINGW32__) && !defined(__APPLE__)
     flags |= SDL_INIT_EVENTTHREAD; /* Not supported on Windows or Mac OS X */
 #endif
