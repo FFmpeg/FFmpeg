@@ -235,14 +235,21 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
     AVFilterFormats *samplerates;
     int scaler_count = 0, resampler_count = 0;
 
+    for (j = 0; j < 2; j++) {
     /* ask all the sub-filters for their supported media formats */
     for (i = 0; i < graph->filter_count; i++) {
+        /* Call query_formats on sources first.
+           This is a temporary workaround for amerge,
+           until format renegociation is implemented. */
+        if (!graph->filters[i]->input_count == j)
+            continue;
         if (graph->filters[i]->filter->query_formats)
             ret = graph->filters[i]->filter->query_formats(graph->filters[i]);
         else
             ret = ff_default_query_formats(graph->filters[i]);
         if (ret < 0)
             return ret;
+    }
     }
 
     /* go through and merge as many format lists as possible */
