@@ -26,6 +26,7 @@
 #include "avstring.h"
 #include "avutil.h"
 #include "audioconvert.h"
+#include "bprint.h"
 
 static const char * const channel_names[] = {
     [0]  = "FL",        /* front left */
@@ -136,8 +137,8 @@ uint64_t av_get_channel_layout(const char *name)
     return layout;
 }
 
-void av_get_channel_layout_string(char *buf, int buf_size,
-                                  int nb_channels, uint64_t channel_layout)
+void av_bprint_channel_layout(struct AVBPrint *bp,
+                              int nb_channels, uint64_t channel_layout)
 {
     int i;
 
@@ -147,27 +148,36 @@ void av_get_channel_layout_string(char *buf, int buf_size,
     for (i = 0; i < FF_ARRAY_ELEMS(channel_layout_map); i++)
         if (nb_channels    == channel_layout_map[i].nb_channels &&
             channel_layout == channel_layout_map[i].layout) {
-            av_strlcpy(buf, channel_layout_map[i].name, buf_size);
+            av_bprintf(bp, "%s", channel_layout_map[i].name);
             return;
         }
 
-    snprintf(buf, buf_size, "%d channels", nb_channels);
+    av_bprintf(bp, "%d channels", nb_channels);
     if (channel_layout) {
         int i, ch;
-        av_strlcat(buf, " (", buf_size);
+        av_bprintf(bp, " (");
         for (i = 0, ch = 0; i < 64; i++) {
             if ((channel_layout & (UINT64_C(1) << i))) {
                 const char *name = get_channel_name(i);
                 if (name) {
                     if (ch > 0)
-                        av_strlcat(buf, "+", buf_size);
-                    av_strlcat(buf, name, buf_size);
+                        av_bprintf(bp, "+");
+                    av_bprintf(bp, "%s", name);
                 }
                 ch++;
             }
         }
-        av_strlcat(buf, ")", buf_size);
+        av_bprintf(bp, ")");
     }
+}
+
+void av_get_channel_layout_string(char *buf, int buf_size,
+                                  int nb_channels, uint64_t channel_layout)
+{
+    AVBPrint bp;
+
+    av_bprint_init_for_buffer(&bp, buf, buf_size);
+    av_bprint_channel_layout(&bp, nb_channels, channel_layout);
 }
 
 int av_get_channel_layout_nb_channels(uint64_t channel_layout)
