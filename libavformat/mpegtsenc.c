@@ -723,9 +723,10 @@ static int mpegts_write_header(AVFormatContext *s)
         if (ts_st) {
             av_freep(&ts_st->payload);
             if (ts_st->amux) {
-                av_free(ts_st->amux->pb->buffer);
-                av_free(ts_st->amux->pb);
+                av_freep(&ts_st->amux->pb->buffer);
+                av_freep(&ts_st->amux->pb);
                 avformat_free_context(ts_st->amux);
+                ts_st->amux = NULL;
             }
         }
         av_freep(&st->priv_data);
@@ -1235,9 +1236,10 @@ static int mpegts_write_end(AVFormatContext *s)
         MpegTSWriteStream *ts_st = st->priv_data;
         av_freep(&ts_st->payload);
         if (ts_st->amux) {
-            av_free(ts_st->amux->pb->buffer);
-            av_free(ts_st->amux->pb);
+            av_freep(&ts_st->amux->pb->buffer);
+            av_freep(&ts_st->amux->pb);
             avformat_free_context(ts_st->amux);
+            ts_st->amux = NULL;
         }
     }
 
