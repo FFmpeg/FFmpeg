@@ -81,19 +81,19 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
 {
     LibRTMPContext *ctx = s->priv_data;
     RTMP *r = &ctx->rtmp;
-    int rc = 0;
+    int rc = 0, level;
     char *filename = s->filename;
 
     switch (av_log_get_level()) {
     default:
-    case AV_LOG_FATAL:   rc = RTMP_LOGCRIT;    break;
-    case AV_LOG_ERROR:   rc = RTMP_LOGERROR;   break;
-    case AV_LOG_WARNING: rc = RTMP_LOGWARNING; break;
-    case AV_LOG_INFO:    rc = RTMP_LOGINFO;    break;
-    case AV_LOG_VERBOSE: rc = RTMP_LOGDEBUG;   break;
-    case AV_LOG_DEBUG:   rc = RTMP_LOGDEBUG2;  break;
+    case AV_LOG_FATAL:   level = RTMP_LOGCRIT;    break;
+    case AV_LOG_ERROR:   level = RTMP_LOGERROR;   break;
+    case AV_LOG_WARNING: level = RTMP_LOGWARNING; break;
+    case AV_LOG_INFO:    level = RTMP_LOGINFO;    break;
+    case AV_LOG_VERBOSE: level = RTMP_LOGDEBUG;   break;
+    case AV_LOG_DEBUG:   level = RTMP_LOGDEBUG2;  break;
     }
-    RTMP_LogSetLevel(rc);
+    RTMP_LogSetLevel(level);
     RTMP_LogSetCallback(rtmp_log);
 
     if (ctx->app || ctx->playpath) {
