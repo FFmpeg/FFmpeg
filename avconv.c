@@ -1668,7 +1668,7 @@ static int poll_filters(void)
         OutputFile    *of = output_files[ost->file_index];
         int ret = 0;
 
-        if (!ost->filter || ost->is_past_recording_time)
+        if (!ost->filter)
             continue;
 
         if (!ost->filtered_frame && !(ost->filtered_frame = avcodec_alloc_frame())) {
@@ -1677,7 +1677,7 @@ static int poll_filters(void)
             avcodec_get_frame_defaults(ost->filtered_frame);
         filtered_frame = ost->filtered_frame;
 
-        while (ret >= 0) {
+        while (ret >= 0 && !ost->is_past_recording_time) {
             if (ost->enc->type == AVMEDIA_TYPE_AUDIO &&
                 !(ost->enc->capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE))
                 ret = av_buffersink_read_samples(ost->filter->filter, &picref,
