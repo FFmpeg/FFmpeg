@@ -62,6 +62,21 @@ static int flv_probe(AVProbeData *p)
     return 0;
 }
 
+static AVStream *create_stream(AVFormatContext *s, int tag, int codec_type){
+    AVStream *st = avformat_new_stream(s, NULL);
+    if (!st)
+        return NULL;
+    st->id = tag;
+    st->codec->codec_type = codec_type;
+    if(s->nb_streams>=3 ||(   s->nb_streams==2
+                           && s->streams[0]->codec->codec_type != AVMEDIA_TYPE_DATA
+                           && s->streams[1]->codec->codec_type != AVMEDIA_TYPE_DATA))
+        s->ctx_flags &= ~AVFMTCTX_NOHEADER;
+
+    avpriv_set_pts_info(st, 32, 1, 1000); /* 32 bit pts in ms */
+    return st;
+}
+
 static void flv_set_audio_codec(AVFormatContext *s, AVStream *astream, AVCodecContext *acodec, int flv_codecid) {
     switch(flv_codecid) {
         //no distinction between S16 and S8 PCM codec flags
@@ -298,6 +313,12 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
                 vcodec->bit_rate = num_val * 1024.0;
             else if (!strcmp(key, "audiodatarate") && acodec && 0 <= (int)(num_val * 1024.0))
                 acodec->bit_rate = num_val * 1024.0;
+            else if (!strcmp(key, "datastream")) {
+                AVStream *st = create_stream(s, 2, AVMEDIA_TYPE_DATA);
+                if (!st)
+                    return AVERROR(ENOMEM);
+                st->codec->codec_id = CODEC_ID_TEXT;
+            }
         }
 
         if (amf_type == AMF_DATA_TYPE_OBJECT && s->nb_streams == 1 &&
@@ -344,7 +365,14 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos) {
 
     //first object needs to be "onMetaData" string
     type = avio_r8(ioc);
-    if(type != AMF_DATA_TYPE_STRING || amf_get_string(ioc, buffer, sizeof(buffer)) < 0 || strcmp(buffer, "onMetaData"))
+    if (type != AMF_DATA_TYPE_STRING ||
+        amf_get_string(ioc, buffer, sizeof(buffer)) < 0)
+        return -1;
+
+    if (!strcmp(buffer, "onTextData"))
+        return 1;
+
+    if (strcmp(buffer, "onMetaData"))
         return -1;
 
     //find the streams now so that amf_parse_object doesn't need to do the lookup every time it is called.
@@ -362,28 +390,6 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos) {
     return 0;
 }
 
-static AVStream *create_stream(AVFormatContext *s, int stream_type){
-    AVStream *st = avformat_new_stream(s, NULL);
-    if (!st)
-        return NULL;
-    st->id = stream_type;
-    switch(stream_type) {
-        case FLV_STREAM_TYPE_VIDEO:    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;    break;
-        case FLV_STREAM_TYPE_AUDIO:    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;    break;
-        case FLV_STREAM_TYPE_DATA:
-            st->codec->codec_type = AVMEDIA_TYPE_DATA;
-            st->codec->codec_id = CODEC_ID_NONE; // Going to rely on copy for now
-            av_log(s, AV_LOG_DEBUG, "Data stream created\n");
-    }
-    if(s->nb_streams>=3 ||(   s->nb_streams==2
-                           && s->streams[0]->codec->codec_type != AVMEDIA_TYPE_DATA
-                           && s->streams[1]->codec->codec_type != AVMEDIA_TYPE_DATA))
-        s->ctx_flags &= ~AVFMTCTX_NOHEADER;
-
-    avpriv_set_pts_info(st, 32, 1, 1000); /* 32 bit pts in ms */
-    return st;
-}
-
 static int flv_read_header(AVFormatContext *s)
 {
     int offset, flags;
@@ -399,11 +405,11 @@ static int flv_read_header(AVFormatContext *s)
         s->ctx_flags |= AVFMTCTX_NOHEADER;
 
     if(flags & FLV_HEADER_FLAG_HASVIDEO){
-        if(!create_stream(s, FLV_STREAM_TYPE_VIDEO))
+        if(!create_stream(s, 0, AVMEDIA_TYPE_VIDEO))
             return AVERROR(ENOMEM);
     }
     if(flags & FLV_HEADER_FLAG_HASAUDIO){
-        if(!create_stream(s, FLV_STREAM_TYPE_AUDIO))
+        if(!create_stream(s, 1, AVMEDIA_TYPE_AUDIO))
             return AVERROR(ENOMEM);
     }
     // Flag doesn't indicate whether or not there is script-data present. Must
@@ -464,6 +470,65 @@ static void clear_index_entries(AVFormatContext *s, int64_t pos)
         }
         st->nb_index_entries = out;
     }
+}
+
+
+static int flv_data_packet(AVFormatContext *s, AVPacket *pkt,
+                           int64_t dts, int64_t next)
+{
+    int ret = AVERROR_INVALIDDATA, i;
+    AVIOContext *pb = s->pb;
+    AVStream *st = NULL;
+    AMFDataType type;
+    char buf[20];
+    int length;
+
+    type = avio_r8(pb);
+    if (type == AMF_DATA_TYPE_MIXEDARRAY)
+        avio_seek(pb, 4, SEEK_CUR);
+    else if (type != AMF_DATA_TYPE_OBJECT)
+        goto out;
+
+    amf_get_string(pb, buf, sizeof(buf));
+    if (strcmp(buf, "type") || avio_r8(pb) != AMF_DATA_TYPE_STRING)
+        goto out;
+
+    amf_get_string(pb, buf, sizeof(buf));
+    //FIXME parse it as codec_id
+    amf_get_string(pb, buf, sizeof(buf));
+    if (strcmp(buf, "text") || avio_r8(pb) != AMF_DATA_TYPE_STRING)
+        goto out;
+
+    length = avio_rb16(pb);
+    ret = av_get_packet(s->pb, pkt, length);
+    if (ret < 0) {
+        ret = AVERROR(EIO);
+        goto out;
+    }
+
+    for (i = 0; i < s->nb_streams; i++) {
+        st = s->streams[i];
+        if (st->id == 2)
+            break;
+    }
+
+    if (i == s->nb_streams) {
+        st = create_stream(s, 2, AVMEDIA_TYPE_DATA);
+        if (!st)
+            goto out;
+        st->codec->codec_id = CODEC_ID_TEXT;
+    }
+
+    pkt->dts  = dts;
+    pkt->pts  = dts;
+    pkt->size = ret;
+
+    pkt->stream_index = st->index;
+    pkt->flags |= AV_PKT_FLAG_KEY;
+
+    avio_seek(s->pb, next + 4, SEEK_SET);
+out:
+    return ret;
 }
 
 static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
@@ -548,7 +613,8 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
     if(i == s->nb_streams){
         av_log(s, AV_LOG_WARNING, "Stream discovered after head already parsed\n");
-        st= create_stream(s, stream_type);
+        st = create_stream(s, stream_type,
+             (int[]){AVMEDIA_TYPE_VIDEO, AVMEDIA_TYPE_AUDIO, AVMEDIA_TYPE_DATA}[stream_type]);
     }
     av_dlog(s, "%d %X %d \n", stream_type, flags, st->discard);
     if(  (st->discard >= AVDISCARD_NONKEY && !((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY || (stream_type == FLV_STREAM_TYPE_AUDIO)))

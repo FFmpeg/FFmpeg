@@ -143,16 +143,20 @@ static int decode_bmv_frame(const uint8_t *source, int src_len, uint8_t *frame, 
         switch (mode) {
         case 1:
             if (forward) {
-                if (dst - frame + SCREEN_WIDE < -frame_off ||
-                        frame_end - dst < frame_off + len)
+                if (dst - frame + SCREEN_WIDE < frame_off ||
+                        dst - frame + SCREEN_WIDE + frame_off < 0 ||
+                        frame_end - dst < frame_off + len ||
+                        frame_end - dst < len)
                     return -1;
                 for (i = 0; i < len; i++)
                     dst[i] = dst[frame_off + i];
                 dst += len;
             } else {
                 dst -= len;
-                if (dst - frame + SCREEN_WIDE < -frame_off ||
-                        frame_end - dst < frame_off + len)
+                if (dst - frame + SCREEN_WIDE < frame_off ||
+                        dst - frame + SCREEN_WIDE + frame_off < 0 ||
+                        frame_end - dst < frame_off + len ||
+                        frame_end - dst < len)
                     return -1;
                 for (i = len - 1; i >= 0; i--)
                     dst[i] = dst[frame_off + i];

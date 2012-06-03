@@ -152,7 +152,7 @@ int av_dup_packet(AVPacket *pkt)
                    pkt->side_data_elems * sizeof(*pkt->side_data));
             for (i = 0; i < pkt->side_data_elems; i++)
                 DUP_DATA(pkt->side_data[i].data, tmp_pkt.side_data[i].data,
-                         pkt->side_data[i].size, 1);
+                         tmp_pkt.side_data[i].size, 1);
         }
     }
     return 0;
