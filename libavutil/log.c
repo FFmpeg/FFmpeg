@@ -34,13 +34,32 @@ static int flags;
 
 #if defined(_WIN32) && !defined(__MINGW32CE__)
 #include <windows.h>
-static const uint8_t color[] = { 12, 12, 12, 14, 7, 10, 11 };
+static const uint8_t color[16 + AV_CLASS_CATEGORY_NB] = {
+    [AV_LOG_PANIC  /8] = 12,
+    [AV_LOG_FATAL  /8] = 12,
+    [AV_LOG_ERROR  /8] = 12,
+    [AV_LOG_WARNING/8] = 14,
+    [AV_LOG_INFO   /8] =  7,
+    [AV_LOG_VERBOSE/8] = 10,
+    [AV_LOG_DEBUG  /8] = 11,
+};
+
 static int16_t background, attr_orig;
 static HANDLE con;
 #define set_color(x)  SetConsoleTextAttribute(con, background | color[x])
 #define reset_color() SetConsoleTextAttribute(con, attr_orig)
 #else
-static const uint8_t color[] = { 0x41, 0x41, 0x11, 0x03, 9, 0x02, 0x06 };
+
+static const uint8_t color[16 + AV_CLASS_CATEGORY_NB] = {
+    [AV_LOG_PANIC  /8] = 0x41,
+    [AV_LOG_FATAL  /8] = 0x41,
+    [AV_LOG_ERROR  /8] = 0x11,
+    [AV_LOG_WARNING/8] = 0x03,
+    [AV_LOG_INFO   /8] =    9,
+    [AV_LOG_VERBOSE/8] = 0x02,
+    [AV_LOG_DEBUG  /8] = 0x06,
+};
+
 #define set_color(x)  fprintf(stderr, "\033[%d;3%dm", color[x] >> 4, color[x]&15)
 #define reset_color() fprintf(stderr, "\033[0m")
 #endif
