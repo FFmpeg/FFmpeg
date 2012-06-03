@@ -1991,7 +1991,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     }
 
     if(avctx->debug&FF_DEBUG_PICT_INFO)
-        av_log(avctx, AV_LOG_ERROR, "keyframe:%d coder:%d\n", p->key_frame, f->ac);
+        av_log(avctx, AV_LOG_DEBUG, "keyframe:%d coder:%d\n", p->key_frame, f->ac);
 
     buf_p= buf + buf_size;
     for(i=f->slice_count-1; i>=0; i--){
