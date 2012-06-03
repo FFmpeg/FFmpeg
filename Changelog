@@ -1,6 +1,24 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 0.7.6:
+
+Security Updates:
+
+- vqavideo: return error if image size is not a multiple of block size (CVE-2012-0947)
+- h263dec: Disallow width/height changing with frame threads (CVE-2011-3937)
+- adpcm: ADPCM Electronic Arts has always two channels (CVE-2012-0852)
+- h264: Add check for invalid chroma_format_idc (CVE-2012-0851)
+- dpcm: ignore extra unpaired bytes in stereo streams (CVE-2011-3951)
+- rtpdec_asf: Fix integer underflow that could allow remote code execution (CVE-2011-4031)
+- aacsbr: prevent out of bounds memcpy() (CVE-2012-0850)
+- kmvc: Check palsize (CVE-2011-3952)
+
+Further bugfixes in the following codecs:
+
+  ea, png, qdm2, tqi, motionpixels, and a compilation failure with gcc 4.7
+
+
 version 0.7.5:
 
 Security updates:
