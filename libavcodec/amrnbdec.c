@@ -136,6 +136,11 @@ typedef struct AMRContext {
 
     float samples_in[LP_FILTER_ORDER + AMR_SUBFRAME_SIZE]; ///< floating point samples
 
+    ACELPFContext                     acelpf_ctx; ///< context for filters for ACELP-based codecs
+    ACELPVContext                     acelpv_ctx; ///< context for vector operations for ACELP-based codecs
+    CELPFContext                       celpf_ctx; ///< context for filters for CELP-based codecs
+    CELPMContext                       celpm_ctx; ///< context for fixed point math operations
+
 } AMRContext;
 
 /** Double version of ff_weighted_vector_sumf() */
@@ -170,6 +175,11 @@ static av_cold int amrnb_decode_init(AVCodecContext *avctx)
 
     avcodec_get_frame_defaults(&p->avframe);
     avctx->coded_frame = &p->avframe;
+
+    ff_acelp_filter_init(&p->acelpf_ctx);
+    ff_acelp_vectors_init(&p->acelpv_ctx);
+    ff_celp_filter_init(&p->celpf_ctx);
+    ff_celp_math_init(&p->celpm_ctx);
 
     return 0;
 }
@@ -214,15 +224,16 @@ static enum Mode unpack_bitstream(AMRContext *p, const uint8_t *buf,
  * Interpolate the LSF vector (used for fixed gain smoothing).
  * The interpolation is done over all four subframes even in MODE_12k2.
  *
+ * @param[in]     ctx       The Context
  * @param[in,out] lsf_q     LSFs in [0,1] for each subframe
  * @param[in]     lsf_new   New LSFs in [0,1] for subframe 4
  */
-static void interpolate_lsf(float lsf_q[4][LP_FILTER_ORDER], float *lsf_new)
+static void interpolate_lsf(ACELPVContext *ctx, float lsf_q[4][LP_FILTER_ORDER], float *lsf_new)
 {
     int i;
 
     for (i = 0; i < 4; i++)
-        ff_weighted_vector_sumf(lsf_q[i], lsf_q[3], lsf_new,
+        ctx->weighted_vector_sumf(lsf_q[i], lsf_q[3], lsf_new,
                                 0.25 * (3 - i), 0.25 * (i + 1),
                                 LP_FILTER_ORDER);
 }
@@ -266,7 +277,7 @@ static void lsf2lsp_for_mode12k2(AMRContext *p, double lsp[LP_FILTER_ORDER],
     ff_set_min_dist_lsf(lsf_q, MIN_LSF_SPACING, LP_FILTER_ORDER);
 
     if (update)
-        interpolate_lsf(p->lsf_q, lsf_q);
+        interpolate_lsf(&p->acelpv_ctx, p->lsf_q, lsf_q);
 
     ff_acelp_lsf2lspd(lsp, lsf_q, LP_FILTER_ORDER);
 }
@@ -329,7 +340,7 @@ static void lsf2lsp_3(AMRContext *p)
     ff_set_min_dist_lsf(lsf_q, MIN_LSF_SPACING, LP_FILTER_ORDER);
 
     // store data for computing the next frame's LSFs
-    interpolate_lsf(p->lsf_q, lsf_q);
+    interpolate_lsf(&p->acelpv_ctx, p->lsf_q, lsf_q);
     memcpy(p->prev_lsf_r, lsf_r, LP_FILTER_ORDER * sizeof(*lsf_r));
 
     ff_acelp_lsf2lspd(p->lsp[3], lsf_q, LP_FILTER_ORDER);
@@ -395,7 +406,8 @@ static void decode_pitch_vector(AMRContext *p,
 
     /* Calculate the pitch vector by interpolating the past excitation at the
        pitch lag using a b60 hamming windowed sinc function.   */
-    ff_acelp_interpolatef(p->excitation, p->excitation + 1 - pitch_lag_int,
+    p->acelpf_ctx.acelp_interpolatef(p->excitation,
+                          p->excitation + 1 - pitch_lag_int,
                           ff_b60_sinc, 6,
                           pitch_lag_frac + 6 - 6*(pitch_lag_frac > 0),
                           10, AMR_SUBFRAME_SIZE);
@@ -780,12 +792,12 @@ static int synthesis(AMRContext *p, float *lpc,
         for (i = 0; i < AMR_SUBFRAME_SIZE; i++)
             p->pitch_vector[i] *= 0.25;
 
-    ff_weighted_vector_sumf(excitation, p->pitch_vector, fixed_vector,
+    p->acelpv_ctx.weighted_vector_sumf(excitation, p->pitch_vector, fixed_vector,
                             p->pitch_gain[4], fixed_gain, AMR_SUBFRAME_SIZE);
 
     // emphasize pitch vector contribution
     if (p->pitch_gain[4] > 0.5 && !overflow) {
-        float energy = ff_dot_productf(excitation, excitation,
+        float energy = p->celpm_ctx.dot_productf(excitation, excitation,
                                        AMR_SUBFRAME_SIZE);
         float pitch_factor =
             p->pitch_gain[4] *
@@ -800,7 +812,8 @@ static int synthesis(AMRContext *p, float *lpc,
                                                 AMR_SUBFRAME_SIZE);
     }
 
-    ff_celp_lp_synthesis_filterf(samples, lpc, excitation, AMR_SUBFRAME_SIZE,
+    p->celpf_ctx.celp_lp_synthesis_filterf(samples, lpc, excitation,
+                                 AMR_SUBFRAME_SIZE,
                                  LP_FILTER_ORDER);
 
     // detect overflow
@@ -846,10 +859,11 @@ static void update_state(AMRContext *p)
 /**
  * Get the tilt factor of a formant filter from its transfer function
  *
+ * @param p     The Context
  * @param lpc_n LP_FILTER_ORDER coefficients of the numerator
  * @param lpc_d LP_FILTER_ORDER coefficients of the denominator
  */
-static float tilt_factor(float *lpc_n, float *lpc_d)
+static float tilt_factor(AMRContext *p, float *lpc_n, float *lpc_d)
 {
     float rh0, rh1; // autocorrelation at lag 0 and 1
 
@@ -859,11 +873,12 @@ static float tilt_factor(float *lpc_n, float *lpc_d)
 
     hf[0] = 1.0;
     memcpy(hf + 1, lpc_n, sizeof(float) * LP_FILTER_ORDER);
-    ff_celp_lp_synthesis_filterf(hf, lpc_d, hf, AMR_TILT_RESPONSE,
+    p->celpf_ctx.celp_lp_synthesis_filterf(hf, lpc_d, hf,
+                                 AMR_TILT_RESPONSE,
                                  LP_FILTER_ORDER);
 
-    rh0 = ff_dot_productf(hf, hf,     AMR_TILT_RESPONSE);
-    rh1 = ff_dot_productf(hf, hf + 1, AMR_TILT_RESPONSE - 1);
+    rh0 = p->celpm_ctx.dot_productf(hf, hf,     AMR_TILT_RESPONSE);
+    rh1 = p->celpm_ctx.dot_productf(hf, hf + 1, AMR_TILT_RESPONSE - 1);
 
     // The spec only specifies this check for 12.2 and 10.2 kbit/s
     // modes. But in the ref source the tilt is always non-negative.
@@ -883,7 +898,7 @@ static void postfilter(AMRContext *p, float *lpc, float *buf_out)
     int i;
     float *samples          = p->samples_in + LP_FILTER_ORDER; // Start of input
 
-    float speech_gain       = ff_dot_productf(samples, samples,
+    float speech_gain       = p->celpm_ctx.dot_productf(samples, samples,
                                               AMR_SUBFRAME_SIZE);
 
     float pole_out[AMR_SUBFRAME_SIZE + LP_FILTER_ORDER];  // Output of pole filter
@@ -904,16 +919,16 @@ static void postfilter(AMRContext *p, float *lpc, float *buf_out)
     }
 
     memcpy(pole_out, p->postfilter_mem, sizeof(float) * LP_FILTER_ORDER);
-    ff_celp_lp_synthesis_filterf(pole_out + LP_FILTER_ORDER, lpc_d, samples,
+    p->celpf_ctx.celp_lp_synthesis_filterf(pole_out + LP_FILTER_ORDER, lpc_d, samples,
                                  AMR_SUBFRAME_SIZE, LP_FILTER_ORDER);
     memcpy(p->postfilter_mem, pole_out + AMR_SUBFRAME_SIZE,
            sizeof(float) * LP_FILTER_ORDER);
 
-    ff_celp_lp_zero_synthesis_filterf(buf_out, lpc_n,
+    p->celpf_ctx.celp_lp_zero_synthesis_filterf(buf_out, lpc_n,
                                       pole_out + LP_FILTER_ORDER,
                                       AMR_SUBFRAME_SIZE, LP_FILTER_ORDER);
 
-    ff_tilt_compensation(&p->tilt_mem, tilt_factor(lpc_n, lpc_d), buf_out,
+    ff_tilt_compensation(&p->tilt_mem, tilt_factor(p, lpc_n, lpc_d), buf_out,
                          AMR_SUBFRAME_SIZE);
 
     ff_adaptive_gain_control(buf_out, buf_out, speech_gain, AMR_SUBFRAME_SIZE,
@@ -990,7 +1005,7 @@ static int amrnb_decode_frame(AVCodecContext *avctx, void *data,
 
         p->fixed_gain[4] =
             ff_amr_set_fixed_gain(fixed_gain_factor,
-                       ff_dot_productf(p->fixed_vector, p->fixed_vector,
+                       p->celpm_ctx.dot_productf(p->fixed_vector, p->fixed_vector,
                                        AMR_SUBFRAME_SIZE)/AMR_SUBFRAME_SIZE,
                        p->prediction_error,
                        energy_mean[p->cur_frame_mode], energy_pred_fac);
@@ -1034,7 +1049,8 @@ static int amrnb_decode_frame(AVCodecContext *avctx, void *data,
         update_state(p);
     }
 
-    ff_acelp_apply_order_2_transfer_function(buf_out, buf_out, highpass_zeros,
+    p->acelpf_ctx.acelp_apply_order_2_transfer_function(buf_out,
+                                             buf_out, highpass_zeros,
                                              highpass_poles,
                                              highpass_gain * AMR_SAMPLE_SCALE,
                                              p->high_pass_mem, AMR_BLOCK_SIZE);
@@ -1045,7 +1061,7 @@ static int amrnb_decode_frame(AVCodecContext *avctx, void *data,
      * for fixed_gain_smooth.
      * The specification has an incorrect formula: the reference decoder uses
      * qbar(n-1) rather than qbar(n) in section 6.1(4) equation 71. */
-    ff_weighted_vector_sumf(p->lsf_avg, p->lsf_avg, p->lsf_q[3],
+    p->acelpv_ctx.weighted_vector_sumf(p->lsf_avg, p->lsf_avg, p->lsf_q[3],
                             0.84, 0.16, LP_FILTER_ORDER);
 
     *got_frame_ptr   = 1;

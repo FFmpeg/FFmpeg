@@ -205,3 +205,12 @@ void ff_celp_lp_zero_synthesis_filterf(float *out, const float *filter_coeffs,
             out[n] += filter_coeffs[i-1] * in[n-i];
     }
 }
+
+void ff_celp_filter_init(CELPFContext *c)
+{
+    c->celp_lp_synthesis_filterf        = ff_celp_lp_synthesis_filterf;
+    c->celp_lp_zero_synthesis_filterf   = ff_celp_lp_zero_synthesis_filterf;
+
+    if(HAVE_MIPSFPU)
+        ff_celp_filter_init_mips(c);
+}

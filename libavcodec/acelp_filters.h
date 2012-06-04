@@ -25,6 +25,39 @@
 
 #include <stdint.h>
 
+typedef struct ACELPFContext {
+    /**
+    * Floating point version of ff_acelp_interpolate()
+    */
+    void (*acelp_interpolatef)(float *out, const float *in,
+                            const float *filter_coeffs, int precision,
+                            int frac_pos, int filter_length, int length);
+
+    /**
+     * Apply an order 2 rational transfer function in-place.
+     *
+     * @param out output buffer for filtered speech samples
+     * @param in input buffer containing speech data (may be the same as out)
+     * @param zero_coeffs z^-1 and z^-2 coefficients of the numerator
+     * @param pole_coeffs z^-1 and z^-2 coefficients of the denominator
+     * @param gain scale factor for final output
+     * @param mem intermediate values used by filter (should be 0 initially)
+     * @param n number of samples (should be a multiple of eight)
+     */
+    void (*acelp_apply_order_2_transfer_function)(float *out, const float *in,
+                                                  const float zero_coeffs[2],
+                                                  const float pole_coeffs[2],
+                                                  float gain,
+                                                  float mem[2], int n);
+
+}ACELPFContext;
+
+/**
+ * Initialize ACELPFContext.
+ */
+void ff_acelp_filter_init(ACELPFContext *c);
+void ff_acelp_filter_init_mips(ACELPFContext *c);
+
 /**
  * low-pass Finite Impulse Response filter coefficients.
  *

@@ -268,6 +268,10 @@ Optimization options (experts only):
   --disable-neon           disable NEON optimizations
   --disable-vis            disable VIS optimizations
   --disable-yasm           disable use of yasm assembler
+  --disable-mips32r2       disable MIPS32R2 optimizations
+  --disable-mipsdspr1      disable MIPS DSP ASE R1 optimizations
+  --disable-mipsdspr2      disable MIPS DSP ASE R2 optimizations
+  --disable-mipsfpu        disable floating point MIPS optimizations
   --postproc-version=V     build libpostproc version V.
                            Where V can be '$ALT_PP_VER_MAJOR.$ALT_PP_VER_MINOR.$ALT_PP_VER_MICRO' or 'current'. [$postproc_version_default]
 
@@ -1149,6 +1153,10 @@ ARCH_EXT_LIST='
     ssse3
     vfpv3
     vis
+    mipsfpu
+    mips32r2
+    mipsdspr1
+    mipsdspr2
 '
 
 HAVE_LIST_PUB='
@@ -1368,6 +1376,10 @@ armvfp_deps="arm"
 neon_deps="arm"
 vfpv3_deps="armvfp"
 
+mipsfpu_deps="mips"
+mips32r2_deps="mips"
+mipsdspr1_deps="mips"
+mipsdspr2_deps="mips"
 mmi_deps="mips"
 
 altivec_deps="ppc"
@@ -2567,6 +2579,28 @@ elif enabled mips; then
 
     cpuflags="-march=$cpu"
 
+    case $cpu in
+        24kc)
+            disable mipsfpu
+            disable mipsdspr1
+            disable mipsdspr2
+        ;;
+        24kf*)
+            disable mipsdspr1
+            disable mipsdspr2
+        ;;
+        24kec|34kc|1004kc)
+            disable mipsfpu
+            disable mipsdspr2
+        ;;
+        24kef*|34kf*|1004kf*)
+            disable mipsdspr2
+        ;;
+        74kc)
+            disable mipsfpu
+        ;;
+    esac
+
 elif enabled avr32; then
 
     case $cpu in
@@ -2942,6 +2976,15 @@ elif enabled mips; then
 
     check_asm loongson '"dmult.g $1, $2, $3"'
     enabled mmi     && check_asm mmi     '"lq $2, 0($2)"'
+    enabled mips32r2  && add_cflags "-mips32r2" &&
+     check_asm mips32r2  '"rotr $t0, $t1, 1"'
+    enabled mipsdspr1 && add_cflags "-mdsp" && add_asflags "-mdsp" &&
+     check_asm mipsdspr1 '"addu.qb $t0, $t1, $t2"'
+    enabled mipsdspr2 && add_cflags "-mdspr2" && add_asflags "-mdspr2" &&
+     check_asm mipsdspr2 '"absq_s.qb $t0, $t1"'
+    enabled mipsfpu   && add_cflags "-mhard-float" &&
+     check_asm mipsfpu   '"madd.d $f0, $f2, $f4, $f6"'
+
 
 elif enabled ppc; then
 
@@ -3541,6 +3584,10 @@ if enabled arm; then
 fi
 if enabled mips; then
     echo "MMI enabled               ${mmi-no}"
+    echo "MIPS FPU enabled          ${mipsfpu-no}"
+    echo "MIPS32R2 enabled          ${mips32r2-no}"
+    echo "MIPS DSP R1 enabled       ${mipsdspr1-no}"
+    echo "MIPS DSP R2 enabled       ${mipsdspr2-no}"
 fi
 if enabled ppc; then
     echo "AltiVec enabled           ${altivec-no}"

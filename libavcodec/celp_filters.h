@@ -25,6 +25,55 @@
 
 #include <stdint.h>
 
+typedef struct CELPFContext {
+    /**
+     * LP synthesis filter.
+     * @param[out] out pointer to output buffer
+     *        - the array out[-filter_length, -1] must
+     *        contain the previous result of this filter
+     * @param filter_coeffs filter coefficients.
+     * @param in input signal
+     * @param buffer_length amount of data to process
+     * @param filter_length filter length (10 for 10th order LP filter). Must be
+     *                      greater than 4 and even.
+     *
+     * @note Output buffer must contain filter_length samples of past
+     *       speech data before pointer.
+     *
+     * Routine applies 1/A(z) filter to given speech data.
+     */
+    void (*celp_lp_synthesis_filterf)(float *out, const float *filter_coeffs,
+                                      const float *in, int buffer_length,
+                                      int filter_length);
+
+    /**
+     * LP zero synthesis filter.
+     * @param[out] out pointer to output buffer
+     * @param filter_coeffs filter coefficients.
+     * @param in input signal
+     *        - the array in[-filter_length, -1] must
+     *        contain the previous input of this filter
+     * @param buffer_length amount of data to process (should be a multiple of eight)
+     * @param filter_length filter length (10 for 10th order LP filter;
+     *                                      should be a multiple of two)
+     *
+     * @note Output buffer must contain filter_length samples of past
+     *       speech data before pointer.
+     *
+     * Routine applies A(z) filter to given speech data.
+     */
+    void (*celp_lp_zero_synthesis_filterf)(float *out, const float *filter_coeffs,
+                                           const float *in, int buffer_length,
+                                           int filter_length);
+
+}CELPFContext;
+
+/**
+ * Initialize CELPFContext.
+ */
+void ff_celp_filter_init(CELPFContext *c);
+void ff_celp_filter_init_mips(CELPFContext *c);
+
 /**
  * Circularly convolve fixed vector with a phase dispersion impulse
  *        response filter (D.6.2 of G.729 and 6.1.5 of AMR).

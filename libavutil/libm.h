@@ -28,6 +28,10 @@
 #include "config.h"
 #include "attributes.h"
 
+#if HAVE_MIPSFPU && HAVE_INLINE_ASM
+#include "libavutil/mips/libm_mips.h"
+#endif /* HAVE_MIPSFPU && HAVE_INLINE_ASM*/
+
 #if !HAVE_CBRTF
 #undef cbrtf
 #define cbrtf(x) powf(x, 1.0/3.0)

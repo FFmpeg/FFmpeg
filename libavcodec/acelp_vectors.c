@@ -260,3 +260,11 @@ void ff_clear_fixed_vector(float *out, const AMRFixed *in, int size)
             } while (x < size && repeats);
     }
 }
+
+void ff_acelp_vectors_init(ACELPVContext *c)
+{
+    c->weighted_vector_sumf   = ff_weighted_vector_sumf;
+
+    if(HAVE_MIPSFPU)
+        ff_acelp_vectors_init_mips(c);
+}

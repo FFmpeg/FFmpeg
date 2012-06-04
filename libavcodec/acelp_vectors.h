@@ -25,6 +25,30 @@
 
 #include <stdint.h>
 
+typedef struct ACELPVContext {
+    /**
+     * float implementation of weighted sum of two vectors.
+     * @param[out] out result of addition
+     * @param in_a first vector
+     * @param in_b second vector
+     * @param weight_coeff_a first vector weight coefficient
+     * @param weight_coeff_a second vector weight coefficient
+     * @param length vectors length (should be a multiple of two)
+     *
+     * @note It is safe to pass the same buffer for out and in_a or in_b.
+     */
+    void (*weighted_vector_sumf)(float *out, const float *in_a, const float *in_b,
+                                 float weight_coeff_a, float weight_coeff_b,
+                                 int length);
+
+}ACELPVContext;
+
+/**
+ * Initialize ACELPVContext.
+ */
+void ff_acelp_vectors_init(ACELPVContext *c);
+void ff_acelp_vectors_init_mips(ACELPVContext *c);
+
 /** Sparse representation for the algebraic codebook (fixed) vector */
 typedef struct {
     int      n;
