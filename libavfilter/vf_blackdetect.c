@@ -59,7 +59,7 @@ static const AVOption blackdetect_options[] = {
 
 static const AVClass blackdetect_class = {
     .class_name = "BlackDetectContext",
-    .item_name  = avfilter_default_filter_name,
+    .item_name  = av_default_item_name,
     .option     = blackdetect_options,
 };
 

@@ -103,7 +103,7 @@ static const AVOption overlay_options[] = {
 
 static const AVClass overlay_class = {
     "OverlayContext",
-    avfilter_default_filter_name,
+    av_default_item_name,
     overlay_options
 };
 

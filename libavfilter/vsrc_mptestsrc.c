@@ -84,7 +84,7 @@ static const AVOption mptestsrc_options[]= {
 
 static const AVClass mptestsrc_class = {
     "MPTestContext",
-    avfilter_default_filter_name,
+    av_default_item_name,
     mptestsrc_options
 };
 

@@ -97,7 +97,7 @@ static const AVOption life_options[] = {
 
 static const AVClass life_class = {
     "LifeContext",
-    avfilter_default_filter_name,
+    av_default_item_name,
     life_options
 };
 

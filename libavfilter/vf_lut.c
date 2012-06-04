@@ -91,7 +91,7 @@ static const AVOption lut_options[] = {
 
 static const AVClass lut_class = {
     "LutContext",
-    avfilter_default_filter_name,
+    av_default_item_name,
     lut_options
 };
 

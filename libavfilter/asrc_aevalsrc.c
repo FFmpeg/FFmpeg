@@ -80,7 +80,7 @@ static const AVOption eval_options[]= {
 
 static const AVClass eval_class = {
     "AEvalSrcContext",
-    avfilter_default_filter_name,
+    av_default_item_name,
     eval_options
 };
 

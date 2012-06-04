@@ -151,7 +151,7 @@ static const AVOption delogo_options[]= {
 
 static const AVClass delogo_class = {
     .class_name = "DelogoContext",
-    .item_name  = avfilter_default_filter_name,
+    .item_name  = av_default_item_name,
     .option     = delogo_options,
 };
 

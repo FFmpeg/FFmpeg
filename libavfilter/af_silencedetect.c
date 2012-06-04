@@ -50,7 +50,7 @@ static const AVOption silencedetect_options[] = {
 
 static const AVClass silencedetect_class = {
     .class_name = "SilenceDetectContext",
-    .item_name  = avfilter_default_filter_name,
+    .item_name  = av_default_item_name,
     .option     = silencedetect_options,
 };
 

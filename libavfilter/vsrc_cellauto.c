@@ -78,7 +78,7 @@ static const AVOption cellauto_options[] = {
 
 static const AVClass cellauto_class = {
     "CellAutoContext",
-    avfilter_default_filter_name,
+    av_default_item_name,
     cellauto_options
 };
 

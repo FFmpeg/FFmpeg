@@ -55,7 +55,7 @@ static const AVOption anullsrc_options[]= {
 
 static const AVClass anullsrc_class = {
     "ANullSrcContext",
-    avfilter_default_filter_name,
+    av_default_item_name,
     anullsrc_options
 };
 

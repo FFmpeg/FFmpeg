@@ -71,7 +71,7 @@ static const AVOption fade_options[] = {
 
 static const AVClass fade_class = {
     "FadeContext",
-    avfilter_default_filter_name,
+    av_default_item_name,
     fade_options
 };
 

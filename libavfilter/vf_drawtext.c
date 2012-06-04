@@ -207,7 +207,7 @@ static const AVOption drawtext_options[]= {
 
 static const AVClass drawtext_class = {
     "DrawTextContext",
-    avfilter_default_filter_name,
+    av_default_item_name,
     drawtext_options
 };
 

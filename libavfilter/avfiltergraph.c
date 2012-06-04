@@ -36,7 +36,7 @@
 
 static const AVClass filtergraph_class = {
     .class_name = "AVFilterGraph",
-    .item_name  = avfilter_default_filter_name,
+    .item_name  = av_default_item_name,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 

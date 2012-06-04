@@ -56,7 +56,7 @@ static const AVOption ass_options[] = {
 
 static const AVClass ass_class = {
     "AssContext",
-    avfilter_default_filter_name,
+    av_default_item_name,
     ass_options
 };
 

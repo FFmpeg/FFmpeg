@@ -105,7 +105,7 @@ static const AVOption mandelbrot_options[] = {
 
 static const AVClass mandelbrot_class = {
     "MBContext",
-    avfilter_default_filter_name,
+    av_default_item_name,
     mandelbrot_options
 };
 
