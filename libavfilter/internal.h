@@ -45,28 +45,6 @@ typedef struct AVFilterCommand {
 } AVFilterCommand;
 
 /**
- * Check for the validity of graph.
- *
- * A graph is considered valid if all its input and output pads are
- * connected.
- *
- * @return 0 in case of success, a negative value otherwise
- */
-int ff_avfilter_graph_check_validity(AVFilterGraph *graphctx, AVClass *log_ctx);
-
-/**
- * Configure all the links of graphctx.
- *
- * @return 0 in case of success, a negative value otherwise
- */
-int ff_avfilter_graph_config_links(AVFilterGraph *graphctx, AVClass *log_ctx);
-
-/**
- * Configure the formats of all the links in the graph.
- */
-int ff_avfilter_graph_config_formats(AVFilterGraph *graphctx, AVClass *log_ctx);
-
-/**
  * Update the position of a link in the age heap.
  */
 void ff_avfilter_graph_update_heap(AVFilterGraph *graph, AVFilterLink *link);

@@ -2027,7 +2027,7 @@ static int poll_filters(void)
             OutputFile    *of = output_files[ost->file_index];
             int ret = 0;
 
-            if (!ost->filter || ost->is_past_recording_time)
+            if (!ost->filter)
                 continue;
 
             if (!ost->filtered_frame && !(ost->filtered_frame = avcodec_alloc_frame())) {
@@ -2036,7 +2036,7 @@ static int poll_filters(void)
                 avcodec_get_frame_defaults(ost->filtered_frame);
             filtered_frame = ost->filtered_frame;
 
-            while (1) {
+            while (!ost->is_past_recording_time) {
                 if (ost->enc->type == AVMEDIA_TYPE_AUDIO &&
                     !(ost->enc->capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE))
                     ret = av_buffersink_read_samples(ost->filter->filter, &picref,
@@ -3307,6 +3307,57 @@ static int transcode_init(void)
     return 0;
 }
 
+/**
+ * @return 1 if there are still streams where more output is wanted,
+ *         0 otherwise
+ */
+static int need_output(void)
+{
+    int i;
+
+    for (i = 0; i < nb_output_streams; i++) {
+        OutputStream *ost    = output_streams[i];
+        OutputFile *of       = output_files[ost->file_index];
+        AVFormatContext *os  = output_files[ost->file_index]->ctx;
+
+        if (ost->is_past_recording_time ||
+            (os->pb && avio_tell(os->pb) >= of->limit_filesize))
+            continue;
+        if (ost->frame_number >= ost->max_frames) {
+            int j;
+            for (j = 0; j < of->ctx->nb_streams; j++)
+                output_streams[of->ost_index + j]->is_past_recording_time = 1;
+            continue;
+        }
+
+        return 1;
+    }
+
+    return 0;
+}
+
+static int select_input_file(uint8_t *no_packet)
+{
+    int64_t ipts_min = INT64_MAX;
+    int i, file_index = -1;
+
+    for (i = 0; i < nb_input_streams; i++) {
+        InputStream *ist = input_streams[i];
+        int64_t ipts     = ist->pts;
+
+        if (ist->discard || no_packet[ist->file_index])
+            continue;
+        if (!input_files[ist->file_index]->eof_reached) {
+            if (ipts < ipts_min) {
+                ipts_min = ipts;
+                file_index = ist->file_index;
+            }
+        }
+    }
+
+    return file_index;
+}
+
 /*
  * The following code is the main loop of the file converter
  */
@@ -3335,12 +3386,10 @@ static int transcode(void)
     timer_start = av_gettime();
 
     for (; received_sigterm == 0;) {
-        int file_index, ist_index, past_recording_time = 1;
+        int file_index, ist_index;
         AVPacket pkt;
-        int64_t ipts_min;
         int64_t cur_time= av_gettime();
 
-        ipts_min = INT64_MAX;
         /* if 'q' pressed, exits */
         if (!using_stdin) {
             static int64_t last_time;
@@ -3433,41 +3482,13 @@ static int transcode(void)
         }
 
         /* check if there's any stream where output is still needed */
-        for (i = 0; i < nb_output_streams; i++) {
-            OutputFile *of;
-            ost = output_streams[i];
-            of  = output_files[ost->file_index];
-            os  = output_files[ost->file_index]->ctx;
-            if (ost->is_past_recording_time ||
-                (os->pb && avio_tell(os->pb) >= of->limit_filesize))
-                continue;
-            if (ost->frame_number >= ost->max_frames) {
-                int j;
-                for (j = 0; j < of->ctx->nb_streams; j++)
-                    output_streams[of->ost_index + j]->is_past_recording_time = 1;
-                continue;
-            }
-            past_recording_time = 0;
-        }
-        if (past_recording_time)
+        if (!need_output()) {
+            av_log(NULL, AV_LOG_VERBOSE, "No more output streams to write to, finishing.\n");
             break;
-
-        /* select the stream that we must read now by looking at the
-           smallest output pts */
-        file_index = -1;
-        for (i = 0; i < nb_input_streams; i++) {
-            int64_t ipts;
-            ist = input_streams[i];
-            ipts = ist->pts;
-            if (ist->discard || no_packet[ist->file_index])
-                continue;
-            if (!input_files[ist->file_index]->eof_reached) {
-                if (ipts < ipts_min) {
-                    ipts_min = ipts;
-                    file_index = ist->file_index;
-                }
-            }
         }
+
+        /* select the stream that we must read now */
+        file_index = select_input_file(no_packet);
         /* if none, if is finished */
         if (file_index < 0) {
             if (no_packet_count) {

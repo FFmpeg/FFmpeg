@@ -422,7 +422,6 @@ static int mov_write_wave_tag(AVIOContext *pb, MOVTrack *track)
     } else if (track->enc->codec_id == CODEC_ID_AMR_NB) {
         mov_write_amr_tag(pb, track);
     } else if (track->enc->codec_id == CODEC_ID_AC3) {
-        mov_write_chan_tag(pb, track);
         mov_write_ac3_tag(pb, track);
     } else if (track->enc->codec_id == CODEC_ID_ALAC) {
         mov_write_extradata_tag(pb, track);
@@ -694,6 +693,9 @@ static int mov_write_audio_tag(AVIOContext *pb, MOVTrack *track)
         mov_write_wfex_tag(pb, track);
     else if (track->vos_len > 0)
         mov_write_glbl_tag(pb, track);
+
+    if (track->mode == MODE_MOV && track->enc->codec_type == AVMEDIA_TYPE_AUDIO)
+        mov_write_chan_tag(pb, track);
 
     return update_size(pb, pos);
 }

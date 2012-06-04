@@ -232,10 +232,6 @@ typedef struct MpegTSWriteStream {
     int64_t payload_dts;
     int payload_flags;
     uint8_t *payload;
-
-    uint8_t *adata;
-    int adata_pos;
-    int adata_size;
     AVFormatContext *amux;
 } MpegTSWriteStream;
 
@@ -503,19 +499,6 @@ static void section_write_packet(MpegTSSection *s, const uint8_t *packet)
     avio_write(ctx->pb, packet, TS_PACKET_SIZE);
 }
 
-/* Write callback for audio packetizer */
-static int mpegts_audio_write(void *opaque, uint8_t *buf, int size)
-{
-    MpegTSWriteStream *ts_st = (MpegTSWriteStream *)opaque;
-    if (ts_st->adata_pos + (int64_t)size > ts_st->adata_size)
-        return AVERROR(EIO);
-
-    memcpy(ts_st->adata + ts_st->adata_pos, buf, size);
-    ts_st->adata_pos += size;
-
-    return 0;
-}
-
 static int mpegts_write_header(AVFormatContext *s)
 {
     MpegTSWrite *ts = s->priv_data;
@@ -616,22 +599,8 @@ static int mpegts_write_header(AVFormatContext *s)
             st->codec->extradata_size > 0)
         {
             AVStream *ast;
-            uint8_t *buffer;
-            int buffer_size = 32768;
             ts_st->amux = avformat_alloc_context();
             if (!ts_st->amux) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
-            buffer = av_malloc(buffer_size);
-            if (!buffer) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
-            ts_st->amux->pb = avio_alloc_context(buffer, buffer_size, AVIO_FLAG_WRITE,
-                                                 ts_st, NULL, mpegts_audio_write, NULL);
-            if (!ts_st->amux->pb) {
-                av_free(buffer);
                 ret = AVERROR(ENOMEM);
                 goto fail;
             }
@@ -723,8 +692,6 @@ static int mpegts_write_header(AVFormatContext *s)
         if (ts_st) {
             av_freep(&ts_st->payload);
             if (ts_st->amux) {
-                av_freep(&ts_st->amux->pb->buffer);
-                av_freep(&ts_st->amux->pb);
                 avformat_free_context(ts_st->amux);
                 ts_st->amux = NULL;
             }
@@ -1130,24 +1097,20 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
             av_init_packet(&pkt2);
             pkt2.data = pkt->data;
             pkt2.size = pkt->size;
-            ts_st->adata_size = 1024 + pkt->size;
-            ts_st->adata = data = av_malloc(ts_st->adata_size);
-            ts_st->adata_pos = 0;
-            if (!data)
+            ret = avio_open_dyn_buf(&ts_st->amux->pb);
+            if (ret < 0)
                 return AVERROR(ENOMEM);
 
             ret = av_write_frame(ts_st->amux, &pkt2);
             if (ret < 0) {
+                avio_close_dyn_buf(ts_st->amux->pb, &data);
+                ts_st->amux->pb = NULL;
                 av_free(data);
                 return ret;
             }
-            avio_flush(ts_st->amux->pb);
-            if (ts_st->amux->pb->error < 0) {
-                av_free(data);
-                return ts_st->amux->pb->error;
-            }
-            buf = ts_st->adata;
-            size = ts_st->adata_pos;
+            size = avio_close_dyn_buf(ts_st->amux->pb, &data);
+            ts_st->amux->pb = NULL;
+            buf = data;
         }
     }
 
@@ -1236,8 +1199,6 @@ static int mpegts_write_end(AVFormatContext *s)
         MpegTSWriteStream *ts_st = st->priv_data;
         av_freep(&ts_st->payload);
         if (ts_st->amux) {
-            av_freep(&ts_st->amux->pb->buffer);
-            av_freep(&ts_st->amux->pb);
             avformat_free_context(ts_st->amux);
             ts_st->amux = NULL;
         }
