@@ -1819,7 +1819,7 @@ static void do_video_out(AVFormatContext *s,
     int ret, format_video_sync;
     AVPacket pkt;
     AVCodecContext *enc = ost->st->codec;
-    int nb_frames, i;
+    int nb_frames;
     double sync_ipts, delta;
     double duration = 0;
     int frame_size = 0;
@@ -2037,7 +2037,6 @@ static int poll_filters(void)
             filtered_frame = ost->filtered_frame;
 
             while (1) {
-                AVRational ist_pts_tb = ost->filter->filter->inputs[0]->time_base;
                 if (ost->enc->type == AVMEDIA_TYPE_AUDIO &&
                     !(ost->enc->capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE))
                     ret = av_buffersink_read_samples(ost->filter->filter, &picref,
