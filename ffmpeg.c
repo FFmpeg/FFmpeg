@@ -1086,7 +1086,7 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
         AUTO_INSERT_FILTER("-async", "aresample", args);
     }
 
-    if (audio_volume != 256) {
+    if (audio_volume != 256 && 0) {
         char args[256];
 
         snprintf(args, sizeof(args), "%f", audio_volume / 256.);
