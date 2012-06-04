@@ -438,6 +438,13 @@ retry:
     if (ret < 0){
         av_log(s->avctx, AV_LOG_ERROR, "header damaged\n");
         return -1;
+    } else if ((s->width  != avctx->coded_width  ||
+                s->height != avctx->coded_height ||
+                (s->width  + 15) >> 4 != s->mb_width ||
+                (s->height + 15) >> 4 != s->mb_height) &&
+               (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME))) {
+        av_log_missing_feature(s->avctx, "Width/height/bit depth/chroma idc changing with threads is", 0);
+        return AVERROR_PATCHWELCOME;   // width / height changed during parallelized decoding
     }
 
     avctx->has_b_frames= !s->low_delay;

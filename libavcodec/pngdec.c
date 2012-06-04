@@ -469,11 +469,12 @@ static int decode_frame(AVCodecContext *avctx,
                     avctx->pix_fmt = PIX_FMT_RGB48BE;
                 } else if (s->bit_depth == 1) {
                     avctx->pix_fmt = PIX_FMT_MONOBLACK;
-                } else if (s->color_type == PNG_COLOR_TYPE_PALETTE) {
+                } else if (s->bit_depth == 8 &&
+                           s->color_type == PNG_COLOR_TYPE_PALETTE) {
                     avctx->pix_fmt = PIX_FMT_PAL8;
                 } else if (s->bit_depth == 8 &&
                            s->color_type == PNG_COLOR_TYPE_GRAY_ALPHA) {
-                    avctx->pix_fmt = PIX_FMT_GRAY8A;
+                    avctx->pix_fmt = PIX_FMT_Y400A;
                 } else {
                     goto fail;
                 }
