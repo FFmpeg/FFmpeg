@@ -40,6 +40,7 @@ typedef struct TqiContext {
     AVFrame frame;
     uint8_t *bitstream_buf;
     unsigned int bitstream_buf_size;
+    DECLARE_ALIGNED_16(DCTELEM, block[6][64]);
 } TqiContext;
 
 static av_cold int tqi_decode_init(AVCodecContext *avctx)
@@ -58,12 +59,15 @@ static av_cold int tqi_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void tqi_decode_mb(MpegEncContext *s, DCTELEM (*block)[64])
+static int tqi_decode_mb(MpegEncContext *s, DCTELEM (*block)[64])
 {
     int n;
     s->dsp.clear_blocks(block[0]);
     for (n=0; n<6; n++)
-        ff_mpeg1_decode_block_intra(s, block[n], n);
+        if (ff_mpeg1_decode_block_intra(s, block[n], n) < 0)
+            return -1;
+
+    return 0;
 }
 
 static inline void tqi_idct_put(TqiContext *t, DCTELEM (*block)[64])
@@ -106,7 +110,6 @@ static int tqi_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf_end = buf+buf_size;
     TqiContext *t = avctx->priv_data;
     MpegEncContext *s = &t->s;
-    DECLARE_ALIGNED_16(DCTELEM, block[6][64]);
 
     s->width  = AV_RL16(&buf[0]);
     s->height = AV_RL16(&buf[2]);
@@ -134,8 +137,9 @@ static int tqi_decode_frame(AVCodecContext *avctx,
     for (s->mb_y=0; s->mb_y<(avctx->height+15)/16; s->mb_y++)
     for (s->mb_x=0; s->mb_x<(avctx->width+15)/16; s->mb_x++)
     {
-        tqi_decode_mb(s, block);
-        tqi_idct_put(t, block);
+        if (tqi_decode_mb(s, t->block) < 0)
+            break;
+        tqi_idct_put(t, t->block);
     }
 
     *data_size = sizeof(AVFrame);
