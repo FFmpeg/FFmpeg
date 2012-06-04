@@ -91,14 +91,17 @@ static int init_filters(const char *filters_descr)
     const int64_t *chlayouts                = avfilter_all_channel_layouts;
     AVABufferSinkParams *abuffersink_params;
     const AVFilterLink *outlink;
+    AVRational time_base = fmt_ctx->streams[audio_stream_index]->time_base;
 
     filter_graph = avfilter_graph_alloc();
 
     /* buffer audio source: the decoded frames from the decoder will be inserted here. */
     if (!dec_ctx->channel_layout)
         dec_ctx->channel_layout = av_get_default_channel_layout(dec_ctx->channels);
-    snprintf(args, sizeof(args), "%d:%d:0x%"PRIx64,
-             dec_ctx->sample_rate, dec_ctx->sample_fmt, dec_ctx->channel_layout);
+    snprintf(args, sizeof(args),
+            "time_base=%d/%d:sample_rate=%d:sample_fmt=%s:channel_layout=0x%"PRIx64,
+             time_base.num, time_base.den, dec_ctx->sample_rate,
+             av_get_sample_fmt_name(dec_ctx->sample_fmt), dec_ctx->channel_layout);
     ret = avfilter_graph_create_filter(&buffersrc_ctx, abuffersrc, "in",
                                        args, NULL, filter_graph);
     if (ret < 0) {
