@@ -820,9 +820,9 @@ static inline void RENAME(rgb15tobgr24)(const uint8_t *src, uint8_t *dst, int sr
             "pand          %3, %%mm1    \n\t"
             "pand          %4, %%mm2    \n\t"
             "psllq         $5, %%mm0    \n\t"
-            "pmulhw        %6, %%mm0    \n\t"
-            "pmulhw        %6, %%mm1    \n\t"
-            "pmulhw        %7, %%mm2    \n\t"
+            "pmulhw        "MANGLE(mul15_mid)", %%mm0    \n\t"
+            "pmulhw        "MANGLE(mul15_mid)", %%mm1    \n\t"
+            "pmulhw        "MANGLE(mul15_hi)", %%mm2    \n\t"
             "movq       %%mm0, %%mm3    \n\t"
             "movq       %%mm1, %%mm4    \n\t"
             "movq       %%mm2, %%mm5    \n\t"
@@ -851,9 +851,9 @@ static inline void RENAME(rgb15tobgr24)(const uint8_t *src, uint8_t *dst, int sr
             "pand          %3, %%mm1    \n\t"
             "pand          %4, %%mm2    \n\t"
             "psllq         $5, %%mm0    \n\t"
-            "pmulhw        %6, %%mm0    \n\t"
-            "pmulhw        %6, %%mm1    \n\t"
-            "pmulhw        %7, %%mm2    \n\t"
+            "pmulhw        "MANGLE(mul15_mid)", %%mm0    \n\t"
+            "pmulhw        "MANGLE(mul15_mid)", %%mm1    \n\t"
+            "pmulhw        "MANGLE(mul15_hi)", %%mm2    \n\t"
             "movq       %%mm0, %%mm3    \n\t"
             "movq       %%mm1, %%mm4    \n\t"
             "movq       %%mm2, %%mm5    \n\t"
@@ -873,7 +873,7 @@ static inline void RENAME(rgb15tobgr24)(const uint8_t *src, uint8_t *dst, int sr
             "por        %%mm5, %%mm3    \n\t"
 
             :"=m"(*d)
-            :"m"(*s),"m"(mask15b),"m"(mask15g),"m"(mask15r),"m"(mmx_null),"m"(mul15_mid),"m"(mul15_hi)
+            :"m"(*s),"m"(mask15b),"m"(mask15g),"m"(mask15r),"m"(mmx_null)
             :"memory");
         /* borrowed 32 to 24 */
         __asm__ volatile(
@@ -926,9 +926,9 @@ static inline void RENAME(rgb16tobgr24)(const uint8_t *src, uint8_t *dst, int sr
             "pand          %4, %%mm2    \n\t"
             "psllq         $5, %%mm0    \n\t"
             "psrlq         $1, %%mm2    \n\t"
-            "pmulhw        %6, %%mm0    \n\t"
-            "pmulhw        %8, %%mm1    \n\t"
-            "pmulhw        %7, %%mm2    \n\t"
+            "pmulhw        "MANGLE(mul15_mid)", %%mm0    \n\t"
+            "pmulhw        "MANGLE(mul16_mid)", %%mm1    \n\t"
+            "pmulhw        "MANGLE(mul15_hi)", %%mm2    \n\t"
             "movq       %%mm0, %%mm3    \n\t"
             "movq       %%mm1, %%mm4    \n\t"
             "movq       %%mm2, %%mm5    \n\t"
@@ -958,9 +958,9 @@ static inline void RENAME(rgb16tobgr24)(const uint8_t *src, uint8_t *dst, int sr
             "pand          %4, %%mm2    \n\t"
             "psllq         $5, %%mm0    \n\t"
             "psrlq         $1, %%mm2    \n\t"
-            "pmulhw        %6, %%mm0    \n\t"
-            "pmulhw        %8, %%mm1    \n\t"
-            "pmulhw        %7, %%mm2    \n\t"
+            "pmulhw        "MANGLE(mul15_mid)", %%mm0    \n\t"
+            "pmulhw        "MANGLE(mul16_mid)", %%mm1    \n\t"
+            "pmulhw        "MANGLE(mul15_hi)", %%mm2    \n\t"
             "movq       %%mm0, %%mm3    \n\t"
             "movq       %%mm1, %%mm4    \n\t"
             "movq       %%mm2, %%mm5    \n\t"
@@ -979,7 +979,7 @@ static inline void RENAME(rgb16tobgr24)(const uint8_t *src, uint8_t *dst, int sr
             "por        %%mm4, %%mm3    \n\t"
             "por        %%mm5, %%mm3    \n\t"
             :"=m"(*d)
-            :"m"(*s),"m"(mask16b),"m"(mask16g),"m"(mask16r),"m"(mmx_null),"m"(mul15_mid),"m"(mul15_hi),"m"(mul16_mid)
+            :"m"(*s),"m"(mask16b),"m"(mask16g),"m"(mask16r),"m"(mmx_null)
             :"memory");
         /* borrowed 32 to 24 */
         __asm__ volatile(
@@ -1054,10 +1054,10 @@ static inline void RENAME(rgb15to32)(const uint8_t *src, uint8_t *dst, int src_s
             "psllq         $5, %%mm0    \n\t"
             "pmulhw        %5, %%mm0    \n\t"
             "pmulhw        %5, %%mm1    \n\t"
-            "pmulhw        %6, %%mm2    \n\t"
+            "pmulhw        "MANGLE(mul15_hi)", %%mm2    \n\t"
             PACK_RGB32
             :"=m"(*d)
-            :"m"(*s),"m"(mask15b),"m"(mask15g),"m"(mask15r),"m"(mul15_mid),"m"(mul15_hi)
+            :"m"(*s),"m"(mask15b),"m"(mask15g),"m"(mask15r),"m"(mul15_mid)
             :"memory");
         d += 16;
         s += 4;
@@ -1097,11 +1097,11 @@ static inline void RENAME(rgb16to32)(const uint8_t *src, uint8_t *dst, int src_s
             "psllq         $5, %%mm0    \n\t"
             "psrlq         $1, %%mm2    \n\t"
             "pmulhw        %5, %%mm0    \n\t"
-            "pmulhw        %7, %%mm1    \n\t"
-            "pmulhw        %6, %%mm2    \n\t"
+            "pmulhw        "MANGLE(mul16_mid)", %%mm1    \n\t"
+            "pmulhw        "MANGLE(mul15_hi)", %%mm2    \n\t"
             PACK_RGB32
             :"=m"(*d)
-            :"m"(*s),"m"(mask16b),"m"(mask16g),"m"(mask16r),"m"(mul15_mid),"m"(mul15_hi),"m"(mul16_mid)
+            :"m"(*s),"m"(mask16b),"m"(mask16g),"m"(mask16r),"m"(mul15_mid)
             :"memory");
         d += 16;
         s += 4;
