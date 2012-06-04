@@ -2876,7 +2876,7 @@ static int mov_read_header(AVFormatContext *s)
 {
     MOVContext *mov = s->priv_data;
     AVIOContext *pb = s->pb;
-    int err;
+    int i, err;
     MOVAtom atom = { AV_RL32("root") };
 
     mov->fc = s;
@@ -2900,7 +2900,6 @@ static int mov_read_header(AVFormatContext *s)
     av_dlog(mov->fc, "on_parse_exit_offset=%"PRId64"\n", avio_tell(pb));
 
     if (pb->seekable) {
-        int i;
         if (mov->chapter_track > 0)
             mov_read_chapters(s);
         for (i = 0; i < s->nb_streams; i++)
@@ -2908,8 +2907,23 @@ static int mov_read_header(AVFormatContext *s)
                 mov_read_timecode_track(s, s->streams[i]);
     }
 
+    /* copy timecode metadata from tmcd tracks to the related video streams */
+    for (i = 0; i < s->nb_streams; i++) {
+        AVStream *st = s->streams[i];
+        MOVStreamContext *sc = st->priv_data;
+        if (sc->tref_type == AV_RL32("tmcd") && sc->trefs_count) {
+            AVDictionaryEntry *tcr;
+            int tmcd_st_id = sc->trefs[0] - 1;
+
+            if (tmcd_st_id < 0 || tmcd_st_id >= s->nb_streams)
+                continue;
+            tcr = av_dict_get(s->streams[tmcd_st_id]->metadata, "timecode", NULL, 0);
+            if (tcr)
+                av_dict_set(&st->metadata, "timecode", tcr->value, 0);
+        }
+    }
+
     if (mov->trex_data) {
-        int i;
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st = s->streams[i];
             MOVStreamContext *sc = st->priv_data;
