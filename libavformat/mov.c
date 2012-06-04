@@ -2872,6 +2872,42 @@ static int mov_read_close(AVFormatContext *s)
     return 0;
 }
 
+static int tmcd_is_referenced(AVFormatContext *s, int tmcd_id)
+{
+    int i, j;
+
+    for (i = 0; i < s->nb_streams; i++) {
+        AVStream *st = s->streams[i];
+        MOVStreamContext *sc = st->priv_data;
+
+        if (s->streams[i]->codec->codec_type != AVMEDIA_TYPE_VIDEO)
+            continue;
+        for (j = 0; j < sc->trefs_count; j++)
+            if (tmcd_id == sc->trefs[j])
+                return 1;
+    }
+    return 0;
+}
+
+/* look for a tmcd track not referenced by any video track, and export it globally */
+static void export_orphan_timecode(AVFormatContext *s)
+{
+    int i;
+
+    for (i = 0; i < s->nb_streams; i++) {
+        AVStream *st = s->streams[i];
+
+        if (st->codec->codec_tag  == MKTAG('t','m','c','d') &&
+            !tmcd_is_referenced(s, i + 1)) {
+            AVDictionaryEntry *tcr = av_dict_get(st->metadata, "timecode", NULL, 0);
+            if (tcr) {
+                av_dict_set(&s->metadata, "timecode", tcr->value, 0);
+                break;
+            }
+        }
+    }
+}
+
 static int mov_read_header(AVFormatContext *s)
 {
     MOVContext *mov = s->priv_data;
@@ -2922,6 +2958,7 @@ static int mov_read_header(AVFormatContext *s)
                 av_dict_set(&st->metadata, "timecode", tcr->value, 0);
         }
     }
+    export_orphan_timecode(s);
 
     if (mov->trex_data) {
         for (i = 0; i < s->nb_streams; i++) {
