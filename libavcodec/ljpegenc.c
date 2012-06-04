@@ -218,5 +218,10 @@ AVCodec ff_ljpeg_encoder = { //FIXME avoid MPV_* lossless JPEG should not need t
     .init           = ff_MPV_encode_init,
     .encode2        = encode_picture_lossless,
     .close          = ff_MPV_encode_end,
+    .pix_fmts       = (const enum PixelFormat[]){
+        PIX_FMT_BGR24, PIX_FMT_BGRA, PIX_FMT_BGR0,
+        PIX_FMT_YUVJ420P, PIX_FMT_YUVJ444P, PIX_FMT_YUVJ422P,
+        PIX_FMT_YUV420P, PIX_FMT_YUV444P, PIX_FMT_YUV422P,
+        PIX_FMT_NONE},
     .long_name      = NULL_IF_CONFIG_SMALL("Lossless JPEG"),
 };
