@@ -2871,7 +2871,7 @@ static int need_output(void)
         if (ost->is_past_recording_time ||
             (os->pb && avio_tell(os->pb) >= of->limit_filesize))
             continue;
-        if (ost->frame_number > ost->max_frames) {
+        if (ost->frame_number >= ost->max_frames) {
             int j;
             for (j = 0; j < of->ctx->nb_streams; j++)
                 output_streams[of->ost_index + j]->is_past_recording_time = 1;
