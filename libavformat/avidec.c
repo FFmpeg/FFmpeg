@@ -39,8 +39,8 @@ typedef struct AVIStream {
     int remaining;
     int packet_size;
 
-    int scale;
-    int rate;
+    uint32_t scale;
+    uint32_t rate;
     int sample_size; /* size of one sample (or packet) (in the rate/scale sense) in bytes */
 
     int64_t cum_len; /* temporary storage (used during seek) */
