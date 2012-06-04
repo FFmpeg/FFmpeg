@@ -207,7 +207,7 @@ static double get_scene_score(AVFilterContext *ctx, AVFilterBufferRef *picref)
                                         linesize, 8);
         emms_c();
         mafd = sad / (picref->video->h * picref->video->w * 3);
-        diff = llabs(mafd - select->prev_mafd);
+        diff = fabs(mafd - select->prev_mafd);
         ret  = av_clipf(FFMIN(mafd, diff) / 100., 0, 1);
         select->prev_mafd = mafd;
         avfilter_unref_buffer(prev_picref);
