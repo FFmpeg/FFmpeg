@@ -591,6 +591,11 @@ retry:
         /* H.263 could change picture size any time */
         ParseContext pc= s->parse_context; //FIXME move these demuxng hack to avformat
 
+        if (HAVE_THREADS && (s->avctx->active_thread_type&FF_THREAD_FRAME)) {
+            av_log_missing_feature(s->avctx, "Width/height/bit depth/chroma idc changing with threads is", 0);
+            return -1;   // width / height changed during parallelized decoding
+        }
+
         s->parse_context.buffer=0;
         MPV_common_end(s);
         s->parse_context= pc;

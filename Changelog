@@ -4,6 +4,11 @@ releases are sorted from youngest to oldest.
 version next:
 
 
+version 0.10.4:
+
+- Several bugs and crashes have been fixed
+  Note, CVE-2012-0851 and CVE-2011-3937 have been fixed in previous releases
+
 version 0.10.3:
 
 - Security fixes in the 4xm demuxer, avi demuxer, cook decoder,

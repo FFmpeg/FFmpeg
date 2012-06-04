@@ -476,12 +476,17 @@ static int ea_read_packet(AVFormatContext *s,
 
     while (!packet_read) {
         chunk_type = avio_rl32(pb);
-        chunk_size = (ea->big_endian ? avio_rb32(pb) : avio_rl32(pb)) - 8;
+        chunk_size = ea->big_endian ? avio_rb32(pb) : avio_rl32(pb);
+        if (chunk_size <= 8)
+            return AVERROR_INVALIDDATA;
+        chunk_size -= 8;
 
         switch (chunk_type) {
         /* audio data */
         case ISNh_TAG:
             /* header chunk also contains data; skip over the header portion*/
+            if (chunk_size < 32)
+                return AVERROR_INVALIDDATA;
             avio_skip(pb, 32);
             chunk_size -= 32;
         case ISNd_TAG:

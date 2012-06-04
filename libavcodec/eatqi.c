@@ -62,7 +62,7 @@ static int tqi_decode_mb(MpegEncContext *s, DCTELEM (*block)[64])
     int n;
     s->dsp.clear_blocks(block[0]);
     for (n=0; n<6; n++)
-        if(ff_mpeg1_decode_block_intra(s, block[n], n)<0)
+        if (ff_mpeg1_decode_block_intra(s, block[n], n) < 0)
             return -1;
 
     return 0;
@@ -137,7 +137,7 @@ static int tqi_decode_frame(AVCodecContext *avctx,
     for (s->mb_y=0; s->mb_y<(avctx->height+15)/16; s->mb_y++)
     for (s->mb_x=0; s->mb_x<(avctx->width+15)/16; s->mb_x++)
     {
-        if(tqi_decode_mb(s, t->block) < 0)
+        if (tqi_decode_mb(s, t->block) < 0)
             break;
         tqi_idct_put(t, t->block);
     }
