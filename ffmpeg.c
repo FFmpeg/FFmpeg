@@ -985,21 +985,28 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     AVRational tb = ist->framerate.num ? (AVRational){ist->framerate.den,
                                                       ist->framerate.num} :
                                          ist->st->time_base;
+    AVRational fr = ist->framerate.num ? ist->framerate :
+                                         ist->st->r_frame_rate;
     AVRational sar;
-    char args[255];
+    AVBPrint args;
     int pad_idx = in->pad_idx;
     int ret;
 
     sar = ist->st->sample_aspect_ratio.num ?
           ist->st->sample_aspect_ratio :
           ist->st->codec->sample_aspect_ratio;
-    snprintf(args, sizeof(args), "%d:%d:%d:%d:%d:%d:%d:flags=%d", ist->st->codec->width,
+    av_bprint_init(&args, 0, 1);
+    av_bprintf(&args,
+             "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:"
+             "pixel_aspect=%d/%d:sws_param=flags=%d", ist->st->codec->width,
              ist->st->codec->height, ist->st->codec->pix_fmt,
              tb.num, tb.den, sar.num, sar.den,
              SWS_BILINEAR + ((ist->st->codec->flags&CODEC_FLAG_BITEXACT) ? SWS_BITEXACT:0));
+    if (fr.num && fr.den)
+        av_bprintf(&args, ":frame_rate=%d/%d", fr.num, fr.den);
 
     if ((ret = avfilter_graph_create_filter(&ifilter->filter, filter, in->name,
-                                            args, NULL, fg->graph)) < 0)
+                                            args.str, NULL, fg->graph)) < 0)
         return ret;
 
     if (ist->framerate.num) {
