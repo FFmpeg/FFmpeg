@@ -158,7 +158,7 @@ static int request_frame(AVFilterLink *outlink)
 
 static const AVClass nullsrc_class = {
     .class_name = "NullSourceContext",
-    .item_name  = avfilter_default_filter_name,
+    .item_name  = av_default_item_name,
     .option     = testsrc_options,
 };
 
@@ -193,7 +193,7 @@ AVFilter avfilter_vsrc_nullsrc = {
 
 static const AVClass testsrc_class = {
     .class_name = "TestSourceContext",
-    .item_name  = avfilter_default_filter_name,
+    .item_name  = av_default_item_name,
     .option     = testsrc_options,
 };
 
@@ -415,7 +415,7 @@ AVFilter avfilter_vsrc_testsrc = {
 
 static const AVClass rgbtestsrc_class = {
     .class_name = "RGBTestSourceContext",
-    .item_name  = avfilter_default_filter_name,
+    .item_name  = av_default_item_name,
     .option     = testsrc_options,
 };
 

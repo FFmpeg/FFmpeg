@@ -80,7 +80,7 @@ static const AVOption movie_options[]= {
 
 static const AVClass movie_class = {
     "MovieContext",
-    avfilter_default_filter_name,
+    av_default_item_name,
     movie_options
 };
 
