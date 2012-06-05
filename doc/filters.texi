@@ -3162,33 +3162,26 @@ Buffer video frames, and make them available to the filter chain.
 This source is mainly intended for a programmatic use, in particular
 through the interface defined in @file{libavfilter/vsrc_buffer.h}.
 
-It accepts the following parameters:
-@var{width}:@var{height}:@var{pix_fmt_string}:@var{timebase_num}:@var{timebase_den}:@var{sample_aspect_ratio_num}:@var{sample_aspect_ratio.den}:@var{scale_params}
-
-All the parameters but @var{scale_params} need to be explicitly
-defined.
-
-Follows the list of the accepted parameters.
+It accepts a list of options in the form of @var{key}=@var{value} pairs
+separated by ":". A descroption of the accepted options follows.
 
 @table @option
 
-@item width, height
-Specify the width and height of the buffered video frames.
+@item video_size
+Specify the size (width and height) of the buffered video frames.
 
-@item pix_fmt_string
+@item pix_fmt
 A string representing the pixel format of the buffered video frames.
 It may be a number corresponding to a pixel format, or a pixel format
 name.
 
-@item timebase_num, timebase_den
-Specify numerator and denomitor of the timebase assumed by the
-timestamps of the buffered frames.
+@item time_base
+Specify the timebase assumed by the timestamps of the buffered frames.
 
-@item sample_aspect_ratio.num, sample_aspect_ratio.den
-Specify numerator and denominator of the sample aspect ratio assumed
-by the video frames.
+@item pixel_aspect
+Specify the sample aspect ratio assumed by the video frames.
 
-@item scale_params
+@item sws_param
 Specify the optional parameters to be used for the scale filter which
 is automatically inserted when an input change is detected in the
 input size or format.
@@ -3196,7 +3189,7 @@ input size or format.
 
 For example:
 @example
-buffer=320:240:yuv410p:1:24:1:1
+buffer=size=320x240:pix_fmt=yuv410p:time_base=1/24:pixel_aspect=1/1
 @end example
 
 will instruct the source to accept video frames with size 320x240 and
@@ -3206,8 +3199,13 @@ Since the pixel format with name "yuv410p" corresponds to the number 6
 (check the enum PixelFormat definition in @file{libavutil/pixfmt.h}),
 this example corresponds to:
 @example
-buffer=320:240:6:1:24:1:1
+buffer=size=320x240:pixfmt=6:time_base=1/24:pixel_aspect=1/1
 @end example
+
+Alternatively, the options can be specified as a flat string, but this
+syntax is deprecated:
+
+@var{width}:@var{height}:@var{pix_fmt}:@var{time_base.num}:@var{time_base.den}:@var{pixel_aspect.num}:@var{pixel_aspect.den}[:@var{sws_param}]
 
 @section cellauto
 
