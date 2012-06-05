@@ -738,6 +738,18 @@ struct AVFilterLink {
      */
     int age_index;
 
+    /**
+     * Frame rate of the stream on the link, or 1/0 if unknown;
+     * if left to 0/0, will be automatically be copied from the first input
+     * of the source filter if it exists.
+     *
+     * Sources should set it to the best estimation of the real frame rate.
+     * Filters should update it if necessary depending on their function.
+     * Sinks can use it to set a default output frame rate.
+     * It is similar to the r_frae_rate field in AVStream.
+     */
+    AVRational frame_rate;
+
 };
 
 /**
