@@ -182,7 +182,7 @@ void ff_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
     AVFilterPad *dst = link->dstpad;
     int64_t pts;
 
-    FF_DPRINTF_START(NULL, filter_samples); ff_dlog_link(NULL, link, 1);
+    FF_TPRINTF_START(NULL, filter_samples); ff_tlog_link(NULL, link, 1);
 
     if (!(filter_samples = dst->filter_samples))
         filter_samples = ff_default_filter_samples;

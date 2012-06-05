@@ -19,8 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/* #define DEBUG */
-
 #include "libavutil/pixdesc.h"
 #include "libavutil/rational.h"
 #include "libavutil/audioconvert.h"
@@ -43,17 +41,17 @@ char *ff_get_ref_perms_string(char *buf, size_t buf_size, int perms)
     return buf;
 }
 
-void ff_dlog_ref(void *ctx, AVFilterBufferRef *ref, int end)
+void ff_tlog_ref(void *ctx, AVFilterBufferRef *ref, int end)
 {
     av_unused char buf[16];
-    av_dlog(ctx,
+    ff_tlog(ctx,
             "ref[%p buf:%p refcount:%d perms:%s data:%p linesize[%d, %d, %d, %d] pts:%"PRId64" pos:%"PRId64,
             ref, ref->buf, ref->buf->refcount, ff_get_ref_perms_string(buf, sizeof(buf), ref->perms), ref->data[0],
             ref->linesize[0], ref->linesize[1], ref->linesize[2], ref->linesize[3],
             ref->pts, ref->pos);
 
     if (ref->video) {
-        av_dlog(ctx, " a:%d/%d s:%dx%d i:%c iskey:%d type:%c",
+        ff_tlog(ctx, " a:%d/%d s:%dx%d i:%c iskey:%d type:%c",
                 ref->video->sample_aspect_ratio.num, ref->video->sample_aspect_ratio.den,
                 ref->video->w, ref->video->h,
                 !ref->video->interlaced     ? 'P' :         /* Progressive  */
@@ -62,13 +60,13 @@ void ff_dlog_ref(void *ctx, AVFilterBufferRef *ref, int end)
                 av_get_picture_type_char(ref->video->pict_type));
     }
     if (ref->audio) {
-        av_dlog(ctx, " cl:%"PRId64"d n:%d r:%d",
+        ff_tlog(ctx, " cl:%"PRId64"d n:%d r:%d",
                 ref->audio->channel_layout,
                 ref->audio->nb_samples,
                 ref->audio->sample_rate);
     }
 
-    av_dlog(ctx, "]%s", end ? "\n" : "");
+    ff_tlog(ctx, "]%s", end ? "\n" : "");
 }
 
 unsigned avfilter_version(void) {
@@ -295,10 +293,10 @@ int avfilter_config_links(AVFilterContext *filter)
     return 0;
 }
 
-void ff_dlog_link(void *ctx, AVFilterLink *link, int end)
+void ff_tlog_link(void *ctx, AVFilterLink *link, int end)
 {
     if (link->type == AVMEDIA_TYPE_VIDEO) {
-        av_dlog(ctx,
+        ff_tlog(ctx,
                 "link[%p s:%dx%d fmt:%s %s->%s]%s",
                 link, link->w, link->h,
                 av_pix_fmt_descriptors[link->format].name,
@@ -309,7 +307,7 @@ void ff_dlog_link(void *ctx, AVFilterLink *link, int end)
         char buf[128];
         av_get_channel_layout_string(buf, sizeof(buf), -1, link->channel_layout);
 
-        av_dlog(ctx,
+        ff_tlog(ctx,
                 "link[%p r:%d cl:%s fmt:%s %s->%s]%s",
                 link, (int)link->sample_rate, buf,
                 av_get_sample_fmt_name(link->format),
@@ -321,7 +319,7 @@ void ff_dlog_link(void *ctx, AVFilterLink *link, int end)
 
 int ff_request_frame(AVFilterLink *link)
 {
-    FF_DPRINTF_START(NULL, request_frame); ff_dlog_link(NULL, link, 1);
+    FF_TPRINTF_START(NULL, request_frame); ff_tlog_link(NULL, link, 1);
 
     if (link->srcpad->request_frame)
         return link->srcpad->request_frame(link);

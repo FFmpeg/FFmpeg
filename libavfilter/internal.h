@@ -126,15 +126,23 @@ void ff_free_pool(AVFilterPool *pool);
 
 void ff_command_queue_pop(AVFilterContext *filter);
 
-/* misc debug functions */
+/* misc trace functions */
 
-#define FF_DPRINTF_START(ctx, func) av_dlog(NULL, "%-16s: ", #func)
+/* #define FF_AVFILTER_TRACE */
+
+#ifdef FF_AVFILTER_TRACE
+#    define ff_tlog(pctx, ...) av_log(pctx, AV_LOG_DEBUG, __VA_ARGS__)
+#else
+#    define ff_tlog(pctx, ...) do { if (0) av_log(pctx, AV_LOG_DEBUG, __VA_ARGS__); } while (0)
+#endif
+
+#define FF_TPRINTF_START(ctx, func) ff_tlog(NULL, "%-16s: ", #func)
 
 char *ff_get_ref_perms_string(char *buf, size_t buf_size, int perms);
 
-void ff_dlog_ref(void *ctx, AVFilterBufferRef *ref, int end);
+void ff_tlog_ref(void *ctx, AVFilterBufferRef *ref, int end);
 
-void ff_dlog_link(void *ctx, AVFilterLink *link, int end);
+void ff_tlog_link(void *ctx, AVFilterLink *link, int end);
 
 /**
  * Insert a new pad.

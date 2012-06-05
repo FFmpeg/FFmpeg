@@ -132,8 +132,8 @@ AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms, int 
     AVFilterBufferRef *ret = NULL;
 
     av_unused char buf[16];
-    FF_DPRINTF_START(NULL, get_video_buffer); ff_dlog_link(NULL, link, 0);
-    av_dlog(NULL, " perms:%s w:%d h:%d\n", ff_get_ref_perms_string(buf, sizeof(buf), perms), w, h);
+    FF_TPRINTF_START(NULL, get_video_buffer); ff_tlog_link(NULL, link, 0);
+    ff_tlog(NULL, " perms:%s w:%d h:%d\n", ff_get_ref_perms_string(buf, sizeof(buf), perms), w, h);
 
     if (link->dstpad->get_video_buffer)
         ret = link->dstpad->get_video_buffer(link, perms, w, h);
@@ -144,7 +144,7 @@ AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms, int 
     if (ret)
         ret->type = AVMEDIA_TYPE_VIDEO;
 
-    FF_DPRINTF_START(NULL, get_video_buffer); ff_dlog_link(NULL, link, 0); av_dlog(NULL, " returning "); ff_dlog_ref(NULL, ret, 1);
+    FF_TPRINTF_START(NULL, get_video_buffer); ff_tlog_link(NULL, link, 0); ff_tlog(NULL, " returning "); ff_tlog_ref(NULL, ret, 1);
 
     return ret;
 }
@@ -177,7 +177,7 @@ void ff_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     int perms = picref->perms;
     AVFilterCommand *cmd= link->dst->command_queue;
 
-    FF_DPRINTF_START(NULL, start_frame); ff_dlog_link(NULL, link, 0); av_dlog(NULL, " "); ff_dlog_ref(NULL, picref, 1);
+    FF_TPRINTF_START(NULL, start_frame); ff_tlog_link(NULL, link, 0); ff_tlog(NULL, " "); ff_tlog_ref(NULL, picref, 1);
 
     if (!(start_frame = dst->start_frame))
         start_frame = default_start_frame;
@@ -284,7 +284,7 @@ void ff_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
     int i, j, vsub;
     void (*draw_slice)(AVFilterLink *, int, int, int);
 
-    FF_DPRINTF_START(NULL, draw_slice); ff_dlog_link(NULL, link, 0); av_dlog(NULL, " y:%d h:%d dir:%d\n", y, h, slice_dir);
+    FF_TPRINTF_START(NULL, draw_slice); ff_tlog_link(NULL, link, 0); ff_tlog(NULL, " y:%d h:%d dir:%d\n", y, h, slice_dir);
 
     /* copy the slice if needed for permission reasons */
     if (link->src_buf) {
