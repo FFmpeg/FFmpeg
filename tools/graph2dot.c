@@ -71,19 +71,23 @@ static void print_digraph(FILE *outfile, AVFilterGraph *graph)
                         filter_ctx_label, dst_filter_ctx_label);
                 if (link->type == AVMEDIA_TYPE_VIDEO) {
                     fprintf(outfile,
-                            " [ label= \"fmt:%s w:%d h:%d tb:%d/%d\" ]",
+                            " [ label= \"inpad:%s fmt:%s w:%d h:%d tb:%d/%d outpad:%s\" ]",
+                            link->srcpad->name,
                             av_pix_fmt_descriptors[link->format].name,
                             link->w, link->h, link->time_base.num,
-                            link->time_base.den);
+                            link->time_base.den,
+                            link->dstpad->name);
                 } else if (link->type == AVMEDIA_TYPE_AUDIO) {
                     char buf[255];
                     av_get_channel_layout_string(buf, sizeof(buf), -1,
                                                  link->channel_layout);
                     fprintf(outfile,
-                            " [ label= \"fmt:%s sr:%"PRId64" cl:%s tb:%d/%d\" ]",
+                            " [ label= \"inpad:%s fmt:%s sr:%"PRId64" cl:%s tb:%d/%d outpad:%s\" ]",
+                            link->srcpad->name,
                             av_get_sample_fmt_name(link->format),
                             link->sample_rate, buf,
-                            link->time_base.num, link->time_base.den);
+                            link->time_base.num, link->time_base.den,
+                            link->dstpad->name);
                 }
                 fprintf(outfile, ";\n");
             }
