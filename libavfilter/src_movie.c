@@ -39,6 +39,7 @@
 #include "avcodec.h"
 #include "avfilter.h"
 #include "formats.h"
+#include "video.h"
 
 typedef struct {
     /* common A/V fields */
@@ -219,7 +220,7 @@ static int movie_query_formats(AVFilterContext *ctx)
     MovieContext *movie = ctx->priv;
     enum PixelFormat pix_fmts[] = { movie->codec_ctx->pix_fmt, PIX_FMT_NONE };
 
-    avfilter_set_common_pixel_formats(ctx, avfilter_make_format_list(pix_fmts));
+    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
     return 0;
 }
 
@@ -318,9 +319,9 @@ static int movie_request_frame(AVFilterLink *outlink)
         return ret;
 
     outpicref = avfilter_ref_buffer(movie->picref, ~0);
-    avfilter_start_frame(outlink, outpicref);
-    avfilter_draw_slice(outlink, 0, outlink->h, 1);
-    avfilter_end_frame(outlink);
+    ff_start_frame(outlink, outpicref);
+    ff_draw_slice(outlink, 0, outlink->h, 1);
+    ff_end_frame(outlink);
     avfilter_unref_buffer(movie->picref);
     movie->picref = NULL;
 

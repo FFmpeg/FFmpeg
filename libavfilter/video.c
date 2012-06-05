@@ -151,7 +151,7 @@ AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms, int 
 
 void ff_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
-    avfilter_start_frame(link->dst->outputs[0], picref);
+    ff_start_frame(link->dst->outputs[0], picref);
 }
 
 static void default_start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
@@ -164,13 +164,13 @@ static void default_start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     if (outlink) {
         outlink->out_buf = avfilter_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
         avfilter_copy_buffer_ref_props(outlink->out_buf, picref);
-        avfilter_start_frame(outlink, avfilter_ref_buffer(outlink->out_buf, ~0));
+        ff_start_frame(outlink, avfilter_ref_buffer(outlink->out_buf, ~0));
     }
 }
 
 /* XXX: should we do the duplicating of the picture ref here, instead of
  * forcing the source filter to do it? */
-void avfilter_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
+void ff_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
     void (*start_frame)(AVFilterLink *, AVFilterBufferRef *);
     AVFilterPad *dst = link->dstpad;
@@ -217,7 +217,7 @@ void avfilter_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 
 void ff_null_end_frame(AVFilterLink *link)
 {
-    avfilter_end_frame(link->dst->outputs[0]);
+    ff_end_frame(link->dst->outputs[0]);
 }
 
 static void default_end_frame(AVFilterLink *inlink)
@@ -235,11 +235,11 @@ static void default_end_frame(AVFilterLink *inlink)
             avfilter_unref_buffer(outlink->out_buf);
             outlink->out_buf = NULL;
         }
-        avfilter_end_frame(outlink);
+        ff_end_frame(outlink);
     }
 }
 
-void avfilter_end_frame(AVFilterLink *link)
+void ff_end_frame(AVFilterLink *link)
 {
     void (*end_frame)(AVFilterLink *);
 
@@ -258,7 +258,7 @@ void avfilter_end_frame(AVFilterLink *link)
 
 void ff_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
-    avfilter_draw_slice(link->dst->outputs[0], y, h, slice_dir);
+    ff_draw_slice(link->dst->outputs[0], y, h, slice_dir);
 }
 
 static void default_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
@@ -269,10 +269,10 @@ static void default_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir
         outlink = inlink->dst->outputs[0];
 
     if (outlink)
-        avfilter_draw_slice(outlink, y, h, slice_dir);
+        ff_draw_slice(outlink, y, h, slice_dir);
 }
 
-void avfilter_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
+void ff_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
     uint8_t *src[4], *dst[4];
     int i, j, vsub;
@@ -345,5 +345,17 @@ void avfilter_null_end_frame(AVFilterLink *link)
 void avfilter_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
     ff_null_draw_slice(link, y, h, slice_dir);
+}
+void avfilter_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
+{
+    ff_start_frame(link, picref);
+}
+void avfilter_end_frame(AVFilterLink *link)
+{
+    ff_end_frame(link);
+}
+void avfilter_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
+{
+    ff_draw_slice(link, y, h, slice_dir);
 }
 #endif

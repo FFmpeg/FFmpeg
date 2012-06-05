@@ -32,6 +32,7 @@
 #include "avfilter.h"
 #include "drawutils.h"
 #include "internal.h"
+#include "formats.h"
 #include "video.h"
 
 #define R 0
@@ -158,7 +159,7 @@ static int query_formats(AVFilterContext *ctx)
         PIX_FMT_NONE
     };
 
-    avfilter_set_common_pixel_formats(ctx, avfilter_make_format_list(pix_fmts));
+    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
     return 0;
 }
 
@@ -257,14 +258,14 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
         }
     }
 
-    avfilter_draw_slice(inlink->dst->outputs[0], y, h, slice_dir);
+    ff_draw_slice(inlink->dst->outputs[0], y, h, slice_dir);
 }
 
 static void end_frame(AVFilterLink *inlink)
 {
     FadeContext *fade = inlink->dst->priv;
 
-    avfilter_end_frame(inlink->dst->outputs[0]);
+    ff_end_frame(inlink->dst->outputs[0]);
 
     if (fade->frame_index >= fade->start_frame &&
         fade->frame_index <= fade->stop_frame)

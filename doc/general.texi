@@ -748,6 +748,7 @@ following image formats are supported:
     @tab encoding supported through external library libgsm
 @item GSM Microsoft variant  @tab  E  @tab  X
     @tab encoding supported through external library libgsm
+@item IAC (Indeo Audio Coder)  @tab     @tab  X
 @item IMC (Intel Music Coder)  @tab     @tab  X
 @item MACE (Macintosh Audio Compression/Expansion) 3:1  @tab     @tab  X
 @item MACE (Macintosh Audio Compression/Expansion) 6:1  @tab     @tab  X

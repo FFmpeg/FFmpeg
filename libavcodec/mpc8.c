@@ -275,7 +275,8 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
         maxband = c->last_max_band + get_vlc2(gb, band_vlc.table, MPC8_BANDS_BITS, 2);
         if(maxband > 32) maxband -= 33;
     }
-    if(maxband >= BANDS) {
+
+    if(maxband > c->maxbands + 1 || maxband >= BANDS) {
         av_log(avctx, AV_LOG_ERROR, "maxband %d too large\n",maxband);
         return AVERROR_INVALIDDATA;
     }
@@ -412,7 +413,8 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
         }
     }
 
-    ff_mpc_dequantize_and_synth(c, maxband, c->frame.data[0], avctx->channels);
+    ff_mpc_dequantize_and_synth(c, maxband - 1, c->frame.data[0],
+                                avctx->channels);
 
     c->cur_frame++;
 

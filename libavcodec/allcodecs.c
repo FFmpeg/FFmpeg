@@ -286,6 +286,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (G729, g729);
     REGISTER_DECODER (GSM, gsm);
     REGISTER_DECODER (GSM_MS, gsm_ms);
+    REGISTER_DECODER (IAC, iac);
     REGISTER_DECODER (IMC, imc);
     REGISTER_DECODER (MACE3, mace3);
     REGISTER_DECODER (MACE6, mace6);

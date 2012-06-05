@@ -1866,7 +1866,11 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
         AVStream *stream = fmt_ctx->streams[i];
         AVCodec *codec;
 
-        if (!(codec = avcodec_find_decoder(stream->codec->codec_id))) {
+        if (stream->codec->codec_id == CODEC_ID_PROBE) {
+            av_log(NULL, AV_LOG_ERROR,
+                   "Failed to probe codec for input stream %d\n",
+                    stream->index);
+        } else if (!(codec = avcodec_find_decoder(stream->codec->codec_id))) {
             av_log(NULL, AV_LOG_ERROR,
                     "Unsupported codec with id %d for input stream %d\n",
                     stream->codec->codec_id, stream->index);

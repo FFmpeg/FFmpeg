@@ -22,6 +22,8 @@
 #include "libavutil/common.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "formats.h"
+#include "internal.h"
 #include "video.h"
 #include "yadif.h"
 
@@ -227,10 +229,10 @@ static void return_frame(AVFilterContext *ctx, int is_second)
         } else {
             yadif->out->pts = AV_NOPTS_VALUE;
         }
-        avfilter_start_frame(ctx->outputs[0], yadif->out);
+        ff_start_frame(ctx->outputs[0], yadif->out);
     }
-    avfilter_draw_slice(ctx->outputs[0], 0, link->h, 1);
-    avfilter_end_frame(ctx->outputs[0]);
+    ff_draw_slice(ctx->outputs[0], 0, link->h, 1);
+    ff_end_frame(ctx->outputs[0]);
 
     yadif->frame_pending = (yadif->mode&1) && !is_second;
 }
@@ -260,7 +262,7 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
         yadif->prev = NULL;
         if (yadif->out->pts != AV_NOPTS_VALUE)
             yadif->out->pts *= 2;
-        avfilter_start_frame(ctx->outputs[0], yadif->out);
+        ff_start_frame(ctx->outputs[0], yadif->out);
         return;
     }
 
@@ -274,7 +276,7 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     yadif->out->video->interlaced = 0;
     if (yadif->out->pts != AV_NOPTS_VALUE)
         yadif->out->pts *= 2;
-    avfilter_start_frame(ctx->outputs[0], yadif->out);
+    ff_start_frame(ctx->outputs[0], yadif->out);
 }
 
 static void end_frame(AVFilterLink *link)
@@ -286,8 +288,8 @@ static void end_frame(AVFilterLink *link)
         return;
 
     if (yadif->auto_enable && !yadif->cur->video->interlaced) {
-        avfilter_draw_slice(ctx->outputs[0], 0, link->h, 1);
-        avfilter_end_frame(ctx->outputs[0]);
+        ff_draw_slice(ctx->outputs[0], 0, link->h, 1);
+        ff_end_frame(ctx->outputs[0]);
         return;
     }
 
@@ -310,7 +312,7 @@ static int request_frame(AVFilterLink *link)
         if (yadif->eof)
             return AVERROR_EOF;
 
-        ret  = avfilter_request_frame(link->src->inputs[0]);
+        ret  = ff_request_frame(link->src->inputs[0]);
 
         if (ret == AVERROR_EOF && yadif->cur) {
             AVFilterBufferRef *next = avfilter_ref_buffer(yadif->next, AV_PERM_READ);
@@ -335,14 +337,14 @@ static int poll_frame(AVFilterLink *link)
     if (yadif->frame_pending)
         return 1;
 
-    val = avfilter_poll_frame(link->src->inputs[0]);
+    val = ff_poll_frame(link->src->inputs[0]);
     if (val <= 0)
         return val;
 
     if (val >= 1 && !yadif->next) { //FIXME change API to not requre this red tape
-        if ((ret = avfilter_request_frame(link->src->inputs[0])) < 0)
+        if ((ret = ff_request_frame(link->src->inputs[0])) < 0)
             return ret;
-        val = avfilter_poll_frame(link->src->inputs[0]);
+        val = ff_poll_frame(link->src->inputs[0]);
         if (val <= 0)
             return val;
     }
@@ -390,7 +392,7 @@ static int query_formats(AVFilterContext *ctx)
         PIX_FMT_NONE
     };
 
-    avfilter_set_common_pixel_formats(ctx, avfilter_make_format_list(pix_fmts));
+    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
 
     return 0;
 }

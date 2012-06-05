@@ -31,6 +31,7 @@
 #include "audio.h"
 #include "avfilter.h"
 #include "buffersink.h"
+#include "internal.h"
 
 typedef struct {
     AVFifoBuffer *fifo;          ///< FIFO buffer of frame references
@@ -102,11 +103,11 @@ int av_buffersink_read(AVFilterContext *ctx, AVFilterBufferRef **buf)
         if (av_fifo_size(sink->fifo))
             return av_fifo_size(sink->fifo)/sizeof(*buf);
         else
-            return avfilter_poll_frame(ctx->inputs[0]);
+            return ff_poll_frame(ctx->inputs[0]);
     }
 
     if (!av_fifo_size(sink->fifo) &&
-        (ret = avfilter_request_frame(link)) < 0)
+        (ret = ff_request_frame(link)) < 0)
         return ret;
 
     if (!av_fifo_size(sink->fifo))

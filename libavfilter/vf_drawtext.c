@@ -41,6 +41,7 @@
 #include "libavutil/lfg.h"
 #include "avfilter.h"
 #include "drawutils.h"
+#include "formats.h"
 #include "video.h"
 
 #undef time
@@ -492,7 +493,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    avfilter_set_common_pixel_formats(ctx, ff_draw_supported_pixel_formats(0));
+    ff_set_common_formats(ctx, ff_draw_supported_pixel_formats(0));
     return 0;
 }
 
@@ -812,8 +813,8 @@ static void end_frame(AVFilterLink *inlink)
 
     dtext->var_values[VAR_N] += 1.0;
 
-    avfilter_draw_slice(outlink, 0, picref->video->h, 1);
-    avfilter_end_frame(outlink);
+    ff_draw_slice(outlink, 0, picref->video->h, 1);
+    ff_end_frame(outlink);
 }
 
 AVFilter avfilter_vf_drawtext = {

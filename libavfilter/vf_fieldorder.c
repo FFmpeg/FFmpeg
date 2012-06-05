@@ -28,6 +28,8 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "formats.h"
+#include "video.h"
 
 typedef struct
 {
@@ -76,12 +78,12 @@ static int query_formats(AVFilterContext *ctx)
                  || av_pix_fmt_descriptors[pix_fmt].flags & PIX_FMT_BITSTREAM)
                 && av_pix_fmt_descriptors[pix_fmt].nb_components
                 && !av_pix_fmt_descriptors[pix_fmt].log2_chroma_h
-                && (ret = avfilter_add_format(&formats, pix_fmt)) < 0) {
-                avfilter_formats_unref(&formats);
+                && (ret = ff_add_format(&formats, pix_fmt)) < 0) {
+                ff_formats_unref(&formats);
                 return ret;
             }
-        avfilter_formats_ref(formats, &ctx->inputs[0]->out_formats);
-        avfilter_formats_ref(formats, &ctx->outputs[0]->in_formats);
+        ff_formats_ref(formats, &ctx->inputs[0]->out_formats);
+        ff_formats_ref(formats, &ctx->outputs[0]->in_formats);
     }
 
     return 0;
@@ -123,7 +125,7 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     outpicref = avfilter_ref_buffer(inpicref, ~0);
     outlink->out_buf = outpicref;
 
-    avfilter_start_frame(outlink, outpicref);
+    ff_start_frame(outlink, outpicref);
 }
 
 static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
@@ -140,7 +142,7 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
      *  and that complexity will be added later */
     if (  !inpicref->video->interlaced
         || inpicref->video->top_field_first == fieldorder->dst_tff) {
-        avfilter_draw_slice(outlink, y, h, slice_dir);
+        ff_draw_slice(outlink, y, h, slice_dir);
     }
 }
 
@@ -202,13 +204,13 @@ static void end_frame(AVFilterLink *inlink)
             }
         }
         outpicref->video->top_field_first = fieldorder->dst_tff;
-        avfilter_draw_slice(outlink, 0, h, 1);
+        ff_draw_slice(outlink, 0, h, 1);
     } else {
         av_dlog(ctx,
                 "not interlaced or field order already correct\n");
     }
 
-    avfilter_end_frame(outlink);
+    ff_end_frame(outlink);
     avfilter_unref_buffer(inpicref);
 }
 

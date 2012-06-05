@@ -82,7 +82,7 @@ static void end_frame(AVFilterLink *inlink)
 
     showinfo->frame++;
     avfilter_unref_buffer(picref);
-    avfilter_end_frame(inlink->dst->outputs[0]);
+    ff_end_frame(inlink->dst->outputs[0]);
 }
 
 AVFilter avfilter_vf_showinfo = {

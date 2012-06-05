@@ -406,6 +406,7 @@ enum CodecID {
     CODEC_ID_8SVX_FIB,
     CODEC_ID_BMV_AUDIO,
     CODEC_ID_RALF,
+    CODEC_ID_IAC,
     CODEC_ID_FFWAVESYNTH = MKBETAG('F','F','W','S'),
     CODEC_ID_8SVX_RAW    = MKBETAG('8','S','V','X'),
     CODEC_ID_SONIC       = MKBETAG('S','O','N','C'),

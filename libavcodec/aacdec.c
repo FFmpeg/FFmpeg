@@ -487,6 +487,7 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
             return NULL;
 
         ac->oc[1].m4ac.chan_config = 2;
+        ac->oc[1].m4ac.ps = 0;
     }
     // And vice-versa
     if (!ac->tags_mapped && type == TYPE_SCE && ac->oc[1].m4ac.chan_config == 2) {
@@ -504,6 +505,8 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
             return NULL;
 
         ac->oc[1].m4ac.chan_config = 1;
+        if (ac->oc[1].m4ac.sbr)
+            ac->oc[1].m4ac.ps = -1;
     }
     // For indexed channel configurations map the channels solely based on position.
     switch (ac->oc[1].m4ac.chan_config) {

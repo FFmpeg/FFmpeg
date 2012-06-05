@@ -55,7 +55,7 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     AspectContext *aspect = link->dst->priv;
 
     picref->video->sample_aspect_ratio = aspect->ratio;
-    avfilter_start_frame(link->dst->outputs[0], picref);
+    ff_start_frame(link->dst->outputs[0], picref);
 }
 
 #if CONFIG_SETDAR_FILTER

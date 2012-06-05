@@ -96,9 +96,9 @@ void ff_command_queue_pop(AVFilterContext *filter)
     av_free(c);
 }
 
-void avfilter_insert_pad(unsigned idx, unsigned *count, size_t padidx_off,
-                         AVFilterPad **pads, AVFilterLink ***links,
-                         AVFilterPad *newpad)
+void ff_insert_pad(unsigned idx, unsigned *count, size_t padidx_off,
+                   AVFilterPad **pads, AVFilterLink ***links,
+                   AVFilterPad *newpad)
 {
     unsigned i;
 
@@ -183,14 +183,15 @@ int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
     /* if any information on supported media formats already exists on the
      * link, we need to preserve that */
     if (link->out_formats)
-        avfilter_formats_changeref(&link->out_formats,
+        ff_formats_changeref(&link->out_formats,
                                    &filt->outputs[filt_dstpad_idx]->out_formats);
+
+    if (link->out_samplerates)
+        ff_formats_changeref(&link->out_samplerates,
+                                   &filt->outputs[filt_dstpad_idx]->out_samplerates);
     if (link->out_channel_layouts)
         ff_channel_layouts_changeref(&link->out_channel_layouts,
                                      &filt->outputs[filt_dstpad_idx]->out_channel_layouts);
-    if (link->out_samplerates)
-        avfilter_formats_changeref(&link->out_samplerates,
-                                   &filt->outputs[filt_dstpad_idx]->out_samplerates);
 
     return 0;
 }
@@ -307,18 +308,18 @@ void ff_dlog_link(void *ctx, AVFilterLink *link, int end)
     }
 }
 
-int avfilter_request_frame(AVFilterLink *link)
+int ff_request_frame(AVFilterLink *link)
 {
     FF_DPRINTF_START(NULL, request_frame); ff_dlog_link(NULL, link, 1);
 
     if (link->srcpad->request_frame)
         return link->srcpad->request_frame(link);
     else if (link->src->inputs[0])
-        return avfilter_request_frame(link->src->inputs[0]);
+        return ff_request_frame(link->src->inputs[0]);
     else return -1;
 }
 
-int avfilter_poll_frame(AVFilterLink *link)
+int ff_poll_frame(AVFilterLink *link)
 {
     int i, min = INT_MAX;
 
@@ -329,7 +330,7 @@ int avfilter_poll_frame(AVFilterLink *link)
         int val;
         if (!link->src->inputs[i])
             return -1;
-        val = avfilter_poll_frame(link->src->inputs[i]);
+        val = ff_poll_frame(link->src->inputs[i]);
         min = FFMIN(min, val);
     }
 
@@ -492,10 +493,10 @@ void avfilter_free(AVFilterContext *filter)
         if ((link = filter->inputs[i])) {
             if (link->src)
                 link->src->outputs[link->srcpad - link->src->output_pads] = NULL;
-            avfilter_formats_unref(&link->in_formats);
-            avfilter_formats_unref(&link->out_formats);
-            avfilter_formats_unref(&link->in_samplerates);
-            avfilter_formats_unref(&link->out_samplerates);
+            ff_formats_unref(&link->in_formats);
+            ff_formats_unref(&link->out_formats);
+            ff_formats_unref(&link->in_samplerates);
+            ff_formats_unref(&link->out_samplerates);
             ff_channel_layouts_unref(&link->in_channel_layouts);
             ff_channel_layouts_unref(&link->out_channel_layouts);
         }
@@ -505,10 +506,10 @@ void avfilter_free(AVFilterContext *filter)
         if ((link = filter->outputs[i])) {
             if (link->dst)
                 link->dst->inputs[link->dstpad - link->dst->input_pads] = NULL;
-            avfilter_formats_unref(&link->in_formats);
-            avfilter_formats_unref(&link->out_formats);
-            avfilter_formats_unref(&link->in_samplerates);
-            avfilter_formats_unref(&link->out_samplerates);
+            ff_formats_unref(&link->in_formats);
+            ff_formats_unref(&link->out_formats);
+            ff_formats_unref(&link->in_samplerates);
+            ff_formats_unref(&link->out_samplerates);
             ff_channel_layouts_unref(&link->in_channel_layouts);
             ff_channel_layouts_unref(&link->out_channel_layouts);
         }
@@ -535,3 +536,32 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         ret = filter->filter->init(filter, args, opaque);
     return ret;
 }
+
+#if FF_API_DEFAULT_CONFIG_OUTPUT_LINK
+void avfilter_insert_pad(unsigned idx, unsigned *count, size_t padidx_off,
+                         AVFilterPad **pads, AVFilterLink ***links,
+                         AVFilterPad *newpad)
+{
+    ff_insert_pad(idx, count, padidx_off, pads, links, newpad);
+}
+void avfilter_insert_inpad(AVFilterContext *f, unsigned index,
+                           AVFilterPad *p)
+{
+    ff_insert_pad(index, &f->input_count, offsetof(AVFilterLink, dstpad),
+                  &f->input_pads, &f->inputs, p);
+}
+void avfilter_insert_outpad(AVFilterContext *f, unsigned index,
+                            AVFilterPad *p)
+{
+    ff_insert_pad(index, &f->output_count, offsetof(AVFilterLink, srcpad),
+                  &f->output_pads, &f->outputs, p);
+}
+int avfilter_poll_frame(AVFilterLink *link)
+{
+    return ff_poll_frame(link);
+}
+int avfilter_request_frame(AVFilterLink *link)
+{
+    return ff_request_frame(link);
+}
+#endif

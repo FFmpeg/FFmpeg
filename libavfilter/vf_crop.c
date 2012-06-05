@@ -26,6 +26,7 @@
 /* #define DEBUG */
 
 #include "avfilter.h"
+#include "formats.h"
 #include "video.h"
 #include "libavutil/eval.h"
 #include "libavutil/avstring.h"
@@ -113,7 +114,7 @@ static int query_formats(AVFilterContext *ctx)
         PIX_FMT_NONE
     };
 
-    avfilter_set_common_pixel_formats(ctx, avfilter_make_format_list(pix_fmts));
+    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
 
     return 0;
 }
@@ -308,7 +309,7 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
         ref2->data[3] += crop->x * crop->max_step[3];
     }
 
-    avfilter_start_frame(link->dst->outputs[0], ref2);
+    ff_start_frame(link->dst->outputs[0], ref2);
 }
 
 static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
@@ -326,7 +327,7 @@ static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
     if (y + h > crop->y + crop->h)
         h = crop->y + crop->h - y;
 
-    avfilter_draw_slice(ctx->outputs[0], y - crop->y, h, slice_dir);
+    ff_draw_slice(ctx->outputs[0], y - crop->y, h, slice_dir);
 }
 
 static void end_frame(AVFilterLink *link)
@@ -335,7 +336,7 @@ static void end_frame(AVFilterLink *link)
 
     crop->var_values[VAR_N] += 1.0;
     avfilter_unref_buffer(link->cur_buf);
-    avfilter_end_frame(link->dst->outputs[0]);
+    ff_end_frame(link->dst->outputs[0]);
 }
 
 AVFilter avfilter_vf_crop = {

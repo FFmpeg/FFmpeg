@@ -41,6 +41,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/eval.h"
@@ -1221,4 +1222,145 @@ void *grow_array(void *array, int elem_size, int *size, int new_size)
         return tmp;
     }
     return array;
+}
+
+static int alloc_buffer(FrameBuffer **pool, AVCodecContext *s, FrameBuffer **pbuf)
+{
+    FrameBuffer  *buf = av_mallocz(sizeof(*buf));
+    int i, ret;
+    const int pixel_size = av_pix_fmt_descriptors[s->pix_fmt].comp[0].step_minus1+1;
+    int h_chroma_shift, v_chroma_shift;
+    int edge = 32; // XXX should be avcodec_get_edge_width(), but that fails on svq1
+    int w = s->width, h = s->height;
+
+    if (!buf)
+        return AVERROR(ENOMEM);
+
+    avcodec_align_dimensions(s, &w, &h);
+
+    if (!(s->flags & CODEC_FLAG_EMU_EDGE)) {
+        w += 2*edge;
+        h += 2*edge;
+    }
+
+    if ((ret = av_image_alloc(buf->base, buf->linesize, w, h,
+                              s->pix_fmt, 32)) < 0) {
+        av_freep(&buf);
+        return ret;
+    }
+    /* XXX this shouldn't be needed, but some tests break without this line
+     * those decoders are buggy and need to be fixed.
+     * the following tests fail:
+     * cdgraphics, ansi, aasc, fraps-v1, qtrle-1bit
+     */
+    memset(buf->base[0], 128, ret);
+
+    avcodec_get_chroma_sub_sample(s->pix_fmt, &h_chroma_shift, &v_chroma_shift);
+    for (i = 0; i < FF_ARRAY_ELEMS(buf->data); i++) {
+        const int h_shift = i==0 ? 0 : h_chroma_shift;
+        const int v_shift = i==0 ? 0 : v_chroma_shift;
+        if ((s->flags & CODEC_FLAG_EMU_EDGE) || !buf->linesize[1] || !buf->base[i])
+            buf->data[i] = buf->base[i];
+        else
+            buf->data[i] = buf->base[i] +
+                           FFALIGN((buf->linesize[i]*edge >> v_shift) +
+                                   (pixel_size*edge >> h_shift), 32);
+    }
+    buf->w       = s->width;
+    buf->h       = s->height;
+    buf->pix_fmt = s->pix_fmt;
+    buf->pool    = pool;
+
+    *pbuf = buf;
+    return 0;
+}
+
+int codec_get_buffer(AVCodecContext *s, AVFrame *frame)
+{
+    FrameBuffer **pool = s->opaque;
+    FrameBuffer *buf;
+    int ret, i;
+
+    if(av_image_check_size(s->width, s->height, 0, s) || s->pix_fmt<0)
+        return -1;
+
+    if (!*pool && (ret = alloc_buffer(pool, s, pool)) < 0)
+        return ret;
+
+    buf              = *pool;
+    *pool            = buf->next;
+    buf->next        = NULL;
+    if (buf->w != s->width || buf->h != s->height || buf->pix_fmt != s->pix_fmt) {
+        av_freep(&buf->base[0]);
+        av_free(buf);
+        if ((ret = alloc_buffer(pool, s, &buf)) < 0)
+            return ret;
+    }
+    av_assert0(!buf->refcount);
+    buf->refcount++;
+
+    frame->opaque        = buf;
+    frame->type          = FF_BUFFER_TYPE_USER;
+    frame->extended_data = frame->data;
+    frame->pkt_pts       = s->pkt ? s->pkt->pts : AV_NOPTS_VALUE;
+    frame->width         = buf->w;
+    frame->height        = buf->h;
+    frame->format        = buf->pix_fmt;
+    frame->sample_aspect_ratio = s->sample_aspect_ratio;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(buf->data); i++) {
+        frame->base[i]     = buf->base[i];  // XXX h264.c uses base though it shouldn't
+        frame->data[i]     = buf->data[i];
+        frame->linesize[i] = buf->linesize[i];
+    }
+
+    return 0;
+}
+
+static void unref_buffer(FrameBuffer *buf)
+{
+    FrameBuffer **pool = buf->pool;
+
+    av_assert0(buf->refcount > 0);
+    buf->refcount--;
+    if (!buf->refcount) {
+        FrameBuffer *tmp;
+        for(tmp= *pool; tmp; tmp= tmp->next)
+            av_assert1(tmp != buf);
+
+        buf->next = *pool;
+        *pool = buf;
+    }
+}
+
+void codec_release_buffer(AVCodecContext *s, AVFrame *frame)
+{
+    FrameBuffer *buf = frame->opaque;
+    int i;
+
+    if(frame->type!=FF_BUFFER_TYPE_USER)
+        return avcodec_default_release_buffer(s, frame);
+
+    for (i = 0; i < FF_ARRAY_ELEMS(frame->data); i++)
+        frame->data[i] = NULL;
+
+    unref_buffer(buf);
+}
+
+void filter_release_buffer(AVFilterBuffer *fb)
+{
+    FrameBuffer *buf = fb->priv;
+    av_free(fb);
+    unref_buffer(buf);
+}
+
+void free_buffer_pool(FrameBuffer **pool)
+{
+    FrameBuffer *buf = *pool;
+    while (buf) {
+        *pool = buf->next;
+        av_freep(&buf->base[0]);
+        av_free(buf);
+        buf = *pool;
+    }
 }

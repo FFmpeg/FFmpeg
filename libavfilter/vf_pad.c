@@ -25,6 +25,8 @@
  */
 
 #include "avfilter.h"
+#include "formats.h"
+#include "video.h"
 #include "libavutil/avstring.h"
 #include "libavutil/eval.h"
 #include "libavutil/pixdesc.h"
@@ -67,7 +69,7 @@ enum var_name {
 
 static int query_formats(AVFilterContext *ctx)
 {
-    avfilter_set_common_pixel_formats(ctx, ff_draw_supported_pixel_formats(0));
+    ff_set_common_formats(ctx, ff_draw_supported_pixel_formats(0));
     return 0;
 }
 
@@ -296,7 +298,7 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     outpicref->video->w = pad->w;
     outpicref->video->h = pad->h;
 
-    avfilter_start_frame(inlink->dst->outputs[0], avfilter_ref_buffer(outpicref, ~0));
+    ff_start_frame(inlink->dst->outputs[0], avfilter_ref_buffer(outpicref, ~0));
 }
 
 static void draw_send_bar_slice(AVFilterLink *link, int y, int h, int slice_dir, int before_slice)
@@ -319,7 +321,7 @@ static void draw_send_bar_slice(AVFilterLink *link, int y, int h, int slice_dir,
                           link->dst->outputs[0]->out_buf->data,
                           link->dst->outputs[0]->out_buf->linesize,
                           0, bar_y, pad->w, bar_h);
-        avfilter_draw_slice(link->dst->outputs[0], bar_y, bar_h, slice_dir);
+        ff_draw_slice(link->dst->outputs[0], bar_y, bar_h, slice_dir);
     }
 }
 
@@ -352,7 +354,7 @@ static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
     /* right border */
     ff_fill_rectangle(&pad->draw, &pad->color, outpic->data, outpic->linesize,
                       pad->x + pad->in_w, y, pad->w - pad->x - pad->in_w, h);
-    avfilter_draw_slice(link->dst->outputs[0], y, h, slice_dir);
+    ff_draw_slice(link->dst->outputs[0], y, h, slice_dir);
 
     draw_send_bar_slice(link, y, h, slice_dir, -1);
 }

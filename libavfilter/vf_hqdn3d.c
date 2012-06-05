@@ -27,6 +27,8 @@
 
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "formats.h"
+#include "video.h"
 
 typedef struct {
     int Coefs[4][512*16];
@@ -268,7 +270,7 @@ static int query_formats(AVFilterContext *ctx)
         PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_YUV411P, PIX_FMT_NONE
     };
 
-    avfilter_set_common_pixel_formats(ctx, avfilter_make_format_list(pix_fmts));
+    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
 
     return 0;
 }
@@ -317,8 +319,8 @@ static void end_frame(AVFilterLink *inlink)
             hqdn3d->Coefs[2],
             hqdn3d->Coefs[3]);
 
-    avfilter_draw_slice(outlink, 0, inpic->video->h, 1);
-    avfilter_end_frame(outlink);
+    ff_draw_slice(outlink, 0, inpic->video->h, 1);
+    ff_end_frame(outlink);
     avfilter_unref_buffer(inpic);
     avfilter_unref_buffer(outpic);
 }

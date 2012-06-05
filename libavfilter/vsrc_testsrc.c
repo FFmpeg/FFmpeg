@@ -36,6 +36,8 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/parseutils.h"
 #include "avfilter.h"
+#include "formats.h"
+#include "video.h"
 
 typedef struct {
     const AVClass *class;
@@ -146,9 +148,9 @@ static int request_frame(AVFilterLink *outlink)
     test->fill_picture_fn(outlink->src, picref);
     test->nb_frame++;
 
-    avfilter_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
-    avfilter_draw_slice(outlink, 0, picref->video->h, 1);
-    avfilter_end_frame(outlink);
+    ff_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
+    ff_draw_slice(outlink, 0, picref->video->h, 1);
+    ff_end_frame(outlink);
     avfilter_unref_buffer(picref);
 
     return 0;
@@ -388,7 +390,7 @@ static int test_query_formats(AVFilterContext *ctx)
     static const enum PixelFormat pix_fmts[] = {
         PIX_FMT_RGB24, PIX_FMT_NONE
     };
-    avfilter_set_common_pixel_formats(ctx, avfilter_make_format_list(pix_fmts));
+    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
     return 0;
 }
 
@@ -494,7 +496,7 @@ static int rgbtest_query_formats(AVFilterContext *ctx)
         PIX_FMT_RGB555, PIX_FMT_BGR555,
         PIX_FMT_NONE
     };
-    avfilter_set_common_pixel_formats(ctx, avfilter_make_format_list(pix_fmts));
+    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
     return 0;
 }
 

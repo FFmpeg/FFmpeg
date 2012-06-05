@@ -4,6 +4,7 @@ releases are sorted from youngest to oldest.
 version next:
 - INI and flat output in ffprobe
 - Scene detection in libavfilter
+- Indeo Audio decoder
 
 
 version 0.11:

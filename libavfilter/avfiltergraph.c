@@ -324,7 +324,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                 continue;
 
             if (link->in_formats != link->out_formats &&
-                !avfilter_merge_formats(link->in_formats,
+                !ff_merge_formats(link->in_formats,
                                         link->out_formats))
                 convert_needed = 1;
             if (link->type == AVMEDIA_TYPE_AUDIO) {
@@ -381,8 +381,8 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                 filter_query_formats(convert);
                 inlink  = convert->inputs[0];
                 outlink = convert->outputs[0];
-                if (!avfilter_merge_formats( inlink->in_formats,  inlink->out_formats) ||
-                    !avfilter_merge_formats(outlink->in_formats, outlink->out_formats))
+                if (!ff_merge_formats( inlink->in_formats,  inlink->out_formats) ||
+                    !ff_merge_formats(outlink->in_formats, outlink->out_formats))
                     ret |= AVERROR(ENOSYS);
                 if (inlink->type == AVMEDIA_TYPE_AUDIO &&
                     (!ff_merge_samplerates(inlink->in_samplerates,
@@ -452,10 +452,10 @@ static int pick_format(AVFilterLink *link, AVFilterLink *ref)
         link->channel_layout = link->in_channel_layouts->channel_layouts[0];
     }
 
-    avfilter_formats_unref(&link->in_formats);
-    avfilter_formats_unref(&link->out_formats);
-    avfilter_formats_unref(&link->in_samplerates);
-    avfilter_formats_unref(&link->out_samplerates);
+    ff_formats_unref(&link->in_formats);
+    ff_formats_unref(&link->out_formats);
+    ff_formats_unref(&link->in_samplerates);
+    ff_formats_unref(&link->out_samplerates);
     ff_channel_layouts_unref(&link->in_channel_layouts);
     ff_channel_layouts_unref(&link->out_channel_layouts);
 
@@ -502,9 +502,9 @@ static int reduce_formats_on_filter(AVFilterContext *filter)
     int i, j, k, ret = 0;
 
     REDUCE_FORMATS(int,      AVFilterFormats,        formats,         formats,
-                   format_count, avfilter_add_format);
+                   format_count, ff_add_format);
     REDUCE_FORMATS(int,      AVFilterFormats,        samplerates,     formats,
-                   format_count, avfilter_add_format);
+                   format_count, ff_add_format);
     REDUCE_FORMATS(uint64_t, AVFilterChannelLayouts, channel_layouts,
                    channel_layouts, nb_channel_layouts, ff_add_channel_layout);
 

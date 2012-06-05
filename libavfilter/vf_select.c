@@ -28,6 +28,7 @@
 #include "libavcodec/dsputil.h"
 #include "avfilter.h"
 #include "formats.h"
+#include "internal.h"
 #include "video.h"
 
 static const char *const var_names[] = {
@@ -284,7 +285,7 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
                                       sizeof(picref), NULL);
             return;
         }
-        avfilter_start_frame(inlink->dst->outputs[0], avfilter_ref_buffer(picref, ~0));
+        ff_start_frame(inlink->dst->outputs[0], avfilter_ref_buffer(picref, ~0));
     }
 }
 
@@ -293,7 +294,7 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
     SelectContext *select = inlink->dst->priv;
 
     if (select->select && !select->cache_frames)
-        avfilter_draw_slice(inlink->dst->outputs[0], y, h, slice_dir);
+        ff_draw_slice(inlink->dst->outputs[0], y, h, slice_dir);
 }
 
 static void end_frame(AVFilterLink *inlink)
@@ -304,7 +305,7 @@ static void end_frame(AVFilterLink *inlink)
     if (select->select) {
         if (select->cache_frames)
             return;
-        avfilter_end_frame(inlink->dst->outputs[0]);
+        ff_end_frame(inlink->dst->outputs[0]);
     }
     avfilter_unref_buffer(picref);
 }
@@ -319,15 +320,15 @@ static int request_frame(AVFilterLink *outlink)
     if (av_fifo_size(select->pending_frames)) {
         AVFilterBufferRef *picref;
         av_fifo_generic_read(select->pending_frames, &picref, sizeof(picref), NULL);
-        avfilter_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
-        avfilter_draw_slice(outlink, 0, outlink->h, 1);
-        avfilter_end_frame(outlink);
+        ff_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
+        ff_draw_slice(outlink, 0, outlink->h, 1);
+        ff_end_frame(outlink);
         avfilter_unref_buffer(picref);
         return 0;
     }
 
     while (!select->select) {
-        int ret = avfilter_request_frame(inlink);
+        int ret = ff_request_frame(inlink);
         if (ret < 0)
             return ret;
     }
@@ -342,12 +343,12 @@ static int poll_frame(AVFilterLink *outlink)
     int count, ret;
 
     if (!av_fifo_size(select->pending_frames)) {
-        if ((count = avfilter_poll_frame(inlink)) <= 0)
+        if ((count = ff_poll_frame(inlink)) <= 0)
             return count;
         /* request frame from input, and apply select condition to it */
         select->cache_frames = 1;
         while (count-- && av_fifo_space(select->pending_frames)) {
-            ret = avfilter_request_frame(inlink);
+            ret = ff_request_frame(inlink);
             if (ret < 0)
                 break;
         }

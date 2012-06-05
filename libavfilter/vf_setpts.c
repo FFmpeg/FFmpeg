@@ -120,7 +120,7 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     setpts->var_values[VAR_N] += 1.0;
     setpts->var_values[VAR_PREV_INPTS ] = TS2D(inpicref ->pts);
     setpts->var_values[VAR_PREV_OUTPTS] = TS2D(outpicref->pts);
-    avfilter_start_frame(inlink->dst->outputs[0], outpicref);
+    ff_start_frame(inlink->dst->outputs[0], outpicref);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)

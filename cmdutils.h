@@ -386,4 +386,46 @@ void exit_program(int ret);
  */
 void *grow_array(void *array, int elem_size, int *size, int new_size);
 
+typedef struct FrameBuffer {
+    uint8_t *base[4];
+    uint8_t *data[4];
+    int  linesize[4];
+
+    int h, w;
+    enum PixelFormat pix_fmt;
+
+    int refcount;
+    struct FrameBuffer **pool;  ///< head of the buffer pool
+    struct FrameBuffer *next;
+} FrameBuffer;
+
+/**
+ * Get a frame from the pool. This is intended to be used as a callback for
+ * AVCodecContext.get_buffer.
+ *
+ * @param s codec context. s->opaque must be a pointer to the head of the
+ *          buffer pool.
+ * @param frame frame->opaque will be set to point to the FrameBuffer
+ *              containing the frame data.
+ */
+int codec_get_buffer(AVCodecContext *s, AVFrame *frame);
+
+/**
+ * A callback to be used for AVCodecContext.release_buffer along with
+ * codec_get_buffer().
+ */
+void codec_release_buffer(AVCodecContext *s, AVFrame *frame);
+
+/**
+ * A callback to be used for AVFilterBuffer.free.
+ * @param fb buffer to free. fb->priv must be a pointer to the FrameBuffer
+ *           containing the buffer data.
+ */
+void filter_release_buffer(AVFilterBuffer *fb);
+
+/**
+ * Free all the buffers in the pool. This must be called after all the
+ * buffers have been released.
+ */
+void free_buffer_pool(FrameBuffer **pool);
 #endif /* CMDUTILS_H */

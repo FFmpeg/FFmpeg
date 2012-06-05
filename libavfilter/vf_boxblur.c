@@ -29,6 +29,8 @@
 #include "libavutil/eval.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "formats.h"
+#include "video.h"
 
 static const char *const var_names[] = {
     "w",
@@ -129,7 +131,7 @@ static int query_formats(AVFilterContext *ctx)
         PIX_FMT_NONE
     };
 
-    avfilter_set_common_pixel_formats(ctx, avfilter_make_format_list(pix_fmts));
+    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
     return 0;
 }
 
@@ -324,7 +326,7 @@ static void end_frame(AVFilterLink *inlink)
               w[plane], h[plane], boxblur->radius[plane], boxblur->power[plane],
               boxblur->temp);
 
-    avfilter_draw_slice(outlink, 0, inlink->h, 1);
+    ff_draw_slice(outlink, 0, inlink->h, 1);
     avfilter_default_end_frame(inlink);
 }
 

@@ -28,6 +28,7 @@
 #include "buffersrc.h"
 #include "formats.h"
 #include "internal.h"
+#include "video.h"
 #include "vsrc_buffer.h"
 #include "avcodec.h"
 
@@ -328,14 +329,14 @@ static int query_formats(AVFilterContext *ctx)
 
     switch (ctx->outputs[0]->type) {
     case AVMEDIA_TYPE_VIDEO:
-        avfilter_add_format(&formats, c->pix_fmt);
-        avfilter_set_common_formats(ctx, formats);
+        ff_add_format(&formats, c->pix_fmt);
+        ff_set_common_formats(ctx, formats);
         break;
     case AVMEDIA_TYPE_AUDIO:
-        avfilter_add_format(&formats,           c->sample_fmt);
-        avfilter_set_common_formats(ctx, formats);
+        ff_add_format(&formats,           c->sample_fmt);
+        ff_set_common_formats(ctx, formats);
 
-        avfilter_add_format(&samplerates,       c->sample_rate);
+        ff_add_format(&samplerates,       c->sample_rate);
         ff_set_common_samplerates(ctx, samplerates);
 
         ff_add_channel_layout(&channel_layouts, c->channel_layout);
@@ -385,9 +386,9 @@ static int request_frame(AVFilterLink *link)
 
     switch (link->type) {
     case AVMEDIA_TYPE_VIDEO:
-        avfilter_start_frame(link, avfilter_ref_buffer(buf, ~0));
-        avfilter_draw_slice(link, 0, link->h, 1);
-        avfilter_end_frame(link);
+        ff_start_frame(link, avfilter_ref_buffer(buf, ~0));
+        ff_draw_slice(link, 0, link->h, 1);
+        ff_end_frame(link);
         break;
     case AVMEDIA_TYPE_AUDIO:
         ff_filter_samples(link, avfilter_ref_buffer(buf, ~0));
