@@ -215,4 +215,25 @@ backslash or single quotes.
 
 @end table
 
+@section tedcaptions
+
+JSON captions used for @url{http://www.ted.com/, TED Talks}.
+
+TED does not provide links to the captions, but they can be guessed from the
+page. The file @file{tools/bookmarklets.html} from the FFmpeg source tree
+contains a bookmarklet to expose them.
+
+This demuxer accepts the following option:
+@table @option
+@item start_time
+Set the start time of the TED talk, in milliseconds. The default is 15000
+(15s). It is used to sync the captions with the downloadable videos, because
+they include a 15s intro.
+@end table
+
+Example: convert the captions to a format most players understand:
+@example
+ffmpeg -i http://www.ted.com/talks/subtitles/id/1/lang/en talk1-en.srt
+@end example
+
 @c man end INPUT DEVICES

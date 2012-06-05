@@ -39,6 +39,7 @@ version <next>:
 - Paris Audio File demuxer
 - Virtual concatenation demuxer
 - VobSub demuxer
+- JSON captions for TED talks decoding support
 
 
 version 1.0:
