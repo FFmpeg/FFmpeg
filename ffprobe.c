@@ -321,12 +321,12 @@ static inline void writer_print_string(WriterContext *wctx,
 }
 
 static void writer_print_time(WriterContext *wctx, const char *key,
-                              int64_t ts, const AVRational *time_base)
+                              int64_t ts, const AVRational *time_base, int is_duration)
 {
     char buf[128];
 
     if (!wctx->is_fmt_chapter || !fmt_entries_to_show || av_dict_get(fmt_entries_to_show, key, NULL, 0)) {
-        if (ts == AV_NOPTS_VALUE) {
+        if ((!is_duration && ts == AV_NOPTS_VALUE) || (is_duration && ts == 0)) {
             writer_print_string(wctx, key, "N/A", 1);
         } else {
             double d = ts * av_q2d(*time_base);
@@ -336,9 +336,9 @@ static void writer_print_time(WriterContext *wctx, const char *key,
     }
 }
 
-static void writer_print_ts(WriterContext *wctx, const char *key, int64_t ts)
+static void writer_print_ts(WriterContext *wctx, const char *key, int64_t ts, int is_duration)
 {
-    if (ts == AV_NOPTS_VALUE) {
+    if ((!is_duration && ts == AV_NOPTS_VALUE) || (is_duration && ts == 0)) {
         writer_print_string(wctx, key, "N/A", 1);
     } else {
         writer_print_integer(wctx, key, ts);
@@ -1510,8 +1510,10 @@ static void writer_register_all(void)
 #define print_int(k, v)         writer_print_integer(w, k, v)
 #define print_str(k, v)         writer_print_string(w, k, v, 0)
 #define print_str_opt(k, v)     writer_print_string(w, k, v, 1)
-#define print_time(k, v, tb)    writer_print_time(w, k, v, tb)
-#define print_ts(k, v)          writer_print_ts(w, k, v)
+#define print_time(k, v, tb)    writer_print_time(w, k, v, tb, 0)
+#define print_ts(k, v)          writer_print_ts(w, k, v, 0)
+#define print_duration_time(k, v, tb) writer_print_time(w, k, v, tb, 1)
+#define print_duration_ts(k, v)       writer_print_ts(w, k, v, 1)
 #define print_val(k, v, u)      writer_print_string(w, k, \
     value_string(val_str, sizeof(val_str), (struct unit_value){.val.i = v, .unit=u}), 0)
 #define print_section_header(s) writer_print_section_header(w, s)
@@ -1536,8 +1538,8 @@ static void show_packet(WriterContext *w, AVFormatContext *fmt_ctx, AVPacket *pk
     print_time("pts_time",        pkt->pts, &st->time_base);
     print_ts  ("dts",             pkt->dts);
     print_time("dts_time",        pkt->dts, &st->time_base);
-    print_ts  ("duration",        pkt->duration);
-    print_time("duration_time",   pkt->duration, &st->time_base);
+    print_duration_ts("duration",        pkt->duration);
+    print_duration_time("duration_time", pkt->duration, &st->time_base);
     print_val("size",             pkt->size, unit_byte_str);
     if (pkt->pos != -1) print_fmt    ("pos", "%"PRId64, pkt->pos);
     else                print_str_opt("pos", "N/A");
