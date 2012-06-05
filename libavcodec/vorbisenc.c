@@ -336,7 +336,8 @@ static int create_vorbis_context(vorbis_enc_context *venc,
         };
         fc->list[i].x = a[i - 2];
     }
-    ff_vorbis_ready_floor1_list(fc->list, fc->values);
+    if (ff_vorbis_ready_floor1_list(avccontext, fc->list, fc->values))
+        return AVERROR(EINVAL);
 
     venc->nresidues = 1;
     venc->residues  = av_malloc(sizeof(vorbis_enc_residue) * venc->nresidues);
