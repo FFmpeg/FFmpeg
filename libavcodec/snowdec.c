@@ -325,12 +325,12 @@ static int decode_header(SnowContext *s){
 
     s->spatial_decomposition_type+= get_symbol(&s->c, s->header_state, 1);
     if(s->spatial_decomposition_type > 1U){
-        av_log(s->avctx, AV_LOG_ERROR, "spatial_decomposition_type %d not supported", s->spatial_decomposition_type);
+        av_log(s->avctx, AV_LOG_ERROR, "spatial_decomposition_type %d not supported\n", s->spatial_decomposition_type);
         return -1;
     }
     if(FFMIN(s->avctx-> width>>s->chroma_h_shift,
              s->avctx->height>>s->chroma_v_shift) >> (s->spatial_decomposition_count-1) <= 0){
-        av_log(s->avctx, AV_LOG_ERROR, "spatial_decomposition_count %d too large for size", s->spatial_decomposition_count);
+        av_log(s->avctx, AV_LOG_ERROR, "spatial_decomposition_count %d too large for size\n", s->spatial_decomposition_count);
         return -1;
     }
 
@@ -344,7 +344,7 @@ static int decode_header(SnowContext *s){
     s->qbias          += get_symbol(&s->c, s->header_state, 1);
     s->block_max_depth+= get_symbol(&s->c, s->header_state, 1);
     if(s->block_max_depth > 1 || s->block_max_depth < 0){
-        av_log(s->avctx, AV_LOG_ERROR, "block_max_depth= %d is too large", s->block_max_depth);
+        av_log(s->avctx, AV_LOG_ERROR, "block_max_depth= %d is too large\n", s->block_max_depth);
         s->block_max_depth= 0;
         return -1;
     }
