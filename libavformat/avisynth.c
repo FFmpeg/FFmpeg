@@ -60,7 +60,7 @@ static int avisynth_read_header(AVFormatContext *s)
   res = AVIFileOpen(&avs->file, filename_char, OF_READ|OF_SHARE_DENY_WRITE, NULL);
   if (res != S_OK)
     {
-      av_log(s, AV_LOG_ERROR, "AVIFileOpen failed with error %ld", res);
+      av_log(s, AV_LOG_ERROR, "AVIFileOpen failed with error %ld\n", res);
       AVIFileExit();
       return -1;
     }
@@ -68,7 +68,7 @@ static int avisynth_read_header(AVFormatContext *s)
   res = AVIFileInfo(avs->file, &info, sizeof(info));
   if (res != S_OK)
     {
-      av_log(s, AV_LOG_ERROR, "AVIFileInfo failed with error %ld", res);
+      av_log(s, AV_LOG_ERROR, "AVIFileInfo failed with error %ld\n", res);
       AVIFileExit();
       return -1;
     }
