@@ -32,6 +32,7 @@
 #include "dict.h"
 #include "log.h"
 #include "parseutils.h"
+#include "pixdesc.h"
 
 #if FF_API_FIND_OPT
 //FIXME order them and do a bin search
@@ -249,6 +250,18 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
         if (ret < 0)
             av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as image size\n", val);
         return ret;
+    case AV_OPT_TYPE_PIXEL_FMT:
+        ret = av_get_pix_fmt(val);
+        if (ret == PIX_FMT_NONE) {
+            char *tail;
+            ret = strtol(val, &tail, 0);
+            if (*tail || (unsigned)ret >= PIX_FMT_NB) {
+                av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as pixel format\n", val);
+                return AVERROR(EINVAL);
+            }
+        }
+        *(enum PixelFormat *)dst = ret;
+        return 0;
     }
 
     av_log(obj, AV_LOG_ERROR, "Invalid option type.\n");
@@ -434,6 +447,9 @@ int av_opt_get(void *obj, const char *name, int search_flags, uint8_t **out_val)
     case AV_OPT_TYPE_IMAGE_SIZE:
         ret = snprintf(buf, sizeof(buf), "%dx%d", ((int *)dst)[0], ((int *)dst)[1]);
         break;
+    case AV_OPT_TYPE_PIXEL_FMT:
+        ret = snprintf(buf, sizeof(buf), "%s", (char *)av_x_if_null(av_get_pix_fmt_name(*(enum PixelFormat *)dst), "?"));
+        break;
     default:
         return AVERROR(EINVAL);
     }
@@ -606,6 +622,9 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
             case AV_OPT_TYPE_IMAGE_SIZE:
                 av_log(av_log_obj, AV_LOG_INFO, "%-7s ", "<image_size>");
                 break;
+            case AV_OPT_TYPE_PIXEL_FMT:
+                av_log(av_log_obj, AV_LOG_INFO, "%-7s ", "<pix_fmt>");
+                break;
             case AV_OPT_TYPE_CONST:
             default:
                 av_log(av_log_obj, AV_LOG_INFO, "%-7s ", "");
@@ -684,6 +703,7 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
             break;
             case AV_OPT_TYPE_STRING:
             case AV_OPT_TYPE_IMAGE_SIZE:
+            case AV_OPT_TYPE_PIXEL_FMT:
                 av_opt_set(s, opt->name, opt->default_val.str, 0);
                 break;
             case AV_OPT_TYPE_BINARY:
