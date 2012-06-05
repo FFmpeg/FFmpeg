@@ -2915,6 +2915,8 @@ static int transcode_init(void)
             ost->encoding_needed = 1;
 
             if (codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+                if (ost->filter && !ost->frame_rate.num)
+                    ost->frame_rate = av_buffersink_get_frame_rate(ost->filter->filter);
                 if (ist && !ost->frame_rate.num)
                     ost->frame_rate = ist->st->r_frame_rate.num ? ist->st->r_frame_rate : (AVRational){25, 1};
                 if (ost->enc && ost->enc->supported_framerates && !ost->force_fps) {
