@@ -135,6 +135,8 @@ const PixelFormatTag ff_raw_pix_fmt_tags[] = {
     { PIX_FMT_GRAY8A,      MKTAG('Y', '2',  0 ,  8 ) },
 
     /* quicktime */
+    { PIX_FMT_YUV420P, MKTAG('R', '4', '2', '0') }, /* Radius DV YUV PAL */
+    { PIX_FMT_YUV411P, MKTAG('R', '4', '1', '1') }, /* Radius DV YUV NTSC */
     { PIX_FMT_UYVY422, MKTAG('2', 'v', 'u', 'y') },
     { PIX_FMT_UYVY422, MKTAG('2', 'V', 'u', 'y') },
     { PIX_FMT_UYVY422, MKTAG('A', 'V', 'U', 'I') }, /* FIXME merge both fields */
