@@ -11,4 +11,4 @@ OBJS = audioconvert.o                        \
        resample.o                            \
        swresample.o                          \
 
-TESTPROGS = swresample_test
+TESTPROGS = swresample
