@@ -243,7 +243,7 @@ int main(int argc, char **argv){
     struct SwrContext *backw_ctx= NULL;
 
     if (argc > 1) {
-        if (!strcmp(argv[1], "-h")) {
+        if (!strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")) {
             av_log(NULL, AV_LOG_INFO, "Usage: swresample-test [<num_tests>[ <test>]]  \n"
                    "num_tests           Default is %d\n", num_tests);
             return 0;
