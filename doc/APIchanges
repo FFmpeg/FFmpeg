@@ -18,9 +18,6 @@ API changes, most recent first:
 2012-06-05 - xxxxxxx - lavc 54.24.100
   Add pkt_duration field to AVFrame.
 
-2012-06-04 - xxxxxxx - lafi 2.78.100
-  Add avfilter_default_filter_name() function in avfilter.h.
-
 2012-05-24 - xxxxxxx - lavu 51.54.100
   Move AVPALETTE_SIZE and AVPALETTE_COUNT macros from
   libavcodec/avcodec.h to libavutil/pixfmt.h.
