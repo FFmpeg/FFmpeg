@@ -133,4 +133,9 @@ int av_buffersink_read(AVFilterContext *sink, AVFilterBufferRef **buf);
 int av_buffersink_read_samples(AVFilterContext *ctx, AVFilterBufferRef **buf,
                                int nb_samples);
 
+/**
+ * Get the frame rate of the input.
+ */
+AVRational av_buffersink_get_frame_rate(AVFilterContext *ctx);
+
 #endif /* AVFILTER_BUFFERSINK_H */

@@ -142,6 +142,11 @@ int av_buffersink_get_buffer_ref(AVFilterContext *ctx,
     return 0;
 }
 
+AVRational av_buffersink_get_frame_rate(AVFilterContext *ctx)
+{
+    return ctx->inputs[0]->frame_rate;
+}
+
 int av_buffersink_poll_frame(AVFilterContext *ctx)
 {
     BufferSinkContext *buf = ctx->priv;
