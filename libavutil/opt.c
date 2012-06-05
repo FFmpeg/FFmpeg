@@ -890,6 +890,8 @@ typedef struct TestContext
     char *string;
     int flags;
     AVRational rational;
+    int w, h;
+    enum PixelFormat pix_fmt;
 } TestContext;
 
 #define OFFSET(x) offsetof(TestContext, x)
@@ -907,6 +909,8 @@ static const AVOption test_options[]= {
 {"cool",     "set cool flag ", 0,                AV_OPT_TYPE_CONST,    {TEST_FLAG_COOL}, INT_MIN,  INT_MAX, 0, "flags" },
 {"lame",     "set lame flag ", 0,                AV_OPT_TYPE_CONST,    {TEST_FLAG_LAME}, INT_MIN,  INT_MAX, 0, "flags" },
 {"mu",       "set mu flag ",   0,                AV_OPT_TYPE_CONST,    {TEST_FLAG_MU},   INT_MIN,  INT_MAX, 0, "flags" },
+{"size",     "set size",       OFFSET(w),        AV_OPT_TYPE_IMAGE_SIZE,{0},             0,        0                   },
+{"pix_fmt",  "set pixfmt",     OFFSET(pix_fmt),  AV_OPT_TYPE_PIXEL_FMT,{0},              0,        0                   },
 {NULL},
 };
 
@@ -948,6 +952,12 @@ int main(void)
             "num=42 : string=blahblah",
             "rational=0 : rational=1/2 : rational=1/-1",
             "rational=-1/0",
+            "size=1024x768",
+            "size=pal",
+            "size=bogus",
+            "pix_fmt=yuv420p",
+            "pix_fmt=2",
+            "pix_fmt=bogus",
         };
 
         test_ctx.class = &test_class;
