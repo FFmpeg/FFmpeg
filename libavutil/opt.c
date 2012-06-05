@@ -962,6 +962,7 @@ int main(void)
                 av_log(&test_ctx, AV_LOG_ERROR, "Error setting options string: '%s'\n", options[i]);
             printf("\n");
         }
+        av_freep(&test_ctx.string);
     }
 
     return 0;
