@@ -1456,7 +1456,9 @@ static void term_init(void)
 #if HAVE_TERMIOS_H
     if(!run_as_daemon){
         struct termios tty;
-
+#if HAVE_ISATTY
+        if(isatty(0) && isatty(2))
+#endif
         if (tcgetattr (0, &tty) == 0) {
             oldtty = tty;
             restore_tty = 1;
