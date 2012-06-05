@@ -927,7 +927,7 @@ int main(void)
 
     printf("\nTesting av_set_options_string()\n");
     {
-        TestContext test_ctx;
+        TestContext test_ctx = { 0 };
         const char *options[] = {
             "",
             ":",
