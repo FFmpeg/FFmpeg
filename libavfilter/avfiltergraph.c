@@ -173,6 +173,36 @@ AVFilterContext *avfilter_graph_get_filter(AVFilterGraph *graph, char *name)
     return NULL;
 }
 
+static int filter_query_formats(AVFilterContext *ctx)
+{
+    int ret;
+    AVFilterFormats *formats;
+    AVFilterChannelLayouts *chlayouts;
+    AVFilterFormats *samplerates;
+    enum AVMediaType type = ctx->inputs  && ctx->inputs [0] ? ctx->inputs [0]->type :
+                            ctx->outputs && ctx->outputs[0] ? ctx->outputs[0]->type :
+                            AVMEDIA_TYPE_VIDEO;
+
+    if ((ret = ctx->filter->query_formats(ctx)) < 0)
+        return ret;
+
+    formats = avfilter_make_all_formats(type);
+    if (!formats)
+        return AVERROR(ENOMEM);
+    avfilter_set_common_formats(ctx, formats);
+    if (type == AVMEDIA_TYPE_AUDIO) {
+        samplerates = ff_all_samplerates();
+        if (!samplerates)
+            return AVERROR(ENOMEM);
+        ff_set_common_samplerates(ctx, samplerates);
+        chlayouts = ff_all_channel_layouts();
+        if (!chlayouts)
+            return AVERROR(ENOMEM);
+        ff_set_common_channel_layouts(ctx, chlayouts);
+    }
+    return 0;
+}
+
 static int insert_conv_filter(AVFilterGraph *graph, AVFilterLink *link,
                               const char *filt_name, const char *filt_args)
 {
@@ -198,7 +228,7 @@ static int insert_conv_filter(AVFilterGraph *graph, AVFilterLink *link,
     if ((ret = avfilter_insert_filter(link, filt_ctx, 0, 0)) < 0)
         return ret;
 
-    filt_ctx->filter->query_formats(filt_ctx);
+    filter_query_formats(filt_ctx);
 
     if ( ((link = filt_ctx-> inputs[0]) &&
            !avfilter_merge_formats(link->in_formats, link->out_formats)) ||
@@ -244,7 +274,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
         if (!graph->filters[i]->input_count == j)
             continue;
         if (graph->filters[i]->filter->query_formats)
-            ret = graph->filters[i]->filter->query_formats(graph->filters[i]);
+            ret = filter_query_formats(graph->filters[i]);
         else
             ret = ff_default_query_formats(graph->filters[i]);
         if (ret < 0)
@@ -348,7 +378,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                 if ((ret = avfilter_insert_filter(link, convert, 0, 0)) < 0)
                     return ret;
 
-                convert->filter->query_formats(convert);
+                filter_query_formats(convert);
                 inlink  = convert->inputs[0];
                 outlink = convert->outputs[0];
                 if (!avfilter_merge_formats( inlink->in_formats,  inlink->out_formats) ||

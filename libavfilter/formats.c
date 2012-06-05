@@ -405,13 +405,13 @@ void avfilter_formats_changeref(AVFilterFormats **oldref,
     int count = 0, i;                                               \
                                                                     \
     for (i = 0; i < ctx->input_count; i++) {                        \
-        if (ctx->inputs[i]) {                                       \
+        if (ctx->inputs[i] && !ctx->inputs[i]->out_fmts) {          \
             ref(fmts, &ctx->inputs[i]->out_fmts);                   \
             count++;                                                \
         }                                                           \
     }                                                               \
     for (i = 0; i < ctx->output_count; i++) {                       \
-        if (ctx->outputs[i]) {                                      \
+        if (ctx->outputs[i] && !ctx->outputs[i]->in_fmts) {         \
             ref(fmts, &ctx->outputs[i]->in_fmts);                   \
             count++;                                                \
         }                                                           \
