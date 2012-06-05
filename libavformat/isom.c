@@ -82,6 +82,8 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
     { AV_CODEC_ID_RAWVIDEO, MKTAG('b', '1', '6', 'g') },
     { AV_CODEC_ID_RAWVIDEO, MKTAG('b', '4', '8', 'r') },
     { AV_CODEC_ID_RAWVIDEO, MKTAG('D', 'V', 'O', 'O') }, /* Digital Voodoo SD 8 Bit */
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('R', '4', '2', '0') }, /* Radius DV YUV PAL */
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('R', '4', '1', '1') }, /* Radius DV YUV NTSC */
 
     { AV_CODEC_ID_R10K,   MKTAG('R', '1', '0', 'k') }, /* UNCOMPRESSED 10BIT RGB */
     { AV_CODEC_ID_R10K,   MKTAG('R', '1', '0', 'g') }, /* UNCOMPRESSED 10BIT RGB */
