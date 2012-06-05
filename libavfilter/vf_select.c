@@ -177,7 +177,7 @@ static int config_input(AVFilterLink *inlink)
         select->avctx = avcodec_alloc_context3(NULL);
         if (!select->avctx)
             return AVERROR(ENOMEM);
-        ff_dsputil_init(&select->c, select->avctx);
+        dsputil_init(&select->c, select->avctx);
     }
     return 0;
 }
