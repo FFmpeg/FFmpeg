@@ -1699,6 +1699,7 @@ static int video_thread(void *arg)
         }
 
         frame->pts = pts_int;
+        frame->sample_aspect_ratio = av_guess_sample_aspect_ratio(is->ic, is->video_st, frame);
         if (is->use_dr1) {
             FrameBuffer      *buf = frame->opaque;
             AVFilterBufferRef *fb = avfilter_get_video_buffer_ref_from_arrays(
