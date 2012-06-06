@@ -1540,9 +1540,6 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
             SDL_UnlockMutex(is->pictq_mutex);
         }
 
-        if (ret)
-            is->frame_last_returned_time = av_gettime() / 1000000.0;
-
         return ret;
     }
     return 0;
@@ -1679,10 +1676,6 @@ static int video_thread(void *arg)
             continue;
         }
 
-        is->frame_last_filter_delay = av_gettime() / 1000000.0 - is->frame_last_returned_time;
-        if (fabs(is->frame_last_filter_delay) > AV_NOSYNC_THRESHOLD / 10.0)
-            is->frame_last_filter_delay = 0;
-
 #if CONFIG_AVFILTER
         if (   last_w != is->video_st->codec->width
             || last_h != is->video_st->codec->height
@@ -1725,11 +1718,17 @@ static int video_thread(void *arg)
         av_free_packet(&pkt);
 
         while (ret >= 0) {
+            is->frame_last_returned_time = av_gettime() / 1000000.0;
+
             ret = av_buffersink_get_buffer_ref(filt_out, &picref, 0);
             if (ret < 0) {
                 ret = 0;
                 break;
             }
+
+            is->frame_last_filter_delay = av_gettime() / 1000000.0 - is->frame_last_returned_time;
+            if (fabs(is->frame_last_filter_delay) > AV_NOSYNC_THRESHOLD / 10.0)
+                is->frame_last_filter_delay = 0;
 
             avfilter_fill_frame_from_video_buffer_ref(frame, picref);
 
