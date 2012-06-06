@@ -190,7 +190,7 @@ void ff_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
     /* prepare to copy the samples if the buffer has insufficient permissions */
     if ((dst->min_perms & samplesref->perms) != dst->min_perms ||
         dst->rej_perms & samplesref->perms) {
-        int  i, planar = av_sample_fmt_is_planar(samplesref->format);
+        int  i, size, planar = av_sample_fmt_is_planar(samplesref->format);
         int planes = !planar ? 1:
                      av_get_channel_layout_nb_channels(samplesref->audio->channel_layout);
 
@@ -204,10 +204,13 @@ void ff_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
         link->cur_buf->audio->sample_rate = samplesref->audio->sample_rate;
 
         /* Copy actual data into new samples buffer */
+        /* src can be larger than dst if it was allocated larger than necessary.
+           dst can be slightly larger due to extra alignment padding. */
+        size = FFMIN(samplesref->linesize[0], link->cur_buf->linesize[0]);
         for (i = 0; samplesref->data[i] && i < 8; i++)
-            memcpy(link->cur_buf->data[i], samplesref->data[i], samplesref->linesize[0]);
+            memcpy(link->cur_buf->data[i], samplesref->data[i], size);
         for (i = 0; i < planes; i++)
-            memcpy(link->cur_buf->extended_data[i], samplesref->extended_data[i], samplesref->linesize[0]);
+            memcpy(link->cur_buf->extended_data[i], samplesref->extended_data[i], size);
 
         avfilter_unref_buffer(samplesref);
     } else
