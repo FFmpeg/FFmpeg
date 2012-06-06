@@ -30,7 +30,7 @@ version next:
 - iec61883 device
 - asettb filter
 - new option: -progress
-- 3GPP Timed Text decoder
+- 3GPP Timed Text encoder/decoder
 - GeoTIFF decoder support
 - ffmpeg -(no)stdin option
 - Opus decoder using libopus
