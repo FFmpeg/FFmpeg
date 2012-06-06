@@ -52,6 +52,8 @@ extern void (*rgb32tobgr15)(const uint8_t *src, uint8_t *dst, int src_size);
 
 extern void (*shuffle_bytes_2103)(const uint8_t *src, uint8_t *dst, int src_size);
 
+void rgb48tobgr48_LL(const uint8_t *src, uint8_t *dst, int src_size);
+void rgb48tobgr48_LB(const uint8_t *src, uint8_t *dst, int src_size);
 void    rgb24to32(const uint8_t *src, uint8_t *dst, int src_size);
 void    rgb32to24(const uint8_t *src, uint8_t *dst, int src_size);
 void rgb16tobgr32(const uint8_t *src, uint8_t *dst, int src_size);

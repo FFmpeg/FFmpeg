@@ -521,6 +521,13 @@ static int planarRgbToRgbWrapper(SwsContext *c, const uint8_t *src[],
         || (x) == PIX_FMT_ABGR   \
         )
 
+#define isRGB48(x) (                \
+           (x) == PIX_FMT_RGB48LE   \
+        || (x) == PIX_FMT_RGB48BE   \
+        || (x) == PIX_FMT_BGR48LE   \
+        || (x) == PIX_FMT_BGR48BE   \
+        )
+
 /* {RGB,BGR}{15,16,24,32,32_1} -> {RGB,BGR}{15,16,24,32} */
 typedef void (* rgbConvFn) (const uint8_t *, uint8_t *, int);
 static rgbConvFn findRgbConvFn(SwsContext *c)
@@ -554,6 +561,15 @@ static rgbConvFn findRgbConvFn(SwsContext *c)
               || CONV_IS(RGBA, BGRA)) conv = shuffle_bytes_2103;
         else if (CONV_IS(BGRA, ABGR)
               || CONV_IS(RGBA, ARGB)) conv = shuffle_bytes_3012;
+    } else if (isRGB48(srcFormat) && isRGB48(dstFormat)) {
+        if      (CONV_IS(RGB48LE, BGR48LE)
+              || CONV_IS(BGR48LE, RGB48LE)
+              || CONV_IS(RGB48BE, BGR48BE)
+              || CONV_IS(BGR48BE, RGB48BE)) conv = rgb48tobgr48_LL;
+        else if (CONV_IS(RGB48LE, BGR48BE)
+              || CONV_IS(BGR48LE, RGB48BE)
+              || CONV_IS(RGB48BE, BGR48LE)
+              || CONV_IS(BGR48BE, RGB48LE)) conv = rgb48tobgr48_LB;
     } else
     /* BGR -> BGR */
     if ((isBGRinInt(srcFormat) && isBGRinInt(dstFormat)) ||
