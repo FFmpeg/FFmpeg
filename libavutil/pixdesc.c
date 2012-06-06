@@ -791,7 +791,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
             { 0, 7, 1, 0, 15 },       /* B */
             { 0, 7, 7, 0, 15 },       /* A */
         },
-        .flags = PIX_FMT_BE,
+        .flags = PIX_FMT_BE | PIX_FMT_RGB,
     },
     [PIX_FMT_BGRA64LE] = {
         .name = "bgra64le",
@@ -804,6 +804,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
             { 0, 7, 1, 0, 15 },       /* B */
             { 0, 7, 7, 0, 15 },       /* A */
         },
+        .flags = PIX_FMT_RGB,
     },
     [PIX_FMT_BGR565BE] = {
         .name = "bgr565be",
