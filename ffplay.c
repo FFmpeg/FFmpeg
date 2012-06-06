@@ -1648,6 +1648,7 @@ static int video_thread(void *arg)
     AVFilterContext *filt_out = NULL, *filt_in = NULL;
     int last_w = is->video_st->codec->width;
     int last_h = is->video_st->codec->height;
+    enum PixelFormat last_format = is->video_st->codec->pix_fmt;
 
     if ((ret = configure_video_filters(graph, is, vfilters)) < 0) {
         SDL_Event event;
@@ -1684,7 +1685,8 @@ static int video_thread(void *arg)
 
 #if CONFIG_AVFILTER
         if (   last_w != is->video_st->codec->width
-            || last_h != is->video_st->codec->height) {
+            || last_h != is->video_st->codec->height
+            || last_format != is->video_st->codec->pix_fmt) {
             av_log(NULL, AV_LOG_INFO, "Frame changed from size:%dx%d to size:%dx%d\n",
                    last_w, last_h, is->video_st->codec->width, is->video_st->codec->height);
             avfilter_graph_free(&graph);
@@ -1697,6 +1699,7 @@ static int video_thread(void *arg)
             filt_out = is->out_video_filter;
             last_w = is->video_st->codec->width;
             last_h = is->video_st->codec->height;
+            last_format = is->video_st->codec->pix_fmt;
         }
 
         frame->pts = pts_int;
