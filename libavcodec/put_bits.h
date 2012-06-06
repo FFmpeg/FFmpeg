@@ -171,7 +171,7 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 
 static inline void put_sbits(PutBitContext *pb, int n, int32_t value)
 {
-    assert(n >= 0 && n <= 31);
+    av_assert2(n >= 0 && n <= 31);
 
     put_bits(pb, n, value & ((1<<n)-1));
 }
@@ -207,8 +207,8 @@ static inline uint8_t* put_bits_ptr(PutBitContext *s)
  */
 static inline void skip_put_bytes(PutBitContext *s, int n)
 {
-        assert((put_bits_count(s)&7)==0);
-        assert(s->bit_left==32);
+        av_assert2((put_bits_count(s)&7)==0);
+        av_assert2(s->bit_left==32);
         s->buf_ptr += n;
 }
 
