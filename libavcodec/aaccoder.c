@@ -878,7 +878,7 @@ static void search_for_quantizers_faac(AVCodecContext *avctx, AACEncContext *s,
     } else {
         for (w = 0; w < 8; w++) {
             const float *coeffs = sce->coeffs + w*128;
-            start = 0;
+            curband = start = 0;
             for (i = 0; i < 128; i++) {
                 if (i - start >= sce->ics.swb_sizes[curband]) {
                     start += sce->ics.swb_sizes[curband];
