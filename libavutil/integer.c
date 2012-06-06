@@ -27,6 +27,7 @@
 
 #include "common.h"
 #include "integer.h"
+#include "avassert.h"
 
 AVInteger av_add_i(AVInteger a, AVInteger b){
     int i, carry=0;
@@ -110,8 +111,8 @@ AVInteger av_mod_i(AVInteger *quot, AVInteger a, AVInteger b){
     AVInteger quot_temp;
     if(!quot) quot = &quot_temp;
 
-    assert((int16_t)a[AV_INTEGER_SIZE-1] >= 0 && (int16_t)b[AV_INTEGER_SIZE-1] >= 0);
-    assert(av_log2(b)>=0);
+    av_assert2((int16_t)a[AV_INTEGER_SIZE-1] >= 0 && (int16_t)b[AV_INTEGER_SIZE-1] >= 0);
+    av_assert2(av_log2(b)>=0);
 
     if(i > 0)
         b= av_shr_i(b, -i);
