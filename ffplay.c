@@ -1672,10 +1672,11 @@ static int video_thread(void *arg)
         ret = get_video_frame(is, frame, &pts_int, &pkt);
         if (ret < 0)
             goto the_end;
-        av_free_packet(&pkt);
 
-        if (!ret)
+        if (!ret) {
+            av_free_packet(&pkt);
             continue;
+        }
 
         is->frame_last_filter_delay = av_gettime() / 1000000.0 - is->frame_last_returned_time;
         if (fabs(is->frame_last_filter_delay) > AV_NOSYNC_THRESHOLD / 10.0)
@@ -1688,8 +1689,10 @@ static int video_thread(void *arg)
                    last_w, last_h, is->video_st->codec->width, is->video_st->codec->height);
             avfilter_graph_free(&graph);
             graph = avfilter_graph_alloc();
-            if ((ret = configure_video_filters(graph, is, vfilters)) < 0)
+            if ((ret = configure_video_filters(graph, is, vfilters)) < 0) {
+                av_free_packet(&pkt);
                 goto the_end;
+            }
             filt_out = is->out_video_filter;
             last_w = is->video_st->codec->width;
             last_h = is->video_st->codec->height;
@@ -1713,6 +1716,8 @@ static int video_thread(void *arg)
 
         } else
             av_buffersrc_write_frame(filt_in, frame);
+
+        av_free_packet(&pkt);
 
         while (ret >= 0) {
             ret = av_buffersink_get_buffer_ref(filt_out, &picref, 0);
