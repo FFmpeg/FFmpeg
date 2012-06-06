@@ -67,29 +67,27 @@ static void print_digraph(FILE *outfile, AVFilterGraph *graph)
                          dst_filter_ctx->name,
                          dst_filter_ctx->filter->name);
 
-                fprintf(outfile, "\"%s\" -> \"%s\"",
-                        filter_ctx_label, dst_filter_ctx_label);
+                fprintf(outfile, "\"%s\" -> \"%s\" [ label= \"inpad:%s ",
+                        filter_ctx_label, dst_filter_ctx_label, link->srcpad->name);
+
                 if (link->type == AVMEDIA_TYPE_VIDEO) {
                     fprintf(outfile,
-                            " [ label= \"inpad:%s fmt:%s w:%d h:%d tb:%d/%d outpad:%s\" ]",
-                            link->srcpad->name,
+                            "fmt:%s w:%d h:%d tb:%d/%d",
                             av_pix_fmt_descriptors[link->format].name,
-                            link->w, link->h, link->time_base.num,
-                            link->time_base.den,
-                            link->dstpad->name);
+                            link->w, link->h,
+                            link->time_base.num, link->time_base.den);
                 } else if (link->type == AVMEDIA_TYPE_AUDIO) {
                     char buf[255];
                     av_get_channel_layout_string(buf, sizeof(buf), -1,
                                                  link->channel_layout);
                     fprintf(outfile,
-                            " [ label= \"inpad:%s fmt:%s sr:%"PRId64" cl:%s tb:%d/%d outpad:%s\" ]",
-                            link->srcpad->name,
+                            "fmt:%s sr:%"PRId64" cl:%s tb:%d/%d",
                             av_get_sample_fmt_name(link->format),
                             link->sample_rate, buf,
-                            link->time_base.num, link->time_base.den,
-                            link->dstpad->name);
+                            link->time_base.num, link->time_base.den);
                 }
-                fprintf(outfile, ";\n");
+
+                fprintf(outfile, " outpad:%s\" ];\n", link->dstpad->name);
             }
         }
     }
