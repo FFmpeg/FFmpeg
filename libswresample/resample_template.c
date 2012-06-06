@@ -93,7 +93,7 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
 
     if(compensation_distance){
         compensation_distance -= dst_index;
-        assert(compensation_distance > 0);
+        av_assert1(compensation_distance > 0);
     }
     if(update_ctx){
         c->frac= frac;
