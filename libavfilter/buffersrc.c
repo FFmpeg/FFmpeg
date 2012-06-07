@@ -267,6 +267,7 @@ static av_cold int init_video(AVFilterContext *ctx, const char *args, void *opaq
         ret = AVERROR(EINVAL);
         goto fail;
     }
+    av_log(ctx, AV_LOG_WARNING, "Flat options syntax is deprecated, use key=value pairs.\n");
 
     if ((ret = ff_parse_pixel_format(&c->pix_fmt, pix_fmt_str, ctx)) < 0)
         goto fail;
