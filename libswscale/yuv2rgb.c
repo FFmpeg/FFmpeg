@@ -26,7 +26,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
-#include <assert.h>
 
 #include "libavutil/cpu.h"
 #include "libavutil/bswap.h"
@@ -587,8 +586,6 @@ SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c)
         return yuv2rgb_c_4b_ordered_dither;
     case PIX_FMT_MONOBLACK:
         return yuv2rgb_c_1_ordered_dither;
-    default:
-        assert(0);
     }
     return NULL;
 }
