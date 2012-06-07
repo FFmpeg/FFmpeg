@@ -32,6 +32,7 @@
 #include "avformat.h"
 #include "internal.h"
 #include "riff.h"
+#include "libavutil/avassert.h"
 
 /** The min size of an XMV header. */
 #define XMV_MIN_HEADER_SIZE 36
@@ -354,7 +355,7 @@ static int xmv_process_packet_header(AVFormatContext *s)
             if (xmv->video.stream_index >= 0) {
                 AVStream *vst = s->streams[xmv->video.stream_index];
 
-                assert(xmv->video.stream_index < s->nb_streams);
+                av_assert0(xmv->video.stream_index < s->nb_streams);
 
                 if (vst->codec->extradata_size < 4) {
                     av_free(vst->codec->extradata);
