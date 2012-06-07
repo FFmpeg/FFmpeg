@@ -31,9 +31,8 @@
 #include "internal.h"
 #include "avcodec.h"
 #include "h264.h"
+#include "libavutil/avassert.h"
 
-//#undef NDEBUG
-#include <assert.h>
 
 static av_always_inline int fetch_diagonal_mv(H264Context *h, const int16_t **C,
                                               int i, int list, int part_width)
@@ -104,7 +103,7 @@ static av_always_inline void pred_motion(H264Context *const h, int n,
     const int16_t *C;
     int diagonal_ref, match_count;
 
-    assert(part_width == 1 || part_width == 2 || part_width == 4);
+    av_assert2(part_width == 1 || part_width == 2 || part_width == 4);
 
 /* mv_cache
  * B . . A T T T T
@@ -486,7 +485,7 @@ static void fill_decode_caches(H264Context *h, int mb_type)
                 } else {
                     int left_typei = s->current_picture.f.mb_type[left_xy[LTOP] + s->mb_stride];
 
-                    assert(left_xy[LTOP] == left_xy[LBOT]);
+                    av_assert2(left_xy[LTOP] == left_xy[LBOT]);
                     if (!((left_typei & type_mask) && (left_type[LTOP] & type_mask))) {
                         h->topleft_samples_available &= 0xDF5F;
                         h->left_samples_available    &= 0x5F5F;
@@ -611,7 +610,7 @@ static void fill_decode_caches(H264Context *h, int mb_type)
             int16_t(*mv)[2]       = s->current_picture.f.motion_val[list];
             if (!USES_LIST(mb_type, list))
                 continue;
-            assert(!(IS_DIRECT(mb_type) && !h->direct_spatial_mv_pred));
+            av_assert2(!(IS_DIRECT(mb_type) && !h->direct_spatial_mv_pred));
 
             if (USES_LIST(top_type, list)) {
                 const int b_xy = h->mb2b_xy[top_xy] + 3 * b_stride;
