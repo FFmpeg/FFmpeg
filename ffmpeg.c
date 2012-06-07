@@ -2747,7 +2747,7 @@ static int transcode_init(void)
 {
     int ret = 0, i, j, k;
     AVFormatContext *oc;
-    AVCodecContext *codec, *icodec;
+    AVCodecContext *codec, *icodec = NULL;
     OutputStream *ost;
     InputStream *ist;
     char error[1024];
