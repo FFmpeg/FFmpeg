@@ -3178,6 +3178,9 @@ name.
 @item time_base
 Specify the timebase assumed by the timestamps of the buffered frames.
 
+@item time_base
+Specify the frame rate expected for the video stream.
+
 @item pixel_aspect
 Specify the sample aspect ratio assumed by the video frames.
 

@@ -42,6 +42,7 @@ typedef struct {
     const AVClass    *class;
     AVFifoBuffer     *fifo;
     AVRational        time_base;     ///< time_base to set in the output link
+    AVRational        frame_rate;    ///< frame_rate to set in the output link
     unsigned          nb_failed_requests;
 
     /* video only */
@@ -220,6 +221,7 @@ unsigned av_buffersrc_get_nb_failed_requests(AVFilterContext *buffer_src)
 #define V AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption video_options[] = {
     { "time_base",      NULL, OFFSET(time_base),           AV_OPT_TYPE_RATIONAL,   { 0 }, 0, INT_MAX, V },
+    { "frame_rate",     NULL, OFFSET(frame_rate),          AV_OPT_TYPE_RATIONAL,   { 0 }, 0, INT_MAX, V },
     { "video_size",     NULL, OFFSET(w),                   AV_OPT_TYPE_IMAGE_SIZE,           .flags = V },
     { "pix_fmt",        NULL, OFFSET(pix_fmt),             AV_OPT_TYPE_PIXEL_FMT,            .flags = V },
     { "pixel_aspect",   NULL, OFFSET(pixel_aspect),        AV_OPT_TYPE_RATIONAL,   { 0 }, 0, INT_MAX, V },
@@ -280,9 +282,9 @@ static av_cold int init_video(AVFilterContext *ctx, const char *args, void *opaq
         goto fail;
     }
 
-    av_log(ctx, AV_LOG_INFO, "w:%d h:%d pixfmt:%s tb:%d/%d sar:%d/%d sws_param:%s\n",
+    av_log(ctx, AV_LOG_INFO, "w:%d h:%d pixfmt:%s tb:%d/%d fr:%d/%d sar:%d/%d sws_param:%s\n",
            c->w, c->h, av_pix_fmt_descriptors[c->pix_fmt].name,
-           c->time_base.num, c->time_base.den,
+           c->time_base.num, c->time_base.den, c->frame_rate.num, c->frame_rate.den,
            c->pixel_aspect.num, c->pixel_aspect.den, (char *)av_x_if_null(c->sws_param, ""));
     return 0;
 
@@ -415,6 +417,7 @@ static int config_props(AVFilterLink *link)
     }
 
     link->time_base = c->time_base;
+    link->frame_rate = c->frame_rate;
     return 0;
 }
 
