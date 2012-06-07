@@ -28,10 +28,10 @@ tests/data/asynth-%.wav: tests/audiogen$(HOSTEXESUF) | tests/data
 	$(M)./$< $@ $(subst -, ,$*)
 
 tests/data/vsynth1.yuv: tests/videogen$(HOSTEXESUF) | tests/data
-	$(M)$< >$@
+	$(M)$< $@
 
 tests/data/vsynth2.yuv: tests/rotozoom$(HOSTEXESUF) | tests/data
-	$(M)$< $(SRC_PATH)/tests/lena.pnm >$@
+	$(M)$< $(SRC_PATH)/tests/lena.pnm $@
 
 tests/data/%.sw tests/data/asynth% tests/data/vsynth%.yuv tests/vsynth%/00.pgm: TAG = GEN
 

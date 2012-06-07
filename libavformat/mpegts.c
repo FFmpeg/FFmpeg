@@ -1868,7 +1868,6 @@ static int handle_packets(MpegTSContext *ts, int nb_packets)
 
 static int mpegts_probe(AVProbeData *p)
 {
-#if 1
     const int size= p->buf_size;
     int score, fec_score, dvhs_score;
     int check_count= size / TS_FEC_PACKET_SIZE;
@@ -1887,13 +1886,6 @@ static int mpegts_probe(AVProbeData *p)
     else if(dvhs_score > score && dvhs_score > fec_score && dvhs_score > 6) return AVPROBE_SCORE_MAX + dvhs_score  - CHECK_COUNT;
     else if(                 fec_score > 6) return AVPROBE_SCORE_MAX + fec_score - CHECK_COUNT;
     else                                    return -1;
-#else
-    /* only use the extension for safer guess */
-    if (av_match_ext(p->filename, "ts"))
-        return AVPROBE_SCORE_MAX;
-    else
-        return 0;
-#endif
 }
 
 /* return the 90kHz PCR and the extension for the 27MHz PCR. return

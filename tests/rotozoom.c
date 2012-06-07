@@ -158,15 +158,16 @@ int main(int argc, char **argv)
 {
     int w, h, i;
     char buf[1024];
+    int isdir = 0;
 
-    if (argc > 3) {
-        printf("usage: %s image.pnm [directory/]\n"
+    if (argc != 3) {
+        printf("usage: %s image.pnm file|dir\n"
                "generate a test video stream\n", argv[0]);
         return 1;
     }
 
-//     if (argc < 3)
-//         err_if(!freopen(NULL, "wb", stdout));
+    if (!freopen(argv[2], "wb", stdout))
+        isdir = 1;
 
     w = DEFAULT_WIDTH;
     h = DEFAULT_HEIGHT;
@@ -181,7 +182,7 @@ int main(int argc, char **argv)
 
     for (i = 0; i < DEFAULT_NB_PICT; i++) {
         gen_image(i, w, h);
-        if (argc > 2) {
+        if (isdir) {
             snprintf(buf, sizeof(buf), "%s%02d.pgm", argv[2], i);
             pgmyuv_save(buf, w, h, rgb_tab);
         } else {
