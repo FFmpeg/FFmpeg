@@ -2481,6 +2481,10 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 } else if(st->need_parsing == AVSTREAM_PARSE_FULL_RAW) {
                     st->parser->flags |= PARSER_FLAG_USE_CODEC_TS;
                 }
+            } else if (st->need_parsing) {
+                av_log(ic, AV_LOG_VERBOSE, "parser not found for codec "
+                       "%s, packets or times may be invalid.\n",
+                       avcodec_get_name(st->codec->codec_id));
             }
         }
         codec = st->codec->codec ? st->codec->codec :
