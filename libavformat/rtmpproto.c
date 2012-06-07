@@ -1133,6 +1133,8 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     }
 
     if (!rt->playpath) {
+        int len = strlen(fname);
+
         rt->playpath = av_malloc(PLAYPATH_MAX_LENGTH);
         if (!rt->playpath) {
             ret = AVERROR(ENOMEM);
@@ -1140,9 +1142,11 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
         }
 
         if (!strchr(fname, ':') &&
-            (!strcmp(fname + strlen(fname) - 4, ".f4v") ||
-             !strcmp(fname + strlen(fname) - 4, ".mp4"))) {
+            (!strcmp(fname + len - 4, ".f4v") ||
+             !strcmp(fname + len - 4, ".mp4"))) {
             memcpy(rt->playpath, "mp4:", 5);
+        } else if (!strcmp(fname + len - 4, ".flv")) {
+            fname[len - 4] = '\0';
         } else {
             rt->playpath[0] = 0;
         }
