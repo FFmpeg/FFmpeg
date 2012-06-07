@@ -1540,9 +1540,6 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
             SDL_UnlockMutex(is->pictq_mutex);
         }
 
-        if (ret)
-            is->frame_last_returned_time = av_gettime() / 1000000.0;
-
         return ret;
     }
     return 0;
@@ -1648,6 +1645,7 @@ static int video_thread(void *arg)
     AVFilterContext *filt_out = NULL, *filt_in = NULL;
     int last_w = is->video_st->codec->width;
     int last_h = is->video_st->codec->height;
+    enum PixelFormat last_format = is->video_st->codec->pix_fmt;
 
     if ((ret = configure_video_filters(graph, is, vfilters)) < 0) {
         SDL_Event event;
@@ -1672,30 +1670,33 @@ static int video_thread(void *arg)
         ret = get_video_frame(is, frame, &pts_int, &pkt);
         if (ret < 0)
             goto the_end;
-        av_free_packet(&pkt);
 
-        if (!ret)
+        if (!ret) {
+            av_free_packet(&pkt);
             continue;
-
-        is->frame_last_filter_delay = av_gettime() / 1000000.0 - is->frame_last_returned_time;
-        if (fabs(is->frame_last_filter_delay) > AV_NOSYNC_THRESHOLD / 10.0)
-            is->frame_last_filter_delay = 0;
+        }
 
 #if CONFIG_AVFILTER
         if (   last_w != is->video_st->codec->width
-            || last_h != is->video_st->codec->height) {
+            || last_h != is->video_st->codec->height
+            || last_format != is->video_st->codec->pix_fmt) {
             av_log(NULL, AV_LOG_INFO, "Frame changed from size:%dx%d to size:%dx%d\n",
                    last_w, last_h, is->video_st->codec->width, is->video_st->codec->height);
             avfilter_graph_free(&graph);
             graph = avfilter_graph_alloc();
-            if ((ret = configure_video_filters(graph, is, vfilters)) < 0)
+            if ((ret = configure_video_filters(graph, is, vfilters)) < 0) {
+                av_free_packet(&pkt);
                 goto the_end;
+            }
+            filt_in  = is->in_video_filter;
             filt_out = is->out_video_filter;
             last_w = is->video_st->codec->width;
             last_h = is->video_st->codec->height;
+            last_format = is->video_st->codec->pix_fmt;
         }
 
         frame->pts = pts_int;
+        frame->sample_aspect_ratio = av_guess_sample_aspect_ratio(is->ic, is->video_st, frame);
         if (is->use_dr1) {
             FrameBuffer      *buf = frame->opaque;
             AVFilterBufferRef *fb = avfilter_get_video_buffer_ref_from_arrays(
@@ -1714,12 +1715,20 @@ static int video_thread(void *arg)
         } else
             av_buffersrc_write_frame(filt_in, frame);
 
+        av_free_packet(&pkt);
+
         while (ret >= 0) {
+            is->frame_last_returned_time = av_gettime() / 1000000.0;
+
             ret = av_buffersink_get_buffer_ref(filt_out, &picref, 0);
             if (ret < 0) {
                 ret = 0;
                 break;
             }
+
+            is->frame_last_filter_delay = av_gettime() / 1000000.0 - is->frame_last_returned_time;
+            if (fabs(is->frame_last_filter_delay) > AV_NOSYNC_THRESHOLD / 10.0)
+                is->frame_last_filter_delay = 0;
 
             avfilter_fill_frame_from_video_buffer_ref(frame, picref);
 
@@ -2300,7 +2309,9 @@ static void stream_component_close(VideoState *is, int stream_index)
 
     ic->streams[stream_index]->discard = AVDISCARD_ALL;
     avcodec_close(avctx);
+#if CONFIG_AVFILTER
     free_buffer_pool(&is->buffer_pool);
+#endif
     switch (avctx->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
         is->audio_st = NULL;
@@ -3060,6 +3071,7 @@ int main(int argc, char **argv)
 {
     int flags;
     VideoState *is;
+    char dummy_videodriver[] = "SDL_VIDEODRIVER=dummy";
 
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
     parse_loglevel(argc, argv, options);
@@ -3097,6 +3109,8 @@ int main(int argc, char **argv)
     flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER;
     if (audio_disable)
         flags &= ~SDL_INIT_AUDIO;
+    if (display_disable)
+        SDL_putenv(dummy_videodriver); /* For the event queue, we always need a video driver. */
 #if !defined(__MINGW32__) && !defined(__APPLE__)
     flags |= SDL_INIT_EVENTTHREAD; /* Not supported on Windows or Mac OS X */
 #endif
