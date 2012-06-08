@@ -18,7 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "asm.S"
+#include "libavutil/arm/asm.S"
 
 .macro rac_get_prob     h, bs, buf, cw, pr, t0, t1
         adds            \bs, \bs, \t0

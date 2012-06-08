@@ -41,8 +41,8 @@
 #if HAVE_ALTIVEC_H
 #include <altivec.h>
 #endif
+#include "libavutil/ppc/types_altivec.h"
 #include "libavcodec/dsputil.h"
-#include "types_altivec.h"
 #include "dsputil_altivec.h"
 
 #define IDCT_HALF                                       \

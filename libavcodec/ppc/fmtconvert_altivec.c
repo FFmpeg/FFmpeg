@@ -20,8 +20,8 @@
 
 #include "libavcodec/fmtconvert.h"
 
+#include "libavutil/ppc/util_altivec.h"
 #include "dsputil_altivec.h"
-#include "util_altivec.h"
 
 static void int32_to_float_fmul_scalar_altivec(float *dst, const int *src, float mul, int len)
 {

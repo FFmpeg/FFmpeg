@@ -21,10 +21,10 @@
  */
 
 #include "libavutil/cpu.h"
+#include "libavutil/ppc/types_altivec.h"
+#include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/vp8dsp.h"
 #include "dsputil_altivec.h"
-#include "types_altivec.h"
-#include "util_altivec.h"
 
 #define REPT4(...) { __VA_ARGS__, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__ }
 

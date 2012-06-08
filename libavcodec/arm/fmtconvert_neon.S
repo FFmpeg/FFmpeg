@@ -20,7 +20,7 @@
  */
 
 #include "config.h"
-#include "asm.S"
+#include "libavutil/arm/asm.S"
 
         preserve8
 

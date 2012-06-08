@@ -21,7 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "asm.S"
+#include "libavutil/arm/asm.S"
 
 #define W1  22725   /* cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5 */
 #define W2  21407   /* cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5 */

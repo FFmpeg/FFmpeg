@@ -2581,11 +2581,6 @@ int  ff_add_hfyu_left_prediction_sse4(uint8_t *dst, const uint8_t *src,
 
 float ff_scalarproduct_float_sse(const float *v1, const float *v2, int order);
 
-void ff_vector_fmul_sse(float *dst, const float *src0, const float *src1,
-                        int len);
-void ff_vector_fmul_avx(float *dst, const float *src0, const float *src1,
-                        int len);
-
 void ff_vector_fmul_reverse_sse(float *dst, const float *src0,
                                 const float *src1, int len);
 void ff_vector_fmul_reverse_avx(float *dst, const float *src0,
@@ -2915,7 +2910,6 @@ static void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx, int mm_flags)
     c->vorbis_inverse_coupling = vorbis_inverse_coupling_sse;
     c->ac3_downmix             = ac3_downmix_sse;
 #if HAVE_YASM
-    c->vector_fmul         = ff_vector_fmul_sse;
     c->vector_fmul_reverse = ff_vector_fmul_reverse_sse;
     c->vector_fmul_add     = ff_vector_fmul_add_sse;
 #endif
@@ -3077,7 +3071,6 @@ static void dsputil_init_avx(DSPContext *c, AVCodecContext *avctx, int mm_flags)
         }
     }
     c->butterflies_float_interleave = ff_butterflies_float_interleave_avx;
-    c->vector_fmul = ff_vector_fmul_avx;
     c->vector_fmul_reverse = ff_vector_fmul_reverse_avx;
     c->vector_fmul_add = ff_vector_fmul_add_avx;
 #endif

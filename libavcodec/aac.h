@@ -30,6 +30,7 @@
 #ifndef AVCODEC_AAC_H
 #define AVCODEC_AAC_H
 
+#include "libavutil/float_dsp.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "fft.h"
@@ -292,6 +293,7 @@ typedef struct {
     FFTContext mdct_ltp;
     DSPContext dsp;
     FmtConvertContext fmt_conv;
+    AVFloatDSPContext fdsp;
     int random_state;
     /** @} */
 

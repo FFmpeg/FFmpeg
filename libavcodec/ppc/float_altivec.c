@@ -18,25 +18,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/dsputil.h"
 
 #include "dsputil_altivec.h"
-#include "util_altivec.h"
-
-static void vector_fmul_altivec(float *dst, const float *src0, const float *src1, int len)
-{
-    int i;
-    vector float d0, d1, s, zero = (vector float)vec_splat_u32(0);
-    for(i=0; i<len-7; i+=8) {
-        d0 = vec_ld(0, src0+i);
-        s = vec_ld(0, src1+i);
-        d1 = vec_ld(16, src0+i);
-        d0 = vec_madd(d0, s, zero);
-        d1 = vec_madd(d1, vec_ld(16,src1+i), zero);
-        vec_st(d0, 0, dst+i);
-        vec_st(d1, 16, dst+i);
-    }
-}
 
 static void vector_fmul_reverse_altivec(float *dst, const float *src0,
                                         const float *src1, int len)
@@ -124,7 +109,6 @@ static void vector_fmul_window_altivec(float *dst, const float *src0, const floa
 
 void ff_float_init_altivec(DSPContext* c, AVCodecContext *avctx)
 {
-    c->vector_fmul = vector_fmul_altivec;
     c->vector_fmul_reverse = vector_fmul_reverse_altivec;
     c->vector_fmul_add = vector_fmul_add_altivec;
     if(!(avctx->flags & CODEC_FLAG_BITEXACT)) {

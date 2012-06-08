@@ -561,7 +561,7 @@ static av_always_inline int vc1_mspel_filter(const uint8_t *src, int stride, int
 /** Function used to do motion compensation with bicubic interpolation
  */
 #define VC1_MSPEL_MC(OP, OPNAME)\
-static void OPNAME ## vc1_mspel_mc(uint8_t *dst, const uint8_t *src, int stride, int hmode, int vmode, int rnd)\
+static av_always_inline void OPNAME ## vc1_mspel_mc(uint8_t *dst, const uint8_t *src, int stride, int hmode, int vmode, int rnd)\
 {\
     int     i, j;\
 \

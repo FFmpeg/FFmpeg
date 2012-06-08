@@ -19,9 +19,10 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include "libavutil/ppc/types_altivec.h"
+#include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/fft.h"
-#include "util_altivec.h"
-#include "types_altivec.h"
 
 /**
  * Do a complex FFT with the parameters defined in ff_fft_init(). The

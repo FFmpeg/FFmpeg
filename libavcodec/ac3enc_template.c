@@ -33,7 +33,7 @@
 
 static void scale_coefficients(AC3EncodeContext *s);
 
-static void apply_window(DSPContext *dsp, SampleType *output,
+static void apply_window(void *dsp, SampleType *output,
                          const SampleType *input, const SampleType *window,
                          unsigned int len);
 
@@ -110,8 +110,13 @@ static void apply_mdct(AC3EncodeContext *s)
             AC3Block *block = &s->blocks[blk];
             const SampleType *input_samples = &s->planar_samples[ch][blk * AC3_BLOCK_SIZE];
 
+#if CONFIG_AC3ENC_FLOAT
+            apply_window(&s->fdsp, s->windowed_samples, input_samples,
+                         s->mdct_window, AC3_WINDOW_SIZE);
+#else
             apply_window(&s->dsp, s->windowed_samples, input_samples,
                          s->mdct_window, AC3_WINDOW_SIZE);
+#endif
 
             if (s->fixed_point)
                 block->coeff_shift[ch+1] = normalize_samples(s);

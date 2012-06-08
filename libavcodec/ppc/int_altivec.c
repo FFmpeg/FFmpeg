@@ -28,11 +28,10 @@
 #include <altivec.h>
 #endif
 
+#include "libavutil/ppc/types_altivec.h"
 #include "libavcodec/dsputil.h"
 
 #include "dsputil_altivec.h"
-
-#include "types_altivec.h"
 
 static int ssd_int8_vs_int16_altivec(const int8_t *pix1, const int16_t *pix2,
                                      int size) {

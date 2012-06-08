@@ -19,7 +19,7 @@
  */
 
 #include "config.h"
-#include "asm.S"
+#include "libavutil/arm/asm.S"
 
 /**
  * ARM VFP optimized float to int16 conversion.

@@ -86,10 +86,12 @@ av_cold int ff_ac3_float_mdct_init(AC3EncodeContext *s)
 /*
  * Apply KBD window to input samples prior to MDCT.
  */
-static void apply_window(DSPContext *dsp, float *output, const float *input,
-                         const float *window, unsigned int len)
+static void apply_window(void *dsp, float *output,
+                         const float *input, const float *window,
+                         unsigned int len)
 {
-    dsp->vector_fmul(output, input, window, len);
+    AVFloatDSPContext *fdsp = dsp;
+    fdsp->vector_fmul(output, input, window, len);
 }
 
 

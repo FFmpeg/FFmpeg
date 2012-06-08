@@ -1130,38 +1130,6 @@ VECTOR_CLIP_INT32 6, 1, 0, 0
 %endif
 
 ;-----------------------------------------------------------------------------
-; void vector_fmul(float *dst, const float *src0, const float *src1, int len)
-;-----------------------------------------------------------------------------
-%macro VECTOR_FMUL 0
-cglobal vector_fmul, 4,4,2, dst, src0, src1, len
-    lea       lenq, [lend*4 - 2*mmsize]
-ALIGN 16
-.loop
-    mova      m0,   [src0q + lenq]
-    mova      m1,   [src0q + lenq + mmsize]
-    mulps     m0, m0, [src1q + lenq]
-    mulps     m1, m1, [src1q + lenq + mmsize]
-    mova      [dstq + lenq], m0
-    mova      [dstq + lenq + mmsize], m1
-
-    sub       lenq, 2*mmsize
-    jge       .loop
-%if mmsize == 32
-    vzeroupper
-    RET
-%else
-    REP_RET
-%endif
-%endmacro
-
-INIT_XMM sse
-VECTOR_FMUL
-%if HAVE_AVX
-INIT_YMM avx
-VECTOR_FMUL
-%endif
-
-;-----------------------------------------------------------------------------
 ; void vector_fmul_reverse(float *dst, const float *src0, const float *src1,
 ;                          int len)
 ;-----------------------------------------------------------------------------

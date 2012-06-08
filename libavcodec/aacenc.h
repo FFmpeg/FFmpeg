@@ -22,6 +22,7 @@
 #ifndef AVCODEC_AACENC_H
 #define AVCODEC_AACENC_H
 
+#include "libavutil/float_dsp.h"
 #include "avcodec.h"
 #include "put_bits.h"
 #include "dsputil.h"
@@ -61,6 +62,7 @@ typedef struct AACEncContext {
     FFTContext mdct1024;                         ///< long (1024 samples) frame transform context
     FFTContext mdct128;                          ///< short (128 samples) frame transform context
     DSPContext  dsp;
+    AVFloatDSPContext fdsp;
     float *planar_samples[6];                    ///< saved preprocessed input
 
     int samplerate_index;                        ///< MPEG-4 samplerate index

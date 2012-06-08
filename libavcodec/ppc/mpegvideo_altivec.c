@@ -23,12 +23,13 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+
 #include "libavutil/cpu.h"
+#include "libavutil/ppc/types_altivec.h"
+#include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/mpegvideo.h"
 
-#include "util_altivec.h"
-#include "types_altivec.h"
 #include "dsputil_altivec.h"
 
 /* AltiVec version of dct_unquantize_h263
