@@ -70,6 +70,7 @@ typedef struct RTMPContext {
     char          *playpath;                  ///< stream identifier to play (with possible "mp4:" prefix)
     int           live;                       ///< 0: recorded, -1: live, -2: both
     char          *app;                       ///< name of application
+    char          *conn;                      ///< append arbitrary AMF data to the Connect message
     ClientState   state;                      ///< current state
     int           main_channel_id;            ///< an additional channel ID which is used for some invocations
     uint8_t*      flv_data;                   ///< buffer with data for demuxer
@@ -111,6 +112,65 @@ static const uint8_t rtmp_server_key[] = {
     0x9E, 0x7E, 0x57, 0x6E, 0xEC, 0x5D, 0x2D, 0x29, 0x80, 0x6F, 0xAB, 0x93, 0xB8,
     0xE6, 0x36, 0xCF, 0xEB, 0x31, 0xAE
 };
+
+static int rtmp_write_amf_data(URLContext *s, char *param, uint8_t **p)
+{
+    char *field, *value, *saveptr;
+    char type;
+
+    /* The type must be B for Boolean, N for number, S for string, O for
+     * object, or Z for null. For Booleans the data must be either 0 or 1 for
+     * FALSE or TRUE, respectively. Likewise for Objects the data must be
+     * 0 or 1 to end or begin an object, respectively. Data items in subobjects
+     * may be named, by prefixing the type with 'N' and specifying the name
+     * before the value (ie. NB:myFlag:1). This option may be used multiple times
+     * to construct arbitrary AMF sequences. */
+    if (param[0] && param[1] == ':') {
+        type = param[0];
+        value = param + 2;
+    } else if (param[0] == 'N' && param[1] && param[2] == ':') {
+        type = param[1];
+        field = strtok_r(param + 3, ":", &saveptr);
+        value = strtok_r(NULL, ":", &saveptr);
+
+        if (!field || !value)
+            goto fail;
+
+        ff_amf_write_field_name(p, field);
+    } else {
+        goto fail;
+    }
+
+    switch (type) {
+    case 'B':
+        ff_amf_write_bool(p, value[0] != '0');
+        break;
+    case 'S':
+        ff_amf_write_string(p, value);
+        break;
+    case 'N':
+        ff_amf_write_number(p, strtod(value, NULL));
+        break;
+    case 'Z':
+        ff_amf_write_null(p);
+        break;
+    case 'O':
+        if (value[0] != '0')
+            ff_amf_write_object_start(p);
+        else
+            ff_amf_write_object_end(p);
+        break;
+    default:
+        goto fail;
+        break;
+    }
+
+    return 0;
+
+fail:
+    av_log(s, AV_LOG_ERROR, "Invalid AMF parameter: %s\n", param);
+    return AVERROR(EINVAL);
+}
 
 /**
  * Generate 'connect' call and send it to the server.
@@ -164,6 +224,22 @@ static int gen_connect(URLContext *s, RTMPContext *rt)
         ff_amf_write_number(&p, 1.0);
     }
     ff_amf_write_object_end(&p);
+
+    if (rt->conn) {
+        char *param, *saveptr;
+
+        // Write arbitrary AMF data to the Connect message.
+        param = strtok_r(rt->conn, " ", &saveptr);
+        while (param != NULL) {
+            if ((ret = rtmp_write_amf_data(s, param, &p)) < 0) {
+                // Invalid AMF parameter.
+                ff_rtmp_packet_destroy(&pkt);
+                return ret;
+            }
+
+            param = strtok_r(NULL, " ", &saveptr);
+        }
+    }
 
     pkt.data_size = p - pkt.data;
 
@@ -1248,6 +1324,7 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
 
 static const AVOption rtmp_options[] = {
     {"rtmp_app", "Name of application to connect to on the RTMP server", OFFSET(app), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+    {"rtmp_conn", "Append arbitrary AMF data to the Connect message", OFFSET(conn), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     {"rtmp_flashver", "Version of the Flash plugin used to run the SWF player.", OFFSET(flashver), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     {"rtmp_live", "Specify that the media is a live stream.", OFFSET(live), AV_OPT_TYPE_INT, {-2}, INT_MIN, INT_MAX, DEC, "rtmp_live"},
     {"any", "both", 0, AV_OPT_TYPE_CONST, {-2}, 0, 0, DEC, "rtmp_live"},
