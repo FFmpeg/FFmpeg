@@ -27,6 +27,7 @@
 #include <stdio.h>
 
 #include "libavutil/common.h"
+#include "libavutil/float_dsp.h"
 #include "libavutil/intmath.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
@@ -383,7 +384,7 @@ typedef struct {
     int profile;
 
     int debug_flag;             ///< used for suppressing repeated error messages output
-    DSPContext dsp;
+    AVFloatDSPContext fdsp;
     FFTContext imdct;
     SynthFilterContext synth;
     DCADSPContext dcadsp;
@@ -1865,8 +1866,8 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
             float *back_chan = s->samples + s->channel_order_tab[s->xch_base_channel]     * 256;
             float *lt_chan   = s->samples + s->channel_order_tab[s->xch_base_channel - 2] * 256;
             float *rt_chan   = s->samples + s->channel_order_tab[s->xch_base_channel - 1] * 256;
-            s->dsp.vector_fmac_scalar(lt_chan, back_chan, -M_SQRT1_2, 256);
-            s->dsp.vector_fmac_scalar(rt_chan, back_chan, -M_SQRT1_2, 256);
+            s->fdsp.vector_fmac_scalar(lt_chan, back_chan, -M_SQRT1_2, 256);
+            s->fdsp.vector_fmac_scalar(rt_chan, back_chan, -M_SQRT1_2, 256);
         }
 
         if (avctx->sample_fmt == AV_SAMPLE_FMT_FLT) {
@@ -1908,7 +1909,7 @@ static av_cold int dca_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
     dca_init_vlcs();
 
-    ff_dsputil_init(&s->dsp, avctx);
+    avpriv_float_dsp_init(&s->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
     ff_mdct_init(&s->imdct, 6, 1, 1.0);
     ff_synth_filter_init(&s->synth);
     ff_dcadsp_init(&s->dcadsp);
