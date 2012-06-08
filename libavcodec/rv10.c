@@ -443,7 +443,7 @@ av_log(s->avctx, AV_LOG_DEBUG, "\n");*/
                    seq, s->mb_x, s->mb_y, s->pict_type, s->qscale, s->no_rounding);
     }
 
-    assert(s->pict_type != AV_PICTURE_TYPE_B || !s->low_delay);
+    av_assert0(s->pict_type != AV_PICTURE_TYPE_B || !s->low_delay);
 
     return s->mb_width*s->mb_height - mb_pos;
 }
