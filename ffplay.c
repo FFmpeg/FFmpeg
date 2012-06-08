@@ -1668,6 +1668,7 @@ static int video_thread(void *arg)
         while (is->paused && !is->videoq.abort_request)
             SDL_Delay(10);
 
+        avcodec_get_frame_defaults(frame);
         ret = get_video_frame(is, frame, &pts_int, &pkt);
         if (ret < 0)
             goto the_end;
