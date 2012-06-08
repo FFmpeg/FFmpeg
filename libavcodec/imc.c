@@ -114,6 +114,62 @@ static const int vlc_offsets[17] = {
 
 static VLC_TYPE vlc_tables[VLC_TABLES_SIZE][2];
 
+static inline double freq2bark(double freq)
+{
+    return 3.5 * atan((freq / 7500.0) * (freq / 7500.0)) + 13.0 * atan(freq * 0.00076);
+}
+
+static av_cold void iac_generate_tabs(IMCContext *q, int sampling_rate)
+{
+    double freqmin[32], freqmid[32], freqmax[32];
+    double scale = sampling_rate / (256.0 * 2.0 * 2.0);
+    double nyquist_freq = sampling_rate * 0.5;
+    double freq, bark, prev_bark = 0, tf, tb;
+    int i, j;
+
+    for (i = 0; i < 32; i++) {
+        freq = (band_tab[i] + band_tab[i + 1] - 1) * scale;
+        bark = freq2bark(freq);
+
+        if (i > 0) {
+            tb = bark - prev_bark;
+            q->weights1[i - 1] = pow(10.0, -1.0 * tb);
+            q->weights2[i - 1] = pow(10.0, -2.7 * tb);
+        }
+        prev_bark = bark;
+
+        freqmid[i] = freq;
+
+        tf = freq;
+        while (tf < nyquist_freq) {
+            tf += 0.5;
+            tb =  freq2bark(tf);
+            if (tb > bark + 0.5)
+                break;
+        }
+        freqmax[i] = tf;
+
+        tf = freq;
+        while (tf > 0.0) {
+            tf -= 0.5;
+            tb =  freq2bark(tf);
+            if (tb <= bark - 0.5)
+                break;
+        }
+        freqmin[i] = tf;
+    }
+
+    for (i = 0; i < 32; i++) {
+        freq = freqmax[i];
+        for (j = 31; j > 0 && freq <= freqmid[j]; j--);
+        q->cyclTab[i] = j + 1;
+
+        freq = freqmin[i];
+        for (j = 0; j < 32 && freq >= freqmid[j]; j++);
+        q->cyclTab2[i] = j - 1;
+    }
+}
+
 static av_cold int imc_decode_init(AVCodecContext *avctx)
 {
     int i, j, ret;
@@ -173,14 +229,14 @@ static av_cold int imc_decode_init(AVCodecContext *avctx)
     }
     q->one_div_log2 = 1 / log(2);
 
-    memcpy(q->cyclTab,  cyclTab,  sizeof(cyclTab));
-    memcpy(q->cyclTab2, cyclTab2, sizeof(cyclTab2));
     if (avctx->codec_id == CODEC_ID_IAC) {
-        q->cyclTab[29]  = 31;
-        q->cyclTab2[31] = 28;
-        memcpy(q->weights1, iac_weights1, sizeof(iac_weights1));
-        memcpy(q->weights2, iac_weights2, sizeof(iac_weights2));
+    }
+
+    if (avctx->codec_id == CODEC_ID_IAC) {
+        iac_generate_tabs(q, avctx->sample_rate);
     } else {
+        memcpy(q->cyclTab,  cyclTab,  sizeof(cyclTab));
+        memcpy(q->cyclTab2, cyclTab2, sizeof(cyclTab2));
         memcpy(q->weights1, imc_weights1, sizeof(imc_weights1));
         memcpy(q->weights2, imc_weights2, sizeof(imc_weights2));
     }
