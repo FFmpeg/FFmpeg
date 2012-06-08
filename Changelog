@@ -2,6 +2,23 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 
+version 0.5.9:
+- dpcm: ignore extra unpaired bytes in stereo streams (CVE-2011-3951)
+- h264: Add check for invalid chroma_format_idc (CVE-2012-0851)
+- adpcm: ADPCM Electronic Arts has always two channels (CVE-2012-0852)
+- kmvc: Check palsize (CVE-2011-3952)
+- qdm2: clip array indices returned by qdm2_get_vlc()
+- configure: properly check for mingw-w64 through installed headers
+- Replace every usage of -lvfw32 with what is particularly necessary for that case
+- mingw32: properly check if vfw capture is supported by the system headers
+- mingw32: merge checks for mingw-w64 and mingw32-runtime >= 3.15 into one
+- vfwcap: Include windows.h before vfw.h since the latter requires defines from the former
+- ea: check chunk_size for validity
+- eatqi: move "block" variable into context to ensure sufficient alignment for idct_put
+- tqi: Pass errors from the MB decoder
+- png: check bit depth for PAL8/Y400A pixel formats.
+
+
 version 0.5.8:
 
 - id3v2: fix skipping extended header in id3v2.4
