@@ -307,6 +307,7 @@ int swri_rematrix_init(SwrContext *s){
         *((int*)s->native_one) = 32768;
         s->mix_1_1_f = copy_s16;
         s->mix_2_1_f = sum2_s16;
+        s->mix_any_f = get_mix_any_func_s16(s);
     }else if(s->midbuf.fmt == AV_SAMPLE_FMT_FLTP){
         s->native_matrix = av_mallocz(nb_in * nb_out * sizeof(float));
         s->native_one    = av_mallocz(sizeof(float));
@@ -316,6 +317,7 @@ int swri_rematrix_init(SwrContext *s){
         *((float*)s->native_one) = 1.0;
         s->mix_1_1_f = copy_float;
         s->mix_2_1_f = sum2_float;
+        s->mix_any_f = get_mix_any_func_float(s);
     }else if(s->midbuf.fmt == AV_SAMPLE_FMT_DBLP){
         s->native_matrix = av_mallocz(nb_in * nb_out * sizeof(double));
         s->native_one    = av_mallocz(sizeof(double));
@@ -325,6 +327,7 @@ int swri_rematrix_init(SwrContext *s){
         *((double*)s->native_one) = 1.0;
         s->mix_1_1_f = copy_double;
         s->mix_2_1_f = sum2_double;
+        s->mix_any_f = get_mix_any_func_double(s);
     }else
         av_assert0(0);
     //FIXME quantize for integeres
