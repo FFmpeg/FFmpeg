@@ -83,6 +83,7 @@ typedef struct MpegTSWrite {
 #define MPEGTS_FLAG_REEMIT_PAT_PMT  0x01
 #define MPEGTS_FLAG_AAC_LATM        0x02
     int flags;
+    int copyts;
 } MpegTSWrite;
 
 /* a PES packet header is generated every DEFAULT_PES_HEADER_FREQ packets */
@@ -117,6 +118,8 @@ static const AVOption options[] = {
     // backward compatibility
     { "resend_headers", "Reemit PAT/PMT before writing the next packet",
       offsetof(MpegTSWrite, reemit_pat_pmt), AV_OPT_TYPE_INT, {0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
+    { "mpegts_copyts", "dont offset dts/pts",
+      offsetof(MpegTSWrite, copyts), AV_OPT_TYPE_INT, {.dbl=-1}, -1, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
 };
 
@@ -636,7 +639,8 @@ static int mpegts_write_header(AVFormatContext *s)
         ts->pat_packet_period      = (ts->mux_rate * PAT_RETRANS_TIME) /
             (TS_PACKET_SIZE * 8 * 1000);
 
-        ts->first_pcr = av_rescale(s->max_delay, PCR_TIME_BASE, AV_TIME_BASE);
+        if(ts->copyts < 1)
+            ts->first_pcr = av_rescale(s->max_delay, PCR_TIME_BASE, AV_TIME_BASE);
     } else {
         /* Arbitrary values, PAT/PMT will also be written on video key frames */
         ts->sdt_packet_period = 200;
@@ -1027,7 +1031,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     MpegTSWrite *ts = s->priv_data;
     MpegTSWriteStream *ts_st = st->priv_data;
     const int64_t delay = av_rescale(s->max_delay, 90000, AV_TIME_BASE)*2;
-    int64_t dts = AV_NOPTS_VALUE, pts = AV_NOPTS_VALUE;
+    int64_t dts = pkt->dts, pts = pkt->pts;
 
     if (ts->reemit_pat_pmt) {
         av_log(s, AV_LOG_WARNING, "resend_headers option is deprecated, use -mpegts_flags resend_headers\n");
@@ -1041,10 +1045,12 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         ts->flags &= ~MPEGTS_FLAG_REEMIT_PAT_PMT;
     }
 
-    if (pkt->pts != AV_NOPTS_VALUE)
-        pts = pkt->pts + delay;
-    if (pkt->dts != AV_NOPTS_VALUE)
-        dts = pkt->dts + delay;
+    if(ts->copyts < 1){
+        if (pts != AV_NOPTS_VALUE)
+            pts += delay;
+        if (dts != AV_NOPTS_VALUE)
+            dts += delay;
+    }
 
     if (ts_st->first_pts_check && pts == AV_NOPTS_VALUE) {
         av_log(s, AV_LOG_ERROR, "first pts value must set\n");
