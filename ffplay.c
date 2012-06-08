@@ -1504,7 +1504,8 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
         return 0;
     }
 
-    avcodec_decode_video2(is->video_st->codec, frame, &got_picture, pkt);
+    if(avcodec_decode_video2(is->video_st->codec, frame, &got_picture, pkt) < 0)
+        return -1;
 
     if (got_picture) {
         int ret = 1;
