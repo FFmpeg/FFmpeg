@@ -19,6 +19,7 @@
  */
 
 #include "util_altivec.h"
+#include "float_dsp_altivec.h"
 
 void ff_vector_fmul_altivec(float *dst, const float *src0, const float *src1,
                             int len)

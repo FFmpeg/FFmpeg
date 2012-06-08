@@ -18,19 +18,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "config.h"
-#include "libavutil/cpu.h"
-#include "libavutil/float_dsp.h"
-#include "float_dsp_altivec.h"
+#ifndef AVUTIL_PPC_FLOAT_DSP_ALTIVEC_H
+#define AVUTIL_PPC_FLOAT_DSP_ALTIVEC_H
 
-void ff_float_dsp_init_ppc(AVFloatDSPContext *fdsp, int bit_exact)
-{
-#if HAVE_ALTIVEC
-    int mm_flags = av_get_cpu_flags();
+extern void ff_vector_fmul_altivec(float *dst, const float *src0,
+                                   const float *src1, int len);
 
-    if (!(mm_flags & AV_CPU_FLAG_ALTIVEC))
-        return;
-
-    fdsp->vector_fmul = ff_vector_fmul_altivec;
-#endif
-}
+#endif /* AVUTIL_PPC_FLOAT_DSP_ALTIVEC_H */
