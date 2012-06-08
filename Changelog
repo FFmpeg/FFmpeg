@@ -1,6 +1,41 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 0.6.6:
+- id3v2: fix skipping extended header in id3v2.4
+- nsvdec: Fix use of uninitialized streams
+- nsvdec: Be more careful with av_malloc()
+- nsvdec: Propagate errors
+- dv: check stype
+- dv: Fix null pointer dereference due to ach=0
+- dv: Fix small stack overread related to CVE-2011-3929 and CVE-2011-3936.
+- atrac3: Fix crash in tonal component decoding
+- mjpegbdec: Fix overflow in SOS
+- kgv1dec: Increase offsets array size so it is large enough
+- motionpixels: decode only the 111 complete frames for fate
+- motionpixels: Clip YUV values after applying a gradient
+- celp filters: Do not read earlier than the start of the 'out' vector
+- vqavideo: return error if image size is not a multiple of block size (CVE-2012-0947)
+- dpcm: ignore extra unpaired bytes in stereo streams (CVE-2011-3951)
+- aacsbr: prevent out of bounds memcpy() (CVE-2012-0850)
+- h264: Add check for invalid chroma_format_idc (CVE-2012-0851)
+- adpcm: ADPCM Electronic Arts has always two channels (CVE-2012-0852)
+- shorten: remove VLA and check for buffer overflow
+- shorten: Prevent block size from increasing
+- shorten: Fix out of bound writes in fix_bitshift()
+- shorten: check for realloc failure (CVE-2012-0858)
+- shorten: Use separate pointers for the allocated memory for decoded samples (CVE-2012-0858)
+- kmvc: Check palsize (CVE-2011-3952)
+- qdm2: clip array indices returned by qdm2_get_vlc()
+- configure: properly check for mingw-w64 through installed headers
+- mingw32: properly check if vfw capture is supported by the system headers
+- mingw32: merge checks for mingw-w64 and mingw32-runtime >= 3.15 into one
+- dxva2: define required feature selection macros
+- png: check bit depth for PAL8/Y400A pixel formats
+- ea: check chunk_size for validity
+- tqi: Pass errors from the MB decoder
+
+
 version 0.6.5:
 - vorbis: An additional defense in the Vorbis codec. (CVE-2011-3895)
 - vorbisdec: Fix decoding bug with channel handling.
