@@ -1746,6 +1746,7 @@ duplicate_frame:
         pkt.flags |= AV_PKT_FLAG_KEY;
 
         write_frame(s, &pkt, ost);
+        video_size += pkt.size;
     } else {
         int got_packet;
         AVFrame big_picture;
