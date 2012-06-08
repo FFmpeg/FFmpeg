@@ -291,6 +291,8 @@ int swri_rematrix_init(SwrContext *s){
     int nb_in  = av_get_channel_layout_nb_channels(s->in_ch_layout);
     int nb_out = av_get_channel_layout_nb_channels(s->out_ch_layout);
 
+    s->mix_any_f = NULL;
+
     if (!s->rematrix_custom) {
         int r = auto_matrix(s);
         if (r)
@@ -345,6 +347,11 @@ void swri_rematrix_free(SwrContext *s){
 
 int swri_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int mustcopy){
     int out_i, in_i, i, j;
+
+    if(s->mix_any_f) {
+        s->mix_any_f(out->ch, in->ch, s->native_matrix, len);
+        return 0;
+    }
 
     av_assert0(out->ch_count == av_get_channel_layout_nb_channels(s->out_ch_layout));
     av_assert0(in ->ch_count == av_get_channel_layout_nb_channels(s-> in_ch_layout));

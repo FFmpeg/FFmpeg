@@ -26,6 +26,8 @@
 typedef void (mix_1_1_func_type)(void *out, const void *in, void *coeffp, int index, int len);
 typedef void (mix_2_1_func_type)(void *out, const void *in1, const void *in2, void *coeffp, int index1, int index2, int len);
 
+typedef void (mix_any_func_type)(void **out, const void **in1, void *coeffp, int len);
+
 typedef struct AudioData{
     uint8_t *ch[SWR_CH_MAX];    ///< samples buffer per channel
     uint8_t *data;              ///< samples buffer
@@ -97,6 +99,8 @@ struct SwrContext {
     uint8_t matrix_ch[SWR_CH_MAX][SWR_CH_MAX+1];    ///< Lists of input channels per output channel that have non zero rematrixing coefficients
     mix_1_1_func_type *mix_1_1_f;
     mix_2_1_func_type *mix_2_1_f;
+
+    mix_any_func_type *mix_any_f;
 
     /* TODO: callbacks for ASM optimizations */
 };
