@@ -26,7 +26,7 @@
 
 void ff_vector_fmul_neon(float *dst, const float *src0, const float *src1, int len);
 
-void ff_dsputil_init_neon(AVFloatDSPContext *fdsp)
+void ff_float_dsp_init_neon(AVFloatDSPContext *fdsp)
 {
-    c->vector_fmul = ff_vector_fmul_neon;
+    fdsp->vector_fmul = ff_vector_fmul_neon;
 }
