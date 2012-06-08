@@ -211,7 +211,7 @@ int main(void)
 
     av_bprint_init(&b, 0, 1);
     bprint_pascal(&b, 25);
-    printf("Long text in automatic buffer: %zu/%u\n", strlen(b.str), b.len);
+    printf("Long text in automatic buffer: %zu/%u\n", strlen(b.str)/8*8, b.len);
     /* Note that the size of the automatic buffer is arch-dependant. */
 
     av_bprint_init(&b, 0, 0);
