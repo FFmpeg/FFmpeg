@@ -23,11 +23,11 @@
 #ifndef AVCODEC_SINEWIN_TABLEGEN_H
 #define AVCODEC_SINEWIN_TABLEGEN_H
 
+#include <assert.h>
 // do not use libavutil/libm.h since this is compiled both
 // for the host and the target and config.h is only valid for the target
 #include <math.h>
 #include "libavutil/attributes.h"
-#include "libavutil/avassert.h"
 
 #if !CONFIG_HARDCODED_TABLES
 SINETABLE(  32);
@@ -57,7 +57,7 @@ av_cold void ff_sine_window_init(float *window, int n) {
 }
 
 av_cold void ff_init_ff_sine_windows(int index) {
-    av_assert0(index >= 0 && index < FF_ARRAY_ELEMS(ff_sine_windows));
+    assert(index >= 0 && index < FF_ARRAY_ELEMS(ff_sine_windows));
 #if !CONFIG_HARDCODED_TABLES
     ff_sine_window_init(ff_sine_windows[index], 1 << index);
 #endif
