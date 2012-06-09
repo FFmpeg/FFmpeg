@@ -320,7 +320,8 @@ int ff_audio_mix_init(AVAudioResampleContext *avr)
                                       avr->center_mix_level,
                                       avr->surround_mix_level,
                                       avr->lfe_mix_level, 1, matrix_dbl,
-                                      avr->in_channels);
+                                      avr->in_channels,
+                                      avr->matrix_encoding);
         if (ret < 0) {
             av_free(matrix_dbl);
             return ret;

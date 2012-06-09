@@ -70,6 +70,7 @@ struct AVAudioResampleContext {
     AudioConvert *ac_out;       /**< output sample format conversion context */
     ResampleContext *resample;  /**< resampling context                      */
     AudioMix *am;               /**< channel mixing context                  */
+    enum AVMatrixEncoding matrix_encoding;      /**< matrixed stereo encoding */
 };
 
 #endif /* AVRESAMPLE_INTERNAL_H */
