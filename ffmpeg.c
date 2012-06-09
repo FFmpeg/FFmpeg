@@ -995,6 +995,8 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     sar = ist->st->sample_aspect_ratio.num ?
           ist->st->sample_aspect_ratio :
           ist->st->codec->sample_aspect_ratio;
+    if(!sar.den)
+        sar = (AVRational){0,1};
     av_bprint_init(&args, 0, 1);
     av_bprintf(&args,
              "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:"
