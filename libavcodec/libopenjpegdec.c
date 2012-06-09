@@ -92,19 +92,19 @@ static inline enum PixelFormat libopenjpeg_guess_pix_fmt(const opj_image_t *imag
     switch (image->color_space) {
     case CLRSPC_SRGB:
         possible_fmts = libopenjpeg_rgb_pix_fmts;
-        possible_fmts_nb = sizeof(libopenjpeg_rgb_pix_fmts) / sizeof(enum PixelFormat);
+        possible_fmts_nb = FF_ARRAY_ELEMS(libopenjpeg_rgb_pix_fmts);
         break;
     case CLRSPC_GRAY:
         possible_fmts = libopenjpeg_gray_pix_fmts;
-        possible_fmts_nb = sizeof(libopenjpeg_gray_pix_fmts) / sizeof(enum PixelFormat);
+        possible_fmts_nb = FF_ARRAY_ELEMS(libopenjpeg_gray_pix_fmts);
         break;
     case CLRSPC_SYCC:
         possible_fmts = libopenjpeg_yuv_pix_fmts;
-        possible_fmts_nb = sizeof(libopenjpeg_yuv_pix_fmts) / sizeof(enum PixelFormat);
+        possible_fmts_nb = FF_ARRAY_ELEMS(libopenjpeg_yuv_pix_fmts);
         break;
     default:
         possible_fmts = libopenjpeg_all_pix_fmts;
-        possible_fmts_nb = sizeof(libopenjpeg_all_pix_fmts) / sizeof(enum PixelFormat);
+        possible_fmts_nb = FF_ARRAY_ELEMS(libopenjpeg_all_pix_fmts);
         break;
     }
 
