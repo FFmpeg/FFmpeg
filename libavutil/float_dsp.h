@@ -42,12 +42,12 @@ typedef struct AVFloatDSPContext {
      * overlap exactly or not at all.
      *
      * @param dst result vector
-     *            constraints: 16-byte aligned
+     *            constraints: 32-byte aligned
      * @param src input vector
-     *            constraints: 16-byte aligned
+     *            constraints: 32-byte aligned
      * @param mul scalar value
      * @param len length of vector
-     *            constraints: multiple of 4
+     *            constraints: multiple of 16
      */
     void (*vector_fmac_scalar)(float *dst, const float *src, float mul,
                                int len);
