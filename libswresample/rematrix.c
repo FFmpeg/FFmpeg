@@ -126,6 +126,7 @@ static int auto_matrix(SwrContext *s)
     int64_t unaccounted= s->in_ch_layout & ~s->out_ch_layout;
     double maxcoef=0;
     char buf[128];
+    const int matrix_encoding = s->matrix_encoding;
 
     memset(s->matrix, 0, sizeof(s->matrix));
     for(i=0; i<64; i++){
@@ -178,8 +179,19 @@ static int auto_matrix(SwrContext *s)
             matrix[ SIDE_LEFT][BACK_CENTER]+= M_SQRT1_2;
             matrix[SIDE_RIGHT][BACK_CENTER]+= M_SQRT1_2;
         }else if(s->out_ch_layout & AV_CH_FRONT_LEFT){
-            matrix[ FRONT_LEFT][BACK_CENTER]+= s->slev*M_SQRT1_2;
-            matrix[FRONT_RIGHT][BACK_CENTER]+= s->slev*M_SQRT1_2;
+            if (matrix_encoding == AV_MATRIX_ENCODING_DOLBY ||
+                matrix_encoding == AV_MATRIX_ENCODING_DPLII) {
+                if (unaccounted & (AV_CH_BACK_LEFT | AV_CH_SIDE_LEFT)) {
+                    matrix[FRONT_LEFT ][BACK_CENTER] -= s->slev * M_SQRT1_2;
+                    matrix[FRONT_RIGHT][BACK_CENTER] += s->slev * M_SQRT1_2;
+                } else {
+                    matrix[FRONT_LEFT ][BACK_CENTER] -= s->slev;
+                    matrix[FRONT_RIGHT][BACK_CENTER] += s->slev;
+                }
+            } else {
+                matrix[ FRONT_LEFT][BACK_CENTER]+= s->slev*M_SQRT1_2;
+                matrix[FRONT_RIGHT][BACK_CENTER]+= s->slev*M_SQRT1_2;
+            }
         }else if(s->out_ch_layout & AV_CH_FRONT_CENTER){
             matrix[ FRONT_CENTER][BACK_CENTER]+= s->slev*M_SQRT1_2;
         }else
@@ -198,8 +210,20 @@ static int auto_matrix(SwrContext *s)
             matrix[SIDE_RIGHT][BACK_RIGHT]+= 1.0;
             }
         }else if(s->out_ch_layout & AV_CH_FRONT_LEFT){
-            matrix[ FRONT_LEFT][ BACK_LEFT]+= s->slev;
-            matrix[FRONT_RIGHT][BACK_RIGHT]+= s->slev;
+            if (matrix_encoding == AV_MATRIX_ENCODING_DOLBY) {
+                matrix[FRONT_LEFT ][BACK_LEFT ] -= s->slev * M_SQRT1_2;
+                matrix[FRONT_LEFT ][BACK_RIGHT] -= s->slev * M_SQRT1_2;
+                matrix[FRONT_RIGHT][BACK_LEFT ] += s->slev * M_SQRT1_2;
+                matrix[FRONT_RIGHT][BACK_RIGHT] += s->slev * M_SQRT1_2;
+            } else if (matrix_encoding == AV_MATRIX_ENCODING_DPLII) {
+                matrix[FRONT_LEFT ][BACK_LEFT ] -= s->slev * SQRT3_2;
+                matrix[FRONT_LEFT ][BACK_RIGHT] -= s->slev * M_SQRT1_2;
+                matrix[FRONT_RIGHT][BACK_LEFT ] += s->slev * M_SQRT1_2;
+                matrix[FRONT_RIGHT][BACK_RIGHT] += s->slev * SQRT3_2;
+            } else {
+                matrix[ FRONT_LEFT][ BACK_LEFT] += s->slev;
+                matrix[FRONT_RIGHT][BACK_RIGHT] += s->slev;
+            }
         }else if(s->out_ch_layout & AV_CH_FRONT_CENTER){
             matrix[ FRONT_CENTER][BACK_LEFT ]+= s->slev*M_SQRT1_2;
             matrix[ FRONT_CENTER][BACK_RIGHT]+= s->slev*M_SQRT1_2;
@@ -222,8 +246,20 @@ static int auto_matrix(SwrContext *s)
             matrix[BACK_CENTER][ SIDE_LEFT]+= M_SQRT1_2;
             matrix[BACK_CENTER][SIDE_RIGHT]+= M_SQRT1_2;
         }else if(s->out_ch_layout & AV_CH_FRONT_LEFT){
-            matrix[ FRONT_LEFT][ SIDE_LEFT]+= s->slev;
-            matrix[FRONT_RIGHT][SIDE_RIGHT]+= s->slev;
+            if (matrix_encoding == AV_MATRIX_ENCODING_DOLBY) {
+                matrix[FRONT_LEFT ][SIDE_LEFT ] -= s->slev * M_SQRT1_2;
+                matrix[FRONT_LEFT ][SIDE_RIGHT] -= s->slev * M_SQRT1_2;
+                matrix[FRONT_RIGHT][SIDE_LEFT ] += s->slev * M_SQRT1_2;
+                matrix[FRONT_RIGHT][SIDE_RIGHT] += s->slev * M_SQRT1_2;
+            } else if (matrix_encoding == AV_MATRIX_ENCODING_DPLII) {
+                matrix[FRONT_LEFT ][SIDE_LEFT ] -= s->slev * SQRT3_2;
+                matrix[FRONT_LEFT ][SIDE_RIGHT] -= s->slev * M_SQRT1_2;
+                matrix[FRONT_RIGHT][SIDE_LEFT ] += s->slev * M_SQRT1_2;
+                matrix[FRONT_RIGHT][SIDE_RIGHT] += s->slev * SQRT3_2;
+            } else {
+                matrix[ FRONT_LEFT][ SIDE_LEFT] += s->slev;
+                matrix[FRONT_RIGHT][SIDE_RIGHT] += s->slev;
+            }
         }else if(s->out_ch_layout & AV_CH_FRONT_CENTER){
             matrix[ FRONT_CENTER][SIDE_LEFT ]+= s->slev*M_SQRT1_2;
             matrix[ FRONT_CENTER][SIDE_RIGHT]+= s->slev*M_SQRT1_2;
