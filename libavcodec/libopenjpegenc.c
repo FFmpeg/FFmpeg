@@ -96,6 +96,8 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
     case PIX_FMT_YUV440P:
     case PIX_FMT_YUV444P:
     case PIX_FMT_YUVA420P:
+    case PIX_FMT_YUVA422P:
+    case PIX_FMT_YUVA444P:
     case PIX_FMT_YUV420P9:
     case PIX_FMT_YUV422P9:
     case PIX_FMT_YUV444P9:
@@ -342,6 +344,8 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     case PIX_FMT_YUV440P:
     case PIX_FMT_YUV444P:
     case PIX_FMT_YUVA420P:
+    case PIX_FMT_YUVA422P:
+    case PIX_FMT_YUVA444P:
         cpyresult = libopenjpeg_copy_unpacked8(avctx, frame, image);
         break;
     case PIX_FMT_GRAY16:
@@ -451,8 +455,8 @@ AVCodec ff_libopenjpeg_encoder = {
     .pix_fmts = (const enum PixelFormat[]){PIX_FMT_RGB24,PIX_FMT_RGBA,PIX_FMT_RGB48,PIX_FMT_RGBA64,
                                            PIX_FMT_GRAY8,PIX_FMT_GRAY8A,PIX_FMT_GRAY16,
                                            PIX_FMT_YUV420P,PIX_FMT_YUV422P,PIX_FMT_YUVA420P,
-                                           PIX_FMT_YUV440P,PIX_FMT_YUV444P,
-                                           PIX_FMT_YUV411P,PIX_FMT_YUV410P,
+                                           PIX_FMT_YUV440P,PIX_FMT_YUV444P,PIX_FMT_YUVA422P,
+                                           PIX_FMT_YUV411P,PIX_FMT_YUV410P,PIX_FMT_YUVA444P,
                                            PIX_FMT_YUV420P9,PIX_FMT_YUV422P9,PIX_FMT_YUV444P9,
                                            PIX_FMT_YUV420P10,PIX_FMT_YUV422P10,PIX_FMT_YUV444P10,
                                            PIX_FMT_YUV420P16,PIX_FMT_YUV422P16,PIX_FMT_YUV444P16,
