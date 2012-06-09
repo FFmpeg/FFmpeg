@@ -175,11 +175,7 @@ void av_get_channel_layout_string(char *buf, int buf_size,
 
 int av_get_channel_layout_nb_channels(uint64_t channel_layout)
 {
-    int count;
-    uint64_t x = channel_layout;
-    for (count = 0; x; count++)
-        x &= x-1; // unset lowest set bit
-    return count;
+    return av_popcount64(channel_layout);
 }
 
 uint64_t av_get_default_channel_layout(int nb_channels)
