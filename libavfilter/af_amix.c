@@ -32,6 +32,7 @@
 #include "libavutil/audio_fifo.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/float_dsp.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
@@ -152,6 +153,7 @@ static int frame_list_add_frame(FrameList *frame_list, int nb_samples, int64_t p
 
 typedef struct MixContext {
     const AVClass *class;       /**< class for AVOptions */
+    AVFloatDSPContext fdsp;
 
     int nb_inputs;              /**< number of inputs */
     int active_inputs;          /**< number of input currently active */
@@ -263,14 +265,6 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-/* TODO: move optimized version from DSPContext to libavutil */
-static void vector_fmac_scalar(float *dst, const float *src, float mul, int len)
-{
-    int i;
-    for (i = 0; i < len; i++)
-        dst[i] += src[i] * mul;
-}
-
 /**
  * Read samples from the input FIFOs, mix, and write to the output link.
  */
@@ -295,9 +289,10 @@ static int output_frame(AVFilterLink *outlink, int nb_samples)
         if (s->input_state[i] == INPUT_ON) {
             av_audio_fifo_read(s->fifos[i], (void **)in_buf->extended_data,
                                nb_samples);
-            vector_fmac_scalar((float *)out_buf->extended_data[0],
-                               (float *) in_buf->extended_data[0],
-                               s->input_scale[i], nb_samples * s->nb_channels);
+            s->fdsp.vector_fmac_scalar((float *)out_buf->extended_data[0],
+                                       (float *) in_buf->extended_data[0],
+                                       s->input_scale[i],
+                                       FFALIGN(nb_samples * s->nb_channels, 16));
         }
     }
     avfilter_unref_buffer(in_buf);
@@ -499,6 +494,8 @@ static int init(AVFilterContext *ctx, const char *args, void *opaque)
 
         ff_insert_inpad(ctx, i, &pad);
     }
+
+    avpriv_float_dsp_init(&s->fdsp, 0);
 
     return 0;
 }
