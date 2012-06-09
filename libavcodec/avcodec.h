@@ -3284,6 +3284,9 @@ void av_destruct_packet(AVPacket *pkt);
 /**
  * Initialize optional fields of a packet with default values.
  *
+ * Note, this does not touch the data and size members, which have to be
+ * initialized separately.
+ *
  * @param pkt packet
  */
 void av_init_packet(AVPacket *pkt);
