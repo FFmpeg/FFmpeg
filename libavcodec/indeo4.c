@@ -40,7 +40,7 @@
  */
 enum {
     FRAMETYPE_INTRA       = 0,
-    FRAMETYPE_BIDIR1      = 1,  ///< bidirectional frame
+    FRAMETYPE_INTRA1      = 1,  ///< intra frame with slightly different bitstream coding
     FRAMETYPE_INTER       = 2,  ///< non-droppable P-frame
     FRAMETYPE_BIDIR       = 3,  ///< bidirectional frame
     FRAMETYPE_INTER_NOREF = 4,  ///< droppable P-frame
@@ -133,8 +133,7 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
     }
 
 #if IVI4_STREAM_ANALYSER
-    if (   ctx->frame_type == FRAMETYPE_BIDIR1
-        || ctx->frame_type == FRAMETYPE_BIDIR)
+    if (ctx->frame_type == FRAMETYPE_BIDIR)
         ctx->has_b_frames = 1;
 #endif
 
@@ -500,7 +499,8 @@ static int decode_mb_info(IVI45DecContext *ctx, IVIBandDesc *band,
             } else {
                 if (band->inherit_mv && ref_mb) {
                     mb->type = ref_mb->type; /* copy mb_type from corresponding reference mb */
-                } else if (ctx->frame_type == FRAMETYPE_INTRA) {
+                } else if (ctx->frame_type == FRAMETYPE_INTRA ||
+                           ctx->frame_type == FRAMETYPE_INTRA1) {
                     mb->type = 0; /* mb_type is always INTRA for intra-frames */
                 } else {
                     mb->type = get_bits(&ctx->gb, mb_type_bits);
@@ -577,6 +577,7 @@ static void switch_buffers(IVI45DecContext *ctx)
 {
     switch (ctx->prev_frame_type) {
     case FRAMETYPE_INTRA:
+    case FRAMETYPE_INTRA1:
     case FRAMETYPE_INTER:
         ctx->buf_switch ^= 1;
         ctx->dst_buf     = ctx->buf_switch;
@@ -588,6 +589,7 @@ static void switch_buffers(IVI45DecContext *ctx)
 
     switch (ctx->frame_type) {
     case FRAMETYPE_INTRA:
+    case FRAMETYPE_INTRA1:
         ctx->buf_switch = 0;
         /* FALLTHROUGH */
     case FRAMETYPE_INTER:

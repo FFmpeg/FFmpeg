@@ -2969,7 +2969,6 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     s->width  = 16 * s->mb_width;
     s->height = 16 * s->mb_height;
 
-
     if(must_reinit) {
         free_tables(h, 0);
         flush_dpb(s->avctx);
