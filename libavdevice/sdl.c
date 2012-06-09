@@ -214,6 +214,6 @@ AVOutputFormat ff_sdl_muxer = {
     .write_header   = sdl_write_header,
     .write_packet   = sdl_write_packet,
     .write_trailer  = sdl_write_trailer,
-    .flags          = AVFMT_NOFILE,
+    .flags          = AVFMT_NOFILE | AVFMT_VARIABLE_FPS | AVFMT_NOTIMESTAMPS,
     .priv_class     = &sdl_class,
 };
