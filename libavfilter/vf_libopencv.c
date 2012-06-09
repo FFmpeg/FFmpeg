@@ -30,6 +30,8 @@
 #include "libavutil/avstring.h"
 #include "libavutil/file.h"
 #include "avfilter.h"
+#include "formats.h"
+#include "video.h"
 
 static void fill_iplimage_from_picref(IplImage *img, const AVFilterBufferRef *picref, enum PixelFormat pixfmt)
 {
