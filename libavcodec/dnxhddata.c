@@ -452,9 +452,6 @@ static const uint8_t dnxhd_1238_ac_flags[257] = {
     3,
 };
 
-static const uint8_t dnxhd_1238_ac_index_flag[257] = {
-};
-
 static const uint16_t dnxhd_1235_1238_1241_run_codes[62] = {
        0,    4,   10,   11,   24,   25,   26,   27,
       56,   57,   58,   59,  120,  242,  486,  487,
