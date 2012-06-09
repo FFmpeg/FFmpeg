@@ -68,6 +68,8 @@
 #define AVERROR_BUG2               FFERRTAG( 'B','U','G',' ')
 #define AVERROR_UNKNOWN            FFERRTAG( 'U','N','K','N') ///< Unknown error, typically from an external library
 
+#define AV_ERROR_MAX_STRING_SIZE 64
+
 /**
  * Put a description of the AVERROR code errnum in errbuf.
  * In case of failure the global variable errno is set to indicate the
@@ -81,6 +83,29 @@
  * cannot be found
  */
 int av_strerror(int errnum, char *errbuf, size_t errbuf_size);
+
+/**
+ * Fill the provided buffer with a string containing an error string
+ * corresponding to the AVERROR code errnum.
+ *
+ * @param errbuf         a buffer
+ * @param errbuf_size    size in bytes of errbuf
+ * @param errnum         error code to describe
+ * @return the buffer in input, filled with the error description
+ * @see av_strerror()
+ */
+static inline char *av_make_error_string(char *errbuf, size_t errbuf_size, int errnum)
+{
+    av_strerror(errnum, errbuf, errbuf_size);
+    return errbuf;
+}
+
+/**
+ * Convenience macro, the return value should be used only directly in
+ * function arguments but never stand-alone.
+ */
+#define av_err2str(errnum) \
+    av_make_error_string((char[AV_ERROR_MAX_STRING_SIZE]){0}, AV_ERROR_MAX_STRING_SIZE, errnum)
 
 /**
  * @}

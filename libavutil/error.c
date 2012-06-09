@@ -79,17 +79,14 @@ int av_strerror(int errnum, char *errbuf, size_t errbuf_size)
 int main(void)
 {
     int i;
-    char errbuf[256];
 
     for (i = 0; i < FF_ARRAY_ELEMS(error_entries); i++) {
         struct error_entry *entry = &error_entries[i];
-        av_strerror(entry->num, errbuf, sizeof(errbuf));
-        printf("%d: %s [%s]\n", entry->num, errbuf, entry->tag);
+        printf("%d: %s [%s]\n", entry->num, av_err2str(entry->num), entry->tag);
     }
 
     for (i = 0; i < 256; i++) {
-        av_strerror(-i, errbuf, sizeof(errbuf));
-        printf("%d: %s\n", -i, errbuf);
+        printf("%d: %s\n", -i, av_err2str(-i));
     }
 
     return 0;
