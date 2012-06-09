@@ -66,8 +66,8 @@ static inline int libopenjpeg_matches_pix_fmt(const opj_image_t *image, enum Pix
 
     switch (descriptor.nb_components) {
     case 4: match = match && descriptor.comp[3].depth_minus1 + 1 >= image->comps[3].prec &&
-                             1 << descriptor.log2_chroma_w == image->comps[3].dx &&
-                             1 << descriptor.log2_chroma_h == image->comps[3].dy;
+                             1 == image->comps[3].dx &&
+                             1 == image->comps[3].dy;
     case 3: match = match && descriptor.comp[2].depth_minus1 + 1 >= image->comps[2].prec &&
                              1 << descriptor.log2_chroma_w == image->comps[2].dx &&
                              1 << descriptor.log2_chroma_h == image->comps[2].dy;
