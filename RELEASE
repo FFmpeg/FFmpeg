@@ -188,6 +188,8 @@ Distributors and system integrators are encouraged
 to update and share their patches against this branch.  For a full list
 of changes please see the Changelog file.
 
+
+
 * 0.5.8 May 10, 2012
 
 General notes
@@ -203,3 +205,20 @@ security issues that have been brought to our attention. Among other
 Distributors and system integrators are encouraged
 to update and share their patches against this branch.  For a full list
 of changes please see the Changelog file.
+
+
+
+* 0.5.9 Jun 09, 2012
+
+General notes
+-------------
+
+This mostly maintenance-only release addresses a number a number of bugs
+such as security and compilation issues that have been brought to our
+attention. Among other fixes, this release features includes security
+updates for the DPCM codecs (CVE-2011-3951), H.264 (CVE-2012-0851),
+ADPCM (CVE-2012-0852), and the KMVC decoder (CVE-2011-3952).
+
+Distributors and system integrators are encouraged
+to update and share their patches against this branch.  For a full list
+of changes please see the Changelog file or the git commit history.
