@@ -115,6 +115,8 @@ static int read_header(AVFormatContext *s)
     vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     vst->codec->codec_id   = CODEC_ID_BINKVIDEO;
     vst->codec->extradata  = av_mallocz(4 + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!vst->codec->extradata)
+        return AVERROR(ENOMEM);
     vst->codec->extradata_size = 4;
     avio_read(pb, vst->codec->extradata, 4);
 
