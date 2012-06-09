@@ -362,7 +362,8 @@ int swri_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int mus
     for(out_i=0; out_i<out->ch_count; out_i++){
         switch(s->matrix_ch[out_i][0]){
         case 0:
-            memset(out->ch[out_i], 0, len * av_get_bytes_per_sample(s->int_sample_fmt));
+            if(mustcopy)
+                memset(out->ch[out_i], 0, len * av_get_bytes_per_sample(s->int_sample_fmt));
             break;
         case 1:
             in_i= s->matrix_ch[out_i][1];
