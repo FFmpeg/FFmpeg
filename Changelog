@@ -29,6 +29,7 @@ version <next>:
 - iLBC encoding/decoding via libilbc
 - Microsoft Screen 1 decoder
 - join audio filter
+- audio channel mapping filter
 
 
 version 0.8:
