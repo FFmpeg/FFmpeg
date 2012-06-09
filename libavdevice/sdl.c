@@ -36,8 +36,8 @@ typedef struct {
     SDL_Overlay *overlay;
     char *window_title;
     char *icon_title;
-    int window_width, window_height;
-    int overlay_width, overlay_height;
+    int window_width,  window_height;  /**< size of the window */
+    int overlay_width, overlay_height; /**< size of the video in the window */
     int overlay_fmt;
     int sdl_was_already_inited;
 } SDLContext;
@@ -144,12 +144,12 @@ static int sdl_write_header(AVFormatContext *s)
         goto fail;
     }
 
-    sdl->overlay = SDL_CreateYUVOverlay(sdl->overlay_width, sdl->overlay_height,
+    sdl->overlay = SDL_CreateYUVOverlay(encctx->width, encctx->height,
                                         sdl->overlay_fmt, sdl->surface);
-    if (!sdl->overlay || sdl->overlay->pitches[0] < sdl->overlay_width) {
+    if (!sdl->overlay || sdl->overlay->pitches[0] < encctx->width) {
         av_log(s, AV_LOG_ERROR,
                "SDL does not support an overlay with size of %dx%d pixels.\n",
-               sdl->overlay_width, sdl->overlay_height);
+               encctx->width, encctx->height);
         ret = AVERROR(EINVAL);
         goto fail;
     }
