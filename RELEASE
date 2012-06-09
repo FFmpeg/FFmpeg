@@ -192,3 +192,21 @@ demuxer (CVE-2011-3893 and CVE-2011-3895).
 Distributors and system integrators are encouraged
 to update and share their patches against this branch.  For a full list
 of changes please see the Changelog file.
+
+
+* 0.6.6
+
+General notes
+-------------
+
+This mostly maintenance-only release that addresses a number a number of
+bugs such as security and compilation issues that have been brought to
+our attention. Among other fixes, this release features includes
+security updates for the, DV decoder (CVE-2011-3929 and CVE-2011-3936),
+VQA Video Decoder (CVE-2012-0947), DPCM codecs (CVE-2011-3951), AAC SBR
+(CVE-2012-0850), H.264 (CVE-2012-0851), ADPCM (CVE-2012-0852), Shorten
+(CVE-2012-0858), and the KMVC decoder (CVE-2011-3952).
+
+Distributors and system integrators are encouraged
+to update and share their patches against this branch.  For a full list
+of changes please see the Changelog file or the git commit history.
