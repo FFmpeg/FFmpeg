@@ -150,6 +150,30 @@ int av_get_channel_layout_nb_channels(uint64_t channel_layout);
 int64_t av_get_default_channel_layout(int nb_channels);
 
 /**
+ * Get the index of a channel in channel_layout.
+ *
+ * @param channel a channel layout describing exactly one channel which must be
+ *                present in channel_layout.
+ *
+ * @return index of channel in channel_layout on success, a negative AVERROR
+ *         on error.
+ */
+int av_get_channel_layout_channel_index(uint64_t channel_layout,
+                                        uint64_t channel);
+
+/**
+ * Get the channel with the given index in channel_layout.
+ */
+uint64_t av_channel_layout_extract_channel(uint64_t channel_layout, int index);
+
+/**
+ * Get the name of a given channel.
+ *
+ * @return channel name on success, NULL on error.
+ */
+const char *av_get_channel_name(uint64_t channel);
+
+/**
  * @}
  */
 

@@ -305,7 +305,7 @@ AVCodec ff_libmp3lame_encoder = {
     .supported_samplerates = libmp3lame_sample_rates,
     .channel_layouts       = (const uint64_t[]) { AV_CH_LAYOUT_MONO,
                                                   AV_CH_LAYOUT_STEREO,
-                                                  0},
+                                                  0 },
     .long_name             = NULL_IF_CONFIG_SMALL("libmp3lame MP3 (MPEG audio layer 3)"),
     .priv_class            = &libmp3lame_class,
     .defaults              = libmp3lame_defaults,

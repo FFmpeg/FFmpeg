@@ -182,11 +182,7 @@ void av_get_channel_layout_string(char *buf, int buf_size,
 
 int av_get_channel_layout_nb_channels(uint64_t channel_layout)
 {
-    int count;
-    uint64_t x = channel_layout;
-    for (count = 0; x; count++)
-        x &= x-1; // unset lowest set bit
-    return count;
+    return av_popcount64(channel_layout);
 }
 
 int64_t av_get_default_channel_layout(int nb_channels) {
@@ -194,5 +190,40 @@ int64_t av_get_default_channel_layout(int nb_channels) {
     for (i = 0; i < FF_ARRAY_ELEMS(channel_layout_map); i++)
         if (nb_channels == channel_layout_map[i].nb_channels)
             return channel_layout_map[i].layout;
+    return 0;
+}
+
+int av_get_channel_layout_channel_index(uint64_t channel_layout,
+                                        uint64_t channel)
+{
+    if (!(channel_layout & channel) ||
+        av_get_channel_layout_nb_channels(channel) != 1)
+        return AVERROR(EINVAL);
+    channel_layout &= channel - 1;
+    return av_get_channel_layout_nb_channels(channel_layout);
+}
+
+const char *av_get_channel_name(uint64_t channel)
+{
+    int i;
+    if (av_get_channel_layout_nb_channels(channel) != 1)
+        return NULL;
+    for (i = 0; i < 64; i++)
+        if ((1ULL<<i) & channel)
+            return get_channel_name(i);
+    return NULL;
+}
+
+uint64_t av_channel_layout_extract_channel(uint64_t channel_layout, int index)
+{
+    int i;
+
+    if (av_get_channel_layout_nb_channels(channel_layout) <= index)
+        return 0;
+
+    for (i = 0; i < 64; i++) {
+        if ((1ULL << i) & channel_layout && !index--)
+            return 1ULL << i;
+    }
     return 0;
 }
