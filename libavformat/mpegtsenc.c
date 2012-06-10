@@ -659,6 +659,8 @@ static int mpegts_write_header(AVFormatContext *s)
             service->pcr_packet_period =
                 pcr_st->codec->time_base.den/(10*pcr_st->codec->time_base.num);
         }
+        if(!service->pcr_packet_period)
+            service->pcr_packet_period = 1;
     }
 
     // output a PCR as soon as possible
