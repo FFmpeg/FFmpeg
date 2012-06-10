@@ -80,6 +80,8 @@ static int config_props(AVFilterLink *outlink)
     outlink->w = tile->w * inlink->w;
     outlink->h = tile->h * inlink->h;
     outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
+    outlink->frame_rate = av_mul_q(inlink->frame_rate,
+                                   (AVRational){ 1, tile->w * tile->h });
     ff_draw_init(&tile->draw, inlink->format, 0);
     /* TODO make the color an option, or find an unified way of choosing it */
     ff_draw_color(&tile->draw, &tile->blank, (uint8_t[]){ 0, 0, 0, -1 });
