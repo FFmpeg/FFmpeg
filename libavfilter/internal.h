@@ -27,6 +27,7 @@
 #include "avfilter.h"
 #include "avfiltergraph.h"
 #include "formats.h"
+#include "video.h"
 
 #define POOL_SIZE 32
 typedef struct AVFilterPool {
@@ -118,15 +119,6 @@ int ff_parse_sample_format(int *ret, const char *arg, void *log_ctx);
  * @return 0 in case of success, a negative AVERROR code on error
  */
 int ff_parse_channel_layout(int64_t *ret, const char *arg, void *log_ctx);
-
-/**
- * Pass video frame along and keep an internal reference for later use.
- */
-static inline void ff_null_start_frame_keep_ref(AVFilterLink *inlink,
-                                                AVFilterBufferRef *picref)
-{
-    avfilter_start_frame(inlink->dst->outputs[0], avfilter_ref_buffer(picref, ~0));
-}
 
 void ff_update_link_current_pts(AVFilterLink *link, int64_t pts);
 

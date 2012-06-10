@@ -215,6 +215,12 @@ void ff_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     ff_update_link_current_pts(link, link->cur_buf->pts);
 }
 
+void ff_null_start_frame_keep_ref(AVFilterLink *inlink,
+                                                AVFilterBufferRef *picref)
+{
+    avfilter_start_frame(inlink->dst->outputs[0], avfilter_ref_buffer(picref, ~0));
+}
+
 void ff_null_end_frame(AVFilterLink *link)
 {
     ff_end_frame(link->dst->outputs[0]);

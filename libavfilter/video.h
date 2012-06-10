@@ -45,6 +45,11 @@ void ff_null_end_frame(AVFilterLink *link);
 void ff_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
 
 /**
+ * Pass video frame along and keep an internal reference for later use.
+ */
+void ff_null_start_frame_keep_ref(AVFilterLink *inlink, AVFilterBufferRef *picref);
+
+/**
  * Notify the next filter that the current frame has finished.
  *
  * @param link the output link the frame was sent over
