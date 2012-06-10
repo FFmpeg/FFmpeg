@@ -26,6 +26,8 @@
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "drawutils.h"
+#include "formats.h"
+#include "video.h"
 
 typedef struct {
     unsigned w, h;
@@ -57,7 +59,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    avfilter_set_common_pixel_formats(ctx, ff_draw_supported_pixel_formats(0));
+    ff_set_common_formats(ctx, ff_draw_supported_pixel_formats(0));
     return 0;
 }
 
@@ -106,7 +108,7 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     avfilter_copy_buffer_ref_props(outlink->out_buf, picref);
     outlink->out_buf->video->w = outlink->w;
     outlink->out_buf->video->h = outlink->h;
-    avfilter_start_frame(outlink, outlink->out_buf);
+    ff_start_frame(outlink, outlink->out_buf);
 }
 
 static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
@@ -145,8 +147,8 @@ static void end_last_frame(AVFilterContext *ctx)
 
     while (tile->current < tile->w * tile->h)
         draw_blank_frame(ctx);
-    avfilter_draw_slice(outlink, 0, outlink->out_buf->video->h, 1);
-    avfilter_end_frame(outlink);
+    ff_draw_slice(outlink, 0, outlink->out_buf->video->h, 1);
+    ff_end_frame(outlink);
     tile->current = 0;
 }
 
