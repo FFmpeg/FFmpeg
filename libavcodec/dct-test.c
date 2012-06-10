@@ -99,7 +99,7 @@ static const struct algo fdct_tab[] = {
     { 0 }
 };
 
-#if HAVE_MMX && HAVE_YASM
+#if ARCH_X86_64 && HAVE_MMX && HAVE_YASM
 void ff_prores_idct_put_10_sse2(uint16_t *dst, int linesize,
                                 DCTELEM *block, int16_t *qmat);
 
