@@ -48,7 +48,7 @@ fate-acodec-dca: CMP = oneline
 fate-acodec-dca: REF = 66bd0e602be7fb97dc19151554c0ee29
 
 FATE_ACODEC += fate-acodec-dca2
-fate-acodec-dca2: CMD = enc_dec_pcm dts wav s16le $(SRC) -c:a dca -strict -2
+fate-acodec-dca2: CMD = enc_dec_pcm dts wav s16le $(SRC) -c:a dca -strict -2 -flags +bitexact
 fate-acodec-dca2: REF = $(SRC)
 fate-acodec-dca2: CMP = stddev
 fate-acodec-dca2: CMP_SHIFT = -1920
