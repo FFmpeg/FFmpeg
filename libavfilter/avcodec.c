@@ -24,6 +24,7 @@
  */
 
 #include "avcodec.h"
+#include "libavutil/avassert.h"
 #include "libavutil/opt.h"
 
 int avfilter_copy_frame_props(AVFilterBufferRef *dst, const AVFrame *src)
@@ -83,6 +84,11 @@ int avfilter_copy_buf_props(AVFrame *dst, const AVFilterBufferRef *src)
 {
     int planes, nb_channels;
 
+    if (!dst)
+        return AVERROR(EINVAL);
+    /* abort in case the src is NULL and dst is not, avoid inconsistent state in dst */
+    av_assert0(src);
+
     memcpy(dst->data, src->data, sizeof(dst->data));
     memcpy(dst->linesize, src->linesize, sizeof(dst->linesize));
 
@@ -91,6 +97,7 @@ int avfilter_copy_buf_props(AVFrame *dst, const AVFilterBufferRef *src)
 
     switch (src->type) {
     case AVMEDIA_TYPE_VIDEO:
+        av_assert0(src->video);
         dst->width               = src->video->w;
         dst->height              = src->video->h;
         dst->sample_aspect_ratio = src->video->sample_aspect_ratio;
@@ -100,6 +107,7 @@ int avfilter_copy_buf_props(AVFrame *dst, const AVFilterBufferRef *src)
         dst->pict_type           = src->video->pict_type;
         break;
     case AVMEDIA_TYPE_AUDIO:
+        av_assert0(src->audio);
         nb_channels = av_get_channel_layout_nb_channels(src->audio->channel_layout);
         planes      = av_sample_fmt_is_planar(src->format) ? nb_channels : 1;
 
