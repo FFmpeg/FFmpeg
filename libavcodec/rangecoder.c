@@ -33,6 +33,7 @@
 
 #include <string.h>
 
+#include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "rangecoder.h"
 #include "bytestream.h"
@@ -103,8 +104,8 @@ int ff_rac_terminate(RangeCoder *c){
     c->range=0xFF;
     renorm_encoder(c);
 
-    assert(c->low   == 0);
-    assert(c->range >= 0x100);
+    av_assert1(c->low   == 0);
+    av_assert1(c->range >= 0x100);
 
     return c->bytestream - c->bytestream_start;
 }
