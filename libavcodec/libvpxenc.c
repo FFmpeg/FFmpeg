@@ -503,6 +503,7 @@ static int vp8_encode(AVCodecContext *avctx, AVPacket *pkt,
     VP8Context *ctx = avctx->priv_data;
     struct vpx_image *rawimg = NULL;
     int64_t timestamp = 0;
+    long flags = 0;
     int res, coded_size;
 
     if (frame) {
@@ -514,10 +515,11 @@ static int vp8_encode(AVCodecContext *avctx, AVPacket *pkt,
         rawimg->stride[VPX_PLANE_U] = frame->linesize[1];
         rawimg->stride[VPX_PLANE_V] = frame->linesize[2];
         timestamp                   = frame->pts;
+        flags                       = frame->pict_type == AV_PICTURE_TYPE_I ? VPX_EFLAG_FORCE_KF : 0;
     }
 
     res = vpx_codec_encode(&ctx->encoder, rawimg, timestamp,
-                           avctx->ticks_per_frame, 0, ctx->deadline);
+                           avctx->ticks_per_frame, flags, ctx->deadline);
     if (res != VPX_CODEC_OK) {
         log_encoder_error(avctx, "Error encoding frame");
         return AVERROR_INVALIDDATA;
