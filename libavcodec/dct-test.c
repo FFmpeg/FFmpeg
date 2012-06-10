@@ -104,8 +104,9 @@ void ff_prores_idct_put_10_sse2(uint16_t *dst, int linesize,
                                 DCTELEM *block, int16_t *qmat);
 
 static void ff_prores_idct_put_10_sse2_wrap(DCTELEM *dst){
-    int16_t qmat[64]; int i;
-    int16_t tmp[64];
+    DECLARE_ALIGNED(16, static int16_t, qmat)[64];
+    DECLARE_ALIGNED(16, static int16_t, tmp)[64];
+    int i;
 
     for(i=0; i<64; i++){
         qmat[i]=4;
