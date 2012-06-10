@@ -114,7 +114,6 @@ static void horizontal_compose_haar1i##ext(IDWTELEM *b, IDWTELEM *tmp, int w)\
 COMPOSE_VERTICAL(_mmx, 4)
 #endif
 COMPOSE_VERTICAL(_sse2, 8)
-#endif
 
 
 void ff_horizontal_compose_dd97i_ssse3(IDWTELEM *b, IDWTELEM *tmp, int w);
@@ -130,6 +129,7 @@ static void horizontal_compose_dd97i_ssse3(IDWTELEM *b, IDWTELEM *tmp, int w)
         b[2*x+1] = (COMPOSE_DD97iH0(tmp[x-1], tmp[x], b[x+w2], tmp[x+1], tmp[x+2]) + 1)>>1;
     }
 }
+#endif
 
 void ff_spatial_idwt_init_mmx(DWTContext *d, enum dwt_type type)
 {
