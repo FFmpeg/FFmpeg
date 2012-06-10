@@ -193,7 +193,7 @@ static av_cold void vsink_uninit(AVFilterContext *ctx)
 {
     BufferSinkContext *buf = ctx->priv;
     av_freep(&buf->pixel_fmts);
-    return common_uninit(ctx);
+    common_uninit(ctx);
 }
 
 static int vsink_query_formats(AVFilterContext *ctx)
@@ -263,7 +263,7 @@ static av_cold void asink_uninit(AVFilterContext *ctx)
 
     av_freep(&buf->sample_fmts);
     av_freep(&buf->channel_layouts);
-    return common_uninit(ctx);
+    common_uninit(ctx);
 }
 
 static int asink_query_formats(AVFilterContext *ctx)
