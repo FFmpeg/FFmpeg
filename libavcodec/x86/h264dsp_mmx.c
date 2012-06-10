@@ -275,7 +275,7 @@ LF_IFUNC(v,  chroma_intra, depth,  avx)
 LF_FUNCS( uint8_t,  8)
 LF_FUNCS(uint16_t, 10)
 
-#if ARCH_X86_32
+#if ARCH_X86_32 && HAVE_YASM
 LF_FUNC (v8, luma,             8, mmxext)
 static void ff_deblock_v_luma_8_mmxext(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0)
 {
