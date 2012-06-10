@@ -1344,7 +1344,7 @@ void codec_release_buffer(AVCodecContext *s, AVFrame *frame)
     int i;
 
     if(frame->type!=FF_BUFFER_TYPE_USER)
-        return avcodec_default_release_buffer(s, frame);
+        avcodec_default_release_buffer(s, frame);
 
     for (i = 0; i < FF_ARRAY_ELEMS(frame->data); i++)
         frame->data[i] = NULL;
