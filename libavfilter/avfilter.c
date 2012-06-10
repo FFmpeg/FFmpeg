@@ -410,7 +410,7 @@ static int pad_count(const AVFilterPad *pads)
     return count;
 }
 
-static char *default_filter_name(void *filter_ctx)
+static const char *default_filter_name(void *filter_ctx)
 {
     AVFilterContext *ctx = filter_ctx;
     return ctx->name ? ctx->name : ctx->filter->name;
