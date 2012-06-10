@@ -56,6 +56,8 @@ DECLARE_WEIGHT(mmx2)
 DECLARE_WEIGHT(sse2)
 DECLARE_WEIGHT(ssse3)
 
+#if HAVE_YASM
+
 /** @{ */
 /**
  * Define one qpel function.
@@ -181,6 +183,8 @@ QPEL_FUNCS_SET (OP, 3, 0, OPT) \
 QPEL_FUNCS_SET (OP, 3, 1, OPT) \
 QPEL_FUNCS_SET (OP, 3, 2, OPT)
 /** @} */
+
+#endif //HAVE_YASM
 
 void ff_rv40dsp_init_x86(RV34DSPContext *c, DSPContext *dsp)
 {
