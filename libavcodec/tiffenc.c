@@ -121,7 +121,7 @@ static void add_entry(TiffEncoderContext * s,
 {
     uint8_t *entries_ptr = s->entries + 12 * s->num_entries;
 
-    assert(s->num_entries < TIFF_MAX_ENTRY);
+    av_assert0(s->num_entries < TIFF_MAX_ENTRY);
 
     bytestream_put_le16(&entries_ptr, tag);
     bytestream_put_le16(&entries_ptr, type);
