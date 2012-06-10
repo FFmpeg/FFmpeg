@@ -148,7 +148,6 @@ static int getnbctxno(int flag, int bandno, int vert_causal_ctx_csty_symbol)
             if (h+v == 1) return 1;
             return 0;
     }
-    assert(0);
 }
 
 uint8_t ff_j2k_sgnctxno_lut[16][16], ff_j2k_xorbit_lut[16][16];
