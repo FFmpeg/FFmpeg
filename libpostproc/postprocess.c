@@ -624,8 +624,10 @@ static inline void postProcess(const uint8_t src[], int srcStride, uint8_t dst[]
     PPMode *ppMode= (PPMode *)vm;
     c->ppMode= *ppMode; //FIXME
 
-    if(ppMode->lumMode & BITEXACT)
-        return postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
+    if(ppMode->lumMode & BITEXACT) {
+        postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
+        return;
+    }
 
     // Using ifs here as they are faster than function pointers although the
     // difference would not be measurable here but it is much better because
