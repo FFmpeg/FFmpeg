@@ -93,6 +93,7 @@ int avfilter_copy_buf_props(AVFrame *dst, const AVFilterBufferRef *src)
     memcpy(dst->linesize, src->linesize, sizeof(dst->linesize));
 
     dst->pts     = src->pts;
+    dst->pkt_pos = src->pos;
     dst->format  = src->format;
 
     switch (src->type) {
