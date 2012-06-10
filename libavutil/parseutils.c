@@ -723,12 +723,10 @@ int main(void)
 
         for (i = 0; i < FF_ARRAY_ELEMS(rates); i++) {
             int ret;
-            char err[1024];
             AVRational q = (AVRational){0, 0};
             ret = av_parse_video_rate(&q, rates[i]);
-            av_strerror(ret, err, sizeof(err));
-            printf("'%s' -> %d/%d ret:%s\n",
-                   rates[i], q.num, q.den, err);
+            printf("'%s' -> %d/%d%s\n",
+                   rates[i], q.num, q.den, ret ? " error" : "");
         }
     }
 
