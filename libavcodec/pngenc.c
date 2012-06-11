@@ -24,6 +24,8 @@
 #include "dsputil.h"
 #include "png.h"
 
+#include "libavutil/avassert.h"
+
 /* TODO:
  * - add 2, 4 and 16 bit depth support
  */
@@ -147,7 +149,7 @@ static uint8_t *png_choose_filter(PNGEncContext *s, uint8_t *dst,
                                   uint8_t *src, uint8_t *top, int size, int bpp)
 {
     int pred = s->filter_type;
-    assert(bpp || !pred);
+    av_assert0(bpp || !pred);
     if(!top && pred)
         pred = PNG_FILTER_VALUE_SUB;
     if(pred == PNG_FILTER_VALUE_MIXED) {
