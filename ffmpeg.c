@@ -2870,6 +2870,10 @@ static int transcode_init(void)
                     codec->time_base.num *= icodec->ticks_per_frame;
                 }
             }
+
+            if(ost->frame_rate.num)
+                codec->time_base = (AVRational){ost->frame_rate.den, ost->frame_rate.num};
+
             av_reduce(&codec->time_base.num, &codec->time_base.den,
                         codec->time_base.num, codec->time_base.den, INT_MAX);
 
@@ -4573,24 +4577,25 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
     AVStream *st;
     OutputStream *ost;
     AVCodecContext *video_enc;
+    char *frame_rate = NULL;
 
     ost = new_output_stream(o, oc, AVMEDIA_TYPE_VIDEO, source_index);
     st  = ost->st;
     video_enc = st->codec;
 
+    MATCH_PER_STREAM_OPT(frame_rates, str, frame_rate, oc, st);
+    if (frame_rate && av_parse_video_rate(&ost->frame_rate, frame_rate) < 0) {
+        av_log(NULL, AV_LOG_FATAL, "Invalid framerate value: %s\n", frame_rate);
+        exit_program(1);
+    }
+
     if (!ost->stream_copy) {
         const char *p = NULL;
-        char *forced_key_frames = NULL, *frame_rate = NULL, *frame_size = NULL;
+        char *forced_key_frames = NULL, *frame_size = NULL;
         char *frame_aspect_ratio = NULL, *frame_pix_fmt = NULL;
         char *intra_matrix = NULL, *inter_matrix = NULL;
         const char *filters = "null";
         int i;
-
-        MATCH_PER_STREAM_OPT(frame_rates, str, frame_rate, oc, st);
-        if (frame_rate && av_parse_video_rate(&ost->frame_rate, frame_rate) < 0) {
-            av_log(NULL, AV_LOG_FATAL, "Invalid framerate value: %s\n", frame_rate);
-            exit_program(1);
-        }
 
         MATCH_PER_STREAM_OPT(frame_sizes, str, frame_size, oc, st);
         if (frame_size && av_parse_video_size(&video_enc->width, &video_enc->height, frame_size) < 0) {
