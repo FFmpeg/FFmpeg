@@ -130,8 +130,8 @@ static int rtmp_write_amf_data(URLContext *s, char *param, uint8_t **p)
         value = param + 2;
     } else if (param[0] == 'N' && param[1] && param[2] == ':') {
         type = param[1];
-        field = strtok_r(param + 3, ":", &saveptr);
-        value = strtok_r(NULL, ":", &saveptr);
+        field = av_strtok(param + 3, ":", &saveptr);
+        value = av_strtok(NULL, ":", &saveptr);
 
         if (!field || !value)
             goto fail;
@@ -229,7 +229,7 @@ static int gen_connect(URLContext *s, RTMPContext *rt)
         char *param, *saveptr;
 
         // Write arbitrary AMF data to the Connect message.
-        param = strtok_r(rt->conn, " ", &saveptr);
+        param = av_strtok(rt->conn, " ", &saveptr);
         while (param != NULL) {
             if ((ret = rtmp_write_amf_data(s, param, &p)) < 0) {
                 // Invalid AMF parameter.
@@ -237,7 +237,7 @@ static int gen_connect(URLContext *s, RTMPContext *rt)
                 return ret;
             }
 
-            param = strtok_r(NULL, " ", &saveptr);
+            param = av_strtok(NULL, " ", &saveptr);
         }
     }
 
