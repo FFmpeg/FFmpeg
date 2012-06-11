@@ -69,12 +69,8 @@
 #include <sys/select.h>
 #endif
 
-#if HAVE_THREADS
 #if HAVE_PTHREADS
 #include <pthread.h>
-#else
-#include "libavcodec/w32pthreads.h"
-#endif
 #endif
 
 #include <time.h>
@@ -148,7 +144,7 @@ static float dts_delta_threshold = 10;
 
 static int print_stats = 1;
 
-#if HAVE_THREADS
+#if HAVE_PTHREADS
 /* signal to input threads that they should exit; set by the main thread */
 static int transcoding_finished;
 #endif
@@ -233,7 +229,7 @@ typedef struct InputFile {
                              from ctx.nb_streams if new streams appear during av_read_frame() */
     int rate_emu;
 
-#if HAVE_THREADS
+#if HAVE_PTHREADS
     pthread_t thread;           /* thread reading from this file */
     int finished;               /* the thread has exited */
     int joined;                 /* the thread has been joined */
@@ -2787,7 +2783,7 @@ static int select_input_file(uint8_t *no_packet)
     return file_index;
 }
 
-#if HAVE_THREADS
+#if HAVE_PTHREADS
 static void *input_thread(void *arg)
 {
     InputFile *f = arg;
@@ -2899,7 +2895,7 @@ static int get_input_packet_mt(InputFile *f, AVPacket *pkt)
 
 static int get_input_packet(InputFile *f, AVPacket *pkt)
 {
-#if HAVE_THREADS
+#if HAVE_PTHREADS
     if (nb_input_files > 1)
         return get_input_packet_mt(f, pkt);
 #endif
@@ -2931,7 +2927,7 @@ static int transcode(void)
 
     timer_start = av_gettime();
 
-#if HAVE_THREADS
+#if HAVE_PTHREADS
     if ((ret = init_input_threads()) < 0)
         goto fail;
 #endif
@@ -3044,7 +3040,7 @@ static int transcode(void)
         /* dump report by using the output first video and audio streams */
         print_report(0, timer_start);
     }
-#if HAVE_THREADS
+#if HAVE_PTHREADS
     free_input_threads();
 #endif
 
@@ -3091,7 +3087,7 @@ static int transcode(void)
 
  fail:
     av_freep(&no_packet);
-#if HAVE_THREADS
+#if HAVE_PTHREADS
     free_input_threads();
 #endif
 
