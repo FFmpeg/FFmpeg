@@ -27,9 +27,8 @@
 #include "avc.h"
 #include "metadata.h"
 #include "libavutil/dict.h"
+#include "libavutil/avassert.h"
 
-#undef NDEBUG
-#include <assert.h>
 
 static const AVCodecTag flv_video_codec_ids[] = {
     {CODEC_ID_FLV1,    FLV_CODECID_H263  },
@@ -453,7 +452,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     case AVMEDIA_TYPE_AUDIO:
         flags = get_audio_flags(s, enc);
 
-        assert(size);
+        av_assert0(size);
 
         avio_w8(pb, FLV_TAG_TYPE_AUDIO);
         break;
