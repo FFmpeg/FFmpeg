@@ -208,6 +208,7 @@ static av_cold int eightsvx_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
+#if CONFIG_EIGHTSVX_FIB_DECODER
 AVCodec ff_eightsvx_fib_decoder = {
   .name           = "8svx_fib",
   .type           = AVMEDIA_TYPE_AUDIO,
@@ -219,7 +220,8 @@ AVCodec ff_eightsvx_fib_decoder = {
   .capabilities   = CODEC_CAP_DR1,
   .long_name      = NULL_IF_CONFIG_SMALL("8SVX fibonacci"),
 };
-
+#endif
+#if CONFIG_EIGHTSVX_EXP_DECODER
 AVCodec ff_eightsvx_exp_decoder = {
   .name           = "8svx_exp",
   .type           = AVMEDIA_TYPE_AUDIO,
@@ -231,7 +233,8 @@ AVCodec ff_eightsvx_exp_decoder = {
   .capabilities   = CODEC_CAP_DR1,
   .long_name      = NULL_IF_CONFIG_SMALL("8SVX exponential"),
 };
-
+#endif
+#if CONFIG_PCM_S8_PLANAR_DECODER
 AVCodec ff_pcm_s8_planar_decoder = {
     .name           = "pcm_s8_planar",
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -243,3 +246,4 @@ AVCodec ff_pcm_s8_planar_decoder = {
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("PCM signed 8-bit planar"),
 };
+#endif

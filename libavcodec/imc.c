@@ -991,7 +991,7 @@ static av_cold int imc_decode_close(AVCodecContext * avctx)
     return 0;
 }
 
-
+#if CONFIG_IMC_DECODER
 AVCodec ff_imc_decoder = {
     .name           = "imc",
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -1003,7 +1003,8 @@ AVCodec ff_imc_decoder = {
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("IMC (Intel Music Coder)"),
 };
-
+#endif
+#if CONFIG_IAC_DECODER
 AVCodec ff_iac_decoder = {
     .name           = "iac",
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -1015,3 +1016,4 @@ AVCodec ff_iac_decoder = {
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("IAC (Indeo Audio Coder)"),
 };
+#endif

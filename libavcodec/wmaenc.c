@@ -417,6 +417,7 @@ static int encode_superframe(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
+#if CONFIG_WMAV1_ENCODER
 AVCodec ff_wmav1_encoder = {
     .name           = "wmav1",
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -429,7 +430,8 @@ AVCodec ff_wmav1_encoder = {
                                                      AV_SAMPLE_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Audio 1"),
 };
-
+#endif
+#if CONFIG_WMAV2_ENCODER
 AVCodec ff_wmav2_encoder = {
     .name           = "wmav2",
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -442,3 +444,4 @@ AVCodec ff_wmav2_encoder = {
                                                      AV_SAMPLE_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Audio 2"),
 };
+#endif

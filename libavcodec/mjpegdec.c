@@ -1804,6 +1804,7 @@ av_cold int ff_mjpeg_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
+#if CONFIG_MJPEG_DECODER
 #define OFFSET(x) offsetof(MJpegDecodeContext, x)
 #define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
@@ -1832,7 +1833,8 @@ AVCodec ff_mjpeg_decoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("MJPEG (Motion JPEG)"),
     .priv_class     = &mjpegdec_class,
 };
-
+#endif
+#if CONFIG_THP_DECODER
 AVCodec ff_thp_decoder = {
     .name           = "thp",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -1845,3 +1847,4 @@ AVCodec ff_thp_decoder = {
     .max_lowres     = 3,
     .long_name      = NULL_IF_CONFIG_SMALL("Nintendo Gamecube THP video"),
 };
+#endif

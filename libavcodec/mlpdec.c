@@ -1199,6 +1199,7 @@ error:
     return AVERROR_INVALIDDATA;
 }
 
+#if CONFIG_MLP_DECODER
 AVCodec ff_mlp_decoder = {
     .name           = "mlp",
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -1209,7 +1210,7 @@ AVCodec ff_mlp_decoder = {
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("MLP (Meridian Lossless Packing)"),
 };
-
+#endif
 #if CONFIG_TRUEHD_DECODER
 AVCodec ff_truehd_decoder = {
     .name           = "truehd",

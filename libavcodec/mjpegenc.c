@@ -498,6 +498,7 @@ static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
     return ff_MPV_encode_picture(avctx, pkt, &pic, got_packet);
 }
 
+#if CONFIG_MJPEG_ENCODER
 AVCodec ff_mjpeg_encoder = {
     .name           = "mjpeg",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -512,7 +513,8 @@ AVCodec ff_mjpeg_encoder = {
     },
     .long_name      = NULL_IF_CONFIG_SMALL("MJPEG (Motion JPEG)"),
 };
-
+#endif
+#if CONFIG_AMV_ENCODER
 AVCodec ff_amv_encoder = {
     .name           = "amv",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -526,3 +528,4 @@ AVCodec ff_amv_encoder = {
     },
     .long_name      = NULL_IF_CONFIG_SMALL("AMV Video"),
 };
+#endif

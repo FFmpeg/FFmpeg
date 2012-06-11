@@ -683,6 +683,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     return 0;
 }
 
+#if CONFIG_IFF_ILBM_DECODER
 AVCodec ff_iff_ilbm_decoder = {
     .name           = "iff_ilbm",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -694,7 +695,8 @@ AVCodec ff_iff_ilbm_decoder = {
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("IFF ILBM"),
 };
-
+#endif
+#if CONFIG_IFF_BYTERUN1_DECODER
 AVCodec ff_iff_byterun1_decoder = {
     .name           = "iff_byterun1",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -706,3 +708,4 @@ AVCodec ff_iff_byterun1_decoder = {
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("IFF ByteRun1"),
 };
+#endif

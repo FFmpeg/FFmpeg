@@ -954,6 +954,7 @@ static av_cold void flush(AVCodecContext *avctx)
     s->last_superframe_len= 0;
 }
 
+#if CONFIG_WMAV1_DECODER
 AVCodec ff_wmav1_decoder = {
     .name           = "wmav1",
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -966,7 +967,8 @@ AVCodec ff_wmav1_decoder = {
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Audio 1"),
 };
-
+#endif
+#if CONFIG_WMAV2_DECODER
 AVCodec ff_wmav2_decoder = {
     .name           = "wmav2",
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -979,3 +981,4 @@ AVCodec ff_wmav2_decoder = {
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Audio 2"),
 };
+#endif
