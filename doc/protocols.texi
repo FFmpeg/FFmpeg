@@ -209,11 +209,58 @@ The number of the TCP port to use (by default is 1935).
 @item app
 It is the name of the application to access. It usually corresponds to
 the path where the application is installed on the RTMP server
-(e.g. @file{/ondemand/}, @file{/flash/live/}, etc.).
+(e.g. @file{/ondemand/}, @file{/flash/live/}, etc.). You can override
+the value parsed from the URI through the @code{rtmp_app} option, too.
 
 @item playpath
 It is the path or name of the resource to play with reference to the
-application specified in @var{app}, may be prefixed by "mp4:".
+application specified in @var{app}, may be prefixed by "mp4:". You
+can override the value parsed from the URI through the @code{rtmp_playpath}
+option, too.
+
+@end table
+
+Additionally, the following parameters can be set via command line options
+(or in code via @code{AVOption}s):
+@table @option
+
+@item rtmp_app
+Name of application to connect on the RTMP server. This option
+overrides the parameter specified in the URI.
+
+@item rtmp_conn
+Extra arbitrary AMF connection parameters, parsed from a string,
+e.g. like @code{B:1 S:authMe O:1 NN:code:1.23 NS:flag:ok O:0}.
+Each value is prefixed by a single character denoting the type,
+B for Boolean, N for number, S for string, O for object, or Z for null,
+followed by a colon. For Booleans the data must be either 0 or 1 for
+FALSE or TRUE, respectively.  Likewise for Objects the data must be 0 or
+1 to end or begin an object, respectively. Data items in subobjects may
+be named, by prefixing the type with 'N' and specifying the name before
+the value (i.e. @code{NB:myFlag:1}). This option may be used multiple
+times to construct arbitrary AMF sequences.
+
+@item rtmp_flashver
+Version of the Flash plugin used to run the SWF player. The default
+is LNX 9,0,124,2.
+
+@item rtmp_live
+Specify that the media is a live stream. No resuming or seeking in
+live streams is possible. The default value is @code{any}, which means the
+subscriber first tries to play the live stream specified in the
+playpath. If a live stream of that name is not found, it plays the
+recorded stream. The other possible values are @code{live} and
+@code{recorded}.
+
+@item rtmp_playpath
+Stream identifier to play or to publish. This option overrides the
+parameter specified in the URI.
+
+@item rtmp_swfurl
+URL of the SWF player for the media. By default no value will be sent.
+
+@item rtmp_tcurl
+URL of the target stream.
 
 @end table
 
