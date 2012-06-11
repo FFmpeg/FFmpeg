@@ -435,7 +435,6 @@ int opt_default(void *optctx, const char *opt, const char *arg)
 
     if (o)
         return 0;
-    av_log(NULL, AV_LOG_ERROR, "Unrecognized option '%s'\n", opt);
     return AVERROR_OPTION_NOT_FOUND;
 }
 
