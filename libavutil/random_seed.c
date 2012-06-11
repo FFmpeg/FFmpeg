@@ -22,8 +22,15 @@
 #include <fcntl.h>
 #include <math.h>
 #include <time.h>
+#include <string.h>
 #include "timer.h"
 #include "random_seed.h"
+#include "sha.h"
+#include "intreadwrite.h"
+
+#ifndef TEST
+#define TEST 0
+#endif
 
 static int read_random(uint32_t *dst, const char *file)
 {
@@ -40,34 +47,44 @@ static int read_random(uint32_t *dst, const char *file)
 
 static uint32_t get_generic_seed(void)
 {
+    uint8_t tmp[av_sha_size];
+    struct AVSHA *sha = (void*)tmp;
     clock_t last_t  = 0;
-    int bits        = 0;
-    uint64_t random = 0;
-    unsigned i;
-    float s = 0.000000000001;
+    static uint64_t i = 0;
+    static uint32_t buffer[512] = {0};
+    unsigned char digest[32];
+    uint64_t last_i = i;
 
-    for (i = 0; bits < 64; i++) {
+    if(TEST){
+        memset(buffer, 0, sizeof(buffer));
+        last_i = i = 0;
+    }else{
+#ifdef AV_READ_TIME
+        buffer[13] ^= AV_READ_TIME();
+        buffer[41] ^= AV_READ_TIME()>>32;
+#endif
+    }
+
+    for (;;) {
         clock_t t = clock();
-        if (last_t && fabs(t - last_t) > s || t == (clock_t) -1) {
-            if (i < 10000 && s < (1 << 24)) {
-                s += s;
-                i = t = 0;
-            } else {
-                random = 2 * random + (i & 1);
-                bits++;
-            }
+
+        if(last_t == t){
+            buffer[i&511]++;
+        }else{
+            buffer[++i&511]+= (t-last_t) % 3294638521U;
+            if(last_i && i-last_i > 4 || i-last_i > 64 || TEST && i-last_i > 8)
+                break;
         }
         last_t = t;
     }
-#ifdef AV_READ_TIME
-    random ^= AV_READ_TIME();
-#else
-    random ^= clock();
-#endif
 
-    random += random >> 32;
+    if(TEST)
+        buffer[0] = buffer[1] = 0;
 
-    return random;
+    av_sha_init(sha, 160);
+    av_sha_update(sha, (uint8_t*)buffer, sizeof(buffer));
+    av_sha_final(sha, digest);
+    return AV_RB32(digest) + AV_RB32(digest+32);
 }
 
 uint32_t av_get_random_seed(void)
@@ -81,7 +98,7 @@ uint32_t av_get_random_seed(void)
     return get_generic_seed();
 }
 
-#ifdef TEST
+#if TEST
 #undef printf
 #define N 256
 #include <stdio.h>
