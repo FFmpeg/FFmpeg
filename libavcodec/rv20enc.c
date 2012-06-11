@@ -40,12 +40,12 @@ void ff_rv20_encode_picture_header(MpegEncContext *s, int picture_number){
 
     put_bits(&s->pb, 1, s->no_rounding);
 
-    assert(s->f_code == 1);
-    assert(s->unrestricted_mv == 0);
-    assert(s->alt_inter_vlc == 0);
-    assert(s->umvplus == 0);
-    assert(s->modified_quant==1);
-    assert(s->loop_filter==1);
+    av_assert0(s->f_code == 1);
+    av_assert0(s->unrestricted_mv == 0);
+    av_assert0(s->alt_inter_vlc == 0);
+    av_assert0(s->umvplus == 0);
+    av_assert0(s->modified_quant==1);
+    av_assert0(s->loop_filter==1);
 
     s->h263_aic= s->pict_type == AV_PICTURE_TYPE_I;
     if(s->h263_aic){
