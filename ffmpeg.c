@@ -90,7 +90,9 @@
 #if HAVE_PTHREADS
 #include <pthread.h>
 #else
-#include "libavcodec/w32pthreads.h"
+//#include "libavcodec/w32pthreads.h"
+#undef HAVE_THREADS
+#define HAVE_THREADS 0
 #endif
 #endif
 
