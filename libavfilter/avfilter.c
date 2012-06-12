@@ -429,6 +429,16 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
     return ret;
 }
 
+const char *avfilter_pad_get_name(AVFilterPad *pads, int pad_idx)
+{
+    return pads[pad_idx].name;
+}
+
+enum AVMediaType avfilter_pad_get_type(AVFilterPad *pads, int pad_idx)
+{
+    return pads[pad_idx].type;
+}
+
 #if FF_API_DEFAULT_CONFIG_OUTPUT_LINK
 int avfilter_default_config_output_link(AVFilterLink *link)
 {

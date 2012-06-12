@@ -359,6 +359,28 @@ struct AVFilterPad {
     int (*config_props)(AVFilterLink *link);
 };
 
+/**
+ * Get the name of an AVFilterPad.
+ *
+ * @param pads an array of AVFilterPads
+ * @param pad_idx index of the pad in the array it; is the caller's
+ *                responsibility to ensure the index is valid
+ *
+ * @return name of the pad_idx'th pad in pads
+ */
+const char *avfilter_pad_get_name(AVFilterPad *pads, int pad_idx);
+
+/**
+ * Get the type of an AVFilterPad.
+ *
+ * @param pads an array of AVFilterPads
+ * @param pad_idx index of the pad in the array; it is the caller's
+ *                responsibility to ensure the index is valid
+ *
+ * @return type of the pad_idx'th pad in pads
+ */
+enum AVMediaType avfilter_pad_get_type(AVFilterPad *pads, int pad_idx);
+
 #if FF_API_FILTERS_PUBLIC
 /** default handler for start_frame() for video inputs */
 attribute_deprecated
