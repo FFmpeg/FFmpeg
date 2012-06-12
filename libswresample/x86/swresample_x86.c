@@ -166,9 +166,11 @@ void swri_rematrix_init_x86(struct SwrContext *s){
     } else if(s->midbuf.fmt == AV_SAMPLE_FMT_FLTP){
         if(mm_flags & AV_CPU_FLAG_SSE) {
             s->mix_1_1_simd = ff_mix_1_1_a_float_sse;
+            s->mix_2_1_simd = ff_mix_2_1_a_float_sse;
         }
         if(HAVE_AVX && mm_flags & AV_CPU_FLAG_AVX) {
             s->mix_1_1_simd = ff_mix_1_1_a_float_avx;
+            s->mix_2_1_simd = ff_mix_2_1_a_float_avx;
         }
         s->native_simd_matrix = av_mallocz(num * sizeof(float));
         memcpy(s->native_simd_matrix, s->native_matrix, num * sizeof(float));

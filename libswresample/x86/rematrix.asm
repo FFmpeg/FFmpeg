@@ -23,6 +23,50 @@
 
 SECTION .text
 
+%macro MIX2_FLT 1
+cglobal mix_2_1_%1_float, 7, 7, 6, out, in1, in2, coeffp, index1, index2, len
+%ifidn %1, a
+    test in1q, mmsize-1
+        jne mix_2_1_float_u_int %+ SUFFIX
+    test in2q, mmsize-1
+        jne mix_2_1_float_u_int %+ SUFFIX
+    test outq, mmsize-1
+        jne mix_2_1_float_u_int %+ SUFFIX
+%else
+mix_2_1_float_u_int %+ SUFFIX
+%endif
+    VBROADCASTSS m4, [coeffpq + 4*index1q]
+    VBROADCASTSS m5, [coeffpq + 4*index2q]
+    shl lenq    , 2
+    add in1q    , lenq
+    add in2q    , lenq
+    add outq    , lenq
+    neg lenq
+.next:
+%ifidn %1, a
+    mulps        m0, m4, [in1q + lenq         ]
+    mulps        m1, m5, [in2q + lenq         ]
+    mulps        m2, m4, [in1q + lenq + mmsize]
+    mulps        m3, m5, [in2q + lenq + mmsize]
+%else
+    movu         m0, [in1q + lenq         ]
+    movu         m1, [in2q + lenq         ]
+    movu         m2, [in1q + lenq + mmsize]
+    movu         m3, [in2q + lenq + mmsize]
+    mulps        m0, m0, m4
+    mulps        m1, m1, m5
+    mulps        m2, m2, m4
+    mulps        m3, m3, m5
+%endif
+    addps        m0, m0, m1
+    addps        m2, m2, m3
+    mov%1  [outq + lenq         ], m0
+    mov%1  [outq + lenq + mmsize], m2
+    add        lenq, mmsize*2
+        jl .next
+    REP_RET
+%endmacro
+
 %macro MIX1_FLT 1
 cglobal mix_1_1_%1_float, 5, 5, 3, out, in, coeffp, index, len
 %ifidn %1, a
@@ -56,11 +100,15 @@ mix_1_1_float_u_int %+ SUFFIX
 %endmacro
 
 INIT_XMM sse
+MIX2_FLT u
+MIX2_FLT a
 MIX1_FLT u
 MIX1_FLT a
 
 %if HAVE_AVX
 INIT_YMM avx
+MIX2_FLT u
+MIX2_FLT a
 MIX1_FLT u
 MIX1_FLT a
 %endif
