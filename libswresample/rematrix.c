@@ -393,7 +393,7 @@ int swri_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int mus
             int in_i1 = s->matrix_ch[out_i][1];
             int in_i2 = s->matrix_ch[out_i][2];
             if(s->mix_2_1_simd && len1)
-                s->mix_2_1_simd(out->ch[out_i]    , in->ch[in_i1]    , in->ch[in_i2]    , s->native_matrix, in->ch_count*out_i + in_i1, in->ch_count*out_i + in_i2, len1);
+                s->mix_2_1_simd(out->ch[out_i]    , in->ch[in_i1]    , in->ch[in_i2]    , s->native_simd_matrix, in->ch_count*out_i + in_i1, in->ch_count*out_i + in_i2, len1);
             else
                 s->mix_2_1_f   (out->ch[out_i]    , in->ch[in_i1]    , in->ch[in_i2]    , s->native_matrix, in->ch_count*out_i + in_i1, in->ch_count*out_i + in_i2, len1);
             if(len != len1)

@@ -158,9 +158,78 @@ mix_1_1_int16_u_int %+ SUFFIX
 %endif
 %endmacro
 
+%macro MIX2_INT16 1
+cglobal mix_2_1_%1_int16, 7, 7, 8, out, in1, in2, coeffp, index1, index2, len
+%ifidn %1, a
+    test in1q, mmsize-1
+        jne mix_2_1_int16_u_int %+ SUFFIX
+    test in2q, mmsize-1
+        jne mix_2_1_int16_u_int %+ SUFFIX
+    test outq, mmsize-1
+        jne mix_2_1_int16_u_int %+ SUFFIX
+%else
+mix_2_1_int16_u_int %+ SUFFIX
+%endif
+    movd   m4, [coeffpq + 4*index1q]
+    movd   m6, [coeffpq + 4*index2q]
+    SPLATW m5, m4
+    SPLATW m6, m6
+    psllq  m4, 32
+    psrlq  m4, 48
+    mova   m7, [dw1]
+    pslld  m7, m4
+    psrld  m7, 1
+    punpcklwd m5, m6
+    add lenq    , lenq
+    add in1q    , lenq
+    add in2q    , lenq
+    add outq    , lenq
+    neg lenq
+.next:
+    mov%1        m0, [in1q + lenq         ]
+    mov%1        m2, [in2q + lenq         ]
+    mova         m1, m0
+    punpcklwd    m0, m2
+    punpckhwd    m1, m2
+
+    mov%1        m2, [in1q + lenq + mmsize]
+    mov%1        m6, [in2q + lenq + mmsize]
+    mova         m3, m2
+    punpcklwd    m2, m6
+    punpckhwd    m3, m6
+
+    pmaddwd      m0, m5
+    pmaddwd      m1, m5
+    pmaddwd      m2, m5
+    pmaddwd      m3, m5
+    paddd        m0, m7
+    paddd        m1, m7
+    paddd        m2, m7
+    paddd        m3, m7
+    psrad        m0, m4
+    psrad        m1, m4
+    psrad        m2, m4
+    psrad        m3, m4
+    packssdw     m0, m1
+    packssdw     m2, m3
+    mov%1  [outq + lenq         ], m0
+    mov%1  [outq + lenq + mmsize], m2
+    add        lenq, mmsize*2
+        jl .next
+%if mmsize == 8
+    emms
+    RET
+%else
+    REP_RET
+%endif
+%endmacro
+
+
 INIT_MMX mmx
 MIX1_INT16 u
 MIX1_INT16 a
+MIX2_INT16 u
+MIX2_INT16 a
 
 INIT_XMM sse
 MIX2_FLT u
@@ -169,6 +238,8 @@ MIX1_FLT u
 MIX1_FLT a
 MIX1_INT16 u
 MIX1_INT16 a
+MIX2_INT16 u
+MIX2_INT16 a
 
 %if HAVE_AVX
 INIT_YMM avx
