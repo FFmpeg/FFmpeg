@@ -488,15 +488,22 @@ struct AVFilterContext {
 
     char *name;                     ///< name of this filter instance
 
-    unsigned input_count;           ///< number of input pads
+#if FF_API_FOO_COUNT
+    unsigned input_count;           ///< @deprecated use nb_inputs
+#endif
     AVFilterPad   *input_pads;      ///< array of input pads
     AVFilterLink **inputs;          ///< array of pointers to input links
 
-    unsigned output_count;          ///< number of output pads
+#if FF_API_FOO_COUNT
+    unsigned output_count;          ///< @deprecated use nb_outputs
+#endif
     AVFilterPad   *output_pads;     ///< array of output pads
     AVFilterLink **outputs;         ///< array of pointers to output links
 
     void *priv;                     ///< private data for use by the filter
+
+    unsigned nb_inputs;             ///< number of input pads
+    unsigned nb_outputs;            ///< number of output pads
 };
 
 /**

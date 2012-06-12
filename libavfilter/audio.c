@@ -156,7 +156,7 @@ void ff_default_filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesr
 {
     AVFilterLink *outlink = NULL;
 
-    if (inlink->dst->output_count)
+    if (inlink->dst->nb_outputs)
         outlink = inlink->dst->outputs[0];
 
     if (outlink) {

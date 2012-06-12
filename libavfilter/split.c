@@ -59,7 +59,7 @@ static void split_uninit(AVFilterContext *ctx)
 {
     int i;
 
-    for (i = 0; i < ctx->output_count; i++)
+    for (i = 0; i < ctx->nb_outputs; i++)
         av_freep(&ctx->output_pads[i].name);
 }
 
@@ -68,7 +68,7 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     AVFilterContext *ctx = inlink->dst;
     int i;
 
-    for (i = 0; i < ctx->output_count; i++)
+    for (i = 0; i < ctx->nb_outputs; i++)
         ff_start_frame(ctx->outputs[i],
                        avfilter_ref_buffer(picref, ~AV_PERM_WRITE));
 }
@@ -78,7 +78,7 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
     AVFilterContext *ctx = inlink->dst;
     int i;
 
-    for (i = 0; i < ctx->output_count; i++)
+    for (i = 0; i < ctx->nb_outputs; i++)
         ff_draw_slice(ctx->outputs[i], y, h, slice_dir);
 }
 
@@ -87,7 +87,7 @@ static void end_frame(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     int i;
 
-    for (i = 0; i < ctx->output_count; i++)
+    for (i = 0; i < ctx->nb_outputs; i++)
         ff_end_frame(ctx->outputs[i]);
 
     avfilter_unref_buffer(inlink->cur_buf);
@@ -115,7 +115,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
     AVFilterContext *ctx = inlink->dst;
     int i;
 
-    for (i = 0; i < ctx->output_count; i++)
+    for (i = 0; i < ctx->nb_outputs; i++)
         ff_filter_samples(inlink->dst->outputs[i],
                           avfilter_ref_buffer(samplesref, ~AV_PERM_WRITE));
 }

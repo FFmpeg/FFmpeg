@@ -330,13 +330,13 @@ void ff_formats_changeref(AVFilterFormats **oldref, AVFilterFormats **newref)
 {                                                                   \
     int count = 0, i;                                               \
                                                                     \
-    for (i = 0; i < ctx->input_count; i++) {                        \
+    for (i = 0; i < ctx->nb_inputs; i++) {                          \
         if (ctx->inputs[i]) {                                       \
             ref(fmts, &ctx->inputs[i]->out_fmts);                   \
             count++;                                                \
         }                                                           \
     }                                                               \
-    for (i = 0; i < ctx->output_count; i++) {                       \
+    for (i = 0; i < ctx->nb_outputs; i++) {                         \
         if (ctx->outputs[i]) {                                      \
             ref(fmts, &ctx->outputs[i]->in_fmts);                   \
             count++;                                                \

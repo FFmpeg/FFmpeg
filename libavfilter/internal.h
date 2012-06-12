@@ -183,16 +183,22 @@ void ff_insert_pad(unsigned idx, unsigned *count, size_t padidx_off,
 static inline void ff_insert_inpad(AVFilterContext *f, unsigned index,
                                    AVFilterPad *p)
 {
-    ff_insert_pad(index, &f->input_count, offsetof(AVFilterLink, dstpad),
+    ff_insert_pad(index, &f->nb_inputs, offsetof(AVFilterLink, dstpad),
                   &f->input_pads, &f->inputs, p);
+#if FF_API_FOO_COUNT
+    f->input_count = f->nb_inputs;
+#endif
 }
 
 /** Insert a new output pad for the filter. */
 static inline void ff_insert_outpad(AVFilterContext *f, unsigned index,
                                     AVFilterPad *p)
 {
-    ff_insert_pad(index, &f->output_count, offsetof(AVFilterLink, srcpad),
+    ff_insert_pad(index, &f->nb_outputs, offsetof(AVFilterLink, srcpad),
                   &f->output_pads, &f->outputs, p);
+#if FF_API_FOO_COUNT
+    f->output_count = f->nb_outputs;
+#endif
 }
 
 /**

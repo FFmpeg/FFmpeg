@@ -99,7 +99,7 @@ static int query_formats(AVFilterContext *ctx)
     ff_add_channel_layout(&in_layouts, s->channel_layout);
     ff_channel_layouts_ref(in_layouts, &ctx->inputs[0]->out_channel_layouts);
 
-    for (i = 0; i < ctx->output_count; i++) {
+    for (i = 0; i < ctx->nb_outputs; i++) {
         AVFilterChannelLayouts *out_layouts = NULL;
         uint64_t channel = av_channel_layout_extract_channel(s->channel_layout, i);
 
@@ -115,7 +115,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
     AVFilterContext *ctx = inlink->dst;
     int i;
 
-    for (i = 0; i < ctx->output_count; i++) {
+    for (i = 0; i < ctx->nb_outputs; i++) {
         AVFilterBufferRef *buf_out = avfilter_ref_buffer(buf, ~AV_PERM_WRITE);
 
         if (!buf_out)

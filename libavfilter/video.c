@@ -169,7 +169,7 @@ static void default_start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
     AVFilterLink *outlink = NULL;
 
-    if (inlink->dst->output_count)
+    if (inlink->dst->nb_outputs)
         outlink = inlink->dst->outputs[0];
 
     if (outlink) {
@@ -220,7 +220,7 @@ static void default_end_frame(AVFilterLink *inlink)
 {
     AVFilterLink *outlink = NULL;
 
-    if (inlink->dst->output_count)
+    if (inlink->dst->nb_outputs)
         outlink = inlink->dst->outputs[0];
 
     avfilter_unref_buffer(inlink->cur_buf);
@@ -261,7 +261,7 @@ static void default_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir
 {
     AVFilterLink *outlink = NULL;
 
-    if (inlink->dst->output_count)
+    if (inlink->dst->nb_outputs)
         outlink = inlink->dst->outputs[0];
 
     if (outlink)
