@@ -98,7 +98,10 @@ struct SwrContext {
     int32_t matrix32[SWR_CH_MAX][SWR_CH_MAX];       ///< 17.15 fixed point rematrixing coefficients
     uint8_t matrix_ch[SWR_CH_MAX][SWR_CH_MAX+1];    ///< Lists of input channels per output channel that have non zero rematrixing coefficients
     mix_1_1_func_type *mix_1_1_f;
+    mix_1_1_func_type *mix_1_1_simd;
+
     mix_2_1_func_type *mix_2_1_f;
+    mix_2_1_func_type *mix_2_1_simd;
 
     mix_any_func_type *mix_any_f;
 
