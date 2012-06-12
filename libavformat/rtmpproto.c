@@ -1141,11 +1141,11 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
             goto fail;
         }
 
-        if (!strchr(fname, ':') &&
+        if (!strchr(fname, ':') && len >= 4 &&
             (!strcmp(fname + len - 4, ".f4v") ||
              !strcmp(fname + len - 4, ".mp4"))) {
             memcpy(rt->playpath, "mp4:", 5);
-        } else if (!strcmp(fname + len - 4, ".flv")) {
+        } else if (len >= 4 && !strcmp(fname + len - 4, ".flv")) {
             fname[len - 4] = '\0';
         } else {
             rt->playpath[0] = 0;

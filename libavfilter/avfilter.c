@@ -231,8 +231,12 @@ int avfilter_config_links(AVFilterContext *filter)
                                                     "callbacks on all outputs\n");
                     return AVERROR(EINVAL);
                 }
-            } else if ((ret = config_link(link)) < 0)
+            } else if ((ret = config_link(link)) < 0) {
+                av_log(link->src, AV_LOG_ERROR,
+                       "Failed to configure output pad on %s\n",
+                       link->src->name);
                 return ret;
+            }
 
             switch (link->type) {
             case AVMEDIA_TYPE_VIDEO:
@@ -277,8 +281,12 @@ int avfilter_config_links(AVFilterContext *filter)
             }
 
             if ((config_link = link->dstpad->config_props))
-                if ((ret = config_link(link)) < 0)
+                if ((ret = config_link(link)) < 0) {
+                    av_log(link->src, AV_LOG_ERROR,
+                           "Failed to configure input pad on %s\n",
+                           link->dst->name);
                     return ret;
+                }
 
             link->init_state = AVLINK_INIT;
         }
