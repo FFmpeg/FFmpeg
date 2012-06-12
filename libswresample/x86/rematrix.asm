@@ -21,6 +21,12 @@
 %include "libavutil/x86/x86inc.asm"
 %include "libavutil/x86/x86util.asm"
 
+
+SECTION_RODATA
+align 32
+dw1: times 8  dd 1
+w1 : times 16 dw 1
+
 SECTION .text
 
 %macro MIX2_FLT 1
@@ -98,6 +104,63 @@ mix_1_1_float_u_int %+ SUFFIX
         jl .next
     REP_RET
 %endmacro
+
+%macro MIX1_INT16 1
+cglobal mix_1_1_%1_int16, 5, 5, 6, out, in, coeffp, index, len
+%ifidn %1, a
+    test inq, mmsize-1
+        jne mix_1_1_int16_u_int %+ SUFFIX
+    test outq, mmsize-1
+        jne mix_1_1_int16_u_int %+ SUFFIX
+%else
+mix_1_1_int16_u_int %+ SUFFIX
+%endif
+    movd   m4, [coeffpq + 4*indexq]
+    SPLATW m5, m4
+    psllq  m4, 32
+    psrlq  m4, 48
+    mova   m0, [w1]
+    psllw  m0, m4
+    psrlw  m0, 1
+    punpcklwd m5, m0
+    add lenq    , lenq
+    add inq     , lenq
+    add outq    , lenq
+    neg lenq
+.next:
+    mov%1        m0, [inq + lenq         ]
+    mov%1        m2, [inq + lenq + mmsize]
+    mova         m1, m0
+    mova         m3, m2
+    punpcklwd    m0, [w1]
+    punpckhwd    m1, [w1]
+    punpcklwd    m2, [w1]
+    punpckhwd    m3, [w1]
+    pmaddwd      m0, m5
+    pmaddwd      m1, m5
+    pmaddwd      m2, m5
+    pmaddwd      m3, m5
+    psrad        m0, m4
+    psrad        m1, m4
+    psrad        m2, m4
+    psrad        m3, m4
+    packssdw     m0, m1
+    packssdw     m2, m3
+    mov%1  [outq + lenq         ], m0
+    mov%1  [outq + lenq + mmsize], m2
+    add        lenq, mmsize*2
+        jl .next
+%if mmsize == 8
+    emms
+    RET
+%else
+    REP_RET
+%endif
+%endmacro
+
+INIT_MMX mmx
+MIX1_INT16 u
+MIX1_INT16 a
 
 INIT_XMM sse
 MIX2_FLT u
