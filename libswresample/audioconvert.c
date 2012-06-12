@@ -175,7 +175,7 @@ int swri_audio_convert(AudioConvert *ctx, AudioData *out, AudioData *in, int len
     //FIXME optimize common cases
 
     if(ctx->simd_f && !ctx->ch_map){
-        off = (len>>4)<<4;
+        off = len&~15;
         av_assert1(off>=0);
         av_assert1(off<=len);
         if(off>0){
