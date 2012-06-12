@@ -340,6 +340,9 @@ int swri_rematrix_init(SwrContext *s){
         }
         s->matrix_ch[i][0]= ch_in;
     }
+
+    if(HAVE_YASM && HAVE_MMX) swri_rematrix_init_x86(s);
+
     return 0;
 }
 
@@ -351,10 +354,17 @@ void swri_rematrix_free(SwrContext *s){
 
 int swri_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int mustcopy){
     int out_i, in_i, i, j;
+    int len1 = 0;
+    int off = 0;
 
     if(s->mix_any_f) {
         s->mix_any_f(out->ch, in->ch, s->native_matrix, len);
         return 0;
+    }
+
+    if(s->mix_2_1_simd || s->mix_1_1_simd){
+        len1= len&~15;
+        off = len1 * out->bps;
     }
 
     av_assert0(out->ch_count == av_get_channel_layout_nb_channels(s->out_ch_layout));
@@ -369,7 +379,10 @@ int swri_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int mus
         case 1:
             in_i= s->matrix_ch[out_i][1];
             if(s->matrix[out_i][in_i]!=1.0){
-                s->mix_1_1_f(out->ch[out_i], in->ch[in_i], s->native_matrix, in->ch_count*out_i + in_i, len);
+                if(s->mix_1_1_simd && len1)
+                    s->mix_1_1_simd(out->ch[out_i]    , in->ch[in_i]    , s->native_matrix, in->ch_count*out_i + in_i, len1);
+                if(len != len1)
+                    s->mix_1_1_f   (out->ch[out_i]+off, in->ch[in_i]+off, s->native_matrix, in->ch_count*out_i + in_i, len-len1);
             }else if(mustcopy){
                 memcpy(out->ch[out_i], in->ch[in_i], len*out->bps);
             }else{
@@ -379,7 +392,12 @@ int swri_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int mus
         case 2: {
             int in_i1 = s->matrix_ch[out_i][1];
             int in_i2 = s->matrix_ch[out_i][2];
-            s->mix_2_1_f(out->ch[out_i], in->ch[in_i1], in->ch[in_i2], s->native_matrix, in->ch_count*out_i + in_i1, in->ch_count*out_i + in_i2, len);
+            if(s->mix_2_1_simd && len1)
+                s->mix_2_1_simd(out->ch[out_i]    , in->ch[in_i1]    , in->ch[in_i2]    , s->native_matrix, in->ch_count*out_i + in_i1, in->ch_count*out_i + in_i2, len1);
+            else
+                s->mix_2_1_f   (out->ch[out_i]    , in->ch[in_i1]    , in->ch[in_i2]    , s->native_matrix, in->ch_count*out_i + in_i1, in->ch_count*out_i + in_i2, len1);
+            if(len != len1)
+                s->mix_2_1_f   (out->ch[out_i]+off, in->ch[in_i1]+off, in->ch[in_i2]+off, s->native_matrix, in->ch_count*out_i + in_i1, in->ch_count*out_i + in_i2, len-len1);
             break;}
         default:
             if(s->int_sample_fmt == AV_SAMPLE_FMT_FLTP){

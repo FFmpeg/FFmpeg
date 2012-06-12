@@ -142,3 +142,35 @@ MULTI_CAPS_FUNC(AV_CPU_FLAG_SSE, sse)
         }
     }
 }
+
+#define D(type, simd) \
+mix_1_1_func_type ff_mix_1_1_a_## type ## _ ## simd;\
+mix_2_1_func_type ff_mix_2_1_a_## type ## _ ## simd;
+
+D(float, sse)
+D(float, avx)
+D(int16, mmx)
+
+
+void swri_rematrix_init_x86(struct SwrContext *s){
+    int mm_flags = av_get_cpu_flags();
+    int nb_in  = av_get_channel_layout_nb_channels(s->in_ch_layout);
+    int nb_out = av_get_channel_layout_nb_channels(s->out_ch_layout);
+    int num    = nb_in * nb_out;
+    int i,j;
+
+    s->mix_1_1_simd = NULL;
+    s->mix_2_1_simd = NULL;
+
+    if (s->midbuf.fmt == AV_SAMPLE_FMT_S16P){
+    } else if(s->midbuf.fmt == AV_SAMPLE_FMT_FLTP){
+        if(mm_flags & AV_CPU_FLAG_SSE) {
+            s->mix_1_1_simd = ff_mix_1_1_a_float_sse;
+        }
+        if(HAVE_AVX && mm_flags & AV_CPU_FLAG_AVX) {
+            s->mix_1_1_simd = ff_mix_1_1_a_float_avx;
+        }
+        s->native_simd_matrix = av_mallocz(num * sizeof(float));
+        memcpy(s->native_simd_matrix, s->native_matrix, num * sizeof(float));
+    }
+}

@@ -121,6 +121,7 @@ int swri_resample_double(struct ResampleContext *c,double  *dst, const double  *
 int swri_rematrix_init(SwrContext *s);
 void swri_rematrix_free(SwrContext *s);
 int swri_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int mustcopy);
+void swri_rematrix_init_x86(struct SwrContext *s);
 
 void swri_get_dither(SwrContext *s, void *dst, int len, unsigned seed, enum AVSampleFormat out_fmt, enum AVSampleFormat in_fmt);
 
