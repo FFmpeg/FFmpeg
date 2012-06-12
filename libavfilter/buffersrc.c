@@ -27,6 +27,7 @@
 #include "avfilter.h"
 #include "buffersrc.h"
 #include "formats.h"
+#include "internal.h"
 #include "video.h"
 #include "vsrc_buffer.h"
 

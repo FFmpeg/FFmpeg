@@ -23,6 +23,7 @@
 
 #include "audio.h"
 #include "avfilter.h"
+#include "internal.h"
 
 AVFilter avfilter_af_anull = {
     .name      = "anull",

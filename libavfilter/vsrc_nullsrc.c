@@ -27,6 +27,7 @@
 #include "libavutil/parseutils.h"
 #include "avfilter.h"
 #include "formats.h"
+#include "internal.h"
 
 static const char *const var_names[] = {
     "E",

@@ -235,8 +235,14 @@ void avfilter_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats)
  */
 #endif
 
+#if FF_API_AVFILTERPAD_PUBLIC
 /**
  * A filter pad used for either input or output.
+ *
+ * @warning this struct will be removed from public API.
+ * users should call avfilter_pad_get_name() and avfilter_pad_get_type()
+ * to access the name and type fields; there should be no need to access
+ * any other fields from outside of libavfilter.
  */
 struct AVFilterPad {
     /**
@@ -358,6 +364,7 @@ struct AVFilterPad {
      */
     int (*config_props)(AVFilterLink *link);
 };
+#endif
 
 /**
  * Get the name of an AVFilterPad.

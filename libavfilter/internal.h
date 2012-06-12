@@ -26,6 +26,132 @@
 
 #include "avfilter.h"
 
+#if !FF_API_AVFILTERPAD_PUBLIC
+/**
+ * A filter pad used for either input or output.
+ */
+struct AVFilterPad {
+    /**
+     * Pad name. The name is unique among inputs and among outputs, but an
+     * input may have the same name as an output. This may be NULL if this
+     * pad has no need to ever be referenced by name.
+     */
+    const char *name;
+
+    /**
+     * AVFilterPad type.
+     */
+    enum AVMediaType type;
+
+    /**
+     * Minimum required permissions on incoming buffers. Any buffer with
+     * insufficient permissions will be automatically copied by the filter
+     * system to a new buffer which provides the needed access permissions.
+     *
+     * Input pads only.
+     */
+    int min_perms;
+
+    /**
+     * Permissions which are not accepted on incoming buffers. Any buffer
+     * which has any of these permissions set will be automatically copied
+     * by the filter system to a new buffer which does not have those
+     * permissions. This can be used to easily disallow buffers with
+     * AV_PERM_REUSE.
+     *
+     * Input pads only.
+     */
+    int rej_perms;
+
+    /**
+     * Callback called before passing the first slice of a new frame. If
+     * NULL, the filter layer will default to storing a reference to the
+     * picture inside the link structure.
+     *
+     * Input video pads only.
+     */
+    void (*start_frame)(AVFilterLink *link, AVFilterBufferRef *picref);
+
+    /**
+     * Callback function to get a video buffer. If NULL, the filter system will
+     * use avfilter_default_get_video_buffer().
+     *
+     * Input video pads only.
+     */
+    AVFilterBufferRef *(*get_video_buffer)(AVFilterLink *link, int perms, int w, int h);
+
+    /**
+     * Callback function to get an audio buffer. If NULL, the filter system will
+     * use avfilter_default_get_audio_buffer().
+     *
+     * Input audio pads only.
+     */
+    AVFilterBufferRef *(*get_audio_buffer)(AVFilterLink *link, int perms,
+                                           int nb_samples);
+
+    /**
+     * Callback called after the slices of a frame are completely sent. If
+     * NULL, the filter layer will default to releasing the reference stored
+     * in the link structure during start_frame().
+     *
+     * Input video pads only.
+     */
+    void (*end_frame)(AVFilterLink *link);
+
+    /**
+     * Slice drawing callback. This is where a filter receives video data
+     * and should do its processing.
+     *
+     * Input video pads only.
+     */
+    void (*draw_slice)(AVFilterLink *link, int y, int height, int slice_dir);
+
+    /**
+     * Samples filtering callback. This is where a filter receives audio data
+     * and should do its processing.
+     *
+     * Input audio pads only.
+     */
+    void (*filter_samples)(AVFilterLink *link, AVFilterBufferRef *samplesref);
+
+    /**
+     * Frame poll callback. This returns the number of immediately available
+     * samples. It should return a positive value if the next request_frame()
+     * is guaranteed to return one frame (with no delay).
+     *
+     * Defaults to just calling the source poll_frame() method.
+     *
+     * Output pads only.
+     */
+    int (*poll_frame)(AVFilterLink *link);
+
+    /**
+     * Frame request callback. A call to this should result in at least one
+     * frame being output over the given link. This should return zero on
+     * success, and another value on error.
+     *
+     * Output pads only.
+     */
+    int (*request_frame)(AVFilterLink *link);
+
+    /**
+     * Link configuration callback.
+     *
+     * For output pads, this should set the link properties such as
+     * width/height. This should NOT set the format property - that is
+     * negotiated between filters by the filter system using the
+     * query_formats() callback before this function is called.
+     *
+     * For input pads, this should check the properties of the link, and update
+     * the filter's internal state as necessary.
+     *
+     * For both input and output filters, this should return zero on success,
+     * and another value on error.
+     */
+    int (*config_props)(AVFilterLink *link);
+};
+#endif
+
 /** default handler for freeing audio/video buffer when there are no references left */
 void ff_avfilter_default_free_buffer(AVFilterBuffer *buf);
 

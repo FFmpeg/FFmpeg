@@ -26,6 +26,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "internal.h"
 #include "video.h"
 
 typedef struct {

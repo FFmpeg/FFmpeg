@@ -38,6 +38,7 @@
 #include "avfilter.h"
 #include "formats.h"
 #include "gradfun.h"
+#include "internal.h"
 #include "video.h"
 
 DECLARE_ALIGNED(16, static const uint16_t, dither)[8][8] = {

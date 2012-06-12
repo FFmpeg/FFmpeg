@@ -17,6 +17,7 @@
  */
 
 #include "avfilter.h"
+#include "internal.h"
 
 static void null_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref) { }
 

@@ -32,6 +32,7 @@
 #include "libavutil/parseutils.h"
 #include "avfilter.h"
 #include "formats.h"
+#include "internal.h"
 #include "video.h"
 
 typedef f0r_instance_t (*f0r_construct_f)(unsigned int width, unsigned int height);
