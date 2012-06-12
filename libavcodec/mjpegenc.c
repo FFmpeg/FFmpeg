@@ -499,6 +499,8 @@ AVCodec ff_amv_encoder = {
     .init           = ff_MPV_encode_init,
     .encode2        = amv_encode_picture,
     .close          = ff_MPV_encode_end,
-    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUVJ420P, PIX_FMT_YUVJ422P, PIX_FMT_NONE},
+    .pix_fmts       = (const enum PixelFormat[]){
+        PIX_FMT_YUVJ420P, PIX_FMT_YUVJ422P, PIX_FMT_NONE
+    },
     .long_name      = NULL_IF_CONFIG_SMALL("AMV Video"),
 };

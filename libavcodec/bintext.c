@@ -225,7 +225,7 @@ AVCodec ff_bintext_decoder = {
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Binary text"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Binary text"),
 };
 #endif
 #if CONFIG_XBIN_DECODER
@@ -238,7 +238,7 @@ AVCodec ff_xbin_decoder = {
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("eXtended BINary text"),
+    .long_name      = NULL_IF_CONFIG_SMALL("eXtended BINary text"),
 };
 #endif
 #if CONFIG_IDF_DECODER
@@ -251,6 +251,6 @@ AVCodec ff_idf_decoder = {
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("iCEDraw text"),
+    .long_name      = NULL_IF_CONFIG_SMALL("iCEDraw text"),
 };
 #endif

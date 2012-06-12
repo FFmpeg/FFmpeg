@@ -315,5 +315,5 @@ AVCodec ff_escape130_decoder = {
     .close          = escape130_decode_close,
     .decode         = escape130_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Escape 130"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Escape 130"),
 };
