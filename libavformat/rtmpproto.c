@@ -88,6 +88,7 @@ typedef struct RTMPContext {
     char*         tcurl;                      ///< url of the target stream
     char*         flashver;                   ///< version of the flash plugin
     char*         swfurl;                     ///< url of the swf player
+    int           server_bw;                  ///< server bandwidth
 } RTMPContext;
 
 #define PLAYER_KEY_OPEN_PART_LEN 30   ///< length of partial key used for first client digest signing
@@ -523,7 +524,7 @@ static int gen_server_bw(URLContext *s, RTMPContext *rt)
         return ret;
 
     p = pkt.data;
-    bytestream_put_be32(&p, 2500000);
+    bytestream_put_be32(&p, rt->server_bw);
     ret = ff_rtmp_packet_write(rt->stream, &pkt, rt->chunk_size,
                                rt->prev_pkt[1]);
     ff_rtmp_packet_destroy(&pkt);
@@ -850,6 +851,14 @@ static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
         }
         av_log(s, AV_LOG_DEBUG, "Client bandwidth = %d\n", AV_RB32(pkt->data));
         rt->client_report_size = AV_RB32(pkt->data) >> 1;
+        break;
+    case RTMP_PT_SERVER_BW:
+        rt->server_bw = AV_RB32(pkt->data);
+        if (rt->server_bw <= 0) {
+            av_log(s, AV_LOG_ERROR, "Incorrect server bandwidth %d\n", rt->server_bw);
+            return AVERROR(EINVAL);
+        }
+        av_log(s, AV_LOG_DEBUG, "Server bandwidth = %d\n", rt->server_bw);
         break;
     case RTMP_PT_INVOKE:
         //TODO: check for the messages sent for wrong state?
@@ -1198,6 +1207,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     rt->client_report_size = 1048576;
     rt->bytes_read = 0;
     rt->last_bytes_read = 0;
+    rt->server_bw = 2500000;
 
     av_log(s, AV_LOG_DEBUG, "Proto = %s, path = %s, app = %s, fname = %s\n",
            proto, path, rt->app, rt->playpath);
