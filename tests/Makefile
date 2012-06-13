@@ -126,7 +126,7 @@ fate-list:
 clean:: testclean
 
 testclean:
-	$(RM) -r tests/vsynth1 tests/vsynth2 tests/data
+	$(RM) -r tests/vsynth1 tests/data
 	$(RM) $(CLEANSUFFIXES:%=tests/%)
 	$(RM) $(TESTTOOLS:%=tests/%$(HOSTEXESUF))
 
