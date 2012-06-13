@@ -43,7 +43,7 @@ mix_2_1_float_u_int %+ SUFFIX
 %endif
     VBROADCASTSS m4, [coeffpq + 4*index1q]
     VBROADCASTSS m5, [coeffpq + 4*index2q]
-    shl lenq    , 2
+    shl lend    , 2
     add in1q    , lenq
     add in2q    , lenq
     add outq    , lenq
@@ -180,7 +180,7 @@ mix_2_1_int16_u_int %+ SUFFIX
     pslld  m7, m4
     psrld  m7, 1
     punpcklwd m5, m6
-    add lenq    , lenq
+    add lend    , lend
     add in1q    , lenq
     add in2q    , lenq
     add outq    , lenq
