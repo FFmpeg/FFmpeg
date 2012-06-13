@@ -213,11 +213,16 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                 /* couldn't merge format lists. auto-insert conversion filter */
                 switch (link->type) {
                 case AVMEDIA_TYPE_VIDEO:
+                    if (!(filter = avfilter_get_by_name("scale"))) {
+                        av_log(log_ctx, AV_LOG_ERROR, "'scale' filter "
+                               "not present, cannot convert pixel formats.\n");
+                        return AVERROR(EINVAL);
+                    }
+
                     snprintf(inst_name, sizeof(inst_name), "auto-inserted scaler %d",
                              scaler_count++);
                     snprintf(scale_args, sizeof(scale_args), "0:0:%s", graph->scale_sws_opts);
-                    if ((ret = avfilter_graph_create_filter(&convert,
-                                                            avfilter_get_by_name("scale"),
+                    if ((ret = avfilter_graph_create_filter(&convert, filter,
                                                             inst_name, scale_args, NULL,
                                                             graph)) < 0)
                         return ret;

@@ -1531,16 +1531,16 @@ frei0r_src_filter_extralibs='$ldl'
 hqdn3d_filter_deps="gpl"
 resample_filter_deps="avresample"
 ocv_filter_deps="libopencv"
+scale_filter_deps="swscale"
 yadif_filter_deps="gpl"
 
 # libraries
 avdevice_deps="avcodec avformat"
-avfilter_deps="swscale"
 avformat_deps="avcodec"
 
 # programs
 avconv_deps="avcodec avfilter avformat avresample swscale format_filter
-             setpts_filter"
+             scale_filter setpts_filter"
 avplay_deps="avcodec avformat swscale sdl"
 avplay_select="rdft"
 avprobe_deps="avcodec avformat"
