@@ -24,7 +24,7 @@
 
 #include "avfilter.h"
 
-static const enum AVSampleFormat ff_packed_sample_fmts[] = {
+static const enum AVSampleFormat ff_packed_sample_fmts_array[] = {
     AV_SAMPLE_FMT_U8,
     AV_SAMPLE_FMT_S16,
     AV_SAMPLE_FMT_S32,
@@ -33,7 +33,7 @@ static const enum AVSampleFormat ff_packed_sample_fmts[] = {
     AV_SAMPLE_FMT_NONE
 };
 
-static const enum AVSampleFormat ff_planar_sample_fmts[] = {
+static const enum AVSampleFormat ff_planar_sample_fmts_array[] = {
     AV_SAMPLE_FMT_U8P,
     AV_SAMPLE_FMT_S16P,
     AV_SAMPLE_FMT_S32P,

@@ -50,7 +50,6 @@ tests/rotozoom
 tests/tiny_psnr
 tests/videogen
 tests/vsynth1
-tests/vsynth2
 tools/aviocat
 tools/cws2fws
 tools/ffeval

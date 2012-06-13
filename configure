@@ -1210,6 +1210,7 @@ HAVE_LIST="
     inet_aton
     inline_asm
     isatty
+    jack_port_get_latency_range
     kbhit
     ldbrx
     libdc1394_1
@@ -1730,7 +1731,6 @@ yadif_filter_deps="gpl"
 
 # libraries
 avdevice_deps="avcodec avformat"
-avfilter_deps="swscale"
 avformat_deps="avcodec"
 postproc_deps="gpl"
 
@@ -3354,7 +3354,8 @@ check_header soundcard.h
 
 enabled_any alsa_indev alsa_outdev && check_lib2 alsa/asoundlib.h snd_pcm_htimestamp -lasound
 
-enabled jack_indev && check_lib2 jack/jack.h jack_client_open -ljack && check_func sem_timedwait
+enabled jack_indev && check_lib2 jack/jack.h jack_client_open -ljack && check_func sem_timedwait &&
+    check_func jack_port_get_latency_range -ljack
 
 enabled_any sndio_indev sndio_outdev && check_lib2 sndio.h sio_open -lsndio
 

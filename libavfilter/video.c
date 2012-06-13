@@ -28,7 +28,7 @@
 
 AVFilterBufferRef *ff_null_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
 {
-    return avfilter_get_video_buffer(link->dst->outputs[0], perms, w, h);
+    return ff_get_video_buffer(link->dst->outputs[0], perms, w, h);
 }
 
 AVFilterBufferRef *ff_default_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
@@ -127,7 +127,7 @@ fail:
     return NULL;
 }
 
-AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
+AVFilterBufferRef *ff_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
 {
     AVFilterBufferRef *ret = NULL;
 
@@ -158,11 +158,11 @@ static void default_start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
     AVFilterLink *outlink = NULL;
 
-    if (inlink->dst->output_count)
+    if (inlink->dst->nb_outputs)
         outlink = inlink->dst->outputs[0];
 
     if (outlink) {
-        outlink->out_buf = avfilter_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+        outlink->out_buf = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
         avfilter_copy_buffer_ref_props(outlink->out_buf, picref);
         ff_start_frame(outlink, avfilter_ref_buffer(outlink->out_buf, ~0));
     }
@@ -191,7 +191,7 @@ void ff_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
                 picref->perms,
                 link->dstpad->min_perms, link->dstpad->rej_perms);
 
-        link->cur_buf = avfilter_get_video_buffer(link, dst->min_perms, link->w, link->h);
+        link->cur_buf = ff_get_video_buffer(link, dst->min_perms, link->w, link->h);
         link->src_buf = picref;
         avfilter_copy_buffer_ref_props(link->cur_buf, link->src_buf);
 
@@ -230,7 +230,7 @@ static void default_end_frame(AVFilterLink *inlink)
 {
     AVFilterLink *outlink = NULL;
 
-    if (inlink->dst->output_count)
+    if (inlink->dst->nb_outputs)
         outlink = inlink->dst->outputs[0];
 
     avfilter_unref_buffer(inlink->cur_buf);
@@ -271,7 +271,7 @@ static void default_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir
 {
     AVFilterLink *outlink = NULL;
 
-    if (inlink->dst->output_count)
+    if (inlink->dst->nb_outputs)
         outlink = inlink->dst->outputs[0];
 
     if (outlink)
@@ -363,5 +363,9 @@ void avfilter_end_frame(AVFilterLink *link)
 void avfilter_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
     ff_draw_slice(link, y, h, slice_dir);
+}
+AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
+{
+    return ff_get_video_buffer(link, perms, w, h);
 }
 #endif

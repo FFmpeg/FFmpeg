@@ -88,6 +88,8 @@ typedef struct RTMPContext {
     char*         tcurl;                      ///< url of the target stream
     char*         flashver;                   ///< version of the flash plugin
     char*         swfurl;                     ///< url of the swf player
+    int           server_bw;                  ///< server bandwidth
+    int           client_buffer_time;         ///< client buffer time in ms
 } RTMPContext;
 
 #define PLAYER_KEY_OPEN_PART_LEN 30   ///< length of partial key used for first client digest signing
@@ -115,7 +117,7 @@ static const uint8_t rtmp_server_key[] = {
 
 static int rtmp_write_amf_data(URLContext *s, char *param, uint8_t **p)
 {
-    char *field, *value, *saveptr;
+    char *field, *value;
     char type;
 
     /* The type must be B for Boolean, N for number, S for string, O for
@@ -130,8 +132,12 @@ static int rtmp_write_amf_data(URLContext *s, char *param, uint8_t **p)
         value = param + 2;
     } else if (param[0] == 'N' && param[1] && param[2] == ':') {
         type = param[1];
-        field = av_strtok(param + 3, ":", &saveptr);
-        value = av_strtok(NULL, ":", &saveptr);
+        field = param + 3;
+        value = strchr(field, ':');
+        if (!value)
+            goto fail;
+        *value = '\0';
+        value++;
 
         if (!field || !value)
             goto fail;
@@ -226,18 +232,27 @@ static int gen_connect(URLContext *s, RTMPContext *rt)
     ff_amf_write_object_end(&p);
 
     if (rt->conn) {
-        char *param, *saveptr;
+        char *param = rt->conn;
 
         // Write arbitrary AMF data to the Connect message.
-        param = av_strtok(rt->conn, " ", &saveptr);
         while (param != NULL) {
+            char *sep;
+            param += strspn(param, " ");
+            if (!*param)
+                break;
+            sep = strchr(param, ' ');
+            if (sep)
+                *sep = '\0';
             if ((ret = rtmp_write_amf_data(s, param, &p)) < 0) {
                 // Invalid AMF parameter.
                 ff_rtmp_packet_destroy(&pkt);
                 return ret;
             }
 
-            param = av_strtok(NULL, " ", &saveptr);
+            if (sep)
+                param = sep + 1;
+            else
+                break;
         }
     }
 
@@ -394,6 +409,31 @@ static int gen_delete_stream(URLContext *s, RTMPContext *rt)
 }
 
 /**
+ * Generate client buffer time and send it to the server.
+ */
+static int gen_buffer_time(URLContext *s, RTMPContext *rt)
+{
+    RTMPPacket pkt;
+    uint8_t *p;
+    int ret;
+
+    if ((ret = ff_rtmp_packet_create(&pkt, RTMP_NETWORK_CHANNEL, RTMP_PT_PING,
+                                     1, 10)) < 0)
+        return ret;
+
+    p = pkt.data;
+    bytestream_put_be16(&p, 3);
+    bytestream_put_be32(&p, rt->main_channel_id);
+    bytestream_put_be32(&p, rt->client_buffer_time);
+
+    ret = ff_rtmp_packet_write(rt->stream, &pkt, rt->chunk_size,
+                               rt->prev_pkt[1]);
+    ff_rtmp_packet_destroy(&pkt);
+
+    return ret;
+}
+
+/**
  * Generate 'play' call and send it to the server, then ping the server
  * to start actual playing.
  */
@@ -417,23 +457,6 @@ static int gen_play(URLContext *s, RTMPContext *rt)
     ff_amf_write_null(&p);
     ff_amf_write_string(&p, rt->playpath);
     ff_amf_write_number(&p, rt->live);
-
-    ret = ff_rtmp_packet_write(rt->stream, &pkt, rt->chunk_size,
-                               rt->prev_pkt[1]);
-    ff_rtmp_packet_destroy(&pkt);
-
-    if (ret < 0)
-        return ret;
-
-    // set client buffer time disguised in ping packet
-    if ((ret = ff_rtmp_packet_create(&pkt, RTMP_NETWORK_CHANNEL, RTMP_PT_PING,
-                                     1, 10)) < 0)
-        return ret;
-
-    p = pkt.data;
-    bytestream_put_be16(&p, 3);
-    bytestream_put_be32(&p, 1);
-    bytestream_put_be32(&p, 256); //TODO: what is a good value here?
 
     ret = ff_rtmp_packet_write(rt->stream, &pkt, rt->chunk_size,
                                rt->prev_pkt[1]);
@@ -510,7 +533,7 @@ static int gen_server_bw(URLContext *s, RTMPContext *rt)
         return ret;
 
     p = pkt.data;
-    bytestream_put_be32(&p, 2500000);
+    bytestream_put_be32(&p, rt->server_bw);
     ret = ff_rtmp_packet_write(rt->stream, &pkt, rt->chunk_size,
                                rt->prev_pkt[1]);
     ff_rtmp_packet_destroy(&pkt);
@@ -838,6 +861,14 @@ static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
         av_log(s, AV_LOG_DEBUG, "Client bandwidth = %d\n", AV_RB32(pkt->data));
         rt->client_report_size = AV_RB32(pkt->data) >> 1;
         break;
+    case RTMP_PT_SERVER_BW:
+        rt->server_bw = AV_RB32(pkt->data);
+        if (rt->server_bw <= 0) {
+            av_log(s, AV_LOG_ERROR, "Incorrect server bandwidth %d\n", rt->server_bw);
+            return AVERROR(EINVAL);
+        }
+        av_log(s, AV_LOG_DEBUG, "Server bandwidth = %d\n", rt->server_bw);
+        break;
     case RTMP_PT_INVOKE:
         //TODO: check for the messages sent for wrong state?
         if (!memcmp(pkt->data, "\002\000\006_error", 9)) {
@@ -888,6 +919,8 @@ static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
                 if (rt->is_input) {
                     if ((ret = gen_play(s, rt)) < 0)
                         return ret;
+                    if ((ret = gen_buffer_time(s, rt)) < 0)
+                        return ret;
                 } else {
                     if ((ret = gen_publish(s, rt)) < 0)
                         return ret;
@@ -923,6 +956,9 @@ static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
             if ((ret = gen_check_bw(s, rt)) < 0)
                 return ret;
         }
+        break;
+    default:
+        av_log(s, AV_LOG_VERBOSE, "Unknown packet type received 0x%02X\n", pkt->type);
         break;
     }
     return 0;
@@ -1182,6 +1218,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     rt->client_report_size = 1048576;
     rt->bytes_read = 0;
     rt->last_bytes_read = 0;
+    rt->server_bw = 2500000;
 
     av_log(s, AV_LOG_DEBUG, "Proto = %s, path = %s, app = %s, fname = %s\n",
            proto, path, rt->app, rt->playpath);
@@ -1328,6 +1365,7 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
 
 static const AVOption rtmp_options[] = {
     {"rtmp_app", "Name of application to connect to on the RTMP server", OFFSET(app), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+    {"rtmp_buffer", "Set buffer time in milliseconds. The default is 3000.", OFFSET(client_buffer_time), AV_OPT_TYPE_INT, {3000}, 0, INT_MAX, DEC|ENC},
     {"rtmp_conn", "Append arbitrary AMF data to the Connect message", OFFSET(conn), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     {"rtmp_flashver", "Version of the Flash plugin used to run the SWF player.", OFFSET(flashver), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     {"rtmp_live", "Specify that the media is a live stream.", OFFSET(live), AV_OPT_TYPE_INT, {-2}, INT_MIN, INT_MAX, DEC, "rtmp_live"},

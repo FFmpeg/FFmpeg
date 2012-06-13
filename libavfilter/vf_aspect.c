@@ -26,6 +26,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/parseutils.h"
 #include "avfilter.h"
+#include "internal.h"
 #include "video.h"
 
 typedef struct {

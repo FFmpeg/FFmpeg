@@ -303,7 +303,7 @@ static int config_output(AVFilterLink *outlink)
 
 static AVFilterBufferRef *get_video_buffer(AVFilterLink *link, int perms, int w, int h)
 {
-    return avfilter_get_video_buffer(link->dst->outputs[0], perms, w, h);
+    return ff_get_video_buffer(link->dst->outputs[0], perms, w, h);
 }
 
 // divide by 255 and round to nearest

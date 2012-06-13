@@ -118,7 +118,7 @@ static int query_formats(AVFilterContext *ctx)
                 if ((inlayout[i] >> c) & 1)
                     *(route[i]++) = out_ch_number++;
     }
-    formats = avfilter_make_format_list(ff_packed_sample_fmts);
+    formats = avfilter_make_format_list(ff_packed_sample_fmts_array);
     avfilter_set_common_sample_formats(ctx, formats);
     for (i = 0; i < am->nb_inputs; i++) {
         layouts = NULL;

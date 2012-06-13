@@ -226,7 +226,7 @@ static int link_filter_inouts(AVFilterContext *filt_ctx,
 {
     int pad, ret;
 
-    for (pad = 0; pad < filt_ctx->input_count; pad++) {
+    for (pad = 0; pad < filt_ctx->nb_inputs; pad++) {
         AVFilterInOut *p = *curr_inputs;
 
         if (p) {
@@ -254,7 +254,7 @@ static int link_filter_inouts(AVFilterContext *filt_ctx,
         return AVERROR(EINVAL);
     }
 
-    pad = filt_ctx->output_count;
+    pad = filt_ctx->nb_outputs;
     while (pad--) {
         AVFilterInOut *currlinkn = av_mallocz(sizeof(AVFilterInOut));
         if (!currlinkn)

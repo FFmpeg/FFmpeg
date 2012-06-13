@@ -30,6 +30,7 @@
 #include "libavutil/imgutils.h"
 #include "avfilter.h"
 #include "formats.h"
+#include "internal.h"
 #include "video.h"
 
 typedef struct {
@@ -117,8 +118,8 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
     AVFilterLink *outlink = inlink->dst->outputs[0];
 
-    outlink->out_buf = avfilter_get_video_buffer(outlink, AV_PERM_WRITE,
-                                                 outlink->w, outlink->h);
+    outlink->out_buf = ff_get_video_buffer(outlink, AV_PERM_WRITE,
+                                           outlink->w, outlink->h);
     outlink->out_buf->pts = picref->pts;
 
     if (picref->video->sample_aspect_ratio.num == 0) {

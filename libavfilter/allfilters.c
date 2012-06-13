@@ -44,6 +44,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER (ASPLIT,      asplit,      af);
     REGISTER_FILTER (ASTREAMSYNC, astreamsync, af);
     REGISTER_FILTER (ASYNCTS,     asyncts,     af);
+    REGISTER_FILTER (CHANNELSPLIT,channelsplit,af);
     REGISTER_FILTER (EARWAX,      earwax,      af);
     REGISTER_FILTER (PAN,         pan,         af);
     REGISTER_FILTER (SILENCEDETECT, silencedetect, af);
@@ -92,6 +93,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER (PAD,         pad,         vf);
     REGISTER_FILTER (PIXDESCTEST, pixdesctest, vf);
     REGISTER_FILTER (REMOVELOGO,  removelogo,  vf);
+    REGISTER_FILTER (SCALE,       scale,       vf);
     REGISTER_FILTER (SELECT,      select,      vf);
     REGISTER_FILTER (SETDAR,      setdar,      vf);
     REGISTER_FILTER (SETFIELD,    setfield,    vf);
@@ -142,9 +144,5 @@ void avfilter_register_all(void)
     {
         extern AVFilter avfilter_asink_abuffer;
         avfilter_register(&avfilter_asink_abuffer);
-    }
-    {
-        extern AVFilter avfilter_vf_scale;
-        avfilter_register(&avfilter_vf_scale);
     }
 }

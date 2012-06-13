@@ -5,6 +5,7 @@ version next:
 - INI and flat output in ffprobe
 - Scene detection in libavfilter
 - Indeo Audio decoder
+- channelsplit audio filter
 
 
 version 0.11:

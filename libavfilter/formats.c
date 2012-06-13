@@ -303,6 +303,18 @@ AVFilterFormats *avfilter_make_all_packing_formats(void)
 }
 #endif
 
+AVFilterFormats *ff_planar_sample_fmts(void)
+{
+    AVFilterFormats *ret = NULL;
+    int fmt;
+
+    for (fmt = 0; fmt < AV_SAMPLE_FMT_NB; fmt++)
+        if (av_sample_fmt_is_planar(fmt))
+            ff_add_format(&ret, fmt);
+
+    return ret;
+}
+
 AVFilterFormats *ff_all_samplerates(void)
 {
     AVFilterFormats *ret = av_mallocz(sizeof(*ret));
@@ -401,13 +413,13 @@ void ff_formats_changeref(AVFilterFormats **oldref, AVFilterFormats **newref)
 {                                                                   \
     int count = 0, i;                                               \
                                                                     \
-    for (i = 0; i < ctx->input_count; i++) {                        \
+    for (i = 0; i < ctx->nb_inputs; i++) {                          \
         if (ctx->inputs[i] && !ctx->inputs[i]->out_fmts) {          \
             ref(fmts, &ctx->inputs[i]->out_fmts);                   \
             count++;                                                \
         }                                                           \
     }                                                               \
-    for (i = 0; i < ctx->output_count; i++) {                       \
+    for (i = 0; i < ctx->nb_outputs; i++) {                         \
         if (ctx->outputs[i] && !ctx->outputs[i]->in_fmts) {         \
             ref(fmts, &ctx->outputs[i]->in_fmts);                   \
             count++;                                                \

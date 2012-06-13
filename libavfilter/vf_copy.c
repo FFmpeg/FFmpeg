@@ -22,6 +22,7 @@
  */
 
 #include "avfilter.h"
+#include "internal.h"
 #include "video.h"
 
 AVFilter avfilter_vf_copy = {

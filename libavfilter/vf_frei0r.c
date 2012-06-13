@@ -32,6 +32,7 @@
 #include "libavutil/parseutils.h"
 #include "avfilter.h"
 #include "formats.h"
+#include "internal.h"
 #include "video.h"
 
 typedef f0r_instance_t (*f0r_construct_f)(unsigned int width, unsigned int height);
@@ -433,7 +434,7 @@ static int source_config_props(AVFilterLink *outlink)
 static int source_request_frame(AVFilterLink *outlink)
 {
     Frei0rContext *frei0r = outlink->src->priv;
-    AVFilterBufferRef *picref = avfilter_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    AVFilterBufferRef *picref = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
     picref->video->sample_aspect_ratio = (AVRational) {1, 1};
     picref->pts = frei0r->pts++;
     picref->pos = -1;

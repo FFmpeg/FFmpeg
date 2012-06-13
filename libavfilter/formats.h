@@ -163,6 +163,11 @@ int ff_add_format(AVFilterFormats **avff, int64_t fmt);
 AVFilterFormats *ff_all_formats(enum AVMediaType type);
 
 /**
+ * Construct a formats list containing all planar sample formats.
+ */
+AVFilterFormats *ff_planar_sample_fmts(void);
+
+/**
  * Return a format list which contains the intersection of the formats of
  * a and b. Also, all the references of a, all the references of b, and
  * a and b themselves will be deallocated.

@@ -84,7 +84,7 @@ static AVFilterBufferRef *copy_buffer_ref(AVFilterContext *ctx,
     switch (outlink->type) {
 
     case AVMEDIA_TYPE_VIDEO:
-        buf = avfilter_get_video_buffer(outlink, AV_PERM_WRITE,
+        buf = ff_get_video_buffer(outlink, AV_PERM_WRITE,
                                         ref->video->w, ref->video->h);
         if(!buf)
             return NULL;

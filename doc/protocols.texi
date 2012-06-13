@@ -228,6 +228,9 @@ Additionally, the following parameters can be set via command line options
 Name of application to connect on the RTMP server. This option
 overrides the parameter specified in the URI.
 
+@item rtmp_buffer
+Set the client buffer time in milliseconds. The default is 3000.
+
 @item rtmp_conn
 Extra arbitrary AMF connection parameters, parsed from a string,
 e.g. like @code{B:1 S:authMe O:1 NN:code:1.23 NS:flag:ok O:0}.

@@ -369,10 +369,16 @@ void avfilter_set_common_packing_formats(AVFilterContext *ctx, AVFilterFormats *
  */
 #endif
 
+#if FF_API_AVFILTERPAD_PUBLIC
 /**
  * A filter pad used for either input or output.
  *
  * See doc/filter_design.txt for details on how to implement the methods.
+ *
+ * @warning this struct might be removed from public API.
+ * users should call avfilter_pad_get_name() and avfilter_pad_get_type()
+ * to access the name and type fields; there should be no need to access
+ * any other fields from outside of libavfilter.
  */
 struct AVFilterPad {
     /**
@@ -499,6 +505,29 @@ struct AVFilterPad {
      */
     int (*config_props)(AVFilterLink *link);
 };
+#endif
+
+/**
+ * Get the name of an AVFilterPad.
+ *
+ * @param pads an array of AVFilterPads
+ * @param pad_idx index of the pad in the array it; is the caller's
+ *                responsibility to ensure the index is valid
+ *
+ * @return name of the pad_idx'th pad in pads
+ */
+const char *avfilter_pad_get_name(AVFilterPad *pads, int pad_idx);
+
+/**
+ * Get the type of an AVFilterPad.
+ *
+ * @param pads an array of AVFilterPads
+ * @param pad_idx index of the pad in the array; it is the caller's
+ *                responsibility to ensure the index is valid
+ *
+ * @return type of the pad_idx'th pad in pads
+ */
+enum AVMediaType avfilter_pad_get_type(AVFilterPad *pads, int pad_idx);
 
 #if FF_API_FILTERS_PUBLIC
 /** default handler for start_frame() for video inputs */
@@ -608,15 +637,22 @@ struct AVFilterContext {
 
     char *name;                     ///< name of this filter instance
 
-    unsigned input_count;           ///< number of input pads
+#if FF_API_FOO_COUNT
+    unsigned input_count;           ///< @deprecated use nb_inputs
+#endif
     AVFilterPad   *input_pads;      ///< array of input pads
     AVFilterLink **inputs;          ///< array of pointers to input links
 
-    unsigned output_count;          ///< number of output pads
+#if FF_API_FOO_COUNT
+    unsigned output_count;          ///< @deprecated use nb_outputs
+#endif
     AVFilterPad   *output_pads;     ///< array of output pads
     AVFilterLink **outputs;         ///< array of pointers to output links
 
     void *priv;                     ///< private data for use by the filter
+
+    unsigned nb_inputs;             ///< number of input pads
+    unsigned nb_outputs;            ///< number of output pads
 
     struct AVFilterCommand *command_queue;
 };
@@ -777,19 +813,11 @@ void avfilter_link_free(AVFilterLink **link);
  */
 int avfilter_config_links(AVFilterContext *filter);
 
-/**
- * Request a picture buffer with a specific set of permissions.
- *
- * @param link  the output link to the filter from which the buffer will
- *              be requested
- * @param perms the required access permissions
- * @param w     the minimum width of the buffer to allocate
- * @param h     the minimum height of the buffer to allocate
- * @return      A reference to the buffer. This must be unreferenced with
- *              avfilter_unref_buffer when you are finished with it.
- */
+#if FF_API_FILTERS_PUBLIC
+attribute_deprecated
 AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms,
                                           int w, int h);
+#endif
 
 /**
  * Create a buffer reference wrapped around an already allocated image

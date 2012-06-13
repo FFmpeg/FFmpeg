@@ -17,6 +17,7 @@
  */
 
 #include "avfilter.h"
+#include "internal.h"
 
 static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {

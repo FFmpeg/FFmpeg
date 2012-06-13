@@ -24,6 +24,7 @@
  * null audio source
  */
 
+#include "internal.h"
 #include "libavutil/audioconvert.h"
 #include "libavutil/opt.h"
 

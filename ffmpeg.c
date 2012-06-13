@@ -708,7 +708,7 @@ static FilterGraph *init_simple_filtergraph(InputStream *ist, OutputStream *ost)
 static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
 {
     InputStream *ist = NULL;
-    enum AVMediaType type = in->filter_ctx->input_pads[in->pad_idx].type;
+    enum AVMediaType type = avfilter_pad_get_type(in->filter_ctx->input_pads, in->pad_idx);
     int i;
 
     // TODO: support other filter types
@@ -978,7 +978,7 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
                                                                    \
     avio_printf(pb, "%s", ctx->filter->name);                      \
     if (nb_pads > 1)                                               \
-        avio_printf(pb, ":%s", pads[inout->pad_idx].name);         \
+        avio_printf(pb, ":%s", avfilter_pad_get_name(pads, inout->pad_idx));\
     avio_w8(pb, 0);                                                \
     avio_close_dyn_buf(pb, &f->name);                              \
 }
@@ -988,7 +988,7 @@ static int configure_output_filter(FilterGraph *fg, OutputFilter *ofilter, AVFil
     av_freep(&ofilter->name);
     DESCRIBE_FILTER_LINK(ofilter, out, 0);
 
-    switch (out->filter_ctx->output_pads[out->pad_idx].type) {
+    switch (avfilter_pad_get_type(out->filter_ctx->output_pads, out->pad_idx)) {
     case AVMEDIA_TYPE_VIDEO: return configure_output_video_filter(fg, ofilter, out);
     case AVMEDIA_TYPE_AUDIO: return configure_output_audio_filter(fg, ofilter, out);
     default: av_assert0(0);
@@ -1132,7 +1132,7 @@ static int configure_input_filter(FilterGraph *fg, InputFilter *ifilter,
     av_freep(&ifilter->name);
     DESCRIBE_FILTER_LINK(ifilter, in, 1);
 
-    switch (in->filter_ctx->input_pads[in->pad_idx].type) {
+    switch (avfilter_pad_get_type(in->filter_ctx->input_pads, in->pad_idx)) {
     case AVMEDIA_TYPE_VIDEO: return configure_input_video_filter(fg, ifilter, in);
     case AVMEDIA_TYPE_AUDIO: return configure_input_audio_filter(fg, ifilter, in);
     default: av_assert0(0);
@@ -4899,7 +4899,8 @@ static void init_output_filter(OutputFilter *ofilter, OptionsContext *o,
 {
     OutputStream *ost;
 
-    switch (ofilter->out_tmp->filter_ctx->output_pads[ofilter->out_tmp->pad_idx].type) {
+    switch (avfilter_pad_get_type(ofilter->out_tmp->filter_ctx->output_pads,
+                                  ofilter->out_tmp->pad_idx)) {
     case AVMEDIA_TYPE_VIDEO: ost = new_video_stream(o, oc, -1); break;
     case AVMEDIA_TYPE_AUDIO: ost = new_audio_stream(o, oc, -1); break;
     default:
@@ -4961,7 +4962,8 @@ static void opt_output_file(void *optctx, const char *filename)
             if (!ofilter->out_tmp || ofilter->out_tmp->name)
                 continue;
 
-            switch (ofilter->out_tmp->filter_ctx->output_pads[ofilter->out_tmp->pad_idx].type) {
+            switch (avfilter_pad_get_type(ofilter->out_tmp->filter_ctx->output_pads,
+                                          ofilter->out_tmp->pad_idx)) {
             case AVMEDIA_TYPE_VIDEO:    o->video_disable    = 1; break;
             case AVMEDIA_TYPE_AUDIO:    o->audio_disable    = 1; break;
             case AVMEDIA_TYPE_SUBTITLE: o->subtitle_disable = 1; break;

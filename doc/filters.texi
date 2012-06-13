@@ -576,6 +576,31 @@ Maximum compensation in samples per second.
 
 @end table
 
+@section channelsplit
+Split each channel in input audio stream into a separate output stream.
+
+This filter accepts the following named parameters:
+@table @option
+@item channel_layout
+Channel layout of the input stream. Default is "stereo".
+@end table
+
+For example, assuming a stereo input MP3 file
+@example
+ffmpeg -i in.mp3 -filter_complex channelsplit out.mkv
+@end example
+will create an output Matroska file with two audio streams, one containing only
+the left channel and the other the right channel.
+
+To split a 5.1 WAV file into per-channel files
+@example
+ffmpeg -i in.wav -filter_complex
+'channelsplit=channel_layout=5.1[FL][FR][FC][LFE][SL][SR]'
+-map '[FL]' front_left.wav -map '[FR]' front_right.wav -map '[FC]'
+front_center.wav -map '[LFE]' lfe.wav -map '[SL]' side_left.wav -map '[SR]'
+side_right.wav
+@end example
+
 @section resample
 Convert the audio sample format, sample rate and channel layout. This filter is
 not meant to be used directly.

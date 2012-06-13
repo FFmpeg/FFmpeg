@@ -25,6 +25,7 @@
 
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "internal.h"
 #include "video.h"
 
 typedef struct {
@@ -57,8 +58,8 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     AVFilterBufferRef *outpicref;
     int i;
 
-    outlink->out_buf = avfilter_get_video_buffer(outlink, AV_PERM_WRITE,
-                                                outlink->w, outlink->h);
+    outlink->out_buf = ff_get_video_buffer(outlink, AV_PERM_WRITE,
+                                           outlink->w, outlink->h);
     outpicref = outlink->out_buf;
     avfilter_copy_buffer_ref_props(outpicref, picref);
 

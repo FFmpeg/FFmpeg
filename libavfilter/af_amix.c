@@ -454,10 +454,10 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
     AVFilterLink *outlink = ctx->outputs[0];
     int i;
 
-    for (i = 0; i < ctx->input_count; i++)
+    for (i = 0; i < ctx->nb_inputs; i++)
         if (ctx->inputs[i] == inlink)
             break;
-    if (i >= ctx->input_count) {
+    if (i >= ctx->nb_inputs) {
         av_log(ctx, AV_LOG_ERROR, "unknown input link\n");
         return;
     }
@@ -518,7 +518,7 @@ static void uninit(AVFilterContext *ctx)
     av_freep(&s->input_state);
     av_freep(&s->input_scale);
 
-    for (i = 0; i < ctx->input_count; i++)
+    for (i = 0; i < ctx->nb_inputs; i++)
         av_freep(&ctx->input_pads[i].name);
 }
 

@@ -24,6 +24,7 @@
  */
 
 #include "avfilter.h"
+#include "internal.h"
 #include "video.h"
 #include "libavutil/pixdesc.h"
 

@@ -26,6 +26,7 @@
 
 #include "avfilter.h"
 #include "formats.h"
+#include "internal.h"
 #include "video.h"
 #include "libavutil/avstring.h"
 #include "libavutil/eval.h"
@@ -220,9 +221,9 @@ static AVFilterBufferRef *get_video_buffer(AVFilterLink *inlink, int perms, int 
     PadContext *pad = inlink->dst->priv;
     int align = (perms&AV_PERM_ALIGN) ? AVFILTER_ALIGN : 1;
 
-    AVFilterBufferRef *picref = avfilter_get_video_buffer(inlink->dst->outputs[0], perms,
-                                                       w + (pad->w - pad->in_w) + 4*align,
-                                                       h + (pad->h - pad->in_h));
+    AVFilterBufferRef *picref = ff_get_video_buffer(inlink->dst->outputs[0], perms,
+                                                    w + (pad->w - pad->in_w) + 4*align,
+                                                    h + (pad->h - pad->in_h));
     int plane;
 
     picref->video->w = w;
@@ -287,9 +288,9 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     if(pad->needs_copy){
         av_log(inlink->dst, AV_LOG_DEBUG, "Direct padding impossible allocating new frame\n");
         avfilter_unref_buffer(outpicref);
-        outpicref = avfilter_get_video_buffer(inlink->dst->outputs[0], AV_PERM_WRITE | AV_PERM_NEG_LINESIZES,
-                                                       FFMAX(inlink->w, pad->w),
-                                                       FFMAX(inlink->h, pad->h));
+        outpicref = ff_get_video_buffer(inlink->dst->outputs[0], AV_PERM_WRITE | AV_PERM_NEG_LINESIZES,
+                                        FFMAX(inlink->w, pad->w),
+                                        FFMAX(inlink->h, pad->h));
         avfilter_copy_buffer_ref_props(outpicref, inpicref);
     }
 
