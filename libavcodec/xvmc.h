@@ -147,7 +147,7 @@ struct xvmc_pix_fmt {
     */
     int             filled_mv_blocks_num;
 
-    /** Number of the the next free data block; one data block consists of
+    /** Number of the next free data block; one data block consists of
         64 short values in the data_blocks array.
         All blocks before this one have already been claimed by placing their
         position into the corresponding block description structure field,

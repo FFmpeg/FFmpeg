@@ -65,8 +65,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
  * @return non-zero if destination buffer is exhausted
  *
  * a copy operation is achieved when 'gb' is set
- * a fill operation is acheived when 'gb' is null and pixel is >= 0
- * a skip operation is acheived when 'gb' is null and pixel is < 0
+ * a fill operation is achieved when 'gb' is null and pixel is >= 0
+ * a skip operation is achieved when 'gb' is null and pixel is < 0
  */
 static inline int op(uint8_t **dst, const uint8_t *dst_end,
                      GetByteContext *gb,
