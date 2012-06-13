@@ -1,8 +1,8 @@
 \input texinfo @c -*- texinfo -*-
 
-@settitle FATE Automated Testing Environment
+@settitle FFmpeg Automated Testing Environment
 @titlepage
-@center @titlefont{FATE Automated Testing Environment}
+@center @titlefont{FFmpeg Automated Testing Environment}
 @end titlepage
 
 @node Top
