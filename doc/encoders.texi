@@ -511,6 +511,12 @@ rc_2pass_vbr_minsection_pct
 @item slices
 @code{VP8E_SET_TOKEN_PARTITIONS}
 
+@item max-intra-rate
+@code{VP8E_SET_MAX_INTRA_BITRATE_PCT}
+
+@item force_key_frames
+@code{VPX_EFLAG_FORCE_KF}
+
 @item Alternate reference frame related
 @table @option
 @item vp8flags altref
