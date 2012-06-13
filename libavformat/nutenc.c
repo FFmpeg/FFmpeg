@@ -23,6 +23,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/tree.h"
 #include "libavutil/dict.h"
+#include "libavutil/avassert.h"
 #include "libavcodec/mpegaudiodata.h"
 #include "nut.h"
 #include "internal.h"
@@ -640,7 +641,7 @@ static int nut_write_header(AVFormatContext *s){
     nut->max_distance = MAX_DISTANCE;
     build_elision_headers(s);
     build_frame_code(s);
-    assert(nut->frame_code['N'].flags == FLAG_INVALID);
+    av_assert0(nut->frame_code['N'].flags == FLAG_INVALID);
 
     avio_write(bc, ID_STRING, strlen(ID_STRING));
     avio_w8(bc, 0);
@@ -745,7 +746,7 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt){
 
         ff_nut_add_sp(nut, nut->last_syncpoint_pos, 0/*unused*/, pkt->dts);
     }
-    assert(nus->last_pts != AV_NOPTS_VALUE);
+    av_assert0(nus->last_pts != AV_NOPTS_VALUE);
 
     coded_pts = pkt->pts & ((1<<nus->msb_pts_shift)-1);
     if(ff_lsb2full(nus, coded_pts) != pkt->pts)
