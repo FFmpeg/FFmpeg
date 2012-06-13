@@ -2827,7 +2827,7 @@ static void free_input_threads(void)
         InputFile *f = input_files[i];
         AVPacket pkt;
 
-        if (f->joined)
+        if (!f->fifo || f->joined)
             continue;
 
         pthread_mutex_lock(&f->fifo_lock);
