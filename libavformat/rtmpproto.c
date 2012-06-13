@@ -89,6 +89,7 @@ typedef struct RTMPContext {
     char*         flashver;                   ///< version of the flash plugin
     char*         swfurl;                     ///< url of the swf player
     int           server_bw;                  ///< server bandwidth
+    int           client_buffer_time;         ///< client buffer time in ms
 } RTMPContext;
 
 #define PLAYER_KEY_OPEN_PART_LEN 30   ///< length of partial key used for first client digest signing
@@ -408,6 +409,31 @@ static int gen_delete_stream(URLContext *s, RTMPContext *rt)
 }
 
 /**
+ * Generate client buffer time and send it to the server.
+ */
+static int gen_buffer_time(URLContext *s, RTMPContext *rt)
+{
+    RTMPPacket pkt;
+    uint8_t *p;
+    int ret;
+
+    if ((ret = ff_rtmp_packet_create(&pkt, RTMP_NETWORK_CHANNEL, RTMP_PT_PING,
+                                     1, 10)) < 0)
+        return ret;
+
+    p = pkt.data;
+    bytestream_put_be16(&p, 3);
+    bytestream_put_be32(&p, rt->main_channel_id);
+    bytestream_put_be32(&p, rt->client_buffer_time);
+
+    ret = ff_rtmp_packet_write(rt->stream, &pkt, rt->chunk_size,
+                               rt->prev_pkt[1]);
+    ff_rtmp_packet_destroy(&pkt);
+
+    return ret;
+}
+
+/**
  * Generate 'play' call and send it to the server, then ping the server
  * to start actual playing.
  */
@@ -431,23 +457,6 @@ static int gen_play(URLContext *s, RTMPContext *rt)
     ff_amf_write_null(&p);
     ff_amf_write_string(&p, rt->playpath);
     ff_amf_write_number(&p, rt->live);
-
-    ret = ff_rtmp_packet_write(rt->stream, &pkt, rt->chunk_size,
-                               rt->prev_pkt[1]);
-    ff_rtmp_packet_destroy(&pkt);
-
-    if (ret < 0)
-        return ret;
-
-    // set client buffer time disguised in ping packet
-    if ((ret = ff_rtmp_packet_create(&pkt, RTMP_NETWORK_CHANNEL, RTMP_PT_PING,
-                                     1, 10)) < 0)
-        return ret;
-
-    p = pkt.data;
-    bytestream_put_be16(&p, 3);
-    bytestream_put_be32(&p, 1);
-    bytestream_put_be32(&p, 256); //TODO: what is a good value here?
 
     ret = ff_rtmp_packet_write(rt->stream, &pkt, rt->chunk_size,
                                rt->prev_pkt[1]);
@@ -910,6 +919,8 @@ static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
                 if (rt->is_input) {
                     if ((ret = gen_play(s, rt)) < 0)
                         return ret;
+                    if ((ret = gen_buffer_time(s, rt)) < 0)
+                        return ret;
                 } else {
                     if ((ret = gen_publish(s, rt)) < 0)
                         return ret;
@@ -1208,6 +1219,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     rt->bytes_read = 0;
     rt->last_bytes_read = 0;
     rt->server_bw = 2500000;
+    rt->client_buffer_time = 3000;
 
     av_log(s, AV_LOG_DEBUG, "Proto = %s, path = %s, app = %s, fname = %s\n",
            proto, path, rt->app, rt->playpath);
