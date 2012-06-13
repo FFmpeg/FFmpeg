@@ -1219,7 +1219,6 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     rt->bytes_read = 0;
     rt->last_bytes_read = 0;
     rt->server_bw = 2500000;
-    rt->client_buffer_time = 3000;
 
     av_log(s, AV_LOG_DEBUG, "Proto = %s, path = %s, app = %s, fname = %s\n",
            proto, path, rt->app, rt->playpath);
@@ -1366,6 +1365,7 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
 
 static const AVOption rtmp_options[] = {
     {"rtmp_app", "Name of application to connect to on the RTMP server", OFFSET(app), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+    {"rtmp_buffer", "Set buffer time in milliseconds. The default is 3000.", OFFSET(client_buffer_time), AV_OPT_TYPE_INT, {3000}, 0, INT_MAX, DEC|ENC},
     {"rtmp_conn", "Append arbitrary AMF data to the Connect message", OFFSET(conn), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     {"rtmp_flashver", "Version of the Flash plugin used to run the SWF player.", OFFSET(flashver), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     {"rtmp_live", "Specify that the media is a live stream.", OFFSET(live), AV_OPT_TYPE_INT, {-2}, INT_MIN, INT_MAX, DEC, "rtmp_live"},
