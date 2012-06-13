@@ -236,8 +236,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
 
                     snprintf(inst_name, sizeof(inst_name), "auto-inserted resampler %d",
                              resampler_count++);
-                    if ((ret = avfilter_graph_create_filter(&convert,
-                                                            avfilter_get_by_name("resample"),
+                    if ((ret = avfilter_graph_create_filter(&convert, filter,
                                                             inst_name, NULL, NULL, graph)) < 0)
                         return ret;
                     break;
