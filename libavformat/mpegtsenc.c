@@ -800,7 +800,7 @@ static void write_pts(uint8_t *q, int fourbits, int64_t pts)
 static void set_af_flag(uint8_t *pkt, int flag)
 {
     // expect at least one flag to set
-    assert(flag);
+    av_assert0(flag);
 
     if ((pkt[3] & 0x20) == 0) {
         // no AF yet, set adaptation field flag
@@ -816,7 +816,7 @@ static void set_af_flag(uint8_t *pkt, int flag)
 static void extend_af(uint8_t *pkt, int size)
 {
     // expect already existing adaptation field
-    assert(pkt[3] & 0x20);
+    av_assert0(pkt[3] & 0x20);
     pkt[4] += size;
 }
 
