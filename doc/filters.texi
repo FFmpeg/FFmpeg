@@ -1842,7 +1842,7 @@ frei0r=perspective:0.2/0.2:0.8/0.2
 @end example
 
 For more information see:
-@url{http://piksel.org/frei0r}
+@url{http://frei0r.dyne.org}
 
 @section gradfun
 
