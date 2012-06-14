@@ -714,14 +714,13 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     return buf_size;
 }
 
-AVCodec ff_g729_decoder =
-{
+AVCodec ff_g729_decoder = {
     .name           = "g729",
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = CODEC_ID_G729,
     .priv_data_size = sizeof(G729Context),
     .init           = decoder_init,
     .decode         = decode_frame,
-    .capabilities = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("G.729"),
+    .capabilities   = CODEC_CAP_DR1,
+    .long_name      = NULL_IF_CONFIG_SMALL("G.729"),
 };
