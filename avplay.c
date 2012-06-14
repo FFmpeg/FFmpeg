@@ -2608,13 +2608,13 @@ static void stream_cycle_channel(VideoState *is, int codec_type)
 
 static void toggle_full_screen(void)
 {
-    is_full_screen = !is_full_screen;
 #if defined(__APPLE__) && SDL_VERSION_ATLEAST(1, 2, 14)
     /* OS X needs to empty the picture_queue */
-    for (int i = 0; i < VIDEO_PICTURE_QUEUE_SIZE; i++) {
+    int i;
+    for (i = 0; i < VIDEO_PICTURE_QUEUE_SIZE; i++)
         cur_stream->pictq[i].reallocate = 1;
-    }
 #endif
+    is_full_screen = !is_full_screen;
     video_open(cur_stream);
 }
 
