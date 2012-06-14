@@ -160,7 +160,7 @@ typedef struct FrameThreadContext {
  * limit the number of threads to 16 for automatic detection */
 #define MAX_AUTO_THREADS 16
 
-static int get_logical_cpus(AVCodecContext *avctx)
+int ff_get_logical_cpus(AVCodecContext *avctx)
 {
     int ret, nb_cpus = 1;
 #if HAVE_SCHED_GETAFFINITY && defined(CPU_COUNT)
@@ -303,7 +303,7 @@ static int thread_init(AVCodecContext *avctx)
     int thread_count = avctx->thread_count;
 
     if (!thread_count) {
-        int nb_cpus = get_logical_cpus(avctx);
+        int nb_cpus = ff_get_logical_cpus(avctx);
         // use number of cores + 1 as thread count if there is more than one
         if (nb_cpus > 1)
             thread_count = avctx->thread_count = FFMIN(nb_cpus + 1, MAX_AUTO_THREADS);
@@ -799,7 +799,7 @@ static int frame_thread_init(AVCodecContext *avctx)
     int i, err = 0;
 
     if (!thread_count) {
-        int nb_cpus = get_logical_cpus(avctx);
+        int nb_cpus = ff_get_logical_cpus(avctx);
         if ((avctx->debug & (FF_DEBUG_VIS_QP | FF_DEBUG_VIS_MB_TYPE)) || avctx->debug_mv)
             nb_cpus = 1;
         // use number of cores + 1 as thread count if there is more than one

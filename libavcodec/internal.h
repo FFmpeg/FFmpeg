@@ -167,4 +167,6 @@ static av_always_inline int64_t ff_samples_to_time_base(AVCodecContext *avctx,
 
 int ff_thread_can_start_frame(AVCodecContext *avctx);
 
+int ff_get_logical_cpus(AVCodecContext *avctx);
+
 #endif /* AVCODEC_INTERNAL_H */
