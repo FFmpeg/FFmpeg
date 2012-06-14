@@ -440,6 +440,8 @@ av_cold int ff_snow_common_init(AVCodecContext *avctx){
 
     s->spatial_idwt_buffer= av_mallocz(width*height*sizeof(IDWTELEM));
     s->spatial_dwt_buffer= av_mallocz(width*height*sizeof(DWTELEM)); //FIXME this does not belong here
+    s->temp_dwt_buffer = av_mallocz(width * sizeof(DWTELEM));
+    s->temp_idwt_buffer = av_mallocz(width * sizeof(IDWTELEM));
 
     for(i=0; i<MAX_REF_FRAMES; i++)
         for(j=0; j<MAX_REF_FRAMES; j++)
@@ -618,7 +620,9 @@ av_cold void ff_snow_common_end(SnowContext *s)
     int plane_index, level, orientation, i;
 
     av_freep(&s->spatial_dwt_buffer);
+    av_freep(&s->temp_dwt_buffer);
     av_freep(&s->spatial_idwt_buffer);
+    av_freep(&s->temp_idwt_buffer);
 
     s->m.me.temp= NULL;
     av_freep(&s->m.me.scratchpad);
