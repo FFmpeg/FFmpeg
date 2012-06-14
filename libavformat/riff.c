@@ -25,6 +25,7 @@
 #include "avio_internal.h"
 #include "riff.h"
 #include "libavcodec/bytestream.h"
+#include "libavutil/avassert.h"
 
 /* Note: when encoding, the first matching tag is used, so order is
    important if multiple tags possible for a given codec. */
@@ -706,7 +707,7 @@ void ff_parse_specific_params(AVCodecContext *stream, int *au_rate, int *au_ssiz
 
 void ff_get_guid(AVIOContext *s, ff_asf_guid *g)
 {
-    assert(sizeof(*g) == 16);
+    av_assert0(sizeof(*g) == 16); //compiler will optimize this out
     if (avio_read(s, *g, sizeof(*g)) < (int)sizeof(*g))
         memset(*g, 0, sizeof(*g));
 }
