@@ -82,6 +82,8 @@ typedef struct AVCodecInternal {
      */
     uint8_t *byte_buffer;
     unsigned int byte_buffer_size;
+
+    void *frame_thread_encoder;
 } AVCodecInternal;
 
 struct AVCodecDefault {

@@ -760,9 +760,9 @@ OBJS-$(CONFIG_REMOVE_EXTRADATA_BSF)       += remove_extradata_bsf.o
 OBJS-$(CONFIG_TEXT2MOVSUB_BSF)            += movsub_bsf.o
 
 # thread libraries
-OBJS-$(HAVE_PTHREADS)                  += pthread.o
-OBJS-$(HAVE_W32THREADS)                += pthread.o
-OBJS-$(HAVE_OS2THREADS)                += pthread.o
+OBJS-$(HAVE_PTHREADS)                  += pthread.o frame_thread_encoder.o
+OBJS-$(HAVE_W32THREADS)                += pthread.o frame_thread_encoder.o
+OBJS-$(HAVE_OS2THREADS)                += pthread.o frame_thread_encoder.o
 
 # inverse.o contains the ff_inverse table definition, which is used by
 # the FASTDIV macro (from libavutil); since referencing the external

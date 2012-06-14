@@ -40,6 +40,7 @@
 #include "libavutil/opt.h"
 #include "imgconvert.h"
 #include "thread.h"
+#include "frame_thread_encoder.h"
 #include "audioconvert.h"
 #include "internal.h"
 #include "bytestream.h"
@@ -851,7 +852,14 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVD
     if (!HAVE_THREADS)
         av_log(avctx, AV_LOG_WARNING, "Warning: not compiled with thread support, using thread emulation\n");
 
-    if (HAVE_THREADS && !avctx->thread_opaque) {
+    entangled_thread_counter--; //we will instanciate a few encoders thus kick the counter to prevent false detection of a problem
+    ret = ff_frame_thread_encoder_init(avctx);
+    entangled_thread_counter++;
+    if (ret < 0)
+        goto free_and_end;
+
+    if (HAVE_THREADS && !avctx->thread_opaque
+        && !(avctx->internal->frame_thread_encoder && (avctx->active_thread_type&FF_THREAD_FRAME))) {
         ret = ff_thread_init(avctx);
         if (ret < 0) {
             goto free_and_end;
@@ -931,7 +939,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVD
     avctx->pts_correction_last_pts =
     avctx->pts_correction_last_dts = INT64_MIN;
 
-    if(avctx->codec->init && !(avctx->active_thread_type&FF_THREAD_FRAME)){
+    if(avctx->codec->init && (!(avctx->active_thread_type&FF_THREAD_FRAME) || avctx->internal->frame_thread_encoder)){
         ret = avctx->codec->init(avctx);
         if (ret < 0) {
             goto free_and_end;
@@ -1301,6 +1309,9 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
 
     *got_packet_ptr = 0;
 
+    if(avctx->internal->frame_thread_encoder && (avctx->active_thread_type&FF_THREAD_FRAME))
+        return ff_thread_video_encode_frame(avctx, avpkt, frame, got_packet_ptr);
+
     if (!(avctx->codec->capabilities & CODEC_CAP_DELAY) && !frame) {
         av_free_packet(avpkt);
         av_init_packet(avpkt);
@@ -1661,6 +1672,11 @@ av_cold int avcodec_close(AVCodecContext *avctx)
     }
 
     if (avcodec_is_open(avctx)) {
+        if (avctx->internal->frame_thread_encoder && avctx->thread_count > 1) {
+            entangled_thread_counter --;
+            ff_frame_thread_encoder_free(avctx);
+            entangled_thread_counter ++;
+        }
         if (HAVE_THREADS && avctx->thread_opaque)
             ff_thread_free(avctx);
         if (avctx->codec && avctx->codec->close)
