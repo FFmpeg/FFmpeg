@@ -132,7 +132,7 @@ static int h263_handle_packet(AVFormatContext *ctx, PayloadContext *data,
     if (!data->buf) {
         /* Check the picture start code, only start buffering a new frame
          * if this is correct */
-        if (!f && len > 4 && AV_RB32(buf) >> 10 == 0x20) {
+        if (len > 4 && AV_RB32(buf) >> 10 == 0x20) {
             int ret = avio_open_dyn_buf(&data->buf);
             if (ret < 0)
                 return ret;
