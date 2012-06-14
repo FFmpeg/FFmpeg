@@ -115,6 +115,19 @@ void ff_rtmp_packet_destroy(RTMPPacket *pkt);
  */
 int ff_rtmp_packet_read(URLContext *h, RTMPPacket *p,
                         int chunk_size, RTMPPacket *prev_pkt);
+/**
+ * Read internal RTMP packet sent by the server.
+ *
+ * @param h          reader context
+ * @param p          packet
+ * @param chunk_size current chunk size
+ * @param prev_pkt   previously read packet headers for all channels
+ *                   (may be needed for restoring incomplete packet header)
+ * @param c          the first byte already read
+ * @return number of bytes read on success, negative value otherwise
+ */
+int ff_rtmp_packet_read_internal(URLContext *h, RTMPPacket *p, int chunk_size,
+                                 RTMPPacket *prev_pkt, uint8_t c);
 
 /**
  * Send RTMP packet to the server.
