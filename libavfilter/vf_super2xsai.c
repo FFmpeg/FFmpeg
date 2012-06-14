@@ -74,32 +74,31 @@ static void super2xsai(AVFilterContext *ctx,
 #define READ_COLOR3(dst, src_line, off) dst = AV_RL24 (src_line + 3*off)
 #define READ_COLOR2(dst, src_line, off) dst = *((const uint16_t *)src_line + off)
 
-    /* Initialise the color matrix for this row. */
-    switch (bpp) {
-    case 4:
-        READ_COLOR4(color[0][0], src_line[0], 0); color[0][1] = color[0][0]; READ_COLOR4(color[0][2], src_line[0], 1); READ_COLOR4(color[0][3], src_line[0], 2);
-        READ_COLOR4(color[1][0], src_line[1], 0); color[1][1] = color[1][0]; READ_COLOR4(color[1][2], src_line[1], 1); READ_COLOR4(color[1][3], src_line[1], 2);
-        READ_COLOR4(color[2][0], src_line[2], 0); color[2][1] = color[2][0]; READ_COLOR4(color[2][2], src_line[2], 1); READ_COLOR4(color[2][3], src_line[2], 2);
-        READ_COLOR4(color[3][0], src_line[3], 0); color[3][1] = color[3][0]; READ_COLOR4(color[3][2], src_line[3], 1); READ_COLOR4(color[3][3], src_line[3], 2);
-        break;
-    case 3:
-        READ_COLOR3(color[0][0], src_line[0], 0); color[0][1] = color[0][0]; READ_COLOR3(color[0][2], src_line[0], 1); READ_COLOR3(color[0][3], src_line[0], 2);
-        READ_COLOR3(color[1][0], src_line[1], 0); color[1][1] = color[1][0]; READ_COLOR3(color[1][2], src_line[1], 1); READ_COLOR3(color[1][3], src_line[1], 2);
-        READ_COLOR3(color[2][0], src_line[2], 0); color[2][1] = color[2][0]; READ_COLOR3(color[2][2], src_line[2], 1); READ_COLOR3(color[2][3], src_line[2], 2);
-        READ_COLOR3(color[3][0], src_line[3], 0); color[3][1] = color[3][0]; READ_COLOR3(color[3][2], src_line[3], 1); READ_COLOR3(color[3][3], src_line[3], 2);
-        break;
-    default:
-        READ_COLOR2(color[0][0], src_line[0], 0); color[0][1] = color[0][0]; READ_COLOR2(color[0][2], src_line[0], 1); READ_COLOR2(color[0][3], src_line[0], 2);
-        READ_COLOR2(color[1][0], src_line[1], 0); color[1][1] = color[1][0]; READ_COLOR2(color[1][2], src_line[1], 1); READ_COLOR2(color[1][3], src_line[1], 2);
-        READ_COLOR2(color[2][0], src_line[2], 0); color[2][1] = color[2][0]; READ_COLOR2(color[2][2], src_line[2], 1); READ_COLOR2(color[2][3], src_line[2], 2);
-        READ_COLOR2(color[3][0], src_line[3], 0); color[3][1] = color[3][0]; READ_COLOR2(color[3][2], src_line[3], 1); READ_COLOR2(color[3][3], src_line[3], 2);
-    }
-
     for (y = 0; y < height; y++) {
         uint8_t *dst_line[2];
 
         dst_line[0] = dst + dst_linesize*2*y;
         dst_line[1] = dst + dst_linesize*(2*y+1);
+
+        switch (bpp) {
+        case 4:
+            READ_COLOR4(color[0][0], src_line[0], 0); color[0][1] = color[0][0]; READ_COLOR4(color[0][2], src_line[0], 1); READ_COLOR4(color[0][3], src_line[0], 2);
+            READ_COLOR4(color[1][0], src_line[1], 0); color[1][1] = color[1][0]; READ_COLOR4(color[1][2], src_line[1], 1); READ_COLOR4(color[1][3], src_line[1], 2);
+            READ_COLOR4(color[2][0], src_line[2], 0); color[2][1] = color[2][0]; READ_COLOR4(color[2][2], src_line[2], 1); READ_COLOR4(color[2][3], src_line[2], 2);
+            READ_COLOR4(color[3][0], src_line[3], 0); color[3][1] = color[3][0]; READ_COLOR4(color[3][2], src_line[3], 1); READ_COLOR4(color[3][3], src_line[3], 2);
+            break;
+        case 3:
+            READ_COLOR3(color[0][0], src_line[0], 0); color[0][1] = color[0][0]; READ_COLOR3(color[0][2], src_line[0], 1); READ_COLOR3(color[0][3], src_line[0], 2);
+            READ_COLOR3(color[1][0], src_line[1], 0); color[1][1] = color[1][0]; READ_COLOR3(color[1][2], src_line[1], 1); READ_COLOR3(color[1][3], src_line[1], 2);
+            READ_COLOR3(color[2][0], src_line[2], 0); color[2][1] = color[2][0]; READ_COLOR3(color[2][2], src_line[2], 1); READ_COLOR3(color[2][3], src_line[2], 2);
+            READ_COLOR3(color[3][0], src_line[3], 0); color[3][1] = color[3][0]; READ_COLOR3(color[3][2], src_line[3], 1); READ_COLOR3(color[3][3], src_line[3], 2);
+            break;
+        default:
+            READ_COLOR2(color[0][0], src_line[0], 0); color[0][1] = color[0][0]; READ_COLOR2(color[0][2], src_line[0], 1); READ_COLOR2(color[0][3], src_line[0], 2);
+            READ_COLOR2(color[1][0], src_line[1], 0); color[1][1] = color[1][0]; READ_COLOR2(color[1][2], src_line[1], 1); READ_COLOR2(color[1][3], src_line[1], 2);
+            READ_COLOR2(color[2][0], src_line[2], 0); color[2][1] = color[2][0]; READ_COLOR2(color[2][2], src_line[2], 1); READ_COLOR2(color[2][3], src_line[2], 2);
+            READ_COLOR2(color[3][0], src_line[3], 0); color[3][1] = color[3][0]; READ_COLOR2(color[3][2], src_line[3], 1); READ_COLOR2(color[3][3], src_line[3], 2);
+        }
 
         for (x = 0; x < width; x++) {
             uint32_t product1a, product1b, product2a, product2b;
@@ -220,26 +219,6 @@ static void super2xsai(AVFilterContext *ctx,
         src_line[3] = src_line[2];
         if (y < height - 3)
             src_line[3] += src_linesize;
-
-        switch (bpp) {
-        case 4:
-            READ_COLOR4(color[0][0], src_line[0], 0); color[0][1] = color[0][0]; READ_COLOR4(color[0][2], src_line[0], 1); READ_COLOR4(color[0][3], src_line[0], 2);
-            READ_COLOR4(color[1][0], src_line[1], 0); color[1][1] = color[1][0]; READ_COLOR4(color[1][2], src_line[1], 1); READ_COLOR4(color[1][3], src_line[1], 2);
-            READ_COLOR4(color[2][0], src_line[2], 0); color[2][1] = color[2][0]; READ_COLOR4(color[2][2], src_line[2], 1); READ_COLOR4(color[2][3], src_line[2], 2);
-            READ_COLOR4(color[3][0], src_line[3], 0); color[3][1] = color[3][0]; READ_COLOR4(color[3][2], src_line[3], 1); READ_COLOR4(color[3][3], src_line[3], 2);
-            break;
-        case 3:
-            READ_COLOR3(color[0][0], src_line[0], 0); color[0][1] = color[0][0]; READ_COLOR3(color[0][2], src_line[0], 1); READ_COLOR3(color[0][3], src_line[0], 2);
-            READ_COLOR3(color[1][0], src_line[1], 0); color[1][1] = color[1][0]; READ_COLOR3(color[1][2], src_line[1], 1); READ_COLOR3(color[1][3], src_line[1], 2);
-            READ_COLOR3(color[2][0], src_line[2], 0); color[2][1] = color[2][0]; READ_COLOR3(color[2][2], src_line[2], 1); READ_COLOR3(color[2][3], src_line[2], 2);
-            READ_COLOR3(color[3][0], src_line[3], 0); color[3][1] = color[3][0]; READ_COLOR3(color[3][2], src_line[3], 1); READ_COLOR3(color[3][3], src_line[3], 2);
-            break;
-        default:
-            READ_COLOR2(color[0][0], src_line[0], 0); color[0][1] = color[0][0]; READ_COLOR2(color[0][2], src_line[0], 1); READ_COLOR2(color[0][3], src_line[0], 2);
-            READ_COLOR2(color[1][0], src_line[1], 0); color[1][1] = color[1][0]; READ_COLOR2(color[1][2], src_line[1], 1); READ_COLOR2(color[1][3], src_line[1], 2);
-            READ_COLOR2(color[2][0], src_line[2], 0); color[2][1] = color[2][0]; READ_COLOR2(color[2][2], src_line[2], 1); READ_COLOR2(color[2][3], src_line[2], 2);
-            READ_COLOR2(color[3][0], src_line[3], 0); color[3][1] = color[3][0]; READ_COLOR2(color[3][2], src_line[3], 1); READ_COLOR2(color[3][3], src_line[3], 2);
-        }
     } // y loop
 }
 
