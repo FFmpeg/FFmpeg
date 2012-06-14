@@ -109,7 +109,7 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
         context->length = avpicture_get_size(avctx->pix_fmt, FFALIGN(avctx->width, 16), avctx->height);
         context->buffer = av_malloc(context->length);
         if (!context->buffer)
-            return -1;
+            return AVERROR(ENOMEM);
     } else {
         context->length = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
     }
@@ -139,7 +139,7 @@ static int raw_decode(AVCodecContext *avctx,
     int buf_size = avpkt->size;
     int linesize_align = 4;
     RawVideoContext *context = avctx->priv_data;
-    int res;
+    int res, len;
 
     AVFrame   *frame   = data;
     AVPicture *picture = data;
@@ -188,8 +188,11 @@ static int raw_decode(AVCodecContext *avctx,
        avctx->codec_tag == MKTAG('A', 'V', 'u', 'p'))
         buf += buf_size - context->length;
 
-    if(buf_size < context->length - (avctx->pix_fmt==PIX_FMT_PAL8 ? 256*4 : 0))
-        return -1;
+    len = context->length - (avctx->pix_fmt==PIX_FMT_PAL8 ? 256*4 : 0);
+    if (buf_size < len) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid buffer size, packet size %d < expected length %d\n", buf_size, len);
+        return AVERROR(EINVAL);
+    }
 
     if ((res = avpicture_fill(picture, buf, avctx->pix_fmt,
                               avctx->width, avctx->height)) < 0)
