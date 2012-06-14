@@ -1287,6 +1287,7 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
     int pktsize, pkttype;
     uint32_t ts;
     const uint8_t *buf_temp = buf;
+    uint8_t c;
     int ret;
 
     do {
@@ -1356,6 +1357,35 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
             rt->flv_header_bytes = 0;
         }
     } while (buf_temp - buf < size);
+
+    /* set stream into nonblocking mode */
+    rt->stream->flags |= AVIO_FLAG_NONBLOCK;
+
+    /* try to read one byte from the stream */
+    ret = ffurl_read(rt->stream, &c, 1);
+
+    /* switch the stream back into blocking mode */
+    rt->stream->flags &= ~AVIO_FLAG_NONBLOCK;
+
+    if (ret == AVERROR(EAGAIN)) {
+        /* no incoming data to handle */
+        return size;
+    } else if (ret < 0) {
+        return ret;
+    } else if (ret == 1) {
+        RTMPPacket rpkt = { 0 };
+
+        if ((ret = ff_rtmp_packet_read_internal(rt->stream, &rpkt,
+                                                rt->chunk_size,
+                                                rt->prev_pkt[0], c)) <= 0)
+             return ret;
+
+        if ((ret = rtmp_parse_result(s, rt, &rpkt)) < 0)
+            return ret;
+
+        ff_rtmp_packet_destroy(&rpkt);
+    }
+
     return size;
 }
 

@@ -886,8 +886,8 @@ error:
 
 void ff_thread_flush(AVCodecContext *avctx)
 {
-    FrameThreadContext *fctx = avctx->thread_opaque;
     int i;
+    FrameThreadContext *fctx = avctx->thread_opaque;
 
     if (!avctx->thread_opaque) return;
 

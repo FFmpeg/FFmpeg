@@ -74,15 +74,25 @@ void ff_amf_write_object_end(uint8_t **dst)
 int ff_rtmp_packet_read(URLContext *h, RTMPPacket *p,
                         int chunk_size, RTMPPacket *prev_pkt)
 {
-    uint8_t hdr, t, buf[16];
+    uint8_t hdr;
+
+    if (ffurl_read(h, &hdr, 1) != 1)
+        return AVERROR(EIO);
+
+    return ff_rtmp_packet_read_internal(h, p, chunk_size, prev_pkt, hdr);
+}
+
+int ff_rtmp_packet_read_internal(URLContext *h, RTMPPacket *p, int chunk_size,
+                                 RTMPPacket *prev_pkt, uint8_t hdr)
+{
+
+    uint8_t t, buf[16];
     int channel_id, timestamp, data_size, offset = 0;
     uint32_t extra = 0;
     enum RTMPPacketType type;
     int size = 0;
     int ret;
 
-    if (ffurl_read(h, &hdr, 1) != 1)
-        return AVERROR(EIO);
     size++;
     channel_id = hdr & 0x3F;
 

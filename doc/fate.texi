@@ -169,6 +169,9 @@ the synchronisation of the samples directory.
 @item THREADS
     Specify how many threads to use while running regression tests, it is
     quite useful to detect thread-related regressions.
+@item THREAD_TYPE
+    Specify which threading strategy test, either @var{slice} or @var{frame},
+    by default @var{slice+frame}
 @item CPUFLAGS
     Specify CPU flags.
 @item TARGET_EXEC

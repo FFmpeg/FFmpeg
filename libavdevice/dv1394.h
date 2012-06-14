@@ -176,7 +176,7 @@
               reset_dv1394();
          } else {
               int i;
-              for(i = 0; i < status.n_clear_frames; i++) {
+              for (i = 0; i < status.n_clear_frames; i++) {
                   copy_DV_frame();
               }
          }
