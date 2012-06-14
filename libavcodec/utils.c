@@ -1461,7 +1461,7 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
 
     *got_picture_ptr= 0;
     if((avctx->coded_width||avctx->coded_height) && av_image_check_size(avctx->coded_width, avctx->coded_height, 0, avctx))
-        return -1;
+        return AVERROR(EINVAL);
 
     if((avctx->codec->capabilities & CODEC_CAP_DELAY) || avpkt->size || (avctx->active_thread_type&FF_THREAD_FRAME)){
         int did_split = av_packet_split_side_data(&tmp);
