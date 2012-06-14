@@ -162,7 +162,7 @@ static int no_sub_motion_search(MpegEncContext * s,
     return dmin;
 }
 
-inline int ff_get_mb_score(MpegEncContext * s, int mx, int my, int src_index,
+av_extern_inline int ff_get_mb_score(MpegEncContext * s, int mx, int my, int src_index,
                                int ref_index, int size, int h, int add_rate)
 {
 //    const int check_luma= s->dsp.me_sub_cmp != s->dsp.mb_cmp;
@@ -974,7 +974,7 @@ static av_always_inline int epzs_motion_search_internal(MpegEncContext * s, int 
 }
 
 //this function is dedicated to the braindamaged gcc
-inline int ff_epzs_motion_search(MpegEncContext * s, int *mx_ptr, int *my_ptr,
+av_extern_inline int ff_epzs_motion_search(MpegEncContext * s, int *mx_ptr, int *my_ptr,
                              int P[10][2], int src_index, int ref_index, int16_t (*last_mv)[2],
                              int ref_mv_scale, int size, int h)
 {
