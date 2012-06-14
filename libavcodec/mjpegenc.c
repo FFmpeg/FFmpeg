@@ -137,6 +137,12 @@ static void jpeg_table_header(MpegEncContext *s)
     }
 #endif
 
+    if(s->avctx->active_thread_type & FF_THREAD_SLICE){
+        put_marker(p, DRI);
+        put_bits(p, 16, 4);
+        put_bits(p, 16, s->mb_width);
+    }
+
     /* huffman table */
     put_marker(p, DHT);
     flush_put_bits(p);
@@ -202,11 +208,12 @@ static void jpeg_put_comments(MpegEncContext *s)
 void ff_mjpeg_encode_picture_header(MpegEncContext *s)
 {
     const int lossless= s->avctx->codec_id != CODEC_ID_MJPEG;
+    int i;
 
     put_marker(&s->pb, SOI);
 
     // hack for AMV mjpeg format
-    if(s->avctx->codec_id == CODEC_ID_AMV) return;
+    if(s->avctx->codec_id == CODEC_ID_AMV) goto end;
 
     jpeg_put_comments(s);
 
@@ -284,6 +291,11 @@ void ff_mjpeg_encode_picture_header(MpegEncContext *s)
     }
 
     put_bits(&s->pb, 8, 0); /* Ah/Al (not used) */
+
+end:
+    s->esc_pos = put_bits_count(&s->pb) >> 3;
+    for(i=1; i<s->slice_context_count; i++)
+        s->thread_context[i]->esc_pos = 0;
 }
 
 static void escape_FF(MpegEncContext *s, int start)
@@ -339,21 +351,30 @@ static void escape_FF(MpegEncContext *s, int start)
     }
 }
 
-void ff_mjpeg_encode_stuffing(PutBitContext * pbc)
+void ff_mjpeg_encode_stuffing(MpegEncContext *s)
 {
-    int length;
+    int length, i;
+    PutBitContext *pbc = &s->pb;
+    int mb_y = s->mb_y - !s->mb_x;
     length= (-put_bits_count(pbc))&7;
     if(length) put_bits(pbc, length, (1<<length)-1);
+
+    flush_put_bits(&s->pb);
+    escape_FF(s, s->esc_pos);
+
+    if((s->avctx->active_thread_type & FF_THREAD_SLICE) && mb_y < s->mb_height)
+        put_marker(pbc, RST0 + (mb_y&7));
+    s->esc_pos = put_bits_count(pbc) >> 3;
+
+    for(i=0; i<3; i++)
+        s->last_dc[i] = 128 << s->intra_dc_precision;
 }
 
 void ff_mjpeg_encode_picture_trailer(MpegEncContext *s)
 {
-    ff_mjpeg_encode_stuffing(&s->pb);
-    flush_put_bits(&s->pb);
 
     assert((s->header_bits&7)==0);
 
-    escape_FF(s, s->header_bits>>3);
 
     put_marker(&s->pb, EOI);
 }
@@ -485,6 +506,7 @@ AVCodec ff_mjpeg_encoder = {
     .init           = ff_MPV_encode_init,
     .encode2        = ff_MPV_encode_picture,
     .close          = ff_MPV_encode_end,
+    .capabilities   = CODEC_CAP_SLICE_THREADS,
     .pix_fmts       = (const enum PixelFormat[]){
         PIX_FMT_YUVJ420P, PIX_FMT_YUVJ422P, PIX_FMT_NONE
     },

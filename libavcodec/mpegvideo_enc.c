@@ -578,6 +578,7 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
         s->codec_id != CODEC_ID_MPEG4      &&
         s->codec_id != CODEC_ID_MPEG1VIDEO &&
         s->codec_id != CODEC_ID_MPEG2VIDEO &&
+        s->codec_id != CODEC_ID_MJPEG      &&
         (s->codec_id != CODEC_ID_H263P)) {
         av_log(avctx, AV_LOG_ERROR,
                "multi threaded encoding not supported by codec\n");
@@ -2372,7 +2373,7 @@ static void write_slice_end(MpegEncContext *s){
 
         ff_mpeg4_stuffing(&s->pb);
     }else if(CONFIG_MJPEG_ENCODER && s->out_format == FMT_MJPEG){
-        ff_mjpeg_encode_stuffing(&s->pb);
+        ff_mjpeg_encode_stuffing(s);
     }
 
     avpriv_align_put_bits(&s->pb);
@@ -2547,12 +2548,14 @@ static int encode_thread(AVCodecContext *c, void *arg){
                 case CODEC_ID_MPEG1VIDEO:
                     if(s->mb_skip_run) is_gob_start=0;
                     break;
+                case CODEC_ID_MJPEG:
+                    if(s->mb_x==0 && s->mb_y!=0) is_gob_start=1;
+                    break;
                 }
 
                 if(is_gob_start){
                     if(s->start_mb_y != mb_y || mb_x!=0){
                         write_slice_end(s);
-
                         if(CONFIG_MPEG4_ENCODER && s->codec_id==CODEC_ID_MPEG4 && s->partitioned_frame){
                             ff_mpeg4_init_partitions(s);
                         }
