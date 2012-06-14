@@ -1827,19 +1827,29 @@ The number and kind of parameters depend on the loaded effect. If an
 effect parameter is not specified the default value is set.
 
 Some examples follow:
-@example
-# apply the distort0r effect, set the first two double parameters
-frei0r=distort0r:0.5:0.01
 
-# apply the colordistance effect, takes a color as first parameter
+@itemize
+@item
+Apply the distort0r effect, set the first two double parameters:
+@example
+frei0r=distort0r:0.5:0.01
+@end example
+
+@item
+Apply the colordistance effect, takes a color as first parameter:
+@example
 frei0r=colordistance:0.2/0.3/0.4
 frei0r=colordistance:violet
 frei0r=colordistance:0x112233
+@end example
 
-# apply the perspective effect, specify the top left and top right
-# image positions
+@item
+Apply the perspective effect, specify the top left and top right image
+positions:
+@example
 frei0r=perspective:0.2/0.2:0.8/0.2
 @end example
+@end itemize
 
 For more information see:
 @url{http://frei0r.dyne.org}
@@ -3528,10 +3538,9 @@ the form @var{num}/@var{den} or a frame rate abbreviation.
 information regarding frei0r and how to set the parameters read the
 section @ref{frei0r} in the description of the video filters.
 
-Some examples follow:
+For example, to generate a frei0r partik0l source with size 200x200
+and frame rate 10 which is overlayed on the overlay filter main input:
 @example
-# generate a frei0r partik0l source with size 200x200 and frame rate 10
-# which is overlayed on the overlay filter main input
 frei0r_src=200x200:10:partik0l=1234 [overlay]; [in][overlay] overlay
 @end example
 
