@@ -2049,7 +2049,7 @@ static void update_stream_timings(AVFormatContext *ic)
                 if (start_time1 < start_time_text)
                     start_time_text = start_time1;
             } else
-            start_time = FFMIN(start_time, start_time1);
+                start_time = FFMIN(start_time, start_time1);
             if (st->duration != AV_NOPTS_VALUE) {
                 end_time1 = start_time1
                           + av_rescale_q(st->duration, st->time_base, AV_TIME_BASE_Q);
