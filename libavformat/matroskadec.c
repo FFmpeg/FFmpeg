@@ -1924,7 +1924,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                 }
             } else {
                 MatroskaTrackEncoding *encodings = track->encodings.elem;
-                int pkt_size = lace_size[n];
+                uint32_t pkt_size = lace_size[n];
                 uint8_t *pkt_data = data;
 
                 if (pkt_size > size) {
