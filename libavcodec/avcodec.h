@@ -726,6 +726,10 @@ typedef struct RcOverride{
  */
 #define CODEC_CAP_VARIABLE_FRAME_SIZE 0x10000
 /**
+ * Codec is intra only.
+ */
+#define CODEC_CAP_INTRA_ONLY       0x40000000
+/**
  * Codec is lossless.
  */
 #define CODEC_CAP_LOSSLESS         0x80000000
