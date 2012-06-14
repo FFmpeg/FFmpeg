@@ -96,6 +96,7 @@ do_lavfi_pixfmts "null"    ""
 do_lavfi_pixfmts "pad"     "500:400:20:20"
 do_lavfi_pixfmts "pixdesctest" ""
 do_lavfi_pixfmts "scale"   "200:100"
+do_lavfi_pixfmts "super2xsai" ""
 do_lavfi_pixfmts "vflip"   ""
 
 do_lavfi_lavd() {
