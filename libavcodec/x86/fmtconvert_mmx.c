@@ -25,6 +25,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/x86_cpu.h"
 #include "libavcodec/fmtconvert.h"
+#include "libavcodec/dsputil.h"
 
 #if HAVE_YASM
 
@@ -34,6 +35,10 @@ void ff_int32_to_float_fmul_scalar_sse2(float *dst, const int *src, float mul, i
 void ff_float_to_int16_3dnow(int16_t *dst, const float *src, long len);
 void ff_float_to_int16_sse  (int16_t *dst, const float *src, long len);
 void ff_float_to_int16_sse2 (int16_t *dst, const float *src, long len);
+
+void ff_float_to_int16_step_3dnow(int16_t *dst, const float *src, long len, long step);
+void ff_float_to_int16_step_sse  (int16_t *dst, const float *src, long len, long step);
+void ff_float_to_int16_step_sse2 (int16_t *dst, const float *src, long len, long step);
 
 void ff_float_to_int16_interleave2_3dnow(int16_t *dst, const float **src, long len);
 void ff_float_to_int16_interleave2_sse  (int16_t *dst, const float **src, long len);
@@ -48,12 +53,9 @@ void ff_float_to_int16_interleave6_3dn2(int16_t *dst, const float **src, int len
 #define FLOAT_TO_INT16_INTERLEAVE(cpu) \
 /* gcc pessimizes register allocation if this is in the same function as float_to_int16_interleave_sse2*/\
 static av_noinline void float_to_int16_interleave_misc_##cpu(int16_t *dst, const float **src, long len, int channels){\
-    DECLARE_ALIGNED(16, int16_t, tmp)[len];\
-    int i,j,c;\
+    int c;\
     for(c=0; c<channels; c++){\
-        ff_float_to_int16_##cpu(tmp, src[c], len);\
-        for(i=0, j=c; i<len; i++, j+=channels)\
-            dst[j] = tmp[i];\
+        ff_float_to_int16_step_##cpu(dst+c, src[c], len, channels);\
     }\
 }\
 \
