@@ -1975,6 +1975,11 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
 
     if (res == 0) {
         for (n = 0; n < laces; n++) {
+            if (lace_size[n] > size) {
+                av_log(matroska->ctx, AV_LOG_ERROR, "Invalid packet size\n");
+                break;
+            }
+
             if ((st->codec->codec_id == CODEC_ID_RA_288 ||
                  st->codec->codec_id == CODEC_ID_COOK ||
                  st->codec->codec_id == CODEC_ID_SIPR ||
@@ -2043,11 +2048,6 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                 int offset = 0;
                 uint32_t pkt_size = lace_size[n];
                 uint8_t *pkt_data = data;
-
-                if (pkt_size > size) {
-                    av_log(matroska->ctx, AV_LOG_ERROR, "Invalid packet size\n");
-                    break;
-                }
 
                 if (encodings && encodings->scope & 1) {
                     offset = matroska_decode_buffer(&pkt_data,&pkt_size, track);
