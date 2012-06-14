@@ -504,7 +504,7 @@ AVCodec ff_mjpeg_encoder = {
     .init           = ff_MPV_encode_init,
     .encode2        = ff_MPV_encode_picture,
     .close          = ff_MPV_encode_end,
-    .capabilities   = CODEC_CAP_SLICE_THREADS,
+    .capabilities   = CODEC_CAP_SLICE_THREADS | CODEC_CAP_INTRA_ONLY,
     .pix_fmts       = (const enum PixelFormat[]){
         PIX_FMT_YUVJ420P, PIX_FMT_YUVJ422P, PIX_FMT_NONE
     },
