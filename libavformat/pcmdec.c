@@ -24,6 +24,7 @@
 #include "pcm.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
+#include "libavutil/avassert.h"
 
 #define RAW_SAMPLES     1024
 
@@ -42,7 +43,7 @@ static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
         return ret;
 
     bps= av_get_bits_per_sample(s->streams[0]->codec->codec_id);
-    assert(bps); // if false there IS a bug elsewhere (NOT in this function)
+    av_assert1(bps); // if false there IS a bug elsewhere (NOT in this function)
     pkt->dts=
     pkt->pts= pkt->pos*8 / (bps * s->streams[0]->codec->channels);
 
