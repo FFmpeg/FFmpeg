@@ -78,6 +78,9 @@ meaning only while running the regression tests.
 @item THREADS
 Specify how many threads to use while running regression tests, it is
 quite useful to detect thread-related regressions.
+@item THREAD_TYPE
+Specify which threading strategy test, either @var{slice} or @var{frame},
+by default @var{slice+frame}
 @item CPUFLAGS
 Specify a mask to be applied to autodetected CPU flags.
 @item TARGET_EXEC
