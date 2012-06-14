@@ -395,21 +395,23 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame *p;
     uint8_t *crow_buf_base = NULL;
     uint32_t tag, length;
+    int64_t sig;
     int ret;
 
     FFSWAP(AVFrame *, s->current_picture, s->last_picture);
     avctx->coded_frame= s->current_picture;
     p = s->current_picture;
 
+    bytestream2_init(&s->gb, buf, buf_size);
+
     /* check signature */
-    if (buf_size < 8 ||
-        memcmp(buf, ff_pngsig, 8) != 0 &&
-        memcmp(buf, ff_mngsig, 8) != 0) {
+    sig = bytestream2_get_be64(&s->gb);
+    if (sig != PNGSIG &&
+        sig != MNGSIG) {
         av_log(avctx, AV_LOG_ERROR, "Missing png signature\n");
         return -1;
     }
 
-    bytestream2_init(&s->gb, buf + 8, buf_size - 8);
     s->y=
     s->state=0;
 //    memset(s, 0, sizeof(PNGDecContext));

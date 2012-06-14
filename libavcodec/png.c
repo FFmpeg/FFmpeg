@@ -21,9 +21,6 @@
 #include "avcodec.h"
 #include "png.h"
 
-const uint8_t ff_pngsig[8] = {137, 80, 78, 71, 13, 10, 26, 10};
-const uint8_t ff_mngsig[8] = {138, 77, 78, 71, 13, 10, 26, 10};
-
 /* Mask to determine which y pixels are valid in a pass */
 const uint8_t ff_png_pass_ymask[NB_PASSES] = {
     0x80, 0x80, 0x08, 0x88, 0x22, 0xaa, 0x55,

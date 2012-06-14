@@ -322,7 +322,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     /* write png header */
-    memcpy(s->bytestream, ff_pngsig, 8);
+    AV_WB64(s->bytestream, PNGSIG);
     s->bytestream += 8;
 
     AV_WB32(s->buf, avctx->width);

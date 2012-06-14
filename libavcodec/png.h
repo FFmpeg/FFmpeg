@@ -49,8 +49,8 @@
 
 #define NB_PASSES 7
 
-extern const uint8_t ff_pngsig[8];
-extern const uint8_t ff_mngsig[8];
+#define PNGSIG 0x89504e470d0a1a0a
+#define MNGSIG 0x8a4d4e470d0a1a0a
 
 /* Mask to determine which y pixels are valid in a pass */
 extern const uint8_t ff_png_pass_ymask[NB_PASSES];

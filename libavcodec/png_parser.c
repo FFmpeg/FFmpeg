@@ -25,9 +25,7 @@
  */
 
 #include "parser.h"
-
-#define PNGSIG 0x89504e470d0a1a0a
-#define MNGSIG 0x8a4d4e470d0a1a0a
+#include "png.h"
 
 typedef struct PNGParseContext
 {
