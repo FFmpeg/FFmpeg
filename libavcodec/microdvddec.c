@@ -226,7 +226,7 @@ static void microdvd_close_no_persistent_tags(AVBPrint *new_line,
 {
     int i, sidx;
 
-    for (i = sizeof(MICRODVD_TAGS) - 2; i; i--) {
+    for (i = sizeof(MICRODVD_TAGS) - 2; i >= 0; i--) {
         if (tags[i].persistent != MICRODVD_PERSISTENT_OFF)
             continue;
         switch (tags[i].key) {
