@@ -41,7 +41,11 @@
 #endif
 
 #ifndef av_extern_inline
+#if defined(__ICL) && __ICL >= 1210 || defined(__GNUC_STDC_INLINE__)
+#    define av_extern_inline extern inline
+#else
 #    define av_extern_inline inline
+#endif
 #endif
 
 #ifndef av_noreturn
