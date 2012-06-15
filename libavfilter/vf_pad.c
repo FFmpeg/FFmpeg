@@ -284,7 +284,7 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
           )
             break;
     }
-    pad->needs_copy= plane < 4 && outpicref->data[plane];
+    pad->needs_copy= plane < 4 && outpicref->data[plane] || !(outpicref->perms & AV_PERM_WRITE);
     if(pad->needs_copy){
         av_log(inlink->dst, AV_LOG_DEBUG, "Direct padding impossible allocating new frame\n");
         avfilter_unref_buffer(outpicref);
