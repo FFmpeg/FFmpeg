@@ -311,11 +311,59 @@ end:
     return avpkt->size;
 }
 
+static int microdvd_init(AVCodecContext *avctx)
+{
+    int i, sidx;
+    AVBPrint font_buf;
+    int font_size    = ASS_DEFAULT_FONT_SIZE;
+    int color        = ASS_DEFAULT_COLOR;
+    int bold         = ASS_DEFAULT_BOLD;
+    int italic       = ASS_DEFAULT_ITALIC;
+    int underline    = ASS_DEFAULT_UNDERLINE;
+    int alignment    = ASS_DEFAULT_ALIGNMENT;
+    struct microdvd_tag tags[sizeof(MICRODVD_TAGS) - 1] = {{0}};
+
+    av_bprint_init(&font_buf, 0, AV_BPRINT_SIZE_AUTOMATIC);
+    av_bprintf(&font_buf, "%s", ASS_DEFAULT_FONT);
+
+    if (avctx->extradata) {
+        microdvd_load_tags(tags, avctx->extradata);
+        for (i = 0; i < sizeof(MICRODVD_TAGS) - 1; i++) {
+            switch (av_tolower(tags[i].key)) {
+            case 'y':
+                for (sidx = 0; sidx < sizeof(MICRODVD_STYLES) - 1; sidx++) {
+                    if (tags[i].data1 & (1 << sidx)) {
+                        switch (MICRODVD_STYLES[sidx]) {
+                        case 'i': italic    = 1; break;
+                        case 'b': bold      = 1; break;
+                        case 'u': underline = 1; break;
+                        }
+                    }
+                }
+                break;
+
+            case 'c': color     = tags[i].data1; break;
+            case 's': font_size = tags[i].data1; break;
+            case 'p': alignment =             8; break;
+
+            case 'f':
+                av_bprint_clear(&font_buf);
+                av_bprintf(&font_buf, "%.*s",
+                           tags[i].data_string_len, tags[i].data_string);
+                break;
+            }
+        }
+    }
+    return ff_ass_subtitle_header(avctx, font_buf.str, font_size, color,
+                                  ASS_DEFAULT_BACK_COLOR, bold, italic,
+                                  underline, alignment);
+}
+
 AVCodec ff_microdvd_decoder = {
     .name         = "microdvd",
     .long_name    = NULL_IF_CONFIG_SMALL("MicroDVD subtitle"),
     .type         = AVMEDIA_TYPE_SUBTITLE,
     .id           = CODEC_ID_MICRODVD,
-    .init         = ff_ass_subtitle_header_default,
+    .init         = microdvd_init,
     .decode       = microdvd_decode_frame,
 };
