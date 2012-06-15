@@ -27,6 +27,7 @@ version <next>:
 - channelsplit audio filter
 - RTMPT protocol support
 - iLBC encoding/decoding via libilbc
+- Microsoft Screen 1 decoder
 
 
 version 0.8:
