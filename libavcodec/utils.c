@@ -1832,6 +1832,11 @@ int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes)
             case 29: return 288;
             case 37: return 480;
             }
+        } else if (id == CODEC_ID_ILBC) {
+            switch (ba) {
+            case 38: return 160;
+            case 50: return 240;
+            }
         }
     }
 

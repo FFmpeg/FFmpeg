@@ -85,6 +85,17 @@ x264 is under the GNU Public License Version 2 or later
 details), you must upgrade Libav's license to GPL in order to use it.
 @end float
 
+@section libilbc
+
+iLBC is a narrowband speech codec that has been made freely available
+by Google as part of the WebRTC project. libilbc is a packaging friendly
+copy of the iLBC codec. Libav can make use of the libilbc library for
+iLBC encoding and decoding.
+
+Go to @url{https://github.com/dekkers/libilbc} and follow the instructions for
+installing the library. Then pass @code{--enable-libilbc} to configure to
+enable it.
+
 
 
 @chapter Supported File Formats and Codecs
@@ -707,6 +718,8 @@ following image formats are supported:
 @item GSM Microsoft variant  @tab  E  @tab  X
     @tab encoding supported through external library libgsm
 @item IAC (Indeo Audio Coder)  @tab     @tab  X
+@item iLBC (Internet Low Bitrate Codec) @tab  E  @tab  E
+    @tab encoding and decoding supported through external library libilbc
 @item IMC (Intel Music Coder)  @tab     @tab  X
 @item MACE (Macintosh Audio Compression/Expansion) 3:1  @tab     @tab  X
 @item MACE (Macintosh Audio Compression/Expansion) 6:1  @tab     @tab  X

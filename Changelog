@@ -26,6 +26,7 @@ version <next>:
 - Indeo Audio decoder
 - channelsplit audio filter
 - RTMPT protocol support
+- iLBC encoding/decoding via libilbc
 
 
 version 0.8:

@@ -394,6 +394,7 @@ enum CodecID {
     CODEC_ID_BMV_AUDIO,
     CODEC_ID_RALF,
     CODEC_ID_IAC,
+    CODEC_ID_ILBC,
 
     /* subtitle codecs */
     CODEC_ID_FIRST_SUBTITLE = 0x17000,          ///< A dummy ID pointing at the start of subtitle codecs.
