@@ -25,6 +25,7 @@ Write and read amr data according to RFC3267, http://www.ietf.org/rfc/rfc3267.tx
 Only mono files are supported.
 
 */
+#include "libavutil/avassert.h"
 #include "avformat.h"
 #include "internal.h"
 
@@ -143,9 +144,7 @@ static int amr_read_packet(AVFormatContext *s,
         size=packed_size[mode];
     }
     else
-    {
-        assert(0);
-    }
+        av_assert0(0);
 
     if ( (size==0) || av_new_packet(pkt, size))
     {
