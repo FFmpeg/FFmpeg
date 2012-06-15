@@ -99,7 +99,7 @@ static int64_t file_seek(URLContext *h, int64_t pos, int whence)
     if (whence == AVSEEK_SIZE) {
         struct stat st;
         int ret = fstat(fd, &st);
-        return ret < 0 ? AVERROR(errno) : st.st_size;
+        return ret < 0 ? AVERROR(errno) : (S_ISFIFO(st.st_mode) ? 0 : st.st_size);
     }
     return lseek(fd, pos, whence);
 }
