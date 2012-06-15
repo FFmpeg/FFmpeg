@@ -62,7 +62,7 @@ static int microdvd_read_header(AVFormatContext *s)
     char c;
 
     if (!st)
-        return -1;
+        return AVERROR(ENOMEM);
     for (i=0; i<FF_ARRAY_ELEMS(microdvd->lines); i++) {
         microdvd->pos[i] = avio_tell(s->pb);
         ff_get_line(s->pb, microdvd->lines[i], sizeof(microdvd->lines[i]));
