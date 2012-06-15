@@ -1,3 +1,9 @@
+FATE_SUBTITLES += fate-sub-jacosub
+fate-sub-jacosub: CMD = md5 -i $(SAMPLES)/sub/JACOsub_capability_tester.jss -f ass
+
+FATE_SUBTITLES += fate-sub-microdvd
+fate-sub-microdvd: CMD = md5 -i $(SAMPLES)/sub/MicroDVD_capability_tester.sub -f ass
+
 FATE_SUBTITLES += fate-sub-srt
 fate-sub-srt: CMD = md5 -i $(SAMPLES)/sub/SubRip_capability_tester.srt -f ass
 
