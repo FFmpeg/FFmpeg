@@ -217,6 +217,10 @@ static int get_siz(J2kDecoderContext *s)
      s->tile_offset_y = bytestream2_get_be32u(&s->g); // YT0Siz
        s->ncomponents = bytestream2_get_be16u(&s->g); // CSiz
 
+    if(s->ncomponents <= 0 || s->ncomponents > 4) {
+        av_log(s->avctx, AV_LOG_ERROR, "unsupported/invalid ncomponents: %d\n", s->ncomponents);
+        return AVERROR(EINVAL);
+    }
     if(s->tile_width<=0 || s->tile_height<=0)
         return AVERROR(EINVAL);
 
