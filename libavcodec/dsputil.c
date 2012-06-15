@@ -2517,7 +2517,7 @@ static void vector_fmac_scalar_c(float *dst, const float *src, float mul,
         dst[i] += src[i] * mul;
 }
 
-static void butterflies_float_c(float *restrict v1, float *restrict v2,
+static void butterflies_float_c(float *av_restrict v1, float *av_restrict v2,
                                 int len)
 {
     int i;
