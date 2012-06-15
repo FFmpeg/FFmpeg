@@ -662,7 +662,7 @@ static inline int get_block_bits(SnowContext *s, int x, int y, int w){
     }
 }
 
-static int get_block_rd(SnowContext *s, int mb_x, int mb_y, int plane_index, const uint8_t *obmc_edged){
+static int get_block_rd(SnowContext *s, int mb_x, int mb_y, int plane_index, uint8_t (*obmc_edged)[MB_SIZE * 2]){
     Plane *p= &s->plane[plane_index];
     const int block_size = MB_SIZE >> s->block_max_depth;
     const int block_w    = plane_index ? block_size/2 : block_size;
@@ -691,7 +691,7 @@ static int get_block_rd(SnowContext *s, int mb_x, int mb_y, int plane_index, con
     ff_snow_pred_block(s, cur, tmp, ref_stride, sx, sy, block_w*2, block_w*2, &s->block[mb_x + mb_y*b_stride], plane_index, w, h);
 
     for(y=y0; y<y1; y++){
-        const uint8_t *obmc1= obmc_edged + y*obmc_stride;
+        const uint8_t *obmc1= obmc_edged[y];
         const IDWTELEM *pred1 = pred + y*obmc_stride;
         uint8_t *cur1 = cur + y*ref_stride;
         uint8_t *dst1 = dst + sx + (sy+y)*ref_stride;
@@ -953,7 +953,7 @@ static int encode_subband(SnowContext *s, SubBand *b, IDWTELEM *src, IDWTELEM *p
 //    encode_subband_dzr(s, b, src, parent, stride, orientation);
 }
 
-static av_always_inline int check_block(SnowContext *s, int mb_x, int mb_y, int p[3], int intra, const uint8_t *obmc_edged, int *best_rd){
+static av_always_inline int check_block(SnowContext *s, int mb_x, int mb_y, int p[3], int intra, uint8_t (*obmc_edged)[MB_SIZE * 2], int *best_rd){
     const int b_stride= s->b_width << s->block_max_depth;
     BlockNode *block= &s->block[mb_x + mb_y * b_stride];
     BlockNode backup= *block;
@@ -994,7 +994,7 @@ static av_always_inline int check_block(SnowContext *s, int mb_x, int mb_y, int 
 
 /* special case for int[2] args we discard afterwards,
  * fixes compilation problem with gcc 2.95 */
-static av_always_inline int check_block_inter(SnowContext *s, int mb_x, int mb_y, int p0, int p1, const uint8_t *obmc_edged, int *best_rd){
+static av_always_inline int check_block_inter(SnowContext *s, int mb_x, int mb_y, int p0, int p1, uint8_t (*obmc_edged)[MB_SIZE * 2], int *best_rd){
     int p[2] = {p0, p1};
     return check_block(s, mb_x, mb_y, p, 0, obmc_edged, best_rd);
 }
@@ -1074,7 +1074,7 @@ static void iterative_me(SnowContext *s){
                 BlockNode *blb= mb_x           && mb_y+1<b_height ? &s->block[index+b_stride-1] : NULL;
                 BlockNode *brb= mb_x+1<b_width && mb_y+1<b_height ? &s->block[index+b_stride+1] : NULL;
                 const int b_w= (MB_SIZE >> s->block_max_depth);
-                uint8_t obmc_edged[b_w*2][b_w*2];
+                uint8_t obmc_edged[MB_SIZE * 2][MB_SIZE * 2];
 
                 if(pass && (block->type & BLOCK_OPT))
                     continue;
@@ -1089,7 +1089,8 @@ static void iterative_me(SnowContext *s){
                 //FIXME precalculate
                 {
                     int x, y;
-                    memcpy(obmc_edged, ff_obmc_tab[s->block_max_depth], b_w*b_w*4);
+                    for (y = 0; y < b_w * 2; y++)
+                        memcpy(obmc_edged[y], ff_obmc_tab[s->block_max_depth] + y * b_w * 2, b_w * 2);
                     if(mb_x==0)
                         for(y=0; y<b_w*2; y++)
                             memset(obmc_edged[y], obmc_edged[y][0] + obmc_edged[y][b_w-1], b_w);
@@ -1143,9 +1144,9 @@ static void iterative_me(SnowContext *s){
                 // get previous score (cannot be cached due to OBMC)
                 if(pass > 0 && (block->type&BLOCK_INTRA)){
                     int color0[3]= {block->color[0], block->color[1], block->color[2]};
-                    check_block(s, mb_x, mb_y, color0, 1, *obmc_edged, &best_rd);
+                    check_block(s, mb_x, mb_y, color0, 1, obmc_edged, &best_rd);
                 }else
-                    check_block_inter(s, mb_x, mb_y, block->mx, block->my, *obmc_edged, &best_rd);
+                    check_block_inter(s, mb_x, mb_y, block->mx, block->my, obmc_edged, &best_rd);
 
                 ref_b= *block;
                 ref_rd= best_rd;
@@ -1156,16 +1157,16 @@ static void iterative_me(SnowContext *s){
                     block->ref= ref;
                     best_rd= INT_MAX;
 
-                    check_block_inter(s, mb_x, mb_y, mvr[0][0], mvr[0][1], *obmc_edged, &best_rd);
-                    check_block_inter(s, mb_x, mb_y, 0, 0, *obmc_edged, &best_rd);
+                    check_block_inter(s, mb_x, mb_y, mvr[0][0], mvr[0][1], obmc_edged, &best_rd);
+                    check_block_inter(s, mb_x, mb_y, 0, 0, obmc_edged, &best_rd);
                     if(tb)
-                        check_block_inter(s, mb_x, mb_y, mvr[-b_stride][0], mvr[-b_stride][1], *obmc_edged, &best_rd);
+                        check_block_inter(s, mb_x, mb_y, mvr[-b_stride][0], mvr[-b_stride][1], obmc_edged, &best_rd);
                     if(lb)
-                        check_block_inter(s, mb_x, mb_y, mvr[-1][0], mvr[-1][1], *obmc_edged, &best_rd);
+                        check_block_inter(s, mb_x, mb_y, mvr[-1][0], mvr[-1][1], obmc_edged, &best_rd);
                     if(rb)
-                        check_block_inter(s, mb_x, mb_y, mvr[1][0], mvr[1][1], *obmc_edged, &best_rd);
+                        check_block_inter(s, mb_x, mb_y, mvr[1][0], mvr[1][1], obmc_edged, &best_rd);
                     if(bb)
-                        check_block_inter(s, mb_x, mb_y, mvr[b_stride][0], mvr[b_stride][1], *obmc_edged, &best_rd);
+                        check_block_inter(s, mb_x, mb_y, mvr[b_stride][0], mvr[b_stride][1], obmc_edged, &best_rd);
 
                     /* fullpel ME */
                     //FIXME avoid subpel interpolation / round to nearest integer
@@ -1173,10 +1174,10 @@ static void iterative_me(SnowContext *s){
                         dia_change=0;
                         for(i=0; i<FFMAX(s->avctx->dia_size, 1); i++){
                             for(j=0; j<i; j++){
-                                dia_change |= check_block_inter(s, mb_x, mb_y, block->mx+4*(i-j), block->my+(4*j), *obmc_edged, &best_rd);
-                                dia_change |= check_block_inter(s, mb_x, mb_y, block->mx-4*(i-j), block->my-(4*j), *obmc_edged, &best_rd);
-                                dia_change |= check_block_inter(s, mb_x, mb_y, block->mx+4*(i-j), block->my-(4*j), *obmc_edged, &best_rd);
-                                dia_change |= check_block_inter(s, mb_x, mb_y, block->mx-4*(i-j), block->my+(4*j), *obmc_edged, &best_rd);
+                                dia_change |= check_block_inter(s, mb_x, mb_y, block->mx+4*(i-j), block->my+(4*j), obmc_edged, &best_rd);
+                                dia_change |= check_block_inter(s, mb_x, mb_y, block->mx-4*(i-j), block->my-(4*j), obmc_edged, &best_rd);
+                                dia_change |= check_block_inter(s, mb_x, mb_y, block->mx+4*(i-j), block->my-(4*j), obmc_edged, &best_rd);
+                                dia_change |= check_block_inter(s, mb_x, mb_y, block->mx-4*(i-j), block->my+(4*j), obmc_edged, &best_rd);
                             }
                         }
                     }while(dia_change);
@@ -1185,7 +1186,7 @@ static void iterative_me(SnowContext *s){
                         static const int square[8][2]= {{+1, 0},{-1, 0},{ 0,+1},{ 0,-1},{+1,+1},{-1,-1},{+1,-1},{-1,+1},};
                         dia_change=0;
                         for(i=0; i<8; i++)
-                            dia_change |= check_block_inter(s, mb_x, mb_y, block->mx+square[i][0], block->my+square[i][1], *obmc_edged, &best_rd);
+                            dia_change |= check_block_inter(s, mb_x, mb_y, block->mx+square[i][0], block->my+square[i][1], obmc_edged, &best_rd);
                     }while(dia_change);
                     //FIXME or try the standard 2 pass qpel or similar
 
@@ -1198,7 +1199,7 @@ static void iterative_me(SnowContext *s){
                 }
                 best_rd= ref_rd;
                 *block= ref_b;
-                check_block(s, mb_x, mb_y, color, 1, *obmc_edged, &best_rd);
+                check_block(s, mb_x, mb_y, color, 1, obmc_edged, &best_rd);
                 //FIXME RD style color selection
                 if(!same_block(block, &backup)){
                     if(tb ) tb ->type &= ~BLOCK_OPT;
