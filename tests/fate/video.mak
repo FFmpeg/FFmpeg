@@ -194,9 +194,6 @@ fate-smc: CMD = framecrc -i $(SAMPLES)/smc/cass_schi.qt -pix_fmt rgb24
 FATE_VIDEO += fate-sp5x
 fate-sp5x: CMD = framecrc -idct simple -i $(SAMPLES)/sp5x/sp5x_problem.avi
 
-FATE_VIDEO += fate-sub-srt
-fate-sub-srt: CMD = md5 -i $(SAMPLES)/sub/SubRip_capability_tester.srt -f ass
-
 FATE_VIDEO += fate-thp
 fate-thp: CMD = framecrc -idct simple -i $(SAMPLES)/thp/pikmin2-opening1-partial.thp -an
 
