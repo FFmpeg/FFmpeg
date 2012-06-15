@@ -95,7 +95,7 @@ static void end_frame(AVFilterLink *inlink)
 
 AVFilter avfilter_vf_split = {
     .name      = "split",
-    .description = NULL_IF_CONFIG_SMALL("Pass on the input to two outputs."),
+    .description = NULL_IF_CONFIG_SMALL("Pass on the input video to N outputs."),
 
     .init   = split_init,
     .uninit = split_uninit,
