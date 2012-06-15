@@ -236,6 +236,11 @@ fate-vsynth%-snow:               ENCOPTS = -strict -2 -qscale 2 -flags +qpel \
                                            -me_method iter -dia_size 2       \
                                            -cmp 12 -subcmp 12 -s 128x64
 
+FATE_VCODEC += snow-hpel
+fate-vsynth%-snow-hpel:          ENCOPTS = -strict -2 -qscale 2              \
+                                           -me_method iter -dia_size 2       \
+                                           -cmp 12 -subcmp 12 -s 128x64
+
 FATE_VCODEC += snow-ll
 fate-vsynth%-snow-ll:            ENCOPTS = -strict -2 -qscale .001 -pred 1 \
                                            -flags +mv4+qpel
