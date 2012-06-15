@@ -27,24 +27,16 @@
 
 #include "avformat.h"
 #include "internal.h"
+#include "subtitles.h"
 #include "libavcodec/jacosub.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/intreadwrite.h"
 
 typedef struct {
-    char *line;         ///< null-terminated heap allocated subtitle line
-    int64_t pos;        ///< offset position
-    int start;          ///< timestamp start
-    int end;            ///< timestamp end
-} SubEntry;
-
-typedef struct {
     int shift;
     unsigned timeres;
-    SubEntry *subs;     ///< subtitles list
-    int nsub;           ///< number of subtitles
-    int sid;            ///< current subtitle
+    FFDemuxSubtitlesQueue q;
 } JACOsubContext;
 
 static int timed_line(const char *ptr)
@@ -101,41 +93,39 @@ static int get_jss_cmd(char k)
 
 static int jacosub_read_close(AVFormatContext *s)
 {
-    int i;
     JACOsubContext *jacosub = s->priv_data;
-
-    for (i = 0; i < jacosub->nsub; i++)
-        av_freep(&jacosub->subs[i].line);
-    jacosub->nsub = 0;
-    av_freep(&jacosub->subs);
+    ff_subtitles_queue_clean(&jacosub->q);
     return 0;
 }
 
 static const char *read_ts(JACOsubContext *jacosub, const char *buf,
-                           int *ts_start, int *ts_end)
+                           int64_t *start, int *duration)
 {
     int len;
     unsigned hs, ms, ss, fs; // hours, minutes, seconds, frame start
     unsigned he, me, se, fe; // hours, minutes, seconds, frame end
+    int ts_start, ts_end;
 
     /* timed format */
     if (sscanf(buf, "%u:%u:%u.%u %u:%u:%u.%u %n",
                &hs, &ms, &ss, &fs,
                &he, &me, &se, &fe, &len) == 8) {
-        *ts_start = (hs*3600 + ms*60 + ss) * jacosub->timeres + fs;
-        *ts_end   = (he*3600 + me*60 + se) * jacosub->timeres + fe;
+        ts_start = (hs*3600 + ms*60 + ss) * jacosub->timeres + fs;
+        ts_end   = (he*3600 + me*60 + se) * jacosub->timeres + fe;
         goto shift_and_ret;
     }
 
     /* timestamps format */
-    if (sscanf(buf, "@%u @%u %n", ts_start, ts_end, &len) == 2)
+    if (sscanf(buf, "@%u @%u %n", &ts_start, &ts_end, &len) == 2)
         goto shift_and_ret;
 
     return NULL;
 
 shift_and_ret:
-    *ts_start = (*ts_start + jacosub->shift) * 100 / jacosub->timeres;
-    *ts_end   = (*ts_end   + jacosub->shift) * 100 / jacosub->timeres;
+    ts_start  = (ts_start + jacosub->shift) * 100 / jacosub->timeres;
+    ts_end    = (ts_end   + jacosub->shift) * 100 / jacosub->timeres;
+    *start    = ts_start;
+    *duration = ts_start + ts_end;
     return buf + len;
 }
 
@@ -159,11 +149,6 @@ static int get_shift(int timeres, const char *buf)
     }
 
     return 0;
-}
-
-static int cmp_timed_sub(const void *a, const void *b)
-{
-    return ((const SubEntry*)a)->start - ((const SubEntry*)b)->start;
 }
 
 static int jacosub_read_header(AVFormatContext *s)
@@ -191,41 +176,19 @@ static int jacosub_read_header(AVFormatContext *s)
         int cmd_len;
         const char *p = line;
         int64_t pos = avio_tell(pb);
-
-        ff_get_line(pb, line, sizeof(line));
+        int len = ff_get_line(pb, line, sizeof(line));
 
         p = jss_skip_whitespace(p);
 
         /* queue timed line */
         if (merge_line || timed_line(p)) {
-            SubEntry *subs, *sub;
-            const int len = strlen(line);
+            AVPacket *sub;
 
-            if (merge_line) {
-                char *tmp;
-                const int old_len = strlen(sub->line);
-
-                sub = &subs[jacosub->nsub];
-                tmp = av_realloc(sub->line, old_len + len + 1);
-                if (!tmp)
-                    return AVERROR(ENOMEM);
-                sub->line = tmp;
-                strcpy(sub->line + old_len, line);
-            } else {
-                subs = av_realloc(jacosub->subs,
-                                  sizeof(*jacosub->subs) * (jacosub->nsub+1));
-                if (!subs)
-                    return AVERROR(ENOMEM);
-                jacosub->subs = subs;
-                sub = &subs[jacosub->nsub];
-                sub->pos  = pos;
-                sub->line = av_strdup(line);
-                if (!sub->line)
-                    return AVERROR(ENOMEM);
-            }
+            sub = ff_subtitles_queue_insert(&jacosub->q, line, len, merge_line);
+            if (!sub)
+                return AVERROR(ENOMEM);
+            sub->pos = pos;
             merge_line = len > 1 && !strcmp(&line[len - 2], "\\\n");
-            if (!merge_line)
-                jacosub->nsub++;
             continue;
         }
 
@@ -267,32 +230,19 @@ static int jacosub_read_header(AVFormatContext *s)
 
     /* SHIFT and TIMERES affect the whole script so packet timing can only be
      * done in a second pass */
-    for (i = 0; i < jacosub->nsub; i++) {
-        SubEntry *sub = &jacosub->subs[i];
-        read_ts(jacosub, sub->line, &sub->start, &sub->end);
+    for (i = 0; i < jacosub->q.nb_subs; i++) {
+        AVPacket *sub = &jacosub->q.subs[i];
+        read_ts(jacosub, sub->data, &sub->pts, &sub->duration);
     }
-    qsort(jacosub->subs, jacosub->nsub, sizeof(*jacosub->subs), cmp_timed_sub);
+    ff_subtitles_queue_finalize(&jacosub->q);
 
     return 0;
 }
 
 static int jacosub_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int res;
     JACOsubContext *jacosub = s->priv_data;
-    const SubEntry *sub = &jacosub->subs[jacosub->sid++];
-
-    if (jacosub->sid == jacosub->nsub)
-        return AVERROR_EOF;
-    res = av_new_packet(pkt, strlen(sub->line));
-    if (res)
-        return res;
-    strcpy(pkt->data, sub->line);
-    pkt->flags |= AV_PKT_FLAG_KEY;
-    pkt->pos = sub->pos;
-    pkt->pts = pkt->dts = sub->start;
-    pkt->duration = sub->end - sub->start;
-    return 0;
+    return ff_subtitles_queue_read_packet(&jacosub->q, pkt);
 }
 
 AVInputFormat ff_jacosub_demuxer = {
