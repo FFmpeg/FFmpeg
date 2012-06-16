@@ -177,8 +177,8 @@ cglobal add_rect_clamped_%1, 7,7,3, dst, src, stride, idwt, idwt_stride, w, h
     and     wd, ~(mmsize-1)
 
 %if ARCH_X86_64
-    mov   r11d, wd
-    %define wspill r11d
+    mov   r8d, wd
+    %define wspill r8d
 %else
     mov    r5m, wd
     %define wspill r5m
