@@ -4310,7 +4310,7 @@ int avpicture_get_size(enum PixelFormat pix_fmt, int width, int height);
 int avpicture_deinterlace(AVPicture *dst, const AVPicture *src,
                           enum PixelFormat pix_fmt, int width, int height);
 /**
- * Copy image src to dst. Wraps av_picture_data_copy() above.
+ * Copy image src to dst. Wraps av_image_copy().
  */
 void av_picture_copy(AVPicture *dst, const AVPicture *src,
                      enum PixelFormat pix_fmt, int width, int height);
