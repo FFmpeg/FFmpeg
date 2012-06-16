@@ -51,9 +51,11 @@ static const AVOption asns_options[] = {
 };
 
 static const AVClass asns_class = {
-    "asetnsamples",
-    av_default_item_name,
-    asns_options
+    .class_name = "asetnsamples",
+    .item_name  = av_default_item_name,
+    .option     = asns_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_FILTER,
 };
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)

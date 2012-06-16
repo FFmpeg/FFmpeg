@@ -58,9 +58,11 @@ static const AVOption blackdetect_options[] = {
 };
 
 static const AVClass blackdetect_class = {
-    .class_name = "BlackDetectContext",
+    .class_name = "blackdetect",
     .item_name  = av_default_item_name,
     .option     = blackdetect_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_FILTER,
 };
 
 #define YUVJ_FORMATS \

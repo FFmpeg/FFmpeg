@@ -152,9 +152,11 @@ static const AVOption delogo_options[]= {
 };
 
 static const AVClass delogo_class = {
-    .class_name = "DelogoContext",
+    .class_name = "delogo",
     .item_name  = av_default_item_name,
     .option     = delogo_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_FILTER,
 };
 
 static int query_formats(AVFilterContext *ctx)

@@ -46,10 +46,11 @@ static const AVOption options[] = {
 };
 
 static const AVClass channelsplit_class = {
-    .class_name = "channelsplit filter",
+    .class_name = "channelsplit",
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_FILTER,
 };
 
 static int init(AVFilterContext *ctx, const char *arg, void *opaque)

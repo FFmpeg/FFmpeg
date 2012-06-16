@@ -81,9 +81,11 @@ static const AVOption movie_options[]= {
 };
 
 static const AVClass movie_class = {
-    "MovieContext",
-    av_default_item_name,
-    movie_options
+    .class_name = "movie",
+    .item_name  = av_default_item_name,
+    .option     = movie_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_FILTER,
 };
 
 static av_cold int movie_common_init(AVFilterContext *ctx, const char *args, void *opaque,

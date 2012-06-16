@@ -98,9 +98,11 @@ static const AVOption life_options[] = {
 };
 
 static const AVClass life_class = {
-    "LifeContext",
-    av_default_item_name,
-    life_options
+    .class_name = "life",
+    .item_name  = av_default_item_name,
+    .option     = life_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_FILTER,
 };
 
 static int parse_rule(uint16_t *born_rule, uint16_t *stay_rule,

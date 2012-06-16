@@ -85,9 +85,11 @@ static const AVOption mptestsrc_options[]= {
 };
 
 static const AVClass mptestsrc_class = {
-    "MPTestContext",
-    av_default_item_name,
-    mptestsrc_options
+    .class_name = "mptestsrc",
+    .item_name  = av_default_item_name,
+    .option     = mptestsrc_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_FILTER,
 };
 
 static double c[64];

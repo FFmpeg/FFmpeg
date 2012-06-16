@@ -79,9 +79,11 @@ static const AVOption eval_options[]= {
 };
 
 static const AVClass eval_class = {
-    "AEvalSrcContext",
-    av_default_item_name,
-    eval_options
+    .class_name = "aevalsrc",
+    .item_name  = av_default_item_name,
+    .option     = eval_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_FILTER,
 };
 
 static int init(AVFilterContext *ctx, const char *args, void *opaque)

@@ -55,9 +55,11 @@ static const AVOption anullsrc_options[]= {
 };
 
 static const AVClass anullsrc_class = {
-    "ANullSrcContext",
-    av_default_item_name,
-    anullsrc_options
+    .class_name = "anullsrc",
+    .item_name  = av_default_item_name,
+    .option     = anullsrc_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_FILTER,
 };
 
 static int init(AVFilterContext *ctx, const char *args, void *opaque)

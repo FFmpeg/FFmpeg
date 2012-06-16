@@ -106,9 +106,11 @@ static const AVOption mandelbrot_options[] = {
 };
 
 static const AVClass mandelbrot_class = {
-    "MBContext",
-    av_default_item_name,
-    mandelbrot_options
+    .class_name = "mandelbrot",
+    .item_name  = av_default_item_name,
+    .option     = mandelbrot_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_FILTER,
 };
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)

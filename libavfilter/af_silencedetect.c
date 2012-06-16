@@ -49,9 +49,11 @@ static const AVOption silencedetect_options[] = {
 };
 
 static const AVClass silencedetect_class = {
-    .class_name = "SilenceDetectContext",
+    .class_name = "silencedetect",
     .item_name  = av_default_item_name,
     .option     = silencedetect_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_FILTER,
 };
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)

@@ -159,9 +159,11 @@ static int request_frame(AVFilterLink *outlink)
 #if CONFIG_NULLSRC_FILTER
 
 static const AVClass nullsrc_class = {
-    .class_name = "NullSourceContext",
+    .class_name = "nullsrc",
     .item_name  = av_default_item_name,
     .option     = testsrc_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_FILTER,
 };
 
 static void nullsrc_fill_picture(AVFilterContext *ctx, AVFilterBufferRef *picref) { }
@@ -194,9 +196,11 @@ AVFilter avfilter_vsrc_nullsrc = {
 #if CONFIG_TESTSRC_FILTER
 
 static const AVClass testsrc_class = {
-    .class_name = "TestSourceContext",
+    .class_name = "testsrc",
     .item_name  = av_default_item_name,
     .option     = testsrc_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_FILTER,
 };
 
 /**
@@ -416,9 +420,11 @@ AVFilter avfilter_vsrc_testsrc = {
 #if CONFIG_RGBTESTSRC_FILTER
 
 static const AVClass rgbtestsrc_class = {
-    .class_name = "RGBTestSourceContext",
+    .class_name = "rgbtestsrc",
     .item_name  = av_default_item_name,
     .option     = testsrc_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_FILTER,
 };
 
 #define R 0

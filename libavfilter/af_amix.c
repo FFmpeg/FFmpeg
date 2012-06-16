@@ -185,10 +185,11 @@ static const AVOption options[] = {
 };
 
 static const AVClass amix_class = {
-    .class_name = "amix filter",
+    .class_name = "amix",
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_FILTER,
 };
 
 

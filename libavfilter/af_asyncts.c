@@ -50,10 +50,11 @@ static const AVOption options[] = {
 };
 
 static const AVClass async_class = {
-    .class_name = "asyncts filter",
+    .class_name = "asyncts",
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_FILTER,
 };
 
 static int init(AVFilterContext *ctx, const char *args, void *opaque)

@@ -53,9 +53,11 @@ static const AVOption amerge_options[] = {
 };
 
 static const AVClass amerge_class = {
-    .class_name = "AMergeContext",
+    .class_name = "amerge",
     .item_name  = av_default_item_name,
     .option     = amerge_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_FILTER,
 };
 
 static av_cold void uninit(AVFilterContext *ctx)

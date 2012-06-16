@@ -79,9 +79,11 @@ static const AVOption cellauto_options[] = {
 };
 
 static const AVClass cellauto_class = {
-    "CellAutoContext",
-    av_default_item_name,
-    cellauto_options
+    .class_name = "cellauto",
+    .item_name  = av_default_item_name,
+    .option     = cellauto_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_FILTER,
 };
 
 #ifdef DEBUG

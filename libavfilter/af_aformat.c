@@ -54,11 +54,11 @@ static const AVOption options[] = {
 };
 
 static const AVClass aformat_class = {
-    .class_name = "aformat filter",
+    .class_name = "aformat",
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
-    .category = AV_CLASS_CATEGORY_FILTER,
+    .category   = AV_CLASS_CATEGORY_FILTER,
 };
 
 #define PARSE_FORMATS(str, type, list, add_to_list, get_fmt, none, desc)    \
