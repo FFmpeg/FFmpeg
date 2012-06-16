@@ -22,7 +22,6 @@
 
 #define _SVID_SOURCE // needed for MAP_ANONYMOUS
 #define _DARWIN_C_SOURCE // needed for MAP_ANON
-#include <assert.h>
 #include <inttypes.h>
 #include <math.h>
 #include <stdio.h>
@@ -287,8 +286,7 @@ static int initFilter(int16_t **outFilter, int32_t **filterPos,
         else if (flags & SWS_BILINEAR)
             sizeFactor = 2;
         else {
-            sizeFactor = 0;     // GCC warning killer
-            assert(0);
+            av_assert0(0);
         }
 
         if (xInc <= 1 << 16)
@@ -387,8 +385,7 @@ static int initFilter(int16_t **outFilter, int32_t **filterPos,
                     double p = -2.196152422706632;
                     coeff = getSplineCoeff(1.0, 0.0, p, -p - 1.0, floatd) * fone;
                 } else {
-                    coeff = 0.0; // GCC warning killer
-                    assert(0);
+                    av_assert0(0);
                 }
 
                 filter[i * filterSize + j] = coeff;
@@ -401,13 +398,13 @@ static int initFilter(int16_t **outFilter, int32_t **filterPos,
     /* apply src & dst Filter to filter -> filter2
      * av_free(filter);
      */
-    assert(filterSize > 0);
+    av_assert0(filterSize > 0);
     filter2Size = filterSize;
     if (srcFilter)
         filter2Size += srcFilter->length - 1;
     if (dstFilter)
         filter2Size += dstFilter->length - 1;
-    assert(filter2Size > 0);
+    av_assert0(filter2Size > 0);
     FF_ALLOCZ_OR_GOTO(NULL, filter2, filter2Size * dstW * sizeof(*filter2), fail);
 
     for (i = 0; i < dstW; i++) {
@@ -489,9 +486,9 @@ static int initFilter(int16_t **outFilter, int32_t **filterPos,
             filterAlign = 1;
     }
 
-    assert(minFilterSize > 0);
+    av_assert0(minFilterSize > 0);
     filterSize = (minFilterSize + (filterAlign - 1)) & (~(filterAlign - 1));
-    assert(filterSize > 0);
+    av_assert0(filterSize > 0);
     filter = av_malloc(filterSize * dstW * sizeof(*filter));
     if (filterSize >= MAX_FILTER_SIZE * 16 /
                       ((flags & SWS_ACCURATE_RND) ? APCK_SIZE : 16) || !filter)
@@ -1217,7 +1214,7 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
             for(j=0; j<dst_stride+1; j++)
                 ((int16_t*)(c->chrUPixBuf[i]))[j] = 1<<14;
 
-    assert(c->chrDstH <= dstH);
+    av_assert0(c->chrDstH <= dstH);
 
     if (flags & SWS_PRINT_INFO) {
         if (flags & SWS_FAST_BILINEAR)
