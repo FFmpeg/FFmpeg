@@ -40,6 +40,7 @@ typedef struct {
     uint32_t q_lo_pixel_mask;
 
     int bpp; ///< bytes per pixel, pixel stride for each (packed) pixel
+    int is_be;
 } Super2xSaIContext;
 
 #define GET_RESULT(A, B, C, D) ((A != C || A != D) - (B != C || B != D))
@@ -72,7 +73,7 @@ static void super2xsai(AVFilterContext *ctx,
 
 #define READ_COLOR4(dst, src_line, off) dst = *((const uint32_t *)src_line + off)
 #define READ_COLOR3(dst, src_line, off) dst = AV_RL24 (src_line + 3*off)
-#define READ_COLOR2(dst, src_line, off) dst = *((const uint16_t *)src_line + off)
+#define READ_COLOR2(dst, src_line, off) dst = sai->is_be ? AV_RB16(src_line + 2 * off) : AV_RL16(src_line + 2 * off)
 
     for (y = 0; y < height; y++) {
         uint8_t *dst_line[2];
@@ -175,8 +176,13 @@ static void super2xsai(AVFilterContext *ctx,
                 AV_WL24(dst_line[1] + x * 6 + 3, product2b);
                 break;
             default: // bpp = 2
-                AV_WN32A(dst_line[0] + x * 4, product1a | (product1b << 16));
-                AV_WN32A(dst_line[1] + x * 4, product2a | (product2b << 16));
+                if (sai->is_be) {
+                    AV_WB32(dst_line[0] + x * 4, product1a | (product1b << 16));
+                    AV_WB32(dst_line[1] + x * 4, product2a | (product2b << 16));
+                } else {
+                    AV_WL32(dst_line[0] + x * 4, product1a | (product1b << 16));
+                    AV_WL32(dst_line[1] + x * 4, product2a | (product2b << 16));
+                }
             }
 
             /* Move color matrix forward */
@@ -227,7 +233,8 @@ static int query_formats(AVFilterContext *ctx)
     static const enum PixelFormat pix_fmts[] = {
         PIX_FMT_RGBA, PIX_FMT_BGRA, PIX_FMT_ARGB, PIX_FMT_ABGR,
         PIX_FMT_RGB24, PIX_FMT_BGR24,
-        PIX_FMT_RGB565, PIX_FMT_BGR565, PIX_FMT_RGB555, PIX_FMT_BGR555,
+        PIX_FMT_RGB565BE, PIX_FMT_BGR565BE, PIX_FMT_RGB555BE, PIX_FMT_BGR555BE,
+        PIX_FMT_RGB565LE, PIX_FMT_BGR565LE, PIX_FMT_RGB555LE, PIX_FMT_BGR555LE,
         PIX_FMT_NONE
     };
 
@@ -251,8 +258,11 @@ static int config_input(AVFilterLink *inlink)
         sai->bpp = 3;
         break;
 
-    case PIX_FMT_RGB565:
-    case PIX_FMT_BGR565:
+    case PIX_FMT_RGB565BE:
+    case PIX_FMT_BGR565BE:
+        sai->is_be = 1;
+    case PIX_FMT_RGB565LE:
+    case PIX_FMT_BGR565LE:
         sai->hi_pixel_mask   = 0xF7DEF7DE;
         sai->lo_pixel_mask   = 0x08210821;
         sai->q_hi_pixel_mask = 0xE79CE79C;
@@ -260,8 +270,11 @@ static int config_input(AVFilterLink *inlink)
         sai->bpp = 2;
         break;
 
-    case PIX_FMT_BGR555:
-    case PIX_FMT_RGB555:
+    case PIX_FMT_BGR555BE:
+    case PIX_FMT_RGB555BE:
+        sai->is_be = 1;
+    case PIX_FMT_BGR555LE:
+    case PIX_FMT_RGB555LE:
         sai->hi_pixel_mask   = 0x7BDE7BDE;
         sai->lo_pixel_mask   = 0x04210421;
         sai->q_hi_pixel_mask = 0x739C739C;
