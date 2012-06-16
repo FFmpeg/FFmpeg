@@ -1456,6 +1456,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
     case CODEC_ID_GSM:
     case CODEC_ID_ADPCM_MS:
     case CODEC_ID_ADPCM_IMA_WAV:
+    case CODEC_ID_ILBC:
         st->codec->block_align = sc->bytes_per_frame;
         break;
     case CODEC_ID_ALAC:

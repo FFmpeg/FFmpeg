@@ -244,6 +244,7 @@ const AVCodecTag ff_codec_movaudio_tags[] = {
     { CODEC_ID_DVAUDIO,         MKTAG('v', 'd', 'v', 'a') },
     { CODEC_ID_DVAUDIO,         MKTAG('d', 'v', 'c', 'a') },
     { CODEC_ID_GSM,             MKTAG('a', 'g', 's', 'm') },
+    { CODEC_ID_ILBC,            MKTAG('i', 'l', 'b', 'c') },
     { CODEC_ID_MACE3,           MKTAG('M', 'A', 'C', '3') },
     { CODEC_ID_MACE6,           MKTAG('M', 'A', 'C', '6') },
     { CODEC_ID_MP1,             MKTAG('.', 'm', 'p', '1') },

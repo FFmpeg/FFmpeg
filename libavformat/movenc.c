@@ -3095,7 +3095,8 @@ static int mov_write_header(AVFormatContext *s)
         }else if(st->codec->codec_type == AVMEDIA_TYPE_AUDIO){
             track->timescale = st->codec->sample_rate;
             /* set sample_size for PCM and ADPCM */
-            if (av_get_bits_per_sample(st->codec->codec_id)) {
+            if (av_get_bits_per_sample(st->codec->codec_id) ||
+                st->codec->codec_id == CODEC_ID_ILBC) {
                 if (!st->codec->block_align) {
                     av_log(s, AV_LOG_ERROR, "track %d: codec block align is not set\n", i);
                     goto error;
