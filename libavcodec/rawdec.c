@@ -150,6 +150,7 @@ static int raw_decode(AVCodecContext *avctx,
     frame->reordered_opaque = avctx->reordered_opaque;
     frame->pkt_pts          = avctx->pkt->pts;
     frame->pkt_pos          = avctx->pkt->pos;
+    frame->pkt_duration     = avctx->pkt->duration;
 
     if(context->tff>=0){
         frame->interlaced_frame = 1;
