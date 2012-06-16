@@ -346,8 +346,8 @@ int avpicture_layout(const AVPicture* src, enum PixelFormat pix_fmt, int width, 
 int avpicture_get_size(enum PixelFormat pix_fmt, int width, int height)
 {
     AVPicture dummy_pict;
-    if(av_image_check_size(width, height, 0, NULL))
-        return -1;
+    if (av_image_check_size(width, height, 0, NULL) < 0)
+        return AVERROR(EINVAL);
     if (av_pix_fmt_descriptors[pix_fmt].flags & PIX_FMT_PSEUDOPAL)
         // do not include palette for these pseudo-paletted formats
         return width * height;
