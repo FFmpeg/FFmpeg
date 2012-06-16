@@ -91,29 +91,29 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterLink *inlink  = ctx->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
 
-    AVFilterFormats        *in_formats      = avfilter_all_formats(AVMEDIA_TYPE_AUDIO);
+    AVFilterFormats        *in_formats      = ff_all_formats(AVMEDIA_TYPE_AUDIO);
     AVFilterFormats        *out_formats;
     AVFilterFormats        *in_samplerates  = ff_all_samplerates();
     AVFilterFormats        *out_samplerates;
     AVFilterChannelLayouts *in_layouts      = ff_all_channel_layouts();
     AVFilterChannelLayouts *out_layouts;
 
-    avfilter_formats_ref  (in_formats,      &inlink->out_formats);
-    avfilter_formats_ref  (in_samplerates,  &inlink->out_samplerates);
+    ff_formats_ref  (in_formats,      &inlink->out_formats);
+    ff_formats_ref  (in_samplerates,  &inlink->out_samplerates);
     ff_channel_layouts_ref(in_layouts,      &inlink->out_channel_layouts);
 
     if(out_rate > 0) {
-        out_samplerates = avfilter_make_format_list((int[]){ out_rate, -1 });
+        out_samplerates = ff_make_format_list((int[]){ out_rate, -1 });
     } else {
         out_samplerates = ff_all_samplerates();
     }
-    avfilter_formats_ref(out_samplerates, &outlink->in_samplerates);
+    ff_formats_ref(out_samplerates, &outlink->in_samplerates);
 
     if(out_format != AV_SAMPLE_FMT_NONE) {
-        out_formats = avfilter_make_format_list((int[]){ out_format, -1 });
+        out_formats = ff_make_format_list((int[]){ out_format, -1 });
     } else
         out_formats = avfilter_make_all_formats(AVMEDIA_TYPE_AUDIO);
-    avfilter_formats_ref(out_formats, &outlink->in_formats);
+    ff_formats_ref(out_formats, &outlink->in_formats);
 
     if(out_layout) {
         out_layouts = avfilter_make_format64_list((int64_t[]){ out_layout, -1 });

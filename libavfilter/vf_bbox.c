@@ -52,7 +52,7 @@ static int query_formats(AVFilterContext *ctx)
         PIX_FMT_NONE,
     };
 
-    avfilter_set_common_pixel_formats(ctx, avfilter_make_format_list(pix_fmts));
+    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
     return 0;
 }
 
@@ -87,7 +87,7 @@ static void end_frame(AVFilterLink *inlink)
 
     bbox->frame++;
     avfilter_unref_buffer(picref);
-    avfilter_end_frame(inlink->dst->outputs[0]);
+    ff_end_frame(inlink->dst->outputs[0]);
 }
 
 AVFilter avfilter_vf_bbox = {
@@ -100,7 +100,7 @@ AVFilter avfilter_vf_bbox = {
     .inputs = (const AVFilterPad[]) {
         { .name             = "default",
           .type             = AVMEDIA_TYPE_VIDEO,
-          .get_video_buffer = avfilter_null_get_video_buffer,
+          .get_video_buffer = ff_null_get_video_buffer,
           .start_frame      = ff_null_start_frame_keep_ref,
           .end_frame        = end_frame,
           .min_perms        = AV_PERM_READ, },

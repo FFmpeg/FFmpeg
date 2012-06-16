@@ -220,7 +220,7 @@ void ff_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 void ff_null_start_frame_keep_ref(AVFilterLink *inlink,
                                                 AVFilterBufferRef *picref)
 {
-    avfilter_start_frame(inlink->dst->outputs[0], avfilter_ref_buffer(picref, ~0));
+    ff_start_frame(inlink->dst->outputs[0], avfilter_ref_buffer(picref, ~0));
 }
 
 void ff_null_end_frame(AVFilterLink *link)

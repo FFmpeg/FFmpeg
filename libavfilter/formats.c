@@ -299,7 +299,7 @@ AVFilterFormats *avfilter_make_all_packing_formats(void)
         -1,
     };
 
-    return avfilter_make_format_list(packing);
+    return ff_make_format_list(packing);
 }
 #endif
 

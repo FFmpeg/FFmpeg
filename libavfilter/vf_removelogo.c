@@ -71,6 +71,8 @@
 
 #include "libavutil/imgutils.h"
 #include "avfilter.h"
+#include "formats.h"
+#include "video.h"
 #include "bbox.h"
 #include "lavfutils.h"
 #include "lswsutils.h"
@@ -190,7 +192,7 @@ static void convert_mask_to_strength_mask(uint8_t *data, int linesize,
 static int query_formats(AVFilterContext *ctx)
 {
     enum PixelFormat pix_fmts[] = { PIX_FMT_YUV420P, PIX_FMT_NONE };
-    avfilter_set_common_pixel_formats(ctx, avfilter_make_format_list(pix_fmts));
+    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
     return 0;
 }
 
@@ -476,7 +478,7 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     AVFilterBufferRef *outpicref;
 
     if (inpicref->perms & AV_PERM_PRESERVE) {
-        outpicref = avfilter_get_video_buffer(outlink, AV_PERM_WRITE,
+        outpicref = ff_get_video_buffer(outlink, AV_PERM_WRITE,
                                               outlink->w, outlink->h);
         avfilter_copy_buffer_ref_props(outpicref, inpicref);
         outpicref->video->w = outlink->w;
@@ -485,7 +487,7 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
         outpicref = inpicref;
 
     outlink->out_buf = outpicref;
-    avfilter_start_frame(outlink, avfilter_ref_buffer(outpicref, ~0));
+    ff_start_frame(outlink, avfilter_ref_buffer(outpicref, ~0));
 }
 
 static void end_frame(AVFilterLink *inlink)
@@ -512,8 +514,8 @@ static void end_frame(AVFilterLink *inlink)
                removelogo->half_mask_data, inlink->w/2,
                inlink->w/2, inlink->h/2, direct, &removelogo->half_mask_bbox);
 
-    avfilter_draw_slice(outlink, 0, inlink->h, 1);
-    avfilter_end_frame(outlink);
+    ff_draw_slice(outlink, 0, inlink->h, 1);
+    ff_end_frame(outlink);
     avfilter_unref_buffer(inpicref);
     if (!direct)
         avfilter_unref_buffer(outpicref);
@@ -554,7 +556,7 @@ AVFilter avfilter_vf_removelogo = {
     .inputs = (const AVFilterPad[]) {
         { .name             = "default",
           .type             = AVMEDIA_TYPE_VIDEO,
-          .get_video_buffer = avfilter_null_get_video_buffer,
+          .get_video_buffer = ff_null_get_video_buffer,
           .config_props     = config_props_input,
           .draw_slice       = null_draw_slice,
           .start_frame      = start_frame,

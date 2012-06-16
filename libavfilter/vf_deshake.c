@@ -50,6 +50,8 @@
  */
 
 #include "avfilter.h"
+#include "formats.h"
+#include "video.h"
 #include "libavutil/common.h"
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
@@ -390,7 +392,7 @@ static int query_formats(AVFilterContext *ctx)
         PIX_FMT_YUVJ444P, PIX_FMT_YUVJ440P, PIX_FMT_NONE
     };
 
-    avfilter_set_common_pixel_formats(ctx, avfilter_make_format_list(pix_fmts));
+    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
 
     return 0;
 }
@@ -525,8 +527,8 @@ static void end_frame(AVFilterLink *link)
     deshake->ref = in;
 
     // Draw the transformed frame information
-    avfilter_draw_slice(link->dst->outputs[0], 0, link->h, 1);
-    avfilter_end_frame(link->dst->outputs[0]);
+    ff_draw_slice(link->dst->outputs[0], 0, link->h, 1);
+    ff_end_frame(link->dst->outputs[0]);
     avfilter_unref_buffer(out);
 }
 

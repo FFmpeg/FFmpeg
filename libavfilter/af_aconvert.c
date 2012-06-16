@@ -75,14 +75,14 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterLink *outlink = ctx->outputs[0];
     AVFilterChannelLayouts *layouts;
 
-    avfilter_formats_ref(avfilter_make_all_formats(AVMEDIA_TYPE_AUDIO),
+    ff_formats_ref(avfilter_make_all_formats(AVMEDIA_TYPE_AUDIO),
                          &inlink->out_formats);
     if (aconvert->out_sample_fmt != AV_SAMPLE_FMT_NONE) {
         formats = NULL;
-        avfilter_add_format(&formats, aconvert->out_sample_fmt);
-        avfilter_formats_ref(formats, &outlink->in_formats);
+        ff_add_format(&formats, aconvert->out_sample_fmt);
+        ff_formats_ref(formats, &outlink->in_formats);
     } else
-        avfilter_formats_ref(avfilter_make_all_formats(AVMEDIA_TYPE_AUDIO),
+        ff_formats_ref(avfilter_make_all_formats(AVMEDIA_TYPE_AUDIO),
                              &outlink->in_formats);
 
     ff_channel_layouts_ref(ff_all_channel_layouts(),

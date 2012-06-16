@@ -29,6 +29,8 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/intreadwrite.h"
 #include "avfilter.h"
+#include "formats.h"
+#include "video.h"
 
 typedef struct {
     /* masks used for two pixels interpolation */
@@ -238,7 +240,7 @@ static int query_formats(AVFilterContext *ctx)
         PIX_FMT_NONE
     };
 
-    avfilter_set_common_pixel_formats(ctx, avfilter_make_format_list(pix_fmts));
+    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
     return 0;
 }
 
@@ -313,8 +315,8 @@ static void end_frame(AVFilterLink *inlink)
                inlink->w, inlink->h);
 
     avfilter_unref_buffer(inpicref);
-    avfilter_draw_slice(outlink, 0, outlink->h, 1);
-    avfilter_end_frame(outlink);
+    ff_draw_slice(outlink, 0, outlink->h, 1);
+    ff_end_frame(outlink);
     avfilter_unref_buffer(outpicref);
 }
 

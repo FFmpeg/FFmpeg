@@ -371,8 +371,8 @@ static int amovie_query_formats(AVFilterContext *ctx)
     int64_t chlayouts[] = { c->channel_layout ? c->channel_layout :
                             av_get_default_channel_layout(c->channels), -1 };
 
-    avfilter_set_common_sample_formats (ctx, avfilter_make_format_list(sample_fmts));
-    ff_set_common_samplerates          (ctx, avfilter_make_format_list(sample_rates));
+    ff_set_common_formats        (ctx, ff_make_format_list(sample_fmts));
+    ff_set_common_samplerates    (ctx, ff_make_format_list(sample_rates));
     ff_set_common_channel_layouts(ctx, avfilter_make_format64_list(chlayouts));
 
     return 0;

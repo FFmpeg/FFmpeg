@@ -28,6 +28,7 @@
  */
 
 #include "avfilter.h"
+#include "internal.h"
 
 #define HIST_SIZE (3*256)
 
@@ -151,10 +152,10 @@ static void end_frame(AVFilterLink *inlink)
     picref = thumb->frames[best_frame_idx].buf;
     av_log(ctx, AV_LOG_INFO, "frame id #%d (pts_time=%f) selected\n",
            best_frame_idx, picref->pts * av_q2d(inlink->time_base));
-    avfilter_start_frame(outlink, picref);
+    ff_start_frame(outlink, picref);
     thumb->frames[best_frame_idx].buf = NULL;
-    avfilter_draw_slice(outlink, 0, inlink->h, 1);
-    avfilter_end_frame(outlink);
+    ff_draw_slice(outlink, 0, inlink->h, 1);
+    ff_end_frame(outlink);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -188,7 +189,7 @@ static int poll_frame(AVFilterLink *link)
 {
     ThumbContext *thumb  = link->src->priv;
     AVFilterLink *inlink = link->src->inputs[0];
-    int ret, available_frames = avfilter_poll_frame(inlink);
+    int ret, available_frames = ff_poll_frame(inlink);
 
     /* If the input link is not able to provide any frame, we can't do anything
      * at the moment and thus have zero thumbnail available. */
@@ -212,7 +213,7 @@ static int query_formats(AVFilterContext *ctx)
         PIX_FMT_RGB24, PIX_FMT_BGR24,
         PIX_FMT_NONE
     };
-    avfilter_set_common_pixel_formats(ctx, avfilter_make_format_list(pix_fmts));
+    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
     return 0;
 }
 
@@ -226,7 +227,7 @@ AVFilter avfilter_vf_thumbnail = {
     .inputs        = (const AVFilterPad[]) {
         {   .name             = "default",
             .type             = AVMEDIA_TYPE_VIDEO,
-            .get_video_buffer = avfilter_null_get_video_buffer,
+            .get_video_buffer = ff_null_get_video_buffer,
             .start_frame      = null_start_frame,
             .draw_slice       = draw_slice,
             .end_frame        = end_frame,

@@ -32,6 +32,8 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/random_seed.h"
 #include "avfilter.h"
+#include "formats.h"
+#include "video.h"
 
 typedef struct {
     const AVClass *class;
@@ -431,7 +433,7 @@ static void fill_picture_rgb(AVFilterContext *ctx, AVFilterBufferRef *picref)
 static int request_frame(AVFilterLink *outlink)
 {
     LifeContext *life = outlink->src->priv;
-    AVFilterBufferRef *picref = avfilter_get_video_buffer(outlink, AV_PERM_WRITE, life->w, life->h);
+    AVFilterBufferRef *picref = ff_get_video_buffer(outlink, AV_PERM_WRITE, life->w, life->h);
     picref->video->sample_aspect_ratio = (AVRational) {1, 1};
     picref->pts = life->pts++;
     picref->pos = -1;
@@ -442,9 +444,9 @@ static int request_frame(AVFilterLink *outlink)
     show_life_grid(outlink->src);
 #endif
 
-    avfilter_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
-    avfilter_draw_slice(outlink, 0, life->h, 1);
-    avfilter_end_frame(outlink);
+    ff_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
+    ff_draw_slice(outlink, 0, life->h, 1);
+    ff_end_frame(outlink);
     avfilter_unref_buffer(picref);
 
     return 0;
@@ -462,7 +464,7 @@ static int query_formats(AVFilterContext *ctx)
         pix_fmts[0] = PIX_FMT_MONOBLACK;
         life->draw = fill_picture_monoblack;
     }
-    avfilter_set_common_pixel_formats(ctx, avfilter_make_format_list(pix_fmts));
+    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
     return 0;
 }
 

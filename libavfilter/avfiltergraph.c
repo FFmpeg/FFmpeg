@@ -189,7 +189,7 @@ static int filter_query_formats(AVFilterContext *ctx)
     formats = avfilter_make_all_formats(type);
     if (!formats)
         return AVERROR(ENOMEM);
-    avfilter_set_common_formats(ctx, formats);
+    ff_set_common_formats(ctx, formats);
     if (type == AVMEDIA_TYPE_AUDIO) {
         samplerates = ff_all_samplerates();
         if (!samplerates)
@@ -231,9 +231,9 @@ static int insert_conv_filter(AVFilterGraph *graph, AVFilterLink *link,
     filter_query_formats(filt_ctx);
 
     if ( ((link = filt_ctx-> inputs[0]) &&
-           !avfilter_merge_formats(link->in_formats, link->out_formats)) ||
+           !ff_merge_formats(link->in_formats, link->out_formats)) ||
          ((link = filt_ctx->outputs[0]) &&
-           !avfilter_merge_formats(link->in_formats, link->out_formats))
+           !ff_merge_formats(link->in_formats, link->out_formats))
        ) {
         av_log(NULL, AV_LOG_ERROR,
                "Impossible to convert between the formats supported by the filter "
@@ -295,7 +295,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                 return AVERROR(EINVAL);
 
             if (link->type == AVMEDIA_TYPE_VIDEO &&
-                !avfilter_merge_formats(link->in_formats, link->out_formats)) {
+                !ff_merge_formats(link->in_formats, link->out_formats)) {
 
                 /* couldn't merge format lists, auto-insert scale filter */
                 snprintf(filt_args, sizeof(filt_args), "0:0:%s",
@@ -310,7 +310,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                 /* Merge all three list before checking: that way, in all
                  * three categories, aconvert will use a common format
                  * whenever possible. */
-                formats   = avfilter_merge_formats(link->in_formats,   link->out_formats);
+                formats     = ff_merge_formats(link->in_formats,   link->out_formats);
                 chlayouts   = ff_merge_channel_layouts(link->in_channel_layouts  , link->out_channel_layouts);
                 samplerates = ff_merge_samplerates    (link->in_samplerates, link->out_samplerates);
 

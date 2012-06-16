@@ -76,7 +76,7 @@ static int query_formats(AVFilterContext *ctx)
         PIX_FMT_NONE
     };
 
-    avfilter_set_common_pixel_formats(ctx, avfilter_make_format_list(pix_fmts));
+    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
     return 0;
 }
 
@@ -224,7 +224,7 @@ static void end_frame(AVFilterLink *inlink)
     switch (tinterlace->mode) {
     case MODE_MERGE: /* move the odd frame into the upper field of the new image, even into
              * the lower field, generating a double-height video at half framerate */
-        out = avfilter_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+        out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
         avfilter_copy_buffer_ref_props(out, cur);
         out->video->h = outlink->h;
         out->video->interlaced = 1;
@@ -251,7 +251,7 @@ static void end_frame(AVFilterLink *inlink)
 
     case MODE_PAD: /* expand each frame to double height, but pad alternate
                     * lines with black; framerate unchanged */
-        out = avfilter_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+        out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
         avfilter_copy_buffer_ref_props(out, cur);
         out->video->h = outlink->h;
 
@@ -273,7 +273,7 @@ static void end_frame(AVFilterLink *inlink)
     case MODE_INTERLEAVE_TOP:    /* top    field first */
     case MODE_INTERLEAVE_BOTTOM: /* bottom field first */
         tff = tinterlace->mode == MODE_INTERLEAVE_TOP;
-        out = avfilter_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+        out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
         avfilter_copy_buffer_ref_props(out, cur);
         out->video->interlaced = 1;
         out->video->top_field_first = tff;
@@ -295,13 +295,13 @@ static void end_frame(AVFilterLink *inlink)
         out = avfilter_ref_buffer(cur, AV_PERM_READ);
         out->video->interlaced = 1;
 
-        avfilter_start_frame(outlink, out);
-        avfilter_draw_slice(outlink, 0, outlink->h, 1);
-        avfilter_end_frame(outlink);
+        ff_start_frame(outlink, out);
+        ff_draw_slice(outlink, 0, outlink->h, 1);
+        ff_end_frame(outlink);
 
         /* output mix of current and next frame */
         tff = next->video->top_field_first;
-        out = avfilter_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+        out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
         avfilter_copy_buffer_ref_props(out, next);
         out->video->interlaced = 1;
 
@@ -318,9 +318,9 @@ static void end_frame(AVFilterLink *inlink)
         break;
     }
 
-    avfilter_start_frame(outlink, out);
-    avfilter_draw_slice(outlink, 0, outlink->h, 1);
-    avfilter_end_frame(outlink);
+    ff_start_frame(outlink, out);
+    ff_draw_slice(outlink, 0, outlink->h, 1);
+    ff_end_frame(outlink);
 
     tinterlace->frame++;
 }
@@ -331,12 +331,12 @@ static int poll_frame(AVFilterLink *outlink)
     AVFilterLink *inlink = outlink->src->inputs[0];
     int ret, val;
 
-    val = avfilter_poll_frame(inlink);
+    val = ff_poll_frame(inlink);
 
     if (val == 1 && !tinterlace->next) {
         if ((ret = avfilter_request_frame(inlink)) < 0)
             return ret;
-        val = avfilter_poll_frame(inlink);
+        val = ff_poll_frame(inlink);
     }
     assert(tinterlace->next);
 

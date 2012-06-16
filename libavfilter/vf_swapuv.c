@@ -24,12 +24,14 @@
  */
 
 #include "avfilter.h"
+#include "formats.h"
+#include "video.h"
 
 static AVFilterBufferRef *get_video_buffer(AVFilterLink *link, int perms,
                                            int w, int h)
 {
     AVFilterBufferRef *picref =
-        avfilter_default_get_video_buffer(link, perms, w, h);
+        ff_default_get_video_buffer(link, perms, w, h);
     uint8_t *tmp;
     int tmp2;
 
@@ -54,7 +56,7 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *inpicref)
     outpicref->linesize[1] = inpicref->linesize[2];
     outpicref->linesize[2] = inpicref->linesize[1];
 
-    avfilter_start_frame(link->dst->outputs[0], outpicref);
+    ff_start_frame(link->dst->outputs[0], outpicref);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -68,7 +70,7 @@ static int query_formats(AVFilterContext *ctx)
         PIX_FMT_NONE,
     };
 
-    avfilter_set_common_pixel_formats(ctx, avfilter_make_format_list(pix_fmts));
+    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
     return 0;
 }
 

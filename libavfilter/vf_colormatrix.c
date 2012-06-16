@@ -31,6 +31,8 @@
 #include <strings.h>
 #include <float.h>
 #include "avfilter.h"
+#include "formats.h"
+#include "video.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/avstring.h"
 
@@ -325,7 +327,7 @@ static int query_formats(AVFilterContext *ctx)
         PIX_FMT_NONE
     };
 
-    avfilter_set_common_pixel_formats(ctx, avfilter_make_format_list(pix_fmts));
+    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
 
     return 0;
 }
@@ -333,7 +335,7 @@ static int query_formats(AVFilterContext *ctx)
 static AVFilterBufferRef *get_video_buffer(AVFilterLink *inlink, int perms, int w, int h)
 {
     AVFilterBufferRef *picref =
-        avfilter_get_video_buffer(inlink->dst->outputs[0], perms, w, h);
+        ff_get_video_buffer(inlink->dst->outputs[0], perms, w, h);
     return picref;
 }
 
@@ -343,7 +345,7 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 
     link->dst->outputs[0]->out_buf = outpicref;
 
-    avfilter_start_frame(link->dst->outputs[0], outpicref);
+    ff_start_frame(link->dst->outputs[0], outpicref);
 }
 
 static void end_frame(AVFilterLink *link)
@@ -359,8 +361,8 @@ static void end_frame(AVFilterLink *link)
     else
         process_frame_uyvy422(color, out, link->cur_buf);
 
-    avfilter_draw_slice(ctx->outputs[0], 0, link->dst->outputs[0]->h, 1);
-    avfilter_end_frame(ctx->outputs[0]);
+    ff_draw_slice(ctx->outputs[0], 0, link->dst->outputs[0]->h, 1);
+    ff_end_frame(ctx->outputs[0]);
     avfilter_unref_buffer(link->cur_buf);
 }
 

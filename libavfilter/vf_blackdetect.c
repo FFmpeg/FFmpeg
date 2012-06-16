@@ -79,7 +79,7 @@ static int query_formats(AVFilterContext *ctx)
         PIX_FMT_NONE
     };
 
-    avfilter_set_common_pixel_formats(ctx, avfilter_make_format_list(pix_fmts));
+    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
     return 0;
 }
 
@@ -134,7 +134,7 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
         p += picref->linesize[0];
     }
 
-    avfilter_draw_slice(ctx->outputs[0], y, h, slice_dir);
+    ff_draw_slice(ctx->outputs[0], y, h, slice_dir);
 }
 
 static void end_frame(AVFilterLink *inlink)
@@ -176,7 +176,7 @@ static void end_frame(AVFilterLink *inlink)
     blackdetect->frame_count++;
     blackdetect->nb_black_pixels = 0;
     avfilter_unref_buffer(picref);
-    avfilter_end_frame(inlink->dst->outputs[0]);
+    ff_end_frame(inlink->dst->outputs[0]);
 }
 
 AVFilter avfilter_vf_blackdetect = {
@@ -191,7 +191,7 @@ AVFilter avfilter_vf_blackdetect = {
           .type             = AVMEDIA_TYPE_VIDEO,
           .config_props     = config_input,
           .draw_slice       = draw_slice,
-          .get_video_buffer = avfilter_null_get_video_buffer,
+          .get_video_buffer = ff_null_get_video_buffer,
           .start_frame      = ff_null_start_frame_keep_ref,
           .end_frame        = end_frame, },
         { .name = NULL }

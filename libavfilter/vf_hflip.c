@@ -88,14 +88,14 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     AVFilterLink *outlink = inlink->dst->outputs[0];
 
     outlink->out_buf =
-        avfilter_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+        ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
     avfilter_copy_buffer_ref_props(outlink->out_buf, picref);
 
     /* copy palette if required */
     if (av_pix_fmt_descriptors[inlink->format].flags & PIX_FMT_PAL)
         memcpy(inlink->dst->outputs[0]->out_buf->data[1], picref->data[1], AVPALETTE_SIZE);
 
-    avfilter_start_frame(outlink, avfilter_ref_buffer(outlink->out_buf, ~0));
+    ff_start_frame(outlink, avfilter_ref_buffer(outlink->out_buf, ~0));
 }
 
 static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)

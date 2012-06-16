@@ -217,7 +217,7 @@ static int query_formats(AVFilterContext *ctx)
 
     pan->pure_gains = are_gains_pure(pan);
     /* libswr supports any sample and packing formats */
-    avfilter_set_common_sample_formats(ctx, avfilter_make_all_formats(AVMEDIA_TYPE_AUDIO));
+    ff_set_common_formats(ctx, avfilter_make_all_formats(AVMEDIA_TYPE_AUDIO));
 
     formats = ff_all_samplerates();
     if (!formats)

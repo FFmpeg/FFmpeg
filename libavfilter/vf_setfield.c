@@ -24,6 +24,7 @@
  */
 
 #include "avfilter.h"
+#include "video.h"
 
 enum SetFieldMode {
     MODE_AUTO = -1,
@@ -79,7 +80,7 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
         outpicref->video->interlaced = 1;
         outpicref->video->top_field_first = setfield->mode;
     }
-    avfilter_start_frame(inlink->dst->outputs[0], outpicref);
+    ff_start_frame(inlink->dst->outputs[0], outpicref);
 }
 
 AVFilter avfilter_vf_setfield = {
@@ -92,7 +93,7 @@ AVFilter avfilter_vf_setfield = {
     .inputs = (const AVFilterPad[]) {
         { .name             = "default",
           .type             = AVMEDIA_TYPE_VIDEO,
-          .get_video_buffer = avfilter_null_get_video_buffer,
+          .get_video_buffer = ff_null_get_video_buffer,
           .start_frame      = start_frame, },
         { .name = NULL }
     },
