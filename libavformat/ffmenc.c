@@ -21,6 +21,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
+#include "libavutil/avassert.h"
 #include "avformat.h"
 #include "internal.h"
 #include "ffm.h"
@@ -189,7 +190,7 @@ static int ffm_write_header(AVFormatContext *s)
     /* init packet mux */
     ffm->packet_ptr = ffm->packet;
     ffm->packet_end = ffm->packet + ffm->packet_size - FFM_HEADER_SIZE;
-    assert(ffm->packet_end >= ffm->packet);
+    av_assert0(ffm->packet_end >= ffm->packet);
     ffm->frame_offset = 0;
     ffm->dts = 0;
     ffm->first_packet = 1;
