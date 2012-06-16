@@ -23,7 +23,6 @@
 #include <math.h>
 #include <stdio.h>
 #include "config.h"
-#include <assert.h>
 #include "swscale.h"
 #include "swscale_internal.h"
 #include "rgb2rgb.h"
@@ -33,6 +32,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/bswap.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/avassert.h"
 
 #define RGB2YUV_SHIFT 15
 #define BY ( (int) (0.114 * 219 / 255 * (1 << RGB2YUV_SHIFT) + 0.5))
@@ -707,7 +707,7 @@ static int packedCopyWrapper(SwsContext *c, const uint8_t *src[],
         while (length + c->srcW <= FFABS(dstStride[0]) &&
                length + c->srcW <= FFABS(srcStride[0]))
             length += c->srcW;
-        assert(length != 0);
+        av_assert1(length != 0);
 
         for (i = 0; i < srcSliceH; i++) {
             memcpy(dstPtr, srcPtr, length);
@@ -1089,7 +1089,7 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
             } else if (c->srcFormat == PIX_FMT_GRAY8 || c->srcFormat == PIX_FMT_GRAY8A) {
                 r = g = b = i;
             } else {
-                assert(c->srcFormat == PIX_FMT_BGR4_BYTE);
+                av_assert1(c->srcFormat == PIX_FMT_BGR4_BYTE);
                 b = ( i >> 3     ) * 255;
                 g = ((i >> 1) & 3) * 85;
                 r = ( i       & 1) * 255;
