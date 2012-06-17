@@ -44,9 +44,6 @@
  * Those FF_API_* defines are not part of public API.
  * They may change, break or disappear at any time.
  */
-#ifndef FF_API_FILTERS_PUBLIC
-#define FF_API_FILTERS_PUBLIC               (LIBAVFILTER_VERSION_MAJOR < 3)
-#endif
 #ifndef FF_API_AVFILTERPAD_PUBLIC
 #define FF_API_AVFILTERPAD_PUBLIC           (LIBAVFILTER_VERSION_MAJOR < 4)
 #endif

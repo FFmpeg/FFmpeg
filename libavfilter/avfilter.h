@@ -198,43 +198,6 @@ AVFilterBufferRef *avfilter_ref_buffer(AVFilterBufferRef *ref, int pmask);
  */
 void avfilter_unref_buffer(AVFilterBufferRef *ref);
 
-#if FF_API_FILTERS_PUBLIC
-/**
- * @addtogroup lavfi_deprecated
- * @deprecated Those functions are only useful inside filters and
- * user filters are not supported at this point.
- * @{
- */
-struct AVFilterFormats {
-    unsigned format_count;      ///< number of formats
-    int *formats;               ///< list of media formats
-
-    unsigned refcount;          ///< number of references to this list
-    struct AVFilterFormats ***refs; ///< references to this list
-};
-
-attribute_deprecated
-AVFilterFormats *avfilter_make_format_list(const int *fmts);
-attribute_deprecated
-int avfilter_add_format(AVFilterFormats **avff, int fmt);
-attribute_deprecated
-AVFilterFormats *avfilter_all_formats(enum AVMediaType type);
-attribute_deprecated
-AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b);
-attribute_deprecated
-void avfilter_formats_ref(AVFilterFormats *formats, AVFilterFormats **ref);
-attribute_deprecated
-void avfilter_formats_unref(AVFilterFormats **ref);
-attribute_deprecated
-void avfilter_formats_changeref(AVFilterFormats **oldref,
-                                AVFilterFormats **newref);
-attribute_deprecated
-void avfilter_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats);
-/**
- * @}
- */
-#endif
-
 #if FF_API_AVFILTERPAD_PUBLIC
 /**
  * A filter pad used for either input or output.
@@ -395,48 +358,6 @@ const char *avfilter_pad_get_name(AVFilterPad *pads, int pad_idx);
  * @return type of the pad_idx'th pad in pads
  */
 enum AVMediaType avfilter_pad_get_type(AVFilterPad *pads, int pad_idx);
-
-#if FF_API_FILTERS_PUBLIC
-/** default handler for start_frame() for video inputs */
-attribute_deprecated
-void avfilter_default_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
-
-/** default handler for draw_slice() for video inputs */
-attribute_deprecated
-void avfilter_default_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
-
-/** default handler for end_frame() for video inputs */
-attribute_deprecated
-void avfilter_default_end_frame(AVFilterLink *link);
-
-/** default handler for get_video_buffer() for video inputs */
-attribute_deprecated
-AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link,
-                                                     int perms, int w, int h);
-
-/** Default handler for query_formats() */
-attribute_deprecated
-int avfilter_default_query_formats(AVFilterContext *ctx);
-#endif
-
-#if FF_API_FILTERS_PUBLIC
-/** start_frame() handler for filters which simply pass video along */
-attribute_deprecated
-void avfilter_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
-
-/** draw_slice() handler for filters which simply pass video along */
-attribute_deprecated
-void avfilter_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
-
-/** end_frame() handler for filters which simply pass video along */
-attribute_deprecated
-void avfilter_null_end_frame(AVFilterLink *link);
-
-/** get_video_buffer() handler for filters which simply pass video along */
-attribute_deprecated
-AVFilterBufferRef *avfilter_null_get_video_buffer(AVFilterLink *link,
-                                                  int perms, int w, int h);
-#endif
 
 /**
  * Filter definition. This defines the pads a filter contains, and all the
@@ -614,12 +535,6 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
  */
 int avfilter_config_links(AVFilterContext *filter);
 
-#if FF_API_FILTERS_PUBLIC
-attribute_deprecated
-AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms,
-                                          int w, int h);
-#endif
-
 /**
  * Create a buffer reference wrapped around an already allocated image
  * buffer.
@@ -652,21 +567,6 @@ AVFilterBufferRef *avfilter_get_audio_buffer_ref_from_arrays(uint8_t **data,
                                                              int nb_samples,
                                                              enum AVSampleFormat sample_fmt,
                                                              uint64_t channel_layout);
-
-#if FF_API_FILTERS_PUBLIC
-attribute_deprecated
-int avfilter_request_frame(AVFilterLink *link);
-
-attribute_deprecated
-int avfilter_poll_frame(AVFilterLink *link);
-
-attribute_deprecated
-void avfilter_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
-attribute_deprecated
-void avfilter_end_frame(AVFilterLink *link);
-attribute_deprecated
-void avfilter_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
-#endif
 
 /** Initialize the filter system. Register all builtin filters. */
 void avfilter_register_all(void);
@@ -744,20 +644,6 @@ void avfilter_free(AVFilterContext *filter);
  */
 int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
                            unsigned filt_srcpad_idx, unsigned filt_dstpad_idx);
-
-#if FF_API_FILTERS_PUBLIC
-attribute_deprecated
-void avfilter_insert_pad(unsigned idx, unsigned *count, size_t padidx_off,
-                         AVFilterPad **pads, AVFilterLink ***links,
-                         AVFilterPad *newpad);
-
-attribute_deprecated
-void avfilter_insert_inpad(AVFilterContext *f, unsigned index,
-                           AVFilterPad *p);
-attribute_deprecated
-void avfilter_insert_outpad(AVFilterContext *f, unsigned index,
-                            AVFilterPad *p);
-#endif
 
 /**
  * Copy the frame properties of src to dst, without copying the actual
