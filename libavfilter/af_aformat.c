@@ -139,8 +139,7 @@ AVFilter avfilter_af_aformat = {
     .priv_size     = sizeof(AFormatContext),
 
     .inputs        = (AVFilterPad[]) {{ .name            = "default",
-                                        .type            = AVMEDIA_TYPE_AUDIO,
-                                        .filter_samples  = ff_null_filter_samples },
+                                        .type            = AVMEDIA_TYPE_AUDIO, },
                                       { .name = NULL}},
     .outputs       = (AVFilterPad[]) {{ .name            = "default",
                                         .type            = AVMEDIA_TYPE_AUDIO},
