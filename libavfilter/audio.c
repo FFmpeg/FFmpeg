@@ -176,6 +176,7 @@ void ff_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
 {
     void (*filter_samples)(AVFilterLink *, AVFilterBufferRef *);
     AVFilterPad *dst = link->dstpad;
+    AVFilterBufferRef *buf_out;
 
     FF_DPRINTF_START(NULL, filter_samples); ff_dlog_link(NULL, link, 1);
 
@@ -189,21 +190,21 @@ void ff_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
                "Copying audio data in avfilter (have perms %x, need %x, reject %x)\n",
                samplesref->perms, link->dstpad->min_perms, link->dstpad->rej_perms);
 
-        link->cur_buf = ff_default_get_audio_buffer(link, dst->min_perms,
-                                                    samplesref->audio->nb_samples);
-        link->cur_buf->pts                = samplesref->pts;
-        link->cur_buf->audio->sample_rate = samplesref->audio->sample_rate;
+        buf_out = ff_default_get_audio_buffer(link, dst->min_perms,
+                                              samplesref->audio->nb_samples);
+        buf_out->pts                = samplesref->pts;
+        buf_out->audio->sample_rate = samplesref->audio->sample_rate;
 
         /* Copy actual data into new samples buffer */
-        av_samples_copy(link->cur_buf->extended_data, samplesref->extended_data,
+        av_samples_copy(buf_out->extended_data, samplesref->extended_data,
                         0, 0, samplesref->audio->nb_samples,
                         av_get_channel_layout_nb_channels(link->channel_layout),
                         link->format);
 
         avfilter_unref_buffer(samplesref);
     } else
-        link->cur_buf = samplesref;
+        buf_out = samplesref;
 
-    filter_samples(link, link->cur_buf);
+    filter_samples(link, buf_out);
 }
 
