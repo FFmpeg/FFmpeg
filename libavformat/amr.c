@@ -124,7 +124,7 @@ static int amr_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         size = packed_size[mode] + 1;
     } else if (enc->codec_id == CODEC_ID_AMR_WB) {
-        static uint8_t packed_size[16] = {
+        static const uint8_t packed_size[16] = {
             18, 24, 33, 37, 41, 47, 51, 59, 61, 6, 6, 0, 0, 0, 1, 1
         };
 
