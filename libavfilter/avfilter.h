@@ -541,11 +541,7 @@ struct AVFilterLink {
     AVRational sample_aspect_ratio; ///< agreed upon sample aspect ratio
     /* These two parameters apply only to audio */
     uint64_t channel_layout;    ///< channel layout of current buffer (see libavutil/audioconvert.h)
-#if FF_API_SAMPLERATE64
-    int64_t sample_rate;        ///< samples per second
-#else
     int sample_rate;            ///< samples per second
-#endif
 
     int format;                 ///< agreed upon media format
 
