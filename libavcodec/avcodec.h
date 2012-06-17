@@ -431,6 +431,7 @@ enum CodecID {
     CODEC_ID_EIA_608    = MKBETAG('c','6','0','8'),
     CODEC_ID_JACOSUB    = MKBETAG('J','S','U','B'),
     CODEC_ID_SAMI       = MKBETAG('S','A','M','I'),
+    CODEC_ID_REALTEXT   = MKBETAG('R','T','X','T'),
 
     /* other specific kind of codecs (generally used for attachments) */
     CODEC_ID_FIRST_UNKNOWN = 0x18000,           ///< A dummy ID pointing at the start of various fake codecs.

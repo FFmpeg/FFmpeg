@@ -864,6 +864,7 @@ performance on systems without hardware floating point support).
 @item JACOsub      @tab X @tab X @tab   @tab X
 @item MicroDVD     @tab X @tab X @tab   @tab X
 @item PGS          @tab   @tab   @tab   @tab X
+@item RealText     @tab   @tab X @tab   @tab X
 @item SAMI         @tab   @tab X @tab   @tab X
 @item SubRip (SRT) @tab X @tab X @tab X @tab X
 @item XSUB         @tab   @tab   @tab X @tab X
