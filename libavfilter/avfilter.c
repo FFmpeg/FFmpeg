@@ -443,12 +443,6 @@ enum AVMediaType avfilter_pad_get_type(AVFilterPad *pads, int pad_idx)
     return pads[pad_idx].type;
 }
 
-#if FF_API_DEFAULT_CONFIG_OUTPUT_LINK
-int avfilter_default_config_output_link(AVFilterLink *link)
-{
-    return 0;
-}
-#endif
 #if FF_API_FILTERS_PUBLIC
 void avfilter_insert_pad(unsigned idx, unsigned *count, size_t padidx_off,
                          AVFilterPad **pads, AVFilterLink ***links,
