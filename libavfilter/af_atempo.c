@@ -654,7 +654,7 @@ static int yae_align(AudioFragment *frag,
 
         // normalize:
         FFTSample drifti = (FFTSample)(drift + i);
-        metric *= drifti;
+        metric *= drifti * (FFTSample)(i - i0) * (FFTSample)(i1 - i);
 
         if (metric > best_metric) {
             best_metric = metric;
