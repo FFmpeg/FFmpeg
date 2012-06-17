@@ -283,7 +283,7 @@ void ff_msmpeg4_encode_ext_header(MpegEncContext * s)
         if(s->msmpeg4_version>=3)
             put_bits(&s->pb, 1, s->flipflop_rounding);
         else
-            assert(s->flipflop_rounding==0);
+            av_assert0(s->flipflop_rounding==0);
 }
 
 void ff_msmpeg4_encode_motion(MpegEncContext * s,
