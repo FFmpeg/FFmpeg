@@ -42,6 +42,7 @@
 #include "golomb.h"
 #include "flac.h"
 #include "flacdata.h"
+#include "flacdsp.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -55,11 +56,12 @@ typedef struct FLACContext {
 
     int blocksize;                          ///< number of samples in the current frame
     int sample_shift;                       ///< shift required to make output samples 16-bit or 32-bit
-    int is32;                               ///< flag to indicate if output should be 32-bit instead of 16-bit
     int ch_mode;                            ///< channel decorrelation type in the current frame
     int got_streaminfo;                     ///< indicates if the STREAMINFO has been read
 
     int32_t *decoded[FLAC_MAX_CHANNELS];    ///< decoded samples
+
+    FLACDSPContext dsp;
 } FLACContext;
 
 static const int64_t flac_channel_layouts[6] = {
@@ -105,11 +107,9 @@ static void flac_set_bps(FLACContext *s)
     if (s->bps > 16) {
         s->avctx->sample_fmt = AV_SAMPLE_FMT_S32;
         s->sample_shift = 32 - s->bps;
-        s->is32 = 1;
     } else {
         s->avctx->sample_fmt = AV_SAMPLE_FMT_S16;
         s->sample_shift = 16 - s->bps;
-        s->is32 = 0;
     }
 }
 
@@ -132,6 +132,7 @@ static av_cold int flac_decode_init(AVCodecContext *avctx)
     avpriv_flac_parse_streaminfo(avctx, (FLACStreaminfo *)s, streaminfo);
     allocate_buffers(s);
     flac_set_bps(s);
+    ff_flacdsp_init(&s->dsp, avctx->sample_fmt);
     s->got_streaminfo = 1;
 
     avcodec_get_frame_defaults(&s->frame);
@@ -231,6 +232,8 @@ static int parse_streaminfo(FLACContext *s, const uint8_t *buf, int buf_size)
     }
     avpriv_flac_parse_streaminfo(s->avctx, (FLACStreaminfo *)s, &buf[8]);
     allocate_buffers(s);
+    flac_set_bps(s);
+    ff_flacdsp_init(&s->dsp, s->avctx->sample_fmt);
     s->got_streaminfo = 1;
 
     return 0;
@@ -548,6 +551,7 @@ static int decode_frame(FLACContext *s)
 
     if (!s->got_streaminfo) {
         allocate_buffers(s);
+        ff_flacdsp_init(&s->dsp, s->avctx->sample_fmt);
         s->got_streaminfo = 1;
         dump_headers(s->avctx, (FLACStreaminfo *)s);
     }
@@ -574,9 +578,7 @@ static int flac_decode_frame(AVCodecContext *avctx, void *data,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     FLACContext *s = avctx->priv_data;
-    int i, j = 0, bytes_read = 0;
-    int16_t *samples_16;
-    int32_t *samples_32;
+    int bytes_read = 0;
     int ret;
 
     *got_frame_ptr = 0;
@@ -616,42 +618,9 @@ static int flac_decode_frame(AVCodecContext *avctx, void *data,
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    samples_16 = (int16_t *)s->frame.data[0];
-    samples_32 = (int32_t *)s->frame.data[0];
 
-#define DECORRELATE(left, right)\
-            assert(s->channels == 2);\
-            for (i = 0; i < s->blocksize; i++) {\
-                int a= s->decoded[0][i];\
-                int b= s->decoded[1][i];\
-                if (s->is32) {\
-                    *samples_32++ = (left)  << s->sample_shift;\
-                    *samples_32++ = (right) << s->sample_shift;\
-                } else {\
-                    *samples_16++ = (left)  << s->sample_shift;\
-                    *samples_16++ = (right) << s->sample_shift;\
-                }\
-            }\
-            break;
-
-    switch (s->ch_mode) {
-    case FLAC_CHMODE_INDEPENDENT:
-        for (j = 0; j < s->blocksize; j++) {
-            for (i = 0; i < s->channels; i++) {
-                if (s->is32)
-                    *samples_32++ = s->decoded[i][j] << s->sample_shift;
-                else
-                    *samples_16++ = s->decoded[i][j] << s->sample_shift;
-            }
-        }
-        break;
-    case FLAC_CHMODE_LEFT_SIDE:
-        DECORRELATE(a,a-b)
-    case FLAC_CHMODE_RIGHT_SIDE:
-        DECORRELATE(a+b,b)
-    case FLAC_CHMODE_MID_SIDE:
-        DECORRELATE( (a-=b>>1) + b, a)
-    }
+    s->dsp.decorrelate[s->ch_mode](s->frame.data, s->decoded, s->channels,
+                                   s->blocksize, s->sample_shift);
 
     if (bytes_read > buf_size) {
         av_log(s->avctx, AV_LOG_ERROR, "overread: %d\n", bytes_read - buf_size);
