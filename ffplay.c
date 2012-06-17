@@ -1566,10 +1566,9 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
              is->video_st->time_base.num, is->video_st->time_base.den,
              codec->sample_aspect_ratio.num, codec->sample_aspect_ratio.den);
 
-
     if ((ret = avfilter_graph_create_filter(&filt_src,
                                             avfilter_get_by_name("buffer"),
-                                            "src", buffersrc_args, NULL,
+                                            "ffplay_buffer", buffersrc_args, NULL,
                                             graph)) < 0)
         return ret;
 
