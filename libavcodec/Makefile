@@ -393,6 +393,7 @@ OBJS-$(CONFIG_RV30_DECODER)            += rv30.o rv34.o rv30dsp.o rv34dsp.o \
                                           mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_RV40_DECODER)            += rv40.o rv34.o rv34dsp.o rv40dsp.o \
                                           mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_SAMI_DECODER)            += samidec.o ass.o
 OBJS-$(CONFIG_S302M_DECODER)           += s302m.o
 OBJS-$(CONFIG_SANM_DECODER)            += sanm.o
 OBJS-$(CONFIG_SGI_DECODER)             += sgidec.o

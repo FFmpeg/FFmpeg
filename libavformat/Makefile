@@ -296,6 +296,7 @@ OBJS-$(CONFIG_RTPDEC)                    += rdt.o         \
 OBJS-$(CONFIG_RTSP_DEMUXER)              += rtsp.o rtspdec.o httpauth.o
 OBJS-$(CONFIG_RTSP_MUXER)                += rtsp.o rtspenc.o httpauth.o \
                                             rtpenc_chain.o
+OBJS-$(CONFIG_SAMI_DEMUXER)              += samidec.o
 OBJS-$(CONFIG_SAP_DEMUXER)               += sapdec.o
 OBJS-$(CONFIG_SAP_MUXER)                 += sapenc.o rtpenc_chain.o
 OBJS-$(CONFIG_SBG_DEMUXER)               += sbgdec.o
