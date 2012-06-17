@@ -20,6 +20,7 @@
 
 #include "avformat.h"
 #include "subtitles.h"
+#include "libavutil/avstring.h"
 
 AVPacket *ff_subtitles_queue_insert(FFDemuxSubtitlesQueue *q,
                                     const uint8_t *event, int len, int merge)
@@ -98,4 +99,47 @@ void ff_subtitles_queue_clean(FFDemuxSubtitlesQueue *q)
         av_destruct_packet(&q->subs[i]);
     av_freep(&q->subs);
     q->nb_subs = q->allocated_size = q->current_sub_idx = 0;
+}
+
+int ff_smil_extract_next_chunk(AVIOContext *pb, AVBPrint *buf, char *c)
+{
+    int i = 0;
+    char end_chr;
+
+    if (!*c) // cached char?
+        *c = avio_r8(pb);
+    if (!*c)
+        return 0;
+
+    end_chr = *c == '<' ? '>' : '<';
+    do {
+        av_bprint_chars(buf, *c, 1);
+        *c = avio_r8(pb);
+        i++;
+    } while (*c != end_chr && *c);
+    if (end_chr == '>') {
+        av_bprint_chars(buf, '>', 1);
+        *c = 0;
+    }
+    return i;
+}
+
+const char *ff_smil_get_attr_ptr(const char *s, const char *attr)
+{
+    int in_quotes = 0;
+    const int len = strlen(attr);
+
+    while (*s) {
+        while (*s) {
+            if (!in_quotes && isspace(*s))
+                break;
+            in_quotes ^= *s == '"'; // XXX: support escaping?
+            s++;
+        }
+        while (isspace(*s))
+            s++;
+        if (!av_strncasecmp(s, attr, len) && s[len] == '=')
+            return s + len + 1 + (s[len + 1] == '"');
+    }
+    return NULL;
 }

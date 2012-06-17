@@ -23,6 +23,7 @@
 
 #include <stdint.h>
 #include "avformat.h"
+#include "libavutil/bprint.h"
 
 typedef struct {
     AVPacket *subs;         ///< array of subtitles packets
@@ -57,5 +58,20 @@ int ff_subtitles_queue_read_packet(FFDemuxSubtitlesQueue *q, AVPacket *pkt);
  * Remove and destroy all the subtitles packets.
  */
 void ff_subtitles_queue_clean(FFDemuxSubtitlesQueue *q);
+
+/**
+ * SMIL helper to load next chunk ("<...>" or untagged content) in buf.
+ *
+ * @param c cached character, to avoid a backward seek
+ */
+int ff_smil_extract_next_chunk(AVIOContext *pb, AVBPrint *buf, char *c);
+
+/**
+ * SMIL helper to point on the value of an attribute in the given tag.
+ *
+ * @param s    SMIL tag ("<...>")
+ * @param attr the attribute to look for
+ */
+const char *ff_smil_get_attr_ptr(const char *s, const char *attr);
 
 #endif /* AVFORMAT_SUBTITLES_H */
