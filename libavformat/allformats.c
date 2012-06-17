@@ -108,6 +108,7 @@ void av_register_all(void)
     REGISTER_DEMUXER  (HLS, hls);
     REGISTER_DEMUXER  (IDCIN, idcin);
     REGISTER_DEMUXER  (IFF, iff);
+    REGISTER_MUXDEMUX (ILBC, ilbc);
     REGISTER_MUXDEMUX (IMAGE2, image2);
     REGISTER_MUXDEMUX (IMAGE2PIPE, image2pipe);
     REGISTER_DEMUXER  (INGENIENT, ingenient);
