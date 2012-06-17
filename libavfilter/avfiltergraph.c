@@ -42,9 +42,7 @@ AVFilterGraph *avfilter_graph_alloc(void)
     AVFilterGraph *ret = av_mallocz(sizeof(AVFilterGraph));
     if (!ret)
         return NULL;
-#if FF_API_GRAPH_AVCLASS
     ret->av_class = &filtergraph_class;
-#endif
     return ret;
 }
 

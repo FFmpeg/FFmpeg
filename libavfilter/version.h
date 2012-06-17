@@ -44,9 +44,6 @@
  * Those FF_API_* defines are not part of public API.
  * They may change, break or disappear at any time.
  */
-#ifndef FF_API_GRAPH_AVCLASS
-#define FF_API_GRAPH_AVCLASS            (LIBAVFILTER_VERSION_MAJOR > 2)
-#endif
 #ifndef FF_API_SAMPLERATE64
 #define FF_API_SAMPLERATE64             (LIBAVFILTER_VERSION_MAJOR < 3)
 #endif
