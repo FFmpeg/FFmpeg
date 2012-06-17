@@ -353,6 +353,8 @@ static int http_read_header(URLContext *h, int *new_location)
     char line[1024];
     int err = 0;
 
+    s->chunksize = -1;
+
     for (;;) {
         if ((err = http_get_line(s, line, sizeof(line))) < 0)
             return err;
@@ -470,7 +472,6 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
         s->http_code = 200;
         return 0;
     }
-    s->chunksize = -1;
 
     /* wait for header */
     err = http_read_header(h, new_location);
@@ -513,14 +514,10 @@ static int http_read(URLContext *h, uint8_t *buf, int size)
     if (!s->hd)
         return AVERROR_EOF;
 
-    if (s->end_chunked_post) {
-        if (!s->end_header) {
-            err = http_read_header(h, &new_location);
-            if (err < 0)
-                return err;
-        }
-
-        return http_buf_read(h, buf, size);
+    if (s->end_chunked_post && !s->end_header) {
+        err = http_read_header(h, &new_location);
+        if (err < 0)
+            return err;
     }
 
     if (s->chunksize >= 0) {
