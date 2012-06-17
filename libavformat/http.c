@@ -510,6 +510,9 @@ static int http_read(URLContext *h, uint8_t *buf, int size)
     HTTPContext *s = h->priv_data;
     int err, new_location;
 
+    if (!s->hd)
+        return AVERROR_EOF;
+
     if (s->end_chunked_post) {
         if (!s->end_header) {
             err = http_read_header(h, &new_location);
