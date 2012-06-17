@@ -1560,7 +1560,8 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
     snprintf(sws_flags_str, sizeof(sws_flags_str), "flags=%d", sws_flags);
     graph->scale_sws_opts = av_strdup(sws_flags_str);
 
-    snprintf(buffersrc_args, sizeof(buffersrc_args), "%d:%d:%d:%d:%d:%d:%d",
+    snprintf(buffersrc_args, sizeof(buffersrc_args),
+             "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:pixel_aspect=%d/%d",
              codec->width, codec->height, codec->pix_fmt,
              is->video_st->time_base.num, is->video_st->time_base.den,
              codec->sample_aspect_ratio.num, codec->sample_aspect_ratio.den);
