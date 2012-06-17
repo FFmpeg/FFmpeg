@@ -25,6 +25,7 @@ version <next>:
   be used with -of old.
 - Indeo Audio decoder
 - channelsplit audio filter
+- RTMPT protocol support
 
 
 version 0.8:

@@ -243,6 +243,14 @@ For example to read with @command{avplay} a multimedia resource named
 avplay rtmp://myserver/vod/sample
 @end example
 
+@section rtmpt
+
+Real-Time Messaging Protocol tunneled through HTTP.
+
+The Real-Time Messaging Protocol tunneled through HTTP (RTMPT) is used
+for streaming multimedia content within HTTP requests to traverse
+firewalls.
+
 @section rtmp, rtmpe, rtmps, rtmpt, rtmpte
 
 Real-Time Messaging Protocol and its variants supported through
