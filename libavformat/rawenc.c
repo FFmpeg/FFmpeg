@@ -257,18 +257,6 @@ AVOutputFormat ff_rawvideo_muxer = {
 };
 #endif
 
-#if CONFIG_SRT_MUXER
-AVOutputFormat ff_srt_muxer = {
-    .name              = "srt",
-    .long_name         = NULL_IF_CONFIG_SMALL("SubRip subtitle format"),
-    .mime_type         = "application/x-subrip",
-    .extensions        = "srt",
-    .write_packet      = ff_raw_write_packet,
-    .flags             = AVFMT_NOTIMESTAMPS,
-    .subtitle_codec    = CODEC_ID_SRT,
-};
-#endif
-
 #if CONFIG_TRUEHD_MUXER
 AVOutputFormat ff_truehd_muxer = {
     .name              = "truehd",
