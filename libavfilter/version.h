@@ -44,9 +44,6 @@
  * Those FF_API_* defines are not part of public API.
  * They may change, break or disappear at any time.
  */
-#ifndef FF_API_VSRC_BUFFER_ADD_FRAME
-#define FF_API_VSRC_BUFFER_ADD_FRAME        (LIBAVFILTER_VERSION_MAJOR < 3)
-#endif
 #ifndef FF_API_DEFAULT_CONFIG_OUTPUT_LINK
 #define FF_API_DEFAULT_CONFIG_OUTPUT_LINK   (LIBAVFILTER_VERSION_MAJOR < 3)
 #endif

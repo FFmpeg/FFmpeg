@@ -29,7 +29,6 @@
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
-#include "vsrc_buffer.h"
 
 #include "libavutil/audioconvert.h"
 #include "libavutil/fifo.h"
@@ -69,25 +68,6 @@ typedef struct {
         av_log(s, AV_LOG_ERROR, "Changing frame properties on the fly is not supported.\n");\
         return AVERROR(EINVAL);\
     }
-
-#if FF_API_VSRC_BUFFER_ADD_FRAME
-int av_vsrc_buffer_add_frame(AVFilterContext *buffer_filter, AVFrame *frame,
-                             int64_t pts, AVRational pixel_aspect)
-{
-    int64_t orig_pts = frame->pts;
-    AVRational orig_sar = frame->sample_aspect_ratio;
-    int ret;
-
-    frame->pts = pts;
-    frame->sample_aspect_ratio = pixel_aspect;
-    if ((ret = av_buffersrc_write_frame(buffer_filter, frame)) < 0)
-        return ret;
-    frame->pts = orig_pts;
-    frame->sample_aspect_ratio = orig_sar;
-
-    return 0;
-}
-#endif
 
 int av_buffersrc_write_frame(AVFilterContext *buffer_filter, AVFrame *frame)
 {
