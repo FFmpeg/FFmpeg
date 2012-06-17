@@ -72,7 +72,7 @@ FATE_AAC_CT = sbr_bc-ps_i.3gp  \
 FATE_AAC += $(FATE_AAC_CT:%=fate-aac-ct-%)
 
 FATE_AAC_ENCODE += fate-aac-aref-encode
-fate-aac-aref-encode: $(AREF)
+fate-aac-aref-encode: ./tests/data/asynth-44100-2.wav
 fate-aac-aref-encode: CMD = enc_dec_pcm adts wav s16le $(REF) -strict -2 -c:a aac -b:a 512k
 fate-aac-aref-encode: CMP = stddev
 fate-aac-aref-encode: REF = ./tests/data/asynth-44100-2.wav
