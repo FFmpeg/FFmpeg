@@ -72,6 +72,10 @@
 #endif
 #endif
 
+#ifndef av_restrict
+#define av_restrict restrict
+#endif
+
 #ifndef av_const
 #if AV_GCC_VERSION_AT_LEAST(2,6)
 #    define av_const __attribute__((const))
