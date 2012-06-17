@@ -39,6 +39,8 @@
       <xsd:attribute name="dts_time"      type="xsd:float" />
       <xsd:attribute name="duration"      type="xsd:long"  />
       <xsd:attribute name="duration_time" type="xsd:float" />
+      <xsd:attribute name="convergence_duration"      type="xsd:long"  />
+      <xsd:attribute name="convergence_duration_time" type="xsd:float" />
       <xsd:attribute name="size"          type="xsd:long" use="required" />
       <xsd:attribute name="pos"           type="xsd:long"  />
       <xsd:attribute name="flags"         type="xsd:string" use="required" />
