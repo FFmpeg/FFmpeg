@@ -406,6 +406,24 @@ amovie=file.ogg [a] ; amovie=file.mp3 [b] ;
 [a2] [b2] amerge
 @end example
 
+@section atempo
+
+Adjust audio tempo.
+
+The filter accepts exactly one parameter, the audio tempo. If not
+specified then the filter will assume nominal 1.0 tempo. Tempo must
+be in the [0.5, 2.0] range.
+
+For example, to slow down audio to 80% tempo:
+@example
+atempo=0.8
+@end example
+
+For example, to speed up audio to 125% tempo:
+@example
+atempo=1.25
+@end example
+
 @section earwax
 
 Make audio easier to listen to on headphones.

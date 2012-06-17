@@ -7,6 +7,7 @@ version next:
 - Indeo Audio decoder
 - channelsplit audio filter
 - setnsamples audio filter
+- atempo filter
 
 
 version 0.11:
