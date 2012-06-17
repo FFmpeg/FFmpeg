@@ -54,14 +54,14 @@ int ff_intel_h263_decode_picture_header(MpegEncContext *s)
 
     s->pict_type = AV_PICTURE_TYPE_I + get_bits1(&s->gb);
 
-    s->unrestricted_mv = get_bits1(&s->gb);
-    s->h263_long_vectors = s->unrestricted_mv;
+    s->h263_long_vectors = get_bits1(&s->gb);
 
     if (get_bits1(&s->gb) != 0) {
         av_log(s->avctx, AV_LOG_ERROR, "SAC not supported\n");
         return -1;      /* SAC: off */
     }
     s->obmc= get_bits1(&s->gb);
+    s->unrestricted_mv = s->obmc || s->h263_long_vectors;
     s->pb_frame = get_bits1(&s->gb);
 
     if (format < 6) {
