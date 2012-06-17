@@ -549,6 +549,12 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
                                          c->sample_rate);
             break;
         }
+        case CODEC_ID_ILBC:
+            av_strlcatf(buff, size, "a=rtpmap:%d iLBC/%d\r\n"
+                                    "a=fmtp:%d mode=%d\r\n",
+                                     payload_type, c->sample_rate,
+                                     payload_type, c->block_align == 38 ? 20 : 30);
+            break;
         default:
             /* Nothing special to do here... */
             break;
