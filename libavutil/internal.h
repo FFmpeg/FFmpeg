@@ -53,6 +53,10 @@ struct AVDictionary {
 #endif
 #endif
 
+#ifndef av_restrict
+#define av_restrict restrict
+#endif
+
 #ifndef INT16_MIN
 #define INT16_MIN       (-0x7fff - 1)
 #endif
