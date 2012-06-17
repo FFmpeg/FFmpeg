@@ -1667,7 +1667,7 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
     s->width = FFALIGN(avctx->width, 16);
     s->height = FFALIGN(avctx->height, 16);
-    if (avctx->pix_fmt == PIX_FMT_NONE)
+    if (avctx->codec_id != CODEC_ID_THEORA)
         avctx->pix_fmt = PIX_FMT_YUV420P;
     avctx->chroma_sample_location = AVCHROMA_LOC_CENTER;
     if(avctx->idct_algo==FF_IDCT_AUTO)
@@ -2314,6 +2314,8 @@ static av_cold int theora_decode_init(AVCodecContext *avctx)
     uint8_t *header_start[3];
     int header_len[3];
     int i;
+
+    avctx->pix_fmt = PIX_FMT_YUV420P;
 
     s->theora = 1;
 
