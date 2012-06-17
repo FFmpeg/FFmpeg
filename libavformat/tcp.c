@@ -90,7 +90,11 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
             ret = ff_neterrno();
             goto fail1;
         }
-        listen(fd, 1);
+        ret = listen(fd, 1);
+        if (ret) {
+            ret = ff_neterrno();
+            goto fail1;
+        }
         fd1 = accept(fd, NULL, NULL);
         if (fd1 < 0) {
             ret = ff_neterrno();

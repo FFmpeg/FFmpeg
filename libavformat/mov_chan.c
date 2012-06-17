@@ -492,7 +492,7 @@ uint32_t ff_mov_get_channel_layout_tag(enum CodecID codec_id,
 
         /* find the layout tag for the specified channel layout */
         for (i = 0; layouts[i] != 0; i++) {
-            if (layouts[i] & 0xFFFF != channels)
+            if ((layouts[i] & 0xFFFF) != channels)
                 continue;
             for (j = 0; layout_map[j].tag != 0; j++) {
                 if (layout_map[j].tag    == layouts[i] &&
