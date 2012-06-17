@@ -1001,15 +1001,8 @@ static int estimate_stereo_mode(int32_t *left_ch, int32_t *right_ch, int n)
     for (i = 1; i < 4; i++)
         if (score[i] < score[best])
             best = i;
-    if (best == 0) {
-        return FLAC_CHMODE_INDEPENDENT;
-    } else if (best == 1) {
-        return FLAC_CHMODE_LEFT_SIDE;
-    } else if (best == 2) {
-        return FLAC_CHMODE_RIGHT_SIDE;
-    } else {
-        return FLAC_CHMODE_MID_SIDE;
-    }
+
+    return best;
 }
 
 
@@ -1081,7 +1074,7 @@ static void write_frame_header(FlacEncodeContext *s)
     if (frame->ch_mode == FLAC_CHMODE_INDEPENDENT)
         put_bits(&s->pb, 4, s->channels-1);
     else
-        put_bits(&s->pb, 4, frame->ch_mode);
+        put_bits(&s->pb, 4, frame->ch_mode + FLAC_MAX_CHANNELS - 1);
 
     put_bits(&s->pb, 3, 4); /* bits-per-sample code */
     put_bits(&s->pb, 1, 0);
