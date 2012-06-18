@@ -252,7 +252,8 @@ const char *ff_gai_strerror(int ecode)
 int ff_socket_nonblock(int socket, int enable)
 {
 #if HAVE_WINSOCK2_H
-   return ioctlsocket(socket, FIONBIO, &enable);
+   u_long param = enable;
+   return ioctlsocket(socket, FIONBIO, &param);
 #else
    if (enable)
       return fcntl(socket, F_SETFL, fcntl(socket, F_GETFL) | O_NONBLOCK);

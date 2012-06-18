@@ -35,6 +35,8 @@
 #define ETIMEDOUT       WSAETIMEDOUT
 #define ECONNREFUSED    WSAECONNREFUSED
 #define EINPROGRESS     WSAEINPROGRESS
+#define getsockopt(a, b, c, d, e) getsockopt(a, b, c, (char*) d, e)
+#define setsockopt(a, b, c, d, e) setsockopt(a, b, c, (const char*) d, e)
 
 int ff_neterrno(void);
 #else
