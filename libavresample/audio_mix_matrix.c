@@ -54,6 +54,8 @@
 #define SURROUND_DIRECT_LEFT   33
 #define SURROUND_DIRECT_RIGHT  34
 
+#define SQRT3_2      1.22474487139158904909  /* sqrt(3/2) */
+
 static av_always_inline int even(uint64_t layout)
 {
     return (!layout || (layout & (layout - 1)));
@@ -83,13 +85,20 @@ static int sane_layout(uint64_t layout)
 int avresample_build_matrix(uint64_t in_layout, uint64_t out_layout,
                             double center_mix_level, double surround_mix_level,
                             double lfe_mix_level, int normalize,
-                            double *matrix_out, int stride)
+                            double *matrix_out, int stride,
+                            enum AVMatrixEncoding matrix_encoding)
 {
     int i, j, out_i, out_j;
     double matrix[64][64] = {{0}};
-    int64_t unaccounted = in_layout & ~out_layout;
+    int64_t unaccounted;
     double maxcoef = 0;
     int in_channels, out_channels;
+
+    if ((out_layout & AV_CH_LAYOUT_STEREO_DOWNMIX) == AV_CH_LAYOUT_STEREO_DOWNMIX) {
+        out_layout = AV_CH_LAYOUT_STEREO;
+    }
+
+    unaccounted = in_layout & ~out_layout;
 
     in_channels  = av_get_channel_layout_nb_channels( in_layout);
     out_channels = av_get_channel_layout_nb_channels(out_layout);
@@ -140,8 +149,19 @@ int avresample_build_matrix(uint64_t in_layout, uint64_t out_layout,
             matrix[SIDE_LEFT ][BACK_CENTER] += M_SQRT1_2;
             matrix[SIDE_RIGHT][BACK_CENTER] += M_SQRT1_2;
         } else if (out_layout & AV_CH_FRONT_LEFT) {
-            matrix[FRONT_LEFT ][BACK_CENTER] += surround_mix_level * M_SQRT1_2;
-            matrix[FRONT_RIGHT][BACK_CENTER] += surround_mix_level * M_SQRT1_2;
+            if (matrix_encoding == AV_MATRIX_ENCODING_DOLBY ||
+                matrix_encoding == AV_MATRIX_ENCODING_DPLII) {
+                if (unaccounted & (AV_CH_BACK_LEFT | AV_CH_SIDE_LEFT)) {
+                    matrix[FRONT_LEFT ][BACK_CENTER] -= surround_mix_level * M_SQRT1_2;
+                    matrix[FRONT_RIGHT][BACK_CENTER] += surround_mix_level * M_SQRT1_2;
+                } else {
+                    matrix[FRONT_LEFT ][BACK_CENTER] -= surround_mix_level;
+                    matrix[FRONT_RIGHT][BACK_CENTER] += surround_mix_level;
+                }
+            } else {
+                matrix[FRONT_LEFT ][BACK_CENTER] += surround_mix_level * M_SQRT1_2;
+                matrix[FRONT_RIGHT][BACK_CENTER] += surround_mix_level * M_SQRT1_2;
+            }
         } else if (out_layout & AV_CH_FRONT_CENTER) {
             matrix[FRONT_CENTER][BACK_CENTER] += surround_mix_level * M_SQRT1_2;
         } else
@@ -163,8 +183,20 @@ int avresample_build_matrix(uint64_t in_layout, uint64_t out_layout,
                 matrix[SIDE_RIGHT][BACK_RIGHT] += 1.0;
             }
         } else if (out_layout & AV_CH_FRONT_LEFT) {
-            matrix[FRONT_LEFT ][BACK_LEFT ] += surround_mix_level;
-            matrix[FRONT_RIGHT][BACK_RIGHT] += surround_mix_level;
+            if (matrix_encoding == AV_MATRIX_ENCODING_DOLBY) {
+                matrix[FRONT_LEFT ][BACK_LEFT ] -= surround_mix_level * M_SQRT1_2;
+                matrix[FRONT_LEFT ][BACK_RIGHT] -= surround_mix_level * M_SQRT1_2;
+                matrix[FRONT_RIGHT][BACK_LEFT ] += surround_mix_level * M_SQRT1_2;
+                matrix[FRONT_RIGHT][BACK_RIGHT] += surround_mix_level * M_SQRT1_2;
+            } else if (matrix_encoding == AV_MATRIX_ENCODING_DPLII) {
+                matrix[FRONT_LEFT ][BACK_LEFT ] -= surround_mix_level * SQRT3_2;
+                matrix[FRONT_LEFT ][BACK_RIGHT] -= surround_mix_level * M_SQRT1_2;
+                matrix[FRONT_RIGHT][BACK_LEFT ] += surround_mix_level * M_SQRT1_2;
+                matrix[FRONT_RIGHT][BACK_RIGHT] += surround_mix_level * SQRT3_2;
+            } else {
+                matrix[FRONT_LEFT ][BACK_LEFT ] += surround_mix_level;
+                matrix[FRONT_RIGHT][BACK_RIGHT] += surround_mix_level;
+            }
         } else if (out_layout & AV_CH_FRONT_CENTER) {
             matrix[FRONT_CENTER][BACK_LEFT ] += surround_mix_level * M_SQRT1_2;
             matrix[FRONT_CENTER][BACK_RIGHT] += surround_mix_level * M_SQRT1_2;
@@ -187,8 +219,20 @@ int avresample_build_matrix(uint64_t in_layout, uint64_t out_layout,
             matrix[BACK_CENTER][SIDE_LEFT ] += M_SQRT1_2;
             matrix[BACK_CENTER][SIDE_RIGHT] += M_SQRT1_2;
         } else if (out_layout & AV_CH_FRONT_LEFT) {
-            matrix[FRONT_LEFT ][SIDE_LEFT ] += surround_mix_level;
-            matrix[FRONT_RIGHT][SIDE_RIGHT] += surround_mix_level;
+            if (matrix_encoding == AV_MATRIX_ENCODING_DOLBY) {
+                matrix[FRONT_LEFT ][SIDE_LEFT ] -= surround_mix_level * M_SQRT1_2;
+                matrix[FRONT_LEFT ][SIDE_RIGHT] -= surround_mix_level * M_SQRT1_2;
+                matrix[FRONT_RIGHT][SIDE_LEFT ] += surround_mix_level * M_SQRT1_2;
+                matrix[FRONT_RIGHT][SIDE_RIGHT] += surround_mix_level * M_SQRT1_2;
+            } else if (matrix_encoding == AV_MATRIX_ENCODING_DPLII) {
+                matrix[FRONT_LEFT ][SIDE_LEFT ] -= surround_mix_level * SQRT3_2;
+                matrix[FRONT_LEFT ][SIDE_RIGHT] -= surround_mix_level * M_SQRT1_2;
+                matrix[FRONT_RIGHT][SIDE_LEFT ] += surround_mix_level * M_SQRT1_2;
+                matrix[FRONT_RIGHT][SIDE_RIGHT] += surround_mix_level * SQRT3_2;
+            } else {
+                matrix[FRONT_LEFT ][SIDE_LEFT ] += surround_mix_level;
+                matrix[FRONT_RIGHT][SIDE_RIGHT] += surround_mix_level;
+            }
         } else if (out_layout & AV_CH_FRONT_CENTER) {
             matrix[FRONT_CENTER][SIDE_LEFT ] += surround_mix_level * M_SQRT1_2;
             matrix[FRONT_CENTER][SIDE_RIGHT] += surround_mix_level * M_SQRT1_2;

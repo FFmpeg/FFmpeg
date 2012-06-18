@@ -1413,17 +1413,24 @@ static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
                                 }
 
                             } else if (vr_type == 2) {
-                                voffs = voffset;
+                                unsigned voffs_div = FASTDIV(voffset, ch);
+                                unsigned voffs_mod = voffset - voffs_div * ch;
 
                                 for (k = 0; k < step; ++k) {
                                     coffs = get_vlc2(gb, codebook.vlc.table, codebook.nb_bits, 3) * dim;
-                                    for (l = 0; l < dim; ++l, ++voffs) {
-                                        vec[voffs / ch + (voffs % ch) * vlen] += codebook.codevectors[coffs + l];  // FPMATH FIXME use if and counter instead of / and %
+                                    for (l = 0; l < dim; ++l) {
+                                        vec[voffs_div + voffs_mod * vlen] +=
+                                            codebook.codevectors[coffs + l];
 
                                         av_dlog(NULL, " pass %d offs: %d curr: %f change: %f cv offs.: %d+%d  \n",
-                                                pass, voffset / ch + (voffs % ch) * vlen,
-                                                vec[voffset / ch + (voffs % ch) * vlen],
+                                                pass, voffs_div + voffs_mod * vlen,
+                                                vec[voffs_div + voffs_mod * vlen],
                                                 codebook.codevectors[coffs + l], coffs, l);
+
+                                        if (++voffs_mod == ch) {
+                                            voffs_div++;
+                                            voffs_mod = 0;
+                                        }
                                     }
                                 }
                             }

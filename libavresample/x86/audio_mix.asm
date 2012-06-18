@@ -150,3 +150,84 @@ cglobal mix_2_to_1_s16p_q8, 3,4,6, src, matrix, len, src1
     sub        lend, mmsize/2
     jg .loop
     REP_RET
+
+;-----------------------------------------------------------------------------
+; void ff_mix_1_to_2_fltp_flt(float **src, float **matrix, int len,
+;                             int out_ch, int in_ch);
+;-----------------------------------------------------------------------------
+
+%macro MIX_1_TO_2_FLTP_FLT 0
+cglobal mix_1_to_2_fltp_flt, 3,5,4, src0, matrix0, len, src1, matrix1
+    mov       src1q, [src0q+gprsize]
+    mov       src0q, [src0q]
+    sub       src1q, src0q
+    mov    matrix1q, [matrix0q+gprsize]
+    mov    matrix0q, [matrix0q]
+    VBROADCASTSS m2, [matrix0q]
+    VBROADCASTSS m3, [matrix1q]
+    ALIGN 16
+.loop:
+    mova         m0, [src0q]
+    mulps        m1, m0, m3
+    mulps        m0, m0, m2
+    mova  [src0q      ], m0
+    mova  [src0q+src1q], m1
+    add       src0q, mmsize
+    sub        lend, mmsize/4
+    jg .loop
+    REP_RET
+%endmacro
+
+INIT_XMM sse
+MIX_1_TO_2_FLTP_FLT
+%if HAVE_AVX
+INIT_YMM avx
+MIX_1_TO_2_FLTP_FLT
+%endif
+
+;-----------------------------------------------------------------------------
+; void ff_mix_1_to_2_s16p_flt(int16_t **src, float **matrix, int len,
+;                             int out_ch, int in_ch);
+;-----------------------------------------------------------------------------
+
+%macro MIX_1_TO_2_S16P_FLT 0
+cglobal mix_1_to_2_s16p_flt, 3,5,6, src0, matrix0, len, src1, matrix1
+    mov       src1q, [src0q+gprsize]
+    mov       src0q, [src0q]
+    sub       src1q, src0q
+    mov    matrix1q, [matrix0q+gprsize]
+    mov    matrix0q, [matrix0q]
+    VBROADCASTSS m4, [matrix0q]
+    VBROADCASTSS m5, [matrix1q]
+    ALIGN 16
+.loop:
+    mova         m0, [src0q]
+    S16_TO_S32_SX 0, 2
+    cvtdq2ps     m0, m0
+    cvtdq2ps     m2, m2
+    mulps        m1, m0, m5
+    mulps        m0, m0, m4
+    mulps        m3, m2, m5
+    mulps        m2, m2, m4
+    cvtps2dq     m0, m0
+    cvtps2dq     m1, m1
+    cvtps2dq     m2, m2
+    cvtps2dq     m3, m3
+    packssdw     m0, m2
+    packssdw     m1, m3
+    mova  [src0q      ], m0
+    mova  [src0q+src1q], m1
+    add       src0q, mmsize
+    sub        lend, mmsize/2
+    jg .loop
+    REP_RET
+%endmacro
+
+INIT_XMM sse2
+MIX_1_TO_2_S16P_FLT
+INIT_XMM sse4
+MIX_1_TO_2_S16P_FLT
+%if HAVE_AVX
+INIT_XMM avx
+MIX_1_TO_2_S16P_FLT
+%endif

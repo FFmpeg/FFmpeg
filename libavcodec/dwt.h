@@ -79,7 +79,7 @@ typedef struct DWTContext {
     void (*vertical_compose97i)(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2,
                                 IDWTELEM *b3, IDWTELEM *b4, IDWTELEM *b5,
                                 int width);
-    void (*horizontal_compose97i)(IDWTELEM *b, int width);
+    void (*horizontal_compose97i)(IDWTELEM *b, IDWTELEM *temp, int width);
     void (*inner_add_yblock)(const uint8_t *obmc, const int obmc_stride,
                              uint8_t **block, int b_w, int b_h, int src_x,
                              int src_y, int src_stride, slice_buffer *sb,
@@ -239,7 +239,7 @@ IDWTELEM *ff_slice_buffer_load_line(slice_buffer *buf, int line);
 void ff_snow_vertical_compose97i(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2,
                                  IDWTELEM *b3, IDWTELEM *b4, IDWTELEM *b5,
                                  int width);
-void ff_snow_horizontal_compose97i(IDWTELEM *b, int width);
+void ff_snow_horizontal_compose97i(IDWTELEM *b, IDWTELEM *temp, int width);
 void ff_snow_inner_add_yblock(const uint8_t *obmc, const int obmc_stride,
                               uint8_t **block, int b_w, int b_h, int src_x,
                               int src_y, int src_stride, slice_buffer *sb,
@@ -248,18 +248,18 @@ void ff_snow_inner_add_yblock(const uint8_t *obmc, const int obmc_stride,
 int ff_w53_32_c(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
 int ff_w97_32_c(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
 
-void ff_spatial_dwt(int *buffer, int width, int height, int stride, int type,
-                    int decomposition_count);
+void ff_spatial_dwt(int *buffer, int *temp, int width, int height, int stride,
+                    int type, int decomposition_count);
 
 void ff_spatial_idwt_buffered_init(DWTCompose *cs, slice_buffer *sb, int width,
                                    int height, int stride_line, int type,
                                    int decomposition_count);
 void ff_spatial_idwt_buffered_slice(DWTContext *dsp, DWTCompose *cs,
-                                    slice_buffer *slice_buf, int width,
-                                    int height, int stride_line, int type,
-                                    int decomposition_count, int y);
-void ff_spatial_idwt(IDWTELEM *buffer, int width, int height, int stride,
-                     int type, int decomposition_count);
+                                    slice_buffer *slice_buf, IDWTELEM *temp,
+                                    int width, int height, int stride_line,
+                                    int type, int decomposition_count, int y);
+void ff_spatial_idwt(IDWTELEM *buffer, IDWTELEM *temp, int width, int height,
+                     int stride, int type, int decomposition_count);
 
 void ff_dwt_init(DWTContext *c);
 void ff_dwt_init_x86(DWTContext *c);

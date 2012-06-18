@@ -52,6 +52,10 @@ static const AVOption options[] = {
     { "phase_shift",            "Resampling Phase Shift",   OFFSET(phase_shift),            AV_OPT_TYPE_INT,    { 10                    }, 0,                    30, /* ??? */           PARAM },
     { "linear_interp",          "Use Linear Interpolation", OFFSET(linear_interp),          AV_OPT_TYPE_INT,    { 0                     }, 0,                    1,                      PARAM },
     { "cutoff",                 "Cutoff Frequency Ratio",   OFFSET(cutoff),                 AV_OPT_TYPE_DOUBLE, { 0.8                   }, 0.0,                  1.0,                    PARAM },
+    { "matrix_encoding",        "Matrixed Stereo Encoding", OFFSET(matrix_encoding),        AV_OPT_TYPE_INT,    { AV_MATRIX_ENCODING_NONE}, AV_MATRIX_ENCODING_NONE,     AV_MATRIX_ENCODING_NB-1, PARAM, "matrix_encoding" },
+        { "none",  "None",               0, AV_OPT_TYPE_CONST, { AV_MATRIX_ENCODING_NONE  }, INT_MIN, INT_MAX, PARAM, "matrix_encoding" },
+        { "dolby", "Dolby",              0, AV_OPT_TYPE_CONST, { AV_MATRIX_ENCODING_DOLBY }, INT_MIN, INT_MAX, PARAM, "matrix_encoding" },
+        { "dplii", "Dolby Pro Logic II", 0, AV_OPT_TYPE_CONST, { AV_MATRIX_ENCODING_DPLII }, INT_MIN, INT_MAX, PARAM, "matrix_encoding" },
     { NULL },
 };
 

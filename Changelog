@@ -9,6 +9,7 @@ version next:
 - setnsamples audio filter
 - atempo filter
 - ffprobe -show_data option
+- RTMPT protocol support
 
 
 version 0.11:

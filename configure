@@ -174,9 +174,6 @@ External library support:
   --enable-libass          enable libass subtitles rendering [no]
   --enable-libbluray       enable BluRay reading using libbluray [no]
   --enable-libcelt         enable CELT decoding via libcelt [no]
-  --enable-libopencore-amrnb enable AMR-NB de/encoding via libopencore-amrnb [no]
-  --enable-libopencore-amrwb enable AMR-WB decoding via libopencore-amrwb [no]
-  --enable-libopencv       enable video filtering via libopencv [no]
   --enable-libcdio         enable audio CD grabbing with libcdio
   --enable-libdc1394       enable IIDC-1394 grabbing using libdc1394
                            and libraw1394 [no]
@@ -187,6 +184,9 @@ External library support:
   --enable-libmp3lame      enable MP3 encoding via libmp3lame [no]
   --enable-libnut          enable NUT (de)muxing via libnut,
                            native (de)muxer exists [no]
+  --enable-libopencore-amrnb enable AMR-NB de/encoding via libopencore-amrnb [no]
+  --enable-libopencore-amrwb enable AMR-WB decoding via libopencore-amrwb [no]
+  --enable-libopencv       enable video filtering via libopencv [no]
   --enable-libopenjpeg     enable JPEG 2000 encoding/decoding via OpenJPEG [no]
   --enable-libpulse        enable Pulseaudio input via libpulse [no]
   --enable-librtmp         enable RTMP[E] support via librtmp [no]
@@ -1689,6 +1689,10 @@ mmsh_protocol_select="http_protocol"
 mmst_protocol_deps="network"
 rtmp_protocol_deps="!librtmp_protocol"
 rtmp_protocol_select="tcp_protocol"
+rtmphttp_protocol_deps="!librtmp_protocol"
+rtmphttp_protocol_select="http_protocol"
+rtmpt_protocol_deps="!librtmp_protocol"
+rtmpt_protocol_select="rtmphttp_protocol"
 rtp_protocol_select="udp_protocol"
 sctp_protocol_deps="network netinet_sctp_h"
 tcp_protocol_deps="network"

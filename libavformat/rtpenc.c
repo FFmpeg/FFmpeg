@@ -198,11 +198,11 @@ static int rtp_write_header(AVFormatContext *s1)
         /* max_header_toc_size + the largest AMR payload must fit */
         if (1 + s->max_frames_per_packet + n > s->max_payload_size) {
             av_log(s1, AV_LOG_ERROR, "RTP max payload size too small for AMR\n");
-            return -1;
+            goto fail;
         }
         if (st->codec->channels != 1) {
             av_log(s1, AV_LOG_ERROR, "Only mono is supported\n");
-            return -1;
+            goto fail;
         }
     case CODEC_ID_AAC:
         s->num_frames = 0;
@@ -216,6 +216,10 @@ defaultcase:
     }
 
     return 0;
+
+fail:
+    av_freep(&s->buf);
+    return AVERROR(EINVAL);
 }
 
 /* send an rtcp sender report packet */

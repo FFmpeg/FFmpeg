@@ -26,9 +26,8 @@
 #include "libavcodec/dwt.h"
 #include "dsputil_mmx.h"
 
-static void ff_snow_horizontal_compose97i_sse2(IDWTELEM *b, int width){
+static void ff_snow_horizontal_compose97i_sse2(IDWTELEM *b, IDWTELEM *temp, int width){
     const int w2= (width+1)>>1;
-    DECLARE_ALIGNED(16, IDWTELEM, temp)[width>>1];
     const int w_l= (width>>1);
     const int w_r= w2 - 1;
     int i;
@@ -215,9 +214,8 @@ static void ff_snow_horizontal_compose97i_sse2(IDWTELEM *b, int width){
     }
 }
 
-static void ff_snow_horizontal_compose97i_mmx(IDWTELEM *b, int width){
+static void ff_snow_horizontal_compose97i_mmx(IDWTELEM *b, IDWTELEM *temp, int width){
     const int w2= (width+1)>>1;
-    IDWTELEM temp[width >> 1];
     const int w_l= (width>>1);
     const int w_r= w2 - 1;
     int i;

@@ -132,7 +132,9 @@ typedef struct SnowContext{
     int16_t (*ref_mvs[MAX_REF_FRAMES])[2];
     uint32_t *ref_scores[MAX_REF_FRAMES];
     DWTELEM *spatial_dwt_buffer;
+    DWTELEM *temp_dwt_buffer;
     IDWTELEM *spatial_idwt_buffer;
+    IDWTELEM *temp_idwt_buffer;
     int colorspace_type;
     int chroma_h_shift;
     int chroma_v_shift;

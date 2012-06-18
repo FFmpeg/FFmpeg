@@ -502,7 +502,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
             }
 
             for(; yd<slice_h; yd+=4){
-                ff_spatial_idwt_buffered_slice(&s->dwt, cs, &s->sb, w, h, 1, s->spatial_decomposition_type, s->spatial_decomposition_count, yd);
+                ff_spatial_idwt_buffered_slice(&s->dwt, cs, &s->sb, s->temp_idwt_buffer, w, h, 1, s->spatial_decomposition_type, s->spatial_decomposition_count, yd);
             }
 
             if(s->qlog == LOSSLESS_QLOG){

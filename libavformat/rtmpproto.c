@@ -1112,9 +1112,15 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     av_url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname), &port,
                  path, sizeof(path), s->filename);
 
-    if (port < 0)
-        port = RTMP_DEFAULT_PORT;
-    ff_url_join(buf, sizeof(buf), "tcp", NULL, hostname, port, NULL);
+    if (!strcmp(proto, "rtmpt")) {
+        /* open the http tunneling connection */
+        ff_url_join(buf, sizeof(buf), "rtmphttp", NULL, hostname, port, NULL);
+    } else {
+        /* open the tcp connection */
+        if (port < 0)
+            port = RTMP_DEFAULT_PORT;
+        ff_url_join(buf, sizeof(buf), "tcp", NULL, hostname, port, NULL);
+    }
 
     if ((ret = ffurl_open(&rt->stream, buf, AVIO_FLAG_READ_WRITE,
                           &s->interrupt_callback, NULL)) < 0) {
@@ -1424,4 +1430,22 @@ URLProtocol ff_rtmp_protocol = {
     .priv_data_size = sizeof(RTMPContext),
     .flags          = URL_PROTOCOL_FLAG_NETWORK,
     .priv_data_class= &rtmp_class,
+};
+
+static const AVClass rtmpt_class = {
+    .class_name = "rtmpt",
+    .item_name  = av_default_item_name,
+    .option     = rtmp_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+URLProtocol ff_rtmpt_protocol = {
+    .name            = "rtmpt",
+    .url_open        = rtmp_open,
+    .url_read        = rtmp_read,
+    .url_write       = rtmp_write,
+    .url_close       = rtmp_close,
+    .priv_data_size  = sizeof(RTMPContext),
+    .flags           = URL_PROTOCOL_FLAG_NETWORK,
+    .priv_data_class = &rtmpt_class,
 };
