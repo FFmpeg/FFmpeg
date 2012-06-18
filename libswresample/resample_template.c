@@ -48,6 +48,28 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
         index += dst_index * dst_incr;
         index += (frac + dst_index * (int64_t)dst_incr_frac) / c->src_incr;
         frac   = (frac + dst_index * (int64_t)dst_incr_frac) % c->src_incr;
+    }else if(compensation_distance == 0 && !c->linear && index >= 0){
+        for(dst_index=0; dst_index < dst_size; dst_index++){
+            FELEM *filter= ((FELEM*)c->filter_bank) + c->filter_length*(index & c->phase_mask);
+            int sample_index= index >> c->phase_shift;
+
+            if(sample_index + c->filter_length > src_size){
+                break;
+            }else{
+                FELEM2 val=0;
+                for(i=0; i<c->filter_length; i++){
+                    val += src[sample_index + i] * (FELEM2)filter[i];
+                }
+                OUT(dst[dst_index], val);
+            }
+
+            frac += dst_incr_frac;
+            index += dst_incr;
+            if(frac >= c->src_incr){
+                frac -= c->src_incr;
+                index++;
+            }
+        }
     }else{
         for(dst_index=0; dst_index < dst_size; dst_index++){
             FELEM *filter= ((FELEM*)c->filter_bank) + c->filter_length*(index & c->phase_mask);
