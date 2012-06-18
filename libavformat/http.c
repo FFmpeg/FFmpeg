@@ -309,15 +309,15 @@ static int process_line(URLContext *h, char *line, int line_count,
             strcpy(s->location, p);
             *new_location = 1;
         } else if (!av_strcasecmp (tag, "Content-Length") && s->filesize == -1) {
-            s->filesize = atoll(p);
+            s->filesize = strtoll(p, NULL, 10);
         } else if (!av_strcasecmp (tag, "Content-Range")) {
             /* "bytes $from-$to/$document_size" */
             const char *slash;
             if (!strncmp (p, "bytes ", 6)) {
                 p += 6;
-                s->off = atoll(p);
+                s->off = strtoll(p, NULL, 10);
                 if ((slash = strchr(p, '/')) && strlen(slash) > 0)
-                    s->filesize = atoll(slash+1);
+                    s->filesize = strtoll(slash+1, NULL, 10);
             }
             h->is_streamed = 0; /* we _can_ in fact seek */
         } else if (!av_strcasecmp(tag, "Accept-Ranges") && !strncmp(p, "bytes", 5)) {
