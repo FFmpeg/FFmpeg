@@ -1,0 +1,86 @@
+/*
+ * copyright (c) 2012 Michael Niedermayer <michaelni@gmx.at>
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+#include "common.h"
+
+
+#define AV_QSORT(p, num, type, cmp) {\
+    void *stack[64][2];\
+    int sp= 1;\
+    stack[0][0] = p;\
+    stack[0][1] = p+num-1;\
+    while(sp){\
+        type *start= stack[--sp][0];\
+        type *end  = stack[  sp][1];\
+        while(start < end){\
+            if(start < end-1) {\
+                int checksort=0;\
+                type *right = end-2;\
+                type *left  = start+1;\
+                type *mid = start + ((end-start)>>1);\
+                if(cmp(start, end) < 0) {\
+                    if(cmp(  end, mid) < 0) FFSWAP(type, *start, *mid);\
+                    else                    FFSWAP(type, *start, *end);\
+                }else{\
+                    if(cmp(start, mid) < 0) FFSWAP(type, *start, *mid);\
+                    else checksort= 1;\
+                }\
+                if(cmp(mid, end) < 0){ \
+                    FFSWAP(type, *mid, *end);\
+                    checksort=0;\
+                }\
+                if(start == end-2) break;\
+                FFSWAP(type, end[-1], *mid);\
+                while(left <= right){\
+                    while(left<=right && cmp(left, end-1) > 0)\
+                        left++;\
+                    while(left<=right && cmp(right, end-1) < 0)\
+                        right--;\
+                    if(left <= right){\
+                        FFSWAP(type, *left, *right);\
+                        left++;\
+                        right--;\
+                    }\
+                }\
+                FFSWAP(type, end[-1], *left);\
+                if(checksort && (mid == left-1 || mid == left)){\
+                    mid= start;\
+                    while(mid<end && cmp(mid, mid+1) >= 0)\
+                        mid++;\
+                    if(mid==end)\
+                        break;\
+                }\
+                if(end-left < left-start){\
+                    stack[sp  ][0]= start;\
+                    stack[sp++][1]= right;\
+                    start = left+1;\
+                }else{\
+                    stack[sp  ][0]= left+1;\
+                    stack[sp++][1]= end;\
+                    end = right;\
+                }\
+            }else{\
+                if(cmp(start, end) < 0)\
+                    FFSWAP(type, *start, *end);\
+                break;\
+            }\
+        }\
+    }\
+}
