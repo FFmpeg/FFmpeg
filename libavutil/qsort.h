@@ -21,6 +21,12 @@
 #include "common.h"
 
 
+/**
+ * Quicksort
+ * This sort is fast, and fully inplace but not stable and it is possible
+ * to construct input that requires O(n^2) time but this is very unlikely to
+ * happen with non constructed input.
+ */
 #define AV_QSORT(p, num, type, cmp) {\
     void *stack[64][2];\
     int sp= 1;\
