@@ -181,6 +181,7 @@ const char *ff_gai_strerror(int ecode);
 #define getaddrinfo ff_getaddrinfo
 #define freeaddrinfo ff_freeaddrinfo
 #define getnameinfo ff_getnameinfo
+#undef gai_strerror
 #define gai_strerror ff_gai_strerror
 #endif
 
