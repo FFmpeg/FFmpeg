@@ -447,7 +447,7 @@ static av_cold int common_init(AVCodecContext *avctx){
 
     s->width= avctx->width;
     s->height= avctx->height;
-    assert(s->width>0 && s->height>0);
+    av_assert1(s->width>0 && s->height>0);
 
     return 0;
 }
@@ -593,7 +593,7 @@ static int store_table(HYuvContext *s, const uint8_t *len, uint8_t *buf){
         for(; i<256 && len[i]==val && repeat<255; i++)
             repeat++;
 
-        assert(val < 32 && val >0 && repeat<256 && repeat>0);
+        av_assert0(val < 32 && val >0 && repeat<256 && repeat>0);
         if(repeat>7){
             buf[index++]= val;
             buf[index++]= repeat;
