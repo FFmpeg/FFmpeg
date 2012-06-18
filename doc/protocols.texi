@@ -217,6 +217,10 @@ times to construct arbitrary AMF sequences.
 Version of the Flash plugin used to run the SWF player. The default
 is LNX 9,0,124,2.
 
+@item rtmp_flush_interval
+Number of packets flushed in the same request (RTMPT only). The default
+is 10.
+
 @item rtmp_live
 Specify that the media is a live stream. No resuming or seeking in
 live streams is possible. The default value is @code{any}, which means the
