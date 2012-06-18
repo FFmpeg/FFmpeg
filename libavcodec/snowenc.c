@@ -1950,14 +1950,17 @@ int main(void){
     s.spatial_decomposition_count=6;
     s.spatial_decomposition_type=1;
 
+    s.temp_dwt_buffer  = av_mallocz(width * sizeof(DWTELEM));
+    s.temp_idwt_buffer = av_mallocz(width * sizeof(IDWTELEM));
+
     av_lfg_init(&prng, 1);
 
     printf("testing 5/3 DWT\n");
     for(i=0; i<width*height; i++)
         buffer[0][i] = buffer[1][i] = av_lfg_get(&prng) % 54321 - 12345;
 
-    ff_spatial_dwt(buffer[0], width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
-    ff_spatial_idwt((IDWTELEM*)buffer[0], width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
+    ff_spatial_dwt(buffer[0], s.temp_dwt_buffer, width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
+    ff_spatial_idwt((IDWTELEM*)buffer[0], s.temp_idwt_buffer, width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
 
     for(i=0; i<width*height; i++)
         if(buffer[0][i]!= buffer[1][i]) printf("fsck: %6d %12d %7d\n",i, buffer[0][i], buffer[1][i]);
@@ -1967,8 +1970,8 @@ int main(void){
     for(i=0; i<width*height; i++)
         buffer[0][i] = buffer[1][i] = av_lfg_get(&prng) % 54321 - 12345;
 
-    ff_spatial_dwt(buffer[0], width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
-    ff_spatial_idwt((IDWTELEM*)buffer[0], width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
+    ff_spatial_dwt(buffer[0], s.temp_dwt_buffer, width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
+    ff_spatial_idwt((IDWTELEM*)buffer[0], s.temp_idwt_buffer, width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
 
     for(i=0; i<width*height; i++)
         if(FFABS(buffer[0][i] - buffer[1][i])>20) printf("fsck: %6d %12d %7d\n",i, buffer[0][i], buffer[1][i]);
@@ -1994,7 +1997,7 @@ int main(void){
 
                 memset(buffer[0], 0, sizeof(int)*width*height);
                 buf[w/2 + h/2*stride]= 256*256;
-                ff_spatial_idwt((IDWTELEM*)buffer[0], width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
+                ff_spatial_idwt((IDWTELEM*)buffer[0], s.temp_idwt_buffer, width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
                 for(y=0; y<height; y++){
                     for(x=0; x<width; x++){
                         int64_t d= buffer[0][x + y*width];
@@ -2036,7 +2039,7 @@ int main(void){
                     buffer[0][x+width*y]= 256*256*tab[(x&1) + 2*(y&1)];
                 }
             }
-            ff_spatial_dwt(buffer[0], width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
+            ff_spatial_dwt(buffer[0], s.temp_dwt_buffer, width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
             for(y=0; y<height; y++){
                 for(x=0; x<width; x++){
                     int64_t d= buffer[0][x + y*width];
