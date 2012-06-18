@@ -2228,14 +2228,17 @@ static void estimate_timings(AVFormatContext *ic, int64_t old_offset)
         file_size && ic->pb->seekable) {
         /* get accurate estimate from the PTSes */
         estimate_timings_from_pts(ic, old_offset);
+        ic->duration_estimation_method = AVFMT_DURATION_FROM_PTS;
     } else if (has_duration(ic)) {
         /* at least one component has timings - we use them for all
            the components */
         fill_all_stream_timings(ic);
+        ic->duration_estimation_method = AVFMT_DURATION_FROM_STREAM;
     } else {
         av_log(ic, AV_LOG_WARNING, "Estimating duration from bitrate, this may be inaccurate\n");
         /* less precise: use bitrate info */
         estimate_timings_from_bit_rate(ic);
+        ic->duration_estimation_method = AVFMT_DURATION_FROM_BITRATE;
     }
     update_stream_timings(ic);
 
