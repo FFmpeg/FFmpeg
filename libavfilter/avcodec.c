@@ -93,8 +93,8 @@ int avfilter_copy_buf_props(AVFrame *dst, const AVFilterBufferRef *src)
     memcpy(dst->linesize, src->linesize, sizeof(dst->linesize));
 
     dst->pts     = src->pts;
-    dst->pkt_pos = src->pos;
     dst->format  = src->format;
+    av_frame_set_pkt_pos(dst, src->pos);
 
     switch (src->type) {
     case AVMEDIA_TYPE_VIDEO:
@@ -120,10 +120,9 @@ int avfilter_copy_buf_props(AVFrame *dst, const AVFilterBufferRef *src)
                    planes * sizeof(dst->extended_data));
         } else
             dst->extended_data = dst->data;
-
-        dst->sample_rate         = src->audio->sample_rate;
-        dst->channel_layout      = src->audio->channel_layout;
         dst->nb_samples          = src->audio->nb_samples;
+        av_frame_set_sample_rate   (dst, src->audio->sample_rate);
+        av_frame_set_channel_layout(dst, src->audio->channel_layout);
         break;
     default:
         return AVERROR(EINVAL);
