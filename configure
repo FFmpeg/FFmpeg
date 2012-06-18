@@ -1051,6 +1051,7 @@ HAVE_LIST="
     $ARCH_EXT_LIST
     $HAVE_LIST_PUB
     $THREADS_LIST
+    aligned_malloc
     aligned_stack
     alsa_asoundlib_h
     altivec_h
@@ -2838,6 +2839,7 @@ check_func  ${malloc_prefix}memalign            && enable memalign
 check_func  mkstemp
 check_func  mmap
 check_func  ${malloc_prefix}posix_memalign      && enable posix_memalign
+check_func_headers malloc.h _aligned_malloc     && enable aligned_malloc
 check_func  setrlimit
 check_func  strerror_r
 check_func  strptime
@@ -3144,7 +3146,7 @@ check_deps $CONFIG_LIST       \
 
 enabled asm || { arch=c; disable $ARCH_LIST $ARCH_EXT_LIST; }
 
-! enabled_any memalign posix_memalign &&
+! enabled_any memalign posix_memalign aligned_malloc &&
     enabled_any $need_memalign && enable memalign_hack
 
 echo "install prefix            $prefix"
