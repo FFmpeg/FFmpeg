@@ -90,3 +90,28 @@
         }\
     }\
 }
+
+/**
+ * Merge sort, this sort requires a temporary buffer and is stable, its worst
+ * case time is O(n log n)
+ * @param p     must be a lvalue pointer, this function may exchange it with tmp
+ * @param tmp   must be a lvalue pointer, this function may exchange it with p
+ */
+#define AV_MSORT(p, tmp, num, type, cmp) {\
+    unsigned i, j, step;\
+    for(step=1; step<(num); step+=step){\
+        for(i=0; i<(num); i+=2*step){\
+            unsigned a[2] = {i, i+step};\
+            unsigned end = FFMIN(i+2*step, (num));\
+            for(j=i; a[0]<i+step && a[1]<end; j++){\
+                int idx= cmp(p+a[0], p+a[1]) < 0;\
+                tmp[j] = p[ a[idx]++ ];\
+            }\
+            if(a[0]>=i+step) a[0] = a[1];\
+            for(; j<end; j++){\
+                tmp[j] = p[ a[0]++ ];\
+            }\
+        }\
+        FFSWAP(type*, p, tmp);\
+    }\
+}
