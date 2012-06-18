@@ -1024,7 +1024,7 @@ static int mov_read_dvc1(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return AVERROR_INVALIDDATA;
 
     profile_level = avio_r8(pb);
-    if (profile_level & 0xf0 != 0xc0)
+    if ((profile_level & 0xf0) != 0xc0)
         return 0;
 
     av_free(st->codec->extradata);
