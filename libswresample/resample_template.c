@@ -56,11 +56,15 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
             if(sample_index + c->filter_length > src_size){
                 break;
             }else{
+#ifdef COMMON_CORE
+                COMMON_CORE
+#else
                 FELEM2 val=0;
                 for(i=0; i<c->filter_length; i++){
                     val += src[sample_index + i] * (FELEM2)filter[i];
                 }
                 OUT(dst[dst_index], val);
+#endif
             }
 
             frac += dst_incr_frac;

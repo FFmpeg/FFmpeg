@@ -356,15 +356,71 @@ int swr_set_compensation(struct SwrContext *s, int sample_delta, int compensatio
 #define OUT(d, v) d = v
 #include "resample_template.c"
 
+#undef RENAME
+#undef FELEM
+#undef FELEM2
+#undef DELEM
+#undef FELEML
+#undef OUT
+#undef FELEM_MIN
+#undef FELEM_MAX
+#undef FILTER_SHIFT
+
+// XXX FIXME the whole C loop should be written in asm so this x86 specific code here isnt needed
+#if ARCH_X86
+#include "x86/resample_mmx.h"
+#define COMMON_CORE COMMON_CORE_INT16_MMX2
+#define RENAME(N) N ## _int16_mmx2
+#define FILTER_SHIFT 15
+#define DELEM  int16_t
+#define FELEM  int16_t
+#define FELEM2 int32_t
+#define FELEML int64_t
+#define FELEM_MAX INT16_MAX
+#define FELEM_MIN INT16_MIN
+#define OUT(d, v) v = (v + (1<<(FILTER_SHIFT-1)))>>FILTER_SHIFT;\
+                  d = (unsigned)(v + 32768) > 65535 ? (v>>31) ^ 32767 : v
+#include "resample_template.c"
+
+#undef COMMON_CORE
+#undef RENAME
+#undef FELEM
+#undef FELEM2
+#undef DELEM
+#undef FELEML
+#undef OUT
+#undef FELEM_MIN
+#undef FELEM_MAX
+#undef FILTER_SHIFT
+
+#define COMMON_CORE COMMON_CORE_INT16_SSSE3
+#define RENAME(N) N ## _int16_ssse3
+#define FILTER_SHIFT 15
+#define DELEM  int16_t
+#define FELEM  int16_t
+#define FELEM2 int32_t
+#define FELEML int64_t
+#define FELEM_MAX INT16_MAX
+#define FELEM_MIN INT16_MIN
+#define OUT(d, v) v = (v + (1<<(FILTER_SHIFT-1)))>>FILTER_SHIFT;\
+                  d = (unsigned)(v + 32768) > 65535 ? (v>>31) ^ 32767 : v
+#include "resample_template.c"
+#endif // ARCH_X86
 
 int swri_multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, AudioData *src, int src_size, int *consumed){
     int i, ret= -1;
+    int mm_flags = av_get_cpu_flags();
 
     for(i=0; i<dst->ch_count; i++){
-        if(c->format == AV_SAMPLE_FMT_S16P) ret= swri_resample_int16(c, (int16_t*)dst->ch[i], (const int16_t*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
-        if(c->format == AV_SAMPLE_FMT_S32P) ret= swri_resample_int32(c, (int32_t*)dst->ch[i], (const int32_t*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
-        if(c->format == AV_SAMPLE_FMT_FLTP) ret= swri_resample_float(c, (float  *)dst->ch[i], (const float  *)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
-        if(c->format == AV_SAMPLE_FMT_DBLP) ret= swri_resample_double(c,(double *)dst->ch[i], (const double *)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
+#if ARCH_X86
+             if(c->format == AV_SAMPLE_FMT_S16P && (mm_flags&AV_CPU_FLAG_SSSE3)) ret= swri_resample_int16_ssse3(c, (int16_t*)dst->ch[i], (const int16_t*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
+        else if(c->format == AV_SAMPLE_FMT_S16P && (mm_flags&AV_CPU_FLAG_MMX2 )) ret= swri_resample_int16_mmx2 (c, (int16_t*)dst->ch[i], (const int16_t*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
+        else
+#endif
+             if(c->format == AV_SAMPLE_FMT_S16P) ret= swri_resample_int16(c, (int16_t*)dst->ch[i], (const int16_t*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
+        else if(c->format == AV_SAMPLE_FMT_S32P) ret= swri_resample_int32(c, (int32_t*)dst->ch[i], (const int32_t*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
+        else if(c->format == AV_SAMPLE_FMT_FLTP) ret= swri_resample_float(c, (float  *)dst->ch[i], (const float  *)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
+        else if(c->format == AV_SAMPLE_FMT_DBLP) ret= swri_resample_double(c,(double *)dst->ch[i], (const double *)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
     }
 
     return ret;
