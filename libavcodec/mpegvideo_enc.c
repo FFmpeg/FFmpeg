@@ -3246,6 +3246,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
         for(i=0; i<s->mb_stride*s->mb_height; i++)
             s->mb_type[i]= CANDIDATE_MB_TYPE_INTRA;
 //printf("Scene change detected, encoding as I Frame %d %d\n", s->current_picture.mb_var_sum, s->current_picture.mc_mb_var_sum);
+        if(s->msmpeg4_version >= 3) s->no_rounding=1;
     }
 
     if(!s->umvplus){
