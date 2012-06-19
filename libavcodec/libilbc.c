@@ -50,7 +50,10 @@ static const AVOption ilbc_dec_options[] = {
 };
 
 static const AVClass ilbc_dec_class = {
-    "libilbc", av_default_item_name, ilbc_dec_options, LIBAVUTIL_VERSION_INT
+    .class_name = "libilbc",
+    .item_name  = av_default_item_name,
+    .option     = ilbc_dec_options,
+    .version    = LIBAVUTIL_VERSION_INT.
 };
 
 static av_cold int ilbc_decode_init(AVCodecContext *avctx)
@@ -127,7 +130,10 @@ static const AVOption ilbc_enc_options[] = {
 };
 
 static const AVClass ilbc_enc_class = {
-    "libilbc", av_default_item_name, ilbc_enc_options, LIBAVUTIL_VERSION_INT
+    .class_name = "libilbc",
+    .item_name  = av_default_item_name,
+    .option     = ilbc_enc_options,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 static av_cold int ilbc_encode_init(AVCodecContext *avctx)
