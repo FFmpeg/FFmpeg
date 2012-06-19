@@ -37,6 +37,7 @@ typedef struct ResampleContext {
     const AVClass *av_class;
     uint8_t *filter_bank;
     int filter_length;
+    int filter_alloc;
     int ideal_dst_incr;
     int dst_incr;
     int index;
@@ -89,7 +90,7 @@ static double bessel(double x){
  * @param type 0->cubic, 1->blackman nuttall windowed sinc, 2..16->kaiser windowed sinc beta=2..16
  * @return 0 on success, negative on error
  */
-static int build_filter(ResampleContext *c, void *filter, double factor, int tap_count, int phase_count, int scale, int type){
+static int build_filter(ResampleContext *c, void *filter, double factor, int tap_count, int alloc, int phase_count, int scale, int type){
     int ph, i;
     double x, y, w;
     double *tab = av_malloc(tap_count * sizeof(*tab));
@@ -133,19 +134,19 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
         switch(c->format){
         case AV_SAMPLE_FMT_S16P:
             for(i=0;i<tap_count;i++)
-                ((int16_t*)filter)[ph * tap_count + i] = av_clip(lrintf(tab[i] * scale / norm), INT16_MIN, INT16_MAX);
+                ((int16_t*)filter)[ph * alloc + i] = av_clip(lrintf(tab[i] * scale / norm), INT16_MIN, INT16_MAX);
             break;
         case AV_SAMPLE_FMT_S32P:
             for(i=0;i<tap_count;i++)
-                ((int32_t*)filter)[ph * tap_count + i] = av_clip(lrintf(tab[i] * scale / norm), INT32_MIN, INT32_MAX);
+                ((int32_t*)filter)[ph * alloc + i] = av_clip(lrintf(tab[i] * scale / norm), INT32_MIN, INT32_MAX);
             break;
         case AV_SAMPLE_FMT_FLTP:
             for(i=0;i<tap_count;i++)
-                ((float*)filter)[ph * tap_count + i] = tab[i] * scale / norm;
+                ((float*)filter)[ph * alloc + i] = tab[i] * scale / norm;
             break;
         case AV_SAMPLE_FMT_DBLP:
             for(i=0;i<tap_count;i++)
-                ((double*)filter)[ph * tap_count + i] = tab[i] * scale / norm;
+                ((double*)filter)[ph * alloc + i] = tab[i] * scale / norm;
             break;
         }
     }
@@ -225,13 +226,14 @@ ResampleContext *swri_resample_init(ResampleContext *c, int out_rate, int in_rat
         c->linear        = linear;
         c->factor        = factor;
         c->filter_length = FFMAX((int)ceil(filter_size/factor), 1);
-        c->filter_bank   = av_mallocz(c->filter_length*(phase_count+1)*c->felem_size);
+        c->filter_alloc  = FFALIGN(c->filter_length, 8);
+        c->filter_bank   = av_mallocz(c->filter_alloc*(phase_count+1)*c->felem_size);
         if (!c->filter_bank)
             goto error;
-        if (build_filter(c, (void*)c->filter_bank, factor, c->filter_length, phase_count, 1<<c->filter_shift, WINDOW_TYPE))
+        if (build_filter(c, (void*)c->filter_bank, factor, c->filter_length, c->filter_alloc, phase_count, 1<<c->filter_shift, WINDOW_TYPE))
             goto error;
-        memcpy(c->filter_bank + (c->filter_length*phase_count+1)*c->felem_size, c->filter_bank, (c->filter_length-1)*c->felem_size);
-        memcpy(c->filter_bank + (c->filter_length*phase_count  )*c->felem_size, c->filter_bank + (c->filter_length - 1)*c->felem_size, c->felem_size);
+        memcpy(c->filter_bank + (c->filter_alloc*phase_count+1)*c->felem_size, c->filter_bank, (c->filter_alloc-1)*c->felem_size);
+        memcpy(c->filter_bank + (c->filter_alloc*phase_count  )*c->felem_size, c->filter_bank + (c->filter_alloc - 1)*c->felem_size, c->felem_size);
     }
 
     c->compensation_distance= 0;
