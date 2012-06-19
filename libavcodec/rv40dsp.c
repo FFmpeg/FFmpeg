@@ -27,6 +27,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "rv34dsp.h"
+#include "libavutil/avassert.h"
 
 #define RV40_LOWPASS(OPNAME, OP) \
 static av_unused void OPNAME ## rv40_qpel8_h_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride,\
@@ -205,7 +206,7 @@ static void OPNAME ## rv40_chroma_mc4_c(uint8_t *dst/*align 8*/, uint8_t *src/*a
     int i;\
     int bias = rv40_bias[y>>1][x>>1];\
     \
-    assert(x<8 && y<8 && x>=0 && y>=0);\
+    av_assert2(x<8 && y<8 && x>=0 && y>=0);\
 \
     if(D){\
         for(i = 0; i < h; i++){\
@@ -238,7 +239,7 @@ static void OPNAME ## rv40_chroma_mc8_c(uint8_t *dst/*align 8*/, uint8_t *src/*a
     int i;\
     int bias = rv40_bias[y>>1][x>>1];\
     \
-    assert(x<8 && y<8 && x>=0 && y>=0);\
+    av_assert2(x<8 && y<8 && x>=0 && y>=0);\
 \
     if(D){\
         for(i = 0; i < h; i++){\
