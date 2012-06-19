@@ -992,15 +992,15 @@ First ffmpeg searches for a file named @var{arg}.ffpreset in the
 directories @file{$FFMPEG_DATADIR} (if set), and @file{$HOME/.ffmpeg}, and in
 the datadir defined at configuration time (usually @file{PREFIX/share/ffmpeg})
 or in a @file{ffpresets} folder along the executable on win32,
-in that order. For example, if the argument is @code{libx264-max}, it will
-search for the file @file{libx264-max.ffpreset}.
+in that order. For example, if the argument is @code{libvpx-1080p}, it will
+search for the file @file{libvpx-1080p.ffpreset}.
 
 If no such file is found, then ffmpeg will search for a file named
 @var{codec_name}-@var{arg}.ffpreset in the above-mentioned
 directories, where @var{codec_name} is the name of the codec to which
 the preset file options will be applied. For example, if you select
-the video codec with @code{-vcodec libx264} and use @code{-vpre max},
-then it will search for the file @file{libx264-max.ffpreset}.
+the video codec with @code{-vcodec libvpx} and use @code{-vpre 1080p},
+then it will search for the file @file{libvpx-1080p.ffpreset}.
 @c man end OPTIONS
 
 @chapter Tips
