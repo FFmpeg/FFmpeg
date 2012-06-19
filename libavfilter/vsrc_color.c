@@ -80,8 +80,8 @@ static av_cold int color_init(AVFilterContext *ctx, const char *args, void *opaq
     color->class = &color_class;
 
     if (args) {
-        colon = strrchr(args, ':');
-        equal = strrchr(args, '=');
+        colon = strchr(args, ':');
+        equal = strchr(args, '=');
     }
 
     if (!args || (equal && (!colon || equal < colon))) {
