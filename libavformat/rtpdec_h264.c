@@ -39,7 +39,6 @@
 #include "avformat.h"
 #include "mpegts.h"
 
-#include <unistd.h>
 #include "network.h"
 #include <assert.h>
 

@@ -31,7 +31,6 @@
 #include "rtpdec.h"
 #include "url.h"
 
-#include <unistd.h>
 #include <stdarg.h>
 #include "internal.h"
 #include "network.h"

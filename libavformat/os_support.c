@@ -57,7 +57,6 @@ int ff_win32_open(const char *filename_utf8, int oflag, int pmode)
 
 #if CONFIG_NETWORK
 #include <fcntl.h>
-#include <unistd.h>
 #if !HAVE_POLL_H
 #include <sys/time.h>
 #if HAVE_WINSOCK2_H
