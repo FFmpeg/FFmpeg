@@ -4261,42 +4261,19 @@ int avpicture_alloc(AVPicture *picture, enum PixelFormat pix_fmt, int width, int
 void avpicture_free(AVPicture *picture);
 
 /**
- * Fill in the AVPicture fields.
- * The fields of the given AVPicture are filled in by using the 'ptr' address
- * which points to the image data buffer. Depending on the specified picture
- * format, one or multiple image data pointers and line sizes will be set.
- * If a planar format is specified, several pointers will be set pointing to
- * the different picture planes and the line sizes of the different planes
- * will be stored in the lines_sizes array.
- * Call with ptr == NULL to get the required size for the ptr buffer.
+ * Fill in the AVPicture fields, always assume a linesize alignment of
+ * 1.
  *
- * To allocate the buffer and fill in the AVPicture fields in one call,
- * use avpicture_alloc().
- *
- * @param picture AVPicture whose fields are to be filled in
- * @param ptr Buffer which will contain or contains the actual image data
- * @param pix_fmt The format in which the picture data is stored.
- * @param width the width of the image in pixels
- * @param height the height of the image in pixels
- * @return size of the image data in bytes
+ * @see av_image_fill_arrays()
  */
 int avpicture_fill(AVPicture *picture, uint8_t *ptr,
                    enum PixelFormat pix_fmt, int width, int height);
 
 /**
- * Copy pixel data from an AVPicture into a buffer.
- * The data is stored compactly, without any gaps for alignment or padding
- * which may be applied by avpicture_fill().
+ * Copy pixel data from an AVPicture into a buffer, always assume a
+ * linesize alignment of 1.
  *
- * @see avpicture_get_size()
- *
- * @param[in] src AVPicture containing image data
- * @param[in] pix_fmt The format in which the picture data is stored.
- * @param[in] width the width of the image in pixels.
- * @param[in] height the height of the image in pixels.
- * @param[out] dest A buffer into which picture data will be copied.
- * @param[in] dest_size The size of 'dest'.
- * @return The number of bytes written to dest, or a negative value (error code) on error.
+ * @see av_image_copy_to_buffer()
  */
 int avpicture_layout(const AVPicture* src, enum PixelFormat pix_fmt, int width, int height,
                      unsigned char *dest, int dest_size);
@@ -4304,14 +4281,9 @@ int avpicture_layout(const AVPicture* src, enum PixelFormat pix_fmt, int width, 
 /**
  * Calculate the size in bytes that a picture of the given width and height
  * would occupy if stored in the given picture format.
- * Note that this returns the size of a compact representation as generated
- * by avpicture_layout(), which can be smaller than the size required for e.g.
- * avpicture_fill().
+ * Always assume a linesize alignment of 1.
  *
- * @param pix_fmt the given picture format
- * @param width the width of the image
- * @param height the height of the image
- * @return Image data size in bytes or -1 on error (e.g. too large dimensions).
+ * @see av_image_get_buffer_size().
  */
 int avpicture_get_size(enum PixelFormat pix_fmt, int width, int height);
 

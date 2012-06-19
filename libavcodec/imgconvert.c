@@ -296,62 +296,21 @@ int ff_is_hwaccel_pix_fmt(enum PixelFormat pix_fmt)
 int avpicture_fill(AVPicture *picture, uint8_t *ptr,
                    enum PixelFormat pix_fmt, int width, int height)
 {
-    int ret;
-
-    if ((ret = av_image_check_size(width, height, 0, NULL)) < 0)
-        return ret;
-
-    if ((ret = av_image_fill_linesizes(picture->linesize, pix_fmt, width)) < 0)
-        return ret;
-
-    return av_image_fill_pointers(picture->data, pix_fmt, height, ptr, picture->linesize);
+    return av_image_fill_arrays(picture->data, picture->linesize,
+                                ptr, pix_fmt, width, height, 1);
 }
 
 int avpicture_layout(const AVPicture* src, enum PixelFormat pix_fmt, int width, int height,
                      unsigned char *dest, int dest_size)
 {
-    int i, j, nb_planes = 0, linesizes[4];
-    const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
-    int size = avpicture_get_size(pix_fmt, width, height);
-
-    if (size > dest_size || size < 0)
-        return AVERROR(EINVAL);
-
-    for (i = 0; i < desc->nb_components; i++)
-        nb_planes = FFMAX(desc->comp[i].plane, nb_planes);
-    nb_planes++;
-
-    av_image_fill_linesizes(linesizes, pix_fmt, width);
-    for (i = 0; i < nb_planes; i++) {
-        int h, shift = (i == 1 || i == 2) ? desc->log2_chroma_h : 0;
-        const unsigned char *s = src->data[i];
-        h = (height + (1 << shift) - 1) >> shift;
-
-        for (j = 0; j < h; j++) {
-            memcpy(dest, s, linesizes[i]);
-            dest += linesizes[i];
-            s += src->linesize[i];
-        }
-    }
-
-    if (desc->flags & PIX_FMT_PAL) {
-        uint32_t *d32 = (unsigned char *)(((size_t)dest + 3) & ~3);
-        for (i = 0; i<256; i++)
-            AV_WL32(d32 + i, AV_RN32(src->data[1] + 4*i));
-    }
-
-    return size;
+    return av_image_copy_to_buffer(dest, dest_size,
+                                   src->data, src->linesize,
+                                   pix_fmt, width, height, 1);
 }
 
 int avpicture_get_size(enum PixelFormat pix_fmt, int width, int height)
 {
-    AVPicture dummy_pict;
-    if (av_image_check_size(width, height, 0, NULL) < 0)
-        return AVERROR(EINVAL);
-    if (av_pix_fmt_descriptors[pix_fmt].flags & PIX_FMT_PSEUDOPAL)
-        // do not include palette for these pseudo-paletted formats
-        return width * height;
-    return avpicture_fill(&dummy_pict, NULL, pix_fmt, width, height);
+    return av_image_get_buffer_size(pix_fmt, width, height, 1);
 }
 
 static int get_pix_fmt_depth(int *min, int *max, enum PixelFormat pix_fmt)
