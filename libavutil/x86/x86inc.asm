@@ -1093,16 +1093,22 @@ AVX_INSTR pfmul, 1, 0, 1
 %undef j
 
 %macro FMA_INSTR 3
-    %macro %1 4-7 %1, %2, %3
-        %if cpuflag(xop)
-            v%5 %1, %2, %3, %4
+    %macro %1 5-8 %1, %2, %3
+        %if cpuflag(xop) || cpuflag(fma4)
+            v%6 %1, %2, %3, %4
         %else
-            %6 %1, %2, %3
-            %7 %1, %4
+            %ifidn %1, %4
+                %7 %5, %2, %3
+                %8 %1, %4, %5
+            %else
+                %7 %1, %2, %3
+                %8 %1, %4
+            %endif
         %endif
     %endmacro
 %endmacro
 
+FMA_INSTR  fmaddps,   mulps, addps
 FMA_INSTR  pmacsdd,  pmulld, paddd
 FMA_INSTR  pmacsww,  pmullw, paddw
 FMA_INSTR pmadcswd, pmaddwd, paddd
