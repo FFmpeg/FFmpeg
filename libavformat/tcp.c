@@ -139,7 +139,8 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         }
         /* test error */
         optlen = sizeof(ret);
-        getsockopt (fd, SOL_SOCKET, SO_ERROR, &ret, &optlen);
+        if (getsockopt (fd, SOL_SOCKET, SO_ERROR, &ret, &optlen))
+            ret = AVUNERROR(ff_neterrno());
         if (ret != 0) {
             char errbuf[100];
             ret = AVERROR(ret);
