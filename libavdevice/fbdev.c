@@ -32,7 +32,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
-#include <sys/time.h>
 #include <sys/mman.h>
 #include <time.h>
 #include <linux/fb.h>

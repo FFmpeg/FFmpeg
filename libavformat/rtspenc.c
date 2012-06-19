@@ -21,7 +21,6 @@
 
 #include "avformat.h"
 
-#include <sys/time.h>
 #if HAVE_POLL_H
 #include <poll.h>
 #endif

@@ -30,7 +30,6 @@
 #if HAVE_POLL_H
 #include <poll.h>
 #endif
-#include <sys/time.h>
 
 struct SAPState {
     URLContext *ann_fd;

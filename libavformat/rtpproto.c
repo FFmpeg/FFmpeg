@@ -39,7 +39,6 @@
 #if HAVE_POLL_H
 #include <sys/poll.h>
 #endif
-#include <sys/time.h>
 
 #define RTP_TX_BUF_SIZE  (64 * 1024)
 #define RTP_RX_BUF_SIZE  (128 * 1024)

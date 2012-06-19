@@ -35,7 +35,6 @@
 #include "network.h"
 #include "os_support.h"
 #include "url.h"
-#include <sys/time.h>
 
 #ifndef IPV6_ADD_MEMBERSHIP
 #define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
