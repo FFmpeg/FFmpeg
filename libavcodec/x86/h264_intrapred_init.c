@@ -188,7 +188,8 @@ void ff_h264_pred_init_x86(H264PredContext *h, int codec_id, const int bit_depth
                 if (chroma_format_idc == 1)
                     h->pred8x8  [PLANE_PRED8x8] = ff_pred8x8_plane_mmx;
                 if (codec_id == CODEC_ID_SVQ3) {
-                    h->pred16x16[PLANE_PRED8x8] = ff_pred16x16_plane_svq3_mmx;
+                    if (mm_flags & AV_CPU_FLAG_CMOV)
+                        h->pred16x16[PLANE_PRED8x8] = ff_pred16x16_plane_svq3_mmx;
                 } else if (codec_id == CODEC_ID_RV40) {
                     h->pred16x16[PLANE_PRED8x8] = ff_pred16x16_plane_rv40_mmx;
                 } else {

@@ -2829,7 +2829,8 @@ static void dsputil_init_3dnow(DSPContext *c, AVCodecContext *avctx,
     c->vorbis_inverse_coupling = vorbis_inverse_coupling_3dnow;
 
 #if HAVE_7REGS
-    c->add_hfyu_median_prediction = add_hfyu_median_prediction_cmov;
+    if (mm_flags & AV_CPU_FLAG_CMOV)
+        c->add_hfyu_median_prediction = add_hfyu_median_prediction_cmov;
 #endif
 }
 
