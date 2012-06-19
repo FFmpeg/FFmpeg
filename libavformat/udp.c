@@ -218,9 +218,10 @@ static int udp_socket_create(UDPContext *s, struct sockaddr_storage *addr,
 static int udp_port(struct sockaddr_storage *addr, int addr_len)
 {
     char sbuf[sizeof(int)*3+1];
+    int error;
 
-    if (getnameinfo((struct sockaddr *)addr, addr_len, NULL, 0,  sbuf, sizeof(sbuf), NI_NUMERICSERV) != 0) {
-        av_log(NULL, AV_LOG_ERROR, "getnameinfo: %s\n", strerror(errno));
+    if ((error = getnameinfo((struct sockaddr *)addr, addr_len, NULL, 0,  sbuf, sizeof(sbuf), NI_NUMERICSERV)) != 0) {
+        av_log(NULL, AV_LOG_ERROR, "getnameinfo: %s\n", gai_strerror(error));
         return -1;
     }
 
