@@ -127,7 +127,7 @@ static const enum PixelFormat dirac_pix_fmt[2][3] = {
 static int parse_source_parameters(AVCodecContext *avctx, GetBitContext *gb,
                                    dirac_source_params *source)
 {
-    AVRational frame_rate = (AVRational){0,0};
+    AVRational frame_rate = {0,0};
     unsigned luma_depth = 8, luma_offset = 16;
     int idx;
 

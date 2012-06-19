@@ -514,14 +514,6 @@ static double predict_size(Predictor *p, double q, double var)
      return p->coeff*var / (q*p->count);
 }
 
-/*
-static double predict_qp(Predictor *p, double size, double var)
-{
-//printf("coeff:%f, count:%f, var:%f, size:%f//\n", p->coeff, p->count, var, size);
-     return p->coeff*var / (size*p->count);
-}
-*/
-
 static void update_predictor(Predictor *p, double q, double var, double size)
 {
     double new_coeff= size*q / (var + 1);
@@ -561,10 +553,6 @@ static void adaptive_quantization(MpegEncContext *s, double q){
         int mb_y = mb_xy / s->mb_stride;
         int mb_distance;
         float mb_factor = 0.0;
-#if 0
-        if(spat_cplx < q/3) spat_cplx= q/3; //FIXME finetune
-        if(temp_cplx < q/3) temp_cplx= q/3; //FIXME finetune
-#endif
         if(spat_cplx < 4) spat_cplx= 4; //FIXME finetune
         if(temp_cplx < 4) temp_cplx= 4; //FIXME finetune
 

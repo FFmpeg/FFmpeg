@@ -21,6 +21,7 @@
 ;******************************************************************************
 
 %include "x86inc.asm"
+%include "x86util.asm"
 
 SECTION .text
 
@@ -54,4 +55,50 @@ VECTOR_FMUL
 %if HAVE_AVX
 INIT_YMM avx
 VECTOR_FMUL
+%endif
+
+;------------------------------------------------------------------------------
+; void ff_vector_fmac_scalar(float *dst, const float *src, float mul, int len)
+;------------------------------------------------------------------------------
+
+%macro VECTOR_FMAC_SCALAR 0
+%if UNIX64
+cglobal vector_fmac_scalar, 3,3,3, dst, src, len
+%else
+cglobal vector_fmac_scalar, 4,4,3, dst, src, mul, len
+%endif
+%if WIN64
+    SWAP 0, 2
+%endif
+%if ARCH_X86_32
+    VBROADCASTSS m0, mulm
+%else
+    shufps     xmm0, xmm0, 0
+%if cpuflag(avx)
+    vinsertf128  m0, m0, xmm0, 1
+%endif
+%endif
+    lea    lenq, [lend*4-2*mmsize]
+.loop
+    mulps    m1, m0, [srcq+lenq       ]
+    mulps    m2, m0, [srcq+lenq+mmsize]
+    addps    m1, m1, [dstq+lenq       ]
+    addps    m2, m2, [dstq+lenq+mmsize]
+    mova  [dstq+lenq       ], m1
+    mova  [dstq+lenq+mmsize], m2
+    sub    lenq, 2*mmsize
+    jge .loop
+%if mmsize == 32
+    vzeroupper
+    RET
+%else
+    REP_RET
+%endif
+%endmacro
+
+INIT_XMM sse
+VECTOR_FMAC_SCALAR
+%if HAVE_AVX
+INIT_YMM avx
+VECTOR_FMAC_SCALAR
 %endif

@@ -74,6 +74,7 @@ static int is_supported(enum CodecID id)
     case CODEC_ID_VP8:
     case CODEC_ID_ADPCM_G722:
     case CODEC_ID_ADPCM_G726:
+    case CODEC_ID_ILBC:
         return 1;
     default:
         return 0;
@@ -187,6 +188,16 @@ static int rtp_write_header(AVFormatContext *s1)
          * 8000, even if the sample rate is 16000. See RFC 3551. */
         avpriv_set_pts_info(st, 32, 1, 8000);
         break;
+    case CODEC_ID_ILBC:
+        if (st->codec->block_align != 38 && st->codec->block_align != 50) {
+            av_log(s1, AV_LOG_ERROR, "Incorrect iLBC block size specified\n");
+            goto fail;
+        }
+        if (!s->max_frames_per_packet)
+            s->max_frames_per_packet = 1;
+        s->max_frames_per_packet = FFMIN(s->max_frames_per_packet,
+                                         s->max_payload_size / st->codec->block_align);
+        goto defaultcase;
     case CODEC_ID_AMR_NB:
     case CODEC_ID_AMR_WB:
         if (!s->max_frames_per_packet)
@@ -395,6 +406,36 @@ static void rtp_send_mpegts_raw(AVFormatContext *s1,
     }
 }
 
+static int rtp_send_ilbc(AVFormatContext *s1, const uint8_t *buf, int size)
+{
+    RTPMuxContext *s = s1->priv_data;
+    AVStream *st = s1->streams[0];
+    int frame_duration = av_get_audio_frame_duration(st->codec, 0);
+    int frame_size = st->codec->block_align;
+    int frames = size / frame_size;
+
+    while (frames > 0) {
+        int n = FFMIN(s->max_frames_per_packet - s->num_frames, frames);
+
+        if (!s->num_frames) {
+            s->buf_ptr = s->buf;
+            s->timestamp = s->cur_timestamp;
+        }
+        memcpy(s->buf_ptr, buf, n * frame_size);
+        frames           -= n;
+        s->num_frames    += n;
+        s->buf_ptr       += n * frame_size;
+        buf              += n * frame_size;
+        s->cur_timestamp += n * frame_duration;
+
+        if (s->num_frames == s->max_frames_per_packet) {
+            ff_rtp_send_data(s1, s->buf, s->buf_ptr - s->buf, 1);
+            s->num_frames = 0;
+        }
+    }
+    return 0;
+}
+
 static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
 {
     RTPMuxContext *s = s1->priv_data;
@@ -482,6 +523,9 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
         break;
     case CODEC_ID_VP8:
         ff_rtp_send_vp8(s1, pkt->data, size);
+        break;
+    case CODEC_ID_ILBC:
+        rtp_send_ilbc(s1, pkt->data, size);
         break;
     default:
         /* better than nothing : send the codec raw data */

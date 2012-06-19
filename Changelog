@@ -10,6 +10,7 @@ version next:
 - atempo filter
 - ffprobe -show_data option
 - RTMPT protocol support
+- iLBC encoding/decoding via libilbc
 
 
 version 0.11:

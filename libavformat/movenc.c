@@ -3371,7 +3371,8 @@ static int mov_write_header(AVFormatContext *s)
                 av_log(s, AV_LOG_WARNING, "track %d: codec frame size is not set\n", i);
                 track->audio_vbr = 1;
             }else if(st->codec->codec_id == CODEC_ID_ADPCM_MS ||
-                     st->codec->codec_id == CODEC_ID_ADPCM_IMA_WAV){
+                     st->codec->codec_id == CODEC_ID_ADPCM_IMA_WAV ||
+                     st->codec->codec_id == CODEC_ID_ILBC){
                 if (!st->codec->block_align) {
                     av_log(s, AV_LOG_ERROR, "track %d: codec block align is not set for adpcm\n", i);
                     goto error;

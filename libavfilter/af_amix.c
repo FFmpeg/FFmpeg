@@ -32,6 +32,7 @@
 #include "libavutil/audio_fifo.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/float_dsp.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
@@ -152,6 +153,7 @@ static int frame_list_add_frame(FrameList *frame_list, int nb_samples, int64_t p
 
 typedef struct MixContext {
     const AVClass *class;       /**< class for AVOptions */
+    AVFloatDSPContext fdsp;
 
     int nb_inputs;              /**< number of inputs */
     int active_inputs;          /**< number of input currently active */
@@ -160,6 +162,7 @@ typedef struct MixContext {
 
     int nb_channels;            /**< number of channels */
     int sample_rate;            /**< sample rate */
+    int planar;
     AVAudioFifo **fifos;        /**< audio fifo for each input */
     uint8_t *input_state;       /**< current state of each input */
     float *input_scale;         /**< mixing scale factor for each input */
@@ -224,6 +227,7 @@ static int config_output(AVFilterLink *outlink)
     int i;
     char buf[64];
 
+    s->planar          = av_sample_fmt_is_planar(outlink->format);
     s->sample_rate     = outlink->sample_rate;
     outlink->time_base = (AVRational){ 1, outlink->sample_rate };
     s->next_pts        = AV_NOPTS_VALUE;
@@ -264,14 +268,6 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-/* TODO: move optimized version from DSPContext to libavutil */
-static void vector_fmac_scalar(float *dst, const float *src, float mul, int len)
-{
-    int i;
-    for (i = 0; i < len; i++)
-        dst[i] += src[i] * mul;
-}
-
 /**
  * Read samples from the input FIFOs, mix, and write to the output link.
  */
@@ -294,11 +290,20 @@ static int output_frame(AVFilterLink *outlink, int nb_samples)
 
     for (i = 0; i < s->nb_inputs; i++) {
         if (s->input_state[i] == INPUT_ON) {
+            int planes, plane_size, p;
+
             av_audio_fifo_read(s->fifos[i], (void **)in_buf->extended_data,
                                nb_samples);
-            vector_fmac_scalar((float *)out_buf->extended_data[0],
-                               (float *) in_buf->extended_data[0],
-                               s->input_scale[i], nb_samples * s->nb_channels);
+
+            planes     = s->planar ? s->nb_channels : 1;
+            plane_size = nb_samples * (s->planar ? 1 : s->nb_channels);
+            plane_size = FFALIGN(plane_size, 16);
+
+            for (p = 0; p < planes; p++) {
+                s->fdsp.vector_fmac_scalar((float *)out_buf->extended_data[p],
+                                           (float *) in_buf->extended_data[p],
+                                           s->input_scale[i], plane_size);
+            }
         }
     }
     avfilter_unref_buffer(in_buf);
@@ -501,6 +506,8 @@ static int init(AVFilterContext *ctx, const char *args, void *opaque)
         ff_insert_inpad(ctx, i, &pad);
     }
 
+    avpriv_float_dsp_init(&s->fdsp, 0);
+
     return 0;
 }
 
@@ -527,6 +534,7 @@ static int query_formats(AVFilterContext *ctx)
 {
     AVFilterFormats *formats = NULL;
     ff_add_format(&formats, AV_SAMPLE_FMT_FLT);
+    ff_add_format(&formats, AV_SAMPLE_FMT_FLTP);
     ff_set_common_formats(ctx, formats);
     ff_set_common_channel_layouts(ctx, ff_all_channel_layouts());
     ff_set_common_samplerates(ctx, ff_all_samplerates());

@@ -123,6 +123,8 @@ OBJS-$(CONFIG_ICO_DEMUXER)               += icodec.o
 OBJS-$(CONFIG_IDCIN_DEMUXER)             += idcin.o
 OBJS-$(CONFIG_IDF_DEMUXER)               += bintext.o
 OBJS-$(CONFIG_IFF_DEMUXER)               += iff.o
+OBJS-$(CONFIG_ILBC_DEMUXER)              += ilbc.o
+OBJS-$(CONFIG_ILBC_MUXER)                += ilbc.o
 OBJS-$(CONFIG_IMAGE2_DEMUXER)            += img2dec.o img2.o
 OBJS-$(CONFIG_IMAGE2_MUXER)              += img2enc.o img2.o
 OBJS-$(CONFIG_IMAGE2PIPE_DEMUXER)        += img2dec.o img2.o
@@ -281,6 +283,7 @@ OBJS-$(CONFIG_RTPDEC)                    += rdt.o         \
                                             rtpdec_h263.o \
                                             rtpdec_h263_rfc2190.o \
                                             rtpdec_h264.o \
+                                            rtpdec_ilbc.o \
                                             rtpdec_latm.o \
                                             rtpdec_mpeg4.o \
                                             rtpdec_qcelp.o \

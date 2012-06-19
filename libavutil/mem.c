@@ -94,6 +94,8 @@ void *av_malloc(size_t size)
     if (size) //OS X on SDK 10.6 has a broken posix_memalign implementation
     if (posix_memalign(&ptr,ALIGN,size))
         ptr = NULL;
+#elif HAVE_ALIGNED_MALLOC
+    ptr = _aligned_malloc(size, ALIGN);
 #elif HAVE_MEMALIGN
     ptr = memalign(ALIGN,size);
     /* Why 64?
@@ -145,6 +147,8 @@ void *av_realloc(void *ptr, size_t size)
     ptr= realloc((char*)ptr - diff, size + diff);
     if(ptr) ptr = (char*)ptr + diff;
     return ptr;
+#elif HAVE_ALIGNED_MALLOC
+    return _aligned_realloc(ptr, size + !size, ALIGN);
 #else
     return realloc(ptr, size + !size);
 #endif
@@ -170,6 +174,8 @@ void av_free(void *ptr)
 #if CONFIG_MEMALIGN_HACK
     if (ptr)
         free((char*)ptr - ((char*)ptr)[-1]);
+#elif HAVE_ALIGNED_MALLOC
+    _aligned_free(ptr);
 #else
     free(ptr);
 #endif

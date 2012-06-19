@@ -76,6 +76,7 @@ typedef struct RTMPContext {
     uint8_t*      flv_data;                   ///< buffer with data for demuxer
     int           flv_size;                   ///< current buffer size
     int           flv_off;                    ///< number of bytes read from current buffer
+    int           flv_nb_packets;             ///< number of flv packets published
     RTMPPacket    out_pkt;                    ///< rtmp packet, created from flv a/v or metadata (for output)
     uint32_t      client_report_size;         ///< number of bytes after which client should report to server
     uint32_t      bytes_read;                 ///< number of bytes read from server
@@ -90,6 +91,7 @@ typedef struct RTMPContext {
     char*         swfurl;                     ///< url of the swf player
     int           server_bw;                  ///< server bandwidth
     int           client_buffer_time;         ///< client buffer time in ms
+    int           flush_interval;             ///< number of packets flushed in the same request (RTMPT only)
 } RTMPContext;
 
 #define PLAYER_KEY_OPEN_PART_LEN 30   ///< length of partial key used for first client digest signing
@@ -1361,8 +1363,13 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
             rt->flv_size = 0;
             rt->flv_off = 0;
             rt->flv_header_bytes = 0;
+            rt->flv_nb_packets++;
         }
     } while (buf_temp - buf < size);
+
+    if (rt->flv_nb_packets < rt->flush_interval)
+        return size;
+    rt->flv_nb_packets = 0;
 
     /* set stream into nonblocking mode */
     rt->stream->flags |= AVIO_FLAG_NONBLOCK;
@@ -1404,6 +1411,7 @@ static const AVOption rtmp_options[] = {
     {"rtmp_buffer", "Set buffer time in milliseconds. The default is 3000.", OFFSET(client_buffer_time), AV_OPT_TYPE_INT, {3000}, 0, INT_MAX, DEC|ENC},
     {"rtmp_conn", "Append arbitrary AMF data to the Connect message", OFFSET(conn), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     {"rtmp_flashver", "Version of the Flash plugin used to run the SWF player.", OFFSET(flashver), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+    {"rtmp_flush_interval", "Number of packets flushed in the same request (RTMPT only).", OFFSET(flush_interval), AV_OPT_TYPE_INT, {10}, 0, INT_MAX, ENC},
     {"rtmp_live", "Specify that the media is a live stream.", OFFSET(live), AV_OPT_TYPE_INT, {-2}, INT_MIN, INT_MAX, DEC, "rtmp_live"},
     {"any", "both", 0, AV_OPT_TYPE_CONST, {-2}, 0, 0, DEC, "rtmp_live"},
     {"live", "live stream", 0, AV_OPT_TYPE_CONST, {-1}, 0, 0, DEC, "rtmp_live"},
