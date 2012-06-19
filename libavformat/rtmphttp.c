@@ -24,6 +24,8 @@
  * RTMP HTTP protocol
  */
 
+#include <unistd.h>
+
 #include "libavutil/avstring.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/opt.h"
@@ -44,6 +46,7 @@ typedef struct RTMP_HTTPContext {
     int          out_capacity;      ///< current output buffer capacity
     int          initialized;       ///< flag indicating when the http context is initialized
     int          finishing;         ///< flag indicating when the client closes the connection
+    int          nb_bytes_read;     ///< number of bytes read since the last request
 } RTMP_HTTPContext;
 
 static int rtmp_http_send_cmd(URLContext *h, const char *cmd)
@@ -69,6 +72,9 @@ static int rtmp_http_send_cmd(URLContext *h, const char *cmd)
     /* read the first byte which contains the polling interval */
     if ((ret = ffurl_read(rt->stream, &c, 1)) < 0)
         return ret;
+
+    /* re-init the number of bytes read */
+    rt->nb_bytes_read = 0;
 
     return ret;
 }
@@ -117,6 +123,12 @@ static int rtmp_http_read(URLContext *h, uint8_t *buf, int size)
                 if ((ret = rtmp_http_send_cmd(h, "send")) < 0)
                     return ret;
             } else {
+                if (rt->nb_bytes_read == 0) {
+                    /* Wait 50ms before retrying to read a server reply in
+                     * order to reduce the number of idle requets. */
+                    usleep(50000);
+                }
+
                 if ((ret = rtmp_http_write(h, "", 1)) < 0)
                     return ret;
 
@@ -131,6 +143,7 @@ static int rtmp_http_read(URLContext *h, uint8_t *buf, int size)
         } else {
             off  += ret;
             size -= ret;
+            rt->nb_bytes_read += ret;
         }
     } while (off <= 0);
 
