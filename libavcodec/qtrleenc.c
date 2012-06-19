@@ -64,9 +64,10 @@ typedef struct QtrleEncContext {
 static av_cold int qtrle_encode_init(AVCodecContext *avctx)
 {
     QtrleEncContext *s = avctx->priv_data;
+    int ret;
 
     if (av_image_check_size(avctx->width, avctx->height, 0, avctx) < 0) {
-        return -1;
+        return AVERROR(EINVAL);
     }
     s->avctx=avctx;
     s->logical_width=avctx->width;
@@ -96,11 +97,11 @@ static av_cold int qtrle_encode_init(AVCodecContext *avctx)
     s->length_table  = av_mallocz((s->logical_width + 1)*sizeof(int));
     if (!s->skip_table || !s->length_table || !s->rlecode_table) {
         av_log(avctx, AV_LOG_ERROR, "Error allocating memory.\n");
-        return -1;
+        return AVERROR(ENOMEM);
     }
-    if (avpicture_alloc(&s->previous_frame, avctx->pix_fmt, avctx->width, avctx->height) < 0) {
+    if ((ret = avpicture_alloc(&s->previous_frame, avctx->pix_fmt, avctx->width, avctx->height)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error allocating picture\n");
-        return -1;
+        return ret;
     }
 
     s->max_buf_size = s->logical_width*s->avctx->height*s->pixel_size*2 /* image base material */
