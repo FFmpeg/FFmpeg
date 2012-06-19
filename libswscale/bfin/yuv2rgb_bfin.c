@@ -21,16 +21,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <inttypes.h>
-#include <assert.h>
-#include <unistd.h>
+#include <stdint.h>
 
 #include "config.h"
-#include "libswscale/rgb2rgb.h"
-#include "libswscale/swscale.h"
 #include "libswscale/swscale_internal.h"
 
 #if defined(__FDPIC__) && CONFIG_SRAM
