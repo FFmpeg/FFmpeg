@@ -135,7 +135,7 @@ static const uint16_t bark_tab_s44_128[] = {
  *
  * without risking a segfault on malformed files.
  */
-static const struct {
+static const struct twinvq_data {
     float lsp08[504];
     int16_t fcb08l[640];
     int16_t fcb08m[320];
