@@ -28,13 +28,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/time.h>
 #include <unistd.h>
 #include <math.h>
 
 #include "libavutil/cpu.h"
 #include "libavutil/common.h"
 #include "libavutil/lfg.h"
+#include "libavutil/time.h"
 
 #include "simple_idct.h"
 #include "aandcttab.h"
@@ -142,13 +142,6 @@ static const struct algo idct_tab[] = {
 };
 
 #define AANSCALE_BITS 12
-
-static int64_t gettime(void)
-{
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return (int64_t)tv.tv_sec * 1000000 + tv.tv_usec;
-}
 
 #define NB_ITS 20000
 #define NB_ITS_SPEED 50000
@@ -312,7 +305,7 @@ static int dct_error(const struct algo *dct, int test, int is_idct, int speed)
     init_block(block, test, is_idct, &prng);
     permute(block1, block, dct->format);
 
-    ti = gettime();
+    ti = av_gettime();
     it1 = 0;
     do {
         for (it = 0; it < NB_ITS_SPEED; it++) {
@@ -320,7 +313,7 @@ static int dct_error(const struct algo *dct, int test, int is_idct, int speed)
             dct->func(block);
         }
         it1 += NB_ITS_SPEED;
-        ti1 = gettime() - ti;
+        ti1 = av_gettime() - ti;
     } while (ti1 < 1000000);
     emms_c();
 
@@ -453,7 +446,7 @@ static void idct248_error(const char *name,
     if (!speed)
         return;
 
-    ti = gettime();
+    ti = av_gettime();
     it1 = 0;
     do {
         for (it = 0; it < NB_ITS_SPEED; it++) {
@@ -462,7 +455,7 @@ static void idct248_error(const char *name,
             idct248_put(img_dest, 8, block);
         }
         it1 += NB_ITS_SPEED;
-        ti1 = gettime() - ti;
+        ti1 = av_gettime() - ti;
     } while (ti1 < 1000000);
     emms_c();
 
