@@ -181,14 +181,6 @@ static void idct_mmx_init(void)
 DECLARE_ALIGNED(16, static DCTELEM, block)[64];
 DECLARE_ALIGNED(8,  static DCTELEM, block1)[64];
 
-static inline void mmx_emms(void)
-{
-#if HAVE_MMX
-    if (cpu_flags & AV_CPU_FLAG_MMX)
-        __asm__ volatile ("emms\n\t");
-#endif
-}
-
 static void init_block(DCTELEM block[64], int test, int is_idct, AVLFG *prng)
 {
     int i, j;
@@ -263,7 +255,7 @@ static int dct_error(const struct algo *dct, int test, int is_idct, int speed)
         permute(block, block1, dct->format);
 
         dct->func(block);
-        mmx_emms();
+        emms_c();
 
         if (dct->format == SCALE_PERM) {
             for (i = 0; i < 64; i++) {
@@ -330,7 +322,7 @@ static int dct_error(const struct algo *dct, int test, int is_idct, int speed)
         it1 += NB_ITS_SPEED;
         ti1 = gettime() - ti;
     } while (ti1 < 1000000);
-    mmx_emms();
+    emms_c();
 
     printf("%s %s: %0.1f kdct/s\n", is_idct ? "IDCT" : "DCT", dct->name,
            (double) it1 * 1000.0 / (double) ti1);
@@ -472,7 +464,7 @@ static void idct248_error(const char *name,
         it1 += NB_ITS_SPEED;
         ti1 = gettime() - ti;
     } while (ti1 < 1000000);
-    mmx_emms();
+    emms_c();
 
     printf("%s %s: %0.1f kdct/s\n", 1 ? "IDCT248" : "DCT248", name,
            (double) it1 * 1000.0 / (double) ti1);
