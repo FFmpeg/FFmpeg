@@ -39,6 +39,7 @@ HEADERS = adler32.h                                                     \
           rational.h                                                    \
           samplefmt.h                                                   \
           sha.h                                                         \
+          time.h                                                        \
           timecode.h                                                    \
           timestamp.h                                                   \
 
@@ -83,6 +84,7 @@ OBJS = adler32.o                                                        \
        rc4.o                                                            \
        samplefmt.o                                                      \
        sha.o                                                            \
+       time.o                                                           \
        timecode.o                                                       \
        tree.o                                                           \
        utils.o                                                          \

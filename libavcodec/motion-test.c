@@ -32,6 +32,7 @@
 #include "config.h"
 #include "dsputil.h"
 #include "libavutil/lfg.h"
+#include "libavutil/time.h"
 
 #undef printf
 
@@ -56,13 +57,6 @@ static void help(void)
 {
     printf("motion-test [-h]\n"
            "test motion implementations\n");
-}
-
-static int64_t gettime(void)
-{
-    struct timeval tv;
-    gettimeofday(&tv,NULL);
-    return (int64_t)tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
 #define NB_ITS 500
@@ -97,7 +91,7 @@ static void test_motion(const char *name,
     emms_c();
 
     /* speed test */
-    ti = gettime();
+    ti = av_gettime();
     d1 = 0;
     for(it=0;it<NB_ITS;it++) {
         for(y=0;y<HEIGHT-17;y++) {
@@ -109,7 +103,7 @@ static void test_motion(const char *name,
     }
     emms_c();
     dummy = d1; /* avoid optimization */
-    ti = gettime() - ti;
+    ti = av_gettime() - ti;
 
     printf("  %0.0f kop/s\n",
            (double)NB_ITS * (WIDTH - 16) * (HEIGHT - 16) /

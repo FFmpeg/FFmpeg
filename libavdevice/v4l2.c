@@ -46,7 +46,6 @@
 #endif
 #include <linux/videodev2.h>
 #endif
-#include <time.h>
 #include "libavutil/imgutils.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"

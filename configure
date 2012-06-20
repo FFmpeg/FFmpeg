@@ -1206,7 +1206,9 @@ HAVE_LIST="
     GetProcessAffinityMask
     GetProcessMemoryInfo
     GetProcessTimes
+    GetSystemTimeAsFileTime
     getrusage
+    gettimeofday
     glob
     gnu_as
     ibm_asm
@@ -3142,6 +3144,7 @@ check_func  getaddrinfo $network_extralibs
 check_func  gethrtime
 check_func  getrusage
 check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
+check_func  gettimeofday
 check_func  inet_aton $network_extralibs
 check_func  isatty
 check_func  localtime_r
@@ -3163,6 +3166,7 @@ check_func_headers lzo/lzo1x.h lzo1x_999_compress
 check_lib2 "windows.h psapi.h" GetProcessMemoryInfo -lpsapi
 check_func_headers windows.h GetProcessAffinityMask
 check_func_headers windows.h GetProcessTimes
+check_func_headers windows.h GetSystemTimeAsFileTime
 check_func_headers windows.h MapViewOfFile
 check_func_headers windows.h VirtualAlloc
 check_func_headers glob.h glob

@@ -55,7 +55,6 @@
 #include <poll.h>
 #endif
 #include <errno.h>
-#include <sys/time.h>
 #include <time.h>
 #include <sys/wait.h>
 #include <signal.h>

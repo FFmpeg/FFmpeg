@@ -27,6 +27,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/lfg.h"
 #include "libavutil/log.h"
+#include "libavutil/time.h"
 #include "fft.h"
 #if CONFIG_FFT_FLOAT
 #include "dct.h"
@@ -34,7 +35,6 @@
 #endif
 #include <math.h>
 #include <unistd.h>
-#include <sys/time.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -184,13 +184,6 @@ static void dct_ref(FFTSample *output, FFTSample *input, int nbits)
 static FFTSample frandom(AVLFG *prng)
 {
     return (int16_t)av_lfg_get(prng) / 32768.0 * RANGE;
-}
-
-static int64_t gettime(void)
-{
-    struct timeval tv;
-    gettimeofday(&tv,NULL);
-    return (int64_t)tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
 static int check_diff(FFTSample *tab1, FFTSample *tab2, int n, double scale)
@@ -430,7 +423,7 @@ int main(int argc, char **argv)
         /* we measure during about 1 seconds */
         nb_its = 1;
         for(;;) {
-            time_start = gettime();
+            time_start = av_gettime();
             for (it = 0; it < nb_its; it++) {
                 switch (transform) {
                 case TRANSFORM_MDCT:
@@ -456,7 +449,7 @@ int main(int argc, char **argv)
 #endif
                 }
             }
-            duration = gettime() - time_start;
+            duration = av_gettime() - time_start;
             if (duration >= 1000000)
                 break;
             nb_its *= 2;

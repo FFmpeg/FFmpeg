@@ -41,8 +41,6 @@
 #include "riff.h"
 #include "audiointerleave.h"
 #include "url.h"
-#include <sys/time.h>
-#include <time.h>
 #include <stdarg.h>
 #if CONFIG_NETWORK
 #include "network.h"
@@ -3875,12 +3873,12 @@ void av_dump_format(AVFormatContext *ic,
     av_free(printed);
 }
 
-int64_t av_gettime(void)
+#if FF_API_AV_GETTIME && CONFIG_SHARED && HAVE_SYMVER
+FF_SYMVER(int64_t, av_gettime, (void), "LIBAVFORMAT_54")
 {
-    struct timeval tv;
-    gettimeofday(&tv,NULL);
-    return (int64_t)tv.tv_sec * 1000000 + tv.tv_usec;
+    return av_gettime();
 }
+#endif
 
 uint64_t ff_ntp_time(void)
 {

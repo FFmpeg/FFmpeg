@@ -21,7 +21,6 @@
 
 #include "libavutil/avstring.h"
 #include "avformat.h"
-#include <unistd.h>
 #include "internal.h"
 #include "network.h"
 #include "http.h"

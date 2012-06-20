@@ -33,8 +33,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
-#include <sys/time.h>
-#include <sys/select.h>
 
 #include "libavutil/log.h"
 #include "libavutil/opt.h"

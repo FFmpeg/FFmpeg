@@ -26,8 +26,6 @@
 #include <poll.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
-#include <sys/time.h>
-#include <time.h>
 
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
