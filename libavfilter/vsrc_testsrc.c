@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2007 Nicolas George <nicolas.george@normalesup.org>
  * Copyright (c) 2011 Stefano Sabatini
+ * Copyright (c) 2012 Paul B Mahol
  *
  * This file is part of FFmpeg.
  *
@@ -28,6 +29,8 @@
  *
  * rgbtestsrc is ported from MPlayer libmpcodecs/vf_rgbtest.c by
  * Michael Niedermayer.
+ *
+ * smptebars is by Paul B Mahol.
  */
 
 #include <float.h>
@@ -646,3 +649,131 @@ AVFilter avfilter_vsrc_rgbtestsrc = {
 };
 
 #endif /* CONFIG_RGBTESTSRC_FILTER */
+
+#if CONFIG_SMPTEBARS_FILTER
+
+#define smptebars_options options
+AVFILTER_DEFINE_CLASS(smptebars);
+
+static const uint8_t rainbow[7][4] = {
+    { 191, 191, 191, 255 },     /* gray */
+    { 191, 191,   0, 255 },     /* yellow */
+    {   0, 191, 191, 255 },     /* cyan */
+    {   0, 191,   0, 255 },     /* green */
+    { 191,   0, 191, 255 },     /* magenta */
+    { 191,   0,   0, 255 },     /* red */
+    {   0,   0, 191, 255 },     /* blue */
+};
+
+static const uint8_t wobnair[7][4] = {
+    {   0,   0, 191, 255 },     /* blue */
+    {  19,  19,  19, 255 },     /* 7.5% intensity black */
+    { 191,   0, 191, 255 },     /* magenta */
+    {  19,  19,  19, 255 },     /* 7.5% intensity black */
+    {   0, 191, 191, 255 },     /* cyan */
+    {  19,  19,  19, 255 },     /* 7.5% intensity black */
+    { 191, 191, 191, 255 },     /* gray */
+};
+
+static const uint8_t white[4] = { 255, 255, 255, 255 };
+static const uint8_t black[4] = {  19,  19,  19, 255 }; /* 7.5% intensity black */
+
+/* pluge pulses */
+static const uint8_t neg4ire[4] = {   9,   9,   9, 255 }; /*  3.5% intensity black */
+static const uint8_t pos4ire[4] = {  29,  29,  29, 255 }; /* 11.5% intensity black */
+
+/* fudged Q/-I */
+static const uint8_t i_pixel[4] = {   0,  68, 130, 255 };
+static const uint8_t q_pixel[4] = {  67,   0, 130, 255 };
+
+static void smptebars_fill_picture(AVFilterContext *ctx, AVFilterBufferRef *picref)
+{
+    TestSourceContext *test = ctx->priv;
+    FFDrawColor color;
+    int r_w, r_h, w_h, p_w, p_h, i, x = 0;
+
+    r_w = (test->w + 6) / 7;
+    r_h = test->h * 2 / 3;
+    w_h = test->h * 3 / 4 - r_h;
+    p_w = r_w * 5 / 4;
+    p_h = test->h - w_h - r_h;
+
+#define DRAW_COLOR(rgba, x, y, w, h)                                    \
+    ff_draw_color(&test->draw, &color, rgba);                           \
+    ff_fill_rectangle(&test->draw, &color,                              \
+                      picref->data, picref->linesize, x, y, w, h)       \
+
+    for (i = 0; i < 7; i++) {
+        DRAW_COLOR(rainbow[i], x, 0,   FFMIN(r_w, test->w - x), r_h);
+        DRAW_COLOR(wobnair[i], x, r_h, FFMIN(r_w, test->w - x), w_h);
+        x += r_w;
+    }
+    x = 0;
+    DRAW_COLOR(i_pixel, x, r_h + w_h, p_w, p_h);
+    x += p_w;
+    DRAW_COLOR(white, x, r_h + w_h, p_w, p_h);
+    x += p_w;
+    DRAW_COLOR(q_pixel, x, r_h + w_h, p_w, p_h);
+    x += p_w;
+    DRAW_COLOR(black, x, r_h + w_h, 5 * r_w - x, p_h);
+    x += 5 * r_w - x;
+    DRAW_COLOR(neg4ire, x, r_h + w_h, r_w / 3, p_h);
+    x += r_w / 3;
+    DRAW_COLOR(black, x, r_h + w_h, r_w / 3, p_h);
+    x += r_w / 3;
+    DRAW_COLOR(pos4ire, x, r_h + w_h, r_w / 3, p_h);
+    x += r_w / 3;
+    DRAW_COLOR(black, x, r_h + w_h, test->w - x, p_h);
+}
+
+static av_cold int smptebars_init(AVFilterContext *ctx, const char *args)
+{
+    TestSourceContext *test = ctx->priv;
+
+    test->class = &smptebars_class;
+    test->fill_picture_fn = smptebars_fill_picture;
+    test->draw_once = 1;
+    return init(ctx, args);
+}
+
+static int smptebars_query_formats(AVFilterContext *ctx)
+{
+    ff_set_common_formats(ctx, ff_draw_supported_pixel_formats(0));
+    return 0;
+}
+
+static int smptebars_config_props(AVFilterLink *outlink)
+{
+    AVFilterContext *ctx = outlink->src;
+    TestSourceContext *test = ctx->priv;
+
+    ff_draw_init(&test->draw, outlink->format, 0);
+
+    return config_props(outlink);
+}
+
+AVFilter avfilter_vsrc_smptebars = {
+    .name      = "smptebars",
+    .description = NULL_IF_CONFIG_SMALL("Generate SMPTE color bars."),
+    .priv_size = sizeof(TestSourceContext),
+    .init      = smptebars_init,
+    .uninit    = uninit,
+
+    .query_formats = smptebars_query_formats,
+
+    .inputs = (const AVFilterPad[]) {
+        { .name = NULL }
+    },
+
+    .outputs = (const AVFilterPad[]) {
+        {
+            .name = "default",
+            .type = AVMEDIA_TYPE_VIDEO,
+            .request_frame = request_frame,
+            .config_props  = smptebars_config_props,
+        },
+        { .name = NULL }
+    },
+};
+
+#endif  /* CONFIG_SMPTEBARS_FILTER */

@@ -42,6 +42,7 @@ version next:
 - bitmap subtitles in filters (experimental and temporary)
 - MP2 encoding via TwoLAME
 - bmp parser
+- smptebars source
 
 
 version 0.11:
