@@ -56,7 +56,7 @@ static AVFilterBufferRef *get_video_buffer(AVFilterLink *link, int perms,
         int vsub = i == 1 || i == 2 ? flip->vsub : 0;
 
         if (picref->data[i]) {
-            picref->data[i] += ((h >> vsub)-1) * picref->linesize[i];
+            picref->data[i] += (((h + (1<<vsub)-1) >> vsub)-1) * picref->linesize[i];
             picref->linesize[i] = -picref->linesize[i];
         }
     }
@@ -74,7 +74,7 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *inpicref)
         int vsub = i == 1 || i == 2 ? flip->vsub : 0;
 
         if (outpicref->data[i]) {
-            outpicref->data[i] += ((link->h >> vsub)-1) * outpicref->linesize[i];
+            outpicref->data[i] += (((link->h + (1<<vsub)-1)>> vsub)-1) * outpicref->linesize[i];
             outpicref->linesize[i] = -outpicref->linesize[i];
         }
     }
