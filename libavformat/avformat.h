@@ -1635,10 +1635,9 @@ void av_dump_format(AVFormatContext *ic,
                     const char *url,
                     int is_output);
 
-/**
- * Get the current time in microseconds.
- */
+#if FF_API_AV_GETTIME
 int64_t av_gettime(void);
+#endif
 
 /**
  * Return in 'buf' the path with '%d' replaced by a number.

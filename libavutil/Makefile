@@ -36,6 +36,7 @@ HEADERS = adler32.h                                                     \
           rational.h                                                    \
           samplefmt.h                                                   \
           sha.h                                                         \
+          time.h                                                        \
 
 ARCH_HEADERS = bswap.h                                                  \
                intmath.h                                                \
@@ -77,6 +78,7 @@ OBJS = adler32.o                                                        \
        rc4.o                                                            \
        samplefmt.o                                                      \
        sha.o                                                            \
+       time.o                                                           \
        tree.o                                                           \
        utils.o                                                          \
 
