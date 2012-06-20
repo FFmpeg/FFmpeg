@@ -400,8 +400,7 @@ static av_cold int source_init(AVFilterContext *ctx, const char *args, void *opa
         return AVERROR(EINVAL);
     }
 
-    if (av_parse_video_rate(&frame_rate_q, frame_rate) < 0 ||
-        frame_rate_q.den <= 0 || frame_rate_q.num <= 0) {
+    if (av_parse_video_rate(&frame_rate_q, frame_rate) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Invalid frame rate: '%s'\n", frame_rate);
         return AVERROR(EINVAL);
     }

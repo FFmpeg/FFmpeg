@@ -131,8 +131,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     mb->start_scale /=mb->h;
     mb->end_scale /=mb->h;
 
-    if (av_parse_video_rate(&rate_q, mb->rate) < 0 ||
-        rate_q.den <= 0 || rate_q.num <= 0) {
+    if (av_parse_video_rate(&rate_q, mb->rate) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Invalid frame rate: %s\n", mb->rate);
         return AVERROR(EINVAL);
     }

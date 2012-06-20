@@ -90,8 +90,7 @@ static av_cold int color_init(AVFilterContext *ctx, const char *args, void *opaq
             av_log(ctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
             goto end;
         }
-        if (av_parse_video_rate(&frame_rate_q, color->rate_str) < 0 ||
-                frame_rate_q.den <= 0 || frame_rate_q.num <= 0) {
+        if (av_parse_video_rate(&frame_rate_q, color->rate_str) < 0) {
             av_log(ctx, AV_LOG_ERROR, "Invalid frame rate: %s\n", color->rate_str);
             ret = AVERROR(EINVAL);
             goto end;
@@ -107,8 +106,7 @@ static av_cold int color_init(AVFilterContext *ctx, const char *args, void *opaq
             av_log(ctx, AV_LOG_ERROR, "Invalid frame size: %s\n", frame_size);
             return AVERROR(EINVAL);
         }
-        if (av_parse_video_rate(&frame_rate_q, frame_rate) < 0 ||
-                frame_rate_q.den <= 0 || frame_rate_q.num <= 0) {
+        if (av_parse_video_rate(&frame_rate_q, frame_rate) < 0) {
             av_log(ctx, AV_LOG_ERROR, "Invalid frame rate: %s\n", frame_rate);
             return AVERROR(EINVAL);
         }
