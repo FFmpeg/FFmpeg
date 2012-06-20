@@ -376,6 +376,10 @@ typedef struct {
     int xch_present;            ///< XCh extension present and valid
     int xch_base_channel;       ///< index of first (only) channel containing XCH data
 
+    /* XXCH extension information */
+    int xxch_spk_layout;
+    int xxch_nbits_spk_mask;
+
     /* ExSS header parser */
     int static_fields;          ///< static fields present
     int mix_metadata;           ///< mixing metadata present
@@ -462,15 +466,43 @@ static inline void get_array(GetBitContext *gb, int *dst, int len, int bits)
         *dst++ = get_bits(gb, bits);
 }
 
-static int dca_parse_audio_coding_header(DCAContext *s, int base_channel)
+static int dca_parse_audio_coding_header(DCAContext *s, int base_channel,
+                                         int xxch)
 {
     int i, j;
     static const float adj_table[4] = { 1.0, 1.1250, 1.2500, 1.4375 };
     static const int bitlen[11] = { 0, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3 };
     static const int thr[11]    = { 0, 1, 3, 3, 3, 3, 7, 7, 7, 7, 7 };
+    int hdr_pos = 0, hdr_size = 0;
+    int mask[8];
+
+    /* xxch has arbitrary sized audio coding headers */
+    if (xxch) {
+        hdr_pos  = get_bits_count(&s->gb);
+        hdr_size = get_bits(&s->gb, 7) + 1;
+    }
 
     s->total_channels = get_bits(&s->gb, 3) + 1 + base_channel;
     s->prim_channels  = s->total_channels;
+
+    /* obtain speaker layout mask & mixdown coefficients if applicable */
+    if (xxch) {
+        s->xxch_spk_layout |= get_bits(&s->gb, s->xxch_nbits_spk_mask - 6);
+        if (get_bits1(&s->gb)) {
+            get_bits1(&s->gb);
+            skip_bits(&s->gb, 6);
+            for (i = base_channel; i < s->prim_channels; i++) {
+                mask[i] = get_bits(&s->gb, s->xxch_nbits_spk_mask);
+            }
+            for (j = base_channel; j < s->prim_channels; j++) {
+                for (i = 0; i < s->xxch_nbits_spk_mask; i++) {
+                    if (mask[j] & (1 << i)) {
+                        int coeff = get_bits(&s->gb, 7);
+                    }
+                }
+            }
+        }
+    }
 
     if (s->prim_channels > DCA_PRIM_CHANNELS_MAX)
         s->prim_channels = DCA_PRIM_CHANNELS_MAX;
@@ -508,9 +540,16 @@ static int dca_parse_audio_coding_header(DCAContext *s, int base_channel)
             if (s->quant_index_huffman[i][j] < thr[j])
                 s->scalefactor_adj[i][j] = adj_table[get_bits(&s->gb, 2)];
 
-    if (s->crc_present) {
-        /* Audio header CRC check */
-        get_bits(&s->gb, 16);
+    if (!xxch) {
+        if (s->crc_present) {
+            /* Audio header CRC check */
+            get_bits(&s->gb, 16);
+        }
+    } else {
+        /* Skip to the end of the header, also ignore CRC if present  */
+        i = get_bits_count(&s->gb);
+        if (hdr_pos + 8 * hdr_size > i)
+            skip_bits_long(&s->gb, hdr_pos + 8 * hdr_size - i);
     }
 
     s->current_subframe    = 0;
@@ -639,7 +678,7 @@ static int dca_parse_frame_header(DCAContext *s)
     /* Primary audio coding header */
     s->subframes         = get_bits(&s->gb, 4) + 1;
 
-    return dca_parse_audio_coding_header(s, 0);
+    return dca_parse_audio_coding_header(s, 0, 0);
 }
 
 
@@ -1727,6 +1766,58 @@ static int dca_xbr_parse_frame(DCAContext *s)
     return 0;
 }
 
+/* parse initial header for XXCH and dump details */
+static int dca_xxch_decode_frame(DCAContext *s)
+{
+    int hdr_size, chhdr_crc, spkmsk_bits, num_chsets, core_spk, hdr_pos;
+    int i, chset, base_channel, chstart, fsize[8];
+
+    /* assume header word has already been parsed */
+    hdr_pos     = get_bits_count(&s->gb) - 32;
+    hdr_size    = get_bits(&s->gb, 6) + 1;
+    chhdr_crc   = get_bits1(&s->gb);
+    spkmsk_bits = get_bits(&s->gb, 5) + 1;
+    num_chsets  = get_bits(&s->gb, 2) + 1;
+
+    for (i = 0; i < num_chsets; i++)
+        fsize[i] = get_bits(&s->gb, 14) + 1;
+
+    core_spk = get_bits(&s->gb, spkmsk_bits);
+
+    s->xxch_spk_layout     = core_spk;
+    s->xxch_nbits_spk_mask = spkmsk_bits;
+
+    /* skip to the end of the header */
+    i = get_bits_count(&s->gb);
+    if (hdr_pos + hdr_size * 8 > i)
+        skip_bits_long(&s->gb, hdr_pos + hdr_size * 8 - i);
+
+    for (chset = 0; chset < num_chsets; chset++) {
+        chstart      = get_bits_count(&s->gb);
+        base_channel = s->prim_channels;
+
+        /* XXCH and Core headers differ, see 6.4.2 "XXCH Channel Set Header" vs.
+           5.3.2 "Primary Audio Coding Header", DTS Spec 1.3.1 */
+        dca_parse_audio_coding_header(s, base_channel, 1);
+
+        /* decode channel data */
+        for (i = 0; i < (s->sample_blocks / 8); i++) {
+            if (dca_decode_block(s, base_channel, i)) {
+                av_log(s->avctx, AV_LOG_ERROR,
+                       "Error decoding DTS-XXCH extension\n");
+                continue;
+            }
+        }
+
+        /* skip to end of this section */
+        i = get_bits_count(&s->gb);
+        if (chstart + fsize[chset] * 8 > i)
+            skip_bits_long(&s->gb, chstart + fsize[chset] * 8 - i);
+    }
+
+    return 0;
+}
+
 /**
  * Parse extension substream header (HD)
  */
@@ -1823,6 +1914,8 @@ static void dca_exss_parse_header(DCAContext *s)
 
         if(mkr == 0x655e315e)
             dca_xbr_parse_frame(s);
+        else
+            av_log(s->avctx, AV_LOG_DEBUG, "DTS-MA: unknown marker = 0x%08x\n", mkr);
     }
 }
 
@@ -1885,7 +1978,7 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
 
     /* only scan for extensions if ext_descr was unknown or indicated a
      * supported XCh extension */
-    if (s->core_ext_mask < 0 || s->core_ext_mask & DCA_EXT_XCH) {
+    if (s->core_ext_mask < 0 || s->core_ext_mask & (DCA_EXT_XCH | DCA_EXT_XXCH)) {
 
         /* if ext_descr was unknown, clear s->core_ext_mask so that the
          * extensions scan can fill it up */
@@ -1923,7 +2016,7 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
                 }
 
                 /* much like core primary audio coding header */
-                dca_parse_audio_coding_header(s, s->xch_base_channel);
+                dca_parse_audio_coding_header(s, s->xch_base_channel, 0);
 
                 for (i = 0; i < (s->sample_blocks / 8); i++)
                     if ((ret = dca_decode_block(s, s->xch_base_channel, i))) {
@@ -1939,6 +2032,7 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
                 /* usually found either in core or HD part in DTS-HD HRA streams,
                  * but not in DTS-ES which contains XCh extensions instead */
                 s->core_ext_mask |= DCA_EXT_XXCH;
+                dca_xxch_decode_frame(s);
                 break;
 
             case 0x1d95f262: {
