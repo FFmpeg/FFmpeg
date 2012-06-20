@@ -56,7 +56,7 @@ static const uint8_t color[16 + AV_CLASS_CATEGORY_NB] = {
     [16+AV_CLASS_CATEGORY_DEMUXER         ] =  5,
     [16+AV_CLASS_CATEGORY_ENCODER         ] = 11,
     [16+AV_CLASS_CATEGORY_DECODER         ] =  3,
-    [16+AV_CLASS_CATEGORY_FILTER          ] =  1,
+    [16+AV_CLASS_CATEGORY_FILTER          ] = 10,
     [16+AV_CLASS_CATEGORY_BITSTREAM_FILTER] =  9,
 };
 
@@ -81,7 +81,7 @@ static const uint8_t color[16 + AV_CLASS_CATEGORY_NB] = {
     [16+AV_CLASS_CATEGORY_DEMUXER         ] = 0x05,
     [16+AV_CLASS_CATEGORY_ENCODER         ] = 0x16,
     [16+AV_CLASS_CATEGORY_DECODER         ] = 0x06,
-    [16+AV_CLASS_CATEGORY_FILTER          ] = 0x04,
+    [16+AV_CLASS_CATEGORY_FILTER          ] = 0x12,
     [16+AV_CLASS_CATEGORY_BITSTREAM_FILTER] = 0x14,
 };
 
