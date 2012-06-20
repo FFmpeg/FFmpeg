@@ -151,8 +151,7 @@ static void end_frame(AVFilterLink *inlink)
     av_log(ctx, AV_LOG_DEBUG,
            "frame:%u picture_black_ratio:%f pos:%"PRId64" pts:%s t:%s type:%c\n",
            blackdetect->frame_count, picture_black_ratio,
-           picref->pos, av_ts2str(picref->pts),
-           av_ts2timestr(blackdetect->black_start, &inlink->time_base),
+           picref->pos, av_ts2str(picref->pts), av_ts2timestr(picref->pts, &inlink->time_base),
            av_get_picture_type_char(picref->video->pict_type));
 
     if (picture_black_ratio >= blackdetect->picture_black_ratio_th) {
