@@ -30,9 +30,6 @@
  * MJPEG decoder.
  */
 
-// #define DEBUG
-#include <assert.h>
-
 #include "libavutil/imgutils.h"
 #include "libavutil/avassert.h"
 #include "libavutil/opt.h"
@@ -52,7 +49,7 @@ static int build_vlc(VLC *vlc, const uint8_t *bits_table,
     uint16_t huff_sym[256];
     int i;
 
-    assert(nb_codes <= 256);
+    av_assert0(nb_codes <= 256);
 
     ff_mjpeg_build_huffman_codes(huff_size, huff_code, bits_table, val_table);
 
@@ -352,7 +349,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
             s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
             }
         }
-        assert(s->nb_components == 3);
+        av_assert0(s->nb_components == 3);
         break;
     case 0x12121100:
     case 0x22122100:
