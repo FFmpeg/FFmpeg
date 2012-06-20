@@ -30,9 +30,6 @@
  * MJPEG encoder.
  */
 
-//#define DEBUG
-#include <assert.h>
-
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
@@ -222,7 +219,7 @@ void ff_mjpeg_encode_picture_header(MpegEncContext *s)
     switch(s->avctx->codec_id){
     case CODEC_ID_MJPEG:  put_marker(&s->pb, SOF0 ); break;
     case CODEC_ID_LJPEG:  put_marker(&s->pb, SOF3 ); break;
-    default: assert(0);
+    default: av_assert0(0);
     }
 
     put_bits(&s->pb, 16, 17);
@@ -287,7 +284,7 @@ void ff_mjpeg_encode_picture_header(MpegEncContext *s)
     switch(s->avctx->codec_id){
     case CODEC_ID_MJPEG:  put_bits(&s->pb, 8, 63); break; /* Se (not used) */
     case CODEC_ID_LJPEG:  put_bits(&s->pb, 8,  0); break; /* not used */
-    default: assert(0);
+    default: av_assert0(0);
     }
 
     put_bits(&s->pb, 8, 0); /* Ah/Al (not used) */
@@ -305,7 +302,7 @@ static void escape_FF(MpegEncContext *s, int start)
     uint8_t *buf= s->pb.buf + start;
     int align= (-(size_t)(buf))&3;
 
-    assert((size&7) == 0);
+    av_assert1((size&7) == 0);
     size >>= 3;
 
     ff_count=0;
@@ -373,7 +370,7 @@ void ff_mjpeg_encode_stuffing(MpegEncContext *s)
 void ff_mjpeg_encode_picture_trailer(MpegEncContext *s)
 {
 
-    assert((s->header_bits&7)==0);
+    av_assert1((s->header_bits&7)==0);
 
 
     put_marker(&s->pb, EOI);
