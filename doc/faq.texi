@@ -222,26 +222,34 @@ equally humble @code{copy} under Windows), and finally transcoding back to your
 format of choice.
 
 @example
-ffmpeg -i input1.avi -same_quant intermediate1.mpg
-ffmpeg -i input2.avi -same_quant intermediate2.mpg
+ffmpeg -i input1.avi -qscale:v 1 intermediate1.mpg
+ffmpeg -i input2.avi -qscale:v 1 intermediate2.mpg
 cat intermediate1.mpg intermediate2.mpg > intermediate_all.mpg
-ffmpeg -i intermediate_all.mpg -same_quant output.avi
+ffmpeg -i intermediate_all.mpg -qscale:v 2 output.avi
 @end example
 
-Notice that you should either use @code{-same_quant} or set a reasonably high
-bitrate for your intermediate and output files, if you want to preserve
-video quality.
+Additionally, you can use the @code{concat} protocol instead of @code{cat} or
+@code{copy} which will avoid creation of a potentially huge intermediate file.
 
-Also notice that you may avoid the huge intermediate files by taking advantage
-of named pipes, should your platform support it:
+@example
+ffmpeg -i input1.avi -qscale:v 1 intermediate1.mpg
+ffmpeg -i input2.avi -qscale:v 1 intermediate2.mpg
+ffmpeg -i concat:"intermediate1.mpg|intermediate2.mpg" -c copy intermediate_all.mpg
+ffmpeg -i intermediate_all.mpg -qscale:v 2 output.avi
+@end example
+
+Note that you may need to escape the character "|" which is special for many
+shells.
+
+Another option is usage of named pipes, should your platform support it:
 
 @example
 mkfifo intermediate1.mpg
 mkfifo intermediate2.mpg
-ffmpeg -i input1.avi -same_quant -y intermediate1.mpg < /dev/null &
-ffmpeg -i input2.avi -same_quant -y intermediate2.mpg < /dev/null &
+ffmpeg -i input1.avi -qscale:v 1 -y intermediate1.mpg < /dev/null &
+ffmpeg -i input2.avi -qscale:v 1 -y intermediate2.mpg < /dev/null &
 cat intermediate1.mpg intermediate2.mpg |\
-ffmpeg -f mpeg -i - -same_quant -c:v mpeg4 -acodec libmp3lame output.avi
+ffmpeg -f mpeg -i - -qscale:v 2 -c:v mpeg4 -acodec libmp3lame -q:a 4 output.avi
 @end example
 
 Similarly, the yuv4mpegpipe format, and the raw video, raw audio codecs also
@@ -268,7 +276,7 @@ cat temp1.a temp2.a > all.a &
 cat temp1.v temp2.v > all.v &
 ffmpeg -f u16le -acodec pcm_s16le -ac 2 -ar 44100 -i all.a \
        -f yuv4mpegpipe -i all.v \
-       -same_quant -y output.flv
+       -qscale:v 2 -y output.flv
 rm temp[12].[av] all.[av]
 @end example
 
