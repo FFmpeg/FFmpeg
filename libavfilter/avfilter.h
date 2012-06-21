@@ -448,13 +448,6 @@ struct AVFilterLink {
     AVFilterContext *dst;       ///< dest filter
     AVFilterPad *dstpad;        ///< input pad on the dest filter
 
-    /** stage of the initialization of the link properties (dimensions, etc) */
-    enum {
-        AVLINK_UNINIT = 0,      ///< not started
-        AVLINK_STARTINIT,       ///< started, but incomplete
-        AVLINK_INIT             ///< complete
-    } init_state;
-
     enum AVMediaType type;      ///< filter media type
 
     /* These parameters apply only to video */
@@ -466,26 +459,6 @@ struct AVFilterLink {
     int sample_rate;            ///< samples per second
 
     int format;                 ///< agreed upon media format
-
-    /**
-     * Lists of formats supported by the input and output filters respectively.
-     * These lists are used for negotiating the format to actually be used,
-     * which will be loaded into the format member, above, when chosen.
-     */
-    AVFilterFormats *in_formats;
-    AVFilterFormats *out_formats;
-
-    /**
-     * The buffer reference currently being sent across the link by the source
-     * filter. This is used internally by the filter system to allow
-     * automatic copying of buffers which do not have sufficient permissions
-     * for the destination. This should not be accessed directly by the
-     * filters.
-     */
-    AVFilterBufferRef *src_buf;
-
-    AVFilterBufferRef *cur_buf;
-    AVFilterBufferRef *out_buf;
 
     /**
      * Define the time base used by the PTS of the frames/samples
@@ -504,6 +477,14 @@ struct AVFilterLink {
      *****************************************************************
      */
     /**
+     * Lists of formats supported by the input and output filters respectively.
+     * These lists are used for negotiating the format to actually be used,
+     * which will be loaded into the format member, above, when chosen.
+     */
+    AVFilterFormats *in_formats;
+    AVFilterFormats *out_formats;
+
+    /**
      * Lists of channel layouts and sample rates used for automatic
      * negotiation.
      */
@@ -520,6 +501,25 @@ struct AVFilterLink {
      * Last buffer before EOF will be padded with silence.
      */
     int request_samples;
+
+    /** stage of the initialization of the link properties (dimensions, etc) */
+    enum {
+        AVLINK_UNINIT = 0,      ///< not started
+        AVLINK_STARTINIT,       ///< started, but incomplete
+        AVLINK_INIT             ///< complete
+    } init_state;
+
+    /**
+     * The buffer reference currently being sent across the link by the source
+     * filter. This is used internally by the filter system to allow
+     * automatic copying of buffers which do not have sufficient permissions
+     * for the destination. This should not be accessed directly by the
+     * filters.
+     */
+    AVFilterBufferRef *src_buf;
+
+    AVFilterBufferRef *cur_buf;
+    AVFilterBufferRef *out_buf;
 };
 
 /**
