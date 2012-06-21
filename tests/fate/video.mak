@@ -209,6 +209,9 @@ fate-rl2: CMD = framecrc -i $(TARGET_SAMPLES)/rl2/Z4915300.RL2 -pix_fmt rgb24 -a
 FATE_SAMPLES_AVCONV-$(call DEMDEC, ROQ, ROQ) += fate-roqvideo
 fate-roqvideo: CMD = framecrc -i $(TARGET_SAMPLES)/idroq/idlogo.roq -an
 
+FATE_SAMPLES_AVCONV-$(call DEMDEC, SMUSH, SANM) += fate-sanm
+fate-sanm: CMD = framecrc -i $(TARGET_SAMPLES)/smush/ronin_part.znm -an -pix_fmt rgb24
+
 FATE_SAMPLES_AVCONV-$(call DEMDEC, VMD, VMDVIDEO) += fate-sierra-vmd-video
 fate-sierra-vmd-video: CMD = framecrc -i $(TARGET_SAMPLES)/vmd/12.vmd -pix_fmt rgb24 -an
 
