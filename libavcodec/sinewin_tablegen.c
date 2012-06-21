@@ -26,9 +26,6 @@
 #define SINETABLE(size) \
     float ff_sine_##size[size]
 #define FF_ARRAY_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
 #include "sinewin_tablegen.h"
 #include "tableprint.h"
 
