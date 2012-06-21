@@ -49,6 +49,9 @@ fate-sierra-vmd-audio: CMD = framecrc -i $(SAMPLES)/vmd/12.vmd -vn
 FATE_SAMPLES_AUDIO += fate-smacker-audio
 fate-smacker-audio: CMD = framecrc -i $(SAMPLES)/smacker/wetlogo.smk -vn
 
+FATE_SAMPLES_AUDIO += fate-vima
+fate-vima: CMD = framecrc -i $(SAMPLES)/smush/ronin_part.znm -vn
+
 FATE_SAMPLES_AUDIO += fate-ws_snd
 fate-ws_snd: CMD = md5 -i $(SAMPLES)/vqa/ws_snd.vqa -f s16le
 
