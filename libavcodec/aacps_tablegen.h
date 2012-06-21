@@ -23,6 +23,7 @@
 #ifndef AACPS_TABLEGEN_H
 #define AACPS_TABLEGEN_H
 
+#include <math.h>
 #include <stdint.h>
 
 #if CONFIG_HARDCODED_TABLES

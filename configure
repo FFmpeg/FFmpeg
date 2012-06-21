@@ -1903,7 +1903,7 @@ AS_O='-o $@'
 CC_O='-o $@'
 CXX_O='-o $@'
 
-host_cflags='-D_ISOC99_SOURCE -O3 -g'
+host_cflags='-D_ISOC99_SOURCE -D_XOPEN_SOURCE=600 -O3 -g'
 host_libs='-lm'
 
 target_path='$(CURDIR)'
