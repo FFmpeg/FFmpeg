@@ -61,22 +61,6 @@ typedef struct AVFilterFormats AVFilterFormats;
  */
 typedef struct AVFilterBuffer {
     uint8_t *data[8];           ///< buffer data for each plane/channel
-    int linesize[8];            ///< number of bytes per line
-
-    unsigned refcount;          ///< number of references to this buffer
-
-    /** private data to be used by a custom free function */
-    void *priv;
-    /**
-     * A pointer to the function to deallocate this buffer if the default
-     * function is not sufficient. This could, for example, add the memory
-     * back into a memory pool to be reused later without the overhead of
-     * reallocating it from scratch.
-     */
-    void (*free)(struct AVFilterBuffer *buf);
-
-    int format;                 ///< media format
-    int w, h;                   ///< width and height of the allocated buffer
 
     /**
      * pointers to the data planes/channels.
@@ -93,6 +77,21 @@ typedef struct AVFilterBuffer {
      * in order to access all channels.
      */
     uint8_t **extended_data;
+    int linesize[8];            ///< number of bytes per line
+
+    /** private data to be used by a custom free function */
+    void *priv;
+    /**
+     * A pointer to the function to deallocate this buffer if the default
+     * function is not sufficient. This could, for example, add the memory
+     * back into a memory pool to be reused later without the overhead of
+     * reallocating it from scratch.
+     */
+    void (*free)(struct AVFilterBuffer *buf);
+
+    int format;                 ///< media format
+    int w, h;                   ///< width and height of the allocated buffer
+    unsigned refcount;          ///< number of references to this buffer
 } AVFilterBuffer;
 
 #define AV_PERM_READ     0x01   ///< can read from the buffer
