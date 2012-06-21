@@ -201,6 +201,10 @@
 #include "avio.h"
 #include "libavformat/version.h"
 
+#if FF_API_AV_GETTIME
+#include "libavutil/time.h"
+#endif
+
 struct AVFormatContext;
 
 
@@ -1634,10 +1638,6 @@ void av_dump_format(AVFormatContext *ic,
                     int index,
                     const char *url,
                     int is_output);
-
-#if FF_API_AV_GETTIME
-int64_t av_gettime(void);
-#endif
 
 /**
  * Return in 'buf' the path with '%d' replaced by a number.
