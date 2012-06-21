@@ -31,6 +31,7 @@
 #include "libavutil/dict.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/samplefmt.h"
+#include "libavutil/time.h"
 #include "libavformat/avformat.h"
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
@@ -54,7 +55,6 @@
 #undef main /* We don't want SDL to override our main() */
 #endif
 
-#include <unistd.h>
 #include <assert.h>
 
 const char program_name[] = "avplay";
@@ -952,7 +952,7 @@ static int refresh_thread(void *opaque)
             is->refresh = 1;
             SDL_PushEvent(&event);
         }
-        usleep(is->audio_st && is->show_audio ? rdftspeed * 1000 : 5000); // FIXME ideally we should wait the correct time but SDLs event passing is so slow it would be silly
+        av_usleep(is->audio_st && is->show_audio ? rdftspeed * 1000 : 5000); // FIXME ideally we should wait the correct time but SDLs event passing is so slow it would be silly
     }
     return 0;
 }

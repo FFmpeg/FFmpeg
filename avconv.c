@@ -27,7 +27,6 @@
 #include <errno.h>
 #include <signal.h>
 #include <limits.h>
-#include <unistd.h>
 #include "libavformat/avformat.h"
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
@@ -45,6 +44,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/libm.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/time.h"
 #include "libavformat/os_support.h"
 
 # include "libavfilter/avfilter.h"
@@ -1876,7 +1876,7 @@ static void rate_emu_sleep(InputStream *ist)
         int64_t pts = av_rescale(ist->last_dts, 1000000, AV_TIME_BASE);
         int64_t now = av_gettime() - ist->start;
         if (pts > now)
-            usleep(pts - now);
+            av_usleep(pts - now);
     }
 }
 
@@ -2793,7 +2793,7 @@ static void *input_thread(void *arg)
         ret = av_read_frame(f->ctx, &pkt);
 
         if (ret == AVERROR(EAGAIN)) {
-            usleep(10000);
+            av_usleep(10000);
             ret = 0;
             continue;
         } else if (ret < 0)
@@ -2948,7 +2948,7 @@ static int transcode(void)
             if (no_packet_count) {
                 no_packet_count = 0;
                 memset(no_packet, 0, nb_input_files);
-                usleep(10000);
+                av_usleep(10000);
                 continue;
             }
             av_log(NULL, AV_LOG_VERBOSE, "No more inputs to read from, finishing.\n");

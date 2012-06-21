@@ -26,11 +26,11 @@
  */
 
 #include "libavutil/avstring.h"
+#include "libavutil/time.h"
 #include "avformat.h"
 #include "internal.h"
 #include "url.h"
 #include "version.h"
-#include <unistd.h>
 
 /*
  * An apple http stream consists of a playlist with media segment files,
@@ -308,7 +308,7 @@ retry:
         while (av_gettime() - s->last_load_time < reload_interval) {
             if (ff_check_interrupt(&h->interrupt_callback))
                 return AVERROR_EXIT;
-            usleep(100*1000);
+            av_usleep(100*1000);
         }
         goto retry;
     }
