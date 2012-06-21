@@ -168,6 +168,79 @@ static struct addrinfo* udp_resolve_host(const char *hostname, int port,
     return res;
 }
 
+static int udp_set_multicast_sources(int sockfd, struct sockaddr *addr,
+                                     int addr_len, char **sources,
+                                     int nb_sources, int include)
+{
+#if HAVE_STRUCT_GROUP_SOURCE_REQ && defined(MCAST_BLOCK_SOURCE) && !defined(_WIN32)
+    /* These ones are available in the microsoft SDK, but don't seem to work
+     * as on linux, so just prefer the v4-only approach there for now. */
+    int i;
+    for (i = 0; i < nb_sources; i++) {
+        struct group_source_req mreqs;
+        int level = addr->sa_family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6;
+        struct addrinfo *sourceaddr = udp_resolve_host(sources[i], 0,
+                                                       SOCK_DGRAM, AF_UNSPEC,
+                                                       AI_NUMERICHOST);
+        if (!sourceaddr)
+            return AVERROR(ENOENT);
+
+        mreqs.gsr_interface = 0;
+        memcpy(&mreqs.gsr_group, addr, addr_len);
+        memcpy(&mreqs.gsr_source, sourceaddr->ai_addr, sourceaddr->ai_addrlen);
+        freeaddrinfo(sourceaddr);
+
+        if (setsockopt(sockfd, level,
+                       include ? MCAST_JOIN_SOURCE_GROUP : MCAST_BLOCK_SOURCE,
+                       (const void *)&mreqs, sizeof(mreqs)) < 0) {
+            if (include)
+                log_net_error(NULL, AV_LOG_ERROR, "setsockopt(MCAST_JOIN_SOURCE_GROUP)");
+            else
+                log_net_error(NULL, AV_LOG_ERROR, "setsockopt(MCAST_BLOCK_SOURCE)");
+            return ff_neterrno();
+        }
+    }
+#elif HAVE_STRUCT_IP_MREQ_SOURCE && defined(IP_BLOCK_SOURCE)
+    int i;
+    if (addr->sa_family != AF_INET) {
+        av_log(NULL, AV_LOG_ERROR,
+               "Setting multicast sources only supported for IPv4\n");
+        return AVERROR(EINVAL);
+    }
+    for (i = 0; i < nb_sources; i++) {
+        struct ip_mreq_source mreqs;
+        struct addrinfo *sourceaddr = udp_resolve_host(sources[i], 0,
+                                                       SOCK_DGRAM, AF_UNSPEC,
+                                                       AI_NUMERICHOST);
+        if (!sourceaddr)
+            return AVERROR(ENOENT);
+        if (sourceaddr->ai_addr->sa_family != AF_INET) {
+            freeaddrinfo(sourceaddr);
+            av_log(NULL, AV_LOG_ERROR, "%s is of incorrect protocol family\n",
+                   sources[i]);
+            return AVERROR(EINVAL);
+        }
+
+        mreqs.imr_multiaddr.s_addr = ((struct sockaddr_in *)addr)->sin_addr.s_addr;
+        mreqs.imr_interface.s_addr = INADDR_ANY;
+        mreqs.imr_sourceaddr.s_addr = ((struct sockaddr_in *)sourceaddr->ai_addr)->sin_addr.s_addr;
+        freeaddrinfo(sourceaddr);
+
+        if (setsockopt(sockfd, IPPROTO_IP,
+                       include ? IP_ADD_SOURCE_MEMBERSHIP : IP_BLOCK_SOURCE,
+                       (const void *)&mreqs, sizeof(mreqs)) < 0) {
+            if (include)
+                log_net_error(NULL, AV_LOG_ERROR, "setsockopt(IP_ADD_SOURCE_MEMBERSHIP)");
+            else
+                log_net_error(NULL, AV_LOG_ERROR, "setsockopt(IP_BLOCK_SOURCE)");
+            return ff_neterrno();
+        }
+    }
+#else
+    return AVERROR(ENOSYS);
+#endif
+    return 0;
+}
 static int udp_set_url(struct sockaddr_storage *addr,
                        const char *hostname, int port)
 {
@@ -318,6 +391,8 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     struct sockaddr_storage my_addr;
     int len;
     int reuse_specified = 0;
+    int i, include = 0, num_sources = 0;
+    char *sources[32];
 
     h->is_streamed = 1;
     h->max_packet_size = 1472;
@@ -354,6 +429,25 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         }
         if (av_find_info_tag(buf, sizeof(buf), "localaddr", p)) {
             av_strlcpy(localaddr, buf, sizeof(localaddr));
+        }
+        if (av_find_info_tag(buf, sizeof(buf), "sources", p))
+            include = 1;
+        if (include || av_find_info_tag(buf, sizeof(buf), "block", p)) {
+            char *source_start;
+
+            source_start = buf;
+            while (1) {
+                char *next = strchr(source_start, ',');
+                if (next)
+                    *next = '\0';
+                sources[num_sources] = av_strdup(source_start);
+                if (!sources[num_sources])
+                    goto fail;
+                source_start = next + 1;
+                num_sources++;
+                if (num_sources >= FF_ARRAY_ELEMS(sources) || !next)
+                    break;
+            }
         }
     }
 
@@ -412,8 +506,21 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         }
         if (h->flags & AVIO_FLAG_READ) {
             /* input */
-            if (udp_join_multicast_group(udp_fd, (struct sockaddr *)&s->dest_addr) < 0)
+            if (num_sources == 0 || !include) {
+                if (udp_join_multicast_group(udp_fd, (struct sockaddr *)&s->dest_addr) < 0)
+                    goto fail;
+
+                if (num_sources) {
+                    if (udp_set_multicast_sources(udp_fd, (struct sockaddr *)&s->dest_addr, s->dest_addr_len, sources, num_sources, 0) < 0)
+                        goto fail;
+                }
+            } else if (include && num_sources) {
+                if (udp_set_multicast_sources(udp_fd, (struct sockaddr *)&s->dest_addr, s->dest_addr_len, sources, num_sources, 1) < 0)
+                    goto fail;
+            } else {
+                av_log(NULL, AV_LOG_ERROR, "invalid udp settings: inclusive multicast but no sources given\n");
                 goto fail;
+            }
         }
     }
 
@@ -441,11 +548,16 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         }
     }
 
+    for (i = 0; i < num_sources; i++)
+        av_free(sources[i]);
+
     s->udp_fd = udp_fd;
     return 0;
  fail:
     if (udp_fd >= 0)
         closesocket(udp_fd);
+    for (i = 0; i < num_sources; i++)
+        av_free(sources[i]);
     return AVERROR(EIO);
 }
 
