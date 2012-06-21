@@ -125,6 +125,7 @@ static int auto_matrix(SwrContext *s)
     double matrix[64][64]={{0}};
     int64_t unaccounted= s->in_ch_layout & ~s->out_ch_layout;
     double maxcoef=0;
+    char buf[128];
 
     memset(s->matrix, 0, sizeof(s->matrix));
     for(i=0; i<64; i++){
@@ -133,11 +134,13 @@ static int auto_matrix(SwrContext *s)
     }
 
     if(!sane_layout(s->in_ch_layout)){
-        av_log(s, AV_LOG_ERROR, "Input channel layout isnt supported\n");
+        av_get_channel_layout_string(buf, sizeof(buf), -1, s->in_ch_layout);
+        av_log(s, AV_LOG_ERROR, "Input channel layout '%s' is not supported\n", buf);
         return AVERROR(EINVAL);
     }
     if(!sane_layout(s->out_ch_layout)){
-        av_log(s, AV_LOG_ERROR, "Output channel layout isnt supported\n");
+        av_get_channel_layout_string(buf, sizeof(buf), -1, s->out_ch_layout);
+        av_log(s, AV_LOG_ERROR, "Output channel layout '%s' is not supported\n", buf);
         return AVERROR(EINVAL);
     }
 
