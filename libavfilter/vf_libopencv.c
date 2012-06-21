@@ -71,7 +71,7 @@ static void null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { }
 
 typedef struct {
     const char *name;
-    int (*init)(AVFilterContext *ctx, const char *args, void *opaque);
+    int (*init)(AVFilterContext *ctx, const char *args);
     void (*uninit)(AVFilterContext *ctx);
     void (*end_frame_filter)(AVFilterContext *ctx, IplImage *inimg, IplImage *outimg);
     void *priv;
@@ -83,7 +83,7 @@ typedef struct {
     double param3, param4;
 } SmoothContext;
 
-static av_cold int smooth_init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int smooth_init(AVFilterContext *ctx, const char *args)
 {
     OCVContext *ocv = ctx->priv;
     SmoothContext *smooth = ocv->priv;
@@ -249,7 +249,7 @@ typedef struct {
     IplConvKernel *kernel;
 } DilateContext;
 
-static av_cold int dilate_init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int dilate_init(AVFilterContext *ctx, const char *args)
 {
     OCVContext *ocv = ctx->priv;
     DilateContext *dilate = ocv->priv;
@@ -303,7 +303,7 @@ static void erode_end_frame_filter(AVFilterContext *ctx, IplImage *inimg, IplIma
 typedef struct {
     const char *name;
     size_t priv_size;
-    int  (*init)(AVFilterContext *ctx, const char *args, void *opaque);
+    int  (*init)(AVFilterContext *ctx, const char *args);
     void (*uninit)(AVFilterContext *ctx);
     void (*end_frame_filter)(AVFilterContext *ctx, IplImage *inimg, IplImage *outimg);
 } OCVFilterEntry;
@@ -314,7 +314,7 @@ static OCVFilterEntry ocv_filter_entries[] = {
     { "smooth", sizeof(SmoothContext), smooth_init, NULL, smooth_end_frame_filter },
 };
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     OCVContext *ocv = ctx->priv;
     char name[128], priv_args[1024];
@@ -333,7 +333,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 
             if (!(ocv->priv = av_mallocz(entry->priv_size)))
                 return AVERROR(ENOMEM);
-            return ocv->init(ctx, priv_args, opaque);
+            return ocv->init(ctx, priv_args);
         }
     }
 

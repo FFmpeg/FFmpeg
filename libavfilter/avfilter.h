@@ -456,10 +456,8 @@ typedef struct AVFilter {
     /**
      * Filter initialization function. Args contains the user-supplied
      * parameters. FIXME: maybe an AVOption-based system would be better?
-     * opaque is data provided by the code requesting creation of the filter,
-     * and is used to pass data to the filter.
      */
-    int (*init)(AVFilterContext *ctx, const char *args, void *opaque);
+    int (*init)(AVFilterContext *ctx, const char *args);
 
     /**
      * Filter uninitialization function. Should deallocate any memory held

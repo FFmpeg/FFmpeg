@@ -54,7 +54,7 @@ typedef struct {
     double var_values[VAR_VARS_NB];
 } SetTBContext;
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     SetTBContext *settb = ctx->priv;
     av_strlcpy(settb->tb_expr, "intb", sizeof(settb->tb_expr));

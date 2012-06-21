@@ -479,7 +479,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
     avfilter_unref_buffer(buf);
 }
 
-static int init(AVFilterContext *ctx, const char *args, void *opaque)
+static int init(AVFilterContext *ctx, const char *args)
 {
     MixContext *s = ctx->priv;
     int i, ret;

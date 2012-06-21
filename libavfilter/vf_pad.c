@@ -108,7 +108,7 @@ typedef struct {
     int needs_copy;
 } PadContext;
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     PadContext *pad = ctx->priv;
     char color_string[128] = "black";

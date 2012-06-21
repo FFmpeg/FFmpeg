@@ -40,7 +40,7 @@ typedef struct {
     int vsub, hsub;   ///< chroma subsampling
 } DrawBoxContext;
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     DrawBoxContext *drawbox= ctx->priv;
     char color_str[1024] = "black";

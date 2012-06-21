@@ -52,7 +52,7 @@ static const AVClass channelsplit_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static int init(AVFilterContext *ctx, const char *arg, void *opaque)
+static int init(AVFilterContext *ctx, const char *arg)
 {
     ChannelSplitContext *s = ctx->priv;
     int nb_channels;

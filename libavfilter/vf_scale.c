@@ -83,7 +83,7 @@ typedef struct {
     char h_expr[256];           ///< height expression string
 } ScaleContext;
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     ScaleContext *scale = ctx->priv;
     const char *p;

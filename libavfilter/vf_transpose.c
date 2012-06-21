@@ -44,7 +44,7 @@ typedef struct {
     int dir;
 } TransContext;
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     TransContext *trans = ctx->priv;
     trans->dir = 0;

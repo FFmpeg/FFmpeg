@@ -37,7 +37,7 @@ typedef struct {
     int hsub, vsub, bpp;
 } FadeContext;
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     FadeContext *fade = ctx->priv;
     unsigned int nb_frames;

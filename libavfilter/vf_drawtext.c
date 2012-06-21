@@ -280,7 +280,7 @@ error:
     return ret;
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     int err;
     DrawTextContext *dtext = ctx->priv;

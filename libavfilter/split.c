@@ -28,7 +28,7 @@
 #include "internal.h"
 #include "video.h"
 
-static int split_init(AVFilterContext *ctx, const char *args, void *opaque)
+static int split_init(AVFilterContext *ctx, const char *args)
 {
     int i, nb_outputs = 2;
 

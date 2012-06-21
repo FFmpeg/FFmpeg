@@ -429,7 +429,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
     int ret=0;
 
     if (filter->filter->init)
-        ret = filter->filter->init(filter, args, opaque);
+        ret = filter->filter->init(filter, args);
     return ret;
 }
 

@@ -278,7 +278,7 @@ static av_cold int frei0r_init(AVFilterContext *ctx,
     return 0;
 }
 
-static av_cold int filter_init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int filter_init(AVFilterContext *ctx, const char *args)
 {
     Frei0rContext *frei0r = ctx->priv;
     char dl_name[1024], c;
@@ -381,7 +381,7 @@ AVFilter avfilter_vf_frei0r = {
                                   { .name = NULL}},
 };
 
-static av_cold int source_init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int source_init(AVFilterContext *ctx, const char *args)
 {
     Frei0rContext *frei0r = ctx->priv;
     char dl_name[1024], c;

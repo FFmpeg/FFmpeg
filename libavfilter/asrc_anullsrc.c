@@ -30,7 +30,7 @@ typedef struct {
     int64_t sample_rate;
 } ANullContext;
 
-static int init(AVFilterContext *ctx, const char *args, void *opaque)
+static int init(AVFilterContext *ctx, const char *args)
 {
     ANullContext *priv = ctx->priv;
     char channel_layout_str[128] = "";

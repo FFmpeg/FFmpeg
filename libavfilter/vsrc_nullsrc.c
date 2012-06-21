@@ -51,7 +51,7 @@ typedef struct {
     double var_values[VAR_VARS_NB];
 } NullContext;
 
-static int init(AVFilterContext *ctx, const char *args, void *opaque)
+static int init(AVFilterContext *ctx, const char *args)
 {
     NullContext *priv = ctx->priv;
 

@@ -173,7 +173,7 @@ int av_buffersrc_buffer(AVFilterContext *s, AVFilterBufferRef *buf)
     return 0;
 }
 
-static av_cold int init_video(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init_video(AVFilterContext *ctx, const char *args)
 {
     BufferSourceContext *c = ctx->priv;
     char pix_fmt_str[128];
@@ -219,7 +219,7 @@ static const AVClass abuffer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static av_cold int init_audio(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init_audio(AVFilterContext *ctx, const char *args)
 {
     BufferSourceContext *s = ctx->priv;
     int ret = 0;

@@ -70,7 +70,7 @@ static const AVOption testsrc_options[] = {
     { NULL },
 };
 
-static av_cold int init_common(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init_common(AVFilterContext *ctx, const char *args)
 {
     TestSourceContext *test = ctx->priv;
     AVRational frame_rate_q;
@@ -336,13 +336,13 @@ static void test_fill_picture(AVFilterContext *ctx, AVFilterBufferRef *picref)
     }
 }
 
-static av_cold int test_init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int test_init(AVFilterContext *ctx, const char *args)
 {
     TestSourceContext *test = ctx->priv;
 
     test->class = &testsrc_class;
     test->fill_picture_fn = test_fill_picture;
-    return init_common(ctx, args, opaque);
+    return init_common(ctx, args);
 }
 
 static int test_query_formats(AVFilterContext *ctx)
@@ -442,13 +442,13 @@ static void rgbtest_fill_picture(AVFilterContext *ctx, AVFilterBufferRef *picref
      }
 }
 
-static av_cold int rgbtest_init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int rgbtest_init(AVFilterContext *ctx, const char *args)
 {
     TestSourceContext *test = ctx->priv;
 
     test->class = &rgbtestsrc_class;
     test->fill_picture_fn = rgbtest_fill_picture;
-    return init_common(ctx, args, opaque);
+    return init_common(ctx, args);
 }
 
 static int rgbtest_query_formats(AVFilterContext *ctx)
