@@ -97,7 +97,7 @@ details), you must upgrade FFmpeg's license to GPL in order to use it.
 
 iLBC is a narrowband speech codec that has been made freely available
 by Google as part of the WebRTC project. libilbc is a packaging friendly
-copy of the iLBC codec. Libav can make use of the libilbc library for
+copy of the iLBC codec. FFmpeg can make use of the libilbc library for
 iLBC encoding and decoding.
 
 Go to @url{https://github.com/dekkers/libilbc} and follow the instructions for
