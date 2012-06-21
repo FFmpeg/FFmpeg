@@ -30,6 +30,7 @@
 #include "avformat.h"
 #include "internal.h"
 #include "avio_internal.h"
+#include "id3v2.h"
 #include "riff.h"
 #include "asf.h"
 #include "asfcrypt.h"
@@ -173,6 +174,101 @@ static int get_value(AVIOContext *pb, int type){
     }
 }
 
+/* MSDN claims that this should be "compatible with the ID3 frame, APIC",
+ * but in reality this is only loosely similar */
+static int asf_read_picture(AVFormatContext *s, int len)
+{
+    AVPacket pkt = { 0 };
+    const CodecMime *mime = ff_id3v2_mime_tags;
+    enum  CodecID      id = CODEC_ID_NONE;
+    char mimetype[64];
+    uint8_t  *desc = NULL;
+    ASFStream *ast = NULL;
+    AVStream   *st = NULL;
+    int ret, type, picsize, desc_len;
+
+    /* type + picsize + mime + desc */
+    if (len < 1 + 4 + 2 + 2) {
+        av_log(s, AV_LOG_ERROR, "Invalid attached picture size: %d.\n", len);
+        return AVERROR_INVALIDDATA;
+    }
+
+    /* picture type */
+    type = avio_r8(s->pb);
+    len--;
+    if (type >= FF_ARRAY_ELEMS(ff_id3v2_picture_types) || type < 0) {
+        av_log(s, AV_LOG_WARNING, "Unknown attached picture type: %d.\n", type);
+        type = 0;
+    }
+
+    /* picture data size */
+    picsize = avio_rl32(s->pb);
+    len -= 4;
+
+    /* picture MIME type */
+    len -= avio_get_str16le(s->pb, len, mimetype, sizeof(mimetype));
+    while (mime->id != CODEC_ID_NONE) {
+        if (!strncmp(mime->str, mimetype, sizeof(mimetype))) {
+            id = mime->id;
+            break;
+        }
+        mime++;
+    }
+    if (id == CODEC_ID_NONE) {
+        av_log(s, AV_LOG_ERROR, "Unknown attached picture mimetype: %s.\n",
+               mimetype);
+        return 0;
+    }
+
+    if (picsize >= len) {
+        av_log(s, AV_LOG_ERROR, "Invalid attached picture data size: %d >= %d.\n",
+               picsize, len);
+        return AVERROR_INVALIDDATA;
+    }
+
+    /* picture description */
+    desc_len = (len - picsize) * 2 + 1;
+    desc     = av_malloc(desc_len);
+    if (!desc)
+        return AVERROR(ENOMEM);
+    len -= avio_get_str16le(s->pb, len - picsize, desc, desc_len);
+
+    ret = av_get_packet(s->pb, &pkt, picsize);
+    if (ret < 0)
+        goto fail;
+
+    st = avformat_new_stream(s, NULL);
+    ast = av_mallocz(sizeof(*ast));
+    if (!st || !ast) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+    st->priv_data = ast;
+
+    st->disposition      |= AV_DISPOSITION_ATTACHED_PIC;
+    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codec->codec_id   = id;
+
+    st->attached_pic      = pkt;
+    st->attached_pic.stream_index = st->index;
+    st->attached_pic.flags |= AV_PKT_FLAG_KEY;
+
+    if (*desc)
+        av_dict_set(&st->metadata, "title", desc, AV_DICT_DONT_STRDUP_VAL);
+    else
+        av_freep(&desc);
+
+    av_dict_set(&st->metadata, "comment", ff_id3v2_picture_types[type], 0);
+
+    return 0;
+
+fail:
+    av_freep(&ast);
+    av_freep(&desc);
+    av_free_packet(&pkt);
+    return ret;
+}
+
 static void get_tag(AVFormatContext *s, const char *key, int type, int len)
 {
     char *value;
@@ -190,6 +286,9 @@ static void get_tag(AVFormatContext *s, const char *key, int type, int len)
     } else if (type > 1 && type <= 5) {  // boolean or DWORD or QWORD or WORD
         uint64_t num = get_value(s->pb, type);
         snprintf(value, len, "%"PRIu64, num);
+    } else if (type == 1 && !strcmp(key, "WM/Picture")) { // handle cover art
+        asf_read_picture(s, len);
+        goto finish;
     } else {
         av_log(s, AV_LOG_DEBUG, "Unsupported value type %d in tag %s.\n", type, key);
         goto finish;
