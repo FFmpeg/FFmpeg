@@ -281,7 +281,6 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     if(   picref->video->w != link->w
        || picref->video->h != link->h
        || picref->format   != link->format) {
-        AVFilterLink *out_link;
         int ret;
         snprintf(scale->w_expr, sizeof(scale->w_expr)-1, "%d", outlink->w);
         snprintf(scale->h_expr, sizeof(scale->h_expr)-1, "%d", outlink->h);
