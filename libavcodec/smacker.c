@@ -43,7 +43,7 @@
 
 #define SMKTREE_BITS 9
 #define SMK_NODE 0x80000000
-
+#define SMKTREE_DECODE_MAX_RECURSION 32
 
 typedef struct SmackVContext {
     AVCodecContext *avctx;
@@ -97,6 +97,11 @@ enum SmkBlockTypes {
 static int smacker_decode_tree(BitstreamContext *bc, HuffContext *hc,
                                uint32_t prefix, int length)
 {
+    if (length > SMKTREE_DECODE_MAX_RECURSION) {
+        av_log(NULL, AV_LOG_ERROR, "Maximum tree recursion level exceeded.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if (!bitstream_read_bit(bc)) { // Leaf
         if(hc->current >= 256){
             av_log(NULL, AV_LOG_ERROR, "Tree size exceeded!\n");
