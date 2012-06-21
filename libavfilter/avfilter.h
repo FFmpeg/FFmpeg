@@ -366,7 +366,22 @@ enum AVMediaType avfilter_pad_get_type(AVFilterPad *pads, int pad_idx);
 typedef struct AVFilter {
     const char *name;         ///< filter name
 
-    int priv_size;      ///< size of private data to allocate for the filter
+    /**
+     * A description for the filter. You should use the
+     * NULL_IF_CONFIG_SMALL() macro to define it.
+     */
+    const char *description;
+
+    const AVFilterPad *inputs;  ///< NULL terminated list of inputs. NULL if none
+    const AVFilterPad *outputs; ///< NULL terminated list of outputs. NULL if none
+
+    /*****************************************************************
+     * All fields below this line are not part of the public API. They
+     * may not be used outside of libavfilter and can be changed and
+     * removed at will.
+     * New public fields should be added right above.
+     *****************************************************************
+     */
 
     /**
      * Filter initialization function. Args contains the user-supplied
@@ -391,14 +406,7 @@ typedef struct AVFilter {
      */
     int (*query_formats)(AVFilterContext *);
 
-    const AVFilterPad *inputs;  ///< NULL terminated list of inputs. NULL if none
-    const AVFilterPad *outputs; ///< NULL terminated list of outputs. NULL if none
-
-    /**
-     * A description for the filter. You should use the
-     * NULL_IF_CONFIG_SMALL() macro to define it.
-     */
-    const char *description;
+    int priv_size;      ///< size of private data to allocate for the filter
 } AVFilter;
 
 /** An instance of a filter */
