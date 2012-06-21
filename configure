@@ -1113,6 +1113,7 @@ HAVE_LIST="
     memalign
     mkstemp
     mmap
+    nanosleep
     netinet_sctp_h
     poll_h
     posix_memalign
@@ -1123,6 +1124,7 @@ HAVE_LIST="
     sdl_video_size
     setmode
     setrlimit
+    Sleep
     sndio_h
     socklen_t
     soundcard_h
@@ -1151,8 +1153,10 @@ HAVE_LIST="
     trunc
     truncf
     unistd_h
+    usleep
     vfp_args
     VirtualAlloc
+    windows_h
     winsock2_h
     xform_asm
     xmm_clobbers
@@ -2851,12 +2855,14 @@ check_func  strtok_r
 check_func  sched_getaffinity
 check_func  sysconf
 check_func  sysctl
+check_func  usleep
 check_func_headers io.h setmode
 check_lib2 "windows.h psapi.h" GetProcessMemoryInfo -lpsapi
 check_func_headers windows.h GetProcessAffinityMask
 check_func_headers windows.h GetProcessTimes
 check_func_headers windows.h GetSystemTimeAsFileTime
 check_func_headers windows.h MapViewOfFile
+check_func_headers windows.h Sleep
 check_func_headers windows.h VirtualAlloc
 
 check_header dlfcn.h
@@ -2870,6 +2876,7 @@ check_header sys/select.h
 check_header unistd.h
 check_header vdpau/vdpau.h
 check_header vdpau/vdpau_x11.h
+check_header windows.h
 check_header X11/extensions/XvMClib.h
 
 disabled  zlib || check_lib   zlib.h      zlibVersion -lz   || disable  zlib
