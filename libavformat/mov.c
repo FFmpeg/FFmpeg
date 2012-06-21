@@ -172,8 +172,8 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 #endif
     char str[1024], key2[16], language[4] = {0};
     const char *key = NULL;
-    uint16_t str_size, langcode = 0;
-    uint32_t data_type = 0;
+    uint16_t langcode = 0;
+    uint32_t data_type = 0, str_size;
     int (*parse)(MOVContext*, AVIOContext*, unsigned, const char*) = NULL;
 
     switch (atom.type) {
