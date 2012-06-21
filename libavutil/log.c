@@ -24,7 +24,11 @@
  * logging functions
  */
 
+#include "config.h"
+
+#if HAVE_ISATTY
 #include <unistd.h>
+#endif
 #include <stdlib.h>
 #include "avstring.h"
 #include "avutil.h"
