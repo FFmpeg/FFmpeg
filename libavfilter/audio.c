@@ -190,7 +190,6 @@ void ff_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
     /* prepare to copy the samples if the buffer has insufficient permissions */
     if ((dst->min_perms & samplesref->perms) != dst->min_perms ||
         dst->rej_perms & samplesref->perms) {
-        int size;
         av_log(link->dst, AV_LOG_DEBUG,
                "Copying audio data in avfilter (have perms %x, need %x, reject %x)\n",
                samplesref->perms, link->dstpad->min_perms, link->dstpad->rej_perms);
