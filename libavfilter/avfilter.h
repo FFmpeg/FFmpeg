@@ -139,23 +139,6 @@ typedef struct AVFilterBufferRefVideoProps {
 typedef struct AVFilterBufferRef {
     AVFilterBuffer *buf;        ///< the buffer that this is a reference to
     uint8_t *data[8];           ///< picture/audio data for each plane
-    int linesize[8];            ///< number of bytes per line
-    int format;                 ///< media format
-
-    /**
-     * presentation timestamp. The time unit may change during
-     * filtering, as it is specified in the link and the filter code
-     * may need to rescale the PTS accordingly.
-     */
-    int64_t pts;
-    int64_t pos;                ///< byte position in stream, -1 if unknown
-
-    int perms;                  ///< permissions, see the AV_PERM_* flags
-
-    enum AVMediaType type;      ///< media type of buffer data
-    AVFilterBufferRefVideoProps *video; ///< video buffer specific properties
-    AVFilterBufferRefAudioProps *audio; ///< audio buffer specific properties
-
     /**
      * pointers to the data planes/channels.
      *
@@ -171,6 +154,24 @@ typedef struct AVFilterBufferRef {
      * in order to access all channels.
      */
     uint8_t **extended_data;
+    int linesize[8];            ///< number of bytes per line
+
+    AVFilterBufferRefVideoProps *video; ///< video buffer specific properties
+    AVFilterBufferRefAudioProps *audio; ///< audio buffer specific properties
+
+    /**
+     * presentation timestamp. The time unit may change during
+     * filtering, as it is specified in the link and the filter code
+     * may need to rescale the PTS accordingly.
+     */
+    int64_t pts;
+    int64_t pos;                ///< byte position in stream, -1 if unknown
+
+    int format;                 ///< media format
+
+    int perms;                  ///< permissions, see the AV_PERM_* flags
+
+    enum AVMediaType type;      ///< media type of buffer data
 } AVFilterBufferRef;
 
 /**
