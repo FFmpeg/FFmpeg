@@ -25,6 +25,7 @@
 #include <math.h>
 #include "attributes.h"
 #include "rational.h"
+#include "intfloat.h"
 
 #ifndef M_LOG2_10
 #define M_LOG2_10      3.32192809488736234787  /* log_2 10 */
@@ -33,10 +34,10 @@
 #define M_PHI          1.61803398874989484820   /* phi / golden ratio */
 #endif
 #ifndef NAN
-#define NAN            (0.0/0.0)
+#define NAN            av_int2float(0x7fc00000)
 #endif
 #ifndef INFINITY
-#define INFINITY       (1.0/0.0)
+#define INFINITY       av_int2float(0x7f800000)
 #endif
 
 /**
