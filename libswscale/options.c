@@ -66,7 +66,11 @@ static const AVOption options[] = {
     { NULL }
 };
 
-const AVClass sws_context_class = { "SWScaler", sws_context_to_name, options };
+const AVClass sws_context_class = {
+    .class_name = "SWScaler",
+    .item_name  = sws_context_to_name,
+    .option     = options,
+};
 
 const AVClass *sws_get_class(void)
 {
