@@ -230,9 +230,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "pixel format not supported\n");
         return -1;
     }
-//    avcodec_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_h_shift, &s->chroma_v_shift);
-    s->chroma_h_shift= 1;
-    s->chroma_v_shift= 1;
+    avcodec_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_h_shift, &s->chroma_v_shift);
 
     ff_set_cmp(&s->dsp, s->dsp.me_cmp, s->avctx->me_cmp);
     ff_set_cmp(&s->dsp, s->dsp.me_sub_cmp, s->avctx->me_sub_cmp);
