@@ -317,8 +317,9 @@ static av_cold int init_audio(AVFilterContext *ctx, const char *args, void *opaq
     if (!s->time_base.num)
         s->time_base = (AVRational){1, s->sample_rate};
 
-    av_log(ctx, AV_LOG_VERBOSE, "tb:%d/%d samplefmt:%s samplerate: %d "
-           "ch layout:%s\n", s->time_base.num, s->time_base.den, s->sample_fmt_str,
+    av_log(ctx, AV_LOG_INFO,
+           "tb:%d/%d samplefmt:%s samplerate:%d chlayout:%s\n",
+           s->time_base.num, s->time_base.den, s->sample_fmt_str,
            s->sample_rate, s->channel_layout_str);
 
 fail:
