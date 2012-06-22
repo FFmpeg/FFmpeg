@@ -29,6 +29,8 @@
 #include "avutil.h"
 #include "log.h"
 
+#define LINE_SZ 1024
+
 static int av_log_level = AV_LOG_INFO;
 static int flags;
 
@@ -148,7 +150,7 @@ static int get_category(void *ptr){
 }
 
 static void format_line(void *ptr, int level, const char *fmt, va_list vl,
-                        char part[3][512], int part_size, int *print_prefix, int type[2])
+                        char part[3][LINE_SZ], int part_size, int *print_prefix, int type[2])
 {
     AVClass* avc = ptr ? *(AVClass **) ptr : NULL;
     part[0][0] = part[1][0] = part[2][0] = 0;
@@ -176,7 +178,7 @@ static void format_line(void *ptr, int level, const char *fmt, va_list vl,
 void av_log_format_line(void *ptr, int level, const char *fmt, va_list vl,
                         char *line, int line_size, int *print_prefix)
 {
-    char part[3][512];
+    char part[3][LINE_SZ];
     format_line(ptr, level, fmt, vl, part, sizeof(part[0]), print_prefix, NULL);
     snprintf(line, line_size, "%s%s%s", part[0], part[1], part[2]);
 }
@@ -185,9 +187,9 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
 {
     static int print_prefix = 1;
     static int count;
-    static char prev[1024];
-    char part[3][512];
-    char line[1024];
+    static char prev[LINE_SZ];
+    char part[3][LINE_SZ];
+    char line[LINE_SZ];
     static int is_atty;
     int type[2];
 
