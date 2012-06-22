@@ -1343,8 +1343,10 @@ void codec_release_buffer(AVCodecContext *s, AVFrame *frame)
     FrameBuffer *buf = frame->opaque;
     int i;
 
-    if(frame->type!=FF_BUFFER_TYPE_USER)
+    if(frame->type!=FF_BUFFER_TYPE_USER) {
         avcodec_default_release_buffer(s, frame);
+        return;
+    }
 
     for (i = 0; i < FF_ARRAY_ELEMS(frame->data); i++)
         frame->data[i] = NULL;
