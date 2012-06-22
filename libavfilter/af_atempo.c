@@ -40,6 +40,7 @@
 
 #include <float.h>
 #include "libavcodec/avfft.h"
+#include "libavutil/audioconvert.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/eval.h"

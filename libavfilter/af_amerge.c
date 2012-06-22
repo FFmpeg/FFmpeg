@@ -23,6 +23,7 @@
  * Audio merging filter
  */
 
+#include "libavutil/audioconvert.h"
 #include "libavutil/bprint.h"
 #include "libavutil/opt.h"
 #include "libswresample/swresample.h" // only for SWR_CH_MAX

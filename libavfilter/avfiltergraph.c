@@ -26,6 +26,7 @@
 #include "libavutil/audioconvert.h"
 #include "libavutil/avassert.h"
 #include "libavutil/pixdesc.h"
+#include "libavcodec/avcodec.h" // avcodec_find_best_pix_fmt2()
 #include "avfilter.h"
 #include "avfiltergraph.h"
 #include "formats.h"

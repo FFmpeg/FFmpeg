@@ -23,6 +23,7 @@
  * Audio silence detector
  */
 
+#include "libavutil/audioconvert.h"
 #include "libavutil/opt.h"
 #include "libavutil/timestamp.h"
 #include "audio.h"
