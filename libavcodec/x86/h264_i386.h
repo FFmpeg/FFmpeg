@@ -37,6 +37,7 @@
 //FIXME use some macros to avoid duplicating get_cabac (cannot be done yet
 //as that would make optimization work hard)
 #if HAVE_7REGS
+#define decode_significance decode_significance_x86
 static int decode_significance_x86(CABACContext *c, int max_coeff,
                                    uint8_t *significant_coeff_ctx_base,
                                    int *index, x86_reg last_off){
@@ -105,6 +106,7 @@ static int decode_significance_x86(CABACContext *c, int max_coeff,
     return coeff_count;
 }
 
+#define decode_significance_8x8 decode_significance_8x8_x86
 static int decode_significance_8x8_x86(CABACContext *c,
                                        uint8_t *significant_coeff_ctx_base,
                                        int *index, uint8_t *last_coeff_ctx_base, const uint8_t *sig_off){
