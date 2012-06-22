@@ -40,9 +40,6 @@
 #include "mpeg4video.h"
 #include "internal.h"
 
-//#undef NDEBUG
-//#include <assert.h>
-
 /**
  * Table of number of bits a motion vector component needs.
  */
@@ -229,7 +226,7 @@ void ff_h263_encode_picture_header(MpegEncContext * s, int picture_number)
     if(s->h263_slice_structured){
         put_bits(&s->pb, 1, 1);
 
-        assert(s->mb_x == 0 && s->mb_y == 0);
+        av_assert1(s->mb_x == 0 && s->mb_y == 0);
         ff_h263_encode_mba(s);
 
         put_bits(&s->pb, 1, 1);
@@ -396,7 +393,7 @@ static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
                 put_bits(&s->pb, 1, last);
                 put_bits(&s->pb, 6, run);
 
-                assert(slevel != 0);
+                av_assert2(slevel != 0);
 
                 if(level < 128)
                     put_sbits(&s->pb, 8, slevel);
@@ -549,7 +546,7 @@ void ff_h263_encode_mb(MpegEncContext * s,
             s->mv_bits+= get_bits_diff(s);
         }
     } else {
-        assert(s->mb_intra);
+        av_assert2(s->mb_intra);
 
         cbp = 0;
         if (s->h263_aic) {
@@ -728,8 +725,8 @@ static void init_mv_penalty_and_fcode(MpegEncContext *s)
 static void init_uni_h263_rl_tab(RLTable *rl, uint32_t *bits_tab, uint8_t *len_tab){
     int slevel, run, last;
 
-    assert(MAX_LEVEL >= 64);
-    assert(MAX_RUN   >= 63);
+    av_assert0(MAX_LEVEL >= 64);
+    av_assert0(MAX_RUN   >= 63);
 
     for(slevel=-64; slevel<64; slevel++){
         if(slevel==0) continue;
