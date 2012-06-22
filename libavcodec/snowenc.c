@@ -252,12 +252,12 @@ static av_cold int encode_init(AVCodecContext *avctx)
 }
 
 //near copy & paste from dsputil, FIXME
-static int pix_sum(uint8_t * pix, int line_size, int w)
+static int pix_sum(uint8_t * pix, int line_size, int w, int h)
 {
     int s, i, j;
 
     s = 0;
-    for (i = 0; i < w; i++) {
+    for (i = 0; i < h; i++) {
         for (j = 0; j < w; j++) {
             s += pix[0];
             pix ++;
@@ -444,15 +444,15 @@ static int encode_q_branch(SnowContext *s, int level, int x, int y){
     score += (s->lambda2*(get_rac_count(&pc)-base_bits))>>FF_LAMBDA_SHIFT;
 
     block_s= block_w*block_w;
-    sum = pix_sum(current_data[0], stride, block_w);
+    sum = pix_sum(current_data[0], stride, block_w, block_w);
     l= (sum + block_s/2)/block_s;
     iscore = pix_norm1(current_data[0], stride, block_w) - 2*l*sum + l*l*block_s;
 
-    block_s= block_w*block_w>>2;
-    sum = pix_sum(current_data[1], uvstride, block_w>>1);
+    block_s= block_w*block_w>>(s->chroma_h_shift + s->chroma_v_shift);
+    sum = pix_sum(current_data[1], uvstride, block_w>>s->chroma_h_shift, block_w>>s->chroma_v_shift);
     cb= (sum + block_s/2)/block_s;
 //    iscore += pix_norm1(&current_mb[1][0], uvstride, block_w>>1) - 2*cb*sum + cb*cb*block_s;
-    sum = pix_sum(current_data[2], uvstride, block_w>>1);
+    sum = pix_sum(current_data[2], uvstride, block_w>>s->chroma_h_shift, block_w>>s->chroma_v_shift);
     cr= (sum + block_s/2)/block_s;
 //    iscore += pix_norm1(&current_mb[2][0], uvstride, block_w>>1) - 2*cr*sum + cr*cr*block_s;
 
