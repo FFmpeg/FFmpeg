@@ -250,7 +250,7 @@ static av_cold int init_video(AVFilterContext *ctx, const char *args, void *opaq
         av_opt_set_defaults(c);
         ret = av_set_options_string(c, args, "=", ":");
         if (ret < 0) {
-            av_log(ctx, AV_LOG_ERROR, "Error parsing options string: %s.\n", args);
+            av_log(ctx, AV_LOG_ERROR, "Error parsing options string: %s\n", args);
             goto fail;
         }
     } else {
@@ -261,7 +261,7 @@ static av_cold int init_video(AVFilterContext *ctx, const char *args, void *opaq
         ret = AVERROR(EINVAL);
         goto fail;
     }
-    av_log(ctx, AV_LOG_WARNING, "Flat options syntax is deprecated, use key=value pairs.\n");
+    av_log(ctx, AV_LOG_WARNING, "Flat options syntax is deprecated, use key=value pairs\n");
 
     if ((ret = ff_parse_pixel_format(&c->pix_fmt, pix_fmt_str, ctx)) < 0)
         goto fail;
@@ -308,13 +308,13 @@ static av_cold int init_audio(AVFilterContext *ctx, const char *args, void *opaq
     av_opt_set_defaults(s);
 
     if ((ret = av_set_options_string(s, args, "=", ":")) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error parsing options string: %s.\n", args);
+        av_log(ctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
         goto fail;
     }
 
     s->sample_fmt = av_get_sample_fmt(s->sample_fmt_str);
     if (s->sample_fmt == AV_SAMPLE_FMT_NONE) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid sample format %s.\n",
+        av_log(ctx, AV_LOG_ERROR, "Invalid sample format '%s'\n",
                s->sample_fmt_str);
         ret = AVERROR(EINVAL);
         goto fail;
@@ -322,7 +322,7 @@ static av_cold int init_audio(AVFilterContext *ctx, const char *args, void *opaq
 
     s->channel_layout = av_get_channel_layout(s->channel_layout_str);
     if (!s->channel_layout) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid channel layout %s.\n",
+        av_log(ctx, AV_LOG_ERROR, "Invalid channel layout '%s'\n",
                s->channel_layout_str);
         ret = AVERROR(EINVAL);
         goto fail;
