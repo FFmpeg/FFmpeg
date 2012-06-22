@@ -328,7 +328,7 @@ void ff_snow_pred_block(SnowContext *s, uint8_t *dst, uint8_t *tmp, int stride, 
         }
     }else{
         uint8_t *src= s->last_picture[block->ref].data[plane_index];
-        const int scale= plane_index ?  s->mv_scale : 2*s->mv_scale;
+        const int scale= plane_index ?  (2*s->mv_scale)>>s->chroma_h_shift : 2*s->mv_scale;
         int mx= block->mx*scale;
         int my= block->my*scale;
         const int dx= mx&15;
@@ -342,6 +342,9 @@ void ff_snow_pred_block(SnowContext *s, uint8_t *dst, uint8_t *tmp, int stride, 
             s->dsp.emulated_edge_mc(tmp + MB_SIZE, src, stride, b_w+HTAPS_MAX-1, b_h+HTAPS_MAX-1, sx, sy, w, h);
             src= tmp + MB_SIZE;
         }
+
+        av_assert2(s->chroma_h_shift == s->chroma_v_shift); // only one mv_scale
+
 //        assert(b_w == b_h || 2*b_w == b_h || b_w == 2*b_h);
 //        assert(!(b_w&(b_w-1)));
         assert(b_w>1 && b_h>1);
@@ -513,8 +516,8 @@ static void halfpel_interpol(SnowContext *s, uint8_t *halfpel[4][4], AVFrame *fr
 
     for(p=0; p<3; p++){
         int is_chroma= !!p;
-        int w= s->avctx->width  >>is_chroma;
-        int h= s->avctx->height >>is_chroma;
+        int w= is_chroma ? s->avctx->width >>s->chroma_h_shift : s->avctx->width;
+        int h= is_chroma ? s->avctx->height>>s->chroma_v_shift : s->avctx->height;
         int ls= frame->linesize[p];
         uint8_t *src= frame->data[p];
 
@@ -573,11 +576,11 @@ int ff_snow_frame_start(SnowContext *s){
                           s->current_picture.linesize[0], w   , h   ,
                           EDGE_WIDTH  , EDGE_WIDTH  , EDGE_TOP | EDGE_BOTTOM);
         s->dsp.draw_edges(s->current_picture.data[1],
-                          s->current_picture.linesize[1], w>>1, h>>1,
-                          EDGE_WIDTH/2, EDGE_WIDTH/2, EDGE_TOP | EDGE_BOTTOM);
+                          s->current_picture.linesize[1], w>>s->chroma_h_shift, h>>s->chroma_v_shift,
+                          EDGE_WIDTH>>s->chroma_h_shift, EDGE_WIDTH>>s->chroma_v_shift, EDGE_TOP | EDGE_BOTTOM);
         s->dsp.draw_edges(s->current_picture.data[2],
-                          s->current_picture.linesize[2], w>>1, h>>1,
-                          EDGE_WIDTH/2, EDGE_WIDTH/2, EDGE_TOP | EDGE_BOTTOM);
+                          s->current_picture.linesize[2], w>>s->chroma_h_shift, h>>s->chroma_v_shift,
+                          EDGE_WIDTH>>s->chroma_h_shift, EDGE_WIDTH>>s->chroma_v_shift, EDGE_TOP | EDGE_BOTTOM);
     }
 
     ff_snow_release_buffer(s->avctx);
