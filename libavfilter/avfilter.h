@@ -22,13 +22,13 @@
 #ifndef AVFILTER_AVFILTER_H
 #define AVFILTER_AVFILTER_H
 
+#include <stddef.h>
+
 #include "libavutil/avutil.h"
 #include "libavutil/log.h"
 #include "libavutil/samplefmt.h"
 #include "libavutil/pixfmt.h"
 #include "libavutil/rational.h"
-
-#include <stddef.h>
 
 #include "libavfilter/version.h"
 
