@@ -838,6 +838,17 @@ typedef struct AVChapter {
     AVDictionary *metadata;
 } AVChapter;
 
+
+/**
+ * The duration of a video can be estimated through various ways, and this enum can be used
+ * to know how the duration was estimated.
+ */
+enum AVDurationEstimationMethod {
+    AVFMT_DURATION_FROM_PTS,    ///< Duration accurately estimated from PTSes
+    AVFMT_DURATION_FROM_STREAM, ///< Duration estimated from a stream with a known duration
+    AVFMT_DURATION_FROM_BITRATE ///< Duration estimated from bitrate (less accurate)
+};
+
 /**
  * Format I/O context.
  * New fields can be added to the end with minor version bumps.
@@ -1108,11 +1119,7 @@ typedef struct AVFormatContext {
      * The duration field can be estimated through various ways, and this field can be used
      * to know how the duration was estimated.
      */
-    enum {
-        AVFMT_DURATION_FROM_PTS,    ///< duration accurately estimated from PTSes
-        AVFMT_DURATION_FROM_STREAM, ///< duration estimated from a stream with a known duration
-        AVFMT_DURATION_FROM_BITRATE ///< duration estimated from bitrate (less accurate)
-    } duration_estimation_method;
+    enum AVDurationEstimationMethod duration_estimation_method;
 } AVFormatContext;
 
 /**
@@ -1120,7 +1127,7 @@ typedef struct AVFormatContext {
  *
  * @return AVFMT_DURATION_FROM_PTS, AVFMT_DURATION_FROM_STREAM, or AVFMT_DURATION_FROM_BITRATE.
  */
-int av_fmt_ctx_get_duration_estimation_method(const AVFormatContext* ctx);
+enum AVDurationEstimationMethod av_fmt_ctx_get_duration_estimation_method(const AVFormatContext* ctx);
 
 typedef struct AVPacketList {
     AVPacket pkt;

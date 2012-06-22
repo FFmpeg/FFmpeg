@@ -111,7 +111,7 @@ AVFormatContext *avformat_alloc_context(void)
     return ic;
 }
 
-int av_fmt_ctx_get_duration_estimation_method(const AVFormatContext* ctx)
+enum AVDurationEstimationMethod av_fmt_ctx_get_duration_estimation_method(const AVFormatContext* ctx)
 {
     return ctx->duration_estimation_method;
 }
