@@ -281,7 +281,7 @@ Desired output channel layout. Defaults to stereo.
 Map channels from inputs to output. The argument is a comma-separated list of
 mappings, each in the @code{@var{input_idx}.@var{in_channel}-@var{out_channel}}
 form. @var{input_idx} is the 0-based index of the input stream. @var{in_channel}
-can be either the name of the input channel (e.g. FR for front left) or its
+can be either the name of the input channel (e.g. FL for front left) or its
 index in the specified input stream. @var{out_channel} is the name of the output
 channel.
 @end table
