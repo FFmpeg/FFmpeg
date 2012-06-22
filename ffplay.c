@@ -1732,7 +1732,7 @@ static int video_thread(void *arg)
             if (fabs(is->frame_last_filter_delay) > AV_NOSYNC_THRESHOLD / 10.0)
                 is->frame_last_filter_delay = 0;
 
-            avfilter_fill_frame_from_video_buffer_ref(frame, picref);
+            avfilter_copy_buf_props(frame, picref);
 
             pts_int = picref->pts;
             tb      = filt_out->inputs[0]->time_base;

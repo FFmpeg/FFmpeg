@@ -1964,7 +1964,7 @@ static int poll_filters(void)
 
                 switch (ost->filter->filter->inputs[0]->type) {
                 case AVMEDIA_TYPE_VIDEO:
-                    avfilter_fill_frame_from_video_buffer_ref(filtered_frame, picref);
+                    avfilter_copy_buf_props(filtered_frame, picref);
                     filtered_frame->pts = frame_pts;
                     if (!ost->frame_aspect_ratio)
                         ost->st->codec->sample_aspect_ratio = picref->video->sample_aspect_ratio;
