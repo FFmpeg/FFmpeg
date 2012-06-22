@@ -639,8 +639,10 @@ av_cold void ff_snow_common_end(SnowContext *s)
     for(i=0; i<MAX_REF_FRAMES; i++){
         av_freep(&s->ref_mvs[i]);
         av_freep(&s->ref_scores[i]);
-        if(s->last_picture[i].data[0])
+        if(s->last_picture[i].data[0]) {
+            av_assert0(s->last_picture[i].data[0] != s->current_picture.data[0]);
             s->avctx->release_buffer(s->avctx, &s->last_picture[i]);
+        }
     }
 
     for(plane_index=0; plane_index<3; plane_index++){
