@@ -293,8 +293,10 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
 
     if (n && buf_size % n) {
         if (buf_size < n) {
-            av_log(avctx, AV_LOG_ERROR, "invalid PCM packet\n");
-            return -1;
+            av_log(avctx, AV_LOG_ERROR,
+                   "Invalid PCM packet, data has size %d but at least a size of %d was expected\n",
+                   buf_size, n);
+            return AVERROR_INVALIDDATA;
         } else
             buf_size -= buf_size % n;
     }
