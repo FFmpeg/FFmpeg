@@ -394,7 +394,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     dtext->class = &drawtext_class;
     av_opt_set_defaults(dtext);
 
-    if ((err = (av_set_options_string(dtext, args, "=", ":"))) < 0) {
+    if ((err = av_set_options_string(dtext, args, "=", ":")) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
         return err;
     }
