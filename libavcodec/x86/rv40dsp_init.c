@@ -26,8 +26,8 @@
  * 3,3 is bugged in the rv40 format and maps to _xy2 version
  */
 
-#include "libavcodec/x86/dsputil_mmx.h"
 #include "libavcodec/rv34dsp.h"
+#include "dsputil_mmx.h"
 
 void ff_put_rv40_chroma_mc8_mmx  (uint8_t *dst, uint8_t *src,
                                   int stride, int h, int x, int y);

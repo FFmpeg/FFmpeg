@@ -1239,6 +1239,7 @@ HAVE_LIST="
     memalign
     mkstemp
     mmap
+    nanosleep
     netinet_sctp_h
     PeekNamedPipe
     poll_h
@@ -1251,6 +1252,7 @@ HAVE_LIST="
     sdl_video_size
     setmode
     setrlimit
+    Sleep
     sndio_h
     socklen_t
     soundcard_h
@@ -1278,8 +1280,11 @@ HAVE_LIST="
     threads
     trunc
     truncf
+    unistd_h
+    usleep
     vfp_args
     VirtualAlloc
+    windows_h
     winsock2_h
     xform_asm
     xmm_clobbers
@@ -3159,6 +3164,7 @@ check_func  strptime
 check_func  sched_getaffinity
 check_func  sysconf
 check_func  sysctl
+check_func  usleep
 check_func_headers conio.h kbhit
 check_func_headers windows.h PeekNamedPipe
 check_func_headers io.h setmode
@@ -3168,6 +3174,7 @@ check_func_headers windows.h GetProcessAffinityMask
 check_func_headers windows.h GetProcessTimes
 check_func_headers windows.h GetSystemTimeAsFileTime
 check_func_headers windows.h MapViewOfFile
+check_func_headers windows.h Sleep
 check_func_headers windows.h VirtualAlloc
 check_func_headers glob.h glob
 
@@ -3181,8 +3188,10 @@ check_header sys/param.h
 check_header sys/resource.h
 check_header sys/select.h
 check_header termios.h
+check_header unistd.h
 check_header vdpau/vdpau.h
 check_header vdpau/vdpau_x11.h
+check_header windows.h
 check_header X11/extensions/XvMClib.h
 check_header asm/types.h
 

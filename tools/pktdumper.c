@@ -25,6 +25,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "libavutil/time.h"
 #include "libavformat/avformat.h"
 
 #define PKTFILESUFF "_%08" PRId64 "_%02d_%010" PRId64 "_%06d_%c.bin"
@@ -122,7 +123,7 @@ int main(int argc, char **argv)
     avformat_close_input(&fctx);
 
     while (donotquit)
-        usleep(60 * 1000000);
+        av_usleep(60 * 1000000);
 
     return 0;
 }

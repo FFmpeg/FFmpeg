@@ -24,11 +24,10 @@
  * RTMP HTTP protocol
  */
 
-#include <unistd.h>
-
 #include "libavutil/avstring.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/opt.h"
+#include "libavutil/time.h"
 #include "internal.h"
 #include "http.h"
 
@@ -126,7 +125,7 @@ static int rtmp_http_read(URLContext *h, uint8_t *buf, int size)
                 if (rt->nb_bytes_read == 0) {
                     /* Wait 50ms before retrying to read a server reply in
                      * order to reduce the number of idle requets. */
-                    usleep(50000);
+                    av_usleep(50000);
                 }
 
                 if ((ret = rtmp_http_write(h, "", 1)) < 0)

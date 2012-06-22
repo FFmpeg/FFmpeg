@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/arm/cpu.h"
 #include "libavutil/float_dsp.h"
+#include "cpu.h"
 #include "float_dsp_arm.h"
 
 void ff_vector_fmul_vfp(float *dst, const float *src0, const float *src1,

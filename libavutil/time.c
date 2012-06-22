@@ -22,13 +22,19 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <time.h>
 #if HAVE_GETTIMEOFDAY
 #include <sys/time.h>
-#elif HAVE_GETSYSTEMTIMEASFILETIME
+#endif
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#if HAVE_WINDOWS_H
 #include <windows.h>
 #endif
 
 #include "libavutil/time.h"
+#include "error.h"
 
 int64_t av_gettime(void)
 {
@@ -44,5 +50,21 @@ int64_t av_gettime(void)
     return t / 10 - 11644473600000000; /* Jan 1, 1601 */
 #else
     return -1;
+#endif
+}
+
+int av_usleep(unsigned usec)
+{
+#if HAVE_NANOSLEEP
+    struct timespec ts = { usec / 1000000, usec % 1000000 * 1000 };
+    while (nanosleep(&ts, &ts) < 0 && errno == EINTR);
+    return 0;
+#elif HAVE_USLEEP
+    return usleep(usec);
+#elif HAVE_SLEEP
+    Sleep(usec / 1000);
+    return 0;
+#else
+    return AVERROR(ENOSYS);
 #endif
 }

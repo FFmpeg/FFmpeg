@@ -20,8 +20,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 
+#include "libavutil/time.h"
 #include "libavformat/avformat.h"
 
 static int usage(const char *argv0, int ret)
@@ -82,7 +82,7 @@ int main(int argc, char **argv)
         if (bps) {
             avio_flush(output);
             while ((av_gettime() - start_time) * bps / AV_TIME_BASE < stream_pos)
-                usleep(50 * 1000);
+                av_usleep(50 * 1000);
         }
     }
 

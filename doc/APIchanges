@@ -38,6 +38,9 @@ API changes, most recent first:
 2012-03-26 - a67d9cf - lavfi 2.66.100
   Add avfilter_fill_frame_from_{audio_,}buffer_ref() functions.
 
+2012-06-22 - xxxxxxx - lavu 51.34.0
+  Add av_usleep()
+
 2012-06-20 - ae0a301 - lavu 51.33.0
   Move av_gettime() to libavutil, add libavutil/time.h
 

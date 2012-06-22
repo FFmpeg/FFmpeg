@@ -37,6 +37,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/samplefmt.h"
 #include "libavutil/avassert.h"
+#include "libavutil/time.h"
 #include "libavformat/avformat.h"
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
@@ -57,7 +58,6 @@
 
 #include "cmdutils.h"
 
-#include <unistd.h>
 #include <assert.h>
 
 const char program_name[] = "ffplay";
@@ -1015,7 +1015,7 @@ static int refresh_thread(void *opaque)
             SDL_PushEvent(&event);
         }
         //FIXME ideally we should wait the correct time but SDLs event passing is so slow it would be silly
-        usleep(is->audio_st && is->show_mode != SHOW_MODE_VIDEO ? rdftspeed*1000 : 5000);
+        av_usleep(is->audio_st && is->show_mode != SHOW_MODE_VIDEO ? rdftspeed*1000 : 5000);
     }
     return 0;
 }
