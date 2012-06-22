@@ -797,7 +797,7 @@ void ff_vc1dsp_init_mmx(VC1DSPContext *dsp)
     if (mm_flags & AV_CPU_FLAG_MMX) {
         dsp->put_no_rnd_vc1_chroma_pixels_tab[0]= ff_put_vc1_chroma_mc8_mmx_nornd;
     }
-    return;
+
     if (mm_flags & AV_CPU_FLAG_MMX2) {
         ASSIGN_LF(mmx2);
         dsp->avg_no_rnd_vc1_chroma_pixels_tab[0]= ff_avg_vc1_chroma_mc8_mmx2_nornd;
