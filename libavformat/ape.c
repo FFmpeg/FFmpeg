@@ -312,12 +312,6 @@ static int ape_read_header(AVFormatContext * s)
 
     ape_dumpinfo(s, ape);
 
-    /* try to read APE tags */
-    if (pb->seekable) {
-        ff_ape_parse_tag(s);
-        avio_seek(pb, 0, SEEK_SET);
-    }
-
     av_log(s, AV_LOG_DEBUG, "Decoding file - v%d.%02d, compression level %"PRIu16"\n",
            ape->fileversion / 1000, (ape->fileversion % 1000) / 10,
            ape->compressiontype);
@@ -352,6 +346,12 @@ static int ape_read_header(AVFormatContext * s)
         ape->frames[i].pts = pts;
         av_add_index_entry(st, ape->frames[i].pos, ape->frames[i].pts, 0, 0, AVINDEX_KEYFRAME);
         pts += ape->blocksperframe / MAC_SUBFRAME_SIZE;
+    }
+
+    /* try to read APE tags */
+    if (pb->seekable) {
+        ff_ape_parse_tag(s);
+        avio_seek(pb, 0, SEEK_SET);
     }
 
     return 0;
