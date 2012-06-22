@@ -29,6 +29,12 @@
 #include "libavcodec/cavsdsp.h"
 #include "dsputil_mmx.h"
 
+/* in/out: mma=mma+mmb, mmb=mmb-mma */
+#define SUMSUB_BA( a, b ) \
+    "paddw "#b", "#a" \n\t"\
+    "paddw "#b", "#b" \n\t"\
+    "psubw "#a", "#b" \n\t"
+
 /*****************************************************************************
  *
  * inverse transform
