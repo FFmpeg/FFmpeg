@@ -42,7 +42,13 @@ static const AVOption options[]={
     {"nitris_compat", "encode with Avid Nitris compatibility", offsetof(DNXHDEncContext, nitris_compat), AV_OPT_TYPE_INT, {.dbl = 0}, 0, 1, VE},
 {NULL}
 };
-static const AVClass class = { "dnxhd", av_default_item_name, options, LIBAVUTIL_VERSION_INT };
+
+static const AVClass class = {
+    .class_name = "dnxhd",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 #define LAMBDA_FRAC_BITS 10
 

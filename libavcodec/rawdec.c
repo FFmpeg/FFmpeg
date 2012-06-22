@@ -45,7 +45,12 @@ static const AVOption options[]={
 {"top", "top field first", offsetof(RawVideoContext, tff), AV_OPT_TYPE_INT, {.dbl = -1}, -1, 1, AV_OPT_FLAG_DECODING_PARAM|AV_OPT_FLAG_VIDEO_PARAM},
 {NULL}
 };
-static const AVClass class = { "rawdec", NULL, options, LIBAVUTIL_VERSION_INT };
+
+static const AVClass class = {
+    .class_name = "rawdec",
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 static const PixelFormatTag pix_fmt_bps_avi[] = {
     { PIX_FMT_MONOWHITE, 1 },
