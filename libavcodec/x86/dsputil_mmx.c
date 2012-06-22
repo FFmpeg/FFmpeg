@@ -807,7 +807,7 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
             : "+r"(ptr)
             : "r"((x86_reg)wrap), "r"((x86_reg)width), "r"(ptr + wrap * height)
             );
-    } else {
+    } else if(w==16){
         __asm__ volatile (
             "1:                                 \n\t"
             "movd            (%0), %%mm0        \n\t"
@@ -825,6 +825,25 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
             "add               %1, %0           \n\t"
             "cmp               %3, %0           \n\t"
             "jb                1b               \n\t"
+            : "+r"(ptr)
+            : "r"((x86_reg)wrap), "r"((x86_reg)width), "r"(ptr + wrap * height)
+            );
+    } else {
+        av_assert1(w == 4);
+        __asm__ volatile (
+            "1:                             \n\t"
+            "movd            (%0), %%mm0    \n\t"
+            "punpcklbw      %%mm0, %%mm0    \n\t"
+            "punpcklwd      %%mm0, %%mm0    \n\t"
+            "movd           %%mm0, -4(%0)   \n\t"
+            "movd      -4(%0, %2), %%mm1    \n\t"
+            "punpcklbw      %%mm1, %%mm1    \n\t"
+            "punpckhwd      %%mm1, %%mm1    \n\t"
+            "punpckhdq      %%mm1, %%mm1    \n\t"
+            "movd           %%mm1, (%0, %2) \n\t"
+            "add               %1, %0       \n\t"
+            "cmp               %3, %0       \n\t"
+            "jb                1b           \n\t"
             : "+r"(ptr)
             : "r"((x86_reg)wrap), "r"((x86_reg)width), "r"(ptr + wrap * height)
             );
