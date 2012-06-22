@@ -58,13 +58,7 @@ static const AVOption blackdetect_options[] = {
     { NULL },
 };
 
-static const AVClass blackdetect_class = {
-    .class_name = "blackdetect",
-    .item_name  = av_default_item_name,
-    .option     = blackdetect_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-    .category   = AV_CLASS_CATEGORY_FILTER,
-};
+AVFILTER_DEFINE_CLASS(blackdetect);
 
 #define YUVJ_FORMATS \
     PIX_FMT_YUVJ420P, PIX_FMT_YUVJ422P, PIX_FMT_YUVJ444P, PIX_FMT_YUVJ440P

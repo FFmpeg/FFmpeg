@@ -55,25 +55,19 @@ typedef struct FPSContext {
 
 #define OFFSET(x) offsetof(FPSContext, x)
 #define V AV_OPT_FLAG_VIDEO_PARAM
-static const AVOption options[] = {
+static const AVOption fps_options[] = {
     { "fps", "A string describing desired output framerate", OFFSET(fps), AV_OPT_TYPE_STRING, { .str = "25" }, .flags = V },
     { NULL },
 };
 
-static const AVClass class = {
-    .class_name = "fps",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-    .category   = AV_CLASS_CATEGORY_FILTER,
-};
+AVFILTER_DEFINE_CLASS(fps);
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     FPSContext *s = ctx->priv;
     int ret;
 
-    s->class = &class;
+    s->class = &fps_class;
     av_opt_set_defaults(s);
 
     if ((ret = av_set_options_string(s, args, "=", ":")) < 0) {

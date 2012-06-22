@@ -30,6 +30,7 @@
 #include "formats.h"
 #include "audio.h"
 #include "video.h"
+#include "internal.h"
 
 typedef struct {
     const AVClass *class;
@@ -54,13 +55,7 @@ static const AVOption showwaves_options[] = {
     { NULL },
 };
 
-static const AVClass showwaves_class = {
-    .class_name = "showwaves",
-    .item_name  = av_default_item_name,
-    .option     = showwaves_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-    .category   = AV_CLASS_CATEGORY_FILTER,
-};
+AVFILTER_DEFINE_CLASS(showwaves);
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {

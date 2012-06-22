@@ -46,20 +46,14 @@ typedef struct AFormatContext {
 
 #define OFFSET(x) offsetof(AFormatContext, x)
 #define A AV_OPT_FLAG_AUDIO_PARAM
-static const AVOption options[] = {
+static const AVOption aformat_options[] = {
     { "sample_fmts",     "A comma-separated list of sample formats.",  OFFSET(formats_str),         AV_OPT_TYPE_STRING, .flags = A },
     { "sample_rates",    "A comma-separated list of sample rates.",    OFFSET(sample_rates_str),    AV_OPT_TYPE_STRING, .flags = A },
     { "channel_layouts", "A comma-separated list of channel layouts.", OFFSET(channel_layouts_str), AV_OPT_TYPE_STRING, .flags = A },
     { NULL },
 };
 
-static const AVClass aformat_class = {
-    .class_name = "aformat",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-    .category   = AV_CLASS_CATEGORY_FILTER,
-};
+AVFILTER_DEFINE_CLASS(aformat);
 
 #define PARSE_FORMATS(str, type, list, add_to_list, get_fmt, none, desc)    \
 do {                                                                        \

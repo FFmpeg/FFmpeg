@@ -207,13 +207,7 @@ static const AVOption drawtext_options[]= {
 {NULL},
 };
 
-static const AVClass drawtext_class = {
-    .class_name = "drawtext",
-    .item_name  = av_default_item_name,
-    .option     = drawtext_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-    .category   = AV_CLASS_CATEGORY_FILTER,
-};
+AVFILTER_DEFINE_CLASS(drawtext);
 
 #undef __FTERRORS_H__
 #define FT_ERROR_START_LIST {

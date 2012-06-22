@@ -194,13 +194,7 @@ AVFilter avfilter_vsrc_nullsrc = {
 
 #if CONFIG_TESTSRC_FILTER
 
-static const AVClass testsrc_class = {
-    .class_name = "testsrc",
-    .item_name  = av_default_item_name,
-    .option     = testsrc_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-    .category   = AV_CLASS_CATEGORY_FILTER,
-};
+AVFILTER_DEFINE_CLASS(testsrc);
 
 /**
  * Fill a rectangle with value val.

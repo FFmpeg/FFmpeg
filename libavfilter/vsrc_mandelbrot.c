@@ -29,6 +29,7 @@
 #include "avfilter.h"
 #include "formats.h"
 #include "video.h"
+#include "internal.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
@@ -105,13 +106,7 @@ static const AVOption mandelbrot_options[] = {
     {NULL},
 };
 
-static const AVClass mandelbrot_class = {
-    .class_name = "mandelbrot",
-    .item_name  = av_default_item_name,
-    .option     = mandelbrot_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-    .category   = AV_CLASS_CATEGORY_FILTER,
-};
+AVFILTER_DEFINE_CLASS(mandelbrot);
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {

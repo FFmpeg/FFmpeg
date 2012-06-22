@@ -219,7 +219,7 @@ unsigned av_buffersrc_get_nb_failed_requests(AVFilterContext *buffer_src)
 
 #define OFFSET(x) offsetof(BufferSourceContext, x)
 #define V AV_OPT_FLAG_VIDEO_PARAM
-static const AVOption video_options[] = {
+static const AVOption buffer_options[] = {
     { "time_base",      NULL, OFFSET(time_base),           AV_OPT_TYPE_RATIONAL,   { 0 }, 0, INT_MAX, V },
     { "frame_rate",     NULL, OFFSET(frame_rate),          AV_OPT_TYPE_RATIONAL,   { 0 }, 0, INT_MAX, V },
     { "video_size",     NULL, OFFSET(w),                   AV_OPT_TYPE_IMAGE_SIZE,           .flags = V },
@@ -230,13 +230,7 @@ static const AVOption video_options[] = {
 };
 #undef V
 
-static const AVClass vbuffer_class = {
-    .class_name = "vbuffer source",
-    .item_name  = av_default_item_name,
-    .option     = video_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-    .category   = AV_CLASS_CATEGORY_FILTER,
-};
+AVFILTER_DEFINE_CLASS(buffer);
 
 static av_cold int init_video(AVFilterContext *ctx, const char *args, void *opaque)
 {
@@ -244,7 +238,7 @@ static av_cold int init_video(AVFilterContext *ctx, const char *args, void *opaq
     char pix_fmt_str[128], sws_param[256] = "", *colon, *equal;
     int ret, n = 0;
 
-    c->class = &vbuffer_class;
+    c->class = &buffer_class;
 
     if (!args) {
         av_log(ctx, AV_LOG_ERROR, "Arguments required\n");
@@ -295,7 +289,7 @@ fail:
 }
 
 #define A AV_OPT_FLAG_AUDIO_PARAM
-static const AVOption audio_options[] = {
+static const AVOption abuffer_options[] = {
     { "time_base",      NULL, OFFSET(time_base),           AV_OPT_TYPE_RATIONAL, { 0 }, 0, INT_MAX, A },
     { "sample_rate",    NULL, OFFSET(sample_rate),         AV_OPT_TYPE_INT,      { 0 }, 0, INT_MAX, A },
     { "sample_fmt",     NULL, OFFSET(sample_fmt_str),      AV_OPT_TYPE_STRING,             .flags = A },
@@ -303,13 +297,7 @@ static const AVOption audio_options[] = {
     { NULL },
 };
 
-static const AVClass abuffer_class = {
-    .class_name = "abuffer source",
-    .item_name  = av_default_item_name,
-    .option     = audio_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-    .category   = AV_CLASS_CATEGORY_FILTER,
-};
+AVFILTER_DEFINE_CLASS(abuffer);
 
 static av_cold int init_audio(AVFilterContext *ctx, const char *args, void *opaque)
 {

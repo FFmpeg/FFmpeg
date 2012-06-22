@@ -173,7 +173,7 @@ typedef struct MixContext {
 
 #define OFFSET(x) offsetof(MixContext, x)
 #define A AV_OPT_FLAG_AUDIO_PARAM
-static const AVOption options[] = {
+static const AVOption amix_options[] = {
     { "inputs", "Number of inputs.",
             OFFSET(nb_inputs), AV_OPT_TYPE_INT, { 2 }, 1, 32, A },
     { "duration", "How to determine the end-of-stream.",
@@ -187,14 +187,7 @@ static const AVOption options[] = {
     { NULL },
 };
 
-static const AVClass amix_class = {
-    .class_name = "amix",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-    .category   = AV_CLASS_CATEGORY_FILTER,
-};
-
+AVFILTER_DEFINE_CLASS(amix);
 
 /**
  * Update the scaling factors to apply to each input during mixing.

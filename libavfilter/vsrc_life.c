@@ -32,6 +32,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/random_seed.h"
 #include "avfilter.h"
+#include "internal.h"
 #include "formats.h"
 #include "video.h"
 
@@ -97,13 +98,7 @@ static const AVOption life_options[] = {
     { NULL },
 };
 
-static const AVClass life_class = {
-    .class_name = "life",
-    .item_name  = av_default_item_name,
-    .option     = life_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-    .category   = AV_CLASS_CATEGORY_FILTER,
-};
+AVFILTER_DEFINE_CLASS(life);
 
 static int parse_rule(uint16_t *born_rule, uint16_t *stay_rule,
                       const char *rule_str, void *log_ctx)

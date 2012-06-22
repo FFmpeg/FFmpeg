@@ -326,4 +326,13 @@ int ff_poll_frame(AVFilterLink *link);
  */
 int ff_request_frame(AVFilterLink *link);
 
+#define AVFILTER_DEFINE_CLASS(fname)            \
+    static const AVClass fname##_class = {      \
+        .class_name = #fname,                   \
+        .item_name  = av_default_item_name,     \
+        .option     = fname##_options,          \
+        .version    = LIBAVUTIL_VERSION_INT,    \
+        .category   = AV_CLASS_CATEGORY_FILTER, \
+    }
+
 #endif /* AVFILTER_INTERNAL_H */

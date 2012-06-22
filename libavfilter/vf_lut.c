@@ -91,13 +91,7 @@ static const AVOption lut_options[] = {
     {NULL},
 };
 
-static const AVClass lut_class = {
-    .class_name = "lut",
-    .item_name  = av_default_item_name,
-    .option     = lut_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-    .category   = AV_CLASS_CATEGORY_FILTER,
-};
+AVFILTER_DEFINE_CLASS(lut);
 
 static int init(AVFilterContext *ctx, const char *args, void *opaque)
 {

@@ -31,6 +31,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/random_seed.h"
 #include "avfilter.h"
+#include "internal.h"
 #include "formats.h"
 #include "video.h"
 
@@ -78,13 +79,7 @@ static const AVOption cellauto_options[] = {
     { NULL },
 };
 
-static const AVClass cellauto_class = {
-    .class_name = "cellauto",
-    .item_name  = av_default_item_name,
-    .option     = cellauto_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-    .category   = AV_CLASS_CATEGORY_FILTER,
-};
+AVFILTER_DEFINE_CLASS(cellauto);
 
 #ifdef DEBUG
 static void show_cellauto_row(AVFilterContext *ctx)

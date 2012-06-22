@@ -28,6 +28,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "internal.h"
 #include "formats.h"
 #include "video.h"
 
@@ -84,13 +85,7 @@ static const AVOption mptestsrc_options[]= {
     { NULL },
 };
 
-static const AVClass mptestsrc_class = {
-    .class_name = "mptestsrc",
-    .item_name  = av_default_item_name,
-    .option     = mptestsrc_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-    .category   = AV_CLASS_CATEGORY_FILTER,
-};
+AVFILTER_DEFINE_CLASS(mptestsrc);
 
 static double c[64];
 

@@ -29,6 +29,7 @@
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "audio.h"
+#include "internal.h"
 #include "formats.h"
 
 typedef struct {
@@ -42,7 +43,7 @@ typedef struct {
 
 #define OFFSET(x) offsetof(ASNSContext, x)
 
-static const AVOption asns_options[] = {
+static const AVOption asetnsamples_options[] = {
 { "pad", "pad last frame with zeros", OFFSET(pad), AV_OPT_TYPE_INT, {.dbl=1}, 0, 1 },
 { "p",   "pad last frame with zeros", OFFSET(pad), AV_OPT_TYPE_INT, {.dbl=1}, 0, 1 },
 { "nb_out_samples", "set the number of per-frame output samples", OFFSET(nb_out_samples), AV_OPT_TYPE_INT, {.dbl=1024}, 1, INT_MAX },
@@ -50,20 +51,14 @@ static const AVOption asns_options[] = {
 { NULL }
 };
 
-static const AVClass asns_class = {
-    .class_name = "asetnsamples",
-    .item_name  = av_default_item_name,
-    .option     = asns_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-    .category   = AV_CLASS_CATEGORY_FILTER,
-};
+AVFILTER_DEFINE_CLASS(asetnsamples);
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     ASNSContext *asns = ctx->priv;
     int err;
 
-    asns->class = &asns_class;
+    asns->class = &asetnsamples_class;
     av_opt_set_defaults(asns);
 
     if ((err = av_set_options_string(asns, args, "=", ":")) < 0) {

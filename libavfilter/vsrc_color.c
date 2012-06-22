@@ -59,13 +59,7 @@ static const AVOption color_options[]= {
     { NULL },
 };
 
-static const AVClass color_class = {
-    .class_name = "color",
-    .item_name  = av_default_item_name,
-    .option     = color_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-    .category   = AV_CLASS_CATEGORY_FILTER,
-};
+AVFILTER_DEFINE_CLASS(color);
 
 static av_cold int color_init(AVFilterContext *ctx, const char *args, void *opaque)
 {

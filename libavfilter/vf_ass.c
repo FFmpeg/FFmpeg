@@ -34,6 +34,7 @@
 #include "libavutil/parseutils.h"
 #include "drawutils.h"
 #include "avfilter.h"
+#include "internal.h"
 #include "formats.h"
 #include "video.h"
 
@@ -56,13 +57,7 @@ static const AVOption ass_options[] = {
     {NULL},
 };
 
-static const AVClass ass_class = {
-    .class_name = "ass",
-    .item_name  = av_default_item_name,
-    .option     = ass_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-    .category   = AV_CLASS_CATEGORY_FILTER,
-};
+AVFILTER_DEFINE_CLASS(ass);
 
 /* libass supports a log level ranging from 0 to 7 */
 int ass_libav_log_level_map[] = {

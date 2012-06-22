@@ -41,7 +41,7 @@ typedef struct ASyncContext {
 
 #define OFFSET(x) offsetof(ASyncContext, x)
 #define A AV_OPT_FLAG_AUDIO_PARAM
-static const AVOption options[] = {
+static const AVOption asyncts_options[] = {
     { "compensate", "Stretch/squeeze the data to make it match the timestamps", OFFSET(resample),      AV_OPT_TYPE_INT,   { 0 },   0, 1,       A },
     { "min_delta",  "Minimum difference between timestamps and audio data "
                     "(in seconds) to trigger padding/trimmin the data.",        OFFSET(min_delta_sec), AV_OPT_TYPE_FLOAT, { 0.1 }, 0, INT_MAX, A },
@@ -49,20 +49,14 @@ static const AVOption options[] = {
     { NULL },
 };
 
-static const AVClass async_class = {
-    .class_name = "asyncts",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-    .category   = AV_CLASS_CATEGORY_FILTER,
-};
+AVFILTER_DEFINE_CLASS(asyncts);
 
 static int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     ASyncContext *s = ctx->priv;
     int ret;
 
-    s->class = &async_class;
+    s->class = &asyncts_class;
     av_opt_set_defaults(s);
 
     if ((ret = av_set_options_string(s, args, "=", ":")) < 0) {

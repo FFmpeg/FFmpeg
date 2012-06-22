@@ -71,13 +71,7 @@ static const AVOption fade_options[] = {
     {NULL},
 };
 
-static const AVClass fade_class = {
-    .class_name = "fade",
-    .item_name  = av_default_item_name,
-    .option     = fade_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-    .category   = AV_CLASS_CATEGORY_FILTER,
-};
+AVFILTER_DEFINE_CLASS(fade);
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {

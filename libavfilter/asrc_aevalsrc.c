@@ -66,7 +66,7 @@ typedef struct {
 
 #define OFFSET(x) offsetof(EvalContext, x)
 
-static const AVOption eval_options[]= {
+static const AVOption aevalsrc_options[]= {
     { "nb_samples",  "set the number of samples per requested frame", OFFSET(nb_samples),      AV_OPT_TYPE_INT,    {.dbl = 1024},    0,        INT_MAX },
     { "n",           "set the number of samples per requested frame", OFFSET(nb_samples),      AV_OPT_TYPE_INT,    {.dbl = 1024},    0,        INT_MAX },
     { "sample_rate", "set the sample rate",                           OFFSET(sample_rate_str), AV_OPT_TYPE_STRING, {.str = "44100"}, CHAR_MIN, CHAR_MAX },
@@ -78,13 +78,7 @@ static const AVOption eval_options[]= {
 {NULL},
 };
 
-static const AVClass eval_class = {
-    .class_name = "aevalsrc",
-    .item_name  = av_default_item_name,
-    .option     = eval_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-    .category   = AV_CLASS_CATEGORY_FILTER,
-};
+AVFILTER_DEFINE_CLASS(aevalsrc);
 
 static int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
@@ -93,7 +87,7 @@ static int init(AVFilterContext *ctx, const char *args, void *opaque)
     char *expr, *buf, *bufptr;
     int ret, i;
 
-    eval->class = &eval_class;
+    eval->class = &aevalsrc_class;
     av_opt_set_defaults(eval);
 
     /* parse expressions */

@@ -103,13 +103,7 @@ static const AVOption overlay_options[] = {
     {NULL},
 };
 
-static const AVClass overlay_class = {
-    .class_name = "overlay",
-    .item_name  = av_default_item_name,
-    .option     = overlay_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-    .category   = AV_CLASS_CATEGORY_FILTER,
-};
+AVFILTER_DEFINE_CLASS(overlay);
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
