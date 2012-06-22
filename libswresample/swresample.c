@@ -97,7 +97,7 @@ static const char* context_to_name(void* ptr) {
 }
 
 static const AVClass av_class = {
-    .class_name                = "SwrContext",
+    .class_name                = "SWResampler",
     .item_name                 = context_to_name,
     .option                    = options,
     .version                   = LIBAVUTIL_VERSION_INT,
