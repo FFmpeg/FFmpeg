@@ -29,14 +29,6 @@
 #include "libavutil/rational.h"
 #include "libavcodec/avcodec.h"
 
-
-#ifndef FF_API_OLD_VSINK_API
-#define FF_API_OLD_VSINK_API        (LIBAVFILTER_VERSION_MAJOR < 3)
-#endif
-#ifndef FF_API_OLD_ALL_FORMATS_API
-#define FF_API_OLD_ALL_FORMATS_API (LIBAVFILTER_VERSION_MAJOR < 3)
-#endif
-
 #include <stddef.h>
 
 #include "libavfilter/version.h"

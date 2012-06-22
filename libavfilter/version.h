@@ -44,6 +44,12 @@
  * Those FF_API_* defines are not part of public API.
  * They may change, break or disappear at any time.
  */
+#ifndef FF_API_OLD_VSINK_API
+#define FF_API_OLD_VSINK_API        (LIBAVFILTER_VERSION_MAJOR < 3)
+#endif
+#ifndef FF_API_OLD_ALL_FORMATS_API
+#define FF_API_OLD_ALL_FORMATS_API (LIBAVFILTER_VERSION_MAJOR < 3)
+#endif
 #ifndef FF_API_GRAPH_AVCLASS
 #define FF_API_GRAPH_AVCLASS            (LIBAVFILTER_VERSION_MAJOR > 2)
 #endif
