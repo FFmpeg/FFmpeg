@@ -21,6 +21,7 @@
 
 #include "libavcodec/get_bits.h"
 #include "libavcodec/unary.h"
+#include "apetag.h"
 #include "avformat.h"
 #include "internal.h"
 #include "avio_internal.h"
@@ -239,6 +240,12 @@ static int mpc8_read_header(AVFormatContext *s)
     avpriv_set_pts_info(st, 32, 1152  << (st->codec->extradata[1]&3)*2, st->codec->sample_rate);
     st->duration = c->samples / (1152 << (st->codec->extradata[1]&3)*2);
     size -= avio_tell(pb) - pos;
+
+    if (pb->seekable) {
+        int64_t pos = avio_tell(s->pb);
+        ff_ape_parse_tag(s);
+        avio_seek(s->pb, pos, SEEK_SET);
+    }
 
     return 0;
 }
