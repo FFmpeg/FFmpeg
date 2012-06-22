@@ -176,6 +176,8 @@ static int print_stats = 1;
 static int debug_ts = 0;
 static int current_time;
 
+static uint8_t *subtitle_out;
+
 #if HAVE_PTHREADS
 /* signal to input threads that they should exit; set by the main thread */
 static int transcoding_finished;
@@ -1374,6 +1376,8 @@ void av_noreturn exit_program(int ret)
     }
     av_freep(&filtergraphs);
 
+    av_freep(&subtitle_out);
+
     /* close files */
     for (i = 0; i < nb_output_files; i++) {
         AVFormatContext *s = output_files[i]->ctx;
@@ -1649,7 +1653,6 @@ static void do_subtitle_out(AVFormatContext *s,
                             AVSubtitle *sub,
                             int64_t pts)
 {
-    static uint8_t *subtitle_out = NULL;
     int subtitle_out_max_size = 1024 * 1024;
     int subtitle_out_size, nb, i;
     AVCodecContext *enc;
