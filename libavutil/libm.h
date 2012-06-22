@@ -28,6 +28,13 @@
 #include "config.h"
 #include "attributes.h"
 
+#if !HAVE_CBRTF
+static av_always_inline float cbrtf(float x)
+{
+    return x < 0 ? -powf(-x, 1.0 / 3.0) : powf(x, 1.0 / 3.0);
+}
+#endif
+
 #if !HAVE_EXP2
 #undef exp2
 #define exp2(x) exp((x) * 0.693147180559945)

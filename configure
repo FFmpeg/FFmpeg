@@ -1059,6 +1059,7 @@ HAVE_LIST="
     asm_mod_y
     attribute_may_alias
     attribute_packed
+    cbrtf
     closesocket
     cmov
     dcbzl
@@ -2918,6 +2919,7 @@ done
 check_lib math.h sin -lm && LIBM="-lm"
 enabled vaapi && require vaapi va/va.h vaInitialize -lva
 
+check_mathfunc cbrtf
 check_mathfunc exp2
 check_mathfunc exp2f
 check_mathfunc llrint
