@@ -25,6 +25,8 @@
 #include "config.h"
 #include "libavutil/common.h"
 
+#if HAVE_INLINE_ASM
+
 #if ARCH_X86_32
 
 #define MULL MULL
@@ -118,4 +120,5 @@ static inline uint32_t NEG_USR32(uint32_t a, int8_t s){
     return a;
 }
 
+#endif /* HAVE_INLINE_ASM */
 #endif /* AVCODEC_X86_MATHOPS_H */

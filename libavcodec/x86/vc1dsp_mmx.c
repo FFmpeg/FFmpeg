@@ -30,6 +30,8 @@
 #include "dsputil_mmx.h"
 #include "libavcodec/vc1dsp.h"
 
+#if HAVE_INLINE_ASM
+
 #define OP_PUT(S,D)
 #define OP_AVG(S,D) "pavgb " #S ", " #D " \n\t"
 
@@ -682,6 +684,8 @@ static void vc1_inv_trans_8x8_dc_mmx2(uint8_t *dest, int linesize, DCTELEM *bloc
     );
 }
 
+#endif /* HAVE_INLINE_ASM */
+
 #define LOOP_FILTER(EXT) \
 void ff_vc1_v_loop_filter4_ ## EXT(uint8_t *src, int stride, int pq); \
 void ff_vc1_h_loop_filter4_ ## EXT(uint8_t *src, int stride, int pq); \
@@ -730,6 +734,7 @@ void ff_vc1dsp_init_mmx(VC1DSPContext *dsp)
 {
     int mm_flags = av_get_cpu_flags();
 
+#if HAVE_INLINE_ASM
     if (mm_flags & AV_CPU_FLAG_MMX) {
         dsp->put_vc1_mspel_pixels_tab[ 0] = ff_put_vc1_mspel_mc00_mmx;
         dsp->put_vc1_mspel_pixels_tab[ 4] = put_vc1_mspel_mc01_mmx;
@@ -778,6 +783,7 @@ void ff_vc1dsp_init_mmx(VC1DSPContext *dsp)
         dsp->vc1_inv_trans_8x4_dc = vc1_inv_trans_8x4_dc_mmx2;
         dsp->vc1_inv_trans_4x4_dc = vc1_inv_trans_4x4_dc_mmx2;
     }
+#endif /* HAVE_INLINE_ASM */
 
 #define ASSIGN_LF(EXT) \
         dsp->vc1_v_loop_filter4  = ff_vc1_v_loop_filter4_ ## EXT; \

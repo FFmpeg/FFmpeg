@@ -29,6 +29,8 @@
 #include "libavcodec/cavsdsp.h"
 #include "dsputil_mmx.h"
 
+#if HAVE_INLINE_ASM
+
 /* in/out: mma=mma+mmb, mmb=mmb-mma */
 #define SUMSUB_BA( a, b ) \
     "paddw "#b", "#a" \n\t"\
@@ -477,10 +479,14 @@ static void ff_cavsdsp_init_3dnow(CAVSDSPContext* c, AVCodecContext *avctx) {
     c->cavs_idct8_add = cavs_idct8_add_mmx;
 }
 
+#endif /* HAVE_INLINE_ASM */
+
 void ff_cavsdsp_init_mmx(CAVSDSPContext *c, AVCodecContext *avctx)
 {
     int mm_flags = av_get_cpu_flags();
 
+#if HAVE_INLINE_ASM
     if (mm_flags & AV_CPU_FLAG_MMX2)  ff_cavsdsp_init_mmx2 (c, avctx);
     if (mm_flags & AV_CPU_FLAG_3DNOW) ff_cavsdsp_init_3dnow(c, avctx);
+#endif /* HAVE_INLINE_ASM */
 }
