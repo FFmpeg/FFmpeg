@@ -4441,7 +4441,6 @@ loop_end:
                 } else if (ret < 0)
                     exit_program(1);
             }
-            printf("ret %d, stream_spec %s\n", ret, stream_spec);
         }
         else {
             switch (type) {
