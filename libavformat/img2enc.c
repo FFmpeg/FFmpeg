@@ -26,8 +26,10 @@
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
+#include "libavutil/opt.h"
 
 typedef struct {
+    const AVClass *class;  /**< Class for private options. */
     int img_number;
     int is_pipe;
     char path[1024];
@@ -37,7 +39,6 @@ static int write_header(AVFormatContext *s)
 {
     VideoMuxData *img = s->priv_data;
 
-    img->img_number = 1;
     av_strlcpy(img->path, s->filename, sizeof(img->path));
 
     /* find format */
@@ -124,7 +125,21 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
+#define OFFSET(x) offsetof(VideoMuxData, x)
+#define ENC AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption muxoptions[] = {
+    { "start_number", "first number in the sequence", OFFSET(img_number), AV_OPT_TYPE_INT, {.dbl = 1}, 1, INT_MAX, ENC },
+    { NULL },
+};
+
 #if CONFIG_IMAGE2_MUXER
+static const AVClass img2mux_class = {
+    .class_name = "image2 muxer",
+    .item_name  = av_default_item_name,
+    .option     = muxoptions,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVOutputFormat ff_image2_muxer = {
     .name           = "image2",
     .long_name      = NULL_IF_CONFIG_SMALL("image2 sequence"),
@@ -135,7 +150,8 @@ AVOutputFormat ff_image2_muxer = {
     .video_codec    = CODEC_ID_MJPEG,
     .write_header   = write_header,
     .write_packet   = write_packet,
-    .flags          = AVFMT_NOTIMESTAMPS | AVFMT_NODIMENSIONS | AVFMT_NOFILE
+    .flags          = AVFMT_NOTIMESTAMPS | AVFMT_NODIMENSIONS | AVFMT_NOFILE,
+    .priv_class     = &img2mux_class,
 };
 #endif
 #if CONFIG_IMAGE2PIPE_MUXER
