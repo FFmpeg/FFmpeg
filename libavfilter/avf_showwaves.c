@@ -196,7 +196,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 
     /* draw data in the buffer */
     for (i = 0; i < nb_samples; i++) {
-        if (showwaves->buf_idx == 0) {
+        if (showwaves->buf_idx == 0 && showwaves->sample_count_mod == 0) {
             showwaves->outpicref = outpicref =
                 ff_get_video_buffer(outlink, AV_PERM_WRITE|AV_PERM_ALIGN,
                                     outlink->w, outlink->h);
