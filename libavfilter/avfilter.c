@@ -126,8 +126,9 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
 
     if (src->output_pads[srcpad].type != dst->input_pads[dstpad].type) {
         av_log(src, AV_LOG_ERROR,
-               "Media type mismatch between the '%s' filter output pad %d and the '%s' filter input pad %d\n",
-               src->name, srcpad, dst->name, dstpad);
+               "Media type mismatch between the '%s' filter output pad %d (%s) and the '%s' filter input pad %d (%s)\n",
+               src->name, srcpad, (char *)av_x_if_null(av_get_media_type_string(src->output_pads[srcpad].type), "?"),
+               dst->name, dstpad, (char *)av_x_if_null(av_get_media_type_string(dst-> input_pads[dstpad].type), "?"));
         return AVERROR(EINVAL);
     }
 
