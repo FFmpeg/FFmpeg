@@ -326,7 +326,7 @@ static av_always_inline void add_yblock(SnowContext *s, int sliced, slice_buffer
 
     if(b_w<=0 || b_h<=0) return;
 
-    assert(src_stride > 2*MB_SIZE + 5);
+    av_assert2(src_stride > 2*MB_SIZE + 5);
 
     if(!sliced && offset_dst)
         dst += src_x + src_y*dst_stride;
@@ -493,7 +493,7 @@ static inline void init_ref(MotionEstContext *c, uint8_t *src[3], uint8_t *ref[3
         c->src[0][i]= src [i];
         c->ref[0][i]= ref [i] + offset[i];
     }
-    assert(!ref_index);
+    av_assert2(!ref_index);
 }
 
 
@@ -558,8 +558,8 @@ static inline void put_symbol2(RangeCoder *c, uint8_t *state, int v, int log2){
     int i;
     int r= log2>=0 ? 1<<log2 : 1;
 
-    assert(v>=0);
-    assert(log2>=-4);
+    av_assert2(v>=0);
+    av_assert2(log2>=-4);
 
     while(v >= r){
         put_rac(c, state+4+log2, 1);
@@ -579,7 +579,7 @@ static inline int get_symbol2(RangeCoder *c, uint8_t *state, int log2){
     int r= log2>=0 ? 1<<log2 : 1;
     int v=0;
 
-    assert(log2>=-4);
+    av_assert2(log2>=-4);
 
     while(get_rac(c, state+4+log2)){
         v+= r;
