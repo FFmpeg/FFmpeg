@@ -2937,14 +2937,15 @@ setpts=N/(25*TB)
 setpts='1/(25*TB) * (N + 0.05 * sin(N*2*PI/25))'
 @end example
 
-@section settb
+@section settb, asettb
 
 Set the timebase to use for the output frames timestamps.
 It is mainly useful for testing timebase configuration.
 
 It accepts in input an arithmetic expression representing a rational.
 The expression can contain the constants "AVTB" (the
-default timebase), and "intb" (the input timebase).
+default timebase), "intb" (the input timebase) and "sr" (the sample rate,
+audio only).
 
 The default value for the input is "intb".
 

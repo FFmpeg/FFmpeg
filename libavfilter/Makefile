@@ -53,6 +53,7 @@ OBJS-$(CONFIG_AMIX_FILTER)                   += af_amix.o
 OBJS-$(CONFIG_ANULL_FILTER)                  += af_anull.o
 OBJS-$(CONFIG_ARESAMPLE_FILTER)              += af_aresample.o
 OBJS-$(CONFIG_ASETNSAMPLES_FILTER)           += af_asetnsamples.o
+OBJS-$(CONFIG_ASETTB_FILTER)                 += vf_settb.o
 OBJS-$(CONFIG_ASHOWINFO_FILTER)              += af_ashowinfo.o
 OBJS-$(CONFIG_ASPLIT_FILTER)                 += split.o
 OBJS-$(CONFIG_ASTREAMSYNC_FILTER)            += af_astreamsync.o

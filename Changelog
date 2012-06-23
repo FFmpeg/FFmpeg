@@ -21,6 +21,7 @@ version next:
 - RealText demuxer and decoder
 - Heart Of Darkness PAF playback support
 - iec61883 device
+- asettb filter
 
 
 version 0.11:
