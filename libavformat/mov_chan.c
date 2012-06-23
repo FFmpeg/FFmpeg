@@ -414,6 +414,20 @@ static const enum MovChannelLayoutTag mov_ch_layouts_alac[] = {
     0,
 };
 
+static const enum MovChannelLayoutTag mov_ch_layouts_wav[] = {
+    MOV_CH_LAYOUT_MONO,
+    MOV_CH_LAYOUT_STEREO,
+    MOV_CH_LAYOUT_MATRIXSTEREO,
+    MOV_CH_LAYOUT_MPEG_3_0_A,
+    MOV_CH_LAYOUT_QUADRAPHONIC,
+    MOV_CH_LAYOUT_MPEG_5_0_A,
+    MOV_CH_LAYOUT_MPEG_5_1_A,
+    MOV_CH_LAYOUT_MPEG_6_1_A,
+    MOV_CH_LAYOUT_MPEG_7_1_A,
+    MOV_CH_LAYOUT_MPEG_7_1_C,
+    MOV_CH_LAYOUT_SMPTE_DTV,
+};
+
 static const struct {
     enum CodecID codec_id;
     const enum MovChannelLayoutTag *layouts;
@@ -421,6 +435,18 @@ static const struct {
     { CODEC_ID_AAC,     mov_ch_layouts_aac      },
     { CODEC_ID_AC3,     mov_ch_layouts_ac3      },
     { CODEC_ID_ALAC,    mov_ch_layouts_alac     },
+    { CODEC_ID_PCM_U8,    mov_ch_layouts_wav    },
+    { CODEC_ID_PCM_S8,    mov_ch_layouts_wav    },
+    { CODEC_ID_PCM_S16LE, mov_ch_layouts_wav    },
+    { CODEC_ID_PCM_S16BE, mov_ch_layouts_wav    },
+    { CODEC_ID_PCM_S24LE, mov_ch_layouts_wav    },
+    { CODEC_ID_PCM_S24BE, mov_ch_layouts_wav    },
+    { CODEC_ID_PCM_S32LE, mov_ch_layouts_wav    },
+    { CODEC_ID_PCM_S32BE, mov_ch_layouts_wav    },
+    { CODEC_ID_PCM_F32LE, mov_ch_layouts_wav    },
+    { CODEC_ID_PCM_F32BE, mov_ch_layouts_wav    },
+    { CODEC_ID_PCM_F64LE, mov_ch_layouts_wav    },
+    { CODEC_ID_PCM_F64BE, mov_ch_layouts_wav    },
     { CODEC_ID_NONE,    NULL                    },
 };
 
