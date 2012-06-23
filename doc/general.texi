@@ -876,16 +876,17 @@ performance on systems without hardware floating point support).
 
 @multitable @columnfractions .4 .1 .1 .1 .1
 @item Name @tab Muxing @tab Demuxing @tab Encoding @tab Decoding
-@item SSA/ASS      @tab X @tab X @tab X @tab X
-@item DVB          @tab X @tab X @tab X @tab X
-@item DVD          @tab X @tab X @tab X @tab X
-@item JACOsub      @tab X @tab X @tab   @tab X
-@item MicroDVD     @tab X @tab X @tab   @tab X
-@item PGS          @tab   @tab   @tab   @tab X
-@item RealText     @tab   @tab X @tab   @tab X
-@item SAMI         @tab   @tab X @tab   @tab X
-@item SubRip (SRT) @tab X @tab X @tab X @tab X
-@item XSUB         @tab   @tab   @tab X @tab X
+@item SSA/ASS          @tab X @tab X @tab X @tab X
+@item DVB              @tab X @tab X @tab X @tab X
+@item DVD              @tab X @tab X @tab X @tab X
+@item JACOsub          @tab X @tab X @tab   @tab X
+@item MicroDVD         @tab X @tab X @tab   @tab X
+@item PGS              @tab   @tab   @tab   @tab X
+@item RealText         @tab   @tab X @tab   @tab X
+@item SAMI             @tab   @tab X @tab   @tab X
+@item SubRip (SRT)     @tab X @tab X @tab X @tab X
+@item 3GPP Timed Text  @tab   @tab   @tab   @tab X
+@item XSUB             @tab   @tab   @tab X @tab X
 @end multitable
 
 @code{X} means that the feature is supported.
