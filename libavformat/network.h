@@ -35,10 +35,19 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 
+#ifndef EPROTONOSUPPORT
 #define EPROTONOSUPPORT WSAEPROTONOSUPPORT
+#endif
+#ifndef ETIMEDOUT
 #define ETIMEDOUT       WSAETIMEDOUT
+#endif
+#ifndef ECONNREFUSED
 #define ECONNREFUSED    WSAECONNREFUSED
+#endif
+#ifndef EINPROGRESS
 #define EINPROGRESS     WSAEINPROGRESS
+#endif
+
 #define getsockopt(a, b, c, d, e) getsockopt(a, b, c, (char*) d, e)
 #define setsockopt(a, b, c, d, e) setsockopt(a, b, c, (const char*) d, e)
 

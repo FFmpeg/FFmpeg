@@ -164,6 +164,14 @@ int ff_neterrno(void)
         return AVERROR(EAGAIN);
     case WSAEINTR:
         return AVERROR(EINTR);
+    case WSAEPROTONOSUPPORT:
+        return AVERROR(EPROTONOSUPPORT);
+    case WSAETIMEDOUT:
+        return AVERROR(ETIMEDOUT);
+    case WSAECONNREFUSED:
+        return AVERROR(ECONNREFUSED);
+    case WSAEINPROGRESS:
+        return AVERROR(EINPROGRESS);
     }
     return -err;
 }
