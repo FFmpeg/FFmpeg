@@ -40,6 +40,7 @@ typedef struct {
     char *video_size;       /**< Set by a private option. */
     char *framerate;        /**< Set by a private option. */
     int loop;
+    int start_number;
 } VideoDemuxData;
 
 static const int sizes[][2] = {
@@ -70,13 +71,13 @@ static int infer_size(int *width_ptr, int *height_ptr, int size)
 
 /* return -1 if no image found */
 static int find_image_range(int *pfirst_index, int *plast_index,
-                            const char *path)
+                            const char *path, int max_start)
 {
     char buf[1024];
     int range, last_index, range1, first_index;
 
     /* find the first image */
-    for(first_index = 0; first_index < 5; first_index++) {
+    for (first_index = 0; first_index < max_start; first_index++) {
         if (av_get_frame_filename(buf, sizeof(buf), path, first_index) < 0){
             *pfirst_index =
             *plast_index = 1;
@@ -182,7 +183,8 @@ static int read_header(AVFormatContext *s1)
     }
 
     if (!s->is_pipe) {
-        if (find_image_range(&first_index, &last_index, s->path) < 0)
+        if (find_image_range(&first_index, &last_index, s->path,
+                             FFMAX(s->start_number, 5)) < 0)
             return AVERROR(ENOENT);
         s->img_first = first_index;
         s->img_last = last_index;
@@ -283,6 +285,7 @@ static const AVOption options[] = {
     { "video_size",   "", OFFSET(video_size),   AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
     { "framerate",    "", OFFSET(framerate),    AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0, DEC },
     { "loop",         "", OFFSET(loop),         AV_OPT_TYPE_INT,    {.dbl = 0},    0, 1, DEC },
+    { "start_number", "first number in the sequence", OFFSET(start_number), AV_OPT_TYPE_INT, {.dbl = 1}, 1, INT_MAX, DEC },
     { NULL },
 };
 
