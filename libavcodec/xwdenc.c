@@ -132,6 +132,11 @@ static int xwd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         bpad     = 8;
         ncolors  = 256;
         break;
+    case PIX_FMT_GRAY8:
+        bpp      = 8;
+        bpad     = 8;
+        vclass   = XWD_STATIC_GRAY;
+        break;
     case PIX_FMT_MONOWHITE:
         be       = 1;
         bitorder = 1;
@@ -243,6 +248,7 @@ AVCodec ff_xwd_encoder = {
                                                  PIX_FMT_RGB4_BYTE,
                                                  PIX_FMT_BGR4_BYTE,
                                                  PIX_FMT_PAL8,
+                                                 PIX_FMT_GRAY8,
                                                  PIX_FMT_MONOWHITE,
                                                  PIX_FMT_NONE },
     .long_name    = NULL_IF_CONFIG_SMALL("XWD (X Window Dump) image"),
