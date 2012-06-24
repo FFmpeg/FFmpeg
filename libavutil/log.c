@@ -39,6 +39,7 @@ static int flags;
 
 #if defined(_WIN32) && !defined(__MINGW32CE__)
 #include <windows.h>
+#include <io.h>
 static const uint8_t color[] = { 12, 12, 12, 14, 7, 10, 11 };
 static int16_t background, attr_orig;
 static HANDLE con;
