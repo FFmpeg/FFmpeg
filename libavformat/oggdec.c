@@ -46,6 +46,7 @@ static const struct ogg_codec * const ogg_codecs[] = {
     &ff_theora_codec,
     &ff_flac_codec,
     &ff_celt_codec,
+    &ff_opus_codec,
     &ff_old_dirac_codec,
     &ff_old_flac_codec,
     &ff_ogm_video_codec,
