@@ -2863,7 +2863,8 @@ check_func nanosleep || { check_func nanosleep -lrt && add_extralibs -lrt; }
 
 check_func  fcntl
 check_func  fork
-check_func  getaddrinfo $network_extralibs
+check_func  getaddrinfo $network_extralibs ||
+    check_func_headers ws2tcpip.h getaddrinfo $network_extralibs
 check_func  gethrtime
 check_func  getopt
 check_func  getrusage
