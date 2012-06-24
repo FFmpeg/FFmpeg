@@ -123,6 +123,8 @@ int av_buffersink_get_buffer_ref(AVFilterContext *ctx,
     int ret;
     *bufref = NULL;
 
+    av_assert0(!strcmp(ctx->filter->name, "buffersink") || !strcmp(ctx->filter->name, "abuffersink"));
+
     /* no picref available, fetch it from the filterchain */
     if (!av_fifo_size(buf->fifo)) {
         if (flags & AV_BUFFERSINK_FLAG_NO_REQUEST)
@@ -144,6 +146,8 @@ int av_buffersink_get_buffer_ref(AVFilterContext *ctx,
 
 AVRational av_buffersink_get_frame_rate(AVFilterContext *ctx)
 {
+    av_assert0(!strcmp(ctx->filter->name, "buffersink"));
+
     return ctx->inputs[0]->frame_rate;
 }
 
@@ -151,6 +155,8 @@ int av_buffersink_poll_frame(AVFilterContext *ctx)
 {
     BufferSinkContext *buf = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
+
+    av_assert0(!strcmp(ctx->filter->name, "buffersink") || !strcmp(ctx->filter->name, "abuffersink"));
 
     return av_fifo_size(buf->fifo)/sizeof(AVFilterBufferRef *) + ff_poll_frame(inlink);
 }
