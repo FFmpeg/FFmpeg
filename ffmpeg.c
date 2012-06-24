@@ -882,7 +882,7 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
 
     snprintf(name, sizeof(name), "output stream %d:%d", ost->file_index, ost->index);
     ret = avfilter_graph_create_filter(&ofilter->filter,
-                                       avfilter_get_by_name("abuffersink_old"),
+                                       avfilter_get_by_name("abuffersink"),
                                        name, NULL, NULL, fg->graph);
     if (ret < 0)
         return ret;
@@ -1939,15 +1939,8 @@ static int poll_filters(void)
             filtered_frame = ost->filtered_frame;
 
             while (!ost->is_past_recording_time) {
-                if (ost->enc->type == AVMEDIA_TYPE_AUDIO &&
-                    !(ost->enc->capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE))
-                    ret = av_buffersink_read_samples(ost->filter->filter, &picref,
-                                                    ost->st->codec->frame_size);
-                else if(ost->enc->type == AVMEDIA_TYPE_AUDIO)
-                    ret = av_buffersink_read(ost->filter->filter, &picref);
-                else
-                    ret = av_buffersink_get_buffer_ref(ost->filter->filter, &picref,
-                                                       AV_BUFFERSINK_FLAG_NO_REQUEST);
+                ret = av_buffersink_get_buffer_ref(ost->filter->filter, &picref,
+                                                   AV_BUFFERSINK_FLAG_NO_REQUEST);
                 if (ret < 0) {
                     if (ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
                         char buf[256];
@@ -3108,6 +3101,10 @@ static int transcode_init(void)
                 ret = AVERROR(EINVAL);
                 goto dump_format;
             }
+            if (ost->enc->type == AVMEDIA_TYPE_AUDIO &&
+                !(ost->enc->capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE))
+                av_buffersink_set_frame_size(ost->filter->filter,
+                                             ost->st->codec->frame_size);
             assert_codec_experimental(ost->st->codec, 1);
             assert_avoptions(ost->opts);
             if (ost->st->codec->bit_rate && ost->st->codec->bit_rate < 1000)
