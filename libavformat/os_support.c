@@ -28,9 +28,11 @@
 #include "os_support.h"
 
 #if defined(_WIN32) && !defined(__MINGW32CE__)
+#undef open
+#include <fcntl.h>
+#include <io.h>
 #include <windows.h>
 
-#undef open
 int ff_win32_open(const char *filename_utf8, int oflag, int pmode)
 {
     int fd;
