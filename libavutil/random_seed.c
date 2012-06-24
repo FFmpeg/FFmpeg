@@ -18,7 +18,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
+
+#if HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <fcntl.h>
 #include <math.h>
 #include <time.h>
@@ -34,6 +38,7 @@
 
 static int read_random(uint32_t *dst, const char *file)
 {
+#if HAVE_UNISTD_H
     int fd = open(file, O_RDONLY);
     int err = -1;
 
@@ -43,6 +48,9 @@ static int read_random(uint32_t *dst, const char *file)
     close(fd);
 
     return err;
+#else
+    return -1;
+#endif
 }
 
 static uint32_t get_generic_seed(void)
