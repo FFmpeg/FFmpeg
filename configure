@@ -1148,6 +1148,7 @@ HAVE_LIST="
     sys_resource_h
     sys_select_h
     sys_soundcard_h
+    sys_time_h
     sys_videoio_h
     threads
     trunc
@@ -2873,6 +2874,7 @@ check_header sys/mman.h
 check_header sys/param.h
 check_header sys/resource.h
 check_header sys/select.h
+check_header sys/time.h
 check_header unistd.h
 check_header vdpau/vdpau.h
 check_header vdpau/vdpau_x11.h
