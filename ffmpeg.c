@@ -792,7 +792,7 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
 #else
     ret = avfilter_graph_create_filter(&ofilter->filter,
                                        avfilter_get_by_name("buffersink"),
-                                       "ffmpeg_buffersink", NULL, buffersink_params, fg->graph);
+                                       "ffmpeg_buffersink", NULL, NULL/*buffersink_params*/, fg->graph);
 #endif
     av_freep(&buffersink_params);
 
