@@ -89,6 +89,16 @@ int av_buffersink_get_buffer_ref(AVFilterContext *buffer_sink,
 int av_buffersink_poll_frame(AVFilterContext *ctx);
 
 /**
+ * Get the frame rate of the input.
+ */
+AVRational av_buffersink_get_frame_rate(AVFilterContext *ctx);
+
+/**
+ * @defgroup libav_api Libav API
+ * @{
+ */
+
+/**
  * Get a buffer with filtered data from sink and put it in buf.
  *
  * @param sink pointer to a context of a buffersink or abuffersink AVFilter.
@@ -122,8 +132,7 @@ int av_buffersink_read_samples(AVFilterContext *ctx, AVFilterBufferRef **buf,
                                int nb_samples);
 
 /**
- * Get the frame rate of the input.
+ * @}
  */
-AVRational av_buffersink_get_frame_rate(AVFilterContext *ctx);
 
 #endif /* AVFILTER_BUFFERSINK_H */
