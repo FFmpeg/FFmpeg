@@ -17,22 +17,22 @@ FATE_VCODEC += cljr
 
 FATE_VCODEC += dnxhd-720p
 fate-vsynth%-dnxhd-720p:         ENCOPTS = -s hd720 -b 90M              \
-                                           -pix_fmt yuv422p -frames 5
+                                           -pix_fmt yuv422p -frames 5 -qmax 8
 fate-vsynth%-dnxhd-720p:         FMT     = dnxhd
 
 FATE_VCODEC += dnxhd-720p-rd
 fate-vsynth%-dnxhd-720p-rd:      ENCOPTS = -s hd720 -b 90M -threads 4 -mbd rd \
-                                           -pix_fmt yuv422p -frames 5
+                                           -pix_fmt yuv422p -frames 5 -qmax 8
 fate-vsynth%-dnxhd-720p-rd:      FMT     = dnxhd
 
 FATE_VCODEC += dnxhd-720p-10bit
 fate-vsynth%-dnxhd-720p-10bit:   ENCOPTS = -s hd720 -b 90M              \
-                                           -pix_fmt yuv422p10 -frames 5
+                                           -pix_fmt yuv422p10 -frames 5 -qmax 8
 fate-vsynth%-dnxhd-720p-10bit:   FMT     = dnxhd
 
 FATE_VCODEC += dnxhd-1080i
 fate-vsynth%-dnxhd-1080i:        ENCOPTS = -s hd1080 -b 120M -flags +ildct \
-                                           -pix_fmt yuv422p -frames 5
+                                           -pix_fmt yuv422p -frames 5 -qmax 8
 fate-vsynth%-dnxhd-1080i:        FMT     = mov
 
 FATE_VCODEC += dv
