@@ -88,7 +88,6 @@ static int init_filters(const char *filters_descr)
     AVFilterInOut *outputs = avfilter_inout_alloc();
     AVFilterInOut *inputs  = avfilter_inout_alloc();
     const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_S16, -1 };
-    const int64_t *chlayouts                = avfilter_all_channel_layouts;
     AVABufferSinkParams *abuffersink_params;
     const AVFilterLink *outlink;
     AVRational time_base = fmt_ctx->streams[audio_stream_index]->time_base;
@@ -112,7 +111,6 @@ static int init_filters(const char *filters_descr)
     /* buffer audio sink: to terminate the filter chain. */
     abuffersink_params = av_abuffersink_params_alloc();
     abuffersink_params->sample_fmts     = sample_fmts;
-    abuffersink_params->channel_layouts = chlayouts;
     ret = avfilter_graph_create_filter(&buffersink_ctx, abuffersink, "out",
                                        NULL, abuffersink_params, filter_graph);
     av_free(abuffersink_params);
@@ -211,11 +209,15 @@ int main(int argc, char **argv)
                 }
 
                 /* pull filtered audio from the filtergraph */
-                while (avfilter_poll_frame(buffersink_ctx->inputs[0])) {
-                    av_buffersink_get_buffer_ref(buffersink_ctx, &samplesref, 0);
+                while (1) {
+                    ret = av_buffersink_get_buffer_ref(buffersink_ctx, &samplesref, 0);
+                    if(ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+                        break;
+                    if(ret < 0)
+                        goto end;
                     if (samplesref) {
                         print_samplesref(samplesref);
-                        avfilter_unref_buffer(samplesref);
+                        avfilter_unref_bufferp(&samplesref);
                     }
                 }
             }
