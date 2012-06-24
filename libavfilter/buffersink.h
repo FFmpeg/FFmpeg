@@ -56,6 +56,15 @@ typedef struct {
 AVABufferSinkParams *av_abuffersink_params_alloc(void);
 
 /**
+ * Set the frame size for an audio buffer sink.
+ *
+ * All calls to av_buffersink_get_buffer_ref will return a buffer with
+ * exactly the specified number of samples, or AVERROR(EAGAIN) if there is
+ * not enough. The last buffer at EOF will be padded with 0.
+ */
+void av_buffersink_set_frame_size(AVFilterContext *ctx, unsigned frame_size);
+
+/**
  * Tell av_buffersink_get_buffer_ref() to read video/samples buffer
  * reference, but not remove it from the buffer. This is useful if you
  * need only to read a video/samples buffer, without to fetch it.

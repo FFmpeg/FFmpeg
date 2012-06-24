@@ -125,6 +125,14 @@ static void end_frame(AVFilterLink *inlink)
     }
 }
 
+void av_buffersink_set_frame_size(AVFilterContext *ctx, unsigned frame_size)
+{
+    AVFilterLink *inlink = ctx->inputs[0];
+
+    inlink->min_samples = inlink->max_samples =
+    inlink->partial_buf_size = frame_size;
+}
+
 int av_buffersink_get_buffer_ref(AVFilterContext *ctx,
                                   AVFilterBufferRef **bufref, int flags)
 {
