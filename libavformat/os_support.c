@@ -286,7 +286,7 @@ int poll(struct pollfd *fds, nfds_t numfds, int timeout)
     FD_ZERO(&write_set);
     FD_ZERO(&exception_set);
 
-    n = -1;
+    n = 0;
     for(i = 0; i < numfds; i++) {
         if (fds[i].fd < 0)
             continue;
@@ -301,22 +301,22 @@ int poll(struct pollfd *fds, nfds_t numfds, int timeout)
         if (fds[i].events & POLLOUT) FD_SET(fds[i].fd, &write_set);
         if (fds[i].events & POLLERR) FD_SET(fds[i].fd, &exception_set);
 
-        if (fds[i].fd > n)
-            n = fds[i].fd;
+        if (fds[i].fd >= n)
+            n = fds[i].fd + 1;
     };
 
-    if (n == -1)
+    if (n == 0)
         /* Hey!? Nothing to poll, in fact!!! */
         return 0;
 
     if (timeout < 0)
-        rc = select(n+1, &read_set, &write_set, &exception_set, NULL);
+        rc = select(n, &read_set, &write_set, &exception_set, NULL);
     else {
         struct timeval    tv;
 
         tv.tv_sec = timeout / 1000;
         tv.tv_usec = 1000 * (timeout % 1000);
-        rc = select(n+1, &read_set, &write_set, &exception_set, &tv);
+        rc = select(n, &read_set, &write_set, &exception_set, &tv);
     };
 
     if (rc < 0)
