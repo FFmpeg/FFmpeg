@@ -104,8 +104,6 @@
 #define VSYNC_VFR         2
 #define VSYNC_DROP        0xff
 
-#define SINKA
-
 const char program_name[] = "ffmpeg";
 const int program_birth_year = 2000;
 
@@ -1925,13 +1923,11 @@ static int poll_filters(void)
                     !(ost->enc->capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE))
                     ret = av_buffersink_read_samples(ost->filter->filter, &picref,
                                                     ost->st->codec->frame_size);
-                else
-#ifdef SINKA
+                else if(ost->enc->type == AVMEDIA_TYPE_AUDIO)
                     ret = av_buffersink_read(ost->filter->filter, &picref);
-#else
+                    else
                     ret = av_buffersink_get_buffer_ref(ost->filter->filter, &picref,
                                                        AV_BUFFERSINK_FLAG_NO_REQUEST);
-#endif
                 if (ret < 0) {
                     if (ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
                         char buf[256];
