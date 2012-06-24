@@ -29,6 +29,8 @@
 
 #include "config.h"
 
+#include <sys/stat.h>
+
 #if defined(__MINGW32__) && !defined(__MINGW32CE__)
 #  include <fcntl.h>
 #  define lseek(f,p,w) _lseeki64((f), (p), (w))
@@ -55,6 +57,13 @@ static inline int is_dos_path(const char *path)
 #define SHUT_RD SD_RECEIVE
 #define SHUT_WR SD_SEND
 #define SHUT_RDWR SD_BOTH
+
+#ifndef S_IRUSR
+#define S_IRUSR S_IREAD
+#endif
+#ifndef S_IWUSR
+#define S_IWUSR S_IWRITE
+#endif
 #endif
 
 #if defined(_WIN32) && !defined(__MINGW32CE__)
