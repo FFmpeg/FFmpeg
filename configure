@@ -1302,6 +1302,7 @@ HAVE_LIST="
     ibm_asm
     inet_aton
     inline_asm
+    io_h
     isatty
     isinf
     isnan
@@ -3503,6 +3504,7 @@ check_func_headers glob.h glob
 check_header dlfcn.h
 check_header dxva.h
 check_header dxva2api.h -D_WIN32_WINNT=0x0600
+check_header io.h
 check_header libcrystalhd/libcrystalhd_if.h
 check_header malloc.h
 check_header poll.h
