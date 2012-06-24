@@ -80,6 +80,7 @@ typedef struct MOVIndex {
     unsigned    timescale;
     uint64_t    time;
     int64_t     track_duration;
+    int         last_sample_is_subtitle_end;
     long        sample_count;
     long        sample_size;
     long        chunkCount;

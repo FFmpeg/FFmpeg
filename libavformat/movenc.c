@@ -3086,6 +3086,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (trk->start_dts == AV_NOPTS_VALUE)
         trk->start_dts = pkt->dts;
     trk->track_duration = pkt->dts - trk->start_dts + pkt->duration;
+    trk->last_sample_is_subtitle_end = 0;
 
     if (pkt->pts == AV_NOPTS_VALUE) {
         av_log(s, AV_LOG_WARNING, "pts has no value\n");
@@ -3122,12 +3123,8 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
+static int mov_write_single_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    if (!pkt) {
-        mov_flush_fragment(s);
-        return 1;
-    } else {
         MOVMuxContext *mov = s->priv_data;
         MOVTrack *trk = &mov->tracks[pkt->stream_index];
         AVCodecContext *enc = trk->enc;
@@ -3151,6 +3148,72 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
 
         return ff_mov_write_packet(s, pkt);
+}
+
+static int mov_write_subtitle_end_packet(AVFormatContext *s,
+                                         int stream_index,
+                                         int64_t dts) {
+    AVPacket end;
+    int ret;
+
+    av_init_packet(&end);
+    end.size = sizeof (short);
+    end.data = av_mallocz(end.size);
+    end.pts = dts;
+    end.dts = dts;
+    end.duration = 0;
+    end.stream_index = stream_index;
+
+    ret = mov_write_single_packet(s, &end);
+    av_free_packet(&end);
+
+    return ret;
+}
+
+static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    if (!pkt) {
+        mov_flush_fragment(s);
+        return 1;
+    } else {
+        int i;
+        MOVMuxContext *mov = s->priv_data;
+
+        if (!pkt->size) return 0; /* Discard 0 sized packets */
+
+        /*
+         * Subtitles require special handling.
+         *
+         * 1) For full complaince, every track must have a sample at
+         * dts == 0, which is rarely true for subtitles. So, as soon
+         * as we see any packet with dts > 0, write an empty subtitle
+         * at dts == 0 for any subtitle track with no samples in it.
+         *
+         * 2) For each subtitle track, check if the current packet's
+         * dts is past the duration of the last subtitle sample. If
+         * so, we now need to write an end sample for that subtitle.
+         *
+         * This must be done conditionally to allow for subtitles that
+         * immediately replace each other, in which case an end sample
+         * is not needed, and is, in fact, actively harmful.
+         *
+         * 3) See mov_write_trailer for how the final end sample is
+         * handled.
+         */
+        for (i = 0; i < mov->nb_streams; i++) {
+            MOVTrack *trk = &mov->tracks[i];
+            int ret;
+
+            if (trk->enc->codec_id == CODEC_ID_MOV_TEXT &&
+                trk->track_duration < pkt->dts &&
+                (trk->entry == 0 || !trk->last_sample_is_subtitle_end)) {
+                ret = mov_write_subtitle_end_packet(s, i, trk->track_duration);
+                if (ret < 0) return ret;
+                trk->last_sample_is_subtitle_end = 1;
+            }
+        }
+
+        return mov_write_single_packet(s, pkt);
     }
 }
 
@@ -3521,10 +3584,24 @@ static int mov_write_trailer(AVFormatContext *s)
 {
     MOVMuxContext *mov = s->priv_data;
     AVIOContext *pb = s->pb;
+    int64_t moov_pos;
     int res = 0;
     int i;
 
-    int64_t moov_pos = avio_tell(pb);
+    /*
+     * Before actually writing the trailer, make sure that there are no
+     * dangling subtitles, that need a terminating sample.
+     */
+    for (i = 0; i < mov->nb_streams; i++) {
+        MOVTrack *trk = &mov->tracks[i];
+        if (trk->enc->codec_id == CODEC_ID_MOV_TEXT &&
+            !trk->last_sample_is_subtitle_end) {
+            mov_write_subtitle_end_packet(s, i, trk->track_duration);
+            trk->last_sample_is_subtitle_end = 1;
+        }
+    }
+
+    moov_pos = avio_tell(pb);
 
     if (!(mov->flags & FF_MOV_FLAG_FRAGMENT)) {
         /* Write size of mdat tag */
