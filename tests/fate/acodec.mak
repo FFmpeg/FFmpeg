@@ -43,7 +43,7 @@ fate-acodec-alac: CODEC = alac -compression_level 1
 FATE_ACODEC += fate-acodec-dca
 fate-acodec-dca: tests/data/asynth-44100-2.wav
 fate-acodec-dca: SRC = tests/data/asynth-44100-2.wav
-fate-acodec-dca: CMD = md5 -i $(SRC) -c:a dca -strict -2 -f dts -flags +bitexact
+fate-acodec-dca: CMD = md5 -i $(TARGET_PATH)/$(SRC) -c:a dca -strict -2 -f dts -flags +bitexact
 fate-acodec-dca: CMP = oneline
 fate-acodec-dca: REF = 66bd0e602be7fb97dc19151554c0ee29
 
