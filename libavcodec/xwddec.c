@@ -157,10 +157,13 @@ static int xwd_decode_frame(AVCodecContext *avctx, void *data,
     switch (vclass) {
     case XWD_STATIC_GRAY:
     case XWD_GRAY_SCALE:
-        if (bpp != 1)
+        if (bpp != 1 && bpp != 8)
             return AVERROR_INVALIDDATA;
-        if (pixdepth == 1)
+        if (pixdepth == 1) {
             avctx->pix_fmt = PIX_FMT_MONOWHITE;
+        } else if (pixdepth == 8) {
+            avctx->pix_fmt = PIX_FMT_GRAY8;
+        }
         break;
     case XWD_STATIC_COLOR:
     case XWD_PSEUDO_COLOR:
