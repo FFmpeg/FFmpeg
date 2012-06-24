@@ -1057,6 +1057,7 @@ HAVE_LIST="
     dlfcn_h
     dlopen
     dos_paths
+    dxva_h
     ebp_available
     ebx_available
     exp2
@@ -2859,6 +2860,7 @@ check_func_headers windows.h MapViewOfFile
 check_func_headers windows.h VirtualAlloc
 
 check_header dlfcn.h
+check_header dxva.h
 check_header dxva2api.h
 check_header libcrystalhd/libcrystalhd_if.h
 check_header malloc.h
