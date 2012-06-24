@@ -39,7 +39,6 @@
 
 #include <netinet/in.h>
 #include <netinet/sctp.h>
-#include <unistd.h>
 
 #include "config.h"
 

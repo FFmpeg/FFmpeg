@@ -27,6 +27,10 @@
 #include "libavutil/error.h"
 #include "os_support.h"
 
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
 #if HAVE_WINSOCK2_H
 #include <winsock2.h>
 #include <ws2tcpip.h>

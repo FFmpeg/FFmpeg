@@ -30,7 +30,6 @@
 #include "avio_internal.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/avstring.h"
-#include <unistd.h>
 #include "internal.h"
 #include "network.h"
 #include "os_support.h"
