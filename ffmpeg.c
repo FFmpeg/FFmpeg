@@ -1925,7 +1925,7 @@ static int poll_filters(void)
                                                     ost->st->codec->frame_size);
                 else if(ost->enc->type == AVMEDIA_TYPE_AUDIO)
                     ret = av_buffersink_read(ost->filter->filter, &picref);
-                    else
+                else
                     ret = av_buffersink_get_buffer_ref(ost->filter->filter, &picref,
                                                        AV_BUFFERSINK_FLAG_NO_REQUEST);
                 if (ret < 0) {
