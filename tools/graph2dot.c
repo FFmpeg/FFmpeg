@@ -52,7 +52,7 @@ static void print_digraph(FILE *outfile, AVFilterGraph *graph)
         char filter_ctx_label[128];
         const AVFilterContext *filter_ctx = graph->filters[i];
 
-        snprintf(filter_ctx_label, sizeof(filter_ctx_label), "%s (%s)",
+        snprintf(filter_ctx_label, sizeof(filter_ctx_label), "%s\\n(%s)",
                  filter_ctx->name,
                  filter_ctx->filter->name);
 
@@ -63,12 +63,13 @@ static void print_digraph(FILE *outfile, AVFilterGraph *graph)
                 const AVFilterContext *dst_filter_ctx = link->dst;
 
                 snprintf(dst_filter_ctx_label, sizeof(dst_filter_ctx_label),
-                         "%s (%s)",
+                         "%s\\n(%s)",
                          dst_filter_ctx->name,
                          dst_filter_ctx->filter->name);
 
-                fprintf(outfile, "\"%s\" -> \"%s\" [ label= \"inpad:%s ",
-                        filter_ctx_label, dst_filter_ctx_label, link->srcpad->name);
+                fprintf(outfile, "\"%s\" -> \"%s\" [ label= \"inpad:%s -> outpad:%s\\n",
+                        filter_ctx_label, dst_filter_ctx_label,
+                        link->srcpad->name, link->dstpad->name);
 
                 if (link->type == AVMEDIA_TYPE_VIDEO) {
                     fprintf(outfile,
@@ -86,8 +87,7 @@ static void print_digraph(FILE *outfile, AVFilterGraph *graph)
                             link->sample_rate, buf,
                             link->time_base.num, link->time_base.den);
                 }
-
-                fprintf(outfile, " outpad:%s\" ];\n", link->dstpad->name);
+                fprintf(outfile, "\n]");
             }
         }
     }
