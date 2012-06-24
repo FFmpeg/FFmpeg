@@ -37,6 +37,7 @@ version 10:
 - Error Resilient AAC syntax (ER AAC LC) decoding
 - Low Delay AAC (ER AAC LD) decoding
 - mux chapters in ASF files
+- Opus in Ogg demuxing
 
 
 version 9:

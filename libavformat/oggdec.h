@@ -116,6 +116,7 @@ extern const struct ogg_codec ff_ogm_text_codec;
 extern const struct ogg_codec ff_ogm_video_codec;
 extern const struct ogg_codec ff_old_dirac_codec;
 extern const struct ogg_codec ff_old_flac_codec;
+extern const struct ogg_codec ff_opus_codec;
 extern const struct ogg_codec ff_skeleton_codec;
 extern const struct ogg_codec ff_speex_codec;
 extern const struct ogg_codec ff_theora_codec;
