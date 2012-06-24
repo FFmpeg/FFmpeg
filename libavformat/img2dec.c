@@ -116,7 +116,7 @@ static int find_image_range(int *pfirst_index, int *plast_index,
     int range, last_index, range1, first_index;
 
     /* find the first image */
-    for(first_index = max_start; first_index < max_start + 5; first_index++) {
+    for (first_index = max_start; first_index < max_start + 5; first_index++) {
         if (av_get_frame_filename(buf, sizeof(buf), path, first_index) < 0){
             *pfirst_index =
             *plast_index = 1;
@@ -252,7 +252,8 @@ static int read_header(AVFormatContext *s1)
             last_index = s->globstate.gl_pathc - 1;
 #endif
         } else {
-            if (find_image_range(&first_index, &last_index, s->path, s->start_number - 1) < 0)
+            if (find_image_range(&first_index, &last_index, s->path,
+                                 s->start_number - 1) < 0)
                 return AVERROR(ENOENT);
         }
         s->img_first = first_index;

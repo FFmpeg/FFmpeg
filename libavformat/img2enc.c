@@ -27,6 +27,7 @@
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
+#include "libavutil/opt.h"
 
 typedef struct {
     const AVClass *class;  /**< Class for private options. */
@@ -140,7 +141,6 @@ static const AVOption muxoptions[] = {
     { NULL },
 };
 
-
 #if CONFIG_IMAGE2_MUXER
 static const AVClass img2mux_class = {
     .class_name = "image2 muxer",
@@ -148,6 +148,7 @@ static const AVClass img2mux_class = {
     .option     = muxoptions,
     .version    = LIBAVUTIL_VERSION_INT,
 };
+
 AVOutputFormat ff_image2_muxer = {
     .name           = "image2",
     .long_name      = NULL_IF_CONFIG_SMALL("image2 sequence"),

@@ -26,7 +26,7 @@
 
 #include "config.h"
 
-#if HAVE_ISATTY
+#if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 #include <stdlib.h>
