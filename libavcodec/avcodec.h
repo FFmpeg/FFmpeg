@@ -420,6 +420,7 @@ enum CodecID {
     CODEC_ID_SONIC       = MKBETAG('S','O','N','C'),
     CODEC_ID_SONIC_LS    = MKBETAG('S','O','N','L'),
     CODEC_ID_PAF_AUDIO   = MKBETAG('P','A','F','A'),
+    CODEC_ID_OPUS        = MKBETAG('O','P','U','S'),
 
     /* subtitle codecs */
     CODEC_ID_FIRST_SUBTITLE = 0x17000,          ///< A dummy ID pointing at the start of subtitle codecs.
