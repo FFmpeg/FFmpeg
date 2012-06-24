@@ -15,6 +15,9 @@ libavutil:     2011-04-18
 
 API changes, most recent first:
 
+2012-06-24 - xxxxxxx - lavu 51.62.100 - version.h
+  version moved from avutil.h to version.h
+
 2012-04-11 - xxxxxxx - lavu 51.58.100 - error.h
   Add av_make_error_string() and av_err2str() utilities to
   libavutil/error.h.

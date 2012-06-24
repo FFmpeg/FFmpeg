@@ -141,30 +141,8 @@
 #define AV_VERSION_DOT(a, b, c) a ##.## b ##.## c
 #define AV_VERSION(a, b, c) AV_VERSION_DOT(a, b, c)
 
-/**
- * @}
- *
- * @defgroup lavu_ver Version and Build diagnostics
- *
- * Macros and function useful to check at compiletime and at runtime
- * which version of libavutil is in use.
- *
- * @{
- */
+#include "libavutil/version.h"
 
-#define LIBAVUTIL_VERSION_MAJOR 51
-#define LIBAVUTIL_VERSION_MINOR 61
-#define LIBAVUTIL_VERSION_MICRO 100
-
-#define LIBAVUTIL_VERSION_INT   AV_VERSION_INT(LIBAVUTIL_VERSION_MAJOR, \
-                                               LIBAVUTIL_VERSION_MINOR, \
-                                               LIBAVUTIL_VERSION_MICRO)
-#define LIBAVUTIL_VERSION       AV_VERSION(LIBAVUTIL_VERSION_MAJOR,     \
-                                           LIBAVUTIL_VERSION_MINOR,     \
-                                           LIBAVUTIL_VERSION_MICRO)
-#define LIBAVUTIL_BUILD         LIBAVUTIL_VERSION_INT
-
-#define LIBAVUTIL_IDENT         "Lavu" AV_STRINGIFY(LIBAVUTIL_VERSION)
 
 /**
  * @}

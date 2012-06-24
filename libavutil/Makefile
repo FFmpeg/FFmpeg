@@ -42,6 +42,7 @@ HEADERS = adler32.h                                                     \
           time.h                                                        \
           timecode.h                                                    \
           timestamp.h                                                   \
+          version.h                                                     \
 
 ARCH_HEADERS = bswap.h                                                  \
                intmath.h                                                \
