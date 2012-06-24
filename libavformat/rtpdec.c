@@ -27,7 +27,6 @@
 #include "mpegts.h"
 #include "url.h"
 
-#include <unistd.h>
 #include "network.h"
 
 #include "rtpdec.h"
