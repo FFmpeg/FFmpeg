@@ -216,7 +216,7 @@ static int request_frame(AVFilterLink *link)
     do {
         int ret;
 
-        if ((ret = avfilter_request_frame(link->src->inputs[0])))
+        if ((ret = ff_request_frame(link->src->inputs[0])))
             return ret;
     } while (!idet->cur);
 
@@ -231,7 +231,7 @@ static int poll_frame(AVFilterLink *link)
     val = ff_poll_frame(link->src->inputs[0]);
 
     if (val >= 1 && !idet->next) { //FIXME change API to not requre this red tape
-        if ((ret = avfilter_request_frame(link->src->inputs[0])) < 0)
+        if ((ret = ff_request_frame(link->src->inputs[0])) < 0)
             return ret;
         val = ff_poll_frame(link->src->inputs[0]);
     }

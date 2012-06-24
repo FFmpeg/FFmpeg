@@ -187,7 +187,7 @@ static int filter_query_formats(AVFilterContext *ctx)
     if ((ret = ctx->filter->query_formats(ctx)) < 0)
         return ret;
 
-    formats = avfilter_make_all_formats(type);
+    formats = ff_all_formats(type);
     if (!formats)
         return AVERROR(ENOMEM);
     ff_set_common_formats(ctx, formats);
@@ -815,11 +815,51 @@ static int ff_avfilter_graph_config_pointers(AVFilterGraph *graph,
     return 0;
 }
 
+static int graph_insert_fifos(AVFilterGraph *graph, AVClass *log_ctx)
+{
+    AVFilterContext *f;
+    int i, j, ret;
+    int fifo_count = 0;
+
+    for (i = 0; i < graph->filter_count; i++) {
+        f = graph->filters[i];
+
+        for (j = 0; j < f->nb_inputs; j++) {
+            AVFilterLink *link = f->inputs[j];
+            AVFilterContext *fifo_ctx;
+            AVFilter *fifo;
+            char name[32];
+
+            if (!link->dstpad->needs_fifo)
+                continue;
+
+            fifo = f->inputs[j]->type == AVMEDIA_TYPE_VIDEO ?
+                   avfilter_get_by_name("fifo") :
+                   avfilter_get_by_name("afifo");
+
+            snprintf(name, sizeof(name), "auto-inserted fifo %d", fifo_count++);
+
+            ret = avfilter_graph_create_filter(&fifo_ctx, fifo, name, NULL,
+                                               NULL, graph);
+            if (ret < 0)
+                return ret;
+
+            ret = avfilter_insert_filter(link, fifo_ctx, 0, 0);
+            if (ret < 0)
+                return ret;
+        }
+    }
+
+    return 0;
+}
+
 int avfilter_graph_config(AVFilterGraph *graphctx, void *log_ctx)
 {
     int ret;
 
     if ((ret = graph_check_validity(graphctx, log_ctx)))
+        return ret;
+    if ((ret = graph_insert_fifos(graphctx, log_ctx)) < 0)
         return ret;
     if ((ret = graph_config_formats(graphctx, log_ctx)))
         return ret;
@@ -939,7 +979,7 @@ int avfilter_graph_request_oldest(AVFilterGraph *graph)
 {
     while (graph->sink_links_count) {
         AVFilterLink *oldest = graph->sink_links[0];
-        int r = avfilter_request_frame(oldest);
+        int r = ff_request_frame(oldest);
         if (r != AVERROR_EOF)
             return r;
         /* EOF: remove the link from the heap */

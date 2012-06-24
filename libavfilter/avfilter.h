@@ -211,7 +211,6 @@ AVFilterBufferRef *avfilter_ref_buffer(AVFilterBufferRef *ref, int pmask);
  */
 void avfilter_unref_buffer(AVFilterBufferRef *ref);
 
-#if FF_API_FILTERS_PUBLIC
 /**
  * Remove a reference to a buffer and set the pointer to NULL.
  * If this is the last reference to the buffer, the buffer itself
@@ -221,6 +220,7 @@ void avfilter_unref_buffer(AVFilterBufferRef *ref);
  */
 void avfilter_unref_bufferp(AVFilterBufferRef **ref);
 
+#if FF_API_FILTERS_PUBLIC
 /**
  * A list of supported formats for one end of a filter link. This is used
  * during the format negotiation process to try to pick the best format to
@@ -291,7 +291,7 @@ AVFilterFormats *avfilter_make_format_list(const int *fmts);
  *
  * @return a non negative value in case of success, or a negative
  * value corresponding to an AVERROR code in case of error
- * @deprecated Use avfilter_make_all_formats() instead.
+ * @deprecated Use ff_all_formats() instead.
  */
 attribute_deprecated
 int avfilter_add_format(AVFilterFormats **avff, int64_t fmt);
@@ -479,7 +479,7 @@ struct AVFilterPad {
      * Frame request callback. A call to this should result in at least one
      * frame being output over the given link. This should return zero on
      * success, and another value on error.
-     * See avfilter_request_frame() for the error codes with a specific
+     * See ff_request_frame() for the error codes with a specific
      * meaning.
      *
      * Output pads only.
@@ -504,6 +504,14 @@ struct AVFilterPad {
      * and another value on error.
      */
     int (*config_props)(AVFilterLink *link);
+
+    /**
+     * The filter expects a fifo to be inserted on its input link,
+     * typically because it has a delay.
+     *
+     * input pads only.
+     */
+    int needs_fifo;
 };
 #endif
 
@@ -529,6 +537,10 @@ const char *avfilter_pad_get_name(AVFilterPad *pads, int pad_idx);
  */
 enum AVMediaType avfilter_pad_get_type(AVFilterPad *pads, int pad_idx);
 
+/** default handler for end_frame() for video inputs */
+attribute_deprecated
+void avfilter_default_end_frame(AVFilterLink *link);
+
 #if FF_API_FILTERS_PUBLIC
 /** default handler for start_frame() for video inputs */
 attribute_deprecated
@@ -537,10 +549,6 @@ void avfilter_default_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 /** default handler for draw_slice() for video inputs */
 attribute_deprecated
 void avfilter_default_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
-
-/** default handler for end_frame() for video inputs */
-attribute_deprecated
-void avfilter_default_end_frame(AVFilterLink *link);
 
 /** default handler for get_video_buffer() for video inputs */
 attribute_deprecated
@@ -756,6 +764,15 @@ struct AVFilterLink {
     struct AVFilterChannelLayouts  *in_channel_layouts;
     struct AVFilterChannelLayouts *out_channel_layouts;
 
+    /**
+     * Audio only, the destination filter sets this to a non-zero value to
+     * request that buffers with the given number of samples should be sent to
+     * it. AVFilterPad.needs_fifo must also be set on the corresponding input
+     * pad.
+     * Last buffer before EOF will be padded with silence.
+     */
+    int request_samples;
+
     struct AVFilterPool *pool;
 
     /**
@@ -785,7 +802,6 @@ struct AVFilterLink {
      * It is similar to the r_frae_rate field in AVStream.
      */
     AVRational frame_rate;
-
 };
 
 /**

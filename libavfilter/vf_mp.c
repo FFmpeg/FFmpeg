@@ -25,6 +25,9 @@
  */
 
 #include "avfilter.h"
+#include "video.h"
+#include "formats.h"
+#include "internal.h"
 #include "libavutil/avassert.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/intreadwrite.h"
@@ -633,9 +636,9 @@ int vf_next_put_image(struct vf_instance *vf,mp_image_t *mpi, double pts){
     if(pts != MP_NOPTS_VALUE)
         picref->pts= pts * av_q2d(outlink->time_base);
 
-    avfilter_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
-    avfilter_draw_slice(outlink, 0, picref->video->h, 1);
-    avfilter_end_frame(outlink);
+    ff_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
+    ff_draw_slice(outlink, 0, picref->video->h, 1);
+    ff_end_frame(outlink);
     avfilter_unref_buffer(picref);
     m->frame_returned++;
 
@@ -788,14 +791,14 @@ static int query_formats(AVFilterContext *ctx)
         if(m->vf.query_format(&m->vf, conversion_map[i].fmt)){
             av_log(ctx, AV_LOG_DEBUG, "supported,adding\n");
             if (conversion_map[i].pix_fmt != lastpixfmt) {
-                avfilter_add_format(&avfmts, conversion_map[i].pix_fmt);
+                ff_add_format(&avfmts, conversion_map[i].pix_fmt);
                 lastpixfmt = conversion_map[i].pix_fmt;
             }
         }
     }
 
     //We assume all allowed input formats are also allowed output formats
-    avfilter_set_common_pixel_formats(ctx, avfmts);
+    ff_set_common_formats(ctx, avfmts);
     return 0;
 }
 
@@ -836,7 +839,7 @@ static int request_frame(AVFilterLink *outlink)
     av_log(m->avfctx, AV_LOG_DEBUG, "mp request_frame\n");
 
     for(m->frame_returned=0; !m->frame_returned;){
-        ret=avfilter_request_frame(outlink->src->inputs[0]);
+        ret=ff_request_frame(outlink->src->inputs[0]);
         if(ret<0)
             break;
     }

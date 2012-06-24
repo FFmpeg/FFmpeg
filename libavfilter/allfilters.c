@@ -47,8 +47,10 @@ void avfilter_register_all(void)
     REGISTER_FILTER (ASTREAMSYNC, astreamsync, af);
     REGISTER_FILTER (ASYNCTS,     asyncts,     af);
     REGISTER_FILTER (ATEMPO,      atempo,      af);
+    REGISTER_FILTER (CHANNELMAP,  channelmap,  af);
     REGISTER_FILTER (CHANNELSPLIT,channelsplit,af);
     REGISTER_FILTER (EARWAX,      earwax,      af);
+    REGISTER_FILTER (JOIN,        join,        af);
     REGISTER_FILTER (PAN,         pan,         af);
     REGISTER_FILTER (SILENCEDETECT, silencedetect, af);
     REGISTER_FILTER (VOLUME,      volume,      af);

@@ -136,7 +136,7 @@ static int request_frame(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     BlackDetectContext *blackdetect = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
-    int ret = avfilter_request_frame(inlink);
+    int ret = ff_request_frame(inlink);
 
     if (ret == AVERROR_EOF && blackdetect->black_started) {
         // FIXME: black_end should be set to last_picref_pts + last_picref_duration

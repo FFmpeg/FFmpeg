@@ -25,7 +25,7 @@
 
 #include "libavutil/audio_fifo.h"
 #include "libavutil/audioconvert.h"
-#include "libavutil/fifo.h"
+#include "libavutil/avassert.h"
 #include "libavutil/mathematics.h"
 
 #include "audio.h"
@@ -34,86 +34,45 @@
 #include "internal.h"
 
 typedef struct {
-    AVFifoBuffer *fifo;          ///< FIFO buffer of frame references
-
+    AVFilterBufferRef *cur_buf;  ///< last buffer delivered on the sink
     AVAudioFifo  *audio_fifo;    ///< FIFO for audio samples
     int64_t next_pts;            ///< interpolating audio pts
 } BufferSinkContext;
-
-#define FIFO_INIT_SIZE 8
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
     BufferSinkContext *sink = ctx->priv;
 
-    while (sink->fifo && av_fifo_size(sink->fifo)) {
-        AVFilterBufferRef *buf;
-        av_fifo_generic_read(sink->fifo, &buf, sizeof(buf), NULL);
-        avfilter_unref_buffer(buf);
-    }
-    av_fifo_free(sink->fifo);
-
     if (sink->audio_fifo)
         av_audio_fifo_free(sink->audio_fifo);
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static void start_frame(AVFilterLink *link, AVFilterBufferRef *buf)
 {
-    BufferSinkContext *sink = ctx->priv;
+    BufferSinkContext *s = link->dst->priv;
 
-    if (!(sink->fifo = av_fifo_alloc(FIFO_INIT_SIZE*sizeof(AVFilterBufferRef*)))) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to allocate fifo\n");
-        return AVERROR(ENOMEM);
-    }
-
-    return 0;
-}
-
-static void write_buf(AVFilterContext *ctx, AVFilterBufferRef *buf)
-{
-    BufferSinkContext *sink = ctx->priv;
-
-    if (av_fifo_space(sink->fifo) < sizeof(AVFilterBufferRef *) &&
-        (av_fifo_realloc2(sink->fifo, av_fifo_size(sink->fifo) * 2) < 0)) {
-            av_log(ctx, AV_LOG_ERROR, "Error reallocating the FIFO.\n");
-            return;
-    }
-
-    av_fifo_generic_write(sink->fifo, &buf, sizeof(buf), NULL);
-}
-
-static void end_frame(AVFilterLink *link)
-{
-    write_buf(link->dst, link->cur_buf);
+//     av_assert0(!s->cur_buf);
+    s->cur_buf    = buf;
     link->cur_buf = NULL;
-}
-
-static void filter_samples(AVFilterLink *link, AVFilterBufferRef *buf)
-{
-    write_buf(link->dst, buf);
-}
+};
 
 int av_buffersink_read(AVFilterContext *ctx, AVFilterBufferRef **buf)
 {
-    BufferSinkContext *sink = ctx->priv;
+    BufferSinkContext *s    = ctx->priv;
     AVFilterLink      *link = ctx->inputs[0];
     int ret;
 
-    if (!buf) {
-        if (av_fifo_size(sink->fifo))
-            return av_fifo_size(sink->fifo)/sizeof(*buf);
-        else
-            return ff_poll_frame(ctx->inputs[0]);
-    }
+    if (!buf)
+        return ff_poll_frame(ctx->inputs[0]);
 
-    if (!av_fifo_size(sink->fifo) &&
-        (ret = ff_request_frame(link)) < 0)
+    if ((ret = ff_request_frame(link)) < 0)
         return ret;
 
-    if (!av_fifo_size(sink->fifo))
+    if (!s->cur_buf)
         return AVERROR(EINVAL);
 
-    av_fifo_generic_read(sink->fifo, buf, sizeof(*buf), NULL);
+    *buf       = s->cur_buf;
+    s->cur_buf = NULL;
 
     return 0;
 }
@@ -182,13 +141,13 @@ AVFilter avfilter_vsink_buffer = {
     .name      = "buffersink_old",
     .description = NULL_IF_CONFIG_SMALL("Buffer video frames, and make them available to the end of the filter graph."),
     .priv_size = sizeof(BufferSinkContext),
-    .init      = init,
     .uninit    = uninit,
 
     .inputs    = (AVFilterPad[]) {{ .name          = "default",
                                     .type          = AVMEDIA_TYPE_VIDEO,
-                                    .end_frame     = end_frame,
-                                    .min_perms     = AV_PERM_READ, },
+                                    .start_frame   = start_frame,
+                                    .min_perms     = AV_PERM_READ,
+                                    .needs_fifo    = 1 },
                                   { .name = NULL }},
     .outputs   = (AVFilterPad[]) {{ .name = NULL }},
 };
@@ -197,13 +156,13 @@ AVFilter avfilter_asink_abuffer = {
     .name      = "abuffersink_old",
     .description = NULL_IF_CONFIG_SMALL("Buffer audio frames, and make them available to the end of the filter graph."),
     .priv_size = sizeof(BufferSinkContext),
-    .init      = init,
     .uninit    = uninit,
 
     .inputs    = (AVFilterPad[]) {{ .name           = "default",
                                     .type           = AVMEDIA_TYPE_AUDIO,
-                                    .filter_samples = filter_samples,
-                                    .min_perms      = AV_PERM_READ, },
+                                    .filter_samples = start_frame,
+                                    .min_perms      = AV_PERM_READ,
+                                    .needs_fifo     = 1 },
                                   { .name = NULL }},
     .outputs   = (AVFilterPad[]) {{ .name = NULL }},
 };

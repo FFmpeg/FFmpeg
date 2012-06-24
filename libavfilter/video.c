@@ -321,6 +321,11 @@ void ff_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
     draw_slice(link, y, h, slice_dir);
 }
 
+void avfilter_default_end_frame(AVFilterLink *inlink)
+{
+    default_end_frame(inlink);
+}
+
 #if FF_API_FILTERS_PUBLIC
 AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
 {
@@ -329,10 +334,6 @@ AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link, int per
 void avfilter_default_start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
     default_start_frame(inlink, picref);
-}
-void avfilter_default_end_frame(AVFilterLink *inlink)
-{
-    default_end_frame(inlink);
 }
 void avfilter_default_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 {

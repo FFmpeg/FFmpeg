@@ -334,7 +334,7 @@ static int poll_frame(AVFilterLink *outlink)
     val = ff_poll_frame(inlink);
 
     if (val == 1 && !tinterlace->next) {
-        if ((ret = avfilter_request_frame(inlink)) < 0)
+        if ((ret = ff_request_frame(inlink)) < 0)
             return ret;
         val = ff_poll_frame(inlink);
     }
@@ -351,7 +351,7 @@ static int request_frame(AVFilterLink *outlink)
     do {
         int ret;
 
-        if ((ret = avfilter_request_frame(inlink)) < 0)
+        if ((ret = ff_request_frame(inlink)) < 0)
             return ret;
     } while (!tinterlace->cur);
 

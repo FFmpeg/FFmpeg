@@ -164,7 +164,7 @@ static int request_frame(AVFilterLink *outlink)
 
     asns->req_fullfilled = 0;
     do {
-        ret = avfilter_request_frame(inlink);
+        ret = ff_request_frame(inlink);
     } while (!asns->req_fullfilled && ret >= 0);
 
     if (ret == AVERROR_EOF)

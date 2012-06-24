@@ -362,7 +362,7 @@ void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth, const int chrom
             c->h264_idct_add8       = ff_h264_idct_add8_8_mmx;
         c->h264_idct_add16intra     = ff_h264_idct_add16intra_8_mmx;
         if (mm_flags & AV_CPU_FLAG_CMOV)
-            c->h264_luma_dc_dequant_idct= ff_h264_luma_dc_dequant_idct_mmx;
+            c->h264_luma_dc_dequant_idct = ff_h264_luma_dc_dequant_idct_mmx;
 
         if (mm_flags & AV_CPU_FLAG_MMX2) {
             c->h264_idct_dc_add    = ff_h264_idct_dc_add_8_mmx2;

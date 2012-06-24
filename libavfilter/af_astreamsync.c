@@ -157,7 +157,7 @@ static int request_frame(AVFilterLink *outlink)
             send_next(ctx);
         } else {
             as->eof |= 1 << as->next_out;
-            avfilter_request_frame(ctx->inputs[as->next_out]);
+            ff_request_frame(ctx->inputs[as->next_out]);
             if (as->eof & (1 << as->next_out))
                 as->next_out = !as->next_out;
         }

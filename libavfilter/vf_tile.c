@@ -28,6 +28,7 @@
 #include "drawutils.h"
 #include "formats.h"
 #include "video.h"
+#include "internal.h"
 
 typedef struct {
     unsigned w, h;
@@ -170,7 +171,7 @@ static int request_frame(AVFilterLink *outlink)
     int r;
 
     while (1) {
-        r = avfilter_request_frame(inlink);
+        r = ff_request_frame(inlink);
         if (r < 0) {
             if (r == AVERROR_EOF && tile->current)
                 end_last_frame(ctx);

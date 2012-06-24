@@ -178,7 +178,7 @@ static int request_frame(AVFilterLink *link)
     /* loop until a frame thumbnail is available (when a frame is queued,
      * thumb->n is reset to zero) */
     do {
-        int ret = avfilter_request_frame(link->src->inputs[0]);
+        int ret = ff_request_frame(link->src->inputs[0]);
         if (ret < 0)
             return ret;
     } while (thumb->n);
@@ -203,7 +203,7 @@ static int poll_frame(AVFilterLink *link)
 
     /* we have some frame(s) available in the input link, but not yet enough to
      * output a thumbnail, so we request more */
-    ret = avfilter_request_frame(inlink);
+    ret = ff_request_frame(inlink);
     return ret < 0 ? ret : 0;
 }
 

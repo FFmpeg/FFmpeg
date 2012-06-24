@@ -262,11 +262,6 @@ int ff_add_channel_layout(AVFilterChannelLayouts **l, uint64_t channel_layout)
 
 AVFilterFormats *ff_all_formats(enum AVMediaType type)
 {
-    return avfilter_make_all_formats(type);
-}
-
-AVFilterFormats *avfilter_make_all_formats(enum AVMediaType type)
-{
     AVFilterFormats *ret = NULL;
     int fmt;
     int num_formats = type == AVMEDIA_TYPE_VIDEO ? PIX_FMT_NB    :

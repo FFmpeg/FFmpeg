@@ -112,7 +112,7 @@ static int query_formats(AVFilterContext *ctx)
     if(out_format != AV_SAMPLE_FMT_NONE) {
         out_formats = ff_make_format_list((int[]){ out_format, -1 });
     } else
-        out_formats = avfilter_make_all_formats(AVMEDIA_TYPE_AUDIO);
+        out_formats = ff_all_formats(AVMEDIA_TYPE_AUDIO);
     ff_formats_ref(out_formats, &outlink->in_formats);
 
     if(out_layout) {
@@ -211,7 +211,7 @@ static int request_frame(AVFilterLink *outlink)
 
     aresample->req_fullfilled = 0;
     do{
-        ret = avfilter_request_frame(ctx->inputs[0]);
+        ret = ff_request_frame(ctx->inputs[0]);
     }while(!aresample->req_fullfilled && ret>=0);
 
     if (ret == AVERROR_EOF) {

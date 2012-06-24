@@ -1083,7 +1083,7 @@ static int request_frame(AVFilterLink *outlink)
 
     atempo->request_fulfilled = 0;
     do {
-        ret = avfilter_request_frame(ctx->inputs[0]);
+        ret = ff_request_frame(ctx->inputs[0]);
     }
     while (!atempo->request_fulfilled && ret >= 0);
 

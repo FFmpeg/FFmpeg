@@ -170,7 +170,7 @@ static int request_frame(AVFilterLink *outlink)
 
     showwaves->req_fullfilled = 0;
     do {
-        ret = avfilter_request_frame(inlink);
+        ret = ff_request_frame(inlink);
     } while (!showwaves->req_fullfilled && ret >= 0);
 
     if (ret == AVERROR_EOF && showwaves->outpicref)
