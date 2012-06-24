@@ -32,6 +32,7 @@ version next:
 - 3GPP Timed Text decoder
 - GeoTIFF decoder support
 - ffmpeg -(no)stdin option
+- Opus decoder using libopus
 
 
 version 0.11:
