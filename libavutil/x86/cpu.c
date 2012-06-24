@@ -37,6 +37,16 @@
 #define xgetbv(index, eax, edx)                                 \
     __asm__ (".byte 0x0f, 0x01, 0xd0" : "=a"(eax), "=d"(edx) : "c" (index))
 
+#define get_eflags(x)                           \
+    __asm__ volatile ("pushfl     \n"           \
+                      "pop    %0  \n"           \
+                      : "=r"(x))
+
+#define set_eflags(x)                           \
+    __asm__ volatile ("push    %0 \n"           \
+                      "popfl      \n"           \
+                      :: "r"(x))
+
 /* Function to test if multimedia instructions are supported...  */
 int ff_get_cpu_flags_x86(void)
 {
@@ -48,26 +58,12 @@ int ff_get_cpu_flags_x86(void)
 
 #if ARCH_X86_32
     x86_reg a, c;
-    __asm__ volatile (
-        /* See if CPUID instruction is supported ... */
-        /* ... Get copies of EFLAGS into eax and ecx */
-        "pushfl\n\t"
-        "pop %0\n\t"
-        "mov %0, %1\n\t"
 
-        /* ... Toggle the ID bit in one copy and store */
-        /*     to the EFLAGS reg */
-        "xor $0x200000, %0\n\t"
-        "push %0\n\t"
-        "popfl\n\t"
-
-        /* ... Get the (hopefully modified) EFLAGS */
-        "pushfl\n\t"
-        "pop %0\n\t"
-        : "=a" (a), "=c" (c)
-        :
-        : "cc"
-        );
+    /* Check if CPUID is supported by attempting to toggle the ID bit in
+     * the EFLAGS register. */
+    get_eflags(a);
+    set_eflags(a ^ 0x200000);
+    get_eflags(c);
 
     if (a == c)
         return 0; /* CPUID not supported */
