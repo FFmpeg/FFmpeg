@@ -28,8 +28,8 @@
 #define AVCODEC_RANGECODER_H
 
 #include <stdint.h>
-#include <assert.h>
 #include "libavutil/common.h"
+#include "libavutil/avassert.h"
 
 typedef struct RangeCoder{
     int low;
@@ -82,9 +82,9 @@ static inline int get_rac_count(RangeCoder *c){
 static inline void put_rac(RangeCoder *c, uint8_t * const state, int bit){
     int range1= (c->range * (*state)) >> 8;
 
-    assert(*state);
-    assert(range1 < c->range);
-    assert(range1 > 0);
+    av_assert2(*state);
+    av_assert2(range1 < c->range);
+    av_assert2(range1 > 0);
     if(!bit){
         c->range -= range1;
         *state= c->zero_state[*state];
