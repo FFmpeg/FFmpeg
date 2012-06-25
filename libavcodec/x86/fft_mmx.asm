@@ -640,19 +640,21 @@ cglobal fft_permute, 2,7,1
 %if ARCH_X86_64
     mov     r0, r1
     mov     r1, r5
+%endif
+%if WIN64
+    sub     rsp, 8
+    call    memcpy
+    add     rsp, 8
+    RET
+%elif ARCH_X86_64
+    jmp     memcpy
 %else
     push    r2
     push    r5
     push    r1
-%endif
-%if ARCH_X86_64 && WIN64 == 0
-    jmp     memcpy
-%else
     call    memcpy
-%if ARCH_X86_32
     add     esp, 12
-%endif
-    REP_RET
+    RET
 %endif
 
 cglobal imdct_calc, 3,5,3
