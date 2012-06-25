@@ -34,6 +34,8 @@
 #include "libavcodec/cabac.h"
 #include "cabac.h"
 
+#if HAVE_INLINE_ASM
+
 //FIXME use some macros to avoid duplicating get_cabac (cannot be done yet
 //as that would make optimization work hard)
 #if HAVE_7REGS
@@ -187,4 +189,5 @@ static int decode_significance_8x8_x86(CABACContext *c,
 }
 #endif /* HAVE_7REGS && !defined(BROKEN_RELOCATIONS) */
 
+#endif /* HAVE_INLINE_ASM */
 #endif /* AVCODEC_X86_H264_I386_H */

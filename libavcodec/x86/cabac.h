@@ -27,6 +27,8 @@
 #include "libavutil/internal.h"
 #include "config.h"
 
+#if HAVE_INLINE_ASM
+
 #ifdef BROKEN_RELOCATIONS
 #define TABLES_ARG , "r"(tables)
 
@@ -220,4 +222,5 @@ static av_always_inline int get_cabac_bypass_sign_x86(CABACContext *c, int val)
     return val;
 }
 
+#endif /* HAVE_INLINE_ASM */
 #endif /* AVCODEC_X86_CABAC_H */

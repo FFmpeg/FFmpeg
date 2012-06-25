@@ -24,6 +24,8 @@
 #include "libavutil/x86_cpu.h"
 #include "libavcodec/dnxhdenc.h"
 
+#if HAVE_INLINE_ASM
+
 static void get_pixels_8x4_sym_sse2(DCTELEM *block, const uint8_t *pixels, int line_size)
 {
     __asm__ volatile(
@@ -50,10 +52,14 @@ static void get_pixels_8x4_sym_sse2(DCTELEM *block, const uint8_t *pixels, int l
     );
 }
 
+#endif /* HAVE_INLINE_ASM */
+
 void ff_dnxhd_init_mmx(DNXHDEncContext *ctx)
 {
+#if HAVE_INLINE_ASM
     if (av_get_cpu_flags() & AV_CPU_FLAG_SSE2) {
         if (ctx->cid_table->bit_depth == 8)
             ctx->get_pixels_8x4_sym = get_pixels_8x4_sym_sse2;
     }
+#endif /* HAVE_INLINE_ASM */
 }

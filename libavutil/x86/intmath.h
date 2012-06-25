@@ -21,6 +21,7 @@
 #ifndef AVUTIL_X86_INTMATH_H
 #define AVUTIL_X86_INTMATH_H
 
+#if HAVE_INLINE_ASM
 #define FASTDIV(a,b) \
     ({\
         int ret, dmy;\
@@ -31,5 +32,6 @@
             );\
         ret;\
     })
+#endif
 
 #endif /* AVUTIL_X86_INTMATH_H */

@@ -111,7 +111,7 @@ struct AVDictionary {
 
 /* math */
 
-#if ARCH_X86
+#if ARCH_X86 && HAVE_INLINE_ASM
 #define MASK_ABS(mask, level)\
             __asm__ volatile(\
                 "cltd                   \n\t"\

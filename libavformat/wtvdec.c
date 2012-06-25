@@ -372,7 +372,11 @@ static int read_probe(AVProbeData *p)
 static void filetime_to_iso8601(char *buf, int buf_size, int64_t value)
 {
     time_t t = (value / 10000000LL) - 11644473600LL;
-    strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", gmtime(&t));
+    struct tm *tm = gmtime(&t);
+    if (tm)
+        strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", gmtime(&t));
+    else
+        buf[0] = '\0';
 }
 
 /**
@@ -381,7 +385,11 @@ static void filetime_to_iso8601(char *buf, int buf_size, int64_t value)
 static void crazytime_to_iso8601(char *buf, int buf_size, int64_t value)
 {
     time_t t = (value / 10000000LL) - 719162LL*86400LL;
-    strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", gmtime(&t));
+    struct tm *tm = gmtime(&t);
+    if (tm)
+        strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", gmtime(&t));
+    else
+        buf[0] = '\0';
 }
 
 /**
