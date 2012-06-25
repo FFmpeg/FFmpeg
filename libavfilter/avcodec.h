@@ -30,7 +30,6 @@
 
 #include "libavcodec/avcodec.h" // AVFrame
 #include "avfilter.h"
-#include "vsrc_buffer.h"
 
 /**
  * Copy the frame properties of src to dst, without copying the actual
@@ -118,16 +117,5 @@ int avfilter_fill_frame_from_buffer_ref(AVFrame *frame,
  */
 int av_buffersrc_add_frame(AVFilterContext *buffer_src,
                            const AVFrame *frame, int flags);
-
-/**
- * Add frame data to buffer_src.
- *
- * @param buffer_src pointer to a buffer source context
- * @param flags a combination of AV_VSRC_BUF_FLAG_* flags
- * @return >= 0 in case of success, a negative AVERROR code in case of
- * failure
- */
-int av_vsrc_buffer_add_frame(AVFilterContext *buffer_src,
-                             const AVFrame *frame, int flags);
 
 #endif /* AVFILTER_AVCODEC_H */
