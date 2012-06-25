@@ -239,7 +239,9 @@ int ff_getnameinfo(const struct sockaddr *sa, int salen,
 
     return 0;
 }
+#endif /* !HAVE_GETADDRINFO */
 
+#if !HAVE_GETADDRINFO || HAVE_WINSOCK2_H
 const char *ff_gai_strerror(int ecode)
 {
     switch(ecode) {
@@ -258,7 +260,7 @@ const char *ff_gai_strerror(int ecode)
 
     return "Unknown error";
 }
-#endif
+#endif /* !HAVE_GETADDRINFO || HAVE_WINSOCK2_H */
 
 int ff_socket_nonblock(int socket, int enable)
 {
