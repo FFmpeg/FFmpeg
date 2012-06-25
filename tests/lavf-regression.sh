@@ -282,7 +282,7 @@ do_audio_only aif
 fi
 
 if [ -n "$do_voc" ] ; then
-do_audio_only voc
+do_audio_only voc "" "-acodec pcm_u8"
 fi
 
 if [ -n "$do_voc_s16" ] ; then
