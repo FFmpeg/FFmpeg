@@ -110,16 +110,32 @@ struct addrinfo {
 #endif
 
 /* getaddrinfo constants */
+#ifndef EAI_AGAIN
+#define EAI_AGAIN 2
+#endif
+#ifndef EAI_BADFLAGS
+#define EAI_BADFLAGS 3
+#endif
 #ifndef EAI_FAIL
 #define EAI_FAIL 4
 #endif
-
 #ifndef EAI_FAMILY
 #define EAI_FAMILY 5
 #endif
-
+#ifndef EAI_MEMORY
+#define EAI_MEMORY 6
+#endif
+#ifndef EAI_NODATA
+#define EAI_NODATA 7
+#endif
 #ifndef EAI_NONAME
 #define EAI_NONAME 8
+#endif
+#ifndef EAI_SERVICE
+#define EAI_SERVICE 9
+#endif
+#ifndef EAI_SOCKTYPE
+#define EAI_SOCKTYPE 10
 #endif
 
 #ifndef AI_PASSIVE

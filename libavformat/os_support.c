@@ -243,9 +243,17 @@ int ff_getnameinfo(const struct sockaddr *sa, int salen,
 const char *ff_gai_strerror(int ecode)
 {
     switch(ecode) {
+    case EAI_AGAIN  : return "Temporary failure in name resolution";
+    case EAI_BADFLAGS: return "Invalid flags for ai_flags";
     case EAI_FAIL   : return "A non-recoverable error occurred";
     case EAI_FAMILY : return "The address family was not recognized or the address length was invalid for the specified family";
+    case EAI_MEMORY : return "Memory allocation failure";
+#if EAI_NODATA != EAI_NONAME
+    case EAI_NODATA : return "No address associated with hostname";
+#endif
     case EAI_NONAME : return "The name does not resolve for the supplied parameters";
+    case EAI_SERVICE: return "servname not supported for ai_socktype";
+    case EAI_SOCKTYPE: return "ai_socktype not supported";
     }
 
     return "Unknown error";
