@@ -52,7 +52,7 @@ static int voc_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVIOContext *pb = s->pb;
 
     if (!voc->param_written) {
-        if (enc->codec_tag > 0xFF) {
+        if (enc->codec_tag > 3) {
             avio_w8(pb, VOC_TYPE_NEW_VOICE_DATA);
             avio_wl24(pb, pkt->size + 12);
             avio_wl32(pb, enc->sample_rate);
