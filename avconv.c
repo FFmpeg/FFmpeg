@@ -546,7 +546,7 @@ static FilterGraph *init_simple_filtergraph(InputStream *ist, OutputStream *ost)
 
 static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
 {
-    InputStream *ist;
+    InputStream *ist = NULL;
     enum AVMediaType type = avfilter_pad_get_type(in->filter_ctx->input_pads, in->pad_idx);
     int i;
 
@@ -598,6 +598,8 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
             exit_program(1);
         }
     }
+    av_assert0(ist);
+
     ist->discard         = 0;
     ist->decoding_needed = 1;
     ist->st->discard = AVDISCARD_NONE;
