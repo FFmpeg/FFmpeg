@@ -91,15 +91,6 @@ int av_buffersink_get_buffer_ref(AVFilterContext *buffer_sink,
  */
 int av_buffersink_poll_frame(AVFilterContext *ctx);
 
-#if FF_API_OLD_VSINK_API
-/**
- * @deprecated Use av_buffersink_get_buffer_ref() instead.
- */
-attribute_deprecated
-int av_vsink_buffer_get_video_buffer_ref(AVFilterContext *buffer_sink,
-                                         AVFilterBufferRef **picref, int flags);
-#endif
-
 /**
  * Get a buffer with filtered data from sink and put it in buf.
  *

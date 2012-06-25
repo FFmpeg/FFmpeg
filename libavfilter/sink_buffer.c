@@ -161,32 +161,20 @@ int av_buffersink_poll_frame(AVFilterContext *ctx)
     return av_fifo_size(buf->fifo)/sizeof(AVFilterBufferRef *) + ff_poll_frame(inlink);
 }
 
-#if FF_API_OLD_VSINK_API
-int av_vsink_buffer_get_video_buffer_ref(AVFilterContext *ctx,
-                                         AVFilterBufferRef **picref, int flags)
-{
-    return av_buffersink_get_buffer_ref(ctx, picref, flags);
-}
-#endif
-
 #if CONFIG_BUFFERSINK_FILTER
 
 static av_cold int vsink_init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     BufferSinkContext *buf = ctx->priv;
-    av_unused AVBufferSinkParams *params;
+    AVBufferSinkParams *params = (AVBufferSinkParams *)opaque;
 
     if (!opaque) {
         av_log(ctx, AV_LOG_WARNING,
                "No opaque field provided\n");
         buf->pixel_fmts = NULL;
     } else {
-#if FF_API_OLD_VSINK_API
-        const int *pixel_fmts = (const enum PixelFormat *)opaque;
-#else
-        params = (AVBufferSinkParams *)opaque;
         const int *pixel_fmts = params->pixel_fmts;
-#endif
+
         buf->pixel_fmts = ff_copy_int_list(pixel_fmts);
         if (!buf->pixel_fmts)
             return AVERROR(ENOMEM);

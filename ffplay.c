@@ -1572,16 +1572,10 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
                                             graph)) < 0)
         return ret;
 
-#if FF_API_OLD_VSINK_API
-    ret = avfilter_graph_create_filter(&filt_out,
-                                       avfilter_get_by_name("buffersink"),
-                                       "ffplay_buffersink", NULL, (void *)pix_fmts, graph);
-#else
     buffersink_params->pixel_fmts = pix_fmts;
     ret = avfilter_graph_create_filter(&filt_out,
                                        avfilter_get_by_name("buffersink"),
                                        "ffplay_buffersink", NULL, buffersink_params, graph);
-#endif
     av_freep(&buffersink_params);
     if (ret < 0)
         return ret;
