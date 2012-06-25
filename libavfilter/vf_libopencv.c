@@ -121,7 +121,7 @@ static av_cold int smooth_init(AVFilterContext *ctx, const char *args)
         return AVERROR(EINVAL);
     }
 
-    av_log(ctx, AV_LOG_INFO, "type:%s param1:%d param2:%d param3:%f param4:%f\n",
+    av_log(ctx, AV_LOG_VERBOSE, "type:%s param1:%d param2:%d param3:%f param4:%f\n",
            type_str, smooth->param1, smooth->param2, smooth->param3, smooth->param4);
     return 0;
 }
@@ -239,7 +239,7 @@ static int parse_iplconvkernel(IplConvKernel **kernel, char *buf, void *log_ctx)
     if (!*kernel)
         return AVERROR(ENOMEM);
 
-    av_log(log_ctx, AV_LOG_INFO, "Structuring element: w:%d h:%d x:%d y:%d shape:%s\n",
+    av_log(log_ctx, AV_LOG_VERBOSE, "Structuring element: w:%d h:%d x:%d y:%d shape:%s\n",
            rows, cols, anchor_x, anchor_y, shape_str);
     return 0;
 }
@@ -269,7 +269,7 @@ static av_cold int dilate_init(AVFilterContext *ctx, const char *args)
     av_free(kernel_str);
 
     sscanf(buf, ":%d", &dilate->nb_iterations);
-    av_log(ctx, AV_LOG_INFO, "iterations_nb:%d\n", dilate->nb_iterations);
+    av_log(ctx, AV_LOG_VERBOSE, "iterations_nb:%d\n", dilate->nb_iterations);
     if (dilate->nb_iterations <= 0) {
         av_log(ctx, AV_LOG_ERROR, "Invalid non-positive value '%d' for nb_iterations\n",
                dilate->nb_iterations);

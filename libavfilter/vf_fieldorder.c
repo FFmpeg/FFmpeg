@@ -58,7 +58,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
         return AVERROR(EINVAL);
     }
 
-    av_log(ctx, AV_LOG_INFO, "output field order: %s\n",
+    av_log(ctx, AV_LOG_VERBOSE, "output field order: %s\n",
             fieldorder->dst_tff ? tff : bff);
 
     return 0;

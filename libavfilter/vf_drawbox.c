@@ -87,7 +87,7 @@ static int config_input(AVFilterLink *inlink)
     if (drawbox->w == 0) drawbox->w = inlink->w;
     if (drawbox->h == 0) drawbox->h = inlink->h;
 
-    av_log(inlink->dst, AV_LOG_INFO, "x:%d y:%d w:%d h:%d color:0x%02X%02X%02X%02X\n",
+    av_log(inlink->dst, AV_LOG_VERBOSE, "x:%d y:%d w:%d h:%d color:0x%02X%02X%02X%02X\n",
            drawbox->w, drawbox->y, drawbox->w, drawbox->h,
            drawbox->yuv_color[Y], drawbox->yuv_color[U], drawbox->yuv_color[V], drawbox->yuv_color[A]);
 

@@ -127,7 +127,7 @@ static int color_config_props(AVFilterLink *inlink)
     ff_fill_line_with_color(color->line, color->line_step, color->w, color->color,
                             inlink->format, rgba_color, &is_packed_rgba, NULL);
 
-    av_log(ctx, AV_LOG_INFO, "w:%d h:%d r:%d/%d color:0x%02x%02x%02x%02x[%s]\n",
+    av_log(ctx, AV_LOG_VERBOSE, "w:%d h:%d r:%d/%d color:0x%02x%02x%02x%02x[%s]\n",
            color->w, color->h, color->time_base.den, color->time_base.num,
            color->color[0], color->color[1], color->color[2], color->color[3],
            is_packed_rgba ? "rgba" : "yuva");

@@ -100,7 +100,7 @@ static int config_props(AVFilterLink *outlink)
     outlink->h = priv->h;
     outlink->time_base = tb;
 
-    av_log(outlink->src, AV_LOG_INFO, "w:%d h:%d tb:%d/%d\n", priv->w, priv->h,
+    av_log(outlink->src, AV_LOG_VERBOSE, "w:%d h:%d tb:%d/%d\n", priv->w, priv->h,
            tb.num, tb.den);
 
     return 0;

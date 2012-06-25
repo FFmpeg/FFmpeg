@@ -92,7 +92,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     if (args)
         sscanf(args, "%d:%d:%d", &cd->limit, &cd->round, &cd->reset_count);
 
-    av_log(ctx, AV_LOG_INFO, "limit:%d round:%d reset_count:%d\n",
+    av_log(ctx, AV_LOG_VERBOSE, "limit:%d round:%d reset_count:%d\n",
            cd->limit, cd->round, cd->reset_count);
 
     return 0;

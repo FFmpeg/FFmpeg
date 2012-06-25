@@ -63,7 +63,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     if (args)
         sscanf(args, "%u:%u", &blackframe->bamount, &blackframe->bthresh);
 
-    av_log(ctx, AV_LOG_INFO, "bamount:%u bthresh:%u\n",
+    av_log(ctx, AV_LOG_VERBOSE, "bamount:%u bthresh:%u\n",
            blackframe->bamount, blackframe->bthresh);
 
     if (blackframe->bamount > 100 || blackframe->bthresh > 255) {

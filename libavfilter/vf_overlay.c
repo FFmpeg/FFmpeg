@@ -151,7 +151,7 @@ static int config_input_overlay(AVFilterLink *inlink)
         goto fail;
     over->x = res;
 
-    av_log(ctx, AV_LOG_INFO,
+    av_log(ctx, AV_LOG_VERBOSE,
            "main w:%d h:%d fmt:%s overlay x:%d y:%d w:%d h:%d fmt:%s\n",
            ctx->inputs[MAIN]->w, ctx->inputs[MAIN]->h,
            av_pix_fmt_descriptors[ctx->inputs[MAIN]->format].name,
@@ -190,7 +190,7 @@ static int config_output(AVFilterLink *outlink)
                       av_gcd((int64_t)tb1.num * tb2.den,
                              (int64_t)tb2.num * tb1.den),
                       (int64_t)tb1.den * tb2.den, INT_MAX);
-    av_log(ctx, AV_LOG_INFO,
+    av_log(ctx, AV_LOG_VERBOSE,
            "main_tb:%d/%d overlay_tb:%d/%d -> tb:%d/%d exact:%d\n",
            tb1.num, tb1.den, tb2.num, tb2.den, tb->num, tb->den, exact);
     if (!exact)

@@ -94,7 +94,7 @@ static int config_input(AVFilterLink *inlink)
 
     setpts->var_values[VAR_TB] = av_q2d(inlink->time_base);
 
-    av_log(inlink->src, AV_LOG_INFO, "TB:%f\n", setpts->var_values[VAR_TB]);
+    av_log(inlink->src, AV_LOG_VERBOSE, "TB:%f\n", setpts->var_values[VAR_TB]);
     return 0;
 }
 

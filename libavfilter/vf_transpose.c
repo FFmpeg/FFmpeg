@@ -110,7 +110,7 @@ static int config_props_output(AVFilterLink *outlink)
     } else
         outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
 
-    av_log(ctx, AV_LOG_INFO, "w:%d h:%d dir:%d -> w:%d h:%d rotation:%s vflip:%d\n",
+    av_log(ctx, AV_LOG_VERBOSE, "w:%d h:%d dir:%d -> w:%d h:%d rotation:%s vflip:%d\n",
            inlink->w, inlink->h, trans->dir, outlink->w, outlink->h,
            trans->dir == 1 || trans->dir == 3 ? "clockwise" : "counterclockwise",
            trans->dir == 0 || trans->dir == 3);
