@@ -1547,6 +1547,44 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
 }
 
 #if CONFIG_AVFILTER
+static int configure_filtergraph(AVFilterGraph *graph, const char *filtergraph,
+                                 AVFilterContext *source_ctx, AVFilterContext *sink_ctx)
+{
+    int ret;
+    AVFilterInOut *outputs = NULL, *inputs = NULL;
+
+    if (filtergraph) {
+        outputs = avfilter_inout_alloc();
+        inputs  = avfilter_inout_alloc();
+        if (!outputs || !inputs) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+
+        outputs->name       = av_strdup("in");
+        outputs->filter_ctx = source_ctx;
+        outputs->pad_idx    = 0;
+        outputs->next       = NULL;
+
+        inputs->name        = av_strdup("out");
+        inputs->filter_ctx  = sink_ctx;
+        inputs->pad_idx     = 0;
+        inputs->next        = NULL;
+
+        if ((ret = avfilter_graph_parse(graph, filtergraph, &inputs, &outputs, NULL)) < 0)
+            goto fail;
+    } else {
+        if ((ret = avfilter_link(source_ctx, 0, sink_ctx, 0)) < 0)
+            goto fail;
+    }
+
+    return avfilter_graph_config(graph, NULL);
+fail:
+    avfilter_inout_free(&outputs);
+    avfilter_inout_free(&inputs);
+    return ret;
+}
+
 static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const char *vfilters)
 {
     static const enum PixelFormat pix_fmts[] = { PIX_FMT_YUV420P, PIX_FMT_NONE };
@@ -1587,29 +1625,7 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
     if ((ret = avfilter_link(filt_format, 0, filt_out, 0)) < 0)
         return ret;
 
-
-    if (vfilters) {
-        AVFilterInOut *outputs = avfilter_inout_alloc();
-        AVFilterInOut *inputs  = avfilter_inout_alloc();
-
-        outputs->name    = av_strdup("in");
-        outputs->filter_ctx = filt_src;
-        outputs->pad_idx = 0;
-        outputs->next    = NULL;
-
-        inputs->name    = av_strdup("out");
-        inputs->filter_ctx = filt_format;
-        inputs->pad_idx = 0;
-        inputs->next    = NULL;
-
-        if ((ret = avfilter_graph_parse(graph, vfilters, &inputs, &outputs, NULL)) < 0)
-            return ret;
-    } else {
-        if ((ret = avfilter_link(filt_src, 0, filt_format, 0)) < 0)
-            return ret;
-    }
-
-    if ((ret = avfilter_graph_config(graph, NULL)) < 0)
+    if ((ret = configure_filtergraph(graph, vfilters, filt_src, filt_format)) < 0)
         return ret;
 
     is->in_video_filter  = filt_src;
