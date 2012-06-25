@@ -1063,6 +1063,7 @@ HAVE_LIST="
     cbrtf
     closesocket
     cmov
+    CommandLineToArgvW
     cpuid
     dcbzl
     dev_bktr_ioctl_bt848_h
@@ -2887,6 +2888,7 @@ check_func  sysconf
 check_func  sysctl
 check_func  usleep
 check_func_headers io.h setmode
+check_lib2 "windows.h shellapi.h" CommandLineToArgvW -lshell32
 check_lib2 "windows.h psapi.h" GetProcessMemoryInfo -lpsapi
 check_func_headers windows.h GetProcessAffinityMask
 check_func_headers windows.h GetProcessTimes
