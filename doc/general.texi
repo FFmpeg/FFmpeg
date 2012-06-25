@@ -335,7 +335,7 @@ library:
     @tab Multimedia format used by many games.
 @item SMJPEG                    @tab X @tab X
     @tab Used in certain Loki game ports.
-@item Smush
+@item Smush                     @tab   @tab X
     @tab Multimedia format used in some LucasArts games.
 @item Sony OpenMG (OMA)         @tab X @tab X
     @tab Audio format used in Sony Sonic Stage and Sony Vegas.
@@ -563,7 +563,7 @@ following image formats are supported:
 @item LCL (LossLess Codec Library) ZLIB  @tab  E  @tab  E
 @item LOCO                   @tab     @tab  X
 @item LucasArts Smush        @tab     @tab  X
-    @ Used in LucasArts games
+    @tab Used in LucasArts games.
 @item lossless MJPEG         @tab  X  @tab  X
 @item Microsoft RLE          @tab     @tab  X
 @item Microsoft Screen 1     @tab     @tab  X
@@ -834,7 +834,7 @@ following image formats are supported:
 @item TrueHD                 @tab     @tab  X
     @tab Used in HD-DVD and Blu-Ray discs.
 @item TwinVQ (VQF flavor)    @tab     @tab  X
-@item VIMA
+@item VIMA                   @tab     @tab  X
     @tab Used in LucasArts SMUSH animations.
 @item Vorbis                 @tab  E  @tab  X
     @tab A native but very primitive encoder exists.
