@@ -419,7 +419,7 @@ static int join_request_frame(AVFilterLink *outlink)
     JoinBufferPriv *priv;
     int linesize   = INT_MAX;
     int perms      = ~0;
-    int nb_samples;
+    int nb_samples = 0;
     int i, j, ret;
 
     /* get a frame on each input */
@@ -448,6 +448,7 @@ static int join_request_frame(AVFilterLink *outlink)
         perms     &= cur_buf->perms;
     }
 
+    av_assert0(nb_samples > 0);
     buf = avfilter_get_audio_buffer_ref_from_arrays(s->data, linesize, perms,
                                                     nb_samples, outlink->format,
                                                     outlink->channel_layout);
