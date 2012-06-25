@@ -285,19 +285,6 @@ const int64_t avfilter_all_channel_layouts[] = {
 //     return avfilter_make_format64_list(avfilter_all_channel_layouts);
 // }
 
-#if FF_API_PACKING
-AVFilterFormats *avfilter_make_all_packing_formats(void)
-{
-    static const int packing[] = {
-        AVFILTER_PACKED,
-        AVFILTER_PLANAR,
-        -1,
-    };
-
-    return ff_make_format_list(packing);
-}
-#endif
-
 AVFilterFormats *ff_planar_sample_fmts(void)
 {
     AVFilterFormats *ret = NULL;

@@ -46,12 +46,3 @@ static void set_common_formats(AVFilterContext *ctx, AVFilterFormats *fmts,
         av_free(fmts);
     }
 }
-
-#if FF_API_PACKING
-void avfilter_set_common_packing_formats(AVFilterContext *ctx, AVFilterFormats *formats)
-{
-    set_common_formats(ctx, formats, AVMEDIA_TYPE_AUDIO,
-                       offsetof(AVFilterLink, in_packing),
-                       offsetof(AVFilterLink, out_packing));
-}
-#endif
