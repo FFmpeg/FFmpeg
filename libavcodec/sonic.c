@@ -796,6 +796,11 @@ static av_cold int sonic_decode_init(AVCodecContext *avctx)
     s->decorrelation = get_bits(&gb, 2);
 
     s->downsampling = get_bits(&gb, 2);
+    if (!s->downsampling) {
+        av_log(avctx, AV_LOG_ERROR, "invalid downsampling value\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     s->num_taps = (get_bits(&gb, 5)+1)<<5;
     if (get_bits1(&gb)) // XXX FIXME
         av_log(avctx, AV_LOG_INFO, "Custom quant table\n");
