@@ -28,7 +28,7 @@
         __asm__ volatile(\
             "mull %3"\
             :"=d"(ret), "=a"(dmy)\
-            :"1"((unsigned int)(a)), "g"(ff_inverse[b])\
+            :"1"((unsigned int)(a)), "rm"(ff_inverse[b])\
             );\
         ret;\
     })
