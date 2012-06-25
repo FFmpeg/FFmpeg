@@ -110,7 +110,16 @@ Then you may run:
 
 Notice that @samp{%d} is replaced by the image number.
 
-@file{img%03d.jpg} means the sequence @file{img001.jpg}, @file{img002.jpg}, etc...
+@file{img%03d.jpg} means the sequence @file{img001.jpg}, @file{img002.jpg}, etc.
+
+Use the @option{-start_number} option to declare a starting number for
+the sequence. This is useful if your sequence does not start with
+@file{img001.jpg} but is still in a numerical order. The following
+example will start with @file{img100.jpg}:
+
+@example
+  ffmpeg -f image2 -start_number 100 -i img%d.jpg /tmp/a.mpg
+@end example
 
 If you have large number of pictures to rename, you can use the
 following command to ease the burden. The command, using the bourne
@@ -132,6 +141,12 @@ Then run:
 @end example
 
 The same logic is used for any image format that ffmpeg reads.
+
+You can also use @command{cat} to pipe images to ffmpeg:
+
+@example
+  cat *.jpg | ffmpeg -f image2pipe -c:v mjpeg -i - output.mpg
+@end example
 
 @section How do I encode movie to single pictures?
 
