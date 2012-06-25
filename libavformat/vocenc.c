@@ -64,13 +64,13 @@ static int voc_write_packet(AVFormatContext *s, AVPacket *pkt)
             if (s->streams[0]->codec->channels > 1) {
                 avio_w8(pb, VOC_TYPE_EXTENDED);
                 avio_wl24(pb, 4);
-                avio_wl16(pb, 65536-256000000/(enc->sample_rate*enc->channels));
+                avio_wl16(pb, 65536-(256000000 + enc->sample_rate*enc->channels/2)/(enc->sample_rate*enc->channels));
                 avio_w8(pb, enc->codec_tag);
                 avio_w8(pb, enc->channels - 1);
             }
             avio_w8(pb, VOC_TYPE_VOICE_DATA);
             avio_wl24(pb, pkt->size + 2);
-            avio_w8(pb, 256 - 1000000 / enc->sample_rate);
+            avio_w8(pb, 256 - (1000000 + enc->sample_rate/2) / enc->sample_rate);
             avio_w8(pb, enc->codec_tag);
         }
         voc->param_written = 1;
