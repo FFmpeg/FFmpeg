@@ -34,9 +34,6 @@
 #include "mathops.h"
 #include "rectangle.h"
 
-//#undef NDEBUG
-#include <assert.h>
-
 /* Deblocking filter (p153) */
 static const uint8_t alpha_table[52*3] = {
      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
@@ -418,7 +415,7 @@ static av_always_inline void h264_filter_mb_fast_internal(H264Context *h,
 }
 
 void ff_h264_filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr, unsigned int linesize, unsigned int uvlinesize) {
-    assert(!FRAME_MBAFF);
+    av_assert2(!FRAME_MBAFF);
     if(!h->h264dsp.h264_loop_filter_strength || h->pps.chroma_qp_diff) {
         ff_h264_filter_mb(h, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize);
         return;
