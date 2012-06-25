@@ -101,7 +101,8 @@ struct pollfd {
 #endif
 
 
-int poll(struct pollfd *fds, nfds_t numfds, int timeout);
+int ff_poll(struct pollfd *fds, nfds_t numfds, int timeout);
+#define poll ff_poll
 #endif /* HAVE_POLL_H */
 #endif /* CONFIG_NETWORK */
 

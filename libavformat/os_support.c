@@ -266,7 +266,7 @@ int ff_socket_nonblock(int socket, int enable)
 }
 
 #if !HAVE_POLL_H
-int poll(struct pollfd *fds, nfds_t numfds, int timeout)
+int ff_poll(struct pollfd *fds, nfds_t numfds, int timeout)
 {
     fd_set read_set;
     fd_set write_set;
