@@ -648,7 +648,11 @@ cglobal fft_permute, 2,7,1
     add     rsp, 8
     RET
 %elif ARCH_X86_64
+%ifdef PIC
+    jmp     memcpy wrt ..plt
+%else
     jmp     memcpy
+%endif
 %else
     push    r2
     push    r5
