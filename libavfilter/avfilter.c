@@ -448,6 +448,8 @@ int avfilter_default_config_output_link(AVFilterLink *link)
 {
     return 0;
 }
+#endif
+#if FF_API_FILTERS_PUBLIC
 void avfilter_insert_pad(unsigned idx, unsigned *count, size_t padidx_off,
                          AVFilterPad **pads, AVFilterLink ***links,
                          AVFilterPad *newpad)
