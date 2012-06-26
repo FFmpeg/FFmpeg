@@ -158,7 +158,10 @@ int ff_raw_video_read_header(AVFormatContext *s)
         goto fail;
     }
 
-    st->r_frame_rate = st->avg_frame_rate = framerate;
+#if FF_API_R_FRAME_RATE
+    st->r_frame_rate =
+#endif
+    st->avg_frame_rate = framerate;
     avpriv_set_pts_info(st, 64, framerate.den, framerate.num);
 
 fail:

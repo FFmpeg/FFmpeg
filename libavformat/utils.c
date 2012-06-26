@@ -758,9 +758,9 @@ static void compute_frame_duration(int *pnum, int *pden, AVStream *st,
     *pden = 0;
     switch(st->codec->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
-        if (st->r_frame_rate.num) {
-            *pnum = st->r_frame_rate.den;
-            *pden = st->r_frame_rate.num;
+        if (st->avg_frame_rate.num) {
+            *pnum = st->avg_frame_rate.den;
+            *pden = st->avg_frame_rate.num;
         } else if(st->time_base.num*1000LL > st->time_base.den) {
             *pnum = st->time_base.num;
             *pden = st->time_base.den;
@@ -2287,7 +2287,9 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     }
 
     for (i=0; i<ic->nb_streams; i++) {
+#if FF_API_R_FRAME_RATE
         ic->streams[i]->info->last_dts = AV_NOPTS_VALUE;
+#endif
         ic->streams[i]->info->fps_first_dts = AV_NOPTS_VALUE;
         ic->streams[i]->info->fps_last_dts  = AV_NOPTS_VALUE;
     }
@@ -2316,8 +2318,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             if (ic->fps_probe_size >= 0)
                 fps_analyze_framecount = ic->fps_probe_size;
             /* variable fps and no guess at the real fps */
-            if(   tb_unreliable(st->codec) && !(st->r_frame_rate.num && st->avg_frame_rate.num)
-               && st->info->duration_count < fps_analyze_framecount
+            if(   tb_unreliable(st->codec) && !st->avg_frame_rate.num
+               && st->codec_info_nb_frames < fps_analyze_framecount
                && st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
                 break;
             if(st->parser && st->parser->parser->split && !st->codec->extradata)
@@ -2423,6 +2425,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 break;
             }
         }
+#if FF_API_R_FRAME_RATE
         {
             int64_t last = st->info->last_dts;
 
@@ -2446,6 +2449,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             if (last == AV_NOPTS_VALUE || st->info->duration_count <= 1)
                 st->info->last_dts = pkt->dts;
         }
+#endif
         if(st->parser && st->parser->parser->split && !st->codec->extradata){
             int i= st->parser->parser->split(st->codec, pkt->data, pkt->size);
             if (i > 0 && i < FF_MAX_EXTRADATA_SIZE) {
@@ -2508,6 +2512,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                               best_fps, 12*1001, INT_MAX);
                 }
             }
+#if FF_API_R_FRAME_RATE
             // the check for tb_unreliable() is not completely correct, since this is not about handling
             // a unreliable/inexact time base, but a time base that is finer than necessary, as e.g.
             // ipmovie.c produces.
@@ -2530,6 +2535,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 if (num && (!st->r_frame_rate.num || (double)num/(12*1001) < 1.01 * av_q2d(st->r_frame_rate)))
                     av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den, num, 12*1001, INT_MAX);
             }
+#endif
         }else if(st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             if(!st->codec->bits_per_coded_sample)
                 st->codec->bits_per_coded_sample= av_get_bits_per_sample(st->codec->codec_id);
@@ -3343,8 +3349,10 @@ static void dump_stream_format(AVFormatContext *ic, int i, int index, int is_out
     if(st->codec->codec_type == AVMEDIA_TYPE_VIDEO){
         if(st->avg_frame_rate.den && st->avg_frame_rate.num)
             print_fps(av_q2d(st->avg_frame_rate), "fps");
+#if FF_API_R_FRAME_RATE
         if(st->r_frame_rate.den && st->r_frame_rate.num)
             print_fps(av_q2d(st->r_frame_rate), "tbr");
+#endif
         if(st->time_base.den && st->time_base.num)
             print_fps(1/av_q2d(st->time_base), "tbn");
         if(st->codec->time_base.den && st->codec->time_base.num)

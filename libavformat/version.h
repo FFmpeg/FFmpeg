@@ -64,5 +64,8 @@
 #ifndef FF_API_AV_GETTIME
 #define FF_API_AV_GETTIME              (LIBAVFORMAT_VERSION_MAJOR < 55)
 #endif
+#ifndef FF_API_R_FRAME_RATE
+#define FF_API_R_FRAME_RATE            (LIBAVFORMAT_VERSION_MAJOR < 55)
+#endif
 
 #endif /* AVFORMAT_VERSION_H */

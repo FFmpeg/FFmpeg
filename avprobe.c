@@ -651,9 +651,6 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
 
     if (fmt_ctx->iformat->flags & AVFMT_SHOW_IDS)
         probe_int("id", stream->id);
-    probe_str("r_frame_rate",
-              rational_string(val_str, sizeof(val_str), "/",
-              &stream->r_frame_rate));
     probe_str("avg_frame_rate",
               rational_string(val_str, sizeof(val_str), "/",
               &stream->avg_frame_rate));

@@ -2196,9 +2196,9 @@ static int output_packet(InputStream *ist, const AVPacket *pkt)
             ret = decode_video    (ist, &avpkt, &got_output);
             if (avpkt.duration)
                 ist->next_dts += av_rescale_q(avpkt.duration, ist->st->time_base, AV_TIME_BASE_Q);
-            else if (ist->st->r_frame_rate.num)
-                ist->next_dts += av_rescale_q(1, (AVRational){ist->st->r_frame_rate.den,
-                                                              ist->st->r_frame_rate.num},
+            else if (ist->st->avg_frame_rate.num)
+                ist->next_dts += av_rescale_q(1, (AVRational){ist->st->avg_frame_rate.den,
+                                                              ist->st->avg_frame_rate.num},
                                               AV_TIME_BASE_Q);
             else if (ist->st->codec->time_base.num != 0) {
                 int ticks      = ist->st->parser ? ist->st->parser->repeat_pict + 1 :
@@ -2526,7 +2526,7 @@ static int transcode_init(void)
                 (video_sync_method ==  VSYNC_CFR ||
                  (video_sync_method ==  VSYNC_AUTO &&
                   !(oc->oformat->flags & (AVFMT_NOTIMESTAMPS | AVFMT_VARIABLE_FPS))))) {
-                ost->frame_rate = ist->st->r_frame_rate.num ? ist->st->r_frame_rate : (AVRational){25, 1};
+                ost->frame_rate = ist->st->avg_frame_rate.num ? ist->st->avg_frame_rate : (AVRational){25, 1};
                 if (ost->enc && ost->enc->supported_framerates && !ost->force_fps) {
                     int idx = av_find_nearest_q_idx(ost->frame_rate, ost->enc->supported_framerates);
                     ost->frame_rate = ost->enc->supported_framerates[idx];
