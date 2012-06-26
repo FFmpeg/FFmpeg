@@ -163,12 +163,15 @@ int av_buffersink_poll_frame(AVFilterContext *ctx)
 
 #if CONFIG_BUFFERSINK_FILTER
 
-static av_cold int vsink_init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int vsink_init(AVFilterContext *ctx, const char *args)
 {
     BufferSinkContext *buf = ctx->priv;
-    AVBufferSinkParams *params = (AVBufferSinkParams *)opaque;
+    AVBufferSinkParams *params = NULL;
 
-    if (!opaque) {
+//     if(args && !strcmp(args, "opaque"))
+//         params = (AVBufferSinkParams *)(args+7);
+
+    if (!params) {
         av_log(ctx, AV_LOG_WARNING,
                "No opaque field provided\n");
         buf->pixel_fmts = NULL;
@@ -228,10 +231,13 @@ static void filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
     end_frame(link);
 }
 
-static av_cold int asink_init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int asink_init(AVFilterContext *ctx, const char *args)
 {
     BufferSinkContext *buf = ctx->priv;
-    AVABufferSinkParams *params = opaque;
+    AVABufferSinkParams *params = NULL;
+
+//     if(args && !strcmp(args, "opaque"))
+//         params = (AVABufferSinkParams *)(args+7);
 
     if (params && params->sample_fmts) {
         buf->sample_fmts     = ff_copy_int_list  (params->sample_fmts);

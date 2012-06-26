@@ -79,7 +79,7 @@ static void ass_log(int ass_level, const char *fmt, va_list args, void *ctx)
     av_log(ctx, level, "\n");
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     AssContext *ass = ctx->priv;
     int ret;

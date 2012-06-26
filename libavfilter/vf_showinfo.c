@@ -34,7 +34,7 @@ typedef struct {
     unsigned int frame;
 } ShowInfoContext;
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     ShowInfoContext *showinfo = ctx->priv;
     showinfo->frame = 0;

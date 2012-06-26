@@ -213,7 +213,7 @@ static const AVOption buffer_options[] = {
 
 AVFILTER_DEFINE_CLASS(buffer);
 
-static av_cold int init_video(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init_video(AVFilterContext *ctx, const char *args)
 {
     BufferSourceContext *c = ctx->priv;
     char pix_fmt_str[128], sws_param[256] = "", *colon, *equal;
@@ -280,7 +280,7 @@ static const AVOption abuffer_options[] = {
 
 AVFILTER_DEFINE_CLASS(abuffer);
 
-static av_cold int init_audio(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init_audio(AVFilterContext *ctx, const char *args)
 {
     BufferSourceContext *s = ctx->priv;
     int ret = 0;

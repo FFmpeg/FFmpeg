@@ -73,7 +73,7 @@ static const AVOption fade_options[] = {
 
 AVFILTER_DEFINE_CLASS(fade);
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     FadeContext *fade = ctx->priv;
     int ret = 0;

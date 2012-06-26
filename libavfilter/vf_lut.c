@@ -93,7 +93,7 @@ static const AVOption lut_options[] = {
 
 AVFILTER_DEFINE_CLASS(lut);
 
-static int init(AVFilterContext *ctx, const char *args, void *opaque)
+static int init(AVFilterContext *ctx, const char *args)
 {
     LutContext *lut = ctx->priv;
     int ret;
@@ -368,7 +368,7 @@ DEFINE_LUT_FILTER(lutrgb, "Compute and apply a lookup table to the RGB input vid
 
 #if CONFIG_NEGATE_FILTER
 
-static int negate_init(AVFilterContext *ctx, const char *args, void *opaque)
+static int negate_init(AVFilterContext *ctx, const char *args)
 {
     LutContext *lut = ctx->priv;
     char lut_params[64];
@@ -381,7 +381,7 @@ static int negate_init(AVFilterContext *ctx, const char *args, void *opaque)
     snprintf(lut_params, sizeof(lut_params), "c0=negval:c1=negval:c2=negval:a=%s",
              lut->negate_alpha ? "negval" : "val");
 
-    return init(ctx, lut_params, opaque);
+    return init(ctx, lut_params);
 }
 
 DEFINE_LUT_FILTER(negate, "Negate input video.", negate_init);

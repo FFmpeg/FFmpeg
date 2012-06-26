@@ -197,7 +197,7 @@ static void PrecalcCoefs(int *Ct, double Dist25)
 #define PARAM2_DEFAULT 3.0
 #define PARAM3_DEFAULT 6.0
 
-static int init(AVFilterContext *ctx, const char *args, void *opaque)
+static int init(AVFilterContext *ctx, const char *args)
 {
     HQDN3DContext *hqdn3d = ctx->priv;
     double LumSpac, LumTmp, ChromSpac, ChromTmp;

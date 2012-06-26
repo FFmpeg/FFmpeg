@@ -34,7 +34,7 @@ typedef struct {
     int vsub, hsub;
 } BBoxContext;
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     BBoxContext *bbox = ctx->priv;
     bbox->frame = 0;

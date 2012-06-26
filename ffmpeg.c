@@ -306,6 +306,7 @@ typedef struct OutputStream {
     int64_t *forced_kf_pts;
     int forced_kf_count;
     int forced_kf_index;
+    char *forced_keyframes;
 
     /* audio only */
     int audio_channels_map[SWR_CH_MAX];  /* list of the channels id to pick from the source stream */
@@ -1383,6 +1384,7 @@ void av_noreturn exit_program(int ret)
         }
         output_streams[i]->bitstream_filters = NULL;
 
+        av_freep(&output_streams[i]->forced_keyframes);
         av_freep(&output_streams[i]->filtered_frame);
         av_freep(&output_streams[i]->avfilter);
         av_freep(&output_streams[i]);
@@ -2763,6 +2765,29 @@ static InputStream *get_input_stream(OutputStream *ost)
     return NULL;
 }
 
+static void parse_forced_key_frames(char *kf, OutputStream *ost,
+                                    AVCodecContext *avctx)
+{
+    char *p;
+    int n = 1, i;
+    int64_t t;
+
+    for (p = kf; *p; p++)
+        if (*p == ',')
+            n++;
+    ost->forced_kf_count = n;
+    ost->forced_kf_pts   = av_malloc(sizeof(*ost->forced_kf_pts) * n);
+    if (!ost->forced_kf_pts) {
+        av_log(NULL, AV_LOG_FATAL, "Could not allocate forced key frames array.\n");
+        exit_program(1);
+    }
+    for (i = 0; i < n; i++) {
+        p = i ? strchr(p, ',') + 1 : kf;
+        t = parse_time_or_die("force_key_frames", p, 1);
+        ost->forced_kf_pts[i] = av_rescale_q(t, AV_TIME_BASE_Q, avctx->time_base);
+    }
+}
+
 static int transcode_init(void)
 {
     int ret = 0, i, j, k;
@@ -2997,6 +3022,9 @@ static int transcode_init(void)
                     codec->bits_per_raw_sample = frame_bits_per_raw_sample;
                 }
 
+                if (ost->forced_keyframes)
+                    parse_forced_key_frames(ost->forced_keyframes, ost,
+                                            ost->st->codec);
                 break;
             case AVMEDIA_TYPE_SUBTITLE:
                 codec->time_base = (AVRational){1, 1000};
@@ -4362,29 +4390,6 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
     return 0;
 }
 
-static void parse_forced_key_frames(char *kf, OutputStream *ost)
-{
-    char *p;
-    int n = 1, i;
-
-    for (p = kf; *p; p++)
-        if (*p == ',')
-            n++;
-    ost->forced_kf_count = n;
-    ost->forced_kf_pts   = av_malloc(sizeof(*ost->forced_kf_pts) * n);
-    if (!ost->forced_kf_pts) {
-        av_log(NULL, AV_LOG_FATAL, "Could not allocate forced key frames array.\n");
-        exit_program(1);
-    }
-    p = kf;
-    for (i = 0; i < n; i++) {
-        char *next = strchr(p, ',');
-        if (next) *next++ = 0;
-        ost->forced_kf_pts[i] = parse_time_or_die("force_key_frames", p, 1);
-        p = next;
-    }
-}
-
 static uint8_t *get_line(AVIOContext *s)
 {
     AVIOContext *line;
@@ -4596,7 +4601,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
 
     if (!ost->stream_copy) {
         const char *p = NULL;
-        char *forced_key_frames = NULL, *frame_size = NULL;
+        char *frame_size = NULL;
         char *frame_aspect_ratio = NULL, *frame_pix_fmt = NULL;
         char *intra_matrix = NULL, *inter_matrix = NULL;
         const char *filters = "null";
@@ -4694,9 +4699,9 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
             }
         }
 
-        MATCH_PER_STREAM_OPT(forced_key_frames, str, forced_key_frames, oc, st);
-        if (forced_key_frames)
-            parse_forced_key_frames(forced_key_frames, ost);
+        MATCH_PER_STREAM_OPT(forced_key_frames, str, ost->forced_keyframes, oc, st);
+        if (ost->forced_keyframes)
+            ost->forced_keyframes = av_strdup(ost->forced_keyframes);
 
         MATCH_PER_STREAM_OPT(force_fps, i, ost->force_fps, oc, st);
 

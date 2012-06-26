@@ -145,7 +145,7 @@ static int get_color_mode_index(const char *name)
     return -1;
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     ColorMatrixContext *color = ctx->priv;
 

@@ -82,7 +82,7 @@ static const AVOption movie_options[]= {
 
 AVFILTER_DEFINE_CLASS(movie);
 
-static av_cold int movie_common_init(AVFilterContext *ctx, const char *args, void *opaque,
+static av_cold int movie_common_init(AVFilterContext *ctx, const char *args,
                                      enum AVMediaType type)
 {
     MovieContext *movie = ctx->priv;
@@ -198,12 +198,12 @@ static av_cold void movie_common_uninit(AVFilterContext *ctx)
 
 #if CONFIG_MOVIE_FILTER
 
-static av_cold int movie_init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int movie_init(AVFilterContext *ctx, const char *args)
 {
     MovieContext *movie = ctx->priv;
     int ret;
 
-    if ((ret = movie_common_init(ctx, args, opaque, AVMEDIA_TYPE_VIDEO)) < 0)
+    if ((ret = movie_common_init(ctx, args, AVMEDIA_TYPE_VIDEO)) < 0)
         return ret;
 
     movie->w = movie->codec_ctx->width;
@@ -345,12 +345,12 @@ AVFilter avfilter_vsrc_movie = {
 
 #if CONFIG_AMOVIE_FILTER
 
-static av_cold int amovie_init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int amovie_init(AVFilterContext *ctx, const char *args)
 {
     MovieContext *movie = ctx->priv;
     int ret;
 
-    if ((ret = movie_common_init(ctx, args, opaque, AVMEDIA_TYPE_AUDIO)) < 0)
+    if ((ret = movie_common_init(ctx, args, AVMEDIA_TYPE_AUDIO)) < 0)
         return ret;
 
     movie->bps = av_get_bytes_per_sample(movie->codec_ctx->sample_fmt);

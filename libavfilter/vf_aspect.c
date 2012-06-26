@@ -33,7 +33,7 @@ typedef struct {
     AVRational ratio;
 } AspectContext;
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     AspectContext *aspect = ctx->priv;
     aspect->ratio = (AVRational) {0, 1};

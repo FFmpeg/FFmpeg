@@ -37,7 +37,7 @@ typedef struct {
     enum SetFieldMode mode;
 } SetFieldContext;
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     SetFieldContext *setfield = ctx->priv;
 

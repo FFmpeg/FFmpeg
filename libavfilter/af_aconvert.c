@@ -38,7 +38,7 @@ typedef struct {
     struct SwrContext *swr;
 } AConvertContext;
 
-static av_cold int init(AVFilterContext *ctx, const char *args0, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args0)
 {
     AConvertContext *aconvert = ctx->priv;
     char *arg, *ptr = NULL;

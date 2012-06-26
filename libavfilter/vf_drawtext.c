@@ -379,7 +379,7 @@ static int load_font(AVFilterContext *ctx)
     return err;
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     int err;
     DrawTextContext *dtext = ctx->priv;
@@ -574,7 +574,7 @@ static int command(AVFilterContext *ctx, const char *cmd, const char *arg, char 
         int ret;
         uninit(ctx);
         dtext->reinit = 1;
-        if ((ret = init(ctx, arg, NULL)) < 0)
+        if ((ret = init(ctx, arg)) < 0)
             return ret;
         return config_input(ctx->inputs[0]);
     }

@@ -56,7 +56,7 @@ static const AVOption anullsrc_options[]= {
 
 AVFILTER_DEFINE_CLASS(anullsrc);
 
-static int init(AVFilterContext *ctx, const char *args, void *opaque)
+static int init(AVFilterContext *ctx, const char *args)
 {
     ANullContext *null = ctx->priv;
     int ret;

@@ -60,7 +60,7 @@ typedef struct {
 
 static const char *default_expr = "t1-t2";
 
-static av_cold int init(AVFilterContext *ctx, const char *args0, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args0)
 {
     AStreamSyncContext *as = ctx->priv;
     const char *expr = args0 ? args0 : default_expr;

@@ -80,7 +80,7 @@ static const AVOption aevalsrc_options[]= {
 
 AVFILTER_DEFINE_CLASS(aevalsrc);
 
-static int init(AVFilterContext *ctx, const char *args, void *opaque)
+static int init(AVFilterContext *ctx, const char *args)
 {
     EvalContext *eval = ctx->priv;
     char *args1 = av_strdup(args);

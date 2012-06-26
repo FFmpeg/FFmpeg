@@ -54,7 +54,7 @@ static const AVOption asetnsamples_options[] = {
 
 AVFILTER_DEFINE_CLASS(asetnsamples);
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     ASNSContext *asns = ctx->priv;
     int err;

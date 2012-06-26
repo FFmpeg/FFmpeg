@@ -38,7 +38,7 @@ typedef struct
     int          line_size[4]; ///< bytes of pixel data per line for each plane
 } FieldOrderContext;
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     FieldOrderContext *fieldorder = ctx->priv;
 

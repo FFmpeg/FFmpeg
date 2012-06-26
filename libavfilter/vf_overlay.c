@@ -105,7 +105,7 @@ static const AVOption overlay_options[] = {
 
 AVFILTER_DEFINE_CLASS(overlay);
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     OverlayContext *over = ctx->priv;
     char *args1 = av_strdup(args);

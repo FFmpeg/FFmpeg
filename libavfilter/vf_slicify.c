@@ -35,7 +35,7 @@ typedef struct {
     int use_random_h;   ///< enable the use of random slice height values
 } SliceContext;
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     SliceContext *slice = ctx->priv;
 

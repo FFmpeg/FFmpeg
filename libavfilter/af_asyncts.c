@@ -51,7 +51,7 @@ static const AVOption asyncts_options[] = {
 
 AVFILTER_DEFINE_CLASS(asyncts);
 
-static int init(AVFilterContext *ctx, const char *args, void *opaque)
+static int init(AVFilterContext *ctx, const char *args)
 {
     ASyncContext *s = ctx->priv;
     int ret;

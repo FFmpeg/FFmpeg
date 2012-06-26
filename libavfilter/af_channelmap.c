@@ -118,8 +118,7 @@ static int get_channel(char **map, uint64_t *ch, char delim)
     return 0;
 }
 
-static av_cold int channelmap_init(AVFilterContext *ctx, const char *args,
-                                   void *opaque)
+static av_cold int channelmap_init(AVFilterContext *ctx, const char *args)
 {
     ChannelMapContext *s = ctx->priv;
     int ret;

@@ -288,7 +288,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
     ff_filter_samples(ctx->outputs[0], outbuf);
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     AMergeContext *am = ctx->priv;
     int ret, i;

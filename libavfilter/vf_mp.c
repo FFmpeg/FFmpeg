@@ -699,7 +699,7 @@ static int vf_default_query_format(struct vf_instance *vf, unsigned int fmt){
 }
 
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     MPContext *m = ctx->priv;
     char name[256];

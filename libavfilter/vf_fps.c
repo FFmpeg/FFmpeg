@@ -62,7 +62,7 @@ static const AVOption fps_options[] = {
 
 AVFILTER_DEFINE_CLASS(fps);
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     FPSContext *s = ctx->priv;
     int ret;

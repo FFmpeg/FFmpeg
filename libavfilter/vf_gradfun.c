@@ -118,7 +118,7 @@ static void filter(GradFunContext *ctx, uint8_t *dst, const uint8_t *src, int wi
     }
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     GradFunContext *gf = ctx->priv;
     float thresh = 1.2;

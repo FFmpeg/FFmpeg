@@ -35,7 +35,7 @@ typedef struct {
     int    volume_i;
 } VolumeContext;
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     VolumeContext *vol = ctx->priv;
     char *tail;

@@ -41,7 +41,7 @@ typedef struct {
     int req_fullfilled;
 } AResampleContext;
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     AResampleContext *aresample = ctx->priv;
     int ret = 0;

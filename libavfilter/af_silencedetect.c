@@ -52,7 +52,7 @@ static const AVOption silencedetect_options[] = {
 
 AVFILTER_DEFINE_CLASS(silencedetect);
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     int ret;
     char *tail;

@@ -948,7 +948,7 @@ static int yae_flush(ATempoContext *atempo,
     return atempo->position[1] == stop_here ? 0 : AVERROR(EAGAIN);
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     ATempoContext *atempo = ctx->priv;
 

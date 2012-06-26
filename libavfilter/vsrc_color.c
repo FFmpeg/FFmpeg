@@ -61,7 +61,7 @@ static const AVOption color_options[]= {
 
 AVFILTER_DEFINE_CLASS(color);
 
-static av_cold int color_init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int color_init(AVFilterContext *ctx, const char *args)
 {
     ColorContext *color = ctx->priv;
     char color_string[128] = "black";

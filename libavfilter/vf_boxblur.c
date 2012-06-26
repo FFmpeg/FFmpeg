@@ -77,7 +77,7 @@ typedef struct {
 #define V 2
 #define A 3
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     BoxBlurContext *boxblur = ctx->priv;
     int e;
