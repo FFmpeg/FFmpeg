@@ -59,7 +59,12 @@ static int ape_tag_read_field(AVFormatContext *s)
         AVStream *st = avformat_new_stream(s, NULL);
         if (!st)
             return AVERROR(ENOMEM);
-        avio_get_str(pb, size, filename, sizeof(filename));
+
+        size -= avio_get_str(pb, size, filename, sizeof(filename));
+        if (size <= 0) {
+            av_log(s, AV_LOG_WARNING, "Skipping binary tag '%s'.\n", key);
+            return 0;
+        }
         st->codec->extradata = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
         if (!st->codec->extradata)
             return AVERROR(ENOMEM);
