@@ -22,7 +22,6 @@ HEADERS = asrc_abuffer.h                                                \
           buffersink.h                                                  \
           buffersrc.h                                                   \
           version.h                                                     \
-          vsrc_buffer.h                                                 \
 
 OBJS = allfilters.o                                                     \
        audio.o                                                          \

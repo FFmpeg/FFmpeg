@@ -525,45 +525,6 @@ int ff_parse_channel_layout(int64_t *ret, const char *arg, void *log_ctx)
     return 0;
 }
 
-#if FF_API_FILTERS_PUBLIC
-int avfilter_default_query_formats(AVFilterContext *ctx)
-{
-    return ff_default_query_formats(ctx);
-}
-void avfilter_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats)
-{
-    ff_set_common_formats(ctx, formats);
-}
-AVFilterFormats *avfilter_make_format_list(const int *fmts)
-{
-    return ff_make_format_list(fmts);
-}
-int avfilter_add_format(AVFilterFormats **avff, int64_t fmt)
-{
-    return ff_add_format(avff, fmt);
-}
-AVFilterFormats *avfilter_all_formats(enum AVMediaType type)
-{
-    return ff_all_formats(type);
-}
-AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
-{
-    return ff_merge_formats(a, b);
-}
-void avfilter_formats_ref(AVFilterFormats *f, AVFilterFormats **ref)
-{
-    ff_formats_ref(f, ref);
-}
-void avfilter_formats_unref(AVFilterFormats **ref)
-{
-    ff_formats_unref(ref);
-}
-void avfilter_formats_changeref(AVFilterFormats **oldref,
-                                AVFilterFormats **newref)
-{
-    ff_formats_changeref(oldref, newref);
-}
-#endif
 #ifdef TEST
 
 #undef printf
@@ -582,3 +543,4 @@ int main(void)
 }
 
 #endif
+

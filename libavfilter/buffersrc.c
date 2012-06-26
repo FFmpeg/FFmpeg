@@ -29,7 +29,6 @@
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
-#include "vsrc_buffer.h"
 #include "avcodec.h"
 
 #include "libavutil/audioconvert.h"

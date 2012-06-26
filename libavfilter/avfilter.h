@@ -208,143 +208,6 @@ void avfilter_unref_buffer(AVFilterBufferRef *ref);
  */
 void avfilter_unref_bufferp(AVFilterBufferRef **ref);
 
-#if FF_API_FILTERS_PUBLIC
-/**
- * A list of supported formats for one end of a filter link. This is used
- * during the format negotiation process to try to pick the best format to
- * use to minimize the number of necessary conversions. Each filter gives a
- * list of the formats supported by each input and output pad. The list
- * given for each pad need not be distinct - they may be references to the
- * same list of formats, as is often the case when a filter supports multiple
- * formats, but will always output the same format as it is given in input.
- *
- * In this way, a list of possible input formats and a list of possible
- * output formats are associated with each link. When a set of formats is
- * negotiated over a link, the input and output lists are merged to form a
- * new list containing only the common elements of each list. In the case
- * that there were no common elements, a format conversion is necessary.
- * Otherwise, the lists are merged, and all other links which reference
- * either of the format lists involved in the merge are also affected.
- *
- * For example, consider the filter chain:
- * filter (a) --> (b) filter (b) --> (c) filter
- *
- * where the letters in parenthesis indicate a list of formats supported on
- * the input or output of the link. Suppose the lists are as follows:
- * (a) = {A, B}
- * (b) = {A, B, C}
- * (c) = {B, C}
- *
- * First, the first link's lists are merged, yielding:
- * filter (a) --> (a) filter (a) --> (c) filter
- *
- * Notice that format list (b) now refers to the same list as filter list (a).
- * Next, the lists for the second link are merged, yielding:
- * filter (a) --> (a) filter (a) --> (a) filter
- *
- * where (a) = {B}.
- *
- * Unfortunately, when the format lists at the two ends of a link are merged,
- * we must ensure that all links which reference either pre-merge format list
- * get updated as well. Therefore, we have the format list structure store a
- * pointer to each of the pointers to itself.
- * @addtogroup lavfi_deprecated
- * @deprecated Those functions are only useful inside filters and
- * user filters are not supported at this point.
- * @{
- */
-struct AVFilterFormats {
-    unsigned format_count;      ///< number of formats
-    int *formats;               ///< list of media formats
-
-    unsigned refcount;          ///< number of references to this list
-    struct AVFilterFormats ***refs; ///< references to this list
-};
-
-/**
- * Create a list of supported formats. This is intended for use in
- * AVFilter->query_formats().
- *
- * @param fmts list of media formats, terminated by -1. If NULL an
- *        empty list is created.
- * @return the format list, with no existing references
- */
-attribute_deprecated
-AVFilterFormats *avfilter_make_format_list(const int *fmts);
-
-/**
- * Add fmt to the list of media formats contained in *avff.
- * If *avff is NULL the function allocates the filter formats struct
- * and puts its pointer in *avff.
- *
- * @return a non negative value in case of success, or a negative
- * value corresponding to an AVERROR code in case of error
- * @deprecated Use ff_all_formats() instead.
- */
-attribute_deprecated
-int avfilter_add_format(AVFilterFormats **avff, int64_t fmt);
-attribute_deprecated
-AVFilterFormats *avfilter_all_formats(enum AVMediaType type);
-
-/**
- * Return a list of all formats supported by FFmpeg for the given media type.
- */
-AVFilterFormats *avfilter_make_all_formats(enum AVMediaType type);
-
-/**
- * A list of all channel layouts supported by libavfilter.
- */
-extern const int64_t avfilter_all_channel_layouts[];
-
-/**
- * Return a format list which contains the intersection of the formats of
- * a and b. Also, all the references of a, all the references of b, and
- * a and b themselves will be deallocated.
- *
- * If a and b do not share any common formats, neither is modified, and NULL
- * is returned.
- */
-attribute_deprecated
-AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b);
-
-/**
- * Add *ref as a new reference to formats.
- * That is the pointers will point like in the ASCII art below:
- *   ________
- *  |formats |<--------.
- *  |  ____  |     ____|___________________
- *  | |refs| |    |  __|_
- *  | |* * | |    | |  | |  AVFilterLink
- *  | |* *--------->|*ref|
- *  | |____| |    | |____|
- *  |________|    |________________________
- */
-attribute_deprecated
-void avfilter_formats_ref(AVFilterFormats *formats, AVFilterFormats **ref);
-attribute_deprecated
-void avfilter_formats_unref(AVFilterFormats **ref);
-attribute_deprecated
-void avfilter_formats_changeref(AVFilterFormats **oldref,
-                                AVFilterFormats **newref);
-/**
- * Helpers for query_formats() which set all links to the same list of
- * formats/layouts. If there are no links hooked to this filter, the list
- * of formats is freed.
- */
-attribute_deprecated
-void avfilter_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats);
-
-attribute_deprecated
-void avfilter_set_common_pixel_formats(AVFilterContext *ctx, AVFilterFormats *formats);
-attribute_deprecated
-void avfilter_set_common_sample_formats(AVFilterContext *ctx, AVFilterFormats *formats);
-attribute_deprecated
-void avfilter_set_common_channel_layouts(AVFilterContext *ctx, AVFilterFormats *formats);
-
-/**
- * @}
- */
-#endif
 
 #if FF_API_AVFILTERPAD_PUBLIC
 /**
@@ -518,44 +381,6 @@ enum AVMediaType avfilter_pad_get_type(AVFilterPad *pads, int pad_idx);
 attribute_deprecated
 void avfilter_default_end_frame(AVFilterLink *link);
 
-#if FF_API_FILTERS_PUBLIC
-/** default handler for start_frame() for video inputs */
-attribute_deprecated
-void avfilter_default_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
-
-/** default handler for draw_slice() for video inputs */
-attribute_deprecated
-void avfilter_default_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
-
-/** default handler for get_video_buffer() for video inputs */
-attribute_deprecated
-AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link,
-                                                     int perms, int w, int h);
-
-/** Default handler for query_formats() */
-attribute_deprecated
-int avfilter_default_query_formats(AVFilterContext *ctx);
-#endif
-
-#if FF_API_FILTERS_PUBLIC
-/** start_frame() handler for filters which simply pass video along */
-attribute_deprecated
-void avfilter_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
-
-/** draw_slice() handler for filters which simply pass video along */
-attribute_deprecated
-void avfilter_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
-
-/** end_frame() handler for filters which simply pass video along */
-attribute_deprecated
-void avfilter_null_end_frame(AVFilterLink *link);
-
-/** get_video_buffer() handler for filters which simply pass video along */
-attribute_deprecated
-AVFilterBufferRef *avfilter_null_get_video_buffer(AVFilterLink *link,
-                                                  int perms, int w, int h);
-#endif
-
 /**
  * Filter definition. This defines the pads a filter contains, and all the
  * callback functions used to interact with the filter.
@@ -669,11 +494,8 @@ struct AVFilterLink {
     AVRational sample_aspect_ratio; ///< agreed upon sample aspect ratio
     /* These parameters apply only to audio */
     uint64_t channel_layout;    ///< channel layout of current buffer (see libavutil/audioconvert.h)
-#if FF_API_SAMPLERATE64
-    int64_t sample_rate;        ///< samples per second
-#else
     int sample_rate;            ///< samples per second
-#endif
+
     int format;                 ///< agreed upon media format
 
     /**
@@ -788,12 +610,6 @@ void avfilter_link_free(AVFilterLink **link);
  */
 int avfilter_config_links(AVFilterContext *filter);
 
-#if FF_API_FILTERS_PUBLIC
-attribute_deprecated
-AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms,
-                                          int w, int h);
-#endif
-
 /**
  * Create a buffer reference wrapped around an already allocated image
  * buffer.
@@ -827,34 +643,6 @@ AVFilterBufferRef *avfilter_get_audio_buffer_ref_from_arrays(uint8_t **data,
                                                              enum AVSampleFormat sample_fmt,
                                                              uint64_t channel_layout);
 
-#if FF_API_FILTERS_PUBLIC
-/**
- * Request an input frame from the filter at the other end of the link.
- *
- * @param link the input link
- * @return     zero on success or a negative error code; in particular:
- *             AVERROR_EOF means that the end of frames have been reached;
- *             AVERROR(EAGAIN) means that no frame could be immediately
- *             produced.
- */
-int avfilter_request_frame(AVFilterLink *link);
-
-attribute_deprecated
-int avfilter_poll_frame(AVFilterLink *link);
-
-attribute_deprecated
-void avfilter_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
-
-/**
- * Notify the next filter that the current frame has finished.
- *
- * @param link the output link the frame was sent over
- */
-attribute_deprecated
-void avfilter_end_frame(AVFilterLink *link);
-attribute_deprecated
-void avfilter_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
-#endif
 
 #define AVFILTER_CMD_FLAG_ONE   1 ///< Stop once a filter understood the command (for target=all for example), fast filters are favored automatically
 #define AVFILTER_CMD_FLAG_FAST  2 ///< Only execute command when its fast (like a video out that supports contrast adjustment in hw)
@@ -941,19 +729,5 @@ void avfilter_free(AVFilterContext *filter);
  */
 int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
                            unsigned filt_srcpad_idx, unsigned filt_dstpad_idx);
-
-#if FF_API_FILTERS_PUBLIC
-attribute_deprecated
-void avfilter_insert_pad(unsigned idx, unsigned *count, size_t padidx_off,
-                         AVFilterPad **pads, AVFilterLink ***links,
-                         AVFilterPad *newpad);
-
-attribute_deprecated
-void avfilter_insert_inpad(AVFilterContext *f, unsigned index,
-                           AVFilterPad *p);
-attribute_deprecated
-void avfilter_insert_outpad(AVFilterContext *f, unsigned index,
-                            AVFilterPad *p);
-#endif
 
 #endif /* AVFILTER_AVFILTER_H */

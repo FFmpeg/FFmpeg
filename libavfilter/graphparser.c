@@ -350,12 +350,6 @@ static int parse_outputs(const char **buf, AVFilterInOut **curr_inputs,
     return pad;
 }
 
-#if FF_API_GRAPH_AVCLASS
-#define log_ctx graph
-#else
-#define log_ctx NULL
-#endif
-
 static int parse_sws_flags(const char **buf, AVFilterGraph *graph)
 {
     char *p = strchr(*buf, ';');
@@ -364,7 +358,7 @@ static int parse_sws_flags(const char **buf, AVFilterGraph *graph)
         return 0;
 
     if (!p) {
-        av_log(log_ctx, AV_LOG_ERROR, "sws_flags not terminated with ';'.\n");
+        av_log(graph, AV_LOG_ERROR, "sws_flags not terminated with ';'.\n");
         return AVERROR(EINVAL);
     }
 
@@ -397,17 +391,17 @@ int avfilter_graph_parse2(AVFilterGraph *graph, const char *filters,
         AVFilterContext *filter;
         filters += strspn(filters, WHITESPACES);
 
-        if ((ret = parse_inputs(&filters, &curr_inputs, &open_outputs, log_ctx)) < 0)
+        if ((ret = parse_inputs(&filters, &curr_inputs, &open_outputs, graph)) < 0)
+            goto end;
+        if ((ret = parse_filter(&filter, &filters, graph, index, graph)) < 0)
             goto end;
 
-        if ((ret = parse_filter(&filter, &filters, graph, index, log_ctx)) < 0)
-            goto end;
 
-        if ((ret = link_filter_inouts(filter, &curr_inputs, &open_inputs, log_ctx)) < 0)
+        if ((ret = link_filter_inouts(filter, &curr_inputs, &open_inputs, graph)) < 0)
             goto end;
 
         if ((ret = parse_outputs(&filters, &curr_inputs, &open_inputs, &open_outputs,
-                                 log_ctx)) < 0)
+                                 graph)) < 0)
             goto end;
 
         filters += strspn(filters, WHITESPACES);
@@ -419,7 +413,7 @@ int avfilter_graph_parse2(AVFilterGraph *graph, const char *filters,
     } while (chr == ',' || chr == ';');
 
     if (chr) {
-        av_log(log_ctx, AV_LOG_ERROR,
+        av_log(graph, AV_LOG_ERROR,
                "Unable to parse graph description substring: \"%s\"\n",
                filters - 1);
         ret = AVERROR(EINVAL);
@@ -446,7 +440,6 @@ int avfilter_graph_parse2(AVFilterGraph *graph, const char *filters,
 
     return ret;
 }
-#undef log_ctx
 
 int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
                          AVFilterInOut **open_inputs_ptr, AVFilterInOut **open_outputs_ptr,

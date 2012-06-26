@@ -119,11 +119,7 @@ static int config_output(AVFilterLink *outlink)
     av_get_channel_layout_string(buf2, sizeof(buf2),
                                  -1, outlink->channel_layout);
     av_log(ctx, AV_LOG_VERBOSE,
-#if FF_API_SAMPLERATE64
-           "fmt:%s srate:%"PRId64" cl:%s -> fmt:%s srate:%"PRId64" cl:%s\n",
-#else
            "fmt:%s srate:%d cl:%s -> fmt:%s srate:%d cl:%s\n",
-#endif /* FF_API_SAMPLERATE64 */
            av_get_sample_fmt_name(inlink ->format), inlink ->sample_rate, buf1,
            av_get_sample_fmt_name(outlink->format), outlink->sample_rate, buf2);
 

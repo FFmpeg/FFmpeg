@@ -26,9 +26,7 @@
 #include "libavutil/log.h"
 
 typedef struct AVFilterGraph {
-#if FF_API_GRAPH_AVCLASS
     const AVClass *av_class;
-#endif
     unsigned filter_count;
     AVFilterContext **filters;
 

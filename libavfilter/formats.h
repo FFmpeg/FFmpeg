@@ -61,7 +61,6 @@
  * get updated as well. Therefore, we have the format list structure store a
  * pointer to each of the pointers to itself.
  */
-#if !FF_API_FILTERS_PUBLIC
 struct AVFilterFormats {
     unsigned format_count;      ///< number of formats
     int *formats;               ///< list of media formats
@@ -69,7 +68,6 @@ struct AVFilterFormats {
     unsigned refcount;          ///< number of references to this list
     struct AVFilterFormats ***refs; ///< references to this list
 };
-#endif
 
 typedef struct AVFilterChannelLayouts {
     uint64_t *channel_layouts;  ///< list of channel layouts
