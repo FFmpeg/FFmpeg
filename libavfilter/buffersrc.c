@@ -196,10 +196,12 @@ int av_buffersrc_add_ref(AVFilterContext *s, AVFilterBufferRef *buf, int flags)
     return 0;
 }
 
+#ifdef FF_API_BUFFERSRC_BUFFER
 int av_buffersrc_buffer(AVFilterContext *s, AVFilterBufferRef *buf)
 {
     return av_buffersrc_add_ref(s, buf, AV_BUFFERSRC_FLAG_NO_COPY);
 }
+#endif
 
 unsigned av_buffersrc_get_nb_failed_requests(AVFilterContext *buffer_src)
 {

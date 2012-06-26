@@ -1722,7 +1722,7 @@ static int video_thread(void *arg)
             fb->buf->free           = filter_release_buffer;
 
             buf->refcount++;
-            av_buffersrc_buffer(filt_in, fb);
+            av_buffersrc_add_ref(filt_in, fb, AV_BUFFERSRC_FLAG_NO_COPY);
 
         } else
             av_buffersrc_write_frame(filt_in, frame);

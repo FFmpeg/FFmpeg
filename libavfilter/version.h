@@ -56,5 +56,8 @@
 #ifndef FF_API_FILL_FRAME
 #define FF_API_FILL_FRAME                   (LIBAVFILTER_VERSION_MAJOR < 4)
 #endif
+#ifndef FF_API_BUFFERSRC_BUFFER
+#define FF_API_BUFFERSRC_BUFFER             (LIBAVFILTER_VERSION_MAJOR < 4)
+#endif
 
 #endif // AVFILTER_VERSION_H
