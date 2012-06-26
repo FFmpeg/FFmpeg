@@ -1956,7 +1956,9 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
                                                    is->frame->nb_samples,
                                                    dec->sample_fmt, 1);
 
-            dec_channel_layout = (dec->channel_layout && dec->channels == av_get_channel_layout_nb_channels(dec->channel_layout)) ? dec->channel_layout : av_get_default_channel_layout(dec->channels);
+            dec_channel_layout =
+                (dec->channel_layout && dec->channels == av_get_channel_layout_nb_channels(dec->channel_layout)) ?
+                dec->channel_layout : av_get_default_channel_layout(dec->channels);
             wanted_nb_samples = synchronize_audio(is, is->frame->nb_samples);
 
             if (dec->sample_fmt != is->audio_src.fmt ||
