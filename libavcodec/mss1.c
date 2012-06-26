@@ -557,7 +557,7 @@ static int decode_pal(MSS1Context *ctx, ArithCoder *acoder)
         *pal++ = (0xFF << 24) | (r << 16) | (g << 8) | b;
     }
 
-    return 0;
+    return 1;
 }
 
 static int decode_pivot(MSS1Context *ctx, ArithCoder *acoder, int base)
