@@ -199,7 +199,6 @@ int main(int argc, char **argv)
             avcodec_get_frame_defaults(&frame);
             got_frame = 0;
             ret = avcodec_decode_video2(dec_ctx, &frame, &got_frame, &packet);
-            av_free_packet(&packet);
             if (ret < 0) {
                 av_log(NULL, AV_LOG_ERROR, "Error decoding video\n");
                 break;
@@ -229,6 +228,7 @@ int main(int argc, char **argv)
                 }
             }
         }
+        av_free_packet(&packet);
     }
 end:
     avfilter_graph_free(&filter_graph);
