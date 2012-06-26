@@ -184,7 +184,7 @@ static int config_input(AVFilterLink *inlink)
     pad->in_w = ff_draw_round_to_sub(&pad->draw, 0, -1, inlink->w);
     pad->in_h = ff_draw_round_to_sub(&pad->draw, 1, -1, inlink->h);
 
-    av_log(ctx, AV_LOG_INFO, "w:%d h:%d -> w:%d h:%d x:%d y:%d color:0x%02X%02X%02X%02X\n",
+    av_log(ctx, AV_LOG_VERBOSE, "w:%d h:%d -> w:%d h:%d x:%d y:%d color:0x%02X%02X%02X%02X\n",
            inlink->w, inlink->h, pad->w, pad->h, pad->x, pad->y,
            pad->rgba_color[0], pad->rgba_color[1], pad->rgba_color[2], pad->rgba_color[3]);
 

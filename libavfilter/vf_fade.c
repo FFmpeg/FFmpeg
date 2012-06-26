@@ -126,7 +126,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     }
     fade->stop_frame = fade->start_frame + fade->nb_frames;
 
-    av_log(ctx, AV_LOG_INFO,
+    av_log(ctx, AV_LOG_VERBOSE,
            "type:%s start_frame:%d nb_frames:%d alpha:%d\n",
            fade->type, fade->start_frame, fade->nb_frames, fade->alpha);
 

@@ -47,7 +47,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
         }
     }
 
-    av_log(ctx, AV_LOG_INFO, "a:%d/%d\n", aspect->ratio.num, aspect->ratio.den);
+    av_log(ctx, AV_LOG_VERBOSE, "a:%d/%d\n", aspect->ratio.num, aspect->ratio.den);
     return 0;
 }
 
@@ -69,7 +69,7 @@ static int setdar_config_props(AVFilterLink *inlink)
                aspect->ratio.num * inlink->h,
                aspect->ratio.den * inlink->w, 100);
 
-    av_log(inlink->dst, AV_LOG_INFO, "w:%d h:%d -> dar:%d/%d sar:%d/%d\n",
+    av_log(inlink->dst, AV_LOG_VERBOSE, "w:%d h:%d -> dar:%d/%d sar:%d/%d\n",
            inlink->w, inlink->h, dar.num, dar.den, aspect->ratio.num, aspect->ratio.den);
 
     inlink->sample_aspect_ratio = aspect->ratio;

@@ -33,9 +33,11 @@
 #endif /* HAVE_MIPSFPU && HAVE_INLINE_ASM*/
 
 #if !HAVE_CBRTF
-#undef cbrtf
-#define cbrtf(x) powf(x, 1.0/3.0)
-#endif /* HAVE_CBRTF */
+static av_always_inline float cbrtf(float x)
+{
+    return x < 0 ? -powf(-x, 1.0 / 3.0) : powf(x, 1.0 / 3.0);
+}
+#endif
 
 #if !HAVE_EXP2
 #undef exp2

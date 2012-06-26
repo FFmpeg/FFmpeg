@@ -32,7 +32,6 @@
 #include "libavutil/fifo.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avstring.h"
-#include <unistd.h>
 #include "internal.h"
 #include "network.h"
 #include "os_support.h"

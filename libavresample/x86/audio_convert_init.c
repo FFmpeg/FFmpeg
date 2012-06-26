@@ -38,9 +38,12 @@ extern void ff_conv_flt_to_s16_sse2(int16_t *dst, const float *src, int len);
 extern void ff_conv_flt_to_s32_sse2(int32_t *dst, const float *src, int len);
 extern void ff_conv_flt_to_s32_avx (int32_t *dst, const float *src, int len);
 
-extern void ff_conv_fltp_to_flt_6ch_mmx (float *dst, float *const *src, int len);
-extern void ff_conv_fltp_to_flt_6ch_sse4(float *dst, float *const *src, int len);
-extern void ff_conv_fltp_to_flt_6ch_avx (float *dst, float *const *src, int len);
+extern void ff_conv_fltp_to_flt_6ch_mmx (float *dst, float *const *src, int len,
+                                         int channels);
+extern void ff_conv_fltp_to_flt_6ch_sse4(float *dst, float *const *src, int len,
+                                         int channels);
+extern void ff_conv_fltp_to_flt_6ch_avx (float *dst, float *const *src, int len,
+                                         int channels);
 
 av_cold void ff_audio_convert_init_x86(AudioConvert *ac)
 {

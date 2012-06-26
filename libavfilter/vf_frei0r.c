@@ -146,7 +146,7 @@ static int set_params(AVFilterContext *ctx, const char *params)
                 return ret;
         }
 
-        av_log(ctx, AV_LOG_INFO,
+        av_log(ctx, AV_LOG_VERBOSE,
                "idx:%d name:'%s' type:%s explanation:'%s' ",
                i, info.name,
                info.type == F0R_PARAM_BOOL     ? "bool"     :
@@ -157,7 +157,7 @@ static int set_params(AVFilterContext *ctx, const char *params)
                info.explanation);
 
 #ifdef DEBUG
-        av_log(ctx, AV_LOG_INFO, "value:");
+        av_log(ctx, AV_LOG_DEBUG, "value:");
         switch (info.type) {
             void *v;
             double d;
@@ -168,31 +168,31 @@ static int set_params(AVFilterContext *ctx, const char *params)
         case F0R_PARAM_BOOL:
             v = &d;
             frei0r->get_param_value(frei0r->instance, v, i);
-            av_log(ctx, AV_LOG_INFO, "%s", d >= 0.5 && d <= 1.0 ? "y" : "n");
+            av_log(ctx, AV_LOG_DEBUG, "%s", d >= 0.5 && d <= 1.0 ? "y" : "n");
             break;
         case F0R_PARAM_DOUBLE:
             v = &d;
             frei0r->get_param_value(frei0r->instance, v, i);
-            av_log(ctx, AV_LOG_INFO, "%f", d);
+            av_log(ctx, AV_LOG_DEBUG, "%f", d);
             break;
         case F0R_PARAM_COLOR:
             v = &col;
             frei0r->get_param_value(frei0r->instance, v, i);
-            av_log(ctx, AV_LOG_INFO, "%f/%f/%f", col.r, col.g, col.b);
+            av_log(ctx, AV_LOG_DEBUG, "%f/%f/%f", col.r, col.g, col.b);
             break;
         case F0R_PARAM_POSITION:
             v = &pos;
             frei0r->get_param_value(frei0r->instance, v, i);
-            av_log(ctx, AV_LOG_INFO, "%lf/%lf", pos.x, pos.y);
+            av_log(ctx, AV_LOG_DEBUG, "%lf/%lf", pos.x, pos.y);
             break;
         default: /* F0R_PARAM_STRING */
             v = s;
             frei0r->get_param_value(frei0r->instance, v, i);
-            av_log(ctx, AV_LOG_INFO, "'%s'\n", s);
+            av_log(ctx, AV_LOG_DEBUG, "'%s'\n", s);
             break;
         }
 #endif
-        av_log(ctx, AV_LOG_INFO, "\n");
+        av_log(ctx, AV_LOG_VERBOSE, "\n");
     }
 
     return 0;
@@ -266,7 +266,7 @@ static av_cold int frei0r_init(AVFilterContext *ctx,
         return AVERROR(EINVAL);
     }
 
-    av_log(ctx, AV_LOG_INFO,
+    av_log(ctx, AV_LOG_VERBOSE,
            "name:%s author:'%s' explanation:'%s' color_model:%s "
            "frei0r_version:%d version:%d.%d num_params:%d\n",
            pi->name, pi->author, pi->explanation,
