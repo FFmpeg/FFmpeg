@@ -59,7 +59,7 @@ static int ape_tag_read_field(AVFormatContext *s)
         AVStream *st = avformat_new_stream(s, NULL);
         if (!st)
             return AVERROR(ENOMEM);
-        avio_get_str(pb, INT_MAX, filename, sizeof(filename));
+        avio_get_str(pb, size, filename, sizeof(filename));
         st->codec->extradata = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
         if (!st->codec->extradata)
             return AVERROR(ENOMEM);
