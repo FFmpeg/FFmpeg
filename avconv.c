@@ -51,7 +51,6 @@
 # include "libavfilter/avfiltergraph.h"
 # include "libavfilter/buffersrc.h"
 # include "libavfilter/buffersink.h"
-# include "libavfilter/vsrc_buffer.h"
 
 #if HAVE_SYS_RESOURCE_H
 #include <sys/types.h>
