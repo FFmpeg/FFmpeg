@@ -908,10 +908,7 @@ static void stream_close(VideoState *is)
     for (i = 0; i < VIDEO_PICTURE_QUEUE_SIZE; i++) {
         vp = &is->pictq[i];
 #if CONFIG_AVFILTER
-        if (vp->picref) {
-            avfilter_unref_buffer(vp->picref);
-            vp->picref = NULL;
-        }
+        avfilter_unref_bufferp(&vp->picref);
 #endif
         if (vp->bmp) {
             SDL_FreeYUVOverlay(vp->bmp);
@@ -1317,9 +1314,7 @@ static void alloc_picture(AllocEventProps *event_props)
         SDL_FreeYUVOverlay(vp->bmp);
 
 #if CONFIG_AVFILTER
-    if (vp->picref)
-        avfilter_unref_buffer(vp->picref);
-    vp->picref = NULL;
+    avfilter_unref_bufferp(&vp->picref);
 #endif
 
     vp->width   = frame->width;
@@ -1425,8 +1420,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
     if (vp->bmp) {
         AVPicture pict = { { 0 } };
 #if CONFIG_AVFILTER
-        if (vp->picref)
-            avfilter_unref_buffer(vp->picref);
+        avfilter_unref_bufferp(&vp->picref);
         vp->picref = src_frame->opaque;
 #endif
 
