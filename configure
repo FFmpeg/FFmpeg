@@ -1093,6 +1093,8 @@ HAVE_LIST="
     inet_aton
     inline_asm
     isatty
+    isinf
+    isnan
     jack_port_get_latency_range
     ldbrx
     libdc1394_1
@@ -2922,6 +2924,8 @@ enabled vaapi && require vaapi va/va.h vaInitialize -lva
 check_mathfunc cbrtf
 check_mathfunc exp2
 check_mathfunc exp2f
+check_mathfunc isinf
+check_mathfunc isnan
 check_mathfunc llrint
 check_mathfunc llrintf
 check_mathfunc log2

@@ -27,6 +27,7 @@
 #include <math.h>
 #include "config.h"
 #include "attributes.h"
+#include "intfloat.h"
 
 #if !HAVE_CBRTF
 static av_always_inline float cbrtf(float x)
@@ -44,6 +45,26 @@ static av_always_inline float cbrtf(float x)
 #undef exp2f
 #define exp2f(x) ((float)exp2(x))
 #endif /* HAVE_EXP2F */
+
+#if !HAVE_ISINF
+static av_always_inline av_const int isinf(float x)
+{
+    uint32_t v = av_float2int(x);
+    if ((v & 0x7f800000) != 0x7f800000)
+        return 0;
+    return !(v & 0x007fffff);
+}
+#endif /* HAVE_ISINF */
+
+#if !HAVE_ISNAN
+static av_always_inline av_const int isnan(float x)
+{
+    uint32_t v = av_float2int(x);
+    if ((v & 0x7f800000) != 0x7f800000)
+        return 0;
+    return v & 0x007fffff;
+}
+#endif /* HAVE_ISNAN */
 
 #if !HAVE_LLRINT
 #undef llrint
