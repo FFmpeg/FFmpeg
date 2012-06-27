@@ -783,6 +783,12 @@ static av_cold int mss1_decode_init(AVCodecContext *avctx)
     av_log(avctx, AV_LOG_DEBUG, "Encoder version %d.%d\n",
            AV_RB32(avctx->extradata + 4), AV_RB32(avctx->extradata + 8));
     c->free_colours     = AV_RB32(avctx->extradata + 48);
+    if ((unsigned)c->free_colours > 256) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Incorrect number of changeable palette entries: %d\n",
+               c->free_colours);
+        return AVERROR_INVALIDDATA;
+    }
     av_log(avctx, AV_LOG_DEBUG, "%d free colour(s)\n", c->free_colours);
     avctx->coded_width  = AV_RB32(avctx->extradata + 20);
     avctx->coded_height = AV_RB32(avctx->extradata + 24);
