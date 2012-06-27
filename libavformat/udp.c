@@ -637,7 +637,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     }
 
     for (i = 0; i < num_sources; i++)
-        av_free(sources[i]);
+        av_freep(&sources[i]);
 
     s->udp_fd = udp_fd;
 
@@ -678,7 +678,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         closesocket(udp_fd);
     av_fifo_free(s->fifo);
     for (i = 0; i < num_sources; i++)
-        av_free(sources[i]);
+        av_freep(&sources[i]);
     return AVERROR(EIO);
 }
 
