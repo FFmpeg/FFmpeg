@@ -23,6 +23,7 @@
 
 #define LPC_USE_DOUBLE
 #include "lpc.h"
+#include "libavutil/avassert.h"
 
 
 /**
@@ -37,7 +38,7 @@ static void lpc_apply_welch_window_c(const int32_t *data, int len,
 
     /* The optimization in commit fa4ed8c does not support odd len.
      * If someone wants odd len extend that change. */
-    assert(!(len & 1));
+    av_assert2(!(len & 1));
 
     n2 = (len >> 1);
     c = 2.0 / (len - 1.0);
@@ -166,7 +167,7 @@ int ff_lpc_calc_coefs(LPCContext *s,
     int i, j, pass;
     int opt_order;
 
-    assert(max_order >= MIN_LPC_ORDER && max_order <= MAX_LPC_ORDER &&
+    av_assert2(max_order >= MIN_LPC_ORDER && max_order <= MAX_LPC_ORDER &&
            lpc_type > FF_LPC_TYPE_FIXED);
 
     /* reinit LPC context if parameters have changed */
