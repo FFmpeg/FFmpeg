@@ -656,7 +656,6 @@ static int udp_close(URLContext *h)
     if (s->is_multicast && (h->flags & AVIO_FLAG_READ))
         udp_leave_multicast_group(s->udp_fd, (struct sockaddr *)&s->dest_addr);
     closesocket(s->udp_fd);
-    av_fifo_free(s->fifo);
 #if HAVE_PTHREAD_CANCEL
     if (s->thread_started) {
         pthread_cancel(s->circular_buffer_thread);
@@ -668,6 +667,7 @@ static int udp_close(URLContext *h)
     pthread_mutex_destroy(&s->mutex);
     pthread_cond_destroy(&s->cond);
 #endif
+    av_fifo_free(s->fifo);
     return 0;
 }
 
