@@ -63,7 +63,12 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     snprintf(portstr, sizeof(portstr), "%d", port);
-    ret = getaddrinfo(hostname, portstr, &hints, &ai);
+    if (listen_socket)
+        hints.ai_flags |= AI_PASSIVE;
+    if (!hostname[0])
+        ret = getaddrinfo(NULL, portstr, &hints, &ai);
+    else
+        ret = getaddrinfo(hostname, portstr, &hints, &ai);
     if (ret) {
         av_log(h, AV_LOG_ERROR,
                "Failed to resolve hostname %s: %s\n",

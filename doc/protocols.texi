@@ -566,6 +566,14 @@ and makes writes return with AVERROR(ECONNREFUSED) if "destination
 unreachable" is received.
 For receiving, this gives the benefit of only receiving packets from
 the specified peer address/port.
+
+@item sources=@var{address}[,@var{address}]
+Only receive packets sent to the multicast group from one of the
+specified sender IP addresses.
+
+@item block=@var{address}[,@var{address}]
+Ignore packets sent to the multicast group from the specified
+sender IP addresses.
 @end table
 
 Some usage examples of the udp protocol with @command{ffmpeg} follow.

@@ -557,7 +557,7 @@ static int decode_pal(MSS1Context *ctx, ArithCoder *acoder)
         *pal++ = (0xFF << 24) | (r << 16) | (g << 8) | b;
     }
 
-    return 1;
+    return !!ncol;
 }
 
 static int decode_pivot(MSS1Context *ctx, ArithCoder *acoder, int base)
@@ -783,8 +783,10 @@ static av_cold int mss1_decode_init(AVCodecContext *avctx)
     av_log(avctx, AV_LOG_DEBUG, "Encoder version %d.%d\n",
            AV_RB32(avctx->extradata + 4), AV_RB32(avctx->extradata + 8));
     c->free_colours     = AV_RB32(avctx->extradata + 48);
-    if (c->free_colours < 0 || c->free_colours > 256) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid free colours %d\n", c->free_colours);
+    if ((unsigned)c->free_colours > 256) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Incorrect number of changeable palette entries: %d\n",
+               c->free_colours);
         return AVERROR_INVALIDDATA;
     }
     av_log(avctx, AV_LOG_DEBUG, "%d free colour(s)\n", c->free_colours);

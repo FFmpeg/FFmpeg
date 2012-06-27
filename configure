@@ -1192,6 +1192,7 @@ HAVE_LIST="
     dlfcn_h
     dlopen
     dos_paths
+    dxva_h
     ebp_available
     ebx_available
     exp2
@@ -1215,6 +1216,8 @@ HAVE_LIST="
     inet_aton
     inline_asm
     isatty
+    isinf
+    isnan
     jack_port_get_latency_range
     kbhit
     ldbrx
@@ -1259,6 +1262,8 @@ HAVE_LIST="
     strerror_r
     strptime
     struct_addrinfo
+    struct_group_source_req
+    struct_ip_mreq_source
     struct_ipv6_mreq
     struct_rusage_ru_maxrss
     struct_sockaddr_in6
@@ -3116,6 +3121,8 @@ fi
 if enabled network; then
     check_type "sys/types.h sys/socket.h" socklen_t
     check_type netdb.h "struct addrinfo"
+    check_type netinet/in.h "struct group_source_req" -D_BSD_SOURCE
+    check_type netinet/in.h "struct ip_mreq_source" -D_BSD_SOURCE
     check_type netinet/in.h "struct ipv6_mreq" -D_DARWIN_C_SOURCE
     check_type netinet/in.h "struct sockaddr_in6"
     check_type "sys/types.h sys/socket.h" "struct sockaddr_storage"
@@ -3131,6 +3138,8 @@ if enabled network; then
             network_extralibs="-lws2_32"; }
         check_type ws2tcpip.h socklen_t
         check_type ws2tcpip.h "struct addrinfo"
+        check_type ws2tcpip.h "struct group_source_req"
+        check_type ws2tcpip.h "struct ip_mreq_source"
         check_type ws2tcpip.h "struct ipv6_mreq"
         check_type ws2tcpip.h "struct sockaddr_in6"
         check_type ws2tcpip.h "struct sockaddr_storage"
@@ -3180,6 +3189,7 @@ check_func_headers windows.h VirtualAlloc
 check_func_headers glob.h glob
 
 check_header dlfcn.h
+check_header dxva.h
 check_header dxva2api.h -D_WIN32_WINNT=0x0600
 check_header libcrystalhd/libcrystalhd_if.h
 check_header malloc.h
@@ -3250,6 +3260,8 @@ enabled vaapi && require vaapi va/va.h vaInitialize -lva
 check_mathfunc cbrtf
 check_mathfunc exp2
 check_mathfunc exp2f
+check_mathfunc isinf
+check_mathfunc isnan
 check_mathfunc llrint
 check_mathfunc llrintf
 check_mathfunc log2

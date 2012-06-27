@@ -616,8 +616,6 @@ cglobal fft_calc, 2,5,8
 .end:
     REP_RET
 
-cextern_naked memcpy
-
 cglobal fft_permute, 2,7,1
     mov     r4,  [r0 + FFTContext.revtab]
     mov     r5,  [r0 + FFTContext.tmpbuf]
@@ -638,29 +636,18 @@ cglobal fft_permute, 2,7,1
     cmp     r0, r2
     jl      .loop
     shl     r2, 3
-%if ARCH_X86_64
-    mov     r0, r1
-    mov     r1, r5
-%endif
-%if WIN64
-    sub     rsp, 8
-    call    memcpy
-    add     rsp, 8
-    RET
-%elif ARCH_X86_64
-%ifdef PIC
-    jmp     memcpy wrt ..plt
-%else
-    jmp     memcpy
-%endif
-%else
-    push    r2
-    push    r5
-    push    r1
-    call    memcpy
-    add     esp, 12
-    RET
-%endif
+    add     r1, r2
+    add     r5, r2
+    neg     r2
+; nbits >= 2 (FFT4) and sizeof(FFTComplex)=8 => at least 32B
+.loopcopy:
+    movaps  xmm0, [r5 + r2]
+    movaps  xmm1, [r5 + r2 + 16]
+    movaps  [r1 + r2], xmm0
+    movaps  [r1 + r2 + 16], xmm1
+    add     r2, 32
+    jl      .loopcopy
+    REP_RET
 
 cglobal imdct_calc, 3,5,3
     mov     r3d, [r0 + FFTContext.mdctsize]
