@@ -4053,11 +4053,12 @@ int attribute_deprecated avcodec_encode_audio(AVCodecContext *avctx,
  *                  The user can supply an output buffer by setting
  *                  avpkt->data and avpkt->size prior to calling the
  *                  function, but if the size of the user-provided data is not
- *                  large enough, encoding will fail. All other AVPacket fields
- *                  will be reset by the encoder using av_init_packet(). If
- *                  avpkt->data is NULL, the encoder will allocate it.
- *                  The encoder will set avpkt->size to the size of the
- *                  output packet.
+ *                  large enough, encoding will fail. If avpkt->data and
+ *                  avpkt->size are set, avpkt->destruct must also be set. All
+ *                  other AVPacket fields will be reset by the encoder using
+ *                  av_init_packet(). If avpkt->data is NULL, the encoder will
+ *                  allocate it. The encoder will set avpkt->size to the size
+ *                  of the output packet.
  *
  *                  If this function fails or produces no output, avpkt will be
  *                  freed using av_free_packet() (i.e. avpkt->destruct will be
