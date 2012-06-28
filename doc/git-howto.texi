@@ -371,9 +371,10 @@ Next let the code pass through a full run of our testsuite.
 @item if fate fails due to missing samples run @command{make fate-rsync} and retry
 @end itemize
 
-While the test suite covers a wide range of possible problems, it is not
-a panacea. Do not hesitate to perform any other tests necessary to convince
-yourself that the changes you are about to push actually work as expected.
+Make sure all your changes have been checked before pushing them, the
+testsuite only checks against regressions and that only to some extend. It does
+obviously not check newly added features/code to be working unless you have
+added a test for that (which is recommanded btw).
 
 Also note that every single commit should pass the test suite, not just
 the result of a series of patches.
