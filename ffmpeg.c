@@ -5242,6 +5242,7 @@ loop_end:
                      AV_DICT_DONT_OVERWRITE);
         if(o->recording_time != INT64_MAX)
             av_dict_set(&oc->metadata, "duration", NULL, 0);
+        av_dict_set(&oc->metadata, "creation_time", NULL, 0);
     }
     if (!o->metadata_streams_manual)
         for (i = output_files[nb_output_files - 1]->ost_index; i < nb_output_streams; i++) {
