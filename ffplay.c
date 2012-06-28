@@ -1986,7 +1986,6 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
                 is->audio_src.fmt = dec->sample_fmt;
             }
 
-            resampled_data_size = data_size;
             if (is->swr_ctx) {
                 const uint8_t *in[] = { is->frame->data[0] };
                 uint8_t *out[] = {is->audio_buf2};
@@ -2011,6 +2010,7 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
                 resampled_data_size = len2 * is->audio_tgt.channels * av_get_bytes_per_sample(is->audio_tgt.fmt);
             } else {
                 is->audio_buf = is->frame->data[0];
+                resampled_data_size = data_size;
             }
 
             /* if no pts, then compute it */
