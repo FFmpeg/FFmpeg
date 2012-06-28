@@ -525,7 +525,7 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
             /* get Rice code for residual decoding */
             if (cmd != FN_ZERO) {
                 residual_size = get_ur_golomb_shorten(&s->gb, ENERGYSIZE);
-                /* this is a hack as version 0 differed in defintion of get_sr_golomb_shorten */
+                /* this is a hack as version 0 differed in definition of get_sr_golomb_shorten */
                 if (s->version == 0)
                     residual_size--;
             }

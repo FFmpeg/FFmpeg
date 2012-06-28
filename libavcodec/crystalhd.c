@@ -43,7 +43,7 @@
  * on testing, the code will wait until 3 pictures are ready before starting
  * to copy out - and this has the effect of extending the pipeline.
  *
- * Finally, while it is tempting to say that once the decoder starts outputing
+ * Finally, while it is tempting to say that once the decoder starts outputting
  * frames, the software should never fail to return a frame from a decode(),
  * this is a hard assertion to make, because the stream may switch between
  * differently encoded content (number of b-frames, interlacing, etc) which

@@ -708,7 +708,7 @@ av_cold int ff_MPV_common_init(MpegEncContext *s)
         avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &s->chroma_x_shift,
                                       &s->chroma_y_shift);
 
-    /* set default edge pos, will be overriden in decode_header if needed */
+    /* set default edge pos, will be overridden in decode_header if needed */
     s->h_edge_pos = s->mb_width * 16;
     s->v_edge_pos = s->mb_height * 16;
 

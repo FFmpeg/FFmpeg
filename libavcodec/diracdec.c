@@ -861,7 +861,7 @@ static int dirac_unpack_prediction_parameters(DiracContext *s)
         return -1;
     }
     if (s->plane[0].xbsep > s->plane[0].xblen || s->plane[0].ybsep > s->plane[0].yblen) {
-        av_log(s->avctx, AV_LOG_ERROR, "Block seperation greater than size\n");
+        av_log(s->avctx, AV_LOG_ERROR, "Block separation greater than size\n");
         return -1;
     }
     if (FFMAX(s->plane[0].xblen, s->plane[0].yblen) > MAX_BLOCKSIZE) {
@@ -961,7 +961,7 @@ static int dirac_unpack_idwt_params(DiracContext *s)
     CHECKEDREAD(s->wavelet_depth, tmp > MAX_DWT_LEVELS || tmp < 1, "invalid number of DWT decompositions\n")
 
     if (!s->low_delay) {
-        /* Codeblock paramaters (core syntax only) */
+        /* Codeblock parameters (core syntax only) */
         if (get_bits1(gb)) {
             for (i = 0; i <= s->wavelet_depth; i++) {
                 CHECKEDREAD(s->codeblock[i].width , tmp < 1, "codeblock width invalid\n")

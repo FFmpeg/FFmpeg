@@ -1709,7 +1709,7 @@ static enum CodecID remap_deprecated_codec_id(enum CodecID id)
 {
     switch(id){
         //This is for future deprecatec codec ids, its empty since
-        //last major bump but will fill up again over time, please dont remove it
+        //last major bump but will fill up again over time, please don't remove it
 //         case CODEC_ID_UTVIDEO_DEPRECATED: return CODEC_ID_UTVIDEO;
         default                         : return id;
     }

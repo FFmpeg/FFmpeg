@@ -1523,7 +1523,7 @@ typedef struct AVCodecContext {
     /**
      * Pixel format, see PIX_FMT_xxx.
      * May be set by the demuxer if known from headers.
-     * May be overriden by the decoder if it knows better.
+     * May be overridden by the decoder if it knows better.
      * - encoding: Set by user.
      * - decoding: Set by user if known, overridden by libavcodec if known
      */
@@ -2287,7 +2287,7 @@ typedef struct AVCodecContext {
 
     /**
      * ratecontrol qmin qmax limiting method
-     * 0-> clipping, 1-> use a nice continous function to limit qscale wthin qmin/qmax.
+     * 0-> clipping, 1-> use a nice continuous function to limit qscale wthin qmin/qmax.
      * - encoding: Set by user.
      * - decoding: unused
      */
@@ -3186,7 +3186,7 @@ typedef struct AVSubtitleRect {
 
     /**
      * 0 terminated ASS/SSA compatible event line.
-     * The pressentation of this is unaffected by the other values in this
+     * The presentation of this is unaffected by the other values in this
      * struct.
      */
     char *ass;

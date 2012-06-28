@@ -562,7 +562,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
                 gain_corr_factor = cb_gain_1st_6k4[gc_1st_index][1] +
                                    cb_gain_2nd_6k4[gc_2nd_index][1];
 
-                /* Without check below overflow can occure in ff_acelp_update_past_gain.
+                /* Without check below overflow can occur in ff_acelp_update_past_gain.
                    It is not issue for G.729, because gain_corr_factor in it's case is always
                    greater than 1024, while in G.729D it can be even zero. */
                 gain_corr_factor = FFMAX(gain_corr_factor, 1024);
@@ -589,7 +589,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
               two times larger than in original G.729.
 
               If bit-exact result is not issue then gain_corr_factor
-              can be simpler devided by 2 before call to g729_get_gain_code
+              can be simpler divided by 2 before call to g729_get_gain_code
               instead of using correction below.
             */
             if (packet_type == FORMAT_G729D_6K4) {

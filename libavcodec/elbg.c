@@ -188,7 +188,7 @@ static void get_new_centroids(elbg_data *elbg, int huc, int *newcentroid_i,
 
 /**
  * Add the points in the low utility cell to its closest cell. Split the high
- * utility cell, putting the separed points in the (now empty) low utility
+ * utility cell, putting the separate points in the (now empty) low utility
  * cell.
  *
  * @param elbg         Internal elbg data

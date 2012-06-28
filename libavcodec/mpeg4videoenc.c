@@ -199,7 +199,7 @@ static inline int decide_ac_pred(MpegEncContext * s, DCTELEM block[6][64], const
 }
 
 /**
- * modify mb_type & qscale so that encoding is acually possible in mpeg4
+ * modify mb_type & qscale so that encoding is actually possible in mpeg4
  */
 void ff_clean_mpeg4_qscales(MpegEncContext *s){
     int i;

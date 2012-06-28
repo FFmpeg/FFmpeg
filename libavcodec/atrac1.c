@@ -246,7 +246,7 @@ static int at1_unpack_dequant(GetBitContext* gb, AT1SUCtx* su,
                      */
                     spec[pos+i] = get_sbits(gb, word_len) * scale_factor * max_quant;
                 }
-            } else { /* word_len = 0 -> empty BFU, zero all specs in the emty BFU */
+            } else { /* word_len = 0 -> empty BFU, zero all specs in the empty BFU */
                 memset(&spec[pos], 0, num_specs * sizeof(float));
             }
         }

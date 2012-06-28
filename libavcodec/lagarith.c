@@ -199,7 +199,7 @@ static int lag_read_prob_header(lag_rac *rac, GetBitContext *gb)
             /* Comment from reference source:
              * if (b & 0x80 == 0) {     // order of operations is 'wrong'; it has been left this way
              *                          // since the compression change is negligable and fixing it
-             *                          // breaks backwards compatibilty
+             *                          // breaks backwards compatibility
              *      b =- (signed int)b;
              *      b &= 0xFF;
              * } else {

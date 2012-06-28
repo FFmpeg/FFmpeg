@@ -1588,7 +1588,7 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
             skip_bits1(gb);     /* marker */
         }
     }else{
-        // set low delay flag only once the smartest? low delay detection won't be overriden
+        // set low delay flag only once the smartest? low delay detection won't be overridden
         if(s->picture_number==0)
             s->low_delay=0;
     }
@@ -2287,7 +2287,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     s->h263_pred = 1;
-    s->low_delay = 0; //default, might be overriden in the vol header during header parsing
+    s->low_delay = 0; //default, might be overridden in the vol header during header parsing
     s->decode_mb= mpeg4_decode_mb;
     s->time_increment_bits = 4; /* default value for broken headers */
     avctx->chroma_sample_location = AVCHROMA_LOC_LEFT;
