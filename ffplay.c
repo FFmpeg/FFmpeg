@@ -1999,7 +1999,7 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
                 len2 = swr_convert(is->swr_ctx, out, sizeof(is->audio_buf2) / is->audio_tgt.channels / av_get_bytes_per_sample(is->audio_tgt.fmt),
                                                 in, is->frame->nb_samples);
                 if (len2 < 0) {
-                    fprintf(stderr, "audio_resample() failed\n");
+                    fprintf(stderr, "swr_convert() failed\n");
                     break;
                 }
                 if (len2 == sizeof(is->audio_buf2) / is->audio_tgt.channels / av_get_bytes_per_sample(is->audio_tgt.fmt)) {
