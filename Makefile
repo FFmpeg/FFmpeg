@@ -164,7 +164,7 @@ coverage-html: coverage.info
 	$(Q)genhtml -o $@ $<
 	$(Q)touch $@
 
-check: all alltools checkheaders examples testprogs fate
+check: all alltools examples testprogs fate
 
 include $(SRC_PATH)/doc/Makefile
 include $(SRC_PATH)/tests/Makefile
