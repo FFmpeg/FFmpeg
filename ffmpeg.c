@@ -531,8 +531,14 @@ static void reset_options(OptionsContext *o, int is_input)
 
     memset(o, 0, sizeof(*o));
 
-    if(is_input) o->recording_time = bak.recording_time;
-    else         o->recording_time = INT64_MAX;
+    if (is_input) {
+        o->recording_time = bak.recording_time;
+        if (o->recording_time != INT64_MAX)
+            av_log(NULL, AV_LOG_WARNING,
+                   "-t is not an input option, keeping it for the next output;"
+                   " consider fixing your command line.\n");
+    } else
+        o->recording_time = INT64_MAX;
     o->mux_max_delay  = 0.7;
     o->limit_filesize = UINT64_MAX;
     o->chapters_input_file = INT_MAX;
