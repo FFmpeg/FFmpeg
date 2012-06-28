@@ -170,6 +170,7 @@ External library support:
   --enable-libdc1394       enable IIDC-1394 grabbing using libdc1394
                            and libraw1394 [no]
   --enable-libfaac         enable FAAC support via libfaac [no]
+  --enable-libfdk-aac      enable AAC support via libfdk-aac [no]
   --enable-libfreetype     enable libfreetype [no]
   --enable-libgsm          enable GSM support via libgsm [no]
   --enable-libilbc         enable iLBC de/encoding via libilbc [no]
@@ -943,6 +944,7 @@ CONFIG_LIST="
     libcdio
     libdc1394
     libfaac
+    libfdk_aac
     libfreetype
     libgsm
     libilbc
@@ -1448,6 +1450,7 @@ h264_parser_select="golomb h264dsp h264pred"
 
 # external libraries
 libfaac_encoder_deps="libfaac"
+libfdk_aac_encoder_deps="libfdk_aac"
 libgsm_decoder_deps="libgsm"
 libgsm_encoder_deps="libgsm"
 libgsm_ms_decoder_deps="libgsm"
@@ -2968,6 +2971,7 @@ enabled avisynth   && require2 vfw32 "windows.h vfw.h" AVIFileInit -lavifil32
 enabled frei0r     && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
 enabled gnutls     && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
 enabled libfaac    && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
+enabled libfdk_aac && require  libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen -lfdk-aac
 enabled libfreetype && require_pkg_config freetype2 "ft2build.h freetype/freetype.h" FT_Init_FreeType
 enabled libgsm     && require  libgsm gsm/gsm.h gsm_create -lgsm
 enabled libilbc    && require  libilbc ilbc.h WebRtcIlbcfix_InitDecode -lilbc
@@ -3259,6 +3263,7 @@ echo "gnutls enabled            ${gnutls-no}"
 echo "libcdio support           ${libcdio-no}"
 echo "libdc1394 support         ${libdc1394-no}"
 echo "libfaac enabled           ${libfaac-no}"
+echo "libfdk-aac enabled        ${libfdk_aac-no}"
 echo "libgsm enabled            ${libgsm-no}"
 echo "libilbc enabled           ${libilbc-no}"
 echo "libmp3lame enabled        ${libmp3lame-no}"

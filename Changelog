@@ -33,6 +33,7 @@ version <next>:
 - Microsoft ATC Screen decoder
 - RTSP listen mode
 - TechSmith Screen Codec 2 decoder
+- AAC encoding via libfdk-aac
 
 
 version 0.8:

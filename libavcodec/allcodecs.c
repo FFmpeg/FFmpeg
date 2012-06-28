@@ -380,6 +380,7 @@ void avcodec_register_all(void)
 
     /* external libraries */
     REGISTER_ENCODER (LIBFAAC, libfaac);
+    REGISTER_ENCODER (LIBFDK_AAC, libfdk_aac);
     REGISTER_ENCDEC  (LIBGSM, libgsm);
     REGISTER_ENCDEC  (LIBGSM_MS, libgsm_ms);
     REGISTER_ENCDEC  (LIBILBC, libilbc);
