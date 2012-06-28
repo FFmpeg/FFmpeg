@@ -2288,6 +2288,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 
     for (i=0; i<ic->nb_streams; i++) {
         ic->streams[i]->info->last_dts = AV_NOPTS_VALUE;
+        ic->streams[i]->info->fps_first_dts = AV_NOPTS_VALUE;
+        ic->streams[i]->info->fps_last_dts  = AV_NOPTS_VALUE;
     }
 
     count = 0;
@@ -2395,12 +2397,31 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         read_size += pkt->size;
 
         st = ic->streams[pkt->stream_index];
-        if (st->codec_info_nb_frames>1) {
-            if (av_rescale_q(st->info->codec_info_duration, st->time_base, AV_TIME_BASE_Q) >= ic->max_analyze_duration) {
+        if (pkt->dts != AV_NOPTS_VALUE && st->codec_info_nb_frames > 1) {
+            /* check for non-increasing dts */
+            if (st->info->fps_last_dts != AV_NOPTS_VALUE &&
+                st->info->fps_last_dts >= pkt->dts) {
+                av_log(ic, AV_LOG_WARNING, "Non-increasing DTS in stream %d: "
+                       "packet %d with DTS %"PRId64", packet %d with DTS "
+                       "%"PRId64"\n", st->index, st->info->fps_last_dts_idx,
+                       st->info->fps_last_dts, st->codec_info_nb_frames, pkt->dts);
+                st->info->fps_first_dts = st->info->fps_last_dts = AV_NOPTS_VALUE;
+            }
+
+            /* update stored dts values */
+            if (st->info->fps_first_dts == AV_NOPTS_VALUE) {
+                st->info->fps_first_dts     = pkt->dts;
+                st->info->fps_first_dts_idx = st->codec_info_nb_frames;
+            }
+            st->info->fps_last_dts = pkt->dts;
+            st->info->fps_last_dts_idx = st->codec_info_nb_frames;
+
+            /* check max_analyze_duration */
+            if (av_rescale_q(pkt->dts - st->info->fps_first_dts, st->time_base,
+                             AV_TIME_BASE_Q) >= ic->max_analyze_duration) {
                 av_log(ic, AV_LOG_WARNING, "max_analyze_duration reached\n");
                 break;
             }
-            st->info->codec_info_duration += pkt->duration;
         }
         {
             int64_t last = st->info->last_dts;
@@ -2460,10 +2481,15 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     for(i=0;i<ic->nb_streams;i++) {
         st = ic->streams[i];
         if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-            if (st->codec_info_nb_frames>2 && !st->avg_frame_rate.num && st->info->codec_info_duration)
+            /* estimate average framerate if not set by demuxer */
+            if (!st->avg_frame_rate.num && st->info->fps_last_dts != st->info->fps_first_dts) {
+                int64_t delta_dts = st->info->fps_last_dts - st->info->fps_first_dts;
+                int delta_packets = st->info->fps_last_dts_idx - st->info->fps_first_dts_idx;
+
                 av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
-                          (st->codec_info_nb_frames-2)*(int64_t)st->time_base.den,
-                          st->info->codec_info_duration*(int64_t)st->time_base.num, 60000);
+                          delta_packets*(int64_t)st->time_base.den,
+                          delta_dts*(int64_t)st->time_base.num, 60000);
+            }
             // the check for tb_unreliable() is not completely correct, since this is not about handling
             // a unreliable/inexact time base, but a time base that is finer than necessary, as e.g.
             // ipmovie.c produces.

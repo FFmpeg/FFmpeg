@@ -718,9 +718,17 @@ typedef struct AVStream {
         int64_t duration_gcd;
         int duration_count;
         double duration_error[MAX_STD_TIMEBASES];
-        int64_t codec_info_duration;
         int nb_decoded_frames;
         int found_decoder;
+
+        /**
+         * Those are used for average framerate estimation.
+         */
+        int64_t fps_first_dts;
+        int     fps_first_dts_idx;
+        int64_t fps_last_dts;
+        int     fps_last_dts_idx;
+
     } *info;
 
     int pts_wrap_bits; /**< number of bits in pts (used for wrapping control) */
