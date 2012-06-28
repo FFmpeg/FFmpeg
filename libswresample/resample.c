@@ -393,6 +393,7 @@ int swr_set_compensation(struct SwrContext *s, int sample_delta, int compensatio
 #undef FELEM_MAX
 #undef FILTER_SHIFT
 
+#if HAVE_SSSE3
 #define COMMON_CORE COMMON_CORE_INT16_SSSE3
 #define RENAME(N) N ## _int16_ssse3
 #define FILTER_SHIFT 15
@@ -405,6 +406,7 @@ int swr_set_compensation(struct SwrContext *s, int sample_delta, int compensatio
 #define OUT(d, v) v = (v + (1<<(FILTER_SHIFT-1)))>>FILTER_SHIFT;\
                   d = (unsigned)(v + 32768) > 65535 ? (v>>31) ^ 32767 : v
 #include "resample_template.c"
+#endif
 #endif // ARCH_X86
 
 int swri_multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, AudioData *src, int src_size, int *consumed){
@@ -413,8 +415,11 @@ int swri_multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, Aud
 
     for(i=0; i<dst->ch_count; i++){
 #if ARCH_X86
+#if HAVE_SSSE3
              if(c->format == AV_SAMPLE_FMT_S16P && (mm_flags&AV_CPU_FLAG_SSSE3)) ret= swri_resample_int16_ssse3(c, (int16_t*)dst->ch[i], (const int16_t*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
-        else if(c->format == AV_SAMPLE_FMT_S16P && (mm_flags&AV_CPU_FLAG_MMX2 )) ret= swri_resample_int16_mmx2 (c, (int16_t*)dst->ch[i], (const int16_t*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
+        else
+#endif
+             if(c->format == AV_SAMPLE_FMT_S16P && (mm_flags&AV_CPU_FLAG_MMX2 )) ret= swri_resample_int16_mmx2 (c, (int16_t*)dst->ch[i], (const int16_t*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
         else
 #endif
              if(c->format == AV_SAMPLE_FMT_S16P) ret= swri_resample_int16(c, (int16_t*)dst->ch[i], (const int16_t*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
