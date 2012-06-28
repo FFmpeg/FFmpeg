@@ -1961,9 +1961,9 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
                 dec->channel_layout : av_get_default_channel_layout(dec->channels);
             wanted_nb_samples = synchronize_audio(is, is->frame->nb_samples);
 
-            if (dec->sample_fmt != is->audio_src.fmt ||
+            if (dec->sample_fmt    != is->audio_src.fmt            ||
                 dec_channel_layout != is->audio_src.channel_layout ||
-                dec->sample_rate != is->audio_src.freq ||
+                dec->sample_rate   != is->audio_src.freq           ||
                 (wanted_nb_samples != is->frame->nb_samples && !is->swr_ctx)) {
                 swr_free(&is->swr_ctx);
                 is->swr_ctx = swr_alloc_set_opts(NULL,
