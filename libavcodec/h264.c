@@ -3383,7 +3383,8 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     h->ref_count[1] = h->pps.ref_count[1];
 
     if (h->slice_type_nos != AV_PICTURE_TYPE_I) {
-        unsigned max = s->picture_structure == PICT_FRAME ? 15 : 31;
+        unsigned max[2];
+        max[0] = max[1] = s->picture_structure == PICT_FRAME ? 15 : 31;
 
         if (h->slice_type_nos == AV_PICTURE_TYPE_B)
             h->direct_spatial_mv_pred = get_bits1(&s->gb);
@@ -3393,10 +3394,13 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
             h->ref_count[0] = get_ue_golomb(&s->gb) + 1;
             if (h->slice_type_nos == AV_PICTURE_TYPE_B)
                 h->ref_count[1] = get_ue_golomb(&s->gb) + 1;
+            else
+                // full range is spec-ok in this case, even for frames
+                max[1] = 31;
         }
 
-        if (h->ref_count[0]-1 > max || h->ref_count[1]-1 > max){
-            av_log(h->s.avctx, AV_LOG_ERROR, "reference overflow\n");
+        if (h->ref_count[0]-1 > max[0] || h->ref_count[1]-1 > max[1]){
+            av_log(h->s.avctx, AV_LOG_ERROR, "reference overflow %u > %u or %u > %u\n", h->ref_count[0]-1, max[0], h->ref_count[1]-1, max[1]);
             h->ref_count[0] = h->ref_count[1] = 1;
             return AVERROR_INVALIDDATA;
         }
