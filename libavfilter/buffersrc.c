@@ -43,6 +43,7 @@ typedef struct {
     AVRational        time_base;     ///< time_base to set in the output link
     AVRational        frame_rate;    ///< frame_rate to set in the output link
     unsigned          nb_failed_requests;
+    unsigned          warning_limit;
 
     /* video only */
     int               w, h;
@@ -183,6 +184,14 @@ int av_buffersrc_add_ref(AVFilterContext *s, AVFilterBufferRef *buf, int flags)
         return ret;
     }
     c->nb_failed_requests = 0;
+    if (c->warning_limit &&
+        av_fifo_size(c->fifo) / sizeof(buf) >= c->warning_limit) {
+        av_log(s, AV_LOG_WARNING,
+               "%d buffers queued in %s, something may be wrong.\n",
+               c->warning_limit,
+               (char *)av_x_if_null(s->name, s->filter->name));
+        c->warning_limit *= 10;
+    }
 
     return 0;
 }
@@ -261,6 +270,7 @@ static av_cold int init_video(AVFilterContext *ctx, const char *args)
            c->w, c->h, av_pix_fmt_descriptors[c->pix_fmt].name,
            c->time_base.num, c->time_base.den, c->frame_rate.num, c->frame_rate.den,
            c->pixel_aspect.num, c->pixel_aspect.den, (char *)av_x_if_null(c->sws_param, ""));
+    c->warning_limit = 100;
     return 0;
 
 fail:
@@ -320,6 +330,7 @@ static av_cold int init_audio(AVFilterContext *ctx, const char *args)
            "tb:%d/%d samplefmt:%s samplerate:%d chlayout:%s\n",
            s->time_base.num, s->time_base.den, s->sample_fmt_str,
            s->sample_rate, s->channel_layout_str);
+    s->warning_limit = 100;
 
 fail:
     av_opt_free(s);
