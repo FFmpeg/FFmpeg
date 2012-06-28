@@ -1597,6 +1597,7 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
 
 static int video_thread(void *arg)
 {
+    AVPacket pkt = { 0 };
     VideoState *is = arg;
     AVFrame *frame = avcodec_alloc_frame();
     int64_t pts_int;
@@ -1617,7 +1618,6 @@ static int video_thread(void *arg)
 #endif
 
     for (;;) {
-        AVPacket pkt;
 #if CONFIG_AVFILTER
         AVFilterBufferRef *picref;
         AVRational tb;
@@ -1625,10 +1625,11 @@ static int video_thread(void *arg)
         while (is->paused && !is->videoq.abort_request)
             SDL_Delay(10);
 
+        av_free_packet(&pkt);
+
         ret = get_video_frame(is, frame, &pts_int, &pkt);
         if (ret < 0)
             goto the_end;
-        av_free_packet(&pkt);
 
         if (!ret)
             continue;
@@ -1708,6 +1709,7 @@ static int video_thread(void *arg)
     av_freep(&vfilters);
     avfilter_graph_free(&graph);
 #endif
+    av_free_packet(&pkt);
     av_free(frame);
     return 0;
 }
