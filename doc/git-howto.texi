@@ -373,16 +373,13 @@ to ensure no local changes still need to be committed and that no local
 changes may have thrown off the results of your testing.
 @end itemize
 
-Next let the code pass through a full run of our testsuite. Before you do,
-the command @command{make fate-rsync} will update the test samples. Changes
-to the samples set are not very common and commits depending on samples
-changes are delayed for at least 24 hours to allow the new samples to
-propagate, so updating it once per day is sufficient.  Now execute
+Next let the code pass through a full run of our testsuite.
 
 @itemize
 @item @command{make distclean}
 @item @command{/path/to/ffmpeg/configure}
 @item @command{make check}
+@item if fate fails due to missing samples run @command{make fate-rsync} and retry
 @end itemize
 
 While the test suite covers a wide range of possible problems, it is not
