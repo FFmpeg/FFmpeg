@@ -355,23 +355,12 @@ proper order. This list tries to be exhaustive. In case you are just
 pushing a typo in a comment, some of the steps may be unnecessary.
 Apply your common sense, but if in doubt, err on the side of caution.
 
-First make sure your Git repository is on a branch that is a direct
-descendant of the FFmpeg master branch, which is the only one from which
-pushing to FFmpeg is possible. Then run the following command:
-
-@itemize
-@item @command{git log --patch --stat origin/master..}
-
-to make sure that only the commits you want to push are pending, that
-the log messages of the commits are correct and descriptive and contain
-no cruft from @command{git am} and to doublecheck that the commits you
-want to push really only contain the changes they are supposed to contain.
-
-@item @command{git status}
-
-to ensure no local changes still need to be committed and that no local
-changes may have thrown off the results of your testing.
-@end itemize
+First, make sure that the commits and branches you are going to push
+match what you want pushed and that nothing is missing, extraneous or
+wrong. You can see what will be pushed by running the git push command
+with --dry-run first. And then inspecting the commits listed with
+@command{git log -p 1234567..987654}. The @item @command{git status} command
+may help in finding local changes that have been forgotten to be added.
 
 Next let the code pass through a full run of our testsuite.
 
@@ -389,6 +378,9 @@ yourself that the changes you are about to push actually work as expected.
 Also note that every single commit should pass the test suite, not just
 the result of a series of patches.
 
+Once everything passed, push the changes to your public ffmpeg clone and post a
+merge request to ffmpeg-devel. You can also push them directly but this is not
+recommended.
 
 @chapter Server Issues
 
