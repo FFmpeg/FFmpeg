@@ -531,6 +531,8 @@ following image formats are supported:
 @item LCL (LossLess Codec Library) ZLIB  @tab  E  @tab  E
 @item LOCO                   @tab     @tab  X
 @item lossless MJPEG         @tab  X  @tab  X
+@item Microsoft ATC Screen   @tab     @tab  X
+    @tab Also known as Microsoft Screen 3.
 @item Microsoft RLE          @tab     @tab  X
 @item Microsoft Screen 1     @tab     @tab  X
     @tab Also known as Windows Media Video V7 Screen.

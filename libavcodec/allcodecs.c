@@ -152,6 +152,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (MPEG4_VDPAU, mpeg4_vdpau);
     REGISTER_DECODER (MPEG_VDPAU, mpeg_vdpau);
     REGISTER_DECODER (MPEG1_VDPAU, mpeg1_vdpau);
+    REGISTER_DECODER (MSA1, msa1);
     REGISTER_DECODER (MSMPEG4V1, msmpeg4v1);
     REGISTER_ENCDEC  (MSMPEG4V2, msmpeg4v2);
     REGISTER_ENCDEC  (MSMPEG4V3, msmpeg4v3);
