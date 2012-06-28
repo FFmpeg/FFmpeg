@@ -141,7 +141,7 @@ static int config_output(AVFilterLink *outlink)
         if (ctx->inputs[i]->sample_rate != ctx->inputs[0]->sample_rate) {
             av_log(ctx, AV_LOG_ERROR,
                    "Inputs must have the same sample rate "
-                   "(%"PRIi64" for in%d vs %"PRIi64")\n",
+                   "%d for in%d vs %d\n",
                    ctx->inputs[i]->sample_rate, i, ctx->inputs[0]->sample_rate);
             return AVERROR(EINVAL);
         }
