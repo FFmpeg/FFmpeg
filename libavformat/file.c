@@ -72,6 +72,7 @@ static int file_open(URLContext *h, const char *filename, int flags)
 {
     int access;
     int fd;
+    struct stat st;
 
     av_strstart(filename, "file:", &filename);
 
@@ -89,6 +90,9 @@ static int file_open(URLContext *h, const char *filename, int flags)
     if (fd == -1)
         return AVERROR(errno);
     h->priv_data = (void *) (intptr_t) fd;
+
+    h->is_streamed = (0==fstat(fd, &st) && S_ISFIFO(st.st_mode)) ? 1 : 0;
+
     return 0;
 }
 
