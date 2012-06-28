@@ -108,6 +108,14 @@ static void flv_set_audio_codec(AVFormatContext *s, AVStream *astream, AVCodecCo
         case FLV_CODECID_NELLYMOSER:
             acodec->codec_id = CODEC_ID_NELLYMOSER;
             break;
+        case FLV_CODECID_PCM_MULAW:
+            acodec->sample_rate = 8000;
+            acodec->codec_id = CODEC_ID_PCM_MULAW;
+            break;
+        case FLV_CODECID_PCM_ALAW:
+            acodec->sample_rate = 8000;
+            acodec->codec_id = CODEC_ID_PCM_ALAW;
+            break;
         default:
             av_log(s, AV_LOG_INFO, "Unsupported audio codec (%x)\n", flv_codecid >> FLV_AUDIO_CODECID_OFFSET);
             acodec->codec_tag = flv_codecid >> FLV_AUDIO_CODECID_OFFSET;
