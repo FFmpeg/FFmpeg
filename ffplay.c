@@ -1963,8 +1963,7 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
                 dec_channel_layout != is->audio_src.channel_layout ||
                 dec->sample_rate != is->audio_src.freq ||
                 (wanted_nb_samples != is->frame->nb_samples && !is->swr_ctx)) {
-                if (is->swr_ctx)
-                    swr_free(&is->swr_ctx);
+                swr_free(&is->swr_ctx);
                 is->swr_ctx = swr_alloc_set_opts(NULL,
                                                  is->audio_tgt.channel_layout, is->audio_tgt.fmt, is->audio_tgt.freq,
                                                  dec_channel_layout,           dec->sample_fmt,   dec->sample_rate,
@@ -2268,8 +2267,7 @@ static void stream_component_close(VideoState *is, int stream_index)
 
         packet_queue_flush(&is->audioq);
         av_free_packet(&is->audio_pkt);
-        if (is->swr_ctx)
-            swr_free(&is->swr_ctx);
+        swr_free(&is->swr_ctx);
         av_freep(&is->audio_buf1);
         is->audio_buf = NULL;
         av_freep(&is->frame);
