@@ -2404,8 +2404,6 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 int64_t duration= pkt->dts - last;
                 double dur= duration * av_q2d(st->time_base);
 
-//                if(st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
-//                    av_log(NULL, AV_LOG_ERROR, "%f\n", dur);
                 if (st->info->duration_count < 2)
                     memset(st->info->duration_error, 0, sizeof(st->info->duration_error));
                 for (i=1; i<FF_ARRAY_ELEMS(st->info->duration_error); i++) {
@@ -2467,17 +2465,13 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             if (tb_unreliable(st->codec) && st->info->duration_count > 15 && st->info->duration_gcd > 1 && !st->r_frame_rate.num)
                 av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den, st->time_base.den, st->time_base.num * st->info->duration_gcd, INT_MAX);
             if (st->info->duration_count && !st->r_frame_rate.num
-               && tb_unreliable(st->codec) /*&&
-               //FIXME we should not special-case MPEG-2, but this needs testing with non-MPEG-2 ...
-               st->time_base.num*duration_sum[i]/st->info->duration_count*101LL > st->time_base.den*/){
+                && tb_unreliable(st->codec)) {
                 int num = 0;
                 double best_error= 2*av_q2d(st->time_base);
                 best_error = best_error*best_error*st->info->duration_count*1000*12*30;
 
                 for (j=1; j<FF_ARRAY_ELEMS(st->info->duration_error); j++) {
                     double error = st->info->duration_error[j] * get_std_framerate(j);
-//                    if(st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
-//                        av_log(NULL, AV_LOG_ERROR, "%f %f\n", get_std_framerate(j) / 12.0/1001, error);
                     if(error < best_error){
                         best_error= error;
                         num = get_std_framerate(j);
