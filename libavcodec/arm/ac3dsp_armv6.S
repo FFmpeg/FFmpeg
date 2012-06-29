@@ -26,8 +26,8 @@ function ff_ac3_bit_alloc_calc_bap_armv6, export=1
         beq             4f
         push            {r4-r11,lr}
         add             r5,  sp,  #40
-        movrel          r4,  X(ff_ac3_bin_to_band_tab)
-        movrel          lr,  X(ff_ac3_band_start_tab)
+        movrelx         r4,  X(ff_ac3_bin_to_band_tab), r11
+        movrelx         lr,  X(ff_ac3_band_start_tab)
         ldm             r5,  {r5-r7}
         ldrb            r4,  [r4, r2]
         add             r1,  r1,  r2,  lsl #1           @ psd + start

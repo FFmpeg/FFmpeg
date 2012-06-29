@@ -116,9 +116,8 @@ function vp3_idct_start_neon
     vadd.s16        q1,  q8,  q12
     vsub.s16        q8,  q8,  q12
     vld1.64         {d28-d31}, [r2,:128]!
-endfunc
 
-function vp3_idct_core_neon
+vp3_idct_core_neon:
     vmull.s16       q2,  d18, xC1S7     // (ip[1] * C1) << 16
     vmull.s16       q3,  d19, xC1S7
     vmull.s16       q4,  d2,  xC4S4     // ((ip[0] + ip[4]) * C4) << 16

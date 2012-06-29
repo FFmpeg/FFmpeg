@@ -143,7 +143,7 @@ function fft16_neon
         vswp            d29, d30                @ q14{r12,i12,i14,r15} q15{r13,i13,i15,r14}
         vadd.f32        q0,  q12, q13           @ {t1,t2,t5,t6}
         vadd.f32        q1,  q14, q15           @ {t1a,t2a,t5a,t6a}
-        movrel          r2,  X(ff_cos_16)
+        movrelx         r2,  X(ff_cos_16)
         vsub.f32        q13, q12, q13           @ {t3,t4,t7,t8}
         vrev64.32       d1,  d1
         vsub.f32        q15, q14, q15           @ {t3a,t4a,t7a,t8a}
@@ -290,7 +290,7 @@ function fft\n\()_neon
         bl              fft\n4\()_neon
         mov             r0,  r4
         pop             {r4, lr}
-        movrel          r1,  X(ff_cos_\n)
+        movrelx         r1,  X(ff_cos_\n)
         mov             r2,  #\n4/2
         b               fft_pass_neon
 endfunc
