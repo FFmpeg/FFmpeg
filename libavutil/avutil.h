@@ -29,7 +29,7 @@
 /*
  * @mainpage
  *
- * @section libav_intro Introduction
+ * @section ffmpeg_intro Introduction
  *
  * This document describes the usage of the different libraries
  * provided by FFmpeg.
