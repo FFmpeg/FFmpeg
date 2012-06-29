@@ -25,12 +25,15 @@
 
 #include "libavutil/eval.h"
 #include "libavutil/fifo.h"
-#include "libavcodec/dsputil.h"
 #include "libavutil/internal.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
+
+#if CONFIG_AVCODEC
+#include "libavcodec/dsputil.h"
+#endif
 
 static const char *const var_names[] = {
     "TB",                ///< timebase
@@ -116,9 +119,11 @@ typedef struct {
     AVExpr *expr;
     double var_values[VAR_VARS_NB];
     int do_scene_detect;            ///< 1 if the expression requires scene detection variables, 0 otherwise
+#if CONFIG_AVCODEC
     AVCodecContext *avctx;          ///< codec context required for the DSPContext (scene detect only)
     DSPContext c;                   ///< context providing optimized SAD methods   (scene detect only)
     double prev_mafd;               ///< previous MAFD                             (scene detect only)
+#endif
     AVFilterBufferRef *prev_picref; ///< previous frame                            (scene detect only)
     double select;
     int cache_frames;
@@ -143,6 +148,10 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     }
 
     select->do_scene_detect = args && strstr(args, "scene");
+    if (select->do_scene_detect && !CONFIG_AVCODEC) {
+        av_log(ctx, AV_LOG_ERROR, "Scene detection is not available without libavcodec.\n");
+        return AVERROR(EINVAL);
+    }
     return 0;
 }
 
@@ -175,7 +184,7 @@ static int config_input(AVFilterLink *inlink)
     select->var_values[VAR_INTERLACE_TYPE_T] = INTERLACE_TYPE_T;
     select->var_values[VAR_INTERLACE_TYPE_B] = INTERLACE_TYPE_B;
 
-    if (select->do_scene_detect) {
+    if (CONFIG_AVCODEC && select->do_scene_detect) {
         select->avctx = avcodec_alloc_context3(NULL);
         if (!select->avctx)
             return AVERROR(ENOMEM);
@@ -184,6 +193,7 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
+#if CONFIG_AVCODEC
 static double get_scene_score(AVFilterContext *ctx, AVFilterBufferRef *picref)
 {
     double ret = 0;
@@ -217,6 +227,7 @@ static double get_scene_score(AVFilterContext *ctx, AVFilterBufferRef *picref)
     select->prev_picref = avfilter_ref_buffer(picref, ~0);
     return ret;
 }
+#endif
 
 #define D2TS(d)  (isnan(d) ? AV_NOPTS_VALUE : (int64_t)(d))
 #define TS2D(ts) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts))
@@ -227,7 +238,7 @@ static int select_frame(AVFilterContext *ctx, AVFilterBufferRef *picref)
     AVFilterLink *inlink = ctx->inputs[0];
     double res;
 
-    if (select->do_scene_detect)
+    if (CONFIG_AVCODEC && select->do_scene_detect)
         select->var_values[VAR_SCENE] = get_scene_score(ctx, picref);
     if (isnan(select->var_values[VAR_START_PTS]))
         select->var_values[VAR_START_PTS] = TS2D(picref->pts);
