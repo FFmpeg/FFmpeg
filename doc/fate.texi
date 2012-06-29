@@ -121,8 +121,8 @@ present in $workdir as specified in the configuration file:
     @item version
 @end itemize
 
-  When you have everything working properly you can create an SSH key and
-send its public part to the FATE server administrator who can be contacted
+  When you have everything working properly you can create an SSH key pair
+and send the public key to the FATE server administrator who can be contacted
 at the email address @email{fate-admin@@ffmpeg.org}.
 
   Configure your SSH client to use public key authentication with that key
