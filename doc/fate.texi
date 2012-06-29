@@ -187,7 +187,8 @@ the synchronisation of the samples directory.
     through @command{ssh}.
 @end table
 
-Example:
+@section Examples
+
 @example
 make V=1 SAMPLES=/var/fate/samples THREADS=2 CPUFLAGS=mmx fate
 @end example
