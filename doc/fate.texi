@@ -133,6 +133,11 @@ The FATE server's fingerprint is:
 
   b1:31:c8:79:3f:04:1d:f8:f2:23:26:5a:fd:55:fa:92
 
+  If you have problems connecting to the FATE server, it may help to try out
+the @command{ssh} command with one or more @option{-v} options. You should
+get detailed output concerning your SSH configuration and the authentication
+process.
+
   The only thing left is to automate the execution of the fate.sh script and
 the synchronisation of the samples directory.
 
