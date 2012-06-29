@@ -219,7 +219,10 @@ static int jacosub_read_header(AVFormatContext *s)
             break;
         case 'T': // ...but must be placed after TIMERES
             jacosub->timeres = strtol(p, NULL, 10);
-            av_bprintf(&header, "#T %s", p);
+            if (!jacosub->timeres)
+                jacosub->timeres = 30;
+            else
+                av_bprintf(&header, "#T %s", p);
             break;
         }
     }
