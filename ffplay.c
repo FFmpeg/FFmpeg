@@ -1985,6 +1985,7 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
             if (is->swr_ctx) {
                 const uint8_t *in[] = { is->frame->data[0] };
                 uint8_t *out[] = {is->audio_buf2};
+                int out_count = sizeof(is->audio_buf2) / is->audio_tgt.channels / av_get_bytes_per_sample(is->audio_tgt.fmt);
                 if (wanted_nb_samples != is->frame->nb_samples) {
                     if (swr_set_compensation(is->swr_ctx, (wanted_nb_samples - is->frame->nb_samples) * is->audio_tgt.freq / dec->sample_rate,
                                                 wanted_nb_samples * is->audio_tgt.freq / dec->sample_rate) < 0) {
@@ -1992,13 +1993,12 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
                         break;
                     }
                 }
-                len2 = swr_convert(is->swr_ctx, out, sizeof(is->audio_buf2) / is->audio_tgt.channels / av_get_bytes_per_sample(is->audio_tgt.fmt),
-                                                in, is->frame->nb_samples);
+                len2 = swr_convert(is->swr_ctx, out, out_count, in, is->frame->nb_samples);
                 if (len2 < 0) {
                     fprintf(stderr, "swr_convert() failed\n");
                     break;
                 }
-                if (len2 == sizeof(is->audio_buf2) / is->audio_tgt.channels / av_get_bytes_per_sample(is->audio_tgt.fmt)) {
+                if (len2 == out_count) {
                     fprintf(stderr, "warning: audio buffer is probably too small\n");
                     swr_init(is->swr_ctx);
                 }
