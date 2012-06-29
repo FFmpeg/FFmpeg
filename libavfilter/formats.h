@@ -156,7 +156,7 @@ AVFilterFormats *ff_make_format_list(const int *fmts);
 int ff_add_format(AVFilterFormats **avff, int64_t fmt);
 
 /**
- * Return a list of all formats supported by Libav for the given media type.
+ * Return a list of all formats supported by FFmpeg for the given media type.
  */
 AVFilterFormats *ff_all_formats(enum AVMediaType type);
 
