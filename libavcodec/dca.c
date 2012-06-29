@@ -126,7 +126,7 @@ enum DCAXxchSpeakerMask {
     DCA_XXCH_REAR_LOW_RIGHT        = 0x8000000,
 };
 
-static const uint32_t map_xxch_to_ffmpeg[28] = {
+static const uint32_t map_xxch_to_native[28] = {
     AV_CH_FRONT_CENTER,
     AV_CH_FRONT_LEFT,
     AV_CH_FRONT_RIGHT,
@@ -2272,7 +2272,7 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
         channel_layout = 0;
         for (i = 0; i < s->xxch_nbits_spk_mask; ++i) {
             if (channel_mask & (1 << i)) {
-                channel_layout |= map_xxch_to_ffmpeg[i];
+                channel_layout |= map_xxch_to_native[i];
             }
         }
 
@@ -2293,7 +2293,7 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
                                   : s->xxch_core_spkmask;
                 for (i = 0; i < s->xxch_nbits_spk_mask; i++) {
                     if (mask & ~(DCA_XXCH_LFE1 | DCA_XXCH_LFE2) & (1 << i)) {
-                        lavc = map_xxch_to_ffmpeg[i];
+                        lavc = map_xxch_to_native[i];
                         posn = av_popcount(channel_layout & (lavc - 1));
                         s->xxch_order_tab[j++] = posn;
                     }
