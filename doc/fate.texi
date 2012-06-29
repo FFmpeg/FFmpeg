@@ -85,7 +85,7 @@ To use a custom wrapper to run the test, pass @option{--target-exec} to
 @chapter Submitting the results to the FFmpeg result aggregation server
 
   To submit your results to the server you should run fate through the
-shell script tests/fate.sh from the FFmpeg sources. This script needs
+shell script @file{tests/fate.sh} from the FFmpeg sources. This script needs
 to be invoked with a configuration file as its first argument.
 
 @example
