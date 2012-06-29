@@ -2081,7 +2081,7 @@ static int stream_component_open(VideoState *is, int stream_index)
         return -1;
     avctx = ic->streams[stream_index]->codec;
 
-    opts = filter_codec_opts(codec_opts, avctx->codec_id, ic, ic->streams[stream_index]);
+    opts = filter_codec_opts(codec_opts, avctx->codec_id, ic, ic->streams[stream_index], NULL);
 
     codec = avcodec_find_decoder(avctx->codec_id);
     avctx->debug_mv          = debug_mv;
