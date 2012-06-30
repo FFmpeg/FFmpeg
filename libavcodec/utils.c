@@ -1103,8 +1103,10 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
     /* check for valid frame size */
     if (frame) {
         if (avctx->codec->capabilities & CODEC_CAP_SMALL_LAST_FRAME) {
-            if (frame->nb_samples > avctx->frame_size)
+            if (frame->nb_samples > avctx->frame_size) {
+                av_log(avctx, AV_LOG_ERROR, "more samples than frame size (avcodec_encode_audio2)\n");
                 return AVERROR(EINVAL);
+            }
         } else if (!(avctx->codec->capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE)) {
             if (frame->nb_samples < avctx->frame_size &&
                 !avctx->internal->last_audio_frame) {
@@ -1116,8 +1118,10 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
                 avctx->internal->last_audio_frame = 1;
             }
 
-            if (frame->nb_samples != avctx->frame_size)
+            if (frame->nb_samples != avctx->frame_size) {
+                av_log(avctx, AV_LOG_ERROR, "nb_samples (%d) != frame_size (%d) (avcodec_encode_audio2)\n", frame->nb_samples, avctx->frame_size);
                 return AVERROR(EINVAL);
+            }
         }
     }
 
