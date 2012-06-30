@@ -336,7 +336,7 @@ static int encode_frame(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE], 
     init_put_bits(&s->pb, buf, buf_size);
 
     if (s->use_bit_reservoir) {
-        assert(0);//FIXME not implemented
+        av_assert0(0);//FIXME not implemented
     }else{
         if(encode_block(s, src_coefs, total_gain) < 0)
             return INT_MAX;
