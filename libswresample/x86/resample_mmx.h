@@ -28,7 +28,7 @@ DECLARE_ALIGNED(16, const uint64_t, ff_resample_int16_rounder)[2]    = { 0x00000
 
 #define COMMON_CORE_INT16_MMX2 \
     x86_reg len= -2*c->filter_length;\
-__asm volatile(\
+__asm__ volatile(\
     "movq "MANGLE(ff_resample_int16_rounder)", %%mm0 \n\t"\
     "1:                         \n\t"\
     "movq    (%1, %0), %%mm1    \n\t"\
@@ -49,7 +49,7 @@ __asm volatile(\
 
 #define COMMON_CORE_INT16_SSSE3 \
     x86_reg len= -2*c->filter_length;\
-__asm volatile(\
+__asm__ volatile(\
     "movdqa "MANGLE(ff_resample_int16_rounder)", %%xmm0 \n\t"\
     "1:                           \n\t"\
     "movdqu  (%1, %0), %%xmm1     \n\t"\
