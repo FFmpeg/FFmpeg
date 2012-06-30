@@ -37,7 +37,7 @@ __asm__ volatile(\
     "add       $8, %0           \n\t"\
     " js 1b                     \n\t"\
     "pshufw $0x0E, %%mm0, %%mm1 \n\t"\
-    "paddd %%mm1, %%mm0 \n\t"\
+    "paddd %%mm1, %%mm0         \n\t"\
     "psrad    $15, %%mm0        \n\t"\
     "packssdw %%mm0, %%mm0      \n\t"\
     "movd %%mm0, (%3)           \n\t"\
