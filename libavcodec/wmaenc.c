@@ -352,7 +352,7 @@ static int encode_superframe(AVCodecContext *avctx, AVPacket *avpkt,
 {
     WMACodecContext *s = avctx->priv_data;
     const int16_t *samples = (const int16_t *)frame->data[0];
-    int i, total_gain, ret;
+    int i, total_gain, ret, error;
 
     s->block_len_bits= s->frame_len_bits; //required by non variable block len
     s->block_len = 1 << s->block_len_bits;
@@ -376,13 +376,14 @@ static int encode_superframe(AVCodecContext *avctx, AVPacket *avpkt,
 
     total_gain= 128;
     for(i=64; i; i>>=1){
-        int error = encode_frame(s, s->coefs, avpkt->data, avpkt->size,
+        error = encode_frame(s, s->coefs, avpkt->data, avpkt->size,
                                  total_gain - i);
         if(error<=0)
             total_gain-= i;
     }
 
-    encode_frame(s, s->coefs, avpkt->data, avpkt->size, total_gain);
+    while(total_gain <= 128 && error > 0)
+        error = encode_frame(s, s->coefs, avpkt->data, avpkt->size, total_gain++);
     av_assert0((put_bits_count(&s->pb) & 7) == 0);
     i= s->block_align - (put_bits_count(&s->pb)+7)/8;
     av_assert0(i>=0);
