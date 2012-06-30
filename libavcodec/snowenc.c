@@ -836,7 +836,7 @@ static int encode_subband_c0run(SnowContext *s, SubBand *b, IDWTELEM *src, IDWTE
 
     if(1){
         int run=0;
-        int runs[w*h];
+        int *runs = s->run_buffer;
         int run_index=0;
         int max_index;
 

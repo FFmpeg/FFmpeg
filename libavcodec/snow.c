@@ -451,6 +451,7 @@ av_cold int ff_snow_common_init(AVCodecContext *avctx){
     FF_ALLOCZ_OR_GOTO(avctx, s->spatial_dwt_buffer,  width * height * sizeof(DWTELEM),  fail); //FIXME this does not belong here
     FF_ALLOCZ_OR_GOTO(avctx, s->temp_dwt_buffer,     width * sizeof(DWTELEM),  fail);
     FF_ALLOCZ_OR_GOTO(avctx, s->temp_idwt_buffer,    width * sizeof(IDWTELEM), fail);
+    FF_ALLOC_OR_GOTO(avctx,  s->run_buffer,          ((width + 1) >> 1) * ((height + 1) >> 1) * sizeof(*s->run_buffer), fail);
 
     for(i=0; i<MAX_REF_FRAMES; i++)
         for(j=0; j<MAX_REF_FRAMES; j++)
@@ -637,6 +638,7 @@ av_cold void ff_snow_common_end(SnowContext *s)
     av_freep(&s->temp_dwt_buffer);
     av_freep(&s->spatial_idwt_buffer);
     av_freep(&s->temp_idwt_buffer);
+    av_freep(&s->run_buffer);
 
     s->m.me.temp= NULL;
     av_freep(&s->m.me.scratchpad);

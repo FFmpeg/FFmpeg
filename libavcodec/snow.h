@@ -135,6 +135,7 @@ typedef struct SnowContext{
     DWTELEM *temp_dwt_buffer;
     IDWTELEM *spatial_idwt_buffer;
     IDWTELEM *temp_idwt_buffer;
+    int *run_buffer;
     int colorspace_type;
     int chroma_h_shift;
     int chroma_v_shift;
