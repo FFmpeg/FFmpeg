@@ -568,6 +568,8 @@ static int64_t find_duration(NUTContext *nut, int64_t filesize)
         duration = FFMAX(duration, ts);
         pos++;
     }
+    if(duration > 0)
+        s->duration_estimation_method = AVFMT_DURATION_FROM_PTS;
     return duration;
 }
 
