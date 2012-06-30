@@ -853,7 +853,7 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
 
     snprintf(args, sizeof(args), "time_base=%d/%d:sample_rate=%d:sample_fmt=%s"
              ":channel_layout=0x%"PRIx64,
-             ist->st->time_base.num, ist->st->time_base.den,
+             1, ist->st->codec->sample_rate,
              ist->st->codec->sample_rate,
              av_get_sample_fmt_name(ist->st->codec->sample_fmt),
              ist->st->codec->channel_layout);
@@ -2029,6 +2029,10 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
             }
     }
 
+    if (decoded_frame->pts != AV_NOPTS_VALUE)
+        decoded_frame->pts = av_rescale_q(decoded_frame->pts,
+                                          ist->st->time_base,
+                                          (AVRational){1, ist->st->codec->sample_rate});
     for (i = 0; i < ist->nb_filters; i++)
         av_buffersrc_write_frame(ist->filters[i]->filter, decoded_frame);
 
