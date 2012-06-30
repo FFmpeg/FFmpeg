@@ -119,7 +119,9 @@ section .text
     pand    m2, m6
     pand    m3, m2  ; d final
 
-    PSIGNW  m3, m7
+    psraw   m7, 15
+    pxor    m3, m7
+    psubw   m3, m7
     psubw   m0, m3
     paddw   m1, m3
     packuswb m0, m0
@@ -284,7 +286,6 @@ cglobal vc1_h_loop_filter8_sse2, 3,6,8
     RET
 
 %define PABSW PABSW_SSSE3
-%define PSIGNW PSIGNW_SSSE3
 
 INIT_MMX
 ; void ff_vc1_v_loop_filter4_ssse3(uint8_t *src, int stride, int pq)

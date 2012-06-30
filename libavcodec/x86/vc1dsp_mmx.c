@@ -809,7 +809,7 @@ void ff_vc1dsp_init_mmx(VC1DSPContext *dsp)
 #if HAVE_YASM
     if (mm_flags & AV_CPU_FLAG_MMX) {
     }
-    return;
+
     if (mm_flags & AV_CPU_FLAG_MMX2) {
         ASSIGN_LF(mmx2);
     }

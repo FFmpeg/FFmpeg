@@ -1128,8 +1128,8 @@ void ff_dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
 #endif
 
         c->pix_norm1 = pix_norm1_mmx;
-        c->sse[0] = (HAVE_YASM && mm_flags & AV_CPU_FLAG_SSE2) ? ff_sse16_sse2 : sse16_mmx;
-          c->sse[1] = sse8_mmx;
+        c->sse[0] = sse16_mmx;
+        c->sse[1] = sse8_mmx;
         c->vsad[4]= vsad_intra16_mmx;
 
         c->nsse[0] = nsse16_mmx;
@@ -1165,9 +1165,12 @@ void ff_dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
             if (bit_depth <= 8)
                 c->get_pixels = get_pixels_sse2;
             c->sum_abs_dctelem= sum_abs_dctelem_sse2;
-#if HAVE_YASM && HAVE_ALIGNED_STACK
+#if HAVE_YASM
+            c->sse[0] = ff_sse16_sse2;
+#if HAVE_ALIGNED_STACK
             c->hadamard8_diff[0]= ff_hadamard8_diff16_sse2;
             c->hadamard8_diff[1]= ff_hadamard8_diff_sse2;
+#endif
 #endif
         }
 

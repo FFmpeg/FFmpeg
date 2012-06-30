@@ -1265,6 +1265,7 @@ HAVE_LIST="
     struct_group_source_req
     struct_ip_mreq_source
     struct_ipv6_mreq
+    struct_pollfd
     struct_rusage_ru_maxrss
     struct_sockaddr_in6
     struct_sockaddr_sa_len
@@ -3125,6 +3126,7 @@ if enabled network; then
     check_type netinet/in.h "struct ip_mreq_source" -D_BSD_SOURCE
     check_type netinet/in.h "struct ipv6_mreq" -D_DARWIN_C_SOURCE
     check_type netinet/in.h "struct sockaddr_in6"
+    check_type poll.h "struct pollfd"
     check_type "sys/types.h sys/socket.h" "struct sockaddr_storage"
     check_struct "sys/types.h sys/socket.h" "struct sockaddr" sa_len
     check_header netinet/sctp.h
@@ -3141,6 +3143,7 @@ if enabled network; then
         check_type ws2tcpip.h "struct group_source_req"
         check_type ws2tcpip.h "struct ip_mreq_source"
         check_type ws2tcpip.h "struct ipv6_mreq"
+        check_type winsock2.h "struct pollfd"
         check_type ws2tcpip.h "struct sockaddr_in6"
         check_type ws2tcpip.h "struct sockaddr_storage"
         check_struct winsock2.h "struct sockaddr" sa_len
