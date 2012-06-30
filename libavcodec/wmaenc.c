@@ -374,7 +374,6 @@ static int encode_superframe(AVCodecContext *avctx, AVPacket *avpkt,
     if ((ret = ff_alloc_packet2(avctx, avpkt, 2 * MAX_CODED_SUPERFRAME_SIZE)))
         return ret;
 
-#if 1
     total_gain= 128;
     for(i=64; i; i>>=1){
         int error = encode_frame(s, s->coefs, avpkt->data, avpkt->size,
@@ -382,22 +381,6 @@ static int encode_superframe(AVCodecContext *avctx, AVPacket *avpkt,
         if(error<=0)
             total_gain-= i;
     }
-#else
-    total_gain= 90;
-    best = encode_frame(s, s->coefs, avpkt->data, avpkt->size, total_gain);
-    for(i=32; i; i>>=1){
-        int scoreL = encode_frame(s, s->coefs, avpkt->data, avpkt->size, total_gain - i);
-        int scoreR = encode_frame(s, s->coefs, avpkt->data, avpkt->size, total_gain + i);
-        av_log(NULL, AV_LOG_ERROR, "%d %d %d (%d)\n", scoreL, best, scoreR, total_gain);
-        if(scoreL < FFMIN(best, scoreR)){
-            best = scoreL;
-            total_gain -= i;
-        }else if(scoreR < best){
-            best = scoreR;
-            total_gain += i;
-        }
-    }
-#endif
 
     encode_frame(s, s->coefs, avpkt->data, avpkt->size, total_gain);
     av_assert0((put_bits_count(&s->pb) & 7) == 0);
