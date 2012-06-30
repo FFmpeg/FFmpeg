@@ -91,7 +91,7 @@ static int file_open(URLContext *h, const char *filename, int flags)
         return AVERROR(errno);
     h->priv_data = (void *) (intptr_t) fd;
 
-    h->is_streamed = 0==fstat(fd, &st) && S_ISFIFO(st.st_mode);
+    h->is_streamed = !fstat(fd, &st) && S_ISFIFO(st.st_mode);
 
     return 0;
 }
