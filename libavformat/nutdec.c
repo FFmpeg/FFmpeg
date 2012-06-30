@@ -898,7 +898,6 @@ static int64_t nut_read_timestamp(AVFormatContext *s, int stream_index,
     do {
         pos = find_startcode(bc, SYNCPOINT_STARTCODE, pos) + 1;
         if (pos < 1) {
-            av_assert0(nut->next_startcode == 0);
             av_log(s, AV_LOG_ERROR, "read_timestamp failed.\n");
             return AV_NOPTS_VALUE;
         }
