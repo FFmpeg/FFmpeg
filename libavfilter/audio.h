@@ -73,4 +73,11 @@ AVFilterBufferRef *ff_get_audio_buffer(AVFilterLink *link, int perms,
  */
 void ff_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref);
 
+/**
+ * Send a buffer of audio samples to the next link, without checking
+ * min_samples.
+ */
+void ff_filter_samples_framed(AVFilterLink *link,
+                              AVFilterBufferRef *samplesref);
+
 #endif /* AVFILTER_AUDIO_H */

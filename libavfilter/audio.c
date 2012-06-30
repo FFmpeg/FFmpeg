@@ -156,7 +156,8 @@ static void default_filter_samples(AVFilterLink *link,
     ff_filter_samples(link->dst->outputs[0], samplesref);
 }
 
-void ff_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
+void ff_filter_samples_framed(AVFilterLink *link,
+                              AVFilterBufferRef *samplesref)
 {
     void (*filter_samples)(AVFilterLink *, AVFilterBufferRef *);
     AVFilterPad *dst = link->dstpad;
@@ -194,4 +195,49 @@ void ff_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
     pts = buf_out->pts;
     filter_samples(link, buf_out);
     ff_update_link_current_pts(link, pts);
+}
+
+void ff_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
+{
+    int insamples = samplesref->audio->nb_samples, inpos = 0, nb_samples;
+    AVFilterBufferRef *pbuf = link->partial_buf;
+    int nb_channels = av_get_channel_layout_nb_channels(link->channel_layout);
+
+    if (!link->min_samples ||
+        (!pbuf &&
+         insamples >= link->min_samples && insamples <= link->max_samples)) {
+        ff_filter_samples_framed(link, samplesref);
+        return;
+    }
+    /* Handle framing (min_samples, max_samples) */
+    while (insamples) {
+        if (!pbuf) {
+            AVRational samples_tb = { 1, link->sample_rate };
+            int perms = link->dstpad->min_perms | AV_PERM_WRITE;
+            pbuf = ff_get_audio_buffer(link, perms, link->partial_buf_size);
+            if (!pbuf) {
+                av_log(link->dst, AV_LOG_WARNING,
+                       "Samples dropped due to memory allocation failure.\n");
+                return;
+            }
+            avfilter_copy_buffer_ref_props(pbuf, samplesref);
+            pbuf->pts = samplesref->pts +
+                        av_rescale_q(inpos, samples_tb, link->time_base);
+            pbuf->audio->nb_samples = 0;
+        }
+        nb_samples = FFMIN(insamples,
+                           link->partial_buf_size - pbuf->audio->nb_samples);
+        av_samples_copy(pbuf->extended_data, samplesref->extended_data,
+                        pbuf->audio->nb_samples, inpos,
+                        nb_samples, nb_channels, link->format);
+        inpos                   += nb_samples;
+        insamples               -= nb_samples;
+        pbuf->audio->nb_samples += nb_samples;
+        if (pbuf->audio->nb_samples >= link->min_samples) {
+            ff_filter_samples_framed(link, pbuf);
+            pbuf = NULL;
+        }
+    }
+    avfilter_unref_buffer(samplesref);
+    link->partial_buf = pbuf;
 }

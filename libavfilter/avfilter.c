@@ -28,6 +28,7 @@
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
+#include "audio.h"
 
 char *ff_get_ref_perms_string(char *buf, size_t buf_size, int perms)
 {
@@ -320,13 +321,20 @@ void ff_tlog_link(void *ctx, AVFilterLink *link, int end)
 
 int ff_request_frame(AVFilterLink *link)
 {
+    int ret = -1;
     FF_TPRINTF_START(NULL, request_frame); ff_tlog_link(NULL, link, 1);
 
     if (link->srcpad->request_frame)
-        return link->srcpad->request_frame(link);
+        ret = link->srcpad->request_frame(link);
     else if (link->src->inputs[0])
-        return ff_request_frame(link->src->inputs[0]);
-    else return -1;
+        ret = ff_request_frame(link->src->inputs[0]);
+    if (ret == AVERROR_EOF && link->partial_buf) {
+        AVFilterBufferRef *pbuf = link->partial_buf;
+        link->partial_buf = NULL;
+        ff_filter_samples_framed(link, pbuf);
+        return 0;
+    }
+    return ret;
 }
 
 int ff_poll_frame(AVFilterLink *link)
