@@ -2425,10 +2425,20 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
         ist->resample_channels       = avctx->channels;
 
         for (i = 0; i < nb_filtergraphs; i++)
-            if (ist_in_filtergraph(filtergraphs[i], ist) &&
-                configure_filtergraph(filtergraphs[i]) < 0) {
-                av_log(NULL, AV_LOG_FATAL, "Error reinitializing filters!\n");
-                exit_program(1);
+            if (ist_in_filtergraph(filtergraphs[i], ist)) {
+                FilterGraph *fg = filtergraphs[i];
+                int j;
+                if (configure_filtergraph(fg) < 0) {
+                    av_log(NULL, AV_LOG_FATAL, "Error reinitializing filters!\n");
+                    exit_program(1);
+                }
+                for (j = 0; j < fg->nb_outputs; j++) {
+                    OutputStream *ost = fg->outputs[j]->ost;
+                    if (ost->enc->type == AVMEDIA_TYPE_AUDIO &&
+                        !(ost->enc->capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE))
+                        av_buffersink_set_frame_size(ost->filter->filter,
+                                                     ost->st->codec->frame_size);
+                }
             }
     }
 
