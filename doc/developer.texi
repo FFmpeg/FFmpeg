@@ -488,6 +488,10 @@ send a reminder by email. Your patch should eventually be dealt with.
 @item
     Lines with similar content should be aligned vertically when doing so
     improves readability.
+@item
+    Make sure you check the return values of function and return appropriate
+    error codes. Especially memory allocation functions like @code{malloc()}
+    are notoriously left unchecked, which is a serious problem.
 @end enumerate
 
 @section Patch review process
