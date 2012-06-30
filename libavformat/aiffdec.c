@@ -26,6 +26,7 @@
 #include "pcm.h"
 #include "aiff.h"
 #include "isom.h"
+#include "id3v2.h"
 
 #define AIFF                    0
 #define AIFF_C_VERSION1         0xA2805140
@@ -195,6 +196,7 @@ static int aiff_read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     AVStream * st;
     AIFFInputContext *aiff = s->priv_data;
+    ID3v2ExtraMeta *id3v2_extra_meta = NULL;
 
     /* check FORM header */
     filesize = get_tag(pb, &tag);
@@ -230,6 +232,10 @@ static int aiff_read_header(AVFormatContext *s)
                 return st->nb_frames;
             if (offset > 0) // COMM is after SSND
                 goto got_sound;
+            break;
+        case MKTAG('I', 'D', '3', ' '):
+            ff_id3v2_read(s, ID3v2_DEFAULT_MAGIC, &id3v2_extra_meta);
+            ff_id3v2_free_extra_meta(&id3v2_extra_meta);
             break;
         case MKTAG('F', 'V', 'E', 'R'):     /* Version chunk */
             version = avio_rb32(pb);
