@@ -379,7 +379,7 @@ static int encode_superframe(AVCodecContext *avctx, AVPacket *avpkt,
     for(i=64; i; i>>=1){
         int error = encode_frame(s, s->coefs, avpkt->data, avpkt->size,
                                  total_gain - i);
-        if(error<0)
+        if(error<=0)
             total_gain-= i;
     }
 #else
