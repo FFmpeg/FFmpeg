@@ -31,6 +31,9 @@
 
 #define NUT_MAX_STREAMS 256    /* arbitrary sanity check value */
 
+static int64_t nut_read_timestamp(AVFormatContext *s, int stream_index,
+                                  int64_t *pos_arg, int64_t pos_limit);
+
 static int get_str(AVIOContext *bc, char *string, unsigned int maxlen)
 {
     unsigned int len = ffio_read_varlen(bc);
@@ -551,6 +554,23 @@ static int decode_syncpoint(NUTContext *nut, int64_t *ts, int64_t *back_ptr)
     return 0;
 }
 
+//FIXME calculate exactly, this is just a good approximation.
+static int64_t find_duration(NUTContext *nut, int64_t filesize)
+{
+    AVFormatContext *s = nut->avf;
+    int64_t duration = 0;
+
+    int64_t pos = FFMAX(0, filesize - 2*nut->max_distance);
+    for(;;){
+        int64_t ts = nut_read_timestamp(s, -1, &pos, INT64_MAX);
+        if(ts < 0)
+            break;
+        duration = FFMAX(duration, ts);
+        pos++;
+    }
+    return duration;
+}
+
 static int find_and_decode_index(NUTContext *nut)
 {
     AVFormatContext *s = nut->avf;
@@ -569,6 +589,9 @@ static int find_and_decode_index(NUTContext *nut)
     avio_seek(bc, filesize - avio_rb64(bc), SEEK_SET);
     if (avio_rb64(bc) != INDEX_STARTCODE) {
         av_log(s, AV_LOG_ERROR, "no index at the end\n");
+
+        if(s->duration<=0)
+            s->duration = find_duration(nut, filesize);
         return -1;
     }
 
