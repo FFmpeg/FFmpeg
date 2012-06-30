@@ -20,6 +20,7 @@
 
 #include "libavutil/x86_cpu.h"
 #include "libavutil/cpu.h"
+#include "libswresample/swresample_internal.h"
 
 int swri_resample_int16_mmx2 (struct ResampleContext *c, int16_t *dst, const int16_t *src, int *consumed, int src_size, int dst_size, int update_ctx);
 int swri_resample_int16_ssse3(struct ResampleContext *c, int16_t *dst, const int16_t *src, int *consumed, int src_size, int dst_size, int update_ctx);
