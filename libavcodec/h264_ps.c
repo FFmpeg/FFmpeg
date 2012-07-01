@@ -380,7 +380,12 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
     sps->poc_type= get_ue_golomb_31(&s->gb);
 
     if(sps->poc_type == 0){ //FIXME #define
-        sps->log2_max_poc_lsb= get_ue_golomb(&s->gb) + 4;
+        unsigned t = get_ue_golomb(&s->gb);
+        if(t>12){
+            av_log(h->s.avctx, AV_LOG_ERROR, "log2_max_poc_lsb (%d) is out of range\n", t);
+            goto fail;
+        }
+        sps->log2_max_poc_lsb= t + 4;
     } else if(sps->poc_type == 1){//FIXME #define
         sps->delta_pic_order_always_zero_flag= get_bits1(&s->gb);
         sps->offset_for_non_ref_pic= get_se_golomb(&s->gb);
