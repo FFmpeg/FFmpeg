@@ -133,13 +133,9 @@ static int smacker_decode_bigtree(GetBitContext *gb, HuffContext *hc, DBCtx *ctx
         return -1;
     }
     if(!get_bits1(gb)){ //Leaf
-        int val, i1, i2, b1, b2;
-        b1 = get_bits_count(gb);
+        int val, i1, i2;
         i1 = ctx->v1->table ? get_vlc2(gb, ctx->v1->table, SMKTREE_BITS, 3) : 0;
-        b1 = get_bits_count(gb) - b1;
-        b2 = get_bits_count(gb);
         i2 = ctx->v2->table ? get_vlc2(gb, ctx->v2->table, SMKTREE_BITS, 3) : 0;
-        b2 = get_bits_count(gb) - b2;
         if (i1 < 0 || i2 < 0)
             return -1;
         val = ctx->recode1[i1] | (ctx->recode2[i2] << 8);
