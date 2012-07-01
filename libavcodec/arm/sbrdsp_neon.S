@@ -307,8 +307,8 @@ function ff_sbr_hf_apply_noise_0_neon, export=1
         vmov.i32        d3,  #0
 .Lhf_apply_noise_0:
         push            {r4,lr}
+        movrelx         r4,  X(ff_sbr_noise_table)
         ldr             r12, [sp, #12]
-        movrel          r4,  X(ff_sbr_noise_table)
         add             r3,  r3,  #1
         bfc             r3,  #9,  #23
         sub             r12, r12, #1
@@ -355,8 +355,8 @@ function ff_sbr_hf_apply_noise_1_neon, export=1
         eor             lr,  r12, #1<<31
         vmov            d3,  r12, lr
 .Lhf_apply_noise_1:
+        movrelx         r4,  X(ff_sbr_noise_table)
         ldr             r12, [sp, #12]
-        movrel          r4,  X(ff_sbr_noise_table)
         add             r3,  r3,  #1
         bfc             r3,  #9,  #23
         sub             r12, r12, #1

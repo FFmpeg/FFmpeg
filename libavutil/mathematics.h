@@ -25,6 +25,7 @@
 #include <math.h>
 #include "attributes.h"
 #include "rational.h"
+#include "intfloat.h"
 
 #ifndef M_E
 #define M_E            2.7182818284590452354   /* e */
@@ -51,10 +52,10 @@
 #define M_SQRT2        1.41421356237309504880  /* sqrt(2) */
 #endif
 #ifndef NAN
-#define NAN            (0.0/0.0)
+#define NAN            av_int2float(0x7fc00000)
 #endif
 #ifndef INFINITY
-#define INFINITY       (1.0/0.0)
+#define INFINITY       av_int2float(0x7f800000)
 #endif
 
 /**

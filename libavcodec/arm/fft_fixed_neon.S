@@ -214,7 +214,7 @@ function fft\n\()_neon
         bl              fft\n4\()_neon
         mov             r0,  r4
         pop             {r4, lr}
-        movrel          r1,  X(ff_cos_\n\()_fixed)
+        movrelx         r1,  X(ff_cos_\n\()_fixed)
         mov             r2,  #\n4/2
         b               fft_pass_neon
 endfunc

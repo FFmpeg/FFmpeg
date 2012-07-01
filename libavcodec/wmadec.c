@@ -109,11 +109,6 @@ static int wma_decode_init(AVCodecContext * avctx)
         }
     }
 
-    if(avctx->channels > MAX_CHANNELS){
-        av_log(avctx, AV_LOG_ERROR, "Invalid number of channels (%d)\n", avctx->channels);
-        return -1;
-    }
-
     if(ff_wma_init(avctx, flags2)<0)
         return -1;
 

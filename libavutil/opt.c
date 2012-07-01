@@ -33,6 +33,7 @@
 #include "log.h"
 #include "parseutils.h"
 #include "pixdesc.h"
+#include "mathematics.h"
 
 #if FF_API_FIND_OPT
 //FIXME order them and do a bin search

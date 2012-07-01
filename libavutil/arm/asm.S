@@ -62,7 +62,14 @@ ELF     .eabi_attribute 25, \val
 .endm
 
 .macro  function name, export=0
+        .set            .Lpic_idx, 0
+        .set            .Lpic_gp, 0
     .macro endfunc
+      .if .Lpic_idx
+        .altmacro
+        put_pic         %(.Lpic_idx - 1)
+        .noaltmacro
+      .endif
 ELF     .size   \name, . - \name
         .endfunc
         .purgem endfunc
@@ -106,12 +113,76 @@ ELF     .size   \name, . - \name
 #endif
 .endm
 
+.macro  put_pic         num
+        put_pic_\num
+.endm
+
+.macro  do_def_pic      num, val, label
+    .macro put_pic_\num
+      .if \num
+        .altmacro
+        put_pic         %(\num - 1)
+        .noaltmacro
+      .endif
+\label: .word           \val
+        .purgem         put_pic_\num
+    .endm
+.endm
+
+.macro  def_pic         val, label
+        .altmacro
+        do_def_pic      %.Lpic_idx, \val, \label
+        .noaltmacro
+        .set            .Lpic_idx, .Lpic_idx + 1
+.endm
+
+.macro  ldpic           rd,  val, indir=0
+        ldr             \rd, .Lpicoff\@
+.Lpic\@:
+    .if \indir
+        ldr             \rd, [pc, \rd]
+    .else
+        add             \rd, pc,  \rd
+    .endif
+        def_pic         \val - (.Lpic\@ + (8 >> CONFIG_THUMB)), .Lpicoff\@
+.endm
+
 .macro  movrel rd, val
-#if HAVE_ARMV6T2 && !CONFIG_PIC && !defined(__APPLE__)
+#if CONFIG_PIC
+        ldpic           \rd, \val
+#elif HAVE_ARMV6T2 && !defined(__APPLE__)
         movw            \rd, #:lower16:\val
         movt            \rd, #:upper16:\val
 #else
         ldr             \rd, =\val
+#endif
+.endm
+
+.macro  movrelx         rd,  val, gp
+#if CONFIG_PIC && defined(__ELF__)
+    .ifnb \gp
+      .if .Lpic_gp
+        .unreq          gp
+      .endif
+        gp      .req    \gp
+        ldpic           gp,  _GLOBAL_OFFSET_TABLE_
+    .elseif !.Lpic_gp
+        gp      .req    r12
+        ldpic           gp,  _GLOBAL_OFFSET_TABLE_
+    .endif
+        .set            .Lpic_gp, 1
+        ldr             \rd, .Lpicoff\@
+        ldr             \rd, [gp, \rd]
+        def_pic         \val(GOT), .Lpicoff\@
+#elif CONFIG_PIC && defined(__APPLE__)
+        ldpic           \rd, .Lpic\@, indir=1
+        .non_lazy_symbol_pointer
+.Lpic\@:
+        .indirect_symbol \val
+        .word           0
+        .text
+#else
+        movrel          \rd, \val
 #endif
 .endm
 
