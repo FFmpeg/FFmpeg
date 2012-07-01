@@ -24,9 +24,6 @@
 #include "wma.h"
 #include "libavutil/avassert.h"
 
-#undef NDEBUG
-#include <assert.h>
-
 
 static int encode_init(AVCodecContext * avctx){
     WMACodecContext *s = avctx->priv_data;
@@ -67,7 +64,7 @@ static int encode_init(AVCodecContext * avctx){
         AV_WL32(extradata, flags1);
         AV_WL16(extradata+4, flags2);
     }else
-        assert(0);
+        av_assert0(0);
     avctx->extradata= extradata;
     s->use_exp_vlc = flags2 & 0x0001;
     s->use_bit_reservoir = flags2 & 0x0002;
@@ -151,7 +148,7 @@ static void encode_exp_vlc(WMACodecContext *s, int ch, const int *exp_param){
     q_end = q + s->block_len;
     if (s->version == 1) {
         last_exp= *exp_param++;
-        assert(last_exp-10 >= 0 && last_exp-10 < 32);
+        av_assert0(last_exp-10 >= 0 && last_exp-10 < 32);
         put_bits(&s->pb, 5, last_exp - 10);
         q+= *ptr++;
     }else
@@ -159,7 +156,7 @@ static void encode_exp_vlc(WMACodecContext *s, int ch, const int *exp_param){
     while (q < q_end) {
         int exp = *exp_param++;
         int code = exp - last_exp + 60;
-        assert(code >= 0 && code < 120);
+        av_assert1(code >= 0 && code < 120);
         put_bits(&s->pb, ff_aac_scalefactor_bits[code], ff_aac_scalefactor_code[code]);
         /* XXX: use a table */
         q+= *ptr++;
@@ -175,7 +172,7 @@ static int encode_block(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE], 
 
     //FIXME remove duplication relative to decoder
     if (s->use_variable_block_len) {
-        assert(0); //FIXME not implemented
+        av_assert0(0); //FIXME not implemented
     }else{
         /* fixed block len */
         s->next_block_len_bits = s->frame_len_bits;
@@ -222,7 +219,7 @@ static int encode_block(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE], 
             mult *= mdct_norm;
             coefs = src_coefs[ch];
             if (s->use_noise_coding && 0) {
-                assert(0); //FIXME not implemented
+                av_assert0(0); //FIXME not implemented
             } else {
                 coefs += s->coefs_start;
                 n = nb_coefs[ch];
@@ -278,13 +275,13 @@ static int encode_block(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE], 
                 if (s->use_exp_vlc) {
                     encode_exp_vlc(s, ch, fixed_exp);
                 } else {
-                    assert(0); //FIXME not implemented
+                    av_assert0(0); //FIXME not implemented
 //                    encode_exp_lsp(s, ch);
                 }
             }
         }
     } else {
-        assert(0); //FIXME not implemented
+        av_assert0(0); //FIXME not implemented
     }
 
     for(ch = 0; ch < s->nb_channels; ch++) {
@@ -306,7 +303,7 @@ static int encode_block(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE], 
                             code= run + s->int_table[tindex][abs_level-1];
                     }
 
-                    assert(code < s->coef_vlcs[tindex]->n);
+                    av_assert2(code < s->coef_vlcs[tindex]->n);
                     put_bits(&s->pb, s->coef_vlcs[tindex]->huffbits[code], s->coef_vlcs[tindex]->huffcodes[code]);
 
                     if(code == 0){
