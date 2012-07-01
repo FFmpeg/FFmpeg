@@ -443,6 +443,9 @@ void ff_h264_remove_all_refs(H264Context *h){
         h->short_ref[i]= NULL;
     }
     h->short_ref_count=0;
+
+    memset(h->default_ref_list, 0, sizeof(h->default_ref_list));
+    memset(h->ref_list, 0, sizeof(h->ref_list));
 }
 
 /**
