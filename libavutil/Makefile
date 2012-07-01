@@ -38,6 +38,7 @@ HEADERS = adler32.h                                                     \
           samplefmt.h                                                   \
           sha.h                                                         \
           time.h                                                        \
+          version.h                                                     \
           xtea.h                                                        \
 
 ARCH_HEADERS = bswap.h                                                  \

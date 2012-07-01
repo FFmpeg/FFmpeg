@@ -19,6 +19,8 @@
 #ifndef AVDEVICE_AVDEVICE_H
 #define AVDEVICE_AVDEVICE_H
 
+#include "version.h"
+
 /**
  * @file
  * @ingroup lavd
@@ -40,20 +42,6 @@
  * compiled muxers and demuxers. They all use standard libavformat API.
  * @}
  */
-
-#include "libavutil/avutil.h"
-
-#define LIBAVDEVICE_VERSION_MAJOR 53
-#define LIBAVDEVICE_VERSION_MINOR  2
-#define LIBAVDEVICE_VERSION_MICRO  0
-
-#define LIBAVDEVICE_VERSION_INT AV_VERSION_INT(LIBAVDEVICE_VERSION_MAJOR, \
-                                               LIBAVDEVICE_VERSION_MINOR, \
-                                               LIBAVDEVICE_VERSION_MICRO)
-#define LIBAVDEVICE_VERSION     AV_VERSION(LIBAVDEVICE_VERSION_MAJOR, \
-                                           LIBAVDEVICE_VERSION_MINOR, \
-                                           LIBAVDEVICE_VERSION_MICRO)
-#define LIBAVDEVICE_BUILD       LIBAVDEVICE_VERSION_INT
 
 /**
  * Return the LIBAVDEVICE_VERSION_INT constant.

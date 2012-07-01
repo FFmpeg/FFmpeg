@@ -142,56 +142,6 @@
 
 /**
  * @}
- *
- * @defgroup lavu_ver Version and Build diagnostics
- *
- * Macros and function useful to check at compiletime and at runtime
- * which version of libavutil is in use.
- *
- * @{
- */
-
-#define LIBAVUTIL_VERSION_MAJOR 51
-#define LIBAVUTIL_VERSION_MINOR 36
-#define LIBAVUTIL_VERSION_MICRO  0
-
-#define LIBAVUTIL_VERSION_INT   AV_VERSION_INT(LIBAVUTIL_VERSION_MAJOR, \
-                                               LIBAVUTIL_VERSION_MINOR, \
-                                               LIBAVUTIL_VERSION_MICRO)
-#define LIBAVUTIL_VERSION       AV_VERSION(LIBAVUTIL_VERSION_MAJOR,     \
-                                           LIBAVUTIL_VERSION_MINOR,     \
-                                           LIBAVUTIL_VERSION_MICRO)
-#define LIBAVUTIL_BUILD         LIBAVUTIL_VERSION_INT
-
-#define LIBAVUTIL_IDENT         "Lavu" AV_STRINGIFY(LIBAVUTIL_VERSION)
-
-/**
- * @}
- *
- * @defgroup depr_guards Deprecation guards
- * Those FF_API_* defines are not part of public API.
- * They may change, break or disappear at any time.
- *
- * They are used mostly internally to mark code that will be removed
- * on the next major version.
- *
- * @{
- */
-#ifndef FF_API_GET_BITS_PER_SAMPLE_FMT
-#define FF_API_GET_BITS_PER_SAMPLE_FMT (LIBAVUTIL_VERSION_MAJOR < 52)
-#endif
-#ifndef FF_API_FIND_OPT
-#define FF_API_FIND_OPT                 (LIBAVUTIL_VERSION_MAJOR < 52)
-#endif
-#ifndef FF_API_AV_FIFO_PEEK
-#define FF_API_AV_FIFO_PEEK             (LIBAVUTIL_VERSION_MAJOR < 52)
-#endif
-#ifndef FF_API_OLD_AVOPTIONS
-#define FF_API_OLD_AVOPTIONS            (LIBAVUTIL_VERSION_MAJOR < 52)
-#endif
-
-/**
- * @}
  */
 
 /**
@@ -315,6 +265,7 @@ char av_get_picture_type_char(enum AVPictureType pict_type);
 
 #include "common.h"
 #include "error.h"
+#include "version.h"
 
 /**
  * @}
