@@ -724,7 +724,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int sizes[4] = { 0 };
     int slice_hdr_size = 2 + 2 * (ctx->num_planes - 1);
     int frame_size, picture_size, slice_size;
-    int mbs_per_slice = ctx->mbs_per_slice;
     int pkt_size, ret;
 
     *avctx->coded_frame           = *pic;
@@ -792,7 +791,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     for (y = 0; y < ctx->mb_height; y++) {
-        mbs_per_slice = ctx->mbs_per_slice;
+        int mbs_per_slice = ctx->mbs_per_slice;
         for (x = mb = 0; x < ctx->mb_width; x += mbs_per_slice, mb++) {
             q = ctx->force_quant ? ctx->force_quant
                                  : ctx->slice_q[mb + y * ctx->slices_width];
