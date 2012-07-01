@@ -31,42 +31,6 @@
 #undef NDEBUG
 #include <assert.h>
 
-typedef struct {
-    /**
-     * 0: send 1 frame for each frame
-     * 1: send 1 frame for each field
-     * 2: like 0 but skips spatial interlacing check
-     * 3: like 1 but skips spatial interlacing check
-     */
-    int mode;
-
-    /**
-     *  0: top field first
-     *  1: bottom field first
-     * -1: auto-detection
-     */
-    int parity;
-
-    int frame_pending;
-
-    /**
-     *  0: deinterlace all frames
-     *  1: only deinterlace frames marked as interlaced
-     */
-    int auto_enable;
-
-    AVFilterBufferRef *cur;
-    AVFilterBufferRef *next;
-    AVFilterBufferRef *prev;
-    AVFilterBufferRef *out;
-    void (*filter_line)(uint8_t *dst,
-                        uint8_t *prev, uint8_t *cur, uint8_t *next,
-                        int w, int prefs, int mrefs, int parity, int mode);
-
-    const AVPixFmtDescriptor *csp;
-    int eof;
-} YADIFContext;
-
 #define CHECK(j)\
     {   int score = FFABS(cur[mrefs-1+(j)] - cur[prefs-1-(j)])\
                   + FFABS(cur[mrefs  +(j)] - cur[prefs  -(j)])\
@@ -397,7 +361,6 @@ static int query_formats(AVFilterContext *ctx)
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     YADIFContext *yadif = ctx->priv;
-    int cpu_flags = av_get_cpu_flags();
 
     yadif->mode = 0;
     yadif->parity = -1;
@@ -407,12 +370,9 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     if (args) sscanf(args, "%d:%d:%d", &yadif->mode, &yadif->parity, &yadif->auto_enable);
 
     yadif->filter_line = filter_line_c;
-    if (HAVE_SSSE3 && cpu_flags & AV_CPU_FLAG_SSSE3)
-        yadif->filter_line = ff_yadif_filter_line_ssse3;
-    else if (HAVE_SSE && cpu_flags & AV_CPU_FLAG_SSE2)
-        yadif->filter_line = ff_yadif_filter_line_sse2;
-    else if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX)
-        yadif->filter_line = ff_yadif_filter_line_mmx;
+
+    if (HAVE_MMX)
+        ff_yadif_init_x86(yadif);
 
     av_log(ctx, AV_LOG_VERBOSE, "mode:%d parity:%d auto_enable:%d\n", yadif->mode, yadif->parity, yadif->auto_enable);
 

@@ -19,18 +19,45 @@
 #ifndef AVFILTER_YADIF_H
 #define AVFILTER_YADIF_H
 
+#include "libavutil/pixdesc.h"
 #include "avfilter.h"
 
-void ff_yadif_filter_line_mmx(uint8_t *dst,
-                              uint8_t *prev, uint8_t *cur, uint8_t *next,
-                              int w, int prefs, int mrefs, int parity, int mode);
+typedef struct {
+    /**
+     * 0: send 1 frame for each frame
+     * 1: send 1 frame for each field
+     * 2: like 0 but skips spatial interlacing check
+     * 3: like 1 but skips spatial interlacing check
+     */
+    int mode;
 
-void ff_yadif_filter_line_sse2(uint8_t *dst,
-                               uint8_t *prev, uint8_t *cur, uint8_t *next,
-                               int w, int prefs, int mrefs, int parity, int mode);
+    /**
+     *  0: top field first
+     *  1: bottom field first
+     * -1: auto-detection
+     */
+    int parity;
 
-void ff_yadif_filter_line_ssse3(uint8_t *dst,
-                                uint8_t *prev, uint8_t *cur, uint8_t *next,
-                                int w, int prefs, int mrefs, int parity, int mode);
+    int frame_pending;
+
+    /**
+     *  0: deinterlace all frames
+     *  1: only deinterlace frames marked as interlaced
+     */
+    int auto_enable;
+
+    AVFilterBufferRef *cur;
+    AVFilterBufferRef *next;
+    AVFilterBufferRef *prev;
+    AVFilterBufferRef *out;
+    void (*filter_line)(uint8_t *dst,
+                        uint8_t *prev, uint8_t *cur, uint8_t *next,
+                        int w, int prefs, int mrefs, int parity, int mode);
+
+    const AVPixFmtDescriptor *csp;
+    int eof;
+} YADIFContext;
+
+void ff_yadif_init_x86(YADIFContext *yadif);
 
 #endif /* AVFILTER_YADIF_H */
