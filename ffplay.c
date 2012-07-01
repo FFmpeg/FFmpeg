@@ -1625,13 +1625,6 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
     is->in_video_filter  = filt_src;
     is->out_video_filter = filt_out;
 
-    if (codec->codec->capabilities & CODEC_CAP_DR1) {
-        is->use_dr1 = 1;
-        codec->get_buffer     = codec_get_buffer;
-        codec->release_buffer = codec_release_buffer;
-        codec->opaque         = &is->buffer_pool;
-    }
-
     return ret;
 }
 
@@ -1646,28 +1639,26 @@ static int video_thread(void *arg)
     int ret;
 
 #if CONFIG_AVFILTER
+    AVCodecContext *codec = is->video_st->codec;
     AVFilterGraph *graph = avfilter_graph_alloc();
     AVFilterContext *filt_out = NULL, *filt_in = NULL;
-    int last_w = is->video_st->codec->width;
-    int last_h = is->video_st->codec->height;
-    enum PixelFormat last_format = is->video_st->codec->pix_fmt;
+    int last_w = 0;
+    int last_h = 0;
+    enum PixelFormat last_format = -2;
 
-    if ((ret = configure_video_filters(graph, is, vfilters)) < 0) {
-        SDL_Event event;
-        event.type = FF_QUIT_EVENT;
-        event.user.data1 = is;
-        SDL_PushEvent(&event);
-        goto the_end;
+    if (codec->codec->capabilities & CODEC_CAP_DR1) {
+        is->use_dr1 = 1;
+        codec->get_buffer     = codec_get_buffer;
+        codec->release_buffer = codec_release_buffer;
+        codec->opaque         = &is->buffer_pool;
     }
-    filt_in  = is->in_video_filter;
-    filt_out = is->out_video_filter;
 #endif
 
     for (;;) {
         AVPacket pkt;
 #if CONFIG_AVFILTER
         AVFilterBufferRef *picref;
-        AVRational tb = filt_out->inputs[0]->time_base;
+        AVRational tb;
 #endif
         while (is->paused && !is->videoq.abort_request)
             SDL_Delay(10);
@@ -1691,6 +1682,10 @@ static int video_thread(void *arg)
             avfilter_graph_free(&graph);
             graph = avfilter_graph_alloc();
             if ((ret = configure_video_filters(graph, is, vfilters)) < 0) {
+                SDL_Event event;
+                event.type = FF_QUIT_EVENT;
+                event.user.data1 = is;
+                SDL_PushEvent(&event);
                 av_free_packet(&pkt);
                 goto the_end;
             }
