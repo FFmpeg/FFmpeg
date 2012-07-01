@@ -64,7 +64,7 @@ static void rl2_rle_decode(Rl2Context *s,const unsigned char* in,int size,
     const unsigned char* back_frame = s->back_frame;
     const unsigned char* in_end = in + size;
     const unsigned char* out_end = out + stride * s->avctx->height;
-    unsigned char* line_end = out + s->avctx->width;
+    unsigned char* line_end;
 
     /** copy start of the background frame */
     for(i=0;i<=base_y;i++){
