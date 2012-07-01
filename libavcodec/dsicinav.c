@@ -121,7 +121,7 @@ static int cin_decode_huffman(const unsigned char *src, int src_size, unsigned c
     unsigned char *dst_end = dst + dst_size;
     const unsigned char *src_end = src + src_size;
 
-    memcpy(huff_code_table, src, 15); src += 15; src_size -= 15;
+    memcpy(huff_code_table, src, 15); src += 15;
 
     while (src < src_end) {
         huff_code = *src++;
