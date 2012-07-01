@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86_cpu.h"
 #include "libavfilter/gradfun.h"
@@ -25,9 +26,9 @@
 DECLARE_ALIGNED(16, static const uint16_t, pw_7f)[8] = {0x7F,0x7F,0x7F,0x7F,0x7F,0x7F,0x7F,0x7F};
 DECLARE_ALIGNED(16, static const uint16_t, pw_ff)[8] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
 
-void ff_gradfun_filter_line_mmx2(uint8_t *dst, uint8_t *src, uint16_t *dc, int width, int thresh, const uint16_t *dithers)
+#if HAVE_MMX2
+static void gradfun_filter_line_mmx2(uint8_t *dst, uint8_t *src, uint16_t *dc, int width, int thresh, const uint16_t *dithers)
 {
-#if HAVE_MMX
     intptr_t x;
     if (width & 3) {
         x = width & ~3;
@@ -70,12 +71,12 @@ void ff_gradfun_filter_line_mmx2(uint8_t *dst, uint8_t *src, uint16_t *dc, int w
          "rm"(thresh), "m"(*dithers), "m"(*pw_7f)
         :"memory"
     );
-#endif
 }
+#endif
 
-void ff_gradfun_filter_line_ssse3(uint8_t *dst, uint8_t *src, uint16_t *dc, int width, int thresh, const uint16_t *dithers)
-{
 #if HAVE_SSSE3
+static void gradfun_filter_line_ssse3(uint8_t *dst, uint8_t *src, uint16_t *dc, int width, int thresh, const uint16_t *dithers)
+{
     intptr_t x;
     if (width & 7) {
         // could be 10% faster if I somehow eliminated this
@@ -117,12 +118,12 @@ void ff_gradfun_filter_line_ssse3(uint8_t *dst, uint8_t *src, uint16_t *dc, int 
          "rm"(thresh), "m"(*dithers), "m"(*pw_7f)
         :"memory"
     );
-#endif // HAVE_SSSE3
 }
+#endif // HAVE_SSSE3
 
-void ff_gradfun_blur_line_sse2(uint16_t *dc, uint16_t *buf, uint16_t *buf1, uint8_t *src, int src_linesize, int width)
-{
 #if HAVE_SSE
+static void gradfun_blur_line_sse2(uint16_t *dc, uint16_t *buf, uint16_t *buf1, uint8_t *src, int src_linesize, int width)
+{
 #define BLURV(load)\
     intptr_t x = -2*width;\
     __asm__ volatile(\
@@ -160,5 +161,17 @@ void ff_gradfun_blur_line_sse2(uint16_t *dc, uint16_t *buf, uint16_t *buf1, uint
     } else {
         BLURV("movdqa");
     }
+}
 #endif // HAVE_SSE
+
+av_cold void ff_gradfun_init_x86(GradFunContext *gf)
+{
+    int cpu_flags = av_get_cpu_flags();
+
+    if (HAVE_MMX2 && cpu_flags & AV_CPU_FLAG_MMX2)
+        gf->filter_line = gradfun_filter_line_mmx2;
+    if (HAVE_SSSE3 && cpu_flags & AV_CPU_FLAG_SSSE3)
+        gf->filter_line = gradfun_filter_line_ssse3;
+    if (HAVE_SSE && cpu_flags & AV_CPU_FLAG_SSE2)
+        gf->blur_line = gradfun_blur_line_sse2;
 }
