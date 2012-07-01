@@ -34,6 +34,8 @@ The following functions are available:
 @item abs(x)
 @item squish(x)
 @item gauss(x)
+@item isinf(x)
+Return 1.0 if @var{x} is +/-INFINITY, 0.0 otherwise.
 @item isnan(x)
 Return 1.0 if @var{x} is NAN, 0.0 otherwise.
 
