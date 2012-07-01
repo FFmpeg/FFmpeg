@@ -346,7 +346,7 @@ static void preview_obmc(MpegEncContext *s){
         s->block_index[i]+= 1;
     s->mb_x++;
 
-    assert(s->pict_type == AV_PICTURE_TYPE_P);
+    av_assert2(s->pict_type == AV_PICTURE_TYPE_P);
 
     do{
         if (get_bits1(&s->gb)) {
