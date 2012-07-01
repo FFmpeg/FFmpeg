@@ -113,4 +113,10 @@
 #    define av_printf_format(fmtpos, attrpos)
 #endif
 
+#if AV_GCC_VERSION_AT_LEAST(2,5)
+#    define av_noreturn __attribute__((noreturn))
+#else
+#    define av_noreturn
+#endif
+
 #endif /* AVUTIL_ATTRIBUTES_H */
