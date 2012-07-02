@@ -51,4 +51,4 @@
 #define FF_API_FOO_COUNT                    (LIBAVFILTER_VERSION_MAJOR < 4)
 #endif
 
-#endif // AVFILTER_VERSION_H
+#endif /* AVFILTER_VERSION_H */

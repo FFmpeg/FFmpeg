@@ -118,4 +118,4 @@ void av_dict_free(AVDictionary **m);
  * @}
  */
 
-#endif // AVUTIL_DICT_H
+#endif /* AVUTIL_DICT_H */
