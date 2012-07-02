@@ -622,6 +622,7 @@ static enum PixelFormat avcodec_find_best_pix_fmt1(enum PixelFormat *pix_fmt_lis
     return dst_pix_fmt;
 }
 
+#if FF_API_FIND_BEST_PIX_FMT
 enum PixelFormat avcodec_find_best_pix_fmt(int64_t pix_fmt_mask, enum PixelFormat src_pix_fmt,
                               int has_alpha, int *loss_ptr)
 {
@@ -637,6 +638,7 @@ enum PixelFormat avcodec_find_best_pix_fmt(int64_t pix_fmt_mask, enum PixelForma
 
     return avcodec_find_best_pix_fmt2(list, src_pix_fmt, has_alpha, loss_ptr);
 }
+#endif /* FF_API_FIND_BEST_PIX_FMT */
 
 enum PixelFormat avcodec_find_best_pix_fmt2(enum PixelFormat *pix_fmt_list,
                                             enum PixelFormat src_pix_fmt,
