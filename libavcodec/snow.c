@@ -395,6 +395,7 @@ av_cold int ff_snow_common_init(AVCodecContext *avctx){
     SnowContext *s = avctx->priv_data;
     int width, height;
     int i, j, ret;
+    int emu_buf_size;
 
     s->avctx= avctx;
     s->max_ref_frames=1; //just make sure its not an invalid value in case of no initial keyframe
@@ -462,6 +463,8 @@ av_cold int ff_snow_common_init(AVCodecContext *avctx){
         return ret;
     }
     FF_ALLOC_OR_GOTO(avctx, s->scratchbuf, s->mconly_picture.linesize[0]*7*MB_SIZE, fail);
+    emu_buf_size = s->mconly_picture.linesize[0] * (2 * MB_SIZE + HTAPS_MAX - 1);
+    FF_ALLOC_OR_GOTO(avctx, s->emu_edge_buffer, emu_buf_size, fail);
 
     return 0;
 fail:
@@ -648,6 +651,7 @@ av_cold void ff_snow_common_end(SnowContext *s)
 
     av_freep(&s->block);
     av_freep(&s->scratchbuf);
+    av_freep(&s->emu_edge_buffer);
 
     for(i=0; i<MAX_REF_FRAMES; i++){
         av_freep(&s->ref_mvs[i]);
