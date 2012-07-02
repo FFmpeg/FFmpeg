@@ -207,6 +207,7 @@ static int get_metadata_size(const uint8_t *buf, int buf_size)
 static int decode_residuals(FLACContext *s, int channel, int pred_order)
 {
     int i, tmp, partition, method_type, rice_order;
+    int rice_bits, rice_esc;
     int sample = 0, samples;
 
     method_type = get_bits(&s->gb, 2);
@@ -225,11 +226,14 @@ static int decode_residuals(FLACContext *s, int channel, int pred_order)
         return -1;
     }
 
+    rice_bits = 4 + method_type;
+    rice_esc  = (1 << rice_bits) - 1;
+
     sample=
     i= pred_order;
     for (partition = 0; partition < (1 << rice_order); partition++) {
-        tmp = get_bits(&s->gb, method_type == 0 ? 4 : 5);
-        if (tmp == (method_type == 0 ? 15 : 31)) {
+        tmp = get_bits(&s->gb, rice_bits);
+        if (tmp == rice_esc) {
             tmp = get_bits(&s->gb, 5);
             for (; i < samples; i++, sample++)
                 s->decoded[channel][sample] = get_sbits_long(&s->gb, tmp);
