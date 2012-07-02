@@ -26,7 +26,7 @@
  */
 
 #include "vc1dsp.h"
-
+#include "libavutil/avassert.h"
 
 /** Apply overlap transform to horizontal edge
 */
@@ -658,7 +658,7 @@ static void put_no_rnd_vc1_chroma_mc8_c(uint8_t *dst/*align 8*/, uint8_t *src/*a
     const int D=(  x)*(  y);
     int i;
 
-    assert(x<8 && y<8 && x>=0 && y>=0);
+    av_assert2(x<8 && y<8 && x>=0 && y>=0);
 
     for(i=0; i<h; i++)
     {
@@ -682,7 +682,7 @@ static void put_no_rnd_vc1_chroma_mc4_c(uint8_t *dst, uint8_t *src, int stride, 
     const int D=(  x)*(  y);
     int i;
 
-    assert(x<8 && y<8 && x>=0 && y>=0);
+    av_assert2(x<8 && y<8 && x>=0 && y>=0);
 
     for(i=0; i<h; i++)
     {
@@ -703,7 +703,7 @@ static void avg_no_rnd_vc1_chroma_mc8_c(uint8_t *dst/*align 8*/, uint8_t *src/*a
     const int D=(  x)*(  y);
     int i;
 
-    assert(x<8 && y<8 && x>=0 && y>=0);
+    av_assert2(x<8 && y<8 && x>=0 && y>=0);
 
     for(i=0; i<h; i++)
     {
