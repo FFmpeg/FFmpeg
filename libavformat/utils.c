@@ -2285,6 +2285,11 @@ static int has_codec_parameters(AVStream *st)
 static int has_decode_delay_been_guessed(AVStream *st)
 {
     if(st->codec->codec_id != CODEC_ID_H264) return 1;
+#if CONFIG_H264_DECODER
+    if(st->codec->has_b_frames &&
+       avpriv_h264_has_num_reorder_frames(st->codec) == st->codec->has_b_frames)
+        return 1;
+#endif
     if(st->codec->has_b_frames<3)
         return st->info->nb_decoded_frames >= 6;
     return st->info->nb_decoded_frames >= 20;
