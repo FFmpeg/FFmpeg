@@ -360,7 +360,7 @@ static int decode_subframe_fixed(FLACContext *s, int channel, int pred_order,
 static int decode_subframe_lpc(FLACContext *s, int channel, int pred_order,
                                int bps)
 {
-    int i, j;
+    int i;
     int coeff_prec, qlevel;
     int coeffs[32];
     int32_t *decoded = s->decoded[channel];
@@ -389,38 +389,7 @@ static int decode_subframe_lpc(FLACContext *s, int channel, int pred_order,
     if (decode_residuals(s, channel, pred_order) < 0)
         return -1;
 
-    if (s->bps > 16) {
-        int64_t sum;
-        for (i = pred_order; i < s->blocksize; i++) {
-            sum = 0;
-            for (j = 0; j < pred_order; j++)
-                sum += (int64_t)coeffs[j] * decoded[i-j-1];
-            decoded[i] += sum >> qlevel;
-        }
-    } else {
-        for (i = pred_order; i < s->blocksize-1; i += 2) {
-            int c;
-            int d = decoded[i-pred_order];
-            int s0 = 0, s1 = 0;
-            for (j = pred_order-1; j > 0; j--) {
-                c = coeffs[j];
-                s0 += c*d;
-                d = decoded[i-j];
-                s1 += c*d;
-            }
-            c = coeffs[0];
-            s0 += c*d;
-            d = decoded[i] += s0 >> qlevel;
-            s1 += c*d;
-            decoded[i+1] += s1 >> qlevel;
-        }
-        if (i < s->blocksize) {
-            int sum = 0;
-            for (j = 0; j < pred_order; j++)
-                sum += coeffs[j] * decoded[i-j-1];
-            decoded[i] += sum >> qlevel;
-        }
-    }
+    s->dsp.lpc(decoded, coeffs, pred_order, qlevel, s->blocksize);
 
     return 0;
 }
