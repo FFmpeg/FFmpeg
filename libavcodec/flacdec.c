@@ -100,6 +100,19 @@ int avpriv_flac_is_extradata_valid(AVCodecContext *avctx,
     return 1;
 }
 
+static void flac_set_bps(FLACContext *s)
+{
+    if (s->bps > 16) {
+        s->avctx->sample_fmt = AV_SAMPLE_FMT_S32;
+        s->sample_shift = 32 - s->bps;
+        s->is32 = 1;
+    } else {
+        s->avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+        s->sample_shift = 16 - s->bps;
+        s->is32 = 0;
+    }
+}
+
 static av_cold int flac_decode_init(AVCodecContext *avctx)
 {
     enum FLACExtradataFormat format;
@@ -117,11 +130,8 @@ static av_cold int flac_decode_init(AVCodecContext *avctx)
 
     /* initialize based on the demuxer-supplied streamdata header */
     avpriv_flac_parse_streaminfo(avctx, (FLACStreaminfo *)s, streaminfo);
-    if (s->bps > 16)
-        avctx->sample_fmt = AV_SAMPLE_FMT_S32;
-    else
-        avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     allocate_buffers(s);
+    flac_set_bps(s);
     s->got_streaminfo = 1;
 
     avcodec_get_frame_defaults(&s->frame);
@@ -512,15 +522,7 @@ static int decode_frame(FLACContext *s)
     }
     s->bps = s->avctx->bits_per_raw_sample = fi.bps;
 
-    if (s->bps > 16) {
-        s->avctx->sample_fmt = AV_SAMPLE_FMT_S32;
-        s->sample_shift = 32 - s->bps;
-        s->is32 = 1;
-    } else {
-        s->avctx->sample_fmt = AV_SAMPLE_FMT_S16;
-        s->sample_shift = 16 - s->bps;
-        s->is32 = 0;
-    }
+    flac_set_bps(s);
 
     if (!s->max_blocksize)
         s->max_blocksize = FLAC_MAX_BLOCKSIZE;
