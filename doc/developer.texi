@@ -491,7 +491,7 @@ send a reminder by email. Your patch should eventually be dealt with.
     If you added YASM code please check that things still work with --disable-yasm
 @item
     Make sure you check the return values of function and return appropriate
-    error codes. Especially memory allocation functions like @code{malloc()}
+    error codes. Especially memory allocation functions like @code{av_malloc()}
     are notoriously left unchecked, which is a serious problem.
 @end enumerate
 
