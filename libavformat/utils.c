@@ -2284,8 +2284,10 @@ static int has_codec_parameters(AVStream *st)
 
 static int has_decode_delay_been_guessed(AVStream *st)
 {
-    return st->codec->codec_id != CODEC_ID_H264 ||
-        st->info->nb_decoded_frames >= 6;
+    if(st->codec->codec_id != CODEC_ID_H264) return 1;
+    if(st->codec->has_b_frames<3)
+        return st->info->nb_decoded_frames >= 6;
+    return st->info->nb_decoded_frames >= 20;
 }
 
 /* returns 1 or 0 if or if not decoded data was returned, or a negative error */
