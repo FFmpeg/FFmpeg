@@ -588,7 +588,7 @@ static int avg_bits_per_pixel(enum PixelFormat pix_fmt)
     return bits;
 }
 
-static enum PixelFormat avcodec_find_best_pix_fmt1(int64_t pix_fmt_mask,
+static enum PixelFormat avcodec_find_best_pix_fmt1(enum PixelFormat *pix_fmt_list,
                                       enum PixelFormat src_pix_fmt,
                                       int has_alpha,
                                       int loss_mask)
@@ -599,24 +599,48 @@ static enum PixelFormat avcodec_find_best_pix_fmt1(int64_t pix_fmt_mask,
     /* find exact color match with smallest size */
     dst_pix_fmt = PIX_FMT_NONE;
     min_dist = 0x7fffffff;
-    /* test only the first 64 pixel formats to avoid undefined behaviour */
-    for (i = 0; i < 64; i++) {
-        if (pix_fmt_mask & (1ULL << i)) {
-            loss = avcodec_get_pix_fmt_loss(i, src_pix_fmt, has_alpha) & loss_mask;
-            if (loss == 0) {
-                dist = avg_bits_per_pixel(i);
-                if (dist < min_dist) {
-                    min_dist = dist;
-                    dst_pix_fmt = i;
-                }
+    i = 0;
+    while (pix_fmt_list[i] != PIX_FMT_NONE) {
+        enum PixelFormat pix_fmt = pix_fmt_list[i];
+
+        if (i > PIX_FMT_NB) {
+            av_log(NULL, AV_LOG_ERROR, "Pixel format list longer than expected, "
+                   "it is either not properly terminated or contains duplicates\n");
+            return PIX_FMT_NONE;
+        }
+
+        loss = avcodec_get_pix_fmt_loss(pix_fmt, src_pix_fmt, has_alpha) & loss_mask;
+        if (loss == 0) {
+            dist = avg_bits_per_pixel(pix_fmt);
+            if (dist < min_dist) {
+                min_dist = dist;
+                dst_pix_fmt = pix_fmt;
             }
         }
+        i++;
     }
     return dst_pix_fmt;
 }
 
 enum PixelFormat avcodec_find_best_pix_fmt(int64_t pix_fmt_mask, enum PixelFormat src_pix_fmt,
                               int has_alpha, int *loss_ptr)
+{
+    enum PixelFormat list[64];
+    int i, j = 0;
+
+    // test only the first 64 pixel formats to avoid undefined behaviour
+    for (i = 0; i < 64; i++) {
+        if (pix_fmt_mask & (1ULL << i))
+            list[j++] = i;
+    }
+    list[j] = PIX_FMT_NONE;
+
+    return avcodec_find_best_pix_fmt2(list, src_pix_fmt, has_alpha, loss_ptr);
+}
+
+enum PixelFormat avcodec_find_best_pix_fmt2(enum PixelFormat *pix_fmt_list,
+                                            enum PixelFormat src_pix_fmt,
+                                            int has_alpha, int *loss_ptr)
 {
     enum PixelFormat dst_pix_fmt;
     int loss_mask, i;
@@ -634,7 +658,7 @@ enum PixelFormat avcodec_find_best_pix_fmt(int64_t pix_fmt_mask, enum PixelForma
     i = 0;
     for(;;) {
         loss_mask = loss_mask_order[i++];
-        dst_pix_fmt = avcodec_find_best_pix_fmt1(pix_fmt_mask, src_pix_fmt,
+        dst_pix_fmt = avcodec_find_best_pix_fmt1(pix_fmt_list, src_pix_fmt,
                                                  has_alpha, loss_mask);
         if (dst_pix_fmt >= 0)
             goto found;
