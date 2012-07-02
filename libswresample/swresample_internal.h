@@ -26,7 +26,7 @@
 typedef void (mix_1_1_func_type)(void *out, const void *in, void *coeffp, int index, int len);
 typedef void (mix_2_1_func_type)(void *out, const void *in1, const void *in2, void *coeffp, int index1, int index2, int len);
 
-typedef void (mix_any_func_type)(void **out, const void **in1, void *coeffp, int len);
+typedef void (mix_any_func_type)(uint8_t **out, const uint8_t **in1, void *coeffp, int len);
 
 typedef struct AudioData{
     uint8_t *ch[SWR_CH_MAX];    ///< samples buffer per channel
