@@ -312,6 +312,7 @@ static int request_frame(AVFilterLink *link)
 {
     BufferSourceContext *c = link->src->priv;
     AVFilterBufferRef *buf;
+    int ret = 0;
 
     if (!av_fifo_size(c->fifo)) {
         if (c->eof)
@@ -327,7 +328,7 @@ static int request_frame(AVFilterLink *link)
         ff_end_frame(link);
         break;
     case AVMEDIA_TYPE_AUDIO:
-        ff_filter_samples(link, avfilter_ref_buffer(buf, ~0));
+        ret = ff_filter_samples(link, avfilter_ref_buffer(buf, ~0));
         break;
     default:
         return AVERROR(EINVAL);
@@ -335,7 +336,7 @@ static int request_frame(AVFilterLink *link)
 
     avfilter_unref_buffer(buf);
 
-    return 0;
+    return ret;
 }
 
 static int poll_frame(AVFilterLink *link)

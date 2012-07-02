@@ -146,15 +146,15 @@ fail:
     return NULL;
 }
 
-static void default_filter_samples(AVFilterLink *link,
-                                   AVFilterBufferRef *samplesref)
+static int default_filter_samples(AVFilterLink *link,
+                                  AVFilterBufferRef *samplesref)
 {
-    ff_filter_samples(link->dst->outputs[0], samplesref);
+    return ff_filter_samples(link->dst->outputs[0], samplesref);
 }
 
-void ff_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
+int ff_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
 {
-    void (*filter_samples)(AVFilterLink *, AVFilterBufferRef *);
+    int (*filter_samples)(AVFilterLink *, AVFilterBufferRef *);
     AVFilterPad *dst = link->dstpad;
     AVFilterBufferRef *buf_out;
 
@@ -185,6 +185,6 @@ void ff_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
     } else
         buf_out = samplesref;
 
-    filter_samples(link, buf_out);
+    return filter_samples(link, buf_out);
 }
 

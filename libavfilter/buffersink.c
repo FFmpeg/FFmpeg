@@ -56,6 +56,12 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *buf)
     link->cur_buf = NULL;
 };
 
+static int filter_samples(AVFilterLink *link, AVFilterBufferRef *buf)
+{
+    start_frame(link, buf);
+    return 0;
+}
+
 int av_buffersink_read(AVFilterContext *ctx, AVFilterBufferRef **buf)
 {
     BufferSinkContext *s    = ctx->priv;
@@ -160,7 +166,7 @@ AVFilter avfilter_asink_abuffer = {
 
     .inputs    = (AVFilterPad[]) {{ .name           = "default",
                                     .type           = AVMEDIA_TYPE_AUDIO,
-                                    .filter_samples = start_frame,
+                                    .filter_samples = filter_samples,
                                     .min_perms      = AV_PERM_READ,
                                     .needs_fifo     = 1 },
                                   { .name = NULL }},

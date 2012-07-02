@@ -49,7 +49,10 @@ AVFilterBufferRef *ff_get_audio_buffer(AVFilterLink *link, int perms,
  * @param samplesref a reference to the buffer of audio samples being sent. The
  *                   receiving filter will free this reference when it no longer
  *                   needs it or pass it on to the next filter.
+ *
+ * @return >= 0 on success, a negative AVERROR on error. The receiving filter
+ * is responsible for unreferencing samplesref in case of error.
  */
-void ff_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref);
+int ff_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref);
 
 #endif /* AVFILTER_AUDIO_H */

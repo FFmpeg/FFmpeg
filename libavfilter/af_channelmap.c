@@ -313,7 +313,7 @@ static int channelmap_query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static void channelmap_filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
+static int channelmap_filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
 {
     AVFilterContext  *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
@@ -330,8 +330,10 @@ static void channelmap_filter_samples(AVFilterLink *inlink, AVFilterBufferRef *b
         if (nch_out > FF_ARRAY_ELEMS(buf->data)) {
             uint8_t **new_extended_data =
                 av_mallocz(nch_out * sizeof(*buf->extended_data));
-            if (!new_extended_data)
-                return;
+            if (!new_extended_data) {
+                avfilter_unref_buffer(buf);
+                return AVERROR(ENOMEM);
+            }
             if (buf->extended_data == buf->data) {
                 buf->extended_data = new_extended_data;
             } else {
@@ -353,7 +355,7 @@ static void channelmap_filter_samples(AVFilterLink *inlink, AVFilterBufferRef *b
         memcpy(buf->data, buf->extended_data,
            FFMIN(FF_ARRAY_ELEMS(buf->data), nch_out) * sizeof(buf->data[0]));
 
-    ff_filter_samples(outlink, buf);
+    return ff_filter_samples(outlink, buf);
 }
 
 static int channelmap_config_input(AVFilterLink *inlink)

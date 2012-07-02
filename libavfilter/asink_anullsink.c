@@ -19,7 +19,10 @@
 #include "avfilter.h"
 #include "internal.h"
 
-static void null_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref) { }
+static int null_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
+{
+    return 0;
+}
 
 AVFilter avfilter_asink_anullsink = {
     .name        = "anullsink",

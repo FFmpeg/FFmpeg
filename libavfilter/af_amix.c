@@ -311,9 +311,7 @@ static int output_frame(AVFilterLink *outlink, int nb_samples)
     if (s->next_pts != AV_NOPTS_VALUE)
         s->next_pts += nb_samples;
 
-    ff_filter_samples(outlink, out_buf);
-
-    return 0;
+    return ff_filter_samples(outlink, out_buf);
 }
 
 /**
@@ -454,31 +452,37 @@ static int request_frame(AVFilterLink *outlink)
     return output_frame(outlink, available_samples);
 }
 
-static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
+static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
 {
     AVFilterContext  *ctx = inlink->dst;
     MixContext       *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    int i;
+    int i, ret = 0;
 
     for (i = 0; i < ctx->nb_inputs; i++)
         if (ctx->inputs[i] == inlink)
             break;
     if (i >= ctx->nb_inputs) {
         av_log(ctx, AV_LOG_ERROR, "unknown input link\n");
-        return;
+        ret = AVERROR(EINVAL);
+        goto fail;
     }
 
     if (i == 0) {
         int64_t pts = av_rescale_q(buf->pts, inlink->time_base,
                                    outlink->time_base);
-        frame_list_add_frame(s->frame_list, buf->audio->nb_samples, pts);
+        ret = frame_list_add_frame(s->frame_list, buf->audio->nb_samples, pts);
+        if (ret < 0)
+            goto fail;
     }
 
-    av_audio_fifo_write(s->fifos[i], (void **)buf->extended_data,
-                        buf->audio->nb_samples);
+    ret = av_audio_fifo_write(s->fifos[i], (void **)buf->extended_data,
+                              buf->audio->nb_samples);
 
+fail:
     avfilter_unref_buffer(buf);
+
+    return ret;
 }
 
 static int init(AVFilterContext *ctx, const char *args)

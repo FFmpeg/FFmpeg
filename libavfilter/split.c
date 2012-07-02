@@ -110,15 +110,19 @@ AVFilter avfilter_vf_split = {
     .outputs   = (AVFilterPad[]) {{ .name = NULL}},
 };
 
-static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
+static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
 {
     AVFilterContext *ctx = inlink->dst;
-    int i;
+    int i, ret = 0;
 
-    for (i = 0; i < ctx->nb_outputs; i++)
-        ff_filter_samples(inlink->dst->outputs[i],
-                          avfilter_ref_buffer(samplesref, ~AV_PERM_WRITE));
+    for (i = 0; i < ctx->nb_outputs; i++) {
+        ret = ff_filter_samples(inlink->dst->outputs[i],
+                                avfilter_ref_buffer(samplesref, ~AV_PERM_WRITE));
+        if (ret < 0)
+            break;
+    }
     avfilter_unref_buffer(samplesref);
+    return ret;
 }
 
 AVFilter avfilter_af_asplit = {
