@@ -55,8 +55,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
 /**
  * Perform decode operation
- * @param dst, dst_end Destination image buffer
- * @param gb, GetByteContext (optional, see below)
+ * @param dst     pointer to destination image buffer
+ * @param dst_end pointer to end of destination image buffer
+ * @param gb GetByteContext (optional, see below)
  * @param pixel Fill color (optional, see below)
  * @param count Pixel count
  * @param x Pointer to x-axis counter
