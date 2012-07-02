@@ -54,7 +54,6 @@ typedef struct FLACContext {
     GetBitContext gb;                       ///< GetBitContext initialized to start at the current frame
 
     int blocksize;                          ///< number of samples in the current frame
-    int curr_bps;                           ///< bps for current subframe, adjusted for channel correlation and wasted bits
     int sample_shift;                       ///< shift required to make output samples 16-bit or 32-bit
     int is32;                               ///< flag to indicate if output should be 32-bit instead of 16-bit
     int ch_mode;                            ///< channel decorrelation type in the current frame
@@ -295,7 +294,8 @@ static int decode_residuals(FLACContext *s, int channel, int pred_order)
     return 0;
 }
 
-static int decode_subframe_fixed(FLACContext *s, int channel, int pred_order)
+static int decode_subframe_fixed(FLACContext *s, int channel, int pred_order,
+                                 int bps)
 {
     const int blocksize = s->blocksize;
     int32_t *decoded = s->decoded[channel];
@@ -303,7 +303,7 @@ static int decode_subframe_fixed(FLACContext *s, int channel, int pred_order)
 
     /* warm up samples */
     for (i = 0; i < pred_order; i++) {
-        decoded[i] = get_sbits_long(&s->gb, s->curr_bps);
+        decoded[i] = get_sbits_long(&s->gb, bps);
     }
 
     if (decode_residuals(s, channel, pred_order) < 0)
@@ -345,7 +345,8 @@ static int decode_subframe_fixed(FLACContext *s, int channel, int pred_order)
     return 0;
 }
 
-static int decode_subframe_lpc(FLACContext *s, int channel, int pred_order)
+static int decode_subframe_lpc(FLACContext *s, int channel, int pred_order,
+                               int bps)
 {
     int i, j;
     int coeff_prec, qlevel;
@@ -354,7 +355,7 @@ static int decode_subframe_lpc(FLACContext *s, int channel, int pred_order)
 
     /* warm up samples */
     for (i = 0; i < pred_order; i++) {
-        decoded[i] = get_sbits_long(&s->gb, s->curr_bps);
+        decoded[i] = get_sbits_long(&s->gb, bps);
     }
 
     coeff_prec = get_bits(&s->gb, 4) + 1;
@@ -415,15 +416,15 @@ static int decode_subframe_lpc(FLACContext *s, int channel, int pred_order)
 static inline int decode_subframe(FLACContext *s, int channel)
 {
     int type, wasted = 0;
+    int bps = s->bps;
     int i, tmp;
 
-    s->curr_bps = s->bps;
     if (channel == 0) {
         if (s->ch_mode == FLAC_CHMODE_RIGHT_SIDE)
-            s->curr_bps++;
+            bps++;
     } else {
         if (s->ch_mode == FLAC_CHMODE_LEFT_SIDE || s->ch_mode == FLAC_CHMODE_MID_SIDE)
-            s->curr_bps++;
+            bps++;
     }
 
     if (get_bits1(&s->gb)) {
@@ -436,35 +437,35 @@ static inline int decode_subframe(FLACContext *s, int channel)
         int left = get_bits_left(&s->gb);
         wasted = 1;
         if ( left < 0 ||
-            (left < s->curr_bps && !show_bits_long(&s->gb, left)) ||
-                                   !show_bits_long(&s->gb, s->curr_bps)) {
+            (left < bps && !show_bits_long(&s->gb, left)) ||
+                           !show_bits_long(&s->gb, bps)) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "Invalid number of wasted bits > available bits (%d) - left=%d\n",
-                   s->curr_bps, left);
+                   bps, left);
             return AVERROR_INVALIDDATA;
         }
         while (!get_bits1(&s->gb))
             wasted++;
-        s->curr_bps -= wasted;
+        bps -= wasted;
     }
-    if (s->curr_bps > 32) {
+    if (bps > 32) {
         av_log_missing_feature(s->avctx, "decorrelated bit depth > 32", 0);
         return -1;
     }
 
 //FIXME use av_log2 for types
     if (type == 0) {
-        tmp = get_sbits_long(&s->gb, s->curr_bps);
+        tmp = get_sbits_long(&s->gb, bps);
         for (i = 0; i < s->blocksize; i++)
             s->decoded[channel][i] = tmp;
     } else if (type == 1) {
         for (i = 0; i < s->blocksize; i++)
-            s->decoded[channel][i] = get_sbits_long(&s->gb, s->curr_bps);
+            s->decoded[channel][i] = get_sbits_long(&s->gb, bps);
     } else if ((type >= 8) && (type <= 12)) {
-        if (decode_subframe_fixed(s, channel, type & ~0x8) < 0)
+        if (decode_subframe_fixed(s, channel, type & ~0x8, bps) < 0)
             return -1;
     } else if (type >= 32) {
-        if (decode_subframe_lpc(s, channel, (type & ~0x20)+1) < 0)
+        if (decode_subframe_lpc(s, channel, (type & ~0x20)+1, bps) < 0)
             return -1;
     } else {
         av_log(s->avctx, AV_LOG_ERROR, "invalid coding type\n");
