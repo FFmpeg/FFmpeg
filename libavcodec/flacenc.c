@@ -53,6 +53,7 @@ typedef struct CompressionOptions {
     int prediction_order_method;
     int min_partition_order;
     int max_partition_order;
+    int ch_mode;
 } CompressionOptions;
 
 typedef struct RiceContext {
@@ -1031,7 +1032,10 @@ static void channel_decorrelation(FlacEncodeContext *s)
         return;
     }
 
-    frame->ch_mode = estimate_stereo_mode(left, right, n);
+    if (s->options.ch_mode < 0)
+        frame->ch_mode = estimate_stereo_mode(left, right, n);
+    else
+        frame->ch_mode = s->options.ch_mode;
 
     /* perform decorrelation and adjust bits-per-sample */
     if (frame->ch_mode == FLAC_CHMODE_INDEPENDENT)
@@ -1288,6 +1292,12 @@ static const AVOption options[] = {
 { "8level",     NULL, 0, AV_OPT_TYPE_CONST, {.dbl = ORDER_METHOD_8LEVEL }, INT_MIN, INT_MAX, FLAGS, "predm" },
 { "search",     NULL, 0, AV_OPT_TYPE_CONST, {.dbl = ORDER_METHOD_SEARCH }, INT_MIN, INT_MAX, FLAGS, "predm" },
 { "log",        NULL, 0, AV_OPT_TYPE_CONST, {.dbl = ORDER_METHOD_LOG },    INT_MIN, INT_MAX, FLAGS, "predm" },
+{ "ch_mode", "Stereo decorrelation mode", offsetof(FlacEncodeContext, options.ch_mode), AV_OPT_TYPE_INT, { .dbl = -1 }, -1, FLAC_CHMODE_MID_SIDE, FLAGS, "ch_mode" },
+{ "auto",       NULL, 0, AV_OPT_TYPE_CONST, { .dbl = -1                      }, INT_MIN, INT_MAX, FLAGS, "ch_mode" },
+{ "indep",      NULL, 0, AV_OPT_TYPE_CONST, { .dbl = FLAC_CHMODE_INDEPENDENT }, INT_MIN, INT_MAX, FLAGS, "ch_mode" },
+{ "left_side",  NULL, 0, AV_OPT_TYPE_CONST, { .dbl = FLAC_CHMODE_LEFT_SIDE   }, INT_MIN, INT_MAX, FLAGS, "ch_mode" },
+{ "right_side", NULL, 0, AV_OPT_TYPE_CONST, { .dbl = FLAC_CHMODE_RIGHT_SIDE  }, INT_MIN, INT_MAX, FLAGS, "ch_mode" },
+{ "mid_side",   NULL, 0, AV_OPT_TYPE_CONST, { .dbl = FLAC_CHMODE_MID_SIDE    }, INT_MIN, INT_MAX, FLAGS, "ch_mode" },
 { NULL },
 };
 
