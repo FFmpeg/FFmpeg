@@ -324,7 +324,9 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
     constraint_set_flags |= get_bits1(&s->gb) << 1;   //constraint_set1_flag
     constraint_set_flags |= get_bits1(&s->gb) << 2;   //constraint_set2_flag
     constraint_set_flags |= get_bits1(&s->gb) << 3;   //constraint_set3_flag
-    get_bits(&s->gb, 4); // reserved
+    constraint_set_flags |= get_bits1(&s->gb) << 4;   //constraint_set4_flag
+    constraint_set_flags |= get_bits1(&s->gb) << 5;   //constraint_set5_flag
+    get_bits(&s->gb, 2); // reserved
     level_idc= get_bits(&s->gb, 8);
     sps_id= get_ue_golomb_31(&s->gb);
 
