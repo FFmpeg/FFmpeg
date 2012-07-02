@@ -156,7 +156,7 @@ static void dwt_quantize(SnowContext *s, Plane *p, DWTELEM *buffer, int width, i
 static av_cold int encode_init(AVCodecContext *avctx)
 {
     SnowContext *s = avctx->priv_data;
-    int plane_index;
+    int plane_index, ret;
 
     if(avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL){
         av_log(avctx, AV_LOG_ERROR, "This codec is under development, files encoded with it may not be decodable with future versions!!!\n"
@@ -185,7 +185,10 @@ static av_cold int encode_init(AVCodecContext *avctx)
         s->plane[plane_index].fast_mc= 1;
     }
 
-    ff_snow_common_init(avctx);
+    if ((ret = ff_snow_common_init(avctx)) < 0) {
+        ff_snow_common_end(avctx->priv_data);
+        return ret;
+    }
     ff_snow_alloc_blocks(s);
 
     s->version=0;
