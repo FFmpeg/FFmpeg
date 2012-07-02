@@ -125,8 +125,14 @@ void *av_malloc(size_t size)
 #else
     ptr = malloc(size);
 #endif
-    if(!ptr && !size)
+    if(!ptr && !size) {
+        size = 1;
         ptr= av_malloc(1);
+    }
+#if CONFIG_MEMORY_POISONING
+    if (ptr)
+        memset(ptr, 0x2a, size);
+#endif
     return ptr;
 }
 

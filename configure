@@ -286,6 +286,7 @@ Developer options (useful when working on FFmpeg itself):
   --disable-stripping      disable stripping of executables and shared libraries
   --assert-level=level     0(default), 1 or 2, amount of assertion testing,
                            2 causes a slowdown at runtime.
+  --enable-memory-poisoning fill heap uninitialized allocated space with arbitrary data
   --valgrind=VALGRIND      run "make fate" tests through valgrind to detect memory
                            leaks and errors, using the specified valgrind binary.
                            Cannot be combined with --target-exec
@@ -1080,6 +1081,7 @@ CONFIG_LIST="
     lsp
     mdct
     memalign_hack
+    memory_poisoning
     mpegaudiodsp
     network
     nonfree
