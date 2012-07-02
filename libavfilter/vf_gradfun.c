@@ -123,7 +123,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     GradFunContext *gf = ctx->priv;
     float thresh = 1.2;
     int radius = 16;
-    int cpu_flags = av_get_cpu_flags();
 
     if (args)
         sscanf(args, "%f:%d", &thresh, &radius);
@@ -135,12 +134,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     gf->blur_line = ff_gradfun_blur_line_c;
     gf->filter_line = ff_gradfun_filter_line_c;
 
-    if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX2)
-        gf->filter_line = ff_gradfun_filter_line_mmx2;
-    if (HAVE_SSSE3 && cpu_flags & AV_CPU_FLAG_SSSE3)
-        gf->filter_line = ff_gradfun_filter_line_ssse3;
-    if (HAVE_SSE && cpu_flags & AV_CPU_FLAG_SSE2)
-        gf->blur_line = ff_gradfun_blur_line_sse2;
+    if (HAVE_MMX)
+        ff_gradfun_init_x86(gf);
 
     av_log(ctx, AV_LOG_VERBOSE, "threshold:%.2f radius:%d\n", thresh, gf->radius);
 

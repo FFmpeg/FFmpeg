@@ -140,7 +140,7 @@ static void mc_block(Plane *p, uint8_t *dst, const uint8_t *src, int stride, int
 
     int x, y, b, r, l;
     int16_t tmpIt   [64*(32+HTAPS_MAX)];
-    uint8_t tmp2t[3][stride*(32+HTAPS_MAX)];
+    uint8_t tmp2t[3][64*(32+HTAPS_MAX)];
     int16_t *tmpI= tmpIt;
     uint8_t *tmp2= tmp2t[0];
     const uint8_t *hpel[11];
@@ -178,7 +178,7 @@ static void mc_block(Plane *p, uint8_t *dst, const uint8_t *src, int stride, int
                 tmp2[x]= am;
             }
             tmpI+= 64;
-            tmp2+= stride;
+            tmp2+= 64;
             src += stride;
         }
         src -= stride*y;
@@ -207,7 +207,7 @@ static void mc_block(Plane *p, uint8_t *dst, const uint8_t *src, int stride, int
                 tmp2[x]= am;
             }
             src += stride;
-            tmp2+= stride;
+            tmp2+= 64;
         }
         src -= stride*y;
     }
@@ -234,12 +234,12 @@ static void mc_block(Plane *p, uint8_t *dst, const uint8_t *src, int stride, int
                 tmp2[x]= am;
             }
             tmpI+= 64;
-            tmp2+= stride;
+            tmp2+= 64;
         }
     }
 
     hpel[ 0]= src;
-    hpel[ 1]= tmp2t[0] + stride*(HTAPS_MAX/2-1);
+    hpel[ 1]= tmp2t[0] + 64*(HTAPS_MAX/2-1);
     hpel[ 2]= src + 1;
 
     hpel[ 4]= tmp2t[1];
@@ -247,14 +247,21 @@ static void mc_block(Plane *p, uint8_t *dst, const uint8_t *src, int stride, int
     hpel[ 6]= tmp2t[1] + 1;
 
     hpel[ 8]= src + stride;
-    hpel[ 9]= hpel[1] + stride;
+    hpel[ 9]= hpel[1] + 64;
     hpel[10]= hpel[8] + 1;
 
+#define MC_STRIDE(x) (needs[x] ? 64 : stride)
+
     if(b==15){
-        const uint8_t *src1= hpel[dx/8 + dy/8*4  ];
-        const uint8_t *src2= hpel[dx/8 + dy/8*4+1];
-        const uint8_t *src3= hpel[dx/8 + dy/8*4+4];
-        const uint8_t *src4= hpel[dx/8 + dy/8*4+5];
+        int dxy = dx / 8 + dy / 8 * 4;
+        const uint8_t *src1 = hpel[dxy    ];
+        const uint8_t *src2 = hpel[dxy + 1];
+        const uint8_t *src3 = hpel[dxy + 4];
+        const uint8_t *src4 = hpel[dxy + 5];
+        int stride1 = MC_STRIDE(dxy);
+        int stride2 = MC_STRIDE(dxy + 1);
+        int stride3 = MC_STRIDE(dxy + 4);
+        int stride4 = MC_STRIDE(dxy + 5);
         dx&=7;
         dy&=7;
         for(y=0; y < b_h; y++){
@@ -262,23 +269,25 @@ static void mc_block(Plane *p, uint8_t *dst, const uint8_t *src, int stride, int
                 dst[x]= ((8-dx)*(8-dy)*src1[x] + dx*(8-dy)*src2[x]+
                          (8-dx)*   dy *src3[x] + dx*   dy *src4[x]+32)>>6;
             }
-            src1+=stride;
-            src2+=stride;
-            src3+=stride;
-            src4+=stride;
+            src1+=stride1;
+            src2+=stride2;
+            src3+=stride3;
+            src4+=stride4;
             dst +=stride;
         }
     }else{
         const uint8_t *src1= hpel[l];
         const uint8_t *src2= hpel[r];
+        int stride1 = MC_STRIDE(l);
+        int stride2 = MC_STRIDE(r);
         int a= weight[((dx&7) + (8*(dy&7)))];
         int b= 8-a;
         for(y=0; y < b_h; y++){
             for(x=0; x < b_w; x++){
                 dst[x]= (a*src1[x] + b*src2[x] + 4)>>3;
             }
-            src1+=stride;
-            src2+=stride;
+            src1+=stride1;
+            src2+=stride2;
             dst +=stride;
         }
     }

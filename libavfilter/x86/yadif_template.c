@@ -103,9 +103,9 @@
             "por       "MM"5, "MM"3 \n\t"\
             MOVQ"      "MM"3, "MM"1 \n\t"
 
-void RENAME(ff_yadif_filter_line)(uint8_t *dst,
-                                  uint8_t *prev, uint8_t *cur, uint8_t *next,
-                                  int w, int prefs, int mrefs, int parity, int mode)
+static void RENAME(yadif_filter_line)(uint8_t *dst, uint8_t *prev, uint8_t *cur,
+                                      uint8_t *next, int w, int prefs,
+                                      int mrefs, int parity, int mode)
 {
     uint8_t tmp[5*16];
     uint8_t *tmpA= (uint8_t*)(((uint64_t)(tmp+15)) & ~15);

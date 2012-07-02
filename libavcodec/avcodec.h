@@ -258,6 +258,7 @@ enum CodecID {
     CODEC_ID_XBM,
     CODEC_ID_ZEROCODEC,
     CODEC_ID_MSS1,
+    CODEC_ID_MSA1,
     CODEC_ID_Y41P       = MKBETAG('Y','4','1','P'),
     CODEC_ID_ESCAPE130  = MKBETAG('E','1','3','0'),
     CODEC_ID_EXR        = MKBETAG('0','E','X','R'),

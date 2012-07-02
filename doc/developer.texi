@@ -489,6 +489,10 @@ send a reminder by email. Your patch should eventually be dealt with.
     Consider to add a regression test for your code.
 @item
     If you added YASM code please check that things still work with --disable-yasm
+@item
+    Make sure you check the return values of function and return appropriate
+    error codes. Especially memory allocation functions like @code{malloc()}
+    are notoriously left unchecked, which is a serious problem.
 @end enumerate
 
 @section Patch review process

@@ -24,6 +24,7 @@
 #include "libavutil/dict.h"
 #include "avformat.h"
 #include "apetag.h"
+#include "internal.h"
 
 #define APE_TAG_VERSION               2000
 #define APE_TAG_FOOTER_BYTES          32
@@ -56,20 +57,47 @@ static int ape_tag_read_field(AVFormatContext *s)
         return -1;
     if (flags & APE_TAG_FLAG_IS_BINARY) {
         uint8_t filename[1024];
+        enum CodecID id;
         AVStream *st = avformat_new_stream(s, NULL);
         if (!st)
             return AVERROR(ENOMEM);
-        avio_get_str(pb, INT_MAX, filename, sizeof(filename));
-        st->codec->extradata = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
-        if (!st->codec->extradata)
-            return AVERROR(ENOMEM);
-        if (avio_read(pb, st->codec->extradata, size) != size) {
-            av_freep(&st->codec->extradata);
-            return AVERROR(EIO);
+
+        size -= avio_get_str(pb, size, filename, sizeof(filename));
+        if (size <= 0) {
+            av_log(s, AV_LOG_WARNING, "Skipping binary tag '%s'.\n", key);
+            return 0;
         }
-        st->codec->extradata_size = size;
+
         av_dict_set(&st->metadata, key, filename, 0);
-        st->codec->codec_type = AVMEDIA_TYPE_ATTACHMENT;
+
+        if ((id = ff_guess_image2_codec(filename)) != CODEC_ID_NONE) {
+            AVPacket pkt;
+            int ret;
+
+            ret = av_get_packet(s->pb, &pkt, size);
+            if (ret < 0) {
+                av_log(s, AV_LOG_ERROR, "Error reading cover art.\n");
+                return ret;
+            }
+
+            st->disposition      |= AV_DISPOSITION_ATTACHED_PIC;
+            st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+            st->codec->codec_id   = id;
+
+            st->attached_pic              = pkt;
+            st->attached_pic.stream_index = st->index;
+            st->attached_pic.flags       |= AV_PKT_FLAG_KEY;
+        } else {
+            st->codec->extradata = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
+            if (!st->codec->extradata)
+                return AVERROR(ENOMEM);
+            if (avio_read(pb, st->codec->extradata, size) != size) {
+                av_freep(&st->codec->extradata);
+                return AVERROR(EIO);
+            }
+            st->codec->extradata_size = size;
+            st->codec->codec_type = AVMEDIA_TYPE_ATTACHMENT;
+        }
     } else {
         value = av_malloc(size+1);
         if (!value)

@@ -18,6 +18,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86_cpu.h"
 #include "libavcodec/x86/dsputil_mmx.h"
@@ -47,3 +48,15 @@ DECLARE_ASM_CONST(16, const xmm_reg, pw_1) = {0x0001000100010001ULL, 0x000100010
 #define RENAME(a) a ## _mmx
 #include "yadif_template.c"
 #endif
+
+av_cold void ff_yadif_init_x86(YADIFContext *yadif)
+{
+    int cpu_flags = av_get_cpu_flags();
+
+    if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX)
+        yadif->filter_line = yadif_filter_line_mmx;
+    if (HAVE_SSE && cpu_flags & AV_CPU_FLAG_SSE2)
+        yadif->filter_line = yadif_filter_line_sse2;
+    if (HAVE_SSSE3 && cpu_flags & AV_CPU_FLAG_SSSE3)
+        yadif->filter_line = yadif_filter_line_ssse3;
+}
