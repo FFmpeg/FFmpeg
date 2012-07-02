@@ -25,6 +25,7 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
+#include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "dsputil.h"
 
@@ -301,7 +302,7 @@ int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int
 
     if(compensation_distance){
         compensation_distance -= dst_index;
-        assert(compensation_distance > 0);
+        av_assert2(compensation_distance > 0);
     }
     if(update_ctx){
         c->frac= frac;
