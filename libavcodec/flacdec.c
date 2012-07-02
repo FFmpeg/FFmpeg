@@ -149,8 +149,7 @@ static void allocate_buffers(FLACContext *s)
     assert(s->max_blocksize);
 
     for (i = 0; i < s->channels; i++) {
-        s->decoded[i] = av_realloc(s->decoded[i],
-                                   sizeof(int32_t)*s->max_blocksize);
+        s->decoded[i] = av_malloc(sizeof(int32_t)*s->max_blocksize);
     }
 }
 
