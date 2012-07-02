@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+typedef void (RENAME(mix_any_func_type))(SAMPLE **out, const SAMPLE **in1, COEFF *coeffp, int len);
 
 static void RENAME(sum2)(SAMPLE *out, const SAMPLE *in1, const SAMPLE *in2, COEFF *coeffp, int index1, int index2, int len){
     int i;
@@ -55,7 +56,7 @@ static void RENAME(mix8to2)(SAMPLE **out, const SAMPLE **in, COEFF *coeffp, int 
     }
 }
 
-static mix_any_func_type *RENAME(get_mix_any_func)(SwrContext *s){
+static RENAME(mix_any_func_type) *RENAME(get_mix_any_func)(SwrContext *s){
     if(   s->out_ch_layout == AV_CH_LAYOUT_STEREO && (s->in_ch_layout == AV_CH_LAYOUT_5POINT1 || s->in_ch_layout == AV_CH_LAYOUT_5POINT1_BACK)
        && s->matrix[0][2] == s->matrix[1][2] && s->matrix[0][3] == s->matrix[1][3]
        && !s->matrix[0][1] && !s->matrix[0][5] && !s->matrix[1][0] && !s->matrix[1][4]
