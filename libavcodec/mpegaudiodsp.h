@@ -56,6 +56,8 @@ void ff_mpa_synth_filter_float(MPADSPContext *s,
 void ff_mpadsp_init_arm(MPADSPContext *s);
 void ff_mpadsp_init_mmx(MPADSPContext *s);
 void ff_mpadsp_init_altivec(MPADSPContext *s);
+void ff_mpadsp_init_mipsfpu(MPADSPContext *s);
+void ff_mpadsp_init_mipsdspr1(MPADSPContext *s);
 
 void ff_mpa_synth_init_float(float *window);
 void ff_mpa_synth_init_fixed(int32_t *window);

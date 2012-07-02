@@ -1170,6 +1170,17 @@ found2:
 }
 
 #if CONFIG_FLOAT
+#if HAVE_MIPSFPU
+#   include "mips/compute_antialias_float.h"
+#endif /* HAVE_MIPSFPU */
+#else
+#if HAVE_MIPSDSPR1
+#   include "mips/compute_antialias_fixed.h"
+#endif /* HAVE_MIPSDSPR1 */
+#endif /* CONFIG_FLOAT */
+
+#ifndef compute_antialias
+#if CONFIG_FLOAT
 #define AA(j) do {                                                      \
         float tmp0 = ptr[-1-j];                                         \
         float tmp1 = ptr[   j];                                         \
@@ -1215,6 +1226,7 @@ static void compute_antialias(MPADecodeContext *s, GranuleDef *g)
         ptr += 18;
     }
 }
+#endif /* compute_antialias */
 
 static void compute_imdct(MPADecodeContext *s, GranuleDef *g,
                           INTFLOAT *sb_samples, INTFLOAT *mdct_buf)
