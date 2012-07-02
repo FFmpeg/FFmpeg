@@ -1,0 +1,27 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+    need)
+        case $2 in
+            ffmpeg|ffplay|ffprobe|ffserver)
+                echo $2.c >> need
+            ;;
+        esac
+    ;;
+    start|reset)
+        echo . > need
+        git bisect $*
+    ;;
+    skip)
+        git bisect $*
+    ;;
+    good|bad)
+        git bisect $*
+
+        until ls `cat need` > /dev/null 2> /dev/null; do
+            git bisect skip || break
+        done
+    ;;
+esac
