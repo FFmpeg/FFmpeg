@@ -23,10 +23,21 @@
 #include "flacdsp.h"
 
 #define SAMPLE_SIZE 16
+#define PLANAR 0
+#include "flacdsp_template.c"
+
+#undef  PLANAR
+#define PLANAR 1
 #include "flacdsp_template.c"
 
 #undef  SAMPLE_SIZE
+#undef  PLANAR
 #define SAMPLE_SIZE 32
+#define PLANAR 0
+#include "flacdsp_template.c"
+
+#undef  PLANAR
+#define PLANAR 1
 #include "flacdsp_template.c"
 
 static void flac_lpc_16_c(int32_t *decoded, const int coeffs[32],
@@ -72,15 +83,27 @@ static void flac_lpc_32_c(int32_t *decoded, const int coeffs[32],
 
 }
 
-av_cold void ff_flacdsp_init(FLACDSPContext *c, enum AVSampleFormat fmt)
+av_cold void ff_flacdsp_init(FLACDSPContext *c, enum AVSampleFormat fmt,
+                             int bps)
 {
+    if (bps > 16)
+        c->lpc            = flac_lpc_32_c;
+    else
+        c->lpc            = flac_lpc_16_c;
+
     switch (fmt) {
     case AV_SAMPLE_FMT_S32:
         c->decorrelate[0] = flac_decorrelate_indep_c_32;
         c->decorrelate[1] = flac_decorrelate_ls_c_32;
         c->decorrelate[2] = flac_decorrelate_rs_c_32;
         c->decorrelate[3] = flac_decorrelate_ms_c_32;
-        c->lpc            = flac_lpc_32_c;
+        break;
+
+    case AV_SAMPLE_FMT_S32P:
+        c->decorrelate[0] = flac_decorrelate_indep_c_32p;
+        c->decorrelate[1] = flac_decorrelate_ls_c_32p;
+        c->decorrelate[2] = flac_decorrelate_rs_c_32p;
+        c->decorrelate[3] = flac_decorrelate_ms_c_32p;
         break;
 
     case AV_SAMPLE_FMT_S16:
@@ -88,7 +111,13 @@ av_cold void ff_flacdsp_init(FLACDSPContext *c, enum AVSampleFormat fmt)
         c->decorrelate[1] = flac_decorrelate_ls_c_16;
         c->decorrelate[2] = flac_decorrelate_rs_c_16;
         c->decorrelate[3] = flac_decorrelate_ms_c_16;
-        c->lpc            = flac_lpc_16_c;
+        break;
+
+    case AV_SAMPLE_FMT_S16P:
+        c->decorrelate[0] = flac_decorrelate_indep_c_16p;
+        c->decorrelate[1] = flac_decorrelate_ls_c_16p;
+        c->decorrelate[2] = flac_decorrelate_rs_c_16p;
+        c->decorrelate[3] = flac_decorrelate_ms_c_16p;
         break;
     }
 }
