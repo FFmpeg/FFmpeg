@@ -461,18 +461,18 @@ static void get_tag(AVFormatContext *s, AVIOContext *pb, const char *key, int ty
     } else if (type == 4 && length == 8) {
         int64_t num = avio_rl64(pb);
         if (!strcmp(key, "WM/EncodingTime") ||
-            !strcmp(key, "WM/MediaOriginalBroadcastDateTime"))
+            !strcmp(key, "WM/MediaOriginalBroadcastDateTime")) {
             if (filetime_to_iso8601(buf, buf_size, num) < 0) {
                 av_free(buf);
                 return;
             }
-        else if (!strcmp(key, "WM/WMRVEncodeTime") ||
-                 !strcmp(key, "WM/WMRVEndTime"))
+        } else if (!strcmp(key, "WM/WMRVEncodeTime") ||
+                   !strcmp(key, "WM/WMRVEndTime")) {
             if (crazytime_to_iso8601(buf, buf_size, num) < 0) {
                 av_free(buf);
                 return;
             }
-        else if (!strcmp(key, "WM/WMRVExpirationDate")) {
+        } else if (!strcmp(key, "WM/WMRVExpirationDate")) {
             if (oledate_to_iso8601(buf, buf_size, num) < 0 ) {
                 av_free(buf);
                 return;
