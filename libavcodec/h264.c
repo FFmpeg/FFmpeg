@@ -70,6 +70,12 @@ static const enum PixelFormat hwaccel_pixfmt_list_h264_jpeg_420[] = {
     PIX_FMT_NONE
 };
 
+int avpriv_h264_has_num_reorder_frames(AVCodecContext *avctx)
+{
+    H264Context *h = avctx->priv_data;
+    return h ? h->sps.num_reorder_frames : 0;
+}
+
 /**
  * Check if the top & left blocks are available if needed and
  * change the dc mode so it only uses the available blocks.
