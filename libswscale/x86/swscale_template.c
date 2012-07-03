@@ -1689,7 +1689,7 @@ static av_cold void RENAME(sws_init_swScale)(SwsContext *c)
         }
     }
 
-    if (c->srcBpc == 8 && c->dstBpc <= 10) {
+    if (c->srcBpc == 8 && c->dstBpc <= 14) {
     // Use the new MMX scaler if the MMX2 one can't be used (it is faster than the x86 ASM one).
 #if COMPILE_TEMPLATE_MMX2
     if (c->flags & SWS_FAST_BILINEAR && c->canMMX2BeUsed)

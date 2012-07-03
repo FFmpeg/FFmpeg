@@ -558,8 +558,8 @@ const char *sws_format_name(enum PixelFormat format);
     (av_pix_fmt_descriptors[x].comp[0].depth_minus1 == 15)
 
 #define is9_OR_10BPS(x) \
-    (av_pix_fmt_descriptors[x].comp[0].depth_minus1 == 8 || \
-     av_pix_fmt_descriptors[x].comp[0].depth_minus1 == 9)
+    (av_pix_fmt_descriptors[x].comp[0].depth_minus1 >= 8 && \
+     av_pix_fmt_descriptors[x].comp[0].depth_minus1 <= 13)
 
 #define isNBPS(x) is9_OR_10BPS(x)
 

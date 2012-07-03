@@ -22,6 +22,7 @@
 #include "config.h"
 #include "libswscale/swscale.h"
 #include "libswscale/swscale_internal.h"
+#include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/x86_cpu.h"
 #include "libavutil/cpu.h"
@@ -378,19 +379,19 @@ void ff_sws_init_swScale_mmx(SwsContext *c)
 #if HAVE_YASM
 #define ASSIGN_SCALE_FUNC2(hscalefn, filtersize, opt1, opt2) do { \
     if (c->srcBpc == 8) { \
-        hscalefn = c->dstBpc <= 10 ? ff_hscale8to15_ ## filtersize ## _ ## opt2 : \
+        hscalefn = c->dstBpc <= 14 ? ff_hscale8to15_ ## filtersize ## _ ## opt2 : \
                                      ff_hscale8to19_ ## filtersize ## _ ## opt1; \
     } else if (c->srcBpc == 9) { \
-        hscalefn = c->dstBpc <= 10 ? ff_hscale9to15_ ## filtersize ## _ ## opt2 : \
+        hscalefn = c->dstBpc <= 14 ? ff_hscale9to15_ ## filtersize ## _ ## opt2 : \
                                      ff_hscale9to19_ ## filtersize ## _ ## opt1; \
     } else if (c->srcBpc == 10) { \
-        hscalefn = c->dstBpc <= 10 ? ff_hscale10to15_ ## filtersize ## _ ## opt2 : \
+        hscalefn = c->dstBpc <= 14 ? ff_hscale10to15_ ## filtersize ## _ ## opt2 : \
                                      ff_hscale10to19_ ## filtersize ## _ ## opt1; \
     } else if (c->srcBpc == 14 || ((c->srcFormat==PIX_FMT_PAL8||isAnyRGB(c->srcFormat)) && av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1<15)) { \
-        hscalefn = c->dstBpc <= 10 ? ff_hscale14to15_ ## filtersize ## _ ## opt2 : \
+        hscalefn = c->dstBpc <= 14 ? ff_hscale14to15_ ## filtersize ## _ ## opt2 : \
                                      ff_hscale14to19_ ## filtersize ## _ ## opt1; \
     } else { /* c->srcBpc == 16 */ \
-        hscalefn = c->dstBpc <= 10 ? ff_hscale16to15_ ## filtersize ## _ ## opt2 : \
+        hscalefn = c->dstBpc <= 14 ? ff_hscale16to15_ ## filtersize ## _ ## opt2 : \
                                      ff_hscale16to19_ ## filtersize ## _ ## opt1; \
     } \
 } while (0)
@@ -412,7 +413,8 @@ switch(c->dstBpc){ \
     case 16: if (!isBE(c->dstFormat))            vscalefn = ff_yuv2plane1_16_ ## opt1; break; \
     case 10: if (!isBE(c->dstFormat) && opt2chk) vscalefn = ff_yuv2plane1_10_ ## opt2; break; \
     case 9:  if (!isBE(c->dstFormat) && opt2chk) vscalefn = ff_yuv2plane1_9_  ## opt2;  break; \
-    default:                                     vscalefn = ff_yuv2plane1_8_  ## opt1;  break; \
+    case 8:                                      vscalefn = ff_yuv2plane1_8_  ## opt1;  break; \
+    default: av_assert0(c->dstBpc>8); \
     }
 #define case_rgb(x, X, opt) \
         case PIX_FMT_ ## X: \
