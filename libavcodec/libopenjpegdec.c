@@ -44,6 +44,8 @@
                             PIX_FMT_YUV440P,PIX_FMT_YUV444P,PIX_FMT_YUVA444P, \
                             PIX_FMT_YUV420P9,PIX_FMT_YUV422P9,PIX_FMT_YUV444P9, \
                             PIX_FMT_YUV420P10,PIX_FMT_YUV422P10,PIX_FMT_YUV444P10, \
+                            PIX_FMT_YUV420P12,PIX_FMT_YUV422P12,PIX_FMT_YUV444P12, \
+                            PIX_FMT_YUV420P14,PIX_FMT_YUV422P14,PIX_FMT_YUV444P14, \
                             PIX_FMT_YUV420P16,PIX_FMT_YUV422P16,PIX_FMT_YUV444P16
 
 static const enum PixelFormat libopenjpeg_rgb_pix_fmts[]  = {RGB_PIXEL_FORMATS};
