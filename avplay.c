@@ -264,6 +264,7 @@ static int exit_on_keydown;
 static int exit_on_mousedown;
 static int loop = 1;
 static int framedrop = 1;
+static int infinite_buffer = 0;
 
 static int rdftspeed = 20;
 #if CONFIG_AVFILTER
@@ -2439,10 +2440,11 @@ static int decode_thread(void *arg)
         }
 
         /* if the queue are full, no need to read more */
-        if (   is->audioq.size + is->videoq.size + is->subtitleq.size > MAX_QUEUE_SIZE
+        if (!infinite_buffer &&
+              (is->audioq.size + is->videoq.size + is->subtitleq.size > MAX_QUEUE_SIZE
             || (   (is->audioq   .size  > MIN_AUDIOQ_SIZE || is->audio_stream < 0)
                 && (is->videoq   .nb_packets > MIN_FRAMES || is->video_stream < 0)
-                && (is->subtitleq.nb_packets > MIN_FRAMES || is->subtitle_stream < 0))) {
+                && (is->subtitleq.nb_packets > MIN_FRAMES || is->subtitle_stream < 0)))) {
             /* wait 10 ms */
             SDL_Delay(10);
             continue;
@@ -2907,6 +2909,7 @@ static const OptionDef options[] = {
     { "exitonmousedown", OPT_BOOL | OPT_EXPERT, { (void*)&exit_on_mousedown }, "exit on mouse down", "" },
     { "loop", OPT_INT | HAS_ARG | OPT_EXPERT, { (void*)&loop }, "set number of times the playback shall be looped", "loop count" },
     { "framedrop", OPT_BOOL | OPT_EXPERT, { (void*)&framedrop }, "drop frames when cpu is too slow", "" },
+    { "infbuf", OPT_BOOL | OPT_EXPERT, { (void*)&infinite_buffer }, "don't limit the input buffer size (useful with realtime streams)", "" },
     { "window_title", OPT_STRING | HAS_ARG, { (void*)&window_title }, "set window title", "window title" },
 #if CONFIG_AVFILTER
     { "vf", OPT_STRING | HAS_ARG, { (void*)&vfilters }, "video filters", "filter list" },
