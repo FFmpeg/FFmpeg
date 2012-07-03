@@ -22,6 +22,9 @@ fate-d-cinema-demux: CMD = framecrc -i $(SAMPLES)/d-cinema/THX_Science_FLT_1920-
 FATE_SAMPLES_DEMUX += fate-iv8-demux
 fate-iv8-demux: CMD = framecrc -i $(SAMPLES)/iv8/zzz-partial.mpg -vcodec copy
 
+FATE_SAMPLES_DEMUX += fate-jv-demux
+fate-jv-demux: CMD = framecrc -i $(SAMPLES)/jv/intro.jv -vcodec copy -acodec copy
+
 FATE_SAMPLES_DEMUX += fate-lmlm4-demux
 fate-lmlm4-demux: CMD = framecrc -i $(SAMPLES)/lmlm4/LMLM4_CIFat30fps.divx -t 3 -acodec copy -vcodec copy
 
