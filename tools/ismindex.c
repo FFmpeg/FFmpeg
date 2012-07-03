@@ -426,6 +426,7 @@ static void output_client_manifest(struct VideoFiles *files,
                  "Duration=\"%"PRId64 "\">\n", files->duration * 10);
     if (files->video_file >= 0) {
         struct VideoFile *vf = files->files[files->video_file];
+        struct VideoFile *first_vf = vf;
         int index = 0;
         fprintf(out,
                 "\t<StreamIndex Type=\"video\" QualityLevels=\"%d\" "
@@ -445,15 +446,26 @@ static void output_client_manifest(struct VideoFiles *files,
                 fprintf(out, "%02X", vf->codec_private[j]);
             fprintf(out, "\" />\n");
             index++;
+            if (vf->chunks != first_vf->chunks)
+                fprintf(stderr, "Mismatched number of video chunks in %s and %s\n",
+                        vf->name, first_vf->name);
         }
-        vf = files->files[files->video_file];
-        for (i = 0; i < vf->chunks; i++)
+        vf = first_vf;
+        for (i = 0; i < vf->chunks; i++) {
+            for (j = files->video_file + 1; j < files->nb_files; j++) {
+                if (files->files[j]->is_video &&
+                    vf->offsets[i].duration != files->files[j]->offsets[i].duration)
+                    fprintf(stderr, "Mismatched duration of video chunk %d in %s and %s\n",
+                            i, vf->name, files->files[j]->name);
+            }
             fprintf(out, "\t\t<c n=\"%d\" d=\"%d\" />\n", i,
                     vf->offsets[i].duration);
+        }
         fprintf(out, "\t</StreamIndex>\n");
     }
     if (files->audio_file >= 0) {
         struct VideoFile *vf = files->files[files->audio_file];
+        struct VideoFile *first_vf = vf;
         int index = 0;
         fprintf(out,
                 "\t<StreamIndex Type=\"audio\" QualityLevels=\"%d\" "
@@ -475,11 +487,21 @@ static void output_client_manifest(struct VideoFiles *files,
                 fprintf(out, "%02X", vf->codec_private[j]);
             fprintf(out, "\" />\n");
             index++;
+            if (vf->chunks != first_vf->chunks)
+                fprintf(stderr, "Mismatched number of audio chunks in %s and %s\n",
+                        vf->name, first_vf->name);
         }
-        vf = files->files[files->audio_file];
-        for (i = 0; i < vf->chunks; i++)
+        vf = first_vf;
+        for (i = 0; i < vf->chunks; i++) {
+            for (j = files->audio_file + 1; j < files->nb_files; j++) {
+                if (files->files[j]->is_audio &&
+                    vf->offsets[i].duration != files->files[j]->offsets[i].duration)
+                    fprintf(stderr, "Mismatched duration of audio chunk %d in %s and %s\n",
+                            i, vf->name, files->files[j]->name);
+            }
             fprintf(out, "\t\t<c n=\"%d\" d=\"%d\" />\n",
                     i, vf->offsets[i].duration);
+        }
         fprintf(out, "\t</StreamIndex>\n");
     }
     fprintf(out, "</SmoothStreamingMedia>\n");
