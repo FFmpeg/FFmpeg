@@ -44,9 +44,11 @@
 #define LIBAVFORMAT_IDENT       "Lavf" AV_STRINGIFY(LIBAVFORMAT_VERSION)
 
 /**
- * These FF_API_* defines are not part of the public API.
- * They may change, break or disappear at any time.
+ * FF_API_* defines may be placed below to indicate public API that will be
+ * dropped at a future version bump. The defines themselves are not part of
+ * the public API and may change, break or disappear at any time.
  */
+
 #ifndef FF_API_CLOSE_INPUT_FILE
 #define FF_API_CLOSE_INPUT_FILE        (LIBAVFORMAT_VERSION_MAJOR < 55)
 #endif

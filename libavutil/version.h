@@ -54,14 +54,13 @@
  * @}
  *
  * @defgroup depr_guards Deprecation guards
- * These FF_API_* defines are not part of the public API.
- * They may change, break or disappear at any time.
- *
- * They are used mostly internally to mark code that will be removed
- * on the next major version.
+ * FF_API_* defines may be placed below to indicate public API that will be
+ * dropped at a future version bump. The defines themselves are not part of
+ * the public API and may change, break or disappear at any time.
  *
  * @{
  */
+
 #ifndef FF_API_GET_BITS_PER_SAMPLE_FMT
 #define FF_API_GET_BITS_PER_SAMPLE_FMT (LIBAVUTIL_VERSION_MAJOR < 52)
 #endif

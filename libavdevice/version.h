@@ -39,4 +39,10 @@
                                            LIBAVDEVICE_VERSION_MICRO)
 #define LIBAVDEVICE_BUILD       LIBAVDEVICE_VERSION_INT
 
+/**
+ * FF_API_* defines may be placed below to indicate public API that will be
+ * dropped at a future version bump. The defines themselves are not part of
+ * the public API and may change, break or disappear at any time.
+ */
+
 #endif /* AVDEVICE_VERSION_H */
