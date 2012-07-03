@@ -3148,6 +3148,7 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
         }
         break;
     default:
+        av_assert0(avctx->bits_per_raw_sample<=8 || avctx->codec_type != AVMEDIA_TYPE_VIDEO);
         BIT_DEPTH_FUNCS(8, _16);
         break;
     }
