@@ -23,12 +23,12 @@ case "$1" in
     need)
         case $2 in
             ffmpeg|ffplay|ffprobe|ffserver)
-                echo $2.c >> need
+                echo $2.c >> tools/bisect.need
             ;;
         esac
     ;;
     start|reset)
-        echo . > need
+        echo . > tools/bisect.need
         git bisect $*
     ;;
     skip)
@@ -37,7 +37,7 @@ case "$1" in
     good|bad)
         git bisect $*
 
-        until ls `cat need` > /dev/null 2> /dev/null; do
+        until ls `cat tools/bisect.need` > /dev/null 2> /dev/null; do
             git bisect skip || break
         done
     ;;

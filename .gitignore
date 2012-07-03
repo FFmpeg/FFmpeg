@@ -48,6 +48,7 @@
 /tests/vsynth1/
 /tools/aviocat
 /tools/ffbisect
+/tools/bisect.need
 /tools/cws2fws
 /tools/ffeval
 /tools/graph2dot
