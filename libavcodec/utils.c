@@ -508,7 +508,8 @@ static int video_get_buffer(AVCodecContext *s, AVFrame *pic)
             buf->linesize[i]= picture.linesize[i];
 
             buf->base[i]= av_malloc(size[i]+16); //FIXME 16
-            if(buf->base[i]==NULL) return -1;
+            if(buf->base[i]==NULL)
+                return AVERROR(ENOMEM);
             memset(buf->base[i], 128, size[i]);
 
             // no edge if EDGE EMU or not planar YUV
