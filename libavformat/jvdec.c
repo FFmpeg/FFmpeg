@@ -164,7 +164,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
 
                 AV_WL32(pkt->data, jvf->video_size);
                 pkt->data[4]      = jvf->video_type;
-                if (avio_read(pb, pkt->data + JV_PREAMBLE_SIZE, size) < 0)
+                if ((size = avio_read(pb, pkt->data + JV_PREAMBLE_SIZE, size)) < 0)
                     return AVERROR(EIO);
 
                 pkt->size         = size + JV_PREAMBLE_SIZE;
