@@ -1254,6 +1254,7 @@ static int alloc_buffer(FrameBuffer **pool, AVCodecContext *s, FrameBuffer **pbu
     if ((ret = av_image_alloc(buf->base, buf->linesize, w, h,
                               s->pix_fmt, 32)) < 0) {
         av_freep(&buf);
+        av_log(s, AV_LOG_ERROR, "alloc_buffer: av_image_alloc() failed\n");
         return ret;
     }
     /* XXX this shouldn't be needed, but some tests break without this line
@@ -1289,8 +1290,10 @@ int codec_get_buffer(AVCodecContext *s, AVFrame *frame)
     FrameBuffer *buf;
     int ret, i;
 
-    if(av_image_check_size(s->width, s->height, 0, s) || s->pix_fmt<0)
+    if(av_image_check_size(s->width, s->height, 0, s) || s->pix_fmt<0) {
+        av_log(s, AV_LOG_ERROR, "codec_get_buffer: image parameters invalid\n");
         return -1;
+    }
 
     if (!*pool && (ret = alloc_buffer(pool, s, pool)) < 0)
         return ret;
