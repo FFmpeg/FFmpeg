@@ -185,18 +185,34 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
     case PIX_FMT_YUV420P9BE:
     case PIX_FMT_YUV420P10LE:
     case PIX_FMT_YUV420P10BE:
+    case PIX_FMT_YUV420P12LE:
+    case PIX_FMT_YUV420P12BE:
+    case PIX_FMT_YUV420P14LE:
+    case PIX_FMT_YUV420P14BE:
     case PIX_FMT_YUV422P9LE:
     case PIX_FMT_YUV422P9BE:
     case PIX_FMT_YUV422P10LE:
     case PIX_FMT_YUV422P10BE:
+    case PIX_FMT_YUV422P12LE:
+    case PIX_FMT_YUV422P12BE:
+    case PIX_FMT_YUV422P14LE:
+    case PIX_FMT_YUV422P14BE:
     case PIX_FMT_YUV444P9LE:
     case PIX_FMT_YUV444P9BE:
     case PIX_FMT_YUV444P10LE:
     case PIX_FMT_YUV444P10BE:
+    case PIX_FMT_YUV444P12LE:
+    case PIX_FMT_YUV444P12BE:
+    case PIX_FMT_YUV444P14LE:
+    case PIX_FMT_YUV444P14BE:
     case PIX_FMT_GBRP9LE:
     case PIX_FMT_GBRP9BE:
     case PIX_FMT_GBRP10LE:
     case PIX_FMT_GBRP10BE:
+    case PIX_FMT_GBRP12LE:
+    case PIX_FMT_GBRP12BE:
+    case PIX_FMT_GBRP14LE:
+    case PIX_FMT_GBRP14BE:
         w_align = 16; //FIXME assume 16 pixel per macroblock
         h_align = 16 * 2; // interlaced needs 2 macroblocks height
         break;
