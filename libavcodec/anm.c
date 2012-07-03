@@ -56,8 +56,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
 /**
  * Perform decode operation
- * @param dst, dst_end Destination image buffer
- * @param gb, GetByteContext (optional, see below)
+ * @param dst     pointer to destination image buffer
+ * @param dst_end pointer to end of destination image buffer
+ * @param gb GetByteContext (optional, see below)
  * @param pixel Fill color (optional, see below)
  * @param count Pixel count
  * @param x Pointer to x-axis counter
@@ -66,8 +67,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
  * @return non-zero if destination buffer is exhausted
  *
  * a copy operation is achieved when 'gb' is set
- * a fill operation is acheived when 'gb' is null and pixel is >= 0
- * a skip operation is acheived when 'gb' is null and pixel is < 0
+ * a fill operation is achieved when 'gb' is null and pixel is >= 0
+ * a skip operation is achieved when 'gb' is null and pixel is < 0
  */
 static inline int op(uint8_t **dst, const uint8_t *dst_end,
                      GetByteContext *gb,

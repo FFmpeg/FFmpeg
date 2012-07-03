@@ -3856,15 +3856,6 @@ test -n "$assert_level" &&
 test -n "$malloc_prefix" &&
     echo "#define MALLOC_PREFIX $malloc_prefix" >>$TMPH
 
-if enabled small || disabled optimizations; then
-    echo "#undef  av_always_inline"  >> $TMPH
-    if enabled small; then
-        echo "#define av_always_inline inline"  >> $TMPH
-    else
-        echo "#define av_always_inline av_unused"  >> $TMPH
-    fi
-fi
-
 if enabled yasm; then
     append config_files $TMPASM
     printf '' >$TMPASM

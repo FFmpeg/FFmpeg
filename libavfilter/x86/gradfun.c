@@ -26,9 +26,9 @@
 DECLARE_ALIGNED(16, static const uint16_t, pw_7f)[8] = {0x7F,0x7F,0x7F,0x7F,0x7F,0x7F,0x7F,0x7F};
 DECLARE_ALIGNED(16, static const uint16_t, pw_ff)[8] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
 
+#if HAVE_MMX2
 static void gradfun_filter_line_mmx2(uint8_t *dst, const uint8_t *src, const uint16_t *dc, int width, int thresh, const uint16_t *dithers)
 {
-#if HAVE_MMX2
     intptr_t x;
     if (width & 3) {
         x = width & ~3;
@@ -71,12 +71,12 @@ static void gradfun_filter_line_mmx2(uint8_t *dst, const uint8_t *src, const uin
          "rm"(thresh), "m"(*dithers), "m"(*pw_7f)
         :"memory"
     );
-#endif
 }
+#endif
 
+#if HAVE_SSSE3
 static void gradfun_filter_line_ssse3(uint8_t *dst, const uint8_t *src, const uint16_t *dc, int width, int thresh, const uint16_t *dithers)
 {
-#if HAVE_SSSE3
     intptr_t x;
     if (width & 7) {
         // could be 10% faster if I somehow eliminated this
@@ -118,12 +118,12 @@ static void gradfun_filter_line_ssse3(uint8_t *dst, const uint8_t *src, const ui
          "rm"(thresh), "m"(*dithers), "m"(*pw_7f)
         :"memory"
     );
-#endif // HAVE_SSSE3
 }
+#endif // HAVE_SSSE3
 
+#if HAVE_SSE
 static void gradfun_blur_line_sse2(uint16_t *dc, uint16_t *buf, const uint16_t *buf1, const uint8_t *src, int src_linesize, int width)
 {
-#if HAVE_SSE
 #define BLURV(load)\
     intptr_t x = -2*width;\
     __asm__ volatile(\
@@ -161,17 +161,23 @@ static void gradfun_blur_line_sse2(uint16_t *dc, uint16_t *buf, const uint16_t *
     } else {
         BLURV("movdqa");
     }
-#endif // HAVE_SSE
 }
+#endif // HAVE_SSE
 
 av_cold void ff_gradfun_init_x86(GradFunContext *gf)
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (HAVE_MMX2 && cpu_flags & AV_CPU_FLAG_MMX2)
+#if HAVE_MMX2
+    if (cpu_flags & AV_CPU_FLAG_MMX2)
         gf->filter_line = gradfun_filter_line_mmx2;
-    if (HAVE_SSSE3 && cpu_flags & AV_CPU_FLAG_SSSE3)
+#endif
+#if HAVE_SSSE3
+    if (cpu_flags & AV_CPU_FLAG_SSSE3)
         gf->filter_line = gradfun_filter_line_ssse3;
-    if (HAVE_SSE && cpu_flags & AV_CPU_FLAG_SSE2)
+#endif
+#if HAVE_SSE
+    if (cpu_flags & AV_CPU_FLAG_SSE2)
         gf->blur_line = gradfun_blur_line_sse2;
+#endif
 }

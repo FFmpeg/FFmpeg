@@ -156,7 +156,7 @@ static void dwt_quantize(SnowContext *s, Plane *p, DWTELEM *buffer, int width, i
 static av_cold int encode_init(AVCodecContext *avctx)
 {
     SnowContext *s = avctx->priv_data;
-    int plane_index;
+    int plane_index, ret;
 
     if(avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL){
         av_log(avctx, AV_LOG_ERROR, "This codec is under development, files encoded with it may not be decodable with future versions!!!\n"
@@ -185,7 +185,10 @@ static av_cold int encode_init(AVCodecContext *avctx)
         s->plane[plane_index].fast_mc= 1;
     }
 
-    ff_snow_common_init(avctx);
+    if ((ret = ff_snow_common_init(avctx)) < 0) {
+        ff_snow_common_end(avctx->priv_data);
+        return ret;
+    }
     ff_snow_alloc_blocks(s);
 
     s->version=0;
@@ -245,8 +248,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
             s->ref_scores[i]= av_mallocz(size*sizeof(uint32_t));
         }
     }
-
-    s->runs = av_malloc(avctx->width * avctx->height * sizeof(*s->runs));
 
     return 0;
 }
@@ -677,7 +678,7 @@ static int get_block_rd(SnowContext *s, int mb_x, int mb_y, int plane_index, uin
     uint8_t *src= s->  input_picture.data[plane_index];
     IDWTELEM *pred= (IDWTELEM*)s->m.obmc_scratchpad + plane_index*block_size*block_size*4;
     uint8_t *cur = s->scratchbuf;
-    uint8_t tmp[ref_stride*(2*MB_SIZE+HTAPS_MAX-1)];
+    uint8_t *tmp = s->emu_edge_buffer;
     const int b_stride = s->b_width << s->block_max_depth;
     const int b_height = s->b_height<< s->block_max_depth;
     const int w= p->width;
@@ -843,6 +844,7 @@ static int encode_subband_c0run(SnowContext *s, SubBand *b, const IDWTELEM *src,
 
     if(1){
         int run=0;
+        int *runs = s->run_buffer;
         int run_index=0;
         int max_index;
 
@@ -876,7 +878,7 @@ static int encode_subband_c0run(SnowContext *s, SubBand *b, const IDWTELEM *src,
                 }
                 if(!(/*ll|*/l|lt|t|rt|p)){
                     if(v){
-                        s->runs[run_index++]= run;
+                        runs[run_index++]= run;
                         run=0;
                     }else{
                         run++;
@@ -885,9 +887,9 @@ static int encode_subband_c0run(SnowContext *s, SubBand *b, const IDWTELEM *src,
             }
         }
         max_index= run_index;
-        s->runs[run_index++]= run;
+        runs[run_index++]= run;
         run_index=0;
-        run= s->runs[run_index++];
+        run= runs[run_index++];
 
         put_symbol2(&s->c, b->state[30], max_index, 0);
         if(run_index <= max_index)
@@ -931,7 +933,7 @@ static int encode_subband_c0run(SnowContext *s, SubBand *b, const IDWTELEM *src,
                     put_rac(&s->c, &b->state[0][context], !!v);
                 }else{
                     if(!run){
-                        run= s->runs[run_index++];
+                        run= runs[run_index++];
 
                         if(run_index <= max_index)
                             put_symbol2(&s->c, b->state[1], run, 3);
@@ -1909,7 +1911,6 @@ static av_cold int encode_end(AVCodecContext *avctx)
     if (s->input_picture.data[0])
         avctx->release_buffer(avctx, &s->input_picture);
     av_free(avctx->stats_out);
-    av_freep(&s->runs);
 
     return 0;
 }

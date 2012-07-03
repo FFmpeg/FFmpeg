@@ -552,9 +552,9 @@ typedef struct DSPContext {
      * @param src  source array
      *             constraints: 16-byte aligned
      * @param min  minimum value
-     *             constraints: must in the the range [-(1<<24), 1<<24]
+     *             constraints: must be in the range [-(1 << 24), 1 << 24]
      * @param max  maximum value
-     *             constraints: must in the the range [-(1<<24), 1<<24]
+     *             constraints: must be in the range [-(1 << 24), 1 << 24]
      * @param len  number of elements in the array
      *             constraints: multiple of 32 greater than zero
      */

@@ -135,6 +135,7 @@ typedef struct SnowContext{
     DWTELEM *temp_dwt_buffer;
     IDWTELEM *spatial_idwt_buffer;
     IDWTELEM *temp_idwt_buffer;
+    int *run_buffer;
     int colorspace_type;
     int chroma_h_shift;
     int chroma_v_shift;
@@ -165,7 +166,7 @@ typedef struct SnowContext{
     MpegEncContext m; // needed for motion estimation, should not be used for anything else, the idea is to eventually make the motion estimation independent of MpegEncContext, so this will be removed then (FIXME/XXX)
 
     uint8_t *scratchbuf;
-    int *runs;
+    uint8_t *emu_edge_buffer;
 }SnowContext;
 
 /* Tables */

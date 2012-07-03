@@ -108,8 +108,6 @@ static av_cold int flac_decode_init(AVCodecContext *avctx)
     FLACContext *s = avctx->priv_data;
     s->avctx = avctx;
 
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
-
     /* for now, the raw FLAC header is allowed to be passed to the decoder as
        frame data instead of extradata. */
     if (!avctx->extradata)

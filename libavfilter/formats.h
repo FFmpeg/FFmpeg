@@ -221,4 +221,4 @@ void ff_formats_unref(AVFilterFormats **ref);
  */
 void ff_formats_changeref(AVFilterFormats **oldref, AVFilterFormats **newref);
 
-#endif // AVFILTER_FORMATS_H
+#endif /* AVFILTER_FORMATS_H */

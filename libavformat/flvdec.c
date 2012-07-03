@@ -76,6 +76,59 @@ static AVStream *create_stream(AVFormatContext *s, int tag, int codec_type){
     avpriv_set_pts_info(st, 32, 1, 1000); /* 32 bit pts in ms */
     return st;
 }
+static int flv_same_audio_codec(AVCodecContext *acodec, int flags)
+{
+    int bits_per_coded_sample = (flags & FLV_AUDIO_SAMPLESIZE_MASK) ? 16 : 8;
+    int flv_codecid = flags & FLV_AUDIO_CODECID_MASK;
+    int codec_id;
+
+    if (!acodec->codec_id && !acodec->codec_tag)
+        return 1;
+
+    if (acodec->bits_per_coded_sample != bits_per_coded_sample)
+        return 0;
+
+    switch(flv_codecid) {
+        //no distinction between S16 and S8 PCM codec flags
+    case FLV_CODECID_PCM:
+        codec_id = bits_per_coded_sample == 8 ? CODEC_ID_PCM_U8 :
+#if HAVE_BIGENDIAN
+                            CODEC_ID_PCM_S16BE;
+#else
+                            CODEC_ID_PCM_S16LE;
+#endif
+        return codec_id == acodec->codec_id;
+    case FLV_CODECID_PCM_LE:
+        codec_id = bits_per_coded_sample == 8 ? CODEC_ID_PCM_U8 : CODEC_ID_PCM_S16LE;
+        return codec_id == acodec->codec_id;
+    case FLV_CODECID_AAC:
+        return acodec->codec_id == CODEC_ID_AAC;
+    case FLV_CODECID_ADPCM:
+        return acodec->codec_id == CODEC_ID_ADPCM_SWF;
+    case FLV_CODECID_SPEEX:
+        return acodec->codec_id == CODEC_ID_SPEEX;
+    case FLV_CODECID_MP3:
+        return acodec->codec_id == CODEC_ID_MP3;
+    case FLV_CODECID_NELLYMOSER_8KHZ_MONO:
+        return acodec->sample_rate == 8000 &&
+               acodec->codec_id == CODEC_ID_NELLYMOSER;
+    case FLV_CODECID_NELLYMOSER_16KHZ_MONO:
+        return acodec->sample_rate == 16000 &&
+               acodec->codec_id == CODEC_ID_NELLYMOSER;
+    case FLV_CODECID_NELLYMOSER:
+        return acodec->codec_id == CODEC_ID_NELLYMOSER;
+    case FLV_CODECID_PCM_MULAW:
+        return acodec->sample_rate == 8000 &&
+               acodec->codec_id == CODEC_ID_PCM_MULAW;
+    case FLV_CODECID_PCM_ALAW:
+        return acodec->sample_rate = 8000 &&
+               acodec->codec_id == CODEC_ID_PCM_ALAW;
+    default:
+        return acodec->codec_tag == (flv_codecid >> FLV_AUDIO_CODECID_OFFSET);
+    }
+
+    return 0;
+}
 
 static void flv_set_audio_codec(AVFormatContext *s, AVStream *astream, AVCodecContext *acodec, int flv_codecid) {
     switch(flv_codecid) {
@@ -120,6 +173,33 @@ static void flv_set_audio_codec(AVFormatContext *s, AVStream *astream, AVCodecCo
             av_log(s, AV_LOG_INFO, "Unsupported audio codec (%x)\n", flv_codecid >> FLV_AUDIO_CODECID_OFFSET);
             acodec->codec_tag = flv_codecid >> FLV_AUDIO_CODECID_OFFSET;
     }
+}
+
+static int flv_same_video_codec(AVCodecContext *vcodec, int flags)
+{
+    int flv_codecid = flags & FLV_VIDEO_CODECID_MASK;
+
+    if (!vcodec->codec_id && !vcodec->codec_tag)
+        return 1;
+
+    switch (flv_codecid) {
+        case FLV_CODECID_H263:
+            return vcodec->codec_id == CODEC_ID_FLV1;
+        case FLV_CODECID_SCREEN:
+            return vcodec->codec_id == CODEC_ID_FLASHSV;
+        case FLV_CODECID_SCREEN2:
+            return vcodec->codec_id == CODEC_ID_FLASHSV2;
+        case FLV_CODECID_VP6:
+            return vcodec->codec_id == CODEC_ID_VP6F;
+        case FLV_CODECID_VP6A:
+            return vcodec->codec_id == CODEC_ID_VP6A;
+        case FLV_CODECID_H264:
+            return vcodec->codec_id == CODEC_ID_H264;
+        default:
+            return vcodec->codec_tag == flv_codecid;
+    }
+
+    return 0;
 }
 
 static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream, int flv_codecid) {
@@ -516,7 +596,7 @@ static int flv_data_packet(AVFormatContext *s, AVPacket *pkt,
 
     for (i = 0; i < s->nb_streams; i++) {
         st = s->streams[i];
-        if (st->id == 2)
+        if (st->codec->codec_type == AVMEDIA_TYPE_DATA)
             break;
     }
 
@@ -616,8 +696,18 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     /* now find stream */
     for(i=0;i<s->nb_streams;i++) {
         st = s->streams[i];
-        if (st->id == stream_type)
+        if (stream_type == FLV_STREAM_TYPE_AUDIO && st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+            if (flv_same_audio_codec(st->codec, flags)) {
+                break;
+            }
+        } else
+        if (stream_type == FLV_STREAM_TYPE_VIDEO && st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+            if (flv_same_video_codec(st->codec, flags)) {
+                break;
+            }
+        } else if (st->id == stream_type) {
             break;
+        }
     }
     if(i == s->nb_streams){
         av_log(s, AV_LOG_WARNING, "Stream discovered after head already parsed\n");

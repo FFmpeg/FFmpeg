@@ -24,10 +24,6 @@
 #include "libavcodec/x86/dsputil_mmx.h"
 #include "libavfilter/yadif.h"
 
-static void yadif_filter_line_ssse3(uint8_t *dst, uint8_t *prev, uint8_t *cur, uint8_t *next, int w, int prefs, int mrefs, int parity, int mode);
-static void yadif_filter_line_sse2(uint8_t *dst, uint8_t *prev, uint8_t *cur, uint8_t *next, int w, int prefs, int mrefs, int parity, int mode);
-static void yadif_filter_line_mmx(uint8_t *dst, uint8_t *prev, uint8_t *cur, uint8_t *next, int w, int prefs, int mrefs, int parity, int mode);
-
 DECLARE_ASM_CONST(16, const xmm_reg, pb_1) = {0x0101010101010101ULL, 0x0101010101010101ULL};
 DECLARE_ASM_CONST(16, const xmm_reg, pw_1) = {0x0001000100010001ULL, 0x0001000100010001ULL};
 
@@ -57,10 +53,16 @@ av_cold void ff_yadif_init_x86(YADIFContext *yadif)
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX)
+#if HAVE_MMX
+    if (cpu_flags & AV_CPU_FLAG_MMX)
         yadif->filter_line = yadif_filter_line_mmx;
-    if (HAVE_SSE && cpu_flags & AV_CPU_FLAG_SSE2)
+#endif
+#if HAVE_SSE
+    if (cpu_flags & AV_CPU_FLAG_SSE2)
         yadif->filter_line = yadif_filter_line_sse2;
-    if (HAVE_SSSE3 && cpu_flags & AV_CPU_FLAG_SSSE3)
+#endif
+#if HAVE_SSSE3
+    if (cpu_flags & AV_CPU_FLAG_SSSE3)
         yadif->filter_line = yadif_filter_line_ssse3;
+#endif
 }

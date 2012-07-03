@@ -41,7 +41,7 @@
 #define LIBAVFILTER_BUILD       LIBAVFILTER_VERSION_INT
 
 /**
- * Those FF_API_* defines are not part of public API.
+ * These FF_API_* defines are not part of the public API.
  * They may change, break or disappear at any time.
  */
 #ifndef FF_API_OLD_ALL_FORMATS_API
@@ -60,4 +60,4 @@
 #define FF_API_BUFFERSRC_BUFFER             (LIBAVFILTER_VERSION_MAJOR < 4)
 #endif
 
-#endif // AVFILTER_VERSION_H
+#endif /* AVFILTER_VERSION_H */

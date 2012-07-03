@@ -1737,7 +1737,7 @@ static av_always_inline void backup_mb_border(H264Context *h, uint8_t *src_y,
     }
 
     top_border = h->top_borders[top_idx][s->mb_x];
-    /* There are two lines saved, the line above the the top macroblock
+    /* There are two lines saved, the line above the top macroblock
      * of a pair, and the line above the bottom macroblock. */
     AV_COPY128(top_border, src_y + 16 * linesize);
     if (pixel_shift)
@@ -4443,7 +4443,7 @@ again:
                 init_get_bits(&s->gb, ptr, bit_length);
                 if (ff_h264_decode_seq_parameter_set(h) < 0 && (h->is_avc ? (nalsize != consumed) && nalsize : 1)) {
                     av_log(h->s.avctx, AV_LOG_DEBUG,
-                           "SPS decoding failure, trying alternative mode\n");
+                           "SPS decoding failure, trying again with the complete NAL\n");
                     if (h->is_avc)
                         av_assert0(next_avc - buf_index + consumed == nalsize);
                     init_get_bits(&s->gb, &buf[buf_index + 1 - consumed],

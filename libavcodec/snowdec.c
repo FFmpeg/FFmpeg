@@ -365,7 +365,12 @@ static int decode_header(SnowContext *s){
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {
-    ff_snow_common_init(avctx);
+    int ret;
+
+    if ((ret = ff_snow_common_init(avctx)) < 0) {
+        ff_snow_common_end(avctx->priv_data);
+        return ret;
+    }
 
     return 0;
 }

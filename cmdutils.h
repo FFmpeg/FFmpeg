@@ -376,7 +376,7 @@ FILE *get_preset_file(char *filename, size_t filename_size,
  * Do all the necessary cleanup and abort.
  * This function is implemented in the avtools, not cmdutils.
  */
-void exit_program(int ret);
+av_noreturn void exit_program(int ret);
 
 /**
  * Realloc array to hold new_size elements of elem_size.
