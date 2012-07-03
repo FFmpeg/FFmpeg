@@ -137,6 +137,9 @@ static int decode_frame(AVCodecContext *avctx,
     const uint8_t *buf_end = buf + avpkt->size;
     int video_size, video_type, i, j;
 
+    if (avpkt->size < 6)
+        return AVERROR_INVALIDDATA;
+
     video_size = AV_RL32(buf);
     video_type = buf[4];
     buf += 5;
@@ -162,11 +165,9 @@ static int decode_frame(AVCodecContext *avctx,
 
             buf += video_size;
         } else if (video_type == 2) {
-            if (buf + 1 <= buf_end) {
-                int v = *buf++;
-                for (j = 0; j < avctx->height; j++)
-                    memset(s->frame.data[0] + j*s->frame.linesize[0], v, avctx->width);
-            }
+            int v = *buf++;
+            for (j = 0; j < avctx->height; j++)
+                memset(s->frame.data[0] + j*s->frame.linesize[0], v, avctx->width);
         } else {
             av_log(avctx, AV_LOG_WARNING, "unsupported frame type %i\n", video_type);
             return AVERROR_INVALIDDATA;
