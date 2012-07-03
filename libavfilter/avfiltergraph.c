@@ -365,7 +365,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                     break;
                 case AVMEDIA_TYPE_AUDIO:
                     if (!(filter = avfilter_get_by_name("aresample"))) {
-                        av_log(log_ctx, AV_LOG_ERROR, "'resample' filter "
+                        av_log(log_ctx, AV_LOG_ERROR, "'aresample' filter "
                                "not present, cannot convert audio formats.\n");
                         return AVERROR(EINVAL);
                     }
