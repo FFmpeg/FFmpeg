@@ -209,10 +209,14 @@ static int read_mfra(struct VideoFiles *files, int start_index,
     avio_seek(f, avio_size(f) - 4, SEEK_SET);
     mfra_size = avio_rb32(f);
     avio_seek(f, -mfra_size, SEEK_CUR);
-    if (avio_rb32(f) != mfra_size)
+    if (avio_rb32(f) != mfra_size) {
+        err = AVERROR_INVALIDDATA;
         goto fail;
-    if (avio_rb32(f) != MKBETAG('m', 'f', 'r', 'a'))
+    }
+    if (avio_rb32(f) != MKBETAG('m', 'f', 'r', 'a')) {
+        err = AVERROR_INVALIDDATA;
         goto fail;
+    }
     while (!read_tfra(files, start_index, f)) {
         /* Empty */
     }
@@ -223,6 +227,8 @@ static int read_mfra(struct VideoFiles *files, int start_index,
 fail:
     if (f)
         avio_close(f);
+    if (err)
+        fprintf(stderr, "Unable to read the MFRA atom in %s\n", file);
     return err;
 }
 
@@ -355,7 +361,7 @@ static int handle_file(struct VideoFiles *files, const char *file, int split)
 
     avformat_close_input(&ctx);
 
-    read_mfra(files, orig_files, file, split);
+    err = read_mfra(files, orig_files, file, split);
 
 fail:
     if (ctx)
@@ -509,7 +515,8 @@ int main(int argc, char **argv)
         } else if (argv[i][0] == '-') {
             return usage(argv[0], 1);
         } else {
-            handle_file(&vf, argv[i], split);
+            if (handle_file(&vf, argv[i], split))
+                return 1;
         }
     }
     if (!vf.nb_files || (!basename && !split))
