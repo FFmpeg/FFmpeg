@@ -394,8 +394,7 @@ mca( 8, 8,8)
 av_cold int ff_snow_common_init(AVCodecContext *avctx){
     SnowContext *s = avctx->priv_data;
     int width, height;
-    int i, j, ret;
-    int emu_buf_size;
+    int i, j;
 
     s->avctx= avctx;
     s->max_ref_frames=1; //just make sure its not an invalid value in case of no initial keyframe
@@ -458,14 +457,6 @@ av_cold int ff_snow_common_init(AVCodecContext *avctx){
         for(j=0; j<MAX_REF_FRAMES; j++)
             ff_scale_mv_ref[i][j] = 256*(i+1)/(j+1);
 
-    if ((ret = s->avctx->get_buffer(s->avctx, &s->mconly_picture)) < 0) {
-//         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-//         return ret;
-    }
-    FF_ALLOCZ_OR_GOTO(avctx, s->scratchbuf, FFMAX(s->mconly_picture.linesize[0], 2*width+256)*7*MB_SIZE, fail);
-    emu_buf_size = FFMAX(s->mconly_picture.linesize[0], 2*width+256) * (2 * MB_SIZE + HTAPS_MAX - 1);
-    FF_ALLOC_OR_GOTO(avctx, s->emu_edge_buffer, emu_buf_size, fail);
-
     return 0;
 fail:
     return AVERROR(ENOMEM);
@@ -474,6 +465,22 @@ fail:
 int ff_snow_common_init_after_header(AVCodecContext *avctx) {
     SnowContext *s = avctx->priv_data;
     int plane_index, level, orientation;
+    int ret, emu_buf_size;
+
+    if(!s->scratchbuf) {
+        if ((ret = s->avctx->get_buffer(s->avctx, &s->mconly_picture)) < 0) {
+            av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+            return ret;
+        }
+        FF_ALLOCZ_OR_GOTO(avctx, s->scratchbuf, FFMAX(s->mconly_picture.linesize[0], 2*avctx->width+256)*7*MB_SIZE, fail);
+        emu_buf_size = FFMAX(s->mconly_picture.linesize[0], 2*avctx->width+256) * (2 * MB_SIZE + HTAPS_MAX - 1);
+        FF_ALLOC_OR_GOTO(avctx, s->emu_edge_buffer, emu_buf_size, fail);
+    }
+
+    if(s->mconly_picture.format != avctx->pix_fmt) {
+        av_log(avctx, AV_LOG_ERROR, "pixel format changed\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     for(plane_index=0; plane_index<3; plane_index++){
         int w= s->avctx->width;
@@ -522,6 +529,8 @@ int ff_snow_common_init_after_header(AVCodecContext *avctx) {
     }
 
     return 0;
+fail:
+    return AVERROR(ENOMEM);
 }
 
 #define USE_HALFPEL_PLANE 0
