@@ -90,6 +90,78 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
     [PIX_FMT_YUV440P] = {
         .color_type = FF_COLOR_YUV,
     },
+    [PIX_FMT_YUV420P9LE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [PIX_FMT_YUV422P9LE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [PIX_FMT_YUV444P9LE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [PIX_FMT_YUV420P9BE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [PIX_FMT_YUV422P9BE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [PIX_FMT_YUV444P9BE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [PIX_FMT_YUV420P10LE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [PIX_FMT_YUV422P10LE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [PIX_FMT_YUV444P10LE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [PIX_FMT_YUV420P10BE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [PIX_FMT_YUV422P10BE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [PIX_FMT_YUV444P10BE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [PIX_FMT_YUV420P12LE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [PIX_FMT_YUV422P12LE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [PIX_FMT_YUV444P12LE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [PIX_FMT_YUV420P12BE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [PIX_FMT_YUV422P12BE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [PIX_FMT_YUV444P12BE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [PIX_FMT_YUV420P14LE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [PIX_FMT_YUV422P14LE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [PIX_FMT_YUV444P14LE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [PIX_FMT_YUV420P14BE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [PIX_FMT_YUV422P14BE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [PIX_FMT_YUV444P14BE] = {
+        .color_type = FF_COLOR_YUV,
+    },
     [PIX_FMT_YUV420P16LE] = {
         .color_type = FF_COLOR_YUV,
     },
