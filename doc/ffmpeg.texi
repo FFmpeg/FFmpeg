@@ -722,10 +722,7 @@ filter. For example, if you need to merge a media (here @file{input.mkv}) with 2
 mono audio streams into one single stereo channel audio stream (and keep the
 video stream), you can use the following command:
 @example
-ffmpeg -i input.mkv -f lavfi -i "
-amovie=input.mkv:si=1 [a1];
-amovie=input.mkv:si=2 [a2];
-[a1][a2] amerge" -c:a pcm_s16le -c:v copy output.mkv
+ffmpeg -i input.mkv -filter_complex "[0:1] [0:2] amerge" -c:a pcm_s16le -c:v copy output.mkv
 @end example
 
 @item -map_metadata[:@var{metadata_spec_out}] @var{infile}[:@var{metadata_spec_in}] (@emph{output,per-metadata})
