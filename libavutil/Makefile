@@ -38,6 +38,7 @@ HEADERS = adler32.h                                                     \
           samplefmt.h                                                   \
           sha.h                                                         \
           time.h                                                        \
+          xtea.h                                                        \
 
 ARCH_HEADERS = bswap.h                                                  \
                intmath.h                                                \
@@ -83,6 +84,7 @@ OBJS = adler32.o                                                        \
        time.o                                                           \
        tree.o                                                           \
        utils.o                                                          \
+       xtea.o                                                           \
 
 TESTPROGS = adler32                                                     \
             aes                                                         \
@@ -101,3 +103,4 @@ TESTPROGS = adler32                                                     \
             parseutils                                                  \
             sha                                                         \
             tree                                                        \
+            xtea                                                        \
