@@ -352,6 +352,40 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
     [PIX_FMT_RGBA] = {
         .color_type = FF_COLOR_RGB,
     },
+
+    [PIX_FMT_GBRP] = {
+        .color_type = FF_COLOR_RGB,
+    },
+    [PIX_FMT_GBRP9BE] = {
+        .color_type = FF_COLOR_RGB,
+    },
+    [PIX_FMT_GBRP9LE] = {
+        .color_type = FF_COLOR_RGB,
+    },
+    [PIX_FMT_GBRP10BE] = {
+        .color_type = FF_COLOR_RGB,
+    },
+    [PIX_FMT_GBRP10LE] = {
+        .color_type = FF_COLOR_RGB,
+    },
+    [PIX_FMT_GBRP12BE] = {
+        .color_type = FF_COLOR_RGB,
+    },
+    [PIX_FMT_GBRP12LE] = {
+        .color_type = FF_COLOR_RGB,
+    },
+    [PIX_FMT_GBRP14BE] = {
+        .color_type = FF_COLOR_RGB,
+    },
+    [PIX_FMT_GBRP14LE] = {
+        .color_type = FF_COLOR_RGB,
+    },
+    [PIX_FMT_GBRP16BE] = {
+        .color_type = FF_COLOR_RGB,
+    },
+    [PIX_FMT_GBRP16LE] = {
+        .color_type = FF_COLOR_RGB,
+    },
 };
 
 void avcodec_get_chroma_sub_sample(enum PixelFormat pix_fmt, int *h_shift, int *v_shift)
