@@ -185,6 +185,23 @@ enum PixelFormat {
     PIX_FMT_YUVA444P,  ///< planar YUV 4:4:4 32bpp, (1 Cr & Cb sample per 1x1 Y & A samples)
     PIX_FMT_YUVA422P,  ///< planar YUV 4:2:2 24bpp, (1 Cr & Cb sample per 2x1 Y & A samples)
 
+    PIX_FMT_YUV420P12BE, ///< planar YUV 4:2:0,18bpp, (1 Cr & Cb sample per 2x2 Y samples), big-endian
+    PIX_FMT_YUV420P12LE, ///< planar YUV 4:2:0,18bpp, (1 Cr & Cb sample per 2x2 Y samples), little-endian
+    PIX_FMT_YUV420P14BE, ///< planar YUV 4:2:0,21bpp, (1 Cr & Cb sample per 2x2 Y samples), big-endian
+    PIX_FMT_YUV420P14LE, ///< planar YUV 4:2:0,21bpp, (1 Cr & Cb sample per 2x2 Y samples), little-endian
+    PIX_FMT_YUV422P12BE, ///< planar YUV 4:2:2,24bpp, (1 Cr & Cb sample per 2x1 Y samples), big-endian
+    PIX_FMT_YUV422P12LE, ///< planar YUV 4:2:2,24bpp, (1 Cr & Cb sample per 2x1 Y samples), little-endian
+    PIX_FMT_YUV422P14BE, ///< planar YUV 4:2:2,28bpp, (1 Cr & Cb sample per 2x1 Y samples), big-endian
+    PIX_FMT_YUV422P14LE, ///< planar YUV 4:2:2,28bpp, (1 Cr & Cb sample per 2x1 Y samples), little-endian
+    PIX_FMT_YUV444P12BE, ///< planar YUV 4:4:4,36bpp, (1 Cr & Cb sample per 1x1 Y samples), big-endian
+    PIX_FMT_YUV444P12LE, ///< planar YUV 4:4:4,36bpp, (1 Cr & Cb sample per 1x1 Y samples), little-endian
+    PIX_FMT_YUV444P14BE, ///< planar YUV 4:4:4,42bpp, (1 Cr & Cb sample per 1x1 Y samples), big-endian
+    PIX_FMT_YUV444P14LE, ///< planar YUV 4:4:4,42bpp, (1 Cr & Cb sample per 1x1 Y samples), little-endian
+    PIX_FMT_GBRP12BE,    ///< planar GBR 4:4:4 36bpp, big endian
+    PIX_FMT_GBRP12LE,    ///< planar GBR 4:4:4 36bpp, little endian
+    PIX_FMT_GBRP14BE,    ///< planar GBR 4:4:4 42bpp, big endian
+    PIX_FMT_GBRP14LE,    ///< planar GBR 4:4:4 42bpp, little endian
+
     PIX_FMT_NB,        ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 };
 
@@ -220,6 +237,12 @@ enum PixelFormat {
 #define PIX_FMT_YUV420P10 PIX_FMT_NE(YUV420P10BE, YUV420P10LE)
 #define PIX_FMT_YUV422P10 PIX_FMT_NE(YUV422P10BE, YUV422P10LE)
 #define PIX_FMT_YUV444P10 PIX_FMT_NE(YUV444P10BE, YUV444P10LE)
+#define PIX_FMT_YUV420P12 PIX_FMT_NE(YUV420P12BE, YUV420P12LE)
+#define PIX_FMT_YUV422P12 PIX_FMT_NE(YUV422P12BE, YUV422P12LE)
+#define PIX_FMT_YUV444P12 PIX_FMT_NE(YUV444P12BE, YUV444P12LE)
+#define PIX_FMT_YUV420P14 PIX_FMT_NE(YUV420P14BE, YUV420P14LE)
+#define PIX_FMT_YUV422P14 PIX_FMT_NE(YUV422P14BE, YUV422P14LE)
+#define PIX_FMT_YUV444P14 PIX_FMT_NE(YUV444P14BE, YUV444P14LE)
 #define PIX_FMT_YUV420P16 PIX_FMT_NE(YUV420P16BE, YUV420P16LE)
 #define PIX_FMT_YUV422P16 PIX_FMT_NE(YUV422P16BE, YUV422P16LE)
 #define PIX_FMT_YUV444P16 PIX_FMT_NE(YUV444P16BE, YUV444P16LE)
@@ -228,6 +251,8 @@ enum PixelFormat {
 #define PIX_FMT_BGRA64 PIX_FMT_NE(BGRA64BE, BGRA64LE)
 #define PIX_FMT_GBRP9     PIX_FMT_NE(GBRP9BE ,    GBRP9LE)
 #define PIX_FMT_GBRP10    PIX_FMT_NE(GBRP10BE,    GBRP10LE)
+#define PIX_FMT_GBRP12    PIX_FMT_NE(GBRP12BE,    GBRP12LE)
+#define PIX_FMT_GBRP14    PIX_FMT_NE(GBRP14BE,    GBRP14LE)
 #define PIX_FMT_GBRP16    PIX_FMT_NE(GBRP16BE,    GBRP16LE)
 
 #endif /* AVUTIL_PIXFMT_H */
