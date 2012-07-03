@@ -356,20 +356,20 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         break;
     case PIX_FMT_GRAY16:
     case PIX_FMT_YUV420P9:
-    case PIX_FMT_YUV420P10:
-    case PIX_FMT_YUV420P16:
     case PIX_FMT_YUV422P9:
-    case PIX_FMT_YUV422P10:
-    case PIX_FMT_YUV422P16:
     case PIX_FMT_YUV444P9:
     case PIX_FMT_YUV444P10:
-    case PIX_FMT_YUV444P16:
+    case PIX_FMT_YUV422P10:
+    case PIX_FMT_YUV420P10:
     case PIX_FMT_YUV420P12:
     case PIX_FMT_YUV422P12:
     case PIX_FMT_YUV444P12:
     case PIX_FMT_YUV420P14:
     case PIX_FMT_YUV422P14:
     case PIX_FMT_YUV444P14:
+    case PIX_FMT_YUV444P16:
+    case PIX_FMT_YUV422P16:
+    case PIX_FMT_YUV420P16:
         cpyresult = libopenjpeg_copy_unpacked16(avctx, frame, image);
         break;
     default:
