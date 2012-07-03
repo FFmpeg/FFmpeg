@@ -87,23 +87,23 @@ cglobal pred16x16_vertical_sse, 2,3
 ; void pred16x16_horizontal(uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 
-%macro PRED16x16_H 1
-cglobal pred16x16_horizontal_%1, 2,3
+%macro PRED16x16_H 0
+cglobal pred16x16_horizontal, 2,3
     mov       r2, 8
-%ifidn %1, ssse3
+%if cpuflag(ssse3)
     mova      m2, [pb_3]
 %endif
 .loop:
     movd      m0, [r0+r1*0-4]
     movd      m1, [r0+r1*1-4]
 
-%ifidn %1, ssse3
+%if cpuflag(ssse3)
     pshufb    m0, m2
     pshufb    m1, m2
 %else
     punpcklbw m0, m0
     punpcklbw m1, m1
-%ifidn %1, mmxext
+%if cpuflag(mmx2)
     pshufw    m0, m0, 0xff
     pshufw    m1, m1, 0xff
 %else
@@ -124,18 +124,20 @@ cglobal pred16x16_horizontal_%1, 2,3
     REP_RET
 %endmacro
 
-INIT_MMX
-PRED16x16_H mmx
-PRED16x16_H mmxext
+INIT_MMX mmx
+PRED16x16_H
+INIT_MMX mmx2
+PRED16x16_H
+INIT_XMM ssse3
+PRED16x16_H
 INIT_XMM
-PRED16x16_H ssse3
 
 ;-----------------------------------------------------------------------------
 ; void pred16x16_dc(uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 
-%macro PRED16x16_DC 1
-cglobal pred16x16_dc_%1, 2,7
+%macro PRED16x16_DC 0
+cglobal pred16x16_dc, 2,7
     mov       r4, r0
     sub       r0, r1
     pxor      mm0, mm0
@@ -158,19 +160,19 @@ cglobal pred16x16_dc_%1, 2,7
     add       r5d, r6d
     lea       r2d, [r2+r5+16]
     shr       r2d, 5
-%ifidn %1, mmxext
+%if cpuflag(ssse3)
+    pxor       m1, m1
     movd       m0, r2d
-    punpcklbw  m0, m0
-    pshufw     m0, m0, 0
-%elifidn %1, sse2
+    pshufb     m0, m1
+%elif cpuflag(sse2)
     movd       m0, r2d
     punpcklbw  m0, m0
     pshuflw    m0, m0, 0
     punpcklqdq m0, m0
-%elifidn %1, ssse3
-    pxor       m1, m1
+%elif cpuflag(mmx2)
     movd       m0, r2d
-    pshufb     m0, m1
+    punpcklbw  m0, m0
+    pshufw     m0, m0, 0
 %endif
 
 %if mmsize==8
@@ -195,18 +197,20 @@ cglobal pred16x16_dc_%1, 2,7
     REP_RET
 %endmacro
 
-INIT_MMX
-PRED16x16_DC mmxext
+INIT_MMX mmx2
+PRED16x16_DC
+INIT_XMM sse2
+PRED16x16_DC
+INIT_XMM ssse3
+PRED16x16_DC
 INIT_XMM
-PRED16x16_DC   sse2
-PRED16x16_DC  ssse3
 
 ;-----------------------------------------------------------------------------
 ; void pred16x16_tm_vp8(uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 
-%macro PRED16x16_TM_MMX 1
-cglobal pred16x16_tm_vp8_%1, 2,5
+%macro PRED16x16_TM_MMX 0
+cglobal pred16x16_tm_vp8, 2,5
     sub        r0, r1
     pxor      mm7, mm7
     movq      mm0, [r0+0]
@@ -223,11 +227,11 @@ cglobal pred16x16_tm_vp8_%1, 2,5
     movzx     r2d, byte [r0+r1-1]
     sub       r2d, r3d
     movd      mm4, r2d
-%ifidn %1, mmx
+%if cpuflag(mmx2)
+    pshufw    mm4, mm4, 0
+%else
     punpcklwd mm4, mm4
     punpckldq mm4, mm4
-%else
-    pshufw    mm4, mm4, 0
 %endif
     movq      mm5, mm4
     movq      mm6, mm4
@@ -246,8 +250,11 @@ cglobal pred16x16_tm_vp8_%1, 2,5
     REP_RET
 %endmacro
 
-PRED16x16_TM_MMX mmx
-PRED16x16_TM_MMX mmxext
+INIT_MMX mmx
+PRED16x16_TM_MMX
+INIT_MMX mmx2
+PRED16x16_TM_MMX
+INIT_MMX
 
 cglobal pred16x16_tm_vp8_sse2, 2,6,6
     sub          r0, r1
@@ -288,8 +295,8 @@ cglobal pred16x16_tm_vp8_sse2, 2,6,6
 ; void pred16x16_plane(uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 
-%macro H264_PRED16x16_PLANE 3
-cglobal pred16x16_plane_%3_%1, 2, 9, %2
+%macro H264_PRED16x16_PLANE 1
+cglobal pred16x16_plane_%1, 2,9,7
     mov          r2, r1           ; +stride
     neg          r1               ; -stride
 
@@ -310,7 +317,10 @@ cglobal pred16x16_plane_%3_%1, 2, 9, %2
     paddw        m0, m2
     paddw        m1, m3
 %else ; mmsize == 16
-%ifidn %1, sse2
+%if cpuflag(ssse3)
+    movhps       m0, [r0+r1  +8]
+    pmaddubsw    m0, [plane_shuf] ; H coefficients
+%else ; sse2
     pxor         m2, m2
     movh         m1, [r0+r1  +8]
     punpcklbw    m0, m2
@@ -318,29 +328,26 @@ cglobal pred16x16_plane_%3_%1, 2, 9, %2
     pmullw       m0, [pw_m8tom1]
     pmullw       m1, [pw_1to8]
     paddw        m0, m1
-%else ; ssse3
-    movhps       m0, [r0+r1  +8]
-    pmaddubsw    m0, [plane_shuf] ; H coefficients
 %endif
     movhlps      m1, m0
 %endif
     paddw        m0, m1
-%ifidn %1, mmx
+%if cpuflag(sse2)
+    pshuflw      m1, m0, 0xE
+%elif cpuflag(mmx2)
+    pshufw       m1, m0, 0xE
+%elif cpuflag(mmx)
     mova         m1, m0
     psrlq        m1, 32
-%elifidn %1, mmx2
-    pshufw       m1, m0, 0xE
-%else ; mmsize == 16
-    pshuflw      m1, m0, 0xE
 %endif
     paddw        m0, m1
-%ifidn %1, mmx
+%if cpuflag(sse2)
+    pshuflw      m1, m0, 0x1
+%elif cpuflag(mmx2)
+    pshufw       m1, m0, 0x1
+%elif cpuflag(mmx)
     mova         m1, m0
     psrlq        m1, 16
-%elifidn %1, mmx2
-    pshufw       m1, m0, 0x1
-%else
-    pshuflw      m1, m0, 0x1
 %endif
     paddw        m0, m1           ; sum of H coefficients
 
@@ -424,13 +431,13 @@ cglobal pred16x16_plane_%3_%1, 2, 9, %2
     mov          r0, r0m
 %endif
 
-%ifidn %3, h264
+%ifidn %1, h264
     lea          r5, [r5*5+32]
     sar          r5, 6
-%elifidn %3, rv40
+%elifidn %1, rv40
     lea          r5, [r5*5]
     sar          r5, 6
-%elifidn %3, svq3
+%elifidn %1, svq3
     test         r5, r5
     lea          r6, [r5+3]
     cmovs        r5, r6
@@ -449,8 +456,8 @@ cglobal pred16x16_plane_%3_%1, 2, 9, %2
 
     movd        r1d, m0
     movsx       r1d, r1w
-%ifnidn %3, svq3
-%ifidn %3, h264
+%ifnidn %1, svq3
+%ifidn %1, h264
     lea         r1d, [r1d*5+32]
 %else ; rv40
     lea         r1d, [r1d*5]
@@ -476,26 +483,26 @@ cglobal pred16x16_plane_%3_%1, 2, 9, %2
 
     movd         m1, r5d
     movd         m3, r3d
-%ifidn %1, mmx
-    punpcklwd    m0, m0
-    punpcklwd    m1, m1
-    punpcklwd    m3, m3
-    punpckldq    m0, m0
-    punpckldq    m1, m1
-    punpckldq    m3, m3
-%elifidn %1, mmx2
-    pshufw       m0, m0, 0x0
-    pshufw       m1, m1, 0x0
-    pshufw       m3, m3, 0x0
-%else
+%if cpuflag(sse2)
     pshuflw      m0, m0, 0x0
     pshuflw      m1, m1, 0x0
     pshuflw      m3, m3, 0x0
     punpcklqdq   m0, m0           ; splat H (words)
     punpcklqdq   m1, m1           ; splat V (words)
     punpcklqdq   m3, m3           ; splat a (words)
+%elif cpuflag(mmx2)
+    pshufw       m0, m0, 0x0
+    pshufw       m1, m1, 0x0
+    pshufw       m3, m3, 0x0
+%elif cpuflag(mmx)
+    punpcklwd    m0, m0
+    punpcklwd    m1, m1
+    punpcklwd    m3, m3
+    punpckldq    m0, m0
+    punpckldq    m1, m1
+    punpckldq    m3, m3
 %endif
-%ifidn %3, svq3
+%ifidn %1, svq3
     SWAP          0, 1
 %endif
     mova         m2, m0
@@ -568,27 +575,30 @@ cglobal pred16x16_plane_%3_%1, 2, 9, %2
     REP_RET
 %endmacro
 
-INIT_MMX
-H264_PRED16x16_PLANE mmx,   0, h264
-H264_PRED16x16_PLANE mmx,   0, rv40
-H264_PRED16x16_PLANE mmx,   0, svq3
-H264_PRED16x16_PLANE mmx2,  0, h264
-H264_PRED16x16_PLANE mmx2,  0, rv40
-H264_PRED16x16_PLANE mmx2,  0, svq3
+INIT_MMX mmx
+H264_PRED16x16_PLANE h264
+H264_PRED16x16_PLANE rv40
+H264_PRED16x16_PLANE svq3
+INIT_MMX mmx2
+H264_PRED16x16_PLANE h264
+H264_PRED16x16_PLANE rv40
+H264_PRED16x16_PLANE svq3
+INIT_XMM sse2
+H264_PRED16x16_PLANE h264
+H264_PRED16x16_PLANE rv40
+H264_PRED16x16_PLANE svq3
+INIT_XMM ssse3
+H264_PRED16x16_PLANE h264
+H264_PRED16x16_PLANE rv40
+H264_PRED16x16_PLANE svq3
 INIT_XMM
-H264_PRED16x16_PLANE sse2,  8, h264
-H264_PRED16x16_PLANE sse2,  8, rv40
-H264_PRED16x16_PLANE sse2,  8, svq3
-H264_PRED16x16_PLANE ssse3, 8, h264
-H264_PRED16x16_PLANE ssse3, 8, rv40
-H264_PRED16x16_PLANE ssse3, 8, svq3
 
 ;-----------------------------------------------------------------------------
 ; void pred8x8_plane(uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 
-%macro H264_PRED8x8_PLANE 2
-cglobal pred8x8_plane_%1, 2, 9, %2
+%macro H264_PRED8x8_PLANE 0
+cglobal pred8x8_plane, 2,9,7
     mov          r2, r1           ; +stride
     neg          r1               ; -stride
 
@@ -601,39 +611,39 @@ cglobal pred8x8_plane_%1, 2, 9, %2
     pmullw       m0, [pw_m4to4]
     pmullw       m1, [pw_m4to4+8]
 %else ; mmsize == 16
-%ifidn %1, sse2
+%if cpuflag(ssse3)
+    movhps       m0, [r0+r1  +4]   ; this reads 4 bytes more than necessary
+    pmaddubsw    m0, [plane8_shuf] ; H coefficients
+%else ; sse2
     pxor         m2, m2
     movd         m1, [r0+r1  +4]
     punpckldq    m0, m1
     punpcklbw    m0, m2
     pmullw       m0, [pw_m4to4]
-%else ; ssse3
-    movhps       m0, [r0+r1  +4]   ; this reads 4 bytes more than necessary
-    pmaddubsw    m0, [plane8_shuf] ; H coefficients
 %endif
     movhlps      m1, m0
 %endif
     paddw        m0, m1
 
-%ifnidn %1, ssse3
-%ifidn %1, mmx
+%if notcpuflag(ssse3)
+%if cpuflag(sse2) ; mmsize == 16
+    pshuflw      m1, m0, 0xE
+%elif cpuflag(mmx2)
+    pshufw       m1, m0, 0xE
+%elif cpuflag(mmx)
     mova         m1, m0
     psrlq        m1, 32
-%elifidn %1, mmx2
-    pshufw       m1, m0, 0xE
-%else ; mmsize == 16
-    pshuflw      m1, m0, 0xE
 %endif
     paddw        m0, m1
 %endif ; !ssse3
 
-%ifidn %1, mmx
+%if cpuflag(sse2)
+    pshuflw      m1, m0, 0x1
+%elif cpuflag(mmx2)
+    pshufw       m1, m0, 0x1
+%elif cpuflag(mmx)
     mova         m1, m0
     psrlq        m1, 16
-%elifidn %1, mmx2
-    pshufw       m1, m0, 0x1
-%else
-    pshuflw      m1, m0, 0x1
 %endif
     paddw        m0, m1           ; sum of H coefficients
 
@@ -701,24 +711,24 @@ cglobal pred8x8_plane_%1, 2, 9, %2
 
     movd         m1, r5d
     movd         m3, r3d
-%ifidn %1, mmx
-    punpcklwd    m0, m0
-    punpcklwd    m1, m1
-    punpcklwd    m3, m3
-    punpckldq    m0, m0
-    punpckldq    m1, m1
-    punpckldq    m3, m3
-%elifidn %1, mmx2
-    pshufw       m0, m0, 0x0
-    pshufw       m1, m1, 0x0
-    pshufw       m3, m3, 0x0
-%else
+%if cpuflag(sse2)
     pshuflw      m0, m0, 0x0
     pshuflw      m1, m1, 0x0
     pshuflw      m3, m3, 0x0
     punpcklqdq   m0, m0           ; splat H (words)
     punpcklqdq   m1, m1           ; splat V (words)
     punpcklqdq   m3, m3           ; splat a (words)
+%elif cpuflag(mmx2)
+    pshufw       m0, m0, 0x0
+    pshufw       m1, m1, 0x0
+    pshufw       m3, m3, 0x0
+%elif cpuflag(mmx)
+    punpcklwd    m0, m0
+    punpcklwd    m1, m1
+    punpcklwd    m3, m3
+    punpckldq    m0, m0
+    punpckldq    m1, m1
+    punpckldq    m3, m3
 %endif
 %if mmsize == 8
     mova         m2, m0
@@ -768,12 +778,15 @@ ALIGN 16
     REP_RET
 %endmacro
 
-INIT_MMX
-H264_PRED8x8_PLANE mmx,   0
-H264_PRED8x8_PLANE mmx2,  0
+INIT_MMX mmx
+H264_PRED8x8_PLANE
+INIT_MMX mmx2
+H264_PRED8x8_PLANE
+INIT_XMM sse2
+H264_PRED8x8_PLANE
+INIT_XMM ssse3
+H264_PRED8x8_PLANE
 INIT_XMM
-H264_PRED8x8_PLANE sse2,  8
-H264_PRED8x8_PLANE ssse3, 8
 
 ;-----------------------------------------------------------------------------
 ; void pred8x8_vertical(uint8_t *src, int stride)
@@ -795,22 +808,22 @@ cglobal pred8x8_vertical_mmx, 2,2
 ; void pred8x8_horizontal(uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 
-%macro PRED8x8_H 1
-cglobal pred8x8_horizontal_%1, 2,3
+%macro PRED8x8_H 0
+cglobal pred8x8_horizontal, 2,3
     mov       r2, 4
-%ifidn %1, ssse3
+%if cpuflag(ssse3)
     mova      m2, [pb_3]
 %endif
 .loop:
     movd      m0, [r0+r1*0-4]
     movd      m1, [r0+r1*1-4]
-%ifidn %1, ssse3
+%if cpuflag(ssse3)
     pshufb    m0, m2
     pshufb    m1, m2
 %else
     punpcklbw m0, m0
     punpcklbw m1, m1
-%ifidn %1, mmxext
+%if cpuflag(mmx2)
     pshufw    m0, m0, 0xff
     pshufw    m1, m1, 0xff
 %else
@@ -828,10 +841,13 @@ cglobal pred8x8_horizontal_%1, 2,3
     REP_RET
 %endmacro
 
+INIT_MMX mmx
+PRED8x8_H
+INIT_MMX mmx2
+PRED8x8_H
+INIT_MMX ssse3
+PRED8x8_H
 INIT_MMX
-PRED8x8_H mmx
-PRED8x8_H mmxext
-PRED8x8_H ssse3
 
 ;-----------------------------------------------------------------------------
 ; void pred8x8_top_dc_mmxext(uint8_t *src, int stride)
@@ -967,8 +983,8 @@ cglobal pred8x8_dc_rv40_mmxext, 2,7
 ; void pred8x8_tm_vp8(uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 
-%macro PRED8x8_TM_MMX 1
-cglobal pred8x8_tm_vp8_%1, 2,6
+%macro PRED8x8_TM_MMX 0
+cglobal pred8x8_tm_vp8, 2,6
     sub        r0, r1
     pxor      mm7, mm7
     movq      mm0, [r0]
@@ -984,14 +1000,14 @@ cglobal pred8x8_tm_vp8_%1, 2,6
     sub       r3d, r4d
     movd      mm2, r2d
     movd      mm4, r3d
-%ifidn %1, mmx
+%if cpuflag(mmx2)
+    pshufw    mm2, mm2, 0
+    pshufw    mm4, mm4, 0
+%else
     punpcklwd mm2, mm2
     punpcklwd mm4, mm4
     punpckldq mm2, mm2
     punpckldq mm4, mm4
-%else
-    pshufw    mm2, mm2, 0
-    pshufw    mm4, mm4, 0
 %endif
     movq      mm3, mm2
     movq      mm5, mm4
@@ -1009,8 +1025,11 @@ cglobal pred8x8_tm_vp8_%1, 2,6
     REP_RET
 %endmacro
 
-PRED8x8_TM_MMX mmx
-PRED8x8_TM_MMX mmxext
+INIT_MMX mmx
+PRED8x8_TM_MMX
+INIT_MMX mmx2
+PRED8x8_TM_MMX
+INIT_MMX
 
 cglobal pred8x8_tm_vp8_sse2, 2,6,4
     sub          r0, r1
@@ -2510,8 +2529,8 @@ cglobal pred4x4_dc_mmxext, 3,5
 ; void pred4x4_tm_vp8_mmxext(uint8_t *src, const uint8_t *topright, int stride)
 ;-----------------------------------------------------------------------------
 
-%macro PRED4x4_TM_MMX 1
-cglobal pred4x4_tm_vp8_%1, 3,6
+%macro PRED4x4_TM_MMX 0
+cglobal pred4x4_tm_vp8, 3,6
     sub        r0, r2
     pxor      mm7, mm7
     movd      mm0, [r0]
@@ -2525,14 +2544,14 @@ cglobal pred4x4_tm_vp8_%1, 3,6
     sub       r3d, r4d
     movd      mm2, r1d
     movd      mm4, r3d
-%ifidn %1, mmx
+%if cpuflag(mmx2)
+    pshufw    mm2, mm2, 0
+    pshufw    mm4, mm4, 0
+%else
     punpcklwd mm2, mm2
     punpcklwd mm4, mm4
     punpckldq mm2, mm2
     punpckldq mm4, mm4
-%else
-    pshufw    mm2, mm2, 0
-    pshufw    mm4, mm4, 0
 %endif
     paddw     mm2, mm0
     paddw     mm4, mm0
@@ -2546,8 +2565,11 @@ cglobal pred4x4_tm_vp8_%1, 3,6
     REP_RET
 %endmacro
 
-PRED4x4_TM_MMX mmx
-PRED4x4_TM_MMX mmxext
+INIT_MMX mmx
+PRED4x4_TM_MMX
+INIT_MMX mmx2
+PRED4x4_TM_MMX
+INIT_MMX
 
 cglobal pred4x4_tm_vp8_ssse3, 3,3
     sub         r0, r2
