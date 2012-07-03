@@ -133,9 +133,8 @@ static int decode_frame(AVCodecContext *avctx,
                         AVPacket *avpkt)
 {
     JvContext *s           = avctx->priv_data;
-    int buf_size           = avpkt->size;
     const uint8_t *buf     = avpkt->data;
-    const uint8_t *buf_end = buf + buf_size;
+    const uint8_t *buf_end = buf + avpkt->size;
     int video_size, video_type, i, j;
 
     video_size = AV_RL32(buf);
@@ -143,7 +142,7 @@ static int decode_frame(AVCodecContext *avctx,
     buf += 5;
 
     if (video_size) {
-        if(video_size < 0 || video_size > buf_size) {
+        if (video_size < 0 || video_size > avpkt->size) {
             av_log(avctx, AV_LOG_ERROR, "video size %d invalid\n", video_size);
             return AVERROR_INVALIDDATA;
         }
@@ -194,7 +193,7 @@ static int decode_frame(AVCodecContext *avctx,
         *(AVFrame*)data = s->frame;
     }
 
-    return buf_size;
+    return avpkt->size;
 }
 
 static av_cold int decode_close(AVCodecContext *avctx)
