@@ -26,6 +26,7 @@
  */
 
 #include <stdint.h>
+#include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "h264dsp.h"
 
@@ -107,6 +108,7 @@ void ff_h264dsp_init(H264DSPContext *c, const int bit_depth, const int chroma_fo
         H264_DSP(10);
         break;
     default:
+        av_assert0(bit_depth<=8);
         H264_DSP(8);
         break;
     }
