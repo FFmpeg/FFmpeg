@@ -1556,8 +1556,10 @@ static int poll_filters(void)
             else
                 ret = av_buffersink_read(ost->filter->filter, &picref);
 
-            if (ret < 0)
+            if (ret == AVERROR_EOF || ret == AVERROR(EAGAIN))
                 break;
+            else if (ret < 0)
+                return ret;
 
             avfilter_copy_buf_props(filtered_frame, picref);
             if (picref->pts != AV_NOPTS_VALUE) {
