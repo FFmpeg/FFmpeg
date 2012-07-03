@@ -440,8 +440,10 @@ static int video_get_buffer(AVCodecContext *s, AVFrame *pic)
         return -1;
     }
 
-    if(av_image_check_size(w, h, 0, s) || s->pix_fmt<0)
+    if(av_image_check_size(w, h, 0, s) || s->pix_fmt<0) {
+        av_log(s, AV_LOG_ERROR, "video_get_buffer: image parameters invalid\n");
         return -1;
+    }
 
     if (!avci->buffer) {
         avci->buffer = av_mallocz((INTERNAL_BUFFER_SIZE+1) *
