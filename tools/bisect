@@ -2,6 +2,23 @@
 
 set -e
 
+if test "bisect" = "`basename $0`" ; then
+    echo WARNING, trying to execute tools/bisect directly this cannot work as
+    echo the script itself would not be available in older checkouts
+    echo please use tools/ffbisect
+    git show master:tools/bisect > tools/ffbisect
+    chmod u+x tools/ffbisect
+    exit 1
+fi
+
+if ! git show master:tools/bisect | diff - tools/ffbisect > /dev/null ; then
+    echo updating tools/ffbisect script to HEAD.
+    git show master:tools/bisect > tools/ffbisect
+    chmod u+x tools/ffbisect
+    tools/ffbisect $*
+    exit 0
+fi
+
 case "$1" in
     need)
         case $2 in

@@ -47,6 +47,7 @@
 /tests/videogen
 /tests/vsynth1/
 /tools/aviocat
+/tools/ffbisect
 /tools/cws2fws
 /tools/ffeval
 /tools/graph2dot
