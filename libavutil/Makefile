@@ -9,6 +9,7 @@ HEADERS = adler32.h                                                     \
           avstring.h                                                    \
           avutil.h                                                      \
           base64.h                                                      \
+          blowfish.h                                                    \
           bswap.h                                                       \
           common.h                                                      \
           cpu.h                                                         \
@@ -51,6 +52,7 @@ OBJS = adler32.o                                                        \
        audioconvert.o                                                   \
        avstring.o                                                       \
        base64.o                                                         \
+       blowfish.o                                                       \
        cpu.o                                                            \
        crc.o                                                            \
        des.o                                                            \
@@ -86,6 +88,7 @@ TESTPROGS = adler32                                                     \
             aes                                                         \
             avstring                                                    \
             base64                                                      \
+            blowfish                                                    \
             cpu                                                         \
             crc                                                         \
             des                                                         \

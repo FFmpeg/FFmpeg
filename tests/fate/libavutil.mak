@@ -12,6 +12,10 @@ FATE_LIBAVUTIL += fate-base64
 fate-base64: libavutil/base64-test$(EXESUF)
 fate-base64: CMD = run libavutil/base64-test
 
+FATE_LIBAVUTIL += fate-blowfish
+fate-blowfish: libavutil/blowfish-test$(EXESUF)
+fate-blowfish: CMD = run libavutil/blowfish-test
+
 FATE_LIBAVUTIL += fate-crc
 fate-crc: libavutil/crc-test$(EXESUF)
 fate-crc: CMD = run libavutil/crc-test
