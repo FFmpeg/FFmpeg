@@ -103,6 +103,7 @@ static const AVClass av_class = {
     .version                   = LIBAVUTIL_VERSION_INT,
     .log_level_offset_offset   = OFFSET(log_level_offset),
     .parent_log_context_offset = OFFSET(log_ctx),
+    .category                  = AV_CLASS_CATEGORY_SWRESAMPLER,
 };
 
 unsigned swresample_version(void)

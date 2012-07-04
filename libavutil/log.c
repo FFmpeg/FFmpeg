@@ -58,6 +58,8 @@ static const uint8_t color[16 + AV_CLASS_CATEGORY_NB] = {
     [16+AV_CLASS_CATEGORY_DECODER         ] =  3,
     [16+AV_CLASS_CATEGORY_FILTER          ] = 10,
     [16+AV_CLASS_CATEGORY_BITSTREAM_FILTER] =  9,
+    [16+AV_CLASS_CATEGORY_SWSCALER        ] =  7,
+    [16+AV_CLASS_CATEGORY_SWRESAMPLER     ] =  7,
 };
 
 static int16_t background, attr_orig;
@@ -66,26 +68,29 @@ static HANDLE con;
 #define reset_color() SetConsoleTextAttribute(con, attr_orig)
 #else
 
-static const uint8_t color[16 + AV_CLASS_CATEGORY_NB] = {
-    [AV_LOG_PANIC  /8] = 0x41,
-    [AV_LOG_FATAL  /8] = 0x41,
-    [AV_LOG_ERROR  /8] = 0x11,
-    [AV_LOG_WARNING/8] = 0x03,
-    [AV_LOG_INFO   /8] =    9,
-    [AV_LOG_VERBOSE/8] = 0x02,
-    [AV_LOG_DEBUG  /8] = 0x02,
-    [16+AV_CLASS_CATEGORY_NA              ] =    9,
-    [16+AV_CLASS_CATEGORY_INPUT           ] = 0x15,
-    [16+AV_CLASS_CATEGORY_OUTPUT          ] = 0x05,
-    [16+AV_CLASS_CATEGORY_MUXER           ] = 0x15,
-    [16+AV_CLASS_CATEGORY_DEMUXER         ] = 0x05,
-    [16+AV_CLASS_CATEGORY_ENCODER         ] = 0x16,
-    [16+AV_CLASS_CATEGORY_DECODER         ] = 0x06,
-    [16+AV_CLASS_CATEGORY_FILTER          ] = 0x12,
-    [16+AV_CLASS_CATEGORY_BITSTREAM_FILTER] = 0x14,
+static const uint32_t color[16 + AV_CLASS_CATEGORY_NB] = {
+    [AV_LOG_PANIC  /8] =  52 << 16 | 196 << 8 | 0x41,
+    [AV_LOG_FATAL  /8] = 208 <<  8 | 0x41,
+    [AV_LOG_ERROR  /8] = 196 <<  8 | 0x11,
+    [AV_LOG_WARNING/8] = 226 <<  8 | 0x03,
+    [AV_LOG_INFO   /8] = 253 <<  8 | 0x09,
+    [AV_LOG_VERBOSE/8] =  40 <<  8 | 0x02,
+    [AV_LOG_DEBUG  /8] =  34 <<  8 | 0x02,
+    [16+AV_CLASS_CATEGORY_NA              ] = 250 << 8 | 0x09,
+    [16+AV_CLASS_CATEGORY_INPUT           ] = 219 << 8 | 0x15,
+    [16+AV_CLASS_CATEGORY_OUTPUT          ] = 201 << 8 | 0x05,
+    [16+AV_CLASS_CATEGORY_MUXER           ] = 213 << 8 | 0x15,
+    [16+AV_CLASS_CATEGORY_DEMUXER         ] = 207 << 8 | 0x05,
+    [16+AV_CLASS_CATEGORY_ENCODER         ] =  51 << 8 | 0x16,
+    [16+AV_CLASS_CATEGORY_DECODER         ] =  39 << 8 | 0x06,
+    [16+AV_CLASS_CATEGORY_FILTER          ] = 155 << 8 | 0x12,
+    [16+AV_CLASS_CATEGORY_BITSTREAM_FILTER] = 192 << 8 | 0x14,
+    [16+AV_CLASS_CATEGORY_SWSCALER        ] = 153 << 8 | 0x14,
+    [16+AV_CLASS_CATEGORY_SWRESAMPLER     ] = 147 << 8 | 0x14,
 };
 
-#define set_color(x)  fprintf(stderr, "\033[%d;3%dm", color[x] >> 4, color[x]&15)
+#define set_color(x)  fprintf(stderr, "\033[%d;3%dm", (color[x] >> 4) & 15, color[x] & 15)
+#define set_256color(x) fprintf(stderr, "\033[48;5;%dm\033[38;5;%dm", (color[x] >> 16) & 0xff, (color[x] >> 8) & 0xff)
 #define reset_color() fprintf(stderr, "\033[0m")
 #endif
 static int use_color = -1;
@@ -108,15 +113,18 @@ static void colored_fputs(int level, const char *str)
         use_color = !getenv("NO_COLOR") && !getenv("AV_LOG_FORCE_NOCOLOR") &&
                     (getenv("TERM") && isatty(2) ||
                      getenv("AV_LOG_FORCE_COLOR"));
+        if (getenv("AV_LOG_FORCE_256COLOR"))
+            use_color *= 256;
 #else
         use_color = getenv("AV_LOG_FORCE_COLOR") && !getenv("NO_COLOR") &&
                    !getenv("AV_LOG_FORCE_NOCOLOR");
 #endif
     }
 
-    if (use_color) {
+    if (use_color == 1) {
         set_color(level);
-    }
+    } else if (use_color == 256)
+        set_256color(level);
     fputs(str, stderr);
     if (use_color) {
         reset_color();
