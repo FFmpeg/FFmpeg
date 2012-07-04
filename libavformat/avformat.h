@@ -805,6 +805,11 @@ typedef struct AVStream {
      * should be discarded.
      */
     int skip_to_keyframe;
+
+    /**
+     * Number of samples to skip at the start of the frame decoded from the next packet.
+     */
+    int skip_samples;
 } AVStream;
 
 #define AV_PROGRAM_RUNNING 1

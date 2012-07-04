@@ -1450,6 +1450,14 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
     }
 
 return_packet:
+
+    if(s->streams[pkt->stream_index]->skip_samples) {
+        uint8_t *p = av_packet_new_side_data(pkt, AV_PKT_DATA_SKIP_SAMPLES, 10);
+        AV_WL32(p, s->streams[pkt->stream_index]->skip_samples);
+        av_log(s, AV_LOG_DEBUG, "demuxer injecting skip %d\n", s->streams[pkt->stream_index]->skip_samples);
+        s->streams[pkt->stream_index]->skip_samples = 0;
+    }
+
     if (is_relative(pkt->dts))
         pkt->dts -= RELATIVE_TS_BASE;
     if (is_relative(pkt->pts))
