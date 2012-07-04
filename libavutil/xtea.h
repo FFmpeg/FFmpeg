@@ -1,5 +1,6 @@
 /*
  * A 32-bit implementation of the XTEA algorithm
+ * Copyright (c) 2012 Samuel Pitoiset
  *
  * This file is part of FFmpeg.
  *
