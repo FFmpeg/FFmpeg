@@ -40,6 +40,14 @@
 #include "h264pred_template.c"
 #undef BIT_DEPTH
 
+#define BIT_DEPTH 12
+#include "h264pred_template.c"
+#undef BIT_DEPTH
+
+#define BIT_DEPTH 14
+#include "h264pred_template.c"
+#undef BIT_DEPTH
+
 static void pred4x4_vertical_vp8_c(uint8_t *src, const uint8_t *topright, int stride){
     const unsigned lt = src[-1-1*stride];
     LOAD_TOP_EDGE
@@ -527,6 +535,12 @@ void ff_h264_pred_init(H264PredContext *h, int codec_id, const int bit_depth, co
             break;
         case 10:
             H264_PRED(10)
+            break;
+        case 12:
+            H264_PRED(12)
+            break;
+        case 14:
+            H264_PRED(14)
             break;
         default:
             av_assert0(bit_depth<=8);
