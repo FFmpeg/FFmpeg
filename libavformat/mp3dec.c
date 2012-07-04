@@ -31,6 +31,8 @@
 
 typedef struct {
     int64_t filesize;
+    int start_pad;
+    int end_pad;
 } MP3Context;
 
 /* mp3 read */
@@ -82,6 +84,7 @@ static int mp3_read_probe(AVProbeData *p)
  */
 static int mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
 {
+    MP3Context *mp3 = s->priv_data;
     uint32_t v, spf;
     unsigned frames = 0; /* Total number of frames in file */
     unsigned size = 0; /* Total number of bytes in the stream */
@@ -107,6 +110,20 @@ static int mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
             frames = avio_rb32(s->pb);
         if(v & 0x2)
             size = avio_rb32(s->pb);
+        if(v & 4)
+            avio_skip(s->pb, 100);
+        if(v & 8)
+            avio_skip(s->pb, 4);
+
+        v = avio_rb32(s->pb);
+        if(v == MKBETAG('L', 'A', 'M', 'E')) {
+            avio_skip(s->pb, 21-4);
+            v= avio_rb24(s->pb);
+            mp3->start_pad = v>>12;
+            mp3->  end_pad = v&4095;
+            st->skip_samples = mp3->start_pad + 528 + 1;
+            av_log(s, AV_LOG_DEBUG, "pad %d %d\n", mp3->start_pad, mp3->  end_pad);
+        }
     }
 
     /* Check for VBRI tag (always 32 bytes after end of mpegaudio header) */
@@ -206,6 +223,16 @@ static int mp3_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
+static int read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int flags)
+{
+    MP3Context *mp3 = s->priv_data;
+    AVStream *st = s->streams[stream_index];
+
+    st->skip_samples = timestamp <= 0 ? mp3->start_pad + 528 + 1 : 0;
+
+    return -1;
+}
+
 AVInputFormat ff_mp3_demuxer = {
     .name           = "mp3",
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG audio layer 2/3"),
@@ -213,6 +240,7 @@ AVInputFormat ff_mp3_demuxer = {
     .read_probe     = mp3_read_probe,
     .read_header    = mp3_read_header,
     .read_packet    = mp3_read_packet,
+    .read_seek      = read_seek,
     .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "mp2,mp3,m2a", /* XXX: use probe */
 };
