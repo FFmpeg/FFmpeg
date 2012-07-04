@@ -42,6 +42,14 @@
 #include "h264dsp_template.c"
 #undef BIT_DEPTH
 
+#define BIT_DEPTH 12
+#include "h264dsp_template.c"
+#undef BIT_DEPTH
+
+#define BIT_DEPTH 14
+#include "h264dsp_template.c"
+#undef BIT_DEPTH
+
 void ff_h264dsp_init(H264DSPContext *c, const int bit_depth, const int chroma_format_idc)
 {
 #undef FUNC
@@ -106,6 +114,12 @@ void ff_h264dsp_init(H264DSPContext *c, const int bit_depth, const int chroma_fo
         break;
     case 10:
         H264_DSP(10);
+        break;
+    case 12:
+        H264_DSP(12);
+        break;
+    case 14:
+        H264_DSP(14);
         break;
     default:
         av_assert0(bit_depth<=8);
