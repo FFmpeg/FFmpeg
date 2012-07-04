@@ -854,6 +854,17 @@ enum AVPacketSideDataType {
      * @endcode
      */
     AV_PKT_DATA_H263_MB_INFO,
+
+    /**
+     * Recommmends skipping the specified number of samples
+     * @code
+     * u32le number of samples to skip from start of this packet
+     * u32le number of samples to skip from end of this packet
+     * u8    reason for start skip
+     * u8    reason for end   skip (0=padding silence, 1=convergence)
+     * @endcode
+     */
+    AV_PKT_DATA_SKIP_SAMPLES=70,
 };
 
 typedef struct AVPacket {
