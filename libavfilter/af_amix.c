@@ -360,7 +360,7 @@ static int request_samples(AVFilterContext *ctx, int min_samples)
                 s->input_state[i] = INPUT_OFF;
                 continue;
             }
-        } else if (ret)
+        } else if (ret < 0)
             return ret;
     }
     return 0;
@@ -422,7 +422,7 @@ static int request_frame(AVFilterLink *outlink)
                 return AVERROR_EOF;
             else
                 return AVERROR(EAGAIN);
-        } else if (ret)
+        } else if (ret < 0)
             return ret;
     }
     av_assert0(s->frame_list->nb_frames > 0);
