@@ -31,6 +31,7 @@ const CodecTags ff_mkv_codec_tags[]={
     {"A_MPEG/L2"        , CODEC_ID_MP2},
     {"A_MPEG/L1"        , CODEC_ID_MP2},
     {"A_MPEG/L3"        , CODEC_ID_MP3},
+    {"A_OPUS",            CODEC_ID_OPUS},
     {"A_PCM/FLOAT/IEEE" , CODEC_ID_PCM_F32LE},
     {"A_PCM/FLOAT/IEEE" , CODEC_ID_PCM_F64LE},
     {"A_PCM/INT/BIG"    , CODEC_ID_PCM_S16BE},
