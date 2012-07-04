@@ -38,6 +38,9 @@ typedef struct ResampleContext {
     AVAudioResampleContext *avr;
 
     int64_t next_pts;
+
+    /* set by filter_samples() to signal an output frame to request_frame() */
+    int got_output;
 } ResampleContext;
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -124,7 +127,11 @@ static int request_frame(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     ResampleContext   *s = ctx->priv;
-    int ret = ff_request_frame(ctx->inputs[0]);
+    int ret = 0;
+
+    s->got_output = 0;
+    while (ret >= 0 && !s->got_output)
+        ret = ff_request_frame(ctx->inputs[0]);
 
     /* flush the lavr delay buffer */
     if (ret == AVERROR_EOF && s->avr) {
@@ -203,10 +210,13 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
             s->next_pts = buf_out->pts + buf_out->audio->nb_samples;
 
             ff_filter_samples(outlink, buf_out);
+            s->got_output = 1;
         }
         avfilter_unref_buffer(buf);
-    } else
+    } else {
         ff_filter_samples(outlink, buf);
+        s->got_output = 1;
+    }
 }
 
 AVFilter avfilter_af_resample = {
