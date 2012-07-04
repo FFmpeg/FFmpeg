@@ -34,7 +34,9 @@
 #include "rdft.h"
 #endif
 #include <math.h>
+#if HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
 
@@ -228,6 +230,10 @@ enum tf_transform {
     TRANSFORM_RDFT,
     TRANSFORM_DCT,
 };
+
+#if !HAVE_GETOPT
+#include "compat/getopt.c"
+#endif
 
 int main(int argc, char **argv)
 {

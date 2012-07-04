@@ -1083,6 +1083,7 @@ HAVE_LIST="
     fork
     getaddrinfo
     gethrtime
+    getopt
     GetProcessAffinityMask
     GetProcessMemoryInfo
     GetProcessTimes
@@ -2862,6 +2863,7 @@ check_func  fcntl
 check_func  fork
 check_func  getaddrinfo $network_extralibs
 check_func  gethrtime
+check_func  getopt
 check_func  getrusage
 check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
 check_func  gettimeofday
