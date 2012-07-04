@@ -700,7 +700,7 @@ static int mxf_read_index_entry_array(AVIOContext *pb, MXFIndexTableSegment *seg
         return 0;
     else if (segment->nb_index_entries < 0 ||
              segment->nb_index_entries >
-             (INT_MAX >> av_log2(sizeof(*segment->stream_offset_entries))))
+             (INT_MAX / sizeof(*segment->stream_offset_entries)))
         return AVERROR(ENOMEM);
 
     length = avio_rb32(pb);
@@ -1084,7 +1084,7 @@ static int mxf_compute_ptses_fake_index(MXFContext *mxf, MXFIndexTable *index_ta
     if (index_table->nb_ptses <= 0)
         return 0;
 
-    if (index_table->nb_ptses > INT_MAX >> av_log2(sizeof(AVIndexEntry)) + 1)
+    if (index_table->nb_ptses > INT_MAX / sizeof(AVIndexEntry))
         return AVERROR(ENOMEM);
 
     index_table->ptses      = av_mallocz(index_table->nb_ptses *
@@ -1196,7 +1196,7 @@ static int mxf_compute_index_tables(MXFContext *mxf)
         }
     }
 
-    if (mxf->nb_index_tables > INT_MAX >> av_log2(sizeof(MXFIndexTable)) + 1 ||
+    if (mxf->nb_index_tables > INT_MAX / sizeof(MXFIndexTable) ||
         !(mxf->index_tables = av_mallocz(mxf->nb_index_tables *
                                          sizeof(MXFIndexTable)))) {
         av_log(mxf->fc, AV_LOG_ERROR, "failed to allocate index tables\n");
@@ -1218,7 +1218,7 @@ static int mxf_compute_index_tables(MXFContext *mxf)
         MXFIndexTable *t = &mxf->index_tables[j];
 
         if (t->nb_segments >
-            (INT_MAX >> av_log2(sizeof(MXFIndexTableSegment *))) ||
+            (INT_MAX / sizeof(MXFIndexTableSegment *)) ||
             !(t->segments = av_mallocz(t->nb_segments *
                                        sizeof(MXFIndexTableSegment*)))) {
             av_log(mxf->fc, AV_LOG_ERROR, "failed to allocate IndexTableSegment"
