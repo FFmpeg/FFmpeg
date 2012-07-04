@@ -103,15 +103,8 @@ cglobal pred16x16_horizontal, 2,3
 %else
     punpcklbw m0, m0
     punpcklbw m1, m1
-%if cpuflag(mmx2)
-    pshufw    m0, m0, 0xff
-    pshufw    m1, m1, 0xff
-%else
-    punpckhwd m0, m0
-    punpckhwd m1, m1
-    punpckhdq m0, m0
-    punpckhdq m1, m1
-%endif
+    SPLATW    m0, m0, 3
+    SPLATW    m1, m1, 3
     mova [r0+r1*0+8], m0
     mova [r0+r1*1+8], m1
 %endif
@@ -162,18 +155,8 @@ cglobal pred16x16_dc, 2,7
     shr       r2d, 5
 %if cpuflag(ssse3)
     pxor       m1, m1
-    movd       m0, r2d
-    pshufb     m0, m1
-%elif cpuflag(sse2)
-    movd       m0, r2d
-    punpcklbw  m0, m0
-    pshuflw    m0, m0, 0
-    punpcklqdq m0, m0
-%elif cpuflag(mmx2)
-    movd       m0, r2d
-    punpcklbw  m0, m0
-    pshufw     m0, m0, 0
 %endif
+    SPLATB_REG m0, r2d, m1
 
 %if mmsize==8
     mov       r3d, 8
@@ -227,12 +210,7 @@ cglobal pred16x16_tm_vp8, 2,5
     movzx     r2d, byte [r0+r1-1]
     sub       r2d, r3d
     movd      mm4, r2d
-%if cpuflag(mmx2)
-    pshufw    mm4, mm4, 0
-%else
-    punpcklwd mm4, mm4
-    punpckldq mm4, mm4
-%endif
+    SPLATW    mm4, mm4, 0
     movq      mm5, mm4
     movq      mm6, mm4
     movq      mm7, mm4
@@ -332,19 +310,15 @@ cglobal pred16x16_plane_%1, 2,9,7
     movhlps      m1, m0
 %endif
     paddw        m0, m1
-%if cpuflag(sse2)
-    pshuflw      m1, m0, 0xE
-%elif cpuflag(mmx2)
-    pshufw       m1, m0, 0xE
+%if cpuflag(mmx2)
+    PSHUFLW      m1, m0, 0xE
 %elif cpuflag(mmx)
     mova         m1, m0
     psrlq        m1, 32
 %endif
     paddw        m0, m1
-%if cpuflag(sse2)
-    pshuflw      m1, m0, 0x1
-%elif cpuflag(mmx2)
-    pshufw       m1, m0, 0x1
+%if cpuflag(mmx2)
+    PSHUFLW      m1, m0, 0x1
 %elif cpuflag(mmx)
     mova         m1, m0
     psrlq        m1, 16
@@ -483,25 +457,9 @@ cglobal pred16x16_plane_%1, 2,9,7
 
     movd         m1, r5d
     movd         m3, r3d
-%if cpuflag(sse2)
-    pshuflw      m0, m0, 0x0
-    pshuflw      m1, m1, 0x0
-    pshuflw      m3, m3, 0x0
-    punpcklqdq   m0, m0           ; splat H (words)
-    punpcklqdq   m1, m1           ; splat V (words)
-    punpcklqdq   m3, m3           ; splat a (words)
-%elif cpuflag(mmx2)
-    pshufw       m0, m0, 0x0
-    pshufw       m1, m1, 0x0
-    pshufw       m3, m3, 0x0
-%elif cpuflag(mmx)
-    punpcklwd    m0, m0
-    punpcklwd    m1, m1
-    punpcklwd    m3, m3
-    punpckldq    m0, m0
-    punpckldq    m1, m1
-    punpckldq    m3, m3
-%endif
+    SPLATW       m0, m0, 0        ; H
+    SPLATW       m1, m1, 0        ; V
+    SPLATW       m3, m3, 0        ; a
 %ifidn %1, svq3
     SWAP          0, 1
 %endif
@@ -626,10 +584,8 @@ cglobal pred8x8_plane, 2,9,7
     paddw        m0, m1
 
 %if notcpuflag(ssse3)
-%if cpuflag(sse2) ; mmsize == 16
-    pshuflw      m1, m0, 0xE
-%elif cpuflag(mmx2)
-    pshufw       m1, m0, 0xE
+%if cpuflag(mmx2)
+    PSHUFLW      m1, m0, 0xE
 %elif cpuflag(mmx)
     mova         m1, m0
     psrlq        m1, 32
@@ -637,10 +593,8 @@ cglobal pred8x8_plane, 2,9,7
     paddw        m0, m1
 %endif ; !ssse3
 
-%if cpuflag(sse2)
-    pshuflw      m1, m0, 0x1
-%elif cpuflag(mmx2)
-    pshufw       m1, m0, 0x1
+%if cpuflag(mmx2)
+    PSHUFLW      m1, m0, 0x1
 %elif cpuflag(mmx)
     mova         m1, m0
     psrlq        m1, 16
@@ -711,25 +665,9 @@ cglobal pred8x8_plane, 2,9,7
 
     movd         m1, r5d
     movd         m3, r3d
-%if cpuflag(sse2)
-    pshuflw      m0, m0, 0x0
-    pshuflw      m1, m1, 0x0
-    pshuflw      m3, m3, 0x0
-    punpcklqdq   m0, m0           ; splat H (words)
-    punpcklqdq   m1, m1           ; splat V (words)
-    punpcklqdq   m3, m3           ; splat a (words)
-%elif cpuflag(mmx2)
-    pshufw       m0, m0, 0x0
-    pshufw       m1, m1, 0x0
-    pshufw       m3, m3, 0x0
-%elif cpuflag(mmx)
-    punpcklwd    m0, m0
-    punpcklwd    m1, m1
-    punpcklwd    m3, m3
-    punpckldq    m0, m0
-    punpckldq    m1, m1
-    punpckldq    m3, m3
-%endif
+    SPLATW       m0, m0, 0        ; H
+    SPLATW       m1, m1, 0        ; V
+    SPLATW       m3, m3, 0        ; a
 %if mmsize == 8
     mova         m2, m0
 %endif
@@ -815,24 +753,8 @@ cglobal pred8x8_horizontal, 2,3
     mova      m2, [pb_3]
 %endif
 .loop:
-    movd      m0, [r0+r1*0-4]
-    movd      m1, [r0+r1*1-4]
-%if cpuflag(ssse3)
-    pshufb    m0, m2
-    pshufb    m1, m2
-%else
-    punpcklbw m0, m0
-    punpcklbw m1, m1
-%if cpuflag(mmx2)
-    pshufw    m0, m0, 0xff
-    pshufw    m1, m1, 0xff
-%else
-    punpckhwd m0, m0
-    punpckhwd m1, m1
-    punpckhdq m0, m0
-    punpckhdq m1, m1
-%endif
-%endif
+    SPLATB_LOAD m0, r0+r1*0-1, m2
+    SPLATB_LOAD m1, r0+r1*1-1, m2
     mova [r0+r1*0], m0
     mova [r0+r1*1], m1
     lea       r0, [r0+r1*2]
@@ -1000,15 +922,8 @@ cglobal pred8x8_tm_vp8, 2,6
     sub       r3d, r4d
     movd      mm2, r2d
     movd      mm4, r3d
-%if cpuflag(mmx2)
-    pshufw    mm2, mm2, 0
-    pshufw    mm4, mm4, 0
-%else
-    punpcklwd mm2, mm2
-    punpcklwd mm4, mm4
-    punpckldq mm2, mm2
-    punpckldq mm4, mm4
-%endif
+    SPLATW    mm2, mm2, 0
+    SPLATW    mm4, mm4, 0
     movq      mm3, mm2
     movq      mm5, mm4
     paddw     mm2, mm0
