@@ -1560,7 +1560,7 @@ static int poll_filters(void)
                 break;
 
             avfilter_copy_buf_props(filtered_frame, picref);
-            if (picref->pts != AV_NOPTS_VALUE)
+            if (picref->pts != AV_NOPTS_VALUE) {
                 filtered_frame->pts = av_rescale_q(picref->pts,
                                                    ost->filter->filter->inputs[0]->time_base,
                                                    ost->st->codec->time_base) -
@@ -1568,9 +1568,10 @@ static int poll_filters(void)
                                                    AV_TIME_BASE_Q,
                                                    ost->st->codec->time_base);
 
-            if (of->start_time && filtered_frame->pts < 0) {
-                avfilter_unref_buffer(picref);
-                continue;
+                if (of->start_time && filtered_frame->pts < 0) {
+                    avfilter_unref_buffer(picref);
+                    continue;
+                }
             }
 
             switch (ost->filter->filter->inputs[0]->type) {
