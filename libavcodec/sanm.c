@@ -772,7 +772,7 @@ static void copy_block(uint16_t *pdest, uint16_t *psrc, int block_size, int pitc
 {
     int y;
 
-    for (y = 0; y != block_size; y++, pdest += pitch, psrc += pitch)
+    for (y = 0; y < block_size; y++, pdest += pitch, psrc += pitch)
         memcpy(pdest, psrc, block_size * sizeof(pdest[0]));
 }
 
@@ -781,8 +781,8 @@ static void fill_block(uint16_t *pdest, uint16_t color, int block_size, int pitc
     int x, y;
 
     pitch -= block_size;
-    for (y = 0; y != block_size; y++, pdest += pitch)
-        for (x = 0; x != block_size; x++)
+    for (y = 0; y < block_size; y++, pdest += pitch)
+        for (x = 0; x < block_size; x++)
             *pdest++ = color;
 }
 
@@ -972,8 +972,8 @@ static int decode_2(SANMVideoContext *ctx)
 {
     int cx, cy, ret;
 
-    for (cy = 0; cy != ctx->aligned_height; cy += 8) {
-        for (cx = 0; cx != ctx->aligned_width; cx += 8) {
+    for (cy = 0; cy < ctx->aligned_height; cy += 8) {
+        for (cx = 0; cx < ctx->aligned_width; cx += 8) {
             if (ret = codec2subblock(ctx, cx, cy, 8))
                 return ret;
         }
