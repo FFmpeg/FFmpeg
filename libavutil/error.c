@@ -37,6 +37,7 @@ struct error_entry error_entries[] = {
     { ERROR_TAG(ENCODER_NOT_FOUND),  "Encoder not found"                              },
     { ERROR_TAG(EOF),                "End of file"                                    },
     { ERROR_TAG(EXIT),               "Immediate exit requested"                       },
+    { ERROR_TAG(EXTERNAL),           "Generic error in an external library"           },
     { ERROR_TAG(FILTER_NOT_FOUND),   "Filter not found"                               },
     { ERROR_TAG(INVALIDDATA),        "Invalid data found when processing input"       },
     { ERROR_TAG(MUXER_NOT_FOUND),    "Muxer not found"                                },
