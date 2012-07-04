@@ -31,6 +31,7 @@ struct error_entry error_entries[] = {
     { ERROR_TAG(BSF_NOT_FOUND),      "Bitstream filter not found"                     },
     { ERROR_TAG(BUG),                "Internal bug, should not have happened"         },
     { ERROR_TAG(BUG2),               "Internal bug, should not have happened"         },
+    { ERROR_TAG(BUFFER_TOO_SMALL),   "Buffer too small"                               },
     { ERROR_TAG(DECODER_NOT_FOUND),  "Decoder not found"                              },
     { ERROR_TAG(DEMUXER_NOT_FOUND),  "Demuxer not found"                              },
     { ERROR_TAG(ENCODER_NOT_FOUND),  "Encoder not found"                              },
