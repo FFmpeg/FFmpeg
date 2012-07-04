@@ -70,7 +70,7 @@ static const AVRational pixel_aspect[17]={
     QP(37,d), QP(37,d), QP(37,d), QP(38,d), QP(38,d), QP(38,d),\
     QP(39,d), QP(39,d), QP(39,d), QP(39,d)
 
-const uint8_t ff_h264_chroma_qp[5][QP_MAX_NUM+1] = {
+const uint8_t ff_h264_chroma_qp[7][QP_MAX_NUM+1] = {
     {
         CHROMA_QP_TABLE_END(8)
     },
@@ -95,6 +95,23 @@ const uint8_t ff_h264_chroma_qp[5][QP_MAX_NUM+1] = {
         12,13,14,15, 16, 17,
         18,19,20,21, 22, 23,
         CHROMA_QP_TABLE_END(12)
+    },
+    {
+        0,  1, 2, 3,  4,  5,
+        6,  7, 8, 9, 10, 11,
+        12,13,14,15, 16, 17,
+        18,19,20,21, 22, 23,
+        24,25,26,27, 28, 29,
+        CHROMA_QP_TABLE_END(13)
+    },
+    {
+        0,  1, 2, 3,  4,  5,
+        6,  7, 8, 9, 10, 11,
+        12,13,14,15, 16, 17,
+        18,19,20,21, 22, 23,
+        24,25,26,27, 28, 29,
+        30,31,32,33, 34, 35,
+        CHROMA_QP_TABLE_END(14)
     },
 };
 
@@ -366,7 +383,7 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
         }
         sps->bit_depth_luma   = get_ue_golomb(&s->gb) + 8;
         sps->bit_depth_chroma = get_ue_golomb(&s->gb) + 8;
-        if (sps->bit_depth_luma > 12U || sps->bit_depth_chroma > 12U) {
+        if (sps->bit_depth_luma > 14U || sps->bit_depth_chroma > 14U) {
             av_log(h->s.avctx, AV_LOG_ERROR, "illegal bit depth value (%d, %d)\n",
                    sps->bit_depth_luma, sps->bit_depth_chroma);
             goto fail;
@@ -536,8 +553,11 @@ int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length){
     if(pps_id >= MAX_PPS_COUNT) {
         av_log(h->s.avctx, AV_LOG_ERROR, "pps_id (%d) out of range\n", pps_id);
         return -1;
-    } else if (h->sps.bit_depth_luma > 10) {
-        av_log(h->s.avctx, AV_LOG_ERROR, "Unimplemented luma bit depth=%d (max=10)\n", h->sps.bit_depth_luma);
+    } else if (h->sps.bit_depth_luma > 14) {
+        av_log(h->s.avctx, AV_LOG_ERROR, "Invalid luma bit depth=%d\n", h->sps.bit_depth_luma);
+        return AVERROR_INVALIDDATA;
+    } else if (h->sps.bit_depth_luma == 11 || h->sps.bit_depth_luma == 13) {
+        av_log(h->s.avctx, AV_LOG_ERROR, "Unimplemented luma bit depth=%d\n", h->sps.bit_depth_luma);
         return AVERROR_PATCHWELCOME;
     }
 

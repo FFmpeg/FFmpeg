@@ -104,7 +104,7 @@
  */
 #define DELAYED_PIC_REF 4
 
-#define QP_MAX_NUM (51 + 4*6)           // The maximum supported qp
+#define QP_MAX_NUM (51 + 6*6)           // The maximum supported qp
 
 /* NAL unit types */
 enum {
@@ -598,7 +598,7 @@ typedef struct H264Context {
     int parse_last_mb;
 } H264Context;
 
-extern const uint8_t ff_h264_chroma_qp[5][QP_MAX_NUM + 1]; ///< One chroma qp table for each possible bit depth (8-12).
+extern const uint8_t ff_h264_chroma_qp[7][QP_MAX_NUM + 1]; ///< One chroma qp table for each possible bit depth (8-14).
 extern const uint16_t ff_h264_mb_sizes[4];
 
 /**

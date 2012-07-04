@@ -53,13 +53,17 @@ const uint16_t ff_h264_mb_sizes[4] = { 256, 384, 512, 768 };
 static const uint8_t rem6[QP_MAX_NUM + 1] = {
     0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2,
     3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5,
-    0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3,
+    0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2,
+    3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5,
+    0, 1, 2, 3,
 };
 
 static const uint8_t div6[QP_MAX_NUM + 1] = {
     0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3,  3,  3,
     3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6,  6,  6,
-    7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 10, 10, 10, 10,
+    7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 10, 10, 10,
+   10,10,10,11,11,11,11,11,11,12,12,12,12,12,12,13,13,13, 13, 13, 13,
+   14,14,14,14,
 };
 
 static const enum PixelFormat hwaccel_pixfmt_list_h264_jpeg_420[] = {
@@ -2484,7 +2488,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
 
         if (s->avctx->bits_per_raw_sample != h->sps.bit_depth_luma ||
             h->cur_chroma_format_idc != h->sps.chroma_format_idc) {
-            if (h->sps.bit_depth_luma >= 8 && h->sps.bit_depth_luma <= 10 &&
+            if (h->sps.bit_depth_luma >= 8 && h->sps.bit_depth_luma <= 14 && h->sps.bit_depth_luma != 11 && h->sps.bit_depth_luma != 13 &&
                 (h->sps.bit_depth_luma != 9 || !CHROMA422)) {
                 s->avctx->bits_per_raw_sample = h->sps.bit_depth_luma;
                 h->cur_chroma_format_idc = h->sps.chroma_format_idc;
@@ -2541,6 +2545,28 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
                 s->avctx->pix_fmt = PIX_FMT_YUV422P10;
             else
                 s->avctx->pix_fmt = PIX_FMT_YUV420P10;
+            break;
+        case 12:
+            if (CHROMA444) {
+                if (s->avctx->colorspace == AVCOL_SPC_RGB) {
+                    s->avctx->pix_fmt = PIX_FMT_GBRP12;
+                } else
+                    s->avctx->pix_fmt = PIX_FMT_YUV444P12;
+            } else if (CHROMA422)
+                s->avctx->pix_fmt = PIX_FMT_YUV422P12;
+            else
+                s->avctx->pix_fmt = PIX_FMT_YUV420P12;
+            break;
+        case 14:
+            if (CHROMA444) {
+                if (s->avctx->colorspace == AVCOL_SPC_RGB) {
+                    s->avctx->pix_fmt = PIX_FMT_GBRP14;
+                } else
+                    s->avctx->pix_fmt = PIX_FMT_YUV444P14;
+            } else if (CHROMA422)
+                s->avctx->pix_fmt = PIX_FMT_YUV422P14;
+            else
+                s->avctx->pix_fmt = PIX_FMT_YUV420P14;
             break;
         case 8:
             if (CHROMA444) {
