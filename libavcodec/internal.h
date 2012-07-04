@@ -84,6 +84,11 @@ typedef struct AVCodecInternal {
     unsigned int byte_buffer_size;
 
     void *frame_thread_encoder;
+
+    /**
+     * Number of audio samples to skip at the start of the next decoded frame
+     */
+    int skip_samples;
 } AVCodecInternal;
 
 struct AVCodecDefault {

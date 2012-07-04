@@ -1627,6 +1627,8 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
     }
 
     if ((avctx->codec->capabilities & CODEC_CAP_DELAY) || avpkt->size) {
+        uint8_t *side;
+        int side_size;
         // copy to ensure we do not change avpkt
         AVPacket tmp = *avpkt;
         int did_split = av_packet_split_side_data(&tmp);
@@ -1643,6 +1645,22 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
                 frame->channel_layout = avctx->channel_layout;
             if (!frame->sample_rate)
                 frame->sample_rate = avctx->sample_rate;
+        }
+
+        side= av_packet_get_side_data(avctx->pkt, AV_PKT_DATA_SKIP_SAMPLES, &side_size);
+        if(side && side_size>=10) {
+            avctx->internal->skip_samples = AV_RL32(side);
+        }
+        if (avctx->internal->skip_samples) {
+            if(frame->nb_samples <= avctx->internal->skip_samples){
+                *got_frame_ptr = 0;
+                avctx->internal->skip_samples -= frame->nb_samples;
+            } else {
+                av_samples_copy(frame->extended_data, frame->extended_data, 0, avctx->internal->skip_samples,
+                                frame->nb_samples - avctx->internal->skip_samples, avctx->channels, frame->format);
+                frame->nb_samples -= avctx->internal->skip_samples;
+                avctx->internal->skip_samples = 0;
+            }
         }
 
         avctx->pkt = NULL;
