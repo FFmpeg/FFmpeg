@@ -480,9 +480,8 @@ static int old_codec37(SANMVideoContext *ctx, int top,
                         if (compr == 4 && !code) {
                             if (bytestream2_get_bytes_left(&ctx->gb) < 1)
                                 return AVERROR_INVALIDDATA;
-                            skip_run = bytestream2_get_byteu(&ctx->gb);
-                            for (k = 0; k < 4; k++)
-                                memcpy(dst + i + k * stride, prev + i + k * stride, 4);
+                            skip_run = bytestream2_get_byteu(&ctx->gb) + 1;
+                            i -= 4;
                         } else {
                             int mx, my;
 
