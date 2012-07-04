@@ -31,6 +31,20 @@
 #include "rdt.h"
 #include "url.h"
 
+static int rtsp_read_close(AVFormatContext *s)
+{
+    RTSPState *rt = s->priv_data;
+
+    ff_rtsp_send_cmd_async(s, "TEARDOWN", rt->control_uri, NULL);
+
+    ff_rtsp_close_streams(s);
+    ff_rtsp_close_connections(s);
+    ff_network_close();
+    rt->real_setup = NULL;
+    av_freep(&rt->real_setup_cache);
+    return 0;
+}
+
 static int rtsp_read_play(AVFormatContext *s)
 {
     RTSPState *rt = s->priv_data;
@@ -377,20 +391,6 @@ static int rtsp_read_seek(AVFormatContext *s, int stream_index,
         rt->state = RTSP_STATE_IDLE;
         break;
     }
-    return 0;
-}
-
-static int rtsp_read_close(AVFormatContext *s)
-{
-    RTSPState *rt = s->priv_data;
-
-    ff_rtsp_send_cmd_async(s, "TEARDOWN", rt->control_uri, NULL);
-
-    ff_rtsp_close_streams(s);
-    ff_rtsp_close_connections(s);
-    ff_network_close();
-    rt->real_setup = NULL;
-    av_freep(&rt->real_setup_cache);
     return 0;
 }
 
