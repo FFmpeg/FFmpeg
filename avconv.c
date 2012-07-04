@@ -1568,7 +1568,7 @@ static int poll_filters(void)
                                                    AV_TIME_BASE_Q,
                                                    ost->st->codec->time_base);
 
-            if (of->start_time && filtered_frame->pts < of->start_time) {
+            if (of->start_time && filtered_frame->pts < 0) {
                 avfilter_unref_buffer(picref);
                 continue;
             }
