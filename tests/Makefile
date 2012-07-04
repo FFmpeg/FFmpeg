@@ -92,7 +92,7 @@ FATE += $(FATE_LIBAVUTIL)
 $(FATE_AVCONV) $(FATE_SAMPLES_AVCONV): avconv$(EXESUF)
 
 $(FATE_LAVF):  $(AREF) $(VREF)
-$(FATE_LAVFI): $(VREF) tools/lavfi-showfiltfmts$(EXESUF)
+$(FATE_LAVFI): $(VREF) libavfilter/filtfmts-test$(EXESUF)
 $(FATE_SEEK):  fate-acodec fate-vsynth2 fate-lavf libavformat/seek-test$(EXESUF)
 
 $(FATE_LAVF):    CMD = lavftest

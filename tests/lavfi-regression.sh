@@ -44,7 +44,7 @@ do_lavfi_pixfmts(){
     filter=$1
     filter_args=$2
 
-    showfiltfmts="$target_exec $target_path/tools/lavfi-showfiltfmts"
+    showfiltfmts="$target_exec $target_path/libavfilter/filtfmts-test"
     exclude_fmts=${outfile}${1}_exclude_fmts
     out_fmts=${outfile}${1}_out_fmts
 

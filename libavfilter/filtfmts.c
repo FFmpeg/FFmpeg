@@ -18,10 +18,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdio.h>
+
 #include "libavformat/avformat.h"
 #include "libavutil/pixdesc.h"
 #include "libavfilter/avfilter.h"
 #include "libavfilter/formats.h"
+
+#undef fprintf
+#undef printf
 
 int main(int argc, char **argv)
 {

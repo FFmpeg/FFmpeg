@@ -89,5 +89,5 @@ OBJS-$(CONFIG_TESTSRC_FILTER)                += vsrc_testsrc.o
 
 OBJS-$(CONFIG_NULLSINK_FILTER)               += vsink_nullsink.o
 
-TOOLS = graph2dot                                                       \
-        lavfi-showfiltfmts                                              \
+TOOLS     = graph2dot
+TESTPROGS = filtfmts
