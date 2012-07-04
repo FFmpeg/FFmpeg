@@ -1644,6 +1644,7 @@ static int video_thread(void *arg)
             graph = avfilter_graph_alloc();
             if ((ret = configure_video_filters(graph, is, vfilters)) < 0)
                 goto the_end;
+            filt_in  = is->in_video_filter;
             filt_out = is->out_video_filter;
             last_w = is->video_st->codec->width;
             last_h = is->video_st->codec->height;
