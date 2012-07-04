@@ -67,7 +67,7 @@ do_lavfi_pixfmts(){
     filter=$1
     filter_args=$2
 
-    showfiltfmts="$target_exec $target_path/tools/lavfi-showfiltfmts"
+    showfiltfmts="$target_exec $target_path/libavfilter/filtfmts-test"
     scale_exclude_fmts=${outfile}${1}_scale_exclude_fmts
     scale_in_fmts=${outfile}${1}_scale_in_fmts
     scale_out_fmts=${outfile}${1}_scale_out_fmts

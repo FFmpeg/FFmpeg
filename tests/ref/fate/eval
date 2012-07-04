@@ -112,6 +112,18 @@ Evaluating 'isnan(1)'
 Evaluating 'isnan(NAN)'
 'isnan(NAN)' -> 1.000000
 
+Evaluating 'isnan(INF)'
+'isnan(INF)' -> 0.000000
+
+Evaluating 'isinf(1)'
+'isinf(1)' -> 0.000000
+
+Evaluating 'isinf(NAN)'
+'isinf(NAN)' -> 0.000000
+
+Evaluating 'isinf(INF)'
+'isinf(INF)' -> 1.000000
+
 Evaluating 'floor(NAN)'
 'floor(NAN)' -> nan
 

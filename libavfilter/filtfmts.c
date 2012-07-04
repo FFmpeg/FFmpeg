@@ -18,11 +18,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdio.h>
+
 #include "libavformat/avformat.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/samplefmt.h"
 #include "libavfilter/avfilter.h"
 #include "libavfilter/formats.h"
+
+#undef fprintf
+#undef printf
 
 static void print_formats(AVFilterContext *filter_ctx)
 {

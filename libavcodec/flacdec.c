@@ -42,6 +42,7 @@
 #include "golomb.h"
 #include "flac.h"
 #include "flacdata.h"
+#include "flacdsp.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -54,13 +55,13 @@ typedef struct FLACContext {
     GetBitContext gb;                       ///< GetBitContext initialized to start at the current frame
 
     int blocksize;                          ///< number of samples in the current frame
-    int curr_bps;                           ///< bps for current subframe, adjusted for channel correlation and wasted bits
     int sample_shift;                       ///< shift required to make output samples 16-bit or 32-bit
-    int is32;                               ///< flag to indicate if output should be 32-bit instead of 16-bit
     int ch_mode;                            ///< channel decorrelation type in the current frame
     int got_streaminfo;                     ///< indicates if the STREAMINFO has been read
 
     int32_t *decoded[FLAC_MAX_CHANNELS];    ///< decoded samples
+
+    FLACDSPContext dsp;
 } FLACContext;
 
 static const int64_t flac_channel_layouts[6] = {
@@ -101,6 +102,17 @@ int avpriv_flac_is_extradata_valid(AVCodecContext *avctx,
     return 1;
 }
 
+static void flac_set_bps(FLACContext *s)
+{
+    if (s->bps > 16) {
+        s->avctx->sample_fmt = AV_SAMPLE_FMT_S32;
+        s->sample_shift = 32 - s->bps;
+    } else {
+        s->avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+        s->sample_shift = 16 - s->bps;
+    }
+}
+
 static av_cold int flac_decode_init(AVCodecContext *avctx)
 {
     enum FLACExtradataFormat format;
@@ -118,11 +130,9 @@ static av_cold int flac_decode_init(AVCodecContext *avctx)
 
     /* initialize based on the demuxer-supplied streamdata header */
     avpriv_flac_parse_streaminfo(avctx, (FLACStreaminfo *)s, streaminfo);
-    if (s->bps > 16)
-        avctx->sample_fmt = AV_SAMPLE_FMT_S32;
-    else
-        avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     allocate_buffers(s);
+    flac_set_bps(s);
+    ff_flacdsp_init(&s->dsp, avctx->sample_fmt);
     s->got_streaminfo = 1;
 
     avcodec_get_frame_defaults(&s->frame);
@@ -150,8 +160,7 @@ static void allocate_buffers(FLACContext *s)
     assert(s->max_blocksize);
 
     for (i = 0; i < s->channels; i++) {
-        s->decoded[i] = av_realloc(s->decoded[i],
-                                   sizeof(int32_t)*s->max_blocksize);
+        s->decoded[i] = av_malloc(sizeof(int32_t)*s->max_blocksize);
     }
 }
 
@@ -223,6 +232,8 @@ static int parse_streaminfo(FLACContext *s, const uint8_t *buf, int buf_size)
     }
     avpriv_flac_parse_streaminfo(s->avctx, (FLACStreaminfo *)s, &buf[8]);
     allocate_buffers(s);
+    flac_set_bps(s);
+    ff_flacdsp_init(&s->dsp, s->avctx->sample_fmt);
     s->got_streaminfo = 1;
 
     return 0;
@@ -295,7 +306,8 @@ static int decode_residuals(FLACContext *s, int channel, int pred_order)
     return 0;
 }
 
-static int decode_subframe_fixed(FLACContext *s, int channel, int pred_order)
+static int decode_subframe_fixed(FLACContext *s, int channel, int pred_order,
+                                 int bps)
 {
     const int blocksize = s->blocksize;
     int32_t *decoded = s->decoded[channel];
@@ -303,7 +315,7 @@ static int decode_subframe_fixed(FLACContext *s, int channel, int pred_order)
 
     /* warm up samples */
     for (i = 0; i < pred_order; i++) {
-        decoded[i] = get_sbits_long(&s->gb, s->curr_bps);
+        decoded[i] = get_sbits_long(&s->gb, bps);
     }
 
     if (decode_residuals(s, channel, pred_order) < 0)
@@ -345,16 +357,17 @@ static int decode_subframe_fixed(FLACContext *s, int channel, int pred_order)
     return 0;
 }
 
-static int decode_subframe_lpc(FLACContext *s, int channel, int pred_order)
+static int decode_subframe_lpc(FLACContext *s, int channel, int pred_order,
+                               int bps)
 {
-    int i, j;
+    int i;
     int coeff_prec, qlevel;
     int coeffs[32];
     int32_t *decoded = s->decoded[channel];
 
     /* warm up samples */
     for (i = 0; i < pred_order; i++) {
-        decoded[i] = get_sbits_long(&s->gb, s->curr_bps);
+        decoded[i] = get_sbits_long(&s->gb, bps);
     }
 
     coeff_prec = get_bits(&s->gb, 4) + 1;
@@ -376,38 +389,7 @@ static int decode_subframe_lpc(FLACContext *s, int channel, int pred_order)
     if (decode_residuals(s, channel, pred_order) < 0)
         return -1;
 
-    if (s->bps > 16) {
-        int64_t sum;
-        for (i = pred_order; i < s->blocksize; i++) {
-            sum = 0;
-            for (j = 0; j < pred_order; j++)
-                sum += (int64_t)coeffs[j] * decoded[i-j-1];
-            decoded[i] += sum >> qlevel;
-        }
-    } else {
-        for (i = pred_order; i < s->blocksize-1; i += 2) {
-            int c;
-            int d = decoded[i-pred_order];
-            int s0 = 0, s1 = 0;
-            for (j = pred_order-1; j > 0; j--) {
-                c = coeffs[j];
-                s0 += c*d;
-                d = decoded[i-j];
-                s1 += c*d;
-            }
-            c = coeffs[0];
-            s0 += c*d;
-            d = decoded[i] += s0 >> qlevel;
-            s1 += c*d;
-            decoded[i+1] += s1 >> qlevel;
-        }
-        if (i < s->blocksize) {
-            int sum = 0;
-            for (j = 0; j < pred_order; j++)
-                sum += coeffs[j] * decoded[i-j-1];
-            decoded[i] += sum >> qlevel;
-        }
-    }
+    s->dsp.lpc(decoded, coeffs, pred_order, qlevel, s->blocksize);
 
     return 0;
 }
@@ -415,15 +397,15 @@ static int decode_subframe_lpc(FLACContext *s, int channel, int pred_order)
 static inline int decode_subframe(FLACContext *s, int channel)
 {
     int type, wasted = 0;
+    int bps = s->bps;
     int i, tmp;
 
-    s->curr_bps = s->bps;
     if (channel == 0) {
         if (s->ch_mode == FLAC_CHMODE_RIGHT_SIDE)
-            s->curr_bps++;
+            bps++;
     } else {
         if (s->ch_mode == FLAC_CHMODE_LEFT_SIDE || s->ch_mode == FLAC_CHMODE_MID_SIDE)
-            s->curr_bps++;
+            bps++;
     }
 
     if (get_bits1(&s->gb)) {
@@ -436,35 +418,35 @@ static inline int decode_subframe(FLACContext *s, int channel)
         int left = get_bits_left(&s->gb);
         wasted = 1;
         if ( left < 0 ||
-            (left < s->curr_bps && !show_bits_long(&s->gb, left)) ||
-                                   !show_bits_long(&s->gb, s->curr_bps)) {
+            (left < bps && !show_bits_long(&s->gb, left)) ||
+                           !show_bits_long(&s->gb, bps)) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "Invalid number of wasted bits > available bits (%d) - left=%d\n",
-                   s->curr_bps, left);
+                   bps, left);
             return AVERROR_INVALIDDATA;
         }
         while (!get_bits1(&s->gb))
             wasted++;
-        s->curr_bps -= wasted;
+        bps -= wasted;
     }
-    if (s->curr_bps > 32) {
+    if (bps > 32) {
         av_log_missing_feature(s->avctx, "decorrelated bit depth > 32", 0);
         return -1;
     }
 
 //FIXME use av_log2 for types
     if (type == 0) {
-        tmp = get_sbits_long(&s->gb, s->curr_bps);
+        tmp = get_sbits_long(&s->gb, bps);
         for (i = 0; i < s->blocksize; i++)
             s->decoded[channel][i] = tmp;
     } else if (type == 1) {
         for (i = 0; i < s->blocksize; i++)
-            s->decoded[channel][i] = get_sbits_long(&s->gb, s->curr_bps);
+            s->decoded[channel][i] = get_sbits_long(&s->gb, bps);
     } else if ((type >= 8) && (type <= 12)) {
-        if (decode_subframe_fixed(s, channel, type & ~0x8) < 0)
+        if (decode_subframe_fixed(s, channel, type & ~0x8, bps) < 0)
             return -1;
     } else if (type >= 32) {
-        if (decode_subframe_lpc(s, channel, (type & ~0x20)+1) < 0)
+        if (decode_subframe_lpc(s, channel, (type & ~0x20)+1, bps) < 0)
             return -1;
     } else {
         av_log(s->avctx, AV_LOG_ERROR, "invalid coding type\n");
@@ -512,15 +494,7 @@ static int decode_frame(FLACContext *s)
     }
     s->bps = s->avctx->bits_per_raw_sample = fi.bps;
 
-    if (s->bps > 16) {
-        s->avctx->sample_fmt = AV_SAMPLE_FMT_S32;
-        s->sample_shift = 32 - s->bps;
-        s->is32 = 1;
-    } else {
-        s->avctx->sample_fmt = AV_SAMPLE_FMT_S16;
-        s->sample_shift = 16 - s->bps;
-        s->is32 = 0;
-    }
+    flac_set_bps(s);
 
     if (!s->max_blocksize)
         s->max_blocksize = FLAC_MAX_BLOCKSIZE;
@@ -546,6 +520,7 @@ static int decode_frame(FLACContext *s)
 
     if (!s->got_streaminfo) {
         allocate_buffers(s);
+        ff_flacdsp_init(&s->dsp, s->avctx->sample_fmt);
         s->got_streaminfo = 1;
         dump_headers(s->avctx, (FLACStreaminfo *)s);
     }
@@ -572,9 +547,7 @@ static int flac_decode_frame(AVCodecContext *avctx, void *data,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     FLACContext *s = avctx->priv_data;
-    int i, j = 0, bytes_read = 0;
-    int16_t *samples_16;
-    int32_t *samples_32;
+    int bytes_read = 0;
     int ret;
 
     *got_frame_ptr = 0;
@@ -614,42 +587,9 @@ static int flac_decode_frame(AVCodecContext *avctx, void *data,
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    samples_16 = (int16_t *)s->frame.data[0];
-    samples_32 = (int32_t *)s->frame.data[0];
 
-#define DECORRELATE(left, right)\
-            assert(s->channels == 2);\
-            for (i = 0; i < s->blocksize; i++) {\
-                int a= s->decoded[0][i];\
-                int b= s->decoded[1][i];\
-                if (s->is32) {\
-                    *samples_32++ = (left)  << s->sample_shift;\
-                    *samples_32++ = (right) << s->sample_shift;\
-                } else {\
-                    *samples_16++ = (left)  << s->sample_shift;\
-                    *samples_16++ = (right) << s->sample_shift;\
-                }\
-            }\
-            break;
-
-    switch (s->ch_mode) {
-    case FLAC_CHMODE_INDEPENDENT:
-        for (j = 0; j < s->blocksize; j++) {
-            for (i = 0; i < s->channels; i++) {
-                if (s->is32)
-                    *samples_32++ = s->decoded[i][j] << s->sample_shift;
-                else
-                    *samples_16++ = s->decoded[i][j] << s->sample_shift;
-            }
-        }
-        break;
-    case FLAC_CHMODE_LEFT_SIDE:
-        DECORRELATE(a,a-b)
-    case FLAC_CHMODE_RIGHT_SIDE:
-        DECORRELATE(a+b,b)
-    case FLAC_CHMODE_MID_SIDE:
-        DECORRELATE( (a-=b>>1) + b, a)
-    }
+    s->dsp.decorrelate[s->ch_mode](s->frame.data, s->decoded, s->channels,
+                                   s->blocksize, s->sample_shift);
 
     if (bytes_read > buf_size) {
         av_log(s->avctx, AV_LOG_ERROR, "overread: %d\n", bytes_read - buf_size);

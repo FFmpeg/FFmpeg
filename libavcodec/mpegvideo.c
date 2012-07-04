@@ -775,6 +775,11 @@ av_cold int ff_MPV_common_init(MpegEncContext *s)
         if(s->avctx->noise_reduction){
             FF_ALLOCZ_OR_GOTO(s->avctx, s->dct_offset, 2 * 64 * sizeof(uint16_t), fail)
         }
+
+            FF_ALLOC_OR_GOTO(s->avctx, s->cplx_tab,
+                             mb_array_size * sizeof(float), fail);
+            FF_ALLOC_OR_GOTO(s->avctx, s->bits_tab,
+                             mb_array_size * sizeof(float), fail);
     }
 
     s->picture_count = MAX_PICTURE_COUNT * FFMAX(1, s->avctx->thread_count);
@@ -784,7 +789,10 @@ av_cold int ff_MPV_common_init(MpegEncContext *s)
         avcodec_get_frame_defaults(&s->picture[i].f);
     }
 
-    FF_ALLOCZ_OR_GOTO(s->avctx, s->error_status_table, mb_array_size*sizeof(uint8_t), fail)
+        FF_ALLOC_OR_GOTO(s->avctx, s->er_temp_buffer,
+                         mb_array_size * sizeof(uint8_t), fail);
+        FF_ALLOCZ_OR_GOTO(s->avctx, s->error_status_table,
+                          mb_array_size * sizeof(uint8_t), fail);
 
         if(s->codec_id==CODEC_ID_MPEG4 || (s->flags & CODEC_FLAG_INTERLACED_ME)){
             /* interlaced direct mode decoding tables */
@@ -923,6 +931,7 @@ void ff_MPV_common_end(MpegEncContext *s)
     av_freep(&s->avctx->stats_out);
     av_freep(&s->ac_stats);
     av_freep(&s->error_status_table);
+    av_freep(&s->er_temp_buffer);
     av_freep(&s->mb_index2xy);
     av_freep(&s->lambda_table);
     if(s->q_chroma_intra_matrix   != s->q_intra_matrix  ) av_freep(&s->q_chroma_intra_matrix);
@@ -936,6 +945,8 @@ void ff_MPV_common_end(MpegEncContext *s)
     av_freep(&s->input_picture);
     av_freep(&s->reordered_input_picture);
     av_freep(&s->dct_offset);
+    av_freep(&s->cplx_tab);
+    av_freep(&s->bits_tab);
 
     if (s->picture && !s->avctx->internal->is_copy) {
         for (i = 0; i < s->picture_count; i++) {

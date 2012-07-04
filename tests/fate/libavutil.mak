@@ -12,6 +12,10 @@ FATE_LIBAVUTIL += fate-base64
 fate-base64: libavutil/base64-test$(EXESUF)
 fate-base64: CMD = run libavutil/base64-test
 
+FATE_LIBAVUTIL += fate-blowfish
+fate-blowfish: libavutil/blowfish-test$(EXESUF)
+fate-blowfish: CMD = run libavutil/blowfish-test
+
 FATE_LIBAVUTIL += fate-bprint
 fate-bprint: libavutil/bprint-test$(EXESUF)
 fate-bprint: CMD = run libavutil/bprint-test
@@ -48,5 +52,9 @@ fate-random_seed: CMD = run libavutil/random_seed-test
 FATE_LIBAVUTIL += fate-sha
 fate-sha: libavutil/sha-test$(EXESUF)
 fate-sha: CMD = run libavutil/sha-test
+
+FATE_LIBAVUTIL += fate-xtea
+fate-xtea: libavutil/xtea-test$(EXESUF)
+fate-xtea: CMD = run libavutil/xtea-test
 
 fate-libavutil: $(FATE_LIBAVUTIL)

@@ -30,34 +30,7 @@
 #include "libavutil/avutil.h"
 #include "libavutil/log.h"
 #include "libavutil/pixfmt.h"
-
-#define LIBSWSCALE_VERSION_MAJOR 2
-#define LIBSWSCALE_VERSION_MINOR 1
-#define LIBSWSCALE_VERSION_MICRO 100
-
-#define LIBSWSCALE_VERSION_INT  AV_VERSION_INT(LIBSWSCALE_VERSION_MAJOR, \
-                                               LIBSWSCALE_VERSION_MINOR, \
-                                               LIBSWSCALE_VERSION_MICRO)
-#define LIBSWSCALE_VERSION      AV_VERSION(LIBSWSCALE_VERSION_MAJOR, \
-                                           LIBSWSCALE_VERSION_MINOR, \
-                                           LIBSWSCALE_VERSION_MICRO)
-#define LIBSWSCALE_BUILD        LIBSWSCALE_VERSION_INT
-
-#define LIBSWSCALE_IDENT        "SwS" AV_STRINGIFY(LIBSWSCALE_VERSION)
-
-/**
- * Those FF_API_* defines are not part of public API.
- * They may change, break or disappear at any time.
- */
-#ifndef FF_API_SWS_GETCONTEXT
-#define FF_API_SWS_GETCONTEXT  (LIBSWSCALE_VERSION_MAJOR < 3)
-#endif
-#ifndef FF_API_SWS_CPU_CAPS
-#define FF_API_SWS_CPU_CAPS    (LIBSWSCALE_VERSION_MAJOR < 3)
-#endif
-#ifndef FF_API_SWS_FORMAT_NAME
-#define FF_API_SWS_FORMAT_NAME  (LIBSWSCALE_VERSION_MAJOR < 3)
-#endif
+#include "version.h"
 
 /**
  * Return the LIBSWSCALE_VERSION_INT constant.

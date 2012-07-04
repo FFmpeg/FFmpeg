@@ -198,7 +198,5 @@ OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/pullup.o
 # transmedia filters
 OBJS-$(CONFIG_SHOWWAVES_FILTER)              += avf_showwaves.o
 
-TESTPROGS = drawutils formats
-
-TOOLS = graph2dot                                                       \
-        lavfi-showfiltfmts                                              \
+TOOLS     = graph2dot
+TESTPROGS = drawutils filtfmts formats

@@ -34,8 +34,9 @@
 #define LIBAVRESAMPLE_IDENT        "Lavr" AV_STRINGIFY(LIBAVRESAMPLE_VERSION)
 
 /**
- * These FF_API_* defines are not part of public API.
- * They may change, break or disappear at any time.
+ * FF_API_* defines may be placed below to indicate public API that will be
+ * dropped at a future version bump. The defines themselves are not part of
+ * the public API and may change, break or disappear at any time.
  */
 
 #endif /* AVRESAMPLE_VERSION_H */

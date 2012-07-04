@@ -705,6 +705,12 @@ typedef struct MpegEncContext {
 
     int mpv_flags;      ///< flags set by private options
     int quantizer_noise_shaping;
+
+    /* error resilience stuff */
+    uint8_t *er_temp_buffer;
+
+    /* temp buffers for rate control */
+    float *cplx_tab, *bits_tab;
 } MpegEncContext;
 
 #define REBASE_PICTURE(pic, new_ctx, old_ctx) (pic ? \

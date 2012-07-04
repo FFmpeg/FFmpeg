@@ -61,7 +61,7 @@ static inline void ff_amr_bit_reorder(uint16_t *out, int size,
            field <<= 1;
            field |= data[bit >> 3] >> (bit & 7) & 1;
         }
-        out[field_offset] = field;
+        out[field_offset >> 1] = field;
     }
 }
 

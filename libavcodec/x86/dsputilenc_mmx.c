@@ -1147,11 +1147,11 @@ void ff_dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
 
 
         if (mm_flags & AV_CPU_FLAG_MMX2) {
-            c->sum_abs_dctelem= sum_abs_dctelem_mmx2;
 #if HAVE_YASM
             c->hadamard8_diff[0]= ff_hadamard8_diff16_mmx2;
             c->hadamard8_diff[1]= ff_hadamard8_diff_mmx2;
 #endif
+            c->sum_abs_dctelem= sum_abs_dctelem_mmx2;
             c->vsad[4]= vsad_intra16_mmx2;
 
             if(!(avctx->flags & CODEC_FLAG_BITEXACT)){

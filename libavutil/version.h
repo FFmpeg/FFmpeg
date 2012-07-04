@@ -21,6 +21,14 @@
 #ifndef AVUTIL_VERSION_H
 #define AVUTIL_VERSION_H
 
+#include "avutil.h"
+
+/**
+ * @file
+ * @ingroup lavu
+ * Libavutil version macros
+ */
+
 /**
  * @defgroup lavu_ver Version and Build diagnostics
  *
@@ -46,6 +54,34 @@
 
 /**
  * @}
+ *
+ * @defgroup depr_guards Deprecation guards
+ * FF_API_* defines may be placed below to indicate public API that will be
+ * dropped at a future version bump. The defines themselves are not part of
+ * the public API and may change, break or disappear at any time.
+ *
+ * @{
  */
 
-#endif  //AVUTIL_VERSION_H
+#ifndef FF_API_OLD_EVAL_NAMES
+#define FF_API_OLD_EVAL_NAMES           (LIBAVUTIL_VERSION_MAJOR < 52)
+#endif
+#ifndef FF_API_GET_BITS_PER_SAMPLE_FMT
+#define FF_API_GET_BITS_PER_SAMPLE_FMT (LIBAVUTIL_VERSION_MAJOR < 52)
+#endif
+#ifndef FF_API_FIND_OPT
+#define FF_API_FIND_OPT                 (LIBAVUTIL_VERSION_MAJOR < 52)
+#endif
+#ifndef FF_API_AV_FIFO_PEEK
+#define FF_API_AV_FIFO_PEEK             (LIBAVUTIL_VERSION_MAJOR < 52)
+#endif
+#ifndef FF_API_OLD_AVOPTIONS
+#define FF_API_OLD_AVOPTIONS            (LIBAVUTIL_VERSION_MAJOR < 52)
+#endif
+
+/**
+ * @}
+ */
+
+#endif /* AVUTIL_VERSION_H */
+

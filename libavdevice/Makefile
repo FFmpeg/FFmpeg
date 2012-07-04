@@ -4,7 +4,8 @@ NAME    = avdevice
 FFLIBS  = avformat avcodec avutil
 FFLIBS-$(CONFIG_LAVFI_INDEV) += avfilter
 
-HEADERS = avdevice.h
+HEADERS = avdevice.h                                                    \
+          version.h                                                     \
 
 OBJS    = alldevices.o                                                  \
           avdevice.o                                                    \

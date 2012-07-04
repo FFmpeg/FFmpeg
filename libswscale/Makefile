@@ -3,7 +3,8 @@ include $(SUBDIR)../config.mak
 NAME = swscale
 FFLIBS = avutil
 
-HEADERS = swscale.h
+HEADERS = swscale.h                                                     \
+          version.h                                                     \
 
 OBJS = input.o                                          \
        options.o                                        \

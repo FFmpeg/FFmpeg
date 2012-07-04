@@ -48,11 +48,13 @@ include $(SRC_PATH)/tests/fate/atrac.mak
 include $(SRC_PATH)/tests/fate/audio.mak
 include $(SRC_PATH)/tests/fate/bmp.mak
 include $(SRC_PATH)/tests/fate/cdxl.mak
+include $(SRC_PATH)/tests/fate/cover-art.mak
 include $(SRC_PATH)/tests/fate/dct.mak
 include $(SRC_PATH)/tests/fate/demux.mak
 include $(SRC_PATH)/tests/fate/dfa.mak
 include $(SRC_PATH)/tests/fate/dpcm.mak
 include $(SRC_PATH)/tests/fate/ea.mak
+include $(SRC_PATH)/tests/fate/flac.mak
 include $(SRC_PATH)/tests/fate/fft.mak
 include $(SRC_PATH)/tests/fate/h264.mak
 include $(SRC_PATH)/tests/fate/image.mak
@@ -106,7 +108,7 @@ FATE += $(FATE_LIBAVUTIL)
 $(FATE_FFMPEG) $(FATE_LAVF_FATE) $(FATE_SAMPLES_AVCONV) $(FATE_SAMPLES_FFMPEG): ffmpeg$(EXESUF)
 
 $(FATE_LAVF):  $(AREF) $(VREF)
-$(FATE_LAVFI): $(VREF) tools/lavfi-showfiltfmts$(EXESUF)
+$(FATE_LAVFI): $(VREF) libavfilter/filtfmts-test$(EXESUF)
 $(FATE_SEEK):  fate-acodec fate-vsynth2 fate-lavf libavformat/seek-test$(EXESUF)
 
 $(FATE_LAVF_FATE): CMD = lavffatetest

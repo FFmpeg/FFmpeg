@@ -55,8 +55,9 @@ int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
     if (fi->ch_mode < FLAC_MAX_CHANNELS) {
         fi->channels = fi->ch_mode + 1;
         fi->ch_mode = FLAC_CHMODE_INDEPENDENT;
-    } else if (fi->ch_mode <= FLAC_CHMODE_MID_SIDE) {
+    } else if (fi->ch_mode < FLAC_MAX_CHANNELS + FLAC_CHMODE_MID_SIDE) {
         fi->channels = 2;
+        fi->ch_mode -= FLAC_MAX_CHANNELS - 1;
     } else {
         av_log(avctx, AV_LOG_ERROR + log_level_offset,
                "invalid channel mode: %d\n", fi->ch_mode);

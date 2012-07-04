@@ -53,6 +53,7 @@ typedef struct CompressionOptions {
     int prediction_order_method;
     int min_partition_order;
     int max_partition_order;
+    int ch_mode;
 } CompressionOptions;
 
 typedef struct RiceContext {
@@ -1022,15 +1023,8 @@ static int estimate_stereo_mode(int32_t *left_ch, int32_t *right_ch, int n)
     for (i = 1; i < 4; i++)
         if (score[i] < score[best])
             best = i;
-    if (best == 0) {
-        return FLAC_CHMODE_INDEPENDENT;
-    } else if (best == 1) {
-        return FLAC_CHMODE_LEFT_SIDE;
-    } else if (best == 2) {
-        return FLAC_CHMODE_RIGHT_SIDE;
-    } else {
-        return FLAC_CHMODE_MID_SIDE;
-    }
+
+    return best;
 }
 
 
@@ -1053,7 +1047,10 @@ static void channel_decorrelation(FlacEncodeContext *s)
         return;
     }
 
-    frame->ch_mode = estimate_stereo_mode(left, right, n);
+    if (s->options.ch_mode < 0)
+        frame->ch_mode = estimate_stereo_mode(left, right, n);
+    else
+        frame->ch_mode = s->options.ch_mode;
 
     /* perform decorrelation and adjust bits-per-sample */
     if (frame->ch_mode == FLAC_CHMODE_INDEPENDENT)
@@ -1099,7 +1096,7 @@ static void write_frame_header(FlacEncodeContext *s)
     if (frame->ch_mode == FLAC_CHMODE_INDEPENDENT)
         put_bits(&s->pb, 4, s->channels-1);
     else
-        put_bits(&s->pb, 4, frame->ch_mode);
+        put_bits(&s->pb, 4, frame->ch_mode + FLAC_MAX_CHANNELS - 1);
 
     put_bits(&s->pb, 3, 4); /* bits-per-sample code */
     put_bits(&s->pb, 1, 0);
@@ -1308,6 +1305,12 @@ static const AVOption options[] = {
 { "8level",     NULL, 0, AV_OPT_TYPE_CONST, {.dbl = ORDER_METHOD_8LEVEL }, INT_MIN, INT_MAX, FLAGS, "predm" },
 { "search",     NULL, 0, AV_OPT_TYPE_CONST, {.dbl = ORDER_METHOD_SEARCH }, INT_MIN, INT_MAX, FLAGS, "predm" },
 { "log",        NULL, 0, AV_OPT_TYPE_CONST, {.dbl = ORDER_METHOD_LOG },    INT_MIN, INT_MAX, FLAGS, "predm" },
+{ "ch_mode", "Stereo decorrelation mode", offsetof(FlacEncodeContext, options.ch_mode), AV_OPT_TYPE_INT, { .dbl = -1 }, -1, FLAC_CHMODE_MID_SIDE, FLAGS, "ch_mode" },
+{ "auto",       NULL, 0, AV_OPT_TYPE_CONST, { .dbl = -1                      }, INT_MIN, INT_MAX, FLAGS, "ch_mode" },
+{ "indep",      NULL, 0, AV_OPT_TYPE_CONST, { .dbl = FLAC_CHMODE_INDEPENDENT }, INT_MIN, INT_MAX, FLAGS, "ch_mode" },
+{ "left_side",  NULL, 0, AV_OPT_TYPE_CONST, { .dbl = FLAC_CHMODE_LEFT_SIDE   }, INT_MIN, INT_MAX, FLAGS, "ch_mode" },
+{ "right_side", NULL, 0, AV_OPT_TYPE_CONST, { .dbl = FLAC_CHMODE_RIGHT_SIDE  }, INT_MIN, INT_MAX, FLAGS, "ch_mode" },
+{ "mid_side",   NULL, 0, AV_OPT_TYPE_CONST, { .dbl = FLAC_CHMODE_MID_SIDE    }, INT_MIN, INT_MAX, FLAGS, "ch_mode" },
 { NULL },
 };
 
