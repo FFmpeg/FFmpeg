@@ -1,5 +1,6 @@
 /*
  * Blowfish algorithm
+ * Copyright (c) 2012 Samuel Pitoiset
  *
  * This file is part of FFmpeg.
  *
