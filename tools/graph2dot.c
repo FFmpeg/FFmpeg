@@ -80,7 +80,7 @@ static void print_digraph(FILE *outfile, AVFilterGraph *graph)
                     av_get_channel_layout_string(buf, sizeof(buf), -1,
                                                  link->channel_layout);
                     fprintf(outfile,
-                            " [ label= \"fmt:%s sr:%"PRId64 " cl:%s\" ]",
+                            " [ label= \"fmt:%s sr:%d cl:%s\" ]",
                             av_get_sample_fmt_name(link->format),
                             link->sample_rate, buf);
                 }
