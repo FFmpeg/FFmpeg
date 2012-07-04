@@ -37,6 +37,9 @@ typedef struct ASyncContext {
     int resample;
     float min_delta_sec;
     int max_comp;
+
+    /* set by filter_samples() to signal an output frame to request_frame() */
+    int got_output;
 } ASyncContext;
 
 #define OFFSET(x) offsetof(ASyncContext, x)
@@ -117,8 +120,12 @@ static int request_frame(AVFilterLink *link)
 {
     AVFilterContext *ctx = link->src;
     ASyncContext      *s = ctx->priv;
-    int ret = ff_request_frame(ctx->inputs[0]);
+    int ret = 0;
     int nb_samples;
+
+    s->got_output = 0;
+    while (ret >= 0 && !s->got_output)
+        ret = ff_request_frame(ctx->inputs[0]);
 
     /* flush the fifo */
     if (ret == AVERROR_EOF && (nb_samples = avresample_get_delay(s->avr))) {
@@ -206,6 +213,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
                                    delta, nb_channels, buf->format);
         }
         ff_filter_samples(outlink, buf_out);
+        s->got_output = 1;
     } else {
         av_log(ctx, AV_LOG_WARNING, "Non-monotonous timestamps, dropping "
                "whole buffer.\n");
