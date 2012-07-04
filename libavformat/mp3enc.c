@@ -123,6 +123,7 @@ static int mp3_write_xing(AVFormatContext *s)
     MPADecodeHeader  c;
     int              srate_idx, ver = 0, i, channels;
     int              needed;
+    const char      *vendor = (codec->flags & CODEC_FLAG_BITEXACT) ? "Lavf" : LIBAVFORMAT_IDENT;
 
     if (!s->pb->seekable)
         return 0;
@@ -177,7 +178,9 @@ static int mp3_write_xing(AVFormatContext *s)
                + 4              // frames/size/toc flags
                + 4              // frames
                + 4              // size
-               + VBR_TOC_SIZE;  // toc
+               + VBR_TOC_SIZE   // toc
+               + 24
+               ;
 
         if (needed <= c.frame_size)
             break;
@@ -201,6 +204,12 @@ static int mp3_write_xing(AVFormatContext *s)
     // toc
     for (i = 0; i < VBR_TOC_SIZE; ++i)
         avio_w8(s->pb, (uint8_t)(255 * i / VBR_TOC_SIZE));
+
+    for (i = 0; i < strlen(vendor); ++i)
+        avio_w8(s->pb, vendor[i]);
+    for (; i < 21; ++i)
+        avio_w8(s->pb, 0);
+    avio_wb24(s->pb, FFMAX(codec->delay - 528 - 1, 0)<<12);
 
     ffio_fill(s->pb, 0, c.frame_size - needed);
     avio_flush(s->pb);

@@ -116,7 +116,7 @@ static int mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
             avio_skip(s->pb, 4);
 
         v = avio_rb32(s->pb);
-        if(v == MKBETAG('L', 'A', 'M', 'E')) {
+        if(v == MKBETAG('L', 'A', 'M', 'E') || v == MKBETAG('L', 'a', 'v', 'f')) {
             avio_skip(s->pb, 21-4);
             v= avio_rb24(s->pb);
             mp3->start_pad = v>>12;
