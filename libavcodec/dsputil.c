@@ -43,6 +43,7 @@
 uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP] = {0, };
 uint32_t ff_squareTbl[512] = {0, };
 
+#define pixeltmp int16_t
 #define BIT_DEPTH 9
 #include "dsputil_template.c"
 #undef BIT_DEPTH
@@ -51,8 +52,21 @@ uint32_t ff_squareTbl[512] = {0, };
 #include "dsputil_template.c"
 #undef BIT_DEPTH
 
+#undef pixeltmp
+#define pixeltmp int32_t
+#define BIT_DEPTH 12
+#include "dsputil_template.c"
+#undef BIT_DEPTH
+
+#define BIT_DEPTH 14
+#include "dsputil_template.c"
+#undef BIT_DEPTH
+
+#undef pixeltmp
+#define pixeltmp int16_t
 #define BIT_DEPTH 8
 #include "dsputil_template.c"
+#undef pixeltmp
 
 // 0x7f7f7f7f or 0x7f7f7f7f7f7f7f7f or whatever, depending on the cpu's native arithmetic size
 #define pb_7f (~0UL/255 * 0x7f)
@@ -3145,6 +3159,20 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
             BIT_DEPTH_FUNCS(10, _32);
         } else {
             BIT_DEPTH_FUNCS(10, _16);
+        }
+        break;
+    case 12:
+        if (c->dct_bits == 32) {
+            BIT_DEPTH_FUNCS(12, _32);
+        } else {
+            BIT_DEPTH_FUNCS(12, _16);
+        }
+        break;
+    case 14:
+        if (c->dct_bits == 32) {
+            BIT_DEPTH_FUNCS(14, _32);
+        } else {
+            BIT_DEPTH_FUNCS(14, _16);
         }
         break;
     default:

@@ -72,6 +72,8 @@ void ff_h264_chroma_dc_dequant_idct_ ## depth ## _c(DCTELEM *block, int qmul);
 H264_IDCT( 8)
 H264_IDCT( 9)
 H264_IDCT(10)
+H264_IDCT(12)
+H264_IDCT(14)
 
 void ff_svq3_luma_dc_dequant_idct_c(DCTELEM *output, DCTELEM *input, int qp);
 void ff_svq3_add_idct_c(uint8_t *dst, DCTELEM *block, int stride, int qp, int dc);
@@ -98,6 +100,8 @@ void ff_avg_pixels16x16_ ## depth ## _c(uint8_t *dst, uint8_t *src, int stride);
 PUTAVG_PIXELS( 8)
 PUTAVG_PIXELS( 9)
 PUTAVG_PIXELS(10)
+PUTAVG_PIXELS(12)
+PUTAVG_PIXELS(14)
 
 #define ff_put_pixels8x8_c ff_put_pixels8x8_8_c
 #define ff_avg_pixels8x8_c ff_avg_pixels8x8_8_c
@@ -211,6 +215,8 @@ void ff_emulated_edge_mc_ ## depth (uint8_t *buf, const uint8_t *src, int linesi
 EMULATED_EDGE(8)
 EMULATED_EDGE(9)
 EMULATED_EDGE(10)
+EMULATED_EDGE(12)
+EMULATED_EDGE(14)
 
 void ff_add_pixels_clamped_c(const DCTELEM *block, uint8_t *dest, int linesize);
 void ff_put_pixels_clamped_c(const DCTELEM *block, uint8_t *dest, int linesize);
