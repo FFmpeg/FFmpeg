@@ -1465,27 +1465,6 @@ VP8_DC_WHT
 %endif
 %endmacro
 
-%macro SPLATB_REG 2-3
-%if cpuflag(ssse3)
-    movd           %1, %2d
-    pshufb         %1, %3
-%elif cpuflag(sse2)
-    movd           %1, %2d
-    punpcklbw      %1, %1
-    pshuflw        %1, %1, 0x0
-    punpcklqdq     %1, %1
-%elif cpuflag(mmx2)
-    movd           %1, %2d
-    punpcklbw      %1, %1
-    pshufw         %1, %1, 0x0
-%else
-    movd           %1, %2d
-    punpcklbw      %1, %1
-    punpcklwd      %1, %1
-    punpckldq      %1, %1
-%endif
-%endmacro
-
 %macro SIMPLE_LOOPFILTER 2
 cglobal vp8_%1_loop_filter_simple, 3, %2, 8, dst, stride, flim, cntr
 %if mmsize == 8 ; mmx/mmxext
