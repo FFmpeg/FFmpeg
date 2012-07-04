@@ -1514,6 +1514,30 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         },
         .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_RGB,
     },
+    [AV_PIX_FMT_GBRP12LE] = {
+        .name = "gbrp12le",
+        .nb_components = 3,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 2, 2, 0, 0, 12, 1, 11, 1 },        /* R */
+            { 0, 2, 0, 0, 12, 1, 11, 1 },        /* G */
+            { 1, 2, 0, 0, 12, 1, 11, 1 },        /* B */
+        },
+        .flags = AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_RGB,
+    },
+    [AV_PIX_FMT_GBRP12BE] = {
+        .name = "gbrp12be",
+        .nb_components = 3,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 2, 2, 0, 0, 12, 1, 11, 1 },        /* R */
+            { 0, 2, 0, 0, 12, 1, 11, 1 },        /* G */
+            { 1, 2, 0, 0, 12, 1, 11, 1 },        /* B */
+        },
+        .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_RGB,
+    },
     [AV_PIX_FMT_GBRP16LE] = {
         .name = "gbrp16le",
         .nb_components = 3,
@@ -1923,6 +1947,7 @@ enum AVPixelFormat av_pix_fmt_swap_endianness(enum AVPixelFormat pix_fmt)
 
     PIX_FMT_SWAP_ENDIANNESS(GBRP9);
     PIX_FMT_SWAP_ENDIANNESS(GBRP10);
+    PIX_FMT_SWAP_ENDIANNESS(GBRP12);
     PIX_FMT_SWAP_ENDIANNESS(GBRP16);
     PIX_FMT_SWAP_ENDIANNESS(YUVA420P9);
     PIX_FMT_SWAP_ENDIANNESS(YUVA422P9);
