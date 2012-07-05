@@ -632,6 +632,18 @@ int ff_rtmp_calc_digest(const uint8_t *src, int len, int gap,
     return 0;
 }
 
+int ff_rtmp_calc_digest_pos(const uint8_t *buf, int off, int mod_val,
+                            int add_val)
+{
+    int i, digest_pos = 0;
+
+    for (i = 0; i < 4; i++)
+        digest_pos += buf[i + off];
+    digest_pos = digest_pos % mod_val + add_val;
+
+    return digest_pos;
+}
+
 /**
  * Put HMAC-SHA2 digest of packet data (except for the bytes where this digest
  * will be stored) into that packet.
@@ -641,12 +653,9 @@ int ff_rtmp_calc_digest(const uint8_t *src, int len, int gap,
  */
 static int rtmp_handshake_imprint_with_digest(uint8_t *buf)
 {
-    int i, digest_pos = 0;
-    int ret;
+    int ret, digest_pos;
 
-    for (i = 8; i < 12; i++)
-        digest_pos += buf[i];
-    digest_pos = (digest_pos % 728) + 12;
+    digest_pos = ff_rtmp_calc_digest_pos(buf, 8, 728, 12);
 
     ret = ff_rtmp_calc_digest(buf, RTMP_HANDSHAKE_PACKET_SIZE, digest_pos,
                               rtmp_player_key, PLAYER_KEY_OPEN_PART_LEN,
@@ -666,13 +675,10 @@ static int rtmp_handshake_imprint_with_digest(uint8_t *buf)
  */
 static int rtmp_validate_digest(uint8_t *buf, int off)
 {
-    int i, digest_pos = 0;
     uint8_t digest[32];
-    int ret;
+    int ret, digest_pos;
 
-    for (i = 0; i < 4; i++)
-        digest_pos += buf[i + off];
-    digest_pos = (digest_pos % 728) + off + 4;
+    digest_pos = ff_rtmp_calc_digest_pos(buf, off, 728, off + 4);
 
     ret = ff_rtmp_calc_digest(buf, RTMP_HANDSHAKE_PACKET_SIZE, digest_pos,
                               rtmp_server_key, SERVER_KEY_OPEN_PART_LEN,

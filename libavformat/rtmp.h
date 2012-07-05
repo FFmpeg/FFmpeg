@@ -57,4 +57,15 @@
 int ff_rtmp_calc_digest(const uint8_t *src, int len, int gap,
                         const uint8_t *key, int keylen, uint8_t *dst);
 
+/**
+ * Calculate digest position for RTMP handshake packets.
+ *
+ * @param buf input buffer (should be 1536 bytes)
+ * @param off offset in buffer where to start calculating digest position
+ * @param mod_val value used for computing modulo
+ * @param add_val value added at the end (after computing modulo)
+ */
+int ff_rtmp_calc_digest_pos(const uint8_t *buf, int off, int mod_val,
+                            int add_val);
+
 #endif /* AVFORMAT_RTMP_H */
