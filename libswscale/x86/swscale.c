@@ -215,10 +215,12 @@ void ff_hscale ## from_bpc ## to ## to_bpc ## _ ## filter_n ## _ ## opt( \
     SCALE_FUNC(filter_n,  8, 15, opt); \
     SCALE_FUNC(filter_n,  9, 15, opt); \
     SCALE_FUNC(filter_n, 10, 15, opt); \
+    SCALE_FUNC(filter_n, 12, 15, opt); \
     SCALE_FUNC(filter_n, 16, 15, opt); \
     SCALE_FUNC(filter_n,  8, 19, opt); \
     SCALE_FUNC(filter_n,  9, 19, opt); \
     SCALE_FUNC(filter_n, 10, 19, opt); \
+    SCALE_FUNC(filter_n, 12, 19, opt); \
     SCALE_FUNC(filter_n, 16, 19, opt)
 
 #define SCALE_FUNCS_MMX(opt) \
@@ -325,8 +327,8 @@ av_cold void ff_sws_init_swscale_x86(SwsContext *c)
         hscalefn = c->dstBpc <= 15 ? ff_hscale10to15_ ## filtersize ## _ ## opt2 : \
                                      ff_hscale10to19_ ## filtersize ## _ ## opt1; \
     } else if (c->srcBpc == 12) { \
-        hscalefn = c->dstBpc <= 15 ? ff_hscale16to15_ ## filtersize ## _ ## opt2 : \
-                                     ff_hscale16to19_ ## filtersize ## _ ## opt1; \
+        hscalefn = c->dstBpc <= 15 ? ff_hscale12to15_ ## filtersize ## _ ## opt2 : \
+                                     ff_hscale12to19_ ## filtersize ## _ ## opt1; \
     } else if (c->srcBpc == 16) { \
         hscalefn = c->dstBpc <= 15 ? ff_hscale16to15_ ## filtersize ## _ ## opt2 : \
                                      ff_hscale16to19_ ## filtersize ## _ ## opt1; \
