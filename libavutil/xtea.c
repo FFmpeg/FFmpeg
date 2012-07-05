@@ -72,7 +72,7 @@ void av_xtea_crypt(AVXTEA *ctx, uint8_t *dst, const uint8_t *src, int count,
     int i;
 
     if (decrypt) {
-        while (count > 0) {
+        while (count--) {
             xtea_crypt_ecb(ctx, dst, src, decrypt);
 
             if (iv) {
@@ -83,10 +83,9 @@ void av_xtea_crypt(AVXTEA *ctx, uint8_t *dst, const uint8_t *src, int count,
 
             src   += 8;
             dst   += 8;
-            count -= 8;
         }
     } else {
-        while (count > 0) {
+        while (count--) {
             if (iv) {
                 for (i = 0; i < 8; i++)
                     dst[i] = src[i] ^ iv[i];
@@ -97,7 +96,6 @@ void av_xtea_crypt(AVXTEA *ctx, uint8_t *dst, const uint8_t *src, int count,
             }
             src   += 8;
             dst   += 8;
-            count -= 8;
         }
     }
 }
