@@ -29,6 +29,9 @@
 
 #define RTMP_HANDSHAKE_PACKET_SIZE 1536
 
+#define HMAC_IPAD_VAL 0x36
+#define HMAC_OPAD_VAL 0x5C
+
 /**
  * emulated Flash client version - 9.0.124.2 on Linux
  * @{
@@ -39,5 +42,19 @@
 #define RTMP_CLIENT_VER3  124
 #define RTMP_CLIENT_VER4    2
 /** @} */ //version defines
+
+/**
+ * Calculate HMAC-SHA2 digest for RTMP handshake packets.
+ *
+ * @param src    input buffer
+ * @param len    input buffer length (should be 1536)
+ * @param gap    offset in buffer where 32 bytes should not be taken into account
+ *               when calculating digest (since it will be used to store that digest)
+ * @param key    digest key
+ * @param keylen digest key length
+ * @param dst    buffer where calculated digest will be stored (32 bytes)
+ */
+int ff_rtmp_calc_digest(const uint8_t *src, int len, int gap,
+                        const uint8_t *key, int keylen, uint8_t *dst);
 
 #endif /* AVFORMAT_RTMP_H */

@@ -590,23 +590,8 @@ static int gen_bytes_read(URLContext *s, RTMPContext *rt, uint32_t ts)
     return ret;
 }
 
-//TODO: Move HMAC code somewhere. Eventually.
-#define HMAC_IPAD_VAL 0x36
-#define HMAC_OPAD_VAL 0x5C
-
-/**
- * Calculate HMAC-SHA2 digest for RTMP handshake packets.
- *
- * @param src    input buffer
- * @param len    input buffer length (should be 1536)
- * @param gap    offset in buffer where 32 bytes should not be taken into account
- *               when calculating digest (since it will be used to store that digest)
- * @param key    digest key
- * @param keylen digest key length
- * @param dst    buffer where calculated digest will be stored (32 bytes)
- */
-static int rtmp_calc_digest(const uint8_t *src, int len, int gap,
-                            const uint8_t *key, int keylen, uint8_t *dst)
+int ff_rtmp_calc_digest(const uint8_t *src, int len, int gap,
+                        const uint8_t *key, int keylen, uint8_t *dst)
 {
     struct AVSHA *sha;
     uint8_t hmac_buf[64+32] = {0};
@@ -663,9 +648,9 @@ static int rtmp_handshake_imprint_with_digest(uint8_t *buf)
         digest_pos += buf[i];
     digest_pos = (digest_pos % 728) + 12;
 
-    ret = rtmp_calc_digest(buf, RTMP_HANDSHAKE_PACKET_SIZE, digest_pos,
-                           rtmp_player_key, PLAYER_KEY_OPEN_PART_LEN,
-                           buf + digest_pos);
+    ret = ff_rtmp_calc_digest(buf, RTMP_HANDSHAKE_PACKET_SIZE, digest_pos,
+                              rtmp_player_key, PLAYER_KEY_OPEN_PART_LEN,
+                              buf + digest_pos);
     if (ret < 0)
         return ret;
 
@@ -689,9 +674,9 @@ static int rtmp_validate_digest(uint8_t *buf, int off)
         digest_pos += buf[i + off];
     digest_pos = (digest_pos % 728) + off + 4;
 
-    ret = rtmp_calc_digest(buf, RTMP_HANDSHAKE_PACKET_SIZE, digest_pos,
-                           rtmp_server_key, SERVER_KEY_OPEN_PART_LEN,
-                           digest);
+    ret = ff_rtmp_calc_digest(buf, RTMP_HANDSHAKE_PACKET_SIZE, digest_pos,
+                              rtmp_server_key, SERVER_KEY_OPEN_PART_LEN,
+                              digest);
     if (ret < 0)
         return ret;
 
@@ -771,13 +756,14 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
             }
         }
 
-        ret = rtmp_calc_digest(tosend + 1 + client_pos, 32, 0, rtmp_server_key,
-                               sizeof(rtmp_server_key), digest);
+        ret = ff_rtmp_calc_digest(tosend + 1 + client_pos, 32, 0,
+                                  rtmp_server_key, sizeof(rtmp_server_key),
+                                  digest);
         if (ret < 0)
             return ret;
 
-        ret = rtmp_calc_digest(clientdata, RTMP_HANDSHAKE_PACKET_SIZE - 32, 0,
-                               digest, 32, digest);
+        ret = ff_rtmp_calc_digest(clientdata, RTMP_HANDSHAKE_PACKET_SIZE - 32,
+                                  0, digest, 32, digest);
         if (ret < 0)
             return ret;
 
@@ -788,15 +774,15 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
 
         for (i = 0; i < RTMP_HANDSHAKE_PACKET_SIZE; i++)
             tosend[i] = av_lfg_get(&rnd) >> 24;
-        ret = rtmp_calc_digest(serverdata + 1 + server_pos, 32, 0,
-                               rtmp_player_key, sizeof(rtmp_player_key),
-                               digest);
+        ret = ff_rtmp_calc_digest(serverdata + 1 + server_pos, 32, 0,
+                                  rtmp_player_key, sizeof(rtmp_player_key),
+                                  digest);
         if (ret < 0)
             return ret;
 
-        ret = rtmp_calc_digest(tosend, RTMP_HANDSHAKE_PACKET_SIZE - 32, 0,
-                               digest, 32,
-                               tosend + RTMP_HANDSHAKE_PACKET_SIZE - 32);
+        ret = ff_rtmp_calc_digest(tosend, RTMP_HANDSHAKE_PACKET_SIZE - 32, 0,
+                                  digest, 32,
+                                  tosend + RTMP_HANDSHAKE_PACKET_SIZE - 32);
         if (ret < 0)
             return ret;
 
