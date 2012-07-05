@@ -104,6 +104,12 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
     case PIX_FMT_YUV420P10:
     case PIX_FMT_YUV422P10:
     case PIX_FMT_YUV444P10:
+    case PIX_FMT_YUV420P12:
+    case PIX_FMT_YUV422P12:
+    case PIX_FMT_YUV444P12:
+    case PIX_FMT_YUV420P14:
+    case PIX_FMT_YUV422P14:
+    case PIX_FMT_YUV444P14:
     case PIX_FMT_YUV420P16:
     case PIX_FMT_YUV422P16:
     case PIX_FMT_YUV444P16:
@@ -350,14 +356,20 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         break;
     case PIX_FMT_GRAY16:
     case PIX_FMT_YUV420P9:
-    case PIX_FMT_YUV420P10:
-    case PIX_FMT_YUV420P16:
     case PIX_FMT_YUV422P9:
-    case PIX_FMT_YUV422P10:
-    case PIX_FMT_YUV422P16:
     case PIX_FMT_YUV444P9:
     case PIX_FMT_YUV444P10:
+    case PIX_FMT_YUV422P10:
+    case PIX_FMT_YUV420P10:
+    case PIX_FMT_YUV420P12:
+    case PIX_FMT_YUV422P12:
+    case PIX_FMT_YUV444P12:
+    case PIX_FMT_YUV420P14:
+    case PIX_FMT_YUV422P14:
+    case PIX_FMT_YUV444P14:
     case PIX_FMT_YUV444P16:
+    case PIX_FMT_YUV422P16:
+    case PIX_FMT_YUV420P16:
         cpyresult = libopenjpeg_copy_unpacked16(avctx, frame, image);
         break;
     default:
@@ -460,6 +472,8 @@ AVCodec ff_libopenjpeg_encoder = {
         PIX_FMT_YUV411P, PIX_FMT_YUV410P, PIX_FMT_YUVA444P,
         PIX_FMT_YUV420P9, PIX_FMT_YUV422P9, PIX_FMT_YUV444P9,
         PIX_FMT_YUV420P10, PIX_FMT_YUV422P10, PIX_FMT_YUV444P10,
+        PIX_FMT_YUV420P12, PIX_FMT_YUV422P12, PIX_FMT_YUV444P12,
+        PIX_FMT_YUV420P14, PIX_FMT_YUV422P14, PIX_FMT_YUV444P14,
         PIX_FMT_YUV420P16, PIX_FMT_YUV422P16, PIX_FMT_YUV444P16,
         PIX_FMT_NONE
     },
