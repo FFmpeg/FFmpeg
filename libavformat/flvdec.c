@@ -113,11 +113,7 @@ static int flv_same_audio_codec(AVCodecContext *acodec, int flags)
     case FLV_CODECID_MP3:
         return acodec->codec_id == CODEC_ID_MP3;
     case FLV_CODECID_NELLYMOSER_8KHZ_MONO:
-        return acodec->sample_rate == 8000 &&
-               acodec->codec_id == CODEC_ID_NELLYMOSER;
     case FLV_CODECID_NELLYMOSER_16KHZ_MONO:
-        return acodec->sample_rate == 16000 &&
-               acodec->codec_id == CODEC_ID_NELLYMOSER;
     case FLV_CODECID_NELLYMOSER:
         return acodec->codec_id == CODEC_ID_NELLYMOSER;
     case FLV_CODECID_PCM_MULAW:
