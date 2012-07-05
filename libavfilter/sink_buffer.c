@@ -20,7 +20,7 @@
 
 /**
  * @file
- * buffer video sink
+ * buffer sink
  */
 
 #include "libavutil/avassert.h"
