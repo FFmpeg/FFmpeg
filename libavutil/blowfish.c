@@ -382,7 +382,7 @@ void av_blowfish_crypt(AVBlowfish *ctx, uint8_t *dst, const uint8_t *src,
     int i;
 
     if (decrypt) {
-        while (count > 0) {
+        while (count--) {
             v0 = AV_RB32(src);
             v1 = AV_RB32(src + 4);
 
@@ -399,10 +399,9 @@ void av_blowfish_crypt(AVBlowfish *ctx, uint8_t *dst, const uint8_t *src,
 
             src   += 8;
             dst   += 8;
-            count -= 8;
         }
     } else {
-        while (count > 0) {
+        while (count--) {
             if (iv) {
                 for (i = 0; i < 8; i++)
                     dst[i] = src[i] ^ iv[i];
@@ -423,7 +422,6 @@ void av_blowfish_crypt(AVBlowfish *ctx, uint8_t *dst, const uint8_t *src,
 
             src   += 8;
             dst   += 8;
-            count -= 8;
         }
     }
 }
