@@ -181,19 +181,12 @@ int av_buffersink_poll_frame(AVFilterContext *ctx)
 
 #if CONFIG_BUFFERSINK_FILTER
 
-static av_cold int vsink_init(AVFilterContext *ctx, const char *args)
+static av_cold int vsink_init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     BufferSinkContext *buf = ctx->priv;
-    AVBufferSinkParams *params = NULL;
+    AVBufferSinkParams *params = opaque;
 
-//     if(args && !strcmp(args, "opaque"))
-//         params = (AVBufferSinkParams *)(args+7);
-
-    if (!params) {
-        av_log(ctx, AV_LOG_WARNING,
-               "No opaque field provided\n");
-        buf->pixel_fmts = NULL;
-    } else {
+    if (params && buf->pixel_fmts) {
         const int *pixel_fmts = params->pixel_fmts;
 
         buf->pixel_fmts = ff_copy_int_list(pixel_fmts);
@@ -227,7 +220,7 @@ AVFilter avfilter_vsink_buffersink = {
     .name      = "buffersink",
     .description = NULL_IF_CONFIG_SMALL("Buffer video frames, and make them available to the end of the filter graph."),
     .priv_size = sizeof(BufferSinkContext),
-    .init      = vsink_init,
+    .init_opaque = vsink_init,
     .uninit    = vsink_uninit,
 
     .query_formats = vsink_query_formats,
@@ -250,13 +243,10 @@ static int filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
     return 0;
 }
 
-static av_cold int asink_init(AVFilterContext *ctx, const char *args)
+static av_cold int asink_init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     BufferSinkContext *buf = ctx->priv;
-    AVABufferSinkParams *params = NULL;
-
-//     if(args && !strcmp(args, "opaque"))
-//         params = (AVABufferSinkParams *)(args+7);
+    AVABufferSinkParams *params = opaque;
 
     if (params && params->sample_fmts) {
         buf->sample_fmts     = ff_copy_int_list  (params->sample_fmts);
@@ -310,7 +300,7 @@ static int asink_query_formats(AVFilterContext *ctx)
 AVFilter avfilter_asink_abuffersink = {
     .name      = "abuffersink",
     .description = NULL_IF_CONFIG_SMALL("Buffer audio frames, and make them available to the end of the filter graph."),
-    .init      = asink_init,
+    .init_opaque = asink_init,
     .uninit    = asink_uninit,
     .priv_size = sizeof(BufferSinkContext),
     .query_formats = asink_query_formats,
