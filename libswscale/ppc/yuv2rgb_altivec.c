@@ -317,12 +317,7 @@ static int altivec_ ## name(SwsContext *c, const unsigned char **in,          \
     const ubyte *ui  = in[1];                                                 \
     const ubyte *vi  = in[2];                                                 \
                                                                               \
-    vector unsigned char *oute =                                              \
-        (vector unsigned char *)                                              \
-            (oplanes[0] + srcSliceY * outstrides[0]);                         \
-    vector unsigned char *outo =                                              \
-        (vector unsigned char *)                                              \
-            (oplanes[0] + srcSliceY * outstrides[0] + outstrides[0]);         \
+    vector unsigned char *oute, *outo;                                        \
                                                                               \
     /* loop moves y{1, 2}i by w */                                            \
     instrides_scl[0] = instrides[0] * 2 - w;                                  \
@@ -332,6 +327,9 @@ static int altivec_ ## name(SwsContext *c, const unsigned char **in,          \
     instrides_scl[2] = instrides[2] - w / 2;                                  \
                                                                               \
     for (i = 0; i < h / 2; i++) {                                             \
+        oute = (vector unsigned char *)(oplanes[0] + outstrides[0] *          \
+                                        (srcSliceY + i * 2));                 \
+        outo = oute + (outstrides[0] >> 4);                                   \
         vec_dstst(outo, (0x02000002 | (((w * 3 + 32) / 32) << 16)), 0);       \
         vec_dstst(oute, (0x02000002 | (((w * 3 + 32) / 32) << 16)), 1);       \
                                                                               \
@@ -428,9 +426,6 @@ static int altivec_ ## name(SwsContext *c, const unsigned char **in,          \
             ui  += 8;                                                         \
             vi  += 8;                                                         \
         }                                                                     \
-                                                                              \
-        outo += (outstrides[0]) >> 4;                                         \
-        oute += (outstrides[0]) >> 4;                                         \
                                                                               \
         ui  += instrides_scl[1];                                              \
         vi  += instrides_scl[2];                                              \
