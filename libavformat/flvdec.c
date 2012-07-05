@@ -26,6 +26,7 @@
 
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"
+#include "libavutil/opt.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/mathematics.h"
 #include "libavcodec/bytestream.h"
@@ -38,6 +39,8 @@
 #define VALIDATE_INDEX_TS_THRESH 2500
 
 typedef struct {
+    const AVClass *class; ///< Class for private options.
+    int trust_metadata; ///< configure streams according onMetaData
     int wrong_dts; ///< wrong dts due to negative cts
     uint8_t *new_extradata[FLV_STREAM_TYPE_NB];
     int      new_extradata_size[FLV_STREAM_TYPE_NB];
@@ -327,6 +330,7 @@ finish:
 
 static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vstream, const char *key, int64_t max_pos, int depth) {
     AVCodecContext *acodec, *vcodec;
+    FLVContext *flv = s->priv_data;
     AVIOContext *ioc;
     AMFDataType amf_type;
     char str_val[256];
@@ -406,6 +410,22 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
                 if (!st)
                     return AVERROR(ENOMEM);
                 st->codec->codec_id = CODEC_ID_TEXT;
+            } else if (flv->trust_metadata) {
+                if (!strcmp(key, "videocodecid") && vcodec) {
+                    flv_set_video_codec(s, vstream, num_val);
+                } else
+                if (!strcmp(key, "audiocodecid") && acodec) {
+                    flv_set_audio_codec(s, astream, acodec, num_val);
+                } else
+                if (!strcmp(key, "audiosamplerate") && acodec) {
+                    acodec->sample_rate = num_val;
+                } else
+                if (!strcmp(key, "width") && vcodec) {
+                    vcodec->width = num_val;
+                } else
+                if (!strcmp(key, "height") && vcodec) {
+                    vcodec->height = num_val;
+                }
             }
         }
 
@@ -857,6 +877,20 @@ static int flv_read_seek(AVFormatContext *s, int stream_index,
     return avio_seek_time(s->pb, stream_index, ts, flags);
 }
 
+#define OFFSET(x) offsetof(FLVContext, x)
+#define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
+static const AVOption options[] = {
+    { "flv_metadata", "Allocate streams according the onMetaData array",      OFFSET(trust_metadata), AV_OPT_TYPE_INT,    { 0 }, 0, 1, VD},
+    { NULL }
+};
+
+static const AVClass class = {
+    .class_name = "flvdec",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVInputFormat ff_flv_demuxer = {
     .name           = "flv",
     .long_name      = NULL_IF_CONFIG_SMALL("FLV format"),
@@ -867,4 +901,5 @@ AVInputFormat ff_flv_demuxer = {
     .read_seek      = flv_read_seek,
     .read_close     = flv_read_close,
     .extensions     = "flv",
+    .priv_class     = &class,
 };

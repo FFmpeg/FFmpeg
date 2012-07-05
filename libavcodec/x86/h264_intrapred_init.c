@@ -96,9 +96,9 @@ PRED16x16(horizontal, 10, sse2)
 void ff_pred16x16_vertical_mmx     (uint8_t *src, int stride);
 void ff_pred16x16_vertical_sse     (uint8_t *src, int stride);
 void ff_pred16x16_horizontal_mmx   (uint8_t *src, int stride);
-void ff_pred16x16_horizontal_mmxext(uint8_t *src, int stride);
+void ff_pred16x16_horizontal_mmx2  (uint8_t *src, int stride);
 void ff_pred16x16_horizontal_ssse3 (uint8_t *src, int stride);
-void ff_pred16x16_dc_mmxext        (uint8_t *src, int stride);
+void ff_pred16x16_dc_mmx2          (uint8_t *src, int stride);
 void ff_pred16x16_dc_sse2          (uint8_t *src, int stride);
 void ff_pred16x16_dc_ssse3         (uint8_t *src, int stride);
 void ff_pred16x16_plane_h264_mmx   (uint8_t *src, int stride);
@@ -114,21 +114,21 @@ void ff_pred16x16_plane_svq3_mmx2  (uint8_t *src, int stride);
 void ff_pred16x16_plane_svq3_sse2  (uint8_t *src, int stride);
 void ff_pred16x16_plane_svq3_ssse3 (uint8_t *src, int stride);
 void ff_pred16x16_tm_vp8_mmx       (uint8_t *src, int stride);
-void ff_pred16x16_tm_vp8_mmxext    (uint8_t *src, int stride);
+void ff_pred16x16_tm_vp8_mmx2      (uint8_t *src, int stride);
 void ff_pred16x16_tm_vp8_sse2      (uint8_t *src, int stride);
 void ff_pred8x8_top_dc_mmxext      (uint8_t *src, int stride);
 void ff_pred8x8_dc_rv40_mmxext     (uint8_t *src, int stride);
 void ff_pred8x8_dc_mmxext          (uint8_t *src, int stride);
 void ff_pred8x8_vertical_mmx       (uint8_t *src, int stride);
 void ff_pred8x8_horizontal_mmx     (uint8_t *src, int stride);
-void ff_pred8x8_horizontal_mmxext  (uint8_t *src, int stride);
+void ff_pred8x8_horizontal_mmx2    (uint8_t *src, int stride);
 void ff_pred8x8_horizontal_ssse3   (uint8_t *src, int stride);
 void ff_pred8x8_plane_mmx          (uint8_t *src, int stride);
 void ff_pred8x8_plane_mmx2         (uint8_t *src, int stride);
 void ff_pred8x8_plane_sse2         (uint8_t *src, int stride);
 void ff_pred8x8_plane_ssse3        (uint8_t *src, int stride);
 void ff_pred8x8_tm_vp8_mmx         (uint8_t *src, int stride);
-void ff_pred8x8_tm_vp8_mmxext      (uint8_t *src, int stride);
+void ff_pred8x8_tm_vp8_mmx2        (uint8_t *src, int stride);
 void ff_pred8x8_tm_vp8_sse2        (uint8_t *src, int stride);
 void ff_pred8x8_tm_vp8_ssse3       (uint8_t *src, int stride);
 void ff_pred8x8l_top_dc_mmxext     (uint8_t *src, int has_topleft, int has_topright, int stride);
@@ -163,7 +163,7 @@ void ff_pred4x4_vertical_right_mmxext(uint8_t *src, const uint8_t *topright, int
 void ff_pred4x4_horizontal_up_mmxext(uint8_t *src, const uint8_t *topright, int stride);
 void ff_pred4x4_horizontal_down_mmxext(uint8_t *src, const uint8_t *topright, int stride);
 void ff_pred4x4_tm_vp8_mmx         (uint8_t *src, const uint8_t *topright, int stride);
-void ff_pred4x4_tm_vp8_mmxext      (uint8_t *src, const uint8_t *topright, int stride);
+void ff_pred4x4_tm_vp8_mmx2        (uint8_t *src, const uint8_t *topright, int stride);
 void ff_pred4x4_tm_vp8_ssse3       (uint8_t *src, const uint8_t *topright, int stride);
 void ff_pred4x4_vertical_vp8_mmxext(uint8_t *src, const uint8_t *topright, int stride);
 
@@ -199,10 +199,10 @@ void ff_h264_pred_init_x86(H264PredContext *h, int codec_id, const int bit_depth
         }
 
         if (mm_flags & AV_CPU_FLAG_MMX2) {
-            h->pred16x16[HOR_PRED8x8            ] = ff_pred16x16_horizontal_mmxext;
-            h->pred16x16[DC_PRED8x8             ] = ff_pred16x16_dc_mmxext;
+            h->pred16x16[HOR_PRED8x8            ] = ff_pred16x16_horizontal_mmx2;
+            h->pred16x16[DC_PRED8x8             ] = ff_pred16x16_dc_mmx2;
             if (chroma_format_idc == 1)
-                h->pred8x8[HOR_PRED8x8          ] = ff_pred8x8_horizontal_mmxext;
+                h->pred8x8[HOR_PRED8x8          ] = ff_pred8x8_horizontal_mmx2;
             h->pred8x8l [TOP_DC_PRED            ] = ff_pred8x8l_top_dc_mmxext;
             h->pred8x8l [DC_PRED                ] = ff_pred8x8l_dc_mmxext;
             h->pred8x8l [HOR_PRED               ] = ff_pred8x8l_horizontal_mmxext;
@@ -232,10 +232,10 @@ void ff_h264_pred_init_x86(H264PredContext *h, int codec_id, const int bit_depth
                 }
             }
             if (codec_id == CODEC_ID_VP8) {
-                h->pred16x16[PLANE_PRED8x8      ] = ff_pred16x16_tm_vp8_mmxext;
+                h->pred16x16[PLANE_PRED8x8      ] = ff_pred16x16_tm_vp8_mmx2;
                 h->pred8x8  [DC_PRED8x8         ] = ff_pred8x8_dc_rv40_mmxext;
-                h->pred8x8  [PLANE_PRED8x8      ] = ff_pred8x8_tm_vp8_mmxext;
-                h->pred4x4  [TM_VP8_PRED        ] = ff_pred4x4_tm_vp8_mmxext;
+                h->pred8x8  [PLANE_PRED8x8      ] = ff_pred8x8_tm_vp8_mmx2;
+                h->pred4x4  [TM_VP8_PRED        ] = ff_pred4x4_tm_vp8_mmx2;
                 h->pred4x4  [VERT_PRED          ] = ff_pred4x4_vertical_vp8_mmxext;
             } else {
                 if (chroma_format_idc == 1)
