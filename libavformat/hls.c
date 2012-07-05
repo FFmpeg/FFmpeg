@@ -42,7 +42,7 @@
  * An apple http stream consists of a playlist with media segment files,
  * played sequentially. There may be several playlists with the same
  * video content, in different bandwidth variants, that are played in
- * parallel (preferrably only one bandwidth variant at a time). In this case,
+ * parallel (preferably only one bandwidth variant at a time). In this case,
  * the user supplied the url to a main playlist that only lists the variant
  * playlists.
  *

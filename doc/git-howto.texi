@@ -374,7 +374,7 @@ Next let the code pass through a full run of our testsuite.
 Make sure all your changes have been checked before pushing them, the
 testsuite only checks against regressions and that only to some extend. It does
 obviously not check newly added features/code to be working unless you have
-added a test for that (which is recommanded btw).
+added a test for that (which is recommended).
 
 Also note that every single commit should pass the test suite, not just
 the result of a series of patches.

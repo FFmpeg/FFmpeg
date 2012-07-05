@@ -142,7 +142,7 @@ enum PixelFormat {
     PIX_FMT_BGR48LE,   ///< packed RGB 16:16:16, 48bpp, 16B, 16G, 16R, the 2-byte value for each R/G/B component is stored as little-endian
 
     //the following 10 formats have the disadvantage of needing 1 format for each bit depth, thus
-    //If you want to support multiple bit depths, then using PIX_FMT_YUV420P16* with the bpp stored seperately
+    //If you want to support multiple bit depths, then using PIX_FMT_YUV420P16* with the bpp stored separately
     //is better
     PIX_FMT_YUV420P9BE, ///< planar YUV 4:2:0, 13.5bpp, (1 Cr & Cb sample per 2x2 Y samples), big-endian
     PIX_FMT_YUV420P9LE, ///< planar YUV 4:2:0, 13.5bpp, (1 Cr & Cb sample per 2x2 Y samples), little-endian

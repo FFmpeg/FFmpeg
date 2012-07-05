@@ -946,7 +946,7 @@ typedef struct AVFormatContext {
 #define AVFMT_FLAG_MP4A_LATM    0x8000 ///< Enable RTP MP4A-LATM payload
 #define AVFMT_FLAG_SORT_DTS    0x10000 ///< try to interleave outputted packets by dts (using this flag can slow demuxing down)
 #define AVFMT_FLAG_PRIV_OPT    0x20000 ///< Enable use of private options by delaying codec open (this could be made default once all code is converted)
-#define AVFMT_FLAG_KEEP_SIDE_DATA 0x40000 ///< Dont merge side data but keep it separate.
+#define AVFMT_FLAG_KEEP_SIDE_DATA 0x40000 ///< Don't merge side data but keep it separate.
 
     /**
      * decoding: size of data to probe; encoding: unused.
@@ -1739,7 +1739,7 @@ int av_get_output_timestamp(struct AVFormatContext *s, int stream,
  * @ingroup libavf
  * @{
  *
- * Miscelaneous utility functions related to both muxing and demuxing
+ * Miscellaneous utility functions related to both muxing and demuxing
  * (or neither).
  */
 
