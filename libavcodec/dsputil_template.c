@@ -832,7 +832,7 @@ static av_unused void FUNC(OPNAME ## h264_qpel2_v_lowpass)(uint8_t *p_dst, uint8
 static av_unused void FUNC(OPNAME ## h264_qpel2_hv_lowpass)(uint8_t *p_dst, pixeltmp *tmp, uint8_t *p_src, int dstStride, int tmpStride, int srcStride){\
     const int h=2;\
     const int w=2;\
-    const int pad = (BIT_DEPTH > 9) ? (-10 * ((1<<BIT_DEPTH)-1)) : 0;\
+    const int pad = (BIT_DEPTH == 10) ? (-10 * ((1<<BIT_DEPTH)-1)) : 0;\
     INIT_CLIP\
     int i;\
     pixel *dst = (pixel*)p_dst;\
@@ -913,7 +913,7 @@ static void FUNC(OPNAME ## h264_qpel4_v_lowpass)(uint8_t *p_dst, uint8_t *p_src,
 static void FUNC(OPNAME ## h264_qpel4_hv_lowpass)(uint8_t *p_dst, pixeltmp *tmp, uint8_t *p_src, int dstStride, int tmpStride, int srcStride){\
     const int h=4;\
     const int w=4;\
-    const int pad = (BIT_DEPTH > 9) ? (-10 * ((1<<BIT_DEPTH)-1)) : 0;\
+    const int pad = (BIT_DEPTH == 10) ? (-10 * ((1<<BIT_DEPTH)-1)) : 0;\
     INIT_CLIP\
     int i;\
     pixel *dst = (pixel*)p_dst;\
@@ -1013,7 +1013,7 @@ static void FUNC(OPNAME ## h264_qpel8_v_lowpass)(uint8_t *p_dst, uint8_t *p_src,
 static void FUNC(OPNAME ## h264_qpel8_hv_lowpass)(uint8_t *p_dst, pixeltmp *tmp, uint8_t *p_src, int dstStride, int tmpStride, int srcStride){\
     const int h=8;\
     const int w=8;\
-    const int pad = (BIT_DEPTH > 9) ? (-10 * ((1<<BIT_DEPTH)-1)) : 0;\
+    const int pad = (BIT_DEPTH == 10) ? (-10 * ((1<<BIT_DEPTH)-1)) : 0;\
     INIT_CLIP\
     int i;\
     pixel *dst = (pixel*)p_dst;\
