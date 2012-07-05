@@ -2821,7 +2821,6 @@ case $target_os in
     linux)
         add_cppflags -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600
         enable dv1394
-        enable iec61883
         ;;
     irix*)
         target_os=irix
