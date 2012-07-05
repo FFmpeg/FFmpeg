@@ -409,7 +409,7 @@ static int request_frame(AVFilterLink *outlink)
 
         available_samples = get_available_samples(s);
         if (!available_samples)
-            return 0;
+            return AVERROR(EAGAIN);
 
         return output_frame(outlink, available_samples);
     }
@@ -440,7 +440,7 @@ static int request_frame(AVFilterLink *outlink)
 
         available_samples = get_available_samples(s);
         if (!available_samples)
-            return 0;
+            return AVERROR(EAGAIN);
         available_samples = FFMIN(available_samples, wanted_samples);
     } else {
         available_samples = wanted_samples;
