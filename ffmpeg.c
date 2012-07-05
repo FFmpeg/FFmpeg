@@ -1948,7 +1948,7 @@ static int poll_filters(void)
                 avcodec_get_frame_defaults(ost->filtered_frame);
             filtered_frame = ost->filtered_frame;
 
-            while (!ost->is_past_recording_time) {
+            while (1) {
                 ret = av_buffersink_get_buffer_ref(ost->filter->filter, &picref,
                                                    AV_BUFFERSINK_FLAG_NO_REQUEST);
                 if (ret < 0) {
