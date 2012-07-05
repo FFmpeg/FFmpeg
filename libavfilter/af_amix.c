@@ -437,7 +437,9 @@ static int request_frame(AVFilterLink *outlink)
         ret = calc_active_inputs(s);
         if (ret < 0)
             return ret;
+    }
 
+    if (s->active_inputs > 1) {
         available_samples = get_available_samples(s);
         if (!available_samples)
             return AVERROR(EAGAIN);
