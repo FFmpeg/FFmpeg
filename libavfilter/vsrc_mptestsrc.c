@@ -256,7 +256,7 @@ static void ring2_test(uint8_t *dst, int dst_linesize, int off)
     }
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     MPTestContext *test = ctx->priv;
     AVRational frame_rate_q;

@@ -43,7 +43,7 @@ typedef struct {
     struct thumb_frame *frames; ///< the n_frames frames
 } ThumbContext;
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     ThumbContext *thumb = ctx->priv;
 

@@ -158,7 +158,7 @@ static int init_pattern_from_file(AVFilterContext *ctx)
     return init_pattern_from_string(ctx);
 }
 
-static int init(AVFilterContext *ctx, const char *args, void *opaque)
+static int init(AVFilterContext *ctx, const char *args)
 {
     CellAutoContext *cellauto = ctx->priv;
     AVRational frame_rate;

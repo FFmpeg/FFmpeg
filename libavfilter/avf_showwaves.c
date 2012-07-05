@@ -57,7 +57,7 @@ static const AVOption showwaves_options[] = {
 
 AVFILTER_DEFINE_CLASS(showwaves);
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     ShowWavesContext *showwaves = ctx->priv;
     int err;

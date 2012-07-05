@@ -108,7 +108,7 @@ static const AVOption mandelbrot_options[] = {
 
 AVFILTER_DEFINE_CLASS(mandelbrot);
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     MBContext *mb = ctx->priv;
     AVRational rate_q;

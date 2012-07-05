@@ -39,7 +39,7 @@ typedef struct {
 
 #define REASONABLE_SIZE 1024
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     TileContext *tile = ctx->priv;
     int r;

@@ -219,7 +219,7 @@ static int init_pattern_from_file(AVFilterContext *ctx)
     return 0;
 }
 
-static int init(AVFilterContext *ctx, const char *args, void *opaque)
+static int init(AVFilterContext *ctx, const char *args)
 {
     LifeContext *life = ctx->priv;
     AVRational frame_rate;
