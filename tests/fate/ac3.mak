@@ -35,7 +35,7 @@ fate-ac3-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
 fate-ac3-encode: CMP_SHIFT = -1024
 fate-ac3-encode: CMP_TARGET = 399.62
 fate-ac3-encode: SIZE_TOLERANCE = 488
-fate-ac3-encode: FUZZ = 3
+fate-ac3-encode: FUZZ = 4
 
 FATE_AC3 += fate-eac3-encode
 fate-eac3-encode: CMD = enc_dec_pcm eac3 wav s16le $(REF) -c:a eac3 -b:a 128k
