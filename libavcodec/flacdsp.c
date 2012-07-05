@@ -45,27 +45,26 @@ static void flac_lpc_16_c(int32_t *decoded, const int coeffs[32],
 {
     int i, j;
 
-    for (i = pred_order; i < len - 1; i += 2) {
-        int c;
-        int d = decoded[i-pred_order];
+    for (i = pred_order; i < len - 1; i += 2, decoded += 2) {
+        int c = coeffs[0];
+        int d = decoded[0];
         int s0 = 0, s1 = 0;
-        for (j = pred_order-1; j > 0; j--) {
-            c = coeffs[j];
+        for (j = 1; j < pred_order; j++) {
             s0 += c*d;
-            d = decoded[i-j];
+            d = decoded[j];
             s1 += c*d;
+            c = coeffs[j];
         }
-        c = coeffs[0];
         s0 += c*d;
-        d = decoded[i] += s0 >> qlevel;
+        d = decoded[j] += s0 >> qlevel;
         s1 += c*d;
-        decoded[i+1] += s1 >> qlevel;
+        decoded[j + 1] += s1 >> qlevel;
     }
     if (i < len) {
         int sum = 0;
         for (j = 0; j < pred_order; j++)
-            sum += coeffs[j] * decoded[i-j-1];
-        decoded[i] += sum >> qlevel;
+            sum += coeffs[j] * decoded[j];
+        decoded[j] += sum >> qlevel;
     }
 }
 
@@ -74,11 +73,11 @@ static void flac_lpc_32_c(int32_t *decoded, const int coeffs[32],
 {
     int i, j;
 
-    for (i = pred_order; i < len; i++) {
+    for (i = pred_order; i < len; i++, decoded++) {
         int64_t sum = 0;
         for (j = 0; j < pred_order; j++)
-            sum += (int64_t)coeffs[j] * decoded[i-j-1];
-        decoded[i] += sum >> qlevel;
+            sum += (int64_t)coeffs[j] * decoded[j];
+        decoded[j] += sum >> qlevel;
     }
 
 }

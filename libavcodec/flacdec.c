@@ -321,7 +321,7 @@ static int decode_subframe_lpc(FLACContext *s, int channel, int pred_order,
     }
 
     for (i = 0; i < pred_order; i++) {
-        coeffs[i] = get_sbits(&s->gb, coeff_prec);
+        coeffs[pred_order - i - 1] = get_sbits(&s->gb, coeff_prec);
     }
 
     if (decode_residuals(s, channel, pred_order) < 0)
