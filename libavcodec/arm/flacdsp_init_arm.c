@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2012 Mans Rullgard <mans@mansr.com>
+ *
  * This file is part of Libav.
  *
  * Libav is free software; you can redistribute it and/or
@@ -16,20 +18,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_FLACDSP_H
-#define AVCODEC_FLACDSP_H
+#include "libavcodec/flacdsp.h"
+#include "config.h"
 
-#include <stdint.h>
-#include "libavutil/samplefmt.h"
+void ff_flac_lpc_16_arm(int32_t *samples, const int coeffs[32], int order,
+                        int qlevel, int len);
 
-typedef struct FLACDSPContext {
-    void (*decorrelate[4])(uint8_t **out, int32_t **in, int channels,
-                           int len, int shift);
-    void (*lpc)(int32_t *samples, const int coeffs[32], int order,
-                int qlevel, int len);
-} FLACDSPContext;
-
-void ff_flacdsp_init(FLACDSPContext *c, enum AVSampleFormat fmt, int bps);
-void ff_flacdsp_init_arm(FLACDSPContext *c, enum AVSampleFormat fmt, int bps);
-
-#endif /* AVCODEC_FLACDSP_H */
+av_cold void ff_flacdsp_init_arm(FLACDSPContext *c, enum AVSampleFormat fmt,
+                                 int bps)
+{
+    if (bps <= 16)
+        c->lpc = ff_flac_lpc_16_arm;
+}
