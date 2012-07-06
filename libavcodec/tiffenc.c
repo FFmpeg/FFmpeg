@@ -25,6 +25,7 @@
  * @author Bartlomiej Wolowiec
  */
 
+#include "libavutil/imgutils.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 
@@ -300,7 +301,6 @@ static int encode_frame(AVCodecContext * avctx, AVPacket *pkt,
         s->bpp = 8 + (16 >> (shift_h + shift_v));
         s->subsampling[0] = 1 << shift_h;
         s->subsampling[1] = 1 << shift_v;
-        s->bpp_tab_size = 3;
         is_yuv = 1;
         break;
     default:
@@ -308,9 +308,8 @@ static int encode_frame(AVCodecContext * avctx, AVPacket *pkt,
                "This colors format is not supported\n");
         return -1;
     }
-    if (!is_yuv)
-        s->bpp_tab_size = (s->bpp >= 48) ? ((s->bpp + 7) >> 4):((s->bpp + 7) >> 3);
 
+    s->bpp_tab_size = av_pix_fmt_descriptors[avctx->pix_fmt].nb_components;
     if (s->compr == TIFF_DEFLATE || s->compr == TIFF_ADOBE_DEFLATE || s->compr == TIFF_LZW)
         //best choose for DEFLATE
         s->rps = s->height;
