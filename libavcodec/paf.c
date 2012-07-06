@@ -439,6 +439,7 @@ AVCodec ff_paf_video_decoder = {
     .init           = paf_vid_init,
     .close          = paf_vid_close,
     .decode         = paf_vid_decode,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Amazing Studio Packed Animation File Video"),
 };
 
