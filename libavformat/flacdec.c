@@ -38,10 +38,6 @@ static int parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
     int type, width, height;
     int len, ret = 0;
 
-    st = avformat_new_stream(s, NULL);
-    if (!st)
-        return AVERROR(ENOMEM);
-
     pb = avio_alloc_context(buf, buf_size, 0, NULL, NULL, NULL, NULL);
     if (!pb)
         return AVERROR(ENOMEM);
@@ -111,6 +107,12 @@ static int parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
     }
     if (avio_read(pb, data, len) != len) {
         ret = AVERROR(EIO);
+        goto fail;
+    }
+
+    st = avformat_new_stream(s, NULL);
+    if (!st) {
+        ret = AVERROR(ENOMEM);
         goto fail;
     }
 
