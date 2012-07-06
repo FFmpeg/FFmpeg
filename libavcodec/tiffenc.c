@@ -258,6 +258,7 @@ static int encode_frame(AVCodecContext * avctx, AVPacket *pkt,
         break;
     case PIX_FMT_GRAY8:
         avctx->bits_per_coded_sample = 0x28;
+    case PIX_FMT_GRAY8A:
     case PIX_FMT_GRAY16LE:
         s->photometric_interpretation = 1;
         break;
@@ -487,7 +488,7 @@ AVCodec ff_tiff_encoder = {
     .priv_data_size = sizeof(TiffEncoderContext),
     .encode2        = encode_frame,
     .pix_fmts       = (const enum PixelFormat[]) {
-        PIX_FMT_RGB24, PIX_FMT_PAL8, PIX_FMT_GRAY8, PIX_FMT_GRAY16LE,
+        PIX_FMT_RGB24, PIX_FMT_PAL8, PIX_FMT_GRAY8, PIX_FMT_GRAY8A, PIX_FMT_GRAY16LE,
         PIX_FMT_MONOBLACK, PIX_FMT_MONOWHITE,
         PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_YUV444P,
         PIX_FMT_YUV410P, PIX_FMT_YUV411P, PIX_FMT_RGB48LE,
