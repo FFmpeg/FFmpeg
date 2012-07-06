@@ -192,6 +192,9 @@ int ff_lpc_calc_coefs(LPCContext *s,
         LLSModel m[2];
         double var[MAX_LPC_ORDER+1], av_uninit(weight);
 
+        if(lpc_passes <= 0)
+            lpc_passes = 2;
+
         for(pass=0; pass<lpc_passes; pass++){
             av_init_lls(&m[pass&1], max_order);
 
