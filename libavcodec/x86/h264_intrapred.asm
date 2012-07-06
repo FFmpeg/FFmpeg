@@ -156,7 +156,7 @@ cglobal pred16x16_dc, 2,7
 %if cpuflag(ssse3)
     pxor       m1, m1
 %endif
-    SPLATB_REG m0, r2d, m1
+    SPLATB_REG m0, r2, m1
 
 %if mmsize==8
     mov       r3d, 8
