@@ -228,7 +228,7 @@ static int encode_frame(AVCodecContext * avctx, AVPacket *pkt,
     uint32_t *strip_offsets = NULL;
     int bytes_per_row;
     uint32_t res[2] = { s->dpi, 1 };        // image resolution (72/1)
-    uint16_t bpp_tab[] = { 8, 8, 8, 8 };
+    uint16_t bpp_tab[4];
     int ret = -1;
     int is_yuv = 0;
     uint8_t *yuv_line = NULL;
@@ -250,18 +250,10 @@ static int encode_frame(AVCodecContext * avctx, AVPacket *pkt,
     case PIX_FMT_RGBA64LE:
         s->bpp = 64;
         s->photometric_interpretation = 2;
-        bpp_tab[0] = 16;
-        bpp_tab[1] = 16;
-        bpp_tab[2] = 16;
-        bpp_tab[3] = 16;
         break;
     case PIX_FMT_RGB48LE:
         s->bpp = 48;
         s->photometric_interpretation = 2;
-        bpp_tab[0] = 16;
-        bpp_tab[1] = 16;
-        bpp_tab[2] = 16;
-        bpp_tab[3] = 16;
         break;
     case PIX_FMT_RGBA:
         avctx->bits_per_coded_sample =
@@ -288,7 +280,6 @@ static int encode_frame(AVCodecContext * avctx, AVPacket *pkt,
         avctx->bits_per_coded_sample =
         s->bpp = 1;
         s->photometric_interpretation = avctx->pix_fmt == PIX_FMT_MONOBLACK;
-        bpp_tab[0] = 1;
         break;
     case PIX_FMT_YUV420P:
     case PIX_FMT_YUV422P:
@@ -310,6 +301,9 @@ static int encode_frame(AVCodecContext * avctx, AVPacket *pkt,
     }
 
     s->bpp_tab_size = av_pix_fmt_descriptors[avctx->pix_fmt].nb_components;
+    for (i = 0; i < s->bpp_tab_size; i++)
+        bpp_tab[i] = av_pix_fmt_descriptors[avctx->pix_fmt].comp[i].depth_minus1 + 1;
+
     if (s->compr == TIFF_DEFLATE || s->compr == TIFF_ADOBE_DEFLATE || s->compr == TIFF_LZW)
         //best choose for DEFLATE
         s->rps = s->height;
