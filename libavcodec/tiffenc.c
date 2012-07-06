@@ -246,39 +246,31 @@ static int encode_frame(AVCodecContext * avctx, AVPacket *pkt,
     s->subsampling[0] = 1;
     s->subsampling[1] = 1;
 
+    avctx->bits_per_coded_sample =
+    s->bpp = av_get_bits_per_pixel(&av_pix_fmt_descriptors[avctx->pix_fmt]);
+
     switch (avctx->pix_fmt) {
     case PIX_FMT_RGBA64LE:
-        s->bpp = 64;
         s->photometric_interpretation = 2;
         break;
     case PIX_FMT_RGB48LE:
-        s->bpp = 48;
         s->photometric_interpretation = 2;
         break;
     case PIX_FMT_RGBA:
-        avctx->bits_per_coded_sample =
-        s->bpp = 32;
         s->photometric_interpretation = 2;
         break;
     case PIX_FMT_RGB24:
-        avctx->bits_per_coded_sample =
-        s->bpp = 24;
         s->photometric_interpretation = 2;
         break;
     case PIX_FMT_GRAY8:
         avctx->bits_per_coded_sample = 0x28;
-        s->bpp = 8;
         s->photometric_interpretation = 1;
         break;
     case PIX_FMT_PAL8:
-        avctx->bits_per_coded_sample =
-        s->bpp = 8;
         s->photometric_interpretation = 3;
         break;
     case PIX_FMT_MONOBLACK:
     case PIX_FMT_MONOWHITE:
-        avctx->bits_per_coded_sample =
-        s->bpp = 1;
         s->photometric_interpretation = avctx->pix_fmt == PIX_FMT_MONOBLACK;
         break;
     case PIX_FMT_YUV420P:
@@ -289,7 +281,6 @@ static int encode_frame(AVCodecContext * avctx, AVPacket *pkt,
         s->photometric_interpretation = 6;
         avcodec_get_chroma_sub_sample(avctx->pix_fmt,
                 &shift_h, &shift_v);
-        s->bpp = 8 + (16 >> (shift_h + shift_v));
         s->subsampling[0] = 1 << shift_h;
         s->subsampling[1] = 1 << shift_v;
         is_yuv = 1;
