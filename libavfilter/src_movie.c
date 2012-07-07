@@ -42,6 +42,12 @@
 #include "internal.h"
 #include "video.h"
 
+typedef enum {
+    STATE_DECODING,
+    STATE_FLUSHING,
+    STATE_DONE,
+} MovieState;
+
 typedef struct {
     /* common A/V fields */
     const AVClass *class;
@@ -54,7 +60,7 @@ typedef struct {
 
     AVFormatContext *format_ctx;
     AVCodecContext *codec_ctx;
-    int is_done;
+    MovieState state;
     AVFrame *frame;   ///< video frame to store the decoded images in
 
     /* video-only fields */
@@ -236,13 +242,14 @@ static int movie_get_frame(AVFilterLink *outlink)
 {
     MovieContext *movie = outlink->src->priv;
     AVPacket pkt;
-    int ret, frame_decoded;
+    int ret = 0, frame_decoded;
     AVStream *st = movie->format_ctx->streams[movie->stream_index];
 
-    if (movie->is_done == 1)
+    if (movie->state == STATE_DONE)
         return 0;
 
     while (1) {
+        if (movie->state == STATE_DECODING) {
         ret = av_read_frame(movie->format_ctx, &pkt);
         if (ret == AVERROR_EOF) {
             int64_t timestamp;
@@ -251,20 +258,19 @@ static int movie_get_frame(AVFilterLink *outlink)
                 if (movie->format_ctx->start_time != AV_NOPTS_VALUE)
                     timestamp += movie->format_ctx->start_time;
                 if (av_seek_frame(movie->format_ctx, -1, timestamp, AVSEEK_FLAG_BACKWARD) < 0) {
-                    movie->is_done = 1;
-                    break;
+                    movie->state = STATE_FLUSHING;
                 } else if (movie->loop_count>1)
                     movie->loop_count--;
                 continue;
             } else {
-                movie->is_done = 1;
-                break;
+                movie->state = STATE_FLUSHING;
             }
         } else if (ret < 0)
             break;
+        }
 
         // Is this a packet from the video stream?
-        if (pkt.stream_index == movie->stream_index) {
+        if (pkt.stream_index == movie->stream_index || movie->state == STATE_FLUSHING) {
             avcodec_decode_video2(movie->codec_ctx, movie->frame, &frame_decoded, &pkt);
 
             if (frame_decoded) {
@@ -295,6 +301,10 @@ static int movie_get_frame(AVFilterLink *outlink)
                 av_free_packet(&pkt);
 
                 return 0;
+            } else if (movie->state == STATE_FLUSHING) {
+                movie->state = STATE_DONE;
+                av_free_packet(&pkt);
+                return AVERROR_EOF;
             }
         }
         // Free the packet that was allocated by av_read_frame
@@ -310,7 +320,7 @@ static int movie_request_frame(AVFilterLink *outlink)
     MovieContext *movie = outlink->src->priv;
     int ret;
 
-    if (movie->is_done)
+    if (movie->state == STATE_DONE)
         return AVERROR_EOF;
     if ((ret = movie_get_frame(outlink)) < 0)
         return ret;
@@ -391,7 +401,7 @@ static int amovie_get_samples(AVFilterLink *outlink)
     AVPacket pkt;
     int ret, got_frame = 0;
 
-    if (!movie->pkt.size && movie->is_done == 1)
+    if (!movie->pkt.size && movie->state == STATE_DONE)
         return AVERROR_EOF;
 
     /* check for another frame, in case the previous one was completely consumed */
@@ -408,7 +418,7 @@ static int amovie_get_samples(AVFilterLink *outlink)
         }
 
         if (ret == AVERROR_EOF) {
-            movie->is_done = 1;
+            movie->state = STATE_DONE;
             return ret;
         }
     }
@@ -451,7 +461,7 @@ static int amovie_request_frame(AVFilterLink *outlink)
     MovieContext *movie = outlink->src->priv;
     int ret;
 
-    if (movie->is_done)
+    if (movie->state == STATE_DONE)
         return AVERROR_EOF;
     do {
         if ((ret = amovie_get_samples(outlink)) < 0)
