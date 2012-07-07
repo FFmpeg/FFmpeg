@@ -79,10 +79,8 @@ cglobal pred4x4_down_right_10, 3, 3
 %endmacro
 
 INIT_XMM sse2
-%define PALIGNR PALIGNR_MMX
 PRED4x4_DR
 INIT_XMM ssse3
-%define PALIGNR PALIGNR_SSSE3
 PRED4x4_DR
 %if HAVE_AVX_EXTERNAL
 INIT_XMM avx
@@ -120,10 +118,8 @@ cglobal pred4x4_vertical_right_10, 3, 3, 6
 %endmacro
 
 INIT_XMM sse2
-%define PALIGNR PALIGNR_MMX
 PRED4x4_VR
 INIT_XMM ssse3
-%define PALIGNR PALIGNR_SSSE3
 PRED4x4_VR
 %if HAVE_AVX_EXTERNAL
 INIT_XMM avx
@@ -164,10 +160,8 @@ cglobal pred4x4_horizontal_down_10, 3, 3
 %endmacro
 
 INIT_XMM sse2
-%define PALIGNR PALIGNR_MMX
 PRED4x4_HD
 INIT_XMM ssse3
-%define PALIGNR PALIGNR_SSSE3
 PRED4x4_HD
 %if HAVE_AVX_EXTERNAL
 INIT_XMM avx
@@ -726,10 +720,8 @@ cglobal pred8x8l_horizontal_10, 4, 4, 5
 %endmacro
 
 INIT_XMM sse2
-%define PALIGNR PALIGNR_MMX
 PRED8x8L_HORIZONTAL
 INIT_XMM ssse3
-%define PALIGNR PALIGNR_SSSE3
 PRED8x8L_HORIZONTAL
 %if HAVE_AVX_EXTERNAL
 INIT_XMM avx
@@ -796,10 +788,8 @@ cglobal pred8x8l_down_left_10, 4, 4, 7
 %endmacro
 
 INIT_XMM sse2
-%define PALIGNR PALIGNR_MMX
 PRED8x8L_DOWN_LEFT
 INIT_XMM ssse3
-%define PALIGNR PALIGNR_SSSE3
 PRED8x8L_DOWN_LEFT
 %if HAVE_AVX_EXTERNAL
 INIT_XMM avx
@@ -872,10 +862,8 @@ cglobal pred8x8l_down_right_10, 4, 5, 8
 %endmacro
 
 INIT_XMM sse2
-%define PALIGNR PALIGNR_MMX
 PRED8x8L_DOWN_RIGHT
 INIT_XMM ssse3
-%define PALIGNR PALIGNR_SSSE3
 PRED8x8L_DOWN_RIGHT
 %if HAVE_AVX_EXTERNAL
 INIT_XMM avx
@@ -944,10 +932,8 @@ cglobal pred8x8l_vertical_right_10, 4, 5, 7
 %endmacro
 
 INIT_XMM sse2
-%define PALIGNR PALIGNR_MMX
 PRED8x8L_VERTICAL_RIGHT
 INIT_XMM ssse3
-%define PALIGNR PALIGNR_SSSE3
 PRED8x8L_VERTICAL_RIGHT
 %if HAVE_AVX_EXTERNAL
 INIT_XMM avx
@@ -1007,10 +993,8 @@ cglobal pred8x8l_horizontal_up_10, 4, 4, 6
 %endmacro
 
 INIT_XMM sse2
-%define PALIGNR PALIGNR_MMX
 PRED8x8L_HORIZONTAL_UP
 INIT_XMM ssse3
-%define PALIGNR PALIGNR_SSSE3
 PRED8x8L_HORIZONTAL_UP
 %if HAVE_AVX_EXTERNAL
 INIT_XMM avx

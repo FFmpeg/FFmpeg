@@ -280,7 +280,14 @@
 %endif
 %endmacro
 
-%macro PALIGNR_MMX 4-5 ; [dst,] src1, src2, imm, tmp
+%macro PALIGNR 4-5
+%if cpuflag(ssse3)
+%if %0==5
+    palignr %1, %2, %3, %4
+%else
+    palignr %1, %2, %3
+%endif
+%elif cpuflag(mmx) ; [dst,] src1, src2, imm, tmp
     %define %%dst %1
 %if %0==5
 %ifnidn %1, %2
@@ -299,13 +306,6 @@
     psrldq  %4, %3
 %endif
     por     %%dst, %4
-%endmacro
-
-%macro PALIGNR_SSSE3 4-5
-%if %0==5
-    palignr %1, %2, %3, %4
-%else
-    palignr %1, %2, %3
 %endif
 %endmacro
 

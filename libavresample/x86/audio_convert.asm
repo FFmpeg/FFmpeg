@@ -919,10 +919,8 @@ cglobal conv_s16_to_s16p_6ch, 2,7,5, dst, src, dst1, dst2, dst3, dst4, dst5
     REP_RET
 %endmacro
 
-%define PALIGNR PALIGNR_MMX
 INIT_XMM sse2
 CONV_S16_TO_S16P_6CH
-%define PALIGNR PALIGNR_SSSE3
 INIT_XMM ssse3
 CONV_S16_TO_S16P_6CH
 %if HAVE_AVX_EXTERNAL
@@ -1038,10 +1036,8 @@ cglobal conv_s16_to_fltp_6ch, 2,7,7, dst, src, dst1, dst2, dst3, dst4, dst5
     REP_RET
 %endmacro
 
-%define PALIGNR PALIGNR_MMX
 INIT_XMM sse2
 CONV_S16_TO_FLTP_6CH
-%define PALIGNR PALIGNR_SSSE3
 INIT_XMM ssse3
 CONV_S16_TO_FLTP_6CH
 INIT_XMM sse4
@@ -1160,10 +1156,8 @@ cglobal conv_flt_to_s16p_6ch, 2,7,7, dst, src, dst1, dst2, dst3, dst4, dst5
     REP_RET
 %endmacro
 
-%define PALIGNR PALIGNR_MMX
 INIT_XMM sse2
 CONV_FLT_TO_S16P_6CH
-%define PALIGNR PALIGNR_SSSE3
 INIT_XMM ssse3
 CONV_FLT_TO_S16P_6CH
 %if HAVE_AVX_EXTERNAL

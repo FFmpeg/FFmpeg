@@ -246,7 +246,6 @@ cglobal yuv2planeX_%1, %3, 8, %2, filter, fltsize, src, dst, w, dither, offset
 %endif ; %1 == 8/9/10/16
 %endmacro
 
-%define PALIGNR PALIGNR_MMX
 %if ARCH_X86_32
 INIT_MMX mmx2
 yuv2planeX_fn  8,  0, 7
@@ -259,7 +258,6 @@ yuv2planeX_fn  8, 10, 7
 yuv2planeX_fn  9,  7, 5
 yuv2planeX_fn 10,  7, 5
 
-%define PALIGNR PALIGNR_SSSE3
 INIT_XMM sse4
 yuv2planeX_fn  8, 10, 7
 yuv2planeX_fn  9,  7, 5
@@ -344,7 +342,7 @@ cglobal yuv2plane1_%1, %3, %3, %2, src, dst, w, dither, offset
 %if mmsize == 16
     punpcklqdq      m3, m3
 %endif ; mmsize == 16
-    PALIGNR_MMX     m3, m3, 3, m2
+    PALIGNR         m3, m3, 3, m2
 .no_rot:
 %if mmsize == 8
     mova            m2, m3

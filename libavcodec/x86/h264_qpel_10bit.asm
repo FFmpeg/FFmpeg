@@ -225,25 +225,21 @@ MC00 avg
 ;-----------------------------------------------------------------------------
 %macro MC_CACHE 1
 %define OP_MOV mova
-%define PALIGNR PALIGNR_MMX
 INIT_MMX mmxext
 %1 put, 4
 INIT_XMM sse2, cache64
 %1 put, 8
 INIT_XMM ssse3, cache64
-%define PALIGNR PALIGNR_SSSE3
 %1 put, 8
 INIT_XMM sse2
 %1 put, 8, 0
 
 %define OP_MOV AVG_MOV
-%define PALIGNR PALIGNR_MMX
 INIT_MMX mmxext
 %1 avg, 4
 INIT_XMM sse2, cache64
 %1 avg, 8
 INIT_XMM ssse3, cache64
-%define PALIGNR PALIGNR_SSSE3
 %1 avg, 8
 INIT_XMM sse2
 %1 avg, 8, 0
