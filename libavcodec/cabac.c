@@ -251,7 +251,7 @@ static int put_cabac_terminate(CABACContext *c, int bit){
 
         renorm_cabac_encoder(c);
 
-        assert(c->low <= 0x1FF);
+        av_assert0(c->low <= 0x1FF);
         put_cabac_bit(c, c->low>>9);
         put_bits(&c->pb, 2, ((c->low>>7)&3)|1);
 
