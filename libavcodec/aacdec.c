@@ -2665,7 +2665,11 @@ static int latm_decode_audio_specific_config(struct LATMContext *latmctx,
         ac->oc[1].m4ac.sample_rate != m4ac.sample_rate ||
         ac->oc[1].m4ac.chan_config != m4ac.chan_config) {
 
-        av_log(avctx, AV_LOG_INFO, "audio config changed\n");
+        if(latmctx->initialized) {
+            av_log(avctx, AV_LOG_INFO, "audio config changed\n");
+        } else {
+            av_log(avctx, AV_LOG_INFO, "initializing latmctx\n");
+        }
         latmctx->initialized = 0;
 
         esize = (bits_consumed+7) / 8;
