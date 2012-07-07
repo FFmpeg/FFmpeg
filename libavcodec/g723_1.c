@@ -1096,7 +1096,7 @@ AVCodec ff_g723_1_decoder = {
     .init           = g723_1_decode_init,
     .decode         = g723_1_decode_frame,
     .long_name      = NULL_IF_CONFIG_SMALL("G.723.1"),
-    .capabilities   = CODEC_CAP_SUBFRAMES,
+    .capabilities   = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1,
 };
 
 #if CONFIG_G723_1_ENCODER
