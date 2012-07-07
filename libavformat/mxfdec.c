@@ -730,6 +730,7 @@ static int mxf_read_index_entry_array(AVIOContext *pb, MXFIndexTableSegment *seg
     int i, length;
 
     segment->nb_index_entries = avio_rb32(pb);
+
     length = avio_rb32(pb);
 
     if (!(segment->temporal_offset_entries=av_calloc(segment->nb_index_entries, sizeof(*segment->temporal_offset_entries))) ||
