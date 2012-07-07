@@ -186,7 +186,7 @@ static int vf_open(vf_instance_t *vf, char *args){
     vf->priv->outfmt=vf_match_csp(&vf->next,fmt_list,IMGFMT_YV12);
     if(!vf->priv->outfmt) return 0; // no csp match :(
 
-    if(args){
+    if(args && *args){
         hex_mode= strtol(args, &endptr, 0);
         if(*endptr){
             name= args;
