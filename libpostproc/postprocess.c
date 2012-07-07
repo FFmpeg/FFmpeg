@@ -728,6 +728,11 @@ pp_mode *pp_get_mode_by_name_and_quality(const char *name, int quality)
     struct PPMode *ppMode;
     char *filterToken;
 
+    if (!name)  {
+        av_log(NULL, AV_LOG_ERROR, "pp: Missing argument\n");
+        return NULL;
+    }
+
     if (!strcmp(name, "help")) {
         const char *p;
         for (p = pp_help; strchr(p, '\n'); p = strchr(p, '\n') + 1) {
