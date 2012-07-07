@@ -250,23 +250,23 @@ static int movie_get_frame(AVFilterLink *outlink)
 
     while (1) {
         if (movie->state == STATE_DECODING) {
-        ret = av_read_frame(movie->format_ctx, &pkt);
-        if (ret == AVERROR_EOF) {
-            int64_t timestamp;
-            if (movie->loop_count != 1) {
-                timestamp = movie->seek_point;
-                if (movie->format_ctx->start_time != AV_NOPTS_VALUE)
-                    timestamp += movie->format_ctx->start_time;
-                if (av_seek_frame(movie->format_ctx, -1, timestamp, AVSEEK_FLAG_BACKWARD) < 0) {
+            ret = av_read_frame(movie->format_ctx, &pkt);
+            if (ret == AVERROR_EOF) {
+                int64_t timestamp;
+                if (movie->loop_count != 1) {
+                    timestamp = movie->seek_point;
+                    if (movie->format_ctx->start_time != AV_NOPTS_VALUE)
+                        timestamp += movie->format_ctx->start_time;
+                    if (av_seek_frame(movie->format_ctx, -1, timestamp, AVSEEK_FLAG_BACKWARD) < 0) {
+                        movie->state = STATE_FLUSHING;
+                    } else if (movie->loop_count>1)
+                        movie->loop_count--;
+                    continue;
+                } else {
                     movie->state = STATE_FLUSHING;
-                } else if (movie->loop_count>1)
-                    movie->loop_count--;
-                continue;
-            } else {
-                movie->state = STATE_FLUSHING;
-            }
-        } else if (ret < 0)
-            break;
+                }
+            } else if (ret < 0)
+                break;
         }
 
         // Is this a packet from the video stream?
