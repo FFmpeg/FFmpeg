@@ -65,6 +65,7 @@ static const uint8_t color[16 + AV_CLASS_CATEGORY_NB] = {
 static int16_t background, attr_orig;
 static HANDLE con;
 #define set_color(x)  SetConsoleTextAttribute(con, background | color[x])
+#define set_256color set_color
 #define reset_color() SetConsoleTextAttribute(con, attr_orig)
 #else
 
