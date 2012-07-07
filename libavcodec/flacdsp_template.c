@@ -19,68 +19,85 @@
  */
 
 #include <stdint.h>
+#include "libavutil/avutil.h"
 
 #undef FUNC
+#undef FSUF
 #undef sample
+#undef sample_type
+#undef OUT
+#undef S
 
 #if SAMPLE_SIZE == 32
-#   define FUNC(n) n ## _32
-#   define sample  int32_t
+#   define sample_type  int32_t
 #else
-#   define FUNC(n) n ## _16
-#   define sample  int16_t
+#   define sample_type  int16_t
 #endif
+
+#if PLANAR
+#   define FSUF   AV_JOIN(SAMPLE_SIZE, p)
+#   define sample sample_type *
+#   define OUT(n) n
+#   define S(s, c, i) (s[c][i])
+#else
+#   define FSUF   SAMPLE_SIZE
+#   define sample sample_type
+#   define OUT(n) n[0]
+#   define S(s, c, i) (*s++)
+#endif
+
+#define FUNC(n) AV_JOIN(n ## _, FSUF)
 
 static void FUNC(flac_decorrelate_indep_c)(uint8_t **out, int32_t **in,
                                            int channels, int len, int shift)
 {
-    sample *samples = (sample *) out[0];
+    sample *samples = (sample *) OUT(out);
     int i, j;
 
     for (j = 0; j < len; j++)
         for (i = 0; i < channels; i++)
-            *samples++ = in[i][j] << shift;
+            S(samples, i, j) = in[i][j] << shift;
 }
 
 static void FUNC(flac_decorrelate_ls_c)(uint8_t **out, int32_t **in,
                                         int channels, int len, int shift)
 {
-    sample *samples = (sample *) out[0];
+    sample *samples = (sample *) OUT(out);
     int i;
 
     for (i = 0; i < len; i++) {
         int a = in[0][i];
         int b = in[1][i];
-        *samples++ =  a      << shift;
-        *samples++ = (a - b) << shift;
+        S(samples, 0, i) =  a      << shift;
+        S(samples, 1, i) = (a - b) << shift;
     }
 }
 
 static void FUNC(flac_decorrelate_rs_c)(uint8_t **out, int32_t **in,
                                         int channels, int len, int shift)
 {
-    sample *samples = (sample *) out[0];
+    sample *samples = (sample *) OUT(out);
     int i;
 
     for (i = 0; i < len; i++) {
         int a = in[0][i];
         int b = in[1][i];
-        *samples++ = (a + b) << shift;
-        *samples++ =  b      << shift;
+        S(samples, 0, i) = (a + b) << shift;
+        S(samples, 1, i) =  b      << shift;
     }
 }
 
 static void FUNC(flac_decorrelate_ms_c)(uint8_t **out, int32_t **in,
                                         int channels, int len, int shift)
 {
-    sample *samples = (sample *) out[0];
+    sample *samples = (sample *) OUT(out);
     int i;
 
     for (i = 0; i < len; i++) {
         int a = in[0][i];
         int b = in[1][i];
         a -= b >> 1;
-        *samples++ = (a + b) << shift;
-        *samples++ =  a      << shift;
+        S(samples, 0, i) = (a + b) << shift;
+        S(samples, 1, i) =  a      << shift;
     }
 }

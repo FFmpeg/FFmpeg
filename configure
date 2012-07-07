@@ -716,6 +716,20 @@ check_ld(){
     check_cmd $ld $LDFLAGS $flags -o $TMPE $TMPO $libs $extralibs
 }
 
+check_code(){
+    log check_code "$@"
+    check=$1
+    headers=$2
+    code=$3
+    shift 3
+    {
+        for hdr in $headers; do
+            echo "#include <$hdr>"
+        done
+        echo "int main(void) { $code; return 0; }"
+    } | check_$check "$@"
+}
+
 check_cppflags(){
     log check_cppflags "$@"
     set -- $($filter_cppflags "$@")
@@ -912,15 +926,7 @@ check_type(){
     type=$2
     shift 2
     disable_safe "$type"
-    incs=""
-    for hdr in $headers; do
-        incs="$incs
-#include <$hdr>"
-    done
-    check_cc "$@" <<EOF && enable_safe "$type"
-$incs
-$type v;
-EOF
+    check_code cc "$headers" "$type v" "$@" && enable_safe "$type"
 }
 
 check_struct(){
@@ -930,15 +936,8 @@ check_struct(){
     member=$3
     shift 3
     disable_safe "${struct}_${member}"
-    incs=""
-    for hdr in $headers; do
-        incs="$incs
-#include <$hdr>"
-    done
-    check_cc "$@" <<EOF && enable_safe "${struct}_${member}"
-$incs
-const void *p = &(($struct *)0)->$member;
-EOF
+    check_code cc "$headers" "const void *p = &(($struct *)0)->$member" "$@" &&
+        enable_safe "${struct}_${member}"
 }
 
 require(){
@@ -2689,9 +2688,7 @@ case "$arch" in
     ;;
     x86)
         subarch="x86_32"
-        check_cc <<EOF && subarch="x86_64"
-        int test[(int)sizeof(char*) - 7];
-EOF
+        check_code cc "" "int test[(int)sizeof(char*) - 7]" && subarch="x86_64"
         if test "$subarch" = "x86_64"; then
             spic=$shared
         fi

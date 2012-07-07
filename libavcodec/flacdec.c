@@ -104,11 +104,22 @@ int avpriv_flac_is_extradata_valid(AVCodecContext *avctx,
 
 static void flac_set_bps(FLACContext *s)
 {
-    if (s->bps > 16) {
-        s->avctx->sample_fmt = AV_SAMPLE_FMT_S32;
+    enum AVSampleFormat req = s->avctx->request_sample_fmt;
+    int need32 = s->bps > 16;
+    int want32 = av_get_bytes_per_sample(req) > 2;
+    int planar = av_sample_fmt_is_planar(req);
+
+    if (need32 || want32) {
+        if (planar)
+            s->avctx->sample_fmt = AV_SAMPLE_FMT_S32P;
+        else
+            s->avctx->sample_fmt = AV_SAMPLE_FMT_S32;
         s->sample_shift = 32 - s->bps;
     } else {
-        s->avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+        if (planar)
+            s->avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
+        else
+            s->avctx->sample_fmt = AV_SAMPLE_FMT_S16;
         s->sample_shift = 16 - s->bps;
     }
 }
@@ -132,7 +143,7 @@ static av_cold int flac_decode_init(AVCodecContext *avctx)
     avpriv_flac_parse_streaminfo(avctx, (FLACStreaminfo *)s, streaminfo);
     allocate_buffers(s);
     flac_set_bps(s);
-    ff_flacdsp_init(&s->dsp, avctx->sample_fmt);
+    ff_flacdsp_init(&s->dsp, avctx->sample_fmt, s->bps);
     s->got_streaminfo = 1;
 
     avcodec_get_frame_defaults(&s->frame);
@@ -233,7 +244,7 @@ static int parse_streaminfo(FLACContext *s, const uint8_t *buf, int buf_size)
     avpriv_flac_parse_streaminfo(s->avctx, (FLACStreaminfo *)s, &buf[8]);
     allocate_buffers(s);
     flac_set_bps(s);
-    ff_flacdsp_init(&s->dsp, s->avctx->sample_fmt);
+    ff_flacdsp_init(&s->dsp, s->avctx->sample_fmt, s->bps);
     s->got_streaminfo = 1;
 
     return 0;
@@ -492,9 +503,11 @@ static int decode_frame(FLACContext *s)
                                        "supported\n");
         return -1;
     }
-    s->bps = s->avctx->bits_per_raw_sample = fi.bps;
 
-    flac_set_bps(s);
+    if (!s->bps) {
+        s->bps = s->avctx->bits_per_raw_sample = fi.bps;
+        flac_set_bps(s);
+    }
 
     if (!s->max_blocksize)
         s->max_blocksize = FLAC_MAX_BLOCKSIZE;
@@ -520,7 +533,7 @@ static int decode_frame(FLACContext *s)
 
     if (!s->got_streaminfo) {
         allocate_buffers(s);
-        ff_flacdsp_init(&s->dsp, s->avctx->sample_fmt);
+        ff_flacdsp_init(&s->dsp, s->avctx->sample_fmt, s->bps);
         s->got_streaminfo = 1;
         dump_headers(s->avctx, (FLACStreaminfo *)s);
     }
@@ -628,4 +641,9 @@ AVCodec ff_flac_decoder = {
     .decode         = flac_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("FLAC (Free Lossless Audio Codec)"),
+    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16,
+                                                      AV_SAMPLE_FMT_S16P,
+                                                      AV_SAMPLE_FMT_S32,
+                                                      AV_SAMPLE_FMT_S32P,
+                                                      -1 },
 };

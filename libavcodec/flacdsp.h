@@ -29,6 +29,6 @@ typedef struct FLACDSPContext {
                 int qlevel, int len);
 } FLACDSPContext;
 
-void ff_flacdsp_init(FLACDSPContext *c, enum AVSampleFormat fmt);
+void ff_flacdsp_init(FLACDSPContext *c, enum AVSampleFormat fmt, int bps);
 
 #endif /* AVCODEC_FLACDSP_H */

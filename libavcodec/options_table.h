@@ -400,6 +400,11 @@ static const AVOption options[]={
 {"s32", "32-bit signed integer",  0, AV_OPT_TYPE_CONST, {.dbl = AV_SAMPLE_FMT_S32 }, INT_MIN, INT_MAX, A|D, "request_sample_fmt"},
 {"flt", "32-bit float",           0, AV_OPT_TYPE_CONST, {.dbl = AV_SAMPLE_FMT_FLT }, INT_MIN, INT_MAX, A|D, "request_sample_fmt"},
 {"dbl", "64-bit double",          0, AV_OPT_TYPE_CONST, {.dbl = AV_SAMPLE_FMT_DBL }, INT_MIN, INT_MAX, A|D, "request_sample_fmt"},
+{"u8p" , "8-bit unsigned integer planar", 0, AV_OPT_TYPE_CONST, {.dbl = AV_SAMPLE_FMT_U8P  }, INT_MIN, INT_MAX, A|D, "request_sample_fmt"},
+{"s16p", "16-bit signed integer planar",  0, AV_OPT_TYPE_CONST, {.dbl = AV_SAMPLE_FMT_S16P }, INT_MIN, INT_MAX, A|D, "request_sample_fmt"},
+{"s32p", "32-bit signed integer planar",  0, AV_OPT_TYPE_CONST, {.dbl = AV_SAMPLE_FMT_S32P }, INT_MIN, INT_MAX, A|D, "request_sample_fmt"},
+{"fltp", "32-bit float planar",           0, AV_OPT_TYPE_CONST, {.dbl = AV_SAMPLE_FMT_FLTP }, INT_MIN, INT_MAX, A|D, "request_sample_fmt"},
+{"dblp", "64-bit double planar",          0, AV_OPT_TYPE_CONST, {.dbl = AV_SAMPLE_FMT_DBLP }, INT_MIN, INT_MAX, A|D, "request_sample_fmt"},
 {NULL},
 };
 
