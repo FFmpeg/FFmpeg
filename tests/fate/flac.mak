@@ -15,5 +15,5 @@ fate-flac-%: CMD = enc_dec_pcm flac wav s16le $(REF) -c flac $(OPTS)
 fate-flac-%: CMP = oneoff
 fate-flac-%: FUZZ = 0
 
-FATE_AVCONV += $(FATE_FLAC)
+FATE_SAMPLES_AVCONV += $(FATE_FLAC)
 fate-flac: $(FATE_FLAC)
