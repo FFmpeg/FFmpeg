@@ -46,6 +46,7 @@
 #endif
 #include <linux/videodev2.h>
 #endif
+#include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
@@ -560,7 +561,7 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
 
         return AVERROR(errno);
     }
-    assert(buf.index < s->buffers);
+    av_assert0(buf.index < s->buffers);
     if (s->frame_size > 0 && buf.bytesused != s->frame_size) {
         av_log(ctx, AV_LOG_ERROR,
                "The v4l2 frame is %d bytes, but %d bytes are expected\n",
@@ -767,7 +768,7 @@ static uint32_t device_try_init(AVFormatContext *s1,
 
     if (desired_format != 0) {
         *codec_id = fmt_v4l2codec(desired_format);
-        assert(*codec_id != CODEC_ID_NONE);
+        av_assert0(*codec_id != CODEC_ID_NONE);
     }
 
     return desired_format;
