@@ -404,7 +404,7 @@ static void compute_scale_factors(unsigned char scale_code[SBLIMIT],
             av_dlog(NULL, "%2d:%d in=%x %x %d\n",
                     j, i, vmax, scale_factor_table[index], index);
             /* store the scale factor */
-            assert(index >=0 && index <= 63);
+            av_assert2(index >=0 && index <= 63);
             sf[i] = index;
         }
 
@@ -466,7 +466,7 @@ static void compute_scale_factors(unsigned char scale_code[SBLIMIT],
             sf[1] = sf[2] = sf[0];
             break;
         default:
-            assert(0); //cannot happen
+            av_assert2(0); //cannot happen
             code = 0;           /* kill warning */
         }
 
@@ -586,7 +586,7 @@ static void compute_bit_allocation(MpegAudioContext *s,
         }
     }
     *padding = max_frame_size - current_frame_size;
-    assert(*padding >= 0);
+    av_assert0(*padding >= 0);
 }
 
 /*
@@ -701,7 +701,7 @@ static void encode_frame(MpegAudioContext *s,
 #endif
                             if (q[m] >= steps)
                                 q[m] = steps - 1;
-                            assert(q[m] >= 0 && q[m] < steps);
+                            av_assert2(q[m] >= 0 && q[m] < steps);
                         }
                         bits = ff_mpa_quant_bits[qindex];
                         if (bits < 0) {
