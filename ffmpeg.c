@@ -175,6 +175,7 @@ static float dts_error_threshold = 3600*30;
 static int print_stats = 1;
 static int debug_ts = 0;
 static int current_time;
+static AVIOContext *progress_avio = NULL;
 
 static uint8_t *subtitle_out;
 
@@ -2028,6 +2029,7 @@ static int poll_filters(void)
 static void print_report(int is_last_report, int64_t timer_start, int64_t cur_time)
 {
     char buf[1024];
+    AVBPrint buf_script;
     OutputStream *ost;
     AVFormatContext *oc;
     int64_t total_size;
@@ -2039,7 +2041,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     static int qp_histogram[52];
     int hours, mins, secs, us;
 
-    if (!print_stats && !is_last_report)
+    if (!print_stats && !is_last_report && !progress_avio)
         return;
 
     if (!is_last_report) {
@@ -2064,6 +2066,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
 
     buf[0] = '\0';
     vid = 0;
+    av_bprint_init(&buf_script, 0, 1);
     for (i = 0; i < nb_output_streams; i++) {
         float q = -1;
         ost = output_streams[i];
@@ -2072,6 +2075,8 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
             q = enc->coded_frame->quality / (float)FF_QP2LAMBDA;
         if (vid && enc->codec_type == AVMEDIA_TYPE_VIDEO) {
             snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "q=%2.1f ", q);
+            av_bprintf(&buf_script, "stream_%d_%d_q=%.1f\n",
+                       ost->file_index, ost->index, q);
         }
         if (!vid && enc->codec_type == AVMEDIA_TYPE_VIDEO) {
             float fps, t = (cur_time-timer_start) / 1000000.0;
@@ -2080,6 +2085,10 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
             fps = t > 1 ? frame_number / t : 0;
             snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "frame=%5d fps=%3.*f q=%3.1f ",
                      frame_number, fps < 9.95, fps, q);
+            av_bprintf(&buf_script, "frame=%d\n", frame_number);
+            av_bprintf(&buf_script, "fps=%.1f\n", fps);
+            av_bprintf(&buf_script, "stream_%d_%d_q=%.1f\n",
+                       ost->file_index, ost->index, q);
             if (is_last_report)
                 snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "L");
             if (qp_hist) {
@@ -2094,6 +2103,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
                 int j;
                 double error, error_sum = 0;
                 double scale, scale_sum = 0;
+                double p;
                 char type[3] = { 'Y','U','V' };
                 snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "PSNR=");
                 for (j = 0; j < 3; j++) {
@@ -2108,9 +2118,15 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
                         scale /= 4;
                     error_sum += error;
                     scale_sum += scale;
-                    snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%c:%2.2f ", type[j], psnr(error / scale));
+                    p = psnr(error / scale);
+                    snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%c:%2.2f ", type[j], p);
+                    av_bprintf(&buf_script, "stream_%d_%d_psnr_%c=%2.2f\n",
+                               ost->file_index, ost->index, type[i] | 32, p);
                 }
+                p = psnr(error_sum / scale_sum);
                 snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "*:%2.2f ", psnr(error_sum / scale_sum));
+                av_bprintf(&buf_script, "stream_%d_%d_psnr_all=%2.2f\n",
+                           ost->file_index, ost->index, p);
             }
             vid = 1;
         }
@@ -2135,14 +2151,35 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
              (100 * us) / AV_TIME_BASE);
     snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
              "bitrate=%6.1fkbits/s", bitrate);
+    av_bprintf(&buf_script, "total_size=%"PRId64"\n", total_size);
+    av_bprintf(&buf_script, "out_time_ms=%"PRId64"\n", pts);
+    av_bprintf(&buf_script, "out_time=%02d:%02d:%02d.%06d\n",
+               hours, mins, secs, us);
 
     if (nb_frames_dup || nb_frames_drop)
         snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), " dup=%d drop=%d",
                 nb_frames_dup, nb_frames_drop);
+    av_bprintf(&buf_script, "dup_frames=%d\n", nb_frames_dup);
+    av_bprintf(&buf_script, "drop_frames=%d\n", nb_frames_drop);
 
+    if (print_stats || is_last_report) {
     av_log(NULL, AV_LOG_INFO, "%s    \r", buf);
 
     fflush(stderr);
+    }
+
+    if (progress_avio) {
+        av_bprintf(&buf_script, "progress=%s\n",
+                   is_last_report ? "end" : "continue");
+        avio_write(progress_avio, buf_script.str,
+                   FFMIN(buf_script.len, buf_script.size - 1));
+        avio_flush(progress_avio);
+        av_bprint_finalize(&buf_script, NULL);
+        if (is_last_report) {
+            avio_close(progress_avio);
+            progress_avio = NULL;
+        }
+    }
 
     if (is_last_report) {
         int64_t raw= audio_size + video_size + subtitle_size + extra_size;
@@ -5791,6 +5828,23 @@ static int opt_filter_complex(const char *opt, const char *arg)
     return 0;
 }
 
+static int opt_progress(const char *opt, const char *arg)
+{
+    AVIOContext *avio = NULL;
+    int ret;
+
+    if (!strcmp(arg, "-"))
+        arg = "pipe:";
+    ret = avio_open2(&avio, arg, AVIO_FLAG_WRITE, &int_cb, NULL);
+    if (ret < 0) {
+        av_log(0, AV_LOG_ERROR, "Failed to open progress URL \"%s\": %s\n",
+               arg, av_err2str(ret));
+        return ret;
+    }
+    progress_avio = avio;
+    return 0;
+}
+
 #define OFFSET(x) offsetof(OptionsContext, x)
 static const OptionDef options[] = {
     /* main options */
@@ -5819,6 +5873,8 @@ static const OptionDef options[] = {
       "add timings for benchmarking" },
     { "benchmark_all", OPT_BOOL | OPT_EXPERT, {(void*)&do_benchmark_all},
       "add timings for each task" },
+    { "progress", HAS_ARG | OPT_EXPERT, {(void*)opt_progress},
+      "write program-readable progress information", "url" },
     { "timelimit", HAS_ARG, {(void*)opt_timelimit}, "set max runtime in seconds", "limit" },
     { "dump", OPT_BOOL | OPT_EXPERT, {(void*)&do_pkt_dump},
       "dump each input packet" },

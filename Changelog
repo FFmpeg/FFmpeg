@@ -26,6 +26,7 @@ version next:
 - Heart Of Darkness PAF playback support
 - iec61883 device
 - asettb filter
+- new option: -progress
 
 
 version 0.11:
