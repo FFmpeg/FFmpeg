@@ -1096,6 +1096,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
                 int64_t old_diff= FFABS(st->cur_dts - duration - pkt->pts);
                 int64_t new_diff= FFABS(st->cur_dts - pkt->pts);
                 if(   old_diff < new_diff && old_diff < (duration>>3)
+                   && st->codec->codec_type == AVMEDIA_TYPE_VIDEO
                    && (!strcmp(s->iformat->name, "mpeg") ||
                        !strcmp(s->iformat->name, "mpegts"))){
                     pkt->pts += duration;
