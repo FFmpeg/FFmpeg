@@ -214,7 +214,6 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     AVFilterContext *ctx = inlink->dst;
     OverlayContext *over = ctx->priv;
 
-    inlink->dst->outputs[0]->out_buf = outpicref;
     outpicref->pts = av_rescale_q(outpicref->pts, ctx->inputs[MAIN]->time_base,
                                   ctx->outputs[0]->time_base);
 
@@ -324,7 +323,7 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
-    AVFilterBufferRef *outpicref = outlink->out_buf;
+    AVFilterBufferRef *outpicref = inlink->cur_buf;
     OverlayContext *over = ctx->priv;
 
     if (over->overpicref &&
