@@ -121,12 +121,13 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     AVFilterContext   *ctx        = inlink->dst;
     AVFilterLink      *outlink    = ctx->outputs[0];
 
-    AVFilterBufferRef *outpicref;
+    AVFilterBufferRef *outpicref, *for_next_filter;
 
     outpicref = avfilter_ref_buffer(inpicref, ~0);
     outlink->out_buf = outpicref;
 
-    ff_start_frame(outlink, outpicref);
+    for_next_filter = avfilter_ref_buffer(outpicref, ~0);
+    ff_start_frame(outlink, for_next_filter);
 }
 
 static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
@@ -213,6 +214,7 @@ static void end_frame(AVFilterLink *inlink)
 
     ff_end_frame(outlink);
     avfilter_unref_buffer(inpicref);
+    avfilter_unref_bufferp(&outlink->out_buf);
 }
 
 AVFilter avfilter_vf_fieldorder = {
