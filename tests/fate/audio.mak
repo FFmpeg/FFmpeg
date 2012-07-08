@@ -34,6 +34,9 @@ fate-nellymoser: CMD = pcm -i $(TARGET_SAMPLES)/nellymoser/nellymoser.flv
 fate-nellymoser: CMP = oneoff
 fate-nellymoser: REF = $(SAMPLES)/nellymoser/nellymoser.pcm
 
+FATE_SAMPLES_AVCONV-$(call DEMDEC, PAF, PAF_AUDIO) += fate-paf-audio
+fate-paf-audio: CMD = framecrc -i $(TARGET_SAMPLES)/paf/hod1-partial.paf -vn
+
 FATE_SAMPLES_AVCONV-$(call DEMDEC, VMD, VMDAUDIO) += fate-sierra-vmd-audio
 fate-sierra-vmd-audio: CMD = framecrc -i $(TARGET_SAMPLES)/vmd/12.vmd -vn
 
