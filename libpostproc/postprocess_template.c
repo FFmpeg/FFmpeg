@@ -1465,7 +1465,7 @@ static inline void RENAME(deInterlaceInterpolateCubic)(uint8_t src[], int stride
         "movq " #d ", %%mm2                     \n\t"\
         "movq " #e ", %%mm3                     \n\t"\
         PAVGB(%%mm2, %%mm1)                             /* (b+d) /2 */\
-        PAVGB(%%mm3, %%mm0)                             /* a(a+e) /2 */\
+        PAVGB(%%mm3, %%mm0)                             /* (a+e) /2 */\
         "movq %%mm0, %%mm2                      \n\t"\
         "punpcklbw %%mm7, %%mm0                 \n\t"\
         "punpckhbw %%mm7, %%mm2                 \n\t"\
