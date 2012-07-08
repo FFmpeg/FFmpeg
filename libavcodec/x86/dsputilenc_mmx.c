@@ -1111,7 +1111,7 @@ void ff_dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
             (dct_algo==FF_DCT_AUTO || dct_algo==FF_DCT_MMX)) {
             if(mm_flags & AV_CPU_FLAG_SSE2){
                 c->fdct = ff_fdct_sse2;
-            }else if(mm_flags & AV_CPU_FLAG_MMX2){
+            } else if (mm_flags & AV_CPU_FLAG_MMXEXT) {
                 c->fdct = ff_fdct_mmx2;
             }else{
                 c->fdct = ff_fdct_mmx;
@@ -1144,8 +1144,7 @@ void ff_dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
 
         c->ssd_int8_vs_int16 = ssd_int8_vs_int16_mmx;
 
-
-        if (mm_flags & AV_CPU_FLAG_MMX2) {
+        if (mm_flags & AV_CPU_FLAG_MMXEXT) {
             c->sum_abs_dctelem= sum_abs_dctelem_mmx2;
             c->vsad[4]= vsad_intra16_mmx2;
 
@@ -1186,7 +1185,7 @@ void ff_dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
         c->hadamard8_diff[0] = ff_hadamard8_diff16_mmx;
         c->hadamard8_diff[1] = ff_hadamard8_diff_mmx;
 
-        if (mm_flags & AV_CPU_FLAG_MMX2) {
+        if (mm_flags & AV_CPU_FLAG_MMXEXT) {
             c->hadamard8_diff[0] = ff_hadamard8_diff16_mmx2;
             c->hadamard8_diff[1] = ff_hadamard8_diff_mmx2;
         }

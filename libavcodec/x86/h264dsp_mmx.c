@@ -218,7 +218,7 @@ void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
 #if HAVE_YASM
     int mm_flags = av_get_cpu_flags();
 
-    if (chroma_format_idc == 1 && mm_flags & AV_CPU_FLAG_MMX2)
+    if (chroma_format_idc == 1 && mm_flags & AV_CPU_FLAG_MMXEXT)
         c->h264_loop_filter_strength = ff_h264_loop_filter_strength_mmx2;
 
     if (bit_depth == 8) {
@@ -236,7 +236,7 @@ void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
             if (mm_flags & AV_CPU_FLAG_CMOV)
                 c->h264_luma_dc_dequant_idct = ff_h264_luma_dc_dequant_idct_mmx;
 
-            if (mm_flags & AV_CPU_FLAG_MMX2) {
+            if (mm_flags & AV_CPU_FLAG_MMXEXT) {
                 c->h264_idct_dc_add  = ff_h264_idct_dc_add_8_mmx2;
                 c->h264_idct8_dc_add = ff_h264_idct8_dc_add_8_mmx2;
                 c->h264_idct_add16   = ff_h264_idct_add16_8_mmx2;
@@ -304,7 +304,7 @@ void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
         }
     } else if (bit_depth == 10) {
         if (mm_flags & AV_CPU_FLAG_MMX) {
-            if (mm_flags & AV_CPU_FLAG_MMX2) {
+            if (mm_flags & AV_CPU_FLAG_MMXEXT) {
 #if ARCH_X86_32
                 c->h264_v_loop_filter_chroma       = ff_deblock_v_chroma_10_mmx2;
                 c->h264_v_loop_filter_chroma_intra = ff_deblock_v_chroma_intra_10_mmx2;

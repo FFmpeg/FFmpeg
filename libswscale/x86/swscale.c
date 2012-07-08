@@ -72,16 +72,16 @@ DECLARE_ALIGNED(8, const uint64_t, ff_w1111)        = 0x0001000100010001ULL;
 //MMX versions
 #if HAVE_MMX
 #undef RENAME
-#define COMPILE_TEMPLATE_MMX2 0
+#define COMPILE_TEMPLATE_MMXEXT 0
 #define RENAME(a) a ## _MMX
 #include "swscale_template.c"
 #endif
 
 //MMX2 versions
-#if HAVE_MMX2
+#if HAVE_MMXEXT
 #undef RENAME
-#undef COMPILE_TEMPLATE_MMX2
-#define COMPILE_TEMPLATE_MMX2 1
+#undef COMPILE_TEMPLATE_MMXEXT
+#define COMPILE_TEMPLATE_MMXEXT 1
 #define RENAME(a) a ## _MMX2
 #include "swscale_template.c"
 #endif
@@ -308,8 +308,8 @@ av_cold void ff_sws_init_swScale_mmx(SwsContext *c)
 #if HAVE_INLINE_ASM
     if (cpu_flags & AV_CPU_FLAG_MMX)
         sws_init_swScale_MMX(c);
-#if HAVE_MMX2
-    if (cpu_flags & AV_CPU_FLAG_MMX2)
+#if HAVE_MMXEXT
+    if (cpu_flags & AV_CPU_FLAG_MMXEXT)
         sws_init_swScale_MMX2(c);
 #endif
 #endif /* HAVE_INLINE_ASM */
@@ -360,7 +360,7 @@ switch(c->dstBpc){ \
     if (cpu_flags & AV_CPU_FLAG_MMX) {
         ASSIGN_MMX_SCALE_FUNC(c->hyScale, c->hLumFilterSize, mmx, mmx);
         ASSIGN_MMX_SCALE_FUNC(c->hcScale, c->hChrFilterSize, mmx, mmx);
-        ASSIGN_VSCALE_FUNC(c->yuv2plane1, mmx, mmx2, cpu_flags & AV_CPU_FLAG_MMX2);
+        ASSIGN_VSCALE_FUNC(c->yuv2plane1, mmx, mmx2, cpu_flags & AV_CPU_FLAG_MMXEXT);
 
         switch (c->srcFormat) {
         case PIX_FMT_Y400A:
@@ -392,7 +392,7 @@ switch(c->dstBpc){ \
             break;
         }
     }
-    if (cpu_flags & AV_CPU_FLAG_MMX2) {
+    if (cpu_flags & AV_CPU_FLAG_MMXEXT) {
         ASSIGN_VSCALEX_FUNC(c->yuv2planeX, mmx2, , 1);
     }
 #endif

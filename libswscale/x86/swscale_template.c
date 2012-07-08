@@ -22,13 +22,13 @@
 #undef MOVNTQ
 #undef PREFETCH
 
-#if COMPILE_TEMPLATE_MMX2
+#if COMPILE_TEMPLATE_MMXEXT
 #define PREFETCH "prefetchnta"
 #else
 #define PREFETCH  " # nop"
 #endif
 
-#if COMPILE_TEMPLATE_MMX2
+#if COMPILE_TEMPLATE_MMXEXT
 #define REAL_MOVNTQ(a,b) "movntq " #a ", " #b " \n\t"
 #else
 #define REAL_MOVNTQ(a,b) "movq " #a ", " #b " \n\t"
@@ -567,7 +567,7 @@ static void RENAME(yuv2rgb555_X)(SwsContext *c, const int16_t *lumFilter,
     "cmp  "#dstw", "#index"     \n\t"\
     " jb       1b               \n\t"
 
-#if COMPILE_TEMPLATE_MMX2
+#if COMPILE_TEMPLATE_MMXEXT
 #undef WRITEBGR24
 #define WRITEBGR24(dst, dstw, index)  WRITEBGR24MMX2(dst, dstw, index)
 #else
@@ -1371,7 +1371,7 @@ static void RENAME(yuv2yuyv422_1)(SwsContext *c, const int16_t *buf0,
     }
 }
 
-#if COMPILE_TEMPLATE_MMX2
+#if COMPILE_TEMPLATE_MMXEXT
 static void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
                                  int dstWidth, const uint8_t *src,
                                  int srcW, int xInc)
@@ -1553,7 +1553,7 @@ static void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst1, int16_t *dst2,
         dst2[i] = src2[srcW-1]*128;
     }
 }
-#endif /* COMPILE_TEMPLATE_MMX2 */
+#endif /* COMPILE_TEMPLATE_MMXEXT */
 
 static av_cold void RENAME(sws_init_swScale)(SwsContext *c)
 {
@@ -1616,17 +1616,17 @@ static av_cold void RENAME(sws_init_swScale)(SwsContext *c)
 
     if (c->srcBpc == 8 && c->dstBpc <= 10) {
     // Use the new MMX scaler if the MMX2 one can't be used (it is faster than the x86 ASM one).
-#if COMPILE_TEMPLATE_MMX2
+#if COMPILE_TEMPLATE_MMXEXT
     if (c->flags & SWS_FAST_BILINEAR && c->canMMX2BeUsed)
     {
         c->hyscale_fast = RENAME(hyscale_fast);
         c->hcscale_fast = RENAME(hcscale_fast);
     } else {
-#endif /* COMPILE_TEMPLATE_MMX2 */
+#endif /* COMPILE_TEMPLATE_MMXEXT */
         c->hyscale_fast = NULL;
         c->hcscale_fast = NULL;
-#if COMPILE_TEMPLATE_MMX2
+#if COMPILE_TEMPLATE_MMXEXT
     }
-#endif /* COMPILE_TEMPLATE_MMX2 */
+#endif /* COMPILE_TEMPLATE_MMXEXT */
     }
 }

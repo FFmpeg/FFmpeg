@@ -45,7 +45,7 @@ DECLARE_ASM_CONST(16, const xmm_reg, pw_1) = {0x0001000100010001ULL, 0x000100010
 #undef COMPILE_TEMPLATE_SSE
 #endif
 
-#if HAVE_MMX2
+#if HAVE_MMXEXT
 #undef RENAME
 #define RENAME(a) a ## _mmx2
 #include "yadif_template.c"
@@ -58,8 +58,8 @@ av_cold void ff_yadif_init_x86(YADIFContext *yadif)
     int cpu_flags = av_get_cpu_flags();
 
 #if HAVE_INLINE_ASM
-#if HAVE_MMX2
-    if (cpu_flags & AV_CPU_FLAG_MMX2)
+#if HAVE_MMXEXT
+    if (cpu_flags & AV_CPU_FLAG_MMXEXT)
         yadif->filter_line = yadif_filter_line_mmx2;
 #endif
 #if HAVE_SSE

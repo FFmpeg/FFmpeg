@@ -198,7 +198,7 @@ void ff_h264_pred_init_x86(H264PredContext *h, int codec_id, const int bit_depth
             }
         }
 
-        if (mm_flags & AV_CPU_FLAG_MMX2) {
+        if (mm_flags & AV_CPU_FLAG_MMXEXT) {
             h->pred16x16[HOR_PRED8x8            ] = ff_pred16x16_horizontal_mmx2;
             h->pred16x16[DC_PRED8x8             ] = ff_pred16x16_dc_mmx2;
             if (chroma_format_idc == 1)
@@ -308,7 +308,7 @@ void ff_h264_pred_init_x86(H264PredContext *h, int codec_id, const int bit_depth
             }
         }
     } else if (bit_depth == 10) {
-        if (mm_flags & AV_CPU_FLAG_MMX2) {
+        if (mm_flags & AV_CPU_FLAG_MMXEXT) {
             h->pred4x4[DC_PRED             ] = ff_pred4x4_dc_10_mmxext;
             h->pred4x4[HOR_UP_PRED         ] = ff_pred4x4_horizontal_up_10_mmxext;
 

@@ -243,7 +243,7 @@ Optimization options (experts only):
   --disable-amd3dnow       disable 3DNow! optimizations
   --disable-amd3dnowext    disable 3DNow! extended optimizations
   --disable-mmx            disable MMX optimizations
-  --disable-mmx2           disable MMX2 optimizations
+  --disable-mmxext         disable MMXEXT optimizations
   --disable-sse            disable SSE optimizations
   --disable-ssse3          disable SSSE3 optimizations
   --disable-avx            disable AVX optimizations
@@ -1054,7 +1054,7 @@ ARCH_EXT_LIST='
     fma4
     mmi
     mmx
-    mmx2
+    mmxext
     neon
     ppc4xx
     sse
@@ -1302,7 +1302,7 @@ x86_64_suggest="cmov fast_cmov"
 amd3dnow_deps="mmx"
 amd3dnowext_deps="amd3dnow"
 mmx_deps="x86"
-mmx2_deps="mmx"
+mmxext_deps="mmx"
 sse_deps="mmx"
 ssse3_deps="sse"
 avx_deps="ssse3"
@@ -2861,9 +2861,9 @@ EOF
     # check whether xmm clobbers are supported
     check_asm xmm_clobbers '"":::"%xmm0"'
 
-    # check whether binutils is new enough to compile SSSE3/MMX2
+    # check whether binutils is new enough to compile SSSE3/MMXEXT
     enabled ssse3 && check_asm ssse3 '"pabsw %xmm0, %xmm0"'
-    enabled mmx2  && check_asm mmx2  '"pmaxub %mm0, %mm1"'
+    enabled mmxext && check_asm mmxext '"pmaxub %mm0, %mm1"'
 
     if ! disabled_any asm mmx yasm; then
         if check_cmd $yasmexe --version; then
@@ -3307,7 +3307,7 @@ echo "runtime cpu detection     ${runtime_cpudetect-no}"
 if enabled x86; then
     echo "${yasmexe}                      ${yasm-no}"
     echo "MMX enabled               ${mmx-no}"
-    echo "MMX2 enabled              ${mmx2-no}"
+    echo "MMXEXT enabled            ${mmxext-no}"
     echo "3DNow! enabled            ${amd3dnow-no}"
     echo "3DNow! extended enabled   ${amd3dnowext-no}"
     echo "SSE enabled               ${sse-no}"

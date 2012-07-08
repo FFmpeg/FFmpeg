@@ -13,6 +13,11 @@ libavutil:     2011-04-18
 
 API changes, most recent first:
 
+2012-08-03 - xxxxxxx - lavu 51.37.1 - cpu.h
+                       lsws 2.1.1   - swscale.h
+  Rename AV_CPU_FLAG_MMX2  ---> AV_CPU_FLAG_MMXEXT.
+  Rename SWS_CPU_CAPS_MMX2 ---> SWS_CPU_CAPS_MMXEXT.
+
 2012-07-xx - xxxxxxx - lavf 54.13.0 - avformat.h
   Add AVFMT_FLAG_NOBUFFER for low latency use cases.
 

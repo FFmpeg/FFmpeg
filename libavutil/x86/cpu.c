@@ -122,7 +122,7 @@ int ff_get_cpu_flags_x86(void)
         if (std_caps & (1 << 23))
             rval |= AV_CPU_FLAG_MMX;
         if (std_caps & (1 << 25))
-            rval |= AV_CPU_FLAG_MMX2;
+            rval |= AV_CPU_FLAG_MMXEXT;
 #if HAVE_SSE
         if (std_caps & (1 << 25))
             rval |= AV_CPU_FLAG_SSE;
@@ -159,7 +159,7 @@ int ff_get_cpu_flags_x86(void)
         if (ext_caps & (1 << 23))
             rval |= AV_CPU_FLAG_MMX;
         if (ext_caps & (1 << 22))
-            rval |= AV_CPU_FLAG_MMX2;
+            rval |= AV_CPU_FLAG_MMXEXT;
 
         /* Allow for selectively disabling SSE2 functions on AMD processors
            with SSE2 support but not SSE4a. This includes Athlon64, some

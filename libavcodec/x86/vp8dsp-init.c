@@ -350,7 +350,7 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
 
     /* note that 4-tap width=16 functions are missing because w=16
      * is only used for luma, and luma is always a copy or sixtap. */
-    if (mm_flags & AV_CPU_FLAG_MMX2) {
+    if (mm_flags & AV_CPU_FLAG_MMXEXT) {
         VP8_MC_FUNC(2, 4, mmx2);
         VP8_BILINEAR_MC_FUNC(2, 4, mmx2);
 #if ARCH_X86_32
