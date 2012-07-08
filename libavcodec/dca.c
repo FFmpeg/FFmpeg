@@ -136,8 +136,8 @@ static const uint32_t map_xxch_to_native[28] = {
     AV_CH_BACK_CENTER,
     AV_CH_BACK_LEFT,
     AV_CH_BACK_RIGHT,
-    AV_CH_BACK_LEFT,           /* side surround left -- dup sur rear L */
-    AV_CH_BACK_RIGHT,          /* side surround right -- dup sur rear R */
+    AV_CH_SIDE_LEFT,           /* side surround left -- dup sur side L */
+    AV_CH_SIDE_RIGHT,          /* side surround right -- dup sur side R */
     AV_CH_FRONT_LEFT_OF_CENTER,
     AV_CH_FRONT_RIGHT_OF_CENTER,
     AV_CH_TOP_FRONT_LEFT,
