@@ -45,9 +45,9 @@ typedef struct {
     int   list_size;       ///< number of entries for the segment list file
     ListType list_type;    ///< set the list type
     AVIOContext *list_pb;  ///< list file put-byte context
-    float time;            ///< segment duration
     int  wrap;             ///< number after which the index wraps
-    int64_t recording_time;
+    char *time_str;        ///< segment duration specification string
+    int64_t time;          ///< segment duration
     int has_video;
     double start_time, end_time;
 } SegmentContext;
@@ -143,7 +143,13 @@ static int seg_write_header(AVFormatContext *s)
     int ret, i;
 
     seg->number = 0;
-    seg->recording_time = seg->time * 1000000;
+
+    if ((ret = av_parse_time(&seg->time, seg->time_str, 1)) < 0) {
+        av_log(s, AV_LOG_ERROR,
+               "Invalid time duration specification '%s' for segment_time option\n",
+               seg->time_str);
+        return ret;
+    }
 
     oc = avformat_alloc_context();
 
@@ -215,7 +221,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
     SegmentContext *seg = s->priv_data;
     AVFormatContext *oc = seg->avf;
     AVStream *st = oc->streams[pkt->stream_index];
-    int64_t end_pts = seg->recording_time * seg->number;
+    int64_t end_pts = seg->time * seg->number;
     int ret;
 
     /* if the segment has video, start a new segment *only* with a key video frame */
@@ -256,6 +262,9 @@ static int seg_write_trailer(struct AVFormatContext *s)
     int ret = segment_end(s);
     if (seg->list)
         avio_close(seg->list_pb);
+
+    av_opt_free(seg);
+
     oc->streams = NULL;
     oc->nb_streams = 0;
     avformat_free_context(oc);
@@ -266,7 +275,7 @@ static int seg_write_trailer(struct AVFormatContext *s)
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
     { "segment_format",    "set container format used for the segments", OFFSET(format),  AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
-    { "segment_time",      "set segment length in seconds",              OFFSET(time),    AV_OPT_TYPE_FLOAT,  {.dbl = 2},     0, FLT_MAX, E },
+    { "segment_time",      "set segment duration",                       OFFSET(time_str),AV_OPT_TYPE_STRING, {.str = "2"},   0, 0,       E },
     { "segment_list",      "set the segment list filename",              OFFSET(list),    AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
     { "segment_list_size", "set the maximum number of playlist entries", OFFSET(list_size), AV_OPT_TYPE_INT,  {.dbl = 5},     0, INT_MAX, E },
     { "segment_list_type", "set the segment list type",                  OFFSET(list_type), AV_OPT_TYPE_INT,  {.dbl = LIST_TYPE_FLAT}, 0, LIST_TYPE_NB-1, E, "list_type" },
