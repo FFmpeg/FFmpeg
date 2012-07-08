@@ -213,6 +213,7 @@ static int smush_read_packet(AVFormatContext *ctx, AVPacket *pkt)
                 return AVERROR(EIO);
 
             pkt->stream_index = smush->audio_stream_index;
+            pkt->flags       |= AV_PKT_FLAG_KEY;
             pkt->duration = AV_RB32(pkt->data);
             if (pkt->duration == 0xFFFFFFFFu)
                 pkt->duration = AV_RB32(pkt->data + 8);
