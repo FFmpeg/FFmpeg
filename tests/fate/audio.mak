@@ -43,6 +43,9 @@ fate-nellymoser-aref-encode: CMP_SHIFT = -244
 fate-nellymoser-aref-encode: CMP_TARGET = 9612
 fate-nellymoser-aref-encode: SIZE_TOLERANCE = 268
 
+FATE_SAMPLES_AUDIO += fate-paf-audio
+fate-paf-audio: CMD = framecrc -i $(SAMPLES)/paf/hod1-partial.paf -vn
+
 FATE_SAMPLES_AUDIO += fate-sierra-vmd-audio
 fate-sierra-vmd-audio: CMD = framecrc -i $(SAMPLES)/vmd/12.vmd -vn
 
