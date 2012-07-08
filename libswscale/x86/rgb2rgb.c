@@ -99,7 +99,7 @@ DECLARE_ASM_CONST(8, uint64_t, blue_15mask)  = 0x0000001f0000001fULL;
 #undef RENAME
 #undef COMPILE_TEMPLATE_MMXEXT
 #define COMPILE_TEMPLATE_MMXEXT 1
-#define RENAME(a) a ## _MMX2
+#define RENAME(a) a ## _MMXEXT
 #include "rgb2rgb_template.c"
 
 //SSE2 versions
@@ -139,7 +139,7 @@ av_cold void rgb2rgb_init_x86(void)
     if (INLINE_AMD3DNOW(cpu_flags))
         rgb2rgb_init_3DNOW();
     if (INLINE_MMXEXT(cpu_flags))
-        rgb2rgb_init_MMX2();
+        rgb2rgb_init_MMXEXT();
     if (INLINE_SSE2(cpu_flags))
         rgb2rgb_init_SSE2();
 #endif /* HAVE_INLINE_ASM */

@@ -647,7 +647,9 @@ static int vsad_intra16_mmx(void *v, uint8_t * pix, uint8_t * dummy, int line_si
 }
 #undef SUM
 
-static int vsad_intra16_mmx2(void *v, uint8_t * pix, uint8_t * dummy, int line_size, int h) {
+static int vsad_intra16_mmxext(void *v, uint8_t *pix, uint8_t *dummy,
+                               int line_size, int h)
+{
     int tmp;
 
     assert( (((int)pix) & 7) == 0);
@@ -765,7 +767,9 @@ static int vsad16_mmx(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, in
 }
 #undef SUM
 
-static int vsad16_mmx2(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h) {
+static int vsad16_mmxext(void *v, uint8_t *pix1, uint8_t *pix2,
+                         int line_size, int h)
+{
     int tmp;
 
     assert( (((int)pix1) & 7) == 0);
@@ -844,7 +848,10 @@ static void diff_bytes_mmx(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
         dst[i+0] = src1[i+0]-src2[i+0];
 }
 
-static void sub_hfyu_median_prediction_mmx2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int w, int *left, int *left_top){
+static void sub_hfyu_median_prediction_mmxext(uint8_t *dst, const uint8_t *src1,
+                                              const uint8_t *src2, int w,
+                                              int *left, int *left_top)
+{
     x86_reg i=0;
     uint8_t l, lt;
 
@@ -976,7 +983,7 @@ DCT_SAD_FUNC(mmx)
 
 #define HSUM(a,t,dst) HSUM_MMXEXT(a,t,dst)
 #define MMABS(a,z)    MMABS_MMXEXT(a,z)
-DCT_SAD_FUNC(mmx2)
+DCT_SAD_FUNC(mmxext)
 #undef HSUM
 #undef DCT_SAD
 
@@ -1115,7 +1122,7 @@ void ff_dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
             if(mm_flags & AV_CPU_FLAG_SSE2){
                 c->fdct = ff_fdct_sse2;
             } else if (mm_flags & AV_CPU_FLAG_MMXEXT) {
-                c->fdct = ff_fdct_mmx2;
+                c->fdct = ff_fdct_mmxext;
             }else{
                 c->fdct = ff_fdct_mmx;
             }
@@ -1148,14 +1155,14 @@ void ff_dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
         c->ssd_int8_vs_int16 = ssd_int8_vs_int16_mmx;
 
         if (mm_flags & AV_CPU_FLAG_MMXEXT) {
-            c->sum_abs_dctelem= sum_abs_dctelem_mmx2;
-            c->vsad[4]= vsad_intra16_mmx2;
+            c->sum_abs_dctelem = sum_abs_dctelem_mmxext;
+            c->vsad[4]         = vsad_intra16_mmxext;
 
             if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
-                c->vsad[0] = vsad16_mmx2;
+                c->vsad[0] = vsad16_mmxext;
             }
 
-            c->sub_hfyu_median_prediction= sub_hfyu_median_prediction_mmx2;
+            c->sub_hfyu_median_prediction = sub_hfyu_median_prediction_mmxext;
         }
 
         if(mm_flags & AV_CPU_FLAG_SSE2){

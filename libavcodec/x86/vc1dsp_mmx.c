@@ -467,7 +467,10 @@ VC1_MSPEL_MC(avg_)
 static void put_vc1_mspel_mc ## a ## b ## _mmx(uint8_t *dst, const uint8_t *src, int stride, int rnd) { \
      put_vc1_mspel_mc(dst, src, stride, a, b, rnd);                     \
 }\
-static void avg_vc1_mspel_mc ## a ## b ## _mmx2(uint8_t *dst, const uint8_t *src, int stride, int rnd) { \
+static void avg_vc1_mspel_mc ## a ## b ## _mmxext(uint8_t *dst,         \
+                                                  const uint8_t *src,   \
+                                                  int stride, int rnd)  \
+{                                                                       \
      avg_vc1_mspel_mc(dst, src, stride, a, b, rnd);                     \
 }
 
@@ -490,7 +493,8 @@ DECLARE_FUNCTION(3, 1)
 DECLARE_FUNCTION(3, 2)
 DECLARE_FUNCTION(3, 3)
 
-static void vc1_inv_trans_4x4_dc_mmx2(uint8_t *dest, int linesize, DCTELEM *block)
+static void vc1_inv_trans_4x4_dc_mmxext(uint8_t *dest, int linesize,
+                                        DCTELEM *block)
 {
     int dc = block[0];
     dc = (17 * dc +  4) >> 3;
@@ -528,7 +532,8 @@ static void vc1_inv_trans_4x4_dc_mmx2(uint8_t *dest, int linesize, DCTELEM *bloc
     );
 }
 
-static void vc1_inv_trans_4x8_dc_mmx2(uint8_t *dest, int linesize, DCTELEM *block)
+static void vc1_inv_trans_4x8_dc_mmxext(uint8_t *dest, int linesize,
+                                        DCTELEM *block)
 {
     int dc = block[0];
     dc = (17 * dc +  4) >> 3;
@@ -589,7 +594,8 @@ static void vc1_inv_trans_4x8_dc_mmx2(uint8_t *dest, int linesize, DCTELEM *bloc
     );
 }
 
-static void vc1_inv_trans_8x4_dc_mmx2(uint8_t *dest, int linesize, DCTELEM *block)
+static void vc1_inv_trans_8x4_dc_mmxext(uint8_t *dest, int linesize,
+                                        DCTELEM *block)
 {
     int dc = block[0];
     dc = ( 3 * dc +  1) >> 1;
@@ -627,7 +633,8 @@ static void vc1_inv_trans_8x4_dc_mmx2(uint8_t *dest, int linesize, DCTELEM *bloc
     );
 }
 
-static void vc1_inv_trans_8x8_dc_mmx2(uint8_t *dest, int linesize, DCTELEM *block)
+static void vc1_inv_trans_8x8_dc_mmxext(uint8_t *dest, int linesize,
+                                        DCTELEM *block)
 {
     int dc = block[0];
     dc = (3 * dc +  1) >> 1;
@@ -713,29 +720,29 @@ av_cold void ff_vc1dsp_init_mmx(VC1DSPContext *dsp)
 
 av_cold void ff_vc1dsp_init_mmxext(VC1DSPContext *dsp)
 {
-        dsp->avg_vc1_mspel_pixels_tab[ 0] = ff_avg_vc1_mspel_mc00_mmx2;
-        dsp->avg_vc1_mspel_pixels_tab[ 4] = avg_vc1_mspel_mc01_mmx2;
-        dsp->avg_vc1_mspel_pixels_tab[ 8] = avg_vc1_mspel_mc02_mmx2;
-        dsp->avg_vc1_mspel_pixels_tab[12] = avg_vc1_mspel_mc03_mmx2;
+        dsp->avg_vc1_mspel_pixels_tab[ 0] = ff_avg_vc1_mspel_mc00_mmxext;
+        dsp->avg_vc1_mspel_pixels_tab[ 4] = avg_vc1_mspel_mc01_mmxext;
+        dsp->avg_vc1_mspel_pixels_tab[ 8] = avg_vc1_mspel_mc02_mmxext;
+        dsp->avg_vc1_mspel_pixels_tab[12] = avg_vc1_mspel_mc03_mmxext;
 
-        dsp->avg_vc1_mspel_pixels_tab[ 1] = avg_vc1_mspel_mc10_mmx2;
-        dsp->avg_vc1_mspel_pixels_tab[ 5] = avg_vc1_mspel_mc11_mmx2;
-        dsp->avg_vc1_mspel_pixels_tab[ 9] = avg_vc1_mspel_mc12_mmx2;
-        dsp->avg_vc1_mspel_pixels_tab[13] = avg_vc1_mspel_mc13_mmx2;
+        dsp->avg_vc1_mspel_pixels_tab[ 1] = avg_vc1_mspel_mc10_mmxext;
+        dsp->avg_vc1_mspel_pixels_tab[ 5] = avg_vc1_mspel_mc11_mmxext;
+        dsp->avg_vc1_mspel_pixels_tab[ 9] = avg_vc1_mspel_mc12_mmxext;
+        dsp->avg_vc1_mspel_pixels_tab[13] = avg_vc1_mspel_mc13_mmxext;
 
-        dsp->avg_vc1_mspel_pixels_tab[ 2] = avg_vc1_mspel_mc20_mmx2;
-        dsp->avg_vc1_mspel_pixels_tab[ 6] = avg_vc1_mspel_mc21_mmx2;
-        dsp->avg_vc1_mspel_pixels_tab[10] = avg_vc1_mspel_mc22_mmx2;
-        dsp->avg_vc1_mspel_pixels_tab[14] = avg_vc1_mspel_mc23_mmx2;
+        dsp->avg_vc1_mspel_pixels_tab[ 2] = avg_vc1_mspel_mc20_mmxext;
+        dsp->avg_vc1_mspel_pixels_tab[ 6] = avg_vc1_mspel_mc21_mmxext;
+        dsp->avg_vc1_mspel_pixels_tab[10] = avg_vc1_mspel_mc22_mmxext;
+        dsp->avg_vc1_mspel_pixels_tab[14] = avg_vc1_mspel_mc23_mmxext;
 
-        dsp->avg_vc1_mspel_pixels_tab[ 3] = avg_vc1_mspel_mc30_mmx2;
-        dsp->avg_vc1_mspel_pixels_tab[ 7] = avg_vc1_mspel_mc31_mmx2;
-        dsp->avg_vc1_mspel_pixels_tab[11] = avg_vc1_mspel_mc32_mmx2;
-        dsp->avg_vc1_mspel_pixels_tab[15] = avg_vc1_mspel_mc33_mmx2;
+        dsp->avg_vc1_mspel_pixels_tab[ 3] = avg_vc1_mspel_mc30_mmxext;
+        dsp->avg_vc1_mspel_pixels_tab[ 7] = avg_vc1_mspel_mc31_mmxext;
+        dsp->avg_vc1_mspel_pixels_tab[11] = avg_vc1_mspel_mc32_mmxext;
+        dsp->avg_vc1_mspel_pixels_tab[15] = avg_vc1_mspel_mc33_mmxext;
 
-        dsp->vc1_inv_trans_8x8_dc = vc1_inv_trans_8x8_dc_mmx2;
-        dsp->vc1_inv_trans_4x8_dc = vc1_inv_trans_4x8_dc_mmx2;
-        dsp->vc1_inv_trans_8x4_dc = vc1_inv_trans_8x4_dc_mmx2;
-        dsp->vc1_inv_trans_4x4_dc = vc1_inv_trans_4x4_dc_mmx2;
+        dsp->vc1_inv_trans_8x8_dc = vc1_inv_trans_8x8_dc_mmxext;
+        dsp->vc1_inv_trans_4x8_dc = vc1_inv_trans_4x8_dc_mmxext;
+        dsp->vc1_inv_trans_8x4_dc = vc1_inv_trans_8x4_dc_mmxext;
+        dsp->vc1_inv_trans_4x4_dc = vc1_inv_trans_4x4_dc_mmxext;
 }
 #endif /* HAVE_INLINE_ASM */

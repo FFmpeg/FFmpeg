@@ -207,7 +207,7 @@ DECLARE_ALIGNED(16, const double, ff_pd_2)[2] = { 2.0, 2.0 };
 /***********************************/
 /* MMXEXT specific */
 
-#define DEF(x) x ## _mmx2
+#define DEF(x) x ## _mmxext
 
 /* Introduced only in MMXEXT set */
 #define PAVGB "pavgb"
@@ -221,11 +221,11 @@ DECLARE_ALIGNED(16, const double, ff_pd_2)[2] = { 2.0, 2.0 };
 
 #define put_no_rnd_pixels16_mmx put_pixels16_mmx
 #define put_no_rnd_pixels8_mmx put_pixels8_mmx
-#define put_pixels16_mmx2 put_pixels16_mmx
-#define put_pixels8_mmx2 put_pixels8_mmx
-#define put_pixels4_mmx2 put_pixels4_mmx
-#define put_no_rnd_pixels16_mmx2 put_no_rnd_pixels16_mmx
-#define put_no_rnd_pixels8_mmx2 put_no_rnd_pixels8_mmx
+#define put_pixels16_mmxext put_pixels16_mmx
+#define put_pixels8_mmxext put_pixels8_mmx
+#define put_pixels4_mmxext put_pixels4_mmx
+#define put_no_rnd_pixels16_mmxext put_no_rnd_pixels16_mmx
+#define put_no_rnd_pixels8_mmxext put_no_rnd_pixels8_mmx
 #define put_pixels16_3dnow put_pixels16_mmx
 #define put_pixels8_3dnow put_pixels8_mmx
 #define put_pixels4_3dnow put_pixels4_mmx
@@ -924,11 +924,11 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
     OP(%%mm5, out, %%mm7, d)
 
 #define QPEL_BASE(OPNAME, ROUNDER, RND, OP_MMXEXT, OP_3DNOW)              \
-static void OPNAME ## mpeg4_qpel16_h_lowpass_mmx2(uint8_t *dst,           \
-                                                  uint8_t *src,           \
-                                                  int dstStride,          \
-                                                  int srcStride,          \
-                                                  int h)                  \
+static void OPNAME ## mpeg4_qpel16_h_lowpass_mmxext(uint8_t *dst,         \
+                                                    uint8_t *src,         \
+                                                    int dstStride,        \
+                                                    int srcStride,        \
+                                                    int h)                \
 {                                                                         \
     uint64_t temp;                                                        \
                                                                           \
@@ -1118,11 +1118,11 @@ static void OPNAME ## mpeg4_qpel16_h_lowpass_3dnow(uint8_t *dst,          \
     }                                                                     \
 }                                                                         \
                                                                           \
-static void OPNAME ## mpeg4_qpel8_h_lowpass_mmx2(uint8_t *dst,            \
-                                                 uint8_t *src,            \
-                                                 int dstStride,           \
-                                                 int srcStride,           \
-                                                 int h)                   \
+static void OPNAME ## mpeg4_qpel8_h_lowpass_mmxext(uint8_t *dst,          \
+                                                   uint8_t *src,          \
+                                                   int dstStride,         \
+                                                   int srcStride,         \
+                                                   int h)                 \
 {                                                                         \
     __asm__ volatile (                                                    \
         "pxor      %%mm7, %%mm7             \n\t"                         \
@@ -1755,9 +1755,9 @@ QPEL_BASE(put_no_rnd_, ff_pw_15, _no_rnd_, PUT_OP,       PUT_OP)
 QPEL_OP(put_,          ff_pw_16, _,        PUT_OP,       3dnow)
 QPEL_OP(avg_,          ff_pw_16, _,        AVG_3DNOW_OP, 3dnow)
 QPEL_OP(put_no_rnd_,   ff_pw_15, _no_rnd_, PUT_OP,       3dnow)
-QPEL_OP(put_,          ff_pw_16, _,        PUT_OP,       mmx2)
-QPEL_OP(avg_,          ff_pw_16, _,        AVG_MMXEXT_OP, mmx2)
-QPEL_OP(put_no_rnd_,   ff_pw_15, _no_rnd_, PUT_OP,       mmx2)
+QPEL_OP(put_,          ff_pw_16, _,        PUT_OP,        mmxext)
+QPEL_OP(avg_,          ff_pw_16, _,        AVG_MMXEXT_OP, mmxext)
+QPEL_OP(put_no_rnd_,   ff_pw_15, _no_rnd_, PUT_OP,        mmxext)
 
 /***********************************/
 /* bilinear qpel: not compliant to any spec, only for -lavdopts fast */
@@ -1811,10 +1811,10 @@ QPEL_2TAP_L3(OPNAME, SIZE, MMX, 31, 1,           stride, -1)                \
 QPEL_2TAP_L3(OPNAME, SIZE, MMX, 13, stride,     -stride,  1)                \
 QPEL_2TAP_L3(OPNAME, SIZE, MMX, 33, stride + 1, -stride, -1)                \
 
-QPEL_2TAP(put_, 16, mmx2)
-QPEL_2TAP(avg_, 16, mmx2)
-QPEL_2TAP(put_,  8, mmx2)
-QPEL_2TAP(avg_,  8, mmx2)
+QPEL_2TAP(put_, 16, mmxext)
+QPEL_2TAP(avg_, 16, mmxext)
+QPEL_2TAP(put_,  8, mmxext)
+QPEL_2TAP(avg_,  8, mmxext)
 QPEL_2TAP(put_, 16, 3dnow)
 QPEL_2TAP(avg_, 16, 3dnow)
 QPEL_2TAP(put_,  8, 3dnow)
@@ -2035,7 +2035,7 @@ static void name(void *mem, int stride, int h)  \
     } while (--h);                              \
 }
 
-PREFETCH(prefetch_mmx2,  prefetcht0)
+PREFETCH(prefetch_mmxext, prefetcht0)
 PREFETCH(prefetch_3dnow, prefetch)
 #undef PREFETCH
 
@@ -2089,22 +2089,22 @@ CHROMA_MC(avg, 8, 10, avx)
 #if HAVE_INLINE_ASM
 
 /* CAVS-specific */
-void ff_put_cavs_qpel8_mc00_mmx2(uint8_t *dst, uint8_t *src, int stride)
+void ff_put_cavs_qpel8_mc00_mmxext(uint8_t *dst, uint8_t *src, int stride)
 {
     put_pixels8_mmx(dst, src, stride, 8);
 }
 
-void ff_avg_cavs_qpel8_mc00_mmx2(uint8_t *dst, uint8_t *src, int stride)
+void ff_avg_cavs_qpel8_mc00_mmxext(uint8_t *dst, uint8_t *src, int stride)
 {
     avg_pixels8_mmx(dst, src, stride, 8);
 }
 
-void ff_put_cavs_qpel16_mc00_mmx2(uint8_t *dst, uint8_t *src, int stride)
+void ff_put_cavs_qpel16_mc00_mmxext(uint8_t *dst, uint8_t *src, int stride)
 {
     put_pixels16_mmx(dst, src, stride, 16);
 }
 
-void ff_avg_cavs_qpel16_mc00_mmx2(uint8_t *dst, uint8_t *src, int stride)
+void ff_avg_cavs_qpel16_mc00_mmxext(uint8_t *dst, uint8_t *src, int stride)
 {
     avg_pixels16_mmx(dst, src, stride, 16);
 }
@@ -2116,10 +2116,10 @@ void ff_put_vc1_mspel_mc00_mmx(uint8_t *dst, const uint8_t *src,
     put_pixels8_mmx(dst, src, stride, 8);
 }
 
-void ff_avg_vc1_mspel_mc00_mmx2(uint8_t *dst, const uint8_t *src,
-                                int stride, int rnd)
+void ff_avg_vc1_mspel_mc00_mmxext(uint8_t *dst, const uint8_t *src,
+                                  int stride, int rnd)
 {
-    avg_pixels8_mmx2(dst, src, stride, 8);
+    avg_pixels8_mmxext(dst, src, stride, 8);
 }
 
 static void vorbis_inverse_coupling_3dnow(float *mag, float *ang, int blocksize)
@@ -2456,74 +2456,74 @@ static void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx, int mm_flags)
 
 }
 
-static void dsputil_init_mmx2(DSPContext *c, AVCodecContext *avctx,
-                              int mm_flags)
+static void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
+                                int mm_flags)
 {
     const int bit_depth      = avctx->bits_per_raw_sample;
     const int high_bit_depth = bit_depth > 8;
 
 #if HAVE_INLINE_ASM
-    c->prefetch = prefetch_mmx2;
+    c->prefetch = prefetch_mmxext;
 
     if (!high_bit_depth) {
-        c->put_pixels_tab[0][1] = put_pixels16_x2_mmx2;
-        c->put_pixels_tab[0][2] = put_pixels16_y2_mmx2;
+        c->put_pixels_tab[0][1] = put_pixels16_x2_mmxext;
+        c->put_pixels_tab[0][2] = put_pixels16_y2_mmxext;
 
-        c->avg_pixels_tab[0][0] = avg_pixels16_mmx2;
-        c->avg_pixels_tab[0][1] = avg_pixels16_x2_mmx2;
-        c->avg_pixels_tab[0][2] = avg_pixels16_y2_mmx2;
+        c->avg_pixels_tab[0][0] = avg_pixels16_mmxext;
+        c->avg_pixels_tab[0][1] = avg_pixels16_x2_mmxext;
+        c->avg_pixels_tab[0][2] = avg_pixels16_y2_mmxext;
 
-        c->put_pixels_tab[1][1] = put_pixels8_x2_mmx2;
-        c->put_pixels_tab[1][2] = put_pixels8_y2_mmx2;
+        c->put_pixels_tab[1][1] = put_pixels8_x2_mmxext;
+        c->put_pixels_tab[1][2] = put_pixels8_y2_mmxext;
 
-        c->avg_pixels_tab[1][0] = avg_pixels8_mmx2;
-        c->avg_pixels_tab[1][1] = avg_pixels8_x2_mmx2;
-        c->avg_pixels_tab[1][2] = avg_pixels8_y2_mmx2;
+        c->avg_pixels_tab[1][0] = avg_pixels8_mmxext;
+        c->avg_pixels_tab[1][1] = avg_pixels8_x2_mmxext;
+        c->avg_pixels_tab[1][2] = avg_pixels8_y2_mmxext;
     }
 
     if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
         if (!high_bit_depth) {
-            c->put_no_rnd_pixels_tab[0][1] = put_no_rnd_pixels16_x2_mmx2;
-            c->put_no_rnd_pixels_tab[0][2] = put_no_rnd_pixels16_y2_mmx2;
-            c->put_no_rnd_pixels_tab[1][1] = put_no_rnd_pixels8_x2_mmx2;
-            c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2_mmx2;
+            c->put_no_rnd_pixels_tab[0][1] = put_no_rnd_pixels16_x2_mmxext;
+            c->put_no_rnd_pixels_tab[0][2] = put_no_rnd_pixels16_y2_mmxext;
+            c->put_no_rnd_pixels_tab[1][1] = put_no_rnd_pixels8_x2_mmxext;
+            c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2_mmxext;
 
-            c->avg_pixels_tab[0][3] = avg_pixels16_xy2_mmx2;
-            c->avg_pixels_tab[1][3] = avg_pixels8_xy2_mmx2;
+            c->avg_pixels_tab[0][3] = avg_pixels16_xy2_mmxext;
+            c->avg_pixels_tab[1][3] = avg_pixels8_xy2_mmxext;
         }
     }
 
     if (!high_bit_depth && avctx->idct_algo == FF_IDCT_XVIDMMX) {
-        c->idct_put = ff_idct_xvid_mmx2_put;
-        c->idct_add = ff_idct_xvid_mmx2_add;
-        c->idct     = ff_idct_xvid_mmx2;
+        c->idct_put = ff_idct_xvid_mmxext_put;
+        c->idct_add = ff_idct_xvid_mmxext_add;
+        c->idct     = ff_idct_xvid_mmxext;
     }
 
     if (CONFIG_VP3_DECODER && (avctx->codec_id == AV_CODEC_ID_VP3 ||
                                avctx->codec_id == AV_CODEC_ID_THEORA)) {
-        c->put_no_rnd_pixels_tab[1][1] = put_no_rnd_pixels8_x2_exact_mmx2;
-        c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2_exact_mmx2;
+        c->put_no_rnd_pixels_tab[1][1] = put_no_rnd_pixels8_x2_exact_mmxext;
+        c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2_exact_mmxext;
     }
 #endif /* HAVE_INLINE_ASM */
 
     if (CONFIG_H264QPEL) {
 #if HAVE_INLINE_ASM
-        SET_QPEL_FUNCS(put_qpel,        0, 16, mmx2, );
-        SET_QPEL_FUNCS(put_qpel,        1,  8, mmx2, );
-        SET_QPEL_FUNCS(put_no_rnd_qpel, 0, 16, mmx2, );
-        SET_QPEL_FUNCS(put_no_rnd_qpel, 1,  8, mmx2, );
-        SET_QPEL_FUNCS(avg_qpel,        0, 16, mmx2, );
-        SET_QPEL_FUNCS(avg_qpel,        1,  8, mmx2, );
+        SET_QPEL_FUNCS(put_qpel,        0, 16, mmxext, );
+        SET_QPEL_FUNCS(put_qpel,        1,  8, mmxext, );
+        SET_QPEL_FUNCS(put_no_rnd_qpel, 0, 16, mmxext, );
+        SET_QPEL_FUNCS(put_no_rnd_qpel, 1,  8, mmxext, );
+        SET_QPEL_FUNCS(avg_qpel,        0, 16, mmxext, );
+        SET_QPEL_FUNCS(avg_qpel,        1,  8, mmxext, );
 #endif /* HAVE_INLINE_ASM */
 
         if (!high_bit_depth) {
 #if HAVE_INLINE_ASM
-            SET_QPEL_FUNCS(put_h264_qpel, 0, 16, mmx2, );
-            SET_QPEL_FUNCS(put_h264_qpel, 1,  8, mmx2, );
-            SET_QPEL_FUNCS(put_h264_qpel, 2,  4, mmx2, );
-            SET_QPEL_FUNCS(avg_h264_qpel, 0, 16, mmx2, );
-            SET_QPEL_FUNCS(avg_h264_qpel, 1,  8, mmx2, );
-            SET_QPEL_FUNCS(avg_h264_qpel, 2,  4, mmx2, );
+            SET_QPEL_FUNCS(put_h264_qpel, 0, 16, mmxext, );
+            SET_QPEL_FUNCS(put_h264_qpel, 1,  8, mmxext, );
+            SET_QPEL_FUNCS(put_h264_qpel, 2,  4, mmxext, );
+            SET_QPEL_FUNCS(avg_h264_qpel, 0, 16, mmxext, );
+            SET_QPEL_FUNCS(avg_h264_qpel, 1,  8, mmxext, );
+            SET_QPEL_FUNCS(avg_h264_qpel, 2,  4, mmxext, );
 #endif /* HAVE_INLINE_ASM */
         } else if (bit_depth == 10) {
 #if HAVE_YASM
@@ -2539,10 +2539,10 @@ static void dsputil_init_mmx2(DSPContext *c, AVCodecContext *avctx,
         }
 
 #if HAVE_INLINE_ASM
-        SET_QPEL_FUNCS(put_2tap_qpel, 0, 16, mmx2, );
-        SET_QPEL_FUNCS(put_2tap_qpel, 1,  8, mmx2, );
-        SET_QPEL_FUNCS(avg_2tap_qpel, 0, 16, mmx2, );
-        SET_QPEL_FUNCS(avg_2tap_qpel, 1,  8, mmx2, );
+        SET_QPEL_FUNCS(put_2tap_qpel, 0, 16, mmxext, );
+        SET_QPEL_FUNCS(put_2tap_qpel, 1,  8, mmxext, );
+        SET_QPEL_FUNCS(avg_2tap_qpel, 0, 16, mmxext, );
+        SET_QPEL_FUNCS(avg_2tap_qpel, 1,  8, mmxext, );
 #endif /* HAVE_INLINE_ASM */
     }
 
@@ -2861,7 +2861,7 @@ void ff_dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx)
         dsputil_init_mmx(c, avctx, mm_flags);
 
     if (mm_flags & AV_CPU_FLAG_MMXEXT)
-        dsputil_init_mmx2(c, avctx, mm_flags);
+        dsputil_init_mmxext(c, avctx, mm_flags);
 
     if (mm_flags & AV_CPU_FLAG_3DNOW)
         dsputil_init_3dnow(c, avctx, mm_flags);

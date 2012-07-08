@@ -1002,36 +1002,36 @@ static void OPNAME ## h264_qpel16_hv_lowpass_ ## MMX(uint8_t *dst, int16_t *tmp,
     OPNAME ## h264_qpel8or16_hv_lowpass_ ## MMX(dst, tmp, src, dstStride, tmpStride, srcStride, 16);\
 }\
 
-#define put_pixels8_l2_sse2 put_pixels8_l2_mmx2
-#define avg_pixels8_l2_sse2 avg_pixels8_l2_mmx2
-#define put_pixels16_l2_sse2 put_pixels16_l2_mmx2
-#define avg_pixels16_l2_sse2 avg_pixels16_l2_mmx2
-#define put_pixels8_l2_ssse3 put_pixels8_l2_mmx2
-#define avg_pixels8_l2_ssse3 avg_pixels8_l2_mmx2
-#define put_pixels16_l2_ssse3 put_pixels16_l2_mmx2
-#define avg_pixels16_l2_ssse3 avg_pixels16_l2_mmx2
+#define put_pixels8_l2_sse2 put_pixels8_l2_mmxext
+#define avg_pixels8_l2_sse2 avg_pixels8_l2_mmxext
+#define put_pixels16_l2_sse2 put_pixels16_l2_mmxext
+#define avg_pixels16_l2_sse2 avg_pixels16_l2_mmxext
+#define put_pixels8_l2_ssse3 put_pixels8_l2_mmxext
+#define avg_pixels8_l2_ssse3 avg_pixels8_l2_mmxext
+#define put_pixels16_l2_ssse3 put_pixels16_l2_mmxext
+#define avg_pixels16_l2_ssse3 avg_pixels16_l2_mmxext
 
-#define put_pixels8_l2_shift5_sse2 put_pixels8_l2_shift5_mmx2
-#define avg_pixels8_l2_shift5_sse2 avg_pixels8_l2_shift5_mmx2
-#define put_pixels16_l2_shift5_sse2 put_pixels16_l2_shift5_mmx2
-#define avg_pixels16_l2_shift5_sse2 avg_pixels16_l2_shift5_mmx2
-#define put_pixels8_l2_shift5_ssse3 put_pixels8_l2_shift5_mmx2
-#define avg_pixels8_l2_shift5_ssse3 avg_pixels8_l2_shift5_mmx2
-#define put_pixels16_l2_shift5_ssse3 put_pixels16_l2_shift5_mmx2
-#define avg_pixels16_l2_shift5_ssse3 avg_pixels16_l2_shift5_mmx2
+#define put_pixels8_l2_shift5_sse2 put_pixels8_l2_shift5_mmxext
+#define avg_pixels8_l2_shift5_sse2 avg_pixels8_l2_shift5_mmxext
+#define put_pixels16_l2_shift5_sse2 put_pixels16_l2_shift5_mmxext
+#define avg_pixels16_l2_shift5_sse2 avg_pixels16_l2_shift5_mmxext
+#define put_pixels8_l2_shift5_ssse3 put_pixels8_l2_shift5_mmxext
+#define avg_pixels8_l2_shift5_ssse3 avg_pixels8_l2_shift5_mmxext
+#define put_pixels16_l2_shift5_ssse3 put_pixels16_l2_shift5_mmxext
+#define avg_pixels16_l2_shift5_ssse3 avg_pixels16_l2_shift5_mmxext
 
-#define put_h264_qpel8_h_lowpass_l2_sse2 put_h264_qpel8_h_lowpass_l2_mmx2
-#define avg_h264_qpel8_h_lowpass_l2_sse2 avg_h264_qpel8_h_lowpass_l2_mmx2
-#define put_h264_qpel16_h_lowpass_l2_sse2 put_h264_qpel16_h_lowpass_l2_mmx2
-#define avg_h264_qpel16_h_lowpass_l2_sse2 avg_h264_qpel16_h_lowpass_l2_mmx2
+#define put_h264_qpel8_h_lowpass_l2_sse2 put_h264_qpel8_h_lowpass_l2_mmxext
+#define avg_h264_qpel8_h_lowpass_l2_sse2 avg_h264_qpel8_h_lowpass_l2_mmxext
+#define put_h264_qpel16_h_lowpass_l2_sse2 put_h264_qpel16_h_lowpass_l2_mmxext
+#define avg_h264_qpel16_h_lowpass_l2_sse2 avg_h264_qpel16_h_lowpass_l2_mmxext
 
 #define put_h264_qpel8_v_lowpass_ssse3 put_h264_qpel8_v_lowpass_sse2
 #define avg_h264_qpel8_v_lowpass_ssse3 avg_h264_qpel8_v_lowpass_sse2
 #define put_h264_qpel16_v_lowpass_ssse3 put_h264_qpel16_v_lowpass_sse2
 #define avg_h264_qpel16_v_lowpass_ssse3 avg_h264_qpel16_v_lowpass_sse2
 
-#define put_h264_qpel8or16_hv2_lowpass_sse2 put_h264_qpel8or16_hv2_lowpass_mmx2
-#define avg_h264_qpel8or16_hv2_lowpass_sse2 avg_h264_qpel8or16_hv2_lowpass_mmx2
+#define put_h264_qpel8or16_hv2_lowpass_sse2 put_h264_qpel8or16_hv2_lowpass_mmxext
+#define avg_h264_qpel8or16_hv2_lowpass_sse2 avg_h264_qpel8or16_hv2_lowpass_mmxext
 
 #define H264_MC(OPNAME, SIZE, MMX, ALIGN) \
 H264_MC_C(OPNAME, SIZE, MMX, ALIGN)\
@@ -1045,8 +1045,8 @@ static void put_h264_qpel16_mc00_sse2 (uint8_t *dst, uint8_t *src, int stride){
 static void avg_h264_qpel16_mc00_sse2 (uint8_t *dst, uint8_t *src, int stride){
     avg_pixels16_sse2(dst, src, stride, 16);
 }
-#define put_h264_qpel8_mc00_sse2 put_h264_qpel8_mc00_mmx2
-#define avg_h264_qpel8_mc00_sse2 avg_h264_qpel8_mc00_mmx2
+#define put_h264_qpel8_mc00_sse2 put_h264_qpel8_mc00_mmxext
+#define avg_h264_qpel8_mc00_sse2 avg_h264_qpel8_mc00_mmxext
 
 #define H264_MC_C(OPNAME, SIZE, MMX, ALIGN) \
 static void OPNAME ## h264_qpel ## SIZE ## _mc00_ ## MMX (uint8_t *dst, uint8_t *src, int stride){\
@@ -1168,8 +1168,8 @@ QPEL_H264(put_,       PUT_OP, 3dnow)
 QPEL_H264(avg_, AVG_3DNOW_OP, 3dnow)
 #undef PAVGB
 #define PAVGB "pavgb"
-QPEL_H264(put_,       PUT_OP, mmx2)
-QPEL_H264(avg_,AVG_MMXEXT_OP, mmx2)
+QPEL_H264(put_,        PUT_OP, mmxext)
+QPEL_H264(avg_, AVG_MMXEXT_OP, mmxext)
 QPEL_H264_V_XMM(put_,       PUT_OP, sse2)
 QPEL_H264_V_XMM(avg_,AVG_MMXEXT_OP, sse2)
 QPEL_H264_HV_XMM(put_,       PUT_OP, sse2)
@@ -1185,7 +1185,7 @@ QPEL_H264_HV_XMM(avg_,AVG_MMXEXT_OP, ssse3)
 #undef PAVGB
 
 H264_MC_4816(3dnow)
-H264_MC_4816(mmx2)
+H264_MC_4816(mmxext)
 H264_MC_816(H264_MC_V, sse2)
 H264_MC_816(H264_MC_HV, sse2)
 #if HAVE_SSSE3_INLINE
