@@ -257,6 +257,7 @@ enum CodecID {
     CODEC_ID_ZEROCODEC,
     CODEC_ID_MSS1,
     CODEC_ID_MSA1,
+    CODEC_ID_TSCC2,
 
     /* various PCM "codecs" */
     CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs
