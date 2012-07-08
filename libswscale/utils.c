@@ -1001,18 +1001,18 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
                      (FFALIGN(srcW, 16) * 2 * FFALIGN(c->srcBpc, 8) >> 3) + 16,
                      fail);
     if (INLINE_MMXEXT(cpu_flags) && c->srcBpc == 8 && c->dstBpc <= 10) {
-        c->canMMX2BeUsed = (dstW >= srcW && (dstW & 31) == 0 &&
-                            (srcW & 15) == 0) ? 1 : 0;
-        if (!c->canMMX2BeUsed && dstW >= srcW && (srcW & 15) == 0
+        c->canMMXEXTBeUsed = (dstW >= srcW && (dstW & 31) == 0 &&
+                              (srcW & 15) == 0) ? 1 : 0;
+        if (!c->canMMXEXTBeUsed && dstW >= srcW && (srcW & 15) == 0
             && (flags & SWS_FAST_BILINEAR)) {
             if (flags & SWS_PRINT_INFO)
                 av_log(c, AV_LOG_INFO,
                        "output width is not a multiple of 32 -> no MMXEXT scaler\n");
         }
         if (usesHFilter)
-            c->canMMX2BeUsed = 0;
+            c->canMMXEXTBeUsed = 0;
     } else
-        c->canMMX2BeUsed = 0;
+        c->canMMXEXTBeUsed = 0;
 
     c->chrXInc = (((int64_t)c->chrSrcW << 16) + (c->chrDstW >> 1)) / c->chrDstW;
     c->chrYInc = (((int64_t)c->chrSrcH << 16) + (c->chrDstH >> 1)) / c->chrDstH;
@@ -1025,7 +1025,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
      * correct variant would be like the vertical one, but that would require
      * some special code for the first and last pixel */
     if (flags & SWS_FAST_BILINEAR) {
-        if (c->canMMX2BeUsed) {
+        if (c->canMMXEXTBeUsed) {
             c->lumXInc += 20;
             c->chrXInc += 20;
         }
@@ -1042,38 +1042,50 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
     {
 #if HAVE_MMXEXT_INLINE
 // can't downscale !!!
-        if (c->canMMX2BeUsed && (flags & SWS_FAST_BILINEAR)) {
-            c->lumMmx2FilterCodeSize = initMMX2HScaler(dstW, c->lumXInc, NULL,
-                                                       NULL, NULL, 8);
-            c->chrMmx2FilterCodeSize = initMMX2HScaler(c->chrDstW, c->chrXInc,
-                                                       NULL, NULL, NULL, 4);
+        if (c->canMMXEXTBeUsed && (flags & SWS_FAST_BILINEAR)) {
+            c->lumMmxextFilterCodeSize = initMMX2HScaler(dstW, c->lumXInc, NULL,
+                                                         NULL, NULL, 8);
+            c->chrMmxextFilterCodeSize = initMMX2HScaler(c->chrDstW, c->chrXInc,
+                                                         NULL, NULL, NULL, 4);
 
 #if USE_MMAP
-            c->lumMmx2FilterCode = mmap(NULL, c->lumMmx2FilterCodeSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-            c->chrMmx2FilterCode = mmap(NULL, c->chrMmx2FilterCodeSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+            c->lumMmxextFilterCode = mmap(NULL, c->lumMmxextFilterCodeSize,
+                                          PROT_READ | PROT_WRITE,
+                                          MAP_PRIVATE | MAP_ANONYMOUS,
+                                          -1, 0);
+            c->chrMmxextFilterCode = mmap(NULL, c->chrMmxextFilterCodeSize,
+                                          PROT_READ | PROT_WRITE,
+                                          MAP_PRIVATE | MAP_ANONYMOUS,
+                                          -1, 0);
 #elif HAVE_VIRTUALALLOC
-            c->lumMmx2FilterCode = VirtualAlloc(NULL, c->lumMmx2FilterCodeSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-            c->chrMmx2FilterCode = VirtualAlloc(NULL, c->chrMmx2FilterCodeSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+            c->lumMmxextFilterCode = VirtualAlloc(NULL,
+                                                  c->lumMmxextFilterCodeSize,
+                                                  MEM_COMMIT,
+                                                  PAGE_EXECUTE_READWRITE);
+            c->chrMmxextFilterCode = VirtualAlloc(NULL,
+                                                  c->chrMmxextFilterCodeSize,
+                                                  MEM_COMMIT,
+                                                  PAGE_EXECUTE_READWRITE);
 #else
-            c->lumMmx2FilterCode = av_malloc(c->lumMmx2FilterCodeSize);
-            c->chrMmx2FilterCode = av_malloc(c->chrMmx2FilterCodeSize);
+            c->lumMmxextFilterCode = av_malloc(c->lumMmxextFilterCodeSize);
+            c->chrMmxextFilterCode = av_malloc(c->chrMmxextFilterCodeSize);
 #endif
 
-            if (!c->lumMmx2FilterCode || !c->chrMmx2FilterCode)
+            if (!c->lumMmxextFilterCode || !c->chrMmxextFilterCode)
                 return AVERROR(ENOMEM);
             FF_ALLOCZ_OR_GOTO(c, c->hLumFilter,    (dstW           / 8 + 8) * sizeof(int16_t), fail);
             FF_ALLOCZ_OR_GOTO(c, c->hChrFilter,    (c->chrDstW     / 4 + 8) * sizeof(int16_t), fail);
             FF_ALLOCZ_OR_GOTO(c, c->hLumFilterPos, (dstW       / 2 / 8 + 8) * sizeof(int32_t), fail);
             FF_ALLOCZ_OR_GOTO(c, c->hChrFilterPos, (c->chrDstW / 2 / 4 + 8) * sizeof(int32_t), fail);
 
-            initMMX2HScaler(dstW, c->lumXInc, c->lumMmx2FilterCode,
+            initMMX2HScaler(dstW, c->lumXInc, c->lumMmxextFilterCode,
                             c->hLumFilter, c->hLumFilterPos, 8);
-            initMMX2HScaler(c->chrDstW, c->chrXInc, c->chrMmx2FilterCode,
+            initMMX2HScaler(c->chrDstW, c->chrXInc, c->chrMmxextFilterCode,
                             c->hChrFilter, c->hChrFilterPos, 4);
 
 #if USE_MMAP
-            mprotect(c->lumMmx2FilterCode, c->lumMmx2FilterCodeSize, PROT_EXEC | PROT_READ);
-            mprotect(c->chrMmx2FilterCode, c->chrMmx2FilterCodeSize, PROT_EXEC | PROT_READ);
+            mprotect(c->lumMmxextFilterCode, c->lumMmxextFilterCodeSize, PROT_EXEC | PROT_READ);
+            mprotect(c->chrMmxextFilterCode, c->chrMmxextFilterCodeSize, PROT_EXEC | PROT_READ);
 #endif
         } else
 #endif /* HAVE_MMXEXT_INLINE */
@@ -1651,21 +1663,21 @@ void sws_freeContext(SwsContext *c)
 
 #if HAVE_MMX_INLINE
 #if USE_MMAP
-    if (c->lumMmx2FilterCode)
-        munmap(c->lumMmx2FilterCode, c->lumMmx2FilterCodeSize);
-    if (c->chrMmx2FilterCode)
-        munmap(c->chrMmx2FilterCode, c->chrMmx2FilterCodeSize);
+    if (c->lumMmxextFilterCode)
+        munmap(c->lumMmxextFilterCode, c->lumMmxextFilterCodeSize);
+    if (c->chrMmxextFilterCode)
+        munmap(c->chrMmxextFilterCode, c->chrMmxextFilterCodeSize);
 #elif HAVE_VIRTUALALLOC
-    if (c->lumMmx2FilterCode)
-        VirtualFree(c->lumMmx2FilterCode, 0, MEM_RELEASE);
-    if (c->chrMmx2FilterCode)
-        VirtualFree(c->chrMmx2FilterCode, 0, MEM_RELEASE);
+    if (c->lumMmxextFilterCode)
+        VirtualFree(c->lumMmxextFilterCode, 0, MEM_RELEASE);
+    if (c->chrMmxextFilterCode)
+        VirtualFree(c->chrMmxextFilterCode, 0, MEM_RELEASE);
 #else
-    av_free(c->lumMmx2FilterCode);
-    av_free(c->chrMmx2FilterCode);
+    av_free(c->lumMmxextFilterCode);
+    av_free(c->chrMmxextFilterCode);
 #endif
-    c->lumMmx2FilterCode = NULL;
-    c->chrMmx2FilterCode = NULL;
+    c->lumMmxextFilterCode = NULL;
+    c->chrMmxextFilterCode = NULL;
 #endif /* HAVE_MMX_INLINE */
 
     av_freep(&c->yuvTable);
