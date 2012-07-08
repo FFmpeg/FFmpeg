@@ -170,6 +170,9 @@ fate-mpeg2-field-enc: CMD = framecrc -flags +bitexact -dct fastint -idct simple 
 FATE_VIDEO += fate-nuv
 fate-nuv: CMD = framecrc -idct simple -i $(SAMPLES)/nuv/Today.nuv -an
 
+FATE_VIDEO += fate-paf-video
+fate-paf-video: CMD = framecrc -i $(SAMPLES)/paf/hod1-partial.paf -pix_fmt rgb24 -an
+
 FATE_VIDEO += fate-qpeg
 fate-qpeg: CMD = framecrc -i $(SAMPLES)/qpeg/Clock.avi -an -pix_fmt rgb24
 
