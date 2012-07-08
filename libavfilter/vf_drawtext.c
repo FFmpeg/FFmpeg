@@ -812,6 +812,7 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
 {
     AVFilterContext *ctx = inlink->dst;
     DrawTextContext *dtext = ctx->priv;
+    AVFilterBufferRef *buf_out;
     int fail = 0;
 
     if (dtext_prepare_text(ctx) < 0) {
@@ -850,7 +851,8 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
             (int)dtext->var_values[VAR_N], dtext->var_values[VAR_T],
             dtext->x, dtext->y, dtext->x+dtext->w, dtext->y+dtext->h);
 
-    ff_start_frame(inlink->dst->outputs[0], inpicref);
+    buf_out = avfilter_ref_buffer(inpicref, ~0);
+    ff_start_frame(inlink->dst->outputs[0], buf_out);
 }
 
 static void end_frame(AVFilterLink *inlink)
@@ -866,6 +868,7 @@ static void end_frame(AVFilterLink *inlink)
 
     ff_draw_slice(outlink, 0, picref->video->h, 1);
     ff_end_frame(outlink);
+    avfilter_unref_buffer(inlink->cur_buf);
 }
 
 AVFilter avfilter_vf_drawtext = {
