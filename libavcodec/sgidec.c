@@ -58,7 +58,7 @@ static int expand_rle_row(SgiState *s, uint8_t *out_buf,
         }
 
         /* Check for buffer overflow. */
-        if(out_buf + pixelstride * count >= out_end) return -1;
+        if(out_buf + pixelstride * (count-1) >= out_end) return -1;
 
         if (pixel & 0x80) {
             while (count--) {
