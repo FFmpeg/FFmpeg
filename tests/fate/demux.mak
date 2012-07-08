@@ -46,6 +46,9 @@ fate-nsv-demux: CMD = framecrc -i $(SAMPLES)/nsv/witchblade-51kbps.nsv -t 6 -vco
 FATE_SAMPLES_DEMUX += fate-oma-demux
 fate-oma-demux: CMD = crc -i $(SAMPLES)/oma/01-Untitled-partial.oma -acodec copy
 
+FATE_SAMPLES_DEMUX += fate-paf-demux
+fate-paf-demux: CMD = framecrc -i $(SAMPLES)/paf/hod1-partial.paf -vcodec copy -acodec copy
+
 FATE_SAMPLES_DEMUX += fate-psx-str-demux
 fate-psx-str-demux: CMD = framecrc -i $(SAMPLES)/psx-str/descent-partial.str -c copy
 
