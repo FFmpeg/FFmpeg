@@ -226,7 +226,7 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
         outpicref->video->w = outlink->w;
         outpicref->video->h = outlink->h;
     } else
-        outpicref = inpicref;
+        outpicref = avfilter_ref_buffer(inpicref, ~0);
 
     outlink->out_buf = outpicref;
     ff_start_frame(outlink, avfilter_ref_buffer(outpicref, ~0));
@@ -240,7 +240,7 @@ static void end_frame(AVFilterLink *inlink)
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFilterBufferRef *inpicref  = inlink ->cur_buf;
     AVFilterBufferRef *outpicref = outlink->out_buf;
-    int direct = inpicref == outpicref;
+    int direct = inpicref->buf == outpicref->buf;
     int hsub0 = av_pix_fmt_descriptors[inlink->format].log2_chroma_w;
     int vsub0 = av_pix_fmt_descriptors[inlink->format].log2_chroma_h;
     int plane;
@@ -261,8 +261,7 @@ static void end_frame(AVFilterLink *inlink)
     ff_draw_slice(outlink, 0, inlink->h, 1);
     ff_end_frame(outlink);
     avfilter_unref_buffer(inpicref);
-    if (!direct)
-        avfilter_unref_buffer(outpicref);
+    avfilter_unref_buffer(outpicref);
 }
 
 AVFilter avfilter_vf_delogo = {
