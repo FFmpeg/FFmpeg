@@ -112,7 +112,7 @@ SECTION .text
     movd            %3, %1
 %endmacro
 
-%macro HSUM_MMX2 3
+%macro HSUM_MMXEXT 3
     pshufw          %2, %1, 0xE
     paddusw         %1, %2
     pshufw          %2, %1, 0x1
@@ -263,12 +263,12 @@ INIT_MMX
 %define HSUM HSUM_MMX
 HADAMARD8_DIFF_MMX mmx
 
-%define ABS1 ABS1_MMX2
-%define HSUM HSUM_MMX2
+%define ABS1 ABS1_MMXEXT
+%define HSUM HSUM_MMXEXT
 HADAMARD8_DIFF_MMX mmx2
 
 INIT_XMM
-%define ABS2 ABS2_MMX2
+%define ABS2 ABS2_MMXEXT
 %if ARCH_X86_64
 %define ABS_SUM_8x8 ABS_SUM_8x8_64
 %else

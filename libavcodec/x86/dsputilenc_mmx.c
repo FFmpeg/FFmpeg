@@ -888,7 +888,7 @@ static void sub_hfyu_median_prediction_mmx2(uint8_t *dst, const uint8_t *src1, c
     "pxor " #z ", " #a "              \n\t"\
     "psubw " #z ", " #a "             \n\t"
 
-#define MMABS_MMX2(a,z)\
+#define MMABS_MMXEXT(a, z)                 \
     "pxor " #z ", " #z "              \n\t"\
     "psubw " #a ", " #z "             \n\t"\
     "pmaxsw " #z ", " #a "            \n\t"
@@ -912,7 +912,7 @@ static void sub_hfyu_median_prediction_mmx2(uint8_t *dst, const uint8_t *src1, c
     "paddusw "#t", "#a"               \n\t"\
     "movd "#a", "#dst"                \n\t"\
 
-#define HSUM_MMX2(a, t, dst)\
+#define HSUM_MMXEXT(a, t, dst)             \
     "pshufw $0x0E, "#a", "#t"         \n\t"\
     "paddusw "#t", "#a"               \n\t"\
     "pshufw $0x01, "#a", "#t"         \n\t"\
@@ -974,8 +974,8 @@ DCT_SAD_FUNC(mmx)
 #undef MMABS
 #undef HSUM
 
-#define HSUM(a,t,dst) HSUM_MMX2(a,t,dst)
-#define MMABS(a,z)    MMABS_MMX2(a,z)
+#define HSUM(a,t,dst) HSUM_MMXEXT(a,t,dst)
+#define MMABS(a,z)    MMABS_MMXEXT(a,z)
 DCT_SAD_FUNC(mmx2)
 #undef HSUM
 #undef DCT_SAD

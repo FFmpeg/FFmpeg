@@ -519,7 +519,7 @@ static void RENAME(yuv2rgb555_X)(SwsContext *c, const int16_t *lumFilter,
     "cmp     "#dstw", "#index"  \n\t"\
     " jb          1b            \n\t"
 
-#define WRITEBGR24MMX2(dst, dstw, index) \
+#define WRITEBGR24MMXEXT(dst, dstw, index) \
     /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */\
     "movq "MANGLE(ff_M24A)", %%mm0 \n\t"\
     "movq "MANGLE(ff_M24C)", %%mm7 \n\t"\
@@ -569,7 +569,7 @@ static void RENAME(yuv2rgb555_X)(SwsContext *c, const int16_t *lumFilter,
 
 #if COMPILE_TEMPLATE_MMXEXT
 #undef WRITEBGR24
-#define WRITEBGR24(dst, dstw, index)  WRITEBGR24MMX2(dst, dstw, index)
+#define WRITEBGR24(dst, dstw, index)  WRITEBGR24MMXEXT(dst, dstw, index)
 #else
 #undef WRITEBGR24
 #define WRITEBGR24(dst, dstw, index)  WRITEBGR24MMX(dst, dstw, index)
@@ -1411,7 +1411,7 @@ static void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
         PREFETCH"      64(%%"REG_c")            \n\t"
 
 #if ARCH_X86_64
-#define CALL_MMX2_FILTER_CODE \
+#define CALL_MMXEXT_FILTER_CODE \
         "movl            (%%"REG_b"), %%esi     \n\t"\
         "call                    *%4            \n\t"\
         "movl (%%"REG_b", %%"REG_a"), %%esi     \n\t"\
@@ -1420,7 +1420,7 @@ static void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
         "xor               %%"REG_a", %%"REG_a" \n\t"\
 
 #else
-#define CALL_MMX2_FILTER_CODE \
+#define CALL_MMXEXT_FILTER_CODE \
         "movl (%%"REG_b"), %%esi        \n\t"\
         "call         *%4                       \n\t"\
         "addl (%%"REG_b", %%"REG_a"), %%"REG_c" \n\t"\
@@ -1429,14 +1429,14 @@ static void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
 
 #endif /* ARCH_X86_64 */
 
-        CALL_MMX2_FILTER_CODE
-        CALL_MMX2_FILTER_CODE
-        CALL_MMX2_FILTER_CODE
-        CALL_MMX2_FILTER_CODE
-        CALL_MMX2_FILTER_CODE
-        CALL_MMX2_FILTER_CODE
-        CALL_MMX2_FILTER_CODE
-        CALL_MMX2_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
 
 #if defined(PIC)
         "mov                      %5, %%"REG_b" \n\t"
@@ -1506,10 +1506,10 @@ static void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst1, int16_t *dst2,
         PREFETCH" 32(%%"REG_c")             \n\t"
         PREFETCH" 64(%%"REG_c")             \n\t"
 
-        CALL_MMX2_FILTER_CODE
-        CALL_MMX2_FILTER_CODE
-        CALL_MMX2_FILTER_CODE
-        CALL_MMX2_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
         "xor          %%"REG_a", %%"REG_a"  \n\t" // i
         "mov                 %5, %%"REG_c"  \n\t" // src
         "mov                 %6, %%"REG_D"  \n\t" // buf2
@@ -1517,10 +1517,10 @@ static void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst1, int16_t *dst2,
         PREFETCH" 32(%%"REG_c")             \n\t"
         PREFETCH" 64(%%"REG_c")             \n\t"
 
-        CALL_MMX2_FILTER_CODE
-        CALL_MMX2_FILTER_CODE
-        CALL_MMX2_FILTER_CODE
-        CALL_MMX2_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
 
 #if defined(PIC)
         "mov %7, %%"REG_b"    \n\t"
