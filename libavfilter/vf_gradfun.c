@@ -191,7 +191,7 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
         outpicref->video->w = outlink->w;
         outpicref->video->h = outlink->h;
     } else
-        outpicref = inpicref;
+        outpicref = avfilter_ref_buffer(inpicref, ~0);
 
     outlink->out_buf = outpicref;
     ff_start_frame(outlink, avfilter_ref_buffer(outpicref, ~0));
@@ -226,8 +226,7 @@ static void end_frame(AVFilterLink *inlink)
     ff_draw_slice(outlink, 0, inlink->h, 1);
     ff_end_frame(outlink);
     avfilter_unref_buffer(inpic);
-    if (outpic != inpic)
-        avfilter_unref_buffer(outpic);
+    avfilter_unref_buffer(outpic);
 }
 
 AVFilter avfilter_vf_gradfun = {
