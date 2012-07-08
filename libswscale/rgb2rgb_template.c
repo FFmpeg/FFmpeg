@@ -77,7 +77,7 @@ static inline void rgb32tobgr24_c(const uint8_t *src, uint8_t *dst,
 /*
  * original by Strepto/Astral
  * ported to gcc & bugfixed: A'rpi
- * MMX2, 3DNOW optimization by Nick Kurshev
+ * MMXEXT, 3DNOW optimization by Nick Kurshev
  * 32-bit C version, and and&add trick by Michael Niedermayer
  */
 static inline void rgb15to16_c(const uint8_t *src, uint8_t *dst, int src_size)

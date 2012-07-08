@@ -218,10 +218,10 @@ cglobal yuv2planeX_%1, %3, 8, %2, filter, fltsize, src, dst, w, dither, offset
 %else ; %1 == 9/10
 %if cpuflag(sse4)
     packusdw        m2,  m1
-%else ; mmx2/sse2
+%else ; mmxext/sse2
     packssdw        m2,  m1
     pmaxsw          m2,  m6
-%endif ; mmx2/sse2/sse4/avx
+%endif ; mmxext/sse2/sse4/avx
     pminsw          m2, [yuv2yuvX_%1_upper]
 %endif ; %1 == 9/10/16
     mova   [dstq+r5*2],  m2

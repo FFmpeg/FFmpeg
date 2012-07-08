@@ -616,7 +616,7 @@ static int initMMX2HScaler(int dstW, int xInc, uint8_t *filterCode,
     int xpos, i;
 
     // create an optimized horizontal scaling routine
-    /* This scaler is made of runtime-generated MMX2 code using specially tuned
+    /* This scaler is made of runtime-generated MMXEXT code using specially tuned
      * pshufw instructions. For every four output pixels, if four input pixels
      * are enough for the fast bilinear scaling, then a chunk of fragmentB is
      * used. If five input pixels are needed, then a chunk of fragmentA is used.
@@ -1007,7 +1007,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
             && (flags & SWS_FAST_BILINEAR)) {
             if (flags & SWS_PRINT_INFO)
                 av_log(c, AV_LOG_INFO,
-                       "output width is not a multiple of 32 -> no MMX2 scaler\n");
+                       "output width is not a multiple of 32 -> no MMXEXT scaler\n");
         }
         if (usesHFilter)
             c->canMMX2BeUsed = 0;
@@ -1237,7 +1237,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
                sws_format_name(dstFormat));
 
         if (INLINE_MMXEXT(cpu_flags))
-            av_log(c, AV_LOG_INFO, "using MMX2\n");
+            av_log(c, AV_LOG_INFO, "using MMXEXT\n");
         else if (INLINE_AMD3DNOW(cpu_flags))
             av_log(c, AV_LOG_INFO, "using 3DNOW\n");
         else if (INLINE_MMX(cpu_flags))

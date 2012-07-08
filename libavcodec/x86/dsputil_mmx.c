@@ -205,11 +205,11 @@ DECLARE_ALIGNED(16, const double, ff_pd_2)[2] = { 2.0, 2.0 };
 #undef OP_AVG
 
 /***********************************/
-/* MMX2 specific */
+/* MMXEXT specific */
 
 #define DEF(x) x ## _mmx2
 
-/* Introduced only in MMX2 set */
+/* Introduced only in MMXEXT set */
 #define PAVGB "pavgb"
 #define OP_AVG PAVGB
 

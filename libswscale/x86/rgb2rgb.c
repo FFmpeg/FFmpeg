@@ -84,7 +84,7 @@ DECLARE_ASM_CONST(8, uint64_t, blue_15mask)  = 0x0000001f0000001fULL;
 #define RV ((int)( 0.439*(1<<RGB2YUV_SHIFT)+0.5))
 #define RU ((int)(-0.148*(1<<RGB2YUV_SHIFT)+0.5))
 
-//Note: We have C, MMX, MMX2, 3DNOW versions, there is no 3DNOW + MMX2 one.
+// Note: We have C, MMX, MMXEXT, 3DNOW versions, there is no 3DNOW + MMXEXT one.
 
 #define COMPILE_TEMPLATE_MMXEXT 0
 #define COMPILE_TEMPLATE_AMD3DNOW 0
@@ -95,7 +95,7 @@ DECLARE_ASM_CONST(8, uint64_t, blue_15mask)  = 0x0000001f0000001fULL;
 #define RENAME(a) a ## _MMX
 #include "rgb2rgb_template.c"
 
-//MMX2 versions
+// MMXEXT versions
 #undef RENAME
 #undef COMPILE_TEMPLATE_MMXEXT
 #define COMPILE_TEMPLATE_MMXEXT 1
@@ -123,7 +123,7 @@ DECLARE_ASM_CONST(8, uint64_t, blue_15mask)  = 0x0000001f0000001fULL;
 /*
  RGB15->RGB16 original by Strepto/Astral
  ported to gcc & bugfixed : A'rpi
- MMX2, 3DNOW optimization by Nick Kurshev
+ MMXEXT, 3DNOW optimization by Nick Kurshev
  32-bit C version, and and&add trick by Michael Niedermayer
 */
 
