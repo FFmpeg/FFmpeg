@@ -26,6 +26,7 @@
  */
 
 #include "libavutil/imgutils.h"
+#include "libavutil/avassert.h"
 #include "avfilter.h"
 #include "internal.h"
 
@@ -338,7 +339,7 @@ static int poll_frame(AVFilterLink *outlink)
             return ret;
         val = ff_poll_frame(inlink);
     }
-    assert(tinterlace->next);
+    av_assert0(tinterlace->next);
 
     return val;
 }
