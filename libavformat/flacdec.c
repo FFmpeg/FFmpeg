@@ -38,10 +38,6 @@ static int parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
     int type, width, height;
     int len, ret = 0;
 
-    st = avformat_new_stream(s, NULL);
-    if (!st)
-        return AVERROR(ENOMEM);
-
     pb = avio_alloc_context(buf, buf_size, 0, NULL, NULL, NULL, NULL);
     if (!pb)
         return AVERROR(ENOMEM);
@@ -50,8 +46,11 @@ static int parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
     type      = avio_rb32(pb);
     if (type >= FF_ARRAY_ELEMS(ff_id3v2_picture_types) || type < 0) {
         av_log(s, AV_LOG_ERROR, "Invalid picture type: %d.\n", type);
-        ret = AVERROR_INVALIDDATA;
-        goto fail;
+        if (s->error_recognition & AV_EF_EXPLODE) {
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
+        type = 0;
     }
 
     /* picture mimetype */
@@ -60,7 +59,8 @@ static int parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
         avio_read(pb, mimetype, FFMIN(len, sizeof(mimetype) - 1)) != len) {
         av_log(s, AV_LOG_ERROR, "Could not read mimetype from an attached "
                "picture.\n");
-        ret = AVERROR_INVALIDDATA;
+        if (s->error_recognition & AV_EF_EXPLODE)
+            ret = AVERROR_INVALIDDATA;
         goto fail;
     }
     mimetype[len] = 0;
@@ -75,7 +75,8 @@ static int parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
     if (id == CODEC_ID_NONE) {
         av_log(s, AV_LOG_ERROR, "Unknown attached picture mimetype: %s.\n",
                mimetype);
-        ret = AVERROR_INVALIDDATA;
+        if (s->error_recognition & AV_EF_EXPLODE)
+            ret = AVERROR_INVALIDDATA;
         goto fail;
     }
 
@@ -88,7 +89,9 @@ static int parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
         }
 
         if (avio_read(pb, desc, len) != len) {
-            ret = AVERROR(EIO);
+            av_log(s, AV_LOG_ERROR, "Error reading attached picture description.\n");
+            if (s->error_recognition & AV_EF_EXPLODE)
+                ret = AVERROR(EIO);
             goto fail;
         }
         desc[len] = 0;
@@ -102,7 +105,9 @@ static int parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
     /* picture data */
     len = avio_rb32(pb);
     if (len <= 0) {
-        ret = AVERROR_INVALIDDATA;
+        av_log(s, AV_LOG_ERROR, "Invalid attached picture size: %d.\n", len);
+        if (s->error_recognition & AV_EF_EXPLODE)
+            ret = AVERROR_INVALIDDATA;
         goto fail;
     }
     if (!(data = av_malloc(len))) {
@@ -110,7 +115,15 @@ static int parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
         goto fail;
     }
     if (avio_read(pb, data, len) != len) {
-        ret = AVERROR(EIO);
+        av_log(s, AV_LOG_ERROR, "Error reading attached picture data.\n");
+        if (s->error_recognition & AV_EF_EXPLODE)
+            ret = AVERROR(EIO);
+        goto fail;
+    }
+
+    st = avformat_new_stream(s, NULL);
+    if (!st) {
+        ret = AVERROR(ENOMEM);
         goto fail;
     }
 

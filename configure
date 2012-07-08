@@ -1253,6 +1253,7 @@ HAVE_LIST="
     poll_h
     posix_memalign
     pthread_cancel
+    rdtsc
     round
     roundf
     sched_getaffinity
@@ -2946,6 +2947,8 @@ extern_prefix=${sym%%ff_extern*}
 check_cc <<EOF && enable inline_asm
 void foo(void) { __asm__ volatile ("" ::); }
 EOF
+
+check_code cc intrin.h "__rdtsc()" && enable rdtsc
 
 _restrict=
 for restrict_keyword in restrict __restrict__ __restrict; do
