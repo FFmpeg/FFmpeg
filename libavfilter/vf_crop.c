@@ -240,7 +240,7 @@ static int config_output(AVFilterLink *link)
     return 0;
 }
 
-static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
+static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
     AVFilterContext *ctx = link->dst;
     CropContext *crop = ctx->priv;
@@ -248,6 +248,9 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     int i;
 
     ref2 = avfilter_ref_buffer(picref, ~0);
+    if (!ref2)
+        return AVERROR(ENOMEM);
+
     ref2->video->w = crop->w;
     ref2->video->h = crop->h;
 
@@ -291,7 +294,7 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
         ref2->data[3] += crop->x * crop->max_step[3];
     }
 
-    ff_start_frame(link->dst->outputs[0], ref2);
+    return ff_start_frame(link->dst->outputs[0], ref2);
 }
 
 static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)

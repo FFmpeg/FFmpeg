@@ -47,20 +47,16 @@ static av_cold void uninit(AVFilterContext *ctx)
         av_audio_fifo_free(sink->audio_fifo);
 }
 
-static void start_frame(AVFilterLink *link, AVFilterBufferRef *buf)
+static int start_frame(AVFilterLink *link, AVFilterBufferRef *buf)
 {
     BufferSinkContext *s = link->dst->priv;
 
     av_assert0(!s->cur_buf);
     s->cur_buf    = buf;
     link->cur_buf = NULL;
-};
 
-static int filter_samples(AVFilterLink *link, AVFilterBufferRef *buf)
-{
-    start_frame(link, buf);
     return 0;
-}
+};
 
 int av_buffersink_read(AVFilterContext *ctx, AVFilterBufferRef **buf)
 {
@@ -166,7 +162,7 @@ AVFilter avfilter_asink_abuffer = {
 
     .inputs    = (const AVFilterPad[]) {{ .name           = "default",
                                           .type           = AVMEDIA_TYPE_AUDIO,
-                                          .filter_samples = filter_samples,
+                                          .filter_samples = start_frame,
                                           .min_perms      = AV_PERM_READ,
                                           .needs_fifo     = 1 },
                                         { .name = NULL }},

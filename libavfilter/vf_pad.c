@@ -299,12 +299,15 @@ static int does_clip(PadContext *pad, AVFilterBufferRef *outpicref, int plane, i
     return 0;
 }
 
-static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
+static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
 {
     PadContext *pad = inlink->dst->priv;
     AVFilterBufferRef *outpicref = avfilter_ref_buffer(inpicref, ~0);
     AVFilterBufferRef *for_next_filter;
-    int plane;
+    int plane, ret = 0;
+
+    if (!outpicref)
+        return AVERROR(ENOMEM);
 
     for (plane = 0; plane < 4 && outpicref->data[plane]; plane++) {
         int hsub = (plane == 1 || plane == 2) ? pad->hsub : 0;
@@ -332,16 +335,31 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
         outpicref = ff_get_video_buffer(inlink->dst->outputs[0], AV_PERM_WRITE | AV_PERM_NEG_LINESIZES,
                                         FFMAX(inlink->w, pad->w),
                                         FFMAX(inlink->h, pad->h));
+        if (!outpicref)
+            return AVERROR(ENOMEM);
+
         avfilter_copy_buffer_ref_props(outpicref, inpicref);
     }
-
-    inlink->dst->outputs[0]->out_buf = outpicref;
 
     outpicref->video->w = pad->w;
     outpicref->video->h = pad->h;
 
     for_next_filter = avfilter_ref_buffer(outpicref, ~0);
-    ff_start_frame(inlink->dst->outputs[0], for_next_filter);
+    if (!for_next_filter) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    ret = ff_start_frame(inlink->dst->outputs[0], for_next_filter);
+    if (ret < 0)
+        goto fail;
+
+    inlink->dst->outputs[0]->out_buf = outpicref;
+    return 0;
+
+fail:
+    avfilter_unref_bufferp(&outpicref);
+    return ret;
 }
 
 static void end_frame(AVFilterLink *link)

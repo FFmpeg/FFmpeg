@@ -117,12 +117,15 @@ static int config_props_output(AVFilterLink *outlink)
     return 0;
 }
 
-static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
+static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
     AVFilterLink *outlink = inlink->dst->outputs[0];
 
     outlink->out_buf = ff_get_video_buffer(outlink, AV_PERM_WRITE,
                                            outlink->w, outlink->h);
+    if (!outlink->out_buf)
+        return AVERROR(ENOMEM);
+
     outlink->out_buf->pts = picref->pts;
 
     if (picref->video->pixel_aspect.num == 0) {
@@ -132,7 +135,7 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
         outlink->out_buf->video->pixel_aspect.den = picref->video->pixel_aspect.num;
     }
 
-    ff_start_frame(outlink, avfilter_ref_buffer(outlink->out_buf, ~0));
+    return ff_start_frame(outlink, avfilter_ref_buffer(outlink->out_buf, ~0));
 }
 
 static void end_frame(AVFilterLink *inlink)

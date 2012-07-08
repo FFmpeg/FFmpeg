@@ -160,13 +160,15 @@ AVFilterBufferRef *ff_get_video_buffer(AVFilterLink *link, int perms, int w, int
     return ret;
 }
 
-void ff_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
+int ff_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
     AVFilterBufferRef *buf_out = avfilter_ref_buffer(picref, ~0);
-    ff_start_frame(link->dst->outputs[0], buf_out);
+    if (!buf_out)
+        return AVERROR(ENOMEM);
+    return ff_start_frame(link->dst->outputs[0], buf_out);
 }
 
-static void default_start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
+static int default_start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
     AVFilterLink *outlink = NULL;
 
@@ -175,18 +177,29 @@ static void default_start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 
     if (outlink) {
         outlink->out_buf = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+        if (!outlink->out_buf)
+            return AVERROR(ENOMEM);
+
         avfilter_copy_buffer_ref_props(outlink->out_buf, picref);
-        ff_start_frame(outlink, avfilter_ref_buffer(outlink->out_buf, ~0));
+        return ff_start_frame(outlink, avfilter_ref_buffer(outlink->out_buf, ~0));
     }
+    return 0;
+}
+
+static void clear_link(AVFilterLink *link)
+{
+    avfilter_unref_bufferp(&link->cur_buf);
+    avfilter_unref_bufferp(&link->src_buf);
+    avfilter_unref_bufferp(&link->out_buf);
 }
 
 /* XXX: should we do the duplicating of the picture ref here, instead of
  * forcing the source filter to do it? */
-void ff_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
+int ff_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
-    void (*start_frame)(AVFilterLink *, AVFilterBufferRef *);
+    int (*start_frame)(AVFilterLink *, AVFilterBufferRef *);
     AVFilterPad *dst = link->dstpad;
-    int perms = picref->perms;
+    int ret, perms = picref->perms;
 
     FF_DPRINTF_START(NULL, start_frame); ff_dlog_link(NULL, link, 0); av_dlog(NULL, " "); ff_dlog_ref(NULL, picref, 1);
 
@@ -203,13 +216,22 @@ void ff_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
                 link->dstpad->min_perms, link->dstpad->rej_perms);
 
         link->cur_buf = ff_get_video_buffer(link, dst->min_perms, link->w, link->h);
+        if (!link->cur_buf) {
+            avfilter_unref_bufferp(&picref);
+            return AVERROR(ENOMEM);
+        }
+
         link->src_buf = picref;
         avfilter_copy_buffer_ref_props(link->cur_buf, link->src_buf);
     }
     else
         link->cur_buf = picref;
 
-    start_frame(link, link->cur_buf);
+    ret = start_frame(link, link->cur_buf);
+    if (ret < 0)
+        clear_link(link);
+
+    return ret;
 }
 
 void ff_null_end_frame(AVFilterLink *link)
@@ -238,14 +260,7 @@ void ff_end_frame(AVFilterLink *link)
 
     end_frame(link);
 
-    /* unreference the source picture if we're feeding the destination filter
-     * a copied version dues to permission issues */
-    if (link->src_buf) {
-        avfilter_unref_buffer(link->src_buf);
-        link->src_buf = NULL;
-    }
-    avfilter_unref_bufferp(&link->cur_buf);
-    avfilter_unref_bufferp(&link->out_buf);
+    clear_link(link);
 }
 
 void ff_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)

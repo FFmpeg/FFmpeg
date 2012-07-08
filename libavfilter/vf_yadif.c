@@ -201,7 +201,7 @@ static void return_frame(AVFilterContext *ctx, int is_second)
     yadif->frame_pending = (yadif->mode&1) && !is_second;
 }
 
-static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
+static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
     AVFilterContext *ctx = link->dst;
     YADIFContext *yadif = ctx->priv;
@@ -216,7 +216,7 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     yadif->next = picref;
 
     if (!yadif->cur)
-        return;
+        return 0;
 
     if (yadif->auto_enable && !yadif->cur->video->interlaced) {
         yadif->out  = avfilter_ref_buffer(yadif->cur, AV_PERM_READ);
@@ -224,8 +224,7 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
         yadif->prev = NULL;
         if (yadif->out->pts != AV_NOPTS_VALUE)
             yadif->out->pts *= 2;
-        ff_start_frame(ctx->outputs[0], yadif->out);
-        return;
+        return ff_start_frame(ctx->outputs[0], yadif->out);
     }
 
     if (!yadif->prev)
@@ -238,7 +237,7 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     yadif->out->video->interlaced = 0;
     if (yadif->out->pts != AV_NOPTS_VALUE)
         yadif->out->pts *= 2;
-    ff_start_frame(ctx->outputs[0], yadif->out);
+    return ff_start_frame(ctx->outputs[0], yadif->out);
 }
 
 static void end_frame(AVFilterLink *link)

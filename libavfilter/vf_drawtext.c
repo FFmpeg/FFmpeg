@@ -808,16 +808,16 @@ static inline int normalize_double(int *n, double d)
     return ret;
 }
 
-static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
+static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
 {
     AVFilterContext *ctx = inlink->dst;
     DrawTextContext *dtext = ctx->priv;
     AVFilterBufferRef *buf_out;
-    int fail = 0;
+    int ret = 0;
 
-    if (dtext_prepare_text(ctx) < 0) {
+    if ((ret = dtext_prepare_text(ctx)) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Can't draw text\n");
-        fail = 1;
+        return ret;
     }
 
     dtext->var_values[VAR_T] = inpicref->pts == AV_NOPTS_VALUE ?
@@ -829,8 +829,7 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     dtext->var_values[VAR_X] =
         av_expr_eval(dtext->x_pexpr, dtext->var_values, &dtext->prng);
 
-    dtext->draw = fail ? 0 :
-        av_expr_eval(dtext->d_pexpr, dtext->var_values, &dtext->prng);
+    dtext->draw = av_expr_eval(dtext->d_pexpr, dtext->var_values, &dtext->prng);
 
     normalize_double(&dtext->x, dtext->var_values[VAR_X]);
     normalize_double(&dtext->y, dtext->var_values[VAR_Y]);
@@ -852,7 +851,10 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
             dtext->x, dtext->y, dtext->x+dtext->w, dtext->y+dtext->h);
 
     buf_out = avfilter_ref_buffer(inpicref, ~0);
-    ff_start_frame(inlink->dst->outputs[0], buf_out);
+    if (!buf_out)
+        return AVERROR(ENOMEM);
+
+    return ff_start_frame(inlink->dst->outputs[0], buf_out);
 }
 
 static void end_frame(AVFilterLink *inlink)

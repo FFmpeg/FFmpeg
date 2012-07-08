@@ -227,7 +227,7 @@ static int select_frame(AVFilterContext *ctx, AVFilterBufferRef *picref)
     return res;
 }
 
-static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
+static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
     SelectContext *select = inlink->dst->priv;
 
@@ -241,10 +241,12 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
             else
                 av_fifo_generic_write(select->pending_frames, &picref,
                                       sizeof(picref), NULL);
-            return;
+            return 0;
         }
-        ff_start_frame(inlink->dst->outputs[0], avfilter_ref_buffer(picref, ~0));
+        return ff_start_frame(inlink->dst->outputs[0], avfilter_ref_buffer(picref, ~0));
     }
+
+    return 0;
 }
 
 static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)

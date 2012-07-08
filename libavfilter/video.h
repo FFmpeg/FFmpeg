@@ -39,7 +39,7 @@ AVFilterBufferRef *ff_null_get_video_buffer(AVFilterLink *link, int perms, int w
 AVFilterBufferRef *ff_get_video_buffer(AVFilterLink *link, int perms,
                                        int w, int h);
 
-void ff_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
+int ff_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
 void ff_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
 void ff_null_end_frame(AVFilterLink *link);
 
@@ -51,8 +51,11 @@ void ff_null_end_frame(AVFilterLink *link);
  *               frame need only be valid once draw_slice() is called for that
  *               portion. The receiving filter will free this reference when
  *               it no longer needs it.
+ *
+ * @return >= 0 on success, a negative AVERROR on error. This function will
+ * unreference picref in case of error.
  */
-void ff_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
+int ff_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
 
 /**
  * Notify the next filter that the current frame has finished.

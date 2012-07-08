@@ -76,6 +76,7 @@ static int add_to_queue(AVFilterLink *inlink, AVFilterBufferRef *buf)
 {
     FifoContext *fifo = inlink->dst->priv;
 
+    inlink->cur_buf = NULL;
     fifo->last->next = av_mallocz(sizeof(Buf));
     if (!fifo->last->next) {
         avfilter_unref_buffer(buf);
@@ -86,12 +87,6 @@ static int add_to_queue(AVFilterLink *inlink, AVFilterBufferRef *buf)
     fifo->last->buf = buf;
 
     return 0;
-}
-
-static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
-{
-    add_to_queue(inlink, buf);
-    inlink->cur_buf = NULL;
 }
 
 static void queue_pop(FifoContext *s)
@@ -272,7 +267,7 @@ AVFilter avfilter_vf_fifo = {
     .inputs    = (const AVFilterPad[]) {{ .name            = "default",
                                           .type            = AVMEDIA_TYPE_VIDEO,
                                           .get_video_buffer= ff_null_get_video_buffer,
-                                          .start_frame     = start_frame,
+                                          .start_frame     = add_to_queue,
                                           .draw_slice      = draw_slice,
                                           .end_frame       = end_frame,
                                           .rej_perms       = AV_PERM_REUSE2, },

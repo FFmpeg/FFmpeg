@@ -64,7 +64,7 @@ static AVFilterBufferRef *get_video_buffer(AVFilterLink *link, int perms,
     return picref;
 }
 
-static void start_frame(AVFilterLink *link, AVFilterBufferRef *inpicref)
+static int start_frame(AVFilterLink *link, AVFilterBufferRef *inpicref)
 {
     FlipContext *flip = link->dst->priv;
     AVFilterBufferRef *outpicref = avfilter_ref_buffer(inpicref, ~0);
@@ -79,7 +79,7 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *inpicref)
         }
     }
 
-    ff_start_frame(link->dst->outputs[0], outpicref);
+    return ff_start_frame(link->dst->outputs[0], outpicref);
 }
 
 static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)

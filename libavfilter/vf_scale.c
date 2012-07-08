@@ -252,26 +252,28 @@ fail:
     return ret;
 }
 
-static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
+static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
     ScaleContext *scale = link->dst->priv;
     AVFilterLink *outlink = link->dst->outputs[0];
     AVFilterBufferRef *outpicref;
+    int ret = 0;
 
     if (!scale->sws) {
-        ff_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
-        return;
+        return ff_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
     }
 
     scale->hsub = av_pix_fmt_descriptors[link->format].log2_chroma_w;
     scale->vsub = av_pix_fmt_descriptors[link->format].log2_chroma_h;
 
     outpicref = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    if (!outpicref)
+        return AVERROR(ENOMEM);
+
     avfilter_copy_buffer_ref_props(outpicref, picref);
     outpicref->video->w = outlink->w;
     outpicref->video->h = outlink->h;
 
-    outlink->out_buf = outpicref;
 
     av_reduce(&outpicref->video->pixel_aspect.num, &outpicref->video->pixel_aspect.den,
               (int64_t)picref->video->pixel_aspect.num * outlink->h * link->w,
@@ -279,7 +281,14 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
               INT_MAX);
 
     scale->slice_y = 0;
-    ff_start_frame(outlink, avfilter_ref_buffer(outpicref, ~0));
+    ret = ff_start_frame(outlink, avfilter_ref_buffer(outpicref, ~0));
+    if (ret < 0) {
+        avfilter_unref_bufferp(&outpicref);
+        return ret;
+    }
+
+    outlink->out_buf = outpicref;
+    return 0;
 }
 
 static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)

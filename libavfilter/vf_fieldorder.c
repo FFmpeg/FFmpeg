@@ -116,18 +116,32 @@ static AVFilterBufferRef *get_video_buffer(AVFilterLink *inlink, int perms, int 
     return ff_get_video_buffer(outlink, perms, w, h);
 }
 
-static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
+static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
 {
     AVFilterContext   *ctx        = inlink->dst;
     AVFilterLink      *outlink    = ctx->outputs[0];
 
     AVFilterBufferRef *outpicref, *for_next_filter;
+    int ret = 0;
 
     outpicref = avfilter_ref_buffer(inpicref, ~0);
-    outlink->out_buf = outpicref;
+    if (!outpicref)
+        return AVERROR(ENOMEM);
 
     for_next_filter = avfilter_ref_buffer(outpicref, ~0);
-    ff_start_frame(outlink, for_next_filter);
+    if (!for_next_filter) {
+        avfilter_unref_bufferp(&outpicref);
+        return AVERROR(ENOMEM);
+    }
+
+    ret = ff_start_frame(outlink, for_next_filter);
+    if (ret < 0) {
+        avfilter_unref_bufferp(&outpicref);
+        return ret;
+    }
+
+    outlink->out_buf = outpicref;
+    return 0;
 }
 
 static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)

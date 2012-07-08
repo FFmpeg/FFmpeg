@@ -104,7 +104,7 @@ static int config_output_props(AVFilterLink *outlink)
     return 0;
 }
 
-static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
+static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
@@ -118,7 +118,7 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     }
     inlink->cur_buf = NULL;
 
-    ff_start_frame(outlink, picref);
+    return ff_start_frame(outlink, picref);
 }
 
 AVFilter avfilter_vf_settb = {

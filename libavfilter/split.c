@@ -63,14 +63,18 @@ static void split_uninit(AVFilterContext *ctx)
         av_freep(&ctx->output_pads[i].name);
 }
 
-static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
+static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
     AVFilterContext *ctx = inlink->dst;
-    int i;
+    int i, ret = 0;
 
-    for (i = 0; i < ctx->nb_outputs; i++)
-        ff_start_frame(ctx->outputs[i],
-                       avfilter_ref_buffer(picref, ~AV_PERM_WRITE));
+    for (i = 0; i < ctx->nb_outputs; i++) {
+        ret = ff_start_frame(ctx->outputs[i],
+                             avfilter_ref_buffer(picref, ~AV_PERM_WRITE));
+        if (ret < 0)
+            break;
+    }
+    return ret;
 }
 
 static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)

@@ -258,8 +258,11 @@ struct AVFilterPad {
      * picture inside the link structure.
      *
      * Input video pads only.
+     *
+     * @return >= 0 on success, a negative AVERROR on error. picref will be
+     * unreferenced by the caller in case of error.
      */
-    void (*start_frame)(AVFilterLink *link, AVFilterBufferRef *picref);
+    int (*start_frame)(AVFilterLink *link, AVFilterBufferRef *picref);
 
     /**
      * Callback function to get a video buffer. If NULL, the filter system will

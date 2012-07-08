@@ -243,8 +243,9 @@ static void end_frame(AVFilterLink *inlink)
     s->pts = s->first_pts + av_rescale_q(s->frames_out, outlink->time_base, inlink->time_base);
 }
 
-static void null_start_frame(AVFilterLink *link, AVFilterBufferRef *buf)
+static int null_start_frame(AVFilterLink *link, AVFilterBufferRef *buf)
 {
+    return 0;
 }
 
 static void null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)

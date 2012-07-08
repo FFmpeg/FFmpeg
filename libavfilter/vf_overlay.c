@@ -208,7 +208,7 @@ static AVFilterBufferRef *get_video_buffer(AVFilterLink *link, int perms, int w,
     return ff_get_video_buffer(link->dst->outputs[0], perms, w, h);
 }
 
-static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
+static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
 {
     AVFilterBufferRef *outpicref = avfilter_ref_buffer(inpicref, ~0);
     AVFilterContext *ctx = inlink->dst;
@@ -228,10 +228,10 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
             over->overpicref = old;
     }
 
-    ff_start_frame(inlink->dst->outputs[0], outpicref);
+    return ff_start_frame(inlink->dst->outputs[0], outpicref);
 }
 
-static void start_frame_overlay(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
+static int start_frame_overlay(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
 {
     AVFilterContext *ctx = inlink->dst;
     OverlayContext *over = ctx->priv;
@@ -239,6 +239,7 @@ static void start_frame_overlay(AVFilterLink *inlink, AVFilterBufferRef *inpicre
     over->overpicref = inpicref;
     over->overpicref->pts = av_rescale_q(inpicref->pts, ctx->inputs[OVERLAY]->time_base,
                                          ctx->outputs[0]->time_base);
+    return 0;
 }
 
 static void blend_slice(AVFilterContext *ctx,

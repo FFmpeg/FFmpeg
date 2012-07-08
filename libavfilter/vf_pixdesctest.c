@@ -51,16 +51,18 @@ static int config_props(AVFilterLink *inlink)
     return 0;
 }
 
-static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
+static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
     PixdescTestContext *priv = inlink->dst->priv;
     AVFilterLink *outlink    = inlink->dst->outputs[0];
     AVFilterBufferRef *outpicref;
-    int i;
+    int i, ret = 0;
 
-    outlink->out_buf = ff_get_video_buffer(outlink, AV_PERM_WRITE,
-                                           outlink->w, outlink->h);
-    outpicref = outlink->out_buf;
+    outpicref = ff_get_video_buffer(outlink, AV_PERM_WRITE,
+                                    outlink->w, outlink->h);
+    if (!outpicref)
+        return AVERROR(ENOMEM);
+
     avfilter_copy_buffer_ref_props(outpicref, picref);
 
     for (i = 0; i < 4; i++) {
@@ -78,7 +80,14 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
         priv->pix_desc->flags & PIX_FMT_PSEUDOPAL)
         memcpy(outpicref->data[1], outpicref->data[1], 256*4);
 
-    ff_start_frame(outlink, avfilter_ref_buffer(outpicref, ~0));
+    ret = ff_start_frame(outlink, avfilter_ref_buffer(outpicref, ~0));
+    if (ret < 0) {
+        avfilter_unref_bufferp(&outpicref);
+        return ret;
+    }
+
+    outlink->out_buf = outpicref;
+    return 0;
 }
 
 static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)

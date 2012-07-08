@@ -64,13 +64,13 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     return 0;
 }
 
-static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
+static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
     AspectContext *aspect = link->dst->priv;
 
     picref->video->pixel_aspect = aspect->aspect;
     link->cur_buf = NULL;
-    ff_start_frame(link->dst->outputs[0], picref);
+    return ff_start_frame(link->dst->outputs[0], picref);
 }
 
 #if CONFIG_SETDAR_FILTER
