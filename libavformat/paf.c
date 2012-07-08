@@ -232,7 +232,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     size = p->video_size - p->frames_offset_table[p->current_frame];
-    if (size < 0)
+    if (size < 1)
         return AVERROR_INVALIDDATA;
 
     if (av_new_packet(pkt, size) < 0)
@@ -241,6 +241,8 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->stream_index = 0;
     pkt->duration     = 1;
     memcpy(pkt->data, p->video_frame + p->frames_offset_table[p->current_frame], size);
+    if (pkt->data[0] & 0x20)
+        pkt->flags   |= AV_PKT_FLAG_KEY;
     p->current_frame++;
 
     return pkt->size;
