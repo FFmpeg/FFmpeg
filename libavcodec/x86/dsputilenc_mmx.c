@@ -1104,7 +1104,7 @@ int ff_hadamard8_diff16_##cpu(void *s, uint8_t *src1, uint8_t *src2, \
                               int stride, int h);
 
 hadamard_func(mmx)
-hadamard_func(mmx2)
+hadamard_func(mmxext)
 hadamard_func(sse2)
 hadamard_func(ssse3)
 
@@ -1195,8 +1195,8 @@ void ff_dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
         c->hadamard8_diff[1] = ff_hadamard8_diff_mmx;
 
         if (EXTERNAL_MMXEXT(mm_flags)) {
-            c->hadamard8_diff[0] = ff_hadamard8_diff16_mmx2;
-            c->hadamard8_diff[1] = ff_hadamard8_diff_mmx2;
+            c->hadamard8_diff[0] = ff_hadamard8_diff16_mmxext;
+            c->hadamard8_diff[1] = ff_hadamard8_diff_mmxext;
         }
 
         if (EXTERNAL_SSE2(mm_flags)) {

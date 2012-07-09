@@ -442,17 +442,17 @@ chroma_mc8_mmx_func put, vc1,  nornd_mmx
 chroma_mc8_mmx_func put, rv40, mmx
 chroma_mc4_mmx_func put, h264, mmx
 chroma_mc4_mmx_func put, rv40, mmx
-chroma_mc2_mmx_func put, h264, mmx2
+chroma_mc2_mmx_func put, h264, mmxext
 
 %define CHROMAMC_AVG  DIRECT_AVG
 %define CHROMAMC_AVG4 COPY_AVG
 %define PAVG          pavgb
-chroma_mc8_mmx_func avg, h264, rnd_mmx2
-chroma_mc8_mmx_func avg, vc1,  nornd_mmx2
-chroma_mc8_mmx_func avg, rv40, mmx2
-chroma_mc4_mmx_func avg, h264, mmx2
-chroma_mc4_mmx_func avg, rv40, mmx2
-chroma_mc2_mmx_func avg, h264, mmx2
+chroma_mc8_mmx_func avg, h264, rnd_mmxext
+chroma_mc8_mmx_func avg, vc1,  nornd_mmxext
+chroma_mc8_mmx_func avg, rv40, mmxext
+chroma_mc4_mmx_func avg, h264, mmxext
+chroma_mc4_mmx_func avg, rv40, mmxext
+chroma_mc2_mmx_func avg, h264, mmxext
 
 %define PAVG          pavgusb
 chroma_mc8_mmx_func avg, h264, rnd_3dnow

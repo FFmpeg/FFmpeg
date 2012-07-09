@@ -2045,21 +2045,21 @@ PREFETCH(prefetch_3dnow, prefetch)
 
 void ff_put_h264_chroma_mc8_rnd_mmx  (uint8_t *dst, uint8_t *src,
                                       int stride, int h, int x, int y);
-void ff_avg_h264_chroma_mc8_rnd_mmx2 (uint8_t *dst, uint8_t *src,
-                                      int stride, int h, int x, int y);
+void ff_avg_h264_chroma_mc8_rnd_mmxext(uint8_t *dst, uint8_t *src,
+                                       int stride, int h, int x, int y);
 void ff_avg_h264_chroma_mc8_rnd_3dnow(uint8_t *dst, uint8_t *src,
                                       int stride, int h, int x, int y);
 
 void ff_put_h264_chroma_mc4_mmx      (uint8_t *dst, uint8_t *src,
                                       int stride, int h, int x, int y);
-void ff_avg_h264_chroma_mc4_mmx2     (uint8_t *dst, uint8_t *src,
+void ff_avg_h264_chroma_mc4_mmxext   (uint8_t *dst, uint8_t *src,
                                       int stride, int h, int x, int y);
 void ff_avg_h264_chroma_mc4_3dnow    (uint8_t *dst, uint8_t *src,
                                       int stride, int h, int x, int y);
 
-void ff_put_h264_chroma_mc2_mmx2     (uint8_t *dst, uint8_t *src,
+void ff_put_h264_chroma_mc2_mmxext   (uint8_t *dst, uint8_t *src,
                                       int stride, int h, int x, int y);
-void ff_avg_h264_chroma_mc2_mmx2     (uint8_t *dst, uint8_t *src,
+void ff_avg_h264_chroma_mc2_mmxext   (uint8_t *dst, uint8_t *src,
                                       int stride, int h, int x, int y);
 
 void ff_put_h264_chroma_mc8_rnd_ssse3(uint8_t *dst, uint8_t *src,
@@ -2077,10 +2077,10 @@ void ff_ ## OP ## _h264_chroma_mc ## NUM ## _ ## DEPTH ## _ ## OPT      \
                                       (uint8_t *dst, uint8_t *src,      \
                                        int stride, int h, int x, int y);
 
-CHROMA_MC(put, 2, 10, mmx2)
-CHROMA_MC(avg, 2, 10, mmx2)
-CHROMA_MC(put, 4, 10, mmx2)
-CHROMA_MC(avg, 4, 10, mmx2)
+CHROMA_MC(put, 2, 10, mmxext)
+CHROMA_MC(avg, 2, 10, mmxext)
+CHROMA_MC(put, 4, 10, mmxext)
+CHROMA_MC(avg, 4, 10, mmxext)
 CHROMA_MC(put, 8, 10, sse2)
 CHROMA_MC(avg, 8, 10, sse2)
 CHROMA_MC(put, 8, 10, avx)
@@ -2283,13 +2283,13 @@ static void vector_clipf_sse(float *dst, const float *src,
 
 #endif /* HAVE_INLINE_ASM */
 
-int32_t ff_scalarproduct_int16_mmx2(const int16_t *v1, const int16_t *v2,
-                                    int order);
+int32_t ff_scalarproduct_int16_mmxext(const int16_t *v1, const int16_t *v2,
+                                      int order);
 int32_t ff_scalarproduct_int16_sse2(const int16_t *v1, const int16_t *v2,
                                     int order);
-int32_t ff_scalarproduct_and_madd_int16_mmx2(int16_t *v1, const int16_t *v2,
-                                             const int16_t *v3,
-                                             int order, int mul);
+int32_t ff_scalarproduct_and_madd_int16_mmxext(int16_t *v1, const int16_t *v2,
+                                               const int16_t *v3,
+                                               int order, int mul);
 int32_t ff_scalarproduct_and_madd_int16_sse2(int16_t *v1, const int16_t *v2,
                                              const int16_t *v3,
                                              int order, int mul);
@@ -2313,9 +2313,9 @@ void ff_apply_window_int16_ssse3_atom(int16_t *output, const int16_t *input,
 void ff_bswap32_buf_ssse3(uint32_t *dst, const uint32_t *src, int w);
 void ff_bswap32_buf_sse2(uint32_t *dst, const uint32_t *src, int w);
 
-void ff_add_hfyu_median_prediction_mmx2(uint8_t *dst, const uint8_t *top,
-                                        const uint8_t *diff, int w,
-                                        int *left, int *left_top);
+void ff_add_hfyu_median_prediction_mmxext(uint8_t *dst, const uint8_t *top,
+                                          const uint8_t *diff, int w,
+                                          int *left, int *left_top);
 int  ff_add_hfyu_left_prediction_ssse3(uint8_t *dst, const uint8_t *src,
                                        int w, int left);
 int  ff_add_hfyu_left_prediction_sse4(uint8_t *dst, const uint8_t *src,
@@ -2548,24 +2548,24 @@ static void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
 
 #if HAVE_YASM
     if (!high_bit_depth && CONFIG_H264CHROMA) {
-        c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_rnd_mmx2;
-        c->avg_h264_chroma_pixels_tab[1] = ff_avg_h264_chroma_mc4_mmx2;
-        c->avg_h264_chroma_pixels_tab[2] = ff_avg_h264_chroma_mc2_mmx2;
-        c->put_h264_chroma_pixels_tab[2] = ff_put_h264_chroma_mc2_mmx2;
+        c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_rnd_mmxext;
+        c->avg_h264_chroma_pixels_tab[1] = ff_avg_h264_chroma_mc4_mmxext;
+        c->avg_h264_chroma_pixels_tab[2] = ff_avg_h264_chroma_mc2_mmxext;
+        c->put_h264_chroma_pixels_tab[2] = ff_put_h264_chroma_mc2_mmxext;
     }
     if (bit_depth == 10 && CONFIG_H264CHROMA) {
-        c->put_h264_chroma_pixels_tab[2] = ff_put_h264_chroma_mc2_10_mmx2;
-        c->avg_h264_chroma_pixels_tab[2] = ff_avg_h264_chroma_mc2_10_mmx2;
-        c->put_h264_chroma_pixels_tab[1] = ff_put_h264_chroma_mc4_10_mmx2;
-        c->avg_h264_chroma_pixels_tab[1] = ff_avg_h264_chroma_mc4_10_mmx2;
+        c->put_h264_chroma_pixels_tab[2] = ff_put_h264_chroma_mc2_10_mmxext;
+        c->avg_h264_chroma_pixels_tab[2] = ff_avg_h264_chroma_mc2_10_mmxext;
+        c->put_h264_chroma_pixels_tab[1] = ff_put_h264_chroma_mc4_10_mmxext;
+        c->avg_h264_chroma_pixels_tab[1] = ff_avg_h264_chroma_mc4_10_mmxext;
     }
 
     /* slower than cmov version on AMD */
     if (!(mm_flags & AV_CPU_FLAG_3DNOW))
-        c->add_hfyu_median_prediction = ff_add_hfyu_median_prediction_mmx2;
+        c->add_hfyu_median_prediction = ff_add_hfyu_median_prediction_mmxext;
 
-    c->scalarproduct_int16          = ff_scalarproduct_int16_mmx2;
-    c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_mmx2;
+    c->scalarproduct_int16          = ff_scalarproduct_int16_mmxext;
+    c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_mmxext;
 
     if (avctx->flags & CODEC_FLAG_BITEXACT) {
         c->apply_window_int16 = ff_apply_window_int16_mmxext_ba;

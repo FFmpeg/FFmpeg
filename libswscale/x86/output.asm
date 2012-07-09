@@ -247,7 +247,7 @@ cglobal yuv2planeX_%1, %3, 8, %2, filter, fltsize, src, dst, w, dither, offset
 %endmacro
 
 %if ARCH_X86_32
-INIT_MMX mmx2
+INIT_MMX mmxext
 yuv2planeX_fn  8,  0, 7
 yuv2planeX_fn  9,  0, 5
 yuv2planeX_fn 10,  0, 5
@@ -388,7 +388,7 @@ INIT_MMX mmx
 yuv2plane1_fn  8, 0, 5
 yuv2plane1_fn 16, 0, 3
 
-INIT_MMX mmx2
+INIT_MMX mmxext
 yuv2plane1_fn  9, 0, 3
 yuv2plane1_fn 10, 0, 3
 %endif

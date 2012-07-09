@@ -31,11 +31,13 @@ void ff_vp3_idct_add_mmx(uint8_t *dest, int line_size, DCTELEM *block);
 void ff_vp3_idct_put_sse2(uint8_t *dest, int line_size, DCTELEM *block);
 void ff_vp3_idct_add_sse2(uint8_t *dest, int line_size, DCTELEM *block);
 
-void ff_vp3_idct_dc_add_mmx2(uint8_t *dest, int line_size,
-                             const DCTELEM *block);
+void ff_vp3_idct_dc_add_mmxext(uint8_t *dest, int line_size,
+                               const DCTELEM *block);
 
-void ff_vp3_v_loop_filter_mmx2(uint8_t *src, int stride, int *bounding_values);
-void ff_vp3_h_loop_filter_mmx2(uint8_t *src, int stride, int *bounding_values);
+void ff_vp3_v_loop_filter_mmxext(uint8_t *src, int stride,
+                                 int *bounding_values);
+void ff_vp3_h_loop_filter_mmxext(uint8_t *src, int stride,
+                                 int *bounding_values);
 
 av_cold void ff_vp3dsp_init_x86(VP3DSPContext *c, int flags)
 {
@@ -50,11 +52,11 @@ av_cold void ff_vp3dsp_init_x86(VP3DSPContext *c, int flags)
 #endif
 
     if (EXTERNAL_MMXEXT(cpuflags)) {
-        c->idct_dc_add = ff_vp3_idct_dc_add_mmx2;
+        c->idct_dc_add = ff_vp3_idct_dc_add_mmxext;
 
         if (!(flags & CODEC_FLAG_BITEXACT)) {
-            c->v_loop_filter = ff_vp3_v_loop_filter_mmx2;
-            c->h_loop_filter = ff_vp3_h_loop_filter_mmx2;
+            c->v_loop_filter = ff_vp3_v_loop_filter_mmxext;
+            c->h_loop_filter = ff_vp3_h_loop_filter_mmxext;
         }
     }
 

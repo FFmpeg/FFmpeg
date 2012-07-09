@@ -182,7 +182,7 @@ PRED4x4_HD
     HADDD   %1, %2
 %endmacro
 
-INIT_MMX mmx2
+INIT_MMX mmxext
 cglobal pred4x4_dc_10, 3, 3
     sub    r0, r2
     lea    r1, [r0+r2*2]
@@ -261,7 +261,7 @@ PRED4x4_VL
 ;-----------------------------------------------------------------------------
 ; void pred4x4_horizontal_up(pixel *src, const pixel *topright, int stride)
 ;-----------------------------------------------------------------------------
-INIT_MMX mmx2
+INIT_MMX mmxext
 cglobal pred4x4_horizontal_up_10, 3, 3
     sub       r0, r2
     lea       r1, [r0+r2*2]
@@ -410,7 +410,7 @@ cglobal pred8x8_dc_10, 2, 6
     RET
 %endmacro
 
-INIT_MMX mmx2
+INIT_MMX mmxext
 PRED8x8_DC pshufw
 INIT_XMM sse2
 PRED8x8_DC pshuflw
@@ -524,7 +524,7 @@ cglobal pred8x8l_128_dc_10, 4, 4
     RET
 %endmacro
 
-INIT_MMX mmx2
+INIT_MMX mmxext
 PRED8x8L_128_DC
 INIT_XMM sse2
 PRED8x8L_128_DC
@@ -1007,7 +1007,7 @@ cglobal pred16x16_vertical_10, 2, 3
     REP_RET
 %endmacro
 
-INIT_MMX mmx2
+INIT_MMX mmxext
 PRED16x16_VERTICAL
 INIT_XMM sse2
 PRED16x16_VERTICAL
@@ -1031,7 +1031,7 @@ cglobal pred16x16_horizontal_10, 2, 3
     REP_RET
 %endmacro
 
-INIT_MMX mmx2
+INIT_MMX mmxext
 PRED16x16_HORIZONTAL
 INIT_XMM sse2
 PRED16x16_HORIZONTAL
@@ -1077,7 +1077,7 @@ cglobal pred16x16_dc_10, 2, 6
     REP_RET
 %endmacro
 
-INIT_MMX mmx2
+INIT_MMX mmxext
 PRED16x16_DC
 INIT_XMM sse2
 PRED16x16_DC
@@ -1109,7 +1109,7 @@ cglobal pred16x16_top_dc_10, 2, 3
     REP_RET
 %endmacro
 
-INIT_MMX mmx2
+INIT_MMX mmxext
 PRED16x16_TOP_DC
 INIT_XMM sse2
 PRED16x16_TOP_DC
@@ -1146,7 +1146,7 @@ cglobal pred16x16_left_dc_10, 2, 6
     REP_RET
 %endmacro
 
-INIT_MMX mmx2
+INIT_MMX mmxext
 PRED16x16_LEFT_DC
 INIT_XMM sse2
 PRED16x16_LEFT_DC
@@ -1167,7 +1167,7 @@ cglobal pred16x16_128_dc_10, 2,3
     REP_RET
 %endmacro
 
-INIT_MMX mmx2
+INIT_MMX mmxext
 PRED16x16_128_DC
 INIT_XMM sse2
 PRED16x16_128_DC

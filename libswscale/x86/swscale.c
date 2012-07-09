@@ -250,7 +250,7 @@ extern void ff_yuv2planeX_ ## size ## _ ## opt(const int16_t *filter, int filter
     VSCALEX_FUNC(10, opt)
 
 #if ARCH_X86_32
-VSCALEX_FUNCS(mmx2);
+VSCALEX_FUNCS(mmxext);
 #endif
 VSCALEX_FUNCS(sse2);
 VSCALEX_FUNCS(sse4);
@@ -267,7 +267,7 @@ extern void ff_yuv2plane1_ ## size ## _ ## opt(const int16_t *src, uint8_t *dst,
     VSCALE_FUNC(16, opt1)
 
 #if ARCH_X86_32
-VSCALE_FUNCS(mmx, mmx2);
+VSCALE_FUNCS(mmx, mmxext);
 #endif
 VSCALE_FUNCS(sse2, sse2);
 VSCALE_FUNC(16, sse4);
@@ -360,7 +360,7 @@ switch(c->dstBpc){ \
     if (EXTERNAL_MMX(cpu_flags)) {
         ASSIGN_MMX_SCALE_FUNC(c->hyScale, c->hLumFilterSize, mmx, mmx);
         ASSIGN_MMX_SCALE_FUNC(c->hcScale, c->hChrFilterSize, mmx, mmx);
-        ASSIGN_VSCALE_FUNC(c->yuv2plane1, mmx, mmx2, cpu_flags & AV_CPU_FLAG_MMXEXT);
+        ASSIGN_VSCALE_FUNC(c->yuv2plane1, mmx, mmxext, cpu_flags & AV_CPU_FLAG_MMXEXT);
 
         switch (c->srcFormat) {
         case AV_PIX_FMT_Y400A:
@@ -393,7 +393,7 @@ switch(c->dstBpc){ \
         }
     }
     if (EXTERNAL_MMXEXT(cpu_flags)) {
-        ASSIGN_VSCALEX_FUNC(c->yuv2planeX, mmx2, , 1);
+        ASSIGN_VSCALEX_FUNC(c->yuv2planeX, mmxext, , 1);
     }
 #endif /* ARCH_X86_32 */
 #define ASSIGN_SSE_SCALE_FUNC(hscalefn, filtersize, opt1, opt2) \

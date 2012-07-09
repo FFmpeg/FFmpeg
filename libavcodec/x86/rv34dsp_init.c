@@ -25,11 +25,11 @@
 #include "libavcodec/dsputil.h"
 #include "libavcodec/rv34dsp.h"
 
-void ff_rv34_idct_dc_mmx2(DCTELEM *block);
-void ff_rv34_idct_dc_noround_mmx2(DCTELEM *block);
+void ff_rv34_idct_dc_mmxext(DCTELEM *block);
+void ff_rv34_idct_dc_noround_mmxext(DCTELEM *block);
 void ff_rv34_idct_dc_add_mmx(uint8_t *dst, ptrdiff_t stride, int dc);
 void ff_rv34_idct_dc_add_sse4(uint8_t *dst, ptrdiff_t stride, int dc);
-void ff_rv34_idct_add_mmx2(uint8_t *dst, ptrdiff_t stride, DCTELEM *block);
+void ff_rv34_idct_add_mmxext(uint8_t *dst, ptrdiff_t stride, DCTELEM *block);
 
 av_cold void ff_rv34dsp_init_x86(RV34DSPContext* c, DSPContext *dsp)
 {
@@ -38,8 +38,8 @@ av_cold void ff_rv34dsp_init_x86(RV34DSPContext* c, DSPContext *dsp)
     if (EXTERNAL_MMX(mm_flags))
         c->rv34_idct_dc_add = ff_rv34_idct_dc_add_mmx;
     if (EXTERNAL_MMXEXT(mm_flags)) {
-        c->rv34_inv_transform_dc = ff_rv34_idct_dc_noround_mmx2;
-        c->rv34_idct_add         = ff_rv34_idct_add_mmx2;
+        c->rv34_inv_transform_dc = ff_rv34_idct_dc_noround_mmxext;
+        c->rv34_idct_add         = ff_rv34_idct_add_mmxext;
     }
     if (EXTERNAL_SSE4(mm_flags))
         c->rv34_idct_dc_add = ff_rv34_idct_dc_add_sse4;

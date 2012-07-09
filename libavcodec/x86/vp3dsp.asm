@@ -101,7 +101,7 @@ SECTION .text
     mov  [r0+r3  -1], r2w
 %endmacro
 
-INIT_MMX mmx2
+INIT_MMX mmxext
 cglobal vp3_v_loop_filter, 3, 4
 %if ARCH_X86_64
     movsxd        r1, r1d
@@ -633,7 +633,7 @@ vp3_idct_funcs
     movq   [r0+r3  ], m5
 %endmacro
 
-INIT_MMX mmx2
+INIT_MMX mmxext
 cglobal vp3_idct_dc_add, 3, 4
 %if ARCH_X86_64
     movsxd        r1, r1d

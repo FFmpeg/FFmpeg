@@ -504,7 +504,7 @@ cglobal deblock_h_luma_8, 0,5
     RET
 %endmacro ; DEBLOCK_LUMA
 
-INIT_MMX mmx2
+INIT_MMX mmxext
 DEBLOCK_LUMA v8, 8
 INIT_XMM sse2
 DEBLOCK_LUMA v, 16
@@ -783,11 +783,11 @@ DEBLOCK_LUMA_INTRA v
 INIT_XMM avx
 DEBLOCK_LUMA_INTRA v
 %if ARCH_X86_64 == 0
-INIT_MMX mmx2
+INIT_MMX mmxext
 DEBLOCK_LUMA_INTRA v8
 %endif
 
-INIT_MMX mmx2
+INIT_MMX mmxext
 
 %macro CHROMA_V_START 0
     dec    r2d      ; alpha-1
@@ -818,7 +818,7 @@ cglobal deblock_v_chroma_8, 5,6
     movq  m1, [t5+r1]
     movq  m2, [r0]
     movq  m3, [r0+r1]
-    call ff_chroma_inter_body_mmx2
+    call ff_chroma_inter_body_mmxext
     movq  [t5+r1], m1
     movq  [r0], m2
     RET
@@ -842,7 +842,7 @@ cglobal deblock_h_chroma_8, 5,7
     TRANSPOSE4x8_LOAD  bw, wd, dq, PASS8ROWS(t5, r0, r1, t6)
     movq  buf0, m0
     movq  buf1, m3
-    call ff_chroma_inter_body_mmx2
+    call ff_chroma_inter_body_mmxext
     movq  m0, buf0
     movq  m3, buf1
     TRANSPOSE8x4B_STORE PASS8ROWS(t5, r0, r1, t6)
@@ -852,7 +852,7 @@ cglobal deblock_h_chroma_8, 5,7
     RET
 
 ALIGN 16
-ff_chroma_inter_body_mmx2:
+ff_chroma_inter_body_mmxext:
     LOAD_MASK  r2d, r3d
     movd       m6, [r4] ; tc0
     punpcklbw  m6, m6
@@ -885,7 +885,7 @@ cglobal deblock_v_chroma_intra_8, 4,5
     movq  m1, [t5+r1]
     movq  m2, [r0]
     movq  m3, [r0+r1]
-    call ff_chroma_intra_body_mmx2
+    call ff_chroma_intra_body_mmxext
     movq  [t5+r1], m1
     movq  [r0], m2
     RET
@@ -896,12 +896,12 @@ cglobal deblock_v_chroma_intra_8, 4,5
 cglobal deblock_h_chroma_intra_8, 4,6
     CHROMA_H_START
     TRANSPOSE4x8_LOAD  bw, wd, dq, PASS8ROWS(t5, r0, r1, t6)
-    call ff_chroma_intra_body_mmx2
+    call ff_chroma_intra_body_mmxext
     TRANSPOSE8x4B_STORE PASS8ROWS(t5, r0, r1, t6)
     RET
 
 ALIGN 16
-ff_chroma_intra_body_mmx2:
+ff_chroma_intra_body_mmxext:
     LOAD_MASK r2d, r3d
     movq   m5, m1
     movq   m6, m2
@@ -1025,7 +1025,7 @@ ff_chroma_intra_body_mmx2:
     jl %%.b_idx_loop
 %endmacro
 
-INIT_MMX mmx2
+INIT_MMX mmxext
 cglobal h264_loop_filter_strength, 9, 9, 0, bs, nnz, ref, mv, bidir, edges, \
                                             step, mask_mv0, mask_mv1, field
 %define b_idxq bidirq
