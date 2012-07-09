@@ -298,7 +298,7 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
     unsigned int outputsamples;
     int hassize;
     unsigned int readsamplesize;
-    int isnotcompressed;
+    int is_compressed;
     uint8_t interlacing_shift;
     uint8_t interlacing_leftweight;
     int i, ch, ret;
@@ -320,7 +320,7 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
     alac->extra_bits = get_bits(&alac->gb, 2) << 3;
 
     /* whether the frame is compressed */
-    isnotcompressed = get_bits1(&alac->gb);
+    is_compressed = !get_bits1(&alac->gb);
 
     if (hassize) {
         /* now read the number of samples as a 32bit integer */
@@ -350,8 +350,7 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
         return -1;
     }
 
-    if (!isnotcompressed) {
-        /* so it is compressed */
+    if (is_compressed) {
         int16_t predictor_coef_table[MAX_CHANNELS][32];
         int predictor_coef_num[MAX_CHANNELS];
         int prediction_type[MAX_CHANNELS];
