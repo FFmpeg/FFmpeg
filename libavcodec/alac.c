@@ -107,13 +107,10 @@ static void bastardized_rice_decompress(ALACContext *alac,
                                         int32_t *output_buffer,
                                         int output_size,
                                         int readsamplesize,
-                                        int rice_initial_history,
-                                        int rice_limit,
-                                        int rice_history_mult,
-                                        int rice_kmodifier_mask)
+                                        int rice_history_mult)
 {
     int output_count;
-    unsigned int history = rice_initial_history;
+    unsigned int history = alac->rice_initial_history;
     int sign_modifier = 0;
 
     for (output_count = 0; output_count < output_size; output_count++) {
@@ -126,7 +123,7 @@ static void bastardized_rice_decompress(ALACContext *alac,
 
         /* read k, that is bits as is */
         k = av_log2((history >> 9) + 3);
-        x= decode_scalar(&alac->gb, k, rice_limit, readsamplesize);
+        x = decode_scalar(&alac->gb, k, alac->rice_limit, readsamplesize);
 
         x_modified = sign_modifier + x;
         final_val = (x_modified + 1) / 2;
@@ -152,7 +149,7 @@ static void bastardized_rice_decompress(ALACContext *alac,
 
             k = 7 - av_log2(history) + ((history + 16) >> 6 /* / 64 */);
 
-            block_size = decode_scalar(&alac->gb, k, rice_limit, 16);
+            block_size = decode_scalar(&alac->gb, k, alac->rice_limit, 16);
 
             if (block_size > 0) {
                 if(block_size >= output_size - output_count){
@@ -434,10 +431,7 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
                                         alac->predict_error_buffer[ch],
                                         outputsamples,
                                         readsamplesize,
-                                        alac->rice_initial_history,
-                                        alac->rice_limit,
-                                        ricemodifier[ch] * alac->rice_history_mult / 4,
-                                        (1 << alac->rice_limit) - 1);
+                                        ricemodifier[ch] * alac->rice_history_mult / 4);
 
             /* adaptive FIR filter */
             if (prediction_type[ch] == 15) {
