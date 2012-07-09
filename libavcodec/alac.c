@@ -186,25 +186,17 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
         /* simple 1st-order prediction */
         if (output_size <= 1)
             return;
-        for (i = 0; i < output_size - 1; i++) {
-            int32_t prev_value;
-            int32_t error_value;
-
-            prev_value = buffer_out[i];
-            error_value = error_buffer[i+1];
-            buffer_out[i+1] =
-                sign_extend((prev_value + error_value), readsamplesize);
+        for (i = 1; i < output_size; i++) {
+            buffer_out[i] = sign_extend(buffer_out[i - 1] + error_buffer[i],
+                                        readsamplesize);
         }
         return;
     }
 
     /* read warm-up samples */
     for (i = 0; i < predictor_coef_num; i++) {
-        int32_t val;
-
-        val = buffer_out[i] + error_buffer[i+1];
-        val = sign_extend(val, readsamplesize);
-        buffer_out[i+1] = val;
+        buffer_out[i + 1] = sign_extend(buffer_out[i] + error_buffer[i + 1],
+                                        readsamplesize);
     }
 
     /* NOTE: 4 and 8 are very common cases that could be optimized. */
