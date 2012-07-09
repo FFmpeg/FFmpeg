@@ -366,7 +366,7 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
 
             /* read the predictor table */
             for (i = 0; i < predictor_coef_num[ch]; i++)
-                predictor_coef_table[ch][i] = (int16_t)get_bits(&alac->gb, 16);
+                predictor_coef_table[ch][i] = get_sbits(&alac->gb, 16);
         }
 
         if (alac->extra_bits) {
