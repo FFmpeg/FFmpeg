@@ -43,9 +43,6 @@
 #include "xvmc_internal.h"
 #include "thread.h"
 
-//#undef NDEBUG
-//#include <assert.h>
-
 
 #define MV_VLC_BITS 9
 #define MBINCR_VLC_BITS 9
@@ -745,7 +742,7 @@ static int mpeg_decode_mb(MpegEncContext *s, DCTELEM block[12][64])
 
     av_dlog(s->avctx, "decode_mb: x=%d y=%d\n", s->mb_x, s->mb_y);
 
-    assert(s->mb_skipped == 0);
+    av_assert2(s->mb_skipped == 0);
 
     if (s->mb_skip_run-- != 0) {
         if (s->pict_type == AV_PICTURE_TYPE_P) {
@@ -762,7 +759,7 @@ static int mpeg_decode_mb(MpegEncContext *s, DCTELEM block[12][64])
                 return -1;
             s->current_picture.f.mb_type[s->mb_x + s->mb_y*s->mb_stride] =
                 mb_type | MB_TYPE_SKIP;
-//            assert(s->current_picture.f.mb_type[s->mb_x + s->mb_y * s->mb_stride - 1] & (MB_TYPE_16x16 | MB_TYPE_16x8));
+//            av_assert2(s->current_picture.f.mb_type[s->mb_x + s->mb_y * s->mb_stride - 1] & (MB_TYPE_16x16 | MB_TYPE_16x8));
 
             if ((s->mv[0][0][0] | s->mv[0][0][1] | s->mv[1][0][0] | s->mv[1][0][1]) == 0)
                 s->mb_skipped = 1;
@@ -860,7 +857,7 @@ static int mpeg_decode_mb(MpegEncContext *s, DCTELEM block[12][64])
         }
     } else {
         if (mb_type & MB_TYPE_ZERO_MV) {
-            assert(mb_type & MB_TYPE_CBP);
+            av_assert2(mb_type & MB_TYPE_CBP);
 
             s->mv_dir = MV_DIR_FORWARD;
             if (s->picture_structure == PICT_FRAME) {
@@ -883,7 +880,7 @@ static int mpeg_decode_mb(MpegEncContext *s, DCTELEM block[12][64])
             s->mv[0][0][0] = 0;
             s->mv[0][0][1] = 0;
         } else {
-            assert(mb_type & MB_TYPE_L0L1);
+            av_assert2(mb_type & MB_TYPE_L0L1);
             // FIXME decide if MBs in field pictures are MB_TYPE_INTERLACED
             /* get additional motion vector type */
             if (s->frame_pred_frame_dct)
@@ -1682,7 +1679,7 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
     s->resync_mb_x =
     s->resync_mb_y = -1;
 
-    assert(mb_y < s->mb_height);
+    av_assert0(mb_y < s->mb_height);
 
     init_get_bits(&s->gb, *buf, buf_size * 8);
     if(s->codec_id != CODEC_ID_MPEG1VIDEO && s->mb_height > 2800/16)
@@ -1792,7 +1789,7 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
                     s->current_picture.f.motion_val[dir][xy + 1][1] = motion_y;
                     s->current_picture.f.ref_index [dir][b8_xy    ] =
                     s->current_picture.f.ref_index [dir][b8_xy + 1] = s->field_select[dir][i];
-                    assert(s->field_select[dir][i] == 0 || s->field_select[dir][i] == 1);
+                    av_assert2(s->field_select[dir][i] == 0 || s->field_select[dir][i] == 1);
                 }
                 xy += wrap;
                 b8_xy +=2;
@@ -2208,7 +2205,7 @@ int ff_mpeg1_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size, 
 */
 
     for (i = 0; i < buf_size; i++) {
-        assert(pc->frame_start_found >= 0 && pc->frame_start_found <= 4);
+        av_assert1(pc->frame_start_found >= 0 && pc->frame_start_found <= 4);
         if (pc->frame_start_found & 1) {
             if (state == EXT_START_CODE && (buf[i] & 0xF0) != 0x80)
                 pc->frame_start_found--;
