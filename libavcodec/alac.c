@@ -173,10 +173,10 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
     /* first sample always copies */
     *buffer_out = *error_buffer;
 
-    if (!predictor_coef_num) {
-        if (output_size <= 1)
-            return;
+    if (output_size <= 1)
+        return;
 
+    if (!predictor_coef_num) {
         memcpy(&buffer_out[1], &error_buffer[1],
                (output_size - 1) * sizeof(*buffer_out));
         return;
@@ -184,8 +184,6 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
 
     if (predictor_coef_num == 31) {
         /* simple 1st-order prediction */
-        if (output_size <= 1)
-            return;
         for (i = 1; i < output_size; i++) {
             buffer_out[i] = sign_extend(buffer_out[i - 1] + error_buffer[i],
                                         readsamplesize);
