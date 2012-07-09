@@ -114,7 +114,7 @@ static int decode_frame(AVCodecContext *avctx,
                    avctx->sample_aspect_ratio.num,  avctx->sample_aspect_ratio.den,
                   0x10000);
     else
-        avctx->sample_aspect_ratio = (AVRational){ 0, 0 };
+        avctx->sample_aspect_ratio = (AVRational){ 0, 1 };
 
     switch (descriptor) {
         case 51: // RGBA
