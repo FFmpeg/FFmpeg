@@ -29,4 +29,9 @@ fate-filter-asyncts: REF = $(SAMPLES)/nellymoser/nellymoser-discont.pcm
 FATE_FILTER += $(FATE_ASYNCTS)
 FATE_SAMPLES_AVCONV += $(FATE_ASYNCTS)
 
+fate-filter-delogo: CMD = framecrc -i $(SAMPLES)/real/rv30.rm -vf delogo=show=0:x=290:y=25:w=26:h=16 -an
+
+FATE_FILTER += fate-filter-delogo
+FATE_SAMPLES_AVCONV += fate-filter-delogo
+
 fate-filter: $(FATE_FILTER)
