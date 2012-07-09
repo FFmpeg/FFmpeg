@@ -199,71 +199,71 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
     }
 
     /* read warm-up samples */
-        for (i = 0; i < predictor_coef_num; i++) {
-            int32_t val;
+    for (i = 0; i < predictor_coef_num; i++) {
+        int32_t val;
 
-            val = buffer_out[i] + error_buffer[i+1];
-            val = sign_extend(val, readsamplesize);
-            buffer_out[i+1] = val;
-        }
+        val = buffer_out[i] + error_buffer[i+1];
+        val = sign_extend(val, readsamplesize);
+        buffer_out[i+1] = val;
+    }
 
     /* NOTE: 4 and 8 are very common cases that could be optimized. */
 
     /* general case */
-        for (i = predictor_coef_num + 1; i < output_size; i++) {
-            int j;
-            int sum = 0;
-            int outval;
-            int error_val = error_buffer[i];
+    for (i = predictor_coef_num + 1; i < output_size; i++) {
+        int j;
+        int sum = 0;
+        int outval;
+        int error_val = error_buffer[i];
 
-            for (j = 0; j < predictor_coef_num; j++) {
-                sum += (buffer_out[predictor_coef_num-j] - buffer_out[0]) *
-                       predictor_coef_table[j];
-            }
-
-            outval = (1 << (predictor_quantitization-1)) + sum;
-            outval = outval >> predictor_quantitization;
-            outval = outval + buffer_out[0] + error_val;
-            outval = sign_extend(outval, readsamplesize);
-
-            buffer_out[predictor_coef_num+1] = outval;
-
-            if (error_val > 0) {
-                int predictor_num = predictor_coef_num - 1;
-
-                while (predictor_num >= 0 && error_val > 0) {
-                    int val = buffer_out[0] - buffer_out[predictor_coef_num - predictor_num];
-                    int sign = sign_only(val);
-
-                    predictor_coef_table[predictor_num] -= sign;
-
-                    val *= sign; /* absolute value */
-
-                    error_val -= ((val >> predictor_quantitization) *
-                                  (predictor_coef_num - predictor_num));
-
-                    predictor_num--;
-                }
-            } else if (error_val < 0) {
-                int predictor_num = predictor_coef_num - 1;
-
-                while (predictor_num >= 0 && error_val < 0) {
-                    int val = buffer_out[0] - buffer_out[predictor_coef_num - predictor_num];
-                    int sign = - sign_only(val);
-
-                    predictor_coef_table[predictor_num] -= sign;
-
-                    val *= sign; /* neg value */
-
-                    error_val -= ((val >> predictor_quantitization) *
-                                  (predictor_coef_num - predictor_num));
-
-                    predictor_num--;
-                }
-            }
-
-            buffer_out++;
+        for (j = 0; j < predictor_coef_num; j++) {
+            sum += (buffer_out[predictor_coef_num-j] - buffer_out[0]) *
+                   predictor_coef_table[j];
         }
+
+        outval = (1 << (predictor_quantitization-1)) + sum;
+        outval = outval >> predictor_quantitization;
+        outval = outval + buffer_out[0] + error_val;
+        outval = sign_extend(outval, readsamplesize);
+
+        buffer_out[predictor_coef_num+1] = outval;
+
+        if (error_val > 0) {
+            int predictor_num = predictor_coef_num - 1;
+
+            while (predictor_num >= 0 && error_val > 0) {
+                int val = buffer_out[0] - buffer_out[predictor_coef_num - predictor_num];
+                int sign = sign_only(val);
+
+                predictor_coef_table[predictor_num] -= sign;
+
+                val *= sign; /* absolute value */
+
+                error_val -= ((val >> predictor_quantitization) *
+                              (predictor_coef_num - predictor_num));
+
+                predictor_num--;
+            }
+        } else if (error_val < 0) {
+            int predictor_num = predictor_coef_num - 1;
+
+            while (predictor_num >= 0 && error_val < 0) {
+                int val = buffer_out[0] - buffer_out[predictor_coef_num - predictor_num];
+                int sign = - sign_only(val);
+
+                predictor_coef_table[predictor_num] -= sign;
+
+                val *= sign; /* neg value */
+
+                error_val -= ((val >> predictor_quantitization) *
+                              (predictor_coef_num - predictor_num));
+
+                predictor_num--;
+            }
+        }
+
+        buffer_out++;
+    }
 }
 
 static void decorrelate_stereo(int32_t *buffer[MAX_CHANNELS],
