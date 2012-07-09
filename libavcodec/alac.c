@@ -133,8 +133,6 @@ static void bastardized_rice_decompress(ALACContext *alac,
             int k;
             unsigned int block_size;
 
-            sign_modifier = 1;
-
             k = 7 - av_log2(history) + ((history + 16) >> 6 /* / 64 */);
             k = FFMIN(k, alac->rice_limit);
 
@@ -149,8 +147,8 @@ static void bastardized_rice_decompress(ALACContext *alac,
                 output_count += block_size;
             }
 
-            if (block_size > 0xffff)
-                sign_modifier = 0;
+            if (block_size <= 0xffff)
+                sign_modifier = 1;
 
             history = 0;
         }
