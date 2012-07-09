@@ -110,32 +110,23 @@ static void bastardized_rice_decompress(ALACContext *alac,
     int sign_modifier = 0;
 
     for (output_count = 0; output_count < output_size; output_count++) {
-        int32_t x;
-        int32_t x_modified;
-        int32_t final_val;
-
-        /* standard rice encoding */
-        int k; /* size of extra bits */
+        int x, k;
 
         /* read k, that is bits as is */
         k = av_log2((history >> 9) + 3);
         k = FFMIN(k, alac->rice_limit);
         x = decode_scalar(&alac->gb, k, readsamplesize);
-
-        x_modified = sign_modifier + x;
-        final_val = (x_modified + 1) / 2;
-        if (x_modified & 1) final_val *= -1;
-
-        output_buffer[output_count] = final_val;
-
+        x += sign_modifier;
         sign_modifier = 0;
 
+        output_buffer[output_count] = (x >> 1) ^ -(x & 1);
+
         /* now update the history */
-        if (x_modified > 0xffff)
+        if (x > 0xffff)
             history = 0xffff;
         else
-            history += x_modified * rice_history_mult -
-                        ((history * rice_history_mult) >> 9);
+            history +=         x * rice_history_mult -
+                       ((history * rice_history_mult) >> 9);
 
         /* special case: there may be compressed blocks of 0 */
         if ((history < 128) && (output_count+1 < output_size)) {
