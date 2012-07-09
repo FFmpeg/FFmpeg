@@ -1116,6 +1116,7 @@ HAVE_LIST="
     MapViewOfFile
     memalign
     mkstemp
+    mm_empty
     mmap
     nanosleep
     netinet_sctp_h
@@ -2742,6 +2743,8 @@ elif enabled sparc; then
 elif enabled x86; then
 
     check_code ld intrin.h "__rdtsc()" && enable rdtsc
+
+    check_code ld mmintrin.h "_mm_empty()" && enable mm_empty
 
     enable local_aligned_8 local_aligned_16
 
