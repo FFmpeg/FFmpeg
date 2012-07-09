@@ -266,28 +266,6 @@ static void append_extra_bits(int32_t *buffer[MAX_CHANNELS],
             buffer[ch][i] = (buffer[ch][i] << extra_bits) | extra_bits_buffer[ch][i];
 }
 
-static void interleave_stereo_16(int32_t *buffer[MAX_CHANNELS],
-                                 int16_t *buffer_out, int numsamples)
-{
-    int i;
-
-    for (i = 0; i < numsamples; i++) {
-        *buffer_out++ = buffer[0][i];
-        *buffer_out++ = buffer[1][i];
-    }
-}
-
-static void interleave_stereo_24(int32_t *buffer[MAX_CHANNELS],
-                                 int32_t *buffer_out, int numsamples)
-{
-    int i;
-
-    for (i = 0; i < numsamples; i++) {
-        *buffer_out++ = buffer[0][i] << 8;
-        *buffer_out++ = buffer[1][i] << 8;
-    }
-}
-
 static int alac_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
@@ -430,28 +408,21 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     switch(alac->sample_size) {
-    case 16:
-        if (channels == 2) {
-            interleave_stereo_16(alac->output_samples_buffer,
-                                 (int16_t *)alac->frame.data[0],
-                                 alac->nb_samples);
-        } else {
-            int16_t *outbuffer = (int16_t *)alac->frame.data[0];
-            for (i = 0; i < alac->nb_samples; i++) {
-                outbuffer[i] = alac->output_samples_buffer[0][i];
-            }
-        }
+    case 16: {
+        int16_t *outbuffer = (int16_t *)alac->frame.data[0];
+        for (i = 0; i < alac->nb_samples; i++) {
+            *outbuffer++ = alac->output_samples_buffer[0][i];
+            if (channels == 2)
+                *outbuffer++ = alac->output_samples_buffer[1][i];
+        }}
         break;
-    case 24:
-        if (channels == 2) {
-            interleave_stereo_24(alac->output_samples_buffer,
-                                 (int32_t *)alac->frame.data[0],
-                                 alac->nb_samples);
-        } else {
-            int32_t *outbuffer = (int32_t *)alac->frame.data[0];
-            for (i = 0; i < alac->nb_samples; i++)
-                outbuffer[i] = alac->output_samples_buffer[0][i] << 8;
-        }
+    case 24: {
+        int32_t *outbuffer = (int32_t *)alac->frame.data[0];
+        for (i = 0; i < alac->nb_samples; i++) {
+            *outbuffer++ = alac->output_samples_buffer[0][i] << 8;
+            if (channels == 2)
+                *outbuffer++ = alac->output_samples_buffer[1][i] << 8;
+        }}
         break;
     }
 
