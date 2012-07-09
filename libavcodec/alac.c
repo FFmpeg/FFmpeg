@@ -131,11 +131,11 @@ static void bastardized_rice_decompress(ALACContext *alac,
         sign_modifier = 0;
 
         /* now update the history */
-        history += x_modified * rice_history_mult -
-                    ((history * rice_history_mult) >> 9);
-
         if (x_modified > 0xffff)
             history = 0xffff;
+        else
+            history += x_modified * rice_history_mult -
+                        ((history * rice_history_mult) >> 9);
 
         /* special case: there may be compressed blocks of 0 */
         if ((history < 128) && (output_count+1 < output_size)) {
