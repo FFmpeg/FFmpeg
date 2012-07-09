@@ -34,8 +34,19 @@
         : "=a" (eax), "=S" (ebx), "=c" (ecx), "=d" (edx)        \
         : "0" (index))
 
+#if HAVE_INLINE_ASM
 #define xgetbv(index, eax, edx)                                 \
     __asm__ (".byte 0x0f, 0x01, 0xd0" : "=a"(eax), "=d"(edx) : "c" (index))
+#elif HAVE_XGETBV
+#include <immintrin.h>
+
+#define xgetbv(index, eax, edx)                 \
+    do {                                        \
+        uint64_t res = __xgetbv(index);         \
+        eax = res;                              \
+        edx = res >> 32;                        \
+    } while (0)
+#endif /* HAVE_XGETBV */
 
 #define get_eflags(x)                           \
     __asm__ volatile ("pushfl     \n"           \
