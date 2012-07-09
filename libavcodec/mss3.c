@@ -26,6 +26,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "mss34dsp.h"
 
 #define HEADER_SIZE 27
 
@@ -118,28 +119,6 @@ typedef struct MSS3Context {
     int              dctblock[64];
     int              hblock[16 * 16];
 } MSS3Context;
-
-static const uint8_t mss3_luma_quant[64] = {
-    16,  11,  10,  16,  24,  40,  51,  61,
-    12,  12,  14,  19,  26,  58,  60,  55,
-    14,  13,  16,  24,  40,  57,  69,  56,
-    14,  17,  22,  29,  51,  87,  80,  62,
-    18,  22,  37,  56,  68, 109, 103,  77,
-    24,  35,  55,  64,  81, 104, 113,  92,
-    49,  64,  78,  87, 103, 121, 120, 101,
-    72,  92,  95,  98, 112, 100, 103,  99
-};
-
-static const uint8_t mss3_chroma_quant[64] = {
-    17, 18, 24, 47, 99, 99, 99, 99,
-    18, 21, 26, 66, 99, 99, 99, 99,
-    24, 26, 56, 99, 99, 99, 99, 99,
-    47, 66, 99, 99, 99, 99, 99, 99,
-    99, 99, 99, 99, 99, 99, 99, 99,
-    99, 99, 99, 99, 99, 99, 99, 99,
-    99, 99, 99, 99, 99, 99, 99, 99,
-    99, 99, 99, 99, 99, 99, 99, 99
-};
 
 static const uint8_t zigzag_scan[64] = {
     0,   1,  8, 16,  9,  2,  3, 10,
@@ -586,58 +565,6 @@ static int decode_dct(RangeCoder *c, DCTBlockCoder *bc, int *block,
     return pos == 64 ? 0 : -1;
 }
 
-#define DCT_TEMPLATE(blk, step, SOP, shift)                         \
-    const int t0 = -39409 * blk[7 * step] -  58980 * blk[1 * step]; \
-    const int t1 =  39410 * blk[1 * step] -  58980 * blk[7 * step]; \
-    const int t2 = -33410 * blk[5 * step] - 167963 * blk[3 * step]; \
-    const int t3 =  33410 * blk[3 * step] - 167963 * blk[5 * step]; \
-    const int t4 =          blk[3 * step] +          blk[7 * step]; \
-    const int t5 =          blk[1 * step] +          blk[5 * step]; \
-    const int t6 =  77062 * t4            +  51491 * t5;            \
-    const int t7 =  77062 * t5            -  51491 * t4;            \
-    const int t8 =  35470 * blk[2 * step] -  85623 * blk[6 * step]; \
-    const int t9 =  35470 * blk[6 * step] +  85623 * blk[2 * step]; \
-    const int tA = SOP(blk[0 * step] - blk[4 * step]);              \
-    const int tB = SOP(blk[0 * step] + blk[4 * step]);              \
-                                                                    \
-    blk[0 * step] = (  t1 + t6  + t9 + tB) >> shift;                \
-    blk[1 * step] = (  t3 + t7  + t8 + tA) >> shift;                \
-    blk[2 * step] = (  t2 + t6  - t8 + tA) >> shift;                \
-    blk[3 * step] = (  t0 + t7  - t9 + tB) >> shift;                \
-    blk[4 * step] = (-(t0 + t7) - t9 + tB) >> shift;                \
-    blk[5 * step] = (-(t2 + t6) - t8 + tA) >> shift;                \
-    blk[6 * step] = (-(t3 + t7) + t8 + tA) >> shift;                \
-    blk[7 * step] = (-(t1 + t6) + t9 + tB) >> shift;                \
-
-#define SOP_ROW(a) ((a) << 16) + 0x2000
-#define SOP_COL(a) ((a + 32) << 16)
-
-static void dct_put(uint8_t *dst, int stride, int *block)
-{
-    int i, j;
-    int *ptr;
-
-    ptr = block;
-    for (i = 0; i < 8; i++) {
-        DCT_TEMPLATE(ptr, 1, SOP_ROW, 13);
-        ptr += 8;
-    }
-
-    ptr = block;
-    for (i = 0; i < 8; i++) {
-        DCT_TEMPLATE(ptr, 8, SOP_COL, 22);
-        ptr++;
-    }
-
-    ptr = block;
-    for (j = 0; j < 8; j++) {
-        for (i = 0; i < 8; i++)
-            dst[i] = av_clip_uint8(ptr[i] + 128);
-        dst += stride;
-        ptr += 8;
-    }
-}
-
 static void decode_dct_block(RangeCoder *c, DCTBlockCoder *bc,
                              uint8_t *dst, int stride, int block_size,
                              int *block, int mb_x, int mb_y)
@@ -655,7 +582,7 @@ static void decode_dct_block(RangeCoder *c, DCTBlockCoder *bc,
                 c->got_error = 1;
                 return;
             }
-            dct_put(dst + i * 8, stride, block);
+            ff_mss34_dct_put(dst + i * 8, stride, block);
         }
         dst += 8 * stride;
     }
@@ -702,14 +629,6 @@ static void decode_haar_block(RangeCoder *c, HaarBlockCoder *hc,
     }
 }
 
-static void gen_quant_mat(uint16_t *qmat, const uint8_t *ref, float scale)
-{
-    int i;
-
-    for (i = 0; i < 64; i++)
-        qmat[i] = (uint16_t)(ref[i] * scale + 50.0) / 100;
-}
-
 static void reset_coders(MSS3Context *ctx, int quality)
 {
     int i, j;
@@ -726,15 +645,8 @@ static void reset_coders(MSS3Context *ctx, int quality)
         for (j = 0; j < 125; j++)
             model_reset(&ctx->image_coder[i].vq_model[j]);
         if (ctx->dct_coder[i].quality != quality) {
-            float scale;
             ctx->dct_coder[i].quality = quality;
-            if (quality > 50)
-                scale = 200.0f - 2 * quality;
-            else
-                scale = 5000.0f / quality;
-            gen_quant_mat(ctx->dct_coder[i].qmat,
-                          i ? mss3_chroma_quant : mss3_luma_quant,
-                          scale);
+            ff_mss34_gen_quant_mat(ctx->dct_coder[i].qmat, quality, !i);
         }
         memset(ctx->dct_coder[i].prev_dc, 0,
                sizeof(*ctx->dct_coder[i].prev_dc) *
