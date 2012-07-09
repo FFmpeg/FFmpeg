@@ -263,8 +263,8 @@ static void lpc_prediction(int32_t *error_buffer, int32_t *buffer_out,
 }
 
 static void decorrelate_stereo(int32_t *buffer[2],
-                               int nb_samples, uint8_t decorr_shift,
-                               uint8_t decorr_left_weight)
+                               int nb_samples, int decorr_shift,
+                               int decorr_left_weight)
 {
     int i;
 
@@ -298,10 +298,10 @@ static int decode_element(AVCodecContext *avctx, void *data, int ch_index,
 {
     ALACContext *alac = avctx->priv_data;
     int has_size;
-    unsigned int bps;
+    int bps;
     int is_compressed;
-    uint8_t decorr_shift;
-    uint8_t decorr_left_weight;
+    int decorr_shift;
+    int decorr_left_weight;
     uint32_t output_samples;
     int i, ch, ret;
 
