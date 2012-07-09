@@ -70,19 +70,16 @@ typedef struct {
 
     int32_t *extra_bits_buffer[MAX_CHANNELS];
 
-    /* stuff from setinfo */
-    uint32_t setinfo_max_samples_per_frame; /* 0x1000 = 4096 */    /* max samples per frame? */
-    uint8_t setinfo_sample_size; /* 0x10 */
-    uint8_t setinfo_rice_historymult; /* 0x28 */
-    uint8_t setinfo_rice_initialhistory; /* 0x0a */
-    uint8_t setinfo_rice_kmodifier; /* 0x0e */
-    /* end setinfo stuff */
+    uint32_t setinfo_max_samples_per_frame;
+    uint8_t setinfo_sample_size;
+    uint8_t setinfo_rice_historymult;
+    uint8_t setinfo_rice_initialhistory;
+    uint8_t setinfo_rice_kmodifier;
 
     int extra_bits;                         /**< number of extra bits beyond 16-bit */
 } ALACContext;
 
 static inline int decode_scalar(GetBitContext *gb, int k, int limit, int readsamplesize){
-    /* read x - number of 1s before 0 represent the rice */
     int x = get_unary_0_9(gb);
 
     if (x > 8) { /* RICE THRESHOLD */
@@ -109,14 +106,13 @@ static inline int decode_scalar(GetBitContext *gb, int k, int limit, int readsam
 }
 
 static void bastardized_rice_decompress(ALACContext *alac,
-                                 int32_t *output_buffer,
-                                 int output_size,
-                                 int readsamplesize, /* arg_10 */
-                                 int rice_initialhistory, /* arg424->b */
-                                 int rice_kmodifier, /* arg424->d */
-                                 int rice_historymult, /* arg424->c */
-                                 int rice_kmodifier_mask /* arg424->e */
-        )
+                                        int32_t *output_buffer,
+                                        int output_size,
+                                        int readsamplesize,
+                                        int rice_initialhistory,
+                                        int rice_kmodifier,
+                                        int rice_historymult,
+                                        int rice_kmodifier_mask)
 {
     int output_count;
     unsigned int history = rice_initialhistory;
@@ -203,10 +199,8 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
         return;
     }
 
-    if (predictor_coef_num == 0x1f) { /* 11111 - max value of predictor_coef_num */
-      /* second-best case scenario for fir decompression,
-       * error describes a small difference from the previous sample only
-       */
+    if (predictor_coef_num == 31) {
+        /* simple 1st-order prediction */
         if (output_size <= 1)
             return;
         for (i = 0; i < output_size - 1; i++) {
@@ -231,9 +225,7 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
             buffer_out[i+1] = val;
         }
 
-    /* 4 and 8 are very common cases (the only ones i've seen). these
-     * should be unrolled and optimized
-     */
+    /* NOTE: 4 and 8 are very common cases that could be optimized. */
 
     /* general case */
     if (predictor_coef_num > 0) {
@@ -371,14 +363,10 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    /* 2^result = something to do with output waiting.
-     * perhaps matters if we read > 1 frame in a pass?
-     */
-    skip_bits(&alac->gb, 4);
+    skip_bits(&alac->gb, 4);  /* element instance tag */
+    skip_bits(&alac->gb, 12); /* unused header bits */
 
-    skip_bits(&alac->gb, 12); /* unknown, skip 12 bits */
-
-    /* the output sample size is stored soon */
+    /* the number of output samples is stored in the frame */
     hassize = get_bits1(&alac->gb);
 
     alac->extra_bits = get_bits(&alac->gb, 2) << 3;
@@ -578,7 +566,6 @@ static int alac_set_info(ALACContext *alac)
 
     bytestream2_skipu(&gb, 12); // size:4, alac:4, version:4
 
-    /* buffer size / 2 ? */
     alac->setinfo_max_samples_per_frame = bytestream2_get_be32u(&gb);
     if (alac->setinfo_max_samples_per_frame >= UINT_MAX/4){
         av_log(alac->avctx, AV_LOG_ERROR,
