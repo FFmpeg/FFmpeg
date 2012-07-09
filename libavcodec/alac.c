@@ -204,28 +204,27 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
     /* general case */
     for (i = predictor_coef_num + 1; i < output_size; i++) {
         int j;
-        int sum = 0;
-        int outval;
+        int val = 0;
         int error_val = error_buffer[i];
 
         for (j = 0; j < predictor_coef_num; j++) {
-            sum += (buffer_out[predictor_coef_num-j] - buffer_out[0]) *
+            val += (buffer_out[predictor_coef_num-j] - buffer_out[0]) *
                    predictor_coef_table[j];
         }
 
-        outval = (1 << (predictor_quantitization-1)) + sum;
-        outval = outval >> predictor_quantitization;
-        outval = outval + buffer_out[0] + error_val;
-        outval = sign_extend(outval, readsamplesize);
+        val = (val + (1 << (predictor_quantitization - 1))) >>
+              predictor_quantitization;
+        val += buffer_out[0] + error_val;
 
-        buffer_out[predictor_coef_num+1] = outval;
+        buffer_out[predictor_coef_num + 1] = sign_extend(val, readsamplesize);
 
         if (error_val > 0) {
             int predictor_num = predictor_coef_num - 1;
 
             while (predictor_num >= 0 && error_val > 0) {
-                int val = buffer_out[0] - buffer_out[predictor_coef_num - predictor_num];
-                int sign = sign_only(val);
+                int sign;
+                val  = buffer_out[0] - buffer_out[predictor_coef_num - predictor_num];
+                sign = sign_only(val);
 
                 predictor_coef_table[predictor_num] -= sign;
 
@@ -240,8 +239,9 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
             int predictor_num = predictor_coef_num - 1;
 
             while (predictor_num >= 0 && error_val < 0) {
-                int val = buffer_out[0] - buffer_out[predictor_coef_num - predictor_num];
-                int sign = - sign_only(val);
+                int sign;
+                val  = buffer_out[0] - buffer_out[predictor_coef_num - predictor_num];
+                sign = -sign_only(val);
 
                 predictor_coef_table[predictor_num] -= sign;
 
