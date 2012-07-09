@@ -199,7 +199,6 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
     }
 
     /* read warm-up samples */
-    if (predictor_coef_num > 0)
         for (i = 0; i < predictor_coef_num; i++) {
             int32_t val;
 
@@ -211,7 +210,6 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
     /* NOTE: 4 and 8 are very common cases that could be optimized. */
 
     /* general case */
-    if (predictor_coef_num > 0) {
         for (i = predictor_coef_num + 1; i < output_size; i++) {
             int j;
             int sum = 0;
@@ -266,7 +264,6 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
 
             buffer_out++;
         }
-    }
 }
 
 static void decorrelate_stereo(int32_t *buffer[MAX_CHANNELS],
