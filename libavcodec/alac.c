@@ -424,6 +424,18 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
                 *outbuffer++ = alac->output_samples_buffer[1][i] << 8;
         }}
         break;
+    case 32:
+        if (channels == 2) {
+            int32_t *outbuffer = (int32_t *)alac->frame.data[0];
+            for (i = 0; i < alac->nb_samples; i++) {
+                *outbuffer++ = alac->output_samples_buffer[0][i];
+                *outbuffer++ = alac->output_samples_buffer[1][i];
+            }
+        } else {
+            memcpy(alac->frame.data[0], alac->output_samples_buffer[0],
+                   alac->nb_samples * sizeof(*alac->output_samples_buffer[0]));
+        }
+        break;
     }
 
     if (avpkt->size * 8 - get_bits_count(&alac->gb) > 8)
@@ -520,7 +532,8 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
     switch (alac->sample_size) {
     case 16: avctx->sample_fmt    = AV_SAMPLE_FMT_S16;
              break;
-    case 24: avctx->sample_fmt    = AV_SAMPLE_FMT_S32;
+    case 24:
+    case 32: avctx->sample_fmt    = AV_SAMPLE_FMT_S32;
              break;
     default: av_log_ask_for_sample(avctx, "Sample depth %d is not supported.\n",
                                    alac->sample_size);
