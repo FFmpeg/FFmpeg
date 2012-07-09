@@ -78,6 +78,18 @@ typedef struct {
     int nb_samples;                         /**< number of samples in the current frame */
 } ALACContext;
 
+enum RawDataBlockType {
+    /* At the moment, only SCE, CPE, LFE, and END are recognized. */
+    TYPE_SCE,
+    TYPE_CPE,
+    TYPE_CCE,
+    TYPE_LFE,
+    TYPE_DSE,
+    TYPE_PCE,
+    TYPE_FIL,
+    TYPE_END
+};
+
 static inline unsigned int decode_scalar(GetBitContext *gb, int k,
                                          int readsamplesize)
 {
@@ -268,26 +280,17 @@ static void append_extra_bits(int32_t *buffer[MAX_CHANNELS],
             buffer[ch][i] = (buffer[ch][i] << extra_bits) | extra_bits_buffer[ch][i];
 }
 
-static int alac_decode_frame(AVCodecContext *avctx, void *data,
-                             int *got_frame_ptr, AVPacket *avpkt)
+static int decode_element(AVCodecContext *avctx, void *data, int ch_index,
+                          int channels)
 {
     ALACContext *alac = avctx->priv_data;
-
-    int channels;
     int hassize;
     unsigned int readsamplesize;
     int is_compressed;
     uint8_t interlacing_shift;
     uint8_t interlacing_leftweight;
+    uint32_t output_samples;
     int i, ch, ret;
-
-    init_get_bits(&alac->gb, avpkt->data, avpkt->size * 8);
-
-    channels = get_bits(&alac->gb, 3) + 1;
-    if (channels != avctx->channels) {
-        av_log(avctx, AV_LOG_ERROR, "frame header channel count mismatch\n");
-        return AVERROR_INVALIDDATA;
-    }
 
     skip_bits(&alac->gb, 4);  /* element instance tag */
     skip_bits(&alac->gb, 12); /* unused header bits */
@@ -305,28 +308,32 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
     /* whether the frame is compressed */
     is_compressed = !get_bits1(&alac->gb);
 
-    if (hassize) {
-        /* now read the number of samples as a 32bit integer */
-        uint32_t output_samples = get_bits_long(&alac->gb, 32);
-        if (!output_samples || output_samples > alac->max_samples_per_frame) {
-            av_log(avctx, AV_LOG_ERROR, "invalid samples per frame: %d\n",
-                   output_samples);
-            return AVERROR_INVALIDDATA;
+    if (hassize)
+        output_samples = get_bits_long(&alac->gb, 32);
+    else
+        output_samples = alac->max_samples_per_frame;
+    if (!output_samples || output_samples > alac->max_samples_per_frame) {
+        av_log(avctx, AV_LOG_ERROR, "invalid samples per frame: %d\n",
+               output_samples);
+        return AVERROR_INVALIDDATA;
+    }
+    if (!alac->nb_samples) {
+        /* get output buffer */
+        alac->frame.nb_samples = output_samples;
+        if ((ret = avctx->get_buffer(avctx, &alac->frame)) < 0) {
+            av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+            return ret;
         }
-        alac->nb_samples = output_samples;
-    } else
-        alac->nb_samples = alac->max_samples_per_frame;
-
-    /* get output buffer */
-    alac->frame.nb_samples = alac->nb_samples;
-    if ((ret = avctx->get_buffer(avctx, &alac->frame)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return ret;
+        if (alac->sample_size > 16) {
+            for (ch = 0; ch < channels; ch++)
+                alac->output_samples_buffer[ch] = (int32_t *)alac->frame.data[ch_index + ch];
+        }
+    } else if (output_samples != alac->nb_samples) {
+        av_log(avctx, AV_LOG_ERROR, "sample count mismatch: %u != %d\n",
+               output_samples, alac->nb_samples);
+        return AVERROR_INVALIDDATA;
     }
-    if (alac->sample_size > 16) {
-        for (ch = 0; ch < alac->channels; ch++)
-            alac->output_samples_buffer[ch] = (int32_t *)alac->frame.data[ch];
-    }
+    alac->nb_samples = output_samples;
 
     if (is_compressed) {
         int16_t predictor_coef_table[MAX_CHANNELS][32];
@@ -391,16 +398,13 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
         /* not compressed, easy case */
         for (i = 0; i < alac->nb_samples; i++) {
             for (ch = 0; ch < channels; ch++) {
-                alac->output_samples_buffer[ch][i] = get_sbits_long(&alac->gb,
-                                                                    alac->sample_size);
+                alac->output_samples_buffer[ch][i] = get_sbits_long(&alac->gb, alac->sample_size);
             }
         }
         alac->extra_bits = 0;
         interlacing_shift = 0;
         interlacing_leftweight = 0;
     }
-    if (get_bits(&alac->gb, 3) != 7)
-        av_log(avctx, AV_LOG_ERROR, "Error : Wrong End Of Frame\n");
 
     if (channels == 2 && interlacing_leftweight) {
         decorrelate_stereo(alac->output_samples_buffer, alac->nb_samples,
@@ -409,23 +413,60 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
 
     if (alac->extra_bits) {
         append_extra_bits(alac->output_samples_buffer, alac->extra_bits_buffer,
-                          alac->extra_bits, alac->channels, alac->nb_samples);
+                          alac->extra_bits, channels, alac->nb_samples);
     }
 
     switch(alac->sample_size) {
     case 16: {
-        for (ch = 0; ch < alac->channels; ch++) {
-            int16_t *outbuffer = (int16_t *)alac->frame.data[ch];
+        for (ch = 0; ch < channels; ch++) {
+            int16_t *outbuffer = (int16_t *)alac->frame.data[ch_index + ch];
             for (i = 0; i < alac->nb_samples; i++)
                 *outbuffer++ = alac->output_samples_buffer[ch][i];
         }}
         break;
     case 24: {
-        for (ch = 0; ch < alac->channels; ch++) {
+        for (ch = 0; ch < channels; ch++) {
             for (i = 0; i < alac->nb_samples; i++)
                 alac->output_samples_buffer[ch][i] <<= 8;
         }}
         break;
+    }
+
+    return 0;
+}
+
+static int alac_decode_frame(AVCodecContext *avctx, void *data,
+                             int *got_frame_ptr, AVPacket *avpkt)
+{
+    ALACContext *alac = avctx->priv_data;
+    enum RawDataBlockType element;
+    int channels;
+    int ch, ret;
+
+    init_get_bits(&alac->gb, avpkt->data, avpkt->size * 8);
+
+    alac->nb_samples = 0;
+    ch = 0;
+    while (get_bits_left(&alac->gb)) {
+        element = get_bits(&alac->gb, 3);
+        if (element == TYPE_END)
+            break;
+        if (element > TYPE_CPE && element != TYPE_LFE) {
+            av_log(avctx, AV_LOG_ERROR, "syntax element unsupported: %d", element);
+            return AVERROR_PATCHWELCOME;
+        }
+
+        channels = (element == TYPE_CPE) ? 2 : 1;
+        if (ch + channels > alac->channels) {
+            av_log(avctx, AV_LOG_ERROR, "invalid element channel count\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        ret = decode_element(avctx, data, ch, channels);
+        if (ret < 0)
+            return ret;
+
+        ch += channels;
     }
 
     if (avpkt->size * 8 - get_bits_count(&alac->gb) > 8)
