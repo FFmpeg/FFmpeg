@@ -63,9 +63,9 @@
 #endif
 
 #if AV_GCC_VERSION_AT_LEAST(4,3)
-    #define av_alloc_size(n) __attribute__((alloc_size(n)))
+    #define av_alloc_size(...) __attribute__((alloc_size(__VA_ARGS__)))
 #else
-    #define av_alloc_size(n)
+    #define av_alloc_size(...)
 #endif
 
 /**
@@ -77,6 +77,22 @@
  * @see av_mallocz()
  */
 void *av_malloc(size_t size) av_malloc_attrib av_alloc_size(1);
+
+/**
+ * Helper function to allocate a block of size * nmemb bytes with
+ * using av_malloc()
+ * @param nmemb Number of elements
+ * @param size Size of the single element
+ * @return Pointer to the allocated block, NULL if the block cannot
+ * be allocated.
+ * @see av_malloc()
+ */
+av_alloc_size(1,2) static inline void *av_malloc_array(size_t nmemb, size_t size)
+{
+    if (size <= 0 || nmemb >= INT_MAX / size)
+        return NULL;
+    return av_malloc(nmemb * size);
+}
 
 /**
  * Allocate or reallocate a block of memory.
@@ -111,6 +127,23 @@ void av_free(void *ptr);
  * @see av_malloc()
  */
 void *av_mallocz(size_t size) av_malloc_attrib av_alloc_size(1);
+
+/**
+ * Helper function to allocate a block of size * nmemb bytes with
+ * using av_mallocz()
+ * @param nmemb Number of elements
+ * @param size Size of the single element
+ * @return Pointer to the allocated block, NULL if the block cannot
+ * be allocated.
+ * @see av_mallocz()
+ * @see av_malloc_array()
+ */
+av_alloc_size(1,2) static inline void *av_mallocz_array(size_t nmemb, size_t size)
+{
+    if (size <= 0 || nmemb >= INT_MAX / size)
+        return NULL;
+    return av_mallocz(nmemb * size);
+}
 
 /**
  * Duplicate the string s.
