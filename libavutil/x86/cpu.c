@@ -25,6 +25,7 @@
 #include "libavutil/x86_cpu.h"
 #include "libavutil/cpu.h"
 
+#if HAVE_INLINE_ASM
 /* ebx saving is necessary for PIC. gcc seems unable to see it alone */
 #define cpuid(index, eax, ebx, ecx, edx)                        \
     __asm__ volatile (                                          \
@@ -33,6 +34,19 @@
         "xchg   %%"REG_b", %%"REG_S                             \
         : "=a" (eax), "=S" (ebx), "=c" (ecx), "=d" (edx)        \
         : "0" (index))
+#elif HAVE_CPUID
+#include <intrin.h>
+
+#define cpuid(index, eax, ebx, ecx, edx)        \
+    do {                                        \
+        int info[4];                            \
+        __cpuid(info, index);                   \
+        eax = info[0];                          \
+        ebx = info[1];                          \
+        ecx = info[2];                          \
+        edx = info[3];                          \
+    } while (0)
+#endif /* HAVE_CPUID */
 
 #if HAVE_INLINE_ASM
 #define xgetbv(index, eax, edx)                                 \

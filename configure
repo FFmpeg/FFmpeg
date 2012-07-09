@@ -1061,6 +1061,7 @@ HAVE_LIST="
     cbrtf
     closesocket
     cmov
+    cpuid
     dcbzl
     dev_bktr_ioctl_bt848_h
     dev_bktr_ioctl_meteor_h
@@ -2744,6 +2745,7 @@ elif enabled sparc; then
 elif enabled x86; then
 
     check_code ld immintrin.h "__xgetbv(0)" && enable xgetbv
+    check_code ld intrin.h "int info[4]; __cpuid(info, 0)" && enable cpuid
     check_code ld intrin.h "__rdtsc()" && enable rdtsc
 
     check_code ld mmintrin.h "_mm_empty()" && enable mm_empty
