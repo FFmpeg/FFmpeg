@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2010 S.N. Hemanth Meenakshisundaram <smeenaks@ucsd.edu>
+ * Common stuff for some Microsoft Screen codecs
+ * Copyright (C) 2012 Konstantin Shishkov
  *
  * This file is part of FFmpeg.
  *
@@ -18,27 +19,27 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "avfilter.h"
-#include "internal.h"
+#ifndef AVCODEC_MSS34DSP_H
+#define AVCODEC_MSS34DSP_H
 
-static int null_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
-{
-    return 0;
-}
+#include <stdint.h>
 
-AVFilter avfilter_asink_anullsink = {
-    .name        = "anullsink",
-    .description = NULL_IF_CONFIG_SMALL("Do absolutely nothing with the input audio."),
+/**
+ * Generate quantisation matrix for given quality.
+ *
+ * @param qmat    destination matrix
+ * @param quality quality setting (1-100)
+ * @param luma    generate quantisation matrix for luma or chroma
+ */
+void ff_mss34_gen_quant_mat(uint16_t *qmat, int quality, int luma);
 
-    .priv_size = 0,
+/**
+ * Transform and output DCT block.
+ *
+ * @param dst     output plane
+ * @param stride  output plane stride
+ * @param block   block to transform and output
+ */
+void ff_mss34_dct_put(uint8_t *dst, int stride, int *block);
 
-    .inputs    = (const AVFilterPad[]) {
-        {
-            .name            = "default",
-            .type            = AVMEDIA_TYPE_AUDIO,
-            .filter_samples  = null_filter_samples,
-        },
-        { .name = NULL},
-    },
-    .outputs   = (const AVFilterPad[]) {{ .name = NULL }},
-};
+#endif /* AVCODEC_MSS34DSP_H */

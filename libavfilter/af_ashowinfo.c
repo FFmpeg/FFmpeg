@@ -40,7 +40,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     return 0;
 }
 
-static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
+static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
 {
     AVFilterContext *ctx = inlink->dst;
     ShowInfoContext *showinfo = ctx->priv;
@@ -83,7 +83,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
     av_log(ctx, AV_LOG_INFO, "]\n");
 
     showinfo->frame++;
-    ff_filter_samples(inlink->dst->outputs[0], samplesref);
+    return ff_filter_samples(inlink->dst->outputs[0], samplesref);
 }
 
 AVFilter avfilter_af_ashowinfo = {

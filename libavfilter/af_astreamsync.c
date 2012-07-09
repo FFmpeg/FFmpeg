@@ -107,11 +107,12 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static void send_out(AVFilterContext *ctx, int out_id)
+static int send_out(AVFilterContext *ctx, int out_id)
 {
     AStreamSyncContext *as = ctx->priv;
     struct buf_queue *queue = &as->queue[out_id];
     AVFilterBufferRef *buf = queue->buf[queue->tail];
+    int ret;
 
     queue->buf[queue->tail] = NULL;
     as->var_values[VAR_B1 + out_id]++;
@@ -121,11 +122,12 @@ static void send_out(AVFilterContext *ctx, int out_id)
             av_q2d(ctx->outputs[out_id]->time_base) * buf->pts;
     as->var_values[VAR_T1 + out_id] += buf->audio->nb_samples /
                                    (double)ctx->inputs[out_id]->sample_rate;
-    ff_filter_samples(ctx->outputs[out_id], buf);
+    ret = ff_filter_samples(ctx->outputs[out_id], buf);
     queue->nb--;
     queue->tail = (queue->tail + 1) % QUEUE_SIZE;
     if (as->req[out_id])
         as->req[out_id]--;
+    return ret;
 }
 
 static void send_next(AVFilterContext *ctx)
@@ -165,7 +167,7 @@ static int request_frame(AVFilterLink *outlink)
     return 0;
 }
 
-static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 {
     AVFilterContext *ctx = inlink->dst;
     AStreamSyncContext *as = ctx->priv;
@@ -175,6 +177,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
         insamples;
     as->eof &= ~(1 << id);
     send_next(ctx);
+    return 0;
 }
 
 AVFilter avfilter_af_astreamsync = {

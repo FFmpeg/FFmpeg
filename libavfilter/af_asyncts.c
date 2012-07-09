@@ -37,6 +37,9 @@ typedef struct ASyncContext {
     int resample;
     float min_delta_sec;
     int max_comp;
+
+    /* set by filter_samples() to signal an output frame to request_frame() */
+    int got_output;
 } ASyncContext;
 
 #define OFFSET(x) offsetof(ASyncContext, x)
@@ -112,8 +115,12 @@ static int request_frame(AVFilterLink *link)
 {
     AVFilterContext *ctx = link->src;
     ASyncContext      *s = ctx->priv;
-    int ret = ff_request_frame(ctx->inputs[0]);
+    int ret = 0;
     int nb_samples;
+
+    s->got_output = 0;
+    while (ret >= 0 && !s->got_output)
+        ret = ff_request_frame(ctx->inputs[0]);
 
     /* flush the fifo */
     if (ret == AVERROR_EOF && (nb_samples = avresample_get_delay(s->avr))) {
@@ -124,18 +131,18 @@ static int request_frame(AVFilterLink *link)
         avresample_convert(s->avr, (void**)buf->extended_data, buf->linesize[0],
                            nb_samples, NULL, 0, 0);
         buf->pts = s->pts;
-        ff_filter_samples(link, buf);
-        return 0;
+        return ff_filter_samples(link, buf);
     }
 
     return ret;
 }
 
-static void write_to_fifo(ASyncContext *s, AVFilterBufferRef *buf)
+static int write_to_fifo(ASyncContext *s, AVFilterBufferRef *buf)
 {
-    avresample_convert(s->avr, NULL, 0, 0, (void**)buf->extended_data,
-                       buf->linesize[0], buf->audio->nb_samples);
+    int ret = avresample_convert(s->avr, NULL, 0, 0, (void**)buf->extended_data,
+                                 buf->linesize[0], buf->audio->nb_samples);
     avfilter_unref_buffer(buf);
+    return ret;
 }
 
 /* get amount of data currently buffered, in samples */
@@ -144,7 +151,7 @@ static int64_t get_delay(ASyncContext *s)
     return avresample_available(s->avr) + avresample_get_delay(s->avr);
 }
 
-static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
+static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
 {
     AVFilterContext  *ctx = inlink->dst;
     ASyncContext       *s = ctx->priv;
@@ -152,7 +159,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
     int nb_channels = av_get_channel_layout_nb_channels(buf->audio->channel_layout);
     int64_t pts = (buf->pts == AV_NOPTS_VALUE) ? buf->pts :
                   av_rescale_q(buf->pts, inlink->time_base, outlink->time_base);
-    int out_size;
+    int out_size, ret;
     int64_t delta;
 
     /* buffer data until we get the first timestamp */
@@ -160,14 +167,12 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
         if (pts != AV_NOPTS_VALUE) {
             s->pts = pts - get_delay(s);
         }
-        write_to_fifo(s, buf);
-        return;
+        return write_to_fifo(s, buf);
     }
 
     /* now wait for the next timestamp */
     if (pts == AV_NOPTS_VALUE) {
-        write_to_fifo(s, buf);
-        return;
+        return write_to_fifo(s, buf);
     }
 
     /* when we have two timestamps, compute how many samples would we have
@@ -190,8 +195,10 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
     if (out_size > 0) {
         AVFilterBufferRef *buf_out = ff_get_audio_buffer(outlink, AV_PERM_WRITE,
                                                          out_size);
-        if (!buf_out)
-            return;
+        if (!buf_out) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
 
         avresample_read(s->avr, (void**)buf_out->extended_data, out_size);
         buf_out->pts = s->pts;
@@ -200,7 +207,10 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
             av_samples_set_silence(buf_out->extended_data, out_size - delta,
                                    delta, nb_channels, buf->format);
         }
-        ff_filter_samples(outlink, buf_out);
+        ret = ff_filter_samples(outlink, buf_out);
+        if (ret < 0)
+            goto fail;
+        s->got_output = 1;
     } else {
         av_log(ctx, AV_LOG_WARNING, "Non-monotonous timestamps, dropping "
                "whole buffer.\n");
@@ -210,9 +220,13 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
     avresample_read(s->avr, NULL, avresample_available(s->avr));
 
     s->pts = pts - avresample_get_delay(s->avr);
-    avresample_convert(s->avr, NULL, 0, 0, (void**)buf->extended_data,
-                       buf->linesize[0], buf->audio->nb_samples);
+    ret = avresample_convert(s->avr, NULL, 0, 0, (void**)buf->extended_data,
+                             buf->linesize[0], buf->audio->nb_samples);
+
+fail:
     avfilter_unref_buffer(buf);
+
+    return ret;
 }
 
 AVFilter avfilter_af_asyncts = {

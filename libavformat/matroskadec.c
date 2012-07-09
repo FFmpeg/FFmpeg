@@ -842,8 +842,11 @@ static int ebml_parse_id(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
         matroska->num_levels > 0 &&
         matroska->levels[matroska->num_levels-1].length == 0xffffffffffffff)
         return 0;  // we reached the end of an unknown size cluster
-    if (!syntax[i].id && id != EBML_ID_VOID && id != EBML_ID_CRC32)
+    if (!syntax[i].id && id != EBML_ID_VOID && id != EBML_ID_CRC32) {
         av_log(matroska->ctx, AV_LOG_INFO, "Unknown entry 0x%X\n", id);
+        if (matroska->ctx->error_recognition & AV_EF_EXPLODE)
+            return AVERROR_INVALIDDATA;
+    }
     return ebml_parse_elem(matroska, &syntax[i], data);
 }
 

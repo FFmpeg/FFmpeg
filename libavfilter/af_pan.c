@@ -343,8 +343,9 @@ static int config_props(AVFilterLink *link)
     return 0;
 }
 
-static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 {
+    int ret;
     int n = insamples->audio->nb_samples;
     AVFilterLink *const outlink = inlink->dst->outputs[0];
     AVFilterBufferRef *outsamples = ff_get_audio_buffer(outlink, AV_PERM_WRITE, n);
@@ -354,8 +355,9 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
     avfilter_copy_buffer_ref_props(outsamples, insamples);
     outsamples->audio->channel_layout = outlink->channel_layout;
 
-    ff_filter_samples(outlink, outsamples);
+    ret = ff_filter_samples(outlink, outsamples);
     avfilter_unref_buffer(insamples);
+    return ret;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)

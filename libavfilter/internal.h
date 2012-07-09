@@ -135,8 +135,12 @@ struct AVFilterPad {
      * and should do its processing.
      *
      * Input audio pads only.
+     *
+     * @return >= 0 on success, a negative AVERROR on error. This function
+     * must ensure that samplesref is properly unreferenced on error if it
+     * hasn't been passed on to another filter.
      */
-    void (*filter_samples)(AVFilterLink *link, AVFilterBufferRef *samplesref);
+    int (*filter_samples)(AVFilterLink *link, AVFilterBufferRef *samplesref);
 
     /**
      * Frame poll callback. This returns the number of immediately available

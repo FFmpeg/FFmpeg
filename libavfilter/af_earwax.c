@@ -120,13 +120,15 @@ static inline int16_t *scalarproduct(const int16_t *in, const int16_t *endin, in
     return out;
 }
 
-static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 {
     AVFilterLink *outlink = inlink->dst->outputs[0];
     int16_t *taps, *endin, *in, *out;
     AVFilterBufferRef *outsamples =
         ff_get_audio_buffer(inlink, AV_PERM_WRITE,
                                   insamples->audio->nb_samples);
+    int ret;
+
     avfilter_copy_buffer_ref_props(outsamples, insamples);
 
     taps  = ((EarwaxContext *)inlink->dst->priv)->taps;
@@ -144,8 +146,9 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
     // save part of input for next round
     memcpy(taps, endin, NUMTAPS * sizeof(*taps));
 
-    ff_filter_samples(outlink, outsamples);
+    ret = ff_filter_samples(outlink, outsamples);
     avfilter_unref_buffer(insamples);
+    return ret;
 }
 
 AVFilter avfilter_af_earwax = {

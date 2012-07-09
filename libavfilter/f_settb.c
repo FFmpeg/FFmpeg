@@ -117,7 +117,7 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     ff_start_frame(outlink, picref2);
 }
 
-static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
@@ -132,7 +132,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
         avfilter_unref_buffer(insamples);
     }
 
-    ff_filter_samples(outlink, outsamples);
+    return ff_filter_samples(outlink, outsamples);
 }
 
 #if CONFIG_SETTB_FILTER

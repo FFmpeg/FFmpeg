@@ -72,13 +72,25 @@ static av_cold void uninit(AVFilterContext *ctx)
     avfilter_unref_buffer(fifo->buf_out);
 }
 
-static void add_to_queue(AVFilterLink *inlink, AVFilterBufferRef *buf)
+static int add_to_queue(AVFilterLink *inlink, AVFilterBufferRef *buf)
 {
     FifoContext *fifo = inlink->dst->priv;
 
     fifo->last->next = av_mallocz(sizeof(Buf));
+    if (!fifo->last->next) {
+        avfilter_unref_buffer(buf);
+        return AVERROR(ENOMEM);
+    }
+
     fifo->last = fifo->last->next;
     fifo->last->buf = buf;
+
+    return 0;
+}
+
+static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
+{
+    add_to_queue(inlink, buf);
 }
 
 static void queue_pop(FifoContext *s)
@@ -210,15 +222,13 @@ static int return_audio_frame(AVFilterContext *ctx)
         buf_out = s->buf_out;
         s->buf_out = NULL;
     }
-    ff_filter_samples(link, buf_out);
-
-    return 0;
+    return ff_filter_samples(link, buf_out);
 }
 
 static int request_frame(AVFilterLink *outlink)
 {
     FifoContext *fifo = outlink->src->priv;
-    int ret;
+    int ret = 0;
 
     if (!fifo->root.next) {
         if ((ret = ff_request_frame(outlink->src->inputs[0])) < 0)
@@ -238,7 +248,7 @@ static int request_frame(AVFilterLink *outlink)
         if (outlink->request_samples) {
             return return_audio_frame(outlink->src);
         } else {
-            ff_filter_samples(outlink, fifo->root.next->buf);
+            ret = ff_filter_samples(outlink, fifo->root.next->buf);
             queue_pop(fifo);
         }
         break;
@@ -246,7 +256,7 @@ static int request_frame(AVFilterLink *outlink)
         return AVERROR(EINVAL);
     }
 
-    return 0;
+    return ret;
 }
 
 AVFilter avfilter_vf_fifo = {
@@ -261,7 +271,7 @@ AVFilter avfilter_vf_fifo = {
     .inputs    = (const AVFilterPad[]) {{ .name      = "default",
                                     .type            = AVMEDIA_TYPE_VIDEO,
                                     .get_video_buffer= ff_null_get_video_buffer,
-                                    .start_frame     = add_to_queue,
+                                    .start_frame     = start_frame,
                                     .draw_slice      = draw_slice,
                                     .end_frame       = end_frame,
                                     .rej_perms       = AV_PERM_REUSE2, },

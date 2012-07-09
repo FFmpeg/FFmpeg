@@ -57,18 +57,43 @@ int avresample_open(AVAudioResampleContext *avr)
     avr->resample_needed   = avr->in_sample_rate != avr->out_sample_rate ||
                              avr->force_resampling;
 
-    /* set sample format conversion parameters */
-    /* override user-requested internal format to avoid unexpected failures
-       TODO: support more internal formats */
-    if (avr->resample_needed && avr->internal_sample_fmt != AV_SAMPLE_FMT_S16P) {
-        av_log(avr, AV_LOG_WARNING, "Using s16p as internal sample format\n");
-        avr->internal_sample_fmt = AV_SAMPLE_FMT_S16P;
-    } else if (avr->mixing_needed &&
-               avr->internal_sample_fmt != AV_SAMPLE_FMT_S16P &&
-               avr->internal_sample_fmt != AV_SAMPLE_FMT_FLTP) {
-        av_log(avr, AV_LOG_WARNING, "Using fltp as internal sample format\n");
-        avr->internal_sample_fmt = AV_SAMPLE_FMT_FLTP;
+    /* select internal sample format if not specified by the user */
+    if (avr->internal_sample_fmt == AV_SAMPLE_FMT_NONE &&
+        (avr->mixing_needed || avr->resample_needed)) {
+        enum AVSampleFormat  in_fmt = av_get_planar_sample_fmt(avr->in_sample_fmt);
+        enum AVSampleFormat out_fmt = av_get_planar_sample_fmt(avr->out_sample_fmt);
+        int max_bps = FFMAX(av_get_bytes_per_sample(in_fmt),
+                            av_get_bytes_per_sample(out_fmt));
+        if (max_bps <= 2) {
+            avr->internal_sample_fmt = AV_SAMPLE_FMT_S16P;
+        } else if (avr->mixing_needed) {
+            avr->internal_sample_fmt = AV_SAMPLE_FMT_FLTP;
+        } else {
+            if (max_bps <= 4) {
+                if (in_fmt  == AV_SAMPLE_FMT_S32P ||
+                    out_fmt == AV_SAMPLE_FMT_S32P) {
+                    if (in_fmt  == AV_SAMPLE_FMT_FLTP ||
+                        out_fmt == AV_SAMPLE_FMT_FLTP) {
+                        /* if one is s32 and the other is flt, use dbl */
+                        avr->internal_sample_fmt = AV_SAMPLE_FMT_DBLP;
+                    } else {
+                        /* if one is s32 and the other is s32, s16, or u8, use s32 */
+                        avr->internal_sample_fmt = AV_SAMPLE_FMT_S32P;
+                    }
+                } else {
+                    /* if one is flt and the other is flt, s16 or u8, use flt */
+                    avr->internal_sample_fmt = AV_SAMPLE_FMT_FLTP;
+                }
+            } else {
+                /* if either is dbl, use dbl */
+                avr->internal_sample_fmt = AV_SAMPLE_FMT_DBLP;
+            }
+        }
+        av_log(avr, AV_LOG_DEBUG, "Using %s as internal sample format\n",
+               av_get_sample_fmt_name(avr->internal_sample_fmt));
     }
+
+    /* set sample format conversion parameters */
     if (avr->in_channels == 1)
         avr->in_sample_fmt = av_get_planar_sample_fmt(avr->in_sample_fmt);
     if (avr->out_channels == 1)

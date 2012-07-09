@@ -1040,7 +1040,7 @@ static void push_samples(ATempoContext *atempo,
     atempo->nsamples_out += n_out;
 }
 
-static void filter_samples(AVFilterLink *inlink,
+static int filter_samples(AVFilterLink *inlink,
                            AVFilterBufferRef *src_buffer)
 {
     AVFilterContext  *ctx = inlink->dst;
@@ -1074,6 +1074,7 @@ static void filter_samples(AVFilterLink *inlink,
 
     atempo->nsamples_in += n_in;
     avfilter_unref_bufferp(&src_buffer);
+    return 0;
 }
 
 static int request_frame(AVFilterLink *outlink)

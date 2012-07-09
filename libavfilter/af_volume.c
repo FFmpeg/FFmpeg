@@ -110,7 +110,7 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 {
     VolumeContext *vol = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
@@ -169,7 +169,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
         }
         }
     }
-    ff_filter_samples(outlink, insamples);
+    return ff_filter_samples(outlink, insamples);
 }
 
 AVFilter avfilter_af_volume = {

@@ -131,7 +131,7 @@ static int push_samples(AVFilterLink *outlink)
     return nb_out_samples;
 }
 
-static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 {
     AVFilterContext *ctx = inlink->dst;
     ASNSContext *asns = ctx->priv;
@@ -145,7 +145,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
         if (ret < 0) {
             av_log(ctx, AV_LOG_ERROR,
                    "Stretching audio fifo failed, discarded %d samples\n", nb_samples);
-            return;
+            return -1;
         }
     }
     av_audio_fifo_write(asns->fifo, (void **)insamples->extended_data, nb_samples);
@@ -155,6 +155,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 
     if (av_audio_fifo_size(asns->fifo) >= asns->nb_out_samples)
         push_samples(outlink);
+    return 0;
 }
 
 static int request_frame(AVFilterLink *outlink)

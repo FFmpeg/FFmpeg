@@ -244,9 +244,10 @@ AVFilter avfilter_vsink_buffersink = {
 
 #if CONFIG_ABUFFERSINK_FILTER
 
-static void filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
+static int filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
 {
     end_frame(link);
+    return 0;
 }
 
 static av_cold int asink_init(AVFilterContext *ctx, const char *args)

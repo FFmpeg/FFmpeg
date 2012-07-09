@@ -168,13 +168,14 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamplesref)
+static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamplesref)
 {
     AResampleContext *aresample = inlink->dst->priv;
     const int n_in  = insamplesref->audio->nb_samples;
     int n_out       = n_in * aresample->ratio * 2 ;
     AVFilterLink *const outlink = inlink->dst->outputs[0];
     AVFilterBufferRef *outsamplesref = ff_get_audio_buffer(outlink, AV_PERM_WRITE, n_out);
+    int ret;
 
 
     avfilter_copy_buffer_ref_props(outsamplesref, insamplesref);
@@ -193,15 +194,16 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamplesref
     if (n_out <= 0) {
         avfilter_unref_buffer(outsamplesref);
         avfilter_unref_buffer(insamplesref);
-        return;
+        return 0;
     }
 
     outsamplesref->audio->sample_rate = outlink->sample_rate;
     outsamplesref->audio->nb_samples  = n_out;
 
-    ff_filter_samples(outlink, outsamplesref);
+    ret = ff_filter_samples(outlink, outsamplesref);
     aresample->req_fullfilled= 1;
     avfilter_unref_buffer(insamplesref);
+    return ret;
 }
 
 static int request_frame(AVFilterLink *outlink)
