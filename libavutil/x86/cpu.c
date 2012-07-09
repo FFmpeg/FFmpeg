@@ -62,6 +62,8 @@
     } while (0)
 #endif /* HAVE_XGETBV */
 
+#if HAVE_INLINE_ASM
+
 #define get_eflags(x)                           \
     __asm__ volatile ("pushfl     \n"           \
                       "pop    %0  \n"           \
@@ -71,6 +73,18 @@
     __asm__ volatile ("push    %0 \n"           \
                       "popfl      \n"           \
                       :: "r"(x))
+
+#elif HAVE_RWEFLAGS
+
+#include <intrin.h>
+
+#define get_eflags(x)                           \
+    x = __readeflags()
+
+#define set_eflags(x)                           \
+    __writeeflags(x)
+
+#endif /* HAVE_INLINE_ASM */
 
 /* Function to test if multimedia instructions are supported...  */
 int ff_get_cpu_flags_x86(void)
