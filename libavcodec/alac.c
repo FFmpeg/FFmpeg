@@ -206,6 +206,7 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
         int j;
         int val = 0;
         int error_val = error_buffer[i];
+        int error_sign;
 
         for (j = 0; j < predictor_coef_num; j++) {
             val += (buffer_out[predictor_coef_num-j] - buffer_out[0]) *
@@ -218,39 +219,17 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
 
         buffer_out[predictor_coef_num + 1] = sign_extend(val, readsamplesize);
 
-        if (error_val > 0) {
-            int predictor_num = predictor_coef_num - 1;
-
-            while (predictor_num >= 0 && error_val > 0) {
+        /* adapt LPC coefficients */
+        error_sign = sign_only(error_val);
+        if (error_sign) {
+            for (j = predictor_coef_num - 1; j >= 0 && error_val * error_sign > 0; j--) {
                 int sign;
-                val  = buffer_out[0] - buffer_out[predictor_coef_num - predictor_num];
-                sign = sign_only(val);
-
-                predictor_coef_table[predictor_num] -= sign;
-
-                val *= sign; /* absolute value */
-
+                val  = buffer_out[0] - buffer_out[predictor_coef_num - j];
+                sign = sign_only(val) * error_sign;
+                predictor_coef_table[j] -= sign;
+                val *= sign;
                 error_val -= ((val >> predictor_quantitization) *
-                              (predictor_coef_num - predictor_num));
-
-                predictor_num--;
-            }
-        } else if (error_val < 0) {
-            int predictor_num = predictor_coef_num - 1;
-
-            while (predictor_num >= 0 && error_val < 0) {
-                int sign;
-                val  = buffer_out[0] - buffer_out[predictor_coef_num - predictor_num];
-                sign = -sign_only(val);
-
-                predictor_coef_table[predictor_num] -= sign;
-
-                val *= sign; /* neg value */
-
-                error_val -= ((val >> predictor_quantitization) *
-                              (predictor_coef_num - predictor_num));
-
-                predictor_num--;
+                              (predictor_coef_num - j));
             }
         }
 
