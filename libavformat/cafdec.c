@@ -192,10 +192,11 @@ static int read_pakt_chunk(AVFormatContext *s, int64_t size)
         st->duration += caf->frames_per_packet ? caf->frames_per_packet : ff_mp4_read_descr_len(pb);
     }
 
-    if (avio_tell(pb) - ccount != size) {
+    if (avio_tell(pb) - ccount > size) {
         av_log(s, AV_LOG_ERROR, "error reading packet table\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
+    avio_skip(pb, ccount + size - avio_tell(pb));
 
     caf->num_bytes = pos;
     return 0;
