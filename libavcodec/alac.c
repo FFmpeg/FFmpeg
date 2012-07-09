@@ -77,17 +77,14 @@ typedef struct {
     int extra_bits;                         /**< number of extra bits beyond 16-bit */
 } ALACContext;
 
-static inline int decode_scalar(GetBitContext *gb, int k, int limit, int readsamplesize){
+static inline int decode_scalar(GetBitContext *gb, int k, int readsamplesize)
+{
     int x = get_unary_0_9(gb);
 
     if (x > 8) { /* RICE THRESHOLD */
         /* use alternative encoding */
         x = get_bits(gb, readsamplesize);
-    } else {
-        if (k >= limit)
-            k = limit;
-
-        if (k != 1) {
+    } else if (k != 1) {
             int extrabits = show_bits(gb, k);
 
             /* multiply x by 2^k - 1, as part of their strange algorithm */
@@ -98,7 +95,6 @@ static inline int decode_scalar(GetBitContext *gb, int k, int limit, int readsam
                 skip_bits(gb, k);
             } else
                 skip_bits(gb, k - 1);
-        }
     }
     return x;
 }
@@ -123,7 +119,8 @@ static void bastardized_rice_decompress(ALACContext *alac,
 
         /* read k, that is bits as is */
         k = av_log2((history >> 9) + 3);
-        x = decode_scalar(&alac->gb, k, alac->rice_limit, readsamplesize);
+        k = FFMIN(k, alac->rice_limit);
+        x = decode_scalar(&alac->gb, k, readsamplesize);
 
         x_modified = sign_modifier + x;
         final_val = (x_modified + 1) / 2;
@@ -148,8 +145,9 @@ static void bastardized_rice_decompress(ALACContext *alac,
             sign_modifier = 1;
 
             k = 7 - av_log2(history) + ((history + 16) >> 6 /* / 64 */);
+            k = FFMIN(k, alac->rice_limit);
 
-            block_size = decode_scalar(&alac->gb, k, alac->rice_limit, 16);
+            block_size = decode_scalar(&alac->gb, k, 16);
 
             if (block_size > 0) {
                 if(block_size >= output_size - output_count){
