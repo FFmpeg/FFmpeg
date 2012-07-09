@@ -316,6 +316,10 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
+    if (alac->sample_size > 16) {
+        for (ch = 0; ch < alac->channels; ch++)
+            alac->output_samples_buffer[ch] = (int32_t *)alac->frame.data[ch];
+    }
 
     readsamplesize = alac->sample_size - alac->extra_bits + channels - 1;
     if (readsamplesize > MIN_CACHE_BITS) {
@@ -409,32 +413,17 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
 
     switch(alac->sample_size) {
     case 16: {
-        int16_t *outbuffer = (int16_t *)alac->frame.data[0];
-        for (i = 0; i < alac->nb_samples; i++) {
-            *outbuffer++ = alac->output_samples_buffer[0][i];
-            if (channels == 2)
-                *outbuffer++ = alac->output_samples_buffer[1][i];
+        for (ch = 0; ch < alac->channels; ch++) {
+            int16_t *outbuffer = (int16_t *)alac->frame.data[ch];
+            for (i = 0; i < alac->nb_samples; i++)
+                *outbuffer++ = alac->output_samples_buffer[ch][i];
         }}
         break;
     case 24: {
-        int32_t *outbuffer = (int32_t *)alac->frame.data[0];
-        for (i = 0; i < alac->nb_samples; i++) {
-            *outbuffer++ = alac->output_samples_buffer[0][i] << 8;
-            if (channels == 2)
-                *outbuffer++ = alac->output_samples_buffer[1][i] << 8;
+        for (ch = 0; ch < alac->channels; ch++) {
+            for (i = 0; i < alac->nb_samples; i++)
+                alac->output_samples_buffer[ch][i] <<= 8;
         }}
-        break;
-    case 32:
-        if (channels == 2) {
-            int32_t *outbuffer = (int32_t *)alac->frame.data[0];
-            for (i = 0; i < alac->nb_samples; i++) {
-                *outbuffer++ = alac->output_samples_buffer[0][i];
-                *outbuffer++ = alac->output_samples_buffer[1][i];
-            }
-        } else {
-            memcpy(alac->frame.data[0], alac->output_samples_buffer[0],
-                   alac->nb_samples * sizeof(*alac->output_samples_buffer[0]));
-        }
         break;
     }
 
@@ -455,7 +444,8 @@ static av_cold int alac_decode_close(AVCodecContext *avctx)
     int ch;
     for (ch = 0; ch < alac->channels; ch++) {
         av_freep(&alac->predict_error_buffer[ch]);
-        av_freep(&alac->output_samples_buffer[ch]);
+        if (alac->sample_size == 16)
+            av_freep(&alac->output_samples_buffer[ch]);
         av_freep(&alac->extra_bits_buffer[ch]);
     }
 
@@ -471,8 +461,10 @@ static int allocate_buffers(ALACContext *alac)
         FF_ALLOC_OR_GOTO(alac->avctx, alac->predict_error_buffer[ch],
                          buf_size, buf_alloc_fail);
 
-        FF_ALLOC_OR_GOTO(alac->avctx, alac->output_samples_buffer[ch],
-                         buf_size, buf_alloc_fail);
+        if (alac->sample_size == 16) {
+            FF_ALLOC_OR_GOTO(alac->avctx, alac->output_samples_buffer[ch],
+                             buf_size, buf_alloc_fail);
+        }
 
         FF_ALLOC_OR_GOTO(alac->avctx, alac->extra_bits_buffer[ch],
                          buf_size, buf_alloc_fail);
@@ -530,10 +522,10 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
     }
 
     switch (alac->sample_size) {
-    case 16: avctx->sample_fmt    = AV_SAMPLE_FMT_S16;
+    case 16: avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
              break;
     case 24:
-    case 32: avctx->sample_fmt    = AV_SAMPLE_FMT_S32;
+    case 32: avctx->sample_fmt = AV_SAMPLE_FMT_S32P;
              break;
     default: av_log_ask_for_sample(avctx, "Sample depth %d is not supported.\n",
                                    alac->sample_size);
