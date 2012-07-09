@@ -142,7 +142,8 @@ static void bastardized_rice_decompress(ALACContext *alac,
                     av_log(alac->avctx, AV_LOG_ERROR, "invalid zero block size of %d %d %d\n", block_size, output_size, output_count);
                     block_size= output_size - output_count - 1;
                 }
-                memset(&output_buffer[output_count+1], 0, block_size * 4);
+                memset(&output_buffer[output_count + 1], 0,
+                       block_size * sizeof(*output_buffer));
                 output_count += block_size;
             }
 
@@ -176,7 +177,8 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
         if (output_size <= 1)
             return;
 
-        memcpy(buffer_out+1, error_buffer+1, (output_size-1) * 4);
+        memcpy(&buffer_out[1], &error_buffer[1],
+               (output_size - 1) * sizeof(*buffer_out));
         return;
     }
 
