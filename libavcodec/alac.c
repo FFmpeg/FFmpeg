@@ -130,7 +130,7 @@ static void bastardized_rice_decompress(ALACContext *alac,
 
         /* special case: there may be compressed blocks of 0 */
         if ((history < 128) && (output_count+1 < output_size)) {
-            unsigned int block_size;
+            int block_size;
 
             k = 7 - av_log2(history) + ((history + 16) >> 6 /* / 64 */);
             k = FFMIN(k, alac->rice_limit);
