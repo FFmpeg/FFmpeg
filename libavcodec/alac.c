@@ -78,13 +78,14 @@ typedef struct {
     int nb_samples;                         /**< number of samples in the current frame */
 } ALACContext;
 
-static inline int decode_scalar(GetBitContext *gb, int k, int readsamplesize)
+static inline unsigned int decode_scalar(GetBitContext *gb, int k,
+                                         int readsamplesize)
 {
-    int x = get_unary_0_9(gb);
+    unsigned int x = get_unary_0_9(gb);
 
     if (x > 8) { /* RICE THRESHOLD */
         /* use alternative encoding */
-        x = get_bits(gb, readsamplesize);
+        x = get_bits_long(gb, readsamplesize);
     } else if (k != 1) {
         int extrabits = show_bits(gb, k);
 
@@ -111,7 +112,8 @@ static void bastardized_rice_decompress(ALACContext *alac,
     int sign_modifier = 0;
 
     for (output_count = 0; output_count < output_size; output_count++) {
-        int x, k;
+        int k;
+        unsigned int x;
 
         /* read k, that is bits as is */
         k = av_log2((history >> 9) + 3);
@@ -294,6 +296,11 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
     hassize = get_bits1(&alac->gb);
 
     alac->extra_bits = get_bits(&alac->gb, 2) << 3;
+    readsamplesize = alac->sample_size - alac->extra_bits + channels - 1;
+    if (readsamplesize > 32) {
+        av_log(avctx, AV_LOG_ERROR, "bps is unsupported: %d\n", readsamplesize);
+        return AVERROR_PATCHWELCOME;
+    }
 
     /* whether the frame is compressed */
     is_compressed = !get_bits1(&alac->gb);
@@ -319,12 +326,6 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
     if (alac->sample_size > 16) {
         for (ch = 0; ch < alac->channels; ch++)
             alac->output_samples_buffer[ch] = (int32_t *)alac->frame.data[ch];
-    }
-
-    readsamplesize = alac->sample_size - alac->extra_bits + channels - 1;
-    if (readsamplesize > MIN_CACHE_BITS) {
-        av_log(avctx, AV_LOG_ERROR, "readsamplesize too big (%d)\n", readsamplesize);
-        return -1;
     }
 
     if (is_compressed) {
