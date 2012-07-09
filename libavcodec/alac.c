@@ -291,8 +291,6 @@ static void interleave_stereo_24(int32_t *buffer[MAX_CHANNELS],
 static int alac_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
-    const uint8_t *inbuffer = avpkt->data;
-    int input_buffer_size = avpkt->size;
     ALACContext *alac = avctx->priv_data;
 
     int channels;
@@ -303,7 +301,7 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
     uint8_t interlacing_leftweight;
     int i, ch, ret;
 
-    init_get_bits(&alac->gb, inbuffer, input_buffer_size * 8);
+    init_get_bits(&alac->gb, avpkt->data, avpkt->size * 8);
 
     channels = get_bits(&alac->gb, 3) + 1;
     if (channels != avctx->channels) {
@@ -457,13 +455,14 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
         break;
     }
 
-    if (input_buffer_size * 8 - get_bits_count(&alac->gb) > 8)
-        av_log(avctx, AV_LOG_ERROR, "Error : %d bits left\n", input_buffer_size * 8 - get_bits_count(&alac->gb));
+    if (avpkt->size * 8 - get_bits_count(&alac->gb) > 8)
+        av_log(avctx, AV_LOG_ERROR, "Error : %d bits left\n",
+               avpkt->size * 8 - get_bits_count(&alac->gb));
 
     *got_frame_ptr   = 1;
     *(AVFrame *)data = alac->frame;
 
-    return input_buffer_size;
+    return avpkt->size;
 }
 
 static av_cold int alac_decode_close(AVCodecContext *avctx)
