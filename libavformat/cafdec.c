@@ -172,8 +172,8 @@ static int read_pakt_chunk(AVFormatContext *s, int64_t size)
     AVIOContext *pb = s->pb;
     AVStream *st      = s->streams[0];
     CaffContext *caf  = s->priv_data;
-    int64_t pos = 0, ccount;
-    int num_packets, i;
+    int64_t pos = 0, ccount, num_packets;
+    int i;
 
     ccount = avio_tell(pb);
 
