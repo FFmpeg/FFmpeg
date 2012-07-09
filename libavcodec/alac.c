@@ -207,15 +207,16 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
         int val = 0;
         int error_val = error_buffer[i + 1];
         int error_sign;
+        int d = buffer_out[i - predictor_coef_num];
 
         for (j = 0; j < predictor_coef_num; j++) {
-            val += (buffer_out[i - j] - buffer_out[i - predictor_coef_num]) *
+            val += (buffer_out[i - j] - d) *
                    predictor_coef_table[j];
         }
 
         val = (val + (1 << (predictor_quantitization - 1))) >>
               predictor_quantitization;
-        val += buffer_out[i - predictor_coef_num] + error_val;
+        val += d + error_val;
 
         buffer_out[i + 1] = sign_extend(val, readsamplesize);
 
@@ -224,7 +225,7 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
         if (error_sign) {
             for (j = predictor_coef_num - 1; j >= 0 && error_val * error_sign > 0; j--) {
                 int sign;
-                val  = buffer_out[i - predictor_coef_num] - buffer_out[i - j];
+                val  = d - buffer_out[i - j];
                 sign = sign_only(val) * error_sign;
                 predictor_coef_table[j] -= sign;
                 val *= sign;
