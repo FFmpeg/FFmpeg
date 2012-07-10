@@ -913,7 +913,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     if(s->version >= 2 && avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
         av_log(avctx, AV_LOG_ERROR, "Version 2 needed for requested features but version 2 is experimental and not enabled\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     s->ac= avctx->coder_type ? 2:0;
@@ -942,11 +942,11 @@ static av_cold int encode_init(AVCodecContext *avctx)
         }
         if(s->bits_per_raw_sample <=8){
             av_log(avctx, AV_LOG_ERROR, "bits_per_raw_sample invalid\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         if(!s->ac){
             av_log(avctx, AV_LOG_ERROR, "bits_per_raw_sample of more than 8 needs -coder 1 currently\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         s->version= FFMAX(s->version, 1);
     case PIX_FMT_GRAY8:
@@ -975,7 +975,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "format not supported\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     if (s->transparency) {
         av_log(avctx, AV_LOG_WARNING, "Storing alpha plane, this will require a recent FFV1 decoder to playback!\n");
@@ -1066,7 +1066,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
                             s->rc_stat2[i][j][k][m]= strtol(p, &next, 0);
                             if(next==p){
                                 av_log(avctx, AV_LOG_ERROR, "2Pass file invalid at %d %d %d %d [%s]\n", i,j,k,m,p);
-                                return -1;
+                                return AVERROR_INVALIDDATA;
                             }
                             p=next;
                         }
@@ -1076,7 +1076,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
             gob_count= strtol(p, &next, 0);
             if(next==p || gob_count <0){
                 av_log(avctx, AV_LOG_ERROR, "2Pass file invalid\n");
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             p=next;
             while(*p=='\n' || *p==' ') p++;
