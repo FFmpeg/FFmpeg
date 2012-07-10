@@ -1599,7 +1599,6 @@ test_deps(){
     done
 }
 
-mxf_d10_test_deps="avfilter"
 seek_lavf_mxf_d10_test_deps="mxf_d10_test"
 
 test_deps _muxer _demuxer                                               \
