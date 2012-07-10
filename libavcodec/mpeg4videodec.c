@@ -1179,7 +1179,7 @@ static int mpeg4_decode_mb(MpegEncContext *s,
     static int8_t quant_tab[4] = { -1, -2, 1, 2 };
     const int xy= s->mb_x + s->mb_y * s->mb_stride;
 
-    assert(s->h263_pred);
+    av_assert2(s->h263_pred);
 
     if (s->pict_type == AV_PICTURE_TYPE_P || s->pict_type==AV_PICTURE_TYPE_S) {
         do{
