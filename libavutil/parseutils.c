@@ -610,6 +610,8 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
                 break;
             microseconds += n * (*q - '0');
         }
+        while (isdigit(*q))
+            q++;
     }
 
     if (duration) {
