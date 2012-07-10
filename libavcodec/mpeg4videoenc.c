@@ -494,9 +494,9 @@ void ff_mpeg4_encode_mb(MpegEncContext * s,
                 }
             }
 
-            assert(s->dquant>=-2 && s->dquant<=2);
-            assert((s->dquant&1)==0);
-            assert(mb_type>=0);
+            av_assert2(s->dquant>=-2 && s->dquant<=2);
+            av_assert2((s->dquant&1)==0);
+            av_assert2(mb_type>=0);
 
             /* nothing to do if this MB was skipped in the next P Frame */
             if (s->next_picture.f.mbskip_table[s->mb_y * s->mb_stride + s->mb_x]) { //FIXME avoid DCT & ...
@@ -516,7 +516,7 @@ void ff_mpeg4_encode_mb(MpegEncContext * s,
 
             if ((cbp | motion_x | motion_y | mb_type) ==0) {
                 /* direct MB with MV={0,0} */
-                assert(s->dquant==0);
+                av_assert2(s->dquant==0);
 
                 put_bits(&s->pb, 1, 1); /* mb not coded modb1=1 */
 
@@ -553,12 +553,12 @@ void ff_mpeg4_encode_mb(MpegEncContext * s,
             }
 
             if(mb_type == 0){
-                assert(s->mv_dir & MV_DIRECT);
+                av_assert2(s->mv_dir & MV_DIRECT);
                 ff_h263_encode_motion_vector(s, motion_x, motion_y, 1);
                 s->b_count++;
                 s->f_count++;
             }else{
-                assert(mb_type > 0 && mb_type < 4);
+                av_assert2(mb_type > 0 && mb_type < 4);
                 if(s->mv_type != MV_TYPE_FIELD){
                     if(s->mv_dir & MV_DIR_FORWARD){
                         ff_h263_encode_motion_vector(s, s->mv[0][0][0] - s->last_mv[0][0][0],
@@ -719,7 +719,7 @@ void ff_mpeg4_encode_mb(MpegEncContext * s,
                 if(s->dquant)
                     put_bits(pb2, 2, dquant_code[s->dquant+2]);
 
-                assert(!s->progressive_sequence);
+                av_assert2(!s->progressive_sequence);
                 if(cbp)
                     put_bits(pb2, 1, s->interlaced_dct);
                 put_bits(pb2, 1, 1);
@@ -740,7 +740,7 @@ void ff_mpeg4_encode_mb(MpegEncContext * s,
                 ff_h263_encode_motion_vector(s, s->mv[0][1][0] - pred_x,
                                                 s->mv[0][1][1] - pred_y, s->f_code);
             }else{
-                assert(s->mv_type==MV_TYPE_8X8);
+                av_assert2(s->mv_type==MV_TYPE_8X8);
                 put_bits(&s->pb,
                         ff_h263_inter_MCBPC_bits[cbpc+16],
                         ff_h263_inter_MCBPC_code[cbpc+16]);
@@ -1063,7 +1063,7 @@ void ff_mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
     time_div= FFUDIV(s->time, s->avctx->time_base.den);
     time_mod= FFUMOD(s->time, s->avctx->time_base.den);
     time_incr= time_div - s->last_time_base;
-    assert(time_incr >= 0);
+    av_assert0(time_incr >= 0);
     while(time_incr--)
         put_bits(&s->pb, 1, 1);
 
@@ -1148,8 +1148,8 @@ static void init_uni_dc_tab(void)
 static void init_uni_mpeg4_rl_tab(RLTable *rl, uint32_t *bits_tab, uint8_t *len_tab){
     int slevel, run, last;
 
-    assert(MAX_LEVEL >= 64);
-    assert(MAX_RUN   >= 63);
+    av_assert0(MAX_LEVEL >= 64);
+    av_assert0(MAX_RUN   >= 63);
 
     for(slevel=-64; slevel<64; slevel++){
         if(slevel==0) continue;
