@@ -562,7 +562,8 @@ OBJS-$(CONFIG_ADPCM_YAMAHA_ENCODER)       += adpcmenc.o adpcm_data.o
 # libavformat dependencies
 OBJS-$(CONFIG_ADTS_MUXER)              += mpeg4audio.o
 OBJS-$(CONFIG_ADX_DEMUXER)             += adx.o
-OBJS-$(CONFIG_CAF_DEMUXER)             += mpeg4audio.o mpegaudiodata.o
+OBJS-$(CONFIG_CAF_DEMUXER)             += mpeg4audio.o mpegaudiodata.o  \
+                                          ac3tab.o
 OBJS-$(CONFIG_DV_DEMUXER)              += dv_profile.o
 OBJS-$(CONFIG_DV_MUXER)                += dv_profile.o
 OBJS-$(CONFIG_FLAC_DEMUXER)            += flacdec.o flacdata.o flac.o
