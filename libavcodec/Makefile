@@ -566,7 +566,8 @@ OBJS-$(CONFIG_CAF_DEMUXER)             += mpeg4audio.o mpegaudiodata.o  \
                                           ac3tab.o
 OBJS-$(CONFIG_DV_DEMUXER)              += dv_profile.o
 OBJS-$(CONFIG_DV_MUXER)                += dv_profile.o
-OBJS-$(CONFIG_FLAC_DEMUXER)            += flac.o flacdata.o
+OBJS-$(CONFIG_FLAC_DEMUXER)            += flac.o flacdata.o             \
+                                          vorbis_parser.o xiph.o
 OBJS-$(CONFIG_FLAC_MUXER)              += flac.o flacdata.o
 OBJS-$(CONFIG_FLV_DEMUXER)             += mpeg4audio.o
 OBJS-$(CONFIG_GXF_DEMUXER)             += mpeg12data.o
