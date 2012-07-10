@@ -918,10 +918,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     s->ac= avctx->coder_type ? 2:0;
 
-    if(s->ac>1)
-        for(i=1; i<256; i++)
-            s->state_transition[i]=ver2_state[i];
-
     s->plane_count=3;
     switch(avctx->pix_fmt){
     case PIX_FMT_YUV444P9:
@@ -988,6 +984,10 @@ static av_cold int encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Invalid context model %d, valid values are 0 and 1\n", avctx->context_model);
         return AVERROR(EINVAL);
     }
+
+    if(s->ac>1)
+        for(i=1; i<256; i++)
+            s->state_transition[i]=ver2_state[i];
 
     for(i=0; i<256; i++){
         s->quant_table_count=2;
