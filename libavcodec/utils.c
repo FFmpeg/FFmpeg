@@ -100,6 +100,18 @@ void av_fast_padded_malloc(void *ptr, unsigned int *size, size_t min_size)
         memset(*p + min_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
 }
 
+void av_fast_padded_mallocz(void *ptr, unsigned int *size, size_t min_size)
+{
+    uint8_t **p = ptr;
+    if (min_size > SIZE_MAX - FF_INPUT_BUFFER_PADDING_SIZE) {
+        av_freep(p);
+        *size = 0;
+        return;
+    }
+    if (!ff_fast_malloc(p, size, min_size + FF_INPUT_BUFFER_PADDING_SIZE, 1))
+        memset(*p, 0, min_size + FF_INPUT_BUFFER_PADDING_SIZE);
+}
+
 /* encoder management */
 static AVCodec *first_avcodec = NULL;
 

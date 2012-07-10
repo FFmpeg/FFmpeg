@@ -15,6 +15,9 @@ libavutil:     2011-04-18
 
 API changes, most recent first:
 
+2012-07-10 - xxxxxxx - lavc 54.33.100
+  Add av_fast_padded_mallocz().
+
 2012-07-10 - xxxxxxx - lavfi 3.2.0 - avfilter.h
   Add init_opaque() callback to AVFilter struct.
 

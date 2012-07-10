@@ -4602,6 +4602,12 @@ void av_fast_malloc(void *ptr, unsigned int *size, size_t min_size);
 void av_fast_padded_malloc(void *ptr, unsigned int *size, size_t min_size);
 
 /**
+ * Same behaviour av_fast_padded_malloc except that buffer will always
+ * be 0-initialized after call.
+ */
+void av_fast_padded_mallocz(void *ptr, unsigned int *size, size_t min_size);
+
+/**
  * Encode extradata length to a buffer. Used by xiph codecs.
  *
  * @param s buffer to write to; must be at least (v/255+1) bytes long
