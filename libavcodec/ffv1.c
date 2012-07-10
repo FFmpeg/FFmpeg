@@ -916,7 +916,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    s->ac= avctx->coder_type ? 2:0;
+    s->ac= avctx->coder_type > 0 ? 2 : 0;
 
     s->plane_count=3;
     switch(avctx->pix_fmt){
@@ -943,6 +943,10 @@ static av_cold int encode_init(AVCodecContext *avctx)
         if(s->bits_per_raw_sample <=8){
             av_log(avctx, AV_LOG_ERROR, "bits_per_raw_sample invalid\n");
             return AVERROR_INVALIDDATA;
+        }
+        if(!s->ac && avctx->coder_type == -1) {
+            av_log(avctx, AV_LOG_INFO, "bits_per_raw_sample > 8, forcing coder 1\n");
+            s->ac = 2;
         }
         if(!s->ac){
             av_log(avctx, AV_LOG_ERROR, "bits_per_raw_sample of more than 8 needs -coder 1 currently\n");
@@ -2058,6 +2062,11 @@ static const AVClass class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
+static const AVCodecDefault ffv1_defaults[] = {
+    { "coder",                "-1" },
+    { NULL },
+};
+
 AVCodec ff_ffv1_encoder = {
     .name           = "ffv1",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -2067,6 +2076,7 @@ AVCodec ff_ffv1_encoder = {
     .encode2        = encode_frame,
     .close          = common_end,
     .capabilities   = CODEC_CAP_SLICE_THREADS,
+    .defaults       = ffv1_defaults,
     .pix_fmts       = (const enum PixelFormat[]){
         PIX_FMT_YUV420P, PIX_FMT_YUVA420P, PIX_FMT_YUVA422P, PIX_FMT_YUV444P,
         PIX_FMT_YUVA444P, PIX_FMT_YUV440P, PIX_FMT_YUV422P, PIX_FMT_YUV411P,
