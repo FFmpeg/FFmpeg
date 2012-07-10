@@ -372,11 +372,17 @@ typedef struct RTSPState {
      * Minimum and maximum local UDP ports.
      */
     int rtp_port_min, rtp_port_max;
+
+    /**
+     * Timeout to wait for incoming connections.
+     */
+    int initial_timeout;
 } RTSPState;
 
 #define RTSP_FLAG_FILTER_SRC  0x1    /**< Filter incoming UDP packets -
                                           receive packets only from the right
                                           source address and port. */
+#define RTSP_FLAG_LISTEN 0x2         /**< Wait for incoming connections. */
 
 /**
  * Describe a single stream, as identified by a single m= line block in the
@@ -527,6 +533,12 @@ int ff_rtsp_setup_input_streams(AVFormatContext *s, RTSPMessageHeader *reply);
  * objects for each media stream.
  */
 int ff_rtsp_setup_output_streams(AVFormatContext *s, const char *addr);
+
+/**
+ * Parse RTSP commands (OPTIONS, PAUSE and TEARDOWN) during streaming in
+ * listen mode.
+ */
+int ff_rtsp_parse_streaming_commands(AVFormatContext *s);
 
 /**
  * Parse an SDP description of streams by populating an RTSPState struct
