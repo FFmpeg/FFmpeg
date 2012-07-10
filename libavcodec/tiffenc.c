@@ -79,7 +79,8 @@ typedef struct TiffEncoderContext {
 
 
 /**
- * Check free space in buffer
+ * Check free space in buffer.
+ *
  * @param s Tiff context
  * @param need Needed bytes
  * @return 0 - ok, 1 - no free space
@@ -95,13 +96,13 @@ static inline int check_size(TiffEncoderContext * s, uint64_t need)
 }
 
 /**
- * Put n values to buffer
+ * Put n values to buffer.
  *
- * @param p Pointer to pointer to output buffer
- * @param n Number of values
- * @param val Pointer to values
- * @param type Type of values
- * @param flip =0 - normal copy, >0 - flip
+ * @param p pointer to pointer to output buffer
+ * @param n number of values
+ * @param val pointer to values
+ * @param type type of values
+ * @param flip = 0 - normal copy, >0 - flip
  */
 static void tnput(uint8_t ** p, int n, const uint8_t * val, enum TiffTypes type,
                   int flip)
@@ -116,11 +117,12 @@ static void tnput(uint8_t ** p, int n, const uint8_t * val, enum TiffTypes type,
 
 /**
  * Add entry to directory in tiff header.
+ *
  * @param s Tiff context
- * @param tag Tag that identifies the entry
- * @param type Entry type
- * @param count The number of values
- * @param ptr_val Pointer to values
+ * @param tag tag that identifies the entry
+ * @param type entry type
+ * @param count the number of values
+ * @param ptr_val pointer to values
  */
 static void add_entry(TiffEncoderContext * s,
                       enum TiffTags tag, enum TiffTypes type, int count,
@@ -153,14 +155,14 @@ static void add_entry1(TiffEncoderContext * s,
 }
 
 /**
- * Encode one strip in tiff file
+ * Encode one strip in tiff file.
  *
  * @param s Tiff context
- * @param src Input buffer
- * @param dst Output buffer
- * @param n Size of input buffer
- * @param compr Compression method
- * @return Number of output bytes. If an output error is encountered, -1 returned
+ * @param src input buffer
+ * @param dst output buffer
+ * @param n size of input buffer
+ * @param compr compression method
+ * @return number of output bytes. If an output error is encountered, -1 is returned
  */
 static int encode_strip(TiffEncoderContext * s, const int8_t * src,
                         uint8_t * dst, int n, int compr)
