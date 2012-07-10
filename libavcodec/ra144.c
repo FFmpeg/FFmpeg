@@ -1715,6 +1715,6 @@ void ff_subblock_synthesis(RA144Context *ractx, const uint16_t *lpc_coefs,
            LPC_ORDER*sizeof(*ractx->curr_sblock));
 
     if (ff_celp_lp_synthesis_filter(ractx->curr_sblock + LPC_ORDER, lpc_coefs,
-                                    block, BLOCKSIZE, LPC_ORDER, 1, 0xfff))
+                                    block, BLOCKSIZE, LPC_ORDER, 1, 0, 0xfff))
         memset(ractx->curr_sblock, 0, (LPC_ORDER+BLOCKSIZE)*sizeof(*ractx->curr_sblock));
 }

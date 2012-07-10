@@ -63,6 +63,7 @@ void ff_celp_circ_addf(float *out, const float *in,
  * @param filter_length filter length (10 for 10th order LP filter)
  * @param stop_on_overflow   1 - return immediately if overflow occurs
  *                           0 - ignore overflows
+ * @param shift the result is shifted right by this value
  * @param rounder the amount to add for rounding (usually 0x800 or 0xfff)
  *
  * @return 1 if overflow occurred, 0 - otherwise
@@ -75,7 +76,7 @@ void ff_celp_circ_addf(float *out, const float *in,
 int ff_celp_lp_synthesis_filter(int16_t *out, const int16_t *filter_coeffs,
                                 const int16_t *in, int buffer_length,
                                 int filter_length, int stop_on_overflow,
-                                int rounder);
+                                int shift, int rounder);
 
 /**
  * LP synthesis filter.
