@@ -231,7 +231,7 @@ struct AVDictionary {
 #   define ONLY_IF_THREADS_ENABLED(x) NULL
 #endif
 
-#if HAVE_MMX
+#if HAVE_MMX && HAVE_INLINE_ASM
 /**
  * Empty mmx state.
  * this must be called between any dsp function and float/double code.
@@ -242,8 +242,11 @@ static av_always_inline void emms_c(void)
     if(av_get_cpu_flags() & AV_CPU_FLAG_MMX)
         __asm__ volatile ("emms" ::: "memory");
 }
+#elif HAVE_MMX && HAVE_MM_EMPTY
+#   include <mmintrin.h>
+#   define emms_c _mm_empty
 #else /* HAVE_MMX */
-#define emms_c()
+#   define emms_c()
 #endif /* HAVE_MMX */
 
 #endif /* AVUTIL_INTERNAL_H */

@@ -1188,6 +1188,7 @@ HAVE_LIST="
     clock_gettime
     closesocket
     cmov
+    cpuid
     dcbzl
     dev_bktr_ioctl_bt848_h
     dev_bktr_ioctl_meteor_h
@@ -1246,6 +1247,7 @@ HAVE_LIST="
     MapViewOfFile
     memalign
     mkstemp
+    mm_empty
     mmap
     nanosleep
     netinet_sctp_h
@@ -1256,6 +1258,7 @@ HAVE_LIST="
     rdtsc
     round
     roundf
+    rweflags
     sched_getaffinity
     sdl
     sdl_video_size
@@ -1300,6 +1303,7 @@ HAVE_LIST="
     windows_h
     winsock2_h
     xform_asm
+    xgetbv
     xmm_clobbers
     yasm
 "
@@ -3055,7 +3059,12 @@ elif enabled sparc; then
 
 elif enabled x86; then
 
+    check_code ld immintrin.h "__xgetbv(0)" "cc" && enable xgetbv
+    check_code ld intrin.h "int info[4]; __cpuid(info, 0)" "cc" && enable cpuid
     check_code ld intrin.h "__rdtsc()" "cc" && enable rdtsc
+    check_code ld intrin.h "unsigned int x = __readeflags()" "cc" && enable rweflags
+
+    check_code ld mmintrin.h "_mm_empty()" "cc" && enable mm_empty
 
     enable local_aligned_8 local_aligned_16
 

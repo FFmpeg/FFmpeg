@@ -1527,7 +1527,8 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             if (st->codec->codec_id == CODEC_ID_RAWVIDEO) {
                 st->codec->pix_fmt = descriptor->pix_fmt;
                 if (st->codec->pix_fmt == PIX_FMT_NONE) {
-                    pix_fmt_ul = mxf_get_codec_ul(ff_mxf_pixel_format_uls, &descriptor->essence_codec_ul);
+                    pix_fmt_ul = mxf_get_codec_ul(ff_mxf_pixel_format_uls,
+                                                  &descriptor->essence_codec_ul);
                     st->codec->pix_fmt = pix_fmt_ul->id;
                     if (st->codec->pix_fmt == PIX_FMT_NONE) {
                         /* support files created before RP224v10 by defaulting to UYVY422
@@ -1972,7 +1973,7 @@ static int64_t mxf_set_current_edit_unit(MXFContext *mxf, int64_t current_offset
              * around this fixes the infinite loop on zzuf3.mxf */
             av_log(mxf->fc, AV_LOG_ERROR,
                    "next_ofs didn't change. not deriving packet timestamps\n");
-            return - 1;
+            return -1;
         }
 
         if (next_ofs > current_offset)

@@ -499,7 +499,7 @@ static int decode_region_masked(MSS1Context *ctx, ArithCoder *acoder,
     dst  += x + y * stride;
     mask += x + y * mask_stride;
 
-    if (mask[0] != 0xFF)
+    if (mask[0] == 0xFF)
         dst[0] = decode_top_left_pixel(acoder, pctx);
     for (j = 0; j < height; j++) {
         for (i = 0; i < width; i++) {
