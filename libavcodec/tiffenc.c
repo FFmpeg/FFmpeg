@@ -215,6 +215,18 @@ static void pack_yuv(TiffEncoderContext * s, uint8_t * dst, int lnum)
     }
 }
 
+static av_cold int encode_init(AVCodecContext *avctx)
+{
+    TiffEncoderContext *s = avctx->priv_data;
+
+    avctx->coded_frame= &s->picture;
+    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
+    avctx->coded_frame->key_frame = 1;
+    s->avctx = avctx;
+
+    return 0;
+}
+
 static int encode_frame(AVCodecContext * avctx, AVPacket *pkt,
                         const AVFrame *pict, int *got_packet)
 {
@@ -234,12 +246,7 @@ static int encode_frame(AVCodecContext * avctx, AVPacket *pkt,
     uint8_t *yuv_line = NULL;
     int shift_h, shift_v;
 
-    s->avctx = avctx;
-
     *p = *pict;
-    p->pict_type = AV_PICTURE_TYPE_I;
-    p->key_frame = 1;
-    avctx->coded_frame= &s->picture;
 
     s->width = avctx->width;
     s->height = avctx->height;
@@ -487,6 +494,7 @@ AVCodec ff_tiff_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_TIFF,
     .priv_data_size = sizeof(TiffEncoderContext),
+    .init           = encode_init,
     .encode2        = encode_frame,
     .pix_fmts       = (const enum PixelFormat[]) {
         PIX_FMT_RGB24, PIX_FMT_PAL8, PIX_FMT_GRAY8, PIX_FMT_GRAY8A, PIX_FMT_GRAY16LE,
