@@ -749,6 +749,14 @@ static void rtsp_parse_transport(RTSPMessageHeader *reply, const char *p)
                     get_word_sep(buf, sizeof(buf), ";,", &p);
                     av_strlcpy(th->source, buf, sizeof(th->source));
                 }
+            } else if (!strcmp(parameter, "mode")) {
+                if (*p == '=') {
+                    p++;
+                    get_word_sep(buf, sizeof(buf), ";, ", &p);
+                    if (!strcmp(buf, "record") ||
+                        !strcmp(buf, "receive"))
+                        th->mode_record = 1;
+                }
             }
 
             while (*p != ';' && *p != '\0' && *p != ',')

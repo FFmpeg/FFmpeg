@@ -102,6 +102,9 @@ typedef struct RTSPTransportField {
      * packets will be allowed to make before being discarded. */
     int ttl;
 
+    /** transport set to record data */
+    int mode_record;
+
     struct sockaddr_storage destination; /**< destination IP address */
     char source[INET6_ADDRSTRLEN + 1]; /**< source IP address */
 
