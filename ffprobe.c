@@ -1645,6 +1645,7 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream)
         print_int("nb_samples",         frame->nb_samples);
         break;
     }
+    show_tags(av_frame_get_metadata(frame));
 
     print_section_footer("frame");
 
