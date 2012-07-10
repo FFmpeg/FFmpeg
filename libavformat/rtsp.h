@@ -561,6 +561,11 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
  */
 void ff_rtsp_undo_setup(AVFormatContext *s);
 
+/**
+ * Open RTSP transport context.
+ */
+int ff_rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st);
+
 extern const AVOption ff_rtsp_options[];
 
 #endif /* AVFORMAT_RTSP_H */

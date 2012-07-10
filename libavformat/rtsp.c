@@ -595,7 +595,7 @@ void ff_rtsp_close_streams(AVFormatContext *s)
     av_free(rt->recvbuf);
 }
 
-static int rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
+int ff_rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
 {
     RTSPState *rt = s->priv_data;
     AVStream *st = NULL;
@@ -1402,7 +1402,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
         }
         }
 
-        if ((err = rtsp_open_transport_ctx(s, rtsp_st)))
+        if ((err = ff_rtsp_open_transport_ctx(s, rtsp_st)))
             goto fail;
     }
 
@@ -1925,7 +1925,7 @@ static int sdp_read_header(AVFormatContext *s)
             err = AVERROR_INVALIDDATA;
             goto fail;
         }
-        if ((err = rtsp_open_transport_ctx(s, rtsp_st)))
+        if ((err = ff_rtsp_open_transport_ctx(s, rtsp_st)))
             goto fail;
     }
     return 0;
