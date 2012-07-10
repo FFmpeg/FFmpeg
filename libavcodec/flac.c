@@ -20,6 +20,9 @@
  */
 
 #include "libavutil/crc.h"
+#include "libavutil/log.h"
+#include "bytestream.h"
+#include "get_bits.h"
 #include "flac.h"
 #include "flacdata.h"
 
@@ -149,4 +152,75 @@ int ff_flac_get_max_frame_size(int blocksize, int ch, int bps)
     count += 2; /* frame footer */
 
     return count;
+}
+
+int avpriv_flac_is_extradata_valid(AVCodecContext *avctx,
+                               enum FLACExtradataFormat *format,
+                               uint8_t **streaminfo_start)
+{
+    if (!avctx->extradata || avctx->extradata_size < FLAC_STREAMINFO_SIZE) {
+        av_log(avctx, AV_LOG_ERROR, "extradata NULL or too small.\n");
+        return 0;
+    }
+    if (AV_RL32(avctx->extradata) != MKTAG('f','L','a','C')) {
+        /* extradata contains STREAMINFO only */
+        if (avctx->extradata_size != FLAC_STREAMINFO_SIZE) {
+            av_log(avctx, AV_LOG_WARNING, "extradata contains %d bytes too many.\n",
+                   FLAC_STREAMINFO_SIZE-avctx->extradata_size);
+        }
+        *format = FLAC_EXTRADATA_FORMAT_STREAMINFO;
+        *streaminfo_start = avctx->extradata;
+    } else {
+        if (avctx->extradata_size < 8+FLAC_STREAMINFO_SIZE) {
+            av_log(avctx, AV_LOG_ERROR, "extradata too small.\n");
+            return 0;
+        }
+        *format = FLAC_EXTRADATA_FORMAT_FULL_HEADER;
+        *streaminfo_start = &avctx->extradata[8];
+    }
+    return 1;
+}
+
+void avpriv_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
+                              const uint8_t *buffer)
+{
+    GetBitContext gb;
+    init_get_bits(&gb, buffer, FLAC_STREAMINFO_SIZE*8);
+
+    skip_bits(&gb, 16); /* skip min blocksize */
+    s->max_blocksize = get_bits(&gb, 16);
+    if (s->max_blocksize < FLAC_MIN_BLOCKSIZE) {
+        av_log(avctx, AV_LOG_WARNING, "invalid max blocksize: %d\n",
+               s->max_blocksize);
+        s->max_blocksize = 16;
+    }
+
+    skip_bits(&gb, 24); /* skip min frame size */
+    s->max_framesize = get_bits_long(&gb, 24);
+
+    s->samplerate = get_bits_long(&gb, 20);
+    s->channels = get_bits(&gb, 3) + 1;
+    s->bps = get_bits(&gb, 5) + 1;
+
+    avctx->channels = s->channels;
+    avctx->sample_rate = s->samplerate;
+    avctx->bits_per_raw_sample = s->bps;
+
+    s->samples  = get_bits_long(&gb, 32) << 4;
+    s->samples |= get_bits(&gb, 4);
+
+    skip_bits_long(&gb, 64); /* md5 sum */
+    skip_bits_long(&gb, 64); /* md5 sum */
+}
+
+void avpriv_flac_parse_block_header(const uint8_t *block_header,
+                                int *last, int *type, int *size)
+{
+    int tmp = bytestream_get_byte(&block_header);
+    if (last)
+        *last = tmp & 0x80;
+    if (type)
+        *type = tmp & 0x7F;
+    if (size)
+        *size = bytestream_get_be24(&block_header);
 }
