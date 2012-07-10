@@ -13,35 +13,35 @@ libavutil:     2011-04-18
 
 API changes, most recent first:
 
-2012-07-10 - xxxxxxx - lavu 51.37.0
+2012-07-10 - 5fade8a - lavu 51.37.0
   Add av_malloc_array() and av_mallocz_array()
 
-2012-06-22 - xxxxxxx - lavu 51.34.0
+2012-06-22 - d3d3a32 - lavu 51.34.0
   Add av_usleep()
 
 2012-06-20 - ae0a301 - lavu 51.33.0
   Move av_gettime() to libavutil, add libavutil/time.h
 
-2012-xx-xx - xxxxxxx - lavr 0.0.3
+2012-06-09 - 3971be0 - lavr 0.0.3
   Add a parameter to avresample_build_matrix() for Dolby/DPLII downmixing.
 
-2012-xx-xx - xxxxxxx - lavfi 2.23.0 - avfilter.h
+2012-06-12 - 9baeff9 - lavfi 2.23.0 - avfilter.h
   Add AVFilterContext.nb_inputs/outputs. Deprecate
   AVFilterContext.input/output_count.
 
-2012-xx-xx - xxxxxxx - lavfi 2.22.0 - avfilter.h
+2012-06-12 - 84b9fbe - lavfi 2.22.0 - avfilter.h
   Add avfilter_pad_get_type() and avfilter_pad_get_name(). Those
   should now be used instead of accessing AVFilterPad members
   directly.
 
-2012-xx-xx - xxxxxxx - lavu 51.32.0 - audioconvert.h
+2012-06-12 - b0f0dfc - lavu 51.32.0 - audioconvert.h
   Add av_get_channel_layout_channel_index(), av_get_channel_name()
   and av_channel_layout_extract_channel().
 
-2012-05-25 - e0e0793 - lavu 51.31.0 - opt.h
+2012-05-25 - 154486f - lavu 51.31.0 - opt.h
   Add av_opt_set_bin()
 
-2012-05-xx - xxxxxxx - lavf 54.3.0
+2012-05-26 - e9cef89 - lavf 54.3.0
   Add AVFMT_TS_NONSTRICT format flag to indicate that a muxer supports
   non-increasing monotone timestamps.
 
