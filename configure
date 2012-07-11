@@ -1256,6 +1256,7 @@ HAVE_LIST="
     posix_memalign
     pthread_cancel
     rdtsc
+    rint
     round
     roundf
     rweflags
@@ -3288,6 +3289,7 @@ check_mathfunc log2
 check_mathfunc log2f
 check_mathfunc lrint
 check_mathfunc lrintf
+check_mathfunc rint
 check_mathfunc round
 check_mathfunc roundf
 check_mathfunc trunc

@@ -90,6 +90,13 @@ static av_always_inline av_const int isnan(float x)
 #define log2f(x) ((float)log2(x))
 #endif /* HAVE_LOG2F */
 
+#if !HAVE_RINT
+static inline double rint(double x)
+{
+    return x >= 0 ? floor(x + 0.5) : ceil(x - 0.5);
+}
+#endif /* HAVE_RINT */
+
 #if !HAVE_LRINT
 static av_always_inline av_const long int lrint(double x)
 {

@@ -377,6 +377,8 @@ Flags for @code{rtsp_flags}:
 @table @option
 @item filter_src
 Accept packets only from negotiated peer address and port.
+@item listen
+Act as a server, listening for an incoming connection.
 @end table
 
 When receiving data over UDP, the demuxer tries to reorder received packets
@@ -407,6 +409,12 @@ To send a stream in realtime to a RTSP server, for others to watch:
 
 @example
 ffmpeg -re -i @var{input} -f rtsp -muxdelay 0.1 rtsp://server/live.sdp
+@end example
+
+To receive a stream in realtime:
+
+@example
+avconv -rtsp_flags listen -i rtsp://ownaddress/live.sdp @var{output}
 @end example
 
 @section sap

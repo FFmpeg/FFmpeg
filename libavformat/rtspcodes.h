@@ -37,4 +37,18 @@ RTSP_STATUS_SERVICE         =503, /**< Service Unavailable */
 RTSP_STATUS_VERSION         =505, /**< RTSP Version not supported */
 };
 
+enum RTSPMethod {
+    DESCRIBE,
+    ANNOUNCE,
+    OPTIONS,
+    SETUP,
+    PLAY,
+    PAUSE,
+    TEARDOWN,
+    GET_PARAMETER,
+    SET_PARAMETER,
+    REDIRECT,
+    RECORD,
+    UNKNOWN = -1,
+};
 #endif /* AVFORMAT_RTSPCODES_H */

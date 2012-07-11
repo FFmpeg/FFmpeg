@@ -63,7 +63,8 @@
 
 #define RTSP_FLAG_OPTS(name, longname) \
     { name, longname, OFFSET(rtsp_flags), AV_OPT_TYPE_FLAGS, {0}, INT_MIN, INT_MAX, DEC, "rtsp_flags" }, \
-    { "filter_src", "Only receive packets from the negotiated peer IP", 0, AV_OPT_TYPE_CONST, {RTSP_FLAG_FILTER_SRC}, 0, 0, DEC, "rtsp_flags" }
+    { "filter_src", "Only receive packets from the negotiated peer IP", 0, AV_OPT_TYPE_CONST, {RTSP_FLAG_FILTER_SRC}, 0, 0, DEC, "rtsp_flags" }, \
+    { "listen", "Wait for incoming connections", 0, AV_OPT_TYPE_CONST, {RTSP_FLAG_LISTEN}, 0, 0, DEC, "rtsp_flags" }
 
 #define RTSP_MEDIATYPE_OPTS(name, longname) \
     { name, longname, OFFSET(media_type_mask), AV_OPT_TYPE_FLAGS, { (1 << (AVMEDIA_TYPE_DATA+1)) - 1 }, INT_MIN, INT_MAX, DEC, "allowed_media_types" }, \
@@ -83,6 +84,7 @@ const AVOption ff_rtsp_options[] = {
     RTSP_MEDIATYPE_OPTS("allowed_media_types", "Media types to accept from the server"),
     { "min_port", "Minimum local UDP port", OFFSET(rtp_port_min), AV_OPT_TYPE_INT, {RTSP_RTP_PORT_MIN}, 0, 65535, DEC|ENC },
     { "max_port", "Maximum local UDP port", OFFSET(rtp_port_max), AV_OPT_TYPE_INT, {RTSP_RTP_PORT_MAX}, 0, 65535, DEC|ENC },
+    { "timeout", "Maximum timeout (in seconds) to wait for incoming connections. -1 is infinite. Implies flag listen", OFFSET(initial_timeout), AV_OPT_TYPE_INT, {-1}, INT_MIN, INT_MAX, DEC },
     { NULL },
 };
 
@@ -595,7 +597,7 @@ void ff_rtsp_close_streams(AVFormatContext *s)
     av_free(rt->recvbuf);
 }
 
-static int rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
+int ff_rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
 {
     RTSPState *rt = s->priv_data;
     AVStream *st = NULL;
@@ -748,6 +750,14 @@ static void rtsp_parse_transport(RTSPMessageHeader *reply, const char *p)
                     p++;
                     get_word_sep(buf, sizeof(buf), ";,", &p);
                     av_strlcpy(th->source, buf, sizeof(th->source));
+                }
+            } else if (!strcmp(parameter, "mode")) {
+                if (*p == '=') {
+                    p++;
+                    get_word_sep(buf, sizeof(buf), ";, ", &p);
+                    if (!strcmp(buf, "record") ||
+                        !strcmp(buf, "receive"))
+                        th->mode_record = 1;
                 }
             }
 
@@ -1389,7 +1399,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
         }
         }
 
-        if ((err = rtsp_open_transport_ctx(s, rtsp_st)))
+        if ((err = ff_rtsp_open_transport_ctx(s, rtsp_st)))
             goto fail;
     }
 
@@ -1701,14 +1711,24 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
             }
 #if CONFIG_RTSP_DEMUXER
             if (tcp_fd != -1 && p[0].revents & POLLIN) {
-                RTSPMessageHeader reply;
-
-                ret = ff_rtsp_read_reply(s, &reply, NULL, 0, NULL);
-                if (ret < 0)
-                    return ret;
-                /* XXX: parse message */
-                if (rt->state != RTSP_STATE_STREAMING)
-                    return 0;
+                if (rt->rtsp_flags & RTSP_FLAG_LISTEN) {
+                    if (rt->state == RTSP_STATE_STREAMING) {
+                        if (!ff_rtsp_parse_streaming_commands(s))
+                            return AVERROR_EOF;
+                        else
+                            av_log(s, AV_LOG_WARNING,
+                                   "Unable to answer to TEARDOWN\n");
+                    } else
+                        return 0;
+                } else {
+                    RTSPMessageHeader reply;
+                    ret = ff_rtsp_read_reply(s, &reply, NULL, 0, NULL);
+                    if (ret < 0)
+                        return ret;
+                    /* XXX: parse message */
+                    if (rt->state != RTSP_STATE_STREAMING)
+                        return 0;
+                }
             }
 #endif
         } else if (n == 0 && ++timeout_cnt >= MAX_TIMEOUTS) {
@@ -1912,7 +1932,7 @@ static int sdp_read_header(AVFormatContext *s)
             err = AVERROR_INVALIDDATA;
             goto fail;
         }
-        if ((err = rtsp_open_transport_ctx(s, rtsp_st)))
+        if ((err = ff_rtsp_open_transport_ctx(s, rtsp_st)))
             goto fail;
     }
     return 0;

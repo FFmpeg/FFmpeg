@@ -102,6 +102,9 @@ typedef struct RTSPTransportField {
      * packets will be allowed to make before being discarded. */
     int ttl;
 
+    /** transport set to record data */
+    int mode_record;
+
     struct sockaddr_storage destination; /**< destination IP address */
     char source[INET6_ADDRSTRLEN + 1]; /**< source IP address */
 
@@ -369,11 +372,17 @@ typedef struct RTSPState {
      * Minimum and maximum local UDP ports.
      */
     int rtp_port_min, rtp_port_max;
+
+    /**
+     * Timeout to wait for incoming connections.
+     */
+    int initial_timeout;
 } RTSPState;
 
 #define RTSP_FLAG_FILTER_SRC  0x1    /**< Filter incoming UDP packets -
                                           receive packets only from the right
                                           source address and port. */
+#define RTSP_FLAG_LISTEN 0x2         /**< Wait for incoming connections. */
 
 /**
  * Describe a single stream, as identified by a single m= line block in the
@@ -526,6 +535,12 @@ int ff_rtsp_setup_input_streams(AVFormatContext *s, RTSPMessageHeader *reply);
 int ff_rtsp_setup_output_streams(AVFormatContext *s, const char *addr);
 
 /**
+ * Parse RTSP commands (OPTIONS, PAUSE and TEARDOWN) during streaming in
+ * listen mode.
+ */
+int ff_rtsp_parse_streaming_commands(AVFormatContext *s);
+
+/**
  * Parse an SDP description of streams by populating an RTSPState struct
  * within the AVFormatContext; also allocate the RTP streams and the
  * pollfd array used for UDP streams.
@@ -557,6 +572,11 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
  * transport_priv and rtp_handle fields.
  */
 void ff_rtsp_undo_setup(AVFormatContext *s);
+
+/**
+ * Open RTSP transport context.
+ */
+int ff_rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st);
 
 extern const AVOption ff_rtsp_options[];
 
