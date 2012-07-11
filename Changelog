@@ -34,6 +34,7 @@ version next:
 - ffmpeg -(no)stdin option
 - Opus decoder using libopus
 - caca output device using libcaca
+- alphaextract and alphamerge filters
 
 
 version 0.11:

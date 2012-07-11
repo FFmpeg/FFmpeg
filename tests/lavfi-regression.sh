@@ -13,19 +13,23 @@ eval do_$test=y
 
 do_video_filter() {
     label=$1
-    filters=$2
+    filters="$2"
     shift 2
     printf '%-20s' $label
     run_avconv $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src    \
         $ENC_OPTS -vf "$filters" -vcodec rawvideo $* -f nut md5:
 }
 
-do_lavfi() {
-    vfilters="slicify=random,$2"
+do_lavfi_plain() {
+    vfilters="$2"
 
     if [ $test = $1 ] ; then
         do_video_filter $test "$vfilters"
     fi
+}
+
+do_lavfi() {
+    do_lavfi_plain $1 "slicify=random,$2"
 }
 
 do_lavfi_colormatrix() {
@@ -59,6 +63,11 @@ do_lavfi "unsharp"            "unsharp=10:10:-1.5:10:10:-1.5"
 do_lavfi "vflip"              "vflip"
 do_lavfi "vflip_crop"         "vflip,crop=iw-100:ih-100:100:100"
 do_lavfi "vflip_vflip"        "vflip,vflip"
+
+do_lavfi_plain "alphamerge_rgb"     "[in]slicify=random,format=bgra,split,alphamerge[out]"
+do_lavfi_plain "alphamerge_yuv"     "[in]slicify=random,format=yuv420p,split,alphamerge[out]"
+do_lavfi_plain "alphaextract_rgb"   "[in]slicify=random,format=bgra,split,alphamerge,slicify=random,split[o3][o4];[o4]alphaextract[alpha];[o3][alpha]alphamerge[out]"
+do_lavfi_plain "alphaextract_yuv"   "[in]slicify=random,format=yuv420p,split,alphamerge,slicify=random,split[o3][o4];[o4]alphaextract[alpha];[o3][alpha]alphamerge[out]"
 
 do_lavfi_colormatrix "colormatrix" bt709 fcc bt601 smpte240m
 
