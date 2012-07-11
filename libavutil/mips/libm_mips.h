@@ -57,7 +57,7 @@ static av_always_inline av_const long int lrintf_mips(float x)
 {
     register int ret_int;
 
-    __asm__ __volatile__ (
+    __asm__ volatile (
         "cvt.w.s    %[x],       %[x]    \n\t"
         "mfc1       %[ret_int], %[x]    \n\t"
 

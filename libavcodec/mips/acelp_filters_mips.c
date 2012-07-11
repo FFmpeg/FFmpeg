@@ -75,7 +75,7 @@ static void ff_acelp_interpolatef_mips(float *out, const float *in,
         float v = 0;
 
         for (i = 0; i < filter_length;i++) {
-            __asm__ __volatile__ (
+            __asm__ volatile (
                 "lwc1   %[in_val_p],           0(%[p_in_p])                    \n\t"
                 "lwc1   %[fc_val_p],           0(%[p_filter_coeffs_p])         \n\t"
                 "lwc1   %[in_val_m],           0(%[p_in_m])                    \n\t"
@@ -108,7 +108,7 @@ static void ff_acelp_apply_order_2_transfer_function_mips(float *out, const floa
     * loop is unrolled eight times
     */
 
-    __asm__ __volatile__ (
+    __asm__ volatile (
         "lwc1   $f0,    0(%[mem])                                              \n\t"
         "blez   %[n],   ff_acelp_apply_order_2_transfer_function_end%=         \n\t"
         "lwc1   $f1,    4(%[mem])                                              \n\t"

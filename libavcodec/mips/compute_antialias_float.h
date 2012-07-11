@@ -82,7 +82,7 @@ static void compute_antialias_mips_float(MPADecodeContext *s,
     * instructions are scheduled to minimize pipeline stall.
     */
 
-    __asm__ __volatile__ (
+    __asm__ volatile (
         "compute_antialias_float_loop%=:                                \t\n"
         "lwc1    %[in1],  -1*4(%[ptr])                                  \t\n"
         "lwc1    %[in2],  0(%[csa])                                     \t\n"

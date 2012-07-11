@@ -61,7 +61,7 @@ static void ff_weighted_vector_sumf_mips(
     const float *a_end = in_a + length;
 
     /* loop unrolled two times */
-    __asm__ __volatile__ (
+    __asm__ volatile (
         "blez   %[length], ff_weighted_vector_sumf_end%=                     \n\t"
 
         "ff_weighted_vector_sumf_madd%=:                                     \n\t"

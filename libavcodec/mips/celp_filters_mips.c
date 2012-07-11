@@ -88,7 +88,7 @@ static void ff_celp_lp_synthesis_filterf_mips(float *out,
         out2 = in[2];
         out3 = in[3];
 
-        __asm__ __volatile__(
+        __asm__ volatile(
             "lwc1       $f2,     8(%[filter_coeffs])                        \n\t"
             "lwc1       $f1,     4(%[filter_coeffs])                        \n\t"
             "lwc1       $f0,     0(%[filter_coeffs])                        \n\t"
@@ -113,7 +113,7 @@ static void ff_celp_lp_synthesis_filterf_mips(float *out,
         );
 
         for (i = 5; i <= filter_length; i += 2) {
-            __asm__ __volatile__(
+            __asm__ volatile(
                 "lwc1    %[old_out3], -20(%[p_out])                         \n\t"
                 "lwc1    $f5,         16(%[p_filter_coeffs])                \n\t"
                 "addiu   %[p_out],    -8                                    \n\t"
@@ -141,7 +141,7 @@ static void ff_celp_lp_synthesis_filterf_mips(float *out,
             FFSWAP(float, old_out0, old_out2);
         }
 
-        __asm__ __volatile__(
+        __asm__ volatile(
             "nmsub.s    %[out3], %[out3], %[a], %[out2]                     \n\t"
             "nmsub.s    %[out2], %[out2], %[a], %[out1]                     \n\t"
             "nmsub.s    %[out3], %[out3], %[b], %[out1]                     \n\t"
@@ -176,7 +176,7 @@ static void ff_celp_lp_synthesis_filterf_mips(float *out,
         p_out = &out[n];
         out_val = in[n];
         for (i = 1; i <= filter_length; i++) {
-            __asm__ __volatile__(
+            __asm__ volatile(
                 "lwc1    %[fc_val],          0(%[p_filter_coeffs])                        \n\t"
                 "lwc1    %[out_val_i],       -4(%[p_out])                                 \n\t"
                 "addiu   %[p_filter_coeffs], 4                                            \n\t"
@@ -219,7 +219,7 @@ static void ff_celp_lp_zero_synthesis_filterf_mips(float *out,
         * outer loop is unrolled eight times so there is less memory access
         * inner loop is unrolled two times
         */
-        __asm__ __volatile__(
+        __asm__ volatile(
             "filt_lp_inner%=:                                               \n\t"
             "lwc1   %[fc_val],   0(%[p_filter_coeffs])                      \n\t"
             "lwc1   $f7,         6*4(%[p_in])                               \n\t"

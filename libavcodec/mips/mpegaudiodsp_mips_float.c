@@ -79,7 +79,7 @@ static void ff_mpadsp_apply_window_mips_float(float *synth_buf, float *window,
     * changed with appropriate assembly instructions.
     */
 
-    __asm__ __volatile__ (
+    __asm__ volatile (
         "lwc1    %[sum],      0(%[dither_state])                            \t\n"
         "sll     %[t_sample], %[incr1],     5                               \t\n"
         "sub     %[t_sample], %[t_sample],  %[incr1]                        \n\t"
@@ -288,7 +288,7 @@ static void ff_dct32_mips_float(float *out, const float *tab)
     /**
     * instructions are scheduled to minimize pipeline stall.
     */
-    __asm__ __volatile__ (
+    __asm__ volatile (
         "lwc1       %[fTmp1],       0*4(%[tab])                             \n\t"
         "lwc1       %[fTmp2],       31*4(%[tab])                            \n\t"
         "lwc1       %[fTmp3],       15*4(%[tab])                            \n\t"
@@ -350,7 +350,7 @@ static void ff_dct32_mips_float(float *out, const float *tab)
         : [tab] "r" (tab)
     );
 
-    __asm__ __volatile__ (
+    __asm__ volatile (
         "lwc1       %[fTmp1],       3*4(%[tab])                             \n\t"
         "lwc1       %[fTmp2],       28*4(%[tab])                            \n\t"
         "lwc1       %[fTmp3],       12*4(%[tab])                            \n\t"
@@ -412,7 +412,7 @@ static void ff_dct32_mips_float(float *out, const float *tab)
         : [tab] "r" (tab)
     );
 
-    __asm__ __volatile__ (
+    __asm__ volatile (
         "li.s       %[fTmp1],       0.54119610014619698439                  \n\t"
         "sub.s      %[fTmp2],       %[val0],        %[val3]                 \n\t"
         "add.s      %[val0],        %[val0],        %[val3]                 \n\t"
@@ -436,7 +436,7 @@ static void ff_dct32_mips_float(float *out, const float *tab)
         :
     );
 
-    __asm__ __volatile__ (
+    __asm__ volatile (
         "sub.s      %[fTmp2],       %[val16],       %[val19]                \n\t"
         "add.s      %[val16],       %[val16],       %[val19]                \n\t"
         "sub.s      %[fTmp3],       %[val23],       %[val20]                \n\t"
@@ -457,7 +457,7 @@ static void ff_dct32_mips_float(float *out, const float *tab)
         : [fTmp1] "f" (fTmp1)
     );
 
-    __asm__ __volatile__ (
+    __asm__ volatile (
         "lwc1       %[fTmp1],       1*4(%[tab])                             \n\t"
         "lwc1       %[fTmp2],       30*4(%[tab])                            \n\t"
         "lwc1       %[fTmp3],       14*4(%[tab])                            \n\t"
@@ -519,7 +519,7 @@ static void ff_dct32_mips_float(float *out, const float *tab)
         : [tab] "r" (tab)
     );
 
-    __asm__ __volatile__ (
+    __asm__ volatile (
         "lwc1       %[fTmp1],       2*4(%[tab])                             \n\t"
         "lwc1       %[fTmp2],       29*4(%[tab])                            \n\t"
         "lwc1       %[fTmp3],       13*4(%[tab])                            \n\t"
@@ -581,7 +581,7 @@ static void ff_dct32_mips_float(float *out, const float *tab)
         : [tab] "r" (tab)
     );
 
-    __asm__ __volatile__ (
+    __asm__ volatile (
         "li.s       %[fTmp1],       1.30656296487637652785                  \n\t"
         "sub.s      %[fTmp2],       %[val1],        %[val2]                 \n\t"
         "add.s      %[val1],        %[val1],        %[val2]                 \n\t"
@@ -605,7 +605,7 @@ static void ff_dct32_mips_float(float *out, const float *tab)
         :
     );
 
-    __asm__ __volatile__ (
+    __asm__ volatile (
         "sub.s      %[fTmp2],       %[val17],       %[val18]                \n\t"
         "add.s      %[val17],       %[val17],       %[val18]                \n\t"
         "sub.s      %[fTmp3],       %[val22],       %[val21]                \n\t"
@@ -626,7 +626,7 @@ static void ff_dct32_mips_float(float *out, const float *tab)
         : [fTmp1] "f" (fTmp1)
     );
 
-    __asm__ __volatile__ (
+    __asm__ volatile (
         "li.s       %[fTmp1],       0.70710678118654752439                  \n\t"
         "sub.s      %[fTmp2],       %[val0],        %[val1]                 \n\t"
         "add.s      %[val0],        %[val0],        %[val1]                 \n\t"
@@ -663,7 +663,7 @@ static void ff_dct32_mips_float(float *out, const float *tab)
         : [out] "r" (out)
     );
 
-    __asm__ __volatile__ (
+    __asm__ volatile (
         "sub.s      %[fTmp2],       %[val8],        %[val9]                 \n\t"
         "add.s      %[val8],        %[val8],        %[val9]                 \n\t"
         "sub.s      %[fTmp3],       %[val11],       %[val10]                \n\t"
@@ -704,7 +704,7 @@ static void ff_dct32_mips_float(float *out, const float *tab)
         : [fTmp1] "f" (fTmp1), [out] "r" (out)
     );
 
-    __asm__ __volatile__ (
+    __asm__ volatile (
         "sub.s      %[fTmp2],       %[val16],       %[val17]                \n\t"
         "add.s      %[val16],       %[val16],       %[val17]                \n\t"
         "sub.s      %[fTmp3],       %[val19],       %[val18]                \n\t"
@@ -730,7 +730,7 @@ static void ff_dct32_mips_float(float *out, const float *tab)
         : [fTmp1] "f" (fTmp1)
     );
 
-    __asm__ __volatile__ (
+    __asm__ volatile (
         "sub.s      %[fTmp2],       %[val24],       %[val25]                \n\t"
         "add.s      %[val24],       %[val24],       %[val25]                \n\t"
         "sub.s      %[fTmp3],       %[val27],       %[val26]                \n\t"
@@ -799,7 +799,7 @@ static void imdct36_mips_float(float *out, float *buf, float *in, float *win)
     */
 
     /* loop 1 and 2 */
-    __asm__ __volatile__ (
+    __asm__ volatile (
         "lwc1   %[in1],  17*4(%[in])                                    \t\n"
         "lwc1   %[in2],  16*4(%[in])                                    \t\n"
         "lwc1   %[in3],  15*4(%[in])                                    \t\n"
@@ -871,7 +871,7 @@ static void imdct36_mips_float(float *out, float *buf, float *in, float *win)
     );
 
     /* loop 3 */
-    __asm__ __volatile__ (
+    __asm__ volatile (
         "li.s    %[c1],   0.5                                           \t\n"
         "lwc1    %[in1],  8*4(%[in])                                    \t\n"
         "lwc1    %[in2],  16*4(%[in])                                   \t\n"
@@ -1002,7 +1002,7 @@ static void imdct36_mips_float(float *out, float *buf, float *in, float *win)
     );
 
     /* loop 4 */
-    __asm__ __volatile__ (
+    __asm__ volatile (
         "lwc1   %[in1],  2*4(%[tmp])                                    \t\n"
         "lwc1   %[in2],  0(%[tmp])                                      \t\n"
         "lwc1   %[in3],  3*4(%[tmp])                                    \t\n"

@@ -70,7 +70,7 @@ static av_always_inline void ff_lsp2polyf_mips(const double *lsp, double *f, int
         double tmp, f_j_2, f_j_1, f_j;
         double val = lsp[2*i];
 
-        __asm__ __volatile__(
+        __asm__ volatile(
             "move   %[p_f],     %[p_fi]                         \n\t"
             "add.d  %[val],     %[val],     %[val]              \n\t"
             "addiu  %[p_fi],    8                               \n\t"

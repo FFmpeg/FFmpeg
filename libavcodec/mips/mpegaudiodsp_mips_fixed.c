@@ -84,7 +84,7 @@ static void ff_mpadsp_apply_window_mips_fixed(int32_t *synth_buf, int32_t *windo
     * use of round_sample function from the original code is eliminated,
     * changed with appropriate assembly instructions.
     */
-    __asm__ __volatile__ (
+    __asm__ volatile (
          "mthi   $zero                                                    \n\t"
          "mtlo   %[temp1]                                                 \n\t"
          "lw     %[w_asm],  0(%[w])                                       \n\t"
@@ -175,7 +175,7 @@ static void ff_mpadsp_apply_window_mips_fixed(int32_t *synth_buf, int32_t *windo
        access per two sample */
 
     for(j = 1; j < 16; j++) {
-        __asm__ __volatile__ (
+        __asm__ volatile (
              "mthi   $0,         $ac1                                      \n\t"
              "mtlo   $0,         $ac1                                      \n\t"
              "mthi   $0                                                    \n\t"
@@ -299,7 +299,7 @@ static void ff_mpadsp_apply_window_mips_fixed(int32_t *synth_buf, int32_t *windo
 
     p = synth_buf + 32;
 
-    __asm__ __volatile__ (
+    __asm__ volatile (
         "mthi   $0                                                        \n\t"
         "mtlo   %[temp1]                                                  \n\t"
         "lw     %[w_asm],  32*4(%[w])                                     \n\t"
@@ -372,7 +372,7 @@ static void imdct36_mips_fixed(int *out, int *buf, int *in, int *win)
     * in order to eliminate unnecessary readings and writings in array
     */
 
-    __asm__ __volatile__ (
+    __asm__ volatile (
         "lw   %[t1], 17*4(%[in])                                         \n\t"
         "lw   %[t2], 16*4(%[in])                                         \n\t"
         "lw   %[t3], 15*4(%[in])                                         \n\t"
@@ -469,7 +469,7 @@ static void imdct36_mips_fixed(int *out, int *buf, int *in, int *win)
          *  "sub  %[t0],       %[temp_reg1],%[t0]                        \n\t"
          */
 
-        __asm__ __volatile__ (
+        __asm__ volatile (
             "lw    %[t7],        4*4(%[in1])                               \n\t"
             "lw    %[t8],        8*4(%[in1])                               \n\t"
             "lw    %[t6],        16*4(%[in1])                              \n\t"
@@ -585,7 +585,7 @@ static void imdct36_mips_fixed(int *out, int *buf, int *in, int *win)
     *
     */
 
-    __asm__ __volatile__ (
+    __asm__ volatile (
         "lw     %[t2],        1*4(%[tmp])                                  \n\t"
         "lw     %[t3],        3*4(%[tmp])                                  \n\t"
         "lw     %[t0],        0*4(%[tmp])                                  \n\t"

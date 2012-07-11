@@ -70,7 +70,7 @@ void hb_fir_filter_mips(float *out, const float fir_coef[HB_FIR_SIZE + 1],
         * inner loop is entirely unrolled and instructions are scheduled
         * to minimize pipeline stall
         */
-        __asm__ __volatile__(
+        __asm__ volatile(
             "mtc1       $zero,     %[output]                      \n\t"
             "lwc1       $f0,       0(%[p_data])                   \n\t"
             "lwc1       $f1,       0(%[fir_coef])                 \n\t"

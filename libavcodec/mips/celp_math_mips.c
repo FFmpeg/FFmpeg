@@ -59,7 +59,7 @@ static float ff_dot_productf_mips(const float* a, const float* b,
     float sum;
     const float* a_end = a + length;
 
-    __asm__ __volatile__ (
+    __asm__ volatile (
         "mtc1   $zero,      %[sum]                              \n\t"
         "blez   %[length],  ff_dot_productf_end%=               \n\t"
         "ff_dot_productf_madd%=:                                \n\t"
