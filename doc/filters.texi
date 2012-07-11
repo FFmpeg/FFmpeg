@@ -33,7 +33,7 @@ ffmpeg -i input -vf "[in] split [T1], fifo, [T2] overlay=0:H/2 [out]; [T1] fifo,
 The result will be that in output the top half of the video is mirrored
 onto the bottom half.
 
-Video filters are loaded using the @var{-vf} option passed to
+Filters are loaded using the @var{-vf} or @var{-af} option passed to
 @command{ffmpeg} or to @command{ffplay}. Filters in the same linear
 chain are separated by commas. In our example, @var{split, fifo,
 overlay} are in one linear chain, and @var{fifo, crop, vflip} are in
@@ -46,9 +46,9 @@ Some filters take in input a list of parameters: they are specified
 after the filter name and an equal sign, and are separated each other
 by a semicolon.
 
-There exist so-called @var{source filters} that do not have a video
-input, and we expect in the future some @var{sink filters} that will
-not have video output.
+There exist so-called @var{source filters} that do not have an
+audio/video input, and @var{sink filters} that will not have audio/video
+output.
 
 @c man end FILTERING INTRODUCTION
 
