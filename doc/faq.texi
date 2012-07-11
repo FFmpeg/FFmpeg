@@ -383,6 +383,24 @@ Yes, as long as the code is optional and can easily and cleanly be placed
 under #if CONFIG_GPL without breaking anything. So, for example, a new codec
 or filter would be OK under GPL while a bug fix to LGPL code would not.
 
+@section I'm using FFmpeg from within my C application but the linker complains about missing symbols from the libraries themselves.
+
+FFmpeg builds static libraries by default. In static libraries, dependencies
+are not handled. That has two consequences. First, you must specify the
+libraries in dependency order: @code{-lavdevice} must come before
+@code{-lavformat}, @code{-lavutil} must come after everything else, etc.
+Second, external libraries that are used in FFmpeg have to be specified too.
+
+An easy way to get the full list of required libraries in dependency order
+is to use @code{pkg-config}.
+
+@example
+  c99 -o program program.c $(pkg-config --cflags --libs libavformat libavcodec)
+@end example
+
+See @file{doc/example/Makefile} and @file{doc/example/pc-uninstalled} for
+more details.
+
 @section I'm using FFmpeg from within my C++ application but the linker complains about missing symbols which seem to be available.
 
 FFmpeg is a pure C project, so to use the libraries within your C++ application
