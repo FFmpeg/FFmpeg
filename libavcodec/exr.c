@@ -457,8 +457,6 @@ static int decode_frame(AVCodecContext *avctx,
 
                 // Zero out the end if xmax+1 is not w
                 memset(ptr_x, 0, (avctx->width - (xmax + 1)) * 2 * av_pix_fmt_descriptors[avctx->pix_fmt].nb_components);
-                ptr_x += (avctx->width - (xmax + 1)) * av_pix_fmt_descriptors[avctx->pix_fmt].nb_components;
-
             }
             // Move to next line
             ptr += stride;
