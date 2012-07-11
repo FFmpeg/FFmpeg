@@ -622,10 +622,11 @@ void decode_mvs(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y)
 }
 
 static av_always_inline
-void decode_intra4x4_modes(VP8Context *s, VP56RangeCoder *c,
+void decode_intra4x4_modes(VP8Context *s, VP56RangeCoder *c, VP8Macroblock *mb,
                            int mb_x, int keyframe)
 {
-    uint8_t *intra4x4 = s->intra4x4_pred_mode_mb;
+    uint8_t *intra4x4 = mb->intra4x4_pred_mode_mb;
+
     if (keyframe) {
         int x, y;
         uint8_t* const top = s->intra4x4_pred_mode_top + 4 * mb_x;
@@ -655,7 +656,7 @@ void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y, uint8_
         *segment = vp8_rac_get_tree(c, vp8_segmentid_tree, s->prob->segmentid);
     else if (s->segmentation.enabled)
         *segment = ref ? *ref : *segment;
-    s->segment = *segment;
+    mb->segment = *segment;
 
     mb->skip = s->mbskip_enabled ? vp56_rac_get_prob(c, s->prob->mbskip) : 0;
 
@@ -663,14 +664,14 @@ void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y, uint8_
         mb->mode = vp8_rac_get_tree(c, vp8_pred16x16_tree_intra, vp8_pred16x16_prob_intra);
 
         if (mb->mode == MODE_I4x4) {
-            decode_intra4x4_modes(s, c, mb_x, 1);
+            decode_intra4x4_modes(s, c, mb, mb_x, 1);
         } else {
             const uint32_t modes = vp8_pred4x4_mode[mb->mode] * 0x01010101u;
             AV_WN32A(s->intra4x4_pred_mode_top + 4 * mb_x, modes);
             AV_WN32A(s->intra4x4_pred_mode_left, modes);
         }
 
-        s->chroma_pred_mode = vp8_rac_get_tree(c, vp8_pred8x8c_tree, vp8_pred8x8c_prob_intra);
+        mb->chroma_pred_mode = vp8_rac_get_tree(c, vp8_pred8x8c_tree, vp8_pred8x8c_prob_intra);
         mb->ref_frame = VP56_FRAME_CURRENT;
     } else if (vp56_rac_get_prob_branchy(c, s->prob->intra)) {
         // inter MB, 16.2
@@ -688,9 +689,9 @@ void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y, uint8_
         mb->mode = vp8_rac_get_tree(c, vp8_pred16x16_tree_inter, s->prob->pred16x16);
 
         if (mb->mode == MODE_I4x4)
-            decode_intra4x4_modes(s, c, mb_x, 0);
+            decode_intra4x4_modes(s, c, mb, mb_x, 0);
 
-        s->chroma_pred_mode = vp8_rac_get_tree(c, vp8_pred8x8c_tree, s->prob->pred8x8c);
+        mb->chroma_pred_mode = vp8_rac_get_tree(c, vp8_pred8x8c_tree, s->prob->pred8x8c);
         mb->ref_frame = VP56_FRAME_CURRENT;
         mb->partitioning = VP8_SPLITMVMODE_NONE;
         AV_ZERO32(&mb->bmv[0]);
@@ -791,7 +792,7 @@ void decode_mb_coeffs(VP8Context *s, VP56RangeCoder *c, VP8Macroblock *mb,
 {
     int i, x, y, luma_start = 0, luma_ctx = 3;
     int nnz_pred, nnz, nnz_total = 0;
-    int segment = s->segment;
+    int segment = mb->segment;
     int block_dc = 0;
 
     if (mb->mode != MODE_I4x4 && mb->mode != VP8_MVMODE_SPLIT) {
@@ -1002,7 +1003,7 @@ void intra_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
         s->hpc.pred16x16[mode](dst[0], s->linesize);
     } else {
         uint8_t *ptr = dst[0];
-        uint8_t *intra4x4 = s->intra4x4_pred_mode_mb;
+        uint8_t *intra4x4 = mb->intra4x4_pred_mode_mb;
         uint8_t tr_top[4] = { 127, 127, 127, 127 };
 
         // all blocks on the right edge of the macroblock use bottom edge
@@ -1087,9 +1088,9 @@ void intra_predict(VP8Context *s, uint8_t *dst[3], VP8Macroblock *mb,
     }
 
     if (avctx->flags & CODEC_FLAG_EMU_EDGE) {
-        mode = check_intra_pred8x8_mode_emuedge(s->chroma_pred_mode, mb_x, mb_y);
+        mode = check_intra_pred8x8_mode_emuedge(mb->chroma_pred_mode, mb_x, mb_y);
     } else {
-        mode = check_intra_pred8x8_mode(s->chroma_pred_mode, mb_x, mb_y);
+        mode = check_intra_pred8x8_mode(mb->chroma_pred_mode, mb_x, mb_y);
     }
     s->hpc.pred8x8[mode](dst[1], s->uvlinesize);
     s->hpc.pred8x8[mode](dst[2], s->uvlinesize);
@@ -1408,7 +1409,7 @@ static av_always_inline void filter_level_for_mb(VP8Context *s, VP8Macroblock *m
     int interior_limit, filter_level;
 
     if (s->segmentation.enabled) {
-        filter_level = s->segmentation.filter_level[s->segment];
+        filter_level = s->segmentation.filter_level[mb->segment];
         if (!s->segmentation.absolute_vals)
             filter_level += s->filter.level;
     } else
