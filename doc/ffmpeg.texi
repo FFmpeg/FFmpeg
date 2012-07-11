@@ -361,6 +361,14 @@ the encoding process. It is made of "@var{key}=@var{value}" lines. @var{key}
 consists of only alphanumeric characters. The last key of a sequence of
 progress information is always "progress".
 
+@item -stdin
+Enable interaction on standard input. On by default unless standard input is
+used as an input.
+
+Useful, for example, if ffmpeg is in the background process group. Roughly
+the same result can be achieved with @code{ffmpeg ... < /dev/null} but it
+requires a shell.
+
 @item -debug_ts (@emph{global})
 Print timestamp information. It is off by default. This option is
 mostly useful for testing and debugging purposes, and the output

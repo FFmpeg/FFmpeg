@@ -5878,6 +5878,8 @@ static const OptionDef options[] = {
       "add timings for each task" },
     { "progress", HAS_ARG | OPT_EXPERT, {(void*)opt_progress},
       "write program-readable progress information", "url" },
+    { "stdin", OPT_BOOL | OPT_EXPERT, {(void*)&stdin_interaction},
+      "enable or disable interaction on standard input" },
     { "timelimit", HAS_ARG, {(void*)opt_timelimit}, "set max runtime in seconds", "limit" },
     { "dump", OPT_BOOL | OPT_EXPERT, {(void*)&do_pkt_dump},
       "dump each input packet" },
