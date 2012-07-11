@@ -108,18 +108,17 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
-    AVFilterBufferRef *picref2 = picref;
 
     if (av_cmp_q(inlink->time_base, outlink->time_base)) {
-        picref2 = avfilter_ref_buffer(picref, ~0);
-        picref2->pts = av_rescale_q(picref->pts, inlink->time_base, outlink->time_base);
+        int64_t orig_pts = picref->pts;
+        picref->pts = av_rescale_q(picref->pts, inlink->time_base, outlink->time_base);
         av_log(ctx, AV_LOG_DEBUG, "tb:%d/%d pts:%"PRId64" -> tb:%d/%d pts:%"PRId64"\n",
-               inlink ->time_base.num, inlink ->time_base.den, picref ->pts,
-               outlink->time_base.num, outlink->time_base.den, picref2->pts);
-        avfilter_unref_buffer(picref);
+               inlink ->time_base.num, inlink ->time_base.den, orig_pts,
+               outlink->time_base.num, outlink->time_base.den, picref->pts);
     }
+    inlink->cur_buf = NULL;
 
-    ff_start_frame(outlink, picref2);
+    ff_start_frame(outlink, picref);
 }
 
 AVFilter avfilter_vf_settb = {
