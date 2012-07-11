@@ -31,6 +31,7 @@
 
 #define BITSTREAM_READER_LE
 #include "libavutil/float_dsp.h"
+#include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "dsputil.h"
@@ -44,9 +45,6 @@
 #define V_NB_BITS2 11
 #define V_MAX_VLCS (1 << 16)
 #define V_MAX_PARTITIONS (1 << 20)
-
-#undef NDEBUG
-#include <assert.h>
 
 typedef struct {
     uint8_t      dimensions;
@@ -1334,7 +1332,7 @@ static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
 
                         av_dlog(NULL, "Classword: %u\n", temp);
 
-                        assert(vr->classifications > 1 && temp <= 65536); //needed for inverse[]
+                        av_assert0(vr->classifications > 1 && temp <= 65536); //needed for inverse[]
                         for (i = 0; i < c_p_c; ++i) {
                             unsigned temp2;
 
