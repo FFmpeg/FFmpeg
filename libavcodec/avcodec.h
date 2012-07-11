@@ -1330,17 +1330,17 @@ typedef struct AVFrame {
  * they should not be accessed directly outside libavcodec.
  */
 int64_t av_frame_get_best_effort_timestamp(const AVFrame *frame);
-int64_t av_frame_get_pkt_duration         (const AVFrame *frame);
-int64_t av_frame_get_pkt_pos              (const AVFrame *frame);
-int64_t av_frame_get_channel_layout       (const AVFrame *frame);
-int     av_frame_get_sample_rate          (const AVFrame *frame);
-AVDictionary *av_frame_get_metadata       (const AVFrame *frame);
 void    av_frame_set_best_effort_timestamp(AVFrame *frame, int64_t val);
+int64_t av_frame_get_pkt_duration         (const AVFrame *frame);
 void    av_frame_set_pkt_duration         (AVFrame *frame, int64_t val);
+int64_t av_frame_get_pkt_pos              (const AVFrame *frame);
 void    av_frame_set_pkt_pos              (AVFrame *frame, int64_t val);
+int64_t av_frame_get_channel_layout       (const AVFrame *frame);
 void    av_frame_set_channel_layout       (AVFrame *frame, int64_t val);
+int     av_frame_get_sample_rate          (const AVFrame *frame);
 void    av_frame_set_sample_rate          (AVFrame *frame, int     val);
-void    av_frame_set_metadata             (AVFrame *frame, AVDictionary *val);
+AVDictionary *av_frame_get_metadata       (const AVFrame *frame);
+void          av_frame_set_metadata       (AVFrame *frame, AVDictionary *val);
 
 struct AVCodecInternal;
 
