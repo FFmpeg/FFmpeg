@@ -73,6 +73,7 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     slice->h = FFMAX(8, slice->h & (-1 << slice->vshift));
 
     av_log(link->dst, AV_LOG_DEBUG, "h:%d\n", slice->h);
+    link->cur_buf = NULL;
 
     ff_start_frame(link->dst->outputs[0], picref);
 }
