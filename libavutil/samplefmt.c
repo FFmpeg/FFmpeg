@@ -208,8 +208,13 @@ int av_samples_copy(uint8_t **dst, uint8_t * const *src, int dst_offset,
     dst_offset *= block_align;
     src_offset *= block_align;
 
-    for (i = 0; i < planes; i++)
-        memcpy(dst[i] + dst_offset, src[i] + src_offset, data_size);
+    if((dst[0] < src[0] ? src[0] - dst[0] : dst[0] - src[0]) >= data_size) {
+        for (i = 0; i < planes; i++)
+            memcpy(dst[i] + dst_offset, src[i] + src_offset, data_size);
+    } else {
+        for (i = 0; i < planes; i++)
+            memmove(dst[i] + dst_offset, src[i] + src_offset, data_size);
+    }
 
     return 0;
 }
