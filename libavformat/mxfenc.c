@@ -38,6 +38,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/random_seed.h"
 #include "libavutil/timecode.h"
+#include "libavutil/avassert.h"
 #include "libavcodec/bytestream.h"
 #include "libavcodec/dnxhddata.h"
 #include "audiointerleave.h"
@@ -1294,7 +1295,7 @@ static void mxf_write_klv_fill(AVFormatContext *s)
         klv_encode_ber4_length(s->pb, pad);
         for (; pad; pad--)
             avio_w8(s->pb, 0);
-        assert(!(avio_tell(s->pb) & (KAG_SIZE-1)));
+        av_assert1(!(avio_tell(s->pb) & (KAG_SIZE-1)));
     }
 }
 
@@ -1883,7 +1884,7 @@ static void mxf_write_d10_video_packet(AVFormatContext *s, AVStream *st, AVPacke
         klv_encode_ber4_length(s->pb, pad);
         for (; pad; pad--)
             avio_w8(s->pb, 0);
-        assert(!(avio_tell(s->pb) & (KAG_SIZE-1)));
+        av_assert1(!(avio_tell(s->pb) & (KAG_SIZE-1)));
     } else {
         av_log(s, AV_LOG_WARNING, "cannot fill d-10 video packet\n");
         for (; pad > 0; pad--)
