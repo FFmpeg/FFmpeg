@@ -2500,6 +2500,16 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
     if(best_effort_timestamp != AV_NOPTS_VALUE)
         ist->next_pts = ist->pts = av_rescale_q(decoded_frame->pts = best_effort_timestamp, ist->st->time_base, AV_TIME_BASE_Q);
 
+    if (debug_ts) {
+        av_log(NULL, AV_LOG_INFO, "decoder -> ist_index:%d type:video "
+                "frame_pts:%s frame_pts_time:%s best_effort_ts:%d best_effort_ts_time:%s keyframe:%d frame_type:%d \n",
+                ist->st->index, av_ts2str(decoded_frame->pts),
+                av_ts2timestr(decoded_frame->pts, &ist->st->time_base),
+                best_effort_timestamp,
+                av_ts2timestr(best_effort_timestamp, &ist->st->time_base),
+                decoded_frame->key_frame, decoded_frame->pict_type);
+    }
+
     pkt->size = 0;
     pre_process_video_frame(ist, (AVPicture *)decoded_frame, &buffer_to_free);
 
