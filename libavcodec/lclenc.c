@@ -41,6 +41,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "internal.h"
 #include "lcl.h"
@@ -132,7 +133,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     c->avctx= avctx;
 
-    assert(avctx->width && avctx->height);
+    av_assert0(avctx->width && avctx->height);
 
     avctx->extradata= av_mallocz(8);
     avctx->coded_frame= &c->pic;
