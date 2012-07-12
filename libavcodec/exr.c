@@ -35,6 +35,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "mathops.h"
+#include "thread.h"
 #include "libavutil/imgutils.h"
 
 enum ExrCompr {
@@ -478,7 +479,7 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     if (s->picture.data[0])
-        avctx->release_buffer(avctx, &s->picture);
+        ff_thread_release_buffer(avctx, &s->picture);
     if (av_image_check_size(w, h, 0, avctx))
         return AVERROR_INVALIDDATA;
 
@@ -505,7 +506,7 @@ static int decode_frame(AVCodecContext *avctx,
             return AVERROR(ENOMEM);
     }
 
-    if ((ret = avctx->get_buffer(avctx, p)) < 0) {
+    if ((ret = ff_thread_get_buffer(avctx, p)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -660,6 +661,6 @@ AVCodec ff_exr_decoder = {
     .init               = decode_init,
     .close              = decode_end,
     .decode             = decode_frame,
-    .capabilities       = CODEC_CAP_DR1,
+    .capabilities       = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
     .long_name          = NULL_IF_CONFIG_SMALL("OpenEXR image"),
 };
