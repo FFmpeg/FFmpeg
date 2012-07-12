@@ -3385,7 +3385,7 @@ else
 fi
 enabled sdl && add_cflags $sdl_cflags && add_extralibs $sdl_libs
 
-texi2html -version > /dev/null 2>&1 && enable texi2html || disable texi2html
+texi2html --help 2> /dev/null | grep -q 'init-file' && enable texi2html || disable texi2html
 makeinfo --version > /dev/null 2>&1 && enable makeinfo  || disable makeinfo
 pod2man --help > /dev/null 2>&1 && enable pod2man || disable pod2man
 
