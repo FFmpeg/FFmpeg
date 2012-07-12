@@ -1255,6 +1255,7 @@ HAVE_LIST="
     nanosleep
     netinet_sctp_h
     PeekNamedPipe
+    pod2man
     poll_h
     posix_memalign
     pthread_cancel
@@ -1297,6 +1298,7 @@ HAVE_LIST="
     sys_time_h
     sys_videoio_h
     termios_h
+    texi2html
     threads
     trunc
     truncf
@@ -1784,7 +1786,7 @@ ffprobe_deps="avcodec avformat"
 ffserver_deps="avformat ffm_muxer fork rtp_protocol rtsp_demuxer"
 ffserver_extralibs='$ldl'
 
-doc_deps="texi2html"
+doc_deps_any="texi2html makeinfo pod2man"
 
 # tests
 
@@ -3385,6 +3387,7 @@ enabled sdl && add_cflags $sdl_cflags && add_extralibs $sdl_libs
 
 texi2html -version > /dev/null 2>&1 && enable texi2html || disable texi2html
 makeinfo --version > /dev/null 2>&1 && enable makeinfo  || disable makeinfo
+pod2man --help > /dev/null 2>&1 && enable pod2man || disable pod2man
 
 check_header linux/fb.h
 check_header linux/videodev.h

@@ -12,10 +12,10 @@ HTMLPAGES   = $(PROGS-yes:%=doc/%.html)                                 \
 TXTPAGES    = doc/fate.txt                                              \
 
 
-DOCS = $(HTMLPAGES) $(MANPAGES) $(PODPAGES)
-ifdef HAVE_MAKEINFO
-DOCS += $(TXTPAGES)
-endif
+DOCS-$(HAVE_TEXI2HTML)  += $(HTMLPAGES)
+DOCS-$(HAVE_POD2MAN)    += $(MANPAGES) $(PODPAGES)
+DOCS-$(HAVE_MAKEINFO)   += $(TXTPAGES)
+DOCS = $(DOCS-yes)
 
 all-$(CONFIG_DOC): documentation
 
@@ -53,11 +53,15 @@ doc/%.1: doc/%.pod $(GENTEXI)
 
 $(DOCS): | doc/
 
+install-man:
+
+ifdef HAVE_POD2MAN
 install-progs-$(CONFIG_DOC): install-man
 
 install-man: $(MANPAGES)
 	$(Q)mkdir -p "$(MANDIR)/man1"
 	$(INSTALL) -m 644 $(MANPAGES) "$(MANDIR)/man1"
+endif
 
 uninstall: uninstall-man
 
