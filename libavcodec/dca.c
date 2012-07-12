@@ -540,6 +540,18 @@ static inline void get_array(GetBitContext *gb, int *dst, int len, int bits)
         *dst++ = get_bits(gb, bits);
 }
 
+static inline int dca_xxch2index(DCAContext *s, int xxch_ch)
+{
+    int i, base, mask;
+
+    /* locate channel set containing the channel */
+    for (i = -1, base = 0, mask = (s->xxch_core_spkmask & ~DCA_XXCH_LFE1);
+         i <= s->xxch_chset && !(mask & xxch_ch); mask = s->xxch_spk_masks[++i])
+        base += av_popcount(mask);
+
+    return base + av_popcount(mask & (xxch_ch - 1));
+}
+
 static int dca_parse_audio_coding_header(DCAContext *s, int base_channel,
                                          int xxch)
 {
@@ -595,8 +607,7 @@ static int dca_parse_audio_coding_header(DCAContext *s, int base_channel,
                         coeff = get_bits(&s->gb, 7);
                         sign  = (coeff & 64) ? 1.0 : -1.0;
                         mag   = dca_downmix_scale_factors[(coeff & 63) << 2];
-                        ichan = av_popcount((acc_mask & ~DCA_XXCH_LFE1)
-                                            & ((1 << i) - 1));
+                        ichan = dca_xxch2index(s, 1 << i);
                         s->xxch_dmix_coeff[j][ichan] = sign * mag * scale_factor;
                     }
                 }
