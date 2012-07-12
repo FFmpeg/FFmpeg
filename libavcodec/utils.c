@@ -1658,6 +1658,12 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
             } else {
                 av_samples_copy(frame->extended_data, frame->extended_data, 0, avctx->internal->skip_samples,
                                 frame->nb_samples - avctx->internal->skip_samples, avctx->channels, frame->format);
+                if(avctx->pkt_timebase.num && avctx->sample_rate) {
+                    if(frame->pkt_pts!=AV_NOPTS_VALUE)
+                        frame->pkt_pts += av_rescale_q(avctx->internal->skip_samples,(AVRational){1, avctx->sample_rate}, avctx->pkt_timebase);
+                    if(frame->pkt_dts!=AV_NOPTS_VALUE)
+                        frame->pkt_dts += av_rescale_q(avctx->internal->skip_samples,(AVRational){1, avctx->sample_rate}, avctx->pkt_timebase);
+                }
                 frame->nb_samples -= avctx->internal->skip_samples;
                 avctx->internal->skip_samples = 0;
             }
