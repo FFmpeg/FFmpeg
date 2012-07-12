@@ -1346,6 +1346,10 @@ static int matroska_read_header(AVFormatContext *s)
             break;
     if (i >= FF_ARRAY_ELEMS(matroska_doctypes)) {
         av_log(s, AV_LOG_WARNING, "Unknown EBML doctype '%s'\n", ebml.doctype);
+        if (matroska->ctx->error_recognition & AV_EF_EXPLODE) {
+            ebml_free(ebml_syntax, &ebml);
+            return AVERROR_INVALIDDATA;
+        }
     }
     ebml_free(ebml_syntax, &ebml);
 
