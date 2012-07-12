@@ -178,6 +178,7 @@ External library support:
   --enable-libdc1394       enable IIDC-1394 grabbing using libdc1394
                            and libraw1394 [no]
   --enable-libfaac         enable FAAC support via libfaac [no]
+  --enable-libfdk-aac      enable AAC support via libfdk-aac [no]
   --enable-libfreetype     enable libfreetype [no]
   --enable-libgsm          enable GSM support via libgsm [no]
   --enable-libiec61883     enable iec61883 via libiec61883 [no]
@@ -1053,6 +1054,7 @@ CONFIG_LIST="
     libcelt
     libdc1394
     libfaac
+    libfdk_aac
     libfreetype
     libgsm
     libiec61883
@@ -1210,6 +1212,7 @@ HAVE_LIST="
     fork
     getaddrinfo
     gethrtime
+    getopt
     GetProcessAffinityMask
     GetProcessMemoryInfo
     GetProcessTimes
@@ -1613,6 +1616,7 @@ h264_parser_select="golomb h264dsp h264pred"
 libaacplus_encoder_deps="libaacplus"
 libcelt_decoder_deps="libcelt"
 libfaac_encoder_deps="libfaac"
+libfdk_aac_encoder_deps="libfdk_aac"
 libgsm_decoder_deps="libgsm"
 libgsm_encoder_deps="libgsm"
 libgsm_ms_decoder_deps="libgsm"
@@ -1797,7 +1801,6 @@ test_deps(){
     done
 }
 
-mxf_d10_test_deps="avfilter"
 seek_lavf_mxf_d10_test_deps="mxf_d10_test"
 
 test_deps _muxer _demuxer                                               \
@@ -3178,6 +3181,7 @@ check_func  fcntl
 check_func  fork
 check_func  getaddrinfo $network_extralibs
 check_func  gethrtime
+check_func  getopt
 check_func  getrusage
 check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
 check_func  gettimeofday
@@ -3308,6 +3312,7 @@ enabled libcelt    && require libcelt celt/celt.h celt_decode -lcelt0 &&
                       { check_lib celt/celt.h celt_decoder_create_custom -lcelt0 ||
                         die "ERROR: libcelt version must be >= 0.11.0."; }
 enabled libfaac    && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
+enabled libfdk_aac && require  libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen -lfdk-aac
 enabled libfreetype && require_pkg_config freetype2 "ft2build.h freetype/freetype.h" FT_Init_FreeType
 enabled libgsm     && require  libgsm gsm/gsm.h gsm_create -lgsm
 enabled libilbc    && require  libilbc ilbc.h WebRtcIlbcfix_InitDecode -lilbc
@@ -3684,6 +3689,7 @@ echo "libcdio support           ${libcdio-no}"
 echo "libcelt enabled           ${libcelt-no}"
 echo "libdc1394 support         ${libdc1394-no}"
 echo "libfaac enabled           ${libfaac-no}"
+echo "libfdk-aac enabled        ${libfdk_aac-no}"
 echo "libgsm enabled            ${libgsm-no}"
 echo "libiec61883 support       ${libiec61883-no}"
 echo "libilbc enabled           ${libilbc-no}"

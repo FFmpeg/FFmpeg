@@ -17,6 +17,7 @@ version next:
 - Microsoft ATC Screen decoder
 - RTSP listen mode
 - TechSmith Screen Codec 2 decoder
+- AAC encoding via libfdk-aac
 - showwaves filter
 - LucasArts SMUSH playback support
 - SAMI demuxer and decoder

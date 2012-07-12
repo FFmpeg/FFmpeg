@@ -26,8 +26,8 @@ instructions.  To enable using OpenJPEG in FFmpeg, pass @code{--enable-libopenjp
 
 @section OpenCORE and VisualOn libraries
 
-Spun off Google Android sources, OpenCore and VisualOn libraries provide
-encoders for a number of audio codecs.
+Spun off Google Android sources, OpenCore, VisualOn and Fraunhofer
+libraries provide encoders for a number of audio codecs.
 
 @float NOTE
 OpenCORE and VisualOn libraries are under the Apache License 2.0
@@ -62,6 +62,14 @@ FFmpeg can make use of the VisualOn AMR-WBenc library for AMR-WB encoding.
 Go to @url{http://sourceforge.net/projects/opencore-amr/} and follow the
 instructions for installing the library.
 Then pass @code{--enable-libvo-amrwbenc} to configure to enable it.
+
+@subsection Fraunhofer AAC library
+
+Libav can make use of the Fraunhofer AAC library for AAC encoding.
+
+Go to @url{http://sourceforge.net/projects/opencore-amr/} and follow the
+instructions for installing the library.
+Then pass @code{--enable-libfdk-aac} to configure to enable it.
 
 @section LAME
 
