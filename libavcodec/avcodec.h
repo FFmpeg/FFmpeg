@@ -2947,6 +2947,15 @@ typedef struct AVCodecContext {
     uint64_t vbv_delay;
 
     /**
+     * Timebase in which pkt_dts/pts and AVPacket.dts/pts are.
+     * Code outside libavcodec should access this field using:
+     * avcodec_set_pkt_timebase(avctx)
+     * - encoding unused.
+     * - decodimg set by user
+     */
+    AVRational pkt_timebase;
+
+    /**
      * Current statistics for PTS correction.
      * - decoding: maintained and used by libavcodec, not intended to be used by user apps
      * - encoding: unused
@@ -2956,6 +2965,9 @@ typedef struct AVCodecContext {
     int64_t pts_correction_last_pts;       /// PTS of the last frame
     int64_t pts_correction_last_dts;       /// DTS of the last frame
 } AVCodecContext;
+
+AVRational av_codec_get_pkt_timebase         (const AVCodecContext *avctx);
+void       av_codec_set_pkt_timebase         (AVCodecContext *avctx, AVRational val);
 
 /**
  * AVProfile.
