@@ -359,7 +359,7 @@ First, make sure that the commits and branches you are going to push
 match what you want pushed and that nothing is missing, extraneous or
 wrong. You can see what will be pushed by running the git push command
 with --dry-run first. And then inspecting the commits listed with
-@command{git log -p 1234567..987654}. The @item @command{git status} command
+@command{git log -p 1234567..987654}. The @command{git status} command
 may help in finding local changes that have been forgotten to be added.
 
 Next let the code pass through a full run of our testsuite.
