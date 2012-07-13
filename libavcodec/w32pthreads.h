@@ -39,6 +39,8 @@
 #include <windows.h>
 #include <process.h>
 
+#include "libavutil/common.h"
+
 typedef struct {
     void *handle;
     void *(*func)(void* arg);
