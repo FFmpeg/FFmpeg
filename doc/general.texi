@@ -65,7 +65,7 @@ Then pass @code{--enable-libvo-amrwbenc} to configure to enable it.
 
 @subsection Fraunhofer AAC library
 
-Libav can make use of the Fraunhofer AAC library for AAC encoding.
+FFmpeg can make use of the Fraunhofer AAC library for AAC encoding.
 
 Go to @url{http://sourceforge.net/projects/opencore-amr/} and follow the
 instructions for installing the library.
