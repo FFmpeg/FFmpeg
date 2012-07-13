@@ -545,7 +545,10 @@ static int decode_frame(AVCodecContext *avctx,
                 const uint8_t *red_channel_buffer, *green_channel_buffer, *blue_channel_buffer, *alpha_channel_buffer = 0;
 
                 if ((s->compr == EXR_ZIP1 || s->compr == EXR_ZIP16) && data_size < uncompressed_size) {
-                    if (uncompress(s->tmp, &uncompressed_size, avpkt->data + line_offset, data_size) != Z_OK) {
+                    unsigned long dest_len = uncompressed_size;
+
+                    if (uncompress(s->tmp, &dest_len, avpkt->data + line_offset, data_size) != Z_OK ||
+                        dest_len != uncompressed_size) {
                         av_log(avctx, AV_LOG_ERROR, "error during zlib decompression\n");
                         return AVERROR(EINVAL);
                     }
