@@ -498,7 +498,7 @@ static int decode_frame(AVCodecContext *avctx,
     bxmin = xmin * 2 * av_pix_fmt_descriptors[avctx->pix_fmt].nb_components;
     axmax = (avctx->width - (xmax + 1)) * 2 * av_pix_fmt_descriptors[avctx->pix_fmt].nb_components;
     out_line_size = avctx->width * 2 * av_pix_fmt_descriptors[avctx->pix_fmt].nb_components;
-    scan_line_size = xdelta * av_pix_fmt_descriptors[avctx->pix_fmt].nb_components * FFMAX(2 * s->bits_per_color_id, 1);
+    scan_line_size = xdelta * current_channel_offset;
     uncompressed_size = scan_line_size * scan_lines_per_block;
 
     if (s->compr != EXR_RAW) {
