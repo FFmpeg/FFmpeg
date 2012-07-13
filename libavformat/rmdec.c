@@ -475,7 +475,8 @@ static int rm_read_header(AVFormatContext *s)
             avio_rb32(pb); /* max packet size */
             avio_rb32(pb); /* avg packet size */
             avio_rb32(pb); /* nb packets */
-            avio_rb32(pb); /* duration */
+            duration = avio_rb32(pb); /* duration */
+            s->duration = av_rescale(duration, AV_TIME_BASE, 1000);
             avio_rb32(pb); /* preroll */
             indx_off = avio_rb32(pb); /* index offset */
             data_off = avio_rb32(pb); /* data offset */
@@ -499,6 +500,8 @@ static int rm_read_header(AVFormatContext *s)
             duration = avio_rb32(pb); /* duration */
             st->start_time = start_time;
             st->duration = duration;
+            if(duration>0)
+                s->duration = AV_NOPTS_VALUE;
             get_str8(pb, buf, sizeof(buf)); /* desc */
             get_str8(pb, buf, sizeof(buf)); /* mimetype */
             st->codec->codec_type = AVMEDIA_TYPE_DATA;
