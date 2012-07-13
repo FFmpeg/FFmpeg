@@ -28,6 +28,7 @@
 
 #include <string.h>
 #include "libavutil/avutil.h"
+#include "libavutil/intmath.h"
 #include "libavutil/log.h"
 #include "postprocess.h"
 
@@ -75,10 +76,8 @@
 //filters on
 //#define COMPILE_TIME_MODE 0x77
 
-static inline int CLIP(int a){
-    if(a&256) return ((a)>>31)^(-1);
-    else      return a;
-}
+#define CLIP av_clip_uint8
+
 /**
  * Postprocessing filter.
  */
