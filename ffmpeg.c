@@ -3006,7 +3006,7 @@ static int transcode_init(void)
                 codec->frame_size         = icodec->frame_size;
                 codec->audio_service_type = icodec->audio_service_type;
                 codec->block_align        = icodec->block_align;
-                if(codec->block_align == 1 && codec->codec_id == CODEC_ID_MP3)
+                if((codec->block_align == 1 || codec->block_align == 1152) && codec->codec_id == CODEC_ID_MP3)
                     codec->block_align= 0;
                 if(codec->codec_id == CODEC_ID_AC3)
                     codec->block_align= 0;
