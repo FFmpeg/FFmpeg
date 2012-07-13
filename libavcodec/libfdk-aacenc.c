@@ -306,7 +306,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     }
 
     /* The maximum packet size is 6144 bits aka 768 bytes per channel. */
-    if ((ret = ff_alloc_packet(avpkt, FFMAX(8192, 768 * avctx->channels)))) {
+    if ((ret = ff_alloc_packet2(avctx, avpkt, FFMAX(8192, 768 * avctx->channels)))) {
         av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
         return ret;
     }
