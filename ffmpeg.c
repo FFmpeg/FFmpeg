@@ -2502,7 +2502,7 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
 
     if (debug_ts) {
         av_log(NULL, AV_LOG_INFO, "decoder -> ist_index:%d type:video "
-                "frame_pts:%s frame_pts_time:%s best_effort_ts:%d best_effort_ts_time:%s keyframe:%d frame_type:%d \n",
+                "frame_pts:%s frame_pts_time:%s best_effort_ts:%"PRId64" best_effort_ts_time:%s keyframe:%d frame_type:%d \n",
                 ist->st->index, av_ts2str(decoded_frame->pts),
                 av_ts2timestr(decoded_frame->pts, &ist->st->time_base),
                 best_effort_timestamp,
