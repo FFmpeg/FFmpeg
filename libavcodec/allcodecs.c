@@ -174,6 +174,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (MSS1, mss1);
     REGISTER_ENCDEC  (MSVIDEO1, msvideo1);
     REGISTER_DECODER (MSZH, mszh);
+    REGISTER_DECODER (MTS2, mts2);
     REGISTER_DECODER (MXPEG, mxpeg);
     REGISTER_DECODER (NUV, nuv);
     REGISTER_DECODER (PAF_VIDEO, paf_video);
