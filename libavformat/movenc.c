@@ -1505,11 +1505,30 @@ static int mov_write_mdia_tag(AVIOContext *pb, MOVTrack *track)
     return update_size(pb, pos);
 }
 
+/* transformation matrix
+     |a  b  u|
+     |c  d  v|
+     |tx ty w| */
+static void write_matrix(AVIOContext *pb, int16_t a, int16_t b, int16_t c,
+                         int16_t d, int16_t tx, int16_t ty)
+{
+    avio_wb32(pb, a << 16);  /* 16.16 format */
+    avio_wb32(pb, b << 16);  /* 16.16 format */
+    avio_wb32(pb, 0);        /* u in 2.30 format */
+    avio_wb32(pb, c << 16);  /* 16.16 format */
+    avio_wb32(pb, d << 16);  /* 16.16 format */
+    avio_wb32(pb, 0);        /* v in 2.30 format */
+    avio_wb32(pb, tx << 16); /* 16.16 format */
+    avio_wb32(pb, ty << 16); /* 16.16 format */
+    avio_wb32(pb, 1 << 30);  /* w in 2.30 format */
+}
+
 static int mov_write_tkhd_tag(AVIOContext *pb, MOVTrack *track, AVStream *st)
 {
     int64_t duration = av_rescale_rnd(track->track_duration, MOV_TIMESCALE,
                                       track->timescale, AV_ROUND_UP);
     int version = duration < INT32_MAX ? 0 : 1;
+    int rotation = 0;
 
     if (track->mode == MODE_ISM)
         version = 1;
@@ -1544,16 +1563,19 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVTrack *track, AVStream *st)
     avio_wb16(pb, 0); /* reserved */
 
     /* Matrix structure */
-    avio_wb32(pb, 0x00010000); /* reserved */
-    avio_wb32(pb, 0x0); /* reserved */
-    avio_wb32(pb, 0x0); /* reserved */
-    avio_wb32(pb, 0x0); /* reserved */
-    avio_wb32(pb, 0x00010000); /* reserved */
-    avio_wb32(pb, 0x0); /* reserved */
-    avio_wb32(pb, 0x0); /* reserved */
-    avio_wb32(pb, 0x0); /* reserved */
-    avio_wb32(pb, 0x40000000); /* reserved */
-
+    if (st && st->metadata) {
+        AVDictionaryEntry *rot = av_dict_get(st->metadata, "rotate", NULL, 0);
+        rotation = (rot && rot->value) ? atoi(rot->value) : 0;
+    }
+    if (rotation == 90) {
+        write_matrix(pb,  0,  1, -1,  0, track->enc->height, 0);
+    } else if (rotation == 180) {
+        write_matrix(pb, -1,  0,  0, -1, track->enc->width, track->enc->height);
+    } else if (rotation == 270) {
+        write_matrix(pb,  0, -1,  1,  0, 0, track->enc->width);
+    } else {
+        write_matrix(pb,  1,  0,  0,  1, 0, 0);
+    }
     /* Track width and height, for visual only */
     if(st && (track->enc->codec_type == AVMEDIA_TYPE_VIDEO ||
               track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE)) {
@@ -1814,15 +1836,7 @@ static int mov_write_mvhd_tag(AVIOContext *pb, MOVMuxContext *mov)
     avio_wb32(pb, 0); /* reserved */
 
     /* Matrix structure */
-    avio_wb32(pb, 0x00010000); /* reserved */
-    avio_wb32(pb, 0x0); /* reserved */
-    avio_wb32(pb, 0x0); /* reserved */
-    avio_wb32(pb, 0x0); /* reserved */
-    avio_wb32(pb, 0x00010000); /* reserved */
-    avio_wb32(pb, 0x0); /* reserved */
-    avio_wb32(pb, 0x0); /* reserved */
-    avio_wb32(pb, 0x0); /* reserved */
-    avio_wb32(pb, 0x40000000); /* reserved */
+    write_matrix(pb, 1, 0, 0, 1, 0, 0);
 
     avio_wb32(pb, 0); /* reserved (preview time) */
     avio_wb32(pb, 0); /* reserved (preview duration) */
