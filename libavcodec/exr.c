@@ -291,12 +291,14 @@ static int decode_frame(AVCodecContext *avctx,
 
                 if (!strcmp(buf, "R"))
                     channel_index = 0;
-                if (!strcmp(buf, "G"))
+                else if (!strcmp(buf, "G"))
                     channel_index = 1;
-                if (!strcmp(buf, "B"))
+                else if (!strcmp(buf, "B"))
                     channel_index = 2;
-                if (!strcmp(buf, "A"))
+                else if (!strcmp(buf, "A"))
                     channel_index = 3;
+                else
+                    av_log(avctx, AV_LOG_WARNING, "Unsupported channel %.256s\n", buf);
 
                 while (bytestream_get_byte(&buf) && buf < channel_list_end)
                     continue; /* skip */
