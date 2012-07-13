@@ -58,7 +58,7 @@ typedef struct EXRContext {
     int uncompressed_size;
 
     uint8_t *tmp;
-    int tmp_size;;
+    int tmp_size;
 } EXRContext;
 
 /**
