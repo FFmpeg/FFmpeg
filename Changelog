@@ -25,8 +25,7 @@ version next:
 - RTMPTE protocol support
 - showwaves filter
 - LucasArts SMUSH playback support
-- SAMI demuxer and decoder
-- RealText demuxer and decoder
+- SAMI, RealText and SubViewer demuxers and decoders
 - Heart Of Darkness PAF playback support
 - iec61883 device
 - asettb filter

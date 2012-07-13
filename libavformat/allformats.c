@@ -229,6 +229,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX (SPDIF, spdif);
     REGISTER_MUXDEMUX (SRT, srt);
     REGISTER_DEMUXER  (STR, str);
+    REGISTER_DEMUXER  (SUBVIEWER, subviewer);
     REGISTER_MUXDEMUX (SWF, swf);
     REGISTER_MUXER    (TG2, tg2);
     REGISTER_MUXER    (TGP, tgp);

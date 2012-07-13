@@ -885,6 +885,7 @@ performance on systems without hardware floating point support).
 @item RealText         @tab   @tab X @tab   @tab X
 @item SAMI             @tab   @tab X @tab   @tab X
 @item SubRip (SRT)     @tab X @tab X @tab X @tab X
+@item SubViewer        @tab   @tab X @tab   @tab X
 @item 3GPP Timed Text  @tab   @tab   @tab   @tab X
 @item XSUB             @tab   @tab   @tab X @tab X
 @end multitable
