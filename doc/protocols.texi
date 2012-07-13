@@ -414,7 +414,7 @@ ffmpeg -re -i @var{input} -f rtsp -muxdelay 0.1 rtsp://server/live.sdp
 To receive a stream in realtime:
 
 @example
-avconv -rtsp_flags listen -i rtsp://ownaddress/live.sdp @var{output}
+ffmpeg -rtsp_flags listen -i rtsp://ownaddress/live.sdp @var{output}
 @end example
 
 @section sap
