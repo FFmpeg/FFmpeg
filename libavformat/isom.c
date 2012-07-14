@@ -219,6 +219,7 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
     { CODEC_ID_TIFF,  MKTAG('t', 'i', 'f', 'f') }, /* TIFF embedded in MOV */
     { CODEC_ID_GIF,   MKTAG('g', 'i', 'f', ' ') }, /* embedded gif files as frames (usually one "click to play movie" frame) */
     { CODEC_ID_PNG,   MKTAG('p', 'n', 'g', ' ') },
+    { CODEC_ID_PNG,   MKTAG('M', 'N', 'G', ' ') },
 
     { CODEC_ID_VC1, MKTAG('v', 'c', '-', '1') }, /* SMPTE RP 2025 */
     { CODEC_ID_CAVS, MKTAG('a', 'v', 's', '2') },
