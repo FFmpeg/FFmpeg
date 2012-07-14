@@ -575,7 +575,7 @@ static int decode_pivot(MSS1Context *ctx, ArithCoder *acoder, int base)
         val = arith_get_number(acoder, (base + 1) / 2 - 2) + 3;
     }
 
-    if (val == base) {
+    if ((unsigned)val >= base) {
         ctx->corrupted = 1;
         return 0;
     }
