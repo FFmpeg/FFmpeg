@@ -515,6 +515,7 @@ static int avg_bits_per_pixel(enum PixelFormat pix_fmt)
         info->padded_size : av_get_bits_per_pixel(desc);
 }
 
+#if FF_API_FIND_BEST_PIX_FMT
 enum PixelFormat avcodec_find_best_pix_fmt(int64_t pix_fmt_mask, enum PixelFormat src_pix_fmt,
                                             int has_alpha, int *loss_ptr)
 {
@@ -531,6 +532,7 @@ enum PixelFormat avcodec_find_best_pix_fmt(int64_t pix_fmt_mask, enum PixelForma
     }
     return dst_pix_fmt;
 }
+#endif /* FF_API_FIND_BEST_PIX_FMT */
 
 enum PixelFormat avcodec_find_best_pix_fmt2(enum PixelFormat dst_pix_fmt1, enum PixelFormat dst_pix_fmt2,
                                             enum PixelFormat src_pix_fmt, int has_alpha, int *loss_ptr)
