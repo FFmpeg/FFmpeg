@@ -158,7 +158,7 @@ static FILE *vstats_file;
 static int audio_volume = 256;
 
 static int exit_on_error = 0;
-static int using_stdin = 0;
+static int stdin_interaction = 1;
 static int run_as_daemon  = 0;
 static volatile int received_nb_signals = 0;
 static int64_t video_size = 0;
@@ -3593,7 +3593,7 @@ static int transcode(void)
     if (ret < 0)
         goto fail;
 
-    if (!using_stdin) {
+    if (stdin_interaction) {
         av_log(NULL, AV_LOG_INFO, "Press [q] to stop, [?] for help\n");
     }
 
@@ -3610,7 +3610,7 @@ static int transcode(void)
         int64_t cur_time= av_gettime();
 
         /* if 'q' pressed, exits */
-        if (!using_stdin)
+        if (stdin_interaction)
             if (check_keyboard_interaction(cur_time) < 0)
                 break;
 
@@ -4290,7 +4290,7 @@ static void assert_file_overwrite(const char *filename)
         (strchr(filename, ':') == NULL || filename[1] == ':' ||
          av_strstart(filename, "file:", NULL))) {
         if (avio_check(filename, 0) == 0) {
-            if (!using_stdin && (!no_file_overwrite || file_overwrite)) {
+            if (stdin_interaction && (!no_file_overwrite || file_overwrite)) {
                 fprintf(stderr,"File '%s' already exists. Overwrite ? [y/N] ", filename);
                 fflush(stderr);
                 term_exit();
@@ -4361,8 +4361,8 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
     if (!strcmp(filename, "-"))
         filename = "pipe:";
 
-    using_stdin |= !strncmp(filename, "pipe:", 5) ||
-                    !strcmp(filename, "/dev/stdin");
+    stdin_interaction &= strncmp(filename, "pipe:", 5) &&
+                         strcmp(filename, "/dev/stdin");
 
     /* get default parameters from command line */
     ic = avformat_alloc_context();
