@@ -127,7 +127,7 @@ static int config_output(AVFilterLink *outlink)
                                  -1, inlink ->channel_layout);
     av_get_channel_layout_string(buf2, sizeof(buf2),
                                  -1, outlink->channel_layout);
-    av_log(ctx, AV_LOG_INFO,
+    av_log(ctx, AV_LOG_VERBOSE,
            "fmt:%s cl:%s -> fmt:%s cl:%s\n",
            av_get_sample_fmt_name(inlink ->format), buf1,
            av_get_sample_fmt_name(outlink->format), buf2);

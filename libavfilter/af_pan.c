@@ -327,7 +327,7 @@ static int config_props(AVFilterLink *link)
                          j ? " + " : "", pan->gain[i][j], j);
             cur += FFMIN(buf + sizeof(buf) - cur, r);
         }
-        av_log(ctx, AV_LOG_INFO, "o%d = %s\n", i, buf);
+        av_log(ctx, AV_LOG_VERBOSE, "o%d = %s\n", i, buf);
     }
     // add channel mapping summary if possible
     if (pan->pure_gains) {

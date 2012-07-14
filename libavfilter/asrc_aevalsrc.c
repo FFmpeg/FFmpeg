@@ -181,7 +181,7 @@ static int config_props(AVFilterLink *outlink)
 
     av_get_channel_layout_string(buf, sizeof(buf), 0, eval->chlayout);
 
-    av_log(outlink->src, AV_LOG_INFO,
+    av_log(outlink->src, AV_LOG_VERBOSE,
            "sample_rate:%d chlayout:%s duration:%f\n",
            eval->sample_rate, buf, eval->duration);
 

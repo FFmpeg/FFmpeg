@@ -75,7 +75,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     }
 
     vol->volume_i = (int)(vol->volume * 256 + 0.5);
-    av_log(ctx, AV_LOG_INFO, "volume=%f\n", vol->volume);
+    av_log(ctx, AV_LOG_VERBOSE, "volume=%f\n", vol->volume);
     return 0;
 }
 

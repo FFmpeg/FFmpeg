@@ -326,7 +326,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     ff_calculate_bounding_box(&removelogo->half_mask_bbox, removelogo->half_mask_data, w/2, w/2, h/2, 0);
 
 #define SHOW_LOGO_INFO(mask_type)                                       \
-    av_log(ctx, AV_LOG_INFO, #mask_type " x1:%d x2:%d y1:%d y2:%d max_mask_size:%d\n", \
+    av_log(ctx, AV_LOG_VERBOSE, #mask_type " x1:%d x2:%d y1:%d y2:%d max_mask_size:%d\n", \
            removelogo->mask_type##_mask_bbox.x1, removelogo->mask_type##_mask_bbox.x2, \
            removelogo->mask_type##_mask_bbox.y1, removelogo->mask_type##_mask_bbox.y2, \
            mask_type##_max_mask_size);

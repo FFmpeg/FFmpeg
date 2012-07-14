@@ -313,7 +313,7 @@ static int config_input(AVFilterLink *inlink)
     color->hsub = pix_desc->log2_chroma_w;
     color->vsub = pix_desc->log2_chroma_h;
 
-    av_log(ctx, AV_LOG_INFO, "%s -> %s\n", color->src, color->dst);
+    av_log(ctx, AV_LOG_VERBOSE, "%s -> %s\n", color->src, color->dst);
 
     return 0;
 }

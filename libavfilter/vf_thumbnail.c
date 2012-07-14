@@ -64,7 +64,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
                "Allocation failure, try to lower the number of frames\n");
         return AVERROR(ENOMEM);
     }
-    av_log(ctx, AV_LOG_INFO, "batch size: %d frames\n", thumb->n_frames);
+    av_log(ctx, AV_LOG_VERBOSE, "batch size: %d frames\n", thumb->n_frames);
     return 0;
 }
 

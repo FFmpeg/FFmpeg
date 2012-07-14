@@ -155,7 +155,7 @@ static int config_out_props(AVFilterLink *outlink)
                    tinterlace->black_linesize[i] * h);
         }
     }
-    av_log(ctx, AV_LOG_INFO, "mode:%s h:%d -> h:%d\n",
+    av_log(ctx, AV_LOG_VERBOSE, "mode:%s h:%d -> h:%d\n",
            tinterlace_mode_str[tinterlace->mode], inlink->h, outlink->h);
 
     return 0;

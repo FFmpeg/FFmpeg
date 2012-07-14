@@ -295,7 +295,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->w = inlink->w*2;
     outlink->h = inlink->h*2;
 
-    av_log(inlink->dst, AV_LOG_INFO, "fmt:%s size:%dx%d -> size:%dx%d\n",
+    av_log(inlink->dst, AV_LOG_VERBOSE, "fmt:%s size:%dx%d -> size:%dx%d\n",
            av_get_pix_fmt_name(inlink->format),
            inlink->w, inlink->h, outlink->w, outlink->h);
 

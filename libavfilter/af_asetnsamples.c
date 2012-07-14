@@ -68,7 +68,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     }
 
     asns->next_out_pts = AV_NOPTS_VALUE;
-    av_log(ctx, AV_LOG_INFO, "nb_out_samples:%d pad:%d\n", asns->nb_out_samples, asns->pad);
+    av_log(ctx, AV_LOG_VERBOSE, "nb_out_samples:%d pad:%d\n", asns->nb_out_samples, asns->pad);
 
     return 0;
 }

@@ -198,7 +198,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     if (delogo->show)
         delogo->band = 4;
 
-    av_log(ctx, AV_LOG_INFO, "x:%d y:%d, w:%d h:%d band:%d show:%d\n",
+    av_log(ctx, AV_LOG_VERBOSE, "x:%d y:%d, w:%d h:%d band:%d show:%d\n",
            delogo->x, delogo->y, delogo->w, delogo->h, delogo->band, delogo->show);
 
     delogo->w += delogo->band*2;

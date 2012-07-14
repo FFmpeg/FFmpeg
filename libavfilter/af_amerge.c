@@ -157,7 +157,7 @@ static int config_output(AVFilterLink *outlink)
     }
     av_bprintf(&bp, " -> out:");
     av_bprint_channel_layout(&bp, -1, ctx->outputs[0]->channel_layout);
-    av_log(ctx, AV_LOG_INFO, "%s\n", bp.str);
+    av_log(ctx, AV_LOG_VERBOSE, "%s\n", bp.str);
 
     return 0;
 }

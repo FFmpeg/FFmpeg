@@ -145,7 +145,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->frame_rate = av_div_q((AVRational){inlink->sample_rate,showwaves->n},
                                    (AVRational){showwaves->w,1});
 
-    av_log(ctx, AV_LOG_INFO, "s:%dx%d r:%f n:%d\n",
+    av_log(ctx, AV_LOG_VERBOSE, "s:%dx%d r:%f n:%d\n",
            showwaves->w, showwaves->h, av_q2d(outlink->frame_rate), showwaves->n);
     return 0;
 }
