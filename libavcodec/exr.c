@@ -52,7 +52,7 @@ typedef struct EXRContext {
     AVFrame picture;
     int compr;
     int bits_per_color_id;
-    int8_t channel_offsets[4]; // 0 = red, 1 = green, 2 = blue and 3 = alpha
+    int channel_offsets[4]; // 0 = red, 1 = green, 2 = blue and 3 = alpha
 
     uint8_t *uncompressed_data;
     int uncompressed_size;
