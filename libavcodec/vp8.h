@@ -94,8 +94,10 @@ typedef struct {
 } VP8Macroblock;
 
 typedef struct {
+#if HAVE_THREADS
     pthread_mutex_t lock;
     pthread_cond_t  cond;
+#endif
     int thread_nr;
     int thread_mb_pos; // (mb_y << 16) | (mb_x & 0xFFFF)
     int wait_mb_pos; // What the current thread is waiting on.

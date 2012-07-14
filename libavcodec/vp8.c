@@ -143,8 +143,10 @@ static int update_dimensions(VP8Context *s, int width, int height)
 
     for (i = 0; i < MAX_THREADS; i++) {
         s->thread_data[i].filter_strength = av_mallocz(s->mb_width*sizeof(*s->thread_data[0].filter_strength));
+#if HAVE_THREADS
         pthread_mutex_init(&s->thread_data[i].lock, NULL);
         pthread_cond_init(&s->thread_data[i].cond, NULL);
+#endif
     }
 
     if (!s->macroblocks_base || !s->top_nnz || !s->top_border ||
@@ -1623,6 +1625,7 @@ static void vp8_decode_mv_mb_modes(AVCodecContext *avctx, AVFrame *curframe,
     }
 }
 
+#if HAVE_THREADS
 #define check_thread_pos(td, otd, mb_x_check, mb_y_check)\
     do {\
         int tmp = (mb_y_check << 16) | (mb_x_check & 0xFFFF);\
@@ -1654,6 +1657,10 @@ static void vp8_decode_mv_mb_modes(AVCodecContext *avctx, AVFrame *curframe,
         pthread_mutex_unlock(&td->lock);\
     }\
     } while(0);
+#else
+#define check_thread_pos(td, otd, mb_x_check, mb_y_check)
+#define update_pos(td, mb_y, mb_x)
+#endif
 
 static void vp8_decode_mb_row_no_filter(AVCodecContext *avctx, void *tdata,
                                         int jobnr, int threadnr)
