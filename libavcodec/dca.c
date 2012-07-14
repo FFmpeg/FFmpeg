@@ -441,11 +441,10 @@ typedef struct {
     /* XXCH extension information */
     int xxch_chset;
     int xxch_nbits_spk_mask;
-    int xxch_num_chsets;        /* number of channel sets */
     uint32_t xxch_core_spkmask;
-    int xxch_num_chans[4];      /* num in channel set */
     uint32_t xxch_spk_masks[4]; /* speaker masks, last element is core mask */
     int xxch_chset_nch[4];
+    float xxch_dmix_sf[DCA_CHSETS_MAX];
 
     uint32_t xxch_downmix;        /* downmix enabled per channel set */
     uint32_t xxch_dmix_embedded;  /* lower layer has mix pre-embedded, per chset */
@@ -591,7 +590,9 @@ static int dca_parse_audio_coding_header(DCAContext *s, int base_channel,
         if (get_bits1(&s->gb)) {
             embedded_downmix = get_bits1(&s->gb);
             scale_factor     =
-                1.0f / dca_downmix_scale_factors[get_bits(&s->gb, 6) << 2];
+               1.0f / dca_downmix_scale_factors[(get_bits(&s->gb, 6) - 1) << 2];
+
+            s->xxch_dmix_sf[s->xxch_chset] = scale_factor;
 
             for (i = base_channel; i < s->prim_channels; i++) {
                 s->xxch_downmix |= (1 << i);
@@ -600,15 +601,20 @@ static int dca_parse_audio_coding_header(DCAContext *s, int base_channel,
 
             for (j = base_channel; j < s->prim_channels; j++) {
                 memset(s->xxch_dmix_coeff[j], 0, sizeof(s->xxch_dmix_coeff[0]));
-                if (mask[j])
-                    s->xxch_dmix_embedded |= (embedded_downmix << j);
+                s->xxch_dmix_embedded |= (embedded_downmix << j);
                 for (i = 0; i < s->xxch_nbits_spk_mask; i++) {
                     if (mask[j] & (1 << i)) {
+                        if ((1 << i) == DCA_XXCH_LFE1) {
+                            av_log(s->avctx, AV_LOG_WARNING,
+                                   "DCA-XXCH: dmix to LFE1 not supported.\n");
+                            continue;
+                        }
+
                         coeff = get_bits(&s->gb, 7);
                         sign  = (coeff & 64) ? 1.0 : -1.0;
-                        mag   = dca_downmix_scale_factors[(coeff & 63) << 2];
+                        mag   = dca_downmix_scale_factors[((coeff & 63) - 1) << 2];
                         ichan = dca_xxch2index(s, 1 << i);
-                        s->xxch_dmix_coeff[j][ichan] = sign * mag * scale_factor;
+                        s->xxch_dmix_coeff[j][ichan] = sign * mag;
                     }
                 }
             }
@@ -2075,6 +2081,8 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
     int lavc;
     int posn;
     int j, k;
+    int ch;
+    int endch;
 
     s->xch_present = 0;
 
@@ -2352,22 +2360,50 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
         }
 
         /* If stream contains XXCH, we might need to undo an embedded downmix */
-        if (s->xxch_downmix & s->xxch_dmix_embedded) {
-            mask = s->xxch_downmix & s->xxch_dmix_embedded;
-            for (j = 0; j < channels; j++) {
-                if (mask & (1 << j)) { /* this channel has been mixed-out */
-                    src_chan = s->samples + s->channel_order_tab[j] * 256;
-                    for (k = 0; k < channels - !!s->lfe; k++) {
-                        achan = s->channel_order_tab[k];
-                        scale = s->xxch_dmix_coeff[j][k];
-                        if (scale != 0.0) {
-                            dst_chan = s->samples + achan * 256;
-                            s->fdsp.vector_fmac_scalar(dst_chan, src_chan,
-                                                       -scale, 256);
+        if (s->xxch_dmix_embedded) {
+            /* Loop over channel sets in turn */
+            ch = num_core_channels;
+            for (chset = 0; chset < s->xxch_chset; chset++) {
+                endch = ch + s->xxch_chset_nch[chset];
+                mask = s->xxch_dmix_embedded;
+
+                /* undo downmix */
+                for (j = ch; j < endch; j++) {
+                    if (mask & (1 << j)) { /* this channel has been mixed-out */
+                        src_chan = s->samples + s->channel_order_tab[j] * 256;
+                        for (k = 0; k < endch; k++) {
+                            achan = s->channel_order_tab[k];
+                            scale = s->xxch_dmix_coeff[j][k];
+                            if (scale != 0.0) {
+                                dst_chan = s->samples + achan * 256;
+                                s->fdsp.vector_fmac_scalar(dst_chan, src_chan,
+                                                           -scale, 256);
+                            }
                         }
                     }
                 }
+
+                /* if a downmix has been embedded then undo the pre-scaling */
+                if ((mask & (1 << ch)) && s->xxch_dmix_sf[chset] != 1.0f) {
+                    scale = s->xxch_dmix_sf[chset];
+
+                    for (j = 0; j < ch; j++) {
+                        src_chan = s->samples + s->channel_order_tab[j] * 256;
+                        for (k = 0; k < 256; k++)
+                            src_chan[k] *= scale;
+                    }
+
+                    /* LFE channel is always part of core, scale if it exists */
+                    if (s->lfe) {
+                        src_chan = s->samples + s->lfe_index * 256;
+                        for (k = 0; k < 256; k++)
+                            src_chan[k] *= scale;
+                    }
+                }
+
+                ch = endch;
             }
+
         }
 
         if (avctx->sample_fmt == AV_SAMPLE_FMT_FLT) {
