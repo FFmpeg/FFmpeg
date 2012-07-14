@@ -250,7 +250,7 @@ static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
     return 0;
 }
 
-static void end_frame(AVFilterLink *inlink)
+static int end_frame(AVFilterLink *inlink)
 {
     DelogoContext *delogo = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
@@ -260,6 +260,7 @@ static void end_frame(AVFilterLink *inlink)
     int hsub0 = av_pix_fmt_descriptors[inlink->format].log2_chroma_w;
     int vsub0 = av_pix_fmt_descriptors[inlink->format].log2_chroma_h;
     int plane;
+    int ret;
 
     for (plane = 0; plane < 4 && inpicref->data[plane]; plane++) {
         int hsub = plane == 1 || plane == 2 ? hsub0 : 0;
@@ -274,8 +275,10 @@ static void end_frame(AVFilterLink *inlink)
                      delogo->show, direct);
     }
 
-    ff_draw_slice(outlink, 0, inlink->h, 1);
-    ff_end_frame(outlink);
+    if ((ret = ff_draw_slice(outlink, 0, inlink->h, 1)) < 0 ||
+        (ret = ff_end_frame(outlink)) < 0)
+        return ret;
+    return 0;
 }
 
 AVFilter avfilter_vf_delogo = {

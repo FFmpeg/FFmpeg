@@ -362,9 +362,9 @@ fail:
     return ret;
 }
 
-static void end_frame(AVFilterLink *link)
+static int end_frame(AVFilterLink *link)
 {
-    ff_end_frame(link->dst->outputs[0]);
+    return ff_end_frame(link->dst->outputs[0]);
 }
 
 static int draw_send_bar_slice(AVFilterLink *link, int y, int h, int slice_dir, int before_slice)

@@ -234,12 +234,12 @@ int ff_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     return ret;
 }
 
-void ff_null_end_frame(AVFilterLink *link)
+int ff_null_end_frame(AVFilterLink *link)
 {
-    ff_end_frame(link->dst->outputs[0]);
+    return ff_end_frame(link->dst->outputs[0]);
 }
 
-static void default_end_frame(AVFilterLink *inlink)
+static int default_end_frame(AVFilterLink *inlink)
 {
     AVFilterLink *outlink = NULL;
 
@@ -247,20 +247,24 @@ static void default_end_frame(AVFilterLink *inlink)
         outlink = inlink->dst->outputs[0];
 
     if (outlink) {
-        ff_end_frame(outlink);
+        return ff_end_frame(outlink);
     }
+    return 0;
 }
 
-void ff_end_frame(AVFilterLink *link)
+int ff_end_frame(AVFilterLink *link)
 {
-    void (*end_frame)(AVFilterLink *);
+    int (*end_frame)(AVFilterLink *);
+    int ret;
 
     if (!(end_frame = link->dstpad->end_frame))
         end_frame = default_end_frame;
 
-    end_frame(link);
+    ret = end_frame(link);
 
     clear_link(link);
+
+    return ret;
 }
 
 int ff_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)

@@ -166,14 +166,14 @@ static int write_to_fifo(AVFifoBuffer *fifo, AVFilterBufferRef *buf)
     return 0;
 }
 
-static void end_frame(AVFilterLink *inlink)
+static int end_frame(AVFilterLink *inlink)
 {
     AVFilterContext    *ctx = inlink->dst;
     FPSContext           *s = ctx->priv;
     AVFilterLink   *outlink = ctx->outputs[0];
     AVFilterBufferRef  *buf = inlink->cur_buf;
     int64_t delta;
-    int i;
+    int i, ret;
 
     inlink->cur_buf = NULL;
     s->frames_in++;
@@ -188,13 +188,12 @@ static void end_frame(AVFilterLink *inlink)
             avfilter_unref_buffer(buf);
             s->drop++;
         }
-        return;
+        return 0;
     }
 
     /* now wait for the next timestamp */
     if (buf->pts == AV_NOPTS_VALUE) {
-        write_to_fifo(s->fifo, buf);
-        return;
+        return write_to_fifo(s->fifo, buf);
     }
 
     /* number of output frames */
@@ -211,10 +210,10 @@ static void end_frame(AVFilterLink *inlink)
 
         av_fifo_generic_read(s->fifo, &tmp, sizeof(tmp), NULL);
         flush_fifo(s->fifo);
-        write_to_fifo(s->fifo, tmp);
+        ret = write_to_fifo(s->fifo, tmp);
 
         avfilter_unref_buffer(buf);
-        return;
+        return ret;
     }
 
     /* can output >= 1 frames */
@@ -239,8 +238,10 @@ static void end_frame(AVFilterLink *inlink)
     }
     flush_fifo(s->fifo);
 
-    write_to_fifo(s->fifo, buf);
+    ret = write_to_fifo(s->fifo, buf);
     s->pts = s->first_pts + av_rescale_q(s->frames_out, outlink->time_base, inlink->time_base);
+
+    return ret;
 }
 
 static int null_start_frame(AVFilterLink *link, AVFilterBufferRef *buf)

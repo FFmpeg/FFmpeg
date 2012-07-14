@@ -215,13 +215,13 @@ static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
     return 0;
 }
 
-static void end_frame(AVFilterLink *inlink)
+static int end_frame(AVFilterLink *inlink)
 {
     GradFunContext *gf = inlink->dst->priv;
     AVFilterBufferRef *inpic = inlink->cur_buf;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFilterBufferRef *outpic = outlink->out_buf;
-    int p;
+    int p, ret;
 
     for (p = 0; p < 4 && inpic->data[p]; p++) {
         int w = inlink->w;
@@ -239,8 +239,10 @@ static void end_frame(AVFilterLink *inlink)
             av_image_copy_plane(outpic->data[p], outpic->linesize[p], inpic->data[p], inpic->linesize[p], w, h);
     }
 
-    ff_draw_slice(outlink, 0, inlink->h, 1);
-    ff_end_frame(outlink);
+    if ((ret = ff_draw_slice(outlink, 0, inlink->h, 1)) < 0 ||
+        (ret = ff_end_frame(outlink)) < 0)
+        return ret;
+    return 0;
 }
 
 AVFilter avfilter_vf_gradfun = {

@@ -337,9 +337,9 @@ static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
     return ff_draw_slice(outlink, y, h, slice_dir);
 }
 
-static void end_frame(AVFilterLink *inlink)
+static int end_frame(AVFilterLink *inlink)
 {
-    ff_end_frame(inlink->dst->outputs[0]);
+    return ff_end_frame(inlink->dst->outputs[0]);
 }
 
 static int null_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
@@ -347,7 +347,10 @@ static int null_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
     return 0;
 }
 
-static void null_end_frame(AVFilterLink *inlink) { }
+static int null_end_frame(AVFilterLink *inlink)
+{
+    return 0;
+}
 
 static int poll_frame(AVFilterLink *link)
 {

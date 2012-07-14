@@ -354,7 +354,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     memset(ocv, 0, sizeof(*ocv));
 }
 
-static void end_frame(AVFilterLink *inlink)
+static int end_frame(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     OCVContext *ocv = ctx->priv;
@@ -362,14 +362,17 @@ static void end_frame(AVFilterLink *inlink)
     AVFilterBufferRef *inpicref  = inlink ->cur_buf;
     AVFilterBufferRef *outpicref = outlink->out_buf;
     IplImage inimg, outimg;
+    int ret;
 
     fill_iplimage_from_picref(&inimg , inpicref , inlink->format);
     fill_iplimage_from_picref(&outimg, outpicref, inlink->format);
     ocv->end_frame_filter(ctx, &inimg, &outimg);
     fill_picref_from_iplimage(outpicref, &outimg, inlink->format);
 
-    ff_draw_slice(outlink, 0, outlink->h, 1);
-    ff_end_frame(outlink);
+    if ((ret = ff_draw_slice(outlink, 0, outlink->h, 1)) < 0 ||
+        (ret = ff_end_frame(outlink)) < 0)
+        return ret;
+    return 0;
 }
 
 AVFilter avfilter_vf_ocv = {

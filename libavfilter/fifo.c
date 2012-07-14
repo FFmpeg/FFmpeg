@@ -98,7 +98,10 @@ static void queue_pop(FifoContext *s)
     s->root.next = tmp;
 }
 
-static void end_frame(AVFilterLink *inlink) { }
+static int end_frame(AVFilterLink *inlink)
+{
+    return 0;
+}
 
 static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 {

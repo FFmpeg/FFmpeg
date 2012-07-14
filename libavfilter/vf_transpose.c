@@ -138,13 +138,13 @@ static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     return ff_start_frame(outlink, avfilter_ref_buffer(outlink->out_buf, ~0));
 }
 
-static void end_frame(AVFilterLink *inlink)
+static int end_frame(AVFilterLink *inlink)
 {
     TransContext *trans = inlink->dst->priv;
     AVFilterBufferRef *inpic  = inlink->cur_buf;
     AVFilterBufferRef *outpic = inlink->dst->outputs[0]->out_buf;
     AVFilterLink *outlink = inlink->dst->outputs[0];
-    int plane;
+    int plane, ret;
 
     for (plane = 0; outpic->data[plane]; plane++) {
         int hsub = plane == 1 || plane == 2 ? trans->hsub : 0;
@@ -195,8 +195,10 @@ static void end_frame(AVFilterLink *inlink)
         }
     }
 
-    ff_draw_slice(outlink, 0, outpic->video->h, 1);
-    ff_end_frame(outlink);
+    if ((ret = ff_draw_slice(outlink, 0, outpic->video->h, 1)) < 0 ||
+        (ret = ff_end_frame(outlink)) < 0)
+        return ret;
+    return 0;
 }
 
 AVFilter avfilter_vf_transpose = {

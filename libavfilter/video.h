@@ -41,7 +41,7 @@ AVFilterBufferRef *ff_get_video_buffer(AVFilterLink *link, int perms,
 
 int ff_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
 int ff_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
-void ff_null_end_frame(AVFilterLink *link);
+int ff_null_end_frame(AVFilterLink *link);
 
 /**
  * Notify the next filter of the start of a frame.
@@ -61,8 +61,10 @@ int ff_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
  * Notify the next filter that the current frame has finished.
  *
  * @param link the output link the frame was sent over
+ *
+ * @return >= 0 on success, a negative AVERROR on error
  */
-void ff_end_frame(AVFilterLink *link);
+int ff_end_frame(AVFilterLink *link);
 
 /**
  * Send a slice to the next filter.

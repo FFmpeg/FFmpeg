@@ -258,15 +258,16 @@ static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
     return 0;
 }
 
-static void end_frame(AVFilterLink *inlink)
+static int end_frame(AVFilterLink *inlink)
 {
     SelectContext *select = inlink->dst->priv;
 
     if (select->select) {
         if (select->cache_frames)
-            return;
-        ff_end_frame(inlink->dst->outputs[0]);
+            return 0;
+        return ff_end_frame(inlink->dst->outputs[0]);
     }
+    return 0;
 }
 
 static int request_frame(AVFilterLink *outlink)

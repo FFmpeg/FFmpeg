@@ -287,8 +287,10 @@ struct AVFilterPad {
      * in the link structure during start_frame().
      *
      * Input video pads only.
+     *
+     * @return >= 0 on success, a negative AVERROR on error.
      */
-    void (*end_frame)(AVFilterLink *link);
+    int (*end_frame)(AVFilterLink *link);
 
     /**
      * Slice drawing callback. This is where a filter receives video data

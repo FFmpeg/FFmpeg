@@ -24,8 +24,9 @@ static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     return 0;
 }
 
-static void end_frame(AVFilterLink *link)
+static int end_frame(AVFilterLink *link)
 {
+    return 0;
 }
 
 AVFilter avfilter_vsink_nullsink = {

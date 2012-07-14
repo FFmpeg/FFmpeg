@@ -315,12 +315,12 @@ static int draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
     return ff_draw_slice(ctx->outputs[0], y - crop->y, h, slice_dir);
 }
 
-static void end_frame(AVFilterLink *link)
+static int end_frame(AVFilterLink *link)
 {
     CropContext *crop = link->dst->priv;
 
     crop->var_values[VAR_N] += 1.0;
-    ff_end_frame(link->dst->outputs[0]);
+    return ff_end_frame(link->dst->outputs[0]);
 }
 
 AVFilter avfilter_vf_crop = {

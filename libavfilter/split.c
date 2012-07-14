@@ -90,13 +90,17 @@ static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
     return ret;
 }
 
-static void end_frame(AVFilterLink *inlink)
+static int end_frame(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
-    int i;
+    int i, ret = 0;
 
-    for (i = 0; i < ctx->nb_outputs; i++)
-        ff_end_frame(ctx->outputs[i]);
+    for (i = 0; i < ctx->nb_outputs; i++) {
+        ret = ff_end_frame(ctx->outputs[i]);
+        if (ret < 0)
+            break;
+    }
+    return ret;
 }
 
 AVFilter avfilter_vf_split = {

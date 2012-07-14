@@ -91,7 +91,7 @@ static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
     return ff_draw_slice(ctx->outputs[0], y, h, slice_dir);
 }
 
-static void end_frame(AVFilterLink *inlink)
+static int end_frame(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     BlackFrameContext *blackframe = ctx->priv;
@@ -106,7 +106,7 @@ static void end_frame(AVFilterLink *inlink)
 
     blackframe->frame++;
     blackframe->nblack = 0;
-    ff_end_frame(inlink->dst->outputs[0]);
+    return ff_end_frame(inlink->dst->outputs[0]);
 }
 
 AVFilter avfilter_vf_blackframe = {

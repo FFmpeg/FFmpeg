@@ -163,7 +163,7 @@ static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
     return 0;
 }
 
-static void end_frame(AVFilterLink *inlink)
+static int end_frame(AVFilterLink *inlink)
 {
     AVFilterContext   *ctx        = inlink->dst;
     FieldOrderContext *fieldorder = ctx->priv;
@@ -227,7 +227,7 @@ static void end_frame(AVFilterLink *inlink)
                 "not interlaced or field order already correct\n");
     }
 
-    ff_end_frame(outlink);
+    return ff_end_frame(outlink);
 }
 
 AVFilter avfilter_vf_fieldorder = {

@@ -240,21 +240,23 @@ static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     return ff_start_frame(ctx->outputs[0], yadif->out);
 }
 
-static void end_frame(AVFilterLink *link)
+static int end_frame(AVFilterLink *link)
 {
     AVFilterContext *ctx = link->dst;
     YADIFContext *yadif = ctx->priv;
 
     if (!yadif->out)
-        return;
+        return 0;
 
     if (yadif->auto_enable && !yadif->cur->video->interlaced) {
-        ff_draw_slice(ctx->outputs[0], 0, link->h, 1);
-        ff_end_frame(ctx->outputs[0]);
-        return;
+        int ret = ff_draw_slice(ctx->outputs[0], 0, link->h, 1);
+        if (ret >= 0)
+            ret = ff_end_frame(ctx->outputs[0]);
+        return ret;
     }
 
     return_frame(ctx, 0);
+    return 0;
 }
 
 static int request_frame(AVFilterLink *link)

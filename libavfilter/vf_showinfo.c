@@ -40,7 +40,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     return 0;
 }
 
-static void end_frame(AVFilterLink *inlink)
+static int end_frame(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     ShowInfoContext *showinfo = ctx->priv;
@@ -76,7 +76,7 @@ static void end_frame(AVFilterLink *inlink)
            checksum, plane_checksum[0], plane_checksum[1], plane_checksum[2], plane_checksum[3]);
 
     showinfo->frame++;
-    ff_end_frame(inlink->dst->outputs[0]);
+    return ff_end_frame(inlink->dst->outputs[0]);
 }
 
 AVFilter avfilter_vf_showinfo = {
