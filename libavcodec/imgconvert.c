@@ -576,6 +576,19 @@ enum PixelFormat avcodec_find_best_pix_fmt2(enum PixelFormat dst_pix_fmt1, enum 
     return dst_pix_fmt;
 }
 
+enum PixelFormat avcodec_find_best_pix_fmt_of_list(enum PixelFormat *pix_fmt_list,
+                                            enum PixelFormat src_pix_fmt,
+                                            int has_alpha, int *loss_ptr){
+    int i;
+
+    enum PixelFormat best = PIX_FMT_NONE;
+
+    for(i=0; pix_fmt_list[i] != PIX_FMT_NONE; i++)
+        best = avcodec_find_best_pix_fmt2(best, pix_fmt_list[i], src_pix_fmt, has_alpha, loss_ptr);
+
+    return best;
+}
+
 void av_picture_copy(AVPicture *dst, const AVPicture *src,
                      enum PixelFormat pix_fmt, int width, int height)
 {
