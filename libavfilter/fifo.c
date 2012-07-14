@@ -91,6 +91,7 @@ static int add_to_queue(AVFilterLink *inlink, AVFilterBufferRef *buf)
 static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
 {
     add_to_queue(inlink, buf);
+    inlink->cur_buf = NULL;
 }
 
 static void queue_pop(FifoContext *s)

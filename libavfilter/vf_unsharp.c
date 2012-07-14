@@ -225,7 +225,6 @@ static void end_frame(AVFilterLink *link)
     apply_unsharp(out->data[1], out->linesize[1], in->data[1], in->linesize[1], cw,      ch,      &unsharp->chroma);
     apply_unsharp(out->data[2], out->linesize[2], in->data[2], in->linesize[2], cw,      ch,      &unsharp->chroma);
 
-    avfilter_unref_buffer(in);
     ff_draw_slice(link->dst->outputs[0], 0, link->h, 1);
     ff_end_frame(link->dst->outputs[0]);
     avfilter_unref_buffer(out);

@@ -260,7 +260,6 @@ static void end_frame(AVFilterLink *inlink)
 
     ff_draw_slice(outlink, 0, inlink->h, 1);
     ff_end_frame(outlink);
-    avfilter_unref_buffer(inpicref);
     avfilter_unref_buffer(outpicref);
 }
 

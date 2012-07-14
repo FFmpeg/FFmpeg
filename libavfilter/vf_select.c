@@ -258,14 +258,12 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 static void end_frame(AVFilterLink *inlink)
 {
     SelectContext *select = inlink->dst->priv;
-    AVFilterBufferRef *picref = inlink->cur_buf;
 
     if (select->select) {
         if (select->cache_frames)
             return;
         ff_end_frame(inlink->dst->outputs[0]);
     }
-    avfilter_unref_buffer(picref);
 }
 
 static int request_frame(AVFilterLink *outlink)

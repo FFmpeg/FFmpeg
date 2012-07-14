@@ -162,7 +162,8 @@ AVFilterBufferRef *ff_get_video_buffer(AVFilterLink *link, int perms, int w, int
 
 void ff_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
-    ff_start_frame(link->dst->outputs[0], picref);
+    AVFilterBufferRef *buf_out = avfilter_ref_buffer(picref, ~0);
+    ff_start_frame(link->dst->outputs[0], buf_out);
 }
 
 static void default_start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
@@ -223,9 +224,6 @@ static void default_end_frame(AVFilterLink *inlink)
     if (inlink->dst->nb_outputs)
         outlink = inlink->dst->outputs[0];
 
-    avfilter_unref_buffer(inlink->cur_buf);
-    inlink->cur_buf = NULL;
-
     if (outlink) {
         if (outlink->out_buf) {
             avfilter_unref_buffer(outlink->out_buf);
@@ -250,6 +248,7 @@ void ff_end_frame(AVFilterLink *link)
         avfilter_unref_buffer(link->src_buf);
         link->src_buf = NULL;
     }
+    avfilter_unref_bufferp(&link->cur_buf);
 }
 
 void ff_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)

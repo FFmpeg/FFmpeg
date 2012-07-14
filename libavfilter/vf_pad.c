@@ -348,7 +348,6 @@ static void end_frame(AVFilterLink *link)
 {
     ff_end_frame(link->dst->outputs[0]);
     avfilter_unref_buffer(link->dst->outputs[0]->out_buf);
-    avfilter_unref_buffer(link->cur_buf);
 }
 
 static void draw_send_bar_slice(AVFilterLink *link, int y, int h, int slice_dir, int before_slice)

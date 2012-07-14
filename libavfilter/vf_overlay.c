@@ -339,7 +339,6 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 static void end_frame(AVFilterLink *inlink)
 {
     ff_end_frame(inlink->dst->outputs[0]);
-    avfilter_unref_buffer(inlink->cur_buf);
 }
 
 static void null_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir) { }
