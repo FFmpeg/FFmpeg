@@ -213,7 +213,6 @@ static void end_frame(AVFilterLink *inlink)
     }
 
     ff_end_frame(outlink);
-    avfilter_unref_bufferp(&outlink->out_buf);
 }
 
 AVFilter avfilter_vf_fieldorder = {

@@ -225,10 +225,6 @@ static void default_end_frame(AVFilterLink *inlink)
         outlink = inlink->dst->outputs[0];
 
     if (outlink) {
-        if (outlink->out_buf) {
-            avfilter_unref_buffer(outlink->out_buf);
-            outlink->out_buf = NULL;
-        }
         ff_end_frame(outlink);
     }
 }
@@ -249,6 +245,7 @@ void ff_end_frame(AVFilterLink *link)
         link->src_buf = NULL;
     }
     avfilter_unref_bufferp(&link->cur_buf);
+    avfilter_unref_bufferp(&link->out_buf);
 }
 
 void ff_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)

@@ -354,7 +354,6 @@ static void end_frame(AVFilterLink *inlink)
                    (uint32_t *)outpicref->data[0]);
     ff_draw_slice(outlink, 0, outlink->h, 1);
     ff_end_frame(outlink);
-    avfilter_unref_buffer(outpicref);
 }
 
 AVFilter avfilter_vf_frei0r = {

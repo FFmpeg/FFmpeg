@@ -194,7 +194,6 @@ static void end_frame(AVFilterLink *inlink)
 
     ff_draw_slice(outlink, 0, outpic->video->h, 1);
     ff_end_frame(outlink);
-    avfilter_unref_buffer(outpic);
 }
 
 AVFilter avfilter_vf_transpose = {
