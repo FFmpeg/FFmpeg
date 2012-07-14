@@ -291,16 +291,15 @@ static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     return 0;
 }
 
-static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
+static int draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
     ScaleContext *scale = link->dst->priv;
-    int out_h;
+    int out_h, ret;
     AVFilterBufferRef *cur_pic = link->cur_buf;
     const uint8_t *data[4];
 
     if (!scale->sws) {
-        ff_draw_slice(link->dst->outputs[0], y, h, slice_dir);
-        return;
+        return ff_draw_slice(link->dst->outputs[0], y, h, slice_dir);
     }
 
     if (scale->slice_y == 0 && slice_dir == -1)
@@ -319,9 +318,10 @@ static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 
     if (slice_dir == -1)
         scale->slice_y -= out_h;
-    ff_draw_slice(link->dst->outputs[0], scale->slice_y, out_h, slice_dir);
+    ret = ff_draw_slice(link->dst->outputs[0], scale->slice_y, out_h, slice_dir);
     if (slice_dir == 1)
         scale->slice_y += out_h;
+    return ret;
 }
 
 AVFilter avfilter_vf_scale = {

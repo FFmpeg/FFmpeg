@@ -297,13 +297,13 @@ static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     return ff_start_frame(link->dst->outputs[0], ref2);
 }
 
-static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
+static int draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
     AVFilterContext *ctx = link->dst;
     CropContext *crop = ctx->priv;
 
     if (y >= crop->y + crop->h || y + h <= crop->y)
-        return;
+        return 0;
 
     if (y < crop->y) {
         h -= crop->y - y;
@@ -312,7 +312,7 @@ static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
     if (y + h > crop->y + crop->h)
         h = crop->y + crop->h - y;
 
-    ff_draw_slice(ctx->outputs[0], y - crop->y, h, slice_dir);
+    return ff_draw_slice(ctx->outputs[0], y - crop->y, h, slice_dir);
 }
 
 static void end_frame(AVFilterLink *link)

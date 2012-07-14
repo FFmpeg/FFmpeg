@@ -306,7 +306,7 @@ static void vblur(uint8_t *dst, int dst_linesize, const uint8_t *src, int src_li
                    h, radius, power, temp);
 }
 
-static void draw_slice(AVFilterLink *inlink, int y0, int h0, int slice_dir)
+static int draw_slice(AVFilterLink *inlink, int y0, int h0, int slice_dir)
 {
     AVFilterContext *ctx = inlink->dst;
     BoxBlurContext *boxblur = ctx->priv;
@@ -330,7 +330,7 @@ static void draw_slice(AVFilterLink *inlink, int y0, int h0, int slice_dir)
               w[plane], h[plane], boxblur->radius[plane], boxblur->power[plane],
               boxblur->temp);
 
-    ff_draw_slice(outlink, y0, h0, slice_dir);
+    return ff_draw_slice(outlink, y0, h0, slice_dir);
 }
 
 AVFilter avfilter_vf_boxblur = {

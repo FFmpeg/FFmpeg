@@ -248,8 +248,9 @@ static int null_start_frame(AVFilterLink *link, AVFilterBufferRef *buf)
     return 0;
 }
 
-static void null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
+static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
+    return 0;
 }
 
 AVFilter avfilter_vf_fps = {

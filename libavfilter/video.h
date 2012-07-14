@@ -40,7 +40,7 @@ AVFilterBufferRef *ff_get_video_buffer(AVFilterLink *link, int perms,
                                        int w, int h);
 
 int ff_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
-void ff_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
+int ff_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
 void ff_null_end_frame(AVFilterLink *link);
 
 /**
@@ -78,7 +78,9 @@ void ff_end_frame(AVFilterLink *link);
  *             from the top slice to the bottom slice if the value is 1,
  *             from the bottom slice to the top slice if the value is -1,
  *             for other values the behavior of the function is undefined.
+ *
+ * @return >= 0 on success, a negative AVERROR on error.
  */
-void ff_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
+int ff_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
 
 #endif /* AVFILTER_VIDEO_H */

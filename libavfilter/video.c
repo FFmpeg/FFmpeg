@@ -263,12 +263,12 @@ void ff_end_frame(AVFilterLink *link)
     clear_link(link);
 }
 
-void ff_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
+int ff_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
-    ff_draw_slice(link->dst->outputs[0], y, h, slice_dir);
+    return ff_draw_slice(link->dst->outputs[0], y, h, slice_dir);
 }
 
-static void default_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
+static int default_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 {
     AVFilterLink *outlink = NULL;
 
@@ -276,14 +276,15 @@ static void default_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir
         outlink = inlink->dst->outputs[0];
 
     if (outlink)
-        ff_draw_slice(outlink, y, h, slice_dir);
+        return ff_draw_slice(outlink, y, h, slice_dir);
+    return 0;
 }
 
-void ff_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
+int ff_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
     uint8_t *src[4], *dst[4];
-    int i, j, vsub;
-    void (*draw_slice)(AVFilterLink *, int, int, int);
+    int i, j, vsub, ret;
+    int (*draw_slice)(AVFilterLink *, int, int, int);
 
     FF_DPRINTF_START(NULL, draw_slice); ff_dlog_link(NULL, link, 0); av_dlog(NULL, " y:%d h:%d dir:%d\n", y, h, slice_dir);
 
@@ -317,5 +318,8 @@ void ff_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 
     if (!(draw_slice = link->dstpad->draw_slice))
         draw_slice = default_draw_slice;
-    draw_slice(link, y, h, slice_dir);
+    ret = draw_slice(link, y, h, slice_dir);
+    if (ret < 0)
+        clear_link(link);
+    return ret;
 }

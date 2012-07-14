@@ -74,7 +74,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     return 0;
 }
 
-static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
+static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 {
     AVFilterContext *ctx = inlink->dst;
     BlackFrameContext *blackframe = ctx->priv;
@@ -88,7 +88,7 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
         p += picref->linesize[0];
     }
 
-    ff_draw_slice(ctx->outputs[0], y, h, slice_dir);
+    return ff_draw_slice(ctx->outputs[0], y, h, slice_dir);
 }
 
 static void end_frame(AVFilterLink *inlink)

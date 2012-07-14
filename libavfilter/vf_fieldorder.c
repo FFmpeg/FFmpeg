@@ -144,7 +144,7 @@ static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     return 0;
 }
 
-static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
+static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 {
     AVFilterContext   *ctx        = inlink->dst;
     FieldOrderContext *fieldorder = ctx->priv;
@@ -158,8 +158,9 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
      *  and that complexity will be added later */
     if (  !inpicref->video->interlaced
         || inpicref->video->top_field_first == fieldorder->dst_tff) {
-        ff_draw_slice(outlink, y, h, slice_dir);
+        return ff_draw_slice(outlink, y, h, slice_dir);
     }
+    return 0;
 }
 
 static void end_frame(AVFilterLink *inlink)

@@ -229,8 +229,9 @@ static void end_frame(AVFilterLink *link)
     ff_end_frame(link->dst->outputs[0]);
 }
 
-static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
+static int draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
+    return 0;
 }
 
 AVFilter avfilter_vf_unsharp = {

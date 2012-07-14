@@ -320,7 +320,7 @@ static void blend_slice(AVFilterContext *ctx,
     }
 }
 
-static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
+static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
@@ -334,7 +334,7 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
                     over->overpicref->video->w, over->overpicref->video->h,
                     y, outpicref->video->w, h);
     }
-    ff_draw_slice(outlink, y, h, slice_dir);
+    return ff_draw_slice(outlink, y, h, slice_dir);
 }
 
 static void end_frame(AVFilterLink *inlink)
@@ -342,7 +342,10 @@ static void end_frame(AVFilterLink *inlink)
     ff_end_frame(inlink->dst->outputs[0]);
 }
 
-static void null_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir) { }
+static int null_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
+{
+    return 0;
+}
 
 static void null_end_frame(AVFilterLink *inlink) { }
 

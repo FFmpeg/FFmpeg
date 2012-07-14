@@ -367,10 +367,10 @@ static void end_frame(AVFilterLink *link)
     ff_end_frame(link->dst->outputs[0]);
 }
 
-static void draw_send_bar_slice(AVFilterLink *link, int y, int h, int slice_dir, int before_slice)
+static int draw_send_bar_slice(AVFilterLink *link, int y, int h, int slice_dir, int before_slice)
 {
     PadContext *pad = link->dst->priv;
-    int bar_y, bar_h = 0;
+    int bar_y, bar_h = 0, ret = 0;
 
     if        (slice_dir * before_slice ==  1 && y == pad->y) {
         /* top bar */
@@ -387,15 +387,17 @@ static void draw_send_bar_slice(AVFilterLink *link, int y, int h, int slice_dir,
                           link->dst->outputs[0]->out_buf->linesize,
                           pad->line, pad->line_step, pad->hsub, pad->vsub,
                           0, bar_y, pad->w, bar_h);
-        ff_draw_slice(link->dst->outputs[0], bar_y, bar_h, slice_dir);
+        ret = ff_draw_slice(link->dst->outputs[0], bar_y, bar_h, slice_dir);
     }
+    return ret;
 }
 
-static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
+static int draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
     PadContext *pad = link->dst->priv;
     AVFilterBufferRef *outpic = link->dst->outputs[0]->out_buf;
     AVFilterBufferRef *inpic = link->cur_buf;
+    int ret;
 
     y += pad->y;
 
@@ -403,7 +405,7 @@ static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
     h &= ~((1 << pad->vsub) - 1);
 
     if (!h)
-        return;
+        return 0;
     draw_send_bar_slice(link, y, h, slice_dir, 1);
 
     /* left border */
@@ -421,9 +423,11 @@ static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
     ff_draw_rectangle(outpic->data, outpic->linesize,
                       pad->line, pad->line_step, pad->hsub, pad->vsub,
                       pad->x + pad->in_w, y, pad->w - pad->x - pad->in_w, h);
-    ff_draw_slice(link->dst->outputs[0], y, h, slice_dir);
+    ret = ff_draw_slice(link->dst->outputs[0], y, h, slice_dir);
+    if (ret < 0)
+        return ret;
 
-    draw_send_bar_slice(link, y, h, slice_dir, -1);
+    return draw_send_bar_slice(link, y, h, slice_dir, -1);
 }
 
 AVFilter avfilter_vf_pad = {

@@ -100,7 +100,10 @@ static void queue_pop(FifoContext *s)
 
 static void end_frame(AVFilterLink *inlink) { }
 
-static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir) { }
+static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
+{
+    return 0;
+}
 
 /**
  * Move data pointers and pts offset samples forward.

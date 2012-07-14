@@ -77,13 +77,17 @@ static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     return ret;
 }
 
-static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
+static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 {
     AVFilterContext *ctx = inlink->dst;
-    int i;
+    int i, ret = 0;
 
-    for (i = 0; i < ctx->nb_outputs; i++)
-        ff_draw_slice(ctx->outputs[i], y, h, slice_dir);
+    for (i = 0; i < ctx->nb_outputs; i++) {
+        ret = ff_draw_slice(ctx->outputs[i], y, h, slice_dir);
+        if (ret < 0)
+            break;
+    }
+    return ret;
 }
 
 static void end_frame(AVFilterLink *inlink)

@@ -82,11 +82,11 @@ static int start_frame(AVFilterLink *link, AVFilterBufferRef *inpicref)
     return ff_start_frame(link->dst->outputs[0], outpicref);
 }
 
-static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
+static int draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
     AVFilterContext *ctx = link->dst;
 
-    ff_draw_slice(ctx->outputs[0], link->h - (y+h), h, -1 * slice_dir);
+    return ff_draw_slice(ctx->outputs[0], link->h - (y+h), h, -1 * slice_dir);
 }
 
 AVFilter avfilter_vf_vflip = {

@@ -106,8 +106,10 @@ struct AVFilterPad {
      * and should do its processing.
      *
      * Input video pads only.
+     *
+     * @return >= 0 on success, a negative AVERROR on error.
      */
-    void (*draw_slice)(AVFilterLink *link, int y, int height, int slice_dir);
+    int (*draw_slice)(AVFilterLink *link, int y, int height, int slice_dir);
 
     /**
      * Samples filtering callback. This is where a filter receives audio data

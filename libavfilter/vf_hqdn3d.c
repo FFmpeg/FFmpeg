@@ -290,7 +290,10 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static void null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { }
+static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
+{
+    return 0;
+}
 
 static void end_frame(AVFilterLink *inlink)
 {
