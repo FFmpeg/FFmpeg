@@ -31,12 +31,6 @@
 #include "rectangle.h"
 #include "thread.h"
 
-#if HAVE_PTHREADS
-#include <pthread.h>
-#elif HAVE_W32THREADS
-#include "w32pthreads.h"
-#endif
-
 #if ARCH_ARM
 #   include "arm/vp8.h"
 #endif

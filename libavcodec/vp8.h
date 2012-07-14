@@ -30,6 +30,11 @@
 #include "vp56data.h"
 #include "vp8dsp.h"
 #include "h264pred.h"
+#if HAVE_PTHREADS
+#include <pthread.h>
+#elif HAVE_W32THREADS
+#include "w32pthreads.h"
+#endif
 
 #define VP8_MAX_QUANT 127
 
