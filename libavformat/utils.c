@@ -4198,6 +4198,7 @@ void avpriv_set_pts_info(AVStream *s, int pts_wrap_bits,
         return;
     }
     s->time_base = new_tb;
+    av_codec_set_pkt_timebase(s->codec, new_tb);
     s->pts_wrap_bits = pts_wrap_bits;
 }
 
