@@ -143,10 +143,9 @@ static int request_frame(AVFilterLink *outlink)
     test->nb_frame++;
     test->fill_picture_fn(outlink->src, picref);
 
-    ff_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
-    ff_draw_slice(outlink, 0, picref->video->h, 1);
+    ff_start_frame(outlink, picref);
+    ff_draw_slice(outlink, 0, test->h, 1);
     ff_end_frame(outlink);
-    avfilter_unref_buffer(picref);
 
     return 0;
 }
