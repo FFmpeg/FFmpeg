@@ -1668,6 +1668,8 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
                         frame->pkt_pts += av_rescale_q(avctx->internal->skip_samples,(AVRational){1, avctx->sample_rate}, avctx->pkt_timebase);
                     if(frame->pkt_dts!=AV_NOPTS_VALUE)
                         frame->pkt_dts += av_rescale_q(avctx->internal->skip_samples,(AVRational){1, avctx->sample_rate}, avctx->pkt_timebase);
+                } else {
+                    av_log(avctx, AV_LOG_WARNING, "Could not update timestamps for skipped samples.\n");
                 }
                 av_log(avctx, AV_LOG_DEBUG, "skip %d/%d samples\n",
                        avctx->internal->skip_samples, frame->nb_samples);
