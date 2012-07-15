@@ -151,15 +151,12 @@ cglobal ac3_max_msb_abs_int16, 2,2,5, src, len
 %endmacro
 
 INIT_MMX mmx
-%define ABS2 ABS2_MMX
 AC3_MAX_MSB_ABS_INT16 or_abs
 INIT_MMX mmxext
-%define ABS2 ABS2_MMXEXT
 AC3_MAX_MSB_ABS_INT16 min_max
 INIT_XMM sse2
 AC3_MAX_MSB_ABS_INT16 min_max
 INIT_XMM ssse3
-%define ABS2 ABS2_SSSE3
 AC3_MAX_MSB_ABS_INT16 or_abs
 
 ;-----------------------------------------------------------------------------
