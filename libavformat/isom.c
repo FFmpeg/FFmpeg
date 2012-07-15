@@ -86,6 +86,7 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
     { CODEC_ID_RAWVIDEO, MKTAG('b', 'x', 'b', 'g') },
     { CODEC_ID_RAWVIDEO, MKTAG('b', 'x', 'r', 'g') },
     { CODEC_ID_RAWVIDEO, MKTAG('b', 'x', 'y', 'v') },
+    { CODEC_ID_RAWVIDEO, MKTAG('N', 'O', '1', '6') },
     { CODEC_ID_RAWVIDEO, MKTAG('D', 'V', 'O', 'O') }, /* Digital Voodoo SD 8 Bit */
     { CODEC_ID_RAWVIDEO, MKTAG('R', '4', '2', '0') }, /* Radius DV YUV PAL */
     { CODEC_ID_RAWVIDEO, MKTAG('R', '4', '1', '1') }, /* Radius DV YUV NTSC */

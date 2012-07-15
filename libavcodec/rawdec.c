@@ -94,7 +94,7 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
 {
     RawVideoContext *context = avctx->priv_data;
 
-    if (avctx->codec_tag == MKTAG('r','a','w',' '))
+    if (avctx->codec_tag == MKTAG('r','a','w',' ') || avctx->codec_tag == MKTAG('N','O','1','6'))
         avctx->pix_fmt = ff_find_pix_fmt(pix_fmt_bps_mov, avctx->bits_per_coded_sample);
     else if (avctx->codec_tag == MKTAG('W','R','A','W'))
         avctx->pix_fmt = ff_find_pix_fmt(pix_fmt_bps_avi, avctx->bits_per_coded_sample);
