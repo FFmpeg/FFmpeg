@@ -49,7 +49,7 @@ static void vc1_h_loop_filter16_ ## EXT(uint8_t *src, int stride, int pq) \
 }
 
 #if HAVE_YASM
-LOOP_FILTER(mmx2)
+LOOP_FILTER(mmxext)
 LOOP_FILTER(sse2)
 LOOP_FILTER(ssse3)
 
@@ -98,7 +98,7 @@ av_cold void ff_vc1dsp_init_x86(VC1DSPContext *dsp)
     }
 
     if (mm_flags & AV_CPU_FLAG_MMXEXT) {
-        ASSIGN_LF(mmx2);
+        ASSIGN_LF(mmxext);
         dsp->avg_no_rnd_vc1_chroma_pixels_tab[0] = ff_avg_vc1_chroma_mc8_nornd_mmx2;
     } else if (mm_flags & AV_CPU_FLAG_3DNOW) {
         dsp->avg_no_rnd_vc1_chroma_pixels_tab[0] = ff_avg_vc1_chroma_mc8_nornd_3dnow;
