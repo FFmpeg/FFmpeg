@@ -103,6 +103,9 @@ int av_buffersrc_write_frame(AVFilterContext *buffer_filter, AVFrame *frame)
                                  frame->format);
         buf = ff_get_audio_buffer(buffer_filter->outputs[0], AV_PERM_WRITE,
                                   frame->nb_samples);
+        if (!buf)
+            return AVERROR(ENOMEM);
+
         av_samples_copy(buf->extended_data, frame->extended_data,
                         0, 0, frame->nb_samples,
                         av_get_channel_layout_nb_channels(frame->channel_layout),
