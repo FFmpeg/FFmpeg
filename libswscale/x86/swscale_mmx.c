@@ -27,6 +27,8 @@
 #include "libavutil/cpu.h"
 #include "libavutil/pixdesc.h"
 
+#if HAVE_INLINE_ASM
+
 #define DITHER1XBPP
 
 DECLARE_ASM_CONST(8, uint64_t, bF8)=       0xF8F8F8F8F8F8F8F8LL;
@@ -199,6 +201,8 @@ void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufI
     }
 }
 
+#endif /* HAVE_INLINE_ASM */
+
 #define SCALE_FUNC(filter_n, from_bpc, to_bpc, opt) \
 extern void ff_hscale ## from_bpc ## to ## to_bpc ## _ ## filter_n ## _ ## opt( \
                                                 SwsContext *c, int16_t *data, \
@@ -300,12 +304,14 @@ void ff_sws_init_swScale_mmx(SwsContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
 
+#if HAVE_INLINE_ASM
     if (cpu_flags & AV_CPU_FLAG_MMX)
         sws_init_swScale_MMX(c);
 #if HAVE_MMX2
     if (cpu_flags & AV_CPU_FLAG_MMX2)
         sws_init_swScale_MMX2(c);
 #endif
+#endif /* HAVE_INLINE_ASM */
 
 #if HAVE_YASM
 #define ASSIGN_SCALE_FUNC2(hscalefn, filtersize, opt1, opt2) do { \
