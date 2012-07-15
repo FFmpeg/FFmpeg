@@ -97,7 +97,8 @@ DEP_LIBS := $(foreach NAME,$(FFLIBS),lib$(NAME)/$($(CONFIG_SHARED:yes=S)LIBNAME)
 ALLHEADERS := $(subst $(SRC_DIR)/,$(SUBDIR),$(wildcard $(SRC_DIR)/*.h $(SRC_DIR)/$(ARCH)/*.h))
 SKIPHEADERS += $(ARCH_HEADERS:%=$(ARCH)/%) $(SKIPHEADERS-)
 SKIPHEADERS := $(SKIPHEADERS:%=$(SUBDIR)%)
-checkheaders: $(filter-out $(SKIPHEADERS:.h=.ho),$(ALLHEADERS:.h=.ho))
+HEADEROBJS  := $(filter-out $(SKIPHEADERS:.h=.ho),$(ALLHEADERS:.h=.ho))
+checkheaders:  $(HEADEROBJS)
 
 alltools: $(TOOLS)
 
@@ -107,12 +108,13 @@ $(HOSTOBJS): %.o: %.c
 $(HOSTPROGS): %$(HOSTEXESUF): %.o
 	$(HOSTCC) $(HOSTLDFLAGS) -o $@ $< $(HOSTLIBS)
 
-$(OBJS):     | $(sort $(dir $(OBJS)))
-$(HOSTOBJS): | $(sort $(dir $(HOSTOBJS)))
-$(TESTOBJS): | $(sort $(dir $(TESTOBJS)))
-$(TOOLOBJS): | tools
+$(OBJS):       | $(sort $(dir $(OBJS)))
+$(HOSTOBJS):   | $(sort $(dir $(HOSTOBJS)))
+$(TESTOBJS):   | $(sort $(dir $(TESTOBJS)))
+$(HEADEROBJS): | $(sort $(dir $(HEADEROBJS)))
+$(TOOLOBJS):   | tools
 
-OBJDIRS := $(OBJDIRS) $(dir $(OBJS) $(HOSTOBJS) $(TESTOBJS))
+OBJDIRS := $(OBJDIRS) $(dir $(OBJS) $(HOSTOBJS) $(TESTOBJS) $(HEADEROBJS))
 
 CLEANSUFFIXES     = *.d *.o *~ *.ho *.map *.ver *.gcno *.gcda
 DISTCLEANSUFFIXES = *.pc
