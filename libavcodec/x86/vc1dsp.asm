@@ -268,7 +268,6 @@ cglobal vc1_h_loop_filter8, 3,5,0
 %endmacro
 
 INIT_MMX mmxext
-%define PABSW PABSW_MMXEXT
 VC1_LF
 
 INIT_XMM sse2
@@ -283,8 +282,6 @@ cglobal vc1_h_loop_filter8, 3,6,8
     START_H_FILTER 8
     VC1_H_LOOP_FILTER 8, r5
     RET
-
-%define PABSW PABSW_SSSE3
 
 INIT_MMX ssse3
 ; void ff_vc1_v_loop_filter4_ssse3(uint8_t *src, int stride, int pq)
