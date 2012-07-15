@@ -1124,11 +1124,9 @@ cglobal vector_clip_int32%5, 5,5,%1, dst, src, min, max, len
 %endmacro
 
 INIT_MMX mmx
-%define SPLATD SPLATD_MMX
 %define CLIPD CLIPD_MMX
 VECTOR_CLIP_INT32 0, 1, 0, 0
 INIT_XMM sse2
-%define SPLATD SPLATD_SSE2
 VECTOR_CLIP_INT32 6, 1, 0, 0, _int
 %define CLIPD CLIPD_SSE2
 VECTOR_CLIP_INT32 6, 2, 0, 1
