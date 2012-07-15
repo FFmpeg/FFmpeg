@@ -1708,7 +1708,7 @@ v4l_indev_deps="linux_videodev_h"
 v4l2_indev_deps_any="linux_videodev2_h sys_videoio_h"
 vfwcap_indev_deps="capCreateCaptureWindow vfwcap_defines"
 vfwcap_indev_extralibs="-lavicap32"
-x11_grab_device_indev_deps="x11grab XShmCreateImage"
+x11_grab_device_indev_deps="x11grab"
 
 # protocols
 bluray_protocol_deps="libbluray"
