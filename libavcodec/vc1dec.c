@@ -3964,7 +3964,7 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
         s->current_picture.f.mb_type[mb_pos + v->mb_off] = MB_TYPE_16x16;
         for (i = 0; i < 6; i++) v->mb_type[0][s->block_index[i]] = 0;
         if (idx_mbmode <= 5) { // 1-MV
-            dmv_x = dmv_y = 0;
+            dmv_x = dmv_y = pred_flag = 0;
             if (idx_mbmode & 1) {
                 get_mvdata_interlaced(v, &dmv_x, &dmv_y, &pred_flag);
             }
