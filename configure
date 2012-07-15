@@ -111,7 +111,7 @@ Component options:
   --disable-swresample     disable libswresample build
   --disable-swscale        disable libswscale build
   --disable-postproc       disable libpostproc build
-  --disable-avfilter       disable video filter support [no]
+  --disable-avfilter       disable libavfilter build
   --enable-avresample      enable libavresample build [no]
   --disable-pthreads       disable pthreads [auto]
   --disable-w32threads     disable Win32 threads [auto]
