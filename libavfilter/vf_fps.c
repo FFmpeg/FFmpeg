@@ -184,7 +184,10 @@ static int end_frame(AVFilterLink *inlink)
     /* discard frames until we get the first timestamp */
     if (s->pts == AV_NOPTS_VALUE) {
         if (buf->pts != AV_NOPTS_VALUE) {
-            write_to_fifo(s->fifo, buf);
+            ret = write_to_fifo(s->fifo, buf);
+            if (ret < 0)
+                return ret;
+
             s->first_pts = s->pts = buf->pts;
         } else {
             av_log(ctx, AV_LOG_WARNING, "Discarding initial frame(s) with no "
@@ -227,8 +230,20 @@ static int end_frame(AVFilterLink *inlink)
 
         /* duplicate the frame if needed */
         if (!av_fifo_size(s->fifo) && i < delta - 1) {
+            AVFilterBufferRef *dup = avfilter_ref_buffer(buf_out, AV_PERM_READ);
+
             av_log(ctx, AV_LOG_DEBUG, "Duplicating frame.\n");
-            write_to_fifo(s->fifo, avfilter_ref_buffer(buf_out, AV_PERM_READ));
+            if (dup)
+                ret = write_to_fifo(s->fifo, dup);
+            else
+                ret = AVERROR(ENOMEM);
+
+            if (ret < 0) {
+                avfilter_unref_bufferp(&buf_out);
+                avfilter_unref_bufferp(&buf);
+                return ret;
+            }
+
             s->dup++;
         }
 
