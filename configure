@@ -1190,6 +1190,7 @@ HAVE_LIST="
     clock_gettime
     closesocket
     cmov
+    CommandLineToArgvW
     cpuid
     dcbzl
     dev_bktr_ioctl_bt848_h
@@ -3182,7 +3183,8 @@ check_func nanosleep || { check_func nanosleep -lrt && add_extralibs -lrt; }
 check_func  clock_gettime || { check_func clock_gettime -lrt && add_extralibs -lrt; }
 check_func  fcntl
 check_func  fork
-check_func  getaddrinfo $network_extralibs
+check_func  getaddrinfo $network_extralibs ||
+    check_func_headers ws2tcpip.h getaddrinfo $network_extralibs
 check_func  gethrtime
 check_func  getopt
 check_func  getrusage
@@ -3207,6 +3209,7 @@ check_func_headers conio.h kbhit
 check_func_headers windows.h PeekNamedPipe
 check_func_headers io.h setmode
 check_func_headers lzo/lzo1x.h lzo1x_999_compress
+check_lib2 "windows.h shellapi.h" CommandLineToArgvW -lshell32
 check_lib2 "windows.h psapi.h" GetProcessMemoryInfo -lpsapi
 check_func_headers windows.h GetProcessAffinityMask
 check_func_headers windows.h GetProcessTimes
