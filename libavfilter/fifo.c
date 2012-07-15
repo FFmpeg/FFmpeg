@@ -241,9 +241,11 @@ static int request_frame(AVFilterLink *outlink)
      * so we don't have to worry about dereferencing it ourselves. */
     switch (outlink->type) {
     case AVMEDIA_TYPE_VIDEO:
-        ff_start_frame(outlink, fifo->root.next->buf);
-        ff_draw_slice (outlink, 0, outlink->h, 1);
-        ff_end_frame  (outlink);
+        if ((ret = ff_start_frame(outlink, fifo->root.next->buf)) < 0 ||
+            (ret = ff_draw_slice(outlink, 0, outlink->h, 1)) < 0 ||
+            (ret = ff_end_frame(outlink)) < 0)
+            return ret;
+
         queue_pop(fifo);
         break;
     case AVMEDIA_TYPE_AUDIO:

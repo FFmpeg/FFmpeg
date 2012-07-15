@@ -289,13 +289,20 @@ static int request_frame(AVFilterLink *outlink)
         return ret;
 
     outpicref = avfilter_ref_buffer(movie->picref, ~0);
-    ff_start_frame(outlink, outpicref);
-    ff_draw_slice(outlink, 0, outlink->h, 1);
-    ff_end_frame(outlink);
+    ret = ff_start_frame(outlink, outpicref);
+    if (ret < 0)
+        goto fail;
+
+    ret = ff_draw_slice(outlink, 0, outlink->h, 1);
+    if (ret < 0)
+        goto fail;
+
+    ret = ff_end_frame(outlink);
+fail:
     avfilter_unref_buffer(movie->picref);
     movie->picref = NULL;
 
-    return 0;
+    return ret;
 }
 
 AVFilter avfilter_vsrc_movie = {

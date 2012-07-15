@@ -157,11 +157,11 @@ static AVFilterBufferRef *get_video_buffer(AVFilterLink *link, int perms, int w,
     return picref;
 }
 
-static void return_frame(AVFilterContext *ctx, int is_second)
+static int return_frame(AVFilterContext *ctx, int is_second)
 {
     YADIFContext *yadif = ctx->priv;
     AVFilterLink *link= ctx->outputs[0];
-    int tff;
+    int tff, ret;
 
     if (yadif->parity == -1) {
         tff = yadif->cur->video->interlaced ?
@@ -193,12 +193,16 @@ static void return_frame(AVFilterContext *ctx, int is_second)
         } else {
             yadif->out->pts = AV_NOPTS_VALUE;
         }
-        ff_start_frame(ctx->outputs[0], yadif->out);
+        ret = ff_start_frame(ctx->outputs[0], yadif->out);
+        if (ret < 0)
+            return ret;
     }
-    ff_draw_slice(ctx->outputs[0], 0, link->h, 1);
-    ff_end_frame(ctx->outputs[0]);
+    if ((ret = ff_draw_slice(ctx->outputs[0], 0, link->h, 1)) < 0 ||
+        (ret = ff_end_frame(ctx->outputs[0])) < 0)
+        return ret;
 
     yadif->frame_pending = (yadif->mode&1) && !is_second;
+    return 0;
 }
 
 static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)

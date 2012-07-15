@@ -143,9 +143,11 @@ static int request_frame(AVFilterLink *outlink)
             buf->pts = av_rescale_q(s->first_pts, ctx->inputs[0]->time_base,
                                     outlink->time_base) + s->frames_out;
 
-            ff_start_frame(outlink, buf);
-            ff_draw_slice(outlink, 0, outlink->h, 1);
-            ff_end_frame(outlink);
+            if ((ret = ff_start_frame(outlink, buf)) < 0 ||
+                (ret = ff_draw_slice(outlink, 0, outlink->h, 1)) < 0 ||
+                (ret = ff_end_frame(outlink)) < 0)
+                return ret;
+
             s->frames_out++;
         }
         return 0;
@@ -231,9 +233,13 @@ static int end_frame(AVFilterLink *inlink)
         buf_out->pts = av_rescale_q(s->first_pts, inlink->time_base,
                                     outlink->time_base) + s->frames_out;
 
-        ff_start_frame(outlink, buf_out);
-        ff_draw_slice(outlink, 0, outlink->h, 1);
-        ff_end_frame(outlink);
+        if ((ret = ff_start_frame(outlink, buf_out)) < 0 ||
+            (ret = ff_draw_slice(outlink, 0, outlink->h, 1)) < 0 ||
+            (ret = ff_end_frame(outlink)) < 0) {
+            avfilter_unref_bufferp(&buf);
+            return ret;
+        }
+
         s->frames_out++;
     }
     flush_fifo(s->fifo);
