@@ -3012,6 +3012,15 @@ static int mov_read_header(AVFormatContext *s)
     }
     export_orphan_timecode(s);
 
+    for (i = 0; i < s->nb_streams; i++) {
+        AVStream *st = s->streams[i];
+        MOVStreamContext *sc = st->priv_data;
+        if(st->codec->codec_type == AVMEDIA_TYPE_AUDIO && st->codec->codec_id == CODEC_ID_AAC) {
+            sc->start_pad = 2112;
+            st->skip_samples = sc->start_pad;
+        }
+    }
+
     if (mov->trex_data) {
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st = s->streams[i];
@@ -3187,7 +3196,10 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     seek_timestamp = st->index_entries[sample].timestamp;
 
     for (i = 0; i < s->nb_streams; i++) {
+        MOVStreamContext *sc = s->streams[i]->priv_data;
         st = s->streams[i];
+        st->skip_samples = (sample_time <= 0) ? sc->start_pad : 0;
+
         if (stream_index == i)
             continue;
 
