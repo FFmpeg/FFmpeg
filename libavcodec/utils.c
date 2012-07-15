@@ -1651,11 +1651,15 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
         side= av_packet_get_side_data(avctx->pkt, AV_PKT_DATA_SKIP_SAMPLES, &side_size);
         if(side && side_size>=10) {
             avctx->internal->skip_samples = AV_RL32(side);
+            av_log(avctx, AV_LOG_DEBUG, "skip %d samples due to side data\n",
+                   avctx->internal->skip_samples);
         }
         if (avctx->internal->skip_samples) {
             if(frame->nb_samples <= avctx->internal->skip_samples){
                 *got_frame_ptr = 0;
                 avctx->internal->skip_samples -= frame->nb_samples;
+                av_log(avctx, AV_LOG_DEBUG, "skip whole frame, skip left: %d\n",
+                       avctx->internal->skip_samples);
             } else {
                 av_samples_copy(frame->extended_data, frame->extended_data, 0, avctx->internal->skip_samples,
                                 frame->nb_samples - avctx->internal->skip_samples, avctx->channels, frame->format);
@@ -1665,6 +1669,8 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
                     if(frame->pkt_dts!=AV_NOPTS_VALUE)
                         frame->pkt_dts += av_rescale_q(avctx->internal->skip_samples,(AVRational){1, avctx->sample_rate}, avctx->pkt_timebase);
                 }
+                av_log(avctx, AV_LOG_DEBUG, "skip %d/%d samples\n",
+                       avctx->internal->skip_samples, frame->nb_samples);
                 frame->nb_samples -= avctx->internal->skip_samples;
                 avctx->internal->skip_samples = 0;
             }
