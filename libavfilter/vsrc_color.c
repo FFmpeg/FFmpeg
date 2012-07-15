@@ -145,6 +145,9 @@ static int color_request_frame(AVFilterLink *link)
     AVFilterBufferRef *buf_out;
     int ret;
 
+    if (!picref)
+        return AVERROR(ENOMEM);
+
     picref->video->pixel_aspect = (AVRational) {1, 1};
     picref->pts                 = color->pts++;
     picref->pos                 = -1;

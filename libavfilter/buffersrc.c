@@ -92,6 +92,9 @@ int av_buffersrc_write_frame(AVFilterContext *buffer_filter, AVFrame *frame)
                                  frame->format);
         buf = ff_get_video_buffer(buffer_filter->outputs[0], AV_PERM_WRITE,
                                   c->w, c->h);
+        if (!buf)
+            return AVERROR(ENOMEM);
+
         av_image_copy(buf->data, buf->linesize, frame->data, frame->linesize,
                       c->pix_fmt, c->w, c->h);
         break;

@@ -441,6 +441,9 @@ static int source_request_frame(AVFilterLink *outlink)
     AVFilterBufferRef *buf_out;
     int ret;
 
+    if (!picref)
+        return AVERROR(ENOMEM);
+
     picref->video->pixel_aspect = (AVRational) {1, 1};
     picref->pts = frei0r->pts++;
     picref->pos = -1;

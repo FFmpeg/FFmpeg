@@ -135,6 +135,9 @@ static int request_frame(AVFilterLink *outlink)
     if (test->max_pts >= 0 && test->pts > test->max_pts)
         return AVERROR_EOF;
     picref = ff_get_video_buffer(outlink, AV_PERM_WRITE, test->w, test->h);
+    if (!picref)
+        return AVERROR(ENOMEM);
+
     picref->pts = test->pts++;
     picref->pos = -1;
     picref->video->key_frame = 1;

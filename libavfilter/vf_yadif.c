@@ -173,6 +173,9 @@ static int return_frame(AVFilterContext *ctx, int is_second)
     if (is_second) {
         yadif->out = ff_get_video_buffer(link, AV_PERM_WRITE | AV_PERM_PRESERVE |
                                          AV_PERM_REUSE, link->w, link->h);
+        if (!yadif->out)
+            return AVERROR(ENOMEM);
+
         avfilter_copy_buffer_ref_props(yadif->out, yadif->cur);
         yadif->out->video->interlaced = 0;
     }
@@ -239,6 +242,8 @@ static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 
     yadif->out = ff_get_video_buffer(ctx->outputs[0], AV_PERM_WRITE | AV_PERM_PRESERVE |
                                      AV_PERM_REUSE, link->w, link->h);
+    if (!yadif->out)
+        return AVERROR(ENOMEM);
 
     avfilter_copy_buffer_ref_props(yadif->out, yadif->cur);
     yadif->out->video->interlaced = 0;
