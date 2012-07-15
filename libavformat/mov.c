@@ -2696,25 +2696,24 @@ static int mov_read_chan2(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_tref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+static int mov_read_tmcd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
-    uint32_t i, size;
+    uint32_t i;
     MOVStreamContext *sc;
 
     if (c->fc->nb_streams < 1)
         return AVERROR_INVALIDDATA;
     sc = c->fc->streams[c->fc->nb_streams - 1]->priv_data;
 
-    size = avio_rb32(pb);
-    if (size < 12)
+    if (atom.size < 4)
         return 0;
 
-    sc->trefs_count = (size - 4) / 8;
+    sc->trefs_count = atom.size / 4;
     sc->trefs = av_malloc(sc->trefs_count * sizeof(*sc->trefs));
     if (!sc->trefs)
         return AVERROR(ENOMEM);
 
-    sc->tref_type = avio_rl32(pb);
+    sc->tref_type = atom.type;
     for (i = 0; i < sc->trefs_count; i++)
         sc->trefs[i] = avio_rb32(pb);
     return 0;
@@ -2767,7 +2766,8 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('t','f','h','d'), mov_read_tfhd }, /* track fragment header */
 { MKTAG('t','r','a','k'), mov_read_trak },
 { MKTAG('t','r','a','f'), mov_read_default },
-{ MKTAG('t','r','e','f'), mov_read_tref },
+{ MKTAG('t','r','e','f'), mov_read_default },
+{ MKTAG('t','m','c','d'), mov_read_tmcd },
 { MKTAG('c','h','a','p'), mov_read_chap },
 { MKTAG('t','r','e','x'), mov_read_trex },
 { MKTAG('t','r','u','n'), mov_read_trun },
