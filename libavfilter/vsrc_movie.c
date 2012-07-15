@@ -289,6 +289,11 @@ static int request_frame(AVFilterLink *outlink)
         return ret;
 
     outpicref = avfilter_ref_buffer(movie->picref, ~0);
+    if (!outpicref) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
     ret = ff_start_frame(outlink, outpicref);
     if (ret < 0)
         goto fail;

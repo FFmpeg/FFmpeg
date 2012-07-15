@@ -70,6 +70,9 @@ static int start_frame(AVFilterLink *link, AVFilterBufferRef *inpicref)
     AVFilterBufferRef *outpicref = avfilter_ref_buffer(inpicref, ~0);
     int i;
 
+    if (!outpicref)
+        return AVERROR(ENOMEM);
+
     for (i = 0; i < 4; i ++) {
         int vsub = i == 1 || i == 2 ? flip->vsub : 0;
 

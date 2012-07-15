@@ -233,6 +233,7 @@ static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 
     select->select = select_frame(inlink->dst, picref);
     if (select->select) {
+        AVFilterBufferRef *buf_out;
         /* frame was requested through poll_frame */
         if (select->cache_frames) {
             if (!av_fifo_space(select->pending_frames))
@@ -243,7 +244,10 @@ static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
                                       sizeof(picref), NULL);
             return 0;
         }
-        return ff_start_frame(inlink->dst->outputs[0], avfilter_ref_buffer(picref, ~0));
+        buf_out = avfilter_ref_buffer(picref, ~0);
+        if (!buf_out)
+            return AVERROR(ENOMEM);
+        return ff_start_frame(inlink->dst->outputs[0], buf_out);
     }
 
     return 0;

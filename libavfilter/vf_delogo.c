@@ -217,7 +217,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
 {
     AVFilterLink *outlink = inlink->dst->outputs[0];
-    AVFilterBufferRef *outpicref = NULL;
+    AVFilterBufferRef *outpicref = NULL, *for_next_filter;
     int ret = 0;
 
     if (inpicref->perms & AV_PERM_PRESERVE) {
@@ -235,7 +235,12 @@ static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
             return AVERROR(ENOMEM);
     }
 
-    ret = ff_start_frame(outlink, avfilter_ref_buffer(outpicref, ~0));
+    for_next_filter = avfilter_ref_buffer(outpicref, ~0);
+    if (for_next_filter)
+        ret = ff_start_frame(outlink, for_next_filter);
+    else
+        ret = AVERROR(ENOMEM);
+
     if (ret < 0) {
         avfilter_unref_bufferp(&outpicref);
         return ret;

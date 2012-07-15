@@ -438,13 +438,20 @@ static int source_request_frame(AVFilterLink *outlink)
 {
     Frei0rContext *frei0r = outlink->src->priv;
     AVFilterBufferRef *picref = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    AVFilterBufferRef *buf_out;
     int ret;
 
     picref->video->pixel_aspect = (AVRational) {1, 1};
     picref->pts = frei0r->pts++;
     picref->pos = -1;
 
-    ret = ff_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
+    buf_out = avfilter_ref_buffer(picref, ~0);
+    if (!buf_out) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    ret = ff_start_frame(outlink, buf_out);
     if (ret < 0)
         goto fail;
 

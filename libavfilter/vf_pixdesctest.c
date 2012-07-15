@@ -55,7 +55,7 @@ static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
     PixdescTestContext *priv = inlink->dst->priv;
     AVFilterLink *outlink    = inlink->dst->outputs[0];
-    AVFilterBufferRef *outpicref;
+    AVFilterBufferRef *outpicref, *for_next_filter;
     int i, ret = 0;
 
     outpicref = ff_get_video_buffer(outlink, AV_PERM_WRITE,
@@ -80,7 +80,12 @@ static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
         priv->pix_desc->flags & PIX_FMT_PSEUDOPAL)
         memcpy(outpicref->data[1], outpicref->data[1], 256*4);
 
-    ret = ff_start_frame(outlink, avfilter_ref_buffer(outpicref, ~0));
+    for_next_filter = avfilter_ref_buffer(outpicref, ~0);
+    if (for_next_filter)
+        ret = ff_start_frame(outlink, for_next_filter);
+    else
+        ret = AVERROR(ENOMEM);
+
     if (ret < 0) {
         avfilter_unref_bufferp(&outpicref);
         return ret;

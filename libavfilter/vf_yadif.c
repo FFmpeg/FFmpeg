@@ -224,14 +224,18 @@ static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 
     if (yadif->auto_enable && !yadif->cur->video->interlaced) {
         yadif->out  = avfilter_ref_buffer(yadif->cur, AV_PERM_READ);
+        if (!yadif->out)
+            return AVERROR(ENOMEM);
+
         avfilter_unref_bufferp(&yadif->prev);
         if (yadif->out->pts != AV_NOPTS_VALUE)
             yadif->out->pts *= 2;
         return ff_start_frame(ctx->outputs[0], yadif->out);
     }
 
-    if (!yadif->prev)
-        yadif->prev = avfilter_ref_buffer(yadif->cur, AV_PERM_READ);
+    if (!yadif->prev &&
+        !(yadif->prev = avfilter_ref_buffer(yadif->cur, AV_PERM_READ)))
+        return AVERROR(ENOMEM);
 
     yadif->out = ff_get_video_buffer(ctx->outputs[0], AV_PERM_WRITE | AV_PERM_PRESERVE |
                                      AV_PERM_REUSE, link->w, link->h);
@@ -282,6 +286,9 @@ static int request_frame(AVFilterLink *link)
 
         if (ret == AVERROR_EOF && yadif->next) {
             AVFilterBufferRef *next = avfilter_ref_buffer(yadif->next, AV_PERM_READ);
+            if (!next)
+                return AVERROR(ENOMEM);
+
             next->pts = yadif->next->pts * 2 - yadif->cur->pts;
 
             start_frame(link->src->inputs[0], next);

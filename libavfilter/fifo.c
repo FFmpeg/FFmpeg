@@ -169,6 +169,9 @@ static int return_audio_frame(AVFilterContext *ctx)
             queue_pop(s);
         } else {
             buf_out = avfilter_ref_buffer(head, AV_PERM_READ);
+            if (!buf_out)
+                return AVERROR(ENOMEM);
+
             buf_out->audio->nb_samples = link->request_samples;
             buffer_offset(link, head, link->request_samples);
         }

@@ -69,8 +69,11 @@ static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     int i, ret = 0;
 
     for (i = 0; i < ctx->nb_outputs; i++) {
-        ret = ff_start_frame(ctx->outputs[i],
-                             avfilter_ref_buffer(picref, ~AV_PERM_WRITE));
+        AVFilterBufferRef *buf_out = avfilter_ref_buffer(picref, ~AV_PERM_WRITE);
+        if (!buf_out)
+            return AVERROR(ENOMEM);
+
+        ret = ff_start_frame(ctx->outputs[i], buf_out);
         if (ret < 0)
             break;
     }
@@ -126,8 +129,14 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
     int i, ret = 0;
 
     for (i = 0; i < ctx->nb_outputs; i++) {
-        ret = ff_filter_samples(inlink->dst->outputs[i],
-                                avfilter_ref_buffer(samplesref, ~AV_PERM_WRITE));
+        AVFilterBufferRef *buf_out = avfilter_ref_buffer(samplesref,
+                                                         ~AV_PERM_WRITE);
+        if (!buf_out) {
+            ret = AVERROR(ENOMEM);
+            break;
+        }
+
+        ret = ff_filter_samples(inlink->dst->outputs[i], buf_out);
         if (ret < 0)
             break;
     }

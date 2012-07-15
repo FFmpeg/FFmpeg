@@ -142,13 +142,20 @@ static int color_request_frame(AVFilterLink *link)
 {
     ColorContext *color = link->src->priv;
     AVFilterBufferRef *picref = ff_get_video_buffer(link, AV_PERM_WRITE, color->w, color->h);
+    AVFilterBufferRef *buf_out;
     int ret;
 
     picref->video->pixel_aspect = (AVRational) {1, 1};
     picref->pts                 = color->pts++;
     picref->pos                 = -1;
 
-    ret = ff_start_frame(link, avfilter_ref_buffer(picref, ~0));
+    buf_out = avfilter_ref_buffer(picref, ~0);
+    if (!buf_out) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    ret = ff_start_frame(link, buf_out);
     if (ret < 0)
         goto fail;
 

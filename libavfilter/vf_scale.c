@@ -256,11 +256,14 @@ static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
     ScaleContext *scale = link->dst->priv;
     AVFilterLink *outlink = link->dst->outputs[0];
-    AVFilterBufferRef *outpicref;
+    AVFilterBufferRef *outpicref, *for_next_filter;
     int ret = 0;
 
     if (!scale->sws) {
-        return ff_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
+        outpicref = avfilter_ref_buffer(picref, ~0);
+        if (!outpicref)
+            return AVERROR(ENOMEM);
+        return ff_start_frame(outlink, outpicref);
     }
 
     scale->hsub = av_pix_fmt_descriptors[link->format].log2_chroma_w;
@@ -281,7 +284,12 @@ static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
               INT_MAX);
 
     scale->slice_y = 0;
-    ret = ff_start_frame(outlink, avfilter_ref_buffer(outpicref, ~0));
+    for_next_filter = avfilter_ref_buffer(outpicref, ~0);
+    if (for_next_filter)
+        ret = ff_start_frame(outlink, for_next_filter);
+    else
+        ret = AVERROR(ENOMEM);
+
     if (ret < 0) {
         avfilter_unref_bufferp(&outpicref);
         return ret;
