@@ -597,6 +597,14 @@ specified sender IP addresses.
 @item block=@var{address}[,@var{address}]
 Ignore packets sent to the multicast group from the specified
 sender IP addresses.
+
+@item fifo_size=@var{units}
+Set the UDP receiving circular buffer size, expressed as a number of
+packets with size of 188 bytes. If not specified defaults to 7*4096.
+
+@item overrun_nonfatal=@var{1|0}
+Survive in case of UDP receiving circular buffer overrun. Default
+value is 0.
 @end table
 
 Some usage examples of the udp protocol with @command{ffmpeg} follow.
