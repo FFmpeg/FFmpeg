@@ -23,6 +23,14 @@
 
 SECTION_TEXT
 
+%macro CVTPS2PI 2
+%if cpuflag(sse)
+    cvtps2pi %1, %2
+%elif cpuflag(3dnow)
+    pf2id %1, %2
+%endif
+%endmacro
+
 ;---------------------------------------------------------------------------------
 ; void int32_to_float_fmul_scalar(float *dst, const int *src, float mul, int len);
 ;---------------------------------------------------------------------------------
@@ -88,10 +96,10 @@ cglobal float_to_int16, 3, 3, %1, dst, src, len
     packssdw    m0, m1
     mova  [dstq+lenq], m0
 %else
-    cvtps2pi    m0, [srcq+2*lenq   ]
-    cvtps2pi    m1, [srcq+2*lenq+ 8]
-    cvtps2pi    m2, [srcq+2*lenq+16]
-    cvtps2pi    m3, [srcq+2*lenq+24]
+    CVTPS2PI    m0, [srcq+2*lenq   ]
+    CVTPS2PI    m1, [srcq+2*lenq+ 8]
+    CVTPS2PI    m2, [srcq+2*lenq+16]
+    CVTPS2PI    m3, [srcq+2*lenq+24]
     packssdw    m0, m1
     packssdw    m2, m3
     mova  [dstq+lenq  ], m0
@@ -109,10 +117,8 @@ INIT_XMM sse2
 FLOAT_TO_INT16 2
 INIT_MMX sse
 FLOAT_TO_INT16 0
-%define cvtps2pi pf2id
 INIT_MMX 3dnow
 FLOAT_TO_INT16 0
-%undef cvtps2pi
 
 ;------------------------------------------------------------------------------
 ; void ff_float_to_int16_step(int16_t *dst, const float *src, long len, long step);
@@ -150,10 +156,10 @@ cglobal float_to_int16_step, 4, 7, %1, dst, src, len, step, step3, v1, v2
     mov  [dstq+step3q*2], v2w
     lea       dstq, [dstq+stepq*8]
 %else
-    cvtps2pi    m0, [srcq+2*lenq   ]
-    cvtps2pi    m1, [srcq+2*lenq+ 8]
-    cvtps2pi    m2, [srcq+2*lenq+16]
-    cvtps2pi    m3, [srcq+2*lenq+24]
+    CVTPS2PI    m0, [srcq+2*lenq   ]
+    CVTPS2PI    m1, [srcq+2*lenq+ 8]
+    CVTPS2PI    m2, [srcq+2*lenq+16]
+    CVTPS2PI    m3, [srcq+2*lenq+24]
     packssdw    m0, m1
     packssdw    m2, m3
     movd       v1d, m0
@@ -189,10 +195,8 @@ INIT_XMM sse2
 FLOAT_TO_INT16_STEP 2
 INIT_MMX sse
 FLOAT_TO_INT16_STEP 0
-%define cvtps2pi pf2id
 INIT_MMX 3dnow
 FLOAT_TO_INT16_STEP 0
-%undef cvtps2pi
 
 ;-------------------------------------------------------------------------------
 ; void ff_float_to_int16_interleave2(int16_t *dst, const float **src, long len);
@@ -215,10 +219,10 @@ cglobal float_to_int16_interleave2, 3, 4, 2, dst, src0, src1, len
     punpcklwd  m0, m1
     mova  [dstq+lenq], m0
 %else
-    cvtps2pi   m0, [src0q+lenq  ]
-    cvtps2pi   m1, [src0q+lenq+8]
-    cvtps2pi   m2, [src1q+lenq  ]
-    cvtps2pi   m3, [src1q+lenq+8]
+    CVTPS2PI   m0, [src0q+lenq  ]
+    CVTPS2PI   m1, [src0q+lenq+8]
+    CVTPS2PI   m2, [src1q+lenq  ]
+    CVTPS2PI   m3, [src1q+lenq+8]
     packssdw   m0, m1
     packssdw   m2, m3
     mova       m1, m0
@@ -236,9 +240,7 @@ cglobal float_to_int16_interleave2, 3, 4, 2, dst, src0, src1, len
 %endmacro
 
 INIT_MMX 3dnow
-%define cvtps2pi pf2id
 FLOAT_TO_INT16_INTERLEAVE2
-%undef cvtps2pi
 INIT_MMX sse
 FLOAT_TO_INT16_INTERLEAVE2
 INIT_XMM sse2
@@ -274,12 +276,12 @@ cglobal float_to_int16_interleave6, 2, 8, 0, dst, src, src1, src2, src3, src4, s
     sub src4q, srcq
     sub src5q, srcq
 .loop:
-    cvtps2pi   mm0, [srcq]
-    cvtps2pi   mm1, [srcq+src1q]
-    cvtps2pi   mm2, [srcq+src2q]
-    cvtps2pi   mm3, [srcq+src3q]
-    cvtps2pi   mm4, [srcq+src4q]
-    cvtps2pi   mm5, [srcq+src5q]
+    CVTPS2PI   mm0, [srcq]
+    CVTPS2PI   mm1, [srcq+src1q]
+    CVTPS2PI   mm2, [srcq+src2q]
+    CVTPS2PI   mm3, [srcq+src3q]
+    CVTPS2PI   mm4, [srcq+src4q]
+    CVTPS2PI   mm5, [srcq+src5q]
     packssdw   mm0, mm3
     packssdw   mm1, mm4
     packssdw   mm2, mm5
@@ -306,13 +308,11 @@ INIT_MMX sse
 %define pswapd PSWAPD_SSE
 FLOAT_TO_INT16_INTERLEAVE6
 INIT_MMX 3dnow
-%define cvtps2pi pf2id
 %define pswapd PSWAPD_3DNOW
 FLOAT_TO_INT16_INTERLEAVE6
 %undef pswapd
 INIT_MMX 3dnowext
 FLOAT_TO_INT16_INTERLEAVE6
-%undef cvtps2pi
 
 ;-----------------------------------------------------------------------------
 ; void ff_float_interleave6(float *dst, const float **src, unsigned int len);
