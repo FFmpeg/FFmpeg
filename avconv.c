@@ -3000,6 +3000,11 @@ static int transcode(void)
             continue;
         }
         if (ret < 0) {
+            if (ret != AVERROR_EOF) {
+                print_error(is->filename, ret);
+                if (exit_on_error)
+                    exit_program(1);
+            }
             input_files[file_index]->eof_reached = 1;
 
             for (i = 0; i < input_files[file_index]->nb_streams; i++) {
