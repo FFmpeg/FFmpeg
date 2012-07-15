@@ -2392,7 +2392,6 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
     else
         avcodec_get_frame_defaults(ist->decoded_frame);
     decoded_frame = ist->decoded_frame;
-    av_codec_set_pkt_timebase(avctx, ist->st->time_base);
 
     update_benchmark(NULL);
     ret = avcodec_decode_audio4(avctx, decoded_frame, got_output, pkt);
@@ -2515,7 +2514,6 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
         avcodec_get_frame_defaults(ist->decoded_frame);
     decoded_frame = ist->decoded_frame;
     pkt->dts  = av_rescale_q(ist->dts, AV_TIME_BASE_Q, ist->st->time_base);
-    av_codec_set_pkt_timebase(ist->st->codec, ist->st->time_base);
 
     update_benchmark(NULL);
     ret = avcodec_decode_video2(ist->st->codec,
