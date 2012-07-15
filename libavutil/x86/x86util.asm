@@ -210,10 +210,14 @@
 %endif
 %endmacro
 
-%macro ABSB_MMX 2
+%macro ABSB 2 ; source mmreg, temp mmreg (unused for ssse3)
+%if cpuflag(ssse3)
+    pabsb   %1, %1
+%else
     pxor    %2, %2
     psubb   %2, %1
     pminub  %1, %2
+%endif
 %endmacro
 
 %macro ABSB2_MMX 4
@@ -236,10 +240,6 @@
     psubd   %2, %4
 %endmacro
 
-%macro ABSB_SSSE3 2
-    pabsb   %1, %1
-%endmacro
-
 %macro ABSB2_SSSE3 4
     pabsb   %1, %1
     pabsb   %2, %2
@@ -250,7 +250,6 @@
     ABS2 %3, %4, %5, %6
 %endmacro
 
-%define ABSB ABSB_MMX
 %define ABSB2 ABSB2_MMX
 
 %macro SPLATB_LOAD 3
