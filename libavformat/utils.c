@@ -2721,7 +2721,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 char buf[256];
                 avcodec_string(buf, sizeof(buf), st->codec, 0);
                 av_log(ic, AV_LOG_WARNING,
-                       "Could not find codec parameters for stream (%s): %s\n",
+                       "Could not find codec parameters for stream (%s): %s\n"
+                       "Consider increasing the value for the 'analyzeduration' and 'probesize' options\n",
                        buf, errmsg);
             } else {
                 ret = 0;
