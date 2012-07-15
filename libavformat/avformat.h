@@ -1949,6 +1949,10 @@ const struct AVCodecTag *avformat_get_riff_video_tags(void);
 const struct AVCodecTag *avformat_get_riff_audio_tags(void);
 
 /**
+ * @}
+ */
+
+/**
  * Guesses the sample aspect ratio of a frame, based on both the stream and the
  * frame aspect ratio.
  *
@@ -1966,10 +1970,6 @@ const struct AVCodecTag *avformat_get_riff_audio_tags(void);
  * @return the guessed (valid) sample_aspect_ratio, 0/1 if no idea
  */
 AVRational av_guess_sample_aspect_ratio(AVFormatContext *format, AVStream *stream, AVFrame *frame);
-
-/**
- * @}
- */
 
 /**
  * @}
