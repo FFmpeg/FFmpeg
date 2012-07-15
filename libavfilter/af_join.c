@@ -248,7 +248,7 @@ static void join_uninit(AVFilterContext *ctx)
 
     for (i = 0; i < ctx->nb_inputs; i++) {
         av_freep(&ctx->input_pads[i].name);
-        avfilter_unref_buffer(s->input_frames[i]);
+        avfilter_unref_bufferp(&s->input_frames[i]);
     }
 
     av_freep(&s->channels);
@@ -402,7 +402,7 @@ static void join_free_buffer(AVFilterBuffer *buf)
         int i;
 
         for (i = 0; i < priv->nb_in_buffers; i++)
-            avfilter_unref_buffer(priv->in_buffers[i]);
+            avfilter_unref_bufferp(&priv->in_buffers[i]);
 
         av_freep(&priv->in_buffers);
         av_freep(&buf->priv);

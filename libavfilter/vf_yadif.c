@@ -224,8 +224,7 @@ static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 
     if (yadif->auto_enable && !yadif->cur->video->interlaced) {
         yadif->out  = avfilter_ref_buffer(yadif->cur, AV_PERM_READ);
-        avfilter_unref_buffer(yadif->prev);
-        yadif->prev = NULL;
+        avfilter_unref_bufferp(&yadif->prev);
         if (yadif->out->pts != AV_NOPTS_VALUE)
             yadif->out->pts *= 2;
         return ff_start_frame(ctx->outputs[0], yadif->out);
@@ -327,9 +326,9 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     YADIFContext *yadif = ctx->priv;
 
-    if (yadif->prev) avfilter_unref_buffer(yadif->prev);
-    if (yadif->cur ) avfilter_unref_buffer(yadif->cur );
-    if (yadif->next) avfilter_unref_buffer(yadif->next);
+    if (yadif->prev) avfilter_unref_bufferp(&yadif->prev);
+    if (yadif->cur ) avfilter_unref_bufferp(&yadif->cur );
+    if (yadif->next) avfilter_unref_bufferp(&yadif->next);
 }
 
 static int query_formats(AVFilterContext *ctx)

@@ -65,11 +65,11 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     for (buf = fifo->root.next; buf; buf = tmp) {
         tmp = buf->next;
-        avfilter_unref_buffer(buf->buf);
+        avfilter_unref_bufferp(&buf->buf);
         av_free(buf);
     }
 
-    avfilter_unref_buffer(fifo->buf_out);
+    avfilter_unref_bufferp(&fifo->buf_out);
 }
 
 static int add_to_queue(AVFilterLink *inlink, AVFilterBufferRef *buf)

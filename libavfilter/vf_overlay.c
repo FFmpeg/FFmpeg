@@ -88,8 +88,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     OverlayContext *over = ctx->priv;
 
-    if (over->overpicref)
-        avfilter_unref_buffer(over->overpicref);
+    avfilter_unref_bufferp(&over->overpicref);
 }
 
 static int query_formats(AVFilterContext *ctx)

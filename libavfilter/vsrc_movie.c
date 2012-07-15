@@ -299,8 +299,7 @@ static int request_frame(AVFilterLink *outlink)
 
     ret = ff_end_frame(outlink);
 fail:
-    avfilter_unref_buffer(movie->picref);
-    movie->picref = NULL;
+    avfilter_unref_bufferp(&movie->picref);
 
     return ret;
 }
