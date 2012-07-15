@@ -282,11 +282,10 @@ static int request_frame(AVFilterLink *outlink)
         int ret;
 
         av_fifo_generic_read(select->pending_frames, &picref, sizeof(picref), NULL);
-        if ((ret = ff_start_frame(outlink, avfilter_ref_buffer(picref, ~0))) < 0 ||
+        if ((ret = ff_start_frame(outlink, picref)) < 0 ||
             (ret = ff_draw_slice(outlink, 0, outlink->h, 1)) < 0 ||
             (ret = ff_end_frame(outlink)) < 0);
 
-        avfilter_unref_buffer(picref);
         return ret;
     }
 
