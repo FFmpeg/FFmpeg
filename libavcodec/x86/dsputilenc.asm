@@ -257,11 +257,9 @@ hadamard8_16_wrapper 0, 14
 %endmacro
 
 INIT_MMX mmx
-%define ABS1 ABS1_MMX
 HADAMARD8_DIFF
 
 INIT_MMX mmxext
-%define ABS1 ABS1_MMXEXT
 HADAMARD8_DIFF
 
 INIT_XMM sse2
