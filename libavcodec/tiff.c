@@ -291,12 +291,32 @@ static int add_shorts_metadata(int count, const char *name,
     return 0;
 }
 
+static int add_string_metadata(int count, const char *name,
+                               TiffContext *s)
+{
+    char *value;
+
+    if (bytestream2_get_bytes_left(&s->gb) < count)
+        return AVERROR_INVALIDDATA;
+
+    value = av_malloc(count + 1);
+    if (!value)
+        return AVERROR(ENOMEM);
+
+    bytestream2_get_bufferu(&s->gb, value, count);
+    value[count] = 0;
+
+    av_dict_set(&s->picture.metadata, name, value, AV_DICT_DONT_STRDUP_VAL);
+    return 0;
+}
+
 static int add_metadata(int count, int type,
                         const char *name, const char *sep, TiffContext *s)
 {
     switch(type) {
     case TIFF_DOUBLE: return add_doubles_metadata(count, name, sep, s);
     case TIFF_SHORT : return add_shorts_metadata(count, name, sep, s);
+    case TIFF_STRING: return add_string_metadata(count, name, s);
     default         : return AVERROR_INVALIDDATA;
     };
 }
@@ -912,6 +932,39 @@ static int tiff_decode_tag(TiffContext *s)
                 }
             }
         }
+        break;
+    case TIFF_ARTIST:
+        ADD_METADATA(count, "artist", NULL);
+        break;
+    case TIFF_COPYRIGHT:
+        ADD_METADATA(count, "copyright", NULL);
+        break;
+    case TIFF_DATE:
+        ADD_METADATA(count, "date", NULL);
+        break;
+    case TIFF_DOCUMENT_NAME:
+        ADD_METADATA(count, "document_name", NULL);
+        break;
+    case TIFF_HOST_COMPUTER:
+        ADD_METADATA(count, "computer", NULL);
+        break;
+    case TIFF_IMAGE_DESCRIPTION:
+        ADD_METADATA(count, "description", NULL);
+        break;
+    case TIFF_MAKE:
+        ADD_METADATA(count, "make", NULL);
+        break;
+    case TIFF_MODEL:
+        ADD_METADATA(count, "model", NULL);
+        break;
+    case TIFF_PAGE_NAME:
+        ADD_METADATA(count, "page_name", NULL);
+        break;
+    case TIFF_PAGE_NUMBER:
+        ADD_METADATA(count, "page_number", " / ");
+        break;
+    case TIFF_SOFTWARE_NAME:
+        ADD_METADATA(count, "software", NULL);
         break;
     default:
         av_log(s->avctx, AV_LOG_DEBUG, "Unknown or unsupported tag %d/0X%0X\n",
