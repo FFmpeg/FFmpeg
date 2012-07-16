@@ -1192,6 +1192,7 @@ CONFIG_EXTRA="
     huffman
     lgplv3
     lpc
+    vp3dsp
 "
 
 CMDLINE_SELECT="
@@ -1415,7 +1416,9 @@ vc1_vdpau_decoder_select="vdpau vc1_decoder"
 vc1image_decoder_select="vc1_decoder"
 vorbis_decoder_select="mdct"
 vorbis_encoder_select="mdct"
-vp6_decoder_select="huffman"
+vp3_decoder_select="vp3dsp"
+vp5_decoder_select="vp3dsp"
+vp6_decoder_select="huffman vp3dsp"
 vp6a_decoder_select="vp6_decoder"
 vp6f_decoder_select="vp6_decoder"
 vp8_decoder_select="h264pred h264qpel"
