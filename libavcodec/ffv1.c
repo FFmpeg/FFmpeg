@@ -37,6 +37,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/crc.h"
 #include "libavutil/opt.h"
+#include "libavutil/imgutils.h"
 
 #ifdef __INTEL_COMPILER
 #undef av_flatten
@@ -197,6 +198,7 @@ typedef struct FFV1Context{
     int gob_count;
     int packed_at_lsb;
     int ec;
+    int slice_damaged;
     int key_frame_ok;
 
     int quant_table_count;
@@ -2015,6 +2017,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         }
         buf_p -= v;
 
+        fs->slice_damaged = 0;
         if(f->ec){
             unsigned crc = av_crc(av_crc_get_table(AV_CRC_32_IEEE), 0, buf_p, v);
             if(crc){
@@ -2027,6 +2030,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
                 } else {
                     av_log(f->avctx, AV_LOG_ERROR, "\n");
                 }
+                fs->slice_damaged = 1;
             }
         }
 
@@ -2036,6 +2040,25 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     }
 
     avctx->execute(avctx, decode_slice, &f->slice_context[0], NULL, f->slice_count, sizeof(void*));
+
+    for(i=f->slice_count-1; i>=0; i--){
+        FFV1Context *fs= f->slice_context[i];
+        int j;
+        if(fs->slice_damaged && f->last_picture.data[0]){
+            uint8_t *dst[4], *src[4];
+            for(j=0; j<4; j++){
+                int sh = (j==1 || j==2) ? f->chroma_h_shift : 0;
+                int sv = (j==1 || j==2) ? f->chroma_v_shift : 0;
+                dst[j] = f->picture     .data[j] + f->picture     .linesize[j]*
+                         (fs->slice_y>>sv) + (fs->slice_x>>sh);
+                src[j] = f->last_picture.data[j] + f->last_picture.linesize[j]*
+                         (fs->slice_y>>sv) + (fs->slice_x>>sh);
+            }
+            av_image_copy(dst, f->picture.linesize, src, f->last_picture.linesize,
+                          avctx->pix_fmt, fs->slice_width, fs->slice_height);
+        }
+    }
+
     f->picture_number++;
 
     *picture= *p;
