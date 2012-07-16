@@ -181,6 +181,7 @@ typedef struct FFV1Context{
     int flags;
     int picture_number;
     AVFrame picture;
+    AVFrame last_picture;
     int plane_count;
     int ac;                              ///< 1=range coder <-> 0=golomb rice
     int ac_byte_count;                   ///< number of bytes used for AC coding
@@ -1364,6 +1365,8 @@ static av_cold int common_end(AVCodecContext *avctx){
 
     if (avctx->codec->decode && s->picture.data[0])
         avctx->release_buffer(avctx, &s->picture);
+    if (avctx->codec->decode && s->last_picture.data[0])
+        avctx->release_buffer(avctx, &s->last_picture);
 
     for(j=0; j<s->slice_count; j++){
         FFV1Context *fs= s->slice_context[j];
@@ -1988,7 +1991,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         p->key_frame= 0;
     }
 
-    p->reference= 0;
+    p->reference= 3; //for error concealment
     if(avctx->get_buffer(avctx, p) < 0){
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
@@ -2037,6 +2040,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
 
     *picture= *p;
     *data_size = sizeof(AVFrame);
+
+    FFSWAP(AVFrame, f->picture, f->last_picture);
 
     return buf_size;
 }
