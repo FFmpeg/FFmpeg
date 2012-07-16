@@ -1190,7 +1190,6 @@ HAVE_LIST="
     clock_gettime
     closesocket
     cmov
-    CommandLineToArgvW
     cpuid
     dcbzl
     dev_bktr_ioctl_bt848_h
@@ -3155,6 +3154,7 @@ if enabled network; then
     check_type "sys/types.h sys/socket.h" "struct sockaddr_storage"
     check_struct "sys/types.h sys/socket.h" "struct sockaddr" sa_len
     check_header netinet/sctp.h
+    check_func getaddrinfo $network_extralibs
     # Prefer arpa/inet.h over winsock2
     if check_header arpa/inet.h ; then
         check_func closesocket
@@ -3163,6 +3163,7 @@ if enabled network; then
             network_extralibs="-lws2" || \
         { check_func_headers winsock2.h closesocket -lws2_32 && \
             network_extralibs="-lws2_32"; }
+        check_func_headers ws2tcpip.h getaddrinfo $network_extralibs
         check_type ws2tcpip.h socklen_t
         check_type ws2tcpip.h "struct addrinfo"
         check_type ws2tcpip.h "struct group_source_req"
@@ -3183,8 +3184,6 @@ check_func nanosleep || { check_func nanosleep -lrt && add_extralibs -lrt; }
 check_func  clock_gettime || { check_func clock_gettime -lrt && add_extralibs -lrt; }
 check_func  fcntl
 check_func  fork
-check_func  getaddrinfo $network_extralibs ||
-    check_func_headers ws2tcpip.h getaddrinfo $network_extralibs
 check_func  gethrtime
 check_func  getopt
 check_func  getrusage

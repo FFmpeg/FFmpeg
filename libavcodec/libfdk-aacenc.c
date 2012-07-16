@@ -231,6 +231,11 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     }
 
     if (avctx->cutoff > 0) {
+        if (avctx->cutoff < (avctx->sample_rate + 255) >> 8) {
+            av_log(avctx, AV_LOG_ERROR, "cutoff valid range is %d-20000\n",
+                   (avctx->sample_rate + 255) >> 8);
+            goto error;
+        }
         if ((err = aacEncoder_SetParam(s->handle, AACENC_BANDWIDTH,
                                        avctx->cutoff)) != AACENC_OK) {
             av_log(avctx, AV_LOG_ERROR, "Unable to set the encoder bandwith to %d: %s\n",
