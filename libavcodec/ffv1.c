@@ -1907,6 +1907,8 @@ static int read_header(FFV1Context *f){
         fs->ac= f->ac;
         fs->packed_at_lsb= f->packed_at_lsb;
 
+        fs->slice_damaged = 0;
+
         if(f->version == 2){
             fs->slice_x     = get_symbol(c, state, 0)   *f->width ;
             fs->slice_y     = get_symbol(c, state, 0)   *f->height;
@@ -2026,7 +2028,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         }
         buf_p -= v;
 
-        fs->slice_damaged = 0;
         if(f->ec){
             unsigned crc = av_crc(av_crc_get_table(AV_CRC_32_IEEE), 0, buf_p, v);
             if(crc){
