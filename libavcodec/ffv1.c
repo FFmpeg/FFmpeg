@@ -1648,6 +1648,13 @@ static int decode_slice(AVCodecContext *c, void *arg){
     }else{
         decode_rgb_frame(fs, (uint32_t*)p->data[0] + ps*x + y*(p->linesize[0]/4), width, height, p->linesize[0]/4);
     }
+    if(fs->ac && f->version > 2) {
+        int v = fs->c.bytestream_end - fs->c.bytestream - 3 - 5*f->ec;
+        if(v != -1 && v!= 0) {
+            av_log(f->avctx, AV_LOG_ERROR, "bytestream end mismatching by %d\n", v);
+            fs->slice_damaged = 1;
+        }
+    }
 
     emms_c();
 
