@@ -95,7 +95,7 @@ static av_cold int init_vlcs(TSCC2Context *c)
     OP(d3, 5 * ((s0) - (s1) + (s2)) - 2 * (s3));  \
 
 #define COL_OP(a, b)  a = b
-#define ROW_OP(a, b)  a = av_clip_uint8((((b) + 0x20) >> 6) + 0x80)
+#define ROW_OP(a, b)  a = (((b) + 0x20) >> 6) + 0x80
 
 static void tscc2_idct4_put(int *in, int q[3], uint8_t *dst, int stride)
 {
