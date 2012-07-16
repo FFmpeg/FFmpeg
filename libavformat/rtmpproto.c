@@ -1120,7 +1120,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
 
     if (!strcmp(proto, "rtmpt")) {
         /* open the http tunneling connection */
-        ff_url_join(buf, sizeof(buf), "rtmphttp", NULL, hostname, port, NULL);
+        ff_url_join(buf, sizeof(buf), "ffrtmphttp", NULL, hostname, port, NULL);
     } else {
         /* open the tcp connection */
         if (port < 0)

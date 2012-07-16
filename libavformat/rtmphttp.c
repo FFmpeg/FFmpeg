@@ -240,8 +240,8 @@ fail:
     return ret;
 }
 
-URLProtocol ff_rtmphttp_protocol = {
-    .name           = "rtmphttp",
+URLProtocol ff_ffrtmphttp_protocol = {
+    .name           = "ffrtmphttp",
     .url_open       = rtmp_http_open,
     .url_read       = rtmp_http_read,
     .url_write      = rtmp_http_write,
