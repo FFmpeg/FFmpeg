@@ -131,7 +131,7 @@
 #   define av_alias
 #endif
 
-#if defined(__GNUC__) && !defined(__INTEL_COMPILER)
+#if defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined(__clang__)
 #    define av_uninit(x) x=x
 #else
 #    define av_uninit(x) x
