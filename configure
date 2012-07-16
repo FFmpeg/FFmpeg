@@ -169,10 +169,10 @@ External library support:
   --enable-libcdio         enable audio CD grabbing with libcdio
   --enable-libdc1394       enable IIDC-1394 grabbing using libdc1394
                            and libraw1394 [no]
-  --enable-libfaac         enable FAAC support via libfaac [no]
-  --enable-libfdk-aac      enable AAC support via libfdk-aac [no]
+  --enable-libfaac         enable AAC encoding via libfaac [no]
+  --enable-libfdk-aac      enable AAC encoding via libfdk-aac [no]
   --enable-libfreetype     enable libfreetype [no]
-  --enable-libgsm          enable GSM support via libgsm [no]
+  --enable-libgsm          enable GSM de/encoding via libgsm [no]
   --enable-libilbc         enable iLBC de/encoding via libilbc [no]
   --enable-libmp3lame      enable MP3 encoding via libmp3lame [no]
   --enable-libopencore-amrnb enable AMR-NB de/encoding via libopencore-amrnb [no]
@@ -181,14 +181,13 @@ External library support:
   --enable-libopenjpeg     enable JPEG 2000 de/encoding via OpenJPEG [no]
   --enable-libpulse        enable Pulseaudio input via libpulse [no]
   --enable-librtmp         enable RTMP[E] support via librtmp [no]
-  --enable-libschroedinger enable Dirac support via libschroedinger [no]
-  --enable-libspeex        enable Speex support via libspeex [no]
+  --enable-libschroedinger enable Dirac de/encoding via libschroedinger [no]
+  --enable-libspeex        enable Speex de/encoding via libspeex [no]
   --enable-libtheora       enable Theora encoding via libtheora [no]
   --enable-libvo-aacenc    enable AAC encoding via libvo-aacenc [no]
   --enable-libvo-amrwbenc  enable AMR-WB encoding via libvo-amrwbenc [no]
-  --enable-libvorbis       enable Vorbis encoding via libvorbis,
-                           native implementation exists [no]
-  --enable-libvpx          enable VP8 support via libvpx [no]
+  --enable-libvorbis       enable Vorbis encoding via libvorbis [no]
+  --enable-libvpx          enable VP8 de/encoding via libvpx [no]
   --enable-libx264         enable H.264 encoding via x264 [no]
   --enable-libxavs         enable AVS encoding via xavs [no]
   --enable-libxvid         enable Xvid encoding via xvidcore,
