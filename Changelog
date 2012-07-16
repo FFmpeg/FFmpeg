@@ -28,6 +28,7 @@ version next:
 - asettb filter
 - new option: -progress
 - 3GPP Timed Text decoder
+- GeoTIFF decoder support
 
 
 version 0.11:
