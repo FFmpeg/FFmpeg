@@ -199,6 +199,7 @@ OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_yvu9.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/pullup.o
 
 # transmedia filters
+OBJS-$(CONFIG_CONCAT_FILTER)                 += avf_concat.o
 OBJS-$(CONFIG_SHOWWAVES_FILTER)              += avf_showwaves.o
 
 TOOLS     = graph2dot

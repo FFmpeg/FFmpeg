@@ -35,6 +35,7 @@ version next:
 - Opus decoder using libopus
 - caca output device using libcaca
 - alphaextract and alphamerge filters
+- concat filter
 
 
 version 0.11:
