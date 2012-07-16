@@ -3726,6 +3726,9 @@ echo "openal enabled            ${openal-no}"
 echo "openssl enabled           ${openssl-no}"
 echo "zlib enabled              ${zlib-no}"
 echo "bzlib enabled             ${bzlib-no}"
+echo "texi2html enabled         ${texi2html-no}"
+echo "pod2man enabled           ${pod2man-no}"
+echo "makeinfo enabled          ${makeinfo-no}"
 test -n "$random_seed" &&
     echo "random seed               ${random_seed}"
 echo
