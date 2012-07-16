@@ -542,7 +542,7 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
     preout_tmp= s->preout;
     preout= &preout_tmp;
 
-    if(s->int_sample_fmt == s-> in_sample_fmt && s->in.planar)
+    if(s->int_sample_fmt == s-> in_sample_fmt && s->in.planar && !s->channel_map)
         postin= in;
 
     if(s->resample_first ? !s->resample : !s->rematrix)
