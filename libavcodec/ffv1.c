@@ -2038,7 +2038,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
 
         if(i){
             ff_init_range_decoder(&fs->c, buf_p, v);
-        }
+        }else
+            fs->c.bytestream_end = buf_p + v;
     }
 
     avctx->execute(avctx, decode_slice, &f->slice_context[0], NULL, f->slice_count, sizeof(void*));
