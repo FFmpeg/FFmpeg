@@ -43,8 +43,8 @@ enclosed in square brackets. In our example, that is @var{[T1]} and
 where video is input and output.
 
 Some filters take in input a list of parameters: they are specified
-after the filter name and an equal sign, and are separated each other
-by a semicolon.
+after the filter name and an equal sign, and are separated from each other
+by a colon.
 
 There exist so-called @var{source filters} that do not have an
 audio/video input, and @var{sink filters} that will not have audio/video
