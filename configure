@@ -2846,9 +2846,9 @@ if enabled network; then
     if check_header arpa/inet.h ; then
         check_func closesocket
     elif check_header winsock2.h ; then
-        check_func_headers winsock2.h closesocket -lws2 && \
-            network_extralibs="-lws2" || \
-        { check_func_headers winsock2.h closesocket -lws2_32 && \
+        check_func_headers winsock2.h closesocket -lws2 &&
+            network_extralibs="-lws2" ||
+        { check_func_headers winsock2.h closesocket -lws2_32 &&
             network_extralibs="-lws2_32"; }
         check_func_headers ws2tcpip.h getaddrinfo $network_extralibs
         check_type ws2tcpip.h socklen_t
@@ -3102,7 +3102,7 @@ check_ldflags -Wl,--warn-common
 check_ldflags -Wl,-rpath-link=libswscale:libavfilter:libavdevice:libavformat:libavcodec:libavutil:libavresample
 test_ldflags -Wl,-Bsymbolic && append SHFLAGS -Wl,-Bsymbolic
 
-enabled xmm_clobber_test &&                             \
+enabled xmm_clobber_test &&
     check_ldflags -Wl,--wrap,avcodec_open2              \
                   -Wl,--wrap,avcodec_decode_audio4      \
                   -Wl,--wrap,avcodec_decode_video2      \
@@ -3110,7 +3110,7 @@ enabled xmm_clobber_test &&                             \
                   -Wl,--wrap,avcodec_encode_audio2      \
                   -Wl,--wrap,avcodec_encode_video       \
                   -Wl,--wrap,avcodec_encode_subtitle    \
-                  -Wl,--wrap,sws_scale ||               \
+                  -Wl,--wrap,sws_scale ||
     disable xmm_clobber_test
 
 echo "X{};" > $TMPV
@@ -3157,8 +3157,8 @@ if enabled icc; then
     # icc 11.0 and 11.1 work with ebp_available, but don't pass the test
     enable ebp_available
     if enabled x86_32; then
-        test ${icc_version%%.*} -ge 11 && \
-            check_cflags -falign-stack=maintain-16-byte || \
+        test ${icc_version%%.*} -ge 11 &&
+            check_cflags -falign-stack=maintain-16-byte ||
             disable aligned_stack
     fi
 elif enabled ccc; then
