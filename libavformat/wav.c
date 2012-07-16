@@ -480,6 +480,10 @@ static int wav_read_header(AVFormatContext *s)
                 return ret;
             break;
         case MKTAG('S','M','V','0'):
+            if (!got_fmt) {
+                av_log(s, AV_LOG_ERROR, "found no 'fmt ' tag before the 'SMV0' tag\n");
+                return AVERROR_INVALIDDATA;
+            }
             // SMV file, a wav file with video appended.
             if (size != MKTAG('0','2','0','0')) {
                 av_log(s, AV_LOG_ERROR, "Unknown SMV version found\n");
