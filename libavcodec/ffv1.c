@@ -1610,8 +1610,10 @@ static int decode_slice(AVCodecContext *c, void *arg){
     if(f->version > 2){
         if(init_slice_state(f, fs) < 0)
             return AVERROR(ENOMEM);
-        if(decode_slice_header(f, fs) < 0)
+        if(decode_slice_header(f, fs) < 0) {
+            fs->slice_damaged = 1;
             return AVERROR_INVALIDDATA;
+        }
     }
     if(init_slice_state(f, fs) < 0)
         return AVERROR(ENOMEM);
