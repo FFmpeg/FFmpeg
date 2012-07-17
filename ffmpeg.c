@@ -1928,7 +1928,7 @@ static int poll_filters(void)
     AVFilterBufferRef *picref;
     AVFrame *filtered_frame = NULL;
     int i, ret, ret_all;
-    unsigned nb_success, nb_eof;
+    unsigned nb_success = 1, av_uninit(nb_eof);
     int64_t frame_pts;
 
     while (1) {
@@ -2001,6 +2001,8 @@ static int poll_filters(void)
                 avfilter_unref_buffer(picref);
             }
         }
+        if (!nb_success) /* from last round */
+            break;
         /* Request frames through all the graphs */
         ret_all = nb_success = nb_eof = 0;
         for (i = 0; i < nb_filtergraphs; i++) {
@@ -2017,8 +2019,6 @@ static int poll_filters(void)
                 ret_all = ret;
             }
         }
-        if (!nb_success)
-            break;
         /* Try again if anything succeeded */
     }
     return nb_eof == nb_filtergraphs ? AVERROR_EOF : ret_all;
