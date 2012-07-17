@@ -260,6 +260,7 @@ void av_register_all(void)
     REGISTER_PROTOCOL (RTMP, rtmp);
     REGISTER_PROTOCOL (RTMPS, rtmps);
     REGISTER_PROTOCOL (RTMPT, rtmpt);
+    REGISTER_PROTOCOL (RTMPTS, rtmpts);
     REGISTER_PROTOCOL (RTP, rtp);
     REGISTER_PROTOCOL (SCTP, sctp);
     REGISTER_PROTOCOL (TCP, tcp);

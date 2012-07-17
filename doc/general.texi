@@ -847,6 +847,7 @@ performance on systems without hardware floating point support).
 @item RTMPS        @tab X
 @item RTMPT        @tab X
 @item RTMPTE       @tab E
+@item RTMPTS       @tab X
 @item RTP          @tab X
 @item SCTP         @tab X
 @item TCP          @tab X

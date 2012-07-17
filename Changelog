@@ -36,6 +36,7 @@ version <next>:
 - AAC encoding via libfdk-aac
 - Microsoft Expression Encoder Screen decoder
 - RTMPS protocol support
+- RTMPTS protocol support
 
 
 version 0.8:
