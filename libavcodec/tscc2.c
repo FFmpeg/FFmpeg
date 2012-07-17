@@ -95,7 +95,7 @@ static av_cold int init_vlcs(TSCC2Context *c)
     OP(d3, 5 * ((s0) - (s1) + (s2)) - 2 * (s3));  \
 
 #define COL_OP(a, b)  a = b
-#define ROW_OP(a, b)  a = (((b) + 0x20) >> 6) + 0x80
+#define ROW_OP(a, b)  a = ((b) + 0x20) >> 6
 
 static void tscc2_idct4_put(int *in, int q[3], uint8_t *dst, int stride)
 {
@@ -158,7 +158,7 @@ static int tscc2_decode_mb(TSCC2Context *c, int *q, int vlc_set,
             }
             dc          = (dc + prev_dc) & 0xFF;
             prev_dc     = dc;
-            c->block[0] = dc - 0x80;
+            c->block[0] = dc;
 
             nc = get_vlc2(gb, c->nc_vlc[vlc_set].table, 9, 1);
             if (nc == -1)
