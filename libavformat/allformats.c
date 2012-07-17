@@ -258,6 +258,7 @@ void av_register_all(void)
     REGISTER_PROTOCOL (MD5,  md5);
     REGISTER_PROTOCOL (PIPE, pipe);
     REGISTER_PROTOCOL (RTMP, rtmp);
+    REGISTER_PROTOCOL (RTMPS, rtmps);
     REGISTER_PROTOCOL (RTMPT, rtmpt);
     REGISTER_PROTOCOL (RTP, rtp);
     REGISTER_PROTOCOL (SCTP, sctp);

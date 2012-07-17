@@ -247,6 +247,13 @@ For example to read with @command{avplay} a multimedia resource named
 avplay rtmp://myserver/vod/sample
 @end example
 
+@section rtmps
+
+Real-Time Messaging Protocol over a secure SSL connection.
+
+The Real-Time Messaging Protocol (RTMPS) is used for streaming
+multimedia content across an encrypted connection.
+
 @section rtmpt
 
 Real-Time Messaging Protocol tunneled through HTTP.
