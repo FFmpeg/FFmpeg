@@ -996,6 +996,8 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
     c->chrDstW = -((-dstW) >> c->chrDstHSubSample);
     c->chrDstH = -((-dstH) >> c->chrDstVSubSample);
 
+    FF_ALLOC_OR_GOTO(c, c->formatConvBuffer, FFALIGN(srcW*2+78, 16) * 2, fail);
+
     /* unscaled special cases */
     if (unscaled && !usesHFilter && !usesVFilter &&
         (c->srcRange == c->dstRange || isAnyRGB(dstFormat))) {
@@ -1020,7 +1022,6 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
         c->srcBpc = 16;
     if (c->dstBpc == 16)
         dst_stride <<= 1;
-    FF_ALLOC_OR_GOTO(c, c->formatConvBuffer, FFALIGN(srcW*2+78, 16) * 2, fail);
     if (HAVE_MMX2 && cpu_flags & AV_CPU_FLAG_MMX2 &&
         c->srcBpc == 8 && c->dstBpc <= 14) {
         c->canMMX2BeUsed = (dstW >= srcW && (dstW & 31) == 0 &&
