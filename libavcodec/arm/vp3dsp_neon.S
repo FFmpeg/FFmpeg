@@ -260,32 +260,6 @@ endfunc
 VP3_IDCT_END row
 VP3_IDCT_END col
 
-function ff_vp3_idct_neon, export=1
-    mov             ip,  lr
-    mov             r2,  r0
-    bl              vp3_idct_start_neon
-    bl              vp3_idct_end_row_neon
-    mov             r3,  #8
-    bl              vp3_idct_core_neon
-    bl              vp3_idct_end_col_neon
-    mov             lr,  ip
-    vpop            {d8-d15}
-
-    vshr.s16        q8,  q8,  #4
-    vshr.s16        q9,  q9,  #4
-    vshr.s16        q10, q10, #4
-    vshr.s16        q11, q11, #4
-    vshr.s16        q12, q12, #4
-    vst1.64         {d16-d19}, [r0,:128]!
-    vshr.s16        q13, q13, #4
-    vshr.s16        q14, q14, #4
-    vst1.64         {d20-d23}, [r0,:128]!
-    vshr.s16        q15, q15, #4
-    vst1.64         {d24-d27}, [r0,:128]!
-    vst1.64         {d28-d31}, [r0,:128]!
-    bx              lr
-endfunc
-
 function ff_vp3_idct_put_neon, export=1
     mov             ip,  lr
     bl              vp3_idct_start_neon

@@ -36,10 +36,6 @@ void ff_gmc1_altivec(uint8_t *dst, uint8_t *src, int stride, int h,
 void ff_idct_put_altivec(uint8_t *dest, int line_size, int16_t *block);
 void ff_idct_add_altivec(uint8_t *dest, int line_size, int16_t *block);
 
-void ff_vp3_idct_altivec(DCTELEM *block);
-void ff_vp3_idct_put_altivec(uint8_t *dest, int line_size, DCTELEM *block);
-void ff_vp3_idct_add_altivec(uint8_t *dest, int line_size, DCTELEM *block);
-
 void ff_dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx);
 
 void ff_dsputil_init_altivec(DSPContext* c, AVCodecContext *avctx);

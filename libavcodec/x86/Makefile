@@ -1,5 +1,6 @@
 OBJS-$(CONFIG_MLP_DECODER)             += x86/mlpdsp.o
 OBJS-$(CONFIG_TRUEHD_DECODER)          += x86/mlpdsp.o
+OBJS-$(CONFIG_VP3DSP)                  += x86/vp3dsp_init.o
 OBJS-$(CONFIG_XMM_CLOBBER_TEST)        += x86/w64xmmtest.o
 
 MMX-OBJS                               += x86/dsputil_mmx.o             \
