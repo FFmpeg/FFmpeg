@@ -1856,7 +1856,7 @@ no_cplx_est:
     }
 
     if(s->avctx->debug&FF_DEBUG_PICT_INFO) {
-        av_log(s->avctx, AV_LOG_DEBUG, "tb %d/%d, tincrbits:%d, qp_prec:%d, ps:%d,  %s%s\n",
+        av_log(s->avctx, AV_LOG_DEBUG, "tb %d/%d, tincrbits:%d, qp_prec:%d, ps:%d,  %s%s%s%s\n",
                s->avctx->time_base.num, s->avctx->time_base.den,
                s->time_increment_bits,
                s->quant_precision,
