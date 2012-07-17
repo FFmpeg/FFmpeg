@@ -19,6 +19,8 @@ version next:
 - TechSmith Screen Codec 2 decoder
 - AAC encoding via libfdk-aac
 - Microsoft Expression Encoder Screen decoder
+- RTMPS protocol support
+- RTMPTS protocol support
 - showwaves filter
 - LucasArts SMUSH playback support
 - SAMI demuxer and decoder

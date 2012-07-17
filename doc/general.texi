@@ -905,9 +905,10 @@ performance on systems without hardware floating point support).
 @item pipe         @tab X
 @item RTMP         @tab X
 @item RTMPE        @tab E
-@item RTMPS        @tab E
-@item RTMPT        @tab E
+@item RTMPS        @tab X
+@item RTMPT        @tab X
 @item RTMPTE       @tab E
+@item RTMPTS       @tab X
 @item RTP          @tab X
 @item SCTP         @tab X
 @item TCP          @tab X

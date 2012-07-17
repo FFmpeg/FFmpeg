@@ -25,6 +25,7 @@
 #include "avformat.h"
 
 #define RTMP_DEFAULT_PORT 1935
+#define RTMPS_DEFAULT_PORT 443
 
 #define RTMP_HANDSHAKE_PACKET_SIZE 1536
 

@@ -24,14 +24,15 @@
 * JPEG 2000 encoder using libopenjpeg
 */
 
+#define  OPJ_STATIC
+#include <openjpeg.h>
+
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "libavutil/intreadwrite.h"
 #include "internal.h"
-#define  OPJ_STATIC
-#include <openjpeg.h>
 
 typedef struct {
     AVClass *avclass;
@@ -41,8 +42,8 @@ typedef struct {
     opj_event_mgr_t event_mgr;
     int format;
     int profile;
-    int cinema_mode;
     int prog_order;
+    int cinema_mode;
     int numresolution;
     int numlayers;
     int disto_alloc;
@@ -52,12 +53,17 @@ typedef struct {
 
 static void error_callback(const char *msg, void *data)
 {
-    av_log((AVCodecContext*)data, AV_LOG_ERROR, "libopenjpeg: %s\n", msg);
+    av_log(data, AV_LOG_ERROR, "%s\n", msg);
 }
 
 static void warning_callback(const char *msg, void *data)
 {
-    av_log((AVCodecContext*)data, AV_LOG_WARNING, "libopenjpeg: %s\n", msg);
+    av_log(data, AV_LOG_WARNING, "%s\n", msg);
+}
+
+static void info_callback(const char *msg, void *data)
+{
+    av_log(data, AV_LOG_DEBUG, "%s\n", msg);
 }
 
 static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *parameters)
@@ -116,11 +122,13 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
         color_space = CLRSPC_SYCC;
         break;
     default:
-        av_log(avctx, AV_LOG_ERROR, "The requested pixel format '%s' is not supported\n", av_get_pix_fmt_name(avctx->pix_fmt));
+        av_log(avctx, AV_LOG_ERROR,
+               "The requested pixel format '%s' is not supported\n",
+               av_get_pix_fmt_name(avctx->pix_fmt));
         return NULL;
     }
 
-    cmptparm = av_mallocz(numcomps * sizeof(opj_image_cmptparm_t));
+    cmptparm = av_mallocz(numcomps * sizeof(*cmptparm));
     if (!cmptparm) {
         av_log(avctx, AV_LOG_ERROR, "Not enough memory");
         return NULL;
@@ -143,8 +151,10 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
 static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
 {
     LibOpenJPEGContext *ctx = avctx->priv_data;
+    int err = AVERROR(ENOMEM);
 
     opj_set_default_encoder_parameters(&ctx->enc_params);
+
     ctx->enc_params.cp_rsiz = ctx->profile;
     ctx->enc_params.mode = !!avctx->global_quality;
     ctx->enc_params.cp_cinema = ctx->cinema_mode;
@@ -164,26 +174,29 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
 
     avctx->coded_frame = avcodec_alloc_frame();
     if (!avctx->coded_frame) {
-        av_freep(&ctx->compress);
         av_log(avctx, AV_LOG_ERROR, "Error allocating coded frame\n");
-        return AVERROR(ENOMEM);
+        goto fail;
     }
 
     ctx->image = mj2_create_image(avctx, &ctx->enc_params);
     if (!ctx->image) {
-        av_freep(&ctx->compress);
-        av_freep(&avctx->coded_frame);
         av_log(avctx, AV_LOG_ERROR, "Error creating the mj2 image\n");
-        return AVERROR(EINVAL);
+        err = AVERROR(EINVAL);
+        goto fail;
     }
 
     memset(&ctx->event_mgr, 0, sizeof(opj_event_mgr_t));
+    ctx->event_mgr.info_handler    = info_callback;
     ctx->event_mgr.error_handler = error_callback;
     ctx->event_mgr.warning_handler = warning_callback;
-    ctx->event_mgr.info_handler = NULL;
     opj_set_event_mgr((opj_common_ptr)ctx->compress, &ctx->event_mgr, avctx);
 
     return 0;
+
+fail:
+    av_freep(&ctx->compress);
+    av_freep(&avctx->coded_frame);
+    return err;
 }
 
 static int libopenjpeg_copy_packed8(AVCodecContext *avctx, const AVFrame *frame, opj_image_t *image)
@@ -373,13 +386,16 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         cpyresult = libopenjpeg_copy_unpacked16(avctx, frame, image);
         break;
     default:
-        av_log(avctx, AV_LOG_ERROR, "The frame's pixel format '%s' is not supported\n", av_get_pix_fmt_name(avctx->pix_fmt));
+        av_log(avctx, AV_LOG_ERROR,
+               "The frame's pixel format '%s' is not supported\n",
+               av_get_pix_fmt_name(avctx->pix_fmt));
         return AVERROR(EINVAL);
         break;
     }
 
     if (!cpyresult) {
-        av_log(avctx, AV_LOG_ERROR, "Could not copy the frame data to the internal image buffer\n");
+        av_log(avctx, AV_LOG_ERROR,
+               "Could not copy the frame data to the internal image buffer\n");
         return -1;
     }
 

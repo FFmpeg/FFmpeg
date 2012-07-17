@@ -272,6 +272,7 @@ void av_register_all(void)
     REGISTER_PROTOCOL (CACHE, cache);
     REGISTER_PROTOCOL (CONCAT, concat);
     REGISTER_PROTOCOL (CRYPTO, crypto);
+    REGISTER_PROTOCOL (FFRTMPHTTP, ffrtmphttp);
     REGISTER_PROTOCOL (FILE, file);
     REGISTER_PROTOCOL (GOPHER, gopher);
     REGISTER_PROTOCOL (HLS, hls);
@@ -283,8 +284,9 @@ void av_register_all(void)
     REGISTER_PROTOCOL (MD5,  md5);
     REGISTER_PROTOCOL (PIPE, pipe);
     REGISTER_PROTOCOL (RTMP, rtmp);
-    REGISTER_PROTOCOL (RTMPHTTP, rtmphttp);
+    REGISTER_PROTOCOL (RTMPS, rtmps);
     REGISTER_PROTOCOL (RTMPT, rtmpt);
+    REGISTER_PROTOCOL (RTMPTS, rtmpts);
     REGISTER_PROTOCOL (RTP, rtp);
     REGISTER_PROTOCOL (SCTP, sctp);
     REGISTER_PROTOCOL (TCP, tcp);

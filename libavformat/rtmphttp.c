@@ -30,11 +30,14 @@
 #include "libavutil/time.h"
 #include "internal.h"
 #include "http.h"
+#include "rtmp.h"
 
 #define RTMPT_DEFAULT_PORT 80
+#define RTMPTS_DEFAULT_PORT RTMPS_DEFAULT_PORT
 
 /* protocol handler context */
 typedef struct RTMP_HTTPContext {
+    const AVClass *class;
     URLContext   *stream;           ///< HTTP stream
     char         host[256];         ///< hostname of the server
     int          port;              ///< port to connect (default is 80)
@@ -46,6 +49,7 @@ typedef struct RTMP_HTTPContext {
     int          initialized;       ///< flag indicating when the http context is initialized
     int          finishing;         ///< flag indicating when the client closes the connection
     int          nb_bytes_read;     ///< number of bytes read since the last request
+    int          tls;               ///< use Transport Security Layer (RTMPTS)
 } RTMP_HTTPContext;
 
 static int rtmp_http_send_cmd(URLContext *h, const char *cmd)
@@ -185,9 +189,6 @@ static int rtmp_http_open(URLContext *h, const char *uri, int flags)
     av_url_split(NULL, 0, NULL, 0, rt->host, sizeof(rt->host), &rt->port,
                  NULL, 0, uri);
 
-    if (rt->port < 0)
-        rt->port = RTMPT_DEFAULT_PORT;
-
     /* This is the first request that is sent to the server in order to
      * register a client on the server and start a new session. The server
      * replies with a unique id (usually a number) that is used by the client
@@ -195,7 +196,15 @@ static int rtmp_http_open(URLContext *h, const char *uri, int flags)
      * Note: the reply doesn't contain a value for the polling interval.
      * A successful connect resets the consecutive index that is used
      * in the URLs. */
-    ff_url_join(url, sizeof(url), "http", NULL, rt->host, rt->port, "/open/1");
+    if (rt->tls) {
+        if (rt->port < 0)
+            rt->port = RTMPTS_DEFAULT_PORT;
+        ff_url_join(url, sizeof(url), "https", NULL, rt->host, rt->port, "/open/1");
+    } else {
+        if (rt->port < 0)
+            rt->port = RTMPT_DEFAULT_PORT;
+        ff_url_join(url, sizeof(url), "http", NULL, rt->host, rt->port, "/open/1");
+    }
 
     /* alloc the http context */
     if ((ret = ffurl_alloc(&rt->stream, url, AVIO_FLAG_READ_WRITE, NULL)) < 0)
@@ -240,12 +249,28 @@ fail:
     return ret;
 }
 
-URLProtocol ff_rtmphttp_protocol = {
-    .name           = "rtmphttp",
+#define OFFSET(x) offsetof(RTMP_HTTPContext, x)
+#define DEC AV_OPT_FLAG_DECODING_PARAM
+
+static const AVOption ffrtmphttp_options[] = {
+    {"ffrtmphttp_tls", "Use a HTTPS tunneling connection (RTMPTS).", OFFSET(tls), AV_OPT_TYPE_INT, {0}, 0, 1, DEC},
+    { NULL },
+};
+
+static const AVClass ffrtmphttp_class = {
+    .class_name = "ffrtmphttp",
+    .item_name  = av_default_item_name,
+    .option     = ffrtmphttp_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+URLProtocol ff_ffrtmphttp_protocol = {
+    .name           = "ffrtmphttp",
     .url_open       = rtmp_http_open,
     .url_read       = rtmp_http_read,
     .url_write      = rtmp_http_write,
     .url_close      = rtmp_http_close,
     .priv_data_size = sizeof(RTMP_HTTPContext),
     .flags          = URL_PROTOCOL_FLAG_NETWORK,
+    .priv_data_class= &ffrtmphttp_class,
 };

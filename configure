@@ -190,7 +190,7 @@ External library support:
   --enable-libopencore-amrnb enable AMR-NB de/encoding via libopencore-amrnb [no]
   --enable-libopencore-amrwb enable AMR-WB decoding via libopencore-amrwb [no]
   --enable-libopencv       enable video filtering via libopencv [no]
-  --enable-libopenjpeg     enable JPEG 2000 encoding/decoding via OpenJPEG [no]
+  --enable-libopenjpeg     enable JPEG 2000 de/encoding via OpenJPEG [no]
   --enable-libpulse        enable Pulseaudio input via libpulse [no]
   --enable-librtmp         enable RTMP[E] support via librtmp [no]
   --enable-libschroedinger enable Dirac support via libschroedinger [no]
@@ -1712,6 +1712,8 @@ x11_grab_device_indev_deps="x11grab XShmCreateImage"
 
 # protocols
 bluray_protocol_deps="libbluray"
+ffrtmphttp_protocol_deps="!librtmp_protocol"
+ffrtmphttp_protocol_select="http_protocol"
 gopher_protocol_deps="network"
 httpproxy_protocol_deps="network"
 httpproxy_protocol_select="tcp_protocol"
@@ -1727,10 +1729,12 @@ mmsh_protocol_select="http_protocol"
 mmst_protocol_deps="network"
 rtmp_protocol_deps="!librtmp_protocol"
 rtmp_protocol_select="tcp_protocol"
-rtmphttp_protocol_deps="!librtmp_protocol"
-rtmphttp_protocol_select="http_protocol"
+rtmps_protocol_deps="!librtmp_protocol"
+rtmps_protocol_select="tls_protocol"
 rtmpt_protocol_deps="!librtmp_protocol"
-rtmpt_protocol_select="rtmphttp_protocol"
+rtmpt_protocol_select="ffrtmphttp_protocol"
+rtmpts_protocol_deps="!librtmp_protocol"
+rtmpts_protocol_select="ffrtmphttp_protocol"
 rtp_protocol_select="udp_protocol"
 sctp_protocol_deps="network netinet_sctp_h"
 tcp_protocol_deps="network"

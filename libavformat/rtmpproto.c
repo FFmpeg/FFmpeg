@@ -1111,6 +1111,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     char *old_app;
     uint8_t buf[2048];
     int port;
+    AVDictionary *opts = NULL;
     int ret;
 
     rt->is_input = !(flags & AVIO_FLAG_WRITE);
@@ -1118,9 +1119,17 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     av_url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname), &port,
                  path, sizeof(path), s->filename);
 
-    if (!strcmp(proto, "rtmpt")) {
+    if (!strcmp(proto, "rtmpt") || !strcmp(proto, "rtmpts")) {
+        if (!strcmp(proto, "rtmpts"))
+            av_dict_set(&opts, "ffrtmphttp_tls", "1", 1);
+
         /* open the http tunneling connection */
-        ff_url_join(buf, sizeof(buf), "rtmphttp", NULL, hostname, port, NULL);
+        ff_url_join(buf, sizeof(buf), "ffrtmphttp", NULL, hostname, port, NULL);
+    } else if (!strcmp(proto, "rtmps")) {
+        /* open the tls connection */
+        if (port < 0)
+            port = RTMPS_DEFAULT_PORT;
+        ff_url_join(buf, sizeof(buf), "tls", NULL, hostname, port, NULL);
     } else {
         /* open the tcp connection */
         if (port < 0)
@@ -1129,7 +1138,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     }
 
     if ((ret = ffurl_open(&rt->stream, buf, AVIO_FLAG_READ_WRITE,
-                          &s->interrupt_callback, NULL)) < 0) {
+                          &s->interrupt_callback, &opts)) < 0) {
         av_log(s , AV_LOG_ERROR, "Cannot open connection %s\n", buf);
         goto fail;
     }
@@ -1261,6 +1270,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     return 0;
 
 fail:
+    av_dict_free(&opts);
     rtmp_close(s);
     return ret;
 }
@@ -1444,6 +1454,24 @@ URLProtocol ff_rtmp_protocol = {
     .priv_data_class= &rtmp_class,
 };
 
+static const AVClass rtmps_class = {
+    .class_name = "rtmps",
+    .item_name  = av_default_item_name,
+    .option     = rtmp_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+URLProtocol ff_rtmps_protocol = {
+    .name            = "rtmps",
+    .url_open        = rtmp_open,
+    .url_read        = rtmp_read,
+    .url_write       = rtmp_write,
+    .url_close       = rtmp_close,
+    .priv_data_size  = sizeof(RTMPContext),
+    .flags           = URL_PROTOCOL_FLAG_NETWORK,
+    .priv_data_class = &rtmps_class,
+};
+
 static const AVClass rtmpt_class = {
     .class_name = "rtmpt",
     .item_name  = av_default_item_name,
@@ -1460,4 +1488,22 @@ URLProtocol ff_rtmpt_protocol = {
     .priv_data_size  = sizeof(RTMPContext),
     .flags           = URL_PROTOCOL_FLAG_NETWORK,
     .priv_data_class = &rtmpt_class,
+};
+
+static const AVClass rtmpts_class = {
+    .class_name = "rtmpts",
+    .item_name  = av_default_item_name,
+    .option     = rtmp_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+URLProtocol ff_rtmpts_protocol = {
+    .name            = "rtmpts",
+    .url_open        = rtmp_open,
+    .url_read        = rtmp_read,
+    .url_write       = rtmp_write,
+    .url_close       = rtmp_close,
+    .priv_data_size  = sizeof(RTMPContext),
+    .flags           = URL_PROTOCOL_FLAG_NETWORK,
+    .priv_data_class = &rtmpts_class,
 };
