@@ -255,6 +255,12 @@ char *avfilter_graph_dump(AVFilterGraph *graph, const char *options);
  * of a filtergraph, only a convenience function to help drain a filtergraph
  * in a balanced way under normal circumstances.
  *
+ * Also note that AVERROR_EOF does not mean that frames did not arrive on
+ * some of the sinks during the process.
+ * When there are multiple sink links, in case the requested link
+ * returns an EOF, this may cause a filter to flush pending frames
+ * which are sent to another sink link, although unrequested.
+ *
  * @return  the return value of ff_request_frame,
  *          or AVERROR_EOF of all links returned AVERROR_EOF.
  */
