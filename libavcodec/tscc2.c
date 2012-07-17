@@ -91,7 +91,7 @@ static av_cold int init_vlcs(TSCC2Context *c)
 #define DCT1D(d0, d1, d2, d3, s0, s1, s2, s3, OP) \
     OP(d0, 5 * ((s0) + (s1) + (s2)) + 2 * (s3));  \
     OP(d1, 5 * ((s0) - (s2) - (s3)) + 2 * (s1));  \
-    OP(d2, 5 * ((s0) - (s2) + (s3)) - 2 * (s3));  \
+    OP(d2, 5 * ((s0) - (s2) + (s3)) - 2 * (s1));  \
     OP(d3, 5 * ((s0) - (s1) + (s2)) - 2 * (s3));  \
 
 #define COL_OP(a, b)  a = b
