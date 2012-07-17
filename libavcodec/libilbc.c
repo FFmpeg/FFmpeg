@@ -53,7 +53,7 @@ static const AVClass ilbc_dec_class = {
     .class_name = "libilbc",
     .item_name  = av_default_item_name,
     .option     = ilbc_dec_options,
-    .version    = LIBAVUTIL_VERSION_INT.
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 static av_cold int ilbc_decode_init(AVCodecContext *avctx)
