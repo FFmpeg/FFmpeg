@@ -129,8 +129,8 @@ typedef struct PerThreadContext {
     /**
      * Array of progress values used by ff_thread_get_buffer().
      */
-    int     progress[MAX_BUFFERS][2];
-    uint8_t progress_used[MAX_BUFFERS];
+    volatile int     progress[MAX_BUFFERS][2];
+    volatile uint8_t progress_used[MAX_BUFFERS];
 
     AVFrame *requested_frame;       ///< AVFrame the codec passed to get_buffer()
 } PerThreadContext;
@@ -500,7 +500,7 @@ static int update_context_from_user(AVCodecContext *dst, AVCodecContext *src)
 static void free_progress(AVFrame *f)
 {
     PerThreadContext *p = f->owner->thread_opaque;
-    int *progress = f->thread_opaque;
+    volatile int *progress = f->thread_opaque;
 
     p->progress_used[(progress - p->progress[0]) / 2] = 0;
 }
@@ -666,7 +666,7 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
 void ff_thread_report_progress(AVFrame *f, int n, int field)
 {
     PerThreadContext *p;
-    int *progress = f->thread_opaque;
+    volatile int *progress = f->thread_opaque;
 
     if (!progress || progress[field] >= n) return;
 
@@ -684,7 +684,7 @@ void ff_thread_report_progress(AVFrame *f, int n, int field)
 void ff_thread_await_progress(AVFrame *f, int n, int field)
 {
     PerThreadContext *p;
-    int *progress = f->thread_opaque;
+    volatile int *progress = f->thread_opaque;
 
     if (!progress || progress[field] >= n) return;
 
@@ -911,7 +911,7 @@ void ff_thread_flush(AVCodecContext *avctx)
     }
 }
 
-static int *allocate_progress(PerThreadContext *p)
+static volatile int *allocate_progress(PerThreadContext *p)
 {
     int i;
 
@@ -942,7 +942,8 @@ int ff_thread_can_start_frame(AVCodecContext *avctx)
 int ff_thread_get_buffer(AVCodecContext *avctx, AVFrame *f)
 {
     PerThreadContext *p = avctx->thread_opaque;
-    int *progress, err;
+    int err;
+    volatile int *progress;
 
     f->owner = avctx;
 
@@ -961,7 +962,7 @@ int ff_thread_get_buffer(AVCodecContext *avctx, AVFrame *f)
     }
 
     pthread_mutex_lock(&p->parent->buffer_mutex);
-    f->thread_opaque = progress = allocate_progress(p);
+    f->thread_opaque = (int*)(progress = allocate_progress(p));
 
     if (!progress) {
         pthread_mutex_unlock(&p->parent->buffer_mutex);
