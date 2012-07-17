@@ -983,6 +983,9 @@ int avfilter_graph_request_oldest(AVFilterGraph *graph)
         int r = ff_request_frame(oldest);
         if (r != AVERROR_EOF)
             return r;
+        av_log(oldest->dst, AV_LOG_DEBUG, "EOF on sink link %s:%s.\n",
+               oldest->dst ? oldest->dst->name : "unknown",
+               oldest->dstpad ? oldest->dstpad->name : "unknown");
         /* EOF: remove the link from the heap */
         if (oldest->age_index < --graph->sink_links_count)
             heap_bubble_down(graph, graph->sink_links[graph->sink_links_count],
