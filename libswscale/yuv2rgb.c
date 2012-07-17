@@ -35,6 +35,8 @@
 #include "swscale_internal.h"
 #include "libavutil/pixdesc.h"
 
+extern const uint8_t dither_2x2_4[2][8];
+extern const uint8_t dither_2x2_8[2][8];
 extern const uint8_t dither_4x4_16[4][8];
 extern const uint8_t dither_8x8_32[8][8];
 extern const uint8_t dither_8x8_73[8][8];
@@ -355,24 +357,65 @@ ENDYUV2RGBLINE(24)
     PUTBGR24(dst_1, py_1, 1);
 ENDYUV2RGBFUNC()
 
-// This is exactly the same code as yuv2rgb_c_32 except for the types of
-// r, g, b, dst_1, dst_2
-YUV2RGBFUNC(yuv2rgb_c_16, uint16_t, 0)
+YUV2RGBFUNC(yuv2rgb_c_16_ordered_dither, uint16_t, 0)
+    const uint8_t *d16 = dither_2x2_8[y & 1];
+    const uint8_t *e16 = dither_2x2_4[y & 1];
+    const uint8_t *f16 = dither_2x2_8[(y & 1)^1];
+
+#define PUTRGB16(dst, src, i, o)                    \
+    Y              = src[2 * i];                    \
+    dst[2 * i]     = r[Y + d16[0 + o]] +            \
+                     g[Y + e16[0 + o]] +            \
+                     b[Y + f16[0 + o]];             \
+    Y              = src[2 * i + 1];                \
+    dst[2 * i + 1] = r[Y + d16[1 + o]] +            \
+                     g[Y + e16[1 + o]] +            \
+                     b[Y + f16[1 + o]];
     LOADCHROMA(0);
-    PUTRGB(dst_1, py_1, 0);
-    PUTRGB(dst_2, py_2, 0);
+    PUTRGB16(dst_1, py_1, 0, 0);
+    PUTRGB16(dst_2, py_2, 0, 0 + 8);
 
     LOADCHROMA(1);
-    PUTRGB(dst_2, py_2, 1);
-    PUTRGB(dst_1, py_1, 1);
+    PUTRGB16(dst_2, py_2, 1, 2 + 8);
+    PUTRGB16(dst_1, py_1, 1, 2);
 
     LOADCHROMA(2);
-    PUTRGB(dst_1, py_1, 2);
-    PUTRGB(dst_2, py_2, 2);
+    PUTRGB16(dst_1, py_1, 2, 4);
+    PUTRGB16(dst_2, py_2, 2, 4 + 8);
 
     LOADCHROMA(3);
-    PUTRGB(dst_2, py_2, 3);
-    PUTRGB(dst_1, py_1, 3);
+    PUTRGB16(dst_2, py_2, 3, 6 + 8);
+    PUTRGB16(dst_1, py_1, 3, 6);
+CLOSEYUV2RGBFUNC(8)
+
+YUV2RGBFUNC(yuv2rgb_c_15_ordered_dither, uint16_t, 0)
+    const uint8_t *d16 = dither_2x2_8[y & 1];
+    const uint8_t *e16 = dither_2x2_8[(y & 1)^1];
+
+#define PUTRGB15(dst, src, i, o)                    \
+    Y              = src[2 * i];                    \
+    dst[2 * i]     = r[Y + d16[0 + o]] +            \
+                     g[Y + d16[1 + o]] +            \
+                     b[Y + e16[0 + o]];             \
+    Y              = src[2 * i + 1];                \
+    dst[2 * i + 1] = r[Y + d16[1 + o]] +            \
+                     g[Y + d16[0 + o]] +            \
+                     b[Y + e16[1 + o]];
+    LOADCHROMA(0);
+    PUTRGB15(dst_1, py_1, 0, 0);
+    PUTRGB15(dst_2, py_2, 0, 0 + 8);
+
+    LOADCHROMA(1);
+    PUTRGB15(dst_2, py_2, 1, 2 + 8);
+    PUTRGB15(dst_1, py_1, 1, 2);
+
+    LOADCHROMA(2);
+    PUTRGB15(dst_1, py_1, 2, 4);
+    PUTRGB15(dst_2, py_2, 2, 4 + 8);
+
+    LOADCHROMA(3);
+    PUTRGB15(dst_2, py_2, 3, 6 + 8);
+    PUTRGB15(dst_1, py_1, 3, 6);
 CLOSEYUV2RGBFUNC(8)
 
 // r, g, b, dst_1, dst_2
@@ -569,9 +612,10 @@ SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c)
         return yuv2rgb_c_24_bgr;
     case PIX_FMT_RGB565:
     case PIX_FMT_BGR565:
+        return yuv2rgb_c_16_ordered_dither;
     case PIX_FMT_RGB555:
     case PIX_FMT_BGR555:
-        return yuv2rgb_c_16;
+        return yuv2rgb_c_15_ordered_dither;
     case PIX_FMT_RGB444:
     case PIX_FMT_BGR444:
         return yuv2rgb_c_12_ordered_dither;

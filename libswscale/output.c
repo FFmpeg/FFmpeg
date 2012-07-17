@@ -36,13 +36,13 @@
 #include "swscale.h"
 #include "swscale_internal.h"
 
-DECLARE_ALIGNED(8, static const uint8_t, dither_2x2_4)[][8]={
+DECLARE_ALIGNED(8, const uint8_t, dither_2x2_4)[][8]={
 {  1,   3,   1,   3,   1,   3,   1,   3, },
 {  2,   0,   2,   0,   2,   0,   2,   0, },
 {  1,   3,   1,   3,   1,   3,   1,   3, },
 };
 
-DECLARE_ALIGNED(8, static const uint8_t, dither_2x2_8)[][8]={
+DECLARE_ALIGNED(8, const uint8_t, dither_2x2_8)[][8]={
 {  6,   2,   6,   2,   6,   2,   6,   2, },
 {  0,   4,   0,   4,   0,   4,   0,   4, },
 {  6,   2,   6,   2,   6,   2,   6,   2, },
