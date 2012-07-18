@@ -1723,7 +1723,7 @@ static void do_video_out(AVFormatContext *s,
     int ret, format_video_sync;
     AVPacket pkt;
     AVCodecContext *enc = ost->st->codec;
-    int nb_frames;
+    int nb_frames, i;
     double sync_ipts, delta;
     double duration = 0;
     int frame_size = 0;
@@ -1782,8 +1782,8 @@ static void do_video_out(AVFormatContext *s,
         av_log(NULL, AV_LOG_VERBOSE, "*** %d dup!\n", nb_frames - 1);
     }
 
-
-duplicate_frame:
+  /* duplicates frame if needed */
+  for (i = 0; i < nb_frames; i++) {
     av_init_packet(&pkt);
     pkt.data = NULL;
     pkt.size = 0;
@@ -1874,9 +1874,7 @@ duplicate_frame:
      * flush, we need to limit them here, before they go into encoder.
      */
     ost->frame_number++;
-
-    if(--nb_frames)
-        goto duplicate_frame;
+  }
 
     if (vstats_filename && frame_size)
         do_video_stats(output_files[ost->file_index]->ctx, ost, frame_size);
