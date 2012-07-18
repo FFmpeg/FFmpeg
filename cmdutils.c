@@ -503,8 +503,8 @@ void show_banner(void)
     av_log(NULL, AV_LOG_INFO,
            "%s version " LIBAV_VERSION ", Copyright (c) %d-%d the Libav developers\n",
            program_name, program_birth_year, this_year);
-    av_log(NULL, AV_LOG_INFO, "  built on %s %s with %s %s\n",
-           __DATE__, __TIME__, CC_TYPE, CC_VERSION);
+    av_log(NULL, AV_LOG_INFO, "  built on %s %s with %s\n",
+           __DATE__, __TIME__, CC_IDENT);
     av_log(NULL, AV_LOG_VERBOSE, "  configuration: " LIBAV_CONFIGURATION "\n");
     print_all_libs_info(INDENT|SHOW_CONFIG,  AV_LOG_VERBOSE);
     print_all_libs_info(INDENT|SHOW_VERSION, AV_LOG_VERBOSE);

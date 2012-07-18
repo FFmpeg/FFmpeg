@@ -1651,7 +1651,6 @@ shlibdir_default="$libdir_default"
 # toolchain
 ar_default="ar"
 cc_default="gcc"
-cc_version=\"unknown\"
 host_cc_default="gcc"
 ln_s="ln -sf"
 nm_default="nm"
@@ -1953,7 +1952,6 @@ filter_cppflags=echo
 
 if   $cc -v 2>&1 | grep -q '^gcc.*LLVM'; then
     cc_type=llvm_gcc
-    cc_version=__VERSION__
     gcc_extra_ver=$(expr "$($cc --version | head -n1)" : '.*\((.*)\)')
     cc_ident="llvm-gcc $($cc -dumpversion) $gcc_extra_ver"
     CC_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
@@ -1962,7 +1960,6 @@ if   $cc -v 2>&1 | grep -q '^gcc.*LLVM'; then
     size_cflags='-Os'
 elif $cc -v 2>&1 | grep -qi ^gcc; then
     cc_type=gcc
-    cc_version=__VERSION__
     gcc_version=$($cc --version | head -n1)
     gcc_basever=$($cc -dumpversion)
     gcc_pkg_ver=$(expr "$gcc_version" : '[^ ]* \(([^)]*)\)')
@@ -1976,7 +1973,6 @@ elif $cc -v 2>&1 | grep -qi ^gcc; then
     size_cflags='-Os'
 elif $cc --version 2>/dev/null | grep -q Intel; then
     cc_type=icc
-    cc_version="AV_STRINGIFY(__INTEL_COMPILER)"
     cc_ident=$($cc --version | head -n1)
     icc_version=$($cc -dumpversion)
     CC_DEPFLAGS='-MMD'
@@ -1986,13 +1982,11 @@ elif $cc --version 2>/dev/null | grep -q Intel; then
     noopt_cflags='-O1'
 elif $cc -v 2>&1 | grep -q xlc; then
     cc_type=xlc
-    cc_version="AV_STRINGIFY(__IBMC__)"
     cc_ident=$($cc -qversion 2>/dev/null | head -n1)
     speed_cflags='-O5'
     size_cflags='-O5 -qcompact'
 elif $cc -V 2>/dev/null | grep -q Compaq; then
     cc_type=ccc
-    cc_version="AV_STRINGIFY(__DECC_VER)"
     cc_ident=$($cc -V | head -n1 | cut -d' ' -f1-3)
     DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -M'
     debuglevel=3
@@ -2002,7 +1996,6 @@ elif $cc -V 2>/dev/null | grep -q Compaq; then
 elif $cc --vsn 2>/dev/null | grep -q "ARM C/C++ Compiler"; then
     test -d "$sysroot" || die "No valid sysroot specified."
     cc_type=armcc
-    cc_version="AV_STRINGIFY(__ARMCC_VERSION)"
     cc_ident=$($cc --vsn | head -n1)
     armcc_conf="$PWD/armcc.conf"
     $cc --arm_linux_configure                 \
@@ -2020,7 +2013,6 @@ elif $cc --vsn 2>/dev/null | grep -q "ARM C/C++ Compiler"; then
     filter_asflags="filter_out -W${armcc_opt}*"
 elif $cc -version 2>/dev/null | grep -q TMS470; then
     cc_type=tms470
-    cc_version="AV_STRINGIFY(__TI_COMPILER_VERSION__)"
     cc_ident=$($cc -version | head -n1 | tr -s ' ')
     cc="$cc --gcc --abi=eabi -eo=.o -mc -me"
     CC_O='-fr=$(@D)'
@@ -2060,8 +2052,6 @@ elif $cc -version 2>/dev/null | grep -q TMS470; then
     }
 elif $cc -v 2>&1 | grep -q clang; then
     cc_type=clang
-    $cc -dM -E $TMPC | grep -q __clang_version__ &&
-        cc_version=__clang_version__ || cc_version=__VERSION__
     cc_ident=$($cc --version | head -n1)
     CC_DEPFLAGS='-MMD'
     AS_DEPFLAGS='-MMD'
@@ -2069,7 +2059,6 @@ elif $cc -v 2>&1 | grep -q clang; then
     size_cflags='-Os'
 elif $cc -V 2>&1 | grep -q Sun; then
     cc_type=suncc
-    cc_version="AV_STRINGIFY(__SUNPRO_C)"
     cc_ident=$($cc -V 2>&1 | head -n1 | cut -d' ' -f 2-)
     DEPEND_CMD='$(DEPCC) $(DEPFLAGS) $< | sed -e "1s,^.*: ,$@: ," -e "\$$!s,\$$, \\\," -e "1!s,^.*: , ," > $(@:.o=.d)'
     DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -xM1'
@@ -2112,7 +2101,6 @@ elif $cc -V 2>&1 | grep -q Sun; then
     }
 elif $cc -v 2>&1 | grep -q 'PathScale\|Path64'; then
     cc_type=pathscale
-    cc_version=__PATHSCALE__
     cc_ident=$($cc -v 2>&1 | head -n1 | tr -d :)
     CC_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
     AS_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
@@ -2121,7 +2109,6 @@ elif $cc -v 2>&1 | grep -q 'PathScale\|Path64'; then
     filter_cflags='filter_out -Wdisabled-optimization'
 elif $cc -v 2>&1 | grep -q Open64; then
     cc_type=open64
-    cc_version=__OPEN64__
     cc_ident=$($cc -v 2>&1 | head -n1 | tr -d :)
     CC_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
     AS_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
@@ -2130,7 +2117,6 @@ elif $cc -v 2>&1 | grep -q Open64; then
     filter_cflags='filter_out -Wdisabled-optimization|-Wtype-limits|-fno-signed-zeros'
 elif $cc -V 2>&1 | grep -q Portland; then
     cc_type=pgi
-    cc_version='AV_STRINGIFY(__PGIC__.__PGIC_MINOR__.__PGIC_PATCHLEVEL__)'
     cc_ident="PGI $($cc -V 2>&1 | awk '/^pgcc/ { print $2; exit }')"
     opt_common='-alias=ansi -Mlre -Mpre'
     speed_cflags="-O3 -Mautoinline -Munroll=c:4 $opt_common"
@@ -3419,8 +3405,7 @@ cat > $TMPH <<EOF
 #define LIBAV_CONFIGURATION "$(c_escape $LIBAV_CONFIGURATION)"
 #define LIBAV_LICENSE "$(c_escape $license)"
 #define AVCONV_DATADIR "$(eval c_escape $datadir)"
-#define CC_TYPE "$cc_type"
-#define CC_VERSION $cc_version
+#define CC_IDENT "$(c_escape ${cc_ident:-Unknown compiler})"
 #define restrict $_restrict
 #define EXTERN_PREFIX "${extern_prefix}"
 #define EXTERN_ASM ${extern_prefix}
