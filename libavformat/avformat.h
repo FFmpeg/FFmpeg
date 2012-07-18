@@ -1972,6 +1972,22 @@ const struct AVCodecTag *avformat_get_riff_audio_tags(void);
 AVRational av_guess_sample_aspect_ratio(AVFormatContext *format, AVStream *stream, AVFrame *frame);
 
 /**
+ * Check if the stream st contained in s is matched by the stream specifier
+ * spec.
+ *
+ * See the "stream specifiers" chapter in the documentation for the syntax
+ * of spec.
+ *
+ * @return  >0 if st is matched by spec;
+ *          0  if st is not matched by spec;
+ *          AVERROR code if spec is invalid
+ *
+ * @note  A stream specifier can match several streams in the format.
+ */
+int avformat_match_stream_specifier(AVFormatContext *s, AVStream *st,
+                                    const char *spec);
+
+/**
  * @}
  */
 
