@@ -26,7 +26,6 @@
 #include <inttypes.h>
 
 #include "libavutil/bswap.h"
-#include "libavutil/intreadwrite.h"
 #include "config.h"
 #include "rgb2rgb.h"
 #include "swscale.h"
@@ -335,20 +334,20 @@ DEFINE_SHUFFLE_BYTES(1, 2, 3, 0)
 DEFINE_SHUFFLE_BYTES(3, 0, 1, 2)
 DEFINE_SHUFFLE_BYTES(3, 2, 1, 0)
 
-#define DEFINE_RGB48TOBGR48(ie, oe)                                     \
-void rgb48tobgr48_ ## ie ## oe(const uint8_t *src,                      \
-                               uint8_t *dst, int src_size)              \
+#define DEFINE_RGB48TOBGR48(need_bswap, swap)                           \
+void rgb48tobgr48_ ## need_bswap(const uint8_t *src,                    \
+                                 uint8_t *dst, int src_size)            \
 {                                                                       \
     uint16_t *d = (uint16_t *)dst;                                      \
     uint16_t *s = (uint16_t *)src;                                      \
     int i, num_pixels = src_size >> 1;                                  \
                                                                         \
     for (i = 0; i < num_pixels; i += 3) {                               \
-        AV_W ## oe ## 16(&d[i    ], AV_R ## ie ## 16(&s[i + 2]));       \
-        AV_W ## oe ## 16(&d[i + 1], AV_R ## ie ## 16(&s[i + 1]));       \
-        AV_W ## oe ## 16(&d[i + 2], AV_R ## ie ## 16(&s[i    ]));       \
+        d[i    ] = swap ? av_bswap16(s[i + 2]) : s[i + 2];              \
+        d[i + 1] = swap ? av_bswap16(s[i + 1]) : s[i + 1];              \
+        d[i + 2] = swap ? av_bswap16(s[i    ]) : s[i    ];              \
     }                                                                   \
 }
 
-DEFINE_RGB48TOBGR48(L, L)
-DEFINE_RGB48TOBGR48(L, B)
+DEFINE_RGB48TOBGR48(nobswap, 0)
+DEFINE_RGB48TOBGR48(bswap, 1)
