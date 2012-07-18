@@ -1974,7 +1974,6 @@ elif $cc -v 2>&1 | grep -qi ^gcc; then
 elif $cc --version 2>/dev/null | grep -q Intel; then
     cc_type=icc
     cc_ident=$($cc --version | head -n1)
-    icc_version=$($cc -dumpversion)
     CC_DEPFLAGS='-MMD'
     AS_DEPFLAGS='-MMD'
     speed_cflags='-O3'
@@ -3146,6 +3145,7 @@ if enabled icc; then
     # icc 11.0 and 11.1 work with ebp_available, but don't pass the test
     enable ebp_available
     if enabled x86_32; then
+        icc_version=$($cc -dumpversion)
         test ${icc_version%%.*} -ge 11 &&
             check_cflags -falign-stack=maintain-16-byte ||
             disable aligned_stack
