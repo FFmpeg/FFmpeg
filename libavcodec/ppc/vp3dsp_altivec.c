@@ -177,9 +177,11 @@ static void vp3_idct_add_altivec(uint8_t *dst, int stride, DCTELEM block[64])
 
 av_cold void ff_vp3dsp_init_ppc(VP3DSPContext *c, int flags)
 {
-    if (HAVE_ALTIVEC && av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC) {
+#if HAVE_ALTIVEC
+    if (av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC) {
         c->idct_put  = vp3_idct_put_altivec;
         c->idct_add  = vp3_idct_add_altivec;
         c->idct_perm = FF_TRANSPOSE_IDCT_PERM;
     }
+#endif
 }
