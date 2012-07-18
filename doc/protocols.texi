@@ -554,8 +554,9 @@ The required syntax for a UDP url is:
 udp://@var{hostname}:@var{port}[?@var{options}]
 @end example
 
-@var{options} contains a list of &-seperated options of the form @var{key}=@var{val}.
-Follow the list of supported options.
+@var{options} contains a list of &-separated options of the form @var{key}=@var{val}.
+
+The list of supported options follows.
 
 @table @option
 
@@ -564,7 +565,7 @@ Set the UDP socket buffer size in bytes. This is used both for the
 receiving and the sending buffer size.
 
 @item localport=@var{port}
-override the local UDP port to bind with
+Override the local UDP port to bind with.
 
 @item localaddr=@var{addr}
 Choose the local IP address. This is useful e.g. if sending multicast
@@ -572,13 +573,13 @@ and the host has multiple interfaces, where the user can choose
 which interface to send on by specifying the IP address of that interface.
 
 @item pkt_size=@var{size}
-set the size in bytes of UDP packets
+Set the size in bytes of UDP packets.
 
 @item reuse=@var{1|0}
-explicitly allow or disallow reusing UDP sockets
+Explicitly allow or disallow reusing UDP sockets.
 
 @item ttl=@var{ttl}
-set the time to live value (for multicast only)
+Set the time to live value (for multicast only).
 
 @item connect=@var{1|0}
 Initialize the UDP socket with @code{connect()}. In this case, the
@@ -608,7 +609,7 @@ Survive in case of UDP receiving circular buffer overrun. Default
 value is 0.
 @end table
 
-Some usage examples of the udp protocol with @command{ffmpeg} follow.
+Some usage examples of the UDP protocol with @command{ffmpeg} follow.
 
 To stream over UDP to a remote endpoint:
 @example
