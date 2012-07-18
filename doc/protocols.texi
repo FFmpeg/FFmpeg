@@ -556,6 +556,11 @@ udp://@var{hostname}:@var{port}[?@var{options}]
 
 @var{options} contains a list of &-separated options of the form @var{key}=@var{val}.
 
+In case threading is enabled on the system, a circular buffer is used
+to store the incoming data, which allows to reduce loss of data due to
+UDP socket buffer overruns. The @var{fifo_size} and
+@var{overrun_nonfatal} options are related to this buffer.
+
 The list of supported options follows.
 
 @table @option
