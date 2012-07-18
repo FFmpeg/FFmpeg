@@ -177,10 +177,10 @@ External library support:
   --enable-libcdio         enable audio CD grabbing with libcdio
   --enable-libdc1394       enable IIDC-1394 grabbing using libdc1394
                            and libraw1394 [no]
-  --enable-libfaac         enable FAAC support via libfaac [no]
-  --enable-libfdk-aac      enable AAC support via libfdk-aac [no]
+  --enable-libfaac         enable AAC encoding via libfaac [no]
+  --enable-libfdk-aac      enable AAC encoding via libfdk-aac [no]
   --enable-libfreetype     enable libfreetype [no]
-  --enable-libgsm          enable GSM support via libgsm [no]
+  --enable-libgsm          enable GSM de/encoding via libgsm [no]
   --enable-libiec61883     enable iec61883 via libiec61883 [no]
   --enable-libilbc         enable iLBC de/encoding via libilbc [no]
   --enable-libmodplug      enable ModPlug via libmodplug [no]
@@ -193,8 +193,8 @@ External library support:
   --enable-libopenjpeg     enable JPEG 2000 de/encoding via OpenJPEG [no]
   --enable-libpulse        enable Pulseaudio input via libpulse [no]
   --enable-librtmp         enable RTMP[E] support via librtmp [no]
-  --enable-libschroedinger enable Dirac support via libschroedinger [no]
-  --enable-libspeex        enable Speex support via libspeex [no]
+  --enable-libschroedinger enable Dirac de/encoding via libschroedinger [no]
+  --enable-libspeex        enable Speex de/encoding via libspeex [no]
   --enable-libstagefright-h264  enable H.264 decoding via libstagefright [no]
   --enable-libtheora       enable Theora encoding via libtheora [no]
   --enable-libutvideo      enable Ut Video encoding and decoding via libutvideo [no]
@@ -203,7 +203,7 @@ External library support:
   --enable-libvo-amrwbenc  enable AMR-WB encoding via libvo-amrwbenc [no]
   --enable-libvorbis       enable Vorbis en/decoding via libvorbis,
                            native implementation exists [no]
-  --enable-libvpx          enable VP8 support via libvpx [no]
+  --enable-libvpx          enable VP8 de/encoding via libvpx [no]
   --enable-libx264         enable H.264 encoding via x264 [no]
   --enable-libxavs         enable AVS encoding via xavs [no]
   --enable-libxvid         enable Xvid encoding via xvidcore,
@@ -1327,6 +1327,7 @@ CONFIG_EXTRA="
     huffman
     lgplv3
     lpc
+    vp3dsp
 "
 
 CMDLINE_SELECT="
@@ -1580,7 +1581,9 @@ vc1_vdpau_decoder_select="vdpau vc1_decoder"
 vc1image_decoder_select="vc1_decoder"
 vorbis_decoder_select="mdct"
 vorbis_encoder_select="mdct"
-vp6_decoder_select="huffman"
+vp3_decoder_select="vp3dsp"
+vp5_decoder_select="vp3dsp"
+vp6_decoder_select="huffman vp3dsp"
 vp6a_decoder_select="vp6_decoder"
 vp6f_decoder_select="vp6_decoder"
 vp8_decoder_select="h264pred h264qpel"
@@ -2933,8 +2936,8 @@ die_license_disabled gpl x11grab
 
 die_license_disabled nonfree libaacplus
 die_license_disabled nonfree libfaac
-enabled gpl && die_license_disabled_gpl nonfree openssl
 enabled gpl && die_license_disabled_gpl nonfree libfdk_aac
+enabled gpl && die_license_disabled_gpl nonfree openssl
 
 die_license_disabled version3 libopencore_amrnb
 die_license_disabled version3 libopencore_amrwb
@@ -3163,9 +3166,9 @@ if enabled network; then
     if check_header arpa/inet.h ; then
         check_func closesocket
     elif check_header winsock2.h ; then
-        check_func_headers winsock2.h closesocket -lws2 && \
-            network_extralibs="-lws2" || \
-        { check_func_headers winsock2.h closesocket -lws2_32 && \
+        check_func_headers winsock2.h closesocket -lws2 &&
+            network_extralibs="-lws2" ||
+        { check_func_headers winsock2.h closesocket -lws2_32 &&
             network_extralibs="-lws2_32"; }
         check_func_headers ws2tcpip.h getaddrinfo $network_extralibs
         check_type ws2tcpip.h socklen_t
@@ -3485,7 +3488,7 @@ check_ldflags -Wl,--warn-common
 check_ldflags -Wl,-rpath-link=libpostproc:libswresample:libswscale:libavfilter:libavdevice:libavformat:libavcodec:libavutil:libavresample
 test_ldflags -Wl,-Bsymbolic && append SHFLAGS -Wl,-Bsymbolic
 
-enabled xmm_clobber_test &&                             \
+enabled xmm_clobber_test &&
     check_ldflags -Wl,--wrap,avcodec_open2              \
                   -Wl,--wrap,avcodec_decode_audio4      \
                   -Wl,--wrap,avcodec_decode_video2      \
@@ -3493,7 +3496,7 @@ enabled xmm_clobber_test &&                             \
                   -Wl,--wrap,avcodec_encode_audio2      \
                   -Wl,--wrap,avcodec_encode_video       \
                   -Wl,--wrap,avcodec_encode_subtitle    \
-                  -Wl,--wrap,sws_scale ||               \
+                  -Wl,--wrap,sws_scale ||
     disable xmm_clobber_test
 
 echo "X{};" > $TMPV
@@ -3544,8 +3547,8 @@ if enabled icc; then
     # icc 11.0 and 11.1 work with ebp_available, but don't pass the test
     enable ebp_available
     if enabled x86_32; then
-        test ${icc_version%%.*} -ge 11 && \
-            check_cflags -falign-stack=maintain-16-byte || \
+        test ${icc_version%%.*} -ge 11 &&
+            check_cflags -falign-stack=maintain-16-byte ||
             disable aligned_stack
     fi
 elif enabled ccc; then

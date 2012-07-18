@@ -2574,20 +2574,6 @@ static void vector_clipf_sse(float *dst, const float *src,
     );
 }
 
-void ff_vp3_idct_mmx(int16_t *input_data);
-void ff_vp3_idct_put_mmx(uint8_t *dest, int line_size, DCTELEM *block);
-void ff_vp3_idct_add_mmx(uint8_t *dest, int line_size, DCTELEM *block);
-
-void ff_vp3_idct_dc_add_mmx2(uint8_t *dest, int line_size,
-                             const DCTELEM *block);
-
-void ff_vp3_v_loop_filter_mmx2(uint8_t *src, int stride, int *bounding_values);
-void ff_vp3_h_loop_filter_mmx2(uint8_t *src, int stride, int *bounding_values);
-
-void ff_vp3_idct_sse2(int16_t *input_data);
-void ff_vp3_idct_put_sse2(uint8_t *dest, int line_size, DCTELEM *block);
-void ff_vp3_idct_add_sse2(uint8_t *dest, int line_size, DCTELEM *block);
-
 int32_t ff_scalarproduct_int16_mmx2(const int16_t *v1, const int16_t *v2,
                                     int order);
 int32_t ff_scalarproduct_int16_sse2(const int16_t *v1, const int16_t *v2,
@@ -2782,14 +2768,7 @@ static void dsputil_init_mmx2(DSPContext *c, AVCodecContext *avctx,
             c->avg_pixels_tab[0][3] = avg_pixels16_xy2_mmx2;
             c->avg_pixels_tab[1][3] = avg_pixels8_xy2_mmx2;
         }
-
-        if (CONFIG_VP3_DECODER && HAVE_YASM) {
-            c->vp3_v_loop_filter = ff_vp3_v_loop_filter_mmx2;
-            c->vp3_h_loop_filter = ff_vp3_h_loop_filter_mmx2;
-        }
     }
-    if (CONFIG_VP3_DECODER && HAVE_YASM)
-        c->vp3_idct_dc_add = ff_vp3_idct_dc_add_mmx2;
 
     if (CONFIG_VP3_DECODER && (avctx->codec_id == CODEC_ID_VP3 ||
                                avctx->codec_id == CODEC_ID_THEORA)) {
@@ -3165,20 +3144,6 @@ void ff_dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx)
                 }
                 c->idct_permutation_type = FF_LIBMPEG2_IDCT_PERM;
 #endif
-            } else if ((CONFIG_VP3_DECODER || CONFIG_VP5_DECODER ||
-                        CONFIG_VP6_DECODER) &&
-                       idct_algo == FF_IDCT_VP3 && HAVE_YASM) {
-                if (mm_flags & AV_CPU_FLAG_SSE2) {
-                    c->idct_put              = ff_vp3_idct_put_sse2;
-                    c->idct_add              = ff_vp3_idct_add_sse2;
-                    c->idct                  = ff_vp3_idct_sse2;
-                    c->idct_permutation_type = FF_TRANSPOSE_IDCT_PERM;
-                } else {
-                    c->idct_put              = ff_vp3_idct_put_mmx;
-                    c->idct_add              = ff_vp3_idct_add_mmx;
-                    c->idct                  = ff_vp3_idct_mmx;
-                    c->idct_permutation_type = FF_PARTTRANS_IDCT_PERM;
-                }
             } else if (idct_algo == FF_IDCT_CAVS) {
                     c->idct_permutation_type = FF_TRANSPOSE_IDCT_PERM;
             } else if (idct_algo == FF_IDCT_XVIDMMX) {

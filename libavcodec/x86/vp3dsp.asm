@@ -524,10 +524,6 @@ cglobal vp3_h_loop_filter_mmx2, 3, 4
 %endmacro
 
 %macro vp3_idct_funcs 3
-cglobal vp3_idct_%1, 1, 1, %2
-    VP3_IDCT_%1   r0
-    RET
-
 cglobal vp3_idct_put_%1, 3, %3, %2
     VP3_IDCT_%1   r2
 %if ARCH_X86_64

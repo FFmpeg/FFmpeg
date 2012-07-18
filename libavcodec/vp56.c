@@ -411,7 +411,7 @@ static void vp56_decode_mb(VP56Context *s, int row, int col, int is_alpha)
         case VP56_MB_INTRA:
             for (b=0; b<b_max; b++) {
                 plane = ff_vp56_b2p[b+ab];
-                s->dsp.idct_put(frame_current->data[plane] + s->block_offset[b],
+                s->vp3dsp.idct_put(frame_current->data[plane] + s->block_offset[b],
                                 s->stride[plane], s->block_coeff[b]);
             }
             break;
@@ -424,7 +424,7 @@ static void vp56_decode_mb(VP56Context *s, int row, int col, int is_alpha)
                 s->dsp.put_pixels_tab[1][0](frame_current->data[plane] + off,
                                             frame_ref->data[plane] + off,
                                             s->stride[plane], 8);
-                s->dsp.idct_add(frame_current->data[plane] + off,
+                s->vp3dsp.idct_add(frame_current->data[plane] + off,
                                 s->stride[plane], s->block_coeff[b]);
             }
             break;
@@ -442,7 +442,7 @@ static void vp56_decode_mb(VP56Context *s, int row, int col, int is_alpha)
                 plane = ff_vp56_b2p[b+ab];
                 vp56_mc(s, b, plane, frame_ref->data[plane], s->stride[plane],
                         16*col+x_off, 16*row+y_off);
-                s->dsp.idct_add(frame_current->data[plane] + s->block_offset[b],
+                s->vp3dsp.idct_add(frame_current->data[plane] + s->block_offset[b],
                                 s->stride[plane], s->block_coeff[b]);
             }
             break;
@@ -666,10 +666,10 @@ av_cold void ff_vp56_init(AVCodecContext *avctx, int flip, int has_alpha)
     s->avctx = avctx;
     avctx->pix_fmt = has_alpha ? PIX_FMT_YUVA420P : PIX_FMT_YUV420P;
 
-    if (avctx->idct_algo == FF_IDCT_AUTO)
-        avctx->idct_algo = FF_IDCT_VP3;
     ff_dsputil_init(&s->dsp, avctx);
+    ff_vp3dsp_init(&s->vp3dsp, avctx->flags);
     ff_vp56dsp_init(&s->vp56dsp, avctx->codec->id);
+    ff_init_scantable_permutation(s->dsp.idct_permutation, s->vp3dsp.idct_perm);
     ff_init_scantable(s->dsp.idct_permutation, &s->scantable,ff_zigzag_direct);
 
     for (i=0; i<4; i++) {

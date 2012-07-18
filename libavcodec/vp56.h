@@ -30,6 +30,7 @@
 #include "dsputil.h"
 #include "get_bits.h"
 #include "bytestream.h"
+#include "vp3dsp.h"
 #include "vp56dsp.h"
 
 typedef struct vp56_context VP56Context;
@@ -91,6 +92,7 @@ typedef struct {
 struct vp56_context {
     AVCodecContext *avctx;
     DSPContext dsp;
+    VP3DSPContext vp3dsp;
     VP56DSPContext vp56dsp;
     ScanTable scantable;
     AVFrame frames[4];

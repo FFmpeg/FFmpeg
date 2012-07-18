@@ -108,15 +108,6 @@ PUTAVG_PIXELS(14)
 #define ff_put_pixels16x16_c ff_put_pixels16x16_8_c
 #define ff_avg_pixels16x16_c ff_avg_pixels16x16_8_c
 
-/* VP3 DSP functions */
-void ff_vp3_idct_c(DCTELEM *block/* align 16*/);
-void ff_vp3_idct_put_c(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
-void ff_vp3_idct_add_c(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
-void ff_vp3_idct_dc_add_c(uint8_t *dest/*align 8*/, int line_size, const DCTELEM *block/*align 16*/);
-
-void ff_vp3_v_loop_filter_c(uint8_t *src, int stride, int *bounding_values);
-void ff_vp3_h_loop_filter_c(uint8_t *src, int stride, int *bounding_values);
-
 /* EA functions */
 void ff_ea_idct_put_c(uint8_t *dest, int linesize, DCTELEM *block);
 
@@ -400,10 +391,6 @@ typedef struct DSPContext {
 
     void (*x8_v_loop_filter)(uint8_t *src, int stride, int qscale);
     void (*x8_h_loop_filter)(uint8_t *src, int stride, int qscale);
-
-    void (*vp3_idct_dc_add)(uint8_t *dest/*align 8*/, int line_size, const DCTELEM *block/*align 16*/);
-    void (*vp3_v_loop_filter)(uint8_t *src, int stride, int *bounding_values);
-    void (*vp3_h_loop_filter)(uint8_t *src, int stride, int *bounding_values);
 
     /* assume len is a multiple of 4, and arrays are 16-byte aligned */
     void (*vorbis_inverse_coupling)(float *mag, float *ang, int blocksize);
