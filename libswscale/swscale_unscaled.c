@@ -582,6 +582,14 @@ static rgbConvFn findRgbConvFn(SwsContext *c)
               || CONV_IS(BGRA64LE, RGB48BE)
               || CONV_IS(RGBA64BE, BGR48LE)
               || CONV_IS(BGRA64BE, RGB48LE)) conv = rgb64tobgr48_bswap;
+        else if (CONV_IS(RGBA64LE, RGB48LE)
+              || CONV_IS(BGRA64LE, BGR48LE)
+              || CONV_IS(RGBA64BE, RGB48BE)
+              || CONV_IS(BGRA64BE, BGR48BE)) conv = rgb64to48_nobswap;
+        else if (CONV_IS(RGBA64LE, RGB48BE)
+              || CONV_IS(BGRA64LE, BGR48BE)
+              || CONV_IS(RGBA64BE, RGB48LE)
+              || CONV_IS(BGRA64BE, BGR48LE)) conv = rgb64to48_bswap;
     } else
     /* BGR -> BGR */
     if ((isBGRinInt(srcFormat) && isBGRinInt(dstFormat)) ||
