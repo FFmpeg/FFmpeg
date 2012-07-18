@@ -261,8 +261,8 @@ char *avfilter_graph_dump(AVFilterGraph *graph, const char *options);
  * returns an EOF, this may cause a filter to flush pending frames
  * which are sent to another sink link, although unrequested.
  *
- * @return  the return value of ff_request_frame,
- *          or AVERROR_EOF of all links returned AVERROR_EOF.
+ * @return  the return value of ff_request_frame(),
+ *          or AVERROR_EOF if all links returned AVERROR_EOF
  */
 int avfilter_graph_request_oldest(AVFilterGraph *graph);
 
