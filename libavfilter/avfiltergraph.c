@@ -430,6 +430,9 @@ static int pick_format(AVFilterLink *link, AVFilterLink *ref)
                 enum PixelFormat p = link->in_formats->formats[i];
                 best= avcodec_find_best_pix_fmt2(best, p, ref->format, has_alpha, NULL);
             }
+            av_log(link->src,AV_LOG_DEBUG, "picking %s out of %d ref:%s alpha:%d\n",
+                   av_get_pix_fmt_name(best), link->in_formats->format_count,
+                   av_get_pix_fmt_name(ref->format), has_alpha);
             link->in_formats->formats[0] = best;
         }
     }
