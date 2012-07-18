@@ -351,3 +351,21 @@ void rgb48tobgr48_ ## need_bswap(const uint8_t *src,                    \
 
 DEFINE_RGB48TOBGR48(nobswap, 0)
 DEFINE_RGB48TOBGR48(bswap, 1)
+
+#define DEFINE_RGB64TOBGR48(need_bswap, swap)                           \
+void rgb64tobgr48_ ## need_bswap(const uint8_t *src,                    \
+                                 uint8_t *dst, int src_size)            \
+{                                                                       \
+    uint16_t *d = (uint16_t *)dst;                                      \
+    uint16_t *s = (uint16_t *)src;                                      \
+    int i, num_pixels = src_size >> 3;                                  \
+                                                                        \
+    for (i = 0; i < num_pixels; i++) {                                  \
+        d[3 * i    ] = swap ? av_bswap16(s[4 * i + 2]) : s[4 * i + 2];  \
+        d[3 * i + 1] = swap ? av_bswap16(s[4 * i + 1]) : s[4 * i + 1];  \
+        d[3 * i + 2] = swap ? av_bswap16(s[4 * i    ]) : s[4 * i    ];  \
+    }                                                                   \
+}
+
+DEFINE_RGB64TOBGR48(nobswap, 0)
+DEFINE_RGB64TOBGR48(bswap, 1)

@@ -521,6 +521,13 @@ static int planarRgbToRgbWrapper(SwsContext *c, const uint8_t *src[],
         || (x) == PIX_FMT_ABGR   \
         )
 
+#define isRGBA64(x) (                \
+           (x) == PIX_FMT_RGBA64LE   \
+        || (x) == PIX_FMT_RGBA64BE   \
+        || (x) == PIX_FMT_BGRA64LE   \
+        || (x) == PIX_FMT_BGRA64BE   \
+        )
+
 #define isRGB48(x) (                \
            (x) == PIX_FMT_RGB48LE   \
         || (x) == PIX_FMT_RGB48BE   \
@@ -566,6 +573,15 @@ static rgbConvFn findRgbConvFn(SwsContext *c)
               || CONV_IS(BGR48LE, RGB48BE)
               || CONV_IS(RGB48BE, BGR48LE)
               || CONV_IS(BGR48BE, RGB48LE)) conv = rgb48tobgr48_bswap;
+    } else if (isRGBA64(srcFormat) && isRGB48(dstFormat)) {
+        if      (CONV_IS(RGBA64LE, BGR48LE)
+              || CONV_IS(BGRA64LE, RGB48LE)
+              || CONV_IS(RGBA64BE, BGR48BE)
+              || CONV_IS(BGRA64BE, RGB48BE)) conv = rgb64tobgr48_nobswap;
+        else if (CONV_IS(RGBA64LE, BGR48BE)
+              || CONV_IS(BGRA64LE, RGB48BE)
+              || CONV_IS(RGBA64BE, BGR48LE)
+              || CONV_IS(BGRA64BE, RGB48LE)) conv = rgb64tobgr48_bswap;
     } else
     /* BGR -> BGR */
     if ((isBGRinInt(srcFormat) && isBGRinInt(dstFormat)) ||
