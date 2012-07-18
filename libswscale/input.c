@@ -30,6 +30,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/avassert.h"
 #include "config.h"
 #include "rgb2rgb.h"
 #include "swscale.h"
@@ -71,7 +72,7 @@ rgb64ToUV_c_template(uint16_t *dstU, uint16_t *dstV,
                     int width, enum PixelFormat origin)
 {
     int i;
-    assert(src1==src2);
+    av_assert1(src1==src2);
     for (i = 0; i < width; i++) {
         int r_b = input_pixel(&src1[i*4+0]);
         int   g = input_pixel(&src1[i*4+1]);
@@ -88,7 +89,7 @@ rgb64ToUV_half_c_template(uint16_t *dstU, uint16_t *dstV,
                           int width, enum PixelFormat origin)
 {
     int i;
-    assert(src1==src2);
+    av_assert1(src1==src2);
     for (i = 0; i < width; i++) {
         int r_b = (input_pixel(&src1[8 * i + 0]) + input_pixel(&src1[8 * i + 4]) + 1) >> 1;
         int   g = (input_pixel(&src1[8 * i + 1]) + input_pixel(&src1[8 * i + 5]) + 1) >> 1;
@@ -153,7 +154,7 @@ static av_always_inline void rgb48ToUV_c_template(uint16_t *dstU,
                                                   enum PixelFormat origin)
 {
     int i;
-    assert(src1 == src2);
+    av_assert1(src1 == src2);
     for (i = 0; i < width; i++) {
         int r_b = input_pixel(&src1[i * 3 + 0]);
         int g   = input_pixel(&src1[i * 3 + 1]);
@@ -172,7 +173,7 @@ static av_always_inline void rgb48ToUV_half_c_template(uint16_t *dstU,
                                                        enum PixelFormat origin)
 {
     int i;
-    assert(src1 == src2);
+    av_assert1(src1 == src2);
     for (i = 0; i < width; i++) {
         int r_b = (input_pixel(&src1[6 * i + 0]) +
                    input_pixel(&src1[6 * i + 3]) + 1) >> 1;
@@ -449,7 +450,7 @@ static void palToUV_c(uint16_t *dstU, int16_t *dstV,
                       int width, uint32_t *pal)
 {
     int i;
-    assert(src1 == src2);
+    av_assert1(src1 == src2);
     for (i = 0; i < width; i++) {
         int p = pal[src1[i]];
 
@@ -506,7 +507,7 @@ static void yuy2ToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, con
         dstU[i] = src1[4 * i + 1];
         dstV[i] = src1[4 * i + 3];
     }
-    assert(src1 == src2);
+    av_assert1(src1 == src2);
 }
 
 static void bswap16Y_c(uint8_t *_dst, const uint8_t *_src, const uint8_t *unused1, const uint8_t *unused2,  int width,
@@ -550,7 +551,7 @@ static void uyvyToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, con
         dstU[i] = src1[4 * i + 0];
         dstV[i] = src1[4 * i + 2];
     }
-    assert(src1 == src2);
+    av_assert1(src1 == src2);
 }
 
 static av_always_inline void nvXXtoUV_c(uint8_t *dst1, uint8_t *dst2,
@@ -604,7 +605,7 @@ static void bgr24ToUV_c(int16_t *dstU, int16_t *dstV, const uint8_t *unused0, co
         dstU[i] = (RU*r + GU*g + BU*b + (256<<(RGB2YUV_SHIFT-1)) + (1<<(RGB2YUV_SHIFT-7)))>>(RGB2YUV_SHIFT-6);
         dstV[i] = (RV*r + GV*g + BV*b + (256<<(RGB2YUV_SHIFT-1)) + (1<<(RGB2YUV_SHIFT-7)))>>(RGB2YUV_SHIFT-6);
     }
-    assert(src1 == src2);
+    av_assert1(src1 == src2);
 }
 
 static void bgr24ToUV_half_c(int16_t *dstU, int16_t *dstV, const uint8_t *unused0, const uint8_t *src1,
@@ -619,7 +620,7 @@ static void bgr24ToUV_half_c(int16_t *dstU, int16_t *dstV, const uint8_t *unused
         dstU[i] = (RU*r + GU*g + BU*b + (256<<RGB2YUV_SHIFT) + (1<<(RGB2YUV_SHIFT-6)))>>(RGB2YUV_SHIFT-5);
         dstV[i] = (RV*r + GV*g + BV*b + (256<<RGB2YUV_SHIFT) + (1<<(RGB2YUV_SHIFT-6)))>>(RGB2YUV_SHIFT-5);
     }
-    assert(src1 == src2);
+    av_assert1(src1 == src2);
 }
 
 static void rgb24ToY_c(int16_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2, int width,
@@ -639,7 +640,7 @@ static void rgb24ToUV_c(int16_t *dstU, int16_t *dstV, const uint8_t *unused0, co
                         const uint8_t *src2, int width, uint32_t *unused)
 {
     int i;
-    assert(src1 == src2);
+    av_assert1(src1 == src2);
     for (i = 0; i < width; i++) {
         int r = src1[3 * i + 0];
         int g = src1[3 * i + 1];
@@ -654,7 +655,7 @@ static void rgb24ToUV_half_c(int16_t *dstU, int16_t *dstV, const uint8_t *unused
                              const uint8_t *src2, int width, uint32_t *unused)
 {
     int i;
-    assert(src1 == src2);
+    av_assert1(src1 == src2);
     for (i = 0; i < width; i++) {
         int r = src1[6 * i + 0] + src1[6 * i + 3];
         int g = src1[6 * i + 1] + src1[6 * i + 4];
