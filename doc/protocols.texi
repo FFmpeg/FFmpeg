@@ -560,7 +560,8 @@ Follow the list of supported options.
 @table @option
 
 @item buffer_size=@var{size}
-set the UDP buffer size in bytes
+Set the UDP socket buffer size in bytes. This is used both for the
+receiving and the sending buffer size.
 
 @item localport=@var{port}
 override the local UDP port to bind with
