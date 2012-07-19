@@ -975,9 +975,9 @@ int ff_thread_get_buffer(AVCodecContext *avctx, AVFrame *f)
         avctx->get_buffer == avcodec_default_get_buffer) {
         err = avctx->get_buffer(avctx, f);
     } else {
+        pthread_mutex_lock(&p->progress_mutex);
         p->requested_frame = f;
         p->state = STATE_GET_BUFFER;
-        pthread_mutex_lock(&p->progress_mutex);
         pthread_cond_broadcast(&p->progress_cond);
 
         while (p->state != STATE_SETTING_UP)
