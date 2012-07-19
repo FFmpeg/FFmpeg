@@ -454,11 +454,11 @@ static const AVOption options[] = {
     { "rpcl",          NULL,                0,                     AV_OPT_TYPE_CONST, { RPCL        }, 0,         0,           VE, "prog_order"  },
     { "pcrl",          NULL,                0,                     AV_OPT_TYPE_CONST, { PCRL        }, 0,         0,           VE, "prog_order"  },
     { "cprl",          NULL,                0,                     AV_OPT_TYPE_CONST, { CPRL        }, 0,         0,           VE, "prog_order"  },
-    { "numresolution", NULL,                OFFSET(numresolution), AV_OPT_TYPE_INT,   { 6           }, 1,         10,          VE },
-    { "numlayers",     NULL,                OFFSET(numlayers),     AV_OPT_TYPE_INT,   { 1           }, 1,         10,          VE },
-    { "disto_alloc",   NULL,                OFFSET(disto_alloc),   AV_OPT_TYPE_INT,   { 1           }, 0,         1,           VE },
-    { "fixed_alloc",   NULL,                OFFSET(fixed_alloc),   AV_OPT_TYPE_INT,   { 0           }, 0,         1,           VE },
-    { "fixed_quality", NULL,                OFFSET(fixed_quality), AV_OPT_TYPE_INT,   { 0           }, 0,         1,           VE },
+    { "numresolution", NULL,                OFFSET(numresolution), AV_OPT_TYPE_INT,   { 6           }, 1,         INT_MAX,     VE                },
+    { "numlayers",     NULL,                OFFSET(numlayers),     AV_OPT_TYPE_INT,   { 1           }, 1,         10,          VE                },
+    { "disto_alloc",   NULL,                OFFSET(disto_alloc),   AV_OPT_TYPE_INT,   { 1           }, 0,         1,           VE                },
+    { "fixed_alloc",   NULL,                OFFSET(fixed_alloc),   AV_OPT_TYPE_INT,   { 0           }, 0,         1,           VE                },
+    { "fixed_quality", NULL,                OFFSET(fixed_quality), AV_OPT_TYPE_INT,   { 0           }, 0,         1,           VE                },
     { NULL },
 };
 
