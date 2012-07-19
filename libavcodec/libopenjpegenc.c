@@ -20,16 +20,16 @@
  */
 
 /**
-* @file
-* JPEG 2000 encoder using libopenjpeg
-*/
+ * @file
+ * JPEG 2000 encoder using libopenjpeg
+ */
 
 #define  OPJ_STATIC
 #include <openjpeg.h>
 
-#include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/opt.h"
 #include "avcodec.h"
 #include "internal.h"
 
@@ -76,13 +76,14 @@ static opj_image_t *libopenjpeg_create_image(AVCodecContext *avctx,
     int sub_dy[4];
     int numcomps = av_pix_fmt_descriptors[avctx->pix_fmt].nb_components;
 
-    sub_dx[0] = sub_dx[3] = 1;
-    sub_dy[0] = sub_dy[3] = 1;
-    sub_dx[1] = sub_dx[2] =
-        1 << av_pix_fmt_descriptors[avctx->pix_fmt].log2_chroma_w;
-    sub_dy[1] = sub_dy[2] =
-        1 << av_pix_fmt_descriptors[avctx->pix_fmt].log2_chroma_h;
-
+    sub_dx[0] =
+    sub_dx[3] = 1;
+    sub_dy[0] =
+    sub_dy[3] = 1;
+    sub_dx[1] =
+    sub_dx[2] = 1 << av_pix_fmt_descriptors[avctx->pix_fmt].log2_chroma_w;
+    sub_dy[1] =
+    sub_dy[2] = 1 << av_pix_fmt_descriptors[avctx->pix_fmt].log2_chroma_h;
 
     switch (avctx->pix_fmt) {
     case PIX_FMT_GRAY8:
@@ -251,10 +252,9 @@ static void libopenjpeg_copy_unpacked8(AVCodecContext *avctx,
         for (y = 0; y < height; ++y) {
             image_index = y * width;
             frame_index = y * frame->linesize[compno];
-            for (x = 0; x < width; ++x) {
+            for (x = 0; x < width; ++x)
                 image->comps[compno].data[image_index++] =
                     frame->data[compno][frame_index++];
-            }
         }
     }
 }
@@ -277,10 +277,9 @@ static void libopenjpeg_copy_unpacked16(AVCodecContext *avctx,
         for (y = 0; y < height; ++y) {
             image_index = y * width;
             frame_index = y * (frame->linesize[compno] / 2);
-            for (x = 0; x < width; ++x) {
+            for (x = 0; x < width; ++x)
                 image->comps[compno].data[image_index++] =
                     frame_ptr[frame_index++];
-            }
         }
     }
 }
@@ -290,7 +289,7 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 {
     LibOpenJPEGContext *ctx = avctx->priv_data;
     opj_cinfo_t *compress = ctx->compress;
-    opj_image_t *image = ctx->image;
+    opj_image_t *image    = ctx->image;
     opj_cio_t *stream;
     int ret, len;
 
@@ -298,7 +297,7 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     // x1, y1 is the width, height of the reference grid
     image->x0 = 0;
     image->y0 = 0;
-    image->x1 = (avctx->width - 1)  * ctx->enc_params.subsampling_dx + 1;
+    image->x1 = (avctx->width  - 1) * ctx->enc_params.subsampling_dx + 1;
     image->y1 = (avctx->height - 1) * ctx->enc_params.subsampling_dy + 1;
 
     switch (avctx->pix_fmt) {
@@ -373,7 +372,7 @@ static av_cold int libopenjpeg_encode_close(AVCodecContext *avctx)
     opj_destroy_compress(ctx->compress);
     opj_image_destroy(ctx->image);
     av_freep(&avctx->coded_frame);
-    return 0 ;
+    return 0;
 }
 
 #define OFFSET(x) offsetof(LibOpenJPEGContext, x)
@@ -397,11 +396,11 @@ static const AVOption options[] = {
     { "rpcl",          NULL,                0,                     AV_OPT_TYPE_CONST, { RPCL        }, 0,         0,           VE, "prog_order"  },
     { "pcrl",          NULL,                0,                     AV_OPT_TYPE_CONST, { PCRL        }, 0,         0,           VE, "prog_order"  },
     { "cprl",          NULL,                0,                     AV_OPT_TYPE_CONST, { CPRL        }, 0,         0,           VE, "prog_order"  },
-    { "numresolution", NULL,                OFFSET(numresolution), AV_OPT_TYPE_INT,   { 6           }, 1,         10,          VE                },
-    { "numlayers",     NULL,                OFFSET(numlayers),     AV_OPT_TYPE_INT,   { 1           }, 1,         10,          VE                },
-    { "disto_alloc",   NULL,                OFFSET(disto_alloc),   AV_OPT_TYPE_INT,   { 1           }, 0,         1,           VE                },
-    { "fixed_alloc",   NULL,                OFFSET(fixed_alloc),   AV_OPT_TYPE_INT,   { 0           }, 0,         1,           VE                },
-    { "fixed_quality", NULL,                OFFSET(fixed_quality), AV_OPT_TYPE_INT,   { 0           }, 0,         1,           VE                },
+    { "numresolution", NULL,                OFFSET(numresolution), AV_OPT_TYPE_INT,   { 6           }, 1,         10,          VE },
+    { "numlayers",     NULL,                OFFSET(numlayers),     AV_OPT_TYPE_INT,   { 1           }, 1,         10,          VE },
+    { "disto_alloc",   NULL,                OFFSET(disto_alloc),   AV_OPT_TYPE_INT,   { 1           }, 0,         1,           VE },
+    { "fixed_alloc",   NULL,                OFFSET(fixed_alloc),   AV_OPT_TYPE_INT,   { 0           }, 0,         1,           VE },
+    { "fixed_quality", NULL,                OFFSET(fixed_quality), AV_OPT_TYPE_INT,   { 0           }, 0,         1,           VE },
     { NULL },
 };
 
@@ -421,7 +420,7 @@ AVCodec ff_libopenjpeg_encoder = {
     .encode2        = libopenjpeg_encode_frame,
     .close          = libopenjpeg_encode_close,
     .capabilities   = 0,
-    .pix_fmts       = (const enum PixelFormat[]){
+    .pix_fmts       = (const enum PixelFormat[]) {
         PIX_FMT_RGB24, PIX_FMT_RGBA, PIX_FMT_RGB48,
         PIX_FMT_GRAY8, PIX_FMT_GRAY16, PIX_FMT_Y400A,
         PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_YUVA420P,

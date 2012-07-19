@@ -20,17 +20,18 @@
  */
 
 /**
-* @file
-* JPEG 2000 decoder using libopenjpeg
-*/
+ * @file
+ * JPEG 2000 decoder using libopenjpeg
+ */
 
-#include "libavutil/opt.h"
-#include "libavutil/imgutils.h"
-#include "avcodec.h"
-#include "libavutil/intreadwrite.h"
-#include "thread.h"
 #define  OPJ_STATIC
 #include <openjpeg.h>
+
+#include "libavutil/imgutils.h"
+#include "libavutil/intreadwrite.h"
+#include "libavutil/opt.h"
+#include "avcodec.h"
+#include "thread.h"
 
 #define JP2_SIG_TYPE    0x6A502020
 #define JP2_SIG_VALUE   0x0D0A870A
@@ -45,10 +46,10 @@ typedef struct {
 
 static int check_image_attributes(opj_image_t *image)
 {
-    return image->comps[0].dx == image->comps[1].dx &&
-           image->comps[1].dx == image->comps[2].dx &&
-           image->comps[0].dy == image->comps[1].dy &&
-           image->comps[1].dy == image->comps[2].dy &&
+    return image->comps[0].dx   == image->comps[1].dx   &&
+           image->comps[1].dx   == image->comps[2].dx   &&
+           image->comps[0].dy   == image->comps[1].dy   &&
+           image->comps[1].dy   == image->comps[2].dy   &&
            image->comps[0].prec == image->comps[1].prec &&
            image->comps[1].prec == image->comps[2].prec;
 }
@@ -89,80 +90,91 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     *data_size = 0;
 
     // Check if input is a raw jpeg2k codestream or in jp2 wrapping
-    if((AV_RB32(buf) == 12) &&
-       (AV_RB32(buf + 4) == JP2_SIG_TYPE) &&
-       (AV_RB32(buf + 8) == JP2_SIG_VALUE)) {
+    if ((AV_RB32(buf)     == 12)           &&
+        (AV_RB32(buf + 4) == JP2_SIG_TYPE) &&
+        (AV_RB32(buf + 8) == JP2_SIG_VALUE)) {
         dec = opj_create_decompress(CODEC_JP2);
     } else {
-        // If the AVPacket contains a jp2c box, then skip to
-        // the starting byte of the codestream.
+        /* If the AVPacket contains a jp2c box, then skip to
+         * the starting byte of the codestream. */
         if (AV_RB32(buf + 4) == AV_RB32("jp2c"))
             buf += 8;
         dec = opj_create_decompress(CODEC_J2K);
     }
 
-    if(!dec) {
+    if (!dec) {
         av_log(avctx, AV_LOG_ERROR, "Error initializing decoder.\n");
         return -1;
     }
     opj_set_event_mgr((opj_common_ptr)dec, NULL, NULL);
 
     ctx->dec_params.cp_limit_decoding = LIMIT_TO_MAIN_HEADER;
-    ctx->dec_params.cp_reduce = ctx->lowres;
-    ctx->dec_params.cp_layer  = ctx->lowqual;
+    ctx->dec_params.cp_reduce         = ctx->lowres;
+    ctx->dec_params.cp_layer          = ctx->lowqual;
     // Tie decoder with decoding parameters
     opj_setup_decoder(dec, &ctx->dec_params);
     stream = opj_cio_open((opj_common_ptr)dec, buf, buf_size);
-    if(!stream) {
-        av_log(avctx, AV_LOG_ERROR, "Codestream could not be opened for reading.\n");
+
+    if (!stream) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Codestream could not be opened for reading.\n");
         opj_destroy_decompress(dec);
         return -1;
     }
 
-    // Decode the header only
+    // Decode the header only.
     image = opj_decode_with_info(dec, stream, NULL);
     opj_cio_close(stream);
-    if(!image) {
+
+    if (!image) {
         av_log(avctx, AV_LOG_ERROR, "Error decoding codestream.\n");
         opj_destroy_decompress(dec);
         return -1;
     }
+
     width  = image->x1 - image->x0;
     height = image->y1 - image->y0;
 
     if (ctx->lowres) {
-        width  = (width + (1 << ctx->lowres) - 1) >> ctx->lowres;
+        width  = (width  + (1 << ctx->lowres) - 1) >> ctx->lowres;
         height = (height + (1 << ctx->lowres) - 1) >> ctx->lowres;
     }
 
-    if(av_image_check_size(width, height, 0, avctx) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "%dx%d dimension invalid.\n", width, height);
+    if (av_image_check_size(width, height, 0, avctx) < 0) {
+        av_log(avctx, AV_LOG_ERROR,
+               "%dx%d dimension invalid.\n", width, height);
         goto done;
     }
+
     avcodec_set_dimensions(avctx, width, height);
 
-    switch(image->numcomps)
-    {
-        case 1:  avctx->pix_fmt = PIX_FMT_GRAY8;
-                 break;
-        case 3:  if(check_image_attributes(image)) {
-                     avctx->pix_fmt = PIX_FMT_RGB24;
-                 } else {
-                     avctx->pix_fmt = PIX_FMT_GRAY8;
-                     av_log(avctx, AV_LOG_ERROR, "Only first component will be used.\n");
-                 }
-                 break;
-        case 4:  has_alpha = 1;
-                 avctx->pix_fmt = PIX_FMT_RGBA;
-                 break;
-        default: av_log(avctx, AV_LOG_ERROR, "%d components unsupported.\n", image->numcomps);
-                 goto done;
+    switch (image->numcomps) {
+    case 1:
+        avctx->pix_fmt = PIX_FMT_GRAY8;
+        break;
+    case 3:
+        if (check_image_attributes(image)) {
+            avctx->pix_fmt = PIX_FMT_RGB24;
+        } else {
+            avctx->pix_fmt = PIX_FMT_GRAY8;
+            av_log(avctx, AV_LOG_ERROR,
+                   "Only first component will be used.\n");
+        }
+        break;
+    case 4:
+        has_alpha      = 1;
+        avctx->pix_fmt = PIX_FMT_RGBA;
+        break;
+    default:
+        av_log(avctx, AV_LOG_ERROR, "%d components unsupported.\n",
+               image->numcomps);
+        goto done;
     }
 
-    if(picture->data[0])
+    if (picture->data[0])
         ff_thread_release_buffer(avctx, picture);
 
-    if(ff_thread_get_buffer(avctx, picture) < 0){
+    if (ff_thread_get_buffer(avctx, picture) < 0) {
         av_log(avctx, AV_LOG_ERROR, "ff_thread_get_buffer() failed\n");
         return -1;
     }
@@ -170,32 +182,32 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     ff_thread_finish_setup(avctx);
 
     ctx->dec_params.cp_limit_decoding = NO_LIMITATION;
-    // Tie decoder with decoding parameters
+    // Tie decoder with decoding parameters.
     opj_setup_decoder(dec, &ctx->dec_params);
     stream = opj_cio_open((opj_common_ptr)dec, buf, buf_size);
-    if(!stream) {
-        av_log(avctx, AV_LOG_ERROR, "Codestream could not be opened for reading.\n");
+    if (!stream) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Codestream could not be opened for reading.\n");
         opj_destroy_decompress(dec);
         return -1;
     }
 
-    // Decode the codestream
+    // Decode the codestream.
     image = opj_decode_with_info(dec, stream, NULL);
     opj_cio_close(stream);
 
-    for(x = 0; x < image->numcomps; x++) {
+    for (x = 0; x < image->numcomps; x++)
         adjust[x] = FFMAX(image->comps[x].prec - 8, 0);
-    }
 
-    for(y = 0; y < avctx->height; y++) {
-        index = y*avctx->width;
-        img_ptr = picture->data[0] + y*picture->linesize[0];
-        for(x = 0; x < avctx->width; x++, index++) {
+    for (y = 0; y < avctx->height; y++) {
+        index   = y * avctx->width;
+        img_ptr = picture->data[0] + y * picture->linesize[0];
+        for (x = 0; x < avctx->width; x++, index++) {
             *img_ptr++ = image->comps[0].data[index] >> adjust[0];
-            if(image->numcomps > 2 && check_image_attributes(image)) {
+            if (image->numcomps > 2 && check_image_attributes(image)) {
                 *img_ptr++ = image->comps[1].data[index] >> adjust[1];
                 *img_ptr++ = image->comps[2].data[index] >> adjust[2];
-                if(has_alpha)
+                if (has_alpha)
                     *img_ptr++ = image->comps[3].data[index] >> adjust[3];
             }
         }
@@ -203,7 +215,7 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
 
     *output    = ctx->image;
     *data_size = sizeof(AVPicture);
-    ret = buf_size;
+    ret        = buf_size;
 
 done:
     opj_image_destroy(image);
@@ -215,17 +227,17 @@ static av_cold int libopenjpeg_decode_close(AVCodecContext *avctx)
 {
     LibOpenJPEGContext *ctx = avctx->priv_data;
 
-    if(ctx->image.data[0])
+    if (ctx->image.data[0])
         ff_thread_release_buffer(avctx, &ctx->image);
-    return 0 ;
+    return 0;
 }
 
 #define OFFSET(x) offsetof(LibOpenJPEGContext, x)
 #define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
 
 static const AVOption options[] = {
-    { "lowqual",       "Limit the number of layers used for decoding",         OFFSET(lowqual),        AV_OPT_TYPE_INT,   { 0 }, 0, INT_MAX, VD },
-    { "lowres",        "Lower the decoding resolution by a power of two",      OFFSET(lowres),         AV_OPT_TYPE_INT,   { 0 }, 0, INT_MAX, VD },
+    { "lowqual", "Limit the number of layers used for decoding",    OFFSET(lowqual), AV_OPT_TYPE_INT, { 0 }, 0, INT_MAX, VD },
+    { "lowres",  "Lower the decoding resolution by a power of two", OFFSET(lowres),  AV_OPT_TYPE_INT, { 0 }, 0, INT_MAX, VD },
     { NULL },
 };
 
