@@ -3107,21 +3107,6 @@ void ff_dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx)
 {
     int mm_flags = av_get_cpu_flags();
 
-#if 0
-    av_log(avctx, AV_LOG_INFO, "libavcodec: CPU flags:");
-    if (mm_flags & AV_CPU_FLAG_MMX)
-        av_log(avctx, AV_LOG_INFO, " mmx");
-    if (mm_flags & AV_CPU_FLAG_MMX2)
-        av_log(avctx, AV_LOG_INFO, " mmx2");
-    if (mm_flags & AV_CPU_FLAG_3DNOW)
-        av_log(avctx, AV_LOG_INFO, " 3dnow");
-    if (mm_flags & AV_CPU_FLAG_SSE)
-        av_log(avctx, AV_LOG_INFO, " sse");
-    if (mm_flags & AV_CPU_FLAG_SSE2)
-        av_log(avctx, AV_LOG_INFO, " sse2");
-    av_log(avctx, AV_LOG_INFO, "\n");
-#endif
-
     if (mm_flags & AV_CPU_FLAG_MMX) {
         const int idct_algo = avctx->idct_algo;
 

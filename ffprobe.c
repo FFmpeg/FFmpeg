@@ -2009,8 +2009,7 @@ static void ffprobe_show_program_version(WriterContext *w)
               program_birth_year, this_year);
     print_str("build_date", __DATE__);
     print_str("build_time", __TIME__);
-    print_str("compiler_type", CC_TYPE);
-    print_str("compiler_version", CC_VERSION);
+    print_str("compiler_ident", CC_IDENT);
     print_str("configuration", FFMPEG_CONFIGURATION);
     print_section_footer("program_version");
     writer_print_chapter_footer(w, "program_version");
