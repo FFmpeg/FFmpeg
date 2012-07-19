@@ -446,6 +446,11 @@ static int decode_frame(AVCodecContext *avctx,
         }
     }
 
+    if (s->compr == -1) {
+        av_log(avctx, AV_LOG_ERROR, "Missing compression attribute\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if (buf >= buf_end) {
         av_log(avctx, AV_LOG_ERROR, "Incomplete frame\n");
         return AVERROR_INVALIDDATA;
@@ -641,6 +646,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     avcodec_get_frame_defaults(&s->picture);
     avctx->coded_frame = &s->picture;
+
+    s->compr = -1;
 
     return 0;
 }
