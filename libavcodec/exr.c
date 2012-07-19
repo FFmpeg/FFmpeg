@@ -403,7 +403,10 @@ static int decode_frame(AVCodecContext *avctx,
             if (!variable_buffer_data_size)
                 return AVERROR_INVALIDDATA;
 
-            s->compr = *buf;
+            if (s->compr == -1)
+                s->compr = *buf;
+            else
+                av_log(avctx, AV_LOG_WARNING, "Found more than one compression attribute\n");
 
             buf += variable_buffer_data_size;
             continue;
