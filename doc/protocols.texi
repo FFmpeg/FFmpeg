@@ -247,6 +247,15 @@ For example to read with @command{avplay} a multimedia resource named
 avplay rtmp://myserver/vod/sample
 @end example
 
+@section rtmpe
+
+Encrypted Real-Time Messaging Protocol.
+
+The Encrypted Real-Time Messaging Protocol (RTMPE) is used for
+streaming multimedia content within standard cryptographic primitives,
+consisting of Diffie-Hellman key exchange and HMACSHA256, generating
+a pair of RC4 keys.
+
 @section rtmps
 
 Real-Time Messaging Protocol over a secure SSL connection.

@@ -950,6 +950,7 @@ CONFIG_LIST="
     fastdiv
     fft
     frei0r
+    gcrypt
     gnutls
     gpl
     gray
@@ -982,6 +983,7 @@ CONFIG_LIST="
     mdct
     memalign_hack
     mpegaudiodsp
+    nettle
     network
     nonfree
     openssl
@@ -1543,6 +1545,9 @@ vfwcap_indev_extralibs="-lavicap32"
 x11_grab_device_indev_deps="x11grab XShmCreateImage"
 
 # protocols
+ffrtmpcrypt_protocol_deps="!librtmp_protocol"
+ffrtmpcrypt_protocol_deps_any="gcrypt nettle openssl"
+ffrtmpcrypt_protocol_select="tcp_protocol"
 ffrtmphttp_protocol_deps="!librtmp_protocol"
 ffrtmphttp_protocol_select="http_protocol"
 gopher_protocol_deps="network"
@@ -1560,6 +1565,7 @@ mmsh_protocol_select="http_protocol"
 mmst_protocol_deps="network"
 rtmp_protocol_deps="!librtmp_protocol"
 rtmp_protocol_select="tcp_protocol"
+rtmpe_protocol_select="ffrtmpcrypt_protocol"
 rtmps_protocol_deps="!librtmp_protocol"
 rtmps_protocol_select="tls_protocol"
 rtmpt_protocol_select="ffrtmphttp_protocol"
@@ -3013,6 +3019,11 @@ enabled openssl    && { check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto 
                         check_lib openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
                         check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
                         die "ERROR: openssl not found"; }
+
+if enabled gnutls; then
+    { check_lib nettle/bignum.h nettle_mpz_get_str_256 -lnettle -lhogweed -lgmp && enable nettle; } ||
+    { check_lib gcrypt.h gcry_mpi_new -lgcrypt && enable gcrypt; }
+fi
 
 # libdc1394 check
 if enabled libdc1394; then

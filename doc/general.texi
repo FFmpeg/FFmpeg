@@ -844,7 +844,7 @@ performance on systems without hardware floating point support).
 @item MMST         @tab X
 @item pipe         @tab X
 @item RTMP         @tab X
-@item RTMPE        @tab E
+@item RTMPE        @tab X
 @item RTMPS        @tab X
 @item RTMPT        @tab X
 @item RTMPTE       @tab E
