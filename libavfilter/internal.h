@@ -347,4 +347,7 @@ int ff_request_frame(AVFilterLink *link);
         .category   = AV_CLASS_CATEGORY_FILTER, \
     }
 
+AVFilterBufferRef *ff_copy_buffer_ref(AVFilterLink *outlink,
+                                      AVFilterBufferRef *ref);
+
 #endif /* AVFILTER_INTERNAL_H */

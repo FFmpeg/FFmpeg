@@ -22,10 +22,12 @@
 
 #include "libavutil/audioconvert.h"
 #include "libavutil/avassert.h"
+#include "libavutil/imgutils.h"
 #include "libavcodec/avcodec.h"
 
 #include "avfilter.h"
 #include "internal.h"
+#include "audio.h"
 #include "avcodec.h"
 
 void ff_avfilter_default_free_buffer(AVFilterBuffer *ptr)
@@ -174,4 +176,41 @@ void avfilter_copy_buffer_ref_props(AVFilterBufferRef *dst, AVFilterBufferRef *s
     case AVMEDIA_TYPE_AUDIO: *dst->audio = *src->audio; break;
     default: break;
     }
+}
+
+AVFilterBufferRef *ff_copy_buffer_ref(AVFilterLink *outlink,
+                                      AVFilterBufferRef *ref)
+{
+    AVFilterBufferRef *buf;
+    int channels;
+
+    switch (outlink->type) {
+
+    case AVMEDIA_TYPE_VIDEO:
+        buf = ff_get_video_buffer(outlink, AV_PERM_WRITE,
+                                  ref->video->w, ref->video->h);
+        if(!buf)
+            return NULL;
+        av_image_copy(buf->data, buf->linesize,
+                      (void*)ref->data, ref->linesize,
+                      ref->format, ref->video->w, ref->video->h);
+        break;
+
+    case AVMEDIA_TYPE_AUDIO:
+        buf = ff_get_audio_buffer(outlink, AV_PERM_WRITE,
+                                        ref->audio->nb_samples);
+        if(!buf)
+            return NULL;
+        channels = av_get_channel_layout_nb_channels(ref->audio->channel_layout);
+        av_samples_copy(buf->extended_data, ref->buf->extended_data,
+                        0, 0, ref->audio->nb_samples,
+                        channels,
+                        ref->format);
+        break;
+
+    default:
+        return NULL;
+    }
+    avfilter_copy_buffer_ref_props(buf, ref);
+    return buf;
 }
