@@ -206,9 +206,9 @@ static int sdl_write_packet(AVFormatContext *s, AVPacket *pkt)
 #define OFFSET(x) offsetof(SDLContext,x)
 
 static const AVOption options[] = {
-    { "window_title", "SDL window title",           OFFSET(window_title),  AV_OPT_TYPE_STRING, {.str = NULL }, 0,  0, AV_OPT_FLAG_ENCODING_PARAM },
-    { "icon_title",   "SDL iconified window title", OFFSET(icon_title)  ,  AV_OPT_TYPE_STRING, {.str = NULL }, 0,  0, AV_OPT_FLAG_ENCODING_PARAM },
-    { "window_size",  "SDL window forced size",     OFFSET(window_width),  AV_OPT_TYPE_IMAGE_SIZE,{.str=NULL}, 0,  0, AV_OPT_FLAG_ENCODING_PARAM },
+    { "window_title", "set SDL window title",           OFFSET(window_title), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
+    { "icon_title",   "set SDL iconified window title", OFFSET(icon_title)  , AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
+    { "window_size",  "set SDL window forced size",     OFFSET(window_width), AV_OPT_TYPE_IMAGE_SIZE,{.str=NULL}, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
     { NULL },
 };
 
