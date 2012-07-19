@@ -350,4 +350,12 @@ int ff_request_frame(AVFilterLink *link);
 AVFilterBufferRef *ff_copy_buffer_ref(AVFilterLink *outlink,
                                       AVFilterBufferRef *ref);
 
+/**
+ * Find the index of a link.
+ *
+ * I.e. find i such that link == ctx->(in|out)puts[i]
+ */
+#define FF_INLINK_IDX(link)  ((int)((link)->dstpad - (link)->dst->input_pads))
+#define FF_OUTLINK_IDX(link) ((int)((link)->srcpad - (link)->src->output_pads))
+
 #endif /* AVFILTER_INTERNAL_H */
