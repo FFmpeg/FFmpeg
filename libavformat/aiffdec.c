@@ -275,9 +275,8 @@ static int aiff_read_header(AVFormatContext *s)
             avio_read(pb, st->codec->extradata, size);
             break;
         case MKTAG('C','H','A','N'):
-            if (size < 12)
+            if(ff_mov_read_chan(s, st, size) < 0)
                 return AVERROR_INVALIDDATA;
-            ff_mov_read_chan(s, size, st->codec);
             break;
         default: /* Jump */
             if (size & 1)   /* Always even aligned */
