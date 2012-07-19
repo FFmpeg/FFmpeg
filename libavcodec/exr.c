@@ -404,18 +404,6 @@ static int decode_frame(AVCodecContext *avctx,
                 return AVERROR_INVALIDDATA;
 
             s->compr = *buf;
-            switch (s->compr) {
-            case EXR_RAW:
-            case EXR_RLE:
-            case EXR_ZIP1:
-            case EXR_ZIP16:
-                break;
-            case EXR_PIZ:
-            case EXR_B44:
-            default:
-                av_log(avctx, AV_LOG_ERROR, "Compression type %d is not supported\n", s->compr);
-                return AVERROR_PATCHWELCOME;
-            }
 
             buf += variable_buffer_data_size;
             continue;
@@ -483,6 +471,9 @@ static int decode_frame(AVCodecContext *avctx,
     case EXR_ZIP16:
         scan_lines_per_block = 16;
         break;
+    default:
+        av_log(avctx, AV_LOG_ERROR, "Compression type %d is not supported\n", s->compr);
+        return AVERROR_PATCHWELCOME;
     }
 
     if (s->picture.data[0])
