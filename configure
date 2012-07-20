@@ -604,6 +604,14 @@ add_extralibs(){
     prepend extralibs $($ldflags_filter "$@")
 }
 
+add_host_cflags(){
+    append host_cflags $($host_cflags_filter "$@")
+}
+
+add_host_ldflags(){
+    append host_ldflags $($host_ldflags_filter "$@")
+}
+
 check_cmd(){
     log "$@"
     "$@" >> $logfile 2>&1
@@ -878,6 +886,7 @@ check_host_cc(){
 
 check_host_cflags(){
     log check_host_cflags "$@"
+    set -- $($host_cflags_filter "$@")
     check_host_cc "$@" <<EOF && append host_cflags "$@"
 int x;
 EOF
@@ -1717,6 +1726,8 @@ CC_O='-o $@'
 
 host_cflags='-D_ISOC99_SOURCE -D_XOPEN_SOURCE=600 -O3 -g'
 host_libs='-lm'
+host_cflags_filter=echo
+host_ldflags_filter=echo
 
 target_path='$(CURDIR)'
 
