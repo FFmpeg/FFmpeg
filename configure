@@ -617,11 +617,15 @@ check_cmd(){
     "$@" >> $logfile 2>&1
 }
 
+cc_o(){
+    eval printf '%s\\n' $CC_O
+}
+
 check_cc(){
     log check_cc "$@"
     cat > $TMPC
     log_file $TMPC
-    check_cmd $cc $CPPFLAGS $CFLAGS "$@" -c -o $TMPO $TMPC
+    check_cmd $cc $CPPFLAGS $CFLAGS "$@" -c $(cc_o $TMPO) $TMPC
 }
 
 check_cpp(){
@@ -2094,12 +2098,10 @@ elif $cc --vsn 2>/dev/null | grep -q "ARM C/C++ Compiler"; then
 elif $cc -version 2>/dev/null | grep -q TMS470; then
     cc_type=tms470
     cc_ident=$($cc -version | head -n1 | tr -s ' ')
-    cc="$cc --gcc --abi=eabi -eo=.o -mc -me"
-    CC_O='-fr=$(@D)'
+    cc="$cc --gcc --abi=eabi -me"
+    CC_O='-fe=$@'
     as_default="${cross_prefix}gcc"
     ld_default="${cross_prefix}gcc"
-    TMPO=$(basename $TMPC .c).o
-    append TMPFILES $TMPO
     add_cflags -D__gnuc_va_list=va_list -D__USER_LABEL_PREFIX__=
     CC_DEPFLAGS='-ppa -ppd=$(@:.o=.d)'
     AS_DEPFLAGS='-MMD'
