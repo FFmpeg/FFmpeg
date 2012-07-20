@@ -622,6 +622,10 @@ cc_o(){
     eval printf '%s\\n' $CC_O
 }
 
+cc_e(){
+    eval printf '%s\\n' $CC_E
+}
+
 check_cc(){
     log check_cc "$@"
     cat > $TMPC
@@ -633,7 +637,7 @@ check_cpp(){
     log check_cpp "$@"
     cat > $TMPC
     log_file $TMPC
-    check_cmd $cc $CPPFLAGS $CFLAGS "$@" -E -o $TMPO $TMPC
+    check_cmd $cc $CPPFLAGS $CFLAGS "$@" $(cc_e $TMPO) $TMPC
 }
 
 check_as(){
@@ -1733,6 +1737,7 @@ cflags_filter=echo
 ldflags_filter=echo
 
 AS_O='-o $@'
+CC_E='-E -o $@'
 CC_O='-o $@'
 LD_O='-o $@'
 HOSTCC_O='-o $@'
@@ -2051,7 +2056,8 @@ probe_cc(){
     pfx=$1
     _cc=$2
 
-    unset _type _ident _cc_o _flags _cflags _ldflags _depflags _DEPCMD _DEPFLAGS
+    unset _type _ident _cc_e _cc_o _flags _cflags _ldflags
+    unset _depflags _DEPCMD _DEPFLAGS
     _flags_filter=echo
 
     if $_cc -v 2>&1 | grep -q '^gcc.*LLVM'; then
@@ -2114,6 +2120,7 @@ probe_cc(){
         _ident=$($_cc -version | head -n1 | tr -s ' ')
         _flags='--gcc --abi=eabi -me'
         _cflags='-D__gnuc_va_list=va_list -D__USER_LABEL_PREFIX__='
+        _cc_e='-ppl -fe=$@'
         _cc_o='-fe=$@'
         as_default="${cross_prefix}gcc"
         ld_default="${cross_prefix}gcc"
@@ -2165,6 +2172,7 @@ probe_cc(){
 }
 
 set_ccvars(){
+    eval ${1}_E=\${_cc_e-\${${1}_E}}
     eval ${1}_O=\${_cc_o-\${${1}_O}}
 
     if [ -n "$_depflags" ]; then
