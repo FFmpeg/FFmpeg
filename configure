@@ -2025,6 +2025,9 @@ tms470_flags(){
             -O[0-3]|-mf=*)  echo $flag                        ;;
             -g)             echo -g -mn                       ;;
             -pds=*)         echo $flag                        ;;
+            -D*|-I*)        echo $flag                        ;;
+            --gcc|--abi=*)  echo $flag                        ;;
+            -me)            echo $flag                        ;;
         esac
     done
 }
