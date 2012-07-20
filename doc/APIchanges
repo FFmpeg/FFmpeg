@@ -15,6 +15,9 @@ libavutil:     2011-04-18
 
 API changes, most recent first:
 
+2012-07-20 - xxxxxxx - lavc 54.43.100
+  Add decode_error_flags field to AVFrame.
+
 2012-07-20 - xxxxxxx - lavf 54.18.100
   Add avformat_match_stream_specifier() function.
 

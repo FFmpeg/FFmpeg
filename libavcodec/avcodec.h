@@ -1323,6 +1323,19 @@ typedef struct AVFrame {
      * - decoding: Set by libavcodec.
      */
     AVDictionary *metadata;
+
+    /**
+     * decode error flags of the frame, set to a combination of
+     * FF_DECODE_ERROR_xxx flags if the decoder produced a frame, but there
+     * were errors during the decoding.
+     * Code outside libavcodec should access this field using:
+     * av_frame_get_decode_error_flags(frame)
+     * - encoding: unused
+     * - decoding: set by libavcodec, read by user.
+     */
+    int decode_error_flags;
+#define FF_DECODE_ERROR_INVALID_BITSTREAM   1
+#define FF_DECODE_ERROR_MISSING_REFERENCE   2
 } AVFrame;
 
 /**
@@ -1342,6 +1355,8 @@ int     av_frame_get_sample_rate          (const AVFrame *frame);
 void    av_frame_set_sample_rate          (AVFrame *frame, int     val);
 AVDictionary *av_frame_get_metadata       (const AVFrame *frame);
 void          av_frame_set_metadata       (AVFrame *frame, AVDictionary *val);
+int     av_frame_get_decode_error_flags   (const AVFrame *frame);
+void    av_frame_set_decode_error_flags   (AVFrame *frame, int     val);
 
 struct AVCodecInternal;
 
