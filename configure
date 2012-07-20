@@ -597,11 +597,11 @@ add_asflags(){
 }
 
 add_ldflags(){
-    append LDFLAGS "$@"
+    append LDFLAGS $($ldflags_filter "$@")
 }
 
 add_extralibs(){
-    prepend extralibs "$@"
+    prepend extralibs $($ldflags_filter "$@")
 }
 
 check_cmd(){
@@ -657,6 +657,8 @@ check_ld(){
         test "${f}" = "${f#-l}" && flags="$flags $f" || libs="$libs $f"
     done
     check_cc $($cflags_filter $flags) || return
+    flags=$($ldflags_filter $flags)
+    libs=$($ldflags_filter $libs)
     check_cmd $ld $LDFLAGS $flags -o $TMPE $TMPO $libs $extralibs
 }
 
@@ -1705,6 +1707,8 @@ SLIBNAME_WITH_MAJOR='$(SLIBNAME).$(LIBMAJOR)'
 LIB_INSTALL_EXTRA_CMD='$$(RANLIB) "$(LIBDIR)/$(LIBNAME)"'
 SLIB_INSTALL_NAME='$(SLIBNAME_WITH_VERSION)'
 SLIB_INSTALL_LINKS='$(SLIBNAME_WITH_MAJOR) $(SLIBNAME)'
+
+ldflags_filter=echo
 
 AS_O='-o $@'
 CC_O='-o $@'
