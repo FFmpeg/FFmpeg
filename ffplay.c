@@ -1980,7 +1980,7 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
             }
 
             if (is->swr_ctx) {
-                const uint8_t **in = is->frame->extended_data;
+                const uint8_t **in = (const uint8_t **)is->frame->extended_data;
                 uint8_t *out[] = {is->audio_buf2};
                 int out_count = sizeof(is->audio_buf2) / is->audio_tgt.channels / av_get_bytes_per_sample(is->audio_tgt.fmt);
                 if (wanted_nb_samples != is->frame->nb_samples) {
