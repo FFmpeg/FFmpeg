@@ -156,9 +156,6 @@ static int device_open(AVFormatContext *ctx)
 {
     struct v4l2_capability cap;
     int fd;
-#if CONFIG_LIBV4L2
-    int fd_libv4l;
-#endif
     int res, err;
     int flags = O_RDWR;
 
@@ -175,16 +172,6 @@ static int device_open(AVFormatContext *ctx)
 
         return AVERROR(err);
     }
-#if CONFIG_LIBV4L2
-    fd_libv4l = v4l2_fd_open(fd, 0);
-    if (fd < 0) {
-        err = AVERROR(errno);
-        av_log(ctx, AV_LOG_ERROR, "Cannot open video device with libv4l neither %s : %s\n",
-               ctx->filename, strerror(errno));
-        return err;
-    }
-    fd = fd_libv4l;
-#endif
 
     res = v4l2_ioctl(fd, VIDIOC_QUERYCAP, &cap);
     if (res < 0) {
