@@ -1227,7 +1227,7 @@ static int alloc_buffer(FrameBuffer **pool, AVCodecContext *s, FrameBuffer **pbu
     for (i = 0; i < FF_ARRAY_ELEMS(buf->data); i++) {
         const int h_shift = i==0 ? 0 : h_chroma_shift;
         const int v_shift = i==0 ? 0 : v_chroma_shift;
-        if ((s->flags & CODEC_FLAG_EMU_EDGE) || !buf->linesize[1] || !buf->base[i])
+        if ((s->flags & CODEC_FLAG_EMU_EDGE) || !buf->linesize[i] || !buf->base[i])
             buf->data[i] = buf->base[i];
         else
             buf->data[i] = buf->base[i] +
