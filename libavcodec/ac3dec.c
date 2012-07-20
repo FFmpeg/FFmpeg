@@ -1433,6 +1433,8 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
         }
     }
 
+    s->frame.decode_error_flags = err ? FF_DECODE_ERROR_INVALID_BITSTREAM : 0;
+
     *got_frame_ptr   = 1;
     *(AVFrame *)data = s->frame;
 
