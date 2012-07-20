@@ -585,7 +585,7 @@ prepend(){
 }
 
 add_cppflags(){
-    append CPPFLAGS $($filter_cppflags "$@")
+    append CPPFLAGS "$@"
 }
 
 add_cflags(){
@@ -676,7 +676,6 @@ check_code(){
 
 check_cppflags(){
     log check_cppflags "$@"
-    set -- $($filter_cppflags "$@")
     check_cc "$@" <<EOF && append CPPFLAGS "$@"
 int x;
 EOF
@@ -757,7 +756,7 @@ check_cpp_condition(){
     header=$1
     condition=$2
     shift 2
-    check_cpp $($filter_cppflags "$@") <<EOF
+    check_cpp "$@" <<EOF
 #include <$header>
 #if !($condition)
 #error "unsatisfied condition: $condition"
@@ -1948,7 +1947,6 @@ fi
 
 filter_asflags=echo
 filter_cflags=echo
-filter_cppflags=echo
 
 if   $cc -v 2>&1 | grep -q '^gcc.*LLVM'; then
     cc_type=llvm_gcc
