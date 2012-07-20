@@ -33,7 +33,7 @@ LDFLAGS    := $(ALLFFLIBS:%=-Llib%) $(LDFLAGS)
 
 define COMPILE
 	$(call $(1)DEP,$(1))
-	$($(1)) $($(1)FLAGS) $($(1)_DEPFLAGS) -c $($(1)_O) $<
+	$($(1)) $($(1)FLAGS) $($(1)_DEPFLAGS) $($(1)_C) $($(1)_O) $<
 endef
 
 COMPILE_C = $(call COMPILE,CC)

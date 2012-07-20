@@ -630,7 +630,7 @@ check_cc(){
     log check_cc "$@"
     cat > $TMPC
     log_file $TMPC
-    check_cmd $cc $CPPFLAGS $CFLAGS "$@" -c $(cc_o $TMPO) $TMPC
+    check_cmd $cc $CPPFLAGS $CFLAGS "$@" $CC_C $(cc_o $TMPO) $TMPC
 }
 
 check_cpp(){
@@ -644,7 +644,7 @@ check_as(){
     log check_as "$@"
     cat > $TMPC
     log_file $TMPC
-    check_cmd $as $CPPFLAGS $ASFLAGS "$@" -c -o $TMPO $TMPC
+    check_cmd $as $CPPFLAGS $ASFLAGS "$@" $AS_C -o $TMPO $TMPC
 }
 
 check_asm(){
@@ -1736,10 +1736,13 @@ asflags_filter=echo
 cflags_filter=echo
 ldflags_filter=echo
 
+AS_C='-c'
 AS_O='-o $@'
+CC_C='-c'
 CC_E='-E -o $@'
 CC_O='-o $@'
 LD_O='-o $@'
+HOSTCC_C='-c'
 HOSTCC_O='-o $@'
 
 host_cflags='-D_ISOC99_SOURCE -D_XOPEN_SOURCE=600 -O3 -g'
@@ -2056,7 +2059,7 @@ probe_cc(){
     pfx=$1
     _cc=$2
 
-    unset _type _ident _cc_e _cc_o _flags _cflags _ldflags
+    unset _type _ident _cc_c _cc_e _cc_o _flags _cflags _ldflags
     unset _depflags _DEPCMD _DEPFLAGS
     _flags_filter=echo
 
@@ -2172,6 +2175,7 @@ probe_cc(){
 }
 
 set_ccvars(){
+    eval ${1}_C=\${_cc_c-\${${1}_C}}
     eval ${1}_E=\${_cc_e-\${${1}_E}}
     eval ${1}_O=\${_cc_o-\${${1}_O}}
 
@@ -3426,7 +3430,9 @@ LN_S=$ln_s
 CPPFLAGS=$CPPFLAGS
 CFLAGS=$CFLAGS
 ASFLAGS=$ASFLAGS
+AS_C=$AS_C
 AS_O=$AS_O
+CC_C=$CC_C
 CC_O=$CC_O
 LD_O=$LD_O
 DLLTOOL=$dlltool
@@ -3459,6 +3465,7 @@ DEPHOSTCCFLAGS=$DEPHOSTCCFLAGS \$(HOSTCCFLAGS)
 HOSTCCDEP=$HOSTCCDEP
 HOSTCCDEP_FLAGS=$HOSTCCDEP_FLAGS
 HOSTCC_DEPFLAGS=$HOSTCC_DEPFLAGS
+HOSTCC_C=$HOSTCC_C
 HOSTCC_O=$HOSTCC_O
 TARGET_EXEC=$target_exec
 TARGET_PATH=$target_path
