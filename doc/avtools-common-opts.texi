@@ -18,10 +18,10 @@ are used to precisely specify which stream(s) does a given option belong to.
 
 A stream specifier is a string generally appended to the option name and
 separated from it by a colon. E.g. @code{-codec:a:1 ac3} option contains
-@code{a:1} stream specifer, which matches the second audio stream. Therefore it
+@code{a:1} stream specifier, which matches the second audio stream. Therefore it
 would select the ac3 codec for the second audio stream.
 
-A stream specifier can match several stream, the option is then applied to all
+A stream specifier can match several streams, the option is then applied to all
 of them. E.g. the stream specifier in @code{-b:a 128k} matches all audio
 streams.
 
@@ -44,6 +44,7 @@ program with id @var{program_id}. Otherwise matches all streams in this program.
 @item #@var{stream_id}
 Matches the stream by format-specific ID.
 @end table
+
 @section Generic options
 
 These options are shared amongst the av* tools.
