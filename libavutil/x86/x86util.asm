@@ -625,3 +625,15 @@
     shufps       %1, %1, 0
 %endif
 %endmacro
+
+%macro SHUFFLE_MASK_W 8
+    %rep 8
+        %if %1>=0x80
+            db %1, %1
+        %else
+            db %1*2
+            db %1*2+1
+        %endif
+        %rotate 1
+    %endrep
+%endmacro
