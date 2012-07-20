@@ -33,7 +33,7 @@ checkheaders: $(filter-out $(SKIPHEADERS:.h=.ho),$(ALLHEADERS:.h=.ho))
 alltools: $(TOOLS)
 
 $(HOSTOBJS): %.o: %.c
-	$(HOSTCC) $(HOSTCFLAGS) -c -o $@ $<
+	$(call COMPILE,HOSTCC)
 
 $(HOSTPROGS): %$(HOSTEXESUF): %.o
 	$(HOSTCC) $(HOSTLDFLAGS) -o $@ $< $(HOSTLIBS)
@@ -49,4 +49,4 @@ CLEANSUFFIXES     = *.d *.o *~ *.ho *.map *.ver
 DISTCLEANSUFFIXES = *.pc
 LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a
 
--include $(wildcard $(OBJS:.o=.d) $(TESTOBJS:.o=.d))
+-include $(wildcard $(OBJS:.o=.d) $(HOSTOBJS:.o=.d) $(TESTOBJS:.o=.d))

@@ -17,8 +17,6 @@ documentation: $(DOCS)
 
 TEXIDEP = awk '/^@include/ { printf "$@: $(@D)/%s\n", $$2 }' <$< >$(@:%=%.d)
 
-doc/print_options.o: libavformat/options_table.h libavcodec/options_table.h
-
 GENTEXI  = format codec
 GENTEXI := $(GENTEXI:%=doc/avoptions_%.texi)
 
