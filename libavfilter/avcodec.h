@@ -65,6 +65,16 @@ AVFilterBufferRef *avfilter_get_video_buffer_ref_from_frame(const AVFrame *frame
 AVFilterBufferRef *avfilter_get_audio_buffer_ref_from_frame(const AVFrame *frame,
                                                             int perms);
 
+/**
+ * Create and return a buffer reference from the data and properties
+ * contained in frame.
+ *
+ * @param perms permissions to assign to the new buffer reference
+ */
+AVFilterBufferRef *avfilter_get_buffer_ref_from_frame(enum AVMediaType type,
+                                                      const AVFrame *frame,
+                                                      int perms);
+
 #ifdef FF_API_FILL_FRAME
 /**
  * Fill an AVFrame with the information stored in samplesref.
