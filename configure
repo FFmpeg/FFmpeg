@@ -1708,6 +1708,8 @@ LIB_INSTALL_EXTRA_CMD='$$(RANLIB) "$(LIBDIR)/$(LIBNAME)"'
 SLIB_INSTALL_NAME='$(SLIBNAME_WITH_VERSION)'
 SLIB_INSTALL_LINKS='$(SLIBNAME_WITH_MAJOR) $(SLIBNAME)'
 
+asflags_filter=echo
+cflags_filter=echo
 ldflags_filter=echo
 
 AS_O='-o $@'
@@ -1948,9 +1950,6 @@ variable to another directory and make sure that it is not mounted noexec.
 EOF
     die "Sanity test failed."
 fi
-
-asflags_filter=echo
-cflags_filter=echo
 
 if   $cc -v 2>&1 | grep -q '^gcc.*LLVM'; then
     cc_type=llvm_gcc
