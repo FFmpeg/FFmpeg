@@ -73,6 +73,8 @@ typedef struct {
 
     int extra_bits;     /**< number of extra bits beyond 16-bit */
     int nb_samples;     /**< number of samples in the current frame */
+
+    int direct_output;
 } ALACContext;
 
 enum RawDataBlockType {
@@ -326,7 +328,7 @@ static int decode_element(AVCodecContext *avctx, void *data, int ch_index,
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return ret;
         }
-        if (alac->sample_size > 16) {
+        if (alac->direct_output) {
             for (ch = 0; ch < channels; ch++)
                 alac->output_samples_buffer[ch] = (int32_t *)alac->frame.extended_data[ch_index + ch];
         }
@@ -418,6 +420,7 @@ static int decode_element(AVCodecContext *avctx, void *data, int ch_index,
                           alac->extra_bits, channels, alac->nb_samples);
     }
 
+    if(av_sample_fmt_is_planar(avctx->sample_fmt)) {
     switch(alac->sample_size) {
     case 16: {
         for (ch = 0; ch < channels; ch++) {
@@ -432,6 +435,31 @@ static int decode_element(AVCodecContext *avctx, void *data, int ch_index,
                 alac->output_samples_buffer[ch][i] <<= 8;
         }}
         break;
+    }
+    }else{
+        switch(alac->sample_size) {
+        case 16: {
+            int16_t *outbuffer = ((int16_t *)alac->frame.extended_data[0]) + ch_index;
+            for (i = 0; i < alac->nb_samples; i++)
+                for (ch = 0; ch < channels; ch++)
+                    *outbuffer++ = alac->output_samples_buffer[ch][i];
+            }
+            break;
+        case 24: {
+            int32_t *outbuffer = ((int32_t *)alac->frame.extended_data[0]) + ch_index;
+            for (i = 0; i < alac->nb_samples; i++)
+                for (ch = 0; ch < channels; ch++)
+                    *outbuffer++ = alac->output_samples_buffer[ch][i] << 8;
+            }
+            break;
+        case 32: {
+            int32_t *outbuffer = ((int32_t *)alac->frame.extended_data[0]) + ch_index;
+            for (i = 0; i < alac->nb_samples; i++)
+                for (ch = 0; ch < channels; ch++)
+                    *outbuffer++ = alac->output_samples_buffer[ch][i];
+            }
+            break;
+        }
     }
 
     return 0;
@@ -491,7 +519,7 @@ static av_cold int alac_decode_close(AVCodecContext *avctx)
     int ch;
     for (ch = 0; ch < FFMIN(alac->channels, 2); ch++) {
         av_freep(&alac->predict_error_buffer[ch]);
-        if (alac->sample_size == 16)
+        if (!alac->direct_output)
             av_freep(&alac->output_samples_buffer[ch]);
         av_freep(&alac->extra_bits_buffer[ch]);
     }
@@ -508,7 +536,8 @@ static int allocate_buffers(ALACContext *alac)
         FF_ALLOC_OR_GOTO(alac->avctx, alac->predict_error_buffer[ch],
                          buf_size, buf_alloc_fail);
 
-        if (alac->sample_size == 16) {
+        alac->direct_output = alac->sample_size > 16 && av_sample_fmt_is_planar(alac->avctx->sample_fmt);
+        if (!alac->direct_output) {
             FF_ALLOC_OR_GOTO(alac->avctx, alac->output_samples_buffer[ch],
                              buf_size, buf_alloc_fail);
         }
@@ -554,6 +583,7 @@ static int alac_set_info(ALACContext *alac)
 static av_cold int alac_decode_init(AVCodecContext * avctx)
 {
     int ret;
+    int req_packed;
     ALACContext *alac = avctx->priv_data;
     alac->avctx = avctx;
 
@@ -568,11 +598,12 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
         return -1;
     }
 
+    req_packed = !av_sample_fmt_is_planar(avctx->request_sample_fmt);
     switch (alac->sample_size) {
-    case 16: avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
+    case 16: avctx->sample_fmt = req_packed ? AV_SAMPLE_FMT_S16 : AV_SAMPLE_FMT_S16P;
              break;
     case 24:
-    case 32: avctx->sample_fmt = AV_SAMPLE_FMT_S32P;
+    case 32: avctx->sample_fmt = req_packed ? AV_SAMPLE_FMT_S32 : AV_SAMPLE_FMT_S32P;
              break;
     default: av_log_ask_for_sample(avctx, "Sample depth %d is not supported.\n",
                                    alac->sample_size);
