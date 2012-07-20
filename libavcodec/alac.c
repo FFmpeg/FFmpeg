@@ -598,7 +598,7 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
         return -1;
     }
 
-    req_packed = !av_sample_fmt_is_planar(avctx->request_sample_fmt);
+    req_packed = LIBAVCODEC_VERSION_MAJOR < 55 && !av_sample_fmt_is_planar(avctx->request_sample_fmt);
     switch (alac->sample_size) {
     case 16: avctx->sample_fmt = req_packed ? AV_SAMPLE_FMT_S16 : AV_SAMPLE_FMT_S16P;
              break;
