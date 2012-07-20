@@ -1731,6 +1731,8 @@ ldflags_filter=echo
 
 AS_O='-o $@'
 CC_O='-o $@'
+LD_O='-o $@'
+HOSTCC_O='-o $@'
 
 host_cflags='-D_ISOC99_SOURCE -D_XOPEN_SOURCE=600 -O3 -g'
 host_libs='-lm'
@@ -1741,8 +1743,8 @@ target_path='$(CURDIR)'
 
 # since the object filename is not given with the -MM flag, the compiler
 # is only able to print the basename, and we must add the path ourselves
-DEPEND_CMD='$(DEPCC) $(DEPFLAGS) $< | sed -e "/^\#.*/d" -e "s,^[[:space:]]*$(*F)\\.o,$(@D)/$(*F).o," > $(@:.o=.d)'
-DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -MM'
+DEPCMD='$(DEP$(1)) $(DEP$(1)FLAGS) $($(1)DEP_FLAGS) $< | sed -e "/^\#.*/d" -e "s,^[[:space:]]*$(*F)\\.o,$(@D)/$(*F).o," > $(@:.o=.d)'
+DEPFLAGS='-MM'
 
 # find source path
 if test -f configure; then
@@ -2042,120 +2044,150 @@ tms470_flags(){
     done
 }
 
-if   $cc -v 2>&1 | grep -q '^gcc.*LLVM'; then
-    cc_type=llvm_gcc
-    gcc_extra_ver=$(expr "$($cc --version | head -n1)" : '.*\((.*)\)')
-    cc_ident="llvm-gcc $($cc -dumpversion) $gcc_extra_ver"
-    CC_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
-    AS_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
-    cflags_speed='-O3'
-    cflags_size='-Os'
-elif $cc -v 2>&1 | grep -qi ^gcc; then
-    cc_type=gcc
-    gcc_version=$($cc --version | head -n1)
-    gcc_basever=$($cc -dumpversion)
-    gcc_pkg_ver=$(expr "$gcc_version" : '[^ ]* \(([^)]*)\)')
-    gcc_ext_ver=$(expr "$gcc_version" : ".*$gcc_pkg_ver $gcc_basever \\(.*\\)")
-    cc_ident=$(cleanws "gcc $gcc_basever $gcc_pkg_ver $gcc_ext_ver")
-    if ! $cc -dumpversion | grep -q '^2\.'; then
-        CC_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
-        AS_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
+probe_cc(){
+    pfx=$1
+    _cc=$2
+
+    unset _type _ident _cc_o _flags _cflags _ldflags _depflags _DEPCMD _DEPFLAGS
+    _flags_filter=echo
+
+    if $_cc -v 2>&1 | grep -q '^gcc.*LLVM'; then
+        _type=llvm_gcc
+        gcc_extra_ver=$(expr "$($_cc --version | head -n1)" : '.*\((.*)\)')
+        _ident="llvm-gcc $($_cc -dumpversion) $gcc_extra_ver"
+        _depflags='-MMD -MF $(@:.o=.d) -MT $@'
+        _cflags_speed='-O3'
+        _cflags_size='-Os'
+    elif $_cc -v 2>&1 | grep -qi ^gcc; then
+        _type=gcc
+        gcc_version=$($_cc --version | head -n1)
+        gcc_basever=$($_cc -dumpversion)
+        gcc_pkg_ver=$(expr "$gcc_version" : '[^ ]* \(([^)]*)\)')
+        gcc_ext_ver=$(expr "$gcc_version" : ".*$gcc_pkg_ver $gcc_basever \\(.*\\)")
+        _ident=$(cleanws "gcc $gcc_basever $gcc_pkg_ver $gcc_ext_ver")
+        if ! $_cc -dumpversion | grep -q '^2\.'; then
+            _depflags='-MMD -MF $(@:.o=.d) -MT $@'
+        fi
+        _cflags_speed='-O3'
+        _cflags_size='-Os'
+    elif $_cc --version 2>/dev/null | grep -q Intel; then
+        _type=icc
+        _ident=$($_cc --version | head -n1)
+        _depflags='-MMD'
+        _cflags_speed='-O3'
+        _cflags_size='-Os'
+        _cflags_noopt='-O1'
+    elif $_cc -v 2>&1 | grep -q xlc; then
+        _type=xlc
+        _ident=$($_cc -qversion 2>/dev/null | head -n1)
+        _cflags_speed='-O5'
+        _cflags_size='-O5 -qcompact'
+    elif $_cc -V 2>/dev/null | grep -q Compaq; then
+        _type=ccc
+        _ident=$($_cc -V | head -n1 | cut -d' ' -f1-3)
+        _DEPFLAGS='-M'
+        debuglevel=3
+        _ldflags='-Wl,-z,now' # calls to libots crash without this
+        _cflags_speed='-fast'
+        _cflags_size='-O1'
+    elif $_cc --vsn 2>/dev/null | grep -q "ARM C/C++ Compiler"; then
+        test -d "$sysroot" || die "No valid sysroot specified."
+        _type=armcc
+        _ident=$($_cc --vsn | head -n1)
+        armcc_conf="$PWD/armcc.conf"
+        $_cc --arm_linux_configure                 \
+             --arm_linux_config_file="$armcc_conf" \
+             --configure_sysroot="$sysroot"        \
+             --configure_cpp_headers="$sysinclude" >>$logfile 2>&1 ||
+             die "Error creating armcc configuration file."
+        $_cc --vsn | grep -q RVCT && armcc_opt=rvct || armcc_opt=armcc
+        _flags="--arm_linux_config_file=$armcc_conf --translate_gcc"
+        as_default="${cross_prefix}gcc"
+        _depflags='-MMD'
+        _cflags_speed='-O3'
+        _cflags_size='-Os'
+    elif $_cc -version 2>/dev/null | grep -q TMS470; then
+        _type=tms470
+        _ident=$($_cc -version | head -n1 | tr -s ' ')
+        _flags='--gcc --abi=eabi -me'
+        _cflags='-D__gnuc_va_list=va_list -D__USER_LABEL_PREFIX__='
+        _cc_o='-fe=$@'
+        as_default="${cross_prefix}gcc"
+        ld_default="${cross_prefix}gcc"
+        _depflags='-ppa -ppd=$(@:.o=.d)'
+        _cflags_speed='-O3 -mf=5'
+        _cflags_size='-O3 -mf=2'
+        _flags_filter=tms470_flags
+    elif $_cc -v 2>&1 | grep -q clang; then
+        _type=clang
+        _ident=$($_cc --version | head -n1)
+        _depflags='-MMD'
+        _cflags_speed='-O3'
+        _cflags_size='-Os'
+    elif $_cc -V 2>&1 | grep -q Sun; then
+        _type=suncc
+        _ident=$($_cc -V 2>&1 | head -n1 | cut -d' ' -f 2-)
+        _DEPCMD='$(DEP$(1)) $(DEP$(1)FLAGS) $($(1)DEP_FLAGS) $< | sed -e "1s,^.*: ,$@: ," -e "\$$!s,\$$, \\\," -e "1!s,^.*: , ," > $(@:.o=.d)'
+        _DEPFLAGS='-xM1'
+        _ldflags='-std=c99'
+        _cflags_speed='-O5'
+        _cflags_size='-O5 -xspace'
+        _flags_filter=suncc_flags
+    elif $_cc -v 2>&1 | grep -q 'PathScale\|Path64'; then
+        _type=pathscale
+        _ident=$($_cc -v 2>&1 | head -n1 | tr -d :)
+        _depflags='-MMD -MF $(@:.o=.d) -MT $@'
+        _cflags_speed='-O2'
+        _cflags_size='-Os'
+        _flags_filter='filter_out -Wdisabled-optimization'
+    elif $_cc -v 2>&1 | grep -q Open64; then
+        _type=open64
+        _ident=$($_cc -v 2>&1 | head -n1 | tr -d :)
+        _depflags='-MMD -MF $(@:.o=.d) -MT $@'
+        _cflags_speed='-O2'
+        _cflags_size='-Os'
+        _flags_filter='filter_out -Wdisabled-optimization|-Wtype-limits|-fno-signed-zeros'
+    elif $_cc -V 2>&1 | grep -q Portland; then
+        _type=pgi
+        _ident="PGI $($_cc -V 2>&1 | awk '/^pgcc/ { print $2; exit }')"
+        opt_common='-alias=ansi -Mlre -Mpre'
+        _cflags_speed="-O3 -Mautoinline -Munroll=c:4 $opt_common"
+        _cflags_size="-O2 -Munroll=c:1 $opt_common"
+        _cflags_noopt="-O1"
+        _flags_filter=pgi_flags
     fi
-    cflags_speed='-O3'
-    cflags_size='-Os'
-elif $cc --version 2>/dev/null | grep -q Intel; then
-    cc_type=icc
-    cc_ident=$($cc --version | head -n1)
-    CC_DEPFLAGS='-MMD'
-    AS_DEPFLAGS='-MMD'
-    cflags_speed='-O3'
-    cflags_size='-Os'
-    cflags_noopt='-O1'
-elif $cc -v 2>&1 | grep -q xlc; then
-    cc_type=xlc
-    cc_ident=$($cc -qversion 2>/dev/null | head -n1)
-    cflags_speed='-O5'
-    cflags_size='-O5 -qcompact'
-elif $cc -V 2>/dev/null | grep -q Compaq; then
-    cc_type=ccc
-    cc_ident=$($cc -V | head -n1 | cut -d' ' -f1-3)
-    DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -M'
-    debuglevel=3
-    add_ldflags -Wl,-z,now # calls to libots crash without this
-    cflags_speed='-fast'
-    cflags_size='-O1'
-elif $cc --vsn 2>/dev/null | grep -q "ARM C/C++ Compiler"; then
-    test -d "$sysroot" || die "No valid sysroot specified."
-    cc_type=armcc
-    cc_ident=$($cc --vsn | head -n1)
-    armcc_conf="$PWD/armcc.conf"
-    $cc --arm_linux_configure                 \
-        --arm_linux_config_file="$armcc_conf" \
-        --configure_sysroot="$sysroot"        \
-        --configure_cpp_headers="$sysinclude" >>$logfile 2>&1 ||
-        die "Error creating armcc configuration file."
-    $cc --vsn | grep -q RVCT && armcc_opt=rvct || armcc_opt=armcc
-    cc="$cc --arm_linux_config_file=$armcc_conf --translate_gcc"
-    as_default="${cross_prefix}gcc"
-    CC_DEPFLAGS='-MMD'
-    AS_DEPFLAGS='-MMD'
-    cflags_speed='-O3'
-    cflags_size='-Os'
-    asflags_filter="filter_out -W${armcc_opt}*"
-elif $cc -version 2>/dev/null | grep -q TMS470; then
-    cc_type=tms470
-    cc_ident=$($cc -version | head -n1 | tr -s ' ')
-    cc="$cc --gcc --abi=eabi -me"
-    CC_O='-fe=$@'
-    as_default="${cross_prefix}gcc"
-    ld_default="${cross_prefix}gcc"
-    add_cflags -D__gnuc_va_list=va_list -D__USER_LABEL_PREFIX__=
-    CC_DEPFLAGS='-ppa -ppd=$(@:.o=.d)'
-    AS_DEPFLAGS='-MMD'
-    cflags_speed='-O3 -mf=5'
-    cflags_size='-O3 -mf=2'
-    cflags_filter=tms470_flags
-elif $cc -v 2>&1 | grep -q clang; then
-    cc_type=clang
-    cc_ident=$($cc --version | head -n1)
-    CC_DEPFLAGS='-MMD'
-    AS_DEPFLAGS='-MMD'
-    cflags_speed='-O3'
-    cflags_size='-Os'
-elif $cc -V 2>&1 | grep -q Sun; then
-    cc_type=suncc
-    cc_ident=$($cc -V 2>&1 | head -n1 | cut -d' ' -f 2-)
-    DEPEND_CMD='$(DEPCC) $(DEPFLAGS) $< | sed -e "1s,^.*: ,$@: ," -e "\$$!s,\$$, \\\," -e "1!s,^.*: , ," > $(@:.o=.d)'
-    DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -xM1'
-    add_ldflags -xc99
-    cflags_speed='-O5'
-    cflags_size='-O5 -xspace'
-    cflags_filter=suncc_flags
-elif $cc -v 2>&1 | grep -q 'PathScale\|Path64'; then
-    cc_type=pathscale
-    cc_ident=$($cc -v 2>&1 | head -n1 | tr -d :)
-    CC_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
-    AS_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
-    cflags_speed='-O2'
-    cflags_size='-Os'
-    cflags_filter='filter_out -Wdisabled-optimization'
-elif $cc -v 2>&1 | grep -q Open64; then
-    cc_type=open64
-    cc_ident=$($cc -v 2>&1 | head -n1 | tr -d :)
-    CC_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
-    AS_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
-    cflags_speed='-O2'
-    cflags_size='-Os'
-    cflags_filter='filter_out -Wdisabled-optimization|-Wtype-limits|-fno-signed-zeros'
-elif $cc -V 2>&1 | grep -q Portland; then
-    cc_type=pgi
-    cc_ident="PGI $($cc -V 2>&1 | awk '/^pgcc/ { print $2; exit }')"
-    opt_common='-alias=ansi -Mlre -Mpre'
-    cflags_speed="-O3 -Mautoinline -Munroll=c:4 $opt_common"
-    cflags_size="-O2 -Munroll=c:1 $opt_common"
-    cflags_noopt="-O1"
-    cflags_filter=pgi_flags
-fi
+
+    eval ${pfx}_type=\$_type
+    eval ${pfx}_ident=\$_ident
+}
+
+set_ccvars(){
+    eval ${1}_O=\${_cc_o-\${${1}_O}}
+
+    if [ -n "$_depflags" ]; then
+        eval ${1}_DEPFLAGS=\$_depflags
+    else
+        eval ${1}DEP=\${_DEPCMD:-\$DEPCMD}
+        eval ${1}DEP_FLAGS=\${_DEPFLAGS:-\$DEPFLAGS}
+        eval DEP${1}FLAGS=\$_flags
+    fi
+}
+
+probe_cc cc "$cc"
+cflags_filter=$_flags_filter
+cflags_speed=$_cflags_speed
+cflags_size=$_cflags_size
+cflags_noopt=$_cflags_noopt
+add_cflags $_flags $_cflags
+cc_ldflags=$_ldflags
+set_ccvars CC
+
+probe_cc hostcc "$host_cc"
+host_cflags_filter=$_flags_filter
+host_ldflags_filter=$_flags_filter
+add_host_cflags  $_flags $_cflags
+add_host_ldflags $_flags $_ldflags
+set_ccvars HOSTCC
 
 test -n "$cc_type" && enable $cc_type ||
     warn "Unknown C compiler $cc, unable to select optimal CFLAGS"
@@ -2165,8 +2197,23 @@ test -n "$cc_type" && enable $cc_type ||
 : ${ld_default:=$cc}
 set_default ar as dep_cc ld
 
-test -n "$CC_DEPFLAGS" || CCDEP=$DEPEND_CMD
-test -n "$AS_DEPFLAGS" || ASDEP=$DEPEND_CMD
+probe_cc as "$as"
+asflags_filter=$_flags_filter
+add_asflags $_flags $_cflags
+set_ccvars AS
+
+probe_cc ld "$ld"
+ldflags_filter=$_flags_filter
+add_ldflags $_flags $_ldflags
+test "$cc_type" != "$ld_type" && add_ldflags $cc_ldflags
+LD_O=${_cc_o-$LD_O}
+
+if [ -z "$CC_DEPFLAGS" ] && [ "$dep_cc" != "$cc" ]; then
+    probe_cc depcc "$dep_cc"
+    CCDEP=${_DEPCMD:-$DEPCMD}
+    CCDEP_FLAGS=${_DEPFLAGS:=$DEPFLAGS}
+    DEPCCFLAGS=$_flags
+fi
 
 add_cflags $extra_cflags
 add_asflags $extra_cflags
@@ -3355,6 +3402,9 @@ CC=$cc
 AS=$as
 LD=$ld
 DEPCC=$dep_cc
+DEPCCFLAGS=$DEPCCFLAGS \$(CPPFLAGS)
+DEPAS=$as
+DEPASFLAGS=$DEPASFLAGS \$(CPPFLAGS)
 YASM=$yasmexe
 YASMDEP=$yasmexe
 AR=$ar
@@ -3363,8 +3413,9 @@ LN_S=$ln_s
 CPPFLAGS=$CPPFLAGS
 CFLAGS=$CFLAGS
 ASFLAGS=$ASFLAGS
-AS_O=$CC_O
+AS_O=$AS_O
 CC_O=$CC_O
+LD_O=$LD_O
 DLLTOOL=$dlltool
 LDFLAGS=$LDFLAGS
 AVSERVERLDFLAGS=$AVSERVERLDFLAGS
@@ -3379,9 +3430,10 @@ SLIBPREF=$SLIBPREF
 SLIBSUF=$SLIBSUF
 EXESUF=$EXESUF
 EXTRA_VERSION=$extra_version
-DEPFLAGS=$DEPFLAGS
 CCDEP=$CCDEP
+CCDEP_FLAGS=$CCDEP_FLAGS
 ASDEP=$ASDEP
+ASDEP_FLAGS=$ASDEP_FLAGS
 CC_DEPFLAGS=$CC_DEPFLAGS
 AS_DEPFLAGS=$AS_DEPFLAGS
 HOSTCC=$host_cc
@@ -3389,6 +3441,12 @@ HOSTCFLAGS=$host_cflags
 HOSTEXESUF=$HOSTEXESUF
 HOSTLDFLAGS=$host_ldflags
 HOSTLIBS=$host_libs
+DEPHOSTCC=$host_cc
+DEPHOSTCCFLAGS=$DEPHOSTCCFLAGS \$(HOSTCCFLAGS)
+HOSTCCDEP=$HOSTCCDEP
+HOSTCCDEP_FLAGS=$HOSTCCDEP_FLAGS
+HOSTCC_DEPFLAGS=$HOSTCC_DEPFLAGS
+HOSTCC_O=$HOSTCC_O
 TARGET_EXEC=$target_exec
 TARGET_PATH=$target_path
 SDL_LIBS=$sdl_libs

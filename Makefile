@@ -11,7 +11,7 @@ ifndef V
 Q      = @
 ECHO   = printf "$(1)\t%s\n" $(2)
 BRIEF  = CC AS YASM AR LD HOSTCC
-SILENT = DEPCC YASMDEP RM RANLIB
+SILENT = DEPCC DEPAS DEPHOSTCC YASMDEP RM RANLIB
 MSG    = $@
 M      = @$(call ECHO,$(TAG),$@);
 $(foreach VAR,$(BRIEF), \
@@ -25,14 +25,15 @@ ALLFFLIBS = avcodec avdevice avfilter avformat avresample avutil swscale
 IFLAGS     := -I. -I$(SRC_PATH)
 CPPFLAGS   := $(IFLAGS) $(CPPFLAGS)
 CFLAGS     += $(ECFLAGS)
-CCFLAGS     = $(CFLAGS)
+CCFLAGS     = $(CPPFLAGS) $(CFLAGS)
+ASFLAGS    := $(CPPFLAGS) $(ASFLAGS)
 YASMFLAGS  += $(IFLAGS) -I$(SRC_PATH)/libavutil/x86/ -Pconfig.asm
 HOSTCFLAGS += $(IFLAGS)
 LDFLAGS    := $(ALLFFLIBS:%=-Llib%) $(LDFLAGS)
 
 define COMPILE
-	$($(1)DEP)
-	$($(1)) $(CPPFLAGS) $($(1)FLAGS) $($(1)_DEPFLAGS) -c $($(1)_O) $<
+	$(call $(1)DEP,$(1))
+	$($(1)) $($(1)FLAGS) $($(1)_DEPFLAGS) -c $($(1)_O) $<
 endef
 
 COMPILE_C = $(call COMPILE,CC)
