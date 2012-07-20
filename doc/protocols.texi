@@ -271,6 +271,14 @@ The Real-Time Messaging Protocol tunneled through HTTP (RTMPT) is used
 for streaming multimedia content within HTTP requests to traverse
 firewalls.
 
+@section rtmpte
+
+Encrypted Real-Time Messaging Protocol tunneled through HTTP.
+
+The Encrypted Real-Time Messaging Protocol tunneled through HTTP (RTMPTE)
+is used for streaming multimedia content within HTTP requests to traverse
+firewalls.
+
 @section rtmpts
 
 Real-Time Messaging Protocol tunneled through HTTPS.

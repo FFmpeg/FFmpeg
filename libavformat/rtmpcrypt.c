@@ -26,6 +26,7 @@
 
 #include "libavutil/blowfish.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/opt.h"
 #include "libavutil/rc4.h"
 #include "libavutil/xtea.h"
 
@@ -37,11 +38,13 @@
 
 /* protocol handler context */
 typedef struct RTMPEContext {
+    const AVClass *class;
     URLContext   *stream;            ///< TCP stream
     FF_DH        *dh;                ///< Diffie-Hellman context
     struct AVRC4 key_in;             ///< RC4 key used for decrypt data
     struct AVRC4 key_out;            ///< RC4 key used for encrypt data
     int          handshaked;         ///< flag indicating when the handshake is performed
+    int          tunneling;          ///< use a HTTP connection (RTMPTE)
 } RTMPEContext;
 
 static const uint8_t rtmpe8_keys[16][16] = {
@@ -248,11 +251,17 @@ static int rtmpe_open(URLContext *h, const char *uri, int flags)
 
     av_url_split(NULL, 0, NULL, 0, host, sizeof(host), &port, NULL, 0, uri);
 
-    if (port < 0)
-        port = 1935;
+    if (rt->tunneling) {
+        if (port < 0)
+            port = 80;
+        ff_url_join(url, sizeof(url), "ffrtmphttp", NULL, host, port, NULL);
+    } else {
+        if (port < 0)
+            port = 1935;
+        ff_url_join(url, sizeof(url), "tcp", NULL, host, port, NULL);
+    }
 
-    /* open the tcp connection */
-    ff_url_join(url, sizeof(url), "tcp", NULL, host, port, NULL);
+    /* open the tcp or ffrtmphttp connection */
     if ((ret = ffurl_open(&rt->stream, url, AVIO_FLAG_READ_WRITE,
                           &h->interrupt_callback, NULL)) < 0) {
         rtmpe_close(h);
@@ -298,6 +307,21 @@ static int rtmpe_write(URLContext *h, const uint8_t *buf, int size)
     return size;
 }
 
+#define OFFSET(x) offsetof(RTMPEContext, x)
+#define DEC AV_OPT_FLAG_DECODING_PARAM
+
+static const AVOption ffrtmpcrypt_options[] = {
+    {"ffrtmpcrypt_tunneling", "Use a HTTP tunneling connection (RTMPTE).", OFFSET(tunneling), AV_OPT_TYPE_INT, {0}, 0, 1, DEC},
+    { NULL },
+};
+
+static const AVClass ffrtmpcrypt_class = {
+    .class_name = "ffrtmpcrypt",
+    .item_name  = av_default_item_name,
+    .option     = ffrtmpcrypt_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 URLProtocol ff_ffrtmpcrypt_protocol = {
     .name            = "ffrtmpcrypt",
     .url_open        = rtmpe_open,
@@ -306,4 +330,5 @@ URLProtocol ff_ffrtmpcrypt_protocol = {
     .url_close       = rtmpe_close,
     .priv_data_size  = sizeof(RTMPEContext),
     .flags           = URL_PROTOCOL_FLAG_NETWORK,
+    .priv_data_class = &ffrtmpcrypt_class,
 };

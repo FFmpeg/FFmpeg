@@ -40,6 +40,7 @@ version <next>:
 - JPEG 2000 encoding support through OpenJPEG
 - G.723.1 demuxer and decoder
 - RTMPE protocol support
+- RTMPTE protocol support
 
 
 version 0.8:

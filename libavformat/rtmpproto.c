@@ -1192,7 +1192,10 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
         if (port < 0)
             port = RTMPS_DEFAULT_PORT;
         ff_url_join(buf, sizeof(buf), "tls", NULL, hostname, port, NULL);
-    } else if (!strcmp(proto, "rtmpe")) {
+    } else if (!strcmp(proto, "rtmpe") || (!strcmp(proto, "rtmpte"))) {
+        if (!strcmp(proto, "rtmpte"))
+            av_dict_set(&opts, "ffrtmpcrypt_tunneling", "1", 1);
+
         /* open the encrypted connection */
         ff_url_join(buf, sizeof(buf), "ffrtmpcrypt", NULL, hostname, port, NULL);
         rt->encrypted = 1;
@@ -1572,6 +1575,24 @@ URLProtocol ff_rtmpt_protocol = {
     .priv_data_size  = sizeof(RTMPContext),
     .flags           = URL_PROTOCOL_FLAG_NETWORK,
     .priv_data_class = &rtmpt_class,
+};
+
+static const AVClass rtmpte_class = {
+    .class_name = "rtmpte",
+    .item_name  = av_default_item_name,
+    .option     = rtmp_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+URLProtocol ff_rtmpte_protocol = {
+    .name            = "rtmpte",
+    .url_open        = rtmp_open,
+    .url_read        = rtmp_read,
+    .url_write       = rtmp_write,
+    .url_close       = rtmp_close,
+    .priv_data_size  = sizeof(RTMPContext),
+    .flags           = URL_PROTOCOL_FLAG_NETWORK,
+    .priv_data_class = &rtmpte_class,
 };
 
 static const AVClass rtmpts_class = {
