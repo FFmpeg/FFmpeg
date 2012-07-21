@@ -880,6 +880,21 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
     return 0;
 }
 
+static int handle_server_bw(URLContext *s, RTMPPacket *pkt)
+{
+    RTMPContext *rt = s->priv_data;
+
+    rt->server_bw = AV_RB32(pkt->data);
+    if (rt->server_bw <= 0) {
+        av_log(s, AV_LOG_ERROR, "Incorrect server bandwidth %d\n",
+               rt->server_bw);
+        return AVERROR(EINVAL);
+    }
+    av_log(s, AV_LOG_DEBUG, "Server bandwidth = %d\n", rt->server_bw);
+
+    return 0;
+}
+
 /**
  * Parse received packet and possibly perform some action depending on
  * the packet contents.
@@ -931,12 +946,8 @@ static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
         rt->client_report_size = AV_RB32(pkt->data) >> 1;
         break;
     case RTMP_PT_SERVER_BW:
-        rt->server_bw = AV_RB32(pkt->data);
-        if (rt->server_bw <= 0) {
-            av_log(s, AV_LOG_ERROR, "Incorrect server bandwidth %d\n", rt->server_bw);
-            return AVERROR(EINVAL);
-        }
-        av_log(s, AV_LOG_DEBUG, "Server bandwidth = %d\n", rt->server_bw);
+        if ((ret = handle_server_bw(s, pkt)) < 0)
+            return ret;
         break;
     case RTMP_PT_INVOKE:
         //TODO: check for the messages sent for wrong state?
