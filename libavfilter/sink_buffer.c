@@ -115,6 +115,7 @@ static void end_frame(AVFilterLink *inlink)
     /* cache frame */
     av_fifo_generic_write(buf->fifo,
                           &inlink->cur_buf, sizeof(AVFilterBufferRef *), NULL);
+    inlink->cur_buf = NULL;
     if (buf->warning_limit &&
         av_fifo_size(buf->fifo) / sizeof(AVFilterBufferRef *) >= buf->warning_limit) {
         av_log(ctx, AV_LOG_WARNING,
