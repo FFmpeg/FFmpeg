@@ -102,7 +102,8 @@ static int caca_write_header(AVFormatContext *s)
             list_dither_antialias(c);
         } else {
             av_log(s, AV_LOG_ERROR,
-                   "Invalid value '%s', for 'list_dither' option\n",
+                   "Invalid argument '%s', for 'list_dither' option\n"
+                   "Argument must be one of 'algorithms, 'antialiases', 'charsets', 'colors'\n",
                    c->list_dither);
             return AVERROR(EINVAL);
         }
