@@ -880,6 +880,34 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
     return 0;
 }
 
+static int handle_chunk_size(URLContext *s, RTMPPacket *pkt)
+{
+    RTMPContext *rt = s->priv_data;
+    int ret;
+
+    if (pkt->data_size != 4) {
+        av_log(s, AV_LOG_ERROR,
+               "Chunk size change packet is not 4 bytes long (%d)\n",
+               pkt->data_size);
+        return -1;
+    }
+
+    if (!rt->is_input) {
+        if ((ret = ff_rtmp_packet_write(rt->stream, pkt, rt->chunk_size,
+                                        rt->prev_pkt[1])) < 0)
+            return ret;
+    }
+
+    rt->chunk_size = AV_RB32(pkt->data);
+    if (rt->chunk_size <= 0) {
+        av_log(s, AV_LOG_ERROR, "Incorrect chunk size %d\n", rt->chunk_size);
+        return -1;
+    }
+    av_log(s, AV_LOG_DEBUG, "New chunk size = %d\n", rt->chunk_size);
+
+    return 0;
+}
+
 static int handle_ping(URLContext *s, RTMPPacket *pkt)
 {
     RTMPContext *rt = s->priv_data;
@@ -943,21 +971,8 @@ static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
 
     switch (pkt->type) {
     case RTMP_PT_CHUNK_SIZE:
-        if (pkt->data_size != 4) {
-            av_log(s, AV_LOG_ERROR,
-                   "Chunk size change packet is not 4 bytes long (%d)\n", pkt->data_size);
-            return -1;
-        }
-        if (!rt->is_input)
-            if ((ret = ff_rtmp_packet_write(rt->stream, pkt, rt->chunk_size,
-                                            rt->prev_pkt[1])) < 0)
-                return ret;
-        rt->chunk_size = AV_RB32(pkt->data);
-        if (rt->chunk_size <= 0) {
-            av_log(s, AV_LOG_ERROR, "Incorrect chunk size %d\n", rt->chunk_size);
-            return -1;
-        }
-        av_log(s, AV_LOG_DEBUG, "New chunk size = %d\n", rt->chunk_size);
+        if ((ret = handle_chunk_size(s, pkt)) < 0)
+            return ret;
         break;
     case RTMP_PT_PING:
         if ((ret = handle_ping(s, pkt)) < 0)
