@@ -237,7 +237,7 @@ static int iff_read_header(AVFormatContext *s)
             else if (fmt_size == sizeof(deep_rgba) && !memcmp(fmt, deep_rgba, sizeof(deep_rgba)))
                 st->codec->pix_fmt = PIX_FMT_RGBA;
             else {
-                av_log_ask_for_sample(NULL, "unsupported color format\n");
+                av_log_ask_for_sample(s, "unsupported color format\n");
                 return AVERROR_PATCHWELCOME;
             }
             break;
