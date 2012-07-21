@@ -560,6 +560,7 @@ static void end_frame_over(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     OverlayContext *over = ctx->priv;
     AVFilterBufferRef *inpicref = inlink->cur_buf;
+    inlink->cur_buf = NULL;
 
     flush_frames(ctx);
     inpicref->pts = av_rescale_q(inpicref->pts, ctx->inputs[OVERLAY]->time_base,
