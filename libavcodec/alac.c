@@ -440,23 +440,29 @@ static int decode_element(AVCodecContext *avctx, void *data, int ch_index,
         switch(alac->sample_size) {
         case 16: {
             int16_t *outbuffer = ((int16_t *)alac->frame.extended_data[0]) + ch_index;
-            for (i = 0; i < alac->nb_samples; i++)
+            for (i = 0; i < alac->nb_samples; i++) {
                 for (ch = 0; ch < channels; ch++)
                     *outbuffer++ = alac->output_samples_buffer[ch][i];
+                outbuffer += alac->channels - channels;
+            }
             }
             break;
         case 24: {
             int32_t *outbuffer = ((int32_t *)alac->frame.extended_data[0]) + ch_index;
-            for (i = 0; i < alac->nb_samples; i++)
+            for (i = 0; i < alac->nb_samples; i++) {
                 for (ch = 0; ch < channels; ch++)
                     *outbuffer++ = alac->output_samples_buffer[ch][i] << 8;
+                outbuffer += alac->channels - channels;
+            }
             }
             break;
         case 32: {
             int32_t *outbuffer = ((int32_t *)alac->frame.extended_data[0]) + ch_index;
-            for (i = 0; i < alac->nb_samples; i++)
+            for (i = 0; i < alac->nb_samples; i++) {
                 for (ch = 0; ch < channels; ch++)
                     *outbuffer++ = alac->output_samples_buffer[ch][i];
+                outbuffer += alac->channels - channels;
+            }
             }
             break;
         }
