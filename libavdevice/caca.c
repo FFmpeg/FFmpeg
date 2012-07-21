@@ -153,15 +153,17 @@ static int caca_write_header(AVFormatContext *s)
         goto fail;
     }
 
-    ret  = caca_set_dither_algorithm(c->dither, c->algorithm);
-    ret += caca_set_dither_antialias(c->dither, c->antialias);
-    ret +=   caca_set_dither_charset(c->dither, c->charset);
-    ret +=     caca_set_dither_color(c->dither, c->colors);
-    if (ret) {
-        av_log(s, AV_LOG_ERROR, "Invalid value given to one of options\n");
-        ret = AVERROR(EINVAL);
-        goto fail;
+#define CHECK_DITHER_OPT(opt)                                           \
+    if (caca_set_dither_##opt(c->dither, c->opt) < 0)  {                \
+        ret = AVERROR(errno);                                           \
+        av_log(s, AV_LOG_ERROR, "Failed to set value '%s' for option '%s'\n", \
+               c->opt, #opt);                                           \
+        goto fail;                                                      \
     }
+    CHECK_DITHER_OPT(algorithm);
+    CHECK_DITHER_OPT(antialias);
+    CHECK_DITHER_OPT(charset);
+    CHECK_DITHER_OPT(color);
 
     if (!c->window_title)
         c->window_title = av_strdup(s->filename);
