@@ -117,6 +117,7 @@ static void end_frame(AVFilterLink *inlink)
 
     // keep a reference of each frame
     thumb->frames[thumb->n].buf = inlink->cur_buf;
+    inlink->cur_buf = NULL;
 
     // no selection until the buffer of N frames is filled up
     if (thumb->n < thumb->n_frames - 1) {
