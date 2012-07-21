@@ -57,31 +57,52 @@ Set display driver.
 Set dithering algorithm. Dithering is necessary
 because the picture being rendered has usually far more colours than
 the available palette.
+The accepted values are listed with @code{-list_dither algorithms}.
 
 @item antialias
 Set antialias method. Antialiasing smoothens the rendered
 image and avoids the commonly seen staircase effect.
+The accepted values are listed with @code{-list_dither antialiases}.
 
 @item charset
 Set which characters are going to be used when rendering text.
+The accepted values are listed with @code{-list_dither charsets}.
 
 @item colors
 Set colors to be used when rendering text.
+The accepted values are listed with @code{-list_dither colors}.
 
 @item list_drivers
-List available drivers.
+If set to @option{true}, print a list of available drivers and exit.
 
 @item list_dither
-List available dither options.
+List available dither options related to the argument.
+The argument must be one of @code{algorithms}, @code{antialiases},
+@code{charsets}, @code{colors}.
 @end table
 
 @subsection Examples
 
+@itemize
+@item
 The following command shows the @command{ffmpeg} output is an
 CACA window, forcing its size to 80x25:
 @example
 ffmpeg -i INPUT -vcodec rawvideo -pix_fmt rgb24 -window_size 80x25 -f caca -
 @end example
+
+@item
+Show the list of available drivers and exit:
+@example
+ffmpeg -i INPUT -pix_fmt rgb24 -f caca -list_drivers true -
+@end example
+
+@item
+Show the list of available dither colors and exit:
+@example
+ffmpeg -i INPUT -pix_fmt rgb24 -f caca -list_dither colors -
+@end example
+@end itemize
 
 @section oss
 
