@@ -60,7 +60,6 @@
 #define ID_ABIT       MKTAG('A','B','I','T')
 #define ID_BODY       MKTAG('B','O','D','Y')
 #define ID_DBOD       MKTAG('D','B','O','D')
-#define ID_ANNO       MKTAG('A','N','N','O')
 #define ID_DPEL       MKTAG('D','P','E','L')
 
 #define LEFT    2
