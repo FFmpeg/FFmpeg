@@ -61,6 +61,7 @@ typedef struct {
     char src[256];
     char dst[256];
     int hsub, vsub;
+    AVFilterBufferRef *outpicref
 } ColorMatrixContext;
 
 #define ma m[0][0]
@@ -341,9 +342,11 @@ static AVFilterBufferRef *get_video_buffer(AVFilterLink *inlink, int perms, int 
 
 static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
+    AVFilterContext *ctx = link->dst;
+    ColorMatrixContext *color = ctx->priv;
     AVFilterBufferRef *outpicref = avfilter_ref_buffer(picref, ~0);
 
-    link->dst->outputs[0]->out_buf = outpicref;
+    color->outpicref = outpicref;
 
     ff_start_frame(link->dst->outputs[0], outpicref);
 }
@@ -352,7 +355,7 @@ static void end_frame(AVFilterLink *link)
 {
     AVFilterContext *ctx = link->dst;
     ColorMatrixContext *color = ctx->priv;
-    AVFilterBufferRef *out = link->dst->outputs[0]->out_buf;
+    AVFilterBufferRef *out = color->outpicref;
 
     if (link->cur_buf->format == PIX_FMT_YUV422P)
         process_frame_yuv422p(color, out, link->cur_buf);
