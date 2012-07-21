@@ -33,6 +33,7 @@ version next:
 - GeoTIFF decoder support
 - ffmpeg -(no)stdin option
 - Opus decoder using libopus
+- caca output device using libcaca
 
 
 version 0.11:
