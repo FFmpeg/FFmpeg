@@ -36,7 +36,7 @@
  * (de)muxers in libavdevice are of the AVFMT_NOFILE type (they use their own
  * I/O functions). The filename passed to avformat_open_input() often does not
  * refer to an actually existing file, but has some special device-specific
- * meaning - e.g. for the x11grab device it is the display name.
+ * meaning - e.g. for x11grab it is the display name.
  *
  * To use libavdevice, simply call avdevice_register_all() to register all
  * compiled muxers and demuxers. They all use standard libavformat API.

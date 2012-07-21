@@ -56,8 +56,7 @@
 /**
  * X11 Device Demuxer context
  */
-struct x11_grab
-{
+struct x11grab {
     const AVClass *class;    /**< Class for private options. */
     int frame_size;          /**< Size in bytes of a grabbed frame */
     AVRational time_base;    /**< Time base */
@@ -85,10 +84,10 @@ struct x11_grab
 /**
  * Draw grabbing region window
  *
- * @param s x11_grab context
+ * @param s x11grab context
  */
 static void
-x11grab_draw_region_win(struct x11_grab *s)
+x11grab_draw_region_win(struct x11grab *s)
 {
     Display *dpy = s->dpy;
     int screen;
@@ -110,10 +109,10 @@ x11grab_draw_region_win(struct x11_grab *s)
 /**
  * Initialize grabbing region window
  *
- * @param s x11_grab context
+ * @param s x11grab context
  */
 static void
-x11grab_region_win_init(struct x11_grab *s)
+x11grab_region_win_init(struct x11grab *s)
 {
     Display *dpy = s->dpy;
     int screen;
@@ -155,7 +154,7 @@ x11grab_region_win_init(struct x11_grab *s)
 static int
 x11grab_read_header(AVFormatContext *s1)
 {
-    struct x11_grab *x11grab = s1->priv_data;
+    struct x11grab *x11grab = s1->priv_data;
     Display *dpy;
     AVStream *st = NULL;
     enum PixelFormat input_pixfmt;
@@ -334,7 +333,7 @@ out:
  *          coordinates
  */
 static void
-paint_mouse_pointer(XImage *image, struct x11_grab *s)
+paint_mouse_pointer(XImage *image, struct x11grab *s)
 {
     int x_off = s->x_off;
     int y_off = s->y_off;
@@ -448,7 +447,7 @@ xget_zpixmap(Display *dpy, Drawable d, XImage *image, int x, int y)
 static int
 x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
 {
-    struct x11_grab *s = s1->priv_data;
+    struct x11grab *s = s1->priv_data;
     Display *dpy = s->dpy;
     XImage *image = s->image;
     int x_off = s->x_off;
@@ -558,7 +557,7 @@ x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
 static int
 x11grab_read_close(AVFormatContext *s1)
 {
-    struct x11_grab *x11grab = s1->priv_data;
+    struct x11grab *x11grab = s1->priv_data;
 
     /* Detach cleanly from shared mem */
     if (x11grab->use_shm) {
@@ -582,7 +581,7 @@ x11grab_read_close(AVFormatContext *s1)
     return 0;
 }
 
-#define OFFSET(x) offsetof(struct x11_grab, x)
+#define OFFSET(x) offsetof(struct x11grab, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
     { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), AV_OPT_TYPE_STRING, {.str = "vga"}, 0, 0, DEC },
@@ -603,10 +602,10 @@ static const AVClass x11_class = {
 };
 
 /** x11 grabber device demuxer declaration */
-AVInputFormat ff_x11_grab_device_demuxer = {
+AVInputFormat ff_x11grab_demuxer = {
     .name           = "x11grab",
     .long_name      = NULL_IF_CONFIG_SMALL("X11grab"),
-    .priv_data_size = sizeof(struct x11_grab),
+    .priv_data_size = sizeof(struct x11grab),
     .read_header    = x11grab_read_header,
     .read_packet    = x11grab_read_packet,
     .read_close     = x11grab_read_close,
