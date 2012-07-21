@@ -880,6 +880,22 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
     return 0;
 }
 
+static int handle_client_bw(URLContext *s, RTMPPacket *pkt)
+{
+    RTMPContext *rt = s->priv_data;
+
+    if (pkt->data_size < 4) {
+        av_log(s, AV_LOG_ERROR,
+               "Client bandwidth report packet is less than 4 bytes long (%d)\n",
+               pkt->data_size);
+        return -1;
+    }
+    av_log(s, AV_LOG_DEBUG, "Client bandwidth = %d\n", AV_RB32(pkt->data));
+    rt->client_report_size = AV_RB32(pkt->data) >> 1;
+
+    return 0;
+}
+
 static int handle_server_bw(URLContext *s, RTMPPacket *pkt)
 {
     RTMPContext *rt = s->priv_data;
@@ -936,14 +952,8 @@ static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
                 return ret;
         break;
     case RTMP_PT_CLIENT_BW:
-        if (pkt->data_size < 4) {
-            av_log(s, AV_LOG_ERROR,
-                   "Client bandwidth report packet is less than 4 bytes long (%d)\n",
-                   pkt->data_size);
-            return -1;
-        }
-        av_log(s, AV_LOG_DEBUG, "Client bandwidth = %d\n", AV_RB32(pkt->data));
-        rt->client_report_size = AV_RB32(pkt->data) >> 1;
+        if ((ret = handle_client_bw(s, pkt)) < 0)
+            return ret;
         break;
     case RTMP_PT_SERVER_BW:
         if ((ret = handle_server_bw(s, pkt)) < 0)
