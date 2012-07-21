@@ -47,9 +47,18 @@ static int caca_write_trailer(AVFormatContext *s)
 
     av_freep(&c->window_title);
 
-    caca_free_dither(c->dither);
-    caca_free_display(c->display);
-    caca_free_canvas(c->canvas);
+    if (c->display) {
+        caca_free_display(c->display);
+        c->display = NULL;
+    }
+    if (c->dither) {
+        caca_free_dither(c->dither);
+        c->dither = NULL;
+    }
+    if (c->canvas) {
+        caca_free_canvas(c->canvas);
+        c->canvas = NULL;
+    }
     return 0;
 }
 
@@ -127,20 +136,8 @@ static int caca_write_header(AVFormatContext *s)
     c->canvas = caca_create_canvas(c->window_width, c->window_height);
     if (!c->canvas) {
         av_log(s, AV_LOG_ERROR, "Failed to create canvas\n");
-        return AVERROR(errno);
-    }
-
-    c->display = caca_create_display_with_driver(c->canvas, c->driver);
-    if (!c->display) {
-        av_log(s, AV_LOG_ERROR, "Failed to create display\n");
-        list_drivers(c);
-        caca_free_canvas(c->canvas);
-        return AVERROR(errno);
-    }
-
-    if (!c->window_width || !c->window_height) {
-        c->window_width  = caca_get_canvas_width(c->canvas);
-        c->window_height = caca_get_canvas_height(c->canvas);
+        ret = AVERROR(errno);
+        goto fail;
     }
 
     bpp = av_get_bits_per_pixel(&av_pix_fmt_descriptors[encctx->pix_fmt]);
@@ -164,6 +161,19 @@ static int caca_write_header(AVFormatContext *s)
     CHECK_DITHER_OPT(antialias);
     CHECK_DITHER_OPT(charset);
     CHECK_DITHER_OPT(color);
+
+    c->display = caca_create_display_with_driver(c->canvas, c->driver);
+    if (!c->display) {
+        av_log(s, AV_LOG_ERROR, "Failed to create display\n");
+        list_drivers(c);
+        ret = AVERROR(errno);
+        goto fail;
+    }
+
+    if (!c->window_width || !c->window_height) {
+        c->window_width  = caca_get_canvas_width(c->canvas);
+        c->window_height = caca_get_canvas_height(c->canvas);
+    }
 
     if (!c->window_title)
         c->window_title = av_strdup(s->filename);
