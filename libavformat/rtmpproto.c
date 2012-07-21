@@ -880,6 +880,20 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
     return 0;
 }
 
+static int handle_ping(URLContext *s, RTMPPacket *pkt)
+{
+    RTMPContext *rt = s->priv_data;
+    int t, ret;
+
+    t = AV_RB16(pkt->data);
+    if (t == 6) {
+        if ((ret = gen_pong(s, rt, pkt)) < 0)
+            return ret;
+    }
+
+    return 0;
+}
+
 static int handle_client_bw(URLContext *s, RTMPPacket *pkt)
 {
     RTMPContext *rt = s->priv_data;
@@ -946,10 +960,8 @@ static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
         av_log(s, AV_LOG_DEBUG, "New chunk size = %d\n", rt->chunk_size);
         break;
     case RTMP_PT_PING:
-        t = AV_RB16(pkt->data);
-        if (t == 6)
-            if ((ret = gen_pong(s, rt, pkt)) < 0)
-                return ret;
+        if ((ret = handle_ping(s, pkt)) < 0)
+            return ret;
         break;
     case RTMP_PT_CLIENT_BW:
         if ((ret = handle_client_bw(s, pkt)) < 0)
