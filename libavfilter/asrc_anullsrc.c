@@ -87,11 +87,11 @@ AVFilter avfilter_asrc_anullsrc = {
     .init        = init,
     .priv_size   = sizeof(ANullContext),
 
-    .inputs      = (AVFilterPad[]) {{ .name = NULL}},
+    .inputs      = (const AVFilterPad[]) {{ .name = NULL}},
 
-    .outputs     = (AVFilterPad[]) {{ .name = "default",
-                                      .type = AVMEDIA_TYPE_AUDIO,
-                                      .config_props = config_props,
-                                      .request_frame = request_frame, },
-                                    { .name = NULL}},
+    .outputs     = (const AVFilterPad[]) {{ .name = "default",
+                                            .type = AVMEDIA_TYPE_AUDIO,
+                                            .config_props = config_props,
+                                            .request_frame = request_frame, },
+                                          { .name = NULL}},
 };

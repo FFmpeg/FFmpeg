@@ -128,15 +128,15 @@ AVFilter avfilter_vf_settb = {
 
     .priv_size = sizeof(SetTBContext),
 
-    .inputs    = (AVFilterPad[]) {{ .name             = "default",
-                                    .type             = AVMEDIA_TYPE_VIDEO,
-                                    .get_video_buffer = ff_null_get_video_buffer,
-                                    .start_frame      = start_frame,
-                                    .end_frame        = ff_null_end_frame },
-                                  { .name = NULL }},
+    .inputs    = (const AVFilterPad[]) {{ .name             = "default",
+                                          .type             = AVMEDIA_TYPE_VIDEO,
+                                          .get_video_buffer = ff_null_get_video_buffer,
+                                          .start_frame      = start_frame,
+                                          .end_frame        = ff_null_end_frame },
+                                        { .name = NULL }},
 
-    .outputs   = (AVFilterPad[]) {{ .name            = "default",
-                                    .type            = AVMEDIA_TYPE_VIDEO,
-                                    .config_props    = config_output_props, },
-                                  { .name = NULL}},
+    .outputs   = (const AVFilterPad[]) {{ .name            = "default",
+                                          .type            = AVMEDIA_TYPE_VIDEO,
+                                          .config_props    = config_output_props, },
+                                        { .name = NULL}},
 };

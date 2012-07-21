@@ -98,14 +98,14 @@ AVFilter avfilter_vf_split = {
     .init   = split_init,
     .uninit = split_uninit,
 
-    .inputs    = (AVFilterPad[]) {{ .name            = "default",
-                                    .type            = AVMEDIA_TYPE_VIDEO,
-                                    .get_video_buffer= ff_null_get_video_buffer,
-                                    .start_frame     = start_frame,
-                                    .draw_slice      = draw_slice,
-                                    .end_frame       = end_frame, },
-                                  { .name = NULL}},
-    .outputs   = (AVFilterPad[]) {{ .name = NULL}},
+    .inputs    = (const AVFilterPad[]) {{ .name            = "default",
+                                          .type            = AVMEDIA_TYPE_VIDEO,
+                                          .get_video_buffer= ff_null_get_video_buffer,
+                                          .start_frame     = start_frame,
+                                          .draw_slice      = draw_slice,
+                                          .end_frame       = end_frame, },
+                                        { .name = NULL}},
+    .outputs   = (const AVFilterPad[]) {{ .name = NULL}},
 };
 
 static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)

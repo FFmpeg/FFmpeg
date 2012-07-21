@@ -342,6 +342,19 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
     ff_draw_slice(outlink, y, h, slice_dir);
 }
 
+static const AVFilterPad inputs[] = {
+    { .name            = "default",
+      .type            = AVMEDIA_TYPE_VIDEO,
+      .draw_slice      = draw_slice,
+      .config_props    = config_props,
+      .min_perms       = AV_PERM_READ, },
+    { .name = NULL}
+};
+static const AVFilterPad outputs[] = {
+    { .name            = "default",
+      .type            = AVMEDIA_TYPE_VIDEO, },
+    { .name = NULL}
+};
 #define DEFINE_LUT_FILTER(name_, description_, init_)                   \
     AVFilter avfilter_vf_##name_ = {                                    \
         .name          = #name_,                                        \
@@ -352,15 +365,8 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
         .uninit        = uninit,                                        \
         .query_formats = query_formats,                                 \
                                                                         \
-        .inputs    = (AVFilterPad[]) {{ .name            = "default",   \
-                                        .type            = AVMEDIA_TYPE_VIDEO, \
-                                        .draw_slice      = draw_slice,  \
-                                        .config_props    = config_props, \
-                                        .min_perms       = AV_PERM_READ, }, \
-                                      { .name = NULL}},                 \
-        .outputs   = (AVFilterPad[]) {{ .name            = "default",   \
-                                        .type            = AVMEDIA_TYPE_VIDEO, }, \
-                                      { .name = NULL}},                 \
+        .inputs        = inputs,                                        \
+        .outputs       = outputs,                                       \
     }
 
 #if CONFIG_LUT_FILTER

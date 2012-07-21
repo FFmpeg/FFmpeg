@@ -306,10 +306,10 @@ AVFilter avfilter_vsrc_movie = {
     .uninit        = uninit,
     .query_formats = query_formats,
 
-    .inputs    = (AVFilterPad[]) {{ .name = NULL }},
-    .outputs   = (AVFilterPad[]) {{ .name            = "default",
-                                    .type            = AVMEDIA_TYPE_VIDEO,
-                                    .request_frame   = request_frame,
-                                    .config_props    = config_output_props, },
-                                  { .name = NULL}},
+    .inputs    = (const AVFilterPad[]) {{ .name = NULL }},
+    .outputs   = (const AVFilterPad[]) {{ .name            = "default",
+                                          .type            = AVMEDIA_TYPE_VIDEO,
+                                          .request_frame   = request_frame,
+                                          .config_props    = config_output_props, },
+                                        { .name = NULL}},
 };

@@ -118,9 +118,9 @@ AVFilter avfilter_vsrc_nullsrc = {
     .init       = init,
     .priv_size = sizeof(NullContext),
 
-    .inputs    = (AVFilterPad[]) {{ .name = NULL}},
+    .inputs    = (const AVFilterPad[]) {{ .name = NULL}},
 
-    .outputs   = (AVFilterPad[]) {
+    .outputs   = (const AVFilterPad[]) {
         {
             .name            = "default",
             .type            = AVMEDIA_TYPE_VIDEO,
