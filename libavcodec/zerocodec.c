@@ -33,10 +33,22 @@ static int zerocodec_decode_frame(AVCodecContext *avctx, void *data,
     AVFrame *pic         = avctx->coded_frame;
     AVFrame *prev_pic    = &zc->previous_frame;
     z_stream *zstream    = &zc->zstream;
-    uint8_t *prev, *dst;
+    uint8_t *prev = prev_pic->data[0], *dst;
     int i, j, zret;
 
     pic->reference = 3;
+
+    if (avpkt->flags & AV_PKT_FLAG_KEY) {
+        pic->key_frame = 1;
+        pic->pict_type = AV_PICTURE_TYPE_I;
+    } else {
+        if (!prev) {
+            av_log(avctx, AV_LOG_ERROR, "Missing reference frame!\n");
+            return AVERROR_INVALIDDATA;
+        }
+        pic->key_frame = 0;
+        pic->pict_type = AV_PICTURE_TYPE_P;
+    }
 
     if (avctx->get_buffer(avctx, pic) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Could not allocate buffer.\n");
@@ -53,25 +65,12 @@ static int zerocodec_decode_frame(AVCodecContext *avctx, void *data,
     zstream->next_in  = avpkt->data;
     zstream->avail_in = avpkt->size;
 
-    prev = prev_pic->data[0];
     dst  = pic->data[0];
 
     /**
      * ZeroCodec has very simple interframe compression. If a value
      * is the same as the previous frame, set it to 0.
      */
-
-    if (avpkt->flags & AV_PKT_FLAG_KEY) {
-        pic->key_frame = 1;
-        pic->pict_type = AV_PICTURE_TYPE_I;
-    } else {
-        if (!prev) {
-            av_log(avctx, AV_LOG_ERROR, "Missing reference frame!\n");
-            return AVERROR_INVALIDDATA;
-        }
-        pic->key_frame = 0;
-        pic->pict_type = AV_PICTURE_TYPE_P;
-    }
 
     for (i = 0; i < avctx->height; i++) {
         zstream->next_out  = dst;
@@ -96,11 +95,12 @@ static int zerocodec_decode_frame(AVCodecContext *avctx, void *data,
     if (prev_pic->data[0])
         avctx->release_buffer(avctx, prev_pic);
 
-    /* Store the previouse frame for use later */
-    *prev_pic = *pic;
-
     *data_size       = sizeof(AVFrame);
     *(AVFrame *)data = *pic;
+
+    /* Store the previous frame for use later.
+     * FFSWAP ensures that e.g. pic->data is NULLed. */
+    FFSWAP(AVFrame, *pic, *prev_pic);
 
     return avpkt->size;
 }
