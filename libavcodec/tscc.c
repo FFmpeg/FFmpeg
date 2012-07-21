@@ -77,22 +77,22 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     CamtasiaContext * const c = avctx->priv_data;
     const unsigned char *encoded = buf;
     int zret; // Zlib return code
-    int len = buf_size;
+    int ret, len = buf_size;
 
     if(c->pic.data[0])
             avctx->release_buffer(avctx, &c->pic);
 
     c->pic.reference = 3;
     c->pic.buffer_hints = FF_BUFFER_HINTS_VALID;
-    if(avctx->get_buffer(avctx, &c->pic) < 0){
+    if((ret = avctx->get_buffer(avctx, &c->pic)) < 0){
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     zret = inflateReset(&c->zstream);
     if (zret != Z_OK) {
         av_log(avctx, AV_LOG_ERROR, "Inflate reset error: %d\n", zret);
-        return -1;
+        return AVERROR(EINVAL);
     }
     c->zstream.next_in = encoded;
     c->zstream.avail_in = len;
@@ -102,7 +102,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     // Z_DATA_ERROR means empty picture
     if ((zret != Z_OK) && (zret != Z_STREAM_END) && (zret != Z_DATA_ERROR)) {
         av_log(avctx, AV_LOG_ERROR, "Inflate error: %d\n", zret);
-        return -1;
+        return AVERROR(EINVAL);
     }
 
 
@@ -157,7 +157,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
              break;
     case 32: avctx->pix_fmt = PIX_FMT_RGB32; break;
     default: av_log(avctx, AV_LOG_ERROR, "Camtasia error: unknown depth %i bpp\n", avctx->bits_per_coded_sample);
-             return -1;
+             return AVERROR_PATCHWELCOME;
     }
     c->bpp = avctx->bits_per_coded_sample;
     // buffer size for RLE 'best' case when 2-byte code precedes each pixel and there may be padding after it too
@@ -167,7 +167,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (c->decomp_size) {
         if ((c->decomp_buf = av_malloc(c->decomp_size)) == NULL) {
             av_log(avctx, AV_LOG_ERROR, "Can't allocate decompression buffer.\n");
-            return 1;
+            return AVERROR(ENOMEM);
         }
     }
 
@@ -177,7 +177,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     zret = inflateInit(&c->zstream);
     if (zret != Z_OK) {
         av_log(avctx, AV_LOG_ERROR, "Inflate init error: %d\n", zret);
-        return 1;
+        return AVERROR(ENOMEM);
     }
 
     return 0;
