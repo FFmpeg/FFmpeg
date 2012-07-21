@@ -258,7 +258,6 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     }
     opj_set_event_mgr((opj_common_ptr)dec, NULL, NULL);
     ctx->dec_params.cp_limit_decoding = LIMIT_TO_MAIN_HEADER;
-    ctx->dec_params.cp_reduce = avctx->lowres;
     ctx->dec_params.cp_layer  = ctx->lowqual;
     // Tie decoder with decoding parameters
     opj_setup_decoder(dec, &ctx->dec_params);
