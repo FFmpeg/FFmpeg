@@ -3337,26 +3337,88 @@ static int need_output(void)
     return 0;
 }
 
-static int select_input_file(uint8_t *no_packet)
+static int input_acceptable(InputStream *ist, uint8_t *no_packet)
 {
-    int64_t ipts_min = INT64_MAX;
-    int i, file_index = -1;
+    av_assert1(!ist->discard);
+    return !no_packet[ist->file_index] &&
+           !input_files[ist->file_index]->eof_reached;
+}
 
-    for (i = 0; i < nb_input_streams; i++) {
-        InputStream *ist = input_streams[i];
-        int64_t ipts     = ist->pts;
+static int find_graph_input(FilterGraph *graph, uint8_t *no_packet)
+{
+    int i, nb_req_max = 0, file_index = -1;
 
-        if (ist->discard || no_packet[ist->file_index])
-            continue;
-        if (!input_files[ist->file_index]->eof_reached) {
-            if (ipts < ipts_min) {
-                ipts_min = ipts;
+    for (i = 0; i < graph->nb_inputs; i++) {
+        int nb_req = av_buffersrc_get_nb_failed_requests(graph->inputs[i]->filter);
+        if (nb_req > nb_req_max) {
+            InputStream *ist = graph->inputs[i]->ist;
+            if (input_acceptable(ist, no_packet)) {
+                nb_req_max = nb_req;
                 file_index = ist->file_index;
             }
         }
     }
 
     return file_index;
+}
+
+/**
+ * Select the input file to read from.
+ *
+ * @param no_packet  array of booleans, one per input file;
+ *                   if set, the input file must not be considered
+ * @param no_frame   array of boolean, one per output stream;
+ *                   if set, the stream must not be considered;
+ *                   for internal use
+ * @return  >=0 index of the input file to use;
+ *          -1  if no file is acceptable;
+ *          -2  to read from filters without reading from a file
+ */
+static int select_input_file(uint8_t *no_packet, uint8_t *no_frame)
+{
+    int i, ret, nb_active_out = nb_output_streams, ost_index = -1;
+    int64_t opts_min;
+    OutputStream *ost;
+    AVFilterBufferRef *dummy;
+
+    memset(no_frame, 0, nb_output_streams);
+    while (nb_active_out) {
+        opts_min = INT64_MAX;
+        ost_index = -1;
+        for (i = 0; i < nb_output_streams; i++) {
+            OutputStream *ost = output_streams[i];
+            int64_t opts = av_rescale_q(ost->st->cur_dts, ost->st->time_base,
+                                        AV_TIME_BASE_Q);
+            if (!no_frame[i] && !ost->is_past_recording_time &&
+                opts < opts_min) {
+                opts_min  = opts;
+                ost_index = i;
+            }
+        }
+        if (ost_index < 0)
+            return -1;
+
+        ost = output_streams[ost_index];
+        if (ost->source_index >= 0) {
+            /* ost is directly connected to an input */
+            InputStream *ist = input_streams[ost->source_index];
+            if (input_acceptable(ist, no_packet))
+                return ist->file_index;
+        } else {
+            /* ost is connected to a complex filtergraph */
+            av_assert1(ost->filter);
+            ret = av_buffersink_get_buffer_ref(ost->filter->filter, &dummy,
+                                               AV_BUFFERSINK_FLAG_PEEK);
+            if (ret >= 0)
+                return -2;
+            ret = find_graph_input(ost->filter->graph, no_packet);
+            if (ret >= 0)
+                return ret;
+        }
+        no_frame[ost_index] = 1;
+        nb_active_out--;
+    }
+    return -1;
 }
 
 static int check_keyboard_interaction(int64_t cur_time)
@@ -3580,12 +3642,13 @@ static int transcode(void)
     AVFormatContext *is, *os;
     OutputStream *ost;
     InputStream *ist;
-    uint8_t *no_packet;
+    uint8_t *no_packet, *no_frame;
     int no_packet_count = 0;
     int64_t timer_start;
 
-    if (!(no_packet = av_mallocz(nb_input_files)))
+    if (!(no_packet = av_mallocz(nb_input_files + nb_output_streams)))
         exit_program(1);
+    no_frame = no_packet + nb_input_files;
 
     ret = transcode_init();
     if (ret < 0)
@@ -3619,8 +3682,12 @@ static int transcode(void)
         }
 
         /* select the stream that we must read now */
-        file_index = select_input_file(no_packet);
+        file_index = select_input_file(no_packet, no_frame);
         /* if none, if is finished */
+        if (file_index == -2) {
+            poll_filters() ;
+            continue;
+        }
         if (file_index < 0) {
             if (no_packet_count) {
                 no_packet_count = 0;
@@ -3652,6 +3719,7 @@ static int transcode(void)
                 ist = input_streams[input_files[file_index]->ist_index + i];
                 if (ist->decoding_needed)
                     output_packet(ist, NULL);
+                poll_filters();
             }
 
             if (opt_shortest)
