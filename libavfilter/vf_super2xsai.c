@@ -314,10 +314,8 @@ static void end_frame(AVFilterLink *inlink)
                outpicref->data[0], outpicref->linesize[0],
                inlink->w, inlink->h);
 
-    avfilter_unref_buffer(inpicref);
     ff_draw_slice(outlink, 0, outlink->h, 1);
     ff_end_frame(outlink);
-    avfilter_unref_buffer(outpicref);
 }
 
 AVFilter avfilter_vf_super2xsai = {

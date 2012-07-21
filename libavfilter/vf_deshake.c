@@ -530,7 +530,6 @@ static void end_frame(AVFilterLink *link)
     // Draw the transformed frame information
     ff_draw_slice(link->dst->outputs[0], 0, link->h, 1);
     ff_end_frame(link->dst->outputs[0]);
-    avfilter_unref_buffer(out);
 }
 
 static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)

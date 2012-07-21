@@ -86,7 +86,6 @@ static void end_frame(AVFilterLink *inlink)
     av_log(ctx, AV_LOG_INFO, "\n");
 
     bbox->frame++;
-    avfilter_unref_buffer(picref);
     ff_end_frame(inlink->dst->outputs[0]);
 }
 

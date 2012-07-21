@@ -114,7 +114,6 @@ static void end_frame(AVFilterLink *inlink)
 
     blackframe->frame++;
     blackframe->nblack = 0;
-    avfilter_unref_buffer(picref);
     ff_end_frame(inlink->dst->outputs[0]);
 }
 

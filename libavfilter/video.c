@@ -151,7 +151,8 @@ AVFilterBufferRef *ff_get_video_buffer(AVFilterLink *link, int perms, int w, int
 
 void ff_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
-    ff_start_frame(link->dst->outputs[0], picref);
+    AVFilterBufferRef *buf_out = avfilter_ref_buffer(picref, ~0);
+    ff_start_frame(link->dst->outputs[0], buf_out);
 }
 
 static void default_start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
@@ -178,6 +179,7 @@ void ff_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     AVFilterPad *dst = link->dstpad;
     int perms = picref->perms;
     AVFilterCommand *cmd= link->dst->command_queue;
+    int64_t pts;
 
     FF_TPRINTF_START(NULL, start_frame); ff_tlog_link(NULL, link, 0); ff_tlog(NULL, " "); ff_tlog_ref(NULL, picref, 1);
 
@@ -212,9 +214,9 @@ void ff_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
         ff_command_queue_pop(link->dst);
         cmd= link->dst->command_queue;
     }
-
+    pts = link->cur_buf->pts;
     start_frame(link, link->cur_buf);
-    ff_update_link_current_pts(link, link->cur_buf->pts);
+    ff_update_link_current_pts(link,link->cur_buf ?  link->cur_buf->pts : pts);
 }
 
 void ff_null_start_frame_keep_ref(AVFilterLink *inlink,
@@ -235,14 +237,7 @@ static void default_end_frame(AVFilterLink *inlink)
     if (inlink->dst->nb_outputs)
         outlink = inlink->dst->outputs[0];
 
-    avfilter_unref_buffer(inlink->cur_buf);
-    inlink->cur_buf = NULL;
-
     if (outlink) {
-        if (outlink->out_buf) {
-            avfilter_unref_buffer(outlink->out_buf);
-            outlink->out_buf = NULL;
-        }
         ff_end_frame(outlink);
     }
 }
@@ -262,6 +257,10 @@ void ff_end_frame(AVFilterLink *link)
         avfilter_unref_buffer(link->src_buf);
         link->src_buf = NULL;
     }
+    if(link->cur_buf != link->out_buf)
+        avfilter_unref_bufferp(&link->cur_buf);
+    link->cur_buf = NULL;
+    avfilter_unref_bufferp(&link->out_buf);
 }
 
 void ff_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)

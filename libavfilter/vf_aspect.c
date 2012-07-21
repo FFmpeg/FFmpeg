@@ -56,6 +56,7 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     AspectContext *aspect = link->dst->priv;
 
     picref->video->sample_aspect_ratio = aspect->ratio;
+    link->cur_buf = NULL;
     ff_start_frame(link->dst->outputs[0], picref);
 }
 

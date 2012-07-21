@@ -883,8 +883,6 @@ static void end_frame(AVFilterLink *inlink)
         av_log(m->avfctx, AV_LOG_DEBUG, "put_image() says skip\n");
     }
     free_mp_image(mpi);
-
-    avfilter_unref_buffer(inpic);
 }
 
 AVFilter avfilter_vf_mp = {

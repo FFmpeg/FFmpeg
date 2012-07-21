@@ -175,6 +175,7 @@ static void end_frame(AVFilterLink *inlink)
     int64_t delta;
     int i;
 
+    inlink->cur_buf = NULL;
     s->frames_in++;
     /* discard frames until we get the first timestamp */
     if (s->pts == AV_NOPTS_VALUE) {

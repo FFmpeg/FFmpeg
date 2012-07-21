@@ -365,10 +365,8 @@ static void end_frame(AVFilterLink *inlink)
     ocv->end_frame_filter(ctx, &inimg, &outimg);
     fill_picref_from_iplimage(outpicref, &outimg, inlink->format);
 
-    avfilter_unref_buffer(inpicref);
     ff_draw_slice(outlink, 0, outlink->h, 1);
     ff_end_frame(outlink);
-    avfilter_unref_buffer(outpicref);
 }
 
 AVFilter avfilter_vf_ocv = {

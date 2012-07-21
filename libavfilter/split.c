@@ -89,8 +89,6 @@ static void end_frame(AVFilterLink *inlink)
 
     for (i = 0; i < ctx->nb_outputs; i++)
         ff_end_frame(ctx->outputs[i]);
-
-    avfilter_unref_buffer(inlink->cur_buf);
 }
 
 AVFilter avfilter_vf_split = {

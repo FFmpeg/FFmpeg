@@ -196,6 +196,9 @@ AVFilterBufferRef *avfilter_ref_buffer(AVFilterBufferRef *ref, int pmask);
  * buffer, the buffer itself is also automatically freed.
  *
  * @param ref reference to the buffer, may be NULL
+ *
+ * @note it is recommended to use avfilter_unref_bufferp() instead of this
+ * function
  */
 void avfilter_unref_buffer(AVFilterBufferRef *ref);
 
@@ -207,7 +210,6 @@ void avfilter_unref_buffer(AVFilterBufferRef *ref);
  * @param ref pointer to the buffer reference
  */
 void avfilter_unref_bufferp(AVFilterBufferRef **ref);
-
 
 #if FF_API_AVFILTERPAD_PUBLIC
 /**

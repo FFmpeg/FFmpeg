@@ -497,7 +497,6 @@ static int try_push_frame(AVFilterContext *ctx)
                     over->overpicref->video->w, over->overpicref->video->h,
                     0, outpicref->video->w, outpicref->video->h);
     ff_draw_slice(outlink, 0, outpicref->video->h, +1);
-    avfilter_unref_bufferp(&outlink->out_buf);
     ff_end_frame(outlink);
     return 0;
 }
@@ -546,8 +545,6 @@ static void end_frame_main(AVFilterLink *inlink)
 
     if (!outpicref)
         return;
-    avfilter_unref_bufferp(&inlink->cur_buf);
-    avfilter_unref_bufferp(&outlink->out_buf);
     ff_end_frame(ctx->outputs[0]);
 }
 

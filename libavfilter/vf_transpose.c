@@ -189,10 +189,8 @@ static void end_frame(AVFilterLink *inlink)
         }
     }
 
-    avfilter_unref_buffer(inpic);
     ff_draw_slice(outlink, 0, outpic->video->h, 1);
     ff_end_frame(outlink);
-    avfilter_unref_buffer(outpic);
 }
 
 static void null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { }
