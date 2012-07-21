@@ -146,7 +146,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&over->y_expr);
 
     if (over->overpicref)
-        avfilter_unref_buffer(over->overpicref);
+        avfilter_unref_bufferp(&over->overpicref);
     ff_bufqueue_discard_all(&over->queue_main);
     ff_bufqueue_discard_all(&over->queue_over);
 }
