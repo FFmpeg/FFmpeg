@@ -200,10 +200,10 @@ static const AVOption options[] = {
     { "true",         NULL, 0, AV_OPT_TYPE_CONST, {.dbl = 1}, 0, 0, ENC, "list_drivers" },
     { "false",        NULL, 0, AV_OPT_TYPE_CONST, {.dbl = 0}, 0, 0, ENC, "list_drivers" },
     { "list_dither", "list available dither options", OFFSET(list_dither), AV_OPT_TYPE_STRING, {.dbl=0}, 0, 1, ENC, "list_dither" },
-    { "colors",       NULL, 0, AV_OPT_TYPE_CONST, {.str = "colors"},     0, 0, ENC, "list_dither" },
-    { "charsets",     NULL, 0, AV_OPT_TYPE_CONST, {.str = "charsets"},   0, 0, ENC, "list_dither" },
-    { "antialiases",  NULL, 0, AV_OPT_TYPE_CONST, {.str = "antialiases"},0, 0, ENC, "list_dither" },
     { "algorithms",   NULL, 0, AV_OPT_TYPE_CONST, {.str = "algorithms"}, 0, 0, ENC, "list_dither" },
+    { "antialiases",  NULL, 0, AV_OPT_TYPE_CONST, {.str = "antialiases"},0, 0, ENC, "list_dither" },
+    { "charsets",     NULL, 0, AV_OPT_TYPE_CONST, {.str = "charsets"},   0, 0, ENC, "list_dither" },
+    { "colors",       NULL, 0, AV_OPT_TYPE_CONST, {.str = "colors"},     0, 0, ENC, "list_dither" },
     { NULL },
 };
 
