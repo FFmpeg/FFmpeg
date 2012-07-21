@@ -716,6 +716,9 @@ error:
     return AVERROR(ENOMEM);
 }
 
+static const enum AVSampleFormat sample_fmts[] = {
+    AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE
+};
 
 #define ADPCM_ENCODER(id_, name_, long_name_)               \
 AVCodec ff_ ## name_ ## _encoder = {                        \
@@ -726,8 +729,7 @@ AVCodec ff_ ## name_ ## _encoder = {                        \
     .init           = adpcm_encode_init,                    \
     .encode2        = adpcm_encode_frame,                   \
     .close          = adpcm_encode_close,                   \
-    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16,    \
-                                                      AV_SAMPLE_FMT_NONE }, \
+    .sample_fmts    = sample_fmts,                          \
     .long_name      = NULL_IF_CONFIG_SMALL(long_name_),     \
 }
 
