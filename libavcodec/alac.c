@@ -328,16 +328,16 @@ static int decode_element(AVCodecContext *avctx, void *data, int ch_index,
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return ret;
         }
-        if (alac->direct_output) {
-            for (ch = 0; ch < channels; ch++)
-                alac->output_samples_buffer[ch] = (int32_t *)alac->frame.extended_data[ch_index + ch];
-        }
     } else if (output_samples != alac->nb_samples) {
         av_log(avctx, AV_LOG_ERROR, "sample count mismatch: %u != %d\n",
                output_samples, alac->nb_samples);
         return AVERROR_INVALIDDATA;
     }
     alac->nb_samples = output_samples;
+    if (alac->direct_output) {
+        for (ch = 0; ch < channels; ch++)
+            alac->output_samples_buffer[ch] = (int32_t *)alac->frame.extended_data[ch_index + ch];
+    }
 
     if (is_compressed) {
         int16_t lpc_coefs[2][32];

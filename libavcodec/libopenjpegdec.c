@@ -24,6 +24,7 @@
 * JPEG 2000 decoder using libopenjpeg
 */
 
+#include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/pixfmt.h"
 #include "avcodec.h"
@@ -54,8 +55,10 @@ static const enum PixelFormat libopenjpeg_yuv_pix_fmts[]  = {YUV_PIXEL_FORMATS};
 static const enum PixelFormat libopenjpeg_all_pix_fmts[]  = {RGB_PIXEL_FORMATS,GRAY_PIXEL_FORMATS,YUV_PIXEL_FORMATS};
 
 typedef struct {
+    AVClass *class;
     opj_dparameters_t dec_params;
     AVFrame image;
+    int lowqual;
 } LibOpenJPEGContext;
 
 static inline int libopenjpeg_matches_pix_fmt(const opj_image_t *image, enum PixelFormat pix_fmt){
@@ -254,8 +257,9 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
         return -1;
     }
     opj_set_event_mgr((opj_common_ptr)dec, NULL, NULL);
-
     ctx->dec_params.cp_limit_decoding = LIMIT_TO_MAIN_HEADER;
+    ctx->dec_params.cp_reduce = avctx->lowres;
+    ctx->dec_params.cp_layer  = ctx->lowqual;
     // Tie decoder with decoding parameters
     opj_setup_decoder(dec, &ctx->dec_params);
     stream = opj_cio_open((opj_common_ptr)dec, buf, buf_size);
@@ -275,6 +279,7 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     }
     width  = image->x1 - image->x0;
     height = image->y1 - image->y0;
+
     if(av_image_check_size(width, height, 0, avctx) < 0) {
         av_log(avctx, AV_LOG_ERROR, "%dx%d dimension invalid.\n", width, height);
         goto done;
@@ -380,6 +385,20 @@ static av_cold int libopenjpeg_decode_close(AVCodecContext *avctx)
     return 0 ;
 }
 
+#define OFFSET(x) offsetof(LibOpenJPEGContext, x)
+#define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
+
+static const AVOption options[] = {
+    { "lowqual",       "Limit the number of layers used for decoding",         OFFSET(lowqual),        AV_OPT_TYPE_INT,   { 0 }, 0, INT_MAX, VD },
+    { NULL },
+};
+
+static const AVClass class = {
+    .class_name = "libopenjpeg",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 AVCodec ff_libopenjpeg_decoder = {
     .name             = "libopenjpeg",
@@ -392,5 +411,6 @@ AVCodec ff_libopenjpeg_decoder = {
     .capabilities     = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
     .max_lowres       = 5,
     .long_name        = NULL_IF_CONFIG_SMALL("OpenJPEG JPEG 2000"),
+    .priv_class       = &class,
     .init_thread_copy = ONLY_IF_THREADS_ENABLED(libopenjpeg_decode_init_thread_copy),
 };

@@ -124,7 +124,7 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
 #define ALAC_HEADER   36
 #define ALAC_NEW_KUKI 24
         uint8_t preamble[12];
-        if (size < ALAC_NEW_KUKI || size > ALAC_PREAMBLE + ALAC_HEADER) {
+        if (size < ALAC_NEW_KUKI) {
             av_log(s, AV_LOG_ERROR, "invalid ALAC magic cookie\n");
             avio_skip(pb, size);
             return AVERROR_INVALIDDATA;
