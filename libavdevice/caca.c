@@ -34,7 +34,7 @@ typedef struct CACAContext {
     caca_dither_t   *dither;
 
     char            *algorithm, *antialias;
-    char            *charset, *colors;
+    char            *charset, *color;
     char            *driver;
 
     char            *list_dither;
@@ -195,7 +195,7 @@ static const AVOption options[] = {
     { "algorithm",    "set dithering algorithm", OFFSET(algorithm), AV_OPT_TYPE_STRING, {.str = "default" }, 0, 0, ENC },
     { "antialias",    "set antialias method",    OFFSET(antialias), AV_OPT_TYPE_STRING, {.str = "default" }, 0, 0, ENC },
     { "charset",      "set charset used to render output", OFFSET(charset), AV_OPT_TYPE_STRING, {.str = "default" }, 0, 0, ENC },
-    { "colors",       "set colors used to render output",  OFFSET(colors),  AV_OPT_TYPE_STRING, {.str = "default" }, 0, 0, ENC },
+    { "color",        "set color used to render output",   OFFSET(color),   AV_OPT_TYPE_STRING, {.str = "default" }, 0, 0, ENC },
     { "list_drivers", "list available drivers",  OFFSET(list_drivers), AV_OPT_TYPE_INT, {.dbl=0}, 0, 1, ENC, "list_drivers" },
     { "true",         NULL, 0, AV_OPT_TYPE_CONST, {.dbl = 1}, 0, 0, ENC, "list_drivers" },
     { "false",        NULL, 0, AV_OPT_TYPE_CONST, {.dbl = 0}, 0, 0, ENC, "list_drivers" },

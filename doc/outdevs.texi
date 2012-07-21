@@ -68,8 +68,8 @@ The accepted values are listed with @code{-list_dither antialiases}.
 Set which characters are going to be used when rendering text.
 The accepted values are listed with @code{-list_dither charsets}.
 
-@item colors
-Set colors to be used when rendering text.
+@item color
+Set color to be used when rendering text.
 The accepted values are listed with @code{-list_dither colors}.
 
 @item list_drivers
