@@ -33,7 +33,7 @@
 #define AC3ENC_TYPE AC3ENC_TYPE_EAC3
 #include "ac3enc_opts_template.c"
 static const AVClass eac3enc_class = { "E-AC-3 Encoder", av_default_item_name,
-                                       eac3_options, LIBAVUTIL_VERSION_INT };
+                                       ac3_options, LIBAVUTIL_VERSION_INT };
 
 
 /**

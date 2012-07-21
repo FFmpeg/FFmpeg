@@ -23,13 +23,7 @@
 #include "internal.h"
 #include "ac3.h"
 
-#if AC3ENC_TYPE == AC3ENC_TYPE_AC3_FIXED
-static const AVOption ac3fixed_options[] = {
-#elif AC3ENC_TYPE == AC3ENC_TYPE_AC3
 static const AVOption ac3_options[] = {
-#else /* AC3ENC_TYPE_EAC3 */
-static const AVOption eac3_options[] = {
-#endif
 /* Metadata Options */
 {"per_frame_metadata", "Allow Changing Metadata Per-Frame", OFFSET(allow_per_frame_metadata), AV_OPT_TYPE_INT, {.dbl = 0 }, 0, 1, AC3ENC_PARAM},
 #if AC3ENC_TYPE != AC3ENC_TYPE_EAC3
