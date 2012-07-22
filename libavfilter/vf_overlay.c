@@ -514,8 +514,11 @@ static void start_frame_main(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     flush_frames(ctx);
     inpicref->pts = av_rescale_q(inpicref->pts, ctx->inputs[MAIN]->time_base,
                                  ctx->outputs[0]->time_base);
-    if (try_start_frame(ctx, inpicref) < 0)
+    if (try_start_frame(ctx, inpicref) < 0) {
         ff_bufqueue_add(ctx, &over->queue_main, inpicref);
+        av_assert1(inpicref == inlink->cur_buf);
+        inlink->cur_buf = NULL;
+    }
 }
 
 static void draw_slice_main(AVFilterLink *inlink, int y, int h, int slice_dir)
