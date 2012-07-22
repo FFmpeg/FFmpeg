@@ -160,7 +160,7 @@ static int tls_open(URLContext *h, const char *uri, int flags)
     TLSContext *c = h->priv_data;
     int ret;
     int port;
-    char buf[200], host[200];
+    char buf[200], host[200], path[1024];
     int numerichost = 0;
     struct addrinfo hints = { 0 }, *ai = NULL;
     const char *proxy_path;
@@ -172,8 +172,8 @@ static int tls_open(URLContext *h, const char *uri, int flags)
     use_proxy = (proxy_path != NULL) && !getenv("no_proxy") &&
         av_strstart(proxy_path, "http://", NULL);
 
-    av_url_split(NULL, 0, NULL, 0, host, sizeof(host), &port, NULL, 0, uri);
-    ff_url_join(buf, sizeof(buf), "tcp", NULL, host, port, NULL);
+    av_url_split(NULL, 0, NULL, 0, host, sizeof(host), &port, path, sizeof(path), uri);
+    ff_url_join(buf, sizeof(buf), "tcp", NULL, host, port, "%s", path);
 
     hints.ai_flags = AI_NUMERICHOST;
     if (!getaddrinfo(host, NULL, &hints, &ai)) {
