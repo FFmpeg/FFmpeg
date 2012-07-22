@@ -43,6 +43,8 @@
 #include "libavcodec/avcodec.h"
 #include "idct_xvid.h"
 
+#if HAVE_INLINE_ASM
+
 //=============================================================================
 // Macros and other preprocessor constants
 //=============================================================================
@@ -523,3 +525,5 @@ __asm__ volatile(
     DCT_8_INV_COL(8(%0), 8(%0))
     :: "r"(block), "r"(rounder_0), "r"(tab_i_04_xmm), "r"(tg_1_16));
 }
+
+#endif /* HAVE_INLINE_ASM */

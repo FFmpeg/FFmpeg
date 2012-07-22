@@ -25,6 +25,8 @@
 #include "libavutil/x86_cpu.h"
 #include "dsputil_mmx.h"
 
+#if HAVE_INLINE_ASM
+
 #define ROW_SHIFT 11
 #define COL_SHIFT 6
 
@@ -626,3 +628,5 @@ declare_idct (ff_mmxext_idct, mmxext_table,
 
 declare_idct (ff_mmx_idct, mmx_table,
               mmx_row_head, mmx_row, mmx_row_tail, mmx_row_mid)
+
+#endif /* HAVE_INLINE_ASM */
