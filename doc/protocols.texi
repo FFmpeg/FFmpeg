@@ -545,6 +545,48 @@ ffplay tcp://@var{hostname}:@var{port}
 
 @end table
 
+@section tls
+
+Transport Layer Security/Secure Sockets Layer
+
+The required syntax for a TLS/SSL url is:
+@example
+tls://@var{hostname}:@var{port}[?@var{options}]
+@end example
+
+@table @option
+
+@item listen
+Act as a server, listening for an incoming connection.
+
+@item cafile=@var{filename}
+Certificate authority file. The file must be in OpenSSL PEM format.
+
+@item cert=@var{filename}
+Certificate file. The file must be in OpenSSL PEM format.
+
+@item key=@var{filename}
+Private key file.
+
+@item verify=@var{0|1}
+Verify the peer's certificate.
+
+@end table
+
+Example command lines:
+
+To create a TLS/SSL server that serves an input stream.
+
+@example
+ffmpeg -i @var{input} -f @var{format} tls://@var{hostname}:@var{port}?listen&cert=@var{server.crt}&key=@var{server.key}
+@end example
+
+To play back a stream from the TLS/SSL server using @command{ffplay}:
+
+@example
+ffplay tls://@var{hostname}:@var{port}
+@end example
+
 @section udp
 
 User Datagram Protocol.
