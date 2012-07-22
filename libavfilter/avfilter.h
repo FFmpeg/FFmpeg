@@ -594,6 +594,24 @@ struct AVFilterLink {
      */
     AVFilterBufferRef *cur_buf;
 
+    /**
+     * The buffer reference to the frame which is sent to output by
+     * the source filter.
+     *
+     * If no start_frame callback is defined on a link,
+     * ff_start_frame() will automatically request a new buffer on the
+     * first output link of the destination filter. The reference to
+     * the buffer so obtained is stored in the out_buf field on the
+     * output link.
+     *
+     * It can also be set by the filter code in case the filter needs
+     * to access the output buffer later. For example the filter code
+     * may set it in a custom start_frame, and access it in
+     * draw_slice.
+     *
+     * It is automatically freed by the filter system in
+     * ff_end_frame().
+     */
     AVFilterBufferRef *out_buf;
 
     struct AVFilterPool *pool;
