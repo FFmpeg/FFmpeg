@@ -33,6 +33,7 @@
 #include "libswscale/rgb2rgb.h"
 #include "libswscale/swscale.h"
 #include "libswscale/swscale_internal.h"
+#include "libavutil/attributes.h"
 #include "libavutil/x86_cpu.h"
 #include "libavutil/cpu.h"
 
@@ -68,7 +69,7 @@ DECLARE_ASM_CONST(8, uint64_t, pb_07) = 0x0707070707070707ULL;
 
 #endif /* HAVE_INLINE_ASM */
 
-SwsFunc ff_yuv2rgb_init_mmx(SwsContext *c)
+av_cold SwsFunc ff_yuv2rgb_init_mmx(SwsContext *c)
 {
 #if HAVE_INLINE_ASM
     int cpu_flags = av_get_cpu_flags();

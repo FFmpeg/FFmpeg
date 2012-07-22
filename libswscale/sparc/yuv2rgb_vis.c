@@ -22,6 +22,7 @@
 #include <inttypes.h>
 #include <stdlib.h>
 
+#include "libavutil/attributes.h"
 #include "libswscale/swscale.h"
 #include "libswscale/swscale_internal.h"
 
@@ -184,7 +185,7 @@ static int vis_422P_ARGB32(SwsContext *c, uint8_t *src[], int srcStride[],
     return srcSliceH;
 }
 
-SwsFunc ff_yuv2rgb_init_vis(SwsContext *c)
+av_cold SwsFunc ff_yuv2rgb_init_vis(SwsContext *c)
 {
     c->sparc_coeffs[5] = c->yCoeff;
     c->sparc_coeffs[6] = c->vgCoeff;

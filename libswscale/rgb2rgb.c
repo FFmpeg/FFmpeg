@@ -25,6 +25,7 @@
 
 #include <inttypes.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/bswap.h"
 #include "config.h"
 #include "rgb2rgb.h"
@@ -125,7 +126,7 @@ void (*yuyvtoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
  * 32-bit C version, and and&add trick by Michael Niedermayer
  */
 
-void sws_rgb2rgb_init(void)
+av_cold void sws_rgb2rgb_init(void)
 {
     rgb2rgb_init_c();
     if (HAVE_MMX)

@@ -37,6 +37,7 @@
 #include <windows.h>
 #endif
 
+#include "libavutil/attributes.h"
 #include "libavutil/avutil.h"
 #include "libavutil/bswap.h"
 #include "libavutil/cpu.h"
@@ -823,7 +824,8 @@ SwsContext *sws_alloc_context(void)
     return c;
 }
 
-int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
+av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
+                             SwsFilter *dstFilter)
 {
     int i;
     int usesVFilter, usesHFilter;
