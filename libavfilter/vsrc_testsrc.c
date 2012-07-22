@@ -401,10 +401,10 @@ AVFilter avfilter_vsrc_testsrc = {
     .inputs    = (const AVFilterPad[]) {{ .name = NULL}},
 
     .outputs   = (const AVFilterPad[]) {{ .name = "default",
-                                    .type = AVMEDIA_TYPE_VIDEO,
-                                    .request_frame = request_frame,
-                                    .config_props  = config_props, },
-                                  { .name = NULL }},
+                                          .type = AVMEDIA_TYPE_VIDEO,
+                                          .request_frame = request_frame,
+                                          .config_props  = config_props, },
+                                        { .name = NULL }},
 };
 
 #endif /* CONFIG_TESTSRC_FILTER */
@@ -525,10 +525,10 @@ AVFilter avfilter_vsrc_rgbtestsrc = {
     .inputs    = (const AVFilterPad[]) {{ .name = NULL}},
 
     .outputs   = (const AVFilterPad[]) {{ .name = "default",
-                                    .type = AVMEDIA_TYPE_VIDEO,
-                                    .request_frame = request_frame,
-                                    .config_props  = rgbtest_config_props, },
-                                  { .name = NULL }},
+                                          .type = AVMEDIA_TYPE_VIDEO,
+                                          .request_frame = request_frame,
+                                          .config_props  = rgbtest_config_props, },
+                                        { .name = NULL }},
 };
 
 #endif /* CONFIG_RGBTESTSRC_FILTER */

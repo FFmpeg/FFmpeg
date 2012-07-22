@@ -24,10 +24,11 @@
  * G.723.1 demuxer
  */
 
+#include "libavutil/audioconvert.h"
 #include "avformat.h"
 #include "internal.h"
 
-static const uint8_t frame_size[4] = {24, 20, 4, 1};
+static const uint8_t frame_size[4] = { 24, 20, 4, 1 };
 
 static int g723_1_init(AVFormatContext *s)
 {
@@ -37,12 +38,14 @@ static int g723_1_init(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id    = CODEC_ID_G723_1;
-    st->codec->channels    = 1;
-    st->codec->sample_rate = 8000;
+    st->codec->codec_type     = AVMEDIA_TYPE_AUDIO;
+    st->codec->codec_id       = CODEC_ID_G723_1;
+    st->codec->channel_layout = AV_CH_LAYOUT_MONO;
+    st->codec->channels       = 1;
+    st->codec->sample_rate    = 8000;
 
     avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+    st->start_time = 0;
 
     return 0;
 }
@@ -77,6 +80,6 @@ AVInputFormat ff_g723_1_demuxer = {
     .long_name   = NULL_IF_CONFIG_SMALL("G.723.1 format"),
     .read_header = g723_1_init,
     .read_packet = g723_1_read_packet,
-    .extensions = "tco,rco,g723_1",
-    .flags = AVFMT_GENERIC_INDEX
+    .extensions  = "tco,rco,g723_1",
+    .flags       = AVFMT_GENERIC_INDEX
 };

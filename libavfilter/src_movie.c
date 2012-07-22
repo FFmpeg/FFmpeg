@@ -344,11 +344,11 @@ AVFilter avfilter_vsrc_movie = {
     .query_formats = movie_query_formats,
 
     .inputs    = (const AVFilterPad[]) {{ .name = NULL }},
-    .outputs   = (const AVFilterPad[]) {{ .name      = "default",
-                                    .type            = AVMEDIA_TYPE_VIDEO,
-                                    .request_frame   = movie_request_frame,
-                                    .config_props    = movie_config_output_props, },
-                                  { .name = NULL}},
+    .outputs   = (const AVFilterPad[]) {{ .name            = "default",
+                                          .type            = AVMEDIA_TYPE_VIDEO,
+                                          .request_frame   = movie_request_frame,
+                                          .config_props    = movie_config_output_props, },
+                                        { .name = NULL}},
 };
 
 #endif  /* CONFIG_MOVIE_FILTER */

@@ -366,17 +366,17 @@ AVFilter avfilter_vf_frei0r = {
 
     .priv_size = sizeof(Frei0rContext),
 
-    .inputs    = (const AVFilterPad[]) {{ .name       = "default",
-                                    .type             = AVMEDIA_TYPE_VIDEO,
-                                    .draw_slice       = null_draw_slice,
-                                    .config_props     = config_input_props,
-                                    .end_frame        = end_frame,
-                                    .min_perms        = AV_PERM_READ },
-                                  { .name = NULL}},
+    .inputs    = (const AVFilterPad[]) {{ .name             = "default",
+                                          .type             = AVMEDIA_TYPE_VIDEO,
+                                          .draw_slice       = null_draw_slice,
+                                          .config_props     = config_input_props,
+                                          .end_frame        = end_frame,
+                                          .min_perms        = AV_PERM_READ },
+                                        { .name = NULL}},
 
-    .outputs   = (const AVFilterPad[]) {{ .name       = "default",
-                                    .type             = AVMEDIA_TYPE_VIDEO, },
-                                  { .name = NULL}},
+    .outputs   = (const AVFilterPad[]) {{ .name             = "default",
+                                          .type             = AVMEDIA_TYPE_VIDEO, },
+                                        { .name = NULL}},
 };
 
 static av_cold int source_init(AVFilterContext *ctx, const char *args)
@@ -458,9 +458,9 @@ AVFilter avfilter_vsrc_frei0r_src = {
 
     .inputs    = (const AVFilterPad[]) {{ .name = NULL}},
 
-    .outputs   = (const AVFilterPad[]) {{ .name      = "default",
-                                    .type            = AVMEDIA_TYPE_VIDEO,
-                                    .request_frame   = source_request_frame,
-                                    .config_props    = source_config_props },
-                                  { .name = NULL}},
+    .outputs   = (const AVFilterPad[]) {{ .name            = "default",
+                                          .type            = AVMEDIA_TYPE_VIDEO,
+                                          .request_frame   = source_request_frame,
+                                          .config_props    = source_config_props },
+                                        { .name = NULL}},
 };

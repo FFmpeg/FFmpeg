@@ -1810,6 +1810,20 @@ ffserver_extralibs='$ldl'
 doc_deps_any="texi2html makeinfo pod2man"
 
 # tests
+colormatrix1_test_deps="colormatrix_filter"
+colormatrix2_test_deps="colormatrix_filter"
+flashsv2_test_deps="zlib"
+mpg_test_deps="mpeg1system_muxer mpegps_demuxer"
+mpng_test_deps="zlib"
+pp_test_deps="mp_filter"
+pp2_test_deps="mp_filter"
+pp3_test_deps="mp_filter"
+pp4_test_deps="mp_filter"
+pp5_test_deps="mp_filter"
+pp6_test_deps="mp_filter"
+seek_lavf_mxf_d10_test_deps="mxf_d10_test"
+zlib_test_deps="zlib"
+zmbv_test_deps="zlib"
 
 test_deps(){
     suf1=$1
@@ -1823,8 +1837,6 @@ test_deps(){
         done
     done
 }
-
-seek_lavf_mxf_d10_test_deps="mxf_d10_test"
 
 test_deps _muxer _demuxer                                               \
     aiff                                                                \
@@ -1850,20 +1862,6 @@ test_deps _muxer _demuxer                                               \
     voc                                                                 \
     wav                                                                 \
     yuv4mpegpipe=yuv4mpeg                                               \
-
-colormatrix1_test_deps="colormatrix_filter"
-colormatrix2_test_deps="colormatrix_filter"
-flashsv2_test_deps="zlib"
-mpg_test_deps="mpeg1system_muxer mpegps_demuxer"
-mpng_test_deps="zlib"
-pp_test_deps="mp_filter"
-pp2_test_deps="mp_filter"
-pp3_test_deps="mp_filter"
-pp4_test_deps="mp_filter"
-pp5_test_deps="mp_filter"
-pp6_test_deps="mp_filter"
-zlib_test_deps="zlib"
-zmbv_test_deps="zlib"
 
 # default parameters
 
@@ -2238,6 +2236,78 @@ EOF
     die "Sanity test failed."
 fi
 
+pgi_flags(){
+    for flag; do
+        case $flag in
+            -fomit-frame-pointer) echo -Mnoframe ;;
+            -g)                   echo -gopt ;;
+            *)                    echo $flag ;;
+        esac
+    done
+}
+
+suncc_flags(){
+    for flag; do
+        case $flag in
+            -march=*|-mcpu=*)
+                case "${flag#*=}" in
+                    native)                   echo -xtarget=native       ;;
+                    v9|niagara)               echo -xarch=sparc          ;;
+                    ultrasparc)               echo -xarch=sparcvis       ;;
+                    ultrasparc3|niagara2)     echo -xarch=sparcvis2      ;;
+                    i586|pentium)             echo -xchip=pentium        ;;
+                    i686|pentiumpro|pentium2) echo -xtarget=pentium_pro  ;;
+                    pentium3*|c3-2)           echo -xtarget=pentium3     ;;
+                    pentium-m)          echo -xarch=sse2 -xchip=pentium3 ;;
+                    pentium4*)          echo -xtarget=pentium4           ;;
+                    prescott|nocona)    echo -xarch=sse3 -xchip=pentium4 ;;
+                    *-sse3)             echo -xarch=sse3                 ;;
+                    core2)              echo -xarch=ssse3 -xchip=core2   ;;
+                    amdfam10|barcelona)       echo -xarch=sse4_1         ;;
+                    athlon-4|athlon-[mx]p)    echo -xarch=ssea           ;;
+                    k8|opteron|athlon64|athlon-fx)
+                                              echo -xarch=sse2a          ;;
+                    athlon*)                  echo -xarch=pentium_proa   ;;
+                esac
+                ;;
+            -std=c99)             echo -xc99              ;;
+            -fomit-frame-pointer) echo -xregs=frameptr    ;;
+            -fPIC)                echo -KPIC -xcode=pic32 ;;
+            -W*,*)                echo $flag              ;;
+            -f*-*|-W*)                                    ;;
+            *)                    echo $flag              ;;
+        esac
+    done
+}
+
+tms470_flags(){
+    for flag; do
+        case $flag in
+            -march=*|-mcpu=*)
+                case "${flag#*=}" in
+                    armv7-a|cortex-a*)      echo -mv=7a8 ;;
+                    armv7-r|cortex-r*)      echo -mv=7r4 ;;
+                    armv7-m|cortex-m*)      echo -mv=7m3 ;;
+                    armv6*|arm11*)          echo -mv=6   ;;
+                    armv5*e|arm[79]*e*|arm9[24]6*|arm96*|arm102[26])
+                                            echo -mv=5e  ;;
+                    armv4*|arm7*|arm9[24]*) echo -mv=4   ;;
+                esac
+                ;;
+            -mfpu=neon)     echo --float_support=vfpv3 --neon ;;
+            -mfpu=vfp)      echo --float_support=vfpv2        ;;
+            -mfpu=vfpv3)    echo --float_support=vfpv3        ;;
+            -msoft-float)   echo --float_support=vfplib       ;;
+            -O[0-3]|-mf=*)  echo $flag                        ;;
+            -g)             echo -g -mn                       ;;
+            -pds=*)         echo $flag                        ;;
+            -D*|-I*)        echo $flag                        ;;
+            --gcc|--abi=*)  echo $flag                        ;;
+            -me)            echo $flag                        ;;
+        esac
+    done
+}
+
 if   $cc -v 2>&1 | grep -q '^gcc.*LLVM'; then
     cc_type=llvm_gcc
     gcc_extra_ver=$(expr "$($cc --version | head -n1)" : '.*\((.*)\)')
@@ -2313,30 +2383,6 @@ elif $cc -version 2>/dev/null | grep -q TMS470; then
     cflags_speed='-O3 -mf=5'
     cflags_size='-O3 -mf=2'
     cflags_filter=tms470_flags
-    tms470_flags(){
-        for flag; do
-            case $flag in
-                -march=*|-mcpu=*)
-                    case "${flag#*=}" in
-                        armv7-a|cortex-a*)      echo -mv=7a8 ;;
-                        armv7-r|cortex-r*)      echo -mv=7r4 ;;
-                        armv7-m|cortex-m*)      echo -mv=7m3 ;;
-                        armv6*|arm11*)          echo -mv=6   ;;
-                        armv5*e|arm[79]*e*|arm9[24]6*|arm96*|arm102[26])
-                                                echo -mv=5e  ;;
-                        armv4*|arm7*|arm9[24]*) echo -mv=4   ;;
-                    esac
-                    ;;
-                -mfpu=neon)     echo --float_support=vfpv3 --neon ;;
-                -mfpu=vfp)      echo --float_support=vfpv2        ;;
-                -mfpu=vfpv3)    echo --float_support=vfpv3        ;;
-                -msoft-float)   echo --float_support=vfplib       ;;
-                -O[0-3]|-mf=*)  echo $flag                        ;;
-                -g)             echo -g -mn                       ;;
-                -pds=*)         echo $flag                        ;;
-            esac
-        done
-    }
 elif $cc -v 2>&1 | grep -q clang; then
     cc_type=clang
     cc_ident=$($cc --version | head -n1)
@@ -2353,39 +2399,6 @@ elif $cc -V 2>&1 | grep -q Sun; then
     cflags_speed='-O5'
     cflags_size='-O5 -xspace'
     cflags_filter=suncc_flags
-    suncc_flags(){
-        for flag; do
-            case $flag in
-                -march=*|-mcpu=*)
-                    case "${flag#*=}" in
-                        native)                   echo -xtarget=native       ;;
-                        v9|niagara)               echo -xarch=sparc          ;;
-                        ultrasparc)               echo -xarch=sparcvis       ;;
-                        ultrasparc3|niagara2)     echo -xarch=sparcvis2      ;;
-                        i586|pentium)             echo -xchip=pentium        ;;
-                        i686|pentiumpro|pentium2) echo -xtarget=pentium_pro  ;;
-                        pentium3*|c3-2)           echo -xtarget=pentium3     ;;
-                        pentium-m)          echo -xarch=sse2 -xchip=pentium3 ;;
-                        pentium4*)          echo -xtarget=pentium4           ;;
-                        prescott|nocona)    echo -xarch=sse3 -xchip=pentium4 ;;
-                        *-sse3)             echo -xarch=sse3                 ;;
-                        core2)              echo -xarch=ssse3 -xchip=core2   ;;
-                        amdfam10|barcelona)       echo -xarch=sse4_1         ;;
-                        athlon-4|athlon-[mx]p)    echo -xarch=ssea           ;;
-                        k8|opteron|athlon64|athlon-fx)
-                                                  echo -xarch=sse2a          ;;
-                        athlon*)                  echo -xarch=pentium_proa   ;;
-                    esac
-                    ;;
-                -std=c99)             echo -xc99              ;;
-                -fomit-frame-pointer) echo -xregs=frameptr    ;;
-                -fPIC)                echo -KPIC -xcode=pic32 ;;
-                -W*,*)                echo $flag              ;;
-                -f*-*|-W*)                                    ;;
-                *)                    echo $flag              ;;
-            esac
-        done
-    }
 elif $cc -v 2>&1 | grep -q 'PathScale\|Path64'; then
     cc_type=pathscale
     cc_ident=$($cc -v 2>&1 | head -n1 | tr -d :)
@@ -2410,15 +2423,6 @@ elif $cc -V 2>&1 | grep -q Portland; then
     cflags_size="-O2 -Munroll=c:1 $opt_common"
     cflags_noopt="-O1"
     cflags_filter=pgi_flags
-    pgi_flags(){
-        for flag; do
-            case $flag in
-                -fomit-frame-pointer) echo -Mnoframe ;;
-                -g)                   echo -gopt ;;
-                *)                    echo $flag ;;
-            esac
-        done
-    }
 fi
 
 test -n "$cc_type" && enable $cc_type ||

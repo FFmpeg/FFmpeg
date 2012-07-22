@@ -127,8 +127,8 @@ AVFilter avfilter_asrc_anullsrc = {
     .inputs      = (const AVFilterPad[]) {{ .name = NULL}},
 
     .outputs     = (const AVFilterPad[]) {{ .name = "default",
-                                      .type = AVMEDIA_TYPE_AUDIO,
-                                      .config_props = config_props,
-                                      .request_frame = request_frame, },
-                                    { .name = NULL}},
+                                            .type = AVMEDIA_TYPE_AUDIO,
+                                            .config_props = config_props,
+                                            .request_frame = request_frame, },
+                                          { .name = NULL}},
 };

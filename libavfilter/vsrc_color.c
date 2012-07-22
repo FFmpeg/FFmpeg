@@ -174,9 +174,9 @@ AVFilter avfilter_vsrc_color = {
 
     .inputs    = (const AVFilterPad[]) {{ .name = NULL}},
 
-    .outputs   = (const AVFilterPad[]) {{ .name      = "default",
-                                    .type            = AVMEDIA_TYPE_VIDEO,
-                                    .request_frame   = color_request_frame,
-                                    .config_props    = color_config_props },
-                                  { .name = NULL}},
+    .outputs   = (const AVFilterPad[]) {{ .name            = "default",
+                                          .type            = AVMEDIA_TYPE_VIDEO,
+                                          .request_frame   = color_request_frame,
+                                          .config_props    = color_config_props },
+                                        { .name = NULL}},
 };
