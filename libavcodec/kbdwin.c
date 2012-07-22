@@ -16,7 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <assert.h>
+
+#include <libavutil/avassert.h>
 #include <libavutil/mathematics.h>
 #include "libavutil/attributes.h"
 #include "kbdwin.h"
@@ -30,7 +31,7 @@ av_cold void ff_kbd_window_init(float *window, float alpha, int n)
    double local_window[FF_KBD_WINDOW_MAX];
    double alpha2 = (alpha * M_PI / n) * (alpha * M_PI / n);
 
-   assert(n <= FF_KBD_WINDOW_MAX);
+   av_assert0(n <= FF_KBD_WINDOW_MAX);
 
    for (i = 0; i < n; i++) {
        tmp = i * (n - i) * alpha2;
