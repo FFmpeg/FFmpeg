@@ -12,7 +12,7 @@ Format negotiation
 ==================
 
   The query_formats method should set, for each input and each output links,
-  the list supported formats.
+  the list of supported formats.
 
   For video links, that means pixel format. For audio links, that means
   channel layout, and sample format (the sample packing is implied by the
@@ -26,7 +26,7 @@ Format negotiation
   references to the list are updated.
 
   That means that if a filter requires that its input and output have the
-  same format amongst a supported list, all it have to do is use a reference
+  same format amongst a supported list, all it has to do is use a reference
   to the same list of formats.
 
 
@@ -70,7 +70,7 @@ Frame scheduling
     request_frame method or the application.
 
     If a filter has several inputs, the filter must be ready for frames
-    arriving randomly on any input. Therefore, any filter with several input
+    arriving randomly on any input. Therefore, any filter with several inputs
     will most likely require some kind of queuing mechanism. It is perfectly
     acceptable to have a limited queue and to drop frames when the inputs
     are too unbalanced.
@@ -85,7 +85,7 @@ Frame scheduling
 
     For a filter, if there are queued frames already ready, one of these
     frames should be pushed. If not, the filter should request a frame on
-    one of its input, repeatedly until at least one frame has been pushed.
+    one of its inputs, repeatedly until at least one frame has been pushed.
 
     Return values:
     if request_frame could produce a frame, it should return 0;
