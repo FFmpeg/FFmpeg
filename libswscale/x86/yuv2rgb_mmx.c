@@ -36,6 +36,8 @@
 #include "libavutil/x86_cpu.h"
 #include "libavutil/cpu.h"
 
+#if HAVE_INLINE_ASM
+
 #define DITHER1XBPP // only for MMX
 
 /* hope these constant values are cache line aligned */
@@ -64,8 +66,11 @@ DECLARE_ASM_CONST(8, uint64_t, pb_07) = 0x0707070707070707ULL;
 #include "yuv2rgb_template.c"
 #endif /* HAVE_MMX2 */
 
+#endif /* HAVE_INLINE_ASM */
+
 SwsFunc ff_yuv2rgb_init_mmx(SwsContext *c)
 {
+#if HAVE_INLINE_ASM
     int cpu_flags = av_get_cpu_flags();
 
 #if HAVE_MMX2
@@ -99,6 +104,7 @@ SwsFunc ff_yuv2rgb_init_mmx(SwsContext *c)
             case PIX_FMT_RGB555: return yuv420_rgb15_MMX;
         }
     }
+#endif /* HAVE_INLINE_ASM */
 
     return NULL;
 }

@@ -631,27 +631,35 @@ prepend(){
 }
 
 add_cppflags(){
-    append CPPFLAGS $($filter_cppflags "$@")
+    append CPPFLAGS "$@"
 }
 
 add_cflags(){
-    append CFLAGS $($filter_cflags "$@")
+    append CFLAGS $($cflags_filter "$@")
 }
 
 add_cxxflags(){
-    append CXXFLAGS $($filter_cflags "$@")
+    append CXXFLAGS $($cflags_filter "$@")
 }
 
 add_asflags(){
-    append ASFLAGS $($filter_asflags "$@")
+    append ASFLAGS $($asflags_filter "$@")
 }
 
 add_ldflags(){
-    append LDFLAGS "$@"
+    append LDFLAGS $($ldflags_filter "$@")
 }
 
 add_extralibs(){
-    prepend extralibs "$@"
+    prepend extralibs $($ldflags_filter "$@")
+}
+
+add_host_cflags(){
+    append host_cflags $($host_cflags_filter "$@")
+}
+
+add_host_ldflags(){
+    append host_ldflags $($host_ldflags_filter "$@")
 }
 
 check_cmd(){
@@ -715,7 +723,9 @@ check_ld(){
     for f; do
         test "${f}" = "${f#-l}" && flags="$flags $f" || libs="$libs $f"
     done
-    check_$type $($filter_cflags $flags) || return
+    check_$type $($cflags_filter $flags) || return
+    flags=$($ldflags_filter $flags)
+    libs=$($ldflags_filter $libs)
     check_cmd $ld $LDFLAGS $flags -o $TMPE $TMPO $libs $extralibs
 }
 
@@ -735,7 +745,6 @@ check_code(){
 
 check_cppflags(){
     log check_cppflags "$@"
-    set -- $($filter_cppflags "$@")
     check_cc "$@" <<EOF && append CPPFLAGS "$@"
 int x;
 EOF
@@ -743,7 +752,7 @@ EOF
 
 check_cflags(){
     log check_cflags "$@"
-    set -- $($filter_cflags "$@")
+    set -- $($cflags_filter "$@")
     check_cc "$@" <<EOF && append CFLAGS "$@"
 int x;
 EOF
@@ -751,7 +760,7 @@ EOF
 
 check_cxxflags(){
     log check_cxxflags "$@"
-    set -- $($filter_cflags "$@")
+    set -- $($cflags_filter "$@")
     check_cxx "$@" <<EOF && append CXXFLAGS "$@"
 int x;
 EOF
@@ -843,7 +852,7 @@ check_cpp_condition(){
     header=$1
     condition=$2
     shift 2
-    check_cpp $($filter_cppflags "$@") <<EOF
+    check_cpp "$@" <<EOF
 #include <$header>
 #if !($condition)
 #error "unsatisfied condition: $condition"
@@ -983,6 +992,7 @@ check_host_cc(){
 
 check_host_cflags(){
     log check_host_cflags "$@"
+    set -- $($host_cflags_filter "$@")
     check_host_cc "$@" <<EOF && append host_cflags "$@"
 int x;
 EOF
@@ -1740,9 +1750,7 @@ rtmp_protocol_deps="!librtmp_protocol"
 rtmp_protocol_select="tcp_protocol"
 rtmps_protocol_deps="!librtmp_protocol"
 rtmps_protocol_select="tls_protocol"
-rtmpt_protocol_deps="!librtmp_protocol"
 rtmpt_protocol_select="ffrtmphttp_protocol"
-rtmpts_protocol_deps="!librtmp_protocol"
 rtmpts_protocol_select="ffrtmphttp_protocol"
 rtp_protocol_select="udp_protocol"
 sctp_protocol_deps="network netinet_sctp_h"
@@ -1941,12 +1949,18 @@ LIB_INSTALL_EXTRA_CMD='$$(RANLIB) "$(LIBDIR)/$(LIBNAME)"'
 SLIB_INSTALL_NAME='$(SLIBNAME_WITH_VERSION)'
 SLIB_INSTALL_LINKS='$(SLIBNAME_WITH_MAJOR) $(SLIBNAME)'
 
+asflags_filter=echo
+cflags_filter=echo
+ldflags_filter=echo
+
 AS_O='-o $@'
 CC_O='-o $@'
 CXX_O='-o $@'
 
 host_cflags='-D_ISOC99_SOURCE -D_XOPEN_SOURCE=600 -O3 -g'
 host_libs='-lm'
+host_cflags_filter=echo
+host_ldflags_filter=echo
 
 target_path='$(CURDIR)'
 
@@ -2224,18 +2238,14 @@ EOF
     die "Sanity test failed."
 fi
 
-filter_asflags=echo
-filter_cflags=echo
-filter_cppflags=echo
-
 if   $cc -v 2>&1 | grep -q '^gcc.*LLVM'; then
     cc_type=llvm_gcc
     gcc_extra_ver=$(expr "$($cc --version | head -n1)" : '.*\((.*)\)')
     cc_ident="llvm-gcc $($cc -dumpversion) $gcc_extra_ver"
     CC_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
     AS_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
-    speed_cflags='-O3'
-    size_cflags='-Os'
+    cflags_speed='-O3'
+    cflags_size='-Os'
 elif $cc -v 2>&1 | grep -qi ^gcc; then
     cc_type=gcc
     gcc_version=$($cc --version | head -n1)
@@ -2247,30 +2257,29 @@ elif $cc -v 2>&1 | grep -qi ^gcc; then
         CC_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
         AS_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
     fi
-    speed_cflags='-O3'
-    size_cflags='-Os'
+    cflags_speed='-O3'
+    cflags_size='-Os'
 elif $cc --version 2>/dev/null | grep -q Intel; then
     cc_type=icc
     cc_ident=$($cc --version | head -n1)
-    icc_version=$($cc -dumpversion)
     CC_DEPFLAGS='-MMD'
     AS_DEPFLAGS='-MMD'
-    speed_cflags='-O3'
-    size_cflags='-Os'
-    noopt_cflags='-O1'
+    cflags_speed='-O3'
+    cflags_size='-Os'
+    cflags_noopt='-O1'
 elif $cc -v 2>&1 | grep -q xlc; then
     cc_type=xlc
     cc_ident=$($cc -qversion 2>/dev/null | head -n1)
-    speed_cflags='-O5'
-    size_cflags='-O5 -qcompact'
+    cflags_speed='-O5'
+    cflags_size='-O5 -qcompact'
 elif $cc -V 2>/dev/null | grep -q Compaq; then
     cc_type=ccc
     cc_ident=$($cc -V | head -n1 | cut -d' ' -f1-3)
     DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -M'
     debuglevel=3
     add_ldflags -Wl,-z,now # calls to libots crash without this
-    speed_cflags='-fast'
-    size_cflags='-O1'
+    cflags_speed='-fast'
+    cflags_size='-O1'
 elif $cc --vsn 2>/dev/null | grep -q "ARM C/C++ Compiler"; then
     test -d "$sysroot" || die "No valid sysroot specified."
     cc_type=armcc
@@ -2286,9 +2295,9 @@ elif $cc --vsn 2>/dev/null | grep -q "ARM C/C++ Compiler"; then
     as_default="${cross_prefix}gcc"
     CC_DEPFLAGS='-MMD'
     AS_DEPFLAGS='-MMD'
-    speed_cflags='-O3'
-    size_cflags='-Os'
-    filter_asflags="filter_out -W${armcc_opt}*"
+    cflags_speed='-O3'
+    cflags_size='-Os'
+    asflags_filter="filter_out -W${armcc_opt}*"
 elif $cc -version 2>/dev/null | grep -q TMS470; then
     cc_type=tms470
     cc_ident=$($cc -version | head -n1 | tr -s ' ')
@@ -2301,9 +2310,9 @@ elif $cc -version 2>/dev/null | grep -q TMS470; then
     add_cflags -D__gnuc_va_list=va_list -D__USER_LABEL_PREFIX__=
     CC_DEPFLAGS='-ppa -ppd=$(@:.o=.d)'
     AS_DEPFLAGS='-MMD'
-    speed_cflags='-O3 -mf=5'
-    size_cflags='-O3 -mf=2'
-    filter_cflags=tms470_flags
+    cflags_speed='-O3 -mf=5'
+    cflags_size='-O3 -mf=2'
+    cflags_filter=tms470_flags
     tms470_flags(){
         for flag; do
             case $flag in
@@ -2333,17 +2342,17 @@ elif $cc -v 2>&1 | grep -q clang; then
     cc_ident=$($cc --version | head -n1)
     CC_DEPFLAGS='-MMD'
     AS_DEPFLAGS='-MMD'
-    speed_cflags='-O3'
-    size_cflags='-Os'
+    cflags_speed='-O3'
+    cflags_size='-Os'
 elif $cc -V 2>&1 | grep -q Sun; then
     cc_type=suncc
     cc_ident=$($cc -V 2>&1 | head -n1 | cut -d' ' -f 2-)
     DEPEND_CMD='$(DEPCC) $(DEPFLAGS) $< | sed -e "1s,^.*: ,$@: ," -e "\$$!s,\$$, \\\," -e "1!s,^.*: , ," > $(@:.o=.d)'
     DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -xM1'
     add_ldflags -xc99
-    speed_cflags='-O5'
-    size_cflags='-O5 -xspace'
-    filter_cflags=suncc_flags
+    cflags_speed='-O5'
+    cflags_size='-O5 -xspace'
+    cflags_filter=suncc_flags
     suncc_flags(){
         for flag; do
             case $flag in
@@ -2382,25 +2391,25 @@ elif $cc -v 2>&1 | grep -q 'PathScale\|Path64'; then
     cc_ident=$($cc -v 2>&1 | head -n1 | tr -d :)
     CC_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
     AS_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
-    speed_cflags='-O2'
-    size_cflags='-Os'
-    filter_cflags='filter_out -Wdisabled-optimization'
+    cflags_speed='-O2'
+    cflags_size='-Os'
+    cflags_filter='filter_out -Wdisabled-optimization'
 elif $cc -v 2>&1 | grep -q Open64; then
     cc_type=open64
     cc_ident=$($cc -v 2>&1 | head -n1 | tr -d :)
     CC_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
     AS_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
-    speed_cflags='-O2'
-    size_cflags='-Os'
-    filter_cflags='filter_out -Wdisabled-optimization|-Wtype-limits|-fno-signed-zeros'
+    cflags_speed='-O2'
+    cflags_size='-Os'
+    cflags_filter='filter_out -Wdisabled-optimization|-Wtype-limits|-fno-signed-zeros'
 elif $cc -V 2>&1 | grep -q Portland; then
     cc_type=pgi
     cc_ident="PGI $($cc -V 2>&1 | awk '/^pgcc/ { print $2; exit }')"
     opt_common='-alias=ansi -Mlre -Mpre'
-    speed_cflags="-O3 -Mautoinline -Munroll=c:4 $opt_common"
-    size_cflags="-O2 -Munroll=c:1 $opt_common"
-    noopt_cflags="-O1"
-    filter_cflags=pgi_flags
+    cflags_speed="-O3 -Mautoinline -Munroll=c:4 $opt_common"
+    cflags_size="-O2 -Munroll=c:1 $opt_common"
+    cflags_noopt="-O1"
+    cflags_filter=pgi_flags
     pgi_flags(){
         for flag; do
             case $flag in
@@ -3509,11 +3518,11 @@ fi
 if [ -n "$optflags" ]; then
     add_cflags $optflags
 elif enabled small; then
-    add_cflags $size_cflags
+    add_cflags $cflags_size
 elif enabled optimizations; then
-    add_cflags $speed_cflags
+    add_cflags $cflags_speed
 else
-    add_cflags $noopt_cflags
+    add_cflags $cflags_noopt
 fi
 check_cflags -fno-math-errno
 check_cflags -fno-signed-zeros
@@ -3541,6 +3550,7 @@ if enabled icc; then
     # icc 11.0 and 11.1 work with ebp_available, but don't pass the test
     enable ebp_available
     if enabled x86_32; then
+        icc_version=$($cc -dumpversion)
         test ${icc_version%%.*} -ge 11 &&
             check_cflags -falign-stack=maintain-16-byte ||
             disable aligned_stack
