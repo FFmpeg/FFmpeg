@@ -609,7 +609,7 @@ static void reverseMatrixing(float *su1, float *su2, int *pPrevCode, int *pCurrC
                 }
                 break;
             default:
-                assert(0);
+                av_assert1(0);
         }
     }
 }
