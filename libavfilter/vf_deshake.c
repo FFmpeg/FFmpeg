@@ -425,7 +425,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&deshake->avctx);
 }
 
-static void end_frame(AVFilterLink *link)
+static int end_frame(AVFilterLink *link)
 {
     DeshakeContext *deshake = link->dst->priv;
     AVFilterBufferRef *in  = link->cur_buf;
@@ -529,11 +529,12 @@ static void end_frame(AVFilterLink *link)
 
     // Draw the transformed frame information
     ff_draw_slice(link->dst->outputs[0], 0, link->h, 1);
-    ff_end_frame(link->dst->outputs[0]);
+    return ff_end_frame(link->dst->outputs[0]);
 }
 
-static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
+static int draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
+    return 0;
 }
 
 AVFilter avfilter_vf_deshake = {

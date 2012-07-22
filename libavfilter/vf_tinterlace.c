@@ -198,7 +198,7 @@ void copy_picture_field(uint8_t *dst[4], int dst_linesize[4],
     }
 }
 
-static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
+static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
     AVFilterContext *ctx = inlink->dst;
     TInterlaceContext *tinterlace = ctx->priv;
@@ -206,9 +206,10 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     avfilter_unref_buffer(tinterlace->cur);
     tinterlace->cur  = tinterlace->next;
     tinterlace->next = picref;
+    return 0;
 }
 
-static void end_frame(AVFilterLink *inlink)
+static int end_frame(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
@@ -220,7 +221,7 @@ static void end_frame(AVFilterLink *inlink)
 
     /* we need at least two frames */
     if (!tinterlace->cur)
-        return;
+        return 0;
 
     switch (tinterlace->mode) {
     case MODE_MERGE: /* move the odd frame into the upper field of the new image, even into
@@ -324,6 +325,8 @@ static void end_frame(AVFilterLink *inlink)
     ff_end_frame(outlink);
 
     tinterlace->frame++;
+
+    return 0;
 }
 
 static int poll_frame(AVFilterLink *outlink)
@@ -359,7 +362,7 @@ static int request_frame(AVFilterLink *outlink)
     return 0;
 }
 
-static void null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { }
+static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { return 0; }
 
 AVFilter avfilter_vf_tinterlace = {
     .name          = "tinterlace",

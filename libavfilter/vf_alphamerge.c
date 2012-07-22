@@ -95,8 +95,8 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref) {}
-static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir) {}
+static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref) {return 0;}
+static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir) {return 0;}
 
 static void draw_frame(AVFilterContext *ctx,
                        AVFilterBufferRef *main_buf,
@@ -130,7 +130,7 @@ static void draw_frame(AVFilterContext *ctx,
     ff_draw_slice(ctx->outputs[0], 0, h, 1);
 }
 
-static void end_frame(AVFilterLink *inlink)
+static int end_frame(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     AlphaMergeContext *merge = ctx->priv;
@@ -157,6 +157,7 @@ static void end_frame(AVFilterLink *inlink)
         ff_end_frame(ctx->outputs[0]);
         avfilter_unref_buffer(alpha_buf);
     }
+    return 0;
 }
 
 static int request_frame(AVFilterLink *outlink)

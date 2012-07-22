@@ -290,9 +290,12 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static void null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { }
+static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
+{
+    return 0;
+}
 
-static void end_frame(AVFilterLink *inlink)
+static int end_frame(AVFilterLink *inlink)
 {
     HQDN3DContext *hqdn3d = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
@@ -300,6 +303,7 @@ static void end_frame(AVFilterLink *inlink)
     AVFilterBufferRef *outpic = outlink->out_buf;
     int cw = inpic->video->w >> hqdn3d->hsub;
     int ch = inpic->video->h >> hqdn3d->vsub;
+    int ret;
 
     deNoise(inpic->data[0], outpic->data[0],
             hqdn3d->Line, &hqdn3d->Frame[0], inpic->video->w, inpic->video->h,
@@ -320,8 +324,10 @@ static void end_frame(AVFilterLink *inlink)
             hqdn3d->Coefs[2],
             hqdn3d->Coefs[3]);
 
-    ff_draw_slice(outlink, 0, inpic->video->h, 1);
-    ff_end_frame(outlink);
+    if ((ret = ff_draw_slice(outlink, 0, inpic->video->h, 1)) < 0 ||
+        (ret = ff_end_frame(outlink)) < 0)
+        return ret;
+    return 0;
 }
 
 AVFilter avfilter_vf_hqdn3d = {

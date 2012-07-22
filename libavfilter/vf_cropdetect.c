@@ -114,7 +114,7 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static void end_frame(AVFilterLink *inlink)
+static int end_frame(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     CropDetectContext *cd = ctx->priv;
@@ -191,7 +191,7 @@ static void end_frame(AVFilterLink *inlink)
                w, h, x, y);
     }
 
-    ff_end_frame(inlink->dst->outputs[0]);
+    return ff_end_frame(inlink->dst->outputs[0]);
 }
 
 AVFilter avfilter_vf_cropdetect = {

@@ -56,7 +56,7 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static void end_frame(AVFilterLink *inlink)
+static int end_frame(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     BBoxContext *bbox = ctx->priv;
@@ -86,7 +86,7 @@ static void end_frame(AVFilterLink *inlink)
     av_log(ctx, AV_LOG_INFO, "\n");
 
     bbox->frame++;
-    ff_end_frame(inlink->dst->outputs[0]);
+    return ff_end_frame(inlink->dst->outputs[0]);
 }
 
 AVFilter avfilter_vf_bbox = {

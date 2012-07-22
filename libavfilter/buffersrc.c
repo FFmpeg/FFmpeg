@@ -382,18 +382,18 @@ static int request_frame(AVFilterLink *link)
 
     switch (link->type) {
     case AVMEDIA_TYPE_VIDEO:
-        ff_start_frame(link, avfilter_ref_buffer(buf, ~0));
-        ff_draw_slice(link, 0, link->h, 1);
-        ff_end_frame(link);
+        if ((ret = ff_start_frame(link, buf)) < 0 ||
+            (ret = ff_draw_slice(link, 0, link->h, 1)) < 0 ||
+            (ret = ff_end_frame(link)) < 0)
+            return ret;
         break;
     case AVMEDIA_TYPE_AUDIO:
-        ret = ff_filter_samples(link, avfilter_ref_buffer(buf, ~0));
+        ret = ff_filter_samples(link, buf);
         break;
     default:
+        avfilter_unref_bufferp(&buf);
         return AVERROR(EINVAL);
     }
-
-    avfilter_unref_buffer(buf);
 
     return ret;
 }

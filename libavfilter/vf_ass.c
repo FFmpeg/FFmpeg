@@ -157,7 +157,7 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static void null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { }
+static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { return 0; }
 
 /* libass stores an RGBA color in the format RRGGBBTT, where TT is the transparency level */
 #define AR(c)  ( (c)>>24)
@@ -180,7 +180,7 @@ static void overlay_ass_image(AssContext *ass, AVFilterBufferRef *picref,
     }
 }
 
-static void end_frame(AVFilterLink *inlink)
+static int end_frame(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
@@ -197,7 +197,7 @@ static void end_frame(AVFilterLink *inlink)
     overlay_ass_image(ass, picref, image);
 
     ff_draw_slice(outlink, 0, picref->video->h, 1);
-    ff_end_frame(outlink);
+    return ff_end_frame(outlink);
 }
 
 AVFilter avfilter_vf_ass = {

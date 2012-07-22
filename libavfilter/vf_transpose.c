@@ -114,12 +114,16 @@ static int config_props_output(AVFilterLink *outlink)
     return 0;
 }
 
-static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
+static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
     AVFilterLink *outlink = inlink->dst->outputs[0];
+    AVFilterBufferRef *buf_out;
 
     outlink->out_buf = ff_get_video_buffer(outlink, AV_PERM_WRITE,
                                            outlink->w, outlink->h);
+    if (!outlink->out_buf)
+        return AVERROR(ENOMEM);
+
     outlink->out_buf->pts = picref->pts;
 
     if (picref->video->sample_aspect_ratio.num == 0) {
@@ -129,16 +133,19 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
         outlink->out_buf->video->sample_aspect_ratio.den = picref->video->sample_aspect_ratio.num;
     }
 
-    ff_start_frame(outlink, avfilter_ref_buffer(outlink->out_buf, ~0));
+    buf_out = avfilter_ref_buffer(outlink->out_buf, ~0);
+    if (!buf_out)
+        return AVERROR(ENOMEM);
+    return ff_start_frame(outlink, buf_out);
 }
 
-static void end_frame(AVFilterLink *inlink)
+static int end_frame(AVFilterLink *inlink)
 {
     TransContext *trans = inlink->dst->priv;
     AVFilterBufferRef *inpic  = inlink->cur_buf;
     AVFilterBufferRef *outpic = inlink->dst->outputs[0]->out_buf;
     AVFilterLink *outlink = inlink->dst->outputs[0];
-    int plane;
+    int plane, ret;
 
     for (plane = 0; outpic->data[plane]; plane++) {
         int hsub = plane == 1 || plane == 2 ? trans->hsub : 0;
@@ -189,11 +196,13 @@ static void end_frame(AVFilterLink *inlink)
         }
     }
 
-    ff_draw_slice(outlink, 0, outpic->video->h, 1);
-    ff_end_frame(outlink);
+    if ((ret = ff_draw_slice(outlink, 0, outpic->video->h, 1)) < 0 ||
+        (ret = ff_end_frame(outlink)) < 0)
+        return ret;
+    return 0;
 }
 
-static void null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { }
+static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { return 0; }
 
 AVFilter avfilter_vf_transpose = {
     .name      = "transpose",

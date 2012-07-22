@@ -340,7 +340,7 @@ static AVFilterBufferRef *get_video_buffer(AVFilterLink *inlink, int perms, int 
     return picref;
 }
 
-static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
+static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
     AVFilterContext *ctx = link->dst;
     ColorMatrixContext *color = ctx->priv;
@@ -348,10 +348,10 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 
     color->outpicref = outpicref;
 
-    ff_start_frame(link->dst->outputs[0], outpicref);
+    return ff_start_frame(link->dst->outputs[0], outpicref);
 }
 
-static void end_frame(AVFilterLink *link)
+static int end_frame(AVFilterLink *link)
 {
     AVFilterContext *ctx = link->dst;
     ColorMatrixContext *color = ctx->priv;
@@ -365,10 +365,10 @@ static void end_frame(AVFilterLink *link)
         process_frame_uyvy422(color, out, link->cur_buf);
 
     ff_draw_slice(ctx->outputs[0], 0, link->dst->outputs[0]->h, 1);
-    ff_end_frame(ctx->outputs[0]);
+    return ff_end_frame(ctx->outputs[0]);
 }
 
-static void null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { }
+static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { return 0; }
 
 AVFilter avfilter_vf_colormatrix = {
     .name          = "colormatrix",

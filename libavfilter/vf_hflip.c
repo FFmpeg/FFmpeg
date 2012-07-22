@@ -83,7 +83,7 @@ static int config_props(AVFilterLink *inlink)
     return 0;
 }
 
-static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
+static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
     AVFilterLink *outlink = inlink->dst->outputs[0];
 
@@ -95,10 +95,10 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     if (av_pix_fmt_descriptors[inlink->format].flags & PIX_FMT_PAL)
         memcpy(inlink->dst->outputs[0]->out_buf->data[1], picref->data[1], AVPALETTE_SIZE);
 
-    ff_start_frame(outlink, avfilter_ref_buffer(outlink->out_buf, ~0));
+    return ff_start_frame(outlink, avfilter_ref_buffer(outlink->out_buf, ~0));
 }
 
-static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
+static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 {
     FlipContext *flip = inlink->dst->priv;
     AVFilterBufferRef *inpic  = inlink->cur_buf;
@@ -159,7 +159,7 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
         }
     }
 
-    ff_draw_slice(inlink->dst->outputs[0], y, h, slice_dir);
+    return ff_draw_slice(inlink->dst->outputs[0], y, h, slice_dir);
 }
 
 AVFilter avfilter_vf_hflip = {

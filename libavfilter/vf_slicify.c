@@ -59,7 +59,7 @@ static int config_props(AVFilterLink *link)
     return 0;
 }
 
-static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
+static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
     SliceContext *slice = link->dst->priv;
 
@@ -75,27 +75,34 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     av_log(link->dst, AV_LOG_DEBUG, "h:%d\n", slice->h);
     link->cur_buf = NULL;
 
-    ff_start_frame(link->dst->outputs[0], picref);
+    return ff_start_frame(link->dst->outputs[0], picref);
 }
 
-static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
+static int draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
     SliceContext *slice = link->dst->priv;
-    int y2;
+    int y2, ret = 0;
 
     if (slice_dir == 1) {
-        for (y2 = y; y2 + slice->h <= y + h; y2 += slice->h)
-            ff_draw_slice(link->dst->outputs[0], y2, slice->h, slice_dir);
+        for (y2 = y; y2 + slice->h <= y + h; y2 += slice->h) {
+            ret = ff_draw_slice(link->dst->outputs[0], y2, slice->h, slice_dir);
+            if (ret < 0)
+                return ret;
+        }
 
         if (y2 < y + h)
-            ff_draw_slice(link->dst->outputs[0], y2, y + h - y2, slice_dir);
+            return ff_draw_slice(link->dst->outputs[0], y2, y + h - y2, slice_dir);
     } else if (slice_dir == -1) {
-        for (y2 = y + h; y2 - slice->h >= y; y2 -= slice->h)
-            ff_draw_slice(link->dst->outputs[0], y2 - slice->h, slice->h, slice_dir);
+        for (y2 = y + h; y2 - slice->h >= y; y2 -= slice->h) {
+            ret = ff_draw_slice(link->dst->outputs[0], y2 - slice->h, slice->h, slice_dir);
+            if (ret < 0)
+                return ret;
+        }
 
         if (y2 > y)
-            ff_draw_slice(link->dst->outputs[0], y, y2 - y, slice_dir);
+            return ff_draw_slice(link->dst->outputs[0], y, y2 - y, slice_dir);
     }
+    return 0;
 }
 
 AVFilter avfilter_vf_slicify = {

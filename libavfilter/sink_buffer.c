@@ -96,7 +96,7 @@ static av_cold void common_uninit(AVFilterContext *ctx)
     }
 }
 
-static void end_frame(AVFilterLink *inlink)
+static int end_frame(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     BufferSinkContext *buf = inlink->dst->priv;
@@ -108,7 +108,7 @@ static void end_frame(AVFilterLink *inlink)
             av_log(ctx, AV_LOG_ERROR,
                    "Cannot buffer more frames. Consume some available frames "
                    "before adding new ones.\n");
-            return;
+            return AVERROR(ENOMEM);
         }
     }
 
@@ -124,6 +124,7 @@ static void end_frame(AVFilterLink *inlink)
                (char *)av_x_if_null(ctx->name, ctx->filter->name));
         buf->warning_limit *= 10;
     }
+    return 0;
 }
 
 void av_buffersink_set_frame_size(AVFilterContext *ctx, unsigned frame_size)

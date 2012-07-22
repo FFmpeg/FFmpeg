@@ -656,8 +656,9 @@ static int ebml_read_num(MatroskaDemuxContext *matroska, AVIOContext *pb,
             av_log(matroska->ctx, AV_LOG_ERROR,
                    "Read error at pos. %"PRIu64" (0x%"PRIx64")\n",
                    pos, pos);
+            return pb->error ? pb->error : AVERROR(EIO);
         }
-        return AVERROR(EIO); /* EOS or actual I/O error */
+        return AVERROR_EOF;
     }
 
     /* get the length of the EBML number */

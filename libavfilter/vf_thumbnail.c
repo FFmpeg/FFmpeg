@@ -68,7 +68,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     return 0;
 }
 
-static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
+static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 {
     int i, j;
     AVFilterContext *ctx = inlink->dst;
@@ -86,6 +86,7 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
         }
         p += picref->linesize[0];
     }
+    return 0;
 }
 
 /**
@@ -106,7 +107,7 @@ static double frame_sum_square_err(const int *hist, const double *median)
     return sum_sq_err;
 }
 
-static void end_frame(AVFilterLink *inlink)
+static int  end_frame(AVFilterLink *inlink)
 {
     int i, j, best_frame_idx = 0;
     double avg_hist[HIST_SIZE] = {0}, sq_err, min_sq_err = -1;
@@ -122,7 +123,7 @@ static void end_frame(AVFilterLink *inlink)
     // no selection until the buffer of N frames is filled up
     if (thumb->n < thumb->n_frames - 1) {
         thumb->n++;
-        return;
+        return 0;
     }
 
     // average histogram of the N frames
@@ -156,7 +157,7 @@ static void end_frame(AVFilterLink *inlink)
     ff_start_frame(outlink, picref);
     thumb->frames[best_frame_idx].buf = NULL;
     ff_draw_slice(outlink, 0, inlink->h, 1);
-    ff_end_frame(outlink);
+    return ff_end_frame(outlink);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -170,7 +171,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&thumb->frames);
 }
 
-static void null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref) { }
+static int null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref) { return 0; }
 
 static int request_frame(AVFilterLink *link)
 {

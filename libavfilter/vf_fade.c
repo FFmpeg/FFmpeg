@@ -214,7 +214,7 @@ static void fade_plane(int y, int h, int w,
     }
 }
 
-static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
+static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 {
     FadeContext *fade = inlink->dst->priv;
     AVFilterBufferRef *outpic = inlink->cur_buf;
@@ -255,20 +255,23 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
         }
     }
 
-    ff_draw_slice(inlink->dst->outputs[0], y, h, slice_dir);
+    return ff_draw_slice(inlink->dst->outputs[0], y, h, slice_dir);
 }
 
-static void end_frame(AVFilterLink *inlink)
+static int end_frame(AVFilterLink *inlink)
 {
     FadeContext *fade = inlink->dst->priv;
+    int ret;
 
-    ff_end_frame(inlink->dst->outputs[0]);
+    ret = ff_end_frame(inlink->dst->outputs[0]);
 
     if (fade->frame_index >= fade->start_frame &&
         fade->frame_index <= fade->stop_frame)
         fade->factor += fade->fade_per_frame;
     fade->factor = av_clip_uint16(fade->factor);
     fade->frame_index++;
+
+    return ret;
 }
 
 AVFilter avfilter_vf_fade = {

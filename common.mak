@@ -54,7 +54,7 @@ COMPILE_S = $(call COMPILE,AS)
 	$(COMPILE_S)
 
 %.ho: %.h
-	$(CC) $(CPPFLAGS) $(CFLAGS) -Wno-unused -c -o $@ -x c $<
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ -x c $<
 
 %.ver: %.v
 	$(Q)sed 's/$$MAJOR/$($(basename $(@F))_VERSION_MAJOR)/' $^ > $@

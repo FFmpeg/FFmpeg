@@ -272,11 +272,12 @@ fail:
     return ret;
 }
 
-static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
+static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
     ScaleContext *scale = link->dst->priv;
     AVFilterLink *outlink = link->dst->outputs[0];
-    AVFilterBufferRef *outpicref;
+    AVFilterBufferRef *outpicref, *for_next_filter;
+    int ret = 0;
 
     if(   picref->video->w != link->w
        || picref->video->h != link->h
@@ -295,19 +296,23 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 
 
     if (!scale->sws) {
-        ff_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
-        return;
+        outpicref = avfilter_ref_buffer(picref, ~0);
+        if (!outpicref)
+            return AVERROR(ENOMEM);
+        return ff_start_frame(outlink, outpicref);
     }
 
     scale->hsub = av_pix_fmt_descriptors[link->format].log2_chroma_w;
     scale->vsub = av_pix_fmt_descriptors[link->format].log2_chroma_h;
 
     outpicref = ff_get_video_buffer(outlink, AV_PERM_WRITE|AV_PERM_ALIGN, outlink->w, outlink->h);
+    if (!outpicref)
+        return AVERROR(ENOMEM);
+
     avfilter_copy_buffer_ref_props(outpicref, picref);
     outpicref->video->w = outlink->w;
     outpicref->video->h = outlink->h;
 
-    outlink->out_buf = outpicref;
     if(scale->output_is_pal)
         ff_set_systematic_pal2(outpicref->data[1], outlink->format == PIX_FMT_PAL8 ? PIX_FMT_BGR8 : outlink->format);
 
@@ -317,7 +322,19 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
               INT_MAX);
 
     scale->slice_y = 0;
-    ff_start_frame(outlink, avfilter_ref_buffer(outpicref, ~0));
+    for_next_filter = avfilter_ref_buffer(outpicref, ~0);
+    if (for_next_filter)
+        ret = ff_start_frame(outlink, for_next_filter);
+    else
+        ret = AVERROR(ENOMEM);
+
+    if (ret < 0) {
+        avfilter_unref_bufferp(&outpicref);
+        return ret;
+    }
+
+    outlink->out_buf = outpicref;
+    return 0;
 }
 
 static int scale_slice(AVFilterLink *link, struct SwsContext *sws, int y, int h, int mul, int field)
@@ -346,14 +363,13 @@ static int scale_slice(AVFilterLink *link, struct SwsContext *sws, int y, int h,
                          out,out_stride);
 }
 
-static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
+static int draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
     ScaleContext *scale = link->dst->priv;
-    int out_h;
+    int out_h, ret;
 
     if (!scale->sws) {
-        ff_draw_slice(link->dst->outputs[0], y, h, slice_dir);
-        return;
+        return ff_draw_slice(link->dst->outputs[0], y, h, slice_dir);
     }
 
     if (scale->slice_y == 0 && slice_dir == -1)
@@ -369,9 +385,10 @@ static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 
     if (slice_dir == -1)
         scale->slice_y -= out_h;
-    ff_draw_slice(link->dst->outputs[0], scale->slice_y, out_h, slice_dir);
+    ret = ff_draw_slice(link->dst->outputs[0], scale->slice_y, out_h, slice_dir);
     if (slice_dir == 1)
         scale->slice_y += out_h;
+    return ret;
 }
 
 AVFilter avfilter_vf_scale = {

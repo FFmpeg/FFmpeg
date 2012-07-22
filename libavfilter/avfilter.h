@@ -261,8 +261,11 @@ struct AVFilterPad {
      * picture inside the link structure.
      *
      * Input video pads only.
+     *
+     * @return >= 0 on success, a negative AVERROR on error. picref will be
+     * unreferenced by the caller in case of error.
      */
-    void (*start_frame)(AVFilterLink *link, AVFilterBufferRef *picref);
+    int (*start_frame)(AVFilterLink *link, AVFilterBufferRef *picref);
 
     /**
      * Callback function to get a video buffer. If NULL, the filter system will
@@ -287,16 +290,20 @@ struct AVFilterPad {
      * in the link structure during start_frame().
      *
      * Input video pads only.
+     *
+     * @return >= 0 on success, a negative AVERROR on error.
      */
-    void (*end_frame)(AVFilterLink *link);
+    int (*end_frame)(AVFilterLink *link);
 
     /**
      * Slice drawing callback. This is where a filter receives video data
      * and should do its processing.
      *
      * Input video pads only.
+     *
+     * @return >= 0 on success, a negative AVERROR on error.
      */
-    void (*draw_slice)(AVFilterLink *link, int y, int height, int slice_dir);
+    int (*draw_slice)(AVFilterLink *link, int y, int height, int slice_dir);
 
     /**
      * Samples filtering callback. This is where a filter receives audio data
@@ -385,7 +392,7 @@ enum AVMediaType avfilter_pad_get_type(AVFilterPad *pads, int pad_idx);
 
 /** default handler for end_frame() for video inputs */
 attribute_deprecated
-void avfilter_default_end_frame(AVFilterLink *link);
+int  avfilter_default_end_frame(AVFilterLink *link);
 
 /**
  * Filter definition. This defines the pads a filter contains, and all the

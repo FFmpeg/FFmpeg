@@ -146,7 +146,7 @@ static int request_frame(AVFilterLink *outlink)
     return ret;
 }
 
-static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
+static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 {
     AVFilterContext *ctx = inlink->dst;
     BlackDetectContext *blackdetect = ctx->priv;
@@ -160,10 +160,10 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
         p += picref->linesize[0];
     }
 
-    ff_draw_slice(ctx->outputs[0], y, h, slice_dir);
+    return ff_draw_slice(ctx->outputs[0], y, h, slice_dir);
 }
 
-static void end_frame(AVFilterLink *inlink)
+static int end_frame(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     BlackDetectContext *blackdetect = ctx->priv;
@@ -194,7 +194,7 @@ static void end_frame(AVFilterLink *inlink)
     blackdetect->last_picref_pts = picref->pts;
     blackdetect->frame_count++;
     blackdetect->nb_black_pixels = 0;
-    ff_end_frame(inlink->dst->outputs[0]);
+    return ff_end_frame(inlink->dst->outputs[0]);
 }
 
 AVFilter avfilter_vf_blackdetect = {

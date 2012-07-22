@@ -848,15 +848,17 @@ static int request_frame(AVFilterLink *outlink)
     return ret;
 }
 
-static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
+static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
+    return 0;
 }
 
-static void null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
+static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
+    return 0;
 }
 
-static void end_frame(AVFilterLink *inlink)
+static int end_frame(AVFilterLink *inlink)
 {
     MPContext *m = inlink->dst->priv;
     AVFilterBufferRef *inpic  = inlink->cur_buf;
@@ -883,6 +885,7 @@ static void end_frame(AVFilterLink *inlink)
         av_log(m->avfctx, AV_LOG_DEBUG, "put_image() says skip\n");
     }
     free_mp_image(mpi);
+    return 0;
 }
 
 AVFilter avfilter_vf_mp = {

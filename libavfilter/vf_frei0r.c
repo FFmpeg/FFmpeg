@@ -340,20 +340,26 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static void null_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir) { }
+static int null_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
+{
+    return 0;
+}
 
-static void end_frame(AVFilterLink *inlink)
+static int end_frame(AVFilterLink *inlink)
 {
     Frei0rContext *frei0r = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFilterBufferRef  *inpicref =  inlink->cur_buf;
     AVFilterBufferRef *outpicref = outlink->out_buf;
+    int ret;
 
     frei0r->update(frei0r->instance, inpicref->pts * av_q2d(inlink->time_base) * 1000,
                    (const uint32_t *)inpicref->data[0],
                    (uint32_t *)outpicref->data[0]);
-    ff_draw_slice(outlink, 0, outlink->h, 1);
-    ff_end_frame(outlink);
+    if ((ret = ff_draw_slice(outlink, 0, outlink->h, 1)) ||
+        (ret = ff_end_frame(outlink)) < 0)
+        return ret;
+    return 0;
 }
 
 AVFilter avfilter_vf_frei0r = {
@@ -432,18 +438,38 @@ static int source_request_frame(AVFilterLink *outlink)
 {
     Frei0rContext *frei0r = outlink->src->priv;
     AVFilterBufferRef *picref = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    AVFilterBufferRef *buf_out;
+    int ret;
+
+    if (!picref)
+        return AVERROR(ENOMEM);
+
     picref->video->sample_aspect_ratio = (AVRational) {1, 1};
     picref->pts = frei0r->pts++;
     picref->pos = -1;
 
-    ff_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
+    buf_out = avfilter_ref_buffer(picref, ~0);
+    if (!buf_out) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    ret = ff_start_frame(outlink, buf_out);
+    if (ret < 0)
+        goto fail;
+
     frei0r->update(frei0r->instance, av_rescale_q(picref->pts, frei0r->time_base, (AVRational){1,1000}),
                    NULL, (uint32_t *)picref->data[0]);
-    ff_draw_slice(outlink, 0, outlink->h, 1);
-    ff_end_frame(outlink);
+    ret = ff_draw_slice(outlink, 0, outlink->h, 1);
+    if (ret < 0)
+        goto fail;
+
+    ret = ff_end_frame(outlink);
+
+fail:
     avfilter_unref_buffer(picref);
 
-    return 0;
+    return ret;
 }
 
 AVFilter avfilter_vsrc_frei0r_src = {

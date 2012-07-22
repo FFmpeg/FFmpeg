@@ -209,27 +209,48 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     return 0;
 }
 
-static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
+static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
 {
     AVFilterLink *outlink = inlink->dst->outputs[0];
-    AVFilterBufferRef *outpicref;
+    AVFilterBufferRef *outpicref = NULL, *for_next_filter;
+    int ret = 0;
 
     if (inpicref->perms & AV_PERM_PRESERVE) {
         outpicref = ff_get_video_buffer(outlink, AV_PERM_WRITE,
                                         outlink->w, outlink->h);
+        if (!outpicref)
+            return AVERROR(ENOMEM);
+
         avfilter_copy_buffer_ref_props(outpicref, inpicref);
         outpicref->video->w = outlink->w;
         outpicref->video->h = outlink->h;
-    } else
+    } else {
         outpicref = avfilter_ref_buffer(inpicref, ~0);
+        if (!outpicref)
+            return AVERROR(ENOMEM);
+    }
+
+    for_next_filter = avfilter_ref_buffer(outpicref, ~0);
+    if (for_next_filter)
+        ret = ff_start_frame(outlink, for_next_filter);
+    else
+        ret = AVERROR(ENOMEM);
+
+    if (ret < 0) {
+        avfilter_unref_bufferp(&outpicref);
+        return ret;
+    }
 
     outlink->out_buf = outpicref;
-    ff_start_frame(outlink, avfilter_ref_buffer(outpicref, ~0));
+    return 0;
 }
 
-static void null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { }
+static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
+{
+    return 0;
+}
 
-static void end_frame(AVFilterLink *inlink)
+static int end_frame(AVFilterLink *inlink)
 {
     DelogoContext *delogo = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
@@ -239,6 +260,7 @@ static void end_frame(AVFilterLink *inlink)
     int hsub0 = av_pix_fmt_descriptors[inlink->format].log2_chroma_w;
     int vsub0 = av_pix_fmt_descriptors[inlink->format].log2_chroma_h;
     int plane;
+    int ret;
 
     for (plane = 0; plane < 4 && inpicref->data[plane]; plane++) {
         int hsub = plane == 1 || plane == 2 ? hsub0 : 0;
@@ -253,8 +275,10 @@ static void end_frame(AVFilterLink *inlink)
                      delogo->show, direct);
     }
 
-    ff_draw_slice(outlink, 0, inlink->h, 1);
-    ff_end_frame(outlink);
+    if ((ret = ff_draw_slice(outlink, 0, inlink->h, 1)) < 0 ||
+        (ret = ff_end_frame(outlink)) < 0)
+        return ret;
+    return 0;
 }
 
 AVFilter avfilter_vf_delogo = {

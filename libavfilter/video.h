@@ -42,9 +42,9 @@ AVFilterBufferRef *ff_null_get_video_buffer(AVFilterLink *link, int perms, int w
 AVFilterBufferRef *ff_get_video_buffer(AVFilterLink *link, int perms,
                                        int w, int h);
 
-void ff_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
-void ff_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
-void ff_null_end_frame(AVFilterLink *link);
+int ff_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
+int ff_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
+int ff_null_end_frame(AVFilterLink *link);
 
 /**
  * Notify the next filter of the start of a frame.
@@ -54,20 +54,25 @@ void ff_null_end_frame(AVFilterLink *link);
  *               frame need only be valid once draw_slice() is called for that
  *               portion. The receiving filter will free this reference when
  *               it no longer needs it.
+ *
+ * @return >= 0 on success, a negative AVERROR on error. This function will
+ * unreference picref in case of error.
  */
-void ff_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
+int ff_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
 
 /**
  * Pass video frame along and keep an internal reference for later use.
  */
-void ff_null_start_frame_keep_ref(AVFilterLink *inlink, AVFilterBufferRef *picref);
+int ff_null_start_frame_keep_ref(AVFilterLink *inlink, AVFilterBufferRef *picref);
 
 /**
  * Notify the next filter that the current frame has finished.
  *
  * @param link the output link the frame was sent over
+ *
+ * @return >= 0 on success, a negative AVERROR on error
  */
-void ff_end_frame(AVFilterLink *link);
+int ff_end_frame(AVFilterLink *link);
 
 /**
  * Send a slice to the next filter.
@@ -83,7 +88,9 @@ void ff_end_frame(AVFilterLink *link);
  *             from the top slice to the bottom slice if the value is 1,
  *             from the bottom slice to the top slice if the value is -1,
  *             for other values the behavior of the function is undefined.
+ *
+ * @return >= 0 on success, a negative AVERROR on error.
  */
-void ff_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
+int ff_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
 
 #endif /* AVFILTER_VIDEO_H */

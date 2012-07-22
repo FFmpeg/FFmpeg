@@ -301,9 +301,9 @@ static void vblur(uint8_t *dst, int dst_linesize, const uint8_t *src, int src_li
                    h, radius, power, temp);
 }
 
-static void null_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir) { }
+static int null_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir) { return 0; }
 
-static void end_frame(AVFilterLink *inlink)
+static int end_frame(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     BoxBlurContext *boxblur = ctx->priv;
@@ -328,7 +328,7 @@ static void end_frame(AVFilterLink *inlink)
               boxblur->temp);
 
     ff_draw_slice(outlink, 0, inlink->h, 1);
-    avfilter_default_end_frame(inlink);
+    return avfilter_default_end_frame(inlink);
 }
 
 AVFilter avfilter_vf_boxblur = {

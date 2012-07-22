@@ -59,7 +59,7 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static void draw_slice(AVFilterLink *inlink, int y0, int h, int slice_dir)
+static int draw_slice(AVFilterLink *inlink, int y0, int h, int slice_dir)
 {
     AlphaExtractContext *extract = inlink->dst->priv;
     AVFilterBufferRef *cur_buf = inlink->cur_buf;
@@ -91,7 +91,7 @@ static void draw_slice(AVFilterLink *inlink, int y0, int h, int slice_dir)
                    linesize);
         }
     }
-    ff_draw_slice(inlink->dst->outputs[0], y0, h, slice_dir);
+    return ff_draw_slice(inlink->dst->outputs[0], y0, h, slice_dir);
 }
 
 AVFilter avfilter_vf_alphaextract = {

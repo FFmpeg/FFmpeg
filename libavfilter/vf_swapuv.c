@@ -46,7 +46,7 @@ static AVFilterBufferRef *get_video_buffer(AVFilterLink *link, int perms,
     return picref;
 }
 
-static void start_frame(AVFilterLink *link, AVFilterBufferRef *inpicref)
+static int start_frame(AVFilterLink *link, AVFilterBufferRef *inpicref)
 {
     AVFilterBufferRef *outpicref = avfilter_ref_buffer(inpicref, ~0);
 
@@ -56,7 +56,7 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *inpicref)
     outpicref->linesize[1] = inpicref->linesize[2];
     outpicref->linesize[2] = inpicref->linesize[1];
 
-    ff_start_frame(link->dst->outputs[0], outpicref);
+    return ff_start_frame(link->dst->outputs[0], outpicref);
 }
 
 static int query_formats(AVFilterContext *ctx)

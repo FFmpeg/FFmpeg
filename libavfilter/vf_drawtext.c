@@ -780,14 +780,18 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
     return 0;
 }
 
-static void null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { }
+static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
+{
+    return 0;
+}
 
-static void end_frame(AVFilterLink *inlink)
+static int end_frame(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     DrawTextContext *dtext = ctx->priv;
     AVFilterBufferRef *picref = inlink->cur_buf;
+    int ret;
 
     dtext->var_values[VAR_T] = picref->pts == AV_NOPTS_VALUE ?
         NAN : picref->pts * av_q2d(inlink->time_base);
@@ -801,8 +805,10 @@ static void end_frame(AVFilterLink *inlink)
 
     dtext->var_values[VAR_N] += 1.0;
 
-    ff_draw_slice(outlink, 0, picref->video->h, 1);
-    ff_end_frame(outlink);
+    if ((ret = ff_draw_slice(outlink, 0, picref->video->h, 1)) < 0 ||
+        (ret = ff_end_frame(outlink)) < 0)
+        return ret;
+    return 0;
 }
 
 AVFilter avfilter_vf_drawtext = {

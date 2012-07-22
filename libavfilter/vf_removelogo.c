@@ -472,7 +472,7 @@ static void blur_image(int ***mask,
     }
 }
 
-static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
+static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
 {
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFilterBufferRef *outpicref;
@@ -487,10 +487,10 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
         outpicref = inpicref;
 
     outlink->out_buf = outpicref;
-    ff_start_frame(outlink, avfilter_ref_buffer(outpicref, ~0));
+    return ff_start_frame(outlink, avfilter_ref_buffer(outpicref, ~0));
 }
 
-static void end_frame(AVFilterLink *inlink)
+static int end_frame(AVFilterLink *inlink)
 {
     RemovelogoContext *removelogo = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
@@ -515,7 +515,7 @@ static void end_frame(AVFilterLink *inlink)
                inlink->w/2, inlink->h/2, direct, &removelogo->half_mask_bbox);
 
     ff_draw_slice(outlink, 0, inlink->h, 1);
-    ff_end_frame(outlink);
+    return ff_end_frame(outlink);
 }
 
 static void uninit(AVFilterContext *ctx)
@@ -540,7 +540,7 @@ static void uninit(AVFilterContext *ctx)
     }
 }
 
-static void null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { }
+static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { return 0; }
 
 AVFilter avfilter_vf_removelogo = {
     .name          = "removelogo",

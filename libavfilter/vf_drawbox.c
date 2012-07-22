@@ -94,7 +94,7 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static void draw_slice(AVFilterLink *inlink, int y0, int h, int slice_dir)
+static int draw_slice(AVFilterLink *inlink, int y0, int h, int slice_dir)
 {
     DrawBoxContext *drawbox = inlink->dst->priv;
     int plane, x, y, xb = drawbox->x, yb = drawbox->y;
@@ -120,7 +120,7 @@ static void draw_slice(AVFilterLink *inlink, int y0, int h, int slice_dir)
         }
     }
 
-    ff_draw_slice(inlink->dst->outputs[0], y0, h, 1);
+    return ff_draw_slice(inlink->dst->outputs[0], y0, h, 1);
 }
 
 AVFilter avfilter_vf_drawbox = {

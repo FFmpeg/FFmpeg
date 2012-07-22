@@ -63,32 +63,47 @@ static void split_uninit(AVFilterContext *ctx)
         av_freep(&ctx->output_pads[i].name);
 }
 
-static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
+static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
     AVFilterContext *ctx = inlink->dst;
-    int i;
+    int i, ret = 0;
 
-    for (i = 0; i < ctx->nb_outputs; i++)
-        ff_start_frame(ctx->outputs[i],
-                       avfilter_ref_buffer(picref, ~AV_PERM_WRITE));
+    for (i = 0; i < ctx->nb_outputs; i++) {
+        AVFilterBufferRef *buf_out = avfilter_ref_buffer(picref, ~AV_PERM_WRITE);
+        if (!buf_out)
+            return AVERROR(ENOMEM);
+
+        ret = ff_start_frame(ctx->outputs[i], buf_out);
+        if (ret < 0)
+            break;
+    }
+    return ret;
 }
 
-static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
+static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 {
     AVFilterContext *ctx = inlink->dst;
-    int i;
+    int i, ret = 0;
 
-    for (i = 0; i < ctx->nb_outputs; i++)
-        ff_draw_slice(ctx->outputs[i], y, h, slice_dir);
+    for (i = 0; i < ctx->nb_outputs; i++) {
+        ret = ff_draw_slice(ctx->outputs[i], y, h, slice_dir);
+        if (ret < 0)
+            break;
+    }
+    return ret;
 }
 
-static void end_frame(AVFilterLink *inlink)
+static int end_frame(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
-    int i;
+    int i, ret = 0;
 
-    for (i = 0; i < ctx->nb_outputs; i++)
-        ff_end_frame(ctx->outputs[i]);
+    for (i = 0; i < ctx->nb_outputs; i++) {
+        ret = ff_end_frame(ctx->outputs[i]);
+        if (ret < 0)
+            break;
+    }
+    return ret;
 }
 
 AVFilter avfilter_vf_split = {
@@ -114,8 +129,14 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
     int i, ret = 0;
 
     for (i = 0; i < ctx->nb_outputs; i++) {
-        ret = ff_filter_samples(inlink->dst->outputs[i],
-                                avfilter_ref_buffer(samplesref, ~AV_PERM_WRITE));
+        AVFilterBufferRef *buf_out = avfilter_ref_buffer(samplesref,
+                                                         ~AV_PERM_WRITE);
+        if (!buf_out) {
+            ret = AVERROR(ENOMEM);
+            break;
+        }
+
+        ret = ff_filter_samples(inlink->dst->outputs[i], buf_out);
         if (ret < 0)
             break;
     }

@@ -134,10 +134,14 @@ static int request_frame(AVFilterLink *outlink)
 {
     TestSourceContext *test = outlink->src->priv;
     AVFilterBufferRef *picref;
+    int ret;
 
     if (test->max_pts >= 0 && test->pts >= test->max_pts)
         return AVERROR_EOF;
     picref = ff_get_video_buffer(outlink, AV_PERM_WRITE, test->w, test->h);
+    if (!picref)
+        return AVERROR(ENOMEM);
+
     picref->pts = test->pts++;
     picref->pos = -1;
     picref->video->key_frame = 1;
@@ -147,9 +151,10 @@ static int request_frame(AVFilterLink *outlink)
     test->fill_picture_fn(outlink->src, picref);
     test->nb_frame++;
 
-    ff_start_frame(outlink, picref);
-    ff_draw_slice(outlink, 0, test->h, 1);
-    ff_end_frame(outlink);
+    if ((ret = ff_start_frame(outlink, picref)) < 0 ||
+        (ret = ff_draw_slice(outlink, 0, test->h, 1)) < 0 ||
+        (ret = ff_end_frame(outlink)) < 0)
+        return ret;
 
     return 0;
 }

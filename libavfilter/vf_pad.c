@@ -226,6 +226,9 @@ static AVFilterBufferRef *get_video_buffer(AVFilterLink *inlink, int perms, int 
                                                     h + (pad->h - pad->in_h));
     int plane;
 
+    if (!picref)
+        return NULL;
+
     picref->video->w = w;
     picref->video->h = h;
 
@@ -259,12 +262,15 @@ static int does_clip(PadContext *pad, AVFilterBufferRef *outpicref, int plane, i
     return 0;
 }
 
-static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
+static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
 {
     PadContext *pad = inlink->dst->priv;
     AVFilterBufferRef *outpicref = avfilter_ref_buffer(inpicref, ~0);
     AVFilterBufferRef *for_next_filter;
-    int plane;
+    int plane, ret = 0;
+
+    if (!outpicref)
+        return AVERROR(ENOMEM);
 
     for (plane = 0; plane < 4 && outpicref->data[plane] && pad->draw.pixelstep[plane]; plane++) {
         int hsub = pad->draw.hsub[plane];
@@ -292,22 +298,37 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
         outpicref = ff_get_video_buffer(inlink->dst->outputs[0], AV_PERM_WRITE | AV_PERM_NEG_LINESIZES,
                                         FFMAX(inlink->w, pad->w),
                                         FFMAX(inlink->h, pad->h));
+        if (!outpicref)
+            return AVERROR(ENOMEM);
+
         avfilter_copy_buffer_ref_props(outpicref, inpicref);
     }
-
-    inlink->dst->outputs[0]->out_buf = outpicref;
 
     outpicref->video->w = pad->w;
     outpicref->video->h = pad->h;
 
     for_next_filter = avfilter_ref_buffer(outpicref, ~0);
-    ff_start_frame(inlink->dst->outputs[0], for_next_filter);
+    if (!for_next_filter) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    ret = ff_start_frame(inlink->dst->outputs[0], for_next_filter);
+    if (ret < 0)
+        goto fail;
+
+    inlink->dst->outputs[0]->out_buf = outpicref;
+    return 0;
+
+fail:
+    avfilter_unref_bufferp(&outpicref);
+    return ret;
 }
 
-static void draw_send_bar_slice(AVFilterLink *link, int y, int h, int slice_dir, int before_slice)
+static int draw_send_bar_slice(AVFilterLink *link, int y, int h, int slice_dir, int before_slice)
 {
     PadContext *pad = link->dst->priv;
-    int bar_y, bar_h = 0;
+    int bar_y, bar_h = 0, ret = 0;
 
     if        (slice_dir * before_slice ==  1 && y == pad->y) {
         /* top bar */
@@ -324,15 +345,17 @@ static void draw_send_bar_slice(AVFilterLink *link, int y, int h, int slice_dir,
                           link->dst->outputs[0]->out_buf->data,
                           link->dst->outputs[0]->out_buf->linesize,
                           0, bar_y, pad->w, bar_h);
-        ff_draw_slice(link->dst->outputs[0], bar_y, bar_h, slice_dir);
+        ret = ff_draw_slice(link->dst->outputs[0], bar_y, bar_h, slice_dir);
     }
+    return ret;
 }
 
-static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
+static int draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
     PadContext *pad = link->dst->priv;
     AVFilterBufferRef *outpic = link->dst->outputs[0]->out_buf;
     AVFilterBufferRef *inpic = link->cur_buf;
+    int ret;
 
     y += pad->y;
 
@@ -340,7 +363,7 @@ static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
     h = ff_draw_round_to_sub(&pad->draw, 1, -1, h);
 
     if (!h)
-        return;
+        return 0;
     draw_send_bar_slice(link, y, h, slice_dir, 1);
 
     /* left border */
@@ -357,9 +380,11 @@ static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
     /* right border */
     ff_fill_rectangle(&pad->draw, &pad->color, outpic->data, outpic->linesize,
                       pad->x + pad->in_w, y, pad->w - pad->x - pad->in_w, h);
-    ff_draw_slice(link->dst->outputs[0], y, h, slice_dir);
+    ret = ff_draw_slice(link->dst->outputs[0], y, h, slice_dir);
+    if (ret < 0)
+        return ret;
 
-    draw_send_bar_slice(link, y, h, slice_dir, -1);
+    return draw_send_bar_slice(link, y, h, slice_dir, -1);
 }
 
 AVFilter avfilter_vf_pad = {

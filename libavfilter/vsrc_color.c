@@ -149,18 +149,38 @@ static int color_request_frame(AVFilterLink *link)
 {
     ColorContext *color = link->src->priv;
     AVFilterBufferRef *picref = ff_get_video_buffer(link, AV_PERM_WRITE, color->w, color->h);
+    AVFilterBufferRef *buf_out;
+    int ret;
+
+    if (!picref)
+        return AVERROR(ENOMEM);
+
     picref->video->sample_aspect_ratio = (AVRational) {1, 1};
     picref->pts = color->pts++;
     picref->pos = -1;
 
-    ff_start_frame(link, avfilter_ref_buffer(picref, ~0));
+    buf_out = avfilter_ref_buffer(picref, ~0);
+    if (!buf_out) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    ret = ff_start_frame(link, buf_out);
+    if (ret < 0)
+        goto fail;
+
     ff_fill_rectangle(&color->draw, &color->color, picref->data, picref->linesize,
                       0, 0, color->w, color->h);
-    ff_draw_slice(link, 0, color->h, 1);
-    ff_end_frame(link);
+    ret = ff_draw_slice(link, 0, color->h, 1);
+    if (ret < 0)
+        goto fail;
+
+    ret = ff_end_frame(link);
+
+fail:
     avfilter_unref_buffer(picref);
 
-    return 0;
+    return ret;
 }
 
 AVFilter avfilter_vsrc_color = {
