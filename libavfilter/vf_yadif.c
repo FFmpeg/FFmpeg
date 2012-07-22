@@ -135,9 +135,8 @@ static void filter(AVFilterContext *ctx, AVFilterBufferRef *dstpic,
             }
         }
     }
-#if HAVE_MMX
-    __asm__ volatile("emms \n\t" : : : "memory");
-#endif
+
+    emms_c();
 }
 
 static AVFilterBufferRef *get_video_buffer(AVFilterLink *link, int perms, int w, int h)
