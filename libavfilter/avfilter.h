@@ -578,7 +578,22 @@ struct AVFilterLink {
      */
     AVFilterBufferRef *src_buf;
 
+    /**
+     * The buffer reference to the frame sent across the link by the
+     * source filter, which is read by the destination filter. It is
+     * automatically set up by ff_start_frame().
+     *
+     * Depending on the permissions, it may either be the same as
+     * src_buf or an automatic copy of it.
+     *
+     * It is automatically freed by the filter system when calling
+     * ff_end_frame(). In case you save the buffer reference
+     * internally (e.g. if you cache it for later reuse), or give it
+     * away (e.g. if you pass the reference to the next filter) it
+     * must be set to NULL before calling ff_end_frame().
+     */
     AVFilterBufferRef *cur_buf;
+
     AVFilterBufferRef *out_buf;
 
     struct AVFilterPool *pool;
