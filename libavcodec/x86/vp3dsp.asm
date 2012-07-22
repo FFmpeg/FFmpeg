@@ -38,12 +38,10 @@ cextern pb_1
 cextern pb_3
 cextern pb_7
 cextern pb_1F
+cextern pb_80
 cextern pb_81
 
 cextern pw_8
-
-cextern put_signed_pixels_clamped_mmx
-cextern add_pixels_clamped_mmx
 
 SECTION .text
 
@@ -523,56 +521,96 @@ cglobal vp3_h_loop_filter_mmx2, 3, 4
         PUT_BLOCK 0, 1, 2, 3, 4, 5, 6, 7
 %endmacro
 
-%macro vp3_idct_funcs 3
-cglobal vp3_idct_put_%1, 3, %3, %2
+%macro vp3_idct_funcs 1
+cglobal vp3_idct_put_%1, 3, 4, 9
     VP3_IDCT_%1   r2
-%if ARCH_X86_64
-    mov           r3, r2
-    mov           r2, r1
-    mov           r1, r0
-    mov           r0, r3
-%else
-    mov          r0m, r2
-    mov          r1m, r0
-    mov          r2m, r1
-%endif
-%if WIN64
-    call put_signed_pixels_clamped_mmx
-    RET
-%else
-    jmp put_signed_pixels_clamped_mmx
-%endif
 
-cglobal vp3_idct_add_%1, 3, %3, %2
-    VP3_IDCT_%1   r2
-%if ARCH_X86_64
-    mov           r3, r2
-    mov           r2, r1
-    mov           r1, r0
-    mov           r0, r3
+    movsxdifnidn  r1, r1d
+    mova          m4, [pb_80]
+    lea           r3, [r1*3]
+%assign %%i 0
+%rep 16/mmsize
+    mova          m0, [r2+mmsize*0+%%i]
+    mova          m1, [r2+mmsize*2+%%i]
+    mova          m2, [r2+mmsize*4+%%i]
+    mova          m3, [r2+mmsize*6+%%i]
+    packsswb      m0, [r2+mmsize*1+%%i]
+    packsswb      m1, [r2+mmsize*3+%%i]
+    packsswb      m2, [r2+mmsize*5+%%i]
+    packsswb      m3, [r2+mmsize*7+%%i]
+    paddb         m0, m4
+    paddb         m1, m4
+    paddb         m2, m4
+    paddb         m3, m4
+    movq   [r0     ], m0
+%if mmsize == 8
+    movq   [r0+r1  ], m1
+    movq   [r0+r1*2], m2
+    movq   [r0+r3  ], m3
 %else
-    mov          r0m, r2
-    mov          r1m, r0
-    mov          r2m, r1
+    movhps [r0+r1  ], m0
+    movq   [r0+r1*2], m1
+    movhps [r0+r3  ], m1
 %endif
-%if WIN64
-    call add_pixels_clamped_mmx
+%if %%i == 0
+    lea           r0, [r0+r1*4]
+%endif
+%if mmsize == 16
+    movq   [r0     ], m2
+    movhps [r0+r1  ], m2
+    movq   [r0+r1*2], m3
+    movhps [r0+r3  ], m3
+%endif
+%assign %%i %%i+64
+%endrep
     RET
-%else
-    jmp add_pixels_clamped_mmx
+
+cglobal vp3_idct_add_%1, 3, 4, 9
+    VP3_IDCT_%1   r2
+
+    mov           r3, 4
+    pxor          m4, m4
+    movsxdifnidn  r1, r1d
+.loop:
+    movq          m0, [r0]
+    movq          m1, [r0+r1]
+%if mmsize == 8
+    mova          m2, m0
+    mova          m3, m1
 %endif
+    punpcklbw     m0, m4
+    punpcklbw     m1, m4
+%if mmsize == 8
+    punpckhbw     m2, m4
+    punpckhbw     m3, m4
+%endif
+    paddsw        m0, [r2+ 0]
+    paddsw        m1, [r2+16]
+%if mmsize == 8
+    paddsw        m2, [r2+ 8]
+    paddsw        m3, [r2+24]
+    packuswb      m0, m2
+    packuswb      m1, m3
+%else ; mmsize == 16
+    packuswb      m0, m1
+%endif
+    movq     [r0   ], m0
+%if mmsize == 8
+    movq     [r0+r1], m1
+%else ; mmsize == 16
+    movhps   [r0+r1], m0
+%endif
+    lea           r0, [r0+r1*2]
+    add           r2, 32
+    dec           r3
+    jg .loop
+    RET
 %endmacro
 
-%if ARCH_X86_64
-%define REGS 4
-%else
-%define REGS 3
-%endif
 INIT_MMX
-vp3_idct_funcs mmx,  0, REGS
+vp3_idct_funcs mmx
 INIT_XMM
-vp3_idct_funcs sse2, 9, REGS
-%undef REGS
+vp3_idct_funcs sse2
 
 %macro DC_ADD 0
     movq          m2, [r0     ]
