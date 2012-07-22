@@ -165,6 +165,10 @@ static int tls_open(URLContext *h, const char *uri, int flags)
     struct addrinfo hints = { 0 }, *ai = NULL;
     const char *proxy_path;
     int use_proxy;
+    int server = 0;
+    const char *p = strchr(uri, '?');
+    if (p && av_find_info_tag(buf, sizeof(buf), "listen", p))
+        server = 1;
 
     ff_tls_init();
 
@@ -199,7 +203,7 @@ static int tls_open(URLContext *h, const char *uri, int flags)
     c->fd = ffurl_get_file_handle(c->tcp);
 
 #if CONFIG_GNUTLS
-    gnutls_init(&c->session, GNUTLS_CLIENT);
+    gnutls_init(&c->session, server ? GNUTLS_SERVER : GNUTLS_CLIENT);
     if (!numerichost)
         gnutls_server_name_set(c->session, GNUTLS_NAME_DNS, host, strlen(host));
     gnutls_certificate_allocate_credentials(&c->cred);
@@ -216,7 +220,7 @@ static int tls_open(URLContext *h, const char *uri, int flags)
             goto fail;
     }
 #elif CONFIG_OPENSSL
-    c->ctx = SSL_CTX_new(TLSv1_client_method());
+    c->ctx = SSL_CTX_new(server ? TLSv1_server_method() : TLSv1_client_method());
     if (!c->ctx) {
         av_log(h, AV_LOG_ERROR, "%s\n", ERR_error_string(ERR_get_error(), NULL));
         ret = AVERROR(EIO);
@@ -230,10 +234,10 @@ static int tls_open(URLContext *h, const char *uri, int flags)
         goto fail;
     }
     SSL_set_fd(c->ssl, c->fd);
-    if (!numerichost)
+    if (!server && !numerichost)
         SSL_set_tlsext_host_name(c->ssl, host);
     while (1) {
-        ret = SSL_connect(c->ssl);
+        ret = server ? SSL_accept(c->ssl) : SSL_connect(c->ssl);
         if (ret > 0)
             break;
         if (ret == 0) {
