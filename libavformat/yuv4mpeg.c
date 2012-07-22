@@ -366,10 +366,10 @@ static int yuv4_read_header(AVFormatContext *s)
                 return -1;
             } else if (strncmp("444", tokstart, 3) == 0) {
                 pix_fmt = PIX_FMT_YUV444P;
-            } else if (strncmp("mono", tokstart, 4) == 0) {
-                pix_fmt = PIX_FMT_GRAY8;
             } else if (strncmp("mono16", tokstart, 6) == 0) {
                 pix_fmt = PIX_FMT_GRAY16;
+            } else if (strncmp("mono", tokstart, 4) == 0) {
+                pix_fmt = PIX_FMT_GRAY8;
             } else {
                 av_log(s, AV_LOG_ERROR, "YUV4MPEG stream contains an unknown "
                        "pixel format.\n");
