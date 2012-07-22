@@ -4076,7 +4076,7 @@ void av_url_split(char *proto, int proto_size,
                   char *path, int path_size,
                   const char *url)
 {
-    const char *p, *ls, *at, *col, *brk;
+    const char *p, *ls, *ls2, *at, *col, *brk;
 
     if (port_ptr)               *port_ptr = -1;
     if (proto_size > 0)         proto[0] = 0;
@@ -4098,8 +4098,11 @@ void av_url_split(char *proto, int proto_size,
 
     /* separate path from hostname */
     ls = strchr(p, '/');
+    ls2 = strchr(p, '?');
     if(!ls)
-        ls = strchr(p, '?');
+        ls = ls2;
+    else if (ls && ls2)
+        ls = FFMIN(ls, ls2);
     if(ls)
         av_strlcpy(path, ls, path_size);
     else
