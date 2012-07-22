@@ -158,6 +158,9 @@ $AFTER_BODY_OPEN
 EOT
 }
 
+# declare encoding in header
+$IN_ENCODING = $ENCODING = "utf-8";
+
 # no navigation elements
 $SECTION_NAVIGATION = 0;
 # the same for texi2html 5.0
