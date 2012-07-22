@@ -108,7 +108,7 @@ static void set_options(URLContext *h, const char *uri)
 {
     TLSContext *c = h->priv_data;
     char buf[1024], key[1024];
-    int has_cert, has_key;
+    int has_cert, has_key, verify = 0;
 #if CONFIG_GNUTLS
     int ret;
 #endif
@@ -127,6 +127,13 @@ static void set_options(URLContext *h, const char *uri)
 #endif
     }
 
+    if (av_find_info_tag(buf, sizeof(buf), "verify", p)) {
+        char *endptr = NULL;
+        verify = strtol(buf, &endptr, 10);
+        if (buf == endptr)
+            verify = 1;
+    }
+
     has_cert = av_find_info_tag(buf, sizeof(buf), "cert", p);
     has_key  = av_find_info_tag(key, sizeof(key), "key", p);
 #if CONFIG_GNUTLS
@@ -137,11 +144,14 @@ static void set_options(URLContext *h, const char *uri)
     } else if (has_cert ^ has_key) {
         av_log(h, AV_LOG_ERROR, "cert and key required\n");
     }
+    gnutls_certificate_set_verify_flags(c->cred, verify);
 #elif CONFIG_OPENSSL
     if (has_cert && !SSL_CTX_use_certificate_chain_file(c->ctx, buf))
         av_log(h, AV_LOG_ERROR, "SSL_CTX_use_certificate_chain_file %s\n", ERR_error_string(ERR_get_error(), NULL));
     if (has_key && !SSL_CTX_use_PrivateKey_file(c->ctx, key, SSL_FILETYPE_PEM))
         av_log(h, AV_LOG_ERROR, "SSL_CTX_use_PrivateKey_file %s\n", ERR_error_string(ERR_get_error(), NULL));
+    if (verify)
+        SSL_CTX_set_verify(c->ctx, SSL_VERIFY_PEER|SSL_VERIFY_FAIL_IF_NO_PEER_CERT, 0);
 #endif
 }
 
@@ -193,7 +203,6 @@ static int tls_open(URLContext *h, const char *uri, int flags)
     if (!numerichost)
         gnutls_server_name_set(c->session, GNUTLS_NAME_DNS, host, strlen(host));
     gnutls_certificate_allocate_credentials(&c->cred);
-    gnutls_certificate_set_verify_flags(c->cred, 0);
     set_options(h, uri);
     gnutls_credentials_set(c->session, GNUTLS_CRD_CERTIFICATE, c->cred);
     gnutls_transport_set_ptr(c->session, (gnutls_transport_ptr_t)
