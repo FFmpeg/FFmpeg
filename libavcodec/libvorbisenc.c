@@ -20,6 +20,7 @@
 
 #include <vorbis/vorbisenc.h>
 
+#include "libavutil/avassert.h"
 #include "libavutil/fifo.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
@@ -28,8 +29,6 @@
 #include "vorbis.h"
 #include "vorbis_parser.h"
 
-#undef NDEBUG
-#include <assert.h>
 
 /* Number of samples the user should send in each call.
  * This value is used because it is the LCD of all possible frame sizes, so
@@ -250,7 +249,7 @@ static av_cold int oggvorbis_encode_init(AVCodecContext *avctx)
     offset += header_comm.bytes;
     memcpy(&p[offset], header_code.packet, header_code.bytes);
     offset += header_code.bytes;
-    assert(offset == avctx->extradata_size);
+    av_assert0(offset == avctx->extradata_size);
 
     if ((ret = avpriv_vorbis_parse_extradata(avctx, &s->vp)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "invalid extradata\n");
