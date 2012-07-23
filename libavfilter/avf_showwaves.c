@@ -206,7 +206,6 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
                              av_rescale_q((p - (int16_t *)insamples->data[0]) / nb_channels,
                                           (AVRational){ 1, inlink->sample_rate },
                                           outlink->time_base);
-            outlink->out_buf = outpicref;
             linesize = outpicref->linesize[0];
             memset(outpicref->data[0], 0, showwaves->h*linesize);
         }
