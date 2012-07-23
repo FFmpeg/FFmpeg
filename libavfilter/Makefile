@@ -69,7 +69,6 @@ OBJS-$(CONFIG_SILENCEDETECT_FILTER)          += af_silencedetect.o
 OBJS-$(CONFIG_VOLUME_FILTER)                 += af_volume.o
 
 OBJS-$(CONFIG_AEVALSRC_FILTER)               += asrc_aevalsrc.o
-OBJS-$(CONFIG_AMOVIE_FILTER)                 += src_movie.o
 OBJS-$(CONFIG_ANULLSRC_FILTER)               += asrc_anullsrc.o
 
 OBJS-$(CONFIG_ABUFFERSINK_FILTER)            += sink_buffer.o
@@ -137,7 +136,6 @@ OBJS-$(CONFIG_COLOR_FILTER)                  += vsrc_color.o
 OBJS-$(CONFIG_FREI0R_SRC_FILTER)             += vf_frei0r.o
 OBJS-$(CONFIG_LIFE_FILTER)                   += vsrc_life.o
 OBJS-$(CONFIG_MANDELBROT_FILTER)             += vsrc_mandelbrot.o
-OBJS-$(CONFIG_MOVIE_FILTER)                  += src_movie.o
 OBJS-$(CONFIG_MPTESTSRC_FILTER)              += vsrc_mptestsrc.o
 OBJS-$(CONFIG_NULLSRC_FILTER)                += vsrc_testsrc.o
 OBJS-$(CONFIG_RGBTESTSRC_FILTER)             += vsrc_testsrc.o
@@ -201,6 +199,10 @@ OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/pullup.o
 # multimedia filters
 OBJS-$(CONFIG_CONCAT_FILTER)                 += avf_concat.o
 OBJS-$(CONFIG_SHOWWAVES_FILTER)              += avf_showwaves.o
+
+# multimedia sources
+OBJS-$(CONFIG_AMOVIE_FILTER)                 += src_movie.o
+OBJS-$(CONFIG_MOVIE_FILTER)                  += src_movie.o
 
 TOOLS     = graph2dot
 TESTPROGS = drawutils filtfmts formats

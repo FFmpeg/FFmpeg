@@ -566,7 +566,7 @@ static int movie_request_frame(AVFilterLink *outlink)
 
 #if CONFIG_MOVIE_FILTER
 
-AVFilter avfilter_vsrc_movie = {
+AVFilter avfilter_avsrc_movie = {
     .name          = "movie",
     .description   = NULL_IF_CONFIG_SMALL("Read from a movie source."),
     .priv_size     = sizeof(MovieContext),
@@ -582,7 +582,7 @@ AVFilter avfilter_vsrc_movie = {
 
 #if CONFIG_AMOVIE_FILTER
 
-AVFilter avfilter_asrc_amovie = {
+AVFilter avfilter_avsrc_amovie = {
     .name          = "amovie",
     .description   = NULL_IF_CONFIG_SMALL("Read audio from a movie source."),
     .priv_size     = sizeof(MovieContext),
