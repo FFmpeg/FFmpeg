@@ -81,13 +81,15 @@ typedef struct g723_1_context {
 
 static av_cold int g723_1_decode_init(AVCodecContext *avctx)
 {
-    G723_1_Context *p  = avctx->priv_data;
+    G723_1_Context *p = avctx->priv_data;
 
-    avctx->sample_fmt  = AV_SAMPLE_FMT_S16;
-    p->pf_gain         = 1 << 12;
+    avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    avctx->sample_fmt     = AV_SAMPLE_FMT_S16;
+    avctx->channels       = 1;
+    p->pf_gain            = 1 << 12;
 
     avcodec_get_frame_defaults(&p->frame);
-    avctx->coded_frame = &p->frame;
+    avctx->coded_frame    = &p->frame;
 
     memcpy(p->prev_lsp, dc_lsp, LPC_ORDER * sizeof(*p->prev_lsp));
 
@@ -225,26 +227,25 @@ static int16_t square_root(int val)
  * Calculate the number of left-shifts required for normalizing the input.
  *
  * @param num   input number
- * @param width width of the input, 16 bits(0) / 32 bits(1)
+ * @param width width of the input, 15 or 31 bits
  */
 static int normalize_bits(int num, int width)
 {
     int i = 0;
-    int bits = (width) ? 31 : 15;
 
     if (num) {
         if (num == -1)
-            return bits;
+            return width;
         if (num < 0)
             num = ~num;
-        i= bits - av_log2(num) - 1;
+        i= width - av_log2(num) - 1;
         i= FFMAX(i, 0);
     }
     return i;
 }
 
-#define normalize_bits_int16(num) normalize_bits(num, 0)
-#define normalize_bits_int32(num) normalize_bits(num, 1)
+#define normalize_bits_int16(num) normalize_bits(num, 15)
+#define normalize_bits_int32(num) normalize_bits(num, 31)
 #define dot_product(a,b,c,d) (ff_dot_product(a,b,c)<<(d))
 
 /**
@@ -263,7 +264,7 @@ static int scale_vector(int16_t *vector, int length)
     for (i = 0; i < length; i++)
         max = FFMAX(max, FFABS(vector[i]));
 
-    bits  = normalize_bits(max, 0);
+    bits  = normalize_bits(max, 15);
     scale = shift_table[bits];
 
     for (i = 0; i < length; i++)
@@ -548,7 +549,7 @@ static void get_residual(int16_t *residual, int16_t *prev_excitation, int lag)
  */
 static void gen_acb_excitation(int16_t *vector, int16_t *prev_excitation,
                                int pitch_lag, G723_1_Subframe subfrm,
-                               Rate cur_rate)
+                               enum Rate cur_rate)
 {
     int16_t residual[SUBFRAME_LEN + PITCH_ORDER - 1];
     const int16_t *cb_ptr;
@@ -710,7 +711,7 @@ static void comp_ppf_coeff(G723_1_Context *p, int offset, int pitch_lag,
     for (i = 0; i < 5; i++)
         temp1 = FFMAX(energy[i], temp1);
 
-    scale = normalize_bits(temp1, 1);
+    scale = normalize_bits(temp1, 31);
     for (i = 0; i < 5; i++)
         energy[i] = av_clipl_int32(energy[i] << scale) >> 16;
 
@@ -861,8 +862,8 @@ static void gain_scale(G723_1_Context *p, int16_t * buf, int energy)
     }
 
     if (num && denom) {
-        bits1   = normalize_bits(num, 1);
-        bits2   = normalize_bits(denom, 1);
+        bits1   = normalize_bits(num,   31);
+        bits2   = normalize_bits(denom, 31);
         num     = num << bits1 >> 1;
         denom <<= bits2;
 
@@ -921,7 +922,7 @@ static void formant_postfilter(G723_1_Context *p, int16_t *lpc, int16_t *buf)
         int scale, energy;
 
         /* Normalize */
-        memcpy(temp_vector, buf_ptr, SUBFRAME_LEN * sizeof(int16_t));
+        memcpy(temp_vector, buf_ptr, SUBFRAME_LEN * sizeof(*temp_vector));
         scale = scale_vector(temp_vector, SUBFRAME_LEN);
 
         /* Compute auto correlation coefficients */
@@ -982,9 +983,11 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     if (unpack_bitstream(p, buf, buf_size) < 0) {
-        bad_frame         = 1;
-        p->cur_frame_type = p->past_frame_type == ACTIVE_FRAME ?
-                            ACTIVE_FRAME : UNTRANSMITTED_FRAME;
+        bad_frame = 1;
+        if (p->past_frame_type == ACTIVE_FRAME)
+            p->cur_frame_type = ACTIVE_FRAME;
+        else
+            p->cur_frame_type = UNTRANSMITTED_FRAME;
     }
 
     p->frame.nb_samples = FRAME_LEN + LPC_ORDER;
@@ -995,10 +998,10 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
     out= (int16_t*)p->frame.data[0];
 
 
-    if(p->cur_frame_type == ACTIVE_FRAME) {
+    if (p->cur_frame_type == ACTIVE_FRAME) {
         if (!bad_frame)
             p->erased_frames = 0;
-        else if(p->erased_frames != 3)
+        else if (p->erased_frames != 3)
             p->erased_frames++;
 
         inverse_quant(cur_lsp, p->prev_lsp, p->lsp_index, bad_frame);
@@ -1038,27 +1041,30 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
             p->interp_index = comp_interp_index(p, p->pitch_lag[1],
                                                 &p->sid_gain, &p->cur_gain);
 
-            for (i = PITCH_MAX, j = 0; j < SUBFRAMES; i += SUBFRAME_LEN, j++)
-                comp_ppf_coeff(p, i, p->pitch_lag[j >> 1],
-                               ppf + j, p->cur_rate);
+                i = PITCH_MAX;
+                for (j = 0; j < SUBFRAMES; i += SUBFRAME_LEN, j++)
+                    comp_ppf_coeff(p, i, p->pitch_lag[j >> 1],
+                                   ppf + j, p->cur_rate);
 
             /* Restore the original excitation */
             memcpy(p->excitation, p->prev_excitation,
-                   PITCH_MAX * sizeof(int16_t));
-            memcpy(vector_ptr, out, FRAME_LEN * sizeof(int16_t));
+                   PITCH_MAX * sizeof(*p->excitation));
+            memcpy(vector_ptr, out, FRAME_LEN * sizeof(*vector_ptr));
 
             /* Peform pitch postfiltering */
-            for (i = 0, j = 0; j < SUBFRAMES; i += SUBFRAME_LEN, j++)
-                ff_acelp_weighted_vector_sum(out + LPC_ORDER + i, vector_ptr + i,
-                                             vector_ptr + i + ppf[j].index,
-                                             ppf[j].sc_gain, ppf[j].opt_gain,
-                                             1 << 14, 15, SUBFRAME_LEN);
+                for (i = 0, j = 0; j < SUBFRAMES; i += SUBFRAME_LEN, j++)
+                    ff_acelp_weighted_vector_sum(out + LPC_ORDER + i,
+                                                 vector_ptr + i,
+                                                 vector_ptr + i + ppf[j].index,
+                                                 ppf[j].sc_gain,
+                                                 ppf[j].opt_gain,
+                                                 1 << 14, 15, SUBFRAME_LEN);
         } else {
             p->interp_gain = (p->interp_gain * 3 + 2) >> 2;
             if (p->erased_frames == 3) {
                 /* Mute output */
                 memset(p->excitation, 0,
-                       (FRAME_LEN + PITCH_MAX) * sizeof(int16_t));
+                       (FRAME_LEN + PITCH_MAX) * sizeof(*p->excitation));
                 memset(out, 0, (FRAME_LEN + LPC_ORDER) * sizeof(int16_t));
             } else {
                 /* Regenerate frame */
@@ -1068,7 +1074,7 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
         }
         /* Save the excitation for the next frame */
         memcpy(p->prev_excitation, p->excitation + FRAME_LEN,
-               PITCH_MAX * sizeof(int16_t));
+               PITCH_MAX * sizeof(*p->excitation));
     } else {
         memset(out, 0, sizeof(int16_t)*FRAME_LEN);
         av_log(avctx, AV_LOG_WARNING,

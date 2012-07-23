@@ -25,8 +25,8 @@
  * G723.1 compatible decoder data tables
  */
 
-#ifndef AVCODEC_G729_1_DATA_H
-#define AVCODEC_G729_1_DATA_H
+#ifndef AVCODEC_G723_1_DATA_H
+#define AVCODEC_G723_1_DATA_H
 
 #include <stdint.h>
 
@@ -55,7 +55,7 @@ typedef enum FrameType {
     UNTRANSMITTED_FRAME
 } FrameType;
 
-static const uint8_t frame_size[4] = {24, 20, 4, 1};
+static const uint8_t frame_size[4] = { 24, 20, 4, 1 };
 
 typedef enum Rate {
     RATE_6300,
@@ -1319,4 +1319,4 @@ static const int16_t percept_flt_tbl[2][LPC_ORDER] = {
     {16384,  8192,  4096,  2048,  1024,   512,   256,   128,    64,    32}
 };
 
-#endif /* AVCODEC_G729_1_DATA_H */
+#endif /* AVCODEC_G723_1_DATA_H */
