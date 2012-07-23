@@ -94,7 +94,7 @@ static int zerocodec_decode_frame(AVCodecContext *avctx, void *data,
     if (prev_pic->data[0])
         avctx->release_buffer(avctx, prev_pic);
 
-    *data_size = sizeof(AVFrame);
+    *data_size       = sizeof(AVFrame);
     *(AVFrame *)data = *pic;
 
     /* Store the previous frame for use later.

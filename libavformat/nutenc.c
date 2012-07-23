@@ -870,13 +870,8 @@ AVOutputFormat ff_nut_muxer = {
     .mime_type      = "video/x-nut",
     .extensions     = "nut",
     .priv_data_size = sizeof(NUTContext),
-#if   CONFIG_LIBVORBIS
-    .audio_codec    = CODEC_ID_VORBIS,
-#elif CONFIG_LIBMP3LAME
-    .audio_codec    = CODEC_ID_MP3,
-#else
-    .audio_codec    = CODEC_ID_MP2,
-#endif
+    .audio_codec    = CONFIG_LIBVORBIS ? CODEC_ID_VORBIS :
+                      CONFIG_LIBMP3LAME ? CODEC_ID_MP3 : CODEC_ID_MP2,
     .video_codec    = CODEC_ID_MPEG4,
     .write_header   = nut_write_header,
     .write_packet   = nut_write_packet,

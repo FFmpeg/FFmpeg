@@ -37,6 +37,7 @@
 
 #include "flv.h"
 #include "rtmp.h"
+#include "rtmpcrypt.h"
 #include "rtmppkt.h"
 #include "url.h"
 
@@ -92,6 +93,7 @@ typedef struct RTMPContext {
     int           server_bw;                  ///< server bandwidth
     int           client_buffer_time;         ///< client buffer time in ms
     int           flush_interval;             ///< number of packets flushed in the same request (RTMPT only)
+    int           encrypted;                  ///< use an encrypted connection (RTMPE only)
 } RTMPContext;
 
 #define PLAYER_KEY_OPEN_PART_LEN 30   ///< length of partial key used for first client digest signing
@@ -590,23 +592,8 @@ static int gen_bytes_read(URLContext *s, RTMPContext *rt, uint32_t ts)
     return ret;
 }
 
-//TODO: Move HMAC code somewhere. Eventually.
-#define HMAC_IPAD_VAL 0x36
-#define HMAC_OPAD_VAL 0x5C
-
-/**
- * Calculate HMAC-SHA2 digest for RTMP handshake packets.
- *
- * @param src    input buffer
- * @param len    input buffer length (should be 1536)
- * @param gap    offset in buffer where 32 bytes should not be taken into account
- *               when calculating digest (since it will be used to store that digest)
- * @param key    digest key
- * @param keylen digest key length
- * @param dst    buffer where calculated digest will be stored (32 bytes)
- */
-static int rtmp_calc_digest(const uint8_t *src, int len, int gap,
-                            const uint8_t *key, int keylen, uint8_t *dst)
+int ff_rtmp_calc_digest(const uint8_t *src, int len, int gap,
+                        const uint8_t *key, int keylen, uint8_t *dst)
 {
     struct AVSHA *sha;
     uint8_t hmac_buf[64+32] = {0};
@@ -647,25 +634,38 @@ static int rtmp_calc_digest(const uint8_t *src, int len, int gap,
     return 0;
 }
 
+int ff_rtmp_calc_digest_pos(const uint8_t *buf, int off, int mod_val,
+                            int add_val)
+{
+    int i, digest_pos = 0;
+
+    for (i = 0; i < 4; i++)
+        digest_pos += buf[i + off];
+    digest_pos = digest_pos % mod_val + add_val;
+
+    return digest_pos;
+}
+
 /**
  * Put HMAC-SHA2 digest of packet data (except for the bytes where this digest
  * will be stored) into that packet.
  *
  * @param buf handshake data (1536 bytes)
+ * @param encrypted use an encrypted connection (RTMPE)
  * @return offset to the digest inside input data
  */
-static int rtmp_handshake_imprint_with_digest(uint8_t *buf)
+static int rtmp_handshake_imprint_with_digest(uint8_t *buf, int encrypted)
 {
-    int i, digest_pos = 0;
-    int ret;
+    int ret, digest_pos;
 
-    for (i = 8; i < 12; i++)
-        digest_pos += buf[i];
-    digest_pos = (digest_pos % 728) + 12;
+    if (encrypted)
+        digest_pos = ff_rtmp_calc_digest_pos(buf, 772, 728, 776);
+    else
+        digest_pos = ff_rtmp_calc_digest_pos(buf, 8, 728, 12);
 
-    ret = rtmp_calc_digest(buf, RTMP_HANDSHAKE_PACKET_SIZE, digest_pos,
-                           rtmp_player_key, PLAYER_KEY_OPEN_PART_LEN,
-                           buf + digest_pos);
+    ret = ff_rtmp_calc_digest(buf, RTMP_HANDSHAKE_PACKET_SIZE, digest_pos,
+                              rtmp_player_key, PLAYER_KEY_OPEN_PART_LEN,
+                              buf + digest_pos);
     if (ret < 0)
         return ret;
 
@@ -681,17 +681,14 @@ static int rtmp_handshake_imprint_with_digest(uint8_t *buf)
  */
 static int rtmp_validate_digest(uint8_t *buf, int off)
 {
-    int i, digest_pos = 0;
     uint8_t digest[32];
-    int ret;
+    int ret, digest_pos;
 
-    for (i = 0; i < 4; i++)
-        digest_pos += buf[i + off];
-    digest_pos = (digest_pos % 728) + off + 4;
+    digest_pos = ff_rtmp_calc_digest_pos(buf, off, 728, off + 4);
 
-    ret = rtmp_calc_digest(buf, RTMP_HANDSHAKE_PACKET_SIZE, digest_pos,
-                           rtmp_server_key, SERVER_KEY_OPEN_PART_LEN,
-                           digest);
+    ret = ff_rtmp_calc_digest(buf, RTMP_HANDSHAKE_PACKET_SIZE, digest_pos,
+                              rtmp_server_key, SERVER_KEY_OPEN_PART_LEN,
+                              digest);
     if (ret < 0)
         return ret;
 
@@ -721,8 +718,9 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
     uint8_t serverdata[RTMP_HANDSHAKE_PACKET_SIZE+1];
     int i;
     int server_pos, client_pos;
-    uint8_t digest[32];
-    int ret;
+    uint8_t digest[32], signature[32];
+    int encrypted = rt->encrypted && CONFIG_FFRTMPCRYPT_PROTOCOL;
+    int ret, type = 0;
 
     av_log(s, AV_LOG_DEBUG, "Handshaking...\n");
 
@@ -730,7 +728,24 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
     // generate handshake packet - 1536 bytes of pseudorandom data
     for (i = 9; i <= RTMP_HANDSHAKE_PACKET_SIZE; i++)
         tosend[i] = av_lfg_get(&rnd) >> 24;
-    client_pos = rtmp_handshake_imprint_with_digest(tosend + 1);
+
+    if (encrypted) {
+        /* When the client wants to use RTMPE, we have to change the command
+         * byte to 0x06 which means to use encrypted data and we have to set
+         * the flash version to at least 9.0.115.0. */
+        tosend[0] = 6;
+        tosend[5] = 128;
+        tosend[6] = 0;
+        tosend[7] = 3;
+        tosend[8] = 2;
+
+        /* Initialize the Diffie-Hellmann context and generate the public key
+         * to send to the server. */
+        if ((ret = ff_rtmpe_gen_pub_key(rt->stream, tosend + 1)) < 0)
+            return ret;
+    }
+
+    client_pos = rtmp_handshake_imprint_with_digest(tosend + 1, encrypted);
     if (client_pos < 0)
         return client_pos;
 
@@ -752,6 +767,7 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
         return ret;
     }
 
+    av_log(s, AV_LOG_DEBUG, "Type answer %d\n", serverdata[0]);
     av_log(s, AV_LOG_DEBUG, "Server version %d.%d.%d.%d\n",
            serverdata[5], serverdata[6], serverdata[7], serverdata[8]);
 
@@ -761,6 +777,7 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
             return server_pos;
 
         if (!server_pos) {
+            type = 1;
             server_pos = rtmp_validate_digest(serverdata + 1, 8);
             if (server_pos < 0)
                 return server_pos;
@@ -771,43 +788,88 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
             }
         }
 
-        ret = rtmp_calc_digest(tosend + 1 + client_pos, 32, 0, rtmp_server_key,
-                               sizeof(rtmp_server_key), digest);
+        ret = ff_rtmp_calc_digest(tosend + 1 + client_pos, 32, 0,
+                                  rtmp_server_key, sizeof(rtmp_server_key),
+                                  digest);
         if (ret < 0)
             return ret;
 
-        ret = rtmp_calc_digest(clientdata, RTMP_HANDSHAKE_PACKET_SIZE - 32, 0,
-                               digest, 32, digest);
+        ret = ff_rtmp_calc_digest(clientdata, RTMP_HANDSHAKE_PACKET_SIZE - 32,
+                                  0, digest, 32, signature);
         if (ret < 0)
             return ret;
 
-        if (memcmp(digest, clientdata + RTMP_HANDSHAKE_PACKET_SIZE - 32, 32)) {
+        if (encrypted) {
+            /* Compute the shared secret key sent by the server and initialize
+             * the RC4 encryption. */
+            if ((ret = ff_rtmpe_compute_secret_key(rt->stream, serverdata + 1,
+                                                   tosend + 1, type)) < 0)
+                return ret;
+
+            /* Encrypt the signature received by the server. */
+            ff_rtmpe_encrypt_sig(rt->stream, signature, digest, serverdata[0]);
+        }
+
+        if (memcmp(signature, clientdata + RTMP_HANDSHAKE_PACKET_SIZE - 32, 32)) {
             av_log(s, AV_LOG_ERROR, "Signature mismatch\n");
             return AVERROR(EIO);
         }
 
         for (i = 0; i < RTMP_HANDSHAKE_PACKET_SIZE; i++)
             tosend[i] = av_lfg_get(&rnd) >> 24;
-        ret = rtmp_calc_digest(serverdata + 1 + server_pos, 32, 0,
-                               rtmp_player_key, sizeof(rtmp_player_key),
-                               digest);
+        ret = ff_rtmp_calc_digest(serverdata + 1 + server_pos, 32, 0,
+                                  rtmp_player_key, sizeof(rtmp_player_key),
+                                  digest);
         if (ret < 0)
             return ret;
 
-        ret = rtmp_calc_digest(tosend, RTMP_HANDSHAKE_PACKET_SIZE - 32, 0,
-                               digest, 32,
-                               tosend + RTMP_HANDSHAKE_PACKET_SIZE - 32);
+        ret = ff_rtmp_calc_digest(tosend, RTMP_HANDSHAKE_PACKET_SIZE - 32, 0,
+                                  digest, 32,
+                                  tosend + RTMP_HANDSHAKE_PACKET_SIZE - 32);
         if (ret < 0)
             return ret;
+
+        if (encrypted) {
+            /* Encrypt the signature to be send to the server. */
+            ff_rtmpe_encrypt_sig(rt->stream, tosend +
+                                 RTMP_HANDSHAKE_PACKET_SIZE - 32, digest,
+                                 serverdata[0]);
+        }
 
         // write reply back to the server
         if ((ret = ffurl_write(rt->stream, tosend,
                                RTMP_HANDSHAKE_PACKET_SIZE)) < 0)
             return ret;
+
+        if (encrypted) {
+            /* Set RC4 keys for encryption and update the keystreams. */
+            if ((ret = ff_rtmpe_update_keystream(rt->stream)) < 0)
+                return ret;
+        }
     } else {
+        if (encrypted) {
+            /* Compute the shared secret key sent by the server and initialize
+             * the RC4 encryption. */
+            if ((ret = ff_rtmpe_compute_secret_key(rt->stream, serverdata + 1,
+                            tosend + 1, 1)) < 0)
+                return ret;
+
+            if (serverdata[0] == 9) {
+                /* Encrypt the signature received by the server. */
+                ff_rtmpe_encrypt_sig(rt->stream, signature, digest,
+                                     serverdata[0]);
+            }
+        }
+
         if ((ret = ffurl_write(rt->stream, serverdata + 1,
                                RTMP_HANDSHAKE_PACKET_SIZE)) < 0)
             return ret;
+
+        if (encrypted) {
+            /* Set RC4 keys for encryption and update the keystreams. */
+            if ((ret = ff_rtmpe_update_keystream(rt->stream)) < 0)
+                return ret;
+        }
     }
 
     return 0;
@@ -1130,6 +1192,13 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
         if (port < 0)
             port = RTMPS_DEFAULT_PORT;
         ff_url_join(buf, sizeof(buf), "tls", NULL, hostname, port, NULL);
+    } else if (!strcmp(proto, "rtmpe") || (!strcmp(proto, "rtmpte"))) {
+        if (!strcmp(proto, "rtmpte"))
+            av_dict_set(&opts, "ffrtmpcrypt_tunneling", "1", 1);
+
+        /* open the encrypted connection */
+        ff_url_join(buf, sizeof(buf), "ffrtmpcrypt", NULL, hostname, port, NULL);
+        rt->encrypted = 1;
     } else {
         /* open the tcp connection */
         if (port < 0)
@@ -1454,6 +1523,24 @@ URLProtocol ff_rtmp_protocol = {
     .priv_data_class= &rtmp_class,
 };
 
+static const AVClass rtmpe_class = {
+    .class_name = "rtmpe",
+    .item_name  = av_default_item_name,
+    .option     = rtmp_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+URLProtocol ff_rtmpe_protocol = {
+    .name            = "rtmpe",
+    .url_open        = rtmp_open,
+    .url_read        = rtmp_read,
+    .url_write       = rtmp_write,
+    .url_close       = rtmp_close,
+    .priv_data_size  = sizeof(RTMPContext),
+    .flags           = URL_PROTOCOL_FLAG_NETWORK,
+    .priv_data_class = &rtmpe_class,
+};
+
 static const AVClass rtmps_class = {
     .class_name = "rtmps",
     .item_name  = av_default_item_name,
@@ -1488,6 +1575,24 @@ URLProtocol ff_rtmpt_protocol = {
     .priv_data_size  = sizeof(RTMPContext),
     .flags           = URL_PROTOCOL_FLAG_NETWORK,
     .priv_data_class = &rtmpt_class,
+};
+
+static const AVClass rtmpte_class = {
+    .class_name = "rtmpte",
+    .item_name  = av_default_item_name,
+    .option     = rtmp_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+URLProtocol ff_rtmpte_protocol = {
+    .name            = "rtmpte",
+    .url_open        = rtmp_open,
+    .url_read        = rtmp_read,
+    .url_write       = rtmp_write,
+    .url_close       = rtmp_close,
+    .priv_data_size  = sizeof(RTMPContext),
+    .flags           = URL_PROTOCOL_FLAG_NETWORK,
+    .priv_data_class = &rtmpte_class,
 };
 
 static const AVClass rtmpts_class = {

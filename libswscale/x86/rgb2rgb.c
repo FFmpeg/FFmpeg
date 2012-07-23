@@ -26,6 +26,7 @@
 #include <stdint.h>
 
 #include "config.h"
+#include "libavutil/attributes.h"
 #include "libavutil/x86_cpu.h"
 #include "libavutil/cpu.h"
 #include "libavutil/bswap.h"
@@ -130,7 +131,7 @@ DECLARE_ASM_CONST(8, uint64_t, mul16_mid)    = 0x2080208020802080ULL;
 
 #endif /* HAVE_INLINE_ASM */
 
-void rgb2rgb_init_x86(void)
+av_cold void rgb2rgb_init_x86(void)
 {
 #if HAVE_INLINE_ASM
     int cpu_flags = av_get_cpu_flags();

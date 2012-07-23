@@ -3584,11 +3584,8 @@ AVOutputFormat ff_mov_muxer = {
     .extensions        = "mov",
     .priv_data_size    = sizeof(MOVMuxContext),
     .audio_codec       = CODEC_ID_AAC,
-#if CONFIG_LIBX264_ENCODER
-    .video_codec       = CODEC_ID_H264,
-#else
-    .video_codec       = CODEC_ID_MPEG4,
-#endif
+    .video_codec       = CONFIG_LIBX264_ENCODER ?
+                         CODEC_ID_H264 : CODEC_ID_MPEG4,
     .write_header      = mov_write_header,
     .write_packet      = mov_write_packet,
     .write_trailer     = mov_write_trailer,
@@ -3625,11 +3622,8 @@ AVOutputFormat ff_mp4_muxer = {
     .extensions        = "mp4",
     .priv_data_size    = sizeof(MOVMuxContext),
     .audio_codec       = CODEC_ID_AAC,
-#if CONFIG_LIBX264_ENCODER
-    .video_codec       = CODEC_ID_H264,
-#else
-    .video_codec       = CODEC_ID_MPEG4,
-#endif
+    .video_codec       = CONFIG_LIBX264_ENCODER ?
+                         CODEC_ID_H264 : CODEC_ID_MPEG4,
     .write_header      = mov_write_header,
     .write_packet      = mov_write_packet,
     .write_trailer     = mov_write_trailer,
@@ -3646,11 +3640,8 @@ AVOutputFormat ff_psp_muxer = {
     .extensions        = "mp4,psp",
     .priv_data_size    = sizeof(MOVMuxContext),
     .audio_codec       = CODEC_ID_AAC,
-#if CONFIG_LIBX264_ENCODER
-    .video_codec       = CODEC_ID_H264,
-#else
-    .video_codec       = CODEC_ID_MPEG4,
-#endif
+    .video_codec       = CONFIG_LIBX264_ENCODER ?
+                         CODEC_ID_H264 : CODEC_ID_MPEG4,
     .write_header      = mov_write_header,
     .write_packet      = mov_write_packet,
     .write_trailer     = mov_write_trailer,

@@ -36,6 +36,9 @@ fate-vc1_sa10091: CMD = framecrc -i $(SAMPLES)/vc1/SA10091.vc1
 FATE_VC1 += fate-vc1_sa20021
 fate-vc1_sa20021: CMD = framecrc -i $(SAMPLES)/vc1/SA20021.vc1
 
+#FATE_VC1 += fate-vc1_sa10143
+fate-vc1_sa10143: CMD = framecrc -i $(SAMPLES)/vc1/SA10143.vc1
+
 FATE_VC1 += fate-vc1-ism
 fate-vc1-ism: CMD = framecrc -i $(SAMPLES)/isom/vc1-wmapro.ism -an
 

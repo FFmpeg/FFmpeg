@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/avutil.h"
 #include "libavutil/avassert.h"
 #include "libavutil/bswap.h"
@@ -1260,13 +1261,13 @@ YUV2RGBWRAPPERX(yuv2, rgb_full, xrgb32_full, PIX_FMT_ARGB,  0)
 YUV2RGBWRAPPERX(yuv2, rgb_full, bgr24_full,  PIX_FMT_BGR24, 0)
 YUV2RGBWRAPPERX(yuv2, rgb_full, rgb24_full,  PIX_FMT_RGB24, 0)
 
-void ff_sws_init_output_funcs(SwsContext *c,
-                              yuv2planar1_fn *yuv2plane1,
-                              yuv2planarX_fn *yuv2planeX,
-                              yuv2interleavedX_fn *yuv2nv12cX,
-                              yuv2packed1_fn *yuv2packed1,
-                              yuv2packed2_fn *yuv2packed2,
-                              yuv2packedX_fn *yuv2packedX)
+av_cold void ff_sws_init_output_funcs(SwsContext *c,
+                                      yuv2planar1_fn *yuv2plane1,
+                                      yuv2planarX_fn *yuv2planeX,
+                                      yuv2interleavedX_fn *yuv2nv12cX,
+                                      yuv2packed1_fn *yuv2packed1,
+                                      yuv2packed2_fn *yuv2packed2,
+                                      yuv2packedX_fn *yuv2packedX)
 {
     enum PixelFormat dstFormat = c->dstFormat;
 

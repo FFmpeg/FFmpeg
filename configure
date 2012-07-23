@@ -667,11 +667,15 @@ check_cmd(){
     "$@" >> $logfile 2>&1
 }
 
+cc_o(){
+    eval printf '%s\\n' $CC_O
+}
+
 check_cc(){
     log check_cc "$@"
     cat > $TMPC
     log_file $TMPC
-    check_cmd $cc $CPPFLAGS $CFLAGS "$@" -c -o $TMPO $TMPC
+    check_cmd $cc $CPPFLAGS $CFLAGS "$@" -c $(cc_o $TMPO) $TMPC
 }
 
 check_cxx(){
@@ -1055,6 +1059,7 @@ CONFIG_LIST="
     fft
     fontconfig
     frei0r
+    gcrypt
     gnutls
     gpl
     gray
@@ -1100,6 +1105,7 @@ CONFIG_LIST="
     memalign_hack
     memory_poisoning
     mpegaudiodsp
+    nettle
     network
     nonfree
     openal
@@ -1731,6 +1737,9 @@ x11_grab_device_indev_deps="x11grab"
 
 # protocols
 bluray_protocol_deps="libbluray"
+ffrtmpcrypt_protocol_deps="!librtmp_protocol"
+ffrtmpcrypt_protocol_deps_any="gcrypt nettle openssl"
+ffrtmpcrypt_protocol_select="tcp_protocol"
 ffrtmphttp_protocol_deps="!librtmp_protocol"
 ffrtmphttp_protocol_select="http_protocol"
 gopher_protocol_deps="network"
@@ -1748,9 +1757,11 @@ mmsh_protocol_select="http_protocol"
 mmst_protocol_deps="network"
 rtmp_protocol_deps="!librtmp_protocol"
 rtmp_protocol_select="tcp_protocol"
+rtmpe_protocol_select="ffrtmpcrypt_protocol"
 rtmps_protocol_deps="!librtmp_protocol"
 rtmps_protocol_select="tls_protocol"
 rtmpt_protocol_select="ffrtmphttp_protocol"
+rtmpte_protocol_select="ffrtmpcrypt_protocol ffrtmphttp_protocol"
 rtmpts_protocol_select="ffrtmphttp_protocol"
 rtp_protocol_select="udp_protocol"
 sctp_protocol_deps="network netinet_sctp_h"
@@ -2371,12 +2382,10 @@ elif $cc --vsn 2>/dev/null | grep -q "ARM C/C++ Compiler"; then
 elif $cc -version 2>/dev/null | grep -q TMS470; then
     cc_type=tms470
     cc_ident=$($cc -version | head -n1 | tr -s ' ')
-    cc="$cc --gcc --abi=eabi -eo=.o -mc -me"
-    CC_O='-fr=$(@D)'
+    cc="$cc --gcc --abi=eabi -me"
+    CC_O='-fe=$@'
     as_default="${cross_prefix}gcc"
     ld_default="${cross_prefix}gcc"
-    TMPO=$(basename $TMPC .c).o
-    append TMPFILES $TMPO
     add_cflags -D__gnuc_va_list=va_list -D__USER_LABEL_PREFIX__=
     CC_DEPFLAGS='-ppa -ppd=$(@:.o=.d)'
     AS_DEPFLAGS='-MMD'
@@ -3374,6 +3383,11 @@ enabled openssl    && { check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto 
                         check_lib openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
                         check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
                         die "ERROR: openssl not found"; }
+
+if enabled gnutls; then
+    { check_lib nettle/bignum.h nettle_mpz_get_str_256 -lnettle -lhogweed -lgmp && enable nettle; } ||
+    { check_lib gcrypt.h gcry_mpi_new -lgcrypt && enable gcrypt; }
+fi
 
 # libdc1394 check
 if enabled libdc1394; then

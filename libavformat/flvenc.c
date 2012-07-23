@@ -570,11 +570,7 @@ AVOutputFormat ff_flv_muxer = {
     .mime_type      = "video/x-flv",
     .extensions     = "flv",
     .priv_data_size = sizeof(FLVContext),
-#if CONFIG_LIBMP3LAME
-    .audio_codec    = CODEC_ID_MP3,
-#else // CONFIG_LIBMP3LAME
-    .audio_codec    = CODEC_ID_ADPCM_SWF,
-#endif // CONFIG_LIBMP3LAME
+    .audio_codec    = CONFIG_LIBMP3LAME ? CODEC_ID_MP3 : CODEC_ID_ADPCM_SWF,
     .video_codec    = CODEC_ID_FLV1,
     .write_header   = flv_write_header,
     .write_packet   = flv_write_packet,

@@ -188,42 +188,50 @@ const uint8_t *ff_h264_decode_nal(H264Context *h, const uint8_t *src,
     src++;
     length--;
 
+#define STARTCODE_TEST                                                  \
+        if (i + 2 < length && src[i + 1] == 0 && src[i + 2] <= 3) {     \
+            if (src[i + 2] != 3) {                                      \
+                /* startcode, so we must be past the end */             \
+                length = i;                                             \
+            }                                                           \
+            break;                                                      \
+        }
 #if HAVE_FAST_UNALIGNED
+#define FIND_FIRST_ZERO                                                 \
+        if (i > 0 && !src[i])                                           \
+            i--;                                                        \
+        while (src[i])                                                  \
+            i++
 #if HAVE_FAST_64BIT
-#define RS 7
     for (i = 0; i + 1 < length; i += 9) {
         if (!((~AV_RN64A(src + i) &
                (AV_RN64A(src + i) - 0x0100010001000101ULL)) &
               0x8000800080008080ULL))
+            continue;
+        FIND_FIRST_ZERO;
+        STARTCODE_TEST;
+        i -= 7;
+    }
 #else
-#define RS 3
     for (i = 0; i + 1 < length; i += 5) {
         if (!((~AV_RN32A(src + i) &
                (AV_RN32A(src + i) - 0x01000101U)) &
               0x80008080U))
-#endif
             continue;
-        if (i > 0 && !src[i])
-            i--;
-        while (src[i])
-            i++;
+        FIND_FIRST_ZERO;
+        STARTCODE_TEST;
+        i -= 3;
+    }
+#endif
 #else
-#define RS 0
     for (i = 0; i + 1 < length; i += 2) {
         if (src[i])
             continue;
         if (i > 0 && src[i - 1] == 0)
             i--;
-#endif
-        if (i + 2 < length && src[i + 1] == 0 && src[i + 2] <= 3) {
-            if (src[i + 2] != 3) {
-                /* startcode, so we must be past the end */
-                length = i;
-            }
-            break;
-        }
-        i -= RS;
+        STARTCODE_TEST;
     }
+#endif
 
     // use second escape buffer for inter data
     bufidx = h->nal_unit_type == NAL_DPC ? 1 : 0;

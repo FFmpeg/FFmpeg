@@ -277,6 +277,15 @@ For example to read with @command{ffplay} a multimedia resource named
 ffplay rtmp://myserver/vod/sample
 @end example
 
+@section rtmpe
+
+Encrypted Real-Time Messaging Protocol.
+
+The Encrypted Real-Time Messaging Protocol (RTMPE) is used for
+streaming multimedia content within standard cryptographic primitives,
+consisting of Diffie-Hellman key exchange and HMACSHA256, generating
+a pair of RC4 keys.
+
 @section rtmps
 
 Real-Time Messaging Protocol over a secure SSL connection.
@@ -290,6 +299,14 @@ Real-Time Messaging Protocol tunneled through HTTP.
 
 The Real-Time Messaging Protocol tunneled through HTTP (RTMPT) is used
 for streaming multimedia content within HTTP requests to traverse
+firewalls.
+
+@section rtmpte
+
+Encrypted Real-Time Messaging Protocol tunneled through HTTP.
+
+The Encrypted Real-Time Messaging Protocol tunneled through HTTP (RTMPTE)
+is used for streaming multimedia content within HTTP requests to traverse
 firewalls.
 
 @section rtmpts
