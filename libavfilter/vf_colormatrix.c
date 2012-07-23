@@ -61,7 +61,7 @@ typedef struct {
     char src[256];
     char dst[256];
     int hsub, vsub;
-    AVFilterBufferRef *outpicref
+    AVFilterBufferRef *outpicref;
 } ColorMatrixContext;
 
 #define ma m[0][0]
