@@ -4008,10 +4008,10 @@ tools.
 
 @c man end VIDEO SINKS
 
-@chapter Transmedia Filters
-@c man begin TRANSMEDIA FILTERS
+@chapter Multimedia Filters
+@c man begin MULTIMEDIA FILTERS
 
-Below is a description of the currently available transmedia filters.
+Below is a description of the currently available multimedia filters.
 
 @section concat
 
@@ -4126,4 +4126,4 @@ aevalsrc=sin(1*2*PI*t)*sin(880*2*PI*t):cos(2*PI*200*t),asplit[out0],showwaves=r=
 @end example
 @end itemize
 
-@c man end TRANSMEDIA FILTERS
+@c man end MULTIMEDIA FILTERS

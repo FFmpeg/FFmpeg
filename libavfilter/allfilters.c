@@ -135,7 +135,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER (BUFFERSINK,  buffersink,  vsink);
     REGISTER_FILTER (NULLSINK,    nullsink,    vsink);
 
-    /* transmedia filters */
+    /* multimedia filters */
     REGISTER_FILTER (CONCAT,      concat,      avf);
     REGISTER_FILTER (SHOWWAVES,   showwaves,   avf);
 

@@ -20,7 +20,7 @@
 
 /**
  * @file
- * audio to video transmedia filter
+ * audio to video multimedia filter
  */
 
 #include "libavutil/audioconvert.h"
