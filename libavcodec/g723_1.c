@@ -1041,10 +1041,12 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
             p->interp_index = comp_interp_index(p, p->pitch_lag[1],
                                                 &p->sid_gain, &p->cur_gain);
 
+            if (p->postfilter) {
                 i = PITCH_MAX;
                 for (j = 0; j < SUBFRAMES; i += SUBFRAME_LEN, j++)
                     comp_ppf_coeff(p, i, p->pitch_lag[j >> 1],
                                    ppf + j, p->cur_rate);
+            }
 
             /* Restore the original excitation */
             memcpy(p->excitation, p->prev_excitation,
@@ -1052,6 +1054,7 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
             memcpy(vector_ptr, out, FRAME_LEN * sizeof(*vector_ptr));
 
             /* Peform pitch postfiltering */
+            if (p->postfilter)
                 for (i = 0, j = 0; j < SUBFRAMES; i += SUBFRAME_LEN, j++)
                     ff_acelp_weighted_vector_sum(out + LPC_ORDER + i,
                                                  vector_ptr + i,
@@ -1091,7 +1094,8 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
                                     0, 1, 1 << 12);
     memcpy(p->synth_mem, out + FRAME_LEN, LPC_ORDER * sizeof(int16_t));
 
-    formant_postfilter(p, lpc, out);
+    if (p->postfilter)
+        formant_postfilter(p, lpc, out);
 
     memmove(out, out + LPC_ORDER, sizeof(int16_t)*FRAME_LEN);
     p->frame.nb_samples = FRAME_LEN;
@@ -1100,6 +1104,22 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
 
     return frame_size[dec_mode];
 }
+
+#define OFFSET(x) offsetof(G723_1_Context, x)
+#define AD     AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM
+
+static const AVOption options[] = {
+    { "postfilter", "postfilter on/off", OFFSET(postfilter), AV_OPT_TYPE_INT,
+      { 1 }, 0, 1, AD },
+    { NULL }
+};
+
+static const AVClass g723_1dec_class = {
+    .class_name = "G.723.1 decoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 AVCodec ff_g723_1_decoder = {
     .name           = "g723_1",
@@ -1110,6 +1130,7 @@ AVCodec ff_g723_1_decoder = {
     .decode         = g723_1_decode_frame,
     .long_name      = NULL_IF_CONFIG_SMALL("G.723.1"),
     .capabilities   = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1,
+    .priv_class     = &g723_1dec_class,
 };
 
 #if CONFIG_G723_1_ENCODER
