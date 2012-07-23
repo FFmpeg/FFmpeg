@@ -25,6 +25,7 @@
  * @author Stefan Gehrer <stefan.gehrer@gmx.de>
  */
 
+#include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "golomb.h"
@@ -372,7 +373,7 @@ static void decode_mb_b(AVSContext *h, enum cavs_mb mb_type) {
         }
         break;
     default:
-        assert((mb_type > B_SYM_16X16) && (mb_type < B_8X8));
+        av_assert2((mb_type > B_SYM_16X16) && (mb_type < B_8X8));
         flags = ff_cavs_partition_flags[mb_type];
         if(mb_type & 1) { /* 16x8 macroblock types */
             if(flags & FWD0)
