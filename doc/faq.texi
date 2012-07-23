@@ -213,8 +213,47 @@ For ANY other help on Avisynth, please visit the
 
 @section How can I join video files?
 
-A few multimedia containers (MPEG-1, MPEG-2 PS, DV) allow to join video files by
-merely concatenating them.
+To "join" video files is quite ambiguous. The following list explains the
+different kinds of "joining" and points out how those are addressed in
+FFmpeg. To join video files may mean:
+
+@itemize
+
+@item
+To put them one after the other: this is called to @emph{concatenate} them
+(in short: concat) and is addressed
+@ref{How can I concatenate video files, in this very faq}.
+
+@item
+To put them together in the same file, to let the user choose between the
+different versions (example: different audio languages): this is called to
+@emph{multiplex} them together (in short: mux), and is done by simply
+invoking ffmpeg with several @option{-i} options.
+
+@item
+For audio, to put all channels together in a single stream (example: two
+mono streams into one stereo stream): this is sometimes called to
+@emph{merge} them, and can be done using the
+@url{http://ffmpeg.org/ffmpeg.html#amerge, @code{amerge}} filter.
+
+@item
+For audio, to play one on top of the other: this is called to @emph{mix}
+them, and can be done by first merging them into a single stream and then
+using the @url{http://ffmpeg.org/ffmpeg.html#pan, @code{pan}} filter to mix
+the channels at will.
+
+@item
+For video, to display both together, side by side or one on top of a part of
+the other; it can be done using the
+@url{http://ffmpeg.org/ffmpeg.html#overlay, @code{overlay}} video filter.
+
+@end itemize
+
+@anchor{How can I concatenate video files}
+@section How can I concatenate video files?
+
+A few multimedia containers (MPEG-1, MPEG-2 PS, DV) allow to concatenate
+video by merely concatenating the files them.
 
 Hence you may concatenate your multimedia files by first transcoding them to
 these privileged formats, then using the humble @code{cat} command (or the
@@ -259,7 +298,8 @@ from all but the first stream. This can be accomplished by piping through
 @code{tail} as seen below. Note that when piping through @code{tail} you
 must use command grouping, @code{@{  ;@}}, to background properly.
 
-For example, let's say we want to join two FLV files into an output.flv file:
+For example, let's say we want to concatenate two FLV files into an
+output.flv file:
 
 @example
 mkfifo temp1.a
