@@ -529,7 +529,7 @@ static int draw_slice_main(AVFilterLink *inlink, int y, int h, int slice_dir)
     AVFilterBufferRef *outpicref = outlink->out_buf;
 
     if (!outpicref)
-        return;
+        return 0;
     if (over->overpicref &&
         y + h > over->y && y < over->y + over->overpicref->video->h) {
         blend_slice(ctx, outpicref, over->overpicref, over->x, over->y,
