@@ -145,7 +145,7 @@ static int ff_cmap_read_palette(AVCodecContext *avctx, uint32_t *pal)
     int palette_size = avctx->extradata_size - AV_RB16(avctx->extradata);
 
     if (avctx->bits_per_coded_sample > 8) {
-        av_log(avctx, AV_LOG_ERROR, "bit_per_coded_sample > 8 not supported\n");
+        av_log(avctx, AV_LOG_ERROR, "bits_per_coded_sample > 8 not supported\n");
         return AVERROR_INVALIDDATA;
     }
 
