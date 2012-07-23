@@ -280,25 +280,25 @@ static int extract_header(AVCodecContext *const avctx,
                 // prefill with black and palette and set HAM take direct value mask to zero
                 memset(s->ham_palbuf, 0, (1 << s->ham) * 2 * sizeof (uint32_t));
                 for (i=0; i < count; i++) {
-                    s->ham_palbuf[i*2+1] = AV_RL24(palette + i*3);
+                    s->ham_palbuf[i*2+1] = 0xFF000000 | AV_RL24(palette + i*3);
                 }
                 count = 1 << s->ham;
             } else { // HAM with grayscale color palette
                 count = 1 << s->ham;
                 for (i=0; i < count; i++) {
-                    s->ham_palbuf[i*2]   = 0; // take direct color value from palette
-                    s->ham_palbuf[i*2+1] = av_le2ne32(gray2rgb((i * 255) >> s->ham));
+                    s->ham_palbuf[i*2]   = 0xFF000000; // take direct color value from palette
+                    s->ham_palbuf[i*2+1] = 0xFF000000 | av_le2ne32(gray2rgb((i * 255) >> s->ham));
                 }
             }
             for (i=0; i < count; i++) {
                 uint32_t tmp = i << (8 - s->ham);
                 tmp |= tmp >> s->ham;
-                s->ham_palbuf[(i+count)*2]     = 0x00FFFF; // just modify blue color component
-                s->ham_palbuf[(i+count*2)*2]   = 0xFFFF00; // just modify red color component
-                s->ham_palbuf[(i+count*3)*2]   = 0xFF00FF; // just modify green color component
-                s->ham_palbuf[(i+count)*2+1]   = tmp << 16;
-                s->ham_palbuf[(i+count*2)*2+1] = tmp;
-                s->ham_palbuf[(i+count*3)*2+1] = tmp << 8;
+                s->ham_palbuf[(i+count)*2]     = 0xFF00FFFF; // just modify blue color component
+                s->ham_palbuf[(i+count*2)*2]   = 0xFFFFFF00; // just modify red color component
+                s->ham_palbuf[(i+count*3)*2]   = 0xFFFF00FF; // just modify green color component
+                s->ham_palbuf[(i+count)*2+1]   = 0xFF000000 | tmp << 16;
+                s->ham_palbuf[(i+count*2)*2+1] = 0xFF000000 | tmp;
+                s->ham_palbuf[(i+count*3)*2+1] = 0xFF000000 | tmp << 8;
             }
             if (s->masking == MASK_HAS_MASK) {
                 for (i = 0; i < ham_count; i++)
