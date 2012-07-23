@@ -252,6 +252,15 @@ the other; it can be done using the
 @anchor{How can I concatenate video files}
 @section How can I concatenate video files?
 
+There are several solutions, depending on the exact circumstances.
+
+@subsection Concatenating using filters
+
+FFmpeg has a @url{http://ffmpeg.org/ffmpeg.html#concat-1, @code{concat}}
+filter designed specifically for that, with examples in the documentation.
+
+@subsection Concatenating at the file level
+
 A few multimedia containers (MPEG-1, MPEG-2 PS, DV) allow to concatenate
 video by merely concatenating the files them.
 
@@ -290,6 +299,8 @@ ffmpeg -i input2.avi -qscale:v 1 -y intermediate2.mpg < /dev/null &
 cat intermediate1.mpg intermediate2.mpg |\
 ffmpeg -f mpeg -i - -qscale:v 2 -c:v mpeg4 -acodec libmp3lame -q:a 4 output.avi
 @end example
+
+@subsection Concatenating using raw audio and video
 
 Similarly, the yuv4mpegpipe format, and the raw video, raw audio codecs also
 allow concatenation, and the transcoding step is almost lossless.
