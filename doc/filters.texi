@@ -4102,22 +4102,32 @@ input -----------> deltapts0 --> overlay --> output
 movie --> scale--> deltapts1 -------+
 @end example
 
-Some examples follow:
+Some examples follow.
+
+@itemize
+@item
+Skip 3.2 seconds from the start of the avi file in.avi, and overlay it
+on top of the input labelled as "in":
 @example
-# skip 3.2 seconds from the start of the avi file in.avi, and overlay it
-# on top of the input labelled as "in".
 movie=in.avi:seek_point=3.2, scale=180:-1, setpts=PTS-STARTPTS [movie];
 [in] setpts=PTS-STARTPTS, [movie] overlay=16:16 [out]
+@end example
 
-# read from a video4linux2 device, and overlay it on top of the input
-# labelled as "in"
+@item
+Read from a video4linux2 device, and overlay it on top of the input
+labelled as "in":
+@example
 movie=/dev/video0:f=video4linux2, scale=180:-1, setpts=PTS-STARTPTS [movie];
 [in] setpts=PTS-STARTPTS, [movie] overlay=16:16 [out]
+@end example
 
-# read the first video stream and the audio stream with id 0x81 from
-# dvd.vob; the video is connected to the pad named "video" and the audio is
-# connected to the pad named "audio":
+@item
+Read the first video stream and the audio stream with id 0x81 from
+dvd.vob; the video is connected to the pad named "video" and the audio is
+connected to the pad named "audio":
+@example
 movie=dvd.vob:s=v:0+#0x81 [video] [audio]
 @end example
+@end itemize
 
 @c man end MULTIMEDIA SOURCES
