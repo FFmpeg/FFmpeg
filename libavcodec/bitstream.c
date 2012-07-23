@@ -28,6 +28,7 @@
  * bitstream api.
  */
 
+#include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "put_bits.h"
@@ -283,7 +284,7 @@ int ff_init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
 
     buf = av_malloc((nb_codes+1)*sizeof(VLCcode));
 
-    assert(symbols_size <= 2 || !symbols);
+    av_assert0(symbols_size <= 2 || !symbols);
     j = 0;
 #define COPY(condition)\
     for (i = 0; i < nb_codes; i++) {\
