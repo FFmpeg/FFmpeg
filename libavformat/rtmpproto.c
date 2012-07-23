@@ -719,7 +719,7 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
     int i;
     int server_pos, client_pos;
     uint8_t digest[32], signature[32];
-    int encrypted = rt->encrypted && CONFIG_FFRTMPCRYPT_PROTOCOL;
+#define encrypted (CONFIG_FFRTMPCRYPT_PROTOCOL && rt->encrypted)
     int ret, type = 0;
 
     av_log(s, AV_LOG_DEBUG, "Handshaking...\n");
@@ -874,6 +874,7 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
 
     return 0;
 }
+#undef encrypted
 
 /**
  * Parse received packet and possibly perform some action depending on
