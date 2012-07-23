@@ -123,8 +123,12 @@ static int iff_probe(AVProbeData *p)
 {
     const uint8_t *d = p->buf;
 
-    if ( AV_RL32(d)   == ID_FORM &&
-         (AV_RL32(d+8) == ID_8SVX || AV_RL32(d+8) == ID_PBM || AV_RL32(d+8) == ID_ACBM || AV_RL32(d+8) == ID_DEEP || AV_RL32(d+8) == ID_ILBM) )
+    if (  AV_RL32(d)   == ID_FORM &&
+         (AV_RL32(d+8) == ID_8SVX ||
+          AV_RL32(d+8) == ID_PBM  ||
+          AV_RL32(d+8) == ID_ACBM ||
+          AV_RL32(d+8) == ID_DEEP ||
+          AV_RL32(d+8) == ID_ILBM) )
         return AVPROBE_SCORE_MAX;
     return 0;
 }
