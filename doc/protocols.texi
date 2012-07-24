@@ -237,7 +237,7 @@ parameter specified in the URI.
 URL of the SWF player for the media. By default no value will be sent.
 
 @item rtmp_tcurl
-URL of the target stream.
+URL of the target stream. Defaults to proto://host[:port]/app.
 
 @end table
 
