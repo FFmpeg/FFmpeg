@@ -27,14 +27,41 @@
 #define  OPJ_STATIC
 #include <openjpeg.h>
 
-#include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/imgutils.h"
+#include "libavutil/pixfmt.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "thread.h"
 
 #define JP2_SIG_TYPE    0x6A502020
 #define JP2_SIG_VALUE   0x0D0A870A
+
+// pix_fmts with lower bpp have to be listed before
+// similar pix_fmts with higher bpp.
+#define RGB_PIXEL_FORMATS  PIX_FMT_RGB24, PIX_FMT_RGBA,  \
+                           PIX_FMT_RGB48
+
+#define GRAY_PIXEL_FORMATS PIX_FMT_GRAY8, PIX_FMT_Y400A, \
+                           PIX_FMT_GRAY16
+
+#define YUV_PIXEL_FORMATS  PIX_FMT_YUV410P,   PIX_FMT_YUV411P,   \
+                           PIX_FMT_YUVA420P, \
+                           PIX_FMT_YUV420P,   PIX_FMT_YUV422P,   \
+                           PIX_FMT_YUV440P,   PIX_FMT_YUV444P,   \
+                           PIX_FMT_YUV420P9,  PIX_FMT_YUV422P9,  \
+                           PIX_FMT_YUV444P9, \
+                           PIX_FMT_YUV420P10, PIX_FMT_YUV422P10, \
+                           PIX_FMT_YUV444P10, \
+                           PIX_FMT_YUV420P16, PIX_FMT_YUV422P16, \
+                           PIX_FMT_YUV444P16
+
+static const enum PixelFormat rgb_pix_fmts[]  = {RGB_PIXEL_FORMATS};
+static const enum PixelFormat gray_pix_fmts[] = {GRAY_PIXEL_FORMATS};
+static const enum PixelFormat yuv_pix_fmts[]  = {YUV_PIXEL_FORMATS};
+static const enum PixelFormat any_pix_fmts[]  = {RGB_PIXEL_FORMATS,
+                                                 GRAY_PIXEL_FORMATS,
+                                                 YUV_PIXEL_FORMATS};
 
 typedef struct {
     AVClass *class;
@@ -44,14 +71,165 @@ typedef struct {
     int lowqual;
 } LibOpenJPEGContext;
 
-static int check_image_attributes(opj_image_t *image)
+static int libopenjpeg_matches_pix_fmt(const opj_image_t *img,
+                                       enum PixelFormat pix_fmt)
 {
-    return image->comps[0].dx   == image->comps[1].dx   &&
-           image->comps[1].dx   == image->comps[2].dx   &&
-           image->comps[0].dy   == image->comps[1].dy   &&
-           image->comps[1].dy   == image->comps[2].dy   &&
-           image->comps[0].prec == image->comps[1].prec &&
-           image->comps[1].prec == image->comps[2].prec;
+    AVPixFmtDescriptor des = av_pix_fmt_descriptors[pix_fmt];
+    int match = 1;
+
+    if (des.nb_components != img->numcomps) {
+        return 0;
+    }
+
+    switch (des.nb_components) {
+    case 4:
+        match = match &&
+            des.comp[3].depth_minus1 + 1 >= img->comps[3].prec &&
+            1 == img->comps[3].dx &&
+            1 == img->comps[3].dy;
+    case 3:
+        match = match &&
+            des.comp[2].depth_minus1 + 1 >= img->comps[2].prec &&
+            1 << des.log2_chroma_w == img->comps[2].dx &&
+            1 << des.log2_chroma_h == img->comps[2].dy;
+    case 2:
+        match = match &&
+            des.comp[1].depth_minus1 + 1 >= img->comps[1].prec &&
+            1 << des.log2_chroma_w == img->comps[1].dx &&
+            1 << des.log2_chroma_h == img->comps[1].dy;
+    case 1:
+        match = match &&
+            des.comp[0].depth_minus1 + 1 >= img->comps[0].prec &&
+            1 == img->comps[0].dx &&
+            1 == img->comps[0].dy;
+    default:
+        break;
+    }
+
+    return match;
+}
+
+static enum PixelFormat libopenjpeg_guess_pix_fmt(const opj_image_t *image)
+{
+    int index;
+    const enum PixelFormat *possible_fmts = NULL;
+    int possible_fmts_nb = 0;
+
+    switch (image->color_space) {
+    case CLRSPC_SRGB:
+        possible_fmts = rgb_pix_fmts;
+        possible_fmts_nb = FF_ARRAY_ELEMS(rgb_pix_fmts);
+        break;
+    case CLRSPC_GRAY:
+        possible_fmts = gray_pix_fmts;
+        possible_fmts_nb = FF_ARRAY_ELEMS(gray_pix_fmts);
+        break;
+    case CLRSPC_SYCC:
+        possible_fmts = yuv_pix_fmts;
+        possible_fmts_nb = FF_ARRAY_ELEMS(yuv_pix_fmts);
+        break;
+    default:
+        possible_fmts = any_pix_fmts;
+        possible_fmts_nb = FF_ARRAY_ELEMS(any_pix_fmts);
+        break;
+    }
+
+    for (index = 0; index < possible_fmts_nb; ++index) {
+        if (libopenjpeg_matches_pix_fmt(image, possible_fmts[index])) {
+            return possible_fmts[index];
+        }
+    }
+
+    return PIX_FMT_NONE;
+}
+
+static inline int libopenjpeg_ispacked(enum PixelFormat pix_fmt)
+{
+    int i, component_plane;
+
+    if (pix_fmt == PIX_FMT_GRAY16)
+        return 0;
+
+    component_plane = av_pix_fmt_descriptors[pix_fmt].comp[0].plane;
+    for (i = 1; i < av_pix_fmt_descriptors[pix_fmt].nb_components; i++) {
+        if (component_plane != av_pix_fmt_descriptors[pix_fmt].comp[i].plane)
+            return 0;
+    }
+    return 1;
+}
+
+static void libopenjpeg_copy_to_packed8(AVFrame *picture, opj_image_t *image)
+{
+    uint8_t *img_ptr;
+    int index, x, y, c;
+
+    for (y = 0; y < picture->height; y++) {
+        index = y*picture->width;
+        img_ptr = picture->data[0] + y*picture->linesize[0];
+        for (x = 0; x < picture->width; x++, index++) {
+            for (c = 0; c < image->numcomps; c++) {
+                *img_ptr++ = image->comps[c].data[index];
+            }
+        }
+    }
+}
+
+static void libopenjpeg_copy_to_packed16(AVFrame *picture, opj_image_t *image)
+{
+    uint16_t *img_ptr;
+    int index, x, y, c;
+    int adjust[4];
+
+    for (x = 0; x < image->numcomps; x++)
+        adjust[x] = FFMAX(FFMIN(16 - image->comps[x].prec, 8), 0);
+
+    for (y = 0; y < picture->height; y++) {
+        index = y*picture->width;
+        img_ptr = (uint16_t*) (picture->data[0] + y*picture->linesize[0]);
+        for (x = 0; x < picture->width; x++, index++) {
+            for (c = 0; c < image->numcomps; c++) {
+                *img_ptr++ = image->comps[c].data[index] << adjust[c];
+            }
+        }
+    }
+}
+
+static void libopenjpeg_copyto8(AVFrame *picture, opj_image_t *image)
+{
+    int *comp_data;
+    uint8_t *img_ptr;
+    int index, x, y;
+
+    for (index = 0; index < image->numcomps; index++) {
+        comp_data = image->comps[index].data;
+        for (y = 0; y < image->comps[index].h; y++) {
+            img_ptr = picture->data[index] + y * picture->linesize[index];
+            for (x = 0; x < image->comps[index].w; x++) {
+                *img_ptr = (uint8_t) *comp_data;
+                img_ptr++;
+                comp_data++;
+            }
+        }
+    }
+}
+
+static void libopenjpeg_copyto16(AVFrame *p, opj_image_t *image)
+{
+    int *comp_data;
+    uint16_t *img_ptr;
+    int index, x, y;
+
+    for (index = 0; index < image->numcomps; index++) {
+        comp_data = image->comps[index].data;
+        for (y = 0; y < image->comps[index].h; y++) {
+            img_ptr = (uint16_t*) (p->data[index] + y * p->linesize[index]);
+            for (x = 0; x < image->comps[index].w; x++) {
+                *img_ptr = *comp_data;
+                img_ptr++;
+                comp_data++;
+            }
+        }
+    }
 }
 
 static av_cold int libopenjpeg_decode_init(AVCodecContext *avctx)
@@ -59,6 +237,7 @@ static av_cold int libopenjpeg_decode_init(AVCodecContext *avctx)
     LibOpenJPEGContext *ctx = avctx->priv_data;
 
     opj_set_default_decoder_parameters(&ctx->dec_params);
+    avcodec_get_frame_defaults(&ctx->image);
     avctx->coded_frame = &ctx->image;
     return 0;
 }
@@ -82,10 +261,10 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     opj_dinfo_t *dec;
     opj_cio_t *stream;
     opj_image_t *image;
-    int width, height, has_alpha = 0, ret = -1;
-    int x, y, index;
-    uint8_t *img_ptr;
-    int adjust[4];
+    int width, height, ret = -1;
+    int pixel_size = 0;
+    int ispacked = 0;
+    int i;
 
     *data_size = 0;
 
@@ -148,38 +327,30 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
 
     avcodec_set_dimensions(avctx, width, height);
 
-    switch (image->numcomps) {
-    case 1:
-        avctx->pix_fmt = PIX_FMT_GRAY8;
-        break;
-    case 3:
-        if (check_image_attributes(image)) {
-            avctx->pix_fmt = PIX_FMT_RGB24;
-        } else {
-            avctx->pix_fmt = PIX_FMT_GRAY8;
-            av_log(avctx, AV_LOG_ERROR,
-                   "Only first component will be used.\n");
-        }
-        break;
-    case 4:
-        has_alpha      = 1;
-        avctx->pix_fmt = PIX_FMT_RGBA;
-        break;
-    default:
-        av_log(avctx, AV_LOG_ERROR, "%d components unsupported.\n",
-               image->numcomps);
+    if (avctx->pix_fmt != PIX_FMT_NONE)
+        if (!libopenjpeg_matches_pix_fmt(image, avctx->pix_fmt))
+            avctx->pix_fmt = PIX_FMT_NONE;
+
+    if (avctx->pix_fmt == PIX_FMT_NONE)
+        avctx->pix_fmt = libopenjpeg_guess_pix_fmt(image);
+
+    if (avctx->pix_fmt == PIX_FMT_NONE) {
+        av_log(avctx, AV_LOG_ERROR, "Unable to determine pixel format\n");
+        ret = AVERROR_INVALIDDATA;
         goto done;
     }
+
+    for (i = 0; i < image->numcomps; i++)
+        if (image->comps[i].prec > avctx->bits_per_raw_sample)
+            avctx->bits_per_raw_sample = image->comps[i].prec;
 
     if (picture->data[0])
         ff_thread_release_buffer(avctx, picture);
 
     if (ff_thread_get_buffer(avctx, picture) < 0) {
         av_log(avctx, AV_LOG_ERROR, "ff_thread_get_buffer() failed\n");
-        return -1;
+        goto done;
     }
-
-    ff_thread_finish_setup(avctx);
 
     ctx->dec_params.cp_limit_decoding = NO_LIMITATION;
     // Tie decoder with decoding parameters.
@@ -188,29 +359,53 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     if (!stream) {
         av_log(avctx, AV_LOG_ERROR,
                "Codestream could not be opened for reading.\n");
-        opj_destroy_decompress(dec);
-        return -1;
+        goto done;
     }
 
-    // Decode the codestream.
+    opj_image_destroy(image);
+    // Decode the codestream
     image = opj_decode_with_info(dec, stream, NULL);
     opj_cio_close(stream);
 
-    for (x = 0; x < image->numcomps; x++)
-        adjust[x] = FFMAX(image->comps[x].prec - 8, 0);
+    if (!image) {
+        av_log(avctx, AV_LOG_ERROR, "Error decoding codestream.\n");
+        goto done;
+    }
 
-    for (y = 0; y < avctx->height; y++) {
-        index   = y * avctx->width;
-        img_ptr = picture->data[0] + y * picture->linesize[0];
-        for (x = 0; x < avctx->width; x++, index++) {
-            *img_ptr++ = image->comps[0].data[index] >> adjust[0];
-            if (image->numcomps > 2 && check_image_attributes(image)) {
-                *img_ptr++ = image->comps[1].data[index] >> adjust[1];
-                *img_ptr++ = image->comps[2].data[index] >> adjust[2];
-                if (has_alpha)
-                    *img_ptr++ = image->comps[3].data[index] >> adjust[3];
-            }
+    pixel_size =
+        av_pix_fmt_descriptors[avctx->pix_fmt].comp[0].step_minus1 + 1;
+    ispacked = libopenjpeg_ispacked(avctx->pix_fmt);
+
+    switch (pixel_size) {
+    case 1:
+        if (ispacked) {
+            libopenjpeg_copy_to_packed8(picture, image);
+        } else {
+            libopenjpeg_copyto8(picture, image);
         }
+        break;
+    case 2:
+        if (ispacked) {
+            libopenjpeg_copy_to_packed8(picture, image);
+        } else {
+            libopenjpeg_copyto16(picture, image);
+        }
+        break;
+    case 3:
+    case 4:
+        if (ispacked) {
+            libopenjpeg_copy_to_packed8(picture, image);
+        }
+        break;
+    case 6:
+    case 8:
+        if (ispacked) {
+            libopenjpeg_copy_to_packed16(picture, image);
+        }
+        break;
+    default:
+        av_log(avctx, AV_LOG_ERROR, "unsupported pixel size %d\n", pixel_size);
+        goto done;
     }
 
     *output    = ctx->image;
