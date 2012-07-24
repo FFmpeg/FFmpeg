@@ -2892,7 +2892,7 @@ AVCodec ff_aac_decoder = {
     .init            = aac_decode_init,
     .close           = aac_decode_close,
     .decode          = aac_decode_frame,
-    .long_name       = NULL_IF_CONFIG_SMALL("Advanced Audio Coding"),
+    .long_name       = NULL_IF_CONFIG_SMALL("AAC (Advanced Audio Coding)"),
     .sample_fmts     = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE
     },

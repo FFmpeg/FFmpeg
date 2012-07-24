@@ -258,6 +258,32 @@ git commit
 @end example
 
 
+@chapter Git configuration
+
+In order to simplify a few workflows, it is advisable to configure both
+your personal Git installation and your local FFmpeg repository.
+
+@section Personal Git installation
+
+Add the following to your @file{~/.gitconfig} to help @command{git send-email}
+and @command{git format-patch} detect renames:
+
+@example
+[diff]
+        renames = copy
+@end example
+
+@section Repository configuration
+
+In order to have @command{git send-email} automatically send patches
+to the ffmpeg-devel mailing list, add the following stanza
+to @file{/path/to/ffmpeg/repository/.git/config}:
+
+@example
+[sendemail]
+        to = ffmpeg-devel@@ffmpeg.org
+@end example
+
 @chapter FFmpeg specific
 
 @section Reverting broken commits
