@@ -1184,6 +1184,7 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
                                pkt->pts, pkt->dts, pkt->pos);
 
         pkt->pts = pkt->dts = AV_NOPTS_VALUE;
+        pkt->pos = -1;
         /* increment read pointer */
         data += len;
         size -= len;
