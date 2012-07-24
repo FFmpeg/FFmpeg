@@ -145,6 +145,7 @@ Hardware-accelerated decoding/encoding:
   --enable-mmal            enable decoding via MMAL [no]
   --enable-nvenc           enable encoding via NVENC [no]
   --enable-omx             enable encoding via OpenMAX IL [no]
+  --enable-omx-rpi         enable encoding via OpenMAX IL for Raspberry Pi [no]
 
 Individual component options:
   --disable-everything     disable all components listed below
@@ -1259,6 +1260,7 @@ EXTERNAL_LIBRARY_LIST="
 FEATURE_LIST="
     gray
     hardcoded_tables
+    omx_rpi
     runtime_cpudetect
     safe_bitstream_reader
     shared
@@ -4621,7 +4623,12 @@ enabled mmal              && { check_lib interface/mmal/mmal.h mmal_port_connect
                                     check_lib interface/mmal/mmal.h mmal_port_connect ; }
                                 check_lib interface/mmal/mmal.h mmal_port_connect ; } ||
                                die "ERROR: mmal not found"; }
-enabled omx               && { check_header OMX_Core.h || die "ERROR: OpenMAX IL headers not found"; }
+enabled omx_rpi && enable omx
+enabled omx               && { check_header OMX_Core.h ||
+                                { ! enabled cross_compile && enabled omx_rpi && {
+                                    add_cflags -isystem/opt/vc/include/IL ; }
+                                check_header OMX_Core.h ; } ||
+                               die "ERROR: OpenMAX IL headers not found"; }
 enabled openssl           && { check_pkg_config openssl openssl/ssl.h SSL_library_init && {
                                add_cflags $openssl_cflags && add_extralibs $openssl_libs; }||
                                check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto ||
