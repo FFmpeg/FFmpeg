@@ -1955,7 +1955,7 @@ const struct AVCodecTag *avformat_get_riff_audio_tags(void);
  */
 
 /**
- * Guesses the sample aspect ratio of a frame, based on both the stream and the
+ * Guess the sample aspect ratio of a frame, based on both the stream and the
  * frame aspect ratio.
  *
  * Since the frame aspect ratio is set by the codec but the stream aspect ratio
