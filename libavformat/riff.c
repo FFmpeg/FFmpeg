@@ -482,6 +482,8 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc)
         //blkalign = 144 * enc->bit_rate/enc->sample_rate;
     } else if (enc->codec_id == CODEC_ID_AC3) {
             blkalign = 3840; //maximum bytes per frame
+    } else if (enc->codec_id == CODEC_ID_G723_1) {
+            blkalign = 24;
     } else if (enc->block_align != 0) { /* specified by the codec */
         blkalign = enc->block_align;
     } else
@@ -493,6 +495,8 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc)
         enc->codec_id == CODEC_ID_PCM_F64LE ||
         enc->codec_id == CODEC_ID_PCM_S16LE) {
         bytespersec = enc->sample_rate * blkalign;
+    } else if (enc->codec_id == CODEC_ID_G723_1) {
+        bytespersec = 800;
     } else {
         bytespersec = enc->bit_rate / 8;
     }
@@ -516,6 +520,11 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc)
         bytestream_put_le16(&riff_extradata, 16);                         /* fwHeadFlags */
         bytestream_put_le32(&riff_extradata, 0);                          /* dwPTSLow */
         bytestream_put_le32(&riff_extradata, 0);                          /* dwPTSHigh */
+    } else if (enc->codec_id == CODEC_ID_G723_1) {
+        hdrsize += 20;
+        bytestream_put_le32(&riff_extradata, 0x9ace0002); /* extradata needed for msacm g723.1 codec */
+        bytestream_put_le32(&riff_extradata, 0xaea2f732);
+        bytestream_put_le16(&riff_extradata, 0xacde);
     } else if (enc->codec_id == CODEC_ID_GSM_MS || enc->codec_id == CODEC_ID_ADPCM_IMA_WAV) {
         hdrsize += 2;
         bytestream_put_le16(&riff_extradata, frame_size); /* wSamplesPerBlock */
