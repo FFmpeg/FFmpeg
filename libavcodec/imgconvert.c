@@ -529,13 +529,13 @@ enum PixelFormat avcodec_find_best_pix_fmt(int64_t pix_fmt_mask, enum PixelForma
     dst_pix_fmt = PIX_FMT_NONE; /* so first iteration doesn't have to be treated special */
     for(i = 0; i< FFMIN(PIX_FMT_NB, 64); i++){
         if (pix_fmt_mask & (1ULL << i))
-            dst_pix_fmt = avcodec_find_best_pix_fmt2(dst_pix_fmt, i, src_pix_fmt, has_alpha, loss_ptr);
+            dst_pix_fmt = avcodec_find_best_pix_fmt_of_2(dst_pix_fmt, i, src_pix_fmt, has_alpha, loss_ptr);
     }
     return dst_pix_fmt;
 }
 #endif /* FF_API_FIND_BEST_PIX_FMT */
 
-enum PixelFormat avcodec_find_best_pix_fmt2(enum PixelFormat dst_pix_fmt1, enum PixelFormat dst_pix_fmt2,
+enum PixelFormat avcodec_find_best_pix_fmt_of_2(enum PixelFormat dst_pix_fmt1, enum PixelFormat dst_pix_fmt2,
                                             enum PixelFormat src_pix_fmt, int has_alpha, int *loss_ptr)
 {
     enum PixelFormat dst_pix_fmt;
@@ -577,6 +577,12 @@ enum PixelFormat avcodec_find_best_pix_fmt2(enum PixelFormat dst_pix_fmt1, enum 
     return dst_pix_fmt;
 }
 
+enum PixelFormat avcodec_find_best_pix_fmt2(enum PixelFormat dst_pix_fmt1, enum PixelFormat dst_pix_fmt2,
+                                            enum PixelFormat src_pix_fmt, int has_alpha, int *loss_ptr)
+{
+    return avcodec_find_best_pix_fmt_of_2(dst_pix_fmt1, dst_pix_fmt2, src_pix_fmt, has_alpha, loss_ptr);
+}
+
 enum PixelFormat avcodec_find_best_pix_fmt_of_list(enum PixelFormat *pix_fmt_list,
                                             enum PixelFormat src_pix_fmt,
                                             int has_alpha, int *loss_ptr){
@@ -585,7 +591,7 @@ enum PixelFormat avcodec_find_best_pix_fmt_of_list(enum PixelFormat *pix_fmt_lis
     enum PixelFormat best = PIX_FMT_NONE;
 
     for(i=0; pix_fmt_list[i] != PIX_FMT_NONE; i++)
-        best = avcodec_find_best_pix_fmt2(best, pix_fmt_list[i], src_pix_fmt, has_alpha, loss_ptr);
+        best = avcodec_find_best_pix_fmt_of_2(best, pix_fmt_list[i], src_pix_fmt, has_alpha, loss_ptr);
 
     return best;
 }
