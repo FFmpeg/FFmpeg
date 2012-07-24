@@ -536,7 +536,7 @@ static int dv_probe(AVProbeData *p)
 #if CONFIG_DV_DEMUXER
 AVInputFormat ff_dv_demuxer = {
     .name           = "dv",
-    .long_name      = NULL_IF_CONFIG_SMALL("DV video format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("DV video"),
     .priv_data_size = sizeof(RawDVContext),
     .read_probe     = dv_probe,
     .read_header    = dv_read_header,

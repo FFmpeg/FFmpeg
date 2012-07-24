@@ -636,7 +636,7 @@ static int ipmovie_read_packet(AVFormatContext *s,
 
 AVInputFormat ff_ipmovie_demuxer = {
     .name           = "ipmovie",
-    .long_name      = NULL_IF_CONFIG_SMALL("Interplay MVE format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Interplay MVE"),
     .priv_data_size = sizeof(IPMVEContext),
     .read_probe     = ipmovie_probe,
     .read_header    = ipmovie_read_header,

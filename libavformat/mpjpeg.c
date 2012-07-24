@@ -55,7 +55,7 @@ static int mpjpeg_write_trailer(AVFormatContext *s)
 
 AVOutputFormat ff_mpjpeg_muxer = {
     .name              = "mpjpeg",
-    .long_name         = NULL_IF_CONFIG_SMALL("MIME multipart JPEG format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("MIME multipart JPEG"),
     .mime_type         = "multipart/x-mixed-replace;boundary=" BOUNDARY_TAG,
     .extensions        = "mjpg",
     .audio_codec       = CODEC_ID_NONE,

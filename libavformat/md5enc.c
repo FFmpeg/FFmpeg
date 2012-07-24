@@ -68,7 +68,7 @@ static int write_trailer(struct AVFormatContext *s)
 
 AVOutputFormat ff_md5_muxer = {
     .name              = "md5",
-    .long_name         = NULL_IF_CONFIG_SMALL("MD5 testing format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("MD5 testing"),
     .extensions        = "",
     .priv_data_size    = PRIVSIZE,
     .audio_codec       = CODEC_ID_PCM_S16LE,
@@ -99,7 +99,7 @@ static int framemd5_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 
 AVOutputFormat ff_framemd5_muxer = {
     .name              = "framemd5",
-    .long_name         = NULL_IF_CONFIG_SMALL("Per-frame MD5 testing format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("Per-frame MD5 testing"),
     .extensions        = "",
     .priv_data_size    = PRIVSIZE,
     .audio_codec       = CODEC_ID_PCM_S16LE,

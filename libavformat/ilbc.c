@@ -122,7 +122,7 @@ static int ilbc_read_packet(AVFormatContext *s,
 
 AVInputFormat ff_ilbc_demuxer = {
     .name         = "ilbc",
-    .long_name    = NULL_IF_CONFIG_SMALL("iLBC storage file format"),
+    .long_name    = NULL_IF_CONFIG_SMALL("iLBC storage"),
     .read_probe   = ilbc_probe,
     .read_header  = ilbc_read_header,
     .read_packet  = ilbc_read_packet,
@@ -131,7 +131,7 @@ AVInputFormat ff_ilbc_demuxer = {
 
 AVOutputFormat ff_ilbc_muxer = {
     .name         = "ilbc",
-    .long_name    = NULL_IF_CONFIG_SMALL("iLBC storage file format"),
+    .long_name    = NULL_IF_CONFIG_SMALL("iLBC storage"),
     .mime_type    = "audio/iLBC",
     .extensions   = "lbc",
     .audio_codec  = CODEC_ID_ILBC,

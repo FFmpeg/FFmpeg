@@ -37,7 +37,7 @@ static int framecrc_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 
 AVOutputFormat ff_framecrc_muxer = {
     .name              = "framecrc",
-    .long_name         = NULL_IF_CONFIG_SMALL("framecrc testing format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("framecrc testing"),
     .extensions        = "",
     .audio_codec       = CODEC_ID_PCM_S16LE,
     .video_codec       = CODEC_ID_RAWVIDEO,

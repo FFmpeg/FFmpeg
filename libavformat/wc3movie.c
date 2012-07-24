@@ -293,7 +293,7 @@ static int wc3_read_close(AVFormatContext *s)
 
 AVInputFormat ff_wc3_demuxer = {
     .name           = "wc3movie",
-    .long_name      = NULL_IF_CONFIG_SMALL("Wing Commander III movie format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Wing Commander III movie"),
     .priv_data_size = sizeof(Wc3DemuxContext),
     .read_probe     = wc3_probe,
     .read_header    = wc3_read_header,

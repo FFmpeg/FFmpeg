@@ -120,7 +120,7 @@ static int xa_read_packet(AVFormatContext *s,
 
 AVInputFormat ff_xa_demuxer = {
     .name           = "xa",
-    .long_name      = NULL_IF_CONFIG_SMALL("Maxis XA File Format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Maxis XA"),
     .priv_data_size = sizeof(MaxisXADemuxContext),
     .read_probe     = xa_probe,
     .read_header    = xa_read_header,

@@ -3357,7 +3357,7 @@ AVOutputFormat ff_ipod_muxer = {
 MOV_CLASS(ismv)
 AVOutputFormat ff_ismv_muxer = {
     .name              = "ismv",
-    .long_name         = NULL_IF_CONFIG_SMALL("ISMV/ISMA (Smooth Streaming) format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("ISMV/ISMA (Smooth Streaming)"),
     .mime_type         = "application/mp4",
     .extensions        = "ismv,isma",
     .priv_data_size    = sizeof(MOVMuxContext),

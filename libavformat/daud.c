@@ -72,7 +72,7 @@ static int daud_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 #if CONFIG_DAUD_DEMUXER
 AVInputFormat ff_daud_demuxer = {
     .name           = "daud",
-    .long_name      = NULL_IF_CONFIG_SMALL("D-Cinema audio format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("D-Cinema audio"),
     .read_header    = daud_header,
     .read_packet    = daud_packet,
     .extensions     = "302",
@@ -82,7 +82,7 @@ AVInputFormat ff_daud_demuxer = {
 #if CONFIG_DAUD_MUXER
 AVOutputFormat ff_daud_muxer = {
     .name         = "daud",
-    .long_name    = NULL_IF_CONFIG_SMALL("D-Cinema audio format"),
+    .long_name    = NULL_IF_CONFIG_SMALL("D-Cinema audio"),
     .extensions   = "302",
     .audio_codec  = CODEC_ID_PCM_S24DAUD,
     .video_codec  = CODEC_ID_NONE,

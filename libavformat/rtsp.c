@@ -2081,7 +2081,7 @@ static const AVClass rtp_demuxer_class = {
 
 AVInputFormat ff_rtp_demuxer = {
     .name           = "rtp",
-    .long_name      = NULL_IF_CONFIG_SMALL("RTP input format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("RTP input"),
     .priv_data_size = sizeof(RTSPState),
     .read_probe     = rtp_probe,
     .read_header    = rtp_read_header,

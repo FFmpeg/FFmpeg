@@ -273,7 +273,7 @@ static int wsvqa_read_packet(AVFormatContext *s,
 
 AVInputFormat ff_wsvqa_demuxer = {
     .name           = "wsvqa",
-    .long_name      = NULL_IF_CONFIG_SMALL("Westwood Studios VQA format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Westwood Studios VQA"),
     .priv_data_size = sizeof(WsVqaDemuxContext),
     .read_probe     = wsvqa_probe,
     .read_header    = wsvqa_read_header,

@@ -339,7 +339,7 @@ static int lxf_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 AVInputFormat ff_lxf_demuxer = {
     .name           = "lxf",
-    .long_name      = NULL_IF_CONFIG_SMALL("VR native stream format (LXF)"),
+    .long_name      = NULL_IF_CONFIG_SMALL("VR native stream (LXF)"),
     .priv_data_size = sizeof(LXFDemuxContext),
     .read_probe     = lxf_probe,
     .read_header    = lxf_read_header,

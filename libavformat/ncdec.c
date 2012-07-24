@@ -93,7 +93,7 @@ static int nc_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 AVInputFormat ff_nc_demuxer = {
     .name           = "nc",
-    .long_name      = NULL_IF_CONFIG_SMALL("NC camera feed format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("NC camera feed"),
     .read_probe     = nc_probe,
     .read_header    = nc_read_header,
     .read_packet    = nc_read_packet,

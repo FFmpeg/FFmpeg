@@ -223,7 +223,7 @@ static int avs_read_close(AVFormatContext * s)
 
 AVInputFormat ff_avs_demuxer = {
     .name           = "avs",
-    .long_name      = NULL_IF_CONFIG_SMALL("AVS format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("AVS"),
     .priv_data_size = sizeof(AvsFormat),
     .read_probe     = avs_probe,
     .read_header    = avs_read_header,

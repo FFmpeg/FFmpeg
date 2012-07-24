@@ -239,7 +239,7 @@ static int ffm_write_trailer(AVFormatContext *s)
 
 AVOutputFormat ff_ffm_muxer = {
     .name              = "ffm",
-    .long_name         = NULL_IF_CONFIG_SMALL("FFM (AVserver live feed) format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("FFM (AVserver live feed)"),
     .mime_type         = "",
     .extensions        = "ffm",
     .priv_data_size    = sizeof(FFMContext),

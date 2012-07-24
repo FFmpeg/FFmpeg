@@ -37,7 +37,7 @@ static int roq_write_header(struct AVFormatContext *s)
 
 AVOutputFormat ff_roq_muxer = {
     .name         = "roq",
-    .long_name    = NULL_IF_CONFIG_SMALL("raw id RoQ format"),
+    .long_name    = NULL_IF_CONFIG_SMALL("raw id RoQ"),
     .extensions   = "roq",
     .audio_codec  = CODEC_ID_ROQ_DPCM,
     .video_codec  = CODEC_ID_ROQ,

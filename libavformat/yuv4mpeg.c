@@ -174,7 +174,7 @@ static int yuv4_write_header(AVFormatContext *s)
 
 AVOutputFormat ff_yuv4mpegpipe_muxer = {
     .name              = "yuv4mpegpipe",
-    .long_name         = NULL_IF_CONFIG_SMALL("YUV4MPEG pipe format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("YUV4MPEG pipe"),
     .mime_type         = "",
     .extensions        = "y4m",
     .priv_data_size    = sizeof(int),
@@ -414,7 +414,7 @@ static int yuv4_probe(AVProbeData *pd)
 #if CONFIG_YUV4MPEGPIPE_DEMUXER
 AVInputFormat ff_yuv4mpegpipe_demuxer = {
     .name           = "yuv4mpegpipe",
-    .long_name      = NULL_IF_CONFIG_SMALL("YUV4MPEG pipe format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("YUV4MPEG pipe"),
     .priv_data_size = sizeof(struct frame_attributes),
     .read_probe     = yuv4_probe,
     .read_header    = yuv4_read_header,
