@@ -1216,6 +1216,9 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
         out_pkt.dts = st->parser->dts;
         out_pkt.pos = st->parser->pos;
 
+        if(st->need_parsing == AVSTREAM_PARSE_FULL_RAW)
+            out_pkt.pos = st->parser->frame_offset;
+
         if (st->parser->key_frame == 1 ||
             (st->parser->key_frame == -1 &&
              st->parser->pict_type == AV_PICTURE_TYPE_I))
