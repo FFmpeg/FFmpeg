@@ -3248,7 +3248,7 @@ static int mov_write_trailer(AVFormatContext *s)
 MOV_CLASS(mov)
 AVOutputFormat ff_mov_muxer = {
     .name              = "mov",
-    .long_name         = NULL_IF_CONFIG_SMALL("MOV format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("QuickTime / MOV"),
     .extensions        = "mov",
     .priv_data_size    = sizeof(MOVMuxContext),
     .audio_codec       = CODEC_ID_AAC,
@@ -3268,7 +3268,7 @@ AVOutputFormat ff_mov_muxer = {
 MOV_CLASS(tgp)
 AVOutputFormat ff_tgp_muxer = {
     .name              = "3gp",
-    .long_name         = NULL_IF_CONFIG_SMALL("3GP format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("3GP (3GPP file format)"),
     .extensions        = "3gp",
     .priv_data_size    = sizeof(MOVMuxContext),
     .audio_codec       = CODEC_ID_AMR_NB,
@@ -3285,7 +3285,7 @@ AVOutputFormat ff_tgp_muxer = {
 MOV_CLASS(mp4)
 AVOutputFormat ff_mp4_muxer = {
     .name              = "mp4",
-    .long_name         = NULL_IF_CONFIG_SMALL("MP4 format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("MP4 (MPEG-4 Part 14)"),
     .mime_type         = "application/mp4",
     .extensions        = "mp4",
     .priv_data_size    = sizeof(MOVMuxContext),
@@ -3304,7 +3304,7 @@ AVOutputFormat ff_mp4_muxer = {
 MOV_CLASS(psp)
 AVOutputFormat ff_psp_muxer = {
     .name              = "psp",
-    .long_name         = NULL_IF_CONFIG_SMALL("PSP MP4 format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("PSP MP4 (MPEG-4 Part 14)"),
     .extensions        = "mp4,psp",
     .priv_data_size    = sizeof(MOVMuxContext),
     .audio_codec       = CODEC_ID_AAC,
@@ -3322,7 +3322,7 @@ AVOutputFormat ff_psp_muxer = {
 MOV_CLASS(tg2)
 AVOutputFormat ff_tg2_muxer = {
     .name              = "3g2",
-    .long_name         = NULL_IF_CONFIG_SMALL("3GP2 format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("3GP2 (3GPP2 file format)"),
     .extensions        = "3g2",
     .priv_data_size    = sizeof(MOVMuxContext),
     .audio_codec       = CODEC_ID_AMR_NB,
@@ -3339,7 +3339,7 @@ AVOutputFormat ff_tg2_muxer = {
 MOV_CLASS(ipod)
 AVOutputFormat ff_ipod_muxer = {
     .name              = "ipod",
-    .long_name         = NULL_IF_CONFIG_SMALL("iPod H.264 MP4 format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("iPod H.264 MP4 (MPEG-4 Part 14)"),
     .mime_type         = "application/mp4",
     .extensions        = "m4v,m4a",
     .priv_data_size    = sizeof(MOVMuxContext),

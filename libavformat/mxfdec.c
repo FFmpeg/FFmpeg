@@ -2246,7 +2246,7 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
 
 AVInputFormat ff_mxf_demuxer = {
     .name           = "mxf",
-    .long_name      = NULL_IF_CONFIG_SMALL("Material eXchange Format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("MXF (Material eXchange Format)"),
     .priv_data_size = sizeof(MXFContext),
     .read_probe     = mxf_probe,
     .read_header    = mxf_read_header,

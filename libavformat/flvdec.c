@@ -875,7 +875,7 @@ static const AVClass class = {
 
 AVInputFormat ff_flv_demuxer = {
     .name           = "flv",
-    .long_name      = NULL_IF_CONFIG_SMALL("FLV format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("FLV (Flash Video)"),
     .priv_data_size = sizeof(FLVContext),
     .read_probe     = flv_probe,
     .read_header    = flv_read_header,

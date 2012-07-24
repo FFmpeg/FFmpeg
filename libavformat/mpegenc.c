@@ -1144,7 +1144,7 @@ static const AVClass flavor ## _class = {\
 MPEGENC_CLASS(mpeg)
 AVOutputFormat ff_mpeg1system_muxer = {
     .name              = "mpeg",
-    .long_name         = NULL_IF_CONFIG_SMALL("MPEG-1 System format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("MPEG-1 Systems / MPEG program stream"),
     .mime_type         = "video/mpeg",
     .extensions        = "mpg,mpeg",
     .priv_data_size    = sizeof(MpegMuxContext),
@@ -1160,7 +1160,7 @@ AVOutputFormat ff_mpeg1system_muxer = {
 MPEGENC_CLASS(vcd)
 AVOutputFormat ff_mpeg1vcd_muxer = {
     .name              = "vcd",
-    .long_name         = NULL_IF_CONFIG_SMALL("MPEG-1 System format (VCD)"),
+    .long_name         = NULL_IF_CONFIG_SMALL("MPEG-1 Systems / MPEG program stream (VCD)"),
     .mime_type         = "video/mpeg",
     .priv_data_size    = sizeof(MpegMuxContext),
     .audio_codec       = CODEC_ID_MP2,
@@ -1193,7 +1193,7 @@ AVOutputFormat ff_mpeg2vob_muxer = {
 MPEGENC_CLASS(svcd)
 AVOutputFormat ff_mpeg2svcd_muxer = {
     .name              = "svcd",
-    .long_name         = NULL_IF_CONFIG_SMALL("MPEG-2 PS format (VOB)"),
+    .long_name         = NULL_IF_CONFIG_SMALL("MPEG-2 PS (SVCD)"),
     .mime_type         = "video/mpeg",
     .extensions        = "vob",
     .priv_data_size    = sizeof(MpegMuxContext),

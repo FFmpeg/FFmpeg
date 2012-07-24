@@ -930,7 +930,7 @@ static int gxf_interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *pk
 
 AVOutputFormat ff_gxf_muxer = {
     .name              = "gxf",
-    .long_name         = NULL_IF_CONFIG_SMALL("GXF format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("GXF (General eXchange Format)"),
     .extensions        = "gxf",
     .priv_data_size    = sizeof(GXFContext),
     .audio_codec       = CODEC_ID_PCM_S16LE,

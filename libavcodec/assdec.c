@@ -54,7 +54,7 @@ static int ass_decode_frame(AVCodecContext *avctx, void *data, int *got_sub_ptr,
 
 AVCodec ff_ass_decoder = {
     .name         = "ass",
-    .long_name    = NULL_IF_CONFIG_SMALL("Advanced SubStation Alpha subtitle"),
+    .long_name    = NULL_IF_CONFIG_SMALL("SSA (SubStation Alpha) subtitle"),
     .type         = AVMEDIA_TYPE_SUBTITLE,
     .id           = CODEC_ID_SSA,
     .init         = ass_decode_init,

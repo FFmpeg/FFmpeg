@@ -1890,7 +1890,7 @@ static int mxf_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int 
 
 AVOutputFormat ff_mxf_muxer = {
     .name              = "mxf",
-    .long_name         = NULL_IF_CONFIG_SMALL("Material eXchange Format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("MXF (Material eXchange Format)"),
     .mime_type         = "application/mxf",
     .extensions        = "mxf",
     .priv_data_size    = sizeof(MXFContext),
@@ -1905,7 +1905,7 @@ AVOutputFormat ff_mxf_muxer = {
 
 AVOutputFormat ff_mxf_d10_muxer = {
     .name              = "mxf_d10",
-    .long_name         = NULL_IF_CONFIG_SMALL("Material eXchange Format, D-10 Mapping"),
+    .long_name         = NULL_IF_CONFIG_SMALL("MXF (Material eXchange Format) D-10 Mapping"),
     .mime_type         = "application/mxf",
     .priv_data_size    = sizeof(MXFContext),
     .audio_codec       = CODEC_ID_PCM_S16LE,

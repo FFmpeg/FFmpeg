@@ -426,7 +426,7 @@ AVCodec ff_libxavs_encoder = {
     .close          = XAVS_close,
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_AUTO_THREADS,
     .pix_fmts       = (const enum PixelFormat[]) { PIX_FMT_YUV420P, PIX_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("libxavs - the Chinese Audio Video Standard Encoder"),
+    .long_name      = NULL_IF_CONFIG_SMALL("libxavs Chinese AVS (Audio Video Standard)"),
     .priv_class     = &class,
     .defaults       = xavs_defaults,
 };

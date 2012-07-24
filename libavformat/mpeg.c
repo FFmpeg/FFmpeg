@@ -567,7 +567,7 @@ static int64_t mpegps_read_dts(AVFormatContext *s, int stream_index,
 
 AVInputFormat ff_mpegps_demuxer = {
     .name           = "mpeg",
-    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-PS format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-PS (MPEG-2 Program Stream)"),
     .priv_data_size = sizeof(MpegDemuxContext),
     .read_probe     = mpegps_probe,
     .read_header    = mpegps_read_header,

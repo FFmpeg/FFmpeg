@@ -190,7 +190,7 @@ static int mp3_write_trailer(struct AVFormatContext *s)
 #if CONFIG_MP2_MUXER
 AVOutputFormat ff_mp2_muxer = {
     .name              = "mp2",
-    .long_name         = NULL_IF_CONFIG_SMALL("MPEG audio layer 2"),
+    .long_name         = NULL_IF_CONFIG_SMALL("MP2 (MPEG audio layer 2)"),
     .mime_type         = "audio/x-mpeg",
     .extensions        = "mp2,m2a",
     .audio_codec       = CODEC_ID_MP2,
@@ -309,7 +309,7 @@ static int mp3_write_header(struct AVFormatContext *s)
 
 AVOutputFormat ff_mp3_muxer = {
     .name              = "mp3",
-    .long_name         = NULL_IF_CONFIG_SMALL("MPEG audio layer 3"),
+    .long_name         = NULL_IF_CONFIG_SMALL("MP3 (MPEG audio layer 3)"),
     .mime_type         = "audio/x-mpeg",
     .extensions        = "mp3",
     .priv_data_size    = sizeof(MP3Context),

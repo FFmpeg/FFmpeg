@@ -207,7 +207,7 @@ static const AVClass wav_muxer_class = {
 
 AVOutputFormat ff_wav_muxer = {
     .name              = "wav",
-    .long_name         = NULL_IF_CONFIG_SMALL("WAV format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("WAV / WAVE (Waveform Audio)"),
     .mime_type         = "audio/x-wav",
     .extensions        = "wav",
     .priv_data_size    = sizeof(WAVContext),
@@ -588,7 +588,7 @@ static int wav_read_seek(AVFormatContext *s,
 
 AVInputFormat ff_wav_demuxer = {
     .name           = "wav",
-    .long_name      = NULL_IF_CONFIG_SMALL("WAV format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("WAV / WAVE (Waveform Audio)"),
     .priv_data_size = sizeof(WAVContext),
     .read_probe     = wav_probe,
     .read_header    = wav_read_header,

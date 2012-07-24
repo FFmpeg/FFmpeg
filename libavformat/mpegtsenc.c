@@ -1162,7 +1162,7 @@ static int mpegts_write_end(AVFormatContext *s)
 
 AVOutputFormat ff_mpegts_muxer = {
     .name              = "mpegts",
-    .long_name         = NULL_IF_CONFIG_SMALL("MPEG-2 transport stream format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("MPEG-TS (MPEG-2 Transport Stream)"),
     .mime_type         = "video/x-mpegts",
     .extensions        = "ts,m2t",
     .priv_data_size    = sizeof(MpegTSWrite),

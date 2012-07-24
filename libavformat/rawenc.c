@@ -60,7 +60,7 @@ AVOutputFormat ff_adx_muxer = {
 #if CONFIG_CAVSVIDEO_MUXER
 AVOutputFormat ff_cavsvideo_muxer = {
     .name              = "cavsvideo",
-    .long_name         = NULL_IF_CONFIG_SMALL("raw Chinese AVS video"),
+    .long_name         = NULL_IF_CONFIG_SMALL("raw Chinese AVS (Audio Video Standard) video"),
     .extensions        = "cavs",
     .audio_codec       = CODEC_ID_NONE,
     .video_codec       = CODEC_ID_CAVS,

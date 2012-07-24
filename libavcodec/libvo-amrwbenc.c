@@ -150,7 +150,7 @@ AVCodec ff_libvo_amrwbenc_encoder = {
     .close          = amr_wb_encode_close,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("Android VisualOn Adaptive "
-                                           "Multi-Rate (AMR) Wide-Band"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Android VisualOn AMR-WB "
+                                           "(Adaptive Multi-Rate Wide-Band)"),
     .priv_class     = &class,
 };
