@@ -229,6 +229,10 @@ playpath. If a live stream of that name is not found, it plays the
 recorded stream. The other possible values are @code{live} and
 @code{recorded}.
 
+@item rtmp_pageurl
+URL of the web page in which the media was embedded. By default no
+value will be sent.
+
 @item rtmp_playpath
 Stream identifier to play or to publish. This option overrides the
 parameter specified in the URI.
