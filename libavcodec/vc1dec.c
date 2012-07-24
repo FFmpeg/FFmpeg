@@ -5638,7 +5638,8 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
 //      return -1;
         if(s->error_occurred && s->pict_type == AV_PICTURE_TYPE_B)
             goto err;
-        ff_er_frame_end(s);
+        if(!v->field_mode)
+            ff_er_frame_end(s);
     }
 
     ff_MPV_frame_end(s);
