@@ -170,8 +170,12 @@ static int sctp_open(URLContext *h, const char *uri, int flags)
 
     av_url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname),
                  &port, path, sizeof(path), uri);
-    if (strcmp(proto,"sctp") || port <= 0 || port >= 65536)
+    if (strcmp(proto, "sctp"))
         return AVERROR(EINVAL);
+    if (port <= 0 || port >= 65536) {
+        av_log(s, AV_LOG_ERROR, "Port missing in uri\n");
+        return AVERROR(EINVAL);
+    }
 
     s->max_streams = 0;
     p = strchr(uri, '?');
