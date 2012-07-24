@@ -1665,34 +1665,44 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
     fflush(stdout);
 }
 
-static av_always_inline int get_decoded_frame(AVFormatContext *fmt_ctx,
-                                              AVFrame *frame, int *got_frame,
-                                              AVPacket *pkt)
+static av_always_inline int process_frame(WriterContext *w,
+                                          AVFormatContext *fmt_ctx,
+                                          AVFrame *frame, AVPacket *pkt)
 {
     AVCodecContext *dec_ctx = fmt_ctx->streams[pkt->stream_index]->codec;
-    int ret = 0;
+    int ret = 0, got_frame = 0;
 
-    *got_frame = 0;
+    avcodec_get_frame_defaults(frame);
     if (dec_ctx->codec) {
         switch (dec_ctx->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
-            ret = avcodec_decode_video2(dec_ctx, frame, got_frame, pkt);
+            ret = avcodec_decode_video2(dec_ctx, frame, &got_frame, pkt);
             break;
 
         case AVMEDIA_TYPE_AUDIO:
-            ret = avcodec_decode_audio4(dec_ctx, frame, got_frame, pkt);
+            ret = avcodec_decode_audio4(dec_ctx, frame, &got_frame, pkt);
             break;
         }
     }
 
-    return ret;
+    if (ret < 0)
+        return ret;
+    ret = FFMIN(ret, pkt->size); /* guard against bogus return values */
+    pkt->data += ret;
+    pkt->size -= ret;
+    if (got_frame) {
+        nb_streams_frames[pkt->stream_index]++;
+        if (do_show_frames)
+            show_frame(w, frame, fmt_ctx->streams[pkt->stream_index], fmt_ctx);
+    }
+    return got_frame;
 }
 
 static void read_packets(WriterContext *w, AVFormatContext *fmt_ctx)
 {
     AVPacket pkt, pkt1;
     AVFrame frame;
-    int i = 0, ret, got_frame;
+    int i = 0;
 
     av_init_packet(&pkt);
 
@@ -1704,17 +1714,7 @@ static void read_packets(WriterContext *w, AVFormatContext *fmt_ctx)
         }
         if (do_read_frames) {
             pkt1 = pkt;
-            while (pkt1.size) {
-                avcodec_get_frame_defaults(&frame);
-                ret = get_decoded_frame(fmt_ctx, &frame, &got_frame, &pkt1);
-                if (ret < 0 || !got_frame)
-                    break;
-                if (do_show_frames)
-                    show_frame(w, &frame, fmt_ctx->streams[pkt.stream_index], fmt_ctx);
-                pkt1.data += ret;
-                pkt1.size -= ret;
-                nb_streams_frames[pkt.stream_index]++;
-            }
+            while (pkt1.size && process_frame(w, fmt_ctx, &frame, &pkt1) > 0);
         }
         av_free_packet(&pkt);
     }
@@ -1724,13 +1724,8 @@ static void read_packets(WriterContext *w, AVFormatContext *fmt_ctx)
     //Flush remaining frames that are cached in the decoder
     for (i = 0; i < fmt_ctx->nb_streams; i++) {
         pkt.stream_index = i;
-        while (get_decoded_frame(fmt_ctx, &frame, &got_frame, &pkt) >= 0 && got_frame) {
-            if (do_read_frames) {
-                if (do_show_frames)
-                    show_frame(w, &frame, fmt_ctx->streams[pkt.stream_index], fmt_ctx);
-                nb_streams_frames[pkt.stream_index]++;
-            }
-        }
+        if (do_read_frames)
+            while (process_frame(w, fmt_ctx, &frame, &pkt) > 0);
     }
 }
 
