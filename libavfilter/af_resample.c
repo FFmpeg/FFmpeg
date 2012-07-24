@@ -239,6 +239,26 @@ fail:
     return ret;
 }
 
+static const AVFilterPad avfilter_af_resample_inputs[] = {
+    {
+        .name           = "default",
+        .type           = AVMEDIA_TYPE_AUDIO,
+        .filter_samples = filter_samples,
+        .min_perms      = AV_PERM_READ
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_af_resample_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_AUDIO,
+        .config_props  = config_output,
+        .request_frame = request_frame
+    },
+    { NULL }
+};
+
 AVFilter avfilter_af_resample = {
     .name          = "resample",
     .description   = NULL_IF_CONFIG_SMALL("Audio resampling and conversion."),
@@ -247,14 +267,6 @@ AVFilter avfilter_af_resample = {
     .uninit         = uninit,
     .query_formats  = query_formats,
 
-    .inputs    = (const AVFilterPad[]) {{ .name            = "default",
-                                          .type            = AVMEDIA_TYPE_AUDIO,
-                                          .filter_samples  = filter_samples,
-                                          .min_perms       = AV_PERM_READ },
-                                        { .name = NULL}},
-    .outputs   = (const AVFilterPad[]) {{ .name          = "default",
-                                          .type          = AVMEDIA_TYPE_AUDIO,
-                                          .config_props  = config_output,
-                                          .request_frame = request_frame },
-                                        { .name = NULL}},
+    .inputs    = avfilter_af_resample_inputs,
+    .outputs   = avfilter_af_resample_outputs,
 };

@@ -434,6 +434,28 @@ static int draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
     return draw_send_bar_slice(link, y, h, slice_dir, -1);
 }
 
+static const AVFilterPad avfilter_vf_pad_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .config_props     = config_input,
+        .get_video_buffer = get_video_buffer,
+        .start_frame      = start_frame,
+        .draw_slice       = draw_slice,
+        .end_frame        = end_frame,
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_pad_outputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_output,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_pad = {
     .name          = "pad",
     .description   = NULL_IF_CONFIG_SMALL("Pad input image to width:height[:x:y[:color]] (default x and y: 0, default color: black)."),
@@ -443,17 +465,7 @@ AVFilter avfilter_vf_pad = {
     .uninit        = uninit,
     .query_formats = query_formats,
 
-    .inputs    = (const AVFilterPad[]) {{ .name             = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO,
-                                          .config_props     = config_input,
-                                          .get_video_buffer = get_video_buffer,
-                                          .start_frame      = start_frame,
-                                          .draw_slice       = draw_slice,
-                                          .end_frame        = end_frame, },
-                                        { .name = NULL}},
+    .inputs    = avfilter_vf_pad_inputs,
 
-    .outputs   = (const AVFilterPad[]) {{ .name             = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO,
-                                          .config_props     = config_output, },
-                                        { .name = NULL}},
+    .outputs   = avfilter_vf_pad_outputs,
 };

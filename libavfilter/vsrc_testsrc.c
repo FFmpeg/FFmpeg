@@ -359,6 +359,16 @@ static int test_query_formats(AVFilterContext *ctx)
     return 0;
 }
 
+static const AVFilterPad avfilter_vsrc_testsrc_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+        .config_props  = config_props,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vsrc_testsrc = {
     .name          = "testsrc",
     .description   = NULL_IF_CONFIG_SMALL("Generate test pattern."),
@@ -369,11 +379,7 @@ AVFilter avfilter_vsrc_testsrc = {
 
     .inputs    = NULL,
 
-    .outputs   = (const AVFilterPad[]) {{ .name = "default",
-                                          .type = AVMEDIA_TYPE_VIDEO,
-                                          .request_frame = request_frame,
-                                          .config_props  = config_props, },
-                                        { .name = NULL }},
+    .outputs   = avfilter_vsrc_testsrc_outputs,
 };
 
 #endif /* CONFIG_TESTSRC_FILTER */
@@ -486,6 +492,16 @@ static int rgbtest_config_props(AVFilterLink *outlink)
     return config_props(outlink);
 }
 
+static const AVFilterPad avfilter_vsrc_rgbtestsrc_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+        .config_props  = rgbtest_config_props,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vsrc_rgbtestsrc = {
     .name          = "rgbtestsrc",
     .description   = NULL_IF_CONFIG_SMALL("Generate RGB test pattern."),
@@ -496,11 +512,7 @@ AVFilter avfilter_vsrc_rgbtestsrc = {
 
     .inputs    = NULL,
 
-    .outputs   = (const AVFilterPad[]) {{ .name = "default",
-                                          .type = AVMEDIA_TYPE_VIDEO,
-                                          .request_frame = request_frame,
-                                          .config_props  = rgbtest_config_props, },
-                                        { .name = NULL }},
+    .outputs   = avfilter_vsrc_rgbtestsrc_outputs,
 };
 
 #endif /* CONFIG_RGBTESTSRC_FILTER */

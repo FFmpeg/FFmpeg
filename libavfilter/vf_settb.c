@@ -125,6 +125,26 @@ static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     return ff_start_frame(outlink, picref);
 }
 
+static const AVFilterPad avfilter_vf_settb_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .get_video_buffer = ff_null_get_video_buffer,
+        .start_frame      = start_frame,
+        .end_frame        = ff_null_end_frame
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_settb_outputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_output_props,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_settb = {
     .name      = "settb",
     .description = NULL_IF_CONFIG_SMALL("Set timebase for the output link."),
@@ -132,15 +152,7 @@ AVFilter avfilter_vf_settb = {
 
     .priv_size = sizeof(SetTBContext),
 
-    .inputs    = (const AVFilterPad[]) {{ .name             = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO,
-                                          .get_video_buffer = ff_null_get_video_buffer,
-                                          .start_frame      = start_frame,
-                                          .end_frame        = ff_null_end_frame },
-                                        { .name = NULL }},
+    .inputs    = avfilter_vf_settb_inputs,
 
-    .outputs   = (const AVFilterPad[]) {{ .name            = "default",
-                                          .type            = AVMEDIA_TYPE_VIDEO,
-                                          .config_props    = config_output_props, },
-                                        { .name = NULL}},
+    .outputs   = avfilter_vf_settb_outputs,
 };

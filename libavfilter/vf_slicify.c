@@ -106,6 +106,27 @@ static int draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
     return 0;
 }
 
+static const AVFilterPad avfilter_vf_slicify_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .get_video_buffer = ff_null_get_video_buffer,
+        .start_frame      = start_frame,
+        .draw_slice       = draw_slice,
+        .config_props     = config_props,
+        .end_frame        = ff_null_end_frame,
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_slicify_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_slicify = {
     .name      = "slicify",
     .description = NULL_IF_CONFIG_SMALL("Pass the images of input video on to next video filter as multiple slices."),
@@ -114,15 +135,6 @@ AVFilter avfilter_vf_slicify = {
 
     .priv_size = sizeof(SliceContext),
 
-    .inputs    = (const AVFilterPad[]) {{ .name             = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO,
-                                          .get_video_buffer = ff_null_get_video_buffer,
-                                          .start_frame      = start_frame,
-                                          .draw_slice       = draw_slice,
-                                          .config_props     = config_props,
-                                          .end_frame        = ff_null_end_frame, },
-                                        { .name = NULL}},
-    .outputs   = (const AVFilterPad[]) {{ .name            = "default",
-                                          .type            = AVMEDIA_TYPE_VIDEO, },
-                                        { .name = NULL}},
+    .inputs    = avfilter_vf_slicify_inputs,
+    .outputs   = avfilter_vf_slicify_outputs,
 };

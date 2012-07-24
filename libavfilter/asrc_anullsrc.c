@@ -84,6 +84,16 @@ static int request_frame(AVFilterLink *link)
     return -1;
 }
 
+static const AVFilterPad avfilter_asrc_anullsrc_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_AUDIO,
+        .config_props  = config_props,
+        .request_frame = request_frame,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_asrc_anullsrc = {
     .name        = "anullsrc",
     .description = NULL_IF_CONFIG_SMALL("Null audio source, never return audio frames."),
@@ -93,9 +103,5 @@ AVFilter avfilter_asrc_anullsrc = {
 
     .inputs      = NULL,
 
-    .outputs     = (const AVFilterPad[]) {{ .name = "default",
-                                            .type = AVMEDIA_TYPE_AUDIO,
-                                            .config_props = config_props,
-                                            .request_frame = request_frame, },
-                                          { .name = NULL}},
+    .outputs     = avfilter_asrc_anullsrc_outputs,
 };

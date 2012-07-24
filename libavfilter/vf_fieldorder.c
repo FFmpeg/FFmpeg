@@ -234,23 +234,35 @@ static int end_frame(AVFilterLink *inlink)
     return ff_end_frame(outlink);
 }
 
+static const AVFilterPad avfilter_vf_fieldorder_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .config_props     = config_input,
+        .start_frame      = start_frame,
+        .get_video_buffer = get_video_buffer,
+        .draw_slice       = draw_slice,
+        .end_frame        = end_frame,
+        .min_perms        = AV_PERM_READ,
+        .rej_perms        = AV_PERM_REUSE2 | AV_PERM_PRESERVE,
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_fieldorder_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_fieldorder = {
     .name          = "fieldorder",
     .description   = NULL_IF_CONFIG_SMALL("Set the field order."),
     .init          = init,
     .priv_size     = sizeof(FieldOrderContext),
     .query_formats = query_formats,
-    .inputs        = (const AVFilterPad[]) {{ .name             = "default",
-                                              .type             = AVMEDIA_TYPE_VIDEO,
-                                              .config_props     = config_input,
-                                              .start_frame      = start_frame,
-                                              .get_video_buffer = get_video_buffer,
-                                              .draw_slice       = draw_slice,
-                                              .end_frame        = end_frame,
-                                              .min_perms        = AV_PERM_READ,
-                                              .rej_perms        = AV_PERM_REUSE2|AV_PERM_PRESERVE,},
-                                            { .name = NULL}},
-    .outputs       = (const AVFilterPad[]) {{ .name             = "default",
-                                              .type             = AVMEDIA_TYPE_VIDEO, },
-                                            { .name = NULL}},
+    .inputs        = avfilter_vf_fieldorder_inputs,
+    .outputs       = avfilter_vf_fieldorder_outputs,
 };

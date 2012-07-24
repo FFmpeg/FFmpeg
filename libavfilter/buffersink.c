@@ -140,19 +140,36 @@ int av_buffersink_read_samples(AVFilterContext *ctx, AVFilterBufferRef **pbuf,
     return ret;
 }
 
+static const AVFilterPad avfilter_vsink_buffer_inputs[] = {
+    {
+        .name        = "default",
+        .type        = AVMEDIA_TYPE_VIDEO,
+        .start_frame = start_frame,
+        .min_perms   = AV_PERM_READ,
+        .needs_fifo  = 1
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vsink_buffer = {
     .name      = "buffersink",
     .description = NULL_IF_CONFIG_SMALL("Buffer video frames, and make them available to the end of the filter graph."),
     .priv_size = sizeof(BufferSinkContext),
     .uninit    = uninit,
 
-    .inputs    = (const AVFilterPad[]) {{ .name          = "default",
-                                          .type          = AVMEDIA_TYPE_VIDEO,
-                                          .start_frame   = start_frame,
-                                          .min_perms     = AV_PERM_READ,
-                                          .needs_fifo    = 1 },
-                                        { .name = NULL }},
+    .inputs    = avfilter_vsink_buffer_inputs,
     .outputs   = NULL,
+};
+
+static const AVFilterPad avfilter_asink_abuffer_inputs[] = {
+    {
+        .name           = "default",
+        .type           = AVMEDIA_TYPE_AUDIO,
+        .filter_samples = start_frame,
+        .min_perms      = AV_PERM_READ,
+        .needs_fifo     = 1
+    },
+    { NULL }
 };
 
 AVFilter avfilter_asink_abuffer = {
@@ -161,11 +178,6 @@ AVFilter avfilter_asink_abuffer = {
     .priv_size = sizeof(BufferSinkContext),
     .uninit    = uninit,
 
-    .inputs    = (const AVFilterPad[]) {{ .name           = "default",
-                                          .type           = AVMEDIA_TYPE_AUDIO,
-                                          .filter_samples = start_frame,
-                                          .min_perms      = AV_PERM_READ,
-                                          .needs_fifo     = 1 },
-                                        { .name = NULL }},
+    .inputs    = avfilter_asink_abuffer_inputs,
     .outputs   = NULL,
 };

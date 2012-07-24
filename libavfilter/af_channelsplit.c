@@ -136,6 +136,15 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
     return ret;
 }
 
+static const AVFilterPad avfilter_af_channelsplit_inputs[] = {
+    {
+        .name           = "default",
+        .type           = AVMEDIA_TYPE_AUDIO,
+        .filter_samples = filter_samples,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_af_channelsplit = {
     .name           = "channelsplit",
     .description    = NULL_IF_CONFIG_SMALL("Split audio into per-channel streams"),
@@ -144,9 +153,6 @@ AVFilter avfilter_af_channelsplit = {
     .init           = init,
     .query_formats  = query_formats,
 
-    .inputs  = (const AVFilterPad[]){{ .name           = "default",
-                                       .type           = AVMEDIA_TYPE_AUDIO,
-                                       .filter_samples = filter_samples, },
-                                     { NULL }},
+    .inputs  = avfilter_af_channelsplit_inputs,
     .outputs = NULL,
 };

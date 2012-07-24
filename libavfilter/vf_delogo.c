@@ -251,6 +251,28 @@ static int end_frame(AVFilterLink *inlink)
     return 0;
 }
 
+static const AVFilterPad avfilter_vf_delogo_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .get_video_buffer = ff_null_get_video_buffer,
+        .start_frame      = ff_inplace_start_frame,
+        .draw_slice       = null_draw_slice,
+        .end_frame        = end_frame,
+        .min_perms        = AV_PERM_WRITE | AV_PERM_READ,
+        .rej_perms        = AV_PERM_PRESERVE
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_delogo_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_delogo = {
     .name          = "delogo",
     .description   = NULL_IF_CONFIG_SMALL("Remove logo from input video."),
@@ -258,16 +280,6 @@ AVFilter avfilter_vf_delogo = {
     .init          = init,
     .query_formats = query_formats,
 
-    .inputs    = (const AVFilterPad[]) {{ .name             = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO,
-                                          .get_video_buffer = ff_null_get_video_buffer,
-                                          .start_frame      = ff_inplace_start_frame,
-                                          .draw_slice       = null_draw_slice,
-                                          .end_frame        = end_frame,
-                                          .min_perms        = AV_PERM_WRITE | AV_PERM_READ,
-                                          .rej_perms        = AV_PERM_PRESERVE },
-                                        { .name = NULL}},
-    .outputs   = (const AVFilterPad[]) {{ .name             = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO, },
-                                        { .name = NULL}},
+    .inputs    = avfilter_vf_delogo_inputs,
+    .outputs   = avfilter_vf_delogo_outputs,
 };

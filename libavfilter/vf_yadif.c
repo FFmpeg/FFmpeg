@@ -424,6 +424,29 @@ static int config_props(AVFilterLink *link)
     return 0;
 }
 
+static const AVFilterPad avfilter_vf_yadif_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .start_frame      = start_frame,
+        .get_video_buffer = get_video_buffer,
+        .draw_slice       = null_draw_slice,
+        .end_frame        = end_frame,
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_yadif_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .poll_frame    = poll_frame,
+        .request_frame = request_frame,
+        .config_props  = config_props,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_yadif = {
     .name          = "yadif",
     .description   = NULL_IF_CONFIG_SMALL("Deinterlace the input image"),
@@ -433,18 +456,7 @@ AVFilter avfilter_vf_yadif = {
     .uninit        = uninit,
     .query_formats = query_formats,
 
-    .inputs    = (const AVFilterPad[]) {{ .name             = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO,
-                                          .start_frame      = start_frame,
-                                          .get_video_buffer = get_video_buffer,
-                                          .draw_slice       = null_draw_slice,
-                                          .end_frame        = end_frame, },
-                                        { .name = NULL}},
+    .inputs    = avfilter_vf_yadif_inputs,
 
-    .outputs   = (const AVFilterPad[]) {{ .name             = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO,
-                                          .poll_frame       = poll_frame,
-                                          .request_frame    = request_frame,
-                                          .config_props     = config_props, },
-                                        { .name = NULL}},
+    .outputs   = avfilter_vf_yadif_outputs,
 };

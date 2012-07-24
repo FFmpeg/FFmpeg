@@ -182,6 +182,16 @@ fail:
     return ret;
 }
 
+static const AVFilterPad avfilter_vsrc_color_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = color_request_frame,
+        .config_props  = color_config_props
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vsrc_color = {
     .name        = "color",
     .description = NULL_IF_CONFIG_SMALL("Provide an uniformly colored input, syntax is: [color[:size[:rate]]]"),
@@ -194,9 +204,5 @@ AVFilter avfilter_vsrc_color = {
 
     .inputs    = NULL,
 
-    .outputs   = (const AVFilterPad[]) {{ .name            = "default",
-                                          .type            = AVMEDIA_TYPE_VIDEO,
-                                          .request_frame   = color_request_frame,
-                                          .config_props    = color_config_props },
-                                        { .name = NULL}},
+    .outputs   = avfilter_vsrc_color_outputs,
 };

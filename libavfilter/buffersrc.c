@@ -355,6 +355,17 @@ static int poll_frame(AVFilterLink *link)
     return size/sizeof(AVFilterBufferRef*);
 }
 
+static const AVFilterPad avfilter_vsrc_buffer_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+        .poll_frame    = poll_frame,
+        .config_props  = config_props,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vsrc_buffer = {
     .name      = "buffer",
     .description = NULL_IF_CONFIG_SMALL("Buffer video frames, and make them accessible to the filterchain."),
@@ -365,12 +376,18 @@ AVFilter avfilter_vsrc_buffer = {
     .uninit    = uninit,
 
     .inputs    = NULL,
-    .outputs   = (const AVFilterPad[]) {{ .name            = "default",
-                                          .type            = AVMEDIA_TYPE_VIDEO,
-                                          .request_frame   = request_frame,
-                                          .poll_frame      = poll_frame,
-                                          .config_props    = config_props, },
-                                        { .name = NULL}},
+    .outputs   = avfilter_vsrc_buffer_outputs,
+};
+
+static const AVFilterPad avfilter_asrc_abuffer_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_AUDIO,
+        .request_frame = request_frame,
+        .poll_frame    = poll_frame,
+        .config_props  = config_props,
+    },
+    { NULL }
 };
 
 AVFilter avfilter_asrc_abuffer = {
@@ -383,10 +400,5 @@ AVFilter avfilter_asrc_abuffer = {
     .uninit    = uninit,
 
     .inputs    = NULL,
-    .outputs   = (const AVFilterPad[]) {{ .name            = "default",
-                                          .type            = AVMEDIA_TYPE_AUDIO,
-                                          .request_frame   = request_frame,
-                                          .poll_frame      = poll_frame,
-                                          .config_props    = config_props, },
-                                        { .name = NULL}},
+    .outputs   = avfilter_asrc_abuffer_outputs,
 };

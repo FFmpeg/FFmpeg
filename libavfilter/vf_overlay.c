@@ -374,6 +374,42 @@ static int request_frame(AVFilterLink *outlink)
     return output_frame(ctx);
 }
 
+static const AVFilterPad avfilter_vf_overlay_inputs[] = {
+    {
+        .name         = "main",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .start_frame  = null_start_frame,
+        .config_props = config_input_main,
+        .draw_slice   = null_draw_slice,
+        .end_frame    = end_frame_main,
+        .min_perms    = AV_PERM_READ,
+        .rej_perms    = AV_PERM_REUSE2 | AV_PERM_PRESERVE,
+        .needs_fifo   = 1,
+    },
+    {
+        .name         = "overlay",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .start_frame  = null_start_frame,
+        .config_props = config_input_overlay,
+        .draw_slice   = null_draw_slice,
+        .end_frame    = end_frame_overlay,
+        .min_perms    = AV_PERM_READ,
+        .rej_perms    = AV_PERM_REUSE2,
+        .needs_fifo   = 1,
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_overlay_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .config_props  = config_output,
+        .request_frame = request_frame,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_overlay = {
     .name      = "overlay",
     .description = NULL_IF_CONFIG_SMALL("Overlay a video source on top of the input."),
@@ -385,28 +421,6 @@ AVFilter avfilter_vf_overlay = {
 
     .query_formats = query_formats,
 
-    .inputs    = (const AVFilterPad[]) {{ .name            = "main",
-                                          .type            = AVMEDIA_TYPE_VIDEO,
-                                          .start_frame     = null_start_frame,
-                                          .config_props    = config_input_main,
-                                          .draw_slice      = null_draw_slice,
-                                          .end_frame       = end_frame_main,
-                                          .min_perms       = AV_PERM_READ,
-                                          .rej_perms       = AV_PERM_REUSE2|AV_PERM_PRESERVE,
-                                          .needs_fifo      = 1, },
-                                        { .name            = "overlay",
-                                          .type            = AVMEDIA_TYPE_VIDEO,
-                                          .start_frame     = null_start_frame,
-                                          .config_props    = config_input_overlay,
-                                          .draw_slice      = null_draw_slice,
-                                          .end_frame       = end_frame_overlay,
-                                          .min_perms       = AV_PERM_READ,
-                                          .rej_perms       = AV_PERM_REUSE2,
-                                          .needs_fifo      = 1, },
-                                        { .name = NULL}},
-    .outputs   = (const AVFilterPad[]) {{ .name            = "default",
-                                          .type            = AVMEDIA_TYPE_VIDEO,
-                                          .config_props    = config_output,
-                                          .request_frame   = request_frame, },
-                                        { .name = NULL}},
+    .inputs    = avfilter_vf_overlay_inputs,
+    .outputs   = avfilter_vf_overlay_outputs,
 };

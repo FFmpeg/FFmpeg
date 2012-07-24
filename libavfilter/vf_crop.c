@@ -326,6 +326,28 @@ static int end_frame(AVFilterLink *link)
     return ff_end_frame(link->dst->outputs[0]);
 }
 
+static const AVFilterPad avfilter_vf_crop_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .start_frame      = start_frame,
+        .draw_slice       = draw_slice,
+        .end_frame        = end_frame,
+        .get_video_buffer = ff_null_get_video_buffer,
+        .config_props     = config_input,
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_crop_outputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_output,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_crop = {
     .name      = "crop",
     .description = NULL_IF_CONFIG_SMALL("Crop the input video to width:height:x:y."),
@@ -336,16 +358,6 @@ AVFilter avfilter_vf_crop = {
     .init          = init,
     .uninit        = uninit,
 
-    .inputs    = (const AVFilterPad[]) {{ .name             = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO,
-                                          .start_frame      = start_frame,
-                                          .draw_slice       = draw_slice,
-                                          .end_frame        = end_frame,
-                                          .get_video_buffer = ff_null_get_video_buffer,
-                                          .config_props     = config_input, },
-                                        { .name = NULL}},
-    .outputs   = (const AVFilterPad[]) {{ .name             = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO,
-                                          .config_props     = config_output, },
-                                        { .name = NULL}},
+    .inputs    = avfilter_vf_crop_inputs,
+    .outputs   = avfilter_vf_crop_outputs,
 };

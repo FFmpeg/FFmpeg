@@ -485,6 +485,16 @@ fail:
     return AVERROR(ENOMEM);
 }
 
+static const AVFilterPad avfilter_af_join_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_AUDIO,
+        .config_props  = join_config_output,
+        .request_frame = join_request_frame,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_af_join = {
     .name           = "join",
     .description    = NULL_IF_CONFIG_SMALL("Join multiple audio streams into "
@@ -496,9 +506,5 @@ AVFilter avfilter_af_join = {
     .query_formats  = join_query_formats,
 
     .inputs  = NULL,
-    .outputs = (const AVFilterPad[]){{ .name          = "default",
-                                       .type          = AVMEDIA_TYPE_AUDIO,
-                                       .config_props  = join_config_output,
-                                       .request_frame = join_request_frame, },
-                                     { NULL }},
+    .outputs = avfilter_af_join_outputs,
 };

@@ -386,6 +386,24 @@ static int channelmap_config_input(AVFilterLink *inlink)
     return err;
 }
 
+static const AVFilterPad avfilter_af_channelmap_inputs[] = {
+    {
+        .name           = "default",
+        .type           = AVMEDIA_TYPE_AUDIO,
+        .filter_samples = channelmap_filter_samples,
+        .config_props   = channelmap_config_input
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_af_channelmap_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_AUDIO
+    },
+    { NULL }
+};
+
 AVFilter avfilter_af_channelmap = {
     .name          = "channelmap",
     .description   = NULL_IF_CONFIG_SMALL("Remap audio channels."),
@@ -393,12 +411,6 @@ AVFilter avfilter_af_channelmap = {
     .query_formats = channelmap_query_formats,
     .priv_size     = sizeof(ChannelMapContext),
 
-    .inputs        = (const AVFilterPad[]) {{ .name            = "default",
-                                              .type            = AVMEDIA_TYPE_AUDIO,
-                                              .filter_samples  = channelmap_filter_samples,
-                                              .config_props    = channelmap_config_input },
-                                            { .name = NULL }},
-    .outputs       = (const AVFilterPad[]) {{ .name            = "default",
-                                              .type            = AVMEDIA_TYPE_AUDIO },
-                                            { .name = NULL }},
+    .inputs        = avfilter_af_channelmap_inputs,
+    .outputs       = avfilter_af_channelmap_outputs,
 };

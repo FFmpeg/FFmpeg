@@ -309,6 +309,16 @@ fail:
     return ret;
 }
 
+static const AVFilterPad avfilter_vsrc_movie_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+        .config_props  = config_output_props,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vsrc_movie = {
     .name          = "movie",
     .description   = NULL_IF_CONFIG_SMALL("Read from a movie source."),
@@ -318,9 +328,5 @@ AVFilter avfilter_vsrc_movie = {
     .query_formats = query_formats,
 
     .inputs    = NULL,
-    .outputs   = (const AVFilterPad[]) {{ .name            = "default",
-                                          .type            = AVMEDIA_TYPE_VIDEO,
-                                          .request_frame   = request_frame,
-                                          .config_props    = config_output_props, },
-                                        { .name = NULL}},
+    .outputs   = avfilter_vsrc_movie_outputs,
 };

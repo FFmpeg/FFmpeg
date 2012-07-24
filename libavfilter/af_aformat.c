@@ -132,6 +132,22 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
+static const AVFilterPad avfilter_af_aformat_inputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_AUDIO,
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_af_aformat_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_AUDIO
+    },
+    { NULL }
+};
+
 AVFilter avfilter_af_aformat = {
     .name          = "aformat",
     .description   = NULL_IF_CONFIG_SMALL("Convert the input audio to one of the specified formats."),
@@ -139,10 +155,6 @@ AVFilter avfilter_af_aformat = {
     .query_formats = query_formats,
     .priv_size     = sizeof(AFormatContext),
 
-    .inputs        = (const AVFilterPad[]) {{ .name            = "default",
-                                              .type            = AVMEDIA_TYPE_AUDIO, },
-                                            { .name = NULL}},
-    .outputs       = (const AVFilterPad[]) {{ .name            = "default",
-                                              .type            = AVMEDIA_TYPE_AUDIO},
-                                            { .name = NULL}},
+    .inputs        = avfilter_af_aformat_inputs,
+    .outputs       = avfilter_af_aformat_outputs,
 };
