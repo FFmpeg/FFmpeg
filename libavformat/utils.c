@@ -942,10 +942,6 @@ static void update_initial_durations(AVFormatContext *s, AVStream *st,
     AVPacketList *pktl= s->parse_queue ? s->parse_queue : s->packet_buffer;
     int64_t cur_dts= RELATIVE_TS_BASE;
 
-    if (st->skip_samples && st->codec->sample_rate && st->time_base.num)
-        cur_dts -= av_rescale_q(st->skip_samples,
-                                (AVRational){ 1, st->codec->sample_rate },
-                                st->time_base);
     if(st->first_dts != AV_NOPTS_VALUE){
         cur_dts= st->first_dts;
         for(; pktl; pktl= get_next_pkt(s, st, pktl)){
