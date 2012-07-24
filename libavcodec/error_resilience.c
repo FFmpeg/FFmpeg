@@ -1075,8 +1075,8 @@ void ff_er_frame_end(MpegEncContext *s)
         if (error & ER_MV_ERROR)
             mv_error++;
     }
-    av_log(s->avctx, AV_LOG_INFO, "concealing %d DC, %d AC, %d MV errors\n",
-           dc_error, ac_error, mv_error);
+    av_log(s->avctx, AV_LOG_INFO, "concealing %d DC, %d AC, %d MV errors in %c frame\n",
+           dc_error, ac_error, mv_error, av_get_picture_type_char(s->pict_type));
 
     is_intra_likely = is_intra_more_likely(s);
 
