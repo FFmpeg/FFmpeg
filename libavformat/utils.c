@@ -1383,6 +1383,7 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
     const int genpts = s->flags & AVFMT_FLAG_GENPTS;
     int          eof = 0;
     int ret;
+    AVStream *st;
 
     if (!genpts) {
         ret = s->packet_buffer ? read_from_packet_buffer(&s->packet_buffer,
@@ -1452,11 +1453,12 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
 
 return_packet:
 
-    if(s->streams[pkt->stream_index]->skip_samples) {
+    st = s->streams[pkt->stream_index];
+    if (st->skip_samples) {
         uint8_t *p = av_packet_new_side_data(pkt, AV_PKT_DATA_SKIP_SAMPLES, 10);
-        AV_WL32(p, s->streams[pkt->stream_index]->skip_samples);
-        av_log(s, AV_LOG_DEBUG, "demuxer injecting skip %d\n", s->streams[pkt->stream_index]->skip_samples);
-        s->streams[pkt->stream_index]->skip_samples = 0;
+        AV_WL32(p, st->skip_samples);
+        av_log(s, AV_LOG_DEBUG, "demuxer injecting skip %d\n", st->skip_samples);
+        st->skip_samples = 0;
     }
 
     if (is_relative(pkt->dts))
