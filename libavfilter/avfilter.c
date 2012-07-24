@@ -222,7 +222,7 @@ void ff_dlog_link(void *ctx, AVFilterLink *link, int end)
         av_get_channel_layout_string(buf, sizeof(buf), -1, link->channel_layout);
 
         av_dlog(ctx,
-                "link[%p r:%"PRId64" cl:%s fmt:%-16s %-16s->%-16s]%s",
+                "link[%p r:%d cl:%s fmt:%-16s %-16s->%-16s]%s",
                 link, link->sample_rate, buf,
                 av_get_sample_fmt_name(link->format),
                 link->src ? link->src->filter->name : "",
