@@ -1595,7 +1595,8 @@ static void show_packet(WriterContext *w, AVFormatContext *fmt_ctx, AVPacket *pk
     fflush(stdout);
 }
 
-static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream)
+static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
+                       AVFormatContext *fmt_ctx)
 {
     AVBPrint pbuf;
     const char *s;
@@ -1618,14 +1619,17 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream)
     else                      print_str_opt("pkt_pos", "N/A");
 
     switch (stream->codec->codec_type) {
+        AVRational sar;
+
     case AVMEDIA_TYPE_VIDEO:
         print_int("width",                  frame->width);
         print_int("height",                 frame->height);
         s = av_get_pix_fmt_name(frame->format);
         if (s) print_str    ("pix_fmt", s);
         else   print_str_opt("pix_fmt", "unknown");
-        if (frame->sample_aspect_ratio.num) {
-            print_q("sample_aspect_ratio", frame->sample_aspect_ratio, ':');
+        sar = av_guess_sample_aspect_ratio(fmt_ctx, stream, frame);
+        if (sar.num) {
+            print_q("sample_aspect_ratio", sar, ':');
         } else {
             print_str_opt("sample_aspect_ratio", "N/A");
         }
@@ -1698,7 +1702,7 @@ static void read_packets(WriterContext *w, AVFormatContext *fmt_ctx)
                 if (ret < 0 || !got_frame)
                     break;
                 if (do_show_frames)
-                    show_frame(w, &frame, fmt_ctx->streams[pkt.stream_index]);
+                    show_frame(w, &frame, fmt_ctx->streams[pkt.stream_index], fmt_ctx);
                 pkt1.data += ret;
                 pkt1.size -= ret;
                 nb_streams_frames[pkt.stream_index]++;
@@ -1715,7 +1719,7 @@ static void read_packets(WriterContext *w, AVFormatContext *fmt_ctx)
         while (get_decoded_frame(fmt_ctx, &frame, &got_frame, &pkt) >= 0 && got_frame) {
             if (do_read_frames) {
                 if (do_show_frames)
-                    show_frame(w, &frame, fmt_ctx->streams[pkt.stream_index]);
+                    show_frame(w, &frame, fmt_ctx->streams[pkt.stream_index], fmt_ctx);
                 nb_streams_frames[pkt.stream_index]++;
             }
         }
@@ -1729,7 +1733,7 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
     AVCodec *dec;
     char val_str[128];
     const char *s;
-    AVRational display_aspect_ratio;
+    AVRational sar, dar;
     AVBPrint pbuf;
 
     av_bprint_init(&pbuf, 1, AV_BPRINT_SIZE_UNLIMITED);
@@ -1768,13 +1772,14 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
             print_int("width",        dec_ctx->width);
             print_int("height",       dec_ctx->height);
             print_int("has_b_frames", dec_ctx->has_b_frames);
-            if (dec_ctx->sample_aspect_ratio.num) {
-                print_q("sample_aspect_ratio", dec_ctx->sample_aspect_ratio, ':');
-                av_reduce(&display_aspect_ratio.num, &display_aspect_ratio.den,
-                          dec_ctx->width  * dec_ctx->sample_aspect_ratio.num,
-                          dec_ctx->height * dec_ctx->sample_aspect_ratio.den,
+            sar = av_guess_sample_aspect_ratio(fmt_ctx, stream, NULL);
+            if (sar.den) {
+                print_q("sample_aspect_ratio", sar, ':');
+                av_reduce(&dar.num, &dar.den,
+                          dec_ctx->width  * sar.num,
+                          dec_ctx->height * sar.den,
                           1024*1024);
-                print_q("display_aspect_ratio", display_aspect_ratio, ':');
+                print_q("display_aspect_ratio", dar, ':');
             } else {
                 print_str_opt("sample_aspect_ratio", "N/A");
                 print_str_opt("display_aspect_ratio", "N/A");
