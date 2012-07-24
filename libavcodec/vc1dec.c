@@ -5630,7 +5630,8 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                 get_bits_count(&s->gb), s->gb.size_in_bits);
 //  if (get_bits_count(&s->gb) > buf_size * 8)
 //      return -1;
-        ff_er_frame_end(&s->er);
+        if (!v->field_mode)
+            ff_er_frame_end(&s->er);
     }
 
     ff_MPV_frame_end(s);
