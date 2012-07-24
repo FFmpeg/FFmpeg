@@ -1,5 +1,7 @@
 /*
  * RTMPE network protocol
+ * Copyright (c) 2008-2009 Andrej Stepanchuk
+ * Copyright (c) 2009-2010 Howard Chu
  * Copyright (c) 2012 Samuel Pitoiset
  *
  * This file is part of Libav.
