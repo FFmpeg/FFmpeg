@@ -1072,9 +1072,10 @@ static int mov_write_video_tag(AVIOContext *pb, MOVTrack *track)
         mov_write_d263_tag(pb);
     else if(track->enc->codec_id == CODEC_ID_SVQ3)
         mov_write_svq3_tag(pb);
-    else if(track->enc->codec_id == CODEC_ID_AVUI)
+    else if(track->enc->codec_id == CODEC_ID_AVUI) {
         mov_write_extradata_tag(pb, track);
-    else if(track->enc->codec_id == CODEC_ID_DNXHD)
+        avio_wb32(pb, 0);
+    } else if(track->enc->codec_id == CODEC_ID_DNXHD)
         mov_write_avid_tag(pb, track);
     else if(track->enc->codec_id == CODEC_ID_H264) {
         mov_write_avcc_tag(pb, track);

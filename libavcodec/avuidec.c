@@ -21,6 +21,7 @@
  */
 
 #include "avcodec.h"
+#include "libavutil/intreadwrite.h"
 
 static av_cold int avui_decode_init(AVCodecContext *avctx)
 {
@@ -40,17 +41,28 @@ static int avui_decode_frame(AVCodecContext *avctx, void *data,
                              int *data_size, AVPacket *avpkt)
 {
     AVFrame *pic = avctx->coded_frame;
-    const uint8_t *src = avpkt->data;
+    const uint8_t *src = avpkt->data, *extradata = avctx->extradata;
     const uint8_t *srca;
     uint8_t *y, *u, *v, *a;
     int transparent, interlaced = 1, skip, opaque_length, i, j, k;
+    uint32_t extradata_size = avctx->extradata_size;
 
     if (pic->data[0])
         avctx->release_buffer(avctx, pic);
 
-    if (avctx->extradata_size >= 24 &&
-        !memcmp(&avctx->extradata[4], "APRGAPRG0001", 12))
-        interlaced = avctx->extradata[19] != 1;
+    while (extradata_size >= 24) {
+        uint32_t atom_size = AV_RB32(extradata);
+        if (!memcmp(&extradata[4], "APRGAPRG0001", 12)) {
+            interlaced = extradata[19] != 1;
+            break;
+        }
+        if (atom_size && atom_size <= extradata_size) {
+            extradata      += atom_size;
+            extradata_size -= atom_size;
+        } else {
+            break;
+        }
+    }
     if (avctx->height == 486) {
         skip = 10;
     } else {

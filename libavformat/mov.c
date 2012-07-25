@@ -939,7 +939,7 @@ static int mov_read_jp2h(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return mov_read_extradata(c, pb, atom, CODEC_ID_JPEG2000);
 }
 
-static int mov_read_aprg(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+static int mov_read_avid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     return mov_read_extradata(c, pb, atom, CODEC_ID_AVUI);
 }
@@ -2548,7 +2548,9 @@ static int mov_read_tref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 }
 
 static const MOVParseTableEntry mov_default_parse_table[] = {
-{ MKTAG('A','P','R','G'), mov_read_aprg },
+{ MKTAG('A','C','L','R'), mov_read_avid },
+{ MKTAG('A','P','R','G'), mov_read_avid },
+{ MKTAG('A','R','E','S'), mov_read_avid },
 { MKTAG('a','v','s','s'), mov_read_avss },
 { MKTAG('c','h','p','l'), mov_read_chpl },
 { MKTAG('c','o','6','4'), mov_read_stco },
