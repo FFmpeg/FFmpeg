@@ -889,7 +889,7 @@ static int handle_chunk_size(URLContext *s, RTMPPacket *pkt)
         av_log(s, AV_LOG_ERROR,
                "Chunk size change packet is not 4 bytes long (%d)\n",
                pkt->data_size);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (!rt->is_input) {
@@ -901,7 +901,7 @@ static int handle_chunk_size(URLContext *s, RTMPPacket *pkt)
     rt->chunk_size = AV_RB32(pkt->data);
     if (rt->chunk_size <= 0) {
         av_log(s, AV_LOG_ERROR, "Incorrect chunk size %d\n", rt->chunk_size);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     av_log(s, AV_LOG_DEBUG, "New chunk size = %d\n", rt->chunk_size);
 
