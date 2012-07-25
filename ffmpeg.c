@@ -703,6 +703,8 @@ static void do_subtitle_out(AVFormatContext *s,
         sub->pts               += av_rescale_q(sub->start_display_time, (AVRational){ 1, 1000 }, AV_TIME_BASE_Q);
         sub->end_display_time  -= sub->start_display_time;
         sub->start_display_time = 0;
+        if (i == 1)
+            sub->num_rects = 0;
         subtitle_out_size = avcodec_encode_subtitle(enc, subtitle_out,
                                                     subtitle_out_max_size, sub);
         if (subtitle_out_size < 0) {
