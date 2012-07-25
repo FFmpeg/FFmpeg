@@ -188,9 +188,9 @@ static int mm_decode_frame(AVCodecContext *avctx,
     buf_size -= MM_PREAMBLE_SIZE;
     bytestream2_init(&s->gb, buf, buf_size);
 
-    if (avctx->reget_buffer(avctx, &s->frame) < 0) {
+    if ((res = avctx->reget_buffer(avctx, &s->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
-        return -1;
+        return res;
     }
 
     switch(type) {
