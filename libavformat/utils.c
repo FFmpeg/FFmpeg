@@ -680,11 +680,15 @@ static void probe_codec(AVFormatContext *s, AVStream *st, const AVPacket *pkt)
         --st->probe_packets;
 
         if (pkt) {
-            pd->buf = av_realloc(pd->buf, pd->buf_size+pkt->size+AVPROBE_PADDING_SIZE);
+            uint8_t *new_buf = av_realloc(pd->buf, pd->buf_size+pkt->size+AVPROBE_PADDING_SIZE);
+            if(!new_buf)
+                goto no_packet;
+            pd->buf = new_buf;
             memcpy(pd->buf+pd->buf_size, pkt->data, pkt->size);
             pd->buf_size += pkt->size;
             memset(pd->buf+pd->buf_size, 0, AVPROBE_PADDING_SIZE);
         } else {
+no_packet:
             st->probe_packets = 0;
         }
 
