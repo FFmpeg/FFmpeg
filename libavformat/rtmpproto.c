@@ -930,7 +930,7 @@ static int handle_client_bw(URLContext *s, RTMPPacket *pkt)
         av_log(s, AV_LOG_ERROR,
                "Client bandwidth report packet is less than 4 bytes long (%d)\n",
                pkt->data_size);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     av_log(s, AV_LOG_DEBUG, "Client bandwidth = %d\n", AV_RB32(pkt->data));
     rt->client_report_size = AV_RB32(pkt->data) >> 1;
