@@ -49,9 +49,12 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
 
     av_url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname),
         &port, path, sizeof(path), uri);
-    if (strcmp(proto,"tcp") || port <= 0 || port >= 65536)
+    if (strcmp(proto, "tcp"))
         return AVERROR(EINVAL);
-
+    if (port <= 0 || port >= 65536) {
+        av_log(h, AV_LOG_ERROR, "Port missing in uri\n");
+        return AVERROR(EINVAL);
+    }
     p = strchr(uri, '?');
     if (p) {
         if (av_find_info_tag(buf, sizeof(buf), "listen", p))
