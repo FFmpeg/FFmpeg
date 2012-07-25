@@ -529,6 +529,11 @@ static int hls_read_header(AVFormatContext *s)
         ret = avformat_open_input(&v->ctx, v->segments[0]->url, in_fmt, NULL);
         if (ret < 0)
             goto fail;
+
+        v->ctx->ctx_flags &= ~AVFMTCTX_NOHEADER;
+        ret = avformat_find_stream_info(v->ctx, NULL);
+        if (ret < 0)
+            goto fail;
         snprintf(bitrate_str, sizeof(bitrate_str), "%d", v->bandwidth);
 
         program = av_new_program(s, i);
