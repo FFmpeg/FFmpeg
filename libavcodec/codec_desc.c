@@ -1315,6 +1315,12 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "cpia",
         .long_name = NULL_IF_CONFIG_SMALL("CPiA video format"),
     },
+    {
+        .id        = AV_CODEC_ID_XFACE,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "xface",
+        .long_name = NULL_IF_CONFIG_SMALL("X-face image"),
+    },
 
     /* various PCM "codecs" */
     {

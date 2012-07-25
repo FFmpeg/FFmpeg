@@ -11,6 +11,7 @@ version next:
 - TAK demuxer, decoder and parser
 - DTS-HD demuxer
 - remove -same_quant, it hasn't worked for years
+- X-Face image encoder and decoder
 
 
 version 1.0:

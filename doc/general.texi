@@ -441,6 +441,8 @@ following image formats are supported:
     @tab Targa (.TGA) image format
 @item XBM  @tab X @tab X
     @tab X BitMap image format
+@item XFace @tab X @tab X
+    @tab X-Face image format
 @item XWD  @tab X @tab X
     @tab X Window Dump image format
 @end multitable
