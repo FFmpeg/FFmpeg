@@ -318,6 +318,22 @@ specifying the exact format.
 aconvert=s16:stereo:packed
 @end example
 
+@section Why does FFmpeg not see the subtitles in my VOB file?
+
+VOB and a few other formats do not have a global header that describes
+everything present in the file. Instead, applications are supposed to scan
+the file to see what it contains. Since VOB files are frequently large, only
+the beginning is scanned. If the subtitles happen only later in the file,
+they will not be initally detected.
+
+Some applications, including the @code{ffmpeg} command-line tool, can only
+work with streams that were detected during the initial scan; streams that
+are detected later are ignored.
+
+The size of the initial scan is controlled by two options: @code{probesize}
+(default ~5 Mo) and @code{analyzeduration} (default 5,000,000 µs = 5 s). For
+the subtitle stream to be detected, both values must be large enough.
+
 @chapter Development
 
 @section Are there examples illustrating how to use the FFmpeg libraries, particularly libavcodec and libavformat?
