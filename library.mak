@@ -17,7 +17,7 @@ $(SUBDIR)%-test.o: $(SUBDIR)%.c
 	$(COMPILE_C)
 
 $(SUBDIR)x86/%.o: $(SUBDIR)x86/%.asm
-	$(YASMDEP) $(YASMFLAGS) -I $(<D)/ -M -o $@ $< > $(@:.o=.d)
+	$(DEPYASM) $(YASMFLAGS) -I $(<D)/ -M -o $@ $< > $(@:.o=.d)
 	$(YASM) $(YASMFLAGS) -I $(<D)/ -o $@ $<
 
 $(OBJS) $(SUBDIR)%.ho $(TESTOBJS): CPPFLAGS += -DHAVE_AV_CONFIG_H
