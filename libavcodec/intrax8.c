@@ -21,6 +21,7 @@
  * @brief IntraX8 (J-Frame) subdecoder, used by WMV2 and VC-1
  */
 
+#include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "mpegvideo.h"
@@ -124,13 +125,13 @@ static inline void x8_select_ac_table(IntraX8Context * const w , int mode){
     MpegEncContext * const s= w->s;
     int table_index;
 
-    assert(mode<4);
+    av_assert2(mode<4);
 
     if( w->j_ac_vlc[mode] ) return;
 
     table_index = get_bits(&s->gb, 3);
     w->j_ac_vlc[mode] = &j_ac_vlc[w->quant<13][mode>>1][table_index];//2 modes use same tables
-    assert(w->j_ac_vlc[mode]);
+    av_assert2(w->j_ac_vlc[mode]);
 }
 
 static inline int x8_get_orient_vlc(IntraX8Context * w){
@@ -141,8 +142,6 @@ static inline int x8_get_orient_vlc(IntraX8Context * w){
         table_index = get_bits(&s->gb, 1+(w->quant<13) );
         w->j_orient_vlc = &j_orient_vlc[w->quant<13][table_index];
     }
-    assert(w->j_orient_vlc);
-    assert(w->j_orient_vlc->table);
 
     return get_vlc2(&s->gb, w->j_orient_vlc->table, OR_VLC_BITS, OR_VLC_MTD);
 }
@@ -264,15 +263,13 @@ static int x8_get_dc_rlf(IntraX8Context * const w,int const mode, int * const le
     MpegEncContext * const s= w->s;
     int i,e,c;
 
-    assert(mode<3);
+    av_assert2(mode<3);
     if( !w->j_dc_vlc[mode] ) {
         int table_index;
         table_index = get_bits(&s->gb, 3);
         //4 modes, same table
         w->j_dc_vlc[mode]= &j_dc_vlc[w->quant<13][table_index];
     }
-    assert(w->j_dc_vlc);
-    assert(w->j_dc_vlc[mode]->table);
 
     i=get_vlc2(&s->gb, w->j_dc_vlc[mode]->table, DC_VLC_BITS, DC_VLC_MTD);
 
@@ -325,7 +322,7 @@ static int x8_setup_spatial_predictor(IntraX8Context * const w, const int chroma
     if(chroma)
         return 0;
 
-    assert(w->orient < 3);
+    av_assert2(w->orient < 3);
     if(range < 2*w->quant){
         if( (w->edges&3) == 0){
             if(w->orient==1) w->orient=11;
@@ -342,8 +339,8 @@ static int x8_setup_spatial_predictor(IntraX8Context * const w, const int chroma
         };
         w->raw_orient=x8_get_orient_vlc(w);
         if(w->raw_orient<0) return -1;
-        assert(w->raw_orient < 12 );
-        assert(w->orient<3);
+        av_assert2(w->raw_orient < 12 );
+        av_assert2(w->orient<3);
         w->orient=prediction_table[w->orient][w->raw_orient];
     }
     return 0;
@@ -535,7 +532,7 @@ static int x8_decode_intra_mb(IntraX8Context* const w, const int chroma){
     int use_quant_matrix;
     int sign;
 
-    assert(w->orient<12);
+    av_assert2(w->orient<12);
     s->dsp.clear_block(s->block[0]);
 
     if(chroma){
@@ -693,7 +690,7 @@ av_cold void ff_intrax8_common_init(IntraX8Context * w, MpegEncContext * const s
 
     w->s=s;
     x8_vlc_init();
-    assert(s->mb_width>0);
+    av_assert0(s->mb_width>0);
     w->prediction_table=av_mallocz(s->mb_width*2*2);//two rows, 2 blocks per cannon mb
 
     ff_init_scantable(s->dsp.idct_permutation, &w->scantable[0], ff_wmv1_scantable[0]);
@@ -725,7 +722,6 @@ av_cold void ff_intrax8_common_end(IntraX8Context * w)
 int ff_intrax8_decode_picture(IntraX8Context * const w, int dquant, int quant_offset){
     MpegEncContext * const s= w->s;
     int mb_xy;
-    assert(s);
     w->use_quant_matrix = get_bits1(&s->gb);
 
     w->dquant = dquant;
