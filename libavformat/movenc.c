@@ -859,6 +859,7 @@ static const struct {
     uint32_t tag;
     unsigned bps;
 } mov_pix_fmt_tags[] = {
+    { PIX_FMT_YUYV422, MKTAG('y','u','v','2'),  0 },
     { PIX_FMT_YUYV422, MKTAG('y','u','v','s'),  0 },
     { PIX_FMT_UYVY422, MKTAG('2','v','u','y'),  0 },
     { PIX_FMT_RGB555BE,MKTAG('r','a','w',' '), 16 },
@@ -881,7 +882,7 @@ static int mov_get_rawvideo_codec_tag(AVFormatContext *s, MOVTrack *track)
     int i;
 
     for (i = 0; i < FF_ARRAY_ELEMS(mov_pix_fmt_tags); i++) {
-        if (track->enc->pix_fmt == mov_pix_fmt_tags[i].pix_fmt) {
+        if (track->enc->codec_tag == mov_pix_fmt_tags[i].tag && track->enc->pix_fmt == mov_pix_fmt_tags[i].pix_fmt) {
             tag = mov_pix_fmt_tags[i].tag;
             track->enc->bits_per_coded_sample = mov_pix_fmt_tags[i].bps;
             break;
