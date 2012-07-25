@@ -175,7 +175,12 @@ cglobal mix_1_to_2_fltp_flt, 3,5,4, src0, matrix0, len, src1, matrix1
     add       src0q, mmsize
     sub        lend, mmsize/4
     jg .loop
+%if mmsize == 32
+    vzeroupper
+    RET
+%else
     REP_RET
+%endif
 %endmacro
 
 INIT_XMM sse
