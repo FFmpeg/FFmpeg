@@ -239,6 +239,7 @@ static int start_frame_overlay(AVFilterLink *inlink, AVFilterBufferRef *inpicref
     OverlayContext *over = ctx->priv;
 
     inlink->cur_buf  = NULL;
+    avfilter_unref_bufferp(&over->overpicref);
     over->overpicref = inpicref;
     over->overpicref->pts = av_rescale_q(inpicref->pts, ctx->inputs[OVERLAY]->time_base,
                                          ctx->outputs[0]->time_base);
