@@ -2494,7 +2494,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     AVPacket pkt1, *pkt;
     int64_t old_offset = avio_tell(ic->pb);
     int orig_nb_streams = ic->nb_streams;        // new streams might appear, no options for those
-    int flush_codecs = 1;
+    int flush_codecs = ic->probesize > 0;
 
     if(ic->pb)
         av_log(ic, AV_LOG_DEBUG, "File position before avformat_find_stream_info() is %"PRId64"\n", avio_tell(ic->pb));
@@ -2820,6 +2820,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         }
     }
 
+    if(ic->probesize)
     estimate_timings(ic, old_offset);
 
     compute_chapters_end(ic);
