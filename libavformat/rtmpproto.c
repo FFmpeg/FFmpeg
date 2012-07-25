@@ -946,7 +946,7 @@ static int handle_server_bw(URLContext *s, RTMPPacket *pkt)
     if (rt->server_bw <= 0) {
         av_log(s, AV_LOG_ERROR, "Incorrect server bandwidth %d\n",
                rt->server_bw);
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
     }
     av_log(s, AV_LOG_DEBUG, "Server bandwidth = %d\n", rt->server_bw);
 
