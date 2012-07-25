@@ -34,4 +34,13 @@ fate-filter-delogo: CMD = framecrc -i $(SAMPLES)/real/rv30.rm -vf delogo=show=0:
 FATE_FILTER += fate-filter-delogo
 FATE_SAMPLES_AVCONV += fate-filter-delogo
 
+FATE_YADIF += fate-filter-yadif-mode0
+fate-filter-yadif-mode0: CMD = framecrc -i $(SAMPLES)/mpeg2/mpeg2_field_encoding.ts -vf yadif=0
+
+FATE_YADIF += fate-filter-yadif-mode1
+fate-filter-yadif-mode1: CMD = framecrc -i $(SAMPLES)/mpeg2/mpeg2_field_encoding.ts -vf yadif=1
+
+FATE_FILTER += $(FATE_YADIF)
+FATE_SAMPLES_AVCONV += $(FATE_YADIF)
+
 fate-filter: $(FATE_FILTER)
