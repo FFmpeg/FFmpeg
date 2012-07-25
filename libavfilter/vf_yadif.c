@@ -221,6 +221,7 @@ static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     yadif->prev = yadif->cur;
     yadif->cur  = yadif->next;
     yadif->next = picref;
+    link->cur_buf = NULL;
 
     if (!yadif->cur)
         return 0;
