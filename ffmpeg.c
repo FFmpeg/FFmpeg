@@ -267,6 +267,7 @@ typedef struct InputFile {
     int64_t ts_offset;
     int nb_streams;       /* number of stream that ffmpeg is aware of; may be different
                              from ctx.nb_streams if new streams appear during av_read_frame() */
+    int nb_streams_warn;  /* number of streams that the user was warned of */
     int rate_emu;
 
 #if HAVE_PTHREADS
@@ -2873,6 +2874,21 @@ static void parse_forced_key_frames(char *kf, OutputStream *ost,
     }
 }
 
+static void report_new_stream(int input_index, AVPacket *pkt)
+{
+    InputFile *file = input_files[input_index];
+    AVStream *st = file->ctx->streams[pkt->stream_index];
+
+    if (pkt->stream_index < file->nb_streams_warn)
+        return;
+    av_log(file->ctx, AV_LOG_WARNING,
+           "New %s stream %d:%d at pos:%"PRId64" and DTS:%ss\n",
+           av_get_media_type_string(st->codec->codec_type),
+           input_index, pkt->stream_index,
+           pkt->pos, av_ts2timestr(pkt->dts, &st->time_base));
+    file->nb_streams_warn = pkt->stream_index + 1;
+}
+
 static int transcode_init(void)
 {
     int ret = 0, i, j, k;
@@ -3732,8 +3748,10 @@ static int transcode(void)
         }
         /* the following test is needed in case new streams appear
            dynamically in stream : we ignore them */
-        if (pkt.stream_index >= input_files[file_index]->nb_streams)
+        if (pkt.stream_index >= input_files[file_index]->nb_streams) {
+            report_new_stream(file_index, &pkt);
             goto discard_packet;
+        }
         ist_index = input_files[file_index]->ist_index + pkt.stream_index;
         ist = input_streams[ist_index];
         if (ist->discard)
