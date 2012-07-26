@@ -35,9 +35,8 @@
 #include "h264data.h" // FIXME FIXME FIXME
 #include "h264_mvpred.h"
 #include "golomb.h"
+#include "libavutil/avassert.h"
 
-//#undef NDEBUG
-#include <assert.h>
 
 static const uint8_t golomb_to_inter_cbp_gray[16]={
  0, 1, 2, 4, 8, 3, 5,10,12,15, 7,11,13,14, 6, 9,
@@ -481,7 +480,7 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
 
     trailing_ones= coeff_token&3;
     tprintf(h->s.avctx, "trailing:%d, total:%d\n", trailing_ones, total_coeff);
-    assert(total_coeff<=16);
+    av_assert2(total_coeff<=16);
 
     i = show_bits(gb, 3);
     skip_bits(gb, trailing_ones);
@@ -639,7 +638,7 @@ static av_always_inline int decode_luma_residual(H264Context *h, GetBitContext *
             return -1; //FIXME continue if partitioned and other return -1 too
         }
 
-        assert((cbp&15) == 0 || (cbp&15) == 15);
+        av_assert2((cbp&15) == 0 || (cbp&15) == 15);
 
         if(cbp&15){
             for(i8x8=0; i8x8<4; i8x8++){
@@ -745,7 +744,7 @@ int ff_h264_decode_mb_cavlc(H264Context *h){
             goto decode_intra_mb;
         }
     }else{
-       assert(h->slice_type_nos == AV_PICTURE_TYPE_I);
+       av_assert2(h->slice_type_nos == AV_PICTURE_TYPE_I);
         if(h->slice_type == AV_PICTURE_TYPE_SI && mb_type)
             mb_type--;
 decode_intra_mb:
@@ -857,7 +856,7 @@ decode_intra_mb:
                 h->ref_cache[1][scan8[12]] = PART_NOT_AVAILABLE;
             }
         }else{
-            assert(h->slice_type_nos == AV_PICTURE_TYPE_P); //FIXME SP correct ?
+            av_assert2(h->slice_type_nos == AV_PICTURE_TYPE_P); //FIXME SP correct ?
             for(i=0; i<4; i++){
                 h->sub_mb_type[i]= get_ue_golomb_31(&s->gb);
                 if(h->sub_mb_type[i] >=4){
@@ -1012,7 +1011,7 @@ decode_intra_mb:
                 }
             }
         }else{
-            assert(IS_8X16(mb_type));
+            av_assert2(IS_8X16(mb_type));
             for(list=0; list<h->list_count; list++){
                     for(i=0; i<2; i++){
                         unsigned int val;
