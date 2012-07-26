@@ -2389,6 +2389,7 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
     AVFrame *decoded_frame;
     AVCodecContext *avctx = ist->st->codec;
     int i, ret, resample_changed;
+    AVRational decoded_frame_tb;
 
     if (!ist->decoded_frame && !(ist->decoded_frame = avcodec_alloc_frame()))
         return AVERROR(ENOMEM);
@@ -2420,14 +2421,19 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
        the decoder could be delaying output by a packet or more. */
     if (decoded_frame->pts != AV_NOPTS_VALUE) {
         ist->dts = ist->next_dts = ist->pts = ist->next_pts = av_rescale_q(decoded_frame->pts, avctx->time_base, AV_TIME_BASE_Q);
+        decoded_frame_tb   = avctx->time_base;
     } else if (decoded_frame->pkt_pts != AV_NOPTS_VALUE) {
         decoded_frame->pts = decoded_frame->pkt_pts;
         pkt->pts           = AV_NOPTS_VALUE;
+        decoded_frame_tb   = ist->st->time_base;
     } else if (pkt->pts != AV_NOPTS_VALUE) {
         decoded_frame->pts = pkt->pts;
         pkt->pts           = AV_NOPTS_VALUE;
-    }else
-        decoded_frame->pts = av_rescale_q(ist->dts, AV_TIME_BASE_Q, ist->st->time_base);
+        decoded_frame_tb   = ist->st->time_base;
+    }else {
+        decoded_frame->pts = ist->dts;
+        decoded_frame_tb   = AV_TIME_BASE_Q;
+    }
 
 
 #if 1
@@ -2494,7 +2500,7 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
 
     if (decoded_frame->pts != AV_NOPTS_VALUE)
         decoded_frame->pts = av_rescale_q(decoded_frame->pts,
-                                          ist->st->time_base,
+                                          decoded_frame_tb,
                                           (AVRational){1, ist->st->codec->sample_rate});
     for (i = 0; i < ist->nb_filters; i++)
         av_buffersrc_add_frame(ist->filters[i]->filter, decoded_frame, 0);
