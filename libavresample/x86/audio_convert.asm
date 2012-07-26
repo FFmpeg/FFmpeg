@@ -145,12 +145,7 @@ cglobal conv_s32_to_flt, 3,3,3, dst, src, len
     mova  [dstq+lenq+mmsize], m2
     add     lenq, mmsize*2
     jl .loop
-%if mmsize == 32
-    vzeroupper
-    RET
-%else
     REP_RET
-%endif
 %endmacro
 
 INIT_XMM sse2
@@ -218,12 +213,7 @@ cglobal conv_flt_to_s32, 3,3,5, dst, src, len
     mova  [dstq+lenq+3*mmsize], m3
     add     lenq, mmsize*4
     jl .loop
-%if mmsize == 32
-    vzeroupper
-    RET
-%else
     REP_RET
-%endif
 %endmacro
 
 INIT_XMM sse2
