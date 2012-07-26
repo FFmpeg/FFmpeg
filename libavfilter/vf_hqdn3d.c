@@ -32,165 +32,161 @@
 #include "video.h"
 
 typedef struct {
-    int Coefs[4][512*16];
-    unsigned int *Line;
-    unsigned short *Frame[3];
+    int coefs[4][512*16];
+    uint32_t *line;
+    uint16_t *frame_prev[3];
     int hsub, vsub;
 } HQDN3DContext;
 
-static inline unsigned int LowPassMul(unsigned int PrevMul, unsigned int CurrMul, int *Coef)
+static inline uint32_t lowpass(unsigned int prev, unsigned int cur, int *coef)
 {
-    //    int dMul= (PrevMul&0xFFFFFF)-(CurrMul&0xFFFFFF);
-    int dMul= PrevMul-CurrMul;
-    unsigned int d=((dMul+0x10007FF)>>12);
-    return CurrMul + Coef[d];
+    int dmul = prev-cur;
+    unsigned int d = (dmul+0x10007FF)>>12; // 0x1000 to convert to unsigned, 7FF for rounding
+    return cur + coef[d];
 }
 
-static void deNoiseTemporal(unsigned char *FrameSrc,
-                            unsigned char *FrameDest,
-                            unsigned short *FrameAnt,
-                            int W, int H, int sStride, int dStride,
-                            int *Temporal)
+static void denoise_temporal(uint8_t *src, uint8_t *dst,
+                             uint16_t *frame_ant,
+                             int w, int h, int sstride, int dstride,
+                             int *temporal)
 {
-    long X, Y;
-    unsigned int PixelDst;
+    long x, y;
+    uint32_t pixel;
 
-    for (Y = 0; Y < H; Y++) {
-        for (X = 0; X < W; X++) {
-            PixelDst = LowPassMul(FrameAnt[X]<<8, FrameSrc[X]<<16, Temporal);
-            FrameAnt[X] = ((PixelDst+0x1000007F)>>8);
-            FrameDest[X]= ((PixelDst+0x10007FFF)>>16);
+    for (y = 0; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            pixel = lowpass(frame_ant[x]<<8, src[x]<<16, temporal);
+            frame_ant[x] = ((pixel+0x1000007F)>>8);
+            dst[x]= ((pixel+0x10007FFF)>>16);
         }
-        FrameSrc  += sStride;
-        FrameDest += dStride;
-        FrameAnt += W;
+        src += sstride;
+        dst += dstride;
+        frame_ant += w;
     }
 }
 
-static void deNoiseSpacial(unsigned char *Frame,
-                           unsigned char *FrameDest,
-                           unsigned int *LineAnt,
-                           int W, int H, int sStride, int dStride,
-                           int *Horizontal, int *Vertical)
+static void denoise_spatial(uint8_t *src, uint8_t *dst,
+                            uint32_t *line_ant,
+                            int w, int h, int sstride, int dstride,
+                            int *horizontal, int *vertical)
 {
-    long X, Y;
-    long sLineOffs = 0, dLineOffs = 0;
-    unsigned int PixelAnt;
-    unsigned int PixelDst;
+    long x, y;
+    long sline_offs = 0, dline_offs = 0;
+    uint32_t pixel_ant;
+    uint32_t pixel;
 
     /* First pixel has no left nor top neighbor. */
-    PixelDst = LineAnt[0] = PixelAnt = Frame[0]<<16;
-    FrameDest[0]= ((PixelDst+0x10007FFF)>>16);
+    pixel = line_ant[0] = pixel_ant = src[0]<<16;
+    dst[0]= ((pixel+0x10007FFF)>>16);
 
     /* First line has no top neighbor, only left. */
-    for (X = 1; X < W; X++) {
-        PixelDst = LineAnt[X] = LowPassMul(PixelAnt, Frame[X]<<16, Horizontal);
-        FrameDest[X]= ((PixelDst+0x10007FFF)>>16);
+    for (x = 1; x < w; x++) {
+        pixel = line_ant[x] = lowpass(pixel_ant, src[x]<<16, horizontal);
+        dst[x]= ((pixel+0x10007FFF)>>16);
     }
 
-    for (Y = 1; Y < H; Y++) {
-        unsigned int PixelAnt;
-        sLineOffs += sStride, dLineOffs += dStride;
+    for (y = 1; y < h; y++) {
+        uint32_t pixel_ant;
+        sline_offs += sstride, dline_offs += dstride;
         /* First pixel on each line doesn't have previous pixel */
-        PixelAnt = Frame[sLineOffs]<<16;
-        PixelDst = LineAnt[0] = LowPassMul(LineAnt[0], PixelAnt, Vertical);
-        FrameDest[dLineOffs]= ((PixelDst+0x10007FFF)>>16);
+        pixel_ant = src[sline_offs]<<16;
+        pixel = line_ant[0] = lowpass(line_ant[0], pixel_ant, vertical);
+        dst[dline_offs]= ((pixel+0x10007FFF)>>16);
 
-        for (X = 1; X < W; X++) {
-            unsigned int PixelDst;
+        for (x = 1; x < w; x++) {
+            uint32_t pixel;
             /* The rest are normal */
-            PixelAnt = LowPassMul(PixelAnt, Frame[sLineOffs+X]<<16, Horizontal);
-            PixelDst = LineAnt[X] = LowPassMul(LineAnt[X], PixelAnt, Vertical);
-            FrameDest[dLineOffs+X]= ((PixelDst+0x10007FFF)>>16);
+            pixel_ant = lowpass(pixel_ant, src[sline_offs+x]<<16, horizontal);
+            pixel = line_ant[x] = lowpass(line_ant[x], pixel_ant, vertical);
+            dst[dline_offs+x]= ((pixel+0x10007FFF)>>16);
         }
     }
 }
 
-static void deNoise(unsigned char *Frame,
-                    unsigned char *FrameDest,
-                    unsigned int *LineAnt,
-                    unsigned short **FrameAntPtr,
-                    int W, int H, int sStride, int dStride,
-                    int *Horizontal, int *Vertical, int *Temporal)
+static void denoise(uint8_t *src, uint8_t *dst,
+                    uint32_t *line_ant, uint16_t **frame_ant_ptr,
+                    int w, int h, int sstride, int dstride,
+                    int *horizontal, int *vertical, int *temporal)
 {
-    long X, Y;
-    long sLineOffs = 0, dLineOffs = 0;
-    unsigned int PixelAnt;
-    unsigned int PixelDst;
-    unsigned short* FrameAnt=(*FrameAntPtr);
+    long x, y;
+    long sline_offs = 0, dline_offs = 0;
+    uint32_t pixel_ant;
+    uint32_t pixel;
+    uint16_t *frame_ant = *frame_ant_ptr;
 
-    if (!FrameAnt) {
-        (*FrameAntPtr) = FrameAnt = av_malloc(W*H*sizeof(unsigned short));
-        for (Y = 0; Y < H; Y++) {
-            unsigned short* dst=&FrameAnt[Y*W];
-            unsigned char* src=Frame+Y*sStride;
-            for (X = 0; X < W; X++) dst[X]=src[X]<<8;
+    if (!frame_ant) {
+        *frame_ant_ptr = frame_ant = av_malloc(w*h*sizeof(uint16_t));
+        for (y = 0; y < h; y++) {
+            uint16_t *frame_dst = frame_ant+y*w;
+            uint8_t *frame_src = src+y*sstride;
+            for (x = 0; x < w; x++)
+                frame_dst[x] = frame_src[x]<<8;
         }
     }
 
-    if (!Horizontal[0] && !Vertical[0]) {
-        deNoiseTemporal(Frame, FrameDest, FrameAnt,
-                        W, H, sStride, dStride, Temporal);
+    if (!horizontal[0] && !vertical[0]) {
+        denoise_temporal(src, dst, frame_ant,
+                         w, h, sstride, dstride, temporal);
         return;
     }
-    if (!Temporal[0]) {
-        deNoiseSpacial(Frame, FrameDest, LineAnt,
-                       W, H, sStride, dStride, Horizontal, Vertical);
+    if (!temporal[0]) {
+        denoise_spatial(src, dst, line_ant,
+                        w, h, sstride, dstride, horizontal, vertical);
         return;
     }
 
     /* First pixel has no left nor top neighbor. Only previous frame */
-    LineAnt[0] = PixelAnt = Frame[0]<<16;
-    PixelDst = LowPassMul(FrameAnt[0]<<8, PixelAnt, Temporal);
-    FrameAnt[0] = ((PixelDst+0x1000007F)>>8);
-    FrameDest[0]= ((PixelDst+0x10007FFF)>>16);
+    line_ant[0] = pixel_ant = src[0]<<16;
+    pixel = lowpass(frame_ant[0]<<8, pixel_ant, temporal);
+    frame_ant[0] = ((pixel+0x1000007F)>>8);
+    dst[0]= ((pixel+0x10007FFF)>>16);
 
     /* First line has no top neighbor. Only left one for each pixel and
      * last frame */
-    for (X = 1; X < W; X++) {
-        LineAnt[X] = PixelAnt = LowPassMul(PixelAnt, Frame[X]<<16, Horizontal);
-        PixelDst = LowPassMul(FrameAnt[X]<<8, PixelAnt, Temporal);
-        FrameAnt[X] = ((PixelDst+0x1000007F)>>8);
-        FrameDest[X]= ((PixelDst+0x10007FFF)>>16);
+    for (x = 1; x < w; x++) {
+        line_ant[x] = pixel_ant = lowpass(pixel_ant, src[x]<<16, horizontal);
+        pixel = lowpass(frame_ant[x]<<8, pixel_ant, temporal);
+        frame_ant[x] = ((pixel+0x1000007F)>>8);
+        dst[x]= ((pixel+0x10007FFF)>>16);
     }
 
-    for (Y = 1; Y < H; Y++) {
-        unsigned int PixelAnt;
-        unsigned short* LinePrev=&FrameAnt[Y*W];
-        sLineOffs += sStride, dLineOffs += dStride;
+    for (y = 1; y < h; y++) {
+        uint32_t pixel_ant;
+        uint16_t *line_prev = frame_ant+y*w;
+        sline_offs += sstride, dline_offs += dstride;
         /* First pixel on each line doesn't have previous pixel */
-        PixelAnt = Frame[sLineOffs]<<16;
-        LineAnt[0] = LowPassMul(LineAnt[0], PixelAnt, Vertical);
-        PixelDst = LowPassMul(LinePrev[0]<<8, LineAnt[0], Temporal);
-        LinePrev[0] = ((PixelDst+0x1000007F)>>8);
-        FrameDest[dLineOffs]= ((PixelDst+0x10007FFF)>>16);
+        pixel_ant = src[sline_offs]<<16;
+        line_ant[0] = lowpass(line_ant[0], pixel_ant, vertical);
+        pixel = lowpass(line_prev[0]<<8, line_ant[0], temporal);
+        line_prev[0] = ((pixel+0x1000007F)>>8);
+        dst[dline_offs]= ((pixel+0x10007FFF)>>16);
 
-        for (X = 1; X < W; X++) {
-            unsigned int PixelDst;
+        for (x = 1; x < w; x++) {
+            uint32_t pixel;
             /* The rest are normal */
-            PixelAnt = LowPassMul(PixelAnt, Frame[sLineOffs+X]<<16, Horizontal);
-            LineAnt[X] = LowPassMul(LineAnt[X], PixelAnt, Vertical);
-            PixelDst = LowPassMul(LinePrev[X]<<8, LineAnt[X], Temporal);
-            LinePrev[X] = ((PixelDst+0x1000007F)>>8);
-            FrameDest[dLineOffs+X]= ((PixelDst+0x10007FFF)>>16);
+            pixel_ant = lowpass(pixel_ant, src[sline_offs+x]<<16, horizontal);
+            line_ant[x] = lowpass(line_ant[x], pixel_ant, vertical);
+            pixel = lowpass(line_prev[x]<<8, line_ant[x], temporal);
+            line_prev[x] = ((pixel+0x1000007F)>>8);
+            dst[dline_offs+x]= ((pixel+0x10007FFF)>>16);
         }
     }
 }
 
-static void PrecalcCoefs(int *Ct, double Dist25)
+static void precalc_coefs(int *ct, double dist25)
 {
     int i;
-    double Gamma, Simil, C;
+    double gamma, simil, C;
 
-    Gamma = log(0.25) / log(1.0 - Dist25/255.0 - 0.00001);
+    gamma = log(0.25) / log(1.0 - dist25/255.0 - 0.00001);
 
     for (i = -255*16; i <= 255*16; i++) {
-        Simil = 1.0 - FFABS(i) / (16*255.0);
-        C = pow(Simil, Gamma) * 65536.0 * i / 16.0;
-        Ct[16*256+i] = lrint(C);
+        simil = 1.0 - FFABS(i) / (16*255.0);
+        C = pow(simil, gamma) * 65536.0 * i / 16.0;
+        ct[16*256+i] = lrint(C);
     }
 
-    Ct[0] = !!Dist25;
+    ct[0] = !!dist25;
 }
 
 #define PARAM1_DEFAULT 4.0
@@ -200,57 +196,57 @@ static void PrecalcCoefs(int *Ct, double Dist25)
 static int init(AVFilterContext *ctx, const char *args)
 {
     HQDN3DContext *hqdn3d = ctx->priv;
-    double LumSpac, LumTmp, ChromSpac, ChromTmp;
-    double Param1, Param2, Param3, Param4;
+    double lum_spac, lum_tmp, chrom_spac, chrom_tmp;
+    double param1, param2, param3, param4;
 
-    LumSpac   = PARAM1_DEFAULT;
-    ChromSpac = PARAM2_DEFAULT;
-    LumTmp    = PARAM3_DEFAULT;
-    ChromTmp  = LumTmp * ChromSpac / LumSpac;
+    lum_spac   = PARAM1_DEFAULT;
+    chrom_spac = PARAM2_DEFAULT;
+    lum_tmp    = PARAM3_DEFAULT;
+    chrom_tmp  = lum_tmp * chrom_spac / lum_spac;
 
     if (args) {
         switch (sscanf(args, "%lf:%lf:%lf:%lf",
-                       &Param1, &Param2, &Param3, &Param4)) {
+                       &param1, &param2, &param3, &param4)) {
         case 1:
-            LumSpac   = Param1;
-            ChromSpac = PARAM2_DEFAULT * Param1 / PARAM1_DEFAULT;
-            LumTmp    = PARAM3_DEFAULT * Param1 / PARAM1_DEFAULT;
-            ChromTmp  = LumTmp * ChromSpac / LumSpac;
+            lum_spac   = param1;
+            chrom_spac = PARAM2_DEFAULT * param1 / PARAM1_DEFAULT;
+            lum_tmp    = PARAM3_DEFAULT * param1 / PARAM1_DEFAULT;
+            chrom_tmp  = lum_tmp * chrom_spac / lum_spac;
             break;
         case 2:
-            LumSpac   = Param1;
-            ChromSpac = Param2;
-            LumTmp    = PARAM3_DEFAULT * Param1 / PARAM1_DEFAULT;
-            ChromTmp  = LumTmp * ChromSpac / LumSpac;
+            lum_spac   = param1;
+            chrom_spac = param2;
+            lum_tmp    = PARAM3_DEFAULT * param1 / PARAM1_DEFAULT;
+            chrom_tmp  = lum_tmp * chrom_spac / lum_spac;
             break;
         case 3:
-            LumSpac   = Param1;
-            ChromSpac = Param2;
-            LumTmp    = Param3;
-            ChromTmp  = LumTmp * ChromSpac / LumSpac;
+            lum_spac   = param1;
+            chrom_spac = param2;
+            lum_tmp    = param3;
+            chrom_tmp  = lum_tmp * chrom_spac / lum_spac;
             break;
         case 4:
-            LumSpac   = Param1;
-            ChromSpac = Param2;
-            LumTmp    = Param3;
-            ChromTmp  = Param4;
+            lum_spac   = param1;
+            chrom_spac = param2;
+            lum_tmp    = param3;
+            chrom_tmp  = param4;
             break;
         }
     }
 
     av_log(ctx, AV_LOG_VERBOSE, "ls:%lf cs:%lf lt:%lf ct:%lf\n",
-           LumSpac, ChromSpac, LumTmp, ChromTmp);
-    if (LumSpac < 0 || ChromSpac < 0 || isnan(ChromTmp)) {
+           lum_spac, chrom_spac, lum_tmp, chrom_tmp);
+    if (lum_spac < 0 || chrom_spac < 0 || isnan(chrom_tmp)) {
         av_log(ctx, AV_LOG_ERROR,
                "Invalid negative value for luma or chroma spatial strength, "
                "or resulting value for chroma temporal strength is nan.\n");
         return AVERROR(EINVAL);
     }
 
-    PrecalcCoefs(hqdn3d->Coefs[0], LumSpac);
-    PrecalcCoefs(hqdn3d->Coefs[1], LumTmp);
-    PrecalcCoefs(hqdn3d->Coefs[2], ChromSpac);
-    PrecalcCoefs(hqdn3d->Coefs[3], ChromTmp);
+    precalc_coefs(hqdn3d->coefs[0], lum_spac);
+    precalc_coefs(hqdn3d->coefs[1], lum_tmp);
+    precalc_coefs(hqdn3d->coefs[2], chrom_spac);
+    precalc_coefs(hqdn3d->coefs[3], chrom_tmp);
 
     return 0;
 }
@@ -259,10 +255,10 @@ static void uninit(AVFilterContext *ctx)
 {
     HQDN3DContext *hqdn3d = ctx->priv;
 
-    av_freep(&hqdn3d->Line);
-    av_freep(&hqdn3d->Frame[0]);
-    av_freep(&hqdn3d->Frame[1]);
-    av_freep(&hqdn3d->Frame[2]);
+    av_freep(&hqdn3d->line);
+    av_freep(&hqdn3d->frame_prev[0]);
+    av_freep(&hqdn3d->frame_prev[1]);
+    av_freep(&hqdn3d->frame_prev[2]);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -283,8 +279,8 @@ static int config_input(AVFilterLink *inlink)
     hqdn3d->hsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_w;
     hqdn3d->vsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_h;
 
-    hqdn3d->Line = av_malloc(inlink->w * sizeof(*hqdn3d->Line));
-    if (!hqdn3d->Line)
+    hqdn3d->line = av_malloc(inlink->w * sizeof(*hqdn3d->line));
+    if (!hqdn3d->line)
         return AVERROR(ENOMEM);
 
     return 0;
@@ -305,24 +301,24 @@ static int end_frame(AVFilterLink *inlink)
     int ch = inpic->video->h >> hqdn3d->vsub;
     int ret;
 
-    deNoise(inpic->data[0], outpic->data[0],
-            hqdn3d->Line, &hqdn3d->Frame[0], inpic->video->w, inpic->video->h,
+    denoise(inpic->data[0], outpic->data[0],
+            hqdn3d->line, &hqdn3d->frame_prev[0], inpic->video->w, inpic->video->h,
             inpic->linesize[0], outpic->linesize[0],
-            hqdn3d->Coefs[0],
-            hqdn3d->Coefs[0],
-            hqdn3d->Coefs[1]);
-    deNoise(inpic->data[1], outpic->data[1],
-            hqdn3d->Line, &hqdn3d->Frame[1], cw, ch,
+            hqdn3d->coefs[0],
+            hqdn3d->coefs[0],
+            hqdn3d->coefs[1]);
+    denoise(inpic->data[1], outpic->data[1],
+            hqdn3d->line, &hqdn3d->frame_prev[1], cw, ch,
             inpic->linesize[1], outpic->linesize[1],
-            hqdn3d->Coefs[2],
-            hqdn3d->Coefs[2],
-            hqdn3d->Coefs[3]);
-    deNoise(inpic->data[2], outpic->data[2],
-            hqdn3d->Line, &hqdn3d->Frame[2], cw, ch,
+            hqdn3d->coefs[2],
+            hqdn3d->coefs[2],
+            hqdn3d->coefs[3]);
+    denoise(inpic->data[2], outpic->data[2],
+            hqdn3d->line, &hqdn3d->frame_prev[2], cw, ch,
             inpic->linesize[2], outpic->linesize[2],
-            hqdn3d->Coefs[2],
-            hqdn3d->Coefs[2],
-            hqdn3d->Coefs[3]);
+            hqdn3d->coefs[2],
+            hqdn3d->coefs[2],
+            hqdn3d->coefs[3]);
 
     if ((ret = ff_draw_slice(outlink, 0, inpic->video->h, 1)) < 0 ||
         (ret = ff_end_frame(outlink)) < 0)
