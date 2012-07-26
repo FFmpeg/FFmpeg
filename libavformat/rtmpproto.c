@@ -885,9 +885,9 @@ static int handle_chunk_size(URLContext *s, RTMPPacket *pkt)
     RTMPContext *rt = s->priv_data;
     int ret;
 
-    if (pkt->data_size != 4) {
+    if (pkt->data_size < 4) {
         av_log(s, AV_LOG_ERROR,
-               "Chunk size change packet is not 4 bytes long (%d)\n",
+               "Too short chunk size change packet (%d)\n",
                pkt->data_size);
         return AVERROR_INVALIDDATA;
     }
