@@ -10,7 +10,7 @@ fate-probe-format-roundup1414: REF = mpeg
 FATE_PROBE_FORMAT += fate-probe-format-roundup2015
 fate-probe-format-roundup2015: REF = dv
 
-FATE_SAMPLES-$(CONFIG_FFPROBE) += $(FATE_PROBE_FORMAT)
+FATE_EXTERN-$(CONFIG_FFPROBE) += $(FATE_PROBE_FORMAT)
 fate-probe-format: $(FATE_PROBE_FORMAT)
 
 $(FATE_PROBE_FORMAT): ffprobe$(EXESUF)
