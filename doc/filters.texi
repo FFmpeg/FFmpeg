@@ -3045,6 +3045,9 @@ the PTS of the first video frame
 @item INTERLACED
 tell if the current frame is interlaced
 
+@item TB
+the time base
+
 @item POS
 original position in the file of the frame, or undefined if undefined
 for the current frame
