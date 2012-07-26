@@ -1235,7 +1235,7 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
 
         if ((s->iformat->flags & AVFMT_GENERIC_INDEX) &&
             out_pkt.flags & AV_PKT_FLAG_KEY) {
-            int64_t pos= (st->parser->flags & PARSER_FLAG_COMPLETE_FRAMES) ? out_pkt.pos : st->parser->frame_offset;
+            int64_t pos= out_pkt.pos;
             ff_reduce_index(s, st->index);
             av_add_index_entry(st, pos, out_pkt.dts,
                                0, 0, AVINDEX_KEYFRAME);
