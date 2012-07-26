@@ -515,6 +515,12 @@ static int gen_pong(URLContext *s, RTMPContext *rt, RTMPPacket *ppkt)
     uint8_t *p;
     int ret;
 
+    if (ppkt->data_size < 6) {
+        av_log(s, AV_LOG_ERROR, "Too short ping packet (%d)\n",
+               ppkt->data_size);
+        return AVERROR_INVALIDDATA;
+    }
+
     if ((ret = ff_rtmp_packet_create(&pkt, RTMP_NETWORK_CHANNEL, RTMP_PT_PING,
                                      ppkt->timestamp + 1, 6)) < 0)
         return ret;
@@ -912,6 +918,12 @@ static int handle_ping(URLContext *s, RTMPPacket *pkt)
 {
     RTMPContext *rt = s->priv_data;
     int t, ret;
+
+    if (pkt->data_size < 2) {
+        av_log(s, AV_LOG_ERROR, "Too short ping packet (%d)\n",
+               pkt->data_size);
+        return AVERROR_INVALIDDATA;
+    }
 
     t = AV_RB16(pkt->data);
     if (t == 6) {
