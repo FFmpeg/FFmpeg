@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2003 Daniel Moreno <comac AT comac DOT darktech DOT org>
  * Copyright (c) 2010 Baptiste Coudurier
+ * Copyright (c) 2012 Loren Merritt
  *
  * This file is part of Libav, ported from MPlayer.
  *
@@ -51,13 +52,13 @@ static void denoise_temporal(uint8_t *src, uint8_t *dst,
                              int *temporal)
 {
     long x, y;
-    uint32_t pixel;
+    uint32_t tmp;
 
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
-            pixel = lowpass(frame_ant[x]<<8, src[x]<<16, temporal);
-            frame_ant[x] = ((pixel+0x1000007F)>>8);
-            dst[x]= ((pixel+0x10007FFF)>>16);
+            tmp = lowpass(frame_ant[x]<<8, src[x]<<16, temporal);
+            frame_ant[x] = (tmp+0x7F)>>8;
+            dst[x] = (tmp+0x7FFF)>>16;
         }
         src += sstride;
         dst += dstride;
@@ -66,111 +67,66 @@ static void denoise_temporal(uint8_t *src, uint8_t *dst,
 }
 
 static void denoise_spatial(uint8_t *src, uint8_t *dst,
-                            uint32_t *line_ant,
+                            uint32_t *line_ant, uint16_t *frame_ant,
                             int w, int h, int sstride, int dstride,
-                            int *horizontal, int *vertical)
+                            int *spatial, int *temporal)
 {
     long x, y;
-    long sline_offs = 0, dline_offs = 0;
     uint32_t pixel_ant;
-    uint32_t pixel;
+    uint32_t tmp;
 
-    /* First pixel has no left nor top neighbor. */
-    pixel = line_ant[0] = pixel_ant = src[0]<<16;
-    dst[0]= ((pixel+0x10007FFF)>>16);
-
-    /* First line has no top neighbor, only left. */
-    for (x = 1; x < w; x++) {
-        pixel = line_ant[x] = lowpass(pixel_ant, src[x]<<16, horizontal);
-        dst[x]= ((pixel+0x10007FFF)>>16);
+    /* First line has no top neighbor. Only left one for each tmp and
+     * last frame */
+    pixel_ant = src[0]<<16;
+    for (x = 0; x < w; x++) {
+        line_ant[x] = tmp = pixel_ant = lowpass(pixel_ant, src[x]<<16, spatial);
+        tmp = lowpass(frame_ant[x]<<8, tmp, temporal);
+        frame_ant[x] = (tmp+0x7F)>>8;
+        dst[x] = (tmp+0x7FFF)>>16;
     }
 
     for (y = 1; y < h; y++) {
-        uint32_t pixel_ant;
-        sline_offs += sstride, dline_offs += dstride;
-        /* First pixel on each line doesn't have previous pixel */
-        pixel_ant = src[sline_offs]<<16;
-        pixel = line_ant[0] = lowpass(line_ant[0], pixel_ant, vertical);
-        dst[dline_offs]= ((pixel+0x10007FFF)>>16);
-
-        for (x = 1; x < w; x++) {
-            uint32_t pixel;
-            /* The rest are normal */
-            pixel_ant = lowpass(pixel_ant, src[sline_offs+x]<<16, horizontal);
-            pixel = line_ant[x] = lowpass(line_ant[x], pixel_ant, vertical);
-            dst[dline_offs+x]= ((pixel+0x10007FFF)>>16);
+        src += sstride;
+        dst += dstride;
+        frame_ant += w;
+        pixel_ant = src[0]<<16;
+        for (x = 0; x < w-1; x++) {
+            line_ant[x] = tmp = lowpass(line_ant[x], pixel_ant, spatial);
+            pixel_ant = lowpass(pixel_ant, src[x+1]<<16, spatial);
+            tmp = lowpass(frame_ant[x]<<8, tmp, temporal);
+            frame_ant[x] = (tmp+0x7F)>>8;
+            dst[x] = (tmp+0x7FFF)>>16;
         }
+        line_ant[x] = tmp = lowpass(line_ant[x], pixel_ant, spatial);
+        tmp = lowpass(frame_ant[x]<<8, tmp, temporal);
+        frame_ant[x] = (tmp+0x7F)>>8;
+        dst[x] = (tmp+0x7FFF)>>16;
     }
 }
 
 static void denoise(uint8_t *src, uint8_t *dst,
                     uint32_t *line_ant, uint16_t **frame_ant_ptr,
                     int w, int h, int sstride, int dstride,
-                    int *horizontal, int *vertical, int *temporal)
+                    int *spatial, int *temporal)
 {
     long x, y;
-    long sline_offs = 0, dline_offs = 0;
-    uint32_t pixel_ant;
-    uint32_t pixel;
     uint16_t *frame_ant = *frame_ant_ptr;
-
     if (!frame_ant) {
+        uint8_t *frame_src = src;
         *frame_ant_ptr = frame_ant = av_malloc(w*h*sizeof(uint16_t));
-        for (y = 0; y < h; y++) {
-            uint16_t *frame_dst = frame_ant+y*w;
-            uint8_t *frame_src = src+y*sstride;
+        for (y = 0; y < h; y++, src += sstride, frame_ant += w)
             for (x = 0; x < w; x++)
-                frame_dst[x] = frame_src[x]<<8;
-        }
+                frame_ant[x] = src[x]<<8;
+        src = frame_src;
+        frame_ant = *frame_ant_ptr;
     }
 
-    if (!horizontal[0] && !vertical[0]) {
+    if (spatial[0])
+        denoise_spatial(src, dst, line_ant, frame_ant,
+                        w, h, sstride, dstride, spatial, temporal);
+    else
         denoise_temporal(src, dst, frame_ant,
                          w, h, sstride, dstride, temporal);
-        return;
-    }
-    if (!temporal[0]) {
-        denoise_spatial(src, dst, line_ant,
-                        w, h, sstride, dstride, horizontal, vertical);
-        return;
-    }
-
-    /* First pixel has no left nor top neighbor. Only previous frame */
-    line_ant[0] = pixel_ant = src[0]<<16;
-    pixel = lowpass(frame_ant[0]<<8, pixel_ant, temporal);
-    frame_ant[0] = ((pixel+0x1000007F)>>8);
-    dst[0]= ((pixel+0x10007FFF)>>16);
-
-    /* First line has no top neighbor. Only left one for each pixel and
-     * last frame */
-    for (x = 1; x < w; x++) {
-        line_ant[x] = pixel_ant = lowpass(pixel_ant, src[x]<<16, horizontal);
-        pixel = lowpass(frame_ant[x]<<8, pixel_ant, temporal);
-        frame_ant[x] = ((pixel+0x1000007F)>>8);
-        dst[x]= ((pixel+0x10007FFF)>>16);
-    }
-
-    for (y = 1; y < h; y++) {
-        uint32_t pixel_ant;
-        uint16_t *line_prev = frame_ant+y*w;
-        sline_offs += sstride, dline_offs += dstride;
-        /* First pixel on each line doesn't have previous pixel */
-        pixel_ant = src[sline_offs]<<16;
-        line_ant[0] = lowpass(line_ant[0], pixel_ant, vertical);
-        pixel = lowpass(line_prev[0]<<8, line_ant[0], temporal);
-        line_prev[0] = ((pixel+0x1000007F)>>8);
-        dst[dline_offs]= ((pixel+0x10007FFF)>>16);
-
-        for (x = 1; x < w; x++) {
-            uint32_t pixel;
-            /* The rest are normal */
-            pixel_ant = lowpass(pixel_ant, src[sline_offs+x]<<16, horizontal);
-            line_ant[x] = lowpass(line_ant[x], pixel_ant, vertical);
-            pixel = lowpass(line_prev[x]<<8, line_ant[x], temporal);
-            line_prev[x] = ((pixel+0x1000007F)>>8);
-            dst[dline_offs+x]= ((pixel+0x10007FFF)>>16);
-        }
-    }
 }
 
 static void precalc_coefs(int *ct, double dist25)
@@ -297,28 +253,16 @@ static int end_frame(AVFilterLink *inlink)
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFilterBufferRef *inpic  = inlink ->cur_buf;
     AVFilterBufferRef *outpic = outlink->out_buf;
-    int cw = inpic->video->w >> hqdn3d->hsub;
-    int ch = inpic->video->h >> hqdn3d->vsub;
-    int ret;
+    int ret, c;
 
-    denoise(inpic->data[0], outpic->data[0],
-            hqdn3d->line, &hqdn3d->frame_prev[0], inpic->video->w, inpic->video->h,
-            inpic->linesize[0], outpic->linesize[0],
-            hqdn3d->coefs[0],
-            hqdn3d->coefs[0],
-            hqdn3d->coefs[1]);
-    denoise(inpic->data[1], outpic->data[1],
-            hqdn3d->line, &hqdn3d->frame_prev[1], cw, ch,
-            inpic->linesize[1], outpic->linesize[1],
-            hqdn3d->coefs[2],
-            hqdn3d->coefs[2],
-            hqdn3d->coefs[3]);
-    denoise(inpic->data[2], outpic->data[2],
-            hqdn3d->line, &hqdn3d->frame_prev[2], cw, ch,
-            inpic->linesize[2], outpic->linesize[2],
-            hqdn3d->coefs[2],
-            hqdn3d->coefs[2],
-            hqdn3d->coefs[3]);
+    for (c = 0; c < 3; c++) {
+        denoise(inpic->data[c], outpic->data[c],
+                hqdn3d->line, &hqdn3d->frame_prev[c],
+                inpic->video->w >> (!!c * hqdn3d->hsub),
+                inpic->video->h >> (!!c * hqdn3d->vsub),
+                inpic->linesize[c], outpic->linesize[c],
+                hqdn3d->coefs[c?2:0], hqdn3d->coefs[c?3:1]);
+    }
 
     if ((ret = ff_draw_slice(outlink, 0, inpic->video->h, 1)) < 0 ||
         (ret = ff_end_frame(outlink)) < 0)
@@ -337,6 +281,7 @@ AVFilter avfilter_vf_hqdn3d = {
 
     .inputs    = (const AVFilterPad[]) {{ .name             = "default",
                                           .type             = AVMEDIA_TYPE_VIDEO,
+                                          .start_frame      = ff_inplace_start_frame,
                                           .draw_slice       = null_draw_slice,
                                           .config_props     = config_input,
                                           .end_frame        = end_frame },
