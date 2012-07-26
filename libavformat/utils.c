@@ -2383,9 +2383,14 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             break;
         }
 
-        pkt= add_to_pktbuf(&ic->packet_buffer, &pkt1, &ic->packet_buffer_end);
-        if ((ret = av_dup_packet(pkt)) < 0)
-            goto find_stream_info_err;
+        if (ic->flags & AVFMT_FLAG_NOBUFFER) {
+            pkt = &pkt1;
+        } else {
+            pkt = add_to_pktbuf(&ic->packet_buffer, &pkt1,
+                                &ic->packet_buffer_end);
+            if ((ret = av_dup_packet(pkt)) < 0)
+                goto find_stream_info_err;
+        }
 
         read_size += pkt->size;
 

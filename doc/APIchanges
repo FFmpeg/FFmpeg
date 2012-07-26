@@ -13,6 +13,9 @@ libavutil:     2011-04-18
 
 API changes, most recent first:
 
+2012-07-xx - xxxxxxx - lavf 54.13.0 - avformat.h
+  Add AVFMT_FLAG_NOBUFFER for low latency use cases.
+
 2012-07-xx - xxxxxxx - lavfi 3.0.0 - avfilter.h
   Add avfilter_unref_bufferp().
 
