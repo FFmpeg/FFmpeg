@@ -2499,6 +2499,8 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
     for (i = 0; i < ist->nb_filters; i++)
         av_buffersrc_add_frame(ist->filters[i]->filter, decoded_frame, 0);
 
+    decoded_frame->pts = AV_NOPTS_VALUE;
+
     return ret;
 }
 
