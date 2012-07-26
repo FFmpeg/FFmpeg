@@ -38,13 +38,11 @@
 #include "h264data.h"
 #include "h264_mvpred.h"
 #include "golomb.h"
+#include "libavutil/avassert.h"
 
 #if ARCH_X86
 #include "x86/h264_i386.h"
 #endif
-
-//#undef NDEBUG
-#include <assert.h>
 
 /* Cabac pre state table */
 
@@ -1672,7 +1670,7 @@ decode_cabac_residual_internal(H264Context *h, DCTELEM *block,
         }
 #endif
     }
-    assert(coeff_count > 0);
+    av_assert2(coeff_count > 0);
 
     if( is_dc ) {
         if( cat == 3 )
@@ -1684,7 +1682,7 @@ decode_cabac_residual_internal(H264Context *h, DCTELEM *block,
         if( max_coeff == 64 )
             fill_rectangle(&h->non_zero_count_cache[scan8[n]], 2, 2, 8, coeff_count, 1);
         else {
-            assert( cat == 1 || cat ==  2 || cat ==  4 || cat == 7 || cat == 8 || cat == 11 || cat == 12 );
+            av_assert2( cat == 1 || cat ==  2 || cat ==  4 || cat == 7 || cat == 8 || cat == 11 || cat == 12 );
             h->non_zero_count_cache[scan8[n]] = coeff_count;
         }
     }
@@ -1911,7 +1909,7 @@ int ff_h264_decode_mb_cabac(H264Context *h) {
 
     if( h->slice_type_nos == AV_PICTURE_TYPE_B ) {
         int ctx = 0;
-        assert(h->slice_type_nos == AV_PICTURE_TYPE_B);
+        av_assert2(h->slice_type_nos == AV_PICTURE_TYPE_B);
 
         if( !IS_DIRECT( h->left_type[LTOP]-1 ) )
             ctx++;
@@ -1964,7 +1962,7 @@ int ff_h264_decode_mb_cabac(H264Context *h) {
         mb_type= decode_cabac_intra_mb_type(h, 3, 1);
         if(h->slice_type == AV_PICTURE_TYPE_SI && mb_type)
             mb_type--;
-        assert(h->slice_type_nos == AV_PICTURE_TYPE_I);
+        av_assert2(h->slice_type_nos == AV_PICTURE_TYPE_I);
 decode_intra_mb:
         partition_count = 0;
         cbp= i_mb_type_info[mb_type].cbp;
@@ -2225,7 +2223,7 @@ decode_intra_mb:
                 }
             }
         }else{
-            assert(IS_8X16(mb_type));
+            av_assert2(IS_8X16(mb_type));
             for(list=0; list<h->list_count; list++){
                     for(i=0; i<2; i++){
                         if(IS_DIR(mb_type, i, list)){ //FIXME optimize
