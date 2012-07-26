@@ -43,6 +43,8 @@
 #include "idct_xvid.h"
 #include "dsputil_mmx.h"
 
+#if HAVE_INLINE_ASM
+
 /**
  * @file
  * @brief SSE2 idct compatible with xvidmmx
@@ -401,3 +403,5 @@ void ff_idct_xvid_sse2_add(uint8_t *dest, int line_size, short *block)
     ff_idct_xvid_sse2(block);
     ff_add_pixels_clamped_mmx(block, dest, line_size);
 }
+
+#endif /* HAVE_INLINE_ASM */

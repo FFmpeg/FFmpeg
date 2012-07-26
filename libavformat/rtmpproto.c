@@ -880,75 +880,104 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
     return 0;
 }
 
-/**
- * Parse received packet and possibly perform some action depending on
- * the packet contents.
- * @return 0 for no errors, negative values for serious errors which prevent
- *         further communications, positive values for uncritical errors
- */
-static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
+static int handle_chunk_size(URLContext *s, RTMPPacket *pkt)
 {
+    RTMPContext *rt = s->priv_data;
+    int ret;
+
+    if (pkt->data_size != 4) {
+        av_log(s, AV_LOG_ERROR,
+               "Chunk size change packet is not 4 bytes long (%d)\n",
+               pkt->data_size);
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (!rt->is_input) {
+        if ((ret = ff_rtmp_packet_write(rt->stream, pkt, rt->chunk_size,
+                                        rt->prev_pkt[1])) < 0)
+            return ret;
+    }
+
+    rt->chunk_size = AV_RB32(pkt->data);
+    if (rt->chunk_size <= 0) {
+        av_log(s, AV_LOG_ERROR, "Incorrect chunk size %d\n", rt->chunk_size);
+        return AVERROR_INVALIDDATA;
+    }
+    av_log(s, AV_LOG_DEBUG, "New chunk size = %d\n", rt->chunk_size);
+
+    return 0;
+}
+
+static int handle_ping(URLContext *s, RTMPPacket *pkt)
+{
+    RTMPContext *rt = s->priv_data;
+    int t, ret;
+
+    t = AV_RB16(pkt->data);
+    if (t == 6) {
+        if ((ret = gen_pong(s, rt, pkt)) < 0)
+            return ret;
+    }
+
+    return 0;
+}
+
+static int handle_client_bw(URLContext *s, RTMPPacket *pkt)
+{
+    RTMPContext *rt = s->priv_data;
+
+    if (pkt->data_size < 4) {
+        av_log(s, AV_LOG_ERROR,
+               "Client bandwidth report packet is less than 4 bytes long (%d)\n",
+               pkt->data_size);
+        return AVERROR_INVALIDDATA;
+    }
+
+    rt->client_report_size = AV_RB32(pkt->data);
+    if (rt->client_report_size <= 0) {
+        av_log(s, AV_LOG_ERROR, "Incorrect client bandwidth %d\n",
+                rt->client_report_size);
+        return AVERROR_INVALIDDATA;
+
+    }
+    av_log(s, AV_LOG_DEBUG, "Client bandwidth = %d\n", rt->client_report_size);
+    rt->client_report_size >>= 1;
+
+    return 0;
+}
+
+static int handle_server_bw(URLContext *s, RTMPPacket *pkt)
+{
+    RTMPContext *rt = s->priv_data;
+
+    rt->server_bw = AV_RB32(pkt->data);
+    if (rt->server_bw <= 0) {
+        av_log(s, AV_LOG_ERROR, "Incorrect server bandwidth %d\n",
+               rt->server_bw);
+        return AVERROR_INVALIDDATA;
+    }
+    av_log(s, AV_LOG_DEBUG, "Server bandwidth = %d\n", rt->server_bw);
+
+    return 0;
+}
+
+static int handle_invoke(URLContext *s, RTMPPacket *pkt)
+{
+    RTMPContext *rt = s->priv_data;
     int i, t;
     const uint8_t *data_end = pkt->data + pkt->data_size;
     int ret;
 
-#ifdef DEBUG
-    ff_rtmp_packet_dump(s, pkt);
-#endif
+    //TODO: check for the messages sent for wrong state?
+    if (!memcmp(pkt->data, "\002\000\006_error", 9)) {
+        uint8_t tmpstr[256];
 
-    switch (pkt->type) {
-    case RTMP_PT_CHUNK_SIZE:
-        if (pkt->data_size != 4) {
-            av_log(s, AV_LOG_ERROR,
-                   "Chunk size change packet is not 4 bytes long (%d)\n", pkt->data_size);
-            return -1;
-        }
-        if (!rt->is_input)
-            if ((ret = ff_rtmp_packet_write(rt->stream, pkt, rt->chunk_size,
-                                            rt->prev_pkt[1])) < 0)
-                return ret;
-        rt->chunk_size = AV_RB32(pkt->data);
-        if (rt->chunk_size <= 0) {
-            av_log(s, AV_LOG_ERROR, "Incorrect chunk size %d\n", rt->chunk_size);
-            return -1;
-        }
-        av_log(s, AV_LOG_DEBUG, "New chunk size = %d\n", rt->chunk_size);
-        break;
-    case RTMP_PT_PING:
-        t = AV_RB16(pkt->data);
-        if (t == 6)
-            if ((ret = gen_pong(s, rt, pkt)) < 0)
-                return ret;
-        break;
-    case RTMP_PT_CLIENT_BW:
-        if (pkt->data_size < 4) {
-            av_log(s, AV_LOG_ERROR,
-                   "Client bandwidth report packet is less than 4 bytes long (%d)\n",
-                   pkt->data_size);
-            return -1;
-        }
-        av_log(s, AV_LOG_DEBUG, "Client bandwidth = %d\n", AV_RB32(pkt->data));
-        rt->client_report_size = AV_RB32(pkt->data) >> 1;
-        break;
-    case RTMP_PT_SERVER_BW:
-        rt->server_bw = AV_RB32(pkt->data);
-        if (rt->server_bw <= 0) {
-            av_log(s, AV_LOG_ERROR, "Incorrect server bandwidth %d\n", rt->server_bw);
-            return AVERROR(EINVAL);
-        }
-        av_log(s, AV_LOG_DEBUG, "Server bandwidth = %d\n", rt->server_bw);
-        break;
-    case RTMP_PT_INVOKE:
-        //TODO: check for the messages sent for wrong state?
-        if (!memcmp(pkt->data, "\002\000\006_error", 9)) {
-            uint8_t tmpstr[256];
-
-            if (!ff_amf_get_field_value(pkt->data + 9, data_end,
-                                        "description", tmpstr, sizeof(tmpstr)))
-                av_log(s, AV_LOG_ERROR, "Server error: %s\n",tmpstr);
-            return -1;
-        } else if (!memcmp(pkt->data, "\002\000\007_result", 10)) {
-            switch (rt->state) {
+        if (!ff_amf_get_field_value(pkt->data + 9, data_end,
+                                    "description", tmpstr, sizeof(tmpstr)))
+            av_log(s, AV_LOG_ERROR, "Server error: %s\n",tmpstr);
+        return -1;
+    } else if (!memcmp(pkt->data, "\002\000\007_result", 10)) {
+        switch (rt->state) {
             case STATE_HANDSHAKED:
                 if (!rt->is_input) {
                     if ((ret = gen_release_stream(s, rt)) < 0)
@@ -996,35 +1025,73 @@ static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
                 }
                 rt->state = STATE_READY;
                 break;
-            }
-        } else if (!memcmp(pkt->data, "\002\000\010onStatus", 11)) {
-            const uint8_t* ptr = pkt->data + 11;
-            uint8_t tmpstr[256];
-
-            for (i = 0; i < 2; i++) {
-                t = ff_amf_tag_size(ptr, data_end);
-                if (t < 0)
-                    return 1;
-                ptr += t;
-            }
-            t = ff_amf_get_field_value(ptr, data_end,
-                                       "level", tmpstr, sizeof(tmpstr));
-            if (!t && !strcmp(tmpstr, "error")) {
-                if (!ff_amf_get_field_value(ptr, data_end,
-                                            "description", tmpstr, sizeof(tmpstr)))
-                    av_log(s, AV_LOG_ERROR, "Server error: %s\n",tmpstr);
-                return -1;
-            }
-            t = ff_amf_get_field_value(ptr, data_end,
-                                       "code", tmpstr, sizeof(tmpstr));
-            if (!t && !strcmp(tmpstr, "NetStream.Play.Start")) rt->state = STATE_PLAYING;
-            if (!t && !strcmp(tmpstr, "NetStream.Play.Stop")) rt->state = STATE_STOPPED;
-            if (!t && !strcmp(tmpstr, "NetStream.Play.UnpublishNotify")) rt->state = STATE_STOPPED;
-            if (!t && !strcmp(tmpstr, "NetStream.Publish.Start")) rt->state = STATE_PUBLISHING;
-        } else if (!memcmp(pkt->data, "\002\000\010onBWDone", 11)) {
-            if ((ret = gen_check_bw(s, rt)) < 0)
-                return ret;
         }
+    } else if (!memcmp(pkt->data, "\002\000\010onStatus", 11)) {
+        const uint8_t* ptr = pkt->data + 11;
+        uint8_t tmpstr[256];
+
+        for (i = 0; i < 2; i++) {
+            t = ff_amf_tag_size(ptr, data_end);
+            if (t < 0)
+                return 1;
+            ptr += t;
+        }
+        t = ff_amf_get_field_value(ptr, data_end,
+                                   "level", tmpstr, sizeof(tmpstr));
+        if (!t && !strcmp(tmpstr, "error")) {
+            if (!ff_amf_get_field_value(ptr, data_end,
+                                        "description", tmpstr, sizeof(tmpstr)))
+                av_log(s, AV_LOG_ERROR, "Server error: %s\n",tmpstr);
+            return -1;
+        }
+        t = ff_amf_get_field_value(ptr, data_end,
+                "code", tmpstr, sizeof(tmpstr));
+        if (!t && !strcmp(tmpstr, "NetStream.Play.Start")) rt->state = STATE_PLAYING;
+        if (!t && !strcmp(tmpstr, "NetStream.Play.Stop")) rt->state = STATE_STOPPED;
+        if (!t && !strcmp(tmpstr, "NetStream.Play.UnpublishNotify")) rt->state = STATE_STOPPED;
+        if (!t && !strcmp(tmpstr, "NetStream.Publish.Start")) rt->state = STATE_PUBLISHING;
+    } else if (!memcmp(pkt->data, "\002\000\010onBWDone", 11)) {
+        if ((ret = gen_check_bw(s, rt)) < 0)
+            return ret;
+    }
+
+    return 0;
+}
+
+/**
+ * Parse received packet and possibly perform some action depending on
+ * the packet contents.
+ * @return 0 for no errors, negative values for serious errors which prevent
+ *         further communications, positive values for uncritical errors
+ */
+static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
+{
+    int ret;
+
+#ifdef DEBUG
+    ff_rtmp_packet_dump(s, pkt);
+#endif
+
+    switch (pkt->type) {
+    case RTMP_PT_CHUNK_SIZE:
+        if ((ret = handle_chunk_size(s, pkt)) < 0)
+            return ret;
+        break;
+    case RTMP_PT_PING:
+        if ((ret = handle_ping(s, pkt)) < 0)
+            return ret;
+        break;
+    case RTMP_PT_CLIENT_BW:
+        if ((ret = handle_client_bw(s, pkt)) < 0)
+            return ret;
+        break;
+    case RTMP_PT_SERVER_BW:
+        if ((ret = handle_server_bw(s, pkt)) < 0)
+            return ret;
+        break;
+    case RTMP_PT_INVOKE:
+        if ((ret = handle_invoke(s, pkt)) < 0)
+            return ret;
         break;
     case RTMP_PT_VIDEO:
     case RTMP_PT_AUDIO:

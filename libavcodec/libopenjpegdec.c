@@ -27,9 +27,9 @@
 #define  OPJ_STATIC
 #include <openjpeg.h>
 
+#include "libavutil/intreadwrite.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/pixfmt.h"
-#include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "thread.h"
@@ -293,15 +293,12 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
 
     avcodec_set_dimensions(avctx, width, height);
 
-    if (avctx->pix_fmt != PIX_FMT_NONE) {
-        if (!libopenjpeg_matches_pix_fmt(image, avctx->pix_fmt)) {
+    if (avctx->pix_fmt != PIX_FMT_NONE)
+        if (!libopenjpeg_matches_pix_fmt(image, avctx->pix_fmt))
             avctx->pix_fmt = PIX_FMT_NONE;
-        }
-    }
 
-    if (avctx->pix_fmt == PIX_FMT_NONE) {
+    if (avctx->pix_fmt == PIX_FMT_NONE)
         avctx->pix_fmt = libopenjpeg_guess_pix_fmt(image);
-    }
 
     if (avctx->pix_fmt == PIX_FMT_NONE) {
         av_log(avctx, AV_LOG_ERROR, "Unable to determine pixel format\n");
@@ -331,9 +328,10 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     }
 
     opj_image_destroy(image);
-    // Decode the codestream.
+    // Decode the codestream
     image = opj_decode_with_info(dec, stream, NULL);
     opj_cio_close(stream);
+
     if (!image) {
         av_log(avctx, AV_LOG_ERROR, "Error decoding codestream.\n");
         goto done;

@@ -194,10 +194,12 @@ void ff_rv40dsp_init_x86(RV34DSPContext *c, DSPContext *dsp)
     if (mm_flags & AV_CPU_FLAG_MMX) {
         c->put_chroma_pixels_tab[0] = ff_put_rv40_chroma_mc8_mmx;
         c->put_chroma_pixels_tab[1] = ff_put_rv40_chroma_mc4_mmx;
+#if HAVE_INLINE_ASM
         c->put_pixels_tab[0][15] = ff_put_rv40_qpel16_mc33_mmx;
         c->put_pixels_tab[1][15] = ff_put_rv40_qpel8_mc33_mmx;
         c->avg_pixels_tab[0][15] = ff_avg_rv40_qpel16_mc33_mmx;
         c->avg_pixels_tab[1][15] = ff_avg_rv40_qpel8_mc33_mmx;
+#endif /* HAVE_INLINE_ASM */
 #if ARCH_X86_32
         QPEL_MC_SET(put_, _mmx)
 #endif
