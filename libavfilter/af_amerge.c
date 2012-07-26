@@ -241,13 +241,13 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
         ins[i] = inbuf[i]->data[0] +
                  am->in[i].pos * am->in[i].nb_ch * am->bps;
     }
+    avfilter_copy_buffer_ref_props(outbuf, inbuf[0]);
     outbuf->pts = inbuf[0]->pts == AV_NOPTS_VALUE ? AV_NOPTS_VALUE :
                   inbuf[0]->pts +
                   av_rescale_q(am->in[0].pos,
                                (AVRational){ 1, ctx->inputs[0]->sample_rate },
                                ctx->outputs[0]->time_base);
 
-    avfilter_copy_buffer_ref_props(outbuf, inbuf[0]);
     outbuf->audio->nb_samples     = nb_samples;
     outbuf->audio->channel_layout = outlink->channel_layout;
 
