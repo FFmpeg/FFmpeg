@@ -214,42 +214,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     return 0;
 }
 
-static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
-{
-    AVFilterLink *outlink = inlink->dst->outputs[0];
-    AVFilterBufferRef *outpicref = NULL, *for_next_filter;
-    int ret = 0;
-
-    if (inpicref->perms & AV_PERM_PRESERVE) {
-        outpicref = ff_get_video_buffer(outlink, AV_PERM_WRITE,
-                                        outlink->w, outlink->h);
-        if (!outpicref)
-            return AVERROR(ENOMEM);
-
-        avfilter_copy_buffer_ref_props(outpicref, inpicref);
-        outpicref->video->w = outlink->w;
-        outpicref->video->h = outlink->h;
-    } else {
-        outpicref = avfilter_ref_buffer(inpicref, ~0);
-        if (!outpicref)
-            return AVERROR(ENOMEM);
-    }
-
-    for_next_filter = avfilter_ref_buffer(outpicref, ~0);
-    if (for_next_filter)
-        ret = ff_start_frame(outlink, for_next_filter);
-    else
-        ret = AVERROR(ENOMEM);
-
-    if (ret < 0) {
-        avfilter_unref_bufferp(&outpicref);
-        return ret;
-    }
-
-    outlink->out_buf = outpicref;
-    return 0;
-}
-
 static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
     return 0;
@@ -296,7 +260,7 @@ AVFilter avfilter_vf_delogo = {
     .inputs    = (const AVFilterPad[]) {{ .name             = "default",
                                           .type             = AVMEDIA_TYPE_VIDEO,
                                           .get_video_buffer = ff_null_get_video_buffer,
-                                          .start_frame      = start_frame,
+                                          .start_frame      = ff_inplace_start_frame,
                                           .draw_slice       = null_draw_slice,
                                           .end_frame        = end_frame,
                                           .min_perms        = AV_PERM_WRITE | AV_PERM_READ,
