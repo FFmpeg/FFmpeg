@@ -636,7 +636,10 @@ int main(int argc, char **argv)
         av_expr_parse_and_eval(&d, *expr,
                                const_names, const_values,
                                NULL, NULL, NULL, NULL, NULL, 0, NULL);
-        printf("'%s' -> %f\n\n", *expr, d);
+        if (isnan(d))
+            printf("'%s' -> nan\n\n", *expr);
+        else
+            printf("'%s' -> %f\n\n", *expr, d);
     }
 
     av_expr_parse_and_eval(&d, "1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)",
