@@ -143,6 +143,9 @@ static av_cold int mpc8_decode_init(AVCodecContext * avctx)
     avctx->channel_layout = (channels==2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
     avctx->channels = channels;
 
+    avcodec_get_frame_defaults(&c->frame);
+    avctx->coded_frame = &c->frame;
+
     if(vlc_initialized) return 0;
     av_log(avctx, AV_LOG_DEBUG, "Initing VLC\n");
 
@@ -233,9 +236,6 @@ static av_cold int mpc8_decode_init(AVCodecContext * avctx)
                  &mpc8_q8_codes[i], 1, 1, INIT_VLC_USE_NEW_STATIC);
     }
     vlc_initialized = 1;
-
-    avcodec_get_frame_defaults(&c->frame);
-    avctx->coded_frame = &c->frame;
 
     return 0;
 }
