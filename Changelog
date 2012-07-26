@@ -23,6 +23,21 @@ version next:
 - RTMPTS protocol support
 - RTMPE protocol support
 - RTMPTE protocol support
+- showwaves filter
+- LucasArts SMUSH playback support
+- SAMI demuxer and decoder
+- RealText demuxer and decoder
+- Heart Of Darkness PAF playback support
+- iec61883 device
+- asettb filter
+- new option: -progress
+- 3GPP Timed Text decoder
+- GeoTIFF decoder support
+- ffmpeg -(no)stdin option
+- Opus decoder using libopus
+- caca output device using libcaca
+- alphaextract and alphamerge filters
+- concat filter
 
 
 version 0.11:
