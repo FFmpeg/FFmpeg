@@ -2417,25 +2417,6 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
         return ret;
     }
 
-    /* if the decoder provides a pts, use it instead of the last packet pts.
-       the decoder could be delaying output by a packet or more. */
-    if (decoded_frame->pts != AV_NOPTS_VALUE) {
-        ist->dts = ist->next_dts = ist->pts = ist->next_pts = av_rescale_q(decoded_frame->pts, avctx->time_base, AV_TIME_BASE_Q);
-        decoded_frame_tb   = avctx->time_base;
-    } else if (decoded_frame->pkt_pts != AV_NOPTS_VALUE) {
-        decoded_frame->pts = decoded_frame->pkt_pts;
-        pkt->pts           = AV_NOPTS_VALUE;
-        decoded_frame_tb   = ist->st->time_base;
-    } else if (pkt->pts != AV_NOPTS_VALUE) {
-        decoded_frame->pts = pkt->pts;
-        pkt->pts           = AV_NOPTS_VALUE;
-        decoded_frame_tb   = ist->st->time_base;
-    }else {
-        decoded_frame->pts = ist->dts;
-        decoded_frame_tb   = AV_TIME_BASE_Q;
-    }
-
-
 #if 1
     /* increment next_dts to use for the case where the input stream does not
        have timestamps or there are multiple frames in the packet */
@@ -2498,6 +2479,23 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
             }
     }
 
+    /* if the decoder provides a pts, use it instead of the last packet pts.
+       the decoder could be delaying output by a packet or more. */
+    if (decoded_frame->pts != AV_NOPTS_VALUE) {
+        ist->dts = ist->next_dts = ist->pts = ist->next_pts = av_rescale_q(decoded_frame->pts, avctx->time_base, AV_TIME_BASE_Q);
+        decoded_frame_tb   = avctx->time_base;
+    } else if (decoded_frame->pkt_pts != AV_NOPTS_VALUE) {
+        decoded_frame->pts = decoded_frame->pkt_pts;
+        pkt->pts           = AV_NOPTS_VALUE;
+        decoded_frame_tb   = ist->st->time_base;
+    } else if (pkt->pts != AV_NOPTS_VALUE) {
+        decoded_frame->pts = pkt->pts;
+        pkt->pts           = AV_NOPTS_VALUE;
+        decoded_frame_tb   = ist->st->time_base;
+    }else {
+        decoded_frame->pts = ist->dts;
+        decoded_frame_tb   = AV_TIME_BASE_Q;
+    }
     if (decoded_frame->pts != AV_NOPTS_VALUE)
         decoded_frame->pts = av_rescale_q(decoded_frame->pts,
                                           decoded_frame_tb,
