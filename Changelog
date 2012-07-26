@@ -39,6 +39,7 @@ version next:
 - concat filter
 - flite filter
 - Canopus Lossless Codec decoder
+- bitmap subtitles in filters (experimental and temporary)
 
 
 version 0.11:

@@ -249,6 +249,12 @@ typedef struct InputStream {
     int      resample_channels;
     uint64_t resample_channel_layout;
 
+    struct sub2video {
+        int64_t last_pts;
+        AVFilterBufferRef *ref;
+        int w, h;
+    } sub2video;
+
     /* a pool of free buffers for decoded data */
     FrameBuffer *buffer_pool;
     int dr1;
@@ -504,6 +510,155 @@ static void update_benchmark(const char *fmt, ...)
     }
 }
 
+/* sub2video hack:
+   Convert subtitles to video with alpha to insert them in filter graphs.
+   This is a temporary solution until libavfilter gets real subtitles support.
+ */
+
+
+static int sub2video_prepare(InputStream *ist)
+{
+    AVFormatContext *avf = input_files[ist->file_index]->ctx;
+    int i, ret, w, h;
+    uint8_t *image[4];
+    int linesize[4];
+
+    /* Compute the size of the canvas for the subtitles stream.
+       If the subtitles codec has set a size, use it. Otherwise use the
+       maximum dimensions of the video streams in the same file. */
+    w = ist->st->codec->width;
+    h = ist->st->codec->height;
+    if (!(w && h)) {
+        for (i = 0; i < avf->nb_streams; i++) {
+            if (avf->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+                w = FFMAX(w, avf->streams[i]->codec->width);
+                h = FFMAX(h, avf->streams[i]->codec->height);
+            }
+        }
+        if (!(w && h)) {
+            w = FFMAX(w, 720);
+            h = FFMAX(h, 576);
+        }
+        av_log(avf, AV_LOG_INFO, "sub2video: using %dx%d canvas\n", w, h);
+    }
+    ist->sub2video.w = ist->st->codec->width  = w;
+    ist->sub2video.h = ist->st->codec->height = h;
+
+    /* rectangles are PIX_FMT_PAL8, but we have no guarantee that the
+       palettes for all rectangles are identical or compatible */
+    ist->st->codec->pix_fmt = PIX_FMT_RGB32;
+
+    ret = av_image_alloc(image, linesize, w, h, PIX_FMT_RGB32, 32);
+    if (ret < 0)
+        return ret;
+    memset(image[0], 0, h * linesize[0]);
+    ist->sub2video.ref = avfilter_get_video_buffer_ref_from_arrays(
+            image, linesize, AV_PERM_READ | AV_PERM_PRESERVE,
+            w, h, PIX_FMT_RGB32);
+    if (!ist->sub2video.ref) {
+        av_free(image[0]);
+        return AVERROR(ENOMEM);
+    }
+    return 0;
+}
+
+static void sub2video_copy_rect(uint8_t *dst, int dst_linesize, int w, int h,
+                                AVSubtitleRect *r)
+{
+    uint32_t *pal, *dst2;
+    uint8_t *src, *src2;
+    int x, y;
+
+    if (r->type != SUBTITLE_BITMAP) {
+        av_log(NULL, AV_LOG_WARNING, "sub2video: non-bitmap subtitle\n");
+        return;
+    }
+    if (r->x < 0 || r->x + r->w > w || r->y < 0 || r->y + r->h > h) {
+        av_log(NULL, AV_LOG_WARNING, "sub2video: rectangle overflowing\n");
+        return;
+    }
+
+    dst += r->y * dst_linesize + r->x * 4;
+    src = r->pict.data[0];
+    pal = (uint32_t *)r->pict.data[1];
+    for (y = 0; y < r->h; y++) {
+        dst2 = (uint32_t *)dst;
+        src2 = src;
+        for (x = 0; x < r->w; x++)
+            *(dst2++) = pal[*(src2++)];
+        dst += dst_linesize;
+        src += r->pict.linesize[0];
+    }
+}
+
+static void sub2video_push_ref(InputStream *ist, int64_t pts)
+{
+    AVFilterBufferRef *ref = ist->sub2video.ref;
+    int i;
+
+    ist->sub2video.last_pts = ref->pts = pts;
+    for (i = 0; i < ist->nb_filters; i++)
+        av_buffersrc_add_ref(ist->filters[i]->filter,
+                             avfilter_ref_buffer(ref, ~0),
+                             AV_BUFFERSRC_FLAG_NO_CHECK_FORMAT |
+                             AV_BUFFERSRC_FLAG_NO_COPY);
+}
+
+static void sub2video_update(InputStream *ist, AVSubtitle *sub, int64_t pts)
+{
+    int w = ist->sub2video.w, h = ist->sub2video.h;
+    AVFilterBufferRef *ref = ist->sub2video.ref;
+    int8_t *dst;
+    int     dst_linesize;
+    int i;
+
+    if (!ref)
+        return;
+    dst          = ref->data    [0];
+    dst_linesize = ref->linesize[0];
+    memset(dst, 0, h * dst_linesize);
+    for (i = 0; i < sub->num_rects; i++)
+        sub2video_copy_rect(dst, dst_linesize, w, h, sub->rects[i]);
+    sub2video_push_ref(ist, pts);
+}
+
+static void sub2video_heartbeat(InputStream *ist, int64_t pts)
+{
+    InputFile *infile = input_files[ist->file_index];
+    int i, j, nb_reqs;
+    int64_t pts2;
+
+    /* When a frame is read from a file, examine all sub2video streams in
+       the same file and send the sub2video frame again. Otherwise, decoded
+       video frames could be accumulating in the filter graph while a filter
+       (possibly overlay) is desperately waiting for a subtitle frame. */
+    for (i = 0; i < infile->nb_streams; i++) {
+        InputStream *ist2 = input_streams[infile->ist_index + i];
+        if (!ist2->sub2video.ref)
+            continue;
+        /* subtitles seem to be usually muxed ahead of other streams;
+           if not, substracting a larger time here is necessary */
+        pts2 = av_rescale_q(pts, ist->st->time_base, ist2->st->time_base) - 1;
+        /* do not send the heartbeat frame if the subtitle is already ahead */
+        if (pts2 <= ist2->sub2video.last_pts)
+            continue;
+        for (j = 0, nb_reqs = 0; j < ist2->nb_filters; j++)
+            nb_reqs += av_buffersrc_get_nb_failed_requests(ist2->filters[j]->filter);
+        if (nb_reqs)
+            sub2video_push_ref(ist2, pts2);
+    }
+}
+
+static void sub2video_flush(InputStream *ist)
+{
+    int i;
+
+    for (i = 0; i < ist->nb_filters; i++)
+        av_buffersrc_add_ref(ist->filters[i]->filter, NULL, 0);
+}
+
+/* end of sub2video hack */
+
 static void reset_options(OptionsContext *o, int is_input)
 {
     const OptionDef *po = options;
@@ -745,7 +900,10 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
         s = input_files[file_idx]->ctx;
 
         for (i = 0; i < s->nb_streams; i++) {
-            if (s->streams[i]->codec->codec_type != type)
+            enum AVMediaType stream_type = s->streams[i]->codec->codec_type;
+            if (stream_type != type &&
+                !(stream_type == AVMEDIA_TYPE_SUBTITLE &&
+                  type == AVMEDIA_TYPE_VIDEO /* sub2video hack */))
                 continue;
             if (check_stream_specifier(s, s->streams[i], *p == ':' ? p + 1 : p) == 1) {
                 st = s->streams[i];
@@ -1024,6 +1182,12 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     char name[255];
     int pad_idx = in->pad_idx;
     int ret;
+
+    if (ist->st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+        ret = sub2video_prepare(ist);
+        if (ret < 0)
+            return ret;
+    }
 
     sar = ist->st->sample_aspect_ratio.num ?
           ist->st->sample_aspect_ratio :
@@ -1413,6 +1577,7 @@ void av_noreturn exit_program(int ret)
         av_freep(&input_streams[i]->decoded_frame);
         av_dict_free(&input_streams[i]->opts);
         free_buffer_pool(&input_streams[i]->buffer_pool);
+        avfilter_unref_bufferp(&input_streams[i]->sub2video.ref);
         av_freep(&input_streams[i]->filters);
         av_freep(&input_streams[i]);
     }
@@ -2636,12 +2801,15 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
     AVSubtitle subtitle;
     int i, ret = avcodec_decode_subtitle2(ist->st->codec,
                                           &subtitle, got_output, pkt);
-    if (ret < 0)
+    if (ret < 0 || !*got_output) {
+        if (!pkt->size)
+            sub2video_flush(ist);
         return ret;
-    if (!*got_output)
-        return ret;
+    }
 
     rate_emu_sleep(ist);
+
+    sub2video_update(ist, &subtitle, pkt->pts);
 
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
@@ -3846,6 +4014,8 @@ static int transcode(void)
                 }
             }
         }
+
+        sub2video_heartbeat(ist, pkt.pts);
 
         // fprintf(stderr,"read #%d.%d size=%d\n", ist->file_index, ist->st->index, pkt.size);
         if ((ret = output_packet(ist, &pkt)) < 0 ||
