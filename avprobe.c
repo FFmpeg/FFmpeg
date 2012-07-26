@@ -44,7 +44,7 @@ static int use_byte_value_binary_prefix = 0;
 static int use_value_sexagesimal_format = 0;
 
 /* globals */
-static const OptionDef options[];
+static const OptionDef *options;
 
 /* AVprobe context */
 static const char *input_filename;
@@ -887,7 +887,7 @@ static void opt_pretty(void)
     use_value_sexagesimal_format = 1;
 }
 
-static const OptionDef options[] = {
+static const OptionDef real_options[] = {
 #include "cmdutils_common_opts.h"
     { "f", HAS_ARG, {(void*)opt_format}, "force format", "format" },
     { "of", HAS_ARG, {(void*)&opt_output_format}, "output the document either as ini or json", "output_format" },
@@ -927,6 +927,7 @@ int main(int argc, char **argv)
     if (!buffer)
         exit(1);
 
+    options = real_options;
     parse_loglevel(argc, argv, options);
     av_register_all();
     avformat_network_init();

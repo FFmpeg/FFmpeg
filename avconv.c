@@ -104,7 +104,7 @@ typedef struct MetadataMap {
     int  index;     ///< stream/chapter/program number
 } MetadataMap;
 
-static const OptionDef options[];
+static const OptionDef *options;
 
 static int video_discard = 0;
 static int same_quant = 0;
@@ -4858,7 +4858,7 @@ static int opt_filter_complex(const char *opt, const char *arg)
 }
 
 #define OFFSET(x) offsetof(OptionsContext, x)
-static const OptionDef options[] = {
+static const OptionDef real_options[] = {
     /* main options */
 #include "cmdutils_common_opts.h"
     { "f", HAS_ARG | OPT_STRING | OPT_OFFSET, {.off = OFFSET(format)}, "force format", "fmt" },
@@ -4975,6 +4975,7 @@ int main(int argc, char **argv)
     OptionsContext o = { 0 };
     int64_t ti;
 
+    options = real_options;
     reset_options(&o);
 
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
