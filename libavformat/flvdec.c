@@ -69,12 +69,11 @@ static int flv_probe(AVProbeData *p)
     return 0;
 }
 
-static AVStream *create_stream(AVFormatContext *s, int tag, int codec_type)
+static AVStream *create_stream(AVFormatContext *s, int codec_type)
 {
     AVStream *st = avformat_new_stream(s, NULL);
     if (!st)
         return NULL;
-    st->id = tag;
     st->codec->codec_type = codec_type;
     avpriv_set_pts_info(st, 32, 1, 1000); /* 32 bit pts in ms */
     return st;
@@ -402,7 +401,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
             else if (!strcmp(key, "audiodatarate") && acodec && 0 <= (int)(num_val * 1024.0))
                 acodec->bit_rate = num_val * 1024.0;
             else if (!strcmp(key, "datastream")) {
-                AVStream *st = create_stream(s, 2, AVMEDIA_TYPE_DATA);
+                AVStream *st = create_stream(s, AVMEDIA_TYPE_DATA);
                 if (!st)
                     return AVERROR(ENOMEM);
                 st->codec->codec_id = CODEC_ID_TEXT;
@@ -507,11 +506,11 @@ static int flv_read_header(AVFormatContext *s)
         s->ctx_flags |= AVFMTCTX_NOHEADER;
 
     if(flags & FLV_HEADER_FLAG_HASVIDEO){
-        if(!create_stream(s, 0, AVMEDIA_TYPE_VIDEO))
+        if(!create_stream(s, AVMEDIA_TYPE_VIDEO))
             return AVERROR(ENOMEM);
     }
     if(flags & FLV_HEADER_FLAG_HASAUDIO){
-        if(!create_stream(s, 1, AVMEDIA_TYPE_AUDIO))
+        if(!create_stream(s, AVMEDIA_TYPE_AUDIO))
             return AVERROR(ENOMEM);
     }
 
@@ -612,7 +611,7 @@ static int flv_data_packet(AVFormatContext *s, AVPacket *pkt,
     }
 
     if (i == s->nb_streams) {
-        st = create_stream(s, 2, AVMEDIA_TYPE_DATA);
+        st = create_stream(s, AVMEDIA_TYPE_DATA);
         if (!st)
             goto out;
         st->codec->codec_id = CODEC_ID_TEXT;
@@ -713,8 +712,8 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
     if(i == s->nb_streams){
-        st = create_stream(s, is_audio,
-             is_audio ? AVMEDIA_TYPE_AUDIO : AVMEDIA_TYPE_VIDEO);
+        st = create_stream(s,
+            is_audio ? AVMEDIA_TYPE_AUDIO : AVMEDIA_TYPE_VIDEO);
         s->ctx_flags &= ~AVFMTCTX_NOHEADER;
     }
     av_dlog(s, "%d %X %d \n", is_audio, flags, st->discard);
