@@ -47,6 +47,7 @@ version next:
 - hue filter
 - ICO muxer
 - SubRip encoder and decoder without embedded timing
+- edge detection filter
 
 
 version 0.11:

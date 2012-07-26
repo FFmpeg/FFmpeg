@@ -81,6 +81,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER (DESHAKE,     deshake,     vf);
     REGISTER_FILTER (DRAWBOX,     drawbox,     vf);
     REGISTER_FILTER (DRAWTEXT,    drawtext,    vf);
+    REGISTER_FILTER (EDGEDETECT,  edgedetect,  vf);
     REGISTER_FILTER (FADE,        fade,        vf);
     REGISTER_FILTER (FIELDORDER,  fieldorder,  vf);
     REGISTER_FILTER (FIFO,        fifo,        vf);
