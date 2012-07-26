@@ -82,22 +82,25 @@ typedef struct AVBPrint {
 } AVBPrint;
 
 /**
+ * Convenience macros for special values for av_bprint_init() size_max
+ * parameter.
+ */
+#define AV_BPRINT_SIZE_UNLIMITED  ((unsigned)-1)
+#define AV_BPRINT_SIZE_AUTOMATIC  1
+#define AV_BPRINT_SIZE_COUNT_ONLY 0
+
+/**
  * Init a print buffer.
  *
  * @param buf        buffer to init
  * @param size_init  initial size (including the final 0)
  * @param size_max   maximum size;
- *                   0 means do not write anything, just count the length;
- *                   1 is replaced by the maximum value for automatic storage
+ *                   any large value means that the internal buffer will be
+ *                   reallocated as needed up to that limit; -1 is converted to
+ *                   UINT_MAX, the largest limit possible.
+ *                   Check also AV_BPRINT_SIZE_* macros.
  */
 void av_bprint_init(AVBPrint *buf, unsigned size_init, unsigned size_max);
-
-/**
- * Convenience macros for special values for size_max.
- */
-#define AV_BPRINT_SIZE_UNLIMITED  ((unsigned)-1)
-#define AV_BPRINT_SIZE_AUTOMATIC  1
-#define AV_BPRINT_SIZE_COUNT_ONLY 0
 
 /**
  * Init a print buffer using a pre-existing buffer.
