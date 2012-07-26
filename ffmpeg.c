@@ -225,13 +225,12 @@ typedef struct InputStream {
 
     int64_t       start;     /* time when read started */
     /* predicted dts of the next packet read for this stream or (when there are
-     * several frames in a packet) of the next frame in current packet */
+     * several frames in a packet) of the next frame in current packet (in AV_TIME_BASE units) */
     int64_t       next_dts;
-    /* dts of the last packet read for this stream */
-    int64_t       dts;
+    int64_t       dts;       ///< dts of the last packet read for this stream (in AV_TIME_BASE units)
 
-    int64_t       next_pts;  /* synthetic pts for the next decode frame */
-    int64_t       pts;       /* current pts of the decoded frame */
+    int64_t       next_pts;  ///< synthetic pts for the next decode frame (in AV_TIME_BASE units)
+    int64_t       pts;       ///< current pts of the decoded frame  (in AV_TIME_BASE units)
     double ts_scale;
     int is_start;            /* is 1 at the start and after a discontinuity */
     int saw_first_ts;
@@ -347,8 +346,8 @@ typedef struct OutputFile {
     AVFormatContext *ctx;
     AVDictionary *opts;
     int ost_index;       /* index of the first stream in output_streams */
-    int64_t recording_time; /* desired length of the resulting file in microseconds */
-    int64_t start_time;     /* start time in microseconds */
+    int64_t recording_time;  ///< desired length of the resulting file in microseconds == AV_TIME_BASE units
+    int64_t start_time;      ///< start time in microseconds == AV_TIME_BASE units
     uint64_t limit_filesize; /* filesize limit expressed in bytes */
 } OutputFile;
 
