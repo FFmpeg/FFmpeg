@@ -127,7 +127,7 @@ FATE += $(FATE_LAVF_FATE)
 FATE += $(FATE_FULL) $(FATE_FULL-yes)
 FATE += $(FATE_SAMPLES)
 fate-rsync:
-	rsync -vaLW --timeout=60 --contimeout=60 rsync://fate.ffmpeg.org/fate-suite/ $(SAMPLES)
+	rsync -vaLW --timeout=60 --contimeout=60 rsync://fate-suite.avcodec.org/fate-suite/ $(SAMPLES)
 else
 fate::
 	@echo "warning: only a subset of the fate tests will be run because SAMPLES is not specified"
