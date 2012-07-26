@@ -33,32 +33,32 @@
 #include "video.h"
 
 typedef struct {
-    int coefs[4][512*16];
-    uint32_t *line;
+    int16_t coefs[4][512*16];
+    uint16_t *line;
     uint16_t *frame_prev[3];
     int hsub, vsub;
 } HQDN3DContext;
 
-static inline uint32_t lowpass(unsigned int prev, unsigned int cur, int *coef)
+static inline uint32_t lowpass(int prev, int cur, int16_t *coef)
 {
-    int dmul = prev-cur;
-    unsigned int d = (dmul+0x10007FF)>>12; // 0x1000 to convert to unsigned, 7FF for rounding
+    int d = (prev-cur)>>4;
     return cur + coef[d];
 }
 
 static void denoise_temporal(uint8_t *src, uint8_t *dst,
                              uint16_t *frame_ant,
                              int w, int h, int sstride, int dstride,
-                             int *temporal)
+                             int16_t *temporal)
 {
     long x, y;
     uint32_t tmp;
 
+    temporal += 0x1000;
+
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
-            tmp = lowpass(frame_ant[x]<<8, src[x]<<16, temporal);
-            frame_ant[x] = (tmp+0x7F)>>8;
-            dst[x] = (tmp+0x7FFF)>>16;
+            frame_ant[x] = tmp = lowpass(frame_ant[x], src[x]<<8, temporal);
+            dst[x] = (tmp+0x7F)>>8;
         }
         src += sstride;
         dst += dstride;
@@ -67,47 +67,47 @@ static void denoise_temporal(uint8_t *src, uint8_t *dst,
 }
 
 static void denoise_spatial(uint8_t *src, uint8_t *dst,
-                            uint32_t *line_ant, uint16_t *frame_ant,
+                            uint16_t *line_ant, uint16_t *frame_ant,
                             int w, int h, int sstride, int dstride,
-                            int *spatial, int *temporal)
+                            int16_t *spatial, int16_t *temporal)
 {
     long x, y;
     uint32_t pixel_ant;
     uint32_t tmp;
 
+    spatial  += 0x1000;
+    temporal += 0x1000;
+
     /* First line has no top neighbor. Only left one for each tmp and
      * last frame */
-    pixel_ant = src[0]<<16;
+    pixel_ant = src[0]<<8;
     for (x = 0; x < w; x++) {
-        line_ant[x] = tmp = pixel_ant = lowpass(pixel_ant, src[x]<<16, spatial);
-        tmp = lowpass(frame_ant[x]<<8, tmp, temporal);
-        frame_ant[x] = (tmp+0x7F)>>8;
-        dst[x] = (tmp+0x7FFF)>>16;
+        line_ant[x] = tmp = pixel_ant = lowpass(pixel_ant, src[x]<<8, spatial);
+        frame_ant[x] = tmp = lowpass(frame_ant[x], tmp, temporal);
+        dst[x] = (tmp+0x7F)>>8;
     }
 
     for (y = 1; y < h; y++) {
         src += sstride;
         dst += dstride;
         frame_ant += w;
-        pixel_ant = src[0]<<16;
+        pixel_ant = src[0]<<8;
         for (x = 0; x < w-1; x++) {
             line_ant[x] = tmp = lowpass(line_ant[x], pixel_ant, spatial);
-            pixel_ant = lowpass(pixel_ant, src[x+1]<<16, spatial);
-            tmp = lowpass(frame_ant[x]<<8, tmp, temporal);
-            frame_ant[x] = (tmp+0x7F)>>8;
-            dst[x] = (tmp+0x7FFF)>>16;
+            pixel_ant = lowpass(pixel_ant, src[x+1]<<8, spatial);
+            frame_ant[x] = tmp = lowpass(frame_ant[x], tmp, temporal);
+            dst[x] = (tmp+0x7F)>>8;
         }
         line_ant[x] = tmp = lowpass(line_ant[x], pixel_ant, spatial);
-        tmp = lowpass(frame_ant[x]<<8, tmp, temporal);
-        frame_ant[x] = (tmp+0x7F)>>8;
-        dst[x] = (tmp+0x7FFF)>>16;
+        frame_ant[x] = tmp = lowpass(frame_ant[x], tmp, temporal);
+        dst[x] = (tmp+0x7F)>>8;
     }
 }
 
 static void denoise(uint8_t *src, uint8_t *dst,
-                    uint32_t *line_ant, uint16_t **frame_ant_ptr,
+                    uint16_t *line_ant, uint16_t **frame_ant_ptr,
                     int w, int h, int sstride, int dstride,
-                    int *spatial, int *temporal)
+                    int16_t *spatial, int16_t *temporal)
 {
     long x, y;
     uint16_t *frame_ant = *frame_ant_ptr;
@@ -129,16 +129,18 @@ static void denoise(uint8_t *src, uint8_t *dst,
                          w, h, sstride, dstride, temporal);
 }
 
-static void precalc_coefs(int *ct, double dist25)
+static void precalc_coefs(int16_t *ct, double dist25)
 {
     int i;
     double gamma, simil, C;
 
-    gamma = log(0.25) / log(1.0 - dist25/255.0 - 0.00001);
+    gamma = log(0.25) / log(1.0 - FFMIN(dist25,252.0)/255.0 - 0.00001);
 
     for (i = -255*16; i <= 255*16; i++) {
-        simil = 1.0 - FFABS(i) / (16*255.0);
-        C = pow(simil, gamma) * 65536.0 * i / 16.0;
+        // lowpass() truncates (not rounds) the diff, so +15/32 for the midpoint of the bin.
+        double f = (i + 15.0/32.0) / 16.0;
+        simil = 1.0 - FFABS(f) / 255.0;
+        C = pow(simil, gamma) * 256.0 * f;
         ct[16*256+i] = lrint(C);
     }
 
