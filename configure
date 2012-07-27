@@ -3165,13 +3165,13 @@ elif enabled mips; then
 
     check_inline_asm loongson '"dmult.g $1, $2, $3"'
     enabled mmi && check_inline_asm mmi '"lq $2, 0($2)"'
-    enabled mips32r2  && add_cflags "-mips32r2" &&
+    enabled mips32r2  && add_cflags "-mips32r2" && add_asflags "-mips32r2" &&
      check_inline_asm mips32r2  '"rotr $t0, $t1, 1"'
     enabled mipsdspr1 && add_cflags "-mdsp" && add_asflags "-mdsp" &&
      check_inline_asm mipsdspr1 '"addu.qb $t0, $t1, $t2"'
     enabled mipsdspr2 && add_cflags "-mdspr2" && add_asflags "-mdspr2" &&
      check_inline_asm mipsdspr2 '"absq_s.qb $t0, $t1"'
-    enabled mipsfpu   && add_cflags "-mhard-float" &&
+    enabled mipsfpu   && add_cflags "-mhard-float" && add_asflags "-mhard-float" &&
      check_inline_asm mipsfpu   '"madd.d $f0, $f2, $f4, $f6"'
 
 elif enabled ppc; then
