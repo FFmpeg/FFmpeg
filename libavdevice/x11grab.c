@@ -42,6 +42,7 @@
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
+#include "libavutil/time.h"
 #include <time.h>
 #include <X11/X.h>
 #include <X11/Xlib.h>

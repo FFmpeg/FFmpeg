@@ -35,6 +35,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/parseutils.h"
+#include "libavutil/time.h"
 #include "riff.h"
 #include "audiointerleave.h"
 #include "url.h"
