@@ -82,8 +82,7 @@ section .text align=16
 
 ; %1 = row or col (for rounding variable)
 ; %2 = number of bits to shift at the end
-; %3 = optimization
-%macro IDCT_1D 3
+%macro IDCT_1D 2
     ; a0 = (W4 * row[0]) + (1 << (15 - 1));
     ; a1 = a0;
     ; a2 = a0;
@@ -330,8 +329,8 @@ section .text align=16
 
 ; void prores_idct_put_10_<opt>(uint8_t *pixels, int stride,
 ;                               DCTELEM *block, const int16_t *qmat);
-%macro idct_put_fn 2
-cglobal prores_idct_put_10_%1, 4, 4, %2
+%macro idct_put_fn 1
+cglobal prores_idct_put_10, 4, 4, %1
     movsxd      r1,  r1d
     pxor        m15, m15           ; zero
 
@@ -347,7 +346,7 @@ cglobal prores_idct_put_10_%1, 4, 4, %2
     pmullw      m13,[r3+64]
     pmullw      m12,[r3+96]
 
-    IDCT_1D     row, 17,  %1
+    IDCT_1D     row, 17
 
     ; transpose for second part of IDCT
     TRANSPOSE8x8W 8, 0, 1, 2, 4, 11, 9, 10, 3
@@ -362,7 +361,7 @@ cglobal prores_idct_put_10_%1, 4, 4, %2
 
     ; for (i = 0; i < 8; i++)
     ;     idctSparseColAdd(dest + i, line_size, block + i);
-    IDCT_1D     col, 20,  %1
+    IDCT_1D     col, 20
 
     ; clip/store
     mova        m6, [pw_512]
@@ -406,27 +405,25 @@ cglobal prores_idct_put_10_%1, 4, 4, %2
     RET
 %endmacro
 
-%macro signextend_sse2 3 ; dstlow, dsthigh, tmp
+%macro SIGNEXTEND 2-3 ; dstlow, dsthigh, tmp
+%if cpuflag(sse4)
+    movhlps     %2,  %1
+    pmovsxwd    %1,  %1
+    pmovsxwd    %2,  %2
+%else ; sse2
     pxor        %3,  %3
     pcmpgtw     %3,  %1
     mova        %2,  %1
     punpcklwd   %1,  %3
     punpckhwd   %2,  %3
+%endif
 %endmacro
 
-%macro signextend_sse4 2-3 ; dstlow, dsthigh
-    movhlps     %2,  %1
-    pmovsxwd    %1,  %1
-    pmovsxwd    %2,  %2
-%endmacro
-
-INIT_XMM
-%define SIGNEXTEND signextend_sse2
-idct_put_fn sse2, 16
-INIT_XMM
-%define SIGNEXTEND signextend_sse4
-idct_put_fn sse4, 16
-INIT_AVX
-idct_put_fn avx,  16
+INIT_XMM sse2
+idct_put_fn 16
+INIT_XMM sse4
+idct_put_fn 16
+INIT_XMM avx
+idct_put_fn 16
 
 %endif
