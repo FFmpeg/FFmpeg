@@ -102,8 +102,8 @@ SECTION .text
     mov  [r0+r3  -1], r2w
 %endmacro
 
-INIT_MMX
-cglobal vp3_v_loop_filter_mmx2, 3, 4
+INIT_MMX mmx2
+cglobal vp3_v_loop_filter, 3, 4
 %if ARCH_X86_64
     movsxd        r1, r1d
 %endif
@@ -120,7 +120,7 @@ cglobal vp3_v_loop_filter_mmx2, 3, 4
     movq     [r0   ], m3
     RET
 
-cglobal vp3_h_loop_filter_mmx2, 3, 4
+cglobal vp3_h_loop_filter, 3, 4
 %if ARCH_X86_64
     movsxd        r1, r1d
 %endif
@@ -354,38 +354,6 @@ cglobal vp3_h_loop_filter_mmx2, 3, 4
     movq        I(2), m2
 %endmacro
 
-%macro VP3_IDCT_mmx 1
-    ; eax = quantized input
-    ; ebx = dequantizer matrix
-    ; ecx = IDCT constants
-    ;  M(I) = ecx + MaskOffset(0) + I * 8
-    ;  C(I) = ecx + CosineOffset(32) + (I-1) * 8
-    ; edx = output
-    ; r0..r7 = mm0..mm7
-%define OC_8 [pw_8]
-%define C(x) [vp3_idct_data+16*(x-1)]
-
-    ; at this point, function has completed dequantization + dezigzag +
-    ; partial transposition; now do the idct itself
-%define I(x) [%1+16* x     ]
-%define J(x) [%1+16*(x-4)+8]
-    RowIDCT
-    Transpose
-
-%define I(x) [%1+16* x   +64]
-%define J(x) [%1+16*(x-4)+72]
-    RowIDCT
-    Transpose
-
-%define I(x) [%1+16*x]
-%define J(x) [%1+16*x]
-    ColumnIDCT
-
-%define I(x) [%1+16*x+8]
-%define J(x) [%1+16*x+8]
-    ColumnIDCT
-%endmacro
-
 %macro VP3_1D_IDCT_SSE2 0
     movdqa        m2, I(3)      ; xmm2 = i3
     movdqa        m6, C(3)      ; xmm6 = c3
@@ -501,7 +469,8 @@ cglobal vp3_h_loop_filter_mmx2, 3, 4
     movdqa      O(7), m%8
 %endmacro
 
-%macro VP3_IDCT_sse2 1
+%macro VP3_IDCT 1
+%if mmsize == 16
 %define I(x) [%1+16*x]
 %define O(x) [%1+16*x]
 %define C(x) [vp3_idct_data+16*(x-1)]
@@ -519,11 +488,42 @@ cglobal vp3_h_loop_filter_mmx2, 3, 4
 %define ADD(x)   paddsw x, [pw_8]
         VP3_1D_IDCT_SSE2
         PUT_BLOCK 0, 1, 2, 3, 4, 5, 6, 7
+%else ; mmsize == 8
+    ; eax = quantized input
+    ; ebx = dequantizer matrix
+    ; ecx = IDCT constants
+    ;  M(I) = ecx + MaskOffset(0) + I * 8
+    ;  C(I) = ecx + CosineOffset(32) + (I-1) * 8
+    ; edx = output
+    ; r0..r7 = mm0..mm7
+%define OC_8 [pw_8]
+%define C(x) [vp3_idct_data+16*(x-1)]
+
+    ; at this point, function has completed dequantization + dezigzag +
+    ; partial transposition; now do the idct itself
+%define I(x) [%1+16* x     ]
+%define J(x) [%1+16*(x-4)+8]
+    RowIDCT
+    Transpose
+
+%define I(x) [%1+16* x   +64]
+%define J(x) [%1+16*(x-4)+72]
+    RowIDCT
+    Transpose
+
+%define I(x) [%1+16*x]
+%define J(x) [%1+16*x]
+    ColumnIDCT
+
+%define I(x) [%1+16*x+8]
+%define J(x) [%1+16*x+8]
+    ColumnIDCT
+%endif ; mmsize == 16/8
 %endmacro
 
-%macro vp3_idct_funcs 1
-cglobal vp3_idct_put_%1, 3, 4, 9
-    VP3_IDCT_%1   r2
+%macro vp3_idct_funcs 0
+cglobal vp3_idct_put, 3, 4, 9
+    VP3_IDCT      r2
 
     movsxdifnidn  r1, r1d
     mova          m4, [pb_80]
@@ -565,8 +565,8 @@ cglobal vp3_idct_put_%1, 3, 4, 9
 %endrep
     RET
 
-cglobal vp3_idct_add_%1, 3, 4, 9
-    VP3_IDCT_%1   r2
+cglobal vp3_idct_add, 3, 4, 9
+    VP3_IDCT      r2
 
     mov           r3, 4
     pxor          m4, m4
@@ -607,10 +607,10 @@ cglobal vp3_idct_add_%1, 3, 4, 9
     RET
 %endmacro
 
-INIT_MMX
-vp3_idct_funcs mmx
-INIT_XMM
-vp3_idct_funcs sse2
+INIT_MMX mmx
+vp3_idct_funcs
+INIT_XMM sse2
+vp3_idct_funcs
 
 %macro DC_ADD 0
     movq          m2, [r0     ]
@@ -631,8 +631,8 @@ vp3_idct_funcs sse2
     movq   [r0+r3  ], m5
 %endmacro
 
-INIT_MMX
-cglobal vp3_idct_dc_add_mmx2, 3, 4
+INIT_MMX mmx2
+cglobal vp3_idct_dc_add, 3, 4
 %if ARCH_X86_64
     movsxd        r1, r1d
 %endif
