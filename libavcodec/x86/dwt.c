@@ -142,23 +142,23 @@ void ff_spatial_idwt_init_mmx(DWTContext *d, enum dwt_type type)
 
     switch (type) {
     case DWT_DIRAC_DD9_7:
-        d->vertical_compose_l0 = vertical_compose53iL0_mmx;
-        d->vertical_compose_h0 = vertical_compose_dd97iH0_mmx;
+        d->vertical_compose_l0 = (void*)vertical_compose53iL0_mmx;
+        d->vertical_compose_h0 = (void*)vertical_compose_dd97iH0_mmx;
         break;
     case DWT_DIRAC_LEGALL5_3:
-        d->vertical_compose_l0 = vertical_compose53iL0_mmx;
-        d->vertical_compose_h0 = vertical_compose_dirac53iH0_mmx;
+        d->vertical_compose_l0 = (void*)vertical_compose53iL0_mmx;
+        d->vertical_compose_h0 = (void*)vertical_compose_dirac53iH0_mmx;
         break;
     case DWT_DIRAC_DD13_7:
-        d->vertical_compose_l0 = vertical_compose_dd137iL0_mmx;
-        d->vertical_compose_h0 = vertical_compose_dd97iH0_mmx;
+        d->vertical_compose_l0 = (void*)vertical_compose_dd137iL0_mmx;
+        d->vertical_compose_h0 = (void*)vertical_compose_dd97iH0_mmx;
         break;
     case DWT_DIRAC_HAAR0:
-        d->vertical_compose   = vertical_compose_haar_mmx;
+        d->vertical_compose   = (void*)vertical_compose_haar_mmx;
         d->horizontal_compose = horizontal_compose_haar0i_mmx;
         break;
     case DWT_DIRAC_HAAR1:
-        d->vertical_compose   = vertical_compose_haar_mmx;
+        d->vertical_compose   = (void*)vertical_compose_haar_mmx;
         d->horizontal_compose = horizontal_compose_haar1i_mmx;
         break;
     }
@@ -169,23 +169,23 @@ void ff_spatial_idwt_init_mmx(DWTContext *d, enum dwt_type type)
 
     switch (type) {
     case DWT_DIRAC_DD9_7:
-        d->vertical_compose_l0 = vertical_compose53iL0_sse2;
-        d->vertical_compose_h0 = vertical_compose_dd97iH0_sse2;
+        d->vertical_compose_l0 = (void*)vertical_compose53iL0_sse2;
+        d->vertical_compose_h0 = (void*)vertical_compose_dd97iH0_sse2;
         break;
     case DWT_DIRAC_LEGALL5_3:
-        d->vertical_compose_l0 = vertical_compose53iL0_sse2;
-        d->vertical_compose_h0 = vertical_compose_dirac53iH0_sse2;
+        d->vertical_compose_l0 = (void*)vertical_compose53iL0_sse2;
+        d->vertical_compose_h0 = (void*)vertical_compose_dirac53iH0_sse2;
         break;
     case DWT_DIRAC_DD13_7:
-        d->vertical_compose_l0 = vertical_compose_dd137iL0_sse2;
-        d->vertical_compose_h0 = vertical_compose_dd97iH0_sse2;
+        d->vertical_compose_l0 = (void*)vertical_compose_dd137iL0_sse2;
+        d->vertical_compose_h0 = (void*)vertical_compose_dd97iH0_sse2;
         break;
     case DWT_DIRAC_HAAR0:
-        d->vertical_compose   = vertical_compose_haar_sse2;
+        d->vertical_compose   = (void*)vertical_compose_haar_sse2;
         d->horizontal_compose = horizontal_compose_haar0i_sse2;
         break;
     case DWT_DIRAC_HAAR1:
-        d->vertical_compose   = vertical_compose_haar_sse2;
+        d->vertical_compose   = (void*)vertical_compose_haar_sse2;
         d->horizontal_compose = horizontal_compose_haar1i_sse2;
         break;
     }
