@@ -76,8 +76,9 @@ static const AVClass *format_child_class_next(const AVClass *prev)
     return NULL;
 }
 
-static AVClassCategory get_category(AVFormatContext *s)
+static AVClassCategory get_category(void *ptr)
 {
+    AVFormatContext* s = ptr;
     if(s->iformat) return AV_CLASS_CATEGORY_DEMUXER;
     else           return AV_CLASS_CATEGORY_MUXER;
 }

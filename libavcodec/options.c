@@ -65,8 +65,9 @@ static const AVClass *codec_child_class_next(const AVClass *prev)
     return NULL;
 }
 
-static AVClassCategory get_category(AVCodecContext *avctx)
+static AVClassCategory get_category(void *ptr)
 {
+    AVCodecContext* avctx = ptr;
     if(avctx->codec && avctx->codec->decode) return AV_CLASS_CATEGORY_DECODER;
     else                                     return AV_CLASS_CATEGORY_ENCODER;
 }
@@ -80,7 +81,7 @@ static const AVClass av_codec_context_class = {
     .child_next              = codec_child_next,
     .child_class_next        = codec_child_class_next,
     .category                = AV_CLASS_CATEGORY_ENCODER,
-    .get_category            = (void*)get_category,
+    .get_category            = get_category,
 };
 
 #if FF_API_ALLOC_CONTEXT
