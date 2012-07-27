@@ -116,6 +116,8 @@ Component options:
   --enable-x11grab         enable X11 grabbing [no]
   --disable-network        disable network support [no]
   --disable-dct            disable DCT code
+  --disable-dwt            disable DWT code
+  --disable-lsp            disable LSP code
   --disable-mdct           disable MDCT code
   --disable-rdft           disable RDFT code
   --disable-fft            disable FFT code
@@ -207,16 +209,18 @@ Advanced options (experts only):
   --ar=AR                  use archive tool AR [$ar_default]
   --as=AS                  use assembler AS [$as_default]
   --cc=CC                  use C compiler CC [$cc_default]
+  --dep-cc=DEPCC           use dependency generator DEPCC [$cc_default]
   --ld=LD                  use linker LD
   --host-cc=HOSTCC         use host C compiler HOSTCC
   --host-cflags=HCFLAGS    use HCFLAGS when compiling for host
   --host-ldflags=HLDFLAGS  use HLDFLAGS when linking for host
   --host-libs=HLIBS        use libs HLIBS when linking for host
+  --host-os=OS             compiler host OS [$target_os]
   --extra-cflags=ECFLAGS   add ECFLAGS to CFLAGS [$CFLAGS]
   --extra-ldflags=ELDFLAGS add ELDFLAGS to LDFLAGS [$LDFLAGS]
   --extra-libs=ELIBS       add ELIBS [$ELIBS]
   --extra-version=STRING   version string suffix []
-  --optflags               override optimization-related compiler flags
+  --optflags=OPTFLAGS      override optimization-related compiler flags
   --build-suffix=SUFFIX    library name suffix []
   --malloc-prefix=PREFIX   prefix malloc and related names with PREFIX
   --arch=ARCH              select architecture [$arch]
@@ -224,6 +228,7 @@ Advanced options (experts only):
                            instruction selection, may crash on older CPUs)
   --enable-pic             build position-independent code
   --enable-sram            allow use of on-chip SRAM
+  --enable-thumb           compile for Thumb instruction set
   --disable-symver         disable symbol versioning
   --disable-fastdiv        disable table-based division
   --enable-hardcoded-tables use hardcoded tables instead of runtime generation
