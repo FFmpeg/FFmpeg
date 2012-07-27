@@ -168,7 +168,7 @@ static int request_frame(AVFilterLink *outlink)
 
     merge->frame_requested = 1;
     while (merge->frame_requested) {
-        in = ff_bufqueue_peek(&merge->queue_main, 0) ? 0 : 1;
+        in = ff_bufqueue_peek(&merge->queue_main, 0) ? 1 : 0;
         ret = ff_request_frame(ctx->inputs[in]);
         if (ret < 0)
             return ret;
