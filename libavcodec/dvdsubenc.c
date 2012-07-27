@@ -20,9 +20,8 @@
  */
 #include "avcodec.h"
 #include "bytestream.h"
+#include "libavutil/avassert.h"
 
-#undef NDEBUG
-#include <assert.h>
 
 // ncnt is the nibble counter
 #define PUTNIBBLE(val)\
@@ -53,7 +52,7 @@ static void dvd_encode_rle(uint8_t **pq,
                 if (bitmap[x+len] != color)
                     break;
             color = cmap[color];
-            assert(color < 4);
+            av_assert0(color < 4);
             if (len < 0x04) {
                 PUTNIBBLE((len << 2)|color);
             } else if (len < 0x10) {
