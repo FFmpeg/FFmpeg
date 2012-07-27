@@ -296,7 +296,7 @@ int av_image_fill_arrays(uint8_t *dst_data[4], int dst_linesize[4],
     if ((ret = av_image_fill_pointers(dst_data, pix_fmt, width, NULL, dst_linesize)) < 0)
         return ret;
 
-    return av_image_fill_pointers(dst_data, pix_fmt, height, src, dst_linesize);
+    return av_image_fill_pointers(dst_data, pix_fmt, height, (uint8_t *)src, dst_linesize);
 }
 
 int av_image_get_buffer_size(enum PixelFormat pix_fmt, int width, int height, int align)
@@ -340,7 +340,7 @@ int av_image_copy_to_buffer(uint8_t *dst, int dst_size,
     }
 
     if (desc->flags & PIX_FMT_PAL) {
-        uint32_t *d32 = (uint8_t *)(((size_t)dst + 3) & ~3);
+        uint32_t *d32 = (uint32_t *)(((size_t)dst + 3) & ~3);
         for (i = 0; i<256; i++)
             AV_WL32(d32 + i, AV_RN32(src_data[1] + 4*i));
     }
