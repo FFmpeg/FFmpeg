@@ -420,8 +420,6 @@ reload:
     ret = ffurl_read(v->input, buf, buf_size);
     if (ret > 0)
         return ret;
-    if (ret < 0 && ret != AVERROR_EOF)
-        return ret;
     ffurl_close(v->input);
     v->input = NULL;
     v->cur_seq_no++;
