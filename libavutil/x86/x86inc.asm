@@ -441,6 +441,9 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
 %macro PROLOGUE 2-4+ ; #args, #regs, #xmm_regs, arg_names...
     %assign num_args %1
     %assign regs_used %2
+    %if num_args > 7
+        %assign num_args 7
+    %endif
     %if regs_used > 7
         %assign regs_used 7
     %endif
