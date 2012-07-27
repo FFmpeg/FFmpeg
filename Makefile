@@ -46,7 +46,7 @@ COMPILE_S = $(call COMPILE,AS)
 	$(COMPILE_S)
 
 %.ho: %.h
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ -x c $<
+	$(CC) $(CCFLAGS) -c $(CC_O) -x c $<
 
 %.ver: %.v
 	$(Q)sed 's/$$MAJOR/$($(basename $(@F))_VERSION_MAJOR)/' $^ > $@
