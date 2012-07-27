@@ -940,7 +940,6 @@ PROGRAM_LIST="
 CONFIG_LIST="
     $COMPONENT_LIST
     $PROGRAM_LIST
-    ac3dsp
     avcodec
     avdevice
     avfilter
@@ -955,7 +954,6 @@ CONFIG_LIST="
     fastdiv
     fft
     frei0r
-    gcrypt
     gnutls
     gpl
     gray
@@ -987,18 +985,14 @@ CONFIG_LIST="
     lsp
     mdct
     memalign_hack
-    mpegaudiodsp
-    nettle
     network
     nonfree
     openssl
     pic
     rdft
-    rtpdec
     runtime_cpudetect
     safe_bitstream_reader
     shared
-    sinewin
     small
     sram
     static
@@ -1204,7 +1198,9 @@ HAVE_LIST="
 # options emitted with CONFIG_ prefix but not available on command line
 CONFIG_EXTRA="
     aandcttables
+    ac3dsp
     avutil
+    gcrypt
     golomb
     gplv3
     h264chroma
@@ -1214,6 +1210,10 @@ CONFIG_EXTRA="
     huffman
     lgplv3
     lpc
+    mpegaudiodsp
+    nettle
+    rtpdec
+    sinewin
     vp3dsp
 "
 
