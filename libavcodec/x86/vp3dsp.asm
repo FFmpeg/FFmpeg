@@ -607,8 +607,11 @@ cglobal vp3_idct_add, 3, 4, 9
     RET
 %endmacro
 
+%if ARCH_X86_32
 INIT_MMX mmx
 vp3_idct_funcs
+%endif
+
 INIT_XMM sse2
 vp3_idct_funcs
 
