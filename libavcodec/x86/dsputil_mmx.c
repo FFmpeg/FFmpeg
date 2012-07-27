@@ -2043,11 +2043,11 @@ PREFETCH(prefetch_3dnow, prefetch)
 
 #include "h264_qpel.c"
 
-void ff_put_h264_chroma_mc8_mmx_rnd  (uint8_t *dst, uint8_t *src,
+void ff_put_h264_chroma_mc8_rnd_mmx  (uint8_t *dst, uint8_t *src,
                                       int stride, int h, int x, int y);
-void ff_avg_h264_chroma_mc8_mmx2_rnd (uint8_t *dst, uint8_t *src,
+void ff_avg_h264_chroma_mc8_rnd_mmx2 (uint8_t *dst, uint8_t *src,
                                       int stride, int h, int x, int y);
-void ff_avg_h264_chroma_mc8_3dnow_rnd(uint8_t *dst, uint8_t *src,
+void ff_avg_h264_chroma_mc8_rnd_3dnow(uint8_t *dst, uint8_t *src,
                                       int stride, int h, int x, int y);
 
 void ff_put_h264_chroma_mc4_mmx      (uint8_t *dst, uint8_t *src,
@@ -2062,12 +2062,12 @@ void ff_put_h264_chroma_mc2_mmx2     (uint8_t *dst, uint8_t *src,
 void ff_avg_h264_chroma_mc2_mmx2     (uint8_t *dst, uint8_t *src,
                                       int stride, int h, int x, int y);
 
-void ff_put_h264_chroma_mc8_ssse3_rnd(uint8_t *dst, uint8_t *src,
+void ff_put_h264_chroma_mc8_rnd_ssse3(uint8_t *dst, uint8_t *src,
                                       int stride, int h, int x, int y);
 void ff_put_h264_chroma_mc4_ssse3    (uint8_t *dst, uint8_t *src,
                                       int stride, int h, int x, int y);
 
-void ff_avg_h264_chroma_mc8_ssse3_rnd(uint8_t *dst, uint8_t *src,
+void ff_avg_h264_chroma_mc8_rnd_ssse3(uint8_t *dst, uint8_t *src,
                                       int stride, int h, int x, int y);
 void ff_avg_h264_chroma_mc4_ssse3    (uint8_t *dst, uint8_t *src,
                                       int stride, int h, int x, int y);
@@ -2447,7 +2447,7 @@ static void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx, int mm_flags)
 #endif
 
     if (!high_bit_depth && CONFIG_H264CHROMA) {
-        c->put_h264_chroma_pixels_tab[0] = ff_put_h264_chroma_mc8_mmx_rnd;
+        c->put_h264_chroma_pixels_tab[0] = ff_put_h264_chroma_mc8_rnd_mmx;
         c->put_h264_chroma_pixels_tab[1] = ff_put_h264_chroma_mc4_mmx;
     }
 
@@ -2548,7 +2548,7 @@ static void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
 
 #if HAVE_YASM
     if (!high_bit_depth && CONFIG_H264CHROMA) {
-        c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_mmx2_rnd;
+        c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_rnd_mmx2;
         c->avg_h264_chroma_pixels_tab[1] = ff_avg_h264_chroma_mc4_mmx2;
         c->avg_h264_chroma_pixels_tab[2] = ff_avg_h264_chroma_mc2_mmx2;
         c->put_h264_chroma_pixels_tab[2] = ff_put_h264_chroma_mc2_mmx2;
@@ -2643,7 +2643,7 @@ static void dsputil_init_3dnow(DSPContext *c, AVCodecContext *avctx,
 
 #if HAVE_YASM
     if (!high_bit_depth && CONFIG_H264CHROMA) {
-        c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_3dnow_rnd;
+        c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_rnd_3dnow;
         c->avg_h264_chroma_pixels_tab[1] = ff_avg_h264_chroma_mc4_3dnow;
     }
 #endif /* HAVE_YASM */
@@ -2796,8 +2796,8 @@ static void dsputil_init_ssse3(DSPContext *c, AVCodecContext *avctx,
         H264_QPEL_FUNCS_10(3, 0, ssse3_cache64);
     }
     if (!high_bit_depth && CONFIG_H264CHROMA) {
-        c->put_h264_chroma_pixels_tab[0] = ff_put_h264_chroma_mc8_ssse3_rnd;
-        c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_ssse3_rnd;
+        c->put_h264_chroma_pixels_tab[0] = ff_put_h264_chroma_mc8_rnd_ssse3;
+        c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_rnd_ssse3;
         c->put_h264_chroma_pixels_tab[1] = ff_put_h264_chroma_mc4_ssse3;
         c->avg_h264_chroma_pixels_tab[1] = ff_avg_h264_chroma_mc4_ssse3;
     }
