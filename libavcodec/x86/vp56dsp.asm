@@ -162,8 +162,10 @@ cglobal vp6_filter_diag4, 5, 7, 8
     RET
 %endmacro
 
+%if ARCH_X86_32
 INIT_MMX mmx
 vp6_filter_diag4
+%endif
 
 INIT_XMM sse2
 vp6_filter_diag4
