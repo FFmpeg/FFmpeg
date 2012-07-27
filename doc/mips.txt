@@ -53,8 +53,12 @@ Files that have MIPS copyright notice in them:
       amrwbdec_mips.h
       celp_filters_mips.c
       celp_math_mips.c
+      compute_antialias_fixed.h
+      compute_antialias_float.h
       lsp_mips.h
       dsputil_mips.c
       fft_mips.c
       fft_table.h
       fmtconvert_mips.c
+      mpegaudiodsp_mips_fixed.c
+      mpegaudiodsp_mips_float.c
