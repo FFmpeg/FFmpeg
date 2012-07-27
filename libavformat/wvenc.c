@@ -22,6 +22,7 @@
 #include "avformat.h"
 #include "internal.h"
 #include "avio_internal.h"
+#include "apetag.h"
 
 typedef struct{
     uint32_t duration;
@@ -74,6 +75,8 @@ static int write_trailer(AVFormatContext *s)
 {
     WVMuxContext *wc = s->priv_data;
     AVIOContext *pb = s->pb;
+
+    ff_ape_write(s);
 
     if (pb->seekable) {
         avio_seek(pb, 12, SEEK_SET);
