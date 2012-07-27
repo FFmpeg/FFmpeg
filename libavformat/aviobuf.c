@@ -122,7 +122,7 @@ AVIOContext *avio_alloc_context(
 static void writeout(AVIOContext *s, const uint8_t *data, int len)
 {
     if (s->write_packet && !s->error){
-        int ret= s->write_packet(s->opaque, data, len);
+        int ret= s->write_packet(s->opaque, (uint8_t *)data, len);
         if(ret < 0){
             s->error = ret;
         }
