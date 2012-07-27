@@ -27,6 +27,7 @@
  */
 
 #include "libavutil/pixdesc.h"
+#include "libavutil/intreadwrite.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
@@ -37,7 +38,13 @@ typedef struct {
     uint16_t *line;
     uint16_t *frame_prev[3];
     int hsub, vsub;
+    int depth;
 } HQDN3DContext;
+
+#define RIGHTSHIFT(a,b) (((a)+(((1<<(b))-1)>>1))>>(b))
+#define LOAD(x) ((depth==8 ? src[x] : AV_RN16A(src+(x)*2)) << (16-depth))
+#define STORE(x,val) (depth==8 ? dst[x] = RIGHTSHIFT(val, 16-depth)\
+                    : AV_WN16A(dst+(x)*2, RIGHTSHIFT(val, 16-depth)))
 
 static inline uint32_t lowpass(int prev, int cur, int16_t *coef)
 {
@@ -45,10 +52,11 @@ static inline uint32_t lowpass(int prev, int cur, int16_t *coef)
     return cur + coef[d];
 }
 
+av_always_inline
 static void denoise_temporal(uint8_t *src, uint8_t *dst,
                              uint16_t *frame_ant,
                              int w, int h, int sstride, int dstride,
-                             int16_t *temporal)
+                             int16_t *temporal, int depth)
 {
     long x, y;
     uint32_t tmp;
@@ -57,8 +65,8 @@ static void denoise_temporal(uint8_t *src, uint8_t *dst,
 
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
-            frame_ant[x] = tmp = lowpass(frame_ant[x], src[x]<<8, temporal);
-            dst[x] = (tmp+0x7F)>>8;
+            frame_ant[x] = tmp = lowpass(frame_ant[x], LOAD(x), temporal);
+            STORE(x, tmp);
         }
         src += sstride;
         dst += dstride;
@@ -66,10 +74,11 @@ static void denoise_temporal(uint8_t *src, uint8_t *dst,
     }
 }
 
+av_always_inline
 static void denoise_spatial(uint8_t *src, uint8_t *dst,
                             uint16_t *line_ant, uint16_t *frame_ant,
                             int w, int h, int sstride, int dstride,
-                            int16_t *spatial, int16_t *temporal)
+                            int16_t *spatial, int16_t *temporal, int depth)
 {
     long x, y;
     uint32_t pixel_ant;
@@ -80,34 +89,35 @@ static void denoise_spatial(uint8_t *src, uint8_t *dst,
 
     /* First line has no top neighbor. Only left one for each tmp and
      * last frame */
-    pixel_ant = src[0]<<8;
+    pixel_ant = LOAD(0);
     for (x = 0; x < w; x++) {
-        line_ant[x] = tmp = pixel_ant = lowpass(pixel_ant, src[x]<<8, spatial);
+        line_ant[x] = tmp = pixel_ant = lowpass(pixel_ant, LOAD(x), spatial);
         frame_ant[x] = tmp = lowpass(frame_ant[x], tmp, temporal);
-        dst[x] = (tmp+0x7F)>>8;
+        STORE(x, tmp);
     }
 
     for (y = 1; y < h; y++) {
         src += sstride;
         dst += dstride;
         frame_ant += w;
-        pixel_ant = src[0]<<8;
+        pixel_ant = LOAD(0);
         for (x = 0; x < w-1; x++) {
             line_ant[x] = tmp = lowpass(line_ant[x], pixel_ant, spatial);
-            pixel_ant = lowpass(pixel_ant, src[x+1]<<8, spatial);
+            pixel_ant = lowpass(pixel_ant, LOAD(x+1), spatial);
             frame_ant[x] = tmp = lowpass(frame_ant[x], tmp, temporal);
-            dst[x] = (tmp+0x7F)>>8;
+            STORE(x, tmp);
         }
         line_ant[x] = tmp = lowpass(line_ant[x], pixel_ant, spatial);
         frame_ant[x] = tmp = lowpass(frame_ant[x], tmp, temporal);
-        dst[x] = (tmp+0x7F)>>8;
+        STORE(x, tmp);
     }
 }
 
-static void denoise(uint8_t *src, uint8_t *dst,
-                    uint16_t *line_ant, uint16_t **frame_ant_ptr,
-                    int w, int h, int sstride, int dstride,
-                    int16_t *spatial, int16_t *temporal)
+av_always_inline
+static void denoise_depth(uint8_t *src, uint8_t *dst,
+                          uint16_t *line_ant, uint16_t **frame_ant_ptr,
+                          int w, int h, int sstride, int dstride,
+                          int16_t *spatial, int16_t *temporal, int depth)
 {
     long x, y;
     uint16_t *frame_ant = *frame_ant_ptr;
@@ -116,18 +126,25 @@ static void denoise(uint8_t *src, uint8_t *dst,
         *frame_ant_ptr = frame_ant = av_malloc(w*h*sizeof(uint16_t));
         for (y = 0; y < h; y++, src += sstride, frame_ant += w)
             for (x = 0; x < w; x++)
-                frame_ant[x] = src[x]<<8;
+                frame_ant[x] = LOAD(x);
         src = frame_src;
         frame_ant = *frame_ant_ptr;
     }
 
     if (spatial[0])
         denoise_spatial(src, dst, line_ant, frame_ant,
-                        w, h, sstride, dstride, spatial, temporal);
+                        w, h, sstride, dstride, spatial, temporal, depth);
     else
         denoise_temporal(src, dst, frame_ant,
-                         w, h, sstride, dstride, temporal);
+                         w, h, sstride, dstride, temporal, depth);
 }
+
+#define denoise(...) \
+    switch (hqdn3d->depth) {\
+        case  8: denoise_depth(__VA_ARGS__,  8); break;\
+        case  9: denoise_depth(__VA_ARGS__,  9); break;\
+        case 10: denoise_depth(__VA_ARGS__, 10); break;\
+    }
 
 static void precalc_coefs(int16_t *ct, double dist25)
 {
@@ -222,7 +239,23 @@ static void uninit(AVFilterContext *ctx)
 static int query_formats(AVFilterContext *ctx)
 {
     static const enum PixelFormat pix_fmts[] = {
-        PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_YUV411P, PIX_FMT_NONE
+        PIX_FMT_YUV420P,
+        PIX_FMT_YUV422P,
+        PIX_FMT_YUV444P,
+        PIX_FMT_YUV410P,
+        PIX_FMT_YUV411P,
+        PIX_FMT_YUV440P,
+        PIX_FMT_YUVJ420P,
+        PIX_FMT_YUVJ422P,
+        PIX_FMT_YUVJ444P,
+        PIX_FMT_YUVJ440P,
+        AV_NE( PIX_FMT_YUV420P9BE, PIX_FMT_YUV420P9LE ),
+        AV_NE( PIX_FMT_YUV422P9BE, PIX_FMT_YUV422P9LE ),
+        AV_NE( PIX_FMT_YUV444P9BE, PIX_FMT_YUV444P9LE ),
+        AV_NE( PIX_FMT_YUV420P10BE, PIX_FMT_YUV420P10LE ),
+        AV_NE( PIX_FMT_YUV422P10BE, PIX_FMT_YUV422P10LE ),
+        AV_NE( PIX_FMT_YUV444P10BE, PIX_FMT_YUV444P10LE ),
+        PIX_FMT_NONE
     };
 
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
@@ -236,6 +269,7 @@ static int config_input(AVFilterLink *inlink)
 
     hqdn3d->hsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_w;
     hqdn3d->vsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_h;
+    hqdn3d->depth = av_pix_fmt_descriptors[inlink->format].comp[0].depth_minus1+1;
 
     hqdn3d->line = av_malloc(inlink->w * sizeof(*hqdn3d->line));
     if (!hqdn3d->line)
