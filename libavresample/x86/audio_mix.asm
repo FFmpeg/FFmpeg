@@ -51,12 +51,7 @@ cglobal mix_2_to_1_fltp_flt, 3,4,6, src, matrix, len, src1
     add        srcq, mmsize*2
     sub        lend, mmsize*2/4
     jg .loop
-%if mmsize == 32
-    vzeroupper
-    RET
-%else
     REP_RET
-%endif
 %endmacro
 
 INIT_XMM sse
@@ -175,12 +170,7 @@ cglobal mix_1_to_2_fltp_flt, 3,5,4, src0, matrix0, len, src1, matrix1
     add       src0q, mmsize
     sub        lend, mmsize/4
     jg .loop
-%if mmsize == 32
-    vzeroupper
-    RET
-%else
     REP_RET
-%endif
 %endmacro
 
 INIT_XMM sse
@@ -236,3 +226,296 @@ MIX_1_TO_2_S16P_FLT
 INIT_XMM avx
 MIX_1_TO_2_S16P_FLT
 %endif
+
+;-----------------------------------------------------------------------------
+; void ff_mix_3_8_to_1_2_fltp/s16p_flt(float/int16_t **src, float **matrix,
+;                                      int len, int out_ch, int in_ch);
+;-----------------------------------------------------------------------------
+
+%macro MIX_3_8_TO_1_2_FLT 3 ; %1 = in channels, %2 = out channels, %3 = s16p or fltp
+; define some names to make the code clearer
+%assign  in_channels %1
+%assign out_channels %2
+%assign stereo out_channels - 1
+%ifidn %3, s16p
+    %assign is_s16 1
+%else
+    %assign is_s16 0
+%endif
+
+; determine how many matrix elements must go on the stack vs. mmregs
+%assign matrix_elements in_channels * out_channels
+%if is_s16
+    %if stereo
+        %assign needed_mmregs 7
+    %else
+        %assign needed_mmregs 5
+    %endif
+%else
+    %if stereo
+        %assign needed_mmregs 4
+    %else
+        %assign needed_mmregs 3
+    %endif
+%endif
+%assign matrix_elements_mm num_mmregs - needed_mmregs
+%if matrix_elements < matrix_elements_mm
+    %assign matrix_elements_mm matrix_elements
+%endif
+%if matrix_elements_mm < matrix_elements
+    %assign matrix_elements_stack matrix_elements - matrix_elements_mm
+%else
+    %assign matrix_elements_stack 0
+%endif
+
+cglobal mix_%1_to_%2_%3_flt, 3,in_channels+2,needed_mmregs+matrix_elements_mm, src0, src1, len, src2, src3, src4, src5, src6, src7
+
+; get aligned stack space if needed
+%if matrix_elements_stack > 0
+    %if mmsize == 32
+    %assign bkpreg %1 + 1
+    %define bkpq r %+ bkpreg %+ q
+    mov           bkpq, rsp
+    and           rsp, ~(mmsize-1)
+    sub           rsp, matrix_elements_stack * mmsize
+    %else
+    %assign pad matrix_elements_stack * mmsize + (mmsize - gprsize) - (stack_offset & (mmsize - gprsize))
+    SUB           rsp, pad
+    %endif
+%endif
+
+; load matrix pointers
+%define matrix0q r1q
+%define matrix1q r3q
+%if stereo
+    mov      matrix1q, [matrix0q+gprsize]
+%endif
+    mov      matrix0q, [matrix0q]
+
+; define matrix coeff names
+%assign %%i 0
+%assign %%j needed_mmregs
+%rep in_channels
+    %if %%i >= matrix_elements_mm
+        CAT_XDEFINE mx_stack_0_, %%i, 1
+        CAT_XDEFINE mx_0_, %%i, [rsp+(%%i-matrix_elements_mm)*mmsize]
+    %else
+        CAT_XDEFINE mx_stack_0_, %%i, 0
+        CAT_XDEFINE mx_0_, %%i, m %+ %%j
+        %assign %%j %%j+1
+    %endif
+    %assign %%i %%i+1
+%endrep
+%if stereo
+%assign %%i 0
+%rep in_channels
+    %if in_channels + %%i >= matrix_elements_mm
+        CAT_XDEFINE mx_stack_1_, %%i, 1
+        CAT_XDEFINE mx_1_, %%i, [rsp+(in_channels+%%i-matrix_elements_mm)*mmsize]
+    %else
+        CAT_XDEFINE mx_stack_1_, %%i, 0
+        CAT_XDEFINE mx_1_, %%i, m %+ %%j
+        %assign %%j %%j+1
+    %endif
+    %assign %%i %%i+1
+%endrep
+%endif
+
+; load/splat matrix coeffs
+%assign %%i 0
+%rep in_channels
+    %if mx_stack_0_ %+ %%i
+        VBROADCASTSS m0, [matrix0q+4*%%i]
+        mova  mx_0_ %+ %%i, m0
+    %else
+        VBROADCASTSS mx_0_ %+ %%i, [matrix0q+4*%%i]
+    %endif
+    %if stereo
+    %if mx_stack_1_ %+ %%i
+        VBROADCASTSS m0, [matrix1q+4*%%i]
+        mova  mx_1_ %+ %%i, m0
+    %else
+        VBROADCASTSS mx_1_ %+ %%i, [matrix1q+4*%%i]
+    %endif
+    %endif
+    %assign %%i %%i+1
+%endrep
+
+; load channel pointers to registers as offsets from the first channel pointer
+%if ARCH_X86_64
+    movsxd       lenq, r2d
+%endif
+    shl          lenq, 2-is_s16
+%assign %%i 1
+%rep (in_channels - 1)
+    %if ARCH_X86_32 && in_channels >= 7 && %%i >= 5
+    mov         src5q, [src0q+%%i*gprsize]
+    add         src5q, lenq
+    mov         src %+ %%i %+ m, src5q
+    %else
+    mov         src %+ %%i %+ q, [src0q+%%i*gprsize]
+    add         src %+ %%i %+ q, lenq
+    %endif
+    %assign %%i %%i+1
+%endrep
+    mov         src0q, [src0q]
+    add         src0q, lenq
+    neg          lenq
+.loop
+; for x86-32 with 7-8 channels we do not have enough gp registers for all src
+; pointers, so we have to load some of them from the stack each time
+%define copy_src_from_stack ARCH_X86_32 && in_channels >= 7 && %%i >= 5
+%if is_s16
+    ; mix with s16p input
+    mova           m0, [src0q+lenq]
+    S16_TO_S32_SX   0, 1
+    cvtdq2ps       m0, m0
+    cvtdq2ps       m1, m1
+    %if stereo
+    mulps          m2, m0, mx_1_0
+    mulps          m3, m1, mx_1_0
+    %endif
+    mulps          m0, m0, mx_0_0
+    mulps          m1, m1, mx_0_0
+%assign %%i 1
+%rep (in_channels - 1)
+    %if copy_src_from_stack
+        %define src_ptr src5q
+    %else
+        %define src_ptr src %+ %%i %+ q
+    %endif
+    %if stereo
+    %if copy_src_from_stack
+    mov       src_ptr, src %+ %%i %+ m
+    %endif
+    mova           m4, [src_ptr+lenq]
+    S16_TO_S32_SX   4, 5
+    cvtdq2ps       m4, m4
+    cvtdq2ps       m5, m5
+    fmaddps        m2, m4, mx_1_ %+ %%i, m2, m6
+    fmaddps        m3, m5, mx_1_ %+ %%i, m3, m6
+    fmaddps        m0, m4, mx_0_ %+ %%i, m0, m4
+    fmaddps        m1, m5, mx_0_ %+ %%i, m1, m5
+    %else
+    %if copy_src_from_stack
+    mov       src_ptr, src %+ %%i %+ m
+    %endif
+    mova           m2, [src_ptr+lenq]
+    S16_TO_S32_SX   2, 3
+    cvtdq2ps       m2, m2
+    cvtdq2ps       m3, m3
+    fmaddps        m0, m2, mx_0_ %+ %%i, m0, m4
+    fmaddps        m1, m3, mx_0_ %+ %%i, m1, m4
+    %endif
+    %assign %%i %%i+1
+%endrep
+    %if stereo
+    cvtps2dq       m2, m2
+    cvtps2dq       m3, m3
+    packssdw       m2, m3
+    mova [src1q+lenq], m2
+    %endif
+    cvtps2dq       m0, m0
+    cvtps2dq       m1, m1
+    packssdw       m0, m1
+    mova [src0q+lenq], m0
+%else
+    ; mix with fltp input
+    %if stereo || mx_stack_0_0
+    mova           m0, [src0q+lenq]
+    %endif
+    %if stereo
+    mulps          m1, m0, mx_1_0
+    %endif
+    %if stereo || mx_stack_0_0
+    mulps          m0, m0, mx_0_0
+    %else
+    mulps          m0, [src0q+lenq], mx_0_0
+    %endif
+%assign %%i 1
+%rep (in_channels - 1)
+    %if copy_src_from_stack
+        %define src_ptr src5q
+        mov   src_ptr, src %+ %%i %+ m
+    %else
+        %define src_ptr src %+ %%i %+ q
+    %endif
+    ; avoid extra load for mono if matrix is in a mm register
+    %if stereo || mx_stack_0_ %+ %%i
+    mova           m2, [src_ptr+lenq]
+    %endif
+    %if stereo
+    fmaddps        m1, m2, mx_1_ %+ %%i, m1, m3
+    %endif
+    %if stereo || mx_stack_0_ %+ %%i
+    fmaddps        m0, m2, mx_0_ %+ %%i, m0, m2
+    %else
+    fmaddps        m0, mx_0_ %+ %%i, [src_ptr+lenq], m0, m1
+    %endif
+    %assign %%i %%i+1
+%endrep
+    mova [src0q+lenq], m0
+    %if stereo
+    mova [src1q+lenq], m1
+    %endif
+%endif
+
+    add          lenq, mmsize
+    jl .loop
+; restore stack pointer
+%if matrix_elements_stack > 0
+    %if mmsize == 32
+    mov           rsp, bkpq
+    %else
+    ADD           rsp, pad
+    %endif
+%endif
+; zero ymm high halves
+%if mmsize == 32
+    vzeroupper
+%endif
+    RET
+%endmacro
+
+%macro MIX_3_8_TO_1_2_FLT_FUNCS 0
+%assign %%i 3
+%rep 6
+    INIT_XMM sse
+    MIX_3_8_TO_1_2_FLT %%i, 1, fltp
+    MIX_3_8_TO_1_2_FLT %%i, 2, fltp
+    INIT_XMM sse2
+    MIX_3_8_TO_1_2_FLT %%i, 1, s16p
+    MIX_3_8_TO_1_2_FLT %%i, 2, s16p
+    INIT_XMM sse4
+    MIX_3_8_TO_1_2_FLT %%i, 1, s16p
+    MIX_3_8_TO_1_2_FLT %%i, 2, s16p
+    ; do not use ymm AVX or FMA4 in x86-32 for 6 or more channels due to stack alignment issues
+    %if HAVE_AVX
+    %if ARCH_X86_64 || %%i < 6
+    INIT_YMM avx
+    %else
+    INIT_XMM avx
+    %endif
+    MIX_3_8_TO_1_2_FLT %%i, 1, fltp
+    MIX_3_8_TO_1_2_FLT %%i, 2, fltp
+    INIT_XMM avx
+    MIX_3_8_TO_1_2_FLT %%i, 1, s16p
+    MIX_3_8_TO_1_2_FLT %%i, 2, s16p
+    %endif
+    %if HAVE_FMA4
+    %if ARCH_X86_64 || %%i < 6
+    INIT_YMM fma4
+    %else
+    INIT_XMM fma4
+    %endif
+    MIX_3_8_TO_1_2_FLT %%i, 1, fltp
+    MIX_3_8_TO_1_2_FLT %%i, 2, fltp
+    INIT_XMM fma4
+    MIX_3_8_TO_1_2_FLT %%i, 1, s16p
+    MIX_3_8_TO_1_2_FLT %%i, 2, s16p
+    %endif
+    %assign %%i %%i+1
+%endrep
+%endmacro
+
+MIX_3_8_TO_1_2_FLT_FUNCS

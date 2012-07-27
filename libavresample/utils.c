@@ -246,9 +246,10 @@ static int handle_buffered_output(AVAudioResampleContext *avr,
     return 0;
 }
 
-int avresample_convert(AVAudioResampleContext *avr, void **output,
-                       int out_plane_size, int out_samples, void **input,
-                       int in_plane_size, int in_samples)
+int attribute_align_arg avresample_convert(AVAudioResampleContext *avr,
+                                           void **output, int out_plane_size,
+                                           int out_samples, void **input,
+                                           int in_plane_size, int in_samples)
 {
     AudioData input_buffer;
     AudioData output_buffer;

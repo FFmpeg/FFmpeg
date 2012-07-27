@@ -28,8 +28,6 @@ doc/%.txt: doc/%.texi
 	$(Q)$(TEXIDEP)
 	$(M)makeinfo --force --no-headers -o $@ $< 2>/dev/null
 
-doc/print_options.o: libavformat/options_table.h libavcodec/options_table.h
-
 GENTEXI  = format codec
 GENTEXI := $(GENTEXI:%=doc/avoptions_%.texi)
 

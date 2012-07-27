@@ -750,9 +750,6 @@ section .text
 ; The others pass args in registers and don't spill anything.
 cglobal fft_dispatch%2, 2,5,8, z, nbits
     FFT_DISPATCH fullsuffix, nbits
-%if mmsize == 32
-    vzeroupper
-%endif
     RET
 %endmacro ; DECL_FFT
 
@@ -957,9 +954,6 @@ cglobal imdct_half, 3,12,8; FFTContext *s, FFTSample *output, const FFTSample *i
     %1 r0, r1, r6, rtcos, rtsin
 %if ARCH_X86_64 == 0
     add esp, 12
-%endif
-%if mmsize == 32
-    vzeroupper
 %endif
     RET
 %endmacro

@@ -392,11 +392,14 @@ DECLARE_REG 14, R15, R15D, R15W, R15B, 120
 %macro RET 0
     WIN64_RESTORE_XMM_INTERNAL rsp
     POP_IF_USED 14, 13, 12, 11, 10, 9, 8, 7
+%if mmsize == 32
+    vzeroupper
+%endif
     ret
 %endmacro
 
 %macro REP_RET 0
-    %if regs_used > 7 || xmm_regs_used > 6
+    %if regs_used > 7 || xmm_regs_used > 6 || mmsize == 32
         RET
     %else
         rep ret
@@ -433,11 +436,14 @@ DECLARE_REG 14, R15, R15D, R15W, R15B, 72
 
 %macro RET 0
     POP_IF_USED 14, 13, 12, 11, 10, 9
+%if mmsize == 32
+    vzeroupper
+%endif
     ret
 %endmacro
 
 %macro REP_RET 0
-    %if regs_used > 9
+    %if regs_used > 9 || mmsize == 32
         RET
     %else
         rep ret
@@ -479,11 +485,14 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
 
 %macro RET 0
     POP_IF_USED 6, 5, 4, 3
+%if mmsize == 32
+    vzeroupper
+%endif
     ret
 %endmacro
 
 %macro REP_RET 0
-    %if regs_used > 3
+    %if regs_used > 3 || mmsize == 32
         RET
     %else
         rep ret
@@ -1126,16 +1135,22 @@ AVX_INSTR pfmul, 1, 0, 1
 %undef j
 
 %macro FMA_INSTR 3
-    %macro %1 4-7 %1, %2, %3
-        %if cpuflag(xop)
-            v%5 %1, %2, %3, %4
+    %macro %1 5-8 %1, %2, %3
+        %if cpuflag(xop) || cpuflag(fma4)
+            v%6 %1, %2, %3, %4
         %else
-            %6 %1, %2, %3
-            %7 %1, %4
+            %ifidn %1, %4
+                %7 %5, %2, %3
+                %8 %1, %4, %5
+            %else
+                %7 %1, %2, %3
+                %8 %1, %4
+            %endif
         %endif
     %endmacro
 %endmacro
 
+FMA_INSTR  fmaddps,   mulps, addps
 FMA_INSTR  pmacsdd,  pmulld, paddd
 FMA_INSTR  pmacsww,  pmullw, paddw
 FMA_INSTR pmadcswd, pmaddwd, paddd

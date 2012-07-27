@@ -26,7 +26,8 @@
     pmovsxwd     m%1, m%1
     SWAP %1, %2
 %else
-    punpckhwd    m%2, m%1
+    mova         m%2, m%1
+    punpckhwd    m%2, m%2
     punpcklwd    m%1, m%1
     psrad        m%2, 16
     psrad        m%1, 16

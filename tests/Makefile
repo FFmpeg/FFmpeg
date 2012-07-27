@@ -15,9 +15,6 @@ ffservertest: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/data/asynth1.sw
 
 OBJDIRS += tests/data tests/vsynth1
 
-# Required due to missing automatic dependency tracking for HOSTOBJS.
-tests/rotozoom.o tests/videogen.o: tests/utils.c
-
 tests/vsynth1/00.pgm: tests/videogen$(HOSTEXESUF) | tests/vsynth1
 	$(M)./$< 'tests/vsynth1/'
 

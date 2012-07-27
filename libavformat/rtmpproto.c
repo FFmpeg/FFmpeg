@@ -515,6 +515,12 @@ static int gen_pong(URLContext *s, RTMPContext *rt, RTMPPacket *ppkt)
     uint8_t *p;
     int ret;
 
+    if (ppkt->data_size < 6) {
+        av_log(s, AV_LOG_ERROR, "Too short ping packet (%d)\n",
+               ppkt->data_size);
+        return AVERROR_INVALIDDATA;
+    }
+
     if ((ret = ff_rtmp_packet_create(&pkt, RTMP_NETWORK_CHANNEL, RTMP_PT_PING,
                                      ppkt->timestamp + 1, 6)) < 0)
         return ret;
@@ -885,9 +891,9 @@ static int handle_chunk_size(URLContext *s, RTMPPacket *pkt)
     RTMPContext *rt = s->priv_data;
     int ret;
 
-    if (pkt->data_size != 4) {
+    if (pkt->data_size < 4) {
         av_log(s, AV_LOG_ERROR,
-               "Chunk size change packet is not 4 bytes long (%d)\n",
+               "Too short chunk size change packet (%d)\n",
                pkt->data_size);
         return AVERROR_INVALIDDATA;
     }
@@ -912,6 +918,12 @@ static int handle_ping(URLContext *s, RTMPPacket *pkt)
 {
     RTMPContext *rt = s->priv_data;
     int t, ret;
+
+    if (pkt->data_size < 2) {
+        av_log(s, AV_LOG_ERROR, "Too short ping packet (%d)\n",
+               pkt->data_size);
+        return AVERROR_INVALIDDATA;
+    }
 
     t = AV_RB16(pkt->data);
     if (t == 6) {
@@ -949,6 +961,13 @@ static int handle_client_bw(URLContext *s, RTMPPacket *pkt)
 static int handle_server_bw(URLContext *s, RTMPPacket *pkt)
 {
     RTMPContext *rt = s->priv_data;
+
+    if (pkt->data_size < 4) {
+        av_log(s, AV_LOG_ERROR,
+               "Too short server bandwidth report packet (%d)\n",
+               pkt->data_size);
+        return AVERROR_INVALIDDATA;
+    }
 
     rt->server_bw = AV_RB32(pkt->data);
     if (rt->server_bw <= 0) {

@@ -42,12 +42,7 @@ ALIGN 16
 
     sub       lenq, 2*mmsize
     jge       .loop
-%if mmsize == 32
-    vzeroupper
-    RET
-%else
     REP_RET
-%endif
 %endmacro
 
 INIT_XMM sse
@@ -88,12 +83,7 @@ cglobal vector_fmac_scalar, 4,4,3, dst, src, mul, len
     mova  [dstq+lenq+mmsize], m2
     sub    lenq, 2*mmsize
     jge .loop
-%if mmsize == 32
-    vzeroupper
-    RET
-%else
     REP_RET
-%endif
 %endmacro
 
 INIT_XMM sse

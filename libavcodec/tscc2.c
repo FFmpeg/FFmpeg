@@ -298,8 +298,8 @@ static int tscc2_decode_frame(AVCodecContext *avctx, void *data,
         if (!size) {
             int skip_row = 1, j, off = i * c->mb_width;
             for (j = 0; j < c->mb_width; j++) {
-                if (c->slice_quants[off + i] == 1 ||
-                    c->slice_quants[off + i] == 2) {
+                if (c->slice_quants[off + j] == 1 ||
+                    c->slice_quants[off + j] == 2) {
                     skip_row = 0;
                     break;
                 }

@@ -11,7 +11,7 @@ ifndef V
 Q      = @
 ECHO   = printf "$(1)\t%s\n" $(2)
 BRIEF  = CC CXX AS YASM AR LD HOSTCC STRIP CP
-SILENT = DEPCC YASMDEP RM RANLIB
+SILENT = DEPCC DEPAS DEPHOSTCC YASMDEP RM RANLIB
 MSG    = $@
 M      = @$(call ECHO,$(TAG),$@);
 $(foreach VAR,$(BRIEF), \
@@ -26,15 +26,16 @@ ALLFFLIBS = avcodec avdevice avfilter avformat avresample avutil postproc swscal
 IFLAGS     := -I. -I$(SRC_PATH)/
 CPPFLAGS   := $(IFLAGS) $(CPPFLAGS)
 CFLAGS     += $(ECFLAGS)
-CCFLAGS     = $(CFLAGS)
+CCFLAGS     = $(CPPFLAGS) $(CFLAGS)
+ASFLAGS    := $(CPPFLAGS) $(ASFLAGS)
 CXXFLAGS   := $(CFLAGS) $(CXXFLAGS)
 YASMFLAGS  += $(IFLAGS) -I$(SRC_PATH)/libavutil/x86/ -Pconfig.asm
-HOSTCFLAGS += $(IFLAGS)
+HOSTCCFLAGS = $(IFLAGS) $(HOSTCFLAGS)
 LDFLAGS    := $(ALLFFLIBS:%=-Llib%) $(LDFLAGS)
 
 define COMPILE
-       $($(1)DEP)
-       $($(1)) $(CPPFLAGS) $($(1)FLAGS) $($(1)_DEPFLAGS) -c $($(1)_O) $<
+       $(call $(1)DEP,$(1))
+       $($(1)) $($(1)FLAGS) $($(1)_DEPFLAGS) -c $($(1)_O) $<
 endef
 
 COMPILE_C = $(call COMPILE,CC)
@@ -101,7 +102,7 @@ checkheaders: $(filter-out $(SKIPHEADERS:.h=.ho),$(ALLHEADERS:.h=.ho))
 alltools: $(TOOLS)
 
 $(HOSTOBJS): %.o: %.c
-	$(HOSTCC) $(HOSTCFLAGS) -c -o $@ $<
+	$(call COMPILE,HOSTCC)
 
 $(HOSTPROGS): %$(HOSTEXESUF): %.o
 	$(HOSTCC) $(HOSTLDFLAGS) -o $@ $< $(HOSTLIBS)
@@ -117,4 +118,4 @@ CLEANSUFFIXES     = *.d *.o *~ *.ho *.map *.ver *.gcno *.gcda
 DISTCLEANSUFFIXES = *.pc
 LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a
 
--include $(wildcard $(OBJS:.o=.d) $(TESTOBJS:.o=.d))
+-include $(wildcard $(OBJS:.o=.d) $(HOSTOBJS:.o=.d) $(TESTOBJS:.o=.d))
