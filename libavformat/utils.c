@@ -2485,10 +2485,28 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             if (!st->avg_frame_rate.num && st->info->fps_last_dts != st->info->fps_first_dts) {
                 int64_t delta_dts = st->info->fps_last_dts - st->info->fps_first_dts;
                 int delta_packets = st->info->fps_last_dts_idx - st->info->fps_first_dts_idx;
+                int      best_fps = 0;
+                double best_error = 0.01;
 
                 av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
                           delta_packets*(int64_t)st->time_base.den,
                           delta_dts*(int64_t)st->time_base.num, 60000);
+
+                /* round guessed framerate to a "standard" framerate if it's
+                 * within 1% of the original estimate*/
+                for (j = 1; j < MAX_STD_TIMEBASES; j++) {
+                    AVRational std_fps = (AVRational){get_std_framerate(j), 12*1001};
+                    double error = fabs(av_q2d(st->avg_frame_rate) / av_q2d(std_fps) - 1);
+
+                    if (error < best_error) {
+                        best_error = error;
+                        best_fps   = std_fps.num;
+                    }
+                }
+                if (best_fps) {
+                    av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
+                              best_fps, 12*1001, INT_MAX);
+                }
             }
             // the check for tb_unreliable() is not completely correct, since this is not about handling
             // a unreliable/inexact time base, but a time base that is finer than necessary, as e.g.
