@@ -427,11 +427,11 @@ cglobal %1_%2_chroma_mc2, 6, 7, 0
 %macro NOTHING 2-3
 %endmacro
 %macro DIRECT_AVG 2
-    PAVG          %1, %2
+    PAVGB         %1, %2
 %endmacro
 %macro COPY_AVG 3
     movd          %2, %3
-    PAVG          %1, %2
+    PAVGB         %1, %2
 %endmacro
 
 INIT_MMX mmx
@@ -448,7 +448,6 @@ chroma_mc2_mmx_func put, h264
 
 %define CHROMAMC_AVG  DIRECT_AVG
 %define CHROMAMC_AVG4 COPY_AVG
-%define PAVG          pavgb
 chroma_mc8_mmx_func avg, h264, _rnd
 chroma_mc8_mmx_func avg, vc1,  _nornd
 chroma_mc8_mmx_func avg, rv40
@@ -456,7 +455,6 @@ chroma_mc4_mmx_func avg, h264
 chroma_mc4_mmx_func avg, rv40
 chroma_mc2_mmx_func avg, h264
 
-%define PAVG          pavgusb
 INIT_MMX 3dnow
 chroma_mc8_mmx_func avg, h264, _rnd
 chroma_mc8_mmx_func avg, vc1,  _nornd
@@ -673,7 +671,6 @@ INIT_MMX ssse3
 chroma_mc4_ssse3_func put, h264
 
 %define CHROMAMC_AVG DIRECT_AVG
-%define PAVG         pavgb
 INIT_XMM ssse3
 chroma_mc8_ssse3_func avg, h264, _rnd
 chroma_mc8_ssse3_func avg, vc1,  _nornd
