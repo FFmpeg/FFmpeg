@@ -293,7 +293,7 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
     /* Create an annex B bitstream buffer with only slice NAL and finalize slice */
     if (FAILED(IDirectXVideoDecoder_GetBuffer(ctx->decoder,
                                                DXVA2_BitStreamDateBufferType,
-                                               &dxva_data, &dxva_size)))
+                                               (void **)&dxva_data, &dxva_size)))
         return -1;
     current = dxva_data;
     end = dxva_data + dxva_size;
