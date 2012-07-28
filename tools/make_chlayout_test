@@ -1,0 +1,114 @@
+#!/usr/bin/env perl
+
+# Copyright (c) 2012 Nicolas George
+#
+# This file is part of FFmpeg.
+#
+# FFmpeg is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# FFmpeg is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with FFmpeg; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
+=head1 NAME
+
+make_chlayout_test - produce a multichannel test file with the channels
+clearly identified
+
+=head1 SYNOPSIS
+
+tools/make_chlayout_test I<channels> I<out_options>
+
+=head1 DESCRIPTION
+
+This script uses B<ffmpeg> and B<libflite> to produce a file with audio
+channels clearly identified by their name. The resulting file can be used to
+check that the layout and order of channels is correctly handled by a piece
+of software, either a part of B<FFmpeg> or not.
+
+I<channels> is a list of channels or channel layouts, separated by '+'.
+
+I<out_options> is a list of valid ffmpeg outout options, including the
+output file.
+
+Note that some output codecs or formats can not handle arbitrary channel
+layout.
+
+This script requires a B<ffmpeg> binary, either in the source tree or in the
+search path; it must have the flite audio source enabled.
+
+=head1 EXAMPLES
+
+Check that the speakers are correctly plugged:
+
+  tools/make_chlayout_test FL+FR -f alsa default
+
+Produce a 5.1 FLAC file:
+
+  tools/make_chlayout_test 5.1 surround.flac
+
+=cut
+
+use strict;
+use warnings;
+use Getopt::Long ":config" => "require_order";
+use Pod::Usage;
+
+GetOptions (
+  "help|usage|?|h" => sub { pod2usage({ -verbose => 1, -exitval => 0 }) },
+  "manpage|m"      => sub { pod2usage({ -verbose => 2, -exitval => 0 }) },
+) and @ARGV >= 2 or pod2usage({ -verbose => 1, -exitval => 1 });
+
+my $channels = shift @ARGV;
+my @out_options = @ARGV;
+
+my $ffmpeg = exists $ENV{FFMPEG} ? $ENV{FFMPEG} :
+             $0 =~ /(.*)\// && -e "$1/../ffmpeg" ? "$1/../ffmpeg" :
+             "ffmpeg";
+
+my %channel_label_to_descr;
+my %layout_to_channels;
+
+{
+  open my $stderr, ">&STDERR";
+  open STDERR, ">", "/dev/null";
+  open my $f, "-|", $ffmpeg, "-layouts" or die "$ffmpeg: $!\n";
+  open STDERR, ">&", $stderr;
+  while (<$f>) {
+    chomp;
+    next if /^NAME/ or /:$/ or /^$/; # skip headings
+    my ($name, $descr) = split " ", $_, 2;
+    next unless $descr;
+    if ($descr =~ /^[[:upper:]]+(?:\+[[:upper:]]+)*$/) {
+      $layout_to_channels{$name} = [ split /\+/, $descr ];
+    } else {
+      $channel_label_to_descr{$name} = $descr;
+    }
+  }
+}
+
+my @channels = map { @{$layout_to_channels{$_} // [$_]} } split /\+/, $channels;
+
+my $layout = join "+", @channels;
+my $graph = "";
+my $concat_in = "";
+for my $i (0 .. $#channels) {
+  my $label = $channels[$i];
+  my $descr = $channel_label_to_descr{$label}
+    or die "Channel $label not found\n";
+  $graph .= "flite=text='${descr}', aformat=channel_layouts=mono, " .
+            "pan=${layout}:${label}=c0 [ch$i] ;\n";
+  $concat_in .= "[ch$i] ";
+}
+$graph .= "${concat_in}concat=v=0:a=1:n=" . scalar(@channels);
+
+exec $ffmpeg, "-f", "lavfi", "-i", $graph, @out_options
+  or die "$ffmpeg: $!\n";
