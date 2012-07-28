@@ -185,11 +185,9 @@ static int mp3_read_header(AVFormatContext *s)
 
 static int mp3_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret, size;
+    int ret;
 
-    size= MP3_PACKET_SIZE;
-
-    ret= av_get_packet(s->pb, pkt, size);
+    ret = av_get_packet(s->pb, pkt, MP3_PACKET_SIZE);
 
     pkt->stream_index = 0;
     if (ret <= 0) {
