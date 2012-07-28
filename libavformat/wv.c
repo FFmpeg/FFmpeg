@@ -90,17 +90,17 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb, int appen
     if(!append){
         tag = avio_rl32(pb);
         if (tag != MKTAG('w', 'v', 'p', 'k'))
-            return -1;
+            return AVERROR_INVALIDDATA;
         size = avio_rl32(pb);
         if(size < 24 || size > WV_BLOCK_LIMIT){
             av_log(ctx, AV_LOG_ERROR, "Incorrect block size %i\n", size);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         wc->blksize = size;
         ver = avio_rl16(pb);
         if(ver < 0x402 || ver > 0x410){
             av_log(ctx, AV_LOG_ERROR, "Unsupported version %03X\n", ver);
-            return -1;
+            return AVERROR_PATCHWELCOME;
         }
         avio_r8(pb); // track no
         avio_r8(pb); // track sub index
@@ -128,7 +128,7 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb, int appen
         int64_t block_end = avio_tell(pb) + wc->blksize - 24;
         if(!pb->seekable){
             av_log(ctx, AV_LOG_ERROR, "Cannot determine additional parameters\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         while(avio_tell(pb) < block_end){
             int id, size;
@@ -141,7 +141,7 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb, int appen
             case 0xD:
                 if(size <= 1){
                     av_log(ctx, AV_LOG_ERROR, "Insufficient channel information\n");
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
                 chan = avio_r8(pb);
                 switch(size - 2){
@@ -164,7 +164,7 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb, int appen
                     break;
                 default:
                     av_log(ctx, AV_LOG_ERROR, "Invalid channel info size %d\n", size);
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
                 break;
             case 0x27:
@@ -178,7 +178,7 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb, int appen
         }
         if(rate == -1){
             av_log(ctx, AV_LOG_ERROR, "Cannot determine custom sampling rate\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         avio_seek(pb, block_end - wc->blksize + 24, SEEK_SET);
     }
@@ -189,15 +189,15 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb, int appen
 
     if(wc->flags && bpp != wc->bpp){
         av_log(ctx, AV_LOG_ERROR, "Bits per sample differ, this block: %i, header block: %i\n", bpp, wc->bpp);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     if(wc->flags && !wc->multichannel && chan != wc->chan){
         av_log(ctx, AV_LOG_ERROR, "Channels differ, this block: %i, header block: %i\n", chan, wc->chan);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     if(wc->flags && rate != -1 && rate != wc->rate){
         av_log(ctx, AV_LOG_ERROR, "Sampling rate differ, this block: %i, header block: %i\n", rate, wc->rate);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     wc->blksize = size - 24;
     return 0;
@@ -208,11 +208,12 @@ static int wv_read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     WVContext *wc = s->priv_data;
     AVStream *st;
+    int ret;
 
     wc->block_parsed = 0;
     for(;;){
-        if(wv_read_block_header(s, pb, 0) < 0)
-            return -1;
+        if ((ret = wv_read_block_header(s, pb, 0)) < 0)
+            return ret;
         if(!AV_RN32(wc->extra))
             avio_skip(pb, wc->blksize - 24);
         else
@@ -222,7 +223,7 @@ static int wv_read_header(AVFormatContext *s)
     /* now we are ready: build format streams */
     st = avformat_new_stream(s, NULL);
     if (!st)
-        return -1;
+        return AVERROR(ENOMEM);
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_WAVPACK;
     st->codec->channels = wc->chan;
@@ -256,8 +257,8 @@ static int wv_read_packet(AVFormatContext *s,
     if (s->pb->eof_reached)
         return AVERROR_EOF;
     if(wc->block_parsed){
-        if(wv_read_block_header(s, s->pb, 0) < 0)
-            return -1;
+        if ((ret = wv_read_block_header(s, s->pb, 0)) < 0)
+            return ret;
     }
 
     pos = wc->pos;
@@ -275,7 +276,7 @@ static int wv_read_packet(AVFormatContext *s,
     while(!(wc->flags & WV_END_BLOCK)){
         if(avio_rl32(s->pb) != MKTAG('w', 'v', 'p', 'k')){
             av_free_packet(pkt);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         if((ret = av_append_packet(s->pb, pkt, 4)) < 0){
             av_free_packet(pkt);
@@ -285,14 +286,14 @@ static int wv_read_packet(AVFormatContext *s,
         if(size < 24 || size > WV_BLOCK_LIMIT){
             av_free_packet(pkt);
             av_log(s, AV_LOG_ERROR, "Incorrect block size %d\n", size);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         wc->blksize = size;
         ver = avio_rl16(s->pb);
         if(ver < 0x402 || ver > 0x410){
             av_free_packet(pkt);
             av_log(s, AV_LOG_ERROR, "Unsupported version %03X\n", ver);
-            return -1;
+            return AVERROR_PATCHWELCOME;
         }
         avio_r8(s->pb); // track no
         avio_r8(s->pb); // track sub index
@@ -304,9 +305,9 @@ static int wv_read_packet(AVFormatContext *s,
         }
         memcpy(wc->extra, pkt->data + pkt->size - WV_EXTRA_SIZE, WV_EXTRA_SIZE);
 
-        if(wv_read_block_header(s, s->pb, 1) < 0){
+        if ((ret = wv_read_block_header(s, s->pb, 1)) < 0){
             av_free_packet(pkt);
-            return -1;
+            return ret;
         }
         ret = av_append_packet(s->pb, pkt, wc->blksize);
         if(ret < 0){
@@ -345,14 +346,14 @@ static int wv_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
     }
     /* if timestamp is out of bounds, return error */
     if(timestamp < 0 || timestamp >= s->duration)
-        return -1;
+        return AVERROR(EINVAL);
 
     pos = avio_tell(s->pb);
     do{
         ret = av_read_frame(s, pkt);
         if (ret < 0){
             avio_seek(s->pb, pos, SEEK_SET);
-            return -1;
+            return ret;
         }
         pts = pkt->pts;
         av_free_packet(pkt);
