@@ -5343,7 +5343,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
             *data_size = sizeof(AVFrame);
         }
 
-        return 0;
+        return buf_size;
     }
 
     if (s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU) {
