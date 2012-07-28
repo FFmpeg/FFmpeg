@@ -254,7 +254,7 @@ static int wv_read_packet(AVFormatContext *s,
     uint32_t block_samples;
 
     if (s->pb->eof_reached)
-        return AVERROR(EIO);
+        return AVERROR_EOF;
     if(wc->block_parsed){
         if(wv_read_block_header(s, s->pb, 0) < 0)
             return -1;
