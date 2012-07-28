@@ -57,7 +57,7 @@ static const AVOption concat_options[] = {
       AV_OPT_TYPE_INT, { .dbl = 2 }, 2, INT_MAX },
     { "v", "specify the number of video streams",
       OFFSET(nb_streams[AVMEDIA_TYPE_VIDEO]),
-      AV_OPT_TYPE_INT, { .dbl = 1 }, 1, INT_MAX },
+      AV_OPT_TYPE_INT, { .dbl = 1 }, 0, INT_MAX },
     { "a", "specify the number of audio streams",
       OFFSET(nb_streams[AVMEDIA_TYPE_AUDIO]),
       AV_OPT_TYPE_INT, { .dbl = 0 }, 0, INT_MAX },
