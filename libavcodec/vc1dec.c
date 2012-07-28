@@ -5579,11 +5579,17 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
             }
             if (i) {
                 v->pic_header_flag = 0;
-                if (v->field_mode && i == n_slices1 + 2)
-                    ff_vc1_parse_frame_header_adv(v, &s->gb);
-                else if (get_bits1(&s->gb)) {
+                if (v->field_mode && i == n_slices1 + 2) {
+                    if (ff_vc1_parse_frame_header_adv(v, &s->gb) < 0) {
+                        av_log(v->s.avctx, AV_LOG_ERROR, "Field header damaged\n");
+                        continue;
+                    }
+                } else if (get_bits1(&s->gb)) {
                     v->pic_header_flag = 1;
-                    ff_vc1_parse_frame_header_adv(v, &s->gb);
+                    if (ff_vc1_parse_frame_header_adv(v, &s->gb) < 0) {
+                        av_log(v->s.avctx, AV_LOG_ERROR, "Slice header damaged\n");
+                        continue;
+                    }
                 }
             }
             s->start_mb_y = (i == 0) ? 0 : FFMAX(0, slices[i-1].mby_start % mb_height);
