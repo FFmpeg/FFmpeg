@@ -194,7 +194,7 @@ static int mm_decode_frame(AVCodecContext *avctx,
     }
 
     switch(type) {
-    case MM_TYPE_PALETTE   : res = mm_decode_pal(s); return buf_size;
+    case MM_TYPE_PALETTE   : res = mm_decode_pal(s); return avpkt->size;
     case MM_TYPE_INTRA     : res = mm_decode_intra(s, 0, 0); break;
     case MM_TYPE_INTRA_HH  : res = mm_decode_intra(s, 1, 0); break;
     case MM_TYPE_INTRA_HHV : res = mm_decode_intra(s, 1, 1); break;
@@ -213,7 +213,7 @@ static int mm_decode_frame(AVCodecContext *avctx,
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = s->frame;
 
-    return buf_size;
+    return avpkt->size;
 }
 
 static av_cold int mm_decode_end(AVCodecContext *avctx)
