@@ -186,7 +186,7 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
 
     if (labs(delta) > s->min_delta) {
         av_log(ctx, AV_LOG_VERBOSE, "Discontinuity - %"PRId64" samples.\n", delta);
-        out_size += delta;
+        out_size = av_clipl_int32((int64_t)out_size + delta);
     } else {
         if (s->resample) {
             int comp = av_clip(delta, -s->max_comp, s->max_comp);
