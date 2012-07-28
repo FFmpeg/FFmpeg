@@ -1033,6 +1033,8 @@ Synthesize a voice utterance using the libflite library.
 To enable compilation of this filter you need to configure FFmpeg with
 @code{--enable-libflite}.
 
+Note that the flite library is not thread-safe.
+
 The source accepts parameters as a list of @var{key}=@var{value} pairs,
 separated by ":".
 

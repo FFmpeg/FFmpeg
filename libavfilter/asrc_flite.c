@@ -42,6 +42,7 @@ typedef struct {
     int      wave_nb_samples;
     int list_voices;
     cst_voice *voice;
+    struct voice_entry *voice_entry;
     int64_t pts;
     int frame_nb_samples; ///< number of samples per frame
 } FliteContext;
@@ -64,7 +65,9 @@ AVFILTER_DEFINE_CLASS(flite);
 static volatile int flite_inited = 0;
 
 /* declare functions for all the supported voices */
-#define DECLARE_REGISTER_VOICE_FN(name) cst_voice *register_cmu_us_## name(const char *)
+#define DECLARE_REGISTER_VOICE_FN(name) \
+    cst_voice *register_cmu_us_## name(const char *); \
+    void     unregister_cmu_us_## name(cst_voice *);
 DECLARE_REGISTER_VOICE_FN(awb);
 DECLARE_REGISTER_VOICE_FN(kal);
 DECLARE_REGISTER_VOICE_FN(kal16);
@@ -74,14 +77,22 @@ DECLARE_REGISTER_VOICE_FN(slt);
 struct voice_entry {
     const char *name;
     cst_voice * (*register_fn)(const char *);
+    void (*unregister_fn)(cst_voice *);
+    cst_voice *voice;
+    unsigned usage_count;
 } voice_entry;
 
+#define MAKE_VOICE_STRUCTURE(voice_name) {             \
+    .name          =                      #voice_name, \
+    .register_fn   =   register_cmu_us_ ## voice_name, \
+    .unregister_fn = unregister_cmu_us_ ## voice_name, \
+}
 static struct voice_entry voice_entries[] = {
-    { "awb",   register_cmu_us_awb },
-    { "kal",   register_cmu_us_kal },
-    { "kal16", register_cmu_us_kal16 },
-    { "rms",   register_cmu_us_rms },
-    { "slt",   register_cmu_us_slt },
+    MAKE_VOICE_STRUCTURE(awb),
+    MAKE_VOICE_STRUCTURE(kal),
+    MAKE_VOICE_STRUCTURE(kal16),
+    MAKE_VOICE_STRUCTURE(rms),
+    MAKE_VOICE_STRUCTURE(slt),
 };
 
 static void list_voices(void *log_ctx, const char *sep)
@@ -92,19 +103,22 @@ static void list_voices(void *log_ctx, const char *sep)
                voice_entries[i].name, i < (n-1) ? sep : "\n");
 }
 
-static int select_voice(cst_voice **voice, const char *voice_name, void *log_ctx)
+static int select_voice(struct voice_entry **entry_ret, const char *voice_name, void *log_ctx)
 {
     int i;
 
     for (i = 0; i < FF_ARRAY_ELEMS(voice_entries); i++) {
         struct voice_entry *entry = &voice_entries[i];
         if (!strcmp(entry->name, voice_name)) {
-            *voice = entry->register_fn(NULL);
-            if (!*voice) {
+            if (!entry->voice)
+                entry->voice = entry->register_fn(NULL);
+            if (!entry->voice) {
                 av_log(log_ctx, AV_LOG_ERROR,
                        "Could not register voice '%s'\n", voice_name);
                 return AVERROR_UNKNOWN;
             }
+            entry->usage_count++;
+            *entry_ret = entry;
             return 0;
         }
     }
@@ -142,8 +156,9 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
         flite_inited++;
     }
 
-    if ((ret = select_voice(&flite->voice, flite->voice_str, ctx)) < 0)
+    if ((ret = select_voice(&flite->voice_entry, flite->voice_str, ctx)) < 0)
         return ret;
+    flite->voice = flite->voice_entry->voice;
 
     if (flite->textfile && flite->text) {
         av_log(ctx, AV_LOG_ERROR,
@@ -188,8 +203,10 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_opt_free(flite);
 
-    delete_voice(flite->voice);
+    if (!--flite->voice_entry->usage_count)
+        flite->voice_entry->unregister_fn(flite->voice);
     flite->voice = NULL;
+    flite->voice_entry = NULL;
     delete_wave(flite->wave);
     flite->wave = NULL;
 }
