@@ -231,6 +231,7 @@ typedef struct InputStream {
 
     int64_t       next_pts;  ///< synthetic pts for the next decode frame (in AV_TIME_BASE units)
     int64_t       pts;       ///< current pts of the decoded frame  (in AV_TIME_BASE units)
+    int           wrap_correction_done;
     double ts_scale;
     int is_start;            /* is 1 at the start and after a discontinuity */
     int saw_first_ts;
@@ -3761,6 +3762,20 @@ static int transcode(void)
         ist = input_streams[ist_index];
         if (ist->discard)
             goto discard_packet;
+
+        if(!ist->wrap_correction_done && input_files[file_index]->ctx->start_time != AV_NOPTS_VALUE && ist->st->pts_wrap_bits < 64){
+            uint64_t stime = av_rescale_q(input_files[file_index]->ctx->start_time, AV_TIME_BASE_Q, ist->st->time_base);
+            uint64_t stime2= stime + (1LL<<ist->st->pts_wrap_bits);
+            ist->wrap_correction_done = 1;
+            if(pkt.dts != AV_NOPTS_VALUE && pkt.dts > stime && pkt.dts - stime > stime2 - pkt.dts) {
+                pkt.dts -= 1LL<<ist->st->pts_wrap_bits;
+                ist->wrap_correction_done = 0;
+            }
+            if(pkt.pts != AV_NOPTS_VALUE && pkt.pts > stime && pkt.pts - stime > stime2 - pkt.pts) {
+                pkt.pts -= 1LL<<ist->st->pts_wrap_bits;
+                ist->wrap_correction_done = 0;
+            }
+        }
 
         if (pkt.dts != AV_NOPTS_VALUE)
             pkt.dts += av_rescale_q(input_files[ist->file_index]->ts_offset, AV_TIME_BASE_Q, ist->st->time_base);
