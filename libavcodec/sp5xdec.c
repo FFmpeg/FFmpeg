@@ -90,7 +90,7 @@ static int sp5x_decode_frame(AVCodecContext *avctx,
 
     av_free(recoded);
 
-    return i;
+    return i < 0 ? i : avpkt->size;
 }
 
 #if CONFIG_SP5X_DECODER
