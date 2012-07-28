@@ -269,7 +269,7 @@ static void send_silence(AVFilterContext *ctx, unsigned in_no, unsigned out_no)
 {
     ConcatContext *cat = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[out_no];
-    int64_t base_pts = cat->in[in_no].pts;
+    int64_t base_pts = cat->in[in_no].pts + cat->delta_ts;
     int64_t nb_samples, sent = 0;
     int frame_nb_samples;
     AVRational rate_tb = { 1, ctx->inputs[in_no]->sample_rate };
