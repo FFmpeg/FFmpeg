@@ -233,7 +233,7 @@ stop:
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = l->pic;
 
-    return buf_size < 0 ? -1 : buf_size;
+    return buf_size < 0 ? -1 : avpkt->size - buf_size;
 }
 
 static av_cold int decode_init(AVCodecContext *avctx){
