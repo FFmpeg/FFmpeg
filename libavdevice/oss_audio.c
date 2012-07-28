@@ -36,6 +36,7 @@
 
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
+#include "libavutil/time.h"
 #include "libavcodec/avcodec.h"
 #include "avdevice.h"
 #include "libavformat/internal.h"

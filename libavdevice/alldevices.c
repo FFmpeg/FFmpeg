@@ -55,7 +55,7 @@ void avdevice_register_all(void)
     REGISTER_INDEV    (V4L2, v4l2);
 //    REGISTER_INDEV    (V4L, v4l
     REGISTER_INDEV    (VFWCAP, vfwcap);
-    REGISTER_INDEV    (X11_GRAB_DEVICE, x11_grab_device);
+    REGISTER_INDEV    (X11GRAB, x11grab);
 
     /* external libraries */
     REGISTER_INDEV    (LIBCDIO, libcdio);

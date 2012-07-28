@@ -72,25 +72,25 @@ SECTION .text
     STORE_DIFFx2 m2, m3, m4, m5, %1, %3
 %endmacro
 
-%macro IDCT_ADD_10 1
-cglobal h264_idct_add_10_%1, 3,3
+%macro IDCT_ADD_10 0
+cglobal h264_idct_add_10, 3,3
     IDCT4_ADD_10 r0, r1, r2
     RET
 %endmacro
 
-INIT_XMM
-IDCT_ADD_10 sse2
+INIT_XMM sse2
+IDCT_ADD_10
 %if HAVE_AVX
-INIT_AVX
-IDCT_ADD_10 avx
+INIT_XMM avx
+IDCT_ADD_10
 %endif
 
 ;-----------------------------------------------------------------------------
 ; h264_idct_add16(pixel *dst, const int *block_offset, dctcoef *block, int stride, const uint8_t nnzc[6*8])
 ;-----------------------------------------------------------------------------
 ;;;;;;; NO FATE SAMPLES TRIGGER THIS
-%macro ADD4x4IDCT 1
-add4x4_idct_%1:
+%macro ADD4x4IDCT 0
+add4x4_idct %+ SUFFIX:
     add   r5, r0
     mova  m0, [r2+ 0]
     mova  m1, [r2+16]
@@ -107,52 +107,52 @@ add4x4_idct_%1:
     ret
 %endmacro
 
-INIT_XMM
+INIT_XMM sse2
 ALIGN 16
-ADD4x4IDCT sse2
+ADD4x4IDCT
 %if HAVE_AVX
-INIT_AVX
+INIT_XMM avx
 ALIGN 16
-ADD4x4IDCT avx
+ADD4x4IDCT
 %endif
 
-%macro ADD16_OP 3
-    cmp          byte [r4+%3], 0
-    jz .skipblock%2
-    mov         r5d, [r1+%2*4]
-    call add4x4_idct_%1
-.skipblock%2:
-%if %2<15
+%macro ADD16_OP 2
+    cmp          byte [r4+%2], 0
+    jz .skipblock%1
+    mov         r5d, [r1+%1*4]
+    call add4x4_idct %+ SUFFIX
+.skipblock%1:
+%if %1<15
     add          r2, 64
 %endif
 %endmacro
 
-%macro IDCT_ADD16_10 1
-cglobal h264_idct_add16_10_%1, 5,6
-    ADD16_OP %1, 0, 4+1*8
-    ADD16_OP %1, 1, 5+1*8
-    ADD16_OP %1, 2, 4+2*8
-    ADD16_OP %1, 3, 5+2*8
-    ADD16_OP %1, 4, 6+1*8
-    ADD16_OP %1, 5, 7+1*8
-    ADD16_OP %1, 6, 6+2*8
-    ADD16_OP %1, 7, 7+2*8
-    ADD16_OP %1, 8, 4+3*8
-    ADD16_OP %1, 9, 5+3*8
-    ADD16_OP %1, 10, 4+4*8
-    ADD16_OP %1, 11, 5+4*8
-    ADD16_OP %1, 12, 6+3*8
-    ADD16_OP %1, 13, 7+3*8
-    ADD16_OP %1, 14, 6+4*8
-    ADD16_OP %1, 15, 7+4*8
+%macro IDCT_ADD16_10 0
+cglobal h264_idct_add16_10, 5,6
+    ADD16_OP 0, 4+1*8
+    ADD16_OP 1, 5+1*8
+    ADD16_OP 2, 4+2*8
+    ADD16_OP 3, 5+2*8
+    ADD16_OP 4, 6+1*8
+    ADD16_OP 5, 7+1*8
+    ADD16_OP 6, 6+2*8
+    ADD16_OP 7, 7+2*8
+    ADD16_OP 8, 4+3*8
+    ADD16_OP 9, 5+3*8
+    ADD16_OP 10, 4+4*8
+    ADD16_OP 11, 5+4*8
+    ADD16_OP 12, 6+3*8
+    ADD16_OP 13, 7+3*8
+    ADD16_OP 14, 6+4*8
+    ADD16_OP 15, 7+4*8
     REP_RET
 %endmacro
 
-INIT_XMM
-IDCT_ADD16_10 sse2
+INIT_XMM sse2
+IDCT_ADD16_10
 %if HAVE_AVX
-INIT_AVX
-IDCT_ADD16_10 avx
+INIT_XMM avx
+IDCT_ADD16_10
 %endif
 
 ;-----------------------------------------------------------------------------
@@ -185,8 +185,8 @@ IDCT_ADD16_10 avx
     mova [%1+%3  ], m4
 %endmacro
 
-INIT_MMX
-cglobal h264_idct_dc_add_10_mmx2,3,3
+INIT_MMX mmx2
+cglobal h264_idct_dc_add_10,3,3
     movd      m0, [r1]
     paddd     m0, [pd_32]
     psrad     m0, 6
@@ -199,8 +199,8 @@ cglobal h264_idct_dc_add_10_mmx2,3,3
 ;-----------------------------------------------------------------------------
 ; void h264_idct8_dc_add(pixel *dst, dctcoef *block, int stride)
 ;-----------------------------------------------------------------------------
-%macro IDCT8_DC_ADD 1
-cglobal h264_idct8_dc_add_10_%1,3,3,7
+%macro IDCT8_DC_ADD 0
+cglobal h264_idct8_dc_add_10,3,3,7
     mov      r1d, [r1]
     add       r1, 32
     sar       r1, 6
@@ -214,45 +214,45 @@ cglobal h264_idct8_dc_add_10_%1,3,3,7
     RET
 %endmacro
 
-INIT_XMM
-IDCT8_DC_ADD sse2
+INIT_XMM sse2
+IDCT8_DC_ADD
 %if HAVE_AVX
-INIT_AVX
-IDCT8_DC_ADD avx
+INIT_XMM avx
+IDCT8_DC_ADD
 %endif
 
 ;-----------------------------------------------------------------------------
 ; h264_idct_add16intra(pixel *dst, const int *block_offset, dctcoef *block, int stride, const uint8_t nnzc[6*8])
 ;-----------------------------------------------------------------------------
-%macro AC 2
-.ac%2
-    mov  r5d, [r1+(%2+0)*4]
-    call add4x4_idct_%1
-    mov  r5d, [r1+(%2+1)*4]
+%macro AC 1
+.ac%1
+    mov  r5d, [r1+(%1+0)*4]
+    call add4x4_idct %+ SUFFIX
+    mov  r5d, [r1+(%1+1)*4]
     add  r2, 64
-    call add4x4_idct_%1
+    call add4x4_idct %+ SUFFIX
     add  r2, 64
-    jmp .skipadd%2
+    jmp .skipadd%1
 %endmacro
 
 %assign last_block 16
-%macro ADD16_OP_INTRA 3
-    cmp      word [r4+%3], 0
-    jnz .ac%2
+%macro ADD16_OP_INTRA 2
+    cmp      word [r4+%2], 0
+    jnz .ac%1
     mov      r5d, [r2+ 0]
     or       r5d, [r2+64]
-    jz .skipblock%2
-    mov      r5d, [r1+(%2+0)*4]
-    call idct_dc_add_%1
-.skipblock%2:
-%if %2<last_block-2
+    jz .skipblock%1
+    mov      r5d, [r1+(%1+0)*4]
+    call idct_dc_add %+ SUFFIX
+.skipblock%1:
+%if %1<last_block-2
     add       r2, 128
 %endif
-.skipadd%2:
+.skipadd%1:
 %endmacro
 
-%macro IDCT_ADD16INTRA_10 1
-idct_dc_add_%1:
+%macro IDCT_ADD16INTRA_10 0
+idct_dc_add %+ SUFFIX:
     add       r5, r0
     movq      m0, [r2+ 0]
     movhps    m0, [r2+64]
@@ -265,46 +265,46 @@ idct_dc_add_%1:
     IDCT_DC_ADD_OP_10 r5, r3, r6
     ret
 
-cglobal h264_idct_add16intra_10_%1,5,7,8
-    ADD16_OP_INTRA %1, 0, 4+1*8
-    ADD16_OP_INTRA %1, 2, 4+2*8
-    ADD16_OP_INTRA %1, 4, 6+1*8
-    ADD16_OP_INTRA %1, 6, 6+2*8
-    ADD16_OP_INTRA %1, 8, 4+3*8
-    ADD16_OP_INTRA %1, 10, 4+4*8
-    ADD16_OP_INTRA %1, 12, 6+3*8
-    ADD16_OP_INTRA %1, 14, 6+4*8
+cglobal h264_idct_add16intra_10,5,7,8
+    ADD16_OP_INTRA 0, 4+1*8
+    ADD16_OP_INTRA 2, 4+2*8
+    ADD16_OP_INTRA 4, 6+1*8
+    ADD16_OP_INTRA 6, 6+2*8
+    ADD16_OP_INTRA 8, 4+3*8
+    ADD16_OP_INTRA 10, 4+4*8
+    ADD16_OP_INTRA 12, 6+3*8
+    ADD16_OP_INTRA 14, 6+4*8
     REP_RET
-    AC %1, 8
-    AC %1, 10
-    AC %1, 12
-    AC %1, 14
-    AC %1, 0
-    AC %1, 2
-    AC %1, 4
-    AC %1, 6
+    AC 8
+    AC 10
+    AC 12
+    AC 14
+    AC 0
+    AC 2
+    AC 4
+    AC 6
 %endmacro
 
-INIT_XMM
-IDCT_ADD16INTRA_10 sse2
+INIT_XMM sse2
+IDCT_ADD16INTRA_10
 %if HAVE_AVX
-INIT_AVX
-IDCT_ADD16INTRA_10 avx
+INIT_XMM avx
+IDCT_ADD16INTRA_10
 %endif
 
 %assign last_block 36
 ;-----------------------------------------------------------------------------
 ; h264_idct_add8(pixel **dst, const int *block_offset, dctcoef *block, int stride, const uint8_t nnzc[6*8])
 ;-----------------------------------------------------------------------------
-%macro IDCT_ADD8 1
-cglobal h264_idct_add8_10_%1,5,8,7
+%macro IDCT_ADD8 0
+cglobal h264_idct_add8_10,5,8,7
 %if ARCH_X86_64
     mov      r7, r0
 %endif
     add      r2, 1024
     mov      r0, [r0]
-    ADD16_OP_INTRA %1, 16, 4+ 6*8
-    ADD16_OP_INTRA %1, 18, 4+ 7*8
+    ADD16_OP_INTRA 16, 4+ 6*8
+    ADD16_OP_INTRA 18, 4+ 7*8
     add      r2, 1024-128*2
 %if ARCH_X86_64
     mov      r0, [r7+gprsize]
@@ -312,21 +312,21 @@ cglobal h264_idct_add8_10_%1,5,8,7
     mov      r0, r0m
     mov      r0, [r0+gprsize]
 %endif
-    ADD16_OP_INTRA %1, 32, 4+11*8
-    ADD16_OP_INTRA %1, 34, 4+12*8
+    ADD16_OP_INTRA 32, 4+11*8
+    ADD16_OP_INTRA 34, 4+12*8
     REP_RET
-    AC %1, 16
-    AC %1, 18
-    AC %1, 32
-    AC %1, 34
+    AC 16
+    AC 18
+    AC 32
+    AC 34
 
 %endmacro ; IDCT_ADD8
 
-INIT_XMM
-IDCT_ADD8 sse2
+INIT_XMM sse2
+IDCT_ADD8
 %if HAVE_AVX
-INIT_AVX
-IDCT_ADD8 avx
+INIT_XMM avx
+IDCT_ADD8
 %endif
 
 ;-----------------------------------------------------------------------------
@@ -432,19 +432,19 @@ IDCT_ADD8 avx
     STORE_DIFFx2 m0, m1, m6, m7, %1, %3
 %endmacro
 
-%macro IDCT8_ADD 1
-cglobal h264_idct8_add_10_%1, 3,4,16
+%macro IDCT8_ADD 0
+cglobal h264_idct8_add_10, 3,4,16
 %if UNIX64 == 0
     %assign pad 16-gprsize-(stack_offset&15)
     sub  rsp, pad
-    call h264_idct8_add1_10_%1
+    call h264_idct8_add1_10 %+ SUFFIX
     add  rsp, pad
     RET
 %endif
 
 ALIGN 16
 ; TODO: does not need to use stack
-h264_idct8_add1_10_%1:
+h264_idct8_add1_10 %+ SUFFIX:
 %assign pad 256+16-gprsize
     sub          rsp, pad
     add   dword [r1], 32
@@ -499,31 +499,31 @@ h264_idct8_add1_10_%1:
     ret
 %endmacro
 
-INIT_XMM
-IDCT8_ADD sse2
+INIT_XMM sse2
+IDCT8_ADD
 %if HAVE_AVX
-INIT_AVX
-IDCT8_ADD avx
+INIT_XMM avx
+IDCT8_ADD
 %endif
 
 ;-----------------------------------------------------------------------------
 ; h264_idct8_add4(pixel **dst, const int *block_offset, dctcoef *block, int stride, const uint8_t nnzc[6*8])
 ;-----------------------------------------------------------------------------
 ;;;;;;; NO FATE SAMPLES TRIGGER THIS
-%macro IDCT8_ADD4_OP 3
-    cmp       byte [r4+%3], 0
-    jz .skipblock%2
-    mov      r0d, [r6+%2*4]
+%macro IDCT8_ADD4_OP 2
+    cmp       byte [r4+%2], 0
+    jz .skipblock%1
+    mov      r0d, [r6+%1*4]
     add       r0, r5
-    call h264_idct8_add1_10_%1
-.skipblock%2:
-%if %2<12
+    call h264_idct8_add1_10 %+ SUFFIX
+.skipblock%1:
+%if %1<12
     add       r1, 256
 %endif
 %endmacro
 
-%macro IDCT8_ADD4 1
-cglobal h264_idct8_add4_10_%1, 0,7,16
+%macro IDCT8_ADD4 0
+cglobal h264_idct8_add4_10, 0,7,16
     %assign pad 16-gprsize-(stack_offset&15)
     SUB      rsp, pad
     mov       r5, r0mp
@@ -531,17 +531,17 @@ cglobal h264_idct8_add4_10_%1, 0,7,16
     mov       r1, r2mp
     mov      r2d, r3m
     movifnidn r4, r4mp
-    IDCT8_ADD4_OP %1,  0, 4+1*8
-    IDCT8_ADD4_OP %1,  4, 6+1*8
-    IDCT8_ADD4_OP %1,  8, 4+3*8
-    IDCT8_ADD4_OP %1, 12, 6+3*8
+    IDCT8_ADD4_OP  0, 4+1*8
+    IDCT8_ADD4_OP  4, 6+1*8
+    IDCT8_ADD4_OP  8, 4+3*8
+    IDCT8_ADD4_OP 12, 6+3*8
     ADD       rsp, pad
     RET
 %endmacro ; IDCT8_ADD4
 
-INIT_XMM
-IDCT8_ADD4 sse2
+INIT_XMM sse2
+IDCT8_ADD4
 %if HAVE_AVX
-INIT_AVX
-IDCT8_ADD4 avx
+INIT_XMM avx
+IDCT8_ADD4
 %endif

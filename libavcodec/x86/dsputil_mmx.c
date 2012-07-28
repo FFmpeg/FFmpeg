@@ -2137,10 +2137,10 @@ void ff_ ## OP ## _h264_chroma_mc ## NUM ## _ ## DEPTH ## _ ## OPT      \
                                       (uint8_t *dst, uint8_t *src,      \
                                        int stride, int h, int x, int y);
 
-CHROMA_MC(put, 2, 10, mmxext)
-CHROMA_MC(avg, 2, 10, mmxext)
-CHROMA_MC(put, 4, 10, mmxext)
-CHROMA_MC(avg, 4, 10, mmxext)
+CHROMA_MC(put, 2, 10, mmx2)
+CHROMA_MC(avg, 2, 10, mmx2)
+CHROMA_MC(put, 4, 10, mmx2)
+CHROMA_MC(avg, 4, 10, mmx2)
 CHROMA_MC(put, 8, 10, sse2)
 CHROMA_MC(avg, 8, 10, sse2)
 CHROMA_MC(put, 8, 10, avx)
@@ -2841,10 +2841,10 @@ static void dsputil_init_mmx2(DSPContext *c, AVCodecContext *avctx,
         c->put_h264_chroma_pixels_tab[2] = ff_put_h264_chroma_mc2_mmx2;
     }
     if (bit_depth == 10 && CONFIG_H264CHROMA) {
-        c->put_h264_chroma_pixels_tab[2] = ff_put_h264_chroma_mc2_10_mmxext;
-        c->avg_h264_chroma_pixels_tab[2] = ff_avg_h264_chroma_mc2_10_mmxext;
-        c->put_h264_chroma_pixels_tab[1] = ff_put_h264_chroma_mc4_10_mmxext;
-        c->avg_h264_chroma_pixels_tab[1] = ff_avg_h264_chroma_mc4_10_mmxext;
+        c->put_h264_chroma_pixels_tab[2] = ff_put_h264_chroma_mc2_10_mmx2;
+        c->avg_h264_chroma_pixels_tab[2] = ff_avg_h264_chroma_mc2_10_mmx2;
+        c->put_h264_chroma_pixels_tab[1] = ff_put_h264_chroma_mc4_10_mmx2;
+        c->avg_h264_chroma_pixels_tab[1] = ff_avg_h264_chroma_mc4_10_mmx2;
     }
 
     c->add_hfyu_median_prediction   = ff_add_hfyu_median_prediction_mmx2;

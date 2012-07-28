@@ -517,23 +517,23 @@ INIT_MMX 3dnow
 FFT48_3DN
 
 
-%define Z(x) [zq + o1q*(x&6) + mmsize*(x&1)]
-%define Z2(x) [zq + o3q + mmsize*(x&1)]
-%define ZH(x) [zq + o1q*(x&6) + mmsize*(x&1) + mmsize/2]
-%define Z2H(x) [zq + o3q + mmsize*(x&1) + mmsize/2]
+%define Z(x) [zcq + o1q*(x&6) + mmsize*(x&1)]
+%define Z2(x) [zcq + o3q + mmsize*(x&1)]
+%define ZH(x) [zcq + o1q*(x&6) + mmsize*(x&1) + mmsize/2]
+%define Z2H(x) [zcq + o3q + mmsize*(x&1) + mmsize/2]
 
 %macro DECL_PASS 2+ ; name, payload
 align 16
 %1:
-DEFINE_ARGS z, w, n, o1, o3
+DEFINE_ARGS zc, w, n, o1, o3
     lea o3q, [nq*3]
     lea o1q, [nq*8]
     shl o3q, 4
 .loop:
     %2
-    add zq, mmsize*2
-    add wq, mmsize
-    sub nd, mmsize/8
+    add zcq, mmsize*2
+    add  wq, mmsize
+    sub  nd, mmsize/8
     jg .loop
     rep ret
 %endmacro
@@ -748,7 +748,7 @@ section .text
 
 ; On x86_32, this function does the register saving and restoring for all of fft.
 ; The others pass args in registers and don't spill anything.
-cglobal fft_dispatch%2, 2,5,8, z, nbits
+cglobal fft_dispatch%2, 2,5,8, zc, nbits
     FFT_DISPATCH fullsuffix, nbits
     RET
 %endmacro ; DECL_FFT

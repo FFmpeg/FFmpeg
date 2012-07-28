@@ -249,12 +249,12 @@ void ff_deblock_ ## DIR ## _ ## TYPE ## _ ## DEPTH ## _ ## OPT (uint8_t *pix, in
                                                                 int alpha, int beta);
 
 #define LF_FUNCS(type, depth)\
-LF_FUNC (h,  chroma,       depth, mmxext)\
-LF_IFUNC(h,  chroma_intra, depth, mmxext)\
-LF_FUNC (v,  chroma,       depth, mmxext)\
-LF_IFUNC(v,  chroma_intra, depth, mmxext)\
-LF_FUNC (h,  luma,         depth, mmxext)\
-LF_IFUNC(h,  luma_intra,   depth, mmxext)\
+LF_FUNC (h,  chroma,       depth, mmx2)\
+LF_IFUNC(h,  chroma_intra, depth, mmx2)\
+LF_FUNC (v,  chroma,       depth, mmx2)\
+LF_IFUNC(v,  chroma_intra, depth, mmx2)\
+LF_FUNC (h,  luma,         depth, mmx2)\
+LF_IFUNC(h,  luma_intra,   depth, mmx2)\
 LF_FUNC (h,  luma,         depth, sse2)\
 LF_IFUNC(h,  luma_intra,   depth, sse2)\
 LF_FUNC (v,  luma,         depth, sse2)\
@@ -276,24 +276,24 @@ LF_FUNCS( uint8_t,  8)
 LF_FUNCS(uint16_t, 10)
 
 #if ARCH_X86_32 && HAVE_YASM
-LF_FUNC (v8, luma,             8, mmxext)
-static void ff_deblock_v_luma_8_mmxext(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0)
+LF_FUNC (v8, luma,             8, mmx2)
+static void ff_deblock_v_luma_8_mmx2(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0)
 {
     if((tc0[0] & tc0[1]) >= 0)
-        ff_deblock_v8_luma_8_mmxext(pix+0, stride, alpha, beta, tc0);
+        ff_deblock_v8_luma_8_mmx2(pix+0, stride, alpha, beta, tc0);
     if((tc0[2] & tc0[3]) >= 0)
-        ff_deblock_v8_luma_8_mmxext(pix+8, stride, alpha, beta, tc0+2);
+        ff_deblock_v8_luma_8_mmx2(pix+8, stride, alpha, beta, tc0+2);
 }
-LF_IFUNC(v8, luma_intra,        8, mmxext)
-static void ff_deblock_v_luma_intra_8_mmxext(uint8_t *pix, int stride, int alpha, int beta)
+LF_IFUNC(v8, luma_intra,        8, mmx2)
+static void ff_deblock_v_luma_intra_8_mmx2(uint8_t *pix, int stride, int alpha, int beta)
 {
-    ff_deblock_v8_luma_intra_8_mmxext(pix+0, stride, alpha, beta);
-    ff_deblock_v8_luma_intra_8_mmxext(pix+8, stride, alpha, beta);
+    ff_deblock_v8_luma_intra_8_mmx2(pix+0, stride, alpha, beta);
+    ff_deblock_v8_luma_intra_8_mmx2(pix+8, stride, alpha, beta);
 }
 #endif /* ARCH_X86_32 */
 
-LF_FUNC (v,  luma,            10, mmxext)
-LF_IFUNC(v,  luma_intra,      10, mmxext)
+LF_FUNC (v,  luma,            10, mmx2)
+LF_IFUNC(v,  luma_intra,      10, mmx2)
 
 /***********************************/
 /* weighted prediction */
@@ -373,17 +373,17 @@ void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth, const int chrom
                 c->h264_idct_add8  = ff_h264_idct_add8_8_mmx2;
             c->h264_idct_add16intra= ff_h264_idct_add16intra_8_mmx2;
 
-            c->h264_v_loop_filter_chroma= ff_deblock_v_chroma_8_mmxext;
-            c->h264_v_loop_filter_chroma_intra= ff_deblock_v_chroma_intra_8_mmxext;
+            c->h264_v_loop_filter_chroma= ff_deblock_v_chroma_8_mmx2;
+            c->h264_v_loop_filter_chroma_intra= ff_deblock_v_chroma_intra_8_mmx2;
             if (chroma_format_idc == 1) {
-                c->h264_h_loop_filter_chroma= ff_deblock_h_chroma_8_mmxext;
-                c->h264_h_loop_filter_chroma_intra= ff_deblock_h_chroma_intra_8_mmxext;
+                c->h264_h_loop_filter_chroma= ff_deblock_h_chroma_8_mmx2;
+                c->h264_h_loop_filter_chroma_intra= ff_deblock_h_chroma_intra_8_mmx2;
             }
 #if ARCH_X86_32
-            c->h264_v_loop_filter_luma= ff_deblock_v_luma_8_mmxext;
-            c->h264_h_loop_filter_luma= ff_deblock_h_luma_8_mmxext;
-            c->h264_v_loop_filter_luma_intra = ff_deblock_v_luma_intra_8_mmxext;
-            c->h264_h_loop_filter_luma_intra = ff_deblock_h_luma_intra_8_mmxext;
+            c->h264_v_loop_filter_luma= ff_deblock_v_luma_8_mmx2;
+            c->h264_h_loop_filter_luma= ff_deblock_h_luma_8_mmx2;
+            c->h264_v_loop_filter_luma_intra = ff_deblock_v_luma_intra_8_mmx2;
+            c->h264_h_loop_filter_luma_intra = ff_deblock_h_luma_intra_8_mmx2;
 #endif
             c->weight_h264_pixels_tab[0]= ff_h264_weight_16_mmx2;
             c->weight_h264_pixels_tab[1]= ff_h264_weight_8_mmx2;
@@ -436,12 +436,12 @@ void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth, const int chrom
     if (mm_flags & AV_CPU_FLAG_MMX) {
         if (mm_flags & AV_CPU_FLAG_MMX2) {
 #if ARCH_X86_32
-            c->h264_v_loop_filter_chroma= ff_deblock_v_chroma_10_mmxext;
-            c->h264_v_loop_filter_chroma_intra= ff_deblock_v_chroma_intra_10_mmxext;
-            c->h264_v_loop_filter_luma= ff_deblock_v_luma_10_mmxext;
-            c->h264_h_loop_filter_luma= ff_deblock_h_luma_10_mmxext;
-            c->h264_v_loop_filter_luma_intra = ff_deblock_v_luma_intra_10_mmxext;
-            c->h264_h_loop_filter_luma_intra = ff_deblock_h_luma_intra_10_mmxext;
+            c->h264_v_loop_filter_chroma= ff_deblock_v_chroma_10_mmx2;
+            c->h264_v_loop_filter_chroma_intra= ff_deblock_v_chroma_intra_10_mmx2;
+            c->h264_v_loop_filter_luma= ff_deblock_v_luma_10_mmx2;
+            c->h264_h_loop_filter_luma= ff_deblock_h_luma_10_mmx2;
+            c->h264_v_loop_filter_luma_intra = ff_deblock_v_luma_intra_10_mmx2;
+            c->h264_h_loop_filter_luma_intra = ff_deblock_h_luma_intra_10_mmx2;
 #endif
             c->h264_idct_dc_add= ff_h264_idct_dc_add_10_mmx2;
             if (mm_flags&AV_CPU_FLAG_SSE2) {

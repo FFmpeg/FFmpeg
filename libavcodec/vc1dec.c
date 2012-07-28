@@ -1050,9 +1050,10 @@ static void vc1_mc_4mv_chroma4(VC1Context *v)
         if ((edges&8) && s->mb_y == (s->mb_height - 1))        \
             mquant = v->altpq;                                 \
         if (!mquant || mquant > 31) {                          \
-            av_log(v->s.avctx, AV_LOG_ERROR, "invalid mquant %d\n", mquant);   \
-            mquant = 1;                                \
-        }                                              \
+            av_log(v->s.avctx, AV_LOG_ERROR,                   \
+                   "Overriding invalid mquant %d\n", mquant);  \
+            mquant = 1;                                        \
+        }                                                      \
     }
 
 /**
@@ -4944,15 +4945,17 @@ static void vc1_draw_sprites(VC1Context *v, SpriteData* sd)
                 int      iline  = s->current_picture.f.linesize[plane];
                 int      ycoord = yoff[sprite] + yadv[sprite] * row;
                 int      yline  = ycoord >> 16;
+                int      next_line;
                 ysub[sprite] = ycoord & 0xFFFF;
                 if (sprite) {
                     iplane = s->last_picture.f.data[plane];
                     iline  = s->last_picture.f.linesize[plane];
                 }
+                next_line = FFMIN(yline + 1, (v->sprite_height >> !!plane) - 1) * iline;
                 if (!(xoff[sprite] & 0xFFFF) && xadv[sprite] == 1 << 16) {
                         src_h[sprite][0] = iplane + (xoff[sprite] >> 16) +  yline      * iline;
                     if (ysub[sprite])
-                        src_h[sprite][1] = iplane + (xoff[sprite] >> 16) + FFMIN(yline + 1, (v->sprite_height>>!!plane)-1) * iline;
+                        src_h[sprite][1] = iplane + (xoff[sprite] >> 16) + next_line;
                 } else {
                     if (sr_cache[sprite][0] != yline) {
                         if (sr_cache[sprite][1] == yline) {
@@ -4964,7 +4967,9 @@ static void vc1_draw_sprites(VC1Context *v, SpriteData* sd)
                         }
                     }
                     if (ysub[sprite] && sr_cache[sprite][1] != yline + 1) {
-                        v->vc1dsp.sprite_h(v->sr_rows[sprite][1], iplane + FFMIN(yline + 1, (v->sprite_height>>!!plane)-1) * iline, xoff[sprite], xadv[sprite], width);
+                        v->vc1dsp.sprite_h(v->sr_rows[sprite][1],
+                                           iplane + next_line, xoff[sprite],
+                                           xadv[sprite], width);
                         sr_cache[sprite][1] = yline + 1;
                     }
                     src_h[sprite][0] = v->sr_rows[sprite][0];
@@ -5581,8 +5586,10 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
         mb_height = s->mb_height >> v->field_mode;
         for (i = 0; i <= n_slices; i++) {
             if (i > 0 &&  slices[i - 1].mby_start >= mb_height) {
-                if(v->field_mode <= 0) {
-                    av_log(v->s.avctx, AV_LOG_ERROR, "invalid end_mb_y %d\n", slices[i - 1].mby_start);
+                if (v->field_mode <= 0) {
+                    av_log(v->s.avctx, AV_LOG_ERROR, "Slice %d starts beyond "
+                           "picture boundary (%d >= %d)\n", i,
+                           slices[i - 1].mby_start, mb_height);
                     continue;
                 }
                 v->second_field = 1;
@@ -5597,13 +5604,13 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                 v->pic_header_flag = 0;
                 if (v->field_mode && i == n_slices1 + 2) {
                     if (ff_vc1_parse_frame_header_adv(v, &s->gb) < 0) {
-                        av_log(v->s.avctx, AV_LOG_ERROR, "slice header damaged\n");
+                        av_log(v->s.avctx, AV_LOG_ERROR, "Field header damaged\n");
                         continue;
                     }
                 } else if (get_bits1(&s->gb)) {
                     v->pic_header_flag = 1;
                     if (ff_vc1_parse_frame_header_adv(v, &s->gb) < 0) {
-                        av_log(v->s.avctx, AV_LOG_ERROR, "slice header damaged\n");
+                        av_log(v->s.avctx, AV_LOG_ERROR, "Slice header damaged\n");
                         continue;
                     }
                 }

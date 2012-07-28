@@ -196,7 +196,6 @@ static int mp3_read_packet(AVFormatContext *s, AVPacket *pkt)
     MP3Context *mp3 = s->priv_data;
     int ret, size;
     int64_t pos;
-    //    AVStream *st = s->streams[0];
 
     size= MP3_PACKET_SIZE;
     pos = avio_tell(s->pb);
@@ -204,14 +203,14 @@ static int mp3_read_packet(AVFormatContext *s, AVPacket *pkt)
         size= FFMIN(size, mp3->filesize - pos);
 
     ret= av_get_packet(s->pb, pkt, size);
-
-    pkt->flags &= ~AV_PKT_FLAG_CORRUPT;
-    pkt->stream_index = 0;
     if (ret <= 0) {
         if(ret<0)
             return ret;
         return AVERROR_EOF;
     }
+
+    pkt->flags &= ~AV_PKT_FLAG_CORRUPT;
+    pkt->stream_index = 0;
 
     if (ret >= ID3v1_TAG_SIZE &&
         memcmp(&pkt->data[ret - ID3v1_TAG_SIZE], "TAG", 3) == 0)

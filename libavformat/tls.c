@@ -266,7 +266,7 @@ static int tls_read(URLContext *h, uint8_t *buf, int size)
         if (ret > 0)
             return ret;
         if (ret == 0)
-            return AVERROR(EIO);
+            return AVERROR_EOF;
         if ((ret = do_tls_poll(h, ret)) < 0)
             return ret;
     }
@@ -281,7 +281,7 @@ static int tls_write(URLContext *h, const uint8_t *buf, int size)
         if (ret > 0)
             return ret;
         if (ret == 0)
-            return AVERROR(EIO);
+            return AVERROR_EOF;
         if ((ret = do_tls_poll(h, ret)) < 0)
             return ret;
     }

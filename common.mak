@@ -11,7 +11,7 @@ ifndef V
 Q      = @
 ECHO   = printf "$(1)\t%s\n" $(2)
 BRIEF  = CC CXX AS YASM AR LD HOSTCC STRIP CP
-SILENT = DEPCC DEPAS DEPHOSTCC YASMDEP RM RANLIB
+SILENT = DEPCC DEPAS DEPHOSTCC DEPYASM RM RANLIB
 MSG    = $@
 M      = @$(call ECHO,$(TAG),$@);
 $(foreach VAR,$(BRIEF), \
@@ -35,7 +35,7 @@ LDFLAGS    := $(ALLFFLIBS:%=-Llib%) $(LDFLAGS)
 
 define COMPILE
        $(call $(1)DEP,$(1))
-       $($(1)) $($(1)FLAGS) $($(1)_DEPFLAGS) -c $($(1)_O) $<
+       $($(1)) $($(1)FLAGS) $($(1)_DEPFLAGS) $($(1)_C) $($(1)_O) $<
 endef
 
 COMPILE_C = $(call COMPILE,CC)
@@ -55,7 +55,7 @@ COMPILE_S = $(call COMPILE,AS)
 	$(COMPILE_S)
 
 %.ho: %.h
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ -x c $<
+	$(CC) $(CCFLAGS) -c $(CC_O) -x c $<
 
 %.ver: %.v
 	$(Q)sed 's/$$MAJOR/$($(basename $(@F))_VERSION_MAJOR)/' $^ > $@
