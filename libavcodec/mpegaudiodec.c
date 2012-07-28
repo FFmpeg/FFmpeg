@@ -25,6 +25,7 @@
  */
 
 #include "libavutil/audioconvert.h"
+#include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "mathops.h"
@@ -326,7 +327,7 @@ static av_cold void decode_init_static(void)
                  INIT_VLC_USE_NEW_STATIC);
         offset += huff_vlc_tables_sizes[i];
     }
-    assert(offset == FF_ARRAY_ELEMS(huff_vlc_tables));
+    av_assert0(offset == FF_ARRAY_ELEMS(huff_vlc_tables));
 
     offset = 0;
     for (i = 0; i < 2; i++) {
@@ -337,7 +338,7 @@ static av_cold void decode_init_static(void)
                  INIT_VLC_USE_NEW_STATIC);
         offset += huff_quad_vlc_tables_sizes[i];
     }
-    assert(offset == FF_ARRAY_ELEMS(huff_quad_vlc_tables));
+    av_assert0(offset == FF_ARRAY_ELEMS(huff_quad_vlc_tables));
 
     for (i = 0; i < 9; i++) {
         k = 0;
@@ -826,7 +827,7 @@ static void switch_buffer(MPADecodeContext *s, int *pos, int *end_pos,
     if (s->in_gb.buffer && *pos >= s->gb.size_in_bits) {
         s->gb           = s->in_gb;
         s->in_gb.buffer = NULL;
-        assert((get_bits_count(&s->gb) & 7) == 0);
+        av_assert2((get_bits_count(&s->gb) & 7) == 0);
         skip_bits_long(&s->gb, *pos - *end_pos);
         *end_pos2 =
         *end_pos  = *end_pos2 + get_bits_count(&s->gb) - *pos;
@@ -1397,7 +1398,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
         int skip;
         const uint8_t *ptr = s->gb.buffer + (get_bits_count(&s->gb)>>3);
         int extrasize = av_clip(get_bits_left(&s->gb) >> 3, 0, EXTRABYTES);
-        assert((get_bits_count(&s->gb) & 7) == 0);
+        av_assert1((get_bits_count(&s->gb) & 7) == 0);
         /* now we get bits from the main_data_begin offset */
         av_dlog(s->avctx, "seekback: %d\n", main_data_begin);
     //av_log(NULL, AV_LOG_ERROR, "backstep:%d, lastbuf:%d\n", main_data_begin, s->last_buf_size);
@@ -1601,7 +1602,7 @@ static int mp_decode_frame(MPADecodeContext *s, OUT_INT *samples,
         }
 
         align_get_bits(&s->gb);
-        assert((get_bits_count(&s->gb) & 7) == 0);
+        av_assert1((get_bits_count(&s->gb) & 7) == 0);
         i = get_bits_left(&s->gb) >> 3;
 
         if (i < 0 || i > BACKSTEP_SIZE || nb_frames < 0) {
@@ -1609,7 +1610,7 @@ static int mp_decode_frame(MPADecodeContext *s, OUT_INT *samples,
                 av_log(s->avctx, AV_LOG_ERROR, "invalid new backstep %d\n", i);
             i = FFMIN(BACKSTEP_SIZE, buf_size - HEADER_SIZE);
         }
-        assert(i <= buf_size - HEADER_SIZE && i >= 0);
+        av_assert1(i <= buf_size - HEADER_SIZE && i >= 0);
         memcpy(s->last_buf + s->last_buf_size, s->gb.buffer + buf_size - HEADER_SIZE - i, i);
         s->last_buf_size += i;
     }
@@ -1945,7 +1946,7 @@ static int decode_frame_mp3on4(AVCodecContext *avctx, void *data,
         fsize = AV_RB16(buf) >> 4;
         fsize = FFMIN3(fsize, len, MPA_MAX_CODED_FRAME_SIZE);
         m     = s->mp3decctx[fr];
-        assert(m != NULL);
+        av_assert1(m);
 
         if (fsize < HEADER_SIZE) {
             av_log(avctx, AV_LOG_ERROR, "Frame size smaller than header size\n");
