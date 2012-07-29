@@ -66,7 +66,7 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
     const char *end;
 
     if (!ptr || avpkt->size <= 2)
-        return 0;
+        return avpkt->size ? AVERROR_INVALIDDATA : 0;
 
     /*
      * The first two bytes of the packet are the length of the text string
