@@ -797,8 +797,7 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     AVFilterContext *first_filter = in->filter_ctx;
     AVFilter *filter = avfilter_get_by_name("buffer");
     InputStream *ist = ifilter->ist;
-    AVRational tb = ist->framerate.num ? (AVRational){ist->framerate.den,
-                                                      ist->framerate.num} :
+    AVRational tb = ist->framerate.num ? av_inv_q(ist->framerate) :
                                          ist->st->time_base;
     AVRational sar;
     char args[255], name[255];
@@ -2197,8 +2196,7 @@ static int output_packet(InputStream *ist, const AVPacket *pkt)
             if (avpkt.duration)
                 ist->next_dts += av_rescale_q(avpkt.duration, ist->st->time_base, AV_TIME_BASE_Q);
             else if (ist->st->avg_frame_rate.num)
-                ist->next_dts += av_rescale_q(1, (AVRational){ist->st->avg_frame_rate.den,
-                                                              ist->st->avg_frame_rate.num},
+                ist->next_dts += av_rescale_q(1, av_inv_q(ist->st->avg_frame_rate),
                                               AV_TIME_BASE_Q);
             else if (ist->st->codec->time_base.num != 0) {
                 int ticks      = ist->st->parser ? ist->st->parser->repeat_pict + 1 :
