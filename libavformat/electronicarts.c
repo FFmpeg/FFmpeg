@@ -439,8 +439,8 @@ static int ea_read_header(AVFormatContext *s)
         st->duration = st->nb_frames = ea->nb_frames;
         if (ea->time_base.num)
             avpriv_set_pts_info(st, 64, ea->time_base.num, ea->time_base.den);
-        st->r_frame_rate = st->avg_frame_rate = (AVRational){ea->time_base.den,
-                                                             ea->time_base.num};
+        st->r_frame_rate =
+        st->avg_frame_rate = (AVRational){ea->time_base.den, ea->time_base.num};
     }
 
     if (ea->audio_codec) {

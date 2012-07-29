@@ -205,9 +205,9 @@ static int flv_write_header(AVFormatContext *s)
         FLVStreamContext *sc;
         switch (enc->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
-            if (s->streams[i]->r_frame_rate.den &&
-                s->streams[i]->r_frame_rate.num) {
-                framerate = av_q2d(s->streams[i]->r_frame_rate);
+            if (s->streams[i]->avg_frame_rate.den &&
+                s->streams[i]->avg_frame_rate.num) {
+                framerate = av_q2d(s->streams[i]->avg_frame_rate);
             } else {
                 framerate = 1 / av_q2d(s->streams[i]->codec->time_base);
             }

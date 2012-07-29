@@ -188,8 +188,10 @@ static int avs_read_packet(AVFormatContext * s, AVPacket * pkt)
                     avs->st_video->codec->height = avs->height;
                     avs->st_video->codec->bits_per_coded_sample=avs->bits_per_sample;
                     avs->st_video->nb_frames = avs->nb_frames;
-                    avs->st_video->r_frame_rate = avs->st_video->avg_frame_rate =
-                                                  (AVRational){avs->fps, 1};
+#if FF_API_R_FRAME_RATE
+                    avs->st_video->r_frame_rate =
+#endif
+                    avs->st_video->avg_frame_rate = (AVRational){avs->fps, 1};
                 }
                 return avs_read_video_packet(s, pkt, type, sub_type, size,
                                              palette, palette_size);

@@ -2556,7 +2556,9 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     }
 
     for (i=0; i<ic->nb_streams; i++) {
+#if FF_API_R_FRAME_RATE
         ic->streams[i]->info->last_dts = AV_NOPTS_VALUE;
+#endif
         ic->streams[i]->info->fps_first_dts = AV_NOPTS_VALUE;
         ic->streams[i]->info->fps_last_dts  = AV_NOPTS_VALUE;
     }
@@ -2676,6 +2678,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             }
             st->info->codec_info_duration += pkt->duration;
         }
+#if FF_API_R_FRAME_RATE
         {
             int64_t last = st->info->last_dts;
 
@@ -2703,6 +2706,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             if (last == AV_NOPTS_VALUE || st->info->duration_count <= 1)
                 st->info->last_dts = pkt->dts;
         }
+#endif
         if(st->parser && st->parser->parser->split && !st->codec->extradata){
             int i= st->parser->parser->split(st->codec, pkt->data, pkt->size);
             if (i > 0 && i < FF_MAX_EXTRADATA_SIZE) {
@@ -2784,9 +2788,28 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 
             /* estimate average framerate if not set by demuxer */
             if (st->codec_info_nb_frames>2 && !st->avg_frame_rate.num && st->info->codec_info_duration) {
+                int      best_fps = 0;
+                double best_error = 0.01;
+
                 av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
                           (st->codec_info_nb_frames-2)*(int64_t)st->time_base.den,
                           st->info->codec_info_duration*(int64_t)st->time_base.num, 60000);
+
+                /* round guessed framerate to a "standard" framerate if it's
+                 * within 1% of the original estimate*/
+                for (j = 1; j < MAX_STD_TIMEBASES; j++) {
+                    AVRational std_fps = (AVRational){get_std_framerate(j), 12*1001};
+                    double error = fabs(av_q2d(st->avg_frame_rate) / av_q2d(std_fps) - 1);
+
+                    if (error < best_error) {
+                        best_error = error;
+                        best_fps   = std_fps.num;
+                    }
+                }
+                if (best_fps) {
+                    av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
+                              best_fps, 12*1001, INT_MAX);
+                }
             }
             // the check for tb_unreliable() is not completely correct, since this is not about handling
             // a unreliable/inexact time base, but a time base that is finer than necessary, as e.g.
@@ -3835,8 +3858,10 @@ static void dump_stream_format(AVFormatContext *ic, int i, int index, int is_out
     if(st->codec->codec_type == AVMEDIA_TYPE_VIDEO){
         if(st->avg_frame_rate.den && st->avg_frame_rate.num)
             print_fps(av_q2d(st->avg_frame_rate), "fps");
+#if FF_API_R_FRAME_RATE
         if(st->r_frame_rate.den && st->r_frame_rate.num)
             print_fps(av_q2d(st->r_frame_rate), "tbr");
+#endif
         if(st->time_base.den && st->time_base.num)
             print_fps(1/av_q2d(st->time_base), "tbn");
         if(st->codec->time_base.den && st->codec->time_base.num)

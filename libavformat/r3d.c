@@ -87,8 +87,12 @@ static int r3d_read_red1(AVFormatContext *s)
 
     framerate.num = avio_rb16(s->pb);
     framerate.den = avio_rb16(s->pb);
-    if (framerate.num && framerate.den)
-        st->r_frame_rate = st->avg_frame_rate = framerate;
+    if (framerate.num && framerate.den) {
+#if FF_API_R_FRAME_RATE
+        st->r_frame_rate =
+#endif
+        st->avg_frame_rate = framerate;
+    }
 
     tmp = avio_r8(s->pb); // audio channels
     av_dlog(s, "audio channels %d\n", tmp);
@@ -135,10 +139,10 @@ static int r3d_read_rdvo(AVFormatContext *s, Atom *atom)
         av_dlog(s, "video offset %d: %#x\n", i, r3d->video_offsets[i]);
     }
 
-    if (st->r_frame_rate.num)
+    if (st->avg_frame_rate.num)
         st->duration = av_rescale_q(r3d->video_offsets_count,
-                                    (AVRational){st->r_frame_rate.den,
-                                                 st->r_frame_rate.num},
+                                    (AVRational){st->avg_frame_rate.den,
+                                                 st->avg_frame_rate.num},
                                     st->time_base);
     av_dlog(s, "duration %"PRId64"\n", st->duration);
 
@@ -262,9 +266,9 @@ static int r3d_read_redv(AVFormatContext *s, AVPacket *pkt, Atom *atom)
 
     pkt->stream_index = 0;
     pkt->dts = dts;
-    if (st->r_frame_rate.num)
+    if (st->avg_frame_rate.num)
         pkt->duration = (uint64_t)st->time_base.den*
-            st->r_frame_rate.den/st->r_frame_rate.num;
+            st->avg_frame_rate.den/st->avg_frame_rate.num;
     av_dlog(s, "pkt dts %"PRId64" duration %d\n", pkt->dts, pkt->duration);
 
     return 0;
@@ -362,11 +366,11 @@ static int r3d_seek(AVFormatContext *s, int stream_index, int64_t sample_time, i
     R3DContext *r3d = s->priv_data;
     int frame_num;
 
-    if (!st->r_frame_rate.num)
+    if (!st->avg_frame_rate.num)
         return -1;
 
     frame_num = av_rescale_q(sample_time, st->time_base,
-                             (AVRational){st->r_frame_rate.den, st->r_frame_rate.num});
+                             (AVRational){st->avg_frame_rate.den, st->avg_frame_rate.num});
     av_dlog(s, "seek frame num %d timestamp %"PRId64"\n",
             frame_num, sample_time);
 

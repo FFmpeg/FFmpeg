@@ -44,8 +44,8 @@ static int vc1test_write_header(AVFormatContext *s)
     avio_wl24(pb, 0); // hrd_buffer
     avio_w8(pb, 0x80); // level|cbr|res1
     avio_wl32(pb, 0); // hrd_rate
-    if (s->streams[0]->r_frame_rate.den && s->streams[0]->r_frame_rate.num == 1)
-        avio_wl32(pb, s->streams[0]->r_frame_rate.den);
+    if (s->streams[0]->avg_frame_rate.den && s->streams[0]->avg_frame_rate.num == 1)
+        avio_wl32(pb, s->streams[0]->avg_frame_rate.den);
     else
         avio_wl32(pb, 0xFFFFFFFF); //variable framerate
     avpriv_set_pts_info(s->streams[0], 32, 1, 1000);

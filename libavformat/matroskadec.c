@@ -1705,9 +1705,11 @@ static int matroska_read_header(AVFormatContext *s)
                       255);
             st->need_parsing = AVSTREAM_PARSE_HEADERS;
             if (track->default_duration) {
-                av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den,
+                av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
                           1000000000, track->default_duration, 30000);
-                st->avg_frame_rate = st->r_frame_rate;
+#if FF_API_R_FRAME_RATE
+                st->r_frame_rate = st->avg_frame_rate;
+#endif
             }
 
             /* export stereo mode flag as metadata tag */
