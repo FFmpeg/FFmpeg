@@ -69,20 +69,20 @@ static av_cold int color_init(AVFilterContext *ctx, const char *args)
 
     color->class = &color_class;
 
-        av_opt_set_defaults(color);
-        if ((ret = av_set_options_string(color, args, "=", ":")) < 0) {
-            av_log(ctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
-            goto end;
-        }
-        if (av_parse_video_rate(&frame_rate_q, color->rate_str) < 0) {
-            av_log(ctx, AV_LOG_ERROR, "Invalid frame rate: %s\n", color->rate_str);
-            ret = AVERROR(EINVAL);
-            goto end;
-        }
-        if (av_parse_color(color->color_rgba, color->color_str, -1, ctx) < 0) {
-            ret = AVERROR(EINVAL);
-            goto end;
-        }
+    av_opt_set_defaults(color);
+    if ((ret = av_set_options_string(color, args, "=", ":")) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
+        goto end;
+    }
+    if (av_parse_video_rate(&frame_rate_q, color->rate_str) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid frame rate: %s\n", color->rate_str);
+        ret = AVERROR(EINVAL);
+        goto end;
+    }
+    if (av_parse_color(color->color_rgba, color->color_str, -1, ctx) < 0) {
+        ret = AVERROR(EINVAL);
+        goto end;
+    }
 
     color->time_base.num = frame_rate_q.den;
     color->time_base.den = frame_rate_q.num;
