@@ -218,6 +218,7 @@ External library support:
   --enable-libquvi         enable quvi input via libquvi [no]
   --enable-librtmp         enable RTMP[E] support via librtmp [no]
   --enable-libschroedinger enable Dirac de/encoding via libschroedinger [no]
+  --enable-libshine        enable fixed-point MP3 encoding via libshine [no]
   --enable-libsoxr         enable Include libsoxr resampling [no]
   --enable-libspeex        enable Speex de/encoding via libspeex [no]
   --enable-libstagefright-h264  enable H.264 decoding via libstagefright [no]
@@ -1172,6 +1173,7 @@ EXTERNAL_LIBRARY_LIST="
     libquvi
     librtmp
     libschroedinger
+    libshine
     libsoxr
     libspeex
     libstagefright_h264
@@ -1976,6 +1978,8 @@ libopus_encoder_select="audio_frame_queue"
 libquvi_demuxer_deps="libquvi"
 libschroedinger_decoder_deps="libschroedinger"
 libschroedinger_encoder_deps="libschroedinger"
+libshine_encoder_deps="libshine"
+libshine_encoder_select="audio_frame_queue"
 libspeex_decoder_deps="libspeex"
 libspeex_encoder_deps="libspeex"
 libspeex_encoder_select="audio_frame_queue"
@@ -3997,6 +4001,7 @@ enabled libpulse && require_pkg_config libpulse-simple pulse/simple.h pa_simple_
 enabled libquvi    && require_pkg_config libquvi quvi/quvi.h quvi_init
 enabled librtmp    && require_pkg_config librtmp librtmp/rtmp.h RTMP_Socket
 enabled libschroedinger && require_pkg_config schroedinger-1.0 schroedinger/schro.h schro_init
+enabled libshine   && require_pkg_config shine shine/layer3.h shine_encode_frame
 enabled libsoxr    && require  libsoxr soxr.h soxr_create -lsoxr
 enabled libspeex   && require  libspeex speex/speex.h speex_decoder_init -lspeex
 enabled libstagefright_h264  && require_cpp libstagefright_h264 "binder/ProcessState.h media/stagefright/MetaData.h
@@ -4398,6 +4403,7 @@ echo "threading support         ${thread_type-no}"
 echo "safe bitstream reader     ${safe_bitstream_reader-no}"
 echo "SDL support               ${sdl-no}"
 echo "opencl enabled            ${opencl-no}"
+echo "libshine enabled          ${libshine-no}"
 echo "texi2html enabled         ${texi2html-no}"
 echo "perl enabled              ${perl-no}"
 echo "pod2man enabled           ${pod2man-no}"
