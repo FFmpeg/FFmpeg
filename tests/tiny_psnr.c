@@ -24,6 +24,8 @@
 #include <inttypes.h>
 #include <assert.h>
 
+#include "libavutil/intfloat.h"
+
 #define FFMIN(a, b) ((a) > (b) ? (b) : (a))
 #define F 100
 #define SIZE 2048
@@ -88,6 +90,23 @@ static uint64_t int_sqrt(uint64_t a)
     return ret;
 }
 
+static int16_t get_s16l(uint8_t *p)
+{
+    union {
+        uint16_t u;
+        int16_t  s;
+    } v;
+    v.u = p[0] | p[1] << 8;
+    return v.s;
+}
+
+static float get_f32l(uint8_t *p)
+{
+    union av_intfloat32 v;
+    v.i = p[0] | p[1] << 8 | p[2] << 16 | p[3] << 24;
+    return v.f;
+}
+
 int main(int argc, char *argv[])
 {
     int i, j;
@@ -96,8 +115,8 @@ int main(int argc, char *argv[])
     FILE *f[2];
     uint8_t buf[2][SIZE];
     uint64_t psnr;
-    int len        = argc < 4 ? 1 : atoi(argv[3]);
-    int64_t max    = (1 << (8 * len)) - 1;
+    int len = 1;
+    int64_t max;
     int shift      = argc < 5 ? 0 : atoi(argv[4]);
     int skip_bytes = argc < 6 ? 0 : atoi(argv[5]);
     int size0      = 0;
@@ -109,6 +128,25 @@ int main(int argc, char *argv[])
         printf("WAV headers are skipped automatically.\n");
         return 1;
     }
+
+    if (argc > 3) {
+        if (!strcmp(argv[3], "u8")) {
+            len = 1;
+        } else if (!strcmp(argv[3], "s16")) {
+            len = 2;
+        } else if (!strcmp(argv[3], "f32")) {
+            len = 4;
+        } else {
+            char *end;
+            len = strtol(argv[3], &end, 0);
+            if (*end || len > 2) {
+                fprintf(stderr, "Unsupported sample format: %s\n", argv[3]);
+                return 1;
+            }
+        }
+    }
+
+    max = (1 << (8 * len)) - 1;
 
     f[0] = fopen(argv[1], "rb");
     f[1] = fopen(argv[2], "rb");
@@ -145,13 +183,19 @@ int main(int argc, char *argv[])
         int s0 = fread(buf[0], 1, SIZE, f[0]);
         int s1 = fread(buf[1], 1, SIZE, f[1]);
 
-        for (j = 0; j < FFMIN(s0, s1); j++) {
+        for (j = 0; j < FFMIN(s0, s1); j += len) {
             int64_t a = buf[0][j];
             int64_t b = buf[1][j];
             int dist;
             if (len == 2) {
-                a = (int16_t)(a | (buf[0][++j] << 8));
-                b = (int16_t)(b | (buf[1][  j] << 8));
+                a = get_s16l(buf[0] + j);
+                b = get_s16l(buf[1] + j);
+            } else if (len == 4) {
+                a = get_f32l(buf[0] + j) * (1 << 24);
+                b = get_f32l(buf[1] + j) * (1 << 24);
+            } else {
+                a = buf[0][j];
+                b = buf[1][j];
             }
             sse += (a - b) * (a - b);
             dist = abs(a - b);
