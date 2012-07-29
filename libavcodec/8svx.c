@@ -121,8 +121,9 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
         /* decompress */
         if (esc->table) {
             const uint8_t *buf = avpkt->data;
+            uint8_t *dst;
             int buf_size = avpkt->size;
-            int n = esc->samples_size;
+            int i, n = esc->samples_size;
 
             if (buf_size < 2) {
                 av_log(avctx, AV_LOG_ERROR, "packet size is too small\n");
@@ -130,15 +131,15 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
             }
             if (!(deinterleaved_samples = av_mallocz(n)))
                 return AVERROR(ENOMEM);
-            p = deinterleaved_samples;
+            dst = p = deinterleaved_samples;
 
             /* the uncompressed starting value is contained in the first byte */
-            if (avctx->channels == 2) {
-                delta_decode(deinterleaved_samples      , buf+1, buf_size/2-1, buf[0], esc->table);
-                buf += buf_size/2;
-                delta_decode(deinterleaved_samples+n/2-1, buf+1, buf_size/2-1, buf[0], esc->table);
-            } else
-                delta_decode(deinterleaved_samples      , buf+1, buf_size-1  , buf[0], esc->table);
+            dst = deinterleaved_samples;
+            for (i = 0; i < avctx->channels; i++) {
+                delta_decode(dst, buf + 1, buf_size / avctx->channels - 1, buf[0], esc->table);
+                buf += buf_size / avctx->channels;
+                dst += n / avctx->channels - 1;
+            }
         } else {
             deinterleaved_samples = avpkt->data;
         }
