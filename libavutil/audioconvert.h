@@ -181,6 +181,14 @@ uint64_t av_channel_layout_extract_channel(uint64_t channel_layout, int index);
 const char *av_get_channel_name(uint64_t channel);
 
 /**
+ * Get the description of a given channel.
+ *
+ * @param channel  a channel layout with a single channel
+ * @return  channel description on success, NULL on error
+ */
+const char *av_get_channel_description(uint64_t channel);
+
+/**
  * @}
  */
 
