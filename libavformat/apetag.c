@@ -26,8 +26,6 @@
 #include "apetag.h"
 #include "internal.h"
 
-#define APE_TAG_VERSION               2000
-#define APE_TAG_FOOTER_BYTES          32
 #define APE_TAG_FLAG_CONTAINS_HEADER  (1 << 31)
 #define APE_TAG_FLAG_IS_HEADER        (1 << 29)
 #define APE_TAG_FLAG_IS_BINARY        (1 << 1)
@@ -127,7 +125,7 @@ void ff_ape_parse_tag(AVFormatContext *s)
     avio_seek(pb, file_size - APE_TAG_FOOTER_BYTES, SEEK_SET);
 
     avio_read(pb, buf, 8);     /* APETAGEX */
-    if (strncmp(buf, "APETAGEX", 8)) {
+    if (strncmp(buf, APE_TAG_PREAMBLE, 8)) {
         return;
     }
 

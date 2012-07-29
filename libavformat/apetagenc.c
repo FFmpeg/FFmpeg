@@ -24,10 +24,6 @@
 #include "avformat.h"
 #include "apetag.h"
 
-#define APE_TAG_PREAMBLE        "APETAGEX"
-#define APE_TAG_VERSION         2000
-#define APE_TAG_FOOTER_BYTES    32
-
 static int string_is_ascii(const uint8_t *str)
 {
     while (*str && *str >= 0x20 && *str <= 0x7e ) str++;
