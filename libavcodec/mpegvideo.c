@@ -36,7 +36,6 @@
 #include "mpegvideo_common.h"
 #include "mjpegenc.h"
 #include "msmpeg4.h"
-#include "faandct.h"
 #include "xvmc_internal.h"
 #include "thread.h"
 #include <limits.h>

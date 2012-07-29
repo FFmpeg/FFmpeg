@@ -36,7 +36,6 @@
 #include "mpegvideo.h"
 #include "mjpegenc.h"
 #include "msmpeg4.h"
-#include "faandct.h"
 #include <limits.h>
 
 int ff_dct_quantize_c(MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow);
