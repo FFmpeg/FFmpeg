@@ -70,14 +70,14 @@ AVFilterBufferRef *avfilter_get_video_buffer_ref_from_frame(const AVFrame *frame
 AVFilterBufferRef *avfilter_get_audio_buffer_ref_from_frame(const AVFrame *frame,
                                                             int perms)
 {
-    AVFilterBufferRef *picref =
+    AVFilterBufferRef *samplesref =
         avfilter_get_audio_buffer_ref_from_arrays((uint8_t **)frame->data, frame->linesize[0], perms,
                                                   frame->nb_samples, frame->format,
                                                   av_frame_get_channel_layout(frame));
-    if (!picref)
+    if (!samplesref)
         return NULL;
-    avfilter_copy_frame_props(picref, frame);
-    return picref;
+    avfilter_copy_frame_props(samplesref, frame);
+    return samplesref;
 }
 
 AVFilterBufferRef *avfilter_get_buffer_ref_from_frame(enum AVMediaType type,
