@@ -16,6 +16,7 @@ $(FATE_AMIX): tests/data/asynth-44100-2.wav tests/data/asynth-44100-2-2.wav
 $(FATE_AMIX): SRC  = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
 $(FATE_AMIX): SRC1 = $(TARGET_PATH)/tests/data/asynth-44100-2-2.wav
 $(FATE_AMIX): CMP  = oneoff
+$(FATE_AMIX): CMP_UNIT = f32
 
 FATE_FILTER += $(FATE_AMIX)
 FATE_SAMPLES_AVCONV += $(FATE_AMIX)
