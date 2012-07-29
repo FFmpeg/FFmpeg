@@ -3635,10 +3635,6 @@ Provide an uniformly colored input.
 This source accepts list of options in the form of
 @var{key}=@var{value} pairs separated by ":".
 
-Alternatively, it accepts a string in the form
-@var{color}:@var{size}:@var{rate}, but this syntax is
-deprecated.
-
 Follows the description of the accepted parameters.
 
 @table @option
