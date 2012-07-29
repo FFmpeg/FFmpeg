@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 
 #include "avfilter.h"
@@ -223,6 +224,7 @@ static void clear_link(AVFilterLink *link)
     avfilter_unref_bufferp(&link->cur_buf);
     avfilter_unref_bufferp(&link->src_buf);
     avfilter_unref_bufferp(&link->out_buf);
+    link->cur_buf_copy = NULL; /* we do not own the reference */
 }
 
 /* XXX: should we do the duplicating of the picture ref here, instead of
@@ -265,6 +267,8 @@ int ff_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     else
         link->cur_buf = picref;
 
+    link->cur_buf_copy = link->cur_buf;
+
     while(cmd && cmd->time <= picref->pts * av_q2d(link->time_base)){
         av_log(link->dst, AV_LOG_DEBUG,
                "Processing command time:%f command:%s arg:%s\n",
@@ -278,6 +282,10 @@ int ff_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     ff_update_link_current_pts(link, pts);
     if (ret < 0)
         clear_link(link);
+    else
+        /* incoming buffers must not be freed in start frame,
+           because they can still be in use by the automatic copy mechanism */
+        av_assert1(link->cur_buf_copy->buf->refcount > 0);
 
     return ret;
 }
@@ -348,22 +356,22 @@ int ff_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
             if (link->src_buf->data[i]) {
                 src[i] = link->src_buf-> data[i] +
                     (y >> (i==1 || i==2 ? vsub : 0)) * link->src_buf-> linesize[i];
-                dst[i] = link->cur_buf->data[i] +
-                    (y >> (i==1 || i==2 ? vsub : 0)) * link->cur_buf->linesize[i];
+                dst[i] = link->cur_buf_copy->data[i] +
+                    (y >> (i==1 || i==2 ? vsub : 0)) * link->cur_buf_copy->linesize[i];
             } else
                 src[i] = dst[i] = NULL;
         }
 
         for (i = 0; i < 4; i++) {
             int planew =
-                av_image_get_linesize(link->format, link->cur_buf->video->w, i);
+                av_image_get_linesize(link->format, link->cur_buf_copy->video->w, i);
 
             if (!src[i]) continue;
 
             for (j = 0; j < h >> (i==1 || i==2 ? vsub : 0); j++) {
                 memcpy(dst[i], src[i], planew);
                 src[i] += link->src_buf->linesize[i];
-                dst[i] += link->cur_buf->linesize[i];
+                dst[i] += link->cur_buf_copy->linesize[i];
             }
         }
     }
@@ -373,6 +381,10 @@ int ff_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
     ret = draw_slice(link, y, h, slice_dir);
     if (ret < 0)
         clear_link(link);
+    else
+        /* incoming buffers must not be freed in start frame,
+           because they can still be in use by the automatic copy mechanism */
+        av_assert1(link->cur_buf_copy->buf->refcount > 0);
     return ret;
 }
 
