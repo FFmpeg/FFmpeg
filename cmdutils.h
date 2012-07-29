@@ -360,6 +360,13 @@ int show_protocols(const char *opt, const char *arg);
 int show_pix_fmts(const char *opt, const char *arg);
 
 /**
+ * Print a listing containing all the standard channel layouts supported by
+ * the program.
+ * This option processing function does not utilize the arguments.
+ */
+int show_layouts(const char *opt, const char *arg);
+
+/**
  * Print a listing containing all the sample formats supported by the
  * program.
  */

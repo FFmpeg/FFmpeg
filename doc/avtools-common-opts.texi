@@ -119,6 +119,9 @@ Show available pixel formats.
 @item -sample_fmts
 Show available sample formats.
 
+@item -layouts
+Show channel names and standard channel layouts.
+
 @item -loglevel @var{loglevel} | -v @var{loglevel}
 Set the logging level used by the library.
 @var{loglevel} is a number or a string containing one of the following values:

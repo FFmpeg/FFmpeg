@@ -12,6 +12,7 @@
     { "protocols"  , OPT_EXIT, {.func_arg = show_protocols},    "show available protocols" },
     { "filters"    , OPT_EXIT, {.func_arg = show_filters  },    "show available filters" },
     { "pix_fmts"   , OPT_EXIT, {.func_arg = show_pix_fmts },    "show available pixel formats" },
+    { "layouts"    , OPT_EXIT, {.func_arg = show_layouts  },    "show standard channel layouts" },
     { "sample_fmts", OPT_EXIT, {.func_arg = show_sample_fmts }, "show available audio sample formats" },
     { "loglevel"   , HAS_ARG,  {.func_arg = opt_loglevel},      "set libav* logging level", "loglevel" },
     { "v",           HAS_ARG,  {.func_arg = opt_loglevel},      "set libav* logging level", "loglevel" },
