@@ -431,6 +431,7 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
         sps->sar.den= 1;
 
     if(s->avctx->debug&FF_DEBUG_PICT_INFO){
+        static const char csp[4][5] = { "Gray", "420", "422", "444" };
         av_log(h->s.avctx, AV_LOG_DEBUG, "sps:%u profile:%d/%d poc:%d ref:%d %dx%d %s %s crop:%d/%d/%d/%d %s %s %d/%d\n",
                sps_id, sps->profile_idc, sps->level_idc,
                sps->poc_type,
@@ -441,7 +442,7 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
                sps->crop_left, sps->crop_right,
                sps->crop_top, sps->crop_bottom,
                sps->vui_parameters_present_flag ? "VUI" : "",
-               ((const char*[]){"Gray","420","422","444"})[sps->chroma_format_idc],
+               csp[sps->chroma_format_idc],
                sps->timing_info_present_flag ? sps->num_units_in_tick : 0,
                sps->timing_info_present_flag ? sps->time_scale : 0
                );
