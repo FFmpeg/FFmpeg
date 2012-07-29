@@ -260,6 +260,12 @@ struct AVFilterPad {
      * NULL, the filter layer will default to storing a reference to the
      * picture inside the link structure.
      *
+     * The reference given as argument is also available in link->cur_buf.
+     * It can be stored elsewhere or given away, but then clearing
+     * link->cur_buf is advised, as it is automatically unreferenced.
+     * The reference must not be unreferenced before end_frame(), as it may
+     * still be in use by the automatic copy mechanism.
+     *
      * Input video pads only.
      *
      * @return >= 0 on success, a negative AVERROR on error. picref will be
