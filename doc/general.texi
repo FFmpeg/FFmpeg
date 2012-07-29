@@ -361,7 +361,7 @@ library:
 @item True Audio                @tab   @tab X
 @item VC-1 test bitstream       @tab X @tab X
 @item WAV                       @tab X @tab X
-@item WavPack                   @tab   @tab X
+@item WavPack                   @tab X @tab X
 @item WebM                      @tab X @tab X
 @item Windows Televison (WTV)   @tab X @tab X
 @item Wing Commander III movie  @tab   @tab X
