@@ -42,6 +42,7 @@ AVFilterBufferRef *ff_null_get_video_buffer(AVFilterLink *link, int perms, int w
 AVFilterBufferRef *ff_get_video_buffer(AVFilterLink *link, int perms,
                                        int w, int h);
 
+int ff_inplace_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
 int ff_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
 int ff_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
 int ff_null_end_frame(AVFilterLink *link);

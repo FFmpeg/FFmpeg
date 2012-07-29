@@ -2557,6 +2557,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 
     for (i=0; i<ic->nb_streams; i++) {
         ic->streams[i]->info->last_dts = AV_NOPTS_VALUE;
+        ic->streams[i]->info->fps_first_dts = AV_NOPTS_VALUE;
+        ic->streams[i]->info->fps_last_dts  = AV_NOPTS_VALUE;
     }
 
     count = 0;
@@ -2630,13 +2632,37 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             break;
         }
 
-        pkt= add_to_pktbuf(&ic->packet_buffer, &pkt1, &ic->packet_buffer_end);
-        if ((ret = av_dup_packet(pkt)) < 0)
-            goto find_stream_info_err;
+        if (ic->flags & AVFMT_FLAG_NOBUFFER) {
+            pkt = &pkt1;
+        } else {
+            pkt = add_to_pktbuf(&ic->packet_buffer, &pkt1,
+                                &ic->packet_buffer_end);
+            if ((ret = av_dup_packet(pkt)) < 0)
+                goto find_stream_info_err;
+        }
 
         read_size += pkt->size;
 
         st = ic->streams[pkt->stream_index];
+        if (pkt->dts != AV_NOPTS_VALUE && st->codec_info_nb_frames > 1) {
+            /* check for non-increasing dts */
+            if (st->info->fps_last_dts != AV_NOPTS_VALUE &&
+                st->info->fps_last_dts >= pkt->dts) {
+                av_log(ic, AV_LOG_DEBUG, "Non-increasing DTS in stream %d: "
+                       "packet %d with DTS %"PRId64", packet %d with DTS "
+                       "%"PRId64"\n", st->index, st->info->fps_last_dts_idx,
+                       st->info->fps_last_dts, st->codec_info_nb_frames, pkt->dts);
+                st->info->fps_first_dts = st->info->fps_last_dts = AV_NOPTS_VALUE;
+            }
+
+            /* update stored dts values */
+            if (st->info->fps_first_dts == AV_NOPTS_VALUE) {
+                st->info->fps_first_dts     = pkt->dts;
+                st->info->fps_first_dts_idx = st->codec_info_nb_frames;
+            }
+            st->info->fps_last_dts = pkt->dts;
+            st->info->fps_last_dts_idx = st->codec_info_nb_frames;
+        }
         if (st->codec_info_nb_frames>1) {
             int64_t t=0;
             if (st->time_base.den > 0)
@@ -2756,10 +2782,12 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                     st->codec->codec_tag= tag;
             }
 
-            if (st->codec_info_nb_frames>2 && !st->avg_frame_rate.num && st->info->codec_info_duration)
+            /* estimate average framerate if not set by demuxer */
+            if (st->codec_info_nb_frames>2 && !st->avg_frame_rate.num && st->info->codec_info_duration) {
                 av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
                           (st->codec_info_nb_frames-2)*(int64_t)st->time_base.den,
                           st->info->codec_info_duration*(int64_t)st->time_base.num, 60000);
+            }
             // the check for tb_unreliable() is not completely correct, since this is not about handling
             // a unreliable/inexact time base, but a time base that is finer than necessary, as e.g.
             // ipmovie.c produces.

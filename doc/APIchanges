@@ -63,6 +63,9 @@ API changes, most recent first:
 2012-03-26 - a67d9cf - lavfi 2.66.100
   Add avfilter_fill_frame_from_{audio_,}buffer_ref() functions.
 
+2012-07-xx - xxxxxxx - lavf 54.13.0 - avformat.h
+  Add AVFMT_FLAG_NOBUFFER for low latency use cases.
+
 2012-07-10 - 5fade8a - lavu 51.37.0
   Add av_malloc_array() and av_mallocz_array()
 

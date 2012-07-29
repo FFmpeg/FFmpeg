@@ -122,7 +122,7 @@ typedef struct {
     int ofile_idx, ostream_idx;               // output
 } AudioChannelMap;
 
-static const OptionDef options[];
+static const OptionDef *options;
 
 #define MAX_STREAMS 1024    /* arbitrary sanity check value */
 
@@ -5955,7 +5955,7 @@ static int opt_progress(const char *opt, const char *arg)
 }
 
 #define OFFSET(x) offsetof(OptionsContext, x)
-static const OptionDef options[] = {
+static const OptionDef real_options[] = {
     /* main options */
 #include "cmdutils_common_opts.h"
     { "f", HAS_ARG | OPT_STRING | OPT_OFFSET, {.off = OFFSET(format)}, "force format", "fmt" },
@@ -6107,6 +6107,7 @@ int main(int argc, char **argv)
     OptionsContext o = { 0 };
     int64_t ti;
 
+    options = real_options;
     reset_options(&o, 0);
 
     av_log_set_flags(AV_LOG_SKIP_REPEATED);

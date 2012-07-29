@@ -65,7 +65,7 @@ static int show_private_data            = 1;
 
 static char *print_format;
 
-static const OptionDef options[];
+static const OptionDef *options;
 
 /* FFprobe context */
 static const char *input_filename;
@@ -2108,7 +2108,7 @@ static int opt_show_versions(const char *opt, const char *arg)
     return 0;
 }
 
-static const OptionDef options[] = {
+static const OptionDef real_options[] = {
 #include "cmdutils_common_opts.h"
     { "f", HAS_ARG, {(void*)opt_format}, "force format", "format" },
     { "unit", OPT_BOOL, {(void*)&show_value_unit}, "show unit of the displayed values" },
@@ -2151,6 +2151,7 @@ int main(int argc, char **argv)
     int ret;
 
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
+    options = real_options;
     parse_loglevel(argc, argv, options);
     av_register_all();
     avformat_network_init();
