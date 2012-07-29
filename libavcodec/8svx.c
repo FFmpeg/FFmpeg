@@ -112,13 +112,13 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
     if (!esc->samples && avpkt) {
         uint8_t *deinterleaved_samples, *p = NULL;
 
-        esc->samples_size = avctx->codec->id == CODEC_ID_8SVX_RAW || avctx->codec->id ==CODEC_ID_PCM_S8_PLANAR?
+        esc->samples_size = !esc->table ?
             avpkt->size : avctx->channels + (avpkt->size-avctx->channels) * 2;
         if (!(esc->samples = av_malloc(esc->samples_size)))
             return AVERROR(ENOMEM);
 
         /* decompress */
-        if (avctx->codec->id == CODEC_ID_8SVX_FIB || avctx->codec->id == CODEC_ID_8SVX_EXP) {
+        if (esc->table) {
             const uint8_t *buf = avpkt->data;
             int buf_size = avpkt->size;
             int n = esc->samples_size;
@@ -166,7 +166,7 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
         *dst++ = *src++ + 128;
     esc->samples_idx += out_data_size;
 
-    return avctx->codec->id == CODEC_ID_8SVX_FIB || avctx->codec->id == CODEC_ID_8SVX_EXP ?
+    return esc->table ?
         (avctx->frame_number == 0)*2 + out_data_size / 2 :
         out_data_size;
 }
