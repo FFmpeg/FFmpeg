@@ -100,6 +100,9 @@ av_cold struct FFPsyPreprocessContext* ff_psy_preprocess_init(AVCodecContext *av
     if (avctx->cutoff > 0)
         cutoff_coeff = 2.0 * avctx->cutoff / avctx->sample_rate;
 
+    if (!cutoff_coeff && avctx->codec_id == CODEC_ID_AAC)
+        cutoff_coeff = 2.0 * AAC_CUTOFF(avctx) / avctx->sample_rate;
+
     if (cutoff_coeff)
     ctx->fcoeffs = ff_iir_filter_init_coeffs(avctx, FF_FILTER_TYPE_BUTTERWORTH,
                                              FF_FILTER_MODE_LOWPASS, FILT_ORDER,

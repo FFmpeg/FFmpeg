@@ -292,7 +292,7 @@ static av_cold int psy_3gpp_init(FFPsyContext *ctx) {
     int i, j, g, start;
     float prev, minscale, minath, minsnr, pe_min;
     const int chan_bitrate = ctx->avctx->bit_rate / ctx->avctx->channels;
-    const int bandwidth    = ctx->avctx->cutoff ? ctx->avctx->cutoff : ctx->avctx->sample_rate / 2;
+    const int bandwidth    = ctx->avctx->cutoff ? ctx->avctx->cutoff : AAC_CUTOFF(ctx->avctx);
     const float num_bark   = calc_bark((float)bandwidth);
 
     ctx->model_priv_data = av_mallocz(sizeof(AacPsyContext));

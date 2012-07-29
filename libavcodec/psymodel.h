@@ -29,6 +29,8 @@
 /** maximum number of channels */
 #define PSY_MAX_CHANS 20
 
+#define AAC_CUTOFF(s) (s->bit_rate ? FFMIN3(4000 + s->bit_rate/8, 12000 + s->bit_rate/32, s->sample_rate / 2) : (s->sample_rate / 2))
+
 /**
  * single band psychoacoustic information
  */
