@@ -32,6 +32,7 @@
 #include "get_bits.h"
 #include "dsputil.h"
 #include "aandcttab.h"
+#include "eaidct.h"
 #include "mpeg12.h"
 #include "mpeg12data.h"
 #include "libavutil/imgutils.h"
@@ -68,9 +69,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     MadContext *s = avctx->priv_data;
     s->avctx = avctx;
     avctx->pix_fmt = PIX_FMT_YUV420P;
-    if (avctx->idct_algo == FF_IDCT_AUTO)
-        avctx->idct_algo = FF_IDCT_EA;
     ff_dsputil_init(&s->dsp, avctx);
+    ff_init_scantable_permutation(s->dsp.idct_permutation, FF_NO_IDCT_PERM);
     ff_init_scantable(s->dsp.idct_permutation, &s->scantable, ff_zigzag_direct);
     ff_mpeg12_init_vlcs();
     return 0;
@@ -105,12 +105,12 @@ static inline void comp_block(MadContext *t, int mb_x, int mb_y,
 static inline void idct_put(MadContext *t, DCTELEM *block, int mb_x, int mb_y, int j)
 {
     if (j < 4) {
-        t->dsp.idct_put(
+        ff_ea_idct_put_c(
             t->frame.data[0] + (mb_y*16 + ((j&2)<<2))*t->frame.linesize[0] + mb_x*16 + ((j&1)<<3),
             t->frame.linesize[0], block);
     } else if (!(t->avctx->flags & CODEC_FLAG_GRAY)) {
         int index = j - 3;
-        t->dsp.idct_put(
+        ff_ea_idct_put_c(
             t->frame.data[index] + (mb_y*8)*t->frame.linesize[index] + mb_x*8,
             t->frame.linesize[index], block);
     }
@@ -219,15 +219,9 @@ static void calc_quant_matrix(MadContext *s, int qscale)
 {
     int i;
 
-    if (s->avctx->idct_algo == FF_IDCT_EA) {
-        s->quant_matrix[0] = (ff_inv_aanscales[0]*ff_mpeg1_default_intra_matrix[0]) >> 11;
-        for (i=1; i<64; i++)
-            s->quant_matrix[i] = (ff_inv_aanscales[i]*ff_mpeg1_default_intra_matrix[i]*qscale + 32) >> 10;
-    } else {
-        s->quant_matrix[0] = ff_mpeg1_default_intra_matrix[0];
-        for (i=1; i<64; i++)
-            s->quant_matrix[i] = (ff_mpeg1_default_intra_matrix[i]*qscale) << 1;
-    }
+    s->quant_matrix[0] = (ff_inv_aanscales[0]*ff_mpeg1_default_intra_matrix[0]) >> 11;
+    for (i=1; i<64; i++)
+        s->quant_matrix[i] = (ff_inv_aanscales[i]*ff_mpeg1_default_intra_matrix[i]*qscale + 32) >> 10;
 }
 
 static int decode_frame(AVCodecContext *avctx,

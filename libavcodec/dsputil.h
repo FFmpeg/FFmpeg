@@ -101,9 +101,6 @@ PUTAVG_PIXELS(10)
 #define ff_put_pixels16x16_c ff_put_pixels16x16_8_c
 #define ff_avg_pixels16x16_c ff_avg_pixels16x16_8_c
 
-/* EA functions */
-void ff_ea_idct_put_c(uint8_t *dest, int linesize, DCTELEM *block);
-
 /* RV40 functions */
 void ff_put_rv40_qpel16_mc33_c(uint8_t *dst, uint8_t *src, int stride);
 void ff_avg_rv40_qpel16_mc33_c(uint8_t *dst, uint8_t *src, int stride);
