@@ -89,13 +89,13 @@ static av_cold int color_init(AVFilterContext *ctx, const char *args)
     color->time_base.den = frame_rate_q.num;
 
 end:
-    av_opt_free(color);
     return ret;
 }
 
 static av_cold void color_uninit(AVFilterContext *ctx)
 {
     ColorContext *color = ctx->priv;
+    av_opt_free(color);
     avfilter_unref_bufferp(&color->picref);
 }
 
