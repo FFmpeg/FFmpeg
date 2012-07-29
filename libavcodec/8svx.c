@@ -37,6 +37,7 @@
  * http://aminet.net/mods/smpl/
  */
 
+#include "libavutil/avassert.h"
 #include "avcodec.h"
 
 /** decoder context */
@@ -150,7 +151,8 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     /* get output buffer */
-    esc->frame.nb_samples = (FFMIN(MAX_FRAME_SIZE, esc->samples_size - esc->samples_idx) +avctx->channels-1)  / avctx->channels;
+    av_assert1(!(esc->samples_size % avctx->channels || esc->samples_idx % avctx->channels));
+    esc->frame.nb_samples = FFMIN(MAX_FRAME_SIZE, esc->samples_size - esc->samples_idx)  / avctx->channels;
     if ((ret = avctx->get_buffer(avctx, &esc->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
