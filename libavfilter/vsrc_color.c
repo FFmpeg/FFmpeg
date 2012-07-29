@@ -45,6 +45,7 @@ typedef struct {
     uint64_t pts;
     FFDrawContext draw;
     FFDrawColor color;
+    AVFilterBufferRef *picref;  ///< cached reference containing the painted picture
 } ColorContext;
 
 #define OFFSET(x) offsetof(ColorContext, x)
@@ -92,6 +93,12 @@ end:
     return ret;
 }
 
+static av_cold void color_uninit(AVFilterContext *ctx)
+{
+    ColorContext *color = ctx->priv;
+    avfilter_unref_bufferp(&color->picref);
+}
+
 static int query_formats(AVFilterContext *ctx)
 {
     ff_set_common_formats(ctx, ff_draw_supported_pixel_formats(0));
@@ -124,18 +131,24 @@ static int color_config_props(AVFilterLink *inlink)
 static int color_request_frame(AVFilterLink *link)
 {
     ColorContext *color = link->src->priv;
-    AVFilterBufferRef *picref = ff_get_video_buffer(link, AV_PERM_WRITE, color->w, color->h);
     AVFilterBufferRef *buf_out;
     int ret;
 
-    if (!picref)
-        return AVERROR(ENOMEM);
+    if (!color->picref) {
+        color->picref =
+            ff_get_video_buffer(link, AV_PERM_WRITE|AV_PERM_PRESERVE|AV_PERM_REUSE,
+                                color->w, color->h);
+        if (!color->picref)
+            return AVERROR(ENOMEM);
+        ff_fill_rectangle(&color->draw, &color->color,
+                          color->picref->data, color->picref->linesize,
+                          0, 0, color->w, color->h);
+        color->picref->video->sample_aspect_ratio = (AVRational) {1, 1};
+        color->picref->pos = -1;
+    }
 
-    picref->video->sample_aspect_ratio = (AVRational) {1, 1};
-    picref->pts = color->pts++;
-    picref->pos = -1;
-
-    buf_out = avfilter_ref_buffer(picref, ~0);
+    color->picref->pts = color->pts++;
+    buf_out = avfilter_ref_buffer(color->picref, ~AV_PERM_WRITE);
     if (!buf_out) {
         ret = AVERROR(ENOMEM);
         goto fail;
@@ -145,8 +158,6 @@ static int color_request_frame(AVFilterLink *link)
     if (ret < 0)
         goto fail;
 
-    ff_fill_rectangle(&color->draw, &color->color, picref->data, picref->linesize,
-                      0, 0, color->w, color->h);
     ret = ff_draw_slice(link, 0, color->h, 1);
     if (ret < 0)
         goto fail;
@@ -154,8 +165,6 @@ static int color_request_frame(AVFilterLink *link)
     ret = ff_end_frame(link);
 
 fail:
-    avfilter_unref_buffer(picref);
-
     return ret;
 }
 
@@ -165,6 +174,7 @@ AVFilter avfilter_vsrc_color = {
 
     .priv_size = sizeof(ColorContext),
     .init      = color_init,
+    .uninit    = color_uninit,
 
     .query_formats = query_formats,
 
