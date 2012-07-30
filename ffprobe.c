@@ -1647,6 +1647,14 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
         if (s) print_str    ("sample_fmt", s);
         else   print_str_opt("sample_fmt", "unknown");
         print_int("nb_samples",         frame->nb_samples);
+        print_int("channels", av_frame_get_channels(frame));
+        if (av_frame_get_channel_layout(frame)) {
+            av_bprint_clear(&pbuf);
+            av_bprint_channel_layout(&pbuf, av_frame_get_channels(frame),
+                                     av_frame_get_channel_layout(frame));
+            print_str    ("channel_layout", pbuf.str);
+        } else
+            print_str_opt("channel_layout", "unknown");
         break;
     }
     show_tags(av_frame_get_metadata(frame));

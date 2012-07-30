@@ -62,6 +62,8 @@
       <!-- audio attributes -->
       <xsd:attribute name="sample_fmt"             type="xsd:string"/>
       <xsd:attribute name="nb_samples"             type="xsd:long"  />
+      <xsd:attribute name="channels"               type="xsd:int"   />
+      <xsd:attribute name="channel_layout"         type="xsd:string"/>
 
       <!-- video attributes -->
       <xsd:attribute name="width"                  type="xsd:long"  />
