@@ -3078,6 +3078,17 @@ static int transcode_init(void)
                 ist->decoding_needed = 1;
             ost->encoding_needed = 1;
 
+            if (!ost->filter &&
+                (codec->codec_type == AVMEDIA_TYPE_VIDEO ||
+                 codec->codec_type == AVMEDIA_TYPE_AUDIO)) {
+                    FilterGraph *fg;
+                    fg = init_simple_filtergraph(ist, ost);
+                    if (configure_filtergraph(fg)) {
+                        av_log(NULL, AV_LOG_FATAL, "Error opening filters!\n");
+                        exit(1);
+                    }
+            }
+
             if (codec->codec_type == AVMEDIA_TYPE_VIDEO) {
                 if (ost->filter && !ost->frame_rate.num)
                     ost->frame_rate = av_buffersink_get_frame_rate(ost->filter->filter);
@@ -3088,17 +3099,6 @@ static int transcode_init(void)
                     int idx = av_find_nearest_q_idx(ost->frame_rate, ost->enc->supported_framerates);
                     ost->frame_rate = ost->enc->supported_framerates[idx];
                 }
-            }
-
-            if (!ost->filter &&
-                (codec->codec_type == AVMEDIA_TYPE_VIDEO ||
-                 codec->codec_type == AVMEDIA_TYPE_AUDIO)) {
-                    FilterGraph *fg;
-                    fg = init_simple_filtergraph(ist, ost);
-                    if (configure_filtergraph(fg)) {
-                        av_log(NULL, AV_LOG_FATAL, "Error opening filters!\n");
-                        exit(1);
-                    }
             }
 
             switch (codec->codec_type) {
