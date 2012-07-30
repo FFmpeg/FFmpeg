@@ -247,11 +247,8 @@ static int paf_vid_decode(AVCodecContext *avctx, void *data,
     uint8_t code, *dst, *src, *end;
     int i, frame, ret;
 
-    if (c->pic.data[0])
-        avctx->release_buffer(avctx, &c->pic);
-
-    c->pic.reference = 0;
-    if ((ret = avctx->get_buffer(avctx, &c->pic)) < 0)
+    c->pic.reference = 3;
+    if ((ret = avctx->reget_buffer(avctx, &c->pic)) < 0)
         return ret;
 
     bytestream2_init(&c->gb, pkt->data, pkt->size);
