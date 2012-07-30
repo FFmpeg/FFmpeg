@@ -27,7 +27,9 @@
 
 /**
  * Read and parse an APE tag
+ *
+ * @return offset of the tag start in the file
  */
-void ff_ape_parse_tag(AVFormatContext *s);
+int64_t ff_ape_parse_tag(AVFormatContext *s);
 
 #endif /* AVFORMAT_APETAG_H */

@@ -52,6 +52,8 @@ typedef struct {
     int frame;
     int64_t header_pos;
     int64_t samples;
+
+    int64_t apetag_start;
 } MPCContext;
 
 static inline int64_t bs_get_v(uint8_t **bs)
@@ -243,7 +245,7 @@ static int mpc8_read_header(AVFormatContext *s)
 
     if (pb->seekable) {
         int64_t pos = avio_tell(s->pb);
-        ff_ape_parse_tag(s);
+        c->apetag_start = ff_ape_parse_tag(s);
         avio_seek(s->pb, pos, SEEK_SET);
     }
 
@@ -258,6 +260,11 @@ static int mpc8_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     while(!s->pb->eof_reached){
         pos = avio_tell(s->pb);
+
+        /* don't return bogus packets with the ape tag data */
+        if (c->apetag_start && pos >= c->apetag_start)
+            return AVERROR_EOF;
+
         mpc8_get_chunk_header(s->pb, &tag, &size);
         if (size < 0)
             return -1;
