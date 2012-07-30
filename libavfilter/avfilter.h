@@ -640,7 +640,7 @@ struct AVFilterLink {
      * Sources should set it to the best estimation of the real frame rate.
      * Filters should update it if necessary depending on their function.
      * Sinks can use it to set a default output frame rate.
-     * It is similar to the r_frae_rate field in AVStream.
+     * It is similar to the r_frame_rate field in AVStream.
      */
     AVRational frame_rate;
 
