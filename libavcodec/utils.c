@@ -427,6 +427,7 @@ static int audio_get_buffer(AVCodecContext *avctx, AVFrame *frame)
     frame->sample_rate    = avctx->sample_rate;
     frame->format         = avctx->sample_fmt;
     frame->channel_layout = avctx->channel_layout;
+    frame->channels       = avctx->channels;
 
     if (avctx->debug & FF_DEBUG_BUFFERS)
         av_log(avctx, AV_LOG_DEBUG, "default_get_buffer called on frame %p, "
@@ -724,6 +725,7 @@ MAKE_ACCESSORS(AVFrame, frame, int64_t, best_effort_timestamp)
 MAKE_ACCESSORS(AVFrame, frame, int64_t, pkt_duration)
 MAKE_ACCESSORS(AVFrame, frame, int64_t, pkt_pos)
 MAKE_ACCESSORS(AVFrame, frame, int64_t, channel_layout)
+MAKE_ACCESSORS(AVFrame, frame, int,     channels)
 MAKE_ACCESSORS(AVFrame, frame, int,     sample_rate)
 MAKE_ACCESSORS(AVFrame, frame, AVDictionary *, metadata)
 MAKE_ACCESSORS(AVFrame, frame, int,     decode_error_flags)
@@ -1648,6 +1650,8 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
                 frame->format = avctx->sample_fmt;
             if (!frame->channel_layout)
                 frame->channel_layout = avctx->channel_layout;
+            if (!frame->channels)
+                frame->channels = avctx->channels;
             if (!frame->sample_rate)
                 frame->sample_rate = avctx->sample_rate;
         }

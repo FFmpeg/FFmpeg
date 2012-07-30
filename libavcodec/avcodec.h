@@ -1337,6 +1337,15 @@ typedef struct AVFrame {
     int decode_error_flags;
 #define FF_DECODE_ERROR_INVALID_BITSTREAM   1
 #define FF_DECODE_ERROR_MISSING_REFERENCE   2
+
+    /**
+     * number of audio channels, only used for audio.
+     * Code outside libavcodec should access this field using:
+     * av_frame_get_channels(frame)
+     * - encoding: unused
+     * - decoding: Read by user.
+     */
+    int64_t channels;
 } AVFrame;
 
 /**
@@ -1352,6 +1361,8 @@ int64_t av_frame_get_pkt_pos              (const AVFrame *frame);
 void    av_frame_set_pkt_pos              (AVFrame *frame, int64_t val);
 int64_t av_frame_get_channel_layout       (const AVFrame *frame);
 void    av_frame_set_channel_layout       (AVFrame *frame, int64_t val);
+int     av_frame_get_channels             (const AVFrame *frame);
+void    av_frame_set_channels             (AVFrame *frame, int     val);
 int     av_frame_get_sample_rate          (const AVFrame *frame);
 void    av_frame_set_sample_rate          (AVFrame *frame, int     val);
 AVDictionary *av_frame_get_metadata       (const AVFrame *frame);
