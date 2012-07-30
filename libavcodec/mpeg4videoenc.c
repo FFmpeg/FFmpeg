@@ -969,6 +969,8 @@ static void mpeg4_encode_vol_header(MpegEncContext * s, int vo_number, int vol_n
 
     put_bits(&s->pb, 4, s->aspect_ratio_info);/* aspect ratio info */
     if (s->aspect_ratio_info == FF_ASPECT_EXTENDED){
+        av_reduce(&s->avctx->sample_aspect_ratio.num, &s->avctx->sample_aspect_ratio.den,
+                   s->avctx->sample_aspect_ratio.num,  s->avctx->sample_aspect_ratio.den, 255);
         put_bits(&s->pb, 8, s->avctx->sample_aspect_ratio.num);
         put_bits(&s->pb, 8, s->avctx->sample_aspect_ratio.den);
     }
