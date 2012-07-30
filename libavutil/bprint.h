@@ -95,6 +95,8 @@ typedef struct AVBPrint {
  * @param buf        buffer to init
  * @param size_init  initial size (including the final 0)
  * @param size_max   maximum size;
+ *                   0 means do not write anything, just count the length;
+ *                   1 is replaced by the maximum value for automatic storage;
  *                   any large value means that the internal buffer will be
  *                   reallocated as needed up to that limit; -1 is converted to
  *                   UINT_MAX, the largest limit possible.
