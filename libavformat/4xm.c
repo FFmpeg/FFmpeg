@@ -359,7 +359,7 @@ static int fourxm_read_close(AVFormatContext *s)
 
 AVInputFormat ff_fourxm_demuxer = {
     .name           = "4xm",
-    .long_name      = NULL_IF_CONFIG_SMALL("4X Technologies format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("4X Technologies"),
     .priv_data_size = sizeof(FourxmDemuxContext),
     .read_probe     = fourxm_probe,
     .read_header    = fourxm_read_header,

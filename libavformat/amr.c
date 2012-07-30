@@ -157,7 +157,7 @@ static int amr_read_packet(AVFormatContext *s, AVPacket *pkt)
 #if CONFIG_AMR_DEMUXER
 AVInputFormat ff_amr_demuxer = {
     .name           = "amr",
-    .long_name      = NULL_IF_CONFIG_SMALL("3GPP AMR file format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("3GPP AMR"),
     .read_probe     = amr_probe,
     .read_header    = amr_read_header,
     .read_packet    = amr_read_packet,
@@ -168,7 +168,7 @@ AVInputFormat ff_amr_demuxer = {
 #if CONFIG_AMR_MUXER
 AVOutputFormat ff_amr_muxer = {
     .name              = "amr",
-    .long_name         = NULL_IF_CONFIG_SMALL("3GPP AMR file format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("3GPP AMR"),
     .mime_type         = "audio/amr",
     .extensions        = "amr",
     .audio_codec       = CODEC_ID_AMR_NB,

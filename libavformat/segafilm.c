@@ -327,7 +327,7 @@ static int film_read_close(AVFormatContext *s)
 
 AVInputFormat ff_segafilm_demuxer = {
     .name           = "film_cpk",
-    .long_name      = NULL_IF_CONFIG_SMALL("Sega FILM/CPK format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Sega FILM / CPK"),
     .priv_data_size = sizeof(FilmDemuxContext),
     .read_probe     = film_probe,
     .read_header    = film_read_header,

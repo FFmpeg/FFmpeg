@@ -240,7 +240,7 @@ static int ffm_write_trailer(AVFormatContext *s)
 
 AVOutputFormat ff_ffm_muxer = {
     .name              = "ffm",
-    .long_name         = NULL_IF_CONFIG_SMALL("FFM (FFserver live feed) format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("FFM (FFserver live feed)"),
     .extensions        = "ffm",
     .priv_data_size    = sizeof(FFMContext),
     .audio_codec       = CODEC_ID_MP2,

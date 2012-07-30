@@ -707,6 +707,13 @@ adding/dropping samples.
 @item max_comp
 Maximum compensation in samples per second.
 
+@item first_pts
+Assume the first pts should be this value.
+This allows for padding/trimming at the start of stream. By default, no
+assumption is made about the first frame's expected pts, so no padding or
+trimming is done. For example, this could be set to 0 to pad the beginning with
+silence if an audio stream starts after the video stream.
+
 @end table
 
 @section channelsplit

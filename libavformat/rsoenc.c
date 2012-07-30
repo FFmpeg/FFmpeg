@@ -102,7 +102,7 @@ static int rso_write_trailer(AVFormatContext *s)
 
 AVOutputFormat ff_rso_muxer = {
     .name           =   "rso",
-    .long_name      =   NULL_IF_CONFIG_SMALL("Lego Mindstorms RSO format"),
+    .long_name      =   NULL_IF_CONFIG_SMALL("Lego Mindstorms RSO"),
     .extensions     =   "rso",
     .audio_codec    =   CODEC_ID_PCM_U8,
     .video_codec    =   CODEC_ID_NONE,

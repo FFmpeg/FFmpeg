@@ -24,6 +24,8 @@
 #include <inttypes.h>
 #include <assert.h>
 
+#include "libavutil/intfloat.h"
+
 #define FFMIN(a, b) ((a) > (b) ? (b) : (a))
 #define F 100
 #define SIZE 2048
@@ -103,6 +105,23 @@ static uint64_t int_sqrt(uint64_t a)
     return ret;
 }
 
+static int16_t get_s16l(uint8_t *p)
+{
+    union {
+        uint16_t u;
+        int16_t  s;
+    } v;
+    v.u = p[0] | p[1] << 8;
+    return v.s;
+}
+
+static float get_f32l(uint8_t *p)
+{
+    union av_intfloat32 v;
+    v.i = p[0] | p[1] << 8 | p[2] << 16 | p[3] << 24;
+    return v.f;
+}
+
 static int run_psnr(FILE *f[2], int len, int shift, int skip_bytes)
 {
     int i, j;
@@ -149,13 +168,19 @@ static int run_psnr(FILE *f[2], int len, int shift, int skip_bytes)
         int s0 = fread(buf[0], 1, SIZE, f[0]);
         int s1 = fread(buf[1], 1, SIZE, f[1]);
 
-        for (j = 0; j < FFMIN(s0, s1); j++) {
+        for (j = 0; j < FFMIN(s0, s1); j += len) {
             int64_t a = buf[0][j];
             int64_t b = buf[1][j];
             int dist;
             if (len == 2) {
-                a = (int16_t)(a | (buf[0][++j] << 8));
-                b = (int16_t)(b | (buf[1][  j] << 8));
+                a = get_s16l(buf[0] + j);
+                b = get_s16l(buf[1] + j);
+            } else if (len == 4) {
+                a = get_f32l(buf[0] + j) * (1 << 24);
+                b = get_f32l(buf[1] + j) * (1 << 24);
+            } else {
+                a = buf[0][j];
+                b = buf[1][j];
             }
             sse += (a - b) * (a - b);
             dist = abs(a - b);
@@ -188,13 +213,30 @@ static int run_psnr(FILE *f[2], int len, int shift, int skip_bytes)
 int main(int argc, char *argv[])
 {
     FILE *f[2];
-    int len        = argc < 4 ? 1 : atoi(argv[3]);
+    int len = 1;
     int shift_first= argc < 5 ? 0 : atoi(argv[4]);
     int skip_bytes = argc < 6 ? 0 : atoi(argv[5]);
     int shift_last = shift_first + (argc < 7 ? 0 : atoi(argv[6]));
     int shift;
     int max_psnr   = -1;
     int max_psnr_shift = 0;
+
+    if (argc > 3) {
+        if (!strcmp(argv[3], "u8")) {
+            len = 1;
+        } else if (!strcmp(argv[3], "s16")) {
+            len = 2;
+        } else if (!strcmp(argv[3], "f32")) {
+            len = 4;
+        } else {
+            char *end;
+            len = strtol(argv[3], &end, 0);
+            if (*end || len > 2) {
+                fprintf(stderr, "Unsupported sample format: %s\n", argv[3]);
+                return 1;
+            }
+        }
+    }
 
     if (argc < 3) {
         printf("tiny_psnr <file1> <file2> [<elem size> [<shift> [<skip bytes> [<shift search range>]]]]\n");

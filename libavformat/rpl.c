@@ -351,7 +351,7 @@ static int rpl_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 AVInputFormat ff_rpl_demuxer = {
     .name           = "rpl",
-    .long_name      = NULL_IF_CONFIG_SMALL("RPL/ARMovie format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("RPL / ARMovie"),
     .priv_data_size = sizeof(RPLContext),
     .read_probe     = rpl_probe,
     .read_header    = rpl_read_header,

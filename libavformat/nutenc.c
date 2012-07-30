@@ -866,7 +866,7 @@ static int nut_write_trailer(AVFormatContext *s){
 
 AVOutputFormat ff_nut_muxer = {
     .name           = "nut",
-    .long_name      = NULL_IF_CONFIG_SMALL("NUT format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("NUT"),
     .mime_type      = "video/x-nut",
     .extensions     = "nut",
     .priv_data_size = sizeof(NUTContext),

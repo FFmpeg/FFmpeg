@@ -788,7 +788,7 @@ static int w64_read_header(AVFormatContext *s)
 
 AVInputFormat ff_w64_demuxer = {
     .name           = "w64",
-    .long_name      = NULL_IF_CONFIG_SMALL("Sony Wave64 format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Sony Wave64"),
     .priv_data_size = sizeof(WAVContext),
     .read_probe     = w64_probe,
     .read_header    = w64_read_header,

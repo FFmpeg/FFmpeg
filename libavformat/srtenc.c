@@ -88,7 +88,7 @@ static int srt_write_packet(AVFormatContext *avf, AVPacket *pkt)
 
 AVOutputFormat ff_srt_muxer = {
     .name           = "srt",
-    .long_name      = NULL_IF_CONFIG_SMALL("SubRip subtitle format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
     .mime_type      = "application/x-subrip",
     .extensions     = "srt",
     .priv_data_size = sizeof(SRTContext),

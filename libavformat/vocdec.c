@@ -166,7 +166,7 @@ static int voc_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 AVInputFormat ff_voc_demuxer = {
     .name           = "voc",
-    .long_name      = NULL_IF_CONFIG_SMALL("Creative Voice file format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Creative Voice"),
     .priv_data_size = sizeof(VocDecContext),
     .read_probe     = voc_probe,
     .read_header    = voc_read_header,

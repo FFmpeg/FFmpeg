@@ -989,7 +989,7 @@ static int64_t rm_read_dts(AVFormatContext *s, int stream_index,
 
 AVInputFormat ff_rm_demuxer = {
     .name           = "rm",
-    .long_name      = NULL_IF_CONFIG_SMALL("RealMedia format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("RealMedia"),
     .priv_data_size = sizeof(RMDemuxContext),
     .read_probe     = rm_probe,
     .read_header    = rm_read_header,

@@ -396,7 +396,7 @@ static int r3d_close(AVFormatContext *s)
 
 AVInputFormat ff_r3d_demuxer = {
     .name           = "r3d",
-    .long_name      = NULL_IF_CONFIG_SMALL("REDCODE R3D format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("REDCODE R3D"),
     .priv_data_size = sizeof(R3DContext),
     .read_probe     = r3d_probe,
     .read_header    = r3d_read_header,

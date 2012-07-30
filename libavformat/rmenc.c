@@ -467,7 +467,7 @@ static int rm_write_trailer(AVFormatContext *s)
 
 AVOutputFormat ff_rm_muxer = {
     .name              = "rm",
-    .long_name         = NULL_IF_CONFIG_SMALL("RealMedia format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("RealMedia"),
     .mime_type         = "application/vnd.rn-realmedia",
     .extensions        = "rm,ra",
     .priv_data_size    = sizeof(RMMuxContext),

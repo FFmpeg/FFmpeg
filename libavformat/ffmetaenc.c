@@ -92,7 +92,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 
 AVOutputFormat ff_ffmetadata_muxer = {
     .name          = "ffmetadata",
-    .long_name     = NULL_IF_CONFIG_SMALL("FFmpeg metadata in text format"),
+    .long_name     = NULL_IF_CONFIG_SMALL("FFmpeg metadata in text"),
     .extensions    = "ffmeta",
     .write_header  = write_header,
     .write_packet  = write_packet,

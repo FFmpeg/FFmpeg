@@ -171,7 +171,7 @@ static const AVClass cdxl_demuxer_class = {
 
 AVInputFormat ff_cdxl_demuxer = {
     .name           = "cdxl",
-    .long_name      = NULL_IF_CONFIG_SMALL("Commodore CDXL video format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Commodore CDXL video"),
     .priv_data_size = sizeof(CDXLDemuxContext),
     .read_header    = cdxl_read_header,
     .read_packet    = cdxl_read_packet,

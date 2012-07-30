@@ -62,7 +62,7 @@ static const AVClass rawvideo_demuxer_class = {
 
 AVInputFormat ff_rawvideo_demuxer = {
     .name           = "rawvideo",
-    .long_name      = NULL_IF_CONFIG_SMALL("raw video format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("raw video"),
     .priv_data_size = sizeof(FFRawVideoDemuxerContext),
     .read_header    = ff_raw_read_header,
     .read_packet    = rawvideo_read_packet,

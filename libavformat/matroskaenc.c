@@ -1307,7 +1307,7 @@ static int mkv_query_codec(enum CodecID codec_id, int std_compliance)
 #if CONFIG_MATROSKA_MUXER
 AVOutputFormat ff_matroska_muxer = {
     .name              = "matroska",
-    .long_name         = NULL_IF_CONFIG_SMALL("Matroska file format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("Matroska"),
     .mime_type         = "video/x-matroska",
     .extensions        = "mkv",
     .priv_data_size    = sizeof(MatroskaMuxContext),
@@ -1328,7 +1328,7 @@ AVOutputFormat ff_matroska_muxer = {
 #if CONFIG_WEBM_MUXER
 AVOutputFormat ff_webm_muxer = {
     .name              = "webm",
-    .long_name         = NULL_IF_CONFIG_SMALL("WebM file format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("WebM"),
     .mime_type         = "video/webm",
     .extensions        = "webm",
     .priv_data_size    = sizeof(MatroskaMuxContext),
@@ -1345,7 +1345,7 @@ AVOutputFormat ff_webm_muxer = {
 #if CONFIG_MATROSKA_AUDIO_MUXER
 AVOutputFormat ff_matroska_audio_muxer = {
     .name              = "matroska",
-    .long_name         = NULL_IF_CONFIG_SMALL("Matroska file format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("Matroska"),
     .mime_type         = "audio/x-matroska",
     .extensions        = "mka",
     .priv_data_size    = sizeof(MatroskaMuxContext),

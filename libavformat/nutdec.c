@@ -1014,7 +1014,7 @@ static int nut_read_close(AVFormatContext *s)
 
 AVInputFormat ff_nut_demuxer = {
     .name           = "nut",
-    .long_name      = NULL_IF_CONFIG_SMALL("NUT format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("NUT"),
     .flags          = AVFMT_SEEK_TO_PTS,
     .priv_data_size = sizeof(NUTContext),
     .read_probe     = nut_probe,

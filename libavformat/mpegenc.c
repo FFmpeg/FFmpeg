@@ -1178,7 +1178,7 @@ AVOutputFormat ff_mpeg1vcd_muxer = {
 MPEGENC_CLASS(vob)
 AVOutputFormat ff_mpeg2vob_muxer = {
     .name              = "vob",
-    .long_name         = NULL_IF_CONFIG_SMALL("MPEG-2 PS format (VOB)"),
+    .long_name         = NULL_IF_CONFIG_SMALL("MPEG-2 PS (VOB)"),
     .mime_type         = "video/mpeg",
     .extensions        = "vob",
     .priv_data_size    = sizeof(MpegMuxContext),
@@ -1214,7 +1214,7 @@ AVOutputFormat ff_mpeg2svcd_muxer = {
 MPEGENC_CLASS(dvd)
 AVOutputFormat ff_mpeg2dvd_muxer = {
     .name              = "dvd",
-    .long_name         = NULL_IF_CONFIG_SMALL("MPEG-2 PS format (DVD VOB)"),
+    .long_name         = NULL_IF_CONFIG_SMALL("MPEG-2 PS (DVD VOB)"),
     .mime_type         = "video/mpeg",
     .extensions        = "dvd",
     .priv_data_size    = sizeof(MpegMuxContext),
