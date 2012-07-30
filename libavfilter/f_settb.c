@@ -116,22 +116,20 @@ static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     return ff_start_frame(outlink, picref);
 }
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
-    AVFilterBufferRef *outsamples = insamples;
 
     if (av_cmp_q(inlink->time_base, outlink->time_base)) {
-        outsamples = avfilter_ref_buffer(insamples, ~0);
-        outsamples->pts = av_rescale_q(insamples->pts, inlink->time_base, outlink->time_base);
+        int64_t orig_pts = samplesref->pts;
+        samplesref->pts = av_rescale_q(samplesref->pts, inlink->time_base, outlink->time_base);
         av_log(ctx, AV_LOG_DEBUG, "tb:%d/%d pts:%"PRId64" -> tb:%d/%d pts:%"PRId64"\n",
-               inlink ->time_base.num, inlink ->time_base.den, insamples ->pts,
-               outlink->time_base.num, outlink->time_base.den, outsamples->pts);
-        avfilter_unref_buffer(insamples);
+               inlink ->time_base.num, inlink ->time_base.den, orig_pts,
+               outlink->time_base.num, outlink->time_base.den, samplesref->pts);
     }
 
-    return ff_filter_samples(outlink, outsamples);
+    return ff_filter_samples(outlink, samplesref);
 }
 
 #if CONFIG_SETTB_FILTER
