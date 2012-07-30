@@ -275,7 +275,7 @@ int ff_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     }
     pts = link->cur_buf->pts;
     ret = start_frame(link, link->cur_buf);
-    ff_update_link_current_pts(link,link->cur_buf ?  link->cur_buf->pts : pts);
+    ff_update_link_current_pts(link, pts);
     if (ret < 0)
         clear_link(link);
 
