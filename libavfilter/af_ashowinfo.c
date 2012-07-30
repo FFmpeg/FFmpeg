@@ -85,12 +85,12 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
 
     av_log(ctx, AV_LOG_INFO,
            "n:%"PRIu64" pts:%s pts_time:%s pos:%"PRId64" "
-           "fmt:%s chlayout:%s rate:%d nb_samples:%d "
+           "fmt:%s channels:%d chlayout:%s rate:%d nb_samples:%d "
            "checksum:%08X ",
            s->frame,
            av_ts2str(buf->pts), av_ts2timestr(buf->pts, &inlink->time_base),
            buf->pos,
-           av_get_sample_fmt_name(buf->format), chlayout_str,
+           av_get_sample_fmt_name(buf->format), buf->audio->channels, chlayout_str,
            buf->audio->sample_rate, buf->audio->nb_samples,
            checksum);
 

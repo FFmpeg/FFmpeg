@@ -117,6 +117,7 @@ typedef struct AVFilterBufferRefAudioProps {
     uint64_t channel_layout;    ///< channel layout of audio buffer
     int nb_samples;             ///< number of audio samples per channel
     int sample_rate;            ///< audio buffer sample rate
+    int channels;               ///< number of channels
 } AVFilterBufferRefAudioProps;
 
 /**
