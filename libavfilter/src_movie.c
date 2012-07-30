@@ -162,6 +162,29 @@ static int open_stream(void *log, MovieStream *st)
     return 0;
 }
 
+static int guess_channel_layout(MovieStream *st, int st_index, void *log_ctx)
+{
+    AVCodecContext *dec_ctx = st->st->codec;
+    char buf[256];
+    int64_t chl = av_get_default_channel_layout(dec_ctx->channels);
+
+    if (!chl) {
+        av_log(log_ctx, AV_LOG_ERROR,
+               "Channel layout is not set in stream %d, and could not "
+               "be guessed from the number of channels (%d)\n",
+               st_index, dec_ctx->channels);
+        return AVERROR(EINVAL);
+    }
+
+    av_get_channel_layout_string(buf, sizeof(buf), dec_ctx->channels, chl);
+    av_log(log_ctx, AV_LOG_WARNING,
+           "Channel layout is not set in output stream %d, "
+           "guessed channel layout is '%s'\n",
+           st_index, buf);
+    dec_ctx->channel_layout = chl;
+    return 0;
+}
+
 static av_cold int movie_init(AVFilterContext *ctx, const char *args)
 {
     MovieContext *movie = ctx->priv;
@@ -282,6 +305,12 @@ static av_cold int movie_init(AVFilterContext *ctx, const char *args)
         ret = open_stream(ctx, &movie->st[i]);
         if (ret < 0)
             return ret;
+        if ( movie->st[i].st->codec->codec->type == AVMEDIA_TYPE_AUDIO &&
+            !movie->st[i].st->codec->channel_layout) {
+            ret = guess_channel_layout(&movie->st[i], i, ctx);
+            if (ret < 0)
+                return ret;
+        }
     }
 
     if (!(movie->frame = avcodec_alloc_frame()) ) {
@@ -337,8 +366,7 @@ static int movie_query_formats(AVFilterContext *ctx)
             ff_formats_ref(ff_make_format_list(list), &outlink->in_formats);
             list[0] = c->sample_rate;
             ff_formats_ref(ff_make_format_list(list), &outlink->in_samplerates);
-            list64[0] = c->channel_layout ? c->channel_layout :
-                        av_get_default_channel_layout(c->channels);
+            list64[0] = c->channel_layout;
             ff_channel_layouts_ref(avfilter_make_format64_list(list64),
                                    &outlink->in_channel_layouts);
             break;
