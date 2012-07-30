@@ -189,6 +189,18 @@ const char *av_get_channel_name(uint64_t channel);
 const char *av_get_channel_description(uint64_t channel);
 
 /**
+ * Get the value and name of a standard channel layout.
+ *
+ * @param[in]  index   index in an internal list, starting at 0
+ * @param[out] layout  channel layout mask
+ * @param[out] name    name of the layout
+ * @return  0  if the layout exists,
+ *          <0 if index is beyond the limits
+ */
+int av_get_standard_channel_layout(unsigned index, uint64_t *layout,
+                                   const char **name);
+
+/**
  * @}
  */
 

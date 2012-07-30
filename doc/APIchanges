@@ -15,6 +15,10 @@ libavutil:     2011-04-18
 
 API changes, most recent first:
 
+2012-07-30 - xxxxxxx - lavu 51.66.100
+  Add av_get_channel_description()
+  and av_get_standard_channel_layout() functions.
+
 2012-07-20 - xxxxxxx - lavc 54.43.100
   Add decode_error_flags field to AVFrame.
 
