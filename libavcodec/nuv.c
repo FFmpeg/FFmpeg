@@ -191,8 +191,15 @@ retry:
     }
     if (c->codec_frameheader) {
         int w, h, q, res;
-        if (buf_size < 12 || buf[0] != 'V') {
-            av_log(avctx, AV_LOG_ERROR, "invalid nuv video frame (wrong codec_tag?)\n");
+        if (buf_size < 12) {
+            av_log(avctx, AV_LOG_ERROR, "Too small NUV video frame\n");
+            return AVERROR_INVALIDDATA;
+        }
+        // There seem to exist two variants of this header: one starts with 'V'
+        // and 5 bytes unknown, the other matches current MythTV and is 4 bytes size,
+        // 1 byte header size (== 12), 1 byte version (== 0)
+        if (buf[0] != 'V' && AV_RL16(&buf[4]) != 0x000c) {
+            av_log(avctx, AV_LOG_ERROR, "Unknown secondary frame header (wrong codec_tag?)\n");
             return AVERROR_INVALIDDATA;
         }
         w = AV_RL16(&buf[6]);
