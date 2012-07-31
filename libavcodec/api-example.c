@@ -38,6 +38,7 @@
 
 #include "libavcodec/avcodec.h"
 #include "libavutil/audioconvert.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/samplefmt.h"
 
@@ -316,10 +317,11 @@ static void video_encode_example(const char *filename)
 {
     AVCodec *codec;
     AVCodecContext *c= NULL;
-    int i, out_size, size, x, y, outbuf_size;
+    int i, ret, x, y, got_output;
     FILE *f;
     AVFrame *picture;
-    uint8_t *outbuf, *picture_buf;
+    AVPacket pkt;
+    uint8_t endcode[] = { 0, 0, 1, 0xb7 };
 
     printf("Video encoding\n");
 
@@ -356,21 +358,22 @@ static void video_encode_example(const char *filename)
         exit(1);
     }
 
-    /* alloc image and output buffer */
-    outbuf_size = 100000;
-    outbuf = malloc(outbuf_size);
-    size = c->width * c->height;
-    picture_buf = malloc((size * 3) / 2); /* size for YUV 420 */
-
-    picture->data[0] = picture_buf;
-    picture->data[1] = picture->data[0] + size;
-    picture->data[2] = picture->data[1] + size / 4;
-    picture->linesize[0] = c->width;
-    picture->linesize[1] = c->width / 2;
-    picture->linesize[2] = c->width / 2;
+    ret = av_image_alloc(picture->data, picture->linesize, c->width, c->height,
+                         c->pix_fmt, 32);
+    if (ret < 0) {
+        fprintf(stderr, "could not alloc raw picture buffer\n");
+        exit(1);
+    }
+    picture->format = c->pix_fmt;
+    picture->width  = c->width;
+    picture->height = c->height;
 
     /* encode 1 second of video */
     for(i=0;i<25;i++) {
+        av_init_packet(&pkt);
+        pkt.data = NULL;    // packet data will be allocated by the encoder
+        pkt.size = 0;
+
         fflush(stdout);
         /* prepare a dummy image */
         /* Y */
@@ -388,33 +391,46 @@ static void video_encode_example(const char *filename)
             }
         }
 
+        picture->pts = i;
+
         /* encode the image */
-        out_size = avcodec_encode_video(c, outbuf, outbuf_size, picture);
-        printf("encoding frame %3d (size=%5d)\n", i, out_size);
-        fwrite(outbuf, 1, out_size, f);
+        ret = avcodec_encode_video2(c, &pkt, picture, &got_output);
+        if (ret < 0) {
+            fprintf(stderr, "error encoding frame\n");
+            exit(1);
+        }
+
+        if (got_output) {
+            printf("encoding frame %3d (size=%5d)\n", i, pkt.size);
+            fwrite(pkt.data, 1, pkt.size, f);
+            av_free_packet(&pkt);
+        }
     }
 
     /* get the delayed frames */
-    for(; out_size; i++) {
+    for (got_output = 1; got_output; i++) {
         fflush(stdout);
 
-        out_size = avcodec_encode_video(c, outbuf, outbuf_size, NULL);
-        printf("write frame %3d (size=%5d)\n", i, out_size);
-        fwrite(outbuf, 1, out_size, f);
+        ret = avcodec_encode_video2(c, &pkt, NULL, &got_output);
+        if (ret < 0) {
+            fprintf(stderr, "error encoding frame\n");
+            exit(1);
+        }
+
+        if (got_output) {
+            printf("encoding frame %3d (size=%5d)\n", i, pkt.size);
+            fwrite(pkt.data, 1, pkt.size, f);
+            av_free_packet(&pkt);
+        }
     }
 
     /* add sequence end code to have a real mpeg file */
-    outbuf[0] = 0x00;
-    outbuf[1] = 0x00;
-    outbuf[2] = 0x01;
-    outbuf[3] = 0xb7;
-    fwrite(outbuf, 1, 4, f);
+    fwrite(endcode, 1, sizeof(endcode), f);
     fclose(f);
-    free(picture_buf);
-    free(outbuf);
 
     avcodec_close(c);
     av_free(c);
+    av_freep(&picture->data[0]);
     av_free(picture);
     printf("\n");
 }
