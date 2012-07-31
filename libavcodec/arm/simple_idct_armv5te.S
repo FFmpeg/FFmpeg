@@ -46,8 +46,8 @@ w57:    .long W57
 function idct_row_armv5te
         str    lr, [sp, #-4]!
 
-        ldrd   v1, [a1, #8]
-        ldrd   a3, [a1]              /* a3 = row[1:0], a4 = row[3:2] */
+        ldrd   v1, v2, [a1, #8]
+        ldrd   a3, a4, [a1]          /* a3 = row[1:0], a4 = row[3:2] */
         orrs   v1, v1, v2
         itt    eq
         cmpeq  v1, a4
@@ -78,7 +78,7 @@ function idct_row_armv5te
         smultt fp, lr, a3
         sub    v7, v7, a2
         smulbt a2, lr, a4
-        ldrd   a3, [a1, #8]          /* a3=row[5:4] a4=row[7:6] */
+        ldrd   a3, a4, [a1, #8]     /* a3=row[5:4] a4=row[7:6] */
         sub    fp, fp, a2
 
         orrs   a2, a3, a4
@@ -121,7 +121,7 @@ function idct_row_armv5te
         add    a2, v4, fp
         mov    a2, a2, lsr #11
         add    a4, a4, a2, lsl #16
-        strd   a3, [a1]
+        strd   a3, a4, [a1]
 
         sub    a2, v4, fp
         mov    a3, a2, lsr #11
@@ -135,7 +135,7 @@ function idct_row_armv5te
         sub    a2, v1, v5
         mov    a2, a2, lsr #11
         add    a4, a4, a2, lsl #16
-        strd   a3, [a1, #8]
+        strd   a3, a4, [a1, #8]
 
         ldr    pc, [sp], #4
 
@@ -144,8 +144,8 @@ row_dc_only:
         bic    a3, a3, #0xe000
         mov    a3, a3, lsl #3
         mov    a4, a3
-        strd   a3, [a1]
-        strd   a3, [a1, #8]
+        strd   a3, a4, [a1]
+        strd   a3, a4, [a1, #8]
 
         ldr    pc, [sp], #4
 endfunc
