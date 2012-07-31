@@ -561,7 +561,7 @@ static int dca_parse_frame_header(DCAContext *s)
     if (s->frame_size < 95)
         return AVERROR_INVALIDDATA;
     s->amode             = get_bits(&s->gb, 6);
-    s->sample_rate       = dca_sample_rates[get_bits(&s->gb, 4)];
+    s->sample_rate       = ff_dca_sample_rates[get_bits(&s->gb, 4)];
     if (!s->sample_rate)
         return AVERROR_INVALIDDATA;
     s->bit_rate_index    = get_bits(&s->gb, 5);

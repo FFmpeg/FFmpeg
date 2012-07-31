@@ -1,9 +1,5 @@
 /*
- * DCA compatible decoder
- * Copyright (C) 2004 Gildas Bazin
- * Copyright (C) 2004 Benjamin Zores
- * Copyright (C) 2006 Benjamin Larsson
- * Copyright (C) 2007 Konstantin Shishkov
+ * DCA compatible decoder data
  *
  * This file is part of Libav.
  *
@@ -22,20 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_DCA_H
-#define AVCODEC_DCA_H
-
 #include <stdint.h>
 
-/** DCA syncwords, also used for bitstream type detection */
-#define DCA_MARKER_RAW_BE 0x7FFE8001
-#define DCA_MARKER_RAW_LE 0xFE7F0180
-#define DCA_MARKER_14B_BE 0x1FFFE800
-#define DCA_MARKER_14B_LE 0xFF1F00E8
+#include "dca.h"
 
-/** DCA-HD specific block starts with this marker. */
-#define DCA_HD_MARKER     0x64582025
-
-extern const uint32_t ff_dca_sample_rates[16];
-
-#endif /* AVCODEC_DCA_H */
+const uint32_t ff_dca_sample_rates[16] =
+{
+    0, 8000, 16000, 32000, 0, 0, 11025, 22050, 44100, 0, 0,
+    12000, 24000, 48000, 96000, 192000
+};
