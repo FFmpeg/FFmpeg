@@ -39,8 +39,6 @@
 #undef NDEBUG
 #include <assert.h>
 
-#define SQ(a) ((a)*(a))
-
 #define P_LEFT P[1]
 #define P_TOP P[2]
 #define P_TOPRIGHT P[3]
@@ -373,8 +371,6 @@ int ff_init_me(MpegEncContext *s){
 
     return 0;
 }
-
-#define Z_THRESHOLD 256
 
 #define CHECK_SAD_HALF_MV(suffix, x, y) \
 {\
