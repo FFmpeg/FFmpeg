@@ -164,7 +164,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         return orig_size;
     }
 
-    if (buf[0] != 'V' || buf_size < 12) {
+    if (buf_size < 12 || buf[0] != 'V') {
         av_log(avctx, AV_LOG_ERROR, "not a nuv video frame\n");
         return -1;
     }
