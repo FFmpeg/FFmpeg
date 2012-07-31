@@ -2343,7 +2343,8 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         opkt.data = pkt->data;
         opkt.size = pkt->size;
     }
-    if (of->ctx->oformat->flags & AVFMT_RAWPICTURE) {
+
+    if (ost->st->codec->codec_type == AVMEDIA_TYPE_VIDEO && (of->ctx->oformat->flags & AVFMT_RAWPICTURE)) {
         /* store AVPicture in AVPacket, as expected by the output format */
         avpicture_fill(&pict, opkt.data, ost->st->codec->pix_fmt, ost->st->codec->width, ost->st->codec->height);
         opkt.data = (uint8_t *)&pict;
