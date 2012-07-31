@@ -23,8 +23,6 @@
 #include "libavcodec/h264dsp.h"
 #include "dsputil_mmx.h"
 
-DECLARE_ALIGNED(8, static const uint64_t, ff_pb_3_1  ) = 0x0103010301030103ULL;
-
 /***********************************/
 /* IDCT */
 #define IDCT_ADD_FUNC(NUM, DEPTH, OPT) \
