@@ -704,7 +704,7 @@ h264_idct_dc_add8_mmx2:
 ALIGN 16
 INIT_XMM
 ; r0 = uint8_t *dst (clobbered), r2 = int16_t *block, r3 = int stride
-x264_add8x4_idct_sse2:
+h264_add8x4_idct_sse2:
     movq   m0, [r2+ 0]
     movq   m1, [r2+ 8]
     movq   m2, [r2+16]
@@ -733,7 +733,7 @@ x264_add8x4_idct_sse2:
 %else
     add         r0, r0m
 %endif
-    call        x264_add8x4_idct_sse2
+    call        h264_add8x4_idct_sse2
 .cycle%1end
 %if %1 < 7
     add         r2, 64
@@ -768,7 +768,7 @@ cglobal h264_idct_add16_8_sse2, 5, 5 + ARCH_X86_64, 8
 %else
     add         r0, r0m
 %endif
-    call        x264_add8x4_idct_sse2
+    call        h264_add8x4_idct_sse2
     jmp .cycle%1end
 .try%1dc
     movsx       r0, word [r2   ]
@@ -815,7 +815,7 @@ cglobal h264_idct_add16intra_8_sse2, 5, 7 + ARCH_X86_64, 8
     mov         r0, [r0]
     add         r0, dword [r1+(%1&1)*8+64*(1+(%1>>1))]
 %endif
-    call        x264_add8x4_idct_sse2
+    call        h264_add8x4_idct_sse2
     jmp .cycle%1end
 .try%1dc
     movsx       r0, word [r2   ]
