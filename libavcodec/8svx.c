@@ -122,6 +122,7 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
             /* the uncompressed starting value is contained in the first byte */
             dst = esc->samples;
             for (i = 0; i < avctx->channels; i++) {
+                *(dst++) = buf[0];
                 delta_decode(dst, buf + 1, buf_size / avctx->channels - 1, buf[0], esc->table);
                 buf += buf_size / avctx->channels;
                 dst += n / avctx->channels - 1;
