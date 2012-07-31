@@ -50,6 +50,8 @@ typedef struct {
     char *duration;             ///< total duration of the generated video
     AVRational sar;             ///< sample aspect ratio
     int nb_decimals;
+    int draw_once;              ///< draw only the first frame, always put out the same picture
+    AVFilterBufferRef *picref;  ///< cached reference containing the painted picture
 
     void (* fill_picture_fn)(AVFilterContext *ctx, AVFilterBufferRef *picref);
 
@@ -123,6 +125,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     TestSourceContext *test = ctx->priv;
 
     av_opt_free(test);
+    avfilter_unref_bufferp(&test->picref);
 }
 
 static int config_props(AVFilterLink *outlink)
@@ -140,25 +143,40 @@ static int config_props(AVFilterLink *outlink)
 static int request_frame(AVFilterLink *outlink)
 {
     TestSourceContext *test = outlink->src->priv;
-    AVFilterBufferRef *picref;
-    int ret;
+    AVFilterBufferRef *outpicref;
+    int ret = 0;
 
     if (test->max_pts >= 0 && test->pts >= test->max_pts)
         return AVERROR_EOF;
-    picref = ff_get_video_buffer(outlink, AV_PERM_WRITE, test->w, test->h);
-    if (!picref)
-        return AVERROR(ENOMEM);
 
-    picref->pts = test->pts++;
-    picref->pos = -1;
-    picref->video->key_frame = 1;
-    picref->video->interlaced = 0;
-    picref->video->pict_type = AV_PICTURE_TYPE_I;
-    picref->video->sample_aspect_ratio = test->sar;
-    test->fill_picture_fn(outlink->src, picref);
+    if (test->draw_once) {
+        if (!test->picref) {
+            test->picref =
+                ff_get_video_buffer(outlink, AV_PERM_WRITE|AV_PERM_PRESERVE|AV_PERM_REUSE,
+                                    test->w, test->h);
+            if (!test->picref)
+                return AVERROR(ENOMEM);
+            test->fill_picture_fn(outlink->src, test->picref);
+        }
+        outpicref = avfilter_ref_buffer(test->picref, ~AV_PERM_WRITE);
+    } else
+        outpicref = ff_get_video_buffer(outlink, AV_PERM_WRITE, test->w, test->h);
+
+    if (!outpicref)
+        return AVERROR(ENOMEM);
+    outpicref->pts = test->pts;
+    outpicref->pos = -1;
+    outpicref->video->key_frame = 1;
+    outpicref->video->interlaced = 0;
+    outpicref->video->pict_type = AV_PICTURE_TYPE_I;
+    outpicref->video->sample_aspect_ratio = test->sar;
+    if (!test->draw_once)
+        test->fill_picture_fn(outlink->src, outpicref);
+
+    test->pts++;
     test->nb_frame++;
 
-    if ((ret = ff_start_frame(outlink, picref)) < 0 ||
+    if ((ret = ff_start_frame(outlink, outpicref)) < 0 ||
         (ret = ff_draw_slice(outlink, 0, test->h, 1)) < 0 ||
         (ret = ff_end_frame(outlink)) < 0)
         return ret;
@@ -493,6 +511,7 @@ static av_cold int rgbtest_init(AVFilterContext *ctx, const char *args)
 {
     TestSourceContext *test = ctx->priv;
 
+    test->draw_once = 1;
     test->class = &rgbtestsrc_class;
     test->fill_picture_fn = rgbtest_fill_picture;
     return init(ctx, args);
