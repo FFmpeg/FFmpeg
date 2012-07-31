@@ -194,9 +194,9 @@ H264_BIWEIGHT_10_SSE( 4, 10)
 
 void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth, const int chroma_format_idc)
 {
+#if HAVE_YASM
     int mm_flags = av_get_cpu_flags();
 
-#if HAVE_YASM
     if (chroma_format_idc == 1 && mm_flags & AV_CPU_FLAG_MMX2) {
         c->h264_loop_filter_strength = ff_h264_loop_filter_strength_mmx2;
     }
@@ -282,9 +282,7 @@ void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth, const int chrom
             }
         }
     }
-#endif
     } else if (bit_depth == 10) {
-#if HAVE_YASM
     if (mm_flags & AV_CPU_FLAG_MMX) {
         if (mm_flags & AV_CPU_FLAG_MMX2) {
 #if ARCH_X86_32
