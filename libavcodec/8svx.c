@@ -112,9 +112,16 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
     /* decode and interleave the first packet */
     if (!esc->samples && avpkt) {
         uint8_t *deinterleaved_samples, *p = NULL;
+        int packet_size = avpkt->size;
 
+        if (packet_size % avctx->channels) {
+            av_log(avctx, AV_LOG_WARNING, "Packet with odd size, ignoring last byte\n");
+            if (packet_size < avctx->channels)
+                return packet_size;
+            packet_size -= packet_size % avctx->channels;
+        }
         esc->samples_size = !esc->table ?
-            avpkt->size : avctx->channels + (avpkt->size-avctx->channels) * 2;
+            packet_size : avctx->channels + (packet_size-avctx->channels) * 2;
         if (!(esc->samples = av_malloc(esc->samples_size)))
             return AVERROR(ENOMEM);
 
