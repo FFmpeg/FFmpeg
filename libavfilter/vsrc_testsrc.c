@@ -92,13 +92,11 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
         av_log(ctx, AV_LOG_ERROR, "Invalid frame rate: '%s'\n", test->rate);
         return ret;
     }
-    av_freep(&test->rate);
 
     if (test->duration && (ret = av_parse_time(&duration, test->duration, 1)) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Invalid duration: '%s'\n", test->duration);
         return ret;
     }
-    av_freep(&test->duration);
 
     if (test->nb_decimals && strcmp(ctx->filter->name, "testsrc")) {
         av_log(ctx, AV_LOG_WARNING,
@@ -118,6 +116,13 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
            duration < 0 ? -1 : test->max_pts * av_q2d(test->time_base),
            test->sar.num, test->sar.den);
     return 0;
+}
+
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    TestSourceContext *test = ctx->priv;
+
+    av_opt_free(test);
 }
 
 static int config_props(AVFilterLink *outlink)
@@ -186,6 +191,7 @@ AVFilter avfilter_vsrc_nullsrc = {
     .name        = "nullsrc",
     .description = NULL_IF_CONFIG_SMALL("Null video source, return unprocessed video frames."),
     .init       = nullsrc_init,
+    .uninit     = uninit,
     .priv_size  = sizeof(TestSourceContext),
 
     .inputs    = (const AVFilterPad[]) {{ .name = NULL}},
@@ -402,6 +408,7 @@ AVFilter avfilter_vsrc_testsrc = {
     .description = NULL_IF_CONFIG_SMALL("Generate test pattern."),
     .priv_size = sizeof(TestSourceContext),
     .init      = test_init,
+    .uninit    = uninit,
 
     .query_formats   = test_query_formats,
 
@@ -526,6 +533,7 @@ AVFilter avfilter_vsrc_rgbtestsrc = {
     .description = NULL_IF_CONFIG_SMALL("Generate RGB test pattern."),
     .priv_size = sizeof(TestSourceContext),
     .init      = rgbtest_init,
+    .uninit    = uninit,
 
     .query_formats   = rgbtest_query_formats,
 
