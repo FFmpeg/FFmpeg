@@ -375,6 +375,7 @@ static int mpegps_read_packet(AVFormatContext *s,
     MpegDemuxContext *m = s->priv_data;
     AVStream *st;
     int len, startcode, i, es_type, ret;
+    int lpcm_header_len;
     int request_probe= 0;
     enum CodecID codec_id = CODEC_ID_NONE;
     enum AVMediaType type;
@@ -391,8 +392,7 @@ static int mpegps_read_packet(AVFormatContext *s,
 
         /* audio: skip header */
         avio_r8(s->pb);
-        avio_r8(s->pb);
-        avio_r8(s->pb);
+        lpcm_header_len = avio_rb16(s->pb);
         len -= 3;
         if (startcode >= 0xb0 && startcode <= 0xbf) {
             /* MLP/TrueHD audio has a 4-byte header */
@@ -458,8 +458,12 @@ static int mpegps_read_packet(AVFormatContext *s,
         codec_id = CODEC_ID_DTS;
     } else if (startcode >= 0xa0 && startcode <= 0xaf) {
         type = AVMEDIA_TYPE_AUDIO;
-        /* 16 bit form will be handled as CODEC_ID_PCM_S16BE */
-        codec_id = CODEC_ID_PCM_DVD;
+        if(lpcm_header_len == 6) {
+            codec_id = CODEC_ID_MLP;
+        } else {
+            /* 16 bit form will be handled as CODEC_ID_PCM_S16BE */
+            codec_id = CODEC_ID_PCM_DVD;
+        }
     } else if (startcode >= 0xb0 && startcode <= 0xbf) {
         type = AVMEDIA_TYPE_AUDIO;
         codec_id = CODEC_ID_TRUEHD;
@@ -493,6 +497,12 @@ static int mpegps_read_packet(AVFormatContext *s,
     if(st->discard >= AVDISCARD_ALL)
         goto skip;
     if (startcode >= 0xa0 && startcode <= 0xaf) {
+      if (lpcm_header_len == 6) {
+            if (len < 6)
+                goto skip;
+            avio_skip(s->pb, 6);
+            len -=6;
+      } else {
         int b1, freq;
 
         /* for LPCM, we just skip the header and consider it is raw
@@ -514,6 +524,7 @@ static int mpegps_read_packet(AVFormatContext *s,
             st->codec->codec_id = CODEC_ID_PCM_S16BE;
         else if (st->codec->bits_per_coded_sample == 28)
             return AVERROR(EINVAL);
+      }
     }
     ret = av_get_packet(s->pb, pkt, len);
     pkt->pts = pts;
