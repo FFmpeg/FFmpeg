@@ -650,7 +650,7 @@ static int avi_write_trailer(AVFormatContext *s)
 
 AVOutputFormat ff_avi_muxer = {
     .name              = "avi",
-    .long_name         = NULL_IF_CONFIG_SMALL("AVI format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("AVI (Audio Video Interleaved)"),
     .mime_type         = "video/x-msvideo",
     .extensions        = "avi",
     .priv_data_size    = sizeof(AVIContext),

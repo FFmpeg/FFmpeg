@@ -88,158 +88,10 @@ void ff_h264_luma_dc_dequant_idct_sse2(DCTELEM *output, DCTELEM *input, int qmul
 /***********************************/
 /* deblocking */
 
-#define h264_loop_filter_strength_iteration_mmx2(bS, nz, ref, mv, bidir, edges, step, mask_mv, dir, d_idx, mask_dir) \
-    do { \
-        x86_reg b_idx; \
-        mask_mv <<= 3; \
-        for( b_idx=0; b_idx<edges; b_idx+=step ) { \
-            if (!mask_dir) \
-            __asm__ volatile( \
-                    "pxor %%mm0, %%mm0 \n\t" \
-                    :: \
-            ); \
-            if(!(mask_mv & b_idx)) { \
-                if(bidir) { \
-                    __asm__ volatile( \
-                        "movd         %a3(%0,%2), %%mm2 \n" \
-                        "punpckldq    %a4(%0,%2), %%mm2 \n" /* { ref0[bn], ref1[bn] } */ \
-                        "pshufw $0x44, 12(%0,%2), %%mm0 \n" /* { ref0[b], ref0[b] } */ \
-                        "pshufw $0x44, 52(%0,%2), %%mm1 \n" /* { ref1[b], ref1[b] } */ \
-                        "pshufw $0x4E, %%mm2, %%mm3 \n" \
-                        "psubb         %%mm2, %%mm0 \n" /* { ref0[b]!=ref0[bn], ref0[b]!=ref1[bn] } */ \
-                        "psubb         %%mm3, %%mm1 \n" /* { ref1[b]!=ref1[bn], ref1[b]!=ref0[bn] } */ \
- \
-                        "por           %%mm1, %%mm0 \n" \
-                        "movq   %a5(%1,%2,4), %%mm1 \n" \
-                        "movq   %a6(%1,%2,4), %%mm2 \n" \
-                        "movq          %%mm1, %%mm3 \n" \
-                        "movq          %%mm2, %%mm4 \n" \
-                        "psubw   48(%1,%2,4), %%mm1 \n" \
-                        "psubw   56(%1,%2,4), %%mm2 \n" \
-                        "psubw  208(%1,%2,4), %%mm3 \n" \
-                        "psubw  216(%1,%2,4), %%mm4 \n" \
-                        "packsswb      %%mm2, %%mm1 \n" \
-                        "packsswb      %%mm4, %%mm3 \n" \
-                        "paddb         %%mm6, %%mm1 \n" \
-                        "paddb         %%mm6, %%mm3 \n" \
-                        "psubusb       %%mm5, %%mm1 \n" /* abs(mv[b] - mv[bn]) >= limit */ \
-                        "psubusb       %%mm5, %%mm3 \n" \
-                        "packsswb      %%mm3, %%mm1 \n" \
- \
-                        "por           %%mm1, %%mm0 \n" \
-                        "movq   %a7(%1,%2,4), %%mm1 \n" \
-                        "movq   %a8(%1,%2,4), %%mm2 \n" \
-                        "movq          %%mm1, %%mm3 \n" \
-                        "movq          %%mm2, %%mm4 \n" \
-                        "psubw   48(%1,%2,4), %%mm1 \n" \
-                        "psubw   56(%1,%2,4), %%mm2 \n" \
-                        "psubw  208(%1,%2,4), %%mm3 \n" \
-                        "psubw  216(%1,%2,4), %%mm4 \n" \
-                        "packsswb      %%mm2, %%mm1 \n" \
-                        "packsswb      %%mm4, %%mm3 \n" \
-                        "paddb         %%mm6, %%mm1 \n" \
-                        "paddb         %%mm6, %%mm3 \n" \
-                        "psubusb       %%mm5, %%mm1 \n" /* abs(mv[b] - mv[bn]) >= limit */ \
-                        "psubusb       %%mm5, %%mm3 \n" \
-                        "packsswb      %%mm3, %%mm1 \n" \
- \
-                        "pshufw $0x4E, %%mm1, %%mm1 \n" \
-                        "por           %%mm1, %%mm0 \n" \
-                        "pshufw $0x4E, %%mm0, %%mm1 \n" \
-                        "pminub        %%mm1, %%mm0 \n" \
-                        ::"r"(ref), \
-                          "r"(mv), \
-                          "r"(b_idx), \
-                          "i"(d_idx+12), \
-                          "i"(d_idx+52), \
-                          "i"(d_idx*4+48), \
-                          "i"(d_idx*4+56), \
-                          "i"(d_idx*4+208), \
-                          "i"(d_idx*4+216) \
-                    ); \
-                } else { \
-                    __asm__ volatile( \
-                        "movd   12(%0,%2), %%mm0 \n" \
-                        "psubb %a3(%0,%2), %%mm0 \n" /* ref[b] != ref[bn] */ \
-                        "movq   48(%1,%2,4), %%mm1 \n" \
-                        "movq   56(%1,%2,4), %%mm2 \n" \
-                        "psubw %a4(%1,%2,4), %%mm1 \n" \
-                        "psubw %a5(%1,%2,4), %%mm2 \n" \
-                        "packsswb   %%mm2, %%mm1 \n" \
-                        "paddb      %%mm6, %%mm1 \n" \
-                        "psubusb    %%mm5, %%mm1 \n" /* abs(mv[b] - mv[bn]) >= limit */ \
-                        "packsswb   %%mm1, %%mm1 \n" \
-                        "por        %%mm1, %%mm0 \n" \
-                        ::"r"(ref), \
-                          "r"(mv), \
-                          "r"(b_idx), \
-                          "i"(d_idx+12), \
-                          "i"(d_idx*4+48), \
-                          "i"(d_idx*4+56) \
-                    ); \
-                } \
-            } \
-            __asm__ volatile( \
-                "movd 12(%0,%1), %%mm1 \n" \
-                "por %a2(%0,%1), %%mm1 \n" /* nnz[b] || nnz[bn] */ \
-                ::"r"(nnz), \
-                  "r"(b_idx), \
-                  "i"(d_idx+12) \
-            ); \
-            __asm__ volatile( \
-                "pminub    %%mm7, %%mm1 \n" \
-                "pminub    %%mm7, %%mm0 \n" \
-                "psllw        $1, %%mm1 \n" \
-                "pxor      %%mm2, %%mm2 \n" \
-                "pmaxub    %%mm0, %%mm1 \n" \
-                "punpcklbw %%mm2, %%mm1 \n" \
-                "movq      %%mm1, %a1(%0,%2) \n" \
-                ::"r"(bS), \
-                  "i"(32*dir), \
-                  "r"(b_idx) \
-                :"memory" \
-            ); \
-        } \
-    } while (0)
-
-static void h264_loop_filter_strength_mmx2( int16_t bS[2][4][4], uint8_t nnz[40], int8_t ref[2][40], int16_t mv[2][40][2],
-                                            int bidir, int edges, int step, int mask_mv0, int mask_mv1, int field ) {
-    __asm__ volatile(
-        "movq %0, %%mm7 \n"
-        "movq %1, %%mm6 \n"
-        ::"m"(ff_pb_1), "m"(ff_pb_3)
-    );
-    if(field)
-        __asm__ volatile(
-            "movq %0, %%mm6 \n"
-            ::"m"(ff_pb_3_1)
-        );
-    __asm__ volatile(
-        "movq  %%mm6, %%mm5 \n"
-        "paddb %%mm5, %%mm5 \n"
-    :);
-
-    // could do a special case for dir==0 && edges==1, but it only reduces the
-    // average filter time by 1.2%
-    step  <<= 3;
-    edges <<= 3;
-    h264_loop_filter_strength_iteration_mmx2(bS, nnz, ref, mv, bidir, edges, step, mask_mv1, 1, -8,  0);
-    h264_loop_filter_strength_iteration_mmx2(bS, nnz, ref, mv, bidir,    32,    8, mask_mv0, 0, -1, -1);
-
-    __asm__ volatile(
-        "movq   (%0), %%mm0 \n\t"
-        "movq  8(%0), %%mm1 \n\t"
-        "movq 16(%0), %%mm2 \n\t"
-        "movq 24(%0), %%mm3 \n\t"
-        TRANSPOSE4(%%mm0, %%mm1, %%mm2, %%mm3, %%mm4)
-        "movq %%mm0,   (%0) \n\t"
-        "movq %%mm3,  8(%0) \n\t"
-        "movq %%mm4, 16(%0) \n\t"
-        "movq %%mm2, 24(%0) \n\t"
-        ::"r"(bS[0])
-        :"memory"
-    );
-}
+void ff_h264_loop_filter_strength_mmx2(int16_t bS[2][4][4], uint8_t nnz[40],
+                                       int8_t ref[2][40], int16_t mv[2][40][2],
+                                       int bidir, int edges, int step,
+                                       int mask_mv0, int mask_mv1, int field);
 
 #define LF_FUNC(DIR, TYPE, DEPTH, OPT) \
 void ff_deblock_ ## DIR ## _ ## TYPE ## _ ## DEPTH ## _ ## OPT (uint8_t *pix, int stride, \
@@ -342,14 +194,14 @@ H264_BIWEIGHT_10_SSE( 4, 10)
 
 void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth, const int chroma_format_idc)
 {
+#if HAVE_YASM
     int mm_flags = av_get_cpu_flags();
 
     if (chroma_format_idc == 1 && mm_flags & AV_CPU_FLAG_MMX2) {
-        c->h264_loop_filter_strength= h264_loop_filter_strength_mmx2;
+        c->h264_loop_filter_strength = ff_h264_loop_filter_strength_mmx2;
     }
 
     if (bit_depth == 8) {
-#if HAVE_YASM
     if (mm_flags & AV_CPU_FLAG_MMX) {
         c->h264_idct_dc_add         =
         c->h264_idct_add            = ff_h264_idct_add_8_mmx;
@@ -430,9 +282,7 @@ void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth, const int chrom
             }
         }
     }
-#endif
     } else if (bit_depth == 10) {
-#if HAVE_YASM
     if (mm_flags & AV_CPU_FLAG_MMX) {
         if (mm_flags & AV_CPU_FLAG_MMX2) {
 #if ARCH_X86_32
@@ -510,6 +360,6 @@ void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth, const int chrom
 #endif /* HAVE_AVX */
         }
     }
-#endif
     }
+#endif
 }

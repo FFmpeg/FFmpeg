@@ -128,6 +128,6 @@ AVCodec ff_flv_decoder = {
     .decode         = ff_h263_decode_frame,
     .capabilities   = CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
     .max_lowres     = 3,
-    .long_name      = NULL_IF_CONFIG_SMALL("Flash Video (FLV) / Sorenson Spark / Sorenson H.263"),
+    .long_name      = NULL_IF_CONFIG_SMALL("FLV / Sorenson Spark / Sorenson H.263 (Flash Video)"),
     .pix_fmts       = ff_pixfmt_list_420,
 };

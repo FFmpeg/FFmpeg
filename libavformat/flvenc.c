@@ -566,7 +566,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 AVOutputFormat ff_flv_muxer = {
     .name           = "flv",
-    .long_name      = NULL_IF_CONFIG_SMALL("FLV format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("FLV (Flash Video)"),
     .mime_type      = "video/x-flv",
     .extensions     = "flv",
     .priv_data_size = sizeof(FLVContext),

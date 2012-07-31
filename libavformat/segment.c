@@ -385,7 +385,7 @@ static const AVClass seg_class = {
 
 AVOutputFormat ff_segment_muxer = {
     .name           = "segment",
-    .long_name      = NULL_IF_CONFIG_SMALL("segment muxer"),
+    .long_name      = NULL_IF_CONFIG_SMALL("segment"),
     .priv_data_size = sizeof(SegmentContext),
     .flags          = AVFMT_GLOBALHEADER | AVFMT_NOFILE,
     .write_header   = seg_write_header,

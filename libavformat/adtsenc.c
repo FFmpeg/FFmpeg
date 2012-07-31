@@ -165,7 +165,7 @@ static int adts_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 AVOutputFormat ff_adts_muxer = {
     .name              = "adts",
-    .long_name         = NULL_IF_CONFIG_SMALL("ADTS AAC"),
+    .long_name         = NULL_IF_CONFIG_SMALL("ADTS AAC (Advanced Audio Coding)"),
     .mime_type         = "audio/aac",
     .extensions        = "aac,adts",
     .priv_data_size    = sizeof(ADTSContext),

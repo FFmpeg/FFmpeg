@@ -276,7 +276,7 @@ static av_cold int swf_read_close(AVFormatContext *avctx)
 
 AVInputFormat ff_swf_demuxer = {
     .name           = "swf",
-    .long_name      = NULL_IF_CONFIG_SMALL("Flash format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("SWF (ShockWave Flash)"),
     .priv_data_size = sizeof(SWFContext),
     .read_probe     = swf_probe,
     .read_header    = swf_read_header,

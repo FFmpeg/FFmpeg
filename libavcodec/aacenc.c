@@ -829,6 +829,6 @@ AVCodec ff_aac_encoder = {
                       CODEC_CAP_EXPERIMENTAL,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLT,
                                                      AV_SAMPLE_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("Advanced Audio Coding"),
+    .long_name      = NULL_IF_CONFIG_SMALL("AAC (Advanced Audio Coding)"),
     .priv_class     = &aacenc_class,
 };

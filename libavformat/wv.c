@@ -64,6 +64,8 @@ typedef struct {
     int block_parsed;
     uint8_t extra[WV_EXTRA_SIZE];
     int64_t pos;
+
+    int64_t apetag_start;
 } WVContext;
 
 static int wv_probe(AVProbeData *p)
@@ -88,6 +90,11 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb,
     uint32_t chmask;
 
     wc->pos = avio_tell(pb);
+
+    /* don't return bogus packets with the ape tag data */
+    if (wc->apetag_start && wc->pos >= wc->apetag_start)
+        return AVERROR_EOF;
+
     if (!append) {
         tag = avio_rl32(pb);
         if (tag != MKTAG('w', 'v', 'p', 'k'))
@@ -252,7 +259,7 @@ static int wv_read_header(AVFormatContext *s)
 
     if (s->pb->seekable) {
         int64_t cur = avio_tell(s->pb);
-        ff_ape_parse_tag(s);
+        wc->apetag_start = ff_ape_parse_tag(s);
         if (!av_dict_get(s->metadata, "", NULL, AV_DICT_IGNORE_SUFFIX))
             ff_id3v1_read(s);
         avio_seek(s->pb, cur, SEEK_SET);

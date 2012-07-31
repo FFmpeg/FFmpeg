@@ -179,5 +179,5 @@ AVCodec ff_bmp_encoder = {
         PIX_FMT_MONOBLACK,
         PIX_FMT_NONE
     },
-    .long_name      = NULL_IF_CONFIG_SMALL("BMP image"),
+    .long_name      = NULL_IF_CONFIG_SMALL("BMP (Windows and OS/2 bitmap)"),
 };

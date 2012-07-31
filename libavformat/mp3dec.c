@@ -234,7 +234,7 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, in
 
 AVInputFormat ff_mp3_demuxer = {
     .name           = "mp3",
-    .long_name      = NULL_IF_CONFIG_SMALL("MPEG audio layer 2/3"),
+    .long_name      = NULL_IF_CONFIG_SMALL("MP2/3 (MPEG audio layer 2/3)"),
     .priv_data_size = sizeof(MP3Context),
     .read_probe     = mp3_read_probe,
     .read_header    = mp3_read_header,

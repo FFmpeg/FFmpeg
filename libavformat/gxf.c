@@ -569,7 +569,7 @@ static int64_t gxf_read_timestamp(AVFormatContext *s, int stream_index,
 
 AVInputFormat ff_gxf_demuxer = {
     .name           = "gxf",
-    .long_name      = NULL_IF_CONFIG_SMALL("GXF format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("GXF (General eXchange Format)"),
     .priv_data_size = sizeof(struct gxf_stream_info),
     .read_probe     = gxf_probe,
     .read_header    = gxf_header,

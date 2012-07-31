@@ -3193,7 +3193,7 @@ static const AVClass class = {
 
 AVInputFormat ff_mov_demuxer = {
     .name           = "mov,mp4,m4a,3gp,3g2,mj2",
-    .long_name      = NULL_IF_CONFIG_SMALL("QuickTime/MPEG-4/Motion JPEG 2000 format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("QuickTime / MOV"),
     .priv_data_size = sizeof(MOVContext),
     .read_probe     = mov_probe,
     .read_header    = mov_read_header,

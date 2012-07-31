@@ -1114,7 +1114,8 @@ static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
         break;
     case RTMP_PT_VIDEO:
     case RTMP_PT_AUDIO:
-        /* Audio and Video packets are parsed in get_packet() */
+    case RTMP_PT_METADATA:
+        /* Audio, Video and Metadata packets are parsed in get_packet() */
         break;
     default:
         av_log(s, AV_LOG_VERBOSE, "Unknown packet type received 0x%02X\n", pkt->type);

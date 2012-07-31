@@ -505,7 +505,7 @@ static int swf_write_trailer(AVFormatContext *s)
 #if CONFIG_SWF_MUXER
 AVOutputFormat ff_swf_muxer = {
     .name              = "swf",
-    .long_name         = NULL_IF_CONFIG_SMALL("Flash format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("SWF (ShockWave Flash)"),
     .mime_type         = "application/x-shockwave-flash",
     .extensions        = "swf",
     .priv_data_size    = sizeof(SWFContext),
@@ -520,7 +520,7 @@ AVOutputFormat ff_swf_muxer = {
 #if CONFIG_AVM2_MUXER
 AVOutputFormat ff_avm2_muxer = {
     .name              = "avm2",
-    .long_name         = NULL_IF_CONFIG_SMALL("Flash 9 (AVM2) format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("SWF (ShockWave Flash) (AVM2)"),
     .mime_type         = "application/x-shockwave-flash",
     .priv_data_size    = sizeof(SWFContext),
     .audio_codec       = CODEC_ID_MP3,

@@ -31,8 +31,10 @@
 
 /**
  * Read and parse an APE tag
+ *
+ * @return offset of the tag start in the file
  */
-void ff_ape_parse_tag(AVFormatContext *s);
+int64_t ff_ape_parse_tag(AVFormatContext *s);
 
 /**
  * Write an APEv2 tag

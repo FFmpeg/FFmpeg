@@ -52,6 +52,8 @@ typedef struct {
     int frame;
     int64_t header_pos;
     int64_t samples;
+
+    int64_t apetag_start;
 } MPCContext;
 
 static inline int64_t bs_get_v(uint8_t **bs)
@@ -200,7 +202,7 @@ static int mpc8_read_header(AVFormatContext *s)
     c->header_pos = avio_tell(pb);
     if(avio_rl32(pb) != TAG_MPCK){
         av_log(s, AV_LOG_ERROR, "Not a Musepack8 file\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     while(!url_feof(pb)){
@@ -212,14 +214,14 @@ static int mpc8_read_header(AVFormatContext *s)
     }
     if(tag != TAG_STREAMHDR){
         av_log(s, AV_LOG_ERROR, "Stream header not found\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     pos = avio_tell(pb);
     avio_skip(pb, 4); //CRC
     c->ver = avio_r8(pb);
     if(c->ver != 8){
         av_log(s, AV_LOG_ERROR, "Unknown stream version %d\n", c->ver);
-        return -1;
+        return AVERROR_PATCHWELCOME;
     }
     c->samples = ffio_read_varlen(pb);
     ffio_read_varlen(pb); //silence samples at the beginning
@@ -245,7 +247,7 @@ static int mpc8_read_header(AVFormatContext *s)
 
     if (pb->seekable) {
         int64_t pos = avio_tell(s->pb);
-        ff_ape_parse_tag(s);
+        c->apetag_start = ff_ape_parse_tag(s);
         avio_seek(s->pb, pos, SEEK_SET);
     }
 
@@ -260,6 +262,11 @@ static int mpc8_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     while(!url_feof(s->pb)){
         pos = avio_tell(s->pb);
+
+        /* don't return bogus packets with the ape tag data */
+        if (c->apetag_start && pos >= c->apetag_start)
+            return AVERROR_EOF;
+
         mpc8_get_chunk_header(s->pb, &tag, &size);
         if (size < 0)
             return -1;

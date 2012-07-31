@@ -195,7 +195,7 @@ static int au_read_packet(AVFormatContext *s,
 #if CONFIG_AU_DEMUXER
 AVInputFormat ff_au_demuxer = {
     .name           = "au",
-    .long_name      = NULL_IF_CONFIG_SMALL("SUN AU format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Sun AU"),
     .read_probe     = au_probe,
     .read_header    = au_read_header,
     .read_packet    = au_read_packet,
@@ -207,7 +207,7 @@ AVInputFormat ff_au_demuxer = {
 #if CONFIG_AU_MUXER
 AVOutputFormat ff_au_muxer = {
     .name              = "au",
-    .long_name         = NULL_IF_CONFIG_SMALL("SUN AU format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("Sun AU"),
     .mime_type         = "audio/basic",
     .extensions        = "au",
     .audio_codec       = CODEC_ID_PCM_S16BE,

@@ -245,7 +245,7 @@ AVCodec ff_libfaac_encoder = {
     .capabilities   = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("libfaac AAC (Advanced Audio Codec)"),
+    .long_name      = NULL_IF_CONFIG_SMALL("libfaac AAC (Advanced Audio Coding)"),
     .profiles       = NULL_IF_CONFIG_SMALL(profiles),
     .channel_layouts = faac_channel_layouts,
 };

@@ -2217,7 +2217,7 @@ void ff_mpegts_parse_close(MpegTSContext *ts)
 
 AVInputFormat ff_mpegts_demuxer = {
     .name           = "mpegts",
-    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-2 transport stream format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-TS (MPEG-2 Transport Stream)"),
     .priv_data_size = sizeof(MpegTSContext),
     .read_probe     = mpegts_probe,
     .read_header    = mpegts_read_header,
@@ -2229,7 +2229,7 @@ AVInputFormat ff_mpegts_demuxer = {
 
 AVInputFormat ff_mpegtsraw_demuxer = {
     .name           = "mpegtsraw",
-    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-2 raw transport stream format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("raw MPEG-TS (MPEG-2 Transport Stream)"),
     .priv_data_size = sizeof(MpegTSContext),
     .read_header    = mpegts_read_header,
     .read_packet    = mpegts_raw_read_packet,
