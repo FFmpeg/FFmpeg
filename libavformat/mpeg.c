@@ -349,18 +349,6 @@ static int mpegps_read_pes_header(AVFormatContext *s,
     if (startcode == PRIVATE_STREAM_1) {
         startcode = avio_r8(s->pb);
         len--;
-        if (startcode >= 0x80 && startcode <= 0xcf) {
-            /* audio: skip header */
-            avio_r8(s->pb);
-            avio_r8(s->pb);
-            avio_r8(s->pb);
-            len -= 3;
-            if (startcode >= 0xb0 && startcode <= 0xbf) {
-                /* MLP/TrueHD audio has a 4-byte header */
-                avio_r8(s->pb);
-                len--;
-            }
-        }
     }
     if(len<0)
         goto error_redo;
@@ -396,6 +384,22 @@ static int mpegps_read_packet(AVFormatContext *s,
     len = mpegps_read_pes_header(s, &dummy_pos, &startcode, &pts, &dts);
     if (len < 0)
         return len;
+
+    if (startcode >= 0x80 && startcode <= 0xcf) {
+        if(len < 4)
+            goto skip;
+
+        /* audio: skip header */
+        avio_r8(s->pb);
+        avio_r8(s->pb);
+        avio_r8(s->pb);
+        len -= 3;
+        if (startcode >= 0xb0 && startcode <= 0xbf) {
+            /* MLP/TrueHD audio has a 4-byte header */
+            avio_r8(s->pb);
+            len--;
+        }
+    }
 
     /* now find stream */
     for(i=0;i<s->nb_streams;i++) {
