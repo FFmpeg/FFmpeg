@@ -44,6 +44,7 @@
       <xsd:attribute name="size"          type="xsd:long" use="required" />
       <xsd:attribute name="pos"           type="xsd:long"  />
       <xsd:attribute name="flags"         type="xsd:string" use="required" />
+      <xsd:attribute name="data"          type="xsd:string" />
     </xsd:complexType>
 
     <xsd:complexType name="frameType">
@@ -86,6 +87,10 @@
     </xsd:complexType>
 
     <xsd:complexType name="streamType">
+      <xsd:sequence>
+        <xsd:element name="tag" type="ffprobe:tagType" minOccurs="0" maxOccurs="unbounded"/>
+      </xsd:sequence>
+
       <xsd:attribute name="index"            type="xsd:int" use="required"/>
       <xsd:attribute name="codec_name"       type="xsd:string" />
       <xsd:attribute name="codec_long_name"  type="xsd:string" />
@@ -94,6 +99,7 @@
       <xsd:attribute name="codec_time_base"  type="xsd:string" use="required"/>
       <xsd:attribute name="codec_tag"        type="xsd:string" use="required"/>
       <xsd:attribute name="codec_tag_string" type="xsd:string" use="required"/>
+      <xsd:attribute name="extradata"        type="xsd:string" />
 
       <!-- video attributes -->
       <xsd:attribute name="width"                type="xsd:int"/>

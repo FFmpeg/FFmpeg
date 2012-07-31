@@ -1844,10 +1844,10 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
     else                                print_str_opt("nb_read_frames", "N/A");
     if (nb_streams_packets[stream_idx]) print_fmt    ("nb_read_packets", "%"PRIu64, nb_streams_packets[stream_idx]);
     else                                print_str_opt("nb_read_packets", "N/A");
-    show_tags(stream->metadata);
     if (do_show_data)
         writer_print_data(w, "extradata", dec_ctx->extradata,
                                           dec_ctx->extradata_size);
+    show_tags(stream->metadata);
 
     print_section_footer("stream");
     av_bprint_finalize(&pbuf, NULL);
