@@ -45,7 +45,7 @@
 #define P_MEDIAN P[4]
 #define P_MV1 P[9]
 
-static inline int sad_hpel_motion_search(MpegEncContext * s,
+static int sad_hpel_motion_search(MpegEncContext * s,
                                   int *mx_ptr, int *my_ptr, int dmin,
                                   int src_index, int ref_index,
                                   int size, int h);
@@ -379,7 +379,7 @@ int ff_init_me(MpegEncContext *s){
     COPY3_IF_LT(dminh, d, dx, x, dy, y)\
 }
 
-static inline int sad_hpel_motion_search(MpegEncContext * s,
+static int sad_hpel_motion_search(MpegEncContext * s,
                                   int *mx_ptr, int *my_ptr, int dmin,
                                   int src_index, int ref_index,
                                   int size, int h)
