@@ -132,7 +132,7 @@ OBJS-$(CONFIG_VFLIP_FILTER)                  += vf_vflip.o
 OBJS-$(CONFIG_YADIF_FILTER)                  += vf_yadif.o
 
 OBJS-$(CONFIG_CELLAUTO_FILTER)               += vsrc_cellauto.o
-OBJS-$(CONFIG_COLOR_FILTER)                  += vsrc_color.o
+OBJS-$(CONFIG_COLOR_FILTER)                  += vsrc_testsrc.o
 OBJS-$(CONFIG_FREI0R_SRC_FILTER)             += vf_frei0r.o
 OBJS-$(CONFIG_LIFE_FILTER)                   += vsrc_life.o
 OBJS-$(CONFIG_MANDELBROT_FILTER)             += vsrc_mandelbrot.o

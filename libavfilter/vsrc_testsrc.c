@@ -33,6 +33,7 @@
 #include <float.h>
 
 #include "libavutil/opt.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/parseutils.h"
 #include "avfilter.h"
@@ -56,6 +57,12 @@ typedef struct {
 
     void (* fill_picture_fn)(AVFilterContext *ctx, AVFilterBufferRef *picref);
 
+    /* only used by color */
+    char *color_str;
+    FFDrawContext draw;
+    FFDrawColor color;
+    uint8_t color_rgba[4];
+
     /* only used by rgbtest */
     uint8_t rgba_map[4];
 } TestSourceContext;
@@ -70,6 +77,10 @@ static const AVOption options[] = {
     { "duration", "set video duration", OFFSET(duration), AV_OPT_TYPE_STRING, {.str = NULL},      0, 0 },
     { "d",        "set video duration", OFFSET(duration), AV_OPT_TYPE_STRING, {.str = NULL},      0, 0 },
     { "sar",      "set video sample aspect ratio", OFFSET(sar), AV_OPT_TYPE_RATIONAL, {.dbl= 1},  0, INT_MAX },
+
+    /* only used by color */
+    { "color", "set color", OFFSET(color_str), AV_OPT_TYPE_STRING, {.str = "black"}, CHAR_MIN, CHAR_MAX },
+    { "c",     "set color", OFFSET(color_str), AV_OPT_TYPE_STRING, {.str = "black"}, CHAR_MIN, CHAR_MAX },
 
     /* only used by testsrc */
     { "decimals", "set number of decimals to show", OFFSET(nb_decimals), AV_OPT_TYPE_INT, {.dbl=0},  INT_MIN, INT_MAX },
@@ -106,6 +117,14 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
                "Option 'decimals' is ignored with source '%s'\n",
                ctx->filter->name);
     }
+
+    if (test->color_str && strcmp(ctx->filter->name, "color")) {
+        av_log(ctx, AV_LOG_WARNING,
+               "Option 'color' is ignored with source '%s'\n",
+               ctx->filter->name);
+    }
+    if ((ret = av_parse_color(test->color_rgba, test->color_str, -1, ctx)) < 0)
+        return ret;
 
     test->time_base.num = frame_rate_q.den;
     test->time_base.den = frame_rate_q.num;
@@ -184,6 +203,83 @@ static int request_frame(AVFilterLink *outlink)
 
     return 0;
 }
+
+#if CONFIG_COLOR_FILTER
+
+#define color_options options
+AVFILTER_DEFINE_CLASS(color);
+
+static void color_fill_picture(AVFilterContext *ctx, AVFilterBufferRef *picref)
+{
+    TestSourceContext *test = ctx->priv;
+    ff_fill_rectangle(&test->draw, &test->color,
+                      picref->data, picref->linesize,
+                      0, 0, test->w, test->h);
+}
+
+static av_cold int color_init(AVFilterContext *ctx, const char *args)
+{
+    TestSourceContext *test = ctx->priv;
+    test->class = &color_class;
+    test->fill_picture_fn = color_fill_picture;
+    test->draw_once = 1;
+    return init(ctx, args);
+}
+
+static int color_query_formats(AVFilterContext *ctx)
+{
+    ff_set_common_formats(ctx, ff_draw_supported_pixel_formats(0));
+    return 0;
+}
+
+static int color_config_props(AVFilterLink *inlink)
+{
+    AVFilterContext *ctx = inlink->src;
+    TestSourceContext *test = ctx->priv;
+    int ret;
+
+    ff_draw_init(&test->draw, inlink->format, 0);
+    ff_draw_color(&test->draw, &test->color, test->color_rgba);
+
+    test->w = ff_draw_round_to_sub(&test->draw, 0, -1, test->w);
+    test->h = ff_draw_round_to_sub(&test->draw, 1, -1, test->h);
+    if (av_image_check_size(test->w, test->h, 0, ctx) < 0)
+        return AVERROR(EINVAL);
+
+    if (ret = config_props(inlink) < 0)
+        return ret;
+
+    av_log(ctx, AV_LOG_VERBOSE, "color:0x%02x%02x%02x%02x\n",
+           test->color_rgba[0], test->color_rgba[1], test->color_rgba[2], test->color_rgba[3]);
+    return 0;
+}
+
+AVFilter avfilter_vsrc_color = {
+    .name        = "color",
+    .description = NULL_IF_CONFIG_SMALL("Provide an uniformly colored input."),
+
+    .priv_size = sizeof(TestSourceContext),
+    .init      = color_init,
+    .uninit    = uninit,
+
+    .query_formats = color_query_formats,
+
+    .inputs = (const AVFilterPad[]) {
+        { .name = NULL }
+    },
+
+    .outputs = (const AVFilterPad[]) {
+        {
+            .name            = "default",
+            .type            = AVMEDIA_TYPE_VIDEO,
+            .request_frame   = request_frame,
+            .config_props    = color_config_props,
+        },
+        { .name = NULL }
+    },
+};
+
+#endif /* CONFIG_COLOR_FILTER */
 
 #if CONFIG_NULLSRC_FILTER
 
