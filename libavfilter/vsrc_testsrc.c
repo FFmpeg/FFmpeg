@@ -61,7 +61,7 @@ typedef struct {
 
 #define OFFSET(x) offsetof(TestSourceContext, x)
 
-static const AVOption testsrc_options[]= {
+static const AVOption options[] = {
     { "size",     "set video size",     OFFSET(w),        AV_OPT_TYPE_IMAGE_SIZE, {.str = "320x240"}, 0, 0 },
     { "s",        "set video size",     OFFSET(w),        AV_OPT_TYPE_IMAGE_SIZE, {.str = "320x240"}, 0, 0 },
     { "rate",     "set video rate",     OFFSET(rate),     AV_OPT_TYPE_STRING, {.str = "25"},      0, 0 },
@@ -186,13 +186,8 @@ static int request_frame(AVFilterLink *outlink)
 
 #if CONFIG_NULLSRC_FILTER
 
-static const AVClass nullsrc_class = {
-    .class_name = "nullsrc",
-    .item_name  = av_default_item_name,
-    .option     = testsrc_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-    .category   = AV_CLASS_CATEGORY_FILTER,
-};
+#define nullsrc_options options
+AVFILTER_DEFINE_CLASS(nullsrc);
 
 static void nullsrc_fill_picture(AVFilterContext *ctx, AVFilterBufferRef *picref) { }
 
@@ -224,6 +219,7 @@ AVFilter avfilter_vsrc_nullsrc = {
 
 #if CONFIG_TESTSRC_FILTER
 
+#define testsrc_options options
 AVFILTER_DEFINE_CLASS(testsrc);
 
 /**
@@ -443,13 +439,8 @@ AVFilter avfilter_vsrc_testsrc = {
 
 #if CONFIG_RGBTESTSRC_FILTER
 
-static const AVClass rgbtestsrc_class = {
-    .class_name = "rgbtestsrc",
-    .item_name  = av_default_item_name,
-    .option     = testsrc_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-    .category   = AV_CLASS_CATEGORY_FILTER,
-};
+#define rgbtestsrc_options options
+AVFILTER_DEFINE_CLASS(rgbtestsrc);
 
 #define R 0
 #define G 1
