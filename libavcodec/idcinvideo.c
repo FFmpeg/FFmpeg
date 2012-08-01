@@ -168,7 +168,7 @@ static av_cold int idcin_decode_init(AVCodecContext *avctx)
         huff_build_tree(s, i);
     }
 
-    s->frame.data[0] = NULL;
+    avcodec_get_frame_defaults(&s->frame);
 
     return 0;
 }
