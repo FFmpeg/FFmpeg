@@ -13,8 +13,6 @@ configure to activate them. In this case, Libav's license changes to GPL v2+.
 
 Specifically, the GPL parts of Libav are
 
-- optional x86 optimizations in the files
-  libavcodec/x86/idct_mmx.c
 - the X11 grabber in libavdevice/x11grab.c
 
 There are a handful of files under other licensing terms, namely:

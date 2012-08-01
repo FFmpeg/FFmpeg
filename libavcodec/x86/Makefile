@@ -19,7 +19,6 @@ MMX-OBJS-$(CONFIG_DNXHD_ENCODER)       += x86/dnxhd_mmx.o
 MMX-OBJS-$(CONFIG_DWT)                 += x86/snowdsp_mmx.o
 MMX-OBJS-$(CONFIG_ENCODERS)            += x86/dsputilenc_mmx.o
 MMX-OBJS-$(CONFIG_FFT)                 += x86/fft.o
-MMX-OBJS-$(CONFIG_GPL)                 += x86/idct_mmx.o
 MMX-OBJS-$(CONFIG_H264DSP)             += x86/h264dsp_mmx.o
 MMX-OBJS-$(CONFIG_H264PRED)            += x86/h264_intrapred_init.o
 MMX-OBJS-$(CONFIG_LPC)                 += x86/lpc_mmx.o

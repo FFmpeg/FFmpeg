@@ -109,10 +109,6 @@ static const struct algo idct_tab[] = {
     { "SIMPLE-C",       ff_simple_idct_8,      NO_PERM  },
 
 #if HAVE_MMX && HAVE_INLINE_ASM
-#if CONFIG_GPL
-    { "LIBMPEG2-MMX",   ff_mmx_idct,           MMX_PERM,  AV_CPU_FLAG_MMX,  1 },
-    { "LIBMPEG2-MMX2",  ff_mmxext_idct,        MMX_PERM,  AV_CPU_FLAG_MMX2, 1 },
-#endif
     { "SIMPLE-MMX",     ff_simple_idct_mmx,  MMX_SIMPLE_PERM, AV_CPU_FLAG_MMX },
     { "XVID-MMX",       ff_idct_xvid_mmx,      NO_PERM,   AV_CPU_FLAG_MMX,  1 },
     { "XVID-MMX2",      ff_idct_xvid_mmx2,     NO_PERM,   AV_CPU_FLAG_MMX2, 1 },
