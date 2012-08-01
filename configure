@@ -197,6 +197,7 @@ External library support:
   --enable-libschroedinger enable Dirac de/encoding via libschroedinger [no]
   --enable-libspeex        enable Speex de/encoding via libspeex [no]
   --enable-libtheora       enable Theora encoding via libtheora [no]
+  --enable-libtwolame      enable MP2 encoding via libtwolame [no]
   --enable-libvo-aacenc    enable AAC encoding via libvo-aacenc [no]
   --enable-libvo-amrwbenc  enable AMR-WB encoding via libvo-amrwbenc [no]
   --enable-libvorbis       enable Vorbis encoding via libvorbis [no]
@@ -1141,6 +1142,7 @@ EXTERNAL_LIBRARY_LIST="
     libschroedinger
     libspeex
     libtheora
+    libtwolame
     libvo_aacenc
     libvo_amrwbenc
     libvorbis
@@ -1947,6 +1949,7 @@ libspeex_decoder_deps="libspeex"
 libspeex_encoder_deps="libspeex"
 libspeex_encoder_select="audio_frame_queue"
 libtheora_encoder_deps="libtheora"
+libtwolame_encoder_deps="libtwolame"
 libvo_aacenc_encoder_deps="libvo_aacenc"
 libvo_aacenc_encoder_select="audio_frame_queue"
 libvo_amrwbenc_encoder_deps="libvo_amrwbenc"
@@ -4038,6 +4041,7 @@ enabled librtmp           && require_pkg_config librtmp librtmp/rtmp.h RTMP_Sock
 enabled libschroedinger   && require_pkg_config schroedinger-1.0 schroedinger/schro.h schro_init
 enabled libspeex          && require libspeex speex/speex.h speex_decoder_init -lspeex
 enabled libtheora         && require libtheora theora/theoraenc.h th_info_init -ltheoraenc -ltheoradec -logg
+enabled libtwolame        && require libtwolame twolame.h twolame_init -ltwolame
 enabled libvo_aacenc      && require libvo_aacenc vo-aacenc/voAAC.h voGetAACEncAPI -lvo-aacenc
 enabled libvo_amrwbenc    && require libvo_amrwbenc vo-amrwbenc/enc_if.h E_IF_init -lvo-amrwbenc
 enabled libvorbis         && require libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbisenc -lvorbis -logg

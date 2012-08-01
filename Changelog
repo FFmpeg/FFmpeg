@@ -17,6 +17,7 @@ version <next>:
 - LucasArts SMUSH SANM video decoder
 - LucasArts SMUSH VIMA audio decoder (ADPCM)
 - LucasArts SMUSH demuxer
+- MP2 encoding via TwoLAME
 
 
 version 10:
