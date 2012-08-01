@@ -735,7 +735,7 @@ int swr_drop_output(struct SwrContext *s, int count){
 
 int swr_inject_silence(struct SwrContext *s, int count){
     int ret, i;
-    AudioData silence = s->out;
+    AudioData silence = s->in;
     uint8_t *tmp_arg[SWR_CH_MAX];
 
     if(count <= 0)
