@@ -170,6 +170,10 @@ static int idcin_read_header(AVFormatContext *s)
             av_log(s, AV_LOG_ERROR, "invalid channels: %u\n", channels);
             return AVERROR_INVALIDDATA;
         }
+        idcin->audio_present = 1;
+    } else {
+        /* if sample rate is 0, assume no audio */
+        idcin->audio_present = 0;
     }
 
     st = avformat_new_stream(s, NULL);
@@ -190,8 +194,7 @@ static int idcin_read_header(AVFormatContext *s)
         HUFFMAN_TABLE_SIZE)
         return AVERROR(EIO);
 
-    /* if sample rate is 0, assume no audio */
-    if (sample_rate) {
+    if (idcin->audio_present) {
         idcin->audio_present = 1;
         st = avformat_new_stream(s, NULL);
         if (!st)
@@ -220,8 +223,7 @@ static int idcin_read_header(AVFormatContext *s)
                 (sample_rate / 14) * bytes_per_sample * channels;
         }
         idcin->current_audio_chunk = 0;
-    } else
-        idcin->audio_present = 1;
+    }
 
     idcin->next_chunk_is_video = 1;
     idcin->pts = 0;
