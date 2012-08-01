@@ -71,7 +71,7 @@ static void MCFUNC(hl_motion)(H264Context *h, uint8_t *dest_y,
     const int mb_xy   = h->mb_xy;
     const int mb_type = s->current_picture.f.mb_type[mb_xy];
 
-    assert(IS_INTER(mb_type));
+    av_assert2(IS_INTER(mb_type));
 
     if (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME))
         await_references(h);
@@ -103,7 +103,7 @@ static void MCFUNC(hl_motion)(H264Context *h, uint8_t *dest_y,
     } else {
         int i;
 
-        assert(IS_8X8(mb_type));
+        av_assert2(IS_8X8(mb_type));
 
         for (i = 0; i < 4; i++) {
             const int sub_mb_type = h->sub_mb_type[i];
@@ -141,7 +141,7 @@ static void MCFUNC(hl_motion)(H264Context *h, uint8_t *dest_y,
                         IS_DIR(sub_mb_type, 0, 0), IS_DIR(sub_mb_type, 0, 1));
             } else {
                 int j;
-                assert(IS_SUB_4X4(sub_mb_type));
+                av_assert2(IS_SUB_4X4(sub_mb_type));
                 for (j = 0; j < 4; j++) {
                     int sub_x_offset = x_offset + 2 * (j & 1);
                     int sub_y_offset = y_offset + (j & 2);
