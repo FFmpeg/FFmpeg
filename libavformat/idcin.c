@@ -278,6 +278,10 @@ static int idcin_read_packet(AVFormatContext *s,
         }
 
         chunk_size = avio_rl32(pb);
+        if (chunk_size < 4 || chunk_size > INT_MAX - 4) {
+            av_log(s, AV_LOG_ERROR, "invalid chunk size: %u\n", chunk_size);
+            return AVERROR_INVALIDDATA;
+        }
         /* skip the number of decoded bytes (always equal to width * height) */
         avio_skip(pb, 4);
         chunk_size -= 4;
