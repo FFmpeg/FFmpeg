@@ -57,13 +57,6 @@ typedef struct MadContext {
     int mb_y;
 } MadContext;
 
-static void bswap16_buf(uint16_t *dst, const uint16_t *src, int count)
-{
-    int i;
-    for (i=0; i<count; i++)
-        dst[i] = av_bswap16(src[i]);
-}
-
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     MadContext *s = avctx->priv_data;
@@ -285,7 +278,7 @@ static int decode_frame(AVCodecContext *avctx,
     av_fast_malloc(&s->bitstream_buf, &s->bitstream_buf_size, (buf_end-buf) + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!s->bitstream_buf)
         return AVERROR(ENOMEM);
-    bswap16_buf(s->bitstream_buf, (const uint16_t*)buf, (buf_end-buf)/2);
+    s->dsp.bswap16_buf(s->bitstream_buf, (const uint16_t*)buf, (buf_end-buf)/2);
     memset((uint8_t*)s->bitstream_buf + (buf_end-buf), 0, FF_INPUT_BUFFER_PADDING_SIZE);
     init_get_bits(&s->gb, s->bitstream_buf, 8*(buf_end-buf));
 
