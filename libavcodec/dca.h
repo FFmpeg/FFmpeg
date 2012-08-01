@@ -36,6 +36,6 @@
 /** DCA-HD specific block starts with this marker. */
 #define DCA_HD_MARKER     0x64582025
 
-extern const uint32_t ff_dca_sample_rates[16];
+extern const uint32_t avpriv_dca_sample_rates[16];
 
 #endif /* AVCODEC_DCA_H */

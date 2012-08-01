@@ -22,7 +22,7 @@
 
 #include "dca.h"
 
-const uint32_t ff_dca_sample_rates[16] =
+const uint32_t avpriv_dca_sample_rates[16] =
 {
     0, 8000, 16000, 32000, 0, 0, 11025, 22050, 44100, 0, 0,
     12000, 24000, 48000, 96000, 192000

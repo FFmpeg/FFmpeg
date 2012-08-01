@@ -161,7 +161,7 @@ static int dca_parse_params(const uint8_t *buf, int buf_size, int *duration,
 
     skip_bits(&gb, 20);
     sr_code = get_bits(&gb, 4);
-    *sample_rate = ff_dca_sample_rates[sr_code];
+    *sample_rate = avpriv_dca_sample_rates[sr_code];
     if (*sample_rate == 0)
         return AVERROR_INVALIDDATA;
 
