@@ -1683,12 +1683,15 @@ static void do_subtitle_out(AVFormatContext *s,
     else
         nb = 1;
 
+    /* shift timestamp to honor -ss and make check_recording_time() work with -t */
+    pts = av_rescale_q(pts, ist->st->time_base, AV_TIME_BASE_Q)
+        - output_files[ost->file_index]->start_time;
     for (i = 0; i < nb; i++) {
-        ost->sync_opts = av_rescale_q(pts, ist->st->time_base, enc->time_base);
+        ost->sync_opts = av_rescale_q(pts, AV_TIME_BASE_Q, enc->time_base);
         if (!check_recording_time(ost))
             return;
 
-        sub->pts = av_rescale_q(pts, ist->st->time_base, AV_TIME_BASE_Q);
+        sub->pts = pts;
         // start_display_time is required to be 0
         sub->pts               += av_rescale_q(sub->start_display_time, (AVRational){ 1, 1000 }, AV_TIME_BASE_Q);
         sub->end_display_time  -= sub->start_display_time;
