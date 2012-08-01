@@ -41,6 +41,7 @@ version <next>:
 - G.723.1 demuxer and decoder
 - RTMPE protocol support
 - RTMPTE protocol support
+- Canopus Lossless Codec decoder
 
 
 version 0.8:
