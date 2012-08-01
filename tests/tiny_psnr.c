@@ -129,7 +129,7 @@ static int run_psnr(FILE *f[2], int len, int shift, int skip_bytes)
     uint64_t dev;
     uint8_t buf[2][SIZE];
     uint64_t psnr;
-    int64_t max    = (1 << (8 * len)) - 1;
+    int64_t max    = (1LL << (8 * len)) - 1;
     int size0      = 0;
     int size1      = 0;
     int maxdist    = 0;
