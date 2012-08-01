@@ -319,6 +319,18 @@
     %endif
 %endmacro
 
+%macro PSWAPD 2
+%if cpuflag(mmxext)
+    pshufw    %1, %2, q1032
+%elif cpuflag(3dnowext)
+    pswapd    %1, %2
+%elif cpuflag(3dnow)
+    movq      %1, %2
+    psrlq     %1, 32
+    punpckldq %1, %2
+%endif
+%endmacro
+
 %macro DEINTB 5 ; mask, reg1, mask, reg2, optional src to fill masks from
 %ifnum %5
     pand   m%3, m%5, m%4 ; src .. y6 .. y4
