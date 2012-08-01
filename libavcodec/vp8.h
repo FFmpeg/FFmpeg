@@ -94,21 +94,8 @@ typedef struct {
 } VP8Macroblock;
 
 typedef struct {
-#if HAVE_THREADS
-    pthread_mutex_t lock;
-    pthread_cond_t  cond;
-#endif
-    int thread_nr;
-    int thread_mb_pos; // (mb_y << 16) | (mb_x & 0xFFFF)
-    int wait_mb_pos; // What the current thread is waiting on.
-    uint8_t *edge_emu_buffer;
-    /**
-     * For coeff decode, we need to know whether the above block had non-zero
-     * coefficients. This means for each macroblock, we need data for 4 luma
-     * blocks, 2 u blocks, 2 v blocks, and the luma dc block, for a total of 9
-     * per macroblock. We keep the last row in top_nnz.
-     */
-    DECLARE_ALIGNED(8, uint8_t, left_nnz)[9];
+    DECLARE_ALIGNED(16, DCTELEM, block)[6][4][16];
+    DECLARE_ALIGNED(16, DCTELEM, block_dc)[16];
     /**
      * This is the index plus one of the last non-zero coeff
      * for each of the blocks in the current macroblock.
@@ -117,8 +104,21 @@ typedef struct {
      *     2+-> full transform
      */
     DECLARE_ALIGNED(16, uint8_t, non_zero_count_cache)[6][4];
-    DECLARE_ALIGNED(16, DCTELEM, block)[6][4][16];
-    DECLARE_ALIGNED(16, DCTELEM, block_dc)[16];
+    /**
+     * For coeff decode, we need to know whether the above block had non-zero
+     * coefficients. This means for each macroblock, we need data for 4 luma
+     * blocks, 2 u blocks, 2 v blocks, and the luma dc block, for a total of 9
+     * per macroblock. We keep the last row in top_nnz.
+     */
+    DECLARE_ALIGNED(8, uint8_t, left_nnz)[9];
+    int thread_nr;
+#if HAVE_THREADS
+    pthread_mutex_t lock;
+    pthread_cond_t  cond;
+#endif
+    int thread_mb_pos; // (mb_y << 16) | (mb_x & 0xFFFF)
+    int wait_mb_pos; // What the current thread is waiting on.
+    uint8_t *edge_emu_buffer;
     VP8FilterStrength *filter_strength;
 } VP8ThreadData;
 
