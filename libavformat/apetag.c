@@ -157,7 +157,7 @@ int64_t ff_ape_parse_tag(AVFormatContext *s)
     val = avio_rl32(pb);       /* flags */
     if (val & APE_TAG_FLAG_IS_HEADER) {
         av_log(s, AV_LOG_ERROR, "APE Tag is a header\n");
-        return;
+        return 0;
     }
 
     avio_seek(pb, file_size - tag_bytes, SEEK_SET);
