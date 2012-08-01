@@ -173,7 +173,7 @@ int ff_draw_init(FFDrawContext *draw, enum PixelFormat format, unsigned flags)
     return 0;
 }
 
-void ff_draw_color(FFDrawContext *draw, FFDrawColor *color, uint8_t rgba[4])
+void ff_draw_color(FFDrawContext *draw, FFDrawColor *color, const uint8_t rgba[4])
 {
     unsigned i;
     uint8_t rgba_map[4];

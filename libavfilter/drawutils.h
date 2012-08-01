@@ -79,7 +79,7 @@ int ff_draw_init(FFDrawContext *draw, enum PixelFormat format, unsigned flags);
 /**
  * Prepare a color.
  */
-void ff_draw_color(FFDrawContext *draw, FFDrawColor *color, uint8_t rgba[4]);
+void ff_draw_color(FFDrawContext *draw, FFDrawColor *color, const uint8_t rgba[4]);
 
 /**
  * Copy a rectangle from an image to another.
