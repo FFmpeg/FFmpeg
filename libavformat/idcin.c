@@ -68,6 +68,7 @@
  *       transmitting them to the video decoder
  */
 
+#include "libavutil/audioconvert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
@@ -204,6 +205,8 @@ static int idcin_read_header(AVFormatContext *s)
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codec->codec_tag = 1;
         st->codec->channels = channels;
+        st->codec->channel_layout = channels > 1 ? AV_CH_LAYOUT_STEREO :
+                                                   AV_CH_LAYOUT_MONO;
         st->codec->sample_rate = sample_rate;
         st->codec->bits_per_coded_sample = bytes_per_sample * 8;
         st->codec->bit_rate = sample_rate * bytes_per_sample * 8 * channels;
