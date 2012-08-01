@@ -94,7 +94,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     }
     av_freep(&test->rate);
 
-    if ((test->duration) && (ret = av_parse_time(&duration, test->duration, 1)) < 0) {
+    if (test->duration && (ret = av_parse_time(&duration, test->duration, 1)) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Invalid duration: '%s'\n", test->duration);
         return ret;
     }
