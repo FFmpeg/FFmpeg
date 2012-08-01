@@ -570,6 +570,7 @@ int ff_mov_read_chan(AVFormatContext *s, AVStream *st, int64_t size)
         avio_rl32(pb);                      // mCoordinates[0]
         avio_rl32(pb);                      // mCoordinates[1]
         avio_rl32(pb);                      // mCoordinates[2]
+        size -= 20;
         if (layout_tag == 0) {
             uint32_t mask_incr = mov_get_channel_label(label);
             if (mask_incr == 0) {
@@ -583,6 +584,7 @@ int ff_mov_read_chan(AVFormatContext *s, AVStream *st, int64_t size)
             st->codec->channel_layout = label_mask;
     else
         st->codec->channel_layout = ff_mov_get_channel_layout(layout_tag, bitmap);
+    avio_skip(pb, size - 12);
 
     return 0;
 }
