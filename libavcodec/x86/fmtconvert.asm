@@ -249,7 +249,7 @@ FLOAT_TO_INT16_INTERLEAVE2 sse2
 %macro PSWAPD_SSE 2
     pshufw %1, %2, 0x4e
 %endmacro
-%macro PSWAPD_3DN1 2
+%macro PSWAPD_3DNOW 2
     movq  %1, %2
     psrlq %1, 32
     punpckldq %1, %2
@@ -306,10 +306,10 @@ cglobal float_to_int16_interleave6_%1, 2,8,0, dst, src, src1, src2, src3, src4, 
 %define pswapd PSWAPD_SSE
 FLOAT_TO_INT16_INTERLEAVE6 sse
 %define cvtps2pi pf2id
-%define pswapd PSWAPD_3DN1
+%define pswapd PSWAPD_3DNOW
 FLOAT_TO_INT16_INTERLEAVE6 3dnow
 %undef pswapd
-FLOAT_TO_INT16_INTERLEAVE6 3dn2
+FLOAT_TO_INT16_INTERLEAVE6 3dnowext
 %undef cvtps2pi
 
 ;-----------------------------------------------------------------------------

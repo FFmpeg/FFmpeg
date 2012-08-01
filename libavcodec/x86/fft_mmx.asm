@@ -93,14 +93,14 @@ cextern cos_ %+ i
 
 SECTION_TEXT
 
-%macro T2_3DN 4 ; z0, z1, mem0, mem1
+%macro T2_3DNOW 4 ; z0, z1, mem0, mem1
     mova     %1, %3
     mova     %2, %1
     pfadd    %1, %4
     pfsub    %2, %4
 %endmacro
 
-%macro T4_3DN 6 ; z0, z1, z2, z3, tmp0, tmp1
+%macro T4_3DNOW 6 ; z0, z1, z2, z3, tmp0, tmp1
     mova     %5, %3
     pfsub    %3, %4
     pfadd    %5, %4 ; {t6,t5}
@@ -444,13 +444,13 @@ fft16_sse:
     ret
 
 
-%macro FFT48_3DN 0
+%macro FFT48_3DNOW 0
 align 16
 fft4 %+ SUFFIX:
-    T2_3DN   m0, m1, Z(0), Z(1)
+    T2_3DNOW m0, m1, Z(0), Z(1)
     mova     m2, Z(2)
     mova     m3, Z(3)
-    T4_3DN   m0, m1, m2, m3, m4, m5
+    T4_3DNOW m0, m1, m2, m3, m4, m5
     PUNPCK   m0, m1, m4
     PUNPCK   m2, m3, m5
     mova   Z(0), m0
@@ -461,14 +461,14 @@ fft4 %+ SUFFIX:
 
 align 16
 fft8 %+ SUFFIX:
-    T2_3DN   m0, m1, Z(0), Z(1)
+    T2_3DNOW m0, m1, Z(0), Z(1)
     mova     m2, Z(2)
     mova     m3, Z(3)
-    T4_3DN   m0, m1, m2, m3, m4, m5
+    T4_3DNOW m0, m1, m2, m3, m4, m5
     mova   Z(0), m0
     mova   Z(2), m2
-    T2_3DN   m4, m5,  Z(4),  Z(5)
-    T2_3DN   m6, m7, Z2(6), Z2(7)
+    T2_3DNOW m4, m5,  Z(4),  Z(5)
+    T2_3DNOW m6, m7, Z2(6), Z2(7)
     PSWAPD   m0, m5
     PSWAPD   m2, m7
     pxor     m0, [ps_m1p1]
@@ -477,12 +477,12 @@ fft8 %+ SUFFIX:
     pfadd    m7, m2
     pfmul    m5, [ps_root2]
     pfmul    m7, [ps_root2]
-    T4_3DN   m1, m3, m5, m7, m0, m2
+    T4_3DNOW m1, m3, m5, m7, m0, m2
     mova   Z(5), m5
     mova  Z2(7), m7
     mova     m0, Z(0)
     mova     m2, Z(2)
-    T4_3DN   m0, m2, m4, m6, m5, m7
+    T4_3DNOW m0, m2, m4, m6, m5, m7
     PUNPCK   m0, m1, m5
     PUNPCK   m2, m3, m7
     mova   Z(0), m0
@@ -500,7 +500,7 @@ fft8 %+ SUFFIX:
 
 %if ARCH_X86_32
 %macro PSWAPD 2
-%if cpuflag(3dnow2)
+%if cpuflag(3dnowext)
     pswapd %1, %2
 %elifidn %1, %2
     movd [r0+12], %1
@@ -512,11 +512,11 @@ fft8 %+ SUFFIX:
 %endif
 %endmacro
 
-INIT_MMX 3dnow2
-FFT48_3DN
+INIT_MMX 3dnowext
+FFT48_3DNOW
 
 INIT_MMX 3dnow
-FFT48_3DN
+FFT48_3DNOW
 %endif
 
 %define Z(x) [zcq + o1q*(x&6) + mmsize*(x&1)]
@@ -633,7 +633,7 @@ cglobal fft_calc, 2,5,8
 %if ARCH_X86_32
 INIT_MMX 3dnow
 FFT_CALC_FUNC
-INIT_MMX 3dnow2
+INIT_MMX 3dnowext
 FFT_CALC_FUNC
 %endif
 INIT_XMM sse
@@ -727,7 +727,7 @@ cglobal imdct_calc, 3,5,3
 %if ARCH_X86_32
 INIT_MMX 3dnow
 IMDCT_CALC_FUNC
-INIT_MMX 3dnow2
+INIT_MMX 3dnowext
 IMDCT_CALC_FUNC
 %endif
 
@@ -743,8 +743,8 @@ INIT_MMX 3dnow
 %define unpckhps punpckhdq
 DECL_PASS pass_3dnow, PASS_SMALL 1, [wq], [wq+o1q]
 DECL_PASS pass_interleave_3dnow, PASS_BIG 0
-%define pass_3dnow2 pass_3dnow
-%define pass_interleave_3dnow2 pass_interleave_3dnow
+%define pass_3dnowext pass_3dnow
+%define pass_interleave_3dnowext pass_interleave_3dnow
 %endif
 
 %ifdef PIC
@@ -813,7 +813,7 @@ DECL_FFT 5, _interleave
 INIT_MMX 3dnow
 DECL_FFT 4
 DECL_FFT 4, _interleave
-INIT_MMX 3dnow2
+INIT_MMX 3dnowext
 DECL_FFT 4
 DECL_FFT 4, _interleave
 %endif
@@ -845,7 +845,7 @@ INIT_XMM sse
     PSWAPD     m5, m3
     pfmul      m2, m3
     pfmul      m6, m5
-%if cpuflag(3dnow2)
+%if cpuflag(3dnowext)
     pfpnacc    m0, m4
     pfpnacc    m2, m6
 %else
@@ -1018,7 +1018,7 @@ cglobal imdct_half, 3,12,8; FFTContext *s, FFTSample *output, const FFTSample *i
     xor   r4, r4
     sub   r4, r3
 %endif
-%if notcpuflag(3dnow2) && mmsize == 8
+%if notcpuflag(3dnowext) && mmsize == 8
     movd  m7, [ps_m1m1m1m1]
 %endif
 .pre:
@@ -1102,7 +1102,7 @@ DECL_IMDCT POSROTATESHUF
 INIT_MMX 3dnow
 DECL_IMDCT POSROTATESHUF_3DNOW
 
-INIT_MMX 3dnow2
+INIT_MMX 3dnowext
 DECL_IMDCT POSROTATESHUF_3DNOW
 %endif
 

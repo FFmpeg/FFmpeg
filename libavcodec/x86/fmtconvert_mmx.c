@@ -46,7 +46,7 @@ void ff_float_to_int16_interleave2_sse2 (int16_t *dst, const float **src, long l
 
 void ff_float_to_int16_interleave6_sse(int16_t *dst, const float **src, int len);
 void ff_float_to_int16_interleave6_3dnow(int16_t *dst, const float **src, int len);
-void ff_float_to_int16_interleave6_3dn2(int16_t *dst, const float **src, int len);
+void ff_float_to_int16_interleave6_3dnowext(int16_t *dst, const float **src, int len);
 
 #define ff_float_to_int16_interleave6_sse2 ff_float_to_int16_interleave6_sse
 
@@ -74,9 +74,11 @@ FLOAT_TO_INT16_INTERLEAVE(3dnow)
 FLOAT_TO_INT16_INTERLEAVE(sse)
 FLOAT_TO_INT16_INTERLEAVE(sse2)
 
-static void float_to_int16_interleave_3dn2(int16_t *dst, const float **src, long len, int channels){
+static void float_to_int16_interleave_3dnowext(int16_t *dst, const float **src,
+                                               long len, int channels)
+{
     if(channels==6)
-        ff_float_to_int16_interleave6_3dn2(dst, src, len);
+        ff_float_to_int16_interleave6_3dnowext(dst, src, len);
     else
         float_to_int16_interleave_3dnow(dst, src, len, channels);
 }
@@ -126,7 +128,7 @@ void ff_fmt_convert_init_x86(FmtConvertContext *c, AVCodecContext *avctx)
         }
         if (HAVE_AMD3DNOWEXT && mm_flags & AV_CPU_FLAG_3DNOWEXT) {
             if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
-                c->float_to_int16_interleave = float_to_int16_interleave_3dn2;
+                c->float_to_int16_interleave = float_to_int16_interleave_3dnowext;
             }
         }
         if (HAVE_SSE && mm_flags & AV_CPU_FLAG_SSE) {

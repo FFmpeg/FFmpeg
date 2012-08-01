@@ -557,7 +557,7 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits
 %assign cpuflags_mmx      (1<<0)
 %assign cpuflags_mmx2     (1<<1) | cpuflags_mmx
 %assign cpuflags_3dnow    (1<<2) | cpuflags_mmx
-%assign cpuflags_3dnow2   (1<<3) | cpuflags_3dnow
+%assign cpuflags_3dnowext (1<<3) | cpuflags_3dnow
 %assign cpuflags_sse      (1<<4) | cpuflags_mmx2
 %assign cpuflags_sse2     (1<<5) | cpuflags_sse
 %assign cpuflags_sse2slow (1<<6) | cpuflags_sse2
