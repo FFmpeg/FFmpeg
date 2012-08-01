@@ -36,7 +36,6 @@
 #include "vc1acdata.h"
 #include "msmpeg4data.h"
 #include "unary.h"
-#include "simple_idct.h"
 #include "mathops.h"
 #include "vdpau_internal.h"
 
