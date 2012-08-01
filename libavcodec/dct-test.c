@@ -85,7 +85,7 @@ static const struct algo fdct_tab[] = {
     { "IJG-AAN-INT",    ff_fdct_ifast,         SCALE_PERM },
     { "IJG-LLM-INT",    ff_jpeg_fdct_islow_8,  NO_PERM    },
 
-#if HAVE_MMX
+#if HAVE_MMX && HAVE_INLINE_ASM
     { "MMX",            ff_fdct_mmx,           NO_PERM,   AV_CPU_FLAG_MMX     },
     { "MMX2",           ff_fdct_mmx2,          NO_PERM,   AV_CPU_FLAG_MMX2    },
     { "SSE2",           ff_fdct_sse2,          NO_PERM,   AV_CPU_FLAG_SSE2    },
