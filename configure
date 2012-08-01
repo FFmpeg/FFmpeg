@@ -2894,7 +2894,7 @@ case $target_os in
                 LIBTARGET=x64
             fi
         elif check_cmd $dlltool --version; then
-            SLIB_EXTRA_CMD=-'$(DLLTOOL) -m $(LIBTARGET) -d $$(@:$(SLIBSUF)=.def) -l $(SUBDIR)$(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.lib) -D $(SLIBNAME_WITH_MAJOR)'
+            SLIB_EXTRA_CMD=-'$(DLLTOOL) -m $(LIBTARGET) -d $$(@:$(SLIBSUF)=.def) -l $(SUBDIR)$(SLIBNAME:$(SLIBSUF)=.lib) -D $(SLIBNAME_WITH_MAJOR)'
         fi
         SLIB_INSTALL_NAME='$(SLIBNAME_WITH_MAJOR)'
         SLIB_INSTALL_LINKS=
@@ -3899,7 +3899,6 @@ DEPCC=$dep_cc
 DEPCCFLAGS=$DEPCCFLAGS \$(CPPFLAGS)
 DEPAS=$as
 DEPASFLAGS=$DEPASFLAGS \$(CPPFLAGS)
-DLLTOOL=$dlltool
 YASM=$yasmexe
 DEPYASM=$yasmexe
 AR=$ar
@@ -3918,6 +3917,7 @@ CC_O=$CC_O
 CXX_C=$CXX_C
 CXX_O=$CXX_O
 LD_O=$LD_O
+DLLTOOL=$dlltool
 LDFLAGS=$LDFLAGS
 FFSERVERLDFLAGS=$FFSERVERLDFLAGS
 SHFLAGS=$SHFLAGS
