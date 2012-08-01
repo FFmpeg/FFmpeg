@@ -79,6 +79,14 @@ Go to @url{http://lame.sourceforge.net/} and follow the
 instructions for installing the library.
 Then pass @code{--enable-libmp3lame} to configure to enable it.
 
+@section TwoLAME
+
+FFmpeg can make use of the TwoLAME library for MP2 encoding.
+
+Go to @url{http://www.twolame.org/} and follow the
+instructions for installing the library.
+Then pass @code{--enable-libtwolame} to configure to enable it.
+
 @section libvpx
 
 FFmpeg can make use of the libvpx library for VP8 encoding.
@@ -797,6 +805,7 @@ following image formats are supported:
     @tab Only versions 3.97-3.99 are supported.
 @item MP1 (MPEG audio layer 1)  @tab     @tab IX
 @item MP2 (MPEG audio layer 2)  @tab IX  @tab IX
+    @tab libtwolame can be used alternatively for encoding.
 @item MP3 (MPEG audio layer 3)  @tab  E  @tab IX
     @tab encoding supported through external library LAME, ADU MP3 and MP3onMP4 also supported
 @item MPEG-4 Audio Lossless Coding (ALS)  @tab     @tab  X
