@@ -30,6 +30,7 @@
 #include "put_bits.h"
 #include "dcaenc.h"
 #include "dcadata.h"
+#include "dca.h"
 
 #undef NDEBUG
 
@@ -569,13 +570,13 @@ static int encode_init(AVCodecContext *avctx)
     }
 
     for (i = 0; i < 16; i++) {
-        if (dca_sample_rates[i] && (dca_sample_rates[i] == avctx->sample_rate))
+        if (avpriv_dca_sample_rates[i] && (avpriv_dca_sample_rates[i] == avctx->sample_rate))
             break;
     }
     if (i == 16) {
         av_log(avctx, AV_LOG_ERROR, "Sample rate %iHz not supported, only ", avctx->sample_rate);
         for (i = 0; i < 16; i++)
-            av_log(avctx, AV_LOG_ERROR, "%d, ", dca_sample_rates[i]);
+            av_log(avctx, AV_LOG_ERROR, "%d, ", avpriv_dca_sample_rates[i]);
         av_log(avctx, AV_LOG_ERROR, "supported.\n");
         return -1;
     }

@@ -159,8 +159,8 @@ function idct_col4_neon
         vmull.s16       q15, d30, w4 /* q15 = W4*(col[0]+(1<<COL_SHIFT-1)/W4)*/
         vld1.64         {d8}, [r2,:64], ip /* d5 = col[3] */
 
-        ldrd            r4,  [r2]
-        ldrd            r6,  [r2, #16]
+        ldrd            r4,  r5,  [r2]
+        ldrd            r6,  r7,  [r2, #16]
         orrs            r4,  r4,  r5
 
         idct_col4_top
@@ -176,7 +176,7 @@ function idct_col4_neon
         vadd.i32        q14, q14, q7
 
 1:      orrs            r6,  r6,  r7
-        ldrd            r4,  [r2, #16]
+        ldrd            r4,  r5,  [r2, #16]
         it              eq
         addeq           r2,  r2,  #16
         beq             2f
@@ -188,7 +188,7 @@ function idct_col4_neon
         vmlal.s16       q6,  d5,  w3    /* q6  += W3 * col[5] */
 
 2:      orrs            r4,  r4,  r5
-        ldrd            r4,  [r2, #16]
+        ldrd            r4,  r5,  [r2, #16]
         it              eq
         addeq           r2,  r2,  #16
         beq             3f

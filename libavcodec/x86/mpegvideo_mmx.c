@@ -29,6 +29,8 @@
 #include "libavcodec/mpegvideo.h"
 #include "dsputil_mmx.h"
 
+#if HAVE_INLINE_ASM
+
 extern uint16_t ff_inv_zigzag_direct16[64];
 
 
@@ -626,8 +628,11 @@ static void  denoise_dct_sse2(MpegEncContext *s, DCTELEM *block){
 #include "mpegvideo_mmx_template.c"
 #endif
 
+#endif /* HAVE_INLINE_ASM */
+
 void ff_MPV_common_init_mmx(MpegEncContext *s)
 {
+#if HAVE_INLINE_ASM
     int mm_flags = av_get_cpu_flags();
 
     if (mm_flags & AV_CPU_FLAG_MMX) {
@@ -662,4 +667,5 @@ void ff_MPV_common_init_mmx(MpegEncContext *s)
             }
         }
     }
+#endif /* HAVE_INLINE_ASM */
 }

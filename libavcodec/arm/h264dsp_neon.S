@@ -886,7 +886,7 @@ T       mov             sp,  r0
         mov             r12, #8
         vpush           {d8-d15}
         bl              put_h264_qpel8_h_lowpass_neon
-        ldrd            r0,  [r11], #8
+        ldrd            r0,  r1,  [r11], #8
         mov             r3,  r2
         add             r12, sp,  #64
         sub             r1,  r1,  r2, lsl #1
@@ -913,7 +913,7 @@ T       mov             sp,  r0
         vpush           {d8-d15}
         bl              put_h264_qpel8_h_lowpass_neon
         mov             r4,  r0
-        ldrd            r0,  [r11], #8
+        ldrd            r0,  r1,  [r11], #8
         sub             r1,  r1,  r2, lsl #1
         sub             r1,  r1,  #2
         mov             r3,  r2
@@ -958,7 +958,7 @@ T       mov             sp,  r0
         vpush           {d8-d15}
         bl              put_h264_qpel8_v_lowpass_neon
         mov             r4,  r0
-        ldrd            r0,  [r11], #8
+        ldrd            r0,  r1,  [r11], #8
         sub             r1,  r1,  r3, lsl #1
         sub             r1,  r1,  #2
         sub             r2,  r4,  #64
@@ -1071,7 +1071,7 @@ T       mov             sp,  r0
         mov             r3,  #16
         vpush           {d8-d15}
         bl              put_h264_qpel16_h_lowpass_neon
-        ldrd            r0,  [r11], #8
+        ldrd            r0,  r1,  [r11], #8
         mov             r3,  r2
         add             r12, sp,  #64
         sub             r1,  r1,  r2, lsl #1
@@ -1096,7 +1096,7 @@ T       mov             sp,  r0
         vpush           {d8-d15}
         bl              put_h264_qpel16_h_lowpass_neon_packed
         mov             r4,  r0
-        ldrd            r0,  [r11], #8
+        ldrd            r0,  r1,  [r11], #8
         sub             r1,  r1,  r2, lsl #1
         sub             r1,  r1,  #2
         mov             r3,  r2
@@ -1139,7 +1139,7 @@ T       mov             sp,  r0
         vpush           {d8-d15}
         bl              put_h264_qpel16_v_lowpass_neon_packed
         mov             r4,  r0
-        ldrd            r0,  [r11], #8
+        ldrd            r0,  r1,  [r11], #8
         sub             r1,  r1,  r3, lsl #1
         sub             r1,  r1,  #2
         mov             r2,  r3
