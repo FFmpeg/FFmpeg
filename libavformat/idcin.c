@@ -290,6 +290,7 @@ static int idcin_read_packet(AVFormatContext *s,
             if (ret < 0)
                 return ret;
             memcpy(pal, palette, AVPALETTE_SIZE);
+            pkt->flags |= AV_PKT_FLAG_KEY;
         }
         pkt->stream_index = idcin->video_stream_index;
         pkt->duration     = 1;
