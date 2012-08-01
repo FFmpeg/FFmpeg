@@ -231,6 +231,48 @@ void ff_amf_write_field_name(uint8_t **dst, const char *str);
  */
 void ff_amf_write_object_end(uint8_t **dst);
 
+/**
+ * Read AMF boolean value.
+ *
+ *@param[in,out] gbc GetByteContext initialized with AMF-formatted data
+ *@param[out]    val 0 or 1
+ *@return 0 on success or an AVERROR code on failure
+*/
+int ff_amf_read_bool(GetByteContext *gbc, int *val);
+
+/**
+ * Read AMF number value.
+ *
+ *@param[in,out] gbc GetByteContext initialized with AMF-formatted data
+ *@param[out]    val read value
+ *@return 0 on success or an AVERROR code on failure
+*/
+int ff_amf_read_number(GetByteContext *gbc, double *val);
+
+/**
+ * Read AMF string value.
+ *
+ * Appends a trailing \0 to output string in order to
+ * ease later parsing.
+ *
+ *@param[in,out] gbc     GetByteContext initialized with AMF-formatted data
+ *@param[out]    str     read string
+ *@param[in]     strsize buffer size available to store the read string
+ *@param[out]    length  read string length
+ *@return 0 on success or an AVERROR code on failure
+*/
+int ff_amf_read_string(GetByteContext *gbc, uint8_t *str,
+                       int strsize, int *length);
+
+/**
+ * Read AMF NULL value.
+ *
+ *@param[in,out] gbc GetByteContext initialized with AMF-formatted data
+ *@return 0 on success or an AVERROR code on failure
+*/
+int ff_amf_read_null(GetByteContext *gbc);
+
+
 /** @} */ // AMF funcs
 
 #endif /* AVFORMAT_RTMPPKT_H */
