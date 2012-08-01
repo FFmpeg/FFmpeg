@@ -82,13 +82,12 @@ typedef struct IdcinDemuxContext {
     int audio_stream_index;
     int audio_chunk_size1;
     int audio_chunk_size2;
+    int block_align;
 
     /* demux state variables */
     int current_audio_chunk;
     int next_chunk_is_video;
     int audio_present;
-
-    int64_t pts;
 } IdcinDemuxContext;
 
 static int idcin_probe(AVProbeData *p)
@@ -181,6 +180,7 @@ static int idcin_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
     avpriv_set_pts_info(st, 33, 1, IDCIN_FPS);
+    st->start_time = 0;
     idcin->video_stream_index = st->index;
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = AV_CODEC_ID_IDCIN;
@@ -200,7 +200,8 @@ static int idcin_read_header(AVFormatContext *s)
         st = avformat_new_stream(s, NULL);
         if (!st)
             return AVERROR(ENOMEM);
-        avpriv_set_pts_info(st, 33, 1, IDCIN_FPS);
+        avpriv_set_pts_info(st, 63, 1, sample_rate);
+        st->start_time = 0;
         idcin->audio_stream_index = st->index;
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codec->codec_tag = 1;
@@ -210,7 +211,7 @@ static int idcin_read_header(AVFormatContext *s)
         st->codec->sample_rate = sample_rate;
         st->codec->bits_per_coded_sample = bytes_per_sample * 8;
         st->codec->bit_rate = sample_rate * bytes_per_sample * 8 * channels;
-        st->codec->block_align = bytes_per_sample * channels;
+        st->codec->block_align = idcin->block_align = bytes_per_sample * channels;
         if (bytes_per_sample == 1)
             st->codec->codec_id = AV_CODEC_ID_PCM_U8;
         else
@@ -229,7 +230,6 @@ static int idcin_read_header(AVFormatContext *s)
     }
 
     idcin->next_chunk_is_video = 1;
-    idcin->pts = 0;
 
     return 0;
 }
@@ -292,7 +292,7 @@ static int idcin_read_packet(AVFormatContext *s,
             memcpy(pal, palette, AVPALETTE_SIZE);
         }
         pkt->stream_index = idcin->video_stream_index;
-        pkt->pts = idcin->pts;
+        pkt->duration     = 1;
     } else {
         /* send out the audio chunk */
         if (idcin->current_audio_chunk)
@@ -303,10 +303,9 @@ static int idcin_read_packet(AVFormatContext *s,
         if (ret < 0)
             return ret;
         pkt->stream_index = idcin->audio_stream_index;
-        pkt->pts = idcin->pts;
+        pkt->duration     = chunk_size / idcin->block_align;
 
         idcin->current_audio_chunk ^= 1;
-        idcin->pts++;
     }
 
     if (idcin->audio_present)
