@@ -36,6 +36,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/parseutils.h"
 #include "avfilter.h"
+#include "drawutils.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -56,7 +57,7 @@ typedef struct {
     void (* fill_picture_fn)(AVFilterContext *ctx, AVFilterBufferRef *picref);
 
     /* only used by rgbtest */
-    int rgba_map[4];
+    uint8_t rgba_map[4];
 } TestSourceContext;
 
 #define OFFSET(x) offsetof(TestSourceContext, x)
@@ -449,7 +450,7 @@ AVFILTER_DEFINE_CLASS(rgbtestsrc);
 
 static void rgbtest_put_pixel(uint8_t *dst, int dst_linesize,
                               int x, int y, int r, int g, int b, enum PixelFormat fmt,
-                              int rgba_map[4])
+                              uint8_t rgba_map[4])
 {
     int32_t v;
     uint8_t *p;
@@ -526,15 +527,7 @@ static int rgbtest_config_props(AVFilterLink *outlink)
 {
     TestSourceContext *test = outlink->src->priv;
 
-    switch (outlink->format) {
-    case PIX_FMT_ARGB:  test->rgba_map[A] = 0; test->rgba_map[R] = 1; test->rgba_map[G] = 2; test->rgba_map[B] = 3; break;
-    case PIX_FMT_ABGR:  test->rgba_map[A] = 0; test->rgba_map[B] = 1; test->rgba_map[G] = 2; test->rgba_map[R] = 3; break;
-    case PIX_FMT_RGBA:
-    case PIX_FMT_RGB24: test->rgba_map[R] = 0; test->rgba_map[G] = 1; test->rgba_map[B] = 2; test->rgba_map[A] = 3; break;
-    case PIX_FMT_BGRA:
-    case PIX_FMT_BGR24: test->rgba_map[B] = 0; test->rgba_map[G] = 1; test->rgba_map[R] = 2; test->rgba_map[A] = 3; break;
-    }
-
+    ff_fill_rgba_map(test->rgba_map, outlink->format);
     return config_props(outlink);
 }
 
