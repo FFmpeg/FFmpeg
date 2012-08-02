@@ -87,7 +87,7 @@ typedef struct g723_1_context {
 
     int16_t prev_lsp[LPC_ORDER];
     int16_t prev_excitation[PITCH_MAX];
-    int16_t excitation[PITCH_MAX + FRAME_LEN];
+    int16_t excitation[PITCH_MAX + FRAME_LEN + 4];
     int16_t synth_mem[LPC_ORDER];
     int16_t fir_mem[LPC_ORDER];
     int     iir_mem[LPC_ORDER];
