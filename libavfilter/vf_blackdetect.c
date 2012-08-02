@@ -210,7 +210,7 @@ AVFilter avfilter_vf_blackdetect = {
           .config_props     = config_input,
           .draw_slice       = draw_slice,
           .get_video_buffer = ff_null_get_video_buffer,
-          .start_frame      = ff_null_start_frame_keep_ref,
+          .start_frame      = ff_null_start_frame,
           .end_frame        = end_frame, },
         { .name = NULL }
     },
