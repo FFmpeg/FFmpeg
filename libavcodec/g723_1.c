@@ -282,7 +282,8 @@ static int normalize_bits(int num, int width)
  */
 static int scale_vector(int16_t *vector, int length)
 {
-    int bits, scale, max = 0;
+    int bits, max = 0;
+    int64_t scale;
     int i;
 
 
@@ -293,7 +294,7 @@ static int scale_vector(int16_t *vector, int length)
     scale = (bits == 15) ? 0x7FFF : (1 << bits);
 
     for (i = 0; i < length; i++)
-        vector[i] = (vector[i] * scale) >> 4;
+        vector[i] = av_clipl_int32(vector[i] * scale << 1) >> 4;
 
     return bits - 3;
 }
