@@ -330,6 +330,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
+    if (s->avctx->sample_rate <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "invalid sample rate\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     s->num_channels = avctx->channels;
 
     if (s->num_channels < 0) {
