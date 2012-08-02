@@ -88,7 +88,7 @@ function ff_decode_block_coeffs_armv6, export=1
 
         add             r4,  r3,  r3,  lsl #5
         sxth            r12, r11
-        add             r4,  r2,  r4
+        add             r4,  r4,  r2
         adds            r6,  r6,  r9
         add             r4,  r4,  #11
         lsl             r8,  r8,  r9
@@ -138,7 +138,7 @@ A       orrcs           r8,  r8,  r10, lsl r6
 2:
         add             r4,  r3,  r3,  lsl #5
         cmp             r3,  #16
-        add             r4,  r2,  r4
+        add             r4,  r4,  r2
         pkhtb           r11, r11, r11, asr #16
         bne             0b
         b               6b
@@ -226,7 +226,7 @@ A       orrcs           r8,  r8,  r10, lsl r6
         ldr             r1,  [sp, #4]
 4:
         add             r4,  r3,  r3,  lsl #5
-        add             r4,  r2,  r4
+        add             r4,  r4,  r2
         add             r4,  r4,  #22
         rac_get_128     r5,  r6,  r7,  r8,  r9,  r10
         it              ge

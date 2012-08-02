@@ -142,7 +142,7 @@ ELF     .size   \name, . - \name
     .if \indir
         ldr             \rd, [pc, \rd]
     .else
-        add             \rd, pc,  \rd
+        add             \rd, \rd, pc
     .endif
         def_pic         \val - (.Lpic\@ + (8 >> CONFIG_THUMB)), .Lpicoff\@
 .endm
