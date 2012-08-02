@@ -47,7 +47,7 @@ static void mpegaudio_tableinit(void)
         double value = i / 4;
         double f, fm;
         int e, m;
-        f  = value * cbrtf(value) * pow(2, (i & 3) * 0.25);
+        f  = value / IMDCT_SCALAR * cbrtf(value) * pow(2, (i & 3) * 0.25);
         fm = frexp(f, &e);
         m  = (uint32_t)(fm * (1LL << 31) + 0.5);
         e += FRAC_BITS - 31 + 5 - 100;
@@ -58,7 +58,7 @@ static void mpegaudio_tableinit(void)
     }
     for (exponent = 0; exponent < 512; exponent++) {
         for (value = 0; value < 16; value++) {
-            double f = (double)value * cbrtf(value) * pow(2, (exponent - 400) * 0.25 + FRAC_BITS + 5);
+            double f = (double)value * cbrtf(value) * pow(2, (exponent - 400) * 0.25 + FRAC_BITS + 5) / IMDCT_SCALAR;
             expval_table_fixed[exponent][value] = llrint(f);
             expval_table_float[exponent][value] = f;
         }

@@ -243,7 +243,7 @@ void RENAME(ff_init_mpadsp_tabs)(void)
                 else if (i <  18) d = 1;
             }
             //merge last stage of imdct into the window coefficients
-            d *= 0.5 / cos(M_PI * (2 * i + 19) / 72);
+            d *= 0.5 * IMDCT_SCALAR / cos(M_PI * (2 * i + 19) / 72);
 
             if (j == 2)
                 RENAME(ff_mdct_win)[j][i/3] = FIXHR((d / (1<<5)));
