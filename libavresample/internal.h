@@ -45,6 +45,7 @@ struct AVAudioResampleContext {
     double center_mix_level;                    /**< center mix level       */
     double surround_mix_level;                  /**< surround mix level     */
     double lfe_mix_level;                       /**< lfe mix level          */
+    int normalize_mix_level;                    /**< enable mix level normalization */
     int force_resampling;                       /**< force resampling       */
     int filter_size;                            /**< length of each FIR filter in the resampling filterbank relative to the cutoff frequency */
     int phase_shift;                            /**< log2 of the number of entries in the resampling polyphase filterbank */
