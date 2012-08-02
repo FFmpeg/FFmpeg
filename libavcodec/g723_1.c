@@ -1012,6 +1012,7 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
     int16_t lpc[SUBFRAMES * LPC_ORDER];
     int16_t acb_vector[SUBFRAME_LEN];
     int16_t *vector_ptr;
+    int16_t *out;
     int bad_frame = 0, i, j, ret;
 
     if (buf_size < frame_size[dec_mode]) {
@@ -1036,6 +1037,8 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
          av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
          return ret;
     }
+
+    out = (int16_t *)p->frame.data[0];
 
     if (p->cur_frame_type == ACTIVE_FRAME) {
         if (!bad_frame)
@@ -1120,7 +1123,7 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
         memcpy(p->prev_excitation, p->excitation + FRAME_LEN,
                PITCH_MAX * sizeof(*p->excitation));
     } else {
-        memset(p->frame.data[0], 0, FRAME_LEN * 2);
+        memset(out, 0, FRAME_LEN * 2);
         av_log(avctx, AV_LOG_WARNING,
                "G.723.1: Comfort noise generation not supported yet\n");
 
@@ -1138,10 +1141,13 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
                                     0, 1, 1 << 12);
     memcpy(p->synth_mem, p->audio + FRAME_LEN, LPC_ORDER * sizeof(*p->audio));
 
-    if (p->postfilter)
+    if (p->postfilter) {
         formant_postfilter(p, lpc, p->audio);
-
-    memcpy(p->frame.data[0], p->audio + LPC_ORDER, FRAME_LEN * 2);
+        memcpy(p->frame.data[0], p->audio + LPC_ORDER, FRAME_LEN * 2);
+    } else { // if output is not postfiltered it should be scaled by 2
+        for (i = 0; i < FRAME_LEN; i++)
+            out[i] = av_clip_int16(p->audio[LPC_ORDER + i] << 1);
+    }
 
     *got_frame_ptr   = 1;
     *(AVFrame *)data = p->frame;
