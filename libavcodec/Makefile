@@ -829,7 +829,7 @@ HOSTPROGS = aac_tablegen                                                \
 
 CLEANFILES = *_tables.c *_tables.h *_tablegen$(HOSTEXESUF)
 
-$(SUBDIR)dct-test$(EXESUF): $(SUBDIR)dctref.o
+$(SUBDIR)dct-test$(EXESUF): $(SUBDIR)dctref.o $(SUBDIR)aandcttab.o
 
 TRIG_TABLES  = cos cos_fixed sin
 TRIG_TABLES := $(TRIG_TABLES:%=$(SUBDIR)%_tables.c)

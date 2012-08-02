@@ -261,6 +261,7 @@ enum CodecID {
     CODEC_ID_MSA1,
     CODEC_ID_TSCC2,
     CODEC_ID_MTS2,
+    CODEC_ID_CLLC,
     CODEC_ID_Y41P       = MKBETAG('Y','4','1','P'),
     CODEC_ID_ESCAPE130  = MKBETAG('E','1','3','0'),
     CODEC_ID_EXR        = MKBETAG('0','E','X','R'),
@@ -274,7 +275,6 @@ enum CodecID {
     CODEC_ID_YUV4       = MKBETAG('Y','U','V','4'),
     CODEC_ID_SANM       = MKBETAG('S','A','N','M'),
     CODEC_ID_PAF_VIDEO  = MKBETAG('P','A','F','V'),
-    CODEC_ID_CLLC       = MKBETAG('C','L','L','C'),
 
     /* various PCM "codecs" */
     CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs

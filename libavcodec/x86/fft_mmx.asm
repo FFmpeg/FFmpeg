@@ -1010,7 +1010,11 @@ cglobal imdct_half, 3,12,8; FFTContext *s, FFTSample *output, const FFTSample *i
     push  rrevtab
 %endif
 
-    sub   r3, mmsize/4
+%if mmsize == 8
+    sub   r3, 2
+%else
+    sub   r3, 4
+%endif
 %if ARCH_X86_64 || mmsize == 8
     xor   r4, r4
     sub   r4, r3
@@ -1037,7 +1041,9 @@ cglobal imdct_half, 3,12,8; FFTContext *s, FFTSample *output, const FFTSample *i
     mova [r1+r5*8], m0
     mova [r1+r6*8], m2
     add    r4, 2
-%elif ARCH_X86_64
+    sub    r4, 2
+%else
+%if ARCH_X86_64
     movzx  r5,  word [rrevtab+r4-4]
     movzx  r6,  word [rrevtab+r4-2]
     movzx  r10, word [rrevtab+r3]
@@ -1058,7 +1064,8 @@ cglobal imdct_half, 3,12,8; FFTContext *s, FFTSample *output, const FFTSample *i
     movlps [r1+r5*8], xmm1
     movhps [r1+r4*8], xmm1
 %endif
-    sub    r3, mmsize/4
+    sub    r3, 4
+%endif
     jns    .pre
 
     mov  r5, r0
