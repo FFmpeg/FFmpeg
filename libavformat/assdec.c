@@ -147,7 +147,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     uint8_t *p, *end;
 
     if(ass->event_index >= ass->event_count)
-        return AVERROR(EIO);
+        return AVERROR_EOF;
 
     p= ass->event[ ass->event_index ];
 
