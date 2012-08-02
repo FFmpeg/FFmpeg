@@ -132,6 +132,7 @@ Codecs:
   celp_filters.*                        Vitor Sessak
   cinepak.c                             Roberto Togni
   cljr                                  Alex Beregszaszi
+  cllc.c                                Derek Buitenhuis
   cook.c, cookdata.h                    Benjamin Larsson
   crystalhd.c                           Philip Langdale
   cscd.c                                Reimar Doeffinger

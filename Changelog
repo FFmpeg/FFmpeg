@@ -38,6 +38,7 @@ version next:
 - alphaextract and alphamerge filters
 - concat filter
 - flite filter
+- Canopus Lossless Codec decoder
 
 
 version 0.11:
