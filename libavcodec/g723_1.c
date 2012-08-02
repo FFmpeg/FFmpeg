@@ -1071,7 +1071,7 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
             vector_ptr = p->excitation + PITCH_MAX;
 
             /* Save the excitation */
-            memcpy(p->audio, vector_ptr, FRAME_LEN * sizeof(*p->audio));
+            memcpy(p->audio + LPC_ORDER, vector_ptr, FRAME_LEN * sizeof(*p->audio));
 
             p->interp_index = comp_interp_index(p, p->pitch_lag[1],
                                                 &p->sid_gain, &p->cur_gain);
@@ -1086,7 +1086,7 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
             /* Restore the original excitation */
             memcpy(p->excitation, p->prev_excitation,
                    PITCH_MAX * sizeof(*p->excitation));
-            memcpy(vector_ptr, p->audio, FRAME_LEN * sizeof(*vector_ptr));
+            memcpy(vector_ptr, p->audio + LPC_ORDER, FRAME_LEN * sizeof(*vector_ptr));
 
             /* Peform pitch postfiltering */
             if (p->postfilter)
