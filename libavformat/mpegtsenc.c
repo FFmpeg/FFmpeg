@@ -921,6 +921,10 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                         st->codec->codec_id == CODEC_ID_MP3 ||
                         st->codec->codec_id == CODEC_ID_AAC)) {
                 *q++ = 0xc0;
+            } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
+                        st->codec->codec_id == CODEC_ID_AC3 &&
+                        ts->m2ts_mode) {
+                *q++ = 0xfd;
             } else {
                 *q++ = 0xbd;
                 if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
@@ -949,6 +953,17 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                 * one byte for extension id
                 */
                 header_len += 3;
+            }
+            /* for Blu-ray AC3 Audio the PES Extension flag should be as follow
+             * otherwise it will not play sound on blu-ray
+             */
+            if (ts->m2ts_mode &&
+                st->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
+                st->codec->codec_id == CODEC_ID_AC3) {
+                        /* set PES_extension_flag */
+                        pes_extension = 1;
+                        flags |= 0x01;
+                        header_len += 3;
             }
             len = payload_size + header_len + 3;
             if (private_code != 0)
@@ -982,6 +997,17 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                 */
                 *q++ = 0x00 | 0x60;
             }
+            /* For Blu-ray AC3 Audio Setting extended flags */
+          if (ts->m2ts_mode &&
+              pes_extension &&
+              st->codec->codec_id == CODEC_ID_AC3) {
+                      flags = 0x01; /* set PES_extension_flag_2 */
+                      *q++ = flags;
+                      *q++ = 0x80 | 0x01; /* marker bit + extension length */
+                      *q++ = 0x00 | 0x71; /* for AC3 Audio (specifically on blue-rays) */
+              }
+
+
             if (private_code != 0)
                 *q++ = private_code;
             is_start = 0;
