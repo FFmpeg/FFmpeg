@@ -39,6 +39,7 @@ static float exp_table_float[512];
 static float expval_table_float[512][16];
 
 #define FRAC_BITS 23
+#define IMDCT_SCALAR 1.759
 
 static void mpegaudio_tableinit(void)
 {
