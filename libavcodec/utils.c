@@ -301,10 +301,21 @@ void ff_init_buffer_info(AVCodecContext *s, AVFrame *pic)
         pic->pkt_duration = 0;
     }
     pic->reordered_opaque= s->reordered_opaque;
-    pic->sample_aspect_ratio = s->sample_aspect_ratio;
-    pic->width               = s->width;
-    pic->height              = s->height;
-    pic->format              = s->pix_fmt;
+
+    switch (s->codec->type) {
+    case AVMEDIA_TYPE_VIDEO:
+        pic->width               = s->width;
+        pic->height              = s->height;
+        pic->format              = s->pix_fmt;
+        pic->sample_aspect_ratio = s->sample_aspect_ratio;
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        pic->sample_rate    = s->sample_rate;
+        pic->format         = s->sample_fmt;
+        pic->channel_layout = s->channel_layout;
+        pic->channels       = s->channels;
+        break;
+    }
 }
 
 int avcodec_fill_audio_frame(AVFrame *frame, int nb_channels,
@@ -411,23 +422,7 @@ static int audio_get_buffer(AVCodecContext *avctx, AVFrame *frame)
     }
 
     frame->type          = FF_BUFFER_TYPE_INTERNAL;
-
-    if (avctx->pkt) {
-        frame->pkt_pts = avctx->pkt->pts;
-        frame->pkt_pos = avctx->pkt->pos;
-        frame->pkt_duration = avctx->pkt->duration;
-    } else {
-        frame->pkt_pts = AV_NOPTS_VALUE;
-        frame->pkt_pos = -1;
-        frame->pkt_duration = 0;
-    }
-
-    frame->reordered_opaque = avctx->reordered_opaque;
-
-    frame->sample_rate    = avctx->sample_rate;
-    frame->format         = avctx->sample_fmt;
-    frame->channel_layout = avctx->channel_layout;
-    frame->channels       = avctx->channels;
+    ff_init_buffer_info(avctx, frame);
 
     if (avctx->debug & FF_DEBUG_BUFFERS)
         av_log(avctx, AV_LOG_DEBUG, "default_get_buffer called on frame %p, "
@@ -553,22 +548,8 @@ static int video_get_buffer(AVCodecContext *s, AVFrame *pic)
     pic->width  = buf->width;
     pic->height = buf->height;
     pic->format = buf->pix_fmt;
-    pic->sample_aspect_ratio = s->sample_aspect_ratio;
 
-    if (s->pkt) {
-        pic->pkt_pts = s->pkt->pts;
-        pic->pkt_pos = s->pkt->pos;
-        pic->pkt_duration = s->pkt->duration;
-    } else {
-        pic->pkt_pts = AV_NOPTS_VALUE;
-        pic->pkt_pos = -1;
-        pic->pkt_duration = 0;
-    }
-    pic->reordered_opaque= s->reordered_opaque;
-    pic->sample_aspect_ratio = s->sample_aspect_ratio;
-    pic->width               = s->width;
-    pic->height              = s->height;
-    pic->format              = s->pix_fmt;
+    ff_init_buffer_info(s, pic);
 
     if(s->debug&FF_DEBUG_BUFFERS)
         av_log(s, AV_LOG_DEBUG, "default_get_buffer called on pic %p, %d "
