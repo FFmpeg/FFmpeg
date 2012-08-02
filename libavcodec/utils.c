@@ -289,31 +289,31 @@ void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height){
     *width=FFALIGN(*width, align);
 }
 
-void ff_init_buffer_info(AVCodecContext *s, AVFrame *pic)
+void ff_init_buffer_info(AVCodecContext *s, AVFrame *frame)
 {
     if (s->pkt) {
-        pic->pkt_pts = s->pkt->pts;
-        pic->pkt_pos = s->pkt->pos;
-        pic->pkt_duration = s->pkt->duration;
+        frame->pkt_pts = s->pkt->pts;
+        frame->pkt_pos = s->pkt->pos;
+        frame->pkt_duration = s->pkt->duration;
     } else {
-        pic->pkt_pts = AV_NOPTS_VALUE;
-        pic->pkt_pos = -1;
-        pic->pkt_duration = 0;
+        frame->pkt_pts = AV_NOPTS_VALUE;
+        frame->pkt_pos = -1;
+        frame->pkt_duration = 0;
     }
-    pic->reordered_opaque= s->reordered_opaque;
+    frame->reordered_opaque = s->reordered_opaque;
 
     switch (s->codec->type) {
     case AVMEDIA_TYPE_VIDEO:
-        pic->width               = s->width;
-        pic->height              = s->height;
-        pic->format              = s->pix_fmt;
-        pic->sample_aspect_ratio = s->sample_aspect_ratio;
+        frame->width               = s->width;
+        frame->height              = s->height;
+        frame->format              = s->pix_fmt;
+        frame->sample_aspect_ratio = s->sample_aspect_ratio;
         break;
     case AVMEDIA_TYPE_AUDIO:
-        pic->sample_rate    = s->sample_rate;
-        pic->format         = s->sample_fmt;
-        pic->channel_layout = s->channel_layout;
-        pic->channels       = s->channels;
+        frame->sample_rate    = s->sample_rate;
+        frame->format         = s->sample_fmt;
+        frame->channel_layout = s->channel_layout;
+        frame->channels       = s->channels;
         break;
     }
 }
