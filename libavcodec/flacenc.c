@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/crc.h"
 #include "libavutil/md5.h"
 #include "libavutil/opt.h"
@@ -139,7 +140,7 @@ static int select_blocksize(int samplerate, int block_time_ms)
     int target;
     int blocksize;
 
-    assert(samplerate > 0);
+    av_assert0(samplerate > 0);
     blocksize = ff_flac_blocksize_table[1];
     target    = (samplerate * block_time_ms) / 1000;
     for (i = 0; i < 16; i++) {
@@ -594,9 +595,9 @@ static uint32_t calc_rice_params(RiceContext *rc, int pmin, int pmax,
     uint32_t *udata;
     uint32_t sums[MAX_PARTITION_ORDER+1][MAX_PARTITIONS];
 
-    assert(pmin >= 0 && pmin <= MAX_PARTITION_ORDER);
-    assert(pmax >= 0 && pmax <= MAX_PARTITION_ORDER);
-    assert(pmin <= pmax);
+    av_assert1(pmin >= 0 && pmin <= MAX_PARTITION_ORDER);
+    av_assert1(pmax >= 0 && pmax <= MAX_PARTITION_ORDER);
+    av_assert1(pmin <= pmax);
 
     udata = av_malloc(n * sizeof(uint32_t));
     for (i = 0; i < n; i++)
