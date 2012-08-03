@@ -1977,20 +1977,6 @@ static av_always_inline int scale_mv(int value, int bfrac, int inv, int qs)
 #endif
 }
 
-static av_always_inline int scale_mv_intfi(int value, int bfrac, int inv,
-                                           int qs, int qs_last)
-{
-    int n = bfrac;
-
-    if (inv)
-        n -= 256;
-    n <<= !qs_last;
-    if (!qs)
-        return (value * n + 255) >> 9;
-    else
-        return (value * n + 128) >> 8;
-}
-
 /** Reconstruct motion vector for B-frame and do motion compensation
  */
 static inline void vc1_b_mc(VC1Context *v, int dmv_x[2], int dmv_y[2],
@@ -2244,14 +2230,14 @@ static inline void vc1_pred_b_mv_intfi(VC1Context *v, int n, int *dmv_x, int *dm
     if (v->bmvtype == BMV_TYPE_DIRECT) {
         int total_opp, k, f;
         if (s->next_picture.f.mb_type[mb_pos + v->mb_off] != MB_TYPE_INTRA) {
-            s->mv[0][0][0] = scale_mv_intfi(s->next_picture.f.motion_val[1][s->block_index[0] + v->blocks_off][0],
-                                            v->bfraction, 0, s->quarter_sample, v->qs_last);
-            s->mv[0][0][1] = scale_mv_intfi(s->next_picture.f.motion_val[1][s->block_index[0] + v->blocks_off][1],
-                                            v->bfraction, 0, s->quarter_sample, v->qs_last);
-            s->mv[1][0][0] = scale_mv_intfi(s->next_picture.f.motion_val[1][s->block_index[0] + v->blocks_off][0],
-                                            v->bfraction, 1, s->quarter_sample, v->qs_last);
-            s->mv[1][0][1] = scale_mv_intfi(s->next_picture.f.motion_val[1][s->block_index[0] + v->blocks_off][1],
-                                            v->bfraction, 1, s->quarter_sample, v->qs_last);
+            s->mv[0][0][0] = scale_mv(s->next_picture.f.motion_val[1][s->block_index[0] + v->blocks_off][0],
+                                      v->bfraction, 0, s->quarter_sample);
+            s->mv[0][0][1] = scale_mv(s->next_picture.f.motion_val[1][s->block_index[0] + v->blocks_off][1],
+                                      v->bfraction, 0, s->quarter_sample);
+            s->mv[1][0][0] = scale_mv(s->next_picture.f.motion_val[1][s->block_index[0] + v->blocks_off][0],
+                                      v->bfraction, 1, s->quarter_sample);
+            s->mv[1][0][1] = scale_mv(s->next_picture.f.motion_val[1][s->block_index[0] + v->blocks_off][1],
+                                      v->bfraction, 1, s->quarter_sample);
 
             total_opp = v->mv_f_next[0][s->block_index[0] + v->blocks_off]
                       + v->mv_f_next[0][s->block_index[1] + v->blocks_off]
