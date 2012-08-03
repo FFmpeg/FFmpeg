@@ -1,3 +1,18 @@
+FATE_LAGARITH += fate-lagarith-rgb24
+fate-lagarith-rgb24: CMD = framecrc -i $(SAMPLES)/lagarith/lag-rgb24.avi
+
+FATE_LAGARITH += fate-lagarith-rgb32
+fate-lagarith-rgb32: CMD = framecrc -i $(SAMPLES)/lagarith/lag-rgb32.avi
+
+FATE_LAGARITH += fate-lagarith-yuy2
+fate-lagarith-yuy2: CMD = framecrc -i $(SAMPLES)/lagarith/lag-yuy2.avi
+
+FATE_LAGARITH += fate-lagarith-yv12
+fate-lagarith-yv12: CMD = framecrc -i $(SAMPLES)/lagarith/lag-yv12.avi
+
+FATE_SAMPLES_AVCONV += $(FATE_LAGARITH)
+fate-lagarith: $(FATE_LAGARITH)
+
 FATE_LOCO += fate-loco-rgb
 fate-loco-rgb: CMD = framecrc -i $(SAMPLES)/loco/pig-loco-rgb.avi
 
