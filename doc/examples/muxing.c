@@ -52,16 +52,14 @@ static float t, tincr, tincr2;
 static int16_t *samples;
 static int audio_input_frame_size;
 
-/*
- * add an audio output stream
- */
-static AVStream *add_audio_stream(AVFormatContext *oc, AVCodec **codec,
-                                  enum AVCodecID codec_id)
+/* Add an output stream. */
+static AVStream *add_stream(AVFormatContext *oc, AVCodec **codec,
+                            enum AVCodecID codec_id)
 {
     AVCodecContext *c;
     AVStream *st;
 
-    /* find the audio encoder */
+    /* find the encoder */
     *codec = avcodec_find_encoder(codec_id);
     if (!(*codec)) {
         fprintf(stderr, "Could not find codec\n");
@@ -76,18 +74,60 @@ static AVStream *add_audio_stream(AVFormatContext *oc, AVCodec **codec,
     st->id = oc->nb_streams-1;
     c = st->codec;
 
-    /* put sample parameters */
-    c->sample_fmt  = AV_SAMPLE_FMT_S16;
-    c->bit_rate    = 64000;
-    c->sample_rate = 44100;
-    c->channels    = 2;
+    switch ((*codec)->type) {
+    case AVMEDIA_TYPE_AUDIO:
+        st->id = 1;
+        c->sample_fmt  = AV_SAMPLE_FMT_S16;
+        c->bit_rate    = 64000;
+        c->sample_rate = 44100;
+        c->channels    = 2;
+        break;
 
-    // some formats want stream headers to be separate
+    case AVMEDIA_TYPE_VIDEO:
+        avcodec_get_context_defaults3(c, *codec);
+        c->codec_id = codec_id;
+
+        c->bit_rate = 400000;
+        /* Resolution must be a multiple of two. */
+        c->width    = 352;
+        c->height   = 288;
+        /* timebase: This is the fundamental unit of time (in seconds) in terms
+         * of which frame timestamps are represented. For fixed-fps content,
+         * timebase should be 1/framerate and timestamp increments should be
+         * identical to 1. */
+        c->time_base.den = STREAM_FRAME_RATE;
+        c->time_base.num = 1;
+        c->gop_size      = 12; /* emit one intra frame every twelve frames at most */
+        c->pix_fmt       = STREAM_PIX_FMT;
+        if (c->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
+            /* just for testing, we also add B frames */
+            c->max_b_frames = 2;
+        }
+        if (c->codec_id == AV_CODEC_ID_MPEG1VIDEO) {
+            /* Needed to avoid using macroblocks in which some coeffs overflow.
+             * This does not happen with normal video, it just happens here as
+             * the motion of the chroma plane does not match the luma plane. */
+            c->mb_decision = 2;
+        }
+    break;
+
+    default:
+        break;
+    }
+
+    /* Some formats want stream headers to be separate. */
     if (oc->oformat->flags & AVFMT_GLOBALHEADER)
         c->flags |= CODEC_FLAG_GLOBAL_HEADER;
 
     return st;
 }
+
+/**************************************************************/
+/* audio output */
+
+static float t, tincr, tincr2;
+static int16_t *samples;
+static int audio_input_frame_size;
 
 static void open_audio(AVFormatContext *oc, AVCodec *codec, AVStream *st)
 {
@@ -187,62 +227,6 @@ static void close_audio(AVFormatContext *oc, AVStream *st)
 static AVFrame *frame;
 static AVPicture src_picture, dst_picture;
 static int frame_count;
-
-/* Add a video output stream. */
-static AVStream *add_video_stream(AVFormatContext *oc, AVCodec **codec,
-                                  enum AVCodecID codec_id)
-{
-    AVCodecContext *c;
-    AVStream *st;
-
-    /* find the video encoder */
-    *codec = avcodec_find_encoder(codec_id);
-    if (!(*codec)) {
-        fprintf(stderr, "codec not found\n");
-        exit(1);
-    }
-
-    st = avformat_new_stream(oc, *codec);
-    if (!st) {
-        fprintf(stderr, "Could not alloc stream\n");
-        exit(1);
-    }
-    st->id = oc->nb_streams-1;
-    c = st->codec;
-
-    avcodec_get_context_defaults3(c, *codec);
-
-    c->codec_id = codec_id;
-
-    /* Put sample parameters. */
-    c->bit_rate = 400000;
-    /* Resolution must be a multiple of two. */
-    c->width    = 352;
-    c->height   = 288;
-    /* timebase: This is the fundamental unit of time (in seconds) in terms
-     * of which frame timestamps are represented. For fixed-fps content,
-     * timebase should be 1/framerate and timestamp increments should be
-     * identical to 1. */
-    c->time_base.den = STREAM_FRAME_RATE;
-    c->time_base.num = 1;
-    c->gop_size      = 12; /* emit one intra frame every twelve frames at most */
-    c->pix_fmt       = STREAM_PIX_FMT;
-    if (c->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
-        /* just for testing, we also add B frames */
-        c->max_b_frames = 2;
-    }
-    if (c->codec_id == AV_CODEC_ID_MPEG1VIDEO) {
-        /* Needed to avoid using macroblocks in which some coeffs overflow.
-         * This does not happen with normal video, it just happens here as
-         * the motion of the chroma plane does not match the luma plane. */
-        c->mb_decision = 2;
-    }
-    /* Some formats want stream headers to be separate. */
-    if (oc->oformat->flags & AVFMT_GLOBALHEADER)
-        c->flags |= CODEC_FLAG_GLOBAL_HEADER;
-
-    return st;
-}
 
 static void open_video(AVFormatContext *oc, AVCodec *codec, AVStream *st)
 {
@@ -437,11 +421,12 @@ int main(int argc, char **argv)
      * and initialize the codecs. */
     video_st = NULL;
     audio_st = NULL;
+
     if (fmt->video_codec != AV_CODEC_ID_NONE) {
-        video_st = add_video_stream(oc, &video_codec, fmt->video_codec);
+        video_st = add_stream(oc, &video_codec, fmt->video_codec);
     }
     if (fmt->audio_codec != AV_CODEC_ID_NONE) {
-        audio_st = add_audio_stream(oc, &audio_codec, fmt->audio_codec);
+        audio_st = add_stream(oc, &audio_codec, fmt->audio_codec);
     }
 
     /* Now that all the parameters are set, we can open the audio and
