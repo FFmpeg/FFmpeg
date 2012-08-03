@@ -57,6 +57,7 @@ typedef struct FLVContext {
     } validate_index[2];
     int validate_next;
     int validate_count;
+    int searched_for_end;
 } FLVContext;
 
 static int flv_probe(AVProbeData *p)
@@ -836,7 +837,8 @@ skip:
 
     // if not streamed and no duration from metadata then seek to end to find
     // the duration from the timestamps
-    if (s->pb->seekable && (!s->duration || s->duration == AV_NOPTS_VALUE)) {
+    if (s->pb->seekable && (!s->duration || s->duration == AV_NOPTS_VALUE) &&
+        !flv->searched_for_end) {
         int size;
         const int64_t pos   = avio_tell(s->pb);
         // Read the last 4 bytes of the file, this should be the size of the
@@ -853,6 +855,7 @@ skip:
             s->duration = ts * (int64_t)AV_TIME_BASE / 1000;
         }
         avio_seek(s->pb, pos, SEEK_SET);
+        flv->searched_for_end = 1;
     }
 
     if (is_audio) {
