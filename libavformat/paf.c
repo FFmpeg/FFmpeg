@@ -200,7 +200,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
             return AVERROR(ENOMEM);
 
         memcpy(pkt->data, p->temp_audio_frame, p->audio_size);
-        pkt->duration     = PAF_SOUND_SAMPLES * p->audio_size / PAF_SOUND_FRAME_SIZE;
+        pkt->duration     = PAF_SOUND_SAMPLES * (p->audio_size / PAF_SOUND_FRAME_SIZE);
         pkt->flags       |= AV_PKT_FLAG_KEY;
         pkt->stream_index = 1;
         p->got_audio      = 0;
