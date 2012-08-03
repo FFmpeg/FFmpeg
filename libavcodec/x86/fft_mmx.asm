@@ -1040,7 +1040,7 @@ cglobal imdct_half, 3,12,8; FFTContext *s, FFTSample *output, const FFTSample *i
     mova [r1+r5*8], m0
     mova [r1+r6*8], m2
     add    r4, 2
-    sub    r4, 2
+    sub    r3, 2
 %else
 %if ARCH_X86_64
     movzx  r5,  word [rrevtab+r4-4]
