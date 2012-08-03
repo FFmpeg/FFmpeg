@@ -106,7 +106,7 @@ static av_cold int smooth_init(AVFilterContext *ctx, const char *args)
     else if (!strcmp(type_str, "gaussian"     )) smooth->type = CV_GAUSSIAN;
     else if (!strcmp(type_str, "bilateral"    )) smooth->type = CV_BILATERAL;
     else {
-        av_log(ctx, AV_LOG_ERROR, "Smoothing type '%s' unknown\n.", type_str);
+        av_log(ctx, AV_LOG_ERROR, "Smoothing type '%s' unknown.\n", type_str);
         return AVERROR(EINVAL);
     }
 
@@ -220,7 +220,7 @@ static int parse_iplconvkernel(IplConvKernel **kernel, char *buf, void *log_ctx)
             return ret;
     } else {
         av_log(log_ctx, AV_LOG_ERROR,
-               "Shape unspecified or type '%s' unknown\n.", shape_str);
+               "Shape unspecified or type '%s' unknown.\n", shape_str);
         return AVERROR(EINVAL);
     }
 

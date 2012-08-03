@@ -927,7 +927,7 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size, AVPacket *a
                     av_log(avctx, AV_LOG_WARNING,
                            "CrystalHD: Failed to parse h.264 packet "
                            "completely. Interlaced frames may be "
-                           "incorrectly detected\n.");
+                           "incorrectly detected.\n");
                 } else {
                     av_log(avctx, AV_LOG_VERBOSE,
                            "CrystalHD: parser picture type %d\n",
