@@ -644,78 +644,120 @@ static void do_video_stats(AVFormatContext *os, OutputStream *ost,
     }
 }
 
-/* check for new output on any of the filtergraphs */
-static int poll_filters(void)
+/**
+ * Read one frame for lavfi output for ost and encode it.
+ */
+static int poll_filter(OutputStream *ost)
 {
+    OutputFile    *of = output_files[ost->file_index];
     AVFilterBufferRef *picref;
     AVFrame *filtered_frame = NULL;
-    int i, frame_size;
+    int frame_size, ret;
 
-    for (i = 0; i < nb_output_streams; i++) {
-        OutputStream *ost = output_streams[i];
-        OutputFile    *of = output_files[ost->file_index];
-        int ret = 0;
+    if (!ost->filtered_frame && !(ost->filtered_frame = avcodec_alloc_frame())) {
+        return AVERROR(ENOMEM);
+    } else
+        avcodec_get_frame_defaults(ost->filtered_frame);
+    filtered_frame = ost->filtered_frame;
 
-        if (!ost->filter)
-            continue;
+    if (ost->enc->type == AVMEDIA_TYPE_AUDIO &&
+        !(ost->enc->capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE))
+        ret = av_buffersink_read_samples(ost->filter->filter, &picref,
+                                         ost->st->codec->frame_size);
+    else
+        ret = av_buffersink_read(ost->filter->filter, &picref);
 
-        if (!ost->filtered_frame && !(ost->filtered_frame = avcodec_alloc_frame())) {
-            return AVERROR(ENOMEM);
-        } else
-            avcodec_get_frame_defaults(ost->filtered_frame);
-        filtered_frame = ost->filtered_frame;
+    if (ret < 0)
+        return ret;
 
-        while (ret >= 0 && !ost->is_past_recording_time) {
-            if (ost->enc->type == AVMEDIA_TYPE_AUDIO &&
-                !(ost->enc->capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE))
-                ret = av_buffersink_read_samples(ost->filter->filter, &picref,
-                                                 ost->st->codec->frame_size);
-            else
-                ret = av_buffersink_read(ost->filter->filter, &picref);
+    avfilter_copy_buf_props(filtered_frame, picref);
+    if (picref->pts != AV_NOPTS_VALUE) {
+        filtered_frame->pts = av_rescale_q(picref->pts,
+                                           ost->filter->filter->inputs[0]->time_base,
+                                           ost->st->codec->time_base) -
+                              av_rescale_q(of->start_time,
+                                           AV_TIME_BASE_Q,
+                                           ost->st->codec->time_base);
 
-            if (ret == AVERROR_EOF || ret == AVERROR(EAGAIN))
-                break;
-            else if (ret < 0)
-                return ret;
-
-            avfilter_copy_buf_props(filtered_frame, picref);
-            if (picref->pts != AV_NOPTS_VALUE) {
-                filtered_frame->pts = av_rescale_q(picref->pts,
-                                                   ost->filter->filter->inputs[0]->time_base,
-                                                   ost->st->codec->time_base) -
-                                      av_rescale_q(of->start_time,
-                                                   AV_TIME_BASE_Q,
-                                                   ost->st->codec->time_base);
-
-                if (of->start_time && filtered_frame->pts < 0) {
-                    avfilter_unref_buffer(picref);
-                    continue;
-                }
-            }
-
-            switch (ost->filter->filter->inputs[0]->type) {
-            case AVMEDIA_TYPE_VIDEO:
-                if (!ost->frame_aspect_ratio)
-                    ost->st->codec->sample_aspect_ratio = picref->video->pixel_aspect;
-
-                do_video_out(of->ctx, ost, filtered_frame, &frame_size,
-                             same_quant ? ost->last_quality :
-                                          ost->st->codec->global_quality);
-                if (vstats_filename && frame_size)
-                    do_video_stats(of->ctx, ost, frame_size);
-                break;
-            case AVMEDIA_TYPE_AUDIO:
-                do_audio_out(of->ctx, ost, filtered_frame);
-                break;
-            default:
-                // TODO support subtitle filters
-                av_assert0(0);
-            }
-
+        if (of->start_time && filtered_frame->pts < 0) {
             avfilter_unref_buffer(picref);
+            return 0;
         }
     }
+
+    switch (ost->filter->filter->inputs[0]->type) {
+    case AVMEDIA_TYPE_VIDEO:
+        if (!ost->frame_aspect_ratio)
+            ost->st->codec->sample_aspect_ratio = picref->video->pixel_aspect;
+
+        do_video_out(of->ctx, ost, filtered_frame, &frame_size,
+                     same_quant ? ost->last_quality :
+                                  ost->st->codec->global_quality);
+        if (vstats_filename && frame_size)
+            do_video_stats(of->ctx, ost, frame_size);
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        do_audio_out(of->ctx, ost, filtered_frame);
+        break;
+    default:
+        // TODO support subtitle filters
+        av_assert0(0);
+    }
+
+    avfilter_unref_buffer(picref);
+
     return 0;
+}
+
+/**
+ * Read as many frames from possible from lavfi and encode them.
+ *
+ * Always read from the active stream with the lowest timestamp. If no frames
+ * are available for it then return EAGAIN and wait for more input. This way we
+ * can use lavfi sources that generate unlimited amount of frames without memory
+ * usage exploding.
+ */
+static int poll_filters(void)
+{
+    int i, ret = 0;
+
+    while (ret >= 0 && !received_sigterm) {
+        OutputStream *ost = NULL;
+        int64_t min_pts = INT64_MAX;
+
+        /* choose output stream with the lowest timestamp */
+        for (i = 0; i < nb_output_streams; i++) {
+            int64_t pts = output_streams[i]->sync_opts;
+
+            if (!output_streams[i]->filter ||
+                output_streams[i]->is_past_recording_time)
+                continue;
+
+            pts = av_rescale_q(pts, output_streams[i]->st->codec->time_base,
+                               AV_TIME_BASE_Q);
+            if (pts < min_pts) {
+                min_pts = pts;
+                ost = output_streams[i];
+            }
+        }
+
+        if (!ost)
+            break;
+
+        ret = poll_filter(ost);
+
+        if (ret == AVERROR_EOF) {
+            ost->is_past_recording_time = 1;
+
+            if (opt_shortest)
+                return ret;
+
+            ret = 0;
+        } else if (ret == AVERROR(EAGAIN))
+            return 0;
+    }
+
+    return ret;
 }
 
 static void print_report(int is_last_report, int64_t timer_start)
