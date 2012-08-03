@@ -3334,14 +3334,29 @@ static int mov_write_header(AVFormatContext *s)
     }
 
     if (mov->mode == MODE_MOV) {
-        /* Add a tmcd track for each video stream with a timecode */
         tmcd_track = mov->nb_streams;
+
+        /* +1 tmcd track for each video stream with a timecode */
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st = s->streams[i];
             if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
                 (global_tcr || av_dict_get(st->metadata, "timecode", NULL, 0)))
-                mov->nb_streams++;
+                mov->nb_meta_tmcd++;
         }
+
+        /* check if there is already a tmcd track to remux */
+        if (mov->nb_meta_tmcd) {
+            for (i = 0; i < s->nb_streams; i++) {
+                AVStream *st = s->streams[i];
+                if (st->codec->codec_tag == MKTAG('t','m','c','d')) {
+                    av_log(s, AV_LOG_WARNING, "You requested a copy of the original timecode track "
+                           "so timecode metadata are now ignored\n");
+                    mov->nb_meta_tmcd = 0;
+                }
+            }
+        }
+
+        mov->nb_streams += mov->nb_meta_tmcd;
     }
 
     mov->tracks = av_mallocz(mov->nb_streams*sizeof(*mov->tracks));
@@ -3468,7 +3483,7 @@ static int mov_write_header(AVFormatContext *s)
         }
     }
 
-    if (mov->mode == MODE_MOV) {
+    if (mov->nb_meta_tmcd) {
         /* Initialize the tmcd tracks */
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st = s->streams[i];
@@ -3551,7 +3566,7 @@ static int mov_write_trailer(AVFormatContext *s)
     for (i=0; i<mov->nb_streams; i++) {
         if (mov->tracks[i].tag == MKTAG('r','t','p',' '))
             ff_mov_close_hinting(&mov->tracks[i]);
-        else if (mov->tracks[i].tag == MKTAG('t','m','c','d'))
+        else if (mov->tracks[i].tag == MKTAG('t','m','c','d') && mov->nb_meta_tmcd)
             av_freep(&mov->tracks[i].enc);
         if (mov->flags & FF_MOV_FLAG_FRAGMENT &&
             mov->tracks[i].vc1_info.struct_offset && s->pb->seekable) {
