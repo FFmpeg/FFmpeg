@@ -748,15 +748,22 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     if(s->pb->seekable && (!s->duration || s->duration==AV_NOPTS_VALUE) && !flv->searched_for_end){
         int size;
         const int64_t pos= avio_tell(s->pb);
-        const int64_t fsize= avio_size(s->pb);
+        int64_t fsize= avio_size(s->pb);
+retry_duration:
         avio_seek(s->pb, fsize-4, SEEK_SET);
         size= avio_rb32(s->pb);
         avio_seek(s->pb, fsize-3-size, SEEK_SET);
         if(size == avio_rb24(s->pb) + 11){
             uint32_t ts = avio_rb24(s->pb);
             ts |= avio_r8(s->pb) << 24;
-            s->duration = ts * (int64_t)AV_TIME_BASE / 1000;
+            if(ts)
+                s->duration = ts * (int64_t)AV_TIME_BASE / 1000;
+            else if (fsize >= 8 && fsize - 8 >= size){
+                fsize -= size+4;
+                goto retry_duration;
+            }
         }
+
         avio_seek(s->pb, pos, SEEK_SET);
         flv->searched_for_end = 1;
     }
