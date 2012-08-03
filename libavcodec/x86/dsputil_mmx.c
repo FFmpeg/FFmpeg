@@ -2485,9 +2485,9 @@ static void ac3_downmix_sse(float (*samples)[256], float (*matrix)[2],
 }
 
 #if HAVE_6REGS
-static void vector_fmul_window_3dnow2(float *dst, const float *src0,
-                                      const float *src1, const float *win,
-                                      int len)
+static void vector_fmul_window_3dnowext(float *dst, const float *src0,
+                                        const float *src1, const float *win,
+                                        int len)
 {
     x86_reg i = -len * 4;
     x86_reg j =  len * 4 - 8;
@@ -2939,11 +2939,11 @@ static void dsputil_init_3dnow(DSPContext *c, AVCodecContext *avctx,
 #endif
 }
 
-static void dsputil_init_3dnow2(DSPContext *c, AVCodecContext *avctx,
-                                int mm_flags)
+static void dsputil_init_3dnowext(DSPContext *c, AVCodecContext *avctx,
+                                  int mm_flags)
 {
 #if HAVE_6REGS && HAVE_INLINE_ASM
-    c->vector_fmul_window  = vector_fmul_window_3dnow2;
+    c->vector_fmul_window  = vector_fmul_window_3dnowext;
 #endif
 }
 
@@ -3194,7 +3194,7 @@ void ff_dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx)
         dsputil_init_3dnow(c, avctx, mm_flags);
 
     if (mm_flags & AV_CPU_FLAG_3DNOWEXT && HAVE_AMD3DNOWEXT)
-        dsputil_init_3dnow2(c, avctx, mm_flags);
+        dsputil_init_3dnowext(c, avctx, mm_flags);
 
     if (mm_flags & AV_CPU_FLAG_SSE && HAVE_SSE)
         dsputil_init_sse(c, avctx, mm_flags);

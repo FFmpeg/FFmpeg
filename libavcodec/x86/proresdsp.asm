@@ -301,12 +301,12 @@ cglobal prores_idct_put_10, 4, 4, %1
     RET
 %endmacro
 
-%macro SIGNEXTEND 2-3 ; dstlow, dsthigh, tmp
-%if cpuflag(sse4)
+%macro SIGNEXTEND 2-3
+%if cpuflag(sse4) ; dstlow, dsthigh
     movhlps     %2,  %1
     pmovsxwd    %1,  %1
     pmovsxwd    %2,  %2
-%else ; sse2
+%elif cpuflag(sse2) ; dstlow, dsthigh, tmp
     pxor        %3,  %3
     pcmpgtw     %3,  %1
     mova        %2,  %1

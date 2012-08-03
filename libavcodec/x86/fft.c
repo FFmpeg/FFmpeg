@@ -34,9 +34,9 @@ av_cold void ff_fft_init_mmx(FFTContext *s)
     }
     if (has_vectors & AV_CPU_FLAG_3DNOWEXT && HAVE_AMD3DNOWEXT) {
         /* 3DNowEx for K7 */
-        s->imdct_calc = ff_imdct_calc_3dnow2;
-        s->imdct_half = ff_imdct_half_3dnow2;
-        s->fft_calc   = ff_fft_calc_3dnow2;
+        s->imdct_calc = ff_imdct_calc_3dnowext;
+        s->imdct_half = ff_imdct_half_3dnowext;
+        s->fft_calc   = ff_fft_calc_3dnowext;
     }
 #endif
     if (has_vectors & AV_CPU_FLAG_SSE && HAVE_SSE) {

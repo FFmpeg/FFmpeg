@@ -1,4 +1,4 @@
 dec0deb2425e908d232d2471acff04a3 *tests/data/fate/acodec-g723_1.g723_1
 4800 tests/data/fate/acodec-g723_1.g723_1
-90b20555c962b638dad0e98ac2c05b25 *tests/data/fate/acodec-g723_1.out.wav
-stddev: 8418.34 PSNR: 17.82 MAXDIFF:52968 bytes:    95992/    96000
+87fd529c9e41914f73a865d147cc9516 *tests/data/fate/acodec-g723_1.out.wav
+stddev: 8425.98 PSNR: 17.82 MAXDIFF:53268 bytes:    95992/    96000
