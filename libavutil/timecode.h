@@ -140,4 +140,11 @@ int av_timecode_init(AVTimecode *tc, AVRational rate, int flags, int frame_start
  */
 int av_timecode_init_from_string(AVTimecode *tc, AVRational rate, const char *str, void *log_ctx);
 
+/**
+ * Check if the timecode feature is available for the given frame rate
+ *
+ * @return 0 if supported, <0 otherwise
+ */
+int av_timecode_check_frame_rate(AVRational rate);
+
 #endif /* AVUTIL_TIMECODE_H */

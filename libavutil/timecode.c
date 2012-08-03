@@ -146,6 +146,17 @@ char *av_timecode_make_mpeg_tc_string(char *buf, uint32_t tc25bit)
     return buf;
 }
 
+static int check_fps(int fps)
+{
+    int i;
+    static const int supported_fps[] = {24, 25, 30, 50, 60};
+
+    for (i = 0; i < FF_ARRAY_ELEMS(supported_fps); i++)
+        if (fps == supported_fps[i])
+            return 0;
+    return -1;
+}
+
 static int check_timecode(void *log_ctx, AVTimecode *tc)
 {
     if (tc->fps <= 0) {
@@ -156,18 +167,12 @@ static int check_timecode(void *log_ctx, AVTimecode *tc)
         av_log(log_ctx, AV_LOG_ERROR, "Drop frame is only allowed with 30000/1001 FPS\n");
         return AVERROR(EINVAL);
     }
-    switch (tc->fps) {
-    case 24:
-    case 25:
-    case 30:
-    case 50:
-    case 60: return  0;
-
-    default:
+    if (check_fps(tc->fps) < 0) {
         av_log(log_ctx, AV_LOG_ERROR, "Timecode frame rate %d/%d not supported\n",
                tc->rate.num, tc->rate.den);
         return AVERROR_PATCHWELCOME;
     }
+    return 0;
 }
 
 static int fps_from_frame_rate(AVRational rate)
@@ -175,6 +180,11 @@ static int fps_from_frame_rate(AVRational rate)
     if (!rate.den || !rate.num)
         return -1;
     return (rate.num + rate.den/2) / rate.den;
+}
+
+int av_timecode_check_frame_rate(AVRational rate)
+{
+    return check_fps(fps_from_frame_rate(rate));
 }
 
 int av_timecode_init(AVTimecode *tc, AVRational rate, int flags, int frame_start, void *log_ctx)
