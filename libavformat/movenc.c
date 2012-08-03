@@ -3292,6 +3292,7 @@ static void mov_create_chapter_track(AVFormatContext *s, int tracknum)
 
 static int mov_create_timecode_track(AVFormatContext *s, int index, int src_index, const char *tcstr)
 {
+    int ret;
     MOVMuxContext *mov  = s->priv_data;
     MOVTrack *track     = &mov->tracks[index];
     AVStream *src_st    = s->streams[src_index];
@@ -3299,8 +3300,15 @@ static int mov_create_timecode_track(AVFormatContext *s, int index, int src_inde
     AVPacket pkt    = {.stream_index = index, .flags = AV_PKT_FLAG_KEY, .size = 4};
     AVRational rate = {src_st->codec->time_base.den, src_st->codec->time_base.num};
 
+    /* if the codec time base makes no sense, try to fallback on stream frame rate */
+    if (av_timecode_check_frame_rate(rate) < 0) {
+        av_log(s, AV_LOG_DEBUG, "timecode: tbc=%d/%d invalid, fallback on %d/%d\n",
+               rate.num, rate.den, src_st->avg_frame_rate.num, src_st->avg_frame_rate.den);
+        rate = src_st->avg_frame_rate;
+    }
+
     /* compute the frame number */
-    int ret = av_timecode_init_from_string(&tc, rate, tcstr, s);
+    ret = av_timecode_init_from_string(&tc, rate, tcstr, s);
     if (ret < 0)
         return ret;
 
