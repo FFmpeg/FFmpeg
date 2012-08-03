@@ -1683,26 +1683,28 @@ static int mxf_write_header(AVFormatContext *s)
         }
 
         if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-            AVRational rate;
+            AVRational rate, tbc = st->codec->time_base;
             // Default component depth to 8
             sc->component_depth = 8;
-            if (fabs(av_q2d(st->codec->time_base) - 1/25.0) < 0.0001) {
+            mxf->timecode_base = (tbc.den + tbc.num/2) / tbc.num;
+            switch (mxf->timecode_base) {
+            case 25:
                 samples_per_frame = PAL_samples_per_frame;
                 mxf->time_base = (AVRational){ 1, 25 };
-                mxf->timecode_base = 25;
-            } else if (fabs(av_q2d(st->codec->time_base) - 1/50.0) < 0.0001) {
+                break;
+            case 50:
                 samples_per_frame = PAL_50_samples_per_frame;
                 mxf->time_base = (AVRational){ 1, 50 };
-                mxf->timecode_base = 50;
-            } else if (fabs(av_q2d(st->codec->time_base) - 1001/30000.0) < 0.0001) {
+                break;
+            case 30:
                 samples_per_frame = NTSC_samples_per_frame;
                 mxf->time_base = (AVRational){ 1001, 30000 };
-                mxf->timecode_base = 30;
-            } else if (fabs(av_q2d(st->codec->time_base) - 1001/60000.0) < 0.0001) {
+                break;
+            case 60:
                 samples_per_frame = NTSC_60_samples_per_frame;
                 mxf->time_base = (AVRational){ 1001, 60000 };
-                mxf->timecode_base = 60;
-            } else {
+                break;
+            default:
                 av_log(s, AV_LOG_ERROR, "unsupported video frame rate\n");
                 return -1;
             }
