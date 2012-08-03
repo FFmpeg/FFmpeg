@@ -65,8 +65,8 @@ typedef struct g723_1_context {
     int reflection_coef;
     int pf_gain;                 ///< formant postfilter
                                  ///< gain scaling unit memory
-
     int postfilter;
+    int16_t audio[FRAME_LEN + LPC_ORDER];
     int16_t prev_data[HALF_FRAME_LEN];
     int16_t prev_weight_sig[PITCH_MAX];
 
@@ -982,7 +982,11 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
     int16_t *out;
     int bad_frame = 0, i, j, ret;
 
-    if (!buf_size || buf_size < frame_size[dec_mode]) {
+    if (buf_size < frame_size[dec_mode]) {
+        if (buf_size)
+            av_log(avctx, AV_LOG_WARNING,
+                   "Expected %d bytes, got %d - skipping packet\n",
+                   frame_size[dec_mode], buf_size);
         *got_frame_ptr = 0;
         return buf_size;
     }
@@ -995,7 +999,7 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
             p->cur_frame_type = UNTRANSMITTED_FRAME;
     }
 
-    p->frame.nb_samples = FRAME_LEN + LPC_ORDER;
+    p->frame.nb_samples = FRAME_LEN;
     if ((ret = avctx->get_buffer(avctx, &p->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
@@ -1041,7 +1045,7 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
             vector_ptr = p->excitation + PITCH_MAX;
 
             /* Save the excitation */
-            memcpy(out, vector_ptr, FRAME_LEN * sizeof(int16_t));
+            memcpy(p->audio + LPC_ORDER, vector_ptr, FRAME_LEN * sizeof(*p->audio));
 
             p->interp_index = comp_interp_index(p, p->pitch_lag[1],
                                                 &p->sid_gain, &p->cur_gain);
@@ -1056,27 +1060,29 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
             /* Restore the original excitation */
             memcpy(p->excitation, p->prev_excitation,
                    PITCH_MAX * sizeof(*p->excitation));
-            memcpy(vector_ptr, out, FRAME_LEN * sizeof(*vector_ptr));
+            memcpy(vector_ptr, p->audio + LPC_ORDER, FRAME_LEN * sizeof(*vector_ptr));
 
             /* Peform pitch postfiltering */
             if (p->postfilter)
                 for (i = 0, j = 0; j < SUBFRAMES; i += SUBFRAME_LEN, j++)
-                    ff_acelp_weighted_vector_sum(out + LPC_ORDER + i,
+                    ff_acelp_weighted_vector_sum(p->audio + LPC_ORDER + i,
                                                  vector_ptr + i,
                                                  vector_ptr + i + ppf[j].index,
                                                  ppf[j].sc_gain,
                                                  ppf[j].opt_gain,
                                                  1 << 14, 15, SUBFRAME_LEN);
+
         } else {
             p->interp_gain = (p->interp_gain * 3 + 2) >> 2;
             if (p->erased_frames == 3) {
                 /* Mute output */
                 memset(p->excitation, 0,
                        (FRAME_LEN + PITCH_MAX) * sizeof(*p->excitation));
-                memset(out, 0, (FRAME_LEN + LPC_ORDER) * sizeof(int16_t));
+                memset(p->frame.data[0], 0,
+                       (FRAME_LEN + LPC_ORDER) * sizeof(int16_t));
             } else {
                 /* Regenerate frame */
-                residual_interp(p->excitation, out + LPC_ORDER, p->interp_index,
+                residual_interp(p->excitation, p->audio + LPC_ORDER, p->interp_index,
                                 p->interp_gain, &p->random_seed);
             }
         }
@@ -1087,27 +1093,28 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
         memset(out, 0, FRAME_LEN * 2);
         av_log(avctx, AV_LOG_WARNING,
                "G.723.1: Comfort noise generation not supported yet\n");
+
+        *got_frame_ptr   = 1;
+        *(AVFrame *)data = p->frame;
         return frame_size[dec_mode];
     }
 
     p->past_frame_type = p->cur_frame_type;
 
-    memcpy(out, p->synth_mem, LPC_ORDER * sizeof(int16_t));
+    memcpy(p->audio, p->synth_mem, LPC_ORDER * sizeof(*p->audio));
     for (i = LPC_ORDER, j = 0; j < SUBFRAMES; i += SUBFRAME_LEN, j++)
-        ff_celp_lp_synthesis_filter(out + i, &lpc[j * LPC_ORDER],
-                                    out + i, SUBFRAME_LEN, LPC_ORDER,
+        ff_celp_lp_synthesis_filter(p->audio + i, &lpc[j * LPC_ORDER],
+                                    p->audio + i, SUBFRAME_LEN, LPC_ORDER,
                                     0, 1, 1 << 12);
-    memcpy(p->synth_mem, out + FRAME_LEN, LPC_ORDER * sizeof(int16_t));
+    memcpy(p->synth_mem, p->audio + FRAME_LEN, LPC_ORDER * sizeof(*p->audio));
 
     if (p->postfilter) {
-        formant_postfilter(p, lpc, out);
+        formant_postfilter(p, lpc, p->audio);
+        memcpy(p->frame.data[0], p->audio + LPC_ORDER, FRAME_LEN * 2);
     } else { // if output is not postfiltered it should be scaled by 2
         for (i = 0; i < FRAME_LEN; i++)
-            out[LPC_ORDER + i] = av_clip_int16(out[LPC_ORDER + i] << 1);
+            out[i] = av_clip_int16(p->audio[LPC_ORDER + i] << 1);
     }
-
-    memmove(out, out + LPC_ORDER, sizeof(int16_t)*FRAME_LEN);
-    p->frame.nb_samples = FRAME_LEN;
 
     *got_frame_ptr   = 1;
     *(AVFrame *)data = p->frame;
@@ -1123,6 +1130,7 @@ static const AVOption options[] = {
       { 1 }, 0, 1, AD },
     { NULL }
 };
+
 
 static const AVClass g723_1dec_class = {
     .class_name = "G.723.1 decoder",
