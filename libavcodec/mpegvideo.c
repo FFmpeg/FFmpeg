@@ -33,7 +33,6 @@
 #include "dsputil.h"
 #include "internal.h"
 #include "mpegvideo.h"
-#include "mpegvideo_common.h"
 #include "mjpegenc.h"
 #include "msmpeg4.h"
 #include "xvmc_internal.h"
@@ -2035,12 +2034,12 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
                     op_pix = s->dsp.put_no_rnd_pixels_tab;
                 }
                 if (s->mv_dir & MV_DIR_FORWARD) {
-                    MPV_motion(s, dest_y, dest_cb, dest_cr, 0, s->last_picture.f.data, op_pix, op_qpix);
+                    ff_MPV_motion(s, dest_y, dest_cb, dest_cr, 0, s->last_picture.f.data, op_pix, op_qpix);
                     op_pix = s->dsp.avg_pixels_tab;
                     op_qpix= s->me.qpel_avg;
                 }
                 if (s->mv_dir & MV_DIR_BACKWARD) {
-                    MPV_motion(s, dest_y, dest_cb, dest_cr, 1, s->next_picture.f.data, op_pix, op_qpix);
+                    ff_MPV_motion(s, dest_y, dest_cb, dest_cr, 1, s->next_picture.f.data, op_pix, op_qpix);
                 }
             }
 

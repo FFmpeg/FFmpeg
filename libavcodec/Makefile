@@ -50,7 +50,7 @@ OBJS-$(CONFIG_MDCT)                    += mdct_fixed.o mdct_float.o
 OBJS-$(CONFIG_MPEGAUDIODSP)            += mpegaudiodsp.o                \
                                           mpegaudiodsp_fixed.o          \
                                           mpegaudiodsp_float.o
-OBJS-$(CONFIG_MPEGVIDEO)               += mpegvideo.o
+OBJS-$(CONFIG_MPEGVIDEO)               += mpegvideo.o mpegvideo_motion.o
 RDFT-OBJS-$(CONFIG_HARDCODED_TABLES)   += sin_tables.o
 OBJS-$(CONFIG_RDFT)                    += rdft.o $(RDFT-OBJS-yes)
 OBJS-$(CONFIG_SINEWIN)                 += sinewin.o

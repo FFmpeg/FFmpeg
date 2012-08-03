@@ -31,7 +31,6 @@
 #include "dsputil.h"
 #include "internal.h"
 #include "mpegvideo.h"
-#include "mpegvideo_common.h"
 #include "dnxhdenc.h"
 
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
