@@ -57,20 +57,20 @@ static int audio_input_frame_size;
 /*
  * add an audio output stream
  */
-static AVStream *add_audio_stream(AVFormatContext *oc, enum CodecID codec_id)
+static AVStream *add_audio_stream(AVFormatContext *oc, AVCodec **codec,
+                                  enum CodecID codec_id)
 {
     AVCodecContext *c;
     AVStream *st;
-    AVCodec *codec;
 
     /* find the audio encoder */
-    codec = avcodec_find_encoder(codec_id);
-    if (!codec) {
+    *codec = avcodec_find_encoder(codec_id);
+    if (!(*codec)) {
         fprintf(stderr, "codec not found\n");
         exit(1);
     }
 
-    st = avformat_new_stream(oc, codec);
+    st = avformat_new_stream(oc, *codec);
     if (!st) {
         fprintf(stderr, "Could not alloc stream\n");
         exit(1);
@@ -92,14 +92,14 @@ static AVStream *add_audio_stream(AVFormatContext *oc, enum CodecID codec_id)
     return st;
 }
 
-static void open_audio(AVFormatContext *oc, AVStream *st)
+static void open_audio(AVFormatContext *oc, AVCodec *codec, AVStream *st)
 {
     AVCodecContext *c;
 
     c = st->codec;
 
     /* open it */
-    if (avcodec_open2(c, NULL, NULL) < 0) {
+    if (avcodec_open2(c, codec, NULL) < 0) {
         fprintf(stderr, "could not open codec\n");
         exit(1);
     }
@@ -182,20 +182,20 @@ static uint8_t *video_outbuf;
 static int frame_count, video_outbuf_size;
 
 /* Add a video output stream. */
-static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id)
+static AVStream *add_video_stream(AVFormatContext *oc, AVCodec **codec,
+                                  enum CodecID codec_id)
 {
     AVCodecContext *c;
     AVStream *st;
-    AVCodec *codec;
 
     /* find the video encoder */
-    codec = avcodec_find_encoder(codec_id);
-    if (!codec) {
+    *codec = avcodec_find_encoder(codec_id);
+    if (!(*codec)) {
         fprintf(stderr, "codec not found\n");
         exit(1);
     }
 
-    st = avformat_new_stream(oc, codec);
+    st = avformat_new_stream(oc, *codec);
     if (!st) {
         fprintf(stderr, "Could not alloc stream\n");
         exit(1);
@@ -203,7 +203,7 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id)
 
     c = st->codec;
 
-    avcodec_get_context_defaults3(c, codec);
+    avcodec_get_context_defaults3(c, *codec);
 
     c->codec_id = codec_id;
 
@@ -245,14 +245,14 @@ static AVFrame *alloc_picture(enum PixelFormat pix_fmt, int width, int height)
     return picture;
 }
 
-static void open_video(AVFormatContext *oc, AVStream *st)
+static void open_video(AVFormatContext *oc, AVCodec *codec, AVStream *st)
 {
     AVCodecContext *c;
 
     c = st->codec;
 
     /* open the codec */
-    if (avcodec_open2(c, NULL, NULL) < 0) {
+    if (avcodec_open2(c, codec, NULL) < 0) {
         fprintf(stderr, "could not open codec\n");
         exit(1);
     }
@@ -412,6 +412,7 @@ int main(int argc, char **argv)
     AVOutputFormat *fmt;
     AVFormatContext *oc;
     AVStream *audio_st, *video_st;
+    AVCodec *audio_codec, *video_codec;
     double audio_pts, video_pts;
     int i;
 
@@ -445,18 +446,18 @@ int main(int argc, char **argv)
     video_st = NULL;
     audio_st = NULL;
     if (fmt->video_codec != CODEC_ID_NONE) {
-        video_st = add_video_stream(oc, fmt->video_codec);
+        video_st = add_video_stream(oc, &video_codec, fmt->video_codec);
     }
     if (fmt->audio_codec != CODEC_ID_NONE) {
-        audio_st = add_audio_stream(oc, fmt->audio_codec);
+        audio_st = add_audio_stream(oc, &audio_codec, fmt->audio_codec);
     }
 
     /* Now that all the parameters are set, we can open the audio and
      * video codecs and allocate the necessary encode buffers. */
     if (video_st)
-        open_video(oc, video_st);
+        open_video(oc, video_codec, video_st);
     if (audio_st)
-        open_audio(oc, audio_st);
+        open_audio(oc, audio_codec, audio_st);
 
     av_dump_format(oc, 0, filename, 1);
 
