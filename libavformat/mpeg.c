@@ -91,10 +91,11 @@ static int mpegps_probe(AVProbeData *p)
     if(pspack > invalid && (priv1+vid+audio)*10 >= pspack*9)
         return pspack > 2 ? AVPROBE_SCORE_MAX/2+2 : AVPROBE_SCORE_MAX/4; // +1 for .mpg
     if((!!vid ^ !!audio) && (audio > 4 || vid > 1) && !sys && !pspack && p->buf_size>2048 && vid + audio > invalid) /* PES stream */
-        return (audio > 12 || vid > 3) ? AVPROBE_SCORE_MAX/2+2 : AVPROBE_SCORE_MAX/4;
+        return (audio > 12 || vid > 3 + 2*invalid) ? AVPROBE_SCORE_MAX/2+2 : AVPROBE_SCORE_MAX/4;
 
     //02-Penguin.flac has sys:0 priv1:0 pspack:0 vid:0 audio:1
     //mp3_misidentified_2.mp3 has sys:0 priv1:0 pspack:0 vid:0 audio:6
+    //Have\ Yourself\ a\ Merry\ Little\ Christmas.mp3 0 0 0 5 0 1 len:21618
     return score;
 }
 
