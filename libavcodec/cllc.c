@@ -225,7 +225,7 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
 
         break;
     default:
-        av_log(avctx, AV_LOG_ERROR, "Unknown coding type: %d\n.", coding_type);
+        av_log(avctx, AV_LOG_ERROR, "Unknown coding type: %d.\n", coding_type);
         return AVERROR_INVALIDDATA;
     }
 
