@@ -2,7 +2,7 @@ FATE_LAGARITH += fate-lagarith-rgb24
 fate-lagarith-rgb24: CMD = framecrc -i $(SAMPLES)/lagarith/lag-rgb24.avi
 
 FATE_LAGARITH += fate-lagarith-rgb32
-fate-lagarith-rgb32: CMD = framecrc -i $(SAMPLES)/lagarith/lag-rgb32.avi
+fate-lagarith-rgb32: CMD = framecrc -i $(SAMPLES)/lagarith/lag-rgb32.avi -pix_fmt bgra
 
 FATE_LAGARITH += fate-lagarith-yuy2
 fate-lagarith-yuy2: CMD = framecrc -i $(SAMPLES)/lagarith/lag-yuy2.avi
