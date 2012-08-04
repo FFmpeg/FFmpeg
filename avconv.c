@@ -2203,10 +2203,6 @@ static int transcode(void)
         if (pkt.dts != AV_NOPTS_VALUE)
             pkt.dts *= ist->ts_scale;
 
-        //fprintf(stderr, "next:%"PRId64" dts:%"PRId64" off:%"PRId64" %d\n",
-        //        ist->next_dts,
-        //        pkt.dts, input_files[ist->file_index].ts_offset,
-        //        ist->st->codec->codec_type);
         if (pkt.dts != AV_NOPTS_VALUE && ist->next_dts != AV_NOPTS_VALUE
             && (is->iformat->flags & AVFMT_TS_DISCONT)) {
             int64_t pkt_dts = av_rescale_q(pkt.dts, ist->st->time_base, AV_TIME_BASE_Q);
@@ -2222,7 +2218,6 @@ static int transcode(void)
             }
         }
 
-        // fprintf(stderr,"read #%d.%d size=%d\n", ist->file_index, ist->st->index, pkt.size);
         if (output_packet(ist, &pkt) < 0 || poll_filters() < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error while decoding stream #%d:%d\n",
                    ist->file_index, ist->st->index);
