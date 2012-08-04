@@ -901,6 +901,22 @@ static int is_intra_only(AVCodecContext *enc){
     return 0;
 }
 
+static int has_decode_delay_been_guessed(AVStream *st)
+{
+    if(st->codec->codec_id != CODEC_ID_H264) return 1;
+#if CONFIG_H264_DECODER
+    if(st->codec->has_b_frames &&
+       avpriv_h264_has_num_reorder_frames(st->codec) == st->codec->has_b_frames)
+        return 1;
+#endif
+    if(st->codec->has_b_frames<3)
+        return st->info->nb_decoded_frames >= 6;
+    else if(st->codec->has_b_frames<4)
+        return st->info->nb_decoded_frames >= 18;
+    else
+        return st->info->nb_decoded_frames >= 20;
+}
+
 static AVPacketList *get_next_pkt(AVFormatContext *s, AVStream *st, AVPacketList *pktl)
 {
     if (pktl->next)
@@ -2311,22 +2327,6 @@ static int has_codec_parameters(AVStream *st, const char **errmsg_ptr)
     if (avctx->codec_id == CODEC_ID_NONE)
         FAIL("unknown codec");
     return 1;
-}
-
-static int has_decode_delay_been_guessed(AVStream *st)
-{
-    if(st->codec->codec_id != CODEC_ID_H264) return 1;
-#if CONFIG_H264_DECODER
-    if(st->codec->has_b_frames &&
-       avpriv_h264_has_num_reorder_frames(st->codec) == st->codec->has_b_frames)
-        return 1;
-#endif
-    if(st->codec->has_b_frames<3)
-        return st->info->nb_decoded_frames >= 6;
-    else if(st->codec->has_b_frames<4)
-        return st->info->nb_decoded_frames >= 18;
-    else
-        return st->info->nb_decoded_frames >= 20;
 }
 
 /* returns 1 or 0 if or if not decoded data was returned, or a negative error */
