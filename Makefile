@@ -59,7 +59,7 @@ PROGS-$(CONFIG_AVPROBE)  += avprobe
 PROGS-$(CONFIG_AVSERVER) += avserver
 
 PROGS      := $(PROGS-yes:%=%$(EXESUF))
-OBJS        = $(PROGS-yes:%=%.o) cmdutils.o
+OBJS        = cmdutils.o
 TESTTOOLS   = audiogen videogen rotozoom tiny_psnr base64
 HOSTPROGS  := $(TESTTOOLS:%=tests/%) doc/print_options
 TOOLS       = qt-faststart trasher
@@ -121,12 +121,19 @@ endef
 
 $(foreach D,$(FFLIBS),$(eval $(call DOSUBDIR,lib$(D))))
 
-avplay.o: CFLAGS += $(SDL_CFLAGS)
-avplay$(EXESUF): FF_EXTRALIBS += $(SDL_LIBS)
-avserver$(EXESUF): LDFLAGS += $(AVSERVERLDFLAGS)
+define DOPROG
+OBJS-$(1) += $(1).o
+$(1)$(EXESUF): $(OBJS-$(1))
+$$(OBJS-$(1)): CFLAGS  += $(CFLAGS-$(1))
+$(1)$(EXESUF): LDFLAGS += $(LDFLAGS-$(1))
+$(1)$(EXESUF): FF_EXTRALIBS += $(LIBS-$(1))
+-include $$(OBJS-$(1):.o=.d)
+endef
+
+$(foreach P,$(PROGS-yes),$(eval $(call DOPROG,$(P))))
 
 $(PROGS): %$(EXESUF): %.o cmdutils.o $(FF_DEP_LIBS)
-	$(LD) $(LDFLAGS) -o $@ $< cmdutils.o $(FF_EXTRALIBS)
+	$(LD) $(LDFLAGS) -o $@ $(OBJS-$*) cmdutils.o $(FF_EXTRALIBS)
 
 OBJDIRS += tools
 
