@@ -29,9 +29,9 @@
 #include "msmpeg4.h"
 #include <limits.h>
 
-static inline void gmc1_motion(MpegEncContext *s,
-                               uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
-                               uint8_t **ref_picture)
+static void gmc1_motion(MpegEncContext *s,
+                        uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
+                        uint8_t **ref_picture)
 {
     uint8_t *ptr;
     int offset, src_x, src_y, linesize, uvlinesize;
@@ -115,9 +115,9 @@ static inline void gmc1_motion(MpegEncContext *s,
     return;
 }
 
-static inline void gmc_motion(MpegEncContext *s,
-                               uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
-                               uint8_t **ref_picture)
+static void gmc_motion(MpegEncContext *s,
+                       uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
+                       uint8_t **ref_picture)
 {
     uint8_t *ptr;
     int linesize, uvlinesize;
@@ -553,11 +553,12 @@ static inline void qpel_motion(MpegEncContext *s,
 /**
  * h263 chroma 4mv motion compensation.
  */
-static inline void chroma_4mv_motion(MpegEncContext *s,
-                                     uint8_t *dest_cb, uint8_t *dest_cr,
-                                     uint8_t **ref_picture,
-                                     op_pixels_func *pix_op,
-                                     int mx, int my){
+static void chroma_4mv_motion(MpegEncContext *s,
+                              uint8_t *dest_cb, uint8_t *dest_cr,
+                              uint8_t **ref_picture,
+                              op_pixels_func *pix_op,
+                              int mx, int my)
+{
     int dxy, emu=0, src_x, src_y, offset;
     uint8_t *ptr;
 
