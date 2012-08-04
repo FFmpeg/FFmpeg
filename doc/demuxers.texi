@@ -35,7 +35,7 @@ specified in the pattern with the string "%%".
 If the pattern contains "%d" or "%0@var{N}d", the first filename of
 the file list specified by the pattern must contain a number
 inclusively contained between @var{start_number} and
-@var{start_number}+4, all the following numbers must be
+@var{start_number}+4, and all the following numbers must be
 sequential.
 
 The pattern may contain a suffix which is used to automatically
