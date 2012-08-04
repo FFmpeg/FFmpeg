@@ -492,7 +492,7 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
 
     if(s->avctx->debug&FF_DEBUG_PICT_INFO){
         static const char csp[4][5] = { "Gray", "420", "422", "444" };
-        av_log(h->s.avctx, AV_LOG_DEBUG, "sps:%u profile:%d/%d poc:%d ref:%d %dx%d %s %s crop:%d/%d/%d/%d %s %s %d/%d b%d\n",
+        av_log(h->s.avctx, AV_LOG_DEBUG, "sps:%u profile:%d/%d poc:%d ref:%d %dx%d %s %s crop:%d/%d/%d/%d %s %s %d/%d b%d reo:%d\n",
                sps_id, sps->profile_idc, sps->level_idc,
                sps->poc_type,
                sps->ref_frame_count,
@@ -505,7 +505,8 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
                csp[sps->chroma_format_idc],
                sps->timing_info_present_flag ? sps->num_units_in_tick : 0,
                sps->timing_info_present_flag ? sps->time_scale : 0,
-               sps->bit_depth_luma
+               sps->bit_depth_luma,
+               h->sps.bitstream_restriction_flag ? sps->num_reorder_frames : -1
                );
     }
 
