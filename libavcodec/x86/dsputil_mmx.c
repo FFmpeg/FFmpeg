@@ -3171,7 +3171,7 @@ void ff_dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx)
                     c->idct_add              = ff_idct_xvid_sse2_add;
                     c->idct                  = ff_idct_xvid_sse2;
                     c->idct_permutation_type = FF_SSE2_IDCT_PERM;
-                } else if (mm_flags & AV_CPU_FLAG_MMX2) {
+                } else if (mm_flags & AV_CPU_FLAG_MMXEXT) {
                     c->idct_put              = ff_idct_xvid_mmx2_put;
                     c->idct_add              = ff_idct_xvid_mmx2_add;
                     c->idct                  = ff_idct_xvid_mmx2;
@@ -3187,7 +3187,7 @@ void ff_dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx)
         dsputil_init_mmx(c, avctx, mm_flags);
     }
 
-    if (mm_flags & AV_CPU_FLAG_MMX2)
+    if (mm_flags & AV_CPU_FLAG_MMXEXT)
         dsputil_init_mmx2(c, avctx, mm_flags);
 
     if (mm_flags & AV_CPU_FLAG_3DNOW && HAVE_AMD3DNOW)

@@ -88,7 +88,7 @@ DECLARE_ASM_CONST(8, uint64_t, mul16_mid)    = 0x2080208020802080ULL;
 
 //Note: We have C, MMX, MMX2, 3DNOW versions, there is no 3DNOW + MMX2 one.
 
-#define COMPILE_TEMPLATE_MMX2 0
+#define COMPILE_TEMPLATE_MMXEXT 0
 #define COMPILE_TEMPLATE_AMD3DNOW 0
 #define COMPILE_TEMPLATE_SSE2 0
 
@@ -99,8 +99,8 @@ DECLARE_ASM_CONST(8, uint64_t, mul16_mid)    = 0x2080208020802080ULL;
 
 //MMX2 versions
 #undef RENAME
-#undef COMPILE_TEMPLATE_MMX2
-#define COMPILE_TEMPLATE_MMX2 1
+#undef COMPILE_TEMPLATE_MMXEXT
+#define COMPILE_TEMPLATE_MMXEXT 1
 #define RENAME(a) a ## _MMX2
 #include "rgb2rgb_template.c"
 
@@ -113,10 +113,10 @@ DECLARE_ASM_CONST(8, uint64_t, mul16_mid)    = 0x2080208020802080ULL;
 
 //3DNOW versions
 #undef RENAME
-#undef COMPILE_TEMPLATE_MMX2
+#undef COMPILE_TEMPLATE_MMXEXT
 #undef COMPILE_TEMPLATE_SSE2
 #undef COMPILE_TEMPLATE_AMD3DNOW
-#define COMPILE_TEMPLATE_MMX2 0
+#define COMPILE_TEMPLATE_MMXEXT 0
 #define COMPILE_TEMPLATE_SSE2 0
 #define COMPILE_TEMPLATE_AMD3DNOW 1
 #define RENAME(a) a ## _3DNOW
@@ -140,7 +140,7 @@ av_cold void rgb2rgb_init_x86(void)
         rgb2rgb_init_MMX();
     if (HAVE_AMD3DNOW && cpu_flags & AV_CPU_FLAG_3DNOW)
         rgb2rgb_init_3DNOW();
-    if (HAVE_MMX2     && cpu_flags & AV_CPU_FLAG_MMX2)
+    if (HAVE_MMXEXT   && cpu_flags & AV_CPU_FLAG_MMXEXT)
         rgb2rgb_init_MMX2();
     if (HAVE_SSE      && cpu_flags & AV_CPU_FLAG_SSE2)
         rgb2rgb_init_SSE2();

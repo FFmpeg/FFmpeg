@@ -29,6 +29,14 @@
 #   define T(x)
 #endif
 
+#if CONFIG_THUMB || defined __clang__
+#   define L(x)
+#   define U(x) x
+#else
+#   define L(x) x
+#   define U(x)
+#endif
+
 #if HAVE_ARMV6 && HAVE_INLINE_ASM
 
 #define vp56_rac_get_prob vp56_rac_get_prob_armv6
@@ -42,8 +50,8 @@ static inline int vp56_rac_get_prob_armv6(VP56RangeCoder *c, int pr)
     __asm__ ("adds    %3,  %3,  %0           \n"
              "itt     cs                     \n"
              "cmpcs   %7,  %4                \n"
-           A("ldrcsh  %2,  [%4], #2          \n")
-           T("ldrhcs  %2,  [%4], #2          \n")
+           L("ldrcsh  %2,  [%4], #2          \n")
+           U("ldrhcs  %2,  [%4], #2          \n")
              "rsb     %0,  %6,  #256         \n"
              "smlabb  %0,  %5,  %6,  %0      \n"
            T("itttt   cs                     \n")
@@ -80,8 +88,8 @@ static inline int vp56_rac_get_prob_branchy_armv6(VP56RangeCoder *c, int pr)
     __asm__ ("adds    %3,  %3,  %0           \n"
              "itt     cs                     \n"
              "cmpcs   %7,  %4                \n"
-           A("ldrcsh  %2,  [%4], #2          \n")
-           T("ldrhcs  %2,  [%4], #2          \n")
+           L("ldrcsh  %2,  [%4], #2          \n")
+           U("ldrhcs  %2,  [%4], #2          \n")
              "rsb     %0,  %6,  #256         \n"
              "smlabb  %0,  %5,  %6,  %0      \n"
            T("itttt   cs                     \n")

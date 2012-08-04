@@ -49,7 +49,7 @@ av_cold void ff_vp3dsp_init_x86(VP3DSPContext *c, int flags)
     }
 #endif
 
-    if (HAVE_MMX2 && cpuflags & AV_CPU_FLAG_MMX2) {
+    if (HAVE_MMXEXT && cpuflags & AV_CPU_FLAG_MMXEXT) {
         c->idct_dc_add = ff_vp3_idct_dc_add_mmx2;
 
         if (!(flags & CODEC_FLAG_BITEXACT)) {

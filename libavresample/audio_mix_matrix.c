@@ -294,8 +294,8 @@ int avresample_get_matrix(AVAudioResampleContext *avr, double *matrix,
     in_channels  = av_get_channel_layout_nb_channels(avr->in_channel_layout);
     out_channels = av_get_channel_layout_nb_channels(avr->out_channel_layout);
 
-    if ( in_channels < 0 ||  in_channels > AVRESAMPLE_MAX_CHANNELS ||
-        out_channels < 0 || out_channels > AVRESAMPLE_MAX_CHANNELS) {
+    if ( in_channels <= 0 ||  in_channels > AVRESAMPLE_MAX_CHANNELS ||
+        out_channels <= 0 || out_channels > AVRESAMPLE_MAX_CHANNELS) {
         av_log(avr, AV_LOG_ERROR, "Invalid channel layouts\n");
         return AVERROR(EINVAL);
     }
@@ -332,6 +332,7 @@ int avresample_get_matrix(AVAudioResampleContext *avr, double *matrix,
         av_log(avr, AV_LOG_ERROR, "Invalid mix coeff type\n");
         return AVERROR(EINVAL);
     }
+
     return 0;
 }
 
@@ -343,14 +344,16 @@ int avresample_set_matrix(AVAudioResampleContext *avr, const double *matrix,
     in_channels  = av_get_channel_layout_nb_channels(avr->in_channel_layout);
     out_channels = av_get_channel_layout_nb_channels(avr->out_channel_layout);
 
-    if ( in_channels < 0 ||  in_channels > AVRESAMPLE_MAX_CHANNELS ||
-        out_channels < 0 || out_channels > AVRESAMPLE_MAX_CHANNELS) {
+    if ( in_channels <= 0 ||  in_channels > AVRESAMPLE_MAX_CHANNELS ||
+        out_channels <= 0 || out_channels > AVRESAMPLE_MAX_CHANNELS) {
         av_log(avr, AV_LOG_ERROR, "Invalid channel layouts\n");
         return AVERROR(EINVAL);
     }
 
-    if (avr->am->matrix)
-        av_freep(avr->am->matrix);
+    if (avr->am->matrix) {
+        av_free(avr->am->matrix[0]);
+        avr->am->matrix = NULL;
+    }
 
 #define CONVERT_MATRIX(type, expr)                                          \
     avr->am->matrix_## type[0] = av_mallocz(out_channels * in_channels *    \
@@ -385,6 +388,12 @@ int avresample_set_matrix(AVAudioResampleContext *avr, const double *matrix,
 
     /* TODO: detect situations where we can just swap around pointers
              instead of doing matrix multiplications with 0.0 and 1.0 */
+
+    /* set AudioMix params */
+    avr->am->in_layout    = avr->in_channel_layout;
+    avr->am->out_layout   = avr->out_channel_layout;
+    avr->am->in_channels  = in_channels;
+    avr->am->out_channels = out_channels;
 
     return 0;
 }

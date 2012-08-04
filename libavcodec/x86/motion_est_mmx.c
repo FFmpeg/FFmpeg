@@ -444,7 +444,7 @@ void ff_dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx)
         c->sad[0]= sad16_mmx;
         c->sad[1]= sad8_mmx;
     }
-    if (mm_flags & AV_CPU_FLAG_MMX2) {
+    if (mm_flags & AV_CPU_FLAG_MMXEXT) {
         c->pix_abs[0][0] = sad16_mmx2;
         c->pix_abs[1][0] = sad8_mmx2;
 

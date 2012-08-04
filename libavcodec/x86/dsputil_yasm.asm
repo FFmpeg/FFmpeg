@@ -388,12 +388,16 @@ cglobal add_hfyu_median_prediction_mmx2, 6,6,0, dst, top, diff, w, left, left_to
     RET
 
 
-%macro ADD_HFYU_LEFT_LOOP 1 ; %1 = is_aligned
+%macro ADD_HFYU_LEFT_LOOP 2 ; %1 = dst_is_aligned, %2 = src_is_aligned
     add     srcq, wq
     add     dstq, wq
     neg     wq
 %%.loop:
+%if %2
     mova    m1, [srcq+wq]
+%else
+    movu    m1, [srcq+wq]
+%endif
     mova    m2, m1
     psllw   m1, 8
     paddb   m1, m2
@@ -435,7 +439,7 @@ cglobal add_hfyu_left_prediction_ssse3, 3,3,7, dst, src, w, left
     mova    m3, [pb_zz11zz55zz99zzdd]
     movd    m0, leftm
     psllq   m0, 56
-    ADD_HFYU_LEFT_LOOP 1
+    ADD_HFYU_LEFT_LOOP 1, 1
 
 INIT_XMM
 cglobal add_hfyu_left_prediction_sse4, 3,3,7, dst, src, w, left
@@ -446,12 +450,14 @@ cglobal add_hfyu_left_prediction_sse4, 3,3,7, dst, src, w, left
     movd    m0, leftm
     pslldq  m0, 15
     test    srcq, 15
-    jnz add_hfyu_left_prediction_ssse3.skip_prologue
+    jnz .src_unaligned
     test    dstq, 15
-    jnz .unaligned
-    ADD_HFYU_LEFT_LOOP 1
-.unaligned:
-    ADD_HFYU_LEFT_LOOP 0
+    jnz .dst_unaligned
+    ADD_HFYU_LEFT_LOOP 1, 1
+.dst_unaligned:
+    ADD_HFYU_LEFT_LOOP 0, 1
+.src_unaligned:
+    ADD_HFYU_LEFT_LOOP 0, 0
 
 
 ; float scalarproduct_float_sse(const float *v1, const float *v2, int len)

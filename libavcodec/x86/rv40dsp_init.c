@@ -204,7 +204,7 @@ void ff_rv40dsp_init_x86(RV34DSPContext *c, DSPContext *dsp)
         QPEL_MC_SET(put_, _mmx)
 #endif
     }
-    if (mm_flags & AV_CPU_FLAG_MMX2) {
+    if (mm_flags & AV_CPU_FLAG_MMXEXT) {
         c->avg_chroma_pixels_tab[0] = ff_avg_rv40_chroma_mc8_mmx2;
         c->avg_chroma_pixels_tab[1] = ff_avg_rv40_chroma_mc4_mmx2;
         c->rv40_weight_pixels_tab[0][0] = ff_rv40_weight_func_rnd_16_mmx2;

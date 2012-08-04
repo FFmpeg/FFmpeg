@@ -314,7 +314,15 @@ int ff_audio_mix_init(AVAudioResampleContext *avr)
     }
 
     /* build matrix if the user did not already set one */
-    if (!avr->am->matrix) {
+    if (avr->am->matrix) {
+        if (avr->am->coeff_type != avr->mix_coeff_type      ||
+            avr->am->in_layout  != avr->in_channel_layout   ||
+            avr->am->out_layout != avr->out_channel_layout) {
+            av_log(avr, AV_LOG_ERROR,
+                   "Custom matrix does not match current parameters\n");
+            return AVERROR(EINVAL);
+        }
+    } else {
         int i, j;
         char in_layout_name[128];
         char out_layout_name[128];

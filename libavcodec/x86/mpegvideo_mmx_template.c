@@ -48,7 +48,7 @@
 #define MMREG_WIDTH "8"
 #define MM "%%mm"
 #define MOVQ "movq"
-#if HAVE_MMX2
+#if HAVE_MMXEXT
 #define SPREADW(a) "pshufw $0, "a", "a" \n\t"
 #define PMAXW(a,b) "pmaxsw "a", "b"     \n\t"
 #define PMAX(a,b) \
