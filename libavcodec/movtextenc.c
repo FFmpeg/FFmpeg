@@ -21,8 +21,8 @@
 
 #include <stdarg.h>
 #include "avcodec.h"
-#include "movtext.h"
 #include "libavutil/avstring.h"
+#include "libavutil/intreadwrite.h"
 #include "ass_split.h"
 #include "ass.h"
 
