@@ -1954,10 +1954,11 @@ static int need_output(void)
     return 0;
 }
 
-static int select_input_file(void)
+static InputFile *select_input_file(void)
 {
+    InputFile *ifile = NULL;
     int64_t ipts_min = INT64_MAX;
-    int i, file_index = -1;
+    int i;
 
     for (i = 0; i < nb_input_streams; i++) {
         InputStream *ist = input_streams[i];
@@ -1968,12 +1969,12 @@ static int select_input_file(void)
         if (!input_files[ist->file_index]->eof_reached) {
             if (ipts < ipts_min) {
                 ipts_min = ipts;
-                file_index = ist->file_index;
+                ifile    = input_files[ist->file_index];
             }
         }
     }
 
-    return file_index;
+    return ifile;
 }
 
 #if HAVE_PTHREADS
@@ -2137,7 +2138,8 @@ static int transcode(void)
 #endif
 
     while (!received_sigterm) {
-        int file_index, ist_index;
+        InputFile *ifile;
+        int ist_index;
         AVPacket pkt;
 
         /* check if there's any stream where output is still needed */
@@ -2147,9 +2149,9 @@ static int transcode(void)
         }
 
         /* select the stream that we must read now */
-        file_index = select_input_file();
+        ifile = select_input_file();
         /* if none, if is finished */
-        if (file_index < 0) {
+        if (!ifile) {
             if (got_eagain()) {
                 reset_eagain();
                 av_usleep(10000);
@@ -2159,11 +2161,11 @@ static int transcode(void)
             break;
         }
 
-        is  = input_files[file_index]->ctx;
-        ret = get_input_packet(input_files[file_index], &pkt);
+        is  = ifile->ctx;
+        ret = get_input_packet(ifile, &pkt);
 
         if (ret == AVERROR(EAGAIN)) {
-            input_files[file_index]->eagain = 1;
+            ifile->eagain = 1;
             continue;
         }
         if (ret < 0) {
@@ -2172,10 +2174,10 @@ static int transcode(void)
                 if (exit_on_error)
                     exit_program(1);
             }
-            input_files[file_index]->eof_reached = 1;
+            ifile->eof_reached = 1;
 
-            for (i = 0; i < input_files[file_index]->nb_streams; i++) {
-                ist = input_streams[input_files[file_index]->ist_index + i];
+            for (i = 0; i < ifile->nb_streams; i++) {
+                ist = input_streams[ifile->ist_index + i];
                 if (ist->decoding_needed)
                     output_packet(ist, NULL);
             }
@@ -2194,17 +2196,17 @@ static int transcode(void)
         }
         /* the following test is needed in case new streams appear
            dynamically in stream : we ignore them */
-        if (pkt.stream_index >= input_files[file_index]->nb_streams)
+        if (pkt.stream_index >= ifile->nb_streams)
             goto discard_packet;
-        ist_index = input_files[file_index]->ist_index + pkt.stream_index;
+        ist_index = ifile->ist_index + pkt.stream_index;
         ist = input_streams[ist_index];
         if (ist->discard)
             goto discard_packet;
 
         if (pkt.dts != AV_NOPTS_VALUE)
-            pkt.dts += av_rescale_q(input_files[ist->file_index]->ts_offset, AV_TIME_BASE_Q, ist->st->time_base);
+            pkt.dts += av_rescale_q(ifile->ts_offset, AV_TIME_BASE_Q, ist->st->time_base);
         if (pkt.pts != AV_NOPTS_VALUE)
-            pkt.pts += av_rescale_q(input_files[ist->file_index]->ts_offset, AV_TIME_BASE_Q, ist->st->time_base);
+            pkt.pts += av_rescale_q(ifile->ts_offset, AV_TIME_BASE_Q, ist->st->time_base);
 
         if (pkt.pts != AV_NOPTS_VALUE)
             pkt.pts *= ist->ts_scale;
@@ -2216,10 +2218,10 @@ static int transcode(void)
             int64_t pkt_dts = av_rescale_q(pkt.dts, ist->st->time_base, AV_TIME_BASE_Q);
             int64_t delta   = pkt_dts - ist->next_dts;
             if ((FFABS(delta) > 1LL * dts_delta_threshold * AV_TIME_BASE || pkt_dts + 1 < ist->last_dts) && !copy_ts) {
-                input_files[ist->file_index]->ts_offset -= delta;
+                ifile->ts_offset -= delta;
                 av_log(NULL, AV_LOG_DEBUG,
                        "timestamp discontinuity %"PRId64", new offset= %"PRId64"\n",
-                       delta, input_files[ist->file_index]->ts_offset);
+                       delta, ifile->ts_offset);
                 pkt.dts-= av_rescale_q(delta, AV_TIME_BASE_Q, ist->st->time_base);
                 if (pkt.pts != AV_NOPTS_VALUE)
                     pkt.pts-= av_rescale_q(delta, AV_TIME_BASE_Q, ist->st->time_base);
