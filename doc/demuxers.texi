@@ -71,18 +71,23 @@ Set the video size of the images to read. If not specified the video
 size is guessed from the first image file in the sequence.
 @end table
 
-The following example shows how to use @command{ffmpeg} for creating a
-video from the images in the file sequence @file{img-001.jpeg},
-@file{img-002.jpeg}, ..., assuming an input frame rate of 10 frames per
-second:
+@subsection Examples
+
+@itemize
+@item
+Use @command{ffmpeg} for creating a video from the images in the file
+sequence @file{img-001.jpeg}, @file{img-002.jpeg}, ..., assuming an
+input frame rate of 10 frames per second:
 @example
 ffmpeg -i 'img-%03d.jpeg' -r 10 out.mkv
 @end example
 
+@item
 As above, but start by reading from a file with index 100 in the sequence:
 @example
 ffmpeg -start_number 100 -i 'img-%03d.jpeg' -r 10 out.mkv
 @end example
+@end itemize
 
 Note that the pattern must not necessarily contain "%d" or
 "%0@var{N}d", for example to convert a single image file
