@@ -910,11 +910,11 @@ static int has_decode_delay_been_guessed(AVStream *st)
         return 1;
 #endif
     if(st->codec->has_b_frames<3)
-        return st->info->nb_decoded_frames >= 7;
+        return st->nb_decoded_frames >= 7;
     else if(st->codec->has_b_frames<4)
-        return st->info->nb_decoded_frames >= 18;
+        return st->nb_decoded_frames >= 18;
     else
-        return st->info->nb_decoded_frames >= 20;
+        return st->nb_decoded_frames >= 20;
 }
 
 static AVPacketList *get_next_pkt(AVFormatContext *s, AVStream *st, AVPacketList *pktl)
@@ -2385,7 +2385,7 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **option
         }
         if (ret >= 0) {
             if (got_picture)
-                st->info->nb_decoded_frames++;
+                st->nb_decoded_frames++;
             pkt.data += ret;
             pkt.size -= ret;
             ret       = got_picture;

@@ -741,7 +741,6 @@ typedef struct AVStream {
         int duration_count;
         double duration_error[2][2][MAX_STD_TIMEBASES];
         int64_t codec_info_duration;
-        int nb_decoded_frames;
         int found_decoder;
 
         /**
@@ -823,6 +822,12 @@ typedef struct AVStream {
      * Number of samples to skip at the start of the frame decoded from the next packet.
      */
     int skip_samples;
+
+    /**
+     * Number of internally decoded frames, used internally in libavformat, do not access
+     * its lifetime differs from info which is why its not in that structure.
+     */
+    int nb_decoded_frames;
 } AVStream;
 
 #define AV_PROGRAM_RUNNING 1
