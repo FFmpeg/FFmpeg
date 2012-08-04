@@ -370,6 +370,17 @@ static int mp2_write_trailer(struct AVFormatContext *s)
     return 0;
 }
 
+static int query_codec(enum CodecID id, int std_compliance)
+{
+    CodecMime *cm= ff_id3v2_mime_tags;
+    while(cm->id != CODEC_ID_NONE) {
+        if(id == cm->id)
+            return MKTAG('A', 'P', 'I', 'C');
+        cm++;
+    }
+    return -1;
+}
+
 #if CONFIG_MP2_MUXER
 AVOutputFormat ff_mp2_muxer = {
     .name              = "mp2",
@@ -516,6 +527,7 @@ AVOutputFormat ff_mp3_muxer = {
     .write_header      = mp3_write_header,
     .write_packet      = mp3_write_packet,
     .write_trailer     = mp3_write_trailer,
+    .query_codec       = query_codec,
     .flags             = AVFMT_NOTIMESTAMPS,
     .priv_class        = &mp3_muxer_class,
 };
