@@ -231,7 +231,6 @@ typedef struct InputFile {
     AVFormatContext *ctx;
     int eof_reached;      /* true if eof reached */
     int ist_index;        /* index of first stream in ist_table */
-    int buffer_size;      /* current total buffer size */
     int64_t ts_offset;
     int nb_streams;       /* number of stream that avconv is aware of; may be different
                              from ctx.nb_streams if new streams appear during av_read_frame() */
