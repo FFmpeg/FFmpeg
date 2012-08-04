@@ -263,8 +263,12 @@ static int read_header(AVFormatContext *s1)
 #endif
         } else {
             if (find_image_range(&first_index, &last_index, s->path,
-                                 s->start_number) < 0)
+                                 s->start_number) < 0) {
+                av_log(s1, AV_LOG_ERROR,
+                       "Could find no file with with path '%s' and index in the range %d-%d\n",
+                       s->path, s->start_number, s->start_number+FIRST_INDEX_SEARCH_RANGE-1);
                 return AVERROR(ENOENT);
+            }
         }
         s->img_first = first_index;
         s->img_last = last_index;
