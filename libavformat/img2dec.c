@@ -108,7 +108,15 @@ static int is_glob(const char *path)
 #endif
 }
 
-/* return -1 if no image found */
+/**
+ * Get index range of image files matched by path.
+ *
+ * @param pfirst_index pointer to index updated with the first number in the range
+ * @param plast_index  pointer to index updated with the last number in the range
+ * @param path         path which has to be matched by the image files in the range
+ * @param start_index  minimum accepted value for the first index in the range
+ * @return -1 if no image file could be found
+ */
 static int find_image_range(int *pfirst_index, int *plast_index,
                             const char *path, int start_index)
 {
