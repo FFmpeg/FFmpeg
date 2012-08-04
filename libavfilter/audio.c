@@ -172,6 +172,10 @@ int ff_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
 
         buf_out = ff_default_get_audio_buffer(link, dst->min_perms,
                                               samplesref->audio->nb_samples);
+        if (!buf_out) {
+            avfilter_unref_buffer(samplesref);
+            return AVERROR(ENOMEM);
+        }
         buf_out->pts                = samplesref->pts;
         buf_out->audio->sample_rate = samplesref->audio->sample_rate;
 
