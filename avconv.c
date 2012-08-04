@@ -2139,7 +2139,6 @@ static int transcode(void)
 
     while (!received_sigterm) {
         InputFile *ifile;
-        int ist_index;
         AVPacket pkt;
 
         /* check if there's any stream where output is still needed */
@@ -2198,8 +2197,8 @@ static int transcode(void)
            dynamically in stream : we ignore them */
         if (pkt.stream_index >= ifile->nb_streams)
             goto discard_packet;
-        ist_index = ifile->ist_index + pkt.stream_index;
-        ist = input_streams[ist_index];
+
+        ist = input_streams[ifile->ist_index + pkt.stream_index];
         if (ist->discard)
             goto discard_packet;
 
