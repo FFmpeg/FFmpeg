@@ -910,7 +910,7 @@ static int has_decode_delay_been_guessed(AVStream *st)
         return 1;
 #endif
     if(st->codec->has_b_frames<3)
-        return st->info->nb_decoded_frames >= 6;
+        return st->info->nb_decoded_frames >= 7;
     else if(st->codec->has_b_frames<4)
         return st->info->nb_decoded_frames >= 18;
     else
