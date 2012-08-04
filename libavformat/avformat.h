@@ -434,6 +434,7 @@ typedef struct AVOutputFormat {
      *
      * @return 1 if the codec is supported, 0 if it is not.
      *         A negative number if unknown.
+     *         MKTAG('A', 'P', 'I', 'C') if the codec is only supported as AV_DISPOSITION_ATTACHED_PIC
      */
     int (*query_codec)(enum AVCodecID id, int std_compliance);
 
