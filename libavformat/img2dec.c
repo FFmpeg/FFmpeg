@@ -108,6 +108,8 @@ static int is_glob(const char *path)
 #endif
 }
 
+#define FIRST_INDEX_SEARCH_RANGE 5
+
 /**
  * Get index range of image files matched by path.
  *
@@ -124,7 +126,7 @@ static int find_image_range(int *pfirst_index, int *plast_index,
     int range, last_index, range1, first_index;
 
     /* find the first image */
-    for (first_index = start_index; first_index < start_index + 5; first_index++) {
+    for (first_index = start_index; first_index < start_index + FIRST_INDEX_SEARCH_RANGE; first_index++) {
         if (av_get_frame_filename(buf, sizeof(buf), path, first_index) < 0){
             *pfirst_index =
             *plast_index = 1;
@@ -135,7 +137,7 @@ static int find_image_range(int *pfirst_index, int *plast_index,
         if (avio_check(buf, AVIO_FLAG_READ) > 0)
             break;
     }
-    if (first_index == start_index + 5)
+    if (first_index == start_index + FIRST_INDEX_SEARCH_RANGE)
         goto fail;
 
     /* find the last image */
