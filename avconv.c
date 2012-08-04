@@ -2136,7 +2136,7 @@ static int transcode(void)
         goto fail;
 #endif
 
-    for (; received_sigterm == 0;) {
+    while (!received_sigterm) {
         int file_index, ist_index;
         AVPacket pkt;
 
