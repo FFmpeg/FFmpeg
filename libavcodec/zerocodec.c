@@ -51,15 +51,15 @@ static int zerocodec_decode_frame(AVCodecContext *avctx, void *data,
         pic->pict_type = AV_PICTURE_TYPE_P;
     }
 
-    if (avctx->get_buffer(avctx, pic) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Could not allocate buffer.\n");
-        return AVERROR(ENOMEM);
-    }
-
     zret = inflateReset(zstream);
     if (zret != Z_OK) {
         av_log(avctx, AV_LOG_ERROR, "Could not reset inflate: %d.\n", zret);
         return AVERROR_INVALIDDATA;
+    }
+
+    if (avctx->get_buffer(avctx, pic) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Could not allocate buffer.\n");
+        return AVERROR(ENOMEM);
     }
 
     zstream->next_in  = avpkt->data;
@@ -78,6 +78,7 @@ static int zerocodec_decode_frame(AVCodecContext *avctx, void *data,
 
         zret = inflate(zstream, Z_SYNC_FLUSH);
         if (zret != Z_OK && zret != Z_STREAM_END) {
+            avctx->release_buffer(avctx, pic);
             av_log(avctx, AV_LOG_ERROR,
                    "Inflate failed with return code: %d.\n", zret);
             return AVERROR_INVALIDDATA;
