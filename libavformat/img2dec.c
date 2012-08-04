@@ -110,13 +110,13 @@ static int is_glob(const char *path)
 
 /* return -1 if no image found */
 static int find_image_range(int *pfirst_index, int *plast_index,
-                            const char *path, int max_start)
+                            const char *path, int start_index)
 {
     char buf[1024];
     int range, last_index, range1, first_index;
 
     /* find the first image */
-    for (first_index = max_start; first_index < max_start + 5; first_index++) {
+    for (first_index = start_index; first_index < start_index + 5; first_index++) {
         if (av_get_frame_filename(buf, sizeof(buf), path, first_index) < 0){
             *pfirst_index =
             *plast_index = 1;
