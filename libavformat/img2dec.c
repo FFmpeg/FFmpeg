@@ -135,7 +135,7 @@ static int find_image_range(int *pfirst_index, int *plast_index,
         if (avio_check(buf, AVIO_FLAG_READ) > 0)
             break;
     }
-    if (first_index == 5)
+    if (first_index == start_index + 5)
         goto fail;
 
     /* find the last image */
