@@ -23,7 +23,7 @@
 typedef struct {
     AVFrame  previous_frame;
     z_stream zstream;
-    int size;
+    int      size;
 } ZeroCodecContext;
 
 static int zerocodec_decode_frame(AVCodecContext *avctx, void *data,
@@ -33,7 +33,8 @@ static int zerocodec_decode_frame(AVCodecContext *avctx, void *data,
     AVFrame *pic         = avctx->coded_frame;
     AVFrame *prev_pic    = &zc->previous_frame;
     z_stream *zstream    = &zc->zstream;
-    uint8_t *prev = prev_pic->data[0], *dst;
+    uint8_t *prev        = prev_pic->data[0];
+    uint8_t *dst;
     int i, j, zret;
 
     pic->reference = 3;
@@ -43,7 +44,7 @@ static int zerocodec_decode_frame(AVCodecContext *avctx, void *data,
         pic->pict_type = AV_PICTURE_TYPE_I;
     } else {
         if (!prev) {
-            av_log(avctx, AV_LOG_ERROR, "Missing reference frame!\n");
+            av_log(avctx, AV_LOG_ERROR, "Missing reference frame.\n");
             return AVERROR_INVALIDDATA;
         }
         pic->key_frame = 0;
@@ -56,16 +57,15 @@ static int zerocodec_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     zret = inflateReset(zstream);
-
     if (zret != Z_OK) {
-        av_log(avctx, AV_LOG_ERROR, "Could not reset inflate: %d\n", zret);
-        return AVERROR(EINVAL);
+        av_log(avctx, AV_LOG_ERROR, "Could not reset inflate: %d.\n", zret);
+        return AVERROR_INVALIDDATA;
     }
 
-    zstream->next_in   = avpkt->data;
-    zstream->avail_in  = avpkt->size;
+    zstream->next_in  = avpkt->data;
+    zstream->avail_in = avpkt->size;
 
-    dst  = pic->data[0];
+    dst = pic->data[0];
 
     /**
      * ZeroCodec has very simple interframe compression. If a value
@@ -75,11 +75,12 @@ static int zerocodec_decode_frame(AVCodecContext *avctx, void *data,
     for (i = 0; i < avctx->height; i++) {
         zstream->next_out  = dst;
         zstream->avail_out = avctx->width << 1;
+
         zret = inflate(zstream, Z_SYNC_FLUSH);
         if (zret != Z_OK && zret != Z_STREAM_END) {
             av_log(avctx, AV_LOG_ERROR,
-                   "Inflate failed with return code: %d\n", zret);
-            return AVERROR(EINVAL);
+                   "Inflate failed with return code: %d.\n", zret);
+            return AVERROR_INVALIDDATA;
         }
 
         if (!(avpkt->flags & AV_PKT_FLAG_KEY))
@@ -137,14 +138,12 @@ static av_cold int zerocodec_decode_init(AVCodecContext *avctx)
     zstream->opaque = Z_NULL;
 
     zret = inflateInit(zstream);
-
     if (zret != Z_OK) {
-        av_log(avctx, AV_LOG_ERROR, "Could not initialize inflate: %d\n", zret);
+        av_log(avctx, AV_LOG_ERROR, "Could not initialize inflate: %d.\n", zret);
         return AVERROR(ENOMEM);
     }
 
     avctx->coded_frame = avcodec_alloc_frame();
-
     if (!avctx->coded_frame) {
         av_log(avctx, AV_LOG_ERROR, "Could not allocate frame buffer.\n");
         zerocodec_decode_close(avctx);
