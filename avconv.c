@@ -1954,7 +1954,7 @@ static int need_output(void)
     return 0;
 }
 
-static int select_input_file(uint8_t *no_packet)
+static int select_input_file(void)
 {
     int64_t ipts_min = INT64_MAX;
     int i, file_index = -1;
@@ -1963,7 +1963,7 @@ static int select_input_file(uint8_t *no_packet)
         InputStream *ist = input_streams[i];
         int64_t ipts     = ist->last_dts;
 
-        if (ist->discard || no_packet[ist->file_index])
+        if (ist->discard || input_files[ist->file_index]->eagain)
             continue;
         if (!input_files[ist->file_index]->eof_reached) {
             if (ipts < ipts_min) {
@@ -2095,6 +2095,22 @@ static int get_input_packet(InputFile *f, AVPacket *pkt)
     return av_read_frame(f->ctx, pkt);
 }
 
+static int got_eagain(void)
+{
+    int i;
+    for (i = 0; i < nb_input_files; i++)
+        if (input_files[i]->eagain)
+            return 1;
+    return 0;
+}
+
+static void reset_eagain(void)
+{
+    int i;
+    for (i = 0; i < nb_input_files; i++)
+        input_files[i]->eagain = 0;
+}
+
 /*
  * The following code is the main loop of the file converter
  */
@@ -2104,12 +2120,7 @@ static int transcode(void)
     AVFormatContext *is, *os;
     OutputStream *ost;
     InputStream *ist;
-    uint8_t *no_packet;
-    int no_packet_count = 0;
     int64_t timer_start;
-
-    if (!(no_packet = av_mallocz(nb_input_files)))
-        exit_program(1);
 
     ret = transcode_init();
     if (ret < 0)
@@ -2136,12 +2147,11 @@ static int transcode(void)
         }
 
         /* select the stream that we must read now */
-        file_index = select_input_file(no_packet);
+        file_index = select_input_file();
         /* if none, if is finished */
         if (file_index < 0) {
-            if (no_packet_count) {
-                no_packet_count = 0;
-                memset(no_packet, 0, nb_input_files);
+            if (got_eagain()) {
+                reset_eagain();
                 av_usleep(10000);
                 continue;
             }
@@ -2153,8 +2163,7 @@ static int transcode(void)
         ret = get_input_packet(input_files[file_index], &pkt);
 
         if (ret == AVERROR(EAGAIN)) {
-            no_packet[file_index] = 1;
-            no_packet_count++;
+            input_files[file_index]->eagain = 1;
             continue;
         }
         if (ret < 0) {
@@ -2177,8 +2186,7 @@ static int transcode(void)
                 continue;
         }
 
-        no_packet_count = 0;
-        memset(no_packet, 0, nb_input_files);
+        reset_eagain();
 
         if (do_pkt_dump) {
             av_pkt_dump_log2(NULL, AV_LOG_DEBUG, &pkt, do_hex_dump,
@@ -2279,7 +2287,6 @@ static int transcode(void)
     ret = 0;
 
  fail:
-    av_freep(&no_packet);
 #if HAVE_PTHREADS
     free_input_threads();
 #endif

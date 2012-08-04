@@ -230,6 +230,7 @@ typedef struct InputStream {
 typedef struct InputFile {
     AVFormatContext *ctx;
     int eof_reached;      /* true if eof reached */
+    int eagain;           /* true if last read attempt returned EAGAIN */
     int ist_index;        /* index of first stream in ist_table */
     int64_t ts_offset;
     int nb_streams;       /* number of stream that avconv is aware of; may be different
