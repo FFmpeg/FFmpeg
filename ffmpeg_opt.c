@@ -1449,10 +1449,13 @@ void opt_output_file(void *optctx, const char *filename)
         /* video: highest resolution */
         if (!o->video_disable && oc->oformat->video_codec != AV_CODEC_ID_NONE) {
             int area = 0, idx = -1;
+            int qcr = avformat_query_codec(oc->oformat, oc->oformat->video_codec, 0);
             for (i = 0; i < nb_input_streams; i++) {
                 ist = input_streams[i];
                 if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
                     ist->st->codec->width * ist->st->codec->height > area) {
+                    if((qcr==MKTAG('A', 'P', 'I', 'C')) && !(ist->st->disposition & AV_DISPOSITION_ATTACHED_PIC))
+                        continue;
                     area = ist->st->codec->width * ist->st->codec->height;
                     idx = i;
                 }
