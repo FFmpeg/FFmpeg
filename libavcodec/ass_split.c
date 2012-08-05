@@ -352,8 +352,10 @@ void ff_ass_split_free(ASSSplitContext *ctx)
 {
     if (ctx) {
         int i;
-        for (i=0; i<FF_ARRAY_ELEMS(ass_sections); i++)
+        for (i=0; i<FF_ARRAY_ELEMS(ass_sections); i++) {
             free_section(ctx, &ass_sections[i]);
+            av_freep(&(ctx->field_order[i]));
+        }
         av_free(ctx);
     }
 }

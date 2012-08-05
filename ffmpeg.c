@@ -3366,7 +3366,8 @@ static int transcode_init(void)
             if ((ist = get_input_stream(ost)))
                 dec = ist->st->codec;
             if (dec && dec->subtitle_header) {
-                ost->st->codec->subtitle_header = av_malloc(dec->subtitle_header_size);
+                /* ASS code assumes this buffer is null terminated so add extra byte. */
+                ost->st->codec->subtitle_header = av_mallocz(dec->subtitle_header_size + 1);
                 if (!ost->st->codec->subtitle_header) {
                     ret = AVERROR(ENOMEM);
                     goto dump_format;
