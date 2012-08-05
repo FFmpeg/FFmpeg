@@ -1523,7 +1523,7 @@ static int transcode_init(void)
 {
     int ret = 0, i, j, k;
     AVFormatContext *oc;
-    AVCodecContext *codec, *icodec;
+    AVCodecContext *codec;
     OutputStream *ost;
     InputStream *ist;
     char error[1024];
@@ -1554,6 +1554,7 @@ static int transcode_init(void)
 
     /* for each output stream, we compute the right encoding parameters */
     for (i = 0; i < nb_output_streams; i++) {
+        AVCodecContext *icodec = NULL;
         ost = output_streams[i];
         oc  = output_files[ost->file_index]->ctx;
         ist = get_input_stream(ost);
@@ -1714,9 +1715,10 @@ static int transcode_init(void)
                     ost->filter->filter->inputs[0]->sample_aspect_ratio;
                 codec->pix_fmt = ost->filter->filter->inputs[0]->format;
 
-                if (codec->width   != icodec->width  ||
-                    codec->height  != icodec->height ||
-                    codec->pix_fmt != icodec->pix_fmt) {
+                if (icodec &&
+                    (codec->width   != icodec->width  ||
+                     codec->height  != icodec->height ||
+                     codec->pix_fmt != icodec->pix_fmt)) {
                     codec->bits_per_raw_sample = 0;
                 }
 
