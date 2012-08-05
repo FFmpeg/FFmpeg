@@ -9,6 +9,7 @@ version <next>:
 - BRender PIX image decoder
 - Amazing Studio PAF playback support
 - XBM decoder
+- bmp standalone parser
 
 
 version 10:
