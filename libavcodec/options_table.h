@@ -46,7 +46,7 @@ static const AVOption options[]={
        "ratecontrol is willing to deviate from the target average bitrate value. This is not related "
        "to min/max bitrate. Lowering tolerance too much has an adverse effect on quality.",
        OFFSET(bit_rate_tolerance), AV_OPT_TYPE_INT, {.dbl = AV_CODEC_DEFAULT_BITRATE*20 }, 1, INT_MAX, V|E},
-{"flags", NULL, OFFSET(flags), AV_OPT_TYPE_FLAGS, {.dbl = DEFAULT }, 0, UINT_MAX, V|A|E|D, "flags"},
+{"flags", NULL, OFFSET(flags), AV_OPT_TYPE_FLAGS, {.dbl = DEFAULT }, 0, UINT_MAX, V|A|S|E|D, "flags"},
 {"mv4", "use four motion vector by macroblock (mpeg4)", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_4MV }, INT_MIN, INT_MAX, V|E, "flags"},
 {"qpel", "use 1/4 pel motion compensation", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_QPEL }, INT_MIN, INT_MAX, V|E, "flags"},
 {"loop", "use loop filter", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_LOOP_FILTER }, INT_MIN, INT_MAX, V|E, "flags"},
