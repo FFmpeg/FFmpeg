@@ -41,6 +41,7 @@ version next:
 - Canopus Lossless Codec decoder
 - bitmap subtitles in filters (experimental and temporary)
 - MP2 encoding via TwoLAME
+- bmp parser
 
 
 version 0.11:
