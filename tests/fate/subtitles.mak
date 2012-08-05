@@ -8,7 +8,7 @@ FATE_SUBTITLES += fate-sub-movtext
 fate-sub-movtext: CMD = md5 -i $(SAMPLES)/sub/MovText_capability_tester.mp4 -f ass
 
 FATE_SUBTITLES += fate-sub-movtextenc
-fate-sub-movtextenc: CMD = md5 -i $(SAMPLES)/sub/MovText_capability_tester.mp4 -map 0 -scodec mov_text -f mp4 -movflags frag_keyframe+empty_moov
+fate-sub-movtextenc: CMD = md5 -i $(SAMPLES)/sub/MovText_capability_tester.mp4 -map 0 -scodec mov_text -f mp4 -flags +bitexact -movflags frag_keyframe+empty_moov
 
 FATE_SUBTITLES += fate-sub-realtext
 fate-sub-realtext: CMD = md5 -i $(SAMPLES)/sub/RealText_capability_tester.rt -f ass
