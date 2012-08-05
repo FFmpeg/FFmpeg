@@ -3131,8 +3131,6 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
 
     if (stream_index >= s->nb_streams)
         return AVERROR_INVALIDDATA;
-    if (sample_time < 0)
-        sample_time = 0;
 
     st = s->streams[stream_index];
     sample = mov_seek_stream(s, st, sample_time, flags);
