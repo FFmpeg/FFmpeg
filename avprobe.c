@@ -468,7 +468,7 @@ static char *value_string(char *buf, int buf_size, double val, const char *unit)
         int index;
 
         if (unit == unit_byte_str && use_byte_value_binary_prefix) {
-            index = (int) (log(val)/log(2)) / 10;
+            index = (int) log2(val) / 10;
             index = av_clip(index, 0, FF_ARRAY_ELEMS(binary_unit_prefixes) - 1);
             val  /= pow(2, index * 10);
             prefix_string = binary_unit_prefixes[index];
