@@ -19,21 +19,16 @@ $(FATE_AMIX): CMP  = oneoff
 $(FATE_AMIX): CMP_UNIT = f32
 
 FATE_FILTER += $(FATE_AMIX)
-FATE_SAMPLES_AVCONV += $(FATE_AMIX)
 
-FATE_ASYNCTS += fate-filter-asyncts
+FATE_FILTER += fate-filter-asyncts
 fate-filter-asyncts: SRC = $(SAMPLES)/nellymoser/nellymoser-discont.flv
 fate-filter-asyncts: CMD = pcm -analyzeduration 10000000 -i $(SRC) -af asyncts
 fate-filter-asyncts: CMP = oneoff
 fate-filter-asyncts: REF = $(SAMPLES)/nellymoser/nellymoser-discont.pcm
 
-FATE_FILTER += $(FATE_ASYNCTS)
-FATE_SAMPLES_AVCONV += $(FATE_ASYNCTS)
-
 fate-filter-delogo: CMD = framecrc -i $(SAMPLES)/real/rv30.rm -vf delogo=show=0:x=290:y=25:w=26:h=16 -an
 
 FATE_FILTER += fate-filter-delogo
-FATE_SAMPLES_AVCONV += fate-filter-delogo
 
 FATE_YADIF += fate-filter-yadif-mode0
 fate-filter-yadif-mode0: CMD = framecrc -flags bitexact -idct simple -i $(SAMPLES)/mpeg2/mpeg2_field_encoding.ts -vf yadif=0
@@ -42,6 +37,6 @@ FATE_YADIF += fate-filter-yadif-mode1
 fate-filter-yadif-mode1: CMD = framecrc -flags bitexact -idct simple -i $(SAMPLES)/mpeg2/mpeg2_field_encoding.ts -vf yadif=1
 
 FATE_FILTER += $(FATE_YADIF)
-FATE_SAMPLES_AVCONV += $(FATE_YADIF)
 
+FATE_SAMPLES_AVCONV += $(FATE_FILTER)
 fate-filter: $(FATE_FILTER)
