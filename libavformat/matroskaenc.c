@@ -475,6 +475,8 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb, AVCodecCo
             ret = ff_flac_write_header(dyn_cp, codec, 1);
         else if (codec->codec_id == CODEC_ID_H264)
             ret = ff_isom_write_avcc(dyn_cp, codec->extradata, codec->extradata_size);
+        else if (codec->codec_id == CODEC_ID_ALAC && (12 < codec->extradata_size))
+            ret = ff_isom_write_avcc(dyn_cp, codec->extradata + 12, codec->extradata_size - 12);
         else if (codec->extradata_size)
             avio_write(dyn_cp, codec->extradata, codec->extradata_size);
     } else if (codec->codec_type == AVMEDIA_TYPE_VIDEO) {
