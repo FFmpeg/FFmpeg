@@ -2431,11 +2431,6 @@ int main(int argc, char **argv)
         exit_program(1);
     }
 
-    if (nb_input_files == 0) {
-        av_log(NULL, AV_LOG_FATAL, "At least one input file must be specified\n");
-        exit_program(1);
-    }
-
     ti = getutime();
     if (transcode() < 0)
         exit_program(1);

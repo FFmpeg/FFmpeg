@@ -805,6 +805,9 @@ the matching type.
 Output link labels are referred to with @option{-map}. Unlabeled outputs are
 added to the first output file.
 
+Note that with this option it is possible to use only lavfi sources without
+normal input files.
+
 For example, to overlay an image over video
 @example
 avconv -i video.mkv -i image.png -filter_complex '[0:v][1:v]overlay[out]' -map
@@ -826,6 +829,11 @@ Furthermore we can omit the output label and the single output from the filter
 graph will be added to the output file automatically, so we can simply write
 @example
 avconv -i video.mkv -i image.png -filter_complex 'overlay' out.mkv
+@end example
+
+To generate 5 seconds of pure red video using lavfi @code{color} source:
+@example
+avconv -filter_complex 'color=red' -t 5 out.mkv
 @end example
 @end table
 @c man end OPTIONS
