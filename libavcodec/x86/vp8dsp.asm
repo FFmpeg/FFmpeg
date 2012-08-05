@@ -189,7 +189,7 @@ cglobal put_vp8_epel%1_h6, 6, 6 + npicregs, 8, dst, dststride, src, srcstride, h
     mova      m6, [sixtap_filter_hb+mxq*8-32]
     mova      m7, [sixtap_filter_hb+mxq*8-16]
 
-.nextrow
+.nextrow:
     movu      m0, [srcq-2]
     mova      m1, m0
     mova      m2, m0
@@ -229,7 +229,7 @@ cglobal put_vp8_epel%1_h4, 6, 6 + npicregs, 7, dst, dststride, src, srcstride, h
     mova      m5, [fourtap_filter_hb+mxq-16] ; set up 4tap filter in bytes
     mova      m6, [fourtap_filter_hb+mxq]
 
-.nextrow
+.nextrow:
     movu      m0, [srcq-1]
     mova      m1, m0
     pshufb    m0, m3
@@ -264,7 +264,7 @@ cglobal put_vp8_epel%1_v4, 7, 7, 8, dst, dststride, src, srcstride, height, picr
     movh      m2, [srcq+2*srcstrideq]
     add     srcq, srcstrideq
 
-.nextrow
+.nextrow:
     movh      m3, [srcq+2*srcstrideq]      ; read new row
     mova      m4, m0
     mova      m0, m1
@@ -304,7 +304,7 @@ cglobal put_vp8_epel%1_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picr
     movh      m3, [srcq]
     movh      m4, [srcq+srcstrideq]
 
-.nextrow
+.nextrow:
     movh      m5, [srcq+2*srcstrideq]      ; read new row
     mova      m6, m0
     punpcklbw m6, m5
@@ -350,7 +350,7 @@ cglobal put_vp8_epel4_h4, 6, 6 + npicregs, 0, dst, dststride, src, srcstride, he
     movq      mm7, [pw_64]
     pxor      mm6, mm6
 
-.nextrow
+.nextrow:
     movq      mm1, [srcq-1]                ; (ABCDEFGH) load 8 horizontal pixels
 
     ; first set of 2 pixels
@@ -399,7 +399,7 @@ cglobal put_vp8_epel4_h6, 6, 6 + npicregs, 0, dst, dststride, src, srcstride, he
     movq      mm7, [pw_64]
     pxor      mm3, mm3
 
-.nextrow
+.nextrow:
     movq      mm1, [srcq-2]                ; (ABCDEFGH) load 8 horizontal pixels
 
     ; first set of 2 pixels
@@ -459,7 +459,7 @@ cglobal put_vp8_epel8_h4, 6, 6 + npicregs, 10, dst, dststride, src, srcstride, h
     mova      m8, [mxq+32]
     mova      m9, [mxq+48]
 %endif
-.nextrow
+.nextrow:
     movq      m0, [srcq-1]
     movq      m1, [srcq-0]
     movq      m2, [srcq+1]
@@ -510,7 +510,7 @@ cglobal put_vp8_epel8_h6, 6, 6 + npicregs, 14, dst, dststride, src, srcstride, h
     mova     m12, [mxq+64]
     mova     m13, [mxq+80]
 %endif
-.nextrow
+.nextrow:
     movq      m0, [srcq-2]
     movq      m1, [srcq-1]
     movq      m2, [srcq-0]
@@ -577,7 +577,7 @@ cglobal put_vp8_epel%1_v4, 7, 7, 8, dst, dststride, src, srcstride, height, picr
     punpcklbw m1, m7
     punpcklbw m2, m7
 
-.nextrow
+.nextrow:
     ; first calculate negative taps (to prevent losing positive overflows)
     movh      m4, [srcq+2*srcstrideq]      ; read new row
     punpcklbw m4, m7
@@ -635,7 +635,7 @@ cglobal put_vp8_epel%1_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picr
     punpcklbw m3, m7
     punpcklbw m4, m7
 
-.nextrow
+.nextrow:
     ; first calculate negative taps (to prevent losing positive overflows)
     mova      m5, m1
     pmullw    m5, [myq+16]
@@ -689,7 +689,7 @@ cglobal put_vp8_bilinear%1_v, 7, 7, 7, dst, dststride, src, srcstride, height, p
     mova      m5, [bilinear_filter_vw+myq-1*16]
     neg      myq
     mova      m4, [bilinear_filter_vw+myq+7*16]
-.nextrow
+.nextrow:
     movh      m0, [srcq+srcstrideq*0]
     movh      m1, [srcq+srcstrideq*1]
     movh      m3, [srcq+srcstrideq*2]
@@ -733,7 +733,7 @@ cglobal put_vp8_bilinear%1_h, 6, 6 + npicregs, 7, dst, dststride, src, srcstride
     mova      m5, [bilinear_filter_vw+mxq-1*16]
     neg      mxq
     mova      m4, [bilinear_filter_vw+mxq+7*16]
-.nextrow
+.nextrow:
     movh      m0, [srcq+srcstrideq*0+0]
     movh      m1, [srcq+srcstrideq*0+1]
     movh      m2, [srcq+srcstrideq*1+0]
@@ -783,7 +783,7 @@ cglobal put_vp8_bilinear%1_v, 7, 7, 5, dst, dststride, src, srcstride, height, p
 %endif
     pxor      m4, m4
     mova      m3, [bilinear_filter_vb+myq-16]
-.nextrow
+.nextrow:
     movh      m0, [srcq+srcstrideq*0]
     movh      m1, [srcq+srcstrideq*1]
     movh      m2, [srcq+srcstrideq*2]
@@ -820,7 +820,7 @@ cglobal put_vp8_bilinear%1_h, 6, 6 + npicregs, 5, dst, dststride, src, srcstride
     pxor      m4, m4
     mova      m2, [filter_h2_shuf]
     mova      m3, [bilinear_filter_vb+mxq-16]
-.nextrow
+.nextrow:
     movu      m0, [srcq+srcstrideq*0]
     movu      m1, [srcq+srcstrideq*1]
     pshufb    m0, m2
@@ -1488,7 +1488,7 @@ cglobal vp8_%1_loop_filter_simple, 3, %2, 8, dst, stride, flim, cntr
 %endif
 
 %if mmsize == 8 ; mmx / mmxext
-.next8px
+.next8px:
 %endif
 %ifidn %1, v
     ; read 4 half/full rows of pixels

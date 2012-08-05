@@ -361,7 +361,7 @@ cglobal mix_%1_to_%2_%3_flt, 3,in_channels+2,needed_mmregs+matrix_elements_mm, s
     mov         src0q, [src0q]
     add         src0q, lenq
     neg          lenq
-.loop
+.loop:
 ; for x86-32 with 7-8 channels we do not have enough gp registers for all src
 ; pointers, so we have to load some of them from the stack each time
 %define copy_src_from_stack ARCH_X86_32 && in_channels >= 7 && %%i >= 5

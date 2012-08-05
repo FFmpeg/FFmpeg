@@ -484,7 +484,7 @@ cglobal pred16x16_plane_%1, 2,9,7
 %endif
 
     mov          r4, 8
-.loop
+.loop:
     mova         m3, m0           ; b[0..7]
     mova         m4, m2           ; b[8..15]
     psraw        m3, 5
@@ -680,7 +680,7 @@ cglobal pred8x8_plane, 2,9,7
 
     mov          r4, 4
 ALIGN 16
-.loop
+.loop:
 %if mmsize == 16
     mova         m3, m0           ; b[0..7]
     paddw        m0, m1
@@ -1045,7 +1045,7 @@ cglobal pred8x8l_top_dc_%1, 4,4
     psrlq       mm5, 56
     psllq       mm5, 56
     pxor        mm1, mm5
-.body
+.body:
     PRED4x4_LOWPASS mm0, mm2, mm1, mm3, mm5
     psadbw   mm7, mm0
     paddw    mm7, [pw_4]
@@ -1141,7 +1141,7 @@ cglobal pred8x8l_dc_%1, 4,5
     jz .fix_lt_2
     test         r2, r2
     jz .fix_tr_1
-.body
+.body:
     lea          r1, [r0+r3*2]
     PRED4x4_LOWPASS mm6, mm2, mm1, mm3, mm5
     pxor        mm0, mm0
@@ -1276,7 +1276,7 @@ cglobal pred8x8l_vertical_%1, 4,4
     psrlq       mm5, 56
     psllq       mm5, 56
     pxor        mm1, mm5
-.body
+.body:
     PRED4x4_LOWPASS mm0, mm2, mm1, mm3, mm5
 %rep 3
     movq [r0+r3*1], mm0
@@ -1576,7 +1576,7 @@ cglobal pred8x8l_down_right_mmxext, 4,5
     psllq       mm5, 56
     pxor        mm1, mm5
     jmp .do_top
-.body
+.body:
     lea         r1, [r0+r3*2]
     movq       mm1, mm7
     movq       mm7, mm5
@@ -1822,7 +1822,7 @@ cglobal pred8x8l_vertical_right_mmxext, 4,5
     jz .fix_lt_2
     test         r2, r2
     jz .fix_tr_1
-.do_top
+.do_top:
     PRED4x4_LOWPASS mm6, mm2, mm1, mm3, mm5
     lea         r1, [r0+r3*2]
     movq       mm2, mm6
@@ -1931,7 +1931,7 @@ cglobal pred8x8l_vertical_right_%1, 4,5,7
     jz .fix_lt_2
     test         r2, r2
     jz .fix_tr_1
-.do_top
+.do_top:
     PRED4x4_LOWPASS mm6, mm2, mm1, mm3, mm5
     lea           r1, [r0+r3*2]
     movq2dq     xmm4, mm6

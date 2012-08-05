@@ -225,7 +225,7 @@ IDCT8_DC_ADD
 ; h264_idct_add16intra(pixel *dst, const int *block_offset, dctcoef *block, int stride, const uint8_t nnzc[6*8])
 ;-----------------------------------------------------------------------------
 %macro AC 1
-.ac%1
+.ac%1:
     mov  r5d, [r1+(%1+0)*4]
     call add4x4_idct %+ SUFFIX
     mov  r5d, [r1+(%1+1)*4]

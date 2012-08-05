@@ -39,7 +39,7 @@ cglobal deinterlace_line_mmx,         7,7,7, dst, lum_m4, lum_m3, lum_m2, lum_m1
 %endif
     pxor  mm7, mm7
     movq  mm6, [pw_4]
-.nextrow
+.nextrow:
     movd  mm0, [lum_m4q]
     movd  mm1, [lum_m3q]
     movd  mm2, [lum_m2q]

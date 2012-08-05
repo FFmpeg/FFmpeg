@@ -1143,7 +1143,7 @@ VECTOR_CLIP_INT32 6, 1, 0, 0
 cglobal vector_fmul_reverse, 4,4,2, dst, src0, src1, len
     lea       lenq, [lend*4 - 2*mmsize]
 ALIGN 16
-.loop
+.loop:
 %if cpuflag(avx)
     vmovaps     xmm0, [src1q + 16]
     vinsertf128 m0, m0, [src1q], 1
@@ -1182,7 +1182,7 @@ VECTOR_FMUL_REVERSE
 cglobal vector_fmul_add, 5,5,2, dst, src0, src1, src2, len
     lea       lenq, [lend*4 - 2*mmsize]
 ALIGN 16
-.loop
+.loop:
     mova    m0,   [src0q + lenq]
     mova    m1,   [src0q + lenq + mmsize]
     mulps   m0, m0, [src1q + lenq]
@@ -1313,7 +1313,7 @@ cglobal bswap32_buf, 3,4,5
     add      r0, 4
     dec      r2
     jnz      .loop2
-.end
+.end:
     RET
 
 ; %1 = aligned/unaligned

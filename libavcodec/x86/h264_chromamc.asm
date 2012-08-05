@@ -69,7 +69,7 @@ SECTION .text
 
 %macro mv0_pixels_mc8 0
     lea           r4, [r2*2 ]
-.next4rows
+.next4rows:
     movq         mm0, [r1   ]
     movq         mm1, [r1+r2]
     add           r1, r4
@@ -117,7 +117,7 @@ cglobal %1_%2_chroma_mc8_%3, 6, 7 + extra_regs, 0
     mv0_pixels_mc8
     REP_RET
 
-.at_least_one_non_zero
+.at_least_one_non_zero:
 %ifidn %2, rv40
 %if ARCH_X86_64
     mov           r7, r5
@@ -145,7 +145,7 @@ cglobal %1_%2_chroma_mc8_%3, 6, 7 + extra_regs, 0
     test         r4d, r4d
     mov           r6, r2        ; dxy = x ? 1 : stride
     jne .both_non_zero
-.my_is_zero
+.my_is_zero:
     ; mx == 0 XOR my == 0 - 1 dimensional filter only
     or           r4d, r5d       ; x + y
 
@@ -166,7 +166,7 @@ cglobal %1_%2_chroma_mc8_%3, 6, 7 + extra_regs, 0
     pxor          m7, m7
     psubw         m4, m5        ; mm4 = A = 8-x
 
-.next1drow
+.next1drow:
     movq          m0, [r1   ]   ; mm0 = src[0..7]
     movq          m2, [r1+r6]   ; mm1 = src[1..8]
 
@@ -197,7 +197,7 @@ cglobal %1_%2_chroma_mc8_%3, 6, 7 + extra_regs, 0
     jne .next1drow
     REP_RET
 
-.both_non_zero ; general case, bilinear
+.both_non_zero: ; general case, bilinear
     movd          m4, r4d         ; x
     movd          m6, r5d         ; y
 %ifidn %2, rv40
@@ -232,7 +232,7 @@ cglobal %1_%2_chroma_mc8_%3, 6, 7 + extra_regs, 0
 
     movq          m0, [r1  ]      ; mm0 = src[0..7]
     movq          m1, [r1+1]      ; mm1 = src[1..8]
-.next2drow
+.next2drow:
     add           r1, r2
 
     movq          m2, m0
@@ -330,7 +330,7 @@ cglobal %1_%2_chroma_mc4_%3, 6, 6 + extra_regs, 0
     pmullw        m6, m2
     paddw         m6, m0
 
-.next2rows
+.next2rows:
     movd          m0, [r1  ]
     movd          m1, [r1+1]
     add           r1, r2
@@ -397,7 +397,7 @@ cglobal %1_%2_chroma_mc2_%3, 6, 7, 0
     punpcklbw     m2, m7
     pshufw        m2, m2, 0x94    ; mm0 = src[0,1,1,2]
 
-.nextrow
+.nextrow:
     add           r1, r2
     movq          m1, m2
     pmaddwd       m1, m5          ; mm1 = A * src[0,1] + B * src[1,2]
@@ -474,7 +474,7 @@ cglobal %1_%2_chroma_mc8_%3, 6, 7, 8
     mv0_pixels_mc8
     REP_RET
 
-.at_least_one_non_zero
+.at_least_one_non_zero:
     test         r5d, r5d
     je .my_is_zero
     test         r4d, r4d
@@ -501,7 +501,7 @@ cglobal %1_%2_chroma_mc8_%3, 6, 7, 8
     movlhps       m7, m7
     movlhps       m6, m6
 
-.next2rows
+.next2rows:
     movq          m1, [r1+r2*1   ]
     movq          m2, [r1+r2*1+1]
     movq          m3, [r1+r2*2  ]
@@ -535,7 +535,7 @@ cglobal %1_%2_chroma_mc8_%3, 6, 7, 8
     jg .next2rows
     REP_RET
 
-.my_is_zero
+.my_is_zero:
     mov          r5d, r4d
     shl          r4d, 8
     add           r4, 8
@@ -545,7 +545,7 @@ cglobal %1_%2_chroma_mc8_%3, 6, 7, 8
     pshuflw       m7, m7, 0
     movlhps       m7, m7
 
-.next2xrows
+.next2xrows:
     movq          m0, [r1     ]
     movq          m1, [r1   +1]
     movq          m2, [r1+r2  ]
@@ -572,7 +572,7 @@ cglobal %1_%2_chroma_mc8_%3, 6, 7, 8
     jg .next2xrows
     REP_RET
 
-.mx_is_zero
+.mx_is_zero:
     mov          r4d, r5d
     shl          r5d, 8
     add           r5, 8
@@ -582,7 +582,7 @@ cglobal %1_%2_chroma_mc8_%3, 6, 7, 8
     pshuflw       m7, m7, 0
     movlhps       m7, m7
 
-.next2yrows
+.next2yrows:
     movq          m0, [r1     ]
     movq          m1, [r1+r2  ]
     movdqa        m2, m1
@@ -632,7 +632,7 @@ cglobal %1_%2_chroma_mc4_%3, 6, 7, 0
     punpcklbw     m0, [r1+1]
     pshufw        m6, m6, 0
 
-.next2rows
+.next2rows:
     movd          m1, [r1+r2*1  ]
     movd          m3, [r1+r2*2  ]
     punpcklbw     m1, [r1+r2*1+1]

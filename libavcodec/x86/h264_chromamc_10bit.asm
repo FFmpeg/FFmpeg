@@ -38,7 +38,7 @@ SECTION .text
 %macro MV0_PIXELS_MC8 0
     lea           r4, [r2*3   ]
     lea           r5, [r2*4   ]
-.next4rows
+.next4rows:
     movu          m0, [r1     ]
     movu          m1, [r1+r2  ]
     CHROMAMC_AVG  m0, [r0     ]
@@ -72,14 +72,14 @@ cglobal %1_h264_chroma_mc8_10, 6,7,8
     MV0_PIXELS_MC8
     REP_RET
 
-.at_least_one_non_zero
+.at_least_one_non_zero:
     mov          r6d, 2
     test         r5d, r5d
     je .x_interpolation
     mov           r6, r2        ; dxy = x ? 1 : stride
     test         r4d, r4d
     jne .xy_interpolation
-.x_interpolation
+.x_interpolation:
     ; mx == 0 XOR my == 0 - 1 dimensional filter only
     or           r4d, r5d       ; x + y
     movd          m5, r4d
@@ -88,7 +88,7 @@ cglobal %1_h264_chroma_mc8_10, 6,7,8
     SPLATW        m5, m5        ; mm5 = B = x
     psubw         m4, m5        ; mm4 = A = 8-x
 
-.next1drow
+.next1drow:
     movu          m0, [r1   ]   ; mm0 = src[0..7]
     movu          m2, [r1+r6]   ; mm2 = src[1..8]
 
@@ -107,7 +107,7 @@ cglobal %1_h264_chroma_mc8_10, 6,7,8
     jne .next1drow
     REP_RET
 
-.xy_interpolation ; general case, bilinear
+.xy_interpolation: ; general case, bilinear
     movd          m4, r4m         ; x
     movd          m6, r5m         ; y
 
@@ -125,7 +125,7 @@ cglobal %1_h264_chroma_mc8_10, 6,7,8
 
     movu          m0, [r1  ]      ; mm0 = src[0..7]
     movu          m1, [r1+2]      ; mm1 = src[1..8]
-.next2drow
+.next2drow:
     add           r1, r2
 
     pmullw        m2, m0, m4
@@ -192,7 +192,7 @@ cglobal %1_h264_chroma_mc4_10, 6,6,7
     pmullw        m6, m2
     paddw         m6, m0
 
-.next2rows
+.next2rows:
     MC4_OP m0, m6
     MC4_OP m6, m0
     sub   r3d, 2
@@ -221,7 +221,7 @@ cglobal %1_h264_chroma_mc2_10, 6,7
     pxor          m7, m7
     pshufw        m2, [r1], 0x94    ; mm0 = src[0,1,1,2]
 
-.nextrow
+.nextrow:
     add           r1, r2
     movq          m1, m2
     pmaddwd       m1, m5          ; mm1 = A * src[0,1] + B * src[1,2]

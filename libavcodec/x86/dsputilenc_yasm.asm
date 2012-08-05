@@ -184,7 +184,7 @@ cglobal hadamard8_diff16_%1, 5, 6, %2
     call hadamard8x8_diff_%1
     add            r5d, eax
 
-.done
+.done:
     mov            eax, r5d
 %ifndef m8
     ADD            rsp, pad
@@ -288,7 +288,7 @@ cglobal sse16_sse2, 5, 5, 8
     pxor      m0, m0         ; mm0 = 0
     pxor      m7, m7         ; mm7 holds the sum
 
-.next2lines ; FIXME why are these unaligned movs? pix1[] is aligned
+.next2lines: ; FIXME why are these unaligned movs? pix1[] is aligned
     movu      m1, [r1   ]    ; mm1 = pix1[0][0-15]
     movu      m2, [r2   ]    ; mm2 = pix2[0][0-15]
     movu      m3, [r1+r3]    ; mm3 = pix1[1][0-15]
