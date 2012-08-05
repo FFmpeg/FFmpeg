@@ -2499,7 +2499,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 /* round guessed framerate to a "standard" framerate if it's
                  * within 1% of the original estimate*/
                 for (j = 1; j < MAX_STD_TIMEBASES; j++) {
-                    AVRational std_fps = (AVRational){get_std_framerate(j), 12*1001};
+                    AVRational std_fps = { get_std_framerate(j), 12*1001 };
                     double error = fabs(av_q2d(st->avg_frame_rate) / av_q2d(std_fps) - 1);
 
                     if (error < best_error) {
