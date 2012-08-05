@@ -230,9 +230,6 @@ static av_cold int imc_decode_init(AVCodecContext *avctx)
     q->one_div_log2 = 1 / log(2);
 
     if (avctx->codec_id == CODEC_ID_IAC) {
-    }
-
-    if (avctx->codec_id == CODEC_ID_IAC) {
         iac_generate_tabs(q, avctx->sample_rate);
     } else {
         memcpy(q->cyclTab,  cyclTab,  sizeof(cyclTab));
