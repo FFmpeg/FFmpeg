@@ -1203,6 +1203,13 @@ typedef struct AVFormatContext {
      */
     unsigned int correct_ts_overflow;
 
+    /**
+     * Force seeking to any (also non key) frames.
+     * - encoding: unused
+     * - decoding: Set by user via AVOPtions (NO direct access)
+     */
+    int seek2any;
+
     /*****************************************************************
      * All fields below this line are not part of the public API. They
      * may not be used outside of libavformat and can be changed and

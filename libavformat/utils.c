@@ -2092,6 +2092,9 @@ int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts, int
     if(min_ts > ts || max_ts < ts)
         return -1;
 
+    if(s->seek2any>0)
+        flags |= AVSEEK_FLAG_ANY;
+
     if (s->iformat->read_seek2) {
         int ret;
         ff_read_frame_flush(s);
