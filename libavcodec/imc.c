@@ -92,7 +92,6 @@ typedef struct {
 
     float sqrt_tab[30];
     GetBitContext gb;
-    float one_div_log2;
 
     DSPContext dsp;
     FFTContext fft;
@@ -227,7 +226,6 @@ static av_cold int imc_decode_init(AVCodecContext *avctx)
                      imc_huffman_bits[i][j], 2, 2, INIT_VLC_USE_NEW_STATIC);
         }
     }
-    q->one_div_log2 = 1 / log(2);
 
     if (avctx->codec_id == CODEC_ID_IAC) {
         iac_generate_tabs(q, avctx->sample_rate);
