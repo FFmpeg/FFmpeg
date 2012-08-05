@@ -1172,8 +1172,7 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     AVFilterContext *first_filter = in->filter_ctx;
     AVFilter *filter = avfilter_get_by_name("buffer");
     InputStream *ist = ifilter->ist;
-    AVRational tb = ist->framerate.num ? (AVRational){ist->framerate.den,
-                                                      ist->framerate.num} :
+    AVRational tb = ist->framerate.num ? av_inv_q(ist->framerate) :
                                          ist->st->time_base;
     AVRational fr = ist->framerate.num ? ist->framerate :
                                          ist->st->r_frame_rate;
