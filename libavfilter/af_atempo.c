@@ -553,7 +553,6 @@ static int yae_load_frag(ATempoContext *atempo,
 
     if (n1) {
         memcpy(dst, b + i1 * atempo->stride, n1 * atempo->stride);
-        dst += n1 * atempo->stride;
     }
 
     return 0;
