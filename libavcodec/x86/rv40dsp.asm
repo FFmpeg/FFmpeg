@@ -466,8 +466,8 @@ cglobal rv40_weight_func_%1_%2, 6, 7, 8
     add        r2, r6
     neg        r6
 
-    movd       m2, r3
-    movd       m3, r4
+    movd       m2, r3d
+    movd       m3, r4d
 %ifidn %1,rnd
 %define  RND   0
     SPLATW     m2, m2
