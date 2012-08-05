@@ -789,7 +789,7 @@ static int imc_decode_block(AVCodecContext *avctx, IMCContext *q, int ch)
         chctx->decoder_reset = 1;
 
     if (chctx->decoder_reset) {
-        memset(q->out_samples, 0, sizeof(q->out_samples));
+        memset(q->out_samples, 0, COEFFS * sizeof(*q->out_samples));
         for (i = 0; i < BANDS; i++)
             chctx->old_floor[i] = 1.0;
         for (i = 0; i < COEFFS; i++)
