@@ -3443,7 +3443,9 @@ enabled libstagefright_h264  && require_cpp libstagefright_h264 "binder/ProcessS
     media/stagefright/MediaBufferGroup.h media/stagefright/MediaDebug.h media/stagefright/MediaDefs.h
     media/stagefright/OMXClient.h media/stagefright/OMXCodec.h" android::OMXClient -lstagefright -lmedia -lutils -lbinder -lgnustl_static
 enabled libtheora  && require  libtheora theora/theoraenc.h th_info_init -ltheoraenc -ltheoradec -logg
-enabled libtwolame && require  libtwolame twolame.h twolame_init -ltwolame
+enabled libtwolame && require  libtwolame twolame.h twolame_init -ltwolame &&
+                      { check_lib twolame.h twolame_encode_buffer_float32_interleaved -ltwolame ||
+                        die "ERROR: libtwolame version must be >= 0.3.10"; }
 enabled libutvideo    && require_cpp utvideo "stdint.h stdlib.h utvideo/utvideo.h utvideo/Codec.h" 'CCodec*' -lutvideo -lstdc++
 enabled libv4l2    && require_pkg_config libv4l2 libv4l2.h v4l2_ioctl
 enabled libvo_aacenc && require libvo_aacenc vo-aacenc/voAAC.h voGetAACEncAPI -lvo-aacenc
