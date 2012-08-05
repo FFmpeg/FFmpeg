@@ -139,10 +139,10 @@ CPU amdnop
         %define r%1mp %2
     %elif ARCH_X86_64 ; memory
         %define r%1m [rsp + stack_offset + %3]
-        %define r%1mp qword r %+ %1m
+        %define r%1mp qword r %+ %1 %+ m
     %else
         %define r%1m [esp + stack_offset + %3]
-        %define r%1mp dword r %+ %1m
+        %define r%1mp dword r %+ %1 %+ m
     %endif
     %define r%1  %2
 %endmacro
