@@ -524,7 +524,9 @@ static int ogg_get_length(AVFormatContext *s)
     ogg_save (s);
     avio_seek (s->pb, s->data_offset, SEEK_SET);
     ogg_reset(s);
+    i = -1;
     while (!ogg_packet(s, &i, NULL, NULL, NULL)) {
+        if(i>=0) {
         int64_t pts = ogg_calc_pts(s, i, NULL);
         if (pts != AV_NOPTS_VALUE && s->streams[i]->start_time == AV_NOPTS_VALUE && !ogg->streams[i].got_start){
             s->streams[i]->duration -= pts;
@@ -533,6 +535,7 @@ static int ogg_get_length(AVFormatContext *s)
         }else if(s->streams[i]->start_time != AV_NOPTS_VALUE && !ogg->streams[i].got_start){
             ogg->streams[i].got_start= 1;
             streams_left--;
+        }
         }
             if(streams_left<=0)
                 break;
