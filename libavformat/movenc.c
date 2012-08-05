@@ -712,19 +712,6 @@ static int mov_write_d263_tag(AVIOContext *pb)
     return 0xf;
 }
 
-/* TODO: No idea about these values */
-static int mov_write_svq3_tag(AVIOContext *pb)
-{
-    avio_wb32(pb, 0x15);
-    ffio_wfourcc(pb, "SMI ");
-    ffio_wfourcc(pb, "SEQH");
-    avio_wb32(pb, 0x5);
-    avio_wb32(pb, 0xe2c0211d);
-    avio_wb32(pb, 0xc0000000);
-    avio_w8(pb, 0);
-    return 0x15;
-}
-
 static int mov_write_avcc_tag(AVIOContext *pb, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
@@ -1071,9 +1058,8 @@ static int mov_write_video_tag(AVIOContext *pb, MOVTrack *track)
         mov_write_esds_tag(pb, track);
     else if(track->enc->codec_id == CODEC_ID_H263)
         mov_write_d263_tag(pb);
-    else if(track->enc->codec_id == CODEC_ID_SVQ3)
-        mov_write_svq3_tag(pb);
-    else if(track->enc->codec_id == CODEC_ID_AVUI) {
+    else if(track->enc->codec_id == CODEC_ID_AVUI ||
+            track->enc->codec_id == CODEC_ID_SVQ3) {
         mov_write_extradata_tag(pb, track);
         avio_wb32(pb, 0);
     } else if(track->enc->codec_id == CODEC_ID_DNXHD)
