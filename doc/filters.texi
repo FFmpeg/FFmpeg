@@ -2178,6 +2178,11 @@ to the pad with identifier "in".
 
 Read a video stream from a movie container.
 
+Note that this source is a hack that bypasses the standard input path. It can be
+useful in applications that do not support arbitrary filter graphs, but its use
+is discouraged in those that do. Specifically in @command{avconv} this filter
+should never be used, the @option{-filter_complex} option fully replaces it.
+
 It accepts the syntax: @var{movie_name}[:@var{options}] where
 @var{movie_name} is the name of the resource to read (not necessarily
 a file but also a device or a stream accessed through some protocol),
