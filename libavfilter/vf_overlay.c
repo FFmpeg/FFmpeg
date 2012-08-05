@@ -486,7 +486,7 @@ static int try_push_frame(AVFilterContext *ctx)
 {
     OverlayContext *over = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    AVFilterBufferRef *outpicref = outlink->out_buf;
+    AVFilterBufferRef *outpicref;
 
     if (try_start_next_frame(ctx) < 0)
         return AVERROR(EAGAIN);
