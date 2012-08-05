@@ -3686,7 +3686,7 @@ It shall assume one of following values:
 Set iteration cound mode.
 @item normalized_iteration_count
 set normalized iteration count mode.
-@end table.
+@end table
 Default value is @var{normalized_iteration_count}.
 
 @item rate, r
