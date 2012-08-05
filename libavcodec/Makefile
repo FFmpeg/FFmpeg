@@ -4,6 +4,7 @@ FFLIBS = avutil
 HEADERS = avcodec.h                                                     \
           avfft.h                                                       \
           dxva2.h                                                       \
+          old_codec_ids.h                                               \
           vaapi.h                                                       \
           vda.h                                                         \
           vdpau.h                                                       \
