@@ -62,7 +62,7 @@ FF_MPV_GENERIC_CLASS(rv20)
 AVCodec ff_rv20_encoder = {
     .name           = "rv20",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_RV20,
+    .id             = AV_CODEC_ID_RV20,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_MPV_encode_init,
     .encode2        = ff_MPV_encode_picture,

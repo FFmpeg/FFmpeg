@@ -46,7 +46,7 @@
 static RTPDynamicProtocolHandler ff_realmedia_mp3_dynamic_handler = {
     .enc_name           = "X-MP3-draft-00",
     .codec_type         = AVMEDIA_TYPE_AUDIO,
-    .codec_id           = CODEC_ID_MP3ADU,
+    .codec_id           = AV_CODEC_ID_MP3ADU,
 };
 
 /* statistics functions */
@@ -364,7 +364,7 @@ void ff_rtp_send_punch_packets(URLContext* rtp_handle)
 /**
  * open a new RTP parse context for stream 'st'. 'st' can be NULL for
  * MPEG2TS streams to indicate that they should be demuxed inside the
- * rtp demux (otherwise CODEC_ID_MPEG2TS packets are returned)
+ * rtp demux (otherwise AV_CODEC_ID_MPEG2TS packets are returned)
  */
 RTPDemuxContext *ff_rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *rtpc, int payload_type, int queue_size)
 {
@@ -388,19 +388,19 @@ RTPDemuxContext *ff_rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext
         }
     } else if (st) {
         switch(st->codec->codec_id) {
-        case CODEC_ID_MPEG1VIDEO:
-        case CODEC_ID_MPEG2VIDEO:
-        case CODEC_ID_MP2:
-        case CODEC_ID_MP3:
-        case CODEC_ID_MPEG4:
-        case CODEC_ID_H263:
-        case CODEC_ID_H264:
+        case AV_CODEC_ID_MPEG1VIDEO:
+        case AV_CODEC_ID_MPEG2VIDEO:
+        case AV_CODEC_ID_MP2:
+        case AV_CODEC_ID_MP3:
+        case AV_CODEC_ID_MPEG4:
+        case AV_CODEC_ID_H263:
+        case AV_CODEC_ID_H264:
             st->need_parsing = AVSTREAM_PARSE_FULL;
             break;
-        case CODEC_ID_VORBIS:
+        case AV_CODEC_ID_VORBIS:
             st->need_parsing = AVSTREAM_PARSE_HEADERS;
             break;
-        case CODEC_ID_ADPCM_G722:
+        case AV_CODEC_ID_ADPCM_G722:
             /* According to RFC 3551, the stream clock rate is 8000
              * even if the sample rate is 16000. */
             if (st->codec->sample_rate == 8000)
@@ -537,8 +537,8 @@ static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
     } else {
         // at this point, the RTP header has been stripped;  This is ASSUMING that there is only 1 CSRC, which in't wise.
         switch(st->codec->codec_id) {
-        case CODEC_ID_MP2:
-        case CODEC_ID_MP3:
+        case AV_CODEC_ID_MP2:
+        case AV_CODEC_ID_MP3:
             /* better than nothing: skip mpeg audio RTP header */
             if (len <= 4)
                 return -1;
@@ -548,8 +548,8 @@ static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
             av_new_packet(pkt, len);
             memcpy(pkt->data, buf, len);
             break;
-        case CODEC_ID_MPEG1VIDEO:
-        case CODEC_ID_MPEG2VIDEO:
+        case AV_CODEC_ID_MPEG1VIDEO:
+        case AV_CODEC_ID_MPEG2VIDEO:
             /* better than nothing: skip mpeg video RTP header */
             if (len <= 4)
                 return -1;

@@ -158,7 +158,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             for (i = 0; i < s->nb_streams; i++) {
                 st = s->streams[i];
                 if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO && st->id == -1) {
-            if (st->codec->codec_id == CODEC_ID_MP3) {
+            if (st->codec->codec_id == AV_CODEC_ID_MP3) {
                 avio_skip(pb, 4);
                 if ((res = av_get_packet(pb, pkt, len-4)) < 0)
                     return res;
@@ -174,7 +174,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
         } else if (tag == TAG_JPEG2) {
             for (i=0; i<s->nb_streams; i++) {
                 st = s->streams[i];
-                if (st->codec->codec_id == CODEC_ID_MJPEG && st->id == -2)
+                if (st->codec->codec_id == AV_CODEC_ID_MJPEG && st->id == -2)
                     break;
             }
             if (i == s->nb_streams) {
@@ -183,7 +183,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
                     return -1;
                 vst->id = -2; /* -2 to avoid clash with video stream and audio stream */
                 vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-                vst->codec->codec_id = CODEC_ID_MJPEG;
+                vst->codec->codec_id = AV_CODEC_ID_MJPEG;
                 avpriv_set_pts_info(vst, 64, 256, swf->frame_rate);
                 st = vst;
             }

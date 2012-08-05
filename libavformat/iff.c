@@ -220,13 +220,13 @@ static int iff_read_header(AVFormatContext *s)
 
         switch(compression) {
         case COMP_NONE:
-            st->codec->codec_id = CODEC_ID_PCM_S8_PLANAR;
+            st->codec->codec_id = AV_CODEC_ID_PCM_S8_PLANAR;
             break;
         case COMP_FIB:
-            st->codec->codec_id = CODEC_ID_8SVX_FIB;
+            st->codec->codec_id = AV_CODEC_ID_8SVX_FIB;
             break;
         case COMP_EXP:
-            st->codec->codec_id = CODEC_ID_8SVX_EXP;
+            st->codec->codec_id = AV_CODEC_ID_8SVX_EXP;
             break;
         default:
             av_log(s, AV_LOG_ERROR, "unknown compression method\n");
@@ -241,10 +241,10 @@ static int iff_read_header(AVFormatContext *s)
     case AVMEDIA_TYPE_VIDEO:
         switch (compression) {
         case BITMAP_RAW:
-            st->codec->codec_id = CODEC_ID_IFF_ILBM;
+            st->codec->codec_id = AV_CODEC_ID_IFF_ILBM;
             break;
         case BITMAP_BYTERUN1:
-            st->codec->codec_id = CODEC_ID_IFF_BYTERUN1;
+            st->codec->codec_id = AV_CODEC_ID_IFF_BYTERUN1;
             break;
         default:
             av_log(s, AV_LOG_ERROR, "unknown compression method\n");

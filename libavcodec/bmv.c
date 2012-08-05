@@ -360,7 +360,7 @@ static int bmv_aud_decode_frame(AVCodecContext *avctx, void *data,
 AVCodec ff_bmv_video_decoder = {
     .name           = "bmv_video",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_BMV_VIDEO,
+    .id             = AV_CODEC_ID_BMV_VIDEO,
     .priv_data_size = sizeof(BMVDecContext),
     .init           = decode_init,
     .close          = decode_end,
@@ -371,7 +371,7 @@ AVCodec ff_bmv_video_decoder = {
 AVCodec ff_bmv_audio_decoder = {
     .name           = "bmv_audio",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_BMV_AUDIO,
+    .id             = AV_CODEC_ID_BMV_AUDIO,
     .priv_data_size = sizeof(BMVAudioDecContext),
     .init           = bmv_aud_decode_init,
     .decode         = bmv_aud_decode_frame,

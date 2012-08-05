@@ -421,7 +421,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 AVCodec ff_nellymoser_encoder = {
     .name           = "nellymoser",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_NELLYMOSER,
+    .id             = AV_CODEC_ID_NELLYMOSER,
     .priv_data_size = sizeof(NellyMoserEncodeContext),
     .init           = encode_init,
     .encode2        = encode_frame,

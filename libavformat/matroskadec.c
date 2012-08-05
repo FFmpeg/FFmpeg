@@ -1364,7 +1364,7 @@ static int matroska_read_header(AVFormatContext *s)
     tracks = matroska->tracks.elem;
     for (i=0; i < matroska->tracks.nb_elem; i++) {
         MatroskaTrack *track = &tracks[i];
-        enum CodecID codec_id = CODEC_ID_NONE;
+        enum AVCodecID codec_id = AV_CODEC_ID_NONE;
         EbmlList *encodings_list = &tracks->encodings;
         MatroskaTrackEncoding *encodings = encodings_list->elem;
         uint8_t *extradata = NULL;
@@ -1434,7 +1434,7 @@ static int matroska_read_header(AVFormatContext *s)
             }
         }
 
-        for(j=0; ff_mkv_codec_tags[j].id != CODEC_ID_NONE; j++){
+        for(j=0; ff_mkv_codec_tags[j].id != AV_CODEC_ID_NONE; j++){
             if(!strncmp(ff_mkv_codec_tags[j].str, track->codec_id,
                         strlen(ff_mkv_codec_tags[j].str))){
                 codec_id= ff_mkv_codec_tags[j].id;
@@ -1469,21 +1469,21 @@ static int matroska_read_header(AVFormatContext *s)
                    && (track->codec_priv.data != NULL)) {
             track->video.fourcc = AV_RL32(track->codec_priv.data);
             codec_id=ff_codec_get_id(ff_codec_movvideo_tags, track->video.fourcc);
-        } else if (codec_id == CODEC_ID_PCM_S16BE) {
+        } else if (codec_id == AV_CODEC_ID_PCM_S16BE) {
             switch (track->audio.bitdepth) {
-            case  8:  codec_id = CODEC_ID_PCM_U8;     break;
-            case 24:  codec_id = CODEC_ID_PCM_S24BE;  break;
-            case 32:  codec_id = CODEC_ID_PCM_S32BE;  break;
+            case  8:  codec_id = AV_CODEC_ID_PCM_U8;     break;
+            case 24:  codec_id = AV_CODEC_ID_PCM_S24BE;  break;
+            case 32:  codec_id = AV_CODEC_ID_PCM_S32BE;  break;
             }
-        } else if (codec_id == CODEC_ID_PCM_S16LE) {
+        } else if (codec_id == AV_CODEC_ID_PCM_S16LE) {
             switch (track->audio.bitdepth) {
-            case  8:  codec_id = CODEC_ID_PCM_U8;     break;
-            case 24:  codec_id = CODEC_ID_PCM_S24LE;  break;
-            case 32:  codec_id = CODEC_ID_PCM_S32LE;  break;
+            case  8:  codec_id = AV_CODEC_ID_PCM_U8;     break;
+            case 24:  codec_id = AV_CODEC_ID_PCM_S24LE;  break;
+            case 32:  codec_id = AV_CODEC_ID_PCM_S32LE;  break;
             }
-        } else if (codec_id==CODEC_ID_PCM_F32LE && track->audio.bitdepth==64) {
-            codec_id = CODEC_ID_PCM_F64LE;
-        } else if (codec_id == CODEC_ID_AAC && !track->codec_priv.size) {
+        } else if (codec_id==AV_CODEC_ID_PCM_F32LE && track->audio.bitdepth==64) {
+            codec_id = AV_CODEC_ID_PCM_F64LE;
+        } else if (codec_id == AV_CODEC_ID_AAC && !track->codec_priv.size) {
             int profile = matroska_aac_profile(track->codec_id);
             int sri = matroska_aac_sri(track->audio.samplerate);
             extradata = av_mallocz(5 + FF_INPUT_BUFFER_PADDING_SIZE);
@@ -1499,7 +1499,7 @@ static int matroska_read_header(AVFormatContext *s)
                 extradata_size = 5;
             } else
                 extradata_size = 2;
-        } else if (codec_id == CODEC_ID_TTA) {
+        } else if (codec_id == AV_CODEC_ID_TTA) {
             extradata_size = 30;
             extradata = av_mallocz(extradata_size);
             if (extradata == NULL)
@@ -1512,14 +1512,14 @@ static int matroska_read_header(AVFormatContext *s)
             avio_wl16(&b, track->audio.bitdepth);
             avio_wl32(&b, track->audio.out_samplerate);
             avio_wl32(&b, matroska->ctx->duration * track->audio.out_samplerate);
-        } else if (codec_id == CODEC_ID_RV10 || codec_id == CODEC_ID_RV20 ||
-                   codec_id == CODEC_ID_RV30 || codec_id == CODEC_ID_RV40) {
+        } else if (codec_id == AV_CODEC_ID_RV10 || codec_id == AV_CODEC_ID_RV20 ||
+                   codec_id == AV_CODEC_ID_RV30 || codec_id == AV_CODEC_ID_RV40) {
             extradata_offset = 26;
-        } else if (codec_id == CODEC_ID_RA_144) {
+        } else if (codec_id == AV_CODEC_ID_RA_144) {
             track->audio.out_samplerate = 8000;
             track->audio.channels = 1;
-        } else if (codec_id == CODEC_ID_RA_288 || codec_id == CODEC_ID_COOK ||
-                   codec_id == CODEC_ID_ATRAC3 || codec_id == CODEC_ID_SIPR) {
+        } else if (codec_id == AV_CODEC_ID_RA_288 || codec_id == AV_CODEC_ID_COOK ||
+                   codec_id == AV_CODEC_ID_ATRAC3 || codec_id == AV_CODEC_ID_SIPR) {
             int flavor;
             ffio_init_context(&b, track->codec_priv.data,track->codec_priv.size,
                           0, NULL, NULL, NULL, NULL);
@@ -1531,11 +1531,11 @@ static int matroska_read_header(AVFormatContext *s)
             track->audio.frame_size      = avio_rb16(&b);
             track->audio.sub_packet_size = avio_rb16(&b);
             track->audio.buf = av_malloc(track->audio.frame_size * track->audio.sub_packet_h);
-            if (codec_id == CODEC_ID_RA_288) {
+            if (codec_id == AV_CODEC_ID_RA_288) {
                 st->codec->block_align = track->audio.coded_framesize;
                 track->codec_priv.size = 0;
             } else {
-                if (codec_id == CODEC_ID_SIPR && flavor < 4) {
+                if (codec_id == AV_CODEC_ID_SIPR && flavor < 4) {
                     const int sipr_bit_rate[4] = { 6504, 8496, 5000, 16000 };
                     track->audio.sub_packet_size = ff_sipr_subpk_size[flavor];
                     st->codec->bit_rate = sipr_bit_rate[flavor];
@@ -1546,9 +1546,9 @@ static int matroska_read_header(AVFormatContext *s)
         }
         track->codec_priv.size -= extradata_offset;
 
-        if (codec_id == CODEC_ID_NONE)
+        if (codec_id == AV_CODEC_ID_NONE)
             av_log(matroska->ctx, AV_LOG_INFO,
-                   "Unknown/unsupported CodecID %s.\n", track->codec_id);
+                   "Unknown/unsupported AVCodecID %s.\n", track->codec_id);
 
         if (track->time_scale < 0.01)
             track->time_scale = 1.0;
@@ -1591,7 +1591,7 @@ static int matroska_read_header(AVFormatContext *s)
                       st->codec->height * track->video.display_width,
                       st->codec-> width * track->video.display_height,
                       255);
-            if (st->codec->codec_id != CODEC_ID_H264)
+            if (st->codec->codec_id != AV_CODEC_ID_H264)
             st->need_parsing = AVSTREAM_PARSE_HEADERS;
             if (track->default_duration) {
                 av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
@@ -1604,11 +1604,11 @@ static int matroska_read_header(AVFormatContext *s)
             st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
             st->codec->sample_rate = track->audio.out_samplerate;
             st->codec->channels = track->audio.channels;
-            if (st->codec->codec_id != CODEC_ID_AAC)
+            if (st->codec->codec_id != AV_CODEC_ID_AAC)
             st->need_parsing = AVSTREAM_PARSE_HEADERS;
         } else if (track->type == MATROSKA_TRACK_TYPE_SUBTITLE) {
             st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-            if (st->codec->codec_id == CODEC_ID_SSA)
+            if (st->codec->codec_id == AV_CODEC_ID_SSA)
                 matroska->contains_ssa = 1;
         }
     }
@@ -1624,7 +1624,7 @@ static int matroska_read_header(AVFormatContext *s)
                 break;
             av_dict_set(&st->metadata, "filename",attachements[j].filename, 0);
             av_dict_set(&st->metadata, "mimetype", attachements[j].mime, 0);
-            st->codec->codec_id = CODEC_ID_NONE;
+            st->codec->codec_id = AV_CODEC_ID_NONE;
             st->codec->codec_type = AVMEDIA_TYPE_ATTACHMENT;
             st->codec->extradata  = av_malloc(attachements[j].bin.size);
             if(st->codec->extradata == NULL)
@@ -1632,7 +1632,7 @@ static int matroska_read_header(AVFormatContext *s)
             st->codec->extradata_size = attachements[j].bin.size;
             memcpy(st->codec->extradata, attachements[j].bin.data, attachements[j].bin.size);
 
-            for (i=0; ff_mkv_mime_tags[i].id != CODEC_ID_NONE; i++) {
+            for (i=0; ff_mkv_mime_tags[i].id != AV_CODEC_ID_NONE; i++) {
                 if (!strncmp(ff_mkv_mime_tags[i].str, attachements[j].mime,
                              strlen(ff_mkv_mime_tags[i].str))) {
                     st->codec->codec_id = ff_mkv_mime_tags[i].id;
@@ -1843,10 +1843,10 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
 
     if (res == 0) {
         for (n = 0; n < laces; n++) {
-            if ((st->codec->codec_id == CODEC_ID_RA_288 ||
-                 st->codec->codec_id == CODEC_ID_COOK ||
-                 st->codec->codec_id == CODEC_ID_SIPR ||
-                 st->codec->codec_id == CODEC_ID_ATRAC3) &&
+            if ((st->codec->codec_id == AV_CODEC_ID_RA_288 ||
+                 st->codec->codec_id == AV_CODEC_ID_COOK ||
+                 st->codec->codec_id == AV_CODEC_ID_SIPR ||
+                 st->codec->codec_id == AV_CODEC_ID_ATRAC3) &&
                  st->codec->block_align && track->audio.sub_packet_size) {
                 int a = st->codec->block_align;
                 int sps = track->audio.sub_packet_size;
@@ -1859,7 +1859,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                 if (!track->audio.pkt_cnt) {
                     if (track->audio.sub_packet_cnt == 0)
                         track->audio.buf_timecode = timecode;
-                    if (st->codec->codec_id == CODEC_ID_RA_288) {
+                    if (st->codec->codec_id == AV_CODEC_ID_RA_288) {
                         if (size < cfs * h / 2) {
                             av_log(matroska->ctx, AV_LOG_ERROR,
                                    "Corrupt int4 RM-style audio packet size\n");
@@ -1869,7 +1869,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                         for (x=0; x<h/2; x++)
                             memcpy(track->audio.buf+x*2*w+y*cfs,
                                    data+x*cfs, cfs);
-                    } else if (st->codec->codec_id == CODEC_ID_SIPR) {
+                    } else if (st->codec->codec_id == AV_CODEC_ID_SIPR) {
                         if (size < w) {
                             av_log(matroska->ctx, AV_LOG_ERROR,
                                    "Corrupt sipr RM-style audio packet size\n");
@@ -1889,7 +1889,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                     }
 
                     if (++track->audio.sub_packet_cnt >= h) {
-                        if (st->codec->codec_id == CODEC_ID_SIPR)
+                        if (st->codec->codec_id == AV_CODEC_ID_SIPR)
                             ff_rm_reorder_sipr_data(track->audio.buf, h, w);
                         track->audio.sub_packet_cnt = 0;
                         track->audio.pkt_cnt = h*w / a;
@@ -1945,19 +1945,19 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                 else
                     pkt->pts = timecode;
                 pkt->pos = pos;
-                if (st->codec->codec_id == CODEC_ID_TEXT)
+                if (st->codec->codec_id == AV_CODEC_ID_TEXT)
                     pkt->convergence_duration = duration;
                 else if (track->type != MATROSKA_TRACK_TYPE_SUBTITLE)
                     pkt->duration = duration;
 
-                if (st->codec->codec_id == CODEC_ID_SSA)
+                if (st->codec->codec_id == AV_CODEC_ID_SSA)
                     matroska_fix_ass_packet(matroska, pkt, duration);
 
                 if (matroska->prev_pkt &&
                     timecode != AV_NOPTS_VALUE &&
                     matroska->prev_pkt->pts == timecode &&
                     matroska->prev_pkt->stream_index == st->index &&
-                    st->codec->codec_id == CODEC_ID_SSA)
+                    st->codec->codec_id == AV_CODEC_ID_SSA)
                     matroska_merge_packets(matroska->prev_pkt, pkt);
                 else {
                     dynarray_add(&matroska->packets,&matroska->num_packets,pkt);

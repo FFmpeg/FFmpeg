@@ -106,7 +106,7 @@ static int ilbc_decode_frame(AVCodecContext *avctx, void *data,
 AVCodec ff_libilbc_decoder = {
     .name           = "libilbc",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_ILBC,
+    .id             = AV_CODEC_ID_ILBC,
     .priv_data_size = sizeof(ILBCDecContext),
     .init           = ilbc_decode_init,
     .decode         = ilbc_decode_frame,
@@ -196,7 +196,7 @@ static const AVCodecDefault ilbc_encode_defaults[] = {
 AVCodec ff_libilbc_encoder = {
     .name           = "libilbc",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_ILBC,
+    .id             = AV_CODEC_ID_ILBC,
     .priv_data_size = sizeof(ILBCEncContext),
     .init           = ilbc_encode_init,
     .encode2        = ilbc_encode_frame,

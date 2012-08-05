@@ -75,7 +75,7 @@ static int read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     vst->codec->codec_type  = AVMEDIA_TYPE_VIDEO;
-    vst->codec->codec_id    = CODEC_ID_JV;
+    vst->codec->codec_id    = AV_CODEC_ID_JV;
     vst->codec->codec_tag   = 0; /* no fourcc */
     vst->codec->width       = avio_rl16(pb);
     vst->codec->height      = avio_rl16(pb);
@@ -87,7 +87,7 @@ static int read_header(AVFormatContext *s)
     avio_skip(pb, 4);
 
     ast->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-    ast->codec->codec_id    = CODEC_ID_PCM_U8;
+    ast->codec->codec_id    = AV_CODEC_ID_PCM_U8;
     ast->codec->codec_tag   = 0; /* no fourcc */
     ast->codec->sample_rate = avio_rl16(pb);
     ast->codec->channels    = 1;

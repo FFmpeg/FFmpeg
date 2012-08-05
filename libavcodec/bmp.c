@@ -364,7 +364,7 @@ static av_cold int bmp_decode_end(AVCodecContext *avctx)
 AVCodec ff_bmp_decoder = {
     .name           = "bmp",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_BMP,
+    .id             = AV_CODEC_ID_BMP,
     .priv_data_size = sizeof(BMPContext),
     .init           = bmp_decode_init,
     .close          = bmp_decode_end,

@@ -525,7 +525,7 @@ static void decode_flush(AVCodecContext *avctx)
 AVCodec ff_ralf_decoder = {
     .name           = "ralf",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_RALF,
+    .id             = AV_CODEC_ID_RALF,
     .priv_data_size = sizeof(RALFContext),
     .init           = decode_init,
     .close          = decode_close,

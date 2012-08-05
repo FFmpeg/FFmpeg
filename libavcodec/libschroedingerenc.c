@@ -442,7 +442,7 @@ static int libschroedinger_encode_close(AVCodecContext *avccontext)
 AVCodec ff_libschroedinger_encoder = {
     .name           = "libschroedinger",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_DIRAC,
+    .id             = AV_CODEC_ID_DIRAC,
     .priv_data_size = sizeof(SchroEncoderParams),
     .init           = libschroedinger_encode_init,
     .encode2        = libschroedinger_encode_frame,

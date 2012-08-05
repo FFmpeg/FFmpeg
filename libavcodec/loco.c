@@ -288,7 +288,7 @@ static av_cold int decode_end(AVCodecContext *avctx){
 AVCodec ff_loco_decoder = {
     .name           = "loco",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_LOCO,
+    .id             = AV_CODEC_ID_LOCO,
     .priv_data_size = sizeof(LOCOContext),
     .init           = decode_init,
     .close          = decode_end,

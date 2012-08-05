@@ -1297,7 +1297,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
 AVCodec ff_cook_decoder = {
     .name           = "cook",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_COOK,
+    .id             = AV_CODEC_ID_COOK,
     .priv_data_size = sizeof(COOKContext),
     .init           = cook_decode_init,
     .close          = cook_decode_close,

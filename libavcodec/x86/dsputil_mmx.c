@@ -2656,8 +2656,8 @@ static void dsputil_init_mmx2(DSPContext *c, AVCodecContext *avctx,
         }
     }
 
-    if (CONFIG_VP3_DECODER && (avctx->codec_id == CODEC_ID_VP3 ||
-                               avctx->codec_id == CODEC_ID_THEORA)) {
+    if (CONFIG_VP3_DECODER && (avctx->codec_id == AV_CODEC_ID_VP3 ||
+                               avctx->codec_id == AV_CODEC_ID_THEORA)) {
         c->put_no_rnd_pixels_tab[1][1] = put_no_rnd_pixels8_x2_exact_mmx2;
         c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2_exact_mmx2;
     }
@@ -2764,8 +2764,8 @@ static void dsputil_init_3dnow(DSPContext *c, AVCodecContext *avctx,
         }
     }
 
-    if (CONFIG_VP3_DECODER && (avctx->codec_id == CODEC_ID_VP3 ||
-                               avctx->codec_id == CODEC_ID_THEORA)) {
+    if (CONFIG_VP3_DECODER && (avctx->codec_id == AV_CODEC_ID_VP3 ||
+                               avctx->codec_id == AV_CODEC_ID_THEORA)) {
         c->put_no_rnd_pixels_tab[1][1] = put_no_rnd_pixels8_x2_exact_3dnow;
         c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2_exact_3dnow;
     }

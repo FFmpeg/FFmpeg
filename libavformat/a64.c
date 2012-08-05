@@ -43,12 +43,12 @@ static int a64_write_header(struct AVFormatContext *s)
     };
     c->interleaved = 0;
     switch (avctx->codec->id) {
-    case CODEC_ID_A64_MULTI:
+    case AV_CODEC_ID_A64_MULTI:
         header[2] = 0x00;
         header[3] = AV_RB32(avctx->extradata+0);
         header[4] = 2;
         break;
-    case CODEC_ID_A64_MULTI5:
+    case AV_CODEC_ID_A64_MULTI5:
         header[2] = 0x01;
         header[3] = AV_RB32(avctx->extradata+0);
         header[4] = 3;
@@ -76,8 +76,8 @@ static int a64_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 
     /* fetch values from extradata */
     switch (avctx->codec->id) {
-    case CODEC_ID_A64_MULTI:
-    case CODEC_ID_A64_MULTI5:
+    case AV_CODEC_ID_A64_MULTI:
+    case AV_CODEC_ID_A64_MULTI5:
         if(c->interleaved) {
             /* Write interleaved, means we insert chunks of the future charset before each current frame.
              * Reason: if we load 1 charset + corresponding frames in one block on c64, we need to store
@@ -168,7 +168,7 @@ AVOutputFormat ff_a64_muxer = {
     .long_name      = NULL_IF_CONFIG_SMALL("a64 - video for Commodore 64"),
     .extensions     = "a64, A64",
     .priv_data_size = sizeof (A64Context),
-    .video_codec    = CODEC_ID_A64_MULTI,
+    .video_codec    = AV_CODEC_ID_A64_MULTI,
     .write_header   = a64_write_header,
     .write_packet   = a64_write_packet,
     .write_trailer  = a64_write_trailer,

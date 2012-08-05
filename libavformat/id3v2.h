@@ -71,7 +71,7 @@ typedef struct ID3v2ExtraMetaAPIC {
     int          len;
     const char  *type;
     uint8_t     *description;
-    enum CodecID id;
+    enum AVCodecID id;
 } ID3v2ExtraMetaAPIC;
 
 /**

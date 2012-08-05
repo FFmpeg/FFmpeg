@@ -180,7 +180,7 @@ static int asf_read_picture(AVFormatContext *s, int len)
 {
     AVPacket pkt = { 0 };
     const CodecMime *mime = ff_id3v2_mime_tags;
-    enum  CodecID      id = CODEC_ID_NONE;
+    enum  AVCodecID      id = AV_CODEC_ID_NONE;
     char mimetype[64];
     uint8_t  *desc = NULL;
     ASFStream *ast = NULL;
@@ -207,14 +207,14 @@ static int asf_read_picture(AVFormatContext *s, int len)
 
     /* picture MIME type */
     len -= avio_get_str16le(s->pb, len, mimetype, sizeof(mimetype));
-    while (mime->id != CODEC_ID_NONE) {
+    while (mime->id != AV_CODEC_ID_NONE) {
         if (!strncmp(mime->str, mimetype, sizeof(mimetype))) {
             id = mime->id;
             break;
         }
         mime++;
     }
-    if (id == CODEC_ID_NONE) {
+    if (id == AV_CODEC_ID_NONE) {
         av_log(s, AV_LOG_ERROR, "Unknown attached picture mimetype: %s.\n",
                mimetype);
         return 0;
@@ -370,7 +370,7 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
         type = AVMEDIA_TYPE_VIDEO;
     } else if (!ff_guidcmp(&g, &ff_asf_jfif_media)) {
         type = AVMEDIA_TYPE_VIDEO;
-        st->codec->codec_id = CODEC_ID_MJPEG;
+        st->codec->codec_id = AV_CODEC_ID_MJPEG;
     } else if (!ff_guidcmp(&g, &ff_asf_command_stream)) {
         type = AVMEDIA_TYPE_DATA;
     } else if (!ff_guidcmp(&g, &ff_asf_ext_stream_embed_stream_header)) {
@@ -411,10 +411,10 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
         if (is_dvr_ms_audio) {
             // codec_id and codec_tag are unreliable in dvr_ms
             // files. Set them later by probing stream.
-            st->codec->codec_id = CODEC_ID_PROBE;
+            st->codec->codec_id = AV_CODEC_ID_PROBE;
             st->codec->codec_tag = 0;
         }
-        if (st->codec->codec_id == CODEC_ID_AAC) {
+        if (st->codec->codec_id == AV_CODEC_ID_AAC) {
             st->need_parsing = AVSTREAM_PARSE_NONE;
         } else {
             st->need_parsing = AVSTREAM_PARSE_FULL;
@@ -483,7 +483,7 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
             av_freep(&st->codec->extradata);
             st->codec->extradata_size=0;
         }
-        if(st->codec->codec_id == CODEC_ID_H264)
+        if(st->codec->codec_id == AV_CODEC_ID_H264)
             st->need_parsing = AVSTREAM_PARSE_FULL_ONCE;
     }
     pos2 = avio_tell(pb);
@@ -1143,7 +1143,7 @@ static int ff_asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pk
         /* test if whole packet is read */
         if (asf_st->frag_offset == asf_st->pkt.size) {
             //workaround for macroshit radio DVR-MS files
-            if(   s->streams[asf->stream_index]->codec->codec_id == CODEC_ID_MPEG2VIDEO
+            if(   s->streams[asf->stream_index]->codec->codec_id == AV_CODEC_ID_MPEG2VIDEO
                && asf_st->pkt.size > 100){
                 int i;
                 for(i=0; i<asf_st->pkt.size && !asf_st->pkt.data[i]; i++);

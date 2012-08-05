@@ -32,17 +32,17 @@
 #define LXF_MAX_AUDIO_PACKET    (8008*15*4) ///< 15-channel 32-bit NTSC audio frame
 
 static const AVCodecTag lxf_tags[] = {
-    { CODEC_ID_MJPEG,       0 },
-    { CODEC_ID_MPEG1VIDEO,  1 },
-    { CODEC_ID_MPEG2VIDEO,  2 },    //MpMl, 4:2:0
-    { CODEC_ID_MPEG2VIDEO,  3 },    //MpPl, 4:2:2
-    { CODEC_ID_DVVIDEO,     4 },    //DV25
-    { CODEC_ID_DVVIDEO,     5 },    //DVCPRO
-    { CODEC_ID_DVVIDEO,     6 },    //DVCPRO50
-    { CODEC_ID_RAWVIDEO,    7 },    //PIX_FMT_ARGB, where alpha is used for chroma keying
-    { CODEC_ID_RAWVIDEO,    8 },    //16-bit chroma key
-    { CODEC_ID_MPEG2VIDEO,  9 },    //4:2:2 CBP ("Constrained Bytes per Gop")
-    { CODEC_ID_NONE,        0 },
+    { AV_CODEC_ID_MJPEG,       0 },
+    { AV_CODEC_ID_MPEG1VIDEO,  1 },
+    { AV_CODEC_ID_MPEG2VIDEO,  2 },    //MpMl, 4:2:0
+    { AV_CODEC_ID_MPEG2VIDEO,  3 },    //MpPl, 4:2:2
+    { AV_CODEC_ID_DVVIDEO,     4 },    //DV25
+    { AV_CODEC_ID_DVVIDEO,     5 },    //DVCPRO
+    { AV_CODEC_ID_DVVIDEO,     6 },    //DVCPRO50
+    { AV_CODEC_ID_RAWVIDEO,    7 },    //PIX_FMT_ARGB, where alpha is used for chroma keying
+    { AV_CODEC_ID_RAWVIDEO,    8 },    //16-bit chroma key
+    { AV_CODEC_ID_MPEG2VIDEO,  9 },    //4:2:2 CBP ("Constrained Bytes per Gop")
+    { AV_CODEC_ID_NONE,        0 },
 };
 
 typedef struct {
@@ -159,10 +159,10 @@ static int get_packet_header(AVFormatContext *s, uint8_t *header, uint32_t *form
         }
 
         switch (st->codec->bits_per_coded_sample) {
-        case 16: st->codec->codec_id = CODEC_ID_PCM_S16LE; break;
-        case 20: st->codec->codec_id = CODEC_ID_PCM_LXF;   break;
-        case 24: st->codec->codec_id = CODEC_ID_PCM_S24LE; break;
-        case 32: st->codec->codec_id = CODEC_ID_PCM_S32LE; break;
+        case 16: st->codec->codec_id = AV_CODEC_ID_PCM_S16LE; break;
+        case 20: st->codec->codec_id = AV_CODEC_ID_PCM_LXF;   break;
+        case 24: st->codec->codec_id = AV_CODEC_ID_PCM_S24LE; break;
+        case 32: st->codec->codec_id = AV_CODEC_ID_PCM_S32LE; break;
         default:
             av_log(s, AV_LOG_WARNING,
                    "only 16-, 20-, 24- and 32-bit PCM currently supported\n");
@@ -314,7 +314,7 @@ static int lxf_read_packet(AVFormatContext *s, AVPacket *pkt)
         return ret2;
 
     //read non-20-bit audio data into lxf->temp so we can deplanarize it
-    buf = ast && ast->codec->codec_id != CODEC_ID_PCM_LXF ? lxf->temp : pkt->data;
+    buf = ast && ast->codec->codec_id != AV_CODEC_ID_PCM_LXF ? lxf->temp : pkt->data;
 
     if ((ret2 = avio_read(pb, buf, ret)) != ret) {
         av_free_packet(pkt);
@@ -324,7 +324,7 @@ static int lxf_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->stream_index = stream;
 
     if (ast) {
-        if(ast->codec->codec_id != CODEC_ID_PCM_LXF)
+        if(ast->codec->codec_id != AV_CODEC_ID_PCM_LXF)
             deplanarize(lxf, ast, pkt->data, ret);
     } else {
         //picture type (0 = closed I, 1 = open I, 2 = P, 3 = B)

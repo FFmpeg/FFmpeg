@@ -84,7 +84,7 @@ static int read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     video->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    video->codec->codec_id = CODEC_ID_C93;
+    video->codec->codec_id = AV_CODEC_ID_C93;
     video->codec->width = 320;
     video->codec->height = 192;
     /* 4:3 320x200 with 8 empty lines */

@@ -718,7 +718,7 @@ static int cavs_decode_frame(AVCodecContext * avctx,void *data, int *data_size,
 AVCodec ff_cavs_decoder = {
     .name           = "cavs",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_CAVS,
+    .id             = AV_CODEC_ID_CAVS,
     .priv_data_size = sizeof(AVSContext),
     .init           = ff_cavs_init,
     .close          = ff_cavs_end,

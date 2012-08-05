@@ -243,7 +243,7 @@ typedef enum {
 
 typedef struct CodecTags{
     char str[20];
-    enum CodecID id;
+    enum AVCodecID id;
 }CodecTags;
 
 /* max. depth in the EBML tree structure */

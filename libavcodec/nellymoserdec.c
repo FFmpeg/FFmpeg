@@ -216,7 +216,7 @@ static av_cold int decode_end(AVCodecContext * avctx) {
 AVCodec ff_nellymoser_decoder = {
     .name           = "nellymoser",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_NELLYMOSER,
+    .id             = AV_CODEC_ID_NELLYMOSER,
     .priv_data_size = sizeof(NellyMoserDecodeContext),
     .init           = decode_init,
     .close          = decode_end,

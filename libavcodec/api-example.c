@@ -60,7 +60,7 @@ static void audio_encode_example(const char *filename)
     printf("Audio encoding\n");
 
     /* find the MP2 encoder */
-    codec = avcodec_find_encoder(CODEC_ID_MP2);
+    codec = avcodec_find_encoder(AV_CODEC_ID_MP2);
     if (!codec) {
         fprintf(stderr, "codec not found\n");
         exit(1);
@@ -130,7 +130,7 @@ static void audio_decode_example(const char *outfilename, const char *filename)
     printf("Audio decoding\n");
 
     /* find the mpeg audio decoder */
-    codec = avcodec_find_decoder(CODEC_ID_MP2);
+    codec = avcodec_find_decoder(AV_CODEC_ID_MP2);
     if (!codec) {
         fprintf(stderr, "codec not found\n");
         exit(1);
@@ -221,7 +221,7 @@ static void video_encode_example(const char *filename)
     printf("Video encoding\n");
 
     /* find the mpeg1 video encoder */
-    codec = avcodec_find_encoder(CODEC_ID_MPEG1VIDEO);
+    codec = avcodec_find_encoder(AV_CODEC_ID_MPEG1VIDEO);
     if (!codec) {
         fprintf(stderr, "codec not found\n");
         exit(1);
@@ -352,7 +352,7 @@ static void video_decode_example(const char *outfilename, const char *filename)
     printf("Video decoding\n");
 
     /* find the mpeg1 video decoder */
-    codec = avcodec_find_decoder(CODEC_ID_MPEG1VIDEO);
+    codec = avcodec_find_decoder(AV_CODEC_ID_MPEG1VIDEO);
     if (!codec) {
         fprintf(stderr, "codec not found\n");
         exit(1);

@@ -91,7 +91,7 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
     int buf_size;
     uint8_t *out_data;
     int ret;
-    int is_compr = (avctx->codec_id != CODEC_ID_PCM_S8_PLANAR);
+    int is_compr = (avctx->codec_id != AV_CODEC_ID_PCM_S8_PLANAR);
 
     /* for the first packet, copy data to buffer */
     if (avpkt->data) {
@@ -180,13 +180,13 @@ static av_cold int eightsvx_decode_init(AVCodecContext *avctx)
     }
 
     switch(avctx->codec->id) {
-        case CODEC_ID_8SVX_FIB:
+        case AV_CODEC_ID_8SVX_FIB:
           esc->table = fibonacci;
           break;
-        case CODEC_ID_8SVX_EXP:
+        case AV_CODEC_ID_8SVX_EXP:
           esc->table = exponential;
           break;
-        case CODEC_ID_PCM_S8_PLANAR:
+        case AV_CODEC_ID_PCM_S8_PLANAR:
             break;
         default:
           return -1;
@@ -212,7 +212,7 @@ static av_cold int eightsvx_decode_close(AVCodecContext *avctx)
 AVCodec ff_eightsvx_fib_decoder = {
   .name           = "8svx_fib",
   .type           = AVMEDIA_TYPE_AUDIO,
-  .id             = CODEC_ID_8SVX_FIB,
+  .id             = AV_CODEC_ID_8SVX_FIB,
   .priv_data_size = sizeof (EightSvxContext),
   .init           = eightsvx_decode_init,
   .close          = eightsvx_decode_close,
@@ -224,7 +224,7 @@ AVCodec ff_eightsvx_fib_decoder = {
 AVCodec ff_eightsvx_exp_decoder = {
   .name           = "8svx_exp",
   .type           = AVMEDIA_TYPE_AUDIO,
-  .id             = CODEC_ID_8SVX_EXP,
+  .id             = AV_CODEC_ID_8SVX_EXP,
   .priv_data_size = sizeof (EightSvxContext),
   .init           = eightsvx_decode_init,
   .close          = eightsvx_decode_close,
@@ -236,7 +236,7 @@ AVCodec ff_eightsvx_exp_decoder = {
 AVCodec ff_pcm_s8_planar_decoder = {
     .name           = "pcm_s8_planar",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_PCM_S8_PLANAR,
+    .id             = AV_CODEC_ID_PCM_S8_PLANAR,
     .priv_data_size = sizeof(EightSvxContext),
     .init           = eightsvx_decode_init,
     .close          = eightsvx_decode_close,

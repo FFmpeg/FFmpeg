@@ -672,7 +672,7 @@ static av_cold int mss4_decode_end(AVCodecContext *avctx)
 AVCodec ff_mts2_decoder = {
     .name           = "mts2",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_MTS2,
+    .id             = AV_CODEC_ID_MTS2,
     .priv_data_size = sizeof(MSS4Context),
     .init           = mss4_decode_init,
     .close          = mss4_decode_end,

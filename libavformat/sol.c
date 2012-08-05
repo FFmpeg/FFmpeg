@@ -47,21 +47,21 @@ static int sol_probe(AVProbeData *p)
 #define SOL_16BIT   4
 #define SOL_STEREO 16
 
-static enum CodecID sol_codec_id(int magic, int type)
+static enum AVCodecID sol_codec_id(int magic, int type)
 {
     if (magic == 0x0B8D)
     {
-        if (type & SOL_DPCM) return CODEC_ID_SOL_DPCM;
-        else return CODEC_ID_PCM_U8;
+        if (type & SOL_DPCM) return AV_CODEC_ID_SOL_DPCM;
+        else return AV_CODEC_ID_PCM_U8;
     }
     if (type & SOL_DPCM)
     {
-        if (type & SOL_16BIT) return CODEC_ID_SOL_DPCM;
-        else if (magic == 0x0C8D) return CODEC_ID_SOL_DPCM;
-        else return CODEC_ID_SOL_DPCM;
+        if (type & SOL_16BIT) return AV_CODEC_ID_SOL_DPCM;
+        else if (magic == 0x0C8D) return AV_CODEC_ID_SOL_DPCM;
+        else return AV_CODEC_ID_SOL_DPCM;
     }
-    if (type & SOL_16BIT) return CODEC_ID_PCM_S16LE;
-    return CODEC_ID_PCM_U8;
+    if (type & SOL_16BIT) return AV_CODEC_ID_PCM_S16LE;
+    return AV_CODEC_ID_PCM_U8;
 }
 
 static int sol_codec_type(int magic, int type)
@@ -87,7 +87,7 @@ static int sol_read_header(AVFormatContext *s)
     unsigned int magic,tag;
     AVIOContext *pb = s->pb;
     unsigned int id, channels, rate, type;
-    enum CodecID codec;
+    enum AVCodecID codec;
     AVStream *st;
 
     /* check ".snd" header */
@@ -104,7 +104,7 @@ static int sol_read_header(AVFormatContext *s)
     codec = sol_codec_id(magic, type);
     channels = sol_channels(magic, type);
 
-    if (codec == CODEC_ID_SOL_DPCM)
+    if (codec == AV_CODEC_ID_SOL_DPCM)
         id = sol_codec_type(magic, type);
     else id = 0;
 

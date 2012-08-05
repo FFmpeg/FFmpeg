@@ -249,7 +249,7 @@ void ff_eac3_output_frame_header(AC3EncodeContext *s)
 AVCodec ff_eac3_encoder = {
     .name            = "eac3",
     .type            = AVMEDIA_TYPE_AUDIO,
-    .id              = CODEC_ID_EAC3,
+    .id              = AV_CODEC_ID_EAC3,
     .priv_data_size  = sizeof(AC3EncodeContext),
     .init            = ff_ac3_encode_init,
     .encode2         = ff_ac3_float_encode_frame,

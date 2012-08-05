@@ -79,18 +79,18 @@ typedef struct {
 } SWFContext;
 
 static const AVCodecTag swf_codec_tags[] = {
-    {CODEC_ID_FLV1, 0x02},
-    {CODEC_ID_VP6F, 0x04},
-    {CODEC_ID_NONE,    0},
+    { AV_CODEC_ID_FLV1, 0x02},
+    { AV_CODEC_ID_VP6F, 0x04},
+    { AV_CODEC_ID_NONE,    0},
 };
 
 static const AVCodecTag swf_audio_codec_tags[] = {
-    {CODEC_ID_PCM_S16LE,  0x00},
-    {CODEC_ID_ADPCM_SWF,  0x01},
-    {CODEC_ID_MP3,        0x02},
-    {CODEC_ID_PCM_S16LE,  0x03},
-  //{CODEC_ID_NELLYMOSER, 0x06},
-    {CODEC_ID_NONE,          0},
+    { AV_CODEC_ID_PCM_S16LE,  0x00},
+    { AV_CODEC_ID_ADPCM_SWF,  0x01},
+    { AV_CODEC_ID_MP3,        0x02},
+    { AV_CODEC_ID_PCM_S16LE,  0x03},
+  //{ AV_CODEC_ID_NELLYMOSER, 0x06},
+    { AV_CODEC_ID_NONE,          0},
 };
 
 #endif /* AVFORMAT_SWF_H */

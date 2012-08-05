@@ -144,7 +144,7 @@ static int g722_decode_frame(AVCodecContext *avctx, void *data,
 AVCodec ff_adpcm_g722_decoder = {
     .name           = "g722",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_ADPCM_G722,
+    .id             = AV_CODEC_ID_ADPCM_G722,
     .priv_data_size = sizeof(G722Context),
     .init           = g722_decode_init,
     .decode         = g722_decode_frame,

@@ -85,7 +85,7 @@ static int read_header(AVFormatContext *avctx)
     }
     st->codec->codec_tag   = 0;
     st->codec->codec_type  = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id    = CODEC_ID_ANSI;
+    st->codec->codec_id    = AV_CODEC_ID_ANSI;
 
     if (s->video_size && (ret = av_parse_video_size(&width, &height, s->video_size)) < 0) {
         av_log (avctx, AV_LOG_ERROR, "Couldn't parse video size.\n");

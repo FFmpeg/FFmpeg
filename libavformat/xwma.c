@@ -84,7 +84,7 @@ static int xwma_read_header(AVFormatContext *s)
      * extradata for that. Thus, ask the user for feedback, but try to go on
      * anyway.
      */
-    if (st->codec->codec_id != CODEC_ID_WMAV2) {
+    if (st->codec->codec_id != AV_CODEC_ID_WMAV2) {
         av_log(s, AV_LOG_WARNING, "unexpected codec (tag 0x04%x; id %d)\n",
                               st->codec->codec_tag, st->codec->codec_id);
         av_log_ask_for_sample(s, NULL);

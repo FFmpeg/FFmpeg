@@ -1283,7 +1283,7 @@ static void flush(AVCodecContext *avctx)
 AVCodec ff_wmalossless_decoder = {
     .name           = "wmalossless",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_WMALOSSLESS,
+    .id             = AV_CODEC_ID_WMALOSSLESS,
     .priv_data_size = sizeof(WmallDecodeCtx),
     .init           = decode_init,
     .decode         = decode_packet,

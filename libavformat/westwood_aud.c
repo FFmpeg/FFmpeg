@@ -106,10 +106,10 @@ static int wsaud_read_header(AVFormatContext *s)
             av_log_ask_for_sample(s, "Stereo WS-SND1 is not supported.\n");
             return AVERROR_PATCHWELCOME;
         }
-        st->codec->codec_id = CODEC_ID_WESTWOOD_SND1;
+        st->codec->codec_id = AV_CODEC_ID_WESTWOOD_SND1;
         break;
     case 99:
-        st->codec->codec_id = CODEC_ID_ADPCM_IMA_WS;
+        st->codec->codec_id = AV_CODEC_ID_ADPCM_IMA_WS;
         st->codec->bits_per_coded_sample = 4;
         st->codec->bit_rate = channels * sample_rate * 4;
         break;
@@ -144,7 +144,7 @@ static int wsaud_read_packet(AVFormatContext *s,
 
     chunk_size = AV_RL16(&preamble[0]);
 
-    if (st->codec->codec_id == CODEC_ID_WESTWOOD_SND1) {
+    if (st->codec->codec_id == AV_CODEC_ID_WESTWOOD_SND1) {
         /* For Westwood SND1 audio we need to add the output size and input
            size to the start of the packet to match what is in VQA.
            Specifically, this is needed to signal when a packet should be

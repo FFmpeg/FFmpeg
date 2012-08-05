@@ -27,7 +27,7 @@
 
 static void amr_decode_fix_avctx(AVCodecContext *avctx)
 {
-    const int is_amr_wb = 1 + (avctx->codec_id == CODEC_ID_AMR_WB);
+    const int is_amr_wb = 1 + (avctx->codec_id == AV_CODEC_ID_AMR_WB);
 
     if (!avctx->sample_rate)
         avctx->sample_rate = 8000 * is_amr_wb;
@@ -174,7 +174,7 @@ static int amr_nb_decode_frame(AVCodecContext *avctx, void *data,
 AVCodec ff_libopencore_amrnb_decoder = {
     .name           = "libopencore_amrnb",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_AMR_NB,
+    .id             = AV_CODEC_ID_AMR_NB,
     .priv_data_size = sizeof(AMRContext),
     .init           = amr_nb_decode_init,
     .close          = amr_nb_decode_close,
@@ -291,7 +291,7 @@ static int amr_nb_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 AVCodec ff_libopencore_amrnb_encoder = {
     .name           = "libopencore_amrnb",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_AMR_NB,
+    .id             = AV_CODEC_ID_AMR_NB,
     .priv_data_size = sizeof(AMRContext),
     .init           = amr_nb_encode_init,
     .encode2        = amr_nb_encode_frame,
@@ -380,7 +380,7 @@ static int amr_wb_decode_close(AVCodecContext *avctx)
 AVCodec ff_libopencore_amrwb_decoder = {
     .name           = "libopencore_amrwb",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_AMR_WB,
+    .id             = AV_CODEC_ID_AMR_WB,
     .priv_data_size = sizeof(AMRWBContext),
     .init           = amr_wb_decode_init,
     .close          = amr_wb_decode_close,

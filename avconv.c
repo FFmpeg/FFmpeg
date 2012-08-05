@@ -1337,7 +1337,7 @@ static void do_subtitle_out(AVFormatContext *s,
     /* Note: DVB subtitle need one packet to draw them and one other
        packet to clear them */
     /* XXX: signal it in the codec context ? */
-    if (enc->codec_id == CODEC_ID_DVB_SUBTITLE)
+    if (enc->codec_id == AV_CODEC_ID_DVB_SUBTITLE)
         nb = 2;
     else
         nb = 1;
@@ -1363,7 +1363,7 @@ static void do_subtitle_out(AVFormatContext *s,
         pkt.data = subtitle_out;
         pkt.size = subtitle_out_size;
         pkt.pts  = av_rescale_q(sub->pts, AV_TIME_BASE_Q, ost->st->time_base);
-        if (enc->codec_id == CODEC_ID_DVB_SUBTITLE) {
+        if (enc->codec_id == AV_CODEC_ID_DVB_SUBTITLE) {
             /* XXX: the pts correction is handled here. Maybe handling
                it in the codec would be better */
             if (i == 0)
@@ -1416,7 +1416,7 @@ static void do_video_out(AVFormatContext *s,
         return;
 
     if (s->oformat->flags & AVFMT_RAWPICTURE &&
-        enc->codec->id == CODEC_ID_RAWVIDEO) {
+        enc->codec->id == AV_CODEC_ID_RAWVIDEO) {
         /* raw pictures are written as AVPicture structure to
            avoid any copies. We support temporarily the older
            method. */
@@ -1736,7 +1736,7 @@ static void flush_encoders(void)
 
         if (ost->st->codec->codec_type == AVMEDIA_TYPE_AUDIO && enc->frame_size <= 1)
             continue;
-        if (ost->st->codec->codec_type == AVMEDIA_TYPE_VIDEO && (os->oformat->flags & AVFMT_RAWPICTURE) && enc->codec->id == CODEC_ID_RAWVIDEO)
+        if (ost->st->codec->codec_type == AVMEDIA_TYPE_VIDEO && (os->oformat->flags & AVFMT_RAWPICTURE) && enc->codec->id == AV_CODEC_ID_RAWVIDEO)
             continue;
 
         for (;;) {
@@ -1850,10 +1850,10 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     opkt.flags    = pkt->flags;
 
     // FIXME remove the following 2 lines they shall be replaced by the bitstream filters
-    if (  ost->st->codec->codec_id != CODEC_ID_H264
-       && ost->st->codec->codec_id != CODEC_ID_MPEG1VIDEO
-       && ost->st->codec->codec_id != CODEC_ID_MPEG2VIDEO
-       && ost->st->codec->codec_id != CODEC_ID_VC1
+    if (  ost->st->codec->codec_id != AV_CODEC_ID_H264
+       && ost->st->codec->codec_id != AV_CODEC_ID_MPEG1VIDEO
+       && ost->st->codec->codec_id != AV_CODEC_ID_MPEG2VIDEO
+       && ost->st->codec->codec_id != AV_CODEC_ID_VC1
        ) {
         if (av_parser_change(ist->st->parser, ost->st->codec, &opkt.data, &opkt.size, pkt->data, pkt->size, pkt->flags & AV_PKT_FLAG_KEY))
             opkt.destruct = av_destruct_packet;
@@ -4230,7 +4230,7 @@ static void opt_output_file(void *optctx, const char *filename)
         }
 
         /* video: highest resolution */
-        if (!o->video_disable && oc->oformat->video_codec != CODEC_ID_NONE) {
+        if (!o->video_disable && oc->oformat->video_codec != AV_CODEC_ID_NONE) {
             int area = 0, idx = -1;
             for (i = 0; i < nb_input_streams; i++) {
                 ist = input_streams[i];
@@ -4244,7 +4244,7 @@ static void opt_output_file(void *optctx, const char *filename)
         }
 
         /* audio: most channels */
-        if (!o->audio_disable && oc->oformat->audio_codec != CODEC_ID_NONE) {
+        if (!o->audio_disable && oc->oformat->audio_codec != AV_CODEC_ID_NONE) {
             int channels = 0, idx = -1;
             for (i = 0; i < nb_input_streams; i++) {
                 ist = input_streams[i];
@@ -4258,7 +4258,7 @@ static void opt_output_file(void *optctx, const char *filename)
         }
 
         /* subtitles: pick first */
-        if (!o->subtitle_disable && oc->oformat->subtitle_codec != CODEC_ID_NONE) {
+        if (!o->subtitle_disable && oc->oformat->subtitle_codec != AV_CODEC_ID_NONE) {
             for (i = 0; i < nb_input_streams; i++)
                 if (input_streams[i]->st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
                     NEW_STREAM(subtitle, i);

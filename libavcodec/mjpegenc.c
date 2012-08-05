@@ -196,7 +196,7 @@ static void jpeg_put_comments(MpegEncContext *s)
 
 void ff_mjpeg_encode_picture_header(MpegEncContext *s)
 {
-    const int lossless= s->avctx->codec_id != CODEC_ID_MJPEG;
+    const int lossless= s->avctx->codec_id != AV_CODEC_ID_MJPEG;
 
     put_marker(&s->pb, SOI);
 
@@ -205,8 +205,8 @@ void ff_mjpeg_encode_picture_header(MpegEncContext *s)
     jpeg_table_header(s);
 
     switch(s->avctx->codec_id){
-    case CODEC_ID_MJPEG:  put_marker(&s->pb, SOF0 ); break;
-    case CODEC_ID_LJPEG:  put_marker(&s->pb, SOF3 ); break;
+    case AV_CODEC_ID_MJPEG:  put_marker(&s->pb, SOF0 ); break;
+    case AV_CODEC_ID_LJPEG:  put_marker(&s->pb, SOF3 ); break;
     default: assert(0);
     }
 
@@ -268,8 +268,8 @@ void ff_mjpeg_encode_picture_header(MpegEncContext *s)
     put_bits(&s->pb, 8, lossless ? s->avctx->prediction_method+1 : 0); /* Ss (not used) */
 
     switch(s->avctx->codec_id){
-    case CODEC_ID_MJPEG:  put_bits(&s->pb, 8, 63); break; /* Se (not used) */
-    case CODEC_ID_LJPEG:  put_bits(&s->pb, 8,  0); break; /* not used */
+    case AV_CODEC_ID_MJPEG:  put_bits(&s->pb, 8, 63); break; /* Se (not used) */
+    case AV_CODEC_ID_LJPEG:  put_bits(&s->pb, 8,  0); break; /* not used */
     default: assert(0);
     }
 
@@ -448,7 +448,7 @@ void ff_mjpeg_encode_mb(MpegEncContext *s, DCTELEM block[6][64])
 AVCodec ff_mjpeg_encoder = {
     .name           = "mjpeg",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_MJPEG,
+    .id             = AV_CODEC_ID_MJPEG,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_MPV_encode_init,
     .encode2        = ff_MPV_encode_picture,

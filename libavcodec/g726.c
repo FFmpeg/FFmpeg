@@ -399,7 +399,7 @@ static const AVCodecDefault defaults[] = {
 AVCodec ff_adpcm_g726_encoder = {
     .name           = "g726",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_ADPCM_G726,
+    .id             = AV_CODEC_ID_ADPCM_G726,
     .priv_data_size = sizeof(G726Context),
     .init           = g726_encode_init,
     .encode2        = g726_encode_frame,
@@ -491,7 +491,7 @@ static void g726_decode_flush(AVCodecContext *avctx)
 AVCodec ff_adpcm_g726_decoder = {
     .name           = "g726",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_ADPCM_G726,
+    .id             = AV_CODEC_ID_ADPCM_G726,
     .priv_data_size = sizeof(G726Context),
     .init           = g726_decode_init,
     .decode         = g726_decode_frame,

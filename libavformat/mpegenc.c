@@ -343,11 +343,11 @@ static int mpeg_mux_init(AVFormatContext *ctx)
 
         switch(st->codec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
-            if        (st->codec->codec_id == CODEC_ID_AC3) {
+            if        (st->codec->codec_id == AV_CODEC_ID_AC3) {
                 stream->id = ac3_id++;
-            } else if (st->codec->codec_id == CODEC_ID_DTS) {
+            } else if (st->codec->codec_id == AV_CODEC_ID_DTS) {
                 stream->id = dts_id++;
-            } else if (st->codec->codec_id == CODEC_ID_PCM_S16BE) {
+            } else if (st->codec->codec_id == AV_CODEC_ID_PCM_S16BE) {
                 stream->id = lpcm_id++;
                 for(j = 0; j < 4; j++) {
                     if (lpcm_freq_tab[j] == st->codec->sample_rate)
@@ -1148,8 +1148,8 @@ AVOutputFormat ff_mpeg1system_muxer = {
     .mime_type         = "video/mpeg",
     .extensions        = "mpg,mpeg",
     .priv_data_size    = sizeof(MpegMuxContext),
-    .audio_codec       = CODEC_ID_MP2,
-    .video_codec       = CODEC_ID_MPEG1VIDEO,
+    .audio_codec       = AV_CODEC_ID_MP2,
+    .video_codec       = AV_CODEC_ID_MPEG1VIDEO,
     .write_header      = mpeg_mux_init,
     .write_packet      = mpeg_mux_write_packet,
     .write_trailer     = mpeg_mux_end,
@@ -1163,8 +1163,8 @@ AVOutputFormat ff_mpeg1vcd_muxer = {
     .long_name         = NULL_IF_CONFIG_SMALL("MPEG-1 Systems / MPEG program stream (VCD)"),
     .mime_type         = "video/mpeg",
     .priv_data_size    = sizeof(MpegMuxContext),
-    .audio_codec       = CODEC_ID_MP2,
-    .video_codec       = CODEC_ID_MPEG1VIDEO,
+    .audio_codec       = AV_CODEC_ID_MP2,
+    .video_codec       = AV_CODEC_ID_MPEG1VIDEO,
     .write_header      = mpeg_mux_init,
     .write_packet      = mpeg_mux_write_packet,
     .write_trailer     = mpeg_mux_end,
@@ -1179,8 +1179,8 @@ AVOutputFormat ff_mpeg2vob_muxer = {
     .mime_type         = "video/mpeg",
     .extensions        = "vob",
     .priv_data_size    = sizeof(MpegMuxContext),
-    .audio_codec       = CODEC_ID_MP2,
-    .video_codec       = CODEC_ID_MPEG2VIDEO,
+    .audio_codec       = AV_CODEC_ID_MP2,
+    .video_codec       = AV_CODEC_ID_MPEG2VIDEO,
     .write_header      = mpeg_mux_init,
     .write_packet      = mpeg_mux_write_packet,
     .write_trailer     = mpeg_mux_end,
@@ -1197,8 +1197,8 @@ AVOutputFormat ff_mpeg2svcd_muxer = {
     .mime_type         = "video/mpeg",
     .extensions        = "vob",
     .priv_data_size    = sizeof(MpegMuxContext),
-    .audio_codec       = CODEC_ID_MP2,
-    .video_codec       = CODEC_ID_MPEG2VIDEO,
+    .audio_codec       = AV_CODEC_ID_MP2,
+    .video_codec       = AV_CODEC_ID_MPEG2VIDEO,
     .write_header      = mpeg_mux_init,
     .write_packet      = mpeg_mux_write_packet,
     .write_trailer     = mpeg_mux_end,
@@ -1215,8 +1215,8 @@ AVOutputFormat ff_mpeg2dvd_muxer = {
     .mime_type         = "video/mpeg",
     .extensions        = "dvd",
     .priv_data_size    = sizeof(MpegMuxContext),
-    .audio_codec       = CODEC_ID_MP2,
-    .video_codec       = CODEC_ID_MPEG2VIDEO,
+    .audio_codec       = AV_CODEC_ID_MP2,
+    .video_codec       = AV_CODEC_ID_MPEG2VIDEO,
     .write_header      = mpeg_mux_init,
     .write_packet      = mpeg_mux_write_packet,
     .write_trailer     = mpeg_mux_end,

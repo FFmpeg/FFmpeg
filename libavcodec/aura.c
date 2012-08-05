@@ -125,7 +125,7 @@ static av_cold int aura_decode_end(AVCodecContext *avctx)
 AVCodec ff_aura2_decoder = {
     .name           = "aura2",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_AURA2,
+    .id             = AV_CODEC_ID_AURA2,
     .priv_data_size = sizeof(AuraDecodeContext),
     .init           = aura_decode_init,
     .close          = aura_decode_end,

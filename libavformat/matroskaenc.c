@@ -423,7 +423,7 @@ static int put_xiph_codecpriv(AVFormatContext *s, AVIOContext *pb, AVCodecContex
     int first_header_size;
     int j;
 
-    if (codec->codec_id == CODEC_ID_VORBIS)
+    if (codec->codec_id == AV_CODEC_ID_VORBIS)
         first_header_size = 30;
     else
         first_header_size = 42;
@@ -469,11 +469,11 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb, AVCodecCo
         return ret;
 
     if (native_id) {
-        if (codec->codec_id == CODEC_ID_VORBIS || codec->codec_id == CODEC_ID_THEORA)
+        if (codec->codec_id == AV_CODEC_ID_VORBIS || codec->codec_id == AV_CODEC_ID_THEORA)
             ret = put_xiph_codecpriv(s, dyn_cp, codec);
-        else if (codec->codec_id == CODEC_ID_FLAC)
+        else if (codec->codec_id == AV_CODEC_ID_FLAC)
             ret = ff_flac_write_header(dyn_cp, codec, 1);
-        else if (codec->codec_id == CODEC_ID_H264)
+        else if (codec->codec_id == AV_CODEC_ID_H264)
             ret = ff_isom_write_avcc(dyn_cp, codec->extradata, codec->extradata_size);
         else if (codec->extradata_size)
             avio_write(dyn_cp, codec->extradata, codec->extradata_size);
@@ -544,7 +544,7 @@ static int mkv_write_tracks(AVFormatContext *s)
         if (!bit_depth)
             bit_depth = av_get_bytes_per_sample(codec->sample_fmt) << 3;
 
-        if (codec->codec_id == CODEC_ID_AAC)
+        if (codec->codec_id == AV_CODEC_ID_AAC)
             get_aac_sample_rates(s, codec, &sample_rate, &output_sample_rate);
 
         track = start_ebml_master(pb, MATROSKA_ID_TRACKENTRY, 0);
@@ -562,7 +562,7 @@ static int mkv_write_tracks(AVFormatContext *s)
 
         // look for a codec ID string specific to mkv to use,
         // if none are found, use AVI codes
-        for (j = 0; ff_mkv_codec_tags[j].id != CODEC_ID_NONE; j++) {
+        for (j = 0; ff_mkv_codec_tags[j].id != AV_CODEC_ID_NONE; j++) {
             if (ff_mkv_codec_tags[j].id == codec->codec_id) {
                 put_ebml_string(pb, MATROSKA_ID_CODECID, ff_mkv_codec_tags[j].str);
                 native_id = 1;
@@ -570,8 +570,8 @@ static int mkv_write_tracks(AVFormatContext *s)
             }
         }
 
-        if (mkv->mode == MODE_WEBM && !(codec->codec_id == CODEC_ID_VP8 ||
-                                        codec->codec_id == CODEC_ID_VORBIS)) {
+        if (mkv->mode == MODE_WEBM && !(codec->codec_id == AV_CODEC_ID_VP8 ||
+                                        codec->codec_id == AV_CODEC_ID_VORBIS)) {
             av_log(s, AV_LOG_ERROR,
                    "Only VP8 video and Vorbis audio are supported for WebM.\n");
             return AVERROR(EINVAL);
@@ -585,9 +585,9 @@ static int mkv_write_tracks(AVFormatContext *s)
                 if (!native_id &&
                       ff_codec_get_tag(ff_codec_movvideo_tags, codec->codec_id) &&
                     (!ff_codec_get_tag(ff_codec_bmp_tags,   codec->codec_id)
-                     || codec->codec_id == CODEC_ID_SVQ1
-                     || codec->codec_id == CODEC_ID_SVQ3
-                     || codec->codec_id == CODEC_ID_CINEPAK))
+                     || codec->codec_id == AV_CODEC_ID_SVQ1
+                     || codec->codec_id == AV_CODEC_ID_SVQ3
+                     || codec->codec_id == AV_CODEC_ID_CINEPAK))
                     qt_id = 1;
 
                 if (qt_id)
@@ -848,9 +848,9 @@ static int mkv_write_attachments(AVFormatContext *s)
         put_ebml_string(pb, MATROSKA_ID_FILENAME, t->value);
         if (t = av_dict_get(st->metadata, "mimetype", NULL, 0))
             mimetype = t->value;
-        else if (st->codec->codec_id != CODEC_ID_NONE ) {
+        else if (st->codec->codec_id != AV_CODEC_ID_NONE ) {
             int i;
-            for (i = 0; ff_mkv_mime_tags[i].id != CODEC_ID_NONE; i++)
+            for (i = 0; ff_mkv_mime_tags[i].id != AV_CODEC_ID_NONE; i++)
                 if (ff_mkv_mime_tags[i].id == st->codec->codec_id) {
                     mimetype = ff_mkv_mime_tags[i].str;
                     break;
@@ -1046,7 +1046,7 @@ static void mkv_write_block(AVFormatContext *s, AVIOContext *pb,
     av_log(s, AV_LOG_DEBUG, "Writing block at offset %" PRIu64 ", size %d, "
            "pts %" PRId64 ", dts %" PRId64 ", duration %d, flags %d\n",
            avio_tell(pb), pkt->size, pkt->pts, pkt->dts, pkt->duration, flags);
-    if (codec->codec_id == CODEC_ID_H264 && codec->extradata_size > 0 &&
+    if (codec->codec_id == AV_CODEC_ID_H264 && codec->extradata_size > 0 &&
         (AV_RB24(codec->extradata) == 1 || AV_RB32(codec->extradata) == 1))
         ff_avc_parse_nal_units_buf(pkt->data, &data, &size);
     else
@@ -1141,9 +1141,9 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
 
     if (codec->codec_type != AVMEDIA_TYPE_SUBTITLE) {
         mkv_write_block(s, pb, MATROSKA_ID_SIMPLEBLOCK, pkt, keyframe << 7);
-    } else if (codec->codec_id == CODEC_ID_SSA) {
+    } else if (codec->codec_id == AV_CODEC_ID_SSA) {
         duration = mkv_write_ass_blocks(s, pb, pkt);
-    } else if (codec->codec_id == CODEC_ID_SRT) {
+    } else if (codec->codec_id == AV_CODEC_ID_SRT) {
         duration = mkv_write_srt_blocks(s, pb, pkt);
     } else {
         ebml_master blockgroup = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP, mkv_blockgroup_size(pkt->size));
@@ -1269,10 +1269,10 @@ static int mkv_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-static int mkv_query_codec(enum CodecID codec_id, int std_compliance)
+static int mkv_query_codec(enum AVCodecID codec_id, int std_compliance)
 {
     int i;
-    for (i = 0; ff_mkv_codec_tags[i].id != CODEC_ID_NONE; i++)
+    for (i = 0; ff_mkv_codec_tags[i].id != AV_CODEC_ID_NONE; i++)
         if (ff_mkv_codec_tags[i].id == codec_id)
             return 1;
 
@@ -1293,9 +1293,9 @@ AVOutputFormat ff_matroska_muxer = {
     .extensions        = "mkv",
     .priv_data_size    = sizeof(MatroskaMuxContext),
     .audio_codec       = CONFIG_LIBVORBIS_ENCODER ?
-                         CODEC_ID_VORBIS : CODEC_ID_AC3,
+                         AV_CODEC_ID_VORBIS : AV_CODEC_ID_AC3,
     .video_codec       = CONFIG_LIBX264_ENCODER ?
-                         CODEC_ID_H264 : CODEC_ID_MPEG4,
+                         AV_CODEC_ID_H264 : AV_CODEC_ID_MPEG4,
     .write_header      = mkv_write_header,
     .write_packet      = mkv_write_packet,
     .write_trailer     = mkv_write_trailer,
@@ -1304,7 +1304,7 @@ AVOutputFormat ff_matroska_muxer = {
     .codec_tag         = (const AVCodecTag* const []){
          ff_codec_bmp_tags, ff_codec_wav_tags, 0
     },
-    .subtitle_codec    = CODEC_ID_SSA,
+    .subtitle_codec    = AV_CODEC_ID_SSA,
     .query_codec       = mkv_query_codec,
 };
 #endif
@@ -1316,8 +1316,8 @@ AVOutputFormat ff_webm_muxer = {
     .mime_type         = "video/webm",
     .extensions        = "webm",
     .priv_data_size    = sizeof(MatroskaMuxContext),
-    .audio_codec       = CODEC_ID_VORBIS,
-    .video_codec       = CODEC_ID_VP8,
+    .audio_codec       = AV_CODEC_ID_VORBIS,
+    .video_codec       = AV_CODEC_ID_VP8,
     .write_header      = mkv_write_header,
     .write_packet      = mkv_write_packet,
     .write_trailer     = mkv_write_trailer,
@@ -1334,8 +1334,8 @@ AVOutputFormat ff_matroska_audio_muxer = {
     .extensions        = "mka",
     .priv_data_size    = sizeof(MatroskaMuxContext),
     .audio_codec       = CONFIG_LIBVORBIS_ENCODER ?
-                         CODEC_ID_VORBIS : CODEC_ID_AC3,
-    .video_codec       = CODEC_ID_NONE,
+                         AV_CODEC_ID_VORBIS : AV_CODEC_ID_AC3,
+    .video_codec       = AV_CODEC_ID_NONE,
     .write_header      = mkv_write_header,
     .write_packet      = mkv_write_packet,
     .write_trailer     = mkv_write_trailer,

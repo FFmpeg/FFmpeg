@@ -126,7 +126,7 @@ static int dxa_read_header(AVFormatContext *s)
 
     /* now we are ready: build format streams */
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = CODEC_ID_DXA;
+    st->codec->codec_id   = AV_CODEC_ID_DXA;
     st->codec->width      = w;
     st->codec->height     = h;
     av_reduce(&den, &num, den, num, (1UL<<31)-1);

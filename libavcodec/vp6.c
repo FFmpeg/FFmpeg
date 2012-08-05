@@ -594,8 +594,8 @@ static av_cold int vp6_decode_init(AVCodecContext *avctx)
 {
     VP56Context *s = avctx->priv_data;
 
-    ff_vp56_init(avctx, avctx->codec->id == CODEC_ID_VP6,
-                        avctx->codec->id == CODEC_ID_VP6A);
+    ff_vp56_init(avctx, avctx->codec->id == AV_CODEC_ID_VP6,
+                        avctx->codec->id == AV_CODEC_ID_VP6A);
     s->vp56_coord_div = vp6_coord_div;
     s->parse_vector_adjustment = vp6_parse_vector_adjustment;
     s->filter = vp6_filter;
@@ -627,7 +627,7 @@ static av_cold int vp6_decode_free(AVCodecContext *avctx)
 AVCodec ff_vp6_decoder = {
     .name           = "vp6",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_VP6,
+    .id             = AV_CODEC_ID_VP6,
     .priv_data_size = sizeof(VP56Context),
     .init           = vp6_decode_init,
     .close          = vp6_decode_free,
@@ -640,7 +640,7 @@ AVCodec ff_vp6_decoder = {
 AVCodec ff_vp6f_decoder = {
     .name           = "vp6f",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_VP6F,
+    .id             = AV_CODEC_ID_VP6F,
     .priv_data_size = sizeof(VP56Context),
     .init           = vp6_decode_init,
     .close          = vp6_decode_free,
@@ -653,7 +653,7 @@ AVCodec ff_vp6f_decoder = {
 AVCodec ff_vp6a_decoder = {
     .name           = "vp6a",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_VP6A,
+    .id             = AV_CODEC_ID_VP6A,
     .priv_data_size = sizeof(VP56Context),
     .init           = vp6_decode_init,
     .close          = vp6_decode_free,

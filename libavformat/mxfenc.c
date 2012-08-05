@@ -82,13 +82,13 @@ typedef struct {
 } MXFContainerEssenceEntry;
 
 static const struct {
-    enum CodecID id;
+    enum AVCodecID id;
     int index;
 } mxf_essence_mappings[] = {
-    { CODEC_ID_MPEG2VIDEO, 0 },
-    { CODEC_ID_PCM_S24LE,  1 },
-    { CODEC_ID_PCM_S16LE,  1 },
-    { CODEC_ID_NONE }
+    { AV_CODEC_ID_MPEG2VIDEO, 0 },
+    { AV_CODEC_ID_PCM_S24LE,  1 },
+    { AV_CODEC_ID_PCM_S16LE,  1 },
+    { AV_CODEC_ID_NONE }
 };
 
 static void mxf_write_wav_desc(AVFormatContext *s, AVStream *st);
@@ -366,7 +366,7 @@ static void klv_encode_ber4_length(AVIOContext *pb, int len)
 /*
  * Get essence container ul index
  */
-static int mxf_get_essence_container_ul_index(enum CodecID id)
+static int mxf_get_essence_container_ul_index(enum AVCodecID id)
 {
     int i;
     for (i = 0; mxf_essence_mappings[i].id; i++)
@@ -1476,8 +1476,8 @@ static int mxf_write_header(AVFormatContext *s)
                     av_log(s, AV_LOG_ERROR, "MXF D-10 only support one audio track\n");
                     return -1;
                 }
-                if (st->codec->codec_id != CODEC_ID_PCM_S16LE &&
-                    st->codec->codec_id != CODEC_ID_PCM_S24LE) {
+                if (st->codec->codec_id != AV_CODEC_ID_PCM_S16LE &&
+                    st->codec->codec_id != AV_CODEC_ID_PCM_S24LE) {
                     av_log(s, AV_LOG_ERROR, "MXF D-10 only support 16 or 24 bits le audio\n");
                 }
                 sc->index = ((MXFStreamContext*)s->streams[0]->priv_data)->index + 1;
@@ -1652,7 +1652,7 @@ static void mxf_write_d10_audio_packet(AVFormatContext *s, AVStream *st, AVPacke
     while (samples < end) {
         for (i = 0; i < st->codec->channels; i++) {
             uint32_t sample;
-            if (st->codec->codec_id == CODEC_ID_PCM_S24LE) {
+            if (st->codec->codec_id == AV_CODEC_ID_PCM_S24LE) {
                 sample = AV_RL24(samples)<< 4;
                 samples += 3;
             } else {
@@ -1683,7 +1683,7 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
-    if (st->codec->codec_id == CODEC_ID_MPEG2VIDEO) {
+    if (st->codec->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
         if (!mxf_parse_mpeg2_frame(s, st, pkt, &ie)) {
             av_log(s, AV_LOG_ERROR, "could not get mpeg2 profile and level\n");
             return -1;
@@ -1894,8 +1894,8 @@ AVOutputFormat ff_mxf_muxer = {
     .mime_type         = "application/mxf",
     .extensions        = "mxf",
     .priv_data_size    = sizeof(MXFContext),
-    .audio_codec       = CODEC_ID_PCM_S16LE,
-    .video_codec       = CODEC_ID_MPEG2VIDEO,
+    .audio_codec       = AV_CODEC_ID_PCM_S16LE,
+    .video_codec       = AV_CODEC_ID_MPEG2VIDEO,
     .write_header      = mxf_write_header,
     .write_packet      = mxf_write_packet,
     .write_trailer     = mxf_write_footer,
@@ -1908,8 +1908,8 @@ AVOutputFormat ff_mxf_d10_muxer = {
     .long_name         = NULL_IF_CONFIG_SMALL("MXF (Material eXchange Format) D-10 Mapping"),
     .mime_type         = "application/mxf",
     .priv_data_size    = sizeof(MXFContext),
-    .audio_codec       = CODEC_ID_PCM_S16LE,
-    .video_codec       = CODEC_ID_MPEG2VIDEO,
+    .audio_codec       = AV_CODEC_ID_PCM_S16LE,
+    .video_codec       = AV_CODEC_ID_MPEG2VIDEO,
     .write_header      = mxf_write_header,
     .write_packet      = mxf_write_packet,
     .write_trailer     = mxf_write_footer,

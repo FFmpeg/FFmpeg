@@ -1740,7 +1740,7 @@ static av_cold void flush(AVCodecContext *avctx)
 AVCodec ff_als_decoder = {
     .name           = "als",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_MP4ALS,
+    .id             = AV_CODEC_ID_MP4ALS,
     .priv_data_size = sizeof(ALSDecContext),
     .init           = decode_init,
     .close          = decode_end,

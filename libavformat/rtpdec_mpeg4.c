@@ -202,7 +202,7 @@ static int parse_fmtp(AVStream *stream, PayloadContext *data,
             return res;
     }
 
-    if (codec->codec_id == CODEC_ID_AAC) {
+    if (codec->codec_id == AV_CODEC_ID_AAC) {
         /* Looking for a known attribute */
         for (i = 0; attr_names[i].str; ++i) {
             if (!av_strcasecmp(attr, attr_names[i].str)) {
@@ -235,14 +235,14 @@ static int parse_sdp_line(AVFormatContext *s, int st_index,
 RTPDynamicProtocolHandler ff_mp4v_es_dynamic_handler = {
     .enc_name           = "MP4V-ES",
     .codec_type         = AVMEDIA_TYPE_VIDEO,
-    .codec_id           = CODEC_ID_MPEG4,
+    .codec_id           = AV_CODEC_ID_MPEG4,
     .parse_sdp_a_line   = parse_sdp_line,
 };
 
 RTPDynamicProtocolHandler ff_mpeg4_generic_dynamic_handler = {
     .enc_name           = "mpeg4-generic",
     .codec_type         = AVMEDIA_TYPE_AUDIO,
-    .codec_id           = CODEC_ID_AAC,
+    .codec_id           = AV_CODEC_ID_AAC,
     .parse_sdp_a_line   = parse_sdp_line,
     .alloc              = new_context,
     .free               = free_context,

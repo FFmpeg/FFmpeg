@@ -652,7 +652,7 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx, void *data,
 AVCodec ff_vmdvideo_decoder = {
     .name           = "vmdvideo",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_VMDVIDEO,
+    .id             = AV_CODEC_ID_VMDVIDEO,
     .priv_data_size = sizeof(VmdVideoContext),
     .init           = vmdvideo_decode_init,
     .close          = vmdvideo_decode_end,
@@ -664,7 +664,7 @@ AVCodec ff_vmdvideo_decoder = {
 AVCodec ff_vmdaudio_decoder = {
     .name           = "vmdaudio",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_VMDAUDIO,
+    .id             = AV_CODEC_ID_VMDAUDIO,
     .priv_data_size = sizeof(VmdAudioContext),
     .init           = vmdaudio_decode_init,
     .decode         = vmdaudio_decode_frame,

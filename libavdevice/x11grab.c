@@ -314,7 +314,7 @@ x11grab_read_header(AVFormatContext *s1)
     x11grab->use_shm = use_shm;
 
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = CODEC_ID_RAWVIDEO;
+    st->codec->codec_id = AV_CODEC_ID_RAWVIDEO;
     st->codec->width  = x11grab->width;
     st->codec->height = x11grab->height;
     st->codec->pix_fmt = input_pixfmt;

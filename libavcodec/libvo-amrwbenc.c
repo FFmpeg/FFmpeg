@@ -143,7 +143,7 @@ static int amr_wb_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 AVCodec ff_libvo_amrwbenc_encoder = {
     .name           = "libvo_amrwbenc",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_AMR_WB,
+    .id             = AV_CODEC_ID_AMR_WB,
     .priv_data_size = sizeof(AMRWBContext),
     .init           = amr_wb_encode_init,
     .encode2        = amr_wb_encode_frame,

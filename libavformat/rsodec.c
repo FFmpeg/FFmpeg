@@ -32,7 +32,7 @@ static int rso_read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     int id, rate, bps;
     unsigned int size;
-    enum CodecID codec;
+    enum AVCodecID codec;
     AVStream *st;
 
     id   = avio_rb16(pb);
@@ -42,7 +42,7 @@ static int rso_read_header(AVFormatContext *s)
 
     codec = ff_codec_get_id(ff_codec_rso_tags, id);
 
-    if (codec == CODEC_ID_ADPCM_IMA_WAV) {
+    if (codec == AV_CODEC_ID_ADPCM_IMA_WAV) {
         av_log(s, AV_LOG_ERROR, "ADPCM in RSO not implemented\n");
         return AVERROR_PATCHWELCOME;
     }

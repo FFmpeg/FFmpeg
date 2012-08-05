@@ -93,34 +93,34 @@ static int flv_same_audio_codec(AVCodecContext *acodec, int flags)
     switch(flv_codecid) {
         //no distinction between S16 and S8 PCM codec flags
     case FLV_CODECID_PCM:
-        codec_id = bits_per_coded_sample == 8 ? CODEC_ID_PCM_U8 :
+        codec_id = bits_per_coded_sample == 8 ? AV_CODEC_ID_PCM_U8 :
 #if HAVE_BIGENDIAN
-                            CODEC_ID_PCM_S16BE;
+                            AV_CODEC_ID_PCM_S16BE;
 #else
-                            CODEC_ID_PCM_S16LE;
+                            AV_CODEC_ID_PCM_S16LE;
 #endif
         return codec_id == acodec->codec_id;
     case FLV_CODECID_PCM_LE:
-        codec_id = bits_per_coded_sample == 8 ? CODEC_ID_PCM_U8 : CODEC_ID_PCM_S16LE;
+        codec_id = bits_per_coded_sample == 8 ? AV_CODEC_ID_PCM_U8 : AV_CODEC_ID_PCM_S16LE;
         return codec_id == acodec->codec_id;
     case FLV_CODECID_AAC:
-        return acodec->codec_id == CODEC_ID_AAC;
+        return acodec->codec_id == AV_CODEC_ID_AAC;
     case FLV_CODECID_ADPCM:
-        return acodec->codec_id == CODEC_ID_ADPCM_SWF;
+        return acodec->codec_id == AV_CODEC_ID_ADPCM_SWF;
     case FLV_CODECID_SPEEX:
-        return acodec->codec_id == CODEC_ID_SPEEX;
+        return acodec->codec_id == AV_CODEC_ID_SPEEX;
     case FLV_CODECID_MP3:
-        return acodec->codec_id == CODEC_ID_MP3;
+        return acodec->codec_id == AV_CODEC_ID_MP3;
     case FLV_CODECID_NELLYMOSER_8KHZ_MONO:
     case FLV_CODECID_NELLYMOSER_16KHZ_MONO:
     case FLV_CODECID_NELLYMOSER:
-        return acodec->codec_id == CODEC_ID_NELLYMOSER;
+        return acodec->codec_id == AV_CODEC_ID_NELLYMOSER;
     case FLV_CODECID_PCM_MULAW:
         return acodec->sample_rate == 8000 &&
-               acodec->codec_id == CODEC_ID_PCM_MULAW;
+               acodec->codec_id == AV_CODEC_ID_PCM_MULAW;
     case FLV_CODECID_PCM_ALAW:
         return acodec->sample_rate = 8000 &&
-               acodec->codec_id == CODEC_ID_PCM_ALAW;
+               acodec->codec_id == AV_CODEC_ID_PCM_ALAW;
     default:
         return acodec->codec_tag == (flv_codecid >> FLV_AUDIO_CODECID_OFFSET);
     }
@@ -132,40 +132,40 @@ static void flv_set_audio_codec(AVFormatContext *s, AVStream *astream, AVCodecCo
     switch(flv_codecid) {
         //no distinction between S16 and S8 PCM codec flags
         case FLV_CODECID_PCM:
-            acodec->codec_id = acodec->bits_per_coded_sample == 8 ? CODEC_ID_PCM_U8 :
+            acodec->codec_id = acodec->bits_per_coded_sample == 8 ? AV_CODEC_ID_PCM_U8 :
 #if HAVE_BIGENDIAN
-                                CODEC_ID_PCM_S16BE;
+                                AV_CODEC_ID_PCM_S16BE;
 #else
-                                CODEC_ID_PCM_S16LE;
+                                AV_CODEC_ID_PCM_S16LE;
 #endif
             break;
         case FLV_CODECID_PCM_LE:
-            acodec->codec_id = acodec->bits_per_coded_sample == 8 ? CODEC_ID_PCM_U8 : CODEC_ID_PCM_S16LE; break;
-        case FLV_CODECID_AAC  : acodec->codec_id = CODEC_ID_AAC;                                    break;
-        case FLV_CODECID_ADPCM: acodec->codec_id = CODEC_ID_ADPCM_SWF;                              break;
+            acodec->codec_id = acodec->bits_per_coded_sample == 8 ? AV_CODEC_ID_PCM_U8 : AV_CODEC_ID_PCM_S16LE; break;
+        case FLV_CODECID_AAC  : acodec->codec_id = AV_CODEC_ID_AAC;                                    break;
+        case FLV_CODECID_ADPCM: acodec->codec_id = AV_CODEC_ID_ADPCM_SWF;                              break;
         case FLV_CODECID_SPEEX:
-            acodec->codec_id = CODEC_ID_SPEEX;
+            acodec->codec_id = AV_CODEC_ID_SPEEX;
             acodec->sample_rate = 16000;
             break;
-        case FLV_CODECID_MP3  : acodec->codec_id = CODEC_ID_MP3      ; astream->need_parsing = AVSTREAM_PARSE_FULL; break;
+        case FLV_CODECID_MP3  : acodec->codec_id = AV_CODEC_ID_MP3      ; astream->need_parsing = AVSTREAM_PARSE_FULL; break;
         case FLV_CODECID_NELLYMOSER_8KHZ_MONO:
             acodec->sample_rate = 8000; //in case metadata does not otherwise declare samplerate
-            acodec->codec_id = CODEC_ID_NELLYMOSER;
+            acodec->codec_id = AV_CODEC_ID_NELLYMOSER;
             break;
         case FLV_CODECID_NELLYMOSER_16KHZ_MONO:
             acodec->sample_rate = 16000;
-            acodec->codec_id = CODEC_ID_NELLYMOSER;
+            acodec->codec_id = AV_CODEC_ID_NELLYMOSER;
             break;
         case FLV_CODECID_NELLYMOSER:
-            acodec->codec_id = CODEC_ID_NELLYMOSER;
+            acodec->codec_id = AV_CODEC_ID_NELLYMOSER;
             break;
         case FLV_CODECID_PCM_MULAW:
             acodec->sample_rate = 8000;
-            acodec->codec_id = CODEC_ID_PCM_MULAW;
+            acodec->codec_id = AV_CODEC_ID_PCM_MULAW;
             break;
         case FLV_CODECID_PCM_ALAW:
             acodec->sample_rate = 8000;
-            acodec->codec_id = CODEC_ID_PCM_ALAW;
+            acodec->codec_id = AV_CODEC_ID_PCM_ALAW;
             break;
         default:
             av_log(s, AV_LOG_INFO, "Unsupported audio codec (%x)\n", flv_codecid >> FLV_AUDIO_CODECID_OFFSET);
@@ -182,17 +182,17 @@ static int flv_same_video_codec(AVCodecContext *vcodec, int flags)
 
     switch (flv_codecid) {
         case FLV_CODECID_H263:
-            return vcodec->codec_id == CODEC_ID_FLV1;
+            return vcodec->codec_id == AV_CODEC_ID_FLV1;
         case FLV_CODECID_SCREEN:
-            return vcodec->codec_id == CODEC_ID_FLASHSV;
+            return vcodec->codec_id == AV_CODEC_ID_FLASHSV;
         case FLV_CODECID_SCREEN2:
-            return vcodec->codec_id == CODEC_ID_FLASHSV2;
+            return vcodec->codec_id == AV_CODEC_ID_FLASHSV2;
         case FLV_CODECID_VP6:
-            return vcodec->codec_id == CODEC_ID_VP6F;
+            return vcodec->codec_id == AV_CODEC_ID_VP6F;
         case FLV_CODECID_VP6A:
-            return vcodec->codec_id == CODEC_ID_VP6A;
+            return vcodec->codec_id == AV_CODEC_ID_VP6A;
         case FLV_CODECID_H264:
-            return vcodec->codec_id == CODEC_ID_H264;
+            return vcodec->codec_id == AV_CODEC_ID_H264;
         default:
             return vcodec->codec_tag == flv_codecid;
     }
@@ -203,13 +203,13 @@ static int flv_same_video_codec(AVCodecContext *vcodec, int flags)
 static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream, int flv_codecid) {
     AVCodecContext *vcodec = vstream->codec;
     switch(flv_codecid) {
-        case FLV_CODECID_H263  : vcodec->codec_id = CODEC_ID_FLV1   ; break;
-        case FLV_CODECID_SCREEN: vcodec->codec_id = CODEC_ID_FLASHSV; break;
-        case FLV_CODECID_SCREEN2: vcodec->codec_id = CODEC_ID_FLASHSV2; break;
-        case FLV_CODECID_VP6   : vcodec->codec_id = CODEC_ID_VP6F   ;
+        case FLV_CODECID_H263  : vcodec->codec_id = AV_CODEC_ID_FLV1   ; break;
+        case FLV_CODECID_SCREEN: vcodec->codec_id = AV_CODEC_ID_FLASHSV; break;
+        case FLV_CODECID_SCREEN2: vcodec->codec_id = AV_CODEC_ID_FLASHSV2; break;
+        case FLV_CODECID_VP6   : vcodec->codec_id = AV_CODEC_ID_VP6F   ;
         case FLV_CODECID_VP6A  :
             if(flv_codecid == FLV_CODECID_VP6A)
-                vcodec->codec_id = CODEC_ID_VP6A;
+                vcodec->codec_id = AV_CODEC_ID_VP6A;
             if(vcodec->extradata_size != 1) {
                 vcodec->extradata_size = 1;
                 vcodec->extradata = av_malloc(1);
@@ -217,7 +217,7 @@ static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream, int flv_co
             vcodec->extradata[0] = avio_r8(s->pb);
             return 1; // 1 byte body size adjustment for flv_read_packet()
         case FLV_CODECID_H264:
-            vcodec->codec_id = CODEC_ID_H264;
+            vcodec->codec_id = AV_CODEC_ID_H264;
             return 3; // not 4, reading packet type will consume one byte
         default:
             av_log(s, AV_LOG_INFO, "Unsupported video codec (%x)\n", flv_codecid);
@@ -404,7 +404,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
                 AVStream *st = create_stream(s, AVMEDIA_TYPE_DATA);
                 if (!st)
                     return AVERROR(ENOMEM);
-                st->codec->codec_id = CODEC_ID_TEXT;
+                st->codec->codec_id = AV_CODEC_ID_TEXT;
             } else if (flv->trust_metadata) {
                 if (!strcmp(key, "videocodecid") && vcodec) {
                     flv_set_video_codec(s, vstream, num_val);
@@ -614,7 +614,7 @@ static int flv_data_packet(AVFormatContext *s, AVPacket *pkt,
         st = create_stream(s, AVMEDIA_TYPE_DATA);
         if (!st)
             goto out;
-        st->codec->codec_id = CODEC_ID_TEXT;
+        st->codec->codec_id = AV_CODEC_ID_TEXT;
     }
 
     pkt->dts  = dts;
@@ -769,11 +769,11 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         size -= flv_set_video_codec(s, st, flags & FLV_VIDEO_CODECID_MASK);
     }
 
-    if (st->codec->codec_id == CODEC_ID_AAC ||
-        st->codec->codec_id == CODEC_ID_H264) {
+    if (st->codec->codec_id == AV_CODEC_ID_AAC ||
+        st->codec->codec_id == AV_CODEC_ID_H264) {
         int type = avio_r8(s->pb);
         size--;
-        if (st->codec->codec_id == CODEC_ID_H264) {
+        if (st->codec->codec_id == AV_CODEC_ID_H264) {
             int32_t cts = (avio_rb24(s->pb)+0xff800000)^0xff800000; // sign extension
             pts = dts + cts;
             if (cts < 0) { // dts are wrong
@@ -792,7 +792,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
             if ((ret = flv_get_extradata(s, st, size)) < 0)
                 return ret;
-            if (st->codec->codec_id == CODEC_ID_AAC) {
+            if (st->codec->codec_id == AV_CODEC_ID_AAC) {
                 MPEG4AudioConfig cfg;
                 avpriv_mpeg4audio_get_config(&cfg, st->codec->extradata,
                                              st->codec->extradata_size * 8, 1);

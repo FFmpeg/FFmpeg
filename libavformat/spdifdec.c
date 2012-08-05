@@ -33,7 +33,7 @@
 static int spdif_get_offset_and_codec(AVFormatContext *s,
                                       enum IEC61937DataType data_type,
                                       const char *buf, int *offset,
-                                      enum CodecID *codec)
+                                      enum AVCodecID *codec)
 {
     AACADTSHeaderInfo aac_hdr;
     GetBitContext gbc;
@@ -41,19 +41,19 @@ static int spdif_get_offset_and_codec(AVFormatContext *s,
     switch (data_type & 0xff) {
     case IEC61937_AC3:
         *offset = AC3_FRAME_SIZE << 2;
-        *codec = CODEC_ID_AC3;
+        *codec = AV_CODEC_ID_AC3;
         break;
     case IEC61937_MPEG1_LAYER1:
         *offset = spdif_mpeg_pkt_offset[1][0];
-        *codec = CODEC_ID_MP1;
+        *codec = AV_CODEC_ID_MP1;
         break;
     case IEC61937_MPEG1_LAYER23:
         *offset = spdif_mpeg_pkt_offset[1][0];
-        *codec = CODEC_ID_MP3;
+        *codec = AV_CODEC_ID_MP3;
         break;
     case IEC61937_MPEG2_EXT:
         *offset = 4608;
-        *codec = CODEC_ID_MP3;
+        *codec = AV_CODEC_ID_MP3;
         break;
     case IEC61937_MPEG2_AAC:
         init_get_bits(&gbc, buf, AAC_ADTS_HEADER_SIZE * 8);
@@ -63,31 +63,31 @@ static int spdif_get_offset_and_codec(AVFormatContext *s,
             return AVERROR_INVALIDDATA;
         }
         *offset = aac_hdr.samples << 2;
-        *codec = CODEC_ID_AAC;
+        *codec = AV_CODEC_ID_AAC;
         break;
     case IEC61937_MPEG2_LAYER1_LSF:
         *offset = spdif_mpeg_pkt_offset[0][0];
-        *codec = CODEC_ID_MP1;
+        *codec = AV_CODEC_ID_MP1;
         break;
     case IEC61937_MPEG2_LAYER2_LSF:
         *offset = spdif_mpeg_pkt_offset[0][1];
-        *codec = CODEC_ID_MP2;
+        *codec = AV_CODEC_ID_MP2;
         break;
     case IEC61937_MPEG2_LAYER3_LSF:
         *offset = spdif_mpeg_pkt_offset[0][2];
-        *codec = CODEC_ID_MP3;
+        *codec = AV_CODEC_ID_MP3;
         break;
     case IEC61937_DTS1:
         *offset = 2048;
-        *codec = CODEC_ID_DTS;
+        *codec = AV_CODEC_ID_DTS;
         break;
     case IEC61937_DTS2:
         *offset = 4096;
-        *codec = CODEC_ID_DTS;
+        *codec = AV_CODEC_ID_DTS;
         break;
     case IEC61937_DTS3:
         *offset = 8192;
-        *codec = CODEC_ID_DTS;
+        *codec = AV_CODEC_ID_DTS;
         break;
     default:
         if (s) { /* be silent during a probe */
@@ -112,7 +112,7 @@ static int spdif_probe(AVProbeData *p)
     int sync_codes = 0;
     int consecutive_codes = 0;
     int offset;
-    enum CodecID codec;
+    enum AVCodecID codec;
 
     for (; buf < probe_end; buf++) {
         state = (state << 8) | *buf;
@@ -165,7 +165,7 @@ static int spdif_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVIOContext *pb = s->pb;
     enum IEC61937DataType data_type;
-    enum CodecID codec_id;
+    enum AVCodecID codec_id;
     uint32_t state = 0;
     int pkt_size_bits, offset, ret;
 

@@ -118,7 +118,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 AVCodec ff_cljr_decoder = {
     .name           = "cljr",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_CLJR,
+    .id             = AV_CODEC_ID_CLJR,
     .priv_data_size = sizeof(CLJRContext),
     .init           = decode_init,
     .close          = decode_end,
@@ -171,7 +171,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 AVCodec ff_cljr_encoder = {
     .name           = "cljr",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_CLJR,
+    .id             = AV_CODEC_ID_CLJR,
     .priv_data_size = sizeof(CLJRContext),
     .init           = common_init,
     .encode2        = encode_frame,

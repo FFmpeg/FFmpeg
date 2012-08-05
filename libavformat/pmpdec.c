@@ -45,7 +45,7 @@ static int pmp_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     int tb_num, tb_den;
     int index_cnt;
-    int audio_codec_id = CODEC_ID_NONE;
+    int audio_codec_id = AV_CODEC_ID_NONE;
     int srate, channels;
     int i;
     uint64_t pos;
@@ -56,10 +56,10 @@ static int pmp_header(AVFormatContext *s)
     avio_skip(pb, 8);
     switch (avio_rl32(pb)) {
     case 0:
-        vst->codec->codec_id = CODEC_ID_MPEG4;
+        vst->codec->codec_id = AV_CODEC_ID_MPEG4;
         break;
     case 1:
-        vst->codec->codec_id = CODEC_ID_H264;
+        vst->codec->codec_id = AV_CODEC_ID_H264;
         break;
     default:
         av_log(s, AV_LOG_ERROR, "Unsupported video format\n");
@@ -77,11 +77,11 @@ static int pmp_header(AVFormatContext *s)
 
     switch (avio_rl32(pb)) {
     case 0:
-        audio_codec_id = CODEC_ID_MP3;
+        audio_codec_id = AV_CODEC_ID_MP3;
         break;
     case 1:
         av_log(s, AV_LOG_WARNING, "AAC is not yet correctly supported\n");
-        audio_codec_id = CODEC_ID_AAC;
+        audio_codec_id = AV_CODEC_ID_AAC;
         break;
     default:
         av_log(s, AV_LOG_ERROR, "Unsupported audio format\n");

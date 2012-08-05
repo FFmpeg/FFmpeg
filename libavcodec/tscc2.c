@@ -372,7 +372,7 @@ static av_cold int tscc2_decode_end(AVCodecContext *avctx)
 AVCodec ff_tscc2_decoder = {
     .name           = "tscc2",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_TSCC2,
+    .id             = AV_CODEC_ID_TSCC2,
     .priv_data_size = sizeof(TSCC2Context),
     .init           = tscc2_decode_init,
     .close          = tscc2_decode_end,

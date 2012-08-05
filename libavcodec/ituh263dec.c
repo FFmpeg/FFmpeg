@@ -230,14 +230,14 @@ const uint8_t *ff_h263_find_resync_marker(const uint8_t *restrict p, const uint8
 int ff_h263_resync(MpegEncContext *s){
     int left, pos, ret;
 
-    if(s->codec_id==CODEC_ID_MPEG4){
+    if(s->codec_id==AV_CODEC_ID_MPEG4){
         skip_bits1(&s->gb);
         align_get_bits(&s->gb);
     }
 
     if(show_bits(&s->gb, 16)==0){
         pos= get_bits_count(&s->gb);
-        if(CONFIG_MPEG4_DECODER && s->codec_id==CODEC_ID_MPEG4)
+        if(CONFIG_MPEG4_DECODER && s->codec_id==AV_CODEC_ID_MPEG4)
             ret= ff_mpeg4_decode_video_packet_header(s);
         else
             ret= h263_decode_gob_header(s);
@@ -254,7 +254,7 @@ int ff_h263_resync(MpegEncContext *s){
             GetBitContext bak= s->gb;
 
             pos= get_bits_count(&s->gb);
-            if(CONFIG_MPEG4_DECODER && s->codec_id==CODEC_ID_MPEG4)
+            if(CONFIG_MPEG4_DECODER && s->codec_id==AV_CODEC_ID_MPEG4)
                 ret= ff_mpeg4_decode_video_packet_header(s);
             else
                 ret= h263_decode_gob_header(s);
@@ -458,7 +458,7 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
         }
     } else if (s->mb_intra) {
         /* DC coef */
-        if(s->codec_id == CODEC_ID_RV10){
+        if(s->codec_id == AV_CODEC_ID_RV10){
 #if CONFIG_RV10_DECODER
           if (s->rv10_version == 3 && s->pict_type == AV_PICTURE_TYPE_I) {
             int component, diff;
@@ -517,7 +517,7 @@ retry:
                 run = get_bits(&s->gb, 6);
                 level = (int8_t)get_bits(&s->gb, 8);
                 if(level == -128){
-                    if (s->codec_id == CODEC_ID_RV10) {
+                    if (s->codec_id == AV_CODEC_ID_RV10) {
                         /* XXX: should patch encoder too */
                         level = get_sbits(&s->gb, 12);
                     }else{

@@ -288,7 +288,7 @@ void ff_clean_h263_qscales(MpegEncContext *s){
             qscale_table[ s->mb_index2xy[i] ]= qscale_table[ s->mb_index2xy[i+1] ]+2;
     }
 
-    if(s->codec_id != CODEC_ID_H263P){
+    if(s->codec_id != AV_CODEC_ID_H263P){
         for(i=1; i<s->mb_num; i++){
             int mb_xy= s->mb_index2xy[i];
 
@@ -795,10 +795,10 @@ void ff_h263_encode_init(MpegEncContext *s)
 
     // use fcodes >1 only for mpeg4 & h263 & h263p FIXME
     switch(s->codec_id){
-    case CODEC_ID_MPEG4:
+    case AV_CODEC_ID_MPEG4:
         s->fcode_tab= fcode_tab;
         break;
-    case CODEC_ID_H263P:
+    case AV_CODEC_ID_H263P:
         if(s->umvplus)
             s->fcode_tab= umv_fcode_tab;
         if(s->modified_quant){
@@ -810,7 +810,7 @@ void ff_h263_encode_init(MpegEncContext *s)
         }
         break;
         //Note for mpeg4 & h263 the dc-scale table will be set per frame as needed later
-    case CODEC_ID_FLV1:
+    case AV_CODEC_ID_FLV1:
         if (s->h263_flv > 1) {
             s->min_qcoeff= -1023;
             s->max_qcoeff=  1023;

@@ -65,4 +65,4 @@ static int cavsvideo_probe(AVProbeData *p)
     return 0;
 }
 
-FF_DEF_RAWVIDEO_DEMUXER(cavsvideo, "raw Chinese AVS (Audio Video Standard)", cavsvideo_probe, NULL, CODEC_ID_CAVS)
+FF_DEF_RAWVIDEO_DEMUXER(cavsvideo, "raw Chinese AVS (Audio Video Standard)", cavsvideo_probe, NULL, AV_CODEC_ID_CAVS)

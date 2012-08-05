@@ -55,7 +55,7 @@ typedef struct AACAC3ParseContext {
     uint64_t state;
 
     int need_next_header;
-    enum CodecID codec_id;
+    enum AVCodecID codec_id;
 } AACAC3ParseContext;
 
 int ff_aac_ac3_parse(AVCodecParserContext *s1,

@@ -563,7 +563,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 AVCodec ff_snow_decoder = {
     .name           = "snow",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_SNOW,
+    .id             = AV_CODEC_ID_SNOW,
     .priv_data_size = sizeof(SnowContext),
     .init           = decode_init,
     .close          = decode_end,

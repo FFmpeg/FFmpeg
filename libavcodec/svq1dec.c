@@ -812,7 +812,7 @@ static av_cold int svq1_decode_end(AVCodecContext *avctx)
 AVCodec ff_svq1_decoder = {
     .name           = "svq1",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_SVQ1,
+    .id             = AV_CODEC_ID_SVQ1,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = svq1_decode_init,
     .close          = svq1_decode_end,

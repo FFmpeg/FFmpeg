@@ -38,7 +38,7 @@ static int mjpega_dump_header(AVBitStreamFilterContext *bsfc, AVCodecContext *av
     unsigned dqt = 0, dht = 0, sof0 = 0;
     int i;
 
-    if (avctx->codec_id != CODEC_ID_MJPEG) {
+    if (avctx->codec_id != AV_CODEC_ID_MJPEG) {
         av_log(avctx, AV_LOG_ERROR, "mjpega bitstream filter only applies to mjpeg codec\n");
         return 0;
     }

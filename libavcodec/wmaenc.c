@@ -55,12 +55,12 @@ static int encode_init(AVCodecContext * avctx){
     /* extract flag infos */
     flags1 = 0;
     flags2 = 1;
-    if (avctx->codec->id == CODEC_ID_WMAV1) {
+    if (avctx->codec->id == AV_CODEC_ID_WMAV1) {
         extradata= av_malloc(4);
         avctx->extradata_size= 4;
         AV_WL16(extradata, flags1);
         AV_WL16(extradata+2, flags2);
-    } else if (avctx->codec->id == CODEC_ID_WMAV2) {
+    } else if (avctx->codec->id == AV_CODEC_ID_WMAV2) {
         extradata= av_mallocz(10);
         avctx->extradata_size= 10;
         AV_WL32(extradata, flags1);
@@ -422,7 +422,7 @@ static int encode_superframe(AVCodecContext *avctx, AVPacket *avpkt,
 AVCodec ff_wmav1_encoder = {
     .name           = "wmav1",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_WMAV1,
+    .id             = AV_CODEC_ID_WMAV1,
     .priv_data_size = sizeof(WMACodecContext),
     .init           = encode_init,
     .encode2        = encode_superframe,
@@ -435,7 +435,7 @@ AVCodec ff_wmav1_encoder = {
 AVCodec ff_wmav2_encoder = {
     .name           = "wmav2",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_WMAV2,
+    .id             = AV_CODEC_ID_WMAV2,
     .priv_data_size = sizeof(WMACodecContext),
     .init           = encode_init,
     .encode2        = encode_superframe,

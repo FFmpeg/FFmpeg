@@ -113,7 +113,7 @@ static int read_header(AVFormatContext *s)
     avpriv_set_pts_info(vst, 64, fps_den, fps_num);
 
     vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    vst->codec->codec_id   = CODEC_ID_BINKVIDEO;
+    vst->codec->codec_id   = AV_CODEC_ID_BINKVIDEO;
     vst->codec->extradata  = av_mallocz(4 + FF_INPUT_BUFFER_PADDING_SIZE);
     vst->codec->extradata_size = 4;
     avio_read(pb, vst->codec->extradata, 4);
@@ -140,7 +140,7 @@ static int read_header(AVFormatContext *s)
             avpriv_set_pts_info(ast, 64, 1, ast->codec->sample_rate);
             flags = avio_rl16(pb);
             ast->codec->codec_id = flags & BINK_AUD_USEDCT ?
-                                   CODEC_ID_BINKAUDIO_DCT : CODEC_ID_BINKAUDIO_RDFT;
+                                   AV_CODEC_ID_BINKAUDIO_DCT : AV_CODEC_ID_BINKAUDIO_RDFT;
             ast->codec->channels = flags & BINK_AUD_STEREO ? 2 : 1;
             ast->codec->extradata = av_mallocz(4 + FF_INPUT_BUFFER_PADDING_SIZE);
             if (!ast->codec->extradata)

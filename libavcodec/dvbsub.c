@@ -405,7 +405,7 @@ static int dvbsub_encode(AVCodecContext *avctx,
 AVCodec ff_dvbsub_encoder = {
     .name           = "dvbsub",
     .type           = AVMEDIA_TYPE_SUBTITLE,
-    .id             = CODEC_ID_DVB_SUBTITLE,
+    .id             = AV_CODEC_ID_DVB_SUBTITLE,
     .priv_data_size = sizeof(DVBSubtitleContext),
     .encode         = dvbsub_encode,
     .long_name      = NULL_IF_CONFIG_SMALL("DVB subtitles"),

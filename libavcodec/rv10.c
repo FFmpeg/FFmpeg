@@ -510,7 +510,7 @@ static int rv10_decode_packet(AVCodecContext *avctx,
 
     active_bits_size = buf_size * 8;
     init_get_bits(&s->gb, buf, FFMAX(buf_size, buf_size2) * 8);
-    if(s->codec_id ==CODEC_ID_RV10)
+    if(s->codec_id ==AV_CODEC_ID_RV10)
         mb_count = rv10_decode_picture_header(s);
     else
         mb_count = rv20_decode_picture_header(rv);
@@ -550,7 +550,7 @@ static int rv10_decode_packet(AVCodecContext *avctx,
     av_dlog(avctx, "qscale=%d\n", s->qscale);
 
     /* default quantization values */
-    if(s->codec_id== CODEC_ID_RV10){
+    if(s->codec_id== AV_CODEC_ID_RV10){
         if(s->mb_y==0) s->first_slice_line=1;
     }else{
         s->first_slice_line=1;
@@ -720,7 +720,7 @@ static int rv10_decode_frame(AVCodecContext *avctx,
 AVCodec ff_rv10_decoder = {
     .name           = "rv10",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_RV10,
+    .id             = AV_CODEC_ID_RV10,
     .priv_data_size = sizeof(RVDecContext),
     .init           = rv10_decode_init,
     .close          = rv10_decode_end,
@@ -733,7 +733,7 @@ AVCodec ff_rv10_decoder = {
 AVCodec ff_rv20_decoder = {
     .name           = "rv20",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_RV20,
+    .id             = AV_CODEC_ID_RV20,
     .priv_data_size = sizeof(RVDecContext),
     .init           = rv10_decode_init,
     .close          = rv10_decode_end,

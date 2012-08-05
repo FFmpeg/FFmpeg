@@ -1249,7 +1249,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
 AVCodec ff_wavpack_decoder = {
     .name           = "wavpack",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_WAVPACK,
+    .id             = AV_CODEC_ID_WAVPACK,
     .priv_data_size = sizeof(WavpackContext),
     .init           = wavpack_decode_init,
     .close          = wavpack_decode_end,

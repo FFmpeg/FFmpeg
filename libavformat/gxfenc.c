@@ -81,22 +81,22 @@ static const struct {
 };
 
 static const AVCodecTag gxf_media_types[] = {
-    { CODEC_ID_MJPEG     ,   3 }, /* NTSC */
-    { CODEC_ID_MJPEG     ,   4 }, /* PAL */
-    { CODEC_ID_PCM_S24LE ,   9 },
-    { CODEC_ID_PCM_S16LE ,  10 },
-    { CODEC_ID_MPEG2VIDEO,  11 }, /* NTSC */
-    { CODEC_ID_MPEG2VIDEO,  12 }, /* PAL */
-    { CODEC_ID_DVVIDEO   ,  13 }, /* NTSC */
-    { CODEC_ID_DVVIDEO   ,  14 }, /* PAL */
-    { CODEC_ID_DVVIDEO   ,  15 }, /* 50M NTSC */
-    { CODEC_ID_DVVIDEO   ,  16 }, /* 50M PAL */
-    { CODEC_ID_AC3       ,  17 },
-    //{ CODEC_ID_NONE,  ,   18 }, /* Non compressed 24 bit audio */
-    { CODEC_ID_MPEG2VIDEO,  20 }, /* MPEG HD */
-    { CODEC_ID_MPEG1VIDEO,  22 }, /* NTSC */
-    { CODEC_ID_MPEG1VIDEO,  23 }, /* PAL */
-    { CODEC_ID_NONE,         0 },
+    { AV_CODEC_ID_MJPEG     ,   3 }, /* NTSC */
+    { AV_CODEC_ID_MJPEG     ,   4 }, /* PAL */
+    { AV_CODEC_ID_PCM_S24LE ,   9 },
+    { AV_CODEC_ID_PCM_S16LE ,  10 },
+    { AV_CODEC_ID_MPEG2VIDEO,  11 }, /* NTSC */
+    { AV_CODEC_ID_MPEG2VIDEO,  12 }, /* PAL */
+    { AV_CODEC_ID_DVVIDEO   ,  13 }, /* NTSC */
+    { AV_CODEC_ID_DVVIDEO   ,  14 }, /* PAL */
+    { AV_CODEC_ID_DVVIDEO   ,  15 }, /* 50M NTSC */
+    { AV_CODEC_ID_DVVIDEO   ,  16 }, /* 50M PAL */
+    { AV_CODEC_ID_AC3       ,  17 },
+    //{ AV_CODEC_ID_NONE,  ,   18 }, /* Non compressed 24 bit audio */
+    { AV_CODEC_ID_MPEG2VIDEO,  20 }, /* MPEG HD */
+    { AV_CODEC_ID_MPEG1VIDEO,  22 }, /* NTSC */
+    { AV_CODEC_ID_MPEG1VIDEO,  23 }, /* PAL */
+    { AV_CODEC_ID_NONE,         0 },
 };
 
 #define SERVER_PATH "EXT:/PDR/default/"
@@ -480,9 +480,9 @@ static int gxf_write_umf_media_mpeg(AVIOContext *pb, AVStream *st)
     avio_wl32(pb, 1); /* I picture per GOP */
     avio_wl32(pb, sc->p_per_gop);
     avio_wl32(pb, sc->b_per_i_or_p);
-    if (st->codec->codec_id == CODEC_ID_MPEG2VIDEO)
+    if (st->codec->codec_id == AV_CODEC_ID_MPEG2VIDEO)
         avio_wl32(pb, 2);
-    else if (st->codec->codec_id == CODEC_ID_MPEG1VIDEO)
+    else if (st->codec->codec_id == AV_CODEC_ID_MPEG1VIDEO)
         avio_wl32(pb, 1);
     else
         avio_wl32(pb, 0);
@@ -565,14 +565,14 @@ static int gxf_write_umf_media_description(AVFormatContext *s)
         else {
             AVStream *st = s->streams[i];
             switch (st->codec->codec_id) {
-            case CODEC_ID_MPEG1VIDEO:
-            case CODEC_ID_MPEG2VIDEO:
+            case AV_CODEC_ID_MPEG1VIDEO:
+            case AV_CODEC_ID_MPEG2VIDEO:
                 gxf_write_umf_media_mpeg(pb, st);
                 break;
-            case CODEC_ID_PCM_S16LE:
+            case AV_CODEC_ID_PCM_S16LE:
                 gxf_write_umf_media_audio(pb, sc);
                 break;
-            case CODEC_ID_DVVIDEO:
+            case AV_CODEC_ID_DVVIDEO:
                 gxf_write_umf_media_dv(pb, sc);
                 break;
             }
@@ -647,7 +647,7 @@ static int gxf_write_header(AVFormatContext *s)
 
         sc->media_type = ff_codec_get_tag(gxf_media_types, st->codec->codec_id);
         if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-            if (st->codec->codec_id != CODEC_ID_PCM_S16LE) {
+            if (st->codec->codec_id != AV_CODEC_ID_PCM_S16LE) {
                 av_log(s, AV_LOG_ERROR, "only 16 BIT PCM LE allowed for now\n");
                 return -1;
             }
@@ -700,24 +700,24 @@ static int gxf_write_header(AVFormatContext *s)
             vsc = sc;
 
             switch (st->codec->codec_id) {
-            case CODEC_ID_MJPEG:
+            case AV_CODEC_ID_MJPEG:
                 sc->track_type = 1;
                 gxf->flags |= 0x00004000;
                 media_info = 'J';
                 break;
-            case CODEC_ID_MPEG1VIDEO:
+            case AV_CODEC_ID_MPEG1VIDEO:
                 sc->track_type = 9;
                 gxf->mpeg_tracks++;
                 media_info = 'L';
                 break;
-            case CODEC_ID_MPEG2VIDEO:
+            case AV_CODEC_ID_MPEG2VIDEO:
                 sc->first_gop_closed = -1;
                 sc->track_type = 4;
                 gxf->mpeg_tracks++;
                 gxf->flags |= 0x00008000;
                 media_info = 'M';
                 break;
-            case CODEC_ID_DVVIDEO:
+            case AV_CODEC_ID_DVVIDEO:
                 if (st->codec->pix_fmt == PIX_FMT_YUV422P) {
                     sc->media_type += 2;
                     sc->track_type = 6;
@@ -830,7 +830,7 @@ static int gxf_write_media_preamble(AVFormatContext *s, AVPacket *pkt, int size)
     if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
         avio_wb16(pb, 0);
         avio_wb16(pb, size / 2);
-    } else if (st->codec->codec_id == CODEC_ID_MPEG2VIDEO) {
+    } else if (st->codec->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
         int frame_type = gxf_parse_mpeg_frame(sc, pkt->data, pkt->size);
         if (frame_type == AV_PICTURE_TYPE_I) {
             avio_w8(pb, 0x0d);
@@ -843,7 +843,7 @@ static int gxf_write_media_preamble(AVFormatContext *s, AVPacket *pkt, int size)
             sc->pframes++;
         }
         avio_wb24(pb, size);
-    } else if (st->codec->codec_id == CODEC_ID_DVVIDEO) {
+    } else if (st->codec->codec_id == AV_CODEC_ID_DVVIDEO) {
         avio_w8(pb, size / 4096);
         avio_wb24(pb, 0);
     } else
@@ -864,7 +864,7 @@ static int gxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     int packet_start_offset = avio_tell(pb) / 1024;
 
     gxf_write_packet_header(pb, PKT_MEDIA);
-    if (st->codec->codec_id == CODEC_ID_MPEG2VIDEO && pkt->size % 4) /* MPEG-2 frames must be padded */
+    if (st->codec->codec_id == AV_CODEC_ID_MPEG2VIDEO && pkt->size % 4) /* MPEG-2 frames must be padded */
         padding = 4 - pkt->size % 4;
     else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
         padding = GXF_AUDIO_PACKET_SIZE - pkt->size;
@@ -933,8 +933,8 @@ AVOutputFormat ff_gxf_muxer = {
     .long_name         = NULL_IF_CONFIG_SMALL("GXF (General eXchange Format)"),
     .extensions        = "gxf",
     .priv_data_size    = sizeof(GXFContext),
-    .audio_codec       = CODEC_ID_PCM_S16LE,
-    .video_codec       = CODEC_ID_MPEG2VIDEO,
+    .audio_codec       = AV_CODEC_ID_PCM_S16LE,
+    .video_codec       = AV_CODEC_ID_MPEG2VIDEO,
     .write_header      = gxf_write_header,
     .write_packet      = gxf_write_packet,
     .write_trailer     = gxf_write_trailer,

@@ -234,7 +234,7 @@ static int avi_write_header(AVFormatContext *s)
         case AVMEDIA_TYPE_SUBTITLE:
             // XSUB subtitles behave like video tracks, other subtitles
             // are not (yet) supported.
-            if (stream->codec_id != CODEC_ID_XSUB) {
+            if (stream->codec_id != AV_CODEC_ID_XSUB) {
                 av_log(s, AV_LOG_ERROR, "Subtitle streams other than DivX XSUB are not supported by the AVI muxer.\n");
                 return AVERROR_PATCHWELCOME;
             }
@@ -244,7 +244,7 @@ static int avi_write_header(AVFormatContext *s)
         case AVMEDIA_TYPE_DATA : ffio_wfourcc(pb, "dats"); break;
         }
         if(stream->codec_type == AVMEDIA_TYPE_VIDEO ||
-           stream->codec_id == CODEC_ID_XSUB)
+           stream->codec_id == AV_CODEC_ID_XSUB)
             avio_wl32(pb, stream->codec_tag);
         else
             avio_wl32(pb, 1);
@@ -286,7 +286,7 @@ static int avi_write_header(AVFormatContext *s)
         case AVMEDIA_TYPE_SUBTITLE:
             // XSUB subtitles behave like video tracks, other subtitles
             // are not (yet) supported.
-            if (stream->codec_id != CODEC_ID_XSUB) break;
+            if (stream->codec_id != AV_CODEC_ID_XSUB) break;
         case AVMEDIA_TYPE_VIDEO:
             ff_put_bmp_header(pb, stream, ff_codec_bmp_tags, 0);
             break;
@@ -615,7 +615,7 @@ static int avi_write_trailer(AVFormatContext *s)
                     if (nb_frames < avist->packet_count)
                         nb_frames = avist->packet_count;
                 } else {
-                    if (stream->codec_id == CODEC_ID_MP2 || stream->codec_id == CODEC_ID_MP3) {
+                    if (stream->codec_id == AV_CODEC_ID_MP2 || stream->codec_id == AV_CODEC_ID_MP3) {
                         nb_frames += avist->packet_count;
                     }
                 }
@@ -645,8 +645,8 @@ AVOutputFormat ff_avi_muxer = {
     .mime_type         = "video/x-msvideo",
     .extensions        = "avi",
     .priv_data_size    = sizeof(AVIContext),
-    .audio_codec       = CONFIG_LIBMP3LAME ? CODEC_ID_MP3 : CODEC_ID_AC3,
-    .video_codec       = CODEC_ID_MPEG4,
+    .audio_codec       = CONFIG_LIBMP3LAME ? AV_CODEC_ID_MP3 : AV_CODEC_ID_AC3,
+    .video_codec       = AV_CODEC_ID_MPEG4,
     .write_header      = avi_write_header,
     .write_packet      = avi_write_packet,
     .write_trailer     = avi_write_trailer,

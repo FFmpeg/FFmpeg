@@ -979,7 +979,7 @@ static int dvvideo_encode_frame(AVCodecContext *c, AVPacket *pkt,
 AVCodec ff_dvvideo_encoder = {
     .name           = "dvvideo",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_DVVIDEO,
+    .id             = AV_CODEC_ID_DVVIDEO,
     .priv_data_size = sizeof(DVVideoContext),
     .init           = dvvideo_init_encoder,
     .encode2        = dvvideo_encode_frame,

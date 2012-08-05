@@ -94,6 +94,6 @@ AVInputFormat ff_gsm_demuxer = {
     .read_packet    = gsm_read_packet,
     .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "gsm",
-    .raw_codec_id   = CODEC_ID_GSM,
+    .raw_codec_id   = AV_CODEC_ID_GSM,
     .priv_class     = &class,
 };

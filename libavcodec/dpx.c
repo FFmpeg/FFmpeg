@@ -237,7 +237,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 AVCodec ff_dpx_decoder = {
     .name           = "dpx",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_DPX,
+    .id             = AV_CODEC_ID_DPX,
     .priv_data_size = sizeof(DPXContext),
     .init           = decode_init,
     .close          = decode_end,

@@ -57,7 +57,7 @@ static av_cold int audio_read_header(AVFormatContext *s1)
     AlsaData *s = s1->priv_data;
     AVStream *st;
     int ret;
-    enum CodecID codec_id;
+    enum AVCodecID codec_id;
     snd_pcm_sw_params_t *sw_params;
 
     st = avformat_new_stream(s1, NULL);

@@ -192,7 +192,7 @@ static int vc1_parse_init(AVCodecParserContext *s)
 }
 
 AVCodecParser ff_vc1_parser = {
-    .codec_ids      = { CODEC_ID_VC1 },
+    .codec_ids      = { AV_CODEC_ID_VC1 },
     .priv_data_size = sizeof(VC1ParseContext),
     .parser_init    = vc1_parse_init,
     .parser_parse   = vc1_parse,

@@ -248,7 +248,7 @@ static int get_video_private_data(struct VideoFile *vf, AVCodecContext *codec)
     uint16_t sps_size, pps_size;
     int err = AVERROR(EINVAL);
 
-    if (codec->codec_id == CODEC_ID_VC1)
+    if (codec->codec_id == AV_CODEC_ID_VC1)
         return get_private_data(vf, codec);
 
     avio_open_dyn_buf(&io);
@@ -332,11 +332,11 @@ static int handle_file(struct VideoFiles *files, const char *file, int split)
             files->nb_audio_files++;
             vf->channels    = st->codec->channels;
             vf->sample_rate = st->codec->sample_rate;
-            if (st->codec->codec_id == CODEC_ID_AAC) {
+            if (st->codec->codec_id == AV_CODEC_ID_AAC) {
                 vf->fourcc    = "AACL";
                 vf->tag       = 255;
                 vf->blocksize = 4;
-            } else if (st->codec->codec_id == CODEC_ID_WMAPRO) {
+            } else if (st->codec->codec_id == AV_CODEC_ID_WMAPRO) {
                 vf->fourcc    = "WMAP";
                 vf->tag       = st->codec->codec_tag;
                 vf->blocksize = st->codec->block_align;
@@ -349,9 +349,9 @@ static int handle_file(struct VideoFiles *files, const char *file, int split)
             files->nb_video_files++;
             vf->width  = st->codec->width;
             vf->height = st->codec->height;
-            if (st->codec->codec_id == CODEC_ID_H264)
+            if (st->codec->codec_id == AV_CODEC_ID_H264)
                 vf->fourcc = "H264";
-            else if (st->codec->codec_id == CODEC_ID_VC1)
+            else if (st->codec->codec_id == AV_CODEC_ID_VC1)
                 vf->fourcc = "WVC1";
             get_video_private_data(vf, st->codec);
         }

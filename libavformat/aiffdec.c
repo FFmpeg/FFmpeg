@@ -34,19 +34,19 @@ typedef struct {
     int block_duration;
 } AIFFInputContext;
 
-static enum CodecID aiff_codec_get_id(int bps)
+static enum AVCodecID aiff_codec_get_id(int bps)
 {
     if (bps <= 8)
-        return CODEC_ID_PCM_S8;
+        return AV_CODEC_ID_PCM_S8;
     if (bps <= 16)
-        return CODEC_ID_PCM_S16BE;
+        return AV_CODEC_ID_PCM_S16BE;
     if (bps <= 24)
-        return CODEC_ID_PCM_S24BE;
+        return AV_CODEC_ID_PCM_S24BE;
     if (bps <= 32)
-        return CODEC_ID_PCM_S32BE;
+        return AV_CODEC_ID_PCM_S32BE;
 
     /* bigger than 32 isn't allowed  */
-    return CODEC_ID_NONE;
+    return AV_CODEC_ID_NONE;
 }
 
 /* returns the size of the found tag */
@@ -117,32 +117,32 @@ static unsigned int get_aiff_header(AVFormatContext *s, int size,
         size -= 4;
     }
 
-    if (version != AIFF_C_VERSION1 || codec->codec_id == CODEC_ID_PCM_S16BE) {
+    if (version != AIFF_C_VERSION1 || codec->codec_id == AV_CODEC_ID_PCM_S16BE) {
         codec->codec_id = aiff_codec_get_id(codec->bits_per_coded_sample);
         codec->bits_per_coded_sample = av_get_bits_per_sample(codec->codec_id);
         aiff->block_duration = 1;
     } else {
         switch (codec->codec_id) {
-        case CODEC_ID_PCM_F32BE:
-        case CODEC_ID_PCM_F64BE:
-        case CODEC_ID_PCM_S16LE:
-        case CODEC_ID_PCM_ALAW:
-        case CODEC_ID_PCM_MULAW:
+        case AV_CODEC_ID_PCM_F32BE:
+        case AV_CODEC_ID_PCM_F64BE:
+        case AV_CODEC_ID_PCM_S16LE:
+        case AV_CODEC_ID_PCM_ALAW:
+        case AV_CODEC_ID_PCM_MULAW:
             aiff->block_duration = 1;
             break;
-        case CODEC_ID_ADPCM_IMA_QT:
+        case AV_CODEC_ID_ADPCM_IMA_QT:
             codec->block_align = 34*codec->channels;
             break;
-        case CODEC_ID_MACE3:
+        case AV_CODEC_ID_MACE3:
             codec->block_align = 2*codec->channels;
             break;
-        case CODEC_ID_MACE6:
+        case AV_CODEC_ID_MACE6:
             codec->block_align = 1*codec->channels;
             break;
-        case CODEC_ID_GSM:
+        case AV_CODEC_ID_GSM:
             codec->block_align = 33;
             break;
-        case CODEC_ID_QCELP:
+        case AV_CODEC_ID_QCELP:
             codec->block_align = 35;
             break;
         default:

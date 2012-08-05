@@ -1209,7 +1209,7 @@ error:
 AVCodec ff_vorbis_encoder = {
     .name           = "vorbis",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_VORBIS,
+    .id             = AV_CODEC_ID_VORBIS,
     .priv_data_size = sizeof(vorbis_enc_context),
     .init           = vorbis_encode_init,
     .encode2        = vorbis_encode_frame,

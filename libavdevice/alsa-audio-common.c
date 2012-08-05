@@ -38,26 +38,26 @@
 static av_cold snd_pcm_format_t codec_id_to_pcm_format(int codec_id)
 {
     switch(codec_id) {
-        case CODEC_ID_PCM_F64LE: return SND_PCM_FORMAT_FLOAT64_LE;
-        case CODEC_ID_PCM_F64BE: return SND_PCM_FORMAT_FLOAT64_BE;
-        case CODEC_ID_PCM_F32LE: return SND_PCM_FORMAT_FLOAT_LE;
-        case CODEC_ID_PCM_F32BE: return SND_PCM_FORMAT_FLOAT_BE;
-        case CODEC_ID_PCM_S32LE: return SND_PCM_FORMAT_S32_LE;
-        case CODEC_ID_PCM_S32BE: return SND_PCM_FORMAT_S32_BE;
-        case CODEC_ID_PCM_U32LE: return SND_PCM_FORMAT_U32_LE;
-        case CODEC_ID_PCM_U32BE: return SND_PCM_FORMAT_U32_BE;
-        case CODEC_ID_PCM_S24LE: return SND_PCM_FORMAT_S24_3LE;
-        case CODEC_ID_PCM_S24BE: return SND_PCM_FORMAT_S24_3BE;
-        case CODEC_ID_PCM_U24LE: return SND_PCM_FORMAT_U24_3LE;
-        case CODEC_ID_PCM_U24BE: return SND_PCM_FORMAT_U24_3BE;
-        case CODEC_ID_PCM_S16LE: return SND_PCM_FORMAT_S16_LE;
-        case CODEC_ID_PCM_S16BE: return SND_PCM_FORMAT_S16_BE;
-        case CODEC_ID_PCM_U16LE: return SND_PCM_FORMAT_U16_LE;
-        case CODEC_ID_PCM_U16BE: return SND_PCM_FORMAT_U16_BE;
-        case CODEC_ID_PCM_S8:    return SND_PCM_FORMAT_S8;
-        case CODEC_ID_PCM_U8:    return SND_PCM_FORMAT_U8;
-        case CODEC_ID_PCM_MULAW: return SND_PCM_FORMAT_MU_LAW;
-        case CODEC_ID_PCM_ALAW:  return SND_PCM_FORMAT_A_LAW;
+        case AV_CODEC_ID_PCM_F64LE: return SND_PCM_FORMAT_FLOAT64_LE;
+        case AV_CODEC_ID_PCM_F64BE: return SND_PCM_FORMAT_FLOAT64_BE;
+        case AV_CODEC_ID_PCM_F32LE: return SND_PCM_FORMAT_FLOAT_LE;
+        case AV_CODEC_ID_PCM_F32BE: return SND_PCM_FORMAT_FLOAT_BE;
+        case AV_CODEC_ID_PCM_S32LE: return SND_PCM_FORMAT_S32_LE;
+        case AV_CODEC_ID_PCM_S32BE: return SND_PCM_FORMAT_S32_BE;
+        case AV_CODEC_ID_PCM_U32LE: return SND_PCM_FORMAT_U32_LE;
+        case AV_CODEC_ID_PCM_U32BE: return SND_PCM_FORMAT_U32_BE;
+        case AV_CODEC_ID_PCM_S24LE: return SND_PCM_FORMAT_S24_3LE;
+        case AV_CODEC_ID_PCM_S24BE: return SND_PCM_FORMAT_S24_3BE;
+        case AV_CODEC_ID_PCM_U24LE: return SND_PCM_FORMAT_U24_3LE;
+        case AV_CODEC_ID_PCM_U24BE: return SND_PCM_FORMAT_U24_3BE;
+        case AV_CODEC_ID_PCM_S16LE: return SND_PCM_FORMAT_S16_LE;
+        case AV_CODEC_ID_PCM_S16BE: return SND_PCM_FORMAT_S16_BE;
+        case AV_CODEC_ID_PCM_U16LE: return SND_PCM_FORMAT_U16_LE;
+        case AV_CODEC_ID_PCM_U16BE: return SND_PCM_FORMAT_U16_BE;
+        case AV_CODEC_ID_PCM_S8:    return SND_PCM_FORMAT_S8;
+        case AV_CODEC_ID_PCM_U8:    return SND_PCM_FORMAT_U8;
+        case AV_CODEC_ID_PCM_MULAW: return SND_PCM_FORMAT_MU_LAW;
+        case AV_CODEC_ID_PCM_ALAW:  return SND_PCM_FORMAT_A_LAW;
         default:                 return SND_PCM_FORMAT_UNKNOWN;
     }
 }
@@ -156,20 +156,20 @@ static av_cold int find_reorder_func(AlsaData *s, int codec_id, uint64_t layout,
         return 0;
 
     switch (codec_id) {
-    case CODEC_ID_PCM_S8:
-    case CODEC_ID_PCM_U8:
-    case CODEC_ID_PCM_ALAW:
-    case CODEC_ID_PCM_MULAW: format = FORMAT_I8;  break;
-    case CODEC_ID_PCM_S16LE:
-    case CODEC_ID_PCM_S16BE:
-    case CODEC_ID_PCM_U16LE:
-    case CODEC_ID_PCM_U16BE: format = FORMAT_I16; break;
-    case CODEC_ID_PCM_S32LE:
-    case CODEC_ID_PCM_S32BE:
-    case CODEC_ID_PCM_U32LE:
-    case CODEC_ID_PCM_U32BE: format = FORMAT_I32; break;
-    case CODEC_ID_PCM_F32LE:
-    case CODEC_ID_PCM_F32BE: format = FORMAT_F32; break;
+    case AV_CODEC_ID_PCM_S8:
+    case AV_CODEC_ID_PCM_U8:
+    case AV_CODEC_ID_PCM_ALAW:
+    case AV_CODEC_ID_PCM_MULAW: format = FORMAT_I8;  break;
+    case AV_CODEC_ID_PCM_S16LE:
+    case AV_CODEC_ID_PCM_S16BE:
+    case AV_CODEC_ID_PCM_U16LE:
+    case AV_CODEC_ID_PCM_U16BE: format = FORMAT_I16; break;
+    case AV_CODEC_ID_PCM_S32LE:
+    case AV_CODEC_ID_PCM_S32BE:
+    case AV_CODEC_ID_PCM_U32LE:
+    case AV_CODEC_ID_PCM_U32BE: format = FORMAT_I32; break;
+    case AV_CODEC_ID_PCM_F32LE:
+    case AV_CODEC_ID_PCM_F32BE: format = FORMAT_F32; break;
     default:                 return AVERROR(ENOSYS);
     }
 
@@ -185,7 +185,7 @@ static av_cold int find_reorder_func(AlsaData *s, int codec_id, uint64_t layout,
 
 av_cold int ff_alsa_open(AVFormatContext *ctx, snd_pcm_stream_t mode,
                          unsigned int *sample_rate,
-                         int channels, enum CodecID *codec_id)
+                         int channels, enum AVCodecID *codec_id)
 {
     AlsaData *s = ctx->priv_data;
     const char *audio_device;
@@ -199,7 +199,7 @@ av_cold int ff_alsa_open(AVFormatContext *ctx, snd_pcm_stream_t mode,
     if (ctx->filename[0] == 0) audio_device = "default";
     else                       audio_device = ctx->filename;
 
-    if (*codec_id == CODEC_ID_NONE)
+    if (*codec_id == AV_CODEC_ID_NONE)
         *codec_id = DEFAULT_CODEC_ID;
     format = codec_id_to_pcm_format(*codec_id);
     if (format == SND_PCM_FORMAT_UNKNOWN) {

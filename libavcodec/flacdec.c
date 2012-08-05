@@ -561,7 +561,7 @@ static av_cold int flac_decode_close(AVCodecContext *avctx)
 AVCodec ff_flac_decoder = {
     .name           = "flac",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_FLAC,
+    .id             = AV_CODEC_ID_FLAC,
     .priv_data_size = sizeof(FLACContext),
     .init           = flac_decode_init,
     .close          = flac_decode_close,

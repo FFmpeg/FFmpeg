@@ -30,7 +30,7 @@ static int ivf_write_header(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
     ctx = s->streams[0]->codec;
-    if (ctx->codec_type != AVMEDIA_TYPE_VIDEO || ctx->codec_id != CODEC_ID_VP8) {
+    if (ctx->codec_type != AVMEDIA_TYPE_VIDEO || ctx->codec_id != AV_CODEC_ID_VP8) {
         av_log(s, AV_LOG_ERROR, "Currently only VP8 is supported!\n");
         return AVERROR(EINVAL);
     }
@@ -62,8 +62,8 @@ AVOutputFormat ff_ivf_muxer = {
     .name         = "ivf",
     .long_name    = NULL_IF_CONFIG_SMALL("On2 IVF"),
     .extensions   = "ivf",
-    .audio_codec  = CODEC_ID_NONE,
-    .video_codec  = CODEC_ID_VP8,
+    .audio_codec  = AV_CODEC_ID_NONE,
+    .video_codec  = AV_CODEC_ID_VP8,
     .write_header = ivf_write_header,
     .write_packet = ivf_write_packet,
 };

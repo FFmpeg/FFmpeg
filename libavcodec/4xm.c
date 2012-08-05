@@ -931,7 +931,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 AVCodec ff_fourxm_decoder = {
     .name           = "4xm",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_4XM,
+    .id             = AV_CODEC_ID_4XM,
     .priv_data_size = sizeof(FourXContext),
     .init           = decode_init,
     .close          = decode_end,

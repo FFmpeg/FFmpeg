@@ -155,7 +155,7 @@ read_header:
 AVCodec ff_mjpegb_decoder = {
     .name           = "mjpegb",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_MJPEGB,
+    .id             = AV_CODEC_ID_MJPEGB,
     .priv_data_size = sizeof(MJpegDecodeContext),
     .init           = ff_mjpeg_decode_init,
     .close          = ff_mjpeg_decode_end,

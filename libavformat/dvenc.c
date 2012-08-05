@@ -318,10 +318,10 @@ static DVMuxContext* dv_init_mux(AVFormatContext* s)
     }
 
     /* Some checks -- DV format is very picky about its incoming streams */
-    if (!vst || vst->codec->codec_id != CODEC_ID_DVVIDEO)
+    if (!vst || vst->codec->codec_id != AV_CODEC_ID_DVVIDEO)
         goto bail_out;
     for (i=0; i<c->n_ast; i++) {
-        if (c->ast[i] && (c->ast[i]->codec->codec_id    != CODEC_ID_PCM_S16LE ||
+        if (c->ast[i] && (c->ast[i]->codec->codec_id    != AV_CODEC_ID_PCM_S16LE ||
                           c->ast[i]->codec->sample_rate != 48000 ||
                           c->ast[i]->codec->channels    != 2))
             goto bail_out;
@@ -408,8 +408,8 @@ AVOutputFormat ff_dv_muxer = {
     .long_name         = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
     .extensions        = "dv",
     .priv_data_size    = sizeof(DVMuxContext),
-    .audio_codec       = CODEC_ID_PCM_S16LE,
-    .video_codec       = CODEC_ID_DVVIDEO,
+    .audio_codec       = AV_CODEC_ID_PCM_S16LE,
+    .video_codec       = AV_CODEC_ID_DVVIDEO,
     .write_header      = dv_write_header,
     .write_packet      = dv_write_packet,
     .write_trailer     = dv_write_trailer,

@@ -2430,7 +2430,7 @@ av_cold int ff_ac3_encode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
 
-    s->eac3 = avctx->codec_id == CODEC_ID_EAC3;
+    s->eac3 = avctx->codec_id == AV_CODEC_ID_EAC3;
 
     ff_ac3_common_init();
 

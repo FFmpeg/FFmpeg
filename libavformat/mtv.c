@@ -129,7 +129,7 @@ static int mtv_read_header(AVFormatContext *s)
 
     avpriv_set_pts_info(st, 64, 1, mtv->video_fps);
     st->codec->codec_type      = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id        = CODEC_ID_RAWVIDEO;
+    st->codec->codec_id        = AV_CODEC_ID_RAWVIDEO;
     st->codec->pix_fmt         = PIX_FMT_RGB565BE;
     st->codec->width           = mtv->img_width;
     st->codec->height          = mtv->img_height;
@@ -145,7 +145,7 @@ static int mtv_read_header(AVFormatContext *s)
 
     avpriv_set_pts_info(st, 64, 1, AUDIO_SAMPLING_RATE);
     st->codec->codec_type      = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id        = CODEC_ID_MP3;
+    st->codec->codec_id        = AV_CODEC_ID_MP3;
     st->codec->bit_rate        = mtv->audio_br;
     st->need_parsing           = AVSTREAM_PARSE_FULL;
 

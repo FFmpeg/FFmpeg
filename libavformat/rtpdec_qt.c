@@ -244,7 +244,7 @@ static void qt_rtp_free(PayloadContext *qt)
 RTPDynamicProtocolHandler ff_ ## m ## _rtp_ ## n ## _handler = { \
     .enc_name         = s, \
     .codec_type       = t, \
-    .codec_id         = CODEC_ID_NONE, \
+    .codec_id         = AV_CODEC_ID_NONE, \
     .alloc            = qt_rtp_new,    \
     .free             = qt_rtp_free,   \
     .parse_packet     = qt_rtp_parse_packet, \

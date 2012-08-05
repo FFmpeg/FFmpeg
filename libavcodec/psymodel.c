@@ -51,7 +51,7 @@ av_cold int ff_psy_init(FFPsyContext *ctx, AVCodecContext *avctx, int num_lens,
     }
 
     switch (ctx->avctx->codec_id) {
-    case CODEC_ID_AAC:
+    case AV_CODEC_ID_AAC:
         ctx->model = &ff_aac_psy_model;
         break;
     }

@@ -90,9 +90,9 @@ static int wma_decode_init(AVCodecContext * avctx)
     /* extract flag infos */
     flags2 = 0;
     extradata = avctx->extradata;
-    if (avctx->codec->id == CODEC_ID_WMAV1 && avctx->extradata_size >= 4) {
+    if (avctx->codec->id == AV_CODEC_ID_WMAV1 && avctx->extradata_size >= 4) {
         flags2 = AV_RL16(extradata+2);
-    } else if (avctx->codec->id == CODEC_ID_WMAV2 && avctx->extradata_size >= 6) {
+    } else if (avctx->codec->id == AV_CODEC_ID_WMAV2 && avctx->extradata_size >= 6) {
         flags2 = AV_RL16(extradata+4);
     }
 // for(i=0; i<avctx->extradata_size; i++)
@@ -939,7 +939,7 @@ static av_cold void flush(AVCodecContext *avctx)
 AVCodec ff_wmav1_decoder = {
     .name           = "wmav1",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_WMAV1,
+    .id             = AV_CODEC_ID_WMAV1,
     .priv_data_size = sizeof(WMACodecContext),
     .init           = wma_decode_init,
     .close          = ff_wma_end,
@@ -952,7 +952,7 @@ AVCodec ff_wmav1_decoder = {
 AVCodec ff_wmav2_decoder = {
     .name           = "wmav2",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_WMAV2,
+    .id             = AV_CODEC_ID_WMAV2,
     .priv_data_size = sizeof(WMACodecContext),
     .init           = wma_decode_init,
     .close          = ff_wma_end,

@@ -283,7 +283,7 @@ static int grab_read_header(AVFormatContext *s1)
 
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->pix_fmt = PIX_FMT_YUV420P;
-    st->codec->codec_id = CODEC_ID_RAWVIDEO;
+    st->codec->codec_id = AV_CODEC_ID_RAWVIDEO;
     st->codec->width = width;
     st->codec->height = height;
     st->codec->time_base.den = framerate.num;

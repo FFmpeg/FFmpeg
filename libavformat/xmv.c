@@ -53,7 +53,7 @@ typedef struct XMVAudioTrack {
     uint16_t block_align;
     uint16_t block_samples;
 
-    enum CodecID codec_id;
+    enum AVCodecID codec_id;
 } XMVAudioTrack;
 
 typedef struct XMVVideoPacket {
@@ -157,7 +157,7 @@ static int xmv_read_header(AVFormatContext *s)
     avpriv_set_pts_info(vst, 32, 1, 1000);
 
     vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    vst->codec->codec_id   = CODEC_ID_WMV2;
+    vst->codec->codec_id   = AV_CODEC_ID_WMV2;
     vst->codec->codec_tag  = MKBETAG('W', 'M', 'V', '2');
     vst->codec->width      = avio_rl32(pb);
     vst->codec->height     = avio_rl32(pb);

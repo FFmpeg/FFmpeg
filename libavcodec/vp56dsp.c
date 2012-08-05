@@ -74,9 +74,9 @@ VP56_EDGE_FILTER(vp5, ver, stride, 1)
 VP56_EDGE_FILTER(vp6, hor, 1, stride)
 VP56_EDGE_FILTER(vp6, ver, stride, 1)
 
-void ff_vp56dsp_init(VP56DSPContext *s, enum CodecID codec)
+void ff_vp56dsp_init(VP56DSPContext *s, enum AVCodecID codec)
 {
-    if (codec == CODEC_ID_VP5) {
+    if (codec == AV_CODEC_ID_VP5) {
         s->edge_filter_hor = vp5_edge_filter_hor;
         s->edge_filter_ver = vp5_edge_filter_ver;
     } else {

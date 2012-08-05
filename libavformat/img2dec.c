@@ -239,12 +239,12 @@ static int read_packet(AVFormatContext *s1, AVPacket *pkt)
             }
             size[i]= avio_size(f[i]);
 
-            if(codec->codec_id != CODEC_ID_RAWVIDEO)
+            if(codec->codec_id != AV_CODEC_ID_RAWVIDEO)
                 break;
             filename[ strlen(filename) - 1 ]= 'U' + i;
         }
 
-        if(codec->codec_id == CODEC_ID_RAWVIDEO && !codec->width)
+        if(codec->codec_id == AV_CODEC_ID_RAWVIDEO && !codec->width)
             infer_size(&codec->width, &codec->height, size[0]);
     } else {
         f[0] = s1->pb;

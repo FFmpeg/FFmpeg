@@ -2841,7 +2841,7 @@ static av_cold int latm_decode_init(AVCodecContext *avctx)
 AVCodec ff_aac_decoder = {
     .name            = "aac",
     .type            = AVMEDIA_TYPE_AUDIO,
-    .id              = CODEC_ID_AAC,
+    .id              = AV_CODEC_ID_AAC,
     .priv_data_size  = sizeof(AACContext),
     .init            = aac_decode_init,
     .close           = aac_decode_close,
@@ -2862,7 +2862,7 @@ AVCodec ff_aac_decoder = {
 AVCodec ff_aac_latm_decoder = {
     .name            = "aac_latm",
     .type            = AVMEDIA_TYPE_AUDIO,
-    .id              = CODEC_ID_AAC_LATM,
+    .id              = AV_CODEC_ID_AAC_LATM,
     .priv_data_size  = sizeof(struct LATMContext),
     .init            = latm_decode_init,
     .close           = aac_decode_close,

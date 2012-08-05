@@ -89,12 +89,12 @@ static int bfi_read_header(AVFormatContext * s)
     /* Set up the video codec... */
     avpriv_set_pts_info(vstream, 32, 1, fps);
     vstream->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    vstream->codec->codec_id   = CODEC_ID_BFI;
+    vstream->codec->codec_id   = AV_CODEC_ID_BFI;
     vstream->codec->pix_fmt    = PIX_FMT_PAL8;
 
     /* Set up the audio codec now... */
     astream->codec->codec_type      = AVMEDIA_TYPE_AUDIO;
-    astream->codec->codec_id        = CODEC_ID_PCM_U8;
+    astream->codec->codec_id        = AV_CODEC_ID_PCM_U8;
     astream->codec->channels        = 1;
     astream->codec->bits_per_coded_sample = 8;
     astream->codec->bit_rate        =

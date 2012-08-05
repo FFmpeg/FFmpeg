@@ -203,7 +203,7 @@ static int dca_parse(AVCodecParserContext * s,
 }
 
 AVCodecParser ff_dca_parser = {
-    .codec_ids      = { CODEC_ID_DTS },
+    .codec_ids      = { AV_CODEC_ID_DTS },
     .priv_data_size = sizeof(DCAParseContext),
     .parser_init    = dca_parse_init,
     .parser_parse   = dca_parse,

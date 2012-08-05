@@ -1623,7 +1623,7 @@ static void flush(AVCodecContext *avctx)
 AVCodec ff_wmapro_decoder = {
     .name           = "wmapro",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_WMAPRO,
+    .id             = AV_CODEC_ID_WMAPRO,
     .priv_data_size = sizeof(WMAProDecodeCtx),
     .init           = decode_init,
     .close          = decode_end,

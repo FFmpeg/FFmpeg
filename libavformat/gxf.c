@@ -89,34 +89,34 @@ static int get_sindex(AVFormatContext *s, int id, int format) {
         case 3:
         case 4:
             st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            st->codec->codec_id = CODEC_ID_MJPEG;
+            st->codec->codec_id = AV_CODEC_ID_MJPEG;
             break;
         case 13:
         case 15:
             st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            st->codec->codec_id = CODEC_ID_DVVIDEO;
+            st->codec->codec_id = AV_CODEC_ID_DVVIDEO;
             break;
         case 14:
         case 16:
             st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            st->codec->codec_id = CODEC_ID_DVVIDEO;
+            st->codec->codec_id = AV_CODEC_ID_DVVIDEO;
             break;
         case 11:
         case 12:
         case 20:
             st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            st->codec->codec_id = CODEC_ID_MPEG2VIDEO;
+            st->codec->codec_id = AV_CODEC_ID_MPEG2VIDEO;
             st->need_parsing = AVSTREAM_PARSE_HEADERS; //get keyframe flag etc.
             break;
         case 22:
         case 23:
             st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            st->codec->codec_id = CODEC_ID_MPEG1VIDEO;
+            st->codec->codec_id = AV_CODEC_ID_MPEG1VIDEO;
             st->need_parsing = AVSTREAM_PARSE_HEADERS; //get keyframe flag etc.
             break;
         case 9:
             st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-            st->codec->codec_id = CODEC_ID_PCM_S24LE;
+            st->codec->codec_id = AV_CODEC_ID_PCM_S24LE;
             st->codec->channels = 1;
             st->codec->sample_rate = 48000;
             st->codec->bit_rate = 3 * 1 * 48000 * 8;
@@ -125,7 +125,7 @@ static int get_sindex(AVFormatContext *s, int id, int format) {
             break;
         case 10:
             st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-            st->codec->codec_id = CODEC_ID_PCM_S16LE;
+            st->codec->codec_id = AV_CODEC_ID_PCM_S16LE;
             st->codec->channels = 1;
             st->codec->sample_rate = 48000;
             st->codec->bit_rate = 2 * 1 * 48000 * 8;
@@ -134,7 +134,7 @@ static int get_sindex(AVFormatContext *s, int id, int format) {
             break;
         case 17:
             st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-            st->codec->codec_id = CODEC_ID_AC3;
+            st->codec->codec_id = AV_CODEC_ID_AC3;
             st->codec->channels = 2;
             st->codec->sample_rate = 48000;
             break;
@@ -143,11 +143,11 @@ static int get_sindex(AVFormatContext *s, int id, int format) {
         case 8:
         case 24:
             st->codec->codec_type = AVMEDIA_TYPE_DATA;
-            st->codec->codec_id = CODEC_ID_NONE;
+            st->codec->codec_id = AV_CODEC_ID_NONE;
             break;
         default:
             st->codec->codec_type = AVMEDIA_TYPE_UNKNOWN;
-            st->codec->codec_id = CODEC_ID_NONE;
+            st->codec->codec_id = AV_CODEC_ID_NONE;
             break;
     }
     return s->nb_streams - 1;
@@ -459,8 +459,8 @@ static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
         avio_rb32(pb); // "timeline" field number
         avio_r8(pb); // flags
         avio_r8(pb); // reserved
-        if (st->codec->codec_id == CODEC_ID_PCM_S24LE ||
-            st->codec->codec_id == CODEC_ID_PCM_S16LE) {
+        if (st->codec->codec_id == AV_CODEC_ID_PCM_S24LE ||
+            st->codec->codec_id == AV_CODEC_ID_PCM_S16LE) {
             int first = field_info >> 16;
             int last  = field_info & 0xffff; // last is exclusive
             int bps = av_get_bits_per_sample(st->codec->codec_id)>>3;
@@ -478,7 +478,7 @@ static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
         pkt->dts = field_nr;
 
         //set duration manually for DV or else lavf misdetects the frame rate
-        if (st->codec->codec_id == CODEC_ID_DVVIDEO)
+        if (st->codec->codec_id == AV_CODEC_ID_DVVIDEO)
             pkt->duration = si->fields_per_frame;
 
         return ret;

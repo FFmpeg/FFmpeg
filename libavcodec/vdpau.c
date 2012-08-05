@@ -340,7 +340,7 @@ void ff_vdpau_mpeg4_decode_picture(MpegEncContext *s, const uint8_t *buf,
     render->info.mpeg4.interlaced                        = !s->progressive_sequence;
     render->info.mpeg4.quant_type                        = s->mpeg_quant;
     render->info.mpeg4.quarter_sample                    = s->quarter_sample;
-    render->info.mpeg4.short_video_header                = s->avctx->codec->id == CODEC_ID_H263;
+    render->info.mpeg4.short_video_header                = s->avctx->codec->id == AV_CODEC_ID_H263;
     render->info.mpeg4.rounding_control                  = s->no_rounding;
     render->info.mpeg4.alternate_vertical_scan_flag      = s->alternate_scan;
     render->info.mpeg4.top_field_first                   = s->top_field_first;

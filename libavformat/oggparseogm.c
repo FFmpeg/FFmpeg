@@ -56,7 +56,7 @@ ogm_header(AVFormatContext *s, int idx)
             st->codec->codec_tag = tag;
         } else if (*p == 't') {
             st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-            st->codec->codec_id = CODEC_ID_TEXT;
+            st->codec->codec_id = AV_CODEC_ID_TEXT;
             p += 12;
         } else {
             uint8_t acid[5];

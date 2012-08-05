@@ -954,7 +954,7 @@ static av_cold int decode_end(AVCodecContext *avctx){
 AVCodec ff_truemotion2_decoder = {
     .name           = "truemotion2",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_TRUEMOTION2,
+    .id             = AV_CODEC_ID_TRUEMOTION2,
     .priv_data_size = sizeof(TM2Context),
     .init           = decode_init,
     .close          = decode_end,

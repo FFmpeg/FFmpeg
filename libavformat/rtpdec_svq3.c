@@ -68,12 +68,12 @@ static int svq3_parse_packet (AVFormatContext *s, PayloadContext *sv,
         AV_WB32(st->codec->extradata + 4, len);
         memcpy(st->codec->extradata + 8, buf, len);
 
-        /* We set codec_id to CODEC_ID_NONE initially to
+        /* We set codec_id to AV_CODEC_ID_NONE initially to
          * delay decoder initialization since extradata is
          * carried within the RTP stream, not SDP. Here,
-         * by setting codec_id to CODEC_ID_SVQ3, we are signalling
+         * by setting codec_id to AV_CODEC_ID_SVQ3, we are signalling
          * to the decoder that it is OK to initialize. */
-        st->codec->codec_id = CODEC_ID_SVQ3;
+        st->codec->codec_id = AV_CODEC_ID_SVQ3;
 
         return AVERROR(EAGAIN);
     }
@@ -127,7 +127,7 @@ static void svq3_extradata_free(PayloadContext *sv)
 RTPDynamicProtocolHandler ff_svq3_dynamic_handler = {
     .enc_name         = "X-SV3V-ES",
     .codec_type       = AVMEDIA_TYPE_VIDEO,
-    .codec_id         = CODEC_ID_NONE,      // see if (config_packet) above
+    .codec_id         = AV_CODEC_ID_NONE,      // see if (config_packet) above
     .alloc            = svq3_extradata_new,
     .free             = svq3_extradata_free,
     .parse_packet     = svq3_parse_packet,

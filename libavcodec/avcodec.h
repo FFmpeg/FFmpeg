@@ -1265,7 +1265,7 @@ typedef struct AVCodecContext {
     enum AVMediaType codec_type; /* see AVMEDIA_TYPE_xxx */
     struct AVCodec  *codec;
     char             codec_name[32];
-    enum CodecID     codec_id; /* see AV_CODEC_ID_xxx */
+    enum AVCodecID     codec_id; /* see AV_CODEC_ID_xxx */
 
     /**
      * fourcc (LSB first, so "ABCD" -> ('D'<<24) + ('C'<<16) + ('B'<<8) + 'A').
@@ -2869,7 +2869,7 @@ typedef struct AVCodec {
      */
     const char *long_name;
     enum AVMediaType type;
-    enum CodecID id;
+    enum AVCodecID id;
     /**
      * Codec capabilities.
      * see CODEC_CAP_*
@@ -2967,9 +2967,9 @@ typedef struct AVHWAccel {
     /**
      * Codec implemented by the hardware accelerator.
      *
-     * See CODEC_ID_xxx
+     * See AV_CODEC_ID_xxx
      */
-    enum CodecID id;
+    enum AVCodecID id;
 
     /**
      * Supported pixel format.
@@ -3388,10 +3388,10 @@ uint8_t* av_packet_get_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
 /**
  * Find a registered decoder with a matching codec ID.
  *
- * @param id CodecID of the requested decoder
+ * @param id AVCodecID of the requested decoder
  * @return A decoder if one was found, NULL otherwise.
  */
-AVCodec *avcodec_find_decoder(enum CodecID id);
+AVCodec *avcodec_find_decoder(enum AVCodecID id);
 
 /**
  * Find a registered decoder with the specified name.
@@ -3810,10 +3810,10 @@ void av_parser_close(AVCodecParserContext *s);
 /**
  * Find a registered encoder with a matching codec ID.
  *
- * @param id CodecID of the requested encoder
+ * @param id AVCodecID of the requested encoder
  * @return An encoder if one was found, NULL otherwise.
  */
-AVCodec *avcodec_find_encoder(enum CodecID id);
+AVCodec *avcodec_find_encoder(enum AVCodecID id);
 
 /**
  * Find a registered encoder with the specified name.
@@ -4323,7 +4323,7 @@ void avcodec_default_free_buffers(AVCodecContext *s);
  * @param[in] codec_id the codec
  * @return Number of bits per sample or zero if unknown for the given codec.
  */
-int av_get_bits_per_sample(enum CodecID codec_id);
+int av_get_bits_per_sample(enum AVCodecID codec_id);
 
 /**
  * Return codec bits per sample.
@@ -4333,7 +4333,7 @@ int av_get_bits_per_sample(enum CodecID codec_id);
  * @param[in] codec_id the codec
  * @return Number of bits per sample or zero if unknown for the given codec.
  */
-int av_get_exact_bits_per_sample(enum CodecID codec_id);
+int av_get_exact_bits_per_sample(enum AVCodecID codec_id);
 
 /**
  * Return audio frame duration.
@@ -4481,7 +4481,7 @@ int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op));
 /**
  * Get the type of the given codec.
  */
-enum AVMediaType avcodec_get_type(enum CodecID codec_id);
+enum AVMediaType avcodec_get_type(enum AVCodecID codec_id);
 
 /**
  * @return a positive value if s is open (i.e. avcodec_open2() was called on it

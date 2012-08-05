@@ -576,7 +576,7 @@ static int alac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 AVCodec ff_alac_encoder = {
     .name           = "alac",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_ALAC,
+    .id             = AV_CODEC_ID_ALAC,
     .priv_data_size = sizeof(AlacEncodeContext),
     .init           = alac_encode_init,
     .encode2        = alac_encode_frame,

@@ -78,7 +78,7 @@ get_next:
        and total number of samples found in an AAC ADTS header are not
        reliable. Bit rate is still accurate because the total frame duration in
        seconds is still correct (as is the number of bits in the frame). */
-    if (avctx->codec_id != CODEC_ID_AAC) {
+    if (avctx->codec_id != AV_CODEC_ID_AAC) {
         avctx->sample_rate = s->sample_rate;
 
         /* allow downmixing to stereo (or mono for AC-3) */
@@ -86,8 +86,8 @@ get_next:
                 avctx->request_channels < s->channels &&
                 (avctx->request_channels <= 2 ||
                 (avctx->request_channels == 1 &&
-                (avctx->codec_id == CODEC_ID_AC3 ||
-                 avctx->codec_id == CODEC_ID_EAC3)))) {
+                (avctx->codec_id == AV_CODEC_ID_AC3 ||
+                 avctx->codec_id == AV_CODEC_ID_EAC3)))) {
             avctx->channels = avctx->request_channels;
         } else {
             avctx->channels = s->channels;

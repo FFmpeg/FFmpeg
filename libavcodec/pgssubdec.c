@@ -471,7 +471,7 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size,
 AVCodec ff_pgssub_decoder = {
     .name           = "pgssub",
     .type           = AVMEDIA_TYPE_SUBTITLE,
-    .id             = CODEC_ID_HDMV_PGS_SUBTITLE,
+    .id             = AV_CODEC_ID_HDMV_PGS_SUBTITLE,
     .priv_data_size = sizeof(PGSSubContext),
     .init           = init_decoder,
     .close          = close_decoder,

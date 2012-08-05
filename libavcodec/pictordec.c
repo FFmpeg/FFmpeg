@@ -253,7 +253,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 AVCodec ff_pictor_decoder = {
     .name           = "pictor",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_PICTOR,
+    .id             = AV_CODEC_ID_PICTOR,
     .priv_data_size = sizeof(PicContext),
     .close          = decode_end,
     .decode         = decode_frame,

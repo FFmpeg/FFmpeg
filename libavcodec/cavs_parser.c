@@ -98,7 +98,7 @@ static int cavsvideo_parse(AVCodecParserContext *s,
 }
 
 AVCodecParser ff_cavsvideo_parser = {
-    .codec_ids      = { CODEC_ID_CAVS },
+    .codec_ids      = { AV_CODEC_ID_CAVS },
     .priv_data_size = sizeof(ParseContext),
     .parser_parse   = cavsvideo_parse,
     .parser_close   = ff_parse_close,

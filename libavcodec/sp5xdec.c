@@ -68,7 +68,7 @@ static int sp5x_decode_frame(AVCodecContext *avctx,
     memcpy(recoded+j, &sp5x_data_sos[0], sizeof(sp5x_data_sos));
     j += sizeof(sp5x_data_sos);
 
-    if(avctx->codec_id==CODEC_ID_AMV)
+    if(avctx->codec_id==AV_CODEC_ID_AMV)
         for (i = 2; i < buf_size-2 && j < buf_size+1024-2; i++)
             recoded[j++] = buf[i];
     else
@@ -96,7 +96,7 @@ static int sp5x_decode_frame(AVCodecContext *avctx,
 AVCodec ff_sp5x_decoder = {
     .name           = "sp5x",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_SP5X,
+    .id             = AV_CODEC_ID_SP5X,
     .priv_data_size = sizeof(MJpegDecodeContext),
     .init           = ff_mjpeg_decode_init,
     .close          = ff_mjpeg_decode_end,
@@ -108,7 +108,7 @@ AVCodec ff_sp5x_decoder = {
 AVCodec ff_amv_decoder = {
     .name           = "amv",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_AMV,
+    .id             = AV_CODEC_ID_AMV,
     .priv_data_size = sizeof(MJpegDecodeContext),
     .init           = ff_mjpeg_decode_init,
     .close          = ff_mjpeg_decode_end,

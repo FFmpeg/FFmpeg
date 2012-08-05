@@ -162,7 +162,7 @@ static int mp3_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id = CODEC_ID_MP3;
+    st->codec->codec_id = AV_CODEC_ID_MP3;
     st->need_parsing = AVSTREAM_PARSE_FULL;
     st->start_time = 0;
 

@@ -281,7 +281,7 @@ static av_cold int vp5_decode_init(AVCodecContext *avctx)
 AVCodec ff_vp5_decoder = {
     .name           = "vp5",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_VP5,
+    .id             = AV_CODEC_ID_VP5,
     .priv_data_size = sizeof(VP56Context),
     .init           = vp5_decode_init,
     .close          = ff_vp56_free,

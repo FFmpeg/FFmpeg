@@ -63,7 +63,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         for (w = 0; w < avctx->width; w++) {
             uint32_t pixel = av_be2ne32(*src++);
             uint16_t r, g, b;
-            if (avctx->codec_id==CODEC_ID_R210) {
+            if (avctx->codec_id==AV_CODEC_ID_R210) {
                 b =  pixel <<  6;
                 g = (pixel >>  4) & 0xffc0;
                 r = (pixel >> 14) & 0xffc0;
@@ -100,7 +100,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
 AVCodec ff_r210_decoder = {
     .name           = "r210",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_R210,
+    .id             = AV_CODEC_ID_R210,
     .init           = decode_init,
     .close          = decode_close,
     .decode         = decode_frame,
@@ -112,7 +112,7 @@ AVCodec ff_r210_decoder = {
 AVCodec ff_r10k_decoder = {
     .name           = "r10k",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_R10K,
+    .id             = AV_CODEC_ID_R10K,
     .init           = decode_init,
     .close          = decode_close,
     .decode         = decode_frame,

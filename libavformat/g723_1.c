@@ -39,7 +39,7 @@ static int g723_1_init(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     st->codec->codec_type     = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id       = CODEC_ID_G723_1;
+    st->codec->codec_id       = AV_CODEC_ID_G723_1;
     st->codec->channel_layout = AV_CH_LAYOUT_MONO;
     st->codec->channels       = 1;
     st->codec->sample_rate    = 8000;

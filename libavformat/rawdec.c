@@ -32,14 +32,14 @@
 int ff_raw_read_header(AVFormatContext *s)
 {
     AVStream *st;
-    enum CodecID id;
+    enum AVCodecID id;
 
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
 
         id = s->iformat->raw_codec_id;
-        if (id == CODEC_ID_RAWVIDEO) {
+        if (id == AV_CODEC_ID_RAWVIDEO) {
             st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
         } else {
             st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
@@ -52,7 +52,7 @@ int ff_raw_read_header(AVFormatContext *s)
 
             st->codec->channels = 1;
 
-            if (id == CODEC_ID_ADPCM_G722)
+            if (id == AV_CODEC_ID_ADPCM_G722)
                 st->codec->sample_rate = 16000;
 
             if (s1 && s1->sample_rate)
@@ -185,7 +185,7 @@ AVInputFormat ff_g722_demuxer = {
     .read_packet    = ff_raw_read_partial_packet,
     .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "g722,722",
-    .raw_codec_id   = CODEC_ID_ADPCM_G722,
+    .raw_codec_id   = AV_CODEC_ID_ADPCM_G722,
 };
 #endif
 
@@ -197,12 +197,12 @@ AVInputFormat ff_latm_demuxer = {
     .read_packet    = ff_raw_read_partial_packet,
     .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "latm",
-    .raw_codec_id   = CODEC_ID_AAC_LATM,
+    .raw_codec_id   = AV_CODEC_ID_AAC_LATM,
 };
 #endif
 
 #if CONFIG_MJPEG_DEMUXER
-FF_DEF_RAWVIDEO_DEMUXER(mjpeg, "raw MJPEG video", NULL, "mjpg,mjpeg", CODEC_ID_MJPEG)
+FF_DEF_RAWVIDEO_DEMUXER(mjpeg, "raw MJPEG video", NULL, "mjpg,mjpeg", AV_CODEC_ID_MJPEG)
 #endif
 
 #if CONFIG_MLP_DEMUXER
@@ -213,7 +213,7 @@ AVInputFormat ff_mlp_demuxer = {
     .read_packet    = ff_raw_read_partial_packet,
     .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "mlp",
-    .raw_codec_id   = CODEC_ID_MLP,
+    .raw_codec_id   = AV_CODEC_ID_MLP,
 };
 #endif
 
@@ -225,7 +225,7 @@ AVInputFormat ff_truehd_demuxer = {
     .read_packet    = ff_raw_read_partial_packet,
     .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "thd",
-    .raw_codec_id   = CODEC_ID_TRUEHD,
+    .raw_codec_id   = AV_CODEC_ID_TRUEHD,
 };
 #endif
 
@@ -237,10 +237,10 @@ AVInputFormat ff_shorten_demuxer = {
     .read_packet    = ff_raw_read_partial_packet,
     .flags          = AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH | AVFMT_NO_BYTE_SEEK,
     .extensions     = "shn",
-    .raw_codec_id   = CODEC_ID_SHORTEN,
+    .raw_codec_id   = AV_CODEC_ID_SHORTEN,
 };
 #endif
 
 #if CONFIG_VC1_DEMUXER
-FF_DEF_RAWVIDEO_DEMUXER(vc1, "raw VC-1", NULL, "vc1", CODEC_ID_VC1)
+FF_DEF_RAWVIDEO_DEMUXER(vc1, "raw VC-1", NULL, "vc1", AV_CODEC_ID_VC1)
 #endif

@@ -375,7 +375,7 @@ static int dvvideo_close(AVCodecContext *c)
 AVCodec ff_dvvideo_decoder = {
     .name           = "dvvideo",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_DVVIDEO,
+    .id             = AV_CODEC_ID_DVVIDEO,
     .priv_data_size = sizeof(DVVideoContext),
     .init           = ff_dvvideo_init,
     .close          = dvvideo_close,

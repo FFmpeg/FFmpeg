@@ -379,7 +379,7 @@ static int decode_stream_header(NUTContext *nut)
         av_log(s, AV_LOG_ERROR, "unknown stream class (%d)\n", class);
         return -1;
     }
-    if (class < 3 && st->codec->codec_id == CODEC_ID_NONE)
+    if (class < 3 && st->codec->codec_id == AV_CODEC_ID_NONE)
         av_log(s, AV_LOG_ERROR,
                "Unknown codec tag '0x%04x' for stream number %d\n",
                (unsigned int) tmp, stream_id);

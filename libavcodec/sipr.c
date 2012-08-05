@@ -561,7 +561,7 @@ static int sipr_decode_frame(AVCodecContext *avctx, void *data,
 AVCodec ff_sipr_decoder = {
     .name           = "sipr",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_SIPR,
+    .id             = AV_CODEC_ID_SIPR,
     .priv_data_size = sizeof(SiprContext),
     .init           = sipr_decoder_init,
     .decode         = sipr_decode_frame,

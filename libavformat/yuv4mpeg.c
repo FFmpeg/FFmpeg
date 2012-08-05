@@ -178,8 +178,8 @@ AVOutputFormat ff_yuv4mpegpipe_muxer = {
     .mime_type         = "",
     .extensions        = "y4m",
     .priv_data_size    = sizeof(int),
-    .audio_codec       = CODEC_ID_NONE,
-    .video_codec       = CODEC_ID_RAWVIDEO,
+    .audio_codec       = AV_CODEC_ID_NONE,
+    .video_codec       = AV_CODEC_ID_RAWVIDEO,
     .write_header      = yuv4_write_header,
     .write_packet      = yuv4_write_packet,
     .flags             = AVFMT_RAWPICTURE,
@@ -356,7 +356,7 @@ static int yuv4_read_header(AVFormatContext *s)
     avpriv_set_pts_info(st, 64, rated, raten);
     st->codec->pix_fmt                = pix_fmt;
     st->codec->codec_type             = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id               = CODEC_ID_RAWVIDEO;
+    st->codec->codec_id               = AV_CODEC_ID_RAWVIDEO;
     st->sample_aspect_ratio           = (AVRational){ aspectn, aspectd };
     st->codec->chroma_sample_location = chroma_sample_location;
 
