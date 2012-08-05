@@ -407,9 +407,11 @@ static int mov_write_wave_tag(AVIOContext *pb, MOVTrack *track)
     avio_wb32(pb, 0);     /* size */
     ffio_wfourcc(pb, "wave");
 
+    if (track->enc->codec_id != CODEC_ID_QDM2) {
     avio_wb32(pb, 12);    /* size */
     ffio_wfourcc(pb, "frma");
     avio_wl32(pb, track->tag);
+    }
 
     if (track->enc->codec_id == CODEC_ID_AAC) {
         /* useless atom needed by mplayer, ipod, not needed by quicktime */
@@ -423,7 +425,8 @@ static int mov_write_wave_tag(AVIOContext *pb, MOVTrack *track)
         mov_write_amr_tag(pb, track);
     } else if (track->enc->codec_id == CODEC_ID_AC3) {
         mov_write_ac3_tag(pb, track);
-    } else if (track->enc->codec_id == CODEC_ID_ALAC) {
+    } else if (track->enc->codec_id == CODEC_ID_ALAC ||
+               track->enc->codec_id == CODEC_ID_QDM2) {
         mov_write_extradata_tag(pb, track);
     } else if (track->enc->codec_id == CODEC_ID_ADPCM_MS ||
                track->enc->codec_id == CODEC_ID_ADPCM_IMA_WAV) {
@@ -614,7 +617,8 @@ static int mov_write_audio_tag(AVIOContext *pb, MOVTrack *track)
             version = 2;
         } else if (track->audio_vbr || mov_pcm_le_gt16(track->enc->codec_id) ||
                    track->enc->codec_id == CODEC_ID_ADPCM_MS ||
-                   track->enc->codec_id == CODEC_ID_ADPCM_IMA_WAV) {
+                   track->enc->codec_id == CODEC_ID_ADPCM_IMA_WAV ||
+                   track->enc->codec_id == CODEC_ID_QDM2) {
             version = 1;
         }
     }
@@ -679,6 +683,7 @@ static int mov_write_audio_tag(AVIOContext *pb, MOVTrack *track)
         track->enc->codec_id == CODEC_ID_ALAC ||
         track->enc->codec_id == CODEC_ID_ADPCM_MS ||
         track->enc->codec_id == CODEC_ID_ADPCM_IMA_WAV ||
+        track->enc->codec_id == CODEC_ID_QDM2 ||
         (mov_pcm_le_gt16(track->enc->codec_id) && version==1)))
         mov_write_wave_tag(pb, track);
     else if(track->tag == MKTAG('m','p','4','a'))
