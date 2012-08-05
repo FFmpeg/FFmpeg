@@ -16,6 +16,7 @@ OBJS = allcodecs.o                                                      \
        avpacket.o                                                       \
        bitstream.o                                                      \
        bitstream_filter.o                                               \
+       codec_desc.o                                                     \
        dsputil.o                                                        \
        faanidct.o                                                       \
        fmtconvert.o                                                     \
