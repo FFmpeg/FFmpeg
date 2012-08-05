@@ -35,8 +35,8 @@ specified in the pattern with the string "%%".
 If the pattern contains "%d" or "%0@var{N}d", the first filename of
 the file list specified by the pattern must contain a number
 inclusively contained between @var{start_number} and
-@var{start_number}+4, and all the following numbers must be
-sequential.
+@var{start_number}+@var{start_number_range}-1, and all the following
+numbers must be sequential.
 
 The pattern may contain a suffix which is used to automatically
 determine the format of the images contained in the files.
@@ -62,6 +62,10 @@ format is guessed from the first image file in the sequence.
 @item start_number
 Set the index of the file matched by the image file pattern to start
 to read from. Default value is 0.
+@item start_number_range
+Set the index interval range to check when looking for the first image
+file in the sequence, starting from @var{start_number}. Default value
+is 5.
 @item video_size
 Set the video size of the images to read. If not specified the video
 size is guessed from the first image file in the sequence.

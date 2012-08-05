@@ -59,6 +59,7 @@ typedef struct {
     glob_t globstate;
 #endif
     int start_number;
+    int start_number_range;
 } VideoDemuxData;
 
 static const int sizes[][2] = {
@@ -108,8 +109,6 @@ static int is_glob(const char *path)
 #endif
 }
 
-#define FIRST_INDEX_SEARCH_RANGE 5
-
 /**
  * Get index range of image files matched by path.
  *
@@ -120,13 +119,13 @@ static int is_glob(const char *path)
  * @return -1 if no image file could be found
  */
 static int find_image_range(int *pfirst_index, int *plast_index,
-                            const char *path, int start_index)
+                            const char *path, int start_index, int start_index_range)
 {
     char buf[1024];
     int range, last_index, range1, first_index;
 
     /* find the first image */
-    for (first_index = start_index; first_index < start_index + FIRST_INDEX_SEARCH_RANGE; first_index++) {
+    for (first_index = start_index; first_index < start_index + start_index_range; first_index++) {
         if (av_get_frame_filename(buf, sizeof(buf), path, first_index) < 0){
             *pfirst_index =
             *plast_index = 1;
@@ -137,7 +136,7 @@ static int find_image_range(int *pfirst_index, int *plast_index,
         if (avio_check(buf, AVIO_FLAG_READ) > 0)
             break;
     }
-    if (first_index == start_index + FIRST_INDEX_SEARCH_RANGE)
+    if (first_index == start_index + start_index_range)
         goto fail;
 
     /* find the last image */
@@ -263,10 +262,10 @@ static int read_header(AVFormatContext *s1)
 #endif
         } else {
             if (find_image_range(&first_index, &last_index, s->path,
-                                 s->start_number) < 0) {
+                                 s->start_number, s->start_number_range) < 0) {
                 av_log(s1, AV_LOG_ERROR,
                        "Could find no file with with path '%s' and index in the range %d-%d\n",
-                       s->path, s->start_number, s->start_number+FIRST_INDEX_SEARCH_RANGE-1);
+                       s->path, s->start_number, s->start_number + s->start_number_range - 1);
                 return AVERROR(ENOENT);
             }
         }
@@ -391,6 +390,7 @@ static const AVOption options[] = {
     { "loop",         "force loop over input file sequence", OFFSET(loop),         AV_OPT_TYPE_INT,    {.dbl = 0},    0, 1, DEC },
     { "pixel_format", "set video pixel format",              OFFSET(pixel_format), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
     { "start_number", "set first number in the sequence",    OFFSET(start_number), AV_OPT_TYPE_INT,    {.dbl = 0},    0, INT_MAX, DEC },
+    { "start_number_range", "set range for looking at the first sequence number", OFFSET(start_number_range), AV_OPT_TYPE_INT, {.dbl = 5}, 1, INT_MAX, DEC },
     { "video_size",   "set video size",                      OFFSET(video_size),   AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
     { NULL },
 };
