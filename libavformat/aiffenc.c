@@ -98,6 +98,12 @@ static int aiff_write_header(AVFormatContext *s)
         avio_wb16(pb, 0);
     }
 
+    if (enc->codec_tag == MKTAG('Q','D','M','2') && enc->extradata_size) {
+        ffio_wfourcc(pb, "wave");
+        avio_wb32(pb, enc->extradata_size);
+        avio_write(pb, enc->extradata, enc->extradata_size);
+    }
+
     /* Sound data chunk */
     ffio_wfourcc(pb, "SSND");
     aiff->ssnd = avio_tell(pb);         /* Sound chunk size */
