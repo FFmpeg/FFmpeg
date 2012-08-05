@@ -3188,7 +3188,7 @@ static int transcode_init(void)
             }
 
             if(ost->frame_rate.num)
-                codec->time_base = (AVRational){ost->frame_rate.den, ost->frame_rate.num};
+                codec->time_base = av_inv_q(ost->frame_rate);
 
             av_reduce(&codec->time_base.num, &codec->time_base.den,
                         codec->time_base.num, codec->time_base.den, INT_MAX);
@@ -3281,7 +3281,7 @@ static int transcode_init(void)
                 codec->time_base      = (AVRational){ 1, codec->sample_rate };
                 break;
             case AVMEDIA_TYPE_VIDEO:
-                codec->time_base = (AVRational){ost->frame_rate.den, ost->frame_rate.num};
+                codec->time_base = av_inv_q(ost->frame_rate);
                 if (ost->filter && !(codec->time_base.num && codec->time_base.den))
                     codec->time_base = ost->filter->filter->inputs[0]->time_base;
                 if (   av_q2d(codec->time_base) < 0.001 && video_sync_method != VSYNC_PASSTHROUGH

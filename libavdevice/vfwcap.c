@@ -372,7 +372,7 @@ static int vfw_read_header(AVFormatContext *s)
         goto fail;
 
     codec = st->codec;
-    codec->time_base = (AVRational){framerate_q.den, framerate_q.num};
+    codec->time_base = av_inv_q(framerate_q);
     codec->codec_type = AVMEDIA_TYPE_VIDEO;
     codec->width  = bi->bmiHeader.biWidth;
     codec->height = bi->bmiHeader.biHeight;

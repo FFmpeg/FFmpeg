@@ -302,7 +302,7 @@ x11grab_read_header(AVFormatContext *s1)
 
     x11grab->frame_size = x11grab->width * x11grab->height * image->bits_per_pixel/8;
     x11grab->dpy = dpy;
-    x11grab->time_base  = (AVRational){framerate.den, framerate.num};
+    x11grab->time_base  = av_inv_q(framerate);
     x11grab->time_frame = av_gettime() / av_q2d(x11grab->time_base);
     x11grab->x_off = x_off;
     x11grab->y_off = y_off;

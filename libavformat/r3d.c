@@ -141,8 +141,7 @@ static int r3d_read_rdvo(AVFormatContext *s, Atom *atom)
 
     if (st->avg_frame_rate.num)
         st->duration = av_rescale_q(r3d->video_offsets_count,
-                                    (AVRational){st->avg_frame_rate.den,
-                                                 st->avg_frame_rate.num},
+                                    av_inv_q(st->avg_frame_rate),
                                     st->time_base);
     av_dlog(s, "duration %"PRId64"\n", st->duration);
 
@@ -370,7 +369,7 @@ static int r3d_seek(AVFormatContext *s, int stream_index, int64_t sample_time, i
         return -1;
 
     frame_num = av_rescale_q(sample_time, st->time_base,
-                             (AVRational){st->avg_frame_rate.den, st->avg_frame_rate.num});
+                             av_inv_q(st->avg_frame_rate));
     av_dlog(s, "seek frame num %d timestamp %"PRId64"\n",
             frame_num, sample_time);
 

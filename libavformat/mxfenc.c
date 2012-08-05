@@ -1706,7 +1706,7 @@ static int mxf_write_header(AVFormatContext *s)
                 av_log(s, AV_LOG_ERROR, "unsupported video frame rate\n");
                 return -1;
             }
-            rate = (AVRational){mxf->time_base.den, mxf->time_base.num};
+            rate = av_inv_q(mxf->time_base);
             avpriv_set_pts_info(st, 64, mxf->time_base.num, mxf->time_base.den);
             if (!tcr)
                 tcr = av_dict_get(st->metadata, "timecode", NULL, 0);
