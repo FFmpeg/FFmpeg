@@ -337,6 +337,13 @@ static int ogg_read_page(AVFormatContext *s, int *str)
     return 0;
 }
 
+/**
+ * @brief find the next Ogg packet
+ * @param *str is set to the stream for the packet or -1 if there is
+ *             no matching stream, in that case assume all other return
+ *             values to be uninitialized.
+ * @return negative value on error or EOF.
+ */
 static int ogg_packet(AVFormatContext *s, int *str, int *dstart, int *dsize,
                       int64_t *fpos)
 {
@@ -347,6 +354,8 @@ static int ogg_packet(AVFormatContext *s, int *str, int *dstart, int *dsize,
     int segp = 0, psize = 0;
 
     av_dlog(s, "ogg_packet: curidx=%i\n", ogg->curidx);
+    if (str)
+        *str = -1;
 
     do{
         idx = ogg->curidx;
@@ -525,7 +534,6 @@ static int ogg_get_length(AVFormatContext *s)
     ogg_save (s);
     avio_seek (s->pb, s->data_offset, SEEK_SET);
     ogg_reset(s);
-    i = -1;
     while (streams_left > 0 && !ogg_packet(s, &i, NULL, NULL, NULL)) {
         int64_t pts;
         if (i < 0) continue;
@@ -612,7 +620,7 @@ static int ogg_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     struct ogg *ogg;
     struct ogg_stream *os;
-    int idx = -1, ret;
+    int idx, ret;
     int pstart, psize;
     int64_t fpos, pts, dts;
 
@@ -671,7 +679,7 @@ static int64_t ogg_read_timestamp(AVFormatContext *s, int stream_index,
     AVIOContext *bc = s->pb;
     int64_t pts = AV_NOPTS_VALUE;
     int64_t keypos = -1;
-    int i = -1;
+    int i;
     int pstart, psize;
     avio_seek(bc, *pos_arg, SEEK_SET);
     ogg_reset(s);
