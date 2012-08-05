@@ -24,6 +24,7 @@
 const CodecTags ff_mkv_codec_tags[]={
     {"A_AAC"            , CODEC_ID_AAC},
     {"A_AC3"            , CODEC_ID_AC3},
+    {"A_ALAC"           , CODEC_ID_ALAC},
     {"A_DTS"            , CODEC_ID_DTS},
     {"A_EAC3"           , CODEC_ID_EAC3},
     {"A_FLAC"           , CODEC_ID_FLAC},
