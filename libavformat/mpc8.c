@@ -274,7 +274,7 @@ static int mpc8_read_packet(AVFormatContext *s, AVPacket *pkt)
             if(av_get_packet(s->pb, pkt, size) < 0)
                 return AVERROR(ENOMEM);
             pkt->stream_index = 0;
-            pkt->pts = c->frame;
+            pkt->pts = c->frame++;
             return 0;
         }
         if(tag == TAG_STREAMEND)
