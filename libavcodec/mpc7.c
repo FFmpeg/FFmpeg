@@ -35,10 +35,6 @@
 #include "mpc.h"
 #include "mpc7data.h"
 
-#define BANDS            32
-#define SAMPLES_PER_BAND 36
-#define MPC_FRAME_SIZE   (BANDS * SAMPLES_PER_BAND)
-
 static VLC scfi_vlc, dscf_vlc, hdr_vlc, quant_vlc[MPC7_QUANT_VLC_TABLES][2];
 
 static const uint16_t quant_offsets[MPC7_QUANT_VLC_TABLES*2 + 1] =
