@@ -164,8 +164,14 @@ FATE_SAMPLES_AVCONV += fate-mpeg2-field-enc
 fate-mpeg2-field-enc: CMD = framecrc -flags +bitexact -dct fastint -idct simple -i $(SAMPLES)/mpeg2/mpeg2_field_encoding.ts -an
 
 # FIXME dropped frames in this test because of coarse timebase
-FATE_SAMPLES_AVCONV += fate-nuv
-fate-nuv: CMD = framecrc -idct simple -i $(SAMPLES)/nuv/Today.nuv -an
+FATE_NUV += fate-nuv-rtjpeg
+fate-nuv-rtjpeg: CMD = framecrc -idct simple -i $(SAMPLES)/nuv/Today.nuv -an
+
+FATE_NUV += fate-nuv-rtjpeg-fh
+fate-nuv-rtjpeg-fh: CMD = framecrc -idct simple -i $(SAMPLES)/nuv/rtjpeg_frameheader.nuv -an
+
+FATE_SAMPLES_AVCONV += $(FATE_NUV)
+fate-nuv: $(FATE_NUV)
 
 FATE_SAMPLES_AVCONV += fate-qpeg
 fate-qpeg: CMD = framecrc -i $(SAMPLES)/qpeg/Clock.avi -an -pix_fmt rgb24
