@@ -420,6 +420,12 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
     return c->cur_frame ? c->last_bits_used >> 3 : buf_size;
 }
 
+static av_cold void mpc8_decode_flush(AVCodecContext *avctx)
+{
+    MPCContext *c = avctx->priv_data;
+    c->cur_frame = 0;
+}
+
 AVCodec ff_mpc8_decoder = {
     .name           = "mpc8",
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -427,6 +433,7 @@ AVCodec ff_mpc8_decoder = {
     .priv_data_size = sizeof(MPCContext),
     .init           = mpc8_decode_init,
     .decode         = mpc8_decode_frame,
+    .flush          = mpc8_decode_flush,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Musepack SV8"),
 };
