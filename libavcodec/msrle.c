@@ -50,6 +50,7 @@ typedef struct MsrleContext {
 static av_cold int msrle_decode_init(AVCodecContext *avctx)
 {
     MsrleContext *s = avctx->priv_data;
+    int i;
 
     s->avctx = avctx;
 
@@ -71,6 +72,10 @@ static av_cold int msrle_decode_init(AVCodecContext *avctx)
 
     avcodec_get_frame_defaults(&s->frame);
     s->frame.data[0] = NULL;
+
+    if (avctx->extradata_size >= AVPALETTE_SIZE)
+        for (i = 0; i < AVPALETTE_SIZE/4; i++)
+            s->pal[i] = 0xFF<<24 | AV_RL32(avctx->extradata+4*i);
 
     return 0;
 }
@@ -101,10 +106,10 @@ static int msrle_decode_frame(AVCodecContext *avctx,
             s->frame.palette_has_changed = 1;
             memcpy(s->pal, pal, AVPALETTE_SIZE);
         }
-
-        /* make the palette available */
-        memcpy(s->frame.data[1], s->pal, AVPALETTE_SIZE);
     }
+
+    /* make the palette available */
+    memcpy(s->frame.data[1], s->pal, AVPALETTE_SIZE);
 
     /* FIXME how to correctly detect RLE ??? */
     if (avctx->height * istride == avpkt->size) { /* assume uncompressed */
