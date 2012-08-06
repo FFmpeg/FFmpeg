@@ -1554,7 +1554,7 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict)
                     else if (!USES_LIST(mb_type, 0))
                         av_log(s->avctx, AV_LOG_DEBUG, "<");
                     else {
-                        assert(USES_LIST(mb_type, 0) && USES_LIST(mb_type, 1));
+                        av_assert2(USES_LIST(mb_type, 0) && USES_LIST(mb_type, 1));
                         av_log(s->avctx, AV_LOG_DEBUG, "X");
                     }
 
@@ -1739,7 +1739,7 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict)
                     } else if (!USES_LIST(mb_type, 0)) {
                         COLOR(0, 48)
                     } else {
-                        assert(USES_LIST(mb_type, 0) && USES_LIST(mb_type, 1));
+                        av_assert2(USES_LIST(mb_type, 0) && USES_LIST(mb_type, 1));
                         COLOR(300,48)
                     }
 
@@ -2165,7 +2165,7 @@ static inline void MPV_motion_lowres(MpegEncContext *s,
         }
         break;
     default:
-        assert(0);
+        av_assert2(0);
     }
 }
 
@@ -2333,7 +2333,7 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
 
             if (s->mb_skipped) {
                 s->mb_skipped= 0;
-                assert(s->pict_type!=AV_PICTURE_TYPE_I);
+                av_assert2(s->pict_type!=AV_PICTURE_TYPE_I);
                 *mbskip_ptr = 1;
             } else if(!s->current_picture.f.reference) {
                 *mbskip_ptr = 1;
@@ -2627,7 +2627,7 @@ void ff_init_block_index(MpegEncContext *s){ //FIXME maybe rename
             s->dest[0] += (s->mb_y>>1) *   linesize << mb_size;
             s->dest[1] += (s->mb_y>>1) * uvlinesize << (mb_size - s->chroma_y_shift);
             s->dest[2] += (s->mb_y>>1) * uvlinesize << (mb_size - s->chroma_y_shift);
-            assert((s->mb_y&1) == (s->picture_structure == PICT_BOTTOM_FIELD));
+            av_assert1((s->mb_y&1) == (s->picture_structure == PICT_BOTTOM_FIELD));
         }
     }
 }
