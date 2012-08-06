@@ -1130,7 +1130,7 @@ static int estimate_best_b_count(MpegEncContext *s)
     int64_t best_rd  = INT64_MAX;
     int best_b_count = -1;
 
-    assert(scale >= 0 && scale <= 3);
+    av_assert0(scale >= 0 && scale <= 3);
 
     //emms_c();
     //s->next_picture_ptr->quality;
@@ -1614,7 +1614,7 @@ vbv_retry:
 
             vbv_delay = FFMAX(vbv_delay, min_delay);
 
-            assert(vbv_delay < 0xFFFF);
+            av_assert0(vbv_delay < 0xFFFF);
 
             s->vbv_delay_ptr[0] &= 0xF8;
             s->vbv_delay_ptr[0] |= vbv_delay >> 13;
@@ -2021,7 +2021,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
     }
 
     /* DCT & quantize */
-    assert(s->out_format != FMT_MJPEG || s->qscale == 8);
+    av_assert2(s->out_format != FMT_MJPEG || s->qscale == 8);
     {
         for (i = 0; i < mb_block_count; i++) {
             if (!skip_dct[i]) {
@@ -2122,7 +2122,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
             ff_mjpeg_encode_mb(s, s->block);
         break;
     default:
-        assert(0);
+        av_assert1(0);
     }
 }
 
@@ -2266,7 +2266,7 @@ static int sse(MpegEncContext *s, uint8_t *src1, uint8_t *src2, int w, int h, in
         }
     }
 
-    assert(acc>=0);
+    av_assert2(acc>=0);
 
     return acc;
 }
@@ -2560,7 +2560,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                         }
                     }
 
-                    assert((put_bits_count(&s->pb)&7) == 0);
+                    av_assert2((put_bits_count(&s->pb)&7) == 0);
                     current_packet_size= put_bits_ptr(&s->pb) - s->ptr_lastgob;
 
                     if(s->avctx->error_rate && s->resync_mb_x + s->resync_mb_y > 0){
@@ -2768,7 +2768,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                         const int mvdir= (best_s.mv_dir&MV_DIR_BACKWARD) ? 1 : 0;
                         static const int dquant_tab[4]={-1,1,-2,2};
 
-                        assert(backup_s.dquant == 0);
+                        av_assert2(backup_s.dquant == 0);
 
                         //FIXME intra
                         s->mv_dir= best_s.mv_dir;
@@ -3384,7 +3384,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
     case FMT_H264:
         break;
     default:
-        assert(0);
+        av_assert0(0);
     }
     bits= put_bits_count(&s->pb);
     s->header_bits= bits - s->last_bits;
@@ -3521,7 +3521,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
 //                coeff[2][k]= -level+2;
             }
             coeff_count[i]= FFMIN(level, 2);
-            assert(coeff_count[i]);
+            av_assert2(coeff_count[i]);
             max |=level;
         }else{
             coeff[0][i]= (level>>31)|1;
@@ -3555,7 +3555,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
             const int alevel= FFABS(level);
             int unquant_coeff;
 
-            assert(level);
+            av_assert2(level);
 
             if(s->out_format == FMT_H263){
                 unquant_coeff= alevel*qmul + qadd;
@@ -3704,7 +3704,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
     }
 
     i= last_i;
-    assert(last_level);
+    av_assert2(last_level);
 
     block[ perm_scantable[last_non_zero] ]= last_level;
     i -= last_run + 1;
@@ -3820,8 +3820,8 @@ STOP_TIMER("memset rem[]")}
         weight[i] = w;
 //        w=weight[i] = (63*qns + (w/2)) / w;
 
-        assert(w>0);
-        assert(w<(1<<6));
+        av_assert2(w>0);
+        av_assert2(w<(1<<6));
         sum += w*w;
     }
     lambda= sum*(uint64_t)s->lambda2 >> (FF_LAMBDA_SHIFT - 6 + 6 + 6 + 6);
@@ -3887,7 +3887,7 @@ STOP_TIMER("dct")}
             const int level= block[0];
             int change, old_coeff;
 
-            assert(s->mb_intra);
+            av_assert2(s->mb_intra);
 
             old_coeff= q*level;
 
@@ -3930,7 +3930,7 @@ STOP_TIMER("dct")}
             }else{
                 old_coeff=0;
                 run2--;
-                assert(run2>=0 || i >= last_non_zero );
+                av_assert2(run2>=0 || i >= last_non_zero );
             }
 
             for(change=-1; change<=1; change+=2){
@@ -3958,7 +3958,7 @@ STOP_TIMER("dct")}
                                          - last_length[UNI_AC_ENC_INDEX(run, level+64)];
                         }
                     }else{
-                        assert(FFABS(new_level)==1);
+                        av_assert2(FFABS(new_level)==1);
 
                         if(analyze_gradient){
                             int g= d1[ scantable[i] ];
@@ -3991,7 +3991,7 @@ STOP_TIMER("dct")}
                     }
                 }else{
                     new_coeff=0;
-                    assert(FFABS(level)==1);
+                    av_assert2(FFABS(level)==1);
 
                     if(i < last_non_zero){
                         int next_i= i + run2 + 1;
@@ -4020,7 +4020,7 @@ STOP_TIMER("dct")}
                 score *= lambda;
 
                 unquant_change= new_coeff - old_coeff;
-                assert((score < 100*lambda && score > -100*lambda) || lambda==0);
+                av_assert2((score < 100*lambda && score > -100*lambda) || lambda==0);
 
                 score+= s->dsp.try_8x8basis(rem, weight, basis[j], unquant_change);
                 if(score<best_score){
@@ -4051,7 +4051,7 @@ STOP_TIMER("iterative step")}
 
             if(best_coeff > last_non_zero){
                 last_non_zero= best_coeff;
-                assert(block[j]);
+                av_assert2(block[j]);
 #ifdef REFINE_STATS
 after_last++;
 #endif
