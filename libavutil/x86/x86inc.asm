@@ -505,12 +505,8 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
 ; Applies any symbol mangling needed for C linkage, and sets up a define such that
 ; subsequent uses of the function name automatically refer to the mangled version.
 ; Appends cpuflags to the function name if cpuflags has been specified.
-%macro cglobal 1-2+ ; name, [PROLOGUE args]
-%if %0 == 1
-    cglobal_internal %1 %+ SUFFIX
-%else
+%macro cglobal 1-2+ "" ; name, [PROLOGUE args]
     cglobal_internal %1 %+ SUFFIX, %2
-%endif
 %endmacro
 %macro cglobal_internal 1-2+
     %ifndef cglobaled_%1
@@ -528,7 +524,7 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
     %1:
     RESET_MM_PERMUTATION ; not really needed, but makes disassembly somewhat nicer
     %assign stack_offset 0
-    %if %0 > 1
+    %ifnidn %2, ""
         PROLOGUE %2
     %endif
 %endmacro
@@ -795,13 +791,13 @@ INIT_XMM
 
 ; Append cpuflags to the callee's name iff the appended name is known and the plain name isn't
 %macro call 1
-    call_internal %1, %1 %+ SUFFIX
+    call_internal %1 %+ SUFFIX, %1
 %endmacro
 %macro call_internal 2
-    %xdefine %%i %1
-    %ifndef cglobaled_%1
-        %ifdef cglobaled_%2
-            %xdefine %%i %2
+    %xdefine %%i %2
+    %ifndef cglobaled_%2
+        %ifdef cglobaled_%1
+            %xdefine %%i %1
         %endif
     %endif
     call %%i
