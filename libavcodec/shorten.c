@@ -466,7 +466,7 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
 
     s->cur_chan = 0;
     while (s->cur_chan < s->channels) {
-        int cmd;
+        unsigned int cmd;
         int len;
 
         if (get_bits_left(&s->gb) < 3+FNSIZE) {
