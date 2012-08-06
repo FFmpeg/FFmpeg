@@ -21,7 +21,12 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "libavutil/avassert.h"
+#include "libavutil/bprint.h"
+#include "libavutil/imgutils.h"
 
+typedef struct {
+    uint32_t global_palette[16];
+} DVDSubtitleContext;
 
 // ncnt is the nibble counter
 #define PUTNIBBLE(val)\
@@ -85,73 +90,243 @@ static void dvd_encode_rle(uint8_t **pq,
     *pq = q;
 }
 
-static int encode_dvd_subtitles(uint8_t *outbuf, int outbuf_size,
+static int color_distance(uint32_t a, uint32_t b)
+{
+    int r = 0, d, i;
+
+    for (i = 0; i < 32; i += 8) {
+        d = ((a >> i) & 0xFF) - ((b >> i) & 0xFF);
+        r += d * d;
+    }
+    return r;
+}
+
+/**
+ * Count colors used in a rectangle, quantizing alpha and grouping by
+ * nearest global palette entry.
+ */
+static void count_colors(AVCodecContext *avctx, unsigned hits[33],
+                         const AVSubtitleRect *r)
+{
+    DVDSubtitleContext *dvdc = avctx->priv_data;
+    unsigned count[256] = { 0 };
+    uint32_t *palette = (uint32_t *)r->pict.data[1];
+    uint32_t color;
+    int x, y, i, j, match, d, best_d, av_uninit(best_j);
+    uint8_t *p = r->pict.data[0];
+
+    for (y = 0; y < r->h; y++) {
+        for (x = 0; x < r->w; x++)
+            count[*(p++)]++;
+        p += r->pict.linesize[0] - r->w;
+    }
+    for (i = 0; i < 256; i++) {
+        if (!count[i]) /* avoid useless search */
+            continue;
+        color = palette[i];
+        /* 0: transparent, 1-16: semi-transparent, 17-33 opaque */
+        match = color < 0x33000000 ? 0 : color < 0xCC000000 ? 1 : 17;
+        if (match) {
+            best_d = INT_MAX;
+            for (j = 0; j < 16; j++) {
+                d = color_distance(color & 0xFFFFFF, dvdc->global_palette[j]);
+                if (d < best_d) {
+                    best_d = d;
+                    best_j = j;
+                }
+            }
+            match += best_j;
+        }
+        hits[match] += count[i];
+    }
+}
+
+static void select_palette(AVCodecContext *avctx, int out_palette[4],
+                           int out_alpha[4], unsigned hits[33])
+{
+    DVDSubtitleContext *dvdc = avctx->priv_data;
+    int i, j, bright, mult;
+    uint32_t color;
+    int selected[4] = { 0 };
+    uint32_t pseudopal[33] = { 0 };
+    uint32_t refcolor[3] = { 0x00000000, 0xFFFFFFFF, 0xFF000000 };
+
+    /* Bonus for transparent: if the rectangle fits tightly the text, the
+       background color can be quite rare, but it would be ugly without it */
+    hits[0] *= 16;
+    /* Bonus for bright colors */
+    for (i = 0; i < 16; i++) {
+        if (!(hits[1 + i] + hits[17 + i]))
+            continue; /* skip unused colors to gain time */
+        color = dvdc->global_palette[i];
+        bright = 0;
+        for (j = 0; j < 3; j++, color >>= 8)
+            bright += (color & 0xFF) < 0x40 || (color & 0xFF) >= 0xC0;
+        mult = 2 + FFMIN(bright, 2);
+        hits[ 1 + i] *= mult;
+        hits[17 + i] *= mult;
+    }
+
+    /* Select four most frequent colors */
+    for (i = 0; i < 4; i++) {
+        for (j = 0; j < 33; j++)
+            if (hits[j] > hits[selected[i]])
+                selected[i] = j;
+        hits[selected[i]] = 0;
+    }
+
+    /* Order the colors like in most DVDs:
+       0: background, 1: foreground, 2: outline */
+    for (i = 0; i < 16; i++) {
+        pseudopal[ 1 + i] = 0x80000000 | dvdc->global_palette[i];
+        pseudopal[17 + i] = 0xFF000000 | dvdc->global_palette[i];
+    }
+    for (i = 0; i < 3; i++) {
+        int best_d = color_distance(refcolor[i], pseudopal[selected[i]]);
+        for (j = i + 1; j < 4; j++) {
+            int d = color_distance(refcolor[i], pseudopal[selected[j]]);
+            if (d < best_d) {
+                FFSWAP(int, selected[i], selected[j]);
+                best_d = d;
+            }
+        }
+    }
+
+    /* Output */
+    for (i = 0; i < 4; i++) {
+        out_palette[i] = selected[i] ? (selected[i] - 1) & 0xF : 0;
+        out_alpha  [i] = !selected[i] ? 0 : selected[i] < 17 ? 0x80 : 0xFF;
+    }
+}
+
+static void build_color_map(AVCodecContext *avctx, int cmap[],
+                            const uint32_t palette[],
+                            const int out_palette[], int const out_alpha[])
+{
+    DVDSubtitleContext *dvdc = avctx->priv_data;
+    int i, j, d, best_d;
+    uint32_t pseudopal[4];
+
+    for (i = 0; i < 4; i++)
+        pseudopal[i] = (out_alpha[i] << 24) |
+                       dvdc->global_palette[out_palette[i]];
+    for (i = 0; i < 256; i++) {
+        best_d = INT_MAX;
+        for (j = 0; j < 4; j++) {
+            d = color_distance(pseudopal[j], palette[i]);
+            if (d < best_d) {
+                cmap[i] = j;
+                best_d = d;
+            }
+        }
+    }
+}
+
+static void copy_rectangle(AVSubtitleRect *dst, AVSubtitleRect *src, int cmap[])
+{
+    int x, y;
+    uint8_t *p, *q;
+
+    p = src->pict.data[0];
+    q = dst->pict.data[0] + (src->x - dst->x) +
+                            (src->y - dst->y) * dst->pict.linesize[0];
+    for (y = 0; y < src->h; y++) {
+        for (x = 0; x < src->w; x++)
+            *(q++) = cmap[*(p++)];
+        p += src->pict.linesize[0] - src->w;
+        q += dst->pict.linesize[0] - src->w;
+    }
+}
+
+static int encode_dvd_subtitles(AVCodecContext *avctx,
+                                uint8_t *outbuf, int outbuf_size,
                                 const AVSubtitle *h)
 {
+    DVDSubtitleContext *dvdc = avctx->priv_data;
     uint8_t *q, *qq;
-    int object_id;
-    int offset1[20], offset2[20];
-    int i, imax, color, alpha, rects = h->num_rects;
-    unsigned long hmax;
-    unsigned long hist[256];
-    int           cmap[256];
+    int offset1, offset2;
+    int i, rects = h->num_rects, ret;
+    unsigned global_palette_hits[33] = { 0 };
+    int cmap[256];
+    int out_palette[4];
+    int out_alpha[4];
+    AVSubtitleRect vrect;
+    uint8_t *vrect_data = NULL;
+    int x2, y2;
 
     if (rects == 0 || h->rects == NULL)
-        return -1;
-    if (rects > 20)
-        rects = 20;
+        return AVERROR(EINVAL);
+    vrect = *h->rects[0];
 
-    // analyze bitmaps, compress to 4 colors
-    for (i=0; i<256; ++i) {
-        hist[i] = 0;
-        cmap[i] = 0;
-    }
-    for (object_id = 0; object_id < rects; object_id++)
-        for (i=0; i<h->rects[object_id]->w*h->rects[object_id]->h; ++i) {
-            color = h->rects[object_id]->pict.data[0][i];
-            // only count non-transparent pixels
-            alpha = ((uint32_t*)h->rects[object_id]->pict.data[1])[color] >> 24;
-            hist[color] += alpha;
+    if (rects > 1) {
+        /* DVD subtitles can have only one rectangle: build a virtual
+           rectangle containing all actual rectangles.
+           The data of the rectangles will be copied later, when the palette
+           is decided, because the rectangles may have different palettes. */
+        int xmin = h->rects[0]->x, xmax = xmin + h->rects[0]->w;
+        int ymin = h->rects[0]->y, ymax = ymin + h->rects[0]->h;
+        for (i = 1; i < rects; i++) {
+            xmin = FFMIN(xmin, h->rects[i]->x);
+            ymin = FFMIN(ymin, h->rects[i]->y);
+            xmax = FFMAX(xmax, h->rects[i]->x + h->rects[i]->w);
+            ymax = FFMAX(ymax, h->rects[i]->y + h->rects[i]->h);
         }
-    for (color=3;; --color) {
-        hmax = 0;
-        imax = 0;
-        for (i=0; i<256; ++i)
-            if (hist[i] > hmax) {
-                imax = i;
-                hmax = hist[i];
-            }
-        if (hmax == 0)
-            break;
-        if (color == 0)
-            color = 3;
-        av_log(NULL, AV_LOG_DEBUG, "dvd_subtitle hist[%d]=%ld -> col %d\n",
-               imax, hist[imax], color);
-        cmap[imax] = color;
-        hist[imax] = 0;
+        vrect.x = xmin;
+        vrect.y = ymin;
+        vrect.w = xmax - xmin;
+        vrect.h = ymax - ymin;
+        if ((ret = av_image_check_size(vrect.w, vrect.h, 0, avctx)) < 0)
+            return ret;
+
+        /* Count pixels outside the virtual rectangle as transparent */
+        global_palette_hits[0] = vrect.w * vrect.h;
+        for (i = 0; i < rects; i++)
+            global_palette_hits[0] -= h->rects[i]->w * h->rects[i]->h;
     }
 
+    for (i = 0; i < rects; i++)
+        count_colors(avctx, global_palette_hits, h->rects[i]);
+    select_palette(avctx, out_palette, out_alpha, global_palette_hits);
+
+    if (rects > 1) {
+        if (!(vrect_data = av_calloc(vrect.w, vrect.h)))
+            return AVERROR(ENOMEM);
+        vrect.pict.data    [0] = vrect_data;
+        vrect.pict.linesize[0] = vrect.w;
+        for (i = 0; i < rects; i++) {
+            build_color_map(avctx, cmap, (uint32_t *)h->rects[i]->pict.data[1],
+                            out_palette, out_alpha);
+            copy_rectangle(&vrect, h->rects[i], cmap);
+        }
+        for (i = 0; i < 4; i++)
+            cmap[i] = i;
+    } else {
+        build_color_map(avctx, cmap, (uint32_t *)h->rects[0]->pict.data[1],
+                        out_palette, out_alpha);
+    }
+
+    av_log(avctx, AV_LOG_DEBUG, "Selected palette:");
+    for (i = 0; i < 4; i++)
+        av_log(avctx, AV_LOG_DEBUG, " 0x%06x@@%02x (0x%x,0x%x)",
+               dvdc->global_palette[out_palette[i]], out_alpha[i],
+               out_palette[i], out_alpha[i] >> 4);
+    av_log(avctx, AV_LOG_DEBUG, "\n");
 
     // encode data block
     q = outbuf + 4;
-    for (object_id = 0; object_id < rects; object_id++) {
-        offset1[object_id] = q - outbuf;
+    /* TODO reindent */
+        offset1 = q - outbuf;
         // worst case memory requirement: 1 nibble per pixel..
-        if ((q - outbuf) + h->rects[object_id]->w*h->rects[object_id]->h/2
-            + 17*rects + 21 > outbuf_size) {
+        if ((q - outbuf) + vrect.w * vrect.h / 2 + 17 + 21 > outbuf_size) {
             av_log(NULL, AV_LOG_ERROR, "dvd_subtitle too big\n");
-            return -1;
+            ret = AVERROR_BUFFER_TOO_SMALL;
+            goto fail;
         }
-        dvd_encode_rle(&q, h->rects[object_id]->pict.data[0],
-                       h->rects[object_id]->w*2,
-                       h->rects[object_id]->w, h->rects[object_id]->h >> 1,
-                       cmap);
-        offset2[object_id] = q - outbuf;
-        dvd_encode_rle(&q, h->rects[object_id]->pict.data[0] + h->rects[object_id]->w,
-                       h->rects[object_id]->w*2,
-                       h->rects[object_id]->w, h->rects[object_id]->h >> 1,
-                       cmap);
-    }
+        dvd_encode_rle(&q, vrect.pict.data[0], vrect.w * 2,
+                       vrect.w, (vrect.h + 1) >> 1, cmap);
+        offset2 = q - outbuf;
+        dvd_encode_rle(&q, vrect.pict.data[0] + vrect.w, vrect.w * 2,
+                       vrect.w, vrect.h >> 1, cmap);
 
     // set data packet size
     qq = outbuf + 2;
@@ -159,34 +334,34 @@ static int encode_dvd_subtitles(uint8_t *outbuf, int outbuf_size,
 
     // send start display command
     bytestream_put_be16(&q, (h->start_display_time*90) >> 10);
-    bytestream_put_be16(&q, (q - outbuf) /*- 2 */ + 8 + 12*rects + 2);
+    bytestream_put_be16(&q, (q - outbuf) /*- 2 */ + 8 + 12 + 2);
     *q++ = 0x03; // palette - 4 nibbles
-    *q++ = 0x03; *q++ = 0x7f;
+    *q++ = (out_palette[3] << 4) | out_palette[2];
+    *q++ = (out_palette[1] << 4) | out_palette[0];
     *q++ = 0x04; // alpha - 4 nibbles
-    *q++ = 0xf0; *q++ = 0x00;
-    //*q++ = 0x0f; *q++ = 0xff;
+    *q++ = (out_alpha[3] & 0xF0) | (out_alpha[2] >> 4);
+    *q++ = (out_alpha[1] & 0xF0) | (out_alpha[0] >> 4);
 
-    // XXX not sure if more than one rect can really be encoded..
     // 12 bytes per rect
-    for (object_id = 0; object_id < rects; object_id++) {
-        int x2 = h->rects[object_id]->x + h->rects[object_id]->w - 1;
-        int y2 = h->rects[object_id]->y + h->rects[object_id]->h - 1;
+    /* TODO reindent */
+        x2 = vrect.x + vrect.w - 1;
+        y2 = vrect.y + vrect.h - 1;
 
         *q++ = 0x05;
         // x1 x2 -> 6 nibbles
-        *q++ = h->rects[object_id]->x >> 4;
-        *q++ = (h->rects[object_id]->x << 4) | ((x2 >> 8) & 0xf);
+        *q++ = vrect.x >> 4;
+        *q++ = (vrect.x << 4) | ((x2 >> 8) & 0xf);
         *q++ = x2;
         // y1 y2 -> 6 nibbles
-        *q++ = h->rects[object_id]->y >> 4;
-        *q++ = (h->rects[object_id]->y << 4) | ((y2 >> 8) & 0xf);
+        *q++ = vrect.y >> 4;
+        *q++ = (vrect.y << 4) | ((y2 >> 8) & 0xf);
         *q++ = y2;
 
         *q++ = 0x06;
         // offset1, offset2
-        bytestream_put_be16(&q, offset1[object_id]);
-        bytestream_put_be16(&q, offset2[object_id]);
-    }
+        bytestream_put_be16(&q, offset1);
+        bytestream_put_be16(&q, offset2);
+
     *q++ = 0x01; // start command
     *q++ = 0xff; // terminating command
 
@@ -200,7 +375,39 @@ static int encode_dvd_subtitles(uint8_t *outbuf, int outbuf_size,
     bytestream_put_be16(&qq, q - outbuf);
 
     av_log(NULL, AV_LOG_DEBUG, "subtitle_packet size=%td\n", q - outbuf);
-    return q - outbuf;
+    ret = q - outbuf;
+
+fail:
+    av_free(vrect_data);
+    return ret;
+}
+
+static int dvdsub_init(AVCodecContext *avctx)
+{
+    DVDSubtitleContext *dvdc = avctx->priv_data;
+    static const uint32_t default_palette[16] = {
+        0x000000, 0x0000FF, 0x00FF00, 0xFF0000,
+        0xFFFF00, 0xFF00FF, 0x00FFFF, 0xFFFFFF,
+        0x808000, 0x8080FF, 0x800080, 0x80FF80,
+        0x008080, 0xFF8080, 0x555555, 0xAAAAAA,
+    };
+    AVBPrint extradata;
+    int i, ret;
+
+    av_assert0(sizeof(dvdc->global_palette) == sizeof(default_palette));
+    memcpy(dvdc->global_palette, default_palette, sizeof(dvdc->global_palette));
+
+    av_bprint_init(&extradata, 0, 1);
+    av_bprintf(&extradata, "palette:");
+    for (i = 0; i < 16; i++)
+        av_bprintf(&extradata, " %06"PRIx32"%c",
+                   dvdc->global_palette[i] & 0xFFFFFF, i < 15 ? ',' : '\n');
+
+    if ((ret = av_bprint_finalize(&extradata, (char **)&avctx->extradata)) < 0)
+        return ret;
+    avctx->extradata_size = extradata.len;
+
+    return 0;
 }
 
 static int dvdsub_encode(AVCodecContext *avctx,
@@ -210,7 +417,7 @@ static int dvdsub_encode(AVCodecContext *avctx,
     AVSubtitle *sub = data;
     int ret;
 
-    ret = encode_dvd_subtitles(buf, buf_size, sub);
+    ret = encode_dvd_subtitles(avctx, buf, buf_size, sub);
     return ret;
 }
 
@@ -218,6 +425,8 @@ AVCodec ff_dvdsub_encoder = {
     .name           = "dvdsub",
     .type           = AVMEDIA_TYPE_SUBTITLE,
     .id             = AV_CODEC_ID_DVD_SUBTITLE,
+    .init           = dvdsub_init,
     .encode         = dvdsub_encode,
     .long_name      = NULL_IF_CONFIG_SMALL("DVD subtitles"),
+    .priv_data_size = sizeof(DVDSubtitleContext),
 };
