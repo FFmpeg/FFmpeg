@@ -786,10 +786,9 @@ static int udp_close(URLContext *h)
         ret = pthread_join(s->circular_buffer_thread, NULL);
         if (ret != 0)
             av_log(h, AV_LOG_ERROR, "pthread_join(): %s\n", strerror(ret));
+        pthread_mutex_destroy(&s->mutex);
+        pthread_cond_destroy(&s->cond);
     }
-
-    pthread_mutex_destroy(&s->mutex);
-    pthread_cond_destroy(&s->cond);
 #endif
     av_fifo_free(s->fifo);
     return 0;
