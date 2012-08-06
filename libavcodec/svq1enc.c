@@ -485,6 +485,7 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
 
     s->avctx= avctx;
     s->m.avctx= avctx;
+    s->m.picture_structure = PICT_FRAME;
     s->m.me.temp      =
     s->m.me.scratchpad= av_mallocz((avctx->width+64)*2*16*2*sizeof(uint8_t));
     s->m.me.map       = av_mallocz(ME_MAP_SIZE*sizeof(uint32_t));
