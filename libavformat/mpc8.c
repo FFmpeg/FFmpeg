@@ -49,7 +49,6 @@ static const int mpc8_rate[8] = { 44100, 48000, 37800, 32000, -1, -1, -1, -1 };
 
 typedef struct {
     int ver;
-    int frame;
     int64_t header_pos;
     int64_t samples;
 
@@ -240,6 +239,7 @@ static int mpc8_read_header(AVFormatContext *s)
     st->codec->channels = (st->codec->extradata[1] >> 4) + 1;
     st->codec->sample_rate = mpc8_rate[st->codec->extradata[0] >> 5];
     avpriv_set_pts_info(st, 32, 1152  << (st->codec->extradata[1]&3)*2, st->codec->sample_rate);
+    st->start_time = 0;
     st->duration = c->samples / (1152 << (st->codec->extradata[1]&3)*2);
     size -= avio_tell(pb) - pos;
 
@@ -272,7 +272,7 @@ static int mpc8_read_packet(AVFormatContext *s, AVPacket *pkt)
             if(av_get_packet(s->pb, pkt, size) < 0)
                 return AVERROR(ENOMEM);
             pkt->stream_index = 0;
-            pkt->pts = c->frame;
+            pkt->duration     = 1;
             return 0;
         }
         if(tag == TAG_STREAMEND)
@@ -285,13 +285,12 @@ static int mpc8_read_packet(AVFormatContext *s, AVPacket *pkt)
 static int mpc8_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int flags)
 {
     AVStream *st = s->streams[stream_index];
-    MPCContext *c = s->priv_data;
     int index = av_index_search_timestamp(st, timestamp, flags);
 
     if(index < 0) return -1;
     if (avio_seek(s->pb, st->index_entries[index].pos, SEEK_SET) < 0)
         return -1;
-    c->frame = st->index_entries[index].timestamp;
+    ff_update_cur_dts(s, st, st->index_entries[index].timestamp);
     return 0;
 }
 
