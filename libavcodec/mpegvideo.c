@@ -1141,9 +1141,6 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     Picture *pic;
     s->mb_skipped = 0;
 
-    assert(s->last_picture_ptr == NULL || s->out_format != FMT_H264 ||
-           s->codec_id == CODEC_ID_SVQ3);
-
     if (!ff_thread_can_start_frame(avctx)) {
         av_log(avctx, AV_LOG_ERROR, "Attempt to start a frame outside SETUP state\n");
         return -1;
