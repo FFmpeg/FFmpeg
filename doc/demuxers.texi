@@ -23,29 +23,11 @@ The description of some of the currently available demuxers follows.
 Image file demuxer.
 
 This demuxer reads from a list of image files specified by a pattern.
-
-The pattern may contain the string "%d" or "%0@var{N}d", which
-specifies the position of the characters representing a sequential
-number in each filename matched by the pattern. If the form
-"%d0@var{N}d" is used, the string representing the number in each
-filename is 0-padded and @var{N} is the total number of 0-padded
-digits representing the number. The literal character '%' can be
-specified in the pattern with the string "%%".
-
-If the pattern contains "%d" or "%0@var{N}d", the first filename of
-the file list specified by the pattern must contain a number
-inclusively contained between @var{start_number} and
-@var{start_number}+@var{start_number_range}-1, and all the following
-numbers must be sequential.
+The syntax and meaning of the pattern is specified by the
+option @var{pattern_type}.
 
 The pattern may contain a suffix which is used to automatically
 determine the format of the images contained in the files.
-
-For example the pattern "img-%03d.bmp" will match a sequence of
-filenames of the form @file{img-001.bmp}, @file{img-002.bmp}, ...,
-@file{img-010.bmp}, etc.; the pattern "i%%m%%g-%d.jpg" will match a
-sequence of filenames of the form @file{i%m%g-1.jpg},
-@file{i%m%g-2.jpg}, ..., @file{i%m%g-10.jpg}, etc.
 
 The size, the pixel format, and the format of each image must be the
 same for all the files in the sequence.
@@ -56,6 +38,71 @@ This demuxer accepts the following options:
 Set the framerate for the video stream. It defaults to 25.
 @item loop
 If set to 1, loop over the input. Default value is 0.
+@item pattern_type
+Select the pattern type used to interpret the provided filename.
+
+@var{pattern_type} accepts one of the following values.
+@table @option
+@item sequence
+Select a sequence pattern type, used to specify a sequence of files
+indexed by sequential numbers.
+
+A sequence pattern may contain the string "%d" or "%0@var{N}d", which
+specifies the position of the characters representing a sequential
+number in each filename matched by the pattern. If the form
+"%d0@var{N}d" is used, the string representing the number in each
+filename is 0-padded and @var{N} is the total number of 0-padded
+digits representing the number. The literal character '%' can be
+specified in the pattern with the string "%%".
+
+If the sequence pattern contains "%d" or "%0@var{N}d", the first filename of
+the file list specified by the pattern must contain a number
+inclusively contained between @var{start_number} and
+@var{start_number}+@var{start_number_range}-1, and all the following
+numbers must be sequential.
+
+For example the pattern "img-%03d.bmp" will match a sequence of
+filenames of the form @file{img-001.bmp}, @file{img-002.bmp}, ...,
+@file{img-010.bmp}, etc.; the pattern "i%%m%%g-%d.jpg" will match a
+sequence of filenames of the form @file{i%m%g-1.jpg},
+@file{i%m%g-2.jpg}, ..., @file{i%m%g-10.jpg}, etc.
+
+Note that the pattern must not necessarily contain "%d" or
+"%0@var{N}d", for example to convert a single image file
+@file{img.jpeg} you can employ the command:
+@example
+ffmpeg -i img.jpeg img.png
+@end example
+
+@item glob
+Select a glob wildcard pattern type.
+
+The pattern is interpreted like a @code{glob()} pattern. This is only
+selectable if libavformat was compiled with globbing support.
+
+@item glob_sequence @emph{(deprecated, will be removed)}
+Select a mixed glob wildcard/sequence pattern.
+
+If your version of libavformat was compiled with globbing support, and
+the provided pattern contains at least one glob meta character among
+@code{%*?[]@{@}} that is preceded by an unescaped "%", the pattern is
+interpreted like a @code{glob()} pattern, otherwise it is interpreted
+like a sequence pattern.
+
+All glob special characters @code{%*?[]@{@}} must be prefixed
+with "%". To escape a literal "%" you shall use "%%".
+
+For example the pattern @code{foo-%*.jpeg} will match all the
+filenames prefixed by "foo-" and terminating with ".jpeg", and
+@code{foo-%?%?%?.jpeg} will match all the filenames prefixed with
+"foo-", followed by a sequence of three characters, and terminating
+with ".jpeg".
+
+This pattern type is deprecated in favor of @var{glob} and
+@var{sequence}.
+@end table
+
+Default value is @var{glob_sequence}.
 @item pixel_format
 Set the pixel format of the images to read. If not specified the pixel
 format is guessed from the first image file in the sequence.
@@ -87,14 +134,14 @@ As above, but start by reading from a file with index 100 in the sequence:
 @example
 ffmpeg -start_number 100 -i 'img-%03d.jpeg' -r 10 out.mkv
 @end example
-@end itemize
 
-Note that the pattern must not necessarily contain "%d" or
-"%0@var{N}d", for example to convert a single image file
-@file{img.jpeg} you can employ the command:
+@item
+Read images matching the "*.png" glob pattern , that is all the files
+terminating with the ".png" suffix:
 @example
-ffmpeg -i img.jpeg img.png
+ffmpeg -pattern_type glob -i "*.png" -r 10 out.mkv
 @end example
+@end itemize
 
 @section applehttp
 

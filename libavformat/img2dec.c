@@ -54,6 +54,7 @@ typedef struct {
     char *video_size;       /**< Set by a private option. */
     char *framerate;        /**< Set by a private option. */
     int loop;
+    enum { PT_GLOB_SEQUENCE, PT_GLOB, PT_SEQUENCE } pattern_type;
     int use_glob;
 #if HAVE_GLOB
     glob_t globstate;
@@ -233,12 +234,15 @@ static int read_header(AVFormatContext *s1)
     }
 
     if (!s->is_pipe) {
+        if (s->pattern_type == PT_GLOB_SEQUENCE) {
         s->use_glob = is_glob(s->path);
         if (s->use_glob) {
-#if HAVE_GLOB
             char *p = s->path, *q, *dup;
             int gerr;
 
+            av_log(s1, AV_LOG_WARNING, "Pattern type 'glob_sequence' is deprecated: "
+                   "use pattern_type 'glob' instead\n");
+#if HAVE_GLOB
             dup = q = av_strdup(p);
             while (*q) {
                 /* Do we have room for the next char and a \ insertion? */
@@ -260,7 +264,9 @@ static int read_header(AVFormatContext *s1)
             first_index = 0;
             last_index = s->globstate.gl_pathc - 1;
 #endif
-        } else {
+        }
+        }
+        if ((s->pattern_type == PT_GLOB_SEQUENCE && !s->use_glob) || s->pattern_type == PT_SEQUENCE) {
             if (find_image_range(&first_index, &last_index, s->path,
                                  s->start_number, s->start_number_range) < 0) {
                 av_log(s1, AV_LOG_ERROR,
@@ -268,6 +274,26 @@ static int read_header(AVFormatContext *s1)
                        s->path, s->start_number, s->start_number + s->start_number_range - 1);
                 return AVERROR(ENOENT);
             }
+        } else if (s->pattern_type == PT_GLOB) {
+#if HAVE_GLOB
+            int gerr;
+            gerr = glob(s->path, GLOB_NOCHECK|GLOB_BRACE|GLOB_NOMAGIC, NULL, &s->globstate);
+            if (gerr != 0) {
+                return AVERROR(ENOENT);
+            }
+            first_index = 0;
+            last_index = s->globstate.gl_pathc - 1;
+            s->use_glob = 1;
+#else
+            av_log(s1, AV_LOG_ERROR,
+                   "Pattern type 'glob' was selected but globbing "
+                   "is not supported by this libavformat build\n");
+            return AVERROR(ENOSYS);
+#endif
+        } else if (s->pattern_type != PT_GLOB_SEQUENCE) {
+            av_log(s1, AV_LOG_ERROR,
+                   "Unknown value '%d' for pattern_type option\n", s->pattern_type);
+            return AVERROR(EINVAL);
         }
         s->img_first = first_index;
         s->img_last = last_index;
@@ -388,6 +414,12 @@ static int read_close(struct AVFormatContext* s1)
 static const AVOption options[] = {
     { "framerate",    "set the video framerate",             OFFSET(framerate),    AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0, DEC },
     { "loop",         "force loop over input file sequence", OFFSET(loop),         AV_OPT_TYPE_INT,    {.dbl = 0},    0, 1, DEC },
+
+    { "pattern_type", "set pattern type",                    OFFSET(pattern_type), AV_OPT_TYPE_INT, {.dbl=PT_GLOB_SEQUENCE}, 0, INT_MAX, DEC, "pattern_type"},
+    { "glob_sequence","glob/sequence pattern type",          0, AV_OPT_TYPE_CONST, {.dbl=PT_GLOB_SEQUENCE}, INT_MIN, INT_MAX, DEC, "pattern_type" },
+    { "glob",         "glob pattern type",                   0, AV_OPT_TYPE_CONST, {.dbl=PT_GLOB},          INT_MIN, INT_MAX, DEC, "pattern_type" },
+    { "sequence",     "glob pattern type",                   0, AV_OPT_TYPE_CONST, {.dbl=PT_SEQUENCE},      INT_MIN, INT_MAX, DEC, "pattern_type" },
+
     { "pixel_format", "set video pixel format",              OFFSET(pixel_format), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
     { "start_number", "set first number in the sequence",    OFFSET(start_number), AV_OPT_TYPE_INT,    {.dbl = 0},    0, INT_MAX, DEC },
     { "start_number_range", "set range for looking at the first sequence number", OFFSET(start_number_range), AV_OPT_TYPE_INT, {.dbl = 5}, 1, INT_MAX, DEC },
