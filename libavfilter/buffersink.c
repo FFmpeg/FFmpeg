@@ -26,6 +26,7 @@
 #include "libavutil/audio_fifo.h"
 #include "libavutil/audioconvert.h"
 #include "libavutil/avassert.h"
+#include "libavutil/common.h"
 #include "libavutil/mathematics.h"
 
 #include "audio.h"

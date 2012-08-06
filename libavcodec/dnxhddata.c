@@ -21,6 +21,7 @@
 
 #include "avcodec.h"
 #include "dnxhddata.h"
+#include "libavutil/common.h"
 
 static const uint8_t dnxhd_1235_luma_weight[] = {
      0, 32, 32, 32, 33, 35, 38, 39,

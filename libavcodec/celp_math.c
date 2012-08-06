@@ -26,6 +26,7 @@
 
 #include "avcodec.h"
 #include "celp_math.h"
+#include "libavutil/common.h"
 
 /**
  * Cosine table: base_cos[i] = (1<<15) * cos(i*PI/64)

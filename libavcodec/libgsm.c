@@ -32,6 +32,7 @@
 #include "avcodec.h"
 #include "internal.h"
 #include "gsm.h"
+#include "libavutil/common.h"
 
 static av_cold int libgsm_encode_init(AVCodecContext *avctx) {
     if (avctx->channels > 1) {

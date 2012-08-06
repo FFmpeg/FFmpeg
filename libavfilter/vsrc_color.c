@@ -23,6 +23,9 @@
  * color source
  */
 
+#include <stdio.h>
+#include <string.h>
+
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
@@ -30,7 +33,9 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/colorspace.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/mem.h"
 #include "libavutil/parseutils.h"
 #include "drawutils.h"
 

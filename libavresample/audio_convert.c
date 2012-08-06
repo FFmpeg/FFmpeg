@@ -22,6 +22,7 @@
 #include <stdint.h>
 
 #include "config.h"
+#include "libavutil/common.h"
 #include "libavutil/libm.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"

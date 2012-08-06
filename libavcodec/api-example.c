@@ -38,6 +38,7 @@
 
 #include "libavcodec/avcodec.h"
 #include "libavutil/audioconvert.h"
+#include "libavutil/common.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/samplefmt.h"

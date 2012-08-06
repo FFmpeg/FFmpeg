@@ -18,6 +18,7 @@
 
 #include "avutil.h"
 #include "avstring.h"
+#include "common.h"
 
 int av_strerror(int errnum, char *errbuf, size_t errbuf_size)
 {

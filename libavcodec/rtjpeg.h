@@ -24,6 +24,7 @@
 
 #include <stdint.h>
 #include "dsputil.h"
+#include "libavutil/mem.h"
 
 #define RTJPEG_FILE_VERSION 0
 #define RTJPEG_HEADER_SIZE 12

@@ -27,6 +27,7 @@
  */
 
 #include "avutil.h"
+#include "common.h"
 #include "eval.h"
 #include "log.h"
 #include "mathematics.h"

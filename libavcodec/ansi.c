@@ -24,6 +24,7 @@
  * ASCII/ANSI art decoder
  */
 
+#include "libavutil/common.h"
 #include "libavutil/lfg.h"
 #include "avcodec.h"
 #include "cga_data.h"

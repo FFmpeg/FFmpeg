@@ -21,6 +21,7 @@
  * a filter enforcing given constant framerate
  */
 
+#include "libavutil/common.h"
 #include "libavutil/fifo.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"

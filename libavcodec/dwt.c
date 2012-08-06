@@ -19,6 +19,7 @@
  */
 
 #include "libavutil/attributes.h"
+#include "libavutil/common.h"
 #include "dsputil.h"
 #include "dwt.h"
 

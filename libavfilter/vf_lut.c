@@ -24,6 +24,7 @@
  * value, and apply it to input video.
  */
 
+#include "libavutil/common.h"
 #include "libavutil/eval.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"

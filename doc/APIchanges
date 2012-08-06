@@ -13,6 +13,9 @@ libavutil:     2011-04-18
 
 API changes, most recent first:
 
+2012-08-08 - xxxxxxx - lavu 51.39 - avutil.h
+  Don't implicitly include libavutil/common.h in avutil.h
+
 2012-08-08 - xxxxxxx - lavu 51.38 - dict.h
   Add av_dict_count().
 

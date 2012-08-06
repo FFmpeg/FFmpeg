@@ -19,7 +19,10 @@
 #ifndef AVUTIL_SAMPLEFMT_H
 #define AVUTIL_SAMPLEFMT_H
 
+#include <stdint.h>
+
 #include "avutil.h"
+#include "attributes.h"
 
 /**
  * Audio Sample Formats

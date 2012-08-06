@@ -26,6 +26,7 @@
  */
 
 #include "avcodec.h"
+#include "config.h"
 #if CONFIG_ZLIB
 #include <zlib.h>
 #endif

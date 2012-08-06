@@ -22,6 +22,7 @@
 #include "avcodec.h"
 #include "ass.h"
 #include "libavutil/avstring.h"
+#include "libavutil/common.h"
 
 /**
  * Generate a suitable AVCodecContext.subtitle_header for SUBTITLE_ASS.

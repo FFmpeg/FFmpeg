@@ -21,6 +21,7 @@
  */
 
 #include "libavutil/cpu.h"
+#include "libavutil/mem.h"
 #include "libavutil/x86/asm.h"
 #include "libavcodec/vp8dsp.h"
 

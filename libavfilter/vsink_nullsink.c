@@ -18,6 +18,7 @@
 
 #include "avfilter.h"
 #include "internal.h"
+#include "libavutil/internal.h"
 
 static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {

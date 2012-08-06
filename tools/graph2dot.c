@@ -19,7 +19,10 @@
  */
 
 #include <unistd.h>             /* getopt */
+#include <stdio.h>
+#include <string.h>
 
+#include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/audioconvert.h"
 #include "libavfilter/avfiltergraph.h"

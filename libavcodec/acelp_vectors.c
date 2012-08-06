@@ -21,6 +21,8 @@
  */
 
 #include <inttypes.h>
+
+#include "libavutil/common.h"
 #include "avcodec.h"
 #include "acelp_vectors.h"
 #include "celp_math.h"

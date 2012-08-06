@@ -25,6 +25,7 @@
  * based heavily on vf_negate.c by Bobby Bingham
  */
 
+#include "libavutil/common.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "formats.h"

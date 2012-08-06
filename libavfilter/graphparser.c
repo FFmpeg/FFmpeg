@@ -22,8 +22,10 @@
 
 #include <ctype.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "libavutil/avstring.h"
+#include "libavutil/mem.h"
 #include "avfilter.h"
 #include "avfiltergraph.h"
 

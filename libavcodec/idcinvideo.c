@@ -49,6 +49,7 @@
 #include <string.h>
 
 #include "avcodec.h"
+#include "libavutil/internal.h"
 
 #define HUFFMAN_TABLE_SIZE 64 * 1024
 #define HUF_TOKENS 256

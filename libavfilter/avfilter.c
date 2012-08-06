@@ -21,6 +21,7 @@
 
 /* #define DEBUG */
 
+#include "libavutil/common.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/rational.h"
 #include "libavutil/audioconvert.h"

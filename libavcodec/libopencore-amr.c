@@ -21,6 +21,7 @@
 
 #include "avcodec.h"
 #include "libavutil/avstring.h"
+#include "libavutil/common.h"
 #include "libavutil/opt.h"
 #include "audio_frame_queue.h"
 #include "internal.h"

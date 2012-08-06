@@ -24,6 +24,7 @@
 #include <math.h>
 
 #include "sipr.h"
+#include "libavutil/common.h"
 #include "libavutil/mathematics.h"
 #include "lsp.h"
 #include "celp_math.h"

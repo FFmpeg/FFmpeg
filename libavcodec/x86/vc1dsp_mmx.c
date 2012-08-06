@@ -25,6 +25,8 @@
  */
 
 #include "libavutil/cpu.h"
+#include "libavutil/internal.h"
+#include "libavutil/mem.h"
 #include "libavutil/x86/asm.h"
 #include "libavcodec/dsputil.h"
 #include "dsputil_mmx.h"

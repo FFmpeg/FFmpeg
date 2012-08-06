@@ -26,7 +26,10 @@
  * @see http://www.oldskool.org/pc/8088_Corruption
  */
 
+#include <string.h>
+
 #include "avcodec.h"
+#include "libavutil/internal.h"
 
 #include "cga_data.h"
 

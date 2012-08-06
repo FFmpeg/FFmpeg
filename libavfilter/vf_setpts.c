@@ -27,6 +27,7 @@
 /* #define DEBUG */
 
 #include "libavutil/eval.h"
+#include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
 #include "avfilter.h"
 #include "internal.h"

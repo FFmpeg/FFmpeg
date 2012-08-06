@@ -29,6 +29,7 @@
 #include "internal.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/internal.h"
 
 static av_cold int raw_init_encoder(AVCodecContext *avctx)
 {

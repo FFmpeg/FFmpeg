@@ -21,6 +21,7 @@
 #include "libavcodec/fmtconvert.h"
 
 #include "libavutil/ppc/util_altivec.h"
+#include "libavutil/mem.h"
 #include "dsputil_altivec.h"
 
 static void int32_to_float_fmul_scalar_altivec(float *dst, const int *src,

@@ -26,6 +26,7 @@
  */
 
 #include "bit_depth_template.c"
+#include "libavutil/common.h"
 
 #ifndef AVCODEC_H264IDCT_INTERNAL_H
 #define AVCODEC_H264IDCT_INTERNAL_H

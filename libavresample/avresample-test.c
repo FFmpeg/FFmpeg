@@ -23,6 +23,7 @@
 #include <stdio.h>
 
 #include "libavutil/avstring.h"
+#include "libavutil/common.h"
 #include "libavutil/lfg.h"
 #include "libavutil/libm.h"
 #include "libavutil/log.h"

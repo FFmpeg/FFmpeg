@@ -27,6 +27,8 @@
 
 #include "dsputil.h"
 #include "faandct.h"
+#include "libavutil/internal.h"
+#include "libavutil/libm.h"
 
 #define FLOAT float
 

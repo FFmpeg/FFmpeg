@@ -29,6 +29,7 @@
 #include "a64tables.h"
 #include "elbg.h"
 #include "internal.h"
+#include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 
 #define DITHERSTEPS   8

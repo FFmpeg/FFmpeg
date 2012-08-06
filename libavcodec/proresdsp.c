@@ -22,6 +22,7 @@
 
 #include "proresdsp.h"
 #include "simple_idct.h"
+#include "libavutil/common.h"
 
 #define BIAS     (1 << (PRORES_BITS_PER_SAMPLE - 1))           ///< bias value for converting signed pixels into unsigned ones
 #define CLIP_MIN (1 << (PRORES_BITS_PER_SAMPLE - 8))           ///< minimum value for clipping resulting pixels

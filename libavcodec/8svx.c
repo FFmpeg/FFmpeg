@@ -29,6 +29,7 @@
  */
 
 #include "avcodec.h"
+#include "libavutil/common.h"
 
 /** decoder context */
 typedef struct EightSvxContext {

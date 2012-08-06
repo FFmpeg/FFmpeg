@@ -24,6 +24,7 @@
 
 #include "libavutil/adler32.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/internal.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "internal.h"

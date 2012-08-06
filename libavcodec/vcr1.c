@@ -26,6 +26,7 @@
 
 #include "avcodec.h"
 #include "dsputil.h"
+#include "libavutil/internal.h"
 
 typedef struct VCR1Context {
     AVFrame picture;

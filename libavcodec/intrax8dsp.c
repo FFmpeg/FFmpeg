@@ -22,6 +22,7 @@
  */
 
 #include "dsputil.h"
+#include "libavutil/common.h"
 
 /*
 area positions, #3 is 1 pixel only, other are 8 pixels

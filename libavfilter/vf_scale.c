@@ -23,12 +23,16 @@
  * scale video filter
  */
 
+#include <stdio.h>
+#include <string.h>
+
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
 #include "libavutil/avstring.h"
 #include "libavutil/eval.h"
+#include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"

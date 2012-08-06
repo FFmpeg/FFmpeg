@@ -24,6 +24,7 @@
 
 #include <stdint.h>
 #include "dsputil.h"
+#include "libavutil/common.h"
 
 static const float amptable[8]={
      0.515625,  0.90234375,  1.57910156,  2.76342773,

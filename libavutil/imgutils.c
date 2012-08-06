@@ -21,6 +21,7 @@
  * misc image utilities
  */
 
+#include "common.h"
 #include "imgutils.h"
 #include "internal.h"
 #include "log.h"

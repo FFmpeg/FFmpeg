@@ -25,9 +25,12 @@
  * Based on MPlayer libmpcodecs/vf_rotate.c.
  */
 
+#include <stdio.h>
+
 #include "libavutil/intreadwrite.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/internal.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"

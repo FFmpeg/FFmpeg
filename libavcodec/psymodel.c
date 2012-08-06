@@ -19,9 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <string.h>
+
 #include "avcodec.h"
 #include "psymodel.h"
 #include "iirfilter.h"
+#include "libavutil/mem.h"
 
 extern const FFPsyModel ff_aac_psy_model;
 

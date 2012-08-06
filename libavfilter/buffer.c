@@ -17,6 +17,7 @@
  */
 
 #include "libavutil/audioconvert.h"
+#include "libavutil/common.h"
 #include "libavcodec/avcodec.h"
 
 #include "avfilter.h"

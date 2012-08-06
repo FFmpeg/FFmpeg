@@ -24,6 +24,7 @@
  */
 
 #include "libavutil/audioconvert.h"
+#include "libavutil/internal.h"
 #include "libavutil/opt.h"
 
 #include "audio.h"

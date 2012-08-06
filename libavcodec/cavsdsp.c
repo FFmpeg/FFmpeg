@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include "dsputil.h"
 #include "cavsdsp.h"
+#include "libavutil/common.h"
 
 /*****************************************************************************
  *

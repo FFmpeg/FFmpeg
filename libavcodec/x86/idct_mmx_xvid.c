@@ -40,7 +40,10 @@
  */
 
 #include <inttypes.h>
+
+#include "config.h"
 #include "libavcodec/avcodec.h"
+#include "libavutil/mem.h"
 #include "idct_xvid.h"
 
 #if HAVE_INLINE_ASM

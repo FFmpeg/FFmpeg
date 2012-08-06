@@ -27,6 +27,7 @@
 #include "avcodec.h"
 #include "imgconvert.h"
 #include "raw.h"
+#include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/imgutils.h"
 

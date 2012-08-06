@@ -27,6 +27,7 @@
 
 #include "avcodec.h"
 #include "dsputil.h"
+#include "libavutil/common.h"
 
 #ifndef CONFIG_RESAMPLE_HP
 #define FILTER_SHIFT 15

@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include "avstring.h"
 #include "avutil.h"
+#include "common.h"
 #include "log.h"
 
 static int av_log_level = AV_LOG_INFO;

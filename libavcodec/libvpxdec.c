@@ -27,6 +27,7 @@
 #include <vpx/vpx_decoder.h>
 #include <vpx/vp8dx.h>
 
+#include "libavutil/common.h"
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
 

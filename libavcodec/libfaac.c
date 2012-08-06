@@ -30,6 +30,7 @@
 #include "audio_frame_queue.h"
 #include "internal.h"
 #include "libavutil/audioconvert.h"
+#include "libavutil/common.h"
 
 
 /* libfaac has an encoder delay of 1024 samples */

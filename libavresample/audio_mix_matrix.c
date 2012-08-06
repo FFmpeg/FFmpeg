@@ -21,6 +21,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/common.h"
 #include "libavutil/libm.h"
 #include "libavutil/samplefmt.h"
 #include "avresample.h"

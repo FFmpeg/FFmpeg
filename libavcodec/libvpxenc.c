@@ -31,6 +31,7 @@
 #include "avcodec.h"
 #include "internal.h"
 #include "libavutil/base64.h"
+#include "libavutil/common.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 

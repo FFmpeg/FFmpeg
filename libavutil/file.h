@@ -19,6 +19,8 @@
 #ifndef AVUTIL_FILE_H
 #define AVUTIL_FILE_H
 
+#include <stdint.h>
+
 #include "avutil.h"
 
 /**

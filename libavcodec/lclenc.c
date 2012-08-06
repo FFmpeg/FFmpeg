@@ -43,6 +43,8 @@
 
 #include "avcodec.h"
 #include "lcl.h"
+#include "libavutil/internal.h"
+#include "libavutil/mem.h"
 
 #include <zlib.h>
 

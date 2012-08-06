@@ -26,6 +26,7 @@
 #include "avstring.h"
 #include "avutil.h"
 #include "audioconvert.h"
+#include "common.h"
 
 static const char * const channel_names[] = {
     [0]  = "FL",        /* front left */

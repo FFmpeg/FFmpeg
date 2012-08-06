@@ -25,6 +25,7 @@
  */
 
 #include "avcodec.h"
+#include "libavutil/common.h"
 
 /*
  * Adapted to libavcodec by Francois Revol <revol@free.fr>

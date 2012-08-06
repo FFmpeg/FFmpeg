@@ -27,8 +27,10 @@
 #include "avcodec.h"
 #include "internal.h"
 #include "libavutil/avassert.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include <float.h>              /* FLT_MIN, FLT_MAX */
+#include <string.h>
 
 #include "options_table.h"
 

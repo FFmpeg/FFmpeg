@@ -23,6 +23,10 @@
  * format and noformat video filters
  */
 
+#include <string.h>
+
+#include "libavutil/internal.h"
+#include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "formats.h"

@@ -23,6 +23,7 @@
 #include <speex/speex_stereo.h>
 #include <speex/speex_callbacks.h>
 #include "avcodec.h"
+#include "libavutil/common.h"
 
 typedef struct {
     AVFrame frame;
