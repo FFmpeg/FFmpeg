@@ -946,6 +946,7 @@ static void formant_postfilter(G723_1_Context *p, int16_t *lpc, int16_t *buf)
         }
         iir_filter(filter_coef[0], filter_coef[1], buf + i,
                    filter_signal + i);
+        lpc += LPC_ORDER;
     }
 
     memcpy(p->fir_mem, buf + FRAME_LEN, LPC_ORDER * sizeof(*p->fir_mem));
