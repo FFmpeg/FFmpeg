@@ -1640,7 +1640,6 @@ vbv_retry:
         if (s->mb_info)
             av_packet_shrink_side_data(pkt, AV_PKT_DATA_H263_MB_INFO, s->mb_info_size);
     } else {
-        assert((put_bits_ptr(&s->pb) == s->pb.buf));
         s->frame_bits = 0;
     }
     assert((s->frame_bits & 7) == 0);
