@@ -184,9 +184,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     }
     if (c->codec_frameheader) {
         int w, h, q;
-        if (buf[0] != 'V' || buf_size < 12) {
-            av_log(avctx, AV_LOG_ERROR, "invalid nuv video frame (wrong codec_tag?)\n");
-            return AVERROR_INVALIDDATA;
+        if (buf_size < 12) {
+            av_log(avctx, AV_LOG_ERROR, "invalid nuv video frame\n");
+            return -1;
         }
         w = AV_RL16(&buf[6]);
         h = AV_RL16(&buf[8]);
