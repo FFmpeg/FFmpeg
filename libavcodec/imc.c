@@ -92,7 +92,6 @@ typedef struct {
 
     float sqrt_tab[30];
     GetBitContext gb;
-    float one_div_log2;
 
     DSPContext dsp;
     FFTContext fft;
@@ -226,10 +225,6 @@ static av_cold int imc_decode_init(AVCodecContext *avctx)
                      imc_huffman_lens[i][j], 1, 1,
                      imc_huffman_bits[i][j], 2, 2, INIT_VLC_USE_NEW_STATIC);
         }
-    }
-    q->one_div_log2 = 1 / log(2);
-
-    if (avctx->codec_id == CODEC_ID_IAC) {
     }
 
     if (avctx->codec_id == CODEC_ID_IAC) {
@@ -792,7 +787,7 @@ static int imc_decode_block(AVCodecContext *avctx, IMCContext *q, int ch)
         chctx->decoder_reset = 1;
 
     if (chctx->decoder_reset) {
-        memset(q->out_samples, 0, sizeof(q->out_samples));
+        memset(q->out_samples, 0, COEFFS * sizeof(*q->out_samples));
         for (i = 0; i < BANDS; i++)
             chctx->old_floor[i] = 1.0;
         for (i = 0; i < COEFFS; i++)
