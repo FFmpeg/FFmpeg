@@ -3661,7 +3661,7 @@ It shall assume one of the following values:
 @table @option
 @item black
 Set black mode.
-@item conververgence
+@item convergence
 Show time until convergence.
 @item mincol
 Set color based on point closest to the origin of the iterations.
