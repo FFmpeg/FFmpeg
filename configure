@@ -1077,6 +1077,7 @@ HAVE_LIST="
     alsa_asoundlib_h
     altivec_h
     arpa_inet_h
+    asm_mod_q
     asm_mod_y
     attribute_may_alias
     attribute_packed
@@ -2792,6 +2793,7 @@ EOF
     enabled neon    && check_asm neon    '"vadd.i16 q0, q0, q0"'
     enabled vfpv3   && check_asm vfpv3   '"vmov.f32 s0, #1.0"'
 
+    check_asm asm_mod_q '"add r0, %Q0, %R0" :: "r"((long long)0)'
     check_asm asm_mod_y '"vmul.i32 d0, d0, %y0" :: "x"(0)'
 
     enabled_all armv6t2 shared !pic && enable_pic
