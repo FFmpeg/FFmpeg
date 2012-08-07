@@ -2309,6 +2309,10 @@ static int has_codec_parameters(AVStream *st, const char **errmsg_ptr)
         if (st->info->found_decoder >= 0 && avctx->pix_fmt == PIX_FMT_NONE)
             FAIL("unspecified pixel format");
         break;
+    case AVMEDIA_TYPE_SUBTITLE:
+        if (avctx->codec_id == AV_CODEC_ID_HDMV_PGS_SUBTITLE && !avctx->width)
+            FAIL("unspecified size");
+        break;
     case AVMEDIA_TYPE_DATA:
         if(avctx->codec_id == AV_CODEC_ID_NONE) return 1;
     }
@@ -2324,6 +2328,7 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **option
     AVCodec *codec;
     int got_picture = 1, ret = 0;
     AVFrame picture;
+    AVSubtitle subtitle;
     AVPacket pkt = *avpkt;
 
     if (!avcodec_is_open(st->codec) && !st->info->found_decoder) {
@@ -2368,6 +2373,11 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **option
             break;
         case AVMEDIA_TYPE_AUDIO:
             ret = avcodec_decode_audio4(st->codec, &picture, &got_picture, &pkt);
+            break;
+        case AVMEDIA_TYPE_SUBTITLE:
+            ret = avcodec_decode_subtitle2(st->codec, &subtitle,
+                                           &got_picture, &pkt);
+            ret = pkt.size;
             break;
         default:
             break;
