@@ -2634,6 +2634,10 @@ elif enabled ppc; then
             cpuflags="-mcpu=cell"
             enable ldbrx
         ;;
+        e500mc)
+            cpuflags="-mcpu=e500mc"
+            disable altivec
+        ;;
         e500v2)
             cpuflags="-mcpu=8548 -mhard-float -mfloat-gprs=double"
             disable altivec
