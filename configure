@@ -660,8 +660,8 @@ check_as(){
     check_cmd $as $CPPFLAGS $ASFLAGS "$@" $AS_C -o $TMPO $TMPC
 }
 
-check_asm(){
-    log check_asm "$@"
+check_inline_asm(){
+    log check_inline_asm "$@"
     name="$1"
     code="$2"
     shift 2
@@ -2833,31 +2833,31 @@ EOF
         warn "Compiler does not indicate floating-point ABI, guessing $fpabi."
     fi
 
-    enabled armv5te && check_asm armv5te '"qadd r0, r0, r0"'
-    enabled armv6   && check_asm armv6   '"sadd16 r0, r0, r0"'
-    enabled armv6t2 && check_asm armv6t2 '"movt r0, #0"'
-    enabled armvfp  && check_asm armvfp  '"fadds s0, s0, s0"'
-    enabled neon    && check_asm neon    '"vadd.i16 q0, q0, q0"'
-    enabled vfpv3   && check_asm vfpv3   '"vmov.f32 s0, #1.0"'
+    enabled armv5te && check_inline_asm armv5te '"qadd r0, r0, r0"'
+    enabled armv6   && check_inline_asm armv6   '"sadd16 r0, r0, r0"'
+    enabled armv6t2 && check_inline_asm armv6t2 '"movt r0, #0"'
+    enabled armvfp  && check_inline_asm armvfp  '"fadds s0, s0, s0"'
+    enabled neon    && check_inline_asm neon    '"vadd.i16 q0, q0, q0"'
+    enabled vfpv3   && check_inline_asm vfpv3   '"vmov.f32 s0, #1.0"'
 
-    check_asm asm_mod_q '"add r0, %Q0, %R0" :: "r"((long long)0)'
-    check_asm asm_mod_y '"vmul.i32 d0, d0, %y0" :: "x"(0)'
+    check_inline_asm asm_mod_q '"add r0, %Q0, %R0" :: "r"((long long)0)'
+    check_inline_asm asm_mod_y '"vmul.i32 d0, d0, %y0" :: "x"(0)'
 
     enabled_all armv6t2 shared !pic && enable_pic
 
 elif enabled mips; then
 
-    check_asm loongson '"dmult.g $1, $2, $3"'
-    enabled mmi     && check_asm mmi     '"lq $2, 0($2)"'
+    check_inline_asm loongson '"dmult.g $1, $2, $3"'
+    enabled mmi && check_inline_asm mmi '"lq $2, 0($2)"'
 
 elif enabled ppc; then
 
     enable local_aligned_8 local_aligned_16
 
-    check_asm dcbzl     '"dcbzl 0, %0" :: "r"(0)'
-    check_asm ibm_asm   '"add 0, 0, 0"'
-    check_asm ppc4xx    '"maclhw r10, r11, r12"'
-    check_asm xform_asm '"lwzx %1, %y0" :: "Z"(*(int*)0), "r"(0)'
+    check_inline_asm dcbzl     '"dcbzl 0, %0" :: "r"(0)'
+    check_inline_asm ibm_asm   '"add 0, 0, 0"'
+    check_inline_asm ppc4xx    '"maclhw r10, r11, r12"'
+    check_inline_asm xform_asm '"lwzx %1, %y0" :: "Z"(*(int*)0), "r"(0)'
 
     # AltiVec flags: The FSF version of GCC differs from the Apple version
     if enabled altivec; then
@@ -2885,7 +2885,8 @@ EOF
 
 elif enabled sparc; then
 
-    enabled vis && check_asm vis '"pdist %f0, %f0, %f0"' -mcpu=ultrasparc &&
+    enabled vis &&
+        check_inline_asm vis '"pdist %f0, %f0, %f0"' -mcpu=ultrasparc &&
         add_cflags -mcpu=ultrasparc -mtune=ultrasparc
 
 elif enabled x86; then
@@ -2912,15 +2913,15 @@ elif enabled x86; then
 EOF
 
     # check whether EBX is available on x86
-    check_asm ebx_available '""::"b"(0)' &&
-        check_asm ebx_available '"":::"%ebx"'
+    check_inline_asm ebx_available '""::"b"(0)' &&
+        check_inline_asm ebx_available '"":::"%ebx"'
 
     # check whether xmm clobbers are supported
-    check_asm xmm_clobbers '"":::"%xmm0"'
+    check_inline_asm xmm_clobbers '"":::"%xmm0"'
 
     # check whether binutils is new enough to compile SSSE3/MMXEXT
-    enabled ssse3 && check_asm ssse3 '"pabsw %xmm0, %xmm0"'
-    enabled mmxext && check_asm mmxext '"pmaxub %mm0, %mm1"'
+    enabled ssse3  && check_inline_asm ssse3  '"pabsw %xmm0, %xmm0"'
+    enabled mmxext && check_inline_asm mmxext '"pmaxub %mm0, %mm1"'
 
     if ! disabled_any asm mmx yasm; then
         if check_cmd $yasmexe --version; then
@@ -2956,7 +2957,7 @@ fi
 
 if enabled asm; then
     as=${gas:=$as}
-    check_asm gnu_as '".macro m n\n\\n:.int 0\n.endm\nm x"' ||
+    check_inline_asm gnu_as '".macro m n\n\\n:.int 0\n.endm\nm x"' ||
         $nogas "GNU assembler not found, install gas-preprocessor"
 fi
 
