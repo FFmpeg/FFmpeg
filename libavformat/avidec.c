@@ -483,6 +483,7 @@ static int avi_read_header(AVFormatContext *s)
                 ast = s->streams[0]->priv_data;
                 av_freep(&s->streams[0]->codec->extradata);
                 av_freep(&s->streams[0]->codec);
+                av_freep(&s->streams[0]->info);
                 av_freep(&s->streams[0]);
                 s->nb_streams = 0;
                 if (CONFIG_DV_DEMUXER) {
