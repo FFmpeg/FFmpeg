@@ -278,7 +278,7 @@ static av_cold int flashsv_encode_end(AVCodecContext *avctx)
 AVCodec ff_flashsv_encoder = {
     .name           = "flashsv",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_FLASHSV,
+    .id             = AV_CODEC_ID_FLASHSV,
     .priv_data_size = sizeof(FlashSVContext),
     .init           = flashsv_encode_init,
     .encode2        = flashsv_encode_frame,

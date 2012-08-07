@@ -148,7 +148,7 @@ static int decode_frame(AVCodecContext *avctx,
     s->frame.palette_has_changed = 1;
     memcpy(s->frame.data[1], s->palette, 16 * 4);
 
-    if (avctx->codec_id == CODEC_ID_XBIN) {
+    if (avctx->codec_id == AV_CODEC_ID_XBIN) {
         while (buf + 2 < buf_end) {
             int i,c,a;
             int type  = *buf >> 6;
@@ -179,7 +179,7 @@ static int decode_frame(AVCodecContext *avctx,
                 break;
             }
         }
-    } else if (avctx->codec_id == CODEC_ID_IDF) {
+    } else if (avctx->codec_id == AV_CODEC_ID_IDF) {
         while (buf + 2 < buf_end) {
             if (AV_RL16(buf) == 1) {
                int i;
@@ -219,7 +219,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 AVCodec ff_bintext_decoder = {
     .name           = "bintext",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_BINTEXT,
+    .id             = AV_CODEC_ID_BINTEXT,
     .priv_data_size = sizeof(XbinContext),
     .init           = decode_init,
     .close          = decode_end,
@@ -232,7 +232,7 @@ AVCodec ff_bintext_decoder = {
 AVCodec ff_xbin_decoder = {
     .name           = "xbin",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_XBIN,
+    .id             = AV_CODEC_ID_XBIN,
     .priv_data_size = sizeof(XbinContext),
     .init           = decode_init,
     .close          = decode_end,
@@ -245,7 +245,7 @@ AVCodec ff_xbin_decoder = {
 AVCodec ff_idf_decoder = {
     .name           = "idf",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_IDF,
+    .id             = AV_CODEC_ID_IDF,
     .priv_data_size = sizeof(XbinContext),
     .init           = decode_init,
     .close          = decode_end,

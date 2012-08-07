@@ -155,7 +155,7 @@ static av_cold int tqi_decode_end(AVCodecContext *avctx)
 AVCodec ff_eatqi_decoder = {
     .name           = "eatqi",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_TQI,
+    .id             = AV_CODEC_ID_TQI,
     .priv_data_size = sizeof(TqiContext),
     .init           = tqi_decode_init,
     .close          = tqi_decode_end,

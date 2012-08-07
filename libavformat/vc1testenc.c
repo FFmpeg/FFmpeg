@@ -30,7 +30,7 @@ static int vc1test_write_header(AVFormatContext *s)
     AVCodecContext *avc = s->streams[0]->codec;
     AVIOContext *pb = s->pb;
 
-    if (avc->codec_id != CODEC_ID_WMV3) {
+    if (avc->codec_id != AV_CODEC_ID_WMV3) {
         av_log(s, AV_LOG_ERROR, "Only WMV3 is accepted!\n");
         return -1;
     }
@@ -87,8 +87,8 @@ AVOutputFormat ff_vc1t_muxer = {
     .long_name         = NULL_IF_CONFIG_SMALL("VC-1 test bitstream"),
     .extensions        = "rcv",
     .priv_data_size    = sizeof(RCVContext),
-    .audio_codec       = CODEC_ID_NONE,
-    .video_codec       = CODEC_ID_WMV3,
+    .audio_codec       = AV_CODEC_ID_NONE,
+    .video_codec       = AV_CODEC_ID_WMV3,
     .write_header      = vc1test_write_header,
     .write_packet      = vc1test_write_packet,
     .write_trailer     = vc1test_write_trailer,

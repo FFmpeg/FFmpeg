@@ -224,7 +224,7 @@ static int modplug_read_header(AVFormatContext *s)
     avpriv_set_pts_info(st, 64, 1, 1000);
     st->duration = ModPlug_GetLength(modplug->f);
     st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id    = CODEC_ID_PCM_S16LE;
+    st->codec->codec_id    = AV_CODEC_ID_PCM_S16LE;
     st->codec->channels    = settings.mChannels;
     st->codec->sample_rate = settings.mFrequency;
 
@@ -238,7 +238,7 @@ static int modplug_read_header(AVFormatContext *s)
         avpriv_set_pts_info(vst, 64, 1, 1000);
         vst->duration = st->duration;
         vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-        vst->codec->codec_id   = CODEC_ID_XBIN;
+        vst->codec->codec_id   = AV_CODEC_ID_XBIN;
         vst->codec->width      = modplug->w << 3;
         vst->codec->height     = modplug->h << 3;
         modplug->linesize = modplug->w * 3;

@@ -210,7 +210,7 @@ static void libopus_dec_flush(AVCodecContext *avc)
 AVCodec ff_libopus_decoder = {
     .name           = "libopus",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_OPUS,
+    .id             = AV_CODEC_ID_OPUS,
     .priv_data_size = sizeof(struct libopus_context),
     .init           = libopus_dec_init,
     .close          = libopus_dec_close,

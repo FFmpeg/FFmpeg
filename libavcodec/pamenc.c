@@ -132,7 +132,7 @@ static int pam_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 AVCodec ff_pam_encoder = {
     .name           = "pam",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_PAM,
+    .id             = AV_CODEC_ID_PAM,
     .priv_data_size = sizeof(PNMContext),
     .init           = ff_pnm_init,
     .encode2        = pam_encode_frame,

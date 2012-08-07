@@ -56,7 +56,7 @@ static int read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id=CODEC_ID_G729;
+    st->codec->codec_id=AV_CODEC_ID_G729;
     st->codec->sample_rate=8000;
     st->codec->block_align = 16;
     st->codec->channels=1;
@@ -118,7 +118,7 @@ static int write_header(AVFormatContext *s)
 {
     AVCodecContext *enc = s->streams[0]->codec;
 
-    enc->codec_id = CODEC_ID_G729;
+    enc->codec_id = AV_CODEC_ID_G729;
     enc->channels = 1;
     enc->bits_per_coded_sample = 16;
     enc->block_align = (enc->bits_per_coded_sample * enc->channels) >> 3;
@@ -148,8 +148,8 @@ AVOutputFormat ff_bit_muxer = {
     .long_name    = NULL_IF_CONFIG_SMALL("G.729 BIT file format"),
     .mime_type    = "audio/bit",
     .extensions   = "bit",
-    .audio_codec  = CODEC_ID_G729,
-    .video_codec  = CODEC_ID_NONE,
+    .audio_codec  = AV_CODEC_ID_G729,
+    .video_codec  = AV_CODEC_ID_NONE,
     .write_header = write_header,
     .write_packet = write_packet,
 };

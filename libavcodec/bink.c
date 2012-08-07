@@ -1335,7 +1335,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 AVCodec ff_bink_decoder = {
     .name           = "binkvideo",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_BINKVIDEO,
+    .id             = AV_CODEC_ID_BINKVIDEO,
     .priv_data_size = sizeof(BinkContext),
     .init           = decode_init,
     .close          = decode_end,

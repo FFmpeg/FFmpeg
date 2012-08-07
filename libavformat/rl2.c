@@ -114,7 +114,7 @@ static av_cold int rl2_read_header(AVFormatContext *s)
          return AVERROR(ENOMEM);
 
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = CODEC_ID_RL2;
+    st->codec->codec_id = AV_CODEC_ID_RL2;
     st->codec->codec_tag = 0;  /* no fourcc */
     st->codec->width = 320;
     st->codec->height = 200;
@@ -146,7 +146,7 @@ static av_cold int rl2_read_header(AVFormatContext *s)
         if (!st)
             return AVERROR(ENOMEM);
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        st->codec->codec_id = CODEC_ID_PCM_U8;
+        st->codec->codec_id = AV_CODEC_ID_PCM_U8;
         st->codec->codec_tag = 1;
         st->codec->channels = channels;
         st->codec->bits_per_coded_sample = 8;

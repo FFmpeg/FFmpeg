@@ -579,7 +579,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 AVCodec ff_utvideo_decoder = {
     .name           = "utvideo",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_UTVIDEO,
+    .id             = AV_CODEC_ID_UTVIDEO,
     .priv_data_size = sizeof(UtvideoContext),
     .init           = decode_init,
     .close          = decode_end,

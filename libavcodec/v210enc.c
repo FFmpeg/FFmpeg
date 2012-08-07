@@ -117,7 +117,7 @@ static av_cold int encode_close(AVCodecContext *avctx)
 AVCodec ff_v210_encoder = {
     .name           = "v210",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_V210,
+    .id             = AV_CODEC_ID_V210,
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_close,

@@ -219,7 +219,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
 
             for(i=1; i<15; i++){
                 float error= aspect_ratio;
-                if(s->codec_id == CODEC_ID_MPEG1VIDEO || i <=1)
+                if(s->codec_id == AV_CODEC_ID_MPEG1VIDEO || i <=1)
                     error-= 1.0/ff_mpeg1_aspect[i];
                 else
                     error-= av_q2d(ff_mpeg2_aspect[i])*s->height/s->width;
@@ -237,7 +237,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
 
             if(s->avctx->rc_max_rate){
                 v = (s->avctx->rc_max_rate + 399) / 400;
-                if (v > 0x3ffff && s->codec_id == CODEC_ID_MPEG1VIDEO)
+                if (v > 0x3ffff && s->codec_id == AV_CODEC_ID_MPEG1VIDEO)
                     v = 0x3ffff;
             }else{
                 v= 0x3FFFF;
@@ -262,14 +262,14 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
                 s->avctx->me_range && s->avctx->me_range < 128 &&
                 vbv_buffer_size <= 20 &&
                 v <= 1856000/400 &&
-                s->codec_id == CODEC_ID_MPEG1VIDEO;
+                s->codec_id == AV_CODEC_ID_MPEG1VIDEO;
 
             put_bits(&s->pb, 1, constraint_parameter_flag);
 
             ff_write_quant_matrix(&s->pb, s->avctx->intra_matrix);
             ff_write_quant_matrix(&s->pb, s->avctx->inter_matrix);
 
-            if(s->codec_id == CODEC_ID_MPEG2VIDEO){
+            if(s->codec_id == AV_CODEC_ID_MPEG2VIDEO){
                 put_header(s, EXT_START_CODE);
                 put_bits(&s->pb, 4, 1); //seq ext
 
@@ -331,7 +331,7 @@ static av_always_inline void put_qscale(MpegEncContext *s)
 }
 
 void ff_mpeg1_encode_slice_header(MpegEncContext *s){
-    if (s->codec_id == CODEC_ID_MPEG2VIDEO && s->height > 2800) {
+    if (s->codec_id == AV_CODEC_ID_MPEG2VIDEO && s->height > 2800) {
         put_header(s, SLICE_MIN_START_CODE + (s->mb_y & 127));
         put_bits(&s->pb, 3, s->mb_y >> 7);  /* slice_vertical_position_extension */
     } else {
@@ -360,7 +360,7 @@ void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
     // RAL: Forward f_code also needed for B frames
     if (s->pict_type == AV_PICTURE_TYPE_P || s->pict_type == AV_PICTURE_TYPE_B) {
         put_bits(&s->pb, 1, 0); /* half pel coordinates */
-        if(s->codec_id == CODEC_ID_MPEG1VIDEO)
+        if(s->codec_id == AV_CODEC_ID_MPEG1VIDEO)
             put_bits(&s->pb, 3, s->f_code); /* forward_f_code */
         else
             put_bits(&s->pb, 3, 7); /* forward_f_code */
@@ -369,7 +369,7 @@ void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
     // RAL: Backward f_code necessary for B frames
     if (s->pict_type == AV_PICTURE_TYPE_B) {
         put_bits(&s->pb, 1, 0); /* half pel coordinates */
-        if(s->codec_id == CODEC_ID_MPEG1VIDEO)
+        if(s->codec_id == AV_CODEC_ID_MPEG1VIDEO)
             put_bits(&s->pb, 3, s->b_code); /* backward_f_code */
         else
             put_bits(&s->pb, 3, 7); /* backward_f_code */
@@ -378,7 +378,7 @@ void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
     put_bits(&s->pb, 1, 0); /* extra bit picture */
 
     s->frame_pred_frame_dct = 1;
-    if(s->codec_id == CODEC_ID_MPEG2VIDEO){
+    if(s->codec_id == AV_CODEC_ID_MPEG2VIDEO){
         put_header(s, EXT_START_CODE);
         put_bits(&s->pb, 4, 8); //pic ext
         if (s->pict_type == AV_PICTURE_TYPE_P || s->pict_type == AV_PICTURE_TYPE_B) {
@@ -459,7 +459,7 @@ static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
     }
 
     if (cbp == 0 && !first_mb && s->mv_type == MV_TYPE_16X16 &&
-        (mb_x != s->mb_width - 1 || (mb_y != s->mb_height - 1 && s->codec_id == CODEC_ID_MPEG1VIDEO)) &&
+        (mb_x != s->mb_width - 1 || (mb_y != s->mb_height - 1 && s->codec_id == AV_CODEC_ID_MPEG1VIDEO)) &&
         ((s->pict_type == AV_PICTURE_TYPE_P && (motion_x | motion_y) == 0) ||
         (s->pict_type == AV_PICTURE_TYPE_B && s->mv_dir == s->last_mv_dir && (((s->mv_dir & MV_DIR_FORWARD) ? ((s->mv[0][0][0] - s->last_mv[0][0][0])|(s->mv[0][0][1] - s->last_mv[0][0][1])) : 0) |
         ((s->mv_dir & MV_DIR_BACKWARD) ? ((s->mv[1][0][0] - s->last_mv[1][0][0])|(s->mv[1][0][1] - s->last_mv[1][0][1])) : 0)) == 0))) {
@@ -793,7 +793,7 @@ void ff_mpeg1_encode_init(MpegEncContext *s)
     }
     s->me.mv_penalty= mv_penalty;
     s->fcode_tab= fcode_tab;
-    if(s->codec_id == CODEC_ID_MPEG1VIDEO){
+    if(s->codec_id == AV_CODEC_ID_MPEG1VIDEO){
         s->min_qcoeff=-255;
         s->max_qcoeff= 255;
     }else{
@@ -907,7 +907,7 @@ static void mpeg1_encode_block(MpegEncContext *s,
                 put_bits(&s->pb, table_vlc[111][1], table_vlc[111][0]);
                 /* escape: only clip in this case */
                 put_bits(&s->pb, 6, run);
-                if(s->codec_id == CODEC_ID_MPEG1VIDEO){
+                if(s->codec_id == AV_CODEC_ID_MPEG1VIDEO){
                     if (alevel < 128) {
                         put_sbits(&s->pb, 8, level);
                     } else {
@@ -964,7 +964,7 @@ mpeg12_class(2)
 AVCodec ff_mpeg1video_encoder = {
     .name                 = "mpeg1video",
     .type                 = AVMEDIA_TYPE_VIDEO,
-    .id                   = CODEC_ID_MPEG1VIDEO,
+    .id                   = AV_CODEC_ID_MPEG1VIDEO,
     .priv_data_size       = sizeof(MpegEncContext),
     .init                 = encode_init,
     .encode2              = ff_MPV_encode_picture,
@@ -980,7 +980,7 @@ AVCodec ff_mpeg1video_encoder = {
 AVCodec ff_mpeg2video_encoder = {
     .name                 = "mpeg2video",
     .type                 = AVMEDIA_TYPE_VIDEO,
-    .id                   = CODEC_ID_MPEG2VIDEO,
+    .id                   = AV_CODEC_ID_MPEG2VIDEO,
     .priv_data_size       = sizeof(MpegEncContext),
     .init                 = encode_init,
     .encode2              = ff_MPV_encode_picture,

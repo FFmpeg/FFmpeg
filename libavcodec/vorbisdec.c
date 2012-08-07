@@ -1732,7 +1732,7 @@ static av_cold void vorbis_decode_flush(AVCodecContext *avccontext)
 AVCodec ff_vorbis_decoder = {
     .name            = "vorbis",
     .type            = AVMEDIA_TYPE_AUDIO,
-    .id              = CODEC_ID_VORBIS,
+    .id              = AV_CODEC_ID_VORBIS,
     .priv_data_size  = sizeof(vorbis_context),
     .init            = vorbis_decode_init,
     .close           = vorbis_decode_close,

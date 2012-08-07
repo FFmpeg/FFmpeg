@@ -52,7 +52,7 @@ static int opus_header(AVFormatContext *avf, int idx)
         if (os->psize < OPUS_HEAD_SIZE || (AV_RL8(packet + 8) & 0xF0) != 0)
             return AVERROR_INVALIDDATA;
         st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-        st->codec->codec_id    = CODEC_ID_OPUS;
+        st->codec->codec_id    = AV_CODEC_ID_OPUS;
         st->codec->channels    = AV_RL8 (packet + 9);
         priv->pre_skip         = AV_RL16(packet + 10);
         /*orig_sample_rate     = AV_RL32(packet + 12);*/

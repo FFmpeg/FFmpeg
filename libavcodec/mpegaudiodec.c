@@ -441,7 +441,7 @@ static av_cold int decode_init(AVCodecContext * avctx)
     avctx->sample_fmt= OUT_FMT;
     s->err_recognition = avctx->err_recognition;
 
-    if (avctx->codec_id == CODEC_ID_MP3ADU)
+    if (avctx->codec_id == AV_CODEC_ID_MP3ADU)
         s->adu_mode = 1;
 
     avcodec_get_frame_defaults(&s->frame);
@@ -2009,7 +2009,7 @@ static int decode_frame_mp3on4(AVCodecContext *avctx, void *data,
 AVCodec ff_mp1_decoder = {
     .name           = "mp1",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_MP1,
+    .id             = AV_CODEC_ID_MP1,
     .priv_data_size = sizeof(MPADecodeContext),
     .init           = decode_init,
     .decode         = decode_frame,
@@ -2022,7 +2022,7 @@ AVCodec ff_mp1_decoder = {
 AVCodec ff_mp2_decoder = {
     .name           = "mp2",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_MP2,
+    .id             = AV_CODEC_ID_MP2,
     .priv_data_size = sizeof(MPADecodeContext),
     .init           = decode_init,
     .decode         = decode_frame,
@@ -2035,7 +2035,7 @@ AVCodec ff_mp2_decoder = {
 AVCodec ff_mp3_decoder = {
     .name           = "mp3",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_MP3,
+    .id             = AV_CODEC_ID_MP3,
     .priv_data_size = sizeof(MPADecodeContext),
     .init           = decode_init,
     .decode         = decode_frame,
@@ -2048,7 +2048,7 @@ AVCodec ff_mp3_decoder = {
 AVCodec ff_mp3adu_decoder = {
     .name           = "mp3adu",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_MP3ADU,
+    .id             = AV_CODEC_ID_MP3ADU,
     .priv_data_size = sizeof(MPADecodeContext),
     .init           = decode_init,
     .decode         = decode_frame_adu,
@@ -2061,7 +2061,7 @@ AVCodec ff_mp3adu_decoder = {
 AVCodec ff_mp3on4_decoder = {
     .name           = "mp3on4",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_MP3ON4,
+    .id             = AV_CODEC_ID_MP3ON4,
     .priv_data_size = sizeof(MP3On4DecodeContext),
     .init           = decode_init_mp3on4,
     .close          = decode_close_mp3on4,

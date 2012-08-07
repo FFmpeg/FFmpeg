@@ -109,7 +109,7 @@ static int dnxhd_parse(AVCodecParserContext *s,
 }
 
 AVCodecParser ff_dnxhd_parser = {
-    .codec_ids      = { CODEC_ID_DNXHD },
+    .codec_ids      = { AV_CODEC_ID_DNXHD },
     .priv_data_size = sizeof(DNXHDParserContext),
     .parser_parse   = dnxhd_parse,
     .parser_close   = ff_parse_close,

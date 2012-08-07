@@ -180,7 +180,7 @@ static int latm_parse_sdp_line(AVFormatContext *s, int st_index,
 RTPDynamicProtocolHandler ff_mp4a_latm_dynamic_handler = {
     .enc_name           = "MP4A-LATM",
     .codec_type         = AVMEDIA_TYPE_AUDIO,
-    .codec_id           = CODEC_ID_AAC,
+    .codec_id           = AV_CODEC_ID_AAC,
     .parse_sdp_a_line   = latm_parse_sdp_line,
     .alloc              = latm_new_context,
     .free               = latm_free_context,

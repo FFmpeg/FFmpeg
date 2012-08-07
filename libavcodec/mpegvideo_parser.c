@@ -68,7 +68,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                 pc->frame_rate.den = avctx->time_base.den = avpriv_frame_rate_tab[frame_rate_index].num;
                 pc->frame_rate.num = avctx->time_base.num = avpriv_frame_rate_tab[frame_rate_index].den;
                 avctx->bit_rate = ((buf[4]<<10) | (buf[5]<<2) | (buf[6]>>6))*400;
-                avctx->codec_id = CODEC_ID_MPEG1VIDEO;
+                avctx->codec_id = AV_CODEC_ID_MPEG1VIDEO;
             }
             break;
         case EXT_START_CODE:
@@ -92,7 +92,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                             avcodec_set_dimensions(avctx, pc->width, pc->height);
                         avctx->time_base.den = pc->frame_rate.den * (frame_rate_ext_n + 1) * 2;
                         avctx->time_base.num = pc->frame_rate.num * (frame_rate_ext_d + 1);
-                        avctx->codec_id = CODEC_ID_MPEG2VIDEO;
+                        avctx->codec_id = AV_CODEC_ID_MPEG2VIDEO;
                     }
                     break;
                 case 0x8: /* picture coding extension */
@@ -189,7 +189,7 @@ static int mpegvideo_parse_init(AVCodecParserContext *s)
 }
 
 AVCodecParser ff_mpegvideo_parser = {
-    .codec_ids      = { CODEC_ID_MPEG1VIDEO, CODEC_ID_MPEG2VIDEO },
+    .codec_ids      = { AV_CODEC_ID_MPEG1VIDEO, AV_CODEC_ID_MPEG2VIDEO },
     .priv_data_size = sizeof(struct MpvParseContext),
     .parser_init    = mpegvideo_parse_init,
     .parser_parse   = mpegvideo_parse,

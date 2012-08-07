@@ -377,7 +377,7 @@ static int mpegps_read_packet(AVFormatContext *s,
     int len, startcode, i, es_type, ret;
     int lpcm_header_len;
     int request_probe= 0;
-    enum CodecID codec_id = CODEC_ID_NONE;
+    enum AVCodecID codec_id = AV_CODEC_ID_NONE;
     enum AVMediaType type;
     int64_t pts, dts, dummy_pos; //dummy_pos is needed for the index building to work
 
@@ -411,26 +411,26 @@ static int mpegps_read_packet(AVFormatContext *s,
     es_type = m->psm_es_type[startcode & 0xff];
     if(es_type > 0 && es_type != STREAM_TYPE_PRIVATE_DATA){
         if(es_type == STREAM_TYPE_VIDEO_MPEG1){
-            codec_id = CODEC_ID_MPEG2VIDEO;
+            codec_id = AV_CODEC_ID_MPEG2VIDEO;
             type = AVMEDIA_TYPE_VIDEO;
         } else if(es_type == STREAM_TYPE_VIDEO_MPEG2){
-            codec_id = CODEC_ID_MPEG2VIDEO;
+            codec_id = AV_CODEC_ID_MPEG2VIDEO;
             type = AVMEDIA_TYPE_VIDEO;
         } else if(es_type == STREAM_TYPE_AUDIO_MPEG1 ||
                   es_type == STREAM_TYPE_AUDIO_MPEG2){
-            codec_id = CODEC_ID_MP3;
+            codec_id = AV_CODEC_ID_MP3;
             type = AVMEDIA_TYPE_AUDIO;
         } else if(es_type == STREAM_TYPE_AUDIO_AAC){
-            codec_id = CODEC_ID_AAC;
+            codec_id = AV_CODEC_ID_AAC;
             type = AVMEDIA_TYPE_AUDIO;
         } else if(es_type == STREAM_TYPE_VIDEO_MPEG4){
-            codec_id = CODEC_ID_MPEG4;
+            codec_id = AV_CODEC_ID_MPEG4;
             type = AVMEDIA_TYPE_VIDEO;
         } else if(es_type == STREAM_TYPE_VIDEO_H264){
-            codec_id = CODEC_ID_H264;
+            codec_id = AV_CODEC_ID_H264;
             type = AVMEDIA_TYPE_VIDEO;
         } else if(es_type == STREAM_TYPE_AUDIO_AC3){
-            codec_id = CODEC_ID_AC3;
+            codec_id = AV_CODEC_ID_AC3;
             type = AVMEDIA_TYPE_AUDIO;
         } else {
             goto skip;
@@ -441,42 +441,42 @@ static int mpegps_read_packet(AVFormatContext *s,
         avio_read(s->pb, buf, 8);
         avio_seek(s->pb, -8, SEEK_CUR);
         if(!memcmp(buf, avs_seqh, 4) && (buf[6] != 0 || buf[7] != 1))
-            codec_id = CODEC_ID_CAVS;
+            codec_id = AV_CODEC_ID_CAVS;
         else
             request_probe= 1;
         type = AVMEDIA_TYPE_VIDEO;
     } else if (startcode >= 0x1c0 && startcode <= 0x1df) {
         type = AVMEDIA_TYPE_AUDIO;
-        codec_id = m->sofdec > 0 ? CODEC_ID_ADPCM_ADX : CODEC_ID_MP2;
+        codec_id = m->sofdec > 0 ? AV_CODEC_ID_ADPCM_ADX : AV_CODEC_ID_MP2;
     } else if (startcode >= 0x80 && startcode <= 0x87) {
         type = AVMEDIA_TYPE_AUDIO;
-        codec_id = CODEC_ID_AC3;
+        codec_id = AV_CODEC_ID_AC3;
     } else if (  ( startcode >= 0x88 && startcode <= 0x8f)
                ||( startcode >= 0x98 && startcode <= 0x9f)) {
         /* 0x90 - 0x97 is reserved for SDDS in DVD specs */
         type = AVMEDIA_TYPE_AUDIO;
-        codec_id = CODEC_ID_DTS;
+        codec_id = AV_CODEC_ID_DTS;
     } else if (startcode >= 0xa0 && startcode <= 0xaf) {
         type = AVMEDIA_TYPE_AUDIO;
         if(lpcm_header_len == 6) {
-            codec_id = CODEC_ID_MLP;
+            codec_id = AV_CODEC_ID_MLP;
         } else {
-            /* 16 bit form will be handled as CODEC_ID_PCM_S16BE */
-            codec_id = CODEC_ID_PCM_DVD;
+            /* 16 bit form will be handled as AV_CODEC_ID_PCM_S16BE */
+            codec_id = AV_CODEC_ID_PCM_DVD;
         }
     } else if (startcode >= 0xb0 && startcode <= 0xbf) {
         type = AVMEDIA_TYPE_AUDIO;
-        codec_id = CODEC_ID_TRUEHD;
+        codec_id = AV_CODEC_ID_TRUEHD;
     } else if (startcode >= 0xc0 && startcode <= 0xcf) {
         /* Used for both AC-3 and E-AC-3 in EVOB files */
         type = AVMEDIA_TYPE_AUDIO;
-        codec_id = CODEC_ID_AC3;
+        codec_id = AV_CODEC_ID_AC3;
     } else if (startcode >= 0x20 && startcode <= 0x3f) {
         type = AVMEDIA_TYPE_SUBTITLE;
-        codec_id = CODEC_ID_DVD_SUBTITLE;
+        codec_id = AV_CODEC_ID_DVD_SUBTITLE;
     } else if (startcode >= 0xfd55 && startcode <= 0xfd5f) {
         type = AVMEDIA_TYPE_VIDEO;
-        codec_id = CODEC_ID_VC1;
+        codec_id = AV_CODEC_ID_VC1;
     } else {
     skip:
         /* skip packet */
@@ -491,7 +491,7 @@ static int mpegps_read_packet(AVFormatContext *s,
     st->codec->codec_type = type;
     st->codec->codec_id = codec_id;
     st->request_probe     = request_probe;
-    if (codec_id != CODEC_ID_PCM_S16BE)
+    if (codec_id != AV_CODEC_ID_PCM_S16BE)
         st->need_parsing = AVSTREAM_PARSE_FULL;
  found:
     if(st->discard >= AVDISCARD_ALL)
@@ -521,7 +521,7 @@ static int mpegps_read_packet(AVFormatContext *s,
                               st->codec->sample_rate *
                               st->codec->bits_per_coded_sample;
         if (st->codec->bits_per_coded_sample == 16)
-            st->codec->codec_id = CODEC_ID_PCM_S16BE;
+            st->codec->codec_id = AV_CODEC_ID_PCM_S16BE;
         else if (st->codec->bits_per_coded_sample == 28)
             return AVERROR(EINVAL);
       }

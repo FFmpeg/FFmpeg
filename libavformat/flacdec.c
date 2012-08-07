@@ -33,7 +33,7 @@
 static int parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
 {
     const CodecMime *mime = ff_id3v2_mime_tags;
-    enum  CodecID      id = CODEC_ID_NONE;
+    enum  AVCodecID      id = AV_CODEC_ID_NONE;
     uint8_t mimetype[64], *desc = NULL, *data = NULL;
     AVIOContext *pb = NULL;
     AVStream *st;
@@ -66,14 +66,14 @@ static int parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
     }
     mimetype[len] = 0;
 
-    while (mime->id != CODEC_ID_NONE) {
+    while (mime->id != AV_CODEC_ID_NONE) {
         if (!strncmp(mime->str, mimetype, sizeof(mimetype))) {
             id = mime->id;
             break;
         }
         mime++;
     }
-    if (id == CODEC_ID_NONE) {
+    if (id == AV_CODEC_ID_NONE) {
         av_log(s, AV_LOG_ERROR, "Unknown attached picture mimetype: %s.\n",
                mimetype);
         if (s->error_recognition & AV_EF_EXPLODE)
@@ -162,7 +162,7 @@ static int flac_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id = CODEC_ID_FLAC;
+    st->codec->codec_id = AV_CODEC_ID_FLAC;
     st->need_parsing = AVSTREAM_PARSE_FULL_RAW;
     /* the parameters will be extracted from the compressed bitstream */
 
@@ -292,5 +292,5 @@ AVInputFormat ff_flac_demuxer = {
     .read_packet    = ff_raw_read_partial_packet,
     .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "flac",
-    .raw_codec_id   = CODEC_ID_FLAC,
+    .raw_codec_id   = AV_CODEC_ID_FLAC,
 };

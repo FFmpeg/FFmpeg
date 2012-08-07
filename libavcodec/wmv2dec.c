@@ -473,7 +473,7 @@ static av_cold int wmv2_decode_end(AVCodecContext *avctx)
 AVCodec ff_wmv2_decoder = {
     .name           = "wmv2",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_WMV2,
+    .id             = AV_CODEC_ID_WMV2,
     .priv_data_size = sizeof(Wmv2Context),
     .init           = wmv2_decode_init,
     .close          = wmv2_decode_end,

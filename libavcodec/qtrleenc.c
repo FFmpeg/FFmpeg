@@ -350,7 +350,7 @@ static av_cold int qtrle_encode_end(AVCodecContext *avctx)
 AVCodec ff_qtrle_encoder = {
     .name           = "qtrle",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_QTRLE,
+    .id             = AV_CODEC_ID_QTRLE,
     .priv_data_size = sizeof(QtrleEncContext),
     .init           = qtrle_encode_init,
     .encode2        = qtrle_encode_frame,

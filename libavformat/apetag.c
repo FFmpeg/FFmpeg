@@ -55,7 +55,7 @@ static int ape_tag_read_field(AVFormatContext *s)
         return -1;
     if (flags & APE_TAG_FLAG_IS_BINARY) {
         uint8_t filename[1024];
-        enum CodecID id;
+        enum AVCodecID id;
         AVStream *st = avformat_new_stream(s, NULL);
         if (!st)
             return AVERROR(ENOMEM);
@@ -68,7 +68,7 @@ static int ape_tag_read_field(AVFormatContext *s)
 
         av_dict_set(&st->metadata, key, filename, 0);
 
-        if ((id = ff_guess_image2_codec(filename)) != CODEC_ID_NONE) {
+        if ((id = ff_guess_image2_codec(filename)) != AV_CODEC_ID_NONE) {
             AVPacket pkt;
             int ret;
 

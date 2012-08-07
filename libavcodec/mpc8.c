@@ -437,7 +437,7 @@ static av_cold void mpc8_decode_flush(AVCodecContext *avctx)
 AVCodec ff_mpc8_decoder = {
     .name           = "mpc8",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_MUSEPACK8,
+    .id             = AV_CODEC_ID_MUSEPACK8,
     .priv_data_size = sizeof(MPCContext),
     .init           = mpc8_decode_init,
     .decode         = mpc8_decode_frame,

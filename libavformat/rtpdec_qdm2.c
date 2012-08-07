@@ -259,14 +259,14 @@ static int qdm2_parse_packet(AVFormatContext *s, PayloadContext *qdm,
                 return res;
             p += res;
 
-            /* We set codec_id to CODEC_ID_NONE initially to
+            /* We set codec_id to AV_CODEC_ID_NONE initially to
              * delay decoder initialization since extradata is
              * carried within the RTP stream, not SDP. Here,
-             * by setting codec_id to CODEC_ID_QDM2, we are signalling
+             * by setting codec_id to AV_CODEC_ID_QDM2, we are signalling
              * to the decoder that it is OK to initialize. */
-            st->codec->codec_id = CODEC_ID_QDM2;
+            st->codec->codec_id = AV_CODEC_ID_QDM2;
         }
-        if (st->codec->codec_id == CODEC_ID_NONE)
+        if (st->codec->codec_id == AV_CODEC_ID_NONE)
             return AVERROR(EAGAIN);
 
         /* subpackets */
@@ -310,7 +310,7 @@ static void qdm2_extradata_free(PayloadContext *qdm)
 RTPDynamicProtocolHandler ff_qdm2_dynamic_handler = {
     .enc_name         = "X-QDM",
     .codec_type       = AVMEDIA_TYPE_AUDIO,
-    .codec_id         = CODEC_ID_NONE,
+    .codec_id         = AV_CODEC_ID_NONE,
     .alloc            = qdm2_extradata_new,
     .free             = qdm2_extradata_free,
     .parse_packet     = qdm2_parse_packet,

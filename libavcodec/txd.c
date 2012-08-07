@@ -164,7 +164,7 @@ static av_cold int txd_end(AVCodecContext *avctx) {
 AVCodec ff_txd_decoder = {
     .name           = "txd",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_TXD,
+    .id             = AV_CODEC_ID_TXD,
     .priv_data_size = sizeof(TXDContext),
     .init           = txd_init,
     .close          = txd_end,

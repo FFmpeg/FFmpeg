@@ -1177,7 +1177,7 @@ static av_cold int twin_decode_init(AVCodecContext *avctx)
 AVCodec ff_twinvq_decoder = {
     .name           = "twinvq",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_TWINVQ,
+    .id             = AV_CODEC_ID_TWINVQ,
     .priv_data_size = sizeof(TwinContext),
     .init           = twin_decode_init,
     .close          = twin_decode_close,

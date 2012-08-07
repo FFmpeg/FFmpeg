@@ -72,7 +72,7 @@ static int cdata_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_tag = 0; /* no fourcc */
-    st->codec->codec_id = CODEC_ID_ADPCM_EA_XAS;
+    st->codec->codec_id = AV_CODEC_ID_ADPCM_EA_XAS;
     st->codec->channels = cdata->channels;
     st->codec->channel_layout = channel_layout;
     st->codec->sample_rate = sample_rate;

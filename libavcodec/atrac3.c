@@ -1068,7 +1068,7 @@ AVCodec ff_atrac3_decoder =
 {
     .name           = "atrac3",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_ATRAC3,
+    .id             = AV_CODEC_ID_ATRAC3,
     .priv_data_size = sizeof(ATRAC3Context),
     .init           = atrac3_decode_init,
     .close          = atrac3_decode_close,

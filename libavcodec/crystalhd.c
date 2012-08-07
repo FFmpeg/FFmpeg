@@ -166,17 +166,17 @@ static const AVOption options[] = {
 static inline BC_MEDIA_SUBTYPE id2subtype(CHDContext *priv, enum CodecID id)
 {
     switch (id) {
-    case CODEC_ID_MPEG4:
+    case AV_CODEC_ID_MPEG4:
         return BC_MSUBTYPE_DIVX;
-    case CODEC_ID_MSMPEG4V3:
+    case AV_CODEC_ID_MSMPEG4V3:
         return BC_MSUBTYPE_DIVX311;
-    case CODEC_ID_MPEG2VIDEO:
+    case AV_CODEC_ID_MPEG2VIDEO:
         return BC_MSUBTYPE_MPEG2VIDEO;
-    case CODEC_ID_VC1:
+    case AV_CODEC_ID_VC1:
         return BC_MSUBTYPE_VC1;
-    case CODEC_ID_WMV3:
+    case AV_CODEC_ID_WMV3:
         return BC_MSUBTYPE_WMV3;
-    case CODEC_ID_H264:
+    case AV_CODEC_ID_H264:
         return priv->is_nal ? BC_MSUBTYPE_AVC1 : BC_MSUBTYPE_H264;
     default:
         return BC_MSUBTYPE_INVALID;
@@ -515,7 +515,7 @@ static av_cold int init(AVCodecContext *avctx)
         goto fail;
     }
 
-    if (avctx->codec->id == CODEC_ID_H264) {
+    if (avctx->codec->id == AV_CODEC_ID_H264) {
         priv->parser = av_parser_init(avctx->codec->id);
         if (!priv->parser)
             av_log(avctx, AV_LOG_WARNING,
@@ -604,7 +604,7 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
      * picture or if there is a corruption in the stream. (In either
      * case a 0 will be returned for the next picture number)
      */
-    trust_interlaced = avctx->codec->id != CODEC_ID_H264 ||
+    trust_interlaced = avctx->codec->id != AV_CODEC_ID_H264 ||
                        !(output->PicInfo.flags & VDEC_FLAG_UNKNOWN_SRC) ||
                        priv->need_second_field ||
                        (decoder_status.picNumFlags & ~0x40000000) ==
@@ -812,7 +812,7 @@ static inline CopyRet receive_frame(AVCodecContext *avctx,
                 priv->last_picture = output.PicInfo.picture_number - 1;
             }
 
-            if (avctx->codec->id == CODEC_ID_MPEG4 &&
+            if (avctx->codec->id == AV_CODEC_ID_MPEG4 &&
                 output.PicInfo.timeStamp == 0 && priv->bframe_bug) {
                 av_log(avctx, AV_LOG_VERBOSE,
                        "CrystalHD: Not returning packed frame twice.\n");
@@ -1091,7 +1091,7 @@ static AVClass h264_class = {
 AVCodec ff_h264_crystalhd_decoder = {
     .name           = "h264_crystalhd",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_H264,
+    .id             = AV_CODEC_ID_H264,
     .priv_data_size = sizeof(CHDContext),
     .init           = init,
     .close          = uninit,
@@ -1115,7 +1115,7 @@ static AVClass mpeg2_class = {
 AVCodec ff_mpeg2_crystalhd_decoder = {
     .name           = "mpeg2_crystalhd",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_MPEG2VIDEO,
+    .id             = AV_CODEC_ID_MPEG2VIDEO,
     .priv_data_size = sizeof(CHDContext),
     .init           = init,
     .close          = uninit,
@@ -1139,7 +1139,7 @@ static AVClass mpeg4_class = {
 AVCodec ff_mpeg4_crystalhd_decoder = {
     .name           = "mpeg4_crystalhd",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_MPEG4,
+    .id             = AV_CODEC_ID_MPEG4,
     .priv_data_size = sizeof(CHDContext),
     .init           = init,
     .close          = uninit,
@@ -1163,7 +1163,7 @@ static AVClass msmpeg4_class = {
 AVCodec ff_msmpeg4_crystalhd_decoder = {
     .name           = "msmpeg4_crystalhd",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_MSMPEG4V3,
+    .id             = AV_CODEC_ID_MSMPEG4V3,
     .priv_data_size = sizeof(CHDContext),
     .init           = init,
     .close          = uninit,
@@ -1187,7 +1187,7 @@ static AVClass vc1_class = {
 AVCodec ff_vc1_crystalhd_decoder = {
     .name           = "vc1_crystalhd",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_VC1,
+    .id             = AV_CODEC_ID_VC1,
     .priv_data_size = sizeof(CHDContext),
     .init           = init,
     .close          = uninit,
@@ -1211,7 +1211,7 @@ static AVClass wmv3_class = {
 AVCodec ff_wmv3_crystalhd_decoder = {
     .name           = "wmv3_crystalhd",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_WMV3,
+    .id             = AV_CODEC_ID_WMV3,
     .priv_data_size = sizeof(CHDContext),
     .init           = init,
     .close          = uninit,

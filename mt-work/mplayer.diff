@@ -10,4 +10,4 @@ index 7c68a20..135e6b1 100644
 +    if(vd_use_slices && (lavc_codec->capabilities&CODEC_CAP_DRAW_HORIZ_BAND) && !do_vis_debug && lavc_param_threads <= 1)
          ctx->do_slices=1;
  
-     if(lavc_codec->capabilities&CODEC_CAP_DR1 && !do_vis_debug && lavc_codec->id != CODEC_ID_H264 && lavc_codec->id != CODEC_ID_INTERPLAY_VIDEO && lavc_codec->id != CODEC_ID_ROQ && lavc_codec->id != CODEC_ID_VP8 && lavc_codec->id != CODEC_ID_LAGARITH)
+     if(lavc_codec->capabilities&CODEC_CAP_DR1 && !do_vis_debug && lavc_codec->id != AV_CODEC_ID_H264 && lavc_codec->id != AV_CODEC_ID_INTERPLAY_VIDEO && lavc_codec->id != AV_CODEC_ID_ROQ && lavc_codec->id != AV_CODEC_ID_VP8 && lavc_codec->id != AV_CODEC_ID_LAGARITH)

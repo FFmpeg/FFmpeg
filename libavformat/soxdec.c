@@ -58,14 +58,14 @@ static int sox_read_header(AVFormatContext *s)
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
 
     if (avio_rl32(pb) == SOX_TAG) {
-        st->codec->codec_id = CODEC_ID_PCM_S32LE;
+        st->codec->codec_id = AV_CODEC_ID_PCM_S32LE;
         header_size         = avio_rl32(pb);
         avio_skip(pb, 8); /* sample count */
         sample_rate         = av_int2double(avio_rl64(pb));
         st->codec->channels = avio_rl32(pb);
         comment_size        = avio_rl32(pb);
     } else {
-        st->codec->codec_id = CODEC_ID_PCM_S32BE;
+        st->codec->codec_id = AV_CODEC_ID_PCM_S32BE;
         header_size         = avio_rb32(pb);
         avio_skip(pb, 8); /* sample count */
         sample_rate         = av_int2double(avio_rb64(pb));

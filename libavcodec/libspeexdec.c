@@ -161,7 +161,7 @@ static av_cold void libspeex_decode_flush(AVCodecContext *avctx)
 AVCodec ff_libspeex_decoder = {
     .name           = "libspeex",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_SPEEX,
+    .id             = AV_CODEC_ID_SPEEX,
     .priv_data_size = sizeof(LibSpeexContext),
     .init           = libspeex_decode_init,
     .close          = libspeex_decode_close,

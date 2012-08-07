@@ -213,7 +213,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 AVCodec ff_sgi_encoder = {
     .name           = "sgi",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_SGI,
+    .id             = AV_CODEC_ID_SGI,
     .priv_data_size = sizeof(SgiContext),
     .init           = encode_init,
     .encode2        = encode_frame,

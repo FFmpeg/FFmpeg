@@ -121,7 +121,7 @@ static int caca_write_header(AVFormatContext *s)
 
     if (   s->nb_streams > 1
         || encctx->codec_type != AVMEDIA_TYPE_VIDEO
-        || encctx->codec_id   != CODEC_ID_RAWVIDEO) {
+        || encctx->codec_id   != AV_CODEC_ID_RAWVIDEO) {
         av_log(s, AV_LOG_ERROR, "Only supports one rawvideo stream\n");
         return AVERROR(EINVAL);
     }
@@ -230,8 +230,8 @@ AVOutputFormat ff_caca_muxer = {
     .name           = "caca",
     .long_name      = NULL_IF_CONFIG_SMALL("caca (color ASCII art) output device"),
     .priv_data_size = sizeof(CACAContext),
-    .audio_codec    = CODEC_ID_NONE,
-    .video_codec    = CODEC_ID_RAWVIDEO,
+    .audio_codec    = AV_CODEC_ID_NONE,
+    .video_codec    = AV_CODEC_ID_RAWVIDEO,
     .write_header   = caca_write_header,
     .write_packet   = caca_write_packet,
     .write_trailer  = caca_write_trailer,

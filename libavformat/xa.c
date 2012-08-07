@@ -74,7 +74,7 @@ static int xa_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     st->codec->codec_type   = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id     = CODEC_ID_ADPCM_EA_MAXIS_XA;
+    st->codec->codec_id     = AV_CODEC_ID_ADPCM_EA_MAXIS_XA;
     avio_skip(pb, 4);       /* Skip the XA ID */
     xa->out_size            =  avio_rl32(pb);
     avio_skip(pb, 2);       /* Skip the tag */

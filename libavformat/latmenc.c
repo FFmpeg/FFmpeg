@@ -86,7 +86,7 @@ static int latm_write_header(AVFormatContext *s)
     LATMContext *ctx = s->priv_data;
     AVCodecContext *avctx = s->streams[0]->codec;
 
-    if (avctx->codec_id == CODEC_ID_AAC_LATM)
+    if (avctx->codec_id == AV_CODEC_ID_AAC_LATM)
         return 0;
 
     if (avctx->extradata_size > 0 &&
@@ -149,7 +149,7 @@ static int latm_write_packet(AVFormatContext *s, AVPacket *pkt)
     int i, len;
     uint8_t loas_header[] = "\x56\xe0\x00";
 
-    if (s->streams[0]->codec->codec_id == CODEC_ID_AAC_LATM)
+    if (s->streams[0]->codec->codec_id == AV_CODEC_ID_AAC_LATM)
         return ff_raw_write_packet(s, pkt);
 
     if (pkt->size > 2 && pkt->data[0] == 0xff && (pkt->data[1] >> 4) == 0xf) {
@@ -213,8 +213,8 @@ AVOutputFormat ff_latm_muxer = {
     .mime_type      = "audio/MP4A-LATM",
     .extensions     = "latm,loas",
     .priv_data_size = sizeof(LATMContext),
-    .audio_codec    = CODEC_ID_AAC,
-    .video_codec    = CODEC_ID_NONE,
+    .audio_codec    = AV_CODEC_ID_AAC,
+    .video_codec    = AV_CODEC_ID_NONE,
     .write_header   = latm_write_header,
     .write_packet   = latm_write_packet,
     .priv_class     = &latm_muxer_class,

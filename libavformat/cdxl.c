@@ -100,7 +100,7 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
 
             st->codec->codec_type    = AVMEDIA_TYPE_AUDIO;
             st->codec->codec_tag     = 0;
-            st->codec->codec_id      = CODEC_ID_PCM_S8;
+            st->codec->codec_id      = AV_CODEC_ID_PCM_S8;
             st->codec->channels      = cdxl->header[1] & 0x10 ? 2 : 1;
             st->codec->sample_rate   = cdxl->sample_rate;
             st->start_time           = 0;
@@ -123,7 +123,7 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
 
             st->codec->codec_type    = AVMEDIA_TYPE_VIDEO;
             st->codec->codec_tag     = 0;
-            st->codec->codec_id      = CODEC_ID_CDXL;
+            st->codec->codec_id      = AV_CODEC_ID_CDXL;
             st->codec->width         = width;
             st->codec->height        = height;
             st->start_time           = 0;

@@ -24,13 +24,13 @@
 #include "avformat.h"
 #include "rawdec.h"
 
-static int ac3_eac3_probe(AVProbeData *p, enum CodecID expected_codec_id)
+static int ac3_eac3_probe(AVProbeData *p, enum AVCodecID expected_codec_id)
 {
     int max_frames, first_frames = 0, frames;
     uint8_t *buf, *buf2, *end;
     AC3HeaderInfo hdr;
     GetBitContext gbc;
-    enum CodecID codec_id = CODEC_ID_AC3;
+    enum AVCodecID codec_id = AV_CODEC_ID_AC3;
 
     max_frames = 0;
     buf = p->buf;
@@ -51,7 +51,7 @@ static int ac3_eac3_probe(AVProbeData *p, enum CodecID expected_codec_id)
                av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0, buf2 + 2, hdr.frame_size - 2))
                 break;
             if (hdr.bitstream_id > 10)
-                codec_id = CODEC_ID_EAC3;
+                codec_id = AV_CODEC_ID_EAC3;
             buf2 += hdr.frame_size;
         }
         max_frames = FFMAX(max_frames, frames);
@@ -71,7 +71,7 @@ static int ac3_eac3_probe(AVProbeData *p, enum CodecID expected_codec_id)
 #if CONFIG_AC3_DEMUXER
 static int ac3_probe(AVProbeData *p)
 {
-    return ac3_eac3_probe(p, CODEC_ID_AC3);
+    return ac3_eac3_probe(p, AV_CODEC_ID_AC3);
 }
 
 AVInputFormat ff_ac3_demuxer = {
@@ -82,14 +82,14 @@ AVInputFormat ff_ac3_demuxer = {
     .read_packet    = ff_raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "ac3",
-    .raw_codec_id   = CODEC_ID_AC3,
+    .raw_codec_id   = AV_CODEC_ID_AC3,
 };
 #endif
 
 #if CONFIG_EAC3_DEMUXER
 static int eac3_probe(AVProbeData *p)
 {
-    return ac3_eac3_probe(p, CODEC_ID_EAC3);
+    return ac3_eac3_probe(p, AV_CODEC_ID_EAC3);
 }
 
 AVInputFormat ff_eac3_demuxer = {
@@ -100,6 +100,6 @@ AVInputFormat ff_eac3_demuxer = {
     .read_packet    = ff_raw_read_partial_packet,
     .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "eac3",
-    .raw_codec_id   = CODEC_ID_EAC3,
+    .raw_codec_id   = AV_CODEC_ID_EAC3,
 };
 #endif

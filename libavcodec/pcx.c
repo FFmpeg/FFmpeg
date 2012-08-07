@@ -253,7 +253,7 @@ static av_cold int pcx_end(AVCodecContext *avctx) {
 AVCodec ff_pcx_decoder = {
     .name           = "pcx",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_PCX,
+    .id             = AV_CODEC_ID_PCX,
     .priv_data_size = sizeof(PCXContext),
     .init           = pcx_init,
     .close          = pcx_end,

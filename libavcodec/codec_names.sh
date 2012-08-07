@@ -41,7 +41,7 @@ parse_config_h () {
 
 define_codecid () {
   id="$1"
-  n=${1#CODEC_ID_}
+  n=${1#AV_CODEC_ID_}
   add_line "case ${id}:"
   eval "c=\${CONFIG_${n}_DECODER}:\${CONFIG_${n}_ENCODER}"
   case "$c" in
@@ -62,8 +62,8 @@ parse_enum_codecid () {
   while read line; do
     case "$line" in
       "};") break;;
-      *CODEC_ID_FIRST*=*) ;;
-      CODEC_ID_*) define_codecid ${line%%[=,]*};;
+      *AV_CODEC_ID_FIRST*=*) ;;
+      AV_CODEC_ID_*) define_codecid ${line%%[=,]*};;
     esac
   done
 }
@@ -71,7 +71,7 @@ parse_enum_codecid () {
 parse_avcodec_h () {
   while read line; do
     case "$line" in
-      "enum CodecID {") parse_enum_codecid; break;;
+      "enum AVCodecID {") parse_enum_codecid; break;;
     esac
   done
 }

@@ -77,7 +77,7 @@ AVCodec ff_realtext_decoder = {
     .name           = "realtext",
     .long_name      = NULL_IF_CONFIG_SMALL("RealText subtitle"),
     .type           = AVMEDIA_TYPE_SUBTITLE,
-    .id             = CODEC_ID_REALTEXT,
+    .id             = AV_CODEC_ID_REALTEXT,
     .decode         = realtext_decode_frame,
     .init           = ff_ass_subtitle_header_default,
 };

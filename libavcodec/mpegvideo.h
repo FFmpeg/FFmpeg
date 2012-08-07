@@ -218,7 +218,7 @@ typedef struct MpegEncContext {
     int h263_plus;    ///< h263 plus headers
     int h263_flv;     ///< use flv h263 header
 
-    enum CodecID codec_id;     /* see CODEC_ID_xxx */
+    enum AVCodecID codec_id;     /* see AV_CODEC_ID_xxx */
     int fixed_qscale; ///< fixed qscale if non zero
     int encoding;     ///< true if we are encoding (vs decoding)
     int flags;        ///< AVCodecContext.flags (HQ, MV4, ...)

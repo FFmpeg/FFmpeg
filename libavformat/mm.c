@@ -109,7 +109,7 @@ static int read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = CODEC_ID_MMVIDEO;
+    st->codec->codec_id = AV_CODEC_ID_MMVIDEO;
     st->codec->codec_tag = 0;  /* no fourcc */
     st->codec->width = width;
     st->codec->height = height;
@@ -122,7 +122,7 @@ static int read_header(AVFormatContext *s)
             return AVERROR(ENOMEM);
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codec->codec_tag = 0; /* no fourcc */
-        st->codec->codec_id = CODEC_ID_PCM_U8;
+        st->codec->codec_id = AV_CODEC_ID_PCM_U8;
         st->codec->channels = 1;
         st->codec->sample_rate = 8000;
         avpriv_set_pts_info(st, 64, 1, 8000); /* 8000 hz */

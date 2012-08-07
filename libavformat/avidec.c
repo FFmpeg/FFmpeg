@@ -588,7 +588,7 @@ static int avi_read_header(AVFormatContext *s)
                         st->codec->width=avih_width;
                         st->codec->height=avih_height;
                         st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-                        st->codec->codec_id = CODEC_ID_AMV;
+                        st->codec->codec_id = AV_CODEC_ID_AMV;
                         avio_skip(pb, size);
                         break;
                     }
@@ -597,7 +597,7 @@ static int avi_read_header(AVFormatContext *s)
                     if (tag1 == MKTAG('D', 'X', 'S', 'B') || tag1 == MKTAG('D','X','S','A')) {
                         st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
                         st->codec->codec_tag = tag1;
-                        st->codec->codec_id = CODEC_ID_XSUB;
+                        st->codec->codec_id = AV_CODEC_ID_XSUB;
                         break;
                     }
 
@@ -639,7 +639,7 @@ static int avi_read_header(AVFormatContext *s)
                     if(tag1 == MKTAG('A', 'V', 'R', 'n') &&
                        st->codec->extradata_size >= 31 &&
                        !memcmp(&st->codec->extradata[28], "1:1", 3))
-                        st->codec->codec_id = CODEC_ID_RAWVIDEO;
+                        st->codec->codec_id = AV_CODEC_ID_RAWVIDEO;
 
                     if(st->codec->codec_tag==0 && st->codec->height > 0 && st->codec->extradata_size < 1U<<30){
                         st->codec->extradata_size+= 9;
@@ -668,17 +668,17 @@ static int avi_read_header(AVFormatContext *s)
                     /* ADTS header is in extradata, AAC without header must be
                      * stored as exact frames. Parser not needed and it will
                      * fail. */
-                    if (st->codec->codec_id == CODEC_ID_AAC && st->codec->extradata_size)
+                    if (st->codec->codec_id == AV_CODEC_ID_AAC && st->codec->extradata_size)
                         st->need_parsing = AVSTREAM_PARSE_NONE;
                     /* AVI files with Xan DPCM audio (wrongly) declare PCM
                      * audio in the header but have Axan as stream_code_tag. */
                     if (st->codec->stream_codec_tag == AV_RL32("Axan")){
-                        st->codec->codec_id  = CODEC_ID_XAN_DPCM;
+                        st->codec->codec_id  = AV_CODEC_ID_XAN_DPCM;
                         st->codec->codec_tag = 0;
                         ast->dshow_block_align = 0;
                     }
                     if (amv_file_format){
-                        st->codec->codec_id  = CODEC_ID_ADPCM_IMA_AMV;
+                        st->codec->codec_id  = AV_CODEC_ID_ADPCM_IMA_AMV;
                         ast->dshow_block_align = 0;
                     }
                     break;
@@ -688,7 +688,7 @@ static int avi_read_header(AVFormatContext *s)
                     break;
                 default:
                     st->codec->codec_type = AVMEDIA_TYPE_DATA;
-                    st->codec->codec_id= CODEC_ID_NONE;
+                    st->codec->codec_id= AV_CODEC_ID_NONE;
                     st->codec->codec_tag= 0;
                     avio_skip(pb, size);
                     break;
@@ -1186,7 +1186,7 @@ resync:
                         int i;
                         uint32_t state=-1;
                         for(i=0; i<FFMIN(size,256); i++){
-                            if(st->codec->codec_id == CODEC_ID_MPEG4){
+                            if(st->codec->codec_id == AV_CODEC_ID_MPEG4){
                                 if(state == 0x1B6){
                                     key= !(pkt->data[i]&0xC0);
                                     break;

@@ -340,7 +340,7 @@ static int decode_slice(AVCodecContext *avctx,
 AVHWAccel ff_h264_vaapi_hwaccel = {
     .name           = "h264_vaapi",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_H264,
+    .id             = AV_CODEC_ID_H264,
     .pix_fmt        = PIX_FMT_VAAPI_VLD,
     .start_frame    = start_frame,
     .end_frame      = end_frame,

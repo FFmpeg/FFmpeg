@@ -246,7 +246,7 @@ static int mmf_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id = CODEC_ID_ADPCM_YAMAHA;
+    st->codec->codec_id = AV_CODEC_ID_ADPCM_YAMAHA;
     st->codec->sample_rate = rate;
     st->codec->channels = 1;
     st->codec->bits_per_coded_sample = 4;
@@ -303,8 +303,8 @@ AVOutputFormat ff_mmf_muxer = {
     .mime_type         = "application/vnd.smaf",
     .extensions        = "mmf",
     .priv_data_size    = sizeof(MMFContext),
-    .audio_codec       = CODEC_ID_ADPCM_YAMAHA,
-    .video_codec       = CODEC_ID_NONE,
+    .audio_codec       = AV_CODEC_ID_ADPCM_YAMAHA,
+    .video_codec       = AV_CODEC_ID_NONE,
     .write_header      = mmf_write_header,
     .write_packet      = mmf_write_packet,
     .write_trailer     = mmf_write_trailer,

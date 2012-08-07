@@ -662,7 +662,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 AVCodec ff_exr_decoder = {
     .name               = "exr",
     .type               = AVMEDIA_TYPE_VIDEO,
-    .id                 = CODEC_ID_EXR,
+    .id                 = AV_CODEC_ID_EXR,
     .priv_data_size     = sizeof(EXRContext),
     .init               = decode_init,
     .close              = decode_end,

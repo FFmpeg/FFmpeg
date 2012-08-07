@@ -51,7 +51,7 @@ av_cold int ff_psy_init(FFPsyContext *ctx, AVCodecContext *avctx, int num_lens,
     }
 
     switch (ctx->avctx->codec_id) {
-    case CODEC_ID_AAC:
+    case AV_CODEC_ID_AAC:
         ctx->model = &ff_aac_psy_model;
         break;
     }
@@ -100,7 +100,7 @@ av_cold struct FFPsyPreprocessContext* ff_psy_preprocess_init(AVCodecContext *av
     if (avctx->cutoff > 0)
         cutoff_coeff = 2.0 * avctx->cutoff / avctx->sample_rate;
 
-    if (!cutoff_coeff && avctx->codec_id == CODEC_ID_AAC)
+    if (!cutoff_coeff && avctx->codec_id == AV_CODEC_ID_AAC)
         cutoff_coeff = 2.0 * AAC_CUTOFF(avctx) / avctx->sample_rate;
 
     if (cutoff_coeff)

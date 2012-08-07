@@ -555,7 +555,7 @@ static int ra144_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 AVCodec ff_ra_144_encoder = {
     .name           = "real_144",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_RA_144,
+    .id             = AV_CODEC_ID_RA_144,
     .priv_data_size = sizeof(RA144Context),
     .init           = ra144_encode_init,
     .encode2        = ra144_encode_frame,

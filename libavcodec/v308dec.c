@@ -99,7 +99,7 @@ static av_cold int v308_decode_close(AVCodecContext *avctx)
 AVCodec ff_v308_decoder = {
     .name         = "v308",
     .type         = AVMEDIA_TYPE_VIDEO,
-    .id           = CODEC_ID_V308,
+    .id           = AV_CODEC_ID_V308,
     .init         = v308_decode_init,
     .decode       = v308_decode_frame,
     .close        = v308_decode_close,

@@ -90,7 +90,7 @@ int ff_wma_init(AVCodecContext *avctx, int flags2)
     ff_dsputil_init(&s->dsp, avctx);
     ff_fmt_convert_init(&s->fmt_conv, avctx);
 
-    if (avctx->codec->id == CODEC_ID_WMAV1) {
+    if (avctx->codec->id == AV_CODEC_ID_WMAV1) {
         s->version = 1;
     } else {
         s->version = 2;

@@ -206,7 +206,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 AVCodec ff_tscc_decoder = {
     .name           = "camtasia",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_TSCC,
+    .id             = AV_CODEC_ID_TSCC,
     .priv_data_size = sizeof(CamtasiaContext),
     .init           = decode_init,
     .close          = decode_end,

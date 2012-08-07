@@ -169,7 +169,7 @@ static int s302m_decode_init(AVCodecContext *avctx)
 AVCodec ff_s302m_decoder = {
     .name           = "s302m",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_S302M,
+    .id             = AV_CODEC_ID_S302M,
     .priv_data_size = sizeof(S302MDecodeContext),
     .init           = s302m_decode_init,
     .decode         = s302m_decode_frame,

@@ -103,7 +103,7 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
     if (size < 0 || size > INT_MAX - FF_INPUT_BUFFER_PADDING_SIZE)
         return -1;
 
-    if (st->codec->codec_id == CODEC_ID_AAC) {
+    if (st->codec->codec_id == AV_CODEC_ID_AAC) {
         /* The magic cookie format for AAC is an mp4 esds atom.
            The lavc AAC decoder requires the data from the codec specific
            description as extradata input. */
@@ -114,12 +114,12 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
         ff_mov_read_esds(s, pb, atom);
         skip = size - (avio_tell(pb) - strt);
         if (skip < 0 || !st->codec->extradata ||
-            st->codec->codec_id != CODEC_ID_AAC) {
+            st->codec->codec_id != AV_CODEC_ID_AAC) {
             av_log(s, AV_LOG_ERROR, "invalid AAC magic cookie\n");
             return AVERROR_INVALIDDATA;
         }
         avio_skip(pb, skip);
-    } else if (st->codec->codec_id == CODEC_ID_ALAC) {
+    } else if (st->codec->codec_id == AV_CODEC_ID_ALAC) {
 #define ALAC_PREAMBLE 12
 #define ALAC_HEADER   36
 #define ALAC_NEW_KUKI 24

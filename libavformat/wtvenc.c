@@ -116,7 +116,7 @@ static int write_pad(AVIOContext *pb, int size)
 static const ff_asf_guid *get_codec_guid(enum CodecID id, const AVCodecGuid *av_guid)
 {
     int i;
-    for (i = 0; av_guid[i].id != CODEC_ID_NONE; i++) {
+    for (i = 0; av_guid[i].id != AV_CODEC_ID_NONE; i++) {
         if (id == av_guid[i].id)
             return &(av_guid[i].guid);
     }
@@ -713,8 +713,8 @@ AVOutputFormat ff_wtv_muxer = {
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Television (WTV)"),
     .extensions     = "wtv",
     .priv_data_size = sizeof(WtvContext),
-    .audio_codec    = CODEC_ID_AC3,
-    .video_codec    = CODEC_ID_MPEG2VIDEO,
+    .audio_codec    = AV_CODEC_ID_AC3,
+    .video_codec    = AV_CODEC_ID_MPEG2VIDEO,
     .write_header   = write_header,
     .write_packet   = write_packet,
     .write_trailer  = write_trailer,

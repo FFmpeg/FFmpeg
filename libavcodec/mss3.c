@@ -859,7 +859,7 @@ static av_cold int mss3_decode_end(AVCodecContext *avctx)
 AVCodec ff_msa1_decoder = {
     .name           = "msa1",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_MSA1,
+    .id             = AV_CODEC_ID_MSA1,
     .priv_data_size = sizeof(MSS3Context),
     .init           = mss3_decode_init,
     .close          = mss3_decode_end,

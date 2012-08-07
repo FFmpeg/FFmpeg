@@ -156,22 +156,22 @@ static int rpl_read_header(AVFormatContext *s)
     switch (vst->codec->codec_tag) {
 #if 0
         case 122:
-            vst->codec->codec_id = CODEC_ID_ESCAPE122;
+            vst->codec->codec_id = AV_CODEC_ID_ESCAPE122;
             break;
 #endif
         case 124:
-            vst->codec->codec_id = CODEC_ID_ESCAPE124;
+            vst->codec->codec_id = AV_CODEC_ID_ESCAPE124;
             // The header is wrong here, at least sometimes
             vst->codec->bits_per_coded_sample = 16;
             break;
         case 130:
-            vst->codec->codec_id = CODEC_ID_ESCAPE130;
+            vst->codec->codec_id = AV_CODEC_ID_ESCAPE130;
             break;
         default:
             av_log(s, AV_LOG_WARNING,
                    "RPL video format %i not supported yet!\n",
                    vst->codec->codec_tag);
-            vst->codec->codec_id = CODEC_ID_NONE;
+            vst->codec->codec_id = AV_CODEC_ID_NONE;
     }
 
     // Audio headers
@@ -197,12 +197,12 @@ static int rpl_read_header(AVFormatContext *s)
                                ast->codec->bits_per_coded_sample *
                                ast->codec->channels;
 
-        ast->codec->codec_id = CODEC_ID_NONE;
+        ast->codec->codec_id = AV_CODEC_ID_NONE;
         switch (audio_format) {
             case 1:
                 if (ast->codec->bits_per_coded_sample == 16) {
                     // 16-bit audio is always signed
-                    ast->codec->codec_id = CODEC_ID_PCM_S16LE;
+                    ast->codec->codec_id = AV_CODEC_ID_PCM_S16LE;
                     break;
                 }
                 // There are some other formats listed as legal per the spec;
@@ -212,15 +212,15 @@ static int rpl_read_header(AVFormatContext *s)
                 if (ast->codec->bits_per_coded_sample == 8) {
                     // The samples with this kind of audio that I have
                     // are all unsigned.
-                    ast->codec->codec_id = CODEC_ID_PCM_U8;
+                    ast->codec->codec_id = AV_CODEC_ID_PCM_U8;
                     break;
                 } else if (ast->codec->bits_per_coded_sample == 4) {
-                    ast->codec->codec_id = CODEC_ID_ADPCM_IMA_EA_SEAD;
+                    ast->codec->codec_id = AV_CODEC_ID_ADPCM_IMA_EA_SEAD;
                     break;
                 }
                 break;
         }
-        if (ast->codec->codec_id == CODEC_ID_NONE) {
+        if (ast->codec->codec_id == AV_CODEC_ID_NONE) {
             av_log(s, AV_LOG_WARNING,
                    "RPL audio format %i not supported yet!\n",
                    audio_format);

@@ -220,7 +220,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 AVCodec ff_eightbps_decoder = {
     .name           = "8bps",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_8BPS,
+    .id             = AV_CODEC_ID_8BPS,
     .priv_data_size = sizeof(EightBpsContext),
     .init           = decode_init,
     .close          = decode_end,

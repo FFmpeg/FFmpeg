@@ -327,7 +327,7 @@ static int ape_read_header(AVFormatContext * s)
     total_blocks = (ape->totalframes == 0) ? 0 : ((ape->totalframes - 1) * ape->blocksperframe) + ape->finalframeblocks;
 
     st->codec->codec_type      = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id        = CODEC_ID_APE;
+    st->codec->codec_id        = AV_CODEC_ID_APE;
     st->codec->codec_tag       = MKTAG('A', 'P', 'E', ' ');
     st->codec->channels        = ape->channels;
     st->codec->sample_rate     = ape->samplerate;

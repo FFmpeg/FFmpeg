@@ -292,7 +292,7 @@ int ff_vbv_update(MpegEncContext *s, int frame_size){
         if(rcc->buffer_index > buffer_size){
             int stuffing= ceil((rcc->buffer_index - buffer_size)/8);
 
-            if(stuffing < 4 && s->codec_id == CODEC_ID_MPEG4)
+            if(stuffing < 4 && s->codec_id == AV_CODEC_ID_MPEG4)
                 stuffing=4;
             rcc->buffer_index -= 8*stuffing;
 

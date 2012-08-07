@@ -165,7 +165,7 @@ static av_cold int decode_end(AVCodecContext *avctx){
 AVCodec ff_wnv1_decoder = {
     .name           = "wnv1",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_WNV1,
+    .id             = AV_CODEC_ID_WNV1,
     .priv_data_size = sizeof(WNV1Context),
     .init           = decode_init,
     .close          = decode_end,

@@ -376,8 +376,8 @@ AVOutputFormat ff_mp2_muxer = {
     .long_name         = NULL_IF_CONFIG_SMALL("MP2 (MPEG audio layer 2)"),
     .mime_type         = "audio/x-mpeg",
     .extensions        = "mp2,m2a",
-    .audio_codec       = CODEC_ID_MP2,
-    .video_codec       = CODEC_ID_NONE,
+    .audio_codec       = AV_CODEC_ID_MP2,
+    .video_codec       = AV_CODEC_ID_NONE,
     .write_packet      = ff_raw_write_packet,
     .write_trailer     = mp2_write_trailer,
     .flags             = AVFMT_NOTIMESTAMPS,
@@ -461,7 +461,7 @@ static int mp3_write_header(struct AVFormatContext *s)
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
         if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-            if (mp3->audio_stream_idx >= 0 || st->codec->codec_id != CODEC_ID_MP3) {
+            if (mp3->audio_stream_idx >= 0 || st->codec->codec_id != AV_CODEC_ID_MP3) {
                 av_log(s, AV_LOG_ERROR, "Invalid audio stream. Exactly one MP3 "
                        "audio stream is required.\n");
                 return AVERROR(EINVAL);
@@ -511,8 +511,8 @@ AVOutputFormat ff_mp3_muxer = {
     .mime_type         = "audio/x-mpeg",
     .extensions        = "mp3",
     .priv_data_size    = sizeof(MP3Context),
-    .audio_codec       = CODEC_ID_MP3,
-    .video_codec       = CODEC_ID_PNG,
+    .audio_codec       = AV_CODEC_ID_MP3,
+    .video_codec       = AV_CODEC_ID_PNG,
     .write_header      = mp3_write_header,
     .write_packet      = mp3_write_packet,
     .write_trailer     = mp3_write_trailer,

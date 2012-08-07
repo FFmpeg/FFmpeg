@@ -76,7 +76,7 @@ static int subviewer_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     avpriv_set_pts_info(st, 64, 1, 100);
     st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-    st->codec->codec_id   = CODEC_ID_SUBVIEWER;
+    st->codec->codec_id   = AV_CODEC_ID_SUBVIEWER;
 
     av_bprint_init(&header, 0, AV_BPRINT_SIZE_UNLIMITED);
 

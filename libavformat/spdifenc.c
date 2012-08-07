@@ -442,24 +442,24 @@ static int spdif_write_header(AVFormatContext *s)
     IEC61937Context *ctx = s->priv_data;
 
     switch (s->streams[0]->codec->codec_id) {
-    case CODEC_ID_AC3:
+    case AV_CODEC_ID_AC3:
         ctx->header_info = spdif_header_ac3;
         break;
-    case CODEC_ID_EAC3:
+    case AV_CODEC_ID_EAC3:
         ctx->header_info = spdif_header_eac3;
         break;
-    case CODEC_ID_MP1:
-    case CODEC_ID_MP2:
-    case CODEC_ID_MP3:
+    case AV_CODEC_ID_MP1:
+    case AV_CODEC_ID_MP2:
+    case AV_CODEC_ID_MP3:
         ctx->header_info = spdif_header_mpeg;
         break;
-    case CODEC_ID_DTS:
+    case AV_CODEC_ID_DTS:
         ctx->header_info = spdif_header_dts;
         break;
-    case CODEC_ID_AAC:
+    case AV_CODEC_ID_AAC:
         ctx->header_info = spdif_header_aac;
         break;
-    case CODEC_ID_TRUEHD:
+    case AV_CODEC_ID_TRUEHD:
         ctx->header_info = spdif_header_truehd;
         ctx->hd_buf = av_malloc(MAT_FRAME_SIZE);
         if (!ctx->hd_buf)
@@ -547,8 +547,8 @@ AVOutputFormat ff_spdif_muxer = {
     .long_name         = NULL_IF_CONFIG_SMALL("IEC 61937 (used on S/PDIF - IEC958)"),
     .extensions        = "spdif",
     .priv_data_size    = sizeof(IEC61937Context),
-    .audio_codec       = CODEC_ID_AC3,
-    .video_codec       = CODEC_ID_NONE,
+    .audio_codec       = AV_CODEC_ID_AC3,
+    .video_codec       = AV_CODEC_ID_NONE,
     .write_header      = spdif_write_header,
     .write_packet      = spdif_write_packet,
     .write_trailer     = spdif_write_trailer,

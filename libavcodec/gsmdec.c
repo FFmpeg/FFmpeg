@@ -40,11 +40,11 @@ static av_cold int gsm_init(AVCodecContext *avctx)
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 
     switch (avctx->codec_id) {
-    case CODEC_ID_GSM:
+    case AV_CODEC_ID_GSM:
         avctx->frame_size  = GSM_FRAME_SIZE;
         avctx->block_align = GSM_BLOCK_SIZE;
         break;
-    case CODEC_ID_GSM_MS:
+    case AV_CODEC_ID_GSM_MS:
         avctx->frame_size  = 2 * GSM_FRAME_SIZE;
         avctx->block_align = GSM_MS_BLOCK_SIZE;
     }
@@ -79,7 +79,7 @@ static int gsm_decode_frame(AVCodecContext *avctx, void *data,
     samples = (int16_t *)s->frame.data[0];
 
     switch (avctx->codec_id) {
-    case CODEC_ID_GSM:
+    case AV_CODEC_ID_GSM:
         init_get_bits(&gb, buf, buf_size * 8);
         if (get_bits(&gb, 4) != 0xd)
             av_log(avctx, AV_LOG_WARNING, "Missing GSM magic!\n");
@@ -87,7 +87,7 @@ static int gsm_decode_frame(AVCodecContext *avctx, void *data,
         if (res < 0)
             return res;
         break;
-    case CODEC_ID_GSM_MS:
+    case AV_CODEC_ID_GSM_MS:
         res = ff_msgsm_decode_block(avctx, samples, buf);
         if (res < 0)
             return res;
@@ -109,7 +109,7 @@ static void gsm_flush(AVCodecContext *avctx)
 AVCodec ff_gsm_decoder = {
     .name           = "gsm",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_GSM,
+    .id             = AV_CODEC_ID_GSM,
     .priv_data_size = sizeof(GSMContext),
     .init           = gsm_init,
     .decode         = gsm_decode_frame,
@@ -122,7 +122,7 @@ AVCodec ff_gsm_decoder = {
 AVCodec ff_gsm_ms_decoder = {
     .name           = "gsm_ms",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_GSM_MS,
+    .id             = AV_CODEC_ID_GSM_MS,
     .priv_data_size = sizeof(GSMContext),
     .init           = gsm_init,
     .decode         = gsm_decode_frame,

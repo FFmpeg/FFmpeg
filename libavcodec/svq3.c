@@ -1134,7 +1134,7 @@ static int svq3_decode_end(AVCodecContext *avctx)
 AVCodec ff_svq3_decoder = {
     .name           = "svq3",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_SVQ3,
+    .id             = AV_CODEC_ID_SVQ3,
     .priv_data_size = sizeof(SVQ3Context),
     .init           = svq3_decode_init,
     .close          = svq3_decode_end,

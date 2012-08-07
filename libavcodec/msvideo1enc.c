@@ -301,7 +301,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
 AVCodec ff_msvideo1_encoder = {
     .name           = "msvideo1",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_MSVIDEO1,
+    .id             = AV_CODEC_ID_MSVIDEO1,
     .priv_data_size = sizeof(Msvideo1EncContext),
     .init           = encode_init,
     .encode2        = encode_frame,

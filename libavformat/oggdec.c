@@ -607,7 +607,7 @@ static void ogg_validate_keyframe(AVFormatContext *s, int idx, int pstart, int p
 {
     struct ogg *ogg = s->priv_data;
     struct ogg_stream *os = ogg->streams + idx;
-    if (psize && s->streams[idx]->codec->codec_id == CODEC_ID_THEORA) {
+    if (psize && s->streams[idx]->codec->codec_id == AV_CODEC_ID_THEORA) {
         if (!!(os->pflags & AV_PKT_FLAG_KEY) != !(os->buf[pstart] & 0x40)) {
             os->pflags ^= AV_PKT_FLAG_KEY;
             av_log(s, AV_LOG_WARNING, "Broken file, %skeyframe not correctly marked.\n",

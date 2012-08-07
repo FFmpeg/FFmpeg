@@ -101,7 +101,7 @@ static int read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = CODEC_ID_ANM;
+    st->codec->codec_id   = AV_CODEC_ID_ANM;
     st->codec->codec_tag  = 0; /* no fourcc */
     st->codec->width      = avio_rl16(pb);
     st->codec->height     = avio_rl16(pb);

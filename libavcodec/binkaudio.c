@@ -98,7 +98,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     s->version_b = avctx->extradata_size >= 4 && avctx->extradata[3] == 'b';
 
-    if (avctx->codec->id == CODEC_ID_BINKAUDIO_RDFT) {
+    if (avctx->codec->id == AV_CODEC_ID_BINKAUDIO_RDFT) {
         // audio is already interleaved for the RDFT format variant
         sample_rate  *= avctx->channels;
         s->channels = 1;
@@ -141,7 +141,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         s->prev_ptr[i]   = s->coeffs_ptr[i] + s->frame_len - s->overlap_len;
     }
 
-    if (CONFIG_BINKAUDIO_RDFT_DECODER && avctx->codec->id == CODEC_ID_BINKAUDIO_RDFT)
+    if (CONFIG_BINKAUDIO_RDFT_DECODER && avctx->codec->id == AV_CODEC_ID_BINKAUDIO_RDFT)
         ff_rdft_init(&s->trans.rdft, frame_len_bits, DFT_C2R);
     else if (CONFIG_BINKAUDIO_DCT_DECODER)
         ff_dct_init(&s->trans.dct, frame_len_bits, DCT_III);
@@ -293,7 +293,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     BinkAudioContext * s = avctx->priv_data;
     av_freep(&s->bands);
     av_freep(&s->packet_buffer);
-    if (CONFIG_BINKAUDIO_RDFT_DECODER && avctx->codec->id == CODEC_ID_BINKAUDIO_RDFT)
+    if (CONFIG_BINKAUDIO_RDFT_DECODER && avctx->codec->id == AV_CODEC_ID_BINKAUDIO_RDFT)
         ff_rdft_end(&s->trans.rdft);
     else if (CONFIG_BINKAUDIO_DCT_DECODER)
         ff_dct_end(&s->trans.dct);
@@ -346,7 +346,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     }
     samples = (int16_t *)s->frame.data[0];
 
-    if (decode_block(s, samples, avctx->codec->id == CODEC_ID_BINKAUDIO_DCT)) {
+    if (decode_block(s, samples, avctx->codec->id == AV_CODEC_ID_BINKAUDIO_DCT)) {
         av_log(avctx, AV_LOG_ERROR, "Incomplete packet\n");
         return AVERROR_INVALIDDATA;
     }
@@ -361,7 +361,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 AVCodec ff_binkaudio_rdft_decoder = {
     .name           = "binkaudio_rdft",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_BINKAUDIO_RDFT,
+    .id             = AV_CODEC_ID_BINKAUDIO_RDFT,
     .priv_data_size = sizeof(BinkAudioContext),
     .init           = decode_init,
     .close          = decode_end,
@@ -373,7 +373,7 @@ AVCodec ff_binkaudio_rdft_decoder = {
 AVCodec ff_binkaudio_dct_decoder = {
     .name           = "binkaudio_dct",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_BINKAUDIO_DCT,
+    .id             = AV_CODEC_ID_BINKAUDIO_DCT,
     .priv_data_size = sizeof(BinkAudioContext),
     .init           = decode_init,
     .close          = decode_end,

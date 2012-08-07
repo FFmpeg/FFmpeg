@@ -236,7 +236,7 @@ int check_stream_specifier(AVFormatContext *s, AVStream *st, const char *spec);
  *              If null, the default one is looked up according to the codec id.
  * @return a pointer to the created dictionary
  */
-AVDictionary *filter_codec_opts(AVDictionary *opts, enum CodecID codec_id,
+AVDictionary *filter_codec_opts(AVDictionary *opts, enum AVCodecID codec_id,
                                 AVFormatContext *s, AVStream *st, AVCodec *codec);
 
 /**

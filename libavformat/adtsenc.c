@@ -169,8 +169,8 @@ AVOutputFormat ff_adts_muxer = {
     .mime_type         = "audio/aac",
     .extensions        = "aac,adts",
     .priv_data_size    = sizeof(ADTSContext),
-    .audio_codec       = CODEC_ID_AAC,
-    .video_codec       = CODEC_ID_NONE,
+    .audio_codec       = AV_CODEC_ID_AAC,
+    .video_codec       = AV_CODEC_ID_NONE,
     .write_header      = adts_write_header,
     .write_packet      = adts_write_packet,
 };

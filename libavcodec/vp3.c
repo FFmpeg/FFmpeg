@@ -1667,7 +1667,7 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
     s->width = FFALIGN(avctx->width, 16);
     s->height = FFALIGN(avctx->height, 16);
-    if (avctx->codec_id != CODEC_ID_THEORA)
+    if (avctx->codec_id != AV_CODEC_ID_THEORA)
         avctx->pix_fmt = PIX_FMT_YUV420P;
     avctx->chroma_sample_location = AVCHROMA_LOC_CENTER;
     ff_dsputil_init(&s->dsp, avctx);
@@ -2374,7 +2374,7 @@ static av_cold int theora_decode_init(AVCodecContext *avctx)
 AVCodec ff_theora_decoder = {
     .name                  = "theora",
     .type                  = AVMEDIA_TYPE_VIDEO,
-    .id                    = CODEC_ID_THEORA,
+    .id                    = AV_CODEC_ID_THEORA,
     .priv_data_size        = sizeof(Vp3DecodeContext),
     .init                  = theora_decode_init,
     .close                 = vp3_decode_end,
@@ -2391,7 +2391,7 @@ AVCodec ff_theora_decoder = {
 AVCodec ff_vp3_decoder = {
     .name                  = "vp3",
     .type                  = AVMEDIA_TYPE_VIDEO,
-    .id                    = CODEC_ID_VP3,
+    .id                    = AV_CODEC_ID_VP3,
     .priv_data_size        = sizeof(Vp3DecodeContext),
     .init                  = vp3_decode_init,
     .close                 = vp3_decode_end,

@@ -90,14 +90,14 @@ static int read_header(AVFormatContext *s)
 
         switch(avio_rl32(pb)) {
         case MKTAG(0x89, 'P', 'N', 'G'):
-            st->codec->codec_id = CODEC_ID_PNG;
+            st->codec->codec_id = AV_CODEC_ID_PNG;
             st->codec->width    = 0;
             st->codec->height   = 0;
             break;
         case 40:
             if (ico->images[i].size < 40)
                 return AVERROR_INVALIDDATA;
-            st->codec->codec_id = CODEC_ID_BMP;
+            st->codec->codec_id = AV_CODEC_ID_BMP;
             tmp = avio_rl32(pb);
             if (tmp)
                 st->codec->width = tmp;
@@ -130,7 +130,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     if ((ret = avio_seek(pb, image->offset, SEEK_SET)) < 0)
         return ret;
 
-    if (s->streams[ico->current_image]->codec->codec_id == CODEC_ID_PNG) {
+    if (s->streams[ico->current_image]->codec->codec_id == AV_CODEC_ID_PNG) {
         if ((ret = av_get_packet(pb, pkt, image->size)) < 0)
             return ret;
     } else {

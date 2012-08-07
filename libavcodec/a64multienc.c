@@ -187,7 +187,7 @@ static av_cold int a64multi_init_encoder(AVCodecContext *avctx)
     av_log(avctx, AV_LOG_INFO, "charset lifetime set to %d frame(s)\n", c->mc_lifetime);
 
     c->mc_frame_counter = 0;
-    c->mc_use_5col      = avctx->codec->id == CODEC_ID_A64_MULTI5;
+    c->mc_use_5col      = avctx->codec->id == AV_CODEC_ID_A64_MULTI5;
     c->mc_pal_size      = 4 + c->mc_use_5col;
 
     /* precalc luma values for later use */
@@ -372,7 +372,7 @@ static int a64multi_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 AVCodec ff_a64multi_encoder = {
     .name           = "a64multi",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_A64_MULTI,
+    .id             = AV_CODEC_ID_A64_MULTI,
     .priv_data_size = sizeof(A64Context),
     .init           = a64multi_init_encoder,
     .encode2        = a64multi_encode_frame,
@@ -386,7 +386,7 @@ AVCodec ff_a64multi_encoder = {
 AVCodec ff_a64multi5_encoder = {
     .name           = "a64multi5",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_A64_MULTI5,
+    .id             = AV_CODEC_ID_A64_MULTI5,
     .priv_data_size = sizeof(A64Context),
     .init           = a64multi_init_encoder,
     .encode2        = a64multi_encode_frame,

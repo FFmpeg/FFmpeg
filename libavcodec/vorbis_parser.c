@@ -263,7 +263,7 @@ end:
 }
 
 AVCodecParser ff_vorbis_parser = {
-    .codec_ids      = { CODEC_ID_VORBIS },
+    .codec_ids      = { AV_CODEC_ID_VORBIS },
     .priv_data_size = sizeof(VorbisParseContext),
     .parser_parse   = vorbis_parse,
 };

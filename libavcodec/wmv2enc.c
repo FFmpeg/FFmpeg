@@ -214,7 +214,7 @@ void ff_wmv2_encode_mb(MpegEncContext * s,
 AVCodec ff_wmv2_encoder = {
     .name           = "wmv2",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_WMV2,
+    .id             = AV_CODEC_ID_WMV2,
     .priv_data_size = sizeof(Wmv2Context),
     .init           = wmv2_encode_init,
     .encode2        = ff_MPV_encode_picture,

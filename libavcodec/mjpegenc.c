@@ -204,21 +204,21 @@ static void jpeg_put_comments(MpegEncContext *s)
 
 void ff_mjpeg_encode_picture_header(MpegEncContext *s)
 {
-    const int lossless= s->avctx->codec_id != CODEC_ID_MJPEG;
+    const int lossless= s->avctx->codec_id != AV_CODEC_ID_MJPEG;
     int i;
 
     put_marker(&s->pb, SOI);
 
     // hack for AMV mjpeg format
-    if(s->avctx->codec_id == CODEC_ID_AMV) goto end;
+    if(s->avctx->codec_id == AV_CODEC_ID_AMV) goto end;
 
     jpeg_put_comments(s);
 
     jpeg_table_header(s);
 
     switch(s->avctx->codec_id){
-    case CODEC_ID_MJPEG:  put_marker(&s->pb, SOF0 ); break;
-    case CODEC_ID_LJPEG:  put_marker(&s->pb, SOF3 ); break;
+    case AV_CODEC_ID_MJPEG:  put_marker(&s->pb, SOF0 ); break;
+    case AV_CODEC_ID_LJPEG:  put_marker(&s->pb, SOF3 ); break;
     default: av_assert0(0);
     }
 
@@ -282,8 +282,8 @@ void ff_mjpeg_encode_picture_header(MpegEncContext *s)
     put_bits(&s->pb, 8, lossless ? s->avctx->prediction_method+1 : 0); /* Ss (not used) */
 
     switch(s->avctx->codec_id){
-    case CODEC_ID_MJPEG:  put_bits(&s->pb, 8, 63); break; /* Se (not used) */
-    case CODEC_ID_LJPEG:  put_bits(&s->pb, 8,  0); break; /* not used */
+    case AV_CODEC_ID_MJPEG:  put_bits(&s->pb, 8, 63); break; /* Se (not used) */
+    case AV_CODEC_ID_LJPEG:  put_bits(&s->pb, 8,  0); break; /* not used */
     default: av_assert0(0);
     }
 
@@ -499,7 +499,7 @@ static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
 AVCodec ff_mjpeg_encoder = {
     .name           = "mjpeg",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_MJPEG,
+    .id             = AV_CODEC_ID_MJPEG,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_MPV_encode_init,
     .encode2        = ff_MPV_encode_picture,
@@ -515,7 +515,7 @@ AVCodec ff_mjpeg_encoder = {
 AVCodec ff_amv_encoder = {
     .name           = "amv",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_AMV,
+    .id             = AV_CODEC_ID_AMV,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_MPV_encode_init,
     .encode2        = amv_encode_picture,

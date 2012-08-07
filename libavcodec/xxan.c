@@ -421,7 +421,7 @@ static av_cold int xan_decode_end(AVCodecContext *avctx)
 AVCodec ff_xan_wc4_decoder = {
     .name           = "xan_wc4",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_XAN_WC4,
+    .id             = AV_CODEC_ID_XAN_WC4,
     .priv_data_size = sizeof(XanContext),
     .init           = xan_decode_init,
     .close          = xan_decode_end,

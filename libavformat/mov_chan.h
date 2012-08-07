@@ -49,7 +49,7 @@ uint64_t ff_mov_get_channel_layout(uint32_t tag, uint32_t bitmap);
  * @param[out] bitmap          channel bitmap
  * @return                     channel layout tag
  */
-uint32_t ff_mov_get_channel_layout_tag(enum CodecID codec_id,
+uint32_t ff_mov_get_channel_layout_tag(enum AVCodecID codec_id,
                                        uint64_t channel_layout,
                                        uint32_t *bitmap);
 

@@ -1021,7 +1021,7 @@ static av_cold int ipvideo_decode_end(AVCodecContext *avctx)
 AVCodec ff_interplay_video_decoder = {
     .name           = "interplayvideo",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_INTERPLAY_VIDEO,
+    .id             = AV_CODEC_ID_INTERPLAY_VIDEO,
     .priv_data_size = sizeof(IpvideoContext),
     .init           = ipvideo_decode_init,
     .close          = ipvideo_decode_end,

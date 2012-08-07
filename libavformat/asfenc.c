@@ -218,10 +218,10 @@ typedef struct {
 } ASFContext;
 
 static const AVCodecTag codec_asf_bmp_tags[] = {
-    { CODEC_ID_MPEG4, MKTAG('M', '4', 'S', '2') },
-    { CODEC_ID_MPEG4, MKTAG('M', 'P', '4', 'S') },
-    { CODEC_ID_MSMPEG4V3, MKTAG('M', 'P', '4', '3') },
-    { CODEC_ID_NONE, 0 },
+    { AV_CODEC_ID_MPEG4, MKTAG('M', '4', 'S', '2') },
+    { AV_CODEC_ID_MPEG4, MKTAG('M', 'P', '4', 'S') },
+    { AV_CODEC_ID_MSMPEG4V3, MKTAG('M', 'P', '4', '3') },
+    { AV_CODEC_ID_NONE, 0 },
 };
 
 #define PREROLL_TIME 3100
@@ -448,7 +448,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
             }
             /* ERROR Correction */
             avio_w8(pb, 0x01);
-            if(enc->codec_id == CODEC_ID_ADPCM_G726 || !enc->block_align){
+            if(enc->codec_id == AV_CODEC_ID_ADPCM_G726 || !enc->block_align){
                 avio_wl16(pb, 0x0190);
                 avio_wl16(pb, 0x0190);
             }else{
@@ -491,7 +491,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
         else
             avio_wl16(pb, -1);
 
-        if(enc->codec_id == CODEC_ID_WMAV2)
+        if(enc->codec_id == AV_CODEC_ID_WMAV2)
             desc = "Windows Media Audio V8";
         else
             desc = p ? p->name : enc->codec_name;
@@ -905,8 +905,8 @@ AVOutputFormat ff_asf_muxer = {
     .mime_type      = "video/x-ms-asf",
     .extensions     = "asf,wmv,wma",
     .priv_data_size = sizeof(ASFContext),
-    .audio_codec    = CODEC_ID_WMAV2,
-    .video_codec    = CODEC_ID_MSMPEG4V3,
+    .audio_codec    = AV_CODEC_ID_WMAV2,
+    .video_codec    = AV_CODEC_ID_MSMPEG4V3,
     .write_header   = asf_write_header,
     .write_packet   = asf_write_packet,
     .write_trailer  = asf_write_trailer,
@@ -924,8 +924,8 @@ AVOutputFormat ff_asf_stream_muxer = {
     .mime_type      = "video/x-ms-asf",
     .extensions     = "asf,wmv,wma",
     .priv_data_size = sizeof(ASFContext),
-    .audio_codec    = CODEC_ID_WMAV2,
-    .video_codec    = CODEC_ID_MSMPEG4V3,
+    .audio_codec    = AV_CODEC_ID_WMAV2,
+    .video_codec    = AV_CODEC_ID_MSMPEG4V3,
     .write_header   = asf_write_stream_header,
     .write_packet   = asf_write_packet,
     .write_trailer  = asf_write_trailer,

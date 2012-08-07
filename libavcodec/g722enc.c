@@ -392,7 +392,7 @@ static int g722_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 AVCodec ff_adpcm_g722_encoder = {
     .name           = "g722",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_ADPCM_G722,
+    .id             = AV_CODEC_ID_ADPCM_G722,
     .priv_data_size = sizeof(G722Context),
     .init           = g722_encode_init,
     .close          = g722_encode_close,

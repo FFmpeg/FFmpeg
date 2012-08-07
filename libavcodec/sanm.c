@@ -1272,7 +1272,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 AVCodec ff_sanm_decoder = {
     .name           = "sanm",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_SANM,
+    .id             = AV_CODEC_ID_SANM,
     .priv_data_size = sizeof(SANMVideoContext),
     .init           = decode_init,
     .close          = decode_end,

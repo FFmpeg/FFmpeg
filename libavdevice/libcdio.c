@@ -83,9 +83,9 @@ static av_cold int read_header(AVFormatContext *ctx)
 
     st->codec->codec_type      = AVMEDIA_TYPE_AUDIO;
     if (s->drive->bigendianp)
-        st->codec->codec_id    = CODEC_ID_PCM_S16BE;
+        st->codec->codec_id    = AV_CODEC_ID_PCM_S16BE;
     else
-        st->codec->codec_id    = CODEC_ID_PCM_S16LE;
+        st->codec->codec_id    = AV_CODEC_ID_PCM_S16LE;
     st->codec->sample_rate     = 44100;
     st->codec->channels        = 2;
     if (s->drive->audio_last_sector != CDIO_INVALID_LSN &&

@@ -1073,7 +1073,7 @@ static int roq_encode_end(AVCodecContext *avctx)
 AVCodec ff_roq_encoder = {
     .name                 = "roqvideo",
     .type                 = AVMEDIA_TYPE_VIDEO,
-    .id                   = CODEC_ID_ROQ,
+    .id                   = AV_CODEC_ID_ROQ,
     .priv_data_size       = sizeof(RoqContext),
     .init                 = roq_encode_init,
     .encode2              = roq_encode_frame,

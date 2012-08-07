@@ -288,8 +288,8 @@ static int read_header(AVFormatContext *s1)
         s->split_planes = str && !av_strcasecmp(str + 1, "y");
         st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
         st->codec->codec_id = ff_guess_image2_codec(s->path);
-        if (st->codec->codec_id == CODEC_ID_LJPEG)
-            st->codec->codec_id = CODEC_ID_MJPEG;
+        if (st->codec->codec_id == AV_CODEC_ID_LJPEG)
+            st->codec->codec_id = AV_CODEC_ID_MJPEG;
     }
     if(st->codec->codec_type == AVMEDIA_TYPE_VIDEO && pix_fmt != PIX_FMT_NONE)
         st->codec->pix_fmt = pix_fmt;
@@ -338,7 +338,7 @@ static int read_packet(AVFormatContext *s1, AVPacket *pkt)
             filename[ strlen(filename) - 1 ]= 'U' + i;
         }
 
-        if(codec->codec_id == CODEC_ID_RAWVIDEO && !codec->width)
+        if(codec->codec_id == AV_CODEC_ID_RAWVIDEO && !codec->width)
             infer_size(&codec->width, &codec->height, size[0]);
     } else {
         f[0] = s1->pb;

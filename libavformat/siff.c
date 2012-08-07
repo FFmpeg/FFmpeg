@@ -77,7 +77,7 @@ static int create_audio_stream(AVFormatContext *s, SIFFContext *c)
     if (!ast)
         return -1;
     ast->codec->codec_type      = AVMEDIA_TYPE_AUDIO;
-    ast->codec->codec_id        = CODEC_ID_PCM_U8;
+    ast->codec->codec_id        = AV_CODEC_ID_PCM_U8;
     ast->codec->channels        = 1;
     ast->codec->bits_per_coded_sample = 8;
     ast->codec->sample_rate     = c->rate;
@@ -121,7 +121,7 @@ static int siff_parse_vbv1(AVFormatContext *s, SIFFContext *c, AVIOContext *pb)
     if (!st)
         return -1;
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = CODEC_ID_VB;
+    st->codec->codec_id   = AV_CODEC_ID_VB;
     st->codec->codec_tag  = MKTAG('V', 'B', 'V', '1');
     st->codec->width      = width;
     st->codec->height     = height;

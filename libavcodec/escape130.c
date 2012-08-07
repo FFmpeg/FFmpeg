@@ -309,7 +309,7 @@ static int escape130_decode_frame(AVCodecContext *avctx,
 AVCodec ff_escape130_decoder = {
     .name           = "escape130",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_ESCAPE130,
+    .id             = AV_CODEC_ID_ESCAPE130,
     .priv_data_size = sizeof(Escape130Context),
     .init           = escape130_decode_init,
     .close          = escape130_decode_close,

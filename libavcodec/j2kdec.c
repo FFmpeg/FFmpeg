@@ -1093,7 +1093,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 AVCodec ff_jpeg2000_decoder = {
     .name           = "j2k",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_JPEG2000,
+    .id             = AV_CODEC_ID_JPEG2000,
     .priv_data_size = sizeof(J2kDecoderContext),
     .init           = j2kdec_init,
     .close          = decode_end,

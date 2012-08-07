@@ -113,7 +113,7 @@ static av_cold int ptx_end(AVCodecContext *avctx) {
 AVCodec ff_ptx_decoder = {
     .name           = "ptx",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_PTX,
+    .id             = AV_CODEC_ID_PTX,
     .priv_data_size = sizeof(PTXContext),
     .init           = ptx_init,
     .close          = ptx_end,

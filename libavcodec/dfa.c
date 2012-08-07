@@ -381,7 +381,7 @@ static av_cold int dfa_decode_end(AVCodecContext *avctx)
 AVCodec ff_dfa_decoder = {
     .name           = "dfa",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_DFA,
+    .id             = AV_CODEC_ID_DFA,
     .priv_data_size = sizeof(DfaContext),
     .init           = dfa_decode_init,
     .close          = dfa_decode_end,

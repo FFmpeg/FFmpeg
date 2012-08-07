@@ -241,7 +241,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     s->fd = video_fd;
 
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = CODEC_ID_RAWVIDEO;
+    st->codec->codec_id = AV_CODEC_ID_RAWVIDEO;
     st->codec->width = s->video_win.width;
     st->codec->height = s->video_win.height;
     st->codec->time_base = s->time_base;

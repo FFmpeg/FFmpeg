@@ -592,7 +592,7 @@ static int encode_init(AVCodecContext *avctx)
 AVCodec ff_dca_encoder = {
     .name           = "dca",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_DTS,
+    .id             = AV_CODEC_ID_DTS,
     .priv_data_size = sizeof(DCAContext),
     .init           = encode_init,
     .encode2        = encode_frame,

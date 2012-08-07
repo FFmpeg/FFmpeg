@@ -375,7 +375,7 @@ static int oggvorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 AVCodec ff_libvorbis_encoder = {
     .name           = "libvorbis",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_VORBIS,
+    .id             = AV_CODEC_ID_VORBIS,
     .priv_data_size = sizeof(OggVorbisEncContext),
     .init           = oggvorbis_encode_init,
     .encode2        = oggvorbis_encode_frame,

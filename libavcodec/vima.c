@@ -227,7 +227,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 AVCodec ff_vima_decoder = {
     .name           = "vima",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_VIMA,
+    .id             = AV_CODEC_ID_VIMA,
     .priv_data_size = sizeof(VimaContext),
     .init           = decode_init,
     .decode         = decode_frame,

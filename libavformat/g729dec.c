@@ -39,7 +39,7 @@ static int g729_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id = CODEC_ID_G729;
+    st->codec->codec_id = AV_CODEC_ID_G729;
     st->codec->sample_rate = 8000;
     st->codec->channels = 1;
 

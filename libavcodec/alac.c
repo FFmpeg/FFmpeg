@@ -652,7 +652,7 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
 AVCodec ff_alac_decoder = {
     .name           = "alac",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_ALAC,
+    .id             = AV_CODEC_ID_ALAC,
     .priv_data_size = sizeof(ALACContext),
     .init           = alac_decode_init,
     .close          = alac_decode_close,

@@ -293,7 +293,7 @@ static av_cold int targa_end(AVCodecContext *avctx){
 AVCodec ff_targa_decoder = {
     .name           = "targa",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_TARGA,
+    .id             = AV_CODEC_ID_TARGA,
     .priv_data_size = sizeof(TargaContext),
     .init           = targa_init,
     .close          = targa_end,

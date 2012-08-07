@@ -302,7 +302,7 @@ static av_cold int cdxl_decode_end(AVCodecContext *avctx)
 AVCodec ff_cdxl_decoder = {
     .name           = "cdxl",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_CDXL,
+    .id             = AV_CODEC_ID_CDXL,
     .priv_data_size = sizeof(CDXLVideoContext),
     .init           = cdxl_decode_init,
     .close          = cdxl_decode_end,

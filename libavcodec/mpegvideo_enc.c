@@ -278,7 +278,7 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
     MPV_encode_defaults(s);
 
     switch (avctx->codec_id) {
-    case CODEC_ID_MPEG2VIDEO:
+    case AV_CODEC_ID_MPEG2VIDEO:
         if (avctx->pix_fmt != PIX_FMT_YUV420P &&
             avctx->pix_fmt != PIX_FMT_YUV422P) {
             av_log(avctx, AV_LOG_ERROR,
@@ -286,7 +286,7 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
             return -1;
         }
         break;
-    case CODEC_ID_LJPEG:
+    case AV_CODEC_ID_LJPEG:
         if (avctx->pix_fmt != PIX_FMT_YUVJ420P &&
             avctx->pix_fmt != PIX_FMT_YUVJ422P &&
             avctx->pix_fmt != PIX_FMT_YUVJ444P &&
@@ -301,8 +301,8 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
             return -1;
         }
         break;
-    case CODEC_ID_MJPEG:
-    case CODEC_ID_AMV:
+    case AV_CODEC_ID_MJPEG:
+    case AV_CODEC_ID_AMV:
         if (avctx->pix_fmt != PIX_FMT_YUVJ420P &&
             avctx->pix_fmt != PIX_FMT_YUVJ422P &&
             ((avctx->pix_fmt != PIX_FMT_YUV420P &&
@@ -433,8 +433,8 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
 
     if (s->avctx->rc_max_rate &&
         s->avctx->rc_min_rate == s->avctx->rc_max_rate &&
-        (s->codec_id == CODEC_ID_MPEG1VIDEO ||
-         s->codec_id == CODEC_ID_MPEG2VIDEO) &&
+        (s->codec_id == AV_CODEC_ID_MPEG1VIDEO ||
+         s->codec_id == AV_CODEC_ID_MPEG2VIDEO) &&
         90000LL * (avctx->rc_buffer_size - 1) >
             s->avctx->rc_max_rate * 0xFFFFLL) {
         av_log(avctx, AV_LOG_INFO,
@@ -442,9 +442,9 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
                "specified vbv buffer is too large for the given bitrate!\n");
     }
 
-    if ((s->flags & CODEC_FLAG_4MV)  && s->codec_id != CODEC_ID_MPEG4 &&
-        s->codec_id != CODEC_ID_H263 && s->codec_id != CODEC_ID_H263P &&
-        s->codec_id != CODEC_ID_FLV1) {
+    if ((s->flags & CODEC_FLAG_4MV)  && s->codec_id != AV_CODEC_ID_MPEG4 &&
+        s->codec_id != AV_CODEC_ID_H263 && s->codec_id != AV_CODEC_ID_H263P &&
+        s->codec_id != AV_CODEC_ID_FLV1) {
         av_log(avctx, AV_LOG_ERROR, "4MV not supported by codec\n");
         return -1;
     }
@@ -455,22 +455,22 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    if (s->quarter_sample && s->codec_id != CODEC_ID_MPEG4) {
+    if (s->quarter_sample && s->codec_id != AV_CODEC_ID_MPEG4) {
         av_log(avctx, AV_LOG_ERROR, "qpel not supported by codec\n");
         return -1;
     }
 
     if (s->max_b_frames                    &&
-        s->codec_id != CODEC_ID_MPEG4      &&
-        s->codec_id != CODEC_ID_MPEG1VIDEO &&
-        s->codec_id != CODEC_ID_MPEG2VIDEO) {
+        s->codec_id != AV_CODEC_ID_MPEG4      &&
+        s->codec_id != AV_CODEC_ID_MPEG1VIDEO &&
+        s->codec_id != AV_CODEC_ID_MPEG2VIDEO) {
         av_log(avctx, AV_LOG_ERROR, "b frames not supported by codec\n");
         return -1;
     }
 
-    if ((s->codec_id == CODEC_ID_MPEG4 ||
-         s->codec_id == CODEC_ID_H263  ||
-         s->codec_id == CODEC_ID_H263P) &&
+    if ((s->codec_id == AV_CODEC_ID_MPEG4 ||
+         s->codec_id == AV_CODEC_ID_H263  ||
+         s->codec_id == AV_CODEC_ID_H263P) &&
         (avctx->sample_aspect_ratio.num > 255 ||
          avctx->sample_aspect_ratio.den > 255)) {
         av_log(avctx, AV_LOG_WARNING,
@@ -480,50 +480,50 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
                    avctx->sample_aspect_ratio.num,  avctx->sample_aspect_ratio.den, 255);
     }
 
-    if ((s->codec_id == CODEC_ID_H263  ||
-         s->codec_id == CODEC_ID_H263P) &&
+    if ((s->codec_id == AV_CODEC_ID_H263  ||
+         s->codec_id == AV_CODEC_ID_H263P) &&
         (avctx->width  > 2048 ||
          avctx->height > 1152 )) {
         av_log(avctx, AV_LOG_ERROR, "H.263 does not support resolutions above 2048x1152\n");
         return -1;
     }
-    if ((s->codec_id == CODEC_ID_H263  ||
-         s->codec_id == CODEC_ID_H263P) &&
+    if ((s->codec_id == AV_CODEC_ID_H263  ||
+         s->codec_id == AV_CODEC_ID_H263P) &&
         ((avctx->width &3) ||
          (avctx->height&3) )) {
         av_log(avctx, AV_LOG_ERROR, "w/h must be a multiple of 4\n");
         return -1;
     }
 
-    if (s->codec_id == CODEC_ID_MPEG1VIDEO &&
+    if (s->codec_id == AV_CODEC_ID_MPEG1VIDEO &&
         (avctx->width  > 4095 ||
          avctx->height > 4095 )) {
         av_log(avctx, AV_LOG_ERROR, "MPEG-1 does not support resolutions above 4095x4095\n");
         return -1;
     }
 
-    if (s->codec_id == CODEC_ID_MPEG2VIDEO &&
+    if (s->codec_id == AV_CODEC_ID_MPEG2VIDEO &&
         (avctx->width  > 16383 ||
          avctx->height > 16383 )) {
         av_log(avctx, AV_LOG_ERROR, "MPEG-2 does not support resolutions above 16383x16383\n");
         return -1;
     }
 
-    if ((s->codec_id == CODEC_ID_WMV1 ||
-         s->codec_id == CODEC_ID_WMV2) &&
+    if ((s->codec_id == AV_CODEC_ID_WMV1 ||
+         s->codec_id == AV_CODEC_ID_WMV2) &&
          avctx->width & 1) {
          av_log(avctx, AV_LOG_ERROR, "width must be multiple of 2\n");
          return -1;
     }
 
     if ((s->flags & (CODEC_FLAG_INTERLACED_DCT | CODEC_FLAG_INTERLACED_ME)) &&
-        s->codec_id != CODEC_ID_MPEG4 && s->codec_id != CODEC_ID_MPEG2VIDEO) {
+        s->codec_id != AV_CODEC_ID_MPEG4 && s->codec_id != AV_CODEC_ID_MPEG2VIDEO) {
         av_log(avctx, AV_LOG_ERROR, "interlacing not supported by codec\n");
         return -1;
     }
 
     // FIXME mpeg2 uses that too
-    if (s->mpeg_quant && s->codec_id != CODEC_ID_MPEG4) {
+    if (s->mpeg_quant && s->codec_id != AV_CODEC_ID_MPEG4) {
         av_log(avctx, AV_LOG_ERROR,
                "mpeg2 style quantization not supported by codec\n");
         return -1;
@@ -554,7 +554,7 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
     }
 
     if (s->flags & CODEC_FLAG_LOW_DELAY) {
-        if (s->codec_id != CODEC_ID_MPEG2VIDEO) {
+        if (s->codec_id != AV_CODEC_ID_MPEG2VIDEO) {
             av_log(avctx, AV_LOG_ERROR,
                   "low delay forcing is only available for mpeg2\n");
             return -1;
@@ -575,11 +575,11 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
     }
 
     if (s->avctx->thread_count > 1         &&
-        s->codec_id != CODEC_ID_MPEG4      &&
-        s->codec_id != CODEC_ID_MPEG1VIDEO &&
-        s->codec_id != CODEC_ID_MPEG2VIDEO &&
-        s->codec_id != CODEC_ID_MJPEG      &&
-        (s->codec_id != CODEC_ID_H263P)) {
+        s->codec_id != AV_CODEC_ID_MPEG4      &&
+        s->codec_id != AV_CODEC_ID_MPEG1VIDEO &&
+        s->codec_id != AV_CODEC_ID_MPEG2VIDEO &&
+        s->codec_id != AV_CODEC_ID_MJPEG      &&
+        (s->codec_id != AV_CODEC_ID_H263P)) {
         av_log(avctx, AV_LOG_ERROR,
                "multi threaded encoding not supported by codec\n");
         return -1;
@@ -626,7 +626,7 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
         //return -1;
     }
 
-    if (s->mpeg_quant || s->codec_id == CODEC_ID_MPEG1VIDEO || s->codec_id == CODEC_ID_MPEG2VIDEO || s->codec_id == CODEC_ID_MJPEG || s->codec_id==CODEC_ID_AMV) {
+    if (s->mpeg_quant || s->codec_id == AV_CODEC_ID_MPEG1VIDEO || s->codec_id == AV_CODEC_ID_MPEG2VIDEO || s->codec_id == AV_CODEC_ID_MJPEG || s->codec_id==AV_CODEC_ID_AMV) {
         // (a + x * 3 / 8) / x
         s->intra_quant_bias = 3 << (QUANT_BIAS_SHIFT - 3);
         s->inter_quant_bias = 0;
@@ -646,7 +646,7 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
     avcodec_get_chroma_sub_sample(avctx->pix_fmt, &chroma_h_shift,
                                   &chroma_v_shift);
 
-    if (avctx->codec_id == CODEC_ID_MPEG4 &&
+    if (avctx->codec_id == AV_CODEC_ID_MPEG4 &&
         s->avctx->time_base.den > (1 << 16) - 1) {
         av_log(avctx, AV_LOG_ERROR,
                "timebase %d/%d not supported by MPEG 4 standard, "
@@ -667,23 +667,23 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
 #endif
 
     switch (avctx->codec->id) {
-    case CODEC_ID_MPEG1VIDEO:
+    case AV_CODEC_ID_MPEG1VIDEO:
         s->out_format = FMT_MPEG1;
         s->low_delay  = !!(s->flags & CODEC_FLAG_LOW_DELAY);
         avctx->delay  = s->low_delay ? 0 : (s->max_b_frames + 1);
         break;
-    case CODEC_ID_MPEG2VIDEO:
+    case AV_CODEC_ID_MPEG2VIDEO:
         s->out_format = FMT_MPEG1;
         s->low_delay  = !!(s->flags & CODEC_FLAG_LOW_DELAY);
         avctx->delay  = s->low_delay ? 0 : (s->max_b_frames + 1);
         s->rtp_mode   = 1;
         break;
-    case CODEC_ID_LJPEG:
-    case CODEC_ID_MJPEG:
-    case CODEC_ID_AMV:
+    case AV_CODEC_ID_LJPEG:
+    case AV_CODEC_ID_MJPEG:
+    case AV_CODEC_ID_AMV:
         s->out_format = FMT_MJPEG;
         s->intra_only = 1; /* force intra only for jpeg */
-        if (avctx->codec->id == CODEC_ID_LJPEG &&
+        if (avctx->codec->id == AV_CODEC_ID_LJPEG &&
             (avctx->pix_fmt == PIX_FMT_BGR0
              || s->avctx->pix_fmt == PIX_FMT_BGRA
              || s->avctx->pix_fmt == PIX_FMT_BGR24)) {
@@ -704,7 +704,7 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
         avctx->delay = 0;
         s->low_delay = 1;
         break;
-    case CODEC_ID_H261:
+    case AV_CODEC_ID_H261:
         if (!CONFIG_H261_ENCODER)
             return -1;
         if (ff_h261_get_picture_format(s->width, s->height) < 0) {
@@ -718,7 +718,7 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
         avctx->delay  = 0;
         s->low_delay  = 1;
         break;
-    case CODEC_ID_H263:
+    case AV_CODEC_ID_H263:
         if (!CONFIG_H263_ENCODER)
             return -1;
         if (ff_match_2uint16(ff_h263_format, FF_ARRAY_ELEMS(ff_h263_format),
@@ -734,7 +734,7 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
         avctx->delay  = 0;
         s->low_delay  = 1;
         break;
-    case CODEC_ID_H263P:
+    case AV_CODEC_ID_H263P:
         s->out_format = FMT_H263;
         s->h263_plus  = 1;
         /* Fx */
@@ -748,7 +748,7 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
         avctx->delay = 0;
         s->low_delay = 1;
         break;
-    case CODEC_ID_FLV1:
+    case AV_CODEC_ID_FLV1:
         s->out_format      = FMT_H263;
         s->h263_flv        = 2; /* format = 1; 11-bit codes */
         s->unrestricted_mv = 1;
@@ -756,12 +756,12 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
         avctx->delay = 0;
         s->low_delay = 1;
         break;
-    case CODEC_ID_RV10:
+    case AV_CODEC_ID_RV10:
         s->out_format = FMT_H263;
         avctx->delay  = 0;
         s->low_delay  = 1;
         break;
-    case CODEC_ID_RV20:
+    case AV_CODEC_ID_RV20:
         s->out_format      = FMT_H263;
         avctx->delay       = 0;
         s->low_delay       = 1;
@@ -771,14 +771,14 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
         s->loop_filter     = 1;
         s->unrestricted_mv = 0;
         break;
-    case CODEC_ID_MPEG4:
+    case AV_CODEC_ID_MPEG4:
         s->out_format      = FMT_H263;
         s->h263_pred       = 1;
         s->unrestricted_mv = 1;
         s->low_delay       = s->max_b_frames ? 0 : 1;
         avctx->delay       = s->low_delay ? 0 : (s->max_b_frames + 1);
         break;
-    case CODEC_ID_MSMPEG4V2:
+    case AV_CODEC_ID_MSMPEG4V2:
         s->out_format      = FMT_H263;
         s->h263_pred       = 1;
         s->unrestricted_mv = 1;
@@ -786,7 +786,7 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
         avctx->delay       = 0;
         s->low_delay       = 1;
         break;
-    case CODEC_ID_MSMPEG4V3:
+    case AV_CODEC_ID_MSMPEG4V3:
         s->out_format        = FMT_H263;
         s->h263_pred         = 1;
         s->unrestricted_mv   = 1;
@@ -795,7 +795,7 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
         avctx->delay         = 0;
         s->low_delay         = 1;
         break;
-    case CODEC_ID_WMV1:
+    case AV_CODEC_ID_WMV1:
         s->out_format        = FMT_H263;
         s->h263_pred         = 1;
         s->unrestricted_mv   = 1;
@@ -804,7 +804,7 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
         avctx->delay         = 0;
         s->low_delay         = 1;
         break;
-    case CODEC_ID_WMV2:
+    case AV_CODEC_ID_WMV2:
         s->out_format        = FMT_H263;
         s->h263_pred         = 1;
         s->unrestricted_mv   = 1;
@@ -859,7 +859,7 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
     /* init q matrix */
     for (i = 0; i < 64; i++) {
         int j = s->dsp.idct_permutation[i];
-        if (CONFIG_MPEG4_ENCODER && s->codec_id == CODEC_ID_MPEG4 &&
+        if (CONFIG_MPEG4_ENCODER && s->codec_id == AV_CODEC_ID_MPEG4 &&
             s->mpeg_quant) {
             s->intra_matrix[j] = ff_mpeg4_default_intra_matrix[i];
             s->inter_matrix[j] = ff_mpeg4_default_non_intra_matrix[i];
@@ -1049,7 +1049,7 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg)
                 uint8_t *src = pic_arg->data[i];
                 uint8_t *dst = pic->data[i];
 
-                if(s->codec_id == CODEC_ID_AMV && !(s->avctx->flags & CODEC_FLAG_EMU_EDGE)){
+                if(s->codec_id == AV_CODEC_ID_AMV && !(s->avctx->flags & CODEC_FLAG_EMU_EDGE)){
                     h= ((s->height+15)/16*16)>>v_shift;
                 }
 
@@ -1525,8 +1525,8 @@ vbv_retry:
                 // done in encode_picture() so we must undo it
                 if (s->pict_type == AV_PICTURE_TYPE_P) {
                     if (s->flipflop_rounding          ||
-                        s->codec_id == CODEC_ID_H263P ||
-                        s->codec_id == CODEC_ID_MPEG4)
+                        s->codec_id == AV_CODEC_ID_H263P ||
+                        s->codec_id == AV_CODEC_ID_MPEG4)
                         s->no_rounding ^= 1;
                 }
                 if (s->pict_type != AV_PICTURE_TYPE_B) {
@@ -1568,13 +1568,13 @@ vbv_retry:
             }
 
             switch (s->codec_id) {
-            case CODEC_ID_MPEG1VIDEO:
-            case CODEC_ID_MPEG2VIDEO:
+            case AV_CODEC_ID_MPEG1VIDEO:
+            case AV_CODEC_ID_MPEG2VIDEO:
                 while (stuffing_count--) {
                     put_bits(&s->pb, 8, 0);
                 }
             break;
-            case CODEC_ID_MPEG4:
+            case AV_CODEC_ID_MPEG4:
                 put_bits(&s->pb, 16, 0);
                 put_bits(&s->pb, 16, 0x1C3);
                 stuffing_count -= 4;
@@ -1795,7 +1795,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
             if (s->out_format == FMT_H263) {
                 s->dquant = av_clip(s->dquant, -2, 2);
 
-                if (s->codec_id == CODEC_ID_MPEG4) {
+                if (s->codec_id == AV_CODEC_ID_MPEG4) {
                     if (!s->mb_intra) {
                         if (s->pict_type == AV_PICTURE_TYPE_B) {
                             if (s->dquant & 1 || s->mv_dir & MV_DIRECT)
@@ -1820,7 +1820,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
     ptr_cr = s->new_picture.f.data[2] +
              (mb_y * mb_block_height * wrap_c) + mb_x * 8;
 
-    if((mb_x*16+16 > s->width || mb_y*16+16 > s->height) && s->codec_id != CODEC_ID_AMV){
+    if((mb_x*16+16 > s->width || mb_y*16+16 > s->height) && s->codec_id != AV_CODEC_ID_AMV){
         uint8_t *ebuf = s->edge_emu_buffer + 32;
         s->dsp.emulated_edge_mc(ebuf, ptr_y, wrap_y, 16, 16, mb_x * 16,
                                 mb_y * 16, s->width, s->height);
@@ -2085,39 +2085,39 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
 
     /* huffman encode */
     switch(s->codec_id){ //FIXME funct ptr could be slightly faster
-    case CODEC_ID_MPEG1VIDEO:
-    case CODEC_ID_MPEG2VIDEO:
+    case AV_CODEC_ID_MPEG1VIDEO:
+    case AV_CODEC_ID_MPEG2VIDEO:
         if (CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER)
             ff_mpeg1_encode_mb(s, s->block, motion_x, motion_y);
         break;
-    case CODEC_ID_MPEG4:
+    case AV_CODEC_ID_MPEG4:
         if (CONFIG_MPEG4_ENCODER)
             ff_mpeg4_encode_mb(s, s->block, motion_x, motion_y);
         break;
-    case CODEC_ID_MSMPEG4V2:
-    case CODEC_ID_MSMPEG4V3:
-    case CODEC_ID_WMV1:
+    case AV_CODEC_ID_MSMPEG4V2:
+    case AV_CODEC_ID_MSMPEG4V3:
+    case AV_CODEC_ID_WMV1:
         if (CONFIG_MSMPEG4_ENCODER)
             ff_msmpeg4_encode_mb(s, s->block, motion_x, motion_y);
         break;
-    case CODEC_ID_WMV2:
+    case AV_CODEC_ID_WMV2:
         if (CONFIG_WMV2_ENCODER)
             ff_wmv2_encode_mb(s, s->block, motion_x, motion_y);
         break;
-    case CODEC_ID_H261:
+    case AV_CODEC_ID_H261:
         if (CONFIG_H261_ENCODER)
             ff_h261_encode_mb(s, s->block, motion_x, motion_y);
         break;
-    case CODEC_ID_H263:
-    case CODEC_ID_H263P:
-    case CODEC_ID_FLV1:
-    case CODEC_ID_RV10:
-    case CODEC_ID_RV20:
+    case AV_CODEC_ID_H263:
+    case AV_CODEC_ID_H263P:
+    case AV_CODEC_ID_FLV1:
+    case AV_CODEC_ID_RV10:
+    case AV_CODEC_ID_RV20:
         if (CONFIG_H263_ENCODER)
             ff_h263_encode_mb(s, s->block, motion_x, motion_y);
         break;
-    case CODEC_ID_MJPEG:
-    case CODEC_ID_AMV:
+    case AV_CODEC_ID_MJPEG:
+    case AV_CODEC_ID_AMV:
         if (CONFIG_MJPEG_ENCODER)
             ff_mjpeg_encode_mb(s, s->block);
         break;
@@ -2365,7 +2365,7 @@ static int mb_var_thread(AVCodecContext *c, void *arg){
 }
 
 static void write_slice_end(MpegEncContext *s){
-    if(CONFIG_MPEG4_ENCODER && s->codec_id==CODEC_ID_MPEG4){
+    if(CONFIG_MPEG4_ENCODER && s->codec_id==AV_CODEC_ID_MPEG4){
         if(s->partitioned_frame){
             ff_mpeg4_merge_partitions(s);
         }
@@ -2462,7 +2462,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
 
         s->current_picture.f.error[i] = 0;
     }
-    if(s->codec_id==CODEC_ID_AMV){
+    if(s->codec_id==AV_CODEC_ID_AMV){
         s->last_dc[0] = 128*8/13;
         s->last_dc[1] = 128*8/14;
         s->last_dc[2] = 128*8/14;
@@ -2473,13 +2473,13 @@ static int encode_thread(AVCodecContext *c, void *arg){
     s->last_mv_dir = 0;
 
     switch(s->codec_id){
-    case CODEC_ID_H263:
-    case CODEC_ID_H263P:
-    case CODEC_ID_FLV1:
+    case AV_CODEC_ID_H263:
+    case AV_CODEC_ID_H263P:
+    case AV_CODEC_ID_FLV1:
         if (CONFIG_H263_ENCODER)
             s->gob_index = ff_h263_get_gob_height(s);
         break;
-    case CODEC_ID_MPEG4:
+    case AV_CODEC_ID_MPEG4:
         if(CONFIG_MPEG4_ENCODER && s->partitioned_frame)
             ff_mpeg4_init_partitions(s);
         break;
@@ -2520,7 +2520,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
             s->mb_y = mb_y;  // moved into loop, can get changed by H.261
             ff_update_block_index(s);
 
-            if(CONFIG_H261_ENCODER && s->codec_id == CODEC_ID_H261){
+            if(CONFIG_H261_ENCODER && s->codec_id == AV_CODEC_ID_H261){
                 ff_h261_reorder_mb_index(s);
                 xy= s->mb_y*s->mb_stride + s->mb_x;
                 mb_type= s->mb_type[xy];
@@ -2537,17 +2537,17 @@ static int encode_thread(AVCodecContext *c, void *arg){
                 if(s->start_mb_y == mb_y && mb_y > 0 && mb_x==0) is_gob_start=1;
 
                 switch(s->codec_id){
-                case CODEC_ID_H263:
-                case CODEC_ID_H263P:
+                case AV_CODEC_ID_H263:
+                case AV_CODEC_ID_H263P:
                     if(!s->h263_slice_structured)
                         if(s->mb_x || s->mb_y%s->gob_index) is_gob_start=0;
                     break;
-                case CODEC_ID_MPEG2VIDEO:
+                case AV_CODEC_ID_MPEG2VIDEO:
                     if(s->mb_x==0 && s->mb_y!=0) is_gob_start=1;
-                case CODEC_ID_MPEG1VIDEO:
+                case AV_CODEC_ID_MPEG1VIDEO:
                     if(s->mb_skip_run) is_gob_start=0;
                     break;
-                case CODEC_ID_MJPEG:
+                case AV_CODEC_ID_MJPEG:
                     if(s->mb_x==0 && s->mb_y!=0) is_gob_start=1;
                     break;
                 }
@@ -2555,7 +2555,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                 if(is_gob_start){
                     if(s->start_mb_y != mb_y || mb_x!=0){
                         write_slice_end(s);
-                        if(CONFIG_MPEG4_ENCODER && s->codec_id==CODEC_ID_MPEG4 && s->partitioned_frame){
+                        if(CONFIG_MPEG4_ENCODER && s->codec_id==AV_CODEC_ID_MPEG4 && s->partitioned_frame){
                             ff_mpeg4_init_partitions(s);
                         }
                     }
@@ -2580,21 +2580,21 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     update_mb_info(s, 1);
 
                     switch(s->codec_id){
-                    case CODEC_ID_MPEG4:
+                    case AV_CODEC_ID_MPEG4:
                         if (CONFIG_MPEG4_ENCODER) {
                             ff_mpeg4_encode_video_packet_header(s);
                             ff_mpeg4_clean_buffers(s);
                         }
                     break;
-                    case CODEC_ID_MPEG1VIDEO:
-                    case CODEC_ID_MPEG2VIDEO:
+                    case AV_CODEC_ID_MPEG1VIDEO:
+                    case AV_CODEC_ID_MPEG2VIDEO:
                         if (CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER) {
                             ff_mpeg1_encode_slice_header(s);
                             ff_mpeg1_clean_buffers(s);
                         }
                     break;
-                    case CODEC_ID_H263:
-                    case CODEC_ID_H263P:
+                    case AV_CODEC_ID_H263:
+                    case AV_CODEC_ID_H263P:
                         if (CONFIG_H263_ENCODER)
                             ff_h263_encode_gob_header(s, mb_y);
                     break;
@@ -3116,13 +3116,13 @@ static int estimate_qp(MpegEncContext *s, int dry_run){
 
     if(s->adaptive_quant){
         switch(s->codec_id){
-        case CODEC_ID_MPEG4:
+        case AV_CODEC_ID_MPEG4:
             if (CONFIG_MPEG4_ENCODER)
                 ff_clean_mpeg4_qscales(s);
             break;
-        case CODEC_ID_H263:
-        case CODEC_ID_H263P:
-        case CODEC_ID_FLV1:
+        case AV_CODEC_ID_H263:
+        case AV_CODEC_ID_H263P:
+        case AV_CODEC_ID_FLV1:
             if (CONFIG_H263_ENCODER)
                 ff_clean_h263_qscales(s);
             break;
@@ -3168,9 +3168,9 @@ static int encode_picture(MpegEncContext *s, int picture_number)
 
     /* we need to initialize some time vars before we can encode b-frames */
     // RAL: Condition added for MPEG1VIDEO
-    if (s->codec_id == CODEC_ID_MPEG1VIDEO || s->codec_id == CODEC_ID_MPEG2VIDEO || (s->h263_pred && !s->msmpeg4_version))
+    if (s->codec_id == AV_CODEC_ID_MPEG1VIDEO || s->codec_id == AV_CODEC_ID_MPEG2VIDEO || (s->h263_pred && !s->msmpeg4_version))
         set_frame_distances(s);
-    if(CONFIG_MPEG4_ENCODER && s->codec_id == CODEC_ID_MPEG4)
+    if(CONFIG_MPEG4_ENCODER && s->codec_id == AV_CODEC_ID_MPEG4)
         ff_set_mpeg4_time(s);
 
     s->me.scene_change_score=0;
@@ -3181,7 +3181,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
         if(s->msmpeg4_version >= 3) s->no_rounding=1;
         else                        s->no_rounding=0;
     }else if(s->pict_type!=AV_PICTURE_TYPE_B){
-        if(s->flipflop_rounding || s->codec_id == CODEC_ID_H263P || s->codec_id == CODEC_ID_MPEG4)
+        if(s->flipflop_rounding || s->codec_id == AV_CODEC_ID_H263P || s->codec_id == AV_CODEC_ID_MPEG4)
             s->no_rounding ^= 1;
     }
 
@@ -3197,7 +3197,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
         update_qscale(s);
     }
 
-    if(s->codec_id != CODEC_ID_AMV){
+    if(s->codec_id != AV_CODEC_ID_AMV){
         if(s->q_chroma_intra_matrix   != s->q_intra_matrix  ) av_freep(&s->q_chroma_intra_matrix);
         if(s->q_chroma_intra_matrix16 != s->q_intra_matrix16) av_freep(&s->q_chroma_intra_matrix16);
         s->q_chroma_intra_matrix   = s->q_intra_matrix;
@@ -3322,7 +3322,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
                        s->intra_matrix, s->intra_quant_bias, 8, 8, 1);
         s->qscale= 8;
     }
-    if(s->codec_id == CODEC_ID_AMV){
+    if(s->codec_id == AV_CODEC_ID_AMV){
         static const uint8_t y[32]={13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13};
         static const uint8_t c[32]={14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14};
         for(i=1;i<64;i++){
@@ -3362,17 +3362,17 @@ static int encode_picture(MpegEncContext *s, int picture_number)
             ff_h261_encode_picture_header(s, picture_number);
         break;
     case FMT_H263:
-        if (CONFIG_WMV2_ENCODER && s->codec_id == CODEC_ID_WMV2)
+        if (CONFIG_WMV2_ENCODER && s->codec_id == AV_CODEC_ID_WMV2)
             ff_wmv2_encode_picture_header(s, picture_number);
         else if (CONFIG_MSMPEG4_ENCODER && s->msmpeg4_version)
             ff_msmpeg4_encode_picture_header(s, picture_number);
         else if (CONFIG_MPEG4_ENCODER && s->h263_pred)
             ff_mpeg4_encode_picture_header(s, picture_number);
-        else if (CONFIG_RV10_ENCODER && s->codec_id == CODEC_ID_RV10)
+        else if (CONFIG_RV10_ENCODER && s->codec_id == AV_CODEC_ID_RV10)
             ff_rv10_encode_picture_header(s, picture_number);
-        else if (CONFIG_RV20_ENCODER && s->codec_id == CODEC_ID_RV20)
+        else if (CONFIG_RV20_ENCODER && s->codec_id == AV_CODEC_ID_RV20)
             ff_rv20_encode_picture_header(s, picture_number);
-        else if (CONFIG_FLV_ENCODER && s->codec_id == CODEC_ID_FLV1)
+        else if (CONFIG_FLV_ENCODER && s->codec_id == AV_CODEC_ID_FLV1)
             ff_flv_encode_picture_header(s, picture_number);
         else if (CONFIG_H263_ENCODER)
             ff_h263_encode_picture_header(s, picture_number);
@@ -4211,7 +4211,7 @@ static const AVClass h263_class = {
 AVCodec ff_h263_encoder = {
     .name           = "h263",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_H263,
+    .id             = AV_CODEC_ID_H263,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_MPV_encode_init,
     .encode2        = ff_MPV_encode_picture,
@@ -4239,7 +4239,7 @@ static const AVClass h263p_class = {
 AVCodec ff_h263p_encoder = {
     .name           = "h263p",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_H263P,
+    .id             = AV_CODEC_ID_H263P,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_MPV_encode_init,
     .encode2        = ff_MPV_encode_picture,
@@ -4255,7 +4255,7 @@ FF_MPV_GENERIC_CLASS(msmpeg4v2)
 AVCodec ff_msmpeg4v2_encoder = {
     .name           = "msmpeg4v2",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_MSMPEG4V2,
+    .id             = AV_CODEC_ID_MSMPEG4V2,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_MPV_encode_init,
     .encode2        = ff_MPV_encode_picture,
@@ -4270,7 +4270,7 @@ FF_MPV_GENERIC_CLASS(msmpeg4v3)
 AVCodec ff_msmpeg4v3_encoder = {
     .name           = "msmpeg4",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_MSMPEG4V3,
+    .id             = AV_CODEC_ID_MSMPEG4V3,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_MPV_encode_init,
     .encode2        = ff_MPV_encode_picture,
@@ -4285,7 +4285,7 @@ FF_MPV_GENERIC_CLASS(wmv1)
 AVCodec ff_wmv1_encoder = {
     .name           = "wmv1",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_WMV1,
+    .id             = AV_CODEC_ID_WMV1,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_MPV_encode_init,
     .encode2        = ff_MPV_encode_picture,

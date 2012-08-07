@@ -792,7 +792,7 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     /* If the bidirectional mode is enabled, next I and the following P frame will */
     /* be sent together. Unfortunately the approach below seems to be the only way */
     /* to handle the B-frames mode. That's exactly the same Intel decoders do.     */
-    if (avctx->codec_id == CODEC_ID_INDEO4 && ctx->frame_type == 0/*FRAMETYPE_INTRA*/) {
+    if (avctx->codec_id == AV_CODEC_ID_INDEO4 && ctx->frame_type == 0/*FRAMETYPE_INTRA*/) {
         while (get_bits(&ctx->gb, 8)); // skip version string
         skip_bits_long(&ctx->gb, 64);  // skip padding, TODO: implement correct 8-bytes alignment
         if (get_bits_left(&ctx->gb) > 18 && show_bits(&ctx->gb, 18) == 0x3FFF8)
@@ -813,7 +813,7 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     }
 
     if (ctx->is_scalable) {
-        if (avctx->codec_id == CODEC_ID_INDEO4)
+        if (avctx->codec_id == AV_CODEC_ID_INDEO4)
             ff_ivi_recompose_haar(&ctx->planes[0], ctx->frame.data[0], ctx->frame.linesize[0], 4);
         else
             ff_ivi_recompose53   (&ctx->planes[0], ctx->frame.data[0], ctx->frame.linesize[0], 4);
@@ -846,7 +846,7 @@ av_cold int ff_ivi_decode_close(AVCodecContext *avctx)
         avctx->release_buffer(avctx, &ctx->frame);
 
 #if IVI4_STREAM_ANALYSER
-    if (avctx->codec_id == CODEC_ID_INDEO4) {
+    if (avctx->codec_id == AV_CODEC_ID_INDEO4) {
     if (ctx->is_scalable)
         av_log(avctx, AV_LOG_ERROR, "This video uses scalability mode!\n");
     if (ctx->uses_tiling)

@@ -135,7 +135,7 @@ static int smush_read_header(AVFormatContext *ctx)
     vst->duration          =
     vst->nb_frames         = nframes;
     vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    vst->codec->codec_id   = CODEC_ID_SANM;
+    vst->codec->codec_id   = AV_CODEC_ID_SANM;
     vst->codec->codec_tag  = 0;
     vst->codec->width      = width;
     vst->codec->height     = height;
@@ -162,7 +162,7 @@ static int smush_read_header(AVFormatContext *ctx)
 
         ast->start_time         = 0;
         ast->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-        ast->codec->codec_id    = CODEC_ID_VIMA;
+        ast->codec->codec_id    = AV_CODEC_ID_VIMA;
         ast->codec->codec_tag   = 0;
         ast->codec->sample_rate = sample_rate;
         ast->codec->channels    = channels;

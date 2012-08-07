@@ -430,7 +430,7 @@ static void get_attachment(AVFormatContext *s, AVIOContext *pb, int length)
     if (!st)
         goto done;
     av_dict_set(&st->metadata, "title", description, 0);
-    st->codec->codec_id   = CODEC_ID_MJPEG;
+    st->codec->codec_id   = AV_CODEC_ID_MJPEG;
     st->codec->codec_type = AVMEDIA_TYPE_ATTACHMENT;
     st->codec->extradata  = av_mallocz(filesize);
     if (!st->codec->extradata)
@@ -550,9 +550,9 @@ static void parse_mpeg1waveformatex(AVStream *st)
 {
     /* fwHeadLayer */
     switch (AV_RL16(st->codec->extradata)) {
-    case 0x0001 : st->codec->codec_id = CODEC_ID_MP1; break;
-    case 0x0002 : st->codec->codec_id = CODEC_ID_MP2; break;
-    case 0x0004 : st->codec->codec_id = CODEC_ID_MP3; break;
+    case 0x0001 : st->codec->codec_id = AV_CODEC_ID_MP1; break;
+    case 0x0002 : st->codec->codec_id = AV_CODEC_ID_MP2; break;
+    case 0x0004 : st->codec->codec_id = AV_CODEC_ID_MP3; break;
     }
 
     st->codec->bit_rate = AV_RL32(st->codec->extradata + 2); /* dwHeadBitrate */
@@ -649,7 +649,7 @@ static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
                 av_log(s, AV_LOG_WARNING, "MPEG1WAVEFORMATEX underflow\n");
         } else {
             st->codec->codec_id = ff_codec_guid_get_id(ff_codec_wav_guids, subtype);
-            if (st->codec->codec_id == CODEC_ID_NONE)
+            if (st->codec->codec_id == AV_CODEC_ID_NONE)
                 av_log(s, AV_LOG_WARNING, "unknown subtype:"FF_PRI_GUID"\n", FF_ARG_GUID(subtype));
         }
         return st;
@@ -674,7 +674,7 @@ static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
         } else {
             st->codec->codec_id = ff_codec_guid_get_id(ff_video_guids, subtype);
         }
-        if (st->codec->codec_id == CODEC_ID_NONE)
+        if (st->codec->codec_id == AV_CODEC_ID_NONE)
             av_log(s, AV_LOG_WARNING, "unknown subtype:"FF_PRI_GUID"\n", FF_ARG_GUID(subtype));
         return st;
     } else if (!ff_guidcmp(mediatype, mediatype_mpeg2_pes) &&
@@ -685,7 +685,7 @@ static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
         if (ff_guidcmp(formattype, ff_format_none))
             av_log(s, AV_LOG_WARNING, "unknown formattype:"FF_PRI_GUID"\n", FF_ARG_GUID(formattype));
         avio_skip(pb, size);
-        st->codec->codec_id = CODEC_ID_DVB_SUBTITLE;
+        st->codec->codec_id = AV_CODEC_ID_DVB_SUBTITLE;
         return st;
     } else if (!ff_guidcmp(mediatype, mediatype_mstvcaption) &&
                (!ff_guidcmp(subtype, mediasubtype_teletext) || !ff_guidcmp(subtype, mediasubtype_dtvccdata))) {
@@ -695,7 +695,7 @@ static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
         if (ff_guidcmp(formattype, ff_format_none))
             av_log(s, AV_LOG_WARNING, "unknown formattype:"FF_PRI_GUID"\n", FF_ARG_GUID(formattype));
         avio_skip(pb, size);
-        st->codec->codec_id   = CODEC_ID_DVB_TELETEXT;
+        st->codec->codec_id   = AV_CODEC_ID_DVB_TELETEXT;
         return st;
     } else if (!ff_guidcmp(mediatype, mediatype_mpeg2_sections) &&
                !ff_guidcmp(subtype, mediasubtype_mpeg2_sections)) {

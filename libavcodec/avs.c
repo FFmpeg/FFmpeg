@@ -178,7 +178,7 @@ static av_cold int avs_decode_end(AVCodecContext *avctx)
 AVCodec ff_avs_decoder = {
     .name           = "avs",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_AVS,
+    .id             = AV_CODEC_ID_AVS,
     .priv_data_size = sizeof(AvsContext),
     .init           = avs_decode_init,
     .decode         = avs_decode_frame,

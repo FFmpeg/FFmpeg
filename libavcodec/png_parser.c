@@ -113,7 +113,7 @@ flush:
 }
 
 AVCodecParser ff_png_parser = {
-    .codec_ids      = { CODEC_ID_PNG },
+    .codec_ids      = { AV_CODEC_ID_PNG },
     .priv_data_size = sizeof(PNGParseContext),
     .parser_parse   = png_parse,
     .parser_close   = ff_parse_close,

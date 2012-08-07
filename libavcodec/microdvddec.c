@@ -363,7 +363,7 @@ AVCodec ff_microdvd_decoder = {
     .name         = "microdvd",
     .long_name    = NULL_IF_CONFIG_SMALL("MicroDVD subtitle"),
     .type         = AVMEDIA_TYPE_SUBTITLE,
-    .id           = CODEC_ID_MICRODVD,
+    .id           = AV_CODEC_ID_MICRODVD,
     .init         = microdvd_init,
     .decode       = microdvd_decode_frame,
 };

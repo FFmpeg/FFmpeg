@@ -468,7 +468,7 @@ static av_cold int smc_decode_end(AVCodecContext *avctx)
 AVCodec ff_smc_decoder = {
     .name           = "smc",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_SMC,
+    .id             = AV_CODEC_ID_SMC,
     .priv_data_size = sizeof(SmcContext),
     .init           = smc_decode_init,
     .close          = smc_decode_end,

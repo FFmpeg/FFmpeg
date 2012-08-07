@@ -146,7 +146,7 @@ static av_cold int avui_decode_close(AVCodecContext *avctx)
 AVCodec ff_avui_decoder = {
     .name         = "avui",
     .type         = AVMEDIA_TYPE_VIDEO,
-    .id           = CODEC_ID_AVUI,
+    .id           = AV_CODEC_ID_AVUI,
     .init         = avui_decode_init,
     .decode       = avui_decode_frame,
     .close        = avui_decode_close,

@@ -328,7 +328,7 @@ static av_cold int gif_decode_close(AVCodecContext *avctx)
 AVCodec ff_gif_decoder = {
     .name           = "gif",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_GIF,
+    .id             = AV_CODEC_ID_GIF,
     .priv_data_size = sizeof(GifState),
     .init           = gif_decode_init,
     .close          = gif_decode_close,

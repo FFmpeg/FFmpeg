@@ -203,7 +203,7 @@ static int roq_dpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 AVCodec ff_roq_dpcm_encoder = {
     .name           = "roq_dpcm",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_ROQ_DPCM,
+    .id             = AV_CODEC_ID_ROQ_DPCM,
     .priv_data_size = sizeof(ROQDPCMContext),
     .init           = roq_dpcm_encode_init,
     .encode2        = roq_dpcm_encode_frame,

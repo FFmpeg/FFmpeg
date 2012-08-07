@@ -51,7 +51,7 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h)
     int *block_offset = &h->block_offset[0];
     const int transform_bypass = !SIMPLE && (s->qscale == 0 && h->sps.transform_bypass);
     /* is_h264 should always be true if SVQ3 is disabled. */
-    const int is_h264 = !CONFIG_SVQ3_DECODER || SIMPLE || s->codec_id == CODEC_ID_H264;
+    const int is_h264 = !CONFIG_SVQ3_DECODER || SIMPLE || s->codec_id == AV_CODEC_ID_H264;
     void (*idct_add)(uint8_t *dst, DCTELEM *block, int stride);
     const int block_h   = 16 >> s->chroma_y_shift;
     const int chroma422 = CHROMA422;

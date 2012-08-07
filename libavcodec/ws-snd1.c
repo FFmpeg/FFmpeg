@@ -185,7 +185,7 @@ static int ws_snd_decode_frame(AVCodecContext *avctx, void *data,
 AVCodec ff_ws_snd1_decoder = {
     .name           = "ws_snd1",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_WESTWOOD_SND1,
+    .id             = AV_CODEC_ID_WESTWOOD_SND1,
     .priv_data_size = sizeof(WSSndContext),
     .init           = ws_snd_decode_init,
     .decode         = ws_snd_decode_frame,

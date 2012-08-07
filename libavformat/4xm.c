@@ -155,7 +155,7 @@ static int fourxm_read_header(AVFormatContext *s)
             fourxm->video_stream_index = st->index;
 
             st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            st->codec->codec_id = CODEC_ID_4XM;
+            st->codec->codec_id = AV_CODEC_ID_4XM;
             st->codec->extradata_size = 4;
             st->codec->extradata = av_malloc(4);
             AV_WL32(st->codec->extradata, AV_RL32(&header[i + 16]));
@@ -228,11 +228,11 @@ static int fourxm_read_header(AVFormatContext *s)
                 st->codec->bits_per_coded_sample;
             st->codec->block_align = st->codec->channels * st->codec->bits_per_coded_sample;
             if (fourxm->tracks[current_track].adpcm){
-                st->codec->codec_id = CODEC_ID_ADPCM_4XM;
+                st->codec->codec_id = AV_CODEC_ID_ADPCM_4XM;
             }else if (st->codec->bits_per_coded_sample == 8){
-                st->codec->codec_id = CODEC_ID_PCM_U8;
+                st->codec->codec_id = AV_CODEC_ID_PCM_U8;
             }else
-                st->codec->codec_id = CODEC_ID_PCM_S16LE;
+                st->codec->codec_id = AV_CODEC_ID_PCM_S16LE;
         }
     }
 

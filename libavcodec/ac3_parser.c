@@ -167,9 +167,9 @@ static int ac3_sync(uint64_t state, AACAC3ParseContext *hdr_info,
     if (hdr.bitstream_mode == 0x7 && hdr.channels > 1)
         hdr_info->service_type = AV_AUDIO_SERVICE_TYPE_KARAOKE;
     if(hdr.bitstream_id>10)
-        hdr_info->codec_id = CODEC_ID_EAC3;
-    else if (hdr_info->codec_id == CODEC_ID_NONE)
-        hdr_info->codec_id = CODEC_ID_AC3;
+        hdr_info->codec_id = AV_CODEC_ID_EAC3;
+    else if (hdr_info->codec_id == AV_CODEC_ID_NONE)
+        hdr_info->codec_id = AV_CODEC_ID_AC3;
 
     *need_next_header = (hdr.frame_type != EAC3_FRAME_TYPE_AC3_CONVERT);
     *new_frame_start  = (hdr.frame_type != EAC3_FRAME_TYPE_DEPENDENT);
@@ -186,7 +186,7 @@ static av_cold int ac3_parse_init(AVCodecParserContext *s1)
 
 
 AVCodecParser ff_ac3_parser = {
-    .codec_ids      = { CODEC_ID_AC3, CODEC_ID_EAC3 },
+    .codec_ids      = { AV_CODEC_ID_AC3, AV_CODEC_ID_EAC3 },
     .priv_data_size = sizeof(AACAC3ParseContext),
     .parser_init    = ac3_parse_init,
     .parser_parse   = ff_aac_ac3_parse,

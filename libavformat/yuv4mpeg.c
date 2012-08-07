@@ -214,7 +214,7 @@ static int yuv4_write_header(AVFormatContext *s)
     if (s->nb_streams != 1)
         return AVERROR(EIO);
 
-    if (s->streams[0]->codec->codec_id != CODEC_ID_RAWVIDEO) {
+    if (s->streams[0]->codec->codec_id != AV_CODEC_ID_RAWVIDEO) {
         av_log(s, AV_LOG_ERROR,
                "A non-rawvideo stream was selected, but yuv4mpeg only handles rawvideo streams\n");
         return AVERROR(EINVAL);
@@ -269,8 +269,8 @@ AVOutputFormat ff_yuv4mpegpipe_muxer = {
     .long_name         = NULL_IF_CONFIG_SMALL("YUV4MPEG pipe"),
     .extensions        = "y4m",
     .priv_data_size    = sizeof(int),
-    .audio_codec       = CODEC_ID_NONE,
-    .video_codec       = CODEC_ID_RAWVIDEO,
+    .audio_codec       = AV_CODEC_ID_NONE,
+    .video_codec       = AV_CODEC_ID_RAWVIDEO,
     .write_header      = yuv4_write_header,
     .write_packet      = yuv4_write_packet,
     .flags             = AVFMT_RAWPICTURE,
@@ -485,7 +485,7 @@ static int yuv4_read_header(AVFormatContext *s)
     avpriv_set_pts_info(st, 64, rated, raten);
     st->codec->pix_fmt                = pix_fmt;
     st->codec->codec_type             = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id               = CODEC_ID_RAWVIDEO;
+    st->codec->codec_id               = AV_CODEC_ID_RAWVIDEO;
     st->sample_aspect_ratio           = (AVRational){ aspectn, aspectd };
     st->codec->chroma_sample_location = chroma_sample_location;
 

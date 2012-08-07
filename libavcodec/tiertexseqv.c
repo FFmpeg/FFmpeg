@@ -260,7 +260,7 @@ static av_cold int seqvideo_decode_end(AVCodecContext *avctx)
 AVCodec ff_tiertexseqvideo_decoder = {
     .name           = "tiertexseqvideo",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_TIERTEXSEQVIDEO,
+    .id             = AV_CODEC_ID_TIERTEXSEQVIDEO,
     .priv_data_size = sizeof(SeqVideoContext),
     .init           = seqvideo_decode_init,
     .close          = seqvideo_decode_end,

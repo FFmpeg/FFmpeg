@@ -274,7 +274,7 @@ static av_cold int cllc_decode_init(AVCodecContext *avctx)
 AVCodec ff_cllc_decoder = {
     .name           = "cllc",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_CLLC,
+    .id             = AV_CODEC_ID_CLLC,
     .priv_data_size = sizeof(CLLCContext),
     .init           = cllc_decode_init,
     .decode         = cllc_decode_frame,

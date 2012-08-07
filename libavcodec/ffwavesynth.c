@@ -472,7 +472,7 @@ static av_cold int wavesynth_close(AVCodecContext *avc)
 AVCodec ff_ffwavesynth_decoder = {
     .name           = "wavesynth",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_FFWAVESYNTH,
+    .id             = AV_CODEC_ID_FFWAVESYNTH,
     .priv_data_size = sizeof(struct wavesynth_context),
     .init           = wavesynth_init,
     .close          = wavesynth_close,

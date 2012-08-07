@@ -40,9 +40,9 @@ static int amr_write_header(AVFormatContext *s)
 
     s->priv_data = NULL;
 
-    if (enc->codec_id == CODEC_ID_AMR_NB) {
+    if (enc->codec_id == AV_CODEC_ID_AMR_NB) {
         avio_write(pb, AMR_header,   sizeof(AMR_header)   - 1); /* magic number */
-    } else if (enc->codec_id == CODEC_ID_AMR_WB) {
+    } else if (enc->codec_id == AV_CODEC_ID_AMR_WB) {
         avio_write(pb, AMRWB_header, sizeof(AMRWB_header) - 1); /* magic number */
     } else {
         return -1;
@@ -90,11 +90,11 @@ static int amr_read_header(AVFormatContext *s)
         }
 
         st->codec->codec_tag   = MKTAG('s', 'a', 'w', 'b');
-        st->codec->codec_id    = CODEC_ID_AMR_WB;
+        st->codec->codec_id    = AV_CODEC_ID_AMR_WB;
         st->codec->sample_rate = 16000;
     } else {
         st->codec->codec_tag   = MKTAG('s', 'a', 'm', 'r');
-        st->codec->codec_id    = CODEC_ID_AMR_NB;
+        st->codec->codec_id    = AV_CODEC_ID_AMR_NB;
         st->codec->sample_rate = 8000;
     }
     st->codec->channels   = 1;
@@ -118,13 +118,13 @@ static int amr_read_packet(AVFormatContext *s, AVPacket *pkt)
     toc  = avio_r8(s->pb);
     mode = (toc >> 3) & 0x0F;
 
-    if (enc->codec_id == CODEC_ID_AMR_NB) {
+    if (enc->codec_id == AV_CODEC_ID_AMR_NB) {
         static const uint8_t packed_size[16] = {
             12, 13, 15, 17, 19, 20, 26, 31, 5, 0, 0, 0, 0, 0, 0, 0
         };
 
         size = packed_size[mode] + 1;
-    } else if (enc->codec_id == CODEC_ID_AMR_WB) {
+    } else if (enc->codec_id == AV_CODEC_ID_AMR_WB) {
         static const uint8_t packed_size[16] = {
             18, 24, 33, 37, 41, 47, 51, 59, 61, 6, 6, 0, 0, 0, 1, 1
         };
@@ -143,7 +143,7 @@ static int amr_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->stream_index = 0;
     pkt->pos          = pos;
     pkt->data[0]      = toc;
-    pkt->duration     = enc->codec_id == CODEC_ID_AMR_NB ? 160 : 320;
+    pkt->duration     = enc->codec_id == AV_CODEC_ID_AMR_NB ? 160 : 320;
     read              = avio_read(s->pb, pkt->data + 1, size - 1);
 
     if (read != size - 1) {
@@ -171,8 +171,8 @@ AVOutputFormat ff_amr_muxer = {
     .long_name         = NULL_IF_CONFIG_SMALL("3GPP AMR"),
     .mime_type         = "audio/amr",
     .extensions        = "amr",
-    .audio_codec       = CODEC_ID_AMR_NB,
-    .video_codec       = CODEC_ID_NONE,
+    .audio_codec       = AV_CODEC_ID_AMR_NB,
+    .video_codec       = AV_CODEC_ID_NONE,
     .write_header      = amr_write_header,
     .write_packet      = amr_write_packet,
 };

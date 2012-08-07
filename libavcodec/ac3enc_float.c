@@ -153,7 +153,7 @@ static CoefType calc_cpl_coord(CoefSumType energy_ch, CoefSumType energy_cpl)
 AVCodec ff_ac3_encoder = {
     .name            = "ac3",
     .type            = AVMEDIA_TYPE_AUDIO,
-    .id              = CODEC_ID_AC3,
+    .id              = AV_CODEC_ID_AC3,
     .priv_data_size  = sizeof(AC3EncodeContext),
     .init            = ff_ac3_encode_init,
     .encode2         = ff_ac3_float_encode_frame,

@@ -107,7 +107,7 @@ static av_cold int y41p_decode_close(AVCodecContext *avctx)
 AVCodec ff_y41p_decoder = {
     .name         = "y41p",
     .type         = AVMEDIA_TYPE_VIDEO,
-    .id           = CODEC_ID_Y41P,
+    .id           = AV_CODEC_ID_Y41P,
     .init         = y41p_decode_init,
     .decode       = y41p_decode_frame,
     .close        = y41p_decode_close,

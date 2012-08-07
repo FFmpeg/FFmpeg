@@ -334,7 +334,7 @@ static av_cold int mpc7_decode_close(AVCodecContext *avctx)
 AVCodec ff_mpc7_decoder = {
     .name           = "mpc7",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_MUSEPACK7,
+    .id             = AV_CODEC_ID_MUSEPACK7,
     .priv_data_size = sizeof(MPCContext),
     .init           = mpc7_decode_init,
     .close          = mpc7_decode_close,

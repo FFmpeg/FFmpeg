@@ -159,7 +159,7 @@ static int idcin_read_header(AVFormatContext *s)
     avpriv_set_pts_info(st, 33, 1, IDCIN_FPS);
     idcin->video_stream_index = st->index;
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = CODEC_ID_IDCIN;
+    st->codec->codec_id = AV_CODEC_ID_IDCIN;
     st->codec->codec_tag = 0;  /* no fourcc */
     st->codec->width = width;
     st->codec->height = height;
@@ -187,9 +187,9 @@ static int idcin_read_header(AVFormatContext *s)
         st->codec->bit_rate = sample_rate * bytes_per_sample * 8 * channels;
         st->codec->block_align = bytes_per_sample * channels;
         if (bytes_per_sample == 1)
-            st->codec->codec_id = CODEC_ID_PCM_U8;
+            st->codec->codec_id = AV_CODEC_ID_PCM_U8;
         else
-            st->codec->codec_id = CODEC_ID_PCM_S16LE;
+            st->codec->codec_id = AV_CODEC_ID_PCM_S16LE;
 
         if (sample_rate % 14 != 0) {
             idcin->audio_chunk_size1 = (sample_rate / 14) *

@@ -199,7 +199,7 @@ static int gif_encode_close(AVCodecContext *avctx)
 AVCodec ff_gif_encoder = {
     .name           = "gif",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_GIF,
+    .id             = AV_CODEC_ID_GIF,
     .priv_data_size = sizeof(GIFContext),
     .init           = gif_encode_init,
     .encode2        = gif_encode_frame,

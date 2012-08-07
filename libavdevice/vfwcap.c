@@ -73,16 +73,16 @@ static enum PixelFormat vfw_pixfmt(DWORD biCompression, WORD biBitCount)
     return PIX_FMT_NONE;
 }
 
-static enum CodecID vfw_codecid(DWORD biCompression)
+static enum AVCodecID vfw_codecid(DWORD biCompression)
 {
     switch(biCompression) {
     case MKTAG('d', 'v', 's', 'd'):
-        return CODEC_ID_DVVIDEO;
+        return AV_CODEC_ID_DVVIDEO;
     case MKTAG('M', 'J', 'P', 'G'):
     case MKTAG('m', 'j', 'p', 'g'):
-        return CODEC_ID_MJPEG;
+        return AV_CODEC_ID_MJPEG;
     }
-    return CODEC_ID_NONE;
+    return AV_CODEC_ID_NONE;
 }
 
 #define dstruct(pctx, sname, var, type) \
@@ -379,7 +379,7 @@ static int vfw_read_header(AVFormatContext *s)
     codec->pix_fmt = vfw_pixfmt(biCompression, biBitCount);
     if(codec->pix_fmt == PIX_FMT_NONE) {
         codec->codec_id = vfw_codecid(biCompression);
-        if(codec->codec_id == CODEC_ID_NONE) {
+        if(codec->codec_id == AV_CODEC_ID_NONE) {
             av_log(s, AV_LOG_ERROR, "Unknown compression type. "
                              "Please report verbose (-v 9) debug information.\n");
             vfw_read_close(s);
@@ -387,7 +387,7 @@ static int vfw_read_header(AVFormatContext *s)
         }
         codec->bits_per_coded_sample = biBitCount;
     } else {
-        codec->codec_id = CODEC_ID_RAWVIDEO;
+        codec->codec_id = AV_CODEC_ID_RAWVIDEO;
         if(biCompression == BI_RGB) {
             codec->bits_per_coded_sample = biBitCount;
             codec->extradata = av_malloc(9 + FF_INPUT_BUFFER_PADDING_SIZE);

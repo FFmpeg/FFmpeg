@@ -323,7 +323,7 @@ static av_cold int mp_decode_end(AVCodecContext *avctx)
 AVCodec ff_motionpixels_decoder = {
     .name           = "motionpixels",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_MOTIONPIXELS,
+    .id             = AV_CODEC_ID_MOTIONPIXELS,
     .priv_data_size = sizeof(MotionPixelsContext),
     .init           = mp_decode_init,
     .close          = mp_decode_end,

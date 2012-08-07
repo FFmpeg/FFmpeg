@@ -115,7 +115,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
 AVCodec ff_frwu_decoder = {
     .name           = "frwu",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_FRWU,
+    .id             = AV_CODEC_ID_FRWU,
     .init           = decode_init,
     .close          = decode_close,
     .decode         = decode_frame,

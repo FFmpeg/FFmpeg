@@ -167,7 +167,7 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
     DXVA_SliceInfo *slice = &ctx_pic->si;
 
     static const uint8_t start_code[] = { 0, 0, 1, 0x0d };
-    const unsigned start_code_size = avctx->codec_id == CODEC_ID_VC1 ? sizeof(start_code) : 0;
+    const unsigned start_code_size = avctx->codec_id == AV_CODEC_ID_VC1 ? sizeof(start_code) : 0;
     const unsigned slice_size = slice->dwSliceBitsInBuffer / 8;
     const unsigned padding = 128 - ((start_code_size + slice_size) & 127);
     const unsigned data_size = start_code_size + slice_size + padding;
@@ -237,7 +237,7 @@ static int decode_slice(AVCodecContext *avctx,
     if (ctx_pic->bitstream_size > 0)
         return -1;
 
-    if (avctx->codec_id == CODEC_ID_VC1 &&
+    if (avctx->codec_id == AV_CODEC_ID_VC1 &&
         size >= 4 && IS_MARKER(AV_RB32(buffer))) {
         buffer += 4;
         size   -= 4;
@@ -268,7 +268,7 @@ static int end_frame(AVCodecContext *avctx)
 AVHWAccel ff_wmv3_dxva2_hwaccel = {
     .name           = "wmv3_dxva2",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_WMV3,
+    .id             = AV_CODEC_ID_WMV3,
     .pix_fmt        = PIX_FMT_DXVA2_VLD,
     .start_frame    = start_frame,
     .decode_slice   = decode_slice,
@@ -280,7 +280,7 @@ AVHWAccel ff_wmv3_dxva2_hwaccel = {
 AVHWAccel ff_vc1_dxva2_hwaccel = {
     .name           = "vc1_dxva2",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_VC1,
+    .id             = AV_CODEC_ID_VC1,
     .pix_fmt        = PIX_FMT_DXVA2_VLD,
     .start_frame    = start_frame,
     .decode_slice   = decode_slice,

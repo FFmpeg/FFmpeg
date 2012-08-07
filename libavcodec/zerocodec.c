@@ -157,7 +157,7 @@ static av_cold int zerocodec_decode_init(AVCodecContext *avctx)
 AVCodec ff_zerocodec_decoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .name           = "zerocodec",
-    .id             = CODEC_ID_ZEROCODEC,
+    .id             = AV_CODEC_ID_ZEROCODEC,
     .priv_data_size = sizeof(ZeroCodecContext),
     .init           = zerocodec_decode_init,
     .decode         = zerocodec_decode_frame,

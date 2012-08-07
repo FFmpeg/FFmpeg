@@ -793,7 +793,7 @@ erasure:
 AVCodec ff_qcelp_decoder = {
     .name           = "qcelp",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_QCELP,
+    .id             = AV_CODEC_ID_QCELP,
     .init           = qcelp_decode_init,
     .decode         = qcelp_decode_frame,
     .capabilities   = CODEC_CAP_DR1,

@@ -70,6 +70,9 @@ API changes, most recent first:
 2012-03-26 - a67d9cf - lavfi 2.66.100
   Add avfilter_fill_frame_from_{audio_,}buffer_ref() functions.
 
+2012-08-xx - xxxxxxx - lavc 54.25 - avcodec.h
+  Rename CodecID to AVCodecID and all CODEC_ID_* to AV_CODEC_ID_*.
+
 2012-08-03 - xxxxxxx - lavu 51.37.1 - cpu.h
                        lsws 2.1.1   - swscale.h
   Rename AV_CPU_FLAG_MMX2  ---> AV_CPU_FLAG_MMXEXT.

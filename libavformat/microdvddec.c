@@ -116,7 +116,7 @@ static int microdvd_read_header(AVFormatContext *s)
     ff_subtitles_queue_finalize(&microdvd->q);
     avpriv_set_pts_info(st, 64, pts_info.den, pts_info.num);
     st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-    st->codec->codec_id   = CODEC_ID_MICRODVD;
+    st->codec->codec_id   = AV_CODEC_ID_MICRODVD;
     return 0;
 }
 

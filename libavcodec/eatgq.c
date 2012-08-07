@@ -242,7 +242,7 @@ static av_cold int tgq_decode_end(AVCodecContext *avctx){
 AVCodec ff_eatgq_decoder = {
     .name           = "eatgq",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_TGQ,
+    .id             = AV_CODEC_ID_TGQ,
     .priv_data_size = sizeof(TgqContext),
     .init           = tgq_decode_init,
     .close          = tgq_decode_end,

@@ -700,7 +700,7 @@ static av_cold int lag_decode_end(AVCodecContext *avctx)
 AVCodec ff_lagarith_decoder = {
     .name           = "lagarith",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_LAGARITH,
+    .id             = AV_CODEC_ID_LAGARITH,
     .priv_data_size = sizeof(LagarithContext),
     .init           = lag_decode_init,
     .close          = lag_decode_end,

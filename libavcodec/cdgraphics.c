@@ -374,7 +374,7 @@ static av_cold int cdg_decode_end(AVCodecContext *avctx)
 AVCodec ff_cdgraphics_decoder = {
     .name           = "cdgraphics",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_CDGRAPHICS,
+    .id             = AV_CODEC_ID_CDGRAPHICS,
     .priv_data_size = sizeof(CDGraphicsContext),
     .init           = cdg_decode_init,
     .close          = cdg_decode_end,

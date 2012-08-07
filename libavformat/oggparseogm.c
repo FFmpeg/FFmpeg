@@ -58,7 +58,7 @@ ogm_header(AVFormatContext *s, int idx)
             st->codec->codec_tag = tag;
         } else if (*p == 't') {
             st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-            st->codec->codec_id = CODEC_ID_TEXT;
+            st->codec->codec_id = AV_CODEC_ID_TEXT;
             p += 12;
         } else {
             uint8_t acid[5];
@@ -70,7 +70,7 @@ ogm_header(AVFormatContext *s, int idx)
             cid = strtol(acid, NULL, 16);
             st->codec->codec_id = ff_codec_get_id(ff_codec_wav_tags, cid);
             // our parser completely breaks AAC in Ogg
-            if (st->codec->codec_id != CODEC_ID_AAC)
+            if (st->codec->codec_id != AV_CODEC_ID_AAC)
                 st->need_parsing = AVSTREAM_PARSE_FULL;
         }
 
@@ -91,7 +91,7 @@ ogm_header(AVFormatContext *s, int idx)
             st->codec->bit_rate = bytestream_get_le32(&p) * 8;
             st->codec->sample_rate = time_unit ? spu * 10000000 / time_unit : 0;
             avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
-            if (size >= 56 && st->codec->codec_id == CODEC_ID_AAC) {
+            if (size >= 56 && st->codec->codec_id == AV_CODEC_ID_AAC) {
                 p += 4;
                 size -= 4;
             }

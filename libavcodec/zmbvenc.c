@@ -337,7 +337,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
 AVCodec ff_zmbv_encoder = {
     .name           = "zmbv",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_ZMBV,
+    .id             = AV_CODEC_ID_ZMBV,
     .priv_data_size = sizeof(ZmbvEncContext),
     .init           = encode_init,
     .encode2        = encode_frame,

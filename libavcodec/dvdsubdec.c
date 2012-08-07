@@ -561,7 +561,7 @@ static int dvdsub_init(AVCodecContext *avctx)
 AVCodec ff_dvdsub_decoder = {
     .name           = "dvdsub",
     .type           = AVMEDIA_TYPE_SUBTITLE,
-    .id             = CODEC_ID_DVD_SUBTITLE,
+    .id             = AV_CODEC_ID_DVD_SUBTITLE,
     .priv_data_size = sizeof(DVDSubContext),
     .init           = dvdsub_init,
     .decode         = dvdsub_decode,

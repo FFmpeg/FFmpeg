@@ -164,7 +164,7 @@ static int adx_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 AVCodec ff_adpcm_adx_encoder = {
     .name           = "adpcm_adx",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_ADPCM_ADX,
+    .id             = AV_CODEC_ID_ADPCM_ADX,
     .priv_data_size = sizeof(ADXContext),
     .init           = adx_encode_init,
     .encode2        = adx_encode_frame,

@@ -161,7 +161,7 @@ static av_cold int decode_end(AVCodecContext *avctx) {
 AVCodec ff_cscd_decoder = {
     .name           = "camstudio",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_CSCD,
+    .id             = AV_CODEC_ID_CSCD,
     .priv_data_size = sizeof(CamStudioContext),
     .init           = decode_init,
     .close          = decode_end,

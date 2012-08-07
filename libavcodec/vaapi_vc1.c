@@ -326,7 +326,7 @@ static int vaapi_vc1_decode_slice(AVCodecContext *avctx, const uint8_t *buffer, 
     av_dlog(avctx, "vaapi_vc1_decode_slice(): buffer %p, size %d\n", buffer, size);
 
     /* Current bit buffer is beyond any marker for VC-1, so skip it */
-    if (avctx->codec_id == CODEC_ID_VC1 && IS_MARKER(AV_RB32(buffer))) {
+    if (avctx->codec_id == AV_CODEC_ID_VC1 && IS_MARKER(AV_RB32(buffer))) {
         buffer += 4;
         size -= 4;
     }
@@ -344,7 +344,7 @@ static int vaapi_vc1_decode_slice(AVCodecContext *avctx, const uint8_t *buffer, 
 AVHWAccel ff_wmv3_vaapi_hwaccel = {
     .name           = "wmv3_vaapi",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_WMV3,
+    .id             = AV_CODEC_ID_WMV3,
     .pix_fmt        = PIX_FMT_VAAPI_VLD,
     .start_frame    = vaapi_vc1_start_frame,
     .end_frame      = vaapi_vc1_end_frame,
@@ -355,7 +355,7 @@ AVHWAccel ff_wmv3_vaapi_hwaccel = {
 AVHWAccel ff_vc1_vaapi_hwaccel = {
     .name           = "vc1_vaapi",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_VC1,
+    .id             = AV_CODEC_ID_VC1,
     .pix_fmt        = PIX_FMT_VAAPI_VLD,
     .start_frame    = vaapi_vc1_start_frame,
     .end_frame      = vaapi_vc1_end_frame,

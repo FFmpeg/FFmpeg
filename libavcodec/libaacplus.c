@@ -132,7 +132,7 @@ static av_cold int aacPlus_encode_close(AVCodecContext *avctx)
 AVCodec ff_libaacplus_encoder = {
     .name           = "libaacplus",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_AAC,
+    .id             = AV_CODEC_ID_AAC,
     .priv_data_size = sizeof(aacPlusAudioContext),
     .init           = aacPlus_encode_init,
     .encode2        = aacPlus_encode_frame,

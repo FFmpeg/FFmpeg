@@ -229,7 +229,7 @@ static av_cold int mm_decode_end(AVCodecContext *avctx)
 AVCodec ff_mmvideo_decoder = {
     .name           = "mmvideo",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_MMVIDEO,
+    .id             = AV_CODEC_ID_MMVIDEO,
     .priv_data_size = sizeof(MmContext),
     .init           = mm_decode_init,
     .close          = mm_decode_end,

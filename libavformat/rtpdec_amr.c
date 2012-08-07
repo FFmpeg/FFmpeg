@@ -64,9 +64,9 @@ static int amr_handle_packet(AVFormatContext *ctx,
     const uint8_t *speech_data;
     uint8_t *ptr;
 
-    if (st->codec->codec_id == CODEC_ID_AMR_NB) {
+    if (st->codec->codec_id == AV_CODEC_ID_AMR_NB) {
         frame_sizes = frame_sizes_nb;
-    } else if (st->codec->codec_id == CODEC_ID_AMR_WB) {
+    } else if (st->codec->codec_id == AV_CODEC_ID_AMR_WB) {
         frame_sizes = frame_sizes_wb;
     } else {
         av_log(ctx, AV_LOG_ERROR, "Bad codec ID\n");
@@ -192,7 +192,7 @@ static int amr_parse_sdp_line(AVFormatContext *s, int st_index,
 RTPDynamicProtocolHandler ff_amr_nb_dynamic_handler = {
     .enc_name         = "AMR",
     .codec_type       = AVMEDIA_TYPE_AUDIO,
-    .codec_id         = CODEC_ID_AMR_NB,
+    .codec_id         = AV_CODEC_ID_AMR_NB,
     .parse_sdp_a_line = amr_parse_sdp_line,
     .alloc            = amr_new_context,
     .free             = amr_free_context,
@@ -202,7 +202,7 @@ RTPDynamicProtocolHandler ff_amr_nb_dynamic_handler = {
 RTPDynamicProtocolHandler ff_amr_wb_dynamic_handler = {
     .enc_name         = "AMR-WB",
     .codec_type       = AVMEDIA_TYPE_AUDIO,
-    .codec_id         = CODEC_ID_AMR_WB,
+    .codec_id         = AV_CODEC_ID_AMR_WB,
     .parse_sdp_a_line = amr_parse_sdp_line,
     .alloc            = amr_new_context,
     .free             = amr_free_context,

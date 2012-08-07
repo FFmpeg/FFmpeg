@@ -38,7 +38,7 @@ static int write_header(AVFormatContext *s)
         av_log(s, AV_LOG_ERROR, "only one stream is supported\n");
         return AVERROR(EINVAL);
     }
-    if (codec->codec_id != CODEC_ID_WAVPACK) {
+    if (codec->codec_id != AV_CODEC_ID_WAVPACK) {
         av_log(s, AV_LOG_ERROR, "unsupported codec\n");
         return AVERROR(EINVAL);
     }
@@ -92,8 +92,8 @@ AVOutputFormat ff_wv_muxer = {
     .long_name         = NULL_IF_CONFIG_SMALL("WavPack"),
     .priv_data_size    = sizeof(WVMuxContext),
     .extensions        = "wv",
-    .audio_codec       = CODEC_ID_WAVPACK,
-    .video_codec       = CODEC_ID_NONE,
+    .audio_codec       = AV_CODEC_ID_WAVPACK,
+    .video_codec       = AV_CODEC_ID_NONE,
     .write_header      = write_header,
     .write_packet      = write_packet,
     .write_trailer     = write_trailer,

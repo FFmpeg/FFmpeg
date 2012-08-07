@@ -26,7 +26,7 @@ static int microdvd_write_header(struct AVFormatContext *s)
 {
     AVCodecContext *avctx = s->streams[0]->codec;
 
-    if (s->nb_streams != 1 || avctx->codec_id != CODEC_ID_MICRODVD) {
+    if (s->nb_streams != 1 || avctx->codec_id != AV_CODEC_ID_MICRODVD) {
         av_log(s, AV_LOG_ERROR, "Exactly one MicroDVD stream is needed.\n");
         return -1;
     }
@@ -47,5 +47,5 @@ AVOutputFormat ff_microdvd_muxer = {
     .write_header   = microdvd_write_header,
     .write_packet   = ff_raw_write_packet,
     .flags          = AVFMT_NOTIMESTAMPS,
-    .subtitle_codec = CODEC_ID_MICRODVD,
+    .subtitle_codec = AV_CODEC_ID_MICRODVD,
 };

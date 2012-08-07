@@ -107,7 +107,7 @@ static int read_header(AVFormatContext *s)
     avio_skip(pb, 4);
     vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     vst->codec->codec_tag  = 0;
-    vst->codec->codec_id   = CODEC_ID_PAF_VIDEO;
+    vst->codec->codec_id   = AV_CODEC_ID_PAF_VIDEO;
     avpriv_set_pts_info(vst, 64, 1, 10);
 
     ast = avformat_new_stream(s, 0);
@@ -117,7 +117,7 @@ static int read_header(AVFormatContext *s)
     ast->start_time         = 0;
     ast->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
     ast->codec->codec_tag   = 0;
-    ast->codec->codec_id    = CODEC_ID_PAF_AUDIO;
+    ast->codec->codec_id    = AV_CODEC_ID_PAF_AUDIO;
     ast->codec->channels    = 2;
     ast->codec->sample_rate = 22050;
     avpriv_set_pts_info(ast, 64, 1, 22050);

@@ -175,7 +175,7 @@ AVCodec ff_libutvideo_decoder = {
     "libutvideo",
     NULL_IF_CONFIG_SMALL("Ut Video"),
     AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_UTVIDEO,
+    AV_CODEC_ID_UTVIDEO,
     0,    //capabilities
     NULL, //supported_framerates
     NULL, //pix_fmts

@@ -251,7 +251,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 AVCodec ff_c93_decoder = {
     .name           = "c93",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_C93,
+    .id             = AV_CODEC_ID_C93,
     .priv_data_size = sizeof(C93DecoderContext),
     .init           = decode_init,
     .close          = decode_end,

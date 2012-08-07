@@ -328,7 +328,7 @@ static av_cold int decode_end(AVCodecContext *avctx){
 AVCodec ff_qpeg_decoder = {
     .name           = "qpeg",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_QPEG,
+    .id             = AV_CODEC_ID_QPEG,
     .priv_data_size = sizeof(QpegContext),
     .init           = decode_init,
     .close          = decode_end,

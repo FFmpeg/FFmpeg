@@ -191,10 +191,10 @@ static av_cold int eightsvx_decode_init(AVCodecContext *avctx)
     }
 
     switch (avctx->codec->id) {
-    case CODEC_ID_8SVX_FIB: esc->table = fibonacci;    break;
-    case CODEC_ID_8SVX_EXP: esc->table = exponential;  break;
-    case CODEC_ID_PCM_S8_PLANAR:
-    case CODEC_ID_8SVX_RAW: esc->table = NULL;         break;
+    case AV_CODEC_ID_8SVX_FIB: esc->table = fibonacci;    break;
+    case AV_CODEC_ID_8SVX_EXP: esc->table = exponential;  break;
+    case AV_CODEC_ID_PCM_S8_PLANAR:
+    case AV_CODEC_ID_8SVX_RAW: esc->table = NULL;         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Invalid codec id %d.\n", avctx->codec->id);
         return AVERROR_INVALIDDATA;
@@ -222,7 +222,7 @@ static av_cold int eightsvx_decode_close(AVCodecContext *avctx)
 AVCodec ff_eightsvx_fib_decoder = {
   .name           = "8svx_fib",
   .type           = AVMEDIA_TYPE_AUDIO,
-  .id             = CODEC_ID_8SVX_FIB,
+  .id             = AV_CODEC_ID_8SVX_FIB,
   .priv_data_size = sizeof (EightSvxContext),
   .init           = eightsvx_decode_init,
   .decode         = eightsvx_decode_frame,
@@ -235,7 +235,7 @@ AVCodec ff_eightsvx_fib_decoder = {
 AVCodec ff_eightsvx_exp_decoder = {
   .name           = "8svx_exp",
   .type           = AVMEDIA_TYPE_AUDIO,
-  .id             = CODEC_ID_8SVX_EXP,
+  .id             = AV_CODEC_ID_8SVX_EXP,
   .priv_data_size = sizeof (EightSvxContext),
   .init           = eightsvx_decode_init,
   .decode         = eightsvx_decode_frame,
@@ -248,7 +248,7 @@ AVCodec ff_eightsvx_exp_decoder = {
 AVCodec ff_pcm_s8_planar_decoder = {
     .name           = "pcm_s8_planar",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_PCM_S8_PLANAR,
+    .id             = AV_CODEC_ID_PCM_S8_PLANAR,
     .priv_data_size = sizeof(EightSvxContext),
     .init           = eightsvx_decode_init,
     .close          = eightsvx_decode_close,

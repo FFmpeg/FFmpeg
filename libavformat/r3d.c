@@ -62,7 +62,7 @@ static int r3d_read_red1(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = CODEC_ID_JPEG2000;
+    st->codec->codec_id = AV_CODEC_ID_JPEG2000;
 
     tmp  = avio_r8(s->pb); // major version
     tmp2 = avio_r8(s->pb); // minor version
@@ -101,7 +101,7 @@ static int r3d_read_red1(AVFormatContext *s)
         if (!ast)
             return AVERROR(ENOMEM);
         ast->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        ast->codec->codec_id = CODEC_ID_PCM_S32BE;
+        ast->codec->codec_id = AV_CODEC_ID_PCM_S32BE;
         ast->codec->channels = tmp;
         avpriv_set_pts_info(ast, 32, 1, st->time_base.den);
     }

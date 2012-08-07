@@ -1916,7 +1916,7 @@ static int dirac_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 AVCodec ff_dirac_decoder = {
     .name           = "dirac",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_DIRAC,
+    .id             = AV_CODEC_ID_DIRAC,
     .priv_data_size = sizeof(DiracContext),
     .init           = dirac_decode_init,
     .close          = dirac_decode_end,

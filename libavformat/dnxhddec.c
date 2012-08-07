@@ -42,4 +42,4 @@ static int dnxhd_probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX;
 }
 
-FF_DEF_RAWVIDEO_DEMUXER(dnxhd, "raw DNxHD (SMPTE VC-3)", dnxhd_probe, NULL, CODEC_ID_DNXHD)
+FF_DEF_RAWVIDEO_DEMUXER(dnxhd, "raw DNxHD (SMPTE VC-3)", dnxhd_probe, NULL, AV_CODEC_ID_DNXHD)

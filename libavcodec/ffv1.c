@@ -2083,7 +2083,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
 AVCodec ff_ffv1_decoder = {
     .name           = "ffv1",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_FFV1,
+    .id             = AV_CODEC_ID_FFV1,
     .priv_data_size = sizeof(FFV1Context),
     .init           = decode_init,
     .close          = common_end,
@@ -2117,7 +2117,7 @@ static const AVCodecDefault ffv1_defaults[] = {
 AVCodec ff_ffv1_encoder = {
     .name           = "ffv1",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_FFV1,
+    .id             = AV_CODEC_ID_FFV1,
     .priv_data_size = sizeof(FFV1Context),
     .init           = encode_init,
     .encode2        = encode_frame,

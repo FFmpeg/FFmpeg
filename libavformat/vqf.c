@@ -105,7 +105,7 @@ static int vqf_read_header(AVFormatContext *s)
     header_size = avio_rb32(s->pb);
 
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id   = CODEC_ID_TWINVQ;
+    st->codec->codec_id   = AV_CODEC_ID_TWINVQ;
     st->start_time = 0;
 
     do {

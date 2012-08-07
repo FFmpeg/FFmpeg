@@ -36,15 +36,15 @@ typedef struct {
 
 static uint32_t codec_flags(enum CodecID codec_id) {
     switch (codec_id) {
-    case CODEC_ID_PCM_F32BE:
-    case CODEC_ID_PCM_F64BE:
+    case AV_CODEC_ID_PCM_F32BE:
+    case AV_CODEC_ID_PCM_F64BE:
         return 1; //< kCAFLinearPCMFormatFlagIsFloat
-    case CODEC_ID_PCM_S16LE:
-    case CODEC_ID_PCM_S24LE:
-    case CODEC_ID_PCM_S32LE:
+    case AV_CODEC_ID_PCM_S16LE:
+    case AV_CODEC_ID_PCM_S24LE:
+    case AV_CODEC_ID_PCM_S32LE:
         return 2; //< kCAFLinearPCMFormatFlagIsLittleEndian
-    case CODEC_ID_PCM_F32LE:
-    case CODEC_ID_PCM_F64LE:
+    case AV_CODEC_ID_PCM_F32LE:
+    case AV_CODEC_ID_PCM_F64LE:
         return 3; //< kCAFLinearPCMFormatFlagIsFloat | kCAFLinearPCMFormatFlagIsLittleEndian
     default:
         return 0;
@@ -53,44 +53,44 @@ static uint32_t codec_flags(enum CodecID codec_id) {
 
 static uint32_t samples_per_packet(enum CodecID codec_id, int channels) {
     switch (codec_id) {
-    case CODEC_ID_PCM_S8:
-    case CODEC_ID_PCM_S16LE:
-    case CODEC_ID_PCM_S16BE:
-    case CODEC_ID_PCM_S24LE:
-    case CODEC_ID_PCM_S24BE:
-    case CODEC_ID_PCM_S32LE:
-    case CODEC_ID_PCM_S32BE:
-    case CODEC_ID_PCM_F32LE:
-    case CODEC_ID_PCM_F32BE:
-    case CODEC_ID_PCM_F64LE:
-    case CODEC_ID_PCM_F64BE:
-    case CODEC_ID_PCM_ALAW:
-    case CODEC_ID_PCM_MULAW:
+    case AV_CODEC_ID_PCM_S8:
+    case AV_CODEC_ID_PCM_S16LE:
+    case AV_CODEC_ID_PCM_S16BE:
+    case AV_CODEC_ID_PCM_S24LE:
+    case AV_CODEC_ID_PCM_S24BE:
+    case AV_CODEC_ID_PCM_S32LE:
+    case AV_CODEC_ID_PCM_S32BE:
+    case AV_CODEC_ID_PCM_F32LE:
+    case AV_CODEC_ID_PCM_F32BE:
+    case AV_CODEC_ID_PCM_F64LE:
+    case AV_CODEC_ID_PCM_F64BE:
+    case AV_CODEC_ID_PCM_ALAW:
+    case AV_CODEC_ID_PCM_MULAW:
         return 1;
-    case CODEC_ID_MACE3:
-    case CODEC_ID_MACE6:
+    case AV_CODEC_ID_MACE3:
+    case AV_CODEC_ID_MACE6:
         return 6;
-    case CODEC_ID_ADPCM_IMA_QT:
+    case AV_CODEC_ID_ADPCM_IMA_QT:
         return 64;
-    case CODEC_ID_AMR_NB:
-    case CODEC_ID_GSM:
-    case CODEC_ID_QCELP:
+    case AV_CODEC_ID_AMR_NB:
+    case AV_CODEC_ID_GSM:
+    case AV_CODEC_ID_QCELP:
         return 160;
-    case CODEC_ID_GSM_MS:
+    case AV_CODEC_ID_GSM_MS:
         return 320;
-    case CODEC_ID_MP1:
+    case AV_CODEC_ID_MP1:
         return 384;
-    case CODEC_ID_MP2:
-    case CODEC_ID_MP3:
+    case AV_CODEC_ID_MP2:
+    case AV_CODEC_ID_MP3:
         return 1152;
-    case CODEC_ID_AC3:
+    case AV_CODEC_ID_AC3:
         return 1536;
-    case CODEC_ID_ALAC:
-    case CODEC_ID_QDM2:
+    case AV_CODEC_ID_ALAC:
+    case AV_CODEC_ID_QDM2:
         return 4096;
-    case CODEC_ID_ADPCM_IMA_WAV:
+    case AV_CODEC_ID_ADPCM_IMA_WAV:
         return (1024 - 4 * channels) * 8 / (4 * channels) + 1;
-    case CODEC_ID_ADPCM_MS:
+    case AV_CODEC_ID_ADPCM_MS:
         return (1024 - 7 * channels) * 2 / channels + 2;
     default:
         return 0;
@@ -105,26 +105,26 @@ static int caf_write_header(AVFormatContext *s)
     unsigned int codec_tag = ff_codec_get_tag(ff_codec_caf_tags, enc->codec_id);
 
     switch (enc->codec_id) {
-    case CODEC_ID_AAC:
-    case CODEC_ID_AC3:
+    case AV_CODEC_ID_AAC:
+    case AV_CODEC_ID_AC3:
         av_log(s, AV_LOG_ERROR, "muxing codec currently unsupported\n");
         return AVERROR_PATCHWELCOME;
     }
 
     switch (enc->codec_id) {
-    case CODEC_ID_PCM_S8:
-    case CODEC_ID_PCM_S16LE:
-    case CODEC_ID_PCM_S16BE:
-    case CODEC_ID_PCM_S24LE:
-    case CODEC_ID_PCM_S24BE:
-    case CODEC_ID_PCM_S32LE:
-    case CODEC_ID_PCM_S32BE:
-    case CODEC_ID_PCM_F32LE:
-    case CODEC_ID_PCM_F32BE:
-    case CODEC_ID_PCM_F64LE:
-    case CODEC_ID_PCM_F64BE:
-    case CODEC_ID_PCM_ALAW:
-    case CODEC_ID_PCM_MULAW:
+    case AV_CODEC_ID_PCM_S8:
+    case AV_CODEC_ID_PCM_S16LE:
+    case AV_CODEC_ID_PCM_S16BE:
+    case AV_CODEC_ID_PCM_S24LE:
+    case AV_CODEC_ID_PCM_S24BE:
+    case AV_CODEC_ID_PCM_S32LE:
+    case AV_CODEC_ID_PCM_S32BE:
+    case AV_CODEC_ID_PCM_F32LE:
+    case AV_CODEC_ID_PCM_F32BE:
+    case AV_CODEC_ID_PCM_F64LE:
+    case AV_CODEC_ID_PCM_F64BE:
+    case AV_CODEC_ID_PCM_ALAW:
+    case AV_CODEC_ID_PCM_MULAW:
         codec_tag = MKTAG('l','p','c','m');
     }
 
@@ -158,12 +158,12 @@ static int caf_write_header(AVFormatContext *s)
         ff_mov_write_chan(pb, enc->channel_layout);
     }
 
-    if (enc->codec_id == CODEC_ID_ALAC) {
+    if (enc->codec_id == AV_CODEC_ID_ALAC) {
         ffio_wfourcc(pb, "kuki");
         avio_wb64(pb, 12 + enc->extradata_size);
         avio_write(pb, "\0\0\0\14frmaalac", 12);
         avio_write(pb, enc->extradata, enc->extradata_size);
-    } else if (enc->codec_id == CODEC_ID_AMR_NB) {
+    } else if (enc->codec_id == AV_CODEC_ID_AMR_NB) {
         ffio_wfourcc(pb, "kuki");
         avio_wb64(pb, 29);
         avio_write(pb, "\0\0\0\14frmasamr", 12);
@@ -174,7 +174,7 @@ static int caf_write_header(AVFormatContext *s)
         avio_wb16(pb, 0x81FF); /* Mode set (all modes for AMR_NB) */
         avio_w8(pb, 0x00); /* Mode change period (no restriction) */
         avio_w8(pb, 0x01); /* Frames per sample */
-    } else if (enc->codec_id == CODEC_ID_QDM2) {
+    } else if (enc->codec_id == AV_CODEC_ID_QDM2) {
         ffio_wfourcc(pb, "kuki");
         avio_wb64(pb, enc->extradata_size);
         avio_write(pb, enc->extradata, enc->extradata_size);
@@ -253,8 +253,8 @@ AVOutputFormat ff_caf_muxer = {
     .mime_type      = "audio/x-caf",
     .extensions     = "caf",
     .priv_data_size = sizeof(CAFContext),
-    .audio_codec    = CODEC_ID_PCM_S16BE,
-    .video_codec    = CODEC_ID_NONE,
+    .audio_codec    = AV_CODEC_ID_PCM_S16BE,
+    .video_codec    = AV_CODEC_ID_NONE,
     .write_header   = caf_write_header,
     .write_packet   = caf_write_packet,
     .write_trailer  = caf_write_trailer,

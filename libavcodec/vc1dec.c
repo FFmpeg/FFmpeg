@@ -4892,7 +4892,7 @@ static void vc1_parse_sprites(VC1Context *v, GetBitContext* gb, SpriteData* sd)
         av_log(avctx, AV_LOG_DEBUG, "Effect flag set\n");
 
     if (get_bits_count(gb) >= gb->size_in_bits +
-       (avctx->codec_id == CODEC_ID_WMV3IMAGE ? 64 : 0))
+       (avctx->codec_id == AV_CODEC_ID_WMV3IMAGE ? 64 : 0))
         av_log(avctx, AV_LOG_ERROR, "Buffer overrun\n");
     if (get_bits_count(gb) < gb->size_in_bits - 8)
         av_log(avctx, AV_LOG_WARNING, "Buffer not fully read\n");
@@ -5101,7 +5101,7 @@ static av_cold int vc1_decode_init_alloc_tables(VC1Context *v)
 
     ff_intrax8_common_init(&v->x8,s);
 
-    if (s->avctx->codec_id == CODEC_ID_WMV3IMAGE || s->avctx->codec_id == CODEC_ID_VC1IMAGE) {
+    if (s->avctx->codec_id == AV_CODEC_ID_WMV3IMAGE || s->avctx->codec_id == AV_CODEC_ID_VC1IMAGE) {
         for (i = 0; i < 4; i++)
             if (!(v->sr_rows[i >> 1][i & 1] = av_malloc(v->output_width))) return -1;
     }
@@ -5148,7 +5148,7 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
         return -1;
     ff_vc1dsp_init(&v->vc1dsp);
 
-    if (avctx->codec_id == CODEC_ID_WMV3 || avctx->codec_id == CODEC_ID_WMV3IMAGE) {
+    if (avctx->codec_id == AV_CODEC_ID_WMV3 || avctx->codec_id == AV_CODEC_ID_WMV3IMAGE) {
         int count = 0;
 
         // looks like WMV3 has a sequence header stored in the extradata
@@ -5242,7 +5242,7 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
         v->top_blk_sh  = 0;
     }
 
-    if (avctx->codec_id == CODEC_ID_WMV3IMAGE || avctx->codec_id == CODEC_ID_VC1IMAGE) {
+    if (avctx->codec_id == AV_CODEC_ID_WMV3IMAGE || avctx->codec_id == AV_CODEC_ID_VC1IMAGE) {
         v->sprite_width  = avctx->coded_width;
         v->sprite_height = avctx->coded_height;
 
@@ -5266,7 +5266,7 @@ static av_cold int vc1_decode_end(AVCodecContext *avctx)
     VC1Context *v = avctx->priv_data;
     int i;
 
-    if ((avctx->codec_id == CODEC_ID_WMV3IMAGE || avctx->codec_id == CODEC_ID_VC1IMAGE)
+    if ((avctx->codec_id == AV_CODEC_ID_WMV3IMAGE || avctx->codec_id == AV_CODEC_ID_VC1IMAGE)
         && v->sprite_output_frame.data[0])
         avctx->release_buffer(avctx, &v->sprite_output_frame);
     for (i = 0; i < 4; i++)
@@ -5339,7 +5339,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     //for advanced profile we may need to parse and unescape data
-    if (avctx->codec_id == CODEC_ID_VC1 || avctx->codec_id == CODEC_ID_VC1IMAGE) {
+    if (avctx->codec_id == AV_CODEC_ID_VC1 || avctx->codec_id == AV_CODEC_ID_VC1IMAGE) {
         int buf_size2 = 0;
         buf2 = av_mallocz(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
 
@@ -5435,11 +5435,11 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
     if (v->res_sprite) {
         v->new_sprite  = !get_bits1(&s->gb);
         v->two_sprites =  get_bits1(&s->gb);
-        /* res_sprite means a Windows Media Image stream, CODEC_ID_*IMAGE means
+        /* res_sprite means a Windows Media Image stream, AV_CODEC_ID_*IMAGE means
            we're using the sprite compositor. These are intentionally kept separate
            so you can get the raw sprites by using the wmv3 decoder for WMVP or
            the vc1 one for WVP2 */
-        if (avctx->codec_id == CODEC_ID_WMV3IMAGE || avctx->codec_id == CODEC_ID_VC1IMAGE) {
+        if (avctx->codec_id == AV_CODEC_ID_WMV3IMAGE || avctx->codec_id == AV_CODEC_ID_VC1IMAGE) {
             if (v->new_sprite) {
                 // switch AVCodecContext parameters to those of the sprites
                 avctx->width  = avctx->coded_width  = v->sprite_width;
@@ -5489,7 +5489,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
         }
     }
 
-    if ((avctx->codec_id == CODEC_ID_WMV3IMAGE || avctx->codec_id == CODEC_ID_VC1IMAGE)
+    if ((avctx->codec_id == AV_CODEC_ID_WMV3IMAGE || avctx->codec_id == AV_CODEC_ID_VC1IMAGE)
         && s->pict_type != AV_PICTURE_TYPE_I) {
         av_log(v->s.avctx, AV_LOG_ERROR, "Sprite decoder: expected I-frame\n");
         goto err;
@@ -5636,7 +5636,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
 
     ff_MPV_frame_end(s);
 
-    if (avctx->codec_id == CODEC_ID_WMV3IMAGE || avctx->codec_id == CODEC_ID_VC1IMAGE) {
+    if (avctx->codec_id == AV_CODEC_ID_WMV3IMAGE || avctx->codec_id == AV_CODEC_ID_VC1IMAGE) {
 image:
         avctx->width  = avctx->coded_width  = v->output_width;
         avctx->height = avctx->coded_height = v->output_height;
@@ -5687,7 +5687,7 @@ static const AVProfile profiles[] = {
 AVCodec ff_vc1_decoder = {
     .name           = "vc1",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_VC1,
+    .id             = AV_CODEC_ID_VC1,
     .priv_data_size = sizeof(VC1Context),
     .init           = vc1_decode_init,
     .close          = vc1_decode_end,
@@ -5702,7 +5702,7 @@ AVCodec ff_vc1_decoder = {
 AVCodec ff_wmv3_decoder = {
     .name           = "wmv3",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_WMV3,
+    .id             = AV_CODEC_ID_WMV3,
     .priv_data_size = sizeof(VC1Context),
     .init           = vc1_decode_init,
     .close          = vc1_decode_end,
@@ -5718,7 +5718,7 @@ AVCodec ff_wmv3_decoder = {
 AVCodec ff_wmv3_vdpau_decoder = {
     .name           = "wmv3_vdpau",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_WMV3,
+    .id             = AV_CODEC_ID_WMV3,
     .priv_data_size = sizeof(VC1Context),
     .init           = vc1_decode_init,
     .close          = vc1_decode_end,
@@ -5734,7 +5734,7 @@ AVCodec ff_wmv3_vdpau_decoder = {
 AVCodec ff_vc1_vdpau_decoder = {
     .name           = "vc1_vdpau",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_VC1,
+    .id             = AV_CODEC_ID_VC1,
     .priv_data_size = sizeof(VC1Context),
     .init           = vc1_decode_init,
     .close          = vc1_decode_end,
@@ -5750,7 +5750,7 @@ AVCodec ff_vc1_vdpau_decoder = {
 AVCodec ff_wmv3image_decoder = {
     .name           = "wmv3image",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_WMV3IMAGE,
+    .id             = AV_CODEC_ID_WMV3IMAGE,
     .priv_data_size = sizeof(VC1Context),
     .init           = vc1_decode_init,
     .close          = vc1_decode_end,
@@ -5766,7 +5766,7 @@ AVCodec ff_wmv3image_decoder = {
 AVCodec ff_vc1image_decoder = {
     .name           = "vc1image",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_VC1IMAGE,
+    .id             = AV_CODEC_ID_VC1IMAGE,
     .priv_data_size = sizeof(VC1Context),
     .init           = vc1_decode_init,
     .close          = vc1_decode_end,

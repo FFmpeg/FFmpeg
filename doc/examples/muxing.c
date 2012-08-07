@@ -58,7 +58,7 @@ static int audio_input_frame_size;
  * add an audio output stream
  */
 static AVStream *add_audio_stream(AVFormatContext *oc, AVCodec **codec,
-                                  enum CodecID codec_id)
+                                  enum AVCodecID codec_id)
 {
     AVCodecContext *c;
     AVStream *st;
@@ -183,7 +183,7 @@ static int frame_count, video_outbuf_size;
 
 /* Add a video output stream. */
 static AVStream *add_video_stream(AVFormatContext *oc, AVCodec **codec,
-                                  enum CodecID codec_id)
+                                  enum AVCodecID codec_id)
 {
     AVCodecContext *c;
     AVStream *st;
@@ -220,11 +220,11 @@ static AVStream *add_video_stream(AVFormatContext *oc, AVCodec **codec,
     c->time_base.num = 1;
     c->gop_size      = 12; /* emit one intra frame every twelve frames at most */
     c->pix_fmt       = STREAM_PIX_FMT;
-    if (c->codec_id == CODEC_ID_MPEG2VIDEO) {
+    if (c->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
         /* just for testing, we also add B frames */
         c->max_b_frames = 2;
     }
-    if (c->codec_id == CODEC_ID_MPEG1VIDEO) {
+    if (c->codec_id == AV_CODEC_ID_MPEG1VIDEO) {
         /* Needed to avoid using macroblocks in which some coeffs overflow.
          * This does not happen with normal video, it just happens here as
          * the motion of the chroma plane does not match the luma plane. */
@@ -445,10 +445,10 @@ int main(int argc, char **argv)
      * and initialize the codecs. */
     video_st = NULL;
     audio_st = NULL;
-    if (fmt->video_codec != CODEC_ID_NONE) {
+    if (fmt->video_codec != AV_CODEC_ID_NONE) {
         video_st = add_video_stream(oc, &video_codec, fmt->video_codec);
     }
-    if (fmt->audio_codec != CODEC_ID_NONE) {
+    if (fmt->audio_codec != AV_CODEC_ID_NONE) {
         audio_st = add_audio_stream(oc, &audio_codec, fmt->audio_codec);
     }
 

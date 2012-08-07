@@ -323,7 +323,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 AVCodec ff_nuv_decoder = {
     .name           = "nuv",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_NUV,
+    .id             = AV_CODEC_ID_NUV,
     .priv_data_size = sizeof(NuvContext),
     .init           = decode_init,
     .close          = decode_end,

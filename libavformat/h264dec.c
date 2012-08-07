@@ -67,4 +67,4 @@ static int h264_probe(AVProbeData *p)
     return 0;
 }
 
-FF_DEF_RAWVIDEO_DEMUXER(h264 , "raw H.264 video", h264_probe, "h26l,h264,264", CODEC_ID_H264)
+FF_DEF_RAWVIDEO_DEMUXER(h264 , "raw H.264 video", h264_probe, "h26l,h264,264", AV_CODEC_ID_H264)

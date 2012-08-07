@@ -268,7 +268,7 @@ static int yop_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 AVCodec ff_yop_decoder = {
     .name           = "yop",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_YOP,
+    .id             = AV_CODEC_ID_YOP,
     .priv_data_size = sizeof(YopDecContext),
     .init           = yop_decode_init,
     .close          = yop_decode_close,

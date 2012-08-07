@@ -80,7 +80,7 @@ typedef struct XMVAudioPacket {
     uint16_t block_align;     ///< Bytes per compressed block.
     uint16_t block_samples;   ///< Decompressed samples per compressed block.
 
-    enum CodecID codec_id; ///< The codec ID of the compression scheme.
+    enum AVCodecID codec_id; ///< The codec ID of the compression scheme.
 
     uint32_t data_size;   ///< The size of the remaining audio data.
     uint64_t data_offset; ///< The offset of the audio data within the file.
@@ -155,7 +155,7 @@ static int xmv_read_header(AVFormatContext *s)
     avpriv_set_pts_info(vst, 32, 1, 1000);
 
     vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    vst->codec->codec_id   = CODEC_ID_WMV2;
+    vst->codec->codec_id   = AV_CODEC_ID_WMV2;
     vst->codec->codec_tag  = MKBETAG('W', 'M', 'V', '2');
     vst->codec->width      = avio_rl32(pb);
     vst->codec->height     = avio_rl32(pb);

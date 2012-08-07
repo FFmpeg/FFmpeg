@@ -599,7 +599,7 @@ static av_cold int prores_encode_close(AVCodecContext *avctx)
 AVCodec ff_prores_anatoliy_encoder = {
     .name           = "prores_anatoliy",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_PRORES,
+    .id             = AV_CODEC_ID_PRORES,
     .priv_data_size = sizeof(ProresContext),
     .init           = prores_encode_init,
     .close          = prores_encode_close,
@@ -612,7 +612,7 @@ AVCodec ff_prores_anatoliy_encoder = {
 AVCodec ff_prores_encoder = {
     .name           = "prores",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_PRORES,
+    .id             = AV_CODEC_ID_PRORES,
     .priv_data_size = sizeof(ProresContext),
     .init           = prores_encode_init,
     .close          = prores_encode_close,

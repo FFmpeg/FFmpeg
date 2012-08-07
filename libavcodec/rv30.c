@@ -274,7 +274,7 @@ static av_cold int rv30_decode_init(AVCodecContext *avctx)
 AVCodec ff_rv30_decoder = {
     .name                  = "rv30",
     .type                  = AVMEDIA_TYPE_VIDEO,
-    .id                    = CODEC_ID_RV30,
+    .id                    = AV_CODEC_ID_RV30,
     .priv_data_size        = sizeof(RV34DecContext),
     .init                  = rv30_decode_init,
     .close                 = ff_rv34_decode_end,

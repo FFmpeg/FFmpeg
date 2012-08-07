@@ -303,8 +303,8 @@ if(s->quarter_sample)
 
     if(   (unsigned)src_x > FFMAX(s->h_edge_pos - (motion_x&1) - 16, 0)
        || (unsigned)src_y > FFMAX(   v_edge_pos - (motion_y&1) - h , 0)){
-            if(is_mpeg12 || s->codec_id == CODEC_ID_MPEG2VIDEO ||
-               s->codec_id == CODEC_ID_MPEG1VIDEO){
+            if(is_mpeg12 || s->codec_id == AV_CODEC_ID_MPEG2VIDEO ||
+               s->codec_id == AV_CODEC_ID_MPEG1VIDEO){
                 av_log(s->avctx,AV_LOG_DEBUG,
                         "MPEG motion vector out of boundary (%d %d)\n", src_x, src_y);
                 return;
@@ -720,7 +720,7 @@ static av_always_inline void MPV_motion_internal(MpegEncContext *s,
                         ref_picture, pix_op, qpix_op,
                         s->mv[dir][0][0], s->mv[dir][0][1], 16);
         } else if (!is_mpeg12 && (CONFIG_WMV2_DECODER || CONFIG_WMV2_ENCODER) &&
-                   s->mspel && s->codec_id == CODEC_ID_WMV2) {
+                   s->mspel && s->codec_id == AV_CODEC_ID_WMV2) {
             ff_mspel_motion(s, dest_y, dest_cb, dest_cr,
                         ref_picture, pix_op,
                         s->mv[dir][0][0], s->mv[dir][0][1], 16);

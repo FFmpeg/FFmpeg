@@ -128,7 +128,7 @@ static av_cold int dpcm_decode_init(AVCodecContext *avctx)
 
     switch(avctx->codec->id) {
 
-    case CODEC_ID_ROQ_DPCM:
+    case AV_CODEC_ID_ROQ_DPCM:
         /* initialize square table */
         for (i = 0; i < 128; i++) {
             int16_t square = i * i;
@@ -137,7 +137,7 @@ static av_cold int dpcm_decode_init(AVCodecContext *avctx)
         }
         break;
 
-    case CODEC_ID_SOL_DPCM:
+    case AV_CODEC_ID_SOL_DPCM:
         switch(avctx->codec_tag){
         case 1:
             s->sol_table = sol_table_old;
@@ -159,7 +159,7 @@ static av_cold int dpcm_decode_init(AVCodecContext *avctx)
         break;
     }
 
-    if (avctx->codec->id == CODEC_ID_SOL_DPCM && avctx->codec_tag != 3)
+    if (avctx->codec->id == AV_CODEC_ID_SOL_DPCM && avctx->codec_tag != 3)
         avctx->sample_fmt = AV_SAMPLE_FMT_U8;
     else
         avctx->sample_fmt = AV_SAMPLE_FMT_S16;
@@ -189,16 +189,16 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
 
     /* calculate output size */
     switch(avctx->codec->id) {
-    case CODEC_ID_ROQ_DPCM:
+    case AV_CODEC_ID_ROQ_DPCM:
         out = buf_size - 8;
         break;
-    case CODEC_ID_INTERPLAY_DPCM:
+    case AV_CODEC_ID_INTERPLAY_DPCM:
         out = buf_size - 6 - s->channels;
         break;
-    case CODEC_ID_XAN_DPCM:
+    case AV_CODEC_ID_XAN_DPCM:
         out = buf_size - 2 * s->channels;
         break;
-    case CODEC_ID_SOL_DPCM:
+    case AV_CODEC_ID_SOL_DPCM:
         if (avctx->codec_tag != 3)
             out = buf_size * 2;
         else
@@ -224,7 +224,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
 
     switch(avctx->codec->id) {
 
-    case CODEC_ID_ROQ_DPCM:
+    case AV_CODEC_ID_ROQ_DPCM:
         bytestream2_skipu(&gb, 6);
 
         if (stereo) {
@@ -245,7 +245,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
         }
         break;
 
-    case CODEC_ID_INTERPLAY_DPCM:
+    case AV_CODEC_ID_INTERPLAY_DPCM:
         bytestream2_skipu(&gb, 6);  /* skip over the stream mask and stream length */
 
         for (ch = 0; ch < s->channels; ch++) {
@@ -264,7 +264,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
         }
         break;
 
-    case CODEC_ID_XAN_DPCM:
+    case AV_CODEC_ID_XAN_DPCM:
     {
         int shift[2] = { 4, 4 };
 
@@ -297,7 +297,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
         }
         break;
     }
-    case CODEC_ID_SOL_DPCM:
+    case AV_CODEC_ID_SOL_DPCM:
         if (avctx->codec_tag != 3) {
             uint8_t *output_samples_u8 = s->frame.data[0],
                     *samples_end_u8 = output_samples_u8 + out;
@@ -344,7 +344,7 @@ AVCodec ff_ ## name_ ## _decoder = {                        \
     .long_name      = NULL_IF_CONFIG_SMALL(long_name_),     \
 }
 
-DPCM_DECODER(CODEC_ID_INTERPLAY_DPCM, interplay_dpcm, "DPCM Interplay");
-DPCM_DECODER(CODEC_ID_ROQ_DPCM,       roq_dpcm,       "DPCM id RoQ");
-DPCM_DECODER(CODEC_ID_SOL_DPCM,       sol_dpcm,       "DPCM Sol");
-DPCM_DECODER(CODEC_ID_XAN_DPCM,       xan_dpcm,       "DPCM Xan");
+DPCM_DECODER(AV_CODEC_ID_INTERPLAY_DPCM, interplay_dpcm, "DPCM Interplay");
+DPCM_DECODER(AV_CODEC_ID_ROQ_DPCM,       roq_dpcm,       "DPCM id RoQ");
+DPCM_DECODER(AV_CODEC_ID_SOL_DPCM,       sol_dpcm,       "DPCM Sol");
+DPCM_DECODER(AV_CODEC_ID_XAN_DPCM,       xan_dpcm,       "DPCM Xan");

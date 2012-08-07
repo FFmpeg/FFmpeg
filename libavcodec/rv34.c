@@ -1490,14 +1490,14 @@ av_cold int ff_rv34_decode_init(AVCodecContext *avctx)
     if ((ret = ff_MPV_common_init(s)) < 0)
         return ret;
 
-    ff_h264_pred_init(&r->h, CODEC_ID_RV40, 8, 1);
+    ff_h264_pred_init(&r->h, AV_CODEC_ID_RV40, 8, 1);
 
 #if CONFIG_RV30_DECODER
-    if (avctx->codec_id == CODEC_ID_RV30)
+    if (avctx->codec_id == AV_CODEC_ID_RV30)
         ff_rv30dsp_init(&r->rdsp, &r->s.dsp);
 #endif
 #if CONFIG_RV40_DECODER
-    if (avctx->codec_id == CODEC_ID_RV40)
+    if (avctx->codec_id == AV_CODEC_ID_RV40)
         ff_rv40dsp_init(&r->rdsp, &r->s.dsp);
 #endif
 

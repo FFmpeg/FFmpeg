@@ -309,7 +309,7 @@ rdt_parse_packet (AVFormatContext *ctx, PayloadContext *rdt, AVStream *st,
         if (res < 0)
             return res;
         if (res > 0) {
-            if (st->codec->codec_id == CODEC_ID_AAC) {
+            if (st->codec->codec_id == AV_CODEC_ID_AAC) {
                 memcpy (rdt->buffer, buf + pos, len - pos);
                 rdt->rmctx->pb = avio_alloc_context (rdt->buffer, len - pos, 0,
                                                     NULL, NULL, NULL, NULL);
@@ -322,7 +322,7 @@ get_cache:
             ff_rm_retrieve_cache (rdt->rmctx, rdt->rmctx->pb,
                                   st, rdt->rmst[st->index], pkt);
         if (rdt->audio_pkt_cnt == 0 &&
-            st->codec->codec_id == CODEC_ID_AAC)
+            st->codec->codec_id == AV_CODEC_ID_AAC)
             av_freep(&rdt->rmctx->pb);
     }
     pkt->stream_index = st->index;
@@ -551,7 +551,7 @@ rdt_free_context (PayloadContext *rdt)
 static RTPDynamicProtocolHandler ff_rdt_ ## n ## _handler = { \
     .enc_name         = s, \
     .codec_type       = t, \
-    .codec_id         = CODEC_ID_NONE, \
+    .codec_id         = AV_CODEC_ID_NONE, \
     .parse_sdp_a_line = rdt_parse_sdp_line, \
     .alloc            = rdt_new_context, \
     .free             = rdt_free_context, \

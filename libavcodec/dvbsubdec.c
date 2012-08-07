@@ -1533,7 +1533,7 @@ static int dvbsub_decode(AVCodecContext *avctx,
 AVCodec ff_dvbsub_decoder = {
     .name           = "dvbsub",
     .type           = AVMEDIA_TYPE_SUBTITLE,
-    .id             = CODEC_ID_DVB_SUBTITLE,
+    .id             = AV_CODEC_ID_DVB_SUBTITLE,
     .priv_data_size = sizeof(DVBSubContext),
     .init           = dvbsub_init_decoder,
     .close          = dvbsub_close_decoder,

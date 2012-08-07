@@ -94,7 +94,7 @@ typedef struct IPMVEContext {
     unsigned int audio_bits;
     unsigned int audio_channels;
     unsigned int audio_sample_rate;
-    enum CodecID audio_type;
+    enum AVCodecID audio_type;
     unsigned int audio_frame_count;
 
     int video_stream_index;
@@ -117,14 +117,14 @@ static int load_ipmovie_packet(IPMVEContext *s, AVIOContext *pb,
     int chunk_type;
 
     if (s->audio_chunk_offset && s->audio_channels && s->audio_bits) {
-        if (s->audio_type == CODEC_ID_NONE) {
+        if (s->audio_type == AV_CODEC_ID_NONE) {
             av_log(NULL, AV_LOG_ERROR, "Can not read audio packet before"
                    "audio codec is known\n");
                 return CHUNK_BAD;
         }
 
         /* adjust for PCM audio by skipping chunk header */
-        if (s->audio_type != CODEC_ID_INTERPLAY_DPCM) {
+        if (s->audio_type != AV_CODEC_ID_INTERPLAY_DPCM) {
             s->audio_chunk_offset += 6;
             s->audio_chunk_size -= 6;
         }
@@ -139,7 +139,7 @@ static int load_ipmovie_packet(IPMVEContext *s, AVIOContext *pb,
         pkt->pts = s->audio_frame_count;
 
         /* audio frame maintenance */
-        if (s->audio_type != CODEC_ID_INTERPLAY_DPCM)
+        if (s->audio_type != AV_CODEC_ID_INTERPLAY_DPCM)
             s->audio_frame_count +=
             (s->audio_chunk_size / s->audio_channels / (s->audio_bits / 8));
         else
@@ -356,15 +356,15 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
             s->audio_bits = (((audio_flags >> 1) & 1) + 1) * 8;
             /* bit 2 indicates compressed audio in version 1 opcode */
             if ((opcode_version == 1) && (audio_flags & 0x4))
-                s->audio_type = CODEC_ID_INTERPLAY_DPCM;
+                s->audio_type = AV_CODEC_ID_INTERPLAY_DPCM;
             else if (s->audio_bits == 16)
-                s->audio_type = CODEC_ID_PCM_S16LE;
+                s->audio_type = AV_CODEC_ID_PCM_S16LE;
             else
-                s->audio_type = CODEC_ID_PCM_U8;
+                s->audio_type = AV_CODEC_ID_PCM_U8;
             av_dlog(NULL, "audio: %d bits, %d Hz, %s, %s format\n",
                     s->audio_bits, s->audio_sample_rate,
                     (s->audio_channels == 2) ? "stereo" : "mono",
-                    (s->audio_type == CODEC_ID_INTERPLAY_DPCM) ?
+                    (s->audio_type == AV_CODEC_ID_INTERPLAY_DPCM) ?
                     "Interplay audio" : "PCM");
             break;
 
@@ -578,7 +578,7 @@ static int ipmovie_read_header(AVFormatContext *s)
     avio_seek(pb, -CHUNK_PREAMBLE_SIZE, SEEK_CUR);
 
     if (chunk_type == CHUNK_VIDEO)
-        ipmovie->audio_type = CODEC_ID_NONE;  /* no audio */
+        ipmovie->audio_type = AV_CODEC_ID_NONE;  /* no audio */
     else if (process_ipmovie_chunk(ipmovie, pb, &pkt) != CHUNK_INIT_AUDIO)
         return AVERROR_INVALIDDATA;
 
@@ -589,7 +589,7 @@ static int ipmovie_read_header(AVFormatContext *s)
     avpriv_set_pts_info(st, 63, 1, 1000000);
     ipmovie->video_stream_index = st->index;
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = CODEC_ID_INTERPLAY_VIDEO;
+    st->codec->codec_id = AV_CODEC_ID_INTERPLAY_VIDEO;
     st->codec->codec_tag = 0;  /* no fourcc */
     st->codec->width = ipmovie->video_width;
     st->codec->height = ipmovie->video_height;
@@ -609,7 +609,7 @@ static int ipmovie_read_header(AVFormatContext *s)
         st->codec->bits_per_coded_sample = ipmovie->audio_bits;
         st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
             st->codec->bits_per_coded_sample;
-        if (st->codec->codec_id == CODEC_ID_INTERPLAY_DPCM)
+        if (st->codec->codec_id == AV_CODEC_ID_INTERPLAY_DPCM)
             st->codec->bit_rate /= 2;
         st->codec->block_align = st->codec->channels * st->codec->bits_per_coded_sample;
     }

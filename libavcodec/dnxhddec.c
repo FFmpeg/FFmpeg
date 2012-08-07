@@ -427,7 +427,7 @@ static av_cold int dnxhd_decode_close(AVCodecContext *avctx)
 AVCodec ff_dnxhd_decoder = {
     .name           = "dnxhd",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_DNXHD,
+    .id             = AV_CODEC_ID_DNXHD,
     .priv_data_size = sizeof(DNXHDContext),
     .init           = dnxhd_decode_init,
     .close          = dnxhd_decode_close,

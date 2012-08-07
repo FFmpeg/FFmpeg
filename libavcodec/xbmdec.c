@@ -128,7 +128,7 @@ static av_cold int xbm_decode_close(AVCodecContext *avctx)
 AVCodec ff_xbm_decoder = {
     .name         = "xbm",
     .type         = AVMEDIA_TYPE_VIDEO,
-    .id           = CODEC_ID_XBM,
+    .id           = AV_CODEC_ID_XBM,
     .init         = xbm_decode_init,
     .close        = xbm_decode_close,
     .decode       = xbm_decode_frame,

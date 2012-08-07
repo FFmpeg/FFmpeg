@@ -513,7 +513,7 @@ static av_cold int sonic_encode_init(AVCodecContext *avctx)
     if (avctx->channels == 2)
         s->decorrelation = MID_SIDE;
 
-    if (avctx->codec->id == CODEC_ID_SONIC_LS)
+    if (avctx->codec->id == AV_CODEC_ID_SONIC_LS)
     {
         s->lossless = 1;
         s->num_taps = 32;
@@ -955,7 +955,7 @@ static int sonic_decode_frame(AVCodecContext *avctx,
 AVCodec ff_sonic_decoder = {
     .name           = "sonic",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_SONIC,
+    .id             = AV_CODEC_ID_SONIC,
     .priv_data_size = sizeof(SonicContext),
     .init           = sonic_decode_init,
     .close          = sonic_decode_close,
@@ -969,7 +969,7 @@ AVCodec ff_sonic_decoder = {
 AVCodec ff_sonic_encoder = {
     .name           = "sonic",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_SONIC,
+    .id             = AV_CODEC_ID_SONIC,
     .priv_data_size = sizeof(SonicContext),
     .init           = sonic_encode_init,
     .encode         = sonic_encode_frame,
@@ -983,7 +983,7 @@ AVCodec ff_sonic_encoder = {
 AVCodec ff_sonic_ls_encoder = {
     .name           = "sonicls",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_SONIC_LS,
+    .id             = AV_CODEC_ID_SONIC_LS,
     .priv_data_size = sizeof(SonicContext),
     .init           = sonic_encode_init,
     .encode         = sonic_encode_frame,

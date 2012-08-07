@@ -77,14 +77,14 @@ static int yop_read_header(AVFormatContext *s)
     // Audio
     audio_dec               = audio_stream->codec;
     audio_dec->codec_type   = AVMEDIA_TYPE_AUDIO;
-    audio_dec->codec_id     = CODEC_ID_ADPCM_IMA_APC;
+    audio_dec->codec_id     = AV_CODEC_ID_ADPCM_IMA_APC;
     audio_dec->channels     = 1;
     audio_dec->sample_rate  = 22050;
 
     // Video
     video_dec               = video_stream->codec;
     video_dec->codec_type   = AVMEDIA_TYPE_VIDEO;
-    video_dec->codec_id     = CODEC_ID_YOP;
+    video_dec->codec_id     = AV_CODEC_ID_YOP;
 
     avio_skip(pb, 6);
 

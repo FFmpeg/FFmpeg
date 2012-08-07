@@ -224,7 +224,7 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
 AVCodec ff_ra_288_decoder = {
     .name           = "real_288",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_RA_288,
+    .id             = AV_CODEC_ID_RA_288,
     .priv_data_size = sizeof(RA288Context),
     .init           = ra288_decode_init,
     .decode         = ra288_decode_frame,

@@ -73,5 +73,5 @@ AVInputFormat ff_dts_demuxer = {
     .read_packet    = ff_raw_read_partial_packet,
     .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "dts",
-    .raw_codec_id   = CODEC_ID_DTS,
+    .raw_codec_id   = AV_CODEC_ID_DTS,
 };

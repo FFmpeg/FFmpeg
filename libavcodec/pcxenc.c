@@ -210,7 +210,7 @@ static int pcx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 AVCodec ff_pcx_encoder = {
     .name           = "pcx",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_PCX,
+    .id             = AV_CODEC_ID_PCX,
     .priv_data_size = sizeof(PCXContext),
     .init           = pcx_encode_init,
     .encode2        = pcx_encode_frame,

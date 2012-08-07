@@ -72,7 +72,7 @@ AVCodec ff_subviewer_decoder = {
     .name           = "subviewer",
     .long_name      = NULL_IF_CONFIG_SMALL("SubViewer subtitle"),
     .type           = AVMEDIA_TYPE_SUBTITLE,
-    .id             = CODEC_ID_SUBVIEWER,
+    .id             = AV_CODEC_ID_SUBVIEWER,
     .decode         = subviewer_decode_frame,
     .init           = ff_ass_subtitle_header_default,
 };

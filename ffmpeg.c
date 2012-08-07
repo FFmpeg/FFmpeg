@@ -715,9 +715,9 @@ static enum PixelFormat choose_pixel_fmt(AVStream *st, AVCodec *codec, enum Pixe
         int has_alpha= av_pix_fmt_descriptors[target].nb_components % 2 == 0;
         enum PixelFormat best= PIX_FMT_NONE;
         if (st->codec->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL) {
-            if (st->codec->codec_id == CODEC_ID_MJPEG) {
+            if (st->codec->codec_id == AV_CODEC_ID_MJPEG) {
                 p = (const enum PixelFormat[]) { PIX_FMT_YUVJ420P, PIX_FMT_YUVJ422P, PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_NONE };
-            } else if (st->codec->codec_id == CODEC_ID_LJPEG) {
+            } else if (st->codec->codec_id == AV_CODEC_ID_LJPEG) {
                 p = (const enum PixelFormat[]) { PIX_FMT_YUVJ420P, PIX_FMT_YUVJ422P, PIX_FMT_YUVJ444P, PIX_FMT_YUV420P,
                                                  PIX_FMT_YUV422P, PIX_FMT_YUV444P, PIX_FMT_BGRA, PIX_FMT_NONE };
             }
@@ -763,9 +763,9 @@ static char *choose_pix_fmts(OutputStream *ost)
 
         p = ost->enc->pix_fmts;
         if (ost->st->codec->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL) {
-            if (ost->st->codec->codec_id == CODEC_ID_MJPEG) {
+            if (ost->st->codec->codec_id == AV_CODEC_ID_MJPEG) {
                 p = (const enum PixelFormat[]) { PIX_FMT_YUVJ420P, PIX_FMT_YUVJ422P, PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_NONE };
-            } else if (ost->st->codec->codec_id == CODEC_ID_LJPEG) {
+            } else if (ost->st->codec->codec_id == AV_CODEC_ID_LJPEG) {
                 p = (const enum PixelFormat[]) { PIX_FMT_YUVJ420P, PIX_FMT_YUVJ422P, PIX_FMT_YUVJ444P, PIX_FMT_YUV420P,
                                                     PIX_FMT_YUV422P, PIX_FMT_YUV444P, PIX_FMT_BGRA, PIX_FMT_NONE };
             }
@@ -1842,7 +1842,7 @@ static void do_subtitle_out(AVFormatContext *s,
     /* Note: DVB subtitle need one packet to draw them and one other
        packet to clear them */
     /* XXX: signal it in the codec context ? */
-    if (enc->codec_id == CODEC_ID_DVB_SUBTITLE)
+    if (enc->codec_id == AV_CODEC_ID_DVB_SUBTITLE)
         nb = 2;
     else
         nb = 1;
@@ -1872,7 +1872,7 @@ static void do_subtitle_out(AVFormatContext *s,
         pkt.size = subtitle_out_size;
         pkt.pts  = av_rescale_q(sub->pts, AV_TIME_BASE_Q, ost->st->time_base);
         pkt.duration = av_rescale_q(sub->end_display_time, (AVRational){ 1, 1000 }, ost->st->time_base);
-        if (enc->codec_id == CODEC_ID_DVB_SUBTITLE) {
+        if (enc->codec_id == AV_CODEC_ID_DVB_SUBTITLE) {
             /* XXX: the pts correction is handled here. Maybe handling
                it in the codec would be better */
             if (i == 0)
@@ -1964,7 +1964,7 @@ static void do_video_out(AVFormatContext *s,
         return;
 
     if (s->oformat->flags & AVFMT_RAWPICTURE &&
-        enc->codec->id == CODEC_ID_RAWVIDEO) {
+        enc->codec->id == AV_CODEC_ID_RAWVIDEO) {
         /* raw pictures are written as AVPicture structure to
            avoid any copies. We support temporarily the older
            method. */
@@ -2380,7 +2380,7 @@ static void flush_encoders(void)
 
         if (ost->st->codec->codec_type == AVMEDIA_TYPE_AUDIO && enc->frame_size <= 1)
             continue;
-        if (ost->st->codec->codec_type == AVMEDIA_TYPE_VIDEO && (os->oformat->flags & AVFMT_RAWPICTURE) && enc->codec->id == CODEC_ID_RAWVIDEO)
+        if (ost->st->codec->codec_type == AVMEDIA_TYPE_VIDEO && (os->oformat->flags & AVFMT_RAWPICTURE) && enc->codec->id == AV_CODEC_ID_RAWVIDEO)
             continue;
 
         for (;;) {
@@ -2499,10 +2499,10 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     opkt.flags    = pkt->flags;
 
     // FIXME remove the following 2 lines they shall be replaced by the bitstream filters
-    if (  ost->st->codec->codec_id != CODEC_ID_H264
-       && ost->st->codec->codec_id != CODEC_ID_MPEG1VIDEO
-       && ost->st->codec->codec_id != CODEC_ID_MPEG2VIDEO
-       && ost->st->codec->codec_id != CODEC_ID_VC1
+    if (  ost->st->codec->codec_id != AV_CODEC_ID_H264
+       && ost->st->codec->codec_id != AV_CODEC_ID_MPEG1VIDEO
+       && ost->st->codec->codec_id != AV_CODEC_ID_MPEG2VIDEO
+       && ost->st->codec->codec_id != AV_CODEC_ID_VC1
        ) {
         if (av_parser_change(ist->st->parser, ost->st->codec, &opkt.data, &opkt.size, pkt->data, pkt->size, pkt->flags & AV_PKT_FLAG_KEY))
             opkt.destruct = av_destruct_packet;
@@ -3205,9 +3205,9 @@ static int transcode_init(void)
                 codec->frame_size         = icodec->frame_size;
                 codec->audio_service_type = icodec->audio_service_type;
                 codec->block_align        = icodec->block_align;
-                if((codec->block_align == 1 || codec->block_align == 1152) && codec->codec_id == CODEC_ID_MP3)
+                if((codec->block_align == 1 || codec->block_align == 1152) && codec->codec_id == AV_CODEC_ID_MP3)
                     codec->block_align= 0;
-                if(codec->codec_id == CODEC_ID_AC3)
+                if(codec->codec_id == AV_CODEC_ID_AC3)
                     codec->block_align= 0;
                 break;
             case AVMEDIA_TYPE_VIDEO:
@@ -4684,11 +4684,11 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
         av_dict_set(&format_opts, "pixel_format", o->frame_pix_fmts[o->nb_frame_pix_fmts - 1].u.str, 0);
 
     ic->video_codec_id   = video_codec_name ?
-        find_codec_or_die(video_codec_name   , AVMEDIA_TYPE_VIDEO   , 0)->id : CODEC_ID_NONE;
+        find_codec_or_die(video_codec_name   , AVMEDIA_TYPE_VIDEO   , 0)->id : AV_CODEC_ID_NONE;
     ic->audio_codec_id   = audio_codec_name ?
-        find_codec_or_die(audio_codec_name   , AVMEDIA_TYPE_AUDIO   , 0)->id : CODEC_ID_NONE;
+        find_codec_or_die(audio_codec_name   , AVMEDIA_TYPE_AUDIO   , 0)->id : AV_CODEC_ID_NONE;
     ic->subtitle_codec_id= subtitle_codec_name ?
-        find_codec_or_die(subtitle_codec_name, AVMEDIA_TYPE_SUBTITLE, 0)->id : CODEC_ID_NONE;
+        find_codec_or_die(subtitle_codec_name, AVMEDIA_TYPE_SUBTITLE, 0)->id : AV_CODEC_ID_NONE;
     ic->flags |= AVFMT_FLAG_NONBLOCK;
     ic->interrupt_callback = int_cb;
 
@@ -5398,7 +5398,7 @@ static void opt_output_file(void *optctx, const char *filename)
         /* pick the "best" stream of each type */
 
         /* video: highest resolution */
-        if (!o->video_disable && oc->oformat->video_codec != CODEC_ID_NONE) {
+        if (!o->video_disable && oc->oformat->video_codec != AV_CODEC_ID_NONE) {
             int area = 0, idx = -1;
             for (i = 0; i < nb_input_streams; i++) {
                 ist = input_streams[i];
@@ -5413,7 +5413,7 @@ static void opt_output_file(void *optctx, const char *filename)
         }
 
         /* audio: most channels */
-        if (!o->audio_disable && oc->oformat->audio_codec != CODEC_ID_NONE) {
+        if (!o->audio_disable && oc->oformat->audio_codec != AV_CODEC_ID_NONE) {
             int channels = 0, idx = -1;
             for (i = 0; i < nb_input_streams; i++) {
                 ist = input_streams[i];
@@ -5428,7 +5428,7 @@ static void opt_output_file(void *optctx, const char *filename)
         }
 
         /* subtitles: pick first */
-        if (!o->subtitle_disable && (oc->oformat->subtitle_codec != CODEC_ID_NONE || subtitle_codec_name)) {
+        if (!o->subtitle_disable && (oc->oformat->subtitle_codec != AV_CODEC_ID_NONE || subtitle_codec_name)) {
             for (i = 0; i < nb_input_streams; i++)
                 if (input_streams[i]->st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
                     new_subtitle_stream(o, oc, i);

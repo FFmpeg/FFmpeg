@@ -83,7 +83,7 @@ static av_cold int yuv4_encode_close(AVCodecContext *avctx)
 AVCodec ff_yuv4_encoder = {
     .name         = "yuv4",
     .type         = AVMEDIA_TYPE_VIDEO,
-    .id           = CODEC_ID_YUV4,
+    .id           = AV_CODEC_ID_YUV4,
     .init         = yuv4_encode_init,
     .encode2      = yuv4_encode_frame,
     .close        = yuv4_encode_close,

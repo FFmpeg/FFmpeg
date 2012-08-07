@@ -116,7 +116,7 @@ static int cin_read_header(AVFormatContext *s)
     avpriv_set_pts_info(st, 32, 1, 12);
     cin->video_stream_index = st->index;
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = CODEC_ID_DSICINVIDEO;
+    st->codec->codec_id = AV_CODEC_ID_DSICINVIDEO;
     st->codec->codec_tag = 0;  /* no fourcc */
     st->codec->width = hdr->video_frame_width;
     st->codec->height = hdr->video_frame_height;
@@ -129,7 +129,7 @@ static int cin_read_header(AVFormatContext *s)
     avpriv_set_pts_info(st, 32, 1, 22050);
     cin->audio_stream_index = st->index;
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id = CODEC_ID_DSICINAUDIO;
+    st->codec->codec_id = AV_CODEC_ID_DSICINAUDIO;
     st->codec->codec_tag = 0;  /* no tag */
     st->codec->channels = 1;
     st->codec->sample_rate = 22050;

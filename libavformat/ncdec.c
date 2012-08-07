@@ -52,7 +52,7 @@ static int nc_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = CODEC_ID_MPEG4;
+    st->codec->codec_id   = AV_CODEC_ID_MPEG4;
     st->need_parsing      = AVSTREAM_PARSE_FULL;
 
     avpriv_set_pts_info(st, 64, 1, 100);

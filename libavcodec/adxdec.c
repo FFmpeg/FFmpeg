@@ -176,7 +176,7 @@ static void adx_decode_flush(AVCodecContext *avctx)
 AVCodec ff_adpcm_adx_decoder = {
     .name           = "adpcm_adx",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_ADPCM_ADX,
+    .id             = AV_CODEC_ID_ADPCM_ADX,
     .priv_data_size = sizeof(ADXContext),
     .init           = adx_decode_init,
     .decode         = adx_decode_frame,

@@ -741,7 +741,7 @@ static av_cold int png_dec_end(AVCodecContext *avctx)
 AVCodec ff_png_decoder = {
     .name           = "png",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_PNG,
+    .id             = AV_CODEC_ID_PNG,
     .priv_data_size = sizeof(PNGDecContext),
     .init           = png_dec_init,
     .close          = png_dec_end,

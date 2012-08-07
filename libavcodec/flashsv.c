@@ -456,7 +456,7 @@ static av_cold int flashsv_decode_end(AVCodecContext *avctx)
 AVCodec ff_flashsv_decoder = {
     .name           = "flashsv",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_FLASHSV,
+    .id             = AV_CODEC_ID_FLASHSV,
     .priv_data_size = sizeof(FlashSVContext),
     .init           = flashsv_decode_init,
     .close          = flashsv_decode_end,
@@ -519,7 +519,7 @@ static av_cold int flashsv2_decode_end(AVCodecContext *avctx)
 AVCodec ff_flashsv2_decoder = {
     .name           = "flashsv2",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_FLASHSV2,
+    .id             = AV_CODEC_ID_FLASHSV2,
     .priv_data_size = sizeof(FlashSVContext),
     .init           = flashsv2_decode_init,
     .close          = flashsv2_decode_end,

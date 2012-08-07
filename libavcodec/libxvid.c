@@ -594,7 +594,7 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
     if( xvid_flags & CODEC_FLAG_GLOBAL_HEADER ) {
         /* In this case, we are claiming to be MPEG4 */
         x->quicktime_format = 1;
-        avctx->codec_id = CODEC_ID_MPEG4;
+        avctx->codec_id = AV_CODEC_ID_MPEG4;
     } else {
         /* We are claiming to be Xvid */
         x->quicktime_format = 0;
@@ -778,7 +778,7 @@ static av_cold int xvid_encode_close(AVCodecContext *avctx) {
 AVCodec ff_libxvid_encoder = {
     .name           = "libxvid",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_MPEG4,
+    .id             = AV_CODEC_ID_MPEG4,
     .priv_data_size = sizeof(struct xvid_context),
     .init           = xvid_encode_init,
     .encode2        = xvid_encode_frame,

@@ -1992,7 +1992,7 @@ AVCodec ff_qdm2_decoder =
 {
     .name           = "qdm2",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_QDM2,
+    .id             = AV_CODEC_ID_QDM2,
     .priv_data_size = sizeof(QDM2Context),
     .init           = qdm2_decode_init,
     .close          = qdm2_decode_close,

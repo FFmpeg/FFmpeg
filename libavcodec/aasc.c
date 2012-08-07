@@ -132,7 +132,7 @@ static av_cold int aasc_decode_end(AVCodecContext *avctx)
 AVCodec ff_aasc_decoder = {
     .name           = "aasc",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_AASC,
+    .id             = AV_CODEC_ID_AASC,
     .priv_data_size = sizeof(AascContext),
     .init           = aasc_decode_init,
     .close          = aasc_decode_end,

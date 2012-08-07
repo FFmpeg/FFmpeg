@@ -219,8 +219,8 @@ AVOutputFormat ff_wav_muxer = {
     .mime_type         = "audio/x-wav",
     .extensions        = "wav",
     .priv_data_size    = sizeof(WAVContext),
-    .audio_codec       = CODEC_ID_PCM_S16LE,
-    .video_codec       = CODEC_ID_NONE,
+    .audio_codec       = AV_CODEC_ID_PCM_S16LE,
+    .video_codec       = AV_CODEC_ID_NONE,
     .write_header      = wav_write_header,
     .write_packet      = wav_write_packet,
     .write_trailer     = wav_write_trailer,
@@ -496,7 +496,7 @@ static int wav_read_header(AVFormatContext *s)
             avio_r8(pb);
             vst->id = 1;
             vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            vst->codec->codec_id = CODEC_ID_MJPEG;
+            vst->codec->codec_id = AV_CODEC_ID_MJPEG;
             vst->codec->width  = avio_rl24(pb);
             vst->codec->height = avio_rl24(pb);
             size = avio_rl24(pb);
@@ -672,10 +672,10 @@ static int wav_read_seek(AVFormatContext *s,
 
     st = s->streams[0];
     switch (st->codec->codec_id) {
-    case CODEC_ID_MP2:
-    case CODEC_ID_MP3:
-    case CODEC_ID_AC3:
-    case CODEC_ID_DTS:
+    case AV_CODEC_ID_MP2:
+    case AV_CODEC_ID_MP3:
+    case AV_CODEC_ID_AC3:
+    case AV_CODEC_ID_DTS:
         /* use generic seeking with dynamically generated indexes */
         return -1;
     default:

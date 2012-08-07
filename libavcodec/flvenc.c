@@ -89,7 +89,7 @@ FF_MPV_GENERIC_CLASS(flv)
 AVCodec ff_flv_encoder = {
     .name           = "flv",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_FLV1,
+    .id             = AV_CODEC_ID_FLV1,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_MPV_encode_init,
     .encode2        = ff_MPV_encode_picture,

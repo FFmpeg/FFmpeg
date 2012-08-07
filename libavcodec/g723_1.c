@@ -1142,7 +1142,7 @@ static const AVClass g723_1dec_class = {
 AVCodec ff_g723_1_decoder = {
     .name           = "g723_1",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_G723_1,
+    .id             = AV_CODEC_ID_G723_1,
     .priv_data_size = sizeof(G723_1_Context),
     .init           = g723_1_decode_init,
     .decode         = g723_1_decode_frame,
@@ -2277,7 +2277,7 @@ static int g723_1_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 AVCodec ff_g723_1_encoder = {
     .name           = "g723_1",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_G723_1,
+    .id             = AV_CODEC_ID_G723_1,
     .priv_data_size = sizeof(G723_1_Context),
     .init           = g723_1_encode_init,
     .encode2        = g723_1_encode_frame,

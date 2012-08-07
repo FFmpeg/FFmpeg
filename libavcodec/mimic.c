@@ -422,7 +422,7 @@ static av_cold int mimic_decode_end(AVCodecContext *avctx)
 AVCodec ff_mimic_decoder = {
     .name                  = "mimic",
     .type                  = AVMEDIA_TYPE_VIDEO,
-    .id                    = CODEC_ID_MIMIC,
+    .id                    = AV_CODEC_ID_MIMIC,
     .priv_data_size        = sizeof(MimicContext),
     .init                  = mimic_decode_init,
     .close                 = mimic_decode_end,

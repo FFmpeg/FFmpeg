@@ -211,7 +211,7 @@ AVCodec ff_libutvideo_encoder = {
     "libutvideo",
     NULL_IF_CONFIG_SMALL("Ut Video"),
     AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_UTVIDEO,
+    AV_CODEC_ID_UTVIDEO,
     CODEC_CAP_AUTO_THREADS | CODEC_CAP_LOSSLESS,
     NULL, /* supported_framerates */
     (const enum PixelFormat[]) {

@@ -1923,7 +1923,7 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
         AVStream *stream = fmt_ctx->streams[i];
         AVCodec *codec;
 
-        if (stream->codec->codec_id == CODEC_ID_PROBE) {
+        if (stream->codec->codec_id == AV_CODEC_ID_PROBE) {
             av_log(NULL, AV_LOG_ERROR,
                    "Failed to probe codec for input stream %d\n",
                     stream->index);
@@ -1948,7 +1948,7 @@ static void close_input_file(AVFormatContext **ctx_ptr)
 
     /* close decoder for each stream */
     for (i = 0; i < fmt_ctx->nb_streams; i++)
-        if (fmt_ctx->streams[i]->codec->codec_id != CODEC_ID_NONE)
+        if (fmt_ctx->streams[i]->codec->codec_id != AV_CODEC_ID_NONE)
             avcodec_close(fmt_ctx->streams[i]->codec);
 
     avformat_close_input(ctx_ptr);

@@ -68,7 +68,7 @@ static int v408_decode_frame(AVCodecContext *avctx, void *data,
 
     for (i = 0; i < avctx->height; i++) {
         for (j = 0; j < avctx->width; j++) {
-            if (avctx->codec_id==CODEC_ID_AYUV) {
+            if (avctx->codec_id==AV_CODEC_ID_AYUV) {
                 v[j] = *src++;
                 u[j] = *src++;
                 y[j] = *src++;
@@ -107,7 +107,7 @@ static av_cold int v408_decode_close(AVCodecContext *avctx)
 AVCodec ff_ayuv_decoder = {
     .name         = "ayuv",
     .type         = AVMEDIA_TYPE_VIDEO,
-    .id           = CODEC_ID_AYUV,
+    .id           = AV_CODEC_ID_AYUV,
     .init         = v408_decode_init,
     .decode       = v408_decode_frame,
     .close        = v408_decode_close,
@@ -119,7 +119,7 @@ AVCodec ff_ayuv_decoder = {
 AVCodec ff_v408_decoder = {
     .name         = "v408",
     .type         = AVMEDIA_TYPE_VIDEO,
-    .id           = CODEC_ID_V408,
+    .id           = AV_CODEC_ID_V408,
     .init         = v408_decode_init,
     .decode       = v408_decode_frame,
     .close        = v408_decode_close,

@@ -100,7 +100,7 @@ static av_cold int yuv4_decode_close(AVCodecContext *avctx)
 AVCodec ff_yuv4_decoder = {
     .name         = "yuv4",
     .type         = AVMEDIA_TYPE_VIDEO,
-    .id           = CODEC_ID_YUV4,
+    .id           = AV_CODEC_ID_YUV4,
     .init         = yuv4_decode_init,
     .decode       = yuv4_decode_frame,
     .close        = yuv4_decode_close,

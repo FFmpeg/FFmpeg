@@ -218,7 +218,7 @@ static av_cold int vble_decode_init(AVCodecContext *avctx)
 AVCodec ff_vble_decoder = {
     .name           = "vble",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_VBLE,
+    .id             = AV_CODEC_ID_VBLE,
     .priv_data_size = sizeof(VBLEContext),
     .init           = vble_decode_init,
     .close          = vble_decode_close,

@@ -574,7 +574,7 @@ AVCodec ff_libstagefright_h264_decoder = {
     "libstagefright_h264",
     NULL_IF_CONFIG_SMALL("libstagefright H.264"),
     AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_H264,
+    AV_CODEC_ID_H264,
     CODEC_CAP_DELAY,
     NULL, //supported_framerates
     NULL, //pix_fmts

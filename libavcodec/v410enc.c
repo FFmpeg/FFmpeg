@@ -89,7 +89,7 @@ static av_cold int v410_encode_close(AVCodecContext *avctx)
 AVCodec ff_v410_encoder = {
     .name         = "v410",
     .type         = AVMEDIA_TYPE_VIDEO,
-    .id           = CODEC_ID_V410,
+    .id           = AV_CODEC_ID_V410,
     .init         = v410_encode_init,
     .encode2      = v410_encode_frame,
     .close        = v410_encode_close,

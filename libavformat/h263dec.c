@@ -64,4 +64,4 @@ static int h263_probe(AVProbeData *p)
     return 0;
 }
 
-FF_DEF_RAWVIDEO_DEMUXER(h263, "raw H.263", h263_probe, NULL, CODEC_ID_H263)
+FF_DEF_RAWVIDEO_DEMUXER(h263, "raw H.263", h263_probe, NULL, AV_CODEC_ID_H263)

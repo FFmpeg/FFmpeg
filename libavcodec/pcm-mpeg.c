@@ -318,7 +318,7 @@ static int pcm_bluray_decode_frame(AVCodecContext *avctx, void *data,
 AVCodec ff_pcm_bluray_decoder = {
     .name           = "pcm_bluray",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_PCM_BLURAY,
+    .id             = AV_CODEC_ID_PCM_BLURAY,
     .priv_data_size = sizeof(PCMBRDecode),
     .init           = pcm_bluray_decode_init,
     .decode         = pcm_bluray_decode_frame,

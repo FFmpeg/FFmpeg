@@ -218,7 +218,7 @@ AVOutputFormat *av_guess_format(const char *short_name, const char *filename,
 #if CONFIG_IMAGE2_MUXER
     if (!short_name && filename &&
         av_filename_number_test(filename) &&
-        ff_guess_image2_codec(filename) != CODEC_ID_NONE) {
+        ff_guess_image2_codec(filename) != AV_CODEC_ID_NONE) {
         return av_guess_format("image2", NULL, NULL);
     }
 #endif
@@ -243,17 +243,17 @@ AVOutputFormat *av_guess_format(const char *short_name, const char *filename,
     return fmt_found;
 }
 
-enum CodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
+enum AVCodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
                             const char *filename, const char *mime_type, enum AVMediaType type){
     if(type == AVMEDIA_TYPE_VIDEO){
-        enum CodecID codec_id= CODEC_ID_NONE;
+        enum AVCodecID codec_id= AV_CODEC_ID_NONE;
 
 #if CONFIG_IMAGE2_MUXER
         if(!strcmp(fmt->name, "image2") || !strcmp(fmt->name, "image2pipe")){
             codec_id= ff_guess_image2_codec(filename);
         }
 #endif
-        if(codec_id == CODEC_ID_NONE)
+        if(codec_id == AV_CODEC_ID_NONE)
             codec_id= fmt->video_codec;
         return codec_id;
     }else if(type == AVMEDIA_TYPE_AUDIO)
@@ -261,7 +261,7 @@ enum CodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
     else if (type == AVMEDIA_TYPE_SUBTITLE)
         return fmt->subtitle_codec;
     else
-        return CODEC_ID_NONE;
+        return AV_CODEC_ID_NONE;
 }
 
 AVInputFormat *av_find_input_format(const char *short_name)
@@ -399,17 +399,17 @@ AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened){
 static int set_codec_from_probe_data(AVFormatContext *s, AVStream *st, AVProbeData *pd)
 {
     static const struct {
-        const char *name; enum CodecID id; enum AVMediaType type;
+        const char *name; enum AVCodecID id; enum AVMediaType type;
     } fmt_id_type[] = {
-        { "aac"      , CODEC_ID_AAC       , AVMEDIA_TYPE_AUDIO },
-        { "ac3"      , CODEC_ID_AC3       , AVMEDIA_TYPE_AUDIO },
-        { "dts"      , CODEC_ID_DTS       , AVMEDIA_TYPE_AUDIO },
-        { "eac3"     , CODEC_ID_EAC3      , AVMEDIA_TYPE_AUDIO },
-        { "h264"     , CODEC_ID_H264      , AVMEDIA_TYPE_VIDEO },
-        { "loas"     , CODEC_ID_AAC_LATM  , AVMEDIA_TYPE_AUDIO },
-        { "m4v"      , CODEC_ID_MPEG4     , AVMEDIA_TYPE_VIDEO },
-        { "mp3"      , CODEC_ID_MP3       , AVMEDIA_TYPE_AUDIO },
-        { "mpegvideo", CODEC_ID_MPEG2VIDEO, AVMEDIA_TYPE_VIDEO },
+        { "aac"      , AV_CODEC_ID_AAC       , AVMEDIA_TYPE_AUDIO },
+        { "ac3"      , AV_CODEC_ID_AC3       , AVMEDIA_TYPE_AUDIO },
+        { "dts"      , AV_CODEC_ID_DTS       , AVMEDIA_TYPE_AUDIO },
+        { "eac3"     , AV_CODEC_ID_EAC3      , AVMEDIA_TYPE_AUDIO },
+        { "h264"     , AV_CODEC_ID_H264      , AVMEDIA_TYPE_VIDEO },
+        { "loas"     , AV_CODEC_ID_AAC_LATM  , AVMEDIA_TYPE_AUDIO },
+        { "m4v"      , AV_CODEC_ID_MPEG4     , AVMEDIA_TYPE_VIDEO },
+        { "mp3"      , AV_CODEC_ID_MP3       , AVMEDIA_TYPE_AUDIO },
+        { "mpegvideo", AV_CODEC_ID_MPEG2VIDEO, AVMEDIA_TYPE_VIDEO },
         { 0 }
     };
     int score;
@@ -698,12 +698,12 @@ no_packet:
 
         if(end || av_log2(pd->buf_size) != av_log2(pd->buf_size - pkt->size)){
             int score= set_codec_from_probe_data(s, st, pd);
-            if(    (st->codec->codec_id != CODEC_ID_NONE && score > AVPROBE_SCORE_MAX/4)
+            if(    (st->codec->codec_id != AV_CODEC_ID_NONE && score > AVPROBE_SCORE_MAX/4)
                 || end){
                 pd->buf_size=0;
                 av_freep(&pd->buf);
                 st->request_probe= -1;
-                if(st->codec->codec_id != CODEC_ID_NONE){
+                if(st->codec->codec_id != AV_CODEC_ID_NONE){
                     av_log(s, AV_LOG_DEBUG, "probed stream %d\n", st->index);
                 }else
                     av_log(s, AV_LOG_WARNING, "probed stream %d failed\n", st->index);
@@ -799,11 +799,11 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int determinable_frame_size(AVCodecContext *avctx)
 {
-    if (/*avctx->codec_id == CODEC_ID_AAC ||*/
-        avctx->codec_id == CODEC_ID_MP1 ||
-        avctx->codec_id == CODEC_ID_MP2 ||
-        avctx->codec_id == CODEC_ID_MP3/* ||
-        avctx->codec_id == CODEC_ID_CELT*/)
+    if (/*avctx->codec_id == AV_CODEC_ID_AAC ||*/
+        avctx->codec_id == AV_CODEC_ID_MP1 ||
+        avctx->codec_id == AV_CODEC_ID_MP2 ||
+        avctx->codec_id == AV_CODEC_ID_MP3/* ||
+        avctx->codec_id == AV_CODEC_ID_CELT*/)
         return 1;
     return 0;
 }
@@ -878,22 +878,22 @@ static int is_intra_only(AVCodecContext *enc){
         return 1;
     }else if(enc->codec_type == AVMEDIA_TYPE_VIDEO){
         switch(enc->codec_id){
-        case CODEC_ID_MJPEG:
-        case CODEC_ID_MJPEGB:
-        case CODEC_ID_LJPEG:
-        case CODEC_ID_PRORES:
-        case CODEC_ID_RAWVIDEO:
-        case CODEC_ID_V210:
-        case CODEC_ID_DVVIDEO:
-        case CODEC_ID_HUFFYUV:
-        case CODEC_ID_FFVHUFF:
-        case CODEC_ID_ASV1:
-        case CODEC_ID_ASV2:
-        case CODEC_ID_VCR1:
-        case CODEC_ID_DNXHD:
-        case CODEC_ID_JPEG2000:
-        case CODEC_ID_MDEC:
-        case CODEC_ID_UTVIDEO:
+        case AV_CODEC_ID_MJPEG:
+        case AV_CODEC_ID_MJPEGB:
+        case AV_CODEC_ID_LJPEG:
+        case AV_CODEC_ID_PRORES:
+        case AV_CODEC_ID_RAWVIDEO:
+        case AV_CODEC_ID_V210:
+        case AV_CODEC_ID_DVVIDEO:
+        case AV_CODEC_ID_HUFFYUV:
+        case AV_CODEC_ID_FFVHUFF:
+        case AV_CODEC_ID_ASV1:
+        case AV_CODEC_ID_ASV2:
+        case AV_CODEC_ID_VCR1:
+        case AV_CODEC_ID_DNXHD:
+        case AV_CODEC_ID_JPEG2000:
+        case AV_CODEC_ID_MDEC:
+        case AV_CODEC_ID_UTVIDEO:
             return 1;
         default: break;
         }
@@ -903,7 +903,7 @@ static int is_intra_only(AVCodecContext *enc){
 
 static int has_decode_delay_been_guessed(AVStream *st)
 {
-    if(st->codec->codec_id != CODEC_ID_H264) return 1;
+    if(st->codec->codec_id != AV_CODEC_ID_H264) return 1;
 #if CONFIG_H264_DECODER
     if(st->codec->has_b_frames &&
        avpriv_h264_has_num_reorder_frames(st->codec) == st->codec->has_b_frames)
@@ -1015,7 +1015,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     if((s->flags & AVFMT_FLAG_IGNDTS) && pkt->pts != AV_NOPTS_VALUE)
         pkt->dts= AV_NOPTS_VALUE;
 
-    if (st->codec->codec_id != CODEC_ID_H264 && pc && pc->pict_type == AV_PICTURE_TYPE_B)
+    if (st->codec->codec_id != AV_CODEC_ID_H264 && pc && pc->pict_type == AV_PICTURE_TYPE_B)
         //FIXME Set low_delay = 0 when has_b_frames = 1
         st->codec->has_b_frames = 1;
 
@@ -1088,7 +1088,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
 //           presentation_delayed, av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(st->cur_dts), pkt->stream_index, pc, pkt->duration);
     /* interpolate PTS and DTS if they are not present */
     //We skip H264 currently because delay and has_b_frames are not reliably set
-    if((delay==0 || (delay==1 && pc)) && st->codec->codec_id != CODEC_ID_H264){
+    if((delay==0 || (delay==1 && pc)) && st->codec->codec_id != AV_CODEC_ID_H264){
         if (presentation_delayed) {
             /* DTS = decompression timestamp */
             /* PTS = presentation timestamp */
@@ -1146,7 +1146,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             FFSWAP(int64_t, st->pts_buffer[i], st->pts_buffer[i+1]);
         if(pkt->dts == AV_NOPTS_VALUE)
             pkt->dts= st->pts_buffer[0];
-        if(st->codec->codec_id == CODEC_ID_H264){ // we skipped it above so we try here
+        if(st->codec->codec_id == AV_CODEC_ID_H264){ // we skipped it above so we try here
             update_initial_timestamps(s, pkt->stream_index, pkt->dts, pkt->pts); // this should happen on the first packet
         }
         if(pkt->dts > st->cur_dts)
@@ -1919,7 +1919,7 @@ static int seek_frame_generic(AVFormatContext *s,
             if(stream_index == pkt.stream_index && pkt.dts > timestamp){
                 if(pkt.flags & AV_PKT_FLAG_KEY)
                     break;
-                if(nonkey++ > 1000 && st->codec->codec_id != CODEC_ID_CDGRAPHICS){
+                if(nonkey++ > 1000 && st->codec->codec_id != AV_CODEC_ID_CDGRAPHICS){
                     av_log(s, AV_LOG_ERROR,"seek_frame_generic failed as this stream seems to contain no keyframes after the target timestamp, %d non keyframes found\n", nonkey);
                     break;
                 }
@@ -2321,10 +2321,10 @@ static int has_codec_parameters(AVStream *st, const char **errmsg_ptr)
             FAIL("unspecified pixel format");
         break;
     case AVMEDIA_TYPE_DATA:
-        if(avctx->codec_id == CODEC_ID_NONE) return 1;
+        if(avctx->codec_id == AV_CODEC_ID_NONE) return 1;
     }
 
-    if (avctx->codec_id == CODEC_ID_NONE)
+    if (avctx->codec_id == AV_CODEC_ID_NONE)
         FAIL("unknown codec");
     return 1;
 }
@@ -2396,9 +2396,9 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **option
     return ret;
 }
 
-unsigned int ff_codec_get_tag(const AVCodecTag *tags, enum CodecID id)
+unsigned int ff_codec_get_tag(const AVCodecTag *tags, enum AVCodecID id)
 {
-    while (tags->id != CODEC_ID_NONE) {
+    while (tags->id != AV_CODEC_ID_NONE) {
         if (tags->id == id)
             return tags->tag;
         tags++;
@@ -2406,21 +2406,21 @@ unsigned int ff_codec_get_tag(const AVCodecTag *tags, enum CodecID id)
     return 0;
 }
 
-enum CodecID ff_codec_get_id(const AVCodecTag *tags, unsigned int tag)
+enum AVCodecID ff_codec_get_id(const AVCodecTag *tags, unsigned int tag)
 {
     int i;
-    for(i=0; tags[i].id != CODEC_ID_NONE;i++) {
+    for(i=0; tags[i].id != AV_CODEC_ID_NONE;i++) {
         if(tag == tags[i].tag)
             return tags[i].id;
     }
-    for(i=0; tags[i].id != CODEC_ID_NONE; i++) {
+    for(i=0; tags[i].id != AV_CODEC_ID_NONE; i++) {
         if (avpriv_toupper4(tag) == avpriv_toupper4(tags[i].tag))
             return tags[i].id;
     }
-    return CODEC_ID_NONE;
+    return AV_CODEC_ID_NONE;
 }
 
-unsigned int av_codec_get_tag(const AVCodecTag * const *tags, enum CodecID id)
+unsigned int av_codec_get_tag(const AVCodecTag * const *tags, enum AVCodecID id)
 {
     int i;
     for(i=0; tags && tags[i]; i++){
@@ -2430,14 +2430,14 @@ unsigned int av_codec_get_tag(const AVCodecTag * const *tags, enum CodecID id)
     return 0;
 }
 
-enum CodecID av_codec_get_id(const AVCodecTag * const *tags, unsigned int tag)
+enum AVCodecID av_codec_get_id(const AVCodecTag * const *tags, unsigned int tag)
 {
     int i;
     for(i=0; tags && tags[i]; i++){
-        enum CodecID id= ff_codec_get_id(tags[i], tag);
-        if(id!=CODEC_ID_NONE) return id;
+        enum AVCodecID id= ff_codec_get_id(tags[i], tag);
+        if(id!=AV_CODEC_ID_NONE) return id;
     }
-    return CODEC_ID_NONE;
+    return AV_CODEC_ID_NONE;
 }
 
 static void compute_chapters_end(AVFormatContext *s)
@@ -2479,8 +2479,8 @@ static int tb_unreliable(AVCodecContext *c){
        || c->time_base.den <    5L*c->time_base.num
 /*       || c->codec_tag == AV_RL32("DIVX")
        || c->codec_tag == AV_RL32("XVID")*/
-       || c->codec_id == CODEC_ID_MPEG2VIDEO
-       || c->codec_id == CODEC_ID_H264
+       || c->codec_id == AV_CODEC_ID_MPEG2VIDEO
+       || c->codec_id == AV_CODEC_ID_H264
        )
         return 1;
     return 0;
@@ -2780,7 +2780,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     for(i=0;i<ic->nb_streams;i++) {
         st = ic->streams[i];
         if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-            if(st->codec->codec_id == CODEC_ID_RAWVIDEO && !st->codec->codec_tag && !st->codec->bits_per_coded_sample){
+            if(st->codec->codec_id == AV_CODEC_ID_RAWVIDEO && !st->codec->codec_tag && !st->codec->bits_per_coded_sample){
                 uint32_t tag= avcodec_pix_fmt_to_codec_tag(st->codec->pix_fmt);
                 if(ff_find_pix_fmt(ff_raw_pix_fmt_tags, tag) == st->codec->pix_fmt)
                     st->codec->codec_tag= tag;
@@ -3223,7 +3223,7 @@ static int validate_codec_tag(AVFormatContext *s, AVStream *st)
 {
     const AVCodecTag *avctag;
     int n;
-    enum CodecID id = CODEC_ID_NONE;
+    enum AVCodecID id = AV_CODEC_ID_NONE;
     unsigned int tag = 0;
 
     /**
@@ -3234,7 +3234,7 @@ static int validate_codec_tag(AVFormatContext *s, AVStream *st)
      */
     for (n = 0; s->oformat->codec_tag[n]; n++) {
         avctag = s->oformat->codec_tag[n];
-        while (avctag->id != CODEC_ID_NONE) {
+        while (avctag->id != AV_CODEC_ID_NONE) {
             if (avpriv_toupper4(avctag->tag) == avpriv_toupper4(st->codec->codec_tag)) {
                 id = avctag->id;
                 if (id == st->codec->codec_id)
@@ -3245,7 +3245,7 @@ static int validate_codec_tag(AVFormatContext *s, AVStream *st)
             avctag++;
         }
     }
-    if (id != CODEC_ID_NONE)
+    if (id != AV_CODEC_ID_NONE)
         return 0;
     if (tag && (st->codec->strict_std_compliance >= FF_COMPLIANCE_NORMAL))
         return 0;
@@ -3314,7 +3314,7 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
 
         if(s->oformat->codec_tag){
             if(   st->codec->codec_tag
-               && st->codec->codec_id == CODEC_ID_RAWVIDEO
+               && st->codec->codec_id == AV_CODEC_ID_RAWVIDEO
                && (av_codec_get_tag(s->oformat->codec_tag, st->codec->codec_id) == 0 || av_codec_get_tag(s->oformat->codec_tag, st->codec->codec_id) ==MKTAG('r', 'a', 'w', ' '))
                && !validate_codec_tag(s, st)){
                 //the current rawvideo encoding system ends up setting the wrong codec_tag for avi/mov, we override it here
@@ -4464,7 +4464,7 @@ int64_t ff_iso8601_to_unix_time(const char *datestr)
 #endif
 }
 
-int avformat_query_codec(AVOutputFormat *ofmt, enum CodecID codec_id, int std_compliance)
+int avformat_query_codec(AVOutputFormat *ofmt, enum AVCodecID codec_id, int std_compliance)
 {
     if (ofmt) {
         if (ofmt->query_codec)

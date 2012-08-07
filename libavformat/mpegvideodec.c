@@ -58,4 +58,4 @@ static int mpegvideo_probe(AVProbeData *p)
     return 0;
 }
 
-FF_DEF_RAWVIDEO_DEMUXER(mpegvideo, "raw MPEG video", mpegvideo_probe, NULL, CODEC_ID_MPEG1VIDEO)
+FF_DEF_RAWVIDEO_DEMUXER(mpegvideo, "raw MPEG video", mpegvideo_probe, NULL, AV_CODEC_ID_MPEG1VIDEO)

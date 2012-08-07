@@ -630,7 +630,7 @@ static av_cold int vqa_decode_end(AVCodecContext *avctx)
 AVCodec ff_vqa_decoder = {
     .name           = "vqavideo",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_WS_VQA,
+    .id             = AV_CODEC_ID_WS_VQA,
     .priv_data_size = sizeof(VqaContext),
     .init           = vqa_decode_init,
     .close          = vqa_decode_end,

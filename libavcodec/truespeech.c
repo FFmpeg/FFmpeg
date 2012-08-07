@@ -360,7 +360,7 @@ static int truespeech_decode_frame(AVCodecContext *avctx, void *data,
 AVCodec ff_truespeech_decoder = {
     .name           = "truespeech",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_TRUESPEECH,
+    .id             = AV_CODEC_ID_TRUESPEECH,
     .priv_data_size = sizeof(TSContext),
     .init           = truespeech_decode_init,
     .decode         = truespeech_decode_frame,

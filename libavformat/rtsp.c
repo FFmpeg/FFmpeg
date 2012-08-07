@@ -207,7 +207,7 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
         codec->codec_id = ff_rtp_codec_id(buf, codec->codec_type);
     }
 
-    if (codec->codec_id == CODEC_ID_NONE) {
+    if (codec->codec_id == AV_CODEC_ID_NONE) {
         RTPDynamicProtocolHandler *handler =
             ff_rtp_handler_find_by_name(buf, codec->codec_type);
         init_rtp_handler(handler, rtsp_st, codec);

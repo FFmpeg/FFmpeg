@@ -263,7 +263,7 @@ static av_cold int xwd_decode_close(AVCodecContext *avctx)
 AVCodec ff_xwd_decoder = {
     .name           = "xwd",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_XWD,
+    .id             = AV_CODEC_ID_XWD,
     .init           = xwd_decode_init,
     .close          = xwd_decode_close,
     .decode         = xwd_decode_frame,

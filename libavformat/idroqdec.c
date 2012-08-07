@@ -130,7 +130,7 @@ static int roq_read_packet(AVFormatContext *s,
                 avpriv_set_pts_info(st, 63, 1, roq->frame_rate);
                 roq->video_stream_index = st->index;
                 st->codec->codec_type   = AVMEDIA_TYPE_VIDEO;
-                st->codec->codec_id     = CODEC_ID_ROQ;
+                st->codec->codec_id     = AV_CODEC_ID_ROQ;
                 st->codec->codec_tag    = 0;  /* no fourcc */
 
                 if (avio_read(pb, preamble, RoQ_CHUNK_PREAMBLE_SIZE) != RoQ_CHUNK_PREAMBLE_SIZE)
@@ -176,7 +176,7 @@ static int roq_read_packet(AVFormatContext *s,
                 avpriv_set_pts_info(st, 32, 1, RoQ_AUDIO_SAMPLE_RATE);
                 roq->audio_stream_index = st->index;
                 st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-                st->codec->codec_id = CODEC_ID_ROQ_DPCM;
+                st->codec->codec_id = AV_CODEC_ID_ROQ_DPCM;
                 st->codec->codec_tag = 0;  /* no tag */
                 st->codec->channels = roq->audio_channels = chunk_type == RoQ_SOUND_STEREO ? 2 : 1;
                 st->codec->sample_rate = RoQ_AUDIO_SAMPLE_RATE;

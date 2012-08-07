@@ -48,7 +48,7 @@ static av_cold int audio_write_header(AVFormatContext *s1)
     AlsaData *s = s1->priv_data;
     AVStream *st;
     unsigned int sample_rate;
-    enum CodecID codec_id;
+    enum AVCodecID codec_id;
     int res;
 
     st = s1->streams[0];
@@ -119,7 +119,7 @@ AVOutputFormat ff_alsa_muxer = {
     .long_name      = NULL_IF_CONFIG_SMALL("ALSA audio output"),
     .priv_data_size = sizeof(AlsaData),
     .audio_codec    = DEFAULT_CODEC_ID,
-    .video_codec    = CODEC_ID_NONE,
+    .video_codec    = AV_CODEC_ID_NONE,
     .write_header   = audio_write_header,
     .write_packet   = audio_write_packet,
     .write_trailer  = ff_alsa_close,

@@ -802,7 +802,7 @@ static av_cold int flic_decode_end(AVCodecContext *avctx)
 AVCodec ff_flic_decoder = {
     .name           = "flic",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_FLIC,
+    .id             = AV_CODEC_ID_FLIC,
     .priv_data_size = sizeof(FlicDecodeContext),
     .init           = flic_decode_init,
     .close          = flic_decode_end,

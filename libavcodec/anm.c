@@ -187,7 +187,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 AVCodec ff_anm_decoder = {
     .name           = "anm",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_ANM,
+    .id             = AV_CODEC_ID_ANM,
     .priv_data_size = sizeof(AnmContext),
     .init           = decode_init,
     .close          = decode_end,

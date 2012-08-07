@@ -58,7 +58,7 @@ static int v408_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     for (i = 0; i < avctx->height; i++) {
         for (j = 0; j < avctx->width; j++) {
-           if (avctx->codec_id==CODEC_ID_AYUV) {
+           if (avctx->codec_id==AV_CODEC_ID_AYUV) {
                 *dst++ = v[j];
                 *dst++ = u[j];
                 *dst++ = y[j];
@@ -92,7 +92,7 @@ static av_cold int v408_encode_close(AVCodecContext *avctx)
 AVCodec ff_ayuv_encoder = {
     .name         = "ayuv",
     .type         = AVMEDIA_TYPE_VIDEO,
-    .id           = CODEC_ID_AYUV,
+    .id           = AV_CODEC_ID_AYUV,
     .init         = v408_encode_init,
     .encode2      = v408_encode_frame,
     .close        = v408_encode_close,
@@ -104,7 +104,7 @@ AVCodec ff_ayuv_encoder = {
 AVCodec ff_v408_encoder = {
     .name         = "v408",
     .type         = AVMEDIA_TYPE_VIDEO,
-    .id           = CODEC_ID_V408,
+    .id           = AV_CODEC_ID_V408,
     .init         = v408_encode_init,
     .encode2      = v408_encode_frame,
     .close        = v408_encode_close,

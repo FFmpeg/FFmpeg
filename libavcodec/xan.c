@@ -507,7 +507,7 @@ static int xan_decode_frame(AVCodecContext *avctx,
     int ret, buf_size = avpkt->size;
     XanContext *s = avctx->priv_data;
 
-    if (avctx->codec->id == CODEC_ID_XAN_WC3) {
+    if (avctx->codec->id == AV_CODEC_ID_XAN_WC3) {
         const uint8_t *buf_end = buf + buf_size;
         int tag = 0;
         while (buf_end - buf > 8 && tag != VGA__TAG) {
@@ -623,7 +623,7 @@ static av_cold int xan_decode_end(AVCodecContext *avctx)
 AVCodec ff_xan_wc3_decoder = {
     .name           = "xan_wc3",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_XAN_WC3,
+    .id             = AV_CODEC_ID_XAN_WC3,
     .priv_data_size = sizeof(XanContext),
     .init           = xan_decode_init,
     .close          = xan_decode_end,

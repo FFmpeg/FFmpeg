@@ -47,7 +47,7 @@ static int bmv_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = CODEC_ID_BMV_VIDEO;
+    st->codec->codec_id   = AV_CODEC_ID_BMV_VIDEO;
     st->codec->width      = 640;
     st->codec->height     = 429;
     st->codec->pix_fmt    = PIX_FMT_PAL8;
@@ -56,7 +56,7 @@ static int bmv_read_header(AVFormatContext *s)
     if (!ast)
         return AVERROR(ENOMEM);
     ast->codec->codec_type      = AVMEDIA_TYPE_AUDIO;
-    ast->codec->codec_id        = CODEC_ID_BMV_AUDIO;
+    ast->codec->codec_id        = AV_CODEC_ID_BMV_AUDIO;
     ast->codec->channels        = 2;
     ast->codec->sample_rate     = 22050;
     avpriv_set_pts_info(ast, 16, 1, 22050);

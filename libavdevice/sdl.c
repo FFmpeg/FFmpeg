@@ -98,7 +98,7 @@ static int sdl_write_header(AVFormatContext *s)
 
     if (   s->nb_streams > 1
         || encctx->codec_type != AVMEDIA_TYPE_VIDEO
-        || encctx->codec_id   != CODEC_ID_RAWVIDEO) {
+        || encctx->codec_id   != AV_CODEC_ID_RAWVIDEO) {
         av_log(s, AV_LOG_ERROR, "Only supports one rawvideo stream\n");
         ret = AVERROR(EINVAL);
         goto fail;
@@ -223,8 +223,8 @@ AVOutputFormat ff_sdl_muxer = {
     .name           = "sdl",
     .long_name      = NULL_IF_CONFIG_SMALL("SDL output device"),
     .priv_data_size = sizeof(SDLContext),
-    .audio_codec    = CODEC_ID_NONE,
-    .video_codec    = CODEC_ID_RAWVIDEO,
+    .audio_codec    = AV_CODEC_ID_NONE,
+    .video_codec    = AV_CODEC_ID_RAWVIDEO,
     .write_header   = sdl_write_header,
     .write_packet   = sdl_write_packet,
     .write_trailer  = sdl_write_trailer,

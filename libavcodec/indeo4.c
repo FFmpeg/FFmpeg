@@ -639,7 +639,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 AVCodec ff_indeo4_decoder = {
     .name           = "indeo4",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_INDEO4,
+    .id             = AV_CODEC_ID_INDEO4,
     .priv_data_size = sizeof(IVI45DecContext),
     .init           = decode_init,
     .close          = ff_ivi_decode_close,

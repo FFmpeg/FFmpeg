@@ -421,7 +421,7 @@ err:
 AVCodec ff_ulti_decoder = {
     .name           = "ultimotion",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_ULTI,
+    .id             = AV_CODEC_ID_ULTI,
     .priv_data_size = sizeof(UltimotionDecodeContext),
     .init           = ulti_decode_init,
     .close          = ulti_decode_end,

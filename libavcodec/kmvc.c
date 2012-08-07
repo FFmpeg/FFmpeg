@@ -440,7 +440,7 @@ static av_cold int decode_end(AVCodecContext * avctx)
 AVCodec ff_kmvc_decoder = {
     .name           = "kmvc",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_KMVC,
+    .id             = AV_CODEC_ID_KMVC,
     .priv_data_size = sizeof(KmvcContext),
     .init           = decode_init,
     .close          = decode_end,

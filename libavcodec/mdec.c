@@ -269,7 +269,7 @@ static av_cold int decode_end(AVCodecContext *avctx){
 AVCodec ff_mdec_decoder = {
     .name             = "mdec",
     .type             = AVMEDIA_TYPE_VIDEO,
-    .id               = CODEC_ID_MDEC,
+    .id               = AV_CODEC_ID_MDEC,
     .priv_data_size   = sizeof(MDECContext),
     .init             = decode_init,
     .close            = decode_end,

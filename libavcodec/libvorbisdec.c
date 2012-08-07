@@ -190,7 +190,7 @@ static int oggvorbis_decode_close(AVCodecContext *avccontext) {
 AVCodec ff_libvorbis_decoder = {
     .name           = "libvorbis",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_VORBIS,
+    .id             = AV_CODEC_ID_VORBIS,
     .priv_data_size = sizeof(OggVorbisDecContext),
     .init           = oggvorbis_decode_init,
     .decode         = oggvorbis_decode_frame,

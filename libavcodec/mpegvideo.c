@@ -230,7 +230,7 @@ static void free_frame_buffer(MpegEncContext *s, Picture *pic)
     /* Windows Media Image codecs allocate internal buffers with different
      * dimensions; ignore user defined callbacks for these
      */
-    if (s->codec_id != CODEC_ID_WMV3IMAGE && s->codec_id != CODEC_ID_VC1IMAGE)
+    if (s->codec_id != AV_CODEC_ID_WMV3IMAGE && s->codec_id != AV_CODEC_ID_VC1IMAGE)
         ff_thread_release_buffer(s->avctx, &pic->f);
     else
         avcodec_default_release_buffer(s->avctx, &pic->f);
@@ -255,7 +255,7 @@ static int alloc_frame_buffer(MpegEncContext *s, Picture *pic)
         }
     }
 
-    if (s->codec_id != CODEC_ID_WMV3IMAGE && s->codec_id != CODEC_ID_VC1IMAGE)
+    if (s->codec_id != AV_CODEC_ID_WMV3IMAGE && s->codec_id != AV_CODEC_ID_VC1IMAGE)
         r = ff_thread_get_buffer(s->avctx, &pic->f);
     else
         r = avcodec_default_get_buffer(s->avctx, &pic->f);
@@ -665,9 +665,9 @@ av_cold int ff_MPV_common_init(MpegEncContext *s)
     if (s->encoding && s->avctx->slices)
         nb_slices = s->avctx->slices;
 
-    if (s->codec_id == CODEC_ID_MPEG2VIDEO && !s->progressive_sequence)
+    if (s->codec_id == AV_CODEC_ID_MPEG2VIDEO && !s->progressive_sequence)
         s->mb_height = (s->height + 31) / 32 * 2;
-    else if (s->codec_id != CODEC_ID_H264)
+    else if (s->codec_id != AV_CODEC_ID_H264)
         s->mb_height = (s->height + 15) / 16;
 
     if (s->avctx->pix_fmt == PIX_FMT_NONE) {
@@ -793,7 +793,7 @@ av_cold int ff_MPV_common_init(MpegEncContext *s)
         FF_ALLOCZ_OR_GOTO(s->avctx, s->error_status_table,
                           mb_array_size * sizeof(uint8_t), fail);
 
-        if(s->codec_id==CODEC_ID_MPEG4 || (s->flags & CODEC_FLAG_INTERLACED_ME)){
+        if(s->codec_id==AV_CODEC_ID_MPEG4 || (s->flags & CODEC_FLAG_INTERLACED_ME)){
             /* interlaced direct mode decoding tables */
             for (i = 0; i < 2; i++) {
                 int j, k;
@@ -1147,7 +1147,7 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     }
 
     /* mark & release old frames */
-    if (s->out_format != FMT_H264 || s->codec_id == CODEC_ID_SVQ3) {
+    if (s->out_format != FMT_H264 || s->codec_id == AV_CODEC_ID_SVQ3) {
         if (s->pict_type != AV_PICTURE_TYPE_B && s->last_picture_ptr &&
             s->last_picture_ptr != s->next_picture_ptr &&
             s->last_picture_ptr->f.data[0]) {
@@ -1189,7 +1189,7 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 
         pic->f.reference = 0;
         if (!s->dropable) {
-            if (s->codec_id == CODEC_ID_H264)
+            if (s->codec_id == AV_CODEC_ID_H264)
                 pic->f.reference = s->picture_structure;
             else if (s->pict_type != AV_PICTURE_TYPE_B)
                 pic->f.reference = 3;
@@ -1203,8 +1203,8 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         s->current_picture_ptr = pic;
         // FIXME use only the vars from current_pic
         s->current_picture_ptr->f.top_field_first = s->top_field_first;
-        if (s->codec_id == CODEC_ID_MPEG1VIDEO ||
-            s->codec_id == CODEC_ID_MPEG2VIDEO) {
+        if (s->codec_id == AV_CODEC_ID_MPEG1VIDEO ||
+            s->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
             if (s->picture_structure != PICT_FRAME)
                 s->current_picture_ptr->f.top_field_first =
                     (s->picture_structure == PICT_TOP_FIELD) == s->first_field;
@@ -1233,7 +1233,7 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
            s->current_picture_ptr ? s->current_picture_ptr->f.data[0] : NULL,
            s->pict_type, s->dropable); */
 
-    if (s->codec_id != CODEC_ID_H264) {
+    if (s->codec_id != AV_CODEC_ID_H264) {
         if ((s->last_picture_ptr == NULL ||
              s->last_picture_ptr->f.data[0] == NULL) &&
             (s->pict_type != AV_PICTURE_TYPE_I ||
@@ -1256,7 +1256,7 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
                 return -1;
             }
 
-            if(s->codec_id == CODEC_ID_FLV1 || s->codec_id == CODEC_ID_H263){
+            if(s->codec_id == AV_CODEC_ID_FLV1 || s->codec_id == AV_CODEC_ID_H263){
                 for(i=0; i<avctx->height; i++)
                     memset(s->last_picture_ptr->f.data[0] + s->last_picture_ptr->f.linesize[0]*i, 16, avctx->width);
             }
@@ -1290,7 +1290,7 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         ff_copy_picture(&s->next_picture, s->next_picture_ptr);
 
     if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_FRAME) &&
-        (s->out_format != FMT_H264 || s->codec_id == CODEC_ID_SVQ3)) {
+        (s->out_format != FMT_H264 || s->codec_id == AV_CODEC_ID_SVQ3)) {
         if (s->next_picture_ptr)
             s->next_picture_ptr->owner2 = s;
         if (s->last_picture_ptr)
@@ -1318,7 +1318,7 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     /* set dequantizer, we can't do it during init as
      * it might change for mpeg4 and we can't do it in the header
      * decode as init is not called for mpeg4 there yet */
-    if (s->mpeg_quant || s->codec_id == CODEC_ID_MPEG2VIDEO) {
+    if (s->mpeg_quant || s->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
         s->dct_unquantize_intra = s->dct_unquantize_mpeg2_intra;
         s->dct_unquantize_inter = s->dct_unquantize_mpeg2_inter;
     } else if (s->out_format == FMT_H263 || s->out_format == FMT_H261) {
@@ -1407,7 +1407,7 @@ void ff_MPV_frame_end(MpegEncContext *s)
 #endif
     s->avctx->coded_frame = &s->current_picture_ptr->f;
 
-    if (s->codec_id != CODEC_ID_H264 && s->current_picture.f.reference) {
+    if (s->codec_id != AV_CODEC_ID_H264 && s->current_picture.f.reference) {
         ff_thread_report_progress(&s->current_picture_ptr->f, INT_MAX, 0);
     }
 }
@@ -1590,7 +1590,7 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict)
         const int height         = s->avctx->height;
         const int mv_sample_log2 = 4 - pict->motion_subsample_log2;
         const int mv_stride      = (s->mb_width << mv_sample_log2) +
-                                   (s->codec_id == CODEC_ID_H264 ? 0 : 1);
+                                   (s->codec_id == AV_CODEC_ID_H264 ? 0 : 1);
         s->low_delay = 0; // needed to see the vectors without trashing the buffers
 
         avcodec_get_chroma_sub_sample(s->avctx->pix_fmt,
@@ -1781,7 +1781,7 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict)
                     }
 
                     if (IS_INTERLACED(mb_type) &&
-                        s->codec_id == CODEC_ID_H264) {
+                        s->codec_id == AV_CODEC_ID_H264) {
                         // hmm
                     }
                 }
@@ -2407,8 +2407,8 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
             }
 
             /* add dct residue */
-            if(s->encoding || !(   s->msmpeg4_version || s->codec_id==CODEC_ID_MPEG1VIDEO || s->codec_id==CODEC_ID_MPEG2VIDEO
-                                || (s->codec_id==CODEC_ID_MPEG4 && !s->mpeg_quant))){
+            if(s->encoding || !(   s->msmpeg4_version || s->codec_id==AV_CODEC_ID_MPEG1VIDEO || s->codec_id==AV_CODEC_ID_MPEG2VIDEO
+                                || (s->codec_id==AV_CODEC_ID_MPEG4 && !s->mpeg_quant))){
                 add_dequant_dct(s, block[0], 0, dest_y                          , dct_linesize, s->qscale);
                 add_dequant_dct(s, block[1], 1, dest_y              + block_size, dct_linesize, s->qscale);
                 add_dequant_dct(s, block[2], 2, dest_y + dct_offset             , dct_linesize, s->qscale);
@@ -2427,7 +2427,7 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
                         add_dequant_dct(s, block[7], 7, dest_cr + dct_offset, dct_linesize, s->chroma_qscale);
                     }
                 }
-            } else if(is_mpeg12 || (s->codec_id != CODEC_ID_WMV2)){
+            } else if(is_mpeg12 || (s->codec_id != AV_CODEC_ID_WMV2)){
                 add_dct(s, block[0], 0, dest_y                          , dct_linesize);
                 add_dct(s, block[1], 1, dest_y              + block_size, dct_linesize);
                 add_dct(s, block[2], 2, dest_y + dct_offset             , dct_linesize);
@@ -2460,7 +2460,7 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
             }
         } else {
             /* dct only in intra block */
-            if(s->encoding || !(s->codec_id==CODEC_ID_MPEG1VIDEO || s->codec_id==CODEC_ID_MPEG2VIDEO)){
+            if(s->encoding || !(s->codec_id==AV_CODEC_ID_MPEG1VIDEO || s->codec_id==AV_CODEC_ID_MPEG2VIDEO)){
                 put_dct(s, block[0], 0, dest_y                          , dct_linesize, s->qscale);
                 put_dct(s, block[1], 1, dest_y              + block_size, dct_linesize, s->qscale);
                 put_dct(s, block[2], 2, dest_y + dct_offset             , dct_linesize, s->qscale);

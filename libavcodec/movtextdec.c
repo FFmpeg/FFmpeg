@@ -100,7 +100,7 @@ AVCodec ff_movtext_decoder = {
     .name         = "mov_text",
     .long_name    = NULL_IF_CONFIG_SMALL("3GPP Timed Text subtitle"),
     .type         = AVMEDIA_TYPE_SUBTITLE,
-    .id           = CODEC_ID_MOV_TEXT,
+    .id           = AV_CODEC_ID_MOV_TEXT,
     .init         = mov_text_init,
     .decode       = mov_text_decode_frame,
 };

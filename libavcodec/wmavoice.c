@@ -2046,7 +2046,7 @@ static av_cold void wmavoice_flush(AVCodecContext *ctx)
 AVCodec ff_wmavoice_decoder = {
     .name           = "wmavoice",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_WMAVOICE,
+    .id             = AV_CODEC_ID_WMAVOICE,
     .priv_data_size = sizeof(WMAVoiceContext),
     .init           = wmavoice_decode_init,
     .close          = wmavoice_decode_end,

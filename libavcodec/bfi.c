@@ -185,7 +185,7 @@ static av_cold int bfi_decode_close(AVCodecContext *avctx)
 AVCodec ff_bfi_decoder = {
     .name           = "bfi",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_BFI,
+    .id             = AV_CODEC_ID_BFI,
     .priv_data_size = sizeof(BFIContext),
     .init           = bfi_decode_init,
     .close          = bfi_decode_close,

@@ -310,7 +310,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 AVCodec ff_eamad_decoder = {
     .name           = "eamad",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_MAD,
+    .id             = AV_CODEC_ID_MAD,
     .priv_data_size = sizeof(MadContext),
     .init           = decode_init,
     .close          = decode_end,

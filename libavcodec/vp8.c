@@ -2020,7 +2020,7 @@ static av_cold int vp8_decode_init(AVCodecContext *avctx)
     avctx->pix_fmt = PIX_FMT_YUV420P;
 
     ff_dsputil_init(&s->dsp, avctx);
-    ff_h264_pred_init(&s->hpc, CODEC_ID_VP8, 8, 1);
+    ff_h264_pred_init(&s->hpc, AV_CODEC_ID_VP8, 8, 1);
     ff_vp8dsp_init(&s->vp8dsp);
 
     return 0;
@@ -2074,7 +2074,7 @@ static int vp8_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
 AVCodec ff_vp8_decoder = {
     .name                  = "vp8",
     .type                  = AVMEDIA_TYPE_VIDEO,
-    .id                    = CODEC_ID_VP8,
+    .id                    = AV_CODEC_ID_VP8,
     .priv_data_size        = sizeof(VP8Context),
     .init                  = vp8_decode_init,
     .close                 = vp8_decode_free,

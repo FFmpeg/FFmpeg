@@ -274,7 +274,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 AVCodec ff_vb_decoder = {
     .name           = "vb",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_VB,
+    .id             = AV_CODEC_ID_VB,
     .priv_data_size = sizeof(VBDecContext),
     .init           = decode_init,
     .close          = decode_end,

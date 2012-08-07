@@ -166,7 +166,7 @@ static av_cold int decode_end(AVCodecContext *avctx){
 AVCodec ff_qdraw_decoder = {
     .name           = "qdraw",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_QDRAW,
+    .id             = AV_CODEC_ID_QDRAW,
     .priv_data_size = sizeof(QdrawContext),
     .init           = decode_init,
     .close          = decode_end,
