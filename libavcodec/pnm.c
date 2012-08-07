@@ -104,7 +104,7 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
             }
         }
         /* check that all tags are present */
-        if (w <= 0 || h <= 0 || maxval <= 0 || depth <= 0 || tuple_type[0] == '\0' || av_image_check_size(w, h, 0, avctx))
+        if (w <= 0 || h <= 0 || maxval <= 0 || depth <= 0 || tuple_type[0] == '\0' || av_image_check_size(w, h, 0, avctx) || s->bytestream >= s->bytestream_end)
             return -1;
 
         avctx->width  = w;
@@ -141,13 +141,15 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
         return -1;
     }
     pnm_get(s, buf1, sizeof(buf1));
-    avctx->width = atoi(buf1);
-    if (avctx->width <= 0)
-        return -1;
+    w = atoi(buf1);
     pnm_get(s, buf1, sizeof(buf1));
-    avctx->height = atoi(buf1);
-    if(avctx->height <= 0 || av_image_check_size(avctx->width, avctx->height, 0, avctx))
+    h = atoi(buf1);
+    if(w <= 0 || h <= 0 || av_image_check_size(w, h, 0, avctx) || s->bytestream >= s->bytestream_end)
         return -1;
+
+    avctx->width  = w;
+    avctx->height = h;
+
     if (avctx->pix_fmt != PIX_FMT_MONOWHITE && avctx->pix_fmt != PIX_FMT_MONOBLACK) {
         pnm_get(s, buf1, sizeof(buf1));
         s->maxval = atoi(buf1);
