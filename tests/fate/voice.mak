@@ -9,6 +9,27 @@ fate-g722-encode: CMD = enc_dec_pcm wav md5 s16le $(SRC) -c:a g722
 FATE_SAMPLES_AVCONV += $(FATE_G722)
 fate-g722: $(FATE_G722)
 
+FATE_G723_1 += fate-g723_1-dec-1
+fate-g723_1-dec-1: CMD = framecrc -postfilter 0 -i $(SAMPLES)/g723_1/ineqd53.tco
+
+FATE_G723_1 += fate-g723_1-dec-2
+fate-g723_1-dec-2: CMD = framecrc -postfilter 0 -i $(SAMPLES)/g723_1/overd53.tco
+
+FATE_G723_1 += fate-g723_1-dec-3
+fate-g723_1-dec-3: CMD = framecrc -postfilter 1 -i $(SAMPLES)/g723_1/overd63p.tco
+
+FATE_G723_1 += fate-g723_1-dec-4
+fate-g723_1-dec-4: CMD = framecrc -postfilter 0 -i $(SAMPLES)/g723_1/pathd53.tco
+
+FATE_G723_1 += fate-g723_1-dec-5
+fate-g723_1-dec-5: CMD = framecrc -postfilter 1 -i $(SAMPLES)/g723_1/pathd63p.tco
+
+FATE_G723_1 += fate-g723_1-dec-6
+fate-g723_1-dec-6: CMD = framecrc -postfilter 1 -i $(SAMPLES)/g723_1/tamed63p.tco
+
+FATE_SAMPLES_AVCONV += $(FATE_G723_1)
+fate-g723_1: $(FATE_G723_1)
+
 FATE_G726 += fate-g726-encode-2bit
 fate-g726-encode-2bit: tests/data/asynth-8000-1.wav
 fate-g726-encode-2bit: SRC = tests/data/asynth-8000-1.wav
