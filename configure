@@ -1220,6 +1220,7 @@ HAVE_LIST="
     closesocket
     cmov
     cpuid
+    cpunop
     dcbzl
     dev_bktr_ioctl_bt848_h
     dev_bktr_ioctl_meteor_h
@@ -3229,6 +3230,7 @@ EOF
             die "yasm not found, use --disable-yasm for a crippled build"
         check_yasm "vextractf128 xmm0, ymm0, 0" || disable avx
         check_yasm "vfmaddps ymm0, ymm1, ymm2, ymm3" || disable fma4
+        check_yasm "CPU amdnop" && enable cpunop
     fi
 
     case "$cpu" in

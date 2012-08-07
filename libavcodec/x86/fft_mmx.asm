@@ -608,7 +608,7 @@ cglobal fft_calc, 2,5,8
     add     rcx, 3
     shl     r2, cl
     sub     r4, r2
-.loop
+.loop:
 %if mmsize == 8
     PSWAPD  m0, [r4 + r2 + 4]
     mova [r4 + r2 + 4], m0

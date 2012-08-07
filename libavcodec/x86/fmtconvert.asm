@@ -404,7 +404,7 @@ cglobal float_interleave2_%1, 3,4,%2, dst, src, len, src1
     mov     src1q, [srcq+gprsize]
     mov      srcq, [srcq        ]
     sub     src1q, srcq
-.loop
+.loop:
     MOVPS      m0, [srcq             ]
     MOVPS      m1, [srcq+src1q       ]
     MOVPS      m3, [srcq      +mmsize]

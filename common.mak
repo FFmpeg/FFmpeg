@@ -29,7 +29,8 @@ CFLAGS     += $(ECFLAGS)
 CCFLAGS     = $(CPPFLAGS) $(CFLAGS)
 ASFLAGS    := $(CPPFLAGS) $(ASFLAGS)
 CXXFLAGS   += $(CPPFLAGS) $(CFLAGS)
-YASMFLAGS  += $(IFLAGS) -I$(SRC_PATH)/libavutil/x86/ -Pconfig.asm
+YASMFLAGS  += $(IFLAGS:%=%/) -I$(SRC_PATH)/libavutil/x86/ -Pconfig.asm
+
 HOSTCCFLAGS = $(IFLAGS) $(HOSTCFLAGS)
 LDFLAGS    := $(ALLFFLIBS:%=-Llib%) $(LDFLAGS)
 

@@ -308,7 +308,7 @@ cglobal h264_idct_add16_8_mmx, 5, 7 + npicregs, 0, dst, block_offset, block, str
 %ifdef PIC
     lea     picregq, [scan8_mem]
 %endif
-.nextblock
+.nextblock:
     movzx        r6, byte [scan8+r5]
     movzx        r6, byte [r4+r6]
     test         r6, r6
@@ -316,7 +316,7 @@ cglobal h264_idct_add16_8_mmx, 5, 7 + npicregs, 0, dst, block_offset, block, str
     mov         r6d, dword [r1+r5*4]
     lea          r6, [r0+r6]
     IDCT4_ADD    r6, r2, r3
-.skipblock
+.skipblock:
     inc          r5
     add          r2, 32
     cmp          r5, 16
@@ -333,7 +333,7 @@ cglobal h264_idct8_add4_8_mmx, 5, 7 + npicregs, 0, dst, block_offset, block, str
 %ifdef PIC
     lea     picregq, [scan8_mem]
 %endif
-.nextblock
+.nextblock:
     movzx        r6, byte [scan8+r5]
     movzx        r6, byte [r4+r6]
     test         r6, r6
@@ -347,7 +347,7 @@ cglobal h264_idct8_add4_8_mmx, 5, 7 + npicregs, 0, dst, block_offset, block, str
     mov         r6d, dword [r1+r5*4]
     lea          r6, [r0+r6+4]
     IDCT8_ADD_MMX_END   r6  , rsp+8, r3
-.skipblock
+.skipblock:
     add          r5, 4
     add          r2, 128
     cmp          r5, 16
@@ -362,7 +362,7 @@ cglobal h264_idct_add16_8_mmx2, 5, 8 + npicregs, 0, dst1, block_offset, block, s
 %ifdef PIC
     lea     picregq, [scan8_mem]
 %endif
-.nextblock
+.nextblock:
     movzx        r6, byte [scan8+r5]
     movzx        r6, byte [r4+r6]
     test         r6, r6
@@ -388,11 +388,11 @@ cglobal h264_idct_add16_8_mmx2, 5, 8 + npicregs, 0, dst1, block_offset, block, s
     cmp          r5, 16
     jl .nextblock
     REP_RET
-.no_dc
+.no_dc:
     mov         r6d, dword [r1+r5*4]
     add          r6, r0
     IDCT4_ADD    r6, r2, r3
-.skipblock
+.skipblock:
     inc          r5
     add          r2, 32
     cmp          r5, 16
@@ -406,7 +406,7 @@ cglobal h264_idct_add16intra_8_mmx, 5, 7 + npicregs, 0, dst, block_offset, block
 %ifdef PIC
     lea     picregq, [scan8_mem]
 %endif
-.nextblock
+.nextblock:
     movzx        r6, byte [scan8+r5]
     movzx        r6, byte [r4+r6]
     or          r6w, word [r2]
@@ -415,7 +415,7 @@ cglobal h264_idct_add16intra_8_mmx, 5, 7 + npicregs, 0, dst, block_offset, block
     mov         r6d, dword [r1+r5*4]
     add          r6, r0
     IDCT4_ADD    r6, r2, r3
-.skipblock
+.skipblock:
     inc          r5
     add          r2, 32
     cmp          r5, 16
@@ -429,7 +429,7 @@ cglobal h264_idct_add16intra_8_mmx2, 5, 8 + npicregs, 0, dst1, block_offset, blo
 %ifdef PIC
     lea     picregq, [scan8_mem]
 %endif
-.nextblock
+.nextblock:
     movzx        r6, byte [scan8+r5]
     movzx        r6, byte [r4+r6]
     test         r6, r6
@@ -442,7 +442,7 @@ cglobal h264_idct_add16intra_8_mmx2, 5, 8 + npicregs, 0, dst1, block_offset, blo
     cmp          r5, 16
     jl .nextblock
     REP_RET
-.try_dc
+.try_dc:
     movsx        r6, word [r2]
     test         r6, r6
     jz .skipblock
@@ -457,7 +457,7 @@ cglobal h264_idct_add16intra_8_mmx2, 5, 8 + npicregs, 0, dst1, block_offset, blo
 %if ARCH_X86_64 == 0
     mov          r1, r1m
 %endif
-.skipblock
+.skipblock:
     inc          r5
     add          r2, 32
     cmp          r5, 16
@@ -474,7 +474,7 @@ cglobal h264_idct8_add4_8_mmx2, 5, 8 + npicregs, 0, dst1, block_offset, block, s
 %ifdef PIC
     lea     picregq, [scan8_mem]
 %endif
-.nextblock
+.nextblock:
     movzx        r6, byte [scan8+r5]
     movzx        r6, byte [r4+r6]
     test         r6, r6
@@ -504,7 +504,7 @@ cglobal h264_idct8_add4_8_mmx2, 5, 8 + npicregs, 0, dst1, block_offset, block, s
 
     ADD         rsp, pad
     RET
-.no_dc
+.no_dc:
     mov         r6d, dword [r1+r5*4]
     add          r6, r0
     add   word [r2], 32
@@ -514,7 +514,7 @@ cglobal h264_idct8_add4_8_mmx2, 5, 8 + npicregs, 0, dst1, block_offset, block, s
     mov         r6d, dword [r1+r5*4]
     lea          r6, [r0+r6+4]
     IDCT8_ADD_MMX_END   r6  , rsp+8, r3
-.skipblock
+.skipblock:
     add          r5, 4
     add          r2, 128
     cmp          r5, 16
@@ -531,7 +531,7 @@ cglobal h264_idct8_add4_8_sse2, 5, 8 + npicregs, 10, dst1, block_offset, block, 
 %ifdef PIC
     lea     picregq, [scan8_mem]
 %endif
-.nextblock
+.nextblock:
     movzx        r6, byte [scan8+r5]
     movzx        r6, byte [r4+r6]
     test         r6, r6
@@ -560,7 +560,7 @@ INIT_MMX
     cmp          r5, 16
     jl .nextblock
     REP_RET
-.no_dc
+.no_dc:
 INIT_XMM
     mov       dst2d, dword [r1+r5*4]
     add       dst2q, r0
@@ -568,7 +568,7 @@ INIT_XMM
 %if ARCH_X86_64 == 0
     mov          r1, r1m
 %endif
-.skipblock
+.skipblock:
     add          r5, 4
     add          r2, 128
     cmp          r5, 16
@@ -577,7 +577,7 @@ INIT_XMM
 
 INIT_MMX
 h264_idct_add8_mmx_plane:
-.nextblock
+.nextblock:
     movzx        r6, byte [scan8+r5]
     movzx        r6, byte [r4+r6]
     or          r6w, word [r2]
@@ -592,7 +592,7 @@ h264_idct_add8_mmx_plane:
     add          r0, dword [r1+r5*4]
 %endif
     IDCT4_ADD    r0, r2, r3
-.skipblock
+.skipblock:
     inc          r5
     add          r2, 32
     test         r5, 3
@@ -621,8 +621,8 @@ cglobal h264_idct_add8_8_mmx, 5, 8 + npicregs, 0, dst1, block_offset, block, str
     call         h264_idct_add8_mmx_plane
     RET
 
-h264_idct_add8_mmx2_plane
-.nextblock
+h264_idct_add8_mmx2_plane:
+.nextblock:
     movzx        r6, byte [scan8+r5]
     movzx        r6, byte [r4+r6]
     test         r6, r6
@@ -641,7 +641,7 @@ h264_idct_add8_mmx2_plane
     test         r5, 3
     jnz .nextblock
     rep ret
-.try_dc
+.try_dc:
     movsx        r6, word [r2]
     test         r6, r6
     jz .skipblock
@@ -655,7 +655,7 @@ h264_idct_add8_mmx2_plane
     add          r0, dword [r1+r5*4]
 %endif
     DC_ADD_MMX2_OP movh, r0, r3, r6
-.skipblock
+.skipblock:
     inc          r5
     add          r2, 32
     test         r5, 3
@@ -734,7 +734,7 @@ h264_add8x4_idct_sse2:
     add         r0, r0m
 %endif
     call        h264_add8x4_idct_sse2
-.cycle%1end
+.cycle%1end:
 %if %1 < 7
     add         r2, 64
 %endif
@@ -770,7 +770,7 @@ cglobal h264_idct_add16_8_sse2, 5, 5 + ARCH_X86_64, 8
 %endif
     call        h264_add8x4_idct_sse2
     jmp .cycle%1end
-.try%1dc
+.try%1dc:
     movsx       r0, word [r2   ]
     or         r0w, word [r2+32]
     jz .cycle%1end
@@ -781,7 +781,7 @@ cglobal h264_idct_add16_8_sse2, 5, 5 + ARCH_X86_64, 8
     add         r0, r0m
 %endif
     call        h264_idct_dc_add8_mmx2
-.cycle%1end
+.cycle%1end:
 %if %1 < 7
     add         r2, 64
 %endif
@@ -817,7 +817,7 @@ cglobal h264_idct_add16intra_8_sse2, 5, 7 + ARCH_X86_64, 8
 %endif
     call        h264_add8x4_idct_sse2
     jmp .cycle%1end
-.try%1dc
+.try%1dc:
     movsx       r0, word [r2   ]
     or         r0w, word [r2+32]
     jz .cycle%1end
@@ -830,7 +830,7 @@ cglobal h264_idct_add16intra_8_sse2, 5, 7 + ARCH_X86_64, 8
     add         r0, dword [r1+(%1&1)*8+64*(1+(%1>>1))]
 %endif
     call        h264_idct_dc_add8_mmx2
-.cycle%1end
+.cycle%1end:
 %if %1 == 1
     add         r2, 384+64
 %elif %1 < 3

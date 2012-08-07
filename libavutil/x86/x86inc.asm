@@ -110,12 +110,14 @@
     default rel
 %endif
 
+%macro CPUNOP 1
+    %if HAVE_CPUNOP
+        CPU %1
+    %endif
+%endmacro
+
 ; Always use long nops (reduces 0x90 spam in disassembly on x86_32)
-; Not supported by NASM (except via smartalign package + ALIGNMODE k8,
-; however that fails when used together with the -M option)
-%ifdef __YASM_VER__
-CPU amdnop
-%endif
+CPUNOP amdnop
 
 ; Macros to eliminate most code duplication between x86_32 and x86_64:
 ; Currently this works only for leaf functions which load all their arguments
@@ -522,22 +524,8 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
 ; Applies any symbol mangling needed for C linkage, and sets up a define such that
 ; subsequent uses of the function name automatically refer to the mangled version.
 ; Appends cpuflags to the function name if cpuflags has been specified.
-%macro cglobal 1-2+ ; name, [PROLOGUE args]
-%if %0 == 1
-    ; HACK: work around %+ broken with empty SUFFIX for nasm 2.09.10
-    %ifndef cpuname
-    cglobal_internal %1
-    %else
-    cglobal_internal %1 %+ SUFFIX
-    %endif
-%else
-    ; HACK: work around %+ broken with empty SUFFIX for nasm 2.09.10
-    %ifndef cpuname
-    cglobal_internal %1, %2
-    %else
+%macro cglobal 1-2+ "" ; name, [PROLOGUE args]
     cglobal_internal %1 %+ SUFFIX, %2
-    %endif
-%endif
 %endmacro
 %macro cglobal_internal 1-2+
     %ifndef cglobaled_%1
@@ -555,7 +543,7 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
     %1:
     RESET_MM_PERMUTATION ; not really needed, but makes disassembly somewhat nicer
     %assign stack_offset 0
-    %if %0 > 1
+    %ifnidn %2, ""
         PROLOGUE %2
     %endif
 %endmacro
@@ -622,9 +610,7 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits
 ; All subsequent functions (up to the next INIT_CPUFLAGS) is built for the specified cpu.
 ; You shouldn't need to invoke this macro directly, it's a subroutine for INIT_MMX &co.
 %macro INIT_CPUFLAGS 0-2
-%ifdef __YASM_VER__
-    CPU amdnop
-%endif
+    CPUNOP amdnop
     %if %0 >= 1
         %xdefine cpuname %1
         %assign cpuflags cpuflags_%1
@@ -648,7 +634,7 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits
         %endif
         %ifdef __YASM_VER__
         %if notcpuflag(mmx2)
-            CPU basicnop
+            CPUNOP basicnop
         %endif
         %endif
     %else
@@ -826,18 +812,13 @@ INIT_XMM
 
 ; Append cpuflags to the callee's name iff the appended name is known and the plain name isn't
 %macro call 1
-    ; HACK: work around %+ broken with empty SUFFIX for nasm 2.09.10
-    %ifndef cpuname
-    call_internal %1, %1
-    %else
-    call_internal %1, %1 %+ SUFFIX
-    %endif
+    call_internal %1 %+ SUFFIX, %1
 %endmacro
 %macro call_internal 2
-    %xdefine %%i %1
-    %ifndef cglobaled_%1
-        %ifdef cglobaled_%2
-            %xdefine %%i %2
+    %xdefine %%i %2
+    %ifndef cglobaled_%2
+        %ifdef cglobaled_%1
+            %xdefine %%i %1
         %endif
     %endif
     call %%i

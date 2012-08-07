@@ -139,7 +139,7 @@ cglobal vp6_filter_diag4, 5, 7, 8
 
     mov          r3, rsp
     mov          r6, 11
-.nextrow
+.nextrow:
     DIAG4        r1, -1, 0, 1, 2, r3
     add          r3, 8
     add          r1, r2
@@ -151,7 +151,7 @@ cglobal vp6_filter_diag4, 5, 7, 8
 
     lea          r3, [rsp+8]
     mov          r6, 8
-.nextcol
+.nextcol:
     DIAG4        r3, -8, 0, 8, 16, r0
     add          r3, 8
     add          r0, r2
