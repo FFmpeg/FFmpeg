@@ -34,12 +34,12 @@ static void pnm_get(PNMContext *sc, char *str, int buf_size)
     int c;
 
     /* skip spaces and comments */
-    for (;;) {
+    while (sc->bytestream < sc->bytestream_end) {
         c = *sc->bytestream++;
         if (c == '#')  {
-            do {
+            while (c != '\n' && sc->bytestream < sc->bytestream_end) {
                 c = *sc->bytestream++;
-            } while (c != '\n' && sc->bytestream < sc->bytestream_end);
+            }
         } else if (!pnm_space(c)) {
             break;
         }
