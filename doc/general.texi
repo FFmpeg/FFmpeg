@@ -385,7 +385,6 @@ library:
 @item eXtended BINary text (XBIN) @tab @tab X
 @item YUV4MPEG pipe             @tab X @tab X
 @item Psygnosis YOP             @tab   @tab X
-@item ZeroCodec Lossless Video  @tab   @tab X
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
@@ -691,6 +690,7 @@ following image formats are supported:
 @item Psygnosis YOP Video    @tab     @tab  X
 @item yuv4                   @tab  X  @tab  X
     @tab libquicktime uncompressed packed 4:2:0
+@item ZeroCodec Lossless Video @tab     @tab  X
 @item ZLIB                   @tab  X  @tab  X
     @tab part of LCL, encoder experimental
 @item Zip Motion Blocks Video  @tab   X @tab  X
