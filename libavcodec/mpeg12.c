@@ -1552,28 +1552,6 @@ static void mpeg_decode_picture_coding_extension(Mpeg1Context *s1)
     s->chroma_420_type            = get_bits1(&s->gb);
     s->progressive_frame          = get_bits1(&s->gb);
 
-    if (s->progressive_sequence && !s->progressive_frame) {
-        s->progressive_frame = 1;
-        av_log(s->avctx, AV_LOG_ERROR, "interlaced frame in progressive sequence, ignoring\n");
-    }
-
-    if (s->picture_structure == 0 || (s->progressive_frame && s->picture_structure != PICT_FRAME)) {
-        av_log(s->avctx, AV_LOG_ERROR, "picture_structure %d invalid, ignoring\n", s->picture_structure);
-        s->picture_structure = PICT_FRAME;
-    }
-
-    if (s->progressive_sequence && !s->frame_pred_frame_dct) {
-        av_log(s->avctx, AV_LOG_WARNING, "invalid frame_pred_frame_dct\n");
-    }
-
-    if (s->picture_structure == PICT_FRAME) {
-        s->first_field = 0;
-        s->v_edge_pos  = 16 * s->mb_height;
-    } else {
-        s->first_field ^= 1;
-        s->v_edge_pos   = 8 * s->mb_height;
-        memset(s->mbskip_table, 0, s->mb_stride * s->mb_height);
-    }
 
     if (s->alternate_scan) {
         ff_init_scantable(s->dsp.idct_permutation, &s->inter_scantable, ff_alternate_vertical_scan);
@@ -2443,6 +2421,32 @@ static int decode_chunks(AVCodecContext *avctx,
             }
             break;
         default:
+            if (start_code >= SLICE_MIN_START_CODE &&
+                start_code <= SLICE_MAX_START_CODE && last_code == PICTURE_START_CODE) {
+
+                if (s2->progressive_sequence && !s2->progressive_frame) {
+                    s2->progressive_frame = 1;
+                    av_log(s2->avctx, AV_LOG_ERROR, "interlaced frame in progressive sequence, ignoring\n");
+                }
+
+                if (s2->picture_structure == 0 || (s2->progressive_frame && s2->picture_structure != PICT_FRAME)) {
+                    av_log(s2->avctx, AV_LOG_ERROR, "picture_structure %d invalid, ignoring\n", s2->picture_structure);
+                    s2->picture_structure = PICT_FRAME;
+                }
+
+                if (s2->progressive_sequence && !s2->frame_pred_frame_dct) {
+                    av_log(s2->avctx, AV_LOG_WARNING, "invalid frame_pred_frame_dct\n");
+                }
+
+                if (s2->picture_structure == PICT_FRAME) {
+                    s2->first_field = 0;
+                    s2->v_edge_pos  = 16 * s2->mb_height;
+                } else {
+                    s2->first_field ^= 1;
+                    s2->v_edge_pos   = 8 * s2->mb_height;
+                    memset(s2->mbskip_table, 0, s2->mb_stride * s2->mb_height);
+                }
+            }
             if (start_code >= SLICE_MIN_START_CODE &&
                 start_code <= SLICE_MAX_START_CODE && last_code != 0) {
                 const int field_pic = s2->picture_structure != PICT_FRAME;
