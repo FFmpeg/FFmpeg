@@ -632,10 +632,8 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits
         %elifidn %1, sse3
             %define movu lddqu
         %endif
-        %ifdef __YASM_VER__
         %if notcpuflag(mmx2)
             CPUNOP basicnop
-        %endif
         %endif
     %else
         %xdefine SUFFIX
