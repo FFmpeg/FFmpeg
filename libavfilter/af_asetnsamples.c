@@ -151,7 +151,7 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
         asns->next_out_pts = insamples->pts;
     avfilter_unref_buffer(insamples);
 
-    if (av_audio_fifo_size(asns->fifo) >= asns->nb_out_samples)
+    while (av_audio_fifo_size(asns->fifo) >= asns->nb_out_samples)
         push_samples(outlink);
     return 0;
 }
