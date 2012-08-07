@@ -604,6 +604,29 @@ static int gen_bytes_read(URLContext *s, RTMPContext *rt, uint32_t ts)
     return ret;
 }
 
+static int gen_fcsubscribe_stream(URLContext *s, RTMPContext *rt)
+{
+    RTMPPacket pkt;
+    uint8_t *p;
+    int ret;
+
+    if ((ret = ff_rtmp_packet_create(&pkt, RTMP_SYSTEM_CHANNEL, RTMP_PT_INVOKE,
+                                     0, 27 + strlen(rt->playpath))) < 0)
+        return ret;
+
+    p = pkt.data;
+    ff_amf_write_string(&p, "FCSubscribe");
+    ff_amf_write_number(&p, ++rt->nb_invokes);
+    ff_amf_write_null(&p);
+    ff_amf_write_string(&p, rt->playpath);
+
+    ret = ff_rtmp_packet_write(rt->stream, &pkt, rt->chunk_size,
+                               rt->prev_pkt[1]);
+    ff_rtmp_packet_destroy(&pkt);
+
+    return ret;
+}
+
 int ff_rtmp_calc_digest(const uint8_t *src, int len, int gap,
                         const uint8_t *key, int keylen, uint8_t *dst)
 {
@@ -1011,6 +1034,14 @@ static int handle_invoke(URLContext *s, RTMPPacket *pkt)
                 }
                 if ((ret = gen_create_stream(s, rt)) < 0)
                     return ret;
+
+                if (rt->is_input) {
+                    /* Send the FCSubscribe command if live stream. */
+                    if (rt->live == -1) {
+                        if ((ret = gen_fcsubscribe_stream(s, rt)) < 0)
+                            return ret;
+                    }
+                }
                 break;
             case STATE_FCPUBLISH:
                 rt->state = STATE_CONNECTING;
