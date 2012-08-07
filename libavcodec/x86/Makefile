@@ -36,7 +36,7 @@ MMX-OBJS-$(CONFIG_VP8_DECODER)         += x86/vp8dsp_init.o
 
 YASM-OBJS-$(CONFIG_AAC_DECODER)        += x86/sbrdsp.o
 YASM-OBJS-$(CONFIG_AC3DSP)             += x86/ac3dsp.o
-YASM-OBJS-$(CONFIG_DCT)                += x86/dct32_sse.o
+YASM-OBJS-$(CONFIG_DCT)                += x86/dct32.o
 YASM-OBJS-$(CONFIG_ENCODERS)           += x86/dsputilenc.o
 YASM-OBJS-$(CONFIG_FFT)                += x86/fft_mmx.o
 YASM-OBJS-$(CONFIG_H264CHROMA)         += x86/h264_chromamc.o           \
@@ -50,7 +50,7 @@ YASM-OBJS-$(CONFIG_H264DSP)            += x86/h264_deblock.o            \
 YASM-OBJS-$(CONFIG_H264PRED)           += x86/h264_intrapred.o          \
                                           x86/h264_intrapred_10bit.o
 YASM-OBJS-$(CONFIG_H264QPEL)           += x86/h264_qpel_10bit.o
-YASM-OBJS-$(CONFIG_MPEGAUDIODSP)       += x86/imdct36_sse.o
+YASM-OBJS-$(CONFIG_MPEGAUDIODSP)       += x86/imdct36.o
 YASM-OBJS-$(CONFIG_PNG_DECODER)        += x86/pngdsp.o
 YASM-OBJS-$(CONFIG_PRORES_DECODER)     += x86/proresdsp.o
 YASM-OBJS-$(CONFIG_RV30_DECODER)       += x86/rv34dsp.o
