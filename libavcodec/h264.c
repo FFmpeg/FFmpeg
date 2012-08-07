@@ -3876,6 +3876,15 @@ again:
 
                 if (avctx->bits_per_raw_sample != h->sps.bit_depth_luma ||
                     h->cur_chroma_format_idc   != h->sps.chroma_format_idc) {
+                    if (s->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU
+                        && (h->sps.bit_depth_luma != 8 ||
+                            h->sps.chroma_format_idc > 1)) {
+                        av_log(avctx, AV_LOG_ERROR,
+                               "VDPAU decoding does not support video "
+                               "colorspace\n");
+                        buf_index = -1;
+                        goto end;
+                    }
                     if (h->sps.bit_depth_luma >= 8 && h->sps.bit_depth_luma <= 10) {
                         avctx->bits_per_raw_sample = h->sps.bit_depth_luma;
                         h->cur_chroma_format_idc   = h->sps.chroma_format_idc;
