@@ -56,7 +56,7 @@ typedef struct GifState {
     uint8_t global_palette[256 * 3];
     uint8_t local_palette[256 * 3];
 
-  AVCodecContext* avctx;
+    AVCodecContext *avctx;
 } GifState;
 
 static const uint8_t gif87a_sig[6] = "GIF87a";
@@ -220,7 +220,7 @@ static int gif_read_header1(GifState *s)
     s->screen_height = bytestream_get_le16(&s->bytestream);
     if(   (unsigned)s->screen_width  > 32767
        || (unsigned)s->screen_height > 32767){
-        av_log(NULL, AV_LOG_ERROR, "picture size too large\n");
+        av_log(s->avctx, AV_LOG_ERROR, "picture size too large\n");
         return -1;
     }
 
