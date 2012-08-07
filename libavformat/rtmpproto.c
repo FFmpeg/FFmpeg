@@ -1598,110 +1598,29 @@ static const AVOption rtmp_options[] = {
     { NULL },
 };
 
-static const AVClass rtmp_class = {
-    .class_name = "rtmp",
-    .item_name  = av_default_item_name,
-    .option     = rtmp_options,
-    .version    = LIBAVUTIL_VERSION_INT,
+#define RTMP_PROTOCOL(flavor)                    \
+static const AVClass flavor##_class = {          \
+    .class_name = #flavor,                       \
+    .item_name  = av_default_item_name,          \
+    .option     = rtmp_options,                  \
+    .version    = LIBAVUTIL_VERSION_INT,         \
+};                                               \
+                                                 \
+URLProtocol ff_##flavor##_protocol = {           \
+    .name           = #flavor,                   \
+    .url_open       = rtmp_open,                 \
+    .url_read       = rtmp_read,                 \
+    .url_write      = rtmp_write,                \
+    .url_close      = rtmp_close,                \
+    .priv_data_size = sizeof(RTMPContext),       \
+    .flags          = URL_PROTOCOL_FLAG_NETWORK, \
+    .priv_data_class= &flavor##_class,           \
 };
 
-URLProtocol ff_rtmp_protocol = {
-    .name           = "rtmp",
-    .url_open       = rtmp_open,
-    .url_read       = rtmp_read,
-    .url_write      = rtmp_write,
-    .url_close      = rtmp_close,
-    .priv_data_size = sizeof(RTMPContext),
-    .flags          = URL_PROTOCOL_FLAG_NETWORK,
-    .priv_data_class= &rtmp_class,
-};
 
-static const AVClass rtmpe_class = {
-    .class_name = "rtmpe",
-    .item_name  = av_default_item_name,
-    .option     = rtmp_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-URLProtocol ff_rtmpe_protocol = {
-    .name            = "rtmpe",
-    .url_open        = rtmp_open,
-    .url_read        = rtmp_read,
-    .url_write       = rtmp_write,
-    .url_close       = rtmp_close,
-    .priv_data_size  = sizeof(RTMPContext),
-    .flags           = URL_PROTOCOL_FLAG_NETWORK,
-    .priv_data_class = &rtmpe_class,
-};
-
-static const AVClass rtmps_class = {
-    .class_name = "rtmps",
-    .item_name  = av_default_item_name,
-    .option     = rtmp_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-URLProtocol ff_rtmps_protocol = {
-    .name            = "rtmps",
-    .url_open        = rtmp_open,
-    .url_read        = rtmp_read,
-    .url_write       = rtmp_write,
-    .url_close       = rtmp_close,
-    .priv_data_size  = sizeof(RTMPContext),
-    .flags           = URL_PROTOCOL_FLAG_NETWORK,
-    .priv_data_class = &rtmps_class,
-};
-
-static const AVClass rtmpt_class = {
-    .class_name = "rtmpt",
-    .item_name  = av_default_item_name,
-    .option     = rtmp_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-URLProtocol ff_rtmpt_protocol = {
-    .name            = "rtmpt",
-    .url_open        = rtmp_open,
-    .url_read        = rtmp_read,
-    .url_write       = rtmp_write,
-    .url_close       = rtmp_close,
-    .priv_data_size  = sizeof(RTMPContext),
-    .flags           = URL_PROTOCOL_FLAG_NETWORK,
-    .priv_data_class = &rtmpt_class,
-};
-
-static const AVClass rtmpte_class = {
-    .class_name = "rtmpte",
-    .item_name  = av_default_item_name,
-    .option     = rtmp_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-URLProtocol ff_rtmpte_protocol = {
-    .name            = "rtmpte",
-    .url_open        = rtmp_open,
-    .url_read        = rtmp_read,
-    .url_write       = rtmp_write,
-    .url_close       = rtmp_close,
-    .priv_data_size  = sizeof(RTMPContext),
-    .flags           = URL_PROTOCOL_FLAG_NETWORK,
-    .priv_data_class = &rtmpte_class,
-};
-
-static const AVClass rtmpts_class = {
-    .class_name = "rtmpts",
-    .item_name  = av_default_item_name,
-    .option     = rtmp_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-URLProtocol ff_rtmpts_protocol = {
-    .name            = "rtmpts",
-    .url_open        = rtmp_open,
-    .url_read        = rtmp_read,
-    .url_write       = rtmp_write,
-    .url_close       = rtmp_close,
-    .priv_data_size  = sizeof(RTMPContext),
-    .flags           = URL_PROTOCOL_FLAG_NETWORK,
-    .priv_data_class = &rtmpts_class,
-};
+RTMP_PROTOCOL(rtmp)
+RTMP_PROTOCOL(rtmpe)
+RTMP_PROTOCOL(rtmps)
+RTMP_PROTOCOL(rtmpt)
+RTMP_PROTOCOL(rtmpte)
+RTMP_PROTOCOL(rtmpts)
