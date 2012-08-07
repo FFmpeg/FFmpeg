@@ -287,9 +287,9 @@ following "Devel" ones:
 binutils, gcc4-core, make, git, mingw-runtime, texi2html
 @end example
 
-And the following "Utils" one:
+In order to run FATE you will also need the following "Utils" packages:
 @example
-diffutils
+bc, diffutils
 @end example
 
 Then run
