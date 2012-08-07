@@ -77,7 +77,7 @@ static int gif_read_image(GifState *s)
     has_local_palette = flags & 0x80;
     bits_per_pixel = (flags & 0x07) + 1;
 
-    av_dlog(s->avctx, "gif: image x=%d y=%d w=%d h=%d\n", left, top, width, height);
+    av_dlog(s->avctx, "image x=%d y=%d w=%d h=%d\n", left, top, width, height);
 
     if (has_local_palette) {
         bytestream_get_buffer(&s->bytestream, s->local_palette, 3 * (1 << bits_per_pixel));
@@ -163,7 +163,7 @@ static int gif_read_extension(GifState *s)
     ext_code = bytestream_get_byte(&s->bytestream);
     ext_len = bytestream_get_byte(&s->bytestream);
 
-    av_dlog(s->avctx, "gif: ext_code=0x%x len=%d\n", ext_code, ext_len);
+    av_dlog(s->avctx, "ext_code=0x%x len=%d\n", ext_code, ext_len);
 
     switch(ext_code) {
     case 0xf9:
@@ -179,7 +179,7 @@ static int gif_read_extension(GifState *s)
             s->transparent_color_index = -1;
         s->gce_disposal = (gce_flags >> 2) & 0x7;
 
-        av_dlog(s->avctx, "gif: gce_flags=%x delay=%d tcolor=%d disposal=%d\n",
+        av_dlog(s->avctx, "gce_flags=%x delay=%d tcolor=%d disposal=%d\n",
                gce_flags, s->gce_delay,
                s->transparent_color_index, s->gce_disposal);
 
@@ -194,7 +194,7 @@ static int gif_read_extension(GifState *s)
             bytestream_get_byte(&s->bytestream);
         ext_len = bytestream_get_byte(&s->bytestream);
 
-        av_dlog(s->avctx, "gif: ext_len1=%d\n", ext_len);
+        av_dlog(s->avctx, "ext_len1=%d\n", ext_len);
     }
     return 0;
 }
@@ -231,7 +231,7 @@ static int gif_read_header1(GifState *s)
     s->background_color_index = bytestream_get_byte(&s->bytestream);
     bytestream_get_byte(&s->bytestream);                /* ignored */
 
-    av_dlog(s->avctx, "gif: screen_w=%d screen_h=%d bpp=%d global_palette=%d\n",
+    av_dlog(s->avctx, "screen_w=%d screen_h=%d bpp=%d global_palette=%d\n",
            s->screen_width, s->screen_height, s->bits_per_pixel,
            has_global_palette);
 
@@ -249,7 +249,7 @@ static int gif_parse_next_image(GifState *s)
     while (s->bytestream < s->bytestream_end) {
         int code = bytestream_get_byte(&s->bytestream);
 
-        av_dlog(s->avctx, "gif: code=%02x '%c'\n", code, code);
+        av_dlog(s->avctx, "code=%02x '%c'\n", code, code);
 
         switch (code) {
         case ',':
