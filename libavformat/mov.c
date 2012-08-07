@@ -870,7 +870,7 @@ static int mov_read_fiel(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
 /* FIXME modify qdm2/svq3/h264 decoders to take full atom as extradata */
 static int mov_read_extradata(MOVContext *c, AVIOContext *pb, MOVAtom atom,
-                              enum CodecID codec_id)
+                              enum AVCodecID codec_id)
 {
     AVStream *st;
     uint64_t size;

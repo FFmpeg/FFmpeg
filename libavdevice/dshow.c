@@ -92,7 +92,7 @@ static enum PixelFormat dshow_pixfmt(DWORD biCompression, WORD biBitCount)
     return PIX_FMT_NONE;
 }
 
-static enum CodecID dshow_codecid(DWORD biCompression)
+static enum AVCodecID dshow_codecid(DWORD biCompression)
 {
     switch(biCompression) {
     case MKTAG('d', 'v', 's', 'd'):
@@ -639,7 +639,7 @@ error:
     return ret;
 }
 
-static enum CodecID waveform_codec_id(enum AVSampleFormat sample_fmt)
+static enum AVCodecID waveform_codec_id(enum AVSampleFormat sample_fmt)
 {
     switch (sample_fmt) {
     case AV_SAMPLE_FMT_U8:  return AV_CODEC_ID_PCM_U8;

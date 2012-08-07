@@ -75,11 +75,11 @@ static av_always_inline int ff_guidcmp(const void *g1, const void *g2)
 void ff_get_guid(AVIOContext *s, ff_asf_guid *g);
 
 typedef struct {
-    enum CodecID id;
+    enum AVCodecID id;
     ff_asf_guid guid;
 } AVCodecGuid;
 
-enum CodecID ff_codec_guid_get_id(const AVCodecGuid *guids, ff_asf_guid guid);
+enum AVCodecID ff_codec_guid_get_id(const AVCodecGuid *guids, ff_asf_guid guid);
 
 extern const AVCodecGuid ff_codec_wav_guids[];
 

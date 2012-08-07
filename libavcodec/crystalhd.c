@@ -163,7 +163,7 @@ static const AVOption options[] = {
  * Helper functions
  ****************************************************************************/
 
-static inline BC_MEDIA_SUBTYPE id2subtype(CHDContext *priv, enum CodecID id)
+static inline BC_MEDIA_SUBTYPE id2subtype(CHDContext *priv, enum AVCodecID id)
 {
     switch (id) {
     case AV_CODEC_ID_MPEG4:

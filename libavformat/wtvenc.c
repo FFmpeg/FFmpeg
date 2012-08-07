@@ -113,7 +113,7 @@ static int write_pad(AVIOContext *pb, int size)
     return 0;
 }
 
-static const ff_asf_guid *get_codec_guid(enum CodecID id, const AVCodecGuid *av_guid)
+static const ff_asf_guid *get_codec_guid(enum AVCodecID id, const AVCodecGuid *av_guid)
 {
     int i;
     for (i = 0; av_guid[i].id != AV_CODEC_ID_NONE; i++) {

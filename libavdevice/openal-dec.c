@@ -48,7 +48,7 @@ typedef struct {
 
 typedef struct {
     ALCenum al_fmt;
-    enum CodecID codec_id;
+    enum AVCodecID codec_id;
     int channels;
 } al_format_info;
 

@@ -733,7 +733,7 @@ void ff_get_guid(AVIOContext *s, ff_asf_guid *g)
         memset(*g, 0, sizeof(*g));
 }
 
-enum CodecID ff_codec_guid_get_id(const AVCodecGuid *guids, ff_asf_guid guid)
+enum AVCodecID ff_codec_guid_get_id(const AVCodecGuid *guids, ff_asf_guid guid)
 {
     int i;
     for (i = 0; guids[i].id != AV_CODEC_ID_NONE; i++) {

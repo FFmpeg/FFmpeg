@@ -348,7 +348,7 @@ static int mov_write_esds_tag(AVIOContext *pb, MOVTrack *track) // Basic
     return update_size(pb, pos);
 }
 
-static int mov_pcm_le_gt16(enum CodecID codec_id)
+static int mov_pcm_le_gt16(enum AVCodecID codec_id)
 {
     return codec_id == AV_CODEC_ID_PCM_S24LE ||
            codec_id == AV_CODEC_ID_PCM_S32LE ||

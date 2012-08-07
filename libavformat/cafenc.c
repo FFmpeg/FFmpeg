@@ -34,7 +34,7 @@ typedef struct {
     int packets;
 } CAFContext;
 
-static uint32_t codec_flags(enum CodecID codec_id) {
+static uint32_t codec_flags(enum AVCodecID codec_id) {
     switch (codec_id) {
     case AV_CODEC_ID_PCM_F32BE:
     case AV_CODEC_ID_PCM_F64BE:
@@ -51,7 +51,7 @@ static uint32_t codec_flags(enum CodecID codec_id) {
     }
 }
 
-static uint32_t samples_per_packet(enum CodecID codec_id, int channels) {
+static uint32_t samples_per_packet(enum AVCodecID codec_id, int channels) {
     switch (codec_id) {
     case AV_CODEC_ID_PCM_S8:
     case AV_CODEC_ID_PCM_S16LE:
