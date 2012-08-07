@@ -398,6 +398,8 @@ static int dvdsub_init(AVCodecContext *avctx)
     memcpy(dvdc->global_palette, default_palette, sizeof(dvdc->global_palette));
 
     av_bprint_init(&extradata, 0, 1);
+    if (avctx->width && avctx->height)
+        av_bprintf(&extradata, "size: %dx%d\n", avctx->width, avctx->height);
     av_bprintf(&extradata, "palette:");
     for (i = 0; i < 16; i++)
         av_bprintf(&extradata, " %06"PRIx32"%c",
