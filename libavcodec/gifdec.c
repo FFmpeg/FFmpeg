@@ -206,13 +206,13 @@ static int gif_read_header1(GifState *s)
     int has_global_palette;
 
     if (s->bytestream_end < s->bytestream + 13)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     /* read gif signature */
     bytestream_get_buffer(&s->bytestream, sig, 6);
     if (memcmp(sig, gif87a_sig, 6) != 0 &&
         memcmp(sig, gif89a_sig, 6) != 0)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     /* read screen header */
     s->transparent_color_index = -1;
@@ -221,7 +221,7 @@ static int gif_read_header1(GifState *s)
     if(   (unsigned)s->screen_width  > 32767
        || (unsigned)s->screen_height > 32767){
         av_log(s->avctx, AV_LOG_ERROR, "picture size too large\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     v = bytestream_get_byte(&s->bytestream);
@@ -238,7 +238,7 @@ static int gif_read_header1(GifState *s)
     if (has_global_palette) {
         n = 1 << s->bits_per_pixel;
         if (s->bytestream_end < s->bytestream + n * 3)
-            return -1;
+            return AVERROR_INVALIDDATA;
         bytestream_get_buffer(&s->bytestream, s->global_palette, n * 3);
     }
     return 0;
@@ -291,8 +291,8 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *data_size, A
 
     s->bytestream = buf;
     s->bytestream_end = buf + buf_size;
-    if (gif_read_header1(s) < 0)
-        return -1;
+    if ((ret = gif_read_header1(s)) < 0)
+        return ret;
 
     avctx->pix_fmt = PIX_FMT_PAL8;
     if (av_image_check_size(s->screen_width, s->screen_height, 0, avctx))
@@ -301,9 +301,9 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *data_size, A
 
     if (s->picture.data[0])
         avctx->release_buffer(avctx, &s->picture);
-    if (avctx->get_buffer(avctx, &s->picture) < 0) {
+    if ((ret = avctx->get_buffer(avctx, &s->picture)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
     s->image_palette = (uint32_t *)s->picture.data[1];
     ret = gif_parse_next_image(s);
