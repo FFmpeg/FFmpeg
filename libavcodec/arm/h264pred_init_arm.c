@@ -45,6 +45,7 @@ void ff_pred8x8_0l0_dc_neon(uint8_t *src, int stride);
 
 static void ff_h264_pred_init_neon(H264PredContext *h, int codec_id, const int bit_depth, const int chroma_format_idc)
 {
+#if HAVE_NEON
     const int high_depth = bit_depth > 8;
 
     if (high_depth)
@@ -74,6 +75,7 @@ static void ff_h264_pred_init_neon(H264PredContext *h, int codec_id, const int b
     h->pred16x16[DC_128_PRED8x8 ] = ff_pred16x16_128_dc_neon;
     if (codec_id != CODEC_ID_SVQ3 && codec_id != CODEC_ID_RV40 && codec_id != CODEC_ID_VP8)
         h->pred16x16[PLANE_PRED8x8  ] = ff_pred16x16_plane_neon;
+#endif // HAVE_NEON
 }
 
 void ff_h264_pred_init_arm(H264PredContext *h, int codec_id, int bit_depth, const int chroma_format_idc)
