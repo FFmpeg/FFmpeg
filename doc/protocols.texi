@@ -237,6 +237,11 @@ value will be sent.
 Stream identifier to play or to publish. This option overrides the
 parameter specified in the URI.
 
+@item rtmp_subscribe
+Name of live stream to subscribe to. By default no value will be sent.
+It is only sent if the option is specified or if rtmp_live
+is set to live.
+
 @item rtmp_swfurl
 URL of the SWF player for the media. By default no value will be sent.
 
