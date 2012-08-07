@@ -1253,17 +1253,15 @@ composed of three digits padded with zeroes to express the sequence
 number. It is the same syntax supported by the C printf function, but
 only formats accepting a normal integer are suitable.
 
-When importing an image sequence, -i also supports expanding shell-like
-wildcard patterns (globbing) internally. To lower the chance of interfering
-with your actual file names and the shell's glob expansion, you are required
-to activate glob meta characters by prefixing them with a single @code{%}
-character, like in @code{foo-%*.jpeg}, @code{foo-%?%?%?.jpeg} or
-@code{foo-00%[234%]%*.jpeg}.
-If your filename actually contains a character sequence of a @code{%} character
-followed by a glob character, you must double the @code{%} character to escape
-it. Imagine your files begin with @code{%?-foo-}, then you could use a glob
-pattern like @code{%%?-foo-%*.jpeg}. For input patterns that could be both a
-printf or a glob pattern, ffmpeg will assume it is a glob pattern.
+When importing an image sequence, -i also supports expanding
+shell-like wildcard patterns (globbing) internally, by selecting the
+image2-specific @code{-pattern_type glob} option.
+
+For example, for creating a video from filenames matching the glob pattern
+@code{foo-*.jpeg}:
+@example
+ffmpeg -f image2 -pattern_type glob -i 'foo-*.jpeg' -r 12 -s WxH foo.avi
+@end example
 
 @item
 You can put many streams of the same type in the output:
