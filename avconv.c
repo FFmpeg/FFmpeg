@@ -345,7 +345,7 @@ static int check_recording_time(OutputStream *ost)
     if (of->recording_time != INT64_MAX &&
         av_compare_ts(ost->sync_opts - ost->first_pts, ost->st->codec->time_base, of->recording_time,
                       AV_TIME_BASE_Q) >= 0) {
-        ost->is_past_recording_time = 1;
+        ost->finished = 1;
         return 0;
     }
     return 1;
@@ -729,8 +729,7 @@ static int poll_filters(void)
         for (i = 0; i < nb_output_streams; i++) {
             int64_t pts = output_streams[i]->sync_opts;
 
-            if (!output_streams[i]->filter ||
-                output_streams[i]->is_past_recording_time)
+            if (!output_streams[i]->filter || output_streams[i]->finished)
                 continue;
 
             pts = av_rescale_q(pts, output_streams[i]->st->codec->time_base,
@@ -747,7 +746,7 @@ static int poll_filters(void)
         ret = poll_filter(ost);
 
         if (ret == AVERROR_EOF) {
-            ost->is_past_recording_time = 1;
+            ost->finished = 1;
 
             if (opt_shortest)
                 return ret;
@@ -983,7 +982,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
 
     if (of->recording_time != INT64_MAX &&
         ist->last_dts >= of->recording_time + of->start_time) {
-        ost->is_past_recording_time = 1;
+        ost->finished = 1;
         return;
     }
 
@@ -1932,13 +1931,13 @@ static int need_output(void)
         OutputFile *of       = output_files[ost->file_index];
         AVFormatContext *os  = output_files[ost->file_index]->ctx;
 
-        if (ost->is_past_recording_time ||
+        if (ost->finished ||
             (os->pb && avio_tell(os->pb) >= of->limit_filesize))
             continue;
         if (ost->frame_number >= ost->max_frames) {
             int j;
             for (j = 0; j < of->ctx->nb_streams; j++)
-                output_streams[of->ost_index + j]->is_past_recording_time = 1;
+                output_streams[of->ost_index + j]->finished = 1;
             continue;
         }
 
@@ -2165,7 +2164,7 @@ static int process_input(void)
 
                 if (ost->source_index == ifile->ist_index + i &&
                     (ost->stream_copy || ost->enc->type == AVMEDIA_TYPE_SUBTITLE))
-                    ost->is_past_recording_time = 1;
+                    ost->finished= 1;
             }
         }
 
