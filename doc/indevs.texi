@@ -635,12 +635,12 @@ ffmpeg -f x11grab -r 25 -s cif -i :0.0 out.mpg
 ffmpeg -f x11grab -r 25 -s cif -i :0.0+10,20 out.mpg
 @end example
 
-@subsection @var{follow_mouse} AVOption
+@subsection Options
 
-The syntax is:
-@example
--follow_mouse centered|@var{PIXELS}
-@end example
+@table @option
+@item follow_mouse
+Make the grabbed area follow the mouse. The argument can be
+@code{centered} or a number of pixels @var{PIXELS}.
 
 When it is specified with "centered", the grabbing region follows the mouse
 pointer and keeps the pointer at the center of region; otherwise, the region
@@ -650,28 +650,29 @@ zero) to the edge of region.
 For example:
 @example
 ffmpeg -f x11grab -follow_mouse centered -r 25 -s cif -i :0.0 out.mpg
+@end example
 
-# Follows only when the mouse pointer reaches within 100 pixels to edge
+To follow only when the mouse pointer reaches within 100 pixels to edge:
+@example
 ffmpeg -f x11grab -follow_mouse 100 -r 25 -s cif -i :0.0 out.mpg
 @end example
 
-@subsection @var{show_region} AVOption
+@item show_region
+Show grabbed region on screen.
 
-The syntax is:
-@example
--show_region 1
-@end example
-
-If @var{show_region} AVOption is specified with @var{1}, then the grabbing
-region will be indicated on screen. With this option, it's easy to know what is
-being grabbed if only a portion of the screen is grabbed.
+If @var{show_region} is specified with @code{1}, then the grabbing
+region will be indicated on screen. With this option, it is easy to
+know what is being grabbed if only a portion of the screen is grabbed.
 
 For example:
 @example
 ffmpeg -f x11grab -show_region 1 -r 25 -s cif -i :0.0+10,20 out.mpg
-
-# With follow_mouse
-ffmpeg -f x11grab -follow_mouse centered -show_region 1  -r 25 -s cif -i :0.0 out.mpg
 @end example
+
+With @var{follow_mouse}:
+@example
+ffmpeg -f x11grab -follow_mouse centered -show_region 1 -r 25 -s cif -i :0.0 out.mpg
+@end example
+@end table
 
 @c man end INPUT DEVICES
