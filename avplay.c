@@ -2236,7 +2236,9 @@ static void stream_component_close(VideoState *is, int stream_index)
 
     ic->streams[stream_index]->discard = AVDISCARD_ALL;
     avcodec_close(avctx);
+#if CONFIG_AVFILTER
     free_buffer_pool(&is->buffer_pool);
+#endif
     switch (avctx->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
         is->audio_st = NULL;
