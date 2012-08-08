@@ -131,6 +131,8 @@ const CodecMime ff_id3v2_mime_tags[] = {
     {"image/png" , AV_CODEC_ID_PNG},
     {"image/tiff", AV_CODEC_ID_TIFF},
     {"image/bmp",  AV_CODEC_ID_BMP},
+    {"JPG",        AV_CODEC_ID_MJPEG}, /* ID3v2.2  */
+    {"PNG" ,       AV_CODEC_ID_PNG},   /* ID3v2.2  */
     {"",           AV_CODEC_ID_NONE},
 };
 

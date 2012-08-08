@@ -24,6 +24,8 @@
  * The simplest mpeg audio layer 2 encoder.
  */
 
+#include "libavutil/audioconvert.h"
+
 #include "avcodec.h"
 #include "internal.h"
 #include "put_bits.h"
@@ -792,6 +794,9 @@ AVCodec ff_mp2_encoder = {
     .supported_samplerates = (const int[]){
         44100, 48000,  32000, 22050, 24000, 16000, 0
     },
+    .channel_layouts       = (const uint64_t[]){ AV_CH_LAYOUT_MONO,
+                                                 AV_CH_LAYOUT_STEREO,
+                                                 0 },
     .long_name             = NULL_IF_CONFIG_SMALL("MP2 (MPEG audio layer 2)"),
     .defaults              = mp2_defaults,
 };

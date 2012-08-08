@@ -33,6 +33,15 @@
 #define HMAC_OPAD_VAL 0x5C
 
 /**
+ * A non-zero transaction id requires the server to send back
+ * a _result or _error response.
+ * Setting it to 0 marks the message as a notification not
+ * requiring feedback.
+ */
+
+#define RTMP_NOTIFICATION 0
+
+/**
  * emulated Flash client version - 9.0.124.2 on Linux
  * @{
  */

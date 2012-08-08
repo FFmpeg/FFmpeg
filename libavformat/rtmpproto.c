@@ -91,6 +91,7 @@ typedef struct RTMPContext {
     char*         flashver;                   ///< version of the flash plugin
     char*         swfurl;                     ///< url of the swf player
     char*         pageurl;                    ///< url of the web page
+    char*         subscribe;                  ///< name of live stream to subscribe
     int           server_bw;                  ///< server bandwidth
     int           client_buffer_time;         ///< client buffer time in ms
     int           flush_interval;             ///< number of packets flushed in the same request (RTMPT only)
@@ -572,7 +573,7 @@ static int gen_check_bw(URLContext *s, RTMPContext *rt)
 
     p = pkt.data;
     ff_amf_write_string(&p, "_checkbw");
-    ff_amf_write_number(&p, ++rt->nb_invokes);
+    ff_amf_write_number(&p, RTMP_NOTIFICATION);
     ff_amf_write_null(&p);
 
     ret = ff_rtmp_packet_write(rt->stream, &pkt, rt->chunk_size,
@@ -597,6 +598,30 @@ static int gen_bytes_read(URLContext *s, RTMPContext *rt, uint32_t ts)
 
     p = pkt.data;
     bytestream_put_be32(&p, rt->bytes_read);
+    ret = ff_rtmp_packet_write(rt->stream, &pkt, rt->chunk_size,
+                               rt->prev_pkt[1]);
+    ff_rtmp_packet_destroy(&pkt);
+
+    return ret;
+}
+
+static int gen_fcsubscribe_stream(URLContext *s, RTMPContext *rt,
+                                  const char *subscribe)
+{
+    RTMPPacket pkt;
+    uint8_t *p;
+    int ret;
+
+    if ((ret = ff_rtmp_packet_create(&pkt, RTMP_SYSTEM_CHANNEL, RTMP_PT_INVOKE,
+                                     0, 27 + strlen(subscribe))) < 0)
+        return ret;
+
+    p = pkt.data;
+    ff_amf_write_string(&p, "FCSubscribe");
+    ff_amf_write_number(&p, ++rt->nb_invokes);
+    ff_amf_write_null(&p);
+    ff_amf_write_string(&p, subscribe);
+
     ret = ff_rtmp_packet_write(rt->stream, &pkt, rt->chunk_size,
                                rt->prev_pkt[1]);
     ff_rtmp_packet_destroy(&pkt);
@@ -1011,6 +1036,20 @@ static int handle_invoke(URLContext *s, RTMPPacket *pkt)
                 }
                 if ((ret = gen_create_stream(s, rt)) < 0)
                     return ret;
+
+                if (rt->is_input) {
+                    /* Send the FCSubscribe command when the name of live
+                     * stream is defined by the user or if it's a live stream. */
+                    if (rt->subscribe) {
+                        if ((ret = gen_fcsubscribe_stream(s, rt,
+                                                          rt->subscribe)) < 0)
+                            return ret;
+                    } else if (rt->live == -1) {
+                        if ((ret = gen_fcsubscribe_stream(s, rt,
+                                                          rt->playpath)) < 0)
+                            return ret;
+                    }
+                }
                 break;
             case STATE_FCPUBLISH:
                 rt->state = STATE_CONNECTING;
@@ -1593,115 +1632,35 @@ static const AVOption rtmp_options[] = {
     {"recorded", "recorded stream", 0, AV_OPT_TYPE_CONST, {0}, 0, 0, DEC, "rtmp_live"},
     {"rtmp_pageurl", "URL of the web page in which the media was embedded. By default no value will be sent.", OFFSET(pageurl), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC},
     {"rtmp_playpath", "Stream identifier to play or to publish", OFFSET(playpath), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+    {"rtmp_subscribe", "Name of live stream to subscribe to. Defaults to rtmp_playpath.", OFFSET(subscribe), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC},
     {"rtmp_swfurl", "URL of the SWF player. By default no value will be sent", OFFSET(swfurl), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     {"rtmp_tcurl", "URL of the target stream. Defaults to proto://host[:port]/app.", OFFSET(tcurl), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     { NULL },
 };
 
-static const AVClass rtmp_class = {
-    .class_name = "rtmp",
-    .item_name  = av_default_item_name,
-    .option     = rtmp_options,
-    .version    = LIBAVUTIL_VERSION_INT,
+#define RTMP_PROTOCOL(flavor)                    \
+static const AVClass flavor##_class = {          \
+    .class_name = #flavor,                       \
+    .item_name  = av_default_item_name,          \
+    .option     = rtmp_options,                  \
+    .version    = LIBAVUTIL_VERSION_INT,         \
+};                                               \
+                                                 \
+URLProtocol ff_##flavor##_protocol = {           \
+    .name           = #flavor,                   \
+    .url_open       = rtmp_open,                 \
+    .url_read       = rtmp_read,                 \
+    .url_write      = rtmp_write,                \
+    .url_close      = rtmp_close,                \
+    .priv_data_size = sizeof(RTMPContext),       \
+    .flags          = URL_PROTOCOL_FLAG_NETWORK, \
+    .priv_data_class= &flavor##_class,           \
 };
 
-URLProtocol ff_rtmp_protocol = {
-    .name           = "rtmp",
-    .url_open       = rtmp_open,
-    .url_read       = rtmp_read,
-    .url_write      = rtmp_write,
-    .url_close      = rtmp_close,
-    .priv_data_size = sizeof(RTMPContext),
-    .flags          = URL_PROTOCOL_FLAG_NETWORK,
-    .priv_data_class= &rtmp_class,
-};
 
-static const AVClass rtmpe_class = {
-    .class_name = "rtmpe",
-    .item_name  = av_default_item_name,
-    .option     = rtmp_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-URLProtocol ff_rtmpe_protocol = {
-    .name            = "rtmpe",
-    .url_open        = rtmp_open,
-    .url_read        = rtmp_read,
-    .url_write       = rtmp_write,
-    .url_close       = rtmp_close,
-    .priv_data_size  = sizeof(RTMPContext),
-    .flags           = URL_PROTOCOL_FLAG_NETWORK,
-    .priv_data_class = &rtmpe_class,
-};
-
-static const AVClass rtmps_class = {
-    .class_name = "rtmps",
-    .item_name  = av_default_item_name,
-    .option     = rtmp_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-URLProtocol ff_rtmps_protocol = {
-    .name            = "rtmps",
-    .url_open        = rtmp_open,
-    .url_read        = rtmp_read,
-    .url_write       = rtmp_write,
-    .url_close       = rtmp_close,
-    .priv_data_size  = sizeof(RTMPContext),
-    .flags           = URL_PROTOCOL_FLAG_NETWORK,
-    .priv_data_class = &rtmps_class,
-};
-
-static const AVClass rtmpt_class = {
-    .class_name = "rtmpt",
-    .item_name  = av_default_item_name,
-    .option     = rtmp_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-URLProtocol ff_rtmpt_protocol = {
-    .name            = "rtmpt",
-    .url_open        = rtmp_open,
-    .url_read        = rtmp_read,
-    .url_write       = rtmp_write,
-    .url_close       = rtmp_close,
-    .priv_data_size  = sizeof(RTMPContext),
-    .flags           = URL_PROTOCOL_FLAG_NETWORK,
-    .priv_data_class = &rtmpt_class,
-};
-
-static const AVClass rtmpte_class = {
-    .class_name = "rtmpte",
-    .item_name  = av_default_item_name,
-    .option     = rtmp_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-URLProtocol ff_rtmpte_protocol = {
-    .name            = "rtmpte",
-    .url_open        = rtmp_open,
-    .url_read        = rtmp_read,
-    .url_write       = rtmp_write,
-    .url_close       = rtmp_close,
-    .priv_data_size  = sizeof(RTMPContext),
-    .flags           = URL_PROTOCOL_FLAG_NETWORK,
-    .priv_data_class = &rtmpte_class,
-};
-
-static const AVClass rtmpts_class = {
-    .class_name = "rtmpts",
-    .item_name  = av_default_item_name,
-    .option     = rtmp_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-URLProtocol ff_rtmpts_protocol = {
-    .name            = "rtmpts",
-    .url_open        = rtmp_open,
-    .url_read        = rtmp_read,
-    .url_write       = rtmp_write,
-    .url_close       = rtmp_close,
-    .priv_data_size  = sizeof(RTMPContext),
-    .flags           = URL_PROTOCOL_FLAG_NETWORK,
-    .priv_data_class = &rtmpts_class,
-};
+RTMP_PROTOCOL(rtmp)
+RTMP_PROTOCOL(rtmpe)
+RTMP_PROTOCOL(rtmps)
+RTMP_PROTOCOL(rtmpt)
+RTMP_PROTOCOL(rtmpte)
+RTMP_PROTOCOL(rtmpts)

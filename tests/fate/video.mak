@@ -167,8 +167,14 @@ FATE_VIDEO += fate-mpeg2-field-enc
 fate-mpeg2-field-enc: CMD = framecrc -flags +bitexact -dct fastint -idct simple -i $(SAMPLES)/mpeg2/mpeg2_field_encoding.ts -an
 
 # FIXME dropped frames in this test because of coarse timebase
-FATE_VIDEO += fate-nuv
-fate-nuv: CMD = framecrc -idct simple -i $(SAMPLES)/nuv/Today.nuv -an
+FATE_NUV += fate-nuv-rtjpeg
+fate-nuv-rtjpeg: CMD = framecrc -idct simple -i $(SAMPLES)/nuv/Today.nuv -an
+
+FATE_NUV += fate-nuv-rtjpeg-fh
+fate-nuv-rtjpeg-fh: CMD = framecrc -idct simple -i $(SAMPLES)/nuv/rtjpeg_frameheader.nuv -an
+
+FATE_VIDEO += $(FATE_NUV)
+fate-nuv: $(FATE_NUV)
 
 FATE_VIDEO += fate-paf-video
 fate-paf-video: CMD = framecrc -i $(SAMPLES)/paf/hod1-partial.paf -pix_fmt rgb24 -an

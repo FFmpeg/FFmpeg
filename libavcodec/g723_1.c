@@ -264,6 +264,7 @@ static int scale_vector(int16_t *vector, int length)
     for (i = 0; i < length; i++)
         max = FFMAX(max, FFABS(vector[i]));
 
+    max   = FFMIN(max, 0x7FFF);
     bits  = normalize_bits(max, 15);
     scale = shift_table[bits];
 
@@ -913,6 +914,7 @@ static void formant_postfilter(G723_1_Context *p, int16_t *lpc, int16_t *buf)
         }
         iir_filter(filter_coef[0], filter_coef[1], buf + i,
                    filter_signal + i, 1);
+        lpc += LPC_ORDER;
     }
 
     memcpy(p->fir_mem, buf + FRAME_LEN, LPC_ORDER * sizeof(int16_t));
