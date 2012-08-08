@@ -24,7 +24,7 @@
 
 #include <stdint.h>
 #include "libavcodec/dsputil.h"
-#include "libavutil/x86_cpu.h"
+#include "libavutil/x86/asm.h"
 
 typedef struct { uint64_t a, b; } xmm_reg;
 

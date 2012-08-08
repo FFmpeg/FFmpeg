@@ -45,7 +45,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
-#include "libavutil/x86_cpu.h"
+#include "libavutil/x86/asm.h"
 #include "rgb2rgb.h"
 #include "swscale.h"
 #include "swscale_internal.h"

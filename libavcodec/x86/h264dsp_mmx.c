@@ -19,7 +19,7 @@
  */
 
 #include "libavutil/cpu.h"
-#include "libavutil/x86_cpu.h"
+#include "libavutil/x86/asm.h"
 #include "libavcodec/h264dsp.h"
 #include "dsputil_mmx.h"
 

@@ -23,7 +23,7 @@
  */
 
 #include "libavutil/cpu.h"
-#include "libavutil/x86_cpu.h"
+#include "libavutil/x86/asm.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/mpegvideo.h"
 #include "libavcodec/mathops.h"
