@@ -167,10 +167,8 @@ static int init(AVFilterContext *ctx, const char *args)
     cellauto->class = &cellauto_class;
     av_opt_set_defaults(cellauto);
 
-    if ((ret = av_set_options_string(cellauto, args, "=", ":")) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
+    if ((ret = av_set_options_string(cellauto, args, "=", ":")) < 0)
         return ret;
-    }
 
     if ((ret = av_parse_video_rate(&frame_rate, cellauto->rate)) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Invalid frame rate: %s\n", cellauto->rate);

@@ -194,10 +194,8 @@ static av_cold int init_video(AVFilterContext *ctx, const char *args)
     if (equal && (!colon || equal < colon)) {
         av_opt_set_defaults(c);
         ret = av_set_options_string(c, args, "=", ":");
-        if (ret < 0) {
-            av_log(ctx, AV_LOG_ERROR, "Error parsing options string: %s\n", args);
+        if (ret < 0)
             goto fail;
-        }
     } else {
     if ((n = sscanf(args, "%d:%d:%127[^:]:%d:%d:%d:%d:%255c", &c->w, &c->h, pix_fmt_str,
                     &c->time_base.num, &c->time_base.den,
@@ -253,10 +251,8 @@ static av_cold int init_audio(AVFilterContext *ctx, const char *args)
     s->class = &abuffer_class;
     av_opt_set_defaults(s);
 
-    if ((ret = av_set_options_string(s, args, "=", ":")) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
+    if ((ret = av_set_options_string(s, args, "=", ":")) < 0)
         goto fail;
-    }
 
     s->sample_fmt = av_get_sample_fmt(s->sample_fmt_str);
     if (s->sample_fmt == AV_SAMPLE_FMT_NONE) {

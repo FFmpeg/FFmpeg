@@ -88,10 +88,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     blackdetect->class = &blackdetect_class;
     av_opt_set_defaults(blackdetect);
 
-    if ((ret = av_set_options_string(blackdetect, args, "=", ":")) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
+    if ((ret = av_set_options_string(blackdetect, args, "=", ":")) < 0)
         return ret;
-    }
 
     return 0;
 }

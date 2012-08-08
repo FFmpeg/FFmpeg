@@ -55,10 +55,8 @@ static int init(AVFilterContext *ctx, const char *arg)
 
     s->class = &channelsplit_class;
     av_opt_set_defaults(s);
-    if ((ret = av_set_options_string(s, arg, "=", ":")) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error parsing options string '%s'.\n", arg);
+    if ((ret = av_set_options_string(s, arg, "=", ":")) < 0)
         return ret;
-    }
     if (!(s->channel_layout = av_get_channel_layout(s->channel_layout_str))) {
         av_log(ctx, AV_LOG_ERROR, "Error parsing channel layout '%s'.\n",
                s->channel_layout_str);

@@ -388,10 +388,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     dtext->class = &drawtext_class;
     av_opt_set_defaults(dtext);
 
-    if ((err = av_set_options_string(dtext, args, "=", ":")) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
+    if ((err = av_set_options_string(dtext, args, "=", ":")) < 0)
         return err;
-    }
 
     if (!dtext->fontfile && !CONFIG_FONTCONFIG) {
         av_log(ctx, AV_LOG_ERROR, "No font filename provided\n");

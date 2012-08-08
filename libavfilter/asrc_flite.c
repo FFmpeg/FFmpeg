@@ -138,10 +138,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     flite->class = &flite_class;
     av_opt_set_defaults(flite);
 
-    if ((ret = av_set_options_string(flite, args, "=", ":")) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
+    if ((ret = av_set_options_string(flite, args, "=", ":")) < 0)
         return ret;
-    }
 
     if (flite->list_voices) {
         list_voices(ctx, "\n");

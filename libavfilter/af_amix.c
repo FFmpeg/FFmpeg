@@ -487,10 +487,8 @@ static int init(AVFilterContext *ctx, const char *args)
     s->class = &amix_class;
     av_opt_set_defaults(s);
 
-    if ((ret = av_set_options_string(s, args, "=", ":")) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error parsing options string '%s'.\n", args);
+    if ((ret = av_set_options_string(s, args, "=", ":")) < 0)
         return ret;
-    }
     av_opt_free(s);
 
     for (i = 0; i < s->nb_inputs; i++) {

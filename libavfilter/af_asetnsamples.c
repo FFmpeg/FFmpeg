@@ -62,10 +62,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     asns->class = &asetnsamples_class;
     av_opt_set_defaults(asns);
 
-    if ((err = av_set_options_string(asns, args, "=", ":")) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
+    if ((err = av_set_options_string(asns, args, "=", ":")) < 0)
         return err;
-    }
 
     asns->next_out_pts = AV_NOPTS_VALUE;
     av_log(ctx, AV_LOG_VERBOSE, "nb_out_samples:%d pad:%d\n", asns->nb_out_samples, asns->pad);

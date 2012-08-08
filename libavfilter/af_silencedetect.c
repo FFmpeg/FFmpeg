@@ -61,10 +61,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     silence->class = &silencedetect_class;
     av_opt_set_defaults(silence);
 
-    if ((ret = av_set_options_string(silence, args, "=", ":")) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
+    if ((ret = av_set_options_string(silence, args, "=", ":")) < 0)
         return ret;
-    }
 
     silence->noise = strtod(silence->noise_str, &tail);
     if (!strcmp(tail, "dB")) {

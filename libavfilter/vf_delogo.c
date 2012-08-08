@@ -180,10 +180,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     if (ret == 5) {
         if (delogo->band < 0)
             delogo->show = 1;
-    } else if ((ret = (av_set_options_string(delogo, args, "=", ":"))) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
+    } else if ((ret = (av_set_options_string(delogo, args, "=", ":"))) < 0)
         return ret;
-    }
 
 #define CHECK_UNSET_OPT(opt)                                            \
     if (delogo->opt == -1) {                                            \

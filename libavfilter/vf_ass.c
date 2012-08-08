@@ -94,10 +94,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
         return AVERROR(EINVAL);
     }
 
-    if (*args++ == ':' && (ret = av_set_options_string(ass, args, "=", ":")) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
+    if (*args++ == ':' && (ret = av_set_options_string(ass, args, "=", ":")) < 0)
         return ret;
-    }
 
     ass->library = ass_library_init();
     if (!ass->library) {
