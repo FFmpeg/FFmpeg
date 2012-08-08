@@ -78,6 +78,7 @@ static double bessel(double x){
         lastv=v;
         t *= x*inv[i];
         v += t;
+        av_assert2(i<99);
     }
     return v;
 }
