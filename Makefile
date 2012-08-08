@@ -10,8 +10,8 @@ vpath %.texi $(SRC_PATH)
 ifndef V
 Q      = @
 ECHO   = printf "$(1)\t%s\n" $(2)
-BRIEF  = CC AS YASM AR LD HOSTCC
-SILENT = DEPCC DEPAS DEPHOSTCC DEPYASM RM RANLIB
+BRIEF  = CC HOSTCC AS YASM AR LD
+SILENT = DEPCC DEPHOSTCC DEPAS DEPYASM RANLIB RM
 MSG    = $@
 M      = @$(call ECHO,$(TAG),$@);
 $(foreach VAR,$(BRIEF), \
@@ -103,8 +103,9 @@ config.h: .config
 
 SUBDIR_VARS := CLEANFILES EXAMPLES FFLIBS HOSTPROGS TESTPROGS TOOLS      \
                ARCH_HEADERS BUILT_HEADERS SKIPHEADERS                    \
-               ALTIVEC-OBJS ARMV5TE-OBJS ARMV6-OBJS ARMVFP-OBJS MMI-OBJS \
-               MMX-OBJS NEON-OBJS VIS-OBJS YASM-OBJS                     \
+               ARMV5TE-OBJS ARMV6-OBJS ARMVFP-OBJS NEON-OBJS             \
+               MMI-OBJS ALTIVEC-OBJS VIS-OBJS                            \
+               MMX-OBJS YASM-OBJS                                        \
                OBJS TESTOBJS
 
 define RESET
