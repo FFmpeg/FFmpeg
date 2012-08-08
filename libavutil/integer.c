@@ -158,8 +158,6 @@ int64_t av_i2int(AVInteger a){
 }
 
 #ifdef TEST
-#undef NDEBUG
-#include <assert.h>
 
 const uint8_t ff_log2_tab[256]={
         0,0,1,1,2,2,2,2,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
@@ -180,17 +178,17 @@ int main(void){
             AVInteger ai= av_int2i(a);
             AVInteger bi= av_int2i(b);
 
-            assert(av_i2int(ai) == a);
-            assert(av_i2int(bi) == b);
-            assert(av_i2int(av_add_i(ai,bi)) == a+b);
-            assert(av_i2int(av_sub_i(ai,bi)) == a-b);
-            assert(av_i2int(av_mul_i(ai,bi)) == a*b);
-            assert(av_i2int(av_shr_i(ai, 9)) == a>>9);
-            assert(av_i2int(av_shr_i(ai,-9)) == a<<9);
-            assert(av_i2int(av_shr_i(ai, 17)) == a>>17);
-            assert(av_i2int(av_shr_i(ai,-17)) == a<<17);
-            assert(av_log2_i(ai) == av_log2(a));
-            assert(av_i2int(av_div_i(ai,bi)) == a/b);
+            av_assert0(av_i2int(ai) == a);
+            av_assert0(av_i2int(bi) == b);
+            av_assert0(av_i2int(av_add_i(ai,bi)) == a+b);
+            av_assert0(av_i2int(av_sub_i(ai,bi)) == a-b);
+            av_assert0(av_i2int(av_mul_i(ai,bi)) == a*b);
+            av_assert0(av_i2int(av_shr_i(ai, 9)) == a>>9);
+            av_assert0(av_i2int(av_shr_i(ai,-9)) == a<<9);
+            av_assert0(av_i2int(av_shr_i(ai, 17)) == a>>17);
+            av_assert0(av_i2int(av_shr_i(ai,-17)) == a<<17);
+            av_assert0(av_log2_i(ai) == av_log2(a));
+            av_assert0(av_i2int(av_div_i(ai,bi)) == a/b);
         }
     }
     return 0;
