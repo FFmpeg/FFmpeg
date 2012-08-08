@@ -36,14 +36,29 @@ typedef struct AascContext {
     AVCodecContext *avctx;
     GetByteContext gb;
     AVFrame frame;
+
+    uint32_t palette[AVPALETTE_COUNT];
+    int palette_size;
 } AascContext;
 
 static av_cold int aasc_decode_init(AVCodecContext *avctx)
 {
     AascContext *s = avctx->priv_data;
+    uint8_t *ptr;
+    int i;
 
     s->avctx = avctx;
     switch (avctx->bits_per_coded_sample) {
+    case 8:
+        avctx->pix_fmt = PIX_FMT_PAL8;
+
+        ptr = avctx->extradata;
+        s->palette_size = FFMIN(avctx->extradata_size, AVPALETTE_SIZE);
+        for (i = 0; i < s->palette_size / 4; i++) {
+            s->palette[i] = 0xFFU << 24 | AV_RL32(ptr);
+            ptr += 4;
+        }
+        break;
     case 16:
         avctx->pix_fmt = PIX_FMT_RGB555;
         break;
@@ -111,6 +126,9 @@ static int aasc_decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "Unknown FourCC: %X\n", avctx->codec_tag);
         return -1;
     }
+
+    if (avctx->pix_fmt == PIX_FMT_PAL8)
+        memcpy(s->frame.data[1], s->palette, s->palette_size);
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = s->frame;
