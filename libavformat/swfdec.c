@@ -120,7 +120,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 return -1;
             vst->id = ch_id;
             vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            vst->codec->codec_id = ff_codec_get_id(swf_codec_tags, avio_r8(pb));
+            vst->codec->codec_id = ff_codec_get_id(ff_swf_codec_tags, avio_r8(pb));
             avpriv_set_pts_info(vst, 16, 256, swf->frame_rate);
             len -= 8;
         } else if (tag == TAG_STREAMHEAD || tag == TAG_STREAMHEAD2) {
