@@ -13,6 +13,9 @@ libavutil:     2011-04-18
 
 API changes, most recent first:
 
+2012-08-08 - xxxxxxx - lavu 51.38 - dict.h
+  Add av_dict_count().
+
 2012-08-xx - xxxxxxx - lavc 54.25 - avcodec.h
   Rename CodecID to AVCodecID and all CODEC_ID_* to AV_CODEC_ID_*.
 

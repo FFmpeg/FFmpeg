@@ -316,7 +316,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
 
     duration = asf->duration + PREROLL_TIME * 10000;
     has_title = tags[0] || tags[1] || tags[2] || tags[3] || tags[4];
-    metadata_count = s->metadata ? s->metadata->count : 0;
+    metadata_count = av_dict_count(s->metadata);
 
     bit_rate = 0;
     for(n=0;n<s->nb_streams;n++) {

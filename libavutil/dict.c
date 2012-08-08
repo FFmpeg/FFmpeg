@@ -23,6 +23,11 @@
 #include "internal.h"
 #include "mem.h"
 
+int av_dict_count(const AVDictionary *m)
+{
+    return m ? m->count : 0;
+}
+
 AVDictionaryEntry *
 av_dict_get(AVDictionary *m, const char *key, const AVDictionaryEntry *prev, int flags)
 {
