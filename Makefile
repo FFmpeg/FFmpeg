@@ -106,7 +106,7 @@ SUBDIR_VARS := CLEANFILES EXAMPLES FFLIBS HOSTPROGS TESTPROGS TOOLS      \
                ARMV5TE-OBJS ARMV6-OBJS ARMVFP-OBJS NEON-OBJS             \
                MMI-OBJS ALTIVEC-OBJS VIS-OBJS                            \
                MMX-OBJS YASM-OBJS                                        \
-               OBJS TESTOBJS
+               OBJS HOSTOBJS TESTOBJS
 
 define RESET
 $(1) :=
