@@ -82,8 +82,8 @@ static const AVOption options[] = {
     { "sar",      "set video sample aspect ratio", OFFSET(sar), AV_OPT_TYPE_RATIONAL, {.dbl= 1},  0, INT_MAX },
 
     /* only used by color */
-    { "color", "set color", OFFSET(color_str), AV_OPT_TYPE_STRING, {.str = "black"}, CHAR_MIN, CHAR_MAX },
-    { "c",     "set color", OFFSET(color_str), AV_OPT_TYPE_STRING, {.str = "black"}, CHAR_MIN, CHAR_MAX },
+    { "color", "set color", OFFSET(color_str), AV_OPT_TYPE_STRING, {.str = NULL}, CHAR_MIN, CHAR_MAX },
+    { "c",     "set color", OFFSET(color_str), AV_OPT_TYPE_STRING, {.str = NULL}, CHAR_MIN, CHAR_MAX },
 
     /* only used by testsrc */
     { "decimals", "set number of decimals to show", OFFSET(nb_decimals), AV_OPT_TYPE_INT, {.dbl=0},  INT_MIN, INT_MAX },
@@ -121,13 +121,17 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
                ctx->filter->name);
     }
 
-    if (test->color_str && strcmp(ctx->filter->name, "color")) {
-        av_log(ctx, AV_LOG_WARNING,
-               "Option 'color' is ignored with source '%s'\n",
-               ctx->filter->name);
+    if (test->color_str) {
+        if (!strcmp(ctx->filter->name, "color")) {
+            ret = av_parse_color(test->color_rgba, test->color_str, -1, ctx);
+            if (ret < 0)
+                return ret;
+        } else {
+            av_log(ctx, AV_LOG_WARNING,
+                   "Option 'color' is ignored with source '%s'\n",
+                   ctx->filter->name);
+        }
     }
-    if ((ret = av_parse_color(test->color_rgba, test->color_str, -1, ctx)) < 0)
-        return ret;
 
     test->time_base.num = frame_rate_q.den;
     test->time_base.den = frame_rate_q.num;
@@ -226,6 +230,7 @@ static av_cold int color_init(AVFilterContext *ctx, const char *args)
     test->class = &color_class;
     test->fill_picture_fn = color_fill_picture;
     test->draw_once = 1;
+    av_opt_set(test, "color", "black", 0);
     return init(ctx, args);
 }
 
