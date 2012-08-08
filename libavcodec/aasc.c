@@ -66,7 +66,7 @@ static int aasc_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     AascContext *s = avctx->priv_data;
-    int compr, i, stride;
+    int compr, i, stride, psize;
 
     s->frame.reference = 3;
     s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
@@ -78,6 +78,7 @@ static int aasc_decode_frame(AVCodecContext *avctx,
     compr = AV_RL32(buf);
     buf += 4;
     buf_size -= 4;
+    psize = avctx->bits_per_coded_sample / 8;
     switch (avctx->codec_tag) {
     case MKTAG('A', 'A', 'S', '4'):
         bytestream2_init(&s->gb, buf - 4, buf_size + 4);
@@ -86,13 +87,13 @@ static int aasc_decode_frame(AVCodecContext *avctx,
     case MKTAG('A', 'A', 'S', 'C'):
     switch(compr){
     case 0:
-        stride = (avctx->width * 3 + 3) & ~3;
+        stride = (avctx->width * psize + psize) & ~psize;
         for(i = avctx->height - 1; i >= 0; i--){
-            if(avctx->width*3 > buf_size){
+            if(avctx->width * psize > buf_size){
                 av_log(avctx, AV_LOG_ERROR, "Next line is beyond buffer bounds\n");
                 break;
             }
-            memcpy(s->frame.data[0] + i*s->frame.linesize[0], buf, avctx->width*3);
+            memcpy(s->frame.data[0] + i*s->frame.linesize[0], buf, avctx->width * psize);
             buf += stride;
             buf_size -= stride;
         }
