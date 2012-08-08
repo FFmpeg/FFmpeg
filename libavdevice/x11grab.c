@@ -174,7 +174,12 @@ x11grab_read_header(AVFormatContext *s1)
     offset = strchr(dpyname, '+');
     if (offset) {
         sscanf(offset, "%d,%d", &x_off, &y_off);
-        x11grab->draw_mouse = !strstr(offset, "nomouse");
+        if (strstr(offset, "nomouse")) {
+            av_log(s1, AV_LOG_WARNING,
+                   "'nomouse' specification in argument is deprecated: "
+                   "use 'draw_mouse' option with value 0 instead\n");
+            x11grab->draw_mouse = 0;
+        }
         *offset= 0;
     }
 
