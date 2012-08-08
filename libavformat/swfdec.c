@@ -23,6 +23,15 @@
 #include "libavutil/intreadwrite.h"
 #include "swf.h"
 
+static const AVCodecTag swf_audio_codec_tags[] = {
+    { CODEC_ID_PCM_S16LE,  0x00 },
+    { CODEC_ID_ADPCM_SWF,  0x01 },
+    { CODEC_ID_MP3,        0x02 },
+    { CODEC_ID_PCM_S16LE,  0x03 },
+//  { CODEC_ID_NELLYMOSER, 0x06 },
+    { CODEC_ID_NONE,          0 },
+};
+
 static int get_swf_tag(AVIOContext *pb, int *len_ptr)
 {
     int tag, len;

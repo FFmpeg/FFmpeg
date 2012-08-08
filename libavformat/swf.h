@@ -84,13 +84,4 @@ static const AVCodecTag swf_codec_tags[] = {
     { AV_CODEC_ID_NONE,    0},
 };
 
-static const AVCodecTag swf_audio_codec_tags[] = {
-    { AV_CODEC_ID_PCM_S16LE,  0x00},
-    { AV_CODEC_ID_ADPCM_SWF,  0x01},
-    { AV_CODEC_ID_MP3,        0x02},
-    { AV_CODEC_ID_PCM_S16LE,  0x03},
-  //{ AV_CODEC_ID_NELLYMOSER, 0x06},
-    { AV_CODEC_ID_NONE,          0},
-};
-
 #endif /* AVFORMAT_SWF_H */
