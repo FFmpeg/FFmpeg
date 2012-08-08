@@ -138,6 +138,13 @@ if ((y) < (x)) {\
 }
 #endif
 
+#ifndef MASK_ABS
+#define MASK_ABS(mask, level) do {              \
+        mask  = level >> 31;                    \
+        level = (level ^ mask) - mask;          \
+    } while (0)
+#endif
+
 #ifndef NEG_SSR32
 #   define NEG_SSR32(a,s) ((( int32_t)(a))>>(32-(s)))
 #endif

@@ -96,22 +96,6 @@ struct AVDictionary {
 
 #define av_abort()      do { av_log(NULL, AV_LOG_ERROR, "Abort at %s:%d\n", __FILE__, __LINE__); abort(); } while (0)
 
-/* math */
-
-#if ARCH_X86 && HAVE_INLINE_ASM
-#define MASK_ABS(mask, level)\
-            __asm__ volatile(\
-                "cltd                   \n\t"\
-                "xorl %1, %0            \n\t"\
-                "subl %1, %0            \n\t"\
-                : "+a" (level), "=&d" (mask)\
-            );
-#else
-#define MASK_ABS(mask, level)\
-            mask  = level >> 31;\
-            level = (level ^ mask) - mask;
-#endif
-
 /* avoid usage of dangerous/inappropriate system functions */
 #undef  malloc
 #define malloc please_use_av_malloc

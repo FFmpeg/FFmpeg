@@ -885,7 +885,7 @@ static void mpeg1_encode_block(MpegEncContext *s,
             run = i - last_non_zero - 1;
 
             alevel= level;
-            MASK_ABS(sign, alevel)
+            MASK_ABS(sign, alevel);
             sign&=1;
 
             if (alevel <= mpeg1_max_level[0][run]){
