@@ -281,8 +281,8 @@ void ff_rtp_send_data(AVFormatContext *s1, const uint8_t *buf1, int len, int m)
 
 /* send an integer number of samples and compute time stamp and fill
    the rtp send buffer before sending. */
-static void rtp_send_samples(AVFormatContext *s1,
-                             const uint8_t *buf1, int size, int sample_size_bits)
+static int rtp_send_samples(AVFormatContext *s1,
+                            const uint8_t *buf1, int size, int sample_size_bits)
 {
     RTPMuxContext *s = s1->priv_data;
     int len, max_packet_size, n;
@@ -292,7 +292,7 @@ static void rtp_send_samples(AVFormatContext *s1,
     max_packet_size = (s->max_payload_size / aligned_samples_size) * aligned_samples_size;
     /* Not needed, but who knows. Don't check if samples aren't an even number of bytes. */
     if ((sample_size_bits % 8) == 0 && ((8 * size) % sample_size_bits) != 0)
-        av_abort();
+        return AVERROR(EINVAL);
     n = 0;
     while (size > 0) {
         s->buf_ptr = s->buf;
@@ -307,6 +307,7 @@ static void rtp_send_samples(AVFormatContext *s1,
         ff_rtp_send_data(s1, s->buf, s->buf_ptr - s->buf, 0);
         n += (s->buf_ptr - s->buf);
     }
+    return 0;
 }
 
 static void rtp_send_mpegaudio(AVFormatContext *s1,
@@ -461,25 +462,21 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
     case AV_CODEC_ID_PCM_ALAW:
     case AV_CODEC_ID_PCM_U8:
     case AV_CODEC_ID_PCM_S8:
-        rtp_send_samples(s1, pkt->data, size, 8 * st->codec->channels);
-        break;
+        return rtp_send_samples(s1, pkt->data, size, 8 * st->codec->channels);
     case AV_CODEC_ID_PCM_U16BE:
     case AV_CODEC_ID_PCM_U16LE:
     case AV_CODEC_ID_PCM_S16BE:
     case AV_CODEC_ID_PCM_S16LE:
-        rtp_send_samples(s1, pkt->data, size, 16 * st->codec->channels);
-        break;
+        return rtp_send_samples(s1, pkt->data, size, 16 * st->codec->channels);
     case AV_CODEC_ID_ADPCM_G722:
         /* The actual sample size is half a byte per sample, but since the
          * stream clock rate is 8000 Hz while the sample rate is 16000 Hz,
          * the correct parameter for send_samples_bits is 8 bits per stream
          * clock. */
-        rtp_send_samples(s1, pkt->data, size, 8 * st->codec->channels);
-        break;
+        return rtp_send_samples(s1, pkt->data, size, 8 * st->codec->channels);
     case AV_CODEC_ID_ADPCM_G726:
-        rtp_send_samples(s1, pkt->data, size,
-                         st->codec->bits_per_coded_sample * st->codec->channels);
-        break;
+        return rtp_send_samples(s1, pkt->data, size,
+                                st->codec->bits_per_coded_sample * st->codec->channels);
     case AV_CODEC_ID_MP2:
     case AV_CODEC_ID_MP3:
         rtp_send_mpegaudio(s1, pkt->data, size);
