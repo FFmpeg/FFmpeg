@@ -56,10 +56,6 @@ struct AVDictionary {
 #    define INT_BIT (CHAR_BIT * sizeof(int))
 #endif
 
-#ifndef offsetof
-#    define offsetof(T, F) ((unsigned int)((char *)&((T *)0)->F))
-#endif
-
 /* debug stuff */
 
 #define av_abort()      do { av_log(NULL, AV_LOG_ERROR, "Abort at %s:%d\n", __FILE__, __LINE__); abort(); } while (0)
