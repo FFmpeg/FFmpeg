@@ -46,6 +46,7 @@
 #include "rtpenc_chain.h"
 #include "url.h"
 #include "rtpenc.h"
+#include "mpegts.h"
 
 //#define DEBUG
 
@@ -380,6 +381,8 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
 
         if (!strcmp(ff_rtp_enc_name(rtsp_st->sdp_payload_type), "MP2T")) {
             /* no corresponding stream */
+            if (rt->transport == RTSP_TRANSPORT_RAW && !rt->ts && CONFIG_RTPDEC)
+                rt->ts = ff_mpegts_parse_open(s);
         } else if (rt->server_type == RTSP_SERVER_WMS &&
                    codec_type == AVMEDIA_TYPE_DATA) {
             /* RTX stream, a stream that carries all the other actual
@@ -596,6 +599,8 @@ void ff_rtsp_close_streams(AVFormatContext *s)
     if (rt->asf_ctx) {
         avformat_close_input(&rt->asf_ctx);
     }
+    if (rt->ts && CONFIG_RTPDEC)
+        ff_mpegts_parse_close(rt->ts);
     av_free(rt->p);
     av_free(rt->recvbuf);
 }
@@ -1773,8 +1778,15 @@ int ff_rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt)
     if (rt->cur_transport_priv) {
         if (rt->transport == RTSP_TRANSPORT_RDT) {
             ret = ff_rdt_parse_packet(rt->cur_transport_priv, pkt, NULL, 0);
-        } else
+        } else if (rt->transport == RTSP_TRANSPORT_RTP) {
             ret = ff_rtp_parse_packet(rt->cur_transport_priv, pkt, NULL, 0);
+        } else if (rt->ts && CONFIG_RTPDEC) {
+            ret = ff_mpegts_parse_packet(rt->ts, pkt, rt->recvbuf + rt->recvbuf_pos, rt->recvbuf_len - rt->recvbuf_pos);
+            if (ret >= 0) {
+                rt->recvbuf_pos += ret;
+                ret = rt->recvbuf_pos < rt->recvbuf_len;
+            }
+        }
         if (ret == 0) {
             rt->cur_transport_priv = NULL;
             return 0;
@@ -1874,6 +1886,18 @@ int ff_rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt)
 
                 if (rt->nb_byes == rt->nb_rtsp_streams)
                     return AVERROR_EOF;
+            }
+        }
+    } else if (rt->ts && CONFIG_RTPDEC) {
+        ret = ff_mpegts_parse_packet(rt->ts, pkt, rt->recvbuf, len);
+        if (ret >= 0) {
+            if (ret < len) {
+                rt->recvbuf_len = len;
+                rt->recvbuf_pos = ret;
+                rt->cur_transport_priv = rt->ts;
+                return 1;
+            } else {
+                ret = 0;
             }
         }
     } else {

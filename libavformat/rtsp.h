@@ -311,6 +311,13 @@ typedef struct RTSPState {
      * other cases, this is a copy of AVFormatContext->filename. */
     char control_uri[1024];
 
+    /** The following are used for parsing raw mpegts in udp */
+    //@{
+    struct MpegTSContext *ts;
+    int recvbuf_pos;
+    int recvbuf_len;
+    //@}
+
     /** Additional output handle, used when input and output are done
      * separately, eg for HTTP tunneling. */
     URLContext *rtsp_hd_out;
