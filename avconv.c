@@ -1069,15 +1069,11 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
     decoded_frame = ist->decoded_frame;
 
     ret = avcodec_decode_audio4(avctx, decoded_frame, got_output, pkt);
-    if (ret < 0) {
-        return ret;
-    }
-
-    if (!*got_output) {
-        /* no audio frame */
-        if (!pkt->size)
+    if (!*got_output || ret < 0) {
+        if (!pkt->size) {
             for (i = 0; i < ist->nb_filters; i++)
                 av_buffersrc_buffer(ist->filters[i]->filter, NULL);
+        }
         return ret;
     }
 
@@ -1216,17 +1212,15 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
 
     ret = avcodec_decode_video2(ist->st->codec,
                                 decoded_frame, got_output, pkt);
-    if (ret < 0)
-        return ret;
-
-    quality = same_quant ? decoded_frame->quality : 0;
-    if (!*got_output) {
-        /* no picture yet */
-        if (!pkt->size)
+    if (!*got_output || ret < 0) {
+        if (!pkt->size) {
             for (i = 0; i < ist->nb_filters; i++)
                 av_buffersrc_buffer(ist->filters[i]->filter, NULL);
+        }
         return ret;
     }
+
+    quality = same_quant ? decoded_frame->quality : 0;
     decoded_frame->pts = guess_correct_pts(&ist->pts_ctx, decoded_frame->pkt_pts,
                                            decoded_frame->pkt_dts);
     pkt->size = 0;
