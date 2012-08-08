@@ -1283,7 +1283,6 @@ HAVE_LIST="
     mm_empty
     mmap
     nanosleep
-    netinet_sctp_h
     PeekNamedPipe
     pod2man
     poll_h
@@ -1311,6 +1310,7 @@ HAVE_LIST="
     struct_ipv6_mreq
     struct_pollfd
     struct_rusage_ru_maxrss
+    struct_sctp_event_subscribe
     struct_sockaddr_in6
     struct_sockaddr_sa_len
     struct_sockaddr_storage
@@ -1782,7 +1782,7 @@ rtmpt_protocol_select="ffrtmphttp_protocol"
 rtmpte_protocol_select="ffrtmpcrypt_protocol ffrtmphttp_protocol"
 rtmpts_protocol_select="ffrtmphttp_protocol https_protocol"
 rtp_protocol_select="udp_protocol"
-sctp_protocol_deps="network netinet_sctp_h"
+sctp_protocol_deps="network struct_sctp_event_subscribe"
 tcp_protocol_deps="network"
 tls_protocol_deps_any="openssl gnutls"
 tls_protocol_select="tcp_protocol"
@@ -3265,7 +3265,7 @@ if enabled network; then
     check_type poll.h "struct pollfd"
     check_type "sys/types.h sys/socket.h" "struct sockaddr_storage"
     check_struct "sys/types.h sys/socket.h" "struct sockaddr" sa_len
-    check_header netinet/sctp.h
+    check_type netinet/sctp.h "struct sctp_event_subscribe"
     check_func getaddrinfo $network_extralibs
     # Prefer arpa/inet.h over winsock2
     if check_header arpa/inet.h ; then
