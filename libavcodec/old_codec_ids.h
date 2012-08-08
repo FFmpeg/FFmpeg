@@ -19,8 +19,6 @@
 #ifndef AVCODEC_OLD_CODEC_IDS_H
 #define AVCODEC_OLD_CODEC_IDS_H
 
-#include "libavutil/attributes.h"
-
 /*
  * This header exists to prevent new codec IDs from being accidentally added to
  * the deprecated list.
@@ -29,8 +27,7 @@
  * Do not add new items to this list. Use the AVCodecID enum instead.
  */
 
-enum CodecID {
-    CODEC_ID_NONE,
+    CODEC_ID_NONE = AV_CODEC_ID_NONE,
 
     /* video codecs */
     CODEC_ID_MPEG1VIDEO,
@@ -365,6 +362,5 @@ enum CodecID {
     CODEC_ID_MPEG4SYSTEMS = 0x20001, /**< _FAKE_ codec to indicate a MPEG-4 Systems
                                 * stream (only used by libavformat) */
     CODEC_ID_FFMETADATA = 0x21000,   ///< Dummy codec for streams containing only metadata information.
-} attribute_deprecated;
 
 #endif /* AVCODEC_OLD_CODEC_IDS_H */
