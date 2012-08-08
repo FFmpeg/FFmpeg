@@ -23,6 +23,11 @@
 #include "internal.h"
 #include "mem.h"
 
+struct AVDictionary {
+    int count;
+    AVDictionaryEntry *elems;
+};
+
 int av_dict_count(const AVDictionary *m)
 {
     return m ? m->count : 0;
