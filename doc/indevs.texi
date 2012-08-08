@@ -640,6 +640,10 @@ ffmpeg -f x11grab -r 25 -s cif -i :0.0+10,20 out.mpg
 @subsection Options
 
 @table @option
+@item draw_mouse
+Specify whether to draw the mouse pointer. A value of @code{0} specify
+not to draw the pointer. Default value is @code{1}.
+
 @item follow_mouse
 Make the grabbed area follow the mouse. The argument can be
 @code{centered} or a number of pixels @var{PIXELS}.
@@ -659,6 +663,10 @@ To follow only when the mouse pointer reaches within 100 pixels to edge:
 ffmpeg -f x11grab -follow_mouse 100 -r 25 -s cif -i :0.0 out.mpg
 @end example
 
+@item framerate
+Set the grabbing frame rate. Default value is @code{ntsc},
+corresponding to a framerate of @code{30000/1001}.
+
 @item show_region
 Show grabbed region on screen.
 
@@ -675,6 +683,9 @@ With @var{follow_mouse}:
 @example
 ffmpeg -f x11grab -follow_mouse centered -show_region 1 -r 25 -s cif -i :0.0 out.mpg
 @end example
+
+@item video_size
+Set the video frame size. Default value is @code{vga}.
 @end table
 
 @c man end INPUT DEVICES
