@@ -1886,8 +1886,6 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
     if (st->discard >= AVDISCARD_ALL)
         return res;
     av_assert1(duration != AV_NOPTS_VALUE);
-    if (!duration)
-        duration = track->default_duration / matroska->time_scale;
 
     block_time = AV_RB16(data);
     data += 2;
@@ -1904,7 +1902,6 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
             is_keyframe = 0;  /* overlapping subtitles are not key frame */
         if (is_keyframe)
             av_add_index_entry(st, cluster_pos, timecode, 0,0,AVINDEX_KEYFRAME);
-        track->end_timecode = FFMAX(track->end_timecode, timecode+duration);
     }
 
     if (matroska->skip_to_keyframe && track->type != MATROSKA_TRACK_TYPE_SUBTITLE) {
@@ -1995,7 +1992,15 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
     }
 
     if (res == 0) {
+        if (!duration)
+            duration = track->default_duration * laces / matroska->time_scale;
+
+        if (cluster_time != (uint64_t)-1 && (block_time >= 0 || cluster_time >= -block_time))
+            track->end_timecode = FFMAX(track->end_timecode, timecode+duration);
+
         for (n = 0; n < laces; n++) {
+            int64_t lace_duration = duration*(n+1) / laces - duration*n / laces;
+
             if (lace_size[n] > size) {
                 av_log(matroska->ctx, AV_LOG_ERROR, "Invalid packet size\n");
                 break;
@@ -2101,12 +2106,12 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                     pkt->pts = timecode;
                 pkt->pos = pos;
                 if (st->codec->codec_id == AV_CODEC_ID_TEXT)
-                    pkt->convergence_duration = duration;
+                    pkt->convergence_duration = lace_duration;
                 else if (track->type != MATROSKA_TRACK_TYPE_SUBTITLE)
-                    pkt->duration = duration;
+                    pkt->duration = lace_duration;
 
                 if (st->codec->codec_id == AV_CODEC_ID_SSA)
-                    matroska_fix_ass_packet(matroska, pkt, duration);
+                    matroska_fix_ass_packet(matroska, pkt, lace_duration);
 
                 if (matroska->prev_pkt &&
                     timecode != AV_NOPTS_VALUE &&
@@ -2121,7 +2126,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
             }
 
             if (timecode != AV_NOPTS_VALUE)
-                timecode = duration ? timecode + duration : AV_NOPTS_VALUE;
+                timecode = lace_duration ? timecode + lace_duration : AV_NOPTS_VALUE;
             data += lace_size[n];
             size -= lace_size[n];
         }
