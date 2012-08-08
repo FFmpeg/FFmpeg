@@ -573,7 +573,7 @@ static int gen_check_bw(URLContext *s, RTMPContext *rt)
 
     p = pkt.data;
     ff_amf_write_string(&p, "_checkbw");
-    ff_amf_write_number(&p, ++rt->nb_invokes);
+    ff_amf_write_number(&p, RTMP_NOTIFICATION);
     ff_amf_write_null(&p);
 
     ret = ff_rtmp_packet_write(rt->stream, &pkt, rt->chunk_size,
