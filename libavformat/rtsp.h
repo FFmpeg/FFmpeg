@@ -52,6 +52,7 @@ enum RTSPLowerTransport {
 enum RTSPTransport {
     RTSP_TRANSPORT_RTP, /**< Standards-compliant RTP */
     RTSP_TRANSPORT_RDT, /**< Realmedia Data Transport */
+    RTSP_TRANSPORT_RAW, /**< Raw data (over UDP) */
     RTSP_TRANSPORT_NB
 };
 

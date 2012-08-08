@@ -370,7 +370,9 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
         get_word(buf1, sizeof(buf1), &p); /* port */
         rtsp_st->sdp_port = atoi(buf1);
 
-        get_word(buf1, sizeof(buf1), &p); /* protocol (ignored) */
+        get_word(buf1, sizeof(buf1), &p); /* protocol */
+        if (!strcmp(buf1, "udp"))
+            rt->transport = RTSP_TRANSPORT_RAW;
 
         /* XXX: handle list of formats */
         get_word(buf1, sizeof(buf1), &p); /* format list */
@@ -563,7 +565,7 @@ void ff_rtsp_undo_setup(AVFormatContext *s)
                 avformat_free_context(rtpctx);
             } else if (rt->transport == RTSP_TRANSPORT_RDT && CONFIG_RTPDEC)
                 ff_rdt_parse_close(rtsp_st->transport_priv);
-            else if (CONFIG_RTPDEC)
+            else if (rt->transport == RTSP_TRANSPORT_RAW && CONFIG_RTPDEC)
                 ff_rtp_parse_close(rtsp_st->transport_priv);
         }
         rtsp_st->transport_priv = NULL;
@@ -617,6 +619,8 @@ int ff_rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
         rtsp_st->rtp_handle = NULL;
         if (ret < 0)
             return ret;
+    } else if (rt->transport == RTSP_TRANSPORT_RAW) {
+        return 0; // Don't need to open any parser here
     } else if (rt->transport == RTSP_TRANSPORT_RDT && CONFIG_RTPDEC)
         rtsp_st->transport_priv = ff_rdt_parse_open(s, st->index,
                                             rtsp_st->dynamic_protocol_context,
@@ -629,7 +633,7 @@ int ff_rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
 
     if (!rtsp_st->transport_priv) {
          return AVERROR(ENOMEM);
-    } else if (rt->transport != RTSP_TRANSPORT_RDT && CONFIG_RTPDEC) {
+    } else if (rt->transport == RTSP_TRANSPORT_RTP && CONFIG_RTPDEC) {
         if (rtsp_st->dynamic_handler) {
             ff_rtp_parse_set_dynamic_protocol(rtsp_st->transport_priv,
                                               rtsp_st->dynamic_protocol_context,
@@ -698,6 +702,15 @@ static void rtsp_parse_transport(RTSPMessageHeader *reply, const char *p)
             get_word_sep(lower_transport, sizeof(lower_transport), "/;,", &p);
             profile[0] = '\0';
             th->transport = RTSP_TRANSPORT_RDT;
+        } else if (!av_strcasecmp(transport_protocol, "raw")) {
+            get_word_sep(profile, sizeof(profile), "/;,", &p);
+            lower_transport[0] = '\0';
+            /* raw/raw/<protocol> */
+            if (*p == '/') {
+                get_word_sep(lower_transport, sizeof(lower_transport),
+                             ";,", &p);
+            }
+            th->transport = RTSP_TRANSPORT_RAW;
         }
         if (!av_strcasecmp(lower_transport, "TCP"))
             th->lower_transport = RTSP_LOWER_TRANSPORT_TCP;
@@ -1187,6 +1200,8 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
 
     if (rt->transport == RTSP_TRANSPORT_RDT)
         trans_pref = "x-pn-tng";
+    else if (rt->transport == RTSP_TRANSPORT_RAW)
+        trans_pref = "RAW/RAW";
     else
         trans_pref = "RTP/AVP";
 
@@ -1822,7 +1837,7 @@ int ff_rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR_EOF;
     if (rt->transport == RTSP_TRANSPORT_RDT) {
         ret = ff_rdt_parse_packet(rtsp_st->transport_priv, pkt, &rt->recvbuf, len);
-    } else {
+    } else if (rt->transport == RTSP_TRANSPORT_RTP) {
         ret = ff_rtp_parse_packet(rtsp_st->transport_priv, pkt, &rt->recvbuf, len);
         if (ret < 0) {
             /* Either bad packet, or a RTCP packet. Check if the
@@ -1861,6 +1876,8 @@ int ff_rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt)
                     return AVERROR_EOF;
             }
         }
+    } else {
+        return AVERROR_INVALIDDATA;
     }
 end:
     if (ret < 0)
