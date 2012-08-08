@@ -43,6 +43,7 @@ version next:
 - MP2 encoding via TwoLAME
 - bmp parser
 - smptebars source
+- asetpts filter
 
 
 version 0.11:
