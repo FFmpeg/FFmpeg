@@ -630,8 +630,10 @@ properties of your X11 display (e.g. grep for "name" or "dimensions").
 For example to grab from @file{:0.0} using @command{ffmpeg}:
 @example
 ffmpeg -f x11grab -r 25 -s cif -i :0.0 out.mpg
+@end example
 
-# Grab at position 10,20.
+Grab at position @code{10,20}:
+@example
 ffmpeg -f x11grab -r 25 -s cif -i :0.0+10,20 out.mpg
 @end example
 
