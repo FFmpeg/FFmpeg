@@ -163,24 +163,6 @@ static void filter(AVFilterContext *ctx, AVFilterBufferRef *dstpic,
     emms_c();
 }
 
-static AVFilterBufferRef *get_video_buffer(AVFilterLink *link, int perms, int w, int h)
-{
-    AVFilterBufferRef *picref;
-    int width = FFALIGN(w, 32);
-    int height= FFALIGN(h+2, 32);
-    int i;
-
-    picref = ff_default_get_video_buffer(link, perms, width, height);
-
-    picref->video->w = w;
-    picref->video->h = h;
-
-    for (i = 0; i < 3; i++)
-        picref->data[i] += picref->linesize[i];
-
-    return picref;
-}
-
 static int return_frame(AVFilterContext *ctx, int is_second)
 {
     YADIFContext *yadif = ctx->priv;
@@ -456,7 +438,6 @@ AVFilter avfilter_vf_yadif = {
     .inputs    = (const AVFilterPad[]) {{ .name             = "default",
                                           .type             = AVMEDIA_TYPE_VIDEO,
                                           .start_frame      = start_frame,
-                                          .get_video_buffer = get_video_buffer,
                                           .draw_slice       = null_draw_slice,
                                           .end_frame        = end_frame,
                                           .rej_perms        = AV_PERM_REUSE2, },
