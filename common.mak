@@ -111,13 +111,13 @@ $(HOSTOBJS): %.o: %.c
 $(HOSTPROGS): %$(HOSTEXESUF): %.o
 	$(HOSTCC) $(HOSTLDFLAGS) -o $@ $< $(HOSTLIBS)
 
-$(OBJS):       | $(sort $(dir $(OBJS)))
-$(HOSTOBJS):   | $(sort $(dir $(HOSTOBJS)))
-$(TESTOBJS):   | $(sort $(dir $(TESTOBJS)))
-$(HEADEROBJS): | $(sort $(dir $(HEADEROBJS)))
-$(TOOLOBJS):   | tools
+$(OBJS):     | $(sort $(dir $(OBJS)))
+$(HOSTOBJS): | $(sort $(dir $(HOSTOBJS)))
+$(TESTOBJS): | $(sort $(dir $(TESTOBJS)))
+$(HOBJS):    | $(sort $(dir $(HOBJS)))
+$(TOOLOBJS): | tools
 
-OBJDIRS := $(OBJDIRS) $(dir $(OBJS) $(HOSTOBJS) $(TESTOBJS) $(HEADEROBJS))
+OBJDIRS := $(OBJDIRS) $(dir $(OBJS) $(HOSTOBJS) $(TESTOBJS) $(HOBJS))
 
 CLEANSUFFIXES     = *.d *.o *~ *.h.c *.map *.ver *.ho *.gcno *.gcda
 DISTCLEANSUFFIXES = *.pc
