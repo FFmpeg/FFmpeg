@@ -1413,20 +1413,18 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
     update_benchmark(NULL);
     ret = avcodec_decode_audio4(avctx, decoded_frame, got_output, pkt);
     update_benchmark("decode_audio %d.%d", ist->file_index, ist->st->index);
-    if (ret < 0) {
-        return ret;
-    }
-    if (avctx->sample_rate <= 0) {
+
+    if (ret >= 0 && avctx->sample_rate <= 0) {
         av_log(avctx, AV_LOG_ERROR, "Sample rate %d invalid\n", avctx->sample_rate);
         return AVERROR_INVALIDDATA;
     }
 
-    if (!*got_output) {
-        /* no audio frame */
-        if (!pkt->size)
+    if (!*got_output || ret < 0) {
+        if (!pkt->size) {
             for (i = 0; i < ist->nb_filters; i++)
                 av_buffersrc_add_ref(ist->filters[i]->filter, NULL,
                                      AV_BUFFERSRC_FLAG_NO_COPY);
+        }
         return ret;
     }
 
@@ -1541,17 +1539,15 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
     ret = avcodec_decode_video2(ist->st->codec,
                                 decoded_frame, got_output, pkt);
     update_benchmark("decode_video %d.%d", ist->file_index, ist->st->index);
-    if (ret < 0)
-        return ret;
-
-    quality = same_quant ? decoded_frame->quality : 0;
-    if (!*got_output) {
-        /* no picture yet */
-        if (!pkt->size)
+    if (!*got_output || ret < 0) {
+        if (!pkt->size) {
             for (i = 0; i < ist->nb_filters; i++)
                 av_buffersrc_add_ref(ist->filters[i]->filter, NULL, AV_BUFFERSRC_FLAG_NO_COPY);
+        }
         return ret;
     }
+
+    quality = same_quant ? decoded_frame->quality : 0;
 
     if(ist->top_field_first>=0)
         decoded_frame->top_field_first = ist->top_field_first;
@@ -2390,7 +2386,7 @@ static int need_output(void)
 static int input_acceptable(InputStream *ist)
 {
     av_assert1(!ist->discard);
-    return !input_files[ist->file_index]->unavailable &&
+    return !input_files[ist->file_index]->eagain &&
            !input_files[ist->file_index]->eof_reached;
 }
 
@@ -2679,6 +2675,22 @@ static int get_input_packet(InputFile *f, AVPacket *pkt)
     return av_read_frame(f->ctx, pkt);
 }
 
+static int got_eagain(void)
+{
+    int i;
+    for (i = 0; i < nb_input_files; i++)
+        if (input_files[i]->eagain)
+            return 1;
+    return 0;
+}
+
+static void reset_eagain(void)
+{
+    int i;
+    for (i = 0; i < nb_input_files; i++)
+        input_files[i]->eagain = 0;
+}
+
 /*
  * The following code is the main loop of the file converter
  */
@@ -2688,7 +2700,6 @@ static int transcode(void)
     AVFormatContext *is, *os;
     OutputStream *ost;
     InputStream *ist;
-    int no_packet_count = 0;
     int64_t timer_start;
 
     ret = transcode_init();
@@ -2706,9 +2717,10 @@ static int transcode(void)
         goto fail;
 #endif
 
-    for (; received_sigterm == 0;) {
-        int file_index, ist_index;
+    while (!received_sigterm) {
+        InputFile *ifile;
         AVPacket pkt;
+        int file_index;
         int64_t cur_time= av_gettime();
 
         /* if 'q' pressed, exits */
@@ -2730,23 +2742,21 @@ static int transcode(void)
             continue;
         }
         if (file_index < 0) {
-            if (no_packet_count) {
-                no_packet_count = 0;
-                for (i = 0; i < nb_input_files; i++)
-                    input_files[i]->unavailable = 0;
+            if (got_eagain()) {
+                reset_eagain();
                 av_usleep(10000);
                 continue;
             }
             av_log(NULL, AV_LOG_VERBOSE, "No more inputs to read from, finishing.\n");
             break;
         }
+        ifile = input_files[file_index];
 
-        is  = input_files[file_index]->ctx;
-        ret = get_input_packet(input_files[file_index], &pkt);
+        is  = ifile->ctx;
+        ret = get_input_packet(ifile, &pkt);
 
         if (ret == AVERROR(EAGAIN)) {
-            input_files[file_index]->unavailable = 1;
-            no_packet_count++;
+            ifile->eagain = 1;
             continue;
         }
         if (ret < 0) {
@@ -2755,10 +2765,10 @@ static int transcode(void)
                 if (exit_on_error)
                     exit_program(1);
             }
-            input_files[file_index]->eof_reached = 1;
+            ifile->eof_reached = 1;
 
-            for (i = 0; i < input_files[file_index]->nb_streams; i++) {
-                ist = input_streams[input_files[file_index]->ist_index + i];
+            for (i = 0; i < ifile->nb_streams; i++) {
+                ist = input_streams[ifile->ist_index + i];
                 if (ist->decoding_needed)
                     output_packet(ist, NULL);
                 poll_filters();
@@ -2770,9 +2780,7 @@ static int transcode(void)
                 continue;
         }
 
-        no_packet_count = 0;
-        for (i = 0; i < nb_input_files; i++)
-            input_files[i]->unavailable = 0;
+        reset_eagain();
 
         if (do_pkt_dump) {
             av_pkt_dump_log2(NULL, AV_LOG_DEBUG, &pkt, do_hex_dump,
@@ -2780,12 +2788,12 @@ static int transcode(void)
         }
         /* the following test is needed in case new streams appear
            dynamically in stream : we ignore them */
-        if (pkt.stream_index >= input_files[file_index]->nb_streams) {
+        if (pkt.stream_index >= ifile->nb_streams) {
             report_new_stream(file_index, &pkt);
             goto discard_packet;
         }
-        ist_index = input_files[file_index]->ist_index + pkt.stream_index;
-        ist = input_streams[ist_index];
+
+        ist = input_streams[ifile->ist_index + pkt.stream_index];
         if (ist->discard)
             goto discard_packet;
 
@@ -2804,9 +2812,9 @@ static int transcode(void)
         }
 
         if (pkt.dts != AV_NOPTS_VALUE)
-            pkt.dts += av_rescale_q(input_files[ist->file_index]->ts_offset, AV_TIME_BASE_Q, ist->st->time_base);
+            pkt.dts += av_rescale_q(ifile->ts_offset, AV_TIME_BASE_Q, ist->st->time_base);
         if (pkt.pts != AV_NOPTS_VALUE)
-            pkt.pts += av_rescale_q(input_files[ist->file_index]->ts_offset, AV_TIME_BASE_Q, ist->st->time_base);
+            pkt.pts += av_rescale_q(ifile->ts_offset, AV_TIME_BASE_Q, ist->st->time_base);
 
         if (pkt.pts != AV_NOPTS_VALUE)
             pkt.pts *= ist->ts_scale;
@@ -2816,7 +2824,7 @@ static int transcode(void)
         if (debug_ts) {
             av_log(NULL, AV_LOG_INFO, "demuxer -> ist_index:%d type:%s "
                     "next_dts:%s next_dts_time:%s next_pts:%s next_pts_time:%s  pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s off:%"PRId64"\n",
-                    ist_index, av_get_media_type_string(ist->st->codec->codec_type),
+                    ifile->ist_index + pkt.stream_index, av_get_media_type_string(ist->st->codec->codec_type),
                     av_ts2str(ist->next_dts), av_ts2timestr(ist->next_dts, &AV_TIME_BASE_Q),
                     av_ts2str(ist->next_pts), av_ts2timestr(ist->next_pts, &AV_TIME_BASE_Q),
                     av_ts2str(pkt.pts), av_ts2timestr(pkt.pts, &ist->st->time_base),
@@ -2832,10 +2840,10 @@ static int transcode(void)
                 (delta > 1LL*dts_delta_threshold*AV_TIME_BASE &&
                  ist->st->codec->codec_type != AVMEDIA_TYPE_SUBTITLE) ||
                 pkt_dts+1<ist->pts){
-                input_files[ist->file_index]->ts_offset -= delta;
+                ifile->ts_offset -= delta;
                 av_log(NULL, AV_LOG_DEBUG,
                        "timestamp discontinuity %"PRId64", new offset= %"PRId64"\n",
-                       delta, input_files[ist->file_index]->ts_offset);
+                       delta, ifile->ts_offset);
                 pkt.dts-= av_rescale_q(delta, AV_TIME_BASE_Q, ist->st->time_base);
                 if (pkt.pts != AV_NOPTS_VALUE)
                     pkt.pts-= av_rescale_q(delta, AV_TIME_BASE_Q, ist->st->time_base);
@@ -2862,7 +2870,6 @@ static int transcode(void)
 
         sub2video_heartbeat(ist, pkt.pts);
 
-        // fprintf(stderr,"read #%d.%d size=%d\n", ist->file_index, ist->st->index, pkt.size);
         if ((ret = output_packet(ist, &pkt)) < 0 ||
             ((ret = poll_filters()) < 0 && ret != AVERROR_EOF)) {
             char buf[128];

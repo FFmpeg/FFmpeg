@@ -242,7 +242,7 @@ typedef struct InputStream {
 typedef struct InputFile {
     AVFormatContext *ctx;
     int eof_reached;      /* true if eof reached */
-    int unavailable;      /* true if the file is unavailable (possibly temporarily) */
+    int eagain;           /* true if last read attempt returned EAGAIN */
     int ist_index;        /* index of first stream in input_streams */
     int64_t ts_offset;
     int nb_streams;       /* number of stream that ffmpeg is aware of; may be different
