@@ -221,6 +221,11 @@ static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 
     av_assert0(picref);
 
+    if (picref->video->h < 3 || picref->video->w < 3) {
+        av_log(ctx, AV_LOG_ERROR, "Video of less than 3 columns or lines is not supported\n");
+        return AVERROR(EINVAL);
+    }
+
     if (yadif->frame_pending)
         return_frame(ctx, 1);
 
