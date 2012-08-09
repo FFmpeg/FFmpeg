@@ -42,7 +42,7 @@ typedef struct AudioConvert AudioConvert;
  * @param in_fmt         input sample format
  * @param channels       number of channels, or 0 for any number of channels
  * @param ptr_align      buffer pointer alignment, in bytes
- * @param sample_align   buffer size alignment, in samples
+ * @param samples_align  buffer size alignment, in samples
  * @param descr          function type description (e.g. "C" or "SSE")
  * @param conv           conversion function pointer
  */

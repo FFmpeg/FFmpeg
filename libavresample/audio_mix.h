@@ -69,7 +69,7 @@ typedef struct AudioMix {
  * @param in_channels    number of input channels, or 0 for any number of channels
  * @param out_channels   number of output channels, or 0 for any number of channels
  * @param ptr_align      buffer pointer alignment, in bytes
- * @param sample_align   buffer size alignment, in samples
+ * @param samples_align  buffer size alignment, in samples
  * @param descr          function type description (e.g. "C" or "SSE")
  * @param mix_func       mixing function pointer
  */
