@@ -453,7 +453,17 @@ typedef struct AVCodecDescriptor {
      * A more descriptive name for this codec. May be NULL.
      */
     const char *long_name;
+    /**
+     * Codec properties, a combination of AV_CODEC_PROP_* flags.
+     */
+    int             props;
 } AVCodecDescriptor;
+
+/**
+ * Codec uses only intra compression.
+ * Video codecs only.
+ */
+#define AV_CODEC_PROP_INTRA_ONLY    (1 << 0)
 
 #if FF_API_OLD_DECODE_AUDIO
 /* in bytes */
