@@ -279,6 +279,7 @@ typedef struct AVOption {
 #define AV_OPT_FLAG_AUDIO_PARAM     8
 #define AV_OPT_FLAG_VIDEO_PARAM     16
 #define AV_OPT_FLAG_SUBTITLE_PARAM  32
+#define AV_OPT_FLAG_FILTERING_PARAM (1<<16) ///< a generic parameter which can be set by the user for filtering
 //FIXME think about enc-audio, ... style flags
 
     /**
