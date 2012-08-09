@@ -1098,10 +1098,41 @@ fail:
     return ret;
 }
 
+static int handle_invoke_status(URLContext *s, RTMPPacket *pkt)
+{
+    RTMPContext *rt = s->priv_data;
+    const uint8_t *data_end = pkt->data + pkt->data_size;
+    const uint8_t *ptr = pkt->data + 11;
+    uint8_t tmpstr[256];
+    int i, t;
+
+    for (i = 0; i < 2; i++) {
+        t = ff_amf_tag_size(ptr, data_end);
+        if (t < 0)
+            return 1;
+        ptr += t;
+    }
+
+    t = ff_amf_get_field_value(ptr, data_end, "level", tmpstr, sizeof(tmpstr));
+    if (!t && !strcmp(tmpstr, "error")) {
+        if (!ff_amf_get_field_value(ptr, data_end,
+                                    "description", tmpstr, sizeof(tmpstr)))
+            av_log(s, AV_LOG_ERROR, "Server error: %s\n", tmpstr);
+        return -1;
+    }
+
+    t = ff_amf_get_field_value(ptr, data_end, "code", tmpstr, sizeof(tmpstr));
+    if (!t && !strcmp(tmpstr, "NetStream.Play.Start")) rt->state = STATE_PLAYING;
+    if (!t && !strcmp(tmpstr, "NetStream.Play.Stop")) rt->state = STATE_STOPPED;
+    if (!t && !strcmp(tmpstr, "NetStream.Play.UnpublishNotify")) rt->state = STATE_STOPPED;
+    if (!t && !strcmp(tmpstr, "NetStream.Publish.Start")) rt->state = STATE_PUBLISHING;
+
+    return 0;
+}
+
 static int handle_invoke(URLContext *s, RTMPPacket *pkt)
 {
     RTMPContext *rt = s->priv_data;
-    int i, t;
     const uint8_t *data_end = pkt->data + pkt->data_size;
     int ret = 0;
 
@@ -1117,29 +1148,8 @@ static int handle_invoke(URLContext *s, RTMPPacket *pkt)
         if ((ret = handle_invoke_result(s, pkt)) < 0)
             return ret;
     } else if (!memcmp(pkt->data, "\002\000\010onStatus", 11)) {
-        const uint8_t* ptr = pkt->data + 11;
-        uint8_t tmpstr[256];
-
-        for (i = 0; i < 2; i++) {
-            t = ff_amf_tag_size(ptr, data_end);
-            if (t < 0)
-                return 1;
-            ptr += t;
-        }
-        t = ff_amf_get_field_value(ptr, data_end,
-                                   "level", tmpstr, sizeof(tmpstr));
-        if (!t && !strcmp(tmpstr, "error")) {
-            if (!ff_amf_get_field_value(ptr, data_end,
-                                        "description", tmpstr, sizeof(tmpstr)))
-                av_log(s, AV_LOG_ERROR, "Server error: %s\n",tmpstr);
-            return -1;
-        }
-        t = ff_amf_get_field_value(ptr, data_end,
-                "code", tmpstr, sizeof(tmpstr));
-        if (!t && !strcmp(tmpstr, "NetStream.Play.Start")) rt->state = STATE_PLAYING;
-        if (!t && !strcmp(tmpstr, "NetStream.Play.Stop")) rt->state = STATE_STOPPED;
-        if (!t && !strcmp(tmpstr, "NetStream.Play.UnpublishNotify")) rt->state = STATE_STOPPED;
-        if (!t && !strcmp(tmpstr, "NetStream.Publish.Start")) rt->state = STATE_PUBLISHING;
+        if ((ret = handle_invoke_status(s, pkt)) < 0)
+            return ret;
     } else if (!memcmp(pkt->data, "\002\000\010onBWDone", 11)) {
         if ((ret = gen_check_bw(s, rt)) < 0)
             return ret;
