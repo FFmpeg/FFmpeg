@@ -56,6 +56,8 @@ typedef struct {
 
     const AVPixFmtDescriptor *csp;
     int eof;
+    uint8_t *temp_line;
+    int temp_line_size;
 } YADIFContext;
 
 void ff_yadif_init_x86(YADIFContext *yadif);
