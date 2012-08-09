@@ -292,21 +292,6 @@ In order to run FATE you will also need the following "Utils" packages:
 bc, diffutils
 @end example
 
-Then run
-
-@example
-./configure
-@end example
-
-to make a static build.
-
-To build shared libraries add a special compiler flag to work around current
-@code{gcc4-core} package bugs in addition to the normal configure flags:
-
-@example
-./configure --enable-shared --disable-static --extra-cflags=-fno-reorder-functions
-@end example
-
 If you want to build Libav with additional libraries, download Cygwin
 "Devel" packages for Ogg and Vorbis from any Cygwin packages repository:
 @example
