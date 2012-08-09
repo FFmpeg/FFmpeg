@@ -974,8 +974,7 @@ static void formant_postfilter(G723_1_Context *p, int16_t *lpc, int16_t *buf)
         if (temp) {
             temp = (auto_corr[0] >> 2) / temp;
         }
-        p->reflection_coef = ((p->reflection_coef << 2) - p->reflection_coef +
-                              temp + 2) >> 2;
+        p->reflection_coef = (3 * p->reflection_coef + temp + 2) >> 2;
         temp = (p->reflection_coef * 0xffffc >> 3) & 0xfffc;
 
         /* Compensation filter */
