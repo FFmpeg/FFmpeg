@@ -1021,6 +1021,20 @@ static int handle_server_bw(URLContext *s, RTMPPacket *pkt)
     return 0;
 }
 
+static int handle_invoke_error(URLContext *s, RTMPPacket *pkt)
+{
+    const uint8_t *data_end = pkt->data + pkt->data_size;
+    uint8_t tmpstr[256];
+
+    if (!ff_amf_get_field_value(pkt->data + 9, data_end,
+                                "description", tmpstr, sizeof(tmpstr))) {
+        av_log(s, AV_LOG_ERROR, "Server error: %s\n", tmpstr);
+        return -1;
+    }
+
+    return 0;
+}
+
 static int handle_invoke_result(URLContext *s, RTMPPacket *pkt)
 {
     RTMPContext *rt = s->priv_data;
@@ -1133,17 +1147,12 @@ static int handle_invoke_status(URLContext *s, RTMPPacket *pkt)
 static int handle_invoke(URLContext *s, RTMPPacket *pkt)
 {
     RTMPContext *rt = s->priv_data;
-    const uint8_t *data_end = pkt->data + pkt->data_size;
     int ret = 0;
 
     //TODO: check for the messages sent for wrong state?
     if (!memcmp(pkt->data, "\002\000\006_error", 9)) {
-        uint8_t tmpstr[256];
-
-        if (!ff_amf_get_field_value(pkt->data + 9, data_end,
-                                    "description", tmpstr, sizeof(tmpstr)))
-            av_log(s, AV_LOG_ERROR, "Server error: %s\n",tmpstr);
-        return -1;
+        if ((ret = handle_invoke_error(s, pkt)) < 0)
+            return ret;
     } else if (!memcmp(pkt->data, "\002\000\007_result", 10)) {
         if ((ret = handle_invoke_result(s, pkt)) < 0)
             return ret;
