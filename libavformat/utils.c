@@ -789,30 +789,14 @@ static void compute_frame_duration(int *pnum, int *pden, AVStream *st,
     }
 }
 
-static int is_intra_only(AVCodecContext *enc){
-    if(enc->codec_type == AVMEDIA_TYPE_AUDIO){
-        return 1;
-    }else if(enc->codec_type == AVMEDIA_TYPE_VIDEO){
-        switch(enc->codec_id){
-        case AV_CODEC_ID_MJPEG:
-        case AV_CODEC_ID_MJPEGB:
-        case AV_CODEC_ID_LJPEG:
-        case AV_CODEC_ID_PRORES:
-        case AV_CODEC_ID_RAWVIDEO:
-        case AV_CODEC_ID_DVVIDEO:
-        case AV_CODEC_ID_HUFFYUV:
-        case AV_CODEC_ID_FFVHUFF:
-        case AV_CODEC_ID_ASV1:
-        case AV_CODEC_ID_ASV2:
-        case AV_CODEC_ID_VCR1:
-        case AV_CODEC_ID_DNXHD:
-        case AV_CODEC_ID_JPEG2000:
-        case AV_CODEC_ID_MDEC:
-            return 1;
-        default: break;
-        }
-    }
-    return 0;
+static int is_intra_only(enum AVCodecID id)
+{
+    const AVCodecDescriptor *d = avcodec_descriptor_get(id);
+    if (!d)
+        return 0;
+    if (d->type == AVMEDIA_TYPE_VIDEO && !(d->props & AV_CODEC_PROP_INTRA_ONLY))
+        return 0;
+    return 1;
 }
 
 static void update_initial_timestamps(AVFormatContext *s, int stream_index,
@@ -1034,7 +1018,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
 //    av_log(NULL, AV_LOG_ERROR, "OUTdelayed:%d/%d pts:%"PRId64", dts:%"PRId64" cur_dts:%"PRId64"\n", presentation_delayed, delay, pkt->pts, pkt->dts, st->cur_dts);
 
     /* update flags */
-    if(is_intra_only(st->codec))
+    if (is_intra_only(st->codec->codec_id))
         pkt->flags |= AV_PKT_FLAG_KEY;
     if (pc)
         pkt->convergence_duration = pc->convergence_duration;
