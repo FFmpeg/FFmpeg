@@ -593,6 +593,7 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
         case AVMEDIA_TYPE_SUBTITLE:
             if(!ist->dec)
                 ist->dec = avcodec_find_decoder(dec->codec_id);
+            MATCH_PER_STREAM_OPT(fix_sub_duration, i, ist->fix_sub_duration, ic, st);
             break;
         case AVMEDIA_TYPE_ATTACHMENT:
         case AVMEDIA_TYPE_UNKNOWN:
@@ -2276,6 +2277,7 @@ const OptionDef options[] = {
     { "sn", OPT_BOOL | OPT_SUBTITLE | OPT_OFFSET, {.off = OFFSET(subtitle_disable)}, "disable subtitle" },
     { "scodec", HAS_ARG | OPT_SUBTITLE | OPT_FUNC2, {(void*)opt_subtitle_codec}, "force subtitle codec ('copy' to copy stream)", "codec" },
     { "stag", HAS_ARG | OPT_EXPERT | OPT_SUBTITLE | OPT_FUNC2, {(void*)opt_old2new}, "force subtitle tag/fourcc", "fourcc/tag" },
+    { "fix_sub_duration", OPT_BOOL | OPT_EXPERT | OPT_SUBTITLE | OPT_SPEC, {.off = OFFSET(fix_sub_duration)}, "fix subtitles duration" },
 
     /* grab options */
     { "vc", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_GRAB, {(void*)opt_video_channel}, "deprecated, use -channel", "channel" },

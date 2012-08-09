@@ -620,6 +620,25 @@ Disable subtitle recording.
 Deprecated, see -bsf
 @end table
 
+@section Advanced Subtitle options:
+
+@table @option
+
+@item -fix_sub_duration
+Fix subtitles durations. For each subtitle, wait for the next packet in the
+same stream and adjust the duration of the first to avoid overlap. This is
+necessary with some subtitles codecs, especially DVB subtitles, because the
+duration in the original packet is only a rough estimate and the end is
+actually marked by an empty subtitle frame. Failing to use this option when
+necessary can result in exaggerated durations or muxing failures due to
+non-monotonic timestamps.
+
+Note that this option will delay the output of all data until the next
+subtitle packet is decoded: it may increase memory consumption and latency a
+lot.
+
+@end table
+
 @section Audio/Video grab options
 
 @table @option

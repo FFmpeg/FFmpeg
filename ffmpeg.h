@@ -158,6 +158,8 @@ typedef struct OptionsContext {
     int        nb_copy_initial_nonkeyframes;
     SpecifierOpt *filters;
     int        nb_filters;
+    SpecifierOpt *fix_sub_duration;
+    int        nb_fix_sub_duration;
 } OptionsContext;
 
 typedef struct InputFilter {
@@ -222,6 +224,14 @@ typedef struct InputStream {
     int      resample_sample_rate;
     int      resample_channels;
     uint64_t resample_channel_layout;
+
+    int fix_sub_duration;
+    struct { /* previous decoded subtitle and related variables */
+        int64_t pts;
+        int got_output;
+        int ret;
+        AVSubtitle subtitle;
+    } prev_sub;
 
     struct sub2video {
         int64_t last_pts;
