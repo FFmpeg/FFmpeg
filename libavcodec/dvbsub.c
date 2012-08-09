@@ -362,12 +362,11 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
         *q++ = 0; /* 8 bit fill colors */
         *q++ = 0x03; /* 4 bit and 2 bit fill colors */
 
-        /* TODO reindent */
-            bytestream_put_be16(&q, region_id); /* object_id == region_id */
-            *q++ = (0 << 6) | (0 << 4);
-            *q++ = 0;
-            *q++ = 0xf0;
-            *q++ = 0;
+        bytestream_put_be16(&q, region_id); /* object_id == region_id */
+        *q++ = (0 << 6) | (0 << 4);
+        *q++ = 0;
+        *q++ = 0xf0;
+        *q++ = 0;
 
         bytestream_put_be16(&pseg_len, q - pseg_len - 2);
     }
