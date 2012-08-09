@@ -107,7 +107,6 @@ static void do_video_stats(AVFormatContext *os, OutputStream *ost, int frame_siz
 static int64_t getutime(void);
 
 static int run_as_daemon  = 0;
-static volatile int received_nb_signals = 0;
 static int64_t video_size = 0;
 static int64_t audio_size = 0;
 static int64_t subtitle_size = 0;
@@ -262,8 +261,10 @@ void term_exit(void)
 }
 
 static volatile int received_sigterm = 0;
+static volatile int received_nb_signals = 0;
 
-static void sigterm_handler(int sig)
+static void
+sigterm_handler(int sig)
 {
     received_sigterm = sig;
     received_nb_signals++;
@@ -411,8 +412,8 @@ void av_noreturn exit_program(int ret)
         output_streams[i]->bitstream_filters = NULL;
 
         av_freep(&output_streams[i]->forced_keyframes);
-        av_freep(&output_streams[i]->filtered_frame);
         av_freep(&output_streams[i]->avfilter);
+        av_freep(&output_streams[i]->filtered_frame);
         av_freep(&output_streams[i]);
     }
     for (i = 0; i < nb_input_files; i++) {
