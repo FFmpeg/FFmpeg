@@ -241,7 +241,7 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
     const AVOption *o = av_opt_find2(obj, name, NULL, 0, search_flags, &target_obj);
     if (!o || !target_obj)
         return AVERROR_OPTION_NOT_FOUND;
-    if (!val && o->type != AV_OPT_TYPE_STRING)
+    if (!val && (o->type != AV_OPT_TYPE_STRING && o->type != AV_OPT_TYPE_PIXEL_FMT && o->type != AV_OPT_TYPE_IMAGE_SIZE))
         return AVERROR(EINVAL);
 
     dst = ((uint8_t*)target_obj) + o->offset;
@@ -255,11 +255,18 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
     case AV_OPT_TYPE_DOUBLE:
     case AV_OPT_TYPE_RATIONAL: return set_string_number(obj, o, val, dst);
     case AV_OPT_TYPE_IMAGE_SIZE:
+        if (!val || !strcmp(val, "none")) {
+            *(int *)dst = *((int *)dst + 1) = 0;
+            return 0;
+        }
         ret = av_parse_video_size(dst, ((int *)dst) + 1, val);
         if (ret < 0)
             av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as image size\n", val);
         return ret;
     case AV_OPT_TYPE_PIXEL_FMT:
+        if (!val || !strcmp(val, "none"))
+            ret = PIX_FMT_NONE;
+        else {
         ret = av_get_pix_fmt(val);
         if (ret == PIX_FMT_NONE) {
             char *tail;
@@ -268,6 +275,7 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
                 av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as pixel format\n", val);
                 return AVERROR(EINVAL);
             }
+        }
         }
         *(enum PixelFormat *)dst = ret;
         return 0;
@@ -457,7 +465,7 @@ int av_opt_get(void *obj, const char *name, int search_flags, uint8_t **out_val)
         ret = snprintf(buf, sizeof(buf), "%dx%d", ((int *)dst)[0], ((int *)dst)[1]);
         break;
     case AV_OPT_TYPE_PIXEL_FMT:
-        ret = snprintf(buf, sizeof(buf), "%s", (char *)av_x_if_null(av_get_pix_fmt_name(*(enum PixelFormat *)dst), "?"));
+        ret = snprintf(buf, sizeof(buf), "%s", (char *)av_x_if_null(av_get_pix_fmt_name(*(enum PixelFormat *)dst), "none"));
         break;
     default:
         return AVERROR(EINVAL);
