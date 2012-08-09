@@ -99,8 +99,14 @@ Configuration options:
   --enable-gray            enable full grayscale support (slower color)
   --disable-swscale-alpha  disable alpha channel support in swscale
 
-Component options:
+Documentation options:
   --disable-doc            do not build documentation
+  --disable-htmlpages      do not build HTML documentation pages
+  --disable-manpages       do not build man documentation pages
+  --disable-podpages       do not build POD documentation pages
+  --disable-txtpages       do not build text documentation pages
+
+Component options:
   --disable-ffmpeg         disable ffmpeg build
   --disable-ffplay         disable ffplay build
   --disable-ffprobe        disable ffprobe build
@@ -1043,6 +1049,14 @@ COMPONENT_LIST="
     protocols
 "
 
+DOCUMENT_LIST="
+    doc
+    htmlpages
+    manpages
+    podpages
+    txtpages
+"
+
 PROGRAM_LIST="
     ffplay
     ffprobe
@@ -1052,6 +1066,7 @@ PROGRAM_LIST="
 
 CONFIG_LIST="
     $COMPONENT_LIST
+    $DOCUMENT_LIST
     $PROGRAM_LIST
     avcodec
     avdevice
@@ -1062,7 +1077,6 @@ CONFIG_LIST="
     bzlib
     crystalhd
     dct
-    doc
     dwt
     dxva2
     fast_unaligned
@@ -1285,6 +1299,7 @@ HAVE_LIST="
     mmap
     nanosleep
     PeekNamedPipe
+    perl
     pod2man
     poll_h
     posix_memalign
@@ -1848,7 +1863,12 @@ ffprobe_deps="avcodec avformat"
 ffserver_deps="avformat ffm_muxer fork rtp_protocol rtsp_demuxer"
 ffserver_extralibs='$ldl'
 
-doc_deps_any="texi2html makeinfo pod2man"
+# documentation
+podpages_deps="perl"
+manpages_deps="perl pod2man"
+htmlpages_deps="texi2html"
+txtpages_deps="makeinfo"
+doc_deps_any="manpages htmlpages podpages txtpages"
 
 # tests
 colormatrix1_test_deps="colormatrix_filter"
@@ -1951,6 +1971,7 @@ ALT_PP_VER=$ALT_PP_VER_MAJOR.$ALT_PP_VER_MINOR.$ALT_PP_VER_MICRO
 
 # configurable options
 enable $PROGRAM_LIST
+enable $DOCUMENT_LIST
 
 enable avcodec
 enable avdevice
@@ -3525,6 +3546,7 @@ enabled sdl && add_cflags $sdl_cflags && add_extralibs $sdl_libs
 
 texi2html --help 2> /dev/null | grep -q 'init-file' && enable texi2html || disable texi2html
 makeinfo --version > /dev/null 2>&1 && enable makeinfo  || disable makeinfo
+perl --version > /dev/null 2>&1 && enable perl || disable perl
 pod2man --help > /dev/null 2>&1 && enable pod2man || disable pod2man
 
 check_header linux/fb.h
@@ -3867,6 +3889,7 @@ echo "openssl enabled           ${openssl-no}"
 echo "zlib enabled              ${zlib-no}"
 echo "bzlib enabled             ${bzlib-no}"
 echo "texi2html enabled         ${texi2html-no}"
+echo "perl enabled              ${perl-no}"
 echo "pod2man enabled           ${pod2man-no}"
 echo "makeinfo enabled          ${makeinfo-no}"
 test -n "$random_seed" &&

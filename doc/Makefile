@@ -12,9 +12,10 @@ HTMLPAGES   = $(PROGS-yes:%=doc/%.html)                                 \
 TXTPAGES    = doc/fate.txt                                              \
 
 
-DOCS-$(HAVE_TEXI2HTML)  += $(HTMLPAGES)
-DOCS-$(HAVE_POD2MAN)    += $(MANPAGES) $(PODPAGES)
-DOCS-$(HAVE_MAKEINFO)   += $(TXTPAGES)
+DOCS-$(CONFIG_HTMLPAGES) += $(HTMLPAGES)
+DOCS-$(CONFIG_PODPAGES)  += $(PODPAGES)
+DOCS-$(CONFIG_MANPAGES)  += $(MANPAGES)
+DOCS-$(CONFIG_TXTPAGES)  += $(TXTPAGES)
 DOCS = $(DOCS-yes)
 
 all-$(CONFIG_DOC): documentation
@@ -53,7 +54,7 @@ $(DOCS): | doc/
 
 install-man:
 
-ifdef HAVE_POD2MAN
+ifdef CONFIG_MANPAGES
 install-progs-$(CONFIG_DOC): install-man
 
 install-man: $(MANPAGES)
