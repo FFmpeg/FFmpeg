@@ -67,9 +67,7 @@ struct ResampleContext {
 #include "resample_template.c"
 
 
-/**
- * 0th order modified bessel function of the first kind.
- */
+/* 0th order modified bessel function of the first kind. */
 static double bessel(double x)
 {
     double v     = 1;
@@ -86,18 +84,7 @@ static double bessel(double x)
     return v;
 }
 
-/**
- * Build a polyphase filterbank.
- *
- * @param[out] filter       filter coefficients
- * @param      factor       resampling factor
- * @param      tap_count    tap count
- * @param      phase_count  phase count
- * @param      scale        wanted sum of coefficients for each filter
- * @param      filter_type  filter type
- * @param      kaiser_beta  kaiser window beta
- * @return                  0 on success, negative AVERROR code on failure
- */
+/* Build a polyphase filterbank. */
 static int build_filter(ResampleContext *c)
 {
     int ph, i;
