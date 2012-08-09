@@ -101,6 +101,12 @@ __asm__ volatile(\
 );
 #endif
 
+#define MASK_ABS(mask, level)                   \
+    __asm__ ("cltd                   \n\t"      \
+             "xorl %1, %0            \n\t"      \
+             "subl %1, %0            \n\t"      \
+             : "+a"(level), "=&d"(mask))
+
 // avoid +32 for shift optimization (gcc should do that ...)
 #define NEG_SSR32 NEG_SSR32
 static inline  int32_t NEG_SSR32( int32_t a, int8_t s){

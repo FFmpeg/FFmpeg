@@ -52,6 +52,7 @@ enum RTSPLowerTransport {
 enum RTSPTransport {
     RTSP_TRANSPORT_RTP, /**< Standards-compliant RTP */
     RTSP_TRANSPORT_RDT, /**< Realmedia Data Transport */
+    RTSP_TRANSPORT_RAW, /**< Raw data (over UDP) */
     RTSP_TRANSPORT_NB
 };
 
@@ -309,6 +310,13 @@ typedef struct RTSPState {
      * for all subsequent RTSP requests, rather than the input URI; in
      * other cases, this is a copy of AVFormatContext->filename. */
     char control_uri[1024];
+
+    /** The following are used for parsing raw mpegts in udp */
+    //@{
+    struct MpegTSContext *ts;
+    int recvbuf_pos;
+    int recvbuf_len;
+    //@}
 
     /** Additional output handle, used when input and output are done
      * separately, eg for HTTP tunneling. */

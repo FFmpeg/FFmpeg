@@ -565,7 +565,7 @@ static int check_recording_time(OutputStream *ost)
     if (of->recording_time != INT64_MAX &&
         av_compare_ts(ost->sync_opts - ost->first_pts, ost->st->codec->time_base, of->recording_time,
                       AV_TIME_BASE_Q) >= 0) {
-        ost->is_past_recording_time = 1;
+        ost->finished = 1;
         return 0;
     }
     return 1;
@@ -1315,7 +1315,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
 
     if (of->recording_time != INT64_MAX &&
         ist->pts >= of->recording_time + of->start_time) {
-        ost->is_past_recording_time = 1;
+        ost->finished = 1;
         return;
     }
 
@@ -1911,7 +1911,7 @@ static int transcode_init(void)
 {
     int ret = 0, i, j, k;
     AVFormatContext *oc;
-    AVCodecContext *codec, *icodec = NULL;
+    AVCodecContext *codec;
     OutputStream *ost;
     InputStream *ist;
     char error[1024];
@@ -1942,6 +1942,7 @@ static int transcode_init(void)
 
     /* for each output stream, we compute the right encoding parameters */
     for (i = 0; i < nb_output_streams; i++) {
+        AVCodecContext *icodec = NULL;
         ost = output_streams[i];
         oc  = output_files[ost->file_index]->ctx;
         ist = get_input_stream(ost);
@@ -2367,13 +2368,13 @@ static int need_output(void)
         OutputFile *of       = output_files[ost->file_index];
         AVFormatContext *os  = output_files[ost->file_index]->ctx;
 
-        if (ost->is_past_recording_time ||
+        if (ost->finished ||
             (os->pb && avio_tell(os->pb) >= of->limit_filesize))
             continue;
         if (ost->frame_number >= ost->max_frames) {
             int j;
             for (j = 0; j < of->ctx->nb_streams; j++)
-                output_streams[of->ost_index + j]->is_past_recording_time = 1;
+                output_streams[of->ost_index + j]->finished = 1;
             continue;
         }
 
@@ -2424,7 +2425,7 @@ static int select_input_file(void)
 
     for (i = 0; i < nb_output_streams; i++)
         nb_active_out -= output_streams[i]->unavailable =
-            output_streams[i]->is_past_recording_time;
+            output_streams[i]->finished;
     while (nb_active_out) {
         opts_min = INT64_MAX;
         ost_index = -1;
@@ -3078,10 +3079,10 @@ int main(int argc, char **argv)
         exit_program(1);
     }
 
-    if (nb_input_files == 0) {
-        av_log(NULL, AV_LOG_FATAL, "At least one input file must be specified\n");
-        exit_program(1);
-    }
+//     if (nb_input_files == 0) {
+//         av_log(NULL, AV_LOG_FATAL, "At least one input file must be specified\n");
+//         exit_program(1);
+//     }
 
     current_time = ti = getutime();
     if (transcode() < 0)

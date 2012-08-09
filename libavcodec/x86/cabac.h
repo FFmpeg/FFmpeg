@@ -23,7 +23,7 @@
 
 #include "libavcodec/cabac.h"
 #include "libavutil/attributes.h"
-#include "libavutil/x86_cpu.h"
+#include "libavutil/x86/asm.h"
 #include "libavutil/internal.h"
 #include "config.h"
 

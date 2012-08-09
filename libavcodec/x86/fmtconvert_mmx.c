@@ -23,7 +23,7 @@
  */
 
 #include "libavutil/cpu.h"
-#include "libavutil/x86_cpu.h"
+#include "libavutil/x86/asm.h"
 #include "libavcodec/fmtconvert.h"
 #include "libavcodec/dsputil.h"
 

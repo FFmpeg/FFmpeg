@@ -34,7 +34,7 @@
 #include "libswscale/swscale.h"
 #include "libswscale/swscale_internal.h"
 #include "libavutil/attributes.h"
-#include "libavutil/x86_cpu.h"
+#include "libavutil/x86/asm.h"
 #include "libavutil/cpu.h"
 
 #if HAVE_INLINE_ASM

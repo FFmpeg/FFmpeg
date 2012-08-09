@@ -20,7 +20,7 @@
  */
 
 #include "libavutil/cpu.h"
-#include "libavutil/x86_cpu.h"
+#include "libavutil/x86/asm.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/snow.h"
 #include "libavcodec/dwt.h"

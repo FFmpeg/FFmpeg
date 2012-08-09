@@ -37,7 +37,6 @@
 #include "libavutil/avstring.h"
 #include "libavcodec/get_bits.h"
 #include "avformat.h"
-#include "mpegts.h"
 
 #include "network.h"
 #include <assert.h>

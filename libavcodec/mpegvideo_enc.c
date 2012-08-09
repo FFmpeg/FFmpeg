@@ -33,7 +33,6 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
-#include "mpegvideo_common.h"
 #include "h263.h"
 #include "mjpegenc.h"
 #include "msmpeg4.h"
@@ -1897,14 +1896,16 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
         }
 
         if (s->mv_dir & MV_DIR_FORWARD) {
-            MPV_motion(s, dest_y, dest_cb, dest_cr, 0, s->last_picture.f.data,
-                       op_pix, op_qpix);
+            ff_MPV_motion(s, dest_y, dest_cb, dest_cr, 0,
+                          s->last_picture.f.data,
+                          op_pix, op_qpix);
             op_pix  = s->dsp.avg_pixels_tab;
             op_qpix = s->dsp.avg_qpel_pixels_tab;
         }
         if (s->mv_dir & MV_DIR_BACKWARD) {
-            MPV_motion(s, dest_y, dest_cb, dest_cr, 1, s->next_picture.f.data,
-                       op_pix, op_qpix);
+            ff_MPV_motion(s, dest_y, dest_cb, dest_cr, 1,
+                          s->next_picture.f.data,
+                          op_pix, op_qpix);
         }
 
         if (s->flags & CODEC_FLAG_INTERLACED_DCT) {

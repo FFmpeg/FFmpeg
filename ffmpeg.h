@@ -306,7 +306,7 @@ typedef struct OutputStream {
     int64_t swr_dither_method;
     double swr_dither_scale;
     AVDictionary *opts;
-    int is_past_recording_time;
+    int finished;        /* no more packets should be written for this stream */
     int unavailable;                     /* true if the steram is unavailable (possibly temporarily) */
     int stream_copy;
     const char *attachment_filename;

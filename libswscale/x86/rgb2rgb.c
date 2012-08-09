@@ -27,7 +27,7 @@
 
 #include "config.h"
 #include "libavutil/attributes.h"
-#include "libavutil/x86_cpu.h"
+#include "libavutil/x86/asm.h"
 #include "libavutil/cpu.h"
 #include "libavutil/bswap.h"
 #include "libswscale/rgb2rgb.h"

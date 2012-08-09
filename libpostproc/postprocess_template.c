@@ -23,7 +23,7 @@
  * mmx/mmx2/3dnow postprocess code.
  */
 
-#include "libavutil/x86_cpu.h"
+#include "libavutil/x86/asm.h"
 
 #undef REAL_PAVGB
 #undef PAVGB

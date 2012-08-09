@@ -22,7 +22,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "libavutil/x86_cpu.h"
+#include "libavutil/x86/asm.h"
 #include "libavutil/cpu.h"
 
 #if HAVE_INLINE_ASM

@@ -22,7 +22,7 @@
 #include "libavutil/common.h"
 #include "libavcodec/dsputil.h"
 
-#include "libavutil/x86_cpu.h"
+#include "libavutil/x86/asm.h"
 #include "dsputil_mmx.h"
 
 #if HAVE_INLINE_ASM
