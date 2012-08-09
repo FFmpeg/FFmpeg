@@ -15,6 +15,10 @@ libavutil:     2011-04-18
 
 API changes, most recent first:
 
+2012-08-13 - xxxxxxx - lavfi 3.8.100 - avfilter.h
+  Add avfilter_get_class() function, and priv_class field to AVFilter
+  struct.
+
 2012-08-13 - xxxxxxx - lavu 51.69.100 - opt.h
   Add AV_OPT_FLAG_FILTERING_PARAM symbol in opt.h.
 

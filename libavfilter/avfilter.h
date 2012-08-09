@@ -47,6 +47,10 @@ const char *avfilter_configuration(void);
  */
 const char *avfilter_license(void);
 
+/**
+ * Get the class for the AVFilterContext struct.
+ */
+const AVClass *avfilter_get_class(void);
 
 typedef struct AVFilterContext AVFilterContext;
 typedef struct AVFilterLink    AVFilterLink;
@@ -469,6 +473,8 @@ typedef struct AVFilter {
      * used for providing binary data.
      */
     int (*init_opaque)(AVFilterContext *ctx, const char *args, void *opaque);
+
+    const AVClass *priv_class;      ///< private class, containing filter specific options
 } AVFilter;
 
 /** An instance of a filter */

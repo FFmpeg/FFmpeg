@@ -432,12 +432,47 @@ static const char *default_filter_name(void *filter_ctx)
     return ctx->name ? ctx->name : ctx->filter->name;
 }
 
+static void *filter_child_next(void *obj, void *prev)
+{
+    AVFilterContext *ctx = obj;
+    if (!prev && ctx->filter && ctx->filter->priv_class)
+        return ctx->priv;
+    return NULL;
+}
+
+static const AVClass *filter_child_class_next(const AVClass *prev)
+{
+    AVFilter **filter_ptr = NULL;
+
+    /* find the filter that corresponds to prev */
+    while (prev && *(filter_ptr = av_filter_next(filter_ptr)))
+        if ((*filter_ptr)->priv_class == prev)
+            break;
+
+    /* could not find filter corresponding to prev */
+    if (prev && !(*filter_ptr))
+        return NULL;
+
+    /* find next filter with specific options */
+    while (*(filter_ptr = av_filter_next(filter_ptr)))
+        if ((*filter_ptr)->priv_class)
+            return (*filter_ptr)->priv_class;
+    return NULL;
+}
+
 static const AVClass avfilter_class = {
     .class_name = "AVFilter",
     .item_name  = default_filter_name,
     .version    = LIBAVUTIL_VERSION_INT,
     .category   = AV_CLASS_CATEGORY_FILTER,
+    .child_next = filter_child_next,
+    .child_class_next = filter_child_class_next,
 };
+
+const AVClass *avfilter_get_class(void)
+{
+    return &avfilter_class;
+}
 
 int avfilter_open(AVFilterContext **filter_ctx, AVFilter *filter, const char *inst_name)
 {
