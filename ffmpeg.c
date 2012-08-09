@@ -2188,6 +2188,10 @@ static int transcode_init(void)
                 break;
             case AVMEDIA_TYPE_SUBTITLE:
                 codec->time_base = (AVRational){1, 1000};
+                if (!codec->width) {
+                    codec->width     = input_streams[ost->source_index]->st->codec->width;
+                    codec->height    = input_streams[ost->source_index]->st->codec->height;
+                }
                 break;
             default:
                 abort();
