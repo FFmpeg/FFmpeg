@@ -33,8 +33,6 @@
 #include "get_bits.h"
 #include "acelp_vectors.h"
 #include "celp_filters.h"
-#include "celp_math.h"
-#include "lsp.h"
 #include "g723_1_data.h"
 
 /**
