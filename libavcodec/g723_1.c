@@ -281,19 +281,21 @@ static int normalize_bits(int num, int width)
 static int scale_vector(int16_t *vector, int length)
 {
     int bits, max = 0;
-    int64_t scale;
     int i;
 
 
     for (i = 0; i < length; i++)
-        max = FFMAX(max, FFABS(vector[i]));
+        max |= FFABS(vector[i]);
 
     max   = FFMIN(max, 0x7FFF);
     bits  = normalize_bits(max, 15);
-    scale = (bits == 15) ? 0x7FFF : (1 << bits);
 
-    for (i = 0; i < length; i++)
-        vector[i] = av_clipl_int32(vector[i] * scale << 1) >> 4;
+    if (bits == 15)
+        for (i = 0; i < length; i++)
+            vector[i] = vector[i] * 0x7fff >> 3;
+    else
+        for (i = 0; i < length; i++)
+            vector[i] = vector[i] << bits >> 3;
 
     return bits - 3;
 }
