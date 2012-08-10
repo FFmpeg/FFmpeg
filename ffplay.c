@@ -2098,7 +2098,7 @@ static int audio_open(void *opaque, int64_t wanted_channel_layout, int wanted_nb
 
     env = SDL_getenv("SDL_AUDIO_CHANNELS");
     if (env) {
-        wanted_nb_channels = SDL_atoi(env);
+        wanted_nb_channels = atoi(env);
         wanted_channel_layout = av_get_default_channel_layout(wanted_nb_channels);
     }
     if (!wanted_channel_layout || wanted_nb_channels != av_get_channel_layout_nb_channels(wanted_channel_layout)) {
