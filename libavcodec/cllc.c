@@ -74,8 +74,8 @@ static int read_code_table(CLLCContext *ctx, GetBitContext *gb, VLC *vlc)
                               codes, 2, 2, symbols, 1, 1, 0);
 }
 
-static int read_line(CLLCContext *ctx, GetBitContext *gb, int *top_left,
-                     VLC *vlc, uint8_t *outbuf)
+static int read_rgb24_component_line(CLLCContext *ctx, GetBitContext *gb,
+                                     int *top_left, VLC *vlc, uint8_t *outbuf)
 {
     uint8_t *dst;
     int pred, code;
@@ -104,7 +104,7 @@ static int read_line(CLLCContext *ctx, GetBitContext *gb, int *top_left,
     return 0;
 }
 
-static int decode_bgr24_frame(CLLCContext *ctx, GetBitContext *gb, AVFrame *pic)
+static int decode_rgb24_frame(CLLCContext *ctx, GetBitContext *gb, AVFrame *pic)
 {
     AVCodecContext *avctx = ctx->avctx;
     uint8_t *dst;
@@ -137,7 +137,7 @@ static int decode_bgr24_frame(CLLCContext *ctx, GetBitContext *gb, AVFrame *pic)
     /* Read in and restore every line */
     for (i = 0; i < avctx->height; i++) {
         for (j = 0; j < 3; j++)
-            read_line(ctx, gb, &pred[j], &vlc[j], &dst[j]);
+            read_rgb24_component_line(ctx, gb, &pred[j], &vlc[j], &dst[j]);
 
         dst += pic->linesize[0];
     }
@@ -219,7 +219,7 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
             return ret;
         }
 
-        ret = decode_bgr24_frame(ctx, &gb, pic);
+        ret = decode_rgb24_frame(ctx, &gb, pic);
         if (ret < 0)
             return ret;
 
