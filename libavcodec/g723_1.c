@@ -979,7 +979,7 @@ static void formant_postfilter(G723_1_Context *p, int16_t *lpc, int16_t *buf)
 
         /* Compensation filter */
         for (j = 0; j < SUBFRAME_LEN; j++) {
-            buf_ptr[j] = av_clipl_int32(signal_ptr[j] +
+            buf_ptr[j] = av_clipl_int32((int64_t)signal_ptr[j] +
                                         ((signal_ptr[j - 1] >> 16) *
                                          temp << 1)) >> 16;
         }
