@@ -534,6 +534,16 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
                                            &new_pkt.data, &new_pkt.size,
                                            pkt->data, pkt->size,
                                            pkt->flags & AV_PKT_FLAG_KEY);
+        if(a == 0 && new_pkt.data != pkt->data && new_pkt.destruct) {
+            uint8_t *t = av_malloc(new_pkt.size + FF_INPUT_BUFFER_PADDING_SIZE); //the new should be a subset of the old so cannot overflow
+            if(t) {
+                memcpy(t, new_pkt.data, new_pkt.size);
+                memset(t + new_pkt.size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+                new_pkt.data = t;
+                a = 1;
+            } else
+                a = AVERROR(ENOMEM);
+        }
         if (a > 0) {
             av_free_packet(pkt);
             new_pkt.destruct = av_destruct_packet;
