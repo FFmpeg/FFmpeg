@@ -574,7 +574,7 @@ static int dot_product(const int16_t *a, const int16_t *b, int length)
     int i, sum = 0;
 
     for (i = 0; i < length; i++) {
-        int64_t prod = av_clipl_int32(MUL64(a[i], b[i]) << 1);
+        int64_t prod = av_clipl_int32((int64_t)(a[i] * b[i]) << 1);
         sum = av_clipl_int32(sum + prod);
     }
     return sum;
@@ -889,9 +889,9 @@ static void gain_scale(G723_1_Context *p, int16_t * buf, int energy)
     num   = energy;
     denom = 0;
     for (i = 0; i < SUBFRAME_LEN; i++) {
-        int64_t temp = buf[i] >> 2;
-        temp  = av_clipl_int32(MUL64(temp, temp) << 1);
-        denom = av_clipl_int32(denom + temp);
+        int temp = buf[i] >> 2;
+        temp *= temp;
+        denom = av_clipl_int32((int64_t)denom + (temp << 1));
     }
 
     if (num && denom) {
