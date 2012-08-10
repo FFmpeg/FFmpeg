@@ -251,24 +251,24 @@ static void get_slice_data(ProresContext *ctx, const uint16_t *src,
             ctx->dsp.fdct(esrc, elinesize, blocks);
             blocks += 64;
             if (blocks_per_mb > 2) {
-                ctx->dsp.fdct(src + 8, linesize, blocks);
+                ctx->dsp.fdct(esrc + 8, elinesize, blocks);
                 blocks += 64;
             }
-            ctx->dsp.fdct(src + linesize * 4, linesize, blocks);
+            ctx->dsp.fdct(esrc + elinesize * 4, elinesize, blocks);
             blocks += 64;
             if (blocks_per_mb > 2) {
-                ctx->dsp.fdct(src + linesize * 4 + 8, linesize, blocks);
+                ctx->dsp.fdct(esrc + elinesize * 4 + 8, elinesize, blocks);
                 blocks += 64;
             }
         } else {
             ctx->dsp.fdct(esrc, elinesize, blocks);
             blocks += 64;
-            ctx->dsp.fdct(src + linesize * 4, linesize, blocks);
+            ctx->dsp.fdct(esrc + elinesize * 4, elinesize, blocks);
             blocks += 64;
             if (blocks_per_mb > 2) {
-                ctx->dsp.fdct(src + 8, linesize, blocks);
+                ctx->dsp.fdct(esrc + 8, elinesize, blocks);
                 blocks += 64;
-                ctx->dsp.fdct(src + linesize * 4 + 8, linesize, blocks);
+                ctx->dsp.fdct(esrc + elinesize * 4 + 8, elinesize, blocks);
                 blocks += 64;
             }
         }
