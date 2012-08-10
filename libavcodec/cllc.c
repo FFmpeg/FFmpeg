@@ -74,6 +74,80 @@ static int read_code_table(CLLCContext *ctx, GetBitContext *gb, VLC *vlc)
                               codes, 2, 2, symbols, 1, 1, 0);
 }
 
+/*
+ * Unlike the RGB24 read/restore, which reads in a component at a time,
+ * ARGB read/restore reads in ARGB quads.
+ */
+static int read_argb_line(CLLCContext *ctx, GetBitContext *gb, int *top_left,
+                          VLC *vlc, uint8_t *outbuf)
+{
+    uint8_t *dst;
+    int pred[4];
+    int code;
+    int i;
+
+    OPEN_READER(bits, gb);
+
+    dst     = outbuf;
+    pred[0] = top_left[0];
+    pred[1] = top_left[1];
+    pred[2] = top_left[2];
+    pred[3] = top_left[3];
+
+    for (i = 0; i < ctx->avctx->width; i++) {
+        /* Always get the alpha component */
+        UPDATE_CACHE(bits, gb);
+        GET_VLC(code, bits, gb, vlc[0].table, 7, 2);
+
+        pred[0] += code;
+        dst[0]   = pred[0];
+
+        /* Skip the components if they are  entirely transparent */
+        if (dst[0]) {
+            /* Red */
+            UPDATE_CACHE(bits, gb);
+            GET_VLC(code, bits, gb, vlc[1].table, 7, 2);
+
+            pred[1] += code;
+            dst[1]   = pred[1];
+
+            /* Green */
+            UPDATE_CACHE(bits, gb);
+            GET_VLC(code, bits, gb, vlc[2].table, 7, 2);
+
+            pred[2] += code;
+            dst[2]   = pred[2];
+
+            /* Blue */
+            UPDATE_CACHE(bits, gb);
+            GET_VLC(code, bits, gb, vlc[3].table, 7, 2);
+
+            pred[3] += code;
+            dst[3]   = pred[3];
+        } else {
+            dst[1] = 0;
+            dst[2] = 0;
+            dst[3] = 0;
+        }
+
+        dst += 4;
+    }
+
+    CLOSE_READER(bits, gb);
+
+    dst         -= 4 * ctx->avctx->width;
+    top_left[0]  = dst[0];
+
+    /* Only stash components if they are not transparent */
+    if (top_left[0]) {
+        top_left[1] = dst[1];
+        top_left[2] = dst[2];
+        top_left[3] = dst[3];
+    }
+
+    return 0;
+}
+
 static int read_rgb24_component_line(CLLCContext *ctx, GetBitContext *gb,
                                      int *top_left, VLC *vlc, uint8_t *outbuf)
 {
@@ -100,6 +174,50 @@ static int read_rgb24_component_line(CLLCContext *ctx, GetBitContext *gb,
 
     /* Stash the first pixel */
     *top_left = dst[-3 * ctx->avctx->width];
+
+    return 0;
+}
+
+static int decode_argb_frame(CLLCContext *ctx, GetBitContext *gb, AVFrame *pic)
+{
+    AVCodecContext *avctx = ctx->avctx;
+    uint8_t *dst;
+    int pred[4];
+    int ret;
+    int i, j;
+    VLC vlc[4];
+
+    pred[0] = 0;
+    pred[1] = 0x80;
+    pred[2] = 0x80;
+    pred[3] = 0x80;
+
+    dst = pic->data[0];
+
+    skip_bits(gb, 16);
+
+    /* Read in code table for each plane */
+    for (i = 0; i < 4; i++) {
+        ret = read_code_table(ctx, gb, &vlc[i]);
+        if (ret < 0) {
+            for (j = 0; j <= i; j++)
+                ff_free_vlc(&vlc[j]);
+
+            av_log(ctx->avctx, AV_LOG_ERROR,
+                   "Could not read code table %d.\n", i);
+            return ret;
+        }
+    }
+
+    /* Read in and restore every line */
+    for (i = 0; i < avctx->height; i++) {
+        read_argb_line(ctx, gb, pred, vlc, dst);
+
+        dst += pic->linesize[0];
+    }
+
+    for (i = 0; i < 4; i++)
+        ff_free_vlc(&vlc[i]);
 
     return 0;
 }
@@ -221,6 +339,21 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
         }
 
         ret = decode_rgb24_frame(ctx, &gb, pic);
+        if (ret < 0)
+            return ret;
+
+        break;
+    case 3:
+        avctx->pix_fmt             = PIX_FMT_ARGB;
+        avctx->bits_per_raw_sample = 8;
+
+        ret = avctx->get_buffer(avctx, pic);
+        if (ret < 0) {
+            av_log(avctx, AV_LOG_ERROR, "Could not allocate buffer.\n");
+            return ret;
+        }
+
+        ret = decode_argb_frame(ctx, &gb, pic);
         if (ret < 0)
             return ret;
 
